@@ -8,6 +8,11 @@ pro pc_read_1d_aver, dir, object=object, varfile=varfile, datadir=datadir, $
 COMPILE_OPT IDL2,HIDDEN
 COMMON pc_precision, zero, one
 ;
+;  Get necessary dimensions.
+;
+pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
+pc_set_precision, dim=dim, quiet=quiet
+;
 ;  Default data directory.
 ;
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
@@ -29,11 +34,6 @@ default, in_file, avdirs+'aver.in'
 default, varfile, avdirs+'averages.dat'
 default, monotone, 0
 default, quiet, 0
-;
-;  Get necessary dimensions.
-;
-pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
-pc_set_precision, dim=dim, quiet=quiet
 ;
 ;  Read variables from '*aver.in' file
 ;

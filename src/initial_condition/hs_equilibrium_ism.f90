@@ -96,10 +96,15 @@ module InitialCondition
   real, dimension(mz) :: TT, zrho
   logical :: lthermal_hse=.true.
 !
+!  Magnetic profile
+!
+  real, parameter :: amplaa_cgs=1e-9 ! 1 nano Gauss
+  real :: amplaa=impossible
+!
 !  start parameters
 !
   namelist /initial_condition_pars/ &
-      rho0ts, T0hs, lthermal_hse
+      rho0ts, T0hs, lthermal_hse, amplaa
 !
   contains
 !***********************************************************************
@@ -278,9 +283,15 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      integer :: i ,icpu
-      real :: ampl,tmp1,tmp3
+      integer :: icpu
+      real :: tmp1,tmp3
       real, dimension(ncpus)::sumtmp,tmp2
+!
+      if (unit_system=='cgs') then
+        if (amplaa == impossible) amplaa = amplaa_cgs/unit_magnetic
+      else if (unit_system=='SI') then
+        call fatal_error('initial_condition_magnetic','SI unit conversions not inplemented')
+      endif
 !
       tmp2(:)=0.0
       sumtmp(:)=0.0
@@ -310,19 +321,17 @@ module InitialCondition
       endif
       if (lroot) print*,'sumtmp =',sumtmp
       print*,'sumtmp on iproc =',sumtmp(iproc+1),iproc
-      if (ampl==0) then
+      if (amplaa==0) then
         f(:,:,:,iaa:iaa+2)=0
-        if (lroot) print*,'ferriere_uniform_y: set B field to zero; i=',i
       else
-        print*,'ferriere_uniform_y: uniform y-field approx rho; i=',i
-        if ((ip<=16).and.lroot) print*,'uniform_y: ampl=',ampl
+        if ((ip<=16).and.lroot) print*,'uniform_y: amplaa=',amplaa
         do n=n1,n2
         do m=m1,m2
           if (ldensity_nolog) then
-            f(l1:l2,m,n,iaa)=ampl*(sumtmp(iproc+1)+&
+            f(l1:l2,m,n,iaa)=amplaa*(sumtmp(iproc+1)+&
                 sum(f(l1:l2,m,n1:n,irho)))*dx*dz
           else
-            f(l1:l2,m,n,iaa)=ampl*(sumtmp(iproc+1)+&
+            f(l1:l2,m,n,iaa)=amplaa*(sumtmp(iproc+1)+&
                 sum(exp(f(l1:l2,m,n1:n,ilnrho))))*dx*dz
           endif
           f(l1:l2,m,n,iaa+1)=0.0

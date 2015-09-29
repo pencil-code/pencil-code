@@ -34,10 +34,6 @@ module Particles
   include 'particles_common.h'
 !
   complex, dimension (7) :: coeff=(0.0,0.0)
-  real, target, dimension (npar_species) :: qbym_species=0.0
-  real, target, dimension (npar_species) :: qbym1_species=0.0
-  real, target, dimension (npar_species) :: tausp_species=0.0
-  real, target, dimension (npar_species) :: tausp1_species=0.0
   real, dimension (3) :: temp_grad0=(/0.0,0.0,0.0/)
   real, dimension (3) :: pos_sphere=(/0.0,0.0,0.0/)
   real :: xp0=0.0, yp0=0.0, zp0=0.0, vpx0=0.0, vpy0=0.0, vpz0=0.0
@@ -51,7 +47,6 @@ module Particles
   real :: Lx0=0.0, Ly0=0.0, Lz0=0.0
   real :: delta_vp0=0.
   real :: rad_sphere=0.0
-  real :: qbym=0.0
   real :: cdtp=0.2
   real :: particles_insert_rate=0.
   real :: avg_n_insert, remaining_particles=0.0
@@ -80,20 +75,23 @@ module Particles
 !
   real, dimension(3) :: uup_shared=0
   real :: turnover_shared=0
+  real :: dust_charge=1.,rhodust=1.,fluid_mu=1.
   logical :: vel_call=.false., turnover_call=.false.
   logical :: lsinkpoint=.false., lglobalrandom=.false.
   logical :: lreassign_strat_rhom=.true.,lcentrifugal_force_par=.false.,lcoriolis_force_par=.false.
   logical :: lpar_spec=.false.
   logical :: lonly_eforce=.false.
+  logical :: lstokes_drag=.false.
 !
   namelist /particles_init_pars/ &
       initxxp, initvvp,amplvvp, xp0, yp0, zp0, Lx0, Ly0,Lz0, vpx0, vpy0, vpz0, delta_vp0, &
-      bcpx, bcpy, bcpz,qbym,qbym_species,lcheck_exact_frontier, linsert_particles_continuously, &
-      lnocalc_rhop,lonly_eforce,lparticlemesh_cic
+      bcpx, bcpy, bcpz,lcheck_exact_frontier, linsert_particles_continuously, &
+      lnocalc_rhop,lonly_eforce,lparticlemesh_cic,lstokes_drag,dust_charge,rhodust
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz,cdtp,lcentrifugal_force_par,lcheck_exact_frontier, lcoriolis_force_par, &
-      lmigration_redo,lonly_eforce,lpar_spec,qbym, qbym_species
+      lmigration_redo,lonly_eforce,lpar_spec,lstokes_drag,dust_charge,rhodust,fluid_mu,& 
+      lstokes_drag,linsert_particles_continuously
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -1691,8 +1689,9 @@ k_loop:   do while (.not. (k>npar_loc))
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
       integer, dimension (mpar_loc,3) :: ineargrid
-      real :: vsqr
-      real, dimension (3) :: EEp,bbp,accn,velocity,fmagnetic
+      real :: vsqr,mass,radius,qbym,one_by_tau
+      real, dimension (3) :: EEp,bbp,accn,velocity,fmagnetic,&
+                             drag_accn,uup
       real,save :: vsqr_max=0.
       integer :: ix0,iy0,iz0,k
 !
@@ -1726,6 +1725,9 @@ k_loop:   do while (.not. (k>npar_loc))
           vsqr=velocity(1)*velocity(1) + &
             velocity(2)*velocity(2) + velocity(3)*velocity(3)
           vsqr_max=max(vsqr_max,vsqr)
+          radius=fp(k,iap)
+          mass = rhodust*(4./3.)*pi*(radius**3)
+          qbym=dust_charge/mass
           if (lonly_eforce) then
 !            accn = -qbym*EEp
              accn = qbym*EEp
@@ -1736,6 +1738,16 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
 !
           dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + accn
+!
+! If drag force is also included then :
+!
+          if (lstokes_drag) then
+            call interpolate_linear(f,iux,iuz,&
+               fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
+            one_by_tau=(9./2.)*fluid_mu/(radius*radius*rhodust)
+            drag_accn = one_by_tau*(uup-velocity)
+            dfp(k,ivpx:ivpz) =  dfp(k,ivpx:ivpz) + drag_accn 
+          endif
         enddo
       else
 !

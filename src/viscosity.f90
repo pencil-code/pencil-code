@@ -93,6 +93,7 @@ module Viscosity
   logical :: lvisc_heat_as_aux=.false.
   logical :: lvisc_mixture=.false.
   logical :: lvisc_spitzer=.false.
+  logical :: lvisc_slope_limited=.false.
   logical :: limplicit_viscosity=.false.
   logical :: lmeanfield_nu=.false.
   logical :: lmagfield_nu=.false.
@@ -101,6 +102,8 @@ module Viscosity
   logical, pointer:: lviscosity_heat
   logical :: lKit_Olem
   real :: damp_sound=0.
+  real :: h_slope_limited=0.
+  character (LEN=labellen) :: islope_limiter=''
 !
   namelist /viscosity_run_pars/ &
       limplicit_viscosity, nu, nu_tdep_exponent, nu_tdep_t0, zeta, &
@@ -112,7 +115,8 @@ module Viscosity
       PrM_turb, roffset_lambda, nu_spitzer, nu_jump2,&
       widthnu_shock, znu_shock, xnu_shock, nu_jump_shock, &
       nnewton_type,nu_infinity,nu0,non_newton_lambda,carreau_exponent,&
-      nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound,luse_nu_rmn_prof
+      nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound,luse_nu_rmn_prof, &
+      lvisc_slope_limited, h_slope_limited, islope_limiter 
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
@@ -174,7 +178,9 @@ module Viscosity
 !
   contains
 !***********************************************************************
-    subroutine register_viscosity()
+    subroutine register_viscosity
+    
+    use FArrayManager, only: farray_register_auxiliary
 !
 !  19-nov-02/tony: coded
 !
@@ -182,6 +188,18 @@ module Viscosity
 !
       if (lroot) call svn_id( &
           "$Id$")
+!
+!  Needed for flux limited diffusion
+!
+      if (lvisc_slope_limited) then
+        if (iFF_diff==0) then
+          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
+          iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
+        endif
+        call farray_register_auxiliary('Div_flux_diff_uu',iFF_div_uu,vector=3)
+        iFF_char_c=max(iFF_div_uu+2,iFF_div_ss)
+        if (iFF_div_aa>0) iFF_char_c=max(iFF_char_c,iFF_div_aa+2)
+      endif
 !
     endsubroutine register_viscosity
 !***********************************************************************
@@ -577,6 +595,8 @@ module Viscosity
 !  Get background energy stratification, if any.
 !
       if (lstratz .and. lthermal_energy) call get_stratz(z, eth0z=eth0z)
+
+      lslope_limit_diff = lslope_limit_diff .or. lvisc_slope_limited
 !
 !  debug output
 !
@@ -1786,6 +1806,14 @@ module Viscosity
         endif
       endif
 !
+!  Calculate viscouse force form a slope limited diffusion
+!  following Rempel (2014).
+!  Here calculating the divergence of the flux.
+!
+      if (lvisc_slope_limited) &
+        p%fvisc(:,iuu:iuu+2)=p%fvisc(:,iuu:iuu+2)+f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)
+!      if(lfirst .and. ldiagnos) print*,'DIV',f(510,m,n,iFF_div_uu:iFF_div_uu+2)
+!
 !  Calculate Lambda effect
 !
       if (llambda_effect) then
@@ -1813,6 +1841,106 @@ module Viscosity
       endif
 !
     endsubroutine calc_pencils_viscosity
+!***********************************************************************
+    subroutine viscosity_after_boundary(f)
+
+      use Sub, only: div
+      use Sub, only: notanumber
+!      use Boundcond, only: update_ghosts
+
+      real, dimension (mx,my,mz,mfarray) :: f
+
+      integer :: ll,mm,nn,j,iff
+      real, dimension(mx-1) :: tmpx
+      real, dimension(my-1) :: tmpy
+      real, dimension(mz-1) :: tmpz
+      real, dimension(nx)   :: tmp
+!
+!  Slope limited diffusion following Rempel (2014)
+!  First calculating the flux in a subroutine below
+!  using a slope limiting procedure then storing in the 
+!  auxilaries variables in the f array (done above).
+!
+      if (lvisc_slope_limited) then
+!
+!  to avoid taking the sqrt several times
+!        
+        f(:,:,:,iFF_char_c)=sqrt(f(:,:,:,iFF_char_c))
+        f(:,:,:,iFF_diff1:iFF_diff2)=0.
+! 
+       do j=1,3
+
+          iff=iFF_diff
+
+          if (nxgrid>1) then
+            do nn=n1,n2; do mm=m1,m2
+              tmpx = f(2:,mm,nn,iuu+j-1)-f(:mx-1,mm,nn,iuu+j-1)
+!if (lroot.and.j==1.and.lfirst.and.ldiagnos) print*, 'tmpx=',tmpx
+              call calc_diffusive_flux(tmpx,f(2:mx-2,mm,nn,iFF_char_c),f(2:mx-2,mm,nn,iff))
+!if (lroot.and.j==1.and.lfirst.and.ldiagnos) print*,'flux=',f(2:mx-2,mm,nn,iff) 
+!if (notanumber(f(2:mx-1,mm,nn,iFF_diff))) print*, 'DIFFX:j,mm,nn=', j,mm,nn
+!            if(lfirst.and.ldiagnos.and.j==1) print*,f(473:533,mm,nn,iff)
+            enddo; enddo
+            iff=iff+1
+          endif
+
+          if (nygrid>1) then
+            do nn=n1,n2; do ll=l1,l2
+              tmpy = f(ll,2:,nn,iuu+j-1)-f(ll,:my-1,nn,iuu+j-1)
+              call calc_diffusive_flux(tmpy,f(ll,2:my-2,nn,iFF_char_c),f(ll,2:my-2,nn,iff))
+!if (notanumber(f(ll,2:my-1,nn,iFF_diff+1))) print*, 'DIFFY:j,ll,nn=', j,ll,nn
+            enddo; enddo
+            iff=iff+1
+          endif
+
+          if (nzgrid>1) then
+            do mm=m1,m2; do ll=l1,l2
+              tmpz = f(ll,mm,2:,iuu+j-1)-f(ll,mm,:mz-1,iuu+j-1)
+!if (notanumber(tmpz)) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
+            call calc_diffusive_flux(tmpz,f(ll,mm,2:mz-2,iFF_char_c),f(ll,mm,2:mz-2,iff))
+!if (notanumber(f(ll,mm,2:mz-1,iFF_diff+2))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
+            enddo; enddo
+          endif
+
+! not yet operational, so not correct for parallel runs!
+          !!!call update_ghosts(f,iFF_diff1,iFF_diff2)   !,lnoboundconds=.true.)     ! not all ghost zones really needed
+
+          do n=n1,n2; do m=m1,m2
+!             if(lfirst.and.ldiagnos.and.j==1) print*,f(473:533,mm,nn,iFF_diff)
+            call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_uu+j-1),iorder=4)
+!if (lroot.and.lfirst.and.ldiagnos.and.j==1) print*,'DIVflux=',f(508:511,m,n,iFF_diff1) 
+!            call div(f,iFF_diff,tmp,iorder=4)
+!if (lroot.and.j==1.and.lfirst.and.ldiagnos) print*, tmp
+          enddo; enddo
+
+        enddo
+      endif
+
+    endsubroutine viscosity_after_boundary
+!***********************************************************************
+    subroutine calc_diffusive_flux(diffs,c_char,flux)
+!
+!  23-sep-15/MR,joern,fred,petri: coded
+!
+      use Sub, only: slope_limiter, diff_flux
+
+      real, dimension(:),intent(in) :: diffs,c_char
+      real, dimension(:),intent(out):: flux
+
+      real, dimension(size(diffs)-1) :: slope
+      real, dimension(size(diffs)-2) :: phi
+      integer :: len
+
+      len=size(diffs)
+
+      call slope_limiter(diffs(2:),diffs(:len-1),slope,islope_limiter)
+
+      flux = diffs(2:len-1) - 0.5*(slope(2:) + slope(1:len-2))
+
+      call diff_flux(h_slope_limited, diffs(2:len-1), flux, phi)
+      flux = -0.5*c_char*phi*flux
+
+    endsubroutine calc_diffusive_flux
 !***********************************************************************
     subroutine getnu_non_newtonian(gdotsqr,nu_effective,gradnu_effective)
 !

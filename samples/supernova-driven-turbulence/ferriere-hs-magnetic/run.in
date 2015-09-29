@@ -48,7 +48,6 @@
 !  TT_SN_min=0.0
   rho_SN_max=3.25
   lSN_mass=T
-  mass_movement='off'
   velocity_profile='gaussian3'
   lSN_velocity=T
 !  ampl_SN=3.182093016 !without kinetic energy
@@ -60,8 +59,6 @@
   heatcool_shock_cutoff_rate=0.25
   cooling_select='WSW'
   heating_select='wolfire'
-  lcooltime_smooth=T
-  SNR_damping=0.5 !any non-zero value ldamping=T value not used
 /
 &shear_run_pars
 /

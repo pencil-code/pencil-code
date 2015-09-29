@@ -380,24 +380,32 @@ class NullPoint(object):
         for null in self.nulls:
             # Find the Jacobian grad(field).
             grad_field = self.__grad_field(null, var, field, delta)
-            # Find the eigenvalues of the Jacobian.
-            eigen_values = np.array(np.linalg.eig(grad_field)[0])
-            # Find the eigenvectors of the Jacobian.
-            eigen_vectors = np.array(np.linalg.eig(grad_field)[1].T)
-            # Determine which way to trace the streamlines.
-            if np.linalg.det(np.real(grad_field)) < 0:
-                sign_trace = 1
-                fan_vectors = eigen_vectors[np.where(np.sign(eigen_values) > 0)]
-            if np.linalg.det(grad_field) > 0:
-                sign_trace = -1
-                fan_vectors = eigen_vectors[np.where(np.sign(eigen_values) < 0)]
-            if np.linalg.det(grad_field) == 0:
-                print("error: Null point is not of x-type.")
-                continue
-            fan_vectors = np.array(fan_vectors)
-            # Compute the normal to the fan-plane.
-            normal = np.cross(fan_vectors[0], fan_vectors[1])
-            normal = normal/np.sqrt(np.sum(normal**2))
+            if abs(np.real(np.linalg.det(grad_field))) > 1e-8*np.min([var.dx, var.dy, var.dz]):
+                # Find the eigenvalues of the Jacobian.
+                eigen_values = np.array(np.linalg.eig(grad_field)[0])
+                # Find the eigenvectors of the Jacobian.
+                eigen_vectors = np.array(np.linalg.eig(grad_field)[1].T)
+                # Determine which way to trace the streamlines.
+                if np.real(np.linalg.det(grad_field)) < 0:
+                    sign_trace = 1
+                    fan_vectors = eigen_vectors[np.where(np.sign(eigen_values) > 0)]
+                if np.real(np.linalg.det(grad_field)) > 0:
+                    sign_trace = -1
+                    fan_vectors = eigen_vectors[np.where(np.sign(eigen_values) < 0)]
+                if np.linalg.det(grad_field) == 0:
+                    print("error: Null point is not of x-type.")
+                    continue
+                fan_vectors = np.array(fan_vectors)
+                # Compute the normal to the fan-plane.
+                normal = np.cross(fan_vectors[0], fan_vectors[1])
+                normal = normal/np.sqrt(np.sum(normal**2))
+            else:
+                print "Warning: Jacobian singular = ",  np.linalg.det(grad_field), grad_field
+                eigen_values = np.zeros(3)
+                eigen_vectors = np.zeros((3, 3))
+                sign_trace = 0
+                fan_vectors = np.zeros((2, 3))
+                normal = np.zeros(3)
 
             self.eigen_values.append(eigen_values)
             self.eigen_vectors.append(eigen_vectors)
@@ -446,38 +454,39 @@ class NullPoint(object):
         for null in self.nulls:
             points.InsertNextPoint(null)
 
-        eigen_values_vtk = []
-        eigen_values = []
-        eigen_vectors_vtk = []
-        eigen_vectors = []
-        fan_vectors_vtk = []
-        fan_vectors = []
-        for dim in range(self.eigen_values.shape[1]):
-            # Write out the eigen values.
-            eigen_values.append(self.eigen_values[:, dim].copy())
-            eigen_values_vtk.append(VN.numpy_to_vtk(eigen_values[-1]))
-            eigen_values_vtk[-1].SetName('eigen_value_{0}'.format(dim))
-            grid_data.GetPointData().AddArray(eigen_values_vtk[-1])
-            # Write out the eigen vectors.
-            eigen_vectors.append(self.eigen_vectors[:, dim, :].copy())
-            eigen_vectors_vtk.append(VN.numpy_to_vtk(eigen_vectors[-1]))
-            eigen_vectors_vtk[-1].SetName('eigen_vector_{0}'.format(dim))
-            grid_data.GetPointData().AddArray(eigen_vectors_vtk[-1])
-            # Write out the fan vectors..
-            if dim < self.eigen_values.shape[1]-1:
-                fan_vectors.append(self.fan_vectors[:, dim, :].copy())
-                fan_vectors_vtk.append(VN.numpy_to_vtk(fan_vectors[-1]))
-                fan_vectors_vtk[-1].SetName('fan_vector_{0}'.format(dim))
-                grid_data.GetPointData().AddArray(fan_vectors_vtk[-1])
-        # Write out the sign for the vector field tracing.
-        sign_trace_vtk = VN.numpy_to_vtk(self.sign_trace)
-        sign_trace_vtk.SetName('sign_trace')
-        grid_data.GetPointData().AddArray(sign_trace_vtk)
-        # Write out the fan plane normal.
-        normals_vtk = VN.numpy_to_vtk(self.normals)
-        normals_vtk.SetName('normal')
-        grid_data.GetPointData().AddArray(normals_vtk)
-        grid_data.SetPoints(points)
+        if len(self.nulls) != 0:
+            eigen_values_vtk = []
+            eigen_values = []
+            eigen_vectors_vtk = []
+            eigen_vectors = []
+            fan_vectors_vtk = []
+            fan_vectors = []
+            for dim in range(self.eigen_values.shape[1]):
+                # Write out the eigen values.
+                eigen_values.append(self.eigen_values[:, dim].copy())
+                eigen_values_vtk.append(VN.numpy_to_vtk(eigen_values[-1]))
+                eigen_values_vtk[-1].SetName('eigen_value_{0}'.format(dim))
+                grid_data.GetPointData().AddArray(eigen_values_vtk[-1])
+                # Write out the eigen vectors.
+                eigen_vectors.append(self.eigen_vectors[:, dim, :].copy())
+                eigen_vectors_vtk.append(VN.numpy_to_vtk(eigen_vectors[-1]))
+                eigen_vectors_vtk[-1].SetName('eigen_vector_{0}'.format(dim))
+                grid_data.GetPointData().AddArray(eigen_vectors_vtk[-1])
+                # Write out the fan vectors..
+                if dim < self.eigen_values.shape[1]-1:
+                    fan_vectors.append(self.fan_vectors[:, dim, :].copy())
+                    fan_vectors_vtk.append(VN.numpy_to_vtk(fan_vectors[-1]))
+                    fan_vectors_vtk[-1].SetName('fan_vector_{0}'.format(dim))
+                    grid_data.GetPointData().AddArray(fan_vectors_vtk[-1])
+            # Write out the sign for the vector field tracing.
+            sign_trace_vtk = VN.numpy_to_vtk(self.sign_trace)
+            sign_trace_vtk.SetName('sign_trace')
+            grid_data.GetPointData().AddArray(sign_trace_vtk)
+            # Write out the fan plane normal.
+            normals_vtk = VN.numpy_to_vtk(self.normals)
+            normals_vtk.SetName('normal')
+            grid_data.GetPointData().AddArray(normals_vtk)
+            grid_data.SetPoints(points)
 
         # Insure compatability between vtk 5 and 6.
         try:
@@ -659,9 +668,14 @@ class Separatrix(object):
 
             tracing = True
             separatrices.append(null)
+            
+            # Only trace separatrices for x-point lilke nulls.
+            if abs(np.linalg.det(null_point.eigen_vectors[null_idx])) < delta*1e-8:
+                continue
+            
             # Create the first ring of points.
             ring = []
-            offset = len(separatrices)
+            offset = len(separatrices)-1
             for theta in np.linspace(0, 2*np.pi*(1-1./ring_density), ring_density):
                 ring.append(null + self.__rotate_vector(normal, fan_vectors[0],
                                                         theta) * delta)
@@ -688,6 +702,9 @@ class Separatrix(object):
                     ring[point_idx] = point
                     point_idx += 1
 
+                # Connectivity array between old and new ring.
+                connectivity_rings = np.ones((2, len(ring)), dtype = 'int')*range(len(ring))
+                
                 # Add points if distance becomes too large.
                 ring_new = []
                 ring_new.append(ring[0])
@@ -695,6 +712,7 @@ class Separatrix(object):
                     if self.__distance(ring[point_idx],
                                        ring[point_idx+1]) > delta:
                         ring_new.append((ring[point_idx]+ring[point_idx+1])/2)
+                        connectivity_rings[1, point_idx+1:] += 1
                     ring_new.append(ring[point_idx+1])
                 if self.__distance(ring[0], ring[-1]) > delta:
                     ring_new.append((ring[0]+ring[-1])/2)
@@ -703,12 +721,24 @@ class Separatrix(object):
                 # Remove points which lie outside.
                 ring_new = []
                 not_connect_to_next = []
+                left_shift = np.zeros(connectivity_rings.shape[1])
                 for point_idx in range(len(ring)):
                     if self.__inside_domain(ring[point_idx], var):
                         ring_new.append(ring[point_idx])
                         separatrices.append(ring[point_idx])
                     else:
                         not_connect_to_next.append(len(ring_new)-1)
+                        mask = connectivity_rings[1, :] == point_idx
+                        connectivity_rings[1, mask] = -1
+                        mask = connectivity_rings[1, :] > point_idx
+                        left_shift += mask
+                connectivity_rings[1, :] -= left_shift
+                ring = ring_new
+                
+                # Stop the tracing routine if there are no points in the ring.
+                if not ring:
+                    tracing = False
+                    continue
 
                 # Set the connectivity within the ring.
                 offset = len(separatrices)-len(ring_new)
@@ -720,28 +750,16 @@ class Separatrix(object):
                 and not np.any(np.array(not_connect_to_next) == -1):
                     connectivity.append(np.array([offset,
                                                   offset+len(ring_new)-1]))
-                ring = ring_new
 
-                offset = len(separatrices)-len(ring_old)-len(ring)
-                # Compute connectivity arrays between the old and new ring.
+                # Set the connectivity between the old and new ring.
                 for point_old_idx in range(len(ring_old)):
-                    point_old = ring_old[point_old_idx]
-                    dist_min = np.inf
-                    idx_min = -1
-                    for point_idx in range(len(ring)):
-                        point = ring[point_idx]
-                        dist = self.__distance(point_old, point)
-                        if dist < dist_min:
-                            dist_min = dist
-                            idx_min = point_idx
-                    if idx_min > -1:
-                        connectivity.append(np.array([offset+point_old_idx,
-                                                      offset+idx_min+len(ring_old)]))
-
+                    if connectivity_rings[1, point_old_idx] >= 0:
+                        connectivity_rings[0, point_old_idx] += len(separatrices)-len(ring_old)-len(ring)
+                        connectivity_rings[1, point_old_idx] += len(separatrices)-len(ring)
+                        connectivity.append(np.array([connectivity_rings[0, point_old_idx],
+                                                      connectivity_rings[1, point_old_idx]]))
+                
                 iteration += 1
-                # Stop the tracing routine if there are no points in the ring.
-                if not ring:
-                    tracing = False
 
         self.separatrices = np.array(separatrices)
         self.connectivity = np.array(connectivity)
@@ -904,6 +922,7 @@ class Spine(object):
 
         spines = []
         for null_idx in range(len(null_point.nulls)):
+            field_sgn = -field*null_point.sign_trace[null_idx]
             null = null_point.nulls[null_idx]
             spine_up = []
             spine_down = []
@@ -917,7 +936,7 @@ class Spine(object):
             iteration = 0
             while tracing and iteration < iter_max:
                 spine_up.append(point)
-                field_norm = vec_int(point, var, field)
+                field_norm = vec_int(point, var, field_sgn)
                 field_norm = field_norm/np.sqrt(np.sum(field_norm**2))
                 point = point + field_norm*delta
                 if not self.__inside_domain(point, var):
@@ -932,7 +951,7 @@ class Spine(object):
             iteration = 0
             while tracing and iteration < iter_max:
                 spine_down.append(point)
-                field_norm = vec_int(point, var, field)
+                field_norm = vec_int(point, var, field_sgn)
                 field_norm = field_norm/np.sqrt(np.sum(field_norm**2))
                 point = point + field_norm*delta
                 if not self.__inside_domain(point, var):

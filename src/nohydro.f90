@@ -63,7 +63,7 @@ module Hydro
 !
   contains
 !***********************************************************************
-    subroutine register_hydro()
+    subroutine register_hydro
 !
 !  Initialise variables which should know that we solve the hydro
 !  equations: iuu, etc; increase nvar accordingly.
@@ -164,7 +164,7 @@ module Hydro
 !
     endsubroutine init_uu
 !***********************************************************************
-    subroutine pencil_criteria_hydro()
+    subroutine pencil_criteria_hydro
 !
 !  All pencils that the Hydro module depends on are specified here.
 !
@@ -997,11 +997,23 @@ module Hydro
 !
     endsubroutine find_umax
 !***********************************************************************
-    subroutine expand_shands_hydro()
+    subroutine expand_shands_hydro
 !
 !  Dummy
 !
     endsubroutine expand_shands_hydro
+!***********************************************************************
+    subroutine update_char_vel_hydro(f)
+!
+!  Dummy
+!
+!   25-sep-15/MR+joern: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+
+      call keep_compiler_quiet(f)
+
+    endsubroutine update_char_vel_hydro
 !***********************************************************************
 endmodule Hydro
 

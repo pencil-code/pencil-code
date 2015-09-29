@@ -414,12 +414,33 @@ function pc_compute_quantity, vars, index, quantity
 		return, sqrt (dot2 (grad_P_therm))
 	end
 
+	if (strcmp (quantity, 'rho_u_x', /fold_case)) then begin
+		; Impulse density x-component
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
+		return, rho * pc_compute_quantity (vars, index, 'u_x')
+	end
+	if (strcmp (quantity, 'rho_u_y', /fold_case)) then begin
+		; Impulse density y-component
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
+		return, rho * pc_compute_quantity (vars, index, 'u_y')
+	end
 	if (strcmp (quantity, 'rho_u_z', /fold_case)) then begin
 		; Impulse density z-component
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		return, rho * pc_compute_quantity (vars, index, 'u_z')
 	end
 
+	if (strcmp (quantity, 'c_Alfven', /fold_case)) then begin
+		; Alfvén velocity
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
+		B_abs = pc_compute_quantity (vars, index, 'B_abs')
+		mu0_SI = pc_get_parameter ('mu0_SI', label=quantity)
+		return, B_abs / sqrt (mu0_SI * rho)
+	end
+	if (strcmp (quantity, 'c_Alfven_inv', /fold_case)) then begin
+		; Inverse of the Alfvén velocity
+		return, 1.0 / pc_compute_quantity (vars, index, 'c_Alfven')
+	end
 	if (strcmp (quantity, 'rho_c', /fold_case)) then begin
 		; Minimum density for an Alfvén speed below the speed of light
 		cdtv = pc_get_parameter ('cdtv', label=quantity)

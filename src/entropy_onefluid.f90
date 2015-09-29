@@ -650,4 +650,19 @@ module Energy
 !
     endsubroutine rprint_energy
 !***********************************************************************
+    subroutine update_char_vel_energy(f)
+!
+! TB implemented.
+!
+!   25-sep-15/MR+joern: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+
+      call keep_compiler_quiet(f)
+
+      call warning('update_char_vel_energy', &
+           'characteristic velocity not yet implemented for entropy_onefluid')
+
+    endsubroutine update_char_vel_energy
+!***********************************************************************
 endmodule Energy

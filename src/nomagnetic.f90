@@ -150,6 +150,18 @@ module Magnetic
 !
     endsubroutine calc_pencils_magnetic
 !***********************************************************************
+    subroutine update_char_vel_magnetic(f)
+!
+! Dummy 
+!
+!  25-sep-15/MR+joern: coded
+!
+      real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine update_char_vel_magnetic
+!***********************************************************************
     subroutine daa_dt(f,df,p)
 !
 !  Dummy routine

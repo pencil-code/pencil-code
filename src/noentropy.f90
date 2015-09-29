@@ -137,6 +137,20 @@ module Energy
 !
     endsubroutine initialize_energy
 !***********************************************************************
+    subroutine update_char_vel_energy(f)
+!
+!  Updates characteristic veelocity for slope-limited diffusion.
+!
+!  25-sep-15/MR+joern: coded
+!
+      use EquationOfState, only: cs20
+!
+      real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
+!
+      if (lslope_limit_diff) f(:,:,:,iFF_char_c)=f(:,:,:,iFF_char_c) + 0.01*cs20
+!
+    endsubroutine update_char_vel_energy
+!***********************************************************************
     subroutine init_energy(f)
 !
 !  Initialise energy; called from start.f90.

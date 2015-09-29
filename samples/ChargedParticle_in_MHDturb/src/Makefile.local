@@ -11,9 +11,9 @@ ENTROPY  = noentropy
 MAGNETIC =   magnetic
 GRAVITY  = nogravity
 FORCING  =   forcing
-PSCALAR  =   pscalar_nolog
 
 FOURIER  =   fourier_fftpack
 POWER    =   power_spectrum
-
 PARTICLES         =   particles_charged
+PARTICLES_RADIUS  =   particles_radius
+REAL_PRECISION = double

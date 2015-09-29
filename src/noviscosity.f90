@@ -115,6 +115,14 @@ module Viscosity
 !
     endsubroutine calc_pencils_viscosity
 !***********************************************************************
+    subroutine viscosity_after_boundary(f)
+
+      real, dimension (mx,my,mz,mfarray) :: f
+
+      call keep_compiler_quiet(f)
+!
+    endsubroutine viscosity_after_boundary
+!***********************************************************************
     subroutine calc_viscosity(f)
 !
       real, dimension (mx,my,mz,mfarray) :: f

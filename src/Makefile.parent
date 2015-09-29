@@ -8,14 +8,23 @@
 
 include src/Makefile.local
 
-# Build the code:
-default: Makefile_inc Fortran_standard
+# Legacy stuff for adapt-mkfile users:
+legacy_default: Makefile_inc Fortran_standard
 	touch src/.build-history
 	echo $(USER)"@"`hostname` "("`date`")" >> src/.build-history
 	( cd src && \
 	  $(MAKE) FROM_PARENT=src/ ADAPT_MKFILE=$(ADAPT_MKFILE) \
 	      -f Makefile.src Makefile && \
 	  $(MAKE) FROM_PARENT=src/ \
+	)
+
+# Build the code:
+default_to_be: Makefile_inc Fortran_standard
+	touch src/.build-history
+	echo $(USER)"@"`hostname` "("`date`")" >> src/.build-history
+	( cd src && \
+	  echo "===== " $(MAKE) FROM_PARENT=src/ -f Makefile.src code "====="; \
+	  $(MAKE) FROM_PARENT=src/ -f Makefile.src default_to_be \
 	)
 
 # Use calculated dependencies instead:

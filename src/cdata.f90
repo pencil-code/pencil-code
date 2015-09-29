@@ -174,7 +174,7 @@ module Cdata
   logical :: lread_oldsnap_nopscalar=.false.
   logical :: lread_oldsnap_notestfield=.false.
   logical :: lread_oldsnap_notestscalar=.false.
-  logical :: lnamelist_error=.false.
+  logical :: lnamelist_error=.false., lparam_nml=.false.
   logical :: lwrite_dim_again=.false.
   logical :: lseparate_persist=.false., ldistribute_persist=.false.
   logical :: save_lastsnap=.true.
@@ -252,6 +252,7 @@ module Cdata
   logical :: lglobal=.false., lglobal_nolog_density=.false.
   logical :: lvisc_hyper=.false.,lvisc_LES=.false.
   logical :: lvisc_smagorinsky=.false.
+  logical :: lslope_limit_diff=.false.
   logical :: leos_temperature_ionization=.false.
   logical :: ltemperature_nolog=.false.
   logical :: leos_idealgas=.false., leos_chemistry=.false.
@@ -297,6 +298,8 @@ module Cdata
   integer :: iff=0,ifx=0,ify=0,ifz=0,idd=0
   integer :: ivisc_heat=0,ibb=0,ibx=0,iby=0,ibz=0,ijj=0,ijx=0,ijy=0,ijz=0
   integer :: iEE=0,iEEx=0,iEEy=0,iEEz=0
+  integer :: iFF_diff=0, iFF_diff1=0,  iFF_diff2=0, &
+             iFF_div_uu=0, iFF_div_aa=0, iFF_div_ss=0, iFF_char_c=0
   integer :: i_adv_der=0,i_adv_derx=0,i_adv_dery=0,i_adv_derz=0
   integer :: iuxb=0,iugu=0,iugh=0
   integer :: ishock=0,ishock_perp=0

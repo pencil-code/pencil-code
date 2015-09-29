@@ -181,7 +181,7 @@ module Magnetic
   logical :: lB_ext_pot=.false., lJ_ext=.false.
   logical :: lforce_free_test=.false.
   logical :: lforcing_cont_aa_local=.false.
-  logical :: lee_as_aux=.false.
+  logical :: lEE_as_aux=.false.
   logical :: lbb_as_aux=.false., ljj_as_aux=.false., ljxb_as_aux=.false.
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
   logical :: lbb_as_comaux=.false., lB_ext_in_comaux=.true.
@@ -202,7 +202,7 @@ module Magnetic
       initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
       kgaussian_aa, &
       lcheck_positive_va2, lskip_projection_aa, lno_second_ampl_aa, &
-      lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lee_as_aux,&
+      lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lEE_as_aux,&
       ljxb_as_aux, ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
       lua_as_aux, lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump, &
@@ -260,6 +260,7 @@ module Magnetic
   logical :: lremove_meanaz=.false.
   logical :: ladd_global_field=.true. 
   logical :: ladd_efield=.false.
+  logical :: lmagnetic_slope_limited=.false.
   real :: ampl_efield=0.
   character (len=labellen) :: A_relaxprofile='0,coskz,0'
   character (len=labellen) :: zdep_profile='fs'
@@ -301,7 +302,7 @@ module Magnetic
       limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb, &
       lpropagate_borderaa, lremove_meanaz,eta_jump_shock, eta_zshock, &
       eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z, & 
-      ladd_efield,ampl_efield
+      ladd_efield,ampl_efield,lmagnetic_slope_limited
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -828,6 +829,16 @@ module Magnetic
 !
         if (lroot) write(4,*) ',ee $'
         if (lroot) write(15,*) 'ee = fltarr(mx,my,mz,3)*one'
+      endif
+!
+      if (lmagnetic_slope_limited) then
+        if (iFF_diff==0) then
+          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
+          iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
+        endif
+        call farray_register_auxiliary('Div_flux_diff_aa',iFF_div_aa,vector=3)
+        iFF_char_c=max(iFF_div_aa+2,iFF_div_ss)
+        if (iFF_div_uu>0) iFF_char_c=max(iFF_char_c,iFF_div_uu+2)
       endif
 !
 !  register the mean-field module
@@ -1392,6 +1403,9 @@ module Magnetic
         if (iforcing_cont_aa==0) &
           call fatal_error('initialize_magnetic','no valid continuous forcing available')
       endif
+!
+      lslope_limit_diff=lslope_limit_diff .or. lmagnetic_slope_limited
+!
     endsubroutine initialize_magnetic
 !***********************************************************************
     subroutine init_aa(f)
@@ -2434,6 +2448,20 @@ module Magnetic
       endif getbb
 !
     endsubroutine magnetic_before_boundary
+!***********************************************************************
+    subroutine update_char_vel_magnetic(f)
+!
+!   25-sep-15/MR+joern: for slope limited diffusion
+!
+!   Add the vectorpotential to the characteritic velocity
+!   for slope limited diffusion
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout):: f
+!
+      if (lslope_limit_diff) &
+         f(:,:,:,iFF_char_c)=f(:,:,:,iFF_char_c)+sum(f(:,:,:,iax:iaz)**2,4)
+
+    endsubroutine update_char_vel_magnetic
 !***********************************************************************
     subroutine calc_pencils_magnetic_std(f,p)
 !

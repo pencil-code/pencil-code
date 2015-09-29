@@ -132,7 +132,7 @@ module Io
 !
       if (lroot) then
         ! collect the global x-data from all leading processors in the yz-plane
-        gx(1:l2) = x(1:l2)
+        gx(1:mx) = x
         if (nprocx > 1) then
           do px = 1, nprocx-1
             call mpirecv_real (buf_x, l2, px, tag_gx)
@@ -140,7 +140,7 @@ module Io
           enddo
         endif
         ! collect the global y-data from all leading processors in the xz-plane
-        gy(1:m2) = y(1:m2)
+        gy(1:my) = y
         if (nprocy > 1) then
           do py = 1, nprocy-1
             call mpirecv_real (buf_y, m2, py*nprocx, tag_gy)
@@ -148,7 +148,7 @@ module Io
           enddo
         endif
         ! collect the global z-data from all leading processors in the xy-plane
-        gz(1:n2) = z(1:n2)
+        gz(1:mz) = z
         if (nprocz > 1) then
           do pz = 1, nprocz-1
             call mpirecv_real (buf_z, n2, pz*nprocxy, tag_gz)

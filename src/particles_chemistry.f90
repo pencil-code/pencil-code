@@ -92,6 +92,7 @@ module Particles_chemistry
   logical :: lpchem_debug = .false.
   logical :: lthiele=.false.
   logical :: lreactive_heating=.false.
+  logical :: lsurface_nopores=.false.
 !
 !*********************************************************************!
 !             Particle dependent variables below here                 !
@@ -140,7 +141,8 @@ module Particles_chemistry
       Sgc_init, &
       lpchem_debug, &
       true_density_carbon, &
-      startup_time
+      startup_time, &
+      lsurface_nopores
 !
   namelist /particles_chem_run_pars/ chemplaceholder, lthiele, lreactive_heating
 !
@@ -385,11 +387,23 @@ module Particles_chemistry
 !
       St = 0.0
 !
-      do k = k1,k2
-        rho_p_init = fp(k,impinit)/(4.*pi/3.*fp(k,iapinit)**3)
-        St(k) = fp(k,imp)*Sgc_init* &
-            sqrt(1.0 - structural_parameter*log(rho_p(k)/rho_p_init))
-      enddo
+!  For global mechanisms, the total surface is usal just the surface 
+!  of a sphere with the radius of the particle
+!  For detailed mechanisms, we have also internal surfaces and 
+!  evolve that
+!
+      if (.not. lsurface_nopores) then
+        do k = k1,k2
+          rho_p_init = fp(k,impinit)/(4.*pi/3.*fp(k,iapinit)**3)
+          St(k) = fp(k,imp)*Sgc_init* &
+              sqrt(1.0 - structural_parameter*log(rho_p(k)/rho_p_init))
+        enddo
+      else
+        do k = k1,k2
+          St(k)= 4.*pi*fp(k,iap)**2
+        enddo
+      endif
+!        
     endsubroutine calc_St
 ! ******************************************************************************
 !  Reading in of the Arrhenius parameters from the parsed mechanics.in file

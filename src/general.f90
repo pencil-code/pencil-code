@@ -12,7 +12,8 @@ module General
 !
   private
 !
-  public :: safe_character_assign,safe_character_append,safe_character_prepend
+  public :: safe_character_assign, safe_character_append, safe_character_prepend
+  public :: lower_case
   public :: random_seed_wrapper
   public :: random_number_wrapper, random_gen, normal_deviate
   public :: parse_filename
@@ -23,12 +24,12 @@ module General
   public :: find_index_range, find_index
   public :: find_proc
 !
-  public :: spline,tridag,pendag,complex_phase,erfcc
+  public :: spline, tridag, pendag, complex_phase, erfcc
   public :: cspline
   public :: polynomial_interpolation
   public :: arcsinh
-  public :: besselj_nu_int,calc_complete_ellints
-  public :: bessj,cyclic
+  public :: besselj_nu_int, calc_complete_ellints
+  public :: bessj, cyclic
   public :: spline_derivative_double, spline_integral, linear_interpolate
   public :: itoa, count_bits, parser, write_full_columns
   public :: read_range, merge_ranges, get_range_no, write_by_ranges, &
@@ -976,6 +977,25 @@ module General
       call safe_character_assign(str1, trim(str1) // trim(str2) // trim(str3))
 !
     endsubroutine safe_character_append_3
+!***********************************************************************
+    function lower_case(input)
+!
+!  27-Sep-2015/PABourdin: coded
+!
+      character(*), intent(in) :: input
+      character(len(input)) :: lower_case
+!
+      character(*), parameter :: lower_chars = 'abcdefghijklmnopqrstuvwxyz'
+      character(*), parameter :: upper_chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+      integer pos, ind
+!
+      lower_case = input
+      do pos = 1, len (input)
+        ind = index (upper_chars, lower_case(pos:pos))
+        if (ind /= 0) lower_case(pos:pos) = lower_chars(ind:ind)
+      enddo
+!
+    endfunction lower_case
 !***********************************************************************
     subroutine find_index_range(aa,naa,aa1,aa2,ii1,ii2)
 !

@@ -111,7 +111,7 @@ module Particles
   logical :: lparticle_gravity=.true.
   logical :: lcylindrical_gravity_par=.false.
   logical :: lpscalar_sink=.false.
-  logical :: lsherwood_const=.true.
+  logical :: lsherwood_const=.false.
   logical :: lbubble=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'

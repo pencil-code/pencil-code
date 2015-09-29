@@ -140,7 +140,7 @@ module Shear
 !
 !  Set up B-spline interpolation if requested.
 !
-      bsplines: if (lshearadvection_as_shift .and. shear_method == 'bspline') then
+      bsplines: if (nygrid > 1 .and. lshearadvection_as_shift .and. shear_method == 'bspline') then
         call bspline_precondition(nygrid, bspline_k, bspline_ay)
         call ludcmp(bspline_ay, bspline_iy)
       endif bsplines
