@@ -286,11 +286,12 @@ module Equ
 !  Calculte the characteristic velocity
 !  for slope limited diffusion
 !
-   if (lslope_limit_diff) then
-     call update_char_vel_energy(f)
-     call update_char_vel_magnetic(f)
-     call update_char_vel_hydro(f)
-   endif
+      if (lslope_limit_diff) then
+        f(:,:,:,iFF_char_c)=0.
+        call update_char_vel_energy(f)
+        call update_char_vel_magnetic(f)
+        call update_char_vel_hydro(f)
+      endif
    
 !
 !  For calculating the pressure gradient directly from the pressure (which is

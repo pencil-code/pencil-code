@@ -1456,7 +1456,7 @@ module Sub
 !
       if (j==1) then
         if (nxgrid/=1) then
-          df=( -1. *(f(l1+1:l2+1,m,n,k)-f(l1-2:l2-2,m,n,k) )     &
+          df=(      (f(l1+1:l2+1,m,n,k)-f(l1-2:l2-2,m,n,k) )     &
                +27.*(f(l1  :l2  ,m,n,k)-f(l1-1:l2-1,m,n,k) ) )/(24.*dx)
         else
           df=0.
@@ -1464,7 +1464,7 @@ module Sub
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          df=( - 1.*(f(l1:l2,m+1,n,k)-f(l1:l2,m-2,n,k) )    &
+          df=(   -  (f(l1:l2,m+1,n,k)-f(l1:l2,m-2,n,k) )    &
                +27.*(f(l1:l2,m  ,n,k)-f(l1:l2,m-1,n,k) ) )/(24.*dy) 
         else
           df=0.
@@ -1472,7 +1472,7 @@ module Sub
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          df=( - 1.*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-2,k) )    &
+          df=(   -  (f(l1:l2,m,n+1,k)-f(l1:l2,m,n-2,k) )    &
                +27.*(f(l1:l2,m,n  ,k)-f(l1:l2,m,n-1,k) ) )/(24.*dz)
         else
           df=0.

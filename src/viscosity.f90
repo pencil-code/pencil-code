@@ -920,6 +920,9 @@ module Viscosity
         lpenc_requested(i_uij) = .true.
         lpenc_requested(i_del2u) = .true.
       endif shksmp
+      if (lvisc_slope_limited) then
+        lpenc_requested(i_del2u)=.true.
+      endif
       if (llambda_effect) then
         lpenc_requested(i_uij)=.true.
         lpenc_requested(i_glnrho)=.true.
@@ -1029,7 +1032,7 @@ module Viscosity
       real, dimension (nx,3) :: tmp,tmp2,gradnu,sgradnu, gradnu_shock
       real, dimension (nx) :: murho1,zetarho1,muTT,nu_smag,tmp3,tmp4,pnu, pnu_shock
       real, dimension (nx) :: lambda_phi,prof,prof2,derprof,derprof2,qfvisc
-      real, dimension (nx) :: gradnu_effective,fac
+      real, dimension (nx) :: gradnu_effective,fac, nu_sld
       real, dimension (nx,3) :: deljskl2,fvisc_nnewton2
 !
       integer :: i,j,ju,ii,jj,kk,ll
@@ -1810,9 +1813,19 @@ module Viscosity
 !  following Rempel (2014).
 !  Here calculating the divergence of the flux.
 !
-      if (lvisc_slope_limited) &
-        p%fvisc(:,iuu:iuu+2)=p%fvisc(:,iuu:iuu+2)+f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)
-!      if(lfirst .and. ldiagnos) print*,'DIV',f(510,m,n,iFF_div_uu:iFF_div_uu+2)
+      if (lvisc_slope_limited) then
+        p%fvisc(:,iuu:iuu+2)=p%fvisc(:,iuu:iuu+2)-f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)
+        if (lfirst.and.ldt) then
+          tmp=0.
+          where (p%del2u /=0.) 
+!            tmp=f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)/p%del2u
+            tmp=f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)/p%uu*dx**2
+          endwhere  
+          nu_sld=maxval(abs(tmp),2)
+!          print*,maxval(nu_sld)
+          p%diffus_total=p%diffus_total+nu_sld        
+        endif  
+      endif
 !
 !  Calculate Lambda effect
 !
@@ -1846,7 +1859,6 @@ module Viscosity
 
       use Sub, only: div
       use Sub, only: notanumber
-!      use Boundcond, only: update_ghosts
 
       real, dimension (mx,my,mz,mfarray) :: f
 
@@ -1878,7 +1890,7 @@ module Viscosity
 !if (lroot.and.j==1.and.lfirst.and.ldiagnos) print*, 'tmpx=',tmpx
               call calc_diffusive_flux(tmpx,f(2:mx-2,mm,nn,iFF_char_c),f(2:mx-2,mm,nn,iff))
 !if (lroot.and.j==1.and.lfirst.and.ldiagnos) print*,'flux=',f(2:mx-2,mm,nn,iff) 
-!if (notanumber(f(2:mx-1,mm,nn,iFF_diff))) print*, 'DIFFX:j,mm,nn=', j,mm,nn
+!if (notanumber(f(2:mx-2,mm,nn,iff))) print*, 'DIFFX:j,mm,nn=', j,mm,nn
 !            if(lfirst.and.ldiagnos.and.j==1) print*,f(473:533,mm,nn,iff)
             enddo; enddo
             iff=iff+1
@@ -1901,9 +1913,6 @@ module Viscosity
 !if (notanumber(f(ll,mm,2:mz-1,iFF_diff+2))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
             enddo; enddo
           endif
-
-! not yet operational, so not correct for parallel runs!
-          !!!call update_ghosts(f,iFF_diff1,iFF_diff2)   !,lnoboundconds=.true.)     ! not all ghost zones really needed
 
           do n=n1,n2; do m=m1,m2
 !             if(lfirst.and.ldiagnos.and.j==1) print*,f(473:533,mm,nn,iFF_diff)

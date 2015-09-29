@@ -2380,25 +2380,43 @@ module Hydro
 !***********************************************************************
     subroutine update_char_vel_hydro(f)
 !
-!   25-sep-15/MR+joern: for slope limited diffusion
+!   25-sep-15/MR+joern: coded
 !
 !   calculation of characteristic velocity
 !   for slope limited diffusion
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, parameter :: i64_1=1/64.
+      real, parameter :: i64_1=1/64., i4_1=1/4.
+      logical :: lfail
 !
-      if (lslope_limit_diff) &
-         f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) &
-         +i64_1 *sum((f(2:mx-2,2:my-2,2:mz-2,iux:iuz) &
-                     +f(2:mx-2,2:my-2,3:mz-1,iux:iuz) &
-                     +f(2:mx-2,3:my-1,2:mz-2,iux:iuz) &
-                     +f(2:mx-2,3:my-1,3:mz-1,iux:iuz) &
-                     +f(3:mx-1,2:my-2,2:mz-2,iux:iuz) &
-                     +f(3:mx-1,2:my-2,3:mz-1,iux:iuz) &
-                     +f(3:mx-1,3:my-1,2:mz-2,iux:iuz) &
-                     +f(3:mx-1,3:my-1,3:mz-1,iux:iuz))**2,4)
-
+      if (lslope_limit_diff) then
+        lfail=.false.
+        if (dimensionality==3) then
+          f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) &
+                                +i64_1 *sum((f(2:mx-2,2:my-2,2:mz-2,iux:iuz) &
+                                            +f(2:mx-2,2:my-2,3:mz-1,iux:iuz) &
+                                            +f(2:mx-2,3:my-1,2:mz-2,iux:iuz) &
+                                            +f(2:mx-2,3:my-1,3:mz-1,iux:iuz) &
+                                            +f(3:mx-1,2:my-2,2:mz-2,iux:iuz) &
+                                            +f(3:mx-1,2:my-2,3:mz-1,iux:iuz) &
+                                            +f(3:mx-1,3:my-1,2:mz-2,iux:iuz) &
+                                            +f(3:mx-1,3:my-1,3:mz-1,iux:iuz))**2,4)
+        elseif (dimensionality==1) then
+          if (nxgrid/=1) then
+            f(2:mx-2,m1:m2,n1:n2,iFF_char_c)=f(2:mx-2,m1:m2,n1:n2,iFF_char_c) & 
+                                  +i4_1*sum((f(2:mx-2,m1:m2,n1:n2,iux:iuz) &
+                                            +f(3:mx-1,m1:m2,n1:n2,iux:iuz))**2,4)
+!     if(ldiagnos) print*,'CHAR',maxval(f(2:mx-2,m1:m2,n1:n2,iFF_char_c))
+          else
+            lfail=.true.
+          endif
+        else
+          lfail=.true.
+        endif
+        if (lfail) & 
+          call fatal_error('update_char_vel_hydro','Characteristic velocity not implented')
+      endif
+!
     endsubroutine update_char_vel_hydro
 !***********************************************************************
 
