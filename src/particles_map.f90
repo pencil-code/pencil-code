@@ -62,7 +62,7 @@ module Particles_map
       integer :: ivar, i, ix0, iy0, iz0, icyl=1
       logical :: lfirstcall=.true.
 !
-      intent(in)  :: f, xxp, ivar1
+      intent(in)  :: f, xxp, ivar1, inear
       intent(out) :: gp
 !
 !  Determine index value of lowest lying corner point of grid box surrounding
@@ -222,7 +222,7 @@ module Particles_map
       integer :: ivar, ix0, iy0, iz0, icyl=1
       logical :: lfirstcall=.true.
 !
-      intent(in)  :: f, xxp, ivar
+      intent(in)  :: f, xxp, ivar, inear
       intent(out) :: gp
 !
 !  Determine index value of lowest lying corner point of grid box surrounding
@@ -411,7 +411,7 @@ module Particles_map
       integer :: ix0, iy0, iz0
       logical, save :: lfirstcall=.true.
 !
-      intent(in)  :: f, xxp, ivar1
+      intent(in)  :: f, xxp, ivar1, inear
       intent(out) :: gp
 !
       ix0=inear(1); iy0=inear(2); iz0=inear(3)
@@ -507,7 +507,7 @@ module Particles_map
       real :: dxp0, dyp0, dzp0
       integer :: ix0, iy0, iz0
 !
-      intent(in)  :: f, xxp, ivar1
+      intent(in)  :: f, xxp, ivar1, inear
       intent(out) :: gp
 !
 !  Redefine the interpolation point in coordinates relative to nearest grid
@@ -685,7 +685,7 @@ module Particles_map
       integer :: ix0, iy0, iz0, ipoint, ivar
       logical, save :: lfirstcall=.true.
 !
-      intent(in)  :: f, xxp, ivar1
+      intent(in)  :: f, xxp, ivar1, inear
       intent(out) :: gp
 !
       ix0=inear(1); iy0=inear(2); iz0=inear(3)
