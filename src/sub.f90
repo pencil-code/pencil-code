@@ -2731,7 +2731,7 @@ module Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3) :: gradf
-      real, dimension (nx,3) :: uu,ff,ugradf
+      real, dimension (nx,3) :: uu,ff,ugradf,grad_f_tmp
       real, dimension (nx) :: tmp
       integer :: j,k
       logical, optional :: upwind,ladd
@@ -2743,7 +2743,8 @@ module Sub
 !
       do j=1,3
 !
-        call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=loptest(upwind))
+        grad_f_tmp = gradf(:,j,:)
+        call u_dot_grad_scl(f,k+j-1,grad_f_tmp,uu,tmp,UPWIND=loptest(upwind))
         if (loptest(ladd)) then
           ugradf(:,j)=ugradf(:,j)+tmp
         else
@@ -2787,7 +2788,7 @@ module Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3) :: gradf
-      real, dimension (nx,3) :: uu,ff,ugradf
+      real, dimension (nx,3) :: uu,ff,ugradf,grad_f_tmp
       real, dimension (nx) :: tmp
       integer :: j,k,iadvec
       logical, optional :: ladd
@@ -2801,7 +2802,8 @@ module Sub
       ladd1=loptest(ladd)
 !
       do j=1,3
-        call u_dot_grad_scl_alt(f,k+j-1,gradf(:,j,:),uu,tmp,iadvec)
+        grad_f_tmp = gradf(:,j,:)
+        call u_dot_grad_scl_alt(f,k+j-1,grad_f_tmp,uu,tmp,iadvec)
         if (ladd1) then
           ugradf(:,j)=ugradf(:,j)+tmp
         else
