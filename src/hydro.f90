@@ -158,7 +158,7 @@ module Hydro
   real :: tau_damp_ruxm1=0.,tau_damp_ruym1=0.,tau_damp_ruzm1=0.
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_damp_ruzm=0.,tau_diffrot1=0.
   real :: ampl1_diffrot=0.,ampl2_diffrot=0., ampl_wind=0.
-  real :: Omega_int=0.,xexp_diffrot=1.,kx_diffrot=1.,kz_diffrot=0.
+  real :: Omega_int=0.,xexp_diffrot=1.,kx_diffrot=1.,kz_diffrot=0., phase_diffrot=0.
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
   real :: utop=0.,ubot=0.,omega_out=0.,omega_in=0.
   real :: width_ff_uu=1.,x1_ff_uu=0.,x2_ff_uu=0.
@@ -195,7 +195,7 @@ module Hydro
       Omega, theta, tdamp, dampu, dampuext, dampuint, rdampext, rdampint, &
       wdamp, tau_damp_ruxm, tau_damp_ruym, tau_damp_ruzm, tau_diffrot1, &
       inituu, ampluu, kz_uu, ampl1_diffrot, ampl2_diffrot, uuprof, &
-      xexp_diffrot, kx_diffrot, kz_diffrot, kz_analysis, ampl_wind, &
+      xexp_diffrot, kx_diffrot, kz_diffrot, kz_analysis, phase_diffrot, ampl_wind, &
       lreinitialize_uu, lremove_mean_momenta, lremove_mean_flow, &
       ldamp_fade, tfade_start, lOmega_int, Omega_int, lupw_uu, othresh, &
       othresh_per_orms, borderuu, lfreeze_uint, lpressuregradient_gas, &
@@ -2388,17 +2388,17 @@ module Hydro
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, parameter :: i64_1=1/64.
 !
-      if (lslope_limit_diff) then
-         f( :mx-1, :my-1, :mz-1,iFF_diff2)=f( :mx-1, :my-1, :mz-1,iFF_diff2) &
-         +i64_1 *sum((f( :mx-1, :my-1, :mz-1,iux:iuz) &
-                     +f( :mx-1, :my-1,2:mz,  iux:iuz) &
-                     +f( :mx-1,2:my ,  :mz-1,iux:iuz) &
-                     +f( :mx-1,2:my , 2:mz  ,iux:iuz) &
-                     +f(2:mx  , :my-1, :mz-1,iux:iuz) &
-                     +f(2:mx  , :my-1,2:mz  ,iux:iuz) &
-                     +f(2:mx  ,2:my  , :mz-1,iux:iuz) &
-                     +f(2:mx  ,2:my  ,2:mz  ,iux:iuz))**2,4)
-      endif
+      if (lslope_limit_diff) &
+         f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) &
+         +i64_1 *sum((f(2:mx-2,2:my-2,2:mz-2,iux:iuz) &
+                     +f(2:mx-2,2:my-2,3:mz-1,iux:iuz) &
+                     +f(2:mx-2,3:my-1,2:mz-2,iux:iuz) &
+                     +f(2:mx-2,3:my-1,3:mz-1,iux:iuz) &
+                     +f(3:mx-1,2:my-2,2:mz-2,iux:iuz) &
+                     +f(3:mx-1,2:my-2,3:mz-1,iux:iuz) &
+                     +f(3:mx-1,3:my-1,2:mz-2,iux:iuz) &
+                     +f(3:mx-1,3:my-1,3:mz-1,iux:iuz))**2,4)
+
     endsubroutine update_char_vel_hydro
 !***********************************************************************
 
@@ -5454,10 +5454,22 @@ module Hydro
       zbot=xyz0(3)
       if (.not.lcalc_uumean) then
         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
-            -tau_diffrot1*(f(l1:l2,m,n,iuy)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)))
+            -tau_diffrot1*(f(l1:l2,m,n,iuy)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)-phase_diffrot))
       else
         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
-            -tau_diffrot1*(uumz(n,2)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)))
+            -tau_diffrot1*(uumz(n,2)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)-phase_diffrot))
+      endif
+!
+!  vertical compression profile
+!
+      case ('vertical_compression')
+      zbot=xyz0(3)
+      if (.not.lcalc_uumean) then
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
+            -tau_diffrot1*(f(l1:l2,m,n,iuz)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)))
+      else
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
+            -tau_diffrot1*(uumz(n,3)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)))
       endif
 !
 !  Remove vertical shear profile
@@ -5516,7 +5528,7 @@ module Hydro
              -tau_diffrot1*(uumxz(l1:l2,n,2)-ampl1_diffrot*tanh((z(n)-zbot)/width_ff_uu))
       endif
 !
-!  Linear vertical shear profile U_y(z), forcing the y-averaged averaged flow.
+!  Linear vertical shear profile U_y(z), forcing the y-averaged flow.
 !
       case ('vertical_shear_linear')
       if (.not.lcalc_uumeanxz) then
