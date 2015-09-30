@@ -592,8 +592,13 @@ module Viscosity
 !  Get background energy stratification, if any.
 !
       if (lstratz .and. lthermal_energy) call get_stratz(z, eth0z=eth0z)
-
+!
+!  Slope limited diffusion is switch on for characteristic velocity,
+!  which might be need also needed for other quantities
+!
       lslope_limit_diff = lslope_limit_diff .or. lvisc_slope_limited
+      if (lvisc_slope_limited.and.lroot) &
+         print*,'viscous force: slope-limited diffusion'
 !
 !  debug output
 !
