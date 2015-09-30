@@ -15,9 +15,11 @@ if [ ! -e "$SCRIPT" ]; then
 	exit 1
 fi
 
-# Execute first the *.in files autocorrection with creation of backup copies.
-# Currently, this is done in test-mode only, remove "-t" to become productive.
-$AUTOCORRECTOR -t -b
+if [ "$1" != "--no-autocorrect" ]; then
+	# Execute first the *.in files autocorrection with creation of backup copies.
+	# Currently, this is done in test-mode only, remove "-t" to become productive.
+	$AUTOCORRECTOR -t -b
+fi
 
 MESSAGE=`$SCRIPT`
 RESULT=`echo -n "$MESSAGE" | grep "$SUCCESS"`
