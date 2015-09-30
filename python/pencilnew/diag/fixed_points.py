@@ -306,6 +306,23 @@ class FixedPoint(object):
                 fixed_tentative[0] <= self.params.Ox+self.params.Lx and \
                 fixed_tentative[1] <= self.params.Oy+self.params.Ly:
                     fixed.append(fixed_tentative)
+
+
+        # Discard fixed points which are too close to each other.
+        def __discard_close_fixed_points(fixed, var):
+            fixed_new = []
+            fixed_new.append(fixed[0])
+            
+            dx = fixed[:, 0] - np.reshape(fixed[:, 0], (fixed.shape[0], 1))
+            dy = fixed[:, 1] - np.reshape(fixed[:, 1], (fixed.shape[0], 1))
+            mask = (abs(dx) > var.dx/2) + (abs(dy) > var.dy/2)
+            print "mask = ", mask
+            
+            for idx in range(1, fixed.shape[0]):
+                if all(mask[idx, :idx]):
+                    fixed_new.append(fixed[idx])
+                
+            return np.array(fixed_new)
                     
                     
         # Convert int_q string into list.
@@ -412,6 +429,9 @@ class FixedPoint(object):
             threads[-1].start()
         for i_proc in range(n_proc):
             threads[i_proc].join()
+        
+        # Discard fixed points which lie too close to each other.
+        fixed = __discard_close_fixed_points(np.array(fixed), var)
         self.fixed_points.append(np.array(fixed))
 
         # Find the fixed points for the remaining times.
@@ -431,7 +451,7 @@ class FixedPoint(object):
                                                 args=(t_idx, field, var,
                                                       fixed, i_proc)))
                 threads[-1].start()
-            for i_proc in range(n_proc):
+            for i_proc in range(int(np.min((n_proc, self.fidx[t_idx-1])))):
                 threads[i_proc].join()
             self.fixed_points.append(np.array(fixed))
             self.fidx[t_idx] = len(fixed)
