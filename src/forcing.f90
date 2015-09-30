@@ -3396,20 +3396,6 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       endif
 !
 !  Set forcing amplitude (same value for each location by default)
-!
-      if (iforce_tprofile=='nothing') then
-        force_tmp=force_ampl
-      elseif (iforce_tprofile=='sin^2') then
-        force_tmp=force_ampl*sin(pi*(tsforce-t)/dtforce)**2
-      else
-        call  fatal_error('forcing_hillrain','iforce_tprofile not good')
-      endif
-!
-!  Let explosion last dtforce_duration or, by default, until next explosion.
-!
-      if ( (dtforce_duration<0.0) .or. &
-           (t-(tsforce-dtforce))<=dtforce_duration ) then
-!
 !  We multiply the forcing term by dt and add to the right-hand side
 !  of the momentum equation for an Euler step, but it also needs to be
 !  divided by sqrt(dt), because square of forcing is proportional
@@ -3417,7 +3403,28 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !  When dtforce is finite, take dtforce+.5*dt.
 !  The 1/2 factor takes care of round-off errors.
 !
+!
+      if (iforce_tprofile=='nothing') then
+        force_tmp=force_ampl
         fact=force_tmp*dt*sqrt(cs0*radius_ff/max(dtforce+.5*dt,dt))
+      elseif (iforce_tprofile=='sin^2') then
+        force_tmp=force_ampl*sin(pi*(tsforce-t)/dtforce)**2
+        fact=force_tmp*dt*sqrt(cs0*radius_ff/max(dtforce+.5*dt,dt))
+      elseif (iforce_tprofile=='delta') then
+        if (tsforce-t <= dt) then
+          force_tmp=force_ampl
+        else
+          force_tmp=0.
+        endif
+        fact=force_tmp
+      else
+        call  fatal_error('forcing_hillrain','iforce_tprofile not good')
+      endif
+!
+!  Let explosion last dtforce_duration or, by default, until next explosion.
+!
+      if ( force_tmp /= 0. .and. ((dtforce_duration<0.0) .or. &
+           (t-(tsforce-dtforce))<=dtforce_duration) ) then
 !
 !  loop the two cases separately, so we don't check for r_ff during
 !  each loop cycle which could inhibit (pseudo-)vectorisation
