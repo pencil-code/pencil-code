@@ -286,7 +286,7 @@ module Equ
 !  Calculte the characteristic velocity
 !  for slope limited diffusion
 !
-      if (lslope_limit_diff) then
+      if (lslope_limit_diff.and.lfirst) then
         f(:,:,:,iFF_char_c)=0.
         call update_char_vel_energy(f)
         call update_char_vel_magnetic(f)

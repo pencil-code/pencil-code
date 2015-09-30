@@ -102,7 +102,7 @@ module Viscosity
   logical, pointer:: lviscosity_heat
   logical :: lKit_Olem
   real :: damp_sound=0.
-  real :: h_slope_limited=0.
+  real :: h_slope_limited=0., nu_sld_thresh=0.
   character (LEN=labellen) :: islope_limiter=''
 !
   namelist /viscosity_run_pars/ &
@@ -116,7 +116,7 @@ module Viscosity
       widthnu_shock, znu_shock, xnu_shock, nu_jump_shock, &
       nnewton_type,nu_infinity,nu0,non_newton_lambda,carreau_exponent,&
       nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound,luse_nu_rmn_prof, &
-      lvisc_slope_limited, h_slope_limited, islope_limiter
+      lvisc_slope_limited, h_slope_limited, islope_limiter, nu_sld_thresh
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
@@ -129,6 +129,7 @@ module Viscosity
   integer :: idiag_nusmagm=0    ! DIAG_DOC: Mean value of Smagorinsky viscosity
   integer :: idiag_nusmagmin=0  ! DIAG_DOC: Min value of Smagorinsky viscosity
   integer :: idiag_nusmagmax=0  ! DIAG_DOC: Max value of Smagorinsky viscosity
+  integer :: idiag_nusldmax=0   ! DIAG_DOC: Max value of slope-limited viscosity
   integer :: idiag_visc_heatm=0 ! DIAG_DOC: Mean value of viscous heating
   integer :: idiag_qfviscm=0    ! DIAG_DOC: $\left<\qv\cdot
                                 ! DIAG_DOC: \fv_{\rm visc}\right>$
@@ -140,6 +141,7 @@ module Viscosity
                                 ! DIAG_DOC:   \quad(time step relative to
                                 ! DIAG_DOC:   viscous time step;
                                 ! DIAG_DOC:  see \S~\ref{time-step})
+  integer :: idiag_dtnusld=0    ! DIAG_DOC: Slope-limited viscous time step
   integer :: idiag_meshRemax=0  ! DIAG_DOC: Max mesh Reynolds number
   integer :: idiag_Reshock=0    ! DIAG_DOC: Mesh Reynolds number at shock
   integer :: idiag_nuD2uxbxm=0  ! DIAG_DOC:
@@ -728,7 +730,8 @@ module Viscosity
         idiag_nuD2uxbxm=0; idiag_nuD2uxbym=0; idiag_nuD2uxbzm=0
         idiag_nu_tdep=0; idiag_fviscm=0 ; idiag_fviscrmsx=0
         idiag_fviscmz=0; idiag_fviscmx=0; idiag_fviscmxy=0
-        idiag_epsKmz=0; idiag_numx=0; idiag_fviscymxy=0
+        idiag_epsKmz=0; idiag_numx=0; idiag_fviscymxy=0 
+        idiag_nusldmax=0; idiag_dtnusld=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -745,7 +748,9 @@ module Viscosity
         call parse_name(iname,cname(iname),cform(iname),'nusmagm',idiag_nusmagm)
         call parse_name(iname,cname(iname),cform(iname),'nusmagmin',idiag_nusmagmin)
         call parse_name(iname,cname(iname),cform(iname),'nusmagmax',idiag_nusmagmax)
+        call parse_name(iname,cname(iname),cform(iname),'nusldmax',idiag_nusldmax)
         call parse_name(iname,cname(iname),cform(iname),'dtnu',idiag_dtnu)
+        call parse_name(iname,cname(iname),cform(iname),'dtnusld',idiag_dtnusld)
         call parse_name(iname,cname(iname),cform(iname),'nu_LES',idiag_nu_LES)
         call parse_name(iname,cname(iname),cform(iname),'visc_heatm', &
             idiag_visc_heatm)
@@ -1029,8 +1034,9 @@ module Viscosity
       real, dimension (nx) :: lambda_phi,prof,prof2,derprof,derprof2,qfvisc
       real, dimension (nx) :: gradnu_effective,fac, nu_sld
       real, dimension (nx,3) :: deljskl2,fvisc_nnewton2
+      real :: nu_tmp
 !
-      integer :: i,j,ju,ii,jj,kk,ll
+      integer :: i,j,ju,ii,jj,kk,ll,count
 !
       intent(inout) :: f,p
 !
@@ -1810,19 +1816,34 @@ module Viscosity
 !
       if (lvisc_slope_limited) then
 
-        p%fvisc(:,iuu:iuu+2)=p%fvisc(:,iuu:iuu+2)-f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)
+        if (lfirst) p%fvisc(:,iuu:iuu+2)=p%fvisc(:,iuu:iuu+2)-f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)
 !        if(lfirst .and. ldiagnos) print*,'DIV',f(510,m,n,iFF_div_uu:iFF_div_uu+2)
 
         if (lfirst .and. ldt) then
-          where (p%del2u/=0.)
-!            tmp=f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)/p%del2u
-            tmp=f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)/p%uu*dx**2
+          where (p%uu/=0.)
+            tmp=abs(f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)/p%uu)*dx**2
+!          where (p%del2u/=0.)
+!            tmp=abs(f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)/p%del2u)
           elsewhere
             tmp=0.
           endwhere
-          nu_sld=maxval(abs(tmp),2)
-!          print*,maxval(nu_sld)
-!          p%diffus_total=p%diffus_total+nu_sld
+          if(nu_sld_thresh>=0.) then
+            nu_sld=0.
+            do j=1,3 
+              count=0; nu_tmp=0.
+              do i=1,nx 
+                if (tmp(i,j)>nu_sld_thresh) then
+                  nu_tmp=nu_tmp+tmp(i,j)
+                  count=count+1
+                endif
+                if (count>0) nu_sld=max(nu_sld,nu_tmp/count)
+              enddo
+            enddo
+!           nu_sld=sum(tmp,2,tmp>nu_sld_thresh)
+          else 
+            nu_sld=maxval(tmp,2)
+          endif
+          p%diffus_total=p%diffus_total+nu_sld
         endif
 
       endif
@@ -1851,6 +1872,10 @@ module Viscosity
           call dot(p%curlo,p%fvisc,qfvisc)
           call sum_mn_name(qfvisc,idiag_qfviscm)
         endif
+        if (idiag_nusldmax/=0) call max_mn_name(nu_sld,idiag_nusldmax)
+        if (idiag_dtnusld/=0 .and. lvisc_slope_limited) &
+            call max_mn_name(nu_sld*dxyz_2/cdtv,idiag_dtnusld,l_dt=.true.)
+
       endif
 !
     endsubroutine calc_pencils_viscosity
@@ -1873,7 +1898,7 @@ module Viscosity
 !  using a slope limiting procedure then storing in the
 !  auxilaries variables in the f array (done above).
 !
-      if (lvisc_slope_limited) then
+      if (lvisc_slope_limited.and.lfirst) then
 !
 !  to avoid taking the sqrt several times
 !
