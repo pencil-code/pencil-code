@@ -49,13 +49,13 @@ program pc_configtest
 !
 !  Read parameters from start.x (default values; overwritten by 'read_all_run_pars').
 !
-  ltolerate_namelist_error = .true.
+  ltolerate_namelist_errors = .true.
   write (*,*) '>>> TESTING START.IN <<<'
   call read_all_init_pars()
 !
 !  Read parameters and output parameter list.
 !
-  ltolerate_namelist_error = .true.
+  ltolerate_namelist_errors = .true.
   write (*,*) '>>> TESTING RUN.IN <<<'
   lstart = .false.
   lrun = .true.
