@@ -1031,7 +1031,6 @@ module Viscosity
       real, dimension (nx,3) :: deljskl2,fvisc_nnewton2
 !
       integer :: i,j,ju,ii,jj,kk,ll
-      real :: nu_shock_jump1
 !
       intent(inout) :: f,p
 !
@@ -1449,14 +1448,14 @@ module Viscosity
 !
       if (lvisc_nu_shock_profz) then
         if (ldensity) then
-          pnu_shock = nu_shock + nu_shock_jump1*step(p%z_mn,znu_shock,-widthnu_shock)
+          pnu_shock = nu_shock + (nu_shock*(nu_jump_shock-1.))*step(p%z_mn,znu_shock,-widthnu_shock)
 !
 !  This indicates that the profile is meant to be applied in Cartesian
 !  coordinates only. Why then z taken from pencil?
 !
           gradnu_shock(:,1) = 0.
           gradnu_shock(:,2) = 0.
-          gradnu_shock(:,3) = nu_shock_jump1*der_step(p%z_mn,znu_shock,-widthnu_shock)
+          gradnu_shock(:,3) = (nu_shock*(nu_jump_shock-1.))*der_step(p%z_mn,znu_shock,-widthnu_shock)
 !
           call multsv(p%divu,p%glnrho,tmp2)
           tmp=tmp2 + p%graddivu
@@ -1480,14 +1479,14 @@ module Viscosity
           else
             tmp3=p%rcyl_mn
           endif
-          pnu_shock = nu_shock + nu_shock_jump1*step(tmp3,xnu_shock,widthnu_shock)
+          pnu_shock = nu_shock + (nu_shock*(nu_jump_shock-1.))*step(tmp3,xnu_shock,widthnu_shock)
 !
 !  This indicates that the profile is meant to be applied in spherical and
 !  cylindrical coordinates only, referring to r and pomega, respectively.
 !  Hence not correct for 'sphere in a box'!
 !  Why then r taken from pencil?
 !
-          gradnu_shock(:,1) = nu_shock_jump1*der_step(tmp3,xnu_shock,widthnu_shock)
+          gradnu_shock(:,1) = (nu_shock*(nu_jump_shock-1.))*der_step(tmp3,xnu_shock,widthnu_shock)
           gradnu_shock(:,2) = 0.
           gradnu_shock(:,3) = 0.
 !
