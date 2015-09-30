@@ -13,7 +13,7 @@ ALLPROCS="$DATADIR/allprocs"
 SCRIPT="src/pre_and_post_processing/$SCRIPTNAME.x"
 
 if [ ! -e "$SCRIPT" ]; then
-	echo "Please compile first by ececuting \"pc_build $SCRIPTNAME\"."
+	echo "Please compile first by executing \"pc_build\"."
 	exit 1
 fi
 

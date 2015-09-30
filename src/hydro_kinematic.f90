@@ -75,6 +75,7 @@ module Hydro
   real :: kinflow_ck_Balpha=0.
   real :: eps_kinflow=0., exp_kinflow=1., omega_kinflow=0., ampl_kinflow=1.
   real :: rp,gamma_dg11=0.4
+  real :: lambda_kinflow=1.
   integer :: kinflow_ck_ell=0.
   character (len=labellen) :: wind_profile='none'
   logical, target :: lpressuregradient_gas=.false.
@@ -90,7 +91,8 @@ module Hydro
       radial_shear, uphi_at_rzero, uphi_rmax, uphi_rbot, uphi_rtop, &
       uphi_step_width,gcs_rzero, &
       gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell, &
-      eps_kinflow,exp_kinflow,omega_kinflow,ampl_kinflow, rp, gamma_dg11
+      eps_kinflow,exp_kinflow,omega_kinflow,ampl_kinflow, rp, gamma_dg11, &
+      lambda_kinflow
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -114,7 +116,7 @@ module Hydro
 !
   contains
 !***********************************************************************
-    subroutine register_hydro()
+    subroutine register_hydro
 !
 !  Initialise variables which should know that we solve the hydro
 !  equations: iuu, etc; increase nvar accordingly.
@@ -299,7 +301,7 @@ module Hydro
 !
     endsubroutine init_uu
 !***********************************************************************
-    subroutine pencil_criteria_hydro()
+    subroutine pencil_criteria_hydro
 !
 !  All pencils that the Hydro module depends on are specified here.
 !
@@ -450,6 +452,13 @@ module Hydro
           p%uu(:,3)=ampl_kinflow_z*cos(omega_kinflow*t)*exp(eps_kinflow*t)
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
+!
+! gradient flow, u_x = -lambda x ; u_y = lambda y
+!
+      case ('grad_xy')
+        p%uu(:,1)=-ampl_kinflow*lambda_kinflow*x(l1:l2)
+        p%uu(:,2)=ampl_kinflow*lambda_kinflow*y(m)
+        p%uu(:,3)=0. 
 !
 !  ABC-flow
 !
@@ -909,9 +918,10 @@ module Hydro
 ! uu
         if (lpenc_loc(i_uu)) then
           fac=ampl_kinflow
-          p%uu(:,1)=    fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*cos(kz_uukin*z(n))
-          p%uu(:,2)=    fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*cos(kz_uukin*z(n))
-          p%uu(:,3)=-2.*fac*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sin(kz_uukin*z(n))
+          fac2=-(dimensionality-1)*fac
+          p%uu(:,1)= fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*cos(kz_uukin*z(n))
+          p%uu(:,2)= fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*cos(kz_uukin*z(n))
+          p%uu(:,3)=fac2*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sin(kz_uukin*z(n))
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
@@ -2578,10 +2588,38 @@ module Hydro
 !
     endsubroutine kinematic_random_phase
 !***********************************************************************
-    subroutine expand_shands_hydro()
+    subroutine expand_shands_hydro
 !
 !  Presently dummy, for later use
 !
     endsubroutine expand_shands_hydro
+!***********************************************************************
+    subroutine update_char_vel_hydro(f)
+!
+!   25-sep-15/MR+joern: for slope limited diffusion
+!
+!   calculation of characteristic velocity
+!   for slope limited diffusion
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, parameter :: i64_1=1/64.
+!
+      if (lslope_limit_diff) then
+        if (lkinflow_as_aux) then
+           f( :mx-1, :my-1, :mz-1,iFF_diff2)=f( :mx-1, :my-1, :mz-1,iFF_diff2) &
+           +i64_1 *sum((f( :mx-1, :my-1, :mz-1,iux:iuz) &
+                       +f( :mx-1, :my-1,2:mz,  iux:iuz) &
+                       +f( :mx-1,2:my ,  :mz-1,iux:iuz) &
+                       +f( :mx-1,2:my , 2:mz  ,iux:iuz) &
+                       +f(2:mx  , :my-1, :mz-1,iux:iuz) &
+                       +f(2:mx  , :my-1,2:mz  ,iux:iuz) &
+                       +f(2:mx  ,2:my  , :mz-1,iux:iuz) &
+                       +f(2:mx  ,2:my  ,2:mz  ,iux:iuz))**2,4)
+        else
+          call warning('update_char_vel_hydro','characteristic velocity not implemented for hydro_kinematic')
+        endif
+      endif
+
+    endsubroutine update_char_vel_hydro
 !***********************************************************************
 endmodule Hydro

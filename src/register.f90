@@ -208,6 +208,7 @@ module Register
       use Dustdensity,      only: initialize_dustdensity
       use Dustvelocity,     only: initialize_dustvelocity
       use Energy,           only: initialize_energy
+      use Opacity,          only: initialize_opacity
       use EquationOfState,  only: initialize_eos, units_eos
       use Forcing,          only: initialize_forcing
       use Gravity,          only: initialize_gravity
@@ -359,18 +360,19 @@ module Register
 !
 !  Run rest of initialization of individual modules.
 !
-      call initialize_deriv()
-      call initialize_diagnostics()
+      call initialize_deriv
+      call initialize_diagnostics
       call initialize_timeavg(f)
       call initialize_initial_condition(f)
-      call initialize_eos()
+      call initialize_eos
       call initialize_gravity(f)
       call initialize_selfgravity(f)
-      call initialize_poisson()
+      call initialize_poisson
       call initialize_density(f)
       call initialize_hydro(f)
-      call initialize_forcing()
+      call initialize_forcing
       call initialize_energy(f)
+      call initialize_opacity
 !      call initialize_conductivity(f)
       call initialize_detonate(f)
       call initialize_magnetic(f)
@@ -379,23 +381,23 @@ module Register
       call initialize_testscalar(f)
       call initialize_testfield(f)
       call initialize_testflow(f)
-      call initialize_radiation()
+      call initialize_radiation
       call initialize_pscalar(f)
       call initialize_chiral(f)
       call initialize_chemistry(f)
       call initialize_dustvelocity(f)
       call initialize_dustdensity(f)
-      call initialize_neutraldensity()
-      call initialize_neutralvelocity()
+      call initialize_neutraldensity
+      call initialize_neutralvelocity
       call initialize_cosmicray(f)
       call initialize_cosmicrayflux(f)
       call initialize_interstellar(f)
-      call initialize_shear()
-      call initialize_testperturb()
+      call initialize_shear
+      call initialize_testperturb
       call initialize_shock(f)
-      call initialize_viscosity()
+      call initialize_viscosity
       call initialize_special(f)
-      call initialize_border_profiles()
+      call initialize_border_profiles
       call initialize_solid_cells(f)
       call initialize_implicit_physics(f)
       call initialize_heatflux(f)
@@ -418,11 +420,11 @@ module Register
 !
       call finalize_special(f)
       call finalize_boundcond(f)
-      call finalize_deriv()
+      call finalize_deriv
 !
     endsubroutine finalize_modules
 !***********************************************************************
-    subroutine units_general()
+    subroutine units_general
 !
 !  This routine calculates things related to units and must be called
 !  before the rest of the units are being calculated.
@@ -472,7 +474,7 @@ module Register
 !
     endsubroutine units_general
 !***********************************************************************
-    subroutine choose_pencils()
+    subroutine choose_pencils
 !
 !  Find out which pencils are needed for all time-steps and also for
 !  diagnostics only. Also takes care of interdependent pencils.
@@ -494,7 +496,7 @@ module Register
 !
 !  Find out which pencils are needed for the pencil case.
 !
-      call pencil_criteria()
+      call pencil_criteria
 !
 !  Set interdependent pencils.
 !
@@ -522,7 +524,7 @@ module Register
 !
     endsubroutine choose_pencils
 !***********************************************************************
-    subroutine pencil_criteria()
+    subroutine pencil_criteria
 !
 !  Find out which pencils are needed for all the modules. In each call
 !  the called module will inform about the pencils that it needs locally.

@@ -1001,7 +1001,7 @@ module Particles_map
       integer :: i, ix0, iy0, iz0, ib
       logical :: lfirstcall=.true.
 !
-      intent(in)  :: xxp, ivar1
+      intent(in)  :: xxp, ivar1, inear
       intent(out)  :: gp
 !
       call keep_compiler_quiet(f)
@@ -1186,7 +1186,7 @@ module Particles_map
       integer :: ix0, iy0, iz0, ib
       logical, save :: lfirstcall=.true.
 !
-      intent(in)  :: xxp, ivar1
+      intent(in)  :: xxp, ivar1, inear
       intent(out) :: gp
 !
       call keep_compiler_quiet(f)
@@ -1289,7 +1289,7 @@ module Particles_map
       real :: dxp0, dyp0, dzp0
       integer :: ix0, iy0, iz0, ib
 !
-      intent(in)  :: xxp, ivar1
+      intent(in)  :: xxp, ivar1, inear
       intent(out) :: gp
 !
       call keep_compiler_quiet(f)

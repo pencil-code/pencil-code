@@ -24,7 +24,7 @@
   lreactions=T
 /
 &viscosity_run_pars
- ivisc='nu-mixture'
+  ivisc='nu-mixture'
 /
 &NSCBC_run_pars
 /

@@ -181,7 +181,7 @@ module Magnetic
   logical :: lB_ext_pot=.false., lJ_ext=.false.
   logical :: lforce_free_test=.false.
   logical :: lforcing_cont_aa_local=.false.
-  logical :: lee_as_aux=.false.
+  logical :: lEE_as_aux=.false.
   logical :: lbb_as_aux=.false., ljj_as_aux=.false., ljxb_as_aux=.false.
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
   logical :: lbb_as_comaux=.false., lB_ext_in_comaux=.true.
@@ -202,7 +202,7 @@ module Magnetic
       initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
       kgaussian_aa, &
       lcheck_positive_va2, lskip_projection_aa, lno_second_ampl_aa, &
-      lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lee_as_aux,&
+      lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lEE_as_aux,&
       ljxb_as_aux, ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
       lua_as_aux, lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump, &
@@ -259,6 +259,9 @@ module Magnetic
   logical :: lpropagate_borderaa=.true.
   logical :: lremove_meanaz=.false.
   logical :: ladd_global_field=.true. 
+  logical :: ladd_efield=.false.
+  logical :: lmagnetic_slope_limited=.false.
+  real :: ampl_efield=0.
   character (len=labellen) :: A_relaxprofile='0,coskz,0'
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: ydep_profile='two-step'
@@ -298,7 +301,8 @@ module Magnetic
       lbx_ext_global,lby_ext_global,lbz_ext_global, &
       limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb, &
       lpropagate_borderaa, lremove_meanaz,eta_jump_shock, eta_zshock, &
-      eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z
+      eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z, & 
+      ladd_efield,ampl_efield,lmagnetic_slope_limited
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -835,6 +839,16 @@ module Magnetic
 !
         if (lroot) write(4,*) ',ee $'
         if (lroot) write(15,*) 'ee = fltarr(mx,my,mz,3)*one'
+      endif
+!
+      if (lmagnetic_slope_limited) then
+        if (iFF_diff==0) then
+          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
+          iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
+        endif
+        call farray_register_auxiliary('Div_flux_diff_aa',iFF_div_aa,vector=3)
+        iFF_char_c=max(iFF_div_aa+2,iFF_div_ss)
+        if (iFF_div_uu>0) iFF_char_c=max(iFF_char_c,iFF_div_uu+2)
       endif
 !
 !  register the mean-field module
@@ -1399,6 +1413,9 @@ module Magnetic
         if (iforcing_cont_aa==0) &
           call fatal_error('initialize_magnetic','no valid continuous forcing available')
       endif
+!
+      lslope_limit_diff=lslope_limit_diff .or. lmagnetic_slope_limited
+!
     endsubroutine initialize_magnetic
 !***********************************************************************
     subroutine init_aa(f)
@@ -1545,6 +1562,24 @@ module Magnetic
         case ('Bphi_cosy')
           do n=n1,n2; do m=m1,m2
              f(l1:l2,m,n,iax)=amplaa(j)*(cos(2*pi*ky_aa(j)*(y(m)-y0)/Lxyz(2)))/Lxyz(2)
+          enddo; enddo
+        case ('Az_cosh2x1')
+          do n=n1,n2; do m=m1,m2
+             f(l1:l2,m,n,iax)=0. 
+             f(l1:l2,m,n,iay)=0.
+             f(l1:l2,m,n,iaz)=amplaa(j)/(cosh(x(l1:l2))*cosh(x(l1:l2))) 
+          enddo; enddo
+        case ('By_sinx')
+          do n=n1,n2; do m=m1,m2
+             f(l1:l2,m,n,iax)=0. 
+             f(l1:l2,m,n,iay)=0.
+             f(l1:l2,m,n,iaz)=amplaa(j)*( cos(x(l1:l2))  )
+          enddo; enddo
+        case ('By_step')
+          do n=n1,n2; do m=m1,m2
+             f(l1:l2,m,n,iax)=0. 
+             f(l1:l2,m,n,iay)=0.
+             f(l1:l2,m,n,iaz)=2*amplaa(j)*step(x(l1:l2),xyz0(1)+Lxyz(1)/2.,widthaa) - amplaa(j)
           enddo; enddo
         case ('crazy', '5'); call crazy(amplaa(j),f,iaa)
         case ('strange'); call strange(amplaa(j),f,iaa)
@@ -2426,6 +2461,20 @@ module Magnetic
 !
     endsubroutine magnetic_before_boundary
 !***********************************************************************
+    subroutine update_char_vel_magnetic(f)
+!
+!   25-sep-15/MR+joern: for slope limited diffusion
+!
+!   Add the vectorpotential to the characteritic velocity
+!   for slope limited diffusion
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout):: f
+!
+      if (lslope_limit_diff) &
+         f(:,:,:,iFF_char_c)=f(:,:,:,iFF_char_c)+sum(f(:,:,:,iax:iaz)**2,4)
+
+    endsubroutine update_char_vel_magnetic
+!***********************************************************************
     subroutine calc_pencils_magnetic_std(f,p)
 !
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
@@ -2951,6 +3000,7 @@ module Magnetic
       real, dimension (nx) :: eta_mn,eta_smag,etatotal
       real, dimension (nx) :: fres2,etaSS
       real, dimension (nx) :: vdrift
+      real, dimension (nx) :: del2aa_ini, tanhx2  
       real, dimension(3) :: B_ext
       real :: tmp,eta_out1,maxetaBB=0.
       real, parameter :: OmegaSS=1.0
@@ -3015,6 +3065,14 @@ module Magnetic
             fres = fres - eta * mu0 * p%jj
           else
             fres = fres + eta * p%del2a
+          endif
+!
+! whatever the gauge is add an external space-varying electric field
+!
+          if (ladd_efield) then
+             tanhx2 = tanh( x(l1:l2) )*tanh( x(l1:l2) )
+             del2aa_ini = ampl_efield*(-2 + 8*tanhx2 - 6*tanhx2*tanhx2 ) 
+             fres(:,3) = fres(:,3) - eta*mu0*del2aa_ini
           endif
           if (lfirst .and. ldt) diffus_eta = diffus_eta + eta
         end if exp_const
@@ -3565,7 +3623,9 @@ module Magnetic
 !AB: corrected by Patrick Adams
         dAdt = dAdt-battery_term*p%fpres
         if (headtt.or.ldebug) print*,'daa_dt: max(battery_term) =',&
-            battery_term*maxval(baroclinic)
+!MR; corrected for the time being to fix the auto-test
+!            battery_term*maxval(baroclinic)
+            battery_term*maxval(p%fpres)
       endif
 !
 ! Add jxb/(b^2\nu) magneto-frictional velocity to uxb term

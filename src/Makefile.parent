@@ -8,14 +8,23 @@
 
 include src/Makefile.local
 
-# Build the code:
-default: Makefile_inc
+# Legacy stuff for adapt-mkfile users:
+legacy_default: Makefile_inc Fortran_standard
 	touch src/.build-history
 	echo $(USER)"@"`hostname` "("`date`")" >> src/.build-history
 	( cd src && \
 	  $(MAKE) FROM_PARENT=src/ ADAPT_MKFILE=$(ADAPT_MKFILE) \
 	      -f Makefile.src Makefile && \
 	  $(MAKE) FROM_PARENT=src/ \
+	)
+
+# Build the code:
+default_to_be: Makefile_inc Fortran_standard
+	touch src/.build-history
+	echo $(USER)"@"`hostname` "("`date`")" >> src/.build-history
+	( cd src && \
+	  echo "===== " $(MAKE) FROM_PARENT=src/ -f Makefile.src code "====="; \
+	  $(MAKE) FROM_PARENT=src/ -f Makefile.src default_to_be \
 	)
 
 # Use calculated dependencies instead:
@@ -132,3 +141,14 @@ Makefile_inc:
 	    ;; \
 	esac; \
 	./src/scripts/precision-check src/.current-precision "$$desired_precision"
+
+Fortran_standard:
+	@case "$(FILE_IO)" in \
+	'file_io_f2003') \
+	    echo "FSTD=$(FSTD_2003)" > src/Makefile-standard.inc; \
+	    ;; \
+	*) \
+	    echo "FSTD=$(FSTD_95)" > src/Makefile-standard.inc; \
+	    ;; \
+	esac;
+

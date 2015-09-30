@@ -33,7 +33,7 @@
   nu_shock=1.
   nu=1e-3
 /
-&special_run_pars 
+&special_run_pars
   K_spitzer=4e-10 ! Spitzer heat conduction
   K_iso=1.e-4     ! isotropic heat conduction proptional to |grad(T)|
 !

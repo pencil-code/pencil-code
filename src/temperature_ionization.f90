@@ -14,7 +14,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2; uglnTT; ugTT; cvspec(nchemspec); fpres(3); tcond
+! PENCILS PROVIDED Ma2; uglnTT; ugTT; cvspec(nchemspec); fpres(3); tcond; sglnTT(3)
 !
 !***************************************************************
 module Energy
@@ -94,7 +94,7 @@ module Energy
 !
   contains
 !***********************************************************************
-    subroutine register_energy()
+    subroutine register_energy
 !
 !  initialise variables which should know that we solve an energy
 !  equation: ilnTT, etc; increase nvar accordingly
@@ -357,7 +357,7 @@ module Energy
 !
     endsubroutine init_energy
 !***********************************************************************
-    subroutine pencil_criteria_energy()
+    subroutine pencil_criteria_energy
 !
 !  All pencils that the Energy module depends on are specified here.
 !
@@ -550,6 +550,10 @@ module Energy
         call fatal_error('calc_pencils_energy', &
                   'calculation of pressure force not yet implemented'//&
                   ' for temperature_ionization')
+! sglnTT 
+      if (lpencil(i_sglnTT)) &
+        call fatal_error('calc_pencils_energy', &
+            'Pencil sglnTT not yet implemented for temperature_ionization')
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
@@ -970,10 +974,25 @@ module Energy
 !
     endsubroutine
 !***********************************************************************
-    subroutine expand_shands_energy()
+    subroutine expand_shands_energy
 !
 !  Presently dummy, for possible use
 !
     endsubroutine expand_shands_energy
+!***********************************************************************
+    subroutine update_char_vel_energy(f)
+!
+! TB implemented.
+!
+!   25-sep-15/MR+joern: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+
+      call keep_compiler_quiet(f)
+
+      call warning('update_char_vel_energy', &
+           'characteristic velocity not yet implemented for temperature_ionization')
+
+    endsubroutine update_char_vel_energy
 !***********************************************************************
 endmodule Energy

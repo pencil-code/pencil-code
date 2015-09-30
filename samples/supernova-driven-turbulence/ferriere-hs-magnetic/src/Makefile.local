@@ -6,6 +6,7 @@
 MPICOMM      =   mpicomm
 IO           =   io_dist
 
+INITIAL_CONDITION = initial_condition/hs_equilibrium_ism
 HYDRO        =   hydro
 SHOCK        =   shock
 DENSITY      =   density

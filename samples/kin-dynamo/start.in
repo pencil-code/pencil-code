@@ -6,6 +6,8 @@
   cvsid='$Id$',
   random_gen='nr_f90'
 /
+&hydro_init_pars
+/
 &magnetic_init_pars
   initaa='gaussian-noise', amplaa=1e-4
 /

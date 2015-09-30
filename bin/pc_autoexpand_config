@@ -10,6 +10,7 @@ my $configtest = "pc_configtest";
 my %expansion = (
 	# special/solar_corona
 	SPECIAL => {
+		# 2012:
 		"special/solar_corona" => { special_init_pars => { } },
 		"special/solar_corona" => { special_run_pars => { K_iso => 0.01234, K_spitzer => -1.234 } },
 	},
@@ -27,15 +28,24 @@ GetOptions(\%opts,
                -d   --debug
                -v   --version
                )) or die "Aborting.\n";
-if ($opts{'v'} || $opts{'version'}) {
-	die '$Id$'."\n";
-}
+if ($opts{'v'} || $opts{'version'}) { die '$Id$'."\n"; }
 my $debug = 0;
 if ($opts{'d'} || $opts{'debug'}) { $debug = 1; }
 my $test = 0;
 if ($opts{'t'} || $opts{'test'}) { $test = 1; }
 my $backup = 0;
 if ($opts{'b'} || $opts{'backup'}) { $backup = 1; }
+
+my $missing = `$configtest`;
+if ($missing =~ /Please compile first/is) { exit (1); }
+my $missing_file = "",
+my @missing_namelists = ();
+while ($missing =~ s/WARNING:  find_namelist: namelist "(.*?)" is missing!//is) {
+	my $missing_expandsion = $1;
+	while ($missing =~ s/>>> TESTING (.*?\.IN) <<<//is) { $missing_file = lc ($1); }
+	push (@missing_namelists, '&'.$missing_expandsion."\n");
+	push (@missing_namelists, '/'."\n");
+}
 
 if (! -e $makefile) { die ('ERROR: There is no "'.$makefile.'" available!\n'); }
 open (IN, "< ".$makefile);
@@ -55,13 +65,20 @@ foreach my $file (@files) {
 	close (IN);
 	my $num_lines = @lines;
 	my $change = 0;
+	if ($file eq $missing_file) {
+		push (@lines, @missing_namelists);
+		$change = 1;
+	}
 	my $namelist = '';
 	foreach my $module (keys (%expansion)) {
+### For now, we stop here.
+last;
+### Auto-expansion of single namelists with mandatory variables would follow here:
 		my %hash = %{$expansion{$module}};
 		foreach my $source (keys (%hash)) {
 			my $target = $modules{$source};
 			my $expand = $hash{$source};
-###
+### WORK HERE:
 			for (my $pos = 0; $pos < $num_lines; $pos++) {
 				if ($lines[$pos] =~ /(?:^|[\s\/])&([a-zA-Z][a-zA-Z0-9_]*)(?:\s+|$)/s) { $namelist = $1; }
 				if ($namelist ne $target) { next; }

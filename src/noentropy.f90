@@ -14,7 +14,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2; fpres(3); tcond; dsdr
+! PENCILS PROVIDED Ma2; fpres(3); tcond; dsdr; sglnTT(3)
 !
 !***************************************************************
 module Energy
@@ -137,6 +137,20 @@ module Energy
 !
     endsubroutine initialize_energy
 !***********************************************************************
+    subroutine update_char_vel_energy(f)
+!
+!  Updates characteristic veelocity for slope-limited diffusion.
+!
+!  25-sep-15/MR+joern: coded
+!
+      use EquationOfState, only: cs20
+!
+      real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
+!
+      if (lslope_limit_diff) f(:,:,:,iFF_char_c)=f(:,:,:,iFF_char_c) + 0.01*cs20
+!
+    endsubroutine update_char_vel_energy
+!***********************************************************************
     subroutine init_energy(f)
 !
 !  Initialise energy; called from start.f90.
@@ -252,9 +266,9 @@ module Energy
 !
 ! tcond (dummy)
 !
-      if (lpencil(i_tcond)) then
-        p%tcond=0.
-      endif
+      if (lpencil(i_tcond)) p%tcond=0.
+! sglnTT (dummy)
+      if (lpencil(i_sglnTT)) p%sglnTT=0.
 !
       call keep_compiler_quiet(f)
 !

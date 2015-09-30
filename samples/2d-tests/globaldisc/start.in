@@ -36,8 +36,8 @@
   ldensity_nolog=T
 /
 &grav_init_pars
- ipotential='no-smooth'
- g0=1.
+  ipotential='no-smooth'
+  g0=1.
 /
 &special_init_pars
 /

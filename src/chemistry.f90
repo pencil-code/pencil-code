@@ -511,26 +511,26 @@ module Chemistry
 !
 !
       if ((nxgrid==1) .and. (nygrid==1) .and. (nzgrid==1)) then
-       ll1=1; ll2=mx; mm1=m1; mm2=m2; nn1=n1; nn2=n2
+        ll1=1; ll2=mx; mm1=m1; mm2=m2; nn1=n1; nn2=n2
       else
-      if (nxgrid==1) then
-       ll1=l1; ll2=l2
-      else
-       ll1=1; ll2=mx
-      endif
+        if (nxgrid==1) then
+          ll1=l1; ll2=l2
+        else
+          ll1=1; ll2=mx
+        endif
 !
-      if (nygrid==1) then
-       mm1=m1; mm2=m2
-      else
-       mm1=1; mm2=my
-      endif
+        if (nygrid==1) then
+          mm1=m1; mm2=m2
+        else
+          mm1=1; mm2=my
+        endif
 !
-      if (nzgrid==1) then
-       nn1=n1; nn2=n2
-      else
-       nn1=1;  nn2=mz
+        if (nzgrid==1) then
+          nn1=n1; nn2=n2
+        else
+          nn1=1;  nn2=mz
+        endif
       endif
-     endif
 !
 !  Reinitialize if required
 !
@@ -749,7 +749,7 @@ module Chemistry
            lpenc_requested(i_Ywater)=.true.
          endif
 !
-         if (ldiffusion) then
+         if (ldiffusion .or. lparticles_chemistry) then
            lpenc_requested(i_Diff_penc_add)=.true.
            if (.not.lDiff_fick) then
              lpenc_requested(i_mukmu1)=.true.

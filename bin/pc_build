@@ -199,12 +199,12 @@ my @extra_make_args = @ARGV;
 
 if ($cleanall) {
     system('pc_setupsrc');
-    system('make', 'cleanall');
+    make('cleanall');
     exit 0;
 }
 
 if ($clean) {
-    system('make', 'clean');
+    make('clean');
     exit 0;
 }
 
@@ -227,10 +227,17 @@ map { s/^\s*MAKE_VAR\d*\s*=\s*// } @make_args;
 print STDERR "Running make '", join("' '", @make_args), "'\n"
   unless ($quiet);
 
-system('make', @make_args) == 0
-  or die "Make failed: <$!>\n";
+make(@make_args, 'default_to_be');
 
 
+# ---------------------------------------------------------------------- #
+sub make {
+# Run 'make' with the given arguments
+    my @make_args = @_;
+
+    system('make', @make_args) == 0
+      or die "'make @make_args' failed: <$!>\n";
+}
 # ---------------------------------------------------------------------- #
 sub mention {
 # Reference a variable without doing anything.

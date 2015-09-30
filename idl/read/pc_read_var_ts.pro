@@ -52,14 +52,16 @@ default,allprocs,0
 default,snap_start,0
 default,snap_end,0
 
+default, procdir, '/proc'+strtrim(proc,2)+'/
+if (keyword_set (allprocs)) then if (allprocs eq 1) then procdir = '/allprocs/'
+
 if (snap_start eq 0 and snap_end eq 0) then begin
   if (not keyword_set(QUIET)) then begin
     print, 'No start and end index specified.'
-    print, 'Taking all snapshots from ' + $
-           datadir+'/proc'+strcompress(proc,/remove_all)+'.'
+    print, 'Taking all snapshots from "'+datadir+procdir'".'
   endif
   snap_start=1
-  dummy=file_search(datadir+'/proc'+strtrim(proc,2)+'/VAR*',count=snap_end)
+  dummy=file_search(datadir+procdir+'VAR*',count=snap_end)
   if (not keyword_set(QUIET)) then begin
     print, 'Found '+strtrim(snap_end,2)+' snapshots.'
   endif

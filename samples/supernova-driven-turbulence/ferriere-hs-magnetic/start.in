@@ -13,6 +13,17 @@
 !  lshift_origin=T,T,T
   lwrite_aux=T
 /
+&initial_condition_pars
+  ! for RBN cooling
+  !rho0ts=3.5
+  !T0hs=15.8421
+  !for WSW cooling
+  rho0ts=2.75
+  T0hs=20.259
+  lthermal_hse=T
+  !amplaa=0.01
+  !initaa='Ferriere-uniform-By'
+/
 !&global_init_pars
 !/
 &eos_init_pars
@@ -21,26 +32,17 @@
 &hydro_init_pars
   Omega=25.
   inituu='nothing'
-!  inituu='soundwave-x', ampluu=1., kx_uu=1.
 /
 &density_init_pars
-  initlnrho='Galactic-hs'
-!  initlnrho='const_lnrho', lnrho_const=0.514379302
-!  density 1.67262158e-24 g per cm^3
+  ldensity_nolog=T
 /
 &grav_init_pars
   gravz_profile='Ferriere'
-!  gravz_profile='Galactic-hs'
-!  cs0hs=0.090837799,H0hs=0.5
 /
 &entropy_init_pars
 !  cs0hs=0.090837799,H0hs=0.2
-  rho0hs=1.67262158
-  initss='Ferriere-hs'
 /
 &magnetic_init_pars
-  amplaa=0.05
-  initaa='Ferriere-uniform-By'
 /
 !&cosmicray_init_pars
 !  initecr='const_ecr', ecr_const=1.

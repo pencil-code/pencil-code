@@ -17,7 +17,7 @@
 !
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp1tilde; glnTT(3)
 ! PENCILS PROVIDED TT; TT1; Ma2; ugss; hss(3,3); hlnTT(3,3)
-! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1; fpres(3)
+! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1; fpres(3); sglnTT(3)
 !
 !***************************************************************
 module Energy
@@ -389,6 +389,10 @@ module Energy
         call fatal_error('calc_pencils_energy', &
                  'calculation of pressure force not yet implemented'//&
                  ' for entropy_onefluid')
+! sglnTT 
+      if (lpencil(i_sglnTT)) &
+        call fatal_error('calc_pencils_energy', &
+            'Pencil sglnTT not yet implemented for entropy_onefluid')
 !
     endsubroutine calc_pencils_energy
 !**********************************************************************
@@ -645,5 +649,20 @@ module Energy
       endif
 !
     endsubroutine rprint_energy
+!***********************************************************************
+    subroutine update_char_vel_energy(f)
+!
+! TB implemented.
+!
+!   25-sep-15/MR+joern: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+
+      call keep_compiler_quiet(f)
+
+      call warning('update_char_vel_energy', &
+           'characteristic velocity not yet implemented for entropy_onefluid')
+
+    endsubroutine update_char_vel_energy
 !***********************************************************************
 endmodule Energy

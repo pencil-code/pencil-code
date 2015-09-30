@@ -19,10 +19,6 @@ module Io
   include 'io.h'
   include 'record_types.h'
 !
-  interface output_form
-    module procedure output_form_int_0D
-  endinterface
-!
   interface write_persist
     module procedure write_persist_logical_0D
     module procedure write_persist_logical_1D
@@ -42,20 +38,20 @@ module Io
   endinterface
 !
   ! define unique logical unit number for input and output calls
-  integer :: lun_input=88
-  integer :: lun_output=91
+  integer :: lun_input = 88
+  integer :: lun_output = 91
 !
   ! Indicates if IO is done distributed (each proc writes into a procdir)
   ! or collectively (eg. by specialized IO-nodes or by MPI-IO).
-  logical :: lcollective_IO=.true.
-  character (len=labellen) :: IO_strategy="MPI-IO"
+  logical :: lcollective_IO = .true.
+  character (len=labellen) :: IO_strategy = "MPI-IO"
 !
-  logical :: persist_initialized=.false.
-  integer :: persist_last_id=-max_int
+  logical :: persist_initialized = .false.
+  integer :: persist_last_id = -max_int
 !
   integer :: local_type, global_type, h5_err
   integer(HID_T) :: h5_file, h5_dset, h5_plist, h5_fspace, h5_mspace
-  integer, parameter :: n_dims=3
+  integer, parameter :: n_dims = 3
   integer, dimension(n_dims+1) :: local_size, local_subsize, local_start
   integer, dimension(n_dims+1) :: global_size, global_subsize, global_start
 !
@@ -194,7 +190,7 @@ module Io
 !
       if (lroot) then
         ! collect the global x-data from all leading processors in the yz-plane
-        gx(1:l2) = x(1:l2)
+        gx(1:mx) = x
         if (nprocx > 1) then
           do px = 1, nprocx-1
             call mpirecv_real (buf_x, l2, px, tag_gx)
@@ -202,7 +198,7 @@ module Io
           enddo
         endif
         ! collect the global y-data from all leading processors in the xz-plane
-        gy(1:m2) = y(1:m2)
+        gy(1:my) = y
         if (nprocy > 1) then
           do py = 1, nprocy-1
             call mpirecv_real (buf_y, m2, py*nprocx, tag_gy)
@@ -210,7 +206,7 @@ module Io
           enddo
         endif
         ! collect the global z-data from all leading processors in the xy-plane
-        gz(1:n2) = z(1:n2)
+        gz(1:mz) = z
         if (nprocz > 1) then
           do pz = 1, nprocz-1
             call mpirecv_real (buf_z, n2, pz*nprocxy, tag_gz)

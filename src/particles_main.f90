@@ -24,6 +24,7 @@ module Particles_main
   use Particles_nbody
   use Particles_number
   use Particles_radius
+  use Particles_grad
   use Particles_selfgravity
   use Particles_sink
   use Particles_spin
@@ -32,7 +33,6 @@ module Particles_main
   use Particles_sub
   use Particles_surfspec
   use Particles_temperature
-  use Particles_viscosity
 !
   implicit none
 !
@@ -57,6 +57,7 @@ module Particles_main
       call register_particles              ()
 !     call register_particles_potential    ()
       call register_particles_radius       ()
+      call register_particles_grad         ()
       call register_particles_spin         ()
       call register_particles_number       ()
       call register_particles_density      ()
@@ -69,7 +70,6 @@ module Particles_main
       call register_particles_chem         ()
       call register_particles_ads          ()
       call register_particles_surfspec     ()
-      call register_particles_viscosity    ()
       call register_pars_diagnos_state     ()
       call register_particles_special      (npvar)
 !
@@ -97,13 +97,13 @@ module Particles_main
           STATUS='old', POSITION='append')
       call rprint_particles              (lreset,LWRITE=lroot)
       call rprint_particles_radius       (lreset,LWRITE=lroot)
+      call rprint_particles_grad         (lreset,LWRITE=lroot)
       call rprint_particles_sink         (lreset,LWRITE=lroot)
       call rprint_particles_spin         (lreset,LWRITE=lroot)
       call rprint_particles_number       (lreset,LWRITE=lroot)
       call rprint_particles_density      (lreset,LWRITE=lroot)
       call rprint_particles_selfgrav     (lreset,LWRITE=lroot)
       call rprint_particles_nbody        (lreset,LWRITE=lroot)
-      call rprint_particles_viscosity    (lreset,LWRITE=lroot)
       call rprint_particles_TT           (lreset,LWRITE=lroot)
       call rprint_particles_mass         (lreset,LWRITE=lroot)
       call rprint_particles_ads          (lreset,LWRITE=lroot)
@@ -222,11 +222,11 @@ module Particles_main
       call initialize_particles_nbody        (f)
       call initialize_particles_number       (f)
       call initialize_particles_radius       (f)
+      call initialize_particles_grad         (f)
       call initialize_particles_selfgrav     (f)
       call initialize_particles_sink         (f)
       call initialize_particles_spin         (f)
       call initialize_particles_stalker      (f)
-      call initialize_particles_viscosity    (f)
       call initialize_particles_TT           (f)
       call initialize_particles_mass         (f)
       call initialize_particles_drag
@@ -282,6 +282,7 @@ module Particles_main
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
       if (lparticles_radius) call set_particle_radius(f,fp,1,npar_loc,init=.true.)
+      if (lparticles_grad) call set_particle_grad(f,fp,1,npar_loc,init=.true.)
       if (lparticles_number)        call init_particles_number(f,fp)
       if (lparticles_density)       call init_particles_density(f,fp)
       call init_particles(f,fp,ineargrid)
@@ -355,7 +356,6 @@ module Particles_main
       call read_namelist(read_particles_num_run_pars      ,'particles_number'       ,lparticles_number)
       call read_namelist(read_particles_selfg_run_pars    ,'particles_selfgrav'     ,lparticles_selfgravity)
       call read_namelist(read_particles_nbody_run_pars    ,'particles_nbody'        ,lparticles_nbody)
-      call read_namelist(read_particles_visc_run_pars     ,'particles_visc'         ,lparticles_viscosity)
       call read_namelist(read_particles_coag_run_pars     ,'particles_coag'         ,lparticles_coagulation)
       call read_namelist(read_particles_coll_run_pars     ,'particles_coll'         ,lparticles_collisions)
       call read_namelist(read_particles_stir_run_pars     ,'particles_stirring'     ,lparticles_stirring)
@@ -712,7 +712,6 @@ module Particles_main
 !  for the grid and interpolate to the position of the particles.
 !
       if (lparticles_nbody)     call calc_nbodygravity_particles(f)
-      if (lparticles_viscosity) call calc_particles_viscosity(f,fp,ineargrid)
       if (lparticles_potential)  call boundcond_neighbour_list()
 !
     endsubroutine particles_before_boundary
@@ -748,6 +747,7 @@ module Particles_main
       if (lparticles_temperature) call pencil_criteria_par_TT()
       if (lparticles_mass)        call pencil_criteria_par_mass()
       if (lparticles_adsorbed)    call pencil_criteria_par_ads()
+      if (lparticles_chemistry)   call pencil_criteria_par_chem()
 !
     endsubroutine particles_pencil_criteria
 !***********************************************************************
@@ -777,6 +777,7 @@ module Particles_main
       if (lparticles)             call calc_pencils_particles(f,p)
       if (lparticles_selfgravity) call calc_pencils_par_selfgrav(f,p)
       if (lparticles_nbody)       call calc_pencils_par_nbody(f,p)
+      if (lparticles_chemistry)   call calc_pencils_par_chem(f,p)
 !
     endsubroutine particles_calc_pencils
 !***********************************************************************
@@ -889,8 +890,6 @@ module Particles_main
           call dvvp_dt_selfgrav_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_nbody) &
           call dvvp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles_viscosity) &
-          call dvvp_dt_viscosity_pencil(f,df,fp,dfp,ineargrid)
 !      if (lparticles_potential) &
 !          call dvvp_dt_potential_pencil(f,df,fp,dfp,ineargrid)
 !      if (lparticles_polymer) &
@@ -1024,7 +1023,6 @@ module Particles_main
       if (lparticles_density)     call write_particles_dens_init_pars(unit)
       if (lparticles_selfgravity) call write_particles_selfg_init_pars(unit)
       if (lparticles_nbody)       call write_particles_nbody_init_pars(unit)
-      if (lparticles_viscosity)   call write_particles_visc_init_pars(unit)
       if (lparticles_stalker)     call write_pstalker_init_pars(unit)
       if (lparticles_mass)        call write_particles_mass_init_pars(unit)
       if (lparticles_drag)        call write_particles_drag_init_pars(unit)
@@ -1049,7 +1047,6 @@ module Particles_main
       if (lparticles_number)         call write_particles_num_run_pars(unit)
       if (lparticles_selfgravity)    call write_particles_selfg_run_pars(unit)
       if (lparticles_nbody)          call write_particles_nbody_run_pars(unit)
-      if (lparticles_viscosity)      call write_particles_visc_run_pars(unit)
       if (lparticles_coagulation)    call write_particles_coag_run_pars(unit)
       if (lparticles_collisions)     call write_particles_coll_run_pars(unit)
       if (lparticles_stirring)       call write_particles_stir_run_pars(unit)

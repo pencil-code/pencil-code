@@ -34,6 +34,7 @@ module Param_IO
   use NeutralDensity
   use NeutralVelocity
   use NSCBC
+  use Opacity, only: read_opacity_run_pars, write_opacity_run_pars
   use Poisson
   use Polymer
   use Power_spectrum
@@ -255,13 +256,14 @@ module Param_IO
 !  19-aug-15/PABourdin: renamed from read_startpars to read_all_init_pars
 !
       use File_io, only: parallel_open, parallel_close
+      use Mpicomm, only: stop_it_if_any
       use Particles_main, only: read_all_particles_init_pars
       use Sub, only: read_namelist
 !
       logical, optional, intent(IN) :: print
 !
-      character(LEN=fnlen) :: file
-
+      character(len=fnlen) :: file
+!
       lnamelist_error = .false.
 !
 !  Set default to shearing sheet if lshear=.true. (even when Sshear==0.).
@@ -271,19 +273,19 @@ module Param_IO
 !  Open namelist file and read through all items that *may* be present in the various modules.
 !
       if (lstart) then
-        file='start.in'
-        call parallel_open(file,remove_comments=.true.)
+        file = 'start.in'
+        call parallel_open(file, remove_comments=.true.)
       else
-        file=trim(datadir)//'/param.nml'
+        file = trim(datadir)//'/param.nml'
+        lparam_nml = .true.
         call parallel_open(file)
-        lstart=.true.                      ! necessary to create correct error messages in read_namelist
       endif
 !
       call read_namelist(read_init_pars                ,'')
       call read_namelist(read_initial_condition_pars   ,'initial_condition_pars',linitial_condition)
-      call read_namelist(read_streamlines_init_pars    ,'streamlines')
+      call read_namelist(read_streamlines_init_pars    ,'streamlines'    ,lstreamlines)
       call read_namelist(read_eos_init_pars            ,'eos'            ,leos)
-      call read_namelist(read_hydro_init_pars          ,'hydro'          ,lhydro.or.lhydro_kinematic)
+      call read_namelist(read_hydro_init_pars          ,'hydro'          ,lhydro .or. lhydro_kinematic)
       call read_namelist(read_density_init_pars        ,'density'        ,ldensity)
       call read_namelist(read_gravity_init_pars        ,'grav'           ,lgrav)
       call read_namelist(read_selfgravity_init_pars    ,'selfgrav'       ,lselfgravity)
@@ -316,13 +318,13 @@ module Param_IO
 !
       call parallel_close
 !
-      if (lnamelist_error .and. .not.ltolerate_namelist_errors) then
+      if (lnamelist_error .and. .not. ltolerate_namelist_errors .and. .not. lparam_nml) then
         call sample_pars
-        call fatal_error ('read_all_init_pars', 'Please fix all above WARNINGs for file "'//trim(file)//'"')
+        call stop_it_if_any (.true., 'read_all_init_pars: Please fix all above WARNINGs for file "'//trim(file)//'"')
       endif
+      call stop_it_if_any (.false., '')
+      lparam_nml = .false.
 !
-      if (lrun) lstart=.false.
-
 !  Print SVN id from first line.
 !
       if (lroot) call svn_id(cvsid)
@@ -377,24 +379,26 @@ module Param_IO
 !
       use Dustvelocity, only: copy_bcs_dust
       use File_io, only: parallel_open, parallel_close
+      use General, only: loptest
+      use Mpicomm, only: stop_it_if_any
       use Particles_main, only: read_all_particles_run_pars
       use Sub, only: parse_bc, read_namelist
-      use General, only: loptest
 !
       logical, optional, intent(in) :: logging
+      character(len=fnlen) :: file = 'run.in'
 !
       lnamelist_error = .false.
       tstart=impossible
 !
 !  Open namelist file.
 !
-      call parallel_open('run.in',remove_comments=.true.)
+      call parallel_open(file, remove_comments=.true.)
 !
 !  Read through all items that *may* be present in the various modules.
 !  AB: at some point the sgi_fix stuff should probably be removed (see sgi bug)
 !
       call read_namelist(read_run_pars                ,'')
-      call read_namelist(read_streamlines_run_pars    ,'streamlines')
+      call read_namelist(read_streamlines_run_pars    ,'streamlines'       ,lstreamlines)
       call read_namelist(read_eos_run_pars            ,'eos'               ,leos)
       call read_namelist(read_hydro_run_pars          ,'hydro'             ,lhydro.or.lhydro_kinematic)
       call read_namelist(read_density_run_pars        ,'density'           ,ldensity)
@@ -429,6 +433,7 @@ module Param_IO
       call read_namelist(read_shock_run_pars          ,'shock'             ,lshock)
       call read_namelist(read_solid_cells_run_pars    ,'solid_cells'       ,lsolid_cells)
       call read_namelist(read_NSCBC_run_pars          ,'NSCBC'             ,lnscbc)
+      call read_namelist(read_opacity_run_pars        ,'opacity'           ,lopacity)
       call read_namelist(read_polymer_run_pars        ,'polymer'           ,lpolymer)
       call read_namelist(read_power_spectrum_run_pars ,'power_spectrum'    ,lpower_spectrum)
       call read_namelist(read_implicit_diff_run_pars  ,'implicit_diffusion',limplicit_diffusion)
@@ -437,10 +442,11 @@ module Param_IO
 !
       call parallel_close
 !
-      if (lnamelist_error .and. .not.ltolerate_namelist_errors) then
+      if (lnamelist_error .and. .not. ltolerate_namelist_errors) then
         call sample_pars
-        call fatal_error ('read_all_run_pars', 'Please fix all above WARNINGs for file "run.in"')
+        call stop_it_if_any (.true., 'read_all_run_pars: Please fix all above WARNINGs for file "'//trim(file)//'"')
       endif
+      call stop_it_if_any (.false., '')
 !
 !  Print SVN id from first line.
 !
@@ -572,7 +578,7 @@ module Param_IO
 !
         if (lstart) then
           call write_stub ('signal', lsignal)
-          call write_stub ('initial_condition_pars', linitial_condition, .false.)
+          call write_stub ('initial_condition_pars', linitial_condition, .true.)
         endif
 !
         call write_stub ('streamlines', ltracers) !! questionable wg. ltracers
@@ -645,7 +651,6 @@ module Param_IO
           call write_stub ('particles_coag', lparticles_coagulation)
           call write_stub ('particles_coll', lparticles_collisions)
           call write_stub ('particles_stirring', lparticles_stirring)
-          call write_stub ('particles_visc', lparticles_viscosity)
           call write_stub ('particles_diagnos_dv', lparticles_diagnos_dv)
           call write_stub ('particles_diagnos_state', lparticles_diagnos_state)
         endif
@@ -803,6 +808,7 @@ module Param_IO
         call write_selfgravity_run_pars(unit)
         call write_poisson_run_pars(unit)
         call write_energy_run_pars(unit)
+        call write_opacity_run_pars(unit)
 !       call write_conductivity_run_pars(unit)
         call write_detonate_run_pars(unit)
         call write_magnetic_run_pars(unit)
@@ -938,34 +944,34 @@ module Param_IO
       integer, intent(in) :: unit
 !
       write(unit,'(A)') "&lphysics"
-      write(unit,'(A,L,A)') " lhydro=", lhydro, ","
-      write(unit,'(A,L,A)') " ldensity=", ldensity, ","
-      write(unit,'(A,L,A)') " lentropy=", lentropy, ","
-      write(unit,'(A,L,A)') " ltemperature=", ltemperature, ","
-      write(unit,'(A,L,A)') " lshock=", lshock, ","
-      write(unit,'(A,L,A)') " lmagnetic=", lmagnetic, ","
-      write(unit,'(A,L,A)') " lforcing=", lforcing, ","
-      write(unit,'(A,L,A)') " llorenz_gauge=", llorenz_gauge, ","
-      write(unit,'(A,L,A)') " ldustvelocity=", ldustvelocity, ","
-      write(unit,'(A,L,A)') " ldustdensity=", ldustdensity, ","
-      write(unit,'(A,L,A)') " ltestscalar=", ltestscalar, ","
-      write(unit,'(A,L,A)') " ltestfield=", ltestfield, ","
-      write(unit,'(A,L,A)') " ltestflow=", ltestflow, ","
-      write(unit,'(A,L,A)') " linterstellar=", linterstellar, ","
-      write(unit,'(A,L,A)') " lcosmicray=", lcosmicray, ","
-      write(unit,'(A,L,A)') " lcosmicrayflux=", lcosmicrayflux, ","
-      write(unit,'(A,L,A)') " lshear=", lshear, ","
-      write(unit,'(A,L,A)') " lpscalar=", lpscalar, ","
-      write(unit,'(A,L,A)') " lradiation=", lradiation, ","
-      write(unit,'(A,L,A)') " leos=", leos, ","
-      write(unit,'(A,L,A)') " lchiral=", lchiral, ","
-      write(unit,'(A,L,A)') " lneutralvelocity=", lneutralvelocity, ","
-      write(unit,'(A,L,A)') " lneutraldensity=", lneutraldensity, ","
-      write(unit,'(A,L,A)') " lpolymer=", lpolymer, ","
-      write(unit,'(A,L,A)') " lsolid_cells=", lsolid_cells, ","
-      write(unit,'(A,L,A)') " lpower_spectrum=", lpower_spectrum, ","
-      write(unit,'(A,L,A)') " lparticles=", lparticles, ","
-      write(unit,'(A,L,A)') " lparticles_drag=", lparticles_drag, ","
+      write(unit,'(A,L1,A)') " lhydro=", lhydro, ","
+      write(unit,'(A,L1,A)') " ldensity=", ldensity, ","
+      write(unit,'(A,L1,A)') " lentropy=", lentropy, ","
+      write(unit,'(A,L1,A)') " ltemperature=", ltemperature, ","
+      write(unit,'(A,L1,A)') " lshock=", lshock, ","
+      write(unit,'(A,L1,A)') " lmagnetic=", lmagnetic, ","
+      write(unit,'(A,L1,A)') " lforcing=", lforcing, ","
+      write(unit,'(A,L1,A)') " llorenz_gauge=", llorenz_gauge, ","
+      write(unit,'(A,L1,A)') " ldustvelocity=", ldustvelocity, ","
+      write(unit,'(A,L1,A)') " ldustdensity=", ldustdensity, ","
+      write(unit,'(A,L1,A)') " ltestscalar=", ltestscalar, ","
+      write(unit,'(A,L1,A)') " ltestfield=", ltestfield, ","
+      write(unit,'(A,L1,A)') " ltestflow=", ltestflow, ","
+      write(unit,'(A,L1,A)') " linterstellar=", linterstellar, ","
+      write(unit,'(A,L1,A)') " lcosmicray=", lcosmicray, ","
+      write(unit,'(A,L1,A)') " lcosmicrayflux=", lcosmicrayflux, ","
+      write(unit,'(A,L1,A)') " lshear=", lshear, ","
+      write(unit,'(A,L1,A)') " lpscalar=", lpscalar, ","
+      write(unit,'(A,L1,A)') " lradiation=", lradiation, ","
+      write(unit,'(A,L1,A)') " leos=", leos, ","
+      write(unit,'(A,L1,A)') " lchiral=", lchiral, ","
+      write(unit,'(A,L1,A)') " lneutralvelocity=", lneutralvelocity, ","
+      write(unit,'(A,L1,A)') " lneutraldensity=", lneutraldensity, ","
+      write(unit,'(A,L1,A)') " lpolymer=", lpolymer, ","
+      write(unit,'(A,L1,A)') " lsolid_cells=", lsolid_cells, ","
+      write(unit,'(A,L1,A)') " lpower_spectrum=", lpower_spectrum, ","
+      write(unit,'(A,L1,A)') " lparticles=", lparticles, ","
+      write(unit,'(A,L1,A)') " lparticles_drag=", lparticles_drag, ","
       write(unit,'(A)') " /"
 !
     endsubroutine write_IDL_logicals

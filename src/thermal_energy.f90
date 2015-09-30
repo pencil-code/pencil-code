@@ -17,7 +17,7 @@
 ! MAUX CONTRIBUTION 0
 ! COMMUNICATED AUXILIARIES 0
 !
-! PENCILS PROVIDED Ma2; fpres(3); ugeths; transpeth
+! PENCILS PROVIDED Ma2; fpres(3); ugeths; transpeth; sglnTT(3)
 !
 !***************************************************************
 module Energy
@@ -439,6 +439,10 @@ module Energy
 !
       if (lpencil(i_transpeth)) &
           call weno_transp(f,m,n,ieth,-1,iux,iuy,iuz,p%transpeth,dx_1,dy_1,dz_1)
+! sglnTT 
+      if (lpencil(i_sglnTT)) &
+        call fatal_error('calc_pencils_energy', &
+            'Pencil sglnTT not yet implemented for thermal_energy')
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
@@ -1374,5 +1378,20 @@ module Energy
       endif
 !
     endfunction get_temperature
+!***********************************************************************
+    subroutine update_char_vel_energy(f)
+!
+! TB implemented.
+!
+!   25-sep-15/MR+joern: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+
+      call keep_compiler_quiet(f)
+
+      call warning('update_char_vel_energy', &
+           'characteristic velocity not yet implemented for thermal energy')
+
+    endsubroutine update_char_vel_energy
 !***********************************************************************
 endmodule Energy

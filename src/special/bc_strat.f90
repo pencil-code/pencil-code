@@ -63,7 +63,7 @@ module Special
 !  Find the scale factors needed for the boundary conditions.
 !
       bot = rho0z(1:nghost) / rho0z(n1)
-      top = rho0z(n2+1:m2) / rho0z(n2)
+      top = rho0z(n2+1:mz) / rho0z(n2)
 !
     endsubroutine initialize_special
 !***********************************************************************

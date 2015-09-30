@@ -55,6 +55,7 @@ module Sub
   public :: del4v, del4, del2vi_etc
   public :: del6v, del6, del6_other, del6fj, del6fjv
   public :: gradf_upw1st, doupwind
+  public :: matrix2linarray, linarray2matrix
 !
   public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot_add, dot_sub, dot2fj
   public :: dot_mn_vm,div_mn_2tensor,trace_mn,transpose_mn
@@ -99,6 +100,7 @@ module Sub
   public :: finalize_aver
   public :: fseek_pos, parallel_file_exists, parallel_count_lines, read_namelist
   public :: meanyz
+  public :: slope_limiter, diff_flux
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -652,6 +654,46 @@ module Sub
       enddo; enddo; enddo
 !
     endsubroutine contract_jk3
+!***********************************************************************
+    subroutine matrix2linarray(mm,aa)
+!
+! converts a 3X3 matrix to an array of length 9
+!
+!18-sep-15/dhruba: coded
+!
+      real,dimension(3,3),intent(in) :: mm
+      real,dimension(9),intent(out) :: aa
+!
+      integer :: i,j,ij,k
+      ij=0
+      do i=1,3
+        do j=1,3
+          ij=ij+1
+          aa(ij) = mm(i,j)
+        enddo
+      enddo
+!
+    endsubroutine matrix2linarray
+!***********************************************************************
+    subroutine linarray2matrix(aa,mm)
+!
+! converts a 3X3 matrix to an array of length 9
+!
+!18-sep-15/dhruba: coded
+!
+      real,dimension(9),intent(in) :: aa
+      real,dimension(3,3),intent(out) :: mm
+!
+      integer :: i,j,ij,k
+      ij=0
+      do i=1,3
+        do j=1,3
+          ij=ij+1
+          mm(i,j) = aa(ij)
+       enddo
+      enddo
+!
+    endsubroutine linarray2matrix
 !***********************************************************************
     subroutine dot_mn_sv(a,b,c)
 !
@@ -1319,7 +1361,7 @@ module Sub
 !
     endsubroutine grad5
 !***********************************************************************
-    subroutine div(f,k,g)
+    subroutine div(f,k,g,iorder)
 !
 !  Calculate divergence of vector, get scalar.
 !
@@ -1328,32 +1370,117 @@ module Sub
 !  31-aug-07/wlad: adapted for cylindrical and spherical coords
 !
       use Deriv, only: der
+      use General, only: ioptest
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: g, tmp
-      integer :: k,k1
+      real, dimension (nx) :: g
+      integer :: k
+      integer, optional :: iorder
 !
-      intent(in)  :: f,k
+      intent(in)  :: f,k,iorder
       intent(out) :: g
+!
+      integer :: k1,iord
+      real, dimension (nx) :: tmp
 !
       k1=k-1
 !
-      call der(f,k1+1,tmp,1)
-      g=tmp
-      call der(f,k1+2,tmp,2)
-      g=g+tmp
-      call der(f,k1+3,tmp,3)
-      g=g+tmp
+      iord=ioptest(iorder,6)
+      if (iord==2) then
+        call der_2nd(f,k1+1,tmp,1)
+        g=tmp
+        call der_2nd(f,k1+2,tmp,2)
+        g=g+tmp
+        call der_2nd(f,k1+3,tmp,3)
+        g=g+tmp
+      elseif (iord==4) then
+        call der_4th_stag(f,k1+1,tmp,1)
+        g=tmp
+        call der_4th_stag(f,k1+2,tmp,2)
+        g=g+tmp
+        call der_4th_stag(f,k1+3,tmp,3)
+        g=g+tmp
+      else
+        call der(f,k1+1,tmp,1)
+        g=tmp
+        call der(f,k1+2,tmp,2)
+        g=g+tmp
+        call der(f,k1+3,tmp,3)
+        g=g+tmp
+      endif
 !
-      if (lspherical_coords) then
+      if (lspherical_coords) &
         g=g+2.*r1_mn*f(l1:l2,m,n,k1+1)+r1_mn*cotth(m)*f(l1:l2,m,n,k1+2)
-      endif
 !
-      if (lcylindrical_coords) then
+      if (lcylindrical_coords) &
         g=g+rcyl_mn1*f(l1:l2,m,n,k1+1)
-      endif
 !
     endsubroutine div
+!***********************************************************************
+    subroutine der_2nd(f,k,df,j)
+
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(nx), intent(out) :: df
+      integer, intent(in) :: j, k
+!
+      if (j==1) then
+        if (nxgrid/=1) then
+          df=(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k))/(2.*dx) 
+        else
+          df=0.
+          if (ip<=5) print*, 'der_2nd: Degenerate case in x-direction'
+        endif
+      elseif (j==2) then
+        if (nygrid/=1) then
+          df=(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k))/(2.*dy)
+        else
+          df=0.
+          if (ip<=5) print*, 'der_2nd: Degenerate case in y-direction'
+        endif
+      elseif (j==3) then
+        if (nzgrid/=1) then
+          df=(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k))/(2.*dz)
+        else
+          df=0.
+          if (ip<=5) print*, 'der_2nd: Degenerate case in z-direction'
+        endif
+      endif
+
+    endsubroutine der_2nd
+!***********************************************************************
+    subroutine der_4th_stag(f,k,df,j)
+
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(nx), intent(out) :: df
+      integer, intent(in) :: j, k
+!
+      if (j==1) then
+        if (nxgrid/=1) then
+          df=(      (f(l1+1:l2+1,m,n,k)-f(l1-2:l2-2,m,n,k) )     &
+               +27.*(f(l1  :l2  ,m,n,k)-f(l1-1:l2-1,m,n,k) ) )/(24.*dx)
+        else
+          df=0.
+          if (ip<=5) print*, 'der_4th_stag: Degenerate case in x-direction'
+        endif
+      elseif (j==2) then
+        if (nygrid/=1) then
+          df=(   -  (f(l1:l2,m+1,n,k)-f(l1:l2,m-2,n,k) )    &
+               +27.*(f(l1:l2,m  ,n,k)-f(l1:l2,m-1,n,k) ) )/(24.*dy) 
+        else
+          df=0.
+          if (ip<=5) print*, 'der_4th_stag: Degenerate case in y-direction'
+        endif
+      elseif (j==3) then
+        if (nzgrid/=1) then
+          df=(   -  (f(l1:l2,m,n+1,k)-f(l1:l2,m,n-2,k) )    &
+               +27.*(f(l1:l2,m,n  ,k)-f(l1:l2,m,n-1,k) ) )/(24.*dz)
+        else
+          df=0.
+          if (ip<=5) print*, 'der_4th_stag: Degenerate case in z-direction'
+        endif
+      endif
+
+    endsubroutine der_4th_stag
 !***********************************************************************
     subroutine div_other(f,g)
 !
@@ -2604,7 +2731,7 @@ module Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3) :: gradf
-      real, dimension (nx,3) :: uu,ff,ugradf
+      real, dimension (nx,3) :: uu,ff,ugradf,grad_f_tmp
       real, dimension (nx) :: tmp
       integer :: j,k
       logical, optional :: upwind,ladd
@@ -2616,7 +2743,8 @@ module Sub
 !
       do j=1,3
 !
-        call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=loptest(upwind))
+        grad_f_tmp = gradf(:,j,:)
+        call u_dot_grad_scl(f,k+j-1,grad_f_tmp,uu,tmp,UPWIND=loptest(upwind))
         if (loptest(ladd)) then
           ugradf(:,j)=ugradf(:,j)+tmp
         else
@@ -2660,7 +2788,7 @@ module Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3) :: gradf
-      real, dimension (nx,3) :: uu,ff,ugradf
+      real, dimension (nx,3) :: uu,ff,ugradf,grad_f_tmp
       real, dimension (nx) :: tmp
       integer :: j,k,iadvec
       logical, optional :: ladd
@@ -2674,7 +2802,8 @@ module Sub
       ladd1=loptest(ladd)
 !
       do j=1,3
-        call u_dot_grad_scl_alt(f,k+j-1,gradf(:,j,:),uu,tmp,iadvec)
+        grad_f_tmp = gradf(:,j,:)
+        call u_dot_grad_scl_alt(f,k+j-1,grad_f_tmp,uu,tmp,iadvec)
         if (ladd1) then
           ugradf(:,j)=ugradf(:,j)+tmp
         else
@@ -3133,6 +3262,7 @@ module Sub
 !  30-sep-97/axel: coded
 !  24-aug-99/axel: allow for logarithmic spacing
 !   9-sep-01/axel: adapted for MPI
+!  10-sep-15/MR  : tout set to t if file is missing and dtout>0
 !
       use Mpicomm, only: mpibcast_real
 !
@@ -3146,6 +3276,7 @@ module Sub
       logical :: exist
       integer, parameter :: nbcast_array=2
       real, dimension(nbcast_array) :: bcast_array
+      double precision :: t0
 !
       if (lroot) then
 !
@@ -3163,16 +3294,13 @@ module Sub
 !
           settout: if (dtout < 0.0) then
             tout = log10(t)
-          else settout
+          elseif (dtout /= 0.0) then settout
             !  make sure the tout is a good time
-            nonzero: if (dtout /= 0.0) then
-              tout = dtout
-            else nonzero
-              call warning("read_snaptime", &
-                   "Am I writing snapshots every 0 time units? (check " // &
-                   trim(file) // ")" )
-              tout = t
-            endif nonzero
+            t0 = max(t - dt, 0.0D0)
+            tout = t0 + (dble(dtout) - modulo(t0, dble(dtout)))
+          else settout
+            call warning("read_snaptime", "Writing snapshot every time step. ")
+            tout = 0.0
           endif settout
           nout=1
           write(lun,*) tout,nout
@@ -6815,7 +6943,7 @@ nameloop: do
 !***********************************************************************
     subroutine read_namelist(reader,name,lactive)
 !
-!  encapsulates reading of pars + error handling
+!  Encapsulates reading of pars + error handling.
 !
 !  31-oct-13/MR: coded
 !  16-dec-13/MR: handling of optional ierr corrected
@@ -6825,9 +6953,9 @@ nameloop: do
 !  18-aug-15/PABourdin: reworked to simplify code and display all errors at once
 !  19-aug-15/PABourdin: renamed from 'read_pars' to 'read_namelist'
 !
-      use General, only: loptest
+      use File_io, only: parallel_rewind, find_namelist
+      use General, only: loptest, itoa
       use Messages, only: warning
-      use File_io, only: parallel_rewind
 !
       interface
         subroutine reader(iostat)
@@ -6839,38 +6967,72 @@ nameloop: do
       logical, optional, intent(in) :: lactive
 !
       integer :: ierr
-      character(len=5) :: type
+      character(len=5) :: type, suffix
 !
-      if (loptest(lactive,.true.)) then
+      if (.not. loptest (lactive, .true.)) return
 !
-        call reader(ierr)
-!
-        if (ierr /= 0) then
-
-          if (lroot) then
-
-            if (lstart) then
-              type = 'init'
-            else
-              type = 'run'
-            endif
-            if (name /= '') type = '_'//type
-!
-            if (ierr == -1) then
-              call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//'_pars" is missing!')
-            else
-              call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//'_pars" has an error!')
-            endif
-          endif
-
-          lnamelist_error = .true.
-
-        endif
-!
-        call parallel_rewind
-
+      if (lstart .or. lparam_nml) then
+        type = 'init'
+      else
+        type = 'run'
+      endif
+      if (name /= '') type = '_'//type
+      suffix = '_pars'
+      if (name == 'initial_condition_pars') then
+        type = ''
+        suffix = ''
       endif
 !
+      if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
+        lnamelist_error = .true.
+        return
+      endif
+!
+      call reader(ierr)
+      if (ierr /= 0) then
+        lnamelist_error = .true.
+        if (lroot .and. (ierr == -1)) then
+          call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)//'" is missing!')
+        elseif (lroot) then
+          call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)// &
+              '" has an error ('//trim(itoa(ierr))//')!')
+        endif
+      endif
+!
+      call parallel_rewind
+!
     endsubroutine read_namelist
+!***********************************************************************
+    elemental subroutine slope_limiter(diff_right,diff_left,limited,type)
+
+      real, intent(OUT):: limited
+      real, intent(IN) :: diff_left, diff_right
+
+      character(LEN=*), intent(IN) :: type
+
+      select case (type)
+      case ('minmod') 
+        limited=min(2.*abs(diff_left),2.*abs(diff_right), &
+                    0.5*abs(diff_right+diff_left))
+
+      case ('superbee')
+      case ('')
+      case default
+      end select
+    
+    endsubroutine slope_limiter
+!***********************************************************************
+    elemental subroutine diff_flux(h, diff_right, diff_lr, phi)
+    
+      real, intent(IN)  :: h, diff_lr, diff_right
+      real, intent(OUT) :: phi
+
+      if (diff_right*diff_lr>0.) then
+        phi=max(0.,1.+h*(diff_lr/diff_right-1.)) 
+      else
+        phi=0.
+      endif
+
+    endsubroutine diff_flux
 !***********************************************************************
 endmodule Sub
