@@ -348,6 +348,16 @@ module Magnetic
   integer :: idiag_uzbzm=0      ! DIAG_DOC: $\left<u_zB_z\right>$
   integer :: idiag_cosubm=0     ! DIAG_DOC: $\left<\Uv\cdot\Bv/(|\Uv|\,|\Bv|)
                                 ! DIAG_DOC: \right>$
+  integer :: idiag_jxbxm=0      ! DIAG_DOC: $\left<j_xB_x\right>$
+  integer :: idiag_jybxm=0      ! DIAG_DOC: $\left<j_yB_x\right>$
+  integer :: idiag_jzbxm=0      ! DIAG_DOC: $\left<j_zB_x\right>$
+  integer :: idiag_jxbym=0      ! DIAG_DOC: $\left<j_xB_y\right>$
+  integer :: idiag_jybym=0      ! DIAG_DOC: $\left<j_yB_y\right>$
+  integer :: idiag_jzbym=0      ! DIAG_DOC: $\left<j_zB_y\right>$
+  integer :: idiag_jxbzm=0      ! DIAG_DOC: $\left<j_xB_z\right>$
+  integer :: idiag_jybzm=0      ! DIAG_DOC: $\left<j_yB_z\right>$
+  integer :: idiag_jzbzm=0      ! DIAG_DOC: $\left<j_zB_z\right>$
+
   integer :: idiag_uam=0        ! DIAG_DOC: $\left<\uv\cdot\Av\right>$
   integer :: idiag_ujm=0        ! DIAG_DOC: $\left<\uv\cdot\Jv\right>$
   integer :: idiag_fbm=0        ! DIAG_DOC: $\left<\fv\cdot\Bv\right>$
@@ -1961,6 +1971,8 @@ module Magnetic
 !  diagnostics pencils
 !
       if (idiag_jxmax/=0 .or. idiag_jymax/=0 .or. idiag_jzmax/=0) lpenc_diagnos(i_jj)=.true.
+      if (idiag_jxbxm/=0 .or. idiag_jybxm/=0 .or. idiag_jzbxm/=0 .or. idiag_jxbym/=0 .or. & 
+          idiag_jxbzm/=0 .or. idiag_jybzm/=0 .or. idiag_jzbzm/=0) lpenc_diagnos(i_jj)=.true.
       if (idiag_jxbrxm/=0 .or. idiag_jxbrym/=0 .or. idiag_jxbrzm/=0) &
           lpenc_diagnos(i_jxbr)=.true.
       if (idiag_jxbrmax/=0) lpenc_diagnos(i_jxbr2)=.true.
@@ -3799,6 +3811,22 @@ module Magnetic
         if (idiag_uybzm/=0) call sum_mn_name(p%uu(:,2)*p%bb(:,3),idiag_uybzm)
         if (idiag_uzbzm/=0) call sum_mn_name(p%uu(:,3)*p%bb(:,3),idiag_uzbzm)
         if (idiag_cosubm/=0) call sum_mn_name(p%cosub,idiag_cosubm)
+
+!
+!  Current helicity tensor (components)
+!
+        !if (idiag_jbm/=0) call sum_mn_name(p%ub,idiag_ubm)
+        if (idiag_jxbxm/=0) call sum_mn_name(p%jj(:,1)*p%bb(:,1),idiag_jxbxm)
+        if (idiag_jybxm/=0) call sum_mn_name(p%jj(:,2)*p%bb(:,1),idiag_jybxm)
+        if (idiag_jzbxm/=0) call sum_mn_name(p%jj(:,3)*p%bb(:,1),idiag_jzbxm)
+        if (idiag_jxbym/=0) call sum_mn_name(p%jj(:,1)*p%bb(:,2),idiag_jxbym)
+        if (idiag_jybym/=0) call sum_mn_name(p%jj(:,2)*p%bb(:,2),idiag_jybym)
+        if (idiag_jzbym/=0) call sum_mn_name(p%jj(:,3)*p%bb(:,2),idiag_jzbym)
+        if (idiag_jxbzm/=0) call sum_mn_name(p%jj(:,1)*p%bb(:,3),idiag_jxbzm)
+        if (idiag_jybzm/=0) call sum_mn_name(p%jj(:,2)*p%bb(:,3),idiag_jybzm)
+        if (idiag_jzbzm/=0) call sum_mn_name(p%jj(:,3)*p%bb(:,3),idiag_jzbzm)
+
+
 !
 !  compute rms value of difference between u and b
 !
@@ -7096,6 +7124,9 @@ module Magnetic
         idiag_uxbxm=0; idiag_uybxm=0; idiag_uzbxm=0
         idiag_uxbym=0; idiag_uybym=0; idiag_uzbym=0
         idiag_uxbzm=0; idiag_uybzm=0; idiag_uzbzm=0
+	idiag_jxbxm=0; idiag_jybxm=0; idiag_jzbxm=0
+        idiag_jxbym=0; idiag_jybym=0; idiag_jzbym=0
+        idiag_jxbzm=0; idiag_jybzm=0; idiag_jzbzm=0
         idiag_fbm=0; idiag_fxbxm=0; idiag_epsM=0; idiag_epsM_LES=0
         idiag_epsAD=0; idiag_epsMmz=0
         idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0
@@ -7230,6 +7261,15 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'uybzm',idiag_uybzm)
         call parse_name(iname,cname(iname),cform(iname),'uzbzm',idiag_uzbzm)
         call parse_name(iname,cname(iname),cform(iname),'cosubm',idiag_cosubm)
+        call parse_name(iname,cname(iname),cform(iname),'jxbxm',idiag_jxbxm)
+        call parse_name(iname,cname(iname),cform(iname),'jybxm',idiag_jybxm)
+        call parse_name(iname,cname(iname),cform(iname),'jzbxm',idiag_jzbxm)
+        call parse_name(iname,cname(iname),cform(iname),'jxbym',idiag_jxbym)
+        call parse_name(iname,cname(iname),cform(iname),'jybym',idiag_jybym)
+        call parse_name(iname,cname(iname),cform(iname),'jzbym',idiag_jzbym)
+        call parse_name(iname,cname(iname),cform(iname),'jxbzm',idiag_jxbzm)
+        call parse_name(iname,cname(iname),cform(iname),'jybzm',idiag_jybzm)
+        call parse_name(iname,cname(iname),cform(iname),'jzbzm',idiag_jzbzm)
         call parse_name(iname,cname(iname),cform(iname),'uam',idiag_uam)
         call parse_name(iname,cname(iname),cform(iname),'ujm',idiag_ujm)
         call parse_name(iname,cname(iname),cform(iname),'fbm',idiag_fbm)
