@@ -1093,6 +1093,17 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS_DOUBLE=-r8 #(gardar*)
 #LIBMPISUFFIX=#(gardar*)
 ##
+## Axel on LCD
+##
+#FC=mpif90 #(ekhi*)
+#FFLAGS= -O3  #(ekhi*)
+#CC=mpicc #(ekhi*)
+#CFLAGS=-O3 -DFUNDERSC=1 #(ekhi*)
+#LD_MPI= #(ekhi*)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(ekhi)
+#FFLAGS_DOUBLE=-r8 #(ekhi*)
+#LIBMPISUFFIX=#(ekhi*)
+##
 ## Axel on Sanssouci (ifc 9.1)
 ##
 #FC=mpif90 #(sanssouci|belvedere|octopus)
