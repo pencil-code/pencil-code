@@ -64,7 +64,7 @@ module Param_IO
   public :: write_all_init_pars, write_all_run_pars
   public :: write_pencil_info
 !
-  logical :: lforce_shear_bc = .true., ltolerate_namelist_errors=.false.
+  logical :: lforce_shear_bc = .true.
 !
 ! local quantities
 !
