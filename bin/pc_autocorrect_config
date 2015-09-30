@@ -5,6 +5,7 @@ use Getopt::Long;
 # Settings
 my @files = ( "start.in", "run.in", "data/param.nml" );
 
+# Namelist variables that have been renamed
 my %translation = (
 	# special/solar_corona
 	special_run_pars => {
@@ -36,6 +37,7 @@ if ($opts{'t'} || $opts{'test'}) { $test = 1; }
 my $backup = 0;
 if ($opts{'b'} || $opts{'backup'}) { $backup = 1; }
 
+# Rename namelist variables
 my $autocorrect = 0;
 foreach my $file (@files) {
 	if (! -e $file) { next; }
