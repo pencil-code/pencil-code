@@ -5,7 +5,7 @@ use Getopt::Long;
 # Settings
 my @files = ( "start.in", "run.in", "data/param.nml" );
 my $makefile = "src/Makefile.local";
-my $configtest = "pc_configtest";
+my $configtest = "pc_configtest --no-autocorrect";
 
 my %expansion = (
 	# special/solar_corona
@@ -36,6 +36,7 @@ if ($opts{'t'} || $opts{'test'}) { $test = 1; }
 my $backup = 0;
 if ($opts{'b'} || $opts{'backup'}) { $backup = 1; }
 
+# Find missing namelists
 my $missing = `$configtest`;
 if ($missing =~ /Please compile first/is) { exit (1); }
 my $missing_file = "",
@@ -66,6 +67,7 @@ foreach my $file (@files) {
 	my $num_lines = @lines;
 	my $change = 0;
 	if ($file eq $missing_file) {
+		# Append the missing namelists
 		push (@lines, @missing_namelists);
 		$change = 1;
 	}
