@@ -274,15 +274,6 @@ class Tracers(object):
                     self.y1[ix, iy, t_idx] = self.y0[ix, iy, t_idx].copy()
                     self.z1[ix, iy, t_idx] = grid.z[0]
 
-#            # Start the parallelized stream line tracing.
-#            threads = []
-#            for i_proc in range(n_proc):
-#                threads.append(threading.Thread(target=__sub_tracers,
-#                                                args=(field, t_idx, i_proc, n_proc)))
-#                threads[i_proc].start()
-#            for i_proc in range(n_proc):
-#                threads[i_proc].join()
-
             proc = []
             sub_data = []
             for i_proc in range(n_proc):
