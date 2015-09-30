@@ -27,10 +27,8 @@ GetOptions(\%opts,
                -b   --backup
                -d   --debug
                -v   --version
-               )) or die "Aborting.\n";
-if ($opts{'v'} || $opts{'version'}) {
-	die '$Id$'."\n";
-}
+               )) or die ("Aborting.\n");
+if ($opts{'v'} || $opts{'version'}) { die ('$Id$'."\n"); }
 my $debug = 0;
 if ($opts{'d'} || $opts{'debug'}) { $debug = 1; }
 my $test = 0;
