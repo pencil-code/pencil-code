@@ -213,7 +213,6 @@ module Viscosity
       use Sub, only: write_zprof, step
 !
       integer :: i
-      real :: nu_shock_jump1
 !
 !  Default viscosity.
 !
@@ -482,14 +481,13 @@ module Viscosity
       endif
 
       if (lvisc_nu_shock_profz .or. lvisc_nu_shock_profr) then
-        nu_shock_jump1=nu_shock*(nu_jump_shock-1.)
 !
 !  Write out shock viscosity z-profile.
 !  At present only correct for Cartesian geometry
 !
         if (lvisc_nu_shock_profz) &
           call write_zprof('visc_shock', &
-                           nu_shock+nu_shock_jump1*step(z(n1:n2),znu_shock,-widthnu_shock))
+                           nu_shock+(nu_shock*(nu_jump_shock-1.))*step(z(n1:n2),znu_shock,-widthnu_shock))
 
 !
 !  Write out shock viscosity r-profile.
@@ -497,7 +495,7 @@ module Viscosity
 !
         if (lvisc_nu_shock_profr) &
           call write_zprof('visc_shock', &
-                           nu_shock+nu_shock_jump1*step(x(l1:l2),xnu_shock,-widthnu_shock))
+                           nu_shock+(nu_shock*(nu_jump_shock-1.))*step(x(l1:l2),xnu_shock,-widthnu_shock))
       endif
 !
 !  Register an extra aux slot for dissipation rate if requested (so
