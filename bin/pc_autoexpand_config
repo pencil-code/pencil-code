@@ -7,6 +7,7 @@ my @files = ( "start.in", "run.in", "data/param.nml" );
 my $makefile = "src/Makefile.local";
 my $configtest = "pc_configtest --no-autocorrect";
 
+# Non-optional namelist variables
 my %expansion = (
 	# special/solar_corona
 	SPECIAL => {
@@ -48,12 +49,16 @@ while ($missing =~ s/WARNING:  find_namelist: namelist "(.*?)" is missing!//is) 
 	push (@missing_namelists, '/'."\n");
 }
 
+# Getting list of activated modules
 if (! -e $makefile) { die ('ERROR: There is no "'.$makefile.'" available!\n'); }
 open (IN, "< ".$makefile);
 my %modules = ();
 while (my $line = <IN>) {
 	if ($line =~ /^\s*REAL_PRECISION\s*=.*$/is) { next; }
-	if ($line =~ /^\s*([a-zA-Z][a-zA-Z0-9_]*)\s*=\s*([a-zA-Z][a-zA-Z0-9_\/\.]*)\s*$/s) { $modules{$2} = $1; }
+	if ($line =~ /^\s*([a-zA-Z][a-zA-Z0-9_]*)\s*=\s*([a-zA-Z][a-zA-Z0-9_\/\.]*)\s*$/s) {
+		my $module_name = $1;
+		if ($module_name !~ /^no/is) { $modules{$2} = $module_name; }
+	}
 }
 close (IN);
 
