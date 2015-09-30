@@ -1812,17 +1812,22 @@ module Viscosity
 !  Here calculating the divergence of the flux.
 !
       if (lvisc_slope_limited) then
+
         p%fvisc(:,iuu:iuu+2)=p%fvisc(:,iuu:iuu+2)-f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)
+!        if(lfirst .and. ldiagnos) print*,'DIV',f(510,m,n,iFF_div_uu:iFF_div_uu+2)
+
         if (lfirst .and. ldt) then
-          tmp=0.
-          where (p%del2u /=0.)
+          where (p%del2u/=0.)
 !            tmp=f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)/p%del2u
             tmp=f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)/p%uu*dx**2
+          elsewhere
+            tmp=0.
           endwhere
           nu_sld=maxval(abs(tmp),2)
 !          print*,maxval(nu_sld)
-          p%diffus_total=p%diffus_total+nu_sld
+!          p%diffus_total=p%diffus_total+nu_sld
         endif
+
       endif
 !
 !  Calculate Lambda effect
@@ -1855,7 +1860,7 @@ module Viscosity
 !***********************************************************************
     subroutine viscosity_after_boundary(f)
 
-      use Sub, only: div
+      use Sub, only: div, calc_diffusive_flux
       use Sub, only: notanumber
 
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1885,8 +1890,9 @@ module Viscosity
           if (nxgrid>1) then
             do nn=n1,n2; do mm=m1,m2
               tmpx = f(2:,mm,nn,iuu+j-1)-f(:mx-1,mm,nn,iuu+j-1)
+if (notanumber(tmpx)) print*, 'TMPX:j,mm,nn=', j,mm,nn
 !if (lroot.and.j==1.and.lfirst.and.ldiagnos) print*, 'tmpx=',tmpx
-              call calc_diffusive_flux(tmpx,f(2:mx-2,mm,nn,iFF_char_c),f(2:mx-2,mm,nn,iff))
+              call calc_diffusive_flux(tmpx,f(2:mx-2,mm,nn,iFF_char_c),islope_limiter,h_slope_limited,f(2:mx-2,mm,nn,iff))
 !if (lroot.and.j==1.and.lfirst.and.ldiagnos) print*,'flux=',f(2:mx-2,mm,nn,iff)
 !if (notanumber(f(2:mx-2,mm,nn,iff))) print*, 'DIFFX:j,mm,nn=', j,mm,nn
 !            if(lfirst.and.ldiagnos.and.j==1) print*,f(473:533,mm,nn,iff)
@@ -1897,8 +1903,9 @@ module Viscosity
           if (nygrid>1) then
             do nn=n1,n2; do ll=l1,l2
               tmpy = f(ll,2:,nn,iuu+j-1)-f(ll,:my-1,nn,iuu+j-1)
-              call calc_diffusive_flux(tmpy,f(ll,2:my-2,nn,iFF_char_c),f(ll,2:my-2,nn,iff))
-!if (notanumber(f(ll,2:my-1,nn,iFF_diff+1))) print*, 'DIFFY:j,ll,nn=', j,ll,nn
+if (notanumber(tmpy)) print*, 'TMPY:j,mm,nn=', j,mm,nn
+              call calc_diffusive_flux(tmpy,f(ll,2:my-2,nn,iFF_char_c),islope_limiter,h_slope_limited,f(ll,2:my-2,nn,iff))
+if (notanumber(f(ll,2:my-2,nn,iff))) print*, 'DIFFY:j,ll,nn=', j,ll,nn
             enddo; enddo
             iff=iff+1
           endif
@@ -1906,9 +1913,9 @@ module Viscosity
           if (nzgrid>1) then
             do mm=m1,m2; do ll=l1,l2
               tmpz = f(ll,mm,2:,iuu+j-1)-f(ll,mm,:mz-1,iuu+j-1)
-!if (notanumber(tmpz)) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
-            call calc_diffusive_flux(tmpz,f(ll,mm,2:mz-2,iFF_char_c),f(ll,mm,2:mz-2,iff))
-!if (notanumber(f(ll,mm,2:mz-1,iFF_diff+2))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
+if (notanumber(tmpz)) print*, 'TMPZ:j,ll,mm=', j,ll,mm
+            call calc_diffusive_flux(tmpz,f(ll,mm,2:mz-2,iFF_char_c),islope_limiter,h_slope_limited,f(ll,mm,2:mz-2,iff))
+if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
             enddo; enddo
           endif
 
@@ -1924,30 +1931,6 @@ module Viscosity
       endif
 
     endsubroutine viscosity_after_boundary
-!***********************************************************************
-    subroutine calc_diffusive_flux(diffs,c_char,flux)
-!
-!  23-sep-15/MR,joern,fred,petri: coded
-!
-      use Sub, only: slope_limiter, diff_flux
-
-      real, dimension(:),intent(in) :: diffs,c_char
-      real, dimension(:),intent(out):: flux
-
-      real, dimension(size(diffs)-1) :: slope
-      real, dimension(size(diffs)-2) :: phi
-      integer :: len
-
-      len=size(diffs)
-
-      call slope_limiter(diffs(2:),diffs(:len-1),slope,islope_limiter)
-
-      flux = diffs(2:len-1) - 0.5*(slope(2:) + slope(1:len-2))
-
-      call diff_flux(h_slope_limited, diffs(2:len-1), flux, phi)
-      flux = -0.5*c_char*phi*flux
-
-    endsubroutine calc_diffusive_flux
 !***********************************************************************
     subroutine getnu_non_newtonian(gdotsqr,nu_effective,gradnu_effective)
 !

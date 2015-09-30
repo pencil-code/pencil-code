@@ -100,7 +100,7 @@ module Sub
   public :: finalize_aver
   public :: fseek_pos, parallel_file_exists, parallel_count_lines, read_namelist
   public :: meanyz
-  public :: slope_limiter, diff_flux
+  public :: calc_diffusive_flux, slope_limiter, diff_flux
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -7002,6 +7002,33 @@ nameloop: do
       call parallel_rewind
 !
     endsubroutine read_namelist
+!***********************************************************************
+    subroutine calc_diffusive_flux(diffs,c_char,islope_limiter,h_slope_limited,flux)
+!
+!  23-sep-15/MR,joern,fred,petri: coded
+!
+      real, dimension(:),intent(in ):: diffs,c_char
+      real,              intent(in) :: h_slope_limited
+      character(LEN=*),  intent(in) :: islope_limiter
+      real, dimension(:),intent(out):: flux
+
+      real, dimension(size(diffs)-1) :: slope
+      real, dimension(size(diffs)-2) :: phi
+      integer :: len
+
+      len=size(diffs)
+
+      call slope_limiter(diffs(2:),diffs(:len-1),slope,islope_limiter)
+      flux = diffs(2:len-1) - 0.5*(slope(2:) + slope(1:len-2))
+
+      call diff_flux(h_slope_limited, diffs(2:len-1), flux, phi)
+      flux = -0.5*c_char*phi*flux
+if (notanumber(c_char)) then
+   print*, 'CALC_DIFFUSIVE_FLUX: c_char=', len
+   stop
+endif 
+          
+    endsubroutine calc_diffusive_flux
 !***********************************************************************
     elemental subroutine slope_limiter(diff_right,diff_left,limited,type)
 
