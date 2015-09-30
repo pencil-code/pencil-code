@@ -54,12 +54,10 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx) :: r, r2, r3, r5, pom2
-      real :: a2_hill, a3_hill, fac1, fac2, f53=5./3.
+      real :: a2_hill, a3_hill
 !
 !  initialize Hill vortex at x=y=z=0
 !
-      fac1=-1.5*u_hill
-      fac2=u_hill
       a2_hill=a_hill**2
       a3_hill=a_hill*a2_hill
       do iy=m1,m2; do iz=n1,n2
