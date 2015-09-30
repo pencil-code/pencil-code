@@ -167,7 +167,6 @@ $ENV{PATH} = "$ENV{PATH}:/usr/sbin" unless ($ENV{PATH} =~ m{(^|:)/usr/sbin($|:)}
 my $instances_running = `ps aux | grep -v "grep" | grep "perl" | grep "$0" | wc -l`;
 $instances_running =~ s/\s+$//s;
 if ($instances_running > 1) { die ("ERROR: another 'pencil-test' is already running here!\n"); }
-exit (1);
 
 print_header();
 
