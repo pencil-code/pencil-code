@@ -780,6 +780,7 @@ print*,'NS: z_center=',z_center_fcont
         case ('cktest');          call forcing_cktest(f)
         case ('diffrot');         call forcing_diffrot(f,force)
         case ('fountain', '3');   call forcing_fountain(f)
+        case ('hillrain');        call forcing_hillrain(f,force)
         case ('gaussianpot');     call forcing_gaussianpot(f,force)
         case ('white_noise');     call forcing_white_noise(f)
         case ('GP');              call forcing_GP(f)
@@ -3323,6 +3324,205 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
       if (ip<=9) print*,'forcing_gaussianpot: forcing OK'
 !
     endsubroutine forcing_gaussianpot
+!***********************************************************************
+    subroutine forcing_hillrain(f,force_ampl)
+!
+!  gradient of gaussians as forcing function
+!
+!  29-sep-15/axel: adapted from forcing_gaussianpot
+!
+      use EquationOfState, only: cs0
+      use General, only: random_number_wrapper
+      use Mpicomm
+      use Sub
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: force_ampl, force_tmp
+!
+      real, dimension (3) :: fran
+      real, dimension (nx) :: r, r2, r3, r5, pom2, ruf, rho
+      real, dimension (nx,3) :: variable_rhs, force_all, delta
+      logical, dimension (3), save :: extent
+      integer :: j,jf
+      real :: irufm, fact, fsum_tmp, fsum
+      real :: a_hill, a2_hill, a3_hill
+!
+!  check length of time step
+!
+      if (ip<=6) print*,'forcing_hillrain: dt=',dt
+!
+!  check whether there is any extent in each of the three directions
+!
+      extent(1)=nx/=1
+      extent(2)=ny/=1
+      extent(3)=nz/=1
+!
+!  generate random numbers
+!
+      if (t>tsforce) then
+        if (lrandom_location) then
+          call random_number_wrapper(fran)
+          location=fran*Lxyz+xyz0
+        else
+          location=location_fixed
+        endif
+!
+!  It turns out that in the presence of shear, and even for weak shear,
+!  vorticitity is being produced. In order to check whether the shearing
+!  periodic boundaries are to blame, we can cut the y extent of forcing
+!  locations by half.
+!
+        if (lforce_cuty) location(2)=location(2)*.5
+!
+!  reset location(i) to x or y, and keep location(3)=0 fixed
+!
+        if (.not.extent(1)) location(1)=x(1)
+        if (.not.extent(2)) location(2)=y(1)
+        location(3)=0.
+!
+!  write location to file
+!
+        if (lroot .and. lwrite_gausspot_to_file) then
+          open(1,file=trim(datadir)//'/hillrain_forcing.dat', &
+              status='unknown',position='append')
+          write(1,'(4f14.7)') t, location
+          close (1)
+        endif
+!
+!  set next forcing time
+!
+        tsforce=t+dtforce
+        if (ip<=6) print*,'forcing_hillrain: location=',location
+      endif
+!
+!  Set forcing amplitude (same value for each location by default)
+!
+      if (iforce_tprofile=='nothing') then
+        force_tmp=force_ampl
+      elseif (iforce_tprofile=='sin^2') then
+        force_tmp=force_ampl*sin(pi*(tsforce-t)/dtforce)**2
+      else
+        call  fatal_error('forcing_hillrain','iforce_tprofile not good')
+      endif
+!
+!  Let explosion last dtforce_duration or, by default, until next explosion.
+!
+      if ( (dtforce_duration<0.0) .or. &
+           (t-(tsforce-dtforce))<=dtforce_duration ) then
+!
+!  We multiply the forcing term by dt and add to the right-hand side
+!  of the momentum equation for an Euler step, but it also needs to be
+!  divided by sqrt(dt), because square of forcing is proportional
+!  to a delta function of the time difference.
+!  When dtforce is finite, take dtforce+.5*dt.
+!  The 1/2 factor takes care of round-off errors.
+!
+        fact=force_tmp*dt*sqrt(cs0*radius_ff/max(dtforce+.5*dt,dt))
+!
+!  loop the two cases separately, so we don't check for r_ff during
+!  each loop cycle which could inhibit (pseudo-)vectorisation
+!  calculate energy input from forcing; must use lout (not ldiagnos)
+!
+        irufm=0
+!
+!  loop over all pencils
+!
+        do n=n1,n2; do m=m1,m2
+!
+!  Obtain distance to center of blob
+!
+          delta(:,1)=x(l1:l2)-location(1)
+          delta(:,2)=y(m)-location(2)
+          delta(:,3)=z(n)-location(3)
+          do j=1,3
+            if (lperi(j)) then
+              if (lforce_peri) then
+                if (j==2) then
+                  delta(:,2)=2*atan(tan(.5*(delta(:,2) &
+                      +2.*deltay*atan(1000.*tan(.25* &
+                      (pi+x(l1:l2)-location(1)))))))
+                else
+                  delta(:,j)=2*atan(tan(.5*delta(:,j)))
+                endif
+              else
+                where (delta(:,j) >  Lxyz(j)/2.) delta(:,j)=delta(:,j)-Lxyz(j)
+                where (delta(:,j) < -Lxyz(j)/2.) delta(:,j)=delta(:,j)+Lxyz(j)
+              endif
+            endif
+            if (.not.extent(j)) delta(:,j)=0.
+          enddo
+!
+!  compute factors for Hill vortex
+!
+          r2=delta(:,1)**2+delta(:,2)**2+delta(:,3)**2
+          pom2=delta(:,1)**2+delta(:,2)**2
+          r=sqrt(r2)
+          r3=r2*r
+          r5=r2*r3
+          a_hill=radius_ff
+          a2_hill=a_hill**2
+          a3_hill=a_hill*a2_hill
+!
+!  compute Hill vortex
+!
+          where (r<=a_hill)
+            variable_rhs(:,1)=-1.5*delta(:,1)*delta(:,3)/a2_hill
+            variable_rhs(:,2)=-1.5*delta(:,2)*delta(:,3)/a2_hill
+            variable_rhs(:,3)=-2.5+1.5*(pom2+r2)/a2_hill
+          elsewhere
+            variable_rhs(:,1)=-1.5*delta(:,1)*delta(:,3)*a3_hill/r5
+            variable_rhs(:,2)=-1.5*delta(:,2)*delta(:,3)*a3_hill/r5
+            variable_rhs(:,3)=-a3_hill/r3+1.5*pom2*a3_hill/r5
+          endwhere
+!
+!  add to the relevant variable
+!
+          do j=1,3
+            if (extent(j)) then
+              jf=j+ifff-1
+              f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+fact*variable_rhs(:,j)
+            endif
+          enddo
+!
+!  passive scalar as a possible test
+!
+!--         if (icc/=0) f(l1:l2,m,n,icc)=f(l1:l2,m,n,icc)+gaussian
+!
+!  diagnostics
+!
+          if (lout) then
+            if (idiag_rufm/=0) then
+              rho=exp(f(l1:l2,m,n,ilnrho))
+              call multsv_mn(rho/dt,f(l1:l2,m,n,iux:iuz),force_all)
+              call dot_mn(variable_rhs,force_all,ruf)
+              irufm=irufm+sum(ruf)
+            endif
+          endif
+!
+!  For printouts
+!
+          if (lout) then
+            if (idiag_rufm/=0) then
+              irufm=irufm/(nwgrid)
+!
+!  on different processors, irufm needs to be communicated
+!  to other processors
+!
+              fsum_tmp=irufm
+              call mpireduce_sum(fsum_tmp,fsum)
+              irufm=fsum
+              call mpibcast_real(irufm)
+!
+              fname(idiag_rufm)=irufm
+              itype_name(idiag_rufm)=ilabel_sum
+            endif
+          endif
+        enddo; enddo
+      endif
+!
+      if (ip<=9) print*,'forcing_hillrain: forcing OK'
+!
+    endsubroutine forcing_hillrain
 !***********************************************************************
     subroutine forcing_white_noise(f)
 !
