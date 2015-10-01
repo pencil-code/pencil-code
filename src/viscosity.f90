@@ -1905,9 +1905,6 @@ module Viscosity
 !
       if (lvisc_slope_limited.and.lfirst) then
 !
-!  to avoid taking the sqrt several times
-!
-        f(:,:,:,iFF_char_c)=sqrt(f(:,:,:,iFF_char_c))
         f(:,:,:,iFF_diff1:iFF_diff2)=0.
 !
         do j=1,3
@@ -1918,11 +1915,8 @@ module Viscosity
             do nn=n1,n2; do mm=m1,m2
               tmpx = f(2:,mm,nn,iuu+j-1)-f(:mx-1,mm,nn,iuu+j-1)
 if (notanumber(tmpx)) print*, 'TMPX:j,mm,nn=', j,mm,nn
-!if (lroot.and.j==1.and.lfirst.and.ldiagnos) print*, 'tmpx=',tmpx
               call calc_diffusive_flux(tmpx,f(2:mx-2,mm,nn,iFF_char_c),islope_limiter,h_slope_limited,f(2:mx-2,mm,nn,iff))
-!if (lroot.and.j==1.and.lfirst.and.ldiagnos) print*,'flux=',f(2:mx-2,mm,nn,iff)
-!if (notanumber(f(2:mx-2,mm,nn,iff))) print*, 'DIFFX:j,mm,nn=', j,mm,nn
-!            if(lfirst.and.ldiagnos.and.j==1) print*,f(473:533,mm,nn,iff)
+if (notanumber(f(2:mx-2,mm,nn,iff))) print*, 'DIFFX:j,mm,nn=', j,mm,nn
             enddo; enddo
             iff=iff+1
           endif
@@ -1947,11 +1941,8 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
           endif
 
           do n=n1,n2; do m=m1,m2
-!             if(lfirst.and.ldiagnos.and.j==2.and.m==520) print*,'FLUX',f(l1:l2,m,n,iFF_diff1:iFF_diff2)
+!            if(lfirst.and.ldiagnos.and.j==2.and.m==520) print*,'FLUX',f(l1:l2,m,n,iFF_diff1:iFF_diff2)
             call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_uu+j-1),.true.)
-!if (lroot.and.lfirst.and.ldiagnos.and.j==1) print*,'DIVflux=',f(508:511,m,n,iFF_diff1)
-!            call div(f,iFF_diff,tmp,iorder=4)
-!if (lroot.and.j==1.and.lfirst.and.ldiagnos) print*, tmp
           enddo; enddo
 
         enddo
