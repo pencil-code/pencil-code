@@ -261,6 +261,8 @@ module Magnetic
   logical :: ladd_global_field=.true. 
   logical :: ladd_efield=.false.
   logical :: lmagnetic_slope_limited=.false.
+  real :: h_slope_limited=0., eta_sld_thresh=0.
+  character (LEN=labellen) :: islope_limiter=''
   real :: ampl_efield=0.
   character (len=labellen) :: A_relaxprofile='0,coskz,0'
   character (len=labellen) :: zdep_profile='fs'
@@ -302,7 +304,7 @@ module Magnetic
       limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb, &
       lpropagate_borderaa, lremove_meanaz,eta_jump_shock, eta_zshock, &
       eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z, & 
-      ladd_efield,ampl_efield,lmagnetic_slope_limited
+      ladd_efield,ampl_efield,lmagnetic_slope_limited,islope_limiter,h_slope_limited,eta_sld_thresh
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -4677,13 +4679,18 @@ module Magnetic
 !   2-jan-10/axel: adapted from calc_lhydro_pars
 !  10-jan-13/MR: added possibility to remove evolving mean field
 !
-      use Sub, only: finalize_aver
+      use Sub, only: notanumber
       use Deriv, only: der_z,der2_z
-!
+      use Sub, only: finalize_aver, div, calc_diffusive_flux
+
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: n,j
+
       real :: fact
-      real, dimension (nz,3) :: gaamz,d2aamz
+      integer :: n,ll,mm,nn,j,iff
+      real, dimension(mx-1) :: tmpx
+      real, dimension(my-1) :: tmpy
+      real, dimension(mz-1) :: tmpz
+      real, dimension(nz,3) :: gaamz,d2aamz
 !
       intent(inout) :: f
 !
@@ -4732,6 +4739,55 @@ module Magnetic
           do m=1,my
             f(:,m,n,iua)=sum(f(:,m,n,iux:iuz)*f(:,m,n,iax:iaz),2)
           enddo
+        enddo
+      endif
+!
+!  Slope limited diffusion following Rempel (2014)
+!  First calculating the flux in a subroutine below
+!  using a slope limiting procedure then storing in the
+!  auxilaries variables in the f array (done above).
+!
+      if (lmagnetic_slope_limited.and.lfirst) then
+!
+        f(:,:,:,iFF_diff1:iFF_diff2)=0.
+!
+        do j=1,3
+
+          iff=iFF_diff
+
+          if (nxgrid>1) then
+            do nn=n1,n2; do mm=m1,m2
+              tmpx = f(2:,mm,nn,iaa+j-1)-f(:mx-1,mm,nn,iaa+j-1)
+if (notanumber(tmpx)) print*, 'TMPX:j,mm,nn=', j,mm,nn
+              call calc_diffusive_flux(tmpx,f(2:mx-2,mm,nn,iFF_char_c),islope_limiter,h_slope_limited,f(2:mx-2,mm,nn,iff))
+if (notanumber(f(2:mx-2,mm,nn,iff))) print*, 'DIFFX:j,mm,nn=', j,mm,nn
+            enddo; enddo
+            iff=iff+1
+          endif
+
+          if (nygrid>1) then
+            do nn=n1,n2; do ll=l1,l2
+              tmpy = f(ll,2:,nn,iaa+j-1)-f(ll,:my-1,nn,iaa+j-1)
+if (notanumber(tmpy)) print*, 'TMPY:j,mm,nn=', j,mm,nn
+              call calc_diffusive_flux(tmpy,f(ll,2:my-2,nn,iFF_char_c),islope_limiter,h_slope_limited,f(ll,2:my-2,nn,iff))
+if (notanumber(f(ll,2:my-2,nn,iff))) print*, 'DIFFY:j,ll,nn=', j,ll,nn
+            enddo; enddo
+            iff=iff+1
+          endif
+
+          if (nzgrid>1) then
+            do mm=m1,m2; do ll=l1,l2
+              tmpz = f(ll,mm,2:,iaa+j-1)-f(ll,mm,:mz-1,iaa+j-1)
+if (notanumber(tmpz)) print*, 'TMPZ:j,ll,mm=', j,ll,mm
+            call calc_diffusive_flux(tmpz,f(ll,mm,2:mz-2,iFF_char_c),islope_limiter,h_slope_limited,f(ll,mm,2:mz-2,iff))
+if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
+            enddo; enddo
+          endif
+
+          do n=n1,n2; do m=m1,m2
+            call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_aa+j-1),iorder=4)
+          enddo; enddo
+
         enddo
       endif
 !
