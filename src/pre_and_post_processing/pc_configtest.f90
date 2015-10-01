@@ -62,6 +62,7 @@ program pc_configtest
   call read_all_run_pars()
   lrun = .false.
   lstart = .true.
+  if (lnamelist_error) stop 1
 !
 !  Derived parameters (that may still be overwritten).
 !  [might better be put into another routine, possibly in 'read_all_run_pars']
