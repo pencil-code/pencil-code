@@ -43,6 +43,7 @@ module Energy
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
   logical :: lheatc_hyper3=.false.
   integer, parameter :: nheatc_max=3
+  logical :: lenergy_slope_limited=.false.
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=intlen) :: iinit_str
@@ -724,6 +725,10 @@ module Energy
 !
       call keep_compiler_quiet(f)
 !
+      if (lenergy_slope_limited) &
+        call fatal_error('calc_lenergy_pars', &
+                         'Slope-limited diffusion not implemented')
+
     endsubroutine calc_lenergy_pars
 !***********************************************************************
     subroutine calc_heatcond_constchi(df,p)

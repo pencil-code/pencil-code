@@ -48,6 +48,7 @@ module Energy
   logical :: lconst_cooling_time = .false.
   logical :: ljeans_floor=.false.
   logical, pointer :: lpressuregradient_gas
+  logical :: lenergy_slope_limited=.false.
   character (len=labellen), dimension(ninit) :: initeth='nothing'
   character(len=labellen) :: feedback = 'linear'
 !
@@ -597,6 +598,10 @@ module Energy
       intent(in) :: f
 !
       call keep_compiler_quiet(f)
+!
+      if (lenergy_slope_limited) &
+        call fatal_error('calc_lenergy_pars', &
+                         'Slope-limited diffusion not implemented')
 !
     endsubroutine calc_lenergy_pars
 !***********************************************************************

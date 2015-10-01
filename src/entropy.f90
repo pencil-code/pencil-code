@@ -126,6 +126,8 @@ module Energy
              lchi_shock_density_dep=.false., &
              lhcond0_density_dep=.false.
   logical :: lenergy_slope_limited=.false.
+  real :: h_slope_limited=0., chi_sld_thresh=0.
+  character (len=labellen) :: islope_limiter=''
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
   character (len=labellen) :: pertss='zero'
@@ -190,7 +192,7 @@ module Energy
       reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, &
       center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
       Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
-      cool_type,ichit,xchit,pclaw, lenergy_slope_limited
+      cool_type,ichit,xchit,pclaw, lenergy_slope_limited,h_slope_limited,chi_sld_thresh
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -341,7 +343,7 @@ module Energy
 !
   contains
 !***********************************************************************
-    subroutine register_energy()
+    subroutine register_energy
 !
 !  Initialise variables which should know that we solve an entropy
 !  equation: iss, etc; increase nvar accordingly.
@@ -2386,7 +2388,7 @@ module Energy
 !
     endsubroutine shock2d
 !***********************************************************************
-    subroutine pencil_criteria_energy()
+    subroutine pencil_criteria_energy
 !
 !  All pencils that the Entropy module depends on are specified here.
 !
@@ -3282,13 +3284,17 @@ module Energy
 !
       use Deriv, only: der_z, der2_z
       use Mpicomm, only: mpiallreduce_sum
-      use Sub, only: finalize_aver
+      use Sub, only: finalize_aver,div, calc_diffusive_flux
+      use Sub, only: notanumber
       use EquationOfState, only : lnrho0, cs20, get_cv1
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(in) :: f
+      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
 !
+      real, dimension(mx-1) :: tmpx
+      real, dimension(my-1) :: tmpy
+      real, dimension(mz-1) :: tmpz
       integer :: l,m,n,lf
+      integer :: ll,mm,nn,iff
       real :: fact, cv1, tmp1
 !
 !  Compute horizontal average of entropy. Include the ghost zones,
@@ -3442,6 +3448,54 @@ module Energy
         call mpiallreduce_sum(tmp1,ss_volaverage)
       endif
 !
+!  Slope limited diffusion following Rempel (2014)
+!  First calculating the flux in a subroutine below
+!  using a slope limiting procedure then storing in the
+!  auxilaries variables in the f array. Finally the divergence
+!  of the flux is calculated and stored in the f array.
+!
+!
+      if (lenergy_slope_limited.and.lfirst) then
+!
+        f(:,:,:,iFF_diff1:iFF_diff2)=0.
+!
+        iff=iFF_diff
+
+        if (nxgrid>1) then
+          do nn=n1,n2; do mm=m1,m2
+            tmpx = f(2:,mm,nn,iss)-f(:mx-1,mm,nn,iss)
+if (notanumber(tmpx)) print*, 'TMPX:mm,nn=', mm,nn
+            call calc_diffusive_flux(tmpx,f(2:mx-2,mm,nn,iFF_char_c),islope_limiter,h_slope_limited,f(2:mx-2,mm,nn,iff))
+if (notanumber(f(2:mx-2,mm,nn,iff))) print*, 'DIFFX:mm,nn=', mm,nn
+          enddo; enddo
+          iff=iff+1
+        endif
+
+        if (nygrid>1) then
+          do nn=n1,n2; do ll=l1,l2
+            tmpy = f(ll,2:,nn,iss)-f(ll,:my-1,nn,iss)
+if (notanumber(tmpy)) print*, 'TMPY:mm,nn=', mm,nn
+            call calc_diffusive_flux(tmpy,f(ll,2:my-2,nn,iFF_char_c),islope_limiter,h_slope_limited,f(ll,2:my-2,nn,iff))
+if (notanumber(f(ll,2:my-2,nn,iff))) print*, 'DIFFY:ll,nn=', ll,nn
+          enddo; enddo
+          iff=iff+1
+        endif
+
+        if (nzgrid>1) then
+          do mm=m1,m2; do ll=l1,l2
+            tmpz = f(ll,mm,2:,iss)-f(ll,mm,:mz-1,iss)
+if (notanumber(tmpz)) print*, 'TMPZ:ll,mm=', ll,mm
+            call calc_diffusive_flux(tmpz,f(ll,mm,2:mz-2,iFF_char_c),islope_limiter,h_slope_limited,f(ll,mm,2:mz-2,iff))
+if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:ll,mm=', ll,mm
+          enddo; enddo
+        endif
+
+        do n=n1,n2; do m=m1,m2
+          call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_ss),iorder=4)
+        enddo; enddo
+
+      endif
+
     endsubroutine calc_lenergy_pars
 !***********************************************************************
     subroutine update_char_vel_energy(f)
@@ -4485,7 +4539,7 @@ module Energy
               call write_zprof('hcond',hcond_zprof)
               call write_zprof('gloghcond',gradloghcond_zprof(:,3))
             endif
-            if (chi_t/=0.0) call get_gravz_chit()
+            if (chi_t/=0.0) call get_gravz_chit
             lfirstcall_hcond=.false.
           endif
 !
@@ -4508,7 +4562,7 @@ module Energy
         elseif (lgravx) then
           if (lfirstcall_hcond.and.lfirstpoint) then
             if (.not.lhcond_global) then
-               call get_gravx_heatcond()
+               call get_gravx_heatcond
             endif
             lfirstcall_hcond=.false.
           endif
@@ -6008,7 +6062,7 @@ module Energy
 !
     endsubroutine calc_heatcond_zprof
 !***********************************************************************
-    subroutine get_gravz_heatcond()
+    subroutine get_gravz_heatcond
 !
 ! Calculate z dependent heat conductivity and its gradient
 ! and stores them in the arrays which are saved at the first time
@@ -6032,7 +6086,7 @@ module Energy
 !
     endsubroutine get_gravz_heatcond
 !***********************************************************************
-    subroutine get_gravx_heatcond()
+    subroutine get_gravx_heatcond
 !
 ! Calculate x dependent heat conductivity and its gradient
 ! and stores them in the arrays which are saved at the first time
@@ -6161,7 +6215,7 @@ module Energy
 !
     endsubroutine gradloghcond
 !***********************************************************************
-    subroutine get_gravz_chit()
+    subroutine get_gravz_chit
 !
 !  Calculate z-dependent chi_t and its gradient and store them in
 !  arrays which are saved at the first time step and used in all the next.
@@ -7045,7 +7099,7 @@ module Energy
 !
     endsubroutine
 !***********************************************************************
-    subroutine expand_shands_energy()
+    subroutine expand_shands_energy
 !
 !  Presently dummy, for possible use
 !

@@ -42,6 +42,7 @@ module Energy
   real :: ss_const=1.
   logical :: lmultilayer=.true.
   logical :: lcalc_heatcond_constchi=.false.
+  logical :: lenergy_slope_limited=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
 !
   ! input parameters
@@ -135,6 +136,18 @@ module Energy
       enddo
 !
     endsubroutine init_energy
+!***********************************************************************
+    subroutine calc_lenergy_pars(f)
+
+      real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
+
+      call keep_compiler_quiet(f)
+
+      if (lenergy_slope_limited) &
+        call fatal_error('calc_lenergy_pars', &
+                         'Slope-limited diffusion not implemented')
+
+    endsubroutine calc_lenergy_pars
 !***********************************************************************
     subroutine denergy_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb,bij)
 !

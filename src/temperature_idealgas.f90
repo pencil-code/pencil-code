@@ -68,6 +68,7 @@ module Energy
   logical :: lcalc_TTmean=.false.
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
+  logical :: lenergy_slope_limited=.false.
   logical :: linitial_log=.false.
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=labellen) :: borderss='nothing'
@@ -1325,6 +1326,10 @@ module Energy
 !
       endif
 !
+      if (lenergy_slope_limited) &
+        call fatal_error('calc_lenergy_pars', &
+                         'Slope-limited diffusion not implemented')
+
     endsubroutine calc_lenergy_pars
 !***********************************************************************
     subroutine calc_heatcond_shock(df,p)
