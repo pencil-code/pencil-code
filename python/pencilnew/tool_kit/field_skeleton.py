@@ -73,6 +73,7 @@ class NullPoint(object):
 
         # Find null points in these cells.
         self.nulls = []
+        nulls_list = []
         delta = min((var.dx, var.dy, var.dz))/500
         for cell_idx in range(np.sum(reduced_cells)):
             # 2) Analysis step.
@@ -363,21 +364,21 @@ class NullPoint(object):
 
             # Compute the average of the null found from different faces.
             if null_cell:
-                self.nulls.append(np.mean(null_cell, axis=0))
+                nulls_list.append(np.mean(null_cell, axis=0))
 
         # Discard nulls which are too close to each other.
-        self.nulls = np.array(self.nulls)
-        keep_null = np.ones(len(self.nulls), dtype=bool)
-        for idx_null_1 in range(len(self.nulls)):
-            for idx_null_2 in range(idx_null_1+1, len(self.nulls)):
-                diff_nulls = abs(self.nulls[idx_null_1]-self.nulls[idx_null_2])
+        nulls_list = np.array(nulls_list)
+        keep_null = np.ones(len(nulls_list), dtype=bool)
+        for idx_null_1 in range(len(nulls_list)):
+            for idx_null_2 in range(idx_null_1+1, len(nulls_list)):
+                diff_nulls = abs(nulls_list[idx_null_1]-nulls_list[idx_null_2])
                 if diff_nulls[0] < var.dx and diff_nulls[1] < var.dy and \
                 diff_nulls[2] < var.dz:
                     keep_null[idx_null_2] = False
-        self.nulls = self.nulls[keep_null == True]
+        nulls_list = nulls_list[keep_null == True]
 
         # Compute the field's characteristics around each null.
-        for null in self.nulls:
+        for null in nulls_list:
             # Find the Jacobian grad(field).
             grad_field = self.__grad_field(null, var, field, delta)
             if abs(np.real(np.linalg.det(grad_field))) > 1e-8*np.min([var.dx, var.dy, var.dz]):
@@ -392,8 +393,8 @@ class NullPoint(object):
                 if np.real(np.linalg.det(grad_field)) > 0:
                     sign_trace = -1
                     fan_vectors = eigen_vectors[np.where(np.sign(eigen_values) < 0)]
-                if np.linalg.det(grad_field) == 0:
-                    print("error: Null point is not of x-type.")
+                if (np.linalg.det(grad_field) == 0) or (len(fan_vectors) == 0):
+                    print("error: Null point is not of x-type. Skip this null.")
                     continue
                 fan_vectors = np.array(fan_vectors)
                 # Compute the normal to the fan-plane.
@@ -407,12 +408,14 @@ class NullPoint(object):
                 fan_vectors = np.zeros((2, 3))
                 normal = np.zeros(3)
 
+            self.nulls.append(null)
             self.eigen_values.append(eigen_values)
             self.eigen_vectors.append(eigen_vectors)
             self.sign_trace.append(sign_trace)
             self.fan_vectors.append(fan_vectors)
             self.normals.append(normal)
 
+        self.nulls = np.array(self.nulls)
         self.eigen_values = np.array(np.real(self.eigen_values))
         self.eigen_vectors = np.array(np.real(self.eigen_vectors))
         self.sign_trace = np.array(self.sign_trace)
