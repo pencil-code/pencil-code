@@ -32,7 +32,7 @@ class FixedPoint(object):
 
     def find_fixed(self, data_dir='data/', destination='fixed_points.hf5',
                    varfile='VAR0', ti=-1, tf=-1, trace_field='bb', h_min=2e-3,
-                   h_max=2e4, len_max=500, tol=1e-2, interpolation='weighted',
+                   h_max=2e4, len_max=500, tol=1e-2, interpolation='trilinear',
                    trace_sub=1, integration='simple', int_q=[''], n_proc=1):
         """
         Find the fixed points.
@@ -41,7 +41,7 @@ class FixedPoint(object):
 
         find_fixed(data_dir='data/', destination='fixed_points.hf5',
                    varfile='VAR0', ti=-1, tf=-1, trace_field='bb', h_min=2e-3,
-                   h_max=2e4, len_max=500, tol=1e-2, interpolation='weighted',
+                   h_max=2e4, len_max=500, tol=1e-2, interpolation='trilinear',
                    trace_sub=1, integration='simple', int_q=[''], n_proc=1):
 
         Finds the fixed points. Returns the fixed points positions.
@@ -83,8 +83,8 @@ class FixedPoint(object):
          *interpolation*:
            Interpolation of the vector field.
            'mean': takes the mean of the adjacent grid point.
-           'weighted': weights the adjacent grid points according to
-                       their distance.
+           'trilinear': weights the adjacent grid points according to
+                        their distance.
 
          *trace_sub*:
            Number of sub-grid cells for the seeds for the initial mapping.

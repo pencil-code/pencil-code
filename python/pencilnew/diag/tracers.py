@@ -14,6 +14,7 @@ except:
     print("Warning: no h5py library found.")
 import multiprocessing as mp
 from pencilnew.calc.streamlines import Stream
+from pencilnew.math.interpolation import vec_int
 
 
 class Tracers(object):
@@ -39,7 +40,7 @@ class Tracers(object):
 
 
     def find_tracers(self, trace_field='bb', h_min=2e-3, h_max=2e4, len_max=500,
-                     tol=1e-2, iter_max=1e3, interpolation='weighted',
+                     tol=1e-2, iter_max=1e3, interpolation='trilinear',
                      trace_sub=1, int_q=[''], varfile='VAR0', ti=-1, tf=-1,
                      integration='simple', data_dir='./data', n_proc=1):
         """
@@ -49,7 +50,7 @@ class Tracers(object):
         call signature::
 
         find_tracers(self, trace_field='bb', h_min=2e-3, h_max=2e4, len_max=500,
-                     tol=1e-2, iter_max=1e3, interpolation='weighted',
+                     tol=1e-2, iter_max=1e3, interpolation='trilinear',
                      trace_sub=1, int_q=[''], varfile='VAR0', ti=-1, tf=-1,
                      integration='simple', data_dir='data/', n_proc=1)
 
@@ -82,7 +83,7 @@ class Tracers(object):
         *interpolation*:
           Interpolation of the vector field.
           'mean': takes the mean of the adjacent grid point.
-          'weighted': weights the adjacent grid points according to
+          'trilinear': weights the adjacent grid points according to
           their distance.
 
         *trace_sub*:
@@ -114,7 +115,7 @@ class Tracers(object):
         """
 
         # Return the tracers for the specified starting locations.
-        def __sub_tracers(queue, field, t_idx, i_proc, n_proc):
+        def __sub_tracers(queue, var, field, t_idx, i_proc, n_proc):
             xx = np.zeros([(self.x0.shape[0]+n_proc-1-i_proc)/n_proc,
                             self.x0.shape[1], 3])
             xx[:, :, 0] = self.x0[i_proc:self.x0.shape[0]:n_proc, :, t_idx].copy()
@@ -139,14 +140,14 @@ class Tracers(object):
                     sub_len[int(ix/n_proc), iy] = stream.len
                     if any(np.array(self.params.int_q) == 'curlyA'):
                         for l in range(stream.stream_len-1):
-                            aaInt = pc.vecInt((stream.tracers[l+1] + stream.tracers[l])/2,
-                                              aa, self.p, self.interpolation)
+                            aaInt = vec_int((stream.tracers[l+1] + stream.tracers[l])/2,
+                                             var, aa, interpolation=self.params.interpolation)
                             sub_curlyA[int(ix/n_proc), iy] += \
                                 np.dot(aaInt, (stream.tracers[l+1] - stream.tracers[l]))
                     if any(np.array(self.params.int_q) == 'ee'):
                         for l in range(stream.stream_len-1):
-                            eeInt = pc.vecInt((stream.tracers[l+1] + stream.tracers[l])/2,
-                                              ee, self.params, self.interpolation)
+                            eeInt = vec_int((stream.tracers[l+1] + stream.tracers[l])/2,
+                                             var, ee, interpolation=self.params.interpolation)
                             sub_ee[int(ix/n_proc), iy] += \
                                 np.dot(eeInt, (stream.tracers[l+1] - stream.tracers[l]))
 
@@ -277,7 +278,7 @@ class Tracers(object):
             proc = []
             sub_data = []
             for i_proc in range(n_proc):
-                proc.append(mp.Process(target=__sub_tracers, args=(queue, field, t_idx, i_proc, n_proc)))
+                proc.append(mp.Process(target=__sub_tracers, args=(queue, var, field, t_idx, i_proc, n_proc)))
             for i_proc in range(n_proc):
                 proc[i_proc].start()
             for i_proc in range(n_proc):
@@ -293,7 +294,7 @@ class Tracers(object):
                 self.len[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][4]
                 self.mapping[sub_proc::n_proc, :, t_idx, :] = sub_data[i_proc][5]
                 if any(np.array(int_q) == 'curlyA'):
-                    self.curlyA[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][6]
+                    self.curly_A[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][6]
                 if any(np.array(int_q) == 'ee'):
                     self.ee[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][7]
             for i_proc in range(n_proc):
@@ -544,7 +545,7 @@ class TracersParameterClass:
         self.len_max = 500
         self.tol = 1e-2
         self.iter_max = 1e3
-        self.interpolation = 'weighted'
+        self.interpolation = 'trilinear'
         self.trace_sub = 1
         self.int_q = ''
         self.varfile = 'VAR0'
