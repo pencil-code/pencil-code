@@ -264,8 +264,6 @@ module Param_IO
 !
       character(len=fnlen) :: file
 !
-      lnamelist_error = .false.
-!
 !  Set default to shearing sheet if lshear=.true. (even when Sshear==0.).
 !
       if (lshear .and. lforce_shear_bc) bcx(:)='she'
@@ -387,7 +385,6 @@ module Param_IO
       logical, optional, intent(in) :: logging
       character(len=fnlen) :: file = 'run.in'
 !
-      lnamelist_error = .false.
       tstart=impossible
 !
 !  Open namelist file.
