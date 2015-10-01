@@ -1361,7 +1361,7 @@ module Sub
 !
     endsubroutine grad5
 !***********************************************************************
-    subroutine div(f,k,g,iorder)
+    subroutine div(f,k,g,ldiff_fluxes)
 !
 !  Calculate divergence of vector, get scalar.
 !
@@ -1370,36 +1370,29 @@ module Sub
 !  31-aug-07/wlad: adapted for cylindrical and spherical coords
 !
       use Deriv, only: der
-      use General, only: ioptest
+      use General, only: loptest, ranges_dimensional
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: g
       integer :: k
-      integer, optional :: iorder
+      logical, optional :: ldiff_fluxes
 !
-      intent(in)  :: f,k,iorder
+      intent(in)  :: f,k,ldiff_fluxes
       intent(out) :: g
 !
-      integer :: k1,iord
+      integer :: k1,i
+      integer, dimension (dimensionality) :: jrange
       real, dimension (nx) :: tmp
 !
       k1=k-1
 !
-      iord=ioptest(iorder,6)
-      if (iord==2) then
-        call der_2nd(f,k1+1,tmp,1)
-        g=tmp
-        call der_2nd(f,k1+2,tmp,2)
-        g=g+tmp
-        call der_2nd(f,k1+3,tmp,3)
-        g=g+tmp
-      elseif (iord==4) then
-        call der_4th_stag(f,k1+1,tmp,1)
-        g=tmp
-        call der_4th_stag(f,k1+2,tmp,2)
-        g=g+tmp
-        call der_4th_stag(f,k1+3,tmp,3)
-        g=g+tmp
+      if (loptest(ldiff_fluxes)) then
+        call ranges_dimensional(jrange)
+        g=0
+        do i=1,dimensionality
+          call der_4th_stag(f,k1+i,tmp,jrange(i))
+          g=g+tmp
+        enddo
       else
         call der(f,k1+1,tmp,1)
         g=tmp

@@ -44,6 +44,7 @@ module General
   public :: indgen
   public :: file_exists, file_size, delete_file, count_lines
   public :: backskip_to_time
+  public :: ranges_dimensional
 !
   include 'record_types.h'
 !
@@ -3618,4 +3619,32 @@ module General
 !
     endfunction count_lines
 !****************************************************************************
+    subroutine ranges_dimensional(jrange)
+ 
+      use Cdata, only: dimensionality,nxgrid,nygrid,nzgrid
+      
+      integer, dimension(dimensionality), intent(OUT) :: jrange
+
+      if (dimensionality==3) then 
+        jrange=(/1,2,3/)
+      else if (dimensionality==2) then
+        if (nxgrid==1) then
+          jrange=(/2,3/)
+        else if (nygrid==1) then
+          jrange=(/1,3/)
+        else if(nzgrid==1) then
+          jrange=(/1,2/)
+        endif
+      else
+        if (nxgrid/=1) then
+          jrange=(/1/)
+        else if(nygrid/=1) then
+          jrange=(/2/)
+        else if(nzgrid/=1) then
+          jrange=(/3/)
+        endif
+      endif
+    
+    endsubroutine ranges_dimensional
+!****************************************************************************  
 endmodule General
