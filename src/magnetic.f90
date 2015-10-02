@@ -173,6 +173,7 @@ module Magnetic
   logical :: lresi_smagorinsky_cross=.false.
   logical :: lresi_anomalous=.false.
   logical :: lresi_spitzer=.false.
+  logical :: lresi_cspeed=.false.
   logical :: lresi_magfield=.false.
   logical, target, dimension (3) :: lfrozen_bb_bot=(/.false.,.false.,.false./)
   logical, target, dimension (3) :: lfrozen_bb_top=(/.false.,.false.,.false./)
@@ -218,7 +219,7 @@ module Magnetic
   real :: eta=0.0, eta1=0.0, eta_hyper2=0.0, eta_hyper3=0.0
   real :: eta_hyper3_mesh=5.0, eta_spitzer=0., eta_anom=0.0
   real :: eta_int=0.0, eta_ext=0.0, wresistivity=0.01, eta_xy_max=1.0
-  real :: height_eta=0.0, eta_out=0.0
+  real :: height_eta=0.0, eta_out=0.0, eta_cspeed=0.
   real :: tau_aa_exterior=0.0
   real :: sigma_ratio=1.0, eta_width=0.0, eta_z0=1.0, eta_z1=1.0
   real :: eta_xwidth=0.0,eta_ywidth=0.0,eta_zwidth=0.0
@@ -298,7 +299,8 @@ module Magnetic
       lbx_ext_global,lby_ext_global,lbz_ext_global, &
       limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb, &
       lpropagate_borderaa, lremove_meanaz,eta_jump_shock, eta_zshock, &
-      eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z
+      eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, &
+      eta_power_z, eta_cspeed
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -1032,6 +1034,7 @@ module Magnetic
       lresi_smagorinsky_cross=.false.
       lresi_anomalous=.false.
       lresi_spitzer=.false.
+      lresi_cspeed=.false.
 !
       do i=1,nresi_max
         select case (iresistivity(i))
@@ -1137,6 +1140,9 @@ module Magnetic
         case ('spitzer','eta-spitzer')
           if (lroot) print*, 'resistivity: temperature dependent (Spitzer 1969)'
           lresi_spitzer=.true.
+        case ('eta-cspeed')
+          if (lroot) print*, 'resistivity: sound speed dependent SN driven ISM'
+          lresi_cspeed=.true.
         case ('magfield')
           if (lroot) print*, 'resistivity: magnetic field dependent'
           lresi_magfield=.true.
@@ -1825,7 +1831,7 @@ module Magnetic
           lresi_eta_shock.or.lresi_smagorinsky.or. &
           lresi_xdep.or.lresi_ydep.or.lresi_xydep.or. &
           lresi_eta_shock_profz.or.lresi_eta_shock_profr.or. &
-          lresi_smagorinsky_cross.or.lresi_spitzer)) &
+          lresi_smagorinsky_cross.or.lresi_spitzer.or.lresi_cspeed)) &
           lpenc_requested(i_del2a)=.true.
       if (lresi_sqrtrhoeta_const) then
         lpenc_requested(i_jj)=.true.
@@ -1870,7 +1876,7 @@ module Magnetic
           lpenc_requested(i_diva)=.true.
         endif
       endif
-      if (lresi_spitzer) then
+      if (lresi_spitzer.or.lresi_cspeed) then
         lpenc_requested(i_lnTT)=.true.
         if (lweyl_gauge) then
           lpenc_requested(i_jj)=.true.
@@ -3319,6 +3325,25 @@ module Magnetic
         endif
         if (lfirst.and.ldt) then
           diffus_eta=diffus_eta+eta_spitzer*exp(-1.5*p%lnTT)
+        endif
+      endif
+!
+! Resistivity proportional to sound speed for stability of SN Turbulent ISM
+!
+      if (lresi_cspeed) then
+        etatotal = etatotal + eta_cspeed*exp(0.5*p%lnTT)
+        if (lweyl_gauge) then
+          do i=1,3
+            fres(:,i)=fres(:,i)-eta_cspeed*exp(0.5*p%lnTT)*mu0*p%jj(:,i)
+          enddo
+        else
+          do i=1,3
+            fres(:,i)=fres(:,i)+eta_cspeed*exp(0.5*p%lnTT)* &
+                (p%del2a(:,i)+0.5*p%diva*p%glnTT(:,i))
+          enddo
+        endif
+        if (lfirst.and.ldt) then
+          diffus_eta=diffus_eta+eta_cspeed*exp(0.5*p%lnTT)
         endif
       endif
 !
