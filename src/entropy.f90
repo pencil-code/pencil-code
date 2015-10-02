@@ -2376,7 +2376,7 @@ module Energy
       use EquationOfState, only: beta_glnrho_scaled
 !
       if (lheatc_Kconst .or. lheatc_chiconst .or. lheatc_Kprof .or. &
-          tau_cor>0 .or. lheatc_chitherm.or. &
+          tau_cor>0 .or. &
           lheatc_sqrtrhochiconst) lpenc_requested(i_cp1)=.true.
       if (ldt) lpenc_requested(i_cs2)=.true.
       if (lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
@@ -2524,6 +2524,7 @@ module Energy
         endif
       endif
       if (lheatc_chitherm) then
+        lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
