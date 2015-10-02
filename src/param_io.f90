@@ -316,7 +316,7 @@ module Param_IO
 !
       call parallel_close
 !
-      if (lnamelist_error .and. .not. ltolerate_namelist_errors .and. .not. lparam_nml) then
+      if (lnamelist_error .and. .not. ltolerate_namelist_errors) then
         call sample_pars
         call stop_it_if_any (.true., 'read_all_init_pars: Please fix all above WARNINGs for file "'//trim(file)//'"')
       endif

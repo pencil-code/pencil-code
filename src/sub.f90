@@ -6977,7 +6977,7 @@ nameloop: do
       endif
 !
       if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
-        lnamelist_error = .true.
+        if (.not. lparam_nml) lnamelist_error = .true.
         return
       endif
 !
