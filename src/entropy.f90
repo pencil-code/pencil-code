@@ -2441,12 +2441,6 @@ module Energy
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
       endif
-      if (lheatc_chitherm) then
-        lpenc_requested(i_rho1)=.true.
-        lpenc_requested(i_lnTT)=.true.
-        lpenc_requested(i_glnTT)=.true.
-        lpenc_requested(i_del2lnTT)=.true.
-      endif
       if (lheatc_sqrtrhochiconst) then
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_lnTT)=.true.
@@ -2530,6 +2524,7 @@ module Energy
         endif
       endif
       if (lheatc_chitherm) then
+        lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
         lpenc_requested(i_glnrho)=.true.
