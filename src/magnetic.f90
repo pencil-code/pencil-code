@@ -4785,7 +4785,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
           endif
 
           do n=n1,n2; do m=m1,m2
-            call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_aa+j-1),iorder=4)
+            call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_aa+j-1),.true.)
           enddo; enddo
 
         enddo
@@ -7240,7 +7240,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
         idiag_uxbxm=0; idiag_uybxm=0; idiag_uzbxm=0
         idiag_uxbym=0; idiag_uybym=0; idiag_uzbym=0
         idiag_uxbzm=0; idiag_uybzm=0; idiag_uzbzm=0
-	idiag_jxbxm=0; idiag_jybxm=0; idiag_jzbxm=0
+        idiag_jxbxm=0; idiag_jybxm=0; idiag_jzbxm=0
         idiag_jxbym=0; idiag_jybym=0; idiag_jzbym=0
         idiag_jxbzm=0; idiag_jybzm=0; idiag_jzbzm=0
         idiag_fbm=0; idiag_fxbxm=0; idiag_epsM=0; idiag_epsM_LES=0

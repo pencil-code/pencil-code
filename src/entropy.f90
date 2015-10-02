@@ -3491,7 +3491,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:ll,mm=', ll,mm
         endif
 
         do n=n1,n2; do m=m1,m2
-          call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_ss),iorder=4)
+          call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_ss),.true.)
         enddo; enddo
 
       endif
