@@ -276,6 +276,9 @@ module Energy
     endsubroutine calc_pencils_energy
 !***********************************************************************
     subroutine calc_lenergy_pars(f)
+!
+!  Dummy routine.
+!
 
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
 
@@ -359,17 +362,6 @@ module Energy
       call keep_compiler_quiet(f)
 !
     endsubroutine denergy_dt
-!***********************************************************************
-    subroutine calc_lenergy_pars(f)
-!
-!  Dummy routine.
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(in) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_lenergy_pars
 !***********************************************************************
     subroutine get_slices_energy(f,slices)
 !
