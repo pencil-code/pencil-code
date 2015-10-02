@@ -55,6 +55,7 @@ module Sub
   public :: del4v, del4, del2vi_etc
   public :: del6v, del6, del6_other, del6fj, del6fjv
   public :: gradf_upw1st, doupwind
+  public :: matrix2linarray, linarray2matrix
 !
   public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot_add, dot_sub, dot2fj
   public :: dot_mn_vm,div_mn_2tensor,trace_mn,transpose_mn
@@ -87,16 +88,19 @@ module Sub
   public :: smooth, get_smooth_kernel
 !
   public :: ludcmp, lubksb
+  public :: bspline_basis, bspline_interpolation, bspline_precondition
+!
   public :: gij_psi, gij_psi_etc
   public :: xlocation, ylocation, zlocation, location_in_proc, position
   public :: register_report_aux
   public :: fourier_single_mode
   public :: remove_mean,global_mean
   public :: insert
-  public :: find_max_fvec, find_xyrms_fvec
+  public :: find_max_fvec, find_rms_fvec, find_xyrms_fvec
   public :: finalize_aver
-  public :: fseek_pos
+  public :: fseek_pos, parallel_file_exists, parallel_count_lines, read_namelist
   public :: meanyz
+  public :: calc_diffusive_flux, slope_limiter, diff_flux
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -650,6 +654,46 @@ module Sub
       enddo; enddo; enddo
 !
     endsubroutine contract_jk3
+!***********************************************************************
+    subroutine matrix2linarray(mm,aa)
+!
+! converts a 3X3 matrix to an array of length 9
+!
+!18-sep-15/dhruba: coded
+!
+      real,dimension(3,3),intent(in) :: mm
+      real,dimension(9),intent(out) :: aa
+!
+      integer :: i,j,ij,k
+      ij=0
+      do i=1,3
+        do j=1,3
+          ij=ij+1
+          aa(ij) = mm(i,j)
+        enddo
+      enddo
+!
+    endsubroutine matrix2linarray
+!***********************************************************************
+    subroutine linarray2matrix(aa,mm)
+!
+! converts a 3X3 matrix to an array of length 9
+!
+!18-sep-15/dhruba: coded
+!
+      real,dimension(9),intent(in) :: aa
+      real,dimension(3,3),intent(out) :: mm
+!
+      integer :: i,j,ij,k
+      ij=0
+      do i=1,3
+        do j=1,3
+          ij=ij+1
+          mm(i,j) = aa(ij)
+       enddo
+      enddo
+!
+    endsubroutine linarray2matrix
 !***********************************************************************
     subroutine dot_mn_sv(a,b,c)
 !
@@ -1317,7 +1361,7 @@ module Sub
 !
     endsubroutine grad5
 !***********************************************************************
-    subroutine div(f,k,g)
+    subroutine div(f,k,g,ldiff_fluxes)
 !
 !  Calculate divergence of vector, get scalar.
 !
@@ -1326,32 +1370,110 @@ module Sub
 !  31-aug-07/wlad: adapted for cylindrical and spherical coords
 !
       use Deriv, only: der
+      use General, only: loptest, ranges_dimensional
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: g, tmp
-      integer :: k,k1
+      real, dimension (nx) :: g
+      integer :: k
+      logical, optional :: ldiff_fluxes
 !
-      intent(in)  :: f,k
+      intent(in)  :: f,k,ldiff_fluxes
       intent(out) :: g
+!
+      integer :: k1,i
+      integer, dimension (dimensionality) :: jrange
+      real, dimension (nx) :: tmp
 !
       k1=k-1
 !
-      call der(f,k1+1,tmp,1)
-      g=tmp
-      call der(f,k1+2,tmp,2)
-      g=g+tmp
-      call der(f,k1+3,tmp,3)
-      g=g+tmp
+      if (loptest(ldiff_fluxes)) then
+        call ranges_dimensional(jrange)
+        g=0
+        do i=1,dimensionality
+          call der_4th_stag(f,k1+i,tmp,jrange(i))
+          g=g+tmp
+        enddo
+      else
+        call der(f,k1+1,tmp,1)
+        g=tmp
+        call der(f,k1+2,tmp,2)
+        g=g+tmp
+        call der(f,k1+3,tmp,3)
+        g=g+tmp
+      endif
 !
-      if (lspherical_coords) then
+      if (lspherical_coords) &
         g=g+2.*r1_mn*f(l1:l2,m,n,k1+1)+r1_mn*cotth(m)*f(l1:l2,m,n,k1+2)
-      endif
 !
-      if (lcylindrical_coords) then
+      if (lcylindrical_coords) &
         g=g+rcyl_mn1*f(l1:l2,m,n,k1+1)
-      endif
 !
     endsubroutine div
+!***********************************************************************
+    subroutine der_2nd(f,k,df,j)
+
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(nx), intent(out) :: df
+      integer, intent(in) :: j, k
+!
+      if (j==1) then
+        if (nxgrid/=1) then
+          df=(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k))/(2.*dx) 
+        else
+          df=0.
+          if (ip<=5) print*, 'der_2nd: Degenerate case in x-direction'
+        endif
+      elseif (j==2) then
+        if (nygrid/=1) then
+          df=(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k))/(2.*dy)
+        else
+          df=0.
+          if (ip<=5) print*, 'der_2nd: Degenerate case in y-direction'
+        endif
+      elseif (j==3) then
+        if (nzgrid/=1) then
+          df=(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k))/(2.*dz)
+        else
+          df=0.
+          if (ip<=5) print*, 'der_2nd: Degenerate case in z-direction'
+        endif
+      endif
+
+    endsubroutine der_2nd
+!***********************************************************************
+    subroutine der_4th_stag(f,k,df,j)
+
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(nx), intent(out) :: df
+      integer, intent(in) :: j, k
+!
+      if (j==1) then
+        if (nxgrid/=1) then
+          df=(      (f(l1+1:l2+1,m,n,k)-f(l1-2:l2-2,m,n,k) )     &
+               +27.*(f(l1  :l2  ,m,n,k)-f(l1-1:l2-1,m,n,k) ) )/(24.*dx)
+        else
+          df=0.
+          if (ip<=5) print*, 'der_4th_stag: Degenerate case in x-direction'
+        endif
+      elseif (j==2) then
+        if (nygrid/=1) then
+          df=(   -  (f(l1:l2,m+1,n,k)-f(l1:l2,m-2,n,k) )    &
+               +27.*(f(l1:l2,m  ,n,k)-f(l1:l2,m-1,n,k) ) )/(24.*dy) 
+        else
+          df=0.
+          if (ip<=5) print*, 'der_4th_stag: Degenerate case in y-direction'
+        endif
+      elseif (j==3) then
+        if (nzgrid/=1) then
+          df=(   -  (f(l1:l2,m,n+1,k)-f(l1:l2,m,n-2,k) )    &
+               +27.*(f(l1:l2,m,n  ,k)-f(l1:l2,m,n-1,k) ) )/(24.*dz)
+        else
+          df=0.
+          if (ip<=5) print*, 'der_4th_stag: Degenerate case in z-direction'
+        endif
+      endif
+
+    endsubroutine der_4th_stag
 !***********************************************************************
     subroutine div_other(f,g)
 !
@@ -2602,7 +2724,7 @@ module Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3) :: gradf
-      real, dimension (nx,3) :: uu,ff,ugradf
+      real, dimension (nx,3) :: uu,ff,ugradf,grad_f_tmp
       real, dimension (nx) :: tmp
       integer :: j,k
       logical, optional :: upwind,ladd
@@ -2614,7 +2736,8 @@ module Sub
 !
       do j=1,3
 !
-        call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=loptest(upwind))
+        grad_f_tmp = gradf(:,j,:)
+        call u_dot_grad_scl(f,k+j-1,grad_f_tmp,uu,tmp,UPWIND=loptest(upwind))
         if (loptest(ladd)) then
           ugradf(:,j)=ugradf(:,j)+tmp
         else
@@ -2658,7 +2781,7 @@ module Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3) :: gradf
-      real, dimension (nx,3) :: uu,ff,ugradf
+      real, dimension (nx,3) :: uu,ff,ugradf,grad_f_tmp
       real, dimension (nx) :: tmp
       integer :: j,k,iadvec
       logical, optional :: ladd
@@ -2672,7 +2795,8 @@ module Sub
       ladd1=loptest(ladd)
 !
       do j=1,3
-        call u_dot_grad_scl_alt(f,k+j-1,gradf(:,j,:),uu,tmp,iadvec)
+        grad_f_tmp = gradf(:,j,:)
+        call u_dot_grad_scl_alt(f,k+j-1,grad_f_tmp,uu,tmp,iadvec)
         if (ladd1) then
           ugradf(:,j)=ugradf(:,j)+tmp
         else
@@ -3131,6 +3255,7 @@ module Sub
 !  30-sep-97/axel: coded
 !  24-aug-99/axel: allow for logarithmic spacing
 !   9-sep-01/axel: adapted for MPI
+!  10-sep-15/MR  : tout set to t if file is missing and dtout>0
 !
       use Mpicomm, only: mpibcast_real
 !
@@ -3144,6 +3269,7 @@ module Sub
       logical :: exist
       integer, parameter :: nbcast_array=2
       real, dimension(nbcast_array) :: bcast_array
+      double precision :: t0
 !
       if (lroot) then
 !
@@ -3159,19 +3285,16 @@ module Sub
 !  Special treatment when dtout is negative.
 !  Now tout and nout refer to the next snapshopt to be written.
 !
-          if (dtout < 0.) then
-            tout=log10(t)
-          else
+          settout: if (dtout < 0.0) then
+            tout = log10(t)
+          elseif (dtout /= 0.0) then settout
             !  make sure the tout is a good time
-            if (dtout /= 0.) then
-              tout = t - mod(t, dble(abs(dtout))) + dtout
-            else
-              call warning("read_snaptime", &
-                   "Am I writing snapshots every 0 time units? (check " // &
-                   trim(file) // ")" )
-              tout = t
-            endif
-          endif
+            t0 = max(t - dt, 0.0D0)
+            tout = t0 + (dble(dtout) - modulo(t0, dble(dtout)))
+          else settout
+            call warning("read_snaptime", "Writing snapshot every time step. ")
+            tout = 0.0
+          endif settout
           nout=1
           write(lun,*) tout,nout
         endif
@@ -3192,13 +3315,16 @@ module Sub
 !
     endsubroutine read_snaptime
 !***********************************************************************
-    subroutine update_snaptime(file,tout,nout,dtout,t,lout,ch)
+    subroutine update_snaptime(file,tout,nout,dtout,t,lout,ch,nowrite)
 !
 !  Check whether we need to write snapshot; if so, update the snapshot
 !  file (e.g. tsnap.dat). Done by all processors.
 !
 !  30-sep-97/axel: coded
 !  24-aug-99/axel: allow for logarithmic spacing
+!  27-jul-15/MR  : try to fix a strange behavior with gfortran:
+!                  when crashing, a big number of unmotivated snapshots
+!                  is output -> test of NaN in t
 !
       use General, only: itoa
 !
@@ -3208,12 +3334,19 @@ module Sub
       real, intent(in) :: dtout
       double precision, intent(in) :: t
       logical, intent(out) :: lout
+      logical, intent(in), optional :: nowrite
       character (len=intlen), intent(out), optional :: ch
 !
       integer, parameter :: lun = 31
+      logical :: lwrite
       real :: t_sp   ! t in single precision for backwards compatibility
       logical, save :: lfirstcall=.true.
       real, save :: deltat_threshold
+!
+      if (notanumber_0d(t)) then
+        lout=.false.
+        return
+      endif
 !
 !  Use t_sp as a shorthand for either t or lg(t).
 !
@@ -3222,6 +3355,11 @@ module Sub
       else
         t_sp=t
       endif
+!
+!  Check if no writing tout is requested.
+!
+      lwrite = .true.
+      if (present(nowrite)) lwrite = .not. nowrite
 !
 !  Generate a running file number, if requested.
 !
@@ -3256,7 +3394,7 @@ module Sub
 !  the code craches. If the disk is full, however, we need to reset the values
 !  manually.
 !
-        if (lroot) then
+        writenext: if (lroot .and. lwrite) then
           open(lun,FILE=trim(file))
           write(lun,*) tout,nout
           write(lun,*) 'This file is written automatically (routine'
@@ -3265,7 +3403,7 @@ module Sub
           write(lun,*) 'are only read once in the beginning. You may adapt'
           write(lun,*) 'them by hand (eg after a crash).'
           close(lun)
-        endif
+        endif writenext
       else
         lout=.false.
       endif
@@ -3773,6 +3911,7 @@ module Sub
 !  Derivative of smooth unit STEP() function given above (i.e. a bump profile).
 !  Adapt this if you change the STEP() profile, or you will run into
 !  inconsistenies.
+!  MR: perhaps to be merged with step
 !
 !  23-jan-02/wolf: coded
 !
@@ -4102,6 +4241,22 @@ module Sub
 !
     endfunction notanumber_0
 !***********************************************************************
+   function notanumber_0d(f)
+!
+!  Check for NaN or Inf values.
+!  Not well tested with all compilers and options, but avoids false
+!  positives in a case where the previous implementation had problems
+!  Version for scalars
+!
+!  27-Jul-15/MR: adapted
+!
+     logical :: notanumber_0d
+     double precision :: f
+!
+     notanumber_0d = .not. ((f <= huge(f)) .or. (f > huge(0.d0)))
+!
+    endfunction notanumber_0d
+!***********************************************************************
     function notanumber_1(f)
 !
 !  Check for NaN or Inf values.
@@ -4426,7 +4581,7 @@ nameloop: do
 !
 !  5-mar-02/wolf: coded
 !
-      use File_io, only: file_exists
+      use General, only: file_exists
 !
       character (len=*), intent(in) :: fname
 !
@@ -4444,8 +4599,6 @@ nameloop: do
 !  If DELETE is true, delete the file after checking for existence.
 !
 !  26-jul-09/wolf: coded
-!
-      use File_io, only : parallel_file_exists
 !
       logical :: control_file_exists
       character (len=*), intent(in) :: fname
@@ -4471,7 +4624,7 @@ nameloop: do
 !
 !  4-oct-02/wolf: coded
 !
-      use File_io, only : file_exists
+      use General, only : file_exists
 !
       character (len=linelen) :: read_line_from_file
       character (len=*) :: fname
@@ -5446,6 +5599,161 @@ nameloop: do
 !
     endfunction interp1
 !***********************************************************************
+    subroutine bspline_basis(k, x, b)
+!
+!  Computes the values of the non-zero B-spline basis functions
+!  B_{i,k}(j+x) for i = j-k+1, j-k+2, ..., j.  The knot sequence {t_i)
+!  is assumed to be infinite and be integers, i.e., t_i = i for all
+!  integer i.
+!
+!  28-jul-15/ccyang: coded.
+!
+!  Input Arguments
+!      k   Number of knot spans for each basis function, which has order
+!          (k-1).
+!      x   A number in [0,1).
+!  Output Argument
+!      b   An array of k elements, where b(i) = B_{j-k+i,k}(j+x).
+!
+      integer, intent(in) :: k
+      real, intent(in) :: x
+      real, dimension(k), intent(out) :: b
+!
+      integer :: i, j
+!
+!  Work up the order column by column.
+!
+      b = 0.0
+      b(1) = 1.0
+      order: do j = 2, k
+        b(j) = x * b(j-1)
+        do i = j - 1, 2, -1
+          b(i) = (x - real(i-j)) * b(i-1) + (real(i) - x) * b(i)
+        end do
+        b(1) = (1.0 - x) * b(1)
+        b(1:j) = b(1:j) / real(j-1)
+      enddo order
+!
+    endsubroutine bspline_basis
+!***********************************************************************
+    subroutine bspline_interpolation(n, k, f, a, indx, shift)
+!
+!  Uses the B-spline interpolation to periodically shift a regular array
+!  of data nodes.
+!
+!  31-jul-15/ccyang: coded.
+!
+!  Input/Output Argument
+!      f   An array of node data; interpolated after shift on return.
+!  Input Arguments
+!      n   Number of nodes.
+!      k   Number of knot spans for each basis function, which has order
+!          (k-1).
+!      a   Preconditioned by bspline_precondition() and then LU
+!          decomposed by ludcmp().
+!      indx
+!          Index permutations returned by ludcmp().
+!      shift
+!          Shift in unit of array index.
+!
+      integer, intent(in) :: n, k
+      real, dimension(n), intent(inout) :: f
+      real, dimension(n,n), intent(in) :: a
+      integer, dimension(n), intent(in) :: indx
+      real, intent(in) :: shift
+!
+      real, dimension(:), allocatable, save :: bk
+      integer :: k_old = -1
+      real :: shift_old = 0.0
+!
+      real, dimension(n) :: b, c
+      integer :: i, j
+!
+!  Solve for the coefficients for the B-spline basis functions.
+!
+      c = f
+      call lubksb(a, indx, c)
+!
+!  Find the values of the basis functions at the interpolation points.
+!
+      j = ceiling(shift - 0.5)
+      basis: if (k /= k_old .or. shift /= shift_old) then
+        alloc: if (k /= k_old) then
+          if (allocated(bk)) deallocate(bk)
+          allocate(bk(k))
+        endif alloc
+        call bspline_basis(k, 0.5 - shift + real(j), bk)
+        k_old = k
+        shift_old = shift
+      endif basis
+      b = 0.0
+      b(1:k) = bk
+!
+!  Make the interpolation.
+!
+      j = k + j
+      do i = 1, n
+        f(i) = sum(cshift(b, j - i) * c)
+      enddo
+!
+    endsubroutine bspline_interpolation
+!***********************************************************************
+    subroutine bspline_precondition(n, k, a)
+!
+!  Sets up the linear system for the coefficients of the B-spline basis
+!  functions, assuming periodic boundary conditions.  The linear system
+!  reads
+!
+!      A x = f,
+!
+!  where
+!          [ B_{1,k}(0.5)   B_{2,k}(0.5)   B_{3,k}(0.5)   ... B_{n,k}(0.5)   ]
+!      A = [ B_{1,k}(1.5)   B_{2,k}(1.5)   B_{3,k}(1.5)   ... B_{n,k}(1.5)   ],
+!          [ ...            ...            ...            ... ...            ]
+!          [ B_{1,k}(n-0.5) B_{2,k}{n-0.5) B_{3,k}(n-0.5) ... B_{n,k}(n-0.5) ]
+!
+!      x = [ alpha_1, alpha_2, alpha_3, ..., alpha_n ]^T,
+!
+!  is the coefficients,
+!
+!      f = [ f_1, f_2, f_3, ..., f_n ],
+!
+!  is the node data.  The B-spline interpolation is then given by
+!
+!      f(x) = sum_i B_{i,k)(x)
+!
+!  with
+!
+!      f(i-0.5) = f_i, i = 1, 2, ..., n.
+!
+!  28-jul-15/ccyang: coded.
+!
+!  Input Arguments
+!      n   Number of nodes.
+!      k   Number of knot spans for each B-spline basis function, which
+!          has order (k-1).
+!  Output Argument
+!      a   The square matrix for the linear system.
+!
+      integer, intent(in) :: n, k
+      real, dimension(n,n), intent(out) :: a
+!
+      real, dimension(n) :: b
+      integer :: i
+!
+!  Find the values of the B-spline basis functions.
+!
+      b = 0.0
+      call bspline_basis(k, 0.5, b(1:k))
+!
+!  Cyclically assign the basis functions into the square matrix.
+!
+      do i = 1, n
+        a(i,:) = cshift(b, k - i)
+      enddo
+!
+    endsubroutine bspline_precondition
+!***********************************************************************
     subroutine ludcmp(a,indx)
 !
 !  25-jun-09/rplasson: coded (adapted from numerical recipe)
@@ -6364,6 +6672,27 @@ nameloop: do
 !
     endfunction find_max_fvec
 !***********************************************************************
+    real function find_rms_fvec(f, iv)
+!
+!  Find the root-mean-square of the modulus of a vector field.
+!
+!  25-aug-2015/ccyang: coded
+!
+      use Mpicomm, only: mpiallreduce_sum
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      integer, intent(in) :: iv
+!
+      real :: s1, s
+!
+!  Find the rms.
+!
+      s1 = sum(f(l1:l2,m1:m2,n1:n2,iv:iv+2)**2)
+      call mpiallreduce_sum(s1, s)
+      find_rms_fvec = sqrt(s / real(nwgrid))
+!
+    endfunction find_rms_fvec
+!***********************************************************************
     function find_xyrms_fvec(f, iv) result(rms)
 !
 !  Find the rms magnitude of a vector field in each z.
@@ -6555,5 +6884,175 @@ nameloop: do
       endif
 !
     endsubroutine fseek_pos
+!***********************************************************************
+    function parallel_count_lines(file,ignore_comments)
+!
+!  Determines in parallel the number of lines in a file.
+!
+!  Returns:
+!  * Integer containing the number of lines in a given file
+!  * -1 on error
+!
+!  23-mar-10/Bourdin.KIS: implemented
+!  26-aug-13/MR: optional parameter ignore_comments added
+!  28-May-2015/Bourdin.KIS: reworked
+!
+      use General, only: count_lines
+      use Mpicomm, only: mpibcast_int
+
+      integer :: parallel_count_lines
+      character (len=*), intent(in) :: file
+      logical, optional, intent(in) :: ignore_comments
+!
+      if (lroot) parallel_count_lines = count_lines(file,ignore_comments)
+      call mpibcast_int(parallel_count_lines)
+!
+    endfunction parallel_count_lines
+!***********************************************************************
+    function parallel_file_exists(file, delete)
+!
+!  Determines in parallel if a given file exists.
+!  If delete is true, deletes the file.
+!
+!  Returns:
+!  * Integer containing the number of lines in a given file
+!  * -1 on error
+!
+!  23-mar-10/Bourdin.KIS: implemented
+!
+      use General, only: file_exists, loptest
+      use Mpicomm, only: mpibcast_logical
+
+      character (len=*) :: file
+      logical :: parallel_file_exists
+      logical, optional :: delete
+!
+      ! Let the root node do the dirty work
+      if (lroot) parallel_file_exists = file_exists(file,loptest(delete))
+!
+      call mpibcast_logical(parallel_file_exists)
+!
+    endfunction parallel_file_exists
+!***********************************************************************
+    subroutine read_namelist(reader,name,lactive)
+!
+!  Encapsulates reading of pars + error handling.
+!
+!  31-oct-13/MR: coded
+!  16-dec-13/MR: handling of optional ierr corrected
+!  18-dec-13/MR: changed handling of ierr to avoid compiler trouble
+!  19-dec-13/MR: changed ierr into logical lierr to avoid compiler trouble
+!  11-jul-14/MR: end-of-file caught to avoid program crash when a namelist is missing
+!  18-aug-15/PABourdin: reworked to simplify code and display all errors at once
+!  19-aug-15/PABourdin: renamed from 'read_pars' to 'read_namelist'
+!
+      use File_io, only: parallel_rewind, find_namelist
+      use General, only: loptest, itoa
+      use Messages, only: warning
+!
+      interface
+        subroutine reader(iostat)
+          integer, intent(out) :: iostat
+        endsubroutine reader
+      endinterface
+!
+      character(len=*), intent(in) :: name
+      logical, optional, intent(in) :: lactive
+!
+      integer :: ierr
+      character(len=5) :: type, suffix
+!
+      if (.not. loptest (lactive, .true.)) return
+!
+      if (lstart .or. lparam_nml) then
+        type = 'init'
+      else
+        type = 'run'
+      endif
+      if (name /= '') type = '_'//type
+      suffix = '_pars'
+      if (name == 'initial_condition_pars') then
+        type = ''
+        suffix = ''
+      endif
+!
+      if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
+        lnamelist_error = .true.
+        return
+      endif
+!
+      call reader(ierr)
+      if (ierr /= 0) then
+        lnamelist_error = .true.
+        if (lroot .and. (ierr == -1)) then
+          call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)//'" is missing!')
+        elseif (lroot) then
+          call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)// &
+              '" has an error ('//trim(itoa(ierr))//')!')
+        endif
+      endif
+!
+      call parallel_rewind
+!
+    endsubroutine read_namelist
+!***********************************************************************
+    subroutine calc_diffusive_flux(diffs,c_char,islope_limiter,h_slope_limited,flux)
+!
+!  23-sep-15/MR,joern,fred,petri: coded
+!
+      real, dimension(:),intent(in ):: diffs,c_char
+      real,              intent(in) :: h_slope_limited
+      character(LEN=*),  intent(in) :: islope_limiter
+      real, dimension(:),intent(out):: flux
+
+      real, dimension(size(diffs)-1) :: slope
+      real, dimension(size(diffs)-2) :: phi
+      integer :: len
+
+      len=size(diffs)
+
+      call slope_limiter(diffs(2:),diffs(:len-1),slope,islope_limiter)
+      flux = diffs(2:len-1) - 0.5*(slope(2:) + slope(1:len-2))
+
+      call diff_flux(h_slope_limited, diffs(2:len-1), flux, phi)
+      flux = -0.5*c_char*phi*flux
+if (notanumber(c_char)) then
+   print*, 'CALC_DIFFUSIVE_FLUX: c_char=', len
+   stop
+endif 
+          
+    endsubroutine calc_diffusive_flux
+!***********************************************************************
+    elemental subroutine slope_limiter(diff_right,diff_left,limited,type)
+
+      real, intent(OUT):: limited
+      real, intent(IN) :: diff_left, diff_right
+
+      character(LEN=*), intent(IN) :: type
+
+      select case (type)
+      case ('minmod') 
+        limited=min(2.*abs(diff_left),2.*abs(diff_right), &
+                    0.5*abs(diff_right+diff_left))
+
+      case ('superbee')
+      case ('')
+      case default
+      end select
+    
+    endsubroutine slope_limiter
+!***********************************************************************
+    elemental subroutine diff_flux(h, diff_right, diff_lr, phi)
+    
+      real, intent(IN)  :: h, diff_lr, diff_right
+      real, intent(OUT) :: phi
+
+      if (diff_right*diff_lr>0.) then
+        phi=max(0.,1.+h*(diff_lr/diff_right-1.)) 
+      else
+        phi=0.
+      endif
+
+    endsubroutine diff_flux
 !***********************************************************************
 endmodule Sub

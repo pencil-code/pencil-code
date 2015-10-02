@@ -165,7 +165,7 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use File_io, only: parallel_file_exists
+      use Sub, only: parallel_file_exists
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -369,7 +369,7 @@ module Special
 !  21-oct-2010/Bourdin.KIS: coded
 !
       use Mpicomm, only: mpibcast_real
-      use File_io, only: file_exists
+      use General, only: file_exists
 !
       integer :: i
       integer, parameter :: unit=12
@@ -450,7 +450,8 @@ module Special
 !  15-sept-2010/Bourdin.KIS: coded
 !
       use Mpicomm, only: mpibcast_int, mpibcast_real
-      use File_io, only: parallel_file_exists, file_size
+      use General, only: file_size
+      use Sub, only: parallel_file_exists
 !
       character(len=*), intent(in) :: filename
       real, dimension(mz), intent(out) :: profile
@@ -687,12 +688,12 @@ module Special
 !***********************************************************************
     subroutine read_special_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "../parallel_unit.h"
 !
-      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+      iostat = 0
+      read(parallel_unit, NML=special_init_pars)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -706,12 +707,12 @@ module Special
 !***********************************************************************
     subroutine read_special_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "../parallel_unit.h"
 !
-      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
+      iostat = 0
+      read(parallel_unit, NML=special_run_pars)
 !
       if (Kgpara /= 0.0) then
         call warning('calc_heatcond_grad', &
@@ -1533,7 +1534,7 @@ module Special
 !  07-jan-2011/Bourdin.KIS: coded
 !
       use Mpicomm, only: mpisend_int, mpirecv_int, mpisend_real, mpirecv_real
-      use File_io, only: file_exists
+      use General, only: file_exists
 !
       real, intent(in) :: time
       character(len=*), intent(in) :: filename
@@ -2978,7 +2979,7 @@ module Special
 !***********************************************************************
     subroutine compute_gran_level(level)
 !
-      use File_io, only: file_exists
+      use General, only: file_exists
 !
       integer, intent(in) :: level
       logical :: lstop=.false.

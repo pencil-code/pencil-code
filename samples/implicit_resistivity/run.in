@@ -11,3 +11,5 @@
   iresistivity = 'eta-const', eta = .1
   limplicit_resistivity = .true.
 /
+&implicit_diffusion_run_pars
+/

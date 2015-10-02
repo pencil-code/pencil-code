@@ -26,6 +26,7 @@ module Equ
 !  12-may-12/MR: call of density_before_boundary added for boussinesq;
 !                moved call of timing after call of anelastic_after_mn
 !  26-aug-13/MR: added call of diagnostic for imaginary parts
+!   9-jun-15/MR: call of gravity_after_boundary added
 !
       use Boundcond
       use BorderProfiles, only: calc_pencils_borderprofiles
@@ -75,7 +76,7 @@ module Equ
       use Testfield
       use Testflow
       use Testscalar
-      use Viscosity, only: calc_viscosity, calc_pencils_viscosity
+      use Viscosity, only: calc_viscosity, calc_pencils_viscosity, viscosity_after_boundary
 !
       logical :: early_finalize
       real, dimension (mx,my,mz,mfarray) :: f
@@ -278,9 +279,22 @@ module Equ
       dyndiff: if (ldyndiff_urmsmxy) then
         ucz = find_xyrms_fvec(f, iuu)
       else if (ldynamical_diffusion) then dyndiff
-        uc = find_max_fvec(f, iuu)
+        uc = find_rms_fvec(f, iuu)
         call set_dyndiff_coeff(uc)
       endif dyndiff
+!
+!  Calculte the characteristic velocity
+!  for slope limited diffusion
+!
+      if (lslope_limit_diff.and.lfirst) then
+        f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=0.
+        call update_char_vel_energy(f)
+        call update_char_vel_magnetic(f)
+        call update_char_vel_hydro(f)
+        f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=sqrt(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
+
+      endif
+   
 !
 !  For calculating the pressure gradient directly from the pressure (which is
 !  derived from the basic thermodynamical variables), we need to fill in the
@@ -322,9 +336,11 @@ module Equ
 !AB: yes, we should rename these step by step
 !AB: so calc_polymer_after_boundary -> polymer_after_boundary
       if (lhydro)                 call calc_lhydro_pars(f)
+      if (lviscosity)             call viscosity_after_boundary(f)
       if (lmagnetic)              call calc_lmagnetic_pars(f)
 !--   if (lmagnetic)              call magnetic_after_boundary(f)
       if (lenergy)                call calc_lenergy_pars(f)
+      if (lgrav)                  call gravity_after_boundary(f)
       if (lforcing_cont)          call calc_lforcing_cont_pars(f)
       if (lpolymer)               call calc_polymer_after_boundary(f)
       if (ltestscalar)            call testscalar_after_boundary(f)

@@ -25,7 +25,7 @@ module ImplicitDiffusion
 !
   character(len=6) :: implicit_method = 'full'
 !
-  namelist /implicit_diffusion_pars/ implicit_method
+  namelist /implicit_diffusion_run_pars/ implicit_method
 !
 !  Module-specific variables
 !
@@ -41,24 +41,23 @@ module ImplicitDiffusion
 !  PUBLIC ROUTINES GO BELOW HERE.
 !***********************************************************************
 !***********************************************************************
-    subroutine read_implicit_diffusion_pars(iostat)
+    subroutine read_implicit_diff_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
-      read(parallel_unit, NML=implicit_diffusion_pars, iostat=iostat)
+      read(parallel_unit, NML=implicit_diffusion_run_pars, iostat=iostat)
 !
-    endsubroutine read_implicit_diffusion_pars
+    endsubroutine read_implicit_diff_run_pars
 !***********************************************************************
-    subroutine write_implicit_diffusion_pars(unit)
+    subroutine write_implicit_diff_run_pars(unit)
 !
       integer, intent(in) :: unit
 !
-      write(unit, nml=implicit_diffusion_pars)
+      write(unit, nml=implicit_diffusion_run_pars)
 !
-    endsubroutine write_implicit_diffusion_pars
+    endsubroutine write_implicit_diff_run_pars
 !***********************************************************************
     subroutine integrate_diffusion(get_diffus_coeff, f, ivar1, ivar2)
 !

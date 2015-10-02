@@ -14,7 +14,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2; uglnTT; ugTT; cvspec(nchemspec); fpres(3); tcond
+! PENCILS PROVIDED Ma2; uglnTT; ugTT; cvspec(nchemspec); fpres(3); tcond; sglnTT(3)
 !
 !***************************************************************
 module Energy
@@ -43,6 +43,7 @@ module Energy
   logical :: lheatc_chiconst=.false.,lheatc_chiconst_accurate=.false.
   logical :: lheatc_hyper3=.false.
   integer, parameter :: nheatc_max=3
+  logical :: lenergy_slope_limited=.false.
   character (len=labellen), dimension(ninit) :: initlnTT='nothing'
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=intlen) :: iinit_str
@@ -94,7 +95,7 @@ module Energy
 !
   contains
 !***********************************************************************
-    subroutine register_energy()
+    subroutine register_energy
 !
 !  initialise variables which should know that we solve an energy
 !  equation: ilnTT, etc; increase nvar accordingly
@@ -244,10 +245,9 @@ module Energy
 !***********************************************************************
     subroutine read_energy_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=entropy_init_pars, IOSTAT=iostat)
 !
@@ -263,10 +263,9 @@ module Energy
 !***********************************************************************
     subroutine read_energy_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=entropy_run_pars, IOSTAT=iostat)
 !
@@ -359,7 +358,7 @@ module Energy
 !
     endsubroutine init_energy
 !***********************************************************************
-    subroutine pencil_criteria_energy()
+    subroutine pencil_criteria_energy
 !
 !  All pencils that the Energy module depends on are specified here.
 !
@@ -552,6 +551,10 @@ module Energy
         call fatal_error('calc_pencils_energy', &
                   'calculation of pressure force not yet implemented'//&
                   ' for temperature_ionization')
+! sglnTT 
+      if (lpencil(i_sglnTT)) &
+        call fatal_error('calc_pencils_energy', &
+            'Pencil sglnTT not yet implemented for temperature_ionization')
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
@@ -722,6 +725,10 @@ module Energy
 !
       call keep_compiler_quiet(f)
 !
+      if (lenergy_slope_limited) &
+        call fatal_error('calc_lenergy_pars', &
+                         'Slope-limited diffusion not implemented')
+
     endsubroutine calc_lenergy_pars
 !***********************************************************************
     subroutine calc_heatcond_constchi(df,p)
@@ -972,10 +979,25 @@ module Energy
 !
     endsubroutine
 !***********************************************************************
-    subroutine expand_shands_energy()
+    subroutine expand_shands_energy
 !
 !  Presently dummy, for possible use
 !
     endsubroutine expand_shands_energy
+!***********************************************************************
+    subroutine update_char_vel_energy(f)
+!
+! TB implemented.
+!
+!   25-sep-15/MR+joern: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+
+      call keep_compiler_quiet(f)
+
+      call warning('update_char_vel_energy', &
+           'characteristic velocity not yet implemented for temperature_ionization')
+
+    endsubroutine update_char_vel_energy
 !***********************************************************************
 endmodule Energy

@@ -28,5 +28,11 @@
   initxxp='random'
   initvvp='follow-gas'
   lparticlemesh_cic=T,lcheck_exact_frontier=T
-  qbym=1.
+  dust_charge=1.,rhodust=1e3
+/
+&particles_radius_init_pars
+  initap='constant'
+  ap0=20e-4,40e-4,80e-4,160e-4,320e-4
+  lsweepup_par=F
+  rhopmat=1e3
 /

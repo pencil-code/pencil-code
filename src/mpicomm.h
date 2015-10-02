@@ -22,11 +22,10 @@
   public :: mpiallreduce_sum_arr, mpiallreduce_sum_arr2
   public :: mpiallreduce_or
   public :: mpireduce_or, mpireduce_and
-  public :: mpibcast_real, mpibcast_logical
+  public :: mpibcast, mpibcast_real, mpibcast_logical
   public :: mpibcast_real_arr, mpibcast_cmplx_arr_dbl, mpibcast_cmplx
   public :: mpibcast_double
   public :: mpibcast_int, mpibcast_char, mpireduce_max_scl_int
-  include "parallel_unit_broadcast_header.h"
   public :: mpigather_xy, mpimerge_1d, mpigather_z, &
             mpigather_and_out_cmplx, mpigather_and_out_real
   public :: mpiwtime, mpiwtick

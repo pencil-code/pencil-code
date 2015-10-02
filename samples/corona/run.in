@@ -33,7 +33,7 @@
   nu_shock=1.
   nu=1e-3
 /
-&special_run_pars 
+&special_run_pars
   K_spitzer=4e-10 ! Spitzer heat conduction
   K_iso=1.e-4     ! isotropic heat conduction proptional to |grad(T)|
 !
@@ -41,10 +41,10 @@
 !  hcond2=1.0e-1
 !  hcond3=1.0e-1
 !
-  tdown=0.1    ! Newton cooling strength
-  allp=1.5     !   and decay 
-  cool_rtv=1.  ! Radiative loss
-  bmdi = 0.5   ! Refresh magnetogram
+  tdown=0.1       ! Newton cooling strength
+  allp=1.5        ! Newton cooling decay half-time
+  cool_rtv=1.     ! Radiative losses
+  b_tau = 0.5     ! Refresh magnetogram
 !
   lgranulation=T
 !

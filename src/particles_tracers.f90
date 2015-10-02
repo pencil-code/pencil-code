@@ -28,6 +28,7 @@ module Particles
   implicit none
 !
   include 'particles.h'
+  include 'particles_common.h'
 !
   real :: xp0=0.0, yp0=0.0, zp0=0.0, tausp=0.0
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
@@ -720,10 +721,9 @@ module Particles
 !***********************************************************************
     subroutine read_particles_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=particles_init_pars, IOSTAT=iostat)
 !
@@ -739,10 +739,9 @@ module Particles
 !***********************************************************************
     subroutine read_particles_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=particles_run_pars, IOSTAT=iostat)
 !

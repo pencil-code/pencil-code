@@ -32,6 +32,7 @@ module Particles
   implicit none
 !
   include 'particles.h'
+  include 'particles_common.h'
 !
   complex, dimension (7) :: coeff=(0.0,0.0)
   real, target, dimension (npar_species) :: tausp_species=0.0
@@ -93,6 +94,7 @@ module Particles
   logical :: ldraglaw_epstein=.true., ldraglaw_epstein_stokes_linear=.false.
   logical :: ldraglaw_simple=.false.
   logical :: ldraglaw_steadystate=.false., ldraglaw_variable=.false.
+  logical :: ldraglaw_purestokes=.false. 
   logical :: ldraglaw_epstein_transonic=.false.
   logical :: ldraglaw_eps_stk_transonic=.false.
   logical :: ldraglaw_variable_density=.false.
@@ -109,7 +111,8 @@ module Particles
   logical :: lparticle_gravity=.true.
   logical :: lcylindrical_gravity_par=.false.
   logical :: lpscalar_sink=.false.
-  logical :: lsherwood_const=.true.
+  logical :: lsherwood_const=.false.
+  logical :: lbubble=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -134,9 +137,11 @@ module Particles
   logical :: l_shell=.false.       !using special/shell.f90 for gas velocities
 !
   real, dimension(3) :: uup_shared=0
-  real :: turnover_shared=0
+  real :: turnover_shared=0, nu_draglaw=0.
   logical :: vel_call=.false., turnover_call=.false.
-  logical :: lreassign_strat_rhom=.true.
+  logical :: lreassign_strat_rhom=.true., lnu_draglaw=.false.
+!
+  logical :: lcdtp_shear = .true.
 !
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
@@ -162,6 +167,7 @@ module Particles
       ldraglaw_eps_stk_transonic, dustdensity_powerlaw, rad_sphere, pos_sphere, ldragforce_stiff, &
       a_ellipsoid, b_ellipsoid, c_ellipsoid, pos_ellipsoid, &
       ldraglaw_steadystate, tstart_liftforce_par, &
+      ldraglaw_purestokes,& 
       tstart_brownian_par, tstart_sink_par, &
       lbrownian_forces,lthermophoretic_forces,lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
@@ -196,6 +202,7 @@ module Particles
       ldraglaw_epstein_transonic, lcheck_exact_frontier, &
       ldraglaw_eps_stk_transonic, ldragforce_stiff, &
       ldraglaw_variable_density, ldraglaw_steadystate, tstart_liftforce_par, &
+      ldraglaw_purestokes,& 
       tstart_brownian_par, tstart_sink_par, &
       lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo, interp_pol_TT, interp_pol_rho, &
@@ -211,7 +218,7 @@ module Particles
       thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, &
       lcommunicate_np, lcylindrical_gravity_par, &
       l_shell, k_shell, lparticlemesh_pqs_assignment, pscalar_sink_rate, &
-      lpscalar_sink, lsherwood_const
+      lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw,lbubble
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -219,7 +226,7 @@ module Particles
   integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0
   integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0, idiag_ekinp=0
   integer :: idiag_vpxmax=0, idiag_vpymax=0, idiag_vpzmax=0, idiag_vpmax=0
-  integer :: idiag_vpzmin=0
+  integer :: idiag_vpxmin=0, idiag_vpymin=0, idiag_vpzmin=0
   integer :: idiag_vpxvpym=0, idiag_vpxvpzm=0, idiag_vpyvpzm=0
   integer :: idiag_rhopvpxm=0, idiag_rhopvpym=0, idiag_rhopvpzm=0
   integer :: idiag_rhopvpxt=0, idiag_rhopvpyt=0, idiag_rhopvpzt=0
@@ -322,6 +329,7 @@ module Particles
 !
       real :: rhom
       integer :: ierr, jspec
+      logical, pointer :: lshearadvection_as_shift
       real, pointer :: reference_state_mass
 !
 !  This module is incompatible with particle block domain decomposition.
@@ -333,6 +341,14 @@ module Particles
         endif
         call fatal_error('initialize_particles','')
       endif
+!
+!  Check if shear advection is on and decide if it needs to be included in the timestep condition.
+!
+      shear: if (lshear) then
+        call get_shared_variable('lshearadvection_as_shift', lshearadvection_as_shift)
+        lcdtp_shear = .not. lshearadvection_as_shift
+        nullify(lshearadvection_as_shift)
+      endif shear
 !
 !  The inverse stopping time is needed for drag force and collisional cooling.
 !
@@ -510,6 +526,7 @@ module Particles
       if (ldraglaw_epstein_transonic    .or.&
           ldraglaw_eps_stk_transonic    .or.&
           ldraglaw_steadystate          .or.&
+          ldraglaw_purestokes          .or.&
           ldraglaw_simple) then
         ldraglaw_epstein=.false.
       endif
@@ -583,7 +600,7 @@ module Particles
       interp%lgradTT=lthermophoretic_forces .and. (temp_grad0(1)==0.0) &
           .and. (temp_grad0(2)==0.0) .and. (temp_grad0(3)==0.0)
       interp%lrho=lbrownian_forces.or.ldraglaw_steadystate &
-          .or. lthermophoretic_forces
+          .or. lthermophoretic_forces .or. ldraglaw_purestokes
       interp%lnu=lchemistry
       interp%lpp=lparticles_chemistry
       interp%lspecies=lparticles_surfspec
@@ -813,6 +830,19 @@ module Particles
               fp(k,izp)=zp3
             endif
           enddo
+!
+        case ('random-constz')
+          if (lroot) print*, 'init_particles: Random particle positions'
+          do k=1,npar_loc
+            if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
+            if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+          enddo
+          if (nxgrid/=1) &
+              fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
+          if (nygrid/=1) &
+              fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
+          if (nzgrid/=1) &
+              fp(1:npar_loc,izp)=zp0
 !
         case ('random')
           if (lroot) print*, 'init_particles: Random particle positions'
@@ -2292,11 +2322,9 @@ module Particles
                 fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
           elseif (lparticlemesh_tsc) then
             if (linterpolate_spline) then
-              call interpolate_quadratic_spline(f,ifgx,ifgz, &
-                  fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
+              call interpolate_quadratic_spline(f,ifgx,ifgz,fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
             else
-              call interpolate_quadratic(f,ifgx,ifgz, &
-                  fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
+              call interpolate_quadratic(f,ifgx,ifgz,fp(k,ixp:izp),vvp,ineargrid(k,:),0,ipar(k))
             endif
           else
             vvp=f(ix0,iy0,iz0,ifgx:ifgz)
@@ -2695,8 +2723,9 @@ module Particles
         if (idiag_vpxmax/=0) call max_par_name(fp(1:npar_loc,ivpx),idiag_vpxmax)
         if (idiag_vpymax/=0) call max_par_name(fp(1:npar_loc,ivpy),idiag_vpymax)
         if (idiag_vpzmax/=0) call max_par_name(fp(1:npar_loc,ivpz),idiag_vpzmax)
-        if (idiag_vpzmin/=0) call max_par_name(-fp(1:npar_loc,ivpz), &
-            idiag_vpzmin,lneg=.true.)
+        if (idiag_vpxmin/=0) call max_par_name(-fp(1:npar_loc,ivpx),idiag_vpxmin,lneg=.true.)
+        if (idiag_vpymin/=0) call max_par_name(-fp(1:npar_loc,ivpy),idiag_vpymin,lneg=.true.)
+        if (idiag_vpzmin/=0) call max_par_name(-fp(1:npar_loc,ivpz),idiag_vpzmin,lneg=.true.)
         if (idiag_eccpxm/=0) call sum_par_name( &
             sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2)*fp(1:npar_loc,ixp)/gravr- &
             sum(fp(1:npar_loc,ixp:izp)*fp(1:npar_loc,ivpx:ivpz),dim=2)* &
@@ -3036,7 +3065,7 @@ module Particles
                 dt1_advpx=0.0
               endif
               if (nygrid/=1) then
-                if (lshear) then
+                if (lshear .and. lcdtp_shear) then
                   dt1_advpy=(-qshear*Omega*fp(k,ixp)+abs(fp(k,ivpy)))*dy_1(iy0)
                 else
                   dt1_advpy=abs(fp(k,ivpy))*dy_1(iy0)
@@ -3090,13 +3119,16 @@ module Particles
 !
       real, dimension (nx) :: dt1_drag = 0.0, dt1_drag_gas, dt1_drag_dust
       real, dimension (nx) :: drag_heat
-      real, dimension (3) :: dragforce, liftforce, bforce,thermforce, uup
+      real, dimension (3) :: dragforce, liftforce, bforce,thermforce, uup, xxp
+      real, dimension (3) :: adv_der_uup = 0.0
       real, dimension(:), allocatable :: rep,stocunn
+      real :: added_mass_beta = 0.0
       real :: rho1_point, tausp1_par, up2
       real :: weight, weight_x, weight_y, weight_z
       real :: rhop_swarm_par, dxp, dyp, dzp, volume_cell
       integer :: k, l, ix0, iy0, iz0, ierr, irad
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
+      integer, dimension (3) :: inear
       logical :: lnbody, lsink
       real, pointer :: pscalar_diff, ap0(:)
       real :: gas_consentration, Sherwood, mass_trans_coeff, lambda_tilde
@@ -3129,12 +3161,10 @@ module Particles
           allocate(rep(k1_imn(imn):k2_imn(imn)))
 !
           if (.not.allocated(rep)) then
-            call fatal_error('dvvp_dt_pencil','unable to allocate sufficient'//&
-              ' memory for rep')
+            call fatal_error('dvvp_dt_pencil','unable to allocate sufficient memory for rep')
           endif
           if (.not. interp%luu) then
-            call fatal_error('dvvp_dt_pencil','you must set lnostore_uu=F'//&
-              ' when rep is to be calculated')
+            call fatal_error('dvvp_dt_pencil','you must set lnostore_uu=F when rep is to be calculated')
           endif
 !
           call calc_pencil_rep(fp,rep)
@@ -3142,12 +3172,11 @@ module Particles
 !
 !  Precalculate Stokes-Cunningham factor (only if not ldraglaw_simple)
 !
-        if (.not.ldraglaw_simple) then
+        if (.not. (ldraglaw_simple .or. ldraglaw_purestokes)) then
           if (ldraglaw_steadystate.or.lbrownian_forces) then
             allocate(stocunn(k1_imn(imn):k2_imn(imn)))
             if (.not.allocated(stocunn)) then
-              call fatal_error('dvvp_dt_pencil','unable to allocate sufficient'//&
-                'memory for stocunn')
+              call fatal_error('dvvp_dt_pencil','unable to allocate sufficient memory for stocunn')
             endif
 !
             call calc_stokes_cunningham(fp,stocunn)
@@ -3185,8 +3214,7 @@ module Particles
               elseif (ivis=='nu-therm') then
                 nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))
               elseif (ivis=='mu-therm') then
-                nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))&
-                  /interp_rho(k1_imn(imn):k2_imn(imn))
+                nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))/interp_rho(k1_imn(imn):k2_imn(imn))
               else
                 call fatal_error('dvvp_dt_pencil','No such ivis!')
               endif
@@ -3209,7 +3237,7 @@ module Particles
             if (lparticles_sink) then
               if (fp(k,iaps)>0.0) lsink=.true.
             endif
-            if ((.not.lnbody).and.(.not.lsink)) then
+            if ((.not. lnbody) .and. (.not. lsink)) then
               ix0=ineargrid(k,1)
               iy0=ineargrid(k,2)
               iz0=ineargrid(k,3)
@@ -3219,9 +3247,7 @@ module Particles
               if (lpenc_requested(i_npvz) .or. lpenc_requested(i_np_rad)) then
                 call get_shared_variable('ap0',ap0,ierr)
                 do irad=1,npart_radii
-                  if (&
-                      (fp(k,iap) > ap0(irad)*0.99) .and. &
-                      (fp(k,iap) < ap0(irad)*1.01)) then
+                  if ((fp(k,iap) > ap0(irad)*0.99) .and. (fp(k,iap) < ap0(irad)*1.01)) then
                     p%npvz(ix0-nghost,irad)=p%npvz(ix0-nghost,irad)+fp(k,ivpz)
                     p%np_rad(ix0-nghost,irad)=p%np_rad(ix0-nghost,irad)+1.
                   endif
@@ -3231,18 +3257,17 @@ module Particles
 !  The interpolated gas velocity is either precalculated, and stored in
 !  interp_uu, or it must be calculated here.
 !
-              if (.not.interp%luu) then
+              if (.not. interp%luu) then
                 if (lhydro) then
+                  inear = ineargrid(k,:)
+                  xxp = fp(k,ixp:izp)
                   if (lparticlemesh_cic) then
-                    call interpolate_linear(f,iux,iuz, &
-                      fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
+                    call interpolate_linear(f,iux,iuz,xxp,uup,inear,0,ipar(k))
                   elseif (lparticlemesh_tsc) then
                     if (linterpolate_spline) then
-                      call interpolate_quadratic_spline(f,iux,iuz, &
-                        fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
+                      call interpolate_quadratic_spline(f,iux,iuz,xxp,uup,inear,0,ipar(k))
                     else
-                      call interpolate_quadratic(f,iux,iuz, &
-                        fp(k,ixp:izp),uup,ineargrid(k,:),0,ipar(k))
+                      call interpolate_quadratic(f,iux,iuz,xxp,uup,inear,0,ipar(k))
                     endif
                   else
                     uup=f(ix0,iy0,iz0,iux:iuz)
@@ -3265,12 +3290,10 @@ module Particles
 !  is dependent on the relative mach number, hence the need to feed uup as
 !  an optional argument to get_frictiontime.
 !
-              if (ldraglaw_epstein_transonic .or. &
-                  ldraglaw_eps_stk_transonic) then
+              if (ldraglaw_epstein_transonic .or. ldraglaw_eps_stk_transonic) then
                 call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,uup)
               elseif (ldraglaw_steadystate) then
-                call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,rep=rep(k),&
-                  stocunn=stocunn(k))
+                call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,rep=rep(k),stocunn=stocunn(k))
               else
                 call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par)
               endif
@@ -3288,6 +3311,38 @@ module Particles
               endif
 !
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + dragforce
+!
+!  Account for added mass term beta
+!  JONAS: The advective derivative of velocity is interpolated for each
+!  particle
+!
+              if (lbubble) then
+                if (lhydro) then
+                  inear = ineargrid(k,:)
+                  xxp = fp(k,ixp:izp)
+                  if (lparticlemesh_cic) then
+                    call interpolate_linear(f,i_adv_derx,i_adv_derz,xxp,adv_der_uup,inear,0,ipar(k))
+                  elseif (lparticlemesh_tsc) then
+                    if (linterpolate_spline) then
+                      call interpolate_quadratic_spline(f,i_adv_derx,i_adv_derz,xxp,adv_der_uup,inear,0,ipar(k))
+                    else
+                      call interpolate_quadratic(f,i_adv_derx,i_adv_derz,xxp,adv_der_uup,inear,0,ipar(k))
+                    endif
+                  else
+                    adv_der_uup=f(ix0,iy0,iz0,i_adv_derx:i_adv_derz)
+                  endif
+                else
+                  adv_der_uup=0.0
+                endif
+!
+!  Calculate the beta for the current particle
+!
+                call calc_added_mass_beta(fp,k,added_mass_beta)
+!
+!  Add the contribution of the added mass/virtual mass term to the velocity evolution
+!
+                dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + added_mass_beta * adv_der_uup
+              endif
 !
 !  Back-reaction friction force from particles on gas. Three methods are
 !  implemented for assigning a particle to the mesh (see Hockney & Eastwood):
@@ -3347,12 +3402,9 @@ module Particles
                   if (nzgrid/=1) izz1=izz0+1
                   do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
                     weight=1.0
-                    if (nxgrid/=1) &
-                         weight=weight*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
-                    if (nygrid/=1) &
-                         weight=weight*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
-                    if (nzgrid/=1) &
-                         weight=weight*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
+                    if (nxgrid/=1) weight=weight*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
+                    if (nygrid/=1) weight=weight*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
+                    if (nzgrid/=1) weight=weight*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
 !  Save the calculation of rho1 when inside pencil.
                     if ( (iyy/=m).or.(izz/=n).or.(ixx<l1).or.(ixx>l2) ) then
                       rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
@@ -3376,8 +3428,7 @@ module Particles
                     endif
                     if (lpscalar_sink .and. lpscalar) then
                       if (ilncc == 0) then
-                        call fatal_error('dvvp_dt_pencil',&
-                            'lpscalar_sink not allowed for pscalar_nolog!')
+                        call fatal_error('dvvp_dt_pencil','lpscalar_sink not allowed for pscalar_nolog!')
                       else
                         df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
                             weight*dthetadt/volume_cell
@@ -4164,10 +4215,15 @@ module Particles
       else if (ldraglaw_eps_stk_transonic) then
 !
 ! ...and this is for a linear combination of Esptein and Stokes drag at
-! intermediate mach number. Pure Stokes drag is not implemented.
+! intermediate mach number. Pure Stokes drag is not implemented. (implemented now, see below)
 !
         call calc_draglaw_parameters(fp,k,uup,p,inx0,tausp1_par,lstokes=.true.)
 !
+!  draglaw_purestokes implemented below, it is simple stokes drag with no 
+!  dependence on partile's reynolds number. 
+!
+      elseif (ldraglaw_purestokes) then
+        call calc_draglaw_purestokes(fp,k,tausp1_par)
       elseif (ldraglaw_steadystate) then
         if (.not.present(rep)) then
           call fatal_error('get_frictiontime','need particle reynolds '// &
@@ -4972,6 +5028,74 @@ module Particles
       enddo
 !
     endsubroutine calc_stokes_cunningham
+!**********************************************************************
+    subroutine calc_added_mass_beta(fp,k,added_mass_beta)
+!
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
+      real, intent(out) :: added_mass_beta
+!
+      integer, intent(in) :: k
+!
+!  beta for added mass according to beta=3rho_fluid/(2rho_part+rho_fluid)
+!  problem: we would have to calculate beta every time for every particle
+        added_mass_beta=3*interp_rho(k)/(2*rhopmat+interp_rho(k))
+!
+    end subroutine calc_added_mass_beta
+!***********************************************************************
+    subroutine calc_draglaw_purestokes(fp,k,tausp1_par)
+!
+!   Calculate relaxation time for particles under Pure Stokes drag 
+!
+!   6-Aug-15/nils+dhruba: coded
+!
+      use Viscosity, only: getnu
+      use Particles_radius
+!
+      real, dimension (mpar_loc,mparray) :: fp
+      integer :: k
+      real :: tausp1_par
+      character (len=labellen) :: ivis=''
+!
+      intent(in) :: fp,k
+      intent(out) :: tausp1_par
+!
+      real :: dia,nu,nu_
+!
+!  Find the kinematic viscosity
+!
+      call getnu(nu_input=nu_,ivis=ivis)
+      if (ivis=='nu-const') then
+        nu=nu_
+      elseif (ivis=='nu-mixture') then
+        nu=interp_nu(k)
+      elseif (ivis=='rho-nu-const') then
+        nu=nu_/interp_rho(k)
+      elseif (ivis=='sqrtrho-nu-const') then
+        nu=nu_/sqrt(interp_rho(k))
+      elseif (ivis=='nu-therm') then
+        nu=nu_*sqrt(interp_TT(k))
+      elseif (ivis=='mu-therm') then
+        nu=nu_*sqrt(interp_TT(k))&
+            /interp_rho(k)
+      else
+        call fatal_error('calc_draglaw_purestokes','No such ivis!')
+      endif
+!
+!  Particle diameter
+!
+      if (.not.lparticles_radius) then
+        print*,'calc_draglaw_purestokes: need particles_radius module to '// &
+            'calculate the relaxation time!'
+        call fatal_error('calc_draglaw_purestokes','')
+      endif
+!
+      dia=2.0*fp(k,iap)
+!
+!  Relaxation time:
+!
+      tausp1_par=18.0*nu/((rhopmat/interp_rho(k))*dia**2)
+!
+    endsubroutine calc_draglaw_purestokes
 !***********************************************************************
     subroutine calc_draglaw_steadystate(fp,k,rep,stocunn,tausp1_par)
 !
@@ -4992,7 +5116,14 @@ module Particles
 !
       real :: cdrag,dia,nu,nu_
 !
-!  Find the kinematic viscosity
+!  Find the kinematic viscosity.
+!  Check whether we want to override the usual viscosity for the drag law.
+!
+      if (lnu_draglaw) then
+        nu=nu_draglaw
+      else
+!
+!  Use usual viscosity for the drag law.
 !
       call getnu(nu_input=nu_,ivis=ivis)
       if (ivis=='nu-const') then
@@ -5010,6 +5141,7 @@ module Particles
             /interp_rho(k)
       else
         call fatal_error('calc_draglaw_steadystate','No such ivis!')
+      endif
       endif
 !
 !  Particle diameter
@@ -5180,10 +5312,9 @@ module Particles
 !***********************************************************************
     subroutine read_particles_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=particles_init_pars, IOSTAT=iostat)
 !
@@ -5199,12 +5330,18 @@ module Particles
 !***********************************************************************
     subroutine read_particles_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=particles_run_pars, IOSTAT=iostat)
+!
+!  If we have bubbles, the advective derivative has to be saved in
+!  an auxiliary variable
+!  COMMENT: This would be better to do in a step between registering and
+!  initializing. Such a hook does not exist at the moment.
+!
+      if (lbubble) ladv_der_as_aux=.true.
 !
     endsubroutine read_particles_run_pars
 !***********************************************************************
@@ -5277,8 +5414,8 @@ module Particles
         idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0
         idiag_vpxvpym=0; idiag_vpxvpzm=0; idiag_vpyvpzm=0
         idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0; idiag_ekinp=0
-        idiag_vpxmax=0; idiag_vpymax=0; idiag_vpzmax=0; idiag_vpzmin=0
-        idiag_vpxmax=0
+        idiag_vpxmax=0; idiag_vpymax=0; idiag_vpzmax=0
+        idiag_vpxmin=0; idiag_vpymin=0; idiag_vpzmin=0
         idiag_rhopvpxm=0; idiag_rhopvpym=0; idiag_rhopvpzm=0; idiag_rhopvpysm=0
         idiag_rhopvpxt=0; idiag_rhopvpyt=0; idiag_rhopvpzt=0
         idiag_lpxm=0; idiag_lpym=0; idiag_lpzm=0
@@ -5330,6 +5467,8 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'vpxmax',idiag_vpxmax)
         call parse_name(iname,cname(iname),cform(iname),'vpymax',idiag_vpymax)
         call parse_name(iname,cname(iname),cform(iname),'vpzmax',idiag_vpzmax)
+        call parse_name(iname,cname(iname),cform(iname),'vpxmin',idiag_vpxmin)
+        call parse_name(iname,cname(iname),cform(iname),'vpymin',idiag_vpymin)
         call parse_name(iname,cname(iname),cform(iname),'vpzmin',idiag_vpzmin)
         call parse_name(iname,cname(iname),cform(iname),'vpmax',idiag_vpmax)
         call parse_name(iname,cname(iname),cform(iname),'rhopvpxm', &
@@ -5465,10 +5604,29 @@ module Particles
 !***********************************************************************
     subroutine periodic_boundcond_on_aux(f)
 !
-! dummy
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
-      call keep_compiler_quiet(f)
+! Impose periodic boundary condition on gradu as auxiliary variable
+!
+      use Boundcond, only: set_periodic_boundcond_on_aux
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+
+!
+      if (lparticles_grad) then
+        if (igradu .ne. 0) then
+          call set_periodic_boundcond_on_aux(f,igradu11)
+          call set_periodic_boundcond_on_aux(f,igradu12)
+          call set_periodic_boundcond_on_aux(f,igradu13)
+          call set_periodic_boundcond_on_aux(f,igradu21)
+          call set_periodic_boundcond_on_aux(f,igradu22)
+          call set_periodic_boundcond_on_aux(f,igradu23)
+          call set_periodic_boundcond_on_aux(f,igradu31)
+          call set_periodic_boundcond_on_aux(f,igradu32)
+          call set_periodic_boundcond_on_aux(f,igradu33)
+        else
+          call fatal_error('periodic_boundcond_on_aux','particles_grad demands igradu ne 0')
+        endif
+      endif
 !
     endsubroutine periodic_boundcond_on_aux
 !***********************************************************************

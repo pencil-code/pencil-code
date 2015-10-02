@@ -47,16 +47,15 @@ program pc_collect
 !
 !  Identify version.
 !
-   call svn_id('$Id: pc_collect.f90 22542 2014-11-18 22:51:03Z Bourdin.KIS $')
+   call svn_id('$Id$')
 !
-!  Read parameters from start.x (default values; may be overwritten by
-!  read_runpars).
+!  Read parameters from start.x (default values; overwritten by 'read_all_run_pars').
 !
-  call read_startpars()
+  call read_all_init_pars()
 !
 !  Read parameters and output parameter list.
 !
-  call read_runpars()
+  call read_all_run_pars()
 !
 ! Calculate dimensionality
 !

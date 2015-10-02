@@ -18,6 +18,7 @@
   public :: hydro_before_boundary
   public :: expand_shands_hydro
   public :: calc_means_hydro
+  public :: update_char_vel_hydro
 !
 ! WL: SHOULDN'T BE PUBLIC!
 !

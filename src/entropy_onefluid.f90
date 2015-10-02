@@ -17,7 +17,7 @@
 !
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp1tilde; glnTT(3)
 ! PENCILS PROVIDED TT; TT1; Ma2; ugss; hss(3,3); hlnTT(3,3)
-! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1; fpres(3)
+! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv1; fpres(3); sglnTT(3)
 !
 !***************************************************************
 module Energy
@@ -40,6 +40,7 @@ module Energy
   logical, pointer :: lpressuregradient_gas
   logical :: lviscosity_heat=.true.
   logical :: ladvection_energy=.true.
+  logical :: lenergy_slope_limited=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=intlen) :: iinit_str
 !
@@ -57,7 +58,7 @@ module Energy
 !
   contains
 !***********************************************************************
-    subroutine register_energy()
+    subroutine register_energy
 !
 !  Initialise variables which should know that we solve an entropy
 !  equation: iss, etc; increase nvar accordingly.
@@ -131,10 +132,9 @@ module Energy
 !***********************************************************************
     subroutine read_energy_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=entropy_init_pars, IOSTAT=iostat)
 !
@@ -150,10 +150,9 @@ module Energy
 !***********************************************************************
     subroutine read_energy_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=entropy_run_pars, IOSTAT=iostat)
 !
@@ -224,7 +223,7 @@ module Energy
 !
     endsubroutine init_energy
 !***********************************************************************
-    subroutine pencil_criteria_energy()
+    subroutine pencil_criteria_energy
 !
 !  All pencils that the Entropy module depends on are specified here.
 !
@@ -391,9 +390,13 @@ module Energy
         call fatal_error('calc_pencils_energy', &
                  'calculation of pressure force not yet implemented'//&
                  ' for entropy_onefluid')
+! sglnTT 
+      if (lpencil(i_sglnTT)) &
+        call fatal_error('calc_pencils_energy', &
+            'Pencil sglnTT not yet implemented for entropy_onefluid')
 !
     endsubroutine calc_pencils_energy
-!**********************************************************************
+!***********************************************************************
     subroutine denergy_dt(f,df,p)
 !
 !  Calculate right hand side of entropy equation.
@@ -505,6 +508,10 @@ module Energy
 !
       call keep_compiler_quiet(f)
 !
+      if (lenergy_slope_limited) &
+        call fatal_error('calc_lenergy_pars', &
+                         'Slope-limited diffusion not implemented')
+
     endsubroutine calc_lenergy_pars
 !***********************************************************************
     subroutine fill_farray_pressure(f)
@@ -540,7 +547,7 @@ module Energy
 !
     endsubroutine split_update_energy
 !***********************************************************************
-    subroutine expand_shands_energy()
+    subroutine expand_shands_energy
 !
 !  Presently dummy, for possible use
 !
@@ -647,5 +654,20 @@ module Energy
       endif
 !
     endsubroutine rprint_energy
+!***********************************************************************
+    subroutine update_char_vel_energy(f)
+!
+! TB implemented.
+!
+!   25-sep-15/MR+joern: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+
+      call keep_compiler_quiet(f)
+
+      call warning('update_char_vel_energy', &
+           'characteristic velocity not yet implemented for entropy_onefluid')
+
+    endsubroutine update_char_vel_energy
 !***********************************************************************
 endmodule Energy

@@ -11,12 +11,12 @@
   public :: particles_calc_pencils, particles_calc_selfpotential
   public :: particles_read_snapshot, particles_before_boundary
   public :: particles_write_snapshot, particles_write_dsnapshot
+  public :: read_all_particles_init_pars, read_all_particles_run_pars
+  public :: write_all_particles_init_pars, write_all_particles_run_pars
   public :: particles_pde, particles_pde_pencil, particles_write_pdim
   public :: particles_pde_blocks, particles_write_block
-  public :: particles_read_startpars, particles_rparam, particles_wparam
-  public :: particles_read_runpars, particles_wparam2
   public :: particles_powersnap, get_slices_particles
   public :: particles_doprepencil_calc
-  public :: write_snapshot_particles, read_snapshot_particles
+  public :: read_snapshot_particles, write_snapshot_particles
   public :: write_dim_particles
   public :: particles_cleanup

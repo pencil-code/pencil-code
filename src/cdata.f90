@@ -174,6 +174,7 @@ module Cdata
   logical :: lread_oldsnap_nopscalar=.false.
   logical :: lread_oldsnap_notestfield=.false.
   logical :: lread_oldsnap_notestscalar=.false.
+  logical :: lnamelist_error=.false., ltolerate_namelist_errors=.false., lparam_nml=.false.
   logical :: lwrite_dim_again=.false.
   logical :: lseparate_persist=.false., ldistribute_persist=.false.
   logical :: save_lastsnap=.true.
@@ -251,6 +252,7 @@ module Cdata
   logical :: lglobal=.false., lglobal_nolog_density=.false.
   logical :: lvisc_hyper=.false.,lvisc_LES=.false.
   logical :: lvisc_smagorinsky=.false.
+  logical :: lslope_limit_diff=.false.
   logical :: leos_temperature_ionization=.false.
   logical :: ltemperature_nolog=.false.
   logical :: leos_idealgas=.false., leos_chemistry=.false.
@@ -259,6 +261,7 @@ module Cdata
   logical :: lweno_transport=.false.
   logical :: lstart=.false., lrun=.false., lreloading=.false.
   logical :: lenergy=.false.
+  logical :: ladv_der_as_aux=.false.
 !
 !  Variable indices (default zero, set later by relevant physics modules).
 !
@@ -274,6 +277,10 @@ module Cdata
   integer :: iuu=0,iux=0,iuy=0,iuz=0,iss=0
   integer :: iuu0=0,iu0x=0,iu0y=0,iu0z=0
   integer :: iox=0,ioy=0,ioz=0
+  integer :: igradu=0
+  integer :: igradu11=0,igradu12=0,igradu13=0
+  integer :: igradu21=0,igradu22=0,igradu23=0
+  integer :: igradu31=0,igradu32=0,igradu33=0
   integer :: ispecialvar=0
   integer :: iuut=0,iuxt=0,iuyt=0,iuzt=0,ioot=0,ioxt=0,ioyt=0,iozt=0
   integer :: ibbt=0,ibxt=0,ibyt=0,ibzt=0,ijjt=0,ijxt=0,ijyt=0,ijzt=0, &
@@ -291,6 +298,9 @@ module Cdata
   integer :: iff=0,ifx=0,ify=0,ifz=0,idd=0
   integer :: ivisc_heat=0,ibb=0,ibx=0,iby=0,ibz=0,ijj=0,ijx=0,ijy=0,ijz=0
   integer :: iEE=0,iEEx=0,iEEy=0,iEEz=0
+  integer :: iFF_diff=0, iFF_diff1=0,  iFF_diff2=0, &
+             iFF_div_uu=0, iFF_div_aa=0, iFF_div_ss=0, iFF_char_c=0
+  integer :: i_adv_der=0,i_adv_derx=0,i_adv_dery=0,i_adv_derz=0
   integer :: iuxb=0,iugu=0,iugh=0
   integer :: ishock=0,ishock_perp=0
   integer :: iyH=0,ihypvis=0,ihypres=0
@@ -463,40 +473,6 @@ module Cdata
 !  Bidiagonal second derivatives; default to true.
 !
   logical :: lbidiagonal_derij=.true.
-!
-!  Constant 'parameters' cannot occur in namelists, so in order to get the
-!  now constant module logicals into the lphysics name list...
-!  We have some proxies that are used to initialise private local variables
-!  called lhydro etc, in the lphysics namelist!
-!
-  logical, parameter :: lhydro_var=lhydro
-  logical, parameter :: ldensity_var=ldensity
-  logical, parameter :: lentropy_var=lentropy
-  logical, parameter :: ltemperature_var=ltemperature
-  logical, parameter :: lshock_var=lshock
-  logical, parameter :: lmagnetic_var=lmagnetic
-  logical, parameter :: lforcing_var=lforcing
-  logical, parameter :: llorenz_gauge_var=llorenz_gauge
-  logical, parameter :: ldustvelocity_var=ldustvelocity
-  logical, parameter :: ldustdensity_var=ldustdensity
-  logical, parameter :: ltestscalar_var=ltestscalar
-  logical, parameter :: ltestfield_var=ltestfield
-  logical, parameter :: ltestflow_var=ltestflow
-  logical, parameter :: linterstellar_var=linterstellar
-  logical, parameter :: lcosmicray_var=lcosmicray
-  logical, parameter :: lcosmicrayflux_var=lcosmicrayflux
-  logical, parameter :: lshear_var=lshear
-  logical, parameter :: lpscalar_var=lpscalar
-  logical, parameter :: lradiation_var=lradiation
-  logical, parameter :: leos_var=leos
-  logical, parameter :: lchiral_var=lchiral
-  logical, parameter :: lneutralvelocity_var=lneutralvelocity
-  logical, parameter :: lneutraldensity_var=lneutraldensity
-  logical, parameter :: lpolymer_var=lpolymer
-  logical, parameter :: lsolid_cells_var=lsolid_cells
-  logical, parameter :: lpower_spectrum_var=lpower_spectrum
-  logical, parameter :: lparticles_var=lparticles
-  logical, parameter :: lparticles_drag_var=lparticles_drag
 !
 !  Variables related to Fourier spectra and structure functions.
 !

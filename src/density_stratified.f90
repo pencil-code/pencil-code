@@ -588,10 +588,9 @@ module Density
 !***********************************************************************
     subroutine read_density_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=density_init_pars, IOSTAT=iostat)
 !
@@ -607,10 +606,9 @@ module Density
 !***********************************************************************
     subroutine read_density_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=density_run_pars, IOSTAT=iostat)
 !
@@ -761,17 +759,17 @@ module Density
 !
     endsubroutine get_slices_density
 !***********************************************************************
-    subroutine dynamical_diffusion(umax)
+    subroutine dynamical_diffusion(urms)
 !
 !  Dynamically set mass diffusion coefficient given fixed mesh Reynolds number.
 !
 !  28-feb-13/ccyang: coded
 !
-      real, intent(in) :: umax
+      real, intent(in) :: urms
 !
 !  Hyper-diffusion coefficient
 !
-      if (ldiff_hyper3_mesh) diffrho_hyper3_mesh = pi5_1 * umax / re_mesh / sqrt(3.0)
+      if (ldiff_hyper3_mesh) diffrho_hyper3_mesh = pi5_1 * urms / re_mesh / sqrt(3.0)
 !
     endsubroutine dynamical_diffusion
 !***********************************************************************

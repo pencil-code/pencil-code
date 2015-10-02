@@ -158,7 +158,7 @@ module Hydro
   real :: tau_damp_ruxm1=0.,tau_damp_ruym1=0.,tau_damp_ruzm1=0.
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_damp_ruzm=0.,tau_diffrot1=0.
   real :: ampl1_diffrot=0.,ampl2_diffrot=0., ampl_wind=0.
-  real :: Omega_int=0.,xexp_diffrot=1.,kx_diffrot=1.,kz_diffrot=0.
+  real :: Omega_int=0.,xexp_diffrot=1.,kx_diffrot=1.,kz_diffrot=0., phase_diffrot=0.
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
   real :: utop=0.,ubot=0.,omega_out=0.,omega_in=0.
   real :: width_ff_uu=1.,x1_ff_uu=0.,x2_ff_uu=0.
@@ -180,6 +180,7 @@ module Hydro
   logical :: lno_meridional_flow=.false.
   logical :: lrotation_xaxis=.false.
   logical :: lpropagate_borderuu=.true.
+  logical :: lgradu_as_aux=.false.
   character (len=labellen) :: uuprof='nothing'
 !
 !  Parameters for interior boundary conditions.
@@ -194,7 +195,7 @@ module Hydro
       Omega, theta, tdamp, dampu, dampuext, dampuint, rdampext, rdampint, &
       wdamp, tau_damp_ruxm, tau_damp_ruym, tau_damp_ruzm, tau_diffrot1, &
       inituu, ampluu, kz_uu, ampl1_diffrot, ampl2_diffrot, uuprof, &
-      xexp_diffrot, kx_diffrot, kz_diffrot, kz_analysis, ampl_wind, &
+      xexp_diffrot, kx_diffrot, kz_diffrot, kz_analysis, phase_diffrot, ampl_wind, &
       lreinitialize_uu, lremove_mean_momenta, lremove_mean_flow, &
       ldamp_fade, tfade_start, lOmega_int, Omega_int, lupw_uu, othresh, &
       othresh_per_orms, borderuu, lfreeze_uint, lpressuregradient_gas, &
@@ -456,6 +457,9 @@ module Hydro
   integer :: idiag_oyuyymz=0    ! XYAVG_DOC: $\left<\omega_y u_{y,y}\right>_{xy}$
   integer :: idiag_oxuzxmz=0    ! XYAVG_DOC: $\left<\omega_x u_{z,x}\right>_{xy}$
   integer :: idiag_oyuzymz=0    ! XYAVG_DOC: $\left<\omega_y u_{z,y}\right>_{xy}$
+  integer :: idiag_uyxuzxmz=0   ! XYAVG_DOC: $\left<u_{y,x} u_{z,x}\right>_{xy}$
+  integer :: idiag_uyyuzymz=0   ! XYAVG_DOC: $\left<u_{y,y} u_{z,y}\right>_{xy}$
+  integer :: idiag_uyzuzzmz=0   ! XYAVG_DOC: $\left<u_{y,z} u_{z,z}\right>_{xy}$
   integer :: idiag_ekinmz=0     ! XYAVG_DOC: $\left<{1\over2}\varrho\uv^2\right>_{xy}$
   integer :: idiag_oumz=0       ! XYAVG_DOC: $\left<\boldsymbol{\omega}
                                 ! XYAVG_DOC: \cdot\uv\right>_{xy}$
@@ -596,6 +600,15 @@ module Hydro
         iu0x = iuu0; iu0y = iuu0+1; iu0z = iuu0+2
       endif
 !
+!  To compute the added mass term for particle drag,
+!  the advective derivative is needed.
+!  The advective derivative is set as an auxiliary
+!
+      if (ladv_der_as_aux) then
+        call farray_register_auxiliary('adv_der_uu',i_adv_der,vector=3)
+        i_adv_derx = i_adv_der;  i_adv_dery = i_adv_der+1; i_adv_derz = i_adv_der+2
+      endif
+!
 !  Share lpressuregradient_gas so the entropy module knows whether to apply
 !  pressure gradient or not. But hydro wants pressure gradient only when
 !  the density is computed, i.e. not with lboussinesq nor lanelastic.
@@ -628,6 +641,11 @@ module Hydro
         endif
         write(15,*) 'uu = fltarr(mx,my,mz,3)*one'
       endif
+!
+! If we are to solve for gradient of dust particle velocity, we must store gradient 
+! of gas velocity as auxiliary
+!
+      if (lparticles_grad) lgradu_as_aux=.true.
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -1826,7 +1844,7 @@ module Hydro
           idiag_umax/=0 .or. idiag_rumax/=0 .or. &
           idiag_fkinzm/=0 .or. idiag_u2m/=0 .or. idiag_um2/=0 .or. idiag_u2mz/=0 .or. &
           idiag_urmsh/=0 .or. idiag_urmsx/=0 .or. idiag_urmsz/=0) lpenc_diagnos(i_u2)=.true.
-      if (idiag_duxdzma/=0 .or. idiag_duydzma/=0) lpenc_diagnos(i_uij)=.true.
+      if (idiag_duxdzma/=0 .or. idiag_duydzma/=0 .or. lgradu_as_aux) lpenc_diagnos(i_uij)=.true.
       if (idiag_fmasszmz/=0 .or. idiag_ruxuym/=0 .or. &
           idiag_ruxm/=0 .or. idiag_ruym/=0 .or. idiag_ruzm/=0 .or. &
           idiag_ruxuzm/=0 .or. idiag_ruyuzm/=0 .or. idiag_pvzm/=0 .or. &
@@ -2015,9 +2033,9 @@ module Hydro
       logical, dimension(npencils) :: lpenc_loc
 !
       real, dimension (nx) :: tmp, tmp2
-      integer :: i, j, ju
+      integer :: i, j, ju, ij
 !
-      intent(in) :: f, lpenc_loc
+      intent(in) :: lpenc_loc
       intent(out):: p
 ! uu
       if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
@@ -2028,6 +2046,18 @@ module Hydro
 !      if (.not.lpenc_loc_check_at_work) then
 !        write(*,*) 'uurad,rad',p%uij(1:6,1,1)
 !      endif
+!
+!  if gradu is to be stored as auxiliary the we store it now
+!
+      if(lgradu_as_aux) then
+        ij=igradu-1
+        do i=1,3
+          do j=1,3
+            ij=ij+1
+            f(l1:l2,m,n,ij) = p%uij(:,i,j) 
+          enddo
+        enddo
+      endif
 ! divu
       if (lpenc_loc(i_divu)) call div_mn(p%uij,p%divu,p%uu)
 ! sij
@@ -2345,8 +2375,52 @@ module Hydro
         if (lremove_mean_flow) call remove_mean_flow(f,iux)
         if (lremove_mean_angmom) call remove_mean_angmom(f,iuz)
       endif
-!
+
     endsubroutine hydro_before_boundary
+!***********************************************************************
+    subroutine update_char_vel_hydro(f)
+!
+!   25-sep-15/MR+joern: coded
+!
+!   calculation of characteristic velocity
+!   for slope limited diffusion
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, parameter :: i64_1=1/64., i16_1=1/16., i4_1=1/4.
+!
+      if (lslope_limit_diff) then
+        if (dimensionality==3) then
+          f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) &
+                                +i64_1 *sum((f(2:mx-2,2:my-2,2:mz-2,iux:iuz) &
+                                            +f(2:mx-2,2:my-2,3:mz-1,iux:iuz) &
+                                            +f(2:mx-2,3:my-1,2:mz-2,iux:iuz) &
+                                            +f(2:mx-2,3:my-1,3:mz-1,iux:iuz) &
+                                            +f(3:mx-1,2:my-2,2:mz-2,iux:iuz) &
+                                            +f(3:mx-1,2:my-2,3:mz-1,iux:iuz) &
+                                            +f(3:mx-1,3:my-1,2:mz-2,iux:iuz) &
+                                            +f(3:mx-1,3:my-1,3:mz-1,iux:iuz))**2,4)
+        elseif (dimensionality==1) then
+          if (nxgrid/=1) then
+            f(2:mx-2,m1:m2,n1:n2,iFF_char_c)=f(2:mx-2,m1:m2,n1:n2,iFF_char_c) & 
+                                  +i4_1*sum((f(2:mx-2,m1:m2,n1:n2,iux:iuz) &
+                                            +f(3:mx-1,m1:m2,n1:n2,iux:iuz))**2,4)
+!     if(ldiagnos) print*,'CHAR',maxval(f(2:mx-2,m1:m2,n1:n2,iFF_char_c))
+          elseif (nygrid/=1) then
+            f(l1:l2,2:my-2,n1:n2,iFF_char_c)=f(l1:l2,2:my-2,n1:n2,iFF_char_c) & 
+                                  +i4_1*sum((f(l1:l2,2:my-2,n1:n2,iux:iuz) &
+                                            +f(l1:l2,3:my-1,n1:n2,iux:iuz))**2,4)
+          else
+            f(l1:l2,m1:m2,2:mz-2,iFF_char_c)=f(l1:l2,m1:m2,2:mz-2,iFF_char_c) & 
+                                  +i4_1*sum((f(l1:l2,m1:m2,2:mz-2,iux:iuz) &
+                                            +f(l1:l2,m1:m2,3:mz-1,iux:iuz))**2,4)
+          endif
+        else
+          call fatal_error('update_char_vel_hydro', &
+                           'Characteristic velocity not implemented for 2D setups')
+        endif
+      endif
+!
+    endsubroutine update_char_vel_hydro
 !***********************************************************************
     subroutine duu_dt(f,df,p)
 !
@@ -2517,6 +2591,13 @@ module Hydro
 !
       if (tau_diffrot1/=0) then
         call impose_profile_diffrot(f,df,uuprof,ldiffrot_test)
+      endif
+!
+!  Save the advective derivative as an auxiliary
+!
+      if(ladv_der_as_aux) then
+        f(l1:l2,m,n,i_adv_derx:i_adv_derz) = &
+            -p%fpres + p%fvisc
       endif
 !
 !  Possibility to damp mean x momentum, ruxm, to zero.
@@ -2966,6 +3047,9 @@ module Hydro
         call xysum_mn_name_z(p%oo(:,2)*p%uij(:,2,2),idiag_oyuyymz)
         call xysum_mn_name_z(p%oo(:,1)*p%uij(:,3,1),idiag_oxuzxmz)
         call xysum_mn_name_z(p%oo(:,2)*p%uij(:,3,2),idiag_oyuzymz)
+        call xysum_mn_name_z(p%uij(:,2,1)*p%uij(:,3,1),idiag_uyxuzxmz)
+        call xysum_mn_name_z(p%uij(:,2,2)*p%uij(:,3,2),idiag_uyyuzymz)
+        call xysum_mn_name_z(p%uij(:,2,3)*p%uij(:,3,3),idiag_uyzuzzmz)
         call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,2),idiag_uxuymy)
         call xzsum_mn_name_y(p%uu(:,1)*p%uu(:,3),idiag_uxuzmy)
         call xzsum_mn_name_y(p%uu(:,2)*p%uu(:,3),idiag_uyuzmy)
@@ -3914,10 +3998,9 @@ module Hydro
 !***********************************************************************
     subroutine read_hydro_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=hydro_init_pars, IOSTAT=iostat)
 !
@@ -3933,10 +4016,9 @@ module Hydro
 !***********************************************************************
     subroutine read_hydro_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=hydro_run_pars, IOSTAT=iostat)
 !
@@ -4063,6 +4145,9 @@ module Hydro
         idiag_oyuyymz=0
         idiag_oxuzxmz=0
         idiag_oyuzymz=0
+        idiag_uyxuzxmz=0
+        idiag_uyyuzymz=0
+        idiag_uyzuzzmz=0
         idiag_umx=0
         idiag_umy=0
         idiag_umz=0
@@ -4395,7 +4480,7 @@ module Hydro
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-        if (lroot.and.ip<14) print*,'hydro: run through parse list'
+        if (lroot.and.ip<14) print*,'rprint_hydro: run through parse list'
         do iname=1,nname
           call parse_name(iname,cname(iname),cform(iname), &
               'urlm'//trim(smode),idiag_urlm(k))
@@ -4529,6 +4614,9 @@ module Hydro
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oyuyymz',idiag_oyuyymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oxuzxmz',idiag_oxuzxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oyuzymz',idiag_oyuzymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyxuzxmz',idiag_uyxuzxmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyyuzymz',idiag_uyyuzymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyzuzzmz',idiag_uyzuzzmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'fmasszmz',idiag_fmasszmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
@@ -4744,14 +4832,15 @@ module Hydro
 !
 !   8-nov-02/axel: adapted from calc_mfield
 !   9-nov-02/axel: allowed mean flow to be compressible
+!  24-aug-15/MR: corrected declaration of umx2
 !
       use Diagnostics, only: save_name
       use Mpicomm, only: mpibcast_real, mpireduce_sum
 !
       logical,save :: first=.true.
       real, dimension (nx,ny) :: fsumxy
-      real, dimension (nx) :: uxmx,uymx,uzmx
-      real, dimension (ny) :: uxmy,uymy,uzmy,umx2,umy2
+      real, dimension (nx) :: uxmx,uymx,uzmx,umx2
+      real, dimension (ny) :: uxmy,uymy,uzmy,umy2
       real :: umx,umy,umz
 !
 !  For vector output (of oo vectors) we need orms
@@ -4786,9 +4875,8 @@ module Hydro
             call mpireduce_sum(fnamexy(:,:,idiag_uzmxy),fsumxy,(/nx,ny/),idir=2)
             uzmx=sum(fsumxy,dim=2)/nygrid
           endif
-          if (lfirst_proc_yz) then
+          if (lfirst_proc_yz) &
             call mpireduce_sum(uxmx**2+uymx**2+uzmx**2,umx2,nx,idir=1)
-          endif
           umx=sqrt(sum(umx2)/nxgrid)
         endif
         call save_name(umx,idiag_umx)
@@ -4813,9 +4901,8 @@ module Hydro
             call mpireduce_sum(fnamexy(:,:,idiag_uzmxy),fsumxy,(/nx,ny/),idir=1)
             uzmy=sum(fsumxy,dim=1)/nxgrid
           endif
-          if (lfirst_proc_xz) then
+          if (lfirst_proc_xz) &
             call mpireduce_sum(uxmy**2+uymy**2+uzmy**2,umy2,ny,idir=2)
-          endif
           umy=sqrt(sum(umy2)/nygrid)
         endif
         call save_name(umy,idiag_umy)
@@ -5387,10 +5474,22 @@ module Hydro
       zbot=xyz0(3)
       if (.not.lcalc_uumean) then
         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
-            -tau_diffrot1*(f(l1:l2,m,n,iuy)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)))
+            -tau_diffrot1*(f(l1:l2,m,n,iuy)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)-phase_diffrot))
       else
         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
-            -tau_diffrot1*(uumz(n,2)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)))
+            -tau_diffrot1*(uumz(n,2)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)-phase_diffrot))
+      endif
+!
+!  vertical compression profile
+!
+      case ('vertical_compression')
+      zbot=xyz0(3)
+      if (.not.lcalc_uumean) then
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
+            -tau_diffrot1*(f(l1:l2,m,n,iuz)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)))
+      else
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
+            -tau_diffrot1*(uumz(n,3)-ampl1_diffrot*cos(kz_diffrot*(z(n)-zbot)))
       endif
 !
 !  Remove vertical shear profile
@@ -5449,7 +5548,7 @@ module Hydro
              -tau_diffrot1*(uumxz(l1:l2,n,2)-ampl1_diffrot*tanh((z(n)-zbot)/width_ff_uu))
       endif
 !
-!  Linear vertical shear profile U_y(z), forcing the y-averaged averaged flow.
+!  Linear vertical shear profile U_y(z), forcing the y-averaged flow.
 !
       case ('vertical_shear_linear')
       if (.not.lcalc_uumeanxz) then

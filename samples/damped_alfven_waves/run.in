@@ -21,6 +21,6 @@
   limplicit_viscosity = .true.
   ivisc = 'simplified', nu = 0.1
 /
-&implicit_diffusion_pars
+&implicit_diffusion_run_pars
   implicit_method = 'fft'
 /

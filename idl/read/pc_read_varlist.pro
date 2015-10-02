@@ -26,27 +26,35 @@
 ;       Written by:     Chao-Chin Yang, February 18, 2013.
 ;-
 
-function pc_read_varlist, datadir=datadir, nvar=nvar, particles=particles
+function pc_read_varlist, datadir=datadir, nvar=nvar, particles=particles, allprocs=allprocs
   compile_opt idl2
 
-; Find the number snapshots.
-  if n_elements(datadir) eq 0 then datadir = pc_get_datadir()
-  if keyword_set(particles) then list = datadir + '/proc0/pvarN.list' else list = datadir + '/proc0/varN.list'
-  nvar = file_lines(list)
+  default, procdir, '/proc0/'
+  default, list_file, 'varN.list'
+
+; Find the list of snapshots.
+  if (n_elements (datadir) eq 0) then datadir = pc_get_datadir()
+  if (size (allprocs, /type) ne 0) then begin
+    if (keyword_set (allprocs)) then procdir = '/allprocs/'
+  end else if (file_test (datadir+'/allprocs/'+list_file)) then begin
+    procdir = '/allprocs/'
+  end
+  if (keyword_set (particles)) then list_file = 'pvarN.list'
+  list_file = datadir + procdir + 'varN.list'
 
 ; Read the file name of each snapshot.
-  openr, lun, list, /get_lun
-  varfile = ''
-  readf, lun, varfile
-  varlist = varfile
-  for i = 2, nvar do begin
-    readf, lun, varfile
-    varlist = [varlist, varfile]
-  endfor
+  nvar = file_lines (list_file)
+  var_list = strarr (nvar)
+  openr, lun, list_file, /get_lun
+  for i = 0, nvar-1 do begin
+    entry = ''
+    readf, lun, entry
+    var_list[i] = entry
+  end
   close, lun
   free_lun, lun
 
-  return, varlist
+  return, var_list
 
 end
 

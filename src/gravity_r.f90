@@ -54,7 +54,7 @@ module Gravity
   character (len=labellen), dimension(ninit) :: ipotential='zero'
 !
   ! variables for compatibility with grav_z (used by Entropy and Density):
-  real :: z1,z2,zref,zgrav,gravz,zinfty
+  real :: z1,z2,zref,zgrav,gravz=0.,zinfty
   real :: nu_epicycle=1.0
   real :: t_ramp_mass=impossible,t1_ramp_mass
   character (len=labellen) :: gravz_profile='zero'
@@ -343,10 +343,9 @@ module Gravity
 !***********************************************************************
     subroutine read_gravity_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=grav_init_pars, IOSTAT=iostat)
 !
@@ -362,10 +361,9 @@ module Gravity
 !***********************************************************************
     subroutine read_gravity_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=grav_run_pars, IOSTAT=iostat)
 !

@@ -115,6 +115,14 @@ module Viscosity
 !
     endsubroutine calc_pencils_viscosity
 !***********************************************************************
+    subroutine viscosity_after_boundary(f)
+
+      real, dimension (mx,my,mz,mfarray) :: f
+
+      call keep_compiler_quiet(f)
+!
+    endsubroutine viscosity_after_boundary
+!***********************************************************************
     subroutine calc_viscosity(f)
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -173,13 +181,13 @@ module Viscosity
 !
     endsubroutine getnu
 !***********************************************************************
-    subroutine dynamical_viscosity(umax)
+    subroutine dynamical_viscosity(urms)
 !
 !  Dummy routine
 !
-      real, intent(in) :: umax
+      real, intent(in) :: urms
 !
-      call keep_compiler_quiet(umax)
+      call keep_compiler_quiet(urms)
 !
     endsubroutine dynamical_viscosity
 !***********************************************************************

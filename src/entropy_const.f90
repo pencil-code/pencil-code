@@ -42,6 +42,7 @@ module Energy
   real :: ss_const=1.
   logical :: lmultilayer=.true.
   logical :: lcalc_heatcond_constchi=.false.
+  logical :: lenergy_slope_limited=.false.
   character (len=labellen), dimension(ninit) :: initss='nothing'
 !
   ! input parameters
@@ -58,7 +59,7 @@ module Energy
 !
   contains
 !***********************************************************************
-    subroutine register_energy()
+    subroutine register_energy
 !
 !  initialise variables which should know that we solve an energy
 !  equation: iss, etc; increase nvar accordingly
@@ -74,7 +75,7 @@ module Energy
 !
     endsubroutine register_energy
 !***********************************************************************
-    subroutine initialize_energy()
+    subroutine initialize_energy
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
@@ -135,6 +136,18 @@ module Energy
       enddo
 !
     endsubroutine init_energy
+!***********************************************************************
+    subroutine calc_lenergy_pars(f)
+
+      real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
+
+      call keep_compiler_quiet(f)
+
+      if (lenergy_slope_limited) &
+        call fatal_error('calc_lenergy_pars', &
+                         'Slope-limited diffusion not implemented')
+
+    endsubroutine calc_lenergy_pars
 !***********************************************************************
     subroutine denergy_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb,bij)
 !
@@ -303,11 +316,26 @@ module Energy
 !
     endsubroutine
 !***********************************************************************
-    subroutine expand_shands_energy()
+    subroutine expand_shands_energy
 !
 !  Presently dummy, for possible use
 !
     endsubroutine expand_shands_energy
+!***********************************************************************
+    subroutine update_char_vel_energy(f)
+!
+! TB implemented.
+!
+!   25-sep-15/MR+joern: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+
+      call keep_compiler_quiet(f)
+
+      call warning('update_char_vel_energy', &
+           'characteristic velocity not yet implemented for entropy_const')
+
+    endsubroutine update_char_vel_energy
 !***********************************************************************
 endmodule Energy
 

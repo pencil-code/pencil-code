@@ -15,6 +15,7 @@ module Cparam
   integer, parameter :: nprocxz=nprocx*nprocz
   integer, parameter :: n_forcing_cont_max=2
   character, dimension(3), parameter :: coornames=(/'x','y','z'/)
+  logical, dimension(3), parameter :: lactive_dimension = (/ nxgrid > 1, nygrid > 1, nzgrid > 1 /)
 !
   include 'cparam.inc'
 !
@@ -94,7 +95,8 @@ module Cparam
 !  Predefine maximum possible numbers.
 !
   integer, parameter :: max_int=huge(0)
-  real, parameter :: max_real=huge(0.0)
+  real, parameter :: max_real=huge(0.0)/10.    ! division necessary as INTEL compiler considers
+                                               ! huge(0.) illegal when reading it from a namelist 
 !
 !  A marker value that is highly unlikely ("impossible") to ever occur
 !  during a meaningful run: use a very large number.

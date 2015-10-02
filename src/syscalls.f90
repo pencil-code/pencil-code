@@ -85,6 +85,27 @@ module Syscalls
 !
     endsubroutine get_env_var
 !***********************************************************************
+    function directory_exists(path)
+!
+!  Checks for existence of a directory.
+!
+!  Returns:
+!  * True, if 'path' points to a directory
+!  * False, otherwise
+!
+!   2-sep-15/PABourdin: coded
+!
+      logical :: directory_exists
+      character(len=*) :: path
+!
+      integer :: exists = -1
+!
+      call directory_exists_c(trim(path)//char(0), exists)
+!
+      directory_exists = (exists == 1)
+!
+    endfunction directory_exists
+!***********************************************************************
     function is_nan_0D(value)
 !
 !  Determines if value is not a number (NaN).

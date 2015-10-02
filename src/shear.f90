@@ -28,10 +28,10 @@ module Shear
   real :: Sshear1=0.0, Sshear_sini=0.0
   real :: diff_hyper3x_mesh = 0.03
   real, dimension(3) :: u0_advec = 0.0
-  character(len=6) :: shear_method = 'fft'
+  character(len=7) :: shear_method = 'fft'
   logical, dimension(mcom) :: lposdef = .false.
+  logical, target :: lshearadvection_as_shift = .false.
   logical :: lshear_acceleration = .true.
-  logical :: lshearadvection_as_shift=.false.
   logical :: ltvd_advection = .false., lposdef_advection = .false.
   logical :: lmagnetic_stretching=.true.,lrandomx0=.false.
   logical :: lmagnetic_tilt=.false.
@@ -57,6 +57,9 @@ module Shear
 !
 !  Module variables
 !
+  integer, parameter :: bspline_k = 7
+  real, dimension(nygrid,nygrid) :: bspline_ay = 0.0
+  integer, dimension(nygrid) :: bspline_iy = 0
   real, dimension(nx) :: uy0 = 0.0
 !
   contains
@@ -67,8 +70,13 @@ module Shear
 !
 !  2-july-02/nils: coded
 !
-      if (lroot) call svn_id( &
-           "$Id$")
+      use SharedVariables, only: put_shared_variable
+!
+      if (lroot) call svn_id("$Id$")
+!
+!  Share lshearadvection_as_shift.
+!
+      call put_shared_variable('lshearadvection_as_shift', lshearadvection_as_shift, caller='register_shear')
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -89,6 +97,8 @@ module Shear
 !  where Omega_p is the angular speed at which the shearing box revolves about
 !  the central host.  If Omega_p = Omega, the usual shearing approximation is
 !  recovered.
+!
+      use Sub, only: bspline_precondition, ludcmp
 !
 !  Calculate the shear velocity.
 !
@@ -128,14 +138,20 @@ module Shear
         if (ldetonate) lposdef(idet) = .true.
       endif posdef
 !
+!  Set up B-spline interpolation if requested.
+!
+      bsplines: if (nygrid > 1 .and. lshearadvection_as_shift .and. shear_method == 'bspline') then
+        call bspline_precondition(nygrid, bspline_k, bspline_ay)
+        call ludcmp(bspline_ay, bspline_iy)
+      endif bsplines
+!
     endsubroutine initialize_shear
 !***********************************************************************
     subroutine read_shear_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=shear_init_pars, IOSTAT=iostat)
 !
@@ -151,10 +167,9 @@ module Shear
 !***********************************************************************
     subroutine read_shear_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=shear_run_pars, IOSTAT=iostat)
 !
@@ -481,7 +496,7 @@ module Shear
           case ('fft') method
             call sheared_advection_fft(f, ivar, ivar, dt_shear)
             if (.not. llast) call sheared_advection_fft(df, ivar, ivar, dt_shear)
-          case ('spline', 'poly') method
+          case ('bspline', 'spline', 'poly') method
             posdef = lposdef_advection .and. lposdef(ivar)
             call sheared_advection_nonfft(f, ivar, ivar, dt_shear, shear_method, ltvd_advection, posdef)
             notlast: if (.not. llast) then
@@ -561,6 +576,7 @@ module Shear
 !
 !  25-feb-13/ccyang: coded.
 !  16-sep-14/ccyang: relax the restrictions of dimensions.
+!  28-jul-15/ccyang: add method 'bspline'
 !
 !  Input/Ouput Argument
 !    a: field to be advected and sheared
@@ -572,6 +588,7 @@ module Shear
       use General, only: cspline, polynomial_interpolation
       use Messages, only: warning
       use Mpicomm, only: remap_to_pencil_xy, unmap_from_pencil_xy, transp_pencil_xy
+      use Sub, only: bspline_interpolation
 !
       real, dimension(:,:,:,:), intent(inout) :: a
       character(len=*), intent(in) :: method
@@ -589,21 +606,27 @@ module Shear
       real, dimension(nxgrid) :: xnew, px, yshift
       real, dimension(nygrid) :: ynew, ynew1, py
       real, dimension(mygrid) :: by
+      real, dimension(3) :: advec
       character(len=256) :: message
       logical :: error
       integer :: istat
       integer :: ic, j, k
+      real :: shift
 !
 !  Find the displacement traveled with the advection.
 !
-      xnew = xgrid - dt_shear * u0_advec(1)
-      ynew = ygrid - dt_shear * u0_advec(2)
+      advec = dt_shear * u0_advec
       yshift = Sshear * (xgrid - x0_shear) * dt_shear
-      scalex: if (method == 'spline') then
-        if (.not. lequidist(1)) &
-            call fatal_error('sheared_advection_nonfft', 'Non-uniform x grid is not implemented for tvd spline. ')
-        xnew = (xnew - xglobal(1)) / dx
-      endif scalex
+!
+      newcoord: if (method /= 'bspline') then
+        xnew = xgrid - advec(1)
+        ynew = ygrid - advec(2)
+        scalex: if (method == 'spline') then
+          if (.not. lequidist(1)) &
+              call fatal_error('sheared_advection_nonfft', 'Non-uniform x grid is not implemented for tvd spline. ')
+          xnew = (xnew - xglobal(1)) / dx
+        endif scalex
+      endif newcoord
 !
 !  Check positive definiteness.
 !
@@ -646,24 +669,29 @@ module Shear
         b1 = b(nghost+1:mxgrid-nghost,nghost+1:nghost+nypx,:)
         ydir: if (nygrid > 1 .and. (Sshear /= 0.0 .or. u0_advec(2) /= 0.0)) then
           call transp_pencil_xy(b1, bt)
-          scan_yz: do k = 1, nz
-            scan_yx: do j = 1, nxpy
-              ynew1 = ynew - yshift((ipy * nprocx + ipx) * nxpy + j)
-!
-              pery: if (.not. tvd .or. .not. method == 'spline') then
+          scan_yx: do j = 1, nxpy
+            shift = yshift((ipy * nprocx + ipx) * nxpy + j)
+            if (method == 'bspline') shift = (shift + advec(2)) / dy
+            scan_yz: do k = 1, nz
+              newy: if (method /= 'bspline') then
+                ynew1 = ynew - shift
                 ynew1 = ynew1 - floor((ynew1 - y0) / Ly) * Ly
-                by(mm1:mm2) = bt(:,j,k)
-                by(1:nghost) = by(mm2i:mm2)
-                by(mm2+1:mygrid) = by(mm1:mm1i)
-              endif pery
+              endif newy
 !
               ymethod: select case (method)
+              case ('bspline') ymethod
+                py = bt(:,j,k)
+                call bspline_interpolation(nygrid, bspline_k, py, bspline_ay, bspline_iy, shift)
+                error = .false.
               case ('spline') ymethod
                 if (.not. lequidist(2)) &
                     call fatal_error('sheared_advection_nonfft', 'Non-uniform y grid is not implemented for tvd spline. ')
                 call cspline(bt(:,j,k), (ynew1 - ygrid(1)) / dy, py, tvd=tvd, posdef=posdef)
                 error = .false.
               case ('poly') ymethod
+                by(mm1:mm2) = bt(:,j,k)
+                by(1:nghost) = by(mm2i:mm2)
+                by(mm2+1:mygrid) = by(mm1:mm1i)
                 call polynomial_interpolation(yglobal, by, ynew1, py, norder_poly, tvd=tvd, posdef=posdef, &
                                               istatus=istat, message=message)
                 error = istat /= 0
@@ -673,8 +701,8 @@ module Shear
               if (error) call warning('sheared_advection_nonfft', 'error in y interpolation; ' // trim(message))
 !
               bt(:,j,k) = py
-            enddo scan_yx
-          enddo scan_yz
+            enddo scan_yz
+          enddo scan_yx
           call transp_pencil_xy(bt, b1)
         endif ydir
         call unmap_from_pencil_xy(b1, a1)
@@ -702,19 +730,19 @@ module Shear
       if (ip<12.and.headtt) print*, &
           'boundconds_x: use shearing sheet boundary condition'
 !
-      if (lshearadvection_as_shift) then
+      shear_advec: if (lshearadvection_as_shift) then
         method: select case (shear_method)
         case ('fft') method
           call fourier_shift_ghostzones(f,ivar1,ivar2)
-        case ('spline', 'poly') method
+        case ('bspline', 'spline', 'poly') method
           call shift_ghostzones_nonfft(f,ivar1,ivar2)
         case default method
           call fatal_error('boundcond_shear', 'unknown method')
         end select method
-      else
+      else shear_advec
         call initiate_shearing(f,ivar1,ivar2)
         call finalize_shearing(f,ivar1,ivar2)
-      endif
+      endif shear_advec
 !
     endsubroutine boundcond_shear
 !***********************************************************************
@@ -814,10 +842,12 @@ module Shear
 !
 !  25-feb-13/ccyang: coded.
 !  16-sep-14/ccyang: relax the nprocx=1 restriction.
+!  28-jul-15/ccyang: add method 'bspline'.
 !
-      use Mpicomm, only: remap_to_pencil_y, unmap_from_pencil_y
       use General, only: cspline, polynomial_interpolation
       use Messages, only: warning
+      use Mpicomm, only: remap_to_pencil_y, unmap_from_pencil_y
+      use Sub, only: bspline_interpolation
 !
       real, dimension(nghost,ny,nz), intent(inout) :: a
       logical, intent(in) :: posdef
@@ -831,17 +861,22 @@ module Shear
       logical :: error
       integer :: istat
       integer :: i, k
+      real :: s
 !
 !  Find the new y-coordinates after shift.
 !
-      ynew = ygrid - shift
-      newy: if (method == 'spline') then
-        if (.not. lequidist(2)) &
-            call fatal_error('shift_ghostzones_nonfft_subtask', 'Non-uniform y grid is not implemented for TVD spline. ')
-        ynew = (ynew - ygrid(1)) / dy
-      else newy
-        ynew = ynew - floor((ynew - y0) / Ly) * Ly
-      endif newy
+      shifty: if (method == 'bspline') then
+        s = shift / dy
+      else shifty
+        ynew = ygrid - shift
+        newy: if (method == 'spline') then
+          if (.not. lequidist(2)) &
+              call fatal_error('shift_ghostzones_nonfft_subtask', 'Non-uniform y grid is not implemented for TVD spline. ')
+          ynew = (ynew - ygrid(1)) / dy
+        elseif (method == 'poly') then newy
+          ynew = ynew - floor((ynew - y0) / Ly) * Ly
+        endif newy
+      endif shifty
 !
 !  Check positive definiteness.
 !
@@ -853,13 +888,17 @@ module Shear
       call remap_to_pencil_y(a, work)
       scan_z: do k = 1, nz
         scan_x: do i = 1, nghost
-          periodic: if (.not. method == 'spline') then
+          periodic: if (method == 'poly') then
             worky(nghost+1:mygrid-nghost) = work(i,:,k)
             worky(1:nghost) = worky(mygrid-2*nghost+1:mygrid-nghost)
             worky(mygrid-nghost+1:mygrid) = worky(nghost+1:nghost+nghost)
           endif periodic
 !
           dispatch: select case (method)
+          case ('bspline') dispatch
+            penc = work(i,:,k)
+            call bspline_interpolation(nygrid, bspline_k, penc, bspline_ay, bspline_iy, s)
+            error = .false.
           case ('spline') dispatch
             call cspline(work(i,:,k), ynew, penc, tvd=ltvd_advection, posdef=posdef)
             error = .false.

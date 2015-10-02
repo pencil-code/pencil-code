@@ -1,3 +1,16 @@
 website/
 driver_switch.tex
 manual.pdf
+manual.dvi
+manual.ps.gz
+*.aux
+*.fidx
+*.find
+*.idx
+*.ilg
+*.ind
+*.log
+*.out
+*.toc
+*.vidx
+*.vind

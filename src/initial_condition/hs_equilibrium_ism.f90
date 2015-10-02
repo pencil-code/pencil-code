@@ -88,13 +88,18 @@ module InitialCondition
   real, parameter :: z_S_cgs=6.172e20, z_D_cgs=3.086e21
 !
   real, parameter :: rho0ts_cgs=3.5E-24, T0hs_cgs=7.088E2
-  real :: rho0ts=impossible, T0hs=impossible, amplaa
+  real :: rho0ts=impossible, T0hs=impossible
 !
 !
 !  TT & z-dependent uv-heating profile
 !
   real, dimension(mz) :: TT, zrho
   logical :: lthermal_hse=.true.
+!
+!  Magnetic profile
+!
+  real, parameter :: amplaa_cgs=1e-9 ! 1 nano Gauss
+  real :: amplaa=impossible
 !
 !  start parameters
 !
@@ -278,11 +283,16 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      integer :: i ,icpu
-      real :: ampl,tmp1,tmp3
+      integer :: icpu
+      real :: tmp1,tmp3
       real, dimension(ncpus)::sumtmp,tmp2
 !
-      ampl = amplaa
+      if (unit_system=='cgs') then
+        if (amplaa == impossible) amplaa = amplaa_cgs/unit_magnetic
+      else if (unit_system=='SI') then
+        call fatal_error('initial_condition_magnetic','SI unit conversions not inplemented')
+      endif
+!
       tmp2(:)=0.0
       sumtmp(:)=0.0
       if (ldensity_nolog) then
@@ -311,19 +321,17 @@ module InitialCondition
       endif
       if (lroot) print*,'sumtmp =',sumtmp
       print*,'sumtmp on iproc =',sumtmp(iproc+1),iproc
-      if (ampl==0) then
+      if (amplaa==0) then
         f(:,:,:,iaa:iaa+2)=0
-        if (lroot) print*,'ferriere_uniform_y: set B field to zero' 
       else
-        print*,'ferriere_uniform_y: uniform y-field approx rho'
-        if ((ip<=16).and.lroot) print*,'uniform_y: ampl=',ampl
+        if ((ip<=16).and.lroot) print*,'uniform_y: amplaa=',amplaa
         do n=n1,n2
         do m=m1,m2
           if (ldensity_nolog) then
-            f(l1:l2,m,n,iaa)=ampl*(sumtmp(iproc+1)+&
+            f(l1:l2,m,n,iaa)=amplaa*(sumtmp(iproc+1)+&
                 sum(f(l1:l2,m,n1:n,irho)))*dx*dz
           else
-            f(l1:l2,m,n,iaa)=ampl*(sumtmp(iproc+1)+&
+            f(l1:l2,m,n,iaa)=amplaa*(sumtmp(iproc+1)+&
                 sum(exp(f(l1:l2,m,n1:n,ilnrho))))*dx*dz
           endif
           f(l1:l2,m,n,iaa+1)=0.0
@@ -523,10 +531,9 @@ module InitialCondition
 !***********************************************************************
     subroutine read_initial_condition_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include '../parallel_unit.h'
 !
       read(parallel_unit, NML=initial_condition_pars, IOSTAT=iostat)
 !

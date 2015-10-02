@@ -22,7 +22,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED Ma2; uglnTT; ugTT; fpres(3); tcond;
+! PENCILS PROVIDED Ma2; uglnTT; ugTT; fpres(3); tcond; sglnTT(3)
 !
 !***************************************************************
 module Energy
@@ -68,6 +68,7 @@ module Energy
   logical :: lcalc_TTmean=.false.
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
+  logical :: lenergy_slope_limited=.false.
   logical :: linitial_log=.false.
   character (len=labellen), dimension(nheatc_max) :: iheatcond='nothing'
   character (len=labellen) :: borderss='nothing'
@@ -195,7 +196,7 @@ module Energy
 !
   contains
 !***********************************************************************
-    subroutine register_energy()
+    subroutine register_energy
 !
 !  Initialise variables which should know that we solve an energy
 !  equation: ilnTT, etc; increase nvar accordingly.
@@ -627,7 +628,7 @@ module Energy
 !
     endsubroutine init_energy
 !***********************************************************************
-    subroutine pencil_criteria_energy()
+    subroutine pencil_criteria_energy
 !
 !  All pencils that the Energy module depends on are specified here.
 !
@@ -918,6 +919,10 @@ module Energy
               'This heatcond is not implemented to work with lpencil(i_cond)!')
         endif
       endif
+! sglnTT 
+      if (lpencil(i_sglnTT)) &
+        call fatal_error('calc_pencils_energy', &
+            'Pencil sglnTT not yet implemented for temperature_idealgas')
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
@@ -1321,6 +1326,10 @@ module Energy
 !
       endif
 !
+      if (lenergy_slope_limited) &
+        call fatal_error('calc_lenergy_pars', &
+                         'Slope-limited diffusion not implemented')
+
     endsubroutine calc_lenergy_pars
 !***********************************************************************
     subroutine calc_heatcond_shock(df,p)
@@ -1840,10 +1849,9 @@ module Energy
 !***********************************************************************
     subroutine read_energy_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=entropy_init_pars, IOSTAT=iostat)
 !
@@ -1859,10 +1867,9 @@ module Energy
 !***********************************************************************
     subroutine read_energy_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=entropy_run_pars, IOSTAT=iostat)
 !
@@ -2355,7 +2362,7 @@ module Energy
 !
     endsubroutine
 !***********************************************************************
-    subroutine expand_shands_energy()
+    subroutine expand_shands_energy
 !
 !  Expands shorthand labels of temperature diagnostics.
 !
@@ -2370,5 +2377,20 @@ module Energy
       endif
 !
     endsubroutine expand_shands_energy
+!***********************************************************************
+    subroutine update_char_vel_energy(f)
+!
+! TB implemented.
+!
+!   25-sep-15/MR+joern: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+
+      call keep_compiler_quiet(f)
+
+      call warning('update_char_vel_energy', &
+           'characteristic velocity not yet implemented for temperature_idealgas')
+
+    endsubroutine update_char_vel_energy
 !***********************************************************************
 endmodule Energy

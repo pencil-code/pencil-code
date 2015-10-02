@@ -272,10 +272,9 @@ module Magnetic_meanfield_demfdt
 !***********************************************************************
     subroutine read_magn_mf_demfdt_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "../parallel_unit.h"
 !
       read(parallel_unit, NML=magn_mf_demfdt_init_pars, IOSTAT=iostat)
 !
@@ -291,10 +290,9 @@ module Magnetic_meanfield_demfdt
 !***********************************************************************
     subroutine read_magn_mf_demfdt_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "../parallel_unit.h"
 !
       read(parallel_unit, NML=magn_mf_demfdt_run_pars, IOSTAT=iostat)
 !

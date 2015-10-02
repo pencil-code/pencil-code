@@ -56,6 +56,22 @@ module Mpicomm
     module procedure mpisend_int_arr
   endinterface
 !
+  interface mpibcast
+    module procedure mpibcast_logical_scl
+    module procedure mpibcast_logical_arr
+    module procedure mpibcast_logical_arr2
+    module procedure mpibcast_int_scl
+    module procedure mpibcast_int_arr
+    module procedure mpibcast_real_scl
+    module procedure mpibcast_real_arr
+    module procedure mpibcast_real_arr2
+    module procedure mpibcast_real_arr3
+    module procedure mpibcast_real_arr4
+    module procedure mpibcast_cmplx_arr_sgl
+    module procedure mpibcast_char_scl
+    module procedure mpibcast_char_arr
+  endinterface
+!
   interface mpibcast_logical
     module procedure mpibcast_logical_scl
     module procedure mpibcast_logical_arr
@@ -952,8 +968,6 @@ module Mpicomm
       if (ALWAYS_FALSE) print*, cbcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_char_arr
-!***********************************************************************
-    include "parallel_unit_nobroadcast.h"
 !***********************************************************************
     subroutine mpibcast_cmplx_arr_dbl(bcast_array,nbcast_array,proc)
 !

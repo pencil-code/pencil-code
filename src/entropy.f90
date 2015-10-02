@@ -13,7 +13,7 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED ugss; Ma2; fpres(3); uglnTT; transprhos !,dsdr
+! PENCILS PROVIDED ugss; Ma2; fpres(3); uglnTT; sglnTT(3); transprhos !,dsdr
 ! PENCILS PROVIDED initss; initlnrho
 !
 !***************************************************************
@@ -83,6 +83,7 @@ module Energy
   real :: Pres_cutoff=impossible
   real :: pclaw=0.0, xchit=0.
   real, target :: hcond0_kramers=0.0, nkramers=0.0
+  real :: chimax_kramers=0., chimin_kramers=0.
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
@@ -124,6 +125,9 @@ module Energy
   logical :: lchromospheric_cooling=.false., &
              lchi_shock_density_dep=.false., &
              lhcond0_density_dep=.false.
+  logical :: lenergy_slope_limited=.false.
+  real :: h_slope_limited=0., chi_sld_thresh=0.
+  character (len=labellen) :: islope_limiter=''
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
   character (len=labellen) :: pertss='zero'
@@ -182,12 +186,13 @@ module Energy
       tau_cool_ss, tau_diff, lfpres_from_pressure, chit_aniso, &
       chit_aniso_prof1, chit_aniso_prof2, lchit_aniso_simplified, &
       lconvection_gravx, ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, &
-      hcond0_kramers, nkramers, xbot_aniso, xtop_aniso, entropy_floor, &
+      hcond0_kramers, nkramers, chimax_kramers, chimin_kramers, &
+      xbot_aniso, xtop_aniso, entropy_floor, &
       lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor, &
       reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, &
       center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
       Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
-      cool_type,ichit,xchit,pclaw
+      cool_type,ichit,xchit,pclaw, lenergy_slope_limited,h_slope_limited,chi_sld_thresh
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -243,6 +248,7 @@ module Energy
   integer :: idiag_TTmr=0       ! DIAG_DOC:
   integer :: idiag_ufpresm=0    ! DIAG_DOC: $\left< -u/\rho\nabla p \right>$
   integer :: idiag_uduum=0
+  integer :: idiag_Kkramersm=0   ! DIAG_DOC: $\left< K_{\rm kramers} \right>$
 !
 ! xy averaged diagnostics given in xyaver.in
 !
@@ -337,14 +343,14 @@ module Energy
 !
   contains
 !***********************************************************************
-    subroutine register_energy()
+    subroutine register_energy
 !
 !  Initialise variables which should know that we solve an entropy
 !  equation: iss, etc; increase nvar accordingly.
 !
 !  6-nov-01/wolf: coded
 !
-      use FArrayManager, only: farray_register_pde
+      use FArrayManager, only: farray_register_pde, farray_register_auxiliary
       use SharedVariables, only: get_shared_variable
 !
       call farray_register_pde('ss',iss)
@@ -359,6 +365,17 @@ module Energy
       call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas, &
                                caller='register_energy')
 !
+      if (lenergy_slope_limited) then
+        if (iFF_diff==0) then
+          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
+          iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
+        endif
+        call farray_register_auxiliary('Div_flux_diff_ss',iFF_div_ss)
+        iFF_char_c=iFF_div_ss
+        if (iFF_div_aa>0) iFF_char_c=max(iFF_char_c,iFF_div_aa+2)
+        if (iFF_div_uu>0) iFF_char_c=max(iFF_char_c,iFF_div_uu+2)
+      endif
+
     endsubroutine register_energy
 !***********************************************************************
     subroutine initialize_energy(f)
@@ -935,7 +952,7 @@ module Energy
         call put_shared_variable('hcond0_kramers',hcond0_kramers)
         call put_shared_variable('nkramers',nkramers)
       else
-        idiag_Kkramersmx=0; idiag_Kkramersmz=0
+        idiag_Kkramersm=0; idiag_Kkramersmx=0; idiag_Kkramersmz=0
       endif
       star_params=(/wheat,luminosity,r_bcz,widthss,alpha_MLT/)
       call put_shared_variable('star_params',star_params)
@@ -961,6 +978,8 @@ module Energy
       if (lreference_state) &
         call get_shared_variable('reference_state',reference_state)
 !
+      lslope_limit_diff=lslope_limit_diff .or. lenergy_slope_limited
+
     endsubroutine initialize_energy
 !***********************************************************************
     subroutine rescale_TT_in_ss(f)
@@ -998,10 +1017,9 @@ module Energy
 !***********************************************************************
     subroutine read_energy_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=entropy_init_pars, IOSTAT=iostat)
 !
@@ -1017,10 +1035,9 @@ module Energy
 !***********************************************************************
     subroutine read_energy_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=entropy_run_pars, IOSTAT=iostat)
 !
@@ -2367,7 +2384,7 @@ module Energy
 !
     endsubroutine shock2d
 !***********************************************************************
-    subroutine pencil_criteria_energy()
+    subroutine pencil_criteria_energy
 !
 !  All pencils that the Entropy module depends on are specified here.
 !
@@ -2744,6 +2761,10 @@ module Energy
         lpencil_in(i_uu)=.true.
         lpencil_in(i_glnTT)=.true.
       endif
+      if (lpencil_in(i_sglnTT)) then
+        lpencil_in(i_sij)=.true.
+        lpencil_in(i_glnTT)=.true.
+      endif
       if (lpencil_in(i_Ma2)) then
         lpencil_in(i_u2)=.true.
         lpencil_in(i_cs2)=.true.
@@ -2774,7 +2795,7 @@ module Energy
 !  15-mar-15/MR: changes for use of reference state.
 !
       use EquationOfState, only: gamma1
-      use Sub, only: u_dot_grad, grad
+      use Sub, only: u_dot_grad, grad, multmv
       use WENO_transport, only: weno_transp
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2785,6 +2806,7 @@ module Energy
 !
       real, dimension(nx,3) :: gradS
       integer :: j
+!
 ! Ma2
       if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 ! ugss
@@ -2796,6 +2818,8 @@ module Energy
 ! for pretend_lnTT
       if (lpencil(i_uglnTT)) &
           call u_dot_grad(f,iss,p%glnTT,p%uu,p%uglnTT,UPWIND=lupw_ss)
+! sglnTT
+      if (lpencil(i_sglnTT)) call multmv(p%sij,p%glnTT,p%sglnTT)
 ! dsdr
      !if (lpencil(i_dsdr)) then
      !    call grad(f,iss,gradS)
@@ -3252,13 +3276,17 @@ module Energy
 !
       use Deriv, only: der_z, der2_z
       use Mpicomm, only: mpiallreduce_sum
-      use Sub, only: finalize_aver
+      use Sub, only: finalize_aver,div, calc_diffusive_flux
+      use Sub, only: notanumber
       use EquationOfState, only : lnrho0, cs20, get_cv1
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(in) :: f
+      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
 !
+      real, dimension(mx-1) :: tmpx
+      real, dimension(my-1) :: tmpy
+      real, dimension(mz-1) :: tmpz
       integer :: l,m,n,lf
+      integer :: ll,mm,nn,iff
       real :: fact, cv1, tmp1
 !
 !  Compute horizontal average of entropy. Include the ghost zones,
@@ -3412,7 +3440,69 @@ module Energy
         call mpiallreduce_sum(tmp1,ss_volaverage)
       endif
 !
+!  Slope limited diffusion following Rempel (2014)
+!  First calculating the flux in a subroutine below
+!  using a slope limiting procedure then storing in the
+!  auxilaries variables in the f array. Finally the divergence
+!  of the flux is calculated and stored in the f array.
+!
+!
+      if (lenergy_slope_limited.and.lfirst) then
+!
+        f(:,:,:,iFF_diff1:iFF_diff2)=0.
+!
+        iff=iFF_diff
+
+        if (nxgrid>1) then
+          do nn=n1,n2; do mm=m1,m2
+            tmpx = f(2:,mm,nn,iss)-f(:mx-1,mm,nn,iss)
+if (notanumber(tmpx)) print*, 'TMPX:mm,nn=', mm,nn
+            call calc_diffusive_flux(tmpx,f(2:mx-2,mm,nn,iFF_char_c),islope_limiter,h_slope_limited,f(2:mx-2,mm,nn,iff))
+if (notanumber(f(2:mx-2,mm,nn,iff))) print*, 'DIFFX:mm,nn=', mm,nn
+          enddo; enddo
+          iff=iff+1
+        endif
+
+        if (nygrid>1) then
+          do nn=n1,n2; do ll=l1,l2
+            tmpy = f(ll,2:,nn,iss)-f(ll,:my-1,nn,iss)
+if (notanumber(tmpy)) print*, 'TMPY:mm,nn=', mm,nn
+            call calc_diffusive_flux(tmpy,f(ll,2:my-2,nn,iFF_char_c),islope_limiter,h_slope_limited,f(ll,2:my-2,nn,iff))
+if (notanumber(f(ll,2:my-2,nn,iff))) print*, 'DIFFY:ll,nn=', ll,nn
+          enddo; enddo
+          iff=iff+1
+        endif
+
+        if (nzgrid>1) then
+          do mm=m1,m2; do ll=l1,l2
+            tmpz = f(ll,mm,2:,iss)-f(ll,mm,:mz-1,iss)
+if (notanumber(tmpz)) print*, 'TMPZ:ll,mm=', ll,mm
+            call calc_diffusive_flux(tmpz,f(ll,mm,2:mz-2,iFF_char_c),islope_limiter,h_slope_limited,f(ll,mm,2:mz-2,iff))
+if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:ll,mm=', ll,mm
+          enddo; enddo
+        endif
+
+        do n=n1,n2; do m=m1,m2
+          call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_ss),iorder=4)
+        enddo; enddo
+
+      endif
+
     endsubroutine calc_lenergy_pars
+!***********************************************************************
+    subroutine update_char_vel_energy(f)
+!
+!  Updates characteristic veelocity for slope-limited diffusion.
+!
+!  25-sep-15/MR+joern: coded, not yet correct
+!
+      use EquationOfState, only: cs20
+!
+      real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
+!
+      if (lslope_limit_diff) f(:,:,:,iFF_char_c)=f(:,:,:,iFF_char_c) + 0.01*cs20
+!
+    endsubroutine update_char_vel_energy
 !***********************************************************************
     subroutine set_border_entropy(f,df,p)
 !
@@ -4273,6 +4363,7 @@ module Energy
 !  Heat conduction using Kramers' opacity law
 !
 !  23-feb-11/pete: coded
+!  24-aug-15/MR: bounds for chi introduced
 !
       use Diagnostics
       use Debug_IO, only: output_pencil
@@ -4296,6 +4387,8 @@ module Energy
 !  In reality n=1, but we may need to use n\=1 for numerical reasons.
 !
       Krho1 = hcond0_kramers*p%rho1**(2.*nkramers+1.)*p%TT**(6.5*nkramers)   ! = K/rho
+      if (chimax_kramers>0.d0) &
+        Krho1 = max(min(Krho1,chimax_kramers/p%cp1),chimin_kramers/p%cp1)
       call dot(-2.*nkramers*p%glnrho+(6.5*nkramers+1)*p%glnTT,p%glnTT,g2)
       thdiff = Krho1*(p%del2lnTT+g2)
 !
@@ -4319,7 +4412,9 @@ module Energy
 !
       chix = p%cp1*Krho1
     
-      if (l1davgfirst.or.l2davgfirst) Krho1 = Krho1*p%rho      ! now Krho1=K
+      if (ldiagnos.or.l1davgfirst.or.l2davgfirst) Krho1 = Krho1*p%rho      ! now Krho1=K
+
+      if (ldiagnos) call sum_mn_name(Krho1,idiag_Kkramersm)
 !
 !  Write radiative flux array.
 !
@@ -4436,7 +4531,7 @@ module Energy
               call write_zprof('hcond',hcond_zprof)
               call write_zprof('gloghcond',gradloghcond_zprof(:,3))
             endif
-            if (chi_t/=0.0) call get_gravz_chit()
+            if (chi_t/=0.0) call get_gravz_chit
             lfirstcall_hcond=.false.
           endif
 !
@@ -4459,7 +4554,7 @@ module Energy
         elseif (lgravx) then
           if (lfirstcall_hcond.and.lfirstpoint) then
             if (.not.lhcond_global) then
-               call get_gravx_heatcond()
+               call get_gravx_heatcond
             endif
             lfirstcall_hcond=.false.
           endif
@@ -4559,7 +4654,7 @@ module Energy
 !  "Turbulent" entropy diffusion.
 !
 !  Should only be present if g.gradss > 0 (unstable stratification).
-!  But this is not curently being checked.
+!  But this is not currently being checked.
 !
       if (chi_t/=0.) then
         if (headtt) then
@@ -5630,7 +5725,7 @@ module Energy
         idiag_gsxmxy=0; idiag_gsymxy=0; idiag_gszmxy=0
         idiag_gTxgsxmxy=0;idiag_gTxgsymxy=0;idiag_gTxgszmxy=0
         idiag_fradymxy_Kprof=0; idiag_fturbymxy=0; idiag_fconvxmx=0
-        idiag_Kkramersmx=0; idiag_Kkramersmz=0
+        idiag_Kkramersm=0; idiag_Kkramersmx=0; idiag_Kkramersmz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -5669,6 +5764,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'fconvm',idiag_fconvm)
         call parse_name(iname,cname(iname),cform(iname),'ufpresm',idiag_ufpresm)
         call parse_name(iname,cname(iname),cform(iname),'uduum',idiag_uduum)
+        call parse_name(iname,cname(iname),cform(iname),'Kkramersm',idiag_Kkramersm)
       enddo
 !
 !  Check for those quantities for which we want yz-averages.
@@ -5958,7 +6054,7 @@ module Energy
 !
     endsubroutine calc_heatcond_zprof
 !***********************************************************************
-    subroutine get_gravz_heatcond()
+    subroutine get_gravz_heatcond
 !
 ! Calculate z dependent heat conductivity and its gradient
 ! and stores them in the arrays which are saved at the first time
@@ -5982,7 +6078,7 @@ module Energy
 !
     endsubroutine get_gravz_heatcond
 !***********************************************************************
-    subroutine get_gravx_heatcond()
+    subroutine get_gravx_heatcond
 !
 ! Calculate x dependent heat conductivity and its gradient
 ! and stores them in the arrays which are saved at the first time
@@ -6111,7 +6207,7 @@ module Energy
 !
     endsubroutine gradloghcond
 !***********************************************************************
-    subroutine get_gravz_chit()
+    subroutine get_gravz_chit
 !
 !  Calculate z-dependent chi_t and its gradient and store them in
 !  arrays which are saved at the first time step and used in all the next.
@@ -6995,7 +7091,7 @@ module Energy
 !
     endsubroutine
 !***********************************************************************
-    subroutine expand_shands_energy()
+    subroutine expand_shands_energy
 !
 !  Presently dummy, for possible use
 !

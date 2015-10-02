@@ -22,21 +22,21 @@ module ImplicitDiffusion
 !
   contains
 !***********************************************************************
-    subroutine read_implicit_diffusion_pars(iostat)
+    subroutine read_implicit_diff_run_pars(iostat)
 !
       integer, intent(out) :: iostat
 !
       iostat = 0
 !
-    endsubroutine read_implicit_diffusion_pars
+    endsubroutine read_implicit_diff_run_pars
 !***********************************************************************
-    subroutine write_implicit_diffusion_pars(unit)
+    subroutine write_implicit_diff_run_pars(unit)
 !
       integer, intent(in) :: unit
 !
       call keep_compiler_quiet(unit)
 !
-    endsubroutine write_implicit_diffusion_pars
+    endsubroutine write_implicit_diff_run_pars
 !***********************************************************************
     subroutine integrate_diffusion(get_diffus_coeff, f, ivar1, ivar2)
 !

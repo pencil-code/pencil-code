@@ -3,13 +3,31 @@ use strict;
 use Getopt::Long;
 
 # Settings
-my @files = ( "start.in", "run.in" );
+my @files = ( "start.in", "run.in", "data/param.nml" );
+my $makefile = "src/Makefile.local";
+my $configtest = "pc_configtest --no-autocorrect";
 
+# Namelist variables that have been renamed
 my %translation = (
 	# special/solar_corona
-	"Kgpara" => "K_spitzer",
-	"Kgpara2" => "K_iso",
-	"bmdi" => "b_tau",
+	special_run_pars => {
+		# 2012:
+		"Kgpara" => "K_spitzer",
+		"Kgpara2" => "K_iso",
+		# 2013:
+		"bmdi" => "b_tau",
+	},
+	# please extend here...
+);
+
+# Non-optional namelist variables
+my %expansion = (
+	# special/solar_corona
+	SPECIAL => {
+		# 2012:
+		"special/solar_corona" => { special_init_pars => { } },
+		"special/solar_corona" => { special_run_pars => { K_iso => 0.01234, K_spitzer => -1.234 } },
+	},
 	# please extend here...
 );
 
@@ -23,10 +41,8 @@ GetOptions(\%opts,
                -b   --backup
                -d   --debug
                -v   --version
-               )) or die "Aborting.\n";
-if ($opts{'v'} || $opts{'version'}) {
-	die '$Id$'."\n";
-}
+               )) or die ("Aborting.\n");
+if ($opts{'v'} || $opts{'version'}) { die ('$Id$'."\n"); }
 my $debug = 0;
 if ($opts{'d'} || $opts{'debug'}) { $debug = 1; }
 my $test = 0;
@@ -34,23 +50,94 @@ if ($opts{'t'} || $opts{'test'}) { $test = 1; }
 my $backup = 0;
 if ($opts{'b'} || $opts{'backup'}) { $backup = 1; }
 
+# Test if code was compiled
+my $test_result = `$configtest 2>&1`;
+if ($test_result =~ /Please compile first/is) { exit (1); }
+
+# Find missing namelists
+my %missing = ();
+if ($test_result =~ /find_namelist: namelist "([a-zA-Z][a-zA-Z0-9_]*)" is missing!/is) {
+	# Split output for different *.in files
+	$test_result =~ s/^.*?(?=>>> TESTING .*?\.IN <<<)//is;
+	my @results = split (/\s+(?=>>> TESTING .*?\.IN <<<)/is, $test_result);
+	# Iterate over *.in files
+	foreach my $result (@results) {
+		if ($result !~ s/>>> TESTING (.*?\.IN) <<<//is) { next; }
+		my $file = lc ($1);
+		while ($result =~ s/find_namelist: namelist "([a-zA-Z][a-zA-Z0-9_]*)" is missing!//is) {
+			my $missing_namelist = $1;
+			push (@{$missing{$file}}, '&'.$missing_namelist."\n");
+			push (@{$missing{$file}}, '/'."\n");
+		}
+	}
+}
+
+# Getting list of activated modules
+if (! -e $makefile) { die ('ERROR: There is no "'.$makefile.'" available!\n'); }
+open (IN, "< ".$makefile);
+my %modules = ();
+while (my $line = <IN>) {
+	if ($line =~ /^\s*REAL_PRECISION\s*=.*$/is) { next; }
+	if ($line =~ /^\s*([a-zA-Z][a-zA-Z0-9_]*)\s*=\s*([a-zA-Z][a-zA-Z0-9_\/\.]*)\s*$/s) {
+		my $module_name = $1;
+		if ($module_name !~ /^no/is) { $modules{$2} = $module_name; }
+	}
+}
+close (IN);
+
+
+# Autocorrection of in-files
 my $autocorrect = 0;
 foreach my $file (@files) {
 	if (! -e $file) { next; }
+
+	# Read in-file
 	open (IN, "< ".$file);
 	my @lines = <IN>;
 	close (IN);
+
+	# Initialization
 	my $change = 0;
-	foreach my $key (keys (%translation)) {
-		my $value = $translation{$key};
-		my $num = @lines;
-		for (my $pos = 0; $pos < $num; $pos++) {
-			while ($lines[$pos] =~ s/(^|[\s,])${key}(\s*=)/${1}${value}${2}/im) {
-				$change = 1;
-				if ($debug) { print "$file : $key => $value\n"; }
+	my $namelist = '';
+
+	# Autoexpand namelists with mandatory variables
+	if ($missing{$file}) {
+		my @missing_namelists = @{$missing{$file}};
+		# Append the missing namelists
+		push (@lines, @missing_namelists);
+		$change = 1;
+	}
+
+	# Auto-expansion of individual namelists with their mandatory variables
+	foreach my $module (keys (%expansion)) {
+### For now, we stop here.
+last;
+		my %hash = %{$expansion{$module}};
+		foreach my $source (keys (%hash)) {
+			my $target = $modules{$source};
+			my $expand = $hash{$source};
+### WORK HERE
+		}
+	}
+
+	# Rename namelist variables
+	my $num_lines = @lines;
+	foreach my $target (keys (%translation)) {
+		my %hash = %{$translation{$target}};
+		foreach my $search (keys (%hash)) {
+			my $replace = $hash{$search};
+			for (my $pos = 0; $pos < $num_lines; $pos++) {
+				if ($lines[$pos] =~ /(?:^|[\s\/])&([a-zA-Z][a-zA-Z0-9_]*)(?:\s+|$)/s) { $namelist = $1; }
+				if ($namelist ne $target) { next; }
+				while ($lines[$pos] =~ s/(^|[\s,])${search}(\s*=)/${1}${replace}${2}/im) {
+					$change = 1;
+					if ($debug) { print "$file | $namelist : $search => $replace\n"; }
+				}
 			}
 		}
 	}
+
+	# Autocorrect in-file
 	if ($change && $test) {
 		print "Needs autocorrection: '$file'\n";
 		$autocorrect = 1;
@@ -65,6 +152,7 @@ foreach my $file (@files) {
 		close (OUT);
 	}
 }
+
 
 if ($autocorrect && $test) {
 	print "Please execute: 'pc_autocorrect_config -b'.\n";

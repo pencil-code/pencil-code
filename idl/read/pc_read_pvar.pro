@@ -411,7 +411,9 @@ endif else begin
 ;
           if (t_rmv_loc[k] le t*(1.0d + epsi)) then begin
             array[ipar_rmv_loc[k]-1,*]=array_loc
-            array_sink[ipar_rmv_loc[k]-1,*]=array_sink_loc
+            if (nfields eq 3) then begin
+               array_sink[ipar_rmv_loc[k]-1,*]=array_sink_loc
+            endif
             ipar_rmv[ipar_rmv_loc[k]-1]=ipar_rmv[ipar_rmv_loc[k]-1]+1
             trmv[ipar_rmv_loc[k]-1]=t_rmv_loc[k]
           endif

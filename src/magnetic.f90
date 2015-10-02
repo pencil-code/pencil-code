@@ -182,7 +182,7 @@ module Magnetic
   logical :: lB_ext_pot=.false., lJ_ext=.false.
   logical :: lforce_free_test=.false.
   logical :: lforcing_cont_aa_local=.false.
-  logical :: lee_as_aux=.false.
+  logical :: lEE_as_aux=.false.
   logical :: lbb_as_aux=.false., ljj_as_aux=.false., ljxb_as_aux=.false.
   logical :: lbbt_as_aux=.false., ljjt_as_aux=.false., lua_as_aux=.false.
   logical :: lbb_as_comaux=.false., lB_ext_in_comaux=.true.
@@ -203,7 +203,7 @@ module Magnetic
       initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
       kgaussian_aa, &
       lcheck_positive_va2, lskip_projection_aa, lno_second_ampl_aa, &
-      lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lee_as_aux,&
+      lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lEE_as_aux,&
       ljxb_as_aux, ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
       lua_as_aux, lneutralion_heat, center1_x, center1_y, center1_z, &
       fluxtube_border_width, va2max_jxb, va2power_jxb, eta_jump, &
@@ -260,6 +260,11 @@ module Magnetic
   logical :: lpropagate_borderaa=.true.
   logical :: lremove_meanaz=.false.
   logical :: ladd_global_field=.true. 
+  logical :: ladd_efield=.false.
+  logical :: lmagnetic_slope_limited=.false.
+  real :: h_slope_limited=0., eta_sld_thresh=0.
+  character (LEN=labellen) :: islope_limiter=''
+  real :: ampl_efield=0.
   character (len=labellen) :: A_relaxprofile='0,coskz,0'
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: ydep_profile='two-step'
@@ -299,8 +304,9 @@ module Magnetic
       lbx_ext_global,lby_ext_global,lbz_ext_global, &
       limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb, &
       lpropagate_borderaa, lremove_meanaz,eta_jump_shock, eta_zshock, &
-      eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, &
-      eta_power_z, eta_cspeed
+      eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z, & 
+      ladd_efield,ampl_efield,lmagnetic_slope_limited,islope_limiter, &
+      h_slope_limited,eta_sld_thresh, eta_cspeed
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -350,6 +356,16 @@ module Magnetic
   integer :: idiag_uzbzm=0      ! DIAG_DOC: $\left<u_zB_z\right>$
   integer :: idiag_cosubm=0     ! DIAG_DOC: $\left<\Uv\cdot\Bv/(|\Uv|\,|\Bv|)
                                 ! DIAG_DOC: \right>$
+  integer :: idiag_jxbxm=0      ! DIAG_DOC: $\left<j_xB_x\right>$
+  integer :: idiag_jybxm=0      ! DIAG_DOC: $\left<j_yB_x\right>$
+  integer :: idiag_jzbxm=0      ! DIAG_DOC: $\left<j_zB_x\right>$
+  integer :: idiag_jxbym=0      ! DIAG_DOC: $\left<j_xB_y\right>$
+  integer :: idiag_jybym=0      ! DIAG_DOC: $\left<j_yB_y\right>$
+  integer :: idiag_jzbym=0      ! DIAG_DOC: $\left<j_zB_y\right>$
+  integer :: idiag_jxbzm=0      ! DIAG_DOC: $\left<j_xB_z\right>$
+  integer :: idiag_jybzm=0      ! DIAG_DOC: $\left<j_yB_z\right>$
+  integer :: idiag_jzbzm=0      ! DIAG_DOC: $\left<j_zB_z\right>$
+
   integer :: idiag_uam=0        ! DIAG_DOC: $\left<\uv\cdot\Av\right>$
   integer :: idiag_ujm=0        ! DIAG_DOC: $\left<\uv\cdot\Jv\right>$
   integer :: idiag_fbm=0        ! DIAG_DOC: $\left<\fv\cdot\Bv\right>$
@@ -827,6 +843,16 @@ module Magnetic
 !
         if (lroot) write(4,*) ',ee $'
         if (lroot) write(15,*) 'ee = fltarr(mx,my,mz,3)*one'
+      endif
+!
+      if (lmagnetic_slope_limited) then
+        if (iFF_diff==0) then
+          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
+          iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
+        endif
+        call farray_register_auxiliary('Div_flux_diff_aa',iFF_div_aa,vector=3)
+        iFF_char_c=max(iFF_div_aa+2,iFF_div_ss)
+        if (iFF_div_uu>0) iFF_char_c=max(iFF_char_c,iFF_div_uu+2)
       endif
 !
 !  register the mean-field module
@@ -1395,6 +1421,9 @@ module Magnetic
         if (iforcing_cont_aa==0) &
           call fatal_error('initialize_magnetic','no valid continuous forcing available')
       endif
+!
+      lslope_limit_diff=lslope_limit_diff .or. lmagnetic_slope_limited
+!
     endsubroutine initialize_magnetic
 !***********************************************************************
     subroutine init_aa(f)
@@ -1541,6 +1570,24 @@ module Magnetic
         case ('Bphi_cosy')
           do n=n1,n2; do m=m1,m2
              f(l1:l2,m,n,iax)=amplaa(j)*(cos(2*pi*ky_aa(j)*(y(m)-y0)/Lxyz(2)))/Lxyz(2)
+          enddo; enddo
+        case ('Az_cosh2x1')
+          do n=n1,n2; do m=m1,m2
+             f(l1:l2,m,n,iax)=0. 
+             f(l1:l2,m,n,iay)=0.
+             f(l1:l2,m,n,iaz)=amplaa(j)/(cosh(x(l1:l2))*cosh(x(l1:l2))) 
+          enddo; enddo
+        case ('By_sinx')
+          do n=n1,n2; do m=m1,m2
+             f(l1:l2,m,n,iax)=0. 
+             f(l1:l2,m,n,iay)=0.
+             f(l1:l2,m,n,iaz)=amplaa(j)*( cos(x(l1:l2))  )
+          enddo; enddo
+        case ('By_step')
+          do n=n1,n2; do m=m1,m2
+             f(l1:l2,m,n,iax)=0. 
+             f(l1:l2,m,n,iay)=0.
+             f(l1:l2,m,n,iaz)=2*amplaa(j)*step(x(l1:l2),xyz0(1)+Lxyz(1)/2.,widthaa) - amplaa(j)
           enddo; enddo
         case ('crazy', '5'); call crazy(amplaa(j),f,iaa)
         case ('strange'); call strange(amplaa(j),f,iaa)
@@ -1967,6 +2014,8 @@ module Magnetic
 !  diagnostics pencils
 !
       if (idiag_jxmax/=0 .or. idiag_jymax/=0 .or. idiag_jzmax/=0) lpenc_diagnos(i_jj)=.true.
+      if (idiag_jxbxm/=0 .or. idiag_jybxm/=0 .or. idiag_jzbxm/=0 .or. idiag_jxbym/=0 .or. & 
+          idiag_jxbzm/=0 .or. idiag_jybzm/=0 .or. idiag_jzbzm/=0) lpenc_diagnos(i_jj)=.true.
       if (idiag_jxbrxm/=0 .or. idiag_jxbrym/=0 .or. idiag_jxbrzm/=0) &
           lpenc_diagnos(i_jxbr)=.true.
       if (idiag_jxbrmax/=0) lpenc_diagnos(i_jxbr2)=.true.
@@ -2419,6 +2468,20 @@ module Magnetic
       endif getbb
 !
     endsubroutine magnetic_before_boundary
+!***********************************************************************
+    subroutine update_char_vel_magnetic(f)
+!
+!   25-sep-15/MR+joern: for slope limited diffusion
+!
+!   Add the vectorpotential to the characteritic velocity
+!   for slope limited diffusion
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout):: f
+!
+      if (lslope_limit_diff) &
+         f(:,:,:,iFF_char_c)=f(:,:,:,iFF_char_c)+sum(f(:,:,:,iax:iaz)**2,4)
+
+    endsubroutine update_char_vel_magnetic
 !***********************************************************************
     subroutine calc_pencils_magnetic_std(f,p)
 !
@@ -2945,6 +3008,7 @@ module Magnetic
       real, dimension (nx) :: eta_mn,eta_smag,etatotal
       real, dimension (nx) :: fres2,etaSS
       real, dimension (nx) :: vdrift
+      real, dimension (nx) :: del2aa_ini, tanhx2  
       real, dimension(3) :: B_ext
       real :: tmp,eta_out1,maxetaBB=0.
       real, parameter :: OmegaSS=1.0
@@ -3009,6 +3073,14 @@ module Magnetic
             fres = fres - eta * mu0 * p%jj
           else
             fres = fres + eta * p%del2a
+          endif
+!
+! whatever the gauge is add an external space-varying electric field
+!
+          if (ladd_efield) then
+             tanhx2 = tanh( x(l1:l2) )*tanh( x(l1:l2) )
+             del2aa_ini = ampl_efield*(-2 + 8*tanhx2 - 6*tanhx2*tanhx2 ) 
+             fres(:,3) = fres(:,3) - eta*mu0*del2aa_ini
           endif
           if (lfirst .and. ldt) diffus_eta = diffus_eta + eta
         end if exp_const
@@ -3578,7 +3650,9 @@ module Magnetic
 !AB: corrected by Patrick Adams
         dAdt = dAdt-battery_term*p%fpres
         if (headtt.or.ldebug) print*,'daa_dt: max(battery_term) =',&
-            battery_term*maxval(baroclinic)
+!MR; corrected for the time being to fix the auto-test
+!            battery_term*maxval(baroclinic)
+            battery_term*maxval(p%fpres)
       endif
 !
 ! Add jxb/(b^2\nu) magneto-frictional velocity to uxb term
@@ -3824,6 +3898,22 @@ module Magnetic
         if (idiag_uybzm/=0) call sum_mn_name(p%uu(:,2)*p%bb(:,3),idiag_uybzm)
         if (idiag_uzbzm/=0) call sum_mn_name(p%uu(:,3)*p%bb(:,3),idiag_uzbzm)
         if (idiag_cosubm/=0) call sum_mn_name(p%cosub,idiag_cosubm)
+
+!
+!  Current helicity tensor (components)
+!
+        !if (idiag_jbm/=0) call sum_mn_name(p%ub,idiag_ubm)
+        if (idiag_jxbxm/=0) call sum_mn_name(p%jj(:,1)*p%bb(:,1),idiag_jxbxm)
+        if (idiag_jybxm/=0) call sum_mn_name(p%jj(:,2)*p%bb(:,1),idiag_jybxm)
+        if (idiag_jzbxm/=0) call sum_mn_name(p%jj(:,3)*p%bb(:,1),idiag_jzbxm)
+        if (idiag_jxbym/=0) call sum_mn_name(p%jj(:,1)*p%bb(:,2),idiag_jxbym)
+        if (idiag_jybym/=0) call sum_mn_name(p%jj(:,2)*p%bb(:,2),idiag_jybym)
+        if (idiag_jzbym/=0) call sum_mn_name(p%jj(:,3)*p%bb(:,2),idiag_jzbym)
+        if (idiag_jxbzm/=0) call sum_mn_name(p%jj(:,1)*p%bb(:,3),idiag_jxbzm)
+        if (idiag_jybzm/=0) call sum_mn_name(p%jj(:,2)*p%bb(:,3),idiag_jybzm)
+        if (idiag_jzbzm/=0) call sum_mn_name(p%jj(:,3)*p%bb(:,3),idiag_jzbzm)
+
+
 !
 !  compute rms value of difference between u and b
 !
@@ -4614,13 +4704,18 @@ module Magnetic
 !   2-jan-10/axel: adapted from calc_lhydro_pars
 !  10-jan-13/MR: added possibility to remove evolving mean field
 !
-      use Sub, only: finalize_aver
+      use Sub, only: notanumber
       use Deriv, only: der_z,der2_z
-!
+      use Sub, only: finalize_aver, div, calc_diffusive_flux
+
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: n,j
+
       real :: fact
-      real, dimension (nz,3) :: gaamz,d2aamz
+      integer :: n,ll,mm,nn,j,iff
+      real, dimension(mx-1) :: tmpx
+      real, dimension(my-1) :: tmpy
+      real, dimension(mz-1) :: tmpz
+      real, dimension(nz,3) :: gaamz,d2aamz
 !
       intent(inout) :: f
 !
@@ -4669,6 +4764,55 @@ module Magnetic
           do m=1,my
             f(:,m,n,iua)=sum(f(:,m,n,iux:iuz)*f(:,m,n,iax:iaz),2)
           enddo
+        enddo
+      endif
+!
+!  Slope limited diffusion following Rempel (2014)
+!  First calculating the flux in a subroutine below
+!  using a slope limiting procedure then storing in the
+!  auxilaries variables in the f array (done above).
+!
+      if (lmagnetic_slope_limited.and.lfirst) then
+!
+        f(:,:,:,iFF_diff1:iFF_diff2)=0.
+!
+        do j=1,3
+
+          iff=iFF_diff
+
+          if (nxgrid>1) then
+            do nn=n1,n2; do mm=m1,m2
+              tmpx = f(2:,mm,nn,iaa+j-1)-f(:mx-1,mm,nn,iaa+j-1)
+if (notanumber(tmpx)) print*, 'TMPX:j,mm,nn=', j,mm,nn
+              call calc_diffusive_flux(tmpx,f(2:mx-2,mm,nn,iFF_char_c),islope_limiter,h_slope_limited,f(2:mx-2,mm,nn,iff))
+if (notanumber(f(2:mx-2,mm,nn,iff))) print*, 'DIFFX:j,mm,nn=', j,mm,nn
+            enddo; enddo
+            iff=iff+1
+          endif
+
+          if (nygrid>1) then
+            do nn=n1,n2; do ll=l1,l2
+              tmpy = f(ll,2:,nn,iaa+j-1)-f(ll,:my-1,nn,iaa+j-1)
+if (notanumber(tmpy)) print*, 'TMPY:j,mm,nn=', j,mm,nn
+              call calc_diffusive_flux(tmpy,f(ll,2:my-2,nn,iFF_char_c),islope_limiter,h_slope_limited,f(ll,2:my-2,nn,iff))
+if (notanumber(f(ll,2:my-2,nn,iff))) print*, 'DIFFY:j,ll,nn=', j,ll,nn
+            enddo; enddo
+            iff=iff+1
+          endif
+
+          if (nzgrid>1) then
+            do mm=m1,m2; do ll=l1,l2
+              tmpz = f(ll,mm,2:,iaa+j-1)-f(ll,mm,:mz-1,iaa+j-1)
+if (notanumber(tmpz)) print*, 'TMPZ:j,ll,mm=', j,ll,mm
+            call calc_diffusive_flux(tmpz,f(ll,mm,2:mz-2,iFF_char_c),islope_limiter,h_slope_limited,f(ll,mm,2:mz-2,iff))
+if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
+            enddo; enddo
+          endif
+
+          do n=n1,n2; do m=m1,m2
+            call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_aa+j-1),iorder=4)
+          enddo; enddo
+
         enddo
       endif
 !
@@ -4982,10 +5126,9 @@ module Magnetic
 !***********************************************************************
     subroutine read_magnetic_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=magnetic_init_pars, IOSTAT=iostat)
 !
@@ -5009,10 +5152,9 @@ module Magnetic
 !***********************************************************************
     subroutine read_magnetic_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=magnetic_run_pars, IOSTAT=iostat)
 !
@@ -7123,6 +7265,9 @@ module Magnetic
         idiag_uxbxm=0; idiag_uybxm=0; idiag_uzbxm=0
         idiag_uxbym=0; idiag_uybym=0; idiag_uzbym=0
         idiag_uxbzm=0; idiag_uybzm=0; idiag_uzbzm=0
+	idiag_jxbxm=0; idiag_jybxm=0; idiag_jzbxm=0
+        idiag_jxbym=0; idiag_jybym=0; idiag_jzbym=0
+        idiag_jxbzm=0; idiag_jybzm=0; idiag_jzbzm=0
         idiag_fbm=0; idiag_fxbxm=0; idiag_epsM=0; idiag_epsM_LES=0
         idiag_epsAD=0; idiag_epsMmz=0
         idiag_bxpt=0; idiag_bypt=0; idiag_bzpt=0
@@ -7257,6 +7402,15 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'uybzm',idiag_uybzm)
         call parse_name(iname,cname(iname),cform(iname),'uzbzm',idiag_uzbzm)
         call parse_name(iname,cname(iname),cform(iname),'cosubm',idiag_cosubm)
+        call parse_name(iname,cname(iname),cform(iname),'jxbxm',idiag_jxbxm)
+        call parse_name(iname,cname(iname),cform(iname),'jybxm',idiag_jybxm)
+        call parse_name(iname,cname(iname),cform(iname),'jzbxm',idiag_jzbxm)
+        call parse_name(iname,cname(iname),cform(iname),'jxbym',idiag_jxbym)
+        call parse_name(iname,cname(iname),cform(iname),'jybym',idiag_jybym)
+        call parse_name(iname,cname(iname),cform(iname),'jzbym',idiag_jzbym)
+        call parse_name(iname,cname(iname),cform(iname),'jxbzm',idiag_jxbzm)
+        call parse_name(iname,cname(iname),cform(iname),'jybzm',idiag_jybzm)
+        call parse_name(iname,cname(iname),cform(iname),'jzbzm',idiag_jzbzm)
         call parse_name(iname,cname(iname),cform(iname),'uam',idiag_uam)
         call parse_name(iname,cname(iname),cform(iname),'ujm',idiag_ujm)
         call parse_name(iname,cname(iname),cform(iname),'fbm',idiag_fbm)
@@ -7749,18 +7903,18 @@ module Magnetic
 !
     endsubroutine rprint_magnetic
 !***********************************************************************
-    subroutine dynamical_resistivity(umax)
+    subroutine dynamical_resistivity(urms)
 !
 !  Dynamically set resistivity coefficient given fixed mesh Reynolds number.
 !
 !  27-jul-11/ccyang: coded
 !
-      real, intent(in) :: umax
+      real, intent(in) :: urms
 !
 !  Hyper-resistivity coefficient
 !
-      if (eta_hyper3 /= 0.) eta_hyper3 = pi5_1 * umax * dxmax**5 / re_mesh
-      if (eta_hyper3_mesh /= 0.) eta_hyper3_mesh = pi5_1 * umax / re_mesh / sqrt(real(dimensionality))
+      if (eta_hyper3 /= 0.) eta_hyper3 = pi5_1 * urms * dxmax**5 / re_mesh
+      if (eta_hyper3_mesh /= 0.) eta_hyper3_mesh = pi5_1 * urms / re_mesh / sqrt(real(dimensionality))
 !
     endsubroutine dynamical_resistivity
 !***********************************************************************

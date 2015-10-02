@@ -32,10 +32,6 @@ module Io
   include 'record_types.h'
   include 'mpif.h'
 !
-  interface output_form
-    module procedure output_form_int_0D
-  endinterface
-!
   interface write_persist
     module procedure write_persist_logical_0D
     module procedure write_persist_logical_1D
@@ -206,7 +202,7 @@ module Io
 !
       if (lroot) then
         ! collect the global x-data from all leading processors in the yz-plane
-        gx(1:l2) = x(1:l2)
+        gx(1:mx) = x
         if (nprocx > 1) then
           do px = 1, nprocx-1
             call mpirecv_real (buf_x, l2, px, tag_gx)
@@ -214,7 +210,7 @@ module Io
           enddo
         endif
         ! collect the global y-data from all leading processors in the xz-plane
-        gy(1:m2) = y(1:m2)
+        gy(1:my) = y
         if (nprocy > 1) then
           do py = 1, nprocy-1
             call mpirecv_real (buf_y, m2, py*nprocx, tag_gy)
@@ -222,7 +218,7 @@ module Io
           enddo
         endif
         ! collect the global z-data from all leading processors in the xy-plane
-        gz(1:n2) = z(1:n2)
+        gz(1:mz) = z
         if (nprocz > 1) then
           do pz = 1, nprocz-1
             call mpirecv_real (buf_z, n2, pz*nprocxy, tag_gz)
@@ -432,50 +428,6 @@ module Io
       endif
 !
     endsubroutine output_snap_finalize
-!***********************************************************************
-    subroutine output_form_int_0D(file,data,lappend)
-!
-!  Write formatted integer data to a file.
-!  Set lappend to false to overwrite the file, default is to append the data.
-!
-!  19-Feb-2012/Bourdin.KIS: coded
-!
-      use Mpicomm, only: mpisend_int, mpirecv_int
-!
-      character (len=*), intent(in) :: file
-      integer, intent(in) :: data
-      logical, intent(in), optional :: lappend
-!
-      integer, dimension(ncpus) :: data_global
-      integer :: partner, buffer
-      integer, parameter :: tag_data = 683
-      logical :: lappend_opt
-!
-      lappend_opt = .false.
-      if (present(lappend)) lappend_opt = lappend
-!
-      if (lroot) then
-        ! collect data into global array
-        data_global(iproc) = data
-        do partner = 0, ncpus-1
-          if (partner == iproc) cycle
-          call mpirecv_int(buffer, partner, tag_data)
-          data_global(partner) = buffer
-        enddo
-        ! write global data to file
-        if (lappend_opt) then
-          open (lun_output, file=trim (directory_collect)//'/'//file, form='formatted', position='append', status='old')
-        else
-          open (lun_output, file=trim (directory_collect)//'/'//file, form='formatted', status='replace')
-        endif
-        write (lun_output,*) data_global
-        close (lun_output)
-      else
-        ! send local data
-        call mpisend_int(data, 0, tag_data)
-      endif
-!
-    endsubroutine output_form_int_0D
 !***********************************************************************
     subroutine input_snap(file, a, nv, mode)
 !
@@ -939,7 +891,7 @@ module Io
 !  13-Dec-2011/Bourdin.KIS: coded
 !
       use Mpicomm, only: mpibcast_logical
-      use File_io, only: file_exists
+      use General, only: file_exists
 !
       character (len=*), intent(in), optional :: file
 !

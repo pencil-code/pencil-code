@@ -31,13 +31,15 @@ module Particles_temperature
   include 'particles_temperature.h'
 !
   logical :: lpart_temp_backreac=.true.
+  logical :: lrad_part=.false.
   real :: init_part_temp, emissivity, cp_part=0.711e7 ! wolframalpha, erg/(g*K)
   character(len=labellen), dimension(ninit) :: init_particle_temperature='nothing'
 !
   namelist /particles_TT_init_pars/ &
       init_particle_temperature, init_part_temp, emissivity, cp_part
 !
-  namelist /particles_TT_run_pars/ emissivity, cp_part, lpart_temp_backreac
+  namelist /particles_TT_run_pars/ emissivity, cp_part, lpart_temp_backreac,&
+      lrad_part
 !
   integer :: idiag_Tpm=0, idiag_etpm=0
 !
@@ -217,16 +219,6 @@ module Particles_temperature
 !
         do k = k1,k2
 !
-!  For a quiecent fluid the Nusselt number is equal to 2. This must be
-!  changed when there is a relative velocity between the partciles and
-!  the fluid.
-!
-!            Nu_p=2.
-!
-!  Radiative heat transfer, has yet to be filled with life
-!
-          Qrad = 0.0
-!
 !  Calculate convective and conductive heat, all in CGS units
 !
           ix0 = ineargrid(k,1)
@@ -235,6 +227,14 @@ module Particles_temperature
           inx0 = ix0-nghost
           cond = p%tcond(inx0)
           Ap = 4.*pi*fp(k,iap)**2
+!
+!  Radiative heat transfer, has yet to be filled with life
+!
+          if (lrad_part) then
+            Qrad=Ap*fp(k,iTp)**4*sigmaSB
+          else
+            Qrad = 0.0
+          endif
           heat_trans_coef = Nu_p(k)*cond/(2*fp(k,iap))
           Qc = heat_trans_coef*Ap*(fp(k,iTp)-interp_TT(k))
 !
@@ -303,10 +303,9 @@ module Particles_temperature
 !***********************************************************************
     subroutine read_particles_TT_init_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=particles_TT_init_pars, IOSTAT=iostat)
 !
@@ -322,10 +321,9 @@ module Particles_temperature
 !***********************************************************************
     subroutine read_particles_TT_run_pars(iostat)
 !
-      use File_io, only: get_unit
+      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
-      include "parallel_unit.h"
 !
       read(parallel_unit, NML=particles_TT_run_pars, IOSTAT=iostat)
 !
