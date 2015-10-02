@@ -94,7 +94,7 @@ module InitialCondition
 !  proportionately. Multiply by m_u_cgs for gas density
 !
   real, parameter, dimension(5) :: nfraction_cgs = (/0.6541, 0.1775, 0.1028, 0.0245, 0.0411/) ! particles per cm cubed 
-  real, parameter, dimension(5) :: hscale_cgs = (/3.919e20, 9.813e20, 1.244e21, 2.160e20, 2.777e21/) ! scale height in cm
+  real, parameter, dimension(5) :: hscale_cgs = (/3.9188e20, 9.8125e20, 1.2435e21, 2.1600e20, 2.7771e21/) ! scale height in cm
   real, dimension(5) :: rho_fraction, hscale 
 !
 !  Parameters for UV heating of Wolfire et al.
@@ -121,14 +121,15 @@ module InitialCondition
   character (len=labellen) :: heating_select  = 'wolfire'
 !
 !
-  real, parameter :: T0hs_cgs=1E3, zT_cgs = 2.785E21
-  real :: T0hs=impossible, zT=impossible, rho_max, const_T_frac=1.25
+  real, parameter :: rho0ts_cgs=3.5e-24, T0hs_cgs=7E2, zT_cgs = 2.777E21 !900 pc
+  real :: T0hs=impossible, zT=impossible, rho_max, const_T_frac=6.5
+  real :: rho0ts=impossible
 !
 !
 !  TT & z-dependent uv-heating profile
 !
   real, dimension(mz) :: rho, TT, rho_obs, drhodz, d2rhodz2, dTdz, d2Tdz2
-  real, dimension(mz) :: eta_mz, chi_mz, lnTT
+  real, dimension(mz) :: eta_mz, chi_mz, lnTT, dlnTdz, d2lnTdz2
 !
 !  Magnetic profile - the magnetic field is propto sqrt density
 !  Diffusivities propto sqrt(T)
@@ -148,7 +149,7 @@ module InitialCondition
 !  start parameters
 !
   namelist /initial_condition_pars/ &
-      T0hs, const_T_frac, amplaa, zT, cooling_select, &
+      T0hs, const_T_frac, amplaa, zT, cooling_select, rho0ts, &
       heating_select, chi_th, eta_cspeed, eta, iresistivity, initaa, &
       ybias_aa
 !
@@ -230,23 +231,24 @@ module InitialCondition
       real :: cp1, muhs, Rgas
       real, dimension(mz) :: Gamma_z, Lambda_z, gravz
       integer :: i 
+!      real :: T0hs = 5500., rho0ts=3.5
 !
 !  Set up physical units.
 !
-      call select_cooling(cooling_select,lncoolT,lncoolH,coolB)
+      call select_cooling()
       unit_Gamma  = unit_velocity**3 / unit_length
       if (unit_system=='cgs') then
         a_S = a_S_cgs/unit_velocity*unit_time
         z_S = z_S_cgs/unit_length
         a_D = a_D_cgs/unit_velocity*unit_time
         z_D = z_D_cgs/unit_length
-!        rho_fraction = nfraction * m_u_cgs/unit_density
-!        hscale = hscale_cgs/unit_length       
-!        if (T0hs == impossible) T0hs=T0hs_cgs/unit_temperature
-!        if (zT == impossible) zT=zT_cgs/unit_length
+        T0UV=T0UV_cgs / unit_temperature
+        cUV=cUV_cgs * unit_temperature
+        if (rho0ts == impossible) rho0ts = rho0ts_cgs/unit_density
+        if (T0hs == impossible) T0hs = rho0ts_cgs/unit_temperature
         if (GammaUV == impossible) GammaUV=GammaUV_cgs/unit_Gamma
         if (amplaa == impossible) amplaa = &
-            amplaa_cgs/unit_magnetic/sqrt(unit_density)
+            amplaa_cgs/unit_magnetic*sqrt(unit_density)
         if (eta == impossible) eta=eta_cgs/unit_velocity/unit_length
         if (eta_cspeed == impossible) eta_cspeed=&
             eta_cgs/unit_velocity/unit_length*sqrt(unit_temperature)
@@ -295,27 +297,43 @@ module InitialCondition
           eta_mz = eta
         else if (iresistivity=='eta-cspeed') then
           if (lroot) print*, 'resistivity: sound speed dependent SN driven ISM'
-          eta_mz = eta_cspeed*sqrt(TT)
+          eta_mz = eta_cspeed*sqrt(exp(lnTT))
         else
           if (lroot) print*, 'No such value for iresistivity: ', &
               trim(iresistivity)
           call fatal_error('initialize_magnetic','')
         endif
       endif
-      chi_mz=chi_th*sqrt(TT)
+      chi_mz=chi_th*sqrt(exp(lnTT))
 !
 !  rho is an even function of z, so multiply odd components by sign(1.0,z)
 !
-      rho = Gamma_z/Lambda_z + chi_mz/cp1/Lambda_z * (sign(1.0,z)* &
-            d2Tdz2 + (0.5/TT - mu0*Rgas/(mu0*Rgas*TT + amplaa**2*muhs) &
-            ) * dTdz**2 + dTdz*gravz*mu0*muhs/(mu0*Rgas*TT + amplaa**2*muhs) &
-            ) + eta_mz*mu0*amplaa**2/(mu0*Rgas*TT + amplaa**2*muhs)**2 * &
-            (muhs**2*gravz**2 - 2.*muhs*gravz*Rgas*dTdz + Rgas**2*dTdz**2)/ &
-            (4.*Lambda_z)
+!      rho = Gamma_z/Lambda_z + chi_mz/cp1/Lambda_z * (sign(1.0,z)* &
+!            d2Tdz2 + (0.5/TT - mu0*Rgas/(mu0*Rgas*TT + amplaa**2*muhs) &
+!            ) * dTdz**2 + dTdz*gravz*mu0*muhs/(mu0*Rgas*TT + amplaa**2*muhs) &
+!            ) + eta_mz*mu0*amplaa**2/(mu0*Rgas*TT + amplaa**2*muhs)**2 * &
+!            (muhs**2*gravz**2 - 2.*muhs*gravz*Rgas*dTdz + Rgas**2*dTdz**2)/ &
+!            (4.*Lambda_z)
+      rho = rho0ts * exp(m_u*muhs/k_B/T0hs *  &
+              (a_S*z_S - a_S*sqrt(z_S**2+z**2) - 0.5*a_D*z**2/z_D + a_S*abs(z)/16))+rho0ts*5e-3
+!      rho = Gamma_z/Lambda_z + chi_mz/cp1/Lambda_z * TT * ( &
+!            d2lnTdz2 + (1.5 - mu0*Rgas*TT/(mu0*Rgas*TT + amplaa**2*muhs) &
+!            )*dlnTdz**2 + dlnTdz*gravz*mu0*muhs/(mu0*Rgas*TT + amplaa**2*muhs) &
+!            ) + eta_mz*mu0*amplaa**2/(mu0*Rgas*TT + amplaa**2*muhs)**2 * &
+!            (muhs**2*gravz**2 - 2.*TT*muhs*gravz*Rgas*dTdz + TT**2*Rgas**2*dTdz**2)/ &
+!            (4.*Lambda_z)
       do n=n1,n2
+!         print*,'g2, z =',&
+!               ((1.5 - mu0*Rgas*TT(n)/(mu0*Rgas*TT(n) + amplaa**2*muhs) &
+!               )*dlnTdz(n)**2 + dlnTdz(n)*gravz(n)*mu0*muhs/(mu0*Rgas*TT(n) + &
+!               amplaa**2*muhs)), z(n)
+!         print*,'lnTT, dlnTTdz, dlnrho, z =', lnTT(n), dlnTdz(n), &
+!                gravz(n)*muhs/(Rgas*TT(n)) - dlnTdz(n), z(n)
         f(:,:,n,ilnrho)=log(rho(n))
-        f(:,:,n,inetcool) = rho(n)*Lambda_z(n) - Gamma_z(n)
+!        f(:,:,n,iheatcool) = Gamma_z(n) - rho(n)*Lambda_z(n)
+!        f(:,:,n,icooling) =  rho(n)*Lambda_z(n)
       enddo
+!      print*,'cp1, Rgas, muhs, rhomax =',cp1, Rgas, muhs, rho_max
 !
     endsubroutine initial_condition_lnrho
 !***********************************************************************
@@ -357,13 +375,13 @@ module InitialCondition
               -sign(1.0,z)*rho_fraction(5) * exp(-abs(z)/hscale(5))/hscale(5) 
 !
       d2rhodz2 = &
-        -sign(1.0,z)*2/hscale(1)**2 * rho_fraction(1) * exp(-z**2/hscale(1)**2) &
-        +4*sign(1.0,z)*z**2/hscale(1)**4*rho_fraction(1)*exp(-z**2/hscale(1)**2) &
-        -sign(1.0,z)*2/hscale(2)**2 * rho_fraction(2) * exp(-z**2/hscale(2)**2) &
-        +4*sign(1.0,z)*z**2/hscale(2)**4*rho_fraction(2)*exp(-z**2/hscale(2)**2) &
-        +sign(1.0,z)* rho_fraction(3) * exp(-abs(z)/hscale(3))/hscale(3)**2 &
-        +sign(1.0,z)* rho_fraction(4) * exp(-abs(z)/hscale(4))/hscale(4)**2 &
-        +sign(1.0,z)* rho_fraction(5) * exp(-abs(z)/hscale(5))/hscale(5)**2 
+        -2/hscale(1)**2 * rho_fraction(1) * exp(-z**2/hscale(1)**2) &
+        +4*z**2/hscale(1)**4*rho_fraction(1)*exp(-z**2/hscale(1)**2) &
+        -2/hscale(2)**2 * rho_fraction(2) * exp(-z**2/hscale(2)**2) &
+        +4*z**2/hscale(2)**4*rho_fraction(2)*exp(-z**2/hscale(2)**2) &
+        +rho_fraction(3) * exp(-abs(z)/hscale(3))/hscale(3)**2 &
+        +rho_fraction(4) * exp(-abs(z)/hscale(4))/hscale(4)**2 &
+        +rho_fraction(5) * exp(-abs(z)/hscale(5))/hscale(5)**2 
 !
 !  Temperature Ansatz, constructed to preserve positive density for all z
 !  and column density same order as observation 
@@ -373,11 +391,17 @@ module InitialCondition
       TT = T0hs * rho_max/rho_obs * exp(-abs(z)/zT) + const_T_frac * T0hs
       lnTT = log(TT)
 !
-!  TT is an even function, but its derivatives must be odd functions of z
+!  TT is an even function, but its first derivative is odd functions of z
 !
-      dTdz =  -TT * (sign(1.0,z)/zT + drhodz/rho_obs)
-      d2Tdz2 = TT * (sign(1.0,z)/zT**2 + 2*drhodz/(zT*rho_obs) &
-                   + 2*sign(1.0,z)*drhodz**2/rho_obs**2 - d2rhodz2/rho_obs)
+      dTdz =    -T0hs * rho_max/rho_obs * exp(-abs(z)/zT) * &
+                      (sign(1.0,z)/zT + drhodz/rho_obs)
+      dlnTdz =  -T0hs * rho_max/rho_obs * exp(-abs(z)/zT) * &
+                      (sign(1.0,z)/zT + drhodz/rho_obs) / TT
+      d2Tdz2 =   T0hs * rho_max/rho_obs * exp(-abs(z)/zT) * &
+                  (1./zT**2 + 2*sign(1.0,z)*drhodz/(zT*rho_obs) &
+                   + 2*drhodz**2/rho_obs**2 - d2rhodz2/rho_obs)
+      d2lnTdz2 =  d2Tdz2/TT  - dTdz**2/TT**2
+     ! d2lnTdz2 =  drhodz**2/rho_obs**2 - d2rhodz2/rho_obs
 !
     endsubroutine temperature_ansatz
 !***********************************************************************
@@ -636,14 +660,14 @@ module InitialCondition
 !
     endsubroutine initial_condition_xxp
 !*****************************************************************************
-    subroutine select_cooling(cooling_select,lncoolT,lncoolH,coolB)
+    subroutine select_cooling()
 !
 !  Routine for selecting parameters for temperature dependent cooling
 !  Lambda. 
 !
-      character (len=labellen), intent(IN) :: cooling_select  
-      real, dimension (:), intent(OUT)  :: lncoolT, coolB
-      double precision, dimension (:), intent(OUT)  :: lncoolH
+!      character (len=labellen), intent(IN) :: cooling_select  
+!      real, dimension (:), intent(OUT)  :: lncoolT, coolB
+!      double precision, dimension (:), intent(OUT)  :: lncoolH
 !
 !
       if (cooling_select == 'RBNr') then
