@@ -72,7 +72,7 @@ my %tests = (
              0 => [qw(
                          no-modules
                          most-modules
-                    )],
+                     )],
              1 => [qw(
                          backwards-compatible
                          2d-tests/selfgravitating-shearwave
@@ -82,7 +82,7 @@ my %tests = (
                          2d-tests/boussinesq_convection
                          1d-tests/implicit_diffusion
                          damped_alfven_waves
-                    )],
+                     )],
              2 => [qw(
                          0d-tests/heating_noionize
                          1d-tests/H2_flamespeed
@@ -123,27 +123,27 @@ my %tests = (
                          2d-tests/Kelvin-Helmholtz
                          2d-tests/selfgravdisk-planet-dust
                          cylindrical-globaldisk-dzone
-                    )],
                          #0d-tests/reactive_particles
+                     )],
              # Level 3 for now contains all non-canonical tests that run
              # successfully
-             3 =>  [qw(
-                          0d-tests/coagulation-fragmentation
-                          0d-tests/heating_ionize_planck
-                          1d-tests/jeans-drag-dustpar-x
-                          1d-tests/jeans-x
-                          1d-tests/sod_10s
-                          1d-tests/toomre-x
-                          2d-tests/bubble
-                          2d-tests/conv-slab-MLT
-                          2d-tests/2d_methane_flame
-                          interstellar
-                          interlocked-fluxrings
-                          conv-slab-flat
-                          testfield
-                          testfield_nonlin_z
-                          spherical-convection
-                          spherical-convection-corona
+             3 => [qw(
+                         0d-tests/coagulation-fragmentation
+                         0d-tests/heating_ionize_planck
+                         1d-tests/jeans-drag-dustpar-x
+                         1d-tests/jeans-x
+                         1d-tests/sod_10s
+                         1d-tests/toomre-x
+                         2d-tests/bubble
+                         2d-tests/conv-slab-MLT
+                         2d-tests/2d_methane_flame
+                         interstellar
+                         interlocked-fluxrings
+                         conv-slab-flat
+                         testfield
+                         testfield_nonlin_z
+                         spherical-convection
+                         spherical-convection-corona
                      )],
              # Level 4 for now contains overlong tests (e.g. test that
              # compile, start and then run for more than 5 minutes on
@@ -161,51 +161,51 @@ my %tests = (
                          sound-spherical-bufferzone
                          2d-tests/shearwave-dust-par
                          2d-tests/selfgrav-shearwave-dust-par
-                    )],
+                     )],
              # Level 5 for now contains all non-canonical tests that run,
              # but produce wrong results
-             5 =>  [qw(
-                          hexagon
-                          MHD-ABCforcing
-                          taylor-couette
-                          potential_field
-                          1d-tests/sod_100
-                          1d-tests/sod_10y
-                          geodynamo-noequi
-                          1d-tests/sod_1000
-                          1d-tests/sod_100s
-                          1d-tests/sod_10sy
-                          1d-tests/sod_10sz
-                          2d-tests/GMSW1976
-                          1d-tests/sod_1000s
-                          1d-tests/sod_10sho
-                          taylor-couette-cyl
-                          0d-tests/chemistry_aped
-                          2d-tests/GMSW1976_cpne1
-                          0d-tests/coag_kernel_lin
-                          2d-tests/dynamical_alpha
-                          2d-tests/potential_field
-                          2d-tests/spherical_gdisk
-                          solar-atmosphere-magnetic
-                          MRI-turbulence_hyper_strict
-                          0d-tests/heating_ionize_temp
-                          1d-tests/solar-atmosphere
+             5 => [qw(
+                         hexagon
+                         MHD-ABCforcing
+                         taylor-couette
+                         potential_field
+                         1d-tests/sod_100
+                         1d-tests/sod_10y
+                         geodynamo-noequi
+                         1d-tests/sod_1000
+                         1d-tests/sod_100s
+                         1d-tests/sod_10sy
+                         1d-tests/sod_10sz
+                         2d-tests/GMSW1976
+                         1d-tests/sod_1000s
+                         1d-tests/sod_10sho
+                         taylor-couette-cyl
+                         0d-tests/chemistry_aped
+                         2d-tests/GMSW1976_cpne1
+                         0d-tests/coag_kernel_lin
+                         2d-tests/dynamical_alpha
+                         2d-tests/potential_field
+                         2d-tests/spherical_gdisk
+                         solar-atmosphere-magnetic
+                         MRI-turbulence_hyper_strict
+                         0d-tests/heating_ionize_temp
+                         1d-tests/solar-atmosphere
                      )],
              # Level 6 for now contains all non-canonical tests that
              # start, but don't run successfully
-             6 =>  [qw(
+             6 => [qw(
                      )],
              # Level 7 for now contains all non-canonical tests that
              # compile, but don't start sucessfully
-             7 =>  [qw(
-                          interstellar_ion
-                          turb-cylindrical-disk
-                          2d-tests/A3+chi11+Ra1e5
+             7 => [qw(
+                         interstellar_ion
+                         turb-cylindrical-disk
+                         2d-tests/A3+chi11+Ra1e5
                      )],
              # Level 8 for now contains all non-canonical tests that don't
              # compile sucessfully
-             8 =>  [qw(
-                          multigrid
+             8 => [qw(
+                         multigrid
                      )],
             );
 # ---------------------------------------------------------------------- #
