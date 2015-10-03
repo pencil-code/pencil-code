@@ -48,8 +48,8 @@ module File_io
 !
       integer :: bytes, ios, ind, indc, inda, inda2, lenbuf, indmax, ni
       integer, parameter :: unit = 11
-      character(len=14000) :: linebuf             ! string length overdimensioned, but needed so for some compilers.
-      character(len=:), allocatable :: buffer
+      character(len=14000) :: linebuf   ! string length overdimensioned, but needed so for some compilers.
+      character(len=:), allocatable :: buffer   ! g95 v0.92 will not compile this line
       character :: sepchar
       logical :: l0
 !
