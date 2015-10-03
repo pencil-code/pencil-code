@@ -151,7 +151,11 @@ module File_io
         if (present(nitems)) then
 
           ! for non-namelist-read files: organize parallel_unit as array 
-          allocate(character(len=lenbuf) :: buffer)
+          ! Bug in gfortran below 4.8 prevents from using the following line:
+          !allocate(character(len=lenbuf) :: buffer)
+          ! Temporary replacement code for the above line:
+          buffer = (repeat (char (0), lenbuf))
+
           buffer=parallel_unit(1)(1:lenbuf)
           deallocate(parallel_unit)
           !allocate(character(len=indmax) :: parallel_unit(nitems))
