@@ -123,7 +123,6 @@ my %tests = (
                          2d-tests/Kelvin-Helmholtz
                          2d-tests/selfgravdisk-planet-dust
                          cylindrical-globaldisk-dzone
-                         #0d-tests/reactive_particles
                      )],
              # Level 3 for now contains all non-canonical tests that run
              # successfully
@@ -190,6 +189,7 @@ my %tests = (
                          MRI-turbulence_hyper_strict
                          0d-tests/heating_ionize_temp
                          1d-tests/solar-atmosphere
+                         0d-tests/reactive_particles
                      )],
              # Level 6 for now contains all non-canonical tests that
              # start, but don't run successfully
