@@ -99,6 +99,7 @@ my %tests = (
                          meissner
                          conv-slab-noequi
                          conv-slab
+                         corona
                          2d-tests/globaldisc
                          2d-tests/cylindrical_gdisk
                          spherical-globaldisk
@@ -139,7 +140,6 @@ my %tests = (
                           interstellar
                           interlocked-fluxrings
                           conv-slab-flat
-                          corona
                           testfield
                           testfield_nonlin_z
                           spherical-convection
