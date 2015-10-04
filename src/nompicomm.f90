@@ -2558,6 +2558,25 @@ module Mpicomm
 !
     endsubroutine unmap_from_pencil_yz_4D
 !***********************************************************************
+    subroutine collect_grid(x, y, z, gx, gy, gz)
+!
+!  This routine collects the global grid on the root processor.
+!
+!  04-Oct-2015/PABourdin: coded
+!
+      real, dimension(:), intent(in) :: x
+      real, dimension(:), intent(in) :: y
+      real, dimension(:), intent(in) :: z
+      real, dimension(:), intent(out), optional :: gx
+      real, dimension(:), intent(out), optional :: gy
+      real, dimension(:), intent(out), optional :: gz
+!
+      gx = x
+      gy = y
+      gz = z
+!
+    endsubroutine collect_grid
+!***********************************************************************
     subroutine y2x(a,xi,zj,zproc_no,ay)
 !
 !  Load the y dimension of an array in a 1-d array.

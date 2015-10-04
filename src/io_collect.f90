@@ -109,61 +109,6 @@ module Io
 !
     endsubroutine directory_names
 !***********************************************************************
-    subroutine collect_grid(x, y, z, gx, gy, gz)
-!
-!  This routine collects the global grid on the root processor.
-!
-!  05-jul-2011/Bourdin.KIS: coded
-!
-      use Mpicomm, only: mpisend_real, mpirecv_real
-!
-      real, dimension(mx), intent(in) :: x
-      real, dimension(my), intent(in) :: y
-      real, dimension(mz), intent(in) :: z
-      real, dimension(nxgrid+2*nghost), intent(out), optional :: gx
-      real, dimension(nygrid+2*nghost), intent(out), optional :: gy
-      real, dimension(nzgrid+2*nghost), intent(out), optional :: gz
-!
-      real, dimension(l2) :: buf_x
-      real, dimension(m2) :: buf_y
-      real, dimension(n2) :: buf_z
-      integer :: px, py, pz
-      integer, parameter :: tag_gx=677, tag_gy=678, tag_gz=679
-!
-      if (lroot) then
-        ! collect the global x-data from all leading processors in the yz-plane
-        gx(1:mx) = x
-        if (nprocx > 1) then
-          do px = 1, nprocx-1
-            call mpirecv_real (buf_x, l2, px, tag_gx)
-            gx(px*nx+l1:px*nx+mx) = buf_x
-          enddo
-        endif
-        ! collect the global y-data from all leading processors in the xz-plane
-        gy(1:my) = y
-        if (nprocy > 1) then
-          do py = 1, nprocy-1
-            call mpirecv_real (buf_y, m2, py*nprocx, tag_gy)
-            gy(py*ny+m1:py*ny+my) = buf_y
-          enddo
-        endif
-        ! collect the global z-data from all leading processors in the xy-plane
-        gz(1:mz) = z
-        if (nprocz > 1) then
-          do pz = 1, nprocz-1
-            call mpirecv_real (buf_z, n2, pz*nprocxy, tag_gz)
-            gz(pz*nz+n1:pz*nz+mz) = buf_z
-          enddo
-        endif
-      else
-        ! leading processors send their local coordinates
-        if (lfirst_proc_yz) call mpisend_real (x(l1:mx), l2, 0, tag_gx)
-        if (lfirst_proc_xz) call mpisend_real (y(m1:my), m2, 0, tag_gy)
-        if (lfirst_proc_xy) call mpisend_real (z(n1:mz), n2, 0, tag_gz)
-      endif
-!
-    endsubroutine collect_grid
-!***********************************************************************
     subroutine distribute_grid(x, y, z, gx, gy, gz)
 !
 !  This routine distributes the global grid to all processors.
@@ -257,7 +202,7 @@ module Io
 !  10-Feb-2012/Bourdin.KIS: coded
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
 !
-      use Mpicomm, only: globalize_xy, mpisend_real, mpirecv_real
+      use Mpicomm, only: globalize_xy, collect_grid
 !
       integer, intent(in) :: nv
       real, dimension (mx,my,mz,nv), intent(in) :: a
@@ -356,7 +301,7 @@ module Io
 !  10-Feb-2012/Bourdin.KIS: coded
 !  13-jan-2015/MR: avoid use of fseek; if necessary comment the calls to fseek in fseek_pos
 !
-      use Mpicomm, only: localize_xy, mpisend_real, mpirecv_real, mpibcast_real
+      use Mpicomm, only: localize_xy, mpibcast_real
       use Syscalls, only: sizeof_real
       use General, only: backskip_to_time
 !
@@ -1254,6 +1199,8 @@ module Io
 !  Write grid coordinates.
 !
 !  10-Feb-2012/Bourdin.KIS: adapted for collective IO
+!
+      use Mpicomm, only: collect_grid
 !
       character (len=*) :: file
       integer, optional :: mxout,myout,mzout

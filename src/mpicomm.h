@@ -54,6 +54,7 @@
   public :: remap_to_pencil_z, unmap_from_pencil_z
   public :: remap_to_pencil_xy, unmap_from_pencil_xy, transp_pencil_xy
   public :: remap_to_pencil_yz, unmap_from_pencil_yz
+  public :: collect_grid
 
   public :: y2x, z2x
 
