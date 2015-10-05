@@ -82,10 +82,20 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
+!  Gravitational parameters from Kuijken & Gilmore
+!
   real :: a_S, a_D
   real, parameter :: a_S_cgs=4.4e-9, a_D_cgs=1.7e-9
   real :: z_S, z_D
   real, parameter :: z_S_cgs=6.172e20, z_D_cgs=3.086e21
+!
+!  Observed number density per cubic cm parameters from Dickey & Lockman
+!  Includes neutral hydrogen and warm ionized hydrogen plus helium 
+!  proportionately. Multiply by m_u_cgs for gas density
+!
+  real, parameter, dimension(5) :: nfraction_cgs = (/0.6541, 0.1775, 0.1028, 0.0245, 0.0411/) ! particles per cm cubed 
+  real, parameter, dimension(5) :: hscale_cgs = (/3.9188e20, 9.8125e20, 1.2435e21, 2.1600e20, 2.7771e21/) ! scale height in cm
+  real, dimension(5) :: rho_fraction, hscale 
 !
 !  Parameters for UV heating of Wolfire et al.
 !
@@ -93,6 +103,7 @@ module InitialCondition
   real, parameter :: GammaUV_cgs=0.0147
   real, parameter :: TUV_cgs=7000., T0UV_cgs=20000., cUV_cgs=5.E-4
   real :: GammaUV=impossible, T0UV=impossible, cUV=impossible
+  real :: unit_Lambda, unit_Gamma, coolingfunction_scalefactor=1.
 !
 !  04-jan-10/fred:
 !  Amended cool dim from 7 to 11 to accomodate WSW dimension.
@@ -106,28 +117,41 @@ module InitialCondition
 !  Heating function, cooling function and mass movement
 !  method selection.
 !
-  character (len=labellen) :: cooling_select  = 'RBN'
+  character (len=labellen) :: cooling_select  = 'WSW'
   character (len=labellen) :: heating_select  = 'wolfire'
 !
 !
-  real, parameter :: rho0ts_cgs=3.5E-24, T0hs_cgs=7.088E2
-  real :: rho0ts=impossible, T0hs=impossible
+  real, parameter :: rho0ts_cgs=3.5e-24, T0hs_cgs=7E2, zT_cgs = 2.777E21 !900 pc
+  real :: T0hs=impossible, zT=impossible, rho_max, const_T_frac=6.5
+  real :: rho0ts=impossible
 !
 !
 !  TT & z-dependent uv-heating profile
 !
-  real, dimension(mz) :: TT, zrho
-  logical :: lthermal_hse=.true.
+  real, dimension(mz) :: rho, TT, rho_obs, drhodz, d2rhodz2, dTdz, d2Tdz2
+  real, dimension(mz) :: eta_mz, chi_mz, lnTT, dlnTdz, d2lnTdz2
 !
-!  Magnetic profile
+!  Magnetic profile - the magnetic field is propto sqrt density
+!  Diffusivities propto sqrt(T)
 !
-  real, parameter :: amplaa_cgs=1e-9 ! 1 nano Gauss
-  real :: amplaa=impossible
+  real, parameter :: amplaa_cgs=1e-21  ! 1 nano Gauss (G g^{1/2} cm^-{3/2})
+  real, parameter :: chi_cgs = 8.425e23  ! 1 cm^2/s/K^0.5
+  real, parameter :: eta_cgs = 8.425e18  ! 1 cm^2/s(/K^0.5 if cspeed)
+  real :: amplaa=impossible, chi_th=impossible, eta_cspeed=impossible
+  real :: eta=impossible, ybias_aa = 1.0 ! adjust angle of field defalt 45deg
+!
+!  multiple options for resistivity are possible in magnetic.f90, but here
+!  only constant or sound speed dependent eta exclusively
+!
+  character (len=labellen) :: iresistivity=''
+  character (len=labellen), dimension(ninit) :: initaa='nothing'
 !
 !  start parameters
 !
   namelist /initial_condition_pars/ &
-      rho0ts, T0hs, lthermal_hse, amplaa
+      T0hs, const_T_frac, amplaa, zT, cooling_select, rho0ts, &
+      heating_select, chi_th, eta_cspeed, eta, iresistivity, initaa, &
+      ybias_aa
 !
   contains
 !***********************************************************************
@@ -201,62 +225,185 @@ module InitialCondition
 !
 !  07-jul-15/fred: coded
 !
-      use EquationOfState, only: getmu
-      use Interstellar, only: select_cooling 
+      use EquationOfState, only: getmu, get_cp1
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real :: logrho, muhs
+      real :: cp1, muhs, Rgas
+      real, dimension(mz) :: Gamma_z, Lambda_z, gravz
+      integer :: i 
+!      real :: T0hs = 5500., rho0ts=3.5
 !
 !  Set up physical units.
 !
-      call select_cooling(cooling_select,lncoolT,lncoolH,coolB)
+      call select_cooling()
+      unit_Gamma  = unit_velocity**3 / unit_length
       if (unit_system=='cgs') then
         a_S = a_S_cgs/unit_velocity*unit_time
         z_S = z_S_cgs/unit_length
         a_D = a_D_cgs/unit_velocity*unit_time
         z_D = z_D_cgs/unit_length
-        if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
-        if (T0hs == impossible) T0hs=T0hs_cgs/unit_temperature
+        T0UV=T0UV_cgs / unit_temperature
+        cUV=cUV_cgs * unit_temperature
+        if (rho0ts == impossible) rho0ts = rho0ts_cgs/unit_density
+        if (T0hs == impossible) T0hs = rho0ts_cgs/unit_temperature
+        if (GammaUV == impossible) GammaUV=GammaUV_cgs/unit_Gamma
+        if (amplaa == impossible) amplaa = &
+            amplaa_cgs/unit_magnetic*sqrt(unit_density)
+        if (eta == impossible) eta=eta_cgs/unit_velocity/unit_length
+        if (eta_cspeed == impossible) eta_cspeed=&
+            eta_cgs/unit_velocity/unit_length*sqrt(unit_temperature)
+        if (chi_th == impossible) chi_th= &
+            chi_cgs/unit_velocity/unit_length*sqrt(unit_temperature)
       else if (unit_system=='SI') then
         call fatal_error('initial_condition_lnrho','SI unit conversions not inplemented')
       endif
 !
-      call getmu(f,muhs)
+!  Stellar and dark halo gravity profile 
 !
-      cool=0.0
+      gravz = -a_S*z/sqrt(z_S**2 + z**2) - a_D * z/z_D
+!
+ !     call temperature_ansatz(TT,dTdz,d2Tdz2,rho_obs,drhodz,d2rhodz2)
+      call temperature_ansatz()
+!
+!  Cooling function Lambda_i T^beta_i for T_i<T<T_(i+1) 
+!
+      Lambda_z=0.0
       cool_loop: do i=1,ncool
         if (lncoolT(i) >= lncoolT(i+1)) exit cool_loop
         where (lncoolT(i) <= lnTT .and. lnTT < lncoolT(i+1))
-          cool=cool+exp(lncoolH(i)+lnrho+lnTT*coolB(i))
+          Lambda_z=Lambda_z+exp(lncoolH(i)+lnTT*coolB(i))
         endwhere
       enddo cool_loop
-      if (lroot) print*, 'thermal-hs: '// &
-          'hydrostatic thermal equilibrium density and entropy profiles'
 !
-!  requires heating_select = 'wolfire' in interstellar_run_pars
+!  UV heating requires heating_select = 'wolfire' in interstellar_run_pars
+!  and lthermal_hs = F in interstellar_run_pars
 !
-      Gamma_z = GammaUV*0.5*(1.0+tanh(cUV*(T0UV-exp(lnTT))))
-      do n=1,mz
-        if (lthermal_hse) then
-          logrho = log(rho0ts)+(a_S*z_S*m_u*muhs/k_B/T0hs)*(log(T0hs)- &
-              log(T0hs/(a_S*z_S)* &
-              (a_S*sqrt(z_S**2+(z(n))**2)+0.5*a_D*(z(n))**2/z_D)))
+
+      if (heating_select /= 'wolfire') then
+        call fatal_error('initial_condition_lnrho','heating_select "'&
+           // trim(heating_select) // '" not inplemented')
+      else
+        Gamma_z = GammaUV*0.5*(1.0+tanh(cUV*(T0UV-exp(lnTT))))
+      endif
+      call getmu(f,muhs)
+      call get_cp1(cp1)
+      Rgas = k_B/m_u
+      if (.not. lmagnetic) then
+        amplaa = 0.
+        eta_mz = 0.
+      else
+        if (iresistivity=='eta-const') then
+          if (lroot) print*, 'resistivity: constant eta'
+          eta_mz = eta
+        else if (iresistivity=='eta-cspeed') then
+          if (lroot) print*, 'resistivity: sound speed dependent SN driven ISM'
+          eta_mz = eta_cspeed*sqrt(exp(lnTT))
         else
-          logrho = log(rho0ts)-0.015*(- &
-              a_S*z_S+ &
-              a_S*sqrt(z_S**2+(z(n))**2)+0.5*a_D*(z(n))**2/z_D)
+          if (lroot) print*, 'No such value for iresistivity: ', &
+              trim(iresistivity)
+          call fatal_error('initialize_magnetic','')
         endif
-        if (logrho < -40.0) logrho=-40.0
-        zrho(n)=exp(logrho)
-      enddo
-      do n=n1,n2
-        f(:,:,n,ilnrho)=log(zrho(n))
-      enddo
-      if (lroot) print*, 'zhro =',minval(zrho),maxval(zrho),'T0hs =',T0hs,'rho0ts =',rho0ts
+      endif
+      chi_mz=chi_th*sqrt(exp(lnTT))
 !
-      call keep_compiler_quiet(f)
+!  rho is an even function of z, so multiply odd components by sign(1.0,z)
+!
+!      rho = Gamma_z/Lambda_z + chi_mz/cp1/Lambda_z * (sign(1.0,z)* &
+!            d2Tdz2 + (0.5/TT - mu0*Rgas/(mu0*Rgas*TT + amplaa**2*muhs) &
+!            ) * dTdz**2 + dTdz*gravz*mu0*muhs/(mu0*Rgas*TT + amplaa**2*muhs) &
+!            ) + eta_mz*mu0*amplaa**2/(mu0*Rgas*TT + amplaa**2*muhs)**2 * &
+!            (muhs**2*gravz**2 - 2.*muhs*gravz*Rgas*dTdz + Rgas**2*dTdz**2)/ &
+!            (4.*Lambda_z)
+      rho = rho0ts * exp(m_u*muhs/k_B/T0hs *  &
+              (a_S*z_S - a_S*sqrt(z_S**2+z**2) - 0.5*a_D*z**2/z_D + a_S*abs(z)/16))+rho0ts*5e-3
+!      rho = Gamma_z/Lambda_z + chi_mz/cp1/Lambda_z * TT * ( &
+!            d2lnTdz2 + (1.5 - mu0*Rgas*TT/(mu0*Rgas*TT + amplaa**2*muhs) &
+!            )*dlnTdz**2 + dlnTdz*gravz*mu0*muhs/(mu0*Rgas*TT + amplaa**2*muhs) &
+!            ) + eta_mz*mu0*amplaa**2/(mu0*Rgas*TT + amplaa**2*muhs)**2 * &
+!            (muhs**2*gravz**2 - 2.*TT*muhs*gravz*Rgas*dTdz + TT**2*Rgas**2*dTdz**2)/ &
+!            (4.*Lambda_z)
+      do n=n1,n2
+!         print*,'g2, z =',&
+!               ((1.5 - mu0*Rgas*TT(n)/(mu0*Rgas*TT(n) + amplaa**2*muhs) &
+!               )*dlnTdz(n)**2 + dlnTdz(n)*gravz(n)*mu0*muhs/(mu0*Rgas*TT(n) + &
+!               amplaa**2*muhs)), z(n)
+!         print*,'lnTT, dlnTTdz, dlnrho, z =', lnTT(n), dlnTdz(n), &
+!                gravz(n)*muhs/(Rgas*TT(n)) - dlnTdz(n), z(n)
+        f(:,:,n,ilnrho)=log(rho(n))
+!        f(:,:,n,iheatcool) = Gamma_z(n) - rho(n)*Lambda_z(n)
+!        f(:,:,n,icooling) =  rho(n)*Lambda_z(n)
+      enddo
+!      print*,'cp1, Rgas, muhs, rhomax =',cp1, Rgas, muhs, rho_max
 !
     endsubroutine initial_condition_lnrho
+!***********************************************************************
+    subroutine temperature_ansatz()
+!
+!  Initialize vertical profile for temperature using empirical density
+!  models from which to derive initial density and entropy distributuins
+!
+!  07-jul-15/fred: coded
+!
+!  Set up physical units.
+!
+      if (unit_system=='cgs') then
+        rho_fraction = nfraction_cgs * m_u_cgs/unit_density
+        hscale = hscale_cgs/unit_length       
+        if (T0hs == impossible) T0hs=T0hs_cgs/unit_temperature
+        if (zT == impossible) zT=zT_cgs/unit_length
+      else if (unit_system=='SI') then
+        call fatal_error('initial_condition_lnrho','SI unit conversions not inplemented')
+      endif
+!
+!  Observed density profile and 1st/2nd derivatives used to specify initial
+!  temperature profile and calculate initial density for thermo-hydrostatic
+!  balance, subject to radiative transfer
+!
+      rho_obs = rho_fraction(1) * exp(-z**2/hscale(1)**2) &
+              + rho_fraction(2) * exp(-z**2/hscale(2)**2) &
+              + rho_fraction(3) * exp(-abs(z)/hscale(3)) &
+              + rho_fraction(4) * exp(-abs(z)/hscale(4)) &
+              + rho_fraction(5) * exp(-abs(z)/hscale(5)) 
+      rho_max = sum(rho_fraction)
+!
+!  rho_obs is an even function, but its derivatives must be odd functions of z
+!
+      drhodz = -2*z/hscale(1)**2 * rho_fraction(1) * exp(-z**2/hscale(1)**2) &
+               -2*z/hscale(2)**2 * rho_fraction(2) * exp(-z**2/hscale(2)**2) &
+              -sign(1.0,z)*rho_fraction(3) * exp(-abs(z)/hscale(3))/hscale(3) &
+              -sign(1.0,z)*rho_fraction(4) * exp(-abs(z)/hscale(4))/hscale(4) &
+              -sign(1.0,z)*rho_fraction(5) * exp(-abs(z)/hscale(5))/hscale(5) 
+!
+      d2rhodz2 = &
+        -2/hscale(1)**2 * rho_fraction(1) * exp(-z**2/hscale(1)**2) &
+        +4*z**2/hscale(1)**4*rho_fraction(1)*exp(-z**2/hscale(1)**2) &
+        -2/hscale(2)**2 * rho_fraction(2) * exp(-z**2/hscale(2)**2) &
+        +4*z**2/hscale(2)**4*rho_fraction(2)*exp(-z**2/hscale(2)**2) &
+        +rho_fraction(3) * exp(-abs(z)/hscale(3))/hscale(3)**2 &
+        +rho_fraction(4) * exp(-abs(z)/hscale(4))/hscale(4)**2 &
+        +rho_fraction(5) * exp(-abs(z)/hscale(5))/hscale(5)**2 
+!
+!  Temperature Ansatz, constructed to preserve positive density for all z
+!  and column density same order as observation 
+!  1st/2nd derivatives required for calulation of initial density for
+!  thermo-hydrostatic balance, subject to radiative transfer
+!
+      TT = T0hs * rho_max/rho_obs * exp(-abs(z)/zT) + const_T_frac * T0hs
+      lnTT = log(TT)
+!
+!  TT is an even function, but its first derivative is odd functions of z
+!
+      dTdz =    -T0hs * rho_max/rho_obs * exp(-abs(z)/zT) * &
+                      (sign(1.0,z)/zT + drhodz/rho_obs)
+      dlnTdz =  -T0hs * rho_max/rho_obs * exp(-abs(z)/zT) * &
+                      (sign(1.0,z)/zT + drhodz/rho_obs) / TT
+      d2Tdz2 =   T0hs * rho_max/rho_obs * exp(-abs(z)/zT) * &
+                  (1./zT**2 + 2*sign(1.0,z)*drhodz/(zT*rho_obs) &
+                   + 2*drhodz**2/rho_obs**2 - d2rhodz2/rho_obs)
+      d2lnTdz2 =  d2Tdz2/TT  - dTdz**2/TT**2
+     ! d2lnTdz2 =  drhodz**2/rho_obs**2 - d2rhodz2/rho_obs
+!
+    endsubroutine temperature_ansatz
 !***********************************************************************
     subroutine initial_condition_ss(f)
 !
@@ -267,43 +414,16 @@ module InitialCondition
       use EquationOfState, only: eoscalc, ilnrho_lnTT 
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real :: TT, lnTT, lnrho, ss
+      real :: lnrho, ss
 !
-!  Set up physical units.
+      do n=n1,n2
+        lnrho=log(rho(n))
 !
-      if (unit_system=='cgs') then
-        a_S = a_S_cgs/unit_velocity*unit_time
-        z_S = z_S_cgs/unit_length
-        a_D = a_D_cgs/unit_velocity*unit_time
-        z_D = z_D_cgs/unit_length
-        if (T0hs == impossible) T0hs=T0hs_cgs/unit_temperature
-      else if (unit_system=='SI') then
-        call fatal_error('initial_condition_lnrho','SI unit conversions not inplemented')
-      endif
-!
-      if (lroot) print*, 'thermal-hs: '// &
-          'hydrostatic thermal equilibrium density and entropy profiles'
-      do n=1,mz
-        if (ldensity_nolog) then
-          lnrho=log(f(1,1,n,irho))
-        else
-          lnrho=f(1,1,n,ilnrho)
-        endif
-!
-        TT=T0hs/(a_S*z_S)* &
-            (a_S*sqrt(z_S**2+(z(n))**2)+0.5*a_D*(z(n))**2/z_D)
-        lnTT=log(TT)
-!
-        call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
+        call eoscalc(ilnrho_lnTT,lnrho,lnTT(n),ss=ss)
 !
         f(:,:,n,iss)=ss
 !
       enddo
-!
-!
-!  SAMPLE IMPLEMENTATION
-!
-      call keep_compiler_quiet(f)
 !
     endsubroutine initial_condition_ss
 !***********************************************************************
@@ -318,67 +438,55 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      integer :: i ,icpu
-      real :: tmp1,tmp3
-      real, dimension(ncpus)::sumtmp,tmp2
+      integer :: i ,j, l, m, n
 !
-      if (unit_system=='cgs') then
-        if (amplaa == impossible) amplaa = amplaa_cgs/unit_magnetic
-      else if (unit_system=='SI') then
-        call fatal_error('initial_condition_magnetic','SI unit conversions not inplemented')
-      endif
+      if (.not. lmagnetic) then
 !
-      tmp2(:)=0.0
-      sumtmp(:)=0.0
-      if (ldensity_nolog) then
-        tmp1=sum(f(l1:l2,m1,n1:n2,irho))
-      else
-        tmp1=sum(exp(f(l1:l2,m1,n1:n2,ilnrho)))
-      endif
-!
-!  Calculate the total mass on each processor tmp1 and identify it with the
-!  appropriate processor in the array tmp2
-!
-      do icpu=1,ncpus
-        tmp3=tmp1
-        call mpibcast_real(tmp3,icpu-1)
-        tmp2(icpu)=tmp3
-      enddo
-!
-!  If nprocz is 1 then start summing mass below from zero (sumtmp above).
-!  Otherwise sum the masses on the processors below from which to start
-!  summing the mass on this processor.
-!
-      if (ncpus>nprocy) then
-        do icpu=nprocy+1,ncpus
-          sumtmp(icpu)=sumtmp(icpu-nprocy)+tmp2(icpu-nprocy)
+        call keep_compiler_quiet(f)
+      else     
+        do j=1,ninit
+!  
+          select case (initaa(j))
+          case ('nothing'); if (lroot .and. j==1) print*,'init_aa: nothing'
+          case ('zero', '0'); f(:,:,:,iax:iaz) = 0.0
+          case ('uniform-x')
+            f(:,:,:,iax:iay) = 0.0
+            do l=l1,l2
+            do n=n1,n2
+              f(l,m1:m2,n,iaz) = amplaa * y(m1:m2) * sqrt(rho(n))
+            enddo
+            enddo
+          case ('uniform-y')
+            f(:,:,:,iax:iay) = 0.0
+            do m=m1,m2
+            do n=n1,n2
+              f(l1:l2,m,n,iaz) = amplaa * x(l1:l2) * sqrt(rho(n))
+            enddo
+            enddo
+          case ('uniform-x+y')
+            f(:,:,:,iax:iay) = 0.0
+            do l=l1,l2
+            do m=m1,m2
+            do n=n1,n2
+              f(l,m,n,iaz) = amplaa * (x(l) + ybias_aa*y(m)) * sqrt(rho(n)) / &
+                             sqrt(1 + ybias_aa**2)
+            enddo
+            enddo
+            enddo
+          case default
+!  
+!  Catch unknown values.
+!  
+            call fatal_error('inititial_condition_aa', &
+                'init_aa value "' // trim(initaa(j)) // '" not recognised')
+!  
+          endselect
+!  
+!  End loop over initial conditions.
+!  
         enddo
-      endif
-      if (lroot) print*,'sumtmp =',sumtmp
-      print*,'sumtmp on iproc =',sumtmp(iproc+1),iproc
-      if (amplaa==0) then
-        f(:,:,:,iaa:iaa+2)=0
-        if (lroot) print*,'ferriere_uniform_y: set B field to zero; i=',i
-      else
-        print*,'ferriere_uniform_y: uniform y-field approx rho; i=',i
-        if ((ip<=16).and.lroot) print*,'uniform_y: amplaa=',amplaa
-        do n=n1,n2
-        do m=m1,m2
-          if (ldensity_nolog) then
-            f(l1:l2,m,n,iaa)=amplaa*(sumtmp(iproc+1)+&
-                sum(f(l1:l2,m,n1:n,irho)))*dx*dz
-          else
-            f(l1:l2,m,n,iaa)=amplaa*(sumtmp(iproc+1)+&
-                sum(exp(f(l1:l2,m,n1:n,ilnrho))))*dx*dz
-          endif
-          f(l1:l2,m,n,iaa+1)=0.0
-          f(l1:l2,m,n,iaa+2)=0.0
-        enddo
-        enddo
-      endif
-!  SAMPLE IMPLEMENTATION
 !
-      call keep_compiler_quiet(f)
+      endif
 !
     endsubroutine initial_condition_aa
 !***********************************************************************
@@ -552,51 +660,95 @@ module InitialCondition
 !
     endsubroutine initial_condition_xxp
 !*****************************************************************************
-    subroutine select_cooling(cooling_select,lncoolT,lncoolH,coolB)
+    subroutine select_cooling()
 !
 !  Routine for selecting parameters for temperature dependent cooling
 !  Lambda. 
 !
-      character (len=labellen), intent(IN) :: cooling_select  
-      real, dimension (:), intent(OUT)  :: lncoolT, coolB
-      double precision, dimension (:), intent(OUT)  :: lncoolH
+!      character (len=labellen), intent(IN) :: cooling_select  
+!      real, dimension (:), intent(OUT)  :: lncoolT, coolB
+!      double precision, dimension (:), intent(OUT)  :: lncoolH
 !
 !
-      if (lroot) print*,'initialize_interstellar: WSW cooling fct'
-      coolT_cgs = (/  10.0,                 &
-                      141.0,                &
-                      313.0,                &
-                      6102.0,               &
-                      1E5,                  &
-                      2.88E5,               &
-                      4.73E5,               &
-                      2.11E6,               &
-                      3.98E6,               &
-                      2.0E7,                &
-                      1.0E17      /)
-      coolH_cgs = (/  3.703109927416290D16, &
-                      9.455658188464892D18, &
-                      1.185035244783337D20, &
-                      1.102120336D10,       &
-                      1.236602671D27,       &
-                      2.390722374D42,       &
-                      4.003272698D26,       &
-                      1.527286104D44,       &
-                      1.608087849D22,       &
-                      9.228575532D20,       &
-                      tiny(0D0) /)
-      coolB =     (/  2.12,                 &
-                      1.0,                  &
-                      0.56,                 &
-                      3.21,                 &
-                     -0.20,                 &
-                     -3.0,                  &
-                     -0.22,                 &
-                     -3.00,                 &
-                      0.33,                 &
-                      0.50,                 &
-                      tiny(0.) /)
-      ncool=10
+      if (cooling_select == 'RBNr') then
+        if (lroot) print*,'initialize_interstellar: RBN cooling fct (revised)'
+        coolT_cgs = (/  10.0,         &
+                        2000.0,       &
+                        8000.0,       &
+                        1E5,          &
+                        1E6,          &
+                        1E17,         &
+                        tiny(0E0),    &
+                        tiny(0E0),    &
+                        tiny(0E0),    &
+                        tiny(0E0),    &
+                        tiny(0E0) /)
+        coolH_cgs = (/  2.2380D-32,   &
+                        1.0012D-30,   &
+                        4.6240D-36,   &
+                        1.7783524D-18,&
+                        2.238814D-25, &
+                        tiny(0D0),    &
+                        tiny(0D0),    &
+                        tiny(0D0),    &
+                        tiny(0D0),    &
+                        tiny(0D0),    &
+                        tiny(0D0) /)  / ( m_p_cgs )**2
+        coolB =     (/  2.0,          &
+                        1.5,          &
+                        2.867,        &
+                       -0.65,         &
+                        0.5,          &
+                        tiny(0.),     &
+                        tiny(0.),     &
+                        tiny(0.),     &
+                        tiny(0.),     &
+                        tiny(0.),     &
+                        tiny(0.)  /)
+        ncool=5
+      else if (cooling_select == 'WSW') then
+        if (lroot) print*,'initialize_interstellar: WSW cooling fct'
+        coolT_cgs = (/  10.0,                 &
+                        141.0,                &
+                        313.0,                &
+                        6102.0,               &
+                        1E5,                  &
+                        2.88E5,               &
+                        4.73E5,               &
+                        2.11E6,               &
+                        3.98E6,               &
+                        2.0E7,                &
+                        1.0E17      /)
+        coolH_cgs = (/  3.703109927416290D16, &
+                        9.455658188464892D18, &
+                        1.185035244783337D20, &
+                        1.102120336D10,       &
+                        1.236602671D27,       &
+                        2.390722374D42,       &
+                        4.003272698D26,       &
+                        1.527286104D44,       &
+                        1.608087849D22,       &
+                        9.228575532D20,       &
+                        tiny(0D0) /)
+        coolB =     (/  2.12,                 &
+                        1.0,                  &
+                        0.56,                 &
+                        3.21,                 &
+                       -0.20,                 &
+                       -3.0,                  &
+                       -0.22,                 &
+                       -3.00,                 &
+                        0.33,                 &
+                        0.50,                 &
+                        tiny(0.) /)
+        ncool=10
+      else if (cooling_select == 'off') then
+        if (lroot) print*,'initialize_interstellar: no cooling applied'
+        coolT_cgs=tiny(0.0)
+        coolH_cgs=tiny(0.0)
+        coolB=tiny(0.)
+      endif
+      unit_Lambda = unit_velocity**2 / unit_density / unit_time
       lncoolH(1:ncool) = real(log(coolH_cgs(1:ncool)) - log(unit_Lambda) &
                               + log(unit_temperature**coolB(1:ncool)) &
                               + log(coolingfunction_scalefactor))

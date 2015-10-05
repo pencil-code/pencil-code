@@ -64,7 +64,7 @@ module Param_IO
   public :: write_all_init_pars, write_all_run_pars
   public :: write_pencil_info
 !
-  logical :: lforce_shear_bc = .true., ltolerate_namelist_errors=.false.
+  logical :: lforce_shear_bc = .true.
 !
 ! local quantities
 !
@@ -264,8 +264,6 @@ module Param_IO
 !
       character(len=fnlen) :: file
 !
-      lnamelist_error = .false.
-!
 !  Set default to shearing sheet if lshear=.true. (even when Sshear==0.).
 !
       if (lshear .and. lforce_shear_bc) bcx(:)='she'
@@ -318,7 +316,7 @@ module Param_IO
 !
       call parallel_close
 !
-      if (lnamelist_error .and. .not. ltolerate_namelist_errors .and. .not. lparam_nml) then
+      if (lnamelist_error .and. .not. ltolerate_namelist_errors) then
         call sample_pars
         call stop_it_if_any (.true., 'read_all_init_pars: Please fix all above WARNINGs for file "'//trim(file)//'"')
       endif
@@ -387,7 +385,6 @@ module Param_IO
       logical, optional, intent(in) :: logging
       character(len=fnlen) :: file = 'run.in'
 !
-      lnamelist_error = .false.
       tstart=impossible
 !
 !  Open namelist file.

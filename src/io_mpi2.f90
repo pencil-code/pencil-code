@@ -179,61 +179,6 @@ module Io
 !
     endsubroutine directory_names
 !***********************************************************************
-    subroutine collect_grid(x, y, z, gx, gy, gz)
-!
-!  This routine collects the global grid on the root processor.
-!
-!  05-jul-2011/Bourdin.KIS: coded
-!
-      use Mpicomm, only: mpisend_real, mpirecv_real
-!
-      real, dimension(mx), intent(in) :: x
-      real, dimension(my), intent(in) :: y
-      real, dimension(mz), intent(in) :: z
-      real, dimension(nxgrid+2*nghost), intent(out), optional :: gx
-      real, dimension(nygrid+2*nghost), intent(out), optional :: gy
-      real, dimension(nzgrid+2*nghost), intent(out), optional :: gz
-!
-      real, dimension(l2) :: buf_x
-      real, dimension(m2) :: buf_y
-      real, dimension(n2) :: buf_z
-      integer :: px, py, pz
-      integer, parameter :: tag_gx=677, tag_gy=678, tag_gz=679
-!
-      if (lroot) then
-        ! collect the global x-data from all leading processors in the yz-plane
-        gx(1:mx) = x
-        if (nprocx > 1) then
-          do px = 1, nprocx-1
-            call mpirecv_real (buf_x, l2, px, tag_gx)
-            gx(px*nx+l1:px*nx+mx) = buf_x
-          enddo
-        endif
-        ! collect the global y-data from all leading processors in the xz-plane
-        gy(1:my) = y
-        if (nprocy > 1) then
-          do py = 1, nprocy-1
-            call mpirecv_real (buf_y, m2, py*nprocx, tag_gy)
-            gy(py*ny+m1:py*ny+my) = buf_y
-          enddo
-        endif
-        ! collect the global z-data from all leading processors in the xy-plane
-        gz(1:mz) = z
-        if (nprocz > 1) then
-          do pz = 1, nprocz-1
-            call mpirecv_real (buf_z, n2, pz*nprocxy, tag_gz)
-            gz(pz*nz+n1:pz*nz+mz) = buf_z
-          enddo
-        endif
-      else
-        ! leading processors send their local coordinates
-        if (lfirst_proc_yz) call mpisend_real (x(l1:mx), l2, 0, tag_gx)
-        if (lfirst_proc_xz) call mpisend_real (y(m1:my), m2, 0, tag_gy)
-        if (lfirst_proc_xy) call mpisend_real (z(n1:mz), n2, 0, tag_gz)
-      endif
-!
-    endsubroutine collect_grid
-!***********************************************************************
     subroutine distribute_grid(x, y, z, gx, gy, gz)
 !
 !  This routine distributes the global grid to all processors.
@@ -320,6 +265,18 @@ module Io
 !
     endsubroutine distribute_grid
 !***********************************************************************
+    subroutine check_success(routine, message, file)
+!
+!  Check success of MPI2 file access and issue error if necessary.
+!
+!  03-Oct-2015/PABourdin: coded
+!
+      character (len=*), intent(in) :: routine, message, file
+!
+      if (mpi_err /= MPI_SUCCESS) call fatal_error (routine//'_snap', 'Could not '//message//' "'//file//'"')
+!
+    endsubroutine check_success
+!***********************************************************************
     subroutine output_snap(a, nv, file, mode)
 !
 !  Write snapshot file, always write mesh and time, could add other things.
@@ -335,7 +292,7 @@ module Io
       integer, optional, intent(in) :: mode
 !
       real, dimension (:), allocatable :: gx, gy, gz
-      integer :: comm, handle, alloc_err, io_info=MPI_INFO_NULL
+      integer :: handle, alloc_err, io_info=MPI_INFO_NULL
       integer, dimension(MPI_STATUS_SIZE) :: status
       logical :: lwrite_add
       real :: t_sp   ! t in single precision for backwards compatibility
@@ -352,47 +309,33 @@ module Io
       local_subsize(4) = nv
       call MPI_TYPE_CREATE_SUBARRAY(n_dims+1, local_size, local_subsize, &
           local_start, order, mpi_precision, local_type, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('output_snap', &
-          'Could not create local subarray: "'//file//'"')
+      call check_success ('output', 'create local subarray', file)
       call MPI_TYPE_COMMIT(local_type, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('output_snap', &
-          'Could not commit local type: "'//file//'"')
+      call check_success ('output', 'commit local type', file)
 !
 ! Define 'global_type' to indicate the local data portion in the global file.
 !
       global_size(4) = nv
       call MPI_TYPE_CREATE_SUBARRAY(n_dims+1, global_size, local_subsize, &
           global_start, order, mpi_precision, global_type, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('output_snap', &
-          'Could not create global subarray: "'//file//'"')
+      call check_success ('output', 'create global subarray', file)
       call MPI_TYPE_COMMIT(global_type, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('output_snap', &
-          'Could not commit global type: "'//file//'"')
+      call check_success ('output', 'commit global type', file)
 !
-      call MPI_FILE_OPEN(comm, trim (directory_snap)//'/'//file, &
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, trim (directory_snap)//'/'//file, &
           MPI_MODE_CREATE+MPI_MODE_WRONLY, io_info, handle, mpi_err)
- write (*,*) "MPI_ERR open: ", mpi_err, iproc
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('output_snap', &
-          'Could not open: "'//trim (directory_snap)//'/'//file//'"')
+      call check_success ('output', 'open', trim (directory_snap)//'/'//file)
 !
 ! Setting file view and write raw binary data, ie. 'native'.
 !
-      call MPI_FILE_SET_VIEW(handle, 0, mpi_precision, global_type, &
-          'native', io_info, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('output_snap', &
-          'Could not create view for "'//file//'"')
+      call MPI_FILE_SET_VIEW(handle, 0, mpi_precision, global_type, 'native', io_info, mpi_err)
+      call check_success ('output', 'create view', file)
 !
       call MPI_FILE_WRITE_ALL(handle, a, 1, local_type, status, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('output_snap', &
-          'Could not write "'//file//'"')
+      call check_success ('output', 'write', file)
 !
       call MPI_FILE_CLOSE(handle, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('output_snap', &
-          'Could not close "'//file//'"')
-!
-      call MPI_FINALIZE(mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('output_snap', &
-          'Could not finalize "'//file//'"')
+      call check_success ('output', 'close', file)
 !
       ! write additional data:
       if (lwrite_add) then
@@ -444,7 +387,7 @@ module Io
       integer, optional, intent(in) :: mode
 !
       real, dimension (:), allocatable :: gx, gy, gz
-      integer :: comm, handle, alloc_err, io_info=MPI_INFO_NULL
+      integer :: handle, alloc_err, io_info=MPI_INFO_NULL
       integer, dimension(MPI_STATUS_SIZE) :: status
       logical :: lread_add
       real :: t_sp   ! t in single precision for backwards compatibility
@@ -458,46 +401,33 @@ module Io
       local_subsize(4) = nv
       call MPI_TYPE_CREATE_SUBARRAY(n_dims+1, local_size, local_subsize, &
           local_start, order, mpi_precision, local_type, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
-          'Could not create local subarray: "'//file//'"')
+      call check_success ('input', 'create local subarray', file)
       call MPI_TYPE_COMMIT(local_type, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
-          'Could not commit local subarray: "'//file//'"')
+      call check_success ('input', 'commit local subarray', file)
 !
 ! Define 'global_type' to indicate the local data portion in the global file.
 !
       global_size(4) = nv
       call MPI_TYPE_CREATE_SUBARRAY(n_dims+1, global_size, local_subsize, &
           global_start, order, mpi_precision, global_type, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
-          'Could not create global subarray: "'//file//'"')
+      call check_success ('input', 'create global subarray', file)
       call MPI_TYPE_COMMIT(global_type, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
-          'Could not commit global subarray: "'//file//'"')
+      call check_success ('input', 'commit global subarray', file)
 !
-      call MPI_FILE_OPEN(comm, trim (directory_snap)//'/'//file, &
+      call MPI_FILE_OPEN(MPI_COMM_WORLD, trim (directory_snap)//'/'//file, &
           MPI_MODE_CREATE+MPI_MODE_WRONLY, io_info, handle, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
-          'Could not open: "'//trim (directory_snap)//'/'//file//'"')
+      call check_success ('input', 'open', trim (directory_snap)//'/'//file)
 !
-! Setting file view and write raw binary data, ie. 'native'.
+! Setting file view and read raw binary data, ie. 'native'.
 !
-      call MPI_FILE_SET_VIEW(handle, 0, mpi_precision, global_type, &
-          'native', io_info, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
-          'Could not create view for "'//file//'"')
+      call MPI_FILE_SET_VIEW(handle, 0, mpi_precision, global_type, 'native', io_info, mpi_err)
+      call check_success ('input', 'create view', file)
 !
       call MPI_FILE_READ_ALL(handle, a, 1, local_type, status, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
-          'Could not write "'//file//'"')
+      call check_success ('input', 'read', file)
 !
       call MPI_FILE_CLOSE(handle, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
-          'Could not close "'//file//'"')
-!
-      call MPI_FINALIZE(mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
-          'Could not finalize "'//file//'"')
+      call check_success ('input', 'close', file)
 !
       ! read additional data
       if (lread_add) then
@@ -505,7 +435,7 @@ module Io
           allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
           if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for gx,gy,gz', .true.)
 !
-          open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='old',position='append')
+          open (lun_input, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', position='append', status='old')
           call backskip_to_time(lun_input)
           read (lun_input) t_sp, gx, gy, gz, dx, dy, dz
           call distribute_grid (x, y, z, gx, gy, gz)
@@ -1273,6 +1203,8 @@ module Io
 !  Write grid coordinates.
 !
 !  10-Feb-2012/Bourdin.KIS: adapted for collective IO
+!
+      use Mpicomm, only: collect_grid
 !
       character (len=*) :: file
       integer, optional :: mxout,myout,mzout

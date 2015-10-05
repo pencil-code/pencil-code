@@ -48,8 +48,8 @@ module File_io
 !
       integer :: bytes, ios, ind, indc, inda, inda2, lenbuf, indmax, ni
       integer, parameter :: unit = 11
-      character(len=14000) :: linebuf             ! string length overdimensioned, but needed so for some compilers.
-      character(len=:), allocatable :: buffer
+      character(len=14000) :: linebuf   ! string length overdimensioned, but needed so for some compilers.
+      character(len=:), allocatable :: buffer   ! g95 v0.92 will not compile this line
       character :: sepchar
       logical :: l0
 !
@@ -151,7 +151,11 @@ module File_io
         if (present(nitems)) then
 
           ! for non-namelist-read files: organize parallel_unit as array 
-          allocate(character(len=lenbuf) :: buffer)
+          ! Bug in gfortran below 4.8 prevents from using the following line:
+          !allocate(character(len=lenbuf) :: buffer)
+          ! Temporary replacement code for the above line:
+          buffer = (repeat (char (0), lenbuf))
+
           buffer=parallel_unit(1)(1:lenbuf)
           deallocate(parallel_unit)
           !allocate(character(len=indmax) :: parallel_unit(nitems))

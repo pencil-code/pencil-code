@@ -49,6 +49,7 @@ module Magnetic_meanfield
 !
   real :: Omega_ampl=0.0, dummy=0.0
   real :: alpha_effect=0.0, alpha_quenching=0.0, delta_effect=0.0, alpha_zz=0.
+  real :: gamma_effect=0.0, gamma_quenching=0.0
   real :: chit_quenching=0.0, chi_t0=0.0
   real :: meanfield_etat=0.0, meanfield_etat_height=1., meanfield_pumping=1.
   real :: meanfield_Beq=1.0,meanfield_Beq_height=0., meanfield_Beq2_height=0.
@@ -96,6 +97,7 @@ module Magnetic_meanfield
 !
   namelist /magn_mf_run_pars/ &
       alpha_effect, alpha_quenching, alpha_rmax, alpha_exp, alpha_zz, &
+      gamma_effect, gamma_quenching, &
       alpha_eps, alpha_width, alpha_width2, alpha_aniso, alpha_tensor, &
       lalpha_profile_total, lmeanfield_noalpm, alpha_profile, &
       chit_quenching, chi_t0, lqp_profile, qp_width, &
@@ -544,7 +546,8 @@ module Magnetic_meanfield
 !  Turbulent diffusivity
 !
       if (meanfield_etat/=0.0 .or. ietat/=0 .or. &
-          alpha_effect/=0.0 .or. delta_effect/=0.0) &
+          alpha_effect/=0.0 .or. delta_effect/=0.0 .or. &
+          gamma_effect/=0.0 ) &
           lpenc_requested(i_mf_EMF)=.true.
       if (delta_effect/=0.0) lpenc_requested(i_oxJ)=.true.
 !
@@ -1015,6 +1018,14 @@ module Magnetic_meanfield
             p%mf_EMF(:,2)=p%mf_EMF(:,2)-fact*meanfield_getat_tmp(:,3)*p%bb(:,1)
           endif
 !
+!  apply pumping effect in spherical coordinates
+!
+          if (gamma_effect/=0.) then
+            fact=gamma_effect
+            p%mf_EMF(:,2)=p%mf_EMF(:,2)-fact*p%bb(:,3)
+            p%mf_EMF(:,3)=p%mf_EMF(:,3)+fact*p%bb(:,2)
+          endif
+!
 !  Apply diffusion term: simple in Weyl gauge, which is not the default!
 !  In diffusive gauge, add (divA) grad(etat) term.
 !
@@ -1228,7 +1239,8 @@ module Magnetic_meanfield
 !
       if (lmagn_mf .and. &
         (meanfield_etat/=0.0 .or. ietat/=0 .or. &
-        alpha_effect/=0.0.or.delta_effect/=0.0)) then
+        alpha_effect/=0.0 .or. delta_effect/=0.0) .or. &
+        gamma_effect/=0.0 ) then
 !
 !  Apply p%mf_EMF only if .not.lmagn_mf_demfdt; otherwise postpone.
 !

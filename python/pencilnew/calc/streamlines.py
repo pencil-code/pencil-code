@@ -14,7 +14,7 @@ class Stream(object):
     Stream -- Holds the traced streamline.
     """
 
-    def __init__(self, field, params, interpolation='weighted',
+    def __init__(self, field, params, interpolation='trilinear',
                  integration='simple', h_min=2e-3, h_max=2e4, len_max=500,
                  tol=1e-2, iter_max=1e3, xx=np.array([0, 0, 0])):
         """
@@ -22,7 +22,7 @@ class Stream(object):
 
         call signature:
 
-          Stream(field, p, interpolation='weighted',
+          Stream(field, p, interpolation='trilinear',
                  integration='simple', h_min=2e-3, h_max=2e4, len_max=500,
                  tol=1e-2, iter_max=1e3, xx=np.array([0,0,0])):
 
@@ -37,8 +37,8 @@ class Stream(object):
          *interpolation*:
             Interpolation of the vector field.
             'mean': Take the mean of the adjacent grid point.
-            'weighted': Weigh the adjacent grid points according to their
-                        distance.
+            'trilinear': Weigh the adjacent grid points according to their
+                         distance.
 
          *integration*:
             Integration method.

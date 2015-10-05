@@ -100,7 +100,7 @@ module Sub
   public :: finalize_aver
   public :: fseek_pos, parallel_file_exists, parallel_count_lines, read_namelist
   public :: meanyz
-  public :: slope_limiter, diff_flux
+  public :: calc_diffusive_flux, slope_limiter, diff_flux
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -1361,7 +1361,7 @@ module Sub
 !
     endsubroutine grad5
 !***********************************************************************
-    subroutine div(f,k,g,iorder)
+    subroutine div(f,k,g,ldiff_fluxes)
 !
 !  Calculate divergence of vector, get scalar.
 !
@@ -1370,36 +1370,29 @@ module Sub
 !  31-aug-07/wlad: adapted for cylindrical and spherical coords
 !
       use Deriv, only: der
-      use General, only: ioptest
+      use General, only: loptest, ranges_dimensional
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: g
       integer :: k
-      integer, optional :: iorder
+      logical, optional :: ldiff_fluxes
 !
-      intent(in)  :: f,k,iorder
+      intent(in)  :: f,k,ldiff_fluxes
       intent(out) :: g
 !
-      integer :: k1,iord
+      integer :: k1,i
+      integer, dimension (dimensionality) :: jrange
       real, dimension (nx) :: tmp
 !
       k1=k-1
 !
-      iord=ioptest(iorder,6)
-      if (iord==2) then
-        call der_2nd(f,k1+1,tmp,1)
-        g=tmp
-        call der_2nd(f,k1+2,tmp,2)
-        g=g+tmp
-        call der_2nd(f,k1+3,tmp,3)
-        g=g+tmp
-      elseif (iord==4) then
-        call der_4th_stag(f,k1+1,tmp,1)
-        g=tmp
-        call der_4th_stag(f,k1+2,tmp,2)
-        g=g+tmp
-        call der_4th_stag(f,k1+3,tmp,3)
-        g=g+tmp
+      if (loptest(ldiff_fluxes)) then
+        call ranges_dimensional(jrange)
+        g=0
+        do i=1,dimensionality
+          call der_4th_stag(f,k1+i,tmp,jrange(i))
+          g=g+tmp
+        enddo
       else
         call der(f,k1+1,tmp,1)
         g=tmp
@@ -1456,7 +1449,7 @@ module Sub
 !
       if (j==1) then
         if (nxgrid/=1) then
-          df=( -1. *(f(l1+1:l2+1,m,n,k)-f(l1-2:l2-2,m,n,k) )     &
+          df=(      (f(l1+1:l2+1,m,n,k)-f(l1-2:l2-2,m,n,k) )     &
                +27.*(f(l1  :l2  ,m,n,k)-f(l1-1:l2-1,m,n,k) ) )/(24.*dx)
         else
           df=0.
@@ -1464,7 +1457,7 @@ module Sub
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          df=( - 1.*(f(l1:l2,m+1,n,k)-f(l1:l2,m-2,n,k) )    &
+          df=(   -  (f(l1:l2,m+1,n,k)-f(l1:l2,m-2,n,k) )    &
                +27.*(f(l1:l2,m  ,n,k)-f(l1:l2,m-1,n,k) ) )/(24.*dy) 
         else
           df=0.
@@ -1472,7 +1465,7 @@ module Sub
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          df=( - 1.*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-2,k) )    &
+          df=(   -  (f(l1:l2,m,n+1,k)-f(l1:l2,m,n-2,k) )    &
                +27.*(f(l1:l2,m,n  ,k)-f(l1:l2,m,n-1,k) ) )/(24.*dz)
         else
           df=0.
@@ -2731,7 +2724,7 @@ module Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3) :: gradf
-      real, dimension (nx,3) :: uu,ff,ugradf
+      real, dimension (nx,3) :: uu,ff,ugradf,grad_f_tmp
       real, dimension (nx) :: tmp
       integer :: j,k
       logical, optional :: upwind,ladd
@@ -2743,7 +2736,8 @@ module Sub
 !
       do j=1,3
 !
-        call u_dot_grad_scl(f,k+j-1,gradf(:,j,:),uu,tmp,UPWIND=loptest(upwind))
+        grad_f_tmp = gradf(:,j,:)
+        call u_dot_grad_scl(f,k+j-1,grad_f_tmp,uu,tmp,UPWIND=loptest(upwind))
         if (loptest(ladd)) then
           ugradf(:,j)=ugradf(:,j)+tmp
         else
@@ -2787,7 +2781,7 @@ module Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3,3) :: gradf
-      real, dimension (nx,3) :: uu,ff,ugradf
+      real, dimension (nx,3) :: uu,ff,ugradf,grad_f_tmp
       real, dimension (nx) :: tmp
       integer :: j,k,iadvec
       logical, optional :: ladd
@@ -2801,7 +2795,8 @@ module Sub
       ladd1=loptest(ladd)
 !
       do j=1,3
-        call u_dot_grad_scl_alt(f,k+j-1,gradf(:,j,:),uu,tmp,iadvec)
+        grad_f_tmp = gradf(:,j,:)
+        call u_dot_grad_scl_alt(f,k+j-1,grad_f_tmp,uu,tmp,iadvec)
         if (ladd1) then
           ugradf(:,j)=ugradf(:,j)+tmp
         else
@@ -6982,7 +6977,7 @@ nameloop: do
       endif
 !
       if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
-        lnamelist_error = .true.
+        if (.not. lparam_nml) lnamelist_error = .true.
         return
       endif
 !
@@ -7000,6 +6995,33 @@ nameloop: do
       call parallel_rewind
 !
     endsubroutine read_namelist
+!***********************************************************************
+    subroutine calc_diffusive_flux(diffs,c_char,islope_limiter,h_slope_limited,flux)
+!
+!  23-sep-15/MR,joern,fred,petri: coded
+!
+      real, dimension(:),intent(in ):: diffs,c_char
+      real,              intent(in) :: h_slope_limited
+      character(LEN=*),  intent(in) :: islope_limiter
+      real, dimension(:),intent(out):: flux
+
+      real, dimension(size(diffs)-1) :: slope
+      real, dimension(size(diffs)-2) :: phi
+      integer :: len
+
+      len=size(diffs)
+
+      call slope_limiter(diffs(2:),diffs(:len-1),slope,islope_limiter)
+      flux = diffs(2:len-1) - 0.5*(slope(2:) + slope(1:len-2))
+
+      call diff_flux(h_slope_limited, diffs(2:len-1), flux, phi)
+      flux = -0.5*c_char*phi*flux
+if (notanumber(c_char)) then
+   print*, 'CALC_DIFFUSIVE_FLUX: c_char=', len
+   stop
+endif 
+          
+    endsubroutine calc_diffusive_flux
 !***********************************************************************
     elemental subroutine slope_limiter(diff_right,diff_left,limited,type)
 

@@ -54,7 +54,7 @@ module Energy
 !
   contains
 !***********************************************************************
-    subroutine register_energy()
+    subroutine register_energy
 !
 !  No energy equation is being solved; use polytropic equation of state.
 !
@@ -62,12 +62,10 @@ module Energy
 !
       use SharedVariables
 !
-      integer :: ierr
+!  Logical variable lpressuregradient_gas shared with hydro modules.
 !
-!  logical variable lpressuregradient_gas shared with hydro modules
-!
-      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas,ierr)
-      if (ierr/=0) call fatal_error('register_energy','lpressuregradient_gas')
+      call get_shared_variable('lpressuregradient_gas',lpressuregradient_gas, &
+                               caller='register_energy')
 !
 !  Identify version number.
 !
@@ -146,8 +144,11 @@ module Energy
       use EquationOfState, only: cs20
 !
       real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
+
+      real, parameter :: weight=0.01 
 !
-      if (lslope_limit_diff) f(:,:,:,iFF_char_c)=f(:,:,:,iFF_char_c) + 0.01*cs20
+      if (lslope_limit_diff) f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) &
+                            =f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) + weight*cs20
 !
     endsubroutine update_char_vel_energy
 !***********************************************************************
@@ -161,7 +162,7 @@ module Energy
 !
     endsubroutine init_energy
 !***********************************************************************
-    subroutine pencil_criteria_energy()
+    subroutine pencil_criteria_energy
 !
 !  All pencils that the Energy module depends on are specified here.
 !
@@ -274,6 +275,17 @@ module Energy
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
+    subroutine calc_lenergy_pars(f)
+!
+!  Dummy routine.
+!
+
+      real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
+
+      call keep_compiler_quiet(f)
+
+    endsubroutine calc_lenergy_pars
+!***********************************************************************
     subroutine denergy_dt(f,df,p)
 !
 !  Calculate pressure gradient term for isothermal/polytropic equation
@@ -350,17 +362,6 @@ module Energy
       call keep_compiler_quiet(f)
 !
     endsubroutine denergy_dt
-!***********************************************************************
-    subroutine calc_lenergy_pars(f)
-!
-!  Dummy routine.
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      intent(in) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine calc_lenergy_pars
 !***********************************************************************
     subroutine get_slices_energy(f,slices)
 !
@@ -485,7 +486,7 @@ module Energy
 !
     endsubroutine
 !***********************************************************************
-    subroutine expand_shands_energy()
+    subroutine expand_shands_energy
 !
 !  Dummy
 !

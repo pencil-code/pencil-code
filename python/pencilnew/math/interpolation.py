@@ -90,7 +90,7 @@ def vec_int(xyz, var, field, interpolation='trilinear'):
                             /np.sum(weight)
 
 
-def vec_int_no_var(xx, field, params, interpolation='weighted'):
+def vec_int_no_var(xx, field, params, interpolation='trilinear'):
     """
     Interpolates the field around this position without the need of
     the full var object.
@@ -113,7 +113,7 @@ def vec_int_no_var(xx, field, params, interpolation='weighted'):
     *interpolation*:
       Interpolation of the vector field.
       'mean': takes the mean of the adjacent grid point.
-      'weighted': weights the adjacent grid points according to their distance.
+      'trilinear': weights the adjacent grid points according to their distance.
     """
 
     # Find the adjacent indices.
@@ -143,7 +143,7 @@ def vec_int_no_var(xx, field, params, interpolation='weighted'):
     if interpolation == 'mean':
         return np.mean(field[:, ii[0]:ii[1]+1, jj[0]:jj[1]+1, kk[0]:kk[1]+1],
                        axis=(1, 2, 3))
-    if interpolation == 'weighted':
+    if interpolation == 'trilinear':
         if ii[0] == ii[1]:
             w1 = np.array([1, 1])
         else:

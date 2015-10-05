@@ -49,17 +49,20 @@ program pc_configtest
 !
 !  Read parameters from start.x (default values; overwritten by 'read_all_run_pars').
 !
+  ltolerate_namelist_errors = .true.
   write (*,*) '>>> TESTING START.IN <<<'
   call read_all_init_pars()
 !
 !  Read parameters and output parameter list.
 !
+  ltolerate_namelist_errors = .true.
   write (*,*) '>>> TESTING RUN.IN <<<'
   lstart = .false.
   lrun = .true.
   call read_all_run_pars()
   lrun = .false.
   lstart = .true.
+  if (lnamelist_error) stop 1
 !
 !  Derived parameters (that may still be overwritten).
 !  [might better be put into another routine, possibly in 'read_all_run_pars']

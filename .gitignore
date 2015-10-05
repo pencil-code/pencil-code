@@ -15,6 +15,7 @@ samples/*/Makefile
 samples/*/.pc_build_history
 samples/*/COMPLETED
 samples/*/ERROR
+samples/*/KEEP_RELOADING
 samples/*/runtime
 samples/*/fort.*
 samples/*/data
@@ -27,6 +28,7 @@ samples/*/*/Makefile
 samples/*/*/.pc_build_history
 samples/*/*/COMPLETED
 samples/*/*/ERROR
+samples/*/*/KEEP_RELOADING
 samples/*/*/runtime
 samples/*/*/fort.*
 samples/*/*/data
@@ -39,6 +41,7 @@ samples/*/*/*/Makefile
 samples/*/*/*/.pc_build_history
 samples/*/*/*/COMPLETED
 samples/*/*/*/ERROR
+samples/*/*/*/KEEP_RELOADING
 samples/*/*/*/runtime
 samples/*/*/*/fort.*
 samples/*/*/*/data
