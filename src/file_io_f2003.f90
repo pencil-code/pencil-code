@@ -17,7 +17,8 @@ module File_io
 ! Fixed string length necessary as gfortran is compiling incorrectly otherwise.
 ! For future debugged gfortran versions the commented lines should be used.
 !
-  !character(len=:), allocatable, protected :: parallel_unit
+  !character(len=:), allocatable, protected :: parallel_unit   ! gfortran v4.8.4 will not compile this line
+  ! Temporary replacement code for the above line:
   character(len=36000), dimension(:), allocatable, protected :: parallel_unit
 !
   include 'file_io.h'
@@ -151,10 +152,9 @@ module File_io
         if (present(nitems)) then
 
           ! for non-namelist-read files: organize parallel_unit as array 
-          ! Bug in gfortran below 4.8 prevents from using the following line:
-          !allocate(character(len=lenbuf) :: buffer)
+          allocate(character(len=lenbuf) :: buffer)   ! gfortran v4.6.3 will not compile this line, v4.8.4 works
           ! Temporary replacement code for the above line:
-          buffer = (repeat (char (0), lenbuf))
+          !buffer = (repeat (char (0), lenbuf))
 
           buffer=parallel_unit(1)(1:lenbuf)
           deallocate(parallel_unit)
