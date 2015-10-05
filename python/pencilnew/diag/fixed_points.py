@@ -11,6 +11,7 @@ import multiprocessing as mp
 from pencilnew.diag.tracers import TracersParameterClass
 from pencilnew.diag.tracers import Tracers
 from pencilnew.calc.streamlines import Stream
+from pencilnew.math.interpolation import vec_int
 
 
 class FixedPoint(object):
@@ -354,6 +355,11 @@ class FixedPoint(object):
         # Convert int_q string into list.
         if not isinstance(int_q, list):
             int_q = [int_q]
+        self.params.int_q = int_q
+        if any(np.array(self.params.int_q) == 'curly_A'):
+            self.curly_A = []
+        if any(np.array(self.params.int_q) == 'ee'):
+            self.ee = []
 
         # Multi core setup.
         if not(np.isscalar(n_proc)) or (n_proc%1 != 0):
@@ -413,6 +419,9 @@ class FixedPoint(object):
         self.t[0] = var.t
         grid = pc.read_grid(datadir=data_dir, quiet=True, trim=True)
         field = getattr(var, trace_field)
+        param2 = pc.read_param(datadir=data_dir, param2=True, quiet=True)
+        if any(np.array(int_q) == 'ee'):
+            ee = var.jj*param2.eta - pc.cross(var.uu, var.bb)
 
         # Get the simulation parameters.
         self.params.dx = var.dx
@@ -516,6 +525,46 @@ class FixedPoint(object):
             self.fixed_points.append(np.array(fixed))
             self.fixed_sign.append(np.array(fixed_sign))
             self.fidx[t_idx] = np.sum(fixed_sign)
+
+        # Compute the traced quantities.
+        if any(np.array(self.params.int_q) == 'curly_A') or \
+        any(np.array(self.params.int_q) == 'ee'):
+            for t_idx in range(0, n_times):
+                if any(np.array(self.params.int_q) == 'curly_A'):
+                    self.curly_A.append([])
+                if any(np.array(self.params.int_q) == 'ee'):
+                    self.ee.append([])
+                for fixed in self.fixed_points[t_idx]:
+                    # Trace the stream line.
+                    xx = np.array([fixed[0], fixed[1], self.params.Oz])
+                    stream = Stream(field, self.params,
+                                    h_min=self.params.h_min,
+                                    h_max=self.params.h_max,
+                                    len_max=self.params.len_max,
+                                    tol=self.params.tol,
+                                    interpolation=self.params.interpolation,
+                                    integration=self.params.integration,
+                                    xx=xx)
+                    # Do the field line integration.
+                    if any(np.array(self.params.int_q) == 'curly_A'):
+                        curly_A = 0
+                        for l in range(stream.stream_len-1):
+                            aaInt = vec_int((stream.tracers[l+1] + stream.tracers[l])/2,
+                                             var, var.aa, interpolation=self.params.interpolation)
+                            curly_A += np.dot(aaInt, (stream.tracers[l+1] - stream.tracers[l]))
+                        self.curly_A[-1].append(curly_A)
+                    if any(np.array(self.params.int_q) == 'ee'):
+                        ee_p = 0
+                        for l in range(stream.stream_len-1):
+                            eeInt = vec_int((stream.tracers[l+1] + stream.tracers[l])/2,
+                                             var, ee, interpolation=self.params.interpolation)
+                            ee_p += np.dot(eeInt, (stream.tracers[l+1] - stream.tracers[l]))
+                        self.ee[-1].append(ee_p)
+                if any(np.array(self.params.int_q) == 'curly_A'):
+                    self.curly_A[-1] = np.array(self.curly_A[-1])
+                if any(np.array(self.params.int_q) == 'ee'):
+                    self.ee[-1] = np.array(self.ee[-1])
+                        
 
 
 def read_fixed_points(data_dir='data/', fileName='fixed_points.dat', hm=1):
