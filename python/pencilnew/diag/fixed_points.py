@@ -8,6 +8,8 @@ import numpy as np
 import pencil as pc
 import math as m
 import multiprocessing as mp
+import os
+import h5py
 from pencilnew.diag.tracers import TracersParameterClass
 from pencilnew.diag.tracers import Tracers
 from pencilnew.calc.streamlines import Stream
@@ -566,6 +568,124 @@ class FixedPoint(object):
                     self.ee[-1] = np.array(self.ee[-1])
                         
 
+    def write(self, data_dir='./data', destination='fixed_points.hdf5'):
+        """
+        Write the fixed points into a file.
+
+        call signature::
+
+        write(self, data_dir='./data', destination='fixed_points.hdf5')
+
+        Keyword arguments:
+
+        *data_dir*:
+          Directory where the data is stored.
+
+        *destination*:
+          Destination file.
+        """
+
+        self.params.destination = destination
+        
+        # Write the results into hdf5 file.
+        if destination != '':
+            f = h5py.File(os.path.join(data_dir, destination), 'w')
+            # Write main data arrays.
+            set_t = f.create_dataset("t", self.t.shape, dtype=self.t.dtype)
+            set_t[...] = self.t[...]
+            set_fidx = f.create_dataset("fidx", self.fidx.shape,
+                                        dtype=self.fidx.dtype)
+            set_fidx[...] = self.fidx[...]
+            set_poincare = f.create_dataset("poincare", self.poincare.shape,
+                                            dtype=self.poincare.dtype)
+            set_poincare[...] = self.poincare[...]   
+            
+            # Write the parameters into their own group.
+            group_params = f.create_group('params')
+            for key in dir(self.params):
+                if not key.startswith('_'):
+                    value = getattr(self.params, key)
+                    group_params.attrs[key] = value
+                    
+            # Create a new group for each time step.
+            fixed_groups = []
+            for t_idx in range(len(self.t)):
+                fixed_groups.append(f.create_group('{0}'.format(t_idx)))
+                set_fixed_points = fixed_groups[-1].create_dataset("fixed_points", self.fixed_points[t_idx].shape, dtype=self.fixed_points[t_idx].dtype)
+                set_fixed_points[...] = self.fixed_points[t_idx]
+                set_fixed_sign = fixed_groups[-1].create_dataset("fixed_sign", self.fixed_sign[t_idx].shape, dtype=self.fixed_sign[t_idx].dtype)
+                set_fixed_sign[...] = self.fixed_sign[t_idx]
+                if any(np.array(self.params.int_q) == 'curly_A'):
+                    set_curly_A = fixed_groups[-1].create_dataset("curly_A", self.curly_A[t_idx].shape, dtype=self.curly_A[t_idx].dtype)
+                    set_curly_A[...] = self.curly_A[t_idx]
+                if any(np.array(self.params.int_q) == 'ee'):
+                    set_ee = fixed_groups[-1].create_dataset("ee", self.ee[t_idx].shape, dtype=self.ee[t_idx].dtype)                
+                    set_ee[...] = self.ee[t_idx]
+            f.close()
+
+            # Write the tracers into their own file.
+            tracer_file_name = self.params.destination[:-5] + '_tracers' + \
+                               self.params.destination[-5:]
+            self.tracers.write(data_dir=self.params.data_dir,
+                               destination=tracer_file_name)
+        else:
+            print("error: empty destination file")
+
+
+    def read(self, data_dir='./data', file_name='fixed_points.hdf5'):
+        """
+        Read the fixed points from a file.
+
+        call signature::
+
+        read(self, data_dir='./data', file_name='fixed_points.hdf5')
+
+        Keyword arguments:
+
+        *data_dir*:
+          Directory where the data is stored.
+
+        *file_name*:
+          File with the tracer data.
+        """
+    
+        # Open the file.
+        f = h5py.File(os.path.join(data_dir, file_name), 'r')
+
+        # Extract arrays.
+        self.t = f['t'].value
+        self.fidx = f['fidx'].value
+        self.poincare = f['poincare'].value
+
+        # Extract parameters.
+        params = f['params']
+        self.params = TracersParameterClass()
+        for param in params.attrs.keys():
+            setattr(self.params, param, params.attrs[param])
+
+        # Read the time series.
+        self.fixed_points = []
+        self.fixed_sign = []
+        if any(np.array(self.params.int_q) == 'curly_A'):
+            self.curly_A = []
+        if any(np.array(self.params.int_q) == 'ee'):
+            self.ee = []
+        for t_idx in range(len(self.t)):
+            group = f['{0}'.format(t_idx)]
+            self.fixed_points.append(group['fixed_points'].value)
+            self.fixed_sign.append(group['fixed_sign'].value)
+            if any(np.array(self.params.int_q) == 'curly_A'):
+                self.curly_A.append(group['curly_A'].value)
+            if any(np.array(self.params.int_q) == 'ee'):
+                self.ee.append(group['ee'].value)
+        f.close()
+
+        # Read the tracers from their own file.
+        tracer_file_name = self.params.destination[:-5] + '_tracers' + \
+                           self.params.destination[-5:]
+        self.tracers = Tracers()
+        self.tracers.read(data_dir=self.params.data_dir,
+                          file_name=tracer_file_name)
 
 def read_fixed_points(data_dir='data/', fileName='fixed_points.dat', hm=1):
     """
