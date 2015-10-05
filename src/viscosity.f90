@@ -1820,34 +1820,36 @@ module Viscosity
 !  Here calculating the divergence of the flux.
 !
       if (lvisc_slope_limited) then
-
+!
         if (lfirst) p%fvisc(:,iuu:iuu+2)=p%fvisc(:,iuu:iuu+2)-f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)
+!
 !        if(lfirst .and. ldiagnos.and.m==200) print*,'DIV',f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)
-
+!
         if (lfirst .and. ldt) then
-          where (p%uu/=0.)
-            tmp=abs(f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)/(p%uu*maxval(dxyz_2)))
+          nu_sld=maxval(sqrt(abs(f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2))*dline_1),2)/dxyz_2
+!          where (p%uu/=0.)
+!            tmp=abs(f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)/(p%uu*maxval(dxyz_2)))
 !          where (p%del2u/=0.)
 !            tmp=abs(f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)/p%del2u)
-          elsewhere
-            tmp=0.
-          endwhere
-          if(nu_sld_thresh>=0.) then
-            nu_sld=0.
-            do j=1,3 
-              count=0; nu_tmp=0.
-              do i=1,nx 
-                if (tmp(i,j)>nu_sld_thresh) then
-                  nu_tmp=nu_tmp+tmp(i,j)
-                  count=count+1
-                endif
-                if (count>0) nu_sld=max(nu_sld,nu_tmp/count)
-              enddo
-            enddo
-!           nu_sld=sum(tmp,2,tmp>nu_sld_thresh)
-          else 
-            nu_sld=maxval(tmp,2)
-          endif
+!          elsewhere
+!            tmp=0.
+!          endwhere
+!          if(nu_sld_thresh>=0.) then
+!            nu_sld=0.
+!            do j=1,3 
+!              count=0; nu_tmp=0.
+!              do i=1,nx 
+!                if (tmp(i,j)>nu_sld_thresh) then
+!                  nu_tmp=nu_tmp+tmp(i,j)
+!                  count=count+1
+!                endif
+!                if (count>0) nu_sld=max(nu_sld,nu_tmp/count)
+!              enddo
+!            enddo
+!!           nu_sld=sum(tmp,2,tmp>nu_sld_thresh)
+!          else 
+!            nu_sld=maxval(tmp,2)
+!          endif
           p%diffus_total=p%diffus_total+nu_sld
         endif
 
@@ -1941,7 +1943,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
           endif
 
           do n=n1,n2; do m=m1,m2
-!            if(lfirst.and.ldiagnos.and.j==2.and.m==520) print*,'FLUX',f(l1:l2,m,n,iFF_diff1:iFF_diff2)
+!            if(lfirst.and.ldiagnos.and.j==2) print*,'FLUX',f(l1:l2,m,n,iFF_diff1:iFF_diff2)
             call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_uu+j-1),.true.)
           enddo; enddo
 
