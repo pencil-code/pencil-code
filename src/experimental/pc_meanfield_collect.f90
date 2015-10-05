@@ -90,10 +90,11 @@ program pc_meanfield_collect
   real(kind=8), dimension(:,:,:)    , allocatable   :: tmparray
   real(kind=8), dimension(:)        , allocatable   :: t_values
 
-  integer               :: filesize, datalen, tlen, data_stride, &
-                           data_start, tsteplen, dim2stride, pos, &
-                           averagelen, dim2runs, resultdim1, resultdim2, &
-                           filesize_check
+  integer                :: datalen, tlen, data_stride, &
+                            data_start, tsteplen, dim2stride, pos, &
+                            averagelen, dim2runs, resultdim1, resultdim2, &
+                            filesize_check
+  integer(kind=8)        :: filesize
   
   integer , parameter   :: t_start = 5
 
@@ -185,7 +186,7 @@ program pc_meanfield_collect
     else
       read(1, NML=collect_config, IOSTAT=ierr)
       if (ierr /= 0) then
-        write(*,*) 'Error reading configuration'
+        write(*,*) 'Error reading main configuration'
         initerror = .true.
       end if
     end if
@@ -344,8 +345,10 @@ program pc_meanfield_collect
 
         dim2stride  = data_stride*ndim1
         ntimesteps  = int(floor(real(filesize)/(16+tlen+datalen)))
-        if (ntimesteps > 20) then
-               ntimesteps  = 20
+        write(*,'(a30,a30)') &
+        ' Number of timesteps:          ', ljustifyI(ntimesteps)
+        if (ntimesteps > 2000) then
+               ntimesteps  = 2000
         end if
         data_start  = t_start + tlen + 8
         tsteplen    = 16 + tlen + datalen
@@ -364,8 +367,8 @@ program pc_meanfield_collect
         ' Datafile:                     ', trim(datafile)
         write(*,'(a30,a30)') &
         ' Number of averages:           ', ljustifyI(naverages)
-        write(*,'(a30,a30)') &
-        ' File size (bytes):            ', ljustifyI(filesize)
+        write(*,'(a30,i30)') &
+        ' File size (bytes):            ', filesize
         write(*,'(a30,a30)') &
         ' Number of timesteps:          ', ljustifyI(ntimesteps)
         write(*,'(a30,a30)') &
@@ -525,8 +528,8 @@ program pc_meanfield_collect
           ' Datafile:                     ', trim(datafile)
           write(2,'(a30,a30)') &
           ' Number of averages:           ', ljustifyI(naverages)
-          write(2,'(a30,a30)') &
-          ' File size (bytes):            ', ljustifyI(filesize)
+          write(2,'(a30,i30)') &
+          ' File size (bytes):            ', filesize
           write(2,'(a30,a30)') &
           ' Number of timesteps:          ', ljustifyI(ntimesteps)
           write(2,'(a30,a30)') &
@@ -591,15 +594,13 @@ program pc_meanfield_collect
                 dataarray(1:ndim1,(j-1)*ndim2read+1:j*ndim2read,1:resultdim1,1:resultdim2) = analyzerfunction(tmparray, &
                                       ndim1, ndim2read, ntimesteps, resultdim1, resultdim2)
               end do
-            end do
-            do iavg=1,navgs
  
               ! Parallel data writing to HDF file
               call H5Dget_space_F(phdf_datasets(ianalyzer,iavg), phdf_dataspace, hdferr)
               phdf_offsets  = [ offsets(1,1), offsets(2,1), 0 , 0 ]
-              phdf_count    = [ 1, 1, 1, 1 ]
+              phdf_count    = [ ndim1, ndim2, resultdim1 , resultdim2 ]
               phdf_stride   = [ 1, 1, 1, 1 ]
-              phdf_block    = [ ndim1, ndim2, resultdim1 , resultdim2 ]
+              phdf_block    = [ 1, 1, 1, 1 ]
               call H5Sselect_hyperslab_F(phdf_dataspace, H5S_SELECT_SET_F, phdf_offsets, phdf_count, &
                                          hdferr,phdf_stride, phdf_block)
               call H5Dwrite_F(phdf_datasets(ianalyzer,iavg), hdfmemtype, dataarray, &

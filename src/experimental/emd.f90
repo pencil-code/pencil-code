@@ -55,10 +55,10 @@ module EMD
           data_area(1:tlen) = analysis(i1,i2,1:tlen,iIMF)
           analysis(i1,i2,1:tlen,iIMF) = imf(1:tlen)
           if (.not. lIMF) then
-            write(*,*) 'Warning, IMF ',iIMF-1,' at (',i1,',',i2,') was not good'
-            write(*,*) 'nmaxima:',nmaxima,' nminima:',nminima
-            write(*,*) 'extrema:',extremas,' crossings:',crossings
-            write(*,*) 'imf min:', minval(imf), maxval(imf)
+            !write(*,*) 'Warning, IMF ',iIMF-1,' at (',i1,',',i2,') was not good'
+            !write(*,*) 'nmaxima:',nmaxima,' nminima:',nminima
+            !write(*,*) 'extrema:',extremas,' crossings:',crossings
+            !write(*,*) 'imf min:', minval(imf), maxval(imf)
             exit IMFloop
           end if
         end do IMFloop
@@ -220,7 +220,7 @@ module EMD
     !end do
 
     lIMF = ((max_mean < err_coeff*imf_std) .and. (abs(extremas-crossings) <= 1))
-    write(*,*) lIMF, max_mean, err_coeff*imf_std, extremas, crossings
+    !write(*,*) lIMF, max_mean, err_coeff*imf_std, extremas, crossings
 
   end subroutine calc_imf
 
