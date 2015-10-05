@@ -126,7 +126,7 @@ class Tracers(object):
             sub_y1 = np.zeros(xx[:, :, 0].shape)
             sub_z1 = np.zeros(xx[:, :, 0].shape)
             sub_len = np.zeros(xx[:, :, 0].shape)
-            sub_curlyA = np.zeros(xx[:, :, 0].shape)
+            sub_curly_A = np.zeros(xx[:, :, 0].shape)
             sub_ee = np.zeros(xx[:, :, 0].shape)
             sub_mapping = np.zeros([xx[:, :, 0].shape[0], xx[:, :, 0].shape[1], 3])
             for ix in range(i_proc, self.x0.shape[0], n_proc):
@@ -138,11 +138,11 @@ class Tracers(object):
                     sub_y1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len-1, 1]
                     sub_z1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len-1, 2]
                     sub_len[int(ix/n_proc), iy] = stream.len
-                    if any(np.array(self.params.int_q) == 'curlyA'):
+                    if any(np.array(self.params.int_q) == 'curly_A'):
                         for l in range(stream.stream_len-1):
                             aaInt = vec_int((stream.tracers[l+1] + stream.tracers[l])/2,
                                              var, aa, interpolation=self.params.interpolation)
-                            sub_curlyA[int(ix/n_proc), iy] += \
+                            sub_curly_A[int(ix/n_proc), iy] += \
                                 np.dot(aaInt, (stream.tracers[l+1] - stream.tracers[l]))
                     if any(np.array(self.params.int_q) == 'ee'):
                         for l in range(stream.stream_len-1):
@@ -167,7 +167,7 @@ class Tracers(object):
                         sub_mapping[int(ix/n_proc), iy, :] = [1, 1, 1]
 
             queue.put((i_proc, sub_x1, sub_y1, sub_z1, sub_len, sub_mapping,
-                       sub_curlyA, sub_ee))
+                       sub_curly_A, sub_ee))
 
 
         # Write the tracing parameters.
@@ -224,7 +224,7 @@ class Tracers(object):
         self.y1 = np.zeros([int(trace_sub*dim.nx), int(trace_sub*dim.ny), nTimes])
         self.z1 = np.zeros([int(trace_sub*dim.nx), int(trace_sub*dim.ny), nTimes])
         self.len = np.zeros([int(trace_sub*dim.nx), int(trace_sub*dim.ny), nTimes])
-        if any(np.array(int_q) == 'curlyA'):
+        if any(np.array(int_q) == 'curly_A'):
             self.curly_A = np.zeros([int(trace_sub*dim.nx),
                                      int(trace_sub*dim.ny), nTimes])
         if any(np.array(int_q) == 'ee'):
@@ -247,7 +247,7 @@ class Tracers(object):
 
             # Extract the requested vector trace_field.
             field = getattr(var, trace_field)
-            if any(np.array(int_q) == 'curlyA'):
+            if any(np.array(int_q) == 'curly_A'):
                 aa = var.aa
             if any(np.array(int_q) == 'ee'):
                 ee = var.jj*param2.eta - pc.cross(var.uu, var.bb)
@@ -293,7 +293,7 @@ class Tracers(object):
                 self.z1[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][3]
                 self.len[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][4]
                 self.mapping[sub_proc::n_proc, :, t_idx, :] = sub_data[i_proc][5]
-                if any(np.array(int_q) == 'curlyA'):
+                if any(np.array(int_q) == 'curly_A'):
                     self.curly_A[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][6]
                 if any(np.array(int_q) == 'ee'):
                     self.ee[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][7]
@@ -354,6 +354,8 @@ class Tracers(object):
                     value = getattr(self.params, key)
                     group_params.attrs[key] = value
             f.close()
+        else:
+            print("error: empty destination file")
 
 
     def read(self, data_dir='./data', file_name='tracers.hdf5'):
@@ -385,8 +387,8 @@ class Tracers(object):
         self.z1 = f['z1'].value
         self.l = f['l'].value
         self.mapping = f['mapping'].value
-        if any(np.array(f.keys()) == 'curlyA'):
-            self.curlyA = f['curly_A'].value
+        if any(np.array(f.keys()) == 'curly_A'):
+            self.curly_A = f['curly_A'].value
         if any(np.array(f.keys()) == 'ee'):
             self.ee = f['ee'].value
 
@@ -395,6 +397,8 @@ class Tracers(object):
         self.params = TracersParameterClass()
         for param in params.attrs.keys():
             setattr(self.params, param, params.attrs[param])
+
+        f.close()
 
 
 ## Need some updating of this routine.
