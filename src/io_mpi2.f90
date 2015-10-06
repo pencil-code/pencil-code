@@ -60,6 +60,7 @@ module Io
   logical :: lcollective_IO=.true.
   character (len=labellen) :: IO_strategy="MPI-IO"
 !
+  logical :: lread_add=.true., lwrite_add=.true.
   logical :: persist_initialized=.false.
   integer :: persist_last_id=-max_int
 !
@@ -81,6 +82,7 @@ module Io
 !  06-Oct-2015/PABourdin: reworked, should work now
 !
       if (lroot) call svn_id ("$Id$")
+      if (ldistribute_persist) call fatal_error ('io_mpi2', "Distibuted persistent variables are not allowed with MPI-IO.")
 !
 ! Define local full data size.
 !
@@ -279,7 +281,6 @@ module Io
 !
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: handle, alloc_err
-      logical :: lwrite_add
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       if (.not. present (file)) call fatal_error ('output_snap', 'downsampled output not implemented for IO_mpi2')
@@ -343,12 +344,15 @@ module Io
 !
 !  11-Feb-2012/PABourdin: coded
 !
-      if (ldistribute_persist .or. lroot) then
-        if (persist_initialized) then
-          if (lroot .and. (ip <= 9)) write (*,*) 'finish persistent block'
+      if (persist_initialized) then
+        if (lroot .and. (ip <= 9)) write (*,*) 'finish persistent block'
+        if (lroot) then
           write (lun_output) id_block_PERSISTENT
-          persist_initialized = .false.
+          close (lun_output)
         endif
+        persist_initialized = .false.
+        persist_last_id = -max_int
+      elseif (lwrite_add .and. lroot) then
         close (lun_output)
       endif
 !
@@ -370,7 +374,6 @@ module Io
 !
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: handle, alloc_err
-      logical :: lread_add
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       lread_add = .true.
@@ -435,11 +438,12 @@ module Io
 !  11-Feb-2012/PABourdin: coded
 !
       if (persist_initialized) then
+        if (ldistribute_persist .or. lroot) close (lun_input)
         persist_initialized = .false.
         persist_last_id = -max_int
+      elseif (lread_add .and. lroot) then
+        close (lun_input)
       endif
-!
-      if (ldistribute_persist .or. lroot) close (lun_input)
 !
     endsubroutine input_snap_finalize
 !***********************************************************************
@@ -462,17 +466,12 @@ module Io
         return
       endif
 !
-      if (ldistribute_persist .or. lroot) then
+      if (lroot) then
         if (filename /= "") then
           if (lroot .and. (ip <= 9)) write (*,*) 'begin write persistent block'
-          if (lroot) close (lun_output)
-          if (ldistribute_persist) then
-            call delete_file(trim(directory_dist)//'/'//filename)
-            open (lun_output, FILE=trim(directory_dist)//'/'//filename, FORM='unformatted', status='new')
-          else
-            call delete_file(trim(directory_snap)//'/'//filename)
-            open (lun_output, FILE=trim(directory_snap)//'/'//filename, FORM='unformatted', status='new')
-          endif
+          close (lun_output)
+          call delete_file(trim(directory_snap)//'/'//filename)
+          open (lun_output, FILE=trim(directory_snap)//'/'//filename, FORM='unformatted', status='new')
           filename = ""
         endif
         write (lun_output) id_block_PERSISTENT
