@@ -173,7 +173,7 @@ module SharedVariables
       character (len=*), optional,          intent(in) :: caller
 
       character(len=2*labellen) :: str
-      logical :: lnotass
+      logical :: lassoc
 
       find_item=.false.
 
@@ -188,22 +188,23 @@ module SharedVariables
           if (item%vartype==type) then
            
             select case (type)
-              case (iSHVAR_TYPE_REAL0D); lnotass=.not.associated(item%real0D)
-              case (iSHVAR_TYPE_REAL1D); lnotass=.not.associated(item%real1D)
-              case (iSHVAR_TYPE_REAL2D); lnotass=.not.associated(item%real2D)
-              case (iSHVAR_TYPE_REAL3D); lnotass=.not.associated(item%real3D)
-              case (iSHVAR_TYPE_REAL4D); lnotass=.not.associated(item%real4D)
-              case (iSHVAR_TYPE_INT0D ); lnotass=.not.associated(item%int0d)
-              case (iSHVAR_TYPE_INT1D ); lnotass=.not.associated(item%int1d)
-              case (iSHVAR_TYPE_LOG0D ); lnotass=.not.associated(item%log0d)
-              case (iSHVAR_TYPE_LOG1D ); lnotass=.not.associated(item%log1d)
-              case (iSHVAR_TYPE_CHAR0D); lnotass=.not.associated(item%char0d)
+              case (iSHVAR_TYPE_REAL0D); lassoc=associated(item%real0D)
+              case (iSHVAR_TYPE_REAL1D); lassoc=associated(item%real1D)
+              case (iSHVAR_TYPE_REAL2D); lassoc=associated(item%real2D)
+              case (iSHVAR_TYPE_REAL3D); lassoc=associated(item%real3D)
+              case (iSHVAR_TYPE_REAL4D); lassoc=associated(item%real4D)
+              case (iSHVAR_TYPE_INT0D ); lassoc=associated(item%int0d)
+              case (iSHVAR_TYPE_INT1D ); lassoc=associated(item%int1d)
+              case (iSHVAR_TYPE_LOG0D ); lassoc=associated(item%log0d)
+              case (iSHVAR_TYPE_LOG1D ); lassoc=associated(item%log1d)
+              case (iSHVAR_TYPE_CHAR0D); lassoc=associated(item%char0d)
               case default
+                lassoc=.false.
                 if (lroot) print*, 'Getting shared variable "'//trim(varname)//trim(str)
                 call fatal_error('', 'Data type '//itoa(type)//' is not implemented.')
             end select
             
-            if (lnotass) then
+            if (.not. lassoc) then
               if (present(ierr)) then
                 ierr=iSHVAR_ERR_NOTASSOCIATED
                 return
