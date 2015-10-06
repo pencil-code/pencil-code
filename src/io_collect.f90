@@ -414,8 +414,8 @@ module Io
       endif
 !
       if (ldistribute_persist .or. lroot) then
-        if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
         if (filename /= "") then
+          if (lroot .and. (ip <= 9)) write (*,*) 'begin write persistent block'
           if (lroot) close (lun_output)
           if (ldistribute_persist) then
             call delete_file(trim(directory_dist)//'/'//filename)
@@ -797,7 +797,7 @@ module Io
       endif
 !
       if (ldistribute_persist .or. lroot) then
-        if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
+        if (lroot .and. (ip <= 9)) write (*,*) 'begin read persistent block'
         if (present (file)) then
           if (lroot) close (lun_input)
           if (ldistribute_persist) then
