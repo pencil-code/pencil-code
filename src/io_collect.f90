@@ -217,8 +217,7 @@ module Io
       integer :: pz, pa, io_len, alloc_err, z_start, z_end
       real :: t_sp   ! t in single precision for backwards compatibility
 !
-      if (.not.present(file)) call fatal_error('output_snap', &
-          'downsampled output not implemented for IO_collect')
+      if (.not. present (file)) call fatal_error ('output_snap', 'downsampled output not implemented for IO_collect')
 !
       lwrite_add = .true.
       if (present (mode)) lwrite_add = (mode == 1)
@@ -228,8 +227,8 @@ module Io
         if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for ga,buffer', .true.)
 !
         inquire (IOLENGTH=io_len) t_sp
-        call delete_file(trim(directory_snap)//'/'//file)
-        open (lun_output, FILE=trim(directory_snap)//'/'//file, status='new', access='direct', recl=mxgrid*mygrid*io_len)
+        call delete_file (trim (directory_snap)//'/'//file)
+        open (lun_output, FILE=trim (directory_snap)//'/'//file, status='new', access='direct', recl=mxgrid*mygrid*io_len)
 !
         ! iterate through xy-leading processors in the z-direction
         do pz = 0, nprocz-1
@@ -422,10 +421,10 @@ module Io
           if (lroot) close (lun_output)
           if (ldistribute_persist) then
             call delete_file(trim(directory_dist)//'/'//filename)
-            open (lun_output, FILE=trim(directory_dist)//'/'//filename, FORM='unformatted', status='new')
+            open (lun_output, FILE=trim (directory_dist)//'/'//filename, FORM='unformatted', status='new')
           else
             call delete_file(trim(directory_snap)//'/'//filename)
-            open (lun_output, FILE=trim(directory_snap)//'/'//filename, FORM='unformatted', status='new')
+            open (lun_output, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='new')
           endif
           filename = ""
         endif
