@@ -139,11 +139,10 @@ def _frame_rectangle(t, x, y, c, xlabel=None, ylabel=None, clabel=None, save=Fal
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     ax.set_title(time_template.format(t[0]))
+    cb = plt.colorbar(pc)
     if logscale:
-        cb = plt.colorbar(pc)
         cb.set_ticks(LogLocator(subs=range(10)).tick_values(vmin0,vmax0))
     else:
-        cb = plt.colorbar(pc)
         cb.ax.minorticks_on()
     cb.set_label(clabel)
     # Loop over each time and update the plot.
