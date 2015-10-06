@@ -306,9 +306,9 @@ module Io
       call MPI_TYPE_COMMIT (global_type, mpi_err)
       call check_success ('output', 'commit global type', file)
 !
-      call delete_file (trim(directory_snap)//'/'//file)
-      call MPI_FILE_OPEN (mpi_comm, trim(directory_snap)//'/'//file, MPI_MODE_CREATE+MPI_MODE_WRONLY, io_info, handle, mpi_err)
-      call check_success ('output', 'open', trim(directory_snap)//'/'//file)
+      call delete_file (trim (directory_snap)//'/'//file)
+      call MPI_FILE_OPEN (mpi_comm, trim (directory_snap)//'/'//file, MPI_MODE_CREATE+MPI_MODE_WRONLY, io_info, handle, mpi_err)
+      call check_success ('output', 'open', trim (directory_snap)//'/'//file)
 !
 ! Setting file view and write raw binary data, ie. 'native'.
 !
@@ -398,8 +398,8 @@ module Io
       call MPI_TYPE_COMMIT (global_type, mpi_err)
       call check_success ('input', 'commit global subarray', file)
 !
-      call MPI_FILE_OPEN (mpi_comm, trim(directory_snap)//'/'//file, MPI_MODE_RDONLY, io_info, handle, mpi_err)
-      call check_success ('input', 'open', trim(directory_snap)//'/'//file)
+      call MPI_FILE_OPEN (mpi_comm, trim (directory_snap)//'/'//file, MPI_MODE_RDONLY, io_info, handle, mpi_err)
+      call check_success ('input', 'open', trim (directory_snap)//'/'//file)
 !
 ! Setting file view and read raw binary data, ie. 'native'.
 !
@@ -471,7 +471,7 @@ module Io
         if (filename /= "") then
           if (lroot .and. (ip <= 9)) write (*,*) 'begin write persistent block'
           close (lun_output)
-          call delete_file(trim(directory_snap)//'/'//filename)
+          call delete_file (trim (directory_snap)//'/'//filename)
           open (lun_output, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='new')
           filename = ""
         endif
@@ -1307,7 +1307,7 @@ module Io
 !
       integer :: ierr
 !
-      call delete_file(file)
+      call delete_file (file)
       open (lun_output, FILE=file, FORM='unformatted', IOSTAT=ierr, status='new')
       if (ierr /= 0) call stop_it ( &
           "Cannot open " // trim(file) // " (or similar) for writing" // &
