@@ -17,7 +17,8 @@
 !  or in a much more efficient way by reading into an array:
 !  IDL> pc_read_var_raw, obj=data, tags=tags, grid=grid, /allprocs
 !
-!  20-Mar-2012/Bourdin.KIS: adapted from io_collect.f90 and io_collect_xy.f90
+!  20-Mar-2012/PABourdin: adapted from io_collect.f90 and io_collect_xy.f90
+!  06-Oct-2015/PABourdin: reworked, should work now
 !
 module Io
 !
@@ -63,9 +64,11 @@ module Io
   integer :: persist_last_id=-max_int
 !
   integer :: local_type, global_type, mpi_err
-  integer, parameter :: n_dims=3, order=MPI_ORDER_FORTRAN
-  integer, dimension(n_dims+1) :: local_size, local_subsize, local_start
-  integer, dimension(n_dims+1) :: global_size, global_subsize, global_start
+  integer, parameter :: mpi_comm=MPI_COMM_WORLD
+  integer, dimension(MPI_STATUS_SIZE) :: status
+  integer (kind=MPI_OFFSET_KIND), parameter :: displacement=0
+  integer, parameter :: io_dims=4, order=MPI_ORDER_FORTRAN, io_info=MPI_INFO_NULL
+  integer, dimension(io_dims) :: local_size, local_start, global_size, global_start, subsize
 !
   contains
 !***********************************************************************
@@ -75,77 +78,60 @@ module Io
 !  VAR#-files are written to the directory directory_snap which will
 !  be the same as directory, unless specified otherwise.
 !
-!  04-jul-2011/Boudin.KIS: coded
-!
-      use Mpicomm, only: mpi_precision
-!
-!  identify version number
+!  06-Oct-2015/PABourdin: reworked, should work now
 !
       if (lroot) call svn_id ("$Id$")
-      if (.not. lseparate_persist) call fatal_error ('io_MPI2', &
-          "This module only works with the setting lseparate_persist=.true.")
-      call fatal_error ('io_MPI2', "This module is purely experimental, please help to get it working! Thanks.")
 !
-! Create datatype to describe internal elements of data, ie. the core data
-! excluding the halos, unless we are on an edge and have to include them.
+! Define local full data size.
 !
       local_size(1) = mx
       local_size(2) = my
       local_size(3) = mz
+      local_size(4) = -1
 !
-      local_subsize(1) = nx
-      local_subsize(2) = ny
-      local_subsize(3) = nz
+! Define the subsize of the local data portion to be saved in the global file.
 !
-! We need to save the outermost halos if we are on either edge.
+      subsize(1) = nx
+      subsize(2) = ny
+      subsize(3) = nz
+      subsize(4) = -1
 !
-      if (lfirst_proc_x) local_subsize(1) = local_subsize(1) + nghost
-      if (lfirst_proc_y) local_subsize(2) = local_subsize(2) + nghost
-      if (lfirst_proc_z) local_subsize(3) = local_subsize(3) + nghost
+! We need to save also the outermost ghost layers if we are on either boundary.
+! This data subsize is identical for the local portion and the global file.
 !
-      if (llast_proc_x)  local_subsize(1) = local_subsize(1) + nghost
-      if (llast_proc_y)  local_subsize(2) = local_subsize(2) + nghost
-      if (llast_proc_z)  local_subsize(3) = local_subsize(3) + nghost
+      if (lfirst_proc_x) subsize(1) = subsize(1) + nghost
+      if (lfirst_proc_y) subsize(2) = subsize(2) + nghost
+      if (lfirst_proc_z) subsize(3) = subsize(3) + nghost
+      if (llast_proc_x) subsize(1) = subsize(1) + nghost
+      if (llast_proc_y) subsize(2) = subsize(2) + nghost
+      if (llast_proc_z) subsize(3) = subsize(3) + nghost
 !
-! The displacements in 'local_start' uses C-like format, ie. start from zero.
+! The displacements in 'local_start' use C-like format, ie. start from zero.
 !
-      local_start(1) = l1 - 1
-      local_start(2) = m1 - 1
-      local_start(3) = n1 - 1
+      local_start(1) = nghost
+      local_start(2) = nghost
+      local_start(3) = nghost
       local_start(4) = 0
-
-! We need to include lower ghost cells if we are on a lower edge
+!
+! We need to include lower ghost cells if we are on a lower edge;
 ! inclusion of upper ghost cells is taken care of by increased subsize.
-
+!
       if (lfirst_proc_x) local_start(1) = local_start(1) - nghost
       if (lfirst_proc_y) local_start(2) = local_start(2) - nghost
       if (lfirst_proc_z) local_start(3) = local_start(3) - nghost
 !
-! Now define the position of this processors data in the global file:
-!
-! Create datatype to describe the section of the global file that
-! is owned by this process (the ftype). 'global_size' has now the global
-! sizes, but 'global_subsize' stays the same. 'global_start' must again count
-! in C-manner, ie. from 0.
-!
-! Global size of array·
+! Define the size of this processor's data in the global file.
 !
       global_size(1) = mxgrid
       global_size(2) = mygrid
       global_size(3) = mzgrid
 !
-! Starting position of this processors data portion.
+! Define starting position of this processor's data portion in global file.
 !
-      global_start(1) = nghost + ipx*nx
-      global_start(2) = nghost + ipy*ny
-      global_start(3) = nghost + ipz*nz
+      global_start(1) = ipx*nx + local_start(1)
+      global_start(2) = ipy*ny + local_start(2)
+      global_start(3) = ipz*nz + local_start(3)
       global_start(4) = 0
-!
-! Take account of inclusion of lower halos on lower edges.
-!
-      if (lfirst_proc_x) global_start(1) = global_start(1) - nghost
-      if (lfirst_proc_y) global_start(2) = global_start(2) - nghost
-      if (lfirst_proc_z) global_start(3) = global_start(3) - nghost
 !
     endsubroutine register_io
 !***********************************************************************
@@ -183,7 +169,7 @@ module Io
 !
 !  This routine distributes the global grid to all processors.
 !
-!  11-Feb-2012/Bourdin.KIS: coded
+!  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
 !
@@ -281,10 +267,10 @@ module Io
 !
 !  Write snapshot file, always write mesh and time, could add other things.
 !
-!  10-Feb-2012/Bourdin.KIS: coded
+!  10-Feb-2012/PABourdin: coded
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
 !
-      use Mpicomm, only: globalize_xy, mpisend_real, mpirecv_real, mpi_precision
+      use Mpicomm, only: globalize_xy, collect_grid, mpi_precision
 !
       integer, intent(in) :: nv
       real, dimension (mx,my,mz,nv), intent(in) :: a
@@ -292,49 +278,45 @@ module Io
       integer, optional, intent(in) :: mode
 !
       real, dimension (:), allocatable :: gx, gy, gz
-      integer :: handle, alloc_err, io_info=MPI_INFO_NULL
-      integer, dimension(MPI_STATUS_SIZE) :: status
+      integer :: handle, alloc_err
       logical :: lwrite_add
       real :: t_sp   ! t in single precision for backwards compatibility
 !
-      if (.not.present(file)) call fatal_error('output_snap', &
-          'downsampled output not implemented for IO_mpi2')
+      if (.not. present (file)) call fatal_error ('output_snap', 'downsampled output not implemented for IO_mpi2')
 !
       lwrite_add = .true.
       if (present (mode)) lwrite_add = (mode == 1)
 !
-! Define 'local_type' to be the local data portion that is being saved.
-!
       local_size(4) = nv
-      local_subsize(4) = nv
-      call MPI_TYPE_CREATE_SUBARRAY(n_dims+1, local_size, local_subsize, &
-          local_start, order, mpi_precision, local_type, mpi_err)
+      global_size(4) = nv
+      subsize(4) = nv
+!
+! Create 'local_type' to be the local data portion that is being saved.
+!
+      call MPI_TYPE_CREATE_SUBARRAY (io_dims, local_size, subsize, local_start, order, mpi_precision, local_type, mpi_err)
       call check_success ('output', 'create local subarray', file)
-      call MPI_TYPE_COMMIT(local_type, mpi_err)
+      call MPI_TYPE_COMMIT (local_type, mpi_err)
       call check_success ('output', 'commit local type', file)
 !
-! Define 'global_type' to indicate the local data portion in the global file.
+! Create 'global_type' to indicate the local data portion in the global file.
 !
-      global_size(4) = nv
-      call MPI_TYPE_CREATE_SUBARRAY(n_dims+1, global_size, local_subsize, &
-          global_start, order, mpi_precision, global_type, mpi_err)
+      call MPI_TYPE_CREATE_SUBARRAY (io_dims, global_size, subsize, global_start, order, mpi_precision, global_type, mpi_err)
       call check_success ('output', 'create global subarray', file)
-      call MPI_TYPE_COMMIT(global_type, mpi_err)
+      call MPI_TYPE_COMMIT (global_type, mpi_err)
       call check_success ('output', 'commit global type', file)
 !
-      call MPI_FILE_OPEN(MPI_COMM_WORLD, trim (directory_snap)//'/'//file, &
-          MPI_MODE_CREATE+MPI_MODE_WRONLY, io_info, handle, mpi_err)
+      call MPI_FILE_OPEN (mpi_comm, trim (directory_snap)//'/'//file, MPI_MODE_CREATE+MPI_MODE_WRONLY, io_info, handle, mpi_err)
       call check_success ('output', 'open', trim (directory_snap)//'/'//file)
 !
 ! Setting file view and write raw binary data, ie. 'native'.
 !
-      call MPI_FILE_SET_VIEW(handle, 0, mpi_precision, global_type, 'native', io_info, mpi_err)
+      call MPI_FILE_SET_VIEW (handle, displacement, mpi_precision, global_type, 'native', io_info, mpi_err)
       call check_success ('output', 'create view', file)
 !
-      call MPI_FILE_WRITE_ALL(handle, a, 1, local_type, status, mpi_err)
+      call MPI_FILE_WRITE_ALL (handle, a, 1, local_type, status, mpi_err)
       call check_success ('output', 'write', file)
 !
-      call MPI_FILE_CLOSE(handle, mpi_err)
+      call MPI_FILE_CLOSE (handle, mpi_err)
       call check_success ('output', 'close', file)
 !
       ! write additional data:
@@ -347,7 +329,6 @@ module Io
           open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', position='append', status='old')
           t_sp = t
           write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
-          close (lun_output)
           deallocate (gx, gy, gz)
         else
           call collect_grid (x, y, z)
@@ -360,13 +341,14 @@ module Io
 !
 !  Close snapshot file.
 !
-!  11-Feb-2012/Bourdin.KIS: coded
-!  10-mar-2015/MR: corrected close
+!  11-Feb-2012/PABourdin: coded
 !
-      if (persist_initialized) then
-        if (lroot .and. (ip <= 9)) write (*,*) 'finish persistent block'
-        write (lun_output) id_block_PERSISTENT
-        persist_initialized = .false.
+      if (ldistribute_persist .or. lroot) then
+        if (persist_initialized) then
+          if (lroot .and. (ip <= 9)) write (*,*) 'finish persistent block'
+          write (lun_output) id_block_PERSISTENT
+          persist_initialized = .false.
+        endif
         close (lun_output)
       endif
 !
@@ -375,10 +357,10 @@ module Io
     subroutine input_snap(file, a, nv, mode)
 !
 !  read snapshot file, possibly with mesh and time (if mode=1)
-!  10-Feb-2012/Bourdin.KIS: coded
+!  10-Feb-2012/PABourdin: coded
 !  10-mar-2015/MR: avoided use of fseek
 !
-      use Mpicomm, only: localize_xy, mpisend_real, mpirecv_real, mpibcast_real, mpi_precision
+      use Mpicomm, only: localize_xy, mpibcast_real, mpi_precision
       use General, only: backskip_to_time
 !
       character (len=*) :: file
@@ -387,46 +369,43 @@ module Io
       integer, optional, intent(in) :: mode
 !
       real, dimension (:), allocatable :: gx, gy, gz
-      integer :: handle, alloc_err, io_info=MPI_INFO_NULL
-      integer, dimension(MPI_STATUS_SIZE) :: status
+      integer :: handle, alloc_err
       logical :: lread_add
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       lread_add = .true.
       if (present (mode)) lread_add = (mode == 1)
 !
-! Define 'local_type' to be the local data portion that is being saved.
-!
       local_size(4) = nv
-      local_subsize(4) = nv
-      call MPI_TYPE_CREATE_SUBARRAY(n_dims+1, local_size, local_subsize, &
-          local_start, order, mpi_precision, local_type, mpi_err)
+      global_size(4) = nv
+      subsize(4) = nv
+!
+! Create 'local_type' to be the local data portion that is being saved.
+!
+      call MPI_TYPE_CREATE_SUBARRAY (io_dims, local_size, subsize, local_start, order, mpi_precision, local_type, mpi_err)
       call check_success ('input', 'create local subarray', file)
-      call MPI_TYPE_COMMIT(local_type, mpi_err)
+      call MPI_TYPE_COMMIT (local_type, mpi_err)
       call check_success ('input', 'commit local subarray', file)
 !
-! Define 'global_type' to indicate the local data portion in the global file.
+! Create 'global_type' to indicate the local data portion in the global file.
 !
-      global_size(4) = nv
-      call MPI_TYPE_CREATE_SUBARRAY(n_dims+1, global_size, local_subsize, &
-          global_start, order, mpi_precision, global_type, mpi_err)
+      call MPI_TYPE_CREATE_SUBARRAY (io_dims, global_size, subsize, global_start, order, mpi_precision, global_type, mpi_err)
       call check_success ('input', 'create global subarray', file)
-      call MPI_TYPE_COMMIT(global_type, mpi_err)
+      call MPI_TYPE_COMMIT (global_type, mpi_err)
       call check_success ('input', 'commit global subarray', file)
 !
-      call MPI_FILE_OPEN(MPI_COMM_WORLD, trim (directory_snap)//'/'//file, &
-          MPI_MODE_CREATE+MPI_MODE_WRONLY, io_info, handle, mpi_err)
+      call MPI_FILE_OPEN (mpi_comm, trim (directory_snap)//'/'//file, MPI_MODE_RDONLY, io_info, handle, mpi_err)
       call check_success ('input', 'open', trim (directory_snap)//'/'//file)
 !
 ! Setting file view and read raw binary data, ie. 'native'.
 !
-      call MPI_FILE_SET_VIEW(handle, 0, mpi_precision, global_type, 'native', io_info, mpi_err)
+      call MPI_FILE_SET_VIEW (handle, displacement, mpi_precision, global_type, 'native', io_info, mpi_err)
       call check_success ('input', 'create view', file)
 !
-      call MPI_FILE_READ_ALL(handle, a, 1, local_type, status, mpi_err)
+      call MPI_FILE_READ_ALL (handle, a, 1, local_type, status, mpi_err)
       call check_success ('input', 'read', file)
 !
-      call MPI_FILE_CLOSE(handle, mpi_err)
+      call MPI_FILE_CLOSE (handle, mpi_err)
       call check_success ('input', 'close', file)
 !
       ! read additional data
@@ -453,13 +432,14 @@ module Io
 !
 !  Close snapshot file.
 !
-!  11-Feb-2012/Bourdin.KIS: coded
+!  11-Feb-2012/PABourdin: coded
 !
       if (persist_initialized) then
-        close (lun_input)
         persist_initialized = .false.
         persist_last_id = -max_int
       endif
+!
+      if (ldistribute_persist .or. lroot) close (lun_input)
 !
     endsubroutine input_snap_finalize
 !***********************************************************************
@@ -467,7 +447,7 @@ module Io
 !
 !  Initialize writing of persistent data to persistent file.
 !
-!  13-Dec-2011/Bourdin.KIS: coded
+!  13-Dec-2011/PABourdin: coded
 !
       character (len=*), intent(in), optional :: file
 !
@@ -482,12 +462,20 @@ module Io
         return
       endif
 !
-      if (filename /= "") then
-        call delete_file(trim(directory_dist)//'/'//filename)
-        open (lun_output, FILE=trim(directory_dist)//'/'//filename, FORM='unformatted', status='new')
-        if (ip <= 9) write (*,*) 'begin persistent block'
+      if (ldistribute_persist .or. lroot) then
+        if (filename /= "") then
+          if (lroot .and. (ip <= 9)) write (*,*) 'begin write persistent block'
+          if (lroot) close (lun_output)
+          if (ldistribute_persist) then
+            call delete_file(trim(directory_dist)//'/'//filename)
+            open (lun_output, FILE=trim(directory_dist)//'/'//filename, FORM='unformatted', status='new')
+          else
+            call delete_file(trim(directory_snap)//'/'//filename)
+            open (lun_output, FILE=trim(directory_snap)//'/'//filename, FORM='unformatted', status='new')
+          endif
+          filename = ""
+        endif
         write (lun_output) id_block_PERSISTENT
-        filename = ""
       endif
 !
       init_write_persist = .false.
@@ -499,7 +487,7 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  13-Dec-2011/Bourdin.KIS: coded
+!  13-Dec-2011/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -524,7 +512,7 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  12-Feb-2012/Bourdin.KIS: coded
+!  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_logical, mpirecv_logical
 !
@@ -572,7 +560,7 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  12-Feb-2012/Bourdin.KIS: coded
+!  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_logical, mpirecv_logical
 !
@@ -622,7 +610,7 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  12-Feb-2012/Bourdin.KIS: coded
+!  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_int, mpirecv_int
 !
@@ -670,7 +658,7 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  12-Feb-2012/Bourdin.KIS: coded
+!  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_int, mpirecv_int
 !
@@ -720,7 +708,7 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  12-Feb-2012/Bourdin.KIS: coded
+!  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
 !
@@ -768,7 +756,7 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  12-Feb-2012/Bourdin.KIS: coded
+!  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
 !
@@ -818,7 +806,7 @@ module Io
 !
 !  Initialize reading of persistent data from persistent file.
 !
-!  13-Dec-2011/Bourdin.KIS: coded
+!  13-Dec-2011/PABourdin: coded
 !
       use Mpicomm, only: mpibcast_logical
       use General, only: file_exists
@@ -834,7 +822,7 @@ module Io
       endif
 !
       if (present (file)) then
-        if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
+        if (lroot .and. (ip <= 9)) write (*,*) 'begin read persistent block'
         open (lun_input, FILE=trim (directory_dist)//'/'//file, FORM='unformatted', status='old')
       endif
 !
@@ -847,7 +835,7 @@ module Io
 !
 !  Read persistent block ID from snapshot file.
 !
-!  17-Feb-2012/Bourdin.KIS: coded
+!  17-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpibcast_int
 !
@@ -882,7 +870,7 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  11-Feb-2012/Bourdin.KIS: coded
+!  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_logical, mpirecv_logical
 !
@@ -924,7 +912,7 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  11-Feb-2012/Bourdin.KIS: coded
+!  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_logical, mpirecv_logical
 !
@@ -968,7 +956,7 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  11-Feb-2012/Bourdin.KIS: coded
+!  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_int, mpirecv_int
 !
@@ -1010,7 +998,7 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  11-Feb-2012/Bourdin.KIS: coded
+!  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_int, mpirecv_int
 !
@@ -1054,7 +1042,7 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  11-Feb-2012/Bourdin.KIS: coded
+!  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
 !
@@ -1096,7 +1084,7 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  11-Feb-2012/Bourdin.KIS: coded
+!  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
 !
@@ -1140,7 +1128,7 @@ module Io
 !
 !  Write snapshot file of globals, ignore time and mesh.
 !
-!  10-Feb-2012/Bourdin.KIS: coded
+!  10-Feb-2012/PABourdin: coded
 !
       character (len=*) :: file
       integer :: nv
@@ -1155,7 +1143,7 @@ module Io
 !
 !  Read globals snapshot file, ignore time and mesh.
 !
-!  10-Feb-2012/Bourdin.KIS: coded
+!  10-Feb-2012/PABourdin: coded
 !
       character (len=*) :: file
       integer :: nv
@@ -1202,7 +1190,7 @@ module Io
 !
 !  Write grid coordinates.
 !
-!  10-Feb-2012/Bourdin.KIS: adapted for collective IO
+!  10-Feb-2012/PABourdin: adapted for collective IO
 !
       use Mpicomm, only: collect_grid
 !
@@ -1244,7 +1232,7 @@ module Io
 !
 !  21-jan-02/wolf: coded
 !  15-jun-03/axel: Lx,Ly,Lz are now read in from file (Tony noticed the mistake)
-!  10-Feb-2012/Bourdin.KIS: adapted for collective IO
+!  10-Feb-2012/PABourdin: adapted for collective IO
 !
       use Mpicomm, only: mpibcast_int, mpibcast_real
 !
@@ -1311,7 +1299,7 @@ module Io
 !
 !   Export processor boundaries to file.
 !
-!   22-Feb-2012/Bourdin.KIS: adapted from io_dist
+!   22-Feb-2012/PABourdin: adapted from io_dist
 !
       use Mpicomm, only: stop_it
 !
@@ -1334,7 +1322,7 @@ module Io
 !
 !   Import processor boundaries from file.
 !
-!   22-Feb-2012/Bourdin.KIS: adapted from io_dist
+!   22-Feb-2012/PABourdin: adapted from io_dist
 !
       use Mpicomm, only: stop_it
 !
