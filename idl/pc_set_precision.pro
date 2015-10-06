@@ -1,33 +1,29 @@
+; Set the precision parameters in the pc_precision common block.
 ;
-; $Id$
-;
-;  Read ensure 'zero' and 'one' are set in the pc_precision common block.
-;
-pro pc_set_precision, precision=precision, dim=dim, datadir=datadir, QUIET=QUIET
-COMPILE_OPT IDL2,HIDDEN
-COMMON pc_precision, zero, one
-;
-if (n_elements(precision) eq 1) then begin
-  if ((precision eq 'S') or (precision eq 's')) then begin
-      one = 1.e0
-  endif else if ((precision eq 'D') or (precision eq 'd')) then begin
-      one = 1.D0
-  endif else begin
-      message, "precision = `"+ precision+"' makes no sense to me"
-  endelse
-  zero = 0*one
-endif else begin
-  if (n_elements(dim) ne 1) then $
-      pc_read_dim, object=dim, datadir=datadir, /quiet
-  precision=dim.precision
-  if ((precision eq 'S') or (precision eq 's')) then begin
-      one = 1.e0
-  endif else if ((precision eq 'D') or (precision eq 'd')) then begin
-      one = 1.D0
-  endif else begin
-      message, "precision = `"+precision+"' makes no sense to me"
-  endelse
-  zero = 0*one
-endelse
-;
+; 14-Sep-2015/Bourdin.KIS: redesigned completely
+
+pro pc_set_precision, new
+
+COMPILE_OPT IDL2, HIDDEN
+
+	common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
+
+	if (size (new, /type) eq 0) then message, "ERROR: precision is a mandatory parameter"
+	precision = strupcase (strmid (strtrim (new, 2), 0, 1))
+
+	if (new eq 'D') then begin
+		; double precision
+		zero = 0.d0
+		one = 1.d0
+		data_type = 'double'
+		data_bytes = 8
+		type_idl = 4
+	end else begin
+		; single precision
+		zero = 0.e0
+		one = 1.e0
+		data_type = 'real'
+		data_bytes = 4
+		type_idl = 5
+	end
 end
