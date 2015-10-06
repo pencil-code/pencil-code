@@ -15,233 +15,235 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MAUX CONTRIBUTION 3
-! COMMUNICATED AUXILIARIES 3
-!   disabled for now: MPVAR_CONTRIBUTION_3
-! CPARAM logical, parameter :: lparticles_spin=.true.
+!!! MAUX CONTRIBUTION 3
+!!! COMMUNICATED AUXILIARIES 3
+! MPVAR CONTRIBUTION 3
+! CPARAM logical, parameter :: lparticles_spin = .true.
 !
 !***************************************************************
 module Particles_spin
-
+!
   use Cdata
+  use Cparam
+  use Messages
   use Particles_cdata
-  use Particles_sub
-
+!
   implicit none
-
+!
   include 'particles_spin.h'
-
-  logical :: lsaffman_lift=.false.
-  logical :: lmagnus_lift=.false.
-  character (len=labellen), dimension(ninit) :: initsp='nothing'
-
-  namelist /particles_spin_init_pars/ &
-    lsaffman_lift, lmagnus_lift, initsp
-
-  namelist /particles_spin_run_pars/ &
-    lsaffman_lift, lmagnus_lift
-
-  integer :: idiag_psxm=0, idiag_psym=0, idiag_pszm=0
-
+!
+  character(len=labellen), dimension(ninit) :: initsp = 'nothing'
+  logical :: lsaffman_lift = .false.
+  logical :: lmagnus_lift = .false.
+!
+  namelist /particles_spin_init_pars/ lsaffman_lift, lmagnus_lift, initsp
+!
+  namelist /particles_spin_run_pars/ lsaffman_lift, lmagnus_lift
+!
+  integer :: idiag_psxm = 0, idiag_psym = 0, idiag_pszm = 0
+!
   contains
-
 !***********************************************************************
     subroutine register_particles_spin()
 !
-!  Set up indices for access to the fp and dfp arrays
+!  Set up indices for access to the fp and dfp arrays.
 !
 !  21-jul-08/kapelrud: coded
 !
-      use Cdata
-      use FArrayManager
-      use Mpicomm, only: stop_it
-      use Messages, only: svn_id
-      use Cparam
+!      use FArrayManager
 !
-      if (lroot) call svn_id( &
-           "$Id$")
-!
-!  Indices for flow field vorticity. The vorticity is a communicated auxiliary
-!  vector.
-!  Assuming that this module is the last to use communicated aux variables,
-!  then the three last entries in bc{x,y,z} in start.in sets the boundary
-!  conditions of the vorticity.
-!
-      call farray_register_auxiliary('ox',iox,communicated=.true.)
-      call farray_register_auxiliary('oy',ioy,communicated=.true.)
-      call farray_register_auxiliary('oz',ioz,communicated=.true.)
+      if (lroot) call svn_id("$Id$")
+!!
+!!  Indices for flow field vorticity. The vorticity is a communicated auxiliary
+!!  vector.
+!!  Assuming that this module is the last to use communicated aux variables,
+!!  then the three last entries in bc{x,y,z} in start.in sets the boundary
+!!  conditions of the vorticity.
+!!
+!      call farray_register_auxiliary('ox', iox, communicated=.true.)
+!      call farray_register_auxiliary('oy', ioy, communicated=.true.)
+!      call farray_register_auxiliary('oz', ioz, communicated=.true.)
 !
 !  Indices for particle spin
 !
-!DM why are the following commented out ?
+      ipsx = npvar + 1
+      pvarname(ipsx) = 'ipsx'
+      ipsy = npvar + 2
+      pvarname(ipsy) = 'ipsy'
+      ipsz = npvar + 3
+      pvarname(ipsz) = 'ipsz'
 !
-!     ipsx=npvar+1
-!     pvarname(npvar+1)='ipsx'
-!     ipsy=npvar+2
-!     pvarname(npvar+1)='ipsx'
-!     ipsz=npvar+3
-!     pvarname(npvar+1)='ipsx'
-!
-!     npvar=npvar+3
+      npvar = npvar + 3
 !
 !  Check that the fp and dfp arrays are big enough.
 !
-      if (npvar > mpvar) then
-        if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
-        call stop_it('register_particles_spin: npvar > mpvar')
-      endif
-!
-!  Make sure that the vorticity field is communicated one time extra
-!  before the pencil loop in pde is executed.
-!
-      lparticles_prepencil_calc=.true.
+      bound: if (npvar > mpvar) then
+        if (lroot) print *, 'npvar = ', npvar, ', mpvar = ', mpvar
+        call fatal_error('register_particles_spin', 'npvar > mpvar')
+      endif bound
+!!
+!!  Make sure that the vorticity field is communicated one time extra
+!!  before the pencil loop in pde is executed.
+!!
+!      lparticles_prepencil_calc=.true.
 !
     endsubroutine register_particles_spin
 !***********************************************************************
     subroutine initialize_particles_spin(f)
 !
-!  Perform any post-parameter-read initialization i.e. calculate derived
-!  parameters.
+!  Perform any post-parameter-read initialization, i.e., calculate
+!  derived parameters.
 !
 !  21-jul-08/kapelrud: coded
 !
-      use Particles_radius
+      use General, only: keep_compiler_quiet
+!      use Particles_radius
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
-!  Initialize vorticity field to zero.
+      call keep_compiler_quiet(f)
 !
-      f(:,:,:,iox)=0.0
-      f(:,:,:,ioy)=0.0
-      f(:,:,:,ioz)=0.0
+      if (lsaffman_lift) call fatal_error('initialize_particles_spin', 'Saffman lift is currently not supported. ')
 !
-      if (lroot) print*,'initialize_particles_spin: '// &
-          'using communicated auxiliary variables.'
-!
-!  Request interpolation of variables:
-!
-      interp%luu=interp%luu.or.lsaffman_lift !.or.lmagnus_lift
-      interp%loo=interp%loo.or.lsaffman_lift !.or.lmagnus_lift
-      interp%lrho=interp%lrho.or.lsaffman_lift !.or.lmagnus_lift
+      if (lmagnus_lift) call fatal_error('initialize_particles_spin', 'Magnus lift is under construction. ')
+!!
+!!  Initialize vorticity field to zero.
+!!
+!      f(:,:,:,iox:ioz) = 0.0
+!!
+!!  Request interpolation of variables:
+!!
+!      interp%luu = interp%luu .or. lsaffman_lift !.or. lmagnus_lift
+!      interp%loo = interp%loo .or. lsaffman_lift !.or. lmagnus_lift
+!      interp%lrho = interp%lrho .or. lsaffman_lift !.or. lmagnus_lift
 !
     endsubroutine initialize_particles_spin
 !***********************************************************************
-    subroutine init_particles_spin(f,fp)
+    subroutine init_particles_spin(f, fp)
 !
 !  Initial spin of particles.
 !
 !  21-jul-08/kapelrud: coded
 !
-      use Cdata, only: m,n
+      use General, only: keep_compiler_quiet
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mpar_loc,mparray), intent(inout) :: fp
 !
-      intent(inout) :: f
-!     integer :: j
+      integer :: j
 !
-      if (lroot) print*,'init_particles_spin: oo will be generated '// &
-          'at run-time.'
+      call keep_compiler_quiet(f)
 !
-!     do j=1,ninit
-!       select case (initsp(j))
+      loop: do j = 1, ninit
+        init: select case (initsp(j))
 !
-!       case ('nothing')
-!         if (lroot) print*,'init_particles_spin: nothing (setting initial '// &
-!           'particle spin to zero for all particles'
-!         fp(1:npar_loc,ipsx:ipsz)=0.0
+!  Do nothing.
 !
-!       endselect
-!     enddo
+        case ('nothing') init
+          if (lroot .and. j == 1) print *, 'init_particles_spin: no initial condition for particle spin'
+!
+!  Zero out all spins.
+!
+        case ('zero') init
+          if (lroot) print *, 'init_particles_spin: zero particle spin'
+          fp(1:npar_loc,ipsx:ipsz) = 0.0
+!
+!  Unknown initial condition.
+!
+        case default init
+          call fatal_error('init_particles_spin', 'unknown initsp = ' // initsp(j))
+!
+        endselect init
+      enddo loop
 !
     endsubroutine init_particles_spin
 !***********************************************************************
     subroutine particles_spin_prepencil_calc(f)
 !
-!  Prepare the curl(uu) field here so that ghost zones can be communicated between
-!  processors before the spin is calculated in dps_dt_pencil.
+!  Prepare the curl(uu) field here so that ghost zones can be
+!  communicated between processors before the spin is calculated in
+!  dps_dt_pencil.
 !
 !  22-jul-08/kapelrud: coded
+!  20-sep-15/ccyang: Disable this subroutine for the moment.
 !
-      use Cdata
-      use Sub, only: curl
+      use General, only: keep_compiler_quiet
+!      use Sub, only: curl
 !
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(nx,3) :: tmp
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
-      intent(inout) :: f
+      call keep_compiler_quiet(f)
 !
-!  Calculate curl(uu) along pencils in the internal region of this
-!  processor's grid. Ghost zones will have to be set by the boundary conditions
-!  and mpi communication as usual.
-!
-      do m=m1,m2;do n=n1,n2
-        call curl(f,iux,tmp)
-        f(l1:l2,m,n,iox:ioz) = tmp
-      enddo;enddo
+!      real, dimension(nx,3) :: tmp
+!!
+!!  Calculate curl(uu) along pencils in the internal region of this
+!!  processor's grid. Ghost zones will have to be set by the boundary conditions
+!!  and mpi communication as usual.
+!!
+!      do m=m1,m2;do n=n1,n2
+!        call curl(f,iux,tmp)
+!        f(l1:l2,m,n,iox:ioz) = tmp
+!      enddo;enddo
 !
     endsubroutine particles_spin_prepencil_calc
 !***********************************************************************
     subroutine pencil_criteria_par_spin()
 !
-!  All pencils that the Particles_spin module depends on are specified here.
+!  All pencils that the Particles_spin module depends on are specified
+!  here.
 !
-!  21-nov-06/anders: coded
-!
-      use Cdata
-!
-      !lpenc_requested(i_uu)=.true.
+!  06-oct-15/ccyang: stub.
 !
     endsubroutine pencil_criteria_par_spin
 !***********************************************************************
-    subroutine dps_dt_pencil(f,df,fp,dfp,p,ineargrid)
+    subroutine dps_dt_pencil(f, df, fp, dfp, p, ineargrid)
 !
-!  Evolution of particle spin.
+!  Evolution of particle spin (called in the pencil loop.)
 !
-!  22-aug-05/anders: coded
+!  06-oct-15/ccyang: stub.
 !
-      use Cdata
-      use Viscosity, only: getnu
-      use Messages, only: fatal_error
-      use Particles_cdata
-      use Particles_radius
+      use General, only: keep_compiler_quiet
+!      use Viscosity, only: getnu
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      type (pencil_case) :: p
-      integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mx,my,mz,mvar), intent(in) :: df
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
+      real, dimension(mpar_loc,mpvar), intent(inout) :: dfp
+      type(pencil_case), intent(in) :: p
+      integer, dimension(mpar_loc,3), intent(in) :: ineargrid
 !
-      logical :: lheader, lfirstcall=.true.
-      real,dimension(3) :: tau
-      real :: ip_tilde,nu
-      integer :: k
+      logical :: lfirstcall = .true.
+!      real, dimension(3) :: tau
+      logical :: lheader
+!      integer :: k
+!      real :: ip_tilde, nu
 !
-      intent (in) :: f,df,fp,ineargrid
-      intent (inout) :: dfp
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
 !
-      call getnu(nu_imput=nu)
+!      call getnu(nu_input=nu)
 !
 !  Print out header information in first time step.
 !
-      lheader=lfirstcall .and. lroot
-      lfirstcall=.false.
+      lheader = lfirstcall .and. lroot
+      lfirstcall = .false.
 !
 !  Identify module and boundary conditions.
 !
-      if (lheader) print*,'dps_dt_pencil: Calculate dps_dt'
-!
-!  Calculate torque on particle due to the shear flow, and
-!  update the particles' spin.
-!
+      if (lheader) print *, 'dps_dt_pencil: Calculate dps_dt (currently do nothing)'
+!!
+!!  Calculate torque on particle due to the shear flow, and
+!!  update the particles' spin.
+!!
 !     if (lmagnus_lift) then
 !       do k=k1_imn(imn),k2_imn(imn)
-!
-!  Calculate angular momentum
-!
+!!
+!!  Calculate angular momentum
+!!
 !         ip_tilde=0.4*mpmat*fp(k,iap)**2
-!
+!!
 !         tau=8.0*pi*interp_rho(k)*nu*fp(k,iap)**3* &
 !             (0.5*interp_oo(k,:)-fp(k,ipsx:ipsz))
 !         dfp(k,ipsx:ipsz)=dfp(k,ipsx:ipsz)+tau/ip_tilde
@@ -250,31 +252,35 @@ module Particles_spin
 !
     endsubroutine dps_dt_pencil
 !***********************************************************************
-    subroutine dps_dt(f,df,fp,dfp,ineargrid)
+    subroutine dps_dt(f, df, fp, dfp, ineargrid)
 !
-!  Evolution of particle spin.
+!  Evolution of particle spin (called after the pencil loop.)
 !
 !  25-jul-08/kapelrud: coded
 !
-      use Sub
+      use Particles_sub, only: sum_par_name
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mx,my,mz,mvar), intent(in) :: df
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
+      real, dimension(mpar_loc,mpvar), intent(in) :: dfp
+      integer, dimension(mpar_loc,3), intent(in) :: ineargrid
 !
-!  Diagnostic output
+!  Diagnostics
 !
-!      if (ldiagnos) then
-!        if (idiag_psxm/=0) call sum_par_name(fp(1:npar_loc,ipsx),idiag_psxm)
-!        if (idiag_psym/=0) call sum_par_name(fp(1:npar_loc,ipsy),idiag_psym)
-!        if (idiag_pszm/=0) call sum_par_name(fp(1:npar_loc,ipsz),idiag_pszm)
-!      endif
+      diag: if (ldiagnos) then
+        if (idiag_psxm /= 0) call sum_par_name(fp(1:npar_loc,ipsx), idiag_psxm)
+        if (idiag_psym /= 0) call sum_par_name(fp(1:npar_loc,ipsy), idiag_psym)
+        if (idiag_pszm /= 0) call sum_par_name(fp(1:npar_loc,ipsz), idiag_pszm)
+      endif diag
 !
     endsubroutine dps_dt
 !***********************************************************************
     subroutine read_particles_spin_init_pars(iostat)
+!
+!  Read initialization parameters from namelist particles_spin_init_pars.
+!
+!  06-oct-15/ccyang: coded.
 !
       use File_io, only: parallel_unit
 !
@@ -286,6 +292,10 @@ module Particles_spin
 !***********************************************************************
     subroutine write_particles_spin_init_pars(unit)
 !
+!  Write initialization parameters from namelist particles_spin_init_pars.
+!
+!  06-oct-15/ccyang: coded.
+!
       integer, intent(in) :: unit
 !
       write(unit, NML=particles_spin_init_pars)
@@ -293,6 +303,10 @@ module Particles_spin
     endsubroutine write_particles_spin_init_pars
 !***********************************************************************
     subroutine read_particles_spin_run_pars(iostat)
+!
+!  Read runtime parameters from namelist particles_spin_run_pars.
+!
+!  06-oct-15/ccyang: coded.
 !
       use File_io, only: parallel_unit
 !
@@ -304,72 +318,92 @@ module Particles_spin
 !***********************************************************************
     subroutine write_particles_spin_run_pars(unit)
 !
+!  Write runtime parameters from namelist particles_spin_run_pars.
+!
+!  06-oct-15/ccyang: coded.
+!
       integer, intent(in) :: unit
 !
       write(unit, NML=particles_spin_run_pars)
 !
     endsubroutine write_particles_spin_run_pars
 !***********************************************************************
-    subroutine rprint_particles_spin(lreset,lwrite)
+    subroutine rprint_particles_spin(lreset, lwrite)
 !
 !  Read and register print parameters relevant for particles spin.
 !
-!  21-jul-08/kapelrud: adapted from particles_radius
+!  21-jul-08/kapelrud: coded.
+!  06-oct-15/ccyang: continued.
 !
-      use Cdata
       use Diagnostics
 !
-      logical :: lreset
-      logical, optional :: lwrite
+      logical, intent(in) :: lreset
+      logical, intent(in), optional :: lwrite
 !
       logical :: lwr
+      integer :: iname
 !
 !  Write information to index.pro
 !
       lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-      if (lwr) write(3,*) 'iox=', iox
+      if (present(lwrite)) lwr = lwrite
+!
+      indices: if (lwr) then
+        write(3,*) "ipsx = ", ipsx
+        write(3,*) "ipsy = ", ipsy
+        write(3,*) "ipsz = ", ipsz
+      endif indices
 !
 !  Reset everything in case of reset
 !
-      if (lreset) then
-!        idiag_psxm=0; idiag_psym=0; idiag_pszm=0
-      endif
+      reset: if (lreset) then
+        idiag_psxm = 0
+        idiag_psym = 0
+        idiag_pszm = 0
+      endif reset
 !
 !  Run through all possible names that may be listed in print.in
 !
-!      if (lroot.and.ip<14) &
-!          print*, 'rprint_particles_spin: run through parse list'
+      if (lroot .and. ip < 14) print *, 'rprint_particles_spin: run through parse list'
+      diag: do iname = 1, nname
+        call parse_name(iname, cname(iname), cform(iname), 'psxm', idiag_psxm)
+        call parse_name(iname, cname(iname), cform(iname), 'psym', idiag_psym)
+        call parse_name(iname, cname(iname), cform(iname), 'pszm', idiag_pszm)
+      enddo diag
 !
     endsubroutine rprint_particles_spin
 !***********************************************************************
-    subroutine calc_liftforce(fp,k,rep,liftforce)
+    subroutine calc_liftforce(fp, k, rep, liftforce)
 !
-!  Calculate lifting forces for a given particle. It should be possible to make
-!  this a routine operating on pencils.
+!  Calculate lifting forces for a given particle. It should be possible
+!  to make this a routine operating on pencils.
 !
 !  22-jul-08/kapelrud: coded
 !
-      real,dimension(mparray) :: fp
-      integer :: k
-      real,dimension(3) :: liftforce
-      real :: rep
-!
-      intent(in) :: fp, k, rep
-      intent(out) :: liftforce
+      real, dimension(mparray), intent(in) :: fp
+      integer, intent(in) :: k
+      real, intent(in) :: rep
+      real, dimension(3), intent(out) :: liftforce
 !
       real,dimension(3) :: dlift
 !
-      liftforce=0.0
-      if (lsaffman_lift) then
-        call calc_saffman_liftforce(fp,k,rep,dlift)
-        liftforce=liftforce+dlift
-      endif
-!     if (lmagnus_lift) then
-!       call calc_magnus_liftforce(fp,k,rep,dlift)
-!       liftforce=liftforce+dlift
-!       endif
-!     endif
+!  Initialization
+!
+      liftforce = 0.0
+!
+!  Find Saffman lift.
+!
+!      if (lsaffman_lift) then
+!        call calc_saffman_liftforce(fp,k,rep,dlift)
+!        liftforce=liftforce+dlift
+!      endif
+!
+!  Find Magnus list.
+!
+     magnus: if (lmagnus_lift) then
+       call calc_magnus_liftforce(fp, k, rep, dlift)
+       liftforce = liftforce + dlift
+     endif magnus
 !
     endsubroutine calc_liftforce
 !***********************************************************************
@@ -393,7 +427,7 @@ module Particles_spin
 !
       real :: csaff,diameter,beta,oo,nu
 !
-      call getnu(nu_imput=nu)
+      call getnu(nu_input=nu)
 !
       if (.not.lparticles_radius) then
         if (lroot) print*,'calc_saffman_liftforce: '//&
@@ -423,26 +457,22 @@ module Particles_spin
 !
     endsubroutine calc_saffman_liftforce
 !***********************************************************************
-    subroutine calc_magnus_liftforce(fp,k,rep,dlift)
+    subroutine calc_magnus_liftforce(fp, k, rep, dlift)
 !
 !  Calculate the Magnus liftforce for a given spinning particle.
 !
 !  22-jul-08/kapelrud: coded
 !
       use Sub, only: cross
-      use Particles_cdata
       use Viscosity, only: getnu
 !
-      real,dimension(mparray) :: fp
-      integer :: k
-      real,dimension(3) :: dlift
-      real :: rep
-!
-      intent(in) :: fp, k, rep
-      intent(out) :: dlift
+      real, dimension(mparray), intent(in) :: fp
+      integer, intent(in) :: k
+      real, intent(in) :: rep
+      real, dimension(3), intent(out) :: dlift
 !
       real :: const_lr, spin_omega, area, nu
-      real, dimension(3) :: ps_rel,uu_rel
+      real, dimension(3) :: ps_rel, uu_rel
 !
       if (.not.lparticles_radius) then
         if (lroot) print*,'calc_magnus_liftforce: '//&
@@ -450,7 +480,7 @@ module Particles_spin
         call fatal_error('calc_magnus_liftforce','')
       endif
 !
-      call getnu(nu_imput=nu)
+      call getnu(nu_input=nu)
 !
 !  Projected area of the particle
 !
@@ -469,5 +499,4 @@ module Particles_spin
 !
     endsubroutine calc_magnus_liftforce
 !***********************************************************************
-
 endmodule Particles_spin
