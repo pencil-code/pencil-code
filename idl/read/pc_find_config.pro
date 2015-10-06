@@ -34,20 +34,22 @@
 ;
 ; EXAMPLE:
 ;       Automatically find VAR files and set all unset parameters:
-;       pc_find_config, varfile, datadir=datadir, procdir=procdir, dim=dim, allprocs=allprocs, f77=f77, additional=additional, marker=marker, mvar_io=mvar_io, start_param=param
+;       pc_find_config, varfile, datadir=datadir, procdir=procdir, dim=dim, allprocs=allprocs, f77=f77, additional=additional, marker=marker, start_param=start_param
 ;
 ; MODIFICATION HISTORY:
 ;       $Id$
 ;       Written by: PABourdin, 06-Sep-2015
 ;
 ;-
-pro pc_find_config, varfile, datadir=datadir, procdir=procdir, dim=dim, allprocs=allprocs, reduced=reduced, swap_endian=swap_endian, f77=f77, additional=additional, marker=marker, mvar_io=mvar_io, start_param=start_param, check_file=check_file
+pro pc_find_config, varfile, datadir=datadir, procdir=procdir, dim=dim, allprocs=allprocs, reduced=reduced, lcollect_xy=lcollect_xy, swap_endian=swap_endian, f77=f77, additional=additional, marker=marker, mvar_io=mvar_io, start_param=start_param, check_file=check_file
 
 COMPILE_OPT IDL2,HIDDEN
 
-	common pc_precision, zero, one
+	common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
+	common cdat_coords, coord_system
 
 	; defaults
+	default, reduced, 0
 	if (not keyword_set (datadir)) then datadir = pc_get_datadir()
 	if (keyword_set (reduced)) then allprocs = 1
 	default, check_file, 0
@@ -71,17 +73,16 @@ COMPILE_OPT IDL2,HIDDEN
 		end else begin
 			procdir = datadir+'/proc0/'
 			allprocs = 0
-			pc_read_dim, object=pd, datadir=datadir, proc=0, /quiet
-			if (size (start_param, /type) ne 8) then pc_read_param, object=start_param, dim=pd, datadir=datadir, /quiet
-			nprocxy = pd.nprocx * pd.nprocy
-			num_var = pd.mvar
-			if (start_param.lwrite_aux) then num_var += pd.maux
+			pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
+			if (size (start_param, /type) ne 8) then pc_read_param, object=start_param, dim=procdim, datadir=datadir, /quiet
+			nprocxy = procdim.nprocx * procdim.nprocy
+			num_var = procdim.mvar
+			if (start_param.lwrite_aux) then num_var += procdim.maux
 			if ((nprocxy le 1) or not file_test (datadir+'/proc1/') or (not file_test (datadir+'/proc1/'+varfile) and not file_test (datadir+'/proc1/VAR*'))) then begin
 				fstat = file_info (procdir+varfile)
-				if (pd.precision eq 'D') then real_bytes=8 else real_bytes=4
-				data_end = long64(pd.mxgrid)*long64(pd.mygrid)*long64(pd.mz)*long64(num_var*real_bytes)
-				file_size = data_end + real_bytes * long64((1+1)+(pd.mxgrid+pd.mygrid+pd.mzgrid+3+1))
-				f2003_size = data_end + 2*strlen (dead_beef) + real_bytes * long64(1+3*(pd.mxgrid+pd.mygrid+pd.mzgrid)+3)
+				data_end = long64(procdim.mxgrid)*long64(procdim.mygrid)*long64(procdim.mz)*long64(num_var*data_bytes)
+				file_size = data_end + data_bytes * long64((1+1)+(procdim.mxgrid+procdim.mygrid+procdim.mzgrid+3+1))
+				f2003_size = data_end + 2*strlen (dead_beef) + data_bytes * long64(1+3*(procdim.mxgrid+procdim.mygrid+procdim.mzgrid)+3)
 				if (fstat.size lt data_end) then begin
 					allprocs = 0
 				end else if (fstat.size eq f2003_size) then begin
@@ -99,59 +100,76 @@ COMPILE_OPT IDL2,HIDDEN
 	end
 	if (keyword_set (reduced) and (allprocs eq 1)) then procdir = datadir+'/reduced/'
 
-	; get dimensions
+	; get global dimensions
 	if (size (dim, /type) ne 8) then begin
-		if (allprocs eq 1) then begin
-			pc_read_dim, object=dim, datadir=datadir, reduced=reduced, /quiet
-		end else if (allprocs ge 2) then begin
-			pc_read_dim, object=dim, datadir=datadir, proc=0, /quiet
-			dim.nx = dim.nxgrid
-			dim.ny = dim.nygrid
-			dim.mx = dim.mxgrid
-			dim.my = dim.mygrid
-			dim.mw = dim.mx * dim.my * dim.mz
-		end else begin
-			pc_read_dim, object=dim, datadir=datadir, proc=0, /quiet
-		end
+		pc_read_dim, object=dim, datadir=datadir, reduced=reduced, /quiet
 	end
 
 	; get "start.in" parameters
 	if (size (start_param, /type) ne 8) then pc_read_param, object=start_param, dim=dim, datadir=datadir, /quiet
 
+	; set coordinate system
+	coord_system = start_param.coord_system
+
 	; get number of variables in VAR file
 	mvar_io = dim.mvar
 	if (start_param.lwrite_aux) then mvar_io += dim.maux
 
-	; set precision
-	pc_set_precision, dim=dim, /quiet
-	if (dim.precision eq 'D') then real_bytes=8 else real_bytes=4
-
 	; set other parameters according to allprocs
 	marker = ''
 	marker_bytes = 4
+	if (allprocs ne 1) then begin
+		if (size (procdim, /type) eq 0) then pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
+	end
 	if (allprocs eq 0) then begin
 		f77 = 1
-		additional = long64(dim.mx)*long64(dim.my)*long64(dim.mz)*long64(mvar_io*real_bytes)+long64(2*marker_bytes)
+		additional = long64(procdim.mx)*long64(procdim.my)*long64(procdim.mz)*long64(mvar_io*data_bytes)+long64(2*marker_bytes)
 	end else if (allprocs eq 1) then begin
 		f77 = 1
-		additional = long64(dim.mxgrid)*long64(dim.mygrid)*long64(dim.mzgrid)*long64(mvar_io*real_bytes)
+		additional = long64(dim.mxgrid)*long64(dim.mygrid)*long64(dim.mzgrid)*long64(mvar_io*data_bytes)
 	end else if (allprocs eq 2) then begin
 		f77 = 1
-		additional = long64(dim.mxgrid)*long64(dim.mygrid)*long64(dim.mz)*long64(mvar_io*real_bytes)+long64(2*marker_bytes)
+		additional = long64(procdim.mxgrid)*long64(procdim.mygrid)*long64(procdim.mz)*long64(mvar_io*data_bytes)+long64(2*marker_bytes)
 	end else if (allprocs eq 3) then begin
 		marker = dead_beef
 		f77 = 0
-		additional = long64(dim.mxgrid)*long64(dim.mygrid)*long64(dim.mz)*long64(mvar_io*real_bytes)
-		; check file integrity
-		record_marker = marker
-		if (check_file) then begin
-			openr, file, procdir+varfile, swap_endian=swap_endian, /get_lun
+		additional = long64(procdim.mxgrid)*long64(procdim.mygrid)*long64(procdim.mz)*long64(mvar_io*data_bytes)+strlen(marker)
+	end
+
+	; set collective IO flags
+	lcollect_xy = (allprocs ge 2) and (allprocs le 3)
+
+	; check file integrity
+	if (check_file) then begin
+		t = zero
+		x = make_array (dim.mx, type=type_idl)
+		y = make_array (dim.my, type=type_idl)
+		z = make_array (dim.mz, type=type_idl)
+		dx = zero
+		dy = zero
+		dz = zero
+		deltay = zero
+		openr, file, procdir+varfile, f77=f77, swap_endian=swap_endian, /get_lun
+		if (allprocs eq 0) then begin
 			point_lun, file, additional
+			if (param.lshear) then begin
+				readu, file, t, x, y, z, dx, dy, dz, deltay
+			end else begin
+				readu, file, t, x, y, z, dx, dy, dz
+			end
+		end else if (allprocs eq 1) then begin
+			point_lun, file, additional
+			readu, file, t, x, y, z, dx, dy, dz
+		end else if (allprocs eq 2) then begin
+			point_lun, file, additional
+			readu, file, t
+		end else if (allprocs eq 3) then begin
+			record_marker = marker
+			point_lun, file, additional - strlen (marker)
 			readu, file, record_marker
 			if (marker ne record_marker) then message, "ERROR: '"+filename+"' has invalid record marker ('"+record_marker+"')."
-			close, file
-			free_lun, file
 		end
-		additional += strlen (marker)
+		close, file
+		free_lun, file
 	end
 end
