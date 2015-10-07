@@ -45,7 +45,7 @@ pro pc_find_config, varfile, datadir=datadir, procdir=procdir, dim=dim, allprocs
 
 COMPILE_OPT IDL2,HIDDEN
 
-	common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
+	common pc_precision, zero, one, precision, data_type, data_bytes, type_idl, precision, data_type, data_bytes, type_idl
 	common cdat_coords, coord_system
 
 	; defaults

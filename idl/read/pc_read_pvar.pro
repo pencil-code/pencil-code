@@ -9,7 +9,7 @@ pro pc_read_pvar, object=object, varfile=varfile_, datadir=datadir, ivar=ivar, $
     solid_object=solid_object, theta_arr=theta_arr, savefile=savefile, $
     proc=proc, ipar=ipar, trimxyz=trimxyz, id_proc=id_proc
 COMPILE_OPT IDL2,HIDDEN
-COMMON pc_precision, zero, one
+common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
 ;  Defaults.
 ;

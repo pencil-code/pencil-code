@@ -10,7 +10,7 @@
 ;;
 pro pc_read_const, object=object, varfile=varfile, datadir=datadir, quiet=quiet, specname=specname,specmass=specmass
 COMPILE_OPT IDL2,HIDDEN
-COMMON pc_precision, zero, one
+common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
 ;  Default data directory.
 ;

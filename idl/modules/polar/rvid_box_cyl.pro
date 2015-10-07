@@ -6,7 +6,7 @@ pro rvid_box_cyl,field,$
              amax=amax,amin=amin,tmax=tmax,tmin=tmin,skip=skip,dev=dev,$
              norm=norm,itpng=itpng,png=png,imgprefix=imgprefix,imgdir=imgdir
 ;
-common pc_precision, zero, one
+common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
 default,dev,'x'
 ;

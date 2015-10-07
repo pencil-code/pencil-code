@@ -95,7 +95,7 @@ COMPILE_OPT IDL2,HIDDEN
   common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
   common cdat_limits, l1, l2, m1, m2, n1, n2, nx, ny, nz
   common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
-  common pc_precision, zero, one
+  common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
   common cdat_coords,coord_system
 ;
 ; Default settings.

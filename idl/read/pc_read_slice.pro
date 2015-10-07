@@ -14,7 +14,7 @@ pro pc_read_slice,field=field,plane=plane,slice=slice,t=t,x=x,y=y,z=z,dx=dx,dy=d
                  object=object, dim1=dim1, dim2=dim2, $
                  datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
 COMPILE_OPT IDL2,HIDDEN
-  COMMON pc_precision, zero, one
+  common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ; If no meaningful parameters are given show some help!
   IF ( keyword_set(HELP) ) THEN BEGIN
     print, "Usage: "

@@ -6,7 +6,7 @@ pro pc_set_precision, new
 
 COMPILE_OPT IDL2, HIDDEN
 
-	common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
+	common pc_precision, zero, one, precision, data_type, data_bytes, type_idl, precision, data_type, data_bytes, type_idl
 
 	if (size (new, /type) eq 0) then message, "ERROR: precision is a mandatory parameter"
 	precision = strupcase (strmid (strtrim (new, 2), 0, 1))

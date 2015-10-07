@@ -6,7 +6,7 @@
 pro pc_read_block, object=object, datadir=datadir, varfile=varfile, $
     proc=proc, swap=swap, quiet=quiet
 compile_opt IDL2,HIDDEN
-COMMON pc_precision, zero, one
+common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
 ; Default settings.
 ;

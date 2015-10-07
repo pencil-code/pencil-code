@@ -6,7 +6,7 @@
 pro pc_read_spvar, object=object, varfile=varfile_, datadir=datadir, ivar=ivar, $
     quiet=quiet, qquiet=qquiet,SWAP_ENDIAN=SWAP_ENDIAN
 COMPILE_OPT IDL2,HIDDEN
-COMMON pc_precision, zero, one
+common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
 ;  Defaults.
 ;

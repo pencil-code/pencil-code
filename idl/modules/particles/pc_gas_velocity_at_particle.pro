@@ -11,7 +11,7 @@ function pc_gas_velocity_at_particle, xxp, uu, x, y, z, $
     ixmin=ixmin, ixmax=ixmax, iymin=iymin, iymax=iymax, $
     izmin=izmin, izmax=izmax
 
-COMMON pc_precision, zero, one
+common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
 ;  Set default values.
 ;

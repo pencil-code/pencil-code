@@ -20,7 +20,7 @@ pro pc_read_2d_aver, dir, object=object, varfile=varfile, datadir=datadir, $
 ;
 COMPILE_OPT IDL2,HIDDEN
 ;
-  common pc_precision, zero, one
+  common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
   if ((dir ne 'y') and (dir ne 'z')) then message, 'ERROR: direction "'+dir+'" unknown.'
 ;

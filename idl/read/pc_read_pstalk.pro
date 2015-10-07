@@ -14,7 +14,7 @@
 pro pc_read_pstalk, object=object, datadir=datadir, it0=it0, it1=it1, $
     swap_endian=swap_endian, quiet=quiet, noutmax=noutmax
 COMPILE_OPT IDL2,HIDDEN
-COMMON pc_precision, zero, one
+common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
 ; Default values.
 ;

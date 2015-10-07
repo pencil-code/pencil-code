@@ -57,7 +57,7 @@ pro rvid_box, field, $
   quiet_skip=quiet_skip, axes=axes, ct=ct, neg=neg, scale=scale, $
   colorbarpos=colorbarpos
 ;
-common pc_precision, zero, one
+common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
 default,amax,0.05
 default,amin,-amax
