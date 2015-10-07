@@ -11,7 +11,7 @@
 ;;
 function pc_particles_to_velocity, xxp, vvp, x, y, z, vprms=vprms, $
     cic=cic, tsc=tsc, fine=fine, ghost=ghost, datadir=datadir, quiet=quiet
-COMMON pc_precision, zero, one
+common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;;
 ;;  Set default values.
 ;;

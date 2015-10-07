@@ -28,7 +28,7 @@ pro rvid_line,field,mpeg=mpeg,tmin=tmin,tmax=tmax,max=amax,min=amin,$
 ;  rvid_line,'XX_chiral',datadir='data/proc0',/xgrid,min=0,max=1
 ;
 ;
-common pc_precision, zero, one
+common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
 default,proc,-1
 default,field,'lnrho'

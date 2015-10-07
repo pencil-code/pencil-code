@@ -260,8 +260,10 @@ module Particles_radius
           k=npar_low
           do ibin=1,nbin_initdist
             kend=k+nn_initdist(ibin)
-            fp(k:kend,iap)=a_initdist(ibin)
-            k=kend
+            if (kend > k) then
+              fp(k:kend,iap)=a_initdist(ibin)
+              k=kend
+            endif
           enddo
           fp(kend+1:,iap)=a0_initdist
 !

@@ -8,7 +8,7 @@
 function pc_particles_to_density, xxp, x, y, z, $
     cic=cic, tsc=tsc, fine=fine, ghost=ghost, normalize=normalize, $
     density=density, datadir=datadir, quiet=quiet
-COMMON pc_precision, zero, one
+common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;;
 ;;  Set default values.
 ;;

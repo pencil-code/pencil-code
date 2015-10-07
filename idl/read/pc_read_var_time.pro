@@ -43,7 +43,7 @@ COMPILE_OPT IDL2,HIDDEN
 ; Use common block belonging to derivative routines etc. so we can
 ; set them up properly.
 ;
-  common pc_precision, zero, one
+  common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
   common cdat_coords,coord_system
 ;
 ; Default settings.

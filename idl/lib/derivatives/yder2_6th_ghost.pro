@@ -12,7 +12,7 @@ function yder2,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
   common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
   common cdat_coords, coord_system
-  common pc_precision, zero, one
+  common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
 ;  Default values.
 ;

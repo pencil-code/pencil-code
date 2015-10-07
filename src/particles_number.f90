@@ -31,7 +31,7 @@ module Particles_number
   character (len=labellen), dimension(ninit) :: initnpswarm='nothing'
 !
   integer :: idiag_npswarmm=0, idiag_dvp22mwnp=0, idiag_dvp22mwnp2=0
-  integer :: idiag_dtfragp=0
+  integer :: idiag_dtfragp=0, idiag_npsm=0
 !
   namelist /particles_number_init_pars/ &
       initnpswarm, np_swarm0, rhop_swarm0, vthresh_coagulation, &
@@ -348,6 +348,8 @@ module Particles_number
       if (ldiagnos) then
         if (idiag_npswarmm/=0) &
             call sum_par_name(fp(1:npar_loc,inpswarm),idiag_npswarmm)
+        if (idiag_npsm/=0) &
+            call sum_par_name(fp(1:npar_loc,inpswarm)*npar/nwgrid,idiag_npsm)
       endif
 !
       call keep_compiler_quiet(f,df)
@@ -416,7 +418,7 @@ module Particles_number
 !
       if (lreset) then
         idiag_npswarmm=0; idiag_dvp22mwnp=0; idiag_dvp22mwnp2=0
-        idiag_dtfragp=0
+        idiag_dtfragp=0; idiag_npsm=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -426,6 +428,8 @@ module Particles_number
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname), &
             'npswarmm',idiag_npswarmm)
+        call parse_name(iname,cname(iname),cform(iname), &
+            'npsm',idiag_npsm)
         call parse_name(iname,cname(iname),cform(iname), &
             'dvp22mwnp',idiag_dvp22mwnp)
         call parse_name(iname,cname(iname),cform(iname), &

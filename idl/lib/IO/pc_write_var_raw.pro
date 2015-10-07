@@ -41,7 +41,7 @@
 
 pro pc_write_var_raw, vars, time=time, dim=dim, grid=grid, param=param, datadir=datadir, varfile=varfile, allprocs=allprocs, f77=f77, swap_endian=swap_endian, quiet=quiet
 
-	common pc_precision, zero, one
+	common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 
 	default, datadir, './data'
 	default, varfile, 'var.dat'

@@ -38,7 +38,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,truepng=png_truecolor,tmin=tmin, $
     interp=interp,savefile=savefile, rotate=rotate,phi_shift=phi_shift, $
     Beq=Beq,taud=taud
 ;
-COMMON pc_precision, zero, one
+common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
 default,ix,-1
 default,iy,-1

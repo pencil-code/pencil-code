@@ -6,7 +6,7 @@
 pro pc_read_1d_aver, dir, object=object, varfile=varfile, datadir=datadir, $
     monotone=monotone, quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
-COMMON pc_precision, zero, one
+common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
 ;  Get necessary dimensions.
 ;
