@@ -8,7 +8,11 @@ COMPILE_OPT IDL2, HIDDEN
 
 	common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 
-	default, new, 'S'
+	if (size (new, /type) eq 0) then
+		if (size (dim, /type) ne 8) pc_read_dim, obj=dim, datadir=datadir, /quiet
+		new = strupcase (dim.precision)
+	end
+
 	if (size (new, /type) eq 0) then message, "ERROR: precision is a mandatory parameter"
 	precision = strupcase (strmid (strtrim (new, 2), 0, 1))
 
