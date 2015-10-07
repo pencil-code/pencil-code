@@ -33,10 +33,11 @@ module Particles_spin
   include 'particles_spin.h'
 !
   character(len=labellen), dimension(ninit) :: initsp = 'nothing'
+  real, dimension(ninit) :: amplsp = 0.0
   logical :: lsaffman_lift = .false.
   logical :: lmagnus_lift = .false.
 !
-  namelist /particles_spin_init_pars/ lsaffman_lift, lmagnus_lift, initsp
+  namelist /particles_spin_init_pars/ initsp, amplsp, lsaffman_lift, lmagnus_lift
 !
   namelist /particles_spin_run_pars/ lsaffman_lift, lmagnus_lift
 !
@@ -123,7 +124,8 @@ module Particles_spin
 !
 !  Initial spin of particles.
 !
-!  21-jul-08/kapelrud: coded
+!  21-jul-08/kapelrud: coded.
+!  07-oct-15/ccyang: continued.
 !
       use General, only: keep_compiler_quiet
 !
@@ -147,6 +149,12 @@ module Particles_spin
         case ('zero') init
           if (lroot) print *, 'init_particles_spin: zero particle spin'
           fp(1:npar_loc,ipsx:ipsz) = 0.0
+!
+!  Random magnitude and orientation.
+!
+        case ('random') init
+          if (lroot) print *, 'init_particles_spin: spins of random magnitude and orientation; amplsp = ', amplsp(j)
+          call gaunoise_vect(amplsp(j), fp, ipsx, ipsz)
 !
 !  Unknown initial condition.
 !
@@ -498,5 +506,34 @@ module Particles_spin
       dlift=0.25*interp_rho(k)*(rep*nu/fp(iap))*const_lr*area/mpmat*dlift
 !
     endsubroutine calc_magnus_liftforce
+!***********************************************************************
+    subroutine gaunoise_vect(ampl, fp, ivar1, ivar2)
+!
+!  Add Gaussian noise for variables ivar1:ivar2
+!
+!  07-oct-15/ccyang: adapted from gaunoise_vect in Initcond.
+!
+      use General, only: random_number_wrapper
+!
+      real, intent(in) :: ampl
+      real, dimension(mpar_loc,mparray), intent(inout) :: fp
+      integer, intent(in) :: ivar1, ivar2
+!
+      real, dimension(npar_loc) :: r, p, tmp
+      integer :: i
+!
+      if (lroot .and. ip <= 8) print *, 'gaunoise_vect: ampl, ivar1, ivar2=', ampl, ivar1, ivar2
+      comp: do i = ivar1, ivar2
+        random: if (modulo(i - ivar1, 2) == 0) then
+          call random_number_wrapper(r)
+          call random_number_wrapper(p)
+          tmp = sqrt(-2.0 * log(r)) * sin(twopi * p)
+        else random
+          tmp = sqrt(-2.0 * log(r)) * cos(twopi * p)
+        endif random
+        fp(1:npar_loc,i) = fp(1:npar_loc,i) + ampl * tmp
+      enddo comp
+!
+    endsubroutine gaunoise_vect
 !***********************************************************************
 endmodule Particles_spin
