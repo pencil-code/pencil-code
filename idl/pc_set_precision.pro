@@ -2,12 +2,13 @@
 ;
 ; 14-Sep-2015/Bourdin.KIS: redesigned completely
 
-pro pc_set_precision, new
+pro pc_set_precision, precision=new, dim=dim, datadir=datadir, QUIET=QUIET
 
 COMPILE_OPT IDL2, HIDDEN
 
 	common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 
+	default, new, 'S'
 	if (size (new, /type) eq 0) then message, "ERROR: precision is a mandatory parameter"
 	precision = strupcase (strmid (strtrim (new, 2), 0, 1))
 
