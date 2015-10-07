@@ -8,8 +8,10 @@ COMPILE_OPT IDL2, HIDDEN
 
 	common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 
-	if (size (new, /type) eq 0) then
-		if (size (dim, /type) ne 8) pc_read_dim, obj=dim, datadir=datadir, /quiet
+	if (size (new, /type) eq 0) then begin
+		if (size (dim, /type) ne 8) then begin
+			pc_read_dim, obj=dim, datadir=datadir, /quiet
+		end
 		new = strupcase (dim.precision)
 	end
 
