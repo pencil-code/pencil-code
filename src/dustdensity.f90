@@ -86,6 +86,7 @@ module Dustdensity
   logical :: lnoaerosol=.false., lnocondens_term=.false.
   logical :: reinitialize_nd=.false., ldustcondensation_simplified=.false.
   logical :: lsemi_chemistry=.false., lradius_binning=.false.
+  logical :: lzero_upper_kern=.false.
   integer :: iadvec_ddensity=0
   logical, pointer :: llin_radiusbins
   real, pointer :: deltamd
@@ -104,7 +105,7 @@ module Dustdensity
       lmdvar, lmice, ldcore, ndmin_for_mdvar, &
       lnocondens_term, Kern_min, &
       advec_ddensity, dustdensity_floor, init_x1, init_x2, lsubstep, a0, a1, &
-      ldustcondensation_simplified, lradius_binning
+      ldustcondensation_simplified, lradius_binning, lzero_upper_kern
 !
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, lno_deltavd, initnd, &
@@ -114,7 +115,7 @@ module Dustdensity
       lnocondens_term,advec_ddensity, bordernd, dustdensity_floor, &
       diffnd_anisotropic,reinitialize_nd, &
       G_condensparam, supsatratio_given, supsatratio_omega, ndmin_for_mdvar, &
-      lsemi_chemistry, lradius_binning, dkern_cst
+      lsemi_chemistry, lradius_binning, dkern_cst, lzero_upper_kern
 !
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdmtot=0
@@ -369,6 +370,16 @@ module Dustdensity
 !
         endselect
       enddo
+!
+!  If nothing special is done, we will start to loose mass when the
+!  larger particles reach the upper boundary. Set lzero_upper_kern=T
+!  to make sure that no particles leave the upper boundary, and hence
+!  that no mass is lost.
+!
+      if (lzero_upper_kern) then
+        dkern(:,ndustspec,:)=0.
+        dkern(:,:,ndustspec)=0.
+      endif
 !
 !  compute maximum value of the kernel
 !
@@ -2242,8 +2253,12 @@ module Dustdensity
 !
         k=ndustspec
         mfluxcondm=(abs(mfluxcond)+mfluxcond)
-        coefkm=.5*mfluxcondm/dlnmd*3.
-        coefk0=  -mfluxcondp*dampfact-coefkm
+        coefkm=.5*mfluxcondm/dlnmd*3.        
+        if (lzero_upper_kern) then
+          coefk0=  0.
+        else
+          coefk0=  -mfluxcondp*dampfact-coefkm
+        endif
         df(l1:l2,m,n,ind(k))=df(l1:l2,m,n,ind(k)) &
           +coefkm*f(l1:l2,m,n,ind(k-1))/ad(k-1)**2 &
           +coefk0*f(l1:l2,m,n,ind(k))  /ad(k)  **2
@@ -2484,6 +2499,20 @@ module Dustdensity
                   ((md(i)+md(j))/(md(i)*md(j)*unit_md))**(1/2.)
               if (deltavd > ust) deltavd = 0.
             endif
+!
+!  If nothing special is done, we will start to loose mass when the
+!  larger particles reach the upper boundary. Set lzero_upper_kern=T
+!  to make sure that no particles leave the upper boundary, and hence
+!  that no mass is lost.
+!
+            if (lzero_upper_kern) then
+              if ((i .ge. ndustspec-1) .or. (j .ge. ndustspec-1)) then
+                scolld(i,j)=0.
+              endif
+            endif
+!
+!  Calculate kernel
+!
             if (lno_deltavd) then
               dkern(l,i,j) = scolld(i,j)*deltavd_const
             else
