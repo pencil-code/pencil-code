@@ -192,6 +192,7 @@ module Special
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       integer :: ip
       real, dimension(mx) :: dist       ! distance of point to pivot point
+      real, dimension(mx) :: dist0      ! distance for the normalization
       real, dimension(mx) :: ux, uy     ! velocity in x and y direction      
       real :: z_factor                  ! multiplication factor for the z-dependence
       integer :: blink                  ! either -1, 0 or 1, depending on the blinking stage
@@ -216,8 +217,12 @@ module Special
             ux = -udrive(ip)*sqrt(2.)*kc*exp((-(x(l1:l2)-xc)**2-(y(m)-yc)**2)/2-(mod(t,t_e3)**2)/(t_e3/4)**2)*(-y(m)+yc)
             uy = -udrive(ip)*sqrt(2.)*kc*exp((-(x(l1:l2)-xc)**2-(y(m)-yc)**2)/2-(mod(t,t_e3)**2)/(t_e3/4)**2)*(x(l1:l2)-xc)
         case ('gaussian')
-            ux = exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))*udrive(ip)*(-y(m)+yp(ip))/dist
-            uy = exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))*udrive(ip)*(x(l1:l2)-xp(ip))/dist
+            ux = exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))*udrive(ip)*(-y(m)+yp(ip))
+            uy = exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))*udrive(ip)*(x(l1:l2)-xp(ip))
+            ! normalize
+            dist0 = (rad(ip) + sqrt(rad(ip)**2 + 4*lam_twist(ip)**2))/2
+            ux = ux/(exp(-(dist0-rad(ip))**2/(2*lam_twist(ip)**2))*udrive(ip)*dist0)
+            uy = uy/(exp(-(dist0-rad(ip))**2/(2*lam_twist(ip)**2))*udrive(ip)*dist0)
         case ('linear_exp')
             ux = exp(-abs(dist-rad(ip))/lam_twist(ip))*udrive(ip)*(-y(m)+yp(ip))
             uy = exp(-abs(dist-rad(ip))/lam_twist(ip))*udrive(ip)*(x(l1:l2)-xp(ip))
