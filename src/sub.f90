@@ -6960,6 +6960,7 @@ nameloop: do
       logical, optional, intent(in) :: lactive
 !
       integer :: ierr
+      logical :: found
       character(len=5) :: type, suffix
 !
       if (.not. loptest (lactive, .true.)) return
@@ -6976,12 +6977,15 @@ nameloop: do
         suffix = ''
       endif
 !
-      if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
+      !if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
+      call find_namelist (trim(name)//trim(type)//trim(suffix),found)
+      if (.not. found) then
         if (.not. lparam_nml) lnamelist_error = .true.
         return
       endif
 !
       call reader(ierr)
+!
       if (ierr /= 0) then
         lnamelist_error = .true.
         if (lroot .and. (ierr == -1)) then

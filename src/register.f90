@@ -331,11 +331,11 @@ module Register
 !
 !  print summary of variable names
 !
-      call write_varname()
+      call write_varname
 !
 !  Coordinate-related issues, initialize specific grid variables
 !
-      call initialize_grid()
+      call initialize_grid
 !
 !  timestep: distinguish two cases,
 !  (a) dt explicitly given in run.in -> ldt=.false.
@@ -709,7 +709,7 @@ module Register
 !   26-aug-13/MR: modification for uncounted comment lines in input file
 !   24-aug-15/MR: introduced use of nitems in parallel_open etc.
 !
-      use File_io, only: parallel_open, parallel_close, parallel_unit
+      use File_io, only: parallel_open, parallel_close, parallel_unit_vec
       use Cdata  , only: comment_char
 !
       character (len=*), intent(in) :: in_file
@@ -726,10 +726,10 @@ module Register
 !  Read names and formats.
 !
       if (nnamel>0) then
-        read(parallel_unit,*) cnamel(1:nnamel)
+        read(parallel_unit_vec,*) cnamel(1:nnamel)
       else
         do
-          read(parallel_unit, *, iostat=io_err) cname_tmp
+          read(parallel_unit_vec, *, iostat=io_err) cname_tmp
           if (io_err < 0) exit ! EOF
           if (io_err > 0) call fatal_error('read_name_format','IO-error while reading "'//trim(in_file)//'"')
           cname_tmp = adjustl(cname_tmp)
