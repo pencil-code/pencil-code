@@ -8,6 +8,9 @@ COMPILE_OPT IDL2, HIDDEN
 
 	common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 
+	; *** WORK HERE: ***
+	; [PABourdin, 07-Oct-2015]
+	; Remove the following block after all scripts have been shifted to new config finder:
 	if (size (new, /type) eq 0) then begin
 		if (size (dim, /type) ne 8) then begin
 			pc_read_dim, obj=dim, datadir=datadir, /quiet
