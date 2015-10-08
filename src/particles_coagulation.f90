@@ -451,9 +451,9 @@ module Particles_coagulation
 !
               if (it==1 .or. mod(it,it1)==0) then
                 if (idiag_ncoagpm/=0) &
-                    call sum_par_name((/float(ncoll_par)/),idiag_ncoagpm)
+                    call sum_par_name((/real(ncoll_par)/),idiag_ncoagpm)
                 if (idiag_ncoagpartpm/=0) &
-                    call sum_par_name((/float(npart_par)/),idiag_ncoagpartpm)
+                    call sum_par_name((/real(npart_par)/),idiag_ncoagpartpm)
               endif
 !
 !  Move to next particle in the grid cell.

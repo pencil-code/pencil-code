@@ -1445,7 +1445,7 @@ module Dustvelocity
       real, dimension(max_rows,max_cols) :: efficiency
       real, dimension(max_cols) :: radius
       real, dimension(max_rows) :: ratio
-      real ::  e,radius_ratio, adx, ady, radius1, radiusx, radiusy,  ratio1, ratiox, ratioy
+      real ::  e,radius_ratio, adx, ady, radiusx, radiusy,  ratiox, ratioy
 
       logical :: luse_table
 !
@@ -1458,7 +1458,6 @@ module Dustvelocity
         efficiency=1.
       case ('read_table')
         luse_table=.true.
-
 !
 !  read file (can make more general)
 !
@@ -1496,76 +1495,72 @@ module Dustvelocity
           ady = ad(j)
 !
           if (luse_table) then
-            if (adx>=ady) then
+            if (adx<=ady) then
+              adx=ad(j)
+              ady=ad(i)
+            endif
+            radius_ratio = ady/adx
 !
 !  radius within interval
 !
-              do col = 2,max_cols-1
-                radius1 = radius(col)
-                radiusx = .5*(radius(col)+radius(col+1))
-                radiusy = .5*(radius(col)+radius(col-1))
-                if (adx>=radiusy .and. adx<radiusx) then
-                  ey = col
-                end if
-              end do
+            do col = 2,max_cols-1
+              radiusx = .5*(radius(col)+radius(col+1))
+              radiusy = .5*(radius(col)+radius(col-1))
+              if (adx<=radiusy .and. adx>radiusx) then
+                ey = col
+              end if
+            end do
 !
 !  lower end
 !
-              col = 1
-              radius1 = radius(col)
-              radiusx = .5*(radius(col)+radius(col+1))
-              if (adx<radiusx) then
-                ey = col
-              end if
+            col = 1
+            radiusx = .5*(radius(col)+radius(col+1))
+            if (adx>radiusx) then
+              ey = col
+            end if
 !
 !  upper end
 !
-              col = max_cols
-              radius1 = radius(col)
-              radiusy = .5*(radius(col)+radius(col-1))
-              if (adx>=radiusy) then
-                ey = col
-              end if
+            col = max_cols
+            radiusy = .5*(radius(col)+radius(col-1))
+            if (adx<=radiusy) then
+              ey = col
+            end if
 !
 !  ratio within interval
 !
-              radius_ratio = adx/ady
-              do row = 2,max_rows-1
-                ratio1 = ratio(row)
-                ratiox = .5*(ratio(row)+ratio(row+1))
-                ratioy = .5*(ratio(row)+ratio(row-1))
-                if (radius_ratio>=ratioy .and. radius_ratio<ratiox) then
-                  ex = row
-                end if
-              end do
+              
+            do row = 2,max_rows-1
+              ratiox = .5*(ratio(row)+ratio(row+1))
+              ratioy = .5*(ratio(row)+ratio(row-1))
+              if (radius_ratio>=ratioy .and. radius_ratio<ratiox) then
+                ex = row
+              end if
+            end do
 !
 !  lower end
 !
-              row = 1
-              ratio1 = ratio(row)
-              ratiox = .5*(ratio(row)+ratio(row+1))
-              if (radius_ratio<ratiox) then
-                ex = row
-              end if
+            row = 1
+            ratiox = .5*(ratio(row)+ratio(row+1))
+            if (radius_ratio<ratiox) then
+              ex = row
+            end if
 !
 !  upper end
 !
-              row = max_rows
-              ratio1 = ratio(row)
-              ratioy = .5*(ratio(row)+ratio(row-1))
-              if (radius_ratio>=ratioy) then
-                ex = row
-              end if
+            row = max_rows
+            ratioy = .5*(ratio(row)+ratio(row-1))
+            if (radius_ratio>=ratioy) then
+              ex = row
+            end if
 !
 !  set efficiency
 !
-            endif
             e = efficiency(ex,ey)
           else
-            e = 1.
-          endif
-          scolld(i,j) = e*pi*(adx+ady)**2
-!
+            e=1.
+         endif
+         scolld(i,j) = e*pi*(adx+ady)**2
         enddo
       enddo
 !
