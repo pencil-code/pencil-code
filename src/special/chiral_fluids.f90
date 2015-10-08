@@ -303,6 +303,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: chiraldiffusion
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -345,6 +346,20 @@ module Special
       if (lhydro) then
         call multsv(p%bgtheta5,p%uxb,uxbbgtheta5)
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+uxbbgtheta5
+      endif
+!  Contribution to the time-step
+!
+      if (lfirst.and.ldt) then
+        chiraldiffusion=max(p%b2*p%theta5/(p%rho*sqrt(dxyz_2)),   &
+                            eta*p%mu5/sqrt(dxyz_2),   &
+                            eta*p%theta5*sqrt(p%u2)/dxyz_2,   &
+                            diffmu5/sqrt(dxyz_2),   &
+                            lambda5*eta*p%b2/(p%mu5*sqrt(dxyz_2)),   &
+                            lambda5*eta*p%b2,   &
+                            lambda5*eta*p%b2*sqrt(p%u2)*p%theta5/(p%mu5*sqrt(dxyz_2)), &
+                            p%theta5/p%mu5   &
+                           )  
+        diffus_special=diffus_special+chiraldiffusion
       endif
 !
 !  diagnostics
