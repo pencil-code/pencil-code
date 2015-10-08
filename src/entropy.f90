@@ -4517,7 +4517,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:ll,mm=', ll,mm
 !
 !  Assume that a vertical K profile is given if lgravz is true.
 !
-         if (lgravz) then
+        if (lgravz) then
 !
 ! DM+GG Added routines to compute hcond and gradloghcond_zprof.
 ! When called for the first time calculate z dependent profile of
