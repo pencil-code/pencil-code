@@ -548,7 +548,7 @@ module NeutralVelocity
          do j=1,3
             jn=j+iuun-1
             df(l1:l2,m,n,jn)=df(l1:l2,m,n,jn) &
-                 -p%cs2*p%glnrhon(:,j)
+                 -p%cs2*p%glnrhon(:,j) !!!AJWR
          enddo
 !
 ! csn2/dx^2 for timestep
