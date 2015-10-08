@@ -1441,7 +1441,7 @@ module Dustvelocity
       integer, parameter :: max_rows = 200, max_cols = 110
       real :: step_radius, step_ratio
       
-      integer :: i,j, row,col,ex,ey
+      integer :: i,j, row,col,ex=1,ey=1
       real, dimension(max_rows,max_cols) :: efficiency
       real, dimension(max_cols) :: radius
       real, dimension(max_rows) :: ratio
@@ -1559,8 +1559,8 @@ module Dustvelocity
             e = efficiency(ex,ey)
           else
             e=1.
-         endif
-         scolld(i,j) = e*pi*(adx+ady)**2
+          endif
+          scolld(i,j) = e*pi*(adx+ady)**2
         enddo
       enddo
 !
