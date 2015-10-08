@@ -50,6 +50,7 @@ module Gravity
   real :: n_pot=10,n_pot1=10   ! exponent for smoothed potential
   real :: qgshear=1.5  ! (global) shear parameter
                        !     1.5 for Keplerian disks, 1.0 for galaxies
+  real :: ionbeta=0.0 ! Poynting-Robertson beta for ions experiencing rad pressure
 !
   character (len=labellen), dimension(ninit) :: ipotential='zero'
 !
@@ -69,12 +70,14 @@ module Gravity
   namelist /grav_init_pars/ &
       ipotential,g0,r0_pot,r1_pot1,n_pot,n_pot1,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
-      lgravity_neutrals,g1,rp1_pot,lindirect_terms,lramp_mass,t_ramp_mass
+      lgravity_neutrals,g1,rp1_pot,lindirect_terms,lramp_mass,t_ramp_mass, &
+      ionbeta !!!AJWR
 !
   namelist /grav_run_pars/ &
       ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
-      lgravity_neutrals,g1,rp1_pot,lindirect_terms,lramp_mass,t_ramp_mass
+      lgravity_neutrals,g1,rp1_pot,lindirect_terms,lramp_mass,t_ramp_mass, &
+      ionbeta !!!AJWR
 !
   contains
 !***********************************************************************
@@ -465,7 +468,7 @@ module Gravity
 ! if statement for testing purposes
 !
       if (lgravity_gas) then
-        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%gg
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + (1.0-ionbeta)*p%gg !!!AJWR
       endif
 !
       if (lneutralvelocity.and.lgravity_neutrals) then
