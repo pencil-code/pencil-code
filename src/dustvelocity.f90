@@ -1556,9 +1556,11 @@ module Dustvelocity
 !
 !  set efficiency
 !
-          endif
-          e = efficiency(ex,ey)
-          scolld(i,j) = e*pi*(adx+ady)**2
+            e = efficiency(ex,ey)
+          else
+            e=1.
+         endif
+         scolld(i,j) = e*pi*(adx+ady)**2
         enddo
       enddo
 !
