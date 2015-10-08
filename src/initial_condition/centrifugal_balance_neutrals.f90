@@ -81,6 +81,8 @@ module InitialCondition
   include '../initial_condition.h'
 !
   real :: g0=1.,density_power_law=0.,temperature_power_law=1., plasma_beta=25
+  real :: rhon_to_rho_ratio=1.0 !!!AJWR
+  real :: ionbeta=0.0 !!!AJWR
   logical :: lexponential_smooth=.false.
   real :: radial_percent_smooth=10.0,rshift=0.0
   real :: gravitational_const=0.
@@ -117,7 +119,7 @@ module InitialCondition
   real :: widthbb1=0.0,widthbb2=0.0
   real :: OOcorot
 !
-  namelist /initial_condition_pars/ g0,density_power_law,&
+  namelist /initial_condition_pars/ g0,ionbeta,density_power_law,&
        temperature_power_law,lexponential_smooth,&
        radial_percent_smooth,rshift,lcorrect_selfgravity,&
        gravitational_const,xmodes,ymodes,zmodes,rho_rms,&
@@ -126,7 +128,8 @@ module InitialCondition
        zmode_mag,rmode_mag,rm_int,rm_ext,Bz_const, &
        r0_pot,qgshear,n_pot,magnetic_power_law,lcorrect_lorentzforce,&
        lcorrect_pressuregradient,lpolynomial_fit_cs2,&
-       ladd_noise_propto_cs,ampluu_cs_factor,widthbb1,widthbb2
+       ladd_noise_propto_cs,ampluu_cs_factor,widthbb1,widthbb2, &
+       rhon_to_rho_ratio
 !
   contains
 !***********************************************************************
@@ -180,7 +183,7 @@ module InitialCondition
       use Sub,     only: get_radial_distance,power_law
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: rr_cyl,rr_sph,OO,g_r,tmp
+      real, dimension (nx) :: rr_cyl,rr_sph,OO,g_r,tmp,OOn,g_rn,tmpn
       integer :: i
 !
       if (lroot) &
@@ -203,6 +206,8 @@ module InitialCondition
 ! Gravity of a static central body
 !
           call acceleration(g_r)
+          g_rn = g_r
+          g_r = (1.0-ionbeta)*g_r
 !
 ! Sanity check
 !
@@ -218,8 +223,10 @@ module InitialCondition
             if ( (coord_system=='cylindric')  .or.&
                  (coord_system=='cartesian')) then
               OO=sqrt(max(-g_r/rr_cyl,0.))
+              OOn=sqrt(max(-g_rn/rr_cyl,0.))
             else if (coord_system=='spherical') then
               OO=sqrt(max(-g_r/rr_sph,0.))
+              OOn=sqrt(max(-g_rn/rr_sph,0.))
             endif
           endif
 !
@@ -227,15 +234,18 @@ module InitialCondition
 !
 ! Nbody gravity with a dominating but dynamical central body
 !
-          call power_law(sqrt(g0),rr_sph,qgshear,tmp)
+          call power_law(sqrt(g0*(1.0-ionbeta)),rr_sph,qgshear,tmp)
+          call power_law(sqrt(g0),rr_sph,qgshear,tmpn)
 !
           if (lcartesian_coords.or.&
                lcylindrical_coords) then
             OO=tmp
+            OOn=tmpn
             if (lcylindrical_gravity) &
                  OO=tmp*sqrt(rr_sph/rr_cyl)
+                 OOn=tmpn*sqrt(rr_sph/rr_cyl)
           elseif (lspherical_coords) then
-            OO=tmp
+            OOn=tmpn
           endif
 !
         endif
@@ -244,14 +254,23 @@ module InitialCondition
           f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - y(  m  )*(OO-OOcorot)
           f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + x(l1:l2)*(OO-OOcorot)
           f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
+          f(l1:l2,m,n,iunx) = f(l1:l2,m,n,iunx) - y(  m  )*(OO-OOcorot)
+          f(l1:l2,m,n,iuny) = f(l1:l2,m,n,iuny) + x(l1:l2)*(OO-OOcorot)
+          f(l1:l2,m,n,iunz) = f(l1:l2,m,n,iunz) + 0.
         elseif (coord_system=='cylindric') then
           f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + 0.
           f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + (OO-OOcorot)*rr_cyl
           f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
+          f(l1:l2,m,n,iunx) = f(l1:l2,m,n,iunx) + 0.
+          f(l1:l2,m,n,iuny) = f(l1:l2,m,n,iuny) + (OO-OOcorot)*rr_cyl
+          f(l1:l2,m,n,iunz) = f(l1:l2,m,n,iunz) + 0.
         elseif (coord_system=='spherical') then
           f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + 0.
           f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + 0.
           f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + (OO-OOcorot)*rr_sph
+          f(l1:l2,m,n,iunx) = f(l1:l2,m,n,iunx) + 0.
+          f(l1:l2,m,n,iuny) = f(l1:l2,m,n,iuny) + 0.
+          f(l1:l2,m,n,iunz) = f(l1:l2,m,n,iunz) + (OO-OOcorot)*rr_sph
         endif
 !
       enddo
@@ -554,6 +573,8 @@ module InitialCondition
       else if (lenergy) then 
         call set_thermodynamical_quantities(f,temperature_power_law,ics2)
       endif
+
+      f(:,:,:,ilnrhon) = log(rhon_to_rho_ratio*exp(f(:,:,:,ilnrho))) !!!AJWR
 !
     endsubroutine initial_condition_lnrho
 !***********************************************************************
@@ -1115,9 +1136,9 @@ module InitialCondition
       use Sub,    only: get_radial_distance,grad
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,3) :: glnrho
+      real, dimension (nx,3) :: glnrho, glnrhon
       real, dimension (nx)   :: rr,rr_cyl,rr_sph
-      real, dimension (nx)   :: cs2,fpres_thermal,gslnrho,gslnTT
+      real, dimension (nx)   :: cs2,fpres_thermal,fpres_thermal_neutrals,gslnrho,gslnrhon,gslnTT !!!AJWR
       integer                :: ics2
       logical                :: lheader
       real :: temperature_power_law
@@ -1135,12 +1156,16 @@ module InitialCondition
 !
         call get_radial_distance(rr_sph,rr_cyl)
         call grad(f,ilnrho,glnrho)
+        call grad(f,ilnrhon,glnrhon)
         if (lcartesian_coords) then
           gslnrho=(glnrho(:,1)*x(l1:l2) + glnrho(:,2)*y(m))/rr_cyl
+          gslnrhon=(glnrhon(:,1)*x(l1:l2) + glnrhon(:,2)*y(m))/rr_cyl !!!AJWR
         else if (lcylindrical_coords) then
           gslnrho=glnrho(:,1)
+          gslnrhon=glnrhon(:,1) !!!AJWR
         else if (lspherical_coords) then
           gslnrho=glnrho(:,1)
+          gslnrhon=glnrhon(:,1) !!!AJWR
         endif
 !
         if (lspherical_coords.or.lsphere_in_a_box) then 
@@ -1169,8 +1194,10 @@ module InitialCondition
 !  Correct for cartesian or spherical
 !
         fpres_thermal=(gslnrho+gslnTT)*cs2/gamma
+        fpres_thermal_neutrals=(gslnrhon+gslnTT)*cs2/gamma !!!AJWR
 !
         call correct_azimuthal_velocity(f,fpres_thermal)
+        call correct_azimuthal_velocityn(f,fpres_thermal_neutrals) !!!AJWR
 !
       enddo;enddo
 !
@@ -1316,6 +1343,49 @@ module InitialCondition
       endif
 !
     endsubroutine correct_azimuthal_velocity
+!***********************************************************************
+    subroutine correct_azimuthal_velocityn(f,corr) !!!AJWR
+!
+      use Sub, only: get_radial_distance
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(nx), intent(in) :: corr
+      real, dimension(nx) :: rr_sph, rr_cyl, rr, tmp1, tmp2
+!
+      call get_radial_distance(rr_sph,rr_cyl)
+!
+      if (lcartesian_coords) then
+        tmp1=(f(l1:l2,m,n,iunx)**2+f(l1:l2,m,n,iuny)**2)/rr_cyl**2
+        tmp2=tmp1 + corr/rr_cyl
+      elseif (lcylindrical_coords) then
+        tmp1=(f(l1:l2,m,n,iuny)/rr_cyl+OOcorot)**2
+        tmp2=tmp1 + corr/rr_cyl
+      elseif (lspherical_coords) then
+        tmp1=(f(l1:l2,m,n,iunz)/rr_sph)**2
+        tmp2=tmp1 + corr/rr_sph
+      endif
+!
+!  Make sure the correction does not impede centrifugal equilibrium
+!
+      if (lcylindrical_coords.or.lcylinder_in_a_box) then 
+        rr=rr_cyl
+      else
+        rr=rr_sph
+      endif
+      call reality_check(tmp2,rr)
+!
+!  Correct the velocities
+!
+      if (lcartesian_coords) then
+        f(l1:l2,m,n,iunx)=-sqrt(tmp2)*y(  m  )
+        f(l1:l2,m,n,iuny)= sqrt(tmp2)*x(l1:l2)
+      elseif (lcylindrical_coords) then
+        f(l1:l2,m,n,iuny)= (sqrt(tmp2)-OOcorot)*rr_cyl
+      elseif (lspherical_coords) then
+        f(l1:l2,m,n,iunz)= sqrt(tmp2)*rr_sph
+      endif
+!
+    endsubroutine correct_azimuthal_velocityn
 !***********************************************************************
     subroutine reality_check(tmp,rr)
 !
