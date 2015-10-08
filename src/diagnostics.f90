@@ -2442,7 +2442,7 @@ module Diagnostics
 !   3-Dec-10/dhruba+joern: coded
 !   11-jan-11/MR: parameter nnamel added
 !
-      use File_io, only : parallel_unit, parallel_open, parallel_close
+      use File_io, only : parallel_unit_vec, parallel_open, parallel_close
       use General, only : itoa
       use Sub, only     : location_in_proc, parallel_count_lines
 !
@@ -2474,9 +2474,9 @@ module Diagnostics
       do isound=1,mcoords_sound
 !
         select case (dimensionality)
-        case (1); read(parallel_unit,*) xsound
-        case (2); read(parallel_unit,*) xsound, ysound
-        case (3); read(parallel_unit,*) xsound, ysound, zsound
+        case (1); read(parallel_unit_vec,*) xsound
+        case (2); read(parallel_unit_vec,*) xsound, ysound
+        case (3); read(parallel_unit_vec,*) xsound, ysound, zsound
         case default
         endselect
 !

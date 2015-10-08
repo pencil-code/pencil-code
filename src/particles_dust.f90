@@ -2344,6 +2344,7 @@ module Particles
       if (ldragforce_gas_par) then
         lpenc_requested(i_epsp)=.true.
         lpenc_requested(i_np)=.true.
+        lpenc_requested(i_rho1) = .true.
       endif
       if (ldragforce_heat .or. lcollisional_heat) then
         lpenc_requested(i_TT1)=.true.
@@ -3675,15 +3676,11 @@ module Particles
 !  With drag force on the gas as well, the maximum time-step is set as
 !    dt1_drag = Sum_k[eps_k/tau_k]
 !
-              if (lfirst.and.ldt) then
-                dt1_drag_dust(ix0-nghost)= &
-                     max(dt1_drag_dust(ix0-nghost),tausp1_par)
-                if (ldragforce_gas_par) then
-                  if (p%np(ix0-nghost)/=0.0) &
-                       dt1_drag_gas(ix0-nghost)=dt1_drag_gas(ix0-nghost)+ &
-                       mp_vcell*tausp1_par
-                endif
-              endif
+              getdt1: if (lfirst .and. ldt) then
+                dt1_drag_dust(ix0-nghost) = max(dt1_drag_dust(ix0-nghost), tausp1_par)
+                if (ldragforce_gas_par) &
+                    dt1_drag_gas(ix0-nghost) = dt1_drag_gas(ix0-nghost) + mp_vcell * p%rho1(ix0-nghost) * tausp1_par
+              endif getdt1
             endif
           enddo
 !

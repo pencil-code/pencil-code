@@ -15,7 +15,7 @@ pro pc_read_var_ts,t_arr=t_arr,array=array, $
                    datadir=datadir,proc=proc,type=type,allprocs=allprocs, $
                    HELP=HELP,QUIET=QUIET,SWAP_ENDIAN=SWAP_ENDIAN
 COMPILE_OPT IDL2,HIDDEN
-  COMMON pc_precision, zero, one
+  common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ; If no meaningful parameters are given show some help!
   IF ( keyword_set(HELP) ) THEN BEGIN
     print, "Usage: "

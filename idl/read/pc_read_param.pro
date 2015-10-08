@@ -14,7 +14,7 @@
 pro pc_read_param, object=object, dim=dim, datadir=datadir, $
     param2=param2, nodelete=nodelete, print=print, quiet=quiet, help=help
 COMPILE_OPT IDL2,HIDDEN
-  common pc_precision, zero, one
+  common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
 ; If no meaningful parameters are given show some help!
 ;

@@ -46,7 +46,7 @@
 
 pro pc_write_vtk, data, index, filename=filename, datadir=datadir, grid=grid, dim=dim, selected=selected
 
-	common pc_precision, zero, one
+	common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 
 	; Default values.
 	if (not keyword_set (filename)) then filename = 'export'

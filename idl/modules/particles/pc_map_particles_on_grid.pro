@@ -9,7 +9,7 @@ pro pc_map_particles_on_grid, xxp, x, y, z, $
     ineargrid=ineargrid, kneighbour=kneighbour, kshepherd=kshepherd, $
     datadir=datadir
 
-COMMON pc_precision, zero, one
+common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 
 pc_set_precision, datadir=datadir
 if (n_elements(x) gt 1) then dx=x[1]-x[0] else dx=1.0*one

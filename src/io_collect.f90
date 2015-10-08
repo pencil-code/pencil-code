@@ -17,7 +17,7 @@
 !  or in a much more efficient way by reading into an array:
 !  IDL> pc_read_var_raw, obj=data, tags=tags, grid=grid, /allprocs
 !
-!  13-Jan-2012/Bourdin.KIS: adapted from io_dist.f90
+!  13-Jan-2012/PABourdin: adapted from io_dist.f90
 !
 module Io
 !
@@ -58,6 +58,7 @@ module Io
   logical :: lcollective_IO=.true.
   character (len=labellen) :: IO_strategy="collect"
 !
+  logical :: lread_add=.true., lwrite_add=.true.
   logical :: persist_initialized=.false.
   integer :: persist_last_id=-max_int
 !
@@ -113,7 +114,7 @@ module Io
 !
 !  This routine distributes the global grid to all processors.
 !
-!  11-Feb-2012/Bourdin.KIS: coded
+!  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
 !
@@ -199,7 +200,7 @@ module Io
 !
 !  write snapshot file, always write mesh and time, could add other things.
 !
-!  10-Feb-2012/Bourdin.KIS: coded
+!  10-Feb-2012/PABourdin: coded
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
 !
       use Mpicomm, only: globalize_xy, collect_grid
@@ -214,11 +215,9 @@ module Io
       real, dimension (:), allocatable :: gx, gy, gz
       integer, parameter :: tag_ga=676
       integer :: pz, pa, io_len, alloc_err, z_start, z_end
-      logical :: lwrite_add
       real :: t_sp   ! t in single precision for backwards compatibility
 !
-      if (.not.present(file)) call fatal_error('output_snap', &
-          'downsampled output not implemented for IO_collect')
+      if (.not. present (file)) call fatal_error ('output_snap', 'downsampled output not implemented for IO_collect')
 !
       lwrite_add = .true.
       if (present (mode)) lwrite_add = (mode == 1)
@@ -228,8 +227,8 @@ module Io
         if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for ga,buffer', .true.)
 !
         inquire (IOLENGTH=io_len) t_sp
-        call delete_file(trim(directory_snap)//'/'//file)
-        open (lun_output, FILE=trim(directory_snap)//'/'//file, status='new', access='direct', recl=mxgrid*mygrid*io_len)
+        call delete_file (trim (directory_snap)//'/'//file)
+        open (lun_output, FILE=trim (directory_snap)//'/'//file, status='new', access='direct', recl=mxgrid*mygrid*io_len)
 !
         ! iterate through xy-leading processors in the z-direction
         do pz = 0, nprocz-1
@@ -282,14 +281,17 @@ module Io
 !
 !  Close snapshot file.
 !
-!  11-Feb-2012/Bourdin.KIS: coded
+!  11-Feb-2012/PABourdin: coded
 !
-      if (ldistribute_persist .or. lroot) then
-        if (persist_initialized) then
-          if (lroot .and. (ip <= 9)) write (*,*) 'finish persistent block'
+      if (persist_initialized) then
+        if (lroot .and. (ip <= 9)) write (*,*) 'finish persistent block'
+        if (ldistribute_persist .or. lroot) then
           write (lun_output) id_block_PERSISTENT
-          persist_initialized = .false.
+          close (lun_output)
         endif
+        persist_initialized = .false.
+        persist_last_id = -max_int
+      elseif (lwrite_add .and. lroot) then
         close (lun_output)
       endif
 !
@@ -298,7 +300,7 @@ module Io
     subroutine input_snap(file, a, nv, mode)
 !
 !  read snapshot file, possibly with mesh and time (if mode=1)
-!  10-Feb-2012/Bourdin.KIS: coded
+!  10-Feb-2012/PABourdin: coded
 !  13-jan-2015/MR: avoid use of fseek; if necessary comment the calls to fseek in fseek_pos
 !
       use Mpicomm, only: localize_xy, mpibcast_real
@@ -316,7 +318,6 @@ module Io
       integer, parameter :: tag_ga=675
       integer :: pz, pa, z_start, io_len, alloc_err
       integer(kind=8) :: rec_len
-      logical :: lread_add
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       lread_add = .true.
@@ -383,14 +384,15 @@ module Io
 !
 !  Close snapshot file.
 !
-!  11-Feb-2012/Bourdin.KIS: coded
+!  11-Feb-2012/PABourdin: coded
 !
       if (persist_initialized) then
+        if (ldistribute_persist .or. lroot) close (lun_input)
         persist_initialized = .false.
         persist_last_id = -max_int
+      elseif (lread_add .and. lroot) then
+        close (lun_input)
       endif
-!
-      if (ldistribute_persist .or. lroot) close (lun_input)
 !
     endsubroutine input_snap_finalize
 !***********************************************************************
@@ -398,7 +400,7 @@ module Io
 !
 !  Initialize writing of persistent data to persistent file.
 !
-!  13-Dec-2011/Bourdin.KIS: coded
+!  13-Dec-2011/PABourdin: coded
 !
       character (len=*), intent(in), optional :: file
 !
@@ -414,15 +416,15 @@ module Io
       endif
 !
       if (ldistribute_persist .or. lroot) then
-        if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
         if (filename /= "") then
+          if (lroot .and. (ip <= 9)) write (*,*) 'begin write persistent block'
           if (lroot) close (lun_output)
           if (ldistribute_persist) then
-            call delete_file(trim(directory_dist)//'/'//filename)
-            open (lun_output, FILE=trim(directory_dist)//'/'//filename, FORM='unformatted', status='new')
+            call delete_file (trim (directory_dist)//'/'//filename)
+            open (lun_output, FILE=trim (directory_dist)//'/'//filename, FORM='unformatted', status='new')
           else
-            call delete_file(trim(directory_snap)//'/'//filename)
-            open (lun_output, FILE=trim(directory_snap)//'/'//filename, FORM='unformatted', status='new')
+            call delete_file (trim (directory_snap)//'/'//filename)
+            open (lun_output, FILE=trim (directory_snap)//'/'//filename, FORM='unformatted', status='new')
           endif
           filename = ""
         endif
@@ -438,7 +440,7 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  13-Dec-2011/Bourdin.KIS: coded
+!  13-Dec-2011/PABourdin: coded
 !
       character (len=*), intent(in) :: label
       integer, intent(in) :: id
@@ -463,7 +465,7 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  12-Feb-2012/Bourdin.KIS: coded
+!  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_logical, mpirecv_logical
 !
@@ -515,7 +517,7 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  12-Feb-2012/Bourdin.KIS: coded
+!  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_logical, mpirecv_logical
 !
@@ -569,7 +571,7 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  12-Feb-2012/Bourdin.KIS: coded
+!  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_int, mpirecv_int
 !
@@ -621,7 +623,7 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  12-Feb-2012/Bourdin.KIS: coded
+!  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_int, mpirecv_int
 !
@@ -675,7 +677,7 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  12-Feb-2012/Bourdin.KIS: coded
+!  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
 !
@@ -727,7 +729,7 @@ module Io
 !
 !  Write persistent data to snapshot file.
 !
-!  12-Feb-2012/Bourdin.KIS: coded
+!  12-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
 !
@@ -781,7 +783,7 @@ module Io
 !
 !  Initialize reading of persistent data from persistent file.
 !
-!  13-Dec-2011/Bourdin.KIS: coded
+!  13-Dec-2011/PABourdin: coded
 !
       use Mpicomm, only: mpibcast_logical
       use General, only: file_exists
@@ -797,7 +799,7 @@ module Io
       endif
 !
       if (ldistribute_persist .or. lroot) then
-        if (lroot .and. (ip <= 9)) write (*,*) 'begin persistent block'
+        if (lroot .and. (ip <= 9)) write (*,*) 'begin read persistent block'
         if (present (file)) then
           if (lroot) close (lun_input)
           if (ldistribute_persist) then
@@ -817,7 +819,7 @@ module Io
 !
 !  Read persistent block ID from snapshot file.
 !
-!  17-Feb-2012/Bourdin.KIS: coded
+!  17-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpibcast_int
 !
@@ -854,7 +856,7 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  11-Feb-2012/Bourdin.KIS: coded
+!  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_logical, mpirecv_logical
 !
@@ -900,7 +902,7 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  11-Feb-2012/Bourdin.KIS: coded
+!  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_logical, mpirecv_logical
 !
@@ -948,7 +950,7 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  11-Feb-2012/Bourdin.KIS: coded
+!  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_int, mpirecv_int
 !
@@ -994,7 +996,7 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  11-Feb-2012/Bourdin.KIS: coded
+!  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_int, mpirecv_int
 !
@@ -1042,7 +1044,7 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  11-Feb-2012/Bourdin.KIS: coded
+!  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
 !
@@ -1088,7 +1090,7 @@ module Io
 !
 !  Read persistent data from snapshot file.
 !
-!  11-Feb-2012/Bourdin.KIS: coded
+!  11-Feb-2012/PABourdin: coded
 !
       use Mpicomm, only: mpisend_real, mpirecv_real
 !
@@ -1136,7 +1138,7 @@ module Io
 !
 !  Write snapshot file of globals, ignore time and mesh.
 !
-!  10-Feb-2012/Bourdin.KIS: coded
+!  10-Feb-2012/PABourdin: coded
 !
       character (len=*) :: file
       integer :: nv
@@ -1151,7 +1153,7 @@ module Io
 !
 !  Read globals snapshot file, ignore time and mesh.
 !
-!  10-Feb-2012/Bourdin.KIS: coded
+!  10-Feb-2012/PABourdin: coded
 !
       character (len=*) :: file
       integer :: nv
@@ -1198,7 +1200,7 @@ module Io
 !
 !  Write grid coordinates.
 !
-!  10-Feb-2012/Bourdin.KIS: adapted for collective IO
+!  10-Feb-2012/PABourdin: adapted for collective IO
 !
       use Mpicomm, only: collect_grid
 !
@@ -1240,7 +1242,7 @@ module Io
 !
 !  21-jan-02/wolf: coded
 !  15-jun-03/axel: Lx,Ly,Lz are now read in from file (Tony noticed the mistake)
-!  10-Feb-2012/Bourdin.KIS: adapted for collective IO
+!  10-Feb-2012/PABourdin: adapted for collective IO
 !
       use Mpicomm, only: mpibcast_int, mpibcast_real
 !
@@ -1307,7 +1309,7 @@ module Io
 !
 !   Export processor boundaries to file.
 !
-!   22-Feb-2012/Bourdin.KIS: adapted from io_dist
+!   22-Feb-2012/PABourdin: adapted from io_dist
 !
       use Mpicomm, only: stop_it
 !
@@ -1330,7 +1332,7 @@ module Io
 !
 !   Import processor boundaries from file.
 !
-!   22-Feb-2012/Bourdin.KIS: adapted from io_dist
+!   22-Feb-2012/PABourdin: adapted from io_dist
 !
       use Mpicomm, only: stop_it
 !

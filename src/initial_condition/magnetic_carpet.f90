@@ -193,6 +193,46 @@ module InitialCondition
                 enddo          
             enddo          
         enddo
+
+    elseif (config == 'single_parasitic_polarity') then
+        do n = 1, mz, 1
+            do m = 1, my, 1
+                do l = 1, mx, 1
+                    f(l,m,n,iax) = ampl * (&        
+                        2. * (x(l) ** 2 + y(m) ** 2 + (z(n) + 0.85) ** 2) ** (-3.0&
+                        / 2.) * y(m) + 2. * ((x(l) + 8.) ** 2 + y(m) ** 2 + (z(n)&
+                        + 0.85) ** 2) ** (-3.0 / 2.) * y(m) + 2. * ((x(l) - 8.)&
+                        ** 2 + y(m) ** 2 + (z(n) + 0.85) ** 2) ** (-3.0 / 2.) * y(m)&
+                        + 2. * (x(l) ** 2 + (y(m) - 8.) ** 2 + (z(n) + 0.85) **&
+                        2) ** (-3.0 / 2.) * (y(m) - 8.) + 2. * (x(l) ** 2 + (y(m)&
+                        + 8.) ** 2 + (z(n) + 0.85) ** 2) ** (-3.0 / 2.) * (y(m)&
+                        + 8.) + 2. * ((x(l) + 8.) ** 2 + (y(m) + 8.) ** 2 + (z(n)&
+                        + 0.85) ** 2) ** (-3.0 / 2.) * (y(m) + 8.) + 2. * ((x(l) +&
+                        8.) ** 2 + (y(m) - 8.) ** 2 + (z(n) + 0.85) ** 2) ** (-3.0&
+                        / 2.) * (y(m) - 8.) + 2. * ((x(l) - 8.) ** 2 + (y(m) + 8.)&
+                        ** 2 + (z(n) + 0.85) ** 2) ** (-3.0 / 2.) * (y(m) + 8.)&
+                        + 2. * ((x(l) - 8.) ** 2 + (y(m) - 8.) ** 2 + (z(n) + 0.85)&
+                        ** 2) ** (-3.0 / 2.) * (y(m) - 8.))
+                    f(l,m,n,iay) = ampl * (&
+                        x(l) - 2. * (x(l) ** 2 + y(m) ** 2 + (z(n) + 0.85) ** 2)&
+                        ** (-3.0 / 2.) * x(l) - 2. * ((x(l) + 8.) ** 2 + y(m) **&
+                        2 + (z(n) + 0.85) ** 2) ** (-3.0 / 2.) * (x(l) + 8.) - 2.&
+                        * ((x(l) - 8.) ** 2 + y(m) ** 2 + (z(n) + 0.85) ** 2) ** (-3.0&
+                        / 2.) * (x(l) - 8.) - 2. * (x(l) ** 2 + (y(m) - 8.) **&
+                        2 + (z(n) + 0.85) ** 2) ** (-3.0 / 2.) * x(l) - 2. * (x(l)&
+                        ** 2 + (y(m) + 8.) ** 2 + (z(n) + 0.85) ** 2) ** (-3.0&
+                        / 2.) * x(l) - 2. * ((x(l) + 8.) ** 2 + (y(m) + 8.) ** 2 +&
+                        (z(n) + 0.85) ** 2) ** (-3.0 / 2.) * (x(l) + 8.) - 2. * ((x(l)&
+                        + 8.) ** 2 + (y(m) - 8.) ** 2 + (z(n) + 0.85) ** 2)&
+                        ** (-3.0 / 2.) * (x(l) + 8.) - 2. * ((x(l) - 8.) ** 2 + (y(m)&
+                        + 8.) ** 2 + (z(n) + 0.85) ** 2) ** (-3.0 / 2.) * (x(l)&
+                        - 8.) - 2. * ((x(l) - 8.) ** 2 + (y(m) - 8.) ** 2 + (z(n)&
+                        + 0.85) ** 2) ** (-3.0 / 2.) * (x(l) - 8.))
+                    f(l,m,n,iaz) = 0
+                enddo          
+            enddo          
+        enddo
+
     elseif (config == 'dominant_polarities') then
         do n = 1, mz, 1
             do m = 1, my, 1
@@ -288,54 +328,47 @@ module InitialCondition
                 enddo          
             enddo          
         enddo
+
+    elseif (config == 'single_dominant_polarity') then
+        do n = 1, mz, 1
+            do m = 1, my, 1
+                do l = 1, mx, 1
+                    f(l,m,n,iax) = ampl * (&        
+                        -1. * (x(l) ** 2 + y(m) ** 2 + (z(n) + 0.5) ** 2) ** (-3.0&
+                        / 2.) * y(m) - 1. * ((x(l) + 8.) ** 2 + y(m) ** 2 + (z(n)&
+                        + 0.5) ** 2) ** (-3.0 / 2.) * y(m) - 1. * ((x(l) - 8.)&
+                        ** 2 + y(m) ** 2 + (z(n) + 0.5) ** 2) ** (-3.0 / 2.) * y(m)&
+                        - 1. * (x(l) ** 2 + (y(m) - 8.) ** 2 + (z(n) + 0.5) ** 2)&
+                        ** (-3.0 / 2.) * (y(m) - 8.) - 1. * (x(l) ** 2 + (y(m) +&
+                        8.) ** 2 + (z(n) + 0.5) ** 2) ** (-3.0 / 2.) * (y(m) + 8.)&
+                        - 1. * ((x(l) + 8.) ** 2 + (y(m) + 8.) ** 2 + (z(n) + 0.5)&
+                        ** 2) ** (-3.0 / 2.) * (y(m) + 8.) - 1. * ((x(l) + 8.)&
+                        ** 2 + (y(m) - 8.) ** 2 + (z(n) + 0.5) ** 2) ** (-3.0 / 2.)&
+                        * (y(m) - 8.) - 1. * ((x(l) - 8.) ** 2 + (y(m) + 8.) **&
+                        2 + (z(n) + 0.5) ** 2) ** (-3.0 / 2.) * (y(m) + 8.) - 1. *&
+                        ((x(l) - 8.) ** 2 + (y(m) - 8.) ** 2 + (z(n) + 0.5) ** 2)&
+                        ** (-3.0 / 2.) * (y(m) - 8.))
+                    f(l,m,n,iay) = ampl * (&
+                        x(l) + 1. * (x(l) ** 2 + y(m) ** 2 + (z(n) + 0.5) ** 2)&
+                        ** (-3.0 / 2.) * x(l) + 1. * ((x(l) + 8.) ** 2 + y(m) ** 2&
+                        + (z(n) + 0.5) ** 2) ** (-3.0 / 2.) * (x(l) + 8.) + 1. *&
+                        ((x(l) - 8.) ** 2 + y(m) ** 2 + (z(n) + 0.5) ** 2) ** (-3.0&
+                        / 2.) * (x(l) - 8.) + 1. * (x(l) ** 2 + (y(m) - 8.) ** 2&
+                        + (z(n) + 0.5) ** 2) ** (-3.0 / 2.) * x(l) + 1. * (x(l) **&
+                        2 + (y(m) + 8.) ** 2 + (z(n) + 0.5) ** 2) ** (-3.0 / 2.)&
+                        * x(l) + 1. * ((x(l) + 8.) ** 2 + (y(m) + 8.) ** 2 + (z(n)&
+                        + 0.5) ** 2) ** (-3.0 / 2.) * (x(l) + 8.) + 1. * ((x(l)&
+                        + 8.) ** 2 + (y(m) - 8.) ** 2 + (z(n) + 0.5) ** 2) ** (-3.0&
+                        / 2.) * (x(l) + 8.) + 1. * ((x(l) - 8.) ** 2 + (y(m) + 8.)&
+                        ** 2 + (z(n) + 0.5) ** 2) ** (-3.0 / 2.) * (x(l) - 8.)&
+                        + 1. * ((x(l) - 8.) ** 2 + (y(m) - 8.) ** 2 + (z(n) + 0.5)&
+                        ** 2) ** (-3.0 / 2.) * (x(l) - 8.))
+                    f(l,m,n,iaz) = 0
+                enddo          
+            enddo          
+        enddo
+
     endif
-! !     Transform the magnetic field into a vector potential
-! !
-! !     communicate the core boundaries for taking the curl
-!       call MPI_BARRIER(MPI_comm_world, ierr)
-!       call boundconds_x(f)
-!       call boundconds_y(f)
-!       call boundconds_z(f)
-!       call initiate_isendrcv_bdry(f)
-!       call finalize_isendrcv_bdry(f)
-!       call MPI_BARRIER(MPI_comm_world, ierr)
-! 
-! !     Compute curl(B) = J for the Poisson solver
-!       do m=m1,m2
-!         do n=n1,n2
-!           call curl(f,iaa,jj(:,m-nghost,n-nghost,:))
-!         enddo
-!       enddo
-!       tmpJ = -jj
-! !
-! !     Use the Poisson solver to solve \nabla^2 A = -J for A
-!       do j=1,3
-!         call inverse_laplacian(tmpJ(:,:,:,j))
-!       enddo
-! !
-! !     Overwrite the f-array with the correct vector potential A
-!       do j=1,3
-!         ju=iaa-1+j
-!         f(l1:l2,m1:m2,n1:n2,ju) = tmpJ(:,:,:,j)
-!       enddo
-! !
-! !     Add a background field to the braid
-!       do l=1,mx
-!         do m=1,my
-!           f(l,m,:,iax) = f(l,m,:,iax) - y(m)*B_bkg/2.
-!           f(l,m,:,iay) = f(l,m,:,iay) + x(l)*B_bkg/2.
-!         enddo
-!       enddo
-!
-! !     communicate the core boundaries for taking the curl
-!       call MPI_BARRIER(MPI_comm_world, ierr)
-!       call boundconds_x(f)
-!       call initiate_isendrcv_bdry(f)
-!       call finalize_isendrcv_bdry(f)
-!       call boundconds_y(f)
-!       call boundconds_z(f)
-!       call MPI_BARRIER(MPI_comm_world, ierr)
-! !
 !
   endsubroutine initial_condition_aa
 !***********************************************************************

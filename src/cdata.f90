@@ -637,7 +637,7 @@ module Cdata
 !  Allow particles modules to do something special with f; like calculating
 !  the full vorticity field (see equ.f90:pde)
 !
-  logical :: lparticles_prepencil_calc
+  logical :: lparticles_prepencil_calc = .false.
 !
 ! Also to insert particles at specific times
 !

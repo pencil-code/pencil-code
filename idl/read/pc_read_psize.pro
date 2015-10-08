@@ -9,7 +9,7 @@
 pro pc_read_psize, object=object, datadir=datadir, filename=filename, $
     quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
-COMMON pc_precision, zero, one
+common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
 ;  Defaul settings.
 ;

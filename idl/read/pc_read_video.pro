@@ -15,7 +15,7 @@ pro pc_read_video, field=field, object=object, nt=nt, njump=njump, $
     xy2read=xy2read, xyread=xyread, xzread=xzread, yzread=yzread, $
     xz2read=xz2read, print=print, quiet=quiet, help=help
 COMPILE_OPT IDL2,HIDDEN
-COMMON pc_precision, zero, one
+common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
 ; Default values.
 ;

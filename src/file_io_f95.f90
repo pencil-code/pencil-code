@@ -23,7 +23,7 @@ module File_io
     module procedure write_binary_file_str
   endinterface
 !
-  integer, parameter :: parallel_unit = 14
+  integer, parameter :: parallel_unit=14, parallel_unit_vec=14
 
   include 'file_io.h'
 !
@@ -263,26 +263,28 @@ module File_io
 !
     endfunction get_tmp_prefix
 !**************************************************************************
-    function find_namelist(name)
+    !function find_namelist(name) result(lfound)
+    subroutine find_namelist(name,lfound)
 !
 !  Tests if the namelist is present and reports a missing namelist.
 !
 !  26-Sep-2015/PABourdin: coded
+!   6-oct-2015/MR: turned into subroutine because of CRAY compiler bug;
+!                  easily revertable by shifting comment char at beginning and end.
 !
-      use Cdata, only: iproc, comment_char
-      use Cparam, only: linelen
+      use Cdata, only: comment_char
       use General, only: lower_case
       use Mpicomm, only: lroot, mpibcast
       use Messages, only: warning
 !
-      logical :: find_namelist
       character(len=*), intent(in) :: name
+      logical :: lfound
 !
       integer :: ierr, pos, state, max_len, line_len
       character(len=36000) :: line
       character :: ch
 !
-      find_namelist = .false.
+      lfound = .false.
 !
       if (lroot) then
         max_len = len (name)
@@ -308,14 +310,14 @@ module File_io
               if (ch == lower_case (name(state:state))) then
                 if (state == max_len) then
                   if (pos == line_len) then
-                    find_namelist = .true.
+                    lfound = .true.
                     exit
                   endif
                   ch = lower_case (line(pos+1:pos+1))
                   if ((ch == ' ') .or. (ch == char(9)) .or. (ch == '!') .or. (ch == comment_char)) then
-                    find_namelist = .true.
+                    lfound = .true.
                   endif
-                  if (find_namelist) exit
+                  if (lfound) exit
                   state = -1
                   cycle
                 endif
@@ -326,12 +328,13 @@ module File_io
             state = -1
           enddo
         enddo
-        call parallel_rewind()
-        if (.not. find_namelist) call warning ('find_namelist', 'namelist "'//trim(name)//'" is missing!')
+        call parallel_rewind
+        if (.not. lfound) call warning ('find_namelist', 'namelist "'//trim(name)//'" is missing!')
       endif
 !
-      call mpibcast (find_namelist)
+      call mpibcast (lfound)
 !
-    endfunction find_namelist
+    endsubroutine find_namelist
+    !endfunction find_namelist
 !***********************************************************************
 endmodule File_io
