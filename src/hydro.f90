@@ -2401,12 +2401,11 @@ module Hydro
                                             +f(3:mx-1,3:my-1,3:mz-1,iux:iuz))**2,4)
         elseif (dimensionality==1) then
           if (nxgrid/=1) then
-            f(2:mx-2,m1:m2,n1:n2,iFF_char_c)=f(2:mx-2,m1:m2,n1:n2,iFF_char_c) & 
+            f(2:mx-2,m1:m2,n1:n2,iFF_char_c)=f(2:mx-2,m1:m2,n1:n2,iFF_char_c) &
                                   +i4_1*sum((f(2:mx-2,m1:m2,n1:n2,iux:iuz) &
                                             +f(3:mx-1,m1:m2,n1:n2,iux:iuz))**2,4)
-!     if(ldiagnos) print*,'CHAR',maxval(f(2:mx-2,m1:m2,n1:n2,iFF_char_c))
           elseif (nygrid/=1) then
-            f(l1:l2,2:my-2,n1:n2,iFF_char_c)=f(l1:l2,2:my-2,n1:n2,iFF_char_c) & 
+            f(l1:l2,2:my-2,n1:n2,iFF_char_c)=f(l1:l2,2:my-2,n1:n2,iFF_char_c) &
                                   +i4_1*sum((f(l1:l2,2:my-2,n1:n2,iux:iuz) &
                                             +f(l1:l2,3:my-1,n1:n2,iux:iuz))**2,4)
           else

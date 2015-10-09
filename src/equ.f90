@@ -172,7 +172,8 @@ module Equ
                      lhyperviscosity_strict.or.lhyperresistivity_strict.or. &
                      ltestscalar.or.ltestfield.or.ltestflow.or. &
                      lparticles_prepencil_calc.or.lsolid_cells.or. &
-                     lchemistry.or.lweno_transport .or. lbfield
+                     lchemistry.or.lweno_transport .or. lbfield .or. & 
+                     lslope_limit_diff
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.
 !  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
@@ -283,7 +284,7 @@ module Equ
         call set_dyndiff_coeff(uc)
       endif dyndiff
 !
-!  Calculte the characteristic velocity
+!  Calculate the characteristic velocity
 !  for slope limited diffusion
 !
       if (lslope_limit_diff.and.lfirst) then
@@ -292,7 +293,6 @@ module Equ
         call update_char_vel_magnetic(f)
         call update_char_vel_hydro(f)
         f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=sqrt(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
-
       endif
    
 !
@@ -329,6 +329,11 @@ module Equ
 !  settings in hydro of the testfield procedure (only when lsoca=.false.),
 !  for example. The used to be or are still called calc_lhydro_pars etc,
 !  and will soon be renamed to hydro_after_boundary.
+!
+!  Important to note that the processor boundaries are not full updated 
+!  at this point, even if the name 'after_boundary' suggesting this.
+!  Use early_finalize in this case.
+!  MR+joern+axel, 8.10.2015
 !
       call timing('pde','before calc_lhydro_pars')
 !DM I suggest the following lhydro_pars, lmagnetic_pars be renamed to

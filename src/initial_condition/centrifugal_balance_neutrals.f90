@@ -311,6 +311,7 @@ module InitialCondition
           endif
         endif
         call gaunoise_vect(ampluu_cs_factor*sqrt(cs2),f,iux,iuz)
+        call gaunoise_vect(ampluu_cs_factor*sqrt(cs2),f,iunx,iunz) !!!AJWR
       enddo; enddo
 !
     endsubroutine add_noise
