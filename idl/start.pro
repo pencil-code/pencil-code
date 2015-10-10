@@ -7,12 +7,6 @@
 ;;; plotting/analysing scripts.
 ;;; $Id$
 
-function param
-  COMPILE_OPT IDL2,HIDDEN 
-; Dummy to keep IDL from complaining.
-; The real param() routine will be compiled below.
-end
-
 common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
 common cdat_limits, l1, l2, m1, m2, n1, n2, nx, ny, nz
 common cdat_grid,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde,lequidist,lperi,ldegenerated
@@ -47,21 +41,16 @@ default, quiet, 0
 default, proc, 0
 default, varfile, 'var.dat'
 
-;; Max # of structure tags in one execute statement; if we use more,
-;; we get `% Program code area full' error.
-;; Typically 398 or 569, but stupid Solaris doesn't tolerate more than 127.
-default, maxtags, 120
 ;
 ;  Read the grid, dimensions and startup parameters
 ;
-pc_read_param, obj=par, datadir=datadir, dim=dim
+pc_read_dim, obj=dim, datadir=datadir
 pc_read_grid, obj=grid, datadir=datadir, dim=dim
+pc_read_param, obj=par, datadir=datadir, dim=dim
+
 l12=dim.l1+indgen(dim.nx)
 m12=dim.m1+indgen(dim.ny)
 n12=dim.n1+indgen(dim.nz)
-;
-;  Read startup parameters
-;
 
 ;  Read the positions of variables in f from index.pro
 ;  Can't just use `@data/index', as the data directory may have a different name
