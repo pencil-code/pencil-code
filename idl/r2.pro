@@ -8,11 +8,6 @@
 ;;; You should have run `start.pro' once before.
 ;;; $Id$
 
-function param2
-; Dummy to keep IDL from complaining. The real param() routine will be
-; compiled below
-end
-
 ;
 ;  read data
 ;
@@ -51,40 +46,10 @@ if (quiet le 2) then print,'File '+varfile+' contains: ', content
 
 
 ;
-;  Read startup parameters
+;  Read run parameters
 ;
-pfile = datatopdir+'/'+'param2.nml'
-if (file_test(pfile)) then begin
-  print, 'Reading param2.nml..'
-  spawn, '$PENCIL_HOME/bin/nl2idl -1 -m -M '+strtrim(maxtags,2) $
-         + ' '+datatopdir+'/param2.nml', result
-  res = flatten_strings(result)
-  ;; For people with an unclean shell: remove everything up to the
-  ;; opening brace:
-  brace = strpos(res,'{')
-  if (brace lt 0) then message, 'TROUBLE: no brace found in <'+res+'>'
-  if (brace ne 0) then begin
-    print, "Your shell produces output when it shouldn't; you'd better"
-    print, "fix your prompt."
-    print, "Trying to clean up the mess.."
-    res = strmid(res,brace)
-  endif
-  ;; Execute the resulting line(s); format is `{ block1 } { block2 } ..'.
-  ;; Need to add each block in its own execute() call in order to
-  ;; remain below the limit of structure tags that can be set within
-  ;; one execute() statement (typically 398 or 570).
-  par2 = { dummy: 0 }            ; initialize structure for appending
-  brace = strpos(res,'}')
-  iblock = 0
-  repeat begin
-    iblock = iblock+1
-    print, "  param2.nml: block "+strtrim(iblock,2)
-    block = strmid(res,0,brace+1)
-    if (execute('par2 = create_struct(par2,'+block+')') ne 1) then $
-        message, 'There was a problem with param2.nml', /INFO
-    res = strmid(res,brace+1)
-    brace = strpos(res,'}')
-  endrep until (brace lt 0)
+pc_read_param, obj=par2, dim=dim, datadir=datadir, /param2
+
   if (lhydro) then begin
     nu=par2.nu
   endif
@@ -97,9 +62,6 @@ if (file_test(pfile)) then begin
     cool=par2.cool & wcool=par2.wcool
     Fbot=par2.Fbot
   endif
-endif else begin
-  print, 'Warning: cannot find file ', pfile
-endelse
 
 ;
 ;  Read data

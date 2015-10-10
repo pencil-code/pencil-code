@@ -9,8 +9,8 @@
 
 function param
   COMPILE_OPT IDL2,HIDDEN 
-; Dummy to keep IDL from complaining. The real param() routine will be
-; compiled below
+; Dummy to keep IDL from complaining.
+; The real param() routine will be compiled below.
 end
 
 common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
@@ -49,10 +49,6 @@ if (n_elements(datatopdir) eq 0) then datatopdir=pc_get_datadir()
 default, varfile, 'var.dat'
 default, dimfile, 'dim.dat'
 datadir = datatopdir+'/proc'+str(proc)
-; Directory for temporary output by the IDL scripts. Defaults to
-; data/, but can be overwritten in case you don't have write access to
-; data/ (e.g. when working in another user's directory or on CD data):
-default, tmpdir, datatopdir
 ;; Max # of structure tags in one execute statement; if we use more,
 ;; we get `% Program code area full' error.
 ;; Typically 398 or 569, but stupid Solaris doesn't tolerate more than 127.
@@ -154,30 +150,17 @@ n1=nghostz & n2=mz-nghostz-1 & n12=n1+indgen(nz)
 ;
 pfile = datatopdir+'/param.nml'
 if (file_test(pfile)) then begin
-  if (quiet le 2) then print, 'Reading param.nml..'
-  spawn, 'for d in . $TMPDIR $TMP /tmp /var/tmp; do if [ -d $d -a -w $d ]; then echo $d; fi; done', /SH, result
-  if (strlen(result[0])) le 0 then begin
-    message, "Can't find writeable directory for temporary files"
-  endif else begin
-    tmpdir = result[0]
-  endelse
-  tmpfile = tmpdir+'/param.pro'
-  ;; Write content of param.nml to temporary file:
-  spawn, '$PENCIL_HOME/bin/nl2idl '+nl2idl_d_opt+' -m ' + $
-      datatopdir+'/param.nml > ' + tmpfile , result
-  ;; Compile that file. Should be easy, but is incredibly awkward, as
-  ;; there is no way in IDL to compile a given file at run-time
-  ;; outside the command line:
-  ;; Save old path and pwd
-  _path = !path
-  cd, tmpdir, CURRENT=_pwd
-  !path = '.:'
+  if (quiet le 2) then print, 'Reading "'+pfile+'".'
+  outfile = 'param.pro'
+  ; Parse content of "param.nml" file, if necessary.
+  spawn, '"$PENCIL_HOME/bin/nl2idl" '+nl2idl_d_opt+' -m "'+pfile+'"' $
+      +' -o "' + datatopdir+'/idl/'+outfile+'"', result
+  ; Compile that file by temporal extension of the $IDL_PATH.
+  old_path = !path
+  !path = datatopdir+'/idl/:'+!path
   resolve_routine, 'param', /IS_FUNCTION
-  ;; Restore old path and pwd
-  !path = _path & cd, _pwd
-  ;; Delete temporary file
-  ; file_delete, tmpfile      ; not in IDL <= 5.3
-  spawn, 'rm -f '+tmpfile, /SH
+  ; Restore old $IDL_PATH.
+  !path = old_path
   par = param()
 
   ;; Abbreviate some frequently used parameters
@@ -195,8 +178,6 @@ if (file_test(pfile)) then begin
   lequidist = par.lequidist
   lhydro    = par.lhydro
   ldensity  = par.ldensity
-  lgravz    = par.lgravz
-  lgravr    = par.lgravr
   lentropy  = par.lentropy
   ltemperature = par.ltemperature
   lmagnetic = par.lmagnetic
@@ -211,7 +192,6 @@ if (file_test(pfile)) then begin
   ldustdensity = par.ldustdensity
   lforcing  = par.lforcing
   lshear    = par.lshear
-  lradiation_fld = par.lradiation_fld
   coord_system  = par.coord_system
 
   ;
@@ -244,13 +224,6 @@ if (file_test(pfile)) then begin
       gamma=par.gamma & gamma_m1=gamma-1.
       cs20 = cs0^2 & lnrho0 = alog(rho0)
     endif
-  endif
-  ;
-  if (lgravz) then begin
-    z1=par.z1 & z2=par.z2
-    zref=par.zref
-    gravz=par.gravz
-    ztop=z[n2] & z3=ztop
   endif
   ;
   if (lentropy) then begin

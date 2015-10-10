@@ -8,11 +8,12 @@
 ;  $Revision: 1.14 $
 ;
 ;  27-nov-02/tony: coded mostly from Wolgang's start.pro
+;  10-Oct-2015/PABourdin: reworked reading of parameter namelist files.
 ;
 ;  REQUIRES: external 'nl2idl' perl script (WD)
 ;  
 pro pc_read_param, object=object, dim=dim, datadir=datadir, $
-    param2=param2, nodelete=nodelete, print=print, quiet=quiet, help=help
+    param2=param2, print=print, quiet=quiet, help=help
 COMPILE_OPT IDL2,HIDDEN
   common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
@@ -43,7 +44,6 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Default parameters.
 ;
-  default, nodelete, 0
   default, quiet, 0
 ;
 ; Default data directory.
@@ -56,6 +56,7 @@ COMPILE_OPT IDL2,HIDDEN
   undefine, object
   if (keyword_set(param2)) then begin
     filename = datadir+'/param2.nml'
+    outfile = datadir+'/idl/param2.pro'
     if (not file_test(filename)) then begin
       if (not keyword_set(quiet)) then $
           print, "WARNING: 'run.csh' not yet executed, 'run_pars' are unavailable."
@@ -63,6 +64,7 @@ COMPILE_OPT IDL2,HIDDEN
     end
   endif else begin
     filename = datadir+'/param.nml'
+    outfile = datadir+'/idl/param.pro'
     if (not file_test(filename)) then $
         message, "ERROR: datadir is not initialized, please execute 'start.csh' first."
   endelse
@@ -82,35 +84,30 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Read the data.
 ;
-  if (not keyword_set(quiet)) then print, 'Reading '+filename+'...'
-  tmpfile = './param.pro'
+  if (not keyword_set(quiet)) then print, 'Reading "'+filename+'".'
 ;
-; Write content of param.nml to temporary file.
+; Check if we are prepared for reading anything.
 ;
   pencil_home = getenv ('PENCIL_HOME')
   if (pencil_home eq "") then $
       message, "ERROR: please 'source sourceme.sh', before using this function."
-  spawn, '$PENCIL_HOME/bin/nl2idl '+nl2idl_d_opt+' -m '+filename+'> '+tmpfile, result
 ;
-; Save old path.
+; Parse content of namelist file, if necessary.
 ;
-  _path = !path
-  if (not running_gdl()) then begin
-    !path = datadir+':'
-    resolve_routine, 'param', /is_function
-  endif
-  object = param()
-;
-; Restore old path.
-;
-  !path = _path
-;
-; Delete temporary file.
-;
-  if (not nodelete) then begin
-;      file_delete, tmpfile      ; not in IDL <= 5.3
-    spawn, 'rm -f '+tmpfile, /sh
-  endif
+  spawn, '"$PENCIL_HOME/bin/nl2idl" '+nl2idl_d_opt+' -m "'+filename+'" -o "'+outfile+'"', result
+  result[0] = ''
+  result = result[sort (result)]
+  num_lines = (size (result, /dimensions))[0]
+  object = { param_file:filename }
+  for pos = 1, num_lines-1 do begin
+    line = result[pos]
+    EOL = stregex (line, ',? *\$ *$')
+    if (EOL gt 0) then begin
+      code = 'struct = {'+strmid (line, 0, EOL)+'}'
+      if (not execute (code)) then message, 'ERROR: while converting ('+code+').'
+      object = create_struct (object, struct)
+    end
+  end
 ;
 ; If requested print a summary
 ;
