@@ -4517,7 +4517,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:ll,mm=', ll,mm
 !
 !  Assume that a vertical K profile is given if lgravz is true.
 !
-         if (lgravz) then
+        if (lgravz) then
 !
 ! DM+GG Added routines to compute hcond and gradloghcond_zprof.
 ! When called for the first time calculate z dependent profile of
@@ -4601,7 +4601,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:ll,mm=', ll,mm
         chix = p%rho1*hcond*p%cp1
         glnThcond = p%glnTT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
         if (notanumber(p%glnTT)) &
-          call fatal_error('calc_heatcond', 'NaNs in p%glnTT')
+          call fatal_error_local('calc_heatcond', 'NaNs in p%glnTT')
         call dot(p%glnTT,glnThcond,g2)
         if (pretend_lnTT) then
           thdiff = p%cv1*p%rho1*hcond * (p%del2lnTT + g2)

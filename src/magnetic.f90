@@ -1728,6 +1728,15 @@ module Magnetic
         case ('geo-benchmark-case1','geo-benchmark-case2'); call geo_benchmark_B(f)
 !
         case ('torus-test'); call torus_test(amplaa(j),f)
+!
+! test case horizontal dipole for spherical shell polar boundary conditions
+!
+        case ('spherical_self_sim')
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iaa  ) = - sin(y(m))*cos(z(n))/x(l1:l2)**2
+            f(l1:l2,m,n,iaa+1) =   cos(y(m))*cos(z(n))/x(l1:l2)**2
+            f(l1:l2,m,n,iaa+2) = - sin(z(n))          /x(l1:l2)**2
+          enddo; enddo
         case ('relprof')
           f(l1:l2,m1:m2,n1:n2,iax:iay)=A_relprof
 !
