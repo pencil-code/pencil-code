@@ -44,8 +44,7 @@ default, varfile, 'var.dat'
 ;
 ;  Read the grid, dimensions and startup parameters
 ;
-pc_read_grid, obj=grid, datadir=datadir, dim=dim
-pc_read_param, obj=par, datadir=datadir, dim=dim
+pc_read_grid, obj=grid, datadir=datadir, dim=dim, param=param
 
 l12=dim.l1+indgen(dim.nx)
 m12=dim.m1+indgen(dim.ny)
