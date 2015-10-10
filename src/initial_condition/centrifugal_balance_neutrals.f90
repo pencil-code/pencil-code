@@ -254,15 +254,15 @@ module InitialCondition
           f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - y(  m  )*(OO-OOcorot)
           f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + x(l1:l2)*(OO-OOcorot)
           f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
-          f(l1:l2,m,n,iunx) = f(l1:l2,m,n,iunx) - y(  m  )*(OO-OOcorot)
-          f(l1:l2,m,n,iuny) = f(l1:l2,m,n,iuny) + x(l1:l2)*(OO-OOcorot)
+          f(l1:l2,m,n,iunx) = f(l1:l2,m,n,iunx) - y(  m  )*(OOn-OOcorot)
+          f(l1:l2,m,n,iuny) = f(l1:l2,m,n,iuny) + x(l1:l2)*(OOn-OOcorot)
           f(l1:l2,m,n,iunz) = f(l1:l2,m,n,iunz) + 0.
         elseif (coord_system=='cylindric') then
           f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + 0.
           f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + (OO-OOcorot)*rr_cyl
           f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
           f(l1:l2,m,n,iunx) = f(l1:l2,m,n,iunx) + 0.
-          f(l1:l2,m,n,iuny) = f(l1:l2,m,n,iuny) + (OO-OOcorot)*rr_cyl
+          f(l1:l2,m,n,iuny) = f(l1:l2,m,n,iuny) + (OOn-OOcorot)*rr_cyl
           f(l1:l2,m,n,iunz) = f(l1:l2,m,n,iunz) + 0.
         elseif (coord_system=='spherical') then
           f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + 0.
@@ -270,7 +270,7 @@ module InitialCondition
           f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + (OO-OOcorot)*rr_sph
           f(l1:l2,m,n,iunx) = f(l1:l2,m,n,iunx) + 0.
           f(l1:l2,m,n,iuny) = f(l1:l2,m,n,iuny) + 0.
-          f(l1:l2,m,n,iunz) = f(l1:l2,m,n,iunz) + (OO-OOcorot)*rr_sph
+          f(l1:l2,m,n,iunz) = f(l1:l2,m,n,iunz) + (OOn-OOcorot)*rr_sph
         endif
 !
       enddo

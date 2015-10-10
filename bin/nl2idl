@@ -82,7 +82,7 @@ GetOptions(\%opts,
 if ($opts{'debug'}) { $debug = 1 } else { $debug = 0 }
 if ($debug) {
     printopts(\%opts);
-    print "\@ARGV = `@ARGV'\n";
+    print "\@ARGV = '@ARGV'\n";
 }
 
 if ($opts{'h'} || $opts{'help'})    { die usage();   }
