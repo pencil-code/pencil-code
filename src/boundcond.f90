@@ -1241,13 +1241,13 @@ module Boundcond
 !
       case ('bot')               ! bottom boundary
         if (nprocz==1) then
-           f(:,1:m1-1,n1:nhalf,j) = -f(:,m1:m1i,nhalf+1:n2,j)
-           f(:,1:m1-1,nhalf+1:n2,j) = -f(:,m1:m1i,n1:nhalf,j)
+           f(:,:m1-1,n1:nhalf,  j) = -f(:,m1i:m1:-1,nhalf+1:n2,j)
+           f(:,:m1-1,nhalf+1:n2,j) = -f(:,m1i:m1:-1,n1:nhalf,j)
         endif
       case ('top')               ! top boundary
         if (nprocz==1) then
-           f(:,m2+1:,n1:nhalf,  j) = -f(:,m2i:m2,nhalf+1:n2,j)
-           f(:,m2+1:,nhalf+1:n2,j) = -f(:,m2i:m2,n1:nhalf,j)
+           f(:,m2+1:,n1:nhalf,  j) = -f(:,m2:m2i:-1,nhalf+1:n2,j)
+           f(:,m2+1:,nhalf+1:n2,j) = -f(:,m2:m2i:-1,n1:nhalf,j)
         endif
       case default
         print*, "bc_aper_y: ", topbot, " should be 'top' or 'bot'"
