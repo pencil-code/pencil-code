@@ -20,13 +20,9 @@ default, varfile, 'var.dat'
 pc_read_var, obj=vars, varfile=varfile, dim=dim, grid=grid, param=param, datadir=datadir
 
 ; Shortcuts
-t = vars.t
-x = grid.x
-y = grid.y
-z = grid.z
-dx = grid.dx
-dy = grid.dy
-dz = grid.dz
+tags = tag_names (vars)
+num_tags = n_elements (tags)
+for pos = 0, num_tags-1 do dummy = execute (tags[pos]+' = vars.'+tags[pos])
 nx = dim.nx
 ny = dim.ny
 nz = dim.nz
