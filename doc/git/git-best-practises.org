@@ -1,0 +1,291 @@
+#+TITLE: Git Best Practises
+
+##+LaTeX_HEADER: \renewcommand{\maketitle}{}
+##+LaTeX: \thispagestyle{empty}
+
+#+begin_abstract
+#+LaTeX: \noindent%
+Tips and recommendations for using Git with the Pencil code.
+#+end_abstract
+
+
+* Operative Summary
+
+  Here is the bottom line of this document.
+
+  1. Decide whether you want to rebase or merge your local changes into
+     upstream (typically the /origin/master/ branch).
+
+     a. Rebase: Use '=git pull --rebase=' to get upstream changes into you
+        local tracking branch (typically /master/).
+        Or consider '=git config --global pull.rebase true=',
+        /but remember to do so in every checkout and expect communication
+        problems with others/.
+
+     b. Merge: Do /not/ merge upstream into your tracking branch like this:
+        #+BEGIN_SRC sh
+        git merge origin/master  # DON'T!
+        #+END_SRC
+
+        Instead, merge your changes into upstream, either manually or
+        using '=git pc merge-to-upstream='.
+        This gives a meaningful first-parent history like
+        #+begin_example
+
+
+        ...
+
+
+
+        #+end_example
+        rather than
+        #+begin_example
+
+
+        ...
+
+
+        #+end_example
+
+* Prerequisites
+
+  We need a few simple concepts for the discussion to follow.
+
+
+** What is Git?
+
+   Git is a flexible version-control system that is well-suited for
+   software development, be it with a centralized server (Github, in our
+   case), or in a completely decentralized setting.
+
+
+** What is a Git repository?
+
+   A Git repository is a set of unique commits that form a
+   [[https://en.wikipedia.org/wiki/Directed_acyclic_graph][directed acyclic graph]] (DAG) like this:
+   #+begin_example
+     A---B---C---D---E---F--- master
+          \     /     \
+           F---G       H---I--- feature
+   #+end_example
+
+   We say that E is a /child/ of D, and that D has two /parents/, C and G.
+   The complete /ancestry/ of D consists of A, B, C, F, and G.
+
+   If you know how to read this diagram, you know enough about DAGs for
+   our purposes.
+
+   You get extra credits if you can answer the question “Which of the
+   commits A, E and F belong to branch /feature/?”
+
+*** What is a commit?
+
+    A commit typically represents a state of the file tree (the directory
+    tree you get by checking out a revision), together with its complete
+    commit ancestry.
+    So you have different commit ids (represented as hexadecimal SHA1 hash
+    codes) for
+    - if you make a change, commit, revert that change and commit it again;
+    - if you change the commit message of your last commit (with
+      '=git commit --amend=');
+    - if you take some part of the commit graph and attach it somewhere
+      else ('=git rebase=');
+    - if you make any change to a commit that is an ancestor of the commit
+      in question.
+
+
+** The different layers[?] of a Git repository's state
+
+   1. Upstream [there could be several, but not for us]
+   2. Tracking branch
+   3. Index
+   4. File system
+
+   → Many combinations that can conflict
+   But don't worry, it is not hard to sort them all out.
+
+
+** Merging and rebasing
+
+*** What is merging?
+
+    A /merge/ commit adds a new connection to parts of the Git graph.
+    For example, if we have the following situation
+    #+begin_example
+      A---B---C--- master
+           \
+            F---G--- feature
+    #+end_example
+    and want to bring the changes from branch /feature/ to /master/, we
+    can merge /feature/ into /master/ and get
+    #+begin_example
+      A---B---C---D--- master
+           \     /
+            F---G--- feature
+    #+end_example
+
+    In the pure DAG sense, the two parents C and G of the merge commit D
+    are completely equivalent, but for reasons discussed [[below]], we want to
+    make sure we merge /feature/ into /master/ (so C is the /first parent/
+    and G is the /second parent/), not the other way around.
+
+*** What is rebasing?
+
+    In the example above, we have a second option to bring the feature
+    branch's changes into master, by creating new commits that contain
+    those changes:
+    #+begin_example
+      A---B---C---D---F'---G'--- master, feature
+    #+end_example
+    Immediately after this, both /master/ and /feature/ point to the same
+    commit G', but this may change in the future, e.g.
+    #+begin_example
+      A---B---C---D---F'---G'---H--- master
+                            \
+                             I--- feature
+    #+end_example
+
+    Rebasing is not an exclusive option.
+    Even if you routinely rebase your local changes, you will want to
+    merge longer-lived feature branches.
+
+*** Pros and cons
+
+    Here is the decision matrix for merging vs. rebasing
+
+    | Criterion                 | Merge        | Rebase           |
+    |---------------------------+--------------+------------------|
+    | Resulting graph structure | More complex | Simpler          |
+    | History                   | Preserved    | Modified         |
+    | Safety                    | Safer        | Less safe [fn:1] |
+
+    In short, use merging when you are afraid – [[What to do when you think you're lost][but you needn't be afraid]].
+
+[fn:1] Less safe in the sense that conflicts can cause you to end up
+    in a detached-head state.
+
+**** Graph structure
+
+     Every merge commit increases the connectivity of the commit graph by
+     one[fn:2].
+
+[fn:2] Or even more than one, in the case of an /octopus merge/.
+     But those are somewhat exotic.
+
+**** Rewriting history
+
+     In our rebase example above, the commits F and G were transformed
+     into F' and G'.
+     In the simplest case, both sets of commits represent exactly the same
+     difference of the file tree.
+     But if you had to fix conflicts, this is no longer the case, and you
+     appear to have lost the original change G by pretending that you were
+     applying a change G' in the first place.[fn:3]
+
+[fn:3] But of course this is not true: you can use [[git reflog]]
+     to go back to your original changes.
+     And you should no longer be interested in the original change once
+     the new version gets part of the Git narrative[?].
+
+     Once you embrace the idea that you can change history, you can use it
+     to write meaningful commit messages while you are in the right set
+     of mind (i.e. /before/ you test your changes, because after testing
+     it is harder to remember what you were doing in the first place).
+     Or you can rewrite history to fix a recent commit (code and message),
+     or to combine commits in order to get a more readable history.
+
+**** The worst thing that can happen
+
+     If you have conflicts, rebasing can bring your sandbox [explain that
+     name, or use another word] into a state where you are not on any
+     branch (/detached head/).
+     This is not really something to worry about:
+     Just fix the conflicts and do '=git rebase --continue=' to finish the
+     rebase; and in case you get lost, do '=git rebase --abort=' and start
+     afresh.
+     Even if you get completely lost and resort to measures like
+     '=git reset=', [[What to do when you think you're lost][you needn't be afraid]] to lose history.
+
+
+* Best practices
+
+** Don't merge upstream into your tracking branch (except when it makes sense)
+
+
+
+
+
+* Put this somewhere
+
+** Use gitk (or '=tig=' or some variant of '=git log --graph=')
+
+** What to do when you think you're lost
+
+   1. [[https://en.wikipedia.org/wiki/Phrases_from_The_Hitchhiker's_Guide_to_the_Galaxy#Don.27t_Panic][Don't panic]]
+
+      [You needn't be afraid], as git tries very hard to preserve your changes.
+
+
+   2. <<git reflog>>'=git reflog=' [plus stash] or '=gitk --reflog='
+      or '=git pc reflog [-v]='
+
+      Discuss garbage collection:
+      Removes old changes that nobody [no commit] is interested in any
+      more.
+      Unless you deliberately dropped commits, there will be some other
+      form of those commits in the perpetual history, and after two weeks
+      you wouldn't remember anyway what you thought when writing the first
+      version.
+
+
+
+
+* Org configuration                                   :noexport:ARCHIVE:
+
+#+AUTHOR: wd (wdobler [at] gmail [dot] com)
+#+EMAIL:  wdobler [at] gmail [dot] com
+#+DATE:   04-Oct-2015
+#+DESCRIPTION:
+#+KEYWORDS:
+#+LANGUAGE: en
+
+##+STARTUP: content
+#+STARTUP: showall
+
+##+ARCHIVE: ::* Archive
+
+#+DRAWERS: HIDDEN PROPERTIES CLOCK LOGBOOK
+#+PROPERTIES: CLOCK_INTO_DRAWER 2
+
+#+TODO: TODO | DONE WONTFIX
+
+#+OPTIONS: toc:nil
+##+OPTIONS: toc:t  tags:not-in-toc
+#+OPTIONS: ^:{}
+#+OPTIONS: tasks:todo
+##+OPTIONS: num:nil
+#+OPTIONS: H:4 num:t
+##+OPTIONS: \n:nil @:t ::t |:t -:t f:t *:t <:t
+##+OPTIONS: TeX:t LaTeX:t skip:nil d:nil todo:t pri:nil
+
+##+EXPORT_SELECT_TAGS: export
+##+EXPORT_EXCLUDE_TAGS: noexport
+
+#+LaTeX_CLASS_OPTIONS: [12pt,pdftex]
+##+LaTeX_CLASS_OPTIONS: [paralist]
+##+LATEX_HEADER: \newcommand{\sectionbreak}{\clearpage}
+
+;; File variables
+
+;; Local Variables:
+;;   mode: org
+;;   ispell-check-comments: t
+;;   coding: utf-8
+;;   eval: (flyspell-mode 1)
+;;   ispell-local-dictionary: "en_CA"
+;; End:
+
+;;
+;; LocalWords:
+
+
