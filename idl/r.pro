@@ -12,8 +12,7 @@ if ((n_elements(started) le 0) or (n_elements(read_all) gt 0)) then begin
   message, "You need to run start.pro first: use `.rnew start'"
 endif
 undefine, read_all
-;
-if (n_elements(datatopdir) eq 0) then datatopdir=pc_get_datadir()
+
 default, varfile, 'var.dat'
 
 ; Read data
