@@ -790,7 +790,7 @@ def var(datadir='./data', ivar=None, par=None, varfile='var.dat', verbose=True):
         verbose
             Verbose output or not.
     """
-    # Chao-Chin Yang, 2015-08-18
+    # Chao-Chin Yang, 2015-10-11
     from collections import namedtuple
     import numpy as np
     # Get the parameters.
@@ -800,9 +800,8 @@ def var(datadir='./data', ivar=None, par=None, varfile='var.dat', verbose=True):
     var = varname(datadir=datadir)
     if par.lwrite_aux:
         mvar = dim.mvar + dim.maux
-        if len(var) == dim.mvar:
-            for i in range(dim.maux):
-                var.append("aux" + str(i+1))
+        for i in range(mvar - len(var)):
+            var.append("aux" + str(i+1))
     else:
         mvar = dim.mvar
     # Check the precision.
