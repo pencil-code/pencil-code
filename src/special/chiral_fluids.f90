@@ -86,9 +86,10 @@ module Special
 ! Declare index of new variables in f array (if any).
 !
    real :: diffmu5, lambda5, theta5_const=0., mu5_const=0.
+   real :: meanmu5
    real, pointer :: eta
    integer :: itheta5, imu5
-  character (len=labellen) :: theta_prof='nothing'
+   character (len=labellen) :: theta_prof='nothing'
 !!   integer :: ispecaux=0
 !
   character (len=labellen) :: initspecial='nothing'
@@ -267,23 +268,6 @@ module Special
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
-!***********************************************************************
-!    subroutine theta_profile(f,df)
-!
-!  5-sep-2015 coded by jennifer
-!
-!      use Sub, only: step
-!
-!      real, dimension (mx,my,mz,mfarray) :: f
-!      real, dimension (nx) :: prof_amp1
-!      integer :: llx
-!
-!      case ('theta_cos')
-!      f(:,:,:,itheta5) = prof_amp1*cos(x(l1:l2))
-!
-!    endsubroutine theta_profile
-!***********************************************************************
-!***********************************************************************
     subroutine dspecial_dt(f,df,p)
 !
 !  calculate right hand side of ONE OR MORE extra coupled PDEs
@@ -330,7 +314,10 @@ module Special
 !
 !  Evolution of theta5
 !
-      df(l1:l2,m,n,itheta5)=df(l1:l2,m,n,itheta5)-p%ugtheta5+p%mu5
+      if (lhydro) then
+      df(l1:l2,m,n,itheta5)=df(l1:l2,m,n,itheta5)-p%ugtheta5+p%mu5 &
+        - meanmu5
+      endif
 !      print*,       df(l1:l2,m,n,itheta5), f(l1:l2,m,n,itheta5)
 !
 !  Additions to evolution of bb
@@ -350,16 +337,15 @@ module Special
 !  Contribution to the time-step
 !
       if (lfirst.and.ldt) then
-        chiraldiffusion=max(p%b2*p%theta5/(p%rho*sqrt(dxyz_2)),   &
-                            eta*p%mu5/sqrt(dxyz_2),   &
-                            eta*p%theta5*sqrt(p%u2)/dxyz_2,   &
-                            diffmu5/sqrt(dxyz_2),   &
-                            lambda5*eta*p%b2/(p%mu5*sqrt(dxyz_2)),   &
+        diffus_special= max(p%b2*p%theta5/(p%rho)*sqrt(dxyz_2),   &
+                            eta*p%mu5*sqrt(dxyz_2),   &
+                            eta*p%theta5*sqrt(p%u2)*dxyz_2,   &
+                            diffmu5*dxyz_2,   &
+                            lambda5*eta*p%b2/(p%mu5)*sqrt(dxyz_2),   &
                             lambda5*eta*p%b2,   &
-                            lambda5*eta*p%b2*sqrt(p%u2)*p%theta5/(p%mu5*sqrt(dxyz_2)), &
-                            p%theta5/p%mu5   &
-                           )  
-        diffus_special=diffus_special+chiraldiffusion
+                            lambda5*eta*p%b2*sqrt(p%u2)*p%theta5/(p%mu5)*sqrt(dxyz_2), &
+                            p%mu5/p%theta5   &
+                          )  
       endif
 !
 !  diagnostics
@@ -456,14 +442,30 @@ module Special
 !***********************************************************************
     subroutine calc_lspecial_pars(f)
 !
-!  Dummy routine.
+!  Calculate meanmu5, which should be subtracted from mu5 in eqn for theta5
 !
-!  15-jan-08/axel: coded
+!  11-oct-15/jenny: coded
+!
+      use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real :: fact, meanmu5_tmp
       intent(inout) :: f
 !
-      call keep_compiler_quiet(f)
+!  compute meanmu5
+!
+      meanmu5=0.
+      do n=n1,n2
+      do m=m1,m2
+        meanmu5=meanmu5+sum(f(l1:l2,m,n,imu5))
+      enddo
+      enddo
+!
+!  communicate and divide by all mesh meshpoints
+!
+      call mpiallreduce_sum(meanmu5,meanmu5_tmp,1)
+      fact=1./(nw*ncpus)
+      meanmu5=fact*meanmu5_tmp
 !
     endsubroutine calc_lspecial_pars
 !***********************************************************************
