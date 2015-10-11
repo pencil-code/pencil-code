@@ -16,12 +16,28 @@ undefine, read_all
 default, varfile, 'var.dat'
 
 ; Read data
-pc_read_var, obj=vars, varfile=varfile, dim=dim, grid=grid, param=param, datadir=datadir
+pc_read_var_raw, obj=var, tags=tags, time=t, varfile=varfile, dim=dim, grid=grid, start_param=param, datadir=datadir
 
 ; Shortcuts
-tags = tag_names (vars)
-num_tags = n_elements (tags)
-for pos = 0, num_tags-1 do dummy = execute (tags[pos]+' = vars.'+tags[pos])
+var_names = tag_names (tags)
+num_tags = n_elements (var_names)
+offset = 0
+while (offset le num_tags-1) do begin
+  indices = tags.(offset)
+  if (size (indices, /type) eq 3) then begin
+    dummy = execute (var_names[offset]+' = var[*,*,*,indices]')
+    components = n_elements (indices)
+    if (components gt 1) then offset += components
+  end
+  offset += 1
+end
+var = 0
+x = grid.x
+y = grid.y
+z = grid.z
+dx = grid.dx
+dy = grid.dy
+dz = grid.dz
 nx = dim.nx
 ny = dim.ny
 nz = dim.nz
