@@ -1850,7 +1850,13 @@ module Viscosity
 !          endif
           p%diffus_total=p%diffus_total+nu_sld
         endif
-
+!
+!  Heating term
+!
+        if (lpencil(i_visc_heat)) then 
+          call dot_mn(p%uu,f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2),tmp3)
+          p%visc_heat=p%visc_heat+tmp3
+        endif
       endif
 !
 !  Calculate Lambda effect
