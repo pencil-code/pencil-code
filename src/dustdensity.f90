@@ -91,8 +91,9 @@ module Dustdensity
   logical, pointer :: llin_radiusbins
   real, pointer :: deltamd
   real    :: dustdensity_floor=-1, Kern_min=0., Kern_max=0.
-  real    :: G_condensparam=0., supsatratio_given=0., supsatratio_omega=0.
-  real    :: dlnmd, dlnad, GS_condensparam
+  real    :: G_condensparam=0., supsatratio_given=0., supsatratio_given0=0.
+  real    :: supsatratio_omega=0.
+  real    :: dlnmd, dlnad, GS_condensparam, GS_condensparam0
 !
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0,  mdave0, Hnd, &
@@ -114,7 +115,8 @@ module Dustdensity
       diffnd_shock,lresetuniform_dustdensity,nd_reuni, lnoaerosol, &
       lnocondens_term,advec_ddensity, bordernd, dustdensity_floor, &
       diffnd_anisotropic,reinitialize_nd, &
-      G_condensparam, supsatratio_given, supsatratio_omega, ndmin_for_mdvar, &
+      G_condensparam, supsatratio_given, supsatratio_given0, &
+      supsatratio_omega, ndmin_for_mdvar, &
       lsemi_chemistry, lradius_binning, dkern_cst, lzero_upper_kern
 !
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
@@ -262,9 +264,10 @@ module Dustdensity
         dlnmd=alog(deltamd)
         dlnad=alog(deltamd)/3.
 !
-!  Compute A=G*S
+!  Compute A=G*S and A0=G*S0 (for constant offset in oscillatory experiments)
 !
         GS_condensparam=G_condensparam*supsatratio_given
+        GS_condensparam0=G_condensparam*supsatratio_given0
 
       endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2398,12 +2401,12 @@ module Dustdensity
 !  Assume a hat(om*t) time behavior
 !
       case ('hat(om*t)')
-        mfluxcond=GS_condensparam*tanh(20.*cos(supsatratio_omega*t))
+        mfluxcond=GS_condensparam0+GS_condensparam*tanh(20.*cos(supsatratio_omega*t))
 !
 !  Assume a cos(om*t) time behavior
 !
       case ('cos(om*t)')
-        mfluxcond=GS_condensparam*cos(supsatratio_omega*t)
+        mfluxcond=GS_condensparam0+GS_condensparam*cos(supsatratio_omega*t)
 !
 !  Allow only positive values (but commented out now).
 !
