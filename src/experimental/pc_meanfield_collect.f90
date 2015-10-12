@@ -37,8 +37,8 @@ program pc_meanfield_collect
   character (len=fnlen), dimension(:)  , allocatable :: avgnames, avgfields, &
                                                      analyzernames
   namelist /collect_config/ avgnames
-  namelist /xaver_config/ avgfields, ndim2read, analyzernames
-  namelist /zaver_config/ avgfields, ndim2read, analyzernames
+  namelist /xaver_config/ avgfields, ndim2read, analyzernames, maxtimesteps
+  namelist /zaver_config/ avgfields, ndim2read, analyzernames, maxtimesteps
 
   integer :: hdferr
   integer(HID_T) :: hdfmemtype, phdf_fileid, phdf_avggroup, phdf_dataspace
@@ -81,7 +81,7 @@ program pc_meanfield_collect
   integer :: iavg, ierr, ntimesteps, navgs, ndim1, ndim2, &
              ndim1_full, ndim2_full, &
              naverages, ndim2read, i, j, nanalyzers, &
-             ianalyzer
+             ianalyzer, maxtimesteps
   
   integer, dimension(:), allocatable :: avgdims
   integer, dimension(:,:), allocatable :: offsets
@@ -347,8 +347,8 @@ program pc_meanfield_collect
         ntimesteps  = int(floor(real(filesize)/(16+tlen+datalen)))
         write(*,'(a30,a30)') &
         ' Number of timesteps:          ', ljustifyI(ntimesteps)
-        if (ntimesteps > 2000) then
-               ntimesteps  = 2000
+        if (ntimesteps > maxtimesteps) then
+               ntimesteps  = maxtimesteps
         end if
         data_start  = t_start + tlen + 8
         tsteplen    = 16 + tlen + datalen
