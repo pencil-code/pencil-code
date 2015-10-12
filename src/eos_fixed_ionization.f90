@@ -30,17 +30,6 @@ module EquationOfState
 !
   include 'eos.h'
 !
-  interface eoscalc ! Overload subroutine `eoscalc'
-    module procedure eoscalc_farray   ! explicit f implicit m,n
-    module procedure eoscalc_point    ! explicit lnrho, ss
-    module procedure eoscalc_pencil
-  end interface
-!
-  interface pressure_gradient ! Overload subroutine `pressure_gradient'
-    module procedure pressure_gradient_farray ! explicit f implicit m,n
-    module procedure pressure_gradient_point  ! explicit lnrho, ss
-  end interface
-!
 ! integers specifying which independent variables to use in eoscalc
 ! (only relevant in ionization.f90)
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
@@ -88,7 +77,7 @@ module EquationOfState
 !
   contains
 !***********************************************************************
-    subroutine register_eos()
+    subroutine register_eos
 !
 !  14-jun-03/axel: adapted from register_ionization
 !
@@ -145,13 +134,13 @@ module EquationOfState
 !
     endsubroutine getmu_array
 !***********************************************************************
-    subroutine units_eos()
+    subroutine units_eos
 !
 !  dummy: here we don't allow for inputting cp.
 !
     endsubroutine units_eos
 !***********************************************************************
-    subroutine initialize_eos()
+    subroutine initialize_eos
 !
 !  Perform any post-parameter-read initialization, e.g. set derived
 !  parameters.
@@ -224,8 +213,8 @@ module EquationOfState
           (1+yH0+xHe-xH2)-2.5)
 
       if (.not.ldensity) then
-        call put_shared_variable('rho0',rho0,ierr)
-        call put_shared_variable('lnrho0',lnrho0,ierr)
+        call put_shared_variable('rho0',rho0,caller='initialize_eos')
+        call put_shared_variable('lnrho0',lnrho0)
       endif
 !
       if (lroot) then
@@ -380,7 +369,7 @@ module EquationOfState
 !
     endsubroutine get_slices_eos
 !***********************************************************************
-    subroutine pencil_criteria_eos()
+    subroutine pencil_criteria_eos
 !
 !  All pencils that the EquationOfState module depends on are specified here.
 !
@@ -421,86 +410,103 @@ module EquationOfState
 !
     endsubroutine pencil_interdep_eos
 !***********************************************************************
-    subroutine calc_pencils_eos(f,p)
+    subroutine calc_pencils_eos_std(f,p)
+!
+! Envelope adjusting calc_pencils_eos_pencpar to the standard use with
+! lpenc_loc=lpencil
+!
+!  9-oct-15/MR: coded
+!
+      real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
+      type (pencil_case),                intent(OUT)  :: p
+!
+      call calc_pencils_eos_pencpar(f,p,lpencil)
+!
+    endsubroutine calc_pencils_eos_std
+!***********************************************************************
+    subroutine calc_pencils_eos_pencpar(f,p,lpenc_loc)
 !
 !  Calculate Entropy pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  02-04-06/tony: coded
+!  09-10-15/MR: added mask parameter lpenc_loc.
 !
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      integer :: i
+      logical, dimension(npencils) :: lpenc_loc
 !
-      intent(in) :: f
+      intent(in) :: f, lpenc_loc
       intent(inout) :: p
+!
+      integer :: i
 !
 ! THE FOLLOWING 2 ARE CONCEPTUALLY WRONG
 ! FOR pretend_lnTT since iss actually contain lnTT NOT entropy!
 ! The code is not wrong however since this is correctly
 ! handled by the eos module.
 ! ss
-      if (lpencil(i_ss)) p%ss=f(l1:l2,m,n,iss)
+      if (lpenc_loc(i_ss)) p%ss=f(l1:l2,m,n,iss)
 !
 ! gss
-      if (lpencil(i_gss)) call grad(f,iss,p%gss)
+      if (lpenc_loc(i_gss)) call grad(f,iss,p%gss)
 ! pp
-      if (lpencil(i_pp)) call eoscalc(f,nx,pp=p%pp)
+      if (lpenc_loc(i_pp)) call eoscalc(f,nx,pp=p%pp)
 ! ee
-      if (lpencil(i_ee)) call eoscalc(f,nx,ee=p%ee)
+      if (lpenc_loc(i_ee)) call eoscalc(f,nx,ee=p%ee)
 ! lnTT
-      if (lpencil(i_lnTT)) call eoscalc(f,nx,lnTT=p%lnTT)
+      if (lpenc_loc(i_lnTT)) call eoscalc(f,nx,lnTT=p%lnTT)
 ! yH
-      if (lpencil(i_yH)) call eoscalc(f,nx,yH=p%yH)
+      if (lpenc_loc(i_yH)) call eoscalc(f,nx,yH=p%yH)
 ! TT
-      if (lpencil(i_TT)) p%TT=exp(p%lnTT)
+      if (lpenc_loc(i_TT)) p%TT=exp(p%lnTT)
 ! TT1
-      if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
+      if (lpenc_loc(i_TT1)) p%TT1=exp(-p%lnTT)
 ! cs2 and cp1tilde
-      if (lpencil(i_cs2) .or. lpencil(i_cp1tilde)) &
+      if (lpenc_loc(i_cs2) .or. lpenc_loc(i_cp1tilde)) &
           call pressure_gradient(f,p%cs2,p%cp1tilde)
 ! glnTT
-      if (lpencil(i_glnTT)) then
+      if (lpenc_loc(i_glnTT)) then
         call temperature_gradient(f,p%glnrho,p%gss,p%glnTT)
       endif
 ! gTT
-      if (lpencil(i_gTT)) then
+      if (lpenc_loc(i_gTT)) then
         do i=1,3; p%gTT(:,i)=p%glnTT(:,i)*p%TT; enddo
       endif
 ! hss
-      if (lpencil(i_hss)) then
+      if (lpenc_loc(i_hss)) then
         call g2ij(f,iss,p%hss)
       endif
 ! del2ss
-      if (lpencil(i_del2ss)) then
+      if (lpenc_loc(i_del2ss)) then
         call del2(f,iss,p%del2ss)
       endif
 ! del2lnTT
-      if (lpencil(i_del2lnTT)) then
+      if (lpenc_loc(i_del2lnTT)) then
           call temperature_laplacian(f,p)
       endif
 ! del6ss
-      if (lpencil(i_del6ss)) then
+      if (lpenc_loc(i_del6ss)) then
         call del6(f,iss,p%del6ss)
       endif
 ! hlnTT
-      if (lpencil(i_hlnTT)) then
+      if (lpenc_loc(i_hlnTT)) then
         call temperature_hessian(f,p%hlnrho,p%hss,p%hlnTT)
       endif
 !
-      if (lpencil(i_glnmumol)) p%glnmumol(:,:)=0.
+      if (lpenc_loc(i_glnmumol)) p%glnmumol(:,:)=0.
 !
 !  This routine does not yet compute cv or cv1, but since those pencils
 !  are supposed to be provided here, we better set them to impossible.
 !
-      if (lpencil(i_cv1)) p%cv1=impossible
-      if (lpencil(i_cp1)) p%cp1=impossible
-      if (lpencil(i_cv))  p%cv=impossible
-      if (lpencil(i_cp))  p%cp=impossible
+      if (lpenc_loc(i_cv1)) p%cv1=impossible
+      if (lpenc_loc(i_cp1)) p%cp1=impossible
+      if (lpenc_loc(i_cv))  p%cv=impossible
+      if (lpenc_loc(i_cp))  p%cp=impossible
 !
-    endsubroutine calc_pencils_eos
+    endsubroutine calc_pencils_eos_pencpar
 !***********************************************************************
     subroutine ioninit(f)
 !

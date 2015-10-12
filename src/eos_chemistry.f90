@@ -33,17 +33,6 @@ module EquationOfState
 !
   include 'eos.h'
 !
-  interface eoscalc ! Overload subroutine `eoscalc' function
-    module procedure eoscalc_pencil   ! explicit f implicit m,n
-    module procedure eoscalc_point    ! explicit lnrho, ss
-    module procedure eoscalc_farray   ! explicit lnrho, ss
-  end interface
-!
-  interface pressure_gradient ! Overload subroutine `pressure_gradient'
-    module procedure pressure_gradient_farray  ! explicit f implicit m,n
-    module procedure pressure_gradient_point   ! explicit lnrho, ss
-  end interface
-!
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3
   integer, parameter :: ilnrho_lnTT=4,ilnrho_cs2=5
   integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8, ilnrho_TT=9
@@ -97,7 +86,7 @@ module EquationOfState
 !
   contains
 !***********************************************************************
-    subroutine register_eos()
+    subroutine register_eos
 !
 !  14-jun-03/axel: adapted from register_eos
 !
@@ -112,7 +101,7 @@ module EquationOfState
 !
     endsubroutine register_eos
 !***********************************************************************
-    subroutine units_eos()
+    subroutine units_eos
 !
 !  This routine calculates things related to units and must be called
 !  before the rest of the units are being calculated.
@@ -153,7 +142,7 @@ module EquationOfState
 !
     endsubroutine units_eos
 !***********************************************************************
-    subroutine initialize_eos()
+    subroutine initialize_eos
 !
       use SharedVariables, only: put_shared_variable
 !
@@ -420,7 +409,7 @@ module EquationOfState
 !
     endsubroutine get_slices_eos
 !***********************************************************************
-   subroutine pencil_criteria_eos()
+   subroutine pencil_criteria_eos
 !
 !  All pencils that the EquationOfState module depends on are specified here.
 !
@@ -499,25 +488,42 @@ module EquationOfState
 !
     endsubroutine pencil_interdep_eos
 !***********************************************************************
-    subroutine calc_pencils_eos(f,p)
+    subroutine calc_pencils_eos_std(f,p)
+!
+! Envelope adjusting calc_pencils_eos_pencpar to the standard use with
+! lpenc_loc=lpencil
+!
+!  9-oct-15/MR: coded
+!
+      real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
+      type (pencil_case),                intent(OUT)  :: p
+!
+      call calc_pencils_eos_pencpar(f,p,lpencil)
+!
+    endsubroutine calc_pencils_eos_std
+!***********************************************************************
+    subroutine calc_pencils_eos_pencpar(f,p,lpenc_loc)
 !
 !  Calculate Entropy pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  02-apr-06/tony: coded
+!  09-oct-15/MR: added mask parameter lpenc_loc.
 !
       use Sub, only: grad, del2
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+      logical, dimension(npencils) :: lpenc_loc
 !
-      intent(in) :: f
+      intent(in) :: f, lpenc_loc
       intent(inout) :: p
+!
       integer :: i
 !
 !  Temperature
 !
-       if (lpencil(i_lnTT)) then
+       if (lpenc_loc(i_lnTT)) then
          if (ltemperature_nolog) then
           p%lnTT=log(f(l1:l2,m,n,iTT))
          else
@@ -525,7 +531,7 @@ module EquationOfState
          endif
        endif
 !
-       if (lpencil(i_TT))  then
+       if (lpenc_loc(i_TT))  then
          if (ltemperature_nolog) then
            p%TT=f(l1:l2,m,n,iTT)
          else
@@ -537,7 +543,7 @@ module EquationOfState
          endif         
        endif
 !
-       if (lpencil(i_TT1)) then
+       if (lpenc_loc(i_TT1)) then
          if (ltemperature_nolog) then
            p%TT1=1./f(l1:l2,m,n,iTT)
          else 
@@ -547,7 +553,7 @@ module EquationOfState
 !
 !  Temperature laplacian and gradient
 !
-        if (lpencil(i_glnTT)) then
+        if (lpenc_loc(i_glnTT)) then
          if (ltemperature_nolog) then
            call grad(f,iTT,p%glnTT)
            p%glnTT(:,1)=p%glnTT(:,1)/p%TT(:)
@@ -559,36 +565,36 @@ module EquationOfState
         endif
 !
         if (ltemperature_nolog) then
-         if (lpencil(i_gTT)) call grad(f,iTT,p%gTT)
+         if (lpenc_loc(i_gTT)) call grad(f,iTT,p%gTT)
          !NILS: The call below does not yield del2lnTT but rather del2TT,
          !NILS: this should be fixed before used. One should also look
          !NILS: through the chemistry module to make sure del2lnTT is used
          !NILS: corectly.
-         if (lpencil(i_del2lnTT)) call del2(f,iTT,p%del2lnTT)
+         if (lpenc_loc(i_del2lnTT)) call del2(f,iTT,p%del2lnTT)
          call fatal_error('calc_pencils_eos',&
              'del2lnTT is not correctly implemented - this must be fixed!')
         else
-         if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
+         if (lpenc_loc(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
         endif
 !
 !       if (lcheminp_eos) then
 !
 !  Mean molecular weight
 !
-        if (lpencil(i_mu1)) then
+        if (lpenc_loc(i_mu1)) then
           p%mu1=mu1_full(l1:l2,m,n)
         endif
 !
-        if (lpencil(i_gmu1)) call grad(mu1_full,p%gmu1)
+        if (lpenc_loc(i_gmu1)) call grad(mu1_full,p%gmu1)
 !
 !
 !  Pressure
 !
-        if (lpencil(i_pp)) p%pp = Rgas*p%TT*p%mu1*p%rho
+        if (lpenc_loc(i_pp)) p%pp = Rgas*p%TT*p%mu1*p%rho
 !
 !  Logarithmic pressure gradient
 !
-        if (lpencil(i_rho1gpp)) then
+        if (lpenc_loc(i_rho1gpp)) then
           do i=1,3
             p%rho1gpp(:,i) = p%pp/p%rho(:) &
                *(p%glnrho(:,i)+p%glnTT(:,i)+p%gmu1(:,i)/p%mu1(:))
@@ -597,7 +603,7 @@ module EquationOfState
 !
 ! Gradient of the lnpp
 !
-       if (lpencil(i_glnpp)) then
+       if (lpenc_loc(i_glnpp)) then
             do i=1,3
              p%glnpp(:,i)=p%rho1gpp(:,i)*p%rho(:)/p%pp(:)
             enddo
@@ -605,18 +611,18 @@ module EquationOfState
 !
 ! Laplasian of pressure
 !
-       if (lpencil(i_del2pp)) then
+       if (lpenc_loc(i_del2pp)) then
          call del2(pp_full(:,:,:),p%del2pp)
        endif
 !
 !  Energy per unit mass (this has been moved to chemistry.f90 in order
 !  to get the correct cv.
 !
-      !if (lpencil(i_ee)) p%ee = p%cv*p%TT
+      !if (lpenc_loc(i_ee)) p%ee = p%cv*p%TT
 !
 !      endif
 !
-    endsubroutine calc_pencils_eos
+    endsubroutine calc_pencils_eos_pencpar
 !***********************************************************************
    subroutine ioninit(f)
 !
@@ -1669,7 +1675,7 @@ module EquationOfState
 !
    endsubroutine read_thermodyn
 !***********************************************************************
-    subroutine write_thermodyn()
+    subroutine write_thermodyn
 !
 !  This subroutine writes the thermodynamical data for every specie
 !  to ./data/chem.out.
