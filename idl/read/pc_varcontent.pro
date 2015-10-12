@@ -263,15 +263,15 @@ selected = selected[sort (position)]
 executes = executes[sort (position)]
 for var = 0, num_vars-1 do begin
   tag = selected[var]
+  dims = indices[tag].dims
+  replace = where (inconsistent[*].name eq indices[tag].name)
   name = strmid (indices[tag].name, 1)
   dummy = execute (executes[var])
   num_components = n_elements (pos)
   for component = 1, num_components do begin
     if (pos[component-1] gt 0) then begin
-      dims = indices[tag].dims
       if (dims eq 1) then joint = '' else joint = strtrim (dims, 2)+','
       idl_var = name
-      replace = where (inconsistent[*].name eq name)
       if (replace[0] ge 0) then idl_var = inconsistent[replace[0]].name
       if (num_components gt 1) then idl_var += strtrim (component, 2)
       varcontent[pos[component-1]-1].variable = indices[tag].label + ' ('+name+')'
