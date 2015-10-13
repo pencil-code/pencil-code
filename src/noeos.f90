@@ -28,16 +28,6 @@ module EquationOfState
 !
   include 'eos.h'
 !
-  interface eoscalc ! Overload subroutine `eoscalc' function
-    module procedure eoscalc_pencil   ! explicit f implicit m,n
-    module procedure eoscalc_point    ! explicit lnrho, ss
-    module procedure eoscalc_farray   ! explicit lnrho, ss
-  end interface
-!
-  interface pressure_gradient ! Overload subroutine `pressure_gradient'
-    module procedure pressure_gradient_farray  ! explicit f implicit m,n
-    module procedure pressure_gradient_point   ! explicit lnrho, ss
-  end interface
 ! integers specifying which independent variables to use in eoscalc
   integer, parameter :: ilnrho_ss=1, ilnrho_ee=2, ilnrho_pp=3, ilnrho_lnTT=4
   integer, parameter :: irho_ss=7, ilnrho_TT=9, irho_TT=10, ipp_ss=11
@@ -191,17 +181,33 @@ module EquationOfState
 !
     endsubroutine pencil_interdep_eos
 !***********************************************************************
-    subroutine calc_pencils_eos(f,p)
+    subroutine calc_pencils_eos_std(f,p)
+!
+! Envelope adjusting calc_pencils_eos_pencpar to the standard use with
+! lpenc_loc=lpencil
+!
+!  9-oct-15/MR: coded
+!
+      real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
+      type (pencil_case),                intent(OUT)  :: p
+!
+      call calc_pencils_eos_pencpar(f,p,lpencil)
+!
+    endsubroutine calc_pencils_eos_std
+!***********************************************************************
+    subroutine calc_pencils_eos_pencpar(f,p,lpenc_loc)
 !
 !  Calculate Entropy pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  02-apr-06/tony: dummy
+!  09-oct-15/MR: added mask parameter lpenc_loc.
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+      logical, dimension(npencils) :: lpenc_loc
 !
-      intent(in) :: f
+      intent(in) :: f,lpenc_loc
       intent(inout) :: p
 !
 !  Set default values.
@@ -210,10 +216,10 @@ module EquationOfState
 ! AXEL: yes, but magnetic has a problematic line
 ! AXEL: "if (ltemperature) lpenc_requested(i_cv1)=.true."
 !
-      if (lpencil(i_cv1)) p%cv1=0.0
-      if (lpencil(i_cp1)) p%cp1=0.0
-      if (lpencil(i_cs2)) p%cs2=cs20
-      if (lpencil(i_gTT)) p%gTT=0.0
+      if (lpenc_loc(i_cv1)) p%cv1=0.0
+      if (lpenc_loc(i_cp1)) p%cp1=0.0
+      if (lpenc_loc(i_cs2)) p%cs2=cs20
+      if (lpenc_loc(i_gTT)) p%gTT=0.0
 !      if (lanelastic) then
 !        p%lnrho=lnrho0
 !        p%rho=exp(p%lnrho)
@@ -221,7 +227,7 @@ module EquationOfState
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_pencils_eos
+    endsubroutine calc_pencils_eos_pencpar
 !***********************************************************************
     subroutine ioninit(f)
 !
