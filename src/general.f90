@@ -267,15 +267,24 @@ module General
 !  Fills a with a random number calculated with one of the generators
 !  available with random_gen.
 !
-      real :: a
-      real, dimension(1) :: b
+      use Cdata, only: lroot
 !
-      intent(out) :: a
+      real, intent(out) :: a
 !
-!     b = a                     ! not needed unless numbers are non-Markovian
+      select case (random_gen)
 !
-      call random_number_wrapper(b)
-      a = b(1)
+        case ('system')
+          call random_number(a)
+        case ('min_std')
+          a=ran0(rstate(1))
+          enddo
+        case ('nr_f90')
+          a=mars_ran()
+        case default
+          if (lroot) print*, 'No such random number generator: ', random_gen
+          STOP 1                ! Return nonzero exit status
+!
+      endselect
 !
     endsubroutine random_number_wrapper_0
 !***********************************************************************
@@ -286,28 +295,26 @@ module General
 !
       use Cdata, only: lroot
 !
-      real, dimension(:) :: a
+      real, dimension(:), intent(out) :: a
       integer :: i
-!
-      intent(out) :: a
 !
       select case (random_gen)
 !
-      case ('system')
-        call random_number(a)
-      case ('min_std')
-        do i=1,size(a,1)
-          a(i)=ran0(rstate(1))
-        enddo
-      case ('nr_f90')
-        do i=1,size(a,1)
-          a(i)=mars_ran()
-        enddo
-      case default
-        if (lroot) print*, 'No such random number generator: ', random_gen
-        STOP 1                ! Return nonzero exit status
+        case ('system')
+          call random_number(a)
+        case ('min_std')
+          do i=1,size(a,1)
+            a(i)=ran0(rstate(1))
+          enddo
+        case ('nr_f90')
+          do i=1,size(a,1)
+            a(i)=mars_ran()
+          enddo
+        case default
+          if (lroot) print*, 'No such random number generator: ', random_gen
+          STOP 1                ! Return nonzero exit status
 !
-     endselect
+      endselect
 !
     endsubroutine random_number_wrapper_1
 !***********************************************************************
@@ -318,26 +325,24 @@ module General
 !
       use Cdata, only: lroot
 !
-      real, dimension(:,:,:) :: a
+      real, dimension(:,:,:), intent(out) :: a
       integer :: i,j,k
-!
-      intent(out) :: a
 !
       select case (random_gen)
 !
-      case ('system')
-        call random_number(a)
-      case ('min_std')
-        do i=1,size(a,1); do j=1,size(a,2); do k=1,size(a,3)
-          a(i,j,k)=ran0(rstate(1))
-        enddo; enddo; enddo
-      case ('nr_f90')
-        do i=1,size(a,1); do j=1,size(a,2); do k=1,size(a,3)
-          a(i,j,k)=mars_ran()
-        enddo; enddo; enddo
-      case default
-        if (lroot) print*, 'No such random number generator: ', random_gen
-        STOP 1                ! Return nonzero exit status
+        case ('system')
+          call random_number(a)
+        case ('min_std')
+          do i=1,size(a,1); do j=1,size(a,2); do k=1,size(a,3)
+            a(i,j,k)=ran0(rstate(1))
+          enddo; enddo; enddo
+        case ('nr_f90')
+          do i=1,size(a,1); do j=1,size(a,2); do k=1,size(a,3)
+            a(i,j,k)=mars_ran()
+          enddo; enddo; enddo
+        case default
+          if (lroot) print*, 'No such random number generator: ', random_gen
+          STOP 1                ! Return nonzero exit status
 !
       endselect
 !
