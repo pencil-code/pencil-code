@@ -741,8 +741,7 @@ module Particles
       use EquationOfState, only: beta_glnrho_global, cs20
       use General, only: random_number_wrapper
       use Mpicomm, only: mpireduce_sum, mpibcast_real
-      use InitialCondition, only: initial_condition_xxp,&
-          initial_condition_vvp
+      use InitialCondition, only: initial_condition_xxp, initial_condition_vvp
       use Particles_diagnos_dv, only: repeated_init
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -834,8 +833,14 @@ module Particles
         case ('random-constz')
           if (lroot) print*, 'init_particles: Random particle positions'
           do k=1,npar_loc
-            if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
-            if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+            if (nxgrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,ixp)=r
+            endif
+            if (nygrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,iyp)=r
+            endif
           enddo
           if (nxgrid/=1) &
               fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
@@ -847,9 +852,18 @@ module Particles
         case ('random')
           if (lroot) print*, 'init_particles: Random particle positions'
           do k=1,npar_loc
-            if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
-            if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
-            if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
+            if (nxgrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,ixp)=r
+            endif
+            if (nygrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,iyp)=r
+            endif
+            if (nzgrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,izp)=r
+            endif
           enddo
           if (nxgrid/=1) &
               fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
@@ -891,12 +905,12 @@ module Particles
             do k=1,npar_loc
               rp2=2.*rad_sphere**2
               do while (rp2>rad_sphere**2)
-                call random_number_wrapper(fp(k,ixp))
-                call random_number_wrapper(fp(k,iyp))
-                call random_number_wrapper(fp(k,izp))
-                fp(k,ixp)=(fp(k,ixp)-0.5)*2.*rad_sphere
-                fp(k,iyp)=(fp(k,iyp)-0.5)*2.*rad_sphere
-                fp(k,izp)=(fp(k,izp)-0.5)*2.*rad_sphere
+                call random_number_wrapper(r)
+                fp(k,ixp)=(r-0.5)*2.*rad_sphere
+                call random_number_wrapper(r)
+                fp(k,iyp)=(r-0.5)*2.*rad_sphere
+                call random_number_wrapper(r)
+                fp(k,izp)=(r-0.5)*2.*rad_sphere
                 rp2=fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2
               enddo
               fp(k,ixp)=fp(k,ixp)+pos_sphere(1)
@@ -932,12 +946,12 @@ module Particles
             do k=1,npar_loc
               rp2=2.
               do while (rp2>1.)
-                call random_number_wrapper(fp(k,ixp))
-                call random_number_wrapper(fp(k,iyp))
-                call random_number_wrapper(fp(k,izp))
-                fp(k,ixp)=(fp(k,ixp)-0.5)*2.*a_ellipsoid
-                fp(k,iyp)=(fp(k,iyp)-0.5)*2.*b_ellipsoid
-                fp(k,izp)=(fp(k,izp)-0.5)*2.*c_ellipsoid
+                call random_number_wrapper(r)
+                fp(k,ixp)=(r-0.5)*2.*a_ellipsoid
+                call random_number_wrapper(r)
+                fp(k,iyp)=(r-0.5)*2.*b_ellipsoid
+                call random_number_wrapper(r)
+                fp(k,izp)=(r-0.5)*2.*c_ellipsoid
                 rp2=fp(k,ixp)**2/a_ell2+fp(k,iyp)**2/b_ell2+fp(k,izp)**2/c_ell2
               enddo
               fp(k,ixp)=fp(k,ixp)+pos_ellipsoid(1)
@@ -952,7 +966,10 @@ module Particles
         case ('random-line-x')
           if (lroot) print*, 'init_particles: Random particle positions'
           do k=1,npar_loc
-            if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
+            if (nxgrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,ixp)=r
+            endif
           enddo
           if (nxgrid/=1) &
               fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
@@ -962,7 +979,10 @@ module Particles
         case ('random-line-y')
           if (lroot) print*, 'init_particles: Random particle positions'
           do k=1,npar_loc
-            if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+            if (nygrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,iyp)=r
+            endif
           enddo
           if (nygrid/=1) &
               fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
@@ -975,12 +995,19 @@ module Particles
           do k=1,npar_loc
             rp2=-1.0
             do while (rp2<rp_int**2)
-              if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
-              if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
-              if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
-              if (nxgrid/=1) fp(k,ixp)=xyz0(1)+fp(k,ixp)*Lxyz(1)
-              if (nygrid/=1) fp(k,iyp)=xyz0(2)+fp(k,iyp)*Lxyz(2)
-              if (nzgrid/=1) fp(k,izp)=xyz0(3)+fp(k,izp)*Lxyz(3)
+              if (nxgrid/=1) then
+                call random_number_wrapper(r)
+                fp(k,ixp)=xyz0(1)+r*Lxyz(1)
+              endif
+              if (nygrid/=1) then
+                call random_number_wrapper(r)
+                fp(k,iyp)=xyz0(2)+r*Lxyz(2)
+              endif
+              if (nzgrid/=1) then
+                call random_number_wrapper(r)
+                fp(k,izp)=xyz0(3)+r*Lxyz(3)
+              endif
+              ! PABourdin: *** FIXME serious issue with non-3D runs:
               rp2=fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2
             enddo
           enddo
@@ -989,9 +1016,18 @@ module Particles
           if (lroot) print*, 'init_particles: Random particle positions '// &
               'within a box'
           do k=1,npar_loc
-            if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
-            if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
-            if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
+            if (nxgrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,ixp)=r
+            endif
+            if (nygrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,iyp)=r
+            endif
+            if (nzgrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,izp)=r
+            endif
             if (lcylindrical_coords) then
               xx0=xp0+fp(k,ixp)*Lx0
               yy0=yp0+fp(k,iyp)*Ly0
@@ -1048,8 +1084,8 @@ module Particles
               if (nxgrid/=1) fp(k,ixp)=rad*cos(phi)
               if (nygrid/=1) fp(k,iyp)=rad*sin(phi)
               if (nzgrid/=1) then
-                call random_number_wrapper(fp(k,izp))
-                fp(k,izp)=xyz0_par(3)+fp(k,izp)*Lxyz_par(3)
+                call random_number_wrapper(r)
+                fp(k,izp)=xyz0_par(3)+r*Lxyz_par(3)
               endif
             elseif (lcylindrical_coords) then
               if (nxgrid/=1) fp(k,ixp)=rad
@@ -1058,8 +1094,8 @@ module Particles
                 fp(k,iyp) = xyz0_par(2)+phi*Lxyz_par(2)
               endif
               if (nzgrid/=1) then
-                call random_number_wrapper(fp(k,izp))
-                fp(k,izp)=xyz0_par(3)+fp(k,izp)*Lxyz_par(3)
+                call random_number_wrapper(r)
+                fp(k,izp)=xyz0_par(3)+r)*Lxyz_par(3)
               endif
             elseif (lspherical_coords) then
               if (nxgrid/=1) fp(k,ixp)=rad
@@ -1082,12 +1118,18 @@ module Particles
           do l=l1,l2
             do m=m1,m2
               do n=n1,n2
-                if (nxgrid/=1) call random_number_wrapper(px)
-                if (nygrid/=1) call random_number_wrapper(py)
-                if (nzgrid/=1) call random_number_wrapper(pz)
-                fp(k,ixp)=x(l)+(px-0.5)*dx
-                fp(k,iyp)=y(m)+(py-0.5)*dy
-                fp(k,izp)=z(n)+(pz-0.5)*dz
+                if (nxgrid/=1) then
+                  call random_number_wrapper(px)
+                  fp(k,ixp)=x(l)+(px-0.5)*dx
+                endif
+                if (nygrid/=1) then
+                  call random_number_wrapper(py)
+                  fp(k,iyp)=y(m)+(py-0.5)*dy
+                endif
+                if (nzgrid/=1) then
+                  call random_number_wrapper(pz)
+                  fp(k,izp)=z(n)+(pz-0.5)*dz
+                endif
                 k=k+1
                 if (k>npar_loc) exit k_loop
               enddo
@@ -1307,8 +1349,14 @@ module Particles
           if (lroot) print*, 'init_particles: Gaussian particle positions'
           do k=1,npar_loc
             do while (.true.)
-              if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
-              if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+              if (nxgrid/=1) then
+                call random_number_wrapper(r)
+                fp(k,ixp)=r
+              endif
+              if (nygrid/=1) then
+                call random_number_wrapper(r)
+                fp(k,iyp)=r
+              endif
               call random_number_wrapper(r)
               call random_number_wrapper(p)
               if (nprocz==2) then
@@ -1329,8 +1377,14 @@ module Particles
           if (lroot) print*, 'init_particles: Gaussian particle positions'
           do k=1,npar_loc
             do while (.true.)
-              if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
-              if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
+              if (nygrid/=1) then
+                call random_number_wrapper(r)
+                fp(k,iyp)=r
+              endif
+              if (nzgrid/=1) then
+                call random_number_wrapper(r)
+                fp(k,izp)=r
+              endif
               call random_number_wrapper(r)
               call random_number_wrapper(p)
               fp(k,ixp)= xp0*sqrt(-2*alog(r))*cos(2*pi*p)
@@ -1789,9 +1843,18 @@ module Particles
             case ('random-box')
 !
               do k=npar_loc_old+1,npar_loc
-                if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
-                if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
-                if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
+                if (nxgrid/=1) then
+                  call random_number_wrapper(r)
+                  fp(k,ixp)=r
+                endif
+                if (nygrid/=1) then
+                  call random_number_wrapper(r)
+                  fp(k,iyp)=r
+                endif
+                if (nzgrid/=1) then
+                  call random_number_wrapper(r)
+                  fp(k,izp)=r
+                endif
                 if (lcylindrical_coords) then
                   xx0=xp0+fp(k,ixp)*Lx0
                   yy0=yp0+fp(k,iyp)*Ly0
@@ -1899,7 +1962,6 @@ module Particles
 !  14-apr-06/anders: coded
 !
       use EquationOfState, only: beta_glnrho_global, cs0
-      use General, only: random_number_wrapper
 !
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2207,8 +2269,8 @@ module Particles
 !
       if (i0+1<=npar_loc) then
         do k=i0+1,npar_loc
-          call random_number_wrapper(fp(k,izp))
-          fp(k,izp)=xyz0(3)+fp(k,izp)*Lxyz(3)
+          call random_number_wrapper(r)
+          fp(k,izp)=xyz0(3)+r*Lxyz(3)
         enddo
         if (lroot) print '(A,i7,A)', 'constant_richardson: placed ', &
             npar_loc-i0, ' particles randomly.'
@@ -2217,8 +2279,14 @@ module Particles
 !  Random positions in x and y.
 !
       do k=1,npar_loc
-        if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
-        if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+        if (nxgrid/=1) then
+          call random_number_wrapper(r)
+          fp(k,ixp)=r
+        endif
+        if (nygrid/=1) then
+          call random_number_wrapper(r)
+          fp(k,iyp)=r
+        endif
       enddo
       if (nxgrid/=1) &
           fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
@@ -2470,8 +2538,6 @@ module Particles
 !  Evolution of dust particle position.
 !
 !  02-jan-05/anders: coded
-!
-      use General, only: random_number_wrapper, random_seed_wrapper
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
