@@ -423,11 +423,13 @@ module General
 !
 !  28.08.02/nils: Adapted from Numerical Recipes
 !
+      integer, intent(inout) :: dummy
+!
+      integer :: k
       integer, parameter :: ia=16807,im=2147483647,iq=127773,ir=2836, &
            mask=123459876
       real, parameter :: am=1./im
       real :: ran0
-      integer :: dummy,k
 !
       dummy=ieor(dummy,mask)
       k=dummy/iq
