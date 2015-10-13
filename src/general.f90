@@ -458,13 +458,13 @@ module General
       real :: mars_ran
       real, save :: am   ! will be constant on a given platform
       integer, parameter :: ia=16807, im=2147483647, iq=127773, ir=2836
-      integer :: k, init1=1812
+      integer :: k
+      integer, save :: init1=1812
       logical, save :: first_call=.true.
-!
-      if (present(init) .or. (rstate(1) == 0) .or. (rstate(2) <= 0)) then
 !
 !  Initialize.
 !
+      if (present(init) .or. (rstate(1) == 0) .or. (rstate(2) <= 0)) then
         if (present(init)) init1 = init
         am=nearest(1.0,-1.0)/im
         first_call=.false.
