@@ -448,31 +448,31 @@ module General
 !  Returns a uniform random number in (0, 1).
 !  Call with (INIT=ival) to initialize.
 !
-!  26-sep-02/wolf: Implemented, following `Numerical Recipes for F90'
+!  26-sep-02/wolf: Implemented, following 'Numerical Recipes for F90'
 !                  ran() routine
 !
       implicit none
 !
-      real :: mars_ran
-      real, save :: am=impossible    ! will be constant on a given platform
       integer, optional, intent(in) :: init
-      integer, parameter :: ia=16807,im=2147483647,iq=127773,ir=2836
-      integer :: k,init1=1812   ! default value
+!
+      real :: mars_ran
+      real, save :: am   ! will be constant on a given platform
+      integer, parameter :: ia=16807, im=2147483647, iq=127773, ir=2836
+      integer :: k, init1=1812
       logical, save :: first_call=.true.
 !
-!ajwm This doesn't appear to always get set!
-      if (first_call) then
-        am=nearest(1.0,-1.0)/im
-        first_call=.false.
-      endif
-      if (present(init) .or. rstate(1)==0 .or. rstate(2)<=0) then
+      if (present(init) .or. (rstate(1) == 0) .or. (rstate(2) <= 0)) then
 !
 !  Initialize.
 !
         if (present(init)) init1 = init
         am=nearest(1.0,-1.0)/im
+        first_call=.false.
         rstate(1)=ieor(777755555,abs(init1))
         rstate(2)=ior(ieor(888889999,abs(init1)),1)
+      elseif (first_call) then
+        am=nearest(1.0,-1.0)/im
+        first_call=.false.
       endif
 !
 !  Marsaglia shift sequence with period 2^32-1.
