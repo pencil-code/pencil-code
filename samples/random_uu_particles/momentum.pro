@@ -9,7 +9,7 @@ pc_read_ts, obj=ts
 
 rhopm = cst.rhop_swarm*pdim.npar/double(dim.nx*dim.ny*dim.nz)
 
-window, 11, title='Momentum conservation analysis', retain=2
+window, 12, title='Momentum conservation analysis', retain=2
 
 title = 'ruxm (green), vpxm (red), sum (white)'
 plot, ts.t, ts.ruxm, yrange=[-1.0,1.0]*5.0e-5, title=title, charsize=charsize, /nodata
