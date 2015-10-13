@@ -995,20 +995,22 @@ module Particles
           do k=1,npar_loc
             rp2=-1.0
             do while (rp2<rp_int**2)
+              rp2=0.0
               if (nxgrid/=1) then
                 call random_number_wrapper(r)
                 fp(k,ixp)=xyz0(1)+r*Lxyz(1)
+                rp2=rp2+fp(k,ixp)**2
               endif
               if (nygrid/=1) then
                 call random_number_wrapper(r)
                 fp(k,iyp)=xyz0(2)+r*Lxyz(2)
+                rp2=rp2+fp(k,iyp)**2
               endif
               if (nzgrid/=1) then
                 call random_number_wrapper(r)
                 fp(k,izp)=xyz0(3)+r*Lxyz(3)
+                rp2=rp2+fp(k,izp)**2
               endif
-              ! PABourdin: *** FIXME serious issue with non-3D runs:
-              rp2=fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2
             enddo
           enddo
 !
