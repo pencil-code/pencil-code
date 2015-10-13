@@ -36,6 +36,7 @@ my @config_path = (
             "$ENV{HOME}/.pencil/config",
             "$ENV{PENCIL_HOME}/config",
             "$ENV{PENCIL_HOME}/config/compilers",
+            "$ENV{PENCIL_HOME}/config/compilers/extensions",
            );
 
 # ---------------------------------------------------------------------- #
