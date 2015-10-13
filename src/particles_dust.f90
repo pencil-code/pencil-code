@@ -5508,22 +5508,14 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'vpymin',idiag_vpymin)
         call parse_name(iname,cname(iname),cform(iname),'vpzmin',idiag_vpzmin)
         call parse_name(iname,cname(iname),cform(iname),'vpmax',idiag_vpmax)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpxm', &
-            idiag_rhopvpxm)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpym', &
-            idiag_rhopvpym)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpzm', &
-            idiag_rhopvpzm)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpysm', &
-            idiag_rhopvpysm)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpxt', &
-            idiag_rhopvpxt)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpyt', &
-            idiag_rhopvpyt)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpzt', &
-            idiag_rhopvpzt)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpysm', &
-            idiag_rhopvpysm)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpxm',idiag_rhopvpxm)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpym',idiag_rhopvpym)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpzm',idiag_rhopvpzm)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpysm',idiag_rhopvpysm)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpxt',idiag_rhopvpxt)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpyt',idiag_rhopvpyt)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpzt',idiag_rhopvpzt)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpysm',idiag_rhopvpysm)
         call parse_name(iname,cname(iname),cform(iname),'lpxm',idiag_lpxm)
         call parse_name(iname,cname(iname),cform(iname),'lpym',idiag_lpym)
         call parse_name(iname,cname(iname),cform(iname),'lpzm',idiag_lpzm)
@@ -5557,19 +5549,13 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'dvpz2m',idiag_dvpz2m)
         call parse_name(iname,cname(iname),cform(iname),'dvpm',idiag_dvpm)
         call parse_name(iname,cname(iname),cform(iname),'dvpmax',idiag_dvpmax)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'dedragp',idiag_dedragp)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'decollp',idiag_decollp)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'epotpm',idiag_epotpm)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'npargone',idiag_npargone)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'vpyfull2m',idiag_vpyfull2m)
+        call parse_name(iname,cname(iname),cform(iname),'dedragp',idiag_dedragp)
+        call parse_name(iname,cname(iname),cform(iname),'decollp',idiag_decollp)
+        call parse_name(iname,cname(iname),cform(iname),'epotpm',idiag_epotpm)
+        call parse_name(iname,cname(iname),cform(iname),'npargone',idiag_npargone)
+        call parse_name(iname,cname(iname),cform(iname),'vpyfull2m',idiag_vpyfull2m)
         call parse_name(iname,cname(iname),cform(iname),'vprms',idiag_vprms)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'deshearbcsm',idiag_deshearbcsm)
+        call parse_name(iname,cname(iname),cform(iname),'deshearbcsm',idiag_deshearbcsm)
       enddo
 !
 !  Check for those quantities for which we want x-averages.
@@ -5596,10 +5582,8 @@ module Particles
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'epspmz',idiag_epspmz)
         do k=1,ninit
           srad=itoa(k)
-          call parse_name(inamez,cnamez(inamez),cformz(inamez),&
-              'npvzmz'//trim(srad),idiag_npvzmz(k))
-          call parse_name(inamez,cnamez(inamez),cformz(inamez),&
-              'nptz'//trim(srad),idiag_nptz(k))
+          call parse_name(inamez,cnamez(inamez),cformz(inamez),'npvzmz'//trim(srad),idiag_npvzmz(k))
+          call parse_name(inamez,cnamez(inamez),cformz(inamez),'nptz'//trim(srad),idiag_nptz(k))
         enddo
 
       enddo
