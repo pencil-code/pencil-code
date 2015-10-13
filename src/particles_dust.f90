@@ -744,9 +744,9 @@ module Particles
       use InitialCondition, only: initial_condition_xxp, initial_condition_vvp
       use Particles_diagnos_dv, only: repeated_init
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
-      integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension (mx,my,mz,mfarray), intent (out) :: f
+      real, dimension (mpar_loc,mparray), intent (out) :: fp
+      integer, dimension (mpar_loc,3), intent (out) :: ineargrid
 !
       real, dimension (3) :: uup, Lxyz_par, xyz0_par, xyz1_par
       real :: vpx_sum, vpy_sum, vpz_sum
@@ -756,8 +756,6 @@ module Particles
       integer :: l, j, k, ix0, iy0, iz0
       logical :: lequidistant=.false.
       real :: rpar_int,rpar_ext
-!
-      intent (out) :: f, fp, ineargrid
 !
 !  Use either a local random position or a global random position for certain
 !  initial conditions. The default is a local random position, but the equal
@@ -1097,7 +1095,7 @@ module Particles
               endif
               if (nzgrid/=1) then
                 call random_number_wrapper(r)
-                fp(k,izp)=xyz0_par(3)+r)*Lxyz_par(3)
+                fp(k,izp)=xyz0_par(3)+r*Lxyz_par(3)
               endif
             elseif (lspherical_coords) then
               if (nxgrid/=1) fp(k,ixp)=rad
@@ -1778,10 +1776,8 @@ module Particles
 !  14-oct-12/dhruba: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
-      integer, dimension (mpar_loc,3) :: ineargrid
-!
-      intent (inout) :: fp,ineargrid
+      real, dimension (mpar_loc,mparray), intent (inout) :: fp
+      integer, dimension (mpar_loc,3), intent (inout) :: ineargrid
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
@@ -1803,14 +1799,12 @@ module Particles
       use Particles_diagnos_state, only: insert_particles_diagnos_state
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
-      integer, dimension (mpar_loc,3) :: ineargrid
-      logical :: linsertmore=.true.
-      real :: xx0, yy0,r2
+      real, dimension (mpar_loc,mparray), intent (inout) :: fp
+      integer, dimension (mpar_loc,3), intent (inout) :: ineargrid
 !
+      logical, save :: linsertmore=.true.
+      real :: xx0, yy0, r2, r
       integer :: j, k, n_insert, npar_loc_old, iii
-!
-      intent (inout) :: fp,ineargrid
 !
 ! Stop call to this routine when maximum number of particles is reached!
 ! Since root inserts all new particles, make sure
@@ -2541,16 +2535,13 @@ module Particles
 !
 !  02-jan-05/anders: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, dimension (mx,my,mz,mvar), intent (inout) :: df
+      real, dimension (mpar_loc,mparray), intent (in) :: fp
+      real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
+      integer, dimension (mpar_loc,3), intent (in) :: ineargrid
 !
       logical :: lheader, lfirstcall=.true.
-!
-      intent (in) :: f, fp, ineargrid
-      intent (inout) :: df, dfp
 !
 !  Print out header information in first time step.
 !
@@ -2635,18 +2626,15 @@ module Particles
       use Diagnostics
       use EquationOfState, only: cs20
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, dimension (mx,my,mz,mvar), intent (inout) :: df
+      real, dimension (mpar_loc,mparray), intent (in) :: fp
+      real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
+      integer, dimension (mpar_loc,3), intent (in) :: ineargrid
 !
       real :: Omega2
       integer :: npar_found
       logical :: lheader, lfirstcall=.true.
-!
-      intent (in) :: f, fp, ineargrid
-      intent (inout) :: df, dfp
 !
 !  Print out header information in first time step.
 !
@@ -2928,19 +2916,16 @@ module Particles
 !
       use Diagnostics
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, dimension (mx,my,mz,mvar), intent (inout) :: df
+      real, dimension (mpar_loc,mparray), intent (in) :: fp
+      real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
+      integer, dimension (mpar_loc,3), intent (in) :: ineargrid
 !
       real, dimension(3) :: ggp
       real :: rr=0, vv=0, OO2
       integer :: k
       logical :: lheader, lfirstcall=.true.
-!
-      intent (in) :: f, fp, ineargrid
-      intent (inout) :: df, dfp
 !
       call keep_compiler_quiet(f,df)
 !
@@ -3179,12 +3164,12 @@ module Particles
       use SharedVariables, only: get_shared_variable
       use Viscosity, only: getnu
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (mx,my,mz,mvar), intent (inout) :: df
       type (pencil_case) :: p
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension (mpar_loc,mparray), intent (inout) :: fp
+      real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
+      integer, dimension (mpar_loc,3), intent (inout) :: ineargrid
 !
       real, dimension (nx) :: dt1_drag = 0.0, dt1_drag_gas, dt1_drag_dust
       real, dimension (nx) :: drag_heat
@@ -3206,8 +3191,6 @@ module Particles
       real, dimension(k1_imn(imn):k2_imn(imn)) :: nu
       character (len=labellen) :: ivis=''
       real :: nu_
-!
-      intent (inout) :: f, df, dfp, fp, ineargrid
 !
 !  Identify module.
 !
@@ -4169,19 +4152,17 @@ module Particles
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
       type (pencil_case) :: p
-      real :: tausp1_par, tmp
       integer, dimension (mpar_loc,3) :: ineargrid
       integer :: k
+      real :: tausp1_par
+      real, optional, dimension(3), intent(in) :: uup
       logical, optional :: nochange_opt
+      real, optional, intent(in) :: rep
+      real, optional :: stocunn
 !
-      real, optional, dimension(3) :: uup
-      real, optional :: rep, stocunn
-!
-      real :: tausg1_point,OO
+      real :: tausg1_point,OO, tmp
       integer :: ix0, iy0, iz0, inx0, jspec
       logical :: nochange=.true.
-!
-      intent(in) :: rep,uup
 !
       if (present(nochange_opt)) then
         if (nochange_opt) then
@@ -5025,12 +5006,11 @@ module Particles
 !
       use Viscosity, only: getnu
 !
-      real, dimension (mpar_loc,mparray) :: fp
-      real,dimension(k1_imn(imn):k2_imn(imn)) :: rep,nu
-      character (len=labellen) :: ivis=''
-      intent(in) :: fp
-      intent(inout) :: rep
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
+      real,dimension(k1_imn(imn):k2_imn(imn)), intent(inout) :: rep
 !
+      real,dimension(k1_imn(imn):k2_imn(imn)) :: nu
+      character (len=labellen) :: ivis=''
       real :: nu_
       integer :: k
 !
@@ -5097,9 +5077,8 @@ module Particles
     subroutine calc_added_mass_beta(fp,k,added_mass_beta)
 !
       real, dimension (mpar_loc,mparray), intent(in) :: fp
-      real, intent(out) :: added_mass_beta
-!
       integer, intent(in) :: k
+      real, intent(out) :: added_mass_beta
 !
 !  beta for added mass according to beta=3rho_fluid/(2rho_part+rho_fluid)
 !  problem: we would have to calculate beta every time for every particle
@@ -5116,14 +5095,11 @@ module Particles
       use Viscosity, only: getnu
       use Particles_radius
 !
-      real, dimension (mpar_loc,mparray) :: fp
-      integer :: k
-      real :: tausp1_par
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
+      integer, intent(in) :: k
+      real, intent(out) :: tausp1_par
+!
       character (len=labellen) :: ivis=''
-!
-      intent(in) :: fp,k
-      intent(out) :: tausp1_par
-!
       real :: dia,nu,nu_
 !
 !  Find the kinematic viscosity
@@ -5171,14 +5147,12 @@ module Particles
       use Viscosity, only: getnu
       use Particles_radius
 !
-      real, dimension (mpar_loc,mparray) :: fp
-      integer :: k
-      real :: rep, stocunn, tausp1_par
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
+      integer, intent(in) :: k
+      real, intent(in) :: rep, stocunn
+      real, intent(out) :: tausp1_par
+!
       character (len=labellen) :: ivis=''
-!
-      intent(in) :: fp,k,rep,stocunn
-      intent(out) :: tausp1_par
-!
       real :: cdrag,dia,nu,nu_
 !
 !  Find the kinematic viscosity.
@@ -5245,16 +5219,14 @@ module Particles
       use General, only: normal_deviate
       use Viscosity, only: getnu
 !
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension(3), intent(out) :: force
-      character (len=labellen) :: ivis=''
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
+      integer, intent(in) :: k
       integer, dimension(3) :: ineark
-      integer :: k
-      real :: stocunn, rhop_swarm_par
+      real :: stocunn
+      real, dimension(3), intent(out) :: force
 !
-      intent(in) :: fp,k
-!
-      real :: Szero,dia,TT,nu,nu_
+      character (len=labellen) :: ivis=''
+      real :: Szero,dia,TT,rhop_swarm_par,nu,nu_
 !
 !  Find kinematic viscosity
 !
@@ -5313,15 +5285,15 @@ module Particles
 !
       use Viscosity, only: getnu
 !
-      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
+      integer, intent(in) :: k
+      integer, dimension(3) :: ineark
       real, dimension(3), intent(out) :: force
+!
       real, dimension(3) :: temp_grad
       real TT,mu,nu_,Kn,phi_therm,mass_p
       real Ktc,Ce,Cm,Cint
       character (len=labellen) :: ivis=''
-      integer, dimension(3) :: ineark
-      integer :: k
-      intent(in) :: fp,k
 !
       call keep_compiler_quiet(ineark)
 !
