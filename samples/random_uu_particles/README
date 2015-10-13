@@ -20,6 +20,9 @@ Comments:
     For energy conservation, try:
     IDL> .r energy
 
+    For analysis of the distribution of particles, try:
+    IDL> .r distribution
+
     The slight non-conservation is probably due to numerical viscosity, since
     the drag force scheme is constructed to conserve momentum.
 References:
