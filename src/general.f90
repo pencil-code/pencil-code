@@ -277,7 +277,6 @@ module General
           call random_number(a)
         case ('min_std')
           a=ran0(rstate(1))
-          enddo
         case ('nr_f90')
           a=mars_ran()
         case default
