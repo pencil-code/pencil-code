@@ -316,9 +316,19 @@ sub mpi_run_cmd {
         print "Running under MPI\n" unless ($quiet);
 
         my $mpiexec = $runtime_params{'mpiexec'};
+        if ($mpiexec) {
+            if (!`which $mpiexec`) {
+                warn "Can not find '".$mpiexec."', trying default setting...\n";
+                $mpiexec = '';
+            }
+        }
         if (!$mpiexec) {
-          $mpiexec = 'mpirun';
-          warn "No mpiexec setting. Using '".$mpiexec."' as default.\n";
+            $mpiexec = 'mpiexec';
+            warn "No valid mpiexec setting. Using '".$mpiexec."' as default.\n";
+            if (!`which $mpiexec`) {
+                warn "Can not find '".$mpiexec."', switching back to older 'mpirun'.\n";
+                $mpiexec = 'mpirun';
+            }
         }
         my $mpiexec_opts = $runtime_params{'mpiexec_opts'} || '';
         my $mpiexec_opts2 = $runtime_params{'mpiexec_opts2'} || '';
