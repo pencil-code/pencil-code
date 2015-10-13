@@ -85,7 +85,7 @@ echo "$ncpus CPUs"
 set start_x = "src/start.x"
 set run_x   = "src/run.x"
 set x_ops = ""         # arguments to both start.x and run.x
-set mpirun = 'mpirun'
+set mpirun = ''
 
 # Check if experimental copy-snapshots is used
 set copysnapshots="copy-snapshots"
@@ -1798,8 +1798,6 @@ else if ($hn =~ fred-asus) then
 #-------------------------------------------------
 else
   echo "Generic setup; hostname is <$hn>."
-  if ($mpi) echo "Use mpirun"
-  set mpirun = mpirun
   #set nprocpernode = 16
   #setenv SCRATCH_DIR $SNIC_TMP
   #set local_disc = 1
@@ -1814,6 +1812,20 @@ endif
 
 ## MPI specific setup
 if ($mpi) then
+  # Check mpiexec setting
+  if ($mpirun == '') then
+    echo "No valid 'mpirun' setting, use default 'mpiexec'."
+    set mpirun = 'mpiexec' # switch to default
+  endif
+  if (($mpirun != 'mpiexec') && (`which $mpirun` == '')) then
+    echo "Can not find '$mpirun', switch back to default 'mpiexec'."
+    set mpirun = 'mpiexec' # switch to default
+  endif
+  if (`which $mpirun` == '') then
+    echo "Can not find '$mpirun', switch back to older default 'mpirun'."
+    set mpirun = 'mpirun' # back to older default
+  endif
+
   # Some mpiruns need special options
   if ("$mpirun" =~ *mpirun*) then
     set npops = "-np $ncpus"
