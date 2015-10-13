@@ -15,31 +15,10 @@ Comments:
     particle collisions.
 
     For momentum conservation, try:
-    IDL> pc_read_const, obj=cst
-    IDL> pc_read_dim, obj=dim
-    IDL> pc_read_pdim, obj=pdim
-    IDL> rhopm=cst.rhop_tilde*pdim.npar/double(dim.nx*dim.ny*dim.nz)
-    IDL> pc_read_ts, obj=ts
-    IDL> plot, ts.t, ts.ruxm, yrange=[-1.0,1.0]*5.0e-5, /nodata
-    IDL> oplot, ts.t, ts.ruxm, col=50
-    IDL> oplot, ts.t, ts.vpxm*rhopm, col=100
-    IDL> oplot, ts.t, ts.ruxm+ts.vpxm*rhopm
-    IDL> plot, ts.t, ts.ruym, yrange=[-1.0,1.0]*2.0e-4, /nodata
-    IDL> oplot, ts.t, ts.ruym, col=50
-    IDL> oplot, ts.t, ts.vpym*rhopm, col=100
-    IDL> oplot, ts.t, ts.ruym+ts.vpym*rhopm
-    IDL> plot, ts.t, ts.ruzm, yrange=[-1.0,1.0]*1.0e-4, /nodata
-    IDL> oplot, ts.t, ts.ruzm, col=50
-    IDL> oplot, ts.t, ts.vpzm, col=100
-    IDL> oplot, ts.t, ts.ruzm+ts.vpzm*rhopm
+    IDL> .r momentum
 
     For energy conservation, try:
-    IDL> pc_read_ts, obj=ts
-    IDL> plot, ts.t, ts.ethm, yrange=[-1.0,1.0]*2.0e-3, /nodata
-    IDL> oplot, ts.t, ts.ethm-0.9, col=50
-    IDL> oplot, ts.t, ts.ekin, col=100
-    IDL> oplot, ts.t, ts.ekinp, col=150
-    IDL> oplot, ts.t, ts.ethm+ts.ekin+ts.ekinp-0.9
+    IDL> .r energy
 
     The slight non-conservation is probably due to numerical viscosity, since
     the drag force scheme is constructed to conserve momentum.
