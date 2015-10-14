@@ -394,6 +394,7 @@ module Energy
       use FArrayManager
       use Gravity, only: gravz, g0, compute_gravity_star
       use Initcond
+      use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable, get_shared_variable
       use Sub, only: blob, read_zprof, write_prof
 !
@@ -792,9 +793,14 @@ module Energy
         case ('shock')
           lheatc_shock=.true.
           if (lroot) print*, 'heat conduction: shock'
+          if (.not. lshock) &
+           call stop_it('initialize_energy: shock diffusity'// &
+                           ' but module setting SHOCK=noshock')
          case ('chi-shock-profr')
           lheatc_shock_profr=.true.
-          if (lroot) print*, 'heat conduction: shock with a radial profile'
+          if (lroot) print*, 'initialize_energy: shock with a radial profile'
+          call stop_it('heat conduction: shock diffusity'// &
+                           ' but module setting SHOCK=noshock')
         case ('hyper3_ss','hyper3')
           lheatc_hyper3ss=.true.
           if (lroot) print*, 'heat conduction: hyperdiffusivity of ss'
