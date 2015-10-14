@@ -1283,14 +1283,11 @@ module Particles
         case ('shift')
           if (lroot) print*, 'init_particles: shift particle positions'
           if (.not. lequidistant) then
-            if (lroot) print*, 'init_particles: must place particles equidistantly before shifting!'
-            call fatal_error('init_particles','')
+            call fatal_error('init_particles','must place particles equidistantly before shifting!')
           endif
           k2_xxp=kx_xxp**2+ky_xxp**2+kz_xxp**2
           if (k2_xxp==0.0) then
-            if (lroot) print*, &
-                'init_particles: kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!'
-            call fatal_error('init_particles','')
+            call fatal_error('init_particles','kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!')
           endif
           do k=1,npar_loc
             fp(k,ixp) = fp(k,ixp) - kx_xxp/k2_xxp*amplxxp* &
@@ -1306,15 +1303,11 @@ module Particles
         case ('cosxcosz')
           if (lroot) print*, 'init_particles: shift particle positions'
           if (.not. lequidistant) then
-            if (lroot) print*, 'init_particles: '// &
-            'must place particles equidistantly before shifting!'
-            call fatal_error('init_particles','')
+            call fatal_error('init_particles','must place particles equidistantly before shifting!')
           endif
           k2_xxp=kx_xxp**2+kz_xxp**2
           if (k2_xxp==0.0) then
-            if (lroot) print*, &
-                'init_particles: kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!'
-            call fatal_error('init_particles','')
+            call fatal_error('init_particles','kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!')
           endif
           do k=1,npar_loc
           fp(k,ixp) = fp(k,ixp) - kx_xxp/k2_xxp*amplxxp* &
@@ -1328,15 +1321,11 @@ module Particles
         case ('sinxsinz')
           if (lroot) print*, 'init_particles: shift particle positions'
           if (.not. lequidistant) then
-            if (lroot) print*, 'init_particles: '// &
-            'must place particles equidistantly before shifting!'
-            call fatal_error('init_particles','')
+            call fatal_error('init_particles','must place particles equidistantly before shifting!')
           endif
           k2_xxp=kx_xxp**2+kz_xxp**2
           if (k2_xxp==0.0) then
-            if (lroot) print*, &
-                'init_particles: kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!'
-            call fatal_error('init_particles','')
+            call fatal_error('init_particles','kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!')
           endif
           do k=1,npar_loc
           fp(k,ixp) = fp(k,ixp) + kx_xxp/k2_xxp*amplxxp* &
@@ -1442,10 +1431,7 @@ module Particles
           call constant_richardson(fp,f)
 !
         case default
-          if (lroot) &
-              print*, 'init_particles: No such such value for initxxp: ', &
-              trim(initxxp(j))
-          call fatal_error('init_particles','')
+          call fatal_error('init_particles','Unknown value initxxp="'//trim(initxxp(j))//'"')
 !
         endselect
 !
@@ -1744,10 +1730,7 @@ module Particles
 !
 !
         case default
-          if (lroot) &
-              print*, 'init_particles: No such such value for initvvp: ', &
-              trim(initvvp(j))
-          call fatal_error('','')
+          call fatal_error('init_particles','Unknown value initvvp="'//trim(initvvp(j))//'"')
 !
         endselect
 !
@@ -1864,12 +1847,10 @@ module Particles
               enddo
 !
             case ('nothing')
-              if (lroot .and. j==1) print*, 'init_particles: nothing'
+              if (j==1) print*, 'init_particles: nothing'
 !
             case default
-              print*, 'insert_particles: No such such value for initxxp: ', &
-                  trim(initxxp(j))
-              call fatal_error('init_particles','', .true.)
+              call fatal_error_local('init_particles','Unknown value initxxp="'//trim(initxxp(j))//'"')
 !
             endselect
           enddo
@@ -1897,10 +1878,8 @@ module Particles
               endif
 !
             case default
-              print*, 'insert_particles: No such such value for initvvp: ', &
-                  trim(initvvp(j))
-              call fatal_error('','', .true.)
-              !
+              call fatal_error_local('init_particles','Unknown value initvvp="'//trim(initvvp(j))//'"')
+!
             endselect
 !
           enddo ! do j=1,ninit
@@ -1967,13 +1946,9 @@ module Particles
 !
       if ( sqrt(npar/real(nwgrid))/=int(sqrt(npar/real(nwgrid))) .or. &
            sqrt(npar_loc/real(nw))/=int(sqrt(npar_loc/real(nw))) ) then
-        if (lroot) then
-          print*, 'streaming_coldstart: the number of particles per grid must'
-          print*, '                     be a quadratic number!'
-        endif
-        print*, '                     iproc, npar/nw, npar_loc/nwgrid=', &
+        print*, '   iproc, npar/nw, npar_loc/nwgrid=', &
             iproc, npar/real(nwgrid), npar_loc/real(nw)
-        call fatal_error('streaming_coldstart','')
+        call fatal_error('streaming_coldstart','the number of particles per grid must be a quadratic number!')
       endif
 !
 !  Define a few disc parameters.
@@ -2653,9 +2628,8 @@ module Particles
             dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - &
                 Omega2*fp(1:npar_loc,ivpx)
           else
-            print*,'dvvp_dt: Coriolis force on the particles is '
-            print*,'not yet implemented for spherical coordinates.'
-            call fatal_error('dvvp_dt','', .true.)
+            call fatal_error('dvvp_dt', &
+                'Coriolis force on the particles is not yet implemented for spherical coordinates.')
           endif
         endif
 !
@@ -2675,9 +2649,8 @@ module Particles
             dfp(1:npar_loc,ivpx) = &
                 dfp(1:npar_loc,ivpx) + Omega**2*fp(1:npar_loc,ixp)
           else
-            print*,'dvvp_dt: Centrifugal force on the particles is '
-            print*,'not implemented for spherical coordinates.'
-            call fatal_error('dvvp_dt','', .true.)
+            call fatal_error('dvvp_dt', &
+                'Centrifugal force on the particles is not implemented for spherical coordinates.')
           endif
         endif
 !
@@ -3214,7 +3187,7 @@ module Particles
             call fatal_error('dvvp_dt_pencil','unable to allocate sufficient memory for rep', .true.)
           endif
           if (.not. interp%luu) then
-            call fatal_error('dvvp_dt_pencil','you must set lnostore_uu=F when rep is to be calculated', .true.)
+            call fatal_error_local('dvvp_dt_pencil','you must set lnostore_uu=F when rep is to be calculated')
           endif
 !
           call calc_pencil_rep(fp,rep)
@@ -3266,7 +3239,7 @@ module Particles
               elseif (ivis=='mu-therm') then
                 nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))/interp_rho(k1_imn(imn):k2_imn(imn))
               else
-                call fatal_error('dvvp_dt_pencil','No such ivis!', .true.)
+                call fatal_error('dvvp_dt_pencil','No such ivis!')
               endif
             endif
 !
@@ -4240,8 +4213,7 @@ module Particles
 !  when Sigmag is given in g/cm^2.
 !
         if (iap==0) then
-          if (lroot) print*, 'get_frictiontime: need particle radius as dynamical variable for Stokes law'
-          call fatal_error('get_frictiontime','')
+          call fatal_error('get_frictiontime','need particle radius as dynamical variable for Stokes law.')
         endif
         if (fp(k,iap)<2.25*mean_free_path_gas) then
           tausp1_par = 1/(fp(k,iap)*rhopmat)
@@ -4465,9 +4437,8 @@ module Particles
 !  Assume that (mu/sigma_coll) is the input parameter mean_free_path_gas
 !
         if (mean_free_path_gas==0) then
-          print*,'You want to use Stokes drag but you forgot to set '//&
-               'mean_free_path_gas in the .in files. Stop and check.'
-          call fatal_error("calc_draglaw_parameters","")
+          call fatal_error("calc_draglaw_parameters","You want to use Stokes drag"// &
+              "but you forgot to set 'mean_free_path_gas' in the *.in files.")
         endif
 !
         if (nzgrid==1) then
@@ -4514,8 +4485,7 @@ module Particles
         elseif (reynolds>1500) then
           kd=0.11*reynolds
         else
-          call fatal_error("calc_draglaw_parameters", &
-              "something went pretty wrong", .true.)
+          call fatal_error_local("calc_draglaw_parameters", "'reynolds' seems to be NaN!")
           kd=0.
         endif
 !
@@ -5030,12 +5000,10 @@ module Particles
       endif
 !
       if (.not.lparticles_radius) then
-        print*,'calc_pencil_rep: particle_radius module needs to be '// &
-          'enabled to calculate the particles Reynolds numbers.'
-        call fatal_error('calc_pencil_rep','')
+        call fatal_error('calc_pencil_rep', &
+            'particle_radius module needs to be enabled to calculate the particles Reynolds numbers.')
       elseif (maxval(nu)==0.0) then
-        print*,'calc_pencil_rep: nu (kinematic visc.) must be non-zero!'
-        call fatal_error('calc_pencil_rep','')
+        call fatal_error('calc_pencil_rep','nu (kinematic visc.) must be non-zero!')
       endif
 !
       do k=k1_imn(imn),k2_imn(imn)
@@ -5122,9 +5090,8 @@ module Particles
 !  Particle diameter
 !
       if (.not.lparticles_radius) then
-        print*,'calc_draglaw_purestokes: need particles_radius module to '// &
-            'calculate the relaxation time!'
-        call fatal_error('calc_draglaw_purestokes','')
+        call fatal_error('calc_draglaw_purestokes', &
+            'need particles_radius module to calculate the relaxation time!')
       endif
 !
       dia=2.0*fp(k,iap)
@@ -5183,9 +5150,8 @@ module Particles
 !  Particle diameter
 !
       if (.not.lparticles_radius) then
-        print*,'calc_draglaw_steadystate: need particles_radius module to '// &
-            'calculate the relaxation time!'
-        call fatal_error('calc_draglaw_steadystate','')
+        call fatal_error('calc_draglaw_steadystate', &
+            'need particles_radius module to calculate the relaxation time!')
       endif
 !
       dia=2.0*fp(k,iap)
