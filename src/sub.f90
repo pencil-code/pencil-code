@@ -100,7 +100,7 @@ module Sub
   public :: finalize_aver
   public :: fseek_pos, parallel_file_exists, parallel_count_lines, read_namelist
   public :: meanyz
-  public :: calc_diffusive_flux, slope_limiter, diff_flux
+  public :: calc_all_diff_fluxes
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -1368,6 +1368,9 @@ module Sub
 !  13-dec-01/nils: coded
 !  16-jul-02/nils: adapted from pencil_mpi
 !  31-aug-07/wlad: adapted for cylindrical and spherical coords
+!  28-sep-15/Joern+MR: adapted to use for slope-limited diffusive 
+!                      flux given on a staggered grid. 
+!  14-oct-15/MR: corrected bug in call of der_4th_stag
 !
       use Deriv, only: der
       use General, only: loptest, ranges_dimensional
@@ -1381,8 +1384,8 @@ module Sub
       intent(out) :: g
 !
       integer :: k1,i
-      integer, dimension (dimensionality) :: jrange
-      real, dimension (nx) :: tmp
+      integer, dimension(dimensionality) :: jrange
+      real, dimension(nx) :: tmp
 !
       k1=k-1
 !
@@ -1390,7 +1393,7 @@ module Sub
         call ranges_dimensional(jrange)
         g=0
         do i=1,dimensionality
-          call der_4th_stag(f,k1+i,tmp,jrange(i))
+          call der_4th_stag(f,k1+jrange(i),tmp,jrange(i))
           g=g+tmp
         enddo
       else
@@ -1442,6 +1445,13 @@ module Sub
     endsubroutine der_2nd
 !***********************************************************************
     subroutine der_4th_stag(f,k,df,j)
+!
+!  Calculates 1st order derivative by a 4th order difference scheme from
+!  data given on a grid shifted by half a grid step w.r.t. the looked at point.
+!  Only valid for equidistant grids!
+!
+!  30-sep-15/MR: coded
+!
 
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(out) :: df
@@ -7002,9 +7012,12 @@ nameloop: do
 !***********************************************************************
     subroutine calc_diffusive_flux(diffs,c_char,islope_limiter,h_slope_limited,flux)
 !
+!  Calculates diffusive flux from variable differences diffs acc. to Eqs. (6)-(10) in Rempel (2014).
+!  c_char is vector of characteristic velocities.
+!
 !  23-sep-15/MR,joern,fred,petri: coded
 !
-      real, dimension(:),intent(in ):: diffs,c_char
+      real, dimension(:),intent(in) :: diffs,c_char
       real,              intent(in) :: h_slope_limited
       character(LEN=*),  intent(in) :: islope_limiter
       real, dimension(:),intent(out):: flux
@@ -7028,10 +7041,14 @@ endif
     endsubroutine calc_diffusive_flux
 !***********************************************************************
     elemental subroutine slope_limiter(diff_right,diff_left,limited,type)
-
-      real, intent(OUT):: limited
-      real, intent(IN) :: diff_left, diff_right
-
+!
+!  Returns limited slope in parameter limited, see Rempel (2014). 
+!  Presently only limiter minmod is implemented. 
+!
+!  25-sep-15/MR,joern: coded
+!
+      real,             intent(IN) :: diff_left, diff_right
+      real,             intent(OUT):: limited
       character(LEN=*), intent(IN) :: type
 
       select case (type)
@@ -7040,14 +7057,22 @@ endif
                     0.5*abs(diff_right+diff_left))
 
       case ('superbee')
+        limited=0.
       case ('')
+        limited=0.
       case default
+        limited=0.
       end select
     
     endsubroutine slope_limiter
 !***********************************************************************
     elemental subroutine diff_flux(h, diff_right, diff_lr, phi)
-    
+!
+!  Calculates diffusive flux for one coordinate direction from u_i+1-u_i and u_r-u_l 
+!  and returns it in parameter phi, see Rempel (2014). 
+!
+!  25-sep-15/MR,joern: coded
+!
       real, intent(IN)  :: h, diff_lr, diff_right
       real, intent(OUT) :: phi
 
@@ -7058,5 +7083,61 @@ endif
       endif
 
     endsubroutine diff_flux
+!***********************************************************************
+    subroutine calc_all_diff_fluxes(f,k,islope_limiter,h_slope_limited)
+!
+!  Calculates all <=3 components of the diffusive flux according to dimensionality. 
+!
+!  8-oct-15/MR: carved out from viscosity
+!
+      real, dimension (:,:,:,:), intent(INOUT):: f
+      integer,                   intent(IN)   :: k
+      character(LEN=*),          intent(IN)   :: islope_limiter
+      real,                      intent(IN)   :: h_slope_limited
+             
+      integer :: iff, nn, mm, ll
+      real, dimension(mx-1) :: tmpx
+      real, dimension(my-1) :: tmpy
+      real, dimension(mz-1) :: tmpz
+
+      !f(:,:,:,iFF_diff1:iFF_diff2)=0.
+
+      iff=iFF_diff
+
+      if (nxgrid>1) then
+        do nn=n1,n2; do mm=m1,m2
+          tmpx = f(2:,mm,nn,k)-f(:mx-1,mm,nn,k)
+if (notanumber(tmpx)) print*, 'TMPX:k,mm,nn=', k,mm,nn
+!if (j==1) print*, 'TMPX:', tmpx
+          call calc_diffusive_flux(tmpx,f(2:mx-2,mm,nn,iFF_char_c),islope_limiter,h_slope_limited,f(2:mx-2,mm,nn,iff))
+if (notanumber(f(2:mx-2,mm,nn,iff))) print*, 'DIFFX:k,mm,nn=', k,mm,nn
+        enddo; enddo
+        iff=iff+1
+      endif
+
+      if (nygrid>1) then
+        do nn=n1,n2; do ll=l1,l2
+          tmpy = f(ll,2:,nn,k)-f(ll,:my-1,nn,k)
+if (notanumber(tmpy)) print*, 'TMPY:k,mm,nn=', k,mm,nn
+!if (j==2) print*, 'UY, iproc=:', iproc    !, '1-5,my-5:my-1'
+!if (j==2) print'(16(e13.6,1x))', f(ll,:,nn,iuu+j-1)
+!!if (j==2) print*, tmpy(47:56)
+!!if (j==2) print*, tmpy(my-5:)
+          call calc_diffusive_flux(tmpy,f(ll,2:my-2,nn,iFF_char_c),islope_limiter,h_slope_limited,f(ll,2:my-2,nn,iff))
+if (notanumber(f(ll,2:my-2,nn,iff))) print*, 'DIFFY:k,ll,mm=', k,ll,mm
+        enddo; enddo
+        iff=iff+1
+      endif
+
+      if (nzgrid>1) then
+        do mm=m1,m2; do ll=l1,l2
+          tmpz = f(ll,mm,2:,k)-f(ll,mm,:mz-1,k)
+if (notanumber(tmpz)) print*, 'TMPZ:k,ll,mm=', k,ll,mm
+          call calc_diffusive_flux(tmpz,f(ll,mm,2:mz-2,iFF_char_c),islope_limiter,h_slope_limited,f(ll,mm,2:mz-2,iff))
+if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
+        enddo; enddo
+      endif
+!
+    endsubroutine calc_all_diff_fluxes
 !***********************************************************************
 endmodule Sub
