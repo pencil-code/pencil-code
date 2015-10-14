@@ -891,11 +891,11 @@ module Particles
                 'radius needs to be larger than zero')
           endif
           if (-rad_sphere+pos_sphere(1)<xyz0(1) .or. &
-              rad_sphere+pos_sphere(1)>xyz1(1) .or. &
+              +rad_sphere+pos_sphere(1)>xyz1(1) .or. &
               -rad_sphere+pos_sphere(2)<xyz0(2) .or. &
-              rad_sphere+pos_sphere(2)>xyz1(2) .or. &
+              +rad_sphere+pos_sphere(2)>xyz1(2) .or. &
               -rad_sphere+pos_sphere(3)<xyz0(3) .or. &
-              rad_sphere+pos_sphere(3)>xyz1(3)) then
+              +rad_sphere+pos_sphere(3)>xyz1(3)) then
             call fatal_error('init_particles','random-sphere '// &
                 'sphere needs to fit in the box')
           endif
@@ -929,11 +929,11 @@ module Particles
                 'all semi-principal axes need to be larger than zero')
           endif
           if (-a_ellipsoid+pos_ellipsoid(1)<xyz0(1) .or. &
-              a_ellipsoid+pos_ellipsoid(1)>xyz1(1) .or. &
+              +a_ellipsoid+pos_ellipsoid(1)>xyz1(1) .or. &
               -b_ellipsoid+pos_ellipsoid(2)<xyz0(2) .or. &
-              b_ellipsoid+pos_ellipsoid(2)>xyz1(2) .or. &
+              +b_ellipsoid+pos_ellipsoid(2)>xyz1(2) .or. &
               -c_ellipsoid+pos_ellipsoid(3)<xyz0(3) .or. &
-              c_ellipsoid+pos_ellipsoid(3)>xyz1(3)) then
+              +c_ellipsoid+pos_ellipsoid(3)>xyz1(3)) then
             call fatal_error('init_particles','random-ellipsoid '// &
                 'ellipsoid needs to fit in the box')
           endif
@@ -1365,7 +1365,7 @@ module Particles
               else
                 fp(k,izp)= zp0*sqrt(-2*alog(r))*cos(2*pi*p)
               endif
-              if ((fp(k,izp)>=xyz0(3)).and.(fp(k,izp)<=xyz1(3))) exit
+              if ((fp(k,izp)>=xyz0(3)) .and. (fp(k,izp)<=xyz1(3))) exit
             enddo
           enddo
           if (nxgrid/=1) &
@@ -1497,10 +1497,8 @@ module Particles
           if (lroot) &
               print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
           if (lcylindrical_coords) then
-            fp(1:npar_loc,ivpx)&
-                =vpx0*cos(fp(k,iyp))+vpy0*sin(fp(k,iyp))
-            fp(1:npar_loc,ivpy)&
-                =vpy0*cos(fp(k,iyp))-vpx0*sin(fp(k,iyp))
+            fp(1:npar_loc,ivpx)=vpx0*cos(fp(k,iyp))+vpy0*sin(fp(k,iyp))
+            fp(1:npar_loc,ivpy)=vpy0*cos(fp(k,iyp))-vpx0*sin(fp(k,iyp))
             fp(1:npar_loc,ivpz)=vpz0
           else
             fp(1:npar_loc,ivpx)=vpx0
