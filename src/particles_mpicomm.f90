@@ -524,7 +524,7 @@ module Particles_mpicomm
                 lredo=.true.
                 exit
               else
-                call fatal_error('migrate_particles','')
+                call fatal_error('migrate_particles','too many particles migrating',.true.)
               endif
             endif
             fp_mig(nmig_leave_total,:)=fp(k,:)
