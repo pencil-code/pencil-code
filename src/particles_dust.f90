@@ -1869,7 +1869,7 @@ module Particles
             case default
               print*, 'insert_particles: No such such value for initxxp: ', &
                   trim(initxxp(j))
-              call fatal_error('init_particles','')
+              call fatal_error('init_particles','', .true.)
 !
             endselect
           enddo
@@ -1899,7 +1899,7 @@ module Particles
             case default
               print*, 'insert_particles: No such such value for initvvp: ', &
                   trim(initvvp(j))
-              call fatal_error('','')
+              call fatal_error('','', .true.)
               !
             endselect
 !
@@ -2655,7 +2655,7 @@ module Particles
           else
             print*,'dvvp_dt: Coriolis force on the particles is '
             print*,'not yet implemented for spherical coordinates.'
-            call fatal_error('dvvp_dt','')
+            call fatal_error('dvvp_dt','', .true.)
           endif
         endif
 !
@@ -2677,7 +2677,7 @@ module Particles
           else
             print*,'dvvp_dt: Centrifugal force on the particles is '
             print*,'not implemented for spherical coordinates.'
-            call fatal_error('dvvp_dt','')
+            call fatal_error('dvvp_dt','', .true.)
           endif
         endif
 !
@@ -3211,10 +3211,10 @@ module Particles
           allocate(rep(k1_imn(imn):k2_imn(imn)))
 !
           if (.not.allocated(rep)) then
-            call fatal_error('dvvp_dt_pencil','unable to allocate sufficient memory for rep')
+            call fatal_error('dvvp_dt_pencil','unable to allocate sufficient memory for rep', .true.)
           endif
           if (.not. interp%luu) then
-            call fatal_error('dvvp_dt_pencil','you must set lnostore_uu=F when rep is to be calculated')
+            call fatal_error('dvvp_dt_pencil','you must set lnostore_uu=F when rep is to be calculated', .true.)
           endif
 !
           call calc_pencil_rep(fp,rep)
@@ -3226,7 +3226,7 @@ module Particles
           if (ldraglaw_steadystate.or.lbrownian_forces) then
             allocate(stocunn(k1_imn(imn):k2_imn(imn)))
             if (.not.allocated(stocunn)) then
-              call fatal_error('dvvp_dt_pencil','unable to allocate sufficient memory for stocunn')
+              call fatal_error('dvvp_dt_pencil','unable to allocate sufficient memory for stocunn', .true.)
             endif
 !
             call calc_stokes_cunningham(fp,stocunn)
@@ -3266,7 +3266,7 @@ module Particles
               elseif (ivis=='mu-therm') then
                 nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))/interp_rho(k1_imn(imn):k2_imn(imn))
               else
-                call fatal_error('dvvp_dt_pencil','No such ivis!')
+                call fatal_error('dvvp_dt_pencil','No such ivis!', .true.)
               endif
             endif
 !
@@ -3842,7 +3842,7 @@ module Particles
         if (idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. &
             idiag_dvpm  /=0 .or. idiag_dvpmax/=0) &
             call calculate_rms_speed(fp,ineargrid,p)
-        if (idiag_dtdragp/=0.and.(lfirst.and.ldt))  &
+        if (idiag_dtdragp/=0.and.(lfirst.and.ldt)) &
             call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
       endif
 !
@@ -4206,8 +4206,7 @@ module Particles
             elseif (lspherical_coords) then
               OO=(fp(k,ixp)*sin(fp(k,iyp)))**(-1.5)
             else
-              call fatal_error("get_frictiontime", &
-                  "no valid coord system")
+              call fatal_error("get_frictiontime", "no valid coord system")
               OO=0.
             endif
             tausp1_par=tmp*OO
@@ -4516,7 +4515,7 @@ module Particles
           kd=0.11*reynolds
         else
           call fatal_error("calc_draglaw_parameters", &
-              "something went pretty wrong")
+              "something went pretty wrong", .true.)
           kd=0.
         endif
 !
