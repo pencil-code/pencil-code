@@ -192,7 +192,8 @@ module Energy
       reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, &
       center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
       Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
-      cool_type,ichit,xchit,pclaw, lenergy_slope_limited,h_slope_limited,chi_sld_thresh
+      cool_type,ichit,xchit,pclaw,lenergy_slope_limited,h_slope_limited,islope_limiter, &
+      chi_sld_thresh
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -342,6 +343,7 @@ module Energy
   real, dimension(:,:), pointer :: reference_state
 !
   contains
+!
 !***********************************************************************
     subroutine register_energy
 !
@@ -597,7 +599,7 @@ module Energy
               print*,'initialize_energy: hcondxbot, hcondxtop, FbotKbot =', &
                 hcondxbot, hcondxtop, FbotKbot
           else
-             call warning('initialize_energy: setting hcondxbot,', &
+            call warning('initialize_energy: setting hcondxbot,', &
               'hcondxtop, and FbotKbot is not implemented for iheatcond\=K-const')
           endif
         endif
@@ -2804,11 +2806,8 @@ module Energy
       use Sub, only: u_dot_grad, grad, multmv
       use WENO_transport, only: weno_transp
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (pencil_case) :: p
-!
-      intent(in) :: f
-      intent(inout) :: p
+      real, dimension(mx,my,mz,mfarray), intent(IN) :: f
+      type(pencil_case),                 intent(OUT):: p
 !
       real, dimension(nx,3) :: gradS
       integer :: j
@@ -3017,6 +3016,10 @@ module Energy
       if (lheatc_hyper3ss_polar) call calc_heatcond_hyper3_polar(f,df)
       if (lheatc_hyper3ss_mesh)  call calc_heatcond_hyper3_mesh(f,df)
       if (lheatc_hyper3ss_aniso) call calc_heatcond_hyper3_aniso(f,df)
+
+      if (lenergy_slope_limited.and.lfirst) df(:,m,n,iss)=df(:,m,n,iss)-f(l1:l2,m,n,iFF_div_ss)
+!
+      !if(lfirst .and. ldiagnos) print*,'DIV:iproc,m,f=',iproc,m,f(l1:l2,m,n,iFF_div_ss)
 !
 !  Explicit heating/cooling terms.
 !
@@ -3282,18 +3285,14 @@ module Energy
 !
       use Deriv, only: der_z, der2_z
       use Mpicomm, only: mpiallreduce_sum
-      use Sub, only: finalize_aver,div, calc_diffusive_flux
-      use Sub, only: notanumber
+      use Sub, only: finalize_aver,calc_all_diff_fluxes,div
       use EquationOfState, only : lnrho0, cs20, get_cv1
 !
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
 !
-      real, dimension(mx-1) :: tmpx
-      real, dimension(my-1) :: tmpy
-      real, dimension(mz-1) :: tmpz
       integer :: l,m,n,lf
-      integer :: ll,mm,nn,iff
       real :: fact, cv1, tmp1
+      real, dimension(nx) :: tmp
 !
 !  Compute horizontal average of entropy. Include the ghost zones,
 !  because they have just been set.
@@ -3454,59 +3453,51 @@ module Energy
 !
 !
       if (lenergy_slope_limited.and.lfirst) then
-!
+  
         f(:,:,:,iFF_diff1:iFF_diff2)=0.
-!
-        iff=iFF_diff
-
-        if (nxgrid>1) then
-          do nn=n1,n2; do mm=m1,m2
-            tmpx = f(2:,mm,nn,iss)-f(:mx-1,mm,nn,iss)
-if (notanumber(tmpx)) print*, 'TMPX:mm,nn=', mm,nn
-            call calc_diffusive_flux(tmpx,f(2:mx-2,mm,nn,iFF_char_c),islope_limiter,h_slope_limited,f(2:mx-2,mm,nn,iff))
-if (notanumber(f(2:mx-2,mm,nn,iff))) print*, 'DIFFX:mm,nn=', mm,nn
-          enddo; enddo
-          iff=iff+1
-        endif
-
-        if (nygrid>1) then
-          do nn=n1,n2; do ll=l1,l2
-            tmpy = f(ll,2:,nn,iss)-f(ll,:my-1,nn,iss)
-if (notanumber(tmpy)) print*, 'TMPY:mm,nn=', mm,nn
-            call calc_diffusive_flux(tmpy,f(ll,2:my-2,nn,iFF_char_c),islope_limiter,h_slope_limited,f(ll,2:my-2,nn,iff))
-if (notanumber(f(ll,2:my-2,nn,iff))) print*, 'DIFFY:ll,nn=', ll,nn
-          enddo; enddo
-          iff=iff+1
-        endif
-
-        if (nzgrid>1) then
-          do mm=m1,m2; do ll=l1,l2
-            tmpz = f(ll,mm,2:,iss)-f(ll,mm,:mz-1,iss)
-if (notanumber(tmpz)) print*, 'TMPZ:ll,mm=', ll,mm
-            call calc_diffusive_flux(tmpz,f(ll,mm,2:mz-2,iFF_char_c),islope_limiter,h_slope_limited,f(ll,mm,2:mz-2,iff))
-if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:ll,mm=', ll,mm
-          enddo; enddo
-        endif
+        call calc_all_diff_fluxes(f,iss,islope_limiter,h_slope_limited)
 
         do n=n1,n2; do m=m1,m2
           call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_ss),.true.)
         enddo; enddo
 
       endif
-
+!
     endsubroutine calc_lenergy_pars
 !***********************************************************************
     subroutine update_char_vel_energy(f)
 !
 !  Updates characteristic veelocity for slope-limited diffusion.
 !
-!  25-sep-15/MR+joern: coded, not yet correct
+!  25-sep-15/MR+joern: coded
+!   9-oct-15/MR: added uodateing of characteristic velocity by sound speed
 !
-      use EquationOfState, only: cs20
+      use EquationOfState, only: calc_pencils_eos
+      use General, only: staggered_mean_scal
 !
       real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
 !
-      if (lslope_limit_diff) f(:,:,:,iFF_char_c)=f(:,:,:,iFF_char_c) + 0.01*cs20
+      type(pencil_case) :: p
+      logical, dimension(npencils) :: lpenc_loc=.false.
+      real, parameter :: weight=0.01
+!
+      if (lslope_limit_diff) then
+
+        lpenc_loc(i_cs2)=.true.
+!
+!  Calculate sound speed and store temporarily in first slot of diffusive fluxes.
+!
+        f(:,:,:,iFF_diff) = 0.
+        do n=n1,n2; do m=m1,m2
+          call calc_pencils_eos(f,p,lpenc_loc)
+          f(l1:l2,m,n,iFF_diff) = sqrt(p%cs2)
+        enddo; enddo
+!
+        call staggered_mean_scal(f,iFF_diff,iFF_char_c,weight)
+
+        !f(:,:,:,iFF_char_c)=f(:,:,:,iFF_char_c) + 0.01*cs20
+!
+      endif
 !
     endsubroutine update_char_vel_energy
 !***********************************************************************
