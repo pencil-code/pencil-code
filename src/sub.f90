@@ -1370,7 +1370,6 @@ module Sub
 !  31-aug-07/wlad: adapted for cylindrical and spherical coords
 !  28-sep-15/Joern+MR: adapted to use for slope-limited diffusive 
 !                      flux given on a staggered grid. 
-!  14-oct-15/MR: corrected bug in call of der_4th_stag
 !
       use Deriv, only: der
       use General, only: loptest, ranges_dimensional
@@ -1393,7 +1392,7 @@ module Sub
         call ranges_dimensional(jrange)
         g=0
         do i=1,dimensionality
-          call der_4th_stag(f,k1+jrange(i),tmp,jrange(i))
+          call der_4th_stag(f,k1+i,tmp,jrange(i))
           g=g+tmp
         enddo
       else
