@@ -796,12 +796,13 @@ module Energy
           lheatc_shock=.true.
           if (lroot) print*, 'heat conduction: shock'
           if (.not. lshock) &
-           call stop_it('initialize_energy: shock diffusity'// &
+            call stop_it('initialize_energy: shock diffusity'// &
                            ' but module setting SHOCK=noshock')
          case ('chi-shock-profr')
           lheatc_shock_profr=.true.
           if (lroot) print*, 'initialize_energy: shock with a radial profile'
-          call stop_it('heat conduction: shock diffusity'// &
+          if (.not. lshock) &
+            call stop_it('heat conduction: shock diffusity'// &
                            ' but module setting SHOCK=noshock')
         case ('hyper3_ss','hyper3')
           lheatc_hyper3ss=.true.
