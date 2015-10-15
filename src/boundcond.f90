@@ -1190,7 +1190,8 @@ module Boundcond
 !
 !  Periodic boundary condition across the pole
 !
-!  15-june-10/dhruba: aped
+!  15-jun-10/dhruba: aped
+!  15-oct-15/fred NB use for scalars and radial vector components
 !
       real, dimension (:,:,:,:) :: f
       integer :: j,nhalf
@@ -1201,23 +1202,13 @@ module Boundcond
 !
       case ('bot')               ! bottom boundary
         if (nprocz==1) then
-           f(:,1,n1:nhalf,j) = f(:,m1+2,nhalf+1:n2,j)
-           f(:,2,n1:nhalf,j) = f(:,m1+1,nhalf+1:n2,j)
-           f(:,3,n1:nhalf,j) = f(:,m1,nhalf+1:n2,j)
-!
-           f(:,1,nhalf+1:n2,j) = f(:,m1+2,n1:nhalf,j)
-           f(:,2,nhalf+1:n2,j) = f(:,m1+1,n1:nhalf,j)
-           f(:,3,nhalf+1:n2,j) = f(:,m1,n1:nhalf,j)
+          f(:,:m1-1,n1:nhalf  ,j) = f(:,m1i:m1:-1,nhalf+1:n2,j)
+          f(:,:m1-1,nhalf+1:n2,j) = f(:,m1i:m1:-1,n1:nhalf  ,j)
         endif
       case ('top')               ! top boundary
         if (nprocz==1) then
-           f(:,m2+1,n1:nhalf,j) = f(:,m2,nhalf+1:n2,j)
-           f(:,m2+2,n1:nhalf,j) = f(:,m2-1,nhalf+1:n2,j)
-           f(:,m2+3,n1:nhalf,j) = f(:,m2-2,nhalf+1:n2,j)
-!
-           f(:,m2+1,nhalf+1:n2,j) = f(:,m2,n1:nhalf,j)
-           f(:,m2+2,nhalf+1:n2,j) = f(:,m2-1,n1:nhalf,j)
-           f(:,m2+3,nhalf+1:n2,j) = f(:,m2-2,n1:nhalf,j)
+          f(:,m2+1:,n1:nhalf  ,j) = f(:,m2:m2i:-1,nhalf+1:n2,j)
+          f(:,m2+1:,nhalf+1:n2,j) = f(:,m2:m2i:-1,n1:nhalf  ,j)
         endif
       case default
         print*, "bc_pper_y: ", topbot, " should be 'top' or 'bot'"
@@ -1230,7 +1221,8 @@ module Boundcond
 !
 !  Anti-periodic boundary condition across the pole
 !
-!  15-june-10/dhruba: aped
+!  15-jun-10/dhruba: aped
+!  15-oct-15/fred NB use for phi and theta vector components
 !
       real, dimension (:,:,:,:) :: f
       integer :: j,nhalf
@@ -1241,13 +1233,13 @@ module Boundcond
 !
       case ('bot')               ! bottom boundary
         if (nprocz==1) then
-           f(:,:m1-1,n1:nhalf,  j) = -f(:,m1i:m1:-1,nhalf+1:n2,j)
-           f(:,:m1-1,nhalf+1:n2,j) = -f(:,m1i:m1:-1,n1:nhalf,j)
+          f(:,:m1-1,n1:nhalf,  j) = -f(:,m1i:m1:-1,nhalf+1:n2,j)
+          f(:,:m1-1,nhalf+1:n2,j) = -f(:,m1i:m1:-1,n1:nhalf,  j)
         endif
       case ('top')               ! top boundary
         if (nprocz==1) then
-           f(:,m2+1:,n1:nhalf,  j) = -f(:,m2:m2i:-1,nhalf+1:n2,j)
-           f(:,m2+1:,nhalf+1:n2,j) = -f(:,m2:m2i:-1,n1:nhalf,j)
+          f(:,m2+1:,n1:nhalf,  j) = -f(:,m2:m2i:-1,nhalf+1:n2,j)
+          f(:,m2+1:,nhalf+1:n2,j) = -f(:,m2:m2i:-1,n1:nhalf,  j)
         endif
       case default
         print*, "bc_aper_y: ", topbot, " should be 'top' or 'bot'"
