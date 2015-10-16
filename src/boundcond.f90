@@ -1197,6 +1197,10 @@ module Boundcond
       integer :: j,nhalf
       character (len=bclen) :: topbot
 !
+      if (nprocz>1 .and. modulo(nprocz,2)==1) &
+        call fatal_error_local('bc_pper_y',&
+             "for 'pp' nprocz must be multiple of 2")
+!
       nhalf=(n1+n2)/2
       select case (topbot)
 !
@@ -1227,6 +1231,10 @@ module Boundcond
       real, dimension (:,:,:,:) :: f
       integer :: j,nhalf
       character (len=bclen) :: topbot
+!
+      if (nprocz>1 .and. modulo(nprocz,2)==1) &
+        call fatal_error_local('bc_aper_y',&
+             "for 'ap' nprocz must be multiple of 2")
 !
       nhalf=(n1+n2)/2
       select case (topbot)
