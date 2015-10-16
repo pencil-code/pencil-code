@@ -685,7 +685,7 @@ else if ($hn =~ psi*) then
   echo "Setting master node to psi24, the only node that is accesible by rsh"
 #--------------------------------------------------
 else if ($hn =~ clogin*) then
-  echo "Sisu - CSC, Kajaani, Finland"
+  echo "sisu - CSC, Kajaani, Finland"
   if ($?SLURM_JOBID) then
     echo "Running job: $SLURM_JOBID"
     setenv SLURM_WORKDIR `pwd`
@@ -699,8 +699,8 @@ else if ($hn =~ clogin*) then
   set one_local_disc = 0
   set remote_top     = 1
   set local_binary = 0
-else if (($hn =~ nid*) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cdstars* || $USER =~ warneche || $USER =~ pekkila)) then
-  echo "Sisu - CSC, Kajaani, Finland"
+else if (($hn =~ nid*) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cdstars* || $USER =~ warneche || $USER =~ mreinhar || $USER =~ fagent || $USER =~ pekkila)) then
+  echo "sisu - CSC, Kajaani, Finland"
   if ($?SLURM_JOBID) then
     echo "Running job: $SLURM_JOBID"
     setenv SLURM_WORKDIR `pwd`
