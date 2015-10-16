@@ -1027,6 +1027,7 @@ module Viscosity
 !
 !  20-nov-04/anders: coded
 !  18-may-12/MR: calculation of viscous heat for boussinesq added
+!  14-oct-15/MR: corrected viscous force for slope-limited flux
 !
       use Deriv, only: der5i1j,der6
       use Diagnostics, only: max_mn_name, sum_mn_name
@@ -1821,7 +1822,14 @@ module Viscosity
 !
       if (lvisc_slope_limited) then
 !
-        if (lfirst) p%fvisc(:,iuu:iuu+2)=p%fvisc(:,iuu:iuu+2)-f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)
+        if (lfirst) then
+          p%fvisc=p%fvisc-f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)
+!
+!  Heating term
+!
+          if (lpencil(i_visc_heat)) & 
+            call dot_mn(p%uu,f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2),p%visc_heat,ladd=.true.)   ! tb checked
+        endif
 !
         if (lfirst .and. ldt) then
           nu_sld=maxval(sqrt(abs(f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2))*dline_1),2)/dxyz_2
@@ -1850,7 +1858,6 @@ module Viscosity
 !          endif
           p%diffus_total=p%diffus_total+nu_sld
         endif
-
       endif
 !
 !  Calculate Lambda effect
@@ -1887,16 +1894,11 @@ module Viscosity
 !***********************************************************************
     subroutine viscosity_after_boundary(f)
 
-      use Sub, only: div, calc_diffusive_flux
-      use Sub, only: notanumber
+      use Sub, only: div, calc_all_diff_fluxes
 
       real, dimension (mx,my,mz,mfarray) :: f
 
-      integer :: ll,mm,nn,j,iff
-      real, dimension(mx-1) :: tmpx
-      real, dimension(my-1) :: tmpy
-      real, dimension(mz-1) :: tmpz
-      real, dimension(nx)   :: tmp
+      integer :: j
 !
 !  Slope limited diffusion following Rempel (2014)
 !  First calculating the flux in a subroutine below
@@ -1910,36 +1912,7 @@ module Viscosity
 !
         do j=1,3
 
-          iff=iFF_diff
-
-          if (nxgrid>1) then
-            do nn=n1,n2; do mm=m1,m2
-              tmpx = f(2: ,mm,nn,iuu+j-1)-f( :mx-1,mm,nn,iuu+j-1)
-if (notanumber(tmpx)) print*, 'TMPX:j,mm,nn=', j,mm,nn
-              call calc_diffusive_flux(tmpx,f(2:mx-2,mm,nn,iFF_char_c),islope_limiter,h_slope_limited,f(2:mx-2,mm,nn,iff))
-if (notanumber(f(2:mx-2,mm,nn,iff))) print*, 'DIFFX:j,mm,nn=', j,mm,nn
-            enddo; enddo
-            iff=iff+1
-          endif
-
-          if (nygrid>1) then
-            do nn=n1,n2; do ll=l1,l2
-              tmpy = f(ll,2: ,nn,iuu+j-1)-f(ll,:my-1,nn,iuu+j-1)
-if (notanumber(tmpy)) print*, 'TMPY:j,mm,nn=', j,mm,nn
-              call calc_diffusive_flux(tmpy,f(ll,2:my-2,nn,iFF_char_c),islope_limiter,h_slope_limited,f(ll,2:my-2,nn,iff))
-if (notanumber(f(ll,2:my-2,nn,iff))) print*, 'DIFFY:j,ll,mm=', j,ll,mm
-            enddo; enddo
-            iff=iff+1
-          endif
-
-          if (nzgrid>1) then
-            do mm=m1,m2; do ll=l1,l2
-              tmpz = f(ll,mm,2: ,iuu+j-1)-f(ll,mm, :mz-1,iuu+j-1)
-if (notanumber(tmpz)) print*, 'TMPZ:j,ll,mm=', j,ll,mm
-            call calc_diffusive_flux(tmpz,f(ll,mm,2:mz-2,iFF_char_c),islope_limiter,h_slope_limited,f(ll,mm,2:mz-2,iff))
-if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
-            enddo; enddo
-          endif
+          call calc_all_diff_fluxes(f,iuu+j-1,islope_limiter,h_slope_limited)
 !
           do n=n1,n2; do m=m1,m2
             call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_uu+j-1),.true.)            
@@ -2024,7 +1997,6 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
 !  the temperature equation. Divide by cv if pretend_lnTT.
 !
       if (lentropy) then
-!
         if (pretend_lnTT) then
           df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%cv1*p%TT1*p%visc_heat
         else

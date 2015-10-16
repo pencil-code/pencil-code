@@ -66,4 +66,20 @@
   public :: species_constants,  tran_data, Lewis_coef, Lewis_coef1
 !  public :: B_n, alpha_n, E_an, low_coeff,high_coeff,troe_coeff,a_k4
 !  public :: Mplus_case, tran_data
+!
+  interface eoscalc              ! Overload subroutine eoscalc
+    module procedure eoscalc_farray
+    module procedure eoscalc_pencil
+    module procedure eoscalc_point
+  endinterface
+!
+  interface pressure_gradient    ! Overload subroutine pressure_gradient
+    module procedure pressure_gradient_farray
+    module procedure pressure_gradient_point
+  endinterface
+!
+  interface calc_pencils_eos
+    module procedure calc_pencils_eos_pencpar
+    module procedure calc_pencils_eos_std
+  endinterface calc_pencils_eos
 

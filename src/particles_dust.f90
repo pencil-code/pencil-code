@@ -741,13 +741,12 @@ module Particles
       use EquationOfState, only: beta_glnrho_global, cs20
       use General, only: random_number_wrapper
       use Mpicomm, only: mpireduce_sum, mpibcast_real
-      use InitialCondition, only: initial_condition_xxp,&
-          initial_condition_vvp
+      use InitialCondition, only: initial_condition_xxp, initial_condition_vvp
       use Particles_diagnos_dv, only: repeated_init
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
-      integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension (mx,my,mz,mfarray), intent (out) :: f
+      real, dimension (mpar_loc,mparray), intent (out) :: fp
+      integer, dimension (mpar_loc,3), intent (out) :: ineargrid
 !
       real, dimension (3) :: uup, Lxyz_par, xyz0_par, xyz1_par
       real :: vpx_sum, vpy_sum, vpz_sum
@@ -757,8 +756,6 @@ module Particles
       integer :: l, j, k, ix0, iy0, iz0
       logical :: lequidistant=.false.
       real :: rpar_int,rpar_ext
-!
-      intent (out) :: f, fp, ineargrid
 !
 !  Use either a local random position or a global random position for certain
 !  initial conditions. The default is a local random position, but the equal
@@ -834,8 +831,14 @@ module Particles
         case ('random-constz')
           if (lroot) print*, 'init_particles: Random particle positions'
           do k=1,npar_loc
-            if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
-            if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+            if (nxgrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,ixp)=r
+            endif
+            if (nygrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,iyp)=r
+            endif
           enddo
           if (nxgrid/=1) &
               fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
@@ -847,9 +850,18 @@ module Particles
         case ('random')
           if (lroot) print*, 'init_particles: Random particle positions'
           do k=1,npar_loc
-            if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
-            if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
-            if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
+            if (nxgrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,ixp)=r
+            endif
+            if (nygrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,iyp)=r
+            endif
+            if (nzgrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,izp)=r
+            endif
           enddo
           if (nxgrid/=1) &
               fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
@@ -879,11 +891,11 @@ module Particles
                 'radius needs to be larger than zero')
           endif
           if (-rad_sphere+pos_sphere(1)<xyz0(1) .or. &
-              rad_sphere+pos_sphere(1)>xyz1(1) .or. &
+              +rad_sphere+pos_sphere(1)>xyz1(1) .or. &
               -rad_sphere+pos_sphere(2)<xyz0(2) .or. &
-              rad_sphere+pos_sphere(2)>xyz1(2) .or. &
+              +rad_sphere+pos_sphere(2)>xyz1(2) .or. &
               -rad_sphere+pos_sphere(3)<xyz0(3) .or. &
-              rad_sphere+pos_sphere(3)>xyz1(3)) then
+              +rad_sphere+pos_sphere(3)>xyz1(3)) then
             call fatal_error('init_particles','random-sphere '// &
                 'sphere needs to fit in the box')
           endif
@@ -891,12 +903,12 @@ module Particles
             do k=1,npar_loc
               rp2=2.*rad_sphere**2
               do while (rp2>rad_sphere**2)
-                call random_number_wrapper(fp(k,ixp))
-                call random_number_wrapper(fp(k,iyp))
-                call random_number_wrapper(fp(k,izp))
-                fp(k,ixp)=(fp(k,ixp)-0.5)*2.*rad_sphere
-                fp(k,iyp)=(fp(k,iyp)-0.5)*2.*rad_sphere
-                fp(k,izp)=(fp(k,izp)-0.5)*2.*rad_sphere
+                call random_number_wrapper(r)
+                fp(k,ixp)=(r-0.5)*2.*rad_sphere
+                call random_number_wrapper(r)
+                fp(k,iyp)=(r-0.5)*2.*rad_sphere
+                call random_number_wrapper(r)
+                fp(k,izp)=(r-0.5)*2.*rad_sphere
                 rp2=fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2
               enddo
               fp(k,ixp)=fp(k,ixp)+pos_sphere(1)
@@ -917,11 +929,11 @@ module Particles
                 'all semi-principal axes need to be larger than zero')
           endif
           if (-a_ellipsoid+pos_ellipsoid(1)<xyz0(1) .or. &
-              a_ellipsoid+pos_ellipsoid(1)>xyz1(1) .or. &
+              +a_ellipsoid+pos_ellipsoid(1)>xyz1(1) .or. &
               -b_ellipsoid+pos_ellipsoid(2)<xyz0(2) .or. &
-              b_ellipsoid+pos_ellipsoid(2)>xyz1(2) .or. &
+              +b_ellipsoid+pos_ellipsoid(2)>xyz1(2) .or. &
               -c_ellipsoid+pos_ellipsoid(3)<xyz0(3) .or. &
-              c_ellipsoid+pos_ellipsoid(3)>xyz1(3)) then
+              +c_ellipsoid+pos_ellipsoid(3)>xyz1(3)) then
             call fatal_error('init_particles','random-ellipsoid '// &
                 'ellipsoid needs to fit in the box')
           endif
@@ -932,12 +944,12 @@ module Particles
             do k=1,npar_loc
               rp2=2.
               do while (rp2>1.)
-                call random_number_wrapper(fp(k,ixp))
-                call random_number_wrapper(fp(k,iyp))
-                call random_number_wrapper(fp(k,izp))
-                fp(k,ixp)=(fp(k,ixp)-0.5)*2.*a_ellipsoid
-                fp(k,iyp)=(fp(k,iyp)-0.5)*2.*b_ellipsoid
-                fp(k,izp)=(fp(k,izp)-0.5)*2.*c_ellipsoid
+                call random_number_wrapper(r)
+                fp(k,ixp)=(r-0.5)*2.*a_ellipsoid
+                call random_number_wrapper(r)
+                fp(k,iyp)=(r-0.5)*2.*b_ellipsoid
+                call random_number_wrapper(r)
+                fp(k,izp)=(r-0.5)*2.*c_ellipsoid
                 rp2=fp(k,ixp)**2/a_ell2+fp(k,iyp)**2/b_ell2+fp(k,izp)**2/c_ell2
               enddo
               fp(k,ixp)=fp(k,ixp)+pos_ellipsoid(1)
@@ -952,7 +964,10 @@ module Particles
         case ('random-line-x')
           if (lroot) print*, 'init_particles: Random particle positions'
           do k=1,npar_loc
-            if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
+            if (nxgrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,ixp)=r
+            endif
           enddo
           if (nxgrid/=1) &
               fp(1:npar_loc,ixp)=xyz0_par(1)+fp(1:npar_loc,ixp)*Lxyz_par(1)
@@ -962,7 +977,10 @@ module Particles
         case ('random-line-y')
           if (lroot) print*, 'init_particles: Random particle positions'
           do k=1,npar_loc
-            if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+            if (nygrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,iyp)=r
+            endif
           enddo
           if (nygrid/=1) &
               fp(1:npar_loc,iyp)=xyz0_par(2)+fp(1:npar_loc,iyp)*Lxyz_par(2)
@@ -975,13 +993,22 @@ module Particles
           do k=1,npar_loc
             rp2=-1.0
             do while (rp2<rp_int**2)
-              if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
-              if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
-              if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
-              if (nxgrid/=1) fp(k,ixp)=xyz0(1)+fp(k,ixp)*Lxyz(1)
-              if (nygrid/=1) fp(k,iyp)=xyz0(2)+fp(k,iyp)*Lxyz(2)
-              if (nzgrid/=1) fp(k,izp)=xyz0(3)+fp(k,izp)*Lxyz(3)
-              rp2=fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2
+              rp2=0.0
+              if (nxgrid/=1) then
+                call random_number_wrapper(r)
+                fp(k,ixp)=xyz0(1)+r*Lxyz(1)
+                rp2=rp2+fp(k,ixp)**2
+              endif
+              if (nygrid/=1) then
+                call random_number_wrapper(r)
+                fp(k,iyp)=xyz0(2)+r*Lxyz(2)
+                rp2=rp2+fp(k,iyp)**2
+              endif
+              if (nzgrid/=1) then
+                call random_number_wrapper(r)
+                fp(k,izp)=xyz0(3)+r*Lxyz(3)
+                rp2=rp2+fp(k,izp)**2
+              endif
             enddo
           enddo
 !
@@ -989,9 +1016,18 @@ module Particles
           if (lroot) print*, 'init_particles: Random particle positions '// &
               'within a box'
           do k=1,npar_loc
-            if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
-            if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
-            if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
+            if (nxgrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,ixp)=r
+            endif
+            if (nygrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,iyp)=r
+            endif
+            if (nzgrid/=1) then
+              call random_number_wrapper(r)
+              fp(k,izp)=r
+            endif
             if (lcylindrical_coords) then
               xx0=xp0+fp(k,ixp)*Lx0
               yy0=yp0+fp(k,iyp)*Ly0
@@ -1048,8 +1084,8 @@ module Particles
               if (nxgrid/=1) fp(k,ixp)=rad*cos(phi)
               if (nygrid/=1) fp(k,iyp)=rad*sin(phi)
               if (nzgrid/=1) then
-                call random_number_wrapper(fp(k,izp))
-                fp(k,izp)=xyz0_par(3)+fp(k,izp)*Lxyz_par(3)
+                call random_number_wrapper(r)
+                fp(k,izp)=xyz0_par(3)+r*Lxyz_par(3)
               endif
             elseif (lcylindrical_coords) then
               if (nxgrid/=1) fp(k,ixp)=rad
@@ -1058,8 +1094,8 @@ module Particles
                 fp(k,iyp) = xyz0_par(2)+phi*Lxyz_par(2)
               endif
               if (nzgrid/=1) then
-                call random_number_wrapper(fp(k,izp))
-                fp(k,izp)=xyz0_par(3)+fp(k,izp)*Lxyz_par(3)
+                call random_number_wrapper(r)
+                fp(k,izp)=xyz0_par(3)+r*Lxyz_par(3)
               endif
             elseif (lspherical_coords) then
               if (nxgrid/=1) fp(k,ixp)=rad
@@ -1082,12 +1118,18 @@ module Particles
           do l=l1,l2
             do m=m1,m2
               do n=n1,n2
-                if (nxgrid/=1) call random_number_wrapper(px)
-                if (nygrid/=1) call random_number_wrapper(py)
-                if (nzgrid/=1) call random_number_wrapper(pz)
-                fp(k,ixp)=x(l)+(px-0.5)*dx
-                fp(k,iyp)=y(m)+(py-0.5)*dy
-                fp(k,izp)=z(n)+(pz-0.5)*dz
+                if (nxgrid/=1) then
+                  call random_number_wrapper(px)
+                  fp(k,ixp)=x(l)+(px-0.5)*dx
+                endif
+                if (nygrid/=1) then
+                  call random_number_wrapper(py)
+                  fp(k,iyp)=y(m)+(py-0.5)*dy
+                endif
+                if (nzgrid/=1) then
+                  call random_number_wrapper(pz)
+                  fp(k,izp)=z(n)+(pz-0.5)*dz
+                endif
                 k=k+1
                 if (k>npar_loc) exit k_loop
               enddo
@@ -1241,14 +1283,11 @@ module Particles
         case ('shift')
           if (lroot) print*, 'init_particles: shift particle positions'
           if (.not. lequidistant) then
-            if (lroot) print*, 'init_particles: must place particles equidistantly before shifting!'
-            call fatal_error('init_particles','')
+            call fatal_error('init_particles','must place particles equidistantly before shifting!')
           endif
           k2_xxp=kx_xxp**2+ky_xxp**2+kz_xxp**2
           if (k2_xxp==0.0) then
-            if (lroot) print*, &
-                'init_particles: kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!'
-            call fatal_error('init_particles','')
+            call fatal_error('init_particles','kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!')
           endif
           do k=1,npar_loc
             fp(k,ixp) = fp(k,ixp) - kx_xxp/k2_xxp*amplxxp* &
@@ -1264,15 +1303,11 @@ module Particles
         case ('cosxcosz')
           if (lroot) print*, 'init_particles: shift particle positions'
           if (.not. lequidistant) then
-            if (lroot) print*, 'init_particles: '// &
-            'must place particles equidistantly before shifting!'
-            call fatal_error('init_particles','')
+            call fatal_error('init_particles','must place particles equidistantly before shifting!')
           endif
           k2_xxp=kx_xxp**2+kz_xxp**2
           if (k2_xxp==0.0) then
-            if (lroot) print*, &
-                'init_particles: kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!'
-            call fatal_error('init_particles','')
+            call fatal_error('init_particles','kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!')
           endif
           do k=1,npar_loc
           fp(k,ixp) = fp(k,ixp) - kx_xxp/k2_xxp*amplxxp* &
@@ -1286,15 +1321,11 @@ module Particles
         case ('sinxsinz')
           if (lroot) print*, 'init_particles: shift particle positions'
           if (.not. lequidistant) then
-            if (lroot) print*, 'init_particles: '// &
-            'must place particles equidistantly before shifting!'
-            call fatal_error('init_particles','')
+            call fatal_error('init_particles','must place particles equidistantly before shifting!')
           endif
           k2_xxp=kx_xxp**2+kz_xxp**2
           if (k2_xxp==0.0) then
-            if (lroot) print*, &
-                'init_particles: kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!'
-            call fatal_error('init_particles','')
+            call fatal_error('init_particles','kx_xxp=ky_xxp=kz_xxp=0.0 is not allowed!')
           endif
           do k=1,npar_loc
           fp(k,ixp) = fp(k,ixp) + kx_xxp/k2_xxp*amplxxp* &
@@ -1307,8 +1338,14 @@ module Particles
           if (lroot) print*, 'init_particles: Gaussian particle positions'
           do k=1,npar_loc
             do while (.true.)
-              if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
-              if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+              if (nxgrid/=1) then
+                call random_number_wrapper(r)
+                fp(k,ixp)=r
+              endif
+              if (nygrid/=1) then
+                call random_number_wrapper(r)
+                fp(k,iyp)=r
+              endif
               call random_number_wrapper(r)
               call random_number_wrapper(p)
               if (nprocz==2) then
@@ -1317,7 +1354,7 @@ module Particles
               else
                 fp(k,izp)= zp0*sqrt(-2*alog(r))*cos(2*pi*p)
               endif
-              if ((fp(k,izp)>=xyz0(3)).and.(fp(k,izp)<=xyz1(3))) exit
+              if ((fp(k,izp)>=xyz0(3)) .and. (fp(k,izp)<=xyz1(3))) exit
             enddo
           enddo
           if (nxgrid/=1) &
@@ -1329,8 +1366,14 @@ module Particles
           if (lroot) print*, 'init_particles: Gaussian particle positions'
           do k=1,npar_loc
             do while (.true.)
-              if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
-              if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
+              if (nygrid/=1) then
+                call random_number_wrapper(r)
+                fp(k,iyp)=r
+              endif
+              if (nzgrid/=1) then
+                call random_number_wrapper(r)
+                fp(k,izp)=r
+              endif
               call random_number_wrapper(r)
               call random_number_wrapper(p)
               fp(k,ixp)= xp0*sqrt(-2*alog(r))*cos(2*pi*p)
@@ -1388,10 +1431,7 @@ module Particles
           call constant_richardson(fp,f)
 !
         case default
-          if (lroot) &
-              print*, 'init_particles: No such such value for initxxp: ', &
-              trim(initxxp(j))
-          call fatal_error('init_particles','')
+          call fatal_error('init_particles','Unknown value initxxp="'//trim(initxxp(j))//'"')
 !
         endselect
 !
@@ -1443,10 +1483,8 @@ module Particles
           if (lroot) &
               print*, 'init_particles: vpx0, vpy0, vpz0=', vpx0, vpy0, vpz0
           if (lcylindrical_coords) then
-            fp(1:npar_loc,ivpx)&
-                =vpx0*cos(fp(k,iyp))+vpy0*sin(fp(k,iyp))
-            fp(1:npar_loc,ivpy)&
-                =vpy0*cos(fp(k,iyp))-vpx0*sin(fp(k,iyp))
+            fp(1:npar_loc,ivpx)=vpx0*cos(fp(k,iyp))+vpy0*sin(fp(k,iyp))
+            fp(1:npar_loc,ivpy)=vpy0*cos(fp(k,iyp))-vpx0*sin(fp(k,iyp))
             fp(1:npar_loc,ivpz)=vpz0
           else
             fp(1:npar_loc,ivpx)=vpx0
@@ -1692,10 +1730,7 @@ module Particles
 !
 !
         case default
-          if (lroot) &
-              print*, 'init_particles: No such such value for initvvp: ', &
-              trim(initvvp(j))
-          call fatal_error('','')
+          call fatal_error('init_particles','Unknown value initvvp="'//trim(initvvp(j))//'"')
 !
         endselect
 !
@@ -1722,10 +1757,8 @@ module Particles
 !  14-oct-12/dhruba: dummy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
-      integer, dimension (mpar_loc,3) :: ineargrid
-!
-      intent (inout) :: fp,ineargrid
+      real, dimension (mpar_loc,mparray), intent (inout) :: fp
+      integer, dimension (mpar_loc,3), intent (inout) :: ineargrid
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
@@ -1747,14 +1780,12 @@ module Particles
       use Particles_diagnos_state, only: insert_particles_diagnos_state
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
-      integer, dimension (mpar_loc,3) :: ineargrid
-      logical :: linsertmore=.true.
-      real :: xx0, yy0,r2
+      real, dimension (mpar_loc,mparray), intent (inout) :: fp
+      integer, dimension (mpar_loc,3), intent (inout) :: ineargrid
 !
+      logical, save :: linsertmore=.true.
+      real :: xx0, yy0, r2, r
       integer :: j, k, n_insert, npar_loc_old, iii
-!
-      intent (inout) :: fp,ineargrid
 !
 ! Stop call to this routine when maximum number of particles is reached!
 ! Since root inserts all new particles, make sure
@@ -1789,9 +1820,18 @@ module Particles
             case ('random-box')
 !
               do k=npar_loc_old+1,npar_loc
-                if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
-                if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
-                if (nzgrid/=1) call random_number_wrapper(fp(k,izp))
+                if (nxgrid/=1) then
+                  call random_number_wrapper(r)
+                  fp(k,ixp)=r
+                endif
+                if (nygrid/=1) then
+                  call random_number_wrapper(r)
+                  fp(k,iyp)=r
+                endif
+                if (nzgrid/=1) then
+                  call random_number_wrapper(r)
+                  fp(k,izp)=r
+                endif
                 if (lcylindrical_coords) then
                   xx0=xp0+fp(k,ixp)*Lx0
                   yy0=yp0+fp(k,iyp)*Ly0
@@ -1807,12 +1847,10 @@ module Particles
               enddo
 !
             case ('nothing')
-              if (lroot .and. j==1) print*, 'init_particles: nothing'
+              if (j==1) print*, 'init_particles: nothing'
 !
             case default
-              print*, 'insert_particles: No such such value for initxxp: ', &
-                  trim(initxxp(j))
-              call fatal_error('init_particles','')
+              call fatal_error_local('init_particles','Unknown value initxxp="'//trim(initxxp(j))//'"')
 !
             endselect
           enddo
@@ -1840,10 +1878,8 @@ module Particles
               endif
 !
             case default
-              print*, 'insert_particles: No such such value for initvvp: ', &
-                  trim(initvvp(j))
-              call fatal_error('','')
-              !
+              call fatal_error_local('init_particles','Unknown value initvvp="'//trim(initvvp(j))//'"')
+!
             endselect
 !
           enddo ! do j=1,ninit
@@ -1899,7 +1935,6 @@ module Particles
 !  14-apr-06/anders: coded
 !
       use EquationOfState, only: beta_glnrho_global, cs0
-      use General, only: random_number_wrapper
 !
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1911,13 +1946,9 @@ module Particles
 !
       if ( sqrt(npar/real(nwgrid))/=int(sqrt(npar/real(nwgrid))) .or. &
            sqrt(npar_loc/real(nw))/=int(sqrt(npar_loc/real(nw))) ) then
-        if (lroot) then
-          print*, 'streaming_coldstart: the number of particles per grid must'
-          print*, '                     be a quadratic number!'
-        endif
-        print*, '                     iproc, npar/nw, npar_loc/nwgrid=', &
+        print*, '   iproc, npar/nw, npar_loc/nwgrid=', &
             iproc, npar/real(nwgrid), npar_loc/real(nw)
-        call fatal_error('streaming_coldstart','')
+        call fatal_error('streaming_coldstart','the number of particles per grid must be a quadratic number!')
       endif
 !
 !  Define a few disc parameters.
@@ -2207,8 +2238,8 @@ module Particles
 !
       if (i0+1<=npar_loc) then
         do k=i0+1,npar_loc
-          call random_number_wrapper(fp(k,izp))
-          fp(k,izp)=xyz0(3)+fp(k,izp)*Lxyz(3)
+          call random_number_wrapper(r)
+          fp(k,izp)=xyz0(3)+r*Lxyz(3)
         enddo
         if (lroot) print '(A,i7,A)', 'constant_richardson: placed ', &
             npar_loc-i0, ' particles randomly.'
@@ -2217,8 +2248,14 @@ module Particles
 !  Random positions in x and y.
 !
       do k=1,npar_loc
-        if (nxgrid/=1) call random_number_wrapper(fp(k,ixp))
-        if (nygrid/=1) call random_number_wrapper(fp(k,iyp))
+        if (nxgrid/=1) then
+          call random_number_wrapper(r)
+          fp(k,ixp)=r
+        endif
+        if (nygrid/=1) then
+          call random_number_wrapper(r)
+          fp(k,iyp)=r
+        endif
       enddo
       if (nxgrid/=1) &
           fp(1:npar_loc,ixp)=xyz0_loc(1)+fp(1:npar_loc,ixp)*Lxyz_loc(1)
@@ -2471,18 +2508,13 @@ module Particles
 !
 !  02-jan-05/anders: coded
 !
-      use General, only: random_number_wrapper, random_seed_wrapper
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, dimension (mx,my,mz,mvar), intent (inout) :: df
+      real, dimension (mpar_loc,mparray), intent (in) :: fp
+      real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
+      integer, dimension (mpar_loc,3), intent (in) :: ineargrid
 !
       logical :: lheader, lfirstcall=.true.
-!
-      intent (in) :: f, fp, ineargrid
-      intent (inout) :: df, dfp
 !
 !  Print out header information in first time step.
 !
@@ -2567,18 +2599,15 @@ module Particles
       use Diagnostics
       use EquationOfState, only: cs20
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, dimension (mx,my,mz,mvar), intent (inout) :: df
+      real, dimension (mpar_loc,mparray), intent (in) :: fp
+      real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
+      integer, dimension (mpar_loc,3), intent (in) :: ineargrid
 !
       real :: Omega2
       integer :: npar_found
       logical :: lheader, lfirstcall=.true.
-!
-      intent (in) :: f, fp, ineargrid
-      intent (inout) :: df, dfp
 !
 !  Print out header information in first time step.
 !
@@ -2599,9 +2628,8 @@ module Particles
             dfp(1:npar_loc,ivpy) = dfp(1:npar_loc,ivpy) - &
                 Omega2*fp(1:npar_loc,ivpx)
           else
-            print*,'dvvp_dt: Coriolis force on the particles is '
-            print*,'not yet implemented for spherical coordinates.'
-            call fatal_error('dvvp_dt','')
+            call fatal_error('dvvp_dt', &
+                'Coriolis force on the particles is not yet implemented for spherical coordinates.')
           endif
         endif
 !
@@ -2621,9 +2649,8 @@ module Particles
             dfp(1:npar_loc,ivpx) = &
                 dfp(1:npar_loc,ivpx) + Omega**2*fp(1:npar_loc,ixp)
           else
-            print*,'dvvp_dt: Centrifugal force on the particles is '
-            print*,'not implemented for spherical coordinates.'
-            call fatal_error('dvvp_dt','')
+            call fatal_error('dvvp_dt', &
+                'Centrifugal force on the particles is not implemented for spherical coordinates.')
           endif
         endif
 !
@@ -2860,19 +2887,16 @@ module Particles
 !
       use Diagnostics
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, dimension (mx,my,mz,mvar), intent (inout) :: df
+      real, dimension (mpar_loc,mparray), intent (in) :: fp
+      real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
+      integer, dimension (mpar_loc,3), intent (in) :: ineargrid
 !
       real, dimension(3) :: ggp
       real :: rr=0, vv=0, OO2
       integer :: k
       logical :: lheader, lfirstcall=.true.
-!
-      intent (in) :: f, fp, ineargrid
-      intent (inout) :: df, dfp
 !
       call keep_compiler_quiet(f,df)
 !
@@ -3111,12 +3135,12 @@ module Particles
       use SharedVariables, only: get_shared_variable
       use Viscosity, only: getnu
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (mx,my,mz,mvar), intent (inout) :: df
       type (pencil_case) :: p
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension (mpar_loc,mparray), intent (inout) :: fp
+      real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
+      integer, dimension (mpar_loc,3), intent (inout) :: ineargrid
 !
       real, dimension (nx) :: dt1_drag = 0.0, dt1_drag_gas, dt1_drag_dust
       real, dimension (nx) :: drag_heat
@@ -3139,8 +3163,6 @@ module Particles
       character (len=labellen) :: ivis=''
       real :: nu_
 !
-      intent (inout) :: f, df, dfp, fp, ineargrid
-!
 !  Identify module.
 !
       if (headtt) then
@@ -3162,10 +3184,10 @@ module Particles
           allocate(rep(k1_imn(imn):k2_imn(imn)))
 !
           if (.not.allocated(rep)) then
-            call fatal_error('dvvp_dt_pencil','unable to allocate sufficient memory for rep')
+            call fatal_error('dvvp_dt_pencil','unable to allocate sufficient memory for rep', .true.)
           endif
           if (.not. interp%luu) then
-            call fatal_error('dvvp_dt_pencil','you must set lnostore_uu=F when rep is to be calculated')
+            call fatal_error_local('dvvp_dt_pencil','you must set lnostore_uu=F when rep is to be calculated')
           endif
 !
           call calc_pencil_rep(fp,rep)
@@ -3177,7 +3199,7 @@ module Particles
           if (ldraglaw_steadystate.or.lbrownian_forces) then
             allocate(stocunn(k1_imn(imn):k2_imn(imn)))
             if (.not.allocated(stocunn)) then
-              call fatal_error('dvvp_dt_pencil','unable to allocate sufficient memory for stocunn')
+              call fatal_error('dvvp_dt_pencil','unable to allocate sufficient memory for stocunn', .true.)
             endif
 !
             call calc_stokes_cunningham(fp,stocunn)
@@ -3793,7 +3815,7 @@ module Particles
         if (idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. &
             idiag_dvpm  /=0 .or. idiag_dvpmax/=0) &
             call calculate_rms_speed(fp,ineargrid,p)
-        if (idiag_dtdragp/=0.and.(lfirst.and.ldt))  &
+        if (idiag_dtdragp/=0.and.(lfirst.and.ldt)) &
             call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
       endif
 !
@@ -4101,19 +4123,17 @@ module Particles
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
       type (pencil_case) :: p
-      real :: tausp1_par, tmp
       integer, dimension (mpar_loc,3) :: ineargrid
       integer :: k
+      real :: tausp1_par
+      real, optional, dimension(3), intent(in) :: uup
       logical, optional :: nochange_opt
+      real, optional, intent(in) :: rep
+      real, optional :: stocunn
 !
-      real, optional, dimension(3) :: uup
-      real, optional :: rep, stocunn
-!
-      real :: tausg1_point,OO
+      real :: tausg1_point,OO, tmp
       integer :: ix0, iy0, iz0, inx0, jspec
       logical :: nochange=.true.
-!
-      intent(in) :: rep,uup
 !
       if (present(nochange_opt)) then
         if (nochange_opt) then
@@ -4159,8 +4179,7 @@ module Particles
             elseif (lspherical_coords) then
               OO=(fp(k,ixp)*sin(fp(k,iyp)))**(-1.5)
             else
-              call fatal_error("get_frictiontime", &
-                  "no valid coord system")
+              call fatal_error("get_frictiontime", "no valid coord system")
               OO=0.
             endif
             tausp1_par=tmp*OO
@@ -4194,8 +4213,7 @@ module Particles
 !  when Sigmag is given in g/cm^2.
 !
         if (iap==0) then
-          if (lroot) print*, 'get_frictiontime: need particle radius as dynamical variable for Stokes law'
-          call fatal_error('get_frictiontime','')
+          call fatal_error('get_frictiontime','need particle radius as dynamical variable for Stokes law.')
         endif
         if (fp(k,iap)<2.25*mean_free_path_gas) then
           tausp1_par = 1/(fp(k,iap)*rhopmat)
@@ -4419,9 +4437,8 @@ module Particles
 !  Assume that (mu/sigma_coll) is the input parameter mean_free_path_gas
 !
         if (mean_free_path_gas==0) then
-          print*,'You want to use Stokes drag but you forgot to set '//&
-               'mean_free_path_gas in the .in files. Stop and check.'
-          call fatal_error("calc_draglaw_parameters","")
+          call fatal_error("calc_draglaw_parameters","You want to use Stokes drag"// &
+              "but you forgot to set 'mean_free_path_gas' in the *.in files.")
         endif
 !
         if (nzgrid==1) then
@@ -4468,8 +4485,7 @@ module Particles
         elseif (reynolds>1500) then
           kd=0.11*reynolds
         else
-          call fatal_error("calc_draglaw_parameters", &
-              "something went pretty wrong")
+          call fatal_error_local("calc_draglaw_parameters", "'reynolds' seems to be NaN!")
           kd=0.
         endif
 !
@@ -4957,12 +4973,11 @@ module Particles
 !
       use Viscosity, only: getnu
 !
-      real, dimension (mpar_loc,mparray) :: fp
-      real,dimension(k1_imn(imn):k2_imn(imn)) :: rep,nu
-      character (len=labellen) :: ivis=''
-      intent(in) :: fp
-      intent(inout) :: rep
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
+      real,dimension(k1_imn(imn):k2_imn(imn)), intent(inout) :: rep
 !
+      real,dimension(k1_imn(imn):k2_imn(imn)) :: nu
+      character (len=labellen) :: ivis=''
       real :: nu_
       integer :: k
 !
@@ -4985,12 +5000,10 @@ module Particles
       endif
 !
       if (.not.lparticles_radius) then
-        print*,'calc_pencil_rep: particle_radius module needs to be '// &
-          'enabled to calculate the particles Reynolds numbers.'
-        call fatal_error('calc_pencil_rep','')
+        call fatal_error('calc_pencil_rep', &
+            'particle_radius module needs to be enabled to calculate the particles Reynolds numbers.')
       elseif (maxval(nu)==0.0) then
-        print*,'calc_pencil_rep: nu (kinematic visc.) must be non-zero!'
-        call fatal_error('calc_pencil_rep','')
+        call fatal_error('calc_pencil_rep','nu (kinematic visc.) must be non-zero!')
       endif
 !
       do k=k1_imn(imn),k2_imn(imn)
@@ -5029,9 +5042,8 @@ module Particles
     subroutine calc_added_mass_beta(fp,k,added_mass_beta)
 !
       real, dimension (mpar_loc,mparray), intent(in) :: fp
-      real, intent(out) :: added_mass_beta
-!
       integer, intent(in) :: k
+      real, intent(out) :: added_mass_beta
 !
 !  beta for added mass according to beta=3rho_fluid/(2rho_part+rho_fluid)
 !  problem: we would have to calculate beta every time for every particle
@@ -5048,14 +5060,11 @@ module Particles
       use Viscosity, only: getnu
       use Particles_radius
 !
-      real, dimension (mpar_loc,mparray) :: fp
-      integer :: k
-      real :: tausp1_par
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
+      integer, intent(in) :: k
+      real, intent(out) :: tausp1_par
+!
       character (len=labellen) :: ivis=''
-!
-      intent(in) :: fp,k
-      intent(out) :: tausp1_par
-!
       real :: dia,nu,nu_
 !
 !  Find the kinematic viscosity
@@ -5081,9 +5090,8 @@ module Particles
 !  Particle diameter
 !
       if (.not.lparticles_radius) then
-        print*,'calc_draglaw_purestokes: need particles_radius module to '// &
-            'calculate the relaxation time!'
-        call fatal_error('calc_draglaw_purestokes','')
+        call fatal_error('calc_draglaw_purestokes', &
+            'need particles_radius module to calculate the relaxation time!')
       endif
 !
       dia=2.0*fp(k,iap)
@@ -5103,14 +5111,12 @@ module Particles
       use Viscosity, only: getnu
       use Particles_radius
 !
-      real, dimension (mpar_loc,mparray) :: fp
-      integer :: k
-      real :: rep, stocunn, tausp1_par
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
+      integer, intent(in) :: k
+      real, intent(in) :: rep, stocunn
+      real, intent(out) :: tausp1_par
+!
       character (len=labellen) :: ivis=''
-!
-      intent(in) :: fp,k,rep,stocunn
-      intent(out) :: tausp1_par
-!
       real :: cdrag,dia,nu,nu_
 !
 !  Find the kinematic viscosity.
@@ -5144,9 +5150,8 @@ module Particles
 !  Particle diameter
 !
       if (.not.lparticles_radius) then
-        print*,'calc_draglaw_steadystate: need particles_radius module to '// &
-            'calculate the relaxation time!'
-        call fatal_error('calc_draglaw_steadystate','')
+        call fatal_error('calc_draglaw_steadystate', &
+            'need particles_radius module to calculate the relaxation time!')
       endif
 !
       dia=2.0*fp(k,iap)
@@ -5177,16 +5182,14 @@ module Particles
       use General, only: normal_deviate
       use Viscosity, only: getnu
 !
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension(3), intent(out) :: force
-      character (len=labellen) :: ivis=''
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
+      integer, intent(in) :: k
       integer, dimension(3) :: ineark
-      integer :: k
-      real :: stocunn, rhop_swarm_par
+      real :: stocunn
+      real, dimension(3), intent(out) :: force
 !
-      intent(in) :: fp,k
-!
-      real :: Szero,dia,TT,nu,nu_
+      character (len=labellen) :: ivis=''
+      real :: Szero,dia,TT,rhop_swarm_par,nu,nu_
 !
 !  Find kinematic viscosity
 !
@@ -5245,15 +5248,15 @@ module Particles
 !
       use Viscosity, only: getnu
 !
-      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
+      integer, intent(in) :: k
+      integer, dimension(3) :: ineark
       real, dimension(3), intent(out) :: force
+!
       real, dimension(3) :: temp_grad
       real TT,mu,nu_,Kn,phi_therm,mass_p
       real Ktc,Ce,Cm,Cint
       character (len=labellen) :: ivis=''
-      integer, dimension(3) :: ineark
-      integer :: k
-      intent(in) :: fp,k
 !
       call keep_compiler_quiet(ineark)
 !
@@ -5468,22 +5471,14 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'vpymin',idiag_vpymin)
         call parse_name(iname,cname(iname),cform(iname),'vpzmin',idiag_vpzmin)
         call parse_name(iname,cname(iname),cform(iname),'vpmax',idiag_vpmax)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpxm', &
-            idiag_rhopvpxm)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpym', &
-            idiag_rhopvpym)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpzm', &
-            idiag_rhopvpzm)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpysm', &
-            idiag_rhopvpysm)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpxt', &
-            idiag_rhopvpxt)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpyt', &
-            idiag_rhopvpyt)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpzt', &
-            idiag_rhopvpzt)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpysm', &
-            idiag_rhopvpysm)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpxm',idiag_rhopvpxm)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpym',idiag_rhopvpym)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpzm',idiag_rhopvpzm)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpysm',idiag_rhopvpysm)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpxt',idiag_rhopvpxt)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpyt',idiag_rhopvpyt)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpzt',idiag_rhopvpzt)
+        call parse_name(iname,cname(iname),cform(iname),'rhopvpysm',idiag_rhopvpysm)
         call parse_name(iname,cname(iname),cform(iname),'lpxm',idiag_lpxm)
         call parse_name(iname,cname(iname),cform(iname),'lpym',idiag_lpym)
         call parse_name(iname,cname(iname),cform(iname),'lpzm',idiag_lpzm)
@@ -5517,19 +5512,13 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'dvpz2m',idiag_dvpz2m)
         call parse_name(iname,cname(iname),cform(iname),'dvpm',idiag_dvpm)
         call parse_name(iname,cname(iname),cform(iname),'dvpmax',idiag_dvpmax)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'dedragp',idiag_dedragp)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'decollp',idiag_decollp)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'epotpm',idiag_epotpm)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'npargone',idiag_npargone)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'vpyfull2m',idiag_vpyfull2m)
+        call parse_name(iname,cname(iname),cform(iname),'dedragp',idiag_dedragp)
+        call parse_name(iname,cname(iname),cform(iname),'decollp',idiag_decollp)
+        call parse_name(iname,cname(iname),cform(iname),'epotpm',idiag_epotpm)
+        call parse_name(iname,cname(iname),cform(iname),'npargone',idiag_npargone)
+        call parse_name(iname,cname(iname),cform(iname),'vpyfull2m',idiag_vpyfull2m)
         call parse_name(iname,cname(iname),cform(iname),'vprms',idiag_vprms)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'deshearbcsm',idiag_deshearbcsm)
+        call parse_name(iname,cname(iname),cform(iname),'deshearbcsm',idiag_deshearbcsm)
       enddo
 !
 !  Check for those quantities for which we want x-averages.
@@ -5556,10 +5545,8 @@ module Particles
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'epspmz',idiag_epspmz)
         do k=1,ninit
           srad=itoa(k)
-          call parse_name(inamez,cnamez(inamez),cformz(inamez),&
-              'npvzmz'//trim(srad),idiag_npvzmz(k))
-          call parse_name(inamez,cnamez(inamez),cformz(inamez),&
-              'nptz'//trim(srad),idiag_nptz(k))
+          call parse_name(inamez,cnamez(inamez),cformz(inamez),'npvzmz'//trim(srad),idiag_npvzmz(k))
+          call parse_name(inamez,cnamez(inamez),cformz(inamez),'nptz'//trim(srad),idiag_nptz(k))
         enddo
 
       enddo

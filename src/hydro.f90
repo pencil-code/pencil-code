@@ -579,7 +579,7 @@ module Hydro
 !
   contains
 !***********************************************************************
-    subroutine register_hydro()
+    subroutine register_hydro
 !
 !  Initialise variables which should know that we solve the hydro
 !  equations: iuu, etc; increase nvar accordingly.
@@ -1751,7 +1751,7 @@ module Hydro
 !
     endsubroutine init_uu
 !***********************************************************************
-    subroutine pencil_criteria_hydro()
+    subroutine pencil_criteria_hydro
 !
 !  All pencils that the Hydro module depends on are specified here.
 !
@@ -2385,39 +2385,11 @@ module Hydro
 !   calculation of characteristic velocity
 !   for slope limited diffusion
 !
+      use General, only: staggered_mean_vec
+
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-      real, parameter :: i64_1=1/64., i16_1=1/16., i4_1=1/4.
 !
-      if (lslope_limit_diff) then
-        if (dimensionality==3) then
-          f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) &
-                                +i64_1 *sum((f(2:mx-2,2:my-2,2:mz-2,iux:iuz) &
-                                            +f(2:mx-2,2:my-2,3:mz-1,iux:iuz) &
-                                            +f(2:mx-2,3:my-1,2:mz-2,iux:iuz) &
-                                            +f(2:mx-2,3:my-1,3:mz-1,iux:iuz) &
-                                            +f(3:mx-1,2:my-2,2:mz-2,iux:iuz) &
-                                            +f(3:mx-1,2:my-2,3:mz-1,iux:iuz) &
-                                            +f(3:mx-1,3:my-1,2:mz-2,iux:iuz) &
-                                            +f(3:mx-1,3:my-1,3:mz-1,iux:iuz))**2,4)
-        elseif (dimensionality==1) then
-          if (nxgrid/=1) then
-            f(2:mx-2,m1:m2,n1:n2,iFF_char_c)=f(2:mx-2,m1:m2,n1:n2,iFF_char_c) &
-                                  +i4_1*sum((f(2:mx-2,m1:m2,n1:n2,iux:iuz) &
-                                            +f(3:mx-1,m1:m2,n1:n2,iux:iuz))**2,4)
-          elseif (nygrid/=1) then
-            f(l1:l2,2:my-2,n1:n2,iFF_char_c)=f(l1:l2,2:my-2,n1:n2,iFF_char_c) &
-                                  +i4_1*sum((f(l1:l2,2:my-2,n1:n2,iux:iuz) &
-                                            +f(l1:l2,3:my-1,n1:n2,iux:iuz))**2,4)
-          else
-            f(l1:l2,m1:m2,2:mz-2,iFF_char_c)=f(l1:l2,m1:m2,2:mz-2,iFF_char_c) & 
-                                  +i4_1*sum((f(l1:l2,m1:m2,2:mz-2,iux:iuz) &
-                                            +f(l1:l2,m1:m2,3:mz-1,iux:iuz))**2,4)
-          endif
-        else
-          call fatal_error('update_char_vel_hydro', &
-                           'Characteristic velocity not implemented for 2D setups')
-        endif
-      endif
+      if (lslope_limit_diff) call staggered_mean_vec(f,iux,iFF_char_c,1.)
 !
     endsubroutine update_char_vel_hydro
 !***********************************************************************
@@ -3439,7 +3411,7 @@ module Hydro
 !
     endsubroutine set_border_hydro
 !***********************************************************************
-    subroutine calc_othresh()
+    subroutine calc_othresh
 !
 !  calculate othresh from orms, give warnings if there are problems
 !
@@ -5760,7 +5732,7 @@ module Hydro
 !
     endsubroutine kinematic_random_phase
 !***********************************************************************
-    subroutine expand_shands_hydro()
+    subroutine expand_shands_hydro
 !
 !  Expands shorthand labels of hydro diagnostics.
 !

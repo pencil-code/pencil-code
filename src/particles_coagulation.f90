@@ -267,7 +267,7 @@ module Particles_coagulation
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real, dimension (3) :: xpj, xpk, vpj, vpk
-      real :: lambda_mfp1, deltavjk, tau_coll1, prob, r, kernel
+      real :: lambda_mfp1, deltavjk, tau_coll1, prob, rran, kernel
       real :: npswarmj, npswarmk
       integer :: l, j, k, ncoll, ncoll_par, npart_par
 !
@@ -415,8 +415,21 @@ module Particles_coagulation
 !  The probability for a collision in this time-step is dt/tau_coll.
 !
                     prob=dt*tau_coll1
-                    call random_number_wrapper(r)
-                    if (r<=prob) then
+!NILS: I found that when the particles_coagulation module was turned on, 
+!NILS: the fluid turbulence was affected. By inspecting the energy spectrum
+!NILS: it became apparent that it was primarily the small scales that were
+!NILS: affected. This happened even though all back reactions from the 
+!NILS: particles to the fluid were turned off. After some intense debugging 
+!NILS: I finally found that the problem was due to a call to
+!NILS: the random_number_wrapper routine. When I replaced this call with a call
+!NILS: to the intinsic random_number subroutine, the energy spectrum was fine.
+!NILS: 
+!NILS: I am not able to understand why the call to the random_number_wrapper
+!NILS: routine should cause any problems, but I have reproduce the problem
+!NILS: both on our linux cluster (with pfg90) and on my laptop (with gfortran).
+                    call random_number(rran)
+!                    call random_number_wrapper(rran)
+                    if (rran<=prob) then
 !
                       call coagulation_fragmentation(fp,j,k,deltavjk, &
                           xpj,xpk,vpj,vpk)

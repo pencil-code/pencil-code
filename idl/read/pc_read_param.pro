@@ -54,9 +54,11 @@ COMPILE_OPT IDL2,HIDDEN
 ; Build the full path and filename and check for existence.
 ;
   undefine, object
+  idl_subdir = datadir+'/idl'
+  if (not file_test (idl_subdir, /directory)) then file_mkdir, idl_subdir
   if (keyword_set(param2)) then begin
     filename = datadir+'/param2.nml'
-    outfile = datadir+'/idl/param2.pro'
+    outfile = idl_subdir+'/run_param.pro'
     if (not file_test(filename)) then begin
       if (not keyword_set(quiet)) then $
           print, "WARNING: 'run.csh' not yet executed, 'run_pars' are unavailable."
@@ -64,7 +66,7 @@ COMPILE_OPT IDL2,HIDDEN
     end
   endif else begin
     filename = datadir+'/param.nml'
-    outfile = datadir+'/idl/param.pro'
+    outfile = idl_subdir+'/start_param.pro'
     if (not file_test(filename)) then $
         message, "ERROR: datadir is not initialized, please execute 'start.csh' first."
   endelse

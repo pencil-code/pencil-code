@@ -804,7 +804,7 @@ module Magnetic
 !
   contains
 !***********************************************************************
-    subroutine register_magnetic()
+    subroutine register_magnetic
 !
 !  Initialise variables which should know that we solve for the vector
 !  potential: iaa, etc; increase nvar accordingly
@@ -857,7 +857,7 @@ module Magnetic
 !
 !  register the mean-field module
 !
-      if (lmagn_mf) call register_magn_mf()
+      if (lmagn_mf) call register_magn_mf
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -1835,7 +1835,7 @@ module Magnetic
 !
     endsubroutine init_aa
 !***********************************************************************
-    subroutine pencil_criteria_magnetic()
+    subroutine pencil_criteria_magnetic
 !
 !   All pencils that the Magnetic module depends on are specified here.
 !
@@ -2208,7 +2208,7 @@ module Magnetic
 !
 !  check for pencil_criteria_magn_mf
 !
-      if (lmagn_mf) call pencil_criteria_magn_mf()
+      if (lmagn_mf) call pencil_criteria_magn_mf
 !
     endsubroutine pencil_criteria_magnetic
 !***********************************************************************
@@ -2480,16 +2480,33 @@ module Magnetic
 !***********************************************************************
     subroutine update_char_vel_magnetic(f)
 !
-!   25-sep-15/MR+joern: for slope limited diffusion
+!   Add the Alfven speed to the characteritic velocity
+!   for slope limited diffusion.
 !
-!   Add the vectorpotential to the characteritic velocity
-!   for slope limited diffusion
+!   25-sep-15/MR+joern: coded
 !
-      real, dimension(mx,my,mz,mfarray), intent(inout):: f
-!
-      if (lslope_limit_diff) &
-         f(:,:,:,iFF_char_c)=f(:,:,:,iFF_char_c)+sum(f(:,:,:,iax:iaz)**2,4)
+      use General, only: staggered_mean_vec
 
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      type(pencil_case) :: p
+      logical, dimension(npencils) :: lpenc_loc=.false.
+!
+      if (lslope_limit_diff) then
+
+        lpenc_loc(i_va2)=.true.
+!
+!  Calculate Alfven speed and store temporarily in first slot of diffusive fluxes.
+!
+        do n=n1,n2; do m=m1,m2
+          call calc_pencils_magnetic(f,p,lpenc_loc)
+          f(l1:l2,m,n,iFF_diff) = sqrt(p%va2)
+        enddo; enddo
+!
+        call staggered_mean_vec(f,iFF_diff,iFF_char_c,1.)
+
+      endif
+!
     endsubroutine update_char_vel_magnetic
 !***********************************************************************
     subroutine calc_pencils_magnetic_std(f,p)
@@ -3001,6 +3018,9 @@ module Magnetic
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
+      intent(in)  :: p
+      intent(inout)  :: f,df
+!
       real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
       real, dimension (nx,3) :: exj,dexb,phib,aa_xyaver,jxbb
       real, dimension (nx,3) :: ujiaj,gua,uxbxb,poynting
@@ -3024,9 +3044,6 @@ module Magnetic
       integer :: i,j,k,ju,ix
       integer :: isound,lspoint,mspoint,nspoint
       integer, parameter :: nxy=nxgrid*nygrid
-!
-      intent(in)  :: p
-      intent(inout)  :: f,df
 !
 !  Identify module and boundary conditions.
 !
@@ -3476,6 +3493,14 @@ module Magnetic
         endif
       elseif (llocal_friction) then
         dAdt = dAdt-LLambda_aa*p%aa
+      endif
+!
+      if (lmagnetic_slope_limited.and.lfirst) then
+        df(:,m,n,iax:iaz)=df(:,m,n,iax:iaz)-f(l1:l2,m,n,iFF_div_aa:iFF_div_aa+2)
+        if (lohmic_heat) then
+          call dot(f(l1:l2,m,n,iFF_div_aa:iFF_div_aa+2),p%jj,phi)                !tb checked
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+(etatotal*mu0)*p%rho1*p%TT1*phi
+        endif
       endif
 !
 !  Special contributions to this module are called here.
@@ -4713,20 +4738,14 @@ module Magnetic
 !   2-jan-10/axel: adapted from calc_lhydro_pars
 !  10-jan-13/MR: added possibility to remove evolving mean field
 !
-      use Sub, only: notanumber
       use Deriv, only: der_z,der2_z
-      use Sub, only: finalize_aver, div, calc_diffusive_flux
+      use Sub, only: finalize_aver, div, calc_all_diff_fluxes
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 
       real :: fact
-      integer :: n,ll,mm,nn,j,iff
-      real, dimension(mx-1) :: tmpx
-      real, dimension(my-1) :: tmpy
-      real, dimension(mz-1) :: tmpz
+      integer :: n,j
       real, dimension(nz,3) :: gaamz,d2aamz
-!
-      intent(inout) :: f
 !
 !  Compute mean field for each component. Include the ghost zones,
 !  because they have just been set.
@@ -4787,42 +4806,14 @@ module Magnetic
 !
         do j=1,3
 
-          iff=iFF_diff
-
-          if (nxgrid>1) then
-            do nn=n1,n2; do mm=m1,m2
-              tmpx = f(2:,mm,nn,iaa+j-1)-f(:mx-1,mm,nn,iaa+j-1)
-if (notanumber(tmpx)) print*, 'TMPX:j,mm,nn=', j,mm,nn
-              call calc_diffusive_flux(tmpx,f(2:mx-2,mm,nn,iFF_char_c),islope_limiter,h_slope_limited,f(2:mx-2,mm,nn,iff))
-if (notanumber(f(2:mx-2,mm,nn,iff))) print*, 'DIFFX:j,mm,nn=', j,mm,nn
-            enddo; enddo
-            iff=iff+1
-          endif
-
-          if (nygrid>1) then
-            do nn=n1,n2; do ll=l1,l2
-              tmpy = f(ll,2:,nn,iaa+j-1)-f(ll,:my-1,nn,iaa+j-1)
-if (notanumber(tmpy)) print*, 'TMPY:j,mm,nn=', j,mm,nn
-              call calc_diffusive_flux(tmpy,f(ll,2:my-2,nn,iFF_char_c),islope_limiter,h_slope_limited,f(ll,2:my-2,nn,iff))
-if (notanumber(f(ll,2:my-2,nn,iff))) print*, 'DIFFY:j,ll,nn=', j,ll,nn
-            enddo; enddo
-            iff=iff+1
-          endif
-
-          if (nzgrid>1) then
-            do mm=m1,m2; do ll=l1,l2
-              tmpz = f(ll,mm,2:,iaa+j-1)-f(ll,mm,:mz-1,iaa+j-1)
-if (notanumber(tmpz)) print*, 'TMPZ:j,ll,mm=', j,ll,mm
-            call calc_diffusive_flux(tmpz,f(ll,mm,2:mz-2,iFF_char_c),islope_limiter,h_slope_limited,f(ll,mm,2:mz-2,iff))
-if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
-            enddo; enddo
-          endif
+          call calc_all_diff_fluxes(f,iaa+j-1,islope_limiter,h_slope_limited)
 
           do n=n1,n2; do m=m1,m2
             call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_aa+j-1),.true.)
           enddo; enddo
 
         enddo
+
       endif
 !
 !  XX
@@ -4954,7 +4945,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
 !
     endsubroutine eta_shell
 !***********************************************************************
-    subroutine calc_bthresh()
+    subroutine calc_bthresh
 !
 !  calculate bthresh from brms, give warnings if there are problems
 !
@@ -7974,7 +7965,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
 !
     endsubroutine get_resistivity_implicit
 !***********************************************************************
-    subroutine expand_shands_magnetic()
+    subroutine expand_shands_magnetic
 !
 !  Expands shorthand labels of magnetic diagnostics.
 !

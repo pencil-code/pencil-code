@@ -30,16 +30,6 @@ module EquationOfState
 !
   include 'eos.h'
 !
-  interface eoscalc ! Overload subroutine `eoscalc' function
-    module procedure eoscalc_pencil   ! explicit f implicit m,n
-    module procedure eoscalc_point    ! explicit lnrho, ss
-    module procedure eoscalc_farray   ! explicit lnrho, ss
-  end interface
-!
-  interface pressure_gradient ! Overload subroutine `pressure_gradient'
-    module procedure pressure_gradient_farray  ! explicit f implicit m,n
-    module procedure pressure_gradient_point   ! explicit lnrho, ss
-  end interface
 ! integers specifying which independent variables to use in eoscalc
   integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
   integer, parameter :: ilnrho_TT=5, irho_ss=7, irho_TT=10, ipp_ss=11
@@ -109,7 +99,7 @@ module EquationOfState
 !
   contains
 !***********************************************************************
-    subroutine register_eos()
+    subroutine register_eos
 !
 !  14-jun-03/axel: adapted from register_eos
 !
@@ -137,7 +127,7 @@ module EquationOfState
 !
     endsubroutine register_eos
 !***********************************************************************
-    subroutine initialize_eos()
+    subroutine initialize_eos
 !
 !  called by run.f90 after reading parameters, but before the time loop
 !
@@ -220,7 +210,7 @@ module EquationOfState
 !
     endsubroutine select_eos_variable
 !***********************************************************************
-    subroutine pencil_criteria_eos()
+    subroutine pencil_criteria_eos
 !
 !  All pencils that the EquationOfState module depends on are specified here.
 !
@@ -327,14 +317,31 @@ module EquationOfState
 !
     endsubroutine pencil_interdep_eos
 !***********************************************************************
-    subroutine calc_pencils_eos(f,p)
+    subroutine calc_pencils_eos_std(f,p)
+!
+! Envelope adjusting calc_pencils_eos_pencpar to the standard use with
+! lpenc_loc=lpencil
+!
+!  9-oct-15/MR: coded
+!
+      real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
+      type (pencil_case),                intent(OUT)  :: p
+!
+      call calc_pencils_eos_pencpar(f,p,lpencil)
+!
+    endsubroutine calc_pencils_eos_std
+!***********************************************************************
+    subroutine calc_pencils_eos_pencpar(f,p,lpenc_loc)
 !
 !  Calculate relevant eos pencils
+!
+!   9-oct-15/MR: added mask on pencil case as a parameter.
 !
       use Sub, only: grad,del2,del6,g2ij
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+      logical, dimension(npencils) :: lpenc_loc
 !
       real, dimension (nx) :: yH_term_cv,TT_term_cv
       real, dimension (nx) :: yH_term_cp,TT_term_cp
@@ -343,18 +350,18 @@ module EquationOfState
 !
 !  Temperature
 !
-      if (lpencil(i_lnTT)) p%lnTT=f(l1:l2,m,n,ilnTT)
-      if (lpencil(i_TT)) p%TT=exp(p%lnTT)
-      if (lpencil(i_TT1)) p%TT1=1/p%TT
+      if (lpenc_loc(i_lnTT)) p%lnTT=f(l1:l2,m,n,ilnTT)
+      if (lpenc_loc(i_TT)) p%TT=exp(p%lnTT)
+      if (lpenc_loc(i_TT1)) p%TT1=1/p%TT
 !
 !
 !  Temperature laplacian and gradient
 !
-      if (lpencil(i_glnTT)) call grad(f,ilnTT,p%glnTT)
-      if (lpencil(i_hlnTT)) call g2ij(f,ilnTT,p%hlnTT)
-      if (lpencil(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
-      if (lpencil(i_del6lnTT)) call del6(f,ilnTT,p%del6lnTT)
-      if (lpencil(i_gTT)) then
+      if (lpenc_loc(i_glnTT)) call grad(f,ilnTT,p%glnTT)
+      if (lpenc_loc(i_hlnTT)) call g2ij(f,ilnTT,p%hlnTT)
+      if (lpenc_loc(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
+      if (lpenc_loc(i_del6lnTT)) call del6(f,ilnTT,p%del6lnTT)
+      if (lpenc_loc(i_gTT)) then
         do i=1,3
           p%gTT(:,i) =p%TT * p%glnTT(:,i)
         enddo
@@ -362,72 +369,72 @@ module EquationOfState
 !
 !  Ionization fraction
 !
-      if (lpencil(i_yH)) p%yH = f(l1:l2,m,n,iyH)
+      if (lpenc_loc(i_yH)) p%yH = f(l1:l2,m,n,iyH)
 !
 !  Mean molecular weight
 !
-      if (lpencil(i_mu1)) p%mu1 = mu1_0*(1 + p%yH + xHe)
+      if (lpenc_loc(i_mu1)) p%mu1 = mu1_0*(1 + p%yH + xHe)
 !
 !  Pressure
 !
-      if (lpencil(i_pp)) p%pp = Rgas*p%mu1*p%rho*p%TT
+      if (lpenc_loc(i_pp)) p%pp = Rgas*p%mu1*p%rho*p%TT
 !
 !  Common terms involving the ionization fraction
 !
-      if (lpencil(i_cv)) then
+      if (lpenc_loc(i_cv)) then
         yH_term_cv = p%yH*(1-p%yH)/((2-p%yH)*(1+p%yH+xHe))
         TT_term_cv = 1.5 + p%TT1*TT_ion
       endif
 !
-      if (lpencil(i_cp).or.lpencil(i_delta)) then
+      if (lpenc_loc(i_cp).or.lpenc_loc(i_delta)) then
         yH_term_cp = p%yH*(1-p%yH)/(2+xHe*(2-p%yH))
         TT_term_cp = 2.5 + p%TT1*TT_ion
       endif
 !
 !  Specific heat at constant volume (i.e. density)
 !
-      if (lpencil(i_cv)) p%cv = Rgas*p%mu1*(1.5 + yH_term_cv*TT_term_cv**2)
-      if (lpencil(i_cv1)) p%cv1=1/p%cv
+      if (lpenc_loc(i_cv)) p%cv = Rgas*p%mu1*(1.5 + yH_term_cv*TT_term_cv**2)
+      if (lpenc_loc(i_cv1)) p%cv1=1/p%cv
 !
 !  Specific heat at constant pressure
 !
-      if (lpencil(i_cp)) then
+      if (lpenc_loc(i_cp)) then
         if (lcalc_cp_full) then
           p%cp = cp_full(l1:l2,m,n)
         else
           p%cp = Rgas*p%mu1*(2.5 + yH_term_cp*TT_term_cp**2)
         endif
       endif
-      if (lpencil(i_cp1)) p%cp1 = 1/p%cp
+      if (lpenc_loc(i_cp1)) p%cp1 = 1/p%cp
 !
 !  Gradient of the above
 !
-      if (lpencil(i_gradcp)) call grad(cp_full,p%gradcp)
+      if (lpenc_loc(i_gradcp)) call grad(cp_full,p%gradcp)
 !
 !  Polytropic index
 !
-      if (lpencil(i_gamma)) p%gamma = p%cp*p%cv1
-      if (lpencil(i_gamma1)) p%gamma1 = p%cv*p%cp1
-      if (lpencil(i_gamma_m1)) p%gamma_m1 = p%gamma - 1
+      if (lpenc_loc(i_gamma)) p%gamma = p%cp*p%cv1
+      if (lpenc_loc(i_gamma1)) p%gamma1 = p%cv*p%cp1
+      if (lpenc_loc(i_gamma_m1)) p%gamma_m1 = p%gamma - 1
 !
 !  For the definition of delta, see Kippenhahn & Weigert
 !
-      if (lpencil(i_delta)) p%delta = 1 + yH_term_cp*TT_term_cp
+      if (lpenc_loc(i_delta)) p%delta = 1 + yH_term_cp*TT_term_cp
 !
 !  Sound speed
 !
-      if (lpencil(i_cs2)) then
+      if (lpenc_loc(i_cs2)) then
         alpha1 = (2+xHe*(2-p%yH))/((2-p%yH)*(1+p%yH+xHe))
         p%cs2 = p%gamma*p%rho1*p%pp*alpha1
       endif
 !
 !  Adiabatic temperature gradient
 !
-      if (lpencil(i_nabla_ad)) p%nabla_ad = Rgas*p%mu1*p%delta*p%cp1
+      if (lpenc_loc(i_nabla_ad)) p%nabla_ad = Rgas*p%mu1*p%delta*p%cp1
 !
 !  Logarithmic pressure gradient
 !
-      if (lpencil(i_rho1gpp)) then
+      if (lpenc_loc(i_rho1gpp)) then
         do i=1,3
           p%rho1gpp(:,i) = p%gamma1*p%cs2*(p%glnrho(:,i)+p%delta*p%glnTT(:,i))
         enddo
@@ -435,12 +442,12 @@ module EquationOfState
 !
 !  Energy per unit mass
 !
-      if (lpencil(i_ee)) p%ee = 1.5*Rgas*p%mu1*p%TT + p%yH*Rgas*mu1_0*TT_ion
+      if (lpenc_loc(i_ee)) p%ee = 1.5*Rgas*p%mu1*p%TT + p%yH*Rgas*mu1_0*TT_ion
 !
 !  Entropy per unit mass
 !  The contributions from each particle species contain the mixing entropy
 !
-      if (lpencil(i_ss)) then
+      if (lpenc_loc(i_ss)) then
         tmp = 2.5 - 1.5*(lnTT_ion-p%lnTT) - p%lnrho
         where (p%yH < 1) ! Neutral Hydrogen
           p%ss = (1-p%yH)*(tmp + lnrho_H - log(1-p%yH))
@@ -455,15 +462,15 @@ module EquationOfState
         p%ss = Rgas*mu1_0*p%ss
       endif
 !
-      if (lpencil(i_gss)) then
+      if (lpenc_loc(i_gss)) then
         call fatal_error('gss',"SHOULDN'T BE CALLED WITH eos_temperature_...")
       endif
 !
-      if (lpencil(i_del2ss)) then
+      if (lpenc_loc(i_del2ss)) then
         call fatal_error('del2ss',"SHOULDN'T BE CALLED WITH eos_temperature_...")
       endif
 !
-      if (lpencil(i_glnmumol)) p%glnmumol(:,:)=0.
+      if (lpenc_loc(i_glnmumol)) p%glnmumol(:,:)=0.
 !
 !  pressure and cp as optional auxiliary variables
 !
@@ -475,7 +482,7 @@ module EquationOfState
       if (lgamma_as_aux) f(l1:l2,m,n,igamma)=p%gamma
       if (lnabad_as_aux) f(l1:l2,m,n,inabad)=p%nabla_ad
 !
-    endsubroutine calc_pencils_eos
+    endsubroutine calc_pencils_eos_pencpar
 !***********************************************************************
     subroutine getmu(f,mu)
 !
@@ -927,7 +934,7 @@ module EquationOfState
 !
     endsubroutine get_soundspeed
 !***********************************************************************
-    subroutine units_eos()
+    subroutine units_eos
 !
 !  If unit_temperature hasn't been specified explictly in start.in,
 !  set it to 1 (Kelvin).

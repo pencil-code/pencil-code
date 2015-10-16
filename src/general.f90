@@ -45,6 +45,7 @@ module General
   public :: file_exists, file_size, delete_file, count_lines
   public :: backskip_to_time
   public :: ranges_dimensional
+  public :: staggered_mean_scal, staggered_mean_vec
 !
   include 'record_types.h'
 !
@@ -267,15 +268,23 @@ module General
 !  Fills a with a random number calculated with one of the generators
 !  available with random_gen.
 !
-      real :: a
-      real, dimension(1) :: b
+      use Cdata, only: lroot
 !
-      intent(out) :: a
+      real, intent(out) :: a
 !
-!     b = a                     ! not needed unless numbers are non-Markovian
+      select case (random_gen)
 !
-      call random_number_wrapper(b)
-      a = b(1)
+        case ('system')
+          call random_number(a)
+        case ('min_std')
+          a=ran0(rstate(1))
+        case ('nr_f90')
+          a=mars_ran()
+        case default
+          if (lroot) print*, 'No such random number generator: ', random_gen
+          STOP 1                ! Return nonzero exit status
+!
+      endselect
 !
     endsubroutine random_number_wrapper_0
 !***********************************************************************
@@ -286,28 +295,26 @@ module General
 !
       use Cdata, only: lroot
 !
-      real, dimension(:) :: a
+      real, dimension(:), intent(out) :: a
       integer :: i
-!
-      intent(out) :: a
 !
       select case (random_gen)
 !
-      case ('system')
-        call random_number(a)
-      case ('min_std')
-        do i=1,size(a,1)
-          a(i)=ran0(rstate(1))
-        enddo
-      case ('nr_f90')
-        do i=1,size(a,1)
-          a(i)=mars_ran()
-        enddo
-      case default
-        if (lroot) print*, 'No such random number generator: ', random_gen
-        STOP 1                ! Return nonzero exit status
+        case ('system')
+          call random_number(a)
+        case ('min_std')
+          do i=1,size(a,1)
+            a(i)=ran0(rstate(1))
+          enddo
+        case ('nr_f90')
+          do i=1,size(a,1)
+            a(i)=mars_ran()
+          enddo
+        case default
+          if (lroot) print*, 'No such random number generator: ', random_gen
+          STOP 1                ! Return nonzero exit status
 !
-     endselect
+      endselect
 !
     endsubroutine random_number_wrapper_1
 !***********************************************************************
@@ -318,26 +325,24 @@ module General
 !
       use Cdata, only: lroot
 !
-      real, dimension(:,:,:) :: a
+      real, dimension(:,:,:), intent(out) :: a
       integer :: i,j,k
-!
-      intent(out) :: a
 !
       select case (random_gen)
 !
-      case ('system')
-        call random_number(a)
-      case ('min_std')
-        do i=1,size(a,1); do j=1,size(a,2); do k=1,size(a,3)
-          a(i,j,k)=ran0(rstate(1))
-        enddo; enddo; enddo
-      case ('nr_f90')
-        do i=1,size(a,1); do j=1,size(a,2); do k=1,size(a,3)
-          a(i,j,k)=mars_ran()
-        enddo; enddo; enddo
-      case default
-        if (lroot) print*, 'No such random number generator: ', random_gen
-        STOP 1                ! Return nonzero exit status
+        case ('system')
+          call random_number(a)
+        case ('min_std')
+          do i=1,size(a,1); do j=1,size(a,2); do k=1,size(a,3)
+            a(i,j,k)=ran0(rstate(1))
+          enddo; enddo; enddo
+        case ('nr_f90')
+          do i=1,size(a,1); do j=1,size(a,2); do k=1,size(a,3)
+            a(i,j,k)=mars_ran()
+          enddo; enddo; enddo
+        case default
+          if (lroot) print*, 'No such random number generator: ', random_gen
+          STOP 1                ! Return nonzero exit status
 !
       endselect
 !
@@ -419,11 +424,13 @@ module General
 !
 !  28.08.02/nils: Adapted from Numerical Recipes
 !
+      integer, intent(inout) :: dummy
+!
+      integer :: k
       integer, parameter :: ia=16807,im=2147483647,iq=127773,ir=2836, &
            mask=123459876
       real, parameter :: am=1./im
       real :: ran0
-      integer :: dummy,k
 !
       dummy=ieor(dummy,mask)
       k=dummy/iq
@@ -442,31 +449,31 @@ module General
 !  Returns a uniform random number in (0, 1).
 !  Call with (INIT=ival) to initialize.
 !
-!  26-sep-02/wolf: Implemented, following `Numerical Recipes for F90'
+!  26-sep-02/wolf: Implemented, following 'Numerical Recipes for F90'
 !                  ran() routine
 !
       implicit none
 !
-      real :: mars_ran
-      real, save :: am=impossible    ! will be constant on a given platform
       integer, optional, intent(in) :: init
-      integer, parameter :: ia=16807,im=2147483647,iq=127773,ir=2836
-      integer :: k,init1=1812   ! default value
-      logical, save :: first_call=.true.
 !
-!ajwm This doesn't appear to always get set!
-      if (first_call) then
-        am=nearest(1.0,-1.0)/im
-        first_call=.false.
-      endif
-      if (present(init) .or. rstate(1)==0 .or. rstate(2)<=0) then
+      real :: mars_ran
+      real, save :: am   ! will be constant on a given platform
+      integer, parameter :: ia=16807, im=2147483647, iq=127773, ir=2836
+      integer :: k
+      integer, save :: init1=1812
+      logical, save :: first_call=.true.
 !
 !  Initialize.
 !
+      if (present(init) .or. (rstate(1) == 0) .or. (rstate(2) <= 0)) then
         if (present(init)) init1 = init
         am=nearest(1.0,-1.0)/im
+        first_call=.false.
         rstate(1)=ieor(777755555,abs(init1))
         rstate(2)=ior(ieor(888889999,abs(init1)),1)
+      elseif (first_call) then
+        am=nearest(1.0,-1.0)/im
+        first_call=.false.
       endif
 !
 !  Marsaglia shift sequence with period 2^32-1.
@@ -3646,5 +3653,128 @@ module General
       endif
     
     endsubroutine ranges_dimensional
+!***********************************************************************
+    subroutine staggered_mean_vec(f,k,jmean,weight)
+!
+!   Calculates mean squared modulus of a vector quantity in the centre of a grid cell.
+!
+!   9-oct-15/MR: coded
+!
+      use Cdata, only: dimensionality
+
+      real, dimension (mx,my,mz,mfarray), intent(inout):: f
+      integer,                            intent(in)   :: k,jmean
+      real,                               intent(in)   :: weight
+
+      real, parameter :: i64_1=1/64., i16_1=1/16., i4_1=1/4.
+!
+      if (dimensionality==3) then 
+        
+        f(2:mx-2,2:my-2,2:mz-2,jmean) = f(2:mx-2,2:my-2,2:mz-2,jmean) &
+                                       +(weight*i64_1)*sum(( f(2:mx-2,2:my-2,2:mz-2,k:k+2) &
+                                                            +f(2:mx-2,2:my-2,3:mz-1,k:k+2) &
+                                                            +f(2:mx-2,3:my-1,2:mz-2,k:k+2) &
+                                                            +f(2:mx-2,3:my-1,3:mz-1,k:k+2) &
+                                                            +f(3:mx-1,2:my-2,2:mz-2,k:k+2) &
+                                                            +f(3:mx-1,2:my-2,3:mz-1,k:k+2) &
+                                                            +f(3:mx-1,3:my-1,2:mz-2,k:k+2) &
+                                                            +f(3:mx-1,3:my-1,3:mz-1,k:k+2))**2,4)
+      elseif (dimensionality==1) then 
+        if (nxgrid/=1) then 
+          f(2:mx-2,m1:m2,n1:n2,jmean) = f(2:mx-2,m1:m2,n1:n2,jmean) &
+                                       +(weight*i4_1)*sum(( f(2:mx-2,m1:m2,n1:n2,k:k+2) &
+                                                           +f(3:mx-1,m1:m2,n1:n2,k:k+2))**2,4)
+!     if(ldiagnos) print*,'CHAR',maxval(f(2:mx-2,m1:m2,n1:n2,jmean))
+        elseif (nygrid/=1) then 
+          f(l1:l2,2:my-2,n1:n2,jmean) = f(l1:l2,2:my-2,n1:n2,jmean) &
+                                       +(weight*i4_1)*sum(( f(l1:l2,2:my-2,n1:n2,k:k+2) &
+                                                           +f(l1:l2,3:my-1,n1:n2,k:k+2))**2,4)
+        else 
+          f(l1:l2,m1:m2,2:mz-2,jmean) = f(l1:l2,m1:m2,2:mz-2,jmean) &
+                                       +(weight*i4_1)*sum(( f(l1:l2,m1:m2,2:mz-2,k:k+2) &
+                                                           +f(l1:l2,m1:m2,3:mz-1,k:k+2))**2,4)
+        endif
+      elseif (nzgrid==1) then   !  x-y
+          f(2:mx-2,2:my-2,n1:n2,jmean) = f(2:mx-2,2:my-2,n1:n2,jmean) &
+                                        +(weight*i16_1)*sum(( f(2:mx-2,2:my-2,n1:n2,k:k+2) &
+                                                             +f(2:mx-2,3:my-1,n1:n2,k:k+2) &
+                                                             +f(3:mx-1,2:my-2,n1:n2,k:k+2) &
+                                                             +f(3:mx-1,3:my-1,n1:n2,k:k+2))**2,4)
+      elseif (nygrid==1) then   !  x-z
+          f(2:mx-2,m1:m2,2:mz-2,jmean) = f(2:mx-2,m1:m2,2:mz-2,jmean) &
+                                        +(weight*i16_1)*sum(( f(2:mx-2,m1:m2,2:mz-2,k:k+2) &
+                                                             +f(2:mx-2,m1:m2,3:mz-1,k:k+2) &
+                                                             +f(3:mx-1,m1:m2,2:mz-2,k:k+2) &
+                                                             +f(3:mx-1,m1:m2,3:mz-1,k:k+2))**2,4)
+      else                      !  y-z
+          f(l1:l2,2:my-2,2:mz-2,jmean) = f(l1:l2,2:my-2,2:mz-2,jmean) &
+                                        +(weight*i16_1)*sum(( f(l1:l2,2:my-2,2:mz-2,k:k+2) &
+                                                             +f(l1:l2,2:my-2,3:mz-1,k:k+2) &
+                                                             +f(l1:l2,3:my-1,2:mz-2,k:k+2) &
+                                                             +f(l1:l2,3:my-1,3:mz-1,k:k+2))**2,4)
+      endif
+
+    endsubroutine staggered_mean_vec
+!***********************************************************************
+    subroutine staggered_mean_scal(f,k,jmean,weight)
+!
+!   Calculates squared mean of a scalar quantity in the centre of a grid cell.
+!
+!   9-oct-15/MR: coded
+!
+      use Cdata, only: dimensionality
+
+      real, dimension (mx,my,mz,mfarray), intent(inout):: f 
+      integer,                            intent(in)   :: k,jmean
+      real,                               intent(in)   :: weight
+
+      real, parameter :: i64_1=1/64., i16_1=1/16., i4_1=1/4.
+!
+      if (dimensionality==3) then 
+        f(2:mx-2,2:my-2,2:mz-2,jmean) = f(2:mx-2,2:my-2,2:mz-2,jmean) &
+                                       +(weight*i64_1)*( f(2:mx-2,2:my-2,2:mz-2,k) &
+                                                        +f(2:mx-2,2:my-2,3:mz-1,k) &
+                                                        +f(2:mx-2,3:my-1,2:mz-2,k) &
+                                                        +f(2:mx-2,3:my-1,3:mz-1,k) &
+                                                        +f(3:mx-1,2:my-2,2:mz-2,k) &
+                                                        +f(3:mx-1,2:my-2,3:mz-1,k) &
+                                                        +f(3:mx-1,3:my-1,2:mz-2,k) &
+                                                        +f(3:mx-1,3:my-1,3:mz-1,k))**2
+      elseif (dimensionality==1) then 
+        if (nxgrid/=1) then 
+          f(2:mx-2,m1:m2,n1:n2,jmean) = f(2:mx-2,m1:m2,n1:n2,jmean) &
+                                       +(weight*i4_1)*( f(2:mx-2,m1:m2,n1:n2,k) &
+                                                       +f(3:mx-1,m1:m2,n1:n2,k))**2
+!     if(ldiagnos) print*,'CHAR',maxval(f(2:mx-2,m1:m2,n1:n2,jmean))
+        elseif (nygrid/=1) then 
+          f(l1:l2,2:my-2,n1:n2,jmean) = f(l1:l2,2:my-2,n1:n2,jmean) &
+                                       +(weight*i4_1)*( f(l1:l2,2:my-2,n1:n2,k) &
+                                                       +f(l1:l2,3:my-1,n1:n2,k))**2
+        else 
+          f(l1:l2,m1:m2,2:mz-2,jmean) = f(l1:l2,m1:m2,2:mz-2,jmean) &
+                                       +(weight*i4_1)*( f(l1:l2,m1:m2,2:mz-2,k) &
+                                                       +f(l1:l2,m1:m2,3:mz-1,k))**2
+        endif
+      elseif (nzgrid==1) then   !  x-y
+          f(2:mx-2,2:my-2,n1:n2,jmean) = f(2:mx-2,2:my-2,n1:n2,jmean) &
+                                        +(weight*i16_1)*( f(2:mx-2,2:my-2,n1:n2,k) &
+                                                         +f(2:mx-2,3:my-1,n1:n2,k) &
+                                                         +f(3:mx-1,2:my-2,n1:n2,k) &
+                                                         +f(3:mx-1,3:my-1,n1:n2,k))**2
+      elseif (nygrid==1) then   !  x-z
+          f(2:mx-2,m1:m2,2:mz-2,jmean) = f(2:mx-2,m1:m2,2:mz-2,jmean) &
+                                        +(weight*i16_1)*( f(2:mx-2,m1:m2,2:mz-2,k) &
+                                                         +f(2:mx-2,m1:m2,3:mz-1,k) &
+                                                         +f(3:mx-1,m1:m2,2:mz-2,k) &
+                                                         +f(3:mx-1,m1:m2,3:mz-1,k))**2
+      else                      !  y-z
+          f(l1:l2,2:my-2,2:mz-2,jmean) = f(l1:l2,2:my-2,2:mz-2,jmean) &
+                                        +(weight*i16_1)*( f(l1:l2,2:my-2,2:mz-2,k) &
+                                                         +f(l1:l2,2:my-2,3:mz-1,k) &
+                                                         +f(l1:l2,3:my-1,2:mz-2,k) &
+                                                         +f(l1:l2,3:my-1,3:mz-1,k))**2
+      endif
+
+    endsubroutine staggered_mean_scal
 !****************************************************************************  
 endmodule General
