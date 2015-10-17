@@ -392,6 +392,29 @@ else if ($hn =~ gardar* ) then
   endif
 
 #------------------------------------------
+else if ($hn =~ ekhi* ) then
+  echo "******************************"
+  echo "ekhi"
+  echo " ******************************"
+  if (! $?PENCIL_HOME) setenv PENCIL_HOME $HOME/pencil-code
+  if (-r $PENCIL_HOME/sourceme.csh) then
+    set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet
+  endif
+    #set nnode = `expr $NSLOTS - 1`
+    set nnode = 12
+    set nprocpernode = `expr $ncpus / $nnode`
+    #set npops = "-nodes=${nnode}x${nprocpernode}"
+    set npops = "-np ${nnode} --cpus-per-proc ${nprocpernode}"
+echo "AXEL1"
+echo $nnode
+echo $nprocpernode
+echo $npops
+echo "AXEL2"
+  #set $mpirun=/usr/local/mpich2/bin/mpirun
+  #set $mpirun=/export/shared/openmpi-1.8.4/bin/mpif90
+  #set $mpirun=mpirun
+
+#------------------------------------------
 else if ($hn =~ compute-*.local ) then
 #  echo "Warp cluster (warp) - Pittsburgh"
 #  echo "******************************"
@@ -1828,7 +1851,7 @@ if ($mpi) then
 
   # Some mpiruns need special options
   if ("$mpirun" =~ *mpirun*) then
-    set npops = "-np $ncpus"
+    #AXEL set npops = "-np $ncpus"
   else if ("$mpirun" =~ *mpiexec*) then
     set npops = "-n $ncpus"
   else if ("$mpirun" =~ *mpimon*) then
