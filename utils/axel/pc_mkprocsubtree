@@ -1,0 +1,15 @@
+#!/bin/csh
+#$Id$
+#
+#  Make subset of proc directories (only those listed in data/procs.txt)
+#
+#  Usage (need to be in data directory):
+#    pc_mkprocsubtree
+#
+set subdirs = `cat procs.txt`
+foreach dir ($subdirs)
+  echo mkdir $dir
+  if (! -e $dir) then
+    mkdir $dir
+  endif
+end
