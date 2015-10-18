@@ -126,6 +126,7 @@ indices = [ $
   { name:'ilnTT', label:'Log temperature', dims:1 }, $
   { name:'iTT', label:'Temperature', dims:1 }, $
   { name:'ieth', label:'Thermal energy', dims:1 } $
+  ; don't forget the comma above when extending
 ]
 
 ; Auxiliary variables:
@@ -152,9 +153,10 @@ indices_aux = [ $
   { name:'ihypres', label:'Hyperresistivity', dims:3 }, $
   { name:'ippaux', label:'Auxiliary pressure', dims:1 }, $
   { name:'ispecaux', label:'Special auxiliary variable', dims:1 } $
+  ; don't forget the comma above when extending
 ]
 
-; Inconsistent names:
+; Inconsistent names (IDL-name is inconsistent with name in the main code):
 inconsistent = [ $
   { name:'ifx', inconsistent_name:'ff' }, $
   { name:'ichemspec', inconsistent_name:'YY' }, $
@@ -164,6 +166,7 @@ inconsistent = [ $
   { name:'igpotselfx', inconsistent_name:'gpotself' }, $
   { name:'ihypvis', inconsistent_name:'hyv' }, $
   { name:'ihypres', inconsistent_name:'hyr' } $
+  ; don't forget the comma above when extending
 ]
 
 ; Special variables:
