@@ -81,7 +81,7 @@ module Cdata
   real :: ybot_slice=0.0,ytop_slice=1.0
   real :: zbot_slice=0.0,ztop_slice=1.0
   real :: glnCrossSec0=0.0, CrossSec_x1=-1., CrossSec_x2=1., CrossSec_w=.1
-  logical, dimension(3) :: lperi, lshift_origin, lshift_origin_lower
+  logical, dimension(3) :: lperi, lshift_origin, lshift_origin_lower, lpole
   logical, dimension(3) :: lequidist=(/.true.,.true.,.true. /)
   character (len=labellen), dimension(3) :: grid_func='linear'
   character (len=labellen) :: pipe_func='error_function'
@@ -334,6 +334,7 @@ module Cdata
   integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
   integer :: poleneigh              ! `pole' processor neighbours
   integer :: llcorn,lucorn,uucorn,ulcorn ! (the 4 corners in yz-plane)
+  integer :: pllcrn,plucrn,puucrn,pulcrn ! (the 4 'pole' corners)
 !
 !  Variables to count the occurance of derivative calls per timestep
 !  for optimisation purposes.  To use uncomment the array and
