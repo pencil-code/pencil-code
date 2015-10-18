@@ -31,6 +31,7 @@ COMPILE_OPT IDL2, HIDDEN
 		type_idl = 5
 	end else begin
 		; single precision
+		new = 'S'
 		zero = 0.e0
 		one = 1.e0
 		data_type = 'real'
