@@ -5,6 +5,7 @@
 git:
 
  - git pc checkout
+ - git pc tag-wip
 
 Note that the original author (wd) will probably never use any of them
 because he considers it better to use the proper git (porcelain) commands:
@@ -66,6 +67,7 @@ def usage(exit_status):
 def create_command_list():
     return [
         CheckoutCommand(),
+        TagWipCommand(),
     ]
 
 
@@ -229,6 +231,32 @@ class CheckoutCommand(Command):
         else:
             self.usage(1)
         git(git_cmd)
+
+
+class TagWipCommand(Command):
+
+    def __init__(self):
+        Command.__init__(
+            self,
+            name='tag-wip',
+            overview='create a tag containing all of your uncommitted changes',
+            usage='\n'
+                + '  git pc TAG-WIP\n'
+                + 'Create a tag representing all of your work-in-progress (WIP).',
+            flags=[]
+        )
+
+    def run(self, options, args):
+        if len(args) > 0:
+            self.usage(1)
+        tag = create_tag_name('WIP')
+        current = git_current('Temporary commit for ' + tag)
+        if current:
+            print 'Tagging temporary commit with %s' % (tag, )
+            git(['tag', tag, current])
+        else:
+            print 'Tagging HEAD with %s' % (tag, )
+            git(['tag', tag, 'HEAD'])
 
 
 class OptionFlag(object):
