@@ -60,6 +60,8 @@ end
 ;  description of the variable in an indexed array of structures
 ;  where the indexes line up with those in the saved f array.
 ;
+;  Note: auxiliary variables should go to the table below the folling one.
+;
 indices = [ $
   { name:'iuu', label:'Velocity', dims:3 }, $
   { name:'ipp', label:'Pressure', dims:1 }, $
