@@ -37,7 +37,7 @@
 pro rvid_box_sph, field, $
   mpeg=mpeg, png=png, truepng=png_truecolor, tmin=tmin, tmax=tmax, $
   max=amax,min=amin, noborder=noborder, imgdir=imgdir, $
-  nrepeat=nrepeat, wait=wait, njump=njump, datadir=datatopdir, $
+  nrepeat=nrepeat, wait=wait, njump=njump, datadir=datadir, $
   noplot=noplot, fo=fo, swapz=swapz, xsize=xsize, ysize=ysize, $
   title=title, itpng=itpng, global_scaling=global_scaling, proc=proc, $
   exponential=exponential, sqroot=sqroot, logarithmic=logarithmic, $
@@ -105,44 +105,51 @@ first_print = 1
 ;
 ; Construct location of slice_var.plane files 
 ;
-if (not keyword_set(datatopdir)) then datatopdir=pc_get_datadir()
+if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 ;  by default, look in data/, assuming we have run read_videofiles.x before:
-datadir=datatopdir
-if (n_elements(proc) le 0) then begin
-  pc_read_dim, obj=dim, datadir=datatopdir
-  if (dim.nprocx*dim.nprocy*dim.nprocz eq 1) then datadir=datatopdir+'/proc0'
+slicedir=datadir
+if (size(proc, /type) eq 0) then begin
+  pc_read_dim, obj=dim, datadir=datadir
+  pc_read_grid, obj=grid, dim=dim, datadir=datadir, /quiet
+  if (dim.nprocx*dim.nprocy*dim.nprocz eq 1) then slicedir=datadir+'/proc0'
 endif else begin
-  datadir=datatopdir+'/'+proc
+  pc_read_dim, obj=dim, proc=proc, datadir=datadir, /quiet
+  pc_read_grid, obj=grid, proc=proc, dim=dim, datadir=datadir, /quiet
+  slicedir=datadir+'/'+strtrim (proc, 2)
 endelse
 ;
 ; Read slices
 ;
-file_slice1=datadir+'/slice_'+field+'.xz'
-file_slice2=datadir+'/slice_'+field+'.xy'
-file_slice3=datadir+'/slice_'+field+'.xy2'
-file_slice4=datadir+'/slice_'+field+'.xy3'
-file_slice5=datadir+'/slice_'+field+'.xy4'
+file_slice1=slicedir+'/slice_'+field+'.xz'
+file_slice2=slicedir+'/slice_'+field+'.xy'
+file_slice3=slicedir+'/slice_'+field+'.xy2'
+file_slice4=slicedir+'/slice_'+field+'.xy3'
+file_slice5=slicedir+'/slice_'+field+'.xy4'
 ;
-;  Read the dimensions from dim.dat
+;  Read start parameters
 ;
-pc_read_dim, obj=dim, datadir=datadir, /quiet
-pc_read_param,obj=param & r_int=param.r_int & r_ext=param.r_ext
+pc_read_param, obj=param, dim=dim, datadir=datadir
+r_int=param.r_int
+r_ext=param.r_ext
 ;
-;  Set single or double precision.
-;
-pc_set_precision, dim=dim, /quiet
-;
-mx=dim.mx & my=dim.my & mz=dim.mz
-nx=dim.nx & ny=dim.ny & nz=dim.nz
-nghostx=dim.nghostx & nghosty=dim.nghosty & nghostz=dim.nghostz
+mx=dim.mx
+my=dim.my
+mz=dim.mz
+nx=dim.nx
+ny=dim.ny
+nz=dim.nz
+nghostx=dim.nghostx
+nghosty=dim.nghosty
+nghostz=dim.nghostz
 ncpus = dim.nprocx*dim.nprocy*dim.nprocz
 ;
 ;if (keyword_set(shell)) then begin
 ;
 ;  Need full grid to mask outside shell.
 ;
-  pc_read_grid, obj=grid, /quiet
-  rad=grid.x & tht=grid.y & phi=grid.z
+  rad=grid.x
+  tht=grid.y
+  phi=grid.z
 ;
   rr = spread(rad, [1,2], [my,mz])
   tt = spread(tht, [0,2], [mx,mz])
