@@ -9,8 +9,8 @@
 ;   2-oct-14/MR: keyword parameter down added for use with downsampled data
 ;  14-Sep-2015/PABourdin: calling 'pc_set_precision' directly after reading
 ;
-pro pc_read_dim, mx=mx, my=my, mz=mz, mvar=mvar, $
-    nx=nx, ny=ny, nz=nz, $
+pro pc_read_dim, mx=mx, my=my, mz=mz, mw=mw, mvar=mvar, $
+    nx=nx, ny=ny, nz=nz, nw=nw, $
     nxgrid=nxgrid, nygrid=nygrid, nzgrid=nzgrid, $
     mxgrid=mxgrid, mygrid=mygrid, mzgrid=mzgrid, $
     precision=precision_new, $
@@ -54,6 +54,7 @@ COMPILE_OPT IDL2, HIDDEN
     print, "       nx: x dimension of processor calculation domain excluding ghost zones       [integer]"
     print, "       ny: y dimension of processor calculation domain excluding ghost zones       [integer]"
     print, "       nz: z dimension of processor calculation domain excluding ghost zones       [integer]"
+    print, "       nw: defined as nx * ny * nz                                                 [integer]"
     print, "   nxgrid: x dimension of full calculation domain excluding ghost zones            [integer]"
     print, "   nygrid: y dimension of full calculation domain excluding ghost zones            [integer]"
     print, "   nzgrid: z dimension of full calculation domain excluding ghost zones            [integer]"
@@ -96,6 +97,7 @@ COMPILE_OPT IDL2, HIDDEN
   nx = 0L
   ny = 0L
   nz = 0L
+  nw = 0L
   nghostx = 0L
   nghosty = 0L
   nghostz = 0L
@@ -157,10 +159,11 @@ COMPILE_OPT IDL2, HIDDEN
 ;
 ;  Calculate any derived quantities
 ;
+  mw = mx * my * mz
   nx = mx - (2 * nghostx)
   ny = my - (2 * nghosty)
   nz = mz - (2 * nghostz)
-  mw = mx * my * mz
+  nw = nx * ny * nz
   l1 = nghostx & l2 = mx-nghostx-1
   m1 = nghosty & m2 = my-nghosty-1
   n1 = nghostz & n2 = mz-nghostz-1
@@ -187,19 +190,21 @@ COMPILE_OPT IDL2, HIDDEN
 ;
 ;  Build structure of all the variables.
 ;
-  object = create_struct(name=filename,['mx','my','mz','mw', $
+  object = create_struct(name=filename,$
+      ['mx','my','mz','mw', $
       'mvar','maux','mglobal', $
       'precision', $
-      'nx','ny','nz', $
+      'nx','ny','nz','nw', $
       'nghostx','nghosty','nghostz', $
       'nxgrid','nygrid','nzgrid', $
       'mxgrid','mygrid','mzgrid', $
       'l1','l2','m1','m2','n1','n2', $
       'ipx','ipy','ipz', $
       'nprocx','nprocy','nprocz'], $
-      mx,my,mz,mw,mvar,maux,mglobal, $
+      mx,my,mz,mw, $
+      mvar,maux,mglobal, $
       precision, $
-      nx,ny,nz, $
+      nx,ny,nz,nw, $
       nghostx,nghosty,nghostz, $
       nxgrid, nygrid, nzgrid, $
       mxgrid, mygrid, mzgrid, $
@@ -220,7 +225,7 @@ COMPILE_OPT IDL2, HIDDEN
 ;
     print, '            (mx,my,mz,mw) = (',mx,',',my,',',mz,',',mw,')'
     print, '    (mvar,maux,precision) = (',mvar,',',maux,',',precision')'
-    print, '               (nx,ny,nz) = (',nx,',',ny,',',nz,')'
+    print, '            (nx,ny,nz,nw) = (',nx,',',ny,',',nz,',',nw,')'
     print, '      (l1:l2,m1:m2,n1:n2) = (',l1,':',l2,',',m1,':',m1,':',m2,',',n1,':',n2,')'
     print, '(nghostx,nghosty,nghostz) = (',nghostx,',',nghosty,',',nghostz,')'
     print, '   (nxgrid,nygrid,nzgrid) = (',nxgrid,',',nygrid,',',nzgrid,')'
