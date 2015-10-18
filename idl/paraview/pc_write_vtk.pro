@@ -62,15 +62,12 @@ pro pc_write_vtk, data, index, filename=filename, datadir=datadir, grid=grid, di
 	; Get necessary dimensions quietly.
 	if (size (dim, /type) ne 8) then pc_read_dim, object=dim, datadir=datadir, /quiet
 	if (size (grid, /type) ne 8) then pc_read_grid, object=grid, dim=dim, datadir=datadir, /quiet
-	if (dim.precision eq 'D') then data_type = 'double' else data_type = 'float'
 
 	; Local shorthand for some parameters.
-	precision = dim.precision
 	nxgrid = dim.nxgrid
 	nygrid = dim.nygrid
 	nzgrid = dim.nzgrid
 	nwgrid = nxgrid * nygrid * nzgrid
-	data_type = strlowcase (size (zero, /tname))
 	dimensions = [ nxgrid, nygrid, nzgrid ]
 	num_dim = total (dimensions gt 1, /int)
 
