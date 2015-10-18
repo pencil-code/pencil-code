@@ -1,0 +1,178 @@
+#!/usr/bin/python2
+# -*- coding: utf-8 -*-   vim: set fileencoding=utf-8 :
+
+'''A collection of utility commands for Pencil Code coders working with
+git:
+
+ - git pc checkout
+
+Note that the original author (wd) will probably never use any of them
+because he considers it better to use the proper git (porcelain) commands:
+ - The git commands are far more atomic, so if something goes wrong you
+   know which step failed and you can solve the exact problem you have.
+ - You can ask or search on the web for information regarding the git
+   commands. Nobody will know what 'git pc' is.
+ - You can use the git commands on any computer with git installed.
+   Sooner or later you will want to use git on a computer without git-pc
+   in your path.
+
+'''
+
+
+import subprocess
+import sys
+
+from abc import ABCMeta, abstractmethod
+
+from optparse import OptionParser
+
+
+usage_text = '\n'.join([
+    'Usage:',
+    '  git pc <command> [options] [arguments]',
+    'where <command> is one of',
+    '%s',
+    'Run',
+    '  git pc <command> --help',
+    'to get help for a specific git-pc command',
+])
+
+
+def main():
+    args = sys.argv[1:]
+    if len(args) < 1 or args[0] == '-h' or args[0] == '--help':
+        usage(0)
+    (cmd, cmd_args) = (args[0], args[1:])
+
+    for command in create_command_list():
+        if cmd == command.name:
+            command.execute(cmd_args)
+            sys.exit(0)
+    print 'Unknown subcommand \'%s\'. Run\n  %s' % (cmd, 'git pc -h', )
+    print 'to get a list of available subcommands'
+    sys.exit(1)
+
+
+def usage(exit_status):
+    global usage_text
+    cmd_overview = ''
+    for cmd in create_command_list():
+        cmd_overview += '  {: <15} -- {: <10}\n'.format(cmd.name, cmd.overview)
+    print usage_text % (cmd_overview, )
+    sys.exit(exit_status)
+
+
+def create_command_list():
+    return [
+        CheckoutCommand(),
+    ]
+
+def git(cmd_list):
+    '''Run git with the given commands.
+
+    E.g.
+      git(['status', '--short'])
+
+    Prints all output from the command to the terminal and aborts if the
+    git command returned a non-zero exit status.
+
+    '''
+    cmd_line = ['git']
+    cmd_line.extend(cmd_list)
+    print ' '.join(cmd_line)
+    try:
+        subprocess.check_call(cmd_line)
+    except subprocess.CalledProcessError, e:
+        print e
+        sys.exit(1)
+
+
+class Command(object):
+    '''A subcommand of \'git pc\''''
+
+    __metaclass__ = ABCMeta
+
+    def __init__(self, name, overview, usage, flags):
+        '''Describe the subcommand and define its interface.
+
+        Options:
+          name         -- name for calling the subcommand
+          overview     -- overview line for 'git pc -h'
+          usage        -- the usage text
+          flags        -- a list of OptionFlag objects defining the
+                          options of the subcommand
+          args         -- the raw arguments given on the command line
+        '''
+        self.name = name
+        self.overview = overview
+        self.parser = OptionParser(usage=usage)
+        for flag in flags:
+            flag.add_to(self.parser)
+
+    def execute(self, args):
+        (options, args) = self.parser.parse_args(args)
+        self.run(options, args)
+
+    @abstractmethod
+    def run(self, options, args):
+        pass
+
+    def usage(self, exit_status):
+        self.parser.print_help()
+        sys.exit(exit_status)
+
+
+class CheckoutCommand(Command):
+
+    def __init__(self):
+        Command.__init__(
+            self,
+            name='checkout',
+            overview='clone the pencil repo from github',
+            usage='\n'
+                + '  git pc checkout [dir]\n'
+                + 'Check out the Pencil Code repository from github.\n'
+                + '\n'
+                + 'Arguments:\n'
+                + '  dir  -- check out to that directory [default: ./pencil-code]',
+            flags=[]
+        )
+
+    def run(self, options, args):
+        git_cmd = ['clone', 'https://github.com/pencil-code/pencil-code']
+        if len(args) == 0:
+            pass
+        elif len(args) == 1:
+            checkout_dir = args[0]
+            git_cmd.append(checkout_dir)
+        else:
+            self.usage(1)
+        git(git_cmd)
+
+
+class OptionFlag(object):
+    '''Specification for a command-line option'''
+
+    def __init__(self, short, long, help, dest=None, action=None):
+        self.short = short
+        self.long = long
+        self.help = help
+        self.dest = dest
+        self.action = action
+
+    def get_overview(self):
+        '''Return the overview line for \'git pc -h\''''
+        return self.overview
+
+    def add_to(self, parser):
+        '''Add this option to an optparse.OptionParser'''
+        parser.add_option(
+            self.short, self.long,
+            dest=self.dest,
+            action=self.action,
+            help=self.help
+            )
+
+
+if __name__ == '__main__':
+    main()
