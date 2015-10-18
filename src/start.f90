@@ -54,6 +54,7 @@ program start
   use Cosmicray,        only: init_ecr
   use Density,          only: init_lnrho
   use Diagnostics
+
   use Dustdensity,      only: init_nd
   use Dustvelocity,     only: init_uud
   use Energy,           only: init_energy
@@ -153,6 +154,7 @@ program start
   lequidist    =(/.true. ,.true. ,.true. /)   ! all directions equidistant grid
   lshift_origin=(/.false.,.false.,.false./)   ! don't shift origin
   lshift_origin_lower=(/.false.,.false.,.false./) ! don't shift origin
+  lpole        =(/.false.,.false.,.false./)   ! radial origin, pole excluded
 !
 !  Calculate dimensionality of the run.
 !
@@ -226,7 +228,30 @@ program start
           Lxyz(i)=2*pi    ! default value
         endif
       else
-        Lxyz(i)=xyz1(i)-xyz0(i)
+!
+!  FG: forcing theta coordinate to be spanning 0:pi overwriting xyz0 and
+!      xyz1 if lpole is selected + plus sanity checks
+!
+        if (lpole(i)) then
+          if (lperi(i)) call fatal_error('start',&
+            'lperi and lpole cannot be used together in same component')
+          if (coord_system/='spherical') call fatal_error('start',&
+            'lpole only implemented for spherical coordinates')
+          if (lequidist(i)) then
+            if (i==2 .and. coord_system == 'spherical') then
+              xyz0(i) = pi/(2*nygrid)
+              Lxyz(i) = pi - 2*xyz0(i)
+            else
+              call fatal_error('start',&
+                  'origin/pole not included for components or coordinates')
+            endif
+          else
+            call fatal_error('start',&
+                'origin/pole not yet implemented for non-equidistant grid')
+          endif
+        else
+          Lxyz(i)=xyz1(i)-xyz0(i)
+        endif
       endif
     else                  ! Lxyz was set
       if (xyz1(i)/=impossible) then ! both Lxyz and xyz1 are set
