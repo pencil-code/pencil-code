@@ -6,7 +6,7 @@
 ;  Author: Anders Johansen (anders@astro.lu.se)
 ;  Date  : 06-feb-11
 ;
-pro pc_read_psize, object=object, datadir=datadir, filename=filename, $
+pro pc_read_psize, object=object, dim=dim, datadir=datadir, filename=filename, $
     quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
@@ -15,14 +15,11 @@ common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
 default, quiet, 0
 ;
-;  Default datadir and filename.
+;  Default datadir, dim, and filename.
 ;
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
+if (size (dim, /type) ne 8) then pc_read_dim, obj=dim, datadir=datadir, /quiet
 default, filename, 'particle_size_dist.dat'
-;
-;  Set the precision.
-;
-pc_set_precision, dim=dim, /quiet
 ;
 ;  Count the number of output entries in the file.
 ;
