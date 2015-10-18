@@ -24,10 +24,9 @@ if (not quiet) then $
 ;
 ;  Find length of data file and define data arrays.
 ;
-spawn, 'wc -l '+fullvarfile, nlines
-nlines=fix(nlines[0])
+nlines = file_lines (fullvarfile)
 if (not quiet) then $
-    print, 'Data file contains ' + strtrim(nlines,2) + ' lines.'
+    print, 'Data file contains ' + nlines,2) + ' lines.'
 array=strarr(nlines)
 varnames=strarr(nlines)
 values=strarr(nlines)
