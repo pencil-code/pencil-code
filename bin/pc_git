@@ -78,6 +78,48 @@ def create_tag_name(prefix):
     return tag
 
 
+def git_current(message=None):
+    '''Create a stash of the current file tree, including any uncommitted files.
+
+    This command changes neither the file tree, nor the index.
+    It just creates a detached stash commit (which is not stored anywhere
+    in the ref namespace).
+
+    If there was something to stash, return the name of the created stash.
+    Otherwise, return None.
+
+    Note that we cannot simply use 'git stash create --include-untracked',
+    because the untracked files are in separate commit that is not
+    returned by the stash command.
+
+    '''
+    head = git_head()
+
+    # Commit changes in the index
+    git(['commit', '--allow-empty', '--message', 'Changes already in the index'])
+    index = git_head()
+
+    # Add changes to tracked files
+    git(['add', '--update'])
+    git(['commit', '--allow-empty', '--message', 'Changes to tracked files'])
+
+    # Add untracked files
+    git(['add', '--all'])
+    git(['commit', '--allow-empty', '--message', 'Untracked files'])
+
+    # Remember commit hash, then reset to original state
+    current = git_head()
+    git(['reset', '--mixed', head])
+    git_root = git_output(['rev-parse', '--show-toplevel'])
+    git(['reset', index, '--', git_root])
+
+    return current
+
+
+def git_head():
+    return git_output(['rev-parse', 'HEAD'])
+
+
 def git(cmd_list):
     '''Run git with the given commands.
 
