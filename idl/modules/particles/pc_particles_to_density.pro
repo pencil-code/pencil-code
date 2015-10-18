@@ -24,10 +24,6 @@ default, quiet, 0
 ;;
 pc_read_param, obj=param, datadir=datadir, /quiet
 ;;
-;;  Set real precision.
-;;
-pc_set_precision, datadir=datadir, /quiet
-;;
 ;;  Read rhopswarm from data directory.
 ;;
 pc_read_const, obj=cst, datadir=datadir, /quiet
