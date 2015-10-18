@@ -1734,8 +1734,8 @@ module Magnetic
         case ('horizontal_dipole')
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iax) =   0.
-            f(l1:l2,m,n,iay) = - amplaa*x(l1:l2)*sin(z(n))
-            f(l1:l2,m,n,iaz) = - amplaa*x(l1:l2)*cos(y(m))*cos(z(n))
+            f(l1:l2,m,n,iay) = - amplaa(j)*x(l1:l2)*sin(z(n))
+            f(l1:l2,m,n,iaz) = - amplaa(j)*x(l1:l2)*cos(y(m))*cos(z(n))
           enddo; enddo
 !
 ! test case vertical dipole for spherical shell polar boundary conditions
@@ -1744,7 +1744,7 @@ module Magnetic
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,iax) = 0.
             f(l1:l2,m,n,iay) = 0.
-            f(l1:l2,m,n,iaz) = amplaa*x(l1:l2)*sin(y(m))
+            f(l1:l2,m,n,iaz) = amplaa(j)*x(l1:l2)*sin(y(m))
           enddo; enddo
 !
         case ('relprof')
