@@ -21,6 +21,7 @@ because he considers it better to use the proper git (porcelain) commands:
 
 import subprocess
 import sys
+import time
 
 from abc import ABCMeta, abstractmethod
 
@@ -66,6 +67,16 @@ def create_command_list():
     return [
         CheckoutCommand(),
     ]
+
+
+def create_tag_name(prefix):
+    '''Create a tag name including a time stamp.'''
+    tag = '%s-%s' % (
+        prefix,
+        time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
+    )
+    return tag
+
 
 def git(cmd_list):
     '''Run git with the given commands.
