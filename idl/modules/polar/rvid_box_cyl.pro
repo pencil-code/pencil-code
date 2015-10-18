@@ -48,10 +48,10 @@ file_slice2=datadir+'/slice_'+field+'.xz'
 file_slice3=datadir+'/slice_'+field+'.yz'
 file_slice4=datadir+'/slice_'+field+'.xy2'
 
-close, 1 & openr, 1, file_slice1, /f77, swap_endian=swap_endian
-close, 2 & openr, 2, file_slice2, /f77, swap_endian=swap_endian
-close, 3 & openr, 3, file_slice3, /f77, swap_endian=swap_endian
-close, 4 & openr, 4, file_slice4, /f77, swap_endian=swap_endian
+openr, file_1, file_slice1, /f77, /get_lun, swap_endian=swap_endian
+openr, file_2, file_slice2, /f77, /get_lun, swap_endian=swap_endian
+openr, file_3, file_slice3, /f77, /get_lun, swap_endian=swap_endian
+openr, file_4, file_slice4, /f77, /get_lun, swap_endian=swap_endian
 islice=0L
 ;
 t=zero
@@ -91,10 +91,10 @@ if (!d.name eq 'X') then wdwset,xs=xsize,ys=ysize
 while ( (not eof(1)) and (t le tmax) ) do begin
 ;
   if ( (t ge tmin) and (t le tmax) and (islice mod (skip+1) eq 0) ) then begin
-    readu, 1, tmp_xy, t, slice_zpos
-    readu, 2, tmp_xz, t, slice_ypos
-    readu, 3, tmp_yz, t, slice_xpos
-    readu, 4, tmp_xy2, t, slice_z2pos
+    readu, file_1, tmp_xy, t, slice_zpos
+    readu, file_2, tmp_xz, t, slice_ypos
+    readu, file_3, tmp_yz, t, slice_xpos
+    readu, file_4, tmp_xy2, t, slice_z2pos
 ;
     xy_int = round((tmp_xy-amin)/(amax-amin) * 255)
     xz_int = round((tmp_xz-amin)/(amax-amin) * 255)
@@ -256,10 +256,10 @@ while ( (not eof(1)) and (t le tmax) ) do begin
   endif else begin
     ; Read only time.
     dummy=zero
-    readu, 1, xy, t
-    readu, 2, dummy
-    readu, 3, dummy
-    readu, 4, dummy
+    readu, file_1, xy, t
+    readu, file_2, dummy
+    readu, file_3, dummy
+    readu, file_4, dummy
   endelse
 ;
 ;  Ready for next video slice.
@@ -276,5 +276,16 @@ while ( (not eof(1)) and (t le tmax) ) do begin
         amin, amax, format='(i9,e12.4,4f13.7)'
 
 endwhile
+;
+;  Close slice files.
+;
+close, file_1
+close, file_2
+close, file_3
+close, file_4
+free_lun, file_1
+free_lun, file_2
+free_lun, file_3
+free_lun, file_4
 ;
 end
