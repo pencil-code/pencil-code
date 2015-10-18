@@ -80,8 +80,8 @@ if (not file_test(filename)) then $
 if (not keyword_set(QUIET)) then print, 'Reading ' , filename , '...'
 
 openr, lun, filename, /get_lun
-readu, lun, t,x,y,z
-readu, lun, dx,dy,dz
+readu, lun, t, x, y, z
+readu, lun, dx, dy, dz
 close, lun
 free_lun, lun
 
@@ -91,12 +91,12 @@ object = CREATE_STRUCT(name=filename,['t','x','y','z','dx','dy','dz'],t,x,y,z,dx
 ; If requested print a summary
 fmt = '(A,4G15.6)'
 if keyword_set(PRINT) then begin
-  print, FORMAT='(A,I2,A)', 'For processor ',proc,' calculation domain:'
+  print, 'For processor ',strtrim (proc, 2),' calculation domain:'
   print, '             t = ', t
-  print, 'min(x), max(x) = ',min(x),', ',max(x)
-  print, 'min(y), max(y) = ',min(y),', ',max(y)
-  print, 'min(z), max(z) = ',min(z),', ',max(z)
-  print, '    dx, dy, dz = ' , dx , ', ' , dy , ', ' , dz
+  print, 'min(x), max(x) = ', min(x), ', ', max(x)
+  print, 'min(y), max(y) = ', min(y), ', ', max(y)
+  print, 'min(z), max(z) = ', min(z), ', ', max(z)
+  print, '    dx, dy, dz = ', dx, ', ', dy, ', ', dz
 endif
 
 end
