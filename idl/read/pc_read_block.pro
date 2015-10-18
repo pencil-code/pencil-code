@@ -15,14 +15,9 @@ default, proc, 0
 default, swap, 0
 default, quiet, 0
 ;
-; Default data directory.
-;
-if (not keyword_set(datadir)) then datadir=pc_get_datadir()
-;
-; Set precision.
+; Read dimension.
 ;
 pc_read_dim, obj=dim, datadir=datadir, /quiet
-pc_set_precision, dim=dim, /quiet
 ;
 ; Read block dimensions from file.
 ;
