@@ -54,42 +54,36 @@ COMPILE_OPT IDL2,HIDDEN
     return
   ENDIF
 
-; Default data directory
-
-if (not keyword_set(datadir)) then datadir=pc_get_datadir()
-
-; Get necessary dimensions, inheriting QUIET
-pc_read_dim,mx=mx,my=my,mz=mz,datadir=datadir,proc=proc,QUIET=QUIET
-; and check pc_precision is set!
-pc_set_precision,dim=dim,QUIET=QUIET
+; Get necessary dimensions
+pc_read_dim, mx=mx, my=my, mz=mz, datadir=datadir, proc=proc, QUIET=QUIET
 
 ;
 ; Initialize / set default returns for ALL variables
 ;
 t=zero
-x=fltarr(mx)*one & y=fltarr(my)*one & z=fltarr(mz)*one
-dx=zero &  dy=zero &  dz=zero & dxyz=zero
-
-; Get a unit number
-GET_LUN, file
+x=fltarr(mx)*one
+y=fltarr(my)*one
+z=fltarr(mz)*one
+dx=zero
+dy=zero
+dz=zero
+dxyz=zero
 
 ; Build the full path and filename
 default,proc,0
 filename=datadir+'/proc'+str(proc)+'/grid.dat'   ; Read processor box dimensions
 
 ; Check for existance and read the data
-if (file_test(filename)) then begin
-  IF ( not keyword_set(QUIET) ) THEN print, 'Reading ' , filename , '...'
+if (not file_test(filename)) then $
+    message, 'ERROR: cannot find file ' , filename
 
-  openr,file,filename
-  readu,file, t,x,y,z
-  readu,file, dx,dy,dz
-  close,file
-  FREE_LUN, file
-end else begin
-  FREE_LUN, file
-  message, 'ERROR: cannot find file ' , filename
-end
+if (not keyword_set(QUIET)) then print, 'Reading ' , filename , '...'
+
+openr, lun, filename, /get_lun
+readu, lun, t,x,y,z
+readu, lun, dx,dy,dz
+close, lun
+free_lun, lun
 
 ; Build structure of all the variables
 object = CREATE_STRUCT(name=filename,['t','x','y','z','dx','dy','dz'],t,x,y,z,dx,dy,dz)
