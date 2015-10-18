@@ -64,7 +64,9 @@ slice_ypos=zero
 slice_zpos=zero
 slice_z2pos=zero
 ;
-rad=grid.x & phi=grid.y & zed=grid.z
+rad=grid.x
+phi=grid.y
+zed=grid.z
 nrad=n_elements(rad) 
 nphi=n_elements(phi) 
 nzed=n_elements(zed) 
@@ -75,7 +77,8 @@ rr=scale*tmp
 ;
 ;correct aspect ratio 
 ;
-tmp=(zed-min(zed))/grid.Lz & zz=tmp-mean(tmp)
+tmp=(zed-min(zed))/grid.Lz
+zz=tmp-mean(tmp)
 aspect_ratio = grid.Lz/grid.Lx
 if (keyword_set(no_orig_aspect)) then aspect_ratio=1.
 zz=aspect_ratio*zz
@@ -109,7 +112,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;
     for iphi=0,nphi-2 do begin  ; nphi-2 do begin;nphi-2 do begin
 ;
-;  3 _____2
+;   3_____2
 ;   |     |
 ;   |     |
 ;   |_____|
@@ -117,11 +120,15 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;
 ; xy
 ;
-       x0=rr[0     ]*cos(phi[iphi])   & y0=rr[0     ]*sin(phi[iphi])
-       x1=rr[nrad-1]*cos(phi[iphi])   & y1=rr[nrad-1]*sin(phi[iphi])
+       x0=rr[0     ]*cos(phi[iphi])
+       y0=rr[0     ]*sin(phi[iphi])
+       x1=rr[nrad-1]*cos(phi[iphi])
+       y1=rr[nrad-1]*sin(phi[iphi])
 ;   
-       x2=rr[nrad-1]*cos(phi[iphi+1]) & y2=rr[nrad-1]*sin(phi[iphi+1])
-       x3=rr[0     ]*cos(phi[iphi+1]) & y3=rr[0     ]*sin(phi[iphi+1])
+       x2=rr[nrad-1]*cos(phi[iphi+1])
+       y2=rr[nrad-1]*sin(phi[iphi+1])
+       x3=rr[0     ]*cos(phi[iphi+1])
+       y3=rr[0     ]*sin(phi[iphi+1])
 ;
        X = [x0,x1,x2,x3]           + xpos 
        Y = [y0,y1,y2,y3]           + ypos    
@@ -144,17 +151,21 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;
     for ized=0,nzed-2 do begin  ; nphi-2 do begin;nphi-2 do begin
 ;
-;  3 _____2
+;   3_____2
 ;   |     |
 ;   |     |
 ;   |_____|
 ;   0     1
 ;
-       x0=rr[0     ]*cos(phi[nphi/2])   & z0=zz[ized]
-       x1=rr[nrad-1]*cos(phi[nphi/2])   & z1=zz[ized]
+       x0=rr[0     ]*cos(phi[nphi/2])
+       z0=zz[ized]
+       x1=rr[nrad-1]*cos(phi[nphi/2])
+       z1=zz[ized]
 ;   
-       x2=rr[nrad-1]*cos(phi[nphi/2]) & z2=zz[ized+1]
-       x3=rr[0     ]*cos(phi[nphi/2]) & z3=zz[ized+1]
+       x2=rr[nrad-1]*cos(phi[nphi/2])
+       z2=zz[ized+1]
+       x3=rr[0     ]*cos(phi[nphi/2])
+       z3=zz[ized+1]
 ;
        X = [x0,x1,x2,x3]   + xpos 
        Y = replicate(0.,4) + ypos    
@@ -166,20 +177,26 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;
     for iphi=0,nphi-2 do begin
 ;
-;  3 _____2
+;   3_____2
 ;   |     |
 ;   |     |
 ;   |_____|
 ;   0     1
 ;
-       x0=rr[nrad/2]*cos(phi[iphi])   & y0=rr[nrad/2]*sin(phi[iphi])
-       x1=rr[nrad/2]*cos(phi[iphi+1]) & y1=rr[nrad/2]*sin(phi[iphi+1])
+       x0=rr[nrad/2]*cos(phi[iphi])
+       y0=rr[nrad/2]*sin(phi[iphi])
+       x1=rr[nrad/2]*cos(phi[iphi+1])
+       y1=rr[nrad/2]*sin(phi[iphi+1])
 ;                                                                 
-       x2=rr[nrad/2]*cos(phi[iphi+1]) & y2=rr[nrad/2]*sin(phi[iphi+1])
-       x3=rr[nrad/2]*cos(phi[iphi])   & y3=rr[nrad/2]*sin(phi[iphi])
+       x2=rr[nrad/2]*cos(phi[iphi+1])
+       y2=rr[nrad/2]*sin(phi[iphi+1])
+       x3=rr[nrad/2]*cos(phi[iphi])
+       y3=rr[nrad/2]*sin(phi[iphi])
 ;
-       z0=zz[0]      & z1=zz[0]
-       z2=zz[nzed-1] & z3=zz[nzed-1]
+       z0=zz[0]
+       z1=zz[0]
+       z2=zz[nzed-1]
+       z3=zz[nzed-1]
 ;
        X = [x0,x1,x2,x3] + xpos 
        Y = [y0,y1,y2,y3] + ypos    
@@ -219,7 +236,8 @@ while ( (not eof(1)) and (t le tmax) ) do begin
     endif
 ;
     a=tvrd() 
-    bad=where(a eq 0) & a(bad)=255
+    bad=where(a eq 0)
+    a(bad)=255
     
     if (keyword_set(png)) then begin
        istr2 = strtrim(string(itpng,'(I20.4)'),2) ;(only up to 9999 frames)
@@ -238,7 +256,9 @@ while ( (not eof(1)) and (t le tmax) ) do begin
  endif else begin       ; Read only time.                                                 
     dummy=zero
     readu, 1, xy, t
-    readu, 2, dummy & readu, 3, dummy & readu, 4, dummy
+    readu, 2, dummy
+    readu, 3, dummy
+    readu, 4, dummy
  endelse
 ;
 ;  Ready for next video slice.
