@@ -218,11 +218,10 @@ COMPILE_OPT IDL2, HIDDEN
       print, 'For GLOBAL calculation domain:'
     endelse
 ;
-    print, '     (mx,my,mz,mvar,maux) = (',mx,',',my,',',mz,',',mvar,',',maux,')'
-    print, '                       mw = ',mw
+    print, '            (mx,my,mz,mw) = (',mx,',',my,',',mz,',',mw,')'
+    print, '    (mvar,maux,precision) = (',mvar,',',maux,',',precision')'
     print, '               (nx,ny,nz) = (',nx,',',ny,',',nz,')'
     print, '      (l1:l2,m1:m2,n1:n2) = (',l1,':',l2,',',m1,':',m1,':',m2,',',n1,':',n2,')'
-    print, '                precision = ', precision
     print, '(nghostx,nghosty,nghostz) = (',nghostx,',',nghosty,',',nghostz,')'
     print, '   (nxgrid,nygrid,nzgrid) = (',nxgrid,',',nygrid,',',nzgrid,')'
     print, '   (mxgrid,mygrid,mzgrid) = (',mxgrid,',',mygrid,',',mzgrid,')'
