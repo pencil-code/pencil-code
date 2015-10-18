@@ -10,12 +10,6 @@ common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
 default,dev,'x'
 ;
-if keyword_set(dev) then begin
-   dev1=dev
-end else begin
-   dev1=''
-endelse
-;
 pc_read_dim, obj=dim, datadir=datadir, /quiet
 pc_read_grid, obj=grid, dim=dim, datadir=datadir, /trim, /q
 nx=dim.nx
@@ -108,7 +102,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;
 ;r-phi
 ;
-    if dev1 ne 'z' then begin
+    if dev ne 'z' then begin
        set_plot,'z'
        device, set_resolution=[xsize,ysize]
     end
@@ -235,7 +229,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
        itpng=itpng+1 
     endif
 
-    if dev1 ne 'z' then begin
+    if dev ne 'z' then begin
        set_plot,'x'
        if (islice eq 1) then WINDOW, retain=2,XSIZE=xsize,YSIZE=ysize
        tv,a       ;,/true
