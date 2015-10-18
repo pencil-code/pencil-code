@@ -195,7 +195,7 @@ endif
 ;
 
 if (keyword_set (param.lwrite_aux) and not keyword_set (noaux)) then begin
-  indices = create_struct (indices, indices_aux)
+  indices = [ indices, indices_aux ]
 endif
 
 ;
