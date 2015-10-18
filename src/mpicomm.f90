@@ -361,7 +361,7 @@ module Mpicomm
   integer :: tolowx=13,touppx=14,tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
   integer :: TOll=7,TOul=8,TOuu=9,TOlu=10 ! msg. tags for corners
   integer :: io_perm=20,io_succ=21
-  integer :: npole_tag=15,spole_tag=16
+  integer :: shiftn=22,shifts=23
 !
 !  mpi tags for radiation
 !  the values for those have to differ by a number greater than maxdir=190
@@ -375,8 +375,8 @@ module Mpicomm
   integer :: MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE
 !
   integer :: isend_rq_tolowx,isend_rq_touppx,irecv_rq_fromlowx,irecv_rq_fromuppx
-  integer :: isend_rq_spole,isend_rq_npole
-  integer :: irecv_rq_spole,irecv_rq_npole
+  integer :: irecv_rq_banshift,isend_rq_fonshift
+  integer :: irecv_rq_basshift,isend_rq_fosshift
   integer :: isend_rq_tolowy,isend_rq_touppy,irecv_rq_fromlowy,irecv_rq_fromuppy
   integer :: isend_rq_tolowz,isend_rq_touppz,irecv_rq_fromlowz,irecv_rq_fromuppz
   integer :: isend_rq_TOll,isend_rq_TOul,isend_rq_TOuu,isend_rq_TOlu  !(corners)
@@ -423,9 +423,9 @@ module Mpicomm
         mpi_precision = MPI_REAL
         if (lroot) then
           write (*,*) ""
-          write (*,*) "==============================================================="
-          write (*,*) "WARNING: using SINGLE PRECISION, you'd better know what you do!"     
-          write (*,*) "==============================================================="
+          write (*,*) "====================================================================="
+          write (*,*) "WARNING: using SINGLE PRECISION, you'd better know what you're doing!"
+          write (*,*) "====================================================================="
           write (*,*) ""
         endif
       else
@@ -641,8 +641,10 @@ module Mpicomm
             zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,mpierr)
         call MPI_ISEND(ubufzo(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
             zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,mpierr)
-        if (lnorth_pole) call isendrcv_bdry_npole(f,ivar1_opt,ivar2_opt)
-        if (lsouth_pole) call isendrcv_bdry_spole(f,ivar1_opt,ivar2_opt)
+        if (lpole(2) .and. lfirst_proc_y) &
+            call isendrcv_bdry_npole(f,ivar1_opt,ivar2_opt)
+        if (lpole(2) .and. llast_proc_y ) &
+            call isendrcv_bdry_spole(f,ivar1_opt,ivar2_opt)
       endif
 !
 !  The four corners (in counter-clockwise order).
@@ -735,6 +737,22 @@ module Mpicomm
         enddo
         call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,mpierr)
         call MPI_WAIT(isend_rq_touppz,isend_stat_tu,mpierr)
+        if (lfirst_proc_y .and. lpole(2)) then
+          call MPI_WAIT(irecv_rq_banshift,irecv_stat_np,mpierr)
+          do j=ivar1,ivar2
+            if (bcy12(j,1)=='pp') f(l1:l2,:m1-1,n1:n2,j)= npbufyi(:,:,:,j)
+            if (bcy12(j,1)=='ap') f(l1:l2,:m1-1,n1:n2,j)=-npbufyi(:,:,:,j)
+          enddo
+          call MPI_WAIT(isend_rq_fonshift,isend_stat_np,mpierr)
+        endif
+        if (llast_proc_y .and. lpole(2)) then
+          call MPI_WAIT(irecv_rq_basshift,irecv_stat_spole,mpierr)
+          do j=ivar1,ivar2
+            if (bcy12(j,2)=='pp') f(l1:l2,m2+1:,n1:n2,j)= spbufyi(:,:,:,j)
+            if (bcy12(j,2)=='ap') f(l1:l2,m2+1:,n1:n2,j)=-spbufyi(:,:,:,j)
+          enddo
+          call MPI_WAIT(isend_rq_fosshift,isend_stat_spole,mpierr)
+        endif
       endif
 !
 !  The four yz-corners (in counter-clockwise order)
@@ -840,6 +858,7 @@ module Mpicomm
 !  Isend and Irecv boundary values for pole.
 !
 !   18-june-10/dhruba: aped
+!   15-oct-15/fred: simplified ghost allocation
 !
       real, dimension (:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
@@ -850,31 +869,28 @@ module Mpicomm
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
-!
 ! The following is not a typo, it must be nprocz although the boundary
 ! is the pole (i.e., along the y direction).
       if (nprocz>1) then
-        npbufyo(:,:,:,ivar1:ivar2)=f(l1:l2,m1:m1i,n1:n2,ivar1:ivar2) !!(north pole)
+        npbufyo(:,:,:,ivar1:ivar2)=f(l1:l2,m1i:m1:-1,n1:n2,ivar1:ivar2) !!(north pole)
         nbuf_pole=nx*nghost*nz*(ivar2-ivar1+1)
         call MPI_IRECV(npbufyi(:,:,:,ivar1:ivar2),nbuf_pole,MPI_REAL, &
-             poleneigh,npole_tag,MPI_COMM_WORLD,irecv_rq_npole,mpierr)
+             poleneigh,shiftn,MPI_COMM_WORLD,irecv_rq_banshift,mpierr)
         call MPI_ISEND(npbufyo(:,:,:,ivar1:ivar2),nbuf_pole,MPI_REAL, &
-             poleneigh,npole_tag,MPI_COMM_WORLD,isend_rq_npole,mpierr)
-        call MPI_WAIT(irecv_rq_npole,irecv_stat_np,mpierr)
-        do j=ivar1,ivar2
-          if (bcy12(j,1)=='pp') then
-             f(l1:l2,1,n1:n2,j)=npbufyi(:,3,:,j)
-             f(l1:l2,2,n1:n2,j)=npbufyi(:,2,:,j)
-             f(l1:l2,3,n1:n2,j)=npbufyi(:,1,:,j)
-          endif
-          if (bcy12(j,1)=='ap') then
-             f(l1:l2,1,n1:n2,j)=-npbufyi(:,3,:,j)
-             f(l1:l2,2,n1:n2,j)=-npbufyi(:,2,:,j)
-             f(l1:l2,3,n1:n2,j)=-npbufyi(:,1,:,j)
-          endif
-        enddo
-        call MPI_WAIT(isend_rq_npole,isend_stat_np,mpierr)
+             poleneigh,shiftn,MPI_COMM_WORLD,isend_rq_fonshift,mpierr)
+!
+!  FG: moved following lines to ...finalize...
+!
+!        call MPI_WAIT(irecv_rq_foshift,irecv_stat_np,mpierr)
+!        do j=ivar1,ivar2
+!          if (bcy12(j,1)=='pp') f(l1:l2,:m1-1,n1:n2,j)= npbufyi(:,:,:,j)
+!          if (bcy12(j,1)=='ap') f(l1:l2,:m1-1,n1:n2,j)=-npbufyi(:,:,:,j)
+!        enddo
+!        call MPI_WAIT(isend_rq_bashift,isend_stat_np,mpierr)
       endif
+!
+!  The above if may be redundant as nested within existing condition, however
+!  worth retaining in case called from elsewhere. Next branch requires corners
 !
     endsubroutine isendrcv_bdry_npole
 !***********************************************************************
@@ -883,6 +899,7 @@ module Mpicomm
 !  Isend and Irecv boundary values for pole.
 !
 !   18-june-10/dhruba: aped
+!   15-oct-15/fred: inverted ghost allocation
 !
       real, dimension (:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
@@ -897,21 +914,26 @@ module Mpicomm
 !  is the pole (i.e., along the y direction).
 !
       if (nprocz>1) then
-        spbufyo(:,:,:,ivar1:ivar2)=f(l1:l2,m2i:m2,n1:n2,ivar1:ivar2) !!(south pole)
+        spbufyo(:,:,:,ivar1:ivar2)=f(l1:l2,m2:m2i:-1,n1:n2,ivar1:ivar2) !!(south pole)
         nbuf_pole=nx*nghost*nz*(ivar2-ivar1+1)
         call MPI_IRECV(spbufyi(:,:,:,ivar1:ivar2),nbuf_pole,MPI_REAL, &
-             poleneigh,spole_tag,MPI_COMM_WORLD,irecv_rq_spole,mpierr)
+             poleneigh,shifts,MPI_COMM_WORLD,irecv_rq_basshift,mpierr)
         call MPI_ISEND(spbufyo(:,:,:,ivar1:ivar2),nbuf_pole,MPI_REAL, &
-             poleneigh,spole_tag,MPI_COMM_WORLD,isend_rq_spole,mpierr)
-        call MPI_WAIT(irecv_rq_spole,irecv_stat_spole,mpierr)
-        do j=ivar1,ivar2
-          if (bcy12(j,2)=='pp') &
-              f(l1:l2,m2+1:,n1:n2,j)=spbufyi(:,:,:,j)
-          if (bcy12(j,2)=='ap') &
-              f(l1:l2,m2+1:,n1:n2,j)=-spbufyi(:,:,:,j)
-        enddo
-        call MPI_WAIT(isend_rq_spole,isend_stat_spole,mpierr)
+             poleneigh,shifts,MPI_COMM_WORLD,isend_rq_fosshift,mpierr)
+!
+!  FG: moved following lines to ...finalize...
+!
+!        call MPI_WAIT(irecv_rq_bashift,irecv_stat_spole,mpierr)
+!        do j=ivar1,ivar2
+!          if (bcy12(j,2)=='pp') f(l1:l2,m2+1:,n1:n2,j)= spbufyi(:,:,:,j)
+!          if (bcy12(j,2)=='ap') f(l1:l2,m2+1:,n1:n2,j)=-spbufyi(:,:,:,j)
+!        enddo
+!        call MPI_WAIT(isend_rq_bashift,isend_stat_spole,mpierr)
       endif
+!
+!  The above if may be redundant as nested within existing condition, however
+!  worth retaining in case called from elsewhere. Next branch requires corners
+!
 !
     endsubroutine isendrcv_bdry_spole
 !***********************************************************************

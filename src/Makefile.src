@@ -1673,6 +1673,8 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #CC=cc #(sisu*)
 #FFLAGS=-O1 -ffree -e m -J . -p . #(sisu*)
 #FFLAGS_DOUBLE=-s real64 #(sisu*)
+##FFLAGS=-O1 #(sisu*)
+##FFLAGS_DOUBLE=-r8 #(sisu*)
 #CFLAGS=-DFUNDERSC=1 -O3 #(sisu*)
 ##
 ## Piz Daint - CrayXC30 - (ETH Zurich)
@@ -2200,7 +2202,7 @@ experimental/analyzers.o experimental/analyzers.mod: experimental/emd.mod
 experimental/emd.o experimental/emd.mod:
 experimental/pc_meanfield_collect.o: experimental/pc_meanfield_collect.f90 $(start) Makefile.local |  experimental/emd.o experimental/analyzers.o
 experimental/pc_meanfield_collect.x: experimental/pc_meanfield_collect.o
-	$(LD) $(LDFLAGS) experimental/analyzers.o experimental/emd.o experimental/pc_meanfield_collect.o $(LD_MPI) $(LD_FOURIER) $(LD_GSL) $(start) -o experimental/pc_meanfield_collect.x
+	$(LD) experimental/analyzers.o experimental/emd.o experimental/pc_meanfield_collect.o $(LDFLAGS) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) $(start) -o experimental/pc_meanfield_collect.x
 #
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90
 PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport
