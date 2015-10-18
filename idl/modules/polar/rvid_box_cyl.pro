@@ -236,8 +236,8 @@ while ( (not eof(1)) and (t le tmax) ) do begin
     endif
 ;
     a=tvrd()
-    bad=where(a eq 0)
-    a(bad)=255
+    bad=where(a eq 0, num)
+    if (num gt 0) then a(bad)=255
 
     if (keyword_set(png)) then begin
        istr2 = strtrim(string(itpng,'(I20.4)'),2) ;(only up to 9999 frames)
