@@ -67,15 +67,15 @@ slice_z2pos=zero
 rad=grid.x
 phi=grid.y
 zed=grid.z
-nrad=n_elements(rad) 
-nphi=n_elements(phi) 
-nzed=n_elements(zed) 
+nrad=n_elements(rad)
+nphi=n_elements(phi)
+nzed=n_elements(zed)
 ;
 tmp=(rad-max(rad)*cos(max(phi)))/max(rad)
 scale=1.
 rr=scale*tmp
 ;
-;correct aspect ratio 
+;correct aspect ratio
 ;
 tmp=(zed-min(zed))/grid.Lz
 zz=tmp-mean(tmp)
@@ -124,14 +124,14 @@ while ( (not eof(1)) and (t le tmax) ) do begin
        y0=rr[0     ]*sin(phi[iphi])
        x1=rr[nrad-1]*cos(phi[iphi])
        y1=rr[nrad-1]*sin(phi[iphi])
-;   
+;
        x2=rr[nrad-1]*cos(phi[iphi+1])
        y2=rr[nrad-1]*sin(phi[iphi+1])
        x3=rr[0     ]*cos(phi[iphi+1])
        y3=rr[0     ]*sin(phi[iphi+1])
 ;
-       X = [x0,x1,x2,x3]           + xpos 
-       Y = [y0,y1,y2,y3]           + ypos    
+       X = [x0,x1,x2,x3]           + xpos
+       Y = [y0,y1,y2,y3]           + ypos
        z = replicate(zz[nzed/2],4) + zpos
 ;
        polyfill,x,y,z,pattern=xy_int[*,iphi],$
@@ -140,7 +140,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ; xy2
 ;
        if (keyword_set(bottom)) then begin
-          z = replicate(0.,4) 
+          z = replicate(0.,4)
           polyfill,x,y,z,pattern=xy2_int[*,iphi],$
                    image_coord=[[0,0],[nrad-1,0],[nrad-1,0],[0,0]],/t3d
        endif
@@ -161,14 +161,14 @@ while ( (not eof(1)) and (t le tmax) ) do begin
        z0=zz[ized]
        x1=rr[nrad-1]*cos(phi[nphi/2])
        z1=zz[ized]
-;   
+;
        x2=rr[nrad-1]*cos(phi[nphi/2])
        z2=zz[ized+1]
        x3=rr[0     ]*cos(phi[nphi/2])
        z3=zz[ized+1]
 ;
-       X = [x0,x1,x2,x3]   + xpos 
-       Y = replicate(0.,4) + ypos    
+       X = [x0,x1,x2,x3]   + xpos
+       Y = replicate(0.,4) + ypos
        z = [z0,z1,z2,z3]   + zpos
 ;
        polyfill,x,y,z,pattern=xz_int[*,ized],$
@@ -187,7 +187,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
        y0=rr[nrad/2]*sin(phi[iphi])
        x1=rr[nrad/2]*cos(phi[iphi+1])
        y1=rr[nrad/2]*sin(phi[iphi+1])
-;                                                                 
+;
        x2=rr[nrad/2]*cos(phi[iphi+1])
        y2=rr[nrad/2]*sin(phi[iphi+1])
        x3=rr[nrad/2]*cos(phi[iphi])
@@ -198,8 +198,8 @@ while ( (not eof(1)) and (t le tmax) ) do begin
        z2=zz[nzed-1]
        z3=zz[nzed-1]
 ;
-       X = [x0,x1,x2,x3] + xpos 
-       Y = [y0,y1,y2,y3] + ypos    
+       X = [x0,x1,x2,x3] + xpos
+       Y = [y0,y1,y2,y3] + ypos
        z = [z0,z1,z2,z3] + zpos
 ;
        polyfill,x,y,z,pattern=reform(yz_int[iphi,*]),$
@@ -208,7 +208,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;
 ; Time label
 ;
-    time=t/tunit 
+    time=t/tunit
     time_int = fix(time)
     time_dec = fix(100*(time-time_int))
     if (time_dec ge 10) then begin
@@ -228,52 +228,53 @@ while ( (not eof(1)) and (t le tmax) ) do begin
        default, divbar, 2
        default, blabel, ''
        !p.title=blabel
-;   colorbar, pos=[.89,.15,.90,.85], color=1, div=divbar,$
+       ;colorbar, pos=[.89,.15,.90,.85], color=1, div=divbar,$
        colorbar_co, pos=[.1,.05,.9,.06], color=1, div=divbar,$
                  range=[amin,amax]/bnorm, $ ;,/right, /vertical, $
                  format=bformat, charsize=bsize, title=title
        !p.title=''
     endif
 ;
-    a=tvrd() 
+    a=tvrd()
     bad=where(a eq 0)
     a(bad)=255
-    
+
     if (keyword_set(png)) then begin
        istr2 = strtrim(string(itpng,'(I20.4)'),2) ;(only up to 9999 frames)
        tvlct, red, green, blue, /GET
        imgname = imgprefix+istr2+'.png'
        write_png, imgdir+'/'+imgname, a, red, green, blue
-       itpng=itpng+1 
+       itpng=itpng+1
     endif
 
     if dev ne 'z' then begin
        set_plot,'x'
        if (islice eq 1) then WINDOW, retain=2,XSIZE=xsize,YSIZE=ysize
-       tv,a       ;,/true
+       tv, a ; , /true
     endif
 ;
- endif else begin       ; Read only time.                                                 
+  endif else begin
+    ; Read only time.
     dummy=zero
     readu, 1, xy, t
     readu, 2, dummy
     readu, 3, dummy
     readu, 4, dummy
- endelse
+  endelse
 ;
 ;  Ready for next video slice.
 ;
- islice=islice+1
+  islice=islice+1
 ;
 ; output
 ;
  if (islice eq 1) then $
     print, '   islice        t        min/norm     max/norm        amin     amax'
- print, islice, t, $
+    print, islice, t, $
         min([min(tmp_xy2),min(tmp_xy),min(tmp_xz),min(tmp_yz)])/norm, $
         max([max(tmp_xy2),max(tmp_xy),max(tmp_xz),max(tmp_yz)])/norm, $
         amin, amax, format='(i9,e12.4,4f13.7)'
-     
+
 endwhile
 ;
 end
