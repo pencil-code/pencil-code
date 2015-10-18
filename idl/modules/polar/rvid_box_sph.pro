@@ -103,7 +103,7 @@ if (keyword_set(png_truecolor)) then png=1
 ;
 first_print = 1
 ;
-; Construct location of slice_var.plane files 
+; Construct location of slice_var.plane files
 ;
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 ;  by default, look in data/, assuming we have run read_videofiles.x before:
@@ -159,11 +159,12 @@ ncpus = dim.nprocx*dim.nprocy*dim.nprocz
 ; nb: need pass these into boxbotex_scl for use after scaling of image;
 ;     otherwise pixelisation can be severe...
 ; nb: at present using the same z-value for both horizontal slices.
-  irad=mx/2 & itht=my/2 
-  iphi1=nghostz    
+  irad=mx/2
+  itht=my/2
+  iphi1=nghostz
   iphi2=nghostz+   mz/4
   iphi3=nghostz+ 2*mz/4
-  iphi4=nghostz+ 3*mz/4  
+  iphi4=nghostz+ 3*mz/4
 ;
 t=zero
 rp =fltarr(nx,nz)*one
@@ -198,15 +199,18 @@ endelse
 ;  Redefine min and max according to mathematical operation.
 ;
 if (keyword_set(sqroot)) then begin
-  amin=sqrt(amin) & amax=sqrt(amax)
+  amin=sqrt(amin)
+  amax=sqrt(amax)
 endif
 ;
 if (keyword_set(exponential)) then begin
-  amin=exp(amin) & amax=exp(amax)
+  amin=exp(amin)
+  amax=exp(amax)
 endif
 ;
 if (keyword_set(logarithmic)) then begin
-  amin=alog(amin) & amax=alog(amax)
+  amin=alog(amin)
+  amax=alog(amax)
 endif
 ;
 ;  Go through all video snapshots and find global min and max.
@@ -226,7 +230,7 @@ if (keyword_set(global_scaling)) then begin
     readu, 1, rp , t, slice_ypos
     readu, 2, rt1, t, slice_z1pos
     readu, 3, rt2, t, slice_z2pos
-    readu, 4, rt3, t, slice_z3pos 
+    readu, 4, rt3, t, slice_z3pos
     readu, 5, rt4, t, slice_z4pos
 ;
     if (first) then begin
@@ -240,7 +244,11 @@ if (keyword_set(global_scaling)) then begin
 ;
   endwhile
 ;
-  close, 1 & close, 2 & close, 3 & close, 4 & close, 5
+  close, 1
+  close, 2
+  close, 3
+  close, 4
+  close, 5
 ;
   print,'Scale using global min, max: ', amin, amax
 ;
@@ -263,13 +271,16 @@ while ( (not eof(1)) and (t le tmax) ) do begin
     readu, 1, rp , t, slice_ypos
     readu, 2, rt1, t, slice_z1pos
     readu, 3, rt2, t, slice_z2pos
-    readu, 4, rt3, t, slice_z3pos 
+    readu, 4, rt3, t, slice_z3pos
     readu, 5, rt4, t, slice_z4pos
- 
+
   endif else begin ; Read only time.
     dummy=zero
     readu, 1, rp, t
-    readu, 2, dummy & readu, 3, dummy & readu, 4, dummy & readu, 5, dummy 
+    readu, 2, dummy
+    readu, 3, dummy
+    readu, 4, dummy
+    readu, 5, dummy
   endelse
 ;
 ;  Possible to set time interval and to jump over njump slices.
@@ -278,16 +289,28 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;
 ;  Perform preset mathematical operation on data before plotting.
 ;
-    if (keyword_set(sqroot)) then begin      
-      rp=sqrt(rp) & rt1=sqrt(rt1) & rt2=sqrt(rt2) & rt3=sqrt(rt3) & rt4=sqrt(rt4)
+    if (keyword_set(sqroot)) then begin
+      rp=sqrt(rp)
+      rt1=sqrt(rt1)
+      rt2=sqrt(rt2)
+      rt3=sqrt(rt3)
+      rt4=sqrt(rt4)
     endif
 ;
-    if (keyword_set(exponential)) then begin      
-      rp=exp(rp) & rt1=exp(rt1) & rt2=exp(rt2) & rt3=exp(rt3) & rt4=exp(rt4)
+    if (keyword_set(exponential)) then begin
+      rp=exp(rp)
+      rt1=exp(rt1)
+      rt2=exp(rt2)
+      rt3=exp(rt3)
+      rt4=exp(rt4)
     endif
 ;
-    if (keyword_set(logarithmic)) then begin      
-      rp=alog(rp) & rt1=alog(rt1) & rt2=alog(rt2) & rt3=alog(rt3) & rt4=alog(rt4)
+    if (keyword_set(logarithmic)) then begin
+      rp=alog(rp)
+      rt1=alog(rt1)
+      rt2=alog(rt2)
+      rt3=alog(rt3)
+      rt4=alog(rt4)
     endif
 ;
 ;  If monotonous scaling is set, increase the range if necessary.
@@ -308,9 +331,14 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;
 ;  If noborder is set.
 ;
-    s=size(rp)  & l1=noborder(0) & l2=s[1]-1-noborder(1)
-                  n1=noborder(4) & n2=s[2]-1-noborder(5)
-    s=size(rt1) & m1=noborder(2) & m2=s[2]-1-noborder(3)
+    s=size(rp)
+    l1=noborder(0)
+    l2=s[1]-1-noborder(1)
+    n1=noborder(4)
+    n2=s[2]-1-noborder(5)
+    s=size(rt1)
+    m1=noborder(2)
+    m2=s[2]-1-noborder(3)
 ;
 ;  Cut the arrays - leftover from swapz of rvid_box
 ;
@@ -325,7 +353,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
     fcrp=pc_cyl2cart(rps,rad[dim.l1:dim.l2],phi[dim.n1:dim.n2])
     rps=fcrp.field
 ;
-;  For masking, rr at constant theta 
+;  For masking, rr at constant theta
 ;
     xx=rebin(fcrp.xc,n_elements(fcrp.xc),n_elements(fcrp.yc))
     yy=rebin(transpose(fcrp.yc),n_elements(fcrp.xc),n_elements(fcrp.yc))
@@ -337,7 +365,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;
     if (keyword_set(nointerpz)) then begin
       ;will use the meridional slices as they are.
-      ;rr at constant phi, for masking  
+      ;rr at constant phi, for masking
       prr=rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iphi1)
       ;tt at constant phi, for masking
       ptt=tt(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iphi1)
@@ -351,15 +379,17 @@ while ( (not eof(1)) and (t le tmax) ) do begin
       fcrt4=pc_meridional(rt4s,rad[dim.l1:dim.l2],tht[dim.m1:dim.m2])
 ;
       ;the quantity fields
-      rt1s=fcrt1.field & rt2s=fcrt2.field 
-      rt3s=fcrt3.field & rt4s=fcrt4.field
+      rt1s=fcrt1.field
+      rt2s=fcrt2.field
+      rt3s=fcrt3.field
+      rt4s=fcrt4.field
 ;
       ;rr at constant phi, for masking
       xx=rebin(fcrt1.xc,n_elements(fcrt1.xc),n_elements(fcrt1.zc))
       zz=rebin(transpose(fcrt1.zc),n_elements(fcrt1.xc),n_elements(fcrt1.zc))
       prr=sqrt(xx^2+zz^2)
       ;tt at constant phi, for masking
-      ptt=atan(xx,zz) 
+      ptt=atan(xx,zz)
 ;
       xm=fcrt1.xc
       zm=fcrt1.zc
@@ -376,7 +406,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;
     xyouts, .08, 0.81, '!8t!6='+string(t/tunit,fo=fo)+'!c'+title, $
       col=1,siz=1.6
-              
+
 ;
 ;  Draw color bar.
 ;
@@ -396,22 +426,25 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;  Draw axes
 ;
       if (keyword_set(axes)) then begin
-        xx=!d.x_size & yy=!d.y_size
+        xx=!d.x_size
+        yy=!d.y_size
         aspect_ratio=1.*yy/xx
         ; length of the arrow
-        length=0.1 
-        xlength=length & ylength=xlength/aspect_ratio 
-        ; rotation angles. I didn't figure out exactly 
-        ; the rotation law. This .7 is an ugly hack 
+        length=0.1
+        xlength=length
+        ylength=xlength/aspect_ratio
+        ; rotation angles. I didn't figure out exactly
+        ; the rotation law. This .7 is an ugly hack
         ; that looks good for most angles
         gamma=.7*xrot*!pi/180.
         alpha=zrot*!pi/180.
         ; position of the origin
-        x0=0.12 & y0=0.25
+        x0=0.12
+        y0=0.25
         ;
         ; x arrow
         ;
-        x1=x0+xlength*(cos(gamma)*cos(alpha)) 
+        x1=x0+xlength*(cos(gamma)*cos(alpha))
         y1=y0+ylength*(sin(gamma)*sin(alpha))
         angle=atan((y1-y0),(x1-x0))
         x2=x0+length*cos(angle)
@@ -437,7 +470,8 @@ while ( (not eof(1)) and (t le tmax) ) do begin
         ;
         ; z arrow
         ;
-        x1=x0 & y1=y0+ylength
+        x1=x0
+        y1=y0+ylength
         arrow, x0, y0, x1, y1,col=1,/normal,$
           thick=thlabel,hthick=thlabel
         xyouts,x1-0.015,y1+0.01,'!8z!x',col=1,/normal,$
@@ -454,7 +488,8 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;
 ;  Make background white, and write png file.
 ;
-        bad=where(image eq 0) & image(bad)=255
+        bad=where(image eq 0)
+        image(bad)=255
         tvlct, red, green, blue, /GET
         imgname = 'img_'+istr2+'.png'
         write_png, imgdir+'/'+imgname, image, red, green, blue
@@ -511,7 +546,7 @@ while ( (not eof(1)) and (t le tmax) ) do begin
     endelse
 ;
 ;  Wait in case movie runs to fast.
-;      
+;
       wait, wait
 ;
 ;  Check whether file has been written.
@@ -543,7 +578,10 @@ endelse
 ;
 ;  Close slice files.
 ;
-close, 1 & close, 2 & close, 3 &close, 4
+close, 1
+close, 2
+close, 3
+close, 4
 ;
 ;  Write and close mpeg file.
 ;
