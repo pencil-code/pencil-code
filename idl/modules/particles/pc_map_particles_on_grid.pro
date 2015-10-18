@@ -9,13 +9,12 @@ pro pc_map_particles_on_grid, xxp, x, y, z, $
     ineargrid=ineargrid, kneighbour=kneighbour, kshepherd=kshepherd, $
     datadir=datadir
 
-common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
-
-pc_set_precision, datadir=datadir
-if (n_elements(x) gt 1) then dx=x[1]-x[0] else dx=1.0*one
-if (n_elements(y) gt 1) then dy=y[1]-y[0] else dy=1.0*one
-if (n_elements(z) gt 1) then dz=z[1]-z[0] else dz=1.0*one
-dx1=1.0D/dx & dy1=1.0D/dy & dz1=1.0D/dz
+if (n_elements(x) gt 1) then dx=x[1]-x[0] else dx=1.0
+if (n_elements(y) gt 1) then dy=y[1]-y[0] else dy=1.0
+if (n_elements(z) gt 1) then dz=z[1]-z[0] else dz=1.0
+dx1=1.0D/dx
+dy1=1.0D/dy
+dz1=1.0D/dz
 
 npar=0L
 
