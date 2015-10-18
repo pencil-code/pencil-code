@@ -16,10 +16,11 @@ end else begin
    dev1=''
 endelse
 ;
-pc_read_grid,obj=grid,/trim,/q
-pc_set_precision, dim=dim, /quiet
 pc_read_dim, obj=dim, datadir=datadir, /quiet
-nx=dim.nx & ny=dim.ny & nz=dim.nz
+pc_read_grid, obj=grid, dim=dim, datadir=datadir, /trim, /q
+nx=dim.nx
+ny=dim.ny
+nz=dim.nz
 ;
 default,field,'rho'
 default,bottom,0.0
@@ -48,9 +49,6 @@ default,imgdir,'.'
 ;
 loadct,ctable
 ;
-if (not keyword_set(datatopdir)) then datatopdir=pc_get_datadir()
-datadir=datatopdir
-
 file_slice1=datadir+'/slice_'+field+'.xy'
 file_slice2=datadir+'/slice_'+field+'.xz'
 file_slice3=datadir+'/slice_'+field+'.yz'
