@@ -73,7 +73,8 @@ module Param_IO
                            fbcz1=0., fbcz2=0., fbcz1_1=0., fbcz1_2=0., fbcz2_1=0., fbcz2_2=0.
 
   namelist /init_pars/ &
-      cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
+      cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower,&
+      coord_system, lpole, &
       lequidist, coeff_grid, zeta_grid0, grid_func, xyz_star, lwrite_ic, &
       lnowrite, luniform_z_mesh_aspect_ratio, unit_system, unit_length, &
       lmodify,modify_filename, &
