@@ -5,6 +5,7 @@
 &init_pars
   cvsid='$Id$',
   random_gen='nr_f90'
+  lwrite_aux=T
 /
 &hydro_init_pars
 /

@@ -2,6 +2,16 @@
 !
 !  cparam.local
 !
+!** AUTOMATIC CPARAM.INC GENERATION ****************************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxiliary variables added by this module
+! Use MVAR to reserve the appropriate workspace for testfield_z.f90
+! The MAUX number must be equally big and is used for uxb in the f-array.
+! At the end of this file, njtest must be set such that 3*njtest=MVAR.
+!
+! MAUX CONTRIBUTION 3
+!
+!***************************************************************************
 !  Local settings concerning grid size and number of CPUs.
 !  This file is included by cparam.f90
 !
