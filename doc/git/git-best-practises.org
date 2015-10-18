@@ -219,12 +219,65 @@ Tips and recommendations for using Git with the Pencil code.
 
 ** Use gitk (or '=tig=' or some variant of '=git log --graph=')
 
-** What to do when you think you're lost
 
-   1. [[https://en.wikipedia.org/wiki/Phrases_from_The_Hitchhiker's_Guide_to_the_Galaxy#Don.27t_Panic][Don't panic]]
+** [[https://en.wikipedia.org/wiki/Phrases_from_The_Hitchhiker's_Guide_to_the_Galaxy#Don.27t_Panic][Don't panic]]
+   [or /What to do when you think you're lost/]
 
-      [You needn't be afraid], as git tries very hard to preserve your changes.
+   Git will try hard to preserve your changes:
 
+   - Any changes you committed will be part of the [[git reflog][/reflog/]] for at least
+     two weeks.\footnote{Unless you explicitly decide othwerwise.}
+
+   - Uncommitted changes to git-controlled-files will only get overwritten
+     if you run one of the commands
+     - =git checkout <file-or-directory>=
+
+   - Files unknown to Git will only get lost with
+     - =git clean=
+     - Again, any non-git commands that change files
+
+   Table \ref{Table:How-to-lose-changes} summarizes this discussion.
+
+#+label: Table:How-to-lose-changes
+#+caption: Scatter Plot with Regression Line
+   | Changes                                     | How they can get lost                 |
+   |---------------------------------------------+---------------------------------------|
+   | Changes committed to git                    | Not at all, unless you insist [fn:4]  |
+   |---------------------------------------------+---------------------------------------|
+   | Uncommitted changes to git-controlled files | =git  t checkout <file-or-directory>= |
+   |                                             | =git reset --hard=                    |
+   |                                             | Non-git commands                      |
+   |---------------------------------------------+---------------------------------------|
+   | Files unknown to Git                        | =git clean=                           |
+   |                                             | Non-git commands                      |
+
+
+[fn:4] Leaving relevant Git commits dangling (≈ unused) for more than two
+weeks counts as insisting on data loss.
+
+*** I'm almost panicking because I'm afraid something got lost
+    [… although I know this is not the case because I stayed away from the
+    commands in Table \ref{Table:How-to-lose-changes}]
+
+    Here is how to see almost[fn:5] every change that was ever[fn:6] known
+    to git:
+    #+begin_src sh
+      gitk --reflog --all
+      # or
+      tig --reflog --all
+      # or, without graphics,
+      git reflog --all --glob='stash*'
+    #+end_src
+
+    If you want to also see dropped stashes, you can use
+    #+begin_src sh
+      git pc panic -v
+    #+end_src
+
+
+[fn:5] This will not show dropped stashes or stashes older than the last one.
+
+[fn:6] Redefining “ever” = “in the last two weeks” for dangling commits.
 
    2. <<git reflog>>'=git reflog=' [plus stash] or '=gitk --reflog='
       or '=git pc reflog [-v]='
