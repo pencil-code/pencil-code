@@ -99,9 +99,7 @@ endif else $
 ;
 if (keyword_set(png_truecolor)) then png=1
 ;
-;  Read the dimensions and precision (single or double) from dim.dat.
-;
-pc_set_precision, datadir=datadir
+;  Read the dimensions from "dim.dat".
 ;
 pc_read_dim, obj=dim, datadir=datadir, proc=proc, /quiet
 nx=dim.nx & ny=dim.ny & nz=dim.nz

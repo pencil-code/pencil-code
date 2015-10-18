@@ -11,7 +11,6 @@ common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;  Get necessary dimensions.
 ;
 pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
-pc_set_precision, dim=dim, quiet=quiet
 ;
 ;  Default data directory.
 ;

@@ -148,10 +148,6 @@ file_slice4=datadir+'/slice_'+field+'.yz'
 ;
 pc_read_dim, obj=dim, datadir=datadir, /quiet
 ;
-;  Set single or double precision.
-;
-pc_set_precision, dim=dim, /quiet
-;
 mx=dim.mx & my=dim.my & mz=dim.mz
 nx=dim.nx & ny=dim.ny & nz=dim.nz
 nghostx=dim.nghostx & nghosty=dim.nghosty & nghostz=dim.nghostz

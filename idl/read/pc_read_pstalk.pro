@@ -28,7 +28,6 @@ if (not keyword_set(datadir)) then datadir=pc_get_datadir()
 ;
 pc_read_dim, obj=dim, datadir=datadir, /quiet
 pc_read_pdim, obj=pdim, datadir=datadir, /quiet
-pc_set_precision, dim=dim, datadir=datadir, /quiet
 ;
 ; Read parameters from file.
 ;

@@ -45,7 +45,6 @@ endelse
 ; Read dimensions and set precision.
 ;
 pc_read_dim, obj=dim, datadir=readdir, /quiet
-pc_set_precision, dim=dim, datadir=readdir, /quiet
 ;
 ; Define filenames of slices.
 ;

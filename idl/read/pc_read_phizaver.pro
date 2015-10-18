@@ -18,7 +18,6 @@ default, quiet, 0
 ;;  Get necessary dimensions.
 ;;
 pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
-pc_set_precision, dim=dim, quiet=quiet
 ;;
 ;;  Derived dimensions.
 ;;

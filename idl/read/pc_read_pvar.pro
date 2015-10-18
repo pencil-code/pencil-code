@@ -43,7 +43,6 @@ endif else begin
   pc_read_dim, obj=dim, datadir=datadir, proc=proc, /quiet
 endelse
 pc_read_pdim, obj=pdim, datadir=datadir, /quiet
-pc_set_precision, dim=dim, /quiet
 ;
 ; Check if we are inserting particles continuously
 ;

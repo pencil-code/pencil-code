@@ -27,9 +27,8 @@ default, izmax, -1
 ;
 ;  Read run parameters and define auxiliary parameters.
 ;
-pc_set_precision, datadir=datadir, dim=dim
-if (not arg_present(par)) then pc_read_param, obj=par, datadir=datadir, /quiet
-if (not arg_present(dim)) then pc_read_dim  , obj=dim, datadir=datadir, /quiet
+if (not arg_present(dim)) then pc_read_dim, obj=dim, datadir=datadir, /quiet
+if (not arg_present(par)) then pc_read_param, obj=par, dim=dim, datadir=datadir, /quiet
 ;
 npar=0L
 npar=n_elements(xxp[*,0])

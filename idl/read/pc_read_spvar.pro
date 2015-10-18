@@ -32,7 +32,6 @@ if (qquiet) then quiet=1
 
 pc_read_dim, obj=dim, datadir=datadir, /quiet
 pc_read_spdim, obj=spdim, datadir=datadir, /quiet
-pc_set_precision,dim=dim,/quiet
 mspvar=spdim.mspvar
 nspar =spdim.nspar
 mspar =0L
@@ -136,8 +135,8 @@ if (mspar ne 0) then begin
 ;
 ;  Read local processor data.
 ;
-    array=fltarr(mspar,mspvar)*one
-    readu, file, array
+  array=fltarr(mspar,mspvar)*one
+  readu, file, array
 ;
 endif
 ;

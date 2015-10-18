@@ -75,7 +75,6 @@ print, file_slice
 ;;
 pc_read_dim, obj=dim, datadir=datadir, /quiet
 nx=dim.nx & ny=dim.ny & nz=dim.nz & prec=''
-pc_set_precision, datadir=datadir
 help, one
 ;
 t=0.*one & islice=0

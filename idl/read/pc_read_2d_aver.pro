@@ -86,7 +86,6 @@ COMPILE_OPT IDL2,HIDDEN
     pc_read_pstalk, obj=pst, datadir=datadir, /quiet
     default, nstalk, n_elements(pst.ipar)
   endif
-  pc_set_precision, dim=dim, /quiet
 ;
 ;  Need to know box size for proper axes and for shifting the shearing
 ;  frame.
