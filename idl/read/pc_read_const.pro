@@ -22,11 +22,6 @@ if (not quiet) then $
     print, 'Going to read Pencil Code constants from the file ' $
     + fullvarfile + ' .'
 ;
-;  Set precision
-;
-pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
-pc_set_precision, dim=dim, quiet=quiet
-;
 ;  Find length of data file and define data arrays.
 ;
 spawn, 'wc -l '+fullvarfile, nlines
