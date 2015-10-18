@@ -224,7 +224,7 @@ COMPILE_OPT IDL2, HIDDEN
     endelse
 ;
     print, '            (mx,my,mz,mw) = (',mx,',',my,',',mz,',',mw,')'
-    print, '    (mvar,maux,precision) = (',mvar,',',maux,',',precision')'
+    print, '    (mvar,maux,precision) = (',mvar,',',maux,',',precision,')'
     print, '            (nx,ny,nz,nw) = (',nx,',',ny,',',nz,',',nw,')'
     print, '      (l1:l2,m1:m2,n1:n2) = (',l1,':',l2,',',m1,':',m1,':',m2,',',n1,':',n2,')'
     print, '(nghostx,nghosty,nghostz) = (',nghostx,',',nghosty,',',nghostz,')'
