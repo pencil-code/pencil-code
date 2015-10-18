@@ -60,6 +60,8 @@ end
 ;  description of the variable in an indexed array of structures
 ;  where the indexes line up with those in the saved f array.
 ;
+;  Note: auxiliary variables should go to the table below the folling one.
+;
 indices = [ $
   { name:'iuu', label:'Velocity', dims:3 }, $
   { name:'ipp', label:'Pressure', dims:1 }, $
@@ -93,7 +95,7 @@ indices = [ $
   { name:'iaatest', label:'Testfield vector potential', dims:ntestfield }, $
   { name:'iuutest', label:'Testflow', dims:ntestflow }, $
   { name:'icctest', label:'Testflow', dims:ntestscalar }, $
-;  { name:'iuxb', label:'Testfield vector potential', dims:ntestfield }, $
+;  { name:'iuxb', label:'Testfield vector potential', dims:ntestfield }, $  ; is this art or can it be removed?
   { name:'iuun', label:'Velocity of neutrals', dims:3 }, $
   { name:'ispitzer', label:'Heat flux vector according to Spitzer', dims:3 }, $
   { name:'ilnrhon', label:'Log density of neutrals', dims:1 }, $
@@ -126,6 +128,7 @@ indices = [ $
   { name:'ilnTT', label:'Log temperature', dims:1 }, $
   { name:'iTT', label:'Temperature', dims:1 }, $
   { name:'ieth', label:'Thermal energy', dims:1 } $
+  ; don't forget to add a comma above when extending
 ]
 
 ; Auxiliary variables:
@@ -152,9 +155,10 @@ indices_aux = [ $
   { name:'ihypres', label:'Hyperresistivity', dims:3 }, $
   { name:'ippaux', label:'Auxiliary pressure', dims:1 }, $
   { name:'ispecaux', label:'Special auxiliary variable', dims:1 } $
+  ; don't forget to add a comma above when extending
 ]
 
-; Inconsistent names:
+; Inconsistent names (IDL-name is inconsistent with name in the main code):
 inconsistent = [ $
   { name:'ifx', inconsistent_name:'ff' }, $
   { name:'ichemspec', inconsistent_name:'YY' }, $
@@ -164,6 +168,7 @@ inconsistent = [ $
   { name:'igpotselfx', inconsistent_name:'gpotself' }, $
   { name:'ihypvis', inconsistent_name:'hyv' }, $
   { name:'ihypres', inconsistent_name:'hyr' } $
+  ; don't forget to add a comma above when extending
 ]
 
 ; Special variables:
@@ -195,7 +200,7 @@ endif
 ;
 
 if (keyword_set (param.lwrite_aux) and not keyword_set (noaux)) then begin
-  indices = create_struct (indices, indices_aux)
+  indices = [ indices, indices_aux ]
 endif
 
 ;

@@ -13,7 +13,7 @@
 ;  REQUIRES: external 'nl2idl' perl script (WD)
 ;  
 pro pc_read_param, object=object, dim=dim, datadir=datadir, $
-    param2=param2, print=print, quiet=quiet, help=help
+    param2=param2, run_param=run_param, print=print, quiet=quiet, help=help
 COMPILE_OPT IDL2,HIDDEN
   common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
@@ -34,7 +34,7 @@ COMPILE_OPT IDL2,HIDDEN
     print, ""
     print, "   object : optional structure in which to return all the above as tags  [struct]"
     print, ""
-    print, "   /param2: for reading param2.nml"
+    print, "   /run_param: for reading param2.nml (synonym: /param2)"
     print, "   /print : instruction to print all variables to standard output"
     print, "   /quiet : instruction not to print any 'helpful' information"
     print, "   /help  : display this usage information, and exit"
@@ -56,7 +56,7 @@ COMPILE_OPT IDL2,HIDDEN
   undefine, object
   idl_subdir = datadir+'/idl'
   if (not file_test (idl_subdir, /directory)) then file_mkdir, idl_subdir
-  if (keyword_set(param2)) then begin
+  if (keyword_set(param2) or keyword_set(run_param)) then begin
     filename = datadir+'/param2.nml'
     outfile = idl_subdir+'/run_param.pro'
     if (not file_test(filename)) then begin

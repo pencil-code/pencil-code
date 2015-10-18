@@ -221,8 +221,8 @@ module Special
             uy = exp(-(dist-rad(ip))**2/(2*lam_twist(ip)**2))*udrive(ip)*(x(l1:l2)-xp(ip))
             ! normalize
             dist0 = (rad(ip) + sqrt(rad(ip)**2 + 4*lam_twist(ip)**2))/2
-            ux = ux/(exp(-(dist0-rad(ip))**2/(2*lam_twist(ip)**2))*udrive(ip)*dist0)
-            uy = uy/(exp(-(dist0-rad(ip))**2/(2*lam_twist(ip)**2))*udrive(ip)*dist0)
+            ux = ux/(exp(-(dist0-rad(ip))**2/(2*lam_twist(ip)**2))*dist0)
+            uy = uy/(exp(-(dist0-rad(ip))**2/(2*lam_twist(ip)**2))*dist0)
         case ('linear_exp')
             ux = exp(-abs(dist-rad(ip))/lam_twist(ip))*udrive(ip)*(-y(m)+yp(ip))
             uy = exp(-abs(dist-rad(ip))/lam_twist(ip))*udrive(ip)*(x(l1:l2)-xp(ip))
