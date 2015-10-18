@@ -91,7 +91,7 @@ object = CREATE_STRUCT(name=filename,['t','x','y','z','dx','dy','dz'],t,x,y,z,dx
 ; If requested print a summary
 fmt = '(A,4G15.6)'
 if keyword_set(PRINT) then begin
-  print, 'For processor ',strtrim (proc, 2),' calculation domain:'
+  print, 'For processor ',str(proc),' calculation domain:'
   print, '             t = ', t
   print, 'min(x), max(x) = ', min(x), ', ', max(x)
   print, 'min(y), max(y) = ', min(y), ', ', max(y)
