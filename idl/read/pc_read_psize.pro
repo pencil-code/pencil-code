@@ -27,7 +27,7 @@ nlines = file_lines(datadir+'/'+filename)
 ;
 ;  Open the file and read the data.
 ;
-openr, 1, datadir+'/'+filename
+openr, lun, datadir+'/'+filename, /get_lun
 ;
 ;  Read information on size of particle bins.
 ;
@@ -35,7 +35,7 @@ log_ap_min_dist=one
 log_ap_max_dist=one
 nbin_ap_dist=0
 ;
-readf, 1, log_ap_min_dist, log_ap_max_dist, nbin_ap_dist
+readf, lun, log_ap_min_dist, log_ap_max_dist, nbin_ap_dist
 ;
 ;  Read information on particle bins.
 ;
@@ -43,9 +43,9 @@ log_ap=fltarr(nbin_ap_dist)*one
 log_ap_low=fltarr(nbin_ap_dist)*one
 log_ap_high=fltarr(nbin_ap_dist)*one
 ;
-readf, 1, log_ap
-readf, 1, log_ap_low
-readf, 1, log_ap_high
+readf, lun, log_ap
+readf, lun, log_ap_low
+readf, lun, log_ap_high
 ;
 ;  Read output times and measured particle size distribution.
 ;
@@ -55,10 +55,13 @@ ap_dist=fltarr(nbin_ap_dist,nlines-4)*one
 t=fltarr(nlines-4)*one
 ;
 for i=0,nlines-5 do begin
-  readf, 1, t_tmp, ap_dist_tmp
+  readf, lun, t_tmp, ap_dist_tmp
   t[i]=t_tmp
   ap_dist[*,i]=ap_dist_tmp
 endfor
+;
+close, lun
+free_lun, lun
 ;
 ;  Inform about the size of the arrays.
 ;
