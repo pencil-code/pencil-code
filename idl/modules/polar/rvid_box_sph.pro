@@ -582,6 +582,7 @@ close, 1
 close, 2
 close, 3
 close, 4
+close, 5
 ;
 ;  Write and close mpeg file.
 ;
