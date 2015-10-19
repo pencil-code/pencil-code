@@ -148,9 +148,15 @@ file_slice4=datadir+'/slice_'+field+'.yz'
 ;
 pc_read_dim, obj=dim, datadir=datadir, /quiet
 ;
-mx=dim.mx & my=dim.my & mz=dim.mz
-nx=dim.nx & ny=dim.ny & nz=dim.nz
-nghostx=dim.nghostx & nghosty=dim.nghosty & nghostz=dim.nghostz
+mx=dim.mx
+my=dim.my
+mz=dim.mz
+nx=dim.nx
+ny=dim.ny
+nz=dim.nz
+nghostx=dim.nghostx
+nghosty=dim.nghosty
+nghostz=dim.nghostz
 ncpus = dim.nprocx*dim.nprocy*dim.nprocz
 ;
 ;  Consider non-equidistant grid
@@ -158,7 +164,7 @@ ncpus = dim.nprocx*dim.nprocy*dim.nprocz
 pc_read_param, obj=par, dim=dim, datadir=datatodir, /quiet
 if not all(par.lequidist) then begin
   massage = 1
-  pc_read_grid, obj=grid, datadir=datadir, /trim, /quiet
+  pc_read_grid, obj=grid, dim=dim, datadir=datadir, /trim, /quiet
   iix=spline(grid.x,findgen(nx),par.xyz0[0]+(findgen(nx)+.5)*(par.lxyz[0] / nx))
   iiy=spline(grid.y,findgen(ny),par.xyz0[1]+(findgen(ny)+.5)*(par.lxyz[1] / ny))
   iiz=spline(grid.z,findgen(nz),par.xyz0[2]+(findgen(nz)+.5)*(par.lxyz[2] / nz))
@@ -168,8 +174,10 @@ if (keyword_set(shell)) then begin
 ;
 ;  Need full grid to mask outside shell.
 ;
-  pc_read_grid, obj=grid, /quiet
-  x=grid.x & y=grid.y & z=grid.z
+  pc_read_grid, obj=grid, dim=dim, datadir=datadir, /quiet
+  x=grid.x
+  y=grid.y
+  z=grid.z
 ;
   xx = spread(x, [1,2], [my,mz])
   yy = spread(y, [0,2], [mx,mz])
@@ -185,9 +193,11 @@ if (keyword_set(shell)) then begin
 ; nb: need pass these into boxbotex_scl for use after scaling of image;
 ;     otherwise pixelisation can be severe...
 ; nb: at present using the same z-value for both horizontal slices.
-  ix=mx/2 & iy=my/2 & iz=mz/2 & iz2=iz
+  ix=mx/2
+  iy=my/2
+  iz=mz/2
   rrxy =rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz)
-  rrxy2=rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz2)
+  rrxy2=rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz)
   rrxz =rr(nghostx:mx-nghostx-1,iy,nghostz:mz-nghostz-1)
   rryz =rr(ix,nghosty:my-nghosty-1,nghostz:mz-nghostz-1)
 ;
@@ -229,17 +239,17 @@ if (keyword_set(global_scaling)) then begin
 ;
   first=1L
 ;
-  close, 1 & openr, 1, file_slice1, /f77, swap_endian=swap_endian
-  close, 2 & openr, 2, file_slice2, /f77, swap_endian=swap_endian
-  close, 3 & openr, 3, file_slice3, /f77, swap_endian=swap_endian
-  close, 4 & openr, 4, file_slice4, /f77, swap_endian=swap_endian
+  openr, lun_1, file_slice1, /f77, /get_lun, swap_endian=swap_endian
+  openr, lun_2, file_slice2, /f77, /get_lun, swap_endian=swap_endian
+  openr, lun_3, file_slice3, /f77, /get_lun, swap_endian=swap_endian
+  openr, lun_4, file_slice4, /f77, /get_lun, swap_endian=swap_endian
 ;
   while (not eof(1)) do begin
 ;
-    readu, 1, xy2, t, slice_z2pos
-    readu, 2, xy, t, slice_zpos
-    readu, 3, xz, t, slice_ypos
-    readu, 4, yz, t, slice_xpos
+    readu, lun_1, xy2, t, slice_z2pos
+    readu, lun_2, xy, t, slice_zpos
+    readu, lun_3, xz, t, slice_ypos
+    readu, lun_4, yz, t, slice_xpos
 ;
     if (first) then begin
       amax=max([max(xy2),max(xy),max(xz),max(yz)])
@@ -252,7 +262,14 @@ if (keyword_set(global_scaling)) then begin
 ;
   endwhile
 ;
-  close, 1 & close, 2 & close, 3 & close, 4
+  close, lun_1
+  close, lun_2
+  close, lun_3
+  close, lun_4
+  free_lun, lun_1
+  free_lun, lun_2
+  free_lun, lun_3
+  free_lun, lun_4
 ;
   print,'Scale using global min, max: ', amin, amax
 ;
@@ -261,33 +278,36 @@ endif
 ;  Redefine min and max according to mathematical operation.
 ;
 if (keyword_set(sqroot)) then begin
-  amin=sqrt(amin) & amax=sqrt(amax)
+  amin=sqrt(amin)
+  amax=sqrt(amax)
 endif
 ;
 if (keyword_set(exponential)) then begin
-  amin=exp(amin) & amax=exp(amax)
+  amin=exp(amin)
+  amax=exp(amax)
 endif
 ;
 if (keyword_set(logarithmic)) then begin
-  amin=alog(amin) & amax=alog(amax)
+  amin=alog(amin)
+  amax=alog(amax)
 endif
 ;
 ;  Open slice files for reading.
 ;
-close, 1 & openr, 1, file_slice1, /f77, swap_endian=swap_endian
-close, 2 & openr, 2, file_slice2, /f77, swap_endian=swap_endian
-close, 3 & openr, 3, file_slice3, /f77, swap_endian=swap_endian
-close, 4 & openr, 4, file_slice4, /f77, swap_endian=swap_endian
+openr, lun_1, file_slice1, /f77, /get_lun, swap_endian=swap_endian
+openr, lun_2, file_slice2, /f77, /get_lun, swap_endian=swap_endian
+openr, lun_3, file_slice3, /f77, /get_lun, swap_endian=swap_endian
+openr, lun_4, file_slice4, /f77, /get_lun, swap_endian=swap_endian
 ;
 islice=0L
 ;
 while ( (not eof(1)) and (t le tmax) ) do begin
 ;
   if ( (t ge tmin) and (t le tmax) and (islice mod (stride+1) eq 0) ) then begin
-    readu, 1, xy2, t, slice_z2pos
-    readu, 2, xy, t, slice_zpos
-    readu, 3, xz, t, slice_ypos
-    readu, 4, yz, t, slice_xpos
+    readu, lun_1, xy2, t, slice_z2pos
+    readu, lun_2, xy, t, slice_zpos
+    readu, lun_3, xz, t, slice_ypos
+    readu, lun_4, yz, t, slice_xpos
 ;
     if (keyword_set(neg)) then begin
       xy2=-xy2
@@ -302,10 +322,13 @@ while ( (not eof(1)) and (t le tmax) ) do begin
       xz  = interpolate(xz,  iix, iiz, /grid)
       yz  = interpolate(yz,  iiy, iiz, /grid)
     endif
-  endif else begin ; Read only time.
+  endif else begin
+    ; Read only time.
     dummy=zero
-    readu, 1, xy2, t
-    readu, 2, dummy & readu, 3, dummy & readu, 4, dummy
+    readu, lun_1, xy2, t
+    readu, lun_2, dummy
+    readu, lun_3, dummy
+    readu, lun_4, dummy
   endelse
 ;
 ;  Possible to set time interval and to skip over "stride" slices.
@@ -315,15 +338,24 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;  Perform preset mathematical operation on data before plotting.
 ;
     if (keyword_set(sqroot)) then begin
-      xy2=sqrt(xy2) & xy=sqrt(xy) & xz=sqrt(xz) & yz=sqrt(yz)
+      xy2=sqrt(xy2)
+      xy=sqrt(xy)
+      xz=sqrt(xz)
+      yz=sqrt(yz)
     endif
 ;
     if (keyword_set(exponential)) then begin
-      xy2=exp(xy2) & xy=exp(xy) & xz=exp(xz) & yz=exp(yz)
+      xy2=exp(xy2)
+      xy=exp(xy)
+      xz=exp(xz)
+      yz=exp(yz)
     endif
 ;
     if (keyword_set(logarithmic)) then begin
-      xy2=alog(xy2) & xy=alog(xy) & xz=alog(xz) & yz=alog(yz)
+      xy2=alog(xy2)
+      xy=alog(xy)
+      xz=alog(xz)
+      yz=alog(yz)
     endif
 ;
 ;  If monotonous scaling is set, increase the range if necessary.
@@ -354,9 +386,14 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;
 ;  If noborder is set.
 ;
-    s=size(xy) & l1=noborder(0) & l2=s[1]-1-noborder(1)
-    s=size(yz) & m1=noborder(2) & m2=s[1]-1-noborder(3)
-                 n1=noborder(4) & n2=s[2]-1-noborder(5)
+    s=size(xy)
+    l1=noborder(0)
+    l2=s[1]-1-noborder(1)
+    s=size(yz)
+    m1=noborder(2)
+    m2=s[1]-1-noborder(3)
+    n1=noborder(4)
+    n2=s[2]-1-noborder(5)
 ;
 ;  Possibility of swapping xy2 and xy (here if qswap is set).
 ;
@@ -387,9 +424,9 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;
       if (not keyword_set(shell)) then begin
         boxbotex_scl,xy2s,xys,xzs,yzs,xmax,ymax,zof=zof,zpos=zpos,ip=3,$
-                     amin=amin/oversaturate,amax=amax/oversaturate,dev=dev,$
-                     xpos=xpos,magnify=magnify,ymagnify=ymagnify,zmagnify=zmagnify,scale=scale, $
-                     nobottom=nobottom,norm=norm,xrot=xrot,zrot=zrot,sample=sample
+            amin=amin/oversaturate,amax=amax/oversaturate,dev=dev,$
+            xpos=xpos,magnify=magnify,ymagnify=ymagnify,zmagnify=zmagnify,scale=scale, $
+            nobottom=nobottom,norm=norm,xrot=xrot,zrot=zrot,sample=sample
         if (keyword_set(nolabel)) then begin
           if (label ne '') then begin
             xyouts,xlabel,ylabel,label,col=1,siz=size_label,charthick=thlabel
@@ -407,17 +444,22 @@ while ( (not eof(1)) and (t le tmax) ) do begin
         endelse
       endif else begin
 ;
-;  Comment me.
+;  Draw axes box.
 ;
         if (keyword_set(centred)) then begin
-          zrr1=rrxy2 & zrr2=rrxy
+          zrr1=rrxy2
+          zrr2=rrxy
           if (keyword_set(z_bot_twice)) then begin
-            xy2s=xys & zrr1=rrxy
+            xy2s=xys
+            zrr1=rrxy
           endif else if (keyword_set(z_top_twice)) then begin
-            xys=xy2s & zrr2=rrxy2
+            xys=xy2s
+            zrr2=rrxy2
           endif else if (keyword_set(z_topbot_swap)) then begin
-            xys=xy2s & zrr2=rrxy2
-            xy2s=xys & zrr1=rrxy
+            xys=xy2s
+            zrr2=rrxy2
+            xy2s=xys
+            zrr1=rrxy
           endif
           boxbotex_scl,xy2s,xys,xzs,yzs,1.,1.,zof=.36,zpos=.25,ip=3,$
               amin=amin,amax=amax,dev=dev,$
@@ -427,9 +469,6 @@ while ( (not eof(1)) and (t le tmax) ) do begin
           xyouts, .08, 0.81, '!8t!6='+string(t/tunit,fo=fo)+'!c'+title, $
               col=1,siz=1.6
         endif else begin
-;
-;  Comment me.
-;
           boxbotex_scl,xy2s,xys,xzs,yzs,xmax,ymax,zof=.65,zpos=.34,ip=3,$
               amin=amin,amax=amax,dev=dev,sample=sample,$
               shell=shell,$
@@ -459,17 +498,20 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;  Draw axes.
 ;
       if (keyword_set(axes)) then begin
-        xx=!d.x_size & yy=!d.y_size
+        xx=!d.x_size
+        yy=!d.y_size
         aspect_ratio=1.*yy/xx
 ;  Length of the arrow.
         length=0.1
-        xlength=length & ylength=xlength/aspect_ratio
+        xlength=length
+        ylength=xlength/aspect_ratio
 ;  Rotation angles. WL didn't figure out exactly the rotation law. This .7 is
 ;  an ugly hack that looks good for most angles.
         gamma=.7*xrot*!pi/180.
         alpha=zrot*!pi/180.
 ;  Position of the origin
-        x0=0.12 & y0=0.25
+        x0=0.12
+        y0=0.25
 ;
 ;  x arrow
 ;
@@ -503,7 +545,8 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;
 ;  z arrow
 ;
-        x1=x0 & y1=y0+ylength
+        x1=x0
+        y1=y0+ylength
         arrow, x0, y0, x1, y1,col=1,/normal,$
           thick=thlabel,hthick=thlabel
         xyouts,x1-0.015,y1+0.01,'!8z!x',col=1,/normal,$
@@ -518,7 +561,8 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;
 ;  Make background white, and write png file.
 ;
-        bad=where(image eq 0) & image(bad)=255
+        bad=where(image eq 0)
+        image(bad)=255
         tvlct, red, green, blue, /GET
         imgname = imgprefix+istr2+'.png'
         write_png, imgdir+'/'+imgname, image, red, green, blue
@@ -607,7 +651,14 @@ endelse
 ;
 ;  Close slice files.
 ;
-close, 1 & close, 2 & close, 3 &close, 4
+close, lun_1
+close, lun_2
+close, lun_3
+close, lun_4
+free_lun, lun_1
+free_lun, lun_2
+free_lun, lun_3
+free_lun, lun_4
 ;
 ;  Write and close mpeg file.
 ;
