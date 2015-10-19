@@ -4,7 +4,7 @@
 ;  Same as pc_read_var, but for global variables.
 ;
 pro pc_read_global,                                                  $
-    object=object, varfile=varfile_, variables=variables, tags=tags, $
+    object=object, varfile=varfile, variables=variables, tags=tags, $
     validate_variables=validate_variables, trimall=trimall,          $
     nameobject=nameobject, allprocs=allprocs,                        $
     dim=dim, grid=grid, param=param, datadir=datadir, proc=proc,     $
@@ -35,8 +35,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Name and path of varfile to read
 ;
-  default, varfile_, 'global.dat'
-  varfile=varfile_
+  default, varfile, 'global.dat'
 ;
 ; Get necessary dimensions quietly
 ;
@@ -71,10 +70,6 @@ COMPILE_OPT IDL2,HIDDEN
     pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
   endelse
 ;
-; ... and check pc_precision is set for all Pencil Code tools
-;
-  pc_set_precision, dim=dim, quiet=quiet
-;
 ; Should ghost zones be returned?
 ;
   if (trimall) then trimxyz=1
@@ -99,7 +94,6 @@ COMPILE_OPT IDL2,HIDDEN
   nghosty=dim.nghosty
   nghostz=dim.nghostz
   mvar=dim.mvar
-  precision=dim.precision
   mxloc=procdim.mx
   myloc=procdim.my
   mzloc=procdim.mz
@@ -139,10 +133,6 @@ COMPILE_OPT IDL2,HIDDEN
   if (n_elements(variables) ne n_elements(tags)) then begin
     message, 'ERROR: variables and tags arrays differ in size'
   endif
-;
-; Get a free unit number
-;
-  get_lun, file
 ;
 ; Prepare for read (build read command)
 ;
@@ -248,10 +238,9 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Open a varfile and read some data!
 ;
-    close,file
-    openr,file, filename, /f77, swap_endian=swap_endian
-    if (execute('readu,file'+res) ne 1) then $
-        message, 'Error reading: ' + 'readu,' + str(file) + res
+    openr, lun, filename, /f77, swap_endian=swap_endian, /get_lun
+    if (execute('readu, lun '+res) ne 1) then $
+        message, 'Error reading: ' + 'readu, lun ' + res
 ;
     if (n_elements(proc) ne 1) then begin
 ;
@@ -300,8 +289,8 @@ COMPILE_OPT IDL2,HIDDEN
 ;
     endif
 ;
-    close,file
-    free_lun,file
+    close, lun
+    free_lun, lun
   endfor
 ;
 ; Tidy memory a little
@@ -314,8 +303,8 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Check variables one at a time and skip the ones that give errors.
 ; This way the program can still return the other variables, instead
-; of dying with an error. One can turn off this option off to decrease
-; execution time.
+; of dying with an error. One can turn off this option in order to
+; reduce execution time.
 ;
   if (validate_variables) then begin
     skipvariable=make_array(n_elements(variables),/INT,value=0)
