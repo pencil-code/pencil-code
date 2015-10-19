@@ -91,7 +91,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	if (size (allprocs, /type) eq 0) then begin
 		if (file_test (datadir+'/allprocs/'+varfile)) then begin
 			allprocs = 1
-		end else if (file_test (datadir+'/proc0/'+varfile) and file_test (datadir+'/proc1/', /directory) and file_test (datadir+'/proc1/'+varfile)) then begin
+		end else if (file_test (datadir+'/proc0/'+varfile) and file_test (datadir+'/proc1/', /directory) and not file_test (datadir+'/proc1/'+varfile)) then begin
 			allprocs = 2
 		end
 	end
