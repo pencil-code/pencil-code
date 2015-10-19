@@ -1,7 +1,5 @@
 #+TITLE: Git Best Practises
 
-##+LaTeX_HEADER: \renewcommand{\maketitle}{}
-##+LaTeX: \thispagestyle{empty}
 
 #+begin_abstract
 #+LaTeX: \noindent%
@@ -18,34 +16,20 @@ Tips and recommendations for using Git with the Pencil code.
 
      a. Rebase: Use '=git pull --rebase=' to get upstream changes into you
         local tracking branch (typically /master/).
-        Or consider '=git config --global pull.rebase true=',
-        /but remember to do so in every checkout and expect communication
-        problems with others/.
 
      b. Merge: Do /not/ merge upstream into your tracking branch like this:
         #+BEGIN_SRC sh
         git merge origin/master  # DON'T!
         #+END_SRC
+        because that breaks the SVN bridge and makes it quite difficult to
+        understand the repository's topology.
 
         Instead, merge your changes into upstream, either manually or
-        using '=git pc merge-to-upstream='.
-        This gives a meaningful first-parent history like
-        #+begin_example
+        using '=git pc reverse-merge='.
 
+  2. Think about using feature branches for logic units that cover more
+     than a few commits.
 
-        ...
-
-
-
-        #+end_example
-        rather than
-        #+begin_example
-
-
-        ...
-
-
-        #+end_example
 
 * Prerequisites
 
@@ -69,29 +53,34 @@ Tips and recommendations for using Git with the Pencil code.
            F---G       H---I--- feature
    #+end_example
 
-   We say that E is a /child/ of D, and that D has two /parents/, C and G.
-   The complete /ancestry/ of D consists of A, B, C, F, and G.
+   We say that E is a /child/ of D, and that D has two
+   /parents/, C and G.
+   The /ancestors/ of D consists of A, B, C, F, and G.
+   The /descendants/ of D are E, F, H, and I.
 
    If you know how to read this diagram, you know enough about DAGs for
-   our purposes.
+   our purposes.[fn:1]
 
-   You get extra credits if you can answer the question “Which of the
+
+[fn:1]You get extra credits if you can answer the question “Which of the
    commits A, E and F belong to branch /feature/?”
+
 
 *** What is a commit?
 
     A commit typically represents a state of the file tree (the directory
     tree you get by checking out a revision), together with its complete
     commit ancestry.
-    So you have different commit ids (represented as hexadecimal SHA1 hash
-    codes) for
-    - if you make a change, commit, revert that change and commit it again;
-    - if you change the commit message of your last commit (with
-      '=git commit --amend=');
-    - if you take some part of the commit graph and attach it somewhere
-      else ('=git rebase=');
-    - if you make any change to a commit that is an ancestor of the commit
-      in question.
+    So you get different commit ids (represented as hexadecimal SHA1 hash
+    codes) if you
+    - commit a change, commit the inverse of that change, and commit the
+      original change again;
+    - change the commit message of your last commit (with '=git commit
+      --amend=');
+    - take some part of the commit graph and attach it somewhere else
+      ('=git rebase=');
+    - make any change to a commit that is an ancestor of the commit in
+      question.
 
 
 ** The different layers[?] of a Git repository's state
@@ -108,6 +97,7 @@ Tips and recommendations for using Git with the Pencil code.
 ** Merging and rebasing
 
 *** What is merging?
+    <<Merge>>
 
     A /merge/ commit adds a new connection to parts of the Git graph.
     For example, if we have the following situation
@@ -129,7 +119,9 @@ Tips and recommendations for using Git with the Pencil code.
     make sure we merge /feature/ into /master/ (so C is the /first parent/
     and G is the /second parent/), not the other way around.
 
+
 *** What is rebasing?
+    <<Rebase>>
 
     In the example above, we have a second option to bring the feature
     branch's changes into master, by creating new commits that contain
@@ -149,6 +141,7 @@ Tips and recommendations for using Git with the Pencil code.
     Even if you routinely rebase your local changes, you will want to
     merge longer-lived feature branches.
 
+
 *** Pros and cons
 
     Here is the decision matrix for merging vs. rebasing
@@ -157,20 +150,24 @@ Tips and recommendations for using Git with the Pencil code.
     |---------------------------+--------------+------------------|
     | Resulting graph structure | More complex | Simpler          |
     | History                   | Preserved    | Modified         |
-    | Safety                    | Safer        | Less safe [fn:1] |
+    | Safety                    | Safer        | Less safe [fn:2] |
 
     In short, use merging when you are afraid – [[What to do when you think you're lost][but you needn't be afraid]].
 
-[fn:1] Less safe in the sense that conflicts can cause you to end up
+
+[fn:2] Less safe in the sense that conflicts can cause you to end up
     in a detached-head state.
+
 
 **** Graph structure
 
      Every merge commit increases the connectivity of the commit graph by
-     one[fn:2].
+     one[fn:3].
 
-[fn:2] Or even more than one, in the case of an /octopus merge/.
+
+[fn:3] Or even more than one, in the case of an /octopus merge/.
      But those are somewhat exotic.
+
 
 **** Rewriting history
 
@@ -180,12 +177,14 @@ Tips and recommendations for using Git with the Pencil code.
      difference of the file tree.
      But if you had to fix conflicts, this is no longer the case, and you
      appear to have lost the original change G by pretending that you were
-     applying a change G' in the first place.[fn:3]
+     applying a change G' in the first place.[fn:4]
 
-[fn:3] But of course this is not true: you can use [[git reflog]]
+
+[fn:4] But of course this is not true: you can use [[git reflog]]
      to go back to your original changes.
      And you should no longer be interested in the original change once
      the new version gets part of the Git narrative[?].
+
 
      Once you embrace the idea that you can change history, you can use it
      to write meaningful commit messages while you are in the right set
@@ -209,24 +208,589 @@ Tips and recommendations for using Git with the Pencil code.
 
 * Best practices
 
-** Don't merge upstream into your tracking branch (except when it makes sense)
+** Don't merge upstream into your tracking branch
+   [… except when it makes sense]
+
+   Suppose you just started developing code on /master/.
+   Your branches look like this (`A' and `B' are commits, the `o' is just
+   a visual connector):
+   #+begin_example
+     --A---B-----  origin/master (remote branch)
+            \
+             o---  master (local tracking branch)
+   #+end_example
+
+   The tracking branch exists only on your local computer, and you modify
+   it by adding commits, rebasing them, etc.
+
+   The /remote branch/ also exists only on your computer.
+   It represents what is known about a branch called /master/ on the
+   server and serves for synchronization with the server.
+   You cannot directly commit to this branch.
+
+   \bigskip
+
+   Now you commit some changes X, Y to your local tracking branch:
+   #+begin_example
+     --A---B----------  origin/master
+            \
+             X---Y----  master
+   #+end_example
+   and want to push them to the server.
+   If the server is still at commit B, this will result in
+   #+begin_example
+     --A---B---X---Y-----  origin/master
+                    \
+                     o---  master
+   #+end_example
+
+   However, if somebody has committed changes to the server before you
+   push, you will get an error message:
+   #+begin_example
+     To [...]
+      ! [rejected]        master -> master (fetch first)
+     error: failed to push some refs to [...]
+   #+end_example
+   followed by some explanatory text.
+
+   Before you can fix the problem, you need to =git fetch= to update the
+   remote branch:
+   #+begin_example
+     --A---B---C---D---E--  origin/master
+            \
+             X---Y--------  master
+   #+end_example
+
+   Your aim is to bring the two lines of development together, and you can
+   either do this [[Rebase][using rebase]], or [[Merge][using merge]].
+
+   Rebasing is straight-forward, you run
+   #+begin_src sh
+     git rebase origin/master
+   #+end_src
+   , if necessary deal with conflicts (that will temporarily throw your
+   repository into a headless state) and end up with
+   #+begin_example
+     --A---B---C---D---E-----------  origin/master
+                        \
+                         X'---Y'---  master
+   #+end_example
+   You have changed your commits by turning them into descendants of E (and
+   possibly by including solutions for conflicts) and you can now push to
+   get
+   #+begin_example
+     --A---B---C---D---E---X'---Y'----  origin/master
+                                 \
+                                  o---  master
+   #+end_example
+   As you can see, this approach gives you a linear history similar to
+   what you know from /Subversion/.
+
+   Alternatively, we can merge the two branches together.
+   It is tempting to just call (after the =git fetch=)
+   #+begin_src sh
+     git merge origin/master  # DON'T DO THIS
+   #+end_src
+   which would give you the following repository structure
+   #+begin_example
+     --A---B---C---D---E-----  origin/master
+            \           \
+             X-----Y-----M---  master
+   #+end_example
+   This doesn't look so bad, but when you push /master/, you will get
+   #+begin_example
+     --A---B---C---D---E---M----  origin/master
+            \             / \
+             X-----------Y   o--  master
+   #+end_example
+
+   Topologically, that is exactly what we want.
+   But there is more to a git repository than pure topology of the
+   directed acyclic graph: there is an order in parentage.
+   Y is the /first parent/ of the merge commit M, while E is the /second
+   parent/:[fn:5]
+   #+begin_example
+                         2
+     --A---B---C---D---E---M-----  origin/master
+            \             /1\
+             X-----------Y   o---  master
+   #+end_example
+   This can be rearranged as
+   #+begin_example
+                     1
+     --A---B---X---Y---M-----  origin/master
+            \         /2 \
+             C---D---E   o---  master
+   #+end_example
+   and indeed this is what many tools will show you.[fn:6]
+   For example, commands like =gitk --first-parent= (or simply =git log
+   --first-parent=), you give you
+   #+begin_example
+     --A---B---X---Y---M-----  origin/master
+                \     / \
+                         o---  master
+   #+end_example
+   which suggests that the main chain (= first-parent lineage) of commits
+   on the server has disruptively changed from
+   #+begin_example
+     --A---B---C---D---E-----
+   #+end_example
+   to
+   #+begin_example
+     --A---B---X---Y---M-----
+   #+end_example
+
+   Given that the SVN bridge probably has to rely on first-parent lineage
+   between commits, it is pretty obvious that such a reinterpretation
+   leads to a new SVN repository structure that is not compatible with
+   what we had before.
+     Hence, it is not surprising that such merges cause troubles with the
+   SVN bridge:
+   #+begin_example
+     $ svn commit <file>
+     svn: E160024: Transmission failed (Details follow):
+     svn: E160024: resource out of date; try updating
+   #+end_example
 
 
+[fn:5]My notation in the graph is adopted from
+   [[http://git-blame.blogspot.de/2015/03/fun-with-non-fast-forward.html][this quite readable discussion]].
 
+
+[fn:6]Including the [[https://github.com/pencil-code/pencil-code/network][GitHub network graph]], gitk (to some extent) and the
+GitHub SVN bridge.
+
+
+   \bigskip
+
+   So is it really wrong to merge?
+   Not if you merge the right way around.
+   You need to create a merge commit where the latest upstream commit (E
+   in our example) is the first parent, and the tracking-branch commit (Y)
+   is the second parent.
+
+   How to do this is left as an exercise to the reader.
+   It is not very tricky, but for convenience we have a =git-pc= command
+   #+begin_src sh
+     git pc reverse-merge origin-master  # DO THIS INSTEAD
+   #+end_src
+   that gives you exactly the desired structure:
+   #+begin_example
+                         1
+     --A---B---C---D---E---M-----  origin/master
+            \             /2\
+             X-----------Y   o---  master
+   #+end_example
+
+   Aside from problems with the SVN bridge, merging the right way around
+   will also lead to a much more meaningful history.
+   Consider the following real-life example:[fn:25]
+   #+begin_example
+     Simo Tuomisto      M─┐ Merge branch 'master' of https://github.com/pencil-
+     Philippe Bourdin   │ o Probably 94aaf8acef156847ab319efee38fc46212dcbff8 f
+     Philippe Bourdin   │ o Fixed stupid mistake from df97a8ab42d4f04bf3e6c4f12
+     Wladimir Lyra      │ o Break if other used than spherical
+     mrheinhardt        │ o MR: corrected bug in communication for gravity adap
+     Axel Brandenburg   │ o replaced Wlad's caltech email by his gmail
+     Jørgen Aarnes      │ M─┐ Merge branch 'master' of https://github.com/penci
+     Axel Brandenburg   │ │ o moved commented out line about 0d-tests/reactive_
+     Jørgen Aarnes      │ o │ smaller changes in config file for specific syste
+     Philippe Bourdin   │ o─┘ This was overseen by the automatic script.
+     Philippe Bourdin   │ o This was overseen by the automatic script.
+     mrheinhardt        │ o MR: gravity_after_boundary added
+     mrheinhardt        │ o MR: gravity_after_boundary added
+     Simo Tuomisto      o │ Much improved version of pc_meanfield_collect.
+     mrheinhardt        o─┘ MR: diagnostics idiag_Kkramersmz, idiag_Kkramersmx
+     mrheinhardt        o MR: added parameter n_adjust_sphersym: if > 0 after e
+   #+end_example
+
+   which is way more readable in the form
+
+   #+begin_example
+     Simo Tuomisto      M───┐ Merge a few commits into master
+     Philippe Bourdin   o   │ Probably 94aaf8acef156847ab319efee38fc46212dcbff8 f
+     Philippe Bourdin   o   │ Fixed stupid mistake from df97a8ab42d4f04bf3e6c4f12
+     Wladimir Lyra      o   │ Break if other used than spherical
+     mrheinhardt        o   │ MR: corrected bug in communication for gravity adap
+     Axel Brandenburg   o   │ replaced Wlad's caltech email by his gmail
+     Jørgen Aarnes      M─┐ │ Merge temporary branch into master
+     Axel Brandenburg   o │ │ moved commented out line about 0d-tests/reactive_
+     Jørgen Aarnes      │ o │ smaller changes in config file for specific syste
+     Philippe Bourdin   o─┘ │ This was overseen by the automatic script.
+     Philippe Bourdin   o   │ This was overseen by the automatic script.
+     mrheinhardt        o   │ MR: gravity_after_boundary added
+     mrheinhardt        o   │ MR: gravity_after_boundary added
+     Simo Tuomisto      │   o Much improved version of pc_meanfield_collect.
+     mrheinhardt        o───┘ MR: diagnostics idiag_Kkramersmz, idiag_Kkramersmx
+     mrheinhardt        o     MR: added parameter n_adjust_sphersym: if > 0 after e
+   #+end_example
+
+
+   #+begin_example
+     2015-10-07 23:44 Chao-Chin Yang            o │ Mac does not like the option -std=f95.
+     2015-10-07 18:37 Iomsn                     o │ Added normalization parameter for the Gaussian profile footpoint driver.
+     2015-10-07 17:33 Iomsn                     o │ Added single dominand polarity as initial condition for the magnetic field.
+     2015-10-07 18:26 Chao-Chin Yang            M─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-10-07 16:48 Iomsn                     │ │ o Added single parasitic polarity as initial condition.
+     2015-10-07 18:23 Chao-Chin Yang            o │ │ Fix a bug in timestep condition in particles_dust.
+     2015-10-07 17:22 Chao-Chin Yang            M─│─┘ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-10-07 15:34 Nils Erland L. Haugen     │ │ o Make sure that all indices are "sound" for the lognormal initial distribution.
+     2015-10-07 13:22 Nils Erland L. Haugen     │ │ o added diagnostics for mean particle (including the swarm particles) number density in the volume
+     2015-10-07 12:43 Philippe Bourdin          │ │ o Added comment to remind me of removing this block later...
+     2015-10-07 12:40 Philippe Bourdin          │ │ o Finally gives fixes for backwards-compatibility.
+     2015-10-07 12:34 Philippe Bourdin          │ │ o Fixed call without parameters.
+     2015-10-07 12:30 Philippe Bourdin          │ │ o Making interface backwards-compatible for now.
+     2015-10-07 12:04 Philippe Bourdin          │ │ o Fixed the automatically (double-)expanded 'pc_precision' common block.
+     2015-10-07 11:58 Philippe Bourdin          │ │ o Extended 'pc_precision' common block for all routines, because it looks like some scripts (like "
+     2015-10-07 17:22 Chao-Chin Yang            o │ │ Add initial condition 'random' in particles_spin.
+     2015-10-07 10:16 Nils Erland L. Haugen     o─│─┘ Set lzero_upper_kern to make sure no mass is lost.
+     2015-10-07 00:12 mrheinhardt               o │ MR: added parallel reading of binary data; changed find_namelist because of CRAY compiler issue;
+     2015-10-07 01:57 Philippe Bourdin          o │ Extendend consistency checking and adapted to new 'pc_precision' common block structure.
+     2015-10-07 01:56 Philippe Bourdin          o │ Fully redesigned, will enable automatic finding of the configuration, later.
+     2015-10-06 23:53 Philippe Bourdin          o │ Unified formatting.
+   #+end_example
+
+   #+begin_example
+     2015-10-03 07:26 Axel Brandenburg          │ o merged my changes of the Summer in experimental/meanfield.f90 (and checked in incorrectly in the wr
+     2015-10-03 14:53 Philippe Bourdin          │ o Lets see if the new IO modules work everywhere as expected...
+     2015-10-02 18:07 Frederick Gent            │ M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-10-02 15:31 Philippe Bourdin          │ │ o We explicitly want to allow missing namelists in "data/param.nml". This should fix all remaining
+     2015-10-02 18:05 Frederick Gent            │ o │ New sample data to account for correction to chi calc in entropy
+     2015-10-02 15:03 Frederick Gent            │ M─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-10-02 15:03 Jörn Warnecke             │ │ o─┘ joern: fixed some errors
+     2015-10-02 13:46 Frederick Gent            │ M─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-10-02 11:10 Jörn Warnecke             │ │ o─┘ removed some doubling of some subroutine
+     2015-10-01 21:59 mrheinhardt               │ │ o MR: preparations for flux-limited diffusion
+     2015-10-01 21:57 mrheinhardt               │ │ o MR: moved sqrt of characteristic velocity to equ; removed some comments
+   #+end_example
+
+   #+begin_example
+     2015-09-16 11:44 Philippe Bourdin          │ │ │ │ │ o Code formatting.
+     2015-09-16 11:32 Philippe Bourdin          │ │ │ │ │ o Updated.
+     2015-09-16 11:09 Philippe Bourdin          │ │ │ │ │ o Removed rather strange and surely outdated comment: MPI libraries have a timeout and will s
+     2015-09-16 11:07 Philippe Bourdin          │ │ │ │ │ M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-09-16 09:52 Jonas Krueger             │ │ │ │ │ │ M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-09-16 09:48 Jonas Krueger             │ │ │ │ │ │ o │ added the get_diff_coeff_reactants routine to nochemistry
+     2015-09-16 11:07 Philippe Bourdin          │ │ │ │ │ o │ │ Added mentions of 'pc_configtest'.
+     2015-09-16 10:48 Philippe Bourdin          │ │ │ │ │ o─│─┘ Deleted outdated section.
+     2015-09-16 10:47 Philippe Bourdin          │ │ │ │ │ o │ Added full list or actual requirements.
+     2015-09-16 10:18 Philippe Bourdin          │ │ │ │ │ o │ Fixing the auto-tests broken from a0da8209f7616612cabe2eca18fd9fe82ec7a409. Jonas: You fo
+     2015-09-16 00:34 mrheinhardt               │ │ │ │ │ o │ MR: added output of error code in case of namelist reading error
+     2015-09-16 00:29 mrheinhardt               │ │ │ │ │ o │ MR: simplified error messages
+     2015-09-15 23:03 Philippe Bourdin          │ │ │ │ │ o │ Fixed the print-out of the sample pars. Thanks Jörn for reporting.
+     2015-09-15 18:02 Iomsn                     │ │ │ │ │ o │ Added tracing out of separatrix layers.
+     2015-09-15 18:27 Philippe Bourdin          │ │ │ │ │ o │ Trying to fix the 'initial_condition_pars' error message, which follows from a slightly i
+     2015-09-15 16:01 Iomsn                     │ │ │ │ │ o │ Aded separatrix class.
+     2015-09-15 15:26 Jonas Krueger             │ │ │ │ │ o─┘ added transport fuction for binary diffusion coefficients from chemistry to particles_che
+     2015-09-14 01:02 mrheinhardt               │ │ │ │ │ o MR: avoided use of undefined quantities to fix the auto-test
+     2015-09-13 21:09 Philippe Bourdin          │ │ │ │ │ o Never try to include something that is not guaranteed to be there.
+     2015-09-13 10:09 Dhrubaditya MITRA         │ │ │ │ │ o particles_dust : ldraglaw_purestokes added forcing: sinz as profile for forcing.
+   #+end_example
+
+   #+begin_example
+     2015-09-01 12:34 Philippe Bourdin          │ │ o │ Never use hardcoded file units, this is ugly and messy.
+     2015-09-01 12:19 Philippe Bourdin          │ │ o │ Added most important reading routines for "big data".
+     2015-09-01 12:16 Philippe Bourdin          │ │ M─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-09-01 12:04 andreas-schreiber         │ │ │ │ o python code should be stabel in matplotlib and backends now
+     2015-09-01 12:00 andreas-schreiber         │ │ │ │ o BARE YOUR NAMESPACES! Dont ever import modules into higher namespaces. Always import what you
+     2015-09-01 11:44 andreas-schreiber         │ │ │ │ o to do list for new python codes
+     2015-09-01 11:12 Philippe Bourdin          │ │ │ │ o Hello Fred, please check if this works for you. "FSTD" should not be overwritten.
+     2015-09-01 12:16 Philippe Bourdin          │ │ o │ │ Removed unused variable.
+     2015-09-01 12:15 Philippe Bourdin          │ │ o │ │ Formatting.
+     2015-09-01 11:31 Philippe Bourdin          │ │ o │ │ A bit simpler, skip the 'REAL_PRECISION' line.
+     2015-09-01 10:25 Philippe Bourdin          │ │ o─│─┘ This additional script will dynamically extend config files with missing namelist entries (no
+     2015-09-01 10:23 Philippe Bourdin          │ │ o │ Added "data/param.nml" in automatic correction, so that reloading simulation would not complain
+     2015-09-01 10:11 andreas-schreiber         │ │ M─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-08-31 18:47 mrheinhardt               │ │ │ │ o MR: split up an if statement: missing short-circuiting caused the failure of the autotest whe
+     2015-08-31 19:10 Simo Tuomisto             │ │ │ │ o pc_meanfield_collect: Changes to match changes in param_io
+     2015-08-31 14:52 mrheinhardt               │ │ │ │ o MR: avoided undefined initial values in single_ray to calm the auto-test
+     2015-08-31 14:33 Philippe Bourdin          │ │ │ │ M─┐ Why again this??? Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-08-31 03:13 Axel Brandenburg          │ │ │ │ │ o added diagostics of divud2m. Added request for curlo in one diagnostics.
+     2015-08-31 03:11 Axel Brandenburg          │ │ │ │ │ o added straining motion
+     2015-08-31 03:10 Axel Brandenburg          │ │ │ │ │ o added possibility for alpha_zz tensor in spherical geometry
+     2015-08-29 17:37 Boris Dintrans            │ │ │ │ │ o changed the grav_xz forcing (uniform vorticity now)
+     2015-08-28 20:38 Philippe Bourdin          │ │ │ │ o │ Applied new version of 'pc_autocorrect_config' to the corona sample *.in files.
+     2015-08-28 20:35 Philippe Bourdin          │ │ │ │ o │ Target-namelist for renaming a parameter has to be given and will be checked. Identical par
+     2015-08-28 20:32 Philippe Bourdin          │ │ │ │ o │ Formatting of comments.
+     2015-08-28 14:40 mrheinhardt               │ │ │ │ o─┘ MR: initialized gravity in initialize_special explicitly to zero to avoid NaNs (should fix
+     2015-08-28 12:51 mrheinhardt               │ │ │ │ o MR: removed strip_comments and other unneeded stuff; tested
+     2015-08-28 14:15 Philippe Bourdin          │ │ │ │ o Fixed typo in routine name. Removed variable with unexplained name. Fixed error messages to s
+   #+end_example
+
+   #+begin_example
+     015-07-29 03:23 Simo Tuomisto              │ │ │ o │ │ pc_meanfield_collect: First round of removing old code.
+     2015-07-27 21:51 Simo Tuomisto             │ │ │ o │ │ pc_meanfield_collect.f90: Working parallel HDF writing.
+     2015-07-18 16:36 Simo Tuomisto             │ │ │ o │ │ Added working parallel hdf file creation.
+     2015-06-11 01:06 Philippe Bourdin          │ │ o │ │ │ This was overseen by the automatic script.
+     2015-09-03 11:26 Illa R. Losada            o │ │ │ │ │ Changed the default plotting settings to keep and interactive shell.
+     2015-07-15 11:21 Illa R. Losada            M─┘ │ │ │ │ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-07-15 11:38 Frederick Gent            │ o │ │ │ │ Reassigned lncoolH as double in module header and removed obsolete comment
+     2015-07-15 11:20 Frederick Gent            │ o │ │ │ │ Moved depricated module to interstallar_old.f90 and copied experimental/supernova.f90 to in
+     2015-07-15 11:19 Frederick Gent            │ o │ │ │ │ Revised interstellar sample to use new interstellar module and initial_condition
+     2015-07-15 09:41 Frederick Gent            │ o │ │ │ │ Updated sample reference and run parameters to match old and new interstellar modules
+     2015-07-15 08:56 Frederick Gent            │ M─│─│─│─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-07-14 19:24 Iomsn                     │ │ │ │ │ │ o Added option for different pfiles other than pvar.dat.
+     2015-07-14 18:29 Iomsn                     │ │ │ │ │ │ o Checks if simulation si double or single precision and adjusts the reading of binary data
+     2015-07-15 08:55 Frederick Gent            │ o │ │ │ │ │ Updated record labels to match revised recored types
+     2015-07-14 20:07 Frederick Gent            │ o │ │ │ │ │ Fixed fractions
+     2015-07-14 20:04 Frederick Gent            │ o │ │ │ │ │ Revised reference data with new and old interstellar modules
+     2015-07-14 18:49 Frederick Gent            │ o │ │ │ │ │ Updated sample reference using old interstellar.f90
+     2015-07-14 18:33 Frederick Gent            │ M─│─│─│─│─┘ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-07-14 13:40 Jørgen R. Aarnes          │ │ │ │ │ │ o fixed image scaling in make_movie()
+     2015-07-14 18:26 Frederick Gent            │ o │ │ │ │ │ Removed obsolete persistent variables, restructured remnants, updated clustering of SN op
+     2015-07-14 18:23 Frederick Gent            │ o │ │ │ │ │ Deprecated obsolete ISM record types and added cluster variables
+     2015-07-13 18:27 Frederick Gent            │ M─│─│─│─│─┘ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-07-13 18:25 Frederick Gent            │ o │ │ │ │ │ Reformatted in line with special.h
+     2015-07-13 18:23 Frederick Gent            │ o │ │ │ │ │ Removed obsolete mass movement routines, integrated cosmic ray injection into existing en
+     2015-07-13 12:29 Frederick Gent            │ o │ │ │ │ │ Removed obsolete subroutine to force location
+     2015-07-13 10:42 Frederick Gent            │ o │ │ │ │ │ Added auto-test generated files from backwards-compatible/data while omitting source code
+     2015-07-13 10:39 Frederick Gent            │ o │ │ │ │ │ Merged z-dependent UV-heating into single sub-routine and deleted obsolete intitial densi
+     2015-07-13 16:46 Illa R. Losada            o │ │ │ │ │ │ Adding some options to "Video files and slices" subsection
+     2015-07-13 10:34 Jørgen R. Aarnes          o─│─│─│─│─│─┘ small changes to allow for reading 2D-runs
+     2015-07-11 14:48 Axel Brandenburg          o │ │ │ │ │ in hydro and magnetic: changed default to lno_second_ampl=.true. (which is the correct choi
+     2015-07-10 17:39 Frederick Gent            M─┘ │ │ │ │ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-07-10 12:04 Piyali Chatterjee         │ M─│─│─│─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-07-10 12:01 Piyali Chatterjee         │ o │ │ │ │ │ Changed compiler flags for Vilje and Pleiades
+     2015-07-10 17:21 Frederick Gent            o │ │ │ │ │ │ Revised reference file ot check modified supernova returns same results
+     2015-07-10 17:20 Frederick Gent            o │ │ │ │ │ │ Set parameters to match old interstellar sample results
+     2015-07-10 17:15 Frederick Gent            o │ │ │ │ │ │ Removed obsolete damping, added call to cooling functions and tidied initialise
+   #+end_example
+
+
+   #+begin_example
+     2015-07-09 15:06 Graeme R Sarson           o │ │ │ │ │ Allow optional advection term in cosmic ray flux equation.
+     2015-07-09 15:05 Graeme R Sarson           o │ │ │ │ │ Allow insertion of cosmic ray flux in SNe.  (Still being tested.)
+     2015-07-09 16:00 Philippe Bourdin          o │ │ │ │ │ Need to add the actual AVX code generation option.
+     2015-07-09 16:22 Frederick Gent            o │ │ │ │ │ Added new files as part of experimental revision of interstellar
+     2015-07-09 13:03 Frederick Gent            M─│─│─│─│─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-07-09 11:40 Piyali Chatterjee         │ o─│─│─│─│─┘ EE should be added to varcontent in the aux part not in the main variables part
+     2015-07-09 11:32 Piyali Chatterjee         │ o │ │ │ │ Added a flag in run.f90 to write dim.dat files again corrected the writing of IDL files def
+     2015-07-08 19:03 Iomsn                     │ o │ │ │ │ Bug: reading particle files from procs with no particles. Fixed
+     2015-07-08 20:08 Axel Brandenburg          │ o │ │ │ │ corrected simplified version of chiral fluids
+     2015-07-09 13:03 Frederick Gent            o │ │ │ │ │ Added comparison sample to check consistency of revised modules with original
+     2015-07-08 19:23 Frederick Gent            M─┘ │ │ │ │ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-07-08 12:01 Philippe Bourdin          │ o │ │ │ │ Updated to use 'mpiifort' instead of 'mpif90' for the Intel configuration.
+     2015-07-08 19:22 Frederick Gent            o │ │ │ │ │ Revising interstellar module with initial conditions - in progress
+     2015-07-07 20:15 Frederick Gent            o─┴─│─│─│─┘ added host file for Fred's Aalto pc
+     2015-07-07 18:39 Frederick Gent            M─┌─┘─│─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-07-07 17:37 Philippe Bourdin          │ │ ┌─┘ │ o Should keep GIT calm when some auto-test or samples were executed and ignore the automatica
+     2015-07-07 17:56 Frederick Gent            M─│─│─┌─┘─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-07-07 17:55 Frederick Gent            │ │ │ │ o─┴─┘ Added Philippe's compiler
+     2015-07-07 17:40 Frederick Gent            o │ │ │ │ Corrected minor typo
+     2015-07-07 13:04 Frederick Gent            M─│─│─│─┘ Merge branch 'master' of https://github.com/pencil-code/pencil-code Revising interstellar to
+     2015-07-06 15:19 Natalia Babkovskaia       │ │ │ │ o !  Differential for integration is ad*dln(ad). Prepare here dln(ad) factor. !  This assumes c
+     2015-07-06 13:57 Jørgen R. Aarnes          │ │ │ │ o removed incorrect comments and print statements
+     2015-07-06 13:54 Jørgen R. Aarnes          │ │ │ │ o fixed issue with parallelization in line_mirror method
+   #+end_example
+
+   #+begin_example
+     2015-06-27 16:01 Axel Brandenburg          │ │ │ │ o added kvectors as initial condition for benchmark
+     2015-06-27 15:34 Axel Brandenburg          │ │ │ │ o removed debug line
+     2015-06-26 15:36 simon                     │ │ │ │ o Minor corrections on the parasitic polarities initial condition. This fixes spurious currents
+     2015-06-26 06:58 Axel Brandenburg          │ │ │ │ o changed ii=cmplx(0.,1.) to ii=(0.,1.) to fix auto-test
+     2015-06-25 21:38 Axel Brandenburg          │ │ │ │ o modal initial condition from file for magnetic field
+     2015-06-25 16:21 Frederick Gent            M─│─│─│─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-06-24 23:17 Philippe Bourdin          │ │ │ │ o─┘ Adapted automatic procdir recognition for the case that no 'var.dat' but a 'VAR#' file is p
+     2015-06-25 02:14 Frederick Gent            o │ │ │ │ Simplified config file
+     2015-06-23 16:40 Frederick Gent            M─│─│─│─┘ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-06-23 13:51 Iomsn                     │ │ │ │ o Added e3 type driver.
+     2015-06-23 16:38 Frederick Gent            o │ │ │ │ added += to conf file
+     2015-06-23 14:56 Frederick Gent            o─│─│─│─┘ Corrected fred-asus host fiel to compile with mpi
+     2015-06-21 13:19 Axel Brandenburg          o─│─┘ │ gamma effect added; experimental
+     2015-06-19 13:19 Chao-Chin Yang            o │ ┌─┘ Avoid the case of no density module in get_gas_density().
+     2015-06-17 19:18 Axel Brandenburg          o │ │ allowed for possibility of 0-D data
+     2015-06-17 15:34 Nils Erland L. Haugen     o │ │ Corrected how the time step due to drag from particles on the gas is calculated when drag law is
+     2015-06-16 23:19 Simo Tuomisto             M─│─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-06-16 02:10 Petri Käpylä              │ │ │ o Added turbulent heat transport in Kramers heat conduction and diagnostics of entropy squared an
+     2015-06-16 23:18 Simo Tuomisto             o │ │ │ Created working Makefile targets.
+     2015-06-15 18:28 Philippe Bourdin          o─│─│─┘ Sub-volumes can't be periodic, if they do not cover the full extent in that direction.
+     2015-06-15 13:28 Simo Tuomisto             M─│─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-06-13 14:59 Philippe Bourdin          │ │ │ o Probably 94aaf8acef156847ab319efee38fc46212dcbff8 fixed the Segmentation Fault previously prese
+     2015-06-13 14:34 Philippe Bourdin          │ │ │ o Fixed stupid mistake from df97a8ab42d4f04bf3e6c4f121d2074a0d5decdd.
+     2015-06-12 13:33 Wladimir Lyra             │ │ │ o Break if other used than spherical
+     2015-06-11 17:15 mrheinhardt               │ │ │ o MR: corrected bug in communication for gravity adaptation; added calc of grav constant from cen
+     2015-06-11 10:37 Axel Brandenburg          │ │ │ o replaced Wlad's caltech email by his gmail
+     2015-06-11 10:19 Jørgen Aarnes             │ │ │ M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     2015-06-11 10:18 Axel Brandenburg          │ │ │ │ o moved commented out line about 0d-tests/reactive_particles outside the array to prevent error
+     2015-06-11 10:18 Jørgen Aarnes             │ │ │ o │ smaller changes in config file for specific system
+     2015-06-11 01:32 Philippe Bourdin          │ │ │ o─┘ This was overseen by the automatic script.
+     2015-06-11 01:29 Philippe Bourdin          │ │ │ o This was overseen by the automatic script.
+     2015-06-10 16:20 mrheinhardt               │ │ │ o MR: gravity_after_boundary added
+     2015-06-10 15:02 mrheinhardt               │ │ │ o MR: gravity_after_boundary added
+     2015-06-10 11:48 Simo Tuomisto             o │ │ │ Much improved version of pc_meanfield_collect. Added also analyzers for it.
+     2015-06-10 01:00 mrheinhardt               o─│─│─┘ MR: diagnostics idiag_Kkramersmz, idiag_Kkramersmx for horizontally averaged Kramers heat condu
+     2015-06-09 19:08 mrheinhardt               o │ │ MR: added parameter n_adjust_sphersym: if > 0 after each n_adjust_sphersym     timesteps the sphe
+     2015-06-09 16:08 mrheinhardt               o │ │ MR: introduced dz2_bound in bc_set_div_z and bc_pp_hds_z_iso
+     2015-06-09 15:46 mrheinhardt               o │ │ MR: added subroutines meanyz_* for calculating yz averages by proper integration
+     2015-06-09 14:18 mrheinhardt               o │ │ MR: calculation of Area_* added
+   #+end_example
+
+
+[fn:25]The output was obtained using =tig=
+
+
+   \bigskip
+
+   To summarize this section:
+   /When developing on /master/, if you cannot directly push your changes
+   due to upstream commits, either use /rebase/, or use /git pc
+   reverse-merge/./
+
+   Now consider the case where you have made local changes on your
+   tracking branch and then =git fetch= finds that in parallel there have
+   been changes on the server:
+   #+begin_example
+     --A---B---C---D---E--  origin/master (remote branch)
+            \
+             M---N---O------  master (local tracking branch)
+   #+end_example
+
+
+* Feature branches
+
+  - When you are working on one topic and expect more than a
+    handful[fn:7] of changes, consider using a /feature branch/.
+
+  - When you are collaborating on a topic with somebody else and your
+    changes are not yet ready for the others, use a feature branch.
+
+
+[fn:7] Even just two or three commits may be enough to go for a feature
+branch if that improves the narrative.
+
+
+  To work with a feature branch, just go to the latest commit of /master/
+  (the later you start the branch, the fewer conflicts you will create),
+
+  #+begin_src sh
+    git checkout master
+    git pull --rebase
+  #+end_src
+  and create the branch
+  #+begin_src sh
+    git checkout -b cool-new-feature
+  #+end_src
+
+  \bigskip
+
+  If that branch is long-lived, you will want to occasionally merge master
+  into it:[fn:8]
+  Run
+  #+begin_src sh
+    git fetch origin
+    git stash  # if you have uncommitted local changes
+  #+end_src
+  to update your knowledge of the server's master branch.
+
+  Then do
+  #+begin_src sh
+    git checkout master  # check out your local tracking branch …
+    git pull --rebase    # … and bring it up to date
+
+    git checkout cool-new-feature
+    git merge master     # do the actual merge
+  #+end_src
+  There are some shorter variants to this procedure. You can use our
+  `=git pc=' script like this:
+  #+begin_src sh
+    git pc ff-update master  # bring master up-to-date
+    git merge master         # do the actual merge
+  #+end_src
+  or you could directly merge the remote branch
+  #+begin_src sh
+    git merge origin/master
+  #+end_src
+  although this is less common than merging the local tracking branch.
+
+  After merging, don't forget to
+  #+begin_src sh
+    git stash pop
+  #+end_src
+  If you have stashed changes before you merged.
+
+  \bigskip
+
+  When your branch is ready for merging back, you do
+  #+begin_src sh
+    git checkout master
+    git pull --rebase    # brin master up-to-date
+    git merge cool-new-feature
+    [test]
+    git push
+  #+end_src
+
+  The topology now looks like this:
+  #+begin_example
+    --A---B---C---D---E---F---G---H---I---J---K-- master
+       \               \             /
+        N---O---P---Q---R---S---T---U             feature
+  #+end_example
+
+  \bigskip
+
+  What if that push failed due to somebody committing new changes
+  upstream?
+
+  No problem.
+  We tag the first merge attempt and merge that tag to the updated
+  upstream branch:
+  #+begin_src sh
+    # remember, we are on master
+    git push   # fails: "! [rejected] master -> master (fetch first)"
+
+    git tag previous-merge-of-cool-new-feature
+    git fetch                       # update origin/master
+    git reset --hard origin/master  # update local master branch
+    git merge previous-merge-of-cool-new-feature
+    [test]
+    git push
+  #+end_src
+
+  The narrative now says:
+  We have tried to merge /cool-new-feature/ into master, but failed to
+  push that, so we then merged that first merge into master and pushed.
+  That may be more detail than we wanted (and more steps than we
+  anticipated), but describes exactly what happened.
+
+  #+begin_example
+    --A---B---C---D---E----F-----G----H---I---J---K-- master
+       \               \               \     /
+        \               \               V---o
+         \               \             /
+          N---O---P---Q---R---S---T---U             feature
+  #+end_example
+
+
+  \bigskip
+
+
+  (*More on feature branches from my email*)
+
+
+[fn:8] This does not violate our rule
+`[[Don't merge upstream into your tracking branch][don't merge upstream into your local tracking branch]]'
+because the merge commit is on the branch and that makes perfect narrative
+sense.
 
 
 * Put this somewhere
 
+** Advice against setting pull.rebase
+        Or consider '=git config --global pull.rebase true=',
+        /but remember to do so in every checkout and expect communication
+        problems with others/.
+
 ** Use gitk (or '=tig=' or some variant of '=git log --graph=')
 
 
-** [[https://en.wikipedia.org/wiki/Phrases_from_The_Hitchhiker's_Guide_to_the_Galaxy#Don.27t_Panic][Don't panic]]
+** Don't panic
+   [[https://en.wikipedia.org/wiki/Phrases_from_The_Hitchhiker's_Guide_to_the_Galaxy#Don.27t_Panic][Don't panic]]
    [or /What to do when you think you're lost/]
 
-   Git will try hard to preserve your changes:
+   Git will try hard to preserve your changes:[fn:9]
 
    - Any changes you committed will be part of the [[git reflog][/reflog/]] for at least
-     two weeks.\footnote{Unless you explicitly decide othwerwise.}
+     two weeks.[fn:10]
 
    - Uncommitted changes to git-controlled-files will only get overwritten
      if you run one of the commands
@@ -236,13 +800,25 @@ Tips and recommendations for using Git with the Pencil code.
      - =git clean=
      - Again, any non-git commands that change files
 
+
+[fn:9]There are corner cases where other git commands (like
+   =git stash --include-untracked=) call commands like =git clean=, which
+   can in principle [[http://blog.icefusion.co.uk/git-stash-can-delete-ignored-files-git-stash-u/][lead to data loss]].
+   However, this should only concern files that match your =.gitignore=
+   patterns, and if that is the case for any file you care about, you have
+   been asking for trouble beforehand.
+
+
+[fn:10]Unless you explicitly decide otherwise.
+
+
    Table \ref{Table:How-to-lose-changes} summarizes this discussion.
 
 #+label: Table:How-to-lose-changes
 #+caption: Scatter Plot with Regression Line
    | Changes                                     | How they can get lost                 |
    |---------------------------------------------+---------------------------------------|
-   | Changes committed to git                    | Not at all, unless you insist [fn:4]  |
+   | Changes committed to git                    | Not at all, unless you insist [fn:11]  |
    |---------------------------------------------+---------------------------------------|
    | Uncommitted changes to git-controlled files | =git  t checkout <file-or-directory>= |
    |                                             | =git reset --hard=                    |
@@ -252,15 +828,16 @@ Tips and recommendations for using Git with the Pencil code.
    |                                             | Non-git commands                      |
 
 
-[fn:4] Leaving relevant Git commits dangling (≈ unused) for more than two
+[fn:11] Leaving relevant Git commits dangling (≈ unused) for more than two
 weeks counts as insisting on data loss.
+
 
 *** I'm almost panicking because I'm afraid something got lost
     [… although I know this is not the case because I stayed away from the
     commands in Table \ref{Table:How-to-lose-changes}]
 
-    Here is how to see almost[fn:5] every change that was ever[fn:6] known
-    to git:
+    Here is how to see almost every change[fn:12] that was ever[fn:13]
+    known to git:
     #+begin_src sh
       gitk --reflog --all
       # or
@@ -275,9 +852,11 @@ weeks counts as insisting on data loss.
     #+end_src
 
 
-[fn:5] This will not show dropped stashes or stashes older than the last one.
+[fn:12] This will not show dropped stashes or stashes older than the last one.
 
-[fn:6] Redefining “ever” = “in the last two weeks” for dangling commits.
+
+[fn:13] Redefining “ever” = “in the last two weeks” for dangling commits.
+
 
    2. <<git reflog>>'=git reflog=' [plus stash] or '=gitk --reflog='
       or '=git pc reflog [-v]='
@@ -290,14 +869,41 @@ weeks counts as insisting on data loss.
       you wouldn't remember anyway what you thought when writing the first
       version.
 
+** Narrative
+   - Telling a story.
+     There are several styles of telling stories:
+     - Always merge :: chronicler/diary style.
+          Include all the nitty-gritty details, failed attempts, etc.
+     - Rebase :: letter/novelist style.
+          Bring facts into a logical frames and order them
 
+** Why no automatic pull-the-push
+
+   - Integrity: this is a version that has not existed before
+     [Hmm, =svn update= does just the pull part, what you push [commit] is
+     what you have in your file system.
+     Still, pulling in changes may put your working copy into some strange
+     state that git can only represent as /detached head \{true?\} …]
+
+
+** What to avoid
+
+   - Rewrite history that is already on the server
+     - Certainly so if it is on /master/
+     - But even feature branches can get merged into master
+
+   - Don't push your personal tags [but not so important, we can delete
+     them later]
+
+
+* To do:
+  - gitk: How to show unadded files?
 
 
 * Org configuration                                   :noexport:ARCHIVE:
 
-#+AUTHOR: wd (wdobler [at] gmail [dot] com)
-#+EMAIL:  wdobler [at] gmail [dot] com
-#+DATE:   04-Oct-2015
+#+AUTHOR: Wolfgang Dobler
+#+EMAIL:
 #+DESCRIPTION:
 #+KEYWORDS:
 #+LANGUAGE: en
