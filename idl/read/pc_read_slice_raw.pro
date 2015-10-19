@@ -85,7 +85,6 @@ pro pc_read_slice_raw, object=object, varfile=varfile, tags=tags, datadir=datadi
 		ze = cut_z
 	end
 
-	pc_read_subvol_raw, object=object, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze, /addghosts, name="pc_read_slice_raw", varfile=varfile, datadir=datadir, allprocs=allprocs, tags=tags, start_param=start_param, run_param=run_param, varcontent=varcontent, dim=dim, trimall=trimall, quiet=quiet, swap_endian=swap_endian, f77=f77, var_list=var_list, time=time, grid=grid, sub_grid=slice_grid, sub_dim=slice_dim, reduced=reduced
-
+	pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datadir, var_list=var_list, varcontent=varcontent, start_param=start_param, run_param=run_param, trimall=trimall, allprocs=allprocs, reduced=reduced, xs=xs, xe=xe, ys=ys, ye=ye, zs=zs, ze=ze, /addghosts, dim=dim, sub_dim=slice_dim, grid=grid, sub_grid=slice_grid, time=time, name="pc_read_slice_raw", quiet=quiet, swap_endian=swap_endian, f77=f77
 end
 
