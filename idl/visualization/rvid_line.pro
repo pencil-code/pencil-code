@@ -74,8 +74,7 @@ print, file_slice
 ;;  Read the dimensions and precision (single or double) from dim.dat
 ;;
 pc_read_dim, obj=dim, datadir=datadir, /quiet
-nx=dim.nx & ny=dim.ny & nz=dim.nz & prec=''
-help, one
+nx=dim.nx & ny=dim.ny & nz=dim.nz
 ;
 t=0.*one & islice=0
 axz=fltarr(nx*ny)*one
