@@ -208,10 +208,10 @@ if (keyword_set(shell)) then begin
   myloc=0L
   mzloc=0L
 ;
-  close,1
-  openr,1,datalocdir+'/'+dimfile
-  readf,1,mxloc,myloc,mzloc
-  close,1
+  openr, lun, datalocdir+'/'+dimfile, /get_lun
+  readf, lun, mxloc,myloc,mzloc
+  close, lun
+  free_lun, lun
 ;
   nxloc=mxloc-2*nghostx
   nyloc=myloc-2*nghosty
@@ -233,19 +233,22 @@ if (keyword_set(shell)) then begin
     endelse
 ;  Read processor position.
     dummy=''
-    ipx=0L &ipy=0L &ipz=0L
-    close,1
-    openr,1,datalocdir+'/'+dimfile
-    readf,1, dummy
-    readf,1, dummy
-    readf,1, dummy
-    readf,1, ipx,ipy,ipz
-    close,1
-    openr,1, datalocdir+'/'+varfile, /F77, swap_endian=swap_endian
-    if (execute('readu,1'+readstring) ne 1) then $
-          message, 'Error reading: ' + 'readu,1'+readstring
-    readu,1, t, xloc, yloc, zloc
-    close,1
+    ipx=0L
+    ipy=0L
+    ipz=0L
+    openr, lun, datalocdir+'/'+dimfile
+    readf, lun, dummy
+    readf, lun, dummy
+    readf, lun, dummy
+    readf, lun, ipx,ipy,ipz
+    close, lun
+    free_lun, lun
+    openr, lun, datalocdir+'/'+varfile, /F77, swap_endian=swap_endian
+    if (execute('readu, lun'+readstring) ne 1) then $
+          message, 'Error reading: ' + 'readu, lun'+readstring
+    readu, lun, t, xloc, yloc, zloc
+    close, lun
+    free_lun, lun
 ;
 ;  Don't overwrite ghost zones of processor to the left (and accordingly in
 ;  y and z direction makes a difference on the diagonals).
