@@ -387,57 +387,73 @@ GitHub SVN bridge.
    Consider the following real-life example:[fn:25]
 
    #+begin_example
-     Jörn Warnecke     o           add new time step calculation for slope limited diffusion
-     Philippe Bourdin  o           Added comments about which line will not work
-     Simo Tuomisto     M─┐         Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Frederick Gent    │ o         Revised data to account for correction to chi-therm
-     Philippe Bourdin  │ o         Lets see if the new IO modules work everywhere as expected...
-     Frederick Gent    │ M─┐       Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Philippe Bourdin  │ │ o       We explicitly want to allow missing namelists
-     Frederick Gent    │ M─│─┐     Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Jörn Warnecke     │ │ o─┘     fixed some errors
-     Frederick Gent    │ M─│─┐     Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Jörn Warnecke     │ │ o─┘     removed some doubling of some subroutine
-     Jörn Warnecke     │ │ o       more on slope limited diffusion
-     Illa R. Losada    │ │ M─┐     Merge branch 'master' of https://github.com/pencil-code/pencil-code Adding
-     Axel Brandenburg  │ │ │ o     added Hill vortex rain as forcing
-     Philippe Bourdin  │ │ │ M─┐   Finally fixed the last still broken autotest! 'nu_jump1' was simply not i
-     Philippe Bourdin  │ │ │ │ o   Finally fixed the last still broken autotest! 'nu_jump1' was simply not i
-     Jörn Warnecke     │ │ │ o │   More correction and additions for the slope limited diffusion,
-     Philippe Bourdin  │ │ │ o─┘   Removed "array temporaries", see also 2a73f3cea323
-     mrheinhardt       │ │ │ o     added a phase to enforced vertical shear profile;
-     Illa R. Losada    │ │ o │     Adding components of the current helicity tensor.
-     Frederick Gent    │ o │ │     thermo hydrostatic equilibrium ISM still under construction
-     Simo Tuomisto     o │ │ │     pc_meanfield_collect: Fixed some bugs and removed line writes
+   A   o           add new time step calculation for slope limited diffusion
+   B   o           Added comments about which line will not work
+   C   M─┐         Merge branch 'master' of https://github.com/pencil-code/pencil-code
+   D   │ o         Revised data to account for correction to chi-therm
+   B   │ o         Lets see if the new IO modules work everywhere as expected...
+   D   │ M─┐       Merge branch 'master' of https://github.com/pencil-code/pencil-code
+   B   │ │ o       We explicitly want to allow missing namelists
+   D   │ M─│─┐     Merge branch 'master' of https://github.com/pencil-code/pencil-code
+   A   │ │ o─┘     fixed some errors
+   D   │ M─│─┐     Merge branch 'master' of https://github.com/pencil-code/pencil-code
+   A   │ │ o─┘     removed some doubling of some subroutine
+   A   │ │ o       more on slope limited diffusion
+   E   │ │ M─┐     Merge branch 'master' of https://github.com/pencil-code/pencil-code Adding
+   F   │ │ │ o     added Hill vortex rain as forcing
+   B   │ │ │ M─┐   Finally fixed the last still broken autotest
+   B   │ │ │ │ o   Finally fixed the last still broken autotest
+   A   │ │ │ o │   More correction and additions for the slope limited diffusion,
+   B   │ │ │ o─┘   Removed "array temporaries", see also 2a73f3cea323
+   G   │ │ │ o     added a phase to enforced vertical shear profile;
+   E   │ │ o │     Adding components of the current helicity tensor.
+   D   │ o │ │     thermo hydrostatic equilibrium ISM still under construction
+   C   o │ │ │     pc_meanfield_collect: Fixed some bugs and removed line writes
    #+end_example
 
+   So, did users A, B and G really work on the same feature branch to add
+   phase to the shear profile, remove array temporaries and to correct
+   slope limited diffusion?
+   And did those commits get merged in a commit that claims to have fixed
+   the last broken autotest?
+
+   The true story must have been something like this:
    #+begin_example
-     Jörn Warnecke     o          add new time step calculation for slope limited diffusion
-     Philippe Bourdin  o          Added comments about which line will not work
-     Simo Tuomisto     M─┐        Merge one commit into master
-     Frederick Gent    o │        Revised data to account for correction to chi-therm
-     Philippe Bourdin  o │        Lets see if the new IO modules work everywhere as expected...
-     Frederick Gent    M─│─┐      Third try at merging equilibrium in to master
-     Philippe Bourdin  o │ │      We explicitly want to allow missing namelists
-     Frederick Gent    │ │ M─┐    Second try at merging hydrostatic equilibrium into master
-     Jörn Warnecke     o─│─┘ │    fixed some errors
-     Frederick Gent    │ │   M─┐  First try at merging hydrostatic equilibrium into master
-     Jörn Warnecke     o─│───┘ │  removed some doubling of some subroutine
-     Jörn Warnecke     o │     │  more on slope limited diffusion
-     Illa R. Losada    M─│─┐   │  Merge current helicity tensor into master
-     Axel Brandenburg  o │ │   │  added Hill vortex rain as forcing
-     Philippe Bourdin  M─│─│─┐ │  Merge fix for last broken autotest
-     Philippe Bourdin  │ │ │ o │  Finally fixed the last still broken autotest
-     Jörn Warnecke     o │ │ │ │  More correction and additions for the slope limited diffusion,
-     Philippe Bourdin  o─│─│─┘ │  Removed "array temporaries", see also 2a73f3cea323
-     mrheinhardt       o │ │   │  added a phase to enforced vertical shear profile;
-     Illa R. Losada    │ │ o   │  Adding components of the current helicity tensor.
-     Frederick Gent    │ │ │   o  thermo hydrostatic equilibrium ISM still under construction
-     Simo Tuomisto     │ o │   │  pc_meanfield_collect: Fixed some bugs and removed line writes
+   A   o          add new time step calculation for slope limited diffusion
+   B   o          Added comments about which line will not work
+   C   M─┐        Merge one commit into master
+   D   o │        Revised data to account for correction to chi-therm
+   B   o │        Lets see if the new IO modules work everywhere as expected...
+   D   M─│─┐      Third try at merging equilibrium in to master
+   B   o │ │      We explicitly want to allow missing namelists
+   D   │ │ M─┐    Second try at merging hydrostatic equilibrium into master
+   A   o─│─┘ │    fixed some errors
+   D   │ │   M─┐  First try at merging hydrostatic equilibrium into master
+   A   o─│───┘ │  removed some doubling of some subroutine
+   A   o │     │  more on slope limited diffusion
+   E   M─│─┐   │  Merge current helicity tensor into master
+   F   o │ │   │  added Hill vortex rain as forcing
+   B   M─│─│─┐ │  Merge fix for last broken autotest
+   B   │ │ │ o │  Finally fixed the last still broken autotest
+   A   o │ │ │ │  More correction and additions for the slope limited diffusion,
+   B   o─│─│─┘ │  Removed "array temporaries", see also 2a73f3cea323
+   G   o │ │   │  added a phase to enforced vertical shear profile;
+   E   │ │ o   │  Adding components of the current helicity tensor.
+   D   │ │ │   o  thermo hydrostatic equilibrium ISM still under construction
+   C   │ o │   │  pc_meanfield_collect: Fixed some bugs and removed line writes
    #+end_example
+   with most of the development happening on the main line, but
+   occasionally, somebody has a change that needs to get merged into that
+   line, because other commits got pushed first.
+
+   And indeed something like this is how =tig= would have drawn the graph,
+   had all of the merges been from tracking-branch into upstream and not
+   the other way around.
 
 
-[fn:25]The output was obtained using =tig=
+[fn:25]The output was obtained using =tig= on the Pencil Code repository,
+removing many commits, shortening some commit messages and mildly
+anonymizing the commits.
 
 
    \bigskip
