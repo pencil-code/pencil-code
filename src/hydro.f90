@@ -108,6 +108,7 @@ module Hydro
   logical :: ladvection_velocity=.true.
   logical :: lprecession=.false.
   logical :: lshear_rateofstrain=.false.
+  logical :: loo_as_aux = .false.
   logical :: luut_as_aux=.false.,loot_as_aux=.false.
   logical :: lscale_tobox=.true.
   logical, target :: lpressuregradient_gas=.true.
@@ -143,7 +144,7 @@ module Hydro
       lskip_projection, lno_second_ampl, &
       N_modes_uu, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
       lprecession, omega_precession, alpha_precession, velocity_ceiling, &
-      luut_as_aux, loot_as_aux, mu_omega, nb_rings, om_rings, gap, &
+      loo_as_aux, luut_as_aux, loot_as_aux, mu_omega, nb_rings, om_rings, gap, &
       lscale_tobox, ampl_Omega, omega_ini, r_cyl, skin_depth, incl_alpha, &
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
@@ -205,7 +206,7 @@ module Hydro
       lalways_use_gij_etc, amp_centforce, &
       lcalc_uumean,lcalc_uumeanx,lcalc_uumeanxy,lcalc_uumeanxz, &
       lforcing_cont_uu, width_ff_uu, x1_ff_uu, x2_ff_uu, &
-      luut_as_aux, loot_as_aux, loutest, ldiffrot_test, &
+      loo_as_aux, luut_as_aux, loot_as_aux, loutest, ldiffrot_test, &
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
       velocity_ceiling, ekman_friction, ampl_Omega, lcoriolis_xdep, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
@@ -659,10 +660,9 @@ module Hydro
 !  26-mar-10/axel: lreinitialize_uu added
 !
       use BorderProfiles, only: request_border_driving
-      use FArrayManager
       use Initcond
       use SharedVariables, only: put_shared_variable,get_shared_variable
-      use Sub, only: step
+      use Sub, only: step, register_report_aux
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: c, s
@@ -863,44 +863,11 @@ module Hydro
 !  in the beginning of your src/cparam.local file, *before* setting
 !  ncpus, nprocy, etc.
 !
-!  After a reload, we need to rewrite index.pro, but the auxiliary
-!  arrays are already allocated and must not be allocated again.
+      if (luut_as_aux) call register_report_aux('uut', iuut, iuxt, iuyt, iuzt)
 !
-      if (luut_as_aux) then
-        if (iuut==0) then
-          call farray_register_auxiliary('uut',iuut,vector=3)
-          iuxt=iuut
-          iuyt=iuut+1
-          iuzt=iuut+2
-        endif
-        if (iuut/=0.and.lroot) then
-          print*, 'initialize_hydro: iuut = ', iuut
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'iuut=',iuut
-          write(3,*) 'iuxt=',iuxt
-          write(3,*) 'iuyt=',iuyt
-          write(3,*) 'iuzt=',iuzt
-          close(3)
-        endif
-      endif
+      if (loot_as_aux) call register_report_aux('oot', ioot, ioxt, ioyt, iozt)
 !
-      if (loot_as_aux) then
-        if (ioot==0) then
-          call farray_register_auxiliary('oot',ioot,vector=3)
-          ioxt=ioot
-          ioyt=ioot+1
-          iozt=ioot+2
-        endif
-        if (ioot/=0.and.lroot) then
-          print*, 'initialize_hydro: ioot = ', ioot
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'ioot=',ioot
-          write(3,*) 'ioxt=',ioxt
-          write(3,*) 'ioyt=',ioyt
-          write(3,*) 'iozt=',iozt
-          close(3)
-        endif
-      endif
+      if (loo_as_aux) call register_report_aux('oo', ioo, iox, ioy, ioz, communicated=.true.)
 !
       if (force_lower_bound == 'vel_time' .or. force_upper_bound == 'vel_time') then
         call put_shared_variable('ampl_forc', ampl_forc)
@@ -1945,7 +1912,7 @@ module Hydro
           lpencil_in(i_curlo)=.true.
         endif
       endif
-      if (lpencil_in(i_oo)) lpencil_in(i_uij)=.true.
+      if (lpencil_in(i_oo) .and. ioo == 0) lpencil_in(i_uij) = .true.
       if (lpencil_in(i_o2)) lpencil_in(i_oo)=.true.
       if (lpencil_in(i_ou)) then
         lpencil_in(i_uu)=.true.
@@ -2067,9 +2034,13 @@ module Hydro
 ! uij5
       if (lpenc_loc(i_uij5)) call gij(f,iuu,p%uij5,5)
 ! oo (=curlu)
-      if (lpenc_loc(i_oo)) then
-        call curl_mn(p%uij,p%oo,p%uu)
-      endif
+      oo: if (lpenc_loc(i_oo)) then
+        if (ioo /= 0) then
+          p%oo = f(l1:l2,m,n,iox:ioz)
+        else
+          call curl_mn(p%uij,p%oo,p%uu)
+        endif
+      endif oo
 ! o2
       if (lpenc_loc(i_o2)) call dot2_mn(p%oo,p%o2)
 ! ou
@@ -2362,9 +2333,14 @@ module Hydro
 !
 !  Actions to take before boundary conditions are set.
 !
-!   15-dec-10/MR: adapted from density for homogeneity
+!  15-dec-10/MR: adapted from density for homogeneity
+!  19-oct-15/ccyang: add calculation of the vorticity field.
+!
+      use Sub, only: curl
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      real, dimension(nx,3) :: pv
 !
 !  Remove mean momenta or mean flows if desired.
 !  Useful to avoid unphysical winds, for example in shearing box simulations.
@@ -2375,7 +2351,18 @@ module Hydro
         if (lremove_mean_flow) call remove_mean_flow(f,iux)
         if (lremove_mean_angmom) call remove_mean_angmom(f,iuz)
       endif
-
+!
+!  Calculate the vorticity field if required.
+!
+      getoo: if (ioo /= 0) then
+        nloop: do n = n1, n2
+          mloop: do m = m1, m2
+            call curl(f, iux, pv)
+            f(l1:l2,m,n,iox:ioz) = pv
+          enddo mloop
+        enddo nloop
+      endif getoo
+!
     endsubroutine hydro_before_boundary
 !***********************************************************************
     subroutine update_char_vel_hydro(f)
