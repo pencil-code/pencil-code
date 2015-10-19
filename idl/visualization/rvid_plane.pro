@@ -140,24 +140,27 @@ if not all(par.lequidist) then begin
     x1 = 0.5 * (grid.x[dim.l2] + grid.x[dim.l2+1])
     dx = (x1 - x0) / nx
     iix = spline(grid.x, findgen(mx) - nghostx, x0 + (findgen(nx) + 0.5) * dx)
-  endif else $
+  endif else begin
     iix = findgen(nx)
+  endelse
 ;
   if ny gt 1 and not par.lequidist[1] then begin
     y0 = 0.5 * (grid.y[dim.m1-1] + grid.y[dim.m1])
     y1 = 0.5 * (grid.y[dim.m2] + grid.y[dim.m2+1])
     dy = (y1 - y0) / ny
     iiy = spline(grid.y, findgen(my) - nghosty, y0 + (findgen(ny) + 0.5) * dy)
-  endif else $
+  endif else begin
     iiy = findgen(ny)
+  endelse
 ;
   if nz gt 1 and not par.lequidist[2] then begin
     z0 = 0.5 * (grid.z[dim.n1-1] + grid.z[dim.n1])
     z1 = 0.5 * (grid.z[dim.n2] + grid.z[dim.n2+1])
     dz = (z1 - z0) / nz
     iiz = spline(grid.z, findgen(mz) - nghostz, z0 + (findgen(nz) + 0.5) * dz)
-  endif else $
+  endif else begin
     iiz = findgen(nz)
+  endelse
 ;
   if extension eq 'xy' then begin
     ii1 = iix
@@ -169,7 +172,9 @@ if not all(par.lequidist) then begin
     ii1 = iiy
     ii2 = iiz
   endelse
-endif else massage = 0
+endif else begin
+  massage = 0
+endelse
 ;
 if (n_elements(proc) ne 0) then begin
   file_slice=datadir+'/proc'+str(proc)+'/slice_'+field+'.'+extension
