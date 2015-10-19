@@ -561,8 +561,8 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;
 ;  Make background white, and write png file.
 ;
-        bad=where(image eq 0)
-        image(bad)=255
+        bad=where(image eq 0, num)
+        if (num gt 0) then image(bad)=255
         tvlct, red, green, blue, /GET
         imgname = imgprefix+istr2+'.png'
         write_png, imgdir+'/'+imgname, image, red, green, blue
