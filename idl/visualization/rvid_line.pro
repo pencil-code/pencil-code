@@ -58,7 +58,7 @@ if (keyword_set(png_truecolor)) then png=1
 if (not keyword_set(png)) then begin
   if (keyword_set(newwindow)) then begin
     window, /free, xsize=xsize, ysize=ysize, title=title
- endif
+  endif
 endif
 ;
 if (proc ge 0) then begin
@@ -74,9 +74,12 @@ print, file_slice
 ;;  Read the dimensions and precision (single or double) from dim.dat
 ;;
 pc_read_dim, obj=dim, datadir=datadir, /quiet
-nx=dim.nx & ny=dim.ny & nz=dim.nz
+nx=dim.nx
+ny=dim.ny
+nz=dim.nz
 ;
-t=0.*one & islice=0
+t=0.*one
+islice=0
 axz=fltarr(nx*ny)*one
 slice_xpos=0.*one
 slice_ypos=0.*one
@@ -92,12 +95,12 @@ endif else if (extension eq 'yz') then begin
 endif
 if (keyword_set(global_scaling)) then begin
   first=1L
-  close,1 & openr,1,file_slice,/f77
+  openr, lun, file_slice, /f77, /get_lun
   while (not eof(1)) do begin
     if (keyword_set(OLDFILE)) then begin ; For files without position
-      readu,1,plane,t
+      readu, lun, plane, t
     endif else begin
-      readu,1,plane,t,slice_z2pos
+      readu, lun, plane, t, slice_z2pos
     endelse
     if (keyword_set(exponential)) then begin
       if (first) then begin
@@ -137,13 +140,14 @@ if (keyword_set(global_scaling)) then begin
       endelse
     endelse
   end
-  close,1
+  close, lun
+  free_lun, lun
   print,'Scale using global min, max: ', amin, amax
 endif
 ;
 ;
 ;
-pc_read_grid, object=grid, /trim
+pc_read_grid, object=grid, dim=dim, datadir=datadir, /trim
 ;
 if (xgrid) then begin
   xaxisscale=grid.x
@@ -164,8 +168,10 @@ if (keyword_set(png)) then begin
   itpng=0 ;(image counter)
   dev='z'
 endif else if (keyword_set(mpeg)) then begin
-  ;Nwx=400 & Nwy=320
-  Nwx=!d.x_size & Nwy=!d.y_size
+  ;Nwx=400
+  ;Nwy=320
+  Nwx=!d.x_size
+  Nwy=!d.y_size
   if (!d.name eq 'X') then window,2,xs=Nwx,ys=Nwy
   mpeg_name = 'movie.mpg'
   print,'write mpeg movie: ',mpeg_name
@@ -179,7 +185,7 @@ endif
 istride=stride ;(make sure the first one is written)
 ;
 it=0
-close,1 & openr,1,file_slice,/f77
+openr, lun, file_slice, /f77, /get_lun
 while (not eof(1)) do begin
   if (extension eq 'xy') then begin
     axz=fltarr(nx,ny)*one
@@ -190,15 +196,15 @@ while (not eof(1)) do begin
   endif
 ;
   if (keyword_set(OLDFILE)) then begin ; For files without position
-    readu,1,axz,t
+    readu, lun, axz, t
   endif else begin
-    readu,1,axz,t,slice_z2pos
+    readu, lun, axz, t, slice_z2pos
   endelse
 ;
   if (keyword_set(transp)) then axz=transpose(axz)
   default,csection,((size(axz))[2]+1)/2
   axz=reform(axz)
-  if (size(axz))[0] gt 1 then begin
+  if ((size(axz))[0] gt 1) then begin
     axz=reform(axz[*,csection])
   endif
   if (keyword_set(sqroot)) then axz=sqrt(axz)
@@ -237,10 +243,10 @@ while (not eof(1)) do begin
         if (not keyword_set(noplot)) then begin
           if (keyword_set(exponential)) then begin
             plot, xaxisscale, exp(axz), psym=psym, yrange=[amin,amax], $
-                  xstyle=xstyle,ystyle=ystyle,xrange=xrange
+                xstyle=xstyle,ystyle=ystyle,xrange=xrange
           endif else begin
             plot, xaxisscale, axz, psym=psym, yrange=[amin,amax], _extra=_extra, $
-                  xstyle=xstyle,ystyle=ystyle,xrange=xrange
+                xstyle=xstyle,ystyle=ystyle,xrange=xrange
           endelse
         endif
         if (keyword_set(png)) then begin
@@ -249,7 +255,8 @@ while (not eof(1)) do begin
 ;
 ;  make background white, and write png file
 ;
-;          bad=where(image eq 0) & image(bad)=255
+          ;bad=where(image eq 0, num)
+          ;if (num gt 0) then image(bad)=255
           tvlct, red, green, blue, /GET
           imgname = imgdir+'/img_'+istr2+'.png'
           write_png, imgname, image, red, green, blue
@@ -286,7 +293,8 @@ while (not eof(1)) do begin
     islice=islice+1
   endelse
 endwhile
-close,1
+close, lun
+free_lun, lun
 ;
 ;  write & close mpeg file
 ;
@@ -298,7 +306,8 @@ endif
 ;
 ;  reform map appropriately
 ;
-nxz=n_elements(axz) & nt=it
+nxz=n_elements(axz)
+nt=it
 map=reform(map,nxz,nt)
 ;
 if (not keyword_set(nocontour)) then begin
