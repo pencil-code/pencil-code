@@ -162,10 +162,10 @@ if not all(par.lequidist) then begin
     iiz = findgen(nz)
   endelse
 ;
-  if extension eq 'xy' then begin
+  if (extension eq 'xy') then begin
     ii1 = iix
     ii2 = iiy
-  endif else if extension eq 'xz' then begin
+  endif else if (extension eq 'xz') then begin
     ii1 = iix
     ii2 = iiz
   endif else begin
@@ -226,7 +226,7 @@ if (keyword_set(shell)) then begin
   readstring=''
 ;
   for i=0,ncpus-1 do begin        ; read data from individual files
-    if n_elements(proc) ne 0 then begin
+    if (size(proc, /type) ne 0) then begin
       datalocdir=datadir+'/proc'+str(proc)
     endif else begin
       datalocdir=datadir+'/proc'+strtrim(i,2)
@@ -245,7 +245,7 @@ if (keyword_set(shell)) then begin
     free_lun, lun
     openr, lun, datalocdir+'/'+varfile, /F77, swap_endian=swap_endian
     if (execute('readu, lun'+readstring) ne 1) then $
-          message, 'Error reading: ' + 'readu, lun'+readstring
+        message, 'Error reading: ' + 'readu, lun'+readstring
     readu, lun, t, xloc, yloc, zloc
     close, lun
     free_lun, lun
@@ -438,7 +438,7 @@ while (not eof(1)) do begin
     readu, lun, plane, t, slice_z2pos
   end
 ;
-  if massage then plane = interpolate(plane, ii1, ii2, /grid)
+  if (massage) then plane = interpolate(plane, ii1, ii2, /grid)
 ;
 ;  Rescale data with optional parameter zoom.
 ;  WARNING: the scaling can produce artifacts at shearing boundaries. Contour
@@ -452,7 +452,7 @@ while (not eof(1)) do begin
   if extension eq 'xy' then begin
     x2=rebin(x,zoom*nx_plane,sample=sample)
     y2=rebin(y,zoom*ny_plane,sample=sample)
-  endif else if extension eq 'yz' then begin
+  endif else if (extension eq 'yz') then begin
     x2=rebin(y,zoom*nx_plane,sample=sample)
     y2=rebin(z,zoom*ny_plane,sample=sample)
   endif
@@ -507,7 +507,7 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
   if (keyword_set(debug)) then begin
     print, t, min([plane2,xy,xz,yz]), max([plane2,xy,xz,yz])
   endif else begin
-    if ( (t ge tmin) and (t le tmax) ) then begin
+    if ((t ge tmin) and (t le tmax)) then begin
       if (istride eq stride) then begin
 ;
         if (keyword_set(automatic_scaling)) then begin
@@ -517,7 +517,7 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
 ;
 ;  Show image scaled between amin and amax and filling whole screen.
 ;
-        if(keyword_set(doublebuffer)) then begin
+        if (keyword_set(doublebuffer)) then begin
 ;
 ;  Paint into buffer.
 ;
