@@ -51,6 +51,8 @@
 ; + read/pc_read_dim
 ; + read/pc_read_grid
 ; + read/pc_read_param
+; + read/pc_read_slice_raw
+; + read/pc_read_subvol_raw
 ; + read/pc_read_var_raw
 ; + read/pc_varcontent
 
