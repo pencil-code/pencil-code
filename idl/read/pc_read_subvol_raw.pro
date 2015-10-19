@@ -75,7 +75,6 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	common cdat_coords, coord_system
 
 	; Default settings.
-	default, allprocs, 0
 	default, reduced, 0
 	default, addghosts, 0
 	default, swap_endian, 0
@@ -89,10 +88,17 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	if (not keyword_set (varfile)) then varfile = 'var.dat'
 
 	; Automatically switch to allprocs, if necessary.
-	if (not keyword_set (allprocs) and not file_test (datadir+'/proc0/'+varfile, /regular)) then allprocs = 1
+	if (size (allprocs, /type) eq 0) then begin
+		if (file_test (datadir+'/allprocs/'+varfile)) then begin
+			allprocs = 1
+		end else if (file_test (datadir+'/proc0/'+varfile) and file_test (datadir+'/proc1/', /directory) and file_test (datadir+'/proc1/'+varfile)) then begin
+			allprocs = 2
+		end
+	end
+	default, allprocs, 0
 
 	; Set f77 keyword according to allprocs.
-	if (keyword_set (allprocs)) then default, f77, 0
+	if (allprocs eq 1) then default, f77, 0
 	default, f77, 1
 
 	; Get necessary dimensions quietly.
