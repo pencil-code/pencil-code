@@ -290,7 +290,7 @@ COMPILE_OPT IDL2,HIDDEN
       ipy=ipyarray[ip]
       openr, lun, filename[ip], /f77, swap_endian=swap_endian, /get_lun
       it=0
-      while ( not eof(lun) and ((nit eq 0) or (it lt nit)) ) do begin
+      while (not eof(lun) and ((nit eq 0) or (it lt nit))) do begin
 ;
 ;  Read time.
 ;
@@ -377,7 +377,7 @@ COMPILE_OPT IDL2,HIDDEN
     it=0
     itimg=0
     lwindow_opened=0
-    while ( not eof(luns[0]) and ((nit eq 0) or (it lt nit)) ) do begin
+    while (not eof(luns[0]) and ((nit eq 0) or (it lt nit))) do begin
 ;
 ;  Read time.
 ;

@@ -75,19 +75,19 @@ t  =fltarr(nt)*one
 ; Open slice files.
 ;
 if (xy2read) then begin
-  close, 1 & openr, 1, file_slice1, /f77, swap_endian=swap_endian
+  openr, lun_1, file_slice1, /f77, /get_lun, swap_endian=swap_endian
 endif
 if (xyread) then begin
-  close, 2 & openr, 2, file_slice2, /f77, swap_endian=swap_endian
+  openr, lun_2, file_slice2, /f77, /get_lun, swap_endian=swap_endian
 endif
 if (xzread) then begin
-  close, 3 & openr, 3, file_slice3, /f77, swap_endian=swap_endian
+  openr, lun_3, file_slice3, /f77, /get_lun, swap_endian=swap_endian
 endif
 if (yzread) then begin
-  close, 4 & openr, 4, file_slice4, /f77, swap_endian=swap_endian
+  openr, lun_4, file_slice4, /f77, /get_lun, swap_endian=swap_endian
 endif
 if (xz2read) then begin
-  close, 5 & openr, 5, file_slice5, /f77, swap_endian=swap_endian
+  openr, lun_5, file_slice5, /f77, /get_lun, swap_endian=swap_endian
 endif
 ;
 ; Read slices at nt times.
@@ -99,25 +99,25 @@ for it=0,nt-1 do begin
   if (njump gt 0) then begin
     dummy=zero
     for ijump=0,njump-1 do begin
-      if (xy2read) then readu, 1, dummy1
-      if (xyread)  then readu, 2, dummy1
-      if (xzread)  then readu, 3, dummy1
-      if (yzread)  then readu, 4, dummy1
-      if (xz2read) then readu, 5, dummy1
+      if (xy2read) then readu, lun_1, dummy1
+      if (xyread)  then readu, lun_2, dummy1
+      if (xzread)  then readu, lun_3, dummy1
+      if (yzread)  then readu, lun_4, dummy1
+      if (xz2read) then readu, lun_5, dummy1
       if (xy2read) then begin
-        if (eof(1)) then break
+        if (eof(lun_1)) then break
       endif
       if (xyread) then begin
-        if (eof(2)) then break
+        if (eof(lun_2)) then break
       endif
       if (xzread) then begin
-        if (eof(3)) then break
+        if (eof(lun_3)) then break
       endif
       if (yzread) then begin
-        if (eof(4)) then break
+        if (eof(lun_4)) then break
       endif
       if (xz2read) then begin
-        if (eof(5)) then break
+        if (eof(lun_5)) then break
       endif
     endfor
   endif
@@ -125,26 +125,26 @@ for it=0,nt-1 do begin
 ; Stop if end of file reached.
 ;
   if (xy2read) then begin
-    if (eof(1)) then break
+    if (eof(lun_1)) then break
   endif
   if (xyread) then begin
-    if (eof(2)) then break
+    if (eof(lun_2)) then break
   endif
   if (xzread) then begin
-    if (eof(3)) then break
+    if (eof(lun_3)) then break
   endif
   if (yzread) then begin
-    if (eof(4)) then break
+    if (eof(lun_4)) then break
   endif
   if (xz2read) then begin
-    if (eof(5)) then break
+    if (eof(lun_5)) then break
   endif
 ;
-  if (xy2read) then readu, 1, xy2_tmp, t_tmp, slice_z2pos
-  if (xyread)  then readu, 2, xy_tmp, t_tmp, slice_zpos
-  if (xzread)  then readu, 3, xz_tmp, t_tmp, slice_ypos
-  if (yzread)  then readu, 4, yz_tmp, t_tmp, slice_xpos
-  if (xz2read) then readu, 5, xz2_tmp, t_tmp, slice_y2pos
+  if (xy2read) then readu, lun_1, xy2_tmp, t_tmp, slice_z2pos
+  if (xyread)  then readu, lun_2, xy_tmp, t_tmp, slice_zpos
+  if (xzread)  then readu, lun_3, xz_tmp, t_tmp, slice_ypos
+  if (yzread)  then readu, lun_4, yz_tmp, t_tmp, slice_xpos
+  if (xz2read) then readu, lun_5, xz2_tmp, t_tmp, slice_y2pos
   xy2[*,*,it]=xy2_tmp
   xy [*,*,it]=xy_tmp
   xz [*,*,it]=xz_tmp
@@ -155,11 +155,26 @@ endfor
 ;
 ; Close files.
 ;
-if (xy2read) then close, 1
-if (xyread)  then close, 2
-if (xzread)  then close, 3
-if (yzread)  then close, 4
-if (xz2read) then close, 5
+if (xy2read) then begin
+  close, lun_1
+  free_lun, lun_1
+endif
+if (xyread)  then begin
+  close, lun_2
+  free_lun, lun_2
+endif
+if (xzread)  then begin
+  close, lun_3
+  free_lun, lun_3
+endif
+if (yzread)  then begin
+  close, lun_4
+  free_lun, lun_4
+endif
+if (xz2read) then begin
+  close, lun_5
+  free_lun, lun_5
+endif
 ;
 ; Truncate the data if less than nt slices were read.
 ;

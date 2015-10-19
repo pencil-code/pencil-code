@@ -104,14 +104,15 @@ xloc=fltarr(procdim.mx)*one & yloc=fltarr(procdim.my)*one & zloc=fltarr(procdim.
 ;  Read variable indices from index.pro
 ;
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
-openr, 1, datadir+'/index.pro'
+openr, lun, datadir+'/index.pro', /get_lun
 line=''
-while (not eof(1)) do begin
-  readf, 1, line, format='(a)'
+while (not eof(lun)) do begin
+  readf, lun, line, format='(a)'
   if (execute(line) ne 1) then $
-    message, 'There was a problem with index.pro', /INF
+      message, 'There was a problem with index.pro', /INF
 endwhile
-close, 1
+close, lun
+free_lun, lun
 ;
 ;  Define structure for data
 ;
@@ -165,10 +166,10 @@ varcontent[iaps].idlinit  = INIT_SCALAR
 file_special=datadir+'/index_special_particles.pro'
 exist_specialvar=file_test(file_special)
 if (exist_specialvar eq 1) then begin
-  openr, 1, file_special
+  openr, lun, file_special, /get_lun
   line=''
-  while (not eof(1)) do begin
-    readf, 1, line
+  while (not eof(lun)) do begin
+    readf, lun, line
     str_tmp=strsplit(line," ",/extract)
     str=str_tmp[0] & istr=fix(str_tmp[1])
     if (istr gt 0) then begin
@@ -177,7 +178,8 @@ if (exist_specialvar eq 1) then begin
       varcontent[istr].idlinit    = INIT_SCALAR
     endif
   endwhile
-  close, 1
+  close, lun
+  free_lun, lun
 endif
 ;
 varcontent = varcontent[1:*]
@@ -347,20 +349,21 @@ endif else begin
 ;
 ;  Read indices and removal times of removed particles.
 ;
-        get_lun, file1 & close, file1
-        openr, file1, filename1
-        ipar_rmv_loc=0L & t_rmv_loc=0.0*one
+        openr, lun, filename1, /get_lun
+        ipar_rmv_loc=0L
+        t_rmv_loc=0.0*one
 ;
 ;  Find out how many particles were removed at this processor. This is done
 ;  by counting lines until eof, without actually using the read data.
 ;
         nrmv=0L
         dummy=''
-        while not (eof(file1)) do begin
-          readf, file1, dummy
+        while not (eof(lun)) do begin
+          readf, lun, dummy
           nrmv=nrmv+1
         endwhile
-        close, file1
+        close, lun
+        free_lun, lun
         nfields=n_elements(strsplit(dummy,' '))
 ;
 ;  Read indices and times into array. The index is read as a real number,

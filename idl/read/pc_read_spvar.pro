@@ -15,11 +15,11 @@ default, quiet, 0
 default, qquiet, 0
 
 if n_elements(ivar) eq 1 then begin
-    default,varfile_,'SPVAR'
-    varfile=varfile_+strcompress(string(ivar),/remove_all)
+  default,varfile_,'SPVAR'
+  varfile=varfile_+strcompress(string(ivar),/remove_all)
 endif else begin
-    default,varfile_,'spvar.dat'
-    varfile=varfile_
+  default,varfile_,'spvar.dat'
+   arfile=varfile_
 endelse
 
 if (qquiet) then quiet=1
@@ -39,14 +39,15 @@ mspar =0L
 ;  Read variable indices from index.pro
 ;
 if (not keyword_set(datadir)) then datadir=pc_get_datadir()
-openr, 1, datadir+'/index.pro'
+openr, lun, datadir+'/index.pro', /get_lun
 line=''
-while ~ eof(1) do begin
-  readf, 1, line, format='(a)'
+while (not eof(lun)) do begin
+  readf, lun, line, format='(a)'
   if (execute(line) ne 1) then $
-    message, 'There was a problem with index.pro', /INF
+      message, 'There was a problem with index.pro', /INF
 endwhile
-close, 1
+close, lun
+free_lun, lun
 ;
 ;  Define structure for data
 ;
@@ -114,20 +115,18 @@ filename=datadir+'/proc0/'+varfile
 ;  Check if file exists.
 ;
 if (not file_test(filename)) then begin
-    print, 'ERROR: cannot find file '+ filename
-    stop
+  print, 'ERROR: cannot find file '+ filename
+  stop
 endif
 ;
 ;  Get a unit number and open file.
 ;
-get_lun, file
-close, file
-openr, file, filename, /F77,SWAP_ENDIAN=SWAN_ENDIAN
+openr, lun, filename, /F77, /get_lun, SWAP_ENDIAN=SWAN_ENDIAN
 ;
 ;  Read the number of particles at the local processor together with their
 ;  global index numbers.
 ;
-readu, file, mspar
+readu, lun, mspar
 ;
 ;  Read particle data (if any).
 ;
@@ -136,27 +135,27 @@ if (mspar ne 0) then begin
 ;  Read local processor data.
 ;
   array=fltarr(mspar,mspvar)*one
-  readu, file, array
+  readu, lun, array
 ;
 endif
 ;
-close, file
-free_lun, file
+close, lun
+free_lun, lun
 ;
 ;  Put data into sensibly named arrays.
 ;
 for iv=1L,mspvar do begin
   res=varcontent[iv].idlvar+'=array[*,iv-1:iv-1+varcontent[iv].skip]'
   if (execute(res,0) ne 1) then $
-    message, 'Error putting data into '+varcontent[iv].idlvar+' array'
+      message, 'Error putting data into '+varcontent[iv].idlvar+' array'
   iv=iv+varcontent[iv].skip
 endfor
 ;
 ;  Put data and parameters in object.
 ;
 makeobject="object = CREATE_STRUCT(name=objectname,[" + $
-     arraytostring(variables,QUOTE="'",/noleader) + "]," + $
-     arraytostring(variables,/noleader) + ")"
+    arraytostring(variables,QUOTE="'",/noleader) + "]," + $
+    arraytostring(variables,/noleader) + ")"
 if (execute(makeobject) ne 1) then begin
   message, 'ERROR Evaluating variables: ' + makeobject, /INFO
   undefine,object

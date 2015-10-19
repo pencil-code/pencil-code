@@ -219,19 +219,19 @@ if (keyword_set(global_scaling)) then begin
 ;
   first=1L
 ;
-  openr, file_1, file_slice1, /f77, /get_lun, swap_endian=swap_endian
-  openr, file_2, file_slice2, /f77, /get_lun, swap_endian=swap_endian
-  openr, file_3, file_slice3, /f77, /get_lun, swap_endian=swap_endian
-  openr, file_4, file_slice4, /f77, /get_lun, swap_endian=swap_endian
-  openr, file_5, file_slice5, /f77, /get_lun, swap_endian=swap_endian
+  openr, lun_1, file_slice1, /f77, /get_lun, swap_endian=swap_endian
+  openr, lun_2, file_slice2, /f77, /get_lun, swap_endian=swap_endian
+  openr, lun_3, file_slice3, /f77, /get_lun, swap_endian=swap_endian
+  openr, lun_4, file_slice4, /f77, /get_lun, swap_endian=swap_endian
+  openr, lun_5, file_slice5, /f77, /get_lun, swap_endian=swap_endian
 ;
-  while (not eof(1)) do begin
+  while (not eof(lun_1)) do begin
 ;
-    readu, file_1, rp , t, slice_ypos
-    readu, file_2, rt1, t, slice_z1pos
-    readu, file_3, rt2, t, slice_z2pos
-    readu, file_4, rt3, t, slice_z3pos
-    readu, file_5, rt4, t, slice_z4pos
+    readu, lun_1, rp , t, slice_ypos
+    readu, lun_2, rt1, t, slice_z1pos
+    readu, lun_3, rt2, t, slice_z2pos
+    readu, lun_4, rt3, t, slice_z3pos
+    readu, lun_5, rt4, t, slice_z4pos
 ;
     if (first) then begin
       amax=max([max(rt2),max(rt1),max(rp),max(rt3),max(rt4)])
@@ -244,16 +244,16 @@ if (keyword_set(global_scaling)) then begin
 ;
   endwhile
 ;
-  close, file_1
-  close, file_2
-  close, file_3
-  close, file_4
-  close, file_5
-  free_lun, file_1
-  free_lun, file_2
-  free_lun, file_3
-  free_lun, file_4
-  free_lun, file_5
+  close, lun_1
+  close, lun_2
+  close, lun_3
+  close, lun_4
+  close, lun_5
+  free_lun, lun_1
+  free_lun, lun_2
+  free_lun, lun_3
+  free_lun, lun_4
+  free_lun, lun_5
 ;
   print,'Scale using global min, max: ', amin, amax
 ;
@@ -261,31 +261,31 @@ endif
 ;
 ;  Open slice files for reading.
 ;
-openr, file_1, file_slice1, /f77, /get_lun, swap_endian=swap_endian
-openr, file_2, file_slice2, /f77, /get_lun, swap_endian=swap_endian
-openr, file_3, file_slice3, /f77, /get_lun, swap_endian=swap_endian
-openr, file_4, file_slice4, /f77, /get_lun, swap_endian=swap_endian
-openr, file_5, file_slice5, /f77, /get_lun, swap_endian=swap_endian
+openr, lun_1, file_slice1, /f77, /get_lun, swap_endian=swap_endian
+openr, lun_2, file_slice2, /f77, /get_lun, swap_endian=swap_endian
+openr, lun_3, file_slice3, /f77, /get_lun, swap_endian=swap_endian
+openr, lun_4, file_slice4, /f77, /get_lun, swap_endian=swap_endian
+openr, lun_5, file_slice5, /f77, /get_lun, swap_endian=swap_endian
 ;
 islice=0L
 ;
 
-while ( (not eof(1)) and (t le tmax) ) do begin
+while ( (not eof(lun_1)) and (t le tmax) ) do begin
 ;
   if ( (t ge tmin) and (t le tmax) and (islice mod (njump+1) eq 0) ) then begin
-    readu, file_1, rp , t, slice_ypos
-    readu, file_2, rt1, t, slice_z1pos
-    readu, file_3, rt2, t, slice_z2pos
-    readu, file_4, rt3, t, slice_z3pos
-    readu, file_5, rt4, t, slice_z4pos
+    readu, lun_1, rp , t, slice_ypos
+    readu, lun_2, rt1, t, slice_z1pos
+    readu, lun_3, rt2, t, slice_z2pos
+    readu, lun_4, rt3, t, slice_z3pos
+    readu, lun_5, rt4, t, slice_z4pos
 
   endif else begin ; Read only time.
     dummy=zero
-    readu, file_1, rp, t
-    readu, file_2, dummy
-    readu, file_3, dummy
-    readu, file_4, dummy
-    readu, file_5, dummy
+    readu, lun_1, rp, t
+    readu, lun_2, dummy
+    readu, lun_3, dummy
+    readu, lun_4, dummy
+    readu, lun_5, dummy
   endelse
 ;
 ;  Possible to set time interval and to jump over njump slices.
@@ -575,16 +575,16 @@ endwhile
 ;
 ;  Close slice files.
 ;
-close, file_1
-close, file_2
-close, file_3
-close, file_4
-close, file_5
-free_lun, file_1
-free_lun, file_2
-free_lun, file_3
-free_lun, file_4
-free_lun, file_5
+close, lun_1
+close, lun_2
+close, lun_3
+close, lun_4
+close, lun_5
+free_lun, lun_1
+free_lun, lun_2
+free_lun, lun_3
+free_lun, lun_4
+free_lun, lun_5
 ;
 ;  Inform the user of why program stopped.
 ;

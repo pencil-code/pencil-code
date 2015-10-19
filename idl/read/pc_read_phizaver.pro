@@ -56,33 +56,33 @@ tt  =fltarr(nit)*one
 ;;
 ;;  Prepare for read
 ;;
-GET_LUN, file
 filename=datadir+'/'+varfile 
 if (not quiet) then print, 'Reading ', filename
 if (not file_test(filename)) then begin
   print, 'ERROR: cannot find file '+ filename
   stop
 endif
-close, file
-openr, file, filename
+openr, lun, filename, /get_lun
 
 ;;
 ;;  Read phiz-averages and put in arrays.
 ;;
 
 ;; Read radius (first ceil(nr/8) records)
-readf, file, rcyl
+readf, lun, rcyl
 for it=0,nit-1 do begin
 ;; Read time
-  readf, file, t
+  readf, lun, t
   tt[it]=t
 ;; Read data
   for i=0,nvar-1 do begin
-    readf, file, var
+    readf, lun, var
     cmd=varnames[i]+'[*,it]=var'
     if (execute(cmd,0) ne 1) then message, 'Error putting data in array'
   endfor
 endfor
+close, lun
+free_lun, lun
 ;;
 ;;  Make time monotonous and crop all variables accordingly.
 ;;  

@@ -48,10 +48,10 @@ file_slice2=datadir+'/slice_'+field+'.xz'
 file_slice3=datadir+'/slice_'+field+'.yz'
 file_slice4=datadir+'/slice_'+field+'.xy2'
 
-openr, file_1, file_slice1, /f77, /get_lun, swap_endian=swap_endian
-openr, file_2, file_slice2, /f77, /get_lun, swap_endian=swap_endian
-openr, file_3, file_slice3, /f77, /get_lun, swap_endian=swap_endian
-openr, file_4, file_slice4, /f77, /get_lun, swap_endian=swap_endian
+openr, lun_1, file_slice1, /f77, /get_lun, swap_endian=swap_endian
+openr, lun_2, file_slice2, /f77, /get_lun, swap_endian=swap_endian
+openr, lun_3, file_slice3, /f77, /get_lun, swap_endian=swap_endian
+openr, lun_4, file_slice4, /f77, /get_lun, swap_endian=swap_endian
 islice=0L
 ;
 t=zero
@@ -88,13 +88,13 @@ scale3,xrange=[0,1],yrange=[0,1],zrange=[0,1],$
 ;
 if (!d.name eq 'X') then wdwset,xs=xsize,ys=ysize
 ;
-while ( (not eof(1)) and (t le tmax) ) do begin
+while ((not eof(lun_1)) and (t le tmax)) do begin
 ;
-  if ( (t ge tmin) and (t le tmax) and (islice mod (skip+1) eq 0) ) then begin
-    readu, file_1, tmp_xy, t, slice_zpos
-    readu, file_2, tmp_xz, t, slice_ypos
-    readu, file_3, tmp_yz, t, slice_xpos
-    readu, file_4, tmp_xy2, t, slice_z2pos
+  if ((t ge tmin) and (t le tmax) and (islice mod (skip+1) eq 0)) then begin
+    readu, lun_1, tmp_xy, t, slice_zpos
+    readu, lun_2, tmp_xz, t, slice_ypos
+    readu, lun_3, tmp_yz, t, slice_xpos
+    readu, lun_4, tmp_xy2, t, slice_z2pos
 ;
     xy_int = round((tmp_xy-amin)/(amax-amin) * 255)
     xz_int = round((tmp_xz-amin)/(amax-amin) * 255)
@@ -256,10 +256,10 @@ while ( (not eof(1)) and (t le tmax) ) do begin
   endif else begin
     ; Read only time.
     dummy=zero
-    readu, file_1, xy, t
-    readu, file_2, dummy
-    readu, file_3, dummy
-    readu, file_4, dummy
+    readu, lun_1, xy, t
+    readu, lun_2, dummy
+    readu, lun_3, dummy
+    readu, lun_4, dummy
   endelse
 ;
 ;  Ready for next video slice.
@@ -279,13 +279,13 @@ endwhile
 ;
 ;  Close slice files.
 ;
-close, file_1
-close, file_2
-close, file_3
-close, file_4
-free_lun, file_1
-free_lun, file_2
-free_lun, file_3
-free_lun, file_4
+close, lun_1
+close, lun_2
+close, lun_3
+close, lun_4
+free_lun, lun_1
+free_lun, lun_2
+free_lun, lun_3
+free_lun, lun_4
 ;
 end

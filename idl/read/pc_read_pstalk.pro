@@ -109,9 +109,8 @@ for iproc=0,dim.nprocx*dim.nprocy*dim.nprocz-1 do begin
   npar_stalk_loc=0L
   ipar=0L
 ;
-  openr, 1, datadir+'/proc'+strtrim(iproc,2)+'/particles_stalker.dat', /f77, $
-      swap_endian=swap_endian
-  while (ntread lt nout and not eof(1)) do begin
+  openr, lun, datadir+'/proc'+strtrim(iproc,2)+'/particles_stalker.dat', /f77, /get_lun, swap_endian=swap_endian
+  while (ntread lt nout and not eof(lun)) do begin
     readu, 1, t_loc, npar_stalk_loc
 ;
     if (it ge it0) then begin
@@ -120,10 +119,10 @@ for iproc=0,dim.nprocx*dim.nprocy*dim.nprocz-1 do begin
 ;
       if (npar_stalk_loc ge 1) then begin
         ipar_loc=lonarr(npar_stalk_loc)
-        readu, 1, ipar_loc
+        readu, lun, ipar_loc
 ;
         array_loc=fltarr(nfields,npar_stalk_loc)*zero
-        readu, 1, array_loc
+        readu, lun, array_loc
 ;
 ; Put data from local processor into global data structure.
 ;
@@ -151,7 +150,8 @@ for iproc=0,dim.nprocx*dim.nprocy*dim.nprocz-1 do begin
     it=it+1
 ;
   endwhile
-  close, 1
+  close, lun
+  free_lun, lun
 ;
 endfor
 ;
