@@ -84,6 +84,8 @@ COMPILE_OPT IDL2,HIDDEN
   default, allprocs, -1
   if (allprocs eq -1) then begin
     allprocs = 0
+    if (size (proc, /type) ne 0) then allprocs = 0
+    if (file_test (datadir+'/proc0/'+varfile) and file_test (datadir+'/proc1/', /directory) and not file_test (datadir+'/proc1/'+varfile)) then allprocs = 2
     if (file_test (datadir+'/allprocs/'+varfile) and (n_elements (proc) eq 0)) then allprocs = 1
   end
 ;
@@ -98,7 +100,7 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
 ;
 ; Set f77 keyword according to allprocs.
 ;
-  if (keyword_set (allprocs)) then default, f77, 0
+  if (allprocs eq 1) then default, f77, 0
   default, f77, 1
 ;
 ; Get necessary dimensions quietly.
