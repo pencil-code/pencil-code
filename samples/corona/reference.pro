@@ -1,10 +1,12 @@
 ; IDL autotest for essential IDL routines
 ;
-; To start the script, just type at a shell prompt:
-; $ idl -demo -e ".r reference"
+; 19-Oct-2015/PABourdin: initial version
 ;
 ; This test reads in a varfile, computes some derived physical quantity
 ; (Ohmic heating), and compares mean, min, and max to reference values.
+;
+; To start this autotest, just type at a shell prompt:
+; $ idl -demo -e ".r reference"
 ;
 ; Tested IDL routines:
 ; ====================
@@ -46,8 +48,7 @@
 ; + read/pc_read_param
 ; + read/pc_read_var_raw
 ; + read/pc_varcontent
-;
-; 19-Oct-2015/PABourdin: initial version
+
 
 ; Settings:
 
