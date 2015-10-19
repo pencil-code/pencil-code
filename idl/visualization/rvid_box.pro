@@ -423,8 +423,8 @@ while ( (not eof(1)) and (t le tmax) ) do begin
 ;  Plot normal box.
 ;
       if (not keyword_set(shell)) then begin
-        boxbotex_scl,xy2s,xys,xzs,yzs,xmax,ymax,zof=zof,zpos=zpos,ip=3,$
-            amin=amin/oversaturate,amax=amax/oversaturate,dev=dev,$
+        boxbotex_scl,xy2s,xys,xzs,yzs,xmax,ymax,zof=zof,zpos=zpos,ip=3, $
+            amin=amin/oversaturate,amax=amax/oversaturate,dev=dev, $
             xpos=xpos,magnify=magnify,ymagnify=ymagnify,zmagnify=zmagnify,scale=scale, $
             nobottom=nobottom,norm=norm,xrot=xrot,zrot=zrot,sample=sample
         if (keyword_set(nolabel)) then begin
@@ -461,18 +461,18 @@ while ( (not eof(1)) and (t le tmax) ) do begin
             xy2s=xys
             zrr1=rrxy
           endif
-          boxbotex_scl,xy2s,xys,xzs,yzs,1.,1.,zof=.36,zpos=.25,ip=3,$
-              amin=amin,amax=amax,dev=dev,$
-              shell=shell,centred=centred,scale=scale,sample=sample,$
-              r_int=r_int,r_ext=r_ext,zrr1=zrr1,zrr2=zrr2,yrr=rrxz,xrr=rryz,$
+          boxbotex_scl,xy2s,xys,xzs,yzs,1.,1.,zof=.36,zpos=.25,ip=3, $
+              amin=amin,amax=amax,dev=dev, $
+              shell=shell,centred=centred,scale=scale,sample=sample, $
+              r_int=r_int,r_ext=r_ext,zrr1=zrr1,zrr2=zrr2,yrr=rrxz,xrr=rryz, $
               nobottom=nobottom,norm=norm,xrot=xrot,zrot=zrot
           xyouts, .08, 0.81, '!8t!6='+string(t/tunit,fo=fo)+'!c'+title, $
               col=1,siz=1.6
         endif else begin
-          boxbotex_scl,xy2s,xys,xzs,yzs,xmax,ymax,zof=.65,zpos=.34,ip=3,$
-              amin=amin,amax=amax,dev=dev,sample=sample,$
-              shell=shell,$
-              r_int=r_int,r_ext=r_ext,zrr1=rrxy,zrr2=rrxy2,yrr=rrxz,xrr=rryz,$
+          boxbotex_scl,xy2s,xys,xzs,yzs,xmax,ymax,zof=.65,zpos=.34,ip=3, $
+              amin=amin,amax=amax,dev=dev,sample=sample, $
+              shell=shell, $
+              r_int=r_int,r_ext=r_ext,zrr1=rrxy,zrr2=rrxy2,yrr=rrxz,xrr=rryz, $
               nobottom=nobottom,norm=norm,xrot=xrot,zrot=zrot
           xyouts, .08, 1.08, '!8t!6='+string(t/tunit,fo=fo)+'!c'+title, $
               col=1,siz=1.6
@@ -488,8 +488,8 @@ while ( (not eof(1)) and (t le tmax) ) do begin
         default, divbar, 2
         default, blabel, ''
         !p.title=blabel
-        ;colorbar, pos=[.80,.15,.82,.85], color=1, div=divbar,$
-        colorbar, pos=colorbarpos, color=1, div=divbar,$
+        ;colorbar, pos=[.80,.15,.82,.85], color=1, div=divbar, $
+        colorbar, pos=colorbarpos, color=1, div=divbar, $
             range=[amin,amax]/bnorm, /right, /vertical, $
             format=bformat, charsize=bsize, title=title
         !p.title=''
@@ -523,10 +523,10 @@ while ( (not eof(1)) and (t le tmax) ) do begin
         x2=x0+length*cos(angle)
         y2=y0+length*sin(angle)
         ;arrow, x0, y0, x1, y1,color=100,/normal
-        arrow, x0, y0, x2, y2,col=1,/normal,$
-          thick=thlabel,hthick=thlabel
-        xyouts,x2-0.01,y2-0.045,'!8x!x',col=1,/normal,$
-        siz=size_label,charthick=thlabel
+        arrow, x0, y0, x2, y2,col=1,/normal, $
+            thick=thlabel,hthick=thlabel
+        xyouts,x2-0.01,y2-0.045,'!8x!x',col=1,/normal, $
+            siz=size_label,charthick=thlabel
 ;
 ;  y arrow
 ;
@@ -538,19 +538,19 @@ while ( (not eof(1)) and (t le tmax) ) do begin
         x2=x0+length*cos(angle)
         y2=y0+length*sin(angle)
         ;arrow, x0, y0, x1, y1,color=100,/normal
-        arrow, x0, y0, x2, y2,col=1,/normal,$
-          thick=thlabel,hthick=thlabel
-        xyouts,x2-0.03,y2-0.01,'!8y!x',col=1,/normal,$
-        siz=size_label,charthick=thlabel
+        arrow, x0, y0, x2, y2,col=1,/normal, $
+            thick=thlabel,hthick=thlabel
+        xyouts,x2-0.03,y2-0.01,'!8y!x',col=1,/normal, $
+            siz=size_label,charthick=thlabel
 ;
 ;  z arrow
 ;
         x1=x0
         y1=y0+ylength
-        arrow, x0, y0, x1, y1,col=1,/normal,$
-          thick=thlabel,hthick=thlabel
-        xyouts,x1-0.015,y1+0.01,'!8z!x',col=1,/normal,$
-          siz=size_label,charthick=thlabel
+        arrow, x0, y0, x1, y1,col=1,/normal, $
+            thick=thlabel,hthick=thlabel
+        xyouts,x1-0.015,y1+0.01,'!8z!x',col=1,/normal, $
+            siz=size_label,charthick=thlabel
       endif
 ;
 ;  Save as png file.
