@@ -102,16 +102,26 @@ if (keyword_set(png_truecolor)) then png=1
 ;  Read the dimensions from "dim.dat".
 ;
 pc_read_dim, obj=dim, datadir=datadir, proc=proc, /quiet
-nx=dim.nx & ny=dim.ny & nz=dim.nz
-mx=dim.mx & my=dim.my & mz=dim.mz
-nghostx=dim.nghostx & nghosty=dim.nghosty & nghostz=dim.nghostz
-nprocx=dim.nprocx & nprocy=dim.nprocy & nprocz=dim.nprocz
+nx=dim.nx
+ny=dim.ny
+nz=dim.nz
+mx=dim.mx
+my=dim.my
+mz=dim.mz
+nghostx=dim.nghostx
+nghosty=dim.nghosty
+nghostz=dim.nghostz
+nprocx=dim.nprocx
+nprocy=dim.nprocy
+nprocz=dim.nprocz
 ncpus=nprocx*nprocy*nprocz
 ;
 ;  Read grid data.
 ;
 pc_read_grid, obj=grid, proc=proc, swap_endian=swap_endian, /quiet
-x=grid.x(dim.l1:dim.l2) & y=grid.y(dim.m1:dim.m2) & z=grid.z(dim.n1:dim.n2)
+x=grid.x(dim.l1:dim.l2)
+y=grid.y(dim.m1:dim.m2)
+z=grid.z(dim.n1:dim.n2)
 ;
 ;  Set reasonable extension for 2-D runs.
 ;
@@ -189,7 +199,9 @@ if (keyword_set(shell)) then begin
 ;  To mask outside shell, need full grid; read from varfiles.
 ;
   datalocdir=datadir+'/proc0'
-  mxloc=0L & myloc=0L & mzloc=0L
+  mxloc=0L
+  myloc=0L
+  mzloc=0L
 ;
   close,1
   openr,1,datalocdir+'/'+dimfile
@@ -200,8 +212,12 @@ if (keyword_set(shell)) then begin
   nyloc=myloc-2*nghosty
   nzloc=mzloc-2*nghostz
 ;
-  x=fltarr(mx)*one & y=fltarr(my)*one & z=fltarr(mz)*one
-  xloc=fltarr(mxloc)*one & yloc=fltarr(myloc)*one & zloc=fltarr(mzloc)*one
+  x=fltarr(mx)*one
+  y=fltarr(my)*one
+  z=fltarr(mz)*one
+  xloc=fltarr(mxloc)*one
+  yloc=fltarr(myloc)*one
+  zloc=fltarr(mzloc)*one
   readstring=''
 ;
   for i=0,ncpus-1 do begin        ; read data from individual files
@@ -230,27 +246,39 @@ if (keyword_set(shell)) then begin
 ;  y and z direction makes a difference on the diagonals).
 ;
     if (ipx eq 0) then begin
-      i0x=ipx*nxloc & i1x=i0x+mxloc-1
-      i0xloc=0 & i1xloc=mxloc-1
+      i0x=ipx*nxloc
+      i1x=i0x+mxloc-1
+      i0xloc=0
+      i1xloc=mxloc-1
     endif else begin
-      i0x=ipx*nxloc+nghostx & i1x=i0x+mxloc-1-nghostx
-      i0xloc=nghostx & i1xloc=mxloc-1
+      i0x=ipx*nxloc+nghostx
+      i1x=i0x+mxloc-1-nghostx
+      i0xloc=nghostx
+      i1xloc=mxloc-1
     endelse
 ;
     if (ipy eq 0) then begin
-      i0y=ipy*nyloc & i1y=i0y+myloc-1
-      i0yloc=0 & i1yloc=myloc-1
+      i0y=ipy*nyloc
+      i1y=i0y+myloc-1
+      i0yloc=0
+      i1yloc=myloc-1
     endif else begin
-      i0y=ipy*nyloc+nghosty & i1y=i0y+myloc-1-nghosty
-      i0yloc=nghosty & i1yloc=myloc-1
+      i0y=ipy*nyloc+nghosty
+      i1y=i0y+myloc-1-nghosty
+      i0yloc=nghosty
+      i1yloc=myloc-1
     endelse
 ;
     if (ipz eq 0) then begin
-      i0z=ipz*nzloc & i1z=i0z+mzloc-1
-      i0zloc=0 & i1zloc=mzloc-1
+      i0z=ipz*nzloc
+      i1z=i0z+mzloc-1
+      i0zloc=0
+      i1zloc=mzloc-1
     endif else begin
-      i0z=ipz*nzloc+nghostz & i1z=i0z+mzloc-1-nghostz
-      i0zloc=nghostz & i1zloc=mzloc-1
+      i0z=ipz*nzloc+nghostz
+      i1z=i0z+mzloc-1-nghostz
+      i0zloc=nghostz
+      i1zloc=mzloc-1
     endelse
 ;
     x[i0x:i1x] = xloc[i0xloc:i1xloc]
@@ -270,15 +298,18 @@ if (keyword_set(shell)) then begin
 ;  nb: at present using the same z-value for both horizontal slices;
 ;      hardwired into boxbotex_scl, also.
 ;
-  ix=mx/2 & iy=my/2 & iz=mz/2 & iz2=iz
+  ix=mx/2
+  iy=my/2
+  iz=mz/2
   if (extension eq 'xy') then rrxy =rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz)
-  if (extension eq 'xy2') then rrxy2=rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz2)
+  if (extension eq 'xy2') then rrxy2=rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz)
   if (extension eq 'xz') then rrxz =rr(nghostx:mx-nghostx-1,iy,nghostz:mz-nghostz-1)
   if (extension eq 'yz') then rryz =rr(ix,nghosty:my-nghosty-1,nghostz:mz-nghostz-1)
 ;
 endif
 ;
-t=zero & islice=0
+t=zero
+islice=0
 ;
 if (extension eq 'xy') then plane=fltarr(nx,ny)*one
 if (extension eq 'xy2') then plane=fltarr(nx,ny)*one
@@ -296,7 +327,8 @@ slice_z2pos=0.0*one
 ;
 dev='x' ;(default)
 if (keyword_set(png)) then begin
-  Nwx=zoom*size_plane[1] & Nwy=zoom*size_plane[2]
+  Nwx=zoom*size_plane[1]
+  Nwy=zoom*size_plane[2]
   Nwy=Nwx*15/20
   help,Nwx,Nwy
   resolution=[Nwx,Nwy] ; set window size
@@ -307,7 +339,8 @@ if (keyword_set(png)) then begin
   itpng=0 ;(image counter)
   dev='z'
 endif else if (keyword_set(mpeg)) then begin
-  Nwx=zoom*size_plane[1] & Nwy=zoom*size_plane[2]
+  Nwx=zoom*size_plane[1]
+  Nwy=zoom*size_plane[2]
   resolution=[Nwx,Nwy] ; set window size
   if (not quiet) then print,'z-buffer resolution (in pixels)=',resolution
   set_plot, 'z'                   ; switch to Z buffer
@@ -330,12 +363,12 @@ istride=stride ;(make sure the first one is written)
 ;
 if (keyword_set(global_scaling)) then begin
   first=1L
-  close,1 & openr,1,file_slice,/f77
+  openr, lun, file_slice, /f77, /get_lun, swap_endian=swap_endian
   while (not eof(1)) do begin
     if (keyword_set(oldfile)) then begin ; For files without position
-      readu,1,plane,t
+      readu, lun, plane, t
     endif else begin
-      readu,1,plane,t,slice_z2pos
+      readu, lun, plane, t, slice_z2pos
     endelse
     if (keyword_set(exponential)) then begin
       if (first) then begin
@@ -384,16 +417,17 @@ if (keyword_set(global_scaling)) then begin
       endelse
     endelse
   end
-  close,1
+  close, lun
+  free_lun, lun
   if (not quiet) then print,'Scale using global min, max: ', amin, amax
 endif
 ;
-close,1 & openr,1,file_slice,/f77,swap_endian=swap_endian
+openr, lun, file_slice, /f77, /get_lun, swap_endian=swap_endian
 while (not eof(1)) do begin
   if (keyword_set(oldfile)) then begin ; For files without position
-    readu,1,plane,t
+    readu, lun, plane, t
   end else begin
-    readu,1,plane,t,slice_z2pos
+    readu, lun, plane, t, slice_z2pos
   end
 ;
   if massage then plane = interpolate(plane, ii1, ii2, /grid)
@@ -442,23 +476,23 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
     white=255
     if (extension eq 'xy') then begin
       zrr = rebinbox(reform(rrxy,nx,ny),zoom)
-      indxy=where(zrr lt r_int or zrr gt r_ext)
-      plane2(indxy)=white
+      indxy=where(zrr lt r_int or zrr gt r_ext, num)
+      if (num gt 0) then plane2[indxy]=white
     endif
     if (extension eq 'xy2') then begin
       zrr2 = rebinbox(reform(rrxy2,nx,ny),zoom)
-      indxy2=where(zrr2 lt r_int or zrr2 gt r_ext)
-      plane2(indxy2)=white
+      indxy2=where(zrr2 lt r_int or zrr2 gt r_ext, num)
+      if (num gt 0) then plane2[indxy2]=white
     endif
     if (extension eq 'xz') then begin
       yrr = rebinbox(reform(rrxz,nx,nz),zoom,/zdir)
-      indxz=where(yrr lt r_int or yrr gt r_ext)
-      plane2(indxz)=white
+      indxz=where(yrr lt r_int or yrr gt r_ext, num)
+      if (num gt 0) then plane2[indxz]=white
     endif
     if (extension eq 'yz') then begin
       xrr = rebinbox(reform(rryz,ny,nz),zoom,/zdir)
-      indyz=where(xrr lt r_int or xrr gt r_ext)
-      plane2(indyz)=white
+      indyz=where(xrr lt r_int or xrr gt r_ext, num)
+      if (num gt 0) then plane2[indyz]=white
     endif
   endif
 ;
@@ -484,12 +518,12 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
         endif
         if (keyword_set(contourplot)) then begin
           lev=grange(amin,amax,60)
-         ;contourfill, plane2, x2, y2, levels=grange(amin,amax,60), $
+          ;contourfill, plane2, x2, y2, levels=grange(amin,amax,60), $
           contourfill, plane2, x2, y2, lev=lev, $
           tit='!8t!6 ='+string(t/tunit,fo="(f7.1)"), _extra=_extra
           colorbar_co,range=[min(lev),max(lev)],pos=[0.95,0.12,0.98,0.92],/vert, $
-            ytickformat='(f6.3)',yticks=2,ytickv=[min(lev),0.,max(lev)], $
-            yaxis=0,char=1.5,col=255,ytit='!6',xtit='!8B!dz!n!6'
+              ytickformat='(f6.3)',yticks=2,ytickv=[min(lev),0.,max(lev)], $
+              yaxis=0,char=1.5,col=255,ytit='!6',xtit='!8B!dz!n!6'
         end else if (keyword_set(polar)) then begin
           if (style_polar eq 'fill') then begin
             contourfill, plane2, x2, y2, levels=grange(amin,amax,60), $
@@ -506,24 +540,24 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
           theta2=x2/!dtor
           phi=y2/!dtor
           if(keyword_set(phi_shift)) then phi=phi-phi_shift
-           !p.background=255
+          !p.background=255
           map_set,/orthographic,/grid,/noborder,/isotropic,latdel=15,londel=15,limit=[0,-30,89,160],xmargin=0.5,ymargin=0.5,15,60,color=0
           lev=grange(amin,amax,25)
           if(keyword_set(rotate)) then tmp=rotate(plane2,3) else tmp=transpose(plane2)
           if(keyword_set(Beq)) then  tmp=tmp/Beq
           if(keyword_set(taud)) then t=t/taud
-            contour,clip(tmp,minmax(lev)),phi,90.-theta2,lev=lev,/fill,/overplot, $
-           col=0, _extra=_extra
+          contour,clip(tmp,minmax(lev)),phi,90.-theta2,lev=lev,/fill,/overplot, $
+              col=0, _extra=_extra
           ;colorbar_co,range=[min(lev),max(lev)],pos=[0.07,0.3,0.10,0.65],/vert, $
           colorbar_co,range=[min(lev),max(lev)],pos=[0.1,0.75,0.14,0.95],/vert, $
-            ytickformat='(F5.2)',yticks=2,ytickv=[min(lev),0.,max(lev)], $
-            yaxis=0,charsize=3,col=0 ;,xtit='!8U!dr!n!6/!8c!6!ds!n'
-           xyouts,480,800,'!8t!6/!7s!6 = '+str(t,fo='(f5.2)')+'', $
-           col=0,/device,charsize=4
-           ;xyouts,480,800,'!8t!6 = '+str(t,fo='(f5.1)')+'',col=0,/device,charsize=4
+              ytickformat='(F5.2)',yticks=2,ytickv=[min(lev),0.,max(lev)], $
+              yaxis=0,charsize=3,col=0 ;,xtit='!8U!dr!n!6/!8c!6!ds!n'
+          xyouts,480,800,'!8t!6/!7s!6 = '+str(t,fo='(f5.2)')+'', $
+              col=0,/device,charsize=4
+          ;xyouts,480,800,'!8t!6 = '+str(t,fo='(f5.1)')+'',col=0,/device,charsize=4
         wait,wait
         endif else begin
-;          plotimage, plane2, range=[amin,amax]
+          ;plotimage, plane2, range=[amin,amax]
           tv, bytscl(plane2,min=amin,max=amax), iplane
         endelse
         if(keyword_set(doublebuffer)) then begin
@@ -546,14 +580,15 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
 ;
 ;  Make background white, and write png file.
 ;
-          ;bad=where(image eq 0) & image(bad)=255
+          ;bad=where(image eq 0)
+          ;if (num gt 0) then image[bad]=255
           tvlct, red, green, blue, /get
           imgname = imgdir+'/img_'+istr2+'.png'
           write_png, imgname, image, red, green, blue
           if (keyword_set(png_truecolor)) then $
               spawn, 'mogrify -type TrueColor ' + imgname
           itpng=itpng+1 ;(counter)
-          ;
+;
         end else if (keyword_set(mpeg)) then begin
 ;
 ;  Write directly mpeg file.
@@ -600,7 +635,8 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
     islice=islice+1
   end
 end
-close,1
+close, lun
+free_lun, lun
 ;
 ;  Write and close mpeg file.
 ;
