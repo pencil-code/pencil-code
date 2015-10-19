@@ -385,311 +385,55 @@ GitHub SVN bridge.
    Aside from problems with the SVN bridge, merging the right way around
    will also lead to a much more meaningful history.
    Consider the following real-life example:[fn:25]
-   #+begin_example
-     Simo Tuomisto      M─┐ Merge branch 'master' of https://github.com/pencil-
-     Philippe Bourdin   │ o Probably 94aaf8acef156847ab319efee38fc46212dcbff8 f
-     Philippe Bourdin   │ o Fixed stupid mistake from df97a8ab42d4f04bf3e6c4f12
-     Wladimir Lyra      │ o Break if other used than spherical
-     mrheinhardt        │ o corrected bug in communication for gravity adap
-     Axel Brandenburg   │ o replaced Wlad's caltech email by his gmail
-     Jørgen Aarnes      │ M─┐ Merge branch 'master' of https://github.com/penci
-     Axel Brandenburg   │ │ o moved commented out line about 0d-tests/reactive_
-     Jørgen Aarnes      │ o │ smaller changes in config file for specific syste
-     Philippe Bourdin   │ o─┘ This was overseen by the automatic script.
-     Philippe Bourdin   │ o This was overseen by the automatic script.
-     mrheinhardt        │ o gravity_after_boundary added
-     mrheinhardt        │ o gravity_after_boundary added
-     Simo Tuomisto      o │ Much improved version of pc_meanfield_collect.
-     mrheinhardt        o─┘ diagnostics idiag_Kkramersmz, idiag_Kkramersmx
-     mrheinhardt        o added parameter n_adjust_sphersym: if > 0 after e
-   #+end_example
-
-   which is way more readable in the form
 
    #+begin_example
-     Simo Tuomisto      M───┐ Merge a few commits into master
-     Philippe Bourdin   o   │ Probably 94aaf8acef156847ab319efee38fc46212dcbff8 f
-     Philippe Bourdin   o   │ Fixed stupid mistake from df97a8ab42d4f04bf3e6c4f12
-     Wladimir Lyra      o   │ Break if other used than spherical
-     mrheinhardt        o   │ corrected bug in communication for gravity adap
-     Axel Brandenburg   o   │ replaced Wlad's caltech email by his gmail
-     Jørgen Aarnes      M─┐ │ Merge temporary branch into master
-     Axel Brandenburg   o │ │ moved commented out line about 0d-tests/reactive_
-     Jørgen Aarnes      │ o │ smaller changes in config file for specific syste
-     Philippe Bourdin   o─┘ │ This was overseen by the automatic script.
-     Philippe Bourdin   o   │ This was overseen by the automatic script.
-     mrheinhardt        o   │ gravity_after_boundary added
-     mrheinhardt        o   │ gravity_after_boundary added
-     Simo Tuomisto      │   o Much improved version of pc_meanfield_collect.
-     mrheinhardt        o───┘ diagnostics idiag_Kkramersmz, idiag_Kkramersmx
-     mrheinhardt        o     added parameter n_adjust_sphersym: if > 0 after e
-   #+end_example
-
-
-   #+begin_example
-     Chao-Chin Yang            o │ Mac does not like the option -std=f95.
-     Iomsn                     o │ Added normalization parameter for the Gaussian profile footpoint driver.
-     Iomsn                     o │ Added single dominand polarity as initial condition for the magnetic field.
-     Chao-Chin Yang            M─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Iomsn                     │ │ o Added single parasitic polarity as initial condition.
-     Chao-Chin Yang            o │ │ Fix a bug in timestep condition in particles_dust.
-     Chao-Chin Yang            M─│─┘ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Nils Erland L. Haugen     │ │ o Make sure that all indices are "sound" for the lognormal initial distribution.
-     Nils Erland L. Haugen     │ │ o added diagnostics for mean particle (including the swarm particles) number density in the volume
-     Philippe Bourdin          │ │ o Added comment to remind me of removing this block later...
-     Philippe Bourdin          │ │ o Finally gives fixes for backwards-compatibility.
-     Philippe Bourdin          │ │ o Fixed call without parameters.
-     Philippe Bourdin          │ │ o Making interface backwards-compatible for now.
-     Philippe Bourdin          │ │ o Fixed the automatically (double-)expanded 'pc_precision' common block.
-     Philippe Bourdin          │ │ o Extended 'pc_precision' common block for all routines, because it looks like some scripts (like "
-     Chao-Chin Yang            o │ │ Add initial condition 'random' in particles_spin.
-     Nils Erland L. Haugen     o─│─┘ Set lzero_upper_kern to make sure no mass is lost.
-     mrheinhardt               o │ added parallel reading of binary data; changed find_namelist because of CRAY compiler issue;
-     Philippe Bourdin          o │ Extendend consistency checking and adapted to new 'pc_precision' common block structure.
-     Philippe Bourdin          o │ Fully redesigned, will enable automatic finding of the configuration, later.
-     Philippe Bourdin          o │ Unified formatting.
+     Jörn Warnecke     o           add new time step calculation for slope limited diffusion
+     Philippe Bourdin  o           Added comments about which line will not work
+     Simo Tuomisto     M─┐         Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     Frederick Gent    │ o         Revised data to account for correction to chi-therm
+     Philippe Bourdin  │ o         Lets see if the new IO modules work everywhere as expected...
+     Frederick Gent    │ M─┐       Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     Philippe Bourdin  │ │ o       We explicitly want to allow missing namelists
+     Frederick Gent    │ M─│─┐     Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     Jörn Warnecke     │ │ o─┘     fixed some errors
+     Frederick Gent    │ M─│─┐     Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     Jörn Warnecke     │ │ o─┘     removed some doubling of some subroutine
+     Jörn Warnecke     │ │ o       more on slope limited diffusion
+     Illa R. Losada    │ │ M─┐     Merge branch 'master' of https://github.com/pencil-code/pencil-code Adding
+     Axel Brandenburg  │ │ │ o     added Hill vortex rain as forcing
+     Philippe Bourdin  │ │ │ M─┐   Finally fixed the last still broken autotest! 'nu_jump1' was simply not i
+     Philippe Bourdin  │ │ │ │ o   Finally fixed the last still broken autotest! 'nu_jump1' was simply not i
+     Jörn Warnecke     │ │ │ o │   More correction and additions for the slope limited diffusion,
+     Philippe Bourdin  │ │ │ o─┘   Removed "array temporaries", see also 2a73f3cea323
+     mrheinhardt       │ │ │ o     added a phase to enforced vertical shear profile;
+     Illa R. Losada    │ │ o │     Adding components of the current helicity tensor.
+     Frederick Gent    │ o │ │     thermo hydrostatic equilibrium ISM still under construction
+     Simo Tuomisto     o │ │ │     pc_meanfield_collect: Fixed some bugs and removed line writes
    #+end_example
 
    #+begin_example
-     Axel Brandenburg          o merged my changes of the Summer in experimental/meanfield.f90 (and checked in incorrectly in the wr
-     Philippe Bourdin          o Lets see if the new IO modules work everywhere as expected...
-     Frederick Gent            M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Philippe Bourdin          │ o We explicitly want to allow missing namelists in "data/param.nml". This should fix all remaining
-     Frederick Gent            o │ New sample data to account for correction to chi calc in entropy
-     Frederick Gent            M─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Jörn Warnecke             │ o─┘ joern: fixed some errors
-     Frederick Gent            M─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Jörn Warnecke             │ o─┘ removed some doubling of some subroutine
-     mrheinhardt               │ o preparations for flux-limited diffusion
-     mrheinhardt               │ o moved sqrt of characteristic velocity to equ; removed some comments
-   #+end_example
-
-   #+begin_example
-     Iomsn                o Added time series for the fixed points.
-     Jörn Warnecke        o add new time step calculation for slope limited diffusion
-     Philippe Bourdin     o Added comments about which line will not work with which compiler version.
-     Simo Tuomisto        M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Frederick Gent       │ o Revised data to account for correction to chi-therm and nu-therm
-     Philippe Bourdin     │ o Lets see if the new IO modules work everywhere as expected...
-     Frederick Gent       │ M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Philippe Bourdin     │ │ o We explicitly want to allow missing namelists in "data/param.nml". This shoul
-     Frederick Gent       │ M─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Jörn Warnecke        │ │ o─┘ fixed some errors
-     Frederick Gent       │ M─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Jörn Warnecke        │ │ o─┘ removed some doubling of some subroutine
-     Jörn Warnecke        │ │ o more on slope limited diffusion
-     Illa R. Losada       │ │ M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code Adding
-     Axel Brandenburg     │ │ │ o added Hill vortex rain as forcing
-     Philippe Bourdin     │ │ │ M─┐ Finally fixed the last still broken autotest! 'nu_jump1' was simply not i
-     Philippe Bourdin     │ │ │ │ o Finally fixed the last still broken autotest! 'nu_jump1' was simply not i
-     Jörn Warnecke        │ │ │ o │ More correction and additions for the slope limited diffusion,
-     Philippe Bourdin     │ │ │ o─┘ Removed "array temporaries", see also 2a73f3cea323f8c08d2824f7d5f5003d904
-     mrheinhardt          │ │ │ o added a phase to enforced vertical shear profile; correction in calcula
-     Illa R. Losada       │ │ o │ Adding components of the current helicity tensor.
-     Frederick Gent       │ o │ │ thermo hydrostatic equilibrium ISM still under construction
-     Simo Tuomisto        o │ │ │ pc_meanfield_collect: Fixed some bugs and removed line writes
-     Simo Tuomisto        M─│─│─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Philippe Bourdin     │ │ │ o─┘ New tool 'pc_autoexpand_config' automatically fills in missing namelists
-     Philippe Bourdin     │ │ │ M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Chao-Chin Yang       │ │ │ │ o Prevent t - dt < 0, which sometimes happens.
-     Philippe Bourdin     │ │ │ │ o This was presumably debug code and should not be checked in. Joern, pleas
-     Jörn Warnecke        │ │ │ │ o more correction for slope limited diffusion
-     mrheinhardt          │ │ │ │ o more corrections for slope-limited diffusion
-     Philippe Bourdin     │ │ │ o─┘ Removed ugly hack with 'lstart' and introduced new 'lparam_nml' to indica
-     mrheinhardt          │ │ │ o some corrections to the slope-limited diffusion scheme
-     Philippe Bourdin     │ │ │ M─┐ Another annoying merge branch 'master' of https://github.com/pencil-code/
-     Frederick Gent       │ │ │ │ M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Frederick Gent       │ │ │ │ o │ Removed obsolete i that broke the autotest
-     Philippe Bourdin     │ │ │ o─│─┘ Formatting.
-     Dhrubaditya MITRA    │ │ │ o─┘ If the electric field was to be stored as auxiliary, there was a confusio
-     Philippe Bourdin     │ │ │ M─┐ Annoying merge branch 'master' of https://github.com/pencil-code/pencil-c
-     Jörn Warnecke        │ │ │ │ o some minor correction to slope limited diffusion
-     Philippe Bourdin     │ │ │ o │ Added general interface 'mpibcast' for MPI-broadcasts in any types.
-     mrheinhardt          │ │ │ o─┘ bug fixed
-     Jörn Warnecke        │ │ │ o More on characteric velocity
-     Iomsn                │ │ │ o Changed core parallelization from using threads to multiprocessing library.
-     mrheinhardt          │ │ │ o more for flux-limited diffusion
-     Frederick Gent       │ │ │ M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     mrheinhardt          │ │ │ │ o added 4th order scheme which calculates first derivative on centered
-     Philippe Bourdin     │ │ │ │ o Minor (small letters for function names can be crucial on case-sensitive
-     Petri Käpylä         │ │ │ │ o Fix broken IDL read-routines: dimensions need to be read before they can
-     Philippe Bourdin     │ │ │ │ o Added inverse of the Alfvén velocity. This allows to compute the Alfvén t
-     Iomsn                │ │ │ │ o Added fixed point finding routine. Needs some fixing to work correctly.
-     Chao-Chin Yang       │ │ │ │ o Fix a bug in gentle forcing in selfgravity.
-     Jonas Krueger        │ │ │ │ o changed the standard value for the calculation of the sherwood number to
-     Iomsn                │ │ │ │ o Some clean up of the routines.
-     System Administrator │ │ │ │ M─┐ Update Merge branch 'master' of https://github.com/pencil-code/pencil-c
-     Wolfgang Dobler      │ │ │ │ │ o Revert "Make config for Norlx51b work."
-     Iomsn                │ │ │ │ │ o Do not trace separatrices if the Jacobian is singular.
-     Sven Bingert         │ │ │ │ M─│─┐ get new code Merge branch 'master' of https://github.com/pencil-code/
-     Sven Bingert         │ │ │ │ o │ │ for testing
-     Frederick Gent       │ │ │ o │ │ │ modified sample not part of auto test
-     Simo Tuomisto        o │ │ │ │ │ │ pc_meanfield_collect: Fixed issue with parallel HDF dataset closing.
-     Chao-Chin Yang       o─│─│─│─│─┘ │ Relieve a time step constraint for particles.
-     Dhrubaditya MITRA    o │ │ │ │ ┌─┘ Added the missing file. Thanks Matthius.
-     mrheinhardt          o │ │ │ │ │ added empty file to fix the auto-test
-     Axel Brandenburg     o │ │ │ │ │ Hill vortex added
-   #+end_example
-
-   #+begin_example
-     Philippe Bourdin          o Code formatting.
-     Philippe Bourdin          o Updated.
-     Philippe Bourdin          o Removed rather strange and surely outdated comment: MPI libraries have a timeout and will s
-     Philippe Bourdin          M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Jonas Krueger             │ M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Jonas Krueger             │ o │ added the get_diff_coeff_reactants routine to nochemistry
-     Philippe Bourdin          o │ │ Added mentions of 'pc_configtest'.
-     Philippe Bourdin          o─│─┘ Deleted outdated section.
-     Philippe Bourdin          o │ Added full list or actual requirements.
-     Philippe Bourdin          o │ Fixing the auto-tests broken from a0da8209f7616612cabe2eca18fd9fe82ec7a409. Jonas: You fo
-     mrheinhardt               o │ added output of error code in case of namelist reading error
-     mrheinhardt               o │ simplified error messages
-     Philippe Bourdin          o │ Fixed the print-out of the sample pars. Thanks Jörn for reporting.
-     Iomsn                     o │ Added tracing out of separatrix layers.
-     Philippe Bourdin          o │ Trying to fix the 'initial_condition_pars' error message, which follows from a slightly i
-     Iomsn                     o │ Aded separatrix class.
-     Jonas Krueger             o─┘ added transport fuction for binary diffusion coefficients from chemistry to particles_che
-     mrheinhardt               o avoided use of undefined quantities to fix the auto-test
-     Philippe Bourdin          o Never try to include something that is not guaranteed to be there.
-     Dhrubaditya MITRA         o particles_dust : ldraglaw_purestokes added forcing: sinz as profile for forcing.
-   #+end_example
-
-   #+begin_example
-     Philippe Bourdin          o Never use hardcoded file units, this is ugly and messy.
-     Philippe Bourdin          o Added most important reading routines for "big data".
-     Philippe Bourdin          M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     andreas-schreiber         │ o python code should be stabel in matplotlib and backends now
-     andreas-schreiber         │ o BARE YOUR NAMESPACES! Dont ever import modules into higher namespaces. Always import what you
-     andreas-schreiber         │ o to do list for new python codes
-     Philippe Bourdin          │ o Hello Fred, please check if this works for you. "FSTD" should not be overwritten.
-     Philippe Bourdin          o │ Removed unused variable.
-     Philippe Bourdin          o │ Formatting.
-     Philippe Bourdin          o │ A bit simpler, skip the 'REAL_PRECISION' line.
-     Philippe Bourdin          o─┘ This additional script will dynamically extend config files with missing namelist entries (no
-     Philippe Bourdin          o Added "data/param.nml" in automatic correction, so that reloading simulation would not complain
-     andreas-schreiber         M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     mrheinhardt               │ o split up an if statement: missing short-circuiting caused the failure of the autotest whe
-     Simo Tuomisto             │ o pc_meanfield_collect: Changes to match changes in param_io
-     mrheinhardt               │ o avoided undefined initial values in single_ray to calm the auto-test
-     Philippe Bourdin          │ M─┐ Why again this??? Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Axel Brandenburg          │ │ o added diagostics of divud2m. Added request for curlo in one diagnostics.
-     Axel Brandenburg          │ │ o added straining motion
-     Axel Brandenburg          │ │ o added possibility for alpha_zz tensor in spherical geometry
-     Boris Dintrans            │ │ o changed the grav_xz forcing (uniform vorticity now)
-     Philippe Bourdin          │ o │ Applied new version of 'pc_autocorrect_config' to the corona sample *.in files.
-     Philippe Bourdin          │ o │ Target-namelist for renaming a parameter has to be given and will be checked. Identical par
-     Philippe Bourdin          │ o │ Formatting of comments.
-     mrheinhardt               │ o─┘ initialized gravity in initialize_special explicitly to zero to avoid NaNs (should fix
-     mrheinhardt               │ o removed strip_comments and other unneeded stuff; tested
-     Philippe Bourdin          │ o Fixed typo in routine name. Removed variable with unexplained name. Fixed error messages to s
-   #+end_example
-
-   #+begin_example
-     imo Tuomisto              │ │ │ o pc_meanfield_collect: First round of removing old code.
-     Simo Tuomisto             │ │ │ o pc_meanfield_collect.f90: Working parallel HDF writing.
-     Simo Tuomisto             │ │ │ o Added working parallel hdf file creation.
-     Philippe Bourdin          │ │ o │ This was overseen by the automatic script.
-     Illa R. Losada            o │ │ │ Changed the default plotting settings to keep and interactive shell.
-     Illa R. Losada            M─┘ │ │ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Frederick Gent            │ o │ │ Reassigned lncoolH as double in module header and removed obsolete comment
-     Frederick Gent            │ o │ │ Moved depricated module to interstallar_old.f90 and copied experimental/supernova.f90 to in
-     Frederick Gent            │ o │ │ Revised interstellar sample to use new interstellar module and initial_condition
-     Frederick Gent            │ o │ │ Updated sample reference and run parameters to match old and new interstellar modules
-     Frederick Gent            │ M─│─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Iomsn                     │ │ │ │ o Added option for different pfiles other than pvar.dat.
-     Iomsn                     │ │ │ │ o Checks if simulation si double or single precision and adjusts the reading of binary data
-     Frederick Gent            │ o │ │ │ Updated record labels to match revised recored types
-     Frederick Gent            │ o │ │ │ Fixed fractions
-     Frederick Gent            │ o │ │ │ Revised reference data with new and old interstellar modules
-     Frederick Gent            │ o │ │ │ Updated sample reference using old interstellar.f90
-     Frederick Gent            │ M─│─│─┘ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Jørgen R. Aarnes          │ │ │ │ o fixed image scaling in make_movie()
-     Frederick Gent            │ o │ │ │ Removed obsolete persistent variables, restructured remnants, updated clustering of SN op
-     Frederick Gent            │ o │ │ │ Deprecated obsolete ISM record types and added cluster variables
-     Frederick Gent            │ M─│─│─┘ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Frederick Gent            │ o │ │ │ Reformatted in line with special.h
-     Frederick Gent            │ o │ │ │ Removed obsolete mass movement routines, integrated cosmic ray injection into existing en
-     Frederick Gent            │ o │ │ │ Removed obsolete subroutine to force location
-     Frederick Gent            │ o │ │ │ Added auto-test generated files from backwards-compatible/data while omitting source code
-     Frederick Gent            │ o │ │ │ Merged z-dependent UV-heating into single sub-routine and deleted obsolete intitial densi
-     Illa R. Losada            o │ │ │ │ Adding some options to "Video files and slices" subsection
-     Jørgen R. Aarnes          o─│─│─│─┘ small changes to allow for reading 2D-runs
-     Axel Brandenburg          o │ │ │ in hydro and magnetic: changed default to lno_second_ampl=.true. (which is the correct choi
-     Frederick Gent            M─┘ │ │ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Piyali Chatterjee         │ M─│─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Piyali Chatterjee         │ o │ │ │ Changed compiler flags for Vilje and Pleiades
-     Frederick Gent            o │ │ │ │ Revised reference file ot check modified supernova returns same results
-     Frederick Gent            o │ │ │ │ Set parameters to match old interstellar sample results
-     Frederick Gent            o │ │ │ │ Removed obsolete damping, added call to cooling functions and tidied initialise
-   #+end_example
-
-
-   #+begin_example
-     Graeme R Sarson           o Allow optional advection term in cosmic ray flux equation.
-     Graeme R Sarson           o Allow insertion of cosmic ray flux in SNe.  (Still being tested.)
-     Philippe Bourdin          o Need to add the actual AVX code generation option.
-     Frederick Gent            o Added new files as part of experimental revision of interstellar
-     Frederick Gent            M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Piyali Chatterjee         │ o EE should be added to varcontent in the aux part not in the main variables part
-     Piyali Chatterjee         │ o Added a flag in run.f90 to write dim.dat files again corrected the writing of IDL files def
-     Iomsn                     │ o Bug: reading particle files from procs with no particles. Fixed
-     Axel Brandenburg          │ o corrected simplified version of chiral fluids
-     Frederick Gent            o │ Added comparison sample to check consistency of revised modules with original
-     Frederick Gent            M─┘ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Philippe Bourdin          │ o Updated to use 'mpiifort' instead of 'mpif90' for the Intel configuration.
-     Frederick Gent            o │ Revising interstellar module with initial conditions - in progress
-     Frederick Gent            o─┘ added host file for Fred's Aalto pc
-     Frederick Gent            M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Philippe Bourdin          │ o Should keep GIT calm when some auto-test or samples were executed and ignore the automatica
-     Frederick Gent            M─│┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Frederick Gent            │ o┘ Added Philippe's compiler
-     Frederick Gent            o │ Corrected minor typo
-     Frederick Gent            M─┘ Merge branch 'master' of https://github.com/pencil-code/pencil-code Revising interstellar to
-     Natalia Babkovskaia       │ o !  Differential for integration is ad*dln(ad). Prepare here dln(ad) factor. !  This assumes c
-     Jørgen R. Aarnes          │ o removed incorrect comments and print statements
-     Jørgen R. Aarnes          │ o fixed issue with parallelization in line_mirror method
-   #+end_example
-
-   #+begin_example
-     Axel Brandenburg          │ o added kvectors as initial condition for benchmark
-     Axel Brandenburg          │ o removed debug line
-     simon                     │ o Minor corrections on the parasitic polarities initial condition. This fixes spurious currents
-     Axel Brandenburg          │ o changed ii=cmplx(0.,1.) to ii=(0.,1.) to fix auto-test
-     Axel Brandenburg          │ o modal initial condition from file for magnetic field
-     Frederick Gent            M─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Philippe Bourdin          │ o─┘ Adapted automatic procdir recognition for the case that no 'var.dat' but a 'VAR#' file is p
-     Frederick Gent            o │ Simplified config file
-     Frederick Gent            M─┘ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Iomsn                     │ o Added e3 type driver.
-     Frederick Gent            o │ added += to conf file
-     Frederick Gent            o─┘ Corrected fred-asus host fiel to compile with mpi
-     Axel Brandenburg          o gamma effect added; experimental
-     Chao-Chin Yang            o Avoid the case of no density module in get_gas_density().
-     Axel Brandenburg          o allowed for possibility of 0-D data
-     Nils Erland L. Haugen     o Corrected how the time step due to drag from particles on the gas is calculated when drag law is
-     Simo Tuomisto             M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Petri Käpylä              │ o Added turbulent heat transport in Kramers heat conduction and diagnostics of entropy squared an
-     Simo Tuomisto             o │ Created working Makefile targets.
-     Philippe Bourdin          o─┘ Sub-volumes can't be periodic, if they do not cover the full extent in that direction.
-     Simo Tuomisto             M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Philippe Bourdin          │ o Probably 94aaf8acef156847ab319efee38fc46212dcbff8 fixed the Segmentation Fault previously prese
-     Philippe Bourdin          │ o Fixed stupid mistake from df97a8ab42d4f04bf3e6c4f121d2074a0d5decdd.
-     Wladimir Lyra             │ o Break if other used than spherical
-     mrheinhardt               │ o corrected bug in communication for gravity adaptation; added calc of grav constant from cen
-     Axel Brandenburg          │ o replaced Wlad's caltech email by his gmail
-     Jørgen Aarnes             │ M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Axel Brandenburg          │ │ o moved commented out line about 0d-tests/reactive_particles outside the array to prevent error
-     Jørgen Aarnes             │ o │ smaller changes in config file for specific system
-     Philippe Bourdin          │ o─┘ This was overseen by the automatic script.
-     Philippe Bourdin          │ o This was overseen by the automatic script.
-     mrheinhardt               │ o gravity_after_boundary added
-     mrheinhardt               │ o gravity_after_boundary added
-     Simo Tuomisto             o │ Much improved version of pc_meanfield_collect. Added also analyzers for it.
-     mrheinhardt               o─┘ diagnostics idiag_Kkramersmz, idiag_Kkramersmx for horizontally averaged Kramers heat condu
-     mrheinhardt               o added parameter n_adjust_sphersym: if > 0 after each n_adjust_sphersym     timesteps the sphe
-     mrheinhardt               o introduced dz2_bound in bc_set_div_z and bc_pp_hds_z_iso
-     mrheinhardt               o added subroutines meanyz_* for calculating yz averages by proper integration
-     mrheinhardt               o calculation of Area_* added
+     Jörn Warnecke     o          add new time step calculation for slope limited diffusion
+     Philippe Bourdin  o          Added comments about which line will not work
+     Simo Tuomisto     M─┐        Merge one commit into master
+     Frederick Gent    o │        Revised data to account for correction to chi-therm
+     Philippe Bourdin  o │        Lets see if the new IO modules work everywhere as expected...
+     Frederick Gent    M─│─┐      Third try at merging equilibrium in to master
+     Philippe Bourdin  o │ │      We explicitly want to allow missing namelists
+     Frederick Gent    │ │ M─┐    Second try at merging hydrostatic equilibrium into master
+     Jörn Warnecke     o─│─┘ │    fixed some errors
+     Frederick Gent    │ │   M─┐  First try at merging hydrostatic equilibrium into master
+     Jörn Warnecke     o─│───┘ │  removed some doubling of some subroutine
+     Jörn Warnecke     o │     │  more on slope limited diffusion
+     Illa R. Losada    M─│─┐   │  Merge current helicity tensor into master
+     Axel Brandenburg  o │ │   │  added Hill vortex rain as forcing
+     Philippe Bourdin  M─│─│─┐ │  Merge fix for last broken autotest
+     Philippe Bourdin  │ │ │ o │  Finally fixed the last still broken autotest
+     Jörn Warnecke     o │ │ │ │  More correction and additions for the slope limited diffusion,
+     Philippe Bourdin  o─│─│─┘ │  Removed "array temporaries", see also 2a73f3cea323
+     mrheinhardt       o │ │   │  added a phase to enforced vertical shear profile;
+     Illa R. Losada    │ │ o   │  Adding components of the current helicity tensor.
+     Frederick Gent    │ │ │   o  thermo hydrostatic equilibrium ISM still under construction
+     Simo Tuomisto     │ o │   │  pc_meanfield_collect: Fixed some bugs and removed line writes
    #+end_example
 
 
