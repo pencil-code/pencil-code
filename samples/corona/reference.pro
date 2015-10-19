@@ -11,13 +11,18 @@
 ; Tested IDL routines:
 ; ====================
 ; + lib/default
+; + lib/derivatives/curl
 ; + lib/derivatives/curlcurl
+; + lib/derivatives/xder
+; + lib/derivatives/xder_6th_ghost
 ; + lib/derivatives/xder2
 ; + lib/derivatives/xder2_6th_ghost
 ; + lib/derivatives/xderyder
 ; + lib/derivatives/xderyder_6th_ghost
 ; + lib/derivatives/xderzder
 ; + lib/derivatives/xderzder_6th_ghost
+; + lib/derivatives/yder
+; + lib/derivatives/yder_6th_ghost
 ; + lib/derivatives/yder2
 ; + lib/derivatives/yder2_6th_ghost
 ; + lib/derivatives/yderxder
@@ -59,6 +64,9 @@ default, reference_file, 'reference.xdr'
 
 HR_ohm = pc_get_quantity ('HR_ohm', 'var.dat')
 
+pc_read_slice_raw, obj=slice, tags=tags, cut_z=2, slice_dim=dim
+B_z = pc_get_quantity ('B_z', slice, tags, dim=dim)
+
 test_mean = mean (HR_ohm)
 test_min = min (HR_ohm)
 test_max = max (HR_ohm)
@@ -79,6 +87,12 @@ end
 
 if (abs (test_max / ref_max - 1.0) gt tolerance) then begin
 	print, "ERROR: max differs: ", test_max, " != ", ref_max
+	success = 0
+end
+
+diff_B_z = round (total (abs (B_z / ref_B_z - 1.0) gt tolerance))
+if (diff_B_z gt 0) then begin
+	print, "ERROR: B_z differs in ", str (diff_B_z), " out of ", str (dim.nw), " pixels."
 	success = 0
 end
 
