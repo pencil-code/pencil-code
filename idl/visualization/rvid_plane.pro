@@ -372,7 +372,7 @@ istride=stride ;(make sure the first one is written)
 if (keyword_set(global_scaling)) then begin
   first=1L
   openr, lun, file_slice, /f77, /get_lun, swap_endian=swap_endian
-  while (not eof(1)) do begin
+  while (not eof(lun)) do begin
     if (keyword_set(oldfile)) then begin ; For files without position
       readu, lun, plane, t
     endif else begin
@@ -431,7 +431,7 @@ if (keyword_set(global_scaling)) then begin
 endif
 ;
 openr, lun, file_slice, /f77, /get_lun, swap_endian=swap_endian
-while (not eof(1)) do begin
+while (not eof(lun)) do begin
   if (keyword_set(oldfile)) then begin ; For files without position
     readu, lun, plane, t
   end else begin

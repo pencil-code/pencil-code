@@ -96,7 +96,7 @@ endif
 if (keyword_set(global_scaling)) then begin
   first=1L
   openr, lun, file_slice, /f77, /get_lun
-  while (not eof(1)) do begin
+  while (not eof(lun)) do begin
     if (keyword_set(OLDFILE)) then begin ; For files without position
       readu, lun, plane, t
     endif else begin
@@ -186,7 +186,7 @@ istride=stride ;(make sure the first one is written)
 ;
 it=0
 openr, lun, file_slice, /f77, /get_lun
-while (not eof(1)) do begin
+while (not eof(lun)) do begin
   if (extension eq 'xy') then begin
     axz=fltarr(nx,ny)*one
   endif else if (extension eq 'xz') then begin

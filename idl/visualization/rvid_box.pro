@@ -244,7 +244,7 @@ if (keyword_set(global_scaling)) then begin
   openr, lun_3, file_slice3, /f77, /get_lun, swap_endian=swap_endian
   openr, lun_4, file_slice4, /f77, /get_lun, swap_endian=swap_endian
 ;
-  while (not eof(1)) do begin
+  while (not eof(lun)) do begin
 ;
     readu, lun_1, xy2, t, slice_z2pos
     readu, lun_2, xy, t, slice_zpos
@@ -301,9 +301,9 @@ openr, lun_4, file_slice4, /f77, /get_lun, swap_endian=swap_endian
 ;
 islice=0L
 ;
-while ( (not eof(1)) and (t le tmax) ) do begin
+while ((not eof(lun)) and (t le tmax)) do begin
 ;
-  if ( (t ge tmin) and (t le tmax) and (islice mod (stride+1) eq 0) ) then begin
+  if ((t ge tmin) and (t le tmax) and (islice mod (stride+1) eq 0)) then begin
     readu, lun_1, xy2, t, slice_z2pos
     readu, lun_2, xy, t, slice_zpos
     readu, lun_3, xz, t, slice_ypos
