@@ -465,208 +465,211 @@ GitHub SVN bridge.
    #+end_example
 
    #+begin_example
-     Simo Tuomisto             M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Frederick Gent            │ o Revised data to account for correction to chi-therm and nu-therm
-     Philippe Bourdin          │ o Moved replicated code of 'collect_grid' into Mpicomm, because this is independa
-     Philippe Bourdin          │ o Fixed some stupid mistakes in the MPI-IO and simplified error handling.
-     Philippe Bourdin          │ o g95 v0.92 will not compile 'file_io_f2003' in its current state, reverting the
-     Philippe Bourdin          │ o Bug in gfortran below 4.8 prevents from allocating variable-length strings, put
-     Philippe Bourdin          │ o Moved "0d-tests/reactive_particles" to where it belongs.
-     Philippe Bourdin          │ o Fixed indentation.
-     Philippe Bourdin          │ o Adding the 'corona' autotest one level higher, want to test it with the hourly
-     Axel Brandenburg          │ o merged my changes of the Summer in experimental/meanfield.f90 (and checked in i
-     Philippe Bourdin          │ o Lets see if the new IO modules work everywhere as expected...
-     Frederick Gent            │ M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Philippe Bourdin          │ │ o We explicitly want to allow missing namelists in "data/param.nml". This shoul
-     Frederick Gent            │ o │ New sample data to account for correction to chi calc in entropy
-     Frederick Gent            │ M─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Jörn Warnecke             │ │ o─┘ joern: fixed some errors
-     Frederick Gent            │ M─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Jörn Warnecke             │ │ o─┘ removed some doubling of some subroutine
-     mrheinhardt               │ │ o MR: preparations for flux-limited diffusion
-     mrheinhardt               │ │ o MR: moved sqrt of characteristic velocity to equ; removed some comments
-     mrheinhardt               │ │ o MR: sqrt of characteristic velocity moved here
-     mrheinhardt               │ │ o MR: preparations for flux-limited diffusion
-     Jörn Warnecke             │ │ o joern+MR:More correction for slope limited diffusion
-     Iomsn                     │ │ o Make sure to skip nulls which are invalid.
-     Iomsn                     │ │ o Updated the default parameter for the field line integration to 'trilinear' i
-     Philippe Bourdin          │ │ o The autoexpansion functionality is now integrated in 'pc_autocorrect_config'.
-     Philippe Bourdin          │ │ o Added namelist-autoexpansion functionality from 'pc_autoexpand_config'.
-     Philippe Bourdin          │ │ o Shorten output on a namelist error.
-     Philippe Bourdin          │ │ o Namelist error shall never be wiped out.
-     Philippe Bourdin          │ │ o Fixed typo from 55aed70b759fd1908461f61f151380fa52433792.
-     Philippe Bourdin          │ │ o Need 'ltolerate_namelist_errors' as global parameter.
-     Philippe Bourdin          │ │ o Filtering out no-modules from modules list. Added some more comments.
-     Philippe Bourdin          │ │ o Making sure we have no recursive endless loop. Addded some comments.
-     Philippe Bourdin          │ │ o Added some comments for documentation.
-     Philippe Bourdin          │ │ o Added option '--no-autocorrect' to suppress autocorrection.
-     Jörn Warnecke             │ │ o added output and comment for slope limited diffusion
-     Philippe Bourdin          │ │ o Formatting.
-     Axel Brandenburg          │ │ o added settings for ekhi
-     Philippe Bourdin          │ │ o Added 'KEEP_RELOADING' within samples directories.
-     Iomsn                     │ │ o Removed redundant code.
-     Iomsn                     │ │ o Discard double fixed points.
-     Jörn Warnecke             │ │ o joern+MR: more on slope limited diffusion
-     Philippe Bourdin          │ │ o 'nu_shock_jump1' was used but not initialized. See also descriptions of bd102
-     Philippe Bourdin          │ │ o Removed 'nu_shock_jump1' varible and replaced with actual constant. It is hig
-     Philippe Bourdin          │ │ o Removed debug code, sorry.
-     mrheinhardt               │ │ o MR: added diffusive fluxes for 1D y and z setups
-     mrheinhardt               │ │ o MR: moved calc_diff_flux to sub.f90
-     Illa R. Losada            │ │ M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code Adding
-     Axel Brandenburg          │ │ │ o some corrections/modifications in hillrain
-     Axel Brandenburg          │ │ │ o removed 2 unused variables
-     Axel Brandenburg          │ │ │ o added Hill vortex rain as forcing
-     Axel Brandenburg          │ │ │ o two missing real :: nu_shock_jump1 entered
-     Philippe Bourdin          │ │ │ o Do not make a mess if another 'pencil-test' is already running in the very
-     Philippe Bourdin          │ │ │ M─┐ Finally fixed the last still broken autotest! 'nu_jump1' was simply not i
-     Philippe Bourdin          │ │ │ │ o Finally fixed the last still broken autotest! 'nu_jump1' was simply not i
-     Philippe Bourdin          │ │ │ o │ Removed spaces at EOL.
-     Jörn Warnecke             │ │ │ o │ More correction and additions for the slope limited diffusion,
-     Philippe Bourdin          │ │ │ o │ Moved experimental code to "src/experimental/".
-     Philippe Bourdin          │ │ │ o─┘ Removed "array temporaries", see also 2a73f3cea323f8c08d2824f7d5f5003d904
-     Philippe Bourdin          │ │ │ o Fixed some "array temporaries", see also 2a73f3cea323f8c08d2824f7d5f5003d90
-     Philippe Bourdin          │ │ │ o Added some missing "intent(in)" for 'inear'.
-     Philippe Bourdin          │ │ │ o Fixing two runtime-warnings ("An array temporary was created for argument '
-     mrheinhardt               │ │ │ o MR: added a phase to enforced vertical shear profile; correction in calcula
-     Illa R. Losada            │ │ o │ Adding components of the current helicity tensor.
-     Frederick Gent            │ o │ │ thermo hydrostatic equilibrium ISM still under construction
-     Frederick Gent            │ o │ │ added sound speed dependent resistivity for ISM turbulence
-     Frederick Gent            │ o │ │ Streamline lheatc_chitherm
-     Frederick Gent            │ o │ │ Cleaned up duplicate
-     Frederick Gent            │ o │ │ Relabelled iheatcool as inetcool
-     Frederick Gent            │ o │ │ added comment at top of module
-     Frederick Gent            │ o │ │ Added missing term for gradient of chi in thermally dependent conduction
-     Frederick Gent            │ o │ │ Completed calculation of density, and magnetic field
-     Frederick Gent            │ o │ │ Minor edit to print statement
-     Simo Tuomisto             o │ │ │ pc_meanfield_collect: Fixed some bugs and removed line writes
-     Simo Tuomisto             M─│─│─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Philippe Bourdin          │ │ │ o─┘ New tool 'pc_autoexpand_config' automatically fills in missing namelists
-     Philippe Bourdin          │ │ │ o Fixed error message.
-     Philippe Bourdin          │ │ │ o Fixed error message.
-     Philippe Bourdin          │ │ │ M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Chao-Chin Yang            │ │ │ │ o Prevent t - dt < 0, which sometimes happens.
-     Philippe Bourdin          │ │ │ │ o This was presumably debug code and should not be checked in. Joern, pleas
-     Jörn Warnecke             │ │ │ │ o more correction for slope limited diffusion
-     Jörn Warnecke             │ │ │ │ o minor change to make to code compile again
-     mrheinhardt               │ │ │ │ o MR: more corrections for slope-limited diffusion
-     mrheinhardt               │ │ │ │ o MR: corrected for use of iFF_char_c: pointer to the slot for characterist
-     mrheinhardt               │ │ │ │ o MR: corrected staggered 4th order derivative
-     Philippe Bourdin          │ │ │ o │ Fixed missing namelist.
-     Philippe Bourdin          │ │ │ o─┘ Removed ugly hack with 'lstart' and introduced new 'lparam_nml' to indica
-     Philippe Bourdin          │ │ │ o The idea in e9285e2c3c751f789620646cd15db4edc6d612a0 could not work, becaus
-     Philippe Bourdin          │ │ │ o Need to tolerate namelist error for 'param.nml' for backwards-compatibility
-     Philippe Bourdin          │ │ │ o Seems we need larger lines...
-     Philippe Bourdin          │ │ │ o Formatting.
-     Philippe Bourdin          │ │ │ o Added missing namelist.
-     Philippe Bourdin          │ │ │ o Need to lower-case also the namelist name provided by the source code.
-     Philippe Bourdin          │ │ │ o Formatting.
-     mrheinhardt               │ │ │ o MR: some corrections to the slope-limited diffusion scheme
-     Philippe Bourdin          │ │ │ o Need to export the new function 'find_namelist' as public.
-     Philippe Bourdin          │ │ │ o Added routine to check for the existence of a namelist before actually tryi
-     Philippe Bourdin          │ │ │ o Added 'lstreamlines' in order to prevent missing namelist errors for setups
-     Philippe Bourdin          │ │ │ o Added forgotten 'lstreamlines', so that the nostreamlines-module will not t
-     Philippe Bourdin          │ │ │ o Removed unneeded line.
-     Philippe Bourdin          │ │ │ o Added funtion to lower-case a string.
-     Philippe Bourdin          │ │ │ o Formatting.
-     Philippe Bourdin          │ │ │ o Replaced with proper operators.
-     Philippe Bourdin          │ │ │ M─┐ Another annoying merge branch 'master' of https://github.com/pencil-code/
-     Frederick Gent            │ │ │ │ M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     Frederick Gent            │ │ │ │ o │ Removed obsolete i that broke the autotest
-     Philippe Bourdin          │ │ │ o │ │ Slowly adapting to the current state of the File_IO modules - still unf
-     Philippe Bourdin          │ │ │ o─│─┘ Formatting.
-     Dhrubaditya MITRA         │ │ │ o─┘ If the electric field was to be stored as auxiliary, there was a confusio
-     Philippe Bourdin          │ │ │ M─┐ Annoying merge branch 'master' of https://github.com/pencil-code/pencil-c
-     Jörn Warnecke             │ │ │ │ o some minor correction to slope limited diffusion
-     Philippe Bourdin          │ │ │ o │ Added general interface 'mpibcast' for MPI-broadcasts in any types.
-     mrheinhardt               │ │ │ o─┘ MR: bug fixed
-     Philippe Bourdin          │ │ │ o Same as 51518940fe1b344d98e741bd9925d482a9ee5a97.
-     Philippe Bourdin          │ │ │ o This should fix the Norlx51b daily G95 autotest. The problem was that 't_sp
-     mrheinhardt               │ │ │ o MR: missing dummy added
-     mrheinhardt               │ │ │ o MR: fixed bug
-     mrheinhardt               │ │ │ o MR: fixed bug, added missing dummy
-     mrheinhardt               │ │ │ o MR: added missing dummies
-     Philippe Bourdin          │ │ │ o Removed debug output.
-     Jörn Warnecke             │ │ │ o More on characteric velocity
-     mrheinhardt               │ │ │ o MR: corrected last commit
-     mrheinhardt               │ │ │ o MR: putlnrho for scalar argument added
-     Jörn Warnecke             │ │ │ o minor
-     Jörn Warnecke             │ │ │ o more on slope limited diffusion
-     mrheinhardt               │ │ │ o MR: more for char velocity calc
-     mrheinhardt               │ │ │ o MR: more for char velocity calc
-     mrheinhardt               │ │ │ o MR: morefor calc of characteriistic velocity
-     Iomsn                     │ │ │ o Changed core parallelization from using threads to multiprocessing library.
-     Jörn Warnecke             │ │ │ o more stuff for slope limited diffusion
-     mrheinhardt               │ │ │ o MR: more for flux-limited diffusion
-     Jörn Warnecke             │ │ │ o corrected for the case of using /trimxyz
-     Jörn Warnecke             │ │ │ o minor corrections
-     Frederick Gent            │ │ │ M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
-     mrheinhardt               │ │ │ │ o MR: added 4th order scheme which calculates first derivative on centered
-     mrheinhardt               │ │ │ │ o MR: added missing dummy
-     Iomsn                     │ │ │ │ o Added  time series to the fixed point finding routine.
-     mrheinhardt               │ │ │ │ o MR+JW+FG:More correction to the slope limited diffusion. Still in testing
-     Iomsn                     │ │ │ │ o Corrected case for small values of the Jacobian determinand int he null p
-     Iomsn                     │ │ │ │ o Import of h5py library is now semi optional. Return warning message.
-     Iomsn                     │ │ │ │ o Corrected the sign of the field integration for the spines.
-     mrheinhardt               │ │ │ │ o MR: changes for slope-limited diffusion
-     Jörn Warnecke             │ │ │ │ o add one comment
-     mrheinhardt               │ │ │ │ o MR: prepared for slope-limited diffusion
-     mrheinhardt               │ │ │ │ o MR: optimized storage use for slope-limited diffusion
-     Philippe Bourdin          │ │ │ │ o Fixed typo.
-     Philippe Bourdin          │ │ │ │ o Identical, but more readable code.
-     Philippe Bourdin          │ │ │ │ o Fixed computation of the necessary iproc numbers. This should fix Petri's
-     Jörn Warnecke             │ │ │ │ o added comment for flux limited diffusion
-     Jörn Warnecke             │ │ │ │ o some correction to slope limited diffusion
-     Philippe Bourdin          │ │ │ │ o Fixed one error.
-     Dhrubaditya MITRA         │ │ │ │ o Includes optional Stokes drag and also the option of running with several
-     Dhrubaditya MITRA         │ │ │ │ o The reference file is changed too.
-     Dhrubaditya MITRA         │ │ │ │ o New version of the sample this time with particles_radius included.
-     Chao-Chin Yang            │ │ │ │ o Fix an indexing error in the boundary condition.
-     Chao-Chin Yang            │ │ │ │ o No need to initialize bspline when nygrid > 1.
-     mrheinhardt               │ │ │ │ o MR: changes for slope-limited diffusion
-     Iomsn                     │ │ │ │ o Added fixed_points to the python init file.
-     Iomsn                     │ │ │ │ o Added interpolation routine for compatability with the streamline module.
-     Iomsn                     │ │ │ │ o Changed some variable names to conform to conventions.
-     Iomsn                     │ │ │ │ o Corrected poincare member.
-     Philippe Bourdin          │ │ │ │ o Minor (small letters for function names can be crucial on case-sensitive
-     Petri Käpylä              │ │ │ │ o Fix broken IDL read-routines: dimensions need to be read before they can
-     Philippe Bourdin          │ │ │ │ o Added inverse of the Alfvén velocity. This allows to compute the Alfvén t
-     Philippe Bourdin          │ │ │ │ o Extracted replicated code into separate procedures. Please, someone with
-     Philippe Bourdin          │ │ │ │ o Added Alfvén velocity to list of available quantities.
-     Philippe Bourdin          │ │ │ │ o Added x- and y-components of the impulse density.
-     Iomsn                     │ │ │ │ o Added fixed point finding routine. Needs some fixing to work correctly.
-     Iomsn                     │ │ │ │ o Confirming now to POP8 convention.
-     Iomsn                     │ │ │ │ o Added/updated tracer writing and reading routine.
-     Iomsn                     │ │ │ │ o Added tracers routine into pencilnew.
-     Iomsn                     │ │ │ │ o Clean up in the streamline tracer routine.
-     Iomsn                     │ │ │ │ o Added streamlinne routines to the new python modules.
-     Iomsn                     │ │ │ │ o Check the Jacobian determinant during the null point finding process.
-     Chao-Chin Yang            │ │ │ │ o Fix a bug in gentle forcing in selfgravity.
-     Jonas Krueger             │ │ │ │ o changed the standard value for the calculation of the sherwood number to
-     Iomsn                     │ │ │ │ o Some clean up of the routines.
-     Iomsn                     │ │ │ │ o Fixed isse with the connectivity matrix when vertices are deleted.
-     Philippe Bourdin          │ │ │ │ o Adapted Sven's 74cb51af7c1208ad6065bd1f03ef9e4dabcbdb23 for the other IO
-     Philippe Bourdin          │ │ │ │ o Fixed 74cb51af7c1208ad6065bd1f03ef9e4dabcbdb23, should fix compiling of '
-     Philippe Bourdin          │ │ │ │ o With SVN this would not have been possible...
-     Philippe Bourdin          │ │ │ │ o I don't really see, why GIT is unable to merge properly... So I need to c
-     Philippe Bourdin          │ │ │ │ o No idea what GIT found to be different, here - maybe spaces at EOL?
-     Sven Bingert              │ │ │ │ o went back to the old version
-     System Administrator      │ │ │ │ M─┐ Update Merge branch 'master' of https://github.com/pencil-code/pencil-c
-     Wolfgang Dobler           │ │ │ │ │ o Revert "Make config for Norlx51b work."
-     Wolfgang Dobler           │ │ │ │ │ o Use Makefile.src, not Makefile when building with pc_build.
-     Wolfgang Dobler           │ │ │ │ │ o Encapsulate 'make' calls in a function.
-     Iomsn                     │ │ │ │ │ o Do not trace separatrices if the Jacobian is singular.
-     Sven Bingert              │ │ │ │ o │ try to fix for the case when nxcpu=nycpu=nzcpu=1
-     Sven Bingert              │ │ │ │ M─│─┐ get new code Merge branch 'master' of https://github.com/pencil-code/
-     Sven Bingert              │ │ │ │ o │ │ for testing
-     Sven Bingert              │ │ │ │ o │ │ for testing
-     Frederick Gent            │ │ │ o │ │ │ modified sample not part of auto test
-     Frederick Gent            │ │ │ o │ │ │ New header comment
-     Frederick Gent            │ │ │ o │ │ │ Added amplaa to init pars
-     Simo Tuomisto             o │ │ │ │ │ │ pc_meanfield_collect: Fixed issue with parallel HDF dataset closing.
-     Chao-Chin Yang            o─│─│─│─│─┘ │ Relieve a time step constraint for particles.
-     Dhrubaditya MITRA         o │ │ │ │ ┌─┘ Added the missing file. Thanks Matthius.
-     mrheinhardt               o │ │ │ │ │ MR: added empty file to fix the auto-test
-     Axel Brandenburg          o │ │ │ │ │ Hill vortex added
+     Iomsn                o Added time series for the fixed points.
+     Jörn Warnecke        o add new time step calculation for slope limited diffusion
+     Philippe Bourdin     o Added comments about which line will not work with which compiler version.
+     Simo Tuomisto        M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     Frederick Gent       │ o Revised data to account for correction to chi-therm and nu-therm
+     Philippe Bourdin     │ o Moved replicated code of 'collect_grid' into Mpicomm, because this is independa
+     Philippe Bourdin     │ o Fixed some stupid mistakes in the MPI-IO and simplified error handling.
+     Philippe Bourdin     │ o g95 v0.92 will not compile 'file_io_f2003' in its current state, reverting the
+     Philippe Bourdin     │ o Bug in gfortran below 4.8 prevents from allocating variable-length strings, put
+     Philippe Bourdin     │ o Moved "0d-tests/reactive_particles" to where it belongs.
+     Philippe Bourdin     │ o Fixed indentation.
+     Philippe Bourdin     │ o Adding the 'corona' autotest one level higher, want to test it with the hourly
+     Axel Brandenburg     │ o merged my changes of the Summer in experimental/meanfield.f90 (and checked in i
+     Philippe Bourdin     │ o Lets see if the new IO modules work everywhere as expected...
+     Frederick Gent       │ M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     Philippe Bourdin     │ │ o We explicitly want to allow missing namelists in "data/param.nml". This shoul
+     Frederick Gent       │ o │ New sample data to account for correction to chi calc in entropy
+     Frederick Gent       │ M─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     Jörn Warnecke        │ │ o─┘ joern: fixed some errors
+     Frederick Gent       │ M─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     Jörn Warnecke        │ │ o─┘ removed some doubling of some subroutine
+     mrheinhardt          │ │ o MR: preparations for flux-limited diffusion
+     mrheinhardt          │ │ o MR: moved sqrt of characteristic velocity to equ; removed some comments
+     mrheinhardt          │ │ o MR: sqrt of characteristic velocity moved here
+     mrheinhardt          │ │ o MR: preparations for flux-limited diffusion
+     Jörn Warnecke        │ │ o joern+MR:More correction for slope limited diffusion
+     Iomsn                │ │ o Make sure to skip nulls which are invalid.
+     Iomsn                │ │ o Updated the default parameter for the field line integration to 'trilinear' i
+     Philippe Bourdin     │ │ o The autoexpansion functionality is now integrated in 'pc_autocorrect_config'.
+     Philippe Bourdin     │ │ o Added namelist-autoexpansion functionality from 'pc_autoexpand_config'.
+     Philippe Bourdin     │ │ o Shorten output on a namelist error.
+     Philippe Bourdin     │ │ o Namelist error shall never be wiped out.
+     Philippe Bourdin     │ │ o Fixed typo from 55aed70b759fd1908461f61f151380fa52433792.
+     Philippe Bourdin     │ │ o Need 'ltolerate_namelist_errors' as global parameter.
+     Philippe Bourdin     │ │ o Filtering out no-modules from modules list. Added some more comments.
+     Philippe Bourdin     │ │ o Making sure we have no recursive endless loop. Addded some comments.
+     Philippe Bourdin     │ │ o Added some comments for documentation.
+     Philippe Bourdin     │ │ o Added option '--no-autocorrect' to suppress autocorrection.
+     Jörn Warnecke        │ │ o added output and comment for slope limited diffusion
+     Philippe Bourdin     │ │ o Formatting.
+     Axel Brandenburg     │ │ o added settings for ekhi
+     Philippe Bourdin     │ │ o Added 'KEEP_RELOADING' within samples directories.
+     Iomsn                │ │ o Removed redundant code.
+     Iomsn                │ │ o Discard double fixed points.
+     Jörn Warnecke        │ │ o joern+MR: more on slope limited diffusion
+     Philippe Bourdin     │ │ o 'nu_shock_jump1' was used but not initialized. See also descriptions of bd102
+     Philippe Bourdin     │ │ o Removed 'nu_shock_jump1' varible and replaced with actual constant. It is hig
+     Philippe Bourdin     │ │ o Removed debug code, sorry.
+     mrheinhardt          │ │ o MR: added diffusive fluxes for 1D y and z setups
+     mrheinhardt          │ │ o MR: moved calc_diff_flux to sub.f90
+     Illa R. Losada       │ │ M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code Adding
+     Axel Brandenburg     │ │ │ o some corrections/modifications in hillrain
+     Axel Brandenburg     │ │ │ o removed 2 unused variables
+     Axel Brandenburg     │ │ │ o added Hill vortex rain as forcing
+     Axel Brandenburg     │ │ │ o two missing real :: nu_shock_jump1 entered
+     Philippe Bourdin     │ │ │ o Do not make a mess if another 'pencil-test' is already running in the very
+     Philippe Bourdin     │ │ │ M─┐ Finally fixed the last still broken autotest! 'nu_jump1' was simply not i
+     Philippe Bourdin     │ │ │ │ o Finally fixed the last still broken autotest! 'nu_jump1' was simply not i
+     Philippe Bourdin     │ │ │ o │ Removed spaces at EOL.
+     Jörn Warnecke        │ │ │ o │ More correction and additions for the slope limited diffusion,
+     Philippe Bourdin     │ │ │ o │ Moved experimental code to "src/experimental/".
+     Philippe Bourdin     │ │ │ o─┘ Removed "array temporaries", see also 2a73f3cea323f8c08d2824f7d5f5003d904
+     Philippe Bourdin     │ │ │ o Fixed some "array temporaries", see also 2a73f3cea323f8c08d2824f7d5f5003d90
+     Philippe Bourdin     │ │ │ o Added some missing "intent(in)" for 'inear'.
+     Philippe Bourdin     │ │ │ o Fixing two runtime-warnings ("An array temporary was created for argument '
+     mrheinhardt          │ │ │ o MR: added a phase to enforced vertical shear profile; correction in calcula
+     Illa R. Losada       │ │ o │ Adding components of the current helicity tensor.
+     Frederick Gent       │ o │ │ thermo hydrostatic equilibrium ISM still under construction
+     Frederick Gent       │ o │ │ added sound speed dependent resistivity for ISM turbulence
+     Frederick Gent       │ o │ │ Streamline lheatc_chitherm
+     Frederick Gent       │ o │ │ Cleaned up duplicate
+     Frederick Gent       │ o │ │ Relabelled iheatcool as inetcool
+     Frederick Gent       │ o │ │ added comment at top of module
+     Frederick Gent       │ o │ │ Added missing term for gradient of chi in thermally dependent conduction
+     Frederick Gent       │ o │ │ Completed calculation of density, and magnetic field
+     Frederick Gent       │ o │ │ Minor edit to print statement
+     Simo Tuomisto        o │ │ │ pc_meanfield_collect: Fixed some bugs and removed line writes
+     Simo Tuomisto        M─│─│─│─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     Philippe Bourdin     │ │ │ o─┘ New tool 'pc_autoexpand_config' automatically fills in missing namelists
+     Philippe Bourdin     │ │ │ o Fixed error message.
+     Philippe Bourdin     │ │ │ o Fixed error message.
+     Philippe Bourdin     │ │ │ M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     Chao-Chin Yang       │ │ │ │ o Prevent t - dt < 0, which sometimes happens.
+     Philippe Bourdin     │ │ │ │ o This was presumably debug code and should not be checked in. Joern, pleas
+     Jörn Warnecke        │ │ │ │ o more correction for slope limited diffusion
+     Jörn Warnecke        │ │ │ │ o minor change to make to code compile again
+     mrheinhardt          │ │ │ │ o MR: more corrections for slope-limited diffusion
+     mrheinhardt          │ │ │ │ o MR: corrected for use of iFF_char_c: pointer to the slot for characterist
+     mrheinhardt          │ │ │ │ o MR: corrected staggered 4th order derivative
+     Philippe Bourdin     │ │ │ o │ Fixed missing namelist.
+     Philippe Bourdin     │ │ │ o─┘ Removed ugly hack with 'lstart' and introduced new 'lparam_nml' to indica
+     Philippe Bourdin     │ │ │ o The idea in e9285e2c3c751f789620646cd15db4edc6d612a0 could not work, becaus
+     Philippe Bourdin     │ │ │ o Need to tolerate namelist error for 'param.nml' for backwards-compatibility
+     Philippe Bourdin     │ │ │ o Seems we need larger lines...
+     Philippe Bourdin     │ │ │ o Formatting.
+     Philippe Bourdin     │ │ │ o Added missing namelist.
+     Philippe Bourdin     │ │ │ o Need to lower-case also the namelist name provided by the source code.
+     Philippe Bourdin     │ │ │ o Formatting.
+     mrheinhardt          │ │ │ o MR: some corrections to the slope-limited diffusion scheme
+     Philippe Bourdin     │ │ │ o Need to export the new function 'find_namelist' as public.
+     Philippe Bourdin     │ │ │ o Added routine to check for the existence of a namelist before actually tryi
+     Philippe Bourdin     │ │ │ o Added 'lstreamlines' in order to prevent missing namelist errors for setups
+     Philippe Bourdin     │ │ │ o Added forgotten 'lstreamlines', so that the nostreamlines-module will not t
+     Philippe Bourdin     │ │ │ o Removed unneeded line.
+     Philippe Bourdin     │ │ │ o Added funtion to lower-case a string.
+     Philippe Bourdin     │ │ │ o Formatting.
+     Philippe Bourdin     │ │ │ o Replaced with proper operators.
+     Philippe Bourdin     │ │ │ M─┐ Another annoying merge branch 'master' of https://github.com/pencil-code/
+     Frederick Gent       │ │ │ │ M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     Frederick Gent       │ │ │ │ o │ Removed obsolete i that broke the autotest
+     Philippe Bourdin     │ │ │ o │ │ Slowly adapting to the current state of the File_IO modules - still unf
+     Philippe Bourdin     │ │ │ o─│─┘ Formatting.
+     Dhrubaditya MITRA    │ │ │ o─┘ If the electric field was to be stored as auxiliary, there was a confusio
+     Philippe Bourdin     │ │ │ M─┐ Annoying merge branch 'master' of https://github.com/pencil-code/pencil-c
+     Jörn Warnecke        │ │ │ │ o some minor correction to slope limited diffusion
+     Philippe Bourdin     │ │ │ o │ Added general interface 'mpibcast' for MPI-broadcasts in any types.
+     mrheinhardt          │ │ │ o─┘ MR: bug fixed
+     Philippe Bourdin     │ │ │ o Same as 51518940fe1b344d98e741bd9925d482a9ee5a97.
+     Philippe Bourdin     │ │ │ o This should fix the Norlx51b daily G95 autotest. The problem was that 't_sp
+     mrheinhardt          │ │ │ o MR: missing dummy added
+     mrheinhardt          │ │ │ o MR: fixed bug
+     mrheinhardt          │ │ │ o MR: fixed bug, added missing dummy
+     mrheinhardt          │ │ │ o MR: added missing dummies
+     Philippe Bourdin     │ │ │ o Removed debug output.
+     Jörn Warnecke        │ │ │ o More on characteric velocity
+     mrheinhardt          │ │ │ o MR: corrected last commit
+     mrheinhardt          │ │ │ o MR: putlnrho for scalar argument added
+     Jörn Warnecke        │ │ │ o minor
+     Jörn Warnecke        │ │ │ o more on slope limited diffusion
+     mrheinhardt          │ │ │ o MR: more for char velocity calc
+     mrheinhardt          │ │ │ o MR: more for char velocity calc
+     mrheinhardt          │ │ │ o MR: morefor calc of characteriistic velocity
+     Iomsn                │ │ │ o Changed core parallelization from using threads to multiprocessing library.
+     Jörn Warnecke        │ │ │ o more stuff for slope limited diffusion
+     mrheinhardt          │ │ │ o MR: more for flux-limited diffusion
+     Jörn Warnecke        │ │ │ o corrected for the case of using /trimxyz
+     Jörn Warnecke        │ │ │ o minor corrections
+     Frederick Gent       │ │ │ M─┐ Merge branch 'master' of https://github.com/pencil-code/pencil-code
+     mrheinhardt          │ │ │ │ o MR: added 4th order scheme which calculates first derivative on centered
+     mrheinhardt          │ │ │ │ o MR: added missing dummy
+     Iomsn                │ │ │ │ o Added  time series to the fixed point finding routine.
+     mrheinhardt          │ │ │ │ o MR+JW+FG:More correction to the slope limited diffusion. Still in testing
+     Iomsn                │ │ │ │ o Corrected case for small values of the Jacobian determinand int he null p
+     Iomsn                │ │ │ │ o Import of h5py library is now semi optional. Return warning message.
+     Iomsn                │ │ │ │ o Corrected the sign of the field integration for the spines.
+     mrheinhardt          │ │ │ │ o MR: changes for slope-limited diffusion
+     Jörn Warnecke        │ │ │ │ o add one comment
+     mrheinhardt          │ │ │ │ o MR: prepared for slope-limited diffusion
+     mrheinhardt          │ │ │ │ o MR: optimized storage use for slope-limited diffusion
+     Philippe Bourdin     │ │ │ │ o Fixed typo.
+     Philippe Bourdin     │ │ │ │ o Identical, but more readable code.
+     Philippe Bourdin     │ │ │ │ o Fixed computation of the necessary iproc numbers. This should fix Petri's
+     Jörn Warnecke        │ │ │ │ o added comment for flux limited diffusion
+     Jörn Warnecke        │ │ │ │ o some correction to slope limited diffusion
+     Philippe Bourdin     │ │ │ │ o Fixed one error.
+     Dhrubaditya MITRA    │ │ │ │ o Includes optional Stokes drag and also the option of running with several
+     Dhrubaditya MITRA    │ │ │ │ o The reference file is changed too.
+     Dhrubaditya MITRA    │ │ │ │ o New version of the sample this time with particles_radius included.
+     Chao-Chin Yang       │ │ │ │ o Fix an indexing error in the boundary condition.
+     Chao-Chin Yang       │ │ │ │ o No need to initialize bspline when nygrid > 1.
+     mrheinhardt          │ │ │ │ o MR: changes for slope-limited diffusion
+     Iomsn                │ │ │ │ o Added fixed_points to the python init file.
+     Iomsn                │ │ │ │ o Added interpolation routine for compatability with the streamline module.
+     Iomsn                │ │ │ │ o Changed some variable names to conform to conventions.
+     Iomsn                │ │ │ │ o Corrected poincare member.
+     Philippe Bourdin     │ │ │ │ o Minor (small letters for function names can be crucial on case-sensitive
+     Petri Käpylä         │ │ │ │ o Fix broken IDL read-routines: dimensions need to be read before they can
+     Philippe Bourdin     │ │ │ │ o Added inverse of the Alfvén velocity. This allows to compute the Alfvén t
+     Philippe Bourdin     │ │ │ │ o Extracted replicated code into separate procedures. Please, someone with
+     Philippe Bourdin     │ │ │ │ o Added Alfvén velocity to list of available quantities.
+     Philippe Bourdin     │ │ │ │ o Added x- and y-components of the impulse density.
+     Iomsn                │ │ │ │ o Added fixed point finding routine. Needs some fixing to work correctly.
+     Iomsn                │ │ │ │ o Confirming now to POP8 convention.
+     Iomsn                │ │ │ │ o Added/updated tracer writing and reading routine.
+     Iomsn                │ │ │ │ o Added tracers routine into pencilnew.
+     Iomsn                │ │ │ │ o Clean up in the streamline tracer routine.
+     Iomsn                │ │ │ │ o Added streamlinne routines to the new python modules.
+     Iomsn                │ │ │ │ o Check the Jacobian determinant during the null point finding process.
+     Chao-Chin Yang       │ │ │ │ o Fix a bug in gentle forcing in selfgravity.
+     Jonas Krueger        │ │ │ │ o changed the standard value for the calculation of the sherwood number to
+     Iomsn                │ │ │ │ o Some clean up of the routines.
+     Iomsn                │ │ │ │ o Fixed isse with the connectivity matrix when vertices are deleted.
+     Philippe Bourdin     │ │ │ │ o Adapted Sven's 74cb51af7c1208ad6065bd1f03ef9e4dabcbdb23 for the other IO
+     Philippe Bourdin     │ │ │ │ o Fixed 74cb51af7c1208ad6065bd1f03ef9e4dabcbdb23, should fix compiling of '
+     Philippe Bourdin     │ │ │ │ o With SVN this would not have been possible...
+     Philippe Bourdin     │ │ │ │ o I don't really see, why GIT is unable to merge properly... So I need to c
+     Philippe Bourdin     │ │ │ │ o No idea what GIT found to be different, here - maybe spaces at EOL?
+     Sven Bingert         │ │ │ │ o went back to the old version
+     System Administrator │ │ │ │ M─┐ Update Merge branch 'master' of https://github.com/pencil-code/pencil-c
+     Wolfgang Dobler      │ │ │ │ │ o Revert "Make config for Norlx51b work."
+     Wolfgang Dobler      │ │ │ │ │ o Use Makefile.src, not Makefile when building with pc_build.
+     Wolfgang Dobler      │ │ │ │ │ o Encapsulate 'make' calls in a function.
+     Iomsn                │ │ │ │ │ o Do not trace separatrices if the Jacobian is singular.
+     Sven Bingert         │ │ │ │ o │ try to fix for the case when nxcpu=nycpu=nzcpu=1
+     Sven Bingert         │ │ │ │ M─│─┐ get new code Merge branch 'master' of https://github.com/pencil-code/
+     Sven Bingert         │ │ │ │ o │ │ for testing
+     Sven Bingert         │ │ │ │ o │ │ for testing
+     Frederick Gent       │ │ │ o │ │ │ modified sample not part of auto test
+     Frederick Gent       │ │ │ o │ │ │ New header comment
+     Frederick Gent       │ │ │ o │ │ │ Added amplaa to init pars
+     Simo Tuomisto        o │ │ │ │ │ │ pc_meanfield_collect: Fixed issue with parallel HDF dataset closing.
+     Chao-Chin Yang       o─│─│─│─│─┘ │ Relieve a time step constraint for particles.
+     Dhrubaditya MITRA    o │ │ │ │ ┌─┘ Added the missing file. Thanks Matthius.
+     mrheinhardt          o │ │ │ │ │ MR: added empty file to fix the auto-test
+     Axel Brandenburg     o │ │ │ │ │ Hill vortex added
    #+end_example
 
    #+begin_example
