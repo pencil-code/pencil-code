@@ -148,76 +148,76 @@ module Dustdensity
 !
 !  Set ind to consecutive numbers nvar+1, nvar+2, ..., nvar+ndustspec.
 !
-      if (lroot .and. ndustspec/=1) then
-        open(3,file=trim(datadir)//'/index.pro', position='append')
-        write(3,*) 'nnd=',ndustspec
-        write(3,*) 'ind=indgen('//trim(itoa(ndustspec))//') + '//trim(itoa(ind(1)))
-        close(3)
-      endif
       do k=1,ndustspec
         sdust='['//trim(itoa(k-1))//']'
         if (ndustspec==1) sdust=''
         call farray_register_pde('nd'//sdust,ind_tmp)
         ind(k) = ind_tmp
       enddo
+      if (lroot .and. ndustspec/=1) then
+        open(3,file=trim(datadir)//'/index.pro', position='append')
+        write(3,*) 'nnd=',ndustspec
+        write(3,*) 'ind=indgen('//trim(itoa(ndustspec))//') + '//trim(itoa(ind(1)))
+        close(3)
+      endif
 !
 !  Register dust mass.
 !
       if (lmdvar) then
-        if (lroot .and. ndustspec/=1) then
-          open(3,file=trim(datadir)//'/index.pro', position='append')
-          write(3,*) 'nmd=',ndustspec
-          write(3,*) 'imd=indgen('//trim(itoa(ndustspec))//') + '//trim(itoa(imd(1)))
-          close(3)
-        endif
         do k=1,ndustspec
           sdust='['//trim(itoa(k-1))//']'
           if (ndustspec==1) sdust=''
           call farray_register_pde('md'//sdust,imd_tmp)
           imd(k) = imd_tmp
         enddo
+        if (lroot .and. ndustspec/=1) then
+          open(3,file=trim(datadir)//'/index.pro', position='append')
+          write(3,*) 'nmd=',ndustspec
+          write(3,*) 'imd=indgen('//trim(itoa(ndustspec))//') + '//trim(itoa(imd(1)))
+          close(3)
+        endif
       endif
 !
 !  Register ice mass.
 !
       if (lmice) then
-        if (lroot .and. ndustspec/=1) then
-          open(3,file=trim(datadir)//'/index.pro', position='append')
-          write(3,*) 'nmi=',ndustspec
-          write(3,*) 'imi=indgen('//trim(itoa(ndustspec))//') + '//trim(itoa(imi(1)))
-          close(3)
-        endif
         do k=1,ndustspec
           sdust='['//trim(itoa(k-1))//']'
           if (ndustspec==1) sdust=''
           call farray_register_pde('mi'//sdust,imi_tmp)
           imd(k) = imi_tmp
         enddo
+        if (lroot .and. ndustspec/=1) then
+          open(3,file=trim(datadir)//'/index.pro', position='append')
+          write(3,*) 'nmi=',ndustspec
+          write(3,*) 'imi=indgen('//trim(itoa(ndustspec))//') + '//trim(itoa(imi(1)))
+          close(3)
+        endif
       endif
 !
 !  Register dust core distribution.
 !
       if (ldcore) then
 !
-      if (lroot .and. ndustspec/=1) then
-        open(3,file=trim(datadir)//'/index.pro', position='append')
-        write(3,*) 'ndc=',ndustspec
-        write(3,*) 'idc=indgen('//trim(itoa(ndustspec))//') + '//trim(itoa(idc(1)))
-        close(3)
-      endif
-!
 !  Is this executed in all cases? Why ndustspec0 here?
 !  *** WORK HERE: Someone please check and fix this...
 !
-      do k=1,ndustspec
-        sdust='['//trim(itoa(k-1))//']'
-        if (ndustspec==1) sdust=''
-        call farray_register_pde('dc'//sdust,dc_tmp,vector=ndustspec0)
-        idc(k) = dc_tmp
-        do i=1,ndustspec0
-          idcj(k,i) = idc(k)+i-1
+        do k=1,ndustspec
+          sdust='['//trim(itoa(k-1))//']'
+          if (ndustspec==1) sdust=''
+          call farray_register_pde('dc'//sdust,dc_tmp,vector=ndustspec0)
+          idc(k) = dc_tmp
+          do i=1,ndustspec0
+            idcj(k,i) = idc(k)+i-1
+          enddo
         enddo
-      enddo
+!
+        if (lroot .and. ndustspec/=1) then
+          open(3,file=trim(datadir)//'/index.pro', position='append')
+          write(3,*) 'ndc=',ndustspec
+          write(3,*) 'idc=indgen('//trim(itoa(ndustspec))//') + '//trim(itoa(idc(1)))
+          close(3)
+        endif
 !
       endif
 !
