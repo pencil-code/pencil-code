@@ -37,10 +37,10 @@
 !
 ! CPARAM logical, parameter :: lspecial = .true.
 !
-! MVAR CONTRIBUTION 2
+! MVAR CONTRIBUTION 4
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED mu5; theta5; del2mu5; gtheta5(3); ugtheta5; bgtheta5
+! PENCILS PROVIDED mu5; gmu5(3); theta5; del2mu5; gtheta5(3); uggtheta5(3); bgtheta5
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -89,6 +89,7 @@ module Special
    real :: meanmu5
    real, pointer :: eta
    integer :: igtheta5, imu5
+   logical :: lupw_gtheta5=.false.
    character (len=labellen) :: theta_prof='nothing'
 !!   integer :: ispecaux=0
 !
@@ -98,7 +99,7 @@ module Special
       initspecial, theta5_const, mu5_const
 !
   namelist /special_run_pars/ &
-      diffmu5, lambda5, theta_prof
+      diffmu5, lambda5, theta_prof, lupw_gtheta5
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -218,6 +219,7 @@ module Special
 !  18-07-06/tony: coded
 !
       lpenc_requested(i_mu5)=.true.
+      lpenc_requested(i_gmu5)=.true.
       lpenc_requested(i_theta5)=.true.
       if (diffmu5/=0.) lpenc_requested(i_del2mu5)=.true.
       if (lhydro) lpenc_requested(i_gtheta5)=.true.
@@ -249,7 +251,7 @@ module Special
 !
 !  24-nov-04/tony: coded
 !
-      use Sub, only: del2, grad, dot
+      use Sub, only: del2, grad, dot, u_dot_grad
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -260,10 +262,10 @@ module Special
 !  del2mu5
 !
       if (lpencil(i_mu5)) p%mu5=f(l1:l2,m,n,imu5)
-      if (lpencil(i_theta5)) p%theta5=f(l1:l2,m,n,igtheta5)
+      if (lpencil(i_gtheta5)) p%gtheta5=f(l1:l2,m,n,igtheta5:igtheta5+2)
+      if (lpencil(i_gmu5)) call grad(f,imu5,p%gmu5)
       if (lpencil(i_del2mu5)) call del2(f,imu5,p%del2mu5)
-      if (lpencil(i_gtheta5)) call grad(f,imu5,p%gtheta5)
-      if (lpencil(i_uggtheta5)) call dot(p%uu,p%gtheta5,p%ugtheta5)
+      if (lpencil(i_uggtheta5)) call u_dot_grad(f,iuu,p%uij,p%uu,p%uggtheta5,UPWIND=lupw_gtheta5)
       if (lpencil(i_bgtheta5)) call dot(p%bb,p%gtheta5,p%bgtheta5)
 !
     endsubroutine calc_pencils_special
@@ -294,7 +296,7 @@ module Special
       intent(inout) :: df
 !
       real, dimension (nx) :: dtheta5, EB
-      real, dimension (nx,3) :: ubgtheta5, dtheta5_bb, mu5bb, uxbbgtheta5
+      real, dimension (nx,3) :: dtheta5_bb, mu5bb, uxbbgtheta5, ubgtheta5, utransgtheta5
       real, parameter :: alpha_fine_structure=1./137.
 !
 !  Identify module and boundary conditions.
@@ -316,7 +318,8 @@ module Special
 !
       if (lhydro) then
         call dot_mn_vm_trans(p%gtheta5,p%uij,utransgtheta5)
-        df(l1:l2,m,n,igtheta5:igtheta5+2)=df(l1:l2,m,n,igtheta5:igtheta5+2)-p%uggtheta5-utransgtheta5+p%gmu5 &
+        df(l1:l2,m,n,igtheta5:igtheta5+2)=df(l1:l2,m,n,igtheta5:igtheta5+2) &
+         -p%uggtheta5-utransgtheta5+p%gmu5
       endif
 !      print*,       df(l1:l2,m,n,igtheta5), f(l1:l2,m,n,igtheta5)
 !
