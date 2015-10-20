@@ -80,7 +80,7 @@ module Special
 !
   implicit none
 !
-  include 'special.h'
+  include '../special.h'
 !
   real :: gravz_boussinesq=0., gravz_boussinesq_lnrho=0., betaz_boussinesq=0.
 !
