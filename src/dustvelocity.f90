@@ -138,7 +138,8 @@ module Dustvelocity
 !
       if (lroot .and. ndustspec/=1) then
         open(3,file=trim(datadir)//'/index.pro', position='append')
-        write(3,*) 'iuud=intarr('//trim(itoa(ndustspec))//')'
+        write(3,*) 'nuud=',ndustspec
+        write(3,*) 'iuud=indgen('//trim(itoa(ndustspec))//')*3 + '//trim(itoa(iuud(1)))
         close(3)
       endif
 !

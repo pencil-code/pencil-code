@@ -150,7 +150,8 @@ module Dustdensity
 !
       if (lroot .and. ndustspec/=1) then
         open(3,file=trim(datadir)//'/index.pro', position='append')
-        write(3,*) 'ind=intarr('//trim(itoa(ndustspec))//')'
+        write(3,*) 'nnd=',ndustspec
+        write(3,*) 'ind=indgen('//trim(itoa(ndustspec))//') + '//trim(itoa(ind(1)))
         close(3)
       endif
       do k=1,ndustspec
@@ -165,7 +166,8 @@ module Dustdensity
       if (lmdvar) then
         if (lroot .and. ndustspec/=1) then
           open(3,file=trim(datadir)//'/index.pro', position='append')
-          write(3,*) 'imd=intarr('//trim(itoa(ndustspec))//')'
+          write(3,*) 'nmd=',ndustspec
+          write(3,*) 'imd=indgen('//trim(itoa(ndustspec))//') + '//trim(itoa(imd(1)))
           close(3)
         endif
         do k=1,ndustspec
@@ -181,7 +183,8 @@ module Dustdensity
       if (lmice) then
         if (lroot .and. ndustspec/=1) then
           open(3,file=trim(datadir)//'/index.pro', position='append')
-          write(3,*) 'imi=intarr('//trim(itoa(ndustspec))//')'
+          write(3,*) 'nmi=',ndustspec
+          write(3,*) 'imi=indgen('//trim(itoa(ndustspec))//') + '//trim(itoa(imi(1)))
           close(3)
         endif
         do k=1,ndustspec
@@ -198,7 +201,8 @@ module Dustdensity
 !
       if (lroot .and. ndustspec/=1) then
         open(3,file=trim(datadir)//'/index.pro', position='append')
-        write(3,*) 'idc=intarr('//trim(itoa(ndustspec))//')'
+        write(3,*) 'ndc=',ndustspec
+        write(3,*) 'idc=indgen('//trim(itoa(ndustspec))//') + '//trim(itoa(idc(1)))
         close(3)
       endif
 !
