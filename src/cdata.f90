@@ -635,11 +635,6 @@ module Cdata
   logical :: lrescaling_testscalar=.false.
   logical :: lrescaling_testfield=.false.
 !
-!  Allow particles modules to do something special with f; like calculating
-!  the full vorticity field (see equ.f90:pde)
-!
-  logical :: lparticles_prepencil_calc = .false.
-!
 ! Also to insert particles at specific times
 !
   logical :: lparticles_insert

@@ -310,7 +310,7 @@ module Timestep
                      leos_ionization.or.lradiation_ray.or. &
                      lhyperviscosity_strict.or.lhyperresistivity_strict.or. &
                      ltestscalar.or.ltestfield.or.ltestflow.or. &
-                     lparticles_prepencil_calc.or.lsolid_cells.or. &
+                     lparticles_spin.or.lsolid_cells.or. &
                      lchemistry.or.lweno_transport
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.
