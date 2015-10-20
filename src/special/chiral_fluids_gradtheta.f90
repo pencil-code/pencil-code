@@ -40,7 +40,8 @@
 ! MVAR CONTRIBUTION 4
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED mu5; gmu5(3); theta5; del2mu5; gtheta5(3); uggtheta5(3); bgtheta5
+! PENCILS PROVIDED mu5; gmu5(3); del2mu5
+! PENCILS PROVIDED gtheta5(3); gtheta5ij(3,3); uggtheta5(3); bgtheta5
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -105,8 +106,7 @@ module Special
 !
   integer :: idiag_mu5m=0      ! DIAG_DOC: $\left<\mu_5\right>$
   integer :: idiag_mu5rms=0    ! DIAG_DOC: $\left<\mu_5^2\right>^{1/2}$
-  integer :: idiag_theta5m=0   ! DIAG_DOC: $\left<\theta_5\right>$
-  integer :: idiag_theta5rms=0 ! DIAG_DOC: $\left<\theta_5^2\right>^{1/2}$
+  integer :: idiag_gtheta5rms=0! DIAG_DOC: $\left<(\nabla\theta_5)^2\right>^{1/2}$
 !
   contains
 !***********************************************************************
@@ -220,9 +220,9 @@ module Special
 !
       lpenc_requested(i_mu5)=.true.
       lpenc_requested(i_gmu5)=.true.
-      lpenc_requested(i_theta5)=.true.
+      lpenc_requested(i_gtheta5)=.true.
+      lpenc_requested(i_gtheta5ij)=.true.
       if (diffmu5/=0.) lpenc_requested(i_del2mu5)=.true.
-      if (lhydro) lpenc_requested(i_gtheta5)=.true.
       if (lhydro) lpenc_requested(i_uggtheta5)=.true.
       if (lmagnetic) lpenc_requested(i_bgtheta5)=.true.
       if (lhydro) lpenc_requested(i_uu)=.true.
@@ -251,7 +251,7 @@ module Special
 !
 !  24-nov-04/tony: coded
 !
-      use Sub, only: del2, grad, dot, u_dot_grad
+      use Sub, only: del2, grad, dot, u_dot_grad, gij
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -263,9 +263,11 @@ module Special
 !
       if (lpencil(i_mu5)) p%mu5=f(l1:l2,m,n,imu5)
       if (lpencil(i_gtheta5)) p%gtheta5=f(l1:l2,m,n,igtheta5:igtheta5+2)
+      if (lpencil(i_gtheta5ij)) call gij(f,igtheta5,p%gtheta5ij,1)
       if (lpencil(i_gmu5)) call grad(f,imu5,p%gmu5)
       if (lpencil(i_del2mu5)) call del2(f,imu5,p%del2mu5)
-      if (lpencil(i_uggtheta5)) call u_dot_grad(f,iuu,p%uij,p%uu,p%uggtheta5,UPWIND=lupw_gtheta5)
+      if (lpencil(i_uggtheta5)) call u_dot_grad(f,igtheta5,p%gtheta5ij, &
+        p%uu,p%uggtheta5,UPWIND=lupw_gtheta5)
       if (lpencil(i_bgtheta5)) call dot(p%bb,p%gtheta5,p%bgtheta5)
 !
     endsubroutine calc_pencils_special
@@ -284,7 +286,7 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use Sub, only: multsv
+      use Sub, only: multsv, dot2_mn
       use Diagnostics, only: sum_mn_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -295,8 +297,9 @@ module Special
       intent(in) :: f,p
       intent(inout) :: df
 !
-      real, dimension (nx) :: dtheta5, EB
-      real, dimension (nx,3) :: dtheta5_bb, mu5bb, uxbbgtheta5, ubgtheta5, utransgtheta5
+      real, dimension (nx) :: dtheta5, gtheta52, EB
+      real, dimension (nx,3) :: mu5bb, dtheta5_bb, uxbbgtheta5, ubgtheta5
+      real, dimension (nx,3) :: uijtransgtheta5
       real, parameter :: alpha_fine_structure=1./137.
 !
 !  Identify module and boundary conditions.
@@ -317,9 +320,9 @@ module Special
 !  Evolution of theta5
 !
       if (lhydro) then
-        call dot_mn_vm_trans(p%gtheta5,p%uij,utransgtheta5)
+        call dot_mn_vm_trans(p%gtheta5,p%uij,uijtransgtheta5)
         df(l1:l2,m,n,igtheta5:igtheta5+2)=df(l1:l2,m,n,igtheta5:igtheta5+2) &
-         -p%uggtheta5-utransgtheta5+p%gmu5
+         -p%uggtheta5-uijtransgtheta5+p%gmu5
       endif
 !      print*,       df(l1:l2,m,n,igtheta5), f(l1:l2,m,n,igtheta5)
 !
@@ -340,14 +343,19 @@ module Special
 !  Contribution to the time-step
 !
       if (lfirst.and.ldt) then
-        diffus_special= max(p%b2*p%theta5/(p%rho)*sqrt(dxyz_2),   &
+!---    diffus_special= max(p%b2*p%theta5/(p%rho)*sqrt(dxyz_2),   &
+!AB: p%theta5 doesn't exist here. Note sure we need something like this here
+        diffus_special= max( &
                             eta*p%mu5*sqrt(dxyz_2),   &
-                            eta*p%theta5*sqrt(p%u2)*dxyz_2,   &
+!--                         eta*p%theta5*sqrt(p%u2)*dxyz_2,   &
+!AB: p%theta5 doesn't exist here. Note sure we need something like this here
                             diffmu5*dxyz_2,   &
                             lambda5*eta*p%b2/(p%mu5)*sqrt(dxyz_2),   &
-                            lambda5*eta*p%b2,   &
-                            lambda5*eta*p%b2*sqrt(p%u2)*p%theta5/(p%mu5)*sqrt(dxyz_2), &
-                            p%mu5/p%theta5   &
+                            lambda5*eta*p%b2 &
+!--                         lambda5*eta*p%b2,   &
+!--                         lambda5*eta*p%b2*sqrt(p%u2)*p%theta5/(p%mu5)*sqrt(dxyz_2), &
+!--                         p%mu5/p%theta5   &
+!AB: p%theta5 doesn't exist here. Note sure we need something like this here
                           )  
       endif
 !
@@ -356,8 +364,10 @@ module Special
       if (ldiagnos) then
         if (idiag_mu5m/=0) call sum_mn_name(p%mu5,idiag_mu5m)
         if (idiag_mu5rms/=0) call sum_mn_name(p%mu5**2,idiag_mu5rms,lsqrt=.true.)
-        if (idiag_theta5m/=0) call sum_mn_name(p%theta5,idiag_theta5m)
-        if (idiag_theta5rms/=0) call sum_mn_name(p%theta5**2,idiag_theta5rms,lsqrt=.true.)
+        if (idiag_gtheta5rms/=0) then
+          call dot2_mn(p%gtheta5,gtheta52)
+          call sum_mn_name(gtheta52,idiag_gtheta5rms,lsqrt=.true.)
+        endif
       endif
 !
     endsubroutine dspecial_dt
@@ -417,14 +427,13 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_mu5m=0; idiag_mu5rms=0; idiag_theta5m=0; idiag_theta5rms=0
+        idiag_mu5m=0; idiag_mu5rms=0; idiag_gtheta5rms=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'mu5m',idiag_mu5m)
         call parse_name(iname,cname(iname),cform(iname),'mu5rms',idiag_mu5rms)
-        call parse_name(iname,cname(iname),cform(iname),'theta5m',idiag_theta5m)
-        call parse_name(iname,cname(iname),cform(iname),'theta5rms',idiag_theta5rms)
+        call parse_name(iname,cname(iname),cform(iname),'gtheta5rms',idiag_gtheta5rms)
       enddo
 !
     endsubroutine rprint_special
@@ -445,7 +454,7 @@ module Special
 !***********************************************************************
     subroutine calc_lspecial_pars(f)
 !
-!  Calculate meanmu5, which should be subtracted from mu5 in eqn for theta5
+!  Calculate meanmu5, which should be subtracted from mu5 in eqn for gtheta5
 !
 !  11-oct-15/jenny: coded
 !
