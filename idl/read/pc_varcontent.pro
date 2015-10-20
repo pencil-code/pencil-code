@@ -228,31 +228,38 @@ INIT_DATA = [ 'make_array (mx,my,mz,', 'type=type_idl)' ]
 INIT_DATA_LOC = [ 'make_array (mxloc,myloc,mzloc,', 'type=type_idl)' ]
 
 ;
-;  Count total number of variables.
+;  Parse variables and count total number of variables.
 ;
 totalvars = 0L
 num_tags = n_elements (indices)
 num_vars = 0
 for tag = 1, num_tags do begin
   search = indices[tag-1].name
-  line = max (where (stregex (index_pro, '^ *'+search+' *= *([0-9]+|\[[0-9, ]+\]) *$', /extract) ne ''))
-  if (line lt 0) then continue
-  str = stregex (index_pro[line], '^ *'+search+' *= *([0-9]+|\[[0-9, ]+\]) *$', /extract, /sub)
-  exec_str = 'pos = '+str[1]
-  if (not execute (exec_str)) then $
-      message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+strtrim (line, 2)+'.', /info
-  if (pos le 0) then continue
-  num_vars += 1
-  if (size (selected, /type) eq 0) then begin
-    selected = [ tag-1 ]
-    executes = [ exec_str ]
-    position = [ pos[0] ]
-  end else begin
-    selected = [ selected, tag-1 ]
-    executes = [ executes, exec_str ]
-    position = [ position, pos[0] ]
-  end
-  totalvars += indices[tag-1].dims
+  lines = where (stregex (index_pro, '^ *'+search+' *= *([a-z]+arr *\( *[0-9]+ *\)) *$', /extract) ne '', num_lines)
+  for line = 0, num_lines-1 do begin
+    if (not execute (index_pro[line])) then $
+        message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+strtrim (max (lines), 2)+'.', /info
+  endfor
+  matches = stregex (index_pro, '^ *('+search+'( *\[[0-9 ]+\])?) *= *([0-9]+|\[[0-9][0-9, ]+\]) *$', /extract, /sub)
+  lines = where (matches[0,*] ne '', num_lines)
+  if (num_lines le 0) then continue
+  for line = 0, num_lines-1 do begin
+    exec_str = 'pos = '+matches[3,lines[line]]
+    if (not execute (exec_str)) then $
+        message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+strtrim (lines[line], 2)+'.', /info
+    if (pos le 0) then continue
+    num_vars += 1
+    if (size (selected, /type) eq 0) then begin
+      selected = [ tag-1 ]
+      executes = [ exec_str ]
+      position = [ pos[0] ]
+    end else begin
+      selected = [ selected, tag-1 ]
+      executes = [ executes, exec_str ]
+      position = [ position, pos[0] ]
+    end
+    totalvars += indices[tag-1].dims
+  endfor
 endfor
 
 ;
