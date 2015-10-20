@@ -351,20 +351,6 @@ module Particles_main
 !
     endsubroutine get_slices_particles
 !***********************************************************************
-    subroutine particles_doprepencil_calc(f,ivar1,ivar2)
-!
-!  12-aug-08/kapelrud: dummy coded
-!
-      real,dimension(mx,my,mz,mfarray),intent(inout) :: f
-      integer, intent(out) :: ivar1, ivar2
-!
-      ivar1 = 0
-      ivar2 = 0
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine particles_doprepencil_calc
-!***********************************************************************
     subroutine write_dim_particles(datadir)
 !
       character (len=*) :: datadir

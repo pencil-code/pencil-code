@@ -171,7 +171,7 @@ module Equ
                      leos_ionization.or.lradiation_ray.or. &
                      lhyperviscosity_strict.or.lhyperresistivity_strict.or. &
                      ltestscalar.or.ltestfield.or.ltestflow.or. &
-                     lparticles_prepencil_calc.or.lsolid_cells.or. &
+                     lparticles_spin.or.lsolid_cells.or. &
                      lchemistry.or.lweno_transport .or. lbfield .or. & 
                      lslope_limit_diff
 !
@@ -250,22 +250,6 @@ module Equ
 ! correct boundary layer close to the solid geometry, i.e. no-slip conditions.
 !
       call update_solid_cells(f)
-!
-!  Give the particle modules a chance to do something special with a fully
-!  communicated f array, for instance: the particles_spin module needs to
-!  maintain the full vorticity field, including ghost zones, to be able to do
-!  interpolation on the vorticity to subgrid particles positions.
-!
-      if (early_finalize.and.lparticles_prepencil_calc) then
-        call particles_doprepencil_calc(f,ivar1,ivar2)
-        if (ivar1>=0 .and. ivar2>=0) then
-          call boundconds_x(f,ivar1,ivar2)
-          call initiate_isendrcv_bdry(f,ivar1,ivar2)
-          call finalize_isendrcv_bdry(f,ivar1,ivar2)
-          call boundconds_y(f,ivar1,ivar2)
-          call boundconds_z(f,ivar1,ivar2)
-        endif
-      endif
 !
 !  For sixth order momentum-conserving, symmetric hyperviscosity with positive
 !  definite heating rate we need to precalculate the viscosity term. The

@@ -198,15 +198,4 @@ module Particles_spin
 !
     endsubroutine calc_liftforce
 !***********************************************************************
-    subroutine particles_spin_prepencil_calc(f)
-!
-!  12-aug-08/kapelrud: dummy coded
-!
-      real,dimension(mx,my,mz,mfarray),intent(inout) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine particles_spin_prepencil_calc
-!***********************************************************************
-
 endmodule Particles_spin
