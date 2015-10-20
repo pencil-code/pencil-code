@@ -165,10 +165,6 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
     end
   end
 ;
-; ... and check pc_precision is set for all Pencil Code tools.
-;
-  pc_set_precision, dim=dim, quiet=quiet
-;
 ; Local shorthand for some parameters.
 ;
   nx = dim.nx
@@ -191,18 +187,17 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
   mvar = dim.mvar
   mvar_io = mvar
   if (run_param.lwrite_aux) then mvar_io += dim.maux
-  precision = dim.precision
 ;
 ; Initialize cdat_grid variables.
 ;
   t = zero
-  x = fltarr (dim.mx) * one
-  y = fltarr (dim.my) * one
-  z = fltarr (dim.mz) * one
+  x = make_array (dim.mx, type=type_idl)
+  y = make_array (dim.my, type=type_idl)
+  z = make_array (dim.mz, type=type_idl)
   if (allprocs eq 0) then begin
-    x_loc = fltarr (procdim.mx) * one
-    y_loc = fltarr (procdim.my) * one
-    z_loc = fltarr (procdim.mz) * one
+    x_loc = make_array (procdim.mx, type=type_idl)
+    y_loc = make_array (procdim.my, type=type_idl)
+    z_loc = make_array (procdim.mz, type=type_idl)
   end
   dx = zero
   dy = zero
@@ -270,15 +265,8 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
 ;
 ; Initialise read buffers.
 ;
-  if (precision eq 'D') then begin
-    bytes = 8
-    object = dblarr (dim.mx, dim.my, dim.mz, num_read)
-    buffer = dblarr (procdim.mx, procdim.my, procdim.mz)
-  end else begin
-    bytes = 4
-    object = fltarr (dim.mx, dim.my, dim.mz, num_read)
-    buffer = fltarr (procdim.mx, procdim.my, procdim.mz)
-  end
+  object = make_array (dim.mx, dim.my, dim.mz, num_read, type=type_idl)
+  buffer = make_array (procdim.mx, procdim.my, procdim.mz, type=type_idl)
   if (f77 eq 0) then markers = 0 else markers = 1
 ;
 ; Iterate over processors.
@@ -332,14 +320,14 @@ if (keyword_set (reduced) and (n_elements (proc) ne 0)) then $
         mxyz = long64 (procdim.mx) * long64 (procdim.my) * long64 (procdim.mz)
         for pos = 0, num_read-1 do begin
           pa = indices[pos]
-          point_lun, lun, bytes * pa*mxyz + long64 (markers*4)
+          point_lun, lun, data_bytes * pa*mxyz + long64 (markers*4)
           readu, lun, buffer
           object[x_off+x_add:x_end,y_off+y_add:y_end,z_off+z_add:z_end,pos] = buffer[x_add:*,y_add:*,z_add:*]
         end
         close, lun
 ;
         openr, lun, filename, /f77, swap_endian=swap_endian
-        point_lun, lun, bytes * mvar_io*mxyz + long64 (2*markers*4)
+        point_lun, lun, data_bytes * mvar_io*mxyz + long64 (2*markers*4)
         t_test = zero
         if (allprocs eq 1) then begin
           ; collectively written files
