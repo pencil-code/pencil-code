@@ -58,7 +58,7 @@ module Sub
   public :: matrix2linarray, linarray2matrix
 !
   public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot_add, dot_sub, dot2fj
-  public :: dot_mn_vm,div_mn_2tensor,trace_mn,transpose_mn
+  public :: dot_mn_vm, dot_mn_vm_trans, div_mn_2tensor, trace_mn, transpose_mn
   public :: dyadic2
   public :: cross, cross_mn, cross_mixed
   public :: sum_mn, max_mn
@@ -751,6 +751,27 @@ module Sub
       enddo
 !
     endsubroutine dot_mn_vm
+!***********************************************************************
+    subroutine dot_mn_vm_trans(a,b,c)
+!
+!  Dot product, c=a.b, between pencil vector and pencil matrix.
+!  I think the name of dot_mn_vm is not right and should have been transposed.
+!
+!  10-oct-06/axel: coded
+!
+      real, dimension (nx,3)      :: a
+      real, dimension (nx,3,3) :: b
+      real, dimension (nx,3)   :: c
+      integer :: i
+!
+      intent(in) :: a,b
+      intent(out) :: c
+!
+      do i=1,3
+        c(:,i)=a(:,1)*b(:,1,i)+a(:,2)*b(:,2,i)+a(:,3)*b(:,3,i)
+      enddo
+!
+    endsubroutine dot_mn_vm_trans
 !***********************************************************************
     subroutine dot_0(a,b,c)
 !
