@@ -532,12 +532,13 @@ module Particles
 !  (The particles_spin module will for instance enable interpolation of the
 !  vorticity oo)
 !
-      if (lnostore_uu) then
-        interp%luu=.false.
-      else
-        interp%luu=ldragforce_dust_par.or.ldraglaw_steadystate.or. &
-          lparticles_spin
-      endif
+      uu: if (lnostore_uu) then
+        if (ldraglaw_steadystate .or. lparticles_spin) &
+            call fatal_error('initialize_particles', 'lnostore_uu = .false. is required. ')
+        interp%luu = .false.
+      else uu
+        interp%luu = ldragforce_dust_par .or. ldraglaw_steadystate .or. lparticles_spin
+      endif uu
       interp%loo=.false.
       interp%lTT=(lbrownian_forces.and.(brownian_T0==0.0))
       interp%lrho=lbrownian_forces.or.ldraglaw_steadystate
@@ -2795,20 +2796,11 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Precalculate particle Reynolds numbers.
 !
-        if (ldraglaw_steadystate.or.lparticles_spin) then
+        getrep: if (ldraglaw_steadystate .or. lparticles_spin) then
           allocate(rep(k1_imn(imn):k2_imn(imn)))
-!
-          if (.not.allocated(rep)) then
-            call fatal_error('dvvp_dt_pencil','unable to allocate sufficient'//&
-              ' memory for rep')
-          endif
-          if (.not. interp%luu) then
-            call fatal_error('dvvp_dt_pencil','you must set lnostore_uu=F'//&
-              ' when rep is to be calculated')
-          endif
-!
-          call calc_pencil_rep(fp,rep)
-        endif
+          if (.not. allocated(rep)) call fatal_error('dvvp_dt_pencil', 'unable to allocate sufficient memory for rep', .true.)
+          call calc_pencil_rep(fp, rep)
+        endif getrep
 !
 !  Precalculate Stokes-Cunningham factor (only if not ldraglaw_simple)
 !
