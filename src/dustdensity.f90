@@ -207,6 +207,7 @@ module Dustdensity
       endif
 !
 !  Is this executed in all cases? Why ndustspec0 here?
+!  *** WORK HERE: Someone please check and fix this...
 !
       do k=1,ndustspec
         sdust='['//trim(itoa(k-1))//']'
