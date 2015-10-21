@@ -75,7 +75,6 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	common cdat_coords, coord_system
 
 	; Default settings.
-	default, allprocs, 0
 	default, reduced, 0
 	default, addghosts, 0
 	default, swap_endian, 0
@@ -89,20 +88,23 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	if (not keyword_set (varfile)) then varfile = 'var.dat'
 
 	; Automatically switch to allprocs, if necessary.
-	if (not keyword_set (allprocs) and not file_test (datadir+'/proc0/'+varfile, /regular)) then allprocs = 1
+	if (size (allprocs, /type) eq 0) then begin
+		if (file_test (datadir+'/allprocs/'+varfile)) then begin
+			allprocs = 1
+		end else if (file_test (datadir+'/proc0/'+varfile) and file_test (datadir+'/proc1/', /directory) and not file_test (datadir+'/proc1/'+varfile)) then begin
+			allprocs = 2
+		end
+	end
+	default, allprocs, 0
 
 	; Set f77 keyword according to allprocs.
-	if (keyword_set (allprocs)) then default, f77, 0
+	if (allprocs eq 1) then default, f77, 0
 	default, f77, 1
 
 	; Get necessary dimensions quietly.
 	if (n_elements (dim) eq 0) then pc_read_dim, object=dim, datadir=datadir, reduced=reduced, /quiet
 
-	; ... and check pc_precision is set for all Pencil Code tools.
-	pc_set_precision, dim=dim, quiet=quiet
-
 	; Local shorthand for some parameters.
-	precision = dim.precision
 	nxgrid = dim.nxgrid
 	nygrid = dim.nygrid
 	nzgrid = dim.nzgrid
@@ -292,13 +294,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 		indices = indices[where (indices ge 0)]
 
 		; Initialize output buffer.
-		if (precision eq 'D') then begin
-			bytes = 8
-			object = dblarr (gx_delta, gy_delta, gz_delta, num_read)
-		end else begin
-			bytes = 4
-			object = fltarr (gx_delta, gy_delta, gz_delta, num_read)
-		end
+		object = make_array (gx_delta, gy_delta, gz_delta, num_read, type=type_idl)
 	end
 
 	; Iterate over processors.
@@ -318,7 +314,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 				pz_delta = pz_end - pz_start + 1
 
 				; Initialize read buffer.
-				if (precision eq 'D') then buffer = dblarr (px_delta) else buffer = fltarr (px_delta)
+				buffer = make_array (px_delta, type=type_idl)
 
 				; Initialize processor specific parameters.
 				iproc = ipx + ipy*dim.nprocx + ipz*dim.nprocx*dim.nprocy
@@ -346,7 +342,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 					pa = indices[pos]
 					for pz = pz_start, pz_end do begin
 						for py = py_start, py_end do begin
-							point_lun, lun, bytes * (px_start + py*mx + pz*mxy + pa*mxyz) + long64 (markers*4)
+							point_lun, lun, data_bytes * (px_start + py*mx + pz*mxy + pa*mxyz) + long64 (markers*4)
 							readu, lun, buffer
 							object[x_off:x_off+px_delta-1,y_off+py-py_start,z_off+pz-pz_start,pos] = buffer
 						endfor

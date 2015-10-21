@@ -134,14 +134,6 @@ module Dustvelocity
       integer :: k, uud_tmp
       character(len=intlen) :: sdust
 !
-!  Write dust index in short notation
-!
-      if (lroot .and. ndustspec/=1) then
-        open(3,file=trim(datadir)//'/index.pro', position='append')
-        write(3,*) 'iuud=intarr('//trim(itoa(ndustspec))//')'
-        close(3)
-      endif
-!
       do k=1,ndustspec
         sdust='['//trim(itoa(k-1))//']'
         if (ndustspec==1) sdust=''
@@ -151,6 +143,15 @@ module Dustvelocity
         iudy(k) = iuud(k)+1
         iudz(k) = iuud(k)+2
       enddo
+!
+!  Write dust index in short notation
+!
+      if (lroot .and. ndustspec/=1) then
+        open(3,file=trim(datadir)//'/index.pro', position='append')
+        write(3,*) 'nuud=',ndustspec
+        write(3,*) 'iuud=indgen('//trim(itoa(ndustspec))//')*3 + '//trim(itoa(iuud(1)))
+        close(3)
+      endif
 !
 !  Identify version number (generated automatically by SVN).
 !

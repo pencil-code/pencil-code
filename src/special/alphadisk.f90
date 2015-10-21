@@ -132,9 +132,9 @@ module Special
 !
       if (lroot) then
         open(4,file=trim(datadir)//'/index_special.pro',status='replace')
-        write(4,*) 'sigma ',isigma
-        write(4,*) 'mdot  ',imdot
-        write(4,*) 'tmid  ',itmid
+        write(4,*) 'isigma= ',isigma
+        write(4,*) 'imdot=  ',imdot
+        write(4,*) 'itmid=  ',itmid
         close(4)
       endif
 !

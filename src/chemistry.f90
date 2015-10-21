@@ -3525,8 +3525,8 @@ module Chemistry
 !  Write chemistry index in short notation
 !
       if (lwr) then
-        write(3,*) 'ichemspec=indgen('//trim(itoa(nchemspec))//') + '//trim(itoa(ichemspec(1)))
         write(3,*) 'nchemspec=',nchemspec
+        write(3,*) 'ichemspec=indgen('//trim(itoa(nchemspec))//') + '//trim(itoa(ichemspec(1)))
       endif
 !
     endsubroutine rprint_chemistry

@@ -25,7 +25,7 @@ COMPILE_OPT IDL2,HIDDEN
     print, "pc_read_param, object=object,"
     print, "               datadir=datadir, proc=proc,"
     print, "               /print, /quiet, /help,"
-    print, "               /param2"
+    print, "               /run_param"
     print, ""
     print, "Returns the parameters of a Pencil-Code run."
     print, "Returns an empty object on failure."
@@ -71,28 +71,20 @@ COMPILE_OPT IDL2,HIDDEN
         message, "ERROR: datadir is not initialized, please execute 'start.csh' first."
   endelse
 ;
-; Check that precision is set.
-;
-  pc_set_precision, dim=dim, quiet=quiet
-  precision = dim.precision
-;
-; If double precision, force input from params.nml to be doubles.
-;
-  if ((precision eq 'S') or (precision eq 's')) then begin ; single precision
-    nl2idl_d_opt = ''
-  endif else if ((precision eq 'D') or (precision eq 'd')) then begin ; double precision
-    nl2idl_d_opt = '-d'
-  endif
-;
-; Read the data.
-;
-  if (not keyword_set(quiet)) then print, 'Reading "'+filename+'".'
-;
 ; Check if we are prepared for reading anything.
 ;
   pencil_home = getenv ('PENCIL_HOME')
   if (pencil_home eq "") then $
       message, "ERROR: please 'source sourceme.sh', before using this function."
+;
+; If double precision, force input to be doubles.
+;
+  nl2idl_d_opt = ''
+  if (data_type eq 'double') then nl2idl_d_opt = '-d'
+;
+; Read the parameter namelist file.
+;
+  if (not keyword_set(quiet)) then print, 'Reading "'+filename+'".'
 ;
 ; Parse content of namelist file, if necessary.
 ;

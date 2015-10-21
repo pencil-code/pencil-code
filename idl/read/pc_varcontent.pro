@@ -52,7 +52,7 @@ default, ntestscalar, 0
 for line = 1, num_lines do begin
   str = stregex (index_pro[line-1], '^ *n[^= ]+[= ]+[0-9]+ *$', /extract)
   if (not execute (str)) then $
-      message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+strtrim(line, 2)+'.', /info
+      message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+str (line)+'.', /info
 end
 
 ;
@@ -182,7 +182,7 @@ if (file_test (file_special)) then begin
     line_pos += 1
     str = stregex (line, '^ *n[^= ]+[= ]+[0-9]+ *$', /extract)
     if (not execute (str)) then $
-        message, 'pc_varcontent: there was a problem with "'+file_special+'" at line '+strtrim(line_pos, 2)+'.', /info
+        message, 'pc_varcontent: there was a problem with "'+file_special+'" at line '+str (line_pos)+'.', /info
     str = stregex (line, '^ *(i[^= ]+)[= ]+.*$', /extract, /sub)
     if (str[1] ne '') then begin
       indices = [ indices, { name:str[1], label:'Special', dims:1 } ]
@@ -228,20 +228,54 @@ INIT_DATA = [ 'make_array (mx,my,mz,', 'type=type_idl)' ]
 INIT_DATA_LOC = [ 'make_array (mxloc,myloc,mzloc,', 'type=type_idl)' ]
 
 ;
-;  Count total number of variables.
+;  Parse variables and count total number of variables.
 ;
 totalvars = 0L
 num_tags = n_elements (indices)
 num_vars = 0
 for tag = 1, num_tags do begin
   search = indices[tag-1].name
-  line = max (where (stregex (index_pro, '^ *'+search+' *= *([0-9]+|\[[0-9, ]+\]) *$', /extract) ne ''))
+  dims = indices[tag-1].dims
+  add_vars = dims
+  ; Backwards-compatibility for old runs with dustdensity or dustvelocity.
+  matches = stregex (index_pro, '^ *'+search+' *= *intarr *\( *([0-9]+) *\) *$', /extract, /sub)
+  line = max (where (matches[0,*] ne ''))
+  if (line ge 0) then begin
+    offset_matches = stregex (index_pro, '^ *'+search+' *\[ *0 *\] *= *([0-9]+) *$', /extract, /sub)
+    offset_line = max (where (offset_matches[0,*] ne ''))
+    if (offset_line ge 0) then begin
+      offset = long (offset_matches[1,offset_line])
+      index_pro[where (matches[0,*] ne '')] = ''
+      index_pro[line] = search+' = indgen ('+str (matches[1,line])+')*'+str (dims)+' + '+str (offset)
+      dummy = execute ('n'+strmid (search, 1)+' = '+str (matches[1,line]))
+    endif
+  endif
+  ; Identify f-array variables with multiple components.
+  matches = stregex (index_pro, '^ *'+search+' *= *(indgen *\( *[0-9]+ *\).*)$', /extract, /sub)
+  line = max (where (matches[0,*] ne ''))
+  if (line ge 0) then begin
+    if (not execute (index_pro[line])) then $
+        message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+str (line)+'.', /info
+    if (not execute ('num_subtags = n'+strmid (search, 1))) then $
+        message, 'pc_varcontent: there was a problem with reading n"'+strmid (search, 1)+'" at line '+str (line)+'.', /info
+    if (search eq 'ichemspec') then begin
+      matches = [ index_pro[line], '[ '+strjoin (str (ichemspec), ',')+' ]' ]
+      add_vars *= num_subtags
+    endif else begin
+      matches = [ index_pro[line], matches[1,line] ]
+      add_vars *= num_subtags
+    endelse
+  endif else begin
+    ; Regular f-array variables.
+    matches = stregex (index_pro, '^ *'+search+' *= *([0-9]+|\[[0-9][0-9, ]+\]) *$', /extract, /sub)
+  endelse
+  line = max (where (matches[0,*] ne ''))
   if (line lt 0) then continue
-  str = stregex (index_pro[line], '^ *'+search+' *= *([0-9]+|\[[0-9, ]+\]) *$', /extract, /sub)
-  exec_str = 'pos = '+str[1]
+  exec_str = 'pos = '+matches[1,line]
   if (not execute (exec_str)) then $
-      message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+strtrim (line, 2)+'.', /info
-  if (pos le 0) then continue
+      message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+str (line)+'.', /info
+  if (pos[0] le 0) then continue
+  ; Append f-array variable to valid varcontent.
   num_vars += 1
   if (size (selected, /type) eq 0) then begin
     selected = [ tag-1 ]
@@ -252,7 +286,7 @@ for tag = 1, num_tags do begin
     executes = [ executes, exec_str ]
     position = [ position, pos[0] ]
   end
-  totalvars += indices[tag-1].dims
+  totalvars += add_vars
 endfor
 
 ;
@@ -269,22 +303,29 @@ executes = executes[sort (position)]
 for var = 0, num_vars-1 do begin
   tag = selected[var]
   dims = indices[tag].dims
+  if (dims eq 1) then joint = '' else joint = str (dims)+','
   replace = where (inconsistent[*].name eq indices[tag].name)
   name = strmid (indices[tag].name, 1)
   dummy = execute (executes[var])
   num_components = n_elements (pos)
+  if (strpos (executes[var], 'indgen') ge 0) then begin
+    joint += str (num_components)+','
+    skip = num_components * dims
+    num_components = 1
+  endif else begin
+    skip = dims
+  endelse
   for component = 1, num_components do begin
     if (pos[component-1] gt 0) then begin
-      if (dims eq 1) then joint = '' else joint = strtrim (dims, 2)+','
       idl_var = name
-      if (replace[0] ge 0) then idl_var = inconsistent[replace[0]].name
-      if (num_components gt 1) then idl_var += strtrim (component, 2)
-      varcontent[pos[component-1]-1].variable = indices[tag].label + ' ('+name+')'
-      varcontent[pos[component-1]-1].idlvar = name
+      if (replace[0] ge 0) then idl_var = inconsistent[replace[0]].inconsistent_name
+      if (num_components gt 1) then idl_var += str (component)
+      varcontent[pos[component-1]-1].variable = indices[tag].label + ' ('+idl_var+')'
+      varcontent[pos[component-1]-1].idlvar = idl_var
       varcontent[pos[component-1]-1].idlinit = strjoin (INIT_DATA, joint)
-      varcontent[pos[component-1]-1].idlvarloc = name+'_loc'
+      varcontent[pos[component-1]-1].idlvarloc = idl_var+'_loc'
       varcontent[pos[component-1]-1].idlinitloc = strjoin (INIT_DATA_LOC, joint)
-      varcontent[pos[component-1]-1].skip = dims - 1
+      varcontent[pos[component-1]-1].skip = skip - 1
     endif
   endfor
 endfor

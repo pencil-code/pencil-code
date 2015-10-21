@@ -656,27 +656,6 @@ module Particles_main
 !
     endsubroutine particles_boundconds
 !***********************************************************************
-    subroutine particles_doprepencil_calc(f,ivar1,ivar2)
-!
-!  Do some pre-pencil-loop calculation on the f array.
-!  The returned indices should be used for recommication of ghost zones.
-!
-!  11-aug-08/kapelrud: coded
-!
-      real, dimension(mx,my,mz,mfarray),intent(inout) :: f
-      integer, intent(out) :: ivar1, ivar2
-!
-      if (lparticles_spin) then
-        call particles_spin_prepencil_calc(f)
-        ivar1=iox
-        ivar2=ioz
-      else
-        ivar1=-1
-        ivar2=-1
-      endif
-!
-    endsubroutine particles_doprepencil_calc
-!***********************************************************************
     subroutine particles_calc_selfpotential(f,rhs_poisson,lcontinued)
 !
 !  Calculate the potential of the dust particles (wrapper).

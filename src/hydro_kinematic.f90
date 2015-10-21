@@ -76,7 +76,7 @@ module Hydro
   real :: eps_kinflow=0., exp_kinflow=1., omega_kinflow=0., ampl_kinflow=1.
   real :: rp,gamma_dg11=0.4
   real :: lambda_kinflow=1.
-  integer :: kinflow_ck_ell=0.
+  integer :: kinflow_ck_ell=0, tree_lmax=8
   character (len=labellen) :: wind_profile='none'
   logical, target :: lpressuregradient_gas=.false.
 !
@@ -92,7 +92,7 @@ module Hydro
       uphi_step_width,gcs_rzero, &
       gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell, &
       eps_kinflow,exp_kinflow,omega_kinflow,ampl_kinflow, rp, gamma_dg11, &
-      lambda_kinflow
+      lambda_kinflow, tree_lmax
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -310,7 +310,8 @@ module Hydro
 !
 !  pencils for kinflow
 !
-      lpenc_requested(i_ugu)=.true.
+!AB: i_ugu is not normally required
+!--   lpenc_requested(i_ugu)=.true.
 !
 !DM: The following line with kinflow can be later removed and the variable
 !DM: kinematic_flow replaced by kinflow.
@@ -413,15 +414,16 @@ module Hydro
       real, dimension(nx) :: vel_prof
       real, dimension(nx) :: tmp_mn, cos1_mn, cos2_mn
       real, dimension(nx) :: rone, argx, pom2
-      real, dimension(nx) :: psi1,psi2,psi3,psi4,rho_prof
+      real, dimension(nx) :: psi1,psi2,psi3,psi4,rho_prof,prof
       real :: fac, fac2, argy, argz, cxt, cyt, czt, omt
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
       real :: Balpha
       real :: ro
+      real :: xi,slopei,zl1,zl2,zmax
       real :: theta,theta1
       real :: exp_kinflow1,exp_kinflow2
-      integer :: modeN, ell
+      integer :: modeN, ell, ll, nn, ii
 !
 !  Choose from a list of different flow profiles.
 !  Begin with a
@@ -1018,6 +1020,34 @@ module Hydro
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
         if (lpenc_loc(i_oo)) p%oo=-kx_uukin*p%uu
+!
+!  Tree-like flow
+!
+      case ('Tree')
+        if (headtt) print*,'Tree flow; kx_uukin,ky_uukin=',kx_uukin,ky_uukin
+        zmax=Lxyz(3)*(1.-2./2**tree_lmax)
+! uu
+        if (lpenc_loc(i_uu)) then
+          ll=int(alog(2.*Lxyz(3)/(xyz1(3)-min(z(n),zmax)))/alog(2.))
+          nn=2**ll
+          zl1=(xyz1(3)-xyz0(3))*(1.-2./nn)
+          zl2=(xyz1(3)-xyz0(3))*(1.-1./nn)
+!print*,'AXEL1',z(n),ll,nn,zl1,zl2
+          prof=0.
+          do ii=1,nn
+            xi=real(ii)/nn-.5-.5/nn
+            slopei=.5*(-1)**ii/nn
+            argx=x(l1:l2)-xi+slopei*(z(n)-zl1)/(zl2-zl1)
+!print*,'AXEL2',ii,xi,slopei
+!print*,'AXEL3',argx
+            prof=prof+(.5+.5*cos(kx_uukin*argx))**100-0.0563485
+          enddo
+          p%uu(:,1)=0.
+          p%uu(:,2)=0.
+          p%uu(:,3)=ampl_kinflow*prof
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+        !if (lpenc_loc(i_oo)) p%oo=-kx_uukin*p%uu
 !
 !  Galloway-Proctor flow with random temporal phase
 !

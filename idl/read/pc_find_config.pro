@@ -152,7 +152,7 @@ COMPILE_OPT IDL2,HIDDEN
 		openr, file, procdir+varfile, f77=f77, swap_endian=swap_endian, /get_lun
 		if (allprocs eq 0) then begin
 			point_lun, file, additional
-			if (param.lshear) then begin
+			if (start_param.lshear) then begin
 				readu, file, t, x, y, z, dx, dy, dz, deltay
 			end else begin
 				readu, file, t, x, y, z, dx, dy, dz

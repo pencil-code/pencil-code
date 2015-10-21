@@ -15,8 +15,6 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-!!! MAUX CONTRIBUTION 3
-!!! COMMUNICATED AUXILIARIES 3
 ! MPVAR CONTRIBUTION 3
 ! CPARAM logical, parameter :: lparticles_spin = .true.
 !
@@ -54,16 +52,6 @@ module Particles_spin
 !      use FArrayManager
 !
       if (lroot) call svn_id("$Id$")
-!!
-!!  Indices for flow field vorticity. The vorticity is a communicated auxiliary
-!!  vector.
-!!  Assuming that this module is the last to use communicated aux variables,
-!!  then the three last entries in bc{x,y,z} in start.in sets the boundary
-!!  conditions of the vorticity.
-!!
-!      call farray_register_auxiliary('ox', iox, communicated=.true.)
-!      call farray_register_auxiliary('oy', ioy, communicated=.true.)
-!      call farray_register_auxiliary('oz', ioz, communicated=.true.)
 !
 !  Indices for particle spin
 !
@@ -82,11 +70,6 @@ module Particles_spin
         if (lroot) print *, 'npvar = ', npvar, ', mpvar = ', mpvar
         call fatal_error('register_particles_spin', 'npvar > mpvar')
       endif bound
-!!
-!!  Make sure that the vorticity field is communicated one time extra
-!!  before the pencil loop in pde is executed.
-!!
-!      lparticles_prepencil_calc=.true.
 !
     endsubroutine register_particles_spin
 !***********************************************************************
@@ -107,10 +90,6 @@ module Particles_spin
       if (lsaffman_lift) call fatal_error('initialize_particles_spin', 'Saffman lift is currently not supported. ')
 !
       if (lmagnus_lift) call fatal_error('initialize_particles_spin', 'Magnus lift is under construction. ')
-!!
-!!  Initialize vorticity field to zero.
-!!
-!      f(:,:,:,iox:ioz) = 0.0
 !!
 !!  Request interpolation of variables:
 !!
@@ -165,35 +144,6 @@ module Particles_spin
       enddo loop
 !
     endsubroutine init_particles_spin
-!***********************************************************************
-    subroutine particles_spin_prepencil_calc(f)
-!
-!  Prepare the curl(uu) field here so that ghost zones can be
-!  communicated between processors before the spin is calculated in
-!  dps_dt_pencil.
-!
-!  22-jul-08/kapelrud: coded
-!  20-sep-15/ccyang: Disable this subroutine for the moment.
-!
-      use General, only: keep_compiler_quiet
-!      use Sub, only: curl
-!
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
-!
-      call keep_compiler_quiet(f)
-!
-!      real, dimension(nx,3) :: tmp
-!!
-!!  Calculate curl(uu) along pencils in the internal region of this
-!!  processor's grid. Ghost zones will have to be set by the boundary conditions
-!!  and mpi communication as usual.
-!!
-!      do m=m1,m2;do n=n1,n2
-!        call curl(f,iux,tmp)
-!        f(l1:l2,m,n,iox:ioz) = tmp
-!      enddo;enddo
-!
-    endsubroutine particles_spin_prepencil_calc
 !***********************************************************************
     subroutine pencil_criteria_par_spin()
 !

@@ -183,5 +183,3 @@ function texsyms, DEVICE=device
   return, sym
 
 end
-
-; End of file symbols.pro
