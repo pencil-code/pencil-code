@@ -334,7 +334,7 @@ module Cdata
   integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
   integer :: poleneigh              ! `pole' processor neighbours
   integer :: llcorn,lucorn,uucorn,ulcorn ! (the 4 corners in yz-plane)
-  integer :: pllcrn,plucrn,puucrn,pulcrn ! (the 4 'pole' corners)
+  integer :: psfcrn,psbcrn,pnfcrn,pnbcrn ! (the 4 'pole' corners)
 !
 !  Variables to count the occurance of derivative calls per timestep
 !  for optimisation purposes.  To use uncomment the array and
