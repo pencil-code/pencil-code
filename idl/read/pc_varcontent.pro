@@ -235,9 +235,24 @@ num_tags = n_elements (indices)
 num_vars = 0
 for tag = 1, num_tags do begin
   search = indices[tag-1].name
+  dims = indices[tag-1].dims
+  add_vars = dims
+  ; Backwards-compatibility for old runs with dustdensity or dustvelocity.
+  matches = stregex (index_pro, '^ *'+search+' *= *intarr *\( *([0-9]+) *\) *$', /extract, /sub)
+  line = max (where (matches[0,*] ne ''))
+  if (line ge 0) then begin
+    offset_matches = stregex (index_pro, '^ *'+search+' *\[ *0 *\] *= *([0-9]+) *$', /extract, /sub)
+    offset_line = max (where (offset_matches[0,*] ne ''))
+    if (offset_line ge 0) then begin
+      offset = long (offset_matches[1,offset_line])
+      index_pro[where (matches[0,*] ne '')] = ''
+      index_pro[line] = search+' = indgen ('+str (matches[1,line])+')*'+str (dims)+' + '+str (offset)
+      dummy = execute ('n'+strmid (search, 1)+' = '+str (matches[1,line]))
+    endif
+  endif
+  ; Identify f-array variables with multiple components.
   matches = stregex (index_pro, '^ *'+search+' *= *(indgen *\( *[0-9]+ *\).*)$', /extract, /sub)
   line = max (where (matches[0,*] ne ''))
-  add_vars = indices[tag-1].dims
   if (line ge 0) then begin
     if (not execute (index_pro[line])) then $
         message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+strtrim (line, 2)+'.', /info
@@ -251,6 +266,7 @@ for tag = 1, num_tags do begin
       add_vars *= num_subtags
     endelse
   endif else begin
+    ; Regular f-array variables.
     matches = stregex (index_pro, '^ *'+search+' *= *([0-9]+|\[[0-9][0-9, ]+\]) *$', /extract, /sub)
   endelse
   line = max (where (matches[0,*] ne ''))
@@ -259,6 +275,7 @@ for tag = 1, num_tags do begin
   if (not execute (exec_str)) then $
       message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+strtrim (line, 2)+'.', /info
   if (pos[0] le 0) then continue
+  ; Append f-array variable to valid varcontent.
   num_vars += 1
   if (size (selected, /type) eq 0) then begin
     selected = [ tag-1 ]
