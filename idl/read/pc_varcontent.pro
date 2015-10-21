@@ -204,6 +204,12 @@ if (keyword_set (param.lwrite_aux) and not keyword_set (noaux)) then begin
 endif
 
 ;
+;  Predefine some variable types used regularly.
+;
+INIT_DATA = [ 'make_array (mx,my,mz,', 'type=type_idl)' ]
+INIT_DATA_LOC = [ 'make_array (mxloc,myloc,mzloc,', 'type=type_idl)' ]
+
+;
 ;  For 2-D runs with lwrite_2d=T. Data has been written by the code without
 ;  ghost zones in the missing direction. We add ghost zones here anyway so
 ;  that the array can be treated exactly like 3-D data.
@@ -220,12 +226,6 @@ if (keyword_set(run2D)) then begin
     INIT_DATA_LOC = [ 'make_array (mxloc,myloc,', 'type=type_idl)' ]
   endelse
 endif
-
-;
-;  Predefine some variable types used regularly.
-;
-INIT_DATA = [ 'make_array (mx,my,mz,', 'type=type_idl)' ]
-INIT_DATA_LOC = [ 'make_array (mxloc,myloc,mzloc,', 'type=type_idl)' ]
 
 ;
 ;  Parse variables and count total number of variables.
