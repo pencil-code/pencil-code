@@ -286,7 +286,7 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use Sub, only: multsv, dot2_mn
+      use Sub, only: multsv, dot2_mn, dot_mn_vm_trans
       use Diagnostics, only: sum_mn_name
 !
       real, dimension (mx,my,mz,mfarray) :: f

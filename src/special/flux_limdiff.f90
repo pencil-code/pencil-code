@@ -92,8 +92,8 @@ module Special
 !
       if (lroot) then
         open(4,file=trim(datadir)//'/index_special.pro',status='replace')
-        write(4,*) 'kappar  ',ikappar
-        write(4,*) 'lambda  ',ilambda
+        write(4,*) 'ikappar=  ',ikappar
+        write(4,*) 'ilambda=  ',ilambda
         close(4)
       endif
 !

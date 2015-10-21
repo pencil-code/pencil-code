@@ -128,7 +128,7 @@ module Special
 !
       if (lroot) then
         open(4,file=trim(datadir)//'/index_special.pro',status='replace')
-        write(4,*) 'potturb  ',ipotturb
+        write(4,*) 'ipotturb=  ',ipotturb
         close(4)
       endif
 !
