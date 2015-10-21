@@ -52,17 +52,19 @@ endelse
 ;
 tout=zero
 default, noutmax, -1
-openr, 1, datadir+'/tstalk.dat'
-  readf, 1, tout, noutmaxfile
-close, 1
+openr, lun, datadir+'/tstalk.dat', /get_lun
+  readf, lun, tout, noutmaxfile
+close, lun
+free_lun, lun
 if (noutmax eq -1 or noutmax gt noutmaxfile) then nout=noutmaxfile else nout=noutmax
 ;
 ; Read header information from file.
 ;
 header=''
-openr, 1, datadir+'/particles_stalker_header.dat'
-  readf, 1, header, format='(A)'
-close, 1
+openr, lun, datadir+'/particles_stalker_header.dat', /get_lun
+  readf, lun, header, format='(A)'
+close, lun
+free_lun, lun
 ;
 ; Extract fields from header in order to know what to read from file.
 ;
@@ -111,7 +113,7 @@ for iproc=0,dim.nprocx*dim.nprocy*dim.nprocz-1 do begin
 ;
   openr, lun, datadir+'/proc'+strtrim(iproc,2)+'/particles_stalker.dat', /f77, /get_lun, swap_endian=swap_endian
   while (ntread lt nout and not eof(lun)) do begin
-    readu, 1, t_loc, npar_stalk_loc
+    readu, lun, t_loc, npar_stalk_loc
 ;
     if (it ge it0) then begin
       if ( (it1 ne -1) and (it mod it1 eq 0) ) then $
@@ -142,8 +144,10 @@ for iproc=0,dim.nprocx*dim.nprocy*dim.nprocz-1 do begin
       t[it-it0]=t_loc
     endif else begin
       if (npar_stalk_loc ge 1) then begin
-        dummyinteger=0L & readu, 1, dummyinteger
-        dummyreal=zero  & readu, 1, dummyreal
+        dummyinteger=0L
+        readu, lun, dummyinteger
+        dummyreal=zero
+        readu, lun, dummyreal
       endif
     endelse
 ;
