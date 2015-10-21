@@ -171,18 +171,40 @@ inconsistent = [ $
   ; don't forget to add a comma above when extending
 ]
 
+; Inconsistent names in special modules (IDL-name is inconsistent with name in the main code):
+inconsistent_special = [ $
+  { name:'isigma', inconsistent_name:'sigma' }, $
+  { name:'imdot', inconsistent_name:'mdot' }, $
+  { name:'itmid', inconsistent_name:'tmid' }, $
+  { name:'ikappar', inconsistent_name:'kappar' }, $
+  { name:'ilambda', inconsistent_name:'lambda' }, $
+  { name:'ipsi', inconsistent_name:'psi' }, $
+  { name:'ipotturb', inconsistent_name:'potturb' } $
+  ; don't forget to add a comma above when extending
+]
+
 ; Special variables:
 file_special = datadir+'/index_special.pro'
 if (file_test (file_special)) then begin
   openr, lun, file_special, /get_lun
   line = ''
   line_pos = 0
+  num_inconsistent = n_elements (inconsistent_special)
   while (not eof (lun)) do begin
     readf, lun, line
     line_pos += 1
+    ; Backwards-compatibility for old runs with alphadisk, flux_limdiff, streamfunction, or turbpotential.
+    for pos = 0, num_inconsistent-1 do begin
+      search = inconsistent_special[pos].inconsistent_name
+      replace = inconsistent_special[pos].name
+      str = stregex (line, '^ *'+search+' *(=.*)$', /extract, /sub)
+      line = replace+str[1]
+    endfor
+    ; Parse line with number of components.
     str = stregex (line, '^ *n[^= ]+[= ]+[0-9]+ *$', /extract)
     if (not execute (str)) then $
         message, 'pc_varcontent: there was a problem with "'+file_special+'" at line '+str (line_pos)+'.', /info
+    ; Parse line with "ispecial = ..." or similar.
     str = stregex (line, '^ *(i[^= ]+)[= ]+.*$', /extract, /sub)
     if (str[1] ne '') then begin
       indices = [ indices, { name:str[1], label:'Special', dims:1 } ]
