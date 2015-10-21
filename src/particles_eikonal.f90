@@ -73,7 +73,6 @@ module Particles
   real :: max_particle_insert_time=huge1
   real :: Deltauy_gas_friction=0.0
   real :: cond_ratio=0.0
-  real :: particle_radius = 0.0
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0
   logical :: lleft_down=.false.

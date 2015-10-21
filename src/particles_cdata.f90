@@ -28,6 +28,7 @@ module Particles_cdata
   real :: mp_swarm=0.0, np_swarm=0.0, rhop_swarm=0.0
   real :: four_pi_rhopmat_over_three
   real :: np_const=0.0, rhop_const=0.0
+  real :: particle_radius = 0.0
   real :: energy_gain_shear_bcs=impossible
   real :: log_ap_min_dist=0.0, log_ap_max_dist=6.0
   real :: rsinkparticle_1=0.0
