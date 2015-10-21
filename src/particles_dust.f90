@@ -77,7 +77,7 @@ module Particles
   real :: max_particle_insert_time=huge1
   real :: Deltauy_gas_friction=0.0
   real :: cond_ratio=0.0
-  real :: fake_particle_radius=0.0
+  real :: particle_radius = 0.0
   real :: pscalar_sink_rate=0.0
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0
@@ -176,8 +176,9 @@ module Particles
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
       lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, &
       Lz0, lglobalrandom, linsert_particles_continuously, &
-      lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, np_const, &
-      rhop_const, ldragforce_equi_noback, rhopmat, Deltauy_gas_friction, xp1, &
+      lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, &
+      np_const, rhop_const, particle_radius, &
+      ldragforce_equi_noback, rhopmat, Deltauy_gas_friction, xp1, &
       yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
       xp3, yp3, zp3, vpx3, vpy3, vpz3, lsinkparticle_1, rsinkparticle_1, &
       lcalc_uup, temp_grad0, thermophoretic_eq, cond_ratio, interp_pol_gradTT, &
@@ -211,8 +212,9 @@ module Particles
       ldragforce_radialonly, lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, &
       rsinkpoint, lshear_accel_par, lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, &
       linsert_particles_continuously, particles_insert_rate, &
-      max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, &
-      lnocalc_rhop, np_const, rhop_const, Deltauy_gas_friction, &
+      max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, &
+      np_const, rhop_const, particle_radius, &
+      Deltauy_gas_friction, &
       loutput_psize_dist, log_ap_min_dist, log_ap_max_dist, nbin_ap_dist, &
       lsinkparticle_1, rsinkparticle_1, lthermophoretic_forces, temp_grad0, &
       thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, &
@@ -349,6 +351,14 @@ module Particles
         lcdtp_shear = .not. lshearadvection_as_shift
         nullify(lshearadvection_as_shift)
       endif shear
+!
+!  Report the particle radius, if set.
+!
+      apar: if (particle_radius /= 0.0) then
+        if (lparticles_radius) &
+            call fatal_error('initialize_particles', 'particle_radius /= 0 has no effect when module Particles_radius is on. ')
+        if (lroot) print *, 'initialize_particles: radius of each constituent particle = ', particle_radius
+      endif apar
 !
 !  The inverse stopping time is needed for drag force and collisional cooling.
 !
@@ -3914,7 +3924,7 @@ module Particles
       integer :: k, ksink, iproc_sink, iproc_sink_send
       integer :: ix, ix1, ix2, iy, iy1, iy2, iz, iz1, iz2
       integer, parameter :: itag1=100, itag2=101
-      real :: particle_radius
+      real :: apar
 !
 !  Sinkparticle activated at time tstart_sink_par
       if (t <= tstart_sink_par) return
@@ -4073,11 +4083,11 @@ module Particles
         k=1
         do while (k<=npar_loc)
           if (lparticles_radius) then
-            particle_radius=fp(k,iap)
+            apar = fp(k,iap)
           else
-            particle_radius=fake_particle_radius
+            apar = particle_radius
           endif
-          if (in_solid_cell(fp(k,ixp:izp),particle_radius)) then
+          if (in_solid_cell(fp(k,ixp:izp),apar)) then
             call remove_particle(fp,ipar,k,dfp,ineargrid)
           else
             k=k+1
@@ -4993,16 +5003,19 @@ module Particles
         call fatal_error('calc_pencil_rep','No such ivis!')
       endif
 !
-      if (.not.lparticles_radius) then
-        call fatal_error('calc_pencil_rep', &
-            'particle_radius module needs to be enabled to calculate the particles Reynolds numbers.')
-      elseif (maxval(nu)==0.0) then
-        call fatal_error('calc_pencil_rep','nu (kinematic visc.) must be non-zero!')
-      endif
+      if (maxval(nu) == 0.0) call fatal_error('calc_pencil_rep', 'nu (kinematic visc.) must be non-zero!')
 !
       do k=k1_imn(imn),k2_imn(imn)
-        rep(k)=2.0*fp(k,iap)*sqrt(sum((interp_uu(k,:)-fp(k,ivpx:ivpz))**2))/nu(k)
+        rep(k) = 2.0 * sqrt(sum((interp_uu(k,:) - fp(k,ivpx:ivpz))**2)) / nu(k)
       enddo
+!
+      if (lparticles_radius) then
+        rep = rep * fp(k1_imn(imn):k2_imn(imn),iap)
+      elseif (particle_radius > 0.0) then
+        rep = rep * particle_radius
+      else
+        call fatal_error('calc_pencil_rep', 'unable to calculate the particle Reynolds number without a particle radius. ')
+      endif
 !
     endsubroutine calc_pencil_rep
 !***********************************************************************
