@@ -117,7 +117,7 @@ module Special
 !
       if (lroot) then
         open(4,file=trim(datadir)//'/index_special.pro',status='replace')
-        write(4,*) 'psi ',ipsi
+        write(4,*) 'ipsi= ',ipsi
         close(4)
       endif
 !
