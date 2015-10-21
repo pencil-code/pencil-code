@@ -79,23 +79,32 @@ module Particles_spin
 !  derived parameters.
 !
 !  21-jul-08/kapelrud: coded
+!  22-oct-15/ccyang: continued.
 !
       use General, only: keep_compiler_quiet
-!      use Particles_radius
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
       call keep_compiler_quiet(f)
 !
+      if (lstart) return
+!
+!  Sanity check.
+!
       if (lsaffman_lift) call fatal_error('initialize_particles_spin', 'Saffman lift is currently not supported. ')
 !
-      if (lmagnus_lift) call fatal_error('initialize_particles_spin', 'Magnus lift is under construction. ')
-!!
-!!  Request interpolation of variables:
-!!
-!      interp%luu = interp%luu .or. lsaffman_lift !.or. lmagnus_lift
-!      interp%loo = interp%loo .or. lsaffman_lift !.or. lmagnus_lift
-!      interp%lrho = interp%lrho .or. lsaffman_lift !.or. lmagnus_lift
+      magnus: if (lmagnus_lift) then
+        if (.not. lparticles_radius .and. particle_radius <= 0.0) &
+            call fatal_error('initialize_particles_spin', 'Magnus lift requires the radius of each constituent particle. ')
+        if (mpmat <= 0.0) &
+            call fatal_error('initialize_particles_spin', 'Magnus lift requires the mass of each constituent particle. ')
+      endif magnus
+!
+!  Request interpolation of variables:
+!
+      interp%luu = interp%luu .or. lsaffman_lift .or. lmagnus_lift
+      interp%loo = interp%loo .or. lsaffman_lift .or. lmagnus_lift
+      interp%lrho = interp%lrho .or. lsaffman_lift .or. lmagnus_lift
 !
     endsubroutine initialize_particles_spin
 !***********************************************************************
@@ -420,6 +429,7 @@ module Particles_spin
 !  Calculate the Magnus liftforce for a given spinning particle.
 !
 !  22-jul-08/kapelrud: coded
+!  22-oct-15/ccyang: continued.
 !
       use Sub, only: cross
       use Viscosity, only: getnu
@@ -429,31 +439,37 @@ module Particles_spin
       real, intent(in) :: rep
       real, dimension(3), intent(out) :: dlift
 !
-      real :: const_lr, spin_omega, area, nu
       real, dimension(3) :: ps_rel, uu_rel
-!
-      if (.not.lparticles_radius) then
-        if (lroot) print*,'calc_magnus_liftforce: '//&
-             'Particle_radius module must be enabled!'
-        call fatal_error('calc_magnus_liftforce','')
-      endif
+      real :: const_lr, spin_omega, area, nu, ap, norm
 !
       call getnu(nu_input=nu)
 !
+!  Get the radius of the constituent particle.
+!
+      if (lparticles_radius) then
+        ap = fp(iap)
+      else
+        ap = particle_radius
+      endif
+!
 !  Projected area of the particle
 !
-      area=pi*fp(iap)**2
+      area = pi * ap**2
 !
 !  Calculate the Magnus lift coefficent
 !
       uu_rel=interp_uu(k,:)-fp(ivpx:ivpz)
-      spin_omega=fp(iap)*sqrt(sum(fp(ipsx:ipsz)**2))/sqrt(sum(uu_rel**2))
+      spin_omega = ap * sqrt(sum(fp(ipsx:ipsz)**2)) / sqrt(sum(uu_rel**2))
       const_lr=min(0.5,0.5*spin_omega)
 !
-      ps_rel=fp(ipsx:ipsz)-0.5*interp_oo(k,:)
-      call cross(uu_rel,ps_rel,dlift)
-      dlift=dlift/sqrt(sum(ps_rel**2))
-      dlift=0.25*interp_rho(k)*(rep*nu/fp(iap))*const_lr*area/mpmat*dlift
+      ps_rel = fp(ipsx:ipsz) - 0.5 * interp_oo(k,:)
+      norm = sum(ps_rel**2)
+      lift: if (norm > 0.0) then
+        call cross(uu_rel, ps_rel, dlift)
+        dlift = 0.25 * interp_rho(k) * (rep * nu / ap) * const_lr * area / mpmat / sqrt(norm) * dlift
+      else lift
+        dlift = 0.0
+      endif lift
 !
     endsubroutine calc_magnus_liftforce
 !***********************************************************************
