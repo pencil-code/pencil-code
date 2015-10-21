@@ -440,35 +440,41 @@ module Particles_spin
       real, dimension(3), intent(out) :: dlift
 !
       real, dimension(3) :: ps_rel, uu_rel
-      real :: const_lr, spin_omega, area, nu, ap, norm
+      real :: const_lr, spin_omega, area, nu, ap
+      real :: ps2, uu2
 !
-      call getnu(nu_input=nu)
+!  Find the relative velocity and spin.
+!
+      uu_rel = interp_uu(k,:) - fp(ivpx:ivpz)
+      ps_rel = fp(ipsx:ipsz) - 0.5 * interp_oo(k,:)
+      uu2 = sum(uu_rel**2)
+      ps2 = sum(ps_rel**2)
+!
+      lift: if (uu2 > 0.0 .and. ps2 > 0.0) then
 !
 !  Get the radius of the constituent particle.
 !
-      if (lparticles_radius) then
-        ap = fp(iap)
-      else
-        ap = particle_radius
-      endif
+        if (lparticles_radius) then
+          ap = fp(iap)
+        else
+          ap = particle_radius
+        endif
 !
 !  Projected area of the particle
 !
-      area = pi * ap**2
+        area = pi * ap**2
 !
 !  Calculate the Magnus lift coefficent
 !
-      uu_rel=interp_uu(k,:)-fp(ivpx:ivpz)
-      spin_omega = ap * sqrt(sum(fp(ipsx:ipsz)**2)) / sqrt(sum(uu_rel**2))
-      const_lr=min(0.5,0.5*spin_omega)
-!
-      ps_rel = fp(ipsx:ipsz) - 0.5 * interp_oo(k,:)
-      norm = sum(ps_rel**2)
-      lift: if (norm > 0.0) then
+        spin_omega = ap * sqrt(sum(fp(ipsx:ipsz)**2)) / sqrt(uu2)
+        const_lr = min(0.5, 0.5*spin_omega)
         call cross(uu_rel, ps_rel, dlift)
-        dlift = 0.25 * interp_rho(k) * (rep * nu / ap) * const_lr * area / mpmat / sqrt(norm) * dlift
+        call getnu(nu_input=nu)
+        dlift = 0.25 * interp_rho(k) * (rep * nu / ap) * const_lr * area / mpmat / sqrt(ps2) * dlift
+!
       else lift
         dlift = 0.0
+!
       endif lift
 !
     endsubroutine calc_magnus_liftforce
