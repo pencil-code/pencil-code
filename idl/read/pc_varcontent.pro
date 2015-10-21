@@ -243,8 +243,13 @@ for tag = 1, num_tags do begin
         message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+strtrim (line, 2)+'.', /info
     if (not execute ('num_subtags = n'+strmid (search, 1))) then $
         message, 'pc_varcontent: there was a problem with reading n"'+strmid (search, 1)+'" at line '+strtrim (line, 2)+'.', /info
-    matches = [ index_pro[line], matches[1,line] ]
-    add_vars *= num_subtags
+    if (search eq 'ichemspec') then begin
+      matches = [ index_pro[line], '[ '+strjoin (str (ichemspec), ',')+' ]' ]
+      add_vars *= num_subtags
+    endif else begin
+      matches = [ index_pro[line], matches[1,line] ]
+      add_vars *= num_subtags
+    endelse
   endif else begin
     matches = stregex (index_pro, '^ *'+search+' *= *([0-9]+|\[[0-9][0-9, ]+\]) *$', /extract, /sub)
   endelse
@@ -293,16 +298,15 @@ for var = 0, num_vars-1 do begin
   endif else begin
     skip = dims
   endelse
-;help, tag, dims, joint, skip, num_components, pos
   for component = 1, num_components do begin
     if (pos[component-1] gt 0) then begin
       idl_var = name
-      if (replace[0] ge 0) then idl_var = inconsistent[replace[0]].name
+      if (replace[0] ge 0) then idl_var = inconsistent[replace[0]].inconsistent_name
       if (num_components gt 1) then idl_var += strtrim (component, 2)
-      varcontent[pos[component-1]-1].variable = indices[tag].label + ' ('+name+')'
-      varcontent[pos[component-1]-1].idlvar = name
+      varcontent[pos[component-1]-1].variable = indices[tag].label + ' ('+idl_var+')'
+      varcontent[pos[component-1]-1].idlvar = idl_var
       varcontent[pos[component-1]-1].idlinit = strjoin (INIT_DATA, joint)
-      varcontent[pos[component-1]-1].idlvarloc = name+'_loc'
+      varcontent[pos[component-1]-1].idlvarloc = idl_var+'_loc'
       varcontent[pos[component-1]-1].idlinitloc = strjoin (INIT_DATA_LOC, joint)
       varcontent[pos[component-1]-1].skip = skip - 1
     endif
