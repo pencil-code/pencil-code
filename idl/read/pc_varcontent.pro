@@ -52,7 +52,7 @@ default, ntestscalar, 0
 for line = 1, num_lines do begin
   str = stregex (index_pro[line-1], '^ *n[^= ]+[= ]+[0-9]+ *$', /extract)
   if (not execute (str)) then $
-      message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+strtrim(line, 2)+'.', /info
+      message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+str (line)+'.', /info
 end
 
 ;
@@ -182,7 +182,7 @@ if (file_test (file_special)) then begin
     line_pos += 1
     str = stregex (line, '^ *n[^= ]+[= ]+[0-9]+ *$', /extract)
     if (not execute (str)) then $
-        message, 'pc_varcontent: there was a problem with "'+file_special+'" at line '+strtrim(line_pos, 2)+'.', /info
+        message, 'pc_varcontent: there was a problem with "'+file_special+'" at line '+str (line_pos)+'.', /info
     str = stregex (line, '^ *(i[^= ]+)[= ]+.*$', /extract, /sub)
     if (str[1] ne '') then begin
       indices = [ indices, { name:str[1], label:'Special', dims:1 } ]
@@ -255,9 +255,9 @@ for tag = 1, num_tags do begin
   line = max (where (matches[0,*] ne ''))
   if (line ge 0) then begin
     if (not execute (index_pro[line])) then $
-        message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+strtrim (line, 2)+'.', /info
+        message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+str (line)+'.', /info
     if (not execute ('num_subtags = n'+strmid (search, 1))) then $
-        message, 'pc_varcontent: there was a problem with reading n"'+strmid (search, 1)+'" at line '+strtrim (line, 2)+'.', /info
+        message, 'pc_varcontent: there was a problem with reading n"'+strmid (search, 1)+'" at line '+str (line)+'.', /info
     if (search eq 'ichemspec') then begin
       matches = [ index_pro[line], '[ '+strjoin (str (ichemspec), ',')+' ]' ]
       add_vars *= num_subtags
@@ -273,7 +273,7 @@ for tag = 1, num_tags do begin
   if (line lt 0) then continue
   exec_str = 'pos = '+matches[1,line]
   if (not execute (exec_str)) then $
-      message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+strtrim (line, 2)+'.', /info
+      message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+str (line)+'.', /info
   if (pos[0] le 0) then continue
   ; Append f-array variable to valid varcontent.
   num_vars += 1
@@ -303,13 +303,13 @@ executes = executes[sort (position)]
 for var = 0, num_vars-1 do begin
   tag = selected[var]
   dims = indices[tag].dims
-  if (dims eq 1) then joint = '' else joint = strtrim (dims, 2)+','
+  if (dims eq 1) then joint = '' else joint = str (dims)+','
   replace = where (inconsistent[*].name eq indices[tag].name)
   name = strmid (indices[tag].name, 1)
   dummy = execute (executes[var])
   num_components = n_elements (pos)
   if (strpos (executes[var], 'indgen') ge 0) then begin
-    joint += strtrim (num_components, 2)+','
+    joint += str (num_components)+','
     skip = num_components * dims
     num_components = 1
   endif else begin
@@ -319,7 +319,7 @@ for var = 0, num_vars-1 do begin
     if (pos[component-1] gt 0) then begin
       idl_var = name
       if (replace[0] ge 0) then idl_var = inconsistent[replace[0]].inconsistent_name
-      if (num_components gt 1) then idl_var += strtrim (component, 2)
+      if (num_components gt 1) then idl_var += str (component)
       varcontent[pos[component-1]-1].variable = indices[tag].label + ' ('+idl_var+')'
       varcontent[pos[component-1]-1].idlvar = idl_var
       varcontent[pos[component-1]-1].idlinit = strjoin (INIT_DATA, joint)
