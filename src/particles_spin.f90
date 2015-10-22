@@ -466,11 +466,12 @@ module Particles_spin
 !
 !  Calculate the Magnus lift coefficent
 !
-        spin_omega = ap * sqrt(sum(fp(ipsx:ipsz)**2)) / sqrt(uu2)
-        const_lr = min(0.5, 0.5*spin_omega)
+        uu2 = sqrt(uu2)
+        spin_omega = ap * sqrt(sum(fp(ipsx:ipsz)**2)) / uu2
+        const_lr = min(0.5, 0.5 / spin_omega)
         call cross(uu_rel, ps_rel, dlift)
         call getnu(nu_input=nu)
-        dlift = 0.25 * interp_rho(k) * (rep * nu / ap) * const_lr * area / mpmat / sqrt(ps2) * dlift
+        dlift = 0.25 * interp_rho(k) * (rep * nu / uu2) * const_lr * area / mpmat / sqrt(ps2) * dlift
 !
       else lift
         dlift = 0.0
