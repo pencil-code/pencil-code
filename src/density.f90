@@ -118,6 +118,9 @@ module Density
   character (len=labellen) :: ffree_profile='none'
   character (len=fnlen) :: datafile='dens_temp.dat'
   character (len=labellen) :: cloud_mode='isothermal'
+  logical :: ldensity_slope_limited=.false.
+  real :: h_slope_limited=0., chi_sld_thresh=0.
+  character (len=labellen) :: islope_limiter=''
 !
   namelist /density_init_pars/ &
       ampllnrho, initlnrho, widthlnrho, rho_left, rho_right, lnrho_const, &
@@ -155,7 +158,8 @@ module Density
       density_zaver_range, rss_coef1, rss_coef2, &
       lconserve_total_mass, total_mass, &
       lreinitialize_lnrho, lreinitialize_rho, initlnrho, rescale_rho,&
-      lsubtract_init_stratification, ireference_state
+      lsubtract_init_stratification, ireference_state, ldensity_slope_limited, &
+      h_slope_limited, chi_sld_thresh, islope_limiter
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -205,12 +209,13 @@ module Density
 !
   contains
 !***********************************************************************
-    subroutine register_density()
+    subroutine register_density
 !
 !  Initialise variables which should know that we solve the
 !  compressible hydro equations: ilnrho; increase nvar accordingly.
 !
 !   4-jun-02/axel: adapted from hydro
+!   21-oct-15/MR: changes for slope-limited diffusion
 !
       use FArrayManager
 !
@@ -219,6 +224,18 @@ module Density
         ilnrho=irho
       else
         call farray_register_pde('lnrho',ilnrho)
+      endif
+
+      if (ldensity_slope_limited) then
+        if (iFF_diff==0) then
+          call farray_register_auxiliary('Flux_diff',iFF_diff,vector=dimensionality)
+          iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
+        endif
+        call farray_register_auxiliary('Div_flux_diff_rho',iFF_div_rho)
+        iFF_char_c=iFF_div_rho
+        if (iFF_div_aa>0) iFF_char_c=max(iFF_char_c,iFF_div_aa+2)
+        if (iFF_div_uu>0) iFF_char_c=max(iFF_char_c,iFF_div_uu+2)
+        if (iFF_div_ss>0) iFF_char_c=max(iFF_char_c,iFF_div_ss)
       endif
 !
 !  Identify version number (generated automatically by SVN).
@@ -754,6 +771,9 @@ module Density
       endif
 !
       call initialize_density_methods
+
+      lslope_limit_diff=lslope_limit_diff .or. ldensity_slope_limited
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_density
@@ -1415,8 +1435,9 @@ module Density
 !   17-aug-14/MR: finalize_aver used
 !   10-feb-15/MR: extended calc of <grad(log(rho))> to linear density;
 !                 mass conservation slightly simplified
+!   21-oct-15/MR: changes for slope-limited diffusion
 !
-      use Sub, only: grad, finalize_aver
+      use Sub, only: grad, finalize_aver, calc_all_diff_fluxes, div
 !
       real, dimension (mx,my,mz,mfarray) :: f
       intent(inout) :: f
@@ -1483,8 +1504,45 @@ module Density
         if (lhydro) f(:,:,:,iux:iuz) = f(:,:,:,iux:iuz) / fact
 !
       endif masscons
+
+!
+!  Slope limited diffusion following Rempel (2014).
+!  No distinction between log and nolog density at the moment.
+!
+      if (ldensity_slope_limited.and.lfirst) then
+
+        f(:,:,:,iFF_diff1:iFF_diff2)=0.
+        call calc_all_diff_fluxes(f,ilnrho,islope_limiter,h_slope_limited)
+
+        do n=n1,n2; do m=m1,m2
+          call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_rho),.true.)
+        enddo; enddo
+
+      endif
 !
    endsubroutine calc_ldensity_pars
+!***********************************************************************
+    subroutine update_char_vel_density(f)
+!
+!  Updates characteristic veelocity for slope-limited diffusion.
+!
+!  25-sep-15/MR+joern: coded
+!   9-oct-15/MR: added updateing of characteristic velocity by density
+!                not yet activated (weight=0), tb reconsidered
+!
+      use EquationOfState, only: calc_pencils_eos
+      use General, only: staggered_mean_scal
+!
+      real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
+!
+      type(pencil_case) :: p
+      logical, dimension(npencils) :: lpenc_loc=.false.
+      real, parameter :: weight=.0
+!
+      if (lslope_limit_diff) &
+        call staggered_mean_scal(f,ilnrho,iFF_char_c,weight)
+!
+    endsubroutine update_char_vel_density
 !***********************************************************************
     subroutine polytropic_lnrho_z( &
          f,mpoly,zint,zbot,zblend,isoth,cs2int,lnrhoint,fac_cs)
@@ -1712,7 +1770,7 @@ module Density
 !
     endsubroutine numerical_equilibrium
 !***********************************************************************
-    subroutine pencil_criteria_density()
+    subroutine pencil_criteria_density
 !
 !  All pencils that the Density module depends on are specified here.
 !
@@ -2046,6 +2104,7 @@ module Density
 !  Calculate dlnrho/dt = - u.gradlnrho - divu
 !
 !   7-jun-02/axel: incoporated from subroutine pde
+!  21-oct-15/MR: changes for slope-limited diffusion
 !
       use Deriv, only: der6
       use Diagnostics
@@ -2059,7 +2118,7 @@ module Density
       intent(in)  :: p
       intent(inout) :: df,f
 !
-      real, dimension (nx) :: fdiff, gshockglnrho, gshockgrho, tmp
+      real, dimension (nx) :: fdiff, gshockglnrho, gshockgrho, tmp, chi_sld
       real, dimension (nx), parameter :: unitpencil=1.
       real, dimension (nx) :: density_rhs   !GPU := df(l1:l2,m,n,irho|ilnrho)
       integer :: j
@@ -2295,6 +2354,14 @@ module Density
         endif
         if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho_shock*p%shock
         if (headtt) print*,'dlnrho_dt: diffrho_shock=', diffrho_shock
+      endif
+
+      if (ldensity_slope_limited.and.lfirst) then
+        fdiff=fdiff-f(l1:l2,m,n,iFF_div_rho)
+        if (ldt) then
+          chi_sld=abs(f(l1:l2,m,n,iFF_div_rho))/dxyz_2
+          !!!diffus_diffrho=diffus_diffrho+chi_sld
+        endif
       endif
 !
 !  Interface for your personal subroutines calls

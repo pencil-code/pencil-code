@@ -903,4 +903,16 @@ module Density
 !
     endfunction mean_density
 !***********************************************************************
+    subroutine update_char_vel_density(f)
+!
+!  Updates characteristic velocity for slope-limited diffusion.
+!
+!  21-oct-15/MR: coded
+!
+      real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
+!
+      if (lslope_limit_diff) call fatal_error('update_char_vel_density', 'not implemented')
+!
+    endsubroutine update_char_vel_density
+!***********************************************************************
 endmodule Density
