@@ -98,6 +98,7 @@ module Particles_spin
             call fatal_error('initialize_particles_spin', 'Magnus lift requires the radius of each constituent particle. ')
         if (mpmat <= 0.0) &
             call fatal_error('initialize_particles_spin', 'Magnus lift requires the mass of each constituent particle. ')
+        if (lroot) print *, 'initialize_particles_spin: turned on Magnus lift. '
       endif magnus
 !
 !  Request interpolation of variables:
