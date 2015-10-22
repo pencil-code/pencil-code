@@ -335,7 +335,7 @@ module Mpicomm
 !
 !  initialize debug parameter for this routine
 !
-  logical :: ldebug_mpi=.false.
+  logical :: ldebug_mpi=.false., lcommunicate_y=.false.
   integer :: mpi_precision
 !
 !  For f-array processor boundaries
@@ -346,6 +346,8 @@ module Mpicomm
   real, dimension (mx,ny,nghost,mcom) :: lbufzi,ubufzi,lbufzo,ubufzo
   real, dimension (mx,nghost,nghost,mcom) :: llbufi,lubufi,uubufi,ulbufi
   real, dimension (mx,nghost,nghost,mcom) :: llbufo,lubufo,uubufo,ulbufo
+  real, dimension (mx,nghost,nghost,mcom) :: nbbufi,nfbufi,sfbufi,sbbufi
+  real, dimension (mx,nghost,nghost,mcom) :: nbbufo,nfbufo,sfbufo,sbbufo
 !
   real, dimension (nghost,my-2*nghost,mz,mcom) :: fahi,falo,fbhi,fblo ! For shear
   real, dimension (nghost,my-2*nghost,mz,mcom) :: fahihi,falolo,fbhihi,fblolo ! For shear
@@ -359,9 +361,11 @@ module Mpicomm
 !  mpi tags
 !
   integer :: tolowx=13,touppx=14,tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
+  integer :: tolowyr,touppyr,tolowys,touppys ! msg. tags placeholders
   integer :: TOll=7,TOul=8,TOuu=9,TOlu=10 ! msg. tags for corners
   integer :: io_perm=20,io_succ=21
   integer :: shiftn=22,shifts=23
+  integer :: TOnf=24,TOnb=25,TOsf=26,TOsb=27 ! msg. tags for pole corners
 !
 !  mpi tags for radiation
 !  the values for those have to differ by a number greater than maxdir=190
@@ -381,6 +385,8 @@ module Mpicomm
   integer :: isend_rq_tolowz,isend_rq_touppz,irecv_rq_fromlowz,irecv_rq_fromuppz
   integer :: isend_rq_TOll,isend_rq_TOul,isend_rq_TOuu,isend_rq_TOlu  !(corners)
   integer :: irecv_rq_FRuu,irecv_rq_FRlu,irecv_rq_FRll,irecv_rq_FRul  !(corners)
+  integer :: isend_rq_TOsb,isend_rq_TOsf,isend_rq_TOnb,isend_rq_TOnf  !(corners)
+  integer :: irecv_rq_FRsb,irecv_rq_FRsf,irecv_rq_FRnb,irecv_rq_FRnf  !(corners)
   integer :: isend_rq_tolastya,isend_rq_tonextya, &
              irecv_rq_fromlastya,irecv_rq_fromnextya ! For shear
   integer :: isend_rq_tolastyb,isend_rq_tonextyb, &
@@ -398,6 +404,10 @@ module Mpicomm
                                           isend_stat_Tuu,isend_stat_Tlu
   integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_Fuu,irecv_stat_Flu, &
                                           irecv_stat_Fll,irecv_stat_Ful
+  integer, dimension (MPI_STATUS_SIZE) :: isend_stat_Tsb,isend_stat_Tsf, &
+                                          irecv_stat_Fsb,irecv_stat_Fsf
+  integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_Fnb,irecv_stat_Fnf, &
+                                          isend_stat_Tnb,isend_stat_Tnf
   integer, dimension (MPI_STATUS_SIZE) :: isend_stat_spole,irecv_stat_spole, &
                                           isend_stat_npole,irecv_stat_npole
 !
@@ -446,6 +456,7 @@ module Mpicomm
 !  21-may-02/axel: communication of corners added
 !   6-jun-02/axel: generalized to allow for ny=1
 !  23-nov-02/axel: corrected problem with ny=4 or less
+!  21-oct-15/fred: adapted periodic y-boundary across the pole
 !
       integer :: i, j, k
 !
@@ -529,12 +540,6 @@ module Mpicomm
       zlneigh = ipx + ipy*nprocx + modulo(ipz-1,nprocz)*nprocxy
       zuneigh = ipx + ipy*nprocx + modulo(ipz+1,nprocz)*nprocxy
 !
-! For boundary condition across the pole set up pole-neighbours
-! This assumes that the domain is equally distributed among the
-! processors in the z direction.
-!
-      poleneigh = modulo(ipz+nprocz/2,nprocz)*nprocxy+ipy*nprocx+ipx
-!
 !  Set the four corners in the yz-plane (in cyclic order).
 !
       llcorn = ipx + modulo(ipy-1,nprocy)*nprocx + modulo(ipz-1,nprocz)*nprocxy
@@ -594,6 +599,7 @@ module Mpicomm
 !
 !  21-may-02/axel: communication of corners added
 !  11-aug-07/axel: communication in the x-direction added
+!  22-oct-15/fred: communication for spherical polar coords across poles
 !
       real, dimension(:,:,:,:), intent(inout):: f
       integer, optional,        intent(in)   :: ivar1_opt, ivar2_opt
@@ -607,31 +613,69 @@ module Mpicomm
 !
       mxl=size(f,1)
 !
-!  Periodic boundary conditions in x.
+!  Set communication across x-planes.
 !
       if (nprocx>1) call isendrcv_bdry_x(f,ivar1_opt,ivar2_opt)
 !
-!  Periodic boundary conditions in y.
+!  Set communication across y-planes.
+!  Standard message tags from defaults for surfaces and corners.
 !
-      if (nprocy>1) then
+      tolowyr=tolowy
+      tolowys=tolowy
+      touppyr=touppy
+      touppys=touppy
+!
+!  For spherical polar boundary condition across the pole set up edge and corner
+!  neighbours. Assumes the domain is binary communication between z processors.
+!
+      if (nprocz>1 .and. lpole(2)) lcommunicate_y = .True.
+      if (lcommunicate_y) then
+        poleneigh = modulo(ipz+nprocz/2,nprocz)*nprocxy+ipy*nprocx+ipx
+        pnbcrn = modulo(ipz-1+nprocz/2,nprocz)*nprocxy+ipy*nprocx+ipx !N rev
+        pnfcrn = modulo(ipz+1+nprocz/2,nprocz)*nprocxy+ipy*nprocx+ipx !N fwd
+        psfcrn = modulo(ipz+1+nprocz/2,nprocz)*nprocxy+ipy*nprocx+ipx !S rev
+        psbcrn = modulo(ipz-1+nprocz/2,nprocz)*nprocxy+ipy*nprocx+ipx !S fwd
+      endif
+!
+!  Allocate and send/receive buffers across y-planes
+!
+      if (nprocy>1 .or. lcommunicate_y) then
+!
+!  Internal and periodic y-plane buffers.
+!
         lbufyo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n1:n2,ivar1:ivar2) !!(lower y-zone)
         ubufyo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n1:n2,ivar1:ivar2) !!(upper y-zone)
         nbufy=mxl*nz*nghost*(ivar2-ivar1+1)
+!
+!  North/south-pole y-plane buffers and message tags. NB N:0/S:pi radians.
+!  Swap N(S) lower(upper) buffers between pi-shifted procs same y-plane.
+!
+        if (lcommunicate_y) then
+          if (lfirst_proc_y) then !N-pole
+            lbufyo(:,:,:,ivar1:ivar2)= f(:,m1i:m1:-1,n1:n2,ivar1:ivar2)
+            tolowys=shiftn; touppyr=shiftn; ylneigh=poleneigh
+          endif
+          if (llast_proc_y) then !S-pole
+            ubufyo(:,:,:,ivar1:ivar2)= f(:,m2:m2i:-1,n1:n2,ivar1:ivar2)
+            tolowyr=shifts; touppys=shifts; yuneigh=poleneigh
+          endif
+        endif
+!
         call MPI_IRECV(ubufyi(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
-            yuneigh,tolowy,MPI_COMM_WORLD,irecv_rq_fromuppy,mpierr)
+            yuneigh,tolowyr,MPI_COMM_WORLD,irecv_rq_fromuppy,mpierr)
         call MPI_IRECV(lbufyi(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
-            ylneigh,touppy,MPI_COMM_WORLD,irecv_rq_fromlowy,mpierr)
+            ylneigh,touppyr,MPI_COMM_WORLD,irecv_rq_fromlowy,mpierr)
         call MPI_ISEND(lbufyo(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
-            ylneigh,tolowy,MPI_COMM_WORLD,isend_rq_tolowy,mpierr)
+            ylneigh,tolowys,MPI_COMM_WORLD,isend_rq_tolowy,mpierr)
         call MPI_ISEND(ubufyo(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
-            yuneigh,touppy,MPI_COMM_WORLD,isend_rq_touppy,mpierr)
+            yuneigh,touppys,MPI_COMM_WORLD,isend_rq_touppy,mpierr)
       endif
 !
-!  Periodic boundary conditions in z.
+!  Set communication across z-planes.
 !
       if (nprocz>1) then
-        lbufzo(:,:,:,ivar1:ivar2)=f(:,m1:m2,n1:n1i,ivar1:ivar2) !!(lower z-zone)
-        ubufzo(:,:,:,ivar1:ivar2)=f(:,m1:m2,n2i:n2,ivar1:ivar2) !!(upper z-zone)
+        lbufzo(:,:,:,ivar1:ivar2)=f(:,m1:m2,n1:n1i,ivar1:ivar2) !lower z-planes
+        ubufzo(:,:,:,ivar1:ivar2)=f(:,m1:m2,n2i:n2,ivar1:ivar2) !upper z-planes
         nbufz=mxl*ny*nghost*(ivar2-ivar1+1)
         call MPI_IRECV(ubufzi(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
             zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,mpierr)
@@ -641,10 +685,6 @@ module Mpicomm
             zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,mpierr)
         call MPI_ISEND(ubufzo(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
             zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,mpierr)
-        if (lpole(2) .and. lfirst_proc_y) &
-            call isendrcv_bdry_npole(f,ivar1_opt,ivar2_opt)
-        if (lpole(2) .and. llast_proc_y ) &
-            call isendrcv_bdry_spole(f,ivar1_opt,ivar2_opt)
       endif
 !
 !  The four corners (in counter-clockwise order).
@@ -690,6 +730,7 @@ module Mpicomm
 !  freed, since MPI_Wait takes care of this.
 !
 !  21-may-02/axel: communication of corners added
+!  22-oct-15/fred: communication for spherical polar coords across poles
 !
       real, dimension(:,:,:,:), intent(inout):: f
       integer, optional,        intent(in)   :: ivar1_opt, ivar2_opt
@@ -705,7 +746,7 @@ module Mpicomm
 !  2. set ghost zones
 !  3. wait until send completed, will be overwritten in next time step
 !
-!  Communication in y (includes periodic bc)
+!  Communication across y-planes (includes periodic bc)
 !
       if (nprocy>1) then
         call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,mpierr)
@@ -716,6 +757,15 @@ module Mpicomm
           endif
           if (.not. llast_proc_y .or. bcy12(j,2)=='p') then
             f(:,m2+1:  ,n1:n2,j)=ubufyi(:,:,:,j)  !!(set upper buffer)
+          endif
+!  Spherical y-planes across the poles
+          if (lcommunicate_y .and. lfirst_proc_y) then
+            if (bcy12(j,1)=='pp') f(:, 1:m1-1,n1:n2,j)= lbufyi(:,:,:,j) !N-pole
+            if (bcy12(j,1)=='ap') f(:, 1:m1-1,n1:n2,j)=-lbufyi(:,:,:,j) !N-pole
+          endif
+          if (lcommunicate_y .and. llast_proc_y) then
+            if (bcy12(j,2)=='pp') f(:,m2+1:  ,n1:n2,j)= ubufyi(:,:,:,j) !S-pole
+            if (bcy12(j,2)=='ap') f(:,m2+1:  ,n1:n2,j)=-ubufyi(:,:,:,j) !S-pole
           endif
         enddo
         call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,mpierr)
@@ -737,22 +787,6 @@ module Mpicomm
         enddo
         call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,mpierr)
         call MPI_WAIT(isend_rq_touppz,isend_stat_tu,mpierr)
-        if (lfirst_proc_y .and. lpole(2)) then
-          call MPI_WAIT(irecv_rq_banshift,irecv_stat_np,mpierr)
-          do j=ivar1,ivar2
-            if (bcy12(j,1)=='pp') f(l1:l2,:m1-1,n1:n2,j)= npbufyi(:,:,:,j)
-            if (bcy12(j,1)=='ap') f(l1:l2,:m1-1,n1:n2,j)=-npbufyi(:,:,:,j)
-          enddo
-          call MPI_WAIT(isend_rq_fonshift,isend_stat_np,mpierr)
-        endif
-        if (llast_proc_y .and. lpole(2)) then
-          call MPI_WAIT(irecv_rq_basshift,irecv_stat_spole,mpierr)
-          do j=ivar1,ivar2
-            if (bcy12(j,2)=='pp') f(l1:l2,m2+1:,n1:n2,j)= spbufyi(:,:,:,j)
-            if (bcy12(j,2)=='ap') f(l1:l2,m2+1:,n1:n2,j)=-spbufyi(:,:,:,j)
-          enddo
-          call MPI_WAIT(isend_rq_fosshift,isend_stat_spole,mpierr)
-        endif
       endif
 !
 !  The four yz-corners (in counter-clockwise order)
@@ -787,7 +821,6 @@ module Mpicomm
         call MPI_WAIT(isend_rq_TOul,isend_stat_Tul,mpierr)
         call MPI_WAIT(isend_rq_TOuu,isend_stat_Tuu,mpierr)
         call MPI_WAIT(isend_rq_TOlu,isend_stat_Tlu,mpierr)
-      
       endif
 !
 !  communication sample
@@ -852,90 +885,6 @@ module Mpicomm
       endif
 !
     endsubroutine isendrcv_bdry_x
-!***********************************************************************
-    subroutine isendrcv_bdry_npole(f,ivar1_opt,ivar2_opt)
-!
-!  Isend and Irecv boundary values for pole.
-!
-!   18-june-10/dhruba: aped
-!   15-oct-15/fred: simplified ghost allocation
-!
-      real, dimension (:,:,:,:) :: f
-      integer, optional :: ivar1_opt, ivar2_opt
-!
-      integer :: ivar1, ivar2, nbuf_pole, j
-!
-      ivar1=1; ivar2=min(mcom,size(f,4))
-      if (present(ivar1_opt)) ivar1=ivar1_opt
-      if (present(ivar2_opt)) ivar2=ivar2_opt
-!
-! The following is not a typo, it must be nprocz although the boundary
-! is the pole (i.e., along the y direction).
-      if (nprocz>1) then
-        npbufyo(:,:,:,ivar1:ivar2)=f(l1:l2,m1i:m1:-1,n1:n2,ivar1:ivar2) !!(north pole)
-        nbuf_pole=nx*nghost*nz*(ivar2-ivar1+1)
-        call MPI_IRECV(npbufyi(:,:,:,ivar1:ivar2),nbuf_pole,MPI_REAL, &
-             poleneigh,shiftn,MPI_COMM_WORLD,irecv_rq_banshift,mpierr)
-        call MPI_ISEND(npbufyo(:,:,:,ivar1:ivar2),nbuf_pole,MPI_REAL, &
-             poleneigh,shiftn,MPI_COMM_WORLD,isend_rq_fonshift,mpierr)
-!
-!  FG: moved following lines to ...finalize...
-!
-!        call MPI_WAIT(irecv_rq_foshift,irecv_stat_np,mpierr)
-!        do j=ivar1,ivar2
-!          if (bcy12(j,1)=='pp') f(l1:l2,:m1-1,n1:n2,j)= npbufyi(:,:,:,j)
-!          if (bcy12(j,1)=='ap') f(l1:l2,:m1-1,n1:n2,j)=-npbufyi(:,:,:,j)
-!        enddo
-!        call MPI_WAIT(isend_rq_bashift,isend_stat_np,mpierr)
-      endif
-!
-!  The above if may be redundant as nested within existing condition, however
-!  worth retaining in case called from elsewhere. Next branch requires corners
-!
-    endsubroutine isendrcv_bdry_npole
-!***********************************************************************
-    subroutine isendrcv_bdry_spole(f,ivar1_opt,ivar2_opt)
-!
-!  Isend and Irecv boundary values for pole.
-!
-!   18-june-10/dhruba: aped
-!   15-oct-15/fred: inverted ghost allocation
-!
-      real, dimension (:,:,:,:) :: f
-      integer, optional :: ivar1_opt, ivar2_opt
-!
-      integer :: ivar1, ivar2, nbuf_pole, j
-!
-      ivar1=1; ivar2=min(mcom,size(f,4))
-      if (present(ivar1_opt)) ivar1=ivar1_opt
-      if (present(ivar2_opt)) ivar2=ivar2_opt
-!
-!  The following is not a typo, it must be nprocz although the boundary
-!  is the pole (i.e., along the y direction).
-!
-      if (nprocz>1) then
-        spbufyo(:,:,:,ivar1:ivar2)=f(l1:l2,m2:m2i:-1,n1:n2,ivar1:ivar2) !!(south pole)
-        nbuf_pole=nx*nghost*nz*(ivar2-ivar1+1)
-        call MPI_IRECV(spbufyi(:,:,:,ivar1:ivar2),nbuf_pole,MPI_REAL, &
-             poleneigh,shifts,MPI_COMM_WORLD,irecv_rq_basshift,mpierr)
-        call MPI_ISEND(spbufyo(:,:,:,ivar1:ivar2),nbuf_pole,MPI_REAL, &
-             poleneigh,shifts,MPI_COMM_WORLD,isend_rq_fosshift,mpierr)
-!
-!  FG: moved following lines to ...finalize...
-!
-!        call MPI_WAIT(irecv_rq_bashift,irecv_stat_spole,mpierr)
-!        do j=ivar1,ivar2
-!          if (bcy12(j,2)=='pp') f(l1:l2,m2+1:,n1:n2,j)= spbufyi(:,:,:,j)
-!          if (bcy12(j,2)=='ap') f(l1:l2,m2+1:,n1:n2,j)=-spbufyi(:,:,:,j)
-!        enddo
-!        call MPI_WAIT(isend_rq_bashift,isend_stat_spole,mpierr)
-      endif
-!
-!  The above if may be redundant as nested within existing condition, however
-!  worth retaining in case called from elsewhere. Next branch requires corners
-!
-!
-    endsubroutine isendrcv_bdry_spole
 !***********************************************************************
    subroutine initiate_shearing(f,ivar1_opt,ivar2_opt)
 !
