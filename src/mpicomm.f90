@@ -355,6 +355,8 @@ module Mpicomm
   integer :: ipx_partner, displs ! For shear
   integer :: nextnextya, nextya, lastya, lastlastya ! For shear
   integer :: nextnextyb, nextyb, lastyb, lastlastyb ! For shear
+  integer :: llcornr, lucornr, ulcornr, uucornr ! Receiving corner ids
+  integer :: llcorns, lucorns, ulcorns, uucorns ! Sending corner ids
   integer :: nprocs, mpierr
   integer :: serial_level = 0
 !
@@ -363,6 +365,7 @@ module Mpicomm
   integer :: tolowx=13,touppx=14,tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
   integer :: tolowyr,touppyr,tolowys,touppys ! msg. tags placeholders
   integer :: TOll=7,TOul=8,TOuu=9,TOlu=10 ! msg. tags for corners
+  integer :: TOllr,TOulr,TOuur,TOlur,TOlls,TOuls,TOuus,TOlus ! placeholder tags
   integer :: io_perm=20,io_succ=21
   integer :: shiftn=22,shifts=23
   integer :: TOnf=24,TOnb=25,TOsf=26,TOsb=27 ! msg. tags for pole corners
@@ -547,6 +550,13 @@ module Mpicomm
       uucorn = ipx + modulo(ipy+1,nprocy)*nprocx + modulo(ipz+1,nprocz)*nprocxy
       lucorn = ipx + modulo(ipy-1,nprocy)*nprocx + modulo(ipz+1,nprocz)*nprocxy
 !
+!  Set stanard processor ids
+!
+      llcornr = llcorn; llcorns = llcorn
+      ulcornr = ulcorn; ulcorns = ulcorn
+      uucornr = uucorn; uucorns = uucorn
+      lucornr = lucorn; lucorns = lucorn
+
 !  This value is not yet the one read in, but the one initialized in cparam.f90.
 !
 !  Print neighbors in counterclockwise order (including the corners),
@@ -600,6 +610,7 @@ module Mpicomm
 !  21-may-02/axel: communication of corners added
 !  11-aug-07/axel: communication in the x-direction added
 !  22-oct-15/fred: communication for spherical polar coords across poles
+!                  added yz corner communication
 !
       real, dimension(:,:,:,:), intent(inout):: f
       integer, optional,        intent(in)   :: ivar1_opt, ivar2_opt
@@ -618,23 +629,24 @@ module Mpicomm
       if (nprocx>1) call isendrcv_bdry_x(f,ivar1_opt,ivar2_opt)
 !
 !  Set communication across y-planes.
-!  Standard message tags from defaults for surfaces and corners.
+!  Standard message tags from defaults for surfaces and yz-corners.
 !
-      tolowyr=tolowy
-      tolowys=tolowy
-      touppyr=touppy
-      touppys=touppy
+      tolowyr=tolowy; TOlls=TOll; TOllr=TOll
+      tolowys=tolowy; TOlus=TOlu; TOlur=TOlu
+      touppyr=touppy; TOuus=TOuu; TOuur=TOuu
+      touppys=touppy; TOuls=TOul; TOulr=TOul
 !
 !  For spherical polar boundary condition across the pole set up edge and corner
 !  neighbours. Assumes the domain is binary communication between z processors.
+!  NB nprocz=2*n, n>=1, comms across y-plane parallel in z! 
 !
       if (nprocz>1 .and. lpole(2)) lcommunicate_y = .True.
       if (lcommunicate_y) then
         poleneigh = modulo(ipz+nprocz/2,nprocz)*nprocxy+ipy*nprocx+ipx
-        pnbcrn = modulo(ipz-1+nprocz/2,nprocz)*nprocxy+ipy*nprocx+ipx !N rev
-        pnfcrn = modulo(ipz+1+nprocz/2,nprocz)*nprocxy+ipy*nprocx+ipx !N fwd
-        psfcrn = modulo(ipz+1+nprocz/2,nprocz)*nprocxy+ipy*nprocx+ipx !S rev
-        psbcrn = modulo(ipz-1+nprocz/2,nprocz)*nprocxy+ipy*nprocx+ipx !S fwd
+        pnbcrn = modulo(ipz-1+nprocz/2,nprocz)*nprocxy+0*nprocx+ipx !N rev
+        pnfcrn = modulo(ipz+1+nprocz/2,nprocz)*nprocxy+0*nprocx+ipx !N fwd
+        psfcrn = modulo(ipz+1+nprocz/2,nprocz)*nprocxy+(nprocy-1)*nprocx+ipx
+        psbcrn = modulo(ipz-1+nprocz/2,nprocz)*nprocxy+(nprocy-1)*nprocx+ipx
       endif
 !
 !  Allocate and send/receive buffers across y-planes
@@ -648,7 +660,7 @@ module Mpicomm
         nbufy=mxl*nz*nghost*(ivar2-ivar1+1)
 !
 !  North/south-pole y-plane buffers and message tags. NB N:0/S:pi radians.
-!  Swap N(S) lower(upper) buffers between pi-shifted procs same y-plane.
+!  Swap N(S) lower(upper) buffers between pi-shifted iprocz same y-plane.
 !
         if (lcommunicate_y) then
           if (lfirst_proc_y) then !N-pole
@@ -691,27 +703,50 @@ module Mpicomm
 !  (NOTE: this should work even for nprocx>1)
 !
       if (nprocy>1.and.nprocz>1) then
+!
+!  Internal and periodic yz-corner buffers.
+!
         llbufo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n1:n1i,ivar1:ivar2)
         ulbufo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n1:n1i,ivar1:ivar2)
         uubufo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n2i:n2,ivar1:ivar2)
         lubufo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n2i:n2,ivar1:ivar2)
         nbufyz=mxl*nghost*nghost*(ivar2-ivar1+1)
+!
+!  North/south-pole yz-corner buffers and message tags. NB N:0/S:pi radians.
+!  Send N(S) lower(upper) buffers to pi-shifted iprocz +/-1 and receive
+!  pi-shifted iprocz -/+1 on the same y-plane.
+!
+        if (lcommunicate_y) then
+          if (lfirst_proc_y) then !N-pole
+            lubufo(:,:,:,ivar1:ivar2)=f(:,m1i:m1:-1,n2i:n2,ivar1:ivar2)
+            llbufo(:,:,:,ivar1:ivar2)=f(:,m1i:m1:-1,n1:n1i,ivar1:ivar2)
+            lucorns=pnfcrn;lucornr=pnbcrn;llcornr=pnfcrn;llcorns=pnbcrn
+            TOlus  =TOnf;  TOulr  =TOnf;  TOuur  =TOnb;  TOlls  =TOnb
+          endif
+          if (llast_proc_y) then !S-pole
+            ulbufo(:,:,:,ivar1:ivar2)=f(:,m2:m2i:-1,n1:n1i,ivar1:ivar2)
+            uubufo(:,:,:,ivar1:ivar2)=f(:,m2:m2i:-1,n2i:n2,ivar1:ivar2)
+            uucorns=psfcrn;uucornr=psbcrn;ulcornr=psfcrn;ulcorns=psbcrn
+            TOuus  =TOsf;  TOllr  =TOsf;  TOlur  =TOsb;  TOuls  =TOsb
+          endif
+        endif
+!
         call MPI_IRECV(uubufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            uucorn,TOll,MPI_COMM_WORLD,irecv_rq_FRuu,mpierr)
+            uucornr,TOllr,MPI_COMM_WORLD,irecv_rq_FRuu,mpierr)
         call MPI_IRECV(lubufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            lucorn,TOul,MPI_COMM_WORLD,irecv_rq_FRlu,mpierr)
+            lucornr,TOulr,MPI_COMM_WORLD,irecv_rq_FRlu,mpierr)
         call MPI_IRECV(llbufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            llcorn,TOuu,MPI_COMM_WORLD,irecv_rq_FRll,mpierr)
+            llcornr,TOuur,MPI_COMM_WORLD,irecv_rq_FRll,mpierr)
         call MPI_IRECV(ulbufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            ulcorn,TOlu,MPI_COMM_WORLD,irecv_rq_FRul,mpierr)
+            ulcornr,TOlur,MPI_COMM_WORLD,irecv_rq_FRul,mpierr)
         call MPI_ISEND(llbufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            llcorn,TOll,MPI_COMM_WORLD,isend_rq_TOll,mpierr)
+            llcorns,TOlls,MPI_COMM_WORLD,isend_rq_TOll,mpierr)
         call MPI_ISEND(ulbufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            ulcorn,TOul,MPI_COMM_WORLD,isend_rq_TOul,mpierr)
+            ulcorns,TOuls,MPI_COMM_WORLD,isend_rq_TOul,mpierr)
         call MPI_ISEND(uubufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            uucorn,TOuu,MPI_COMM_WORLD,isend_rq_TOuu,mpierr)
+            uucorns,TOuus,MPI_COMM_WORLD,isend_rq_TOuu,mpierr)
         call MPI_ISEND(lubufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            lucorn,TOlu,MPI_COMM_WORLD,isend_rq_TOlu,mpierr)
+            lucorns,TOlus,MPI_COMM_WORLD,isend_rq_TOlu,mpierr)
       endif
 !
 !  communication sample
@@ -731,6 +766,7 @@ module Mpicomm
 !
 !  21-may-02/axel: communication of corners added
 !  22-oct-15/fred: communication for spherical polar coords across poles
+!                  added yz corner communication
 !
       real, dimension(:,:,:,:), intent(inout):: f
       integer, optional,        intent(in)   :: ivar1_opt, ivar2_opt
@@ -813,6 +849,27 @@ module Mpicomm
             endif
             if (.not. lfirst_proc_y .or. bcy12(j,1)=='p') then
               f(:, 1:m1-1,n2+1:,j)=lubufi(:,:,:,j)  !!(set lu corner)
+            endif
+          endif
+!  Spherical yz-corners across the poles. If lcommunicate_y then periodic in z
+          if (lcommunicate_y .and. lfirst_proc_y) then
+            if (bcy12(j,1)=='pp') then !N-pole periodic
+              f(:,:m1-1,:n1-1,j)= lubufi(:,:,:,j)  !(set ll corner)
+              f(:,:m1-1,n2+1:,j)= llbufi(:,:,:,j)  !(set lu corner)
+            endif
+            if (bcy12(j,1)=='ap') then !N-pole aperiodic
+              f(:,:m1-1,:n1-1,j)=-lubufi(:,:,:,j)  !(set ll corner)
+              f(:,:m1-1,n2+1:,j)=-llbufi(:,:,:,j)  !(set lu corner)
+            endif
+          endif
+          if (lcommunicate_y .and. llast_proc_y) then
+            if (bcy12(j,2)=='pp') then !S-pole periodic
+              f(:,m2+1:,:n1-1,j)= uubufi(:,:,:,j)  !(set ul corner)
+              f(:,m2+1:,n2+1:,j)= ulbufi(:,:,:,j)  !(set uu corner)
+            endif
+            if (bcy12(j,2)=='ap') then !S-pole aperiodic
+              f(:,m2+1:,:n1-1,j)=-uubufi(:,:,:,j)  !(set ul corner)
+              f(:,m2+1:,n2+1:,j)=-ulbufi(:,:,:,j)  !(set uu corner)
             endif
           endif
         enddo
