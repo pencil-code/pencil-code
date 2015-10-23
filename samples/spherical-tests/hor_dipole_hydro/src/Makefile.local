@@ -5,7 +5,7 @@
 
 MPICOMM   =   mpicomm
 IO        =   io_dist
-FILE_IO   =   file_io_f2003
+#FILE_IO   =   file_io_f2003
 GLOBAL    = noglobal
 FFT       = nofft
 FFTPACK   = nofftpack
