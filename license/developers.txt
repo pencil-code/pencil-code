@@ -23,7 +23,7 @@ Fabio Del Sordo,      fabio/nordita.org,             fadiesis,             +46 8
 Boris Dintrans,       boris.dintrans/irap.omp.eu,    boris.dintrans,       +33 5 6133 2811    +33 6 51 05 35 21,        bdintrans
 Wolfgang Dobler,      wdobler/gmail.com,             wdobler,              +49 33201 43791,   +49 1520 4056 762, +49 3053 31 12083 (office), mob (new): +49 151 28123472
 Thomas Gastine,       gastine/mps.mpg.de,            ,                     +49 5556 979 456
-Fred A. Gent,         fred.gent.ncl/gmail.com,       fred.gent.ncl,        +44 114 222 3285,  +44 7779 364 893 (mob),   fred_gent
+Fred A. Gent,         frederick.gent@aalto.fi,       fred.gent.ncl,        +44 114 222 3285,  +44 7779 364 893 (mob),   fred_gent
 Gustavo Guerrero,     tavo.buk/gmail.com,            ,                     +46 8 5537 8718,   +46 76 089 1432
 Anders Johansen,      anders/astro.lu.se,            ,                     +46 46 22 21589,   +46 736 84 96 98
 Nils E.L. Haugen,     Nils.E.Haugen/sintef.no,       ,                     +47 986 08 683,    +47 986 08 683
