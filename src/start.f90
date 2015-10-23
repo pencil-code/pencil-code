@@ -224,6 +224,23 @@ program start
         if (i==3.and.luniform_z_mesh_aspect_ratio) then
           Lxyz(i)=2*pi*real(nzgrid)/real(nxgrid)
           xyz0(i)=-pi*real(nzgrid)/real(nxgrid)
+        elseif (lpole(i)) then
+          if (lperi(i)) call fatal_error('start',&
+            'lperi and lpole cannot be used together in same component')
+          if (coord_system/='spherical') call fatal_error('start',&
+            'lpole only implemented for spherical coordinates')
+          if (lequidist(i)) then
+            if (i==2 .and. coord_system == 'spherical') then
+              xyz0(i) = pi/(2*nygrid)
+              Lxyz(i) = pi - 2*xyz0(i)
+            else
+              call fatal_error('start',&
+                  'origin/pole not included for components or coordinates')
+            endif
+          else
+            call fatal_error('start',&
+                'origin/pole not yet implemented for non-equidistant grid')
+          endif
         else
           Lxyz(i)=2*pi    ! default value
         endif
@@ -241,6 +258,8 @@ program start
             if (i==2 .and. coord_system == 'spherical') then
               xyz0(i) = pi/(2*nygrid)
               Lxyz(i) = pi - 2*xyz0(i)
+              xyz0(3) = 0.
+              xyz1(3) = 2*pi
             else
               call fatal_error('start',&
                   'origin/pole not included for components or coordinates')
