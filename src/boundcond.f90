@@ -513,10 +513,10 @@ module Boundcond
                 call bc_per_y(f,topbot,j)
               case ('pp')
                 ! BCY_DOC: periodic across the pole
-                call bc_pper_y(f,topbot,j)
+                call bc_pper_y(f,+1,topbot,j)
               case ('ap')
                 ! BCY_DOC: anti-periodic across the pole
-                call bc_aper_y(f,topbot,j)
+                call bc_pper_y(f,-1,topbot,j)
               case ('s')
                 ! BCY_DOC: symmetry symmetry, $f_{N+i}=f_{N-i}$;
                   ! BCX_DOC: implies $f'(y_N)=f'''(y_0)=0$
@@ -1186,17 +1186,21 @@ module Boundcond
 !
     endsubroutine bc_per_y
 !***********************************************************************
-    subroutine bc_pper_y(f,topbot,j)
+    subroutine bc_pper_y(f,sgn,topbot,j)
 !
 !  Periodic boundary condition across the pole
 !
 !  15-jun-10/dhruba: aped
 !  15-oct-15/fred NB use for scalars and radial vector components
+!            In principle similar conditions could apply for R=0
+!            for sph/cyl coords, but not yet implemented
 !
       real, dimension (:,:,:,:) :: f
-      integer :: j,nhalf
+      integer :: j,nhalf,sgn
       character (len=bclen) :: topbot
 !
+      if (.not.lpole(2)) call fatal_error_local('bc_pper_y',&
+        "for 'p' lpole=F,T,F , lperi=F,F,T in start.in")
       if (nprocz>1 .and. modulo(nprocz,2)==1) &
         call fatal_error_local('bc_pper_y',&
              "for 'pp' nprocz must be multiple of 2")
@@ -1206,13 +1210,13 @@ module Boundcond
 !
       case ('bot')               ! bottom boundary
         if (nprocz==1) then
-          f(:,:m1-1,n1:nhalf  ,j) = f(:,m1i:m1:-1,nhalf+1:n2,j)
-          f(:,:m1-1,nhalf+1:n2,j) = f(:,m1i:m1:-1,n1:nhalf  ,j)
+          f(:,:m1-1,n1:nhalf  ,j) = sgn*f(:,m1i:m1:-1,nhalf+1:n2,j)
+          f(:,:m1-1,nhalf+1:n2,j) = sgn*f(:,m1i:m1:-1,n1:nhalf  ,j)
         endif
       case ('top')               ! top boundary
         if (nprocz==1) then
-          f(:,m2+1:,n1:nhalf  ,j) = f(:,m2:m2i:-1,nhalf+1:n2,j)
-          f(:,m2+1:,nhalf+1:n2,j) = f(:,m2:m2i:-1,n1:nhalf  ,j)
+          f(:,m2+1:,n1:nhalf  ,j) = sgn*f(:,m2:m2i:-1,nhalf+1:n2,j)
+          f(:,m2+1:,nhalf+1:n2,j) = sgn*f(:,m2:m2i:-1,n1:nhalf  ,j)
         endif
       case default
         print*, "bc_pper_y: ", topbot, " should be 'top' or 'bot'"
@@ -1220,41 +1224,6 @@ module Boundcond
       endselect
 !
     endsubroutine bc_pper_y
-!***********************************************************************
-    subroutine bc_aper_y(f,topbot,j)
-!
-!  Anti-periodic boundary condition across the pole
-!
-!  15-jun-10/dhruba: aped
-!  15-oct-15/fred NB use for phi and theta vector components
-!
-      real, dimension (:,:,:,:) :: f
-      integer :: j,nhalf
-      character (len=bclen) :: topbot
-!
-      if (nprocz>1 .and. modulo(nprocz,2)==1) &
-        call fatal_error_local('bc_aper_y',&
-             "for 'ap' nprocz must be multiple of 2")
-!
-      nhalf=(n1+n2)/2
-      select case (topbot)
-!
-      case ('bot')               ! bottom boundary
-        if (nprocz==1) then
-          f(:,:m1-1,n1:nhalf,  j) = -f(:,m1i:m1:-1,nhalf+1:n2,j)
-          f(:,:m1-1,nhalf+1:n2,j) = -f(:,m1i:m1:-1,n1:nhalf,  j)
-        endif
-      case ('top')               ! top boundary
-        if (nprocz==1) then
-          f(:,m2+1:,n1:nhalf,  j) = -f(:,m2:m2i:-1,nhalf+1:n2,j)
-          f(:,m2+1:,nhalf+1:n2,j) = -f(:,m2:m2i:-1,n1:nhalf,  j)
-        endif
-      case default
-        print*, "bc_aper_y: ", topbot, " should be 'top' or 'bot'"
-!
-      endselect
-!
-    endsubroutine bc_aper_y
 !***********************************************************************
     subroutine bc_per_z(f,topbot,j)
 !
