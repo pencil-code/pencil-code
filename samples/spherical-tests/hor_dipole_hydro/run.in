@@ -1,0 +1,22 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Convection in a spherical wedge
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.2 2014/07/21 11:02:45 pkapyla Exp $',
+  nt=250, it1=25, isave=500, itorder=3, tmax=500000
+  dsnap=.00025, dvid=0.5, ialive=0,
+  cdtv=0.30, d2davg=0.5, cdt=0.9
+  bcx='s' , 's' , 's' , 'spr', 'spr', 'spr'
+  bcy='pp', 'ap', 'ap', 'pp' , 'ap' , 'ap'
+/
+&hydro_run_pars
+/
+&magnetic_run_pars
+  lupw_aa=T
+  eta=5e-3
+/
+&viscosity_run_pars
+  ivisc='nu-const'
+  nu=1e-1
+/

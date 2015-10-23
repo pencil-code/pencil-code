@@ -1,0 +1,22 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Convection in a spherical wedge
+!
+&init_pars
+  coord_system='spherical'
+  lperi=F, F, T
+  lpole=F, T, F
+  xyz0=0.7, 0.018699956271367817
+  xyz1=1.0, 3.1228926973184254
+  bcx='s' , 's' , 's' , 'spr', 'spr', 'spr'
+  bcy='pp', 'ap', 'ap', 'pp' , 'ap' , 'ap'
+/
+&hydro_init_pars
+  inituu='zero'
+/
+&magnetic_init_pars
+  initaa='horizontal_dipole'
+  amplaa=0.05
+/
+&viscosity_init_pars
+/

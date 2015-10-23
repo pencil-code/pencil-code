@@ -1,0 +1,18 @@
+Directory:
+    ${PENCIL_HOME}/samples/spherical-tests/hor_dipole
+SVN Id:
+    $Id: README 13517 2010-03-23 00:56:25Z wladimir.lyra $
+Maintainer:
+    Frederick Gent <fred.gent.ncl@gmail.com>
+Added:
+     23-oct-2015
+Status:
+    introduced 23-oct-2015
+Recommended resolution:
+    tba
+Comments:
+    Compare with ver_dipole to determine numerical effect of 
+    calculating diffusion of field along the axis vs across 
+    the equator with a/periodic boundary over the poles.
+Reference:
+    tba

@@ -1,0 +1,20 @@
+Directory:
+    ${PENCIL_HOME}/samples/spherical-tests
+SVN Id:
+    $Id: README 13517 2010-03-23 00:56:25Z wladimir.lyra $
+Maintainer:
+    Frederick Gent <fred.gent.ncl@gmail.com>
+Added:
+     23-oct-2015
+Status:
+    introduced 23-oct-2015
+Recommended resolution:
+    tba
+Comments:
+    Introduced polar spherical pole boundary conditions. 
+    Including 3 tests: horizontal dipole and vertical dipole
+    pure magnetic to check diffusion independent of boundary,
+    and horizontal dipole with hydro to check consistency of 
+    the yz-corner boundary necessary for stress tensor
+Reference:
+    tba
