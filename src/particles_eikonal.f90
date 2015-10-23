@@ -73,7 +73,6 @@ module Particles
   real :: max_particle_insert_time=huge1
   real :: Deltauy_gas_friction=0.0
   real :: cond_ratio=0.0
-  real :: fake_particle_radius=0.0
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0
   logical :: lleft_down=.false.
@@ -158,8 +157,9 @@ module Particles
       lnostore_uu, ldt_grav_par, ldragforce_radialonly, &
       lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, &
       Lz0, lglobalrandom, linsert_particles_continuously, &
-      lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, np_const, &
-      rhop_const, ldragforce_equi_noback, rhopmat, Deltauy_gas_friction, xp1, &
+      lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, &
+      np_const, rhop_const, particle_radius, &
+      ldragforce_equi_noback, rhopmat, Deltauy_gas_friction, xp1, &
       yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
       xp3, yp3, zp3, vpx3, vpy3, vpz3, &
       lcalc_uup, temp_grad0, cond_ratio, interp_pol_gradTT, &
@@ -191,8 +191,9 @@ module Particles
       ldragforce_radialonly, &
       lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, &
       particles_insert_rate, &
-      max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, &
-      lnocalc_rhop, np_const, rhop_const, Deltauy_gas_friction, &
+      max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, &
+      np_const, rhop_const, particle_radius, &
+      Deltauy_gas_friction, &
       loutput_psize_dist, log_ap_min_dist, log_ap_max_dist, nbin_ap_dist, &
       temp_grad0, &
       cond_ratio, interp_pol_gradTT, lcommunicate_rhop, & 
@@ -316,6 +317,14 @@ module Particles
         endif
         call fatal_error('initialize_particles','')
       endif
+!
+!  Report the particle radius, if set.
+!
+      apar: if (particle_radius /= 0.0) then
+        if (lparticles_radius) &
+            call fatal_error('initialize_particles', 'particle_radius /= 0 has no effect when module Particles_radius is on. ')
+        if (lroot) print *, 'initialize_particles: radius of each constituent particle = ', particle_radius
+      endif apar
 !
 !  The inverse stopping time is needed for drag force and collisional cooling.
 !
@@ -4016,18 +4025,19 @@ k_loop:   do while (.not. (k>npar_loc))
         call fatal_error('calc_pencil_rep','No such ivis!')
       endif
 !
-      if (.not.lparticles_radius) then
-        print*,'calc_pencil_rep: particle_radius module needs to be '// &
-          'enabled to calculate the particles Reynolds numbers.'
-        call fatal_error('calc_pencil_rep','')
-      elseif (maxval(nu)==0.0) then
-        print*,'calc_pencil_rep: nu (kinematic visc.) must be non-zero!'
-        call fatal_error('calc_pencil_rep','')
-      endif
+      if (maxval(nu)==0.0) call fatal_error('calc_pencil_rep', 'nu (kinematic visc.) must be non-zero!')
 !
       do k=k1_imn(imn),k2_imn(imn)
-        rep(k)=2.0*fp(k,iap)*sqrt(sum((interp_uu(k,:)-fp(k,ivpx:ivpz))**2))/nu(k)
+        rep(k) = 2.0 * sqrt(sum((interp_uu(k,:) - fp(k,ivpx:ivpz))**2)) / nu(k)
       enddo
+!
+      if (lparticles_radius) then
+        rep = rep * fp(k1_imn(imn):k2_imn(imn),iap)
+      elseif (particle_radius > 0.0) then
+        rep = rep * particle_radius
+      else
+        call fatal_error('calc_pencil_rep', 'unable to calculate the particle Reynolds number without a particle radius. ')
+      endif
 !
     endsubroutine calc_pencil_rep
 !***********************************************************************

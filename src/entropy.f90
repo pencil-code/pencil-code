@@ -376,6 +376,7 @@ module Energy
         iFF_char_c=iFF_div_ss
         if (iFF_div_aa>0) iFF_char_c=max(iFF_char_c,iFF_div_aa+2)
         if (iFF_div_uu>0) iFF_char_c=max(iFF_char_c,iFF_div_uu+2)
+        if (iFF_div_rho>0) iFF_char_c=max(iFF_char_c,iFF_div_rho)
       endif
 
     endsubroutine register_energy
@@ -2881,7 +2882,8 @@ module Energy
 !  17-sep-01/axel: coded
 !   9-jun-02/axel: pressure gradient added to du/dt already here
 !   2-feb-03/axel: added possibility of ionization
-!
+!  21-oct-15/MR: added timestep adaptation for slope-limited diffusion
+! 
       use Diagnostics
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, &
                                  gamma1, cs0
@@ -2897,7 +2899,7 @@ module Energy
       real, dimension (nx) :: Hmax,gT2,gs2,gTxgs2
       real, dimension (nx,3) :: gTxgs
       real :: ztop,xi,profile_cor,uT,fradz,TTtop
-      real, dimension(nx) :: ufpres, uduu, glnTT2, Ktmp
+      real, dimension(nx) :: ufpres, uduu, glnTT2, Ktmp, chi_sld
       integer :: j,ju
       integer :: i
 !
@@ -3018,7 +3020,13 @@ module Energy
       if (lheatc_hyper3ss_mesh)  call calc_heatcond_hyper3_mesh(f,df)
       if (lheatc_hyper3ss_aniso) call calc_heatcond_hyper3_aniso(f,df)
 
-      if (lenergy_slope_limited.and.lfirst) df(:,m,n,iss)=df(:,m,n,iss)-f(l1:l2,m,n,iFF_div_ss)
+      if (lenergy_slope_limited.and.lfirst) then
+        df(:,m,n,iss)=df(:,m,n,iss)-f(l1:l2,m,n,iFF_div_ss)
+        if (ldt) then
+          chi_sld=abs(f(l1:l2,m,n,iFF_div_ss))/dxyz_2
+          diffus_chi=diffus_chi+chi_sld
+        endif
+      endif
 !
       !if(lfirst .and. ldiagnos) print*,'DIV:iproc,m,f=',iproc,m,f(l1:l2,m,n,iFF_div_ss)
 !
@@ -3460,6 +3468,8 @@ module Energy
 
         do n=n1,n2; do m=m1,m2
           call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_ss),.true.)
+!          call div(f,iFF_diff,tmp,.true.)
+!          f(l1:l2,m,n,iFF_div_ss)=tmp
         enddo; enddo
 
       endif

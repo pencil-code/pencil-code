@@ -184,6 +184,7 @@ module Viscosity
     use FArrayManager, only: farray_register_auxiliary
 !
 !  19-nov-02/tony: coded
+!  30-sep-15/Joern+MR: changes for slope-limited diffusion
 !
 !  Identify version number.
 !
@@ -198,8 +199,10 @@ module Viscosity
           iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
         endif
         call farray_register_auxiliary('Div_flux_diff_uu',iFF_div_uu,vector=3)
-        iFF_char_c=max(iFF_div_uu+2,iFF_div_ss)
+        iFF_char_c=iFF_div_uu+2
         if (iFF_div_aa>0) iFF_char_c=max(iFF_char_c,iFF_div_aa+2)
+        if (iFF_div_ss>0) iFF_char_c=max(iFF_char_c,iFF_div_ss)
+        if (iFF_div_rho>0) iFF_char_c=max(iFF_char_c,iFF_div_rho)
       endif
 !
     endsubroutine register_viscosity
@@ -1908,12 +1911,13 @@ module Viscosity
 
       if (lvisc_slope_limited.and.lfirst) then
 !
+!print*, 'iFF etc.=', iFF_diff, iFF_diff1,iFF_diff2, iFF_div_uu, iFF_char_c
         f(:,:,:,iFF_diff1:iFF_diff2)=0.
 !
         do j=1,3
 
           call calc_all_diff_fluxes(f,iuu+j-1,islope_limiter,h_slope_limited)
-!
+
           do n=n1,n2; do m=m1,m2
             call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_uu+j-1),.true.)            
           enddo; enddo

@@ -299,7 +299,7 @@ module Cdata
   integer :: ivisc_heat=0,ibb=0,ibx=0,iby=0,ibz=0,ijj=0,ijx=0,ijy=0,ijz=0
   integer :: iEE=0,iEEx=0,iEEy=0,iEEz=0
   integer :: iFF_diff=0, iFF_diff1=0,  iFF_diff2=0, &
-             iFF_div_uu=0, iFF_div_aa=0, iFF_div_ss=0, iFF_char_c=0
+             iFF_div_uu=0, iFF_div_aa=0, iFF_div_ss=0, iFF_div_rho=0, iFF_char_c=0
   integer :: i_adv_der=0,i_adv_derx=0,i_adv_dery=0,i_adv_derz=0
   integer :: iuxb=0,iugu=0,iugh=0
   integer :: ishock=0,ishock_perp=0
@@ -588,7 +588,7 @@ module Cdata
 ! by this variable.
 !
   character (len=40) :: kinflow=''
-  logical :: lkinflow_as_aux
+  logical :: lkinflow_as_aux=.false.
   real :: ampl_kinflow_x=0., ampl_kinflow_y=0., ampl_kinflow_z=0.
   real :: kx_kinflow=1., ky_kinflow=1., kz_kinflow=1.
   real :: dtphase_kinflow=0.

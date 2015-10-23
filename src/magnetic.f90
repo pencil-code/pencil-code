@@ -810,6 +810,7 @@ module Magnetic
 !  potential: iaa, etc; increase nvar accordingly
 !
 !  1-may-02/wolf: coded
+! 15-oct-15/MR: changes for slope-limited diffusion
 !
       use FArrayManager, only: farray_register_pde,farray_register_auxiliary
 !
@@ -851,8 +852,10 @@ module Magnetic
           iFF_diff1=iFF_diff; iFF_diff2=iFF_diff+dimensionality-1
         endif
         call farray_register_auxiliary('Div_flux_diff_aa',iFF_div_aa,vector=3)
-        iFF_char_c=max(iFF_div_aa+2,iFF_div_ss)
+        iFF_char_c=iFF_div_aa+2
         if (iFF_div_uu>0) iFF_char_c=max(iFF_char_c,iFF_div_uu+2)
+        if (iFF_div_ss>0) iFF_char_c=max(iFF_char_c,iFF_div_ss)
+        if (iFF_div_rho>0) iFF_char_c=max(iFF_char_c,iFF_div_rho)
       endif
 !
 !  register the mean-field module
@@ -3016,6 +3019,7 @@ module Magnetic
 !   9-apr-12/MR: upwinding for ladvective_gauge=F generalized
 !  31-mar-13/axel: Stokes parameter integration from synchrotron emission
 !  25-aug-13/MR: simplified calls of save_name_sound
+! 15-oct-15/MR: changes for slope-limited diffusion
 !
       use Debug_IO, only: output_pencil
       use Deriv, only: der6
@@ -4747,6 +4751,7 @@ module Magnetic
 !
 !   2-jan-10/axel: adapted from calc_lhydro_pars
 !  10-jan-13/MR: added possibility to remove evolving mean field
+!i  15-oct-15/MR: changes for slope-limited diffusion
 !
       use Deriv, only: der_z,der2_z
       use Sub, only: finalize_aver, div, calc_all_diff_fluxes
