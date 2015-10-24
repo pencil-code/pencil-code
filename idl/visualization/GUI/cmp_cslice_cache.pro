@@ -507,21 +507,21 @@ pro cslice_event, event
 		end
 		restore, settings_file
 		if (file_test (streamlines_file, /read)) then restore, streamlines_file
-		selected_var = (where (tag_names (varsets) eq var_names[selected_var]))[0]
+		selected_var = find_tag (varsets, var_names[selected_var])
 		if (selected_var ge 0) then selected_cube = selected_var
 		num = n_elements (var_names)
 		for pos = 0, num-1 do begin
-			insert = (where (tag_names (varsets) eq var_names[pos]))[0]
+			insert = find_tag (varsets, var_names[pos])
 			if (insert ge 0) then begin
 				pos_b[insert,*,*] = pos_bot[pos,*,*]
 				pos_t[insert,*,*] = pos_top[pos,*,*]
 			end
 		end
-		selected_over = (where (tag_names (overplot) eq over_names[selected_over]))[0]
+		selected_over = find_tag (overplot, over_names[selected_over])
 		if (selected_over ge 0) then selected_overplot = selected_over
 		num = n_elements (over_names)
 		for pos = 0, num-1 do begin
-			insert = (where (tag_names (overplot) eq over_names[pos]))[0]
+			insert = find_tag (overplot, over_names[pos])
 			if (insert ge 0) then pos_over[insert] = pos_overplot[pos]
 		end
 		if (px gt (num_x - 1)) then px = num_x - 1
@@ -1398,7 +1398,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	if (not keyword_set (overplots)) then begin
 		overplots = {none:'none'}
 	end else begin
-		if (not any (strlowcase (tag_names (overplots)) eq 'none')) then begin
+		if (not has_tag (overplots, 'none')) then begin
 			overplots = create_struct ({none:'none'}, overplots)
 		end
 	end
