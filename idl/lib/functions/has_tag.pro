@@ -15,7 +15,6 @@ function has_tag, structure, tag
 
 	COMPILE_OPT IDL2, HIDDEN
 
-	exists = strupcase (tag_names (structure))
-	return, any (exists eq strupcase (tag))
+	return, (find_tag (structure, tag) ge 0)
 end
 
