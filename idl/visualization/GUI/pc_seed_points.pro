@@ -200,9 +200,9 @@ function pc_seed_points, grid, start=start, description=description, precision=p
 	select_int = select
 
 	coord = grid
-	if (not any (strcmp (tag_names (coord), 'x_off', /fold_case))) then coord = create_struct (coord, 'x_off', 0)
-	if (not any (strcmp (tag_names (coord), 'y_off', /fold_case))) then coord = create_struct (coord, 'y_off', 0)
-	if (not any (strcmp (tag_names (coord), 'z_off', /fold_case))) then coord = create_struct (coord, 'z_off', 0)
+	if (not has_tag (coord, 'x_off')) then coord = create_struct (coord, 'x_off', 0)
+	if (not has_tag (coord, 'y_off')) then coord = create_struct (coord, 'y_off', 0)
+	if (not has_tag (coord, 'z_off')) then coord = create_struct (coord, 'z_off', 0)
 
 	num_x = n_elements (coord.x)
 	num_y = n_elements (coord.y)
