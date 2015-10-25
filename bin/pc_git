@@ -275,12 +275,15 @@ class TagWipCommand(Command):
 class OptionFlag(object):
     '''Specification for a command-line option'''
 
-    def __init__(self, short, long, help, dest=None, action=None):
+    def __init__(
+            self, short, long, help, action=None, dest=None, default=None
+            ):
         self.short = short
         self.long = long
         self.help = help
-        self.dest = dest
         self.action = action
+        self.dest = dest
+        self.default = default
 
     def get_overview(self):
         '''Return the overview line for \'git pc -h\''''
@@ -290,8 +293,9 @@ class OptionFlag(object):
         '''Add this option to an optparse.OptionParser'''
         parser.add_option(
             self.short, self.long,
-            dest=self.dest,
             action=self.action,
+            dest=self.dest,
+            default=self.default,
             help=self.help
             )
 
