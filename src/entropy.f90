@@ -3483,25 +3483,22 @@ module Energy
 !  25-sep-15/MR+joern: coded
 !   9-oct-15/MR: added uodateing of characteristic velocity by sound speed
 !
-      use EquationOfState, only: calc_pencils_eos
+      use EquationOfState, only: eoscalc
       use General, only: staggered_mean_scal
 !
       real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
 !
-      type(pencil_case) :: p
-      logical, dimension(npencils) :: lpenc_loc=.false.
       real, parameter :: weight=0.01
+      real, dimension(mx) :: cs2
 !
       if (lslope_limit_diff) then
-
-        lpenc_loc(i_cs2)=.true.
 !
 !  Calculate sound speed and store temporarily in first slot of diffusive fluxes.
 !
         f(:,:,:,iFF_diff) = 0.
-        do n=n1,n2; do m=m1,m2
-          call calc_pencils_eos(f,p,lpenc_loc)
-          f(l1:l2,m,n,iFF_diff) = sqrt(p%cs2)
+        do n=1,mz; do m=1,my
+          call eoscalc(f,mx,cs2=cs2)
+          f(:,m,n,iFF_diff) = sqrt(cs2)   ! sqrt needed as staggered_mean is performing a square again
         enddo; enddo
 !
         call staggered_mean_scal(f,iFF_diff,iFF_char_c,weight)
