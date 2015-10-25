@@ -163,7 +163,11 @@ def git_output(cmd_list):
       head = git_output(['rev-parse', 'HEAD'])
 
     '''
-    return git_outputs(cmd_list)[0]
+    outputs = git_outputs(cmd_list)
+    if (outputs):
+        return outputs[0]
+    else:
+        return None
 
 
 def git_outputs(cmd_list):
