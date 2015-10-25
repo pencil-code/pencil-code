@@ -208,7 +208,7 @@ class Command(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, name, overview, usage, flags):
+    def __init__(self, name, overview, usage, flags=()):
         '''Describe the subcommand and define its interface.
 
         Options:
@@ -250,8 +250,7 @@ class CheckoutCommand(Command):
             + 'Check out the Pencil Code repository from github.\n'
             + '\n'
             + 'Arguments:\n'
-            + '  dir  -- check out to that directory [default: ./pencil-code]',
-            flags=[]
+            + '  dir  -- check out to that directory [default: ./pencil-code]'
         )
 
     def run(self, options, args):
@@ -275,8 +274,7 @@ class TagWipCommand(Command):
             overview='create a tag containing all of your uncommitted changes',
             usage='\n'
             + '  git pc TAG-WIP\n'
-            + 'Create a tag representing all of your work-in-progress (WIP).',
-            flags=[]
+            + 'Create a tag representing all of your work-in-progress (WIP).'
         )
 
     def run(self, options, args):
