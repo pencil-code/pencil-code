@@ -84,7 +84,7 @@ def create_tag_name(prefix):
     return tag
 
 
-def git_current(message=None):
+def git_stash_unrecorded(message=None):
     '''Create a stash of the current file tree, including uncommitted files.
 
     This command changes neither the file tree, nor the index.
@@ -267,7 +267,7 @@ class TagWipCommand(Command):
         if len(args) > 0:
             self.usage(1)
         tag = create_tag_name('WIP')
-        current = git_current('Temporary commit for ' + tag)
+        current = git_stash_unrecorded('Temporary commit for ' + tag)
         if current:
             print 'Tagging temporary commit with %s' % (tag, )
             git(['tag', tag, current])
