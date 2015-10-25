@@ -7,6 +7,7 @@ git:
  - git pc checkout
  - git pc tag-wip
  - git pc panic
+ - git pc reverse-merge
 
 Note that the original author (wd) will probably never use any of them
 because he considers it better to use the proper git (porcelain) commands:
@@ -72,6 +73,7 @@ def create_command_list():
         CheckoutCommand(),
         TagWipCommand(),
         PanicCommand(),
+        ReverseMergeCommand(),
     ]
 
 
@@ -382,6 +384,63 @@ class PanicCommand(Command):
             for line in git_outputs(['fsck', '--dangling', '--no-reflog'])
             if 'dangling commit' in line
             ]
+
+
+class ReverseMergeCommand(Command):
+
+    def __init__(self):
+        Command.__init__(
+            self,
+            name='reverse-merge',
+            overview='merge the current into the given branch.',
+            usage='\n'
+            + '  git pc reverse-merge [<branch>]\n'
+            + 'Merge the current branch into the given branch '
+            + '(default: upstream).\n'
+            + 'This is most useful when trying to integrate upstream changes '
+            + 'with local\n'
+            + '(committed) changes:\n'
+            + '    git commit -m \'Last commit, will push now\'\n'
+            + '    git push\n'
+            + '    # [fails: upstream changes]\n'
+            + '    git fetch\n'
+            + '    git pc reverse-merge\n'
+            + '    # [test before pushing ...]\n'
+            + '    git push\n'
+            + '\n'
+            + 'Arguments:\n'
+            + '  branch  -- the branch to merge into (defaults to @{u}, '
+            + 'i.e. the current\n'
+            + '             upstream branch)'
+        )
+
+    def run(self, options, args):
+        if len(args) == 0:
+            other_branch = '@{u}'
+        elif len(args) == 1:
+            other_branch = args[0]
+        else:
+            self.usage(1)
+        work_branch = git_branch_name()
+        unrecorded = git_stash_unrecorded(
+            'Unrecorded changes stashed away by \'git pc reverse-merge\''
+        )
+
+        git(['reset', '--hard', other_branch])
+
+        temp_branch = 'reverse-merge-%s' % (work_branch, )
+        git(['checkout', '-B', temp_branch])
+        git(['merge', work_branch])
+        # Now what happens in case of a conflict??
+        git(['commit'])
+        merge_commit = git_head()
+
+        git(['checkout', work_branch])
+        git(['reset', '--hard', merge_commit])
+        if unrecorded:
+            git(['cherry-pick', '-x', '-n', unrecorded])
+            git(['reset', merge_commit])
+        git(['branch', '-D', temp_branch])
 
 
 class OptionFlag(object):
