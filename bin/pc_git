@@ -137,12 +137,7 @@ def git(cmd_list):
     '''
     cmd_line = ['git']
     cmd_line.extend(cmd_list)
-    print ' '.join(cmd_line)
-    try:
-        subprocess.check_call(cmd_line)
-    except subprocess.CalledProcessError, e:
-        print e
-        sys.exit(1)
+    run_system_cmd(cmd_line)
 
 
 def git_output(cmd_list):
@@ -164,6 +159,21 @@ def git_outputs(cmd_list):
     '''
     cmd_line = ['git']
     cmd_line.extend(cmd_list)
+    return run_system_cmd_get_output(cmd_line)
+
+
+def run_system_cmd(cmd_line):
+    '''Run a system command, writing output to the terminal'''
+    print ' '.join(cmd_line)
+    try:
+        subprocess.check_call(cmd_line)
+    except subprocess.CalledProcessError, e:
+        print e
+        sys.exit(1)
+
+
+def run_system_cmd_get_output(cmd_line):
+    '''Run a system command and return output as array of lines'''
     print ' '.join(cmd_line)
     try:
         output = subprocess.check_output(cmd_line)
