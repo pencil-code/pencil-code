@@ -126,7 +126,19 @@ def git_stash_unrecorded(message=None):
 
 
 def git_head():
+    '''Return the SHA1 of the current HEAD'''
     return git_output(['rev-parse', 'HEAD'])
+
+
+def git_branch_name():
+    '''Return the name of the current branch, or None (if detached)'''
+    try:
+        return git_output(['symbolic-ref', '-q', '--short', 'HEAD'])
+    except subprocess.CalledProcessError, e:
+        if e.returncode == 1:  # detached HEAD
+            return None
+        else:
+            raise Exception(e)
 
 
 def git(cmd_list):
