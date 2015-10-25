@@ -81,7 +81,7 @@ def create_tag_name(prefix):
 
 
 def git_current(message=None):
-    '''Create a stash of the current file tree, including any uncommitted files.
+    '''Create a stash of the current file tree, including uncommitted files.
 
     This command changes neither the file tree, nor the index.
     It just creates a detached stash commit (which is not stored anywhere
@@ -98,7 +98,10 @@ def git_current(message=None):
     head = git_head()
 
     # Commit changes in the index
-    git(['commit', '--allow-empty', '--message', 'Changes already in the index'])
+    git([
+        'commit', '--allow-empty',
+        '--message', 'Changes already in the index'
+        ])
     index = git_head()
 
     # Add changes to tracked files
@@ -213,11 +216,11 @@ class CheckoutCommand(Command):
             name='checkout',
             overview='clone the pencil repo from github',
             usage='\n'
-                + '  git pc checkout [dir]\n'
-                + 'Check out the Pencil Code repository from github.\n'
-                + '\n'
-                + 'Arguments:\n'
-                + '  dir  -- check out to that directory [default: ./pencil-code]',
+            + '  git pc checkout [dir]\n'
+            + 'Check out the Pencil Code repository from github.\n'
+            + '\n'
+            + 'Arguments:\n'
+            + '  dir  -- check out to that directory [default: ./pencil-code]',
             flags=[]
         )
 
@@ -241,8 +244,8 @@ class TagWipCommand(Command):
             name='tag-wip',
             overview='create a tag containing all of your uncommitted changes',
             usage='\n'
-                + '  git pc TAG-WIP\n'
-                + 'Create a tag representing all of your work-in-progress (WIP).',
+            + '  git pc TAG-WIP\n'
+            + 'Create a tag representing all of your work-in-progress (WIP).',
             flags=[]
         )
 
