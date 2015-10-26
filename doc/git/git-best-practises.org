@@ -6,7 +6,7 @@
 #+LaTeX: \noindent%
 Tips and recommendations for using Git with the Pencil code:
 - Don't panic.
-- Don't pull from the remote branch into the tracking branch.
+- Never pull from the remote branch into the tracking branch.
 - Make the git history a good narrative.
 #+end_abstract
 
@@ -23,7 +23,9 @@ Tips and recommendations for using Git with the Pencil code:
 
      b. Merge: Do /not/ merge upstream into your tracking branch like this:
         #+BEGIN_SRC sh
-        git merge origin/master  # DON'T!
+          git pull origin/master   # DON'T!
+          # or
+          git merge origin/master  # DON'T!
         #+END_SRC
         because that breaks the SVN bridge and makes it quite difficult to
         understand the history of commits.
@@ -31,11 +33,15 @@ Tips and recommendations for using Git with the Pencil code:
         Instead, merge your changes into upstream, either manually or
         using
         #+BEGIN_SRC sh
-        git pc reverse-merge  # DO THIS INSTEAD
+          git pc reverse-pull  # DO THIS INSTEAD
+          # or
+          git pc reverse-merge  # DO THIS INSTEAD
         #+END_SRC
 
   2. Think about using feature branches for logic units that cover more
      than a few commits.
+
+  3. Don't rebase (or otherwise modify) published history.
 
 
 * Prerequisites
@@ -44,8 +50,7 @@ Tips and recommendations for using Git with the Pencil code:
   available on the web, and I will assume that you already know the basic
   operations.
 
-  Let us recall a few important concepts for the discussion to follow.
-
+  But for the discussion below we will need a few important concepts.
 
 ** What is Git?
 
@@ -59,9 +64,9 @@ Tips and recommendations for using Git with the Pencil code:
    A Git repository is a set of unique commits that form a
    [[https://en.wikipedia.org/wiki/Directed_acyclic_graph][directed acyclic graph]] (DAG) like this:
    #+begin_example
-     A---B---C---D---E---F--- master
+     A---B---C---D---E---F---  master
           \     /     \
-           G---H       I---J--- feature
+           G---H       I---J---  feature
    #+end_example
 
    We say that E is a /child/ of D, and that D has two
@@ -110,32 +115,15 @@ G belong to branch /feature/.
    sense and formulate and format your log messages appropriately.[fn:2]
 
 
-[fn:2]The first line of your commit message is a heading summarizing what
-has happened.
+[fn:2]The first line of your commit message is a /heading/ summarizing
+what was intended, or what has happened.
 The second line is traditionally kept empty, and more details can follow
 on lines 3, 4, 5, etc. of the log message.
 
 
-** The different levels of a Git repository's state
-
-   There are (at least) four different variants of the /Pencil Code/ that
-   you are interacting with:
-   1. The upstream branch that you occasionally update by querying the
-      server (there could be several upstream branches, but not for us).
-      You cannot directly commit to this branch, because its purpose is to
-      represent the last state of the server branch you /fetched/.
-   2. Your tracking branch.
-      This is where [...]
-   3. The /index/ where changes are recorded before they get committed to
-      your local branches.
-   4. The file system.
-
-   [Many possibilities for discord, but not that bad...]
-
-
 ** Atomicity
 
-   Git commands tend to be focused on one task.
+   Git commands tend to be focused on one task.[fn:3]
    As a consequence, what the user perceives as one logical step may
    require two or three consecutive command calls.
    This helps in understanding what you are doing, and when something
@@ -143,8 +131,8 @@ on lines 3, 4, 5, etc. of the log message.
 
    However, if you prefer to combine several elementary git operations
    into one command call (say, committing and pushing), or don't want to
-   type the same command-line options over and over again, you can (of
-   course) create a shell script, or you can define a /Git alias/.
+   type the same command-line options over and over again, you can of
+   course create a shell script, or you can define a /Git alias/.
    For example, after running
    #+begin_src sh
      git config --global alias.where 'rev-parse --short=12 HEAD'
@@ -164,159 +152,20 @@ on lines 3, 4, 5, etc. of the log message.
    Run =‘git pc -h’= to get a list of available sub-commands.
 
 
-* Joining different lines of development
-  <<Section:Joining-lines-of-development>>
-
-  In a community coding project like the /Pencil Code/, we will
-  frequently have a situation like this:
-  #+begin_example
-     A---B---C--- branch1
-          \
-           F---G--- branch2
-  #+end_example
-  where different (diverging) commits have been made on different
-  branches (very often, these branches are the remote branch
-  /origin/master/ and the local tracking branch /master/), and we want to
-  integrate both lines of development into one.
-
-  Git offers two different techniques to achieve that goal: /merging/ and
-  /rebasing/.
-
-
-** What is merging?
-   <<Merge>>
-
-   A /merge/ commit adds a new connection to parts of the Git graph.
-   For example, if we have the following situation
-   #+begin_example
-     A---B---C--- master
-          \
-           F---G--- feature
-   #+end_example
-   and want to bring the changes from branch /feature/ to /master/, we
-   can merge /feature/ into /master/ and get
-   #+begin_example
-     A---B---C---D--- master
-          \     /
-           F---G--- feature
-   #+end_example
-
-   In the pure DAG sense, the two parents C and G of the merge commit D
-   are completely equivalent, but for reasons discussed [[below]], we want to
-   make sure we merge /feature/ into /master/ (so C is the /first parent/
-   and G is the /second parent/), not the other way around.
-
-   You remember our narrative metaphor?
-   If you always /merge/ your commits or groups of commits because you
-   don't want to change history, you are narrating in a diary or
-   chronicler's style.
-
-
-** What is rebasing?
-   <<Rebase>>
-
-   In the example above, we have a second option to bring the feature
-   branch's changes into master, by creating new commits that contain
-   those changes:
-   #+begin_example
-     A---B---C---D---F'---G'--- master, feature
-   #+end_example
-   Immediately after this, both /master/ and /feature/ point to the same
-   commit G', but will may change as you continue to commit, e.g.
-   #+begin_example
-     A---B---C---D---F'---G'---H--- master
-                           \
-                            I--- feature
-   #+end_example
-
-   Rebasing is not an exclusive option.
-   Even if you routinely rebase your local changes, you will want to
-   merge longer-lived feature branches.
-
-   In terms of narrating, /rebasing/ suggests letter style, where you
-   bring facts into logical frames and order them accordingly (because it
-   is too hard to find readers for stream-of-consciousness letters).
-
-
-** Pros and cons
-
-   Here is the decision matrix for merging vs. rebasing
-
-   | Criterion                 | Merge        | Rebase           |
-   |---------------------------+--------------+------------------|
-   | Resulting graph structure | More complex | Simpler          |
-   | History                   | Preserved    | Modified         |
-   | Safety                    | Safer        | Less safe [fn:3] |
-
-   In short, use merging when you are afraid – but you know from
-   Sec.\nbsp{}\ref{Section-dont-panic} that you needn't be afraid.
-
-
-[fn:3] Less safe in the sense that conflicts can put you in a
-detached-head state.
-
-
-*** Graph structure
-
-    Every merge commit increases the connectivity of the commit graph by
-    one[fn:4].
-    A rebase, by contrast, does not change the connectivity and leads to a
-    more linear history.
-
-
-[fn:4] Or even more than one, in the case of an /octopus merge/.
-     But those are somewhat exotic.
-
-
-*** Rewriting history
-
-    In our rebase example above, the commits F and G were transformed
-    into F' and G'.
-    In the simplest case, both sets of commits represent exactly the same
-    difference of the file tree.
-    But if you had to fix conflicts, this is no longer the case, and you
-    appear to have lost the original change G by pretending that you were
-    applying a change G' in the first place.[fn:5]
-    Even if there are no conflicts during the rebase, the state G' is
-    completely new, and there is no guarantee that it will
-    e.g.\nbsp{}compile.
-
-[fn:5] But of course this is not true: you can use =‘git reflog’= and
-friends to view your original changes, see
-Sec.\nbsp{}\ref{Section-almost-panicking}.
-And you will no longer be interested in the original change once
-the new version gets part of the Git narrative.
-
-
-    Once you accept the idea that you can change history, you can use it
-    to write meaningful commit messages while you are in the right set
-    of mind (i.e. /before/ you test your changes, because after testing
-    it is harder to remember what you were doing in the first place).
-    Or you can rewrite history to fix a recent commit (code and message),
-    or to combine commits in order to get a more readable history.
-
-*** The worst thing that can happen
-
-    If you have conflicts, rebasing can bring your sandbox [explain that
-    name, or use another word] into a state where you are not on any
-    branch (/detached head/).
-    This is not really something to worry about:
-    Just fix the conflicts and do '=git rebase --continue=' to finish the
-    rebase; and in case you get lost, do '=git rebase --abort=' and start
-    afresh.
-    Even if you get completely lost and resort to measures like
-    '=git reset=', [[What to do when you think you're lost][you needn't be afraid]] to lose history.
+[fn:3]One popular counter example is =‘git pull [--rebase]’=, which is
+pretty much just a combination of =‘git fetch’= with either =‘git merge’=
+or =‘git rebase’=.
 
 
 * Don't panic
   \label{Section-dont-panic}
 
-  or /What to do when you think you're lost/
+  Or: /What to do when you think you're lost/
 
-  Git will try hard to preserve your changes:[fn:6]
+  Git will try hard to preserve your changes:
 
   - Any changes you committed will be part of the [[git reflog][/reflog/]] for at least
-    two weeks[fn:7], even if you change or abandon them.
+    two weeks[fn:4], even if you change or abandon them.
 
   - Uncommitted changes to git-controlled-files will only get overwritten
     if you run one of the commands
@@ -324,39 +173,39 @@ the new version gets part of the Git narrative.
     - =git reset --hard=
     - And of course any non-git commands that change files
 
-  - Files unknown to Git will only get lost with
+  - Files unknown to Git will only get lost with[fn:5]
     - =git clean=
     - Again, any non-git commands that change files
 
 
-[fn:6]There are corner cases where other git commands (like
+[fn:4]Unless you explicitly decide otherwise.
+
+
+[fn:5]There are corner cases where other git commands (like
   =git stash --include-untracked=) call =git clean=, which can in
   principle [[http://blog.icefusion.co.uk/git-stash-can-delete-ignored-files-git-stash-u/][lead to data loss]].
   However, this should only concern files that match your =.gitignore=
   patterns, and if that is the case for any file you care about, you have
-  been asking for trouble beforehand.
-
-
-[fn:7]Unless you explicitly decide otherwise.
+  been asking for trouble.
 
 
   Table \ref{Table:How-to-lose-changes} summarizes this discussion.
 
 #+label: Table:How-to-lose-changes
 #+caption: How to lose changes with git
-   | /Changes/                                   | /How they can get lost/               |
-   |---------------------------------------------+---------------------------------------|
-   | Changes committed to git                    | Not at all, unless you insist [fn:8]  |
-   |---------------------------------------------+---------------------------------------|
-   | Uncommitted changes to git-controlled files | =git checkout <file-or-directory>=    |
-   |                                             | =git reset --hard=                    |
-   |                                             | Non-git commands                      |
-   |---------------------------------------------+---------------------------------------|
-   | Files unknown to Git                        | =git clean=                           |
-   |                                             | Non-git commands                      |
+   | /Changes/                                   | /How they can get lost/              |
+   |---------------------------------------------+--------------------------------------|
+   | Changes committed to git                    | Not at all, unless you insist [fn:6] |
+   |---------------------------------------------+--------------------------------------|
+   | Uncommitted changes to git-controlled files | =git checkout <file-or-directory>=   |
+   |                                             | =git reset --hard=                   |
+   |                                             | Non-git commands                     |
+   |---------------------------------------------+--------------------------------------|
+   | Files unknown to Git                        | =git clean=                          |
+   |                                             | Non-git commands                     |
 
 
-[fn:8] Leaving important Git commits dangling (≈ unused) for more than two
+[fn:6] Leaving important Git commits dangling (≈ unused) for more than two
 weeks counts as insisting on data loss.
 
 
@@ -371,7 +220,7 @@ weeks counts as insisting on data loss.
 
    \bigskip
 
-   Here is how to see almost every change[fn:9] that was ever[fn:10]
+   Here is how to see almost every change[fn:7] that was ever[fn:8]
    known to git:
    #+begin_src sh
      gitk --reflog --all
@@ -379,19 +228,167 @@ weeks counts as insisting on data loss.
      tig --reflog --all
      # or, without graphics,
      git reflog --all --glob='stash*'
+
+     # If you prefer melodramatic command names, try
+     git pc panic
    #+end_src
 
    If you want to also see dropped stashes, you can use
    #+begin_src sh
-     git pc panic -v
+     git pc panic --full
    #+end_src
 
 
-[fn:9] This will not show dropped stashes or stashes older than the last
+[fn:7] This will not show dropped stashes or stashes older than the last
 one (but those are still accessible).
 
 
-[fn:10] Redefining “ever” = “in the last two weeks” for dangling commits.
+[fn:8] Redefining “ever” = “in the last two weeks” for dangling commits.
+
+
+* Joining different lines of development
+  <<Section:Joining-lines-of-development>>
+
+  In a community coding project like the /Pencil Code/, we will
+  frequently have a situation like this:
+  #+begin_example
+    A---B---C-----  branch1
+         \
+          F---G---  branch2
+  #+end_example
+  where different (diverging) commits have been made on different
+  branches (very often, these branches are the remote branch
+  /origin/master/ and the local tracking branch /master/), and we want to
+  integrate both lines of development into one.
+
+  Git offers two different techniques to achieve that goal: /merging/ and
+  /rebasing/.
+  Tobias Heinemann has created a screencast where he
+  [[https://asciinema.org/a/dauj562l4uwr7bpyohqyewkj5][demonstrates different variants of these approaches]].
+
+
+** What is merging?
+   <<Merge>>
+
+   A /merge/ commit adds a new connection to parts of the Git graph.
+   For example, if we have the following situation
+   #+begin_example
+     A---B---C-----  master
+          \
+           F---G---  feature
+   #+end_example
+   and want to bring the changes from branch /feature/ to /master/, we
+   can merge /feature/ into /master/ and get
+   #+begin_example
+     A---B---C---D---  master
+          \     /
+           F---G-----  feature
+   #+end_example
+
+   In the pure DAG sense, the two parents C and G of the merge commit D
+   are completely equivalent, but for reasons discussed [[below]], we want to
+   make sure we merge /feature/ into /master/ (so C is the /first parent/
+   and G is the /second parent/), not the other way around.
+
+   You remember our narrative metaphor?
+   If you always /merge/ your commits or groups of commits because you
+   don't want to modify history, you are narrating in a diary or
+   chronicler's style.
+
+
+** What is rebasing?
+   <<Rebase>>
+
+   In the example above, we have a second option to bring the feature
+   branch's changes into master, by creating new commits that contain
+   those changes, but start from the state C, not B:
+   #+begin_example
+     A---B---C-----------  master
+              \
+               F'---G'---  feature
+   #+end_example
+   We say that we have /rebased/ the commits F and G from B onto C.
+
+   Rebasing modifies history, which is only permissible as long as this
+   history is /local/.
+   So /don't rebase published commits/.
+   The commits that are eligible to rebasing are the ones displayed by
+   #+begin_src sh
+     gitk origin/master..master
+     # or
+     tig origin/master..master
+     # or, without graphics,
+     git log origin/master..master
+   #+end_src
+
+   Even if the new commit F' may represent introduce the same textual
+   difference as the original commit F, the file-tree state it represents
+   is completely new and there is no guarantee that it will e.g.\nbsp{}compile,
+   even if both, C and F do.
+
+   Once you finish the rebase, you appear to have lost the original change
+   F by pretending that you were applying a change F' in the first
+   place.[fn:9]
+   That's perfectly OK, as you will no longer be interested in the
+   original change when the new version gets part of the Git narrative.
+
+
+[fn:9] This is of course not true: you can use =‘git reflog’= and friends
+to view your original changes, see
+Sec.\nbsp{}\ref{Section-almost-panicking}.
+
+
+   \bigskip
+
+   Rebasing is not an exclusive option.
+   Even if you routinely rebase your local changes, you will want to
+   merge longer-lived feature branches.
+
+   In terms of narrating, /rebasing/ allows you to use letter style, where
+   you bring facts into logical frames and order them accordingly (because
+   nobody would want to read your stream-of-consciousness letters).
+
+
+** Pros and cons
+
+   Here is the decision matrix for merging vs. rebasing
+
+   | Criterion                 | Merge        | Rebase           |
+   |---------------------------+--------------+------------------|
+   | Resulting graph structure | More complex | Simpler          |
+   | History                   | Preserved    | Modified         |
+   | Safety                    | Safer        | Less safe [fn:10] |
+
+   In short, use merging when you are afraid – but you know from
+   Sec.\nbsp{}\ref{Section-dont-panic} that you needn't be afraid.
+
+
+[fn:10] Less safe in the sense that conflicts can put you in a
+detached-head state.
+
+
+*** Graph structure
+
+    Every merge commit increases the connectivity of the commit graph by
+    one[fn:11].
+    A rebase, by contrast, does not change the connectivity and leads to a
+    more linear history.
+
+
+[fn:11] Or even more than one, in the case of an /octopus merge/.
+     But those are somewhat exotic.
+
+
+*** The worst thing that can happen
+
+    If you have conflicts, rebasing can bring your working-directory into
+    a state where you are not on any branch (/detached head/).
+    This is not really something to worry about:
+    Just fix the conflicts, =‘git add’= the changes, and do =‘git rebase
+    --continue’= to finish the rebase; and in case you get lost, do =‘git
+    rebase --abort’= and start afresh.
+    Even if you get completely lost and resort to measures like
+    =‘git reset’=, [[Don't panic][you needn't be afraid]] to lose history.
 
 
 * Best practices
@@ -417,7 +414,7 @@ one (but those are still accessible).
    You cannot directly commit to this branch.
 
    The tracking branch reflects how you would like the server branch to
-   look like.[fn:11]
+   look like.[fn:12]
 
 
    \bigskip
@@ -436,9 +433,12 @@ one (but those are still accessible).
                     \
                      o---  master
    #+end_example
+   and you are done.
 
    However, if somebody has committed changes to the server before you
-   push, you will get an error message[fn:15]:
+   push, you will get an error message[fn:13]:
+
+   #+LaTeX: {\small
    #+begin_example
      To [...]
       ! [rejected]        master -> master (fetch first)
@@ -449,24 +449,25 @@ one (but those are still accessible).
      hint: (e.g., 'git pull ...') before pushing again.
      hint: See the 'Note about fast-forwards' in 'git push --help' for details.
    #+end_example
+   #+LaTeX: }
 
-   Before you can fix the problem, you need to =git fetch= to update the
+   Before you can fix the problem, you need to =‘git fetch’= to update the
    remote branch:
    #+begin_example
-     --A---B---C---D---E--  origin/master
+     --A---B---C---D---E---  origin/master
             \
-             X---Y--------  master
+             X---Y---------  master
    #+end_example
 
-   Your task is to bring the two lines of development together, and you can
-   either do this [[Rebase][using rebase]], or [[Merge][using merge]].
+   Now your task is to bring the two lines of development together, and
+   you can either do this [[Rebase][using rebase]], or [[Merge][using merge]].
 
 
-[fn:11]And if that is not compatible with the server's latest history, you
+[fn:12]And if that is not compatible with the server's latest history, you
 modify the tracking branch until it is.
 
 
-[fn:15]Do you see the ellipses in the suggested '=git pull ...=' command?
+[fn:13]Do you see the ellipses in the suggested '=git pull ...=' command?
 Git did /not/ say you should run just =‘git pull’= without any arguments.
 
 
@@ -502,9 +503,7 @@ Git did /not/ say you should run just =‘git pull’= without any arguments.
      git pull --rebase
    #+end_src
    This is equivalent to ~git fetch; git rebase origin/master~, so this is
-   exactly what we need[fn:12]
-   See also [[https://asciinema.org/a/dauj562l4uwr7bpyohqyewkj5][Tobi's screencast]] where he demonstrates a variant of that
-   approach.
+   exactly what we need[fn:14]
 
    \bigskip
 
@@ -512,31 +511,42 @@ Git did /not/ say you should run just =‘git pull’= without any arguments.
    To push your committed changes, run
    #+begin_src sh
      git pull --rebase
+     # [test]
      git push
    #+end_src
-   (possibly in connection with ~rebase.autostash=true~),
-   or maybe
-   #+begin_src sh
-     git pc pull-and-rebase
-     git push
-   #+end_src
-   and life will be beautiful.
+   and life will be beautiful.[fn:15]
 
 
-[fn:12]You can even set the =--rebase= option via your git configuration,
+[fn:14]You can even set the =--rebase= option via your git configuration,
 using\\
 \noindent\qquad\qquad  =git config --global branch.master.rebase true=\\
 \noindent\qquad\qquad  =git config --global branch.autoSetupRebase always=\\
 and henceforth when you type =‘git pull’=, you will in fact do
 =‘git pull --rebase’=.
 
-However, I recommend against using these options, because tacitly changing
-the behaviour of commands is a great source of confusion.
+However, tacitly changing the behaviour of commands is a great source of
+confusion.
 Sooner or later you will work on a system where you have not set these
 flags (e.g. because you forgot, or you are helping somebody else).
 Without thinking twice, you will type =‘git pull’=, then =‘git push’=,
 and, voilà: after half year of disciplined commits by everybody, you
 managed to break the SVN bridge again.
+
+Thus, it is better to just get into the habit of always using =git pull=
+with the =--rebase= flag.
+
+
+[fn:15]If you happen to have uncommitted changes when you want to
+=‘git pull --rebase’=, Git will refuse to do anything before you have
+stashed them away.
+With Git $\ge$ 2.6, you can configure ~rebase.autostash=true~ to have git
+automatically stash away your uncommitted changes and restore them after
+the pull.
+For older versions of Git, you get the same functionality with
+=‘git pc pull-and-rebase’=, i.e.\\
+\noindent\qquad\qquad  =git pc pull-and-rebase=\\
+\noindent\qquad\qquad  =# [test]=\\
+\noindent\qquad\qquad  =git push=
 
 
 *** Alternative 2: Merge the other way around
@@ -548,6 +558,8 @@ managed to break the SVN bridge again.
    The take-home message is to merge not the remote branch into the
    tracking branch:
    #+begin_src sh
+     git pull origin/master   # DON'T DO THIS
+     # or
      git merge origin/master  # DON'T DO THIS
    #+end_src
    but rather the other way around, because
@@ -556,9 +568,11 @@ managed to break the SVN bridge again.
    /master/.
 #+LaTeX: }
 
-   Getting this typically right involves some temporary branch or tag and
+   Getting this right typically involves some temporary branch or tag and
    a =git reset=, but as an alternative, you can use our
    #+begin_src sh
+     git pc reverse-pull origin/master   # DO THIS INSTEAD
+     # or
      git pc reverse-merge origin/master  # DO THIS INSTEAD
    #+end_src
 
@@ -577,20 +591,27 @@ managed to break the SVN bridge again.
    #+LaTeX:     \end{minipage}%
    #+LaTeX: }
    #+end_quote
-   If this rule is violated, tools like the GitHub SVN bridge or the
-   commit emails will fail, and history will generally become misleading.
+
+   If you violate this rule, you pretend that changes that were already on
+   the server have only just appeared there due to your merge, and that
+   your changes have been on the server before.
+   As a consequence, tools like the GitHub SVN bridge or the commit emails
+   will fail, and history will generally become misleading.
+
+   See Appendix \ref{Section-which-way-to-merge} for a discussion of
+   /first-parent/ history.
 
 
 ** Feature branches
 
    - When you are working on one topic and expect more than a
-     handful[fn:13] of changes, consider using a /feature branch/.
+     handful[fn:16] of changes, consider using a /feature branch/.
 
    - When you are collaborating on a topic with somebody else and your
      changes are not yet ready for the others, use a feature branch.
 
 
-[fn:13] Even just two or three commits may be enough to go for a feature
+[fn:16] Even just two or three commits may be enough to go for a feature
 branch if that improves the narrative.
 
 
@@ -609,13 +630,18 @@ branch if that improves the narrative.
   \bigskip
 
   If that branch is long-lived, you will want to occasionally merge
-  /master/ into it:[fn:14]
+  /master/ into it.[fn:17]
+  Say, you have this situation
+  #+begin_example
+    --A---B---C---D---E---  master
+       \
+        N---O---P---Q-----  feature
+  #+end_example
   Run
   #+begin_src sh
-    git fetch origin
-    git stash  # if you have uncommitted local changes
+    git fetch origin  #  update origin/master from the server
+    git stash         # if you have uncommitted local changes
   #+end_src
-  to update your knowledge of the server's master branch.
 
   Then do
   #+begin_src sh
@@ -625,10 +651,18 @@ branch if that improves the narrative.
     git checkout cool-new-feature  # go back to your feature branch
     git merge master               # do the actual merge
   #+end_src
+  to obtain
+  #+begin_example
+    --A---B---C---D---E-----  master
+       \               \
+        N---O---P---Q---R---  feature
+  #+end_example
+
+
   There are some shorter variants to this procedure. You can use our
   =‘git pc’= script like this:
   #+begin_src sh
-    git pc ff-update master  # bring master up-to-date
+    git pc ff-update master  # update master without checking it out
     git merge master         # do the actual merge
   #+end_src
   or you could directly merge the remote branch
@@ -685,7 +719,7 @@ branch if that improves the narrative.
   We have tried to merge /cool-new-feature/ into master, but failed to
   push that, so we then merged that first merge into master and pushed.
   That may be more detail than we wanted (and more steps than we
-  anticipated), but describes exactly what happened.
+  anticipated), but describes exactly what happened:
 
   #+begin_example
     --A---B---C---D---E----F-----G----H---X---Y--- master
@@ -707,7 +741,7 @@ branch if that improves the narrative.
    branches).
 
 
-[fn:14] This does /not/ violate our rule
+[fn:17] This does /not/ violate our rule
 `[[Don't merge upstream into your tracking branch][don't merge upstream into your local tracking branch]]'.
 
 
@@ -720,7 +754,7 @@ branch if that improves the narrative.
   \label{Section-which-way-to-merge}
 
   Consider the situation from Sec. \ref{S-developing-on-master}, where
-  you want to join your line of development with what happened n the
+  you want to join your line of development with what happened on the
   server:
   #+begin_example
     --A---B---C---D---E--  origin/master
@@ -728,8 +762,11 @@ branch if that improves the narrative.
             X---Y--------  master
   #+end_example
 
-  It is tempting to just call (after the =git fetch=)
+  It is tempting to just call
   #+begin_src sh
+    git pull                 # DON'T DO THIS
+    # or, equivalently,
+    git fetch
     git merge origin/master  # DON'T DO THIS
   #+end_src
   which would give you the following repository structure
@@ -740,16 +777,16 @@ branch if that improves the narrative.
   #+end_example
   This doesn't look bad, so you now push /master/ to the server and get
   #+begin_example
-    --A---B---C---D---E---M----  origin/master
+    --A---B---C---D---E---M-----  origin/master
            \             / \
-            X-----------Y   o--  master
+            X-----------Y   o---  master
   #+end_example
 
   Topologically, that is exactly what we want.
   But there is more to a git repository than pure topology of the
   directed acyclic graph: there is an order in parentage.
   Y is the /first parent/ of the merge commit M, while E is the /second
-  parent/:[fn:15]
+  parent/:[fn:18]
   #+begin_example
                         2
     --A---B---C---D---E---M-----  origin/master
@@ -764,7 +801,7 @@ branch if that improves the narrative.
            \         /2 \
             C---D---E   o---  master
   #+end_example
-  and indeed this is what many tools will show you.[fn:16]
+  and indeed this is what many tools will show you.[fn:19]
 
   For example, commands like =gitk --first-parent= (or simply =git log
   --first-parent=), give
@@ -795,13 +832,13 @@ branch if that improves the narrative.
   #+end_example
 
 
-[fn:15]My notation in the graph is adopted from
+[fn:18]My notation in the graph is adopted from
    [[http://git-blame.blogspot.de/2015/03/fun-with-non-fast-forward.html][Junio Hamano's Blog]].
    Another good discussion on the importance of first-parent history can
    be found on the [[http://devblog.nestoria.com/post/98892582763/maintaining-a-consistent-linear-history-for-git][Nestoria Dev Blog]].
 
 
-[fn:16]Including the [[https://github.com/pencil-code/pencil-code/network][GitHub network graph]], gitk (to some extent) and the
+[fn:19]Including the [[https://github.com/pencil-code/pencil-code/network][GitHub network graph]], gitk (to some extent) and the
 GitHub SVN bridge.
 
 
@@ -810,12 +847,15 @@ GitHub SVN bridge.
   So is it really wrong to merge?
   Not if you merge the right way around.
   You need to create a merge commit where the latest upstream commit (E
-  in our example) is the first parent, and the tracking-branch commit (Y)
-  is the second parent.
+  in our example) is the /first parent/, and the tracking-branch commit
+  (Y) is the /second parent/.
 
   How to do this is left as an exercise to the reader.
   It is not very tricky, but for convenience we have a =git-pc= command
   #+begin_src sh
+    git pc reverse-pull origin/master   # DO THIS INSTEAD
+    # or
+    git fetch
     git pc reverse-merge origin/master  # DO THIS INSTEAD
   #+end_src
   that gives you exactly the desired structure:
@@ -827,9 +867,11 @@ GitHub SVN bridge.
   #+end_example
   which you can push without violating our Rule 1.
 
+  \bigskip
+
   Apart from avoiding problems with the SVN bridge, merging the right way
   around will also lead to a much more meaningful history.
-  Consider the following real-life example:[fn:17]
+  Consider the following real-life example:[fn:20]
 
 #+LaTeX: \includegraphics[width=.97\linewidth]{git-wrong-history.pdf}
 
@@ -902,44 +944,12 @@ GitHub SVN bridge.
   other commits got pushed first.
 
   And indeed something like this is how =tig= would have drawn the graph,
-  had all of the merges been from tracking-branch into the remote branch
+  had all of the merges been from tracking branch into the remote branch
   and not the other way around.
 
 
-[fn:17]The output was obtained using =tig= on the Pencil Code repository,
+[fn:20]The output was obtained using =tig= on the Pencil Code repository,
 removing many commits, shortening and mildly anonymizing the commits.
-
-
-  \bigskip
-
-  To summarize this section:
-#+LaTeX: \emph{
-  When developing on /master/, if you cannot directly push your changes
-  due to upstream commits, either use /rebase/, or use /git pc
-  reverse-merge/.
-#+LaTeX: }
-
-
-* Put this somewhere                                               :noexport:
-
-
-
-** Autostash and git 2.6
-
-** Use gitk (or '=tig=' or some variant of '=git log --graph=')
-
-** What to avoid
-
-   - Rewrite history that is already on the server
-     - You can only rewrite (or rebase) commits in the range between
-       /origin/master/ and /master/:
-       #+begin_src sh
-         gitk origin/master..master
-       #+end_src
-
-
-   - Don't push your personal tags [but not so important, we can delete
-     them later]
 
 
 

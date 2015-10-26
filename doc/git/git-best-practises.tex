@@ -1,4 +1,4 @@
-% Created 2015-10-22 Thu 23:14
+% Created 2015-10-26 Mon 22:11
 \documentclass[12pt,pdftex]{article}
 \usepackage[postscript]{ucs}
 \usepackage[utf8x]{inputenc}
@@ -51,7 +51,7 @@
 Tips and recommendations for using Git with the Pencil code:
 \begin{itemize}
 \item Don't panic.
-\item Don't pull from the remote branch into the tracking branch.
+\item Never pull from the remote branch into the tracking branch.
 \item Make the git history a good narrative.
 \end{itemize}
 \end{abstract}
@@ -73,6 +73,8 @@ local tracking branch (typically \emph{master}).
 \item Merge: Do \emph{not} merge upstream into your tracking branch like this:
 \lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
 \begin{lstlisting}
+git pull origin/master   # DON'T!
+# or
 git merge origin/master  # DON'T!
 \end{lstlisting}
 because that breaks the SVN bridge and makes it quite difficult to
@@ -82,12 +84,16 @@ Instead, merge your changes into upstream, either manually or
 using
 \lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
 \begin{lstlisting}
+git pc reverse-pull  # DO THIS INSTEAD
+# or
 git pc reverse-merge  # DO THIS INSTEAD
 \end{lstlisting}
 \end{enumerate}
 
 \item Think about using feature branches for logic units that cover more
 than a few commits.
+
+\item Don't rebase (or otherwise modify) published history.
 \end{enumerate}
 
 
@@ -98,8 +104,7 @@ This text is not an introduction to Git – there are many Git tutorials
 available on the web, and I will assume that you already know the basic
 operations.
 
-Let us recall a few important concepts for the discussion to follow.
-
+But for the discussion below we will need a few important concepts.
 
 \subsection{What is Git?}
 \label{sec-2-1}
@@ -115,9 +120,9 @@ case), or in a completely decentralized setting.
 A Git repository is a set of unique commits that form a
 \href{https://en.wikipedia.org/wiki/Directed_acyclic_graph}{directed acyclic graph} (DAG) like this:
 \begin{verbatim}
-A---B---C---D---E---F--- master
+A---B---C---D---E---F---  master
      \     /     \
-      G---H       I---J--- feature
+      G---H       I---J---  feature
 \end{verbatim}
 
 We say that E is a \emph{child} of D, and that D has two
@@ -164,36 +169,18 @@ is the same.
 And while there are different styles of telling the story well, a badly
 told narrative will make us all suffer.
 So please think about the logical order in which your changes make most
-sense and formulate and format your log messages appropriately.\footnote{The first line of your commit message is a heading summarizing what
-has happened.
+sense and formulate and format your log messages appropriately.\footnote{The first line of your commit message is a \emph{heading} summarizing
+what was intended, or what has happened.
 The second line is traditionally kept empty, and more details can follow
 on lines 3, 4, 5, etc. of the log message.}
 
 
-\subsection{The different levels of a Git repository's state}
+\subsection{Atomicity}
 \label{sec-2-5}
 
-There are (at least) four different variants of the \emph{Pencil Code} that
-you are interacting with:
-\begin{enumerate}
-\item The upstream branch that you occasionally update by querying the
-server (there could be several upstream branches, but not for us).
-You cannot directly commit to this branch, because its purpose is to
-represent the last state of the server branch you \emph{fetched}.
-\item Your tracking branch.
-This is where [\ldots{}]
-\item The \emph{index} where changes are recorded before they get committed to
-your local branches.
-\item The file system.
-\end{enumerate}
-
-[Many possibilities for discord, but not that bad\ldots{}]
-
-
-\subsection{Atomicity}
-\label{sec-2-6}
-
-Git commands tend to be focused on one task.
+Git commands tend to be focused on one task.\footnote{One popular counter example is \texttt{‘git pull [-{}-rebase]’}, which is
+pretty much just a combination of \texttt{‘git fetch’} with either \texttt{‘git merge’}
+or \texttt{‘git rebase’}.}
 As a consequence, what the user perceives as one logical step may
 require two or three consecutive command calls.
 This helps in understanding what you are doing, and when something
@@ -201,8 +188,8 @@ goes wrong you know where exactly the problem occurred.
 
 However, if you prefer to combine several elementary git operations
 into one command call (say, committing and pushing), or don't want to
-type the same command-line options over and over again, you can (of
-course) create a shell script, or you can define a \emph{Git alias}.
+type the same command-line options over and over again, you can of
+course create a shell script, or you can define a \emph{Git alias}.
 For example, after running
 \lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
 \begin{lstlisting}
@@ -223,166 +210,13 @@ combined operations.
 Run \texttt{‘git pc -h’} to get a list of available sub-commands.
 
 
-\section{Joining different lines of development}
-\label{sec-3}
-\label{Section:Joining-lines-of-development}
-
-In a community coding project like the \emph{Pencil Code}, we will
-frequently have a situation like this:
-\begin{verbatim}
-A---B---C--- branch1
-     \
-      F---G--- branch2
-\end{verbatim}
-where different (diverging) commits have been made on different
-branches (very often, these branches are the remote branch
-\emph{origin/master} and the local tracking branch \emph{master}), and we want to
-integrate both lines of development into one.
-
-Git offers two different techniques to achieve that goal: \emph{merging} and
-\emph{rebasing}.
-
-
-\subsection{What is merging?}
-\label{sec-3-1}
-\label{Merge}
-
-A \emph{merge} commit adds a new connection to parts of the Git graph.
-For example, if we have the following situation
-\begin{verbatim}
-A---B---C--- master
-     \
-      F---G--- feature
-\end{verbatim}
-and want to bring the changes from branch \emph{feature} to \emph{master}, we
-can merge \emph{feature} into \emph{master} and get
-\begin{verbatim}
-A---B---C---D--- master
-     \     /
-      F---G--- feature
-\end{verbatim}
-
-In the pure DAG sense, the two parents C and G of the merge commit D
-are completely equivalent, but for reasons discussed \texttt{below}, we want to
-make sure we merge \emph{feature} into \emph{master} (so C is the \emph{first parent}
-and G is the \emph{second parent}), not the other way around.
-
-You remember our narrative metaphor?
-If you always \emph{merge} your commits or groups of commits because you
-don't want to change history, you are narrating in a diary or
-chronicler's style.
-
-
-\subsection{What is rebasing?}
-\label{sec-3-2}
-\label{Rebase}
-
-In the example above, we have a second option to bring the feature
-branch's changes into master, by creating new commits that contain
-those changes:
-\begin{verbatim}
-A---B---C---D---F'---G'--- master, feature
-\end{verbatim}
-Immediately after this, both \emph{master} and \emph{feature} point to the same
-commit G', but will may change as you continue to commit, e.g.
-\begin{verbatim}
-A---B---C---D---F'---G'---H--- master
-                      \
-                       I--- feature
-\end{verbatim}
-
-Rebasing is not an exclusive option.
-Even if you routinely rebase your local changes, you will want to
-merge longer-lived feature branches.
-
-In terms of narrating, \emph{rebasing} suggests letter style, where you
-bring facts into logical frames and order them accordingly (because it
-is too hard to find readers for stream-of-consciousness letters).
-
-
-\subsection{Pros and cons}
-\label{sec-3-3}
-
-Here is the decision matrix for merging vs. rebasing
-
-\begin{center}
-\begin{tabular}{lll}
-\toprule
-Criterion & Merge & Rebase\\
-\midrule
-Resulting graph structure & More complex & Simpler\\
-History & Preserved & Modified\\
-Safety & Safer & Less safe \footnotemark\\
-\bottomrule
-\end{tabular}
-\end{center}\footnotetext[3]{Less safe in the sense that conflicts can put you in a
-detached-head state.}
-
-In short, use merging when you are afraid – but you know from
-Sec.~\ref{Section-dont-panic} that you needn't be afraid.
-
-
-\subsubsection{Graph structure}
-\label{sec-3-3-1}
-
-Every merge commit increases the connectivity of the commit graph by
-one\footnote{Or even more than one, in the case of an \emph{octopus merge}.
-But those are somewhat exotic.}.
-A rebase, by contrast, does not change the connectivity and leads to a
-more linear history.
-
-
-\subsubsection{Rewriting history}
-\label{sec-3-3-2}
-
-In our rebase example above, the commits F and G were transformed
-into F' and G'.
-In the simplest case, both sets of commits represent exactly the same
-difference of the file tree.
-But if you had to fix conflicts, this is no longer the case, and you
-appear to have lost the original change G by pretending that you were
-applying a change G' in the first place.\footnote{But of course this is not true: you can use \texttt{‘git reflog’} and
-friends to view your original changes, see
-Sec.~\ref{Section-almost-panicking}.
-And you will no longer be interested in the original change once
-the new version gets part of the Git narrative.}
-Even if there are no conflicts during the rebase, the state G' is
-completely new, and there is no guarantee that it will
-e.g.~compile.
-
-Once you accept the idea that you can change history, you can use it
-to write meaningful commit messages while you are in the right set
-of mind (i.e. \emph{before} you test your changes, because after testing
-it is harder to remember what you were doing in the first place).
-Or you can rewrite history to fix a recent commit (code and message),
-or to combine commits in order to get a more readable history.
-
-\subsubsection{The worst thing that can happen}
-\label{sec-3-3-3}
-
-If you have conflicts, rebasing can bring your sandbox [explain that
-name, or use another word] into a state where you are not on any
-branch (\emph{detached head}).
-This is not really something to worry about:
-Just fix the conflicts and do '\texttt{git rebase -{}-continue}' to finish the
-rebase; and in case you get lost, do '\texttt{git rebase -{}-abort}' and start
-afresh.
-Even if you get completely lost and resort to measures like
-'\texttt{git reset}', \texttt{you needn't be afraid} to lose history.
-
-
 \section{Don't panic}
-\label{sec-4}
+\label{sec-3}
 \label{Section-dont-panic}
 
-or \emph{What to do when you think you're lost}
+Or: \emph{What to do when you think you're lost}
 
-Git will try hard to preserve your changes:\footnote{There are corner cases where other git commands (like
-\texttt{git stash -{}-include-untracked}) call \texttt{git clean}, which can in
-principle \href{http://blog.icefusion.co.uk/git-stash-can-delete-ignored-files-git-stash-u/}{lead to data loss}.
-However, this should only concern files that match your \texttt{.gitignore}
-patterns, and if that is the case for any file you care about, you have
-been asking for trouble beforehand.}
+Git will try hard to preserve your changes:
 
 \begin{itemize}
 \item Any changes you committed will be part of the \texttt{\emph{reflog}} for at least
@@ -396,7 +230,12 @@ if you run one of the commands
 \item And of course any non-git commands that change files
 \end{itemize}
 
-\item Files unknown to Git will only get lost with
+\item Files unknown to Git will only get lost with\footnote{There are corner cases where other git commands (like
+\texttt{git stash -{}-include-untracked}) call \texttt{git clean}, which can in
+principle \href{http://blog.icefusion.co.uk/git-stash-can-delete-ignored-files-git-stash-u/}{lead to data loss}.
+However, this should only concern files that match your \texttt{.gitignore}
+patterns, and if that is the case for any file you care about, you have
+been asking for trouble.}
 \begin{itemize}
 \item \texttt{git clean}
 \item Again, any non-git commands that change files
@@ -423,12 +262,12 @@ Files unknown to Git & \texttt{git clean}\\
  & Non-git commands\\
 \bottomrule
 \end{tabular}
-\end{table}\footnotetext[8]{Leaving important Git commits dangling (≈ unused) for more than two
+\end{table}\footnotetext[6]{Leaving important Git commits dangling (≈ unused) for more than two
 weeks counts as insisting on data loss.}
 
 
 \subsection{I'm almost panicking …}
-\label{sec-4-1}
+\label{sec-3-1}
 \label{Section-almost-panicking}
 
 \emph{
@@ -449,13 +288,165 @@ gitk --reflog --all
 tig --reflog --all
 # or, without graphics,
 git reflog --all --glob='stash*'
+
+# If you prefer melodramatic command names, try
+git pc panic
 \end{lstlisting}
 
 If you want to also see dropped stashes, you can use
 \lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
 \begin{lstlisting}
-git pc panic -v
+git pc panic --full
 \end{lstlisting}
+
+
+\section{Joining different lines of development}
+\label{sec-4}
+\label{Section:Joining-lines-of-development}
+
+In a community coding project like the \emph{Pencil Code}, we will
+frequently have a situation like this:
+\begin{verbatim}
+A---B---C-----  branch1
+     \
+      F---G---  branch2
+\end{verbatim}
+where different (diverging) commits have been made on different
+branches (very often, these branches are the remote branch
+\emph{origin/master} and the local tracking branch \emph{master}), and we want to
+integrate both lines of development into one.
+
+Git offers two different techniques to achieve that goal: \emph{merging} and
+\emph{rebasing}.
+Tobias Heinemann has created a screencast where he
+\href{https://asciinema.org/a/dauj562l4uwr7bpyohqyewkj5}{demonstrates different variants of these approaches}.
+
+
+\subsection{What is merging?}
+\label{sec-4-1}
+\label{Merge}
+
+A \emph{merge} commit adds a new connection to parts of the Git graph.
+For example, if we have the following situation
+\begin{verbatim}
+A---B---C-----  master
+     \
+      F---G---  feature
+\end{verbatim}
+and want to bring the changes from branch \emph{feature} to \emph{master}, we
+can merge \emph{feature} into \emph{master} and get
+\begin{verbatim}
+A---B---C---D---  master
+     \     /
+      F---G-----  feature
+\end{verbatim}
+
+In the pure DAG sense, the two parents C and G of the merge commit D
+are completely equivalent, but for reasons discussed \texttt{below}, we want to
+make sure we merge \emph{feature} into \emph{master} (so C is the \emph{first parent}
+and G is the \emph{second parent}), not the other way around.
+
+You remember our narrative metaphor?
+If you always \emph{merge} your commits or groups of commits because you
+don't want to modify history, you are narrating in a diary or
+chronicler's style.
+
+
+\subsection{What is rebasing?}
+\label{sec-4-2}
+\label{Rebase}
+
+In the example above, we have a second option to bring the feature
+branch's changes into master, by creating new commits that contain
+those changes, but start from the state C, not B:
+\begin{verbatim}
+A---B---C-----------  master
+         \
+          F'---G'---  feature
+\end{verbatim}
+We say that we have \emph{rebased} the commits F and G from B onto C.
+
+Rebasing modifies history, which is only permissible as long as this
+history is \emph{local}.
+So \emph{don't rebase published commits}.
+The commits that are eligible to rebasing are the ones displayed by
+\lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
+\begin{lstlisting}
+gitk origin/master..master
+# or
+tig origin/master..master
+# or, without graphics,
+git log origin/master..master
+\end{lstlisting}
+
+Even if the new commit F' may represent introduce the same textual
+difference as the original commit F, the file-tree state it represents
+is completely new and there is no guarantee that it will e.g.~compile,
+even if both, C and F do.
+
+Once you finish the rebase, you appear to have lost the original change
+F by pretending that you were applying a change F' in the first
+place.\footnote{This is of course not true: you can use \texttt{‘git reflog’} and friends
+to view your original changes, see
+Sec.~\ref{Section-almost-panicking}.}
+That's perfectly OK, as you will no longer be interested in the
+original change when the new version gets part of the Git narrative.
+
+
+\bigskip
+
+Rebasing is not an exclusive option.
+Even if you routinely rebase your local changes, you will want to
+merge longer-lived feature branches.
+
+In terms of narrating, \emph{rebasing} allows you to use letter style, where
+you bring facts into logical frames and order them accordingly (because
+nobody would want to read your stream-of-consciousness letters).
+
+
+\subsection{Pros and cons}
+\label{sec-4-3}
+
+Here is the decision matrix for merging vs. rebasing
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+Criterion & Merge & Rebase\\
+\midrule
+Resulting graph structure & More complex & Simpler\\
+History & Preserved & Modified\\
+Safety & Safer & Less safe \footnotemark\\
+\bottomrule
+\end{tabular}
+\end{center}\footnotetext[10]{Less safe in the sense that conflicts can put you in a
+detached-head state.}
+
+In short, use merging when you are afraid – but you know from
+Sec.~\ref{Section-dont-panic} that you needn't be afraid.
+
+
+\subsubsection{Graph structure}
+\label{sec-4-3-1}
+
+Every merge commit increases the connectivity of the commit graph by
+one\footnote{Or even more than one, in the case of an \emph{octopus merge}.
+But those are somewhat exotic.}.
+A rebase, by contrast, does not change the connectivity and leads to a
+more linear history.
+
+
+\subsubsection{The worst thing that can happen}
+\label{sec-4-3-2}
+
+If you have conflicts, rebasing can bring your working-directory into
+a state where you are not on any branch (\emph{detached head}).
+This is not really something to worry about:
+Just fix the conflicts, \texttt{‘git add’} the changes, and do \texttt{‘git rebase
+    -{}-continue’} to finish the rebase; and in case you get lost, do \texttt{‘git
+    rebase -{}-abort’} and start afresh.
+Even if you get completely lost and resort to measures like
+\texttt{‘git reset’}, \hyperref[sec-3]{you needn't be afraid} to lose history.
 
 
 \section{Best practices}
@@ -503,12 +494,13 @@ If the server is still at commit B, this will result in
                \
                 o---  master
 \end{verbatim}
+and you are done.
 
 However, if somebody has committed changes to the server before you
-push, you will get an error message\footnote{My notation in the graph is adopted from
-\href{http://git-blame.blogspot.de/2015/03/fun-with-non-fast-forward.html}{Junio Hamano's Blog}.
-Another good discussion on the importance of first-parent history can
-be found on the \href{http://devblog.nestoria.com/post/98892582763/maintaining-a-consistent-linear-history-for-git}{Nestoria Dev Blog}.}:
+push, you will get an error message\footnote{Do you see the ellipses in the suggested '\texttt{git pull ...}' command?
+Git did \emph{not} say you should run just \texttt{‘git pull’} without any arguments.}:
+
+{\small
 \begin{verbatim}
 To [...]
  ! [rejected]        master -> master (fetch first)
@@ -519,17 +511,18 @@ hint: to the same ref. You may want to first integrate the remote changes
 hint: (e.g., 'git pull ...') before pushing again.
 hint: See the 'Note about fast-forwards' in 'git push --help' for details.
 \end{verbatim}
+}
 
-Before you can fix the problem, you need to \texttt{git fetch} to update the
+Before you can fix the problem, you need to \texttt{‘git fetch’} to update the
 remote branch:
 \begin{verbatim}
---A---B---C---D---E--  origin/master
+--A---B---C---D---E---  origin/master
        \
-        X---Y--------  master
+        X---Y---------  master
 \end{verbatim}
 
-Your task is to bring the two lines of development together, and you can
-either do this \hyperref[Rebase]{using rebase}, or \hyperref[Merge]{using merge}.
+Now your task is to bring the two lines of development together, and
+you can either do this \hyperref[Rebase]{using rebase}, or \hyperref[Merge]{using merge}.
 
 
 \subsubsection{Alternative 1: Rebase}
@@ -574,15 +567,16 @@ using\\
 and henceforth when you type \texttt{‘git pull’}, you will in fact do
 \texttt{‘git pull -{}-rebase’}.
 
-However, I recommend against using these options, because tacitly changing
-the behaviour of commands is a great source of confusion.
+However, tacitly changing the behaviour of commands is a great source of
+confusion.
 Sooner or later you will work on a system where you have not set these
 flags (e.g. because you forgot, or you are helping somebody else).
 Without thinking twice, you will type \texttt{‘git pull’}, then \texttt{‘git push’},
 and, voilà: after half year of disciplined commits by everybody, you
-managed to break the SVN bridge again.}
-See also \href{https://asciinema.org/a/dauj562l4uwr7bpyohqyewkj5}{Tobi's screencast} where he demonstrates a variant of that
-approach.
+managed to break the SVN bridge again.
+
+Thus, it is better to just get into the habit of always using \texttt{git pull}
+with the \texttt{-{}-rebase} flag.}
 
 \bigskip
 
@@ -591,16 +585,20 @@ To push your committed changes, run
 \lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
 \begin{lstlisting}
 git pull --rebase
+# [test]
 git push
 \end{lstlisting}
-(possibly in connection with \verb~rebase.autostash=true~),
-or maybe
-\lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
-\begin{lstlisting}
-git pc pull-and-rebase
-git push
-\end{lstlisting}
-and life will be beautiful.
+and life will be beautiful.\footnote{If you happen to have uncommitted changes when you want to
+\texttt{‘git pull -{}-rebase’}, Git will refuse to do anything before you have
+stashed them away.
+With Git \(\ge\) 2.6, you can configure \verb~rebase.autostash=true~ to have git
+automatically stash away your uncommitted changes and restore them after
+the pull.
+For older versions of Git, you get the same functionality with
+\texttt{‘git pc pull-and-rebase’}, i.e.\\
+\noindent\qquad\qquad  \texttt{git pc pull-and-rebase}\\
+\noindent\qquad\qquad  \texttt{\# [test]}\\
+\noindent\qquad\qquad  \texttt{git push}}
 
 
 \subsubsection{Alternative 2: Merge the other way around}
@@ -614,6 +612,8 @@ The take-home message is to merge not the remote branch into the
 tracking branch:
 \lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
 \begin{lstlisting}
+git pull origin/master   # DON'T DO THIS
+# or
 git merge origin/master  # DON'T DO THIS
 \end{lstlisting}
 but rather the other way around, because
@@ -622,10 +622,12 @@ the commit you push must not be a merge of \emph{origin/master} into
 \emph{master}.
 }
 
-Getting this typically right involves some temporary branch or tag and
+Getting this right typically involves some temporary branch or tag and
 a \texttt{git reset}, but as an alternative, you can use our
 \lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
 \begin{lstlisting}
+git pc reverse-pull origin/master   # DO THIS INSTEAD
+# or
 git pc reverse-merge origin/master  # DO THIS INSTEAD
 \end{lstlisting}
 
@@ -644,8 +646,15 @@ appended to.
 \end{minipage}%
 }
 \end{quote}
-If this rule is violated, tools like the GitHub SVN bridge or the
-commit emails will fail, and history will generally become misleading.
+
+If you violate this rule, you pretend that changes that were already on
+the server have only just appeared there due to your merge, and that
+your changes have been on the server before.
+As a consequence, tools like the GitHub SVN bridge or the commit emails
+will fail, and history will generally become misleading.
+
+See Appendix \ref{Section-which-way-to-merge} for a discussion of
+\emph{first-parent} history.
 
 
 \subsection{Feature branches}
@@ -678,15 +687,20 @@ git checkout -b cool-new-feature
 \bigskip
 
 If that branch is long-lived, you will want to occasionally merge
-\emph{master} into it:\footnote{This does \emph{not} violate our rule
+\emph{master} into it.\footnote{This does \emph{not} violate our rule
 `\hyperref[sec-5-1]{don't merge upstream into your local tracking branch}'.}
+Say, you have this situation
+\begin{verbatim}
+--A---B---C---D---E---  master
+   \
+    N---O---P---Q-----  feature
+\end{verbatim}
 Run
 \lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
 \begin{lstlisting}
-git fetch origin
-git stash  # if you have uncommitted local changes
+git fetch origin  #  update origin/master from the server
+git stash         # if you have uncommitted local changes
 \end{lstlisting}
-to update your knowledge of the server's master branch.
 
 Then do
 \lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
@@ -697,11 +711,19 @@ git pull --rebase              # ... and bring it up to date
 git checkout cool-new-feature  # go back to your feature branch
 git merge master               # do the actual merge
 \end{lstlisting}
+to obtain
+\begin{verbatim}
+--A---B---C---D---E-----  master
+   \               \
+    N---O---P---Q---R---  feature
+\end{verbatim}
+
+
 There are some shorter variants to this procedure. You can use our
 \texttt{‘git pc’} script like this:
 \lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
 \begin{lstlisting}
-git pc ff-update master  # bring master up-to-date
+git pc ff-update master  # update master without checking it out
 git merge master         # do the actual merge
 \end{lstlisting}
 or you could directly merge the remote branch
@@ -762,7 +784,7 @@ The narrative now says:
 We have tried to merge \emph{cool-new-feature} into master, but failed to
 push that, so we then merged that first merge into master and pushed.
 That may be more detail than we wanted (and more steps than we
-anticipated), but describes exactly what happened.
+anticipated), but describes exactly what happened:
 
 \begin{verbatim}
 --A---B---C---D---E----F-----G----H---X---Y--- master
@@ -793,7 +815,7 @@ branches).
 \label{Section-which-way-to-merge}
 
 Consider the situation from Sec. \ref{S-developing-on-master}, where
-you want to join your line of development with what happened n the
+you want to join your line of development with what happened on the
 server:
 \begin{verbatim}
 --A---B---C---D---E--  origin/master
@@ -801,9 +823,12 @@ server:
         X---Y--------  master
 \end{verbatim}
 
-It is tempting to just call (after the \texttt{git fetch})
+It is tempting to just call
 \lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
 \begin{lstlisting}
+git pull                 # DON'T DO THIS
+# or, equivalently,
+git fetch
 git merge origin/master  # DON'T DO THIS
 \end{lstlisting}
 which would give you the following repository structure
@@ -814,16 +839,19 @@ which would give you the following repository structure
 \end{verbatim}
 This doesn't look bad, so you now push \emph{master} to the server and get
 \begin{verbatim}
---A---B---C---D---E---M----  origin/master
+--A---B---C---D---E---M-----  origin/master
        \             / \
-        X-----------Y   o--  master
+        X-----------Y   o---  master
 \end{verbatim}
 
 Topologically, that is exactly what we want.
 But there is more to a git repository than pure topology of the
 directed acyclic graph: there is an order in parentage.
 Y is the \emph{first parent} of the merge commit M, while E is the \emph{second
-parent}:\footnotemark[12]{}
+parent}:\footnote{My notation in the graph is adopted from
+\href{http://git-blame.blogspot.de/2015/03/fun-with-non-fast-forward.html}{Junio Hamano's Blog}.
+Another good discussion on the importance of first-parent history can
+be found on the \href{http://devblog.nestoria.com/post/98892582763/maintaining-a-consistent-linear-history-for-git}{Nestoria Dev Blog}.}
 \begin{verbatim}
                     2
 --A---B---C---D---E---M-----  origin/master
@@ -875,13 +903,16 @@ svn: E160024: resource out of date; try updating
 So is it really wrong to merge?
 Not if you merge the right way around.
 You need to create a merge commit where the latest upstream commit (E
-in our example) is the first parent, and the tracking-branch commit (Y)
-is the second parent.
+in our example) is the \emph{first parent}, and the tracking-branch commit
+(Y) is the \emph{second parent}.
 
 How to do this is left as an exercise to the reader.
 It is not very tricky, but for convenience we have a \texttt{git-pc} command
 \lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
 \begin{lstlisting}
+git pc reverse-pull origin/master   # DO THIS INSTEAD
+# or
+git fetch
 git pc reverse-merge origin/master  # DO THIS INSTEAD
 \end{lstlisting}
 that gives you exactly the desired structure:
@@ -893,12 +924,14 @@ that gives you exactly the desired structure:
 \end{verbatim}
 which you can push without violating our Rule 1.
 
+\bigskip
+
 Apart from avoiding problems with the SVN bridge, merging the right way
 around will also lead to a much more meaningful history.
 Consider the following real-life example:\footnote{The output was obtained using \texttt{tig} on the Pencil Code repository,
 removing many commits, shortening and mildly anonymizing the commits.}
 
-\includegraphics[width=.98\linewidth]{git-wrong-history.pdf}
+\includegraphics[width=.97\linewidth]{git-wrong-history.pdf}
 
 So, did users A, B and G really work on the same feature branch to add
 phase to the shear profile, remove array temporaries and to correct
@@ -908,24 +941,14 @@ the last broken autotest?
 
 The true story must have been more like this:
 
-\includegraphics[width=.98\linewidth]{git-better-history.pdf}
+\includegraphics[width=.97\linewidth]{git-better-history.pdf}
 
 Most of the development happened on the main line, but occasionally
 somebody had a change that needed to get merged into that line, because
 other commits got pushed first.
 
 And indeed something like this is how \texttt{tig} would have drawn the graph,
-had all of the merges been from tracking-branch into the remote branch
+had all of the merges been from tracking branch into the remote branch
 and not the other way around.
-
-
-\bigskip
-
-To summarize this section:
-\emph{
-When developing on \emph{master}, if you cannot directly push your changes
-due to upstream commits, either use \emph{rebase}, or use \emph{git pc
-reverse-merge}.
-}
 % Emacs 24.3.1 (Org mode 8.3beta)
 \end{document}
