@@ -56,9 +56,9 @@ PRO vizit_event, sEvent
       ;WIDGET_CONTROL, sEvent.top, SET_UVALUE=sState
 
       (*sState).oBBox->SetProperty,HIDE=1-(*sState).drawbbox
-      if (TOTAL((tag_names(*sState) eq 'OVOLUME')) gt 0) then begin 
+      if (has_tag(*sState, 'oVolume')) then begin
         (*sState).oVolume->SetProperty,HIDE=1-(*sState).drawcontent
-      endif else if (TOTAL((tag_names(*sState) eq 'OPOLYGON')) gt 0) then begin 
+      endif else if (has_tag(*sState, 'oPolygon')) then begin
         if (not (*sState).noiso) then begin
           if n_elements((*sState).oPolygon) eq 1 then begin
             (*sState).oPolygon->SetProperty,HIDE=1-(*sState).drawcontent
@@ -69,7 +69,7 @@ PRO vizit_event, sEvent
           endelse
         endif
       endif
-      if (TOTAL((tag_names(*sState) eq 'OSURFACES')) gt 0) then begin 
+      if (has_tag(*sState, 'oSurfaces')) then begin
         if ((*sState).nsurfaces gt 0) then begin
           for i=0,n_elements((*sState).oSurfaces)-1 do begin
             (*sState).oSurfaces[i]->SetProperty,HIDE=1-(*sState).drawcontent
@@ -176,14 +176,14 @@ PRO vizit_event, sEvent
                   iSurface=-1
                   if PTR_VALID(sState) then begin
                     result = -1
-  		            if obj_valid((*sState).oPolygon) then begin  
-                      result = (*sState).oMainWindow->PickData((*sState).oMainView,(*sState).oPolygon,loc,xyz) 
+  		            if obj_valid((*sState).oPolygon) then begin
+                      result = (*sState).oMainWindow->PickData((*sState).oMainView,(*sState).oPolygon,loc,xyz)
                       hitType=1
                     endif
                     if (result le 0) then begin
                       for i=0,n_elements((*sState).oSurfaces)-1 do begin
                         if (size((*sState).oSurfaces[i],/type) ne 11) then continue
-                        result = (*sState).oMainWindow->PickData((*sState).oMainView,(*sState).oSurfaces[i],loc,xyz) 
+                        result = (*sState).oMainWindow->PickData((*sState).oMainView,(*sState).oSurfaces[i],loc,xyz)
                         if (result eq 1) then begin
                           hitType=2
                           iSurface=i
@@ -196,7 +196,7 @@ PRO vizit_event, sEvent
 		          endelse
 
                   if result eq 1 then begin
-                    case hitType OF 
+                    case hitType OF
                       1: begin
                         (*sState).oPolygon->GetProperty,XCOORD_CONV=xcc
                         (*sState).oPolygon->GetProperty,YCOORD_CONV=ycc
@@ -209,7 +209,7 @@ PRO vizit_event, sEvent
                       end
                     endcase
                     print,'PickData: xyz=',xyz
-                    print,'PickData: conv xyz=',xyz[0]*xcc[1]+xcc[0],xyz[1]*ycc[1]+ycc[0],xyz[1]*zcc[1]+zcc[0] 
+                    print,'PickData: conv xyz=',xyz[0]*xcc[1]+xcc[0],xyz[1]*ycc[1]+ycc[0],xyz[1]*zcc[1]+zcc[0]
                   endif else if result eq 0 then begin
                     print,'PickData: Hit background'
                   endif else begin
@@ -254,8 +254,8 @@ PRO vizit_event, sEvent
                if ((*sState).drawbbox eq 1) then vizit_BBoxFade, (*sState).oBBox, (*sState).oModel
                if ((*sState).autodraw eq 1) then (*sState).oMainWindow->Draw, (*sState).oMainView
                (*sState).oMainView->GetProperty, ZCLIP=zclip
-               widget_control,(*sState).wZClip0,set_value=zclip[0] 
-               widget_control,(*sState).wZClip1,set_value=zclip[1] 
+               widget_control,(*sState).wZClip0,set_value=zclip[0]
+               widget_control,(*sState).wZClip1,set_value=zclip[1]
 
            END
         END

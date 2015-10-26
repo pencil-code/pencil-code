@@ -127,7 +127,7 @@
 ; 	Written by:	DD, December 1996
 ; 	Modified by: AJWM, September 2006
 ;      Added the possibility to specify the behaviour of
-;      the buttons independently, including new scale function 
+;      the buttons independently, including new scale function
 ;
 ;-
 
@@ -198,7 +198,7 @@ END
 ;
 ; Purpose:
 ;  Calculate a transformation matrix based upon a pair of (x,y) coordinates
-;  This function handles scaling of an object as if moving in and out of 
+;  This function handles scaling of an object as if moving in and out of
 ;  the screen
 ;
 ; Arguments:

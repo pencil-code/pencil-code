@@ -22,7 +22,7 @@ PRO vizit_isoupd, data, state
         vert[*,*]=0.
         poly=[3,0,1,2]
       endif
-      if state.nonequidistant eq 1 then begin 
+      if state.nonequidistant eq 1 then begin
         vert[0,*]=interpol(state.xx,findgen(n_elements(state.xx)),reform(vert[0,*]))
         vert[1,*]=interpol(state.yy,findgen(n_elements(state.yy)),reform(vert[1,*]))
         vert[2,*]=interpol(state.zz,findgen(n_elements(state.zz)),reform(vert[2,*]))
@@ -105,9 +105,9 @@ PRO vizit, object, xsize=xsz, ysize=ysz, colortable=coltab, $
   default, xtitle, ''
   default, ytitle, ''
   default, ztitle, ''
-  default, hideXAxis, 1 
-  default, hideYAxis, 1 
-  default, hideZAxis, 1 
+  default, hideXAxis, 1
+  default, hideYAxis, 1
+  default, hideZAxis, 1
   default, drawdatabox, 0
   if keyword_set(PNG) then begin
     default, drawbbox, 1
@@ -139,7 +139,7 @@ PRO vizit, object, xsize=xsz, ysize=ysz, colortable=coltab, $
 
   s = size(data)
   mx = s[1]  & my = s[2]    & mz = s[3]
-  
+
   if not keyword_set(nonequidistant) then begin
     default, dx, 1.
     default, dy, 1.
@@ -148,7 +148,7 @@ PRO vizit, object, xsize=xsz, ysize=ysz, colortable=coltab, $
     default, Ly, dy*my
     default, Lz, dz*mz
     default, xyz0, [-Lx/2.,-Ly/2.,-Lz/2.]
-  
+
     default,xrange,[xyz0[0],xyz0[0]+Lx]
     default,yrange,[xyz0[1],xyz0[1]+Ly]
     default,zrange,[xyz0[2],xyz0[2]+Lz]
@@ -223,7 +223,7 @@ PRO vizit, object, xsize=xsz, ysize=ysz, colortable=coltab, $
     plevel=level
     plevel[*]=0.5
     nlevels=n_elements(level)
-    default, index, 128 
+    default, index, 128
   endif else begin
     default, plevel, 0.9
     default, level, (1.-plevel)*min + plevel*max
@@ -250,12 +250,12 @@ PRO vizit, object, xsize=xsz, ysize=ysz, colortable=coltab, $
       oTexture=obj_new('IDLgrImage',texture,interleave=0)
 
       undefine,normals
-      if (max(where(tag_names(surfaces[eachsurface]) eq 'NORMALS')) ge 0) then begin
-        if ptr_valid(surfaces[eachsurface].normals) then begin
+      if (has_tag(surfaces[eachsurface], 'normals')) then begin
+        if (ptr_valid(surfaces[eachsurface].normals)) then begin
           normals=*(surfaces[eachsurface].normals)
         endif
       endif
-      
+
       oSurfaces[eachsurface] = obj_new('IDLgrPolygon', $
                        *(surfaces[eachsurface].vertices), $
               POLYGONS=*(surfaces[eachsurface].triangles), $
@@ -268,7 +268,7 @@ PRO vizit, object, xsize=xsz, ysize=ysz, colortable=coltab, $
               YCOORD_CONV=ycc_surfaces, $
               ZCOORD_CONV=zcc_surfaces, $
               TEXTURE_MAP=oTexture)
-       if (((size(tmat))[0] eq 2) and n_elements(tmat) eq 16) then begin
+       if ((((size(tmat))[0] eq 2) and n_elements(tmat) eq 16)) then begin
          if keyword_set(DEPTH_REORDER) then reorder_by_depth,oSurfaces[eachsurface],tmat=tmat
        endif
     endfor
@@ -308,7 +308,7 @@ endif else begin
        print,"Color index must be scalar colour index or [3] R,G,B value"
        exit
     endelse
-   
+
     oTexture=obj_new('IDLgrImage',texture,interleave=0)
 
     if calcnormals eq 1 then begin
@@ -318,8 +318,8 @@ endif else begin
       normals[1,*]=interpolate(gradvar[*,*,*,1],vert[0,*],vert[1,*],vert[2,*])
       normals[2,*]=interpolate(gradvar[*,*,*,2],vert[0,*],vert[1,*],vert[2,*])
     endif
-      
-    if nonequidistant eq 1 then begin 
+
+    if nonequidistant eq 1 then begin
       vert[0,*]=interpol(xx,findgen(n_elements(xx)),reform(vert[0,*]))
       vert[1,*]=interpol(yy,findgen(n_elements(yy)),reform(vert[1,*]))
       vert[2,*]=interpol(zz,findgen(n_elements(zz)),reform(vert[2,*]))
@@ -382,7 +382,7 @@ endif else begin
     ;  texture[0,*,*]=index[eachlevel]
     ;  texture[1,*,*]=alpha[eachlevel]
       oTexture=obj_new('IDLgrImage',texture,interleave=0)
-      if nonequidistant eq 1 then begin 
+      if nonequidistant eq 1 then begin
         vert[0,*]=interpol(xx,findgen(n_elements(xx)),vert[0,*])
         vert[1,*]=interpol(yy,findgen(n_elements(yy)),vert[1,*])
         vert[2,*]=interpol(zz,findgen(n_elements(zz)),vert[2,*])
@@ -395,7 +395,7 @@ endif else begin
           XCOORD_CONV=xcc_surfaces, $
           YCOORD_CONV=ycc_surfaces, $
           ZCOORD_CONV=zcc_surfaces)
-          
+
           if (((size(tmat))[0] eq 2) and n_elements(tmat) eq 16) then begin
             if keyword_set(DEPTH_REORDER) then reorder_by_depth,oPolygon[eachlevel],tmat=tmat
           endif
@@ -502,7 +502,7 @@ endelse
   if nlevels eq 1 then begin
     wLAB  = WIDGET_LABEL (wButtons2, UVALUE='LEVEL', UNAME='LEVEL', $
       VALUE=' level = '+string(level,format='(g10.3)'))
-  endif else begin 
+  endif else begin
     strlevels=''
     for eachlevel=0,nlevels-1 do begin
       strlevels=strjoin([strlevels, string(level[eachlevel],format='(g10.3)'),', '])
@@ -512,8 +512,8 @@ endelse
   endelse
   wDraw = WIDGET_DRAW(wBase, XSIZE=xsz, YSIZE=ysz, UVALUE='MAIN', $
     RETAIN=0, /EXPOSE_EVENTS, /BUTTON_EVENTS, GRAPHICS_LEVEL=2)
-  wZClip0 = CW_FIELD( wControl , /FLOATING , /RETURN_EVENTS, /ROW, STRING=string, TEXT_FRAME=2, TITLE='Near Z Clip', UVALUE='ZCLIP0') 
-  wZClip1 = CW_FIELD( wControl , /FLOATING , /RETURN_EVENTS, /ROW, STRING=string, TEXT_FRAME=2, TITLE='Far Z Clip', UVALUE='ZCLIP1') 
+  wZClip0 = CW_FIELD( wControl , /FLOATING , /RETURN_EVENTS, /ROW, STRING=string, TEXT_FRAME=2, TITLE='Near Z Clip', UVALUE='ZCLIP0')
+  wZClip1 = CW_FIELD( wControl , /FLOATING , /RETURN_EVENTS, /ROW, STRING=string, TEXT_FRAME=2, TITLE='Far Z Clip', UVALUE='ZCLIP1')
 
 if keyword_set(PNG) then begin
   oMainWindow = obj_new('IDLgrBuffer', $
@@ -734,7 +734,7 @@ drwacontent=1
             oImage = oMainWindow->read()
             oImage->GetProperty, data=im
             image2D = Color_Quan(im, 1, r, g, b)
-    
+
             frame_filename=filename+string(frameno,format=format_frameno)
             if keyword_set(PNG) then begin
               write_png, frame_filename+'.png', image2d, r, g, b

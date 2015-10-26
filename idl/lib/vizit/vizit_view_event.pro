@@ -56,9 +56,9 @@ PRO vizit_event, sEvent
       ;WIDGET_CONTROL, sEvent.top, SET_UVALUE=sState
 
       (*sState).oBBox->SetProperty,HIDE=1-(*sState).drawbbox
-      if (TOTAL((tag_names(*sState) eq 'OVOLUME')) gt 0) then begin 
+      if (has_tag(*sState, 'oVolume')) then begin
         (*sState).oVolume->SetProperty,HIDE=1-(*sState).drawcontent
-      endif else if (TOTAL((tag_names(*sState) eq 'OPOLYGON')) gt 0) then begin 
+      endif else if (has_tag(*sState, 'oPolygon')) then begin
         if (not (*sState).noiso) then begin
           if n_elements((*sState).oPolygon) eq 1 then begin
             (*sState).oPolygon->SetProperty,HIDE=1-(*sState).drawcontent
@@ -69,7 +69,7 @@ PRO vizit_event, sEvent
           endelse
         endif
       endif
-      if (TOTAL((tag_names(*sState) eq 'OSURFACES')) gt 0) then begin 
+      if (has_tag(*sState, 'oSurfaces')) then begin
         if ((*sState).nsurfaces gt 0) then begin
           for i=0,n_elements((*sState).oSurfaces)-1 do begin
             (*sState).oSurfaces[i]->SetProperty,HIDE=1-(*sState).drawcontent
@@ -218,10 +218,10 @@ PRO vizit_event, sEvent
                (*sState).oModel->GetProperty, TRANSFORM=t
                print,"Transformation Matrix"
                help,t
-               print,'tmat=[[',t[0,0],',',t[1,0],',',t[2,0],',',t[3,0],'], $' 
-               print,'      [',t[0,1],',',t[1,1],',',t[2,1],',',t[3,1],'], $' 
-               print,'      [',t[0,2],',',t[1,2],',',t[2,2],',',t[3,2],'], $' 
-               print,'      [',t[0,3],',',t[1,3],',',t[2,3],',',t[3,3],']]' 
+               print,'tmat=[[',t[0,0],',',t[1,0],',',t[2,0],',',t[3,0],'], $'
+               print,'      [',t[0,1],',',t[1,1],',',t[2,1],',',t[3,1],'], $'
+               print,'      [',t[0,2],',',t[1,2],',',t[2,2],',',t[3,2],'], $'
+               print,'      [',t[0,3],',',t[1,3],',',t[2,3],',',t[3,3],']]'
 
 
         END
