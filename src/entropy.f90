@@ -1533,7 +1533,7 @@ module Energy
           tmp = (1.0 + beta1*(z(n)-zint)/cs2int)
           ! Abort if args of log() are negative
           if ( (tmp<=0.0) .and. (z(n)<=zblend) ) then
-            call fatal_error('polytropic_ss_z', &
+            call fatal_error_local('polytropic_ss_z', &
                 'Imaginary entropy values -- your z_inf is too low.')
           endif
           tmp = max(tmp,epsi)  ! ensure arg to log is positive
@@ -1606,7 +1606,7 @@ module Energy
           tmp = 1 + beta1*(z(n)**2-zint**2)/cs2int/2.
           ! Abort if args of log() are negative
           if ( (tmp<=0.0) .and. (z(n)<=zblend) ) then
-            call fatal_error('polytropic_ss_disc', &
+            call fatal_error_local('polytropic_ss_disc', &
                 'Imaginary entropy values -- your z_inf is too low.')
           endif
           tmp = max(tmp,epsi)  ! ensure arg to log is positive
@@ -4454,7 +4454,7 @@ module Energy
 !
         if (notanumber(thdiff)) then
           print*, 'calc_heatcond_kramers: m,n,y(m),z(n)=', m, n, y(m), z(n)
-          call fatal_error('calc_heatcond_kramers','NaNs in thdiff')
+          call fatal_error_local('calc_heatcond_kramers','NaNs in thdiff')
         endif
       endif
 !
@@ -4759,7 +4759,7 @@ module Energy
 !
         if (notanumber(thdiff)) then
           print*, 'calc_heatcond: m,n,y(m),z(n)=', m, n, y(m), z(n)
-          call fatal_error('calc_heatcond','NaNs in thdiff')
+          call fatal_error_local('calc_heatcond','NaNs in thdiff')
         endif
       endif
       if (headt .and. lfirst .and. ip == 13) then
