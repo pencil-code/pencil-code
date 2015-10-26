@@ -78,7 +78,7 @@ pro psa, $
   ; ;; thing, but is not currently so). Hence, we peek into the _EXTRA
   ; ;; structure to check for /COLOR.
   ; if (n_elements(extra) gt 0) then begin
-  ;   if (any(tag_names(extra) eq 'COLOR')) then begin
+  ;   if (has_tag (extra, 'color')) then begin
   ;     if (extra.color) then device, BITS_PER_PIXEL=8
   ;   endif
   ; endif

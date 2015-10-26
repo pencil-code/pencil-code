@@ -7,7 +7,7 @@
 ;
 pro circ_sym,siz,fill,thick=thick,_extra=extra
 ;
-if n_params() eq 0 then begin
+if (n_params() eq 0) then begin
   print,'circ_sym,siz,fill'
   print,'eg, circ_sym,1,1'
   return
@@ -17,24 +17,24 @@ th=findgen(46)/45.*2*!pi
 xx=cos(th)*siz
 yy=sin(th)*siz
 
-if n_params() eq 2 then $
-  if fill ne 0 then $
-    if exists(extra) then $
+if (n_params() eq 2) then $
+  if (fill ne 0) then $
+    if (exists(extra)) then $
       extra=create_struct(extra, 'fill', 1) $
     else $
       extra=create_struct('fill', 1)
 
-if keyword_set(extra) then $
-  if is_in(tag_names(extra),'THICK') lt 0 then $
+if (keyword_set(extra)) then $
+  if (has_tag(extra, 'thick')) then $
     extra=create_struct('thick', !p.thick, extra) $
   else begin
-    if extra.thick eq 0 then $
+    if (extra.thick eq 0) then $
       extra.thick = !p.thick
   endelse $
 else $
   extra=create_struct('thick', !p.thick)
 
-if fill eq 1 then usersym,xx,yy,/fill,thick=thick else usersym,xx,yy,thick=thick
+if (fill eq 1) then usersym,xx,yy,/fill,thick=thick else usersym,xx,yy,thick=thick
 return
 end
 ;

@@ -57,8 +57,7 @@ pro default, var, val, STRUCT=struct, HELP=help, DEBUG=debug
     cmd = "struct = create_struct( struct"
     nnewtags = 0
     for i=0,nvar-1 do begin
-      idx = min(where(tag_names(struct) eq strupcase(var[i])))
-      if (idx lt 0) then begin
+      if (not has_tag(struct, var[i])) then begin
         ; tag didn't exist
         if (nvar gt 1) then begin
           ; several slots --> assign one by one
