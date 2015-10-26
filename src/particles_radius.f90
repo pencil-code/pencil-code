@@ -168,6 +168,7 @@ module Particles_radius
       integer :: npar_low,npar_high
       logical, optional :: init
 !
+      real, dimension (mpar_loc) :: r_mpar_loc, p_mpar_loc, tmp_mpar_loc
       real, dimension (ninit) :: radii_cumulative
       real, dimension (nbin_initdist) :: n_initdist, a_initdist
       integer, dimension (nbin_initdist) :: nn_initdist
@@ -233,10 +234,23 @@ module Particles_radius
             enddo
           endif
 !
+!  Lognormal distribution. Here, ap1 is the largest value in the distribution.
+!  Initialize particle radii by a direct probabilistic calculation using
+!  gaussian noise for ln(a/a0)/sigma.
+!
+        case ('lognormal')
+
+          if (initial.and.lroot) print*, 'set_particles_radius: '// &
+              'lognormal=', ap0(1), ap1
+          call random_number_wrapper(r_mpar_loc)
+          call random_number_wrapper(p_mpar_loc)
+          tmp_mpar_loc=sqrt(-2*log(r_mpar_loc))*sin(2*pi*p_mpar_loc)
+          fp(:,iap)=ap1*exp(sigma_initdist*tmp_mpar_loc)
+!
 !  Lognormal distribution. Here, ap1 is the largest value in the distribution
 !  and ap0 is the smallest radius initially.
 !
-        case ('lognormal')
+        case ('old_lognormal')
 
           if (initial.and.lroot) print*, 'set_particles_radius: '// &
               'lognormal=', ap0(1), ap1
@@ -265,6 +279,10 @@ module Particles_radius
               k=kend
             endif
           enddo
+!
+!  put all the remaining particles (from kend+1 to the end of the array)
+!  in the bin corresponding to the middle of the distribution.
+!
           fp(kend+1:,iap)=a0_initdist
 !
         case ('specify')
