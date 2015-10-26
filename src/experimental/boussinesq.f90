@@ -23,7 +23,7 @@
 ! PENCILS PROVIDED ekin; transprho
 !
 ! PENCILS PROVIDED glnrhos(3)
-!!
+!
 !***************************************************************
 module Density
 !
@@ -736,5 +736,21 @@ module Density
       call keep_compiler_quiet(f)
 !
     endfunction mean_density
+!***********************************************************************
+    subroutine update_char_vel_density(f)
+!
+!  Updates characteristic veelocity for slope-limited diffusion.
+!  Most likely not yet a good method.
+!
+!  21-oct-15/MR: coded
+!
+      use EquationOfState, only: rho0
+!
+      real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
+!
+      if (lslope_limit_diff) f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) &
+                            =f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) + rho0**2
+!
+    endsubroutine update_char_vel_density
 !***********************************************************************
 endmodule Density

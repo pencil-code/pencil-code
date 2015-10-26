@@ -699,7 +699,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
     endsubroutine eosperturb
 !***********************************************************************
-    subroutine eoscalc_farray(f,psize,lnrho,ss,yH,lnTT,ee,pp,kapparho)
+    subroutine eoscalc_farray(f,psize,lnrho,ss,yH,lnTT,ee,pp,cs2,kapparho)
 !
 !   Calculate thermodynamical quantities
 !
@@ -712,7 +712,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
       real, dimension(psize), intent(out), optional :: lnrho,ss,yH,lnTT
-      real, dimension(psize), intent(out), optional :: ee,pp,kapparho
+      real, dimension(psize), intent(out), optional :: ee,pp,cs2,kapparho
       real, dimension(psize) :: lnrho_,ss_,lnTT_,TT_,yH_
 !
       select case (psize)
@@ -740,6 +740,8 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       if (present(lnTT))  lnTT=lnTT_
       if (present(ee))    ee=1.5*(1+yH_+xHe-xH2)*ss_ion*TT_+yH_*ss_ion*TT_ion
       if (present(pp))    pp=(1+yH_+xHe-xH2)*exp(lnrho_)*TT_*ss_ion
+      if (present(cs2)) &
+        call fatal_error('eoscalc_farray','calculation of cs2 not implemented')
 !
 !  Hminus opacity
 !

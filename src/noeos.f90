@@ -403,7 +403,7 @@ module EquationOfState
 !
     endsubroutine eosperturb
 !***********************************************************************
-    subroutine eoscalc_farray(f,psize,lnrho,ss,yH,mu1,lnTT,ee,pp,kapparho)
+    subroutine eoscalc_farray(f,psize,lnrho,ss,yH,mu1,lnTT,ee,pp,cs2,kapparho)
 !
 !   02-apr-04/tony: dummy
 !
@@ -411,7 +411,7 @@ module EquationOfState
       integer, intent(in) :: psize
       real, dimension (psize), intent(out), optional :: lnrho,ss
       real, dimension (psize), intent(out), optional :: yH,lnTT,mu1
-      real, dimension (psize), intent(out), optional :: ee,pp,kapparho
+      real, dimension (psize), intent(out), optional :: ee,pp,cs2,kapparho
 !
       call fatal_error('eoscalc_farray','should not be called with noeos')
 !
@@ -425,6 +425,7 @@ module EquationOfState
       if (present(ee)) ee = 0.0
       if (present(pp)) pp = 0.0
       if (present(kapparho)) kapparho = 0.0
+      if (present(cs2)) cs2 = 0.0
 !
       call keep_compiler_quiet(f)
 !
