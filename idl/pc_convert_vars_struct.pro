@@ -41,7 +41,7 @@ function pc_convert_vars_struct, vars, varcontent, tags
   tag_str = 'tags = { ' + strmid (tag_str, 2) + ' }'
   if (execute (tag_str) ne 1) then message, 'Error executing: ' + tag_str
 
-  index = where (strcmp (tag_names (vars[0]), varcontent[0].idlvar, /fold_case))
+  index = find_tag (vars[0], varcontent[0].idlvar)
   s = size (vars[0].(index), /structure)
   if (s.type eq 4) then begin
     array = fltarr (s.dimensions[0], s.dimensions[1], s.dimensions[2], totalvars)

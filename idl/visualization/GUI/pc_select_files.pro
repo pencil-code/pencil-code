@@ -49,20 +49,19 @@ pro pc_select_files_update_list, list, all, indices, default=default, avail=avai
 
 	avail_list = "[N/A] ("+list+")"
 	indices = -1
-	tags = tag_names (all)
-	tags_default = tag_names (default)
 	if (any (cont_selected lt 0)) then return
 
 	avail = pc_check_quantities (check=all, sources=sources[cont_selected], /indices)
 	if (any (avail lt 0)) then return
 
+	tags = tag_names (all)
 	num = n_elements (avail)
 	for pos = 0, num-1 do begin
 		avail_list[avail[pos]] = all.(avail[pos])
-		if (any (strcmp (tags_default, tags[avail[pos]], /fold_case))) then indices = [ indices, avail[pos] ]
+		if (has_tag (default, tags[avail[pos]])) then indices = [ indices, avail[pos] ]
 	end
-	active = where (indices ge 0)
-	if (any (active ge 0)) then indices = indices[active]
+	active = where (indices ge 0, num_active)
+	if (num_active ge 0) then indices = indices[active]
 end
 
 
@@ -467,7 +466,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	nz = dim.nz
 	nghost = max ([dim.nghostx, dim.nghosty, dim.nghostz])
 	if (not keyword_set (unit)) then pc_units, obj=unit, datadir=datadir, param=start_param, dim=dim, /quiet
-	if (not any (strcmp (tag_names (unit), "default_length", /fold_case))) then unit = create_struct (unit, display_units)
+	if (not has_tag (unit, "default_length")) then unit = create_struct (unit, display_units)
 	units = unit
 	start_par = start_param
 	if (keyword_set (run_param)) then run_par = run_param

@@ -56,7 +56,7 @@ function dependency_ok, tag, depend, sources, ALT=ALT
 	end
 
 	; If no dependency is found, check against sources
-	index = (where (strcmp (tag, tag_names (depend), /fold_case)))[0]
+	index = find_tag (depend, tag)
 	if (index eq -1) then return, dependency_ok (tag, -1, sources)
 
 	dependency = depend.(index)
@@ -67,7 +67,7 @@ function dependency_ok, tag, depend, sources, ALT=ALT
 		or_flags = bytarr (num)
 		for pos = 0, num-1 do begin
 			alternative = dependency.(pos)
-			if (strcmp (tag, (tag_names (dependency))[pos], /fold_case)) then begin
+			if (find_tag (dependency, tag) eq pos) then begin
 				or_flags[pos] = dependency_ok (alternative, -1, sources)
 			end else begin
 				or_flags[pos] = dependency_ok (alternative, depend, sources, /ALT)
@@ -424,22 +424,19 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 	pos_list = -1
 	num_list = 0
 	avail = create_struct (available, available_vectorfields)
-	avail_list = tag_names (avail)
-	alias_list = tag_names (alias)
-	additional_list = tag_names (additional)
 	tags = tag_names (check)
 	for pos = 0, num-1 do begin
 		tag = tags[pos]
-		index = where (avail_list eq tag)
+		index = find_tag (avail, tag)
 		if (index lt 0) then begin
-			index = where (alias_list eq tag)
+			index = find_tag (alias, tag)
 			if (index ge 0) then begin
 				tag = alias.(index)
-				index = where (strcmp (avail_list, tag, /fold_case))
+				index = find_tag (avail, tag)
 			end
 		end
 		if (index lt 0) then begin
-			index = where (strcmp (additional_list, tag, /fold_case))
+			index = find_tag (additional, tag)
 			if (index ge 0) then label = additional.(index)
 		end else begin
 			label = avail.(index)

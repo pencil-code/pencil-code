@@ -74,9 +74,9 @@ function pc_extract_streamline, data, streamlines, name=name, label=label, preci
 	default, y_off, 0
 	default, z_off, 0
 	if (keyword_set (grid)) then begin
-		if (any (strcmp (tag_names (grid), 'x_off', /fold_case))) then x_off = grid.x_off
-		if (any (strcmp (tag_names (grid), 'y_off', /fold_case))) then y_off = grid.y_off
-		if (any (strcmp (tag_names (grid), 'z_off', /fold_case))) then z_off = grid.z_off
+		if (has_tag (grid, 'x_off')) then x_off = grid.x_off
+		if (has_tag (grid, 'y_off')) then y_off = grid.y_off
+		if (has_tag (grid, 'z_off')) then z_off = grid.z_off
 	end
 
 	if (n_elements (data) eq 0) then message, "ERROR: no data array given."
@@ -85,7 +85,7 @@ function pc_extract_streamline, data, streamlines, name=name, label=label, preci
 		num_points = n_elements (streamlines[0,*])
 		streamlines = { num:1L, set_1:{ indices:streamlines, num_points:num_points, num_lines:1L, first:[ 0L ], last:[ num_points-1L ] } }
 	end
-	if (not any (strcmp (tag_names (streamlines.(1)), 'indices', /fold_case))) then message, "ERROR: no indices in given streamlines structure."
+	if (not has_tag (streamlines.(1), 'indices')) then message, "ERROR: no indices in given streamlines structure."
 	if (not keyword_set (name)) then name = default_name
 	if (size (name, /type) ne 7) then name = default_name
 	name = strtrim (name, 2)

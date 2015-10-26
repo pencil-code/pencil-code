@@ -337,7 +337,6 @@ pro pc_show_ts_analyze
 	print, "dt    :", ts.dt[0]
 	plot, ts.dt, title = 'dt', xc=charsize, yc=charsize, /yl
 
-	tags = tag_names (ts)
 	if (has_tag (ts, 't')) then begin
 		time = ts.t
 	endif else begin
@@ -481,7 +480,7 @@ pro pc_show_ts_analyze
 		rho_min = ts.rhomin * units.density / units.default_density
 		plot, time, rho_min, title = 'rho_min(t) ['+units.default_density_str+']', xrange=x_minmax, /xs, xc=charsize, yc=charsize, /yl
 	end
-	if (has_tag (ts, 'j2m') and has_tag (ts, 'visc_heatm') and any (tag_names (run_par) eq "ETA") and (num_subplots lt max_subplots)) then begin
+	if (has_tag (ts, 'j2m') and has_tag (ts, 'visc_heatm') and has_tag (run_par, "eta") and (num_subplots lt max_subplots)) then begin
 		num_subplots += 1
 		HR_ohm = run_par.eta * start_par.mu0 * ts.j2m * units.density * units.velocity^3 / units.length
 		visc_heat_mean = ts.visc_heatm * units.density * units.velocity^3 / units.length
@@ -489,7 +488,7 @@ pro pc_show_ts_analyze
 		plot, time, HR_ohm, title = 'Mean Ohmic heating rate {w} and viscous heating rate {.r}', xrange=x_minmax, /xs, xc=charsize, yc=charsize, ytitle='heating rates [W/m^3]', yrange=yrange, /yl
 		oplot, time, visc_heat_mean, color=200
 		oplot, time, HR_ohm, linestyle=2
-	end else if (has_tag (ts, 'j2m') and any (tag_names (run_par) eq "ETA") and (num_subplots lt max_subplots)) then begin
+	end else if (has_tag (ts, 'j2m') and has_tag (run_par, "eta") and (num_subplots lt max_subplots)) then begin
 		num_subplots += 1
 		mu0_SI = 4.0 * !Pi * 1.e-7
 		HR_ohm = run_par.eta * start_par.mu0 * ts.j2m * units.density * units.velocity^3 / units.length
@@ -529,7 +528,8 @@ pro pc_show_ts_analyze
 	end
 
 	skip_ts = 2
-	num_tags = n_elements (tag_names (ts))
+	tags = tag_names (ts)
+	num_tags = n_elements (tags)
 	while ((num_subplots lt max_subplots) and (skip_ts+1 lt num_tags)) do begin
 		num_subplots += 1
 		skip_ts += 1
@@ -557,7 +557,7 @@ pro pc_show_ts, object=time_series, unit=unit, start_param=start_param, run_para
 	if (not keyword_set (datadir)) then datadir = pc_get_datadir()
 	pc_read_dim, obj=orig_dim, datadir=datadir, /quiet
 	if (not keyword_set (unit)) then pc_units, obj=unit, datadir=datadir, param=start_param, dim=orig_dim, /quiet
-	if (not any (strcmp (tag_names (unit), "default_length", /fold_case))) then unit = create_struct (unit, display_units)
+	if (not has_tag (unit, "default_length")) then unit = create_struct (unit, display_units)
 	units = unit
 
 	if (keyword_set (time_series)) then ts = time_series

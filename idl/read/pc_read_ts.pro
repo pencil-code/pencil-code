@@ -219,7 +219,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Merge read data into full data set.
 ;
     if ((size(full_labels))[0] eq 0) then begin
-    ;If it's the first time just chunk the data into place
+      ; If it's the first time just chunk the data into place
       full_labels=labels
       full_data=data
       if ((size(full_data))[0] eq 1) then $
