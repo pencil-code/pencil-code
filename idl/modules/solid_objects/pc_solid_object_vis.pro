@@ -11,18 +11,11 @@ default,color,255
 ;
 ; Check if cylinders and spheres are defined
 ;
-lcyl=0
-lsph=0
 print,start.ncylinders
-allnames=TAG_NAMES(start)
-for i=0,n_elements(allnames)-1 do begin
-    if (allnames[i] eq 'NCYLINDERS') then lcyl=1
-    if (allnames[i] eq 'NSPHERES')   then lsph=1
-end
 ;
 ; Insert cylinders
 ;
-if (lcyl) then begin
+if (has_tag (start, 'ncylinders')) then begin
     if (start.ncylinders > 0) then begin
         for icyl=0,start.ncylinders-1 do begin
             r=start.cylinder_radius[icyl]
@@ -35,7 +28,7 @@ endif
 ;
 ; Insert spheres
 ;
-if (lsph) then begin
+if (has_tag (start, 'nspheres')) then begin
     if (start.nspheres > 0) then begin
         for icyl=0,start.nspheres-1 do begin
             r=start.sphere_radius[icyl]

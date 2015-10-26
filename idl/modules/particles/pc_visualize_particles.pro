@@ -145,19 +145,7 @@ endelse
 ;
 ; Check if we hare using the old version, 'rhops', or the new one; 'rhopmat'.
 ;
-res=tag_names(param)
-dims=size(res)
-ndims=dims[1]
-found=0
-target='RHOPS'
-for i=0,ndims-1 do begin
-    print,res[i],' ',target
-    if res[i] eq target then begin
-        found=1
-    endif
-end
-print,'found=',found
-if (found) then begin
+if (has_tag (param, 'rhops')) then begin
     material_density=param.rhops
 endif else begin
     material_density=param.rhopmat
