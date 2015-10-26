@@ -821,7 +821,7 @@ module EquationOfState
 !
     endsubroutine eosperturb
 !***********************************************************************
-    subroutine eoscalc_farray(f,psize,lnrho,ss,yH,lnTT,ee,pp,kapparho)
+    subroutine eoscalc_farray(f,psize,lnrho,ss,yH,lnTT,ee,pp,cs2,kapparho)
 !
 !   Calculate thermodynamical quantities
 !
@@ -838,9 +838,8 @@ module EquationOfState
       integer, intent(in) :: psize
       real, dimension(psize), intent(out), optional :: lnrho,ss
       real, dimension(psize), intent(out), optional :: yH,lnTT
-      real, dimension(psize), intent(out), optional :: ee,pp,kapparho
+      real, dimension(psize), intent(out), optional :: ee,pp,cs2,kapparho
       real, dimension(psize) :: lnrho_,ss_,yH_,lnTT_,TT_,fractions,exponent
-!
 !
       select case (psize)
 !
@@ -870,6 +869,8 @@ module EquationOfState
       if (present(lnTT)) lnTT=lnTT_
       if (present(ee)) ee=1.5*fractions*ss_ion*TT_+yH_*ee_ion
       if (present(pp)) pp=fractions*exp(lnrho_)*TT_*ss_ion
+      if (present(cs2)) &
+        call fatal_error('eoscalc_farray','calculation of cs2 not implemented')
 !
 !  Hminus opacity
 !

@@ -851,7 +851,7 @@ module EquationOfState
 !
     endsubroutine eosperturb
 !***********************************************************************
-    subroutine eoscalc_farray(f,psize,lnrho,yH,lnTT,ee,pp,kapparho)
+    subroutine eoscalc_farray(f,psize,lnrho,yH,lnTT,ee,pp,cs2,kapparho)
 !
 !   dummy routine to calculate thermodynamical quantities
 !   copied from eo_idealgas
@@ -859,12 +859,13 @@ module EquationOfState
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
       real, dimension(psize), optional :: lnrho,lnTT
-      real, dimension(psize), optional :: yH,ee,pp,kapparho
+      real, dimension(psize), optional :: yH,ee,pp,cs2,kapparho
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(present(lnrho),present(lnTT))
       call keep_compiler_quiet(present(yH),present(ee))
       call keep_compiler_quiet(present(pp),present(kapparho))
+      call keep_compiler_quiet(present(cs2))
 !
       call fatal_error('eoscalc_farray', &
           'This routine is not coded for eos_chemistry')

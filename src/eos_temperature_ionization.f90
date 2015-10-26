@@ -771,7 +771,7 @@ module EquationOfState
 !
     endsubroutine temperature_hessian
 !***********************************************************************
-    subroutine eoscalc_farray(f,psize,lnrho,ss,yH,mu1,lnTT,ee,pp,kapparho)
+    subroutine eoscalc_farray(f,psize,lnrho,ss,yH,mu1,lnTT,ee,pp,cs2,kapparho)
 !
 !   Calculate thermodynamical quantities
 !
@@ -784,7 +784,7 @@ module EquationOfState
       integer, intent(in) :: psize
       real, dimension(psize), intent(out), optional :: lnrho,ss
       real, dimension(psize), intent(out), optional :: yH,lnTT,mu1
-      real, dimension(psize), intent(out), optional :: ee,pp,kapparho
+      real, dimension(psize), intent(out), optional :: ee,pp,cs2,kapparho
 !
       real, dimension(psize) :: lnrho_,lnTT_,yH_,mu1_
       real, dimension(psize) :: TT1,tmp,tmpy,tmpy1
@@ -834,6 +834,9 @@ module EquationOfState
         endif
         ss = Rgas*mu1_0*ss
       endif
+!
+      if (present(cs2)) &
+        call fatal_error('eoscalc_farray','calculation of cs2 not implemented')
 !
       if (present(kapparho)) then
 !
