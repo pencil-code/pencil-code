@@ -3115,7 +3115,7 @@ module Solid_Cells
                 endif
                 dr = r_point-r_obj
                 if ((dr >= 0) .and. (dr < limit_close_linear*dxmin)) then
-                  ba(i,j,k,1) = 10
+                  ba(i,j,k,1:3) = 10
                   ba(i,j,k,4) = iobj
                 endif
               enddo
