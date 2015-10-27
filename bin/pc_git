@@ -394,7 +394,7 @@ class ReverseMergeCommand(Command):
             name='reverse-merge',
             overview='merge the current into the given branch.',
             usage='\n'
-            + '  git pc reverse-merge [<branch>]\n'
+            + '  git pc reverse-merge [--autostash] [<branch>]\n'
             + 'Merge the current branch into the given branch '
             + '(default: upstream).\n'
             + 'This is most useful when trying to integrate upstream changes '
@@ -411,7 +411,19 @@ class ReverseMergeCommand(Command):
             + 'Arguments:\n'
             + '  branch  -- the branch to merge into (defaults to @{u}, '
             + 'i.e. the current\n'
-            + '             upstream branch)'
+            + '             upstream branch)',
+            flags=[
+                OptionFlag(
+                    '', '--autostash',
+                    'Stash away any unrecorded changes begfore the operation'
+                    + ' begins and restore them\n'
+                    + 'after it ends, so you can run reverse-merge on a dirty '
+                    + ' worktree.\n'
+                    + 'However, the final restoration step may result in'
+                    + ' non-trivial conflicts.',
+                    action='store_true', dest='full', default=False
+                ),
+            ]
         )
 
     def run(self, options, args):
@@ -422,9 +434,10 @@ class ReverseMergeCommand(Command):
         else:
             self.usage(1)
         work_branch = git_branch_name()
-        unrecorded = git_stash_unrecorded(
-            'Unrecorded changes stashed away by \'git pc reverse-merge\''
-        )
+        if options.autostash:
+            unrecorded = git_stash_unrecorded(
+                'Unrecorded changes stashed away by \'git pc reverse-merge\''
+            )
 
         git(['reset', '--hard', other_branch])
 
