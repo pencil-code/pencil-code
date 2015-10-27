@@ -260,7 +260,7 @@ class PanicCommand(Command):
             overview='show all changes and files that were ever known to git',
             usage='\n'
             + '  git pc panic [--full] [--visual|--curses|--graph|--log]\n'
-            + 'show all changes and files that were ever known to git.\n',
+            + 'show all changes and files that were ever known to git.',
             flags=[
                 OptionFlag(
                     '-f', '--full', 'Try as hard as you can',
@@ -511,14 +511,10 @@ class UnrecordedChanges(object):
         new_index = git_head()
 
         git(['cherry-pick', '-x', '-n', self.tracked])
-        new_tracked = git_head()
-
         git(['cherry-pick', '-x', '-n', self.untracked])
-        new_untracked = git_head()
 
         git(['reset', '--mixed', new_index])
         git(['reset', '--soft', new_head])
-
 
 
 if __name__ == '__main__':
