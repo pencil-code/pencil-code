@@ -310,6 +310,7 @@ module Dustdensity
           select case (initnd(j))
           case ('old'); f(:,:,:,ind)=0.; call init_nd(f)
           case ('zero8'); f(:,:,:,ind(1):ind(min(ndustspec,8)))=0.
+          case ('lognormal'); call initnd_lognormal(f,.true.)
           endselect
         enddo
       endif
@@ -643,25 +644,11 @@ module Dustdensity
               endif
             endif
           enddo
-        case ('lognormal')
-          if (headtt) then
-            print*, 'init_nd: lognormal distribution in particle radius'
-            print*, 'init_nd: amplnd   =',amplnd
-            print*, 'init_nd: a0, a1, sigmad=',a0, a1, sigmad
-          endif
-          do k=1,ndustspec
-            if (a1 == 0) then
-              if (lradius_binning) then
-                fac=1./(sqrt(twopi)*sigmad*ad(k))
-              else
-                fac=dlnad/(sqrt(twopi)*sigmad)
-              endif
-              f(:,:,:,ind(k))=f(:,:,:,ind(k))&
-                  +amplnd*exp(-0.5*(alog(ad(k))-alog(a0))**2/sigmad**2)*fac
-            else
-              call fatal_error('initnd','no lognormal with a1/=1')
-            endif
-          enddo
+!
+!  lognormal initial condition
+!
+        case ('lognormal'); call initnd_lognormal(f,.false.)
+!
         case ('MRN77')   ! Mathis, Rumpl, & Nordsieck (1977)
           print*,'init_nd: Initial dust distribution of MRN77'
           do k=1,ndustspec
@@ -3324,5 +3311,47 @@ module Dustdensity
       endif
 !
     endsubroutine impose_dustdensity_floor
+!***********************************************************************
+    subroutine initnd_lognormal(f,loverwrite)
+!
+!  lognormal initial condition. Now as subroutine, so it can also be
+!  called for reinitialization without replicating code.
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      real :: fac
+      integer :: k
+      logical :: loverwrite
+!
+!  Impose the density floor.
+!
+      if (headtt) then
+        print*, 'init_nd: lognormal distribution in particle radius'
+        print*, 'init_nd: amplnd   =',amplnd
+        print*, 'init_nd: a0, a1, sigmad=',a0, a1, sigmad
+      endif
+!
+!  loop through the dust bins
+!
+      do k=1,ndustspec
+        if (a1 == 0) then
+          if (lradius_binning) then
+            fac=1./(sqrt(twopi)*sigmad*ad(k))
+          else
+            fac=dlnad/(sqrt(twopi)*sigmad)
+          endif
+          if (loverwrite) then
+            f(:,:,:,ind(k))= &
+                +amplnd*exp(-0.5*(alog(ad(k))-alog(a0))**2/sigmad**2)*fac
+          else
+            f(:,:,:,ind(k))=f(:,:,:,ind(k)) &
+                +amplnd*exp(-0.5*(alog(ad(k))-alog(a0))**2/sigmad**2)*fac
+          endif
+        else
+          call fatal_error('initnd','no lognormal with a1/=1')
+        endif
+      enddo
+!
+    endsubroutine initnd_lognormal
 !***********************************************************************
 endmodule Dustdensity
