@@ -86,47 +86,6 @@ def create_tag_name(prefix):
     return tag
 
 
-def git_stash_unrecorded(message=None):
-    '''Create a stash of the current file tree, including uncommitted files.
-
-    This command changes neither the file tree, nor the index.
-    It just creates a detached stash commit (which is not stored anywhere
-    in the ref namespace).
-
-    If there was something to stash, return the name of the created stash.
-    Otherwise, return None.
-
-    Note that we cannot simply use 'git stash create --include-untracked',
-    because the untracked files are in separate commit that is not
-    returned by the stash command.
-
-    '''
-    head = git_head()
-
-    # Commit changes in the index
-    git([
-        'commit', '--allow-empty',
-        '--message', 'Changes already in the index'
-        ])
-    index = git_head()
-
-    # Add changes to tracked files
-    git(['add', '--update'])
-    git(['commit', '--allow-empty', '--message', 'Changes to tracked files'])
-
-    # Add untracked files
-    git(['add', '--all'])
-    git(['commit', '--allow-empty', '--message', 'Untracked files'])
-
-    # Remember commit hash, then reset to original state
-    current = git_head()
-    git(['reset', '--mixed', head])
-    git_root = git_output(['rev-parse', '--show-toplevel'])
-    git(['reset', index, '--', git_root])
-
-    return current
-
-
 def git_head():
     '''Return the SHA1 of the current HEAD'''
     return git_output(['rev-parse', 'HEAD'])
@@ -283,13 +242,13 @@ class TagWipCommand(Command):
         if len(args) > 0:
             self.usage(1)
         tag = create_tag_name('WIP')
-        current = git_stash_unrecorded('Temporary commit for ' + tag)
-        if current:
-            print 'Tagging temporary commit with %s' % (tag, )
-            git(['tag', tag, current])
-        else:
+        current = UnrecordedChanges('Temporary commit for ' + tag)
+        if current.empty:
             print 'Tagging HEAD with %s' % (tag, )
             git(['tag', tag, 'HEAD'])
+        else:
+            print 'Tagging temporary commit with %s' % (tag, )
+            git(['tag', tag, current.tip])
 
 
 class PanicCommand(Command):
@@ -435,7 +394,7 @@ class ReverseMergeCommand(Command):
             self.usage(1)
         work_branch = git_branch_name()
         if options.autostash:
-            unrecorded = git_stash_unrecorded(
+            unrecorded = UnrecordedChanges(
                 'Unrecorded changes stashed away by \'git pc reverse-merge\''
             )
 
@@ -450,9 +409,8 @@ class ReverseMergeCommand(Command):
 
         git(['checkout', work_branch])
         git(['reset', '--hard', merge_commit])
-        if unrecorded:
-            git(['cherry-pick', '-x', '-n', unrecorded])
-            git(['reset', merge_commit])
+        if options.autostash:
+            unrecorded.restore()
         git(['branch', '-D', temp_branch])
 
 
@@ -482,6 +440,76 @@ class OptionFlag(object):
             default=self.default,
             help=self.help
             )
+
+
+class UnrecordedChanges(object):
+    '''Represents unrecorded changes that we want to restore later.
+
+    Conceptually, this is similar to a stash, but our implementation does
+    not use 'git stash --include-untracked', because the untracked files
+    would end up in separate commit that is not returned by the stash
+    command.
+
+    Creating an UnrecordedChanges object changes neither the file tree,
+    nor the index.
+    It just creates a detached commit (which is not stored anywhere in the
+    ref namespace).
+
+    '''
+
+    def __init__(self, log_message='Unrecorded changes'):
+        self.log_message = log_message
+
+        if git_outputs('status', '--porcelain'):
+            self.empty = False
+        else:
+            self.empty = True
+
+        head = git_head()
+
+        # Commit changes in the index
+        git([
+            'commit', '--allow-empty',
+            '--message', 'Changes already in the index'
+            ])
+        self.index = git_head()
+
+        # Add changes to tracked files
+        git(['add', '--update'])
+        git([
+            'commit', '--allow-empty',
+            '--message', 'Changes to tracked files'
+            ])
+        self.tracked = git_head()
+
+        # Add untracked files
+        git(['add', '--all'])
+        git([
+            'commit', '--allow-empty',
+            '--message', 'Untracked files'
+            ])
+        self.untracked = git_head()
+        self.tip = self.untracked
+
+        # Reset to original state
+        git(['reset', '--mixed', self.index])
+        git(['reset', '--soft', head])
+
+    def restore(self):
+        new_head = git_head()
+
+        git(['cherry-pick', '-x', '-n', self.index])
+        new_index = git_head()
+
+        git(['cherry-pick', '-x', '-n', self.tracked])
+        new_tracked = git_head()
+
+        git(['cherry-pick', '-x', '-n', self.untracked])
+        new_untracked = git_head()
+
+        git(['reset', '--mixed', new_index])
+        git(['reset', '--soft', new_head])
+
 
 
 if __name__ == '__main__':
