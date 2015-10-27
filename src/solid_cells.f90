@@ -170,63 +170,6 @@ module Solid_Cells
         cylinder_temp(1) = impossible
       endif
 !
-! If the plane describing the interface between two processor sub-domains
-! happens to be inside the solid structure there might be problems. Check
-! that we are not in possible problems....
-! NILS: This test is not perfect yet...the code may still crash due to the
-! NILS: topology :-(
-!
-! $      do iobj=1,nobjects
-! $        xobj=objects(iobj)%x(1)
-! $        yobj=objects(iobj)%x(2)
-! $        zobj=objects(iobj)%x(3)
-! $        robj=objects(iobj)%r
-! $!
-! $        do iprocx=0,nprocx
-! $          xbound=procx_bounds(iprocx)
-! $          if ((xbound > xobj-robj) .and. (xbound < xobj-robj+gridlim*dx)) then
-! $            print*,'iobj,xbound,xobj,robj=',iobj,xbound,xobj,robj
-! $            call fatal_error('initialize_solid_cells',&
-! $              'Processor boundaries are problematic in lower x!')
-! $          endif
-! $          if ((xbound < xobj+robj) .and. (xbound > xobj+robj-gridlim*dx)) then
-! $            print*,'iobj,xbound,xobj,robj=',iobj,xbound,xobj,robj
-! $            call fatal_error('initialize_solid_cells',&
-! $              'Processor boundaries are problematic in upper x!')
-! $          endif
-! $        enddo
-! $!
-! $        do iprocy=0,nprocy
-! $          ybound=procy_bounds(iprocy)
-! $          if ((ybound > yobj-robj) .and. (ybound < yobj-robj+gridlim*dy)) then
-! $            print*,'iobj,ybound,yobj,robj=',iobj,ybound,yobj,robj
-! $            call fatal_error('initialize_solid_cells',&
-! $                'Processor boundaries are problematic in lower y!')
-! $          endif
-! $          if ((ybound < yobj+robj) .and. (ybound > yobj+robj-gridlim*dy)) then
-! $            print*,'iobj,ybound,yobj,robj=',iobj,ybound,yobj,robj
-! $            call fatal_error('initialize_solid_cells',&
-! $                'Processor boundaries are problematic in upper y!')
-! $          endif
-! $        enddo
-! $!
-! $        if (objects(iobj)%form== 'sphere') then
-! $          do iprocz=0,nprocz
-! $            zbound=procz_bounds(iprocz)
-! $            if ((zbound > zobj-robj) .and. (zbound < zobj-robj+gridlim*dz)) then
-! $              print*,'iobj,zbound,zobj,robj=',iobj,zbound,zobj,robj
-! $              call fatal_error('initialize_solid_cells',&
-! $                  'Processor boundaries are problematic in lower z!')
-! $            endif
-! $            if ((zbound < zobj+robj) .and. (zbound > zobj+robj-gridlim*dz)) then
-! $              print*,'iobj,zbound,zobj,robj=',iobj,zbound,zobj,robj
-! $              call fatal_error('initialize_solid_cells',&
-! $                  'Processor boundaries are problematic in upper z!')
-! $            endif
-! $          enddo
-! $        endif
-! $      enddo
-!
 !  Prepare the solid geometry
 !
       call find_solid_cell_boundaries(f)
@@ -1083,12 +1026,12 @@ module Solid_Cells
 !  is set from interpolation between the value at the closest grid line
 !  and the value at the solid surface.
 !
-      if (interpolation_method == 'mirror' .or. &
-          interpolation_method == 'line_mirror') then
-        do i = l1,l2
-          do j = m1,m2
-            do k = n1,n2
-              if (lclose_linear) then ! NILS: Move this outside the 3D loop?????
+      if (lclose_linear) then
+        if (interpolation_method == 'mirror' .or. &
+            interpolation_method == 'line_mirror') then
+          do i = l1,l2
+            do j = m1,m2
+              do k = n1,n2
                 if (ba(i,j,k,1) == 10) then
                   iobj = ba(i,j,k,4)
                   x_obj = objects(iobj)%x(1)
@@ -1108,10 +1051,10 @@ module Solid_Cells
                     if (ilnTT > 0) f(i,j,k,ilnTT) = f_tmp(ilnTT)
                   endif
                 endif
-              endif
+              enddo
             enddo
           enddo
-        enddo
+        endif              
       endif
 !
 !  Find ghost points based on the mirror interpolation method
@@ -1124,10 +1067,13 @@ module Solid_Cells
               iobj = ba(i,j,k,4)
               if (iobj > 0) then
                 form = objects(iobj)%form
-                bax = (ba(i,j,k,1) /= 0).and.(ba(i,j,k,1) /= 9).and.(ba(i,j,k,1) /= 10)
-                bay = (ba(i,j,k,2) /= 0).and.(ba(i,j,k,2) /= 9).and.(ba(i,j,k,2) /= 10)
+                bax = (ba(i,j,k,1) /= 0).and.(ba(i,j,k,1) /= 9).and.&
+                    (ba(i,j,k,1) /= 10)
+                bay = (ba(i,j,k,2) /= 0).and.(ba(i,j,k,2) /= 9).and.&
+                    (ba(i,j,k,2) /= 10)
                 if (form == 'sphere') then
-                  baz = (ba(i,j,k,3) /= 0).and.(ba(i,j,k,3) /= 9).and.(ba(i,j,k,3) /= 10)
+                  baz = (ba(i,j,k,3) /= 0).and.(ba(i,j,k,3) /= 9).and.&
+                      (ba(i,j,k,3) /= 10)
                 else
                   baz = .false.
                 endif
@@ -1369,7 +1315,8 @@ module Solid_Cells
 !  find ghost points to be modified for this pencil
 !
         do i = l1,l2
-          bax = ((ba(i,m,n,1) /= 0).and.(ba(i,m,n,1) /= 9).and.(ba(i,m,n,1) /= 10))
+          bax = ((ba(i,m,n,1) /= 0).and.(ba(i,m,n,1) /= 9).and.&
+              (ba(i,m,n,1) /= 10))
 !
 !  set ghost points in x-direction first
 !
@@ -1493,7 +1440,7 @@ module Solid_Cells
                   endif
                 enddo
 !
-! Coorrection for mirror poitns very close to the surface to avoid 
+! Coorrection for mirror points very close to the surface to avoid 
 ! using ghost point in the interpolation
 !
                 if (upper_j == (m+j)) then
@@ -1880,7 +1827,7 @@ module Solid_Cells
 !  and the value at the solid surface "s".
 !  The point "g" may be defined in two different ways:
 !    1) the closest grid line which the normal from "s" to "p" cross
-!    2) the ponint which is a normal from "s" and a given distance from "s"
+!    2) the point which is a normal from "s" and a given distance from "s"
 !  Method number 2) is chosen if "close_interpolation_method=3" where
 !  "limit_close_linear" give the number of grid sizes which "g" is
 !  away from "s".
