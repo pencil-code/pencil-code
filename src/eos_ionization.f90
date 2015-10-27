@@ -838,7 +838,8 @@ module EquationOfState
       integer, intent(in) :: psize
       real, dimension(psize), intent(out), optional :: lnrho,ss
       real, dimension(psize), intent(out), optional :: yH,lnTT
-      real, dimension(psize), intent(out), optional :: ee,pp,cs2,kapparho
+      real, dimension(psize), intent(out), optional :: ee,pp,kapparho
+      real, dimension(psize), optional :: cs2
       real, dimension(psize) :: lnrho_,ss_,yH_,lnTT_,TT_,fractions,exponent
 !
       select case (psize)

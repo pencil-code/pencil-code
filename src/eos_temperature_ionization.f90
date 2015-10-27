@@ -784,7 +784,8 @@ module EquationOfState
       integer, intent(in) :: psize
       real, dimension(psize), intent(out), optional :: lnrho,ss
       real, dimension(psize), intent(out), optional :: yH,lnTT,mu1
-      real, dimension(psize), intent(out), optional :: ee,pp,cs2,kapparho
+      real, dimension(psize), intent(out), optional :: ee,pp,kapparho
+      real, dimension(psize), optional :: cs2
 !
       real, dimension(psize) :: lnrho_,lnTT_,yH_,mu1_
       real, dimension(psize) :: TT1,tmp,tmpy,tmpy1

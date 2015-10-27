@@ -712,7 +712,8 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: psize
       real, dimension(psize), intent(out), optional :: lnrho,ss,yH,lnTT
-      real, dimension(psize), intent(out), optional :: ee,pp,cs2,kapparho
+      real, dimension(psize), intent(out), optional :: ee,pp,kapparho
+      real, dimension(psize), optional :: cs2
       real, dimension(psize) :: lnrho_,ss_,lnTT_,TT_,yH_
 !
       select case (psize)
