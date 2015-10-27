@@ -374,13 +374,14 @@ class ReverseMergeCommand(Command):
             flags=[
                 OptionFlag(
                     '', '--autostash',
-                    'Stash away any unrecorded changes begfore the operation'
+                    'Stash away any unrecorded changes before the operation'
                     + ' begins and restore them\n'
                     + 'after it ends, so you can run reverse-merge on a dirty '
                     + ' worktree.\n'
                     + 'However, the final restoration step may result in'
                     + ' non-trivial conflicts.',
-                    action='store_true', dest='full', default=False
+                    action='store_true', dest='full', default=False,
+                    status='experimental'
                 ),
             ]
         )
@@ -418,7 +419,8 @@ class OptionFlag(object):
     '''Specification for a command-line option'''
 
     def __init__(
-            self, short, long, help, action=None, dest=None, default=None
+            self, short, long, help, action=None, dest=None, default=None,
+            status=None
             ):
         self.short = short
         self.long = long
@@ -426,6 +428,13 @@ class OptionFlag(object):
         self.action = action
         self.dest = dest
         self.default = default
+        self.status = status
+
+        if self.status:
+            if self.status == 'experimental':
+                self.help = '[Experimental] ' + self.help
+            else:
+                raise Exception('Unknown status %s' % (str(status), ))
 
     def get_overview(self):
         '''Return the overview line for \'git pc -h\''''
