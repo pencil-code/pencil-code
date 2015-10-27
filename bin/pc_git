@@ -8,6 +8,7 @@ git:
  - git pc tag-wip
  - git pc panic
  - git pc reverse-merge
+ - git pc reverse-pull
 
 Note that the original author (wd) will probably never use any of them
 because he considers it better to use the proper git (porcelain) commands:
@@ -74,6 +75,7 @@ def create_command_list():
         TagWipCommand(),
         PanicCommand(),
         ReverseMergeCommand(),
+        ReversePullCommand(),
     ]
 
 
@@ -413,6 +415,55 @@ class ReverseMergeCommand(Command):
         if options.autostash:
             unrecorded.restore()
         git(['branch', '-D', temp_branch])
+
+
+class ReversePullCommand(Command):
+
+    def __init__(self):
+        Command.__init__(
+            self,
+            name='reverse-pull',
+            overview='fetch changes and merge current into remote branch',
+            usage='\n'
+            + '  git pc reverse-pull [--autostash] [<repository>]\n'
+            + 'Fetch upstream changes and merge the current branch into'
+            + ' the remote branch.\n'
+            + 'This is most useful when trying to integrate upstream changes '
+            + 'with local\n'
+            + '(committed) changes:\n'
+            + '    git commit -m \'Last commit, will push now\'\n'
+            + '    git push\n'
+            + '    # [fails: upstream changes]\n'
+            + '    git pc reverse-pull\n'
+            + '    # [test before pushing ...]\n'
+            + '    git push\n'
+            + '\n'
+            + 'Arguments:\n'
+            + '  repository  -- the repository to fetch from',
+            flags=[
+                OptionFlag(
+                    '', '--autostash',
+                    'Stash away any unrecorded changes before the operation'
+                    + ' begins and restore them\n'
+                    + 'after it ends, so you can run reverse-pull on a dirty '
+                    + ' worktree.\n'
+                    + 'However, the final restoration step may result in'
+                    + ' non-trivial conflicts.',
+                    action='store_true', dest='full', default=False,
+                    status='experimental'
+                ),
+            ]
+        )
+
+    def run(self, options, args):
+        if len(args) == 0:
+            git(['fetch'])
+        elif len(args) == 1:
+            repo = args[0]
+            git(['fetch', repo])
+        else:
+            self.usage(1)
+        ReverseMergeCommand().run(options, [])
 
 
 class OptionFlag(object):
