@@ -32,14 +32,16 @@ module Particles_temperature
 !
   logical :: lpart_temp_backreac=.true.
   logical :: lrad_part=.false.
-  real :: init_part_temp, emissivity, cp_part=0.711e7 ! wolframalpha, erg/(g*K)
+  real :: init_part_temp, emissivity=0.0
+  real :: Twall=0.0
+  real :: cp_part=0.711e7 ! wolframalpha, erg/(g*K)
   character(len=labellen), dimension(ninit) :: init_particle_temperature='nothing'
 !
   namelist /particles_TT_init_pars/ &
       init_particle_temperature, init_part_temp, emissivity, cp_part
 !
   namelist /particles_TT_run_pars/ emissivity, cp_part, lpart_temp_backreac,&
-      lrad_part
+      lrad_part,Twall
 !
   integer :: idiag_Tpm=0, idiag_etpm=0
 !
@@ -182,8 +184,8 @@ module Particles_temperature
       type (pencil_case) :: p
       integer, dimension(mpar_loc,3) :: ineargrid
       real, dimension(nx) :: feed_back, volume_pencil
-      real, dimension(:), allocatable :: q_reac, Nu_p
-      real :: volume_cell
+      real, dimension(:), allocatable :: q_reac, Nu_p,mass_loss
+      real :: volume_cell, stefan_b
       real :: Qc, Qreac, Qrad, Ap, heat_trans_coef, cond
       integer :: k, inx0, ix0, iy0, iz0, ierr
       real :: rho1_point, weight
@@ -213,7 +215,8 @@ module Particles_temperature
 !
         allocate(Nu_p(k1:k2))
         allocate(q_reac(k1:k2))
-        call get_temperature_chemistry(q_reac,Nu_p)
+        allocate(mass_loss(k1:k2))
+        call get_temperature_chemistry(q_reac,Nu_p,mass_loss)
 !
 !  Loop over all particles in current pencil.
 !
@@ -231,17 +234,40 @@ module Particles_temperature
 !  Radiative heat transfer, has yet to be filled with life
 !
           if (lrad_part) then
-            Qrad=Ap*fp(k,iTp)**4*sigmaSB
+            Qrad=Ap*(Twall**4-fp(k,iTp)**4)*sigmaSB
           else
             Qrad = 0.0
           endif
-          heat_trans_coef = Nu_p(k)*cond/(2*fp(k,iap))
+!
+!  Calculation of stefan flow constant stefan_b
+!
+          stefan_b = mass_loss(k)*p%cv(inx0)/&
+              (2*pi*fp(k,iap)*Nu_p(k)*cond)
+!          print*, 'stefan',stefan_b
+!
+          if (stefan_b /= 0.0) then
+!
+!  Convective heat transfer including the Stefan Flow
+!
+            heat_trans_coef = Nu_p(k)*cond/(2*fp(k,iap))*&
+                (stefan_b/(exp(stefan_b)-1.0))
+!
+!  Convective heat transfer without the Stefan Flow
+!
+          else
+            heat_trans_coef = Nu_p(k)*cond/(2*fp(k,iap))
+          endif
+
           Qc = heat_trans_coef*Ap*(fp(k,iTp)-interp_TT(k))
 !
 !  Calculate the change in particle temperature based on the cooling/heating
 !  rates on the particle
 !
           dfp(k,iTp) = dfp(k,iTp)+(q_reac(k)-Qc+Qrad)/(fp(k,imp)*cp_part)
+!          print*, 'q_reac(k),Qc,Qrad',q_reac(k),Qc,Qrad
+!          print*, 'cp_part',cp_part
+!          print*,'heat_trans_coef',heat_trans_coef
+!          print*,'parts', Nu_p(k),cond
 !
 !  Calculate feed back from the particles to the gas phase
 !
@@ -287,6 +313,7 @@ module Particles_temperature
                   else
                     df(ixx,iyy,izz,ilnTT) = df(ixx,iyy,izz,ilnTT) &
                         +Qc*p%cv1(inx0)*rho1_point*p%TT1(inx0)*weight/volume_cell
+!                    print*, 'dTgdt: ', Qc*p%cv1(inx0)*rho1_point*p%TT1(inx0)*weight/volume_cell
                   endif
                 enddo
               enddo
@@ -296,6 +323,7 @@ module Particles_temperature
 !
         deallocate(Nu_p)
         deallocate(q_reac)
+        deallocate(mass_loss)
 !
       endif
 !

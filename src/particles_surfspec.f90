@@ -353,7 +353,7 @@ module Particles_surfspec
               dfp(k,isurf+i-1) = 3*term(k,i)/(porosity*Cg(k)*fp(k,iap))
             enddo
           else
-            if (linfinite_diffusion) then
+            if (linfinite_diffusion .or. lbaum_and_street) then
               do i = 1,N_surface_reactants
                 fp(k,isurf+i-1) = interp_species(k,jmap(i)) / &
                     species_constants(jmap(i),imass) * mean_molar_mass
@@ -391,15 +391,21 @@ module Particles_surfspec
                     index1 = jmap(i)
                     dmass = dmass+ndot(k,i)*species_constants(index1,imass)*A_p
                   enddo
+!                  print*,'ndot: ',ndot
 !
                   do i = 1,N_surface_species
                     index1 = jmap(i)
                     index2 = ichemspec(index1)
                     df(ixx,iyy,izz,index2) = &
                         df(ixx,iyy,izz,index2)+ &
-                        (A_p*ndot(k,i)*species_constants(index1,imass)+ &
+                        (A_p*ndot(k,i)*species_constants(index1,imass)- &
                         dmass*interp_species(k,index1))* &
                         rho1_point*weight/volume_cell
+!                    print*, 'df()',(A_p*ndot(k,i)*species_constants(index1,imass)- &
+!                        dmass*interp_species(k,index1))* &
+!                        rho1_point*weight/volume_cell
+!                    print*, 'constants: ',species_constants(index1,imass)
+!                    print*, 'interp_species: ',interp_species(k,index1)
                   enddo
                 enddo
               enddo
@@ -431,7 +437,11 @@ module Particles_surfspec
 ! Write information to index.pro
       lwr = .false.
       if (present(lwrite)) lwr = lwrite
-      if (lwr) write (3,*) 'Ysurf=', isurf
+!
+!  JONAS: The next bit makes trouble in read_var,  I am not sure this needs to 
+!  JONAS: be present in index.pro
+!
+!      if (lwr) write (3,*) 'Ysurf=', isurf
 !
       if (lreset) then
         idiag_surf = 0
@@ -623,32 +633,36 @@ module Particles_surfspec
       integer :: k, k1, k2,i
       integer :: ix0
       integer::spec_glob, spec_chem
-      real, dimension(:,:), allocatable :: diff_coeff_species
+      real :: diff_coeff_species
       real, dimension(:), allocatable :: Cg
 !
       if (npar_imn(imn) /= 0) then
         k1 = k1_imn(imn)
         k2 = k2_imn(imn)
 !
-        allocate(diff_coeff_species(k1:k2,N_species))
+!        allocate(diff_coeff_species(k1:k2,N_species))
         allocate(Cg(k1:k2))
+!
+!        do k = k1,k2
+!          ix0 = ineargrid(k,1)
+!          do i = 1,N_surface_species
+!            diff_coeff_species(k,i) = p%Diff_penc_add(ix0-nghost,jmap(i))
+!          enddo
+!        enddo
+!
+        call get_surface_chemistry(Cg)
+!
+!  JONAS: possible unit problem!
 !
         do k = k1,k2
           ix0 = ineargrid(k,1)
           do i = 1,N_surface_species
-            diff_coeff_species(k,i) = p%Diff_penc_add(ix0-nghost,jmap(i))
+            diff_coeff_species = p%Diff_penc_add(ix0-nghost,jmap(i))
+            mass_trans_coeff_species(k,i) = Cg(k)*diff_coeff_species/ fp(k,iap)
           enddo
         enddo
 !
-        call get_surface_chemistry(Cg)
-!
-        do k = k1,k2
-          do i = 1,N_surface_species
-            mass_trans_coeff_species(k,i) = Cg(k)*diff_coeff_species(k,i)/ fp(k,iap)
-          enddo
-        enddo
-!
-        deallocate(diff_coeff_species)
+!        deallocate(diff_coeff_species)
         deallocate(Cg)
       endif
 !

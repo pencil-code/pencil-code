@@ -93,6 +93,7 @@ module Particles_chemistry
   logical :: lthiele=.false.
   logical :: lreactive_heating=.false.
   logical :: lsurface_nopores=.false.
+  logical :: lbaum_and_street=.false.
 !
 !*********************************************************************!
 !             Particle dependent variables below here                 !
@@ -142,7 +143,8 @@ module Particles_chemistry
       lpchem_debug, &
       true_density_carbon, &
       startup_time, &
-      lsurface_nopores
+      lsurface_nopores,&
+      lbaum_and_street
 !
   namelist /particles_chem_run_pars/ chemplaceholder, lthiele, lreactive_heating
 !
@@ -170,6 +172,11 @@ module Particles_chemistry
       if (ierr /= 0) call fatal_error('register_particles_chem', 'unable to share total_carbon')
       call put_shared_variable('true_density_carbon',true_density_carbon,ierr)
       if (ierr /= 0) call fatal_error('register_particles_chem', 'unable to share true_density')
+
+      if (lbaum_and_street .and. .not. lsurface_nopores) then
+        call fatal_error('register_particles_chem',&
+            'If lbaum_and_street, lsurface_nopores hast to be True!')
+      endif
 !
     endsubroutine register_particles_chem
 ! ******************************************************************************
@@ -1047,8 +1054,10 @@ module Particles_chemistry
       type (pencil_case) :: p
       real, dimension(mpar_loc,mparray) :: fp
       real, dimension(mx,my,mz,mfarray) :: f
-      real :: pre_Cg, pre_Cs, pre_RR_hat
-      integer :: i, j, k, k1, k2,l
+      real :: pre_Cg, pre_Cs, pre_RR_hat,pre_dia,pre_k
+      real :: pre_kkcg
+      real ::  k_im, kkcg, x_mod, root_term
+      integer :: i, j, k, k1, k2,l,ix0
       integer, dimension(mpar_loc,3) :: ineargrid
 !
       k1 = k1_imn(imn)
@@ -1061,25 +1070,60 @@ module Particles_chemistry
         pre_Cg = 1e6
         pre_Cs = 1e4
         pre_RR_hat = 1e-4
+        pre_dia = 1e2
+        pre_k=1e1
+        pre_kkcg=1e3
       else
         pre_Cg = 1.
         pre_Cs = 1.
         pre_RR_hat = 1.
+        pre_dia = 1.
+        pre_k=1.
+        pre_kkcg=1.
       endif
 !
       do k = k1,k2
         do j = 1,N_surface_reactions
           RR_hat(k,j) = K_k(k,j)*reaction_enhancement(j)
-          do i = 1,N_surface_reactants
-            if (nu(i,j) > 0) RR_hat(k,j) = RR_hat(k,j)* &
-                (pre_Cg * Cg(k)*fp(k,isurf-1+i))**nu(i,j)
-          enddo
+!
+!  Take into account temperature dependance
+!
+          RR_hat(k,j) = RR_hat(k,j)*(fp(k,iTp)**T_k(j))
+!
+!  Calculation of the surface species concentration using the Baum and Street 
+!  algebraic equation
+!
+          if (lbaum_and_street) then
+            do i = 1,N_surface_reactants
+              if (nu(i,j) > 0) then
+                ix0 = ineargrid(k,1)
+!
+!  k_im and kk are here without Cg as it cancels out!
+!
+                k_im = Cg(k)*p%Diff_penc_add(ix0-nghost,jmap(i))/fp(k,iap)*pre_k
+                kkcg= RR_hat(k,j)*Cg(k)*pre_kkcg
+                root_term = sqrt(k_im**2 + kkcg**2 + 2*k_im*kkcg + 4*k_im*fp(k,isurf-1+i)*kkcg)
+!                print*, 'k_im: ', k_im
+!                print*,'kkcg: ', kkcg
+!                print*, 'root_term:',root_term
+!                print*, 'x_infty:', fp(k,isurf-1+i)
+                x_mod = (-k_im-kkcg+root_term)/2/kkcg
+!                print*,'x_mod: ', x_mod
+                RR_hat(k,j) = RR_hat(k,j)* &
+                    (pre_Cg * Cg(k)*x_mod)**nu(i,j)
+              endif
+            enddo
+          else
+            do i = 1,N_surface_reactants
+              if (nu(i,j) > 0) RR_hat(k,j) = RR_hat(k,j)* &
+                  (pre_Cg * Cg(k)*fp(k,isurf-1+i))**nu(i,j)
+            enddo
+          endif
           if (N_adsorbed_species > 1) then
             do i = 1,N_adsorbed_species
               if (mu(i,j) > 0) RR_hat(k,j) = RR_hat(k,j)*(pre_Cs*Cs(k,i))**mu(i,j)
             enddo
           endif
-          RR_hat(k,j) = RR_hat(k,j)*(fp(k,iTp)**T_k(j))
         enddo
       enddo
 !
@@ -1117,7 +1161,7 @@ module Particles_chemistry
 !  after thiele. (8th US combustion Meeting, Paper #070CO-0312)
 !  equation 56 ff.
 !
-      if (lthiele) then
+      if (.not. lbaum_and_street .and. lthiele) then
         call calc_effectiveness_factor(fp,ineargrid,p)
         do j = 1,N_surface_reactions
           RR_hat(:,j) = RR_hat(:,j) * effectiveness_factor_reaction(:,j)
@@ -2214,15 +2258,17 @@ module Particles_chemistry
       Cg_targ = Cg
 !
     endsubroutine get_surface_chemistry
-! ******************************************************************************
+! ****************************************************************************
 !  Get temperature-chemistry dependent variables!
 !  dec-11/Jonas: coded
 !
-    subroutine get_temperature_chemistry(q_reac_targ,Nu_p_targ)
+    subroutine get_temperature_chemistry(q_reac_targ,Nu_p_targ,mass_loss_targ)
       real, dimension(:) :: q_reac_targ, Nu_p_targ
+      real, dimension(:), optional :: mass_loss_targ
 !
       Nu_p_targ = Nu_p
       q_reac_targ = q_reac
+      if (present(mass_loss_targ)) mass_loss_targ = mass_loss
 !      q_reac_targ = q_reac
 !
     endsubroutine get_temperature_chemistry

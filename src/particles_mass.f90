@@ -30,7 +30,7 @@ module Particles_mass
   include 'particles_mass.h'
 !
   logical :: lpart_mass_backreac=.true.
-  real :: mass_const, dmpdt=1e-3
+  real :: mass_const=0.0, dmpdt=1e-3
   character(len=labellen), dimension(ninit) :: init_particle_mass='nothing'
 !
   namelist /particles_mass_init_pars/ init_particle_mass, mass_const
@@ -266,7 +266,10 @@ module Particles_mass
 !  decrease before the outer shell is entirly consumed).
 !
           Vp = 4*pi*fp(k,iap)**3/3.
-          dfp(k,irhosurf) = dfp(k,irhosurf)-sum(Rck_max(k,:))*St(k)/Vp
+!
+          if (fp(k,irhosurf)>=0.0) then
+            dfp(k,irhosurf) = dfp(k,irhosurf)-sum(Rck_max(k,:))*St(k)/Vp
+          endif
 !
 ! Calculate feed back from the particles to the gas phase
           if (lpart_mass_backreac) then

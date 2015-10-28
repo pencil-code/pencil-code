@@ -64,6 +64,7 @@
   public :: mu, mu_prime, ac, aac, nu, nu_prime
   public :: jmap
   public :: dependent_reactant
+  public :: lbaum_and_street
 
 
   

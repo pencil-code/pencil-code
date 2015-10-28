@@ -35,6 +35,7 @@ module Particles_chemistry
   integer :: mu=0, mu_prime=0, ac=0, aac=0, nu=0, nu_prime=0
   integer :: jmap=0
   integer :: dependent_reactant = 0
+  logical :: lbaum_and_street = .false.
   real, dimension(2) :: mass_loss
 
   contains
@@ -352,11 +353,12 @@ module Particles_chemistry
 ! ******************************************************************************
 !  11-nov-2014/jonas: coded
 
-  subroutine get_temperature_chemistry(var1,var2)
-    real, dimension(:) :: var1,var2
+  subroutine get_temperature_chemistry(var1,var2,var3)
+    real, dimension(:) :: var1,var2,var3
 !
     call keep_compiler_quiet(var1)
     call keep_compiler_quiet(var2)
+    call keep_compiler_quiet(var3)
 !
   endsubroutine get_temperature_chemistry
 ! ******************************************************************************
