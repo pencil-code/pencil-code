@@ -241,11 +241,11 @@ module Particles_radius
         case ('lognormal')
 
           if (initial.and.lroot) print*, 'set_particles_radius: '// &
-              'lognormal=', ap0(1), ap1
+              'lognormal=', a0_initdist
           call random_number_wrapper(r_mpar_loc)
           call random_number_wrapper(p_mpar_loc)
           tmp_mpar_loc=sqrt(-2*log(r_mpar_loc))*sin(2*pi*p_mpar_loc)
-          fp(:,iap)=ap1*exp(sigma_initdist*tmp_mpar_loc)
+          fp(:,iap)=a0_initdist*exp(sigma_initdist*tmp_mpar_loc)
 !
 !  Lognormal distribution. Here, ap1 is the largest value in the distribution
 !  and ap0 is the smallest radius initially.
