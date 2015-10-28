@@ -1,0 +1,31 @@
+#!/bin/csh
+#
+#  $Id$
+#
+#  This script returns the name of the run directory,
+#  Could do this more generally using $PENCIL_HOME
+#  after having excaped all the slashes.
+#
+echo $cwd >! .tmp
+#
+#  in the following if block one can add more machines
+#  where workspace can be allocated.
+#
+set hn = `hostname`
+#echo 'We are on the machine "'$hn'", so the new workspace will be'
+#
+if ($hn =~ beskow*) then
+  set str='s/cfs\/klemming\/scratch\/b\/brandenb\///g'
+else if (($hn =~ beskow*) && ($USER =~ brandenb)) then
+  #echo "special entry for Axel on Beskow"
+  set str='s/cfs\/klemming\/scratch\/b\/brandenb\///g'
+endif
+#
+#  Make and link to scratch disk.
+#
+sed -e "$str" .tmp >! .scr
+echo `cat .scr`
+#
+#  Delete temporary files.
+#
+\rm -f .scr .tmp

@@ -1,0 +1,14 @@
+#!/bin/csh
+#$Id$
+#
+#  Copies file from subtree to another machine, assuming that the
+#  same directory structure is prepared on the target machine.
+#
+#  Usage:
+#    pc_scp_subtree dim.dat $ekhi
+#
+set subdirs = `cat data/procs.txt`
+foreach dir ($subdirs)
+  echo scp data/$dir/$1 $2`pc_rundir`/data/$dir
+  scp data/$dir/$1 $2`pc_rundir`/data/$dir
+end
