@@ -3057,8 +3057,8 @@ module Special
 !
               lno_overlap = .false.
 !
-              xdist=dx*(ii-current%data(1)-ipx*nx)
-              ydist=dy*(jj-current%data(2)-ipy*ny)
+              xdist=dx*(ii-xpos)
+              ydist=dy*(jj-ypos)
 !
               dist2=max(xdist**2+ydist**2,dxdy2)
               dist=sqrt(dist2)
