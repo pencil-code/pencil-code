@@ -7,6 +7,7 @@ git:
  - git pc checkout
  - git pc tag-wip
  - git pc panic
+ - git pc ff-update
  - git pc reverse-merge
  - git pc reverse-pull
 
@@ -74,6 +75,7 @@ def create_command_list():
         CheckoutCommand(),
         TagWipCommand(),
         PanicCommand(),
+        FfUpdateCommand(),
         ReverseMergeCommand(),
         ReversePullCommand(),
     ]
@@ -355,6 +357,67 @@ class PanicCommand(Command):
             for line in git_outputs(['fsck', '--dangling', '--no-reflog'])
             if 'dangling commit' in line
             ]
+
+
+class FfUpdateCommand(Command):
+    '''Fast-forward update a branch without checking it out.
+
+    Adopted and simplified from
+    http://stackoverflow.com/questions/4156957/
+          /merging-branches-without-checkout/4157435#4157435
+
+    '''
+
+    def __init__(self):
+        Command.__init__(
+            self,
+            name='ff-update',
+            overview='update a branch without checking it out',
+            usage='\n'
+            + '  git pc ff-update <branch> [<upstream>]\n'
+            + 'Update <branch> from upstream without checking it out,\n'
+            + 'provided that this update is a fast-forward.\n'
+            + 'If it is not, cry foul.\n'
+            + '\n'
+            + 'Arguments:\n'
+            + '  <branch>    -- the branch to update'
+            + '  <upstream>  -- the commit to update branch to (defaults\n'
+            + '                 to branch@{u})'
+        )
+
+    def run(self, options, args):
+        if len(args) == 2:
+            branch, upstream = args
+        else:
+            self.usage(1)
+
+        FfUpdateCommand._merge_ff(branch, upstream)
+
+    @staticmethod
+    def _merge_ff(self, branch, upstream):
+        if git_commits_equal(branch, upstream):
+            print 'Branch %s is already up to date' % (branch, )
+            return
+
+        if git_commits_equal('HEAD', branch):
+            # Update checked-out branch
+            git(['merge', '--ff-only', upstream])
+            return
+
+        merge_base = git_output(['merge-base', branch, upstream])
+        if git_commits_equal(merge_base, upstream):
+            print 'Branch %s is ahead of upstream'
+            return
+
+        is_ff = git_commits_equal(merge_base, branch)
+        if is_ff:
+            reason = 'Fast-forward merge %s into %s' % (upstream, branch, )
+            ref = 'refs/heads/%s' % (branch, )
+            git(['update-ref', '-m', reason, ref, upstream])
+        else:
+            print 'Not a fast-forward: Merging %s into %s' \
+                % (upstream, branch, )
+            sys.exit(1)
 
 
 class ReverseMergeCommand(Command):
