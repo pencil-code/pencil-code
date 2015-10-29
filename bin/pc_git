@@ -90,7 +90,7 @@ def create_tag_name(prefix):
 
 def git_head():
     '''Return the SHA1 of the current HEAD'''
-    return git_output(['rev-parse', 'HEAD'])
+    return git_hash('HEAD')
 
 
 def git_branch_name():
@@ -102,6 +102,16 @@ def git_branch_name():
             return None
         else:
             raise Exception(e)
+
+
+def git_commits_equal(c1, c2):
+    '''Do the two commitishs represent the same commit?'''
+    return git_hash(c1) == git_hash(c1)
+
+
+def git_hash(commit):
+    '''Return the SHA1 of the current HEAD'''
+    return git_output(['rev-parse', '--verify', '%s{commit}' % (commit, )])
 
 
 def git(cmd_list):
