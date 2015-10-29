@@ -460,7 +460,6 @@ module Particles_chemistry
       enddo
 !
       ER_k = ER_k/gas_constant
-      print*, 'ER_k'
     endsubroutine create_arh_param
 ! ******************************************************************************
     subroutine create_dependency(nu,dependent_reactant,n_surface_reactions, &
