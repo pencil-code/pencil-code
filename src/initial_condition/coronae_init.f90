@@ -159,7 +159,7 @@ contains
       use EquationOfState, only: get_cp1,gamma,gamma_m1,cs20
       use Mpicomm, only: mpibcast_int, mpibcast_real, stop_it_if_any
       use Messages, only: warning
-      use File_io, only: file_exists, file_size
+      use General, only: file_exists, file_size
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -399,7 +399,7 @@ contains
       use EquationOfState, only: gamma,cs2top,cs2bot
       use Gravity, only: gravz
       use Mpicomm, only: mpibcast_real,mpibcast_int,stop_it_if_any
-      use File_io, only: file_exists, file_size
+      use General, only: file_exists, file_size
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ztop,zbot
@@ -574,7 +574,7 @@ contains
     use EquationOfState, only: gamma,get_cp1
     use Gravity, only: get_xgravity
     use Mpicomm, only: mpibcast_real,mpibcast_int,stop_it_if_any
-    use File_io, only: file_exists, file_size
+    use General, only: file_exists, file_size
 !
     real, dimension (mx,my,mz,mfarray) :: f
     integer :: prof_nx
