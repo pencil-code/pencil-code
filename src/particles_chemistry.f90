@@ -1082,48 +1082,57 @@ module Particles_chemistry
       endif
 !
       do k = k1,k2
-        do j = 1,N_surface_reactions
-          RR_hat(k,j) = K_k(k,j)*reaction_enhancement(j)
+!
+!  The particle mass should not be allowed to decrease to less than
+!  one percent of ints initial mass. 
+!
+        if (fp(k,imp) < fp(k,impinit)*0.01) then
+          RR_hat(k,:)=0.
+        else
+
+          do j = 1,N_surface_reactions
+            RR_hat(k,j) = K_k(k,j)*reaction_enhancement(j)
 !
 !  Take into account temperature dependance
 !
-          RR_hat(k,j) = RR_hat(k,j)*(fp(k,iTp)**T_k(j))
+            RR_hat(k,j) = RR_hat(k,j)*(fp(k,iTp)**T_k(j))
 !
 !  Calculation of the surface species concentration using the Baum and Street 
 !  algebraic equation
 !
-          if (lbaum_and_street) then
-            do i = 1,N_surface_reactants
-              if (nu(i,j) > 0) then
-                ix0 = ineargrid(k,1)
+            if (lbaum_and_street) then
+              do i = 1,N_surface_reactants
+                if (nu(i,j) > 0) then
+                  ix0 = ineargrid(k,1)
 !
 !  k_im and kk are here without Cg as it cancels out!
 !
-                k_im = Cg(k)*p%Diff_penc_add(ix0-nghost,jmap(i))/fp(k,iap)*pre_k
-                kkcg= RR_hat(k,j)*Cg(k)*pre_kkcg
-                root_term = sqrt(k_im**2 + kkcg**2 + 2*k_im*kkcg + 4*k_im*fp(k,isurf-1+i)*kkcg)
+                  k_im = Cg(k)*p%Diff_penc_add(ix0-nghost,jmap(i))/fp(k,iap)*pre_k
+                  kkcg= RR_hat(k,j)*Cg(k)*pre_kkcg
+                  root_term = sqrt(k_im**2 + kkcg**2 + 2*k_im*kkcg + 4*k_im*fp(k,isurf-1+i)*kkcg)
 !                print*, 'k_im: ', k_im
 !                print*,'kkcg: ', kkcg
 !                print*, 'root_term:',root_term
 !                print*, 'x_infty:', fp(k,isurf-1+i)
-                x_mod = (-k_im-kkcg+root_term)/2/kkcg
+                  x_mod = (-k_im-kkcg+root_term)/2/kkcg
 !                print*,'x_mod: ', x_mod
-                RR_hat(k,j) = RR_hat(k,j)* &
-                    (pre_Cg * Cg(k)*x_mod)**nu(i,j)
-              endif
-            enddo
-          else
-            do i = 1,N_surface_reactants
-              if (nu(i,j) > 0) RR_hat(k,j) = RR_hat(k,j)* &
-                  (pre_Cg * Cg(k)*fp(k,isurf-1+i))**nu(i,j)
-            enddo
-          endif
-          if (N_adsorbed_species > 1) then
-            do i = 1,N_adsorbed_species
-              if (mu(i,j) > 0) RR_hat(k,j) = RR_hat(k,j)*(pre_Cs*Cs(k,i))**mu(i,j)
-            enddo
-          endif
-        enddo
+                  RR_hat(k,j) = RR_hat(k,j)* &
+                      (pre_Cg * Cg(k)*x_mod)**nu(i,j)
+                endif
+              enddo
+            else
+              do i = 1,N_surface_reactants
+                if (nu(i,j) > 0) RR_hat(k,j) = RR_hat(k,j)* &
+                    (pre_Cg * Cg(k)*fp(k,isurf-1+i))**nu(i,j)
+              enddo
+            endif
+            if (N_adsorbed_species > 1) then
+              do i = 1,N_adsorbed_species
+                if (mu(i,j) > 0) RR_hat(k,j) = RR_hat(k,j)*(pre_Cs*Cs(k,i))**mu(i,j)
+              enddo
+            endif
+          enddo
+        endif
       enddo
 !
 !  Make sure RR_hat is given in the right unit system (above it is always
