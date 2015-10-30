@@ -1403,7 +1403,8 @@ module Solid_Cells
           do j = -3,3
             if (j /= 0) then
               bay = (ba(i,m+j,n,2) /= 0).and.(ba(i,m+j,n,2) /= 9).and. &
-                  (ba(i,m+j,n,2) /= 10).and.(ba(i,m,n,2)==0)
+                  (ba(i,m+j,n,2) /= 10).and. &
+                  (ba(i,m,n,2)==0 .or. ba(i,m,n,2)==10)
               if (bay) then
                 iobj = ba(i,m+j,n,4)
                 r_obj = objects(iobj)%r
@@ -1491,7 +1492,8 @@ module Solid_Cells
               if (iobj > 0) then
                 if (objects(iobj)%form == 'sphere') then
                   baz = (ba(i,m,k+n,3) /= 0).and.(ba(i,m,k+n,3) /= 9).and. &
-                      (ba(i,m,k+n,3) /= 10).and.(ba(i,m,n,3)==0)
+                      (ba(i,m,k+n,3) /= 10).and.&
+                      (ba(i,m,n,3)==0 .or. ba(i,m,n,3)==10)
                 else
                   baz = .false.
                 endif
