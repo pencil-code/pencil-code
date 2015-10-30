@@ -2760,7 +2760,7 @@ module Fourier
           ax = cmplx (p_re(:,m), p_im(:,m))
           call cfftb (nxgrid, ax, wsavex)
           p_re(:,m) = real (ax)
-          if (lcompute_im) p_im(:,m) = aimag (ax)
+          p_im(:,m) = aimag (ax)
         enddo
 !
         call transp_pencil_xy (p_re, t_re)
@@ -3080,7 +3080,7 @@ module Fourier
             ax = cmplx (p_re(:,m,pos_z), p_im(:,m,pos_z))
             call cfftb (nxgrid, ax, wsavex)
             p_re(:,m,pos_z) = real (ax)
-            if (lcompute_im) p_im(:,m,pos_z) = aimag (ax)
+            p_im(:,m,pos_z) = aimag (ax)
           enddo
         enddo
 !
@@ -3263,7 +3263,7 @@ module Fourier
               ax = cmplx (p_re(:,m,pos_z,pos_a), p_im(:,m,pos_z,pos_a))
               call cfftb (nxgrid, ax, wsavex)
               p_re(:,m,pos_z,pos_a) = real (ax)
-              if (lcompute_im) p_im(:,m,pos_z,pos_a) = aimag (ax)
+              p_im(:,m,pos_z,pos_a) = aimag (ax)
             enddo
           enddo
         enddo
