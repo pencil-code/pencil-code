@@ -17,7 +17,7 @@ def avgt1d(tmin=None, **kwarg):
         **kwarg
             Keyword arguments to be passed to read.avg1d().
     """
-    # Chao-Chin Yang, 2014-10-27
+    # Chao-Chin Yang, 2014-10-29
     from . import read
     import numpy as np
     from scipy import integrate
@@ -26,14 +26,7 @@ def avgt1d(tmin=None, **kwarg):
     t, indices = np.unique(t, return_index=True)
     avg1d = avg1d[indices,:]
     # Check the time span.
-    tmax = t.max()
-    if tmin is None:
-        tmin = t.min()
-    if tmax <= tmin:
-        print("The minimum time has not been reached. ")
-        print("  tmin, tmax = ", tmin, tmax)
-        tmin = t.min()
-    indices = t >= tmin
+    indices, tmin, tmax = _get_indices(t, tmin=tmin)
     dtinv = 1 / (tmax - tmin)
     # Find the time average at each location for each variable.
     var = avg1d.dtype.names
@@ -154,7 +147,7 @@ def time_average(datadir='./data', diagnostics=None, tmin=0, verbose=True):
         verbose
             Directly print out the averages when True.
     """
-    # Chao-Chin Yang, 2014-07-31
+    # Chao-Chin Yang, 2015-10-26
     from . import read
     from collections import namedtuple
     from numpy import sqrt, unique
@@ -164,13 +157,7 @@ def time_average(datadir='./data', diagnostics=None, tmin=0, verbose=True):
     t, indices = unique(ts.t, return_index=True)
     ts = ts[indices]
     # Check the time span.
-    tmax = max(ts.t)
-    if tmax <= tmin:
-        print("The minimum time has not been reached. ")
-        print("  tmax = ", tmax)
-        print("  tmin = ", tmin)
-        return None
-    indices = ts.t >= tmin
+    indices, tmin, tmax = _get_indices(t, tmin=tmin)
     dtinv = 1 / (tmax - tmin)
     # Local function for conducting statistics.
     def stats(diag):
@@ -195,3 +182,35 @@ def time_average(datadir='./data', diagnostics=None, tmin=0, verbose=True):
         StdDev = namedtuple('StandardDeviation', diagnostics)
         mean, stddev = zip(*(stats(diag) for diag in diagnostics))
         return Mean(*mean), StdDev(*stddev)
+#=======================================================================
+def _get_indices(t, tmin=None, tmax=None):
+    """Gets the indices in t that is in the range [tmin, tmax].
+
+    Positional Arguments:
+        t
+            A numpy array.
+        tmin
+            Minimum value; no minimum if None.
+        tmax
+            Maximum value; no maximum if None.
+
+    Returned Values:
+        indices
+            Indices in t that is in the range [tmin, tmax].
+        tmin
+            Real minimum in t[indices].
+        tmax
+            Real maximum in t[indices].
+    """
+    # Created: 2015-10-29
+    # Author: Chao-Chin Yang
+    if tmin is None: tmin = t.min()
+    if tmax is None: tmax = t.max()
+    if tmin >= tmax:
+        print("tmin = ", tmin)
+        print("tmax = ", tmax)
+        raise ValueError("tmin >= tmax")
+    indices = (tmin <= t) & (t <= tmax)
+    tmin = t[indices].min()
+    tmax = t[indices].max()
+    return indices, tmin, tmax
