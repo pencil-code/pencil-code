@@ -1041,7 +1041,8 @@ module Solid_Cells
                   if (objects(iobj)%form == 'cylinder') then
                     r_point = sqrt(((x(i)-x_obj)**2+(y(j)-y_obj)**2))
                   elseif (objects(iobj)%form == 'sphere') then
-                    r_point = sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+(z(k)-z_obj)**2)
+                    r_point = sqrt((x(i)-x_obj)**2+(y(j)-y_obj)**2+&
+                        (z(k)-z_obj)**2)
                   endif
                   dr = r_point-r_obj
                   if ((dr > 0) .and. (dr < dxmin*limit_close_linear)) then
@@ -1392,7 +1393,7 @@ module Solid_Cells
 !  Do nothing, this is done in update_solid_cells
 !
               else
-                call fatal_error('','no such ivar')
+                call fatal_error('update_solid_cells_pencil','no such ivar')
               endif
             enddo
           endif
@@ -1402,7 +1403,7 @@ module Solid_Cells
           do j = -3,3
             if (j /= 0) then
               bay = (ba(i,m+j,n,2) /= 0).and.(ba(i,m+j,n,2) /= 9).and. &
-                  (ba(i,m+j,n,2) /= 10).and.(ba(i,m,n,1)==0)
+                  (ba(i,m+j,n,2) /= 10).and.(ba(i,m,n,2)==0)
               if (bay) then
                 iobj = ba(i,m+j,n,4)
                 r_obj = objects(iobj)%r
@@ -1475,14 +1476,14 @@ module Solid_Cells
 !  Do nothing, this is done in update_solid_cells
 !
                   else
-                    call fatal_error('','no such ivar')
+                    call fatal_error('update_solid_cells_pencil','no such ivar')
                   endif
                 enddo
               endif
             endif
           enddo
 !
-!  loop over all relevant ghost points in y-direction
+!  loop over all relevant ghost points in z-direction
 !
           do k = -3,3
             if (k /= 0) then
@@ -1490,7 +1491,7 @@ module Solid_Cells
               if (iobj > 0) then
                 if (objects(iobj)%form == 'sphere') then
                   baz = (ba(i,m,k+n,3) /= 0).and.(ba(i,m,k+n,3) /= 9).and. &
-                      (ba(i,m,k+n,3) /= 10).and.(ba(i,m,n,1)==0)
+                      (ba(i,m,k+n,3) /= 10).and.(ba(i,m,n,3)==0)
                 else
                   baz = .false.
                 endif
@@ -1564,7 +1565,7 @@ module Solid_Cells
 !  Do nothing, this is done in update_solid_cells
 !
                   else
-                    call fatal_error('','No such ivar')
+                    call fatal_error('update_solid_cells_pencil','No such ivar')
                   endif
                 enddo
               endif
@@ -2690,7 +2691,7 @@ module Solid_Cells
             (ba(i,m,n,2) /= 0).or. &
             (ba(i,m,n,3) /= 0)) then
 !
-!  If this is a fluid point which has to be interpolated because it is very
+!  If this is a fluid point that has to be interpolated because it is very
 !  close to the solid geometry (i.e. ba(i,m,n,1) == 10) then only the
 !  temperature and the velocity components should be frozen.
 !
