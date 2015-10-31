@@ -1584,7 +1584,7 @@ module Density
           tmp = 1.0 + beta1*(z(n)-zint)/cs2int
 ! Abort if args of log() are negative
           if ( (tmp<=0.0) .and. (z(n)<=zblend) ) then
-            call fatal_error('polytropic_lnrho_z', &
+            call fatal_error_local('polytropic_lnrho_z', &
                 'Imaginary density values -- your z_inf is too low.')
           endif
           tmp = max(tmp,epsi)  ! ensure arg to log is positive
@@ -1649,7 +1649,7 @@ module Density
           tmp = 1.0 + beta1*(z(n)**2-zint**2)/cs2int/2.
 ! Abort if args of log() are negative
           if ( (tmp<=0.0) .and. (z(n)<=zblend) ) then
-            call fatal_error('polytropic_lnrho_disc', &
+            call fatal_error_local('polytropic_lnrho_disc', &
                 'Imaginary density values -- your z_inf is too low.')
           endif
           tmp = max(tmp,epsi)  ! ensure arg to log is positive
@@ -2043,9 +2043,11 @@ module Density
       if (lpencil(i_glnrho).or.lpencil(i_grho)) then
         call grad(f,ilnrho,p%glnrho)
         if (notanumber(p%glnrho)) then
-          print*, 'it,n,m=', it,n,m
-          print*, f(4,4,1:6,ilnrho)
-          call fatal_error('calc_pencils_density','NaNs in p%glnrho)')
+          print*, 'density:iproc,it,m,n=', iproc,it,m,n
+          !print*, 'it,m,n=', it,m,n
+          print*, "density:f(:,m,n,ilnrho)=",f(:,m,n,ilnrho)
+          !print*, f(4,4,1:6,ilnrho)
+          call fatal_error_local('calc_pencils_density','NaNs in p%glnrho)')
         endif
         if (lpencil(i_grho)) then
           do i=1,3
