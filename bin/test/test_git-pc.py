@@ -32,7 +32,10 @@ import tempfile
 
 
 from proboscis import test, TestProgram
-#from proboscis.asserts import assert_equal, assert_not_equal,assert_true, assert_false
+#from proboscis.asserts import assert_equal, \
+#                              assert_not_equal, \
+#                              assert_true, \
+#                              assert_false
 
 
 current_git_time = 0            # Our test commits all occurred in 1970...
