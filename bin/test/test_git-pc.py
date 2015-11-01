@@ -18,6 +18,8 @@ and run these tests with
 To do:
  - Remove temporary directories for successful tests
  - Reduce output
+ - Capture stderr ('git pc panic --full' writes to stderr, although maybe
+   it shouldn't), but separately from stdout.
 
 '''
 
