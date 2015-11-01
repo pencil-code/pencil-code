@@ -53,13 +53,12 @@ def call_checkout():
     # print run_system_cmd(['git', 'pc', 'checkout'])
 
 
-@test(groups=['tagging'])
+@test(groups=['tag-wip'])
 def test_tag_wip():
     '''Tag unrecorded changes with 'git pc tag-wip\''''
     git = GitSandbox('tag_wip', initial_commit=True)
     file1 = 'committed-file'
 
-    git.system_cmd('touch', file1)
     git.write_line_to(file1, 'Committed line.')
     git('add', file1)
     git.commit_all('Committing one line.')
@@ -141,7 +140,7 @@ class GitSandbox(object):
         if initial_commit:
             self.__call__(
                 'commit', '--allow-empty',
-                '-m', 'Initial commit in %s' % (name, )
+                '-m', 'Initial commit in %s' % (dir_basename, )
                 )
 
     def purge(self):
