@@ -221,11 +221,11 @@ class CheckoutCommand(Command):
             name='checkout',
             overview='clone the pencil repo from github',
             usage='\n'
-            + '  git pc checkout [dir]\n'
+            + '  git pc checkout <dir>\n'
             + 'Check out the Pencil Code repository from github.\n'
             + '\n'
             + 'Arguments:\n'
-            + '  dir  -- check out to that directory [default: ./pencil-code]'
+            + '  <dir> -- check out to that directory [default: ./pencil-code]'
         )
 
     def run(self, options, args):
@@ -248,7 +248,7 @@ class TagWipCommand(Command):
             name='tag-wip',
             overview='create a tag containing all of your uncommitted changes',
             usage='\n'
-            + '  git pc TAG-WIP\n'
+            + '  git pc tag-wip\n'
             + 'Create a tag representing all of your work-in-progress (WIP).'
         )
 
@@ -428,7 +428,7 @@ class ReverseMergeCommand(Command):
             name='reverse-merge',
             overview='merge the current into the given branch.',
             usage='\n'
-            + '  git pc reverse-merge [--autostash] [<branch>]\n'
+            + '  git pc reverse-merge [--autostash] <branch>\n'
             + 'Merge the current branch into the given branch '
             + '(default: upstream).\n'
             + 'This is most useful when trying to integrate upstream changes '
@@ -443,7 +443,7 @@ class ReverseMergeCommand(Command):
             + '    git push\n'
             + '\n'
             + 'Arguments:\n'
-            + '  branch  -- the branch to merge into (defaults to @{u}, '
+            + '  <branch> -- the branch to merge into (defaults to @{u}, '
             + 'i.e. the current\n'
             + '             upstream branch)',
             flags=[
@@ -498,7 +498,7 @@ class ReversePullCommand(Command):
             name='reverse-pull',
             overview='fetch changes and merge current into remote branch',
             usage='\n'
-            + '  git pc reverse-pull [--autostash] [<repository>]\n'
+            + '  git pc reverse-pull [--autostash] <repository>\n'
             + 'Fetch upstream changes and merge the current branch into'
             + ' the remote branch.\n'
             + 'This is most useful when trying to integrate upstream changes '
@@ -512,7 +512,7 @@ class ReversePullCommand(Command):
             + '    git push\n'
             + '\n'
             + 'Arguments:\n'
-            + '  repository  -- the repository to fetch from',
+            + '  <repository> -- the repository to fetch from',
             flags=[
                 OptionFlag(
                     '', '--autostash',
