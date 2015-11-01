@@ -15,6 +15,12 @@ and run these tests with
 
   ${PENCIL_HOME}/bin/test/test_git-pc.py
 
+To do:
+ - Remove temporary directories for successful tests
+ - Between consecutive git calls, increase GIT_AUTHOR_DATE /
+   GIT_COMMITTER_DATE by ≥ 1 second in order to get a more readable
+   history.
+
 '''
 
 import os
