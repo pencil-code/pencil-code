@@ -113,7 +113,7 @@ def git_commits_equal(c1, c2):
 
 def git_hash(commit):
     '''Return the SHA1 of the current HEAD'''
-    return git_output(['rev-parse', '--verify', '%s{commit}' % (commit, )])
+    return git_output(['rev-parse', '--verify', '%s^{commit}' % (commit, )])
 
 
 def git(cmd_list):
