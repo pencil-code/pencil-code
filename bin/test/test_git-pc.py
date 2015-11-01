@@ -47,6 +47,11 @@ def call_checkout():
     # print run_system_cmd(['git', 'pc', 'checkout'])
 
 
+@test(groups=['tagging'])
+def test_tag_wip():
+    '''Tag unrecorded changes with 'git pc tag-wip\''''
+    git = GitSandbox('tag_wip', initial_commit=True)
+    file1 = 'committed-file'
 
     git.system_cmd('touch', file1)
     git.write_line_to(file1, 'Committed line.')
