@@ -76,6 +76,29 @@ def test_tag_wip():
     git('pc', 'tag-wip')
 
 
+@test(groups=['panic'])
+def test_panic():
+    '''Test 'git pc panic\''''
+    git = GitSandbox('panic', initial_commit=True)
+
+    for f in 'file1', 'file2', 'file3':
+        # Commit file
+        git.write_line_to(f, 'Committed line.')
+        git('add', f)
+        git('commit', f, '-m', 'Committing file %s.' % (f, ))
+
+        # Stash another change
+        git.write_line_to(f, 'Stashed line.')
+        git('stash')
+
+        # Forget about file
+        git('reset', '--hard', 'HEAD~')
+
+    git('pc', 'panic', '-l')
+    git('pc', 'panic', '-g')
+    git('pc', 'panic', '--full', '-g')
+
+
 def run_system_cmd(cmd_line):
     '''Run a system command, writing output to the terminal'''
     print ' '.join(cmd_line)
