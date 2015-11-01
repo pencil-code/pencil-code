@@ -17,12 +17,11 @@ and run these tests with
 
 To do:
  - Remove temporary directories for successful tests
- - Between consecutive git calls, increase GIT_AUTHOR_DATE /
-   GIT_COMMITTER_DATE by ≥ 1 second in order to get a more readable
-   history.
+ - Reduce output
 
 '''
 
+import datetime
 import os
 import shutil
 import subprocess
@@ -32,6 +31,9 @@ import tempfile
 
 from proboscis import test, TestProgram
 #from proboscis.asserts import assert_equal, assert_not_equal,assert_true, assert_false
+
+
+current_git_time = 0            # Our test commits all occurred in 1970...
 
 
 def main():
@@ -108,6 +110,17 @@ def run_system_cmd(cmd_line):
 def run_system_cmd_get_output(cmd_line):
     '''Run a system command and return output as array of lines'''
     print ' '.join(cmd_line)
+
+    # Set the commit time.
+    # We do this in order to have at least one second between different
+    # git commits, because otherwise 'git log' and friends often show the
+    # wrong time order for commits on different branches.
+    global current_git_time
+    current_git_time += 1
+    dtime = datetime.datetime.fromtimestamp(current_git_time)
+    time_string = dtime.ctime()
+    os.environ['GIT_AUTHOR_DATE'] = time_string
+    os.environ['GIT_COMMITTER_DATE'] = time_string
     try:
         output = subprocess.check_output(cmd_line)
         return output.splitlines()
