@@ -58,8 +58,9 @@ module Energy
   real, target :: hcond0=impossible, hcond1=impossible
   real, target :: hcondxbot=impossible, hcondxtop=impossible
   real, target :: hcondzbot=impossible, hcondztop=impossible
-  real, target :: Fbot=impossible, FbotKbot=impossible
-  real, target :: Ftop=impossible, FtopKtop=impossible
+  real, target :: Fbot=impossible, FbotKbot=0. !set default to 0 vs impossible
+  ! FbotKbot normally overwritten, but to remain finite if not
+  real, target :: Ftop=impossible, FtopKtop=0. !also 0 not impossible
   real, target :: chit_prof1=1.0, chit_prof2=1.0
   real, pointer :: reduce_cs2
   real :: Kbot=impossible, Ktop=impossible
