@@ -10,6 +10,7 @@ git:
  - git pc ff-update
  - git pc reverse-merge
  - git pc reverse-pull
+ - git-pc-update-and-push
 
 Note that the original author (wd) will probably never use any of them
 because he considers it better to use the proper git (porcelain) commands:
@@ -78,6 +79,7 @@ def create_command_list():
         FfUpdateCommand(),
         ReverseMergeCommand(),
         ReversePullCommand(),
+        UpdateAndPushCommand(),
     ]
 
 
@@ -537,6 +539,52 @@ class ReversePullCommand(Command):
         else:
             self.usage(1)
         ReverseMergeCommand().run(options, [])
+
+
+class UpdateAndPushCommand(Command):
+
+    def __init__(self):
+        Command.__init__(
+            self,
+            name='update-and-push',
+            overview='push commits to upstream on top of'
+            + ' yet unpulled changes',
+            usage='\n'
+            + '  git pc update-and-push <repository>\n'
+            + 'Push commits on top of yet unpulled changes,'
+            + ' even from a dirty index and\n'
+            + 'file-tree. This is achieved by\n'
+            + '1. stashing away unrecorded changes,\n'
+            + '2. running \'pull --rebase\', .\n'
+            + '3. pushing,\n'
+            + '4. restoring the stashed changes.\n'
+            + '\n'
+            + 'Note that starting with git 2.6, you can achieve the'
+            + ' same result by setting\n'
+            + 'the configuration variable rebase.autostash=true and running'
+            + ' \'git pull --rebase;\n'
+            + 'git push\'.\n'
+            + '\n'
+            + 'Arguments:\n'
+            + '  <repository> -- where to push to. Default: the upstream'
+            + ' branch associated\n'
+            + '                  with the current branch'
+        )
+
+    def run(self, options, args):
+        head = git_head()
+        unrecorded = UnrecordedChanges(
+            'Unrecorded changes stashed away by \'git pc update-and-push\''
+            )
+
+        git(['reset', '--hard', head])
+
+        if options.repository:
+            git(['pull', '--rebase', options.repository])
+        else:
+            git(['pull', '--rebase'])
+
+        unrecorded.restore()
 
 
 class OptionFlag(object):
