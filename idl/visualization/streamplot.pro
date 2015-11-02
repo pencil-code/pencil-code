@@ -46,7 +46,7 @@ end
 
 ; ------------------------------------------------------------------------------
 
-function value_at, a, xi, yi, oob=oob
+function value_at, a, xi, yi, oob=oob, tstep=tstep
 
   common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby
 
@@ -70,7 +70,21 @@ function value_at, a, xi, yi, oob=oob
   a0 = a00*(1-xt) + a01*xt
   a1 = a10*(1-xt) + a11*xt
 
-  return, a0*(1-yt) + a1*yt
+  res = a0*(1-yt) + a1*yt
+
+  ; --- avoid zero return value if provided for setting of stepsize
+
+  if keyword_set(tstep) and (res eq 0.) then begin
+    if a01 ne 0. then begin
+      xi=xp & res=a01 
+    endif else if a10 ne 0. then begin
+      yi=yp & res=a10 
+    endif else if a11 ne 0. then begin
+      xi=xp & yi=yp & res=a11
+    endif
+  endif
+
+  return, res
 end
 
 ; ------------------------------------------------------------------------------
@@ -80,7 +94,10 @@ function f, xi, yi, bw=bw, oob=oob
   common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby
   common fields, u,v,x,y, speed, blank
 
-  dt_ds = 1./value_at(speed, xi, yi, oob=oob)
+  dt_ds = value_at(speed, xi, yi, oob=oob, /tstep)
+  if dt_ds  eq 0 then stop,'streamplot: Interpolated value of speed is zero'
+  dt_ds = 1./dt_ds
+
   ui = value_at(u, xi, yi)
   vi = value_at(v, xi, yi)
 
@@ -219,7 +236,7 @@ end
 
 ; ------------------------------------------------------------------------------
 
-pro traj, xb,yb, _extra=extr
+pro traj, xb,yb, _extra=extr, arrow=arrow
 
   common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby
   common fields, u,v,x,y, speed, blank
@@ -243,12 +260,13 @@ pro traj, xb,yb, _extra=extr
         oplot, tx, ty, _extra=extr
         
         ; add arrow
-        nn = n_elements(tx)/2
-        if (nn gt 8) then $ ; jitter arrow position
-           nn += long(0.16*nn*(randomn(system_seed)-0.5))
-        headsz = (!d.name eq 'X') ? 8 : 160
-        arrow, tx[nn-2], ty[nn-2], tx[nn], ty[nn], $
-               /data, hsize=headsz, _extra=extr
+        if keyword_set(arrow) then begin
+          nn = n_elements(tx)/2
+          if (nn gt 8) then $ ; jitter arrow position
+             nn += long(0.16*nn*(randomn(system_seed)-0.5))
+          arrow_pc, tx[nn-2], ty[nn-2], tx[nn], ty[nn], $
+                    /data, _extra=extr
+        endif
      endif
   endif
 
@@ -257,7 +275,7 @@ end
 
 ; ------------------------------------------------------------------------------
 
-pro streamplot, uu, vv, xx, yy, density=density, _extra=extr
+pro streamplot, uu, vv, xx, yy, density=density, _extra=extr, hsize=hsize
 
   common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby
   common fields, u,v,x,y, speed, blank
@@ -270,6 +288,20 @@ pro streamplot, uu, vv, xx, yy, density=density, _extra=extr
   if not keyword_set(density) then density = 1.
   if ((size(density))[0] eq 0) then density=[density,density]
 
+  ; --- set defaults for arrow lengths
+
+  if not keyword_set(hsize) then hsize = (!d.name eq 'X') ? 8 : 160
+
+  ; --- grid dimensions
+
+  ngx = n_elements(xx)
+  ngy = n_elements(yy)
+
+  ; --- in polar coordinates: r d\phi/dt = v_phi !
+
+  if keyword_set(extr.polar) then $
+    for i=0,ngy-1 do vv(*,i) /= xx  
+
   ; --- copy input variables to common block
 
   u = transpose(uu)
@@ -278,9 +310,6 @@ pro streamplot, uu, vv, xx, yy, density=density, _extra=extr
   y = yy
 
   ; --- grid properties
-
-  ngx = n_elements(x)
-  ngy = n_elements(y)
 
   dx = x[1] - x[0]
   dy = y[1] - y[0]
@@ -332,10 +361,10 @@ pro streamplot, uu, vv, xx, yy, density=density, _extra=extr
   for indent = 0,max([nbx,nby])/2-1 do $
      for xi = 0,max([nbx,nby])-2*indent-1 do begin
 
-        traj, xi + indent,  indent,       _extra=extr
-        traj, xi + indent,  nby-1-indent, _extra=extr
-        traj, indent,       xi + indent,  _extra=extr
-        traj, nbx-1-indent, xi + indent,  _extra=extr
+        traj, xi + indent,  indent,       _extra=extr, hsize=hsize
+        traj, xi + indent,  nby-1-indent, _extra=extr, hsize=hsize
+        traj, indent,       xi + indent,  _extra=extr, hsize=hsize
+        traj, nbx-1-indent, xi + indent,  _extra=extr, hsize=hsize
 
      endfor
 
