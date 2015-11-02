@@ -34,7 +34,7 @@ class Tracers(object):
         self.x1 = []
         self.y1 = []
         self.z1 = []
-        self.len = []
+        self.l = []
         self.mapping = []
         self.t = []
 
@@ -125,7 +125,7 @@ class Tracers(object):
             sub_x1 = np.zeros(xx[:, :, 0].shape)
             sub_y1 = np.zeros(xx[:, :, 0].shape)
             sub_z1 = np.zeros(xx[:, :, 0].shape)
-            sub_len = np.zeros(xx[:, :, 0].shape)
+            sub_l = np.zeros(xx[:, :, 0].shape)
             sub_curly_A = np.zeros(xx[:, :, 0].shape)
             sub_ee = np.zeros(xx[:, :, 0].shape)
             sub_mapping = np.zeros([xx[:, :, 0].shape[0], xx[:, :, 0].shape[1], 3])
@@ -137,7 +137,7 @@ class Tracers(object):
                     sub_x1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len-1, 0]
                     sub_y1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len-1, 1]
                     sub_z1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len-1, 2]
-                    sub_len[int(ix/n_proc), iy] = stream.len
+                    sub_l[int(ix/n_proc), iy] = stream.len
                     if any(np.array(self.params.int_q) == 'curly_A'):
                         for l in range(stream.stream_len-1):
                             aaInt = vec_int((stream.tracers[l+1] + stream.tracers[l])/2,
@@ -166,7 +166,7 @@ class Tracers(object):
                     else:
                         sub_mapping[int(ix/n_proc), iy, :] = [1, 1, 1]
 
-            queue.put((i_proc, sub_x1, sub_y1, sub_z1, sub_len, sub_mapping,
+            queue.put((i_proc, sub_x1, sub_y1, sub_z1, sub_l, sub_mapping,
                        sub_curly_A, sub_ee))
 
 
@@ -223,7 +223,7 @@ class Tracers(object):
         self.x1 = np.zeros([int(trace_sub*dim.nx), int(trace_sub*dim.ny), nTimes])
         self.y1 = np.zeros([int(trace_sub*dim.nx), int(trace_sub*dim.ny), nTimes])
         self.z1 = np.zeros([int(trace_sub*dim.nx), int(trace_sub*dim.ny), nTimes])
-        self.len = np.zeros([int(trace_sub*dim.nx), int(trace_sub*dim.ny), nTimes])
+        self.l = np.zeros([int(trace_sub*dim.nx), int(trace_sub*dim.ny), nTimes])
         if any(np.array(int_q) == 'curly_A'):
             self.curly_A = np.zeros([int(trace_sub*dim.nx),
                                      int(trace_sub*dim.ny), nTimes])
@@ -291,7 +291,7 @@ class Tracers(object):
                 self.x1[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][1]
                 self.y1[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][2]
                 self.z1[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][3]
-                self.len[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][4]
+                self.l[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][4]
                 self.mapping[sub_proc::n_proc, :, t_idx, :] = sub_data[i_proc][5]
                 if any(np.array(int_q) == 'curly_A'):
                     self.curly_A[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][6]
@@ -329,20 +329,20 @@ class Tracers(object):
             set_x1 = f.create_dataset("x1", self.x1.shape, dtype=self.x1.dtype)
             set_y1 = f.create_dataset("y1", self.y1.shape, dtype=self.y1.dtype)
             set_z1 = f.create_dataset("z1", self.z1.shape, dtype=self.z1.dtype)
-            set_len = f.create_dataset("l", self.len.shape, dtype=self.len.dtype)
+            set_l = f.create_dataset("l", self.l.shape, dtype=self.l.dtype)
             set_x0[...] = self.x0[...]
             set_y0[...] = self.y0[...]
             set_x1[...] = self.x1[...]
             set_y1[...] = self.y1[...]
             set_z1[...] = self.z1[...]
-            set_len[...] = self.len[...]
+            set_l[...] = self.l[...]
             set_q = []
             for q in self.params.int_q:
                 if not q == '':
                     set_q.append(f.create_dataset(q, getattr(self, q).shape,
                                                   dtype=getattr(self, q).dtype))
                     set_q[-1][...] = getattr(self, q)[...]
-            set_t = f.create_dataset("t", self.t.shape, dtype=self.len.dtype)
+            set_t = f.create_dataset("t", self.t.shape, dtype=self.l.dtype)
             set_m = f.create_dataset("mapping", self.mapping.shape,
                                      dtype=self.mapping.dtype)
             set_t[...] = self.t[...]
