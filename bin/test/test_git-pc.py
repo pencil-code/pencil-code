@@ -156,6 +156,33 @@ class TmpDir(object):
         shutil.rmtree(self.path)
 
 
+def setup_git_with_server(name, root_dir=None):
+    '''Set up a server repo with two sandbox repos'''
+    dir_basename = 'git-pc-test_' + name
+    if root_dir:
+        top_dir = TmpDir(root_dir, dir_basename)
+    else:
+        top_dir = TmpDir(None, dir_basename)
+    root_dir = top_dir.path
+    server = GitSandbox(
+        'server', bare=True, root_dir=root_dir, create_tmp_dir=False
+        )
+    git1 = GitSandbox(
+        'git1', root_dir=root_dir, create_tmp_dir=False,
+        initial_commit=True
+        )
+    git2 = GitSandbox(
+        'git2', root_dir=root_dir, create_tmp_dir=False
+        )
+    git1('remote', 'add', 'origin', server.directory)
+    git1('remote')
+    git1('push', '--set-upstream', 'origin', 'master')
+    git2('remote', 'add', 'origin', server.directory)
+    git2('fetch')
+    git2('checkout', 'master')
+    return (server, git1, git2)
+
+
 class GitSandbox(object):
     '''A directory associated with a git checkout
 
