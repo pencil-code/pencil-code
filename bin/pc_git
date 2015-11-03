@@ -396,7 +396,7 @@ class FfUpdateCommand(Command):
         FfUpdateCommand._merge_ff(branch, upstream)
 
     @staticmethod
-    def _merge_ff(self, branch, upstream):
+    def _merge_ff(branch, upstream):
         if git_commits_equal(branch, upstream):
             print 'Branch %s is already up to date' % (branch, )
             return
