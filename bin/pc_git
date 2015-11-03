@@ -388,7 +388,10 @@ class FfUpdateCommand(Command):
         )
 
     def run(self, options, args):
-        if len(args) == 2:
+        if len(args) == 1:
+            branch = args[0]
+            upstream = '%s@{u}' % (branch, )
+        elif len(args) == 2:
             branch, upstream = args
         else:
             self.usage(1)
