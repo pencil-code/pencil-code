@@ -333,7 +333,7 @@ class PanicCommand(Command):
     def _get_common_args(self, include_dangling):
         '''Return a list of arguments.
 
-        These arguments make the 'it log' family of commands show
+        These arguments make the 'git log' family of commands show
         practically every kown commit.
 
         '''
@@ -382,9 +382,9 @@ class FfUpdateCommand(Command):
             + 'If it is not, cry foul.\n'
             + '\n'
             + 'Arguments:\n'
-            + '  <branch>    -- the branch to update'
-            + '  <upstream>  -- the commit to update branch to (defaults\n'
-            + '                 to branch@{u})'
+            + '  <branch>    -- the branch to update\n'
+            + '  <upstream>  -- the commit to update branch to (defaults'
+            + ' to branch@{u})'
         )
 
     def run(self, options, args):
