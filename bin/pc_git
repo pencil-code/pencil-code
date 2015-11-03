@@ -625,16 +625,16 @@ class OptionFlag(object):
 
 
 class UnrecordedChanges(object):
-    '''Represents unrecorded changes that we want to restore later.
+    '''Record and remove unrecorded changes that we want to restore later.
 
     Conceptually, this is similar to a stash, but our implementation does
     not use 'git stash --include-untracked', because the untracked files
     would end up in separate commit that is not returned by the stash
     command.
 
-    Creating an UnrecordedChanges object changes neither the file tree,
-    nor the index.
-    It just creates a detached commit (which is not stored anywhere in the
+    Creating an UnrecordedChanges object removes the unrecorded changes
+    from the file tree, and the index.
+    It creates a detached commit (which is not stored anywhere in the
     ref namespace).
 
     '''
@@ -676,18 +676,17 @@ class UnrecordedChanges(object):
         self.tag = create_tag_name('unrecorded-changes')
         git(['tag', '-f', self.tag])
 
-        # Reset to original state
-        git(['reset', '--mixed', self.index])
-        git(['reset', '--soft', head])
+        # Reset to HEAD
+        git(['reset', '--hard', head])
 
     def restore(self):
         new_head = git_head()
 
-        git(['cherry-pick', '-x', '-n', self.index])
+        git(['cherry-pick', '-x', self.index])
         new_index = git_head()
 
-        git(['cherry-pick', '-x', '-n', self.tracked])
-        git(['cherry-pick', '-x', '-n', self.untracked])
+        git(['cherry-pick', '-x', self.tracked])
+        git(['cherry-pick', '-x', self.untracked])
 
         git(['reset', '--mixed', new_index])
         git(['reset', '--soft', new_head])
