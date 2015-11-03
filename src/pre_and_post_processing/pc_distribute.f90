@@ -30,7 +30,8 @@ program pc_distribute
   integer :: mvar_in, io_len, pz, pa, alloc_err, lun_global=87
   real :: t_sp   ! t in single precision for backwards compatibility
 !
-  lstart = .true.
+  lstart = .false.
+  lrun = .true.
   lmpicomm = .false.
   root = 0
   lroot = .true.
