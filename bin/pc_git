@@ -479,19 +479,17 @@ class ReverseMergeCommand(Command):
                 'Unrecorded changes stashed away by \'git pc reverse-merge\''
             )
 
-        git(['reset', '--hard', other_branch])
-
-        temp_branch = 'reverse-merge-%s' % (work_branch, )
-        git(['checkout', '-B', temp_branch])
+        temp_branch = 'reverse-merge-work-%s' % (work_branch, )
+        git(['checkout', '-B', temp_branch, other_branch])
         git(['merge', work_branch])
         # Now what happens in case of a conflict??
-        git(['commit'])
         merge_commit = git_head()
 
         git(['checkout', work_branch])
         git(['reset', '--hard', merge_commit])
         if options.autostash:
             unrecorded.restore()
+
         git(['branch', '-D', temp_branch])
 
 
