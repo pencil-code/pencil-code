@@ -507,7 +507,7 @@ class ReversePullCommand(Command):
             name='reverse-pull',
             overview='fetch changes and merge current into remote branch',
             usage='\n'
-            + '  git pc reverse-pull [--autostash] <repository>\n'
+            + '  git pc reverse-pull [--autostash] [<repository>]\n'
             + 'Fetch upstream changes and merge the current branch into'
             + ' the remote branch.\n'
             + 'This is most useful when trying to integrate upstream changes '
@@ -531,7 +531,7 @@ class ReversePullCommand(Command):
                     + ' worktree.\n'
                     + 'However, the final restoration step may result in'
                     + ' non-trivial conflicts.',
-                    action='store_true', dest='full', default=False,
+                    action='store_true', dest='autostash', default=False,
                     status='experimental'
                 ),
             ]
