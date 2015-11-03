@@ -106,13 +106,13 @@ def test_panic():
     git('pc', 'panic', '--full', '-g')
 
 
-def run_system_cmd(cmd_line):
+def run_system_cmd(cmd_line, dir=None):
     '''Run a system command, writing output to the terminal'''
     print ' '.join(cmd_line)
-    print '\n'.join(run_system_cmd_get_output(cmd_line))
+    print '\n'.join(run_system_cmd_get_output(cmd_line, dir))
 
 
-def run_system_cmd_get_output(cmd_line):
+def run_system_cmd_get_output(cmd_line, dir=None):
     '''Run a system command and return output as array of lines'''
     print ' '.join(cmd_line)
 
@@ -127,7 +127,11 @@ def run_system_cmd_get_output(cmd_line):
     os.environ['GIT_AUTHOR_DATE'] = time_string
     os.environ['GIT_COMMITTER_DATE'] = time_string
     try:
+        pwd = os.getcwd()
+        if dir:
+            os.chdir(dir)
         output = subprocess.check_output(cmd_line)
+        os.chdir(pwd)
         return output.splitlines()
     except subprocess.CalledProcessError, e:
         print e
@@ -142,9 +146,9 @@ class TmpDir(object):
 
     '''
 
-    def __init__(self, parent_dir=None, name='test'):
+    def __init__(self, parent_dir=None, name='test', suffix=''):
         self.path = tempfile.mkdtemp(
-            suffix='', prefix=name + '_', dir=parent_dir
+            suffix=suffix, prefix=name + '_', dir=parent_dir
             )
 
     def purge(self):
@@ -166,14 +170,46 @@ class GitSandbox(object):
 
     def __init__(
             self, name,
-            bare=None, initial_commit=False, root_dir=None
+            bare=None, initial_commit=False, root_dir=None,
+            create_tmp_dir=True
             ):
-        dir_basename = 'git-pc-test_' + name
-        if root_dir:
-            self.directory = TmpDir(root_dir, dir_basename)
+        '''Arguments:
+        name           -- the name of the repository
+        bare           -- if true, create a bare repository
+        initial_commit -- if true, add an initial (empty) commit
+        root_dir       -- set the directory under which to create the
+                          repository
+        create_tmp_dir -- if true (default), create a temporary directory
+                          based on a prefix + NAME.
+                          Otherwise, create a directory called NAME.
+        '''
+        if create_tmp_dir:
+            dir_basename = 'git-pc-test_' + name
         else:
-            self.directory = TmpDir(None, dir_basename)
-        os.chdir(self.directory.path)
+            dir_basename = name
+        if bare:
+            suffix = '.git'
+        else:
+            suffix = ''
+        if create_tmp_dir:
+            if root_dir:
+                self.tmp_dir = TmpDir(
+                    root_dir, dir_basename, suffix=suffix
+                    )
+            else:
+                self.tmp_dir = TmpDir(None, dir_basename, suffix=suffix)
+            self.directory = self.tmp_dir.path
+        else:
+            if root_dir:
+                self.directory = os.path.join(
+                    root_dir, dir_basename + suffix
+                    )
+            else:
+                self.directory = os.path.join(
+                    tempfile.gettempdir(), dir_basename + suffix
+                    )
+            os.mkdir(self.directory)
+        os.chdir(self.directory)
         if bare:
             self.__call__('init', '--bare')
         else:
@@ -185,23 +221,24 @@ class GitSandbox(object):
                 )
 
     def purge(self):
-        if self.directory:
-            self.directory.purge()
+        if self.tmp_dir:
+            self.tmp_dir.purge()
 
     def __call__(self, *args):
         cmd_list = ['git']
         cmd_list.extend(args)
-        run_system_cmd(cmd_list)
+        run_system_cmd(cmd_list, dir=self.directory)
 
     def commit_all(self, message):
         self.__call__('commit', '-a', '-m', message)
 
     def system_cmd(self, *args):
-        return run_system_cmd_get_output(args)
+        return run_system_cmd_get_output(args, dir=self.directory)
 
     def write_line_to(self, filename, line):
         '''Create file FILENAME if necessary, and append the given line'''
-        f = open(filename, 'a')
+        path = os.path.join(self.directory, filename)
+        f = open(path, 'a')
         f.write(line + '\n')
         f.close()
 
