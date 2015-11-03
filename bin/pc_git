@@ -479,6 +479,9 @@ class ReverseMergeCommand(Command):
                 'Unrecorded changes stashed away by \'git pc reverse-merge\''
             )
 
+        temp_tag = create_tag_name('before-reverse-merge')
+        git(['tag', temp_tag])
+
         temp_branch = 'reverse-merge-work-%s' % (work_branch, )
         git(['checkout', '-B', temp_branch, other_branch])
         message = 'Merge branch \'%s\' into %s using \'%s\'' \
@@ -493,6 +496,7 @@ class ReverseMergeCommand(Command):
             unrecorded.restore()
 
         git(['branch', '-D', temp_branch])
+        git(['tag', '-d', temp_tag])
 
 
 class ReversePullCommand(Command):
