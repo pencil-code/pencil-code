@@ -673,6 +673,9 @@ class UnrecordedChanges(object):
         self.untracked = git_head()
         self.tip = self.untracked
 
+        self.tag = create_tag_name('unrecorded-changes')
+        git(['tag', '-f', self.tag])
+
         # Reset to original state
         git(['reset', '--mixed', self.index])
         git(['reset', '--soft', head])
@@ -688,6 +691,8 @@ class UnrecordedChanges(object):
 
         git(['reset', '--mixed', new_index])
         git(['reset', '--soft', new_head])
+
+        git(['tag', '-d', self.tag])
 
 
 if __name__ == '__main__':
