@@ -25,7 +25,7 @@ if (n_params() eq 2) then $
       extra=create_struct('fill', 1)
 
 if (keyword_set(extra)) then $
-  if (has_tag(extra, 'thick')) then $
+  if (not has_tag(extra, 'thick')) then $
     extra=create_struct('thick', !p.thick, extra) $
   else begin
     if (extra.thick eq 0) then $
