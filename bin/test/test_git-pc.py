@@ -106,6 +106,28 @@ def test_panic():
     git('pc', 'panic', '--full', '-g')
 
 
+@test(groups=['ff-update'])
+def test_ff_update():
+    '''Test 'git pc ff-update\''''
+    (server, git1, git2) = setup_git_with_server('ff-update')
+
+    # git1: work on feature branch
+    git1('checkout', '-b', 'feature-branch')
+    git1.write_line_to('file1', 'Line added locally on feature branch')
+    git1('add', 'file1')
+    git1.commit_all('Commit file on feature branch')
+
+    # git2: work on master
+    git2.write_line_to('file2', 'Line added remotely on master')
+    git2('add', 'file2')
+    git2.commit_all('Commit file on master')
+    git2('push')
+
+    # git1: update master without checking it out
+    git1('fetch')
+    git1('pc', 'ff-update', 'master')
+
+
 def run_system_cmd(cmd_line, dir=None):
     '''Run a system command, writing output to the terminal'''
     print ' '.join(cmd_line)
