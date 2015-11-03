@@ -110,7 +110,7 @@ def git_branch_name():
 
 def git_commits_equal(c1, c2):
     '''Do the two commitishs represent the same commit?'''
-    return git_hash(c1) == git_hash(c1)
+    return git_hash(c1) == git_hash(c2)
 
 
 def git_hash(commit):
