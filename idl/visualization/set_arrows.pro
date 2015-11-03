@@ -1,4 +1,4 @@
-pro set_arrows, info, xy, hsize=hsize, indmin=indmin, refpoint=refpoint, tol=tol, color=color, ref2point=ref2point
+pro set_arrows, info, xy, hsize=hsize, indmin=indmin, refpoint=refpoint, tol=tol, color=color, ref2point=ref2point, all=all, revert=revert
 ;
 ; sets arrows on isolines found by contour described by its output parameters path_info (info) and path_xy (xy)
 ;
@@ -7,6 +7,8 @@ pro set_arrows, info, xy, hsize=hsize, indmin=indmin, refpoint=refpoint, tol=tol
 ; refpoint  - arrows are set at minimum distance to refpoint on each line
 ; ref2point - if provided minimumdistance is also calculated w.r.t. refpoint2; arrow is set at point with the smaller of these two distances
 ; tol       - smallest relative distance to box boundaries at which arrow is still set
+; all       - plot arrow disregarding distance to box boundaries
+; revert    - revert direction of arrow
 ;
 ; apr-2014/MR: coded
 ;  
@@ -74,7 +76,7 @@ istop=21
     endif
   endfor
 
-  if js eq -1 then begin
+  if (js eq -1) ne keyword_set(revert) then begin
    temp=pt1 & pt1=pt2 & pt2=temp
   endif
 
@@ -85,11 +87,13 @@ istop=21
 
     arrow, pt2(0), pt2(1), pt1(0), pt1(1), /data, /solid, hsize=hsize, color=color
   endif else begin
-    ;arrow, pt1(0), pt1(1), pt2(0), pt2(1), /data, /solid, hsize=hsize, color=0
+    if keyword_set(all) then $
+      arrow, pt2(0), pt2(1), pt1(0), pt1(1), /data, /solid, hsize=hsize $
+    else $
+      arrow, pt2(0), pt2(1), pt1(0), pt1(1), /data, /solid, hsize=hsize, color=0
     ;print, 'black, i=', i
   endelse
-    ;print, 'i=', i
-    ;if i eq istop then stop
+  ;if i eq istop then stop, 'i=', i
 endfor
 
 end
