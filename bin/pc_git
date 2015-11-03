@@ -467,13 +467,13 @@ class ReverseMergeCommand(Command):
         )
 
     def run(self, options, args):
+        work_branch = git_branch_name()
         if len(args) == 0:
-            other_branch = '@{u}'
+            other_branch = '%s@{u}' % (work_branch, )
         elif len(args) == 1:
             other_branch = args[0]
         else:
             self.usage(1)
-        work_branch = git_branch_name()
         if options.autostash:
             unrecorded = UnrecordedChanges(
                 'Unrecorded changes stashed away by \'git pc reverse-merge\''
@@ -481,7 +481,9 @@ class ReverseMergeCommand(Command):
 
         temp_branch = 'reverse-merge-work-%s' % (work_branch, )
         git(['checkout', '-B', temp_branch, other_branch])
-        git(['merge', work_branch])
+        message = 'Merge branch \'%s\' into %s using \'%s\'' \
+            % (work_branch, other_branch, 'git pc reverse-merge')
+        git(['merge', work_branch, '-m', message])
         # Now what happens in case of a conflict??
         merge_commit = git_head()
 
