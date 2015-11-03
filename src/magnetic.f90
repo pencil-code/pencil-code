@@ -74,6 +74,7 @@ module Magnetic
 !
   real, dimension (mz,3) :: aamz
   real, dimension (nz,3) :: bbmz,jjmz
+  real, dimension (:,:), allocatable :: aamxy
 !
 ! Parameters
 !
@@ -258,7 +259,7 @@ module Magnetic
   logical :: limplicit_resistivity=.false.
   logical :: lncr_correlated=.false., lncr_anticorrelated=.false.
   logical :: lpropagate_borderaa=.true.
-  logical :: lremove_meanaz=.false.
+  logical :: lremove_meanaz=.false., lremove_meanaxy=.false.
   logical :: ladd_global_field=.true. 
   logical :: ladd_efield=.false.
   logical :: lmagnetic_slope_limited=.false.
@@ -303,7 +304,7 @@ module Magnetic
       lncr_correlated, lncr_anticorrelated, ncr_quench, &
       lbx_ext_global,lby_ext_global,lbz_ext_global, &
       limplicit_resistivity,ambipolar_diffusion, betamin_jxb, gamma_epspb, &
-      lpropagate_borderaa, lremove_meanaz,eta_jump_shock, eta_zshock, &
+      lpropagate_borderaa, lremove_meanaz, lremove_meanaxy, eta_jump_shock, eta_zshock, &
       eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z, & 
       ladd_efield,ampl_efield,lmagnetic_slope_limited,islope_limiter, &
       h_slope_limited,eta_sld_thresh, eta_cspeed
@@ -1427,6 +1428,8 @@ module Magnetic
 !
       lslope_limit_diff=lslope_limit_diff .or. lmagnetic_slope_limited
 !
+     if (lremove_meanaxy) allocate(aamxy(mx,my))
+
     endsubroutine initialize_magnetic
 !***********************************************************************
     subroutine init_aa(f)
@@ -4751,7 +4754,7 @@ module Magnetic
 !
 !   2-jan-10/axel: adapted from calc_lhydro_pars
 !  10-jan-13/MR: added possibility to remove evolving mean field
-!i  15-oct-15/MR: changes for slope-limited diffusion
+!  15-oct-15/MR: changes for slope-limited diffusion
 !
       use Deriv, only: der_z,der2_z
       use Sub, only: finalize_aver, div, calc_all_diff_fluxes
@@ -4762,7 +4765,7 @@ module Magnetic
       integer :: n,j
       real, dimension(nz,3) :: gaamz,d2aamz
 !
-!  Compute mean field for each component. Include the ghost zones,
+!  Compute mean field (xy verage) for each component. Include the ghost zones,
 !  because they have just been set.
 !
       if (lcalc_aameanz.or.lremove_meanaz) then
@@ -4777,9 +4780,12 @@ module Magnetic
 !
         if (lremove_meanaz) then
           do j=1,3
-            f(l1:l2,m1:m2,n,iax+j-1) = f(l1:l2,m1:m2,n,iax+j-1)-aamz(n,j)
+            do n=1,mz
+              f(:,:,n,iax+j-1) = f(:,:,n,iax+j-1)-aamz(n,j)
+            enddo
           enddo
         endif
+
         if (lcalc_aameanz) then
 !
 !  Compute first and second derivatives.
@@ -4798,6 +4804,22 @@ module Magnetic
           jjmz(:,2)=-d2aamz(:,2)
           jjmz(:,3)=0.
         endif
+      endif
+!
+!  Compute mean field (z verage).
+!
+      if (lremove_meanaxy) then
+!
+        fact=1./nzgrid
+        do j=1,3
+          aamxy=fact*sum(f(:,:,n1:n2,iaa+j-1),3)
+          call finalize_aver(nprocz,3,aamxy)
+!
+          do n=1,mz
+            f(:,:,n,iaa+j-1) = f(:,:,n,iaa+j-1)-aamxy
+          enddo
+        enddo
+
       endif
 !
 !  put u.a into auxiliarry arry
