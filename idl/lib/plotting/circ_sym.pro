@@ -5,7 +5,7 @@
 ;     10/03/26: MR added handing over of all keyword parameters to usersym,
 ;               if parameter thick missing or 0 value is set from !p.thick
 ;
-pro circ_sym,siz,fill,thick=thick,_extra=extra
+pro circ_sym,siz,fill,_extra=extra
 ;
 if (n_params() eq 0) then begin
   print,'circ_sym,siz,fill'
@@ -34,9 +34,6 @@ if (keyword_set(extra)) then $
 else $
   extra=create_struct('thick', !p.thick)
 
-if (fill eq 1) then usersym,xx,yy,/fill,thick=thick else usersym,xx,yy,thick=thick
-return
+usersym,xx,yy,_extra=extra
+
 end
-;
-;
-;
