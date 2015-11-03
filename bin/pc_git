@@ -460,7 +460,7 @@ class ReverseMergeCommand(Command):
                     + ' worktree.\n'
                     + 'However, the final restoration step may result in'
                     + ' non-trivial conflicts.',
-                    action='store_true', dest='full', default=False,
+                    action='store_true', dest='autostash', default=False,
                     status='experimental'
                 ),
             ]
