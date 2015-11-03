@@ -266,7 +266,7 @@ class GitSandbox(object):
         if initial_commit:
             self.__call__(
                 'commit', '--allow-empty',
-                '-m', 'Initial commit in %s' % (dir_basename, )
+                '-m', 'Initial commit.'
                 )
 
     def purge(self):
