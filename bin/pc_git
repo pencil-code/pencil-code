@@ -476,7 +476,8 @@ class ReverseMergeCommand(Command):
             self.usage(1)
         if options.autostash:
             unrecorded = UnrecordedChanges(
-                'Unrecorded changes stashed away by \'git pc reverse-merge\''
+                'Unrecorded changes stashed away by \'git pc reverse-merge\'',
+                reset=True
             )
 
         temp_tag = create_tag_name('before-reverse-merge')
@@ -645,8 +646,9 @@ class UnrecordedChanges(object):
 
     '''
 
-    def __init__(self, log_message='Unrecorded changes'):
+    def __init__(self, log_message='Unrecorded changes', reset=False):
         self.log_message = log_message
+        self.reset = reset
 
         if git_outputs(['status', '--porcelain']):
             self.empty = False
@@ -682,20 +684,25 @@ class UnrecordedChanges(object):
         self.tag = create_tag_name('unrecorded-changes')
         git(['tag', '-f', self.tag])
 
-        # Reset to HEAD
-        git(['reset', '--hard', head])
+        if self.reset:
+            # Reset to HEAD
+            git(['reset', '--hard', head])
+        else:
+            git(['reset', '--mixed', self.index])
+            git(['reset', '--soft', head])
 
     def restore(self):
-        new_head = git_head()
+        if self.reset:
+            new_head = git_head()
 
-        git(['cherry-pick', '-x', self.index])
-        new_index = git_head()
+            git(['cherry-pick', '-x', self.index])
+            new_index = git_head()
 
-        git(['cherry-pick', '-x', self.tracked])
-        git(['cherry-pick', '-x', self.untracked])
+            git(['cherry-pick', '-x', self.tracked])
+            git(['cherry-pick', '-x', self.untracked])
 
-        git(['reset', '--mixed', new_index])
-        git(['reset', '--soft', new_head])
+            git(['reset', '--mixed', new_index])
+            git(['reset', '--soft', new_head])
 
         git(['tag', '-d', self.tag])
 
