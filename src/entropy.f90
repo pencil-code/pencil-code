@@ -2022,7 +2022,7 @@ module Energy
 !  (i.e. k_B = 1.381e-16 (erg/K) / 9.59e-15 (erg/cm/s^2) )
       real, parameter :: T_c_cgs=500.0,T_w_cgs=8.0e3,T_i_cgs=8.0e3,T_h_cgs=1.0e6
       real :: T_c,T_w,T_i,T_h
-      real, dimension(nx) :: rho,pp,lnrho
+      real, dimension(nx) :: rho,pp
       real :: kpc,fmpi1
       double precision ::  rhoscale
 !
@@ -2263,7 +2263,7 @@ module Energy
 !
       real, dimension (mx,my,mz,mfarray) :: f
 
-      real, dimension(nx) :: rho,pp,lnrho,ss
+      real, dimension(nx) :: rho,pp,ss
       real :: rho0hs,cs0hs,H0hs,fmpi1
 !
       if (lroot) print*, &
@@ -2811,7 +2811,6 @@ module Energy
       real, dimension(mx,my,mz,mfarray), intent(IN) :: f
       type(pencil_case),                 intent(OUT):: p
 !
-      real, dimension(nx,3) :: gradS
       integer :: j
 !
 ! Ma2
@@ -5210,7 +5209,7 @@ module Energy
       use Sub, only: step
 !
       type (pencil_case) :: p
-      real, dimension (nx) :: heat,prof,theta_profile,prof2
+      real, dimension (nx) :: heat,prof,theta_profile
 !      real :: zbot,ztop
       intent(in) :: p
 !
@@ -6266,7 +6265,6 @@ module Energy
 !
       real, dimension (nx) :: chit_prof,z_mn
       real :: zbot, ztop
-      type (pencil_case)     :: p
 !
 !  If zz1 and/or zz2 are not set, use z1 and z2 instead.
 !
@@ -6313,7 +6311,6 @@ module Energy
       real, dimension (nx,3) :: glnchit_prof
       real, dimension (nx) :: z_mn
       real :: zbot, ztop
-      type (pencil_case)     :: p
 !
 !  If zz1 and/or zz2 are not set, use z1 and z2 instead.
 !
@@ -6948,19 +6945,17 @@ module Energy
           -79.4008, -79.5159, -79.7462, -80.1990, -80.9052, -81.3196, &
           -81.9874, -82.2023, -82.5093, -82.5477, -82.4172, -82.2637, &
           -0.66650 /)
-      real, dimension(9) :: pars = (/ &
+      real, parameter, dimension(9) :: pars = (/ &
           2.12040e+00, 3.88284e-01, 2.02889e+00, 3.35665e-01, 6.34343e-01, &
           1.94052e-01, 2.54536e+00, 7.28306e-01, -2.40088e+01 /)
 !
-      real, dimension (nx) :: slope, ordinate
-      real, dimension (nx) :: logT, logQ
-      integer :: i, px, z_ref
+      integer ::  px, z_ref
       real :: pos, frac
 !
         do px = 1, nx
-           pos = interpol_tabulated (lnTT(px), intlnT)
-           z_ref = floor (pos)
-         if (z_ref < 1) then
+          pos = interpol_tabulated (lnTT(px), intlnT)
+          z_ref = floor (pos)
+          if (z_ref < 1) then
             lnQ(px) = -max_real
             delta_lnTT(px) = intlnT(2) - intlnT(1)
             cycle

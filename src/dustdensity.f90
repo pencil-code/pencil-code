@@ -1224,10 +1224,12 @@ module Dustdensity
       real, dimension (nx,3) :: tmp_pencil_3
       real, dimension (nx,ndustspec) :: dndr_tmp, nd_substep, nd_substep_0, K1,K2,K3,K4
       real, dimension (ndustspec) :: ff_tmp,ttt
-      real :: aa0= 6.107799961, aa1= 4.436518521e-1
-      real :: aa2= 1.428945805e-2, aa3= 2.650648471e-4
-      real :: aa4= 3.031240396e-6, aa5= 2.034080948e-8, aa6= 6.136820929e-11, ddt=1e-7
-      integer :: i,k,mm,nn,ll1,l1p4
+      real, parameter :: aa0= 6.107799961, aa1= 4.436518521e-1
+      real, parameter :: aa2= 1.428945805e-2, aa3= 2.650648471e-4
+      real, parameter :: aa4= 3.031240396e-6, aa5= 2.034080948e-8, aa6= 6.136820929e-11
+      real :: ddt=1e-7     !MR: Initialization needed? Makes ddt static!
+!
+      integer :: i,k,mm,nn
 !
       intent(inout) :: f,p
 ! nd
@@ -1678,10 +1680,8 @@ module Dustdensity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: mfluxcond,fdiffd,gshockgnd, Imr, tmp1, tmp2
-      real, dimension (nx,ndustspec) :: dndr_tmp=0.
-      integer :: k,i,j
-      real :: tmpl
+      real, dimension (nx) :: mfluxcond,fdiffd,gshockgnd, tmp1, tmp2
+      integer :: k,j
 !
       intent(in)  :: f,p
       intent(inout) :: df
@@ -2173,8 +2173,8 @@ module Dustdensity
       type (pencil_case) :: p
       real, dimension (nx) :: mfluxcond, mfluxcondp, mfluxcondm, cc_tmp
       real, dimension (nx) :: coefkp, coefkm, coefk0
-      real :: dmdfac, dampfact
-      integer :: k,l
+      real :: dampfact
+      integer :: k
 !
 !  Calculate mass flux of condensing monomers
 !  But only if not lsemi_chemistry, because then we run Natalia's stuff.
@@ -3034,13 +3034,10 @@ module Dustdensity
 
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension (nx,ndustspec) :: dndr_dr,dndr_dr_inter,ff_tmp,ff_tmp_inter
-      real, dimension (nx,ndustspec) :: ff_tmp1,ff_tmp2,dndr_dr1,dndr_dr2
+      real, dimension (nx,ndustspec) :: dndr_dr,ff_tmp
       real, dimension (nx,ndustspec) :: ppsf_full_i, nd_substep
-      integer :: k, i, jj, ll0=6, kk1,kk2 !, ind_tmp=6
-      real, dimension (35) ::  x2, S
-      real, dimension (6) ::  X1, Y1
-      real :: del =0.85, GS
+      integer :: k, i, jj, kk1,kk2 !, ind_tmp=6
+      real :: GS
 !
       intent(in) :: ppsf_full_i, i
       intent(out) :: dndr_dr

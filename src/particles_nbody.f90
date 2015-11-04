@@ -141,7 +141,7 @@ module Particles_nbody
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      integer :: ierr,ks
+      integer :: ks
 !
 !  Look for initialized masses.
 !
@@ -179,12 +179,7 @@ module Particles_nbody
         !ONLY REASSIGN THE GNEWTON
         !IF IT IS NOT SET IN START.IN!!!!!
         if (lselfgravity) then
-          call get_shared_variable('rhs_poisson_const',rhs_poisson_const,ierr)
-          if (ierr/=0) then
-            if (lroot) print*, 'initialize_particles_nbody: '// &
-                'there was a problem when getting rhs_poisson_const!'
-            call fatal_error('initialize_particles_nbody','')
-          endif
+          call get_shared_variable('rhs_poisson_const',rhs_poisson_const,caller='initialize_particles_nbody')
           GNewton=rhs_poisson_const/(4*pi)
         else
           GNewton=G_Newton
@@ -196,14 +191,8 @@ module Particles_nbody
 !  Get the variable tstart_selfgrav from selfgrav, so we know when to create
 !  sinks.
 !
-      if (lselfgravity) then
-        call get_shared_variable('tstart_selfgrav',tstart_selfgrav,ierr)
-        if (ierr/=0) then
-          if (lroot) print*, 'initialize_particles_nbody: '// &
-              'there was a problem when getting tstart_selfgrav!'
-          call fatal_error('initialize_particles_nbody','')
-        endif
-      endif
+      if (lselfgravity) &
+        call get_shared_variable('tstart_selfgrav',tstart_selfgrav,caller='initialize_particles_nbody')
 !
 !  inverse mass
 !
@@ -1119,7 +1108,7 @@ module Particles_nbody
       real, dimension (mspar) :: sq_hills
       integer, dimension (mpar_loc,3) :: ineargrid
 !
-      real :: r2_ij, rs2, invr3_ij, v_ij,tmp1,tmp2
+      real :: r2_ij, invr3_ij
       integer :: ks
 !
       real, dimension (3) :: evr_cart,acc_cart
@@ -2406,7 +2395,7 @@ module Particles_nbody
                 endif
               enddo
               do i=1,nx
-                if (pnp(i)>1.0) vvpm(i,:)=vvpm(i,:)/pnp(i)
+                if (pnp(i)>1) vvpm(i,:)=vvpm(i,:)/pnp(i)
               enddo
 !  vpm2
               do k=k1_imn(imn),k2_imn(imn)
@@ -2418,7 +2407,7 @@ module Particles_nbody
                   endif
               enddo
               do i=1,nx
-                if (pnp(i)>1.0) vpm2(i)=vpm2(i)/pnp(i)
+                if (pnp(i)>1) vpm2(i)=vpm2(i)/pnp(i)
               enddo
 !
               if (nzgrid/=1) then
@@ -2430,7 +2419,7 @@ module Particles_nbody
 !  Now fill up an array with the identification index of the particles
 !  present in each grid cell
 !
-              npik=0.
+              npik=0
               do k=k1_imn(imn),k2_imn(imn)
                 if (.not.(any(ipar(k)==ipar_nbody))) then
                   inx0=ineargrid(k,1)-nghost
@@ -2446,7 +2435,7 @@ module Particles_nbody
 !
 !  This cell is unstable. Remove all particles from it
 !
-                  if (pnp(i) > 1.0) then
+                  if (pnp(i) > 1) then
                     !removing must always be done backwards
                     do kn=pnp(i),1,-1
                       if (.not.(any(ipar(k)==ipar_nbody))) &
@@ -2480,7 +2469,7 @@ module Particles_nbody
 !  the mass of the new particle is the
 !  collapsed mass M=m_particle*np
 !
-                    fcsp_loc(nc_loc,imass_nbody)    = mp_swarm*pnp(i)
+                    fcsp_loc(nc_loc,imass_nbody) = mp_swarm*pnp(i)
 !
                   endif
                 endif

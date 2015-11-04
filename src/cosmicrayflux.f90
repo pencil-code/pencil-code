@@ -180,7 +180,7 @@ module Cosmicrayflux
       real, dimension(nx)   :: tmp
       real, dimension (nx,3,3) :: gfcr
       real, dimension (nx,3) :: ugfcr
-      integer :: i, j, k
+      integer :: i, j
       type (pencil_case) :: p
 !
       intent(in)     :: f

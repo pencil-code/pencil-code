@@ -425,7 +425,7 @@ module Dustvelocity
 !
         if (ldustdensity) &
           call put_shared_variable('deltamd',deltamd,caller='initialize_dustvelocity')
-          call put_shared_variable('llin_radiusbins',llin_radiusbins,caller='initialize_dustvelocity')
+          call put_shared_variable('llin_radiusbins',llin_radiusbins)
 !
 !  Tell the BorderProfiles module if we intend to use border driving, so
 !  that the module can request the right pencils.
@@ -1440,7 +1440,6 @@ module Dustvelocity
 !   5-mar-15/nils+Xiangyu+axel: used actual interval size for ratio. radius
 !
       integer, parameter :: max_rows = 200, max_cols = 110
-      real :: step_radius, step_ratio
       
       integer :: i,j, row,col,ex=1,ey=1
       real, dimension(max_rows,max_cols) :: efficiency
@@ -1575,8 +1574,8 @@ module Dustvelocity
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: rho,rhod,csrho,cs2,deltaud2, Rep
-      real :: stokes_prefactor
       integer :: k
+      real :: stokes_prefactor
 !
       select case (draglaw)
 

@@ -1599,7 +1599,7 @@ module Boundcond
 !
       character (len=bclen) :: topbot
       real, dimension (:,:,:,:) :: f
-      real, dimension (:), optional :: val
+      real, dimension (:) :: val
       integer :: i,j
 !
       select case (topbot)
@@ -2100,7 +2100,7 @@ module Boundcond
 !
       character (len=bclen) :: topbot
       real, dimension (:,:,:,:) :: f
-      real, dimension (:), optional :: val
+      real, dimension (:) :: val
       integer :: i,j
 !
       select case (topbot)
@@ -2127,7 +2127,7 @@ module Boundcond
       character (len=bclen) :: topbot
       real, dimension (:,:,:,:) :: f
       real, dimension (size(f,1),size(f,3)) :: derval
-      real, dimension (:), optional :: val
+      real, dimension (:) :: val
       integer :: i,j
 !
       derval=spread((xyz1(1)-x)*val(j),2,size(f,3))

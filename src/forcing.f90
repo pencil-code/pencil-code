@@ -187,7 +187,6 @@ module Forcing
 !
       real :: zstar
       integer :: l,i
-      integer :: ierr
 !
       if (lstart) then
         if (ip<4) print*,'initialize_forcing: not needed in start'
@@ -629,7 +628,7 @@ module Forcing
 !  Get reference_state. Requires that density is initialized before forcing.
 !
       if (lreference_state) &
-          call get_shared_variable('reference_state',reference_state,caller='initialize_forcing')
+        call get_shared_variable('reference_state',reference_state,caller='initialize_forcing')
 
       if (.not.lforcing_cont) return
       
@@ -4383,8 +4382,8 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real :: force_ampl
-      real :: irufm,fsum_tmp,fsum
-      real, dimension (nx) :: ruf,rho, rho1
+      real :: irufm
+      real, dimension (nx) :: ruf,rho,rho1
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
 !      real, dimension (nx,3) :: bb,fxb
       integer :: j,jf,l

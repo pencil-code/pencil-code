@@ -5242,7 +5242,7 @@ module Mpicomm
 !  11-Feb-2012/Bourdin.KIS: coded
 !
       real, dimension(mz), intent(out) :: out
-      real, dimension(mzgrid), intent(in), optional :: in
+      real, dimension(mzgrid), intent(in) :: in
       integer, intent(in), optional :: source_proc
 !
       integer :: pz, broadcaster, partner

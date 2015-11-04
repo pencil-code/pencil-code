@@ -165,7 +165,6 @@ subroutine read_and_distribute(filename,f,lonly_farray)
 
   character(LEN=*) :: filename
   real, dimension(:,:,:,:) :: f
-  integer :: mvar_in
   logical :: lonly_farray
 
   integer :: mvar

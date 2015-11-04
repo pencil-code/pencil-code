@@ -965,8 +965,6 @@ module Interstellar
 !
       use IO, only: write_persist, write_persist_id, lun_output, lcollective_IO
 !
-      integer :: i
-!
 !      if (lcollective_IO) call fatal_error ('output_persistent_interstellar', &
 !          "The interstellar persistent variables can't be written collectively!")
 !
@@ -1370,7 +1368,6 @@ module Interstellar
       real, dimension (nx), intent(inout) :: Hmax
       real, dimension (nx) :: heat,cool,heatcool,netheat,netcool
       real, dimension (nx) :: damp_profile,gsh2
-      integer :: i, iSNR
 !
 !  Identifier
 !
@@ -1510,7 +1507,6 @@ module Interstellar
 !
       real, dimension (nx), intent(out) :: heat
       real, dimension (nx), intent(in) :: lnTT
-      real, dimension (mz) :: TT
 !
 !  Constant heating with a rate heating_rate[erg/g/s].
 !
@@ -2538,11 +2534,10 @@ module Interstellar
       integer, intent(inout), optional, dimension(4,npreSN) :: preSN
       integer, optional :: ierr
 !
-      real :: c_SN,cmass_SN,cvelocity_SN,c_crays_SN,c_rayflux_SN
+      real :: c_SN,cmass_SN,cvelocity_SN
       real :: width_energy, width_mass, width_velocity
       real :: rhom, ekintot
       real ::  rhom_new, ekintot_new
-      real :: rho_SN_new,lnrho_SN_new,yH_SN_new
       real :: uu_sedov
 !
       real, dimension(nx) :: deltarho, deltaEE, deltaCR
@@ -2910,7 +2905,6 @@ module Interstellar
       real, dimension(nx,3) :: uu
       integer, dimension(nx) :: mask
       real, dimension(3) :: tmp,tmp2
-      logical :: precise_sqrt=.true.
 !
 !  Obtain distance to SN and sum all points inside SNR radius and
 !  divide by number of points.
@@ -2979,7 +2973,6 @@ module Interstellar
       real, dimension(nx,3) :: deltauu
       integer, dimension(nx) :: mask
       real, dimension(3) :: tmp,tmp2
-      logical :: precise_sqrt=.true.
 !
 !  Obtain distance to SN and sum all points inside SNR radius and
 !  divide by number of points.

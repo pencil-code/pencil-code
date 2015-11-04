@@ -2047,11 +2047,11 @@ module Mpicomm
 !  13-aug-2011/Bourdin.KIS: coded
 !
       real, dimension(:), intent(out) :: out
-      real, dimension(:), intent(in), optional :: in
+      real, dimension(:), intent(in) :: in
       integer, intent(in), optional :: source_proc
 !
       if (present (source_proc)) continue
-      if (present (in)) out = in
+      out = in
 !
     endsubroutine localize_z
 !***********************************************************************

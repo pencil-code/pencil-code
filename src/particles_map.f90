@@ -1153,7 +1153,7 @@ module Particles_map
       integer, dimension (mpar_loc) :: ipar
       real, dimension (mpar_loc,mpvar), optional :: dfp
 !
-      integer :: k,noccup,ix0,iy0,iz0,ix,im,in,imn
+      integer :: k,ix0,ix,im,in,imn
       integer, dimension(nx) :: pinl, pin_cell
       integer, dimension(0:nx-1) :: cuml_pinl
       integer, dimension(npar_loc) :: lpark_sorted
