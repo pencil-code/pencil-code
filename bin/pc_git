@@ -1,7 +1,12 @@
 #!/usr/bin/python2
 # -*- coding: utf-8 -*-   vim: set fileencoding=utf-8 :
 
-'''A collection of utility commands for Pencil Code coders working with
+'''
+
+THIS SCRIPT IS STILL IN ITS EARLY TESTING PHASE.
+DON'T USE UNLESS YOU ARE EXPLICITLY ASKED TO.
+
+A collection of utility commands for Pencil Code coders working with
 git:
 
  - git pc checkout
