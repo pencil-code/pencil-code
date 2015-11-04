@@ -594,16 +594,16 @@ class UpdateAndPushCommand(Command):
             repository = args[0]
         else:
             self.usage(1)
+
         unrecorded = UnrecordedChanges(
             'Unrecorded changes stashed away by \'git pc update-and-push\'',
             reset=True
             )
-
         if repository:
             git(['pull', '--rebase', repository])
         else:
             git(['pull', '--rebase'])
-
+        git(['push'])
         unrecorded.restore()
 
 
