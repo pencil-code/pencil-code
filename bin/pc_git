@@ -258,13 +258,16 @@ class TagWipCommand(Command):
         if len(args) > 0:
             self.usage(1)
         tag = create_tag_name('WIP')
-        current = UnrecordedChanges('Temporary commit for ' + tag)
-        if current.empty:
+        unrecorded = UnrecordedChanges(
+            'Temporary commit for ' + tag, reset=False
+            )
+        if unrecorded.empty:
             print 'Tagging HEAD with %s' % (tag, )
             git(['tag', tag, 'HEAD'])
         else:
             print 'Tagging temporary commit with %s' % (tag, )
-            git(['tag', tag, current.tip])
+            git(['tag', tag, unrecorded.tip])
+        unrecorded.restore()
 
 
 class PanicCommand(Command):
