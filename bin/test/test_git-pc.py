@@ -210,6 +210,36 @@ def test_reverse_pull_autostash():
     git1('pc', 'reverse-pull', '--autostash')
 
 
+@test(groups=['update-and-push'])
+def test_update_and_push():
+    '''Test 'git pc update-and-push\''''
+    (server, git1, git2) = setup_git_with_server('update-and-push')
+
+    # git1: commit a change
+    git1.write_line_to('file1', 'Committed line.')
+    git1('add', 'file1')
+    git1.commit_all('Committing one line.')
+    # Stage (but don't commit) a change
+    git1.write_line_to('file1', 'Staged line.')
+    git1('add', 'file1')
+    # Add a line, but don't stage it
+    git1.write_line_to('file1', 'Uncommitted line.')
+    # Add an uncommitted file
+    git1.write_line_to(
+        'uncommitted-file',
+        'Uncommitted line in uncommitted file.'
+        )
+
+    # git2: commit a change and push
+    git2.write_line_to('file2', 'Line added on server')
+    git2('add', 'file2')
+    git2.commit_all('git2: Commit file and push to server')
+    git2('push')
+
+    # git1: update and push
+    git1('pc', 'update-and-push')
+
+
 def run_system_cmd(cmd_line, dir=None):
     '''Run a system command, writing output to the terminal'''
     print ' '.join(cmd_line)
