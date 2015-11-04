@@ -662,6 +662,7 @@ branch if that improves the narrative.
   There are some shorter variants to this procedure. You can use our
   =‘git pc’= script like this:
   #+begin_src sh
+    git fetch origin  #  update origin/master from the server
     git pc ff-update master  # update master without checking it out
     git merge master         # do the actual merge
   #+end_src
