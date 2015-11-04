@@ -566,11 +566,11 @@ class UpdateAndPushCommand(Command):
             + ' even from a dirty index and\n'
             + 'file-tree. This is achieved by\n'
             + '1. stashing away unrecorded changes,\n'
-            + '2. running \'pull --rebase\', .\n'
+            + '2. running \'pull --rebase\',\n'
             + '3. pushing,\n'
             + '4. restoring the stashed changes.\n'
             + '\n'
-            + 'Note that starting with git 2.6, you can achieve the'
+            + 'Note that starting wcith git 2.6, you can achieve the'
             + ' same result by setting\n'
             + 'the configuration variable rebase.autostash=true and running'
             + ' \'git pull --rebase;\n'
@@ -583,15 +583,19 @@ class UpdateAndPushCommand(Command):
         )
 
     def run(self, options, args):
-        head = git_head()
+        if len(args) == 0:
+            repository = None
+        elif len(args) == 1:
+            repository = args[0]
+        else:
+            self.usage(1)
         unrecorded = UnrecordedChanges(
-            'Unrecorded changes stashed away by \'git pc update-and-push\''
+            'Unrecorded changes stashed away by \'git pc update-and-push\'',
+            reset=True
             )
 
-        git(['reset', '--hard', head])
-
-        if options.repository:
-            git(['pull', '--rebase', options.repository])
+        if repository:
+            git(['pull', '--rebase', repository])
         else:
             git(['pull', '--rebase'])
 
