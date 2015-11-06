@@ -503,14 +503,16 @@ program start
     call init_special(f)
   enddo
 !
+!  If desired, the f array can be initialized in one call.
+!
+  if (linitial_condition) call initial_condition_all(f)
+!
+!  Initialize particle modules.
+!
   if (lparticles) then 
     call particles_initialize_modules(f)
     call particles_init(f)
   endif
-!
-!  If desired, the f array can be initialized in one call.
-!
-  if (linitial_condition) call initial_condition_all(f)
 !
 !  If requested, write original (z-dependent) stratification to file.
 !
