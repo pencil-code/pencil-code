@@ -329,10 +329,6 @@ module Register
         close (1)
       endif
 !
-!  print summary of variable names
-!
-      call write_varname
-!
 !  Coordinate-related issues, initialize specific grid variables
 !
       call initialize_grid
@@ -401,6 +397,10 @@ module Register
       call initialize_solid_cells(f)
       call initialize_implicit_physics(f)
       call initialize_heatflux(f)
+!
+!  print summary of variable names
+!
+      call write_varname
 !
     endsubroutine initialize_modules
 !***********************************************************************
