@@ -242,6 +242,7 @@ module Particles
   integer :: idiag_epspmin=0, idiag_epspmax=0
   integer :: idiag_npmx=0, idiag_npmy=0, idiag_npmz=0
   integer :: idiag_rhopmx=0, idiag_rhopmy=0, idiag_rhopmz=0
+  integer :: idiag_rhop2mx=0, idiag_rhop2my=0, idiag_rhop2mz=0
   integer :: idiag_epspmx=0, idiag_epspmy=0, idiag_epspmz=0
   integer :: idiag_mpt=0, idiag_dedragp=0, idiag_rhopmxy=0, idiag_rhopmr=0
   integer :: idiag_sigmap=0
@@ -2430,6 +2431,7 @@ module Particles
           idiag_rhopmax/=0 .or. idiag_rhopmin/=0 .or. idiag_rhopmphi/=0 .or. &
           idiag_rhopmx/=0 .or. idiag_rhopmy/=0 .or. idiag_rhopmz/=0) &
           lpenc_diagnos(i_rhop)=.true.
+      if (idiag_rhop2mx /= 0 .or. idiag_rhop2my /= 0 .or. idiag_rhop2mz /= 0) lpenc_diagnos(i_rhop) = .true.
       if (idiag_dedragp/=0 .or. idiag_decollp/=0) then
         lpenc_diagnos(i_TT1)=.true.
         lpenc_diagnos(i_rho1)=.true.
@@ -3833,6 +3835,9 @@ module Particles
         if (idiag_rhopmx/=0)  call yzsum_mn_name_x(p%rhop,idiag_rhopmx)
         if (idiag_rhopmy/=0)  call xzsum_mn_name_y(p%rhop,idiag_rhopmy)
         if (idiag_rhopmz/=0)  call xysum_mn_name_z(p%rhop,idiag_rhopmz)
+        if (idiag_rhop2mx/=0)  call yzsum_mn_name_x(p%rhop**2,idiag_rhop2mx)
+        if (idiag_rhop2my/=0)  call xzsum_mn_name_y(p%rhop**2,idiag_rhop2my)
+        if (idiag_rhop2mz/=0)  call xysum_mn_name_z(p%rhop**2,idiag_rhop2mz)
         if (idiag_epspmx/=0)  call yzsum_mn_name_x(p%epsp,idiag_epspmx)
         if (idiag_epspmy/=0)  call xzsum_mn_name_y(p%epsp,idiag_epspmy)
         if (idiag_epspmz/=0)  call xysum_mn_name_z(p%epsp,idiag_epspmz)
@@ -5437,6 +5442,7 @@ module Particles
         idiag_nparmin=0; idiag_nparmax=0; idiag_nmigmax=0; idiag_nmigmmax=0; idiag_mpt=0
         idiag_npmx=0; idiag_npmy=0; idiag_npmz=0; idiag_epotpm=0
         idiag_rhopmx=0; idiag_rhopmy=0; idiag_rhopmz=0
+        idiag_rhop2mx=0; idiag_rhop2my=0; idiag_rhop2mz=0
         idiag_epspmx=0; idiag_epspmy=0; idiag_epspmz=0
         idiag_rhopmxy=0; idiag_rhopmxz=0; idiag_rhopmr=0
         idiag_sigmap = 0
@@ -5536,6 +5542,7 @@ module Particles
       do inamex=1,nnamex
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'npmx',idiag_npmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'rhopmx',idiag_rhopmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'rhop2mx',idiag_rhop2mx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'epspmx',idiag_epspmx)
       enddo
 !
@@ -5543,7 +5550,8 @@ module Particles
 !
       do inamey=1,nnamey
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'npmy',idiag_npmy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey),'rhopmy',idiag_npmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'rhopmy',idiag_rhopmy)
+        call parse_name(inamey,cnamey(inamey),cformy(inamey),'rhop2my',idiag_rhop2my)
         call parse_name(inamey,cnamey(inamey),cformy(inamey),'epspmy',idiag_epspmy)
       enddo
 !
@@ -5552,6 +5560,7 @@ module Particles
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'npmz',idiag_npmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhopmz',idiag_rhopmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhop2mz',idiag_rhop2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'epspmz',idiag_epspmz)
         do k=1,ninit
           srad=itoa(k)
