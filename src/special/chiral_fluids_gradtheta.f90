@@ -193,7 +193,7 @@ module Special
       select case (initspecial)
         case ('nothing'); if (lroot) print*,'init_special: nothing'
         case ('const')
-          f(:,:,:,igtheta5) = theta5_const
+          f(:,:,:,igtheta5) = 0.
           f(:,:,:,imu5) = mu5_const
         case ('zero')
           f(:,:,:,igtheta5) = 0.
@@ -218,6 +218,7 @@ module Special
 !
 !  18-07-06/tony: coded
 !
+      lpenc_requested(i_b2)=.true.
       lpenc_requested(i_mu5)=.true.
       lpenc_requested(i_gmu5)=.true.
       lpenc_requested(i_gtheta5)=.true.
