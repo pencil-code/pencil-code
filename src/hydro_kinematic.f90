@@ -75,7 +75,7 @@ module Hydro
   real :: kinflow_ck_Balpha=0.
   real :: eps_kinflow=0., exp_kinflow=1., omega_kinflow=0., ampl_kinflow=1.
   real :: rp,gamma_dg11=0.4
-  real :: lambda_kinflow=1.
+  real :: lambda_kinflow=1., zinfty_kinflow=0.
   integer :: kinflow_ck_ell=0, tree_lmax=8
   character (len=labellen) :: wind_profile='none'
   logical, target :: lpressuregradient_gas=.false.
@@ -92,7 +92,7 @@ module Hydro
       uphi_step_width,gcs_rzero, &
       gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell, &
       eps_kinflow,exp_kinflow,omega_kinflow,ampl_kinflow, rp, gamma_dg11, &
-      lambda_kinflow, tree_lmax
+      lambda_kinflow, tree_lmax, zinfty_kinflow
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -414,16 +414,16 @@ module Hydro
       real, dimension(nx) :: vel_prof
       real, dimension(nx) :: tmp_mn, cos1_mn, cos2_mn
       real, dimension(nx) :: rone, argx, pom2
-      real, dimension(nx) :: psi1,psi2,psi3,psi4,rho_prof,prof
+      real, dimension(nx) :: psi1, psi2, psi3, psi4, rho_prof, prof, prof1
       real :: fac, fac2, argy, argz, cxt, cyt, czt, omt
       real :: fpara, dfpara, ecost, esint, epst, sin2t, cos2t
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
       real :: Balpha
       real :: ro
-      real :: xi,slopei,zl1,zl2,zmax
+      real :: xi,slopei,zl1,zlm1,zmax
       real :: theta,theta1
       real :: exp_kinflow1,exp_kinflow2
-      integer :: modeN, ell, ll, nn, ii
+      integer :: modeN, ell, ll, nn, ii, kappa_kinflow=100
 !
 !  Choose from a list of different flow profiles.
 !  Begin with a
@@ -1022,28 +1022,32 @@ module Hydro
         if (lpenc_loc(i_oo)) p%oo=-kx_uukin*p%uu
 !
 !  Tree-like flow
+!  Define ampl_kinflow > 0 for downflow; therefore the minus sign below.
 !
       case ('Tree')
-        if (headtt) print*,'Tree flow; kx_uukin,ky_uukin=',kx_uukin,ky_uukin
+        if (headtt) print*,'Tree flow; kx_uukin,Lx,Lz=',kx_uukin,Lx,Lz
         zmax=Lxyz(3)*(1.-2./2**tree_lmax)
+        fac=-ampl_kinflow*((zinfty_kinflow-z(n))/Lz)**(-1.5)
 ! uu
         if (lpenc_loc(i_uu)) then
           ll=int(alog(2.*Lxyz(3)/(xyz1(3)-min(z(n),zmax)))/alog(2.))
           nn=2**ll
-          zl2=(xyz1(3)-xyz0(3))*(1.-2./nn)
-          zl1=(xyz1(3)-xyz0(3))*(1.-1./nn)
+          zl1 =(xyz1(3)-xyz0(3))*(1.-1./nn)  !(=z_l)
+          zlm1=(xyz1(3)-xyz0(3))*(1.-2./nn)  !(=z_{l-1})
           prof=0.
+          prof1=0.
           do ii=1,nn
             xi=real(ii)/nn-.5-.5/nn
             slopei=.5*(-1)**ii/nn
-            fac=xi-slopei*(z(n)-zl1)/(zl2-zl1)
-            argx=x(l1:l2)-2.*pi*fac
-            if (ip.le.6) write(*,fmt='(2f10.4)') z(n),fac
-            prof=prof+(.5+.5*cos(kx_uukin*argx))**100/nn
+            theta=xi-slopei*(zl1-z(n))/(zl1-zlm1)
+            argx=x(l1:l2)-Lx*theta
+            if (ip.le.6) write(*,fmt='(2f10.4)') z(n),theta
+            prof=prof+(.5+.5*cos(kx_uukin*argx))**kappa_kinflow/nn
+            prof1=prof1+(.5+.5*cos(kx_uukin*argx))**kappa_kinflow/nn*(-1.)**ii
           enddo
-          p%uu(:,1)=0.
+          p%uu(:,1)=fac*prof1*Lx/(2.*Lz)
           p%uu(:,2)=0.
-          p%uu(:,3)=ampl_kinflow*prof
+          p%uu(:,3)=fac*prof
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
         !if (lpenc_loc(i_oo)) p%oo=-kx_uukin*p%uu
