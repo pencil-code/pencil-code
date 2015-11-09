@@ -111,6 +111,7 @@ indices = [ $
   { name:'iLam', label:'Gauge potential', dims:1 }, $
   { name:'iecr', label:'Cosmic ray energy density', dims:1 }, $
   { name:'ifcr', label:'Cosmic ray energy flux', dims:3 }, $
+  { name:'igtheta5', label:'Chemical potential gradient', dims:3 }, $
   { name:'itheta5', label:'Chemical potential', dims:1 }, $
   { name:'imu5', label:'Cosmic ray energy density', dims:1 }, $
   { name:'iam', label:'Meanfield dynamo', dims:3 }, $
