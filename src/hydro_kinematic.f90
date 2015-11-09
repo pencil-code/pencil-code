@@ -1030,17 +1030,16 @@ module Hydro
         if (lpenc_loc(i_uu)) then
           ll=int(alog(2.*Lxyz(3)/(xyz1(3)-min(z(n),zmax)))/alog(2.))
           nn=2**ll
-          zl1=(xyz1(3)-xyz0(3))*(1.-2./nn)
-          zl2=(xyz1(3)-xyz0(3))*(1.-1./nn)
-!print*,'AXEL1',z(n),ll,nn,zl1,zl2
+          zl2=(xyz1(3)-xyz0(3))*(1.-2./nn)
+          zl1=(xyz1(3)-xyz0(3))*(1.-1./nn)
           prof=0.
           do ii=1,nn
             xi=real(ii)/nn-.5-.5/nn
             slopei=.5*(-1)**ii/nn
-            argx=x(l1:l2)-xi+slopei*(z(n)-zl1)/(zl2-zl1)
-!print*,'AXEL2',ii,xi,slopei
-!print*,'AXEL3',argx
-            prof=prof+(.5+.5*cos(kx_uukin*argx))**100-0.0563485
+            fac=xi-slopei*(z(n)-zl1)/(zl2-zl1)
+            argx=x(l1:l2)-2.*pi*fac
+            if (ip.le.6) write(*,fmt='(2f10.4)') z(n),fac
+            prof=prof+(.5+.5*cos(kx_uukin*argx))**100/nn
           enddo
           p%uu(:,1)=0.
           p%uu(:,2)=0.
