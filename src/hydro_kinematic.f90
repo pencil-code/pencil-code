@@ -76,7 +76,7 @@ module Hydro
   real :: eps_kinflow=0., exp_kinflow=1., omega_kinflow=0., ampl_kinflow=1.
   real :: rp,gamma_dg11=0.4
   real :: lambda_kinflow=1., zinfty_kinflow=0.
-  integer :: kinflow_ck_ell=0, tree_lmax=8
+  integer :: kinflow_ck_ell=0, tree_lmax=8, kappa_kinflow=100
   character (len=labellen) :: wind_profile='none'
   logical, target :: lpressuregradient_gas=.false.
 !
@@ -92,7 +92,7 @@ module Hydro
       uphi_step_width,gcs_rzero, &
       gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell, &
       eps_kinflow,exp_kinflow,omega_kinflow,ampl_kinflow, rp, gamma_dg11, &
-      lambda_kinflow, tree_lmax, zinfty_kinflow
+      lambda_kinflow, tree_lmax, zinfty_kinflow, kappa_kinflow
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -423,7 +423,7 @@ module Hydro
       real :: xi,slopei,zl1,zlm1,zmax
       real :: theta,theta1
       real :: exp_kinflow1,exp_kinflow2
-      integer :: modeN, ell, ll, nn, ii, kappa_kinflow=100
+      integer :: modeN, ell, ll, nn, ii
 !
 !  Choose from a list of different flow profiles.
 !  Begin with a
