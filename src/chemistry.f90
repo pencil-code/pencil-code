@@ -177,6 +177,7 @@ module Chemistry
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
+  integer :: idiag_dtchem=0     ! DIAG_DOC:
   integer :: idiag_Y1m=0        ! DIAG_DOC: $\left<Y_1\right>$
   integer :: idiag_Y2m=0        ! DIAG_DOC: $\left<Y_2\right>$
   integer :: idiag_Y3m=0        ! DIAG_DOC: $\left<Y_3\right>$
@@ -3103,6 +3104,9 @@ module Chemistry
 !
       call timing('dchemistry_dt','before ldiagnos',mnloop=.true.)
       if (ldiagnos) then
+        if (idiag_dtchem/=0) then
+          call max_mn_name(reac_chem/cdtc,idiag_dtchem,l_dt=.true.)
+        endif
 !
 !  WL: instead of hardcoding Y1-Y9, wouldn't it be possible
 !      to have them all in the same array? The particles_nbody
@@ -3308,6 +3312,7 @@ module Chemistry
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
+        idiag_dtchem=0
         idiag_Y1m=0; idiag_Y2m=0; idiag_Y3m=0; idiag_Y4m=0
         idiag_Y5m=0; idiag_Y6m=0; idiag_Y7m=0; idiag_Y8m=0
         idiag_Y9m=0; idiag_Y10m=0; idiag_Y11m=0; idiag_Y12m=0
@@ -3358,6 +3363,7 @@ module Chemistry
 !  check for those quantities that we want to evaluate online
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'dtchem',idiag_dtchem)
         call parse_name(iname,cname(iname),cform(iname),'Y1m',idiag_Y1m)
         call parse_name(iname,cname(iname),cform(iname),'Y2m',idiag_Y2m)
         call parse_name(iname,cname(iname),cform(iname),'Y3m',idiag_Y3m)
