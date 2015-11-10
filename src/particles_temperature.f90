@@ -245,7 +245,7 @@ module Particles_temperature
               (2*pi*fp(k,iap)*Nu_p(k)*cond)
 !          print*, 'stefan',stefan_b
 !
-          if (stefan_b /= 0.0) then
+          if (stefan_b .gt. 1e-5) then
 !
 !  Convective heat transfer including the Stefan Flow
 !
@@ -268,6 +268,7 @@ module Particles_temperature
 !          print*, 'cp_part',cp_part
 !          print*,'heat_trans_coef',heat_trans_coef
 !          print*,'parts', Nu_p(k),cond
+!          print*,'fp(k,iap)=',fp(k,iap)
 !
 !  Calculate feed back from the particles to the gas phase
 !
