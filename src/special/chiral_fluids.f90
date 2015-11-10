@@ -86,7 +86,7 @@ module Special
 ! Declare index of new variables in f array (if any).
 !
    real :: diffmu5, lambda5, theta5_const=0., mu5_const=0.
-   real :: meanmu5
+   real :: meanmu5, kx_theta5=1., ky_theta5=1., kx_mu5=1.
    real, pointer :: eta
    integer :: itheta5, imu5
    character (len=labellen) :: theta_prof='nothing'
@@ -98,7 +98,7 @@ module Special
       initspecial, theta5_const, mu5_const
 !
   namelist /special_run_pars/ &
-      diffmu5, lambda5, theta_prof
+      diffmu5, lambda5, theta_prof, kx_theta5, ky_theta5, kx_mu5
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -191,17 +191,33 @@ module Special
 !
       select case (initspecial)
         case ('nothing'); if (lroot) print*,'init_special: nothing'
+!
         case ('const')
           f(:,:,:,itheta5) = theta5_const
           f(:,:,:,imu5) = mu5_const
+!
         case ('zero')
           f(:,:,:,itheta5) = 0.
           f(:,:,:,imu5) = 0.
-        case ('theta_profile')
-	do n=n1,n2; do m=m1,m2
-          f(l1:l2,m,n,itheta5)=theta5_const*cos(2.*pi*(y(m)-y0)/Ly)
-        enddo; enddo 
+!
+        case ('mu5_cosx')
+          do n=n1,n2; do m=m1,m2
+            f(:,m,n,itheta5)=0.
+            f(:,m,n,imu5)=mu5_const*cos(kx_mu5*x)
+          enddo; enddo 
+!
+        case ('theta5_cosx')
+          do n=n1,n2; do m=m1,m2
+            f(:,m,n,itheta5)=theta5_const*cos(kx_theta5*x)
+            f(:,m,n,imu5)=mu5_const
+          enddo; enddo 
+!
+        case ('theta5_cosy')
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,itheta5)=theta5_const*cos(ky_theta5*y(m))
+          enddo; enddo 
           f(:,:,:,imu5) = mu5_const
+!
         case default
           call fatal_error("init_special: No such value for initspecial:" &
               ,trim(initspecial))
@@ -217,8 +233,10 @@ module Special
 !
 !  18-07-06/tony: coded
 !
+      lpenc_requested(i_b2)=.true.
       lpenc_requested(i_mu5)=.true.
       lpenc_requested(i_theta5)=.true.
+      if (ldt) lpenc_requested(i_rho)=.true.
       if (diffmu5/=0.) lpenc_requested(i_del2mu5)=.true.
       if (lhydro) lpenc_requested(i_gtheta5)=.true.
       if (lhydro) lpenc_requested(i_ugtheta5)=.true.
@@ -343,8 +361,9 @@ module Special
                             diffmu5*dxyz_2,   &
                             lambda5*eta*p%b2/(p%mu5)*sqrt(dxyz_2),   &
                             lambda5*eta*p%b2,   &
-                            lambda5*eta*p%b2*sqrt(p%u2)*p%theta5/(p%mu5)*sqrt(dxyz_2), &
-                            p%mu5/p%theta5   &
+                            !lambda5*eta*p%b2*sqrt(p%u2)*p%theta5/(p%mu5)*sqrt(dxyz_2), &
+                            !p%mu5/p%theta5   &
+                            lambda5*eta*p%b2*sqrt(p%u2)*p%theta5/(p%mu5)*sqrt(dxyz_2) &
                           )  
       endif
 !
