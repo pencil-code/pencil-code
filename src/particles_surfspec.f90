@@ -293,6 +293,7 @@ module Particles_surfspec
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(mpar_loc,mparray) :: fp
       real, dimension(mpar_loc,mpvar) :: dfp
+      real, dimension(nx,nchemspec) :: chem_reac
       real, dimension(:,:), allocatable :: term, ndot
       real, dimension(:), allocatable :: Cg
       real :: porosity
@@ -374,6 +375,16 @@ module Particles_surfspec
             iz0 = ineargrid(k,3)
             call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1, &
                 fp,k,ix0,iy0,iz0)
+!
+! negative dmass means particle is losing mass
+            dmass = 0.
+            do i = 1,N_surface_species
+              index1 = jmap(i)
+              dmass = dmass+ndot(k,i)*species_constants(index1,imass)*A_p
+            enddo
+!
+! Loop over all neighbouring grid points
+!
             do izz = izz0,izz1
               do iyy = iyy0,iyy1
                 do ixx = ixx0,ixx1
@@ -385,14 +396,6 @@ module Particles_surfspec
                     rho1_point = p%rho1(ixx-nghost)
                   endif
 !
-! negative dmass means particle is losing mass
-                  dmass = 0.
-                  do i = 1,N_surface_species
-                    index1 = jmap(i)
-                    dmass = dmass+ndot(k,i)*species_constants(index1,imass)*A_p
-                  enddo
-!                  print*,'ndot: ',ndot
-!
                   do i = 1,N_surface_species
                     index1 = jmap(i)
                     index2 = ichemspec(index1)
@@ -401,15 +404,17 @@ module Particles_surfspec
                         (A_p*ndot(k,i)*species_constants(index1,imass)- &
                         dmass*interp_species(k,index1))* &
                         rho1_point*weight/volume_cell
-!                    print*, 'df()',(A_p*ndot(k,i)*species_constants(index1,imass)- &
-!                        dmass*interp_species(k,index1))* &
-!                        rho1_point*weight/volume_cell
-!                    print*, 'constants: ',species_constants(index1,imass)
-!                    print*, 'interp_species: ',interp_species(k,index1)
                   enddo
                 enddo
               enddo
             enddo
+
+!            do i = 1,N_surface_species
+!              index1 = jmap(i)
+!              index2 = ichemspec(index1)
+!              chem_reac(ix0,index1)=chem_reac(ix0,index1)+
+!            
+
           endif
         enddo
 !
