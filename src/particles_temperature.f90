@@ -32,6 +32,7 @@ module Particles_temperature
 !
   logical :: lpart_temp_backreac=.true.
   logical :: lrad_part=.false.
+  logical :: lpart_nuss_const=.false.
   real :: init_part_temp, emissivity=0.0
   real :: Twall=0.0
   real :: cp_part=0.711e7 ! wolframalpha, erg/(g*K)
@@ -41,7 +42,7 @@ module Particles_temperature
       init_particle_temperature, init_part_temp, emissivity, cp_part
 !
   namelist /particles_TT_run_pars/ emissivity, cp_part, lpart_temp_backreac,&
-      lrad_part,Twall
+      lrad_part,Twall, lpart_nuss_const
 !
   integer :: idiag_Tpm=0, idiag_etpm=0
 !
@@ -175,6 +176,7 @@ module Particles_temperature
 !
 !  28-aug-14/jonas+nils: coded
 !
+      use Viscosity, only: getnu
       use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mfarray) :: f
@@ -184,8 +186,9 @@ module Particles_temperature
       type (pencil_case) :: p
       integer, dimension(mpar_loc,3) :: ineargrid
       real, dimension(nx) :: feed_back, volume_pencil
-      real, dimension(:), allocatable :: q_reac, Nu_p,mass_loss
-      real :: volume_cell, stefan_b
+      real, dimension(:), allocatable :: q_reac, mass_loss,rep,nu
+      real, dimension(:), allocatable :: Nuss_p
+      real :: volume_cell, stefan_b,Prandtl
       real :: Qc, Qreac, Qrad, Ap, heat_trans_coef, cond
       integer :: k, inx0, ix0, iy0, iz0, ierr
       real :: rho1_point, weight
@@ -195,16 +198,29 @@ module Particles_temperature
       intent(in) :: f, fp, ineargrid
       intent(inout) :: dfp, df
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(p)
-      call keep_compiler_quiet(ineargrid)
+!      call keep_compiler_quiet(f)
+!      call keep_compiler_quiet(df)
+!      call keep_compiler_quiet(p)
+!      call keep_compiler_quiet(ineargrid)
 !
       feed_back = 0.
 !
 !  Do only if particles are present on the current pencil
 !
       if (npar_imn(imn) /= 0) then
+!
+!  The Ranz-Marshall correlation for the Sherwood number needs the particle Reynolds number
+!  Precalculate partrticle Reynolds numbers.
+!
+        getrep: if (lpart_temp_backreac .and. .not. lpart_nuss_const) then
+          allocate(rep(k1_imn(imn):k2_imn(imn)))
+          if (.not. allocated(rep)) call fatal_error('dvvp_dt_pencil', &
+              'unable to allocate sufficient memory for rep', .true.)
+          allocate(nu(k1_imn(imn):k2_imn(imn)))
+          if (.not. allocated(nu)) call fatal_error('dvvp_dt_pencil', &
+              'unable to allocate sufficient memory for nu', .true.)
+          call calc_pencil_rep_nu(fp, rep,nu)
+        endif getrep
 !
         k1 = k1_imn(imn)
         k2 = k2_imn(imn)
@@ -213,10 +229,12 @@ module Particles_temperature
 !  for reactive heating of the particle if lreactive_heating is false,
 !  q_reac is set to zero in particles_chemistry
 !
-        allocate(Nu_p(k1:k2))
+        allocate(Nuss_p(k1:k2))
         allocate(q_reac(k1:k2))
         allocate(mass_loss(k1:k2))
-        call get_temperature_chemistry(q_reac,Nu_p,mass_loss)
+        call get_temperature_chemistry(q_reac,mass_loss)
+!
+        if (lpart_nuss_const) Nuss_p=2.0
 !
 !  Loop over all particles in current pencil.
 !
@@ -229,6 +247,15 @@ module Particles_temperature
           iz0 = ineargrid(k,3)
           inx0 = ix0-nghost
           cond = p%tcond(inx0)
+!
+!  Calculation of the Nusselt number according to the 
+!  Ranz-Marshall correlation. Nu= 2+ 0.6*sqrt(Re_p)Pr**1/3
+!
+          if (.not. lpart_nuss_const) then
+            Prandtl= nu(k)*p%cp(inx0)*p%rho(inx0)/cond
+            Nuss_p(k)=2.0 + 0.6*sqrt(rep(k))*Prandtl**(1./3.)
+          endif
+!
           Ap = 4.*pi*fp(k,iap)**2
 !
 !  Radiative heat transfer, has yet to be filled with life
@@ -242,20 +269,19 @@ module Particles_temperature
 !  Calculation of stefan flow constant stefan_b
 !
           stefan_b = mass_loss(k)*p%cv(inx0)/&
-              (2*pi*fp(k,iap)*Nu_p(k)*cond)
-!          print*, 'stefan',stefan_b
+              (2*pi*fp(k,iap)*Nuss_p(k)*cond)
 !
           if (stefan_b .gt. 1e-5) then
 !
 !  Convective heat transfer including the Stefan Flow
 !
-            heat_trans_coef = Nu_p(k)*cond/(2*fp(k,iap))*&
+            heat_trans_coef = Nuss_p(k)*cond/(2*fp(k,iap))*&
                 (stefan_b/(exp(stefan_b)-1.0))
 !
 !  Convective heat transfer without the Stefan Flow
 !
           else
-            heat_trans_coef = Nu_p(k)*cond/(2*fp(k,iap))
+            heat_trans_coef = Nuss_p(k)*cond/(2*fp(k,iap))
           endif
 
           Qc = heat_trans_coef*Ap*(fp(k,iTp)-interp_TT(k))
@@ -264,11 +290,6 @@ module Particles_temperature
 !  rates on the particle
 !
           dfp(k,iTp) = dfp(k,iTp)+(q_reac(k)-Qc+Qrad)/(fp(k,imp)*cp_part)
-!          print*, 'q_reac(k),Qc,Qrad',q_reac(k),Qc,Qrad
-!          print*, 'cp_part',cp_part
-!          print*,'heat_trans_coef',heat_trans_coef
-!          print*,'parts', Nu_p(k),cond
-!          print*,'fp(k,iap)=',fp(k,iap)
 !
 !  Calculate feed back from the particles to the gas phase
 !
@@ -322,9 +343,11 @@ module Particles_temperature
           endif
         enddo
 !
-        deallocate(Nu_p)
-        deallocate(q_reac)
-        deallocate(mass_loss)
+        if (allocated(q_reac)) deallocate(q_reac)
+        if (allocated(rep)) deallocate(rep)
+        if (allocated(nu)) deallocate(nu)
+        if (allocated(Nuss_p)) deallocate(Nuss_p)
+        if (allocated(mass_loss)) deallocate(mass_loss)
 !
       endif
 !
@@ -401,7 +424,6 @@ module Particles_temperature
 !
     endsubroutine rprint_particles_TT
 !***********************************************************************
-!***********************************************************************
     subroutine particles_TT_prepencil_calc(f)
 !
 !  28-aug-14/jonas+nils: coded
@@ -412,4 +434,56 @@ module Particles_temperature
 !
     endsubroutine particles_TT_prepencil_calc
 !***********************************************************************
+    subroutine calc_pencil_rep_nu(fp,rep, nu)
+!
+!  Calculate particle Reynolds numbers
+!
+!  16-jul-08/kapelrud: coded
+!  10-nov-15/jonas : inserted and adapted
+!
+      use Viscosity, only: getnu
+!
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
+      real,dimension(k1_imn(imn):k2_imn(imn)), intent(out) :: rep
+!
+      real,dimension(k1_imn(imn):k2_imn(imn)), intent(out) :: nu
+      character (len=labellen) :: ivis=''
+      real :: nu_
+      integer :: k
+!
+      call getnu(nu_input=nu_,IVIS=ivis)
+      if (ivis=='nu-const') then
+        nu=nu_
+      elseif (ivis=='nu-mixture') then
+        nu=interp_nu
+      elseif (ivis=='rho-nu-const') then
+        nu=nu_/interp_rho(k1_imn(imn):k2_imn(imn))
+      elseif (ivis=='sqrtrho-nu-const') then
+        nu=nu_/sqrt(interp_rho(k1_imn(imn):k2_imn(imn)))
+      elseif (ivis=='nu-therm') then
+        nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))
+      elseif (ivis=='mu-therm') then
+        nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))&
+            /interp_rho(k1_imn(imn):k2_imn(imn))
+      else
+        call fatal_error('calc_pencil_rep','No such ivis!')
+      endif
+!
+      if (maxval(nu) == 0.0) call fatal_error('calc_pencil_rep', 'nu (kinematic visc.) must be non-zero!')
+!
+      do k=k1_imn(imn),k2_imn(imn)
+        rep(k) = 2.0 * sqrt(sum((interp_uu(k,:) - fp(k,ivpx:ivpz))**2)) / nu(k)
+      enddo
+!
+      if (lparticles_radius) then
+        rep = rep * fp(k1_imn(imn):k2_imn(imn),iap)
+      elseif (particle_radius > 0.0) then
+        rep = rep * particle_radius
+      else
+        call fatal_error('calc_pencil_rep', &
+            'unable to calculate the particle Reynolds number without a particle radius. ')
+      endif
+!
+    endsubroutine calc_pencil_rep_nu
+!*********************************************************
 endmodule Particles_temperature

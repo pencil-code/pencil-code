@@ -41,6 +41,7 @@ module Particles_surfspec
   logical :: lspecies_transfer=.true.
   logical :: linfinite_diffusion=.true.
   logical :: lboundary_explicit=.true.
+  logical :: lpchem_cdtc=.false.
 !
   integer :: jH2, jO2, jCO2, jCO, jCH4, jN2, jH2O
   integer :: jOH, jAR, jO, jH, jCH, jCH2, jHCO, jCH3
@@ -61,6 +62,8 @@ module Particles_surfspec
       lboundary_explicit, &
       linfinite_diffusion, &
       lspecies_transfer
+!
+  integer :: idiag_dtpchem=0
 !
   contains
 ! ******************************************************************************
@@ -289,6 +292,9 @@ module Particles_surfspec
 !  23-sep-14/Nils: coded
 !
     subroutine dpsurf_dt_pencil(f,df,fp,dfp,p,ineargrid)
+!
+      use Diagnostics
+!
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(mpar_loc,mparray) :: fp
@@ -302,6 +308,8 @@ module Particles_surfspec
       integer :: k, k1, k2, i, ix0, iy0, iz0
       real :: weight, volume_cell, rho1_point
       real :: mean_molar_mass, dmass, A_p
+      real :: reac_pchem_weight,max_reac_pchem
+      real :: dmass_frac_dt
       integer :: ix1, iy1, iz1, ierr
       integer :: ixx, iyy, izz
       integer :: ixx0, iyy0, izz0
@@ -331,6 +339,8 @@ module Particles_surfspec
 !
         call calc_mass_trans_reactants()
         call get_surface_chemistry(Cg,ndot)
+!
+        reac_pchem = 0.0
 !
 !  set surface gas species composition
 !  (infinite diffusion, set as far field and convert from
@@ -383,11 +393,18 @@ module Particles_surfspec
               dmass = dmass+ndot(k,i)*species_constants(index1,imass)*A_p
             enddo
 !
+!  Prepare the max_reac_pchem
+!
+            if (lfirst .and. ldt) max_reac_pchem = 0.0
+!
 ! Loop over all neighbouring grid points
 !
             do izz = izz0,izz1
               do iyy = iyy0,iyy1
-                do ixx = ixx0,ixx1
+                do ixx = ixx0,ixx1                 
+!
+!  reac_pchem and dmass_frac_dt are here to obtain a heterogeneous timestep
+!
                   call find_interpolation_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
                   call find_grid_volume(ixx,iyy,izz,volume_cell)
                   if ( (iyy /= m).or.(izz /= n).or.(ixx < l1).or.(ixx > l2) ) then
@@ -397,26 +414,36 @@ module Particles_surfspec
                   endif
 !
                   do i = 1,N_surface_species
+                    reac_pchem_weight= 0.0
                     index1 = jmap(i)
                     index2 = ichemspec(index1)
-                    df(ixx,iyy,izz,index2) = &
-                        df(ixx,iyy,izz,index2)+ &
-                        (A_p*ndot(k,i)*species_constants(index1,imass)- &
-                        dmass*interp_species(k,index1))* &
-                        rho1_point*weight/volume_cell
+                    dmass_frac_dt = (A_p*ndot(k,i)*species_constants(index1,imass)-&
+                        dmass*interp_species(k,index1))*rho1_point*weight/volume_cell
+                    df(ixx,iyy,izz,index2) = df(ixx,iyy,izz,index2) + dmass_frac_dt
+                    if (lfirst .and. ldt)&
+                        reac_pchem_weight = max(reac_pchem_weight,abs(dmass_frac_dt/&
+                        max(f(ixx,iyy,izz,index2),1e-5)))
                   enddo
+!
+!  Compare the current maximum reaction rate to the previous one
+!
+                  if (lfirst .and. ldt) max_reac_pchem = max(max_reac_pchem, reac_pchem_weight)
+
                 enddo
               enddo
             enddo
-
-!            do i = 1,N_surface_species
-!              index1 = jmap(i)
-!              index2 = ichemspec(index1)
-!              chem_reac(ix0,index1)=chem_reac(ix0,index1)+
-!            
-
+!
+!  Compare the current maximum reaction rate to the current maximum 
+!  reaction rate in the current pencil
+!
+            if (lfirst .and. ldt) reac_pchem = max(reac_pchem,max_reac_pchem)
+!
           endif
         enddo
+!
+        if (ldiagnos .and. idiag_dtpchem/=0) then
+          call max_name(max_reac_pchem/cdtc,idiag_dtpchem,l_dt=.true.)
+        endif
 !
         deallocate(term)
         deallocate(ndot)
@@ -442,13 +469,8 @@ module Particles_surfspec
 ! Write information to index.pro
       lwr = .false.
       if (present(lwrite)) lwr = lwrite
-!
-!  JONAS: The next bit makes trouble in read_var,  I am not sure this needs to 
-!  JONAS: be present in index.pro
-!
-!      if (lwr) write (3,*) 'Ysurf=', isurf
-!
       if (lreset) then
+        idiag_dtpchem = 0
         idiag_surf = 0
       endif
 !
@@ -460,7 +482,9 @@ module Particles_surfspec
           diagn_surf = 'Ysurf'//trim(adjustl(number))
           call parse_name(iname,cname(iname),cform(iname),trim(diagn_surf),idiag_surf(i))
         enddo
+        call parse_name(iname,cname(iname),cform(iname),'dtpchem',idiag_dtpchem)
       enddo
+!
     endsubroutine rprint_particles_surf
 ! ******************************************************************************
 !  07-oct-2014/jonas: coded
@@ -656,9 +680,6 @@ module Particles_surfspec
 !        enddo
 !
         call get_surface_chemistry(Cg)
-!
-!  JONAS: possible unit problem!
-!
         do k = k1,k2
           ix0 = ineargrid(k,1)
           do i = 1,N_surface_species

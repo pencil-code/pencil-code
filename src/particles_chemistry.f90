@@ -122,7 +122,6 @@ module Particles_chemistry
   real, dimension(:), allocatable :: initial_density
   real, dimension(:), allocatable :: Cg, A_p
   real, dimension(:), allocatable :: q_reac
-  real, dimension(:), allocatable :: Nu_p
   real, dimension(:), allocatable :: mass_loss
 !
   real :: mol_mass_carbon=12.0 !g/mol
@@ -1602,15 +1601,8 @@ module Particles_chemistry
 !
         if (lreactive_heating) then
           call calc_q_reac()
-!JONAS:  Commented out the calculation of the Nusselt number for now
-!JONAS:  since this has to be fixed before it can be used.
-!        call calc_Nusselt()
-          Nu_p = 2.
-!JONAS:  We also need to make a subroutine calculcating the Sherwood
-!JONAS:  number.
         else
-          Nu_p = 2.
-          q_reac = 0.0
+          q_reac=0.0
         endif
 !
         call calc_ndot_mdot_R_j_hat(fp)
@@ -1706,9 +1698,6 @@ module Particles_chemistry
       allocate(A_p(k1:k2), STAT=stat)
       if (stat > 0) call fatal_error('allocate_variable_pencils', &
           'Could not allocate memory for A_p')
-      allocate(Nu_p(k1:k2), STAT=stat)
-      if (stat > 0) call fatal_error('allocate_variable_pencils', &
-          'Could not allocate memory for Nu_p')
       allocate(mdot_ck(k1:k2,N_surface_reactions),STAT=stat)
       if (stat > 0) call fatal_error('register_dep_pchem', &
           'Could not allocate memory for mdot_ck')
@@ -1745,7 +1734,6 @@ module Particles_chemistry
         deallocate(Cg)
         deallocate(A_p)
         deallocate(q_reac)
-        deallocate(Nu_p)
         deallocate(mdot_ck)
         deallocate(mass_loss)
       endif
@@ -2034,54 +2022,7 @@ module Particles_chemistry
       enddo
 !
     endsubroutine calc_q_reac
-! ******************************************************************************
-!
-!  Calculate the Nusselt number of each particle. This is still incomplete
-!
-!  oct-14/Jonas: coded
-!
-    subroutine calc_Nusselt()
-!
-      use SharedVariables, only: put_shared_variable
-!
-      integer :: k, k1, k2
-      real :: Pr_g, Sc_g, rep, ierr
-!
-      k1 = k1_imn(imn)
-      k2 = k2_imn(imn)
-!
-!  JONAS: access to some chemistry variables as well to particles_dust for rep(k)
-!  for Pr and Sc is needed, these are only placeholders!!!
-!
-      call fatal_error('calc_Nusselt', &
-          'Prandtl, Schmidt and Reynolds number are wrong!')
-      !NILS: We must do this correctly now, otherwise we are likely to
-      !NILS: forget and we will get wrong results.
-      Pr_g = 0.7
-      Sc_g = 0.65
-      rep = 0.0002
-!
-      do k = k1,k2
-!  case from the paper "Dimensionless heat-mass transfer coefficients
-!  for forced convection around a sphere: a general low
-!  Reynolds number correlation
-        if (rep < 3.5) then
-          Nu_p(k) = 0.5+0.5*(1+2*rep*Pr_g)**(1./3.)
-!  First case in "The effect of particle packing on the Nusselt
-!  number in a cluster of particles
-        elseif (rep >= 3.5 .and. rep <= 7.6e4 .and. Pr_g >= 0.7 .and. Pr_g <= 380.) then
-          Nu_p(k) = 2.0+(0.4*rep**0.5+0.06*rep**0.67)* Pr_g**0.4
-        else
-          Nu_p = 2.0
-        endif
-      enddo
-!
-!    call put_shared_variable('Nu_p',Nu_p,ierr)
-!    if (ierr/=0) call fatal_error('particles_chemistry:',&
-!        'failed to put Nu_p')
-!
-    endsubroutine calc_Nusselt
-! ******************************************************************************
+! *******************************************************************************
 !  This subroutine parses trough the list of elements of the mechanics.in
 !  and looks for terms of the form T^x.yz where x.yz is a real number.
 !  This is saved in T_k and is for temperature dependent reactions
@@ -2270,11 +2211,10 @@ module Particles_chemistry
 !  Get temperature-chemistry dependent variables!
 !  dec-11/Jonas: coded
 !
-    subroutine get_temperature_chemistry(q_reac_targ,Nu_p_targ,mass_loss_targ)
-      real, dimension(:) :: q_reac_targ, Nu_p_targ
+    subroutine get_temperature_chemistry(q_reac_targ,mass_loss_targ)
+      real, dimension(:) :: q_reac_targ
       real, dimension(:), optional :: mass_loss_targ
 !
-      Nu_p_targ = Nu_p
       q_reac_targ = q_reac
       if (present(mass_loss_targ)) mass_loss_targ = mass_loss
 !      q_reac_targ = q_reac

@@ -30,12 +30,14 @@ module Particles_mass
   include 'particles_mass.h'
 !
   logical :: lpart_mass_backreac=.true.
+  logical :: lpart_mass_momentum_backreac=.true.
   real :: mass_const=0.0, dmpdt=1e-3
   character(len=labellen), dimension(ninit) :: init_particle_mass='nothing'
 !
   namelist /particles_mass_init_pars/ init_particle_mass, mass_const
 !
-  namelist /particles_mass_run_pars/ lpart_mass_backreac, dmpdt
+  namelist /particles_mass_run_pars/ lpart_mass_backreac, dmpdt,&
+      lpart_mass_momentum_backreac
 !
   integer :: idiag_mpm=0
   integer :: idiag_convm=0
@@ -224,8 +226,8 @@ module Particles_mass
       intent(in) :: f, fp, ineargrid
       intent(inout) :: dfp, df
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
+!      call keep_compiler_quiet(f)
+!      call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
       call keep_compiler_quiet(ineargrid)
 !
@@ -251,7 +253,9 @@ module Particles_mass
 ! Check if particles chemistry is turned on
           if (lparticles_chemistry) then
 !
-! Calculate the change in particle mass
+!  Calculate the change in particle mass
+!  dmass positive --> particle is gaining mass
+!
             dmass = mass_loss(k)
 !
           else
@@ -311,6 +315,19 @@ module Particles_mass
                   else
                     df(ixx,iyy,izz,ilnrho) = df(ixx,iyy,izz,ilnrho) &
                         -dmass*rho1_point*weight/volume_cell
+                  endif
+!
+!  Momentum transfer via mass transfer between particle and gas phase
+!
+                  if (lpart_mass_momentum_backreac) then
+                    if (interp%luu) then
+                      df(ixx,iyy,izz,iux:iuz) = df(ixx,iyy,izz,iux:iuz) &
+                          -dmass*weight/volume_cell*rho1_point*&
+                          (fp(k,ivpx:ivpz)-interp_uu(k,:))
+                    else
+                      call fatal_error('dpmass_dt_pencil',&
+                          'momentum transfer via mass transfer needs interp%uu')
+                    endif
                   endif
                 enddo
               enddo

@@ -453,14 +453,23 @@ module Particles_radius
         allocate(effectiveness_factor(k1:k2))
 !
         call get_radius_chemistry(mass_loss,effectiveness_factor)
-        do k = k1,k2
-          if (fp(k,irhosurf) < 0) then
+!
+        if (.not. lsurface_nopores) then
+          do k = k1,k2
+            if (fp(k,irhosurf) < 0) then
+              rho = fp(k,imp) / (fp(k,iap)**3 * 4./3. * pi )
+              mass_per_radius = 4. * pi * rho * fp(k,iap)**2
+              dfp(k,iap) = dfp(k,iap) + mass_loss(k) *(1-effectiveness_factor(k))/mass_per_radius
+            endif
+            fp(k,ieffp) = effectiveness_factor(k)
+          enddo
+        else
+          do k = k1,k2
             rho = fp(k,imp) / (fp(k,iap)**3 * 4./3. * pi )
             mass_per_radius = 4. * pi * rho * fp(k,iap)**2
-            dfp(k,iap) = dfp(k,iap) + mass_loss(k) *(1-effectiveness_factor(k))/mass_per_radius
-          endif
-          fp(k,ieffp) = effectiveness_factor(k)
-        enddo
+            dfp(k,iap) = dfp(k,iap) + mass_loss(k)/mass_per_radius
+          enddo
+        endif
         deallocate(mass_loss)
         deallocate(effectiveness_factor)
       endif

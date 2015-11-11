@@ -3090,7 +3090,8 @@ module Chemistry
             reac_chem=0.
             !sum_reac_rate=0.
             do k=1,nchemspec
-              reac_chem=reac_chem+abs(p%DYDt_reac(:,k)/f(l1:l2,m,n,ichemspec(k)))
+              reac_chem=reac_chem+abs(p%DYDt_reac(:,k)/&
+                  max(f(l1:l2,m,n,ichemspec(k)),0.001))
               !sum_reac_rate=sum_reac_rate+p%DYDt_reac(:,k)
             enddo
             if (maxval(reac_chem)>1e11) then
