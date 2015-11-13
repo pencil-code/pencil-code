@@ -1727,6 +1727,9 @@ module Particles
             elseif (lspherical_coords) then 
               rad=fp(k,ixp)*sin(fp(k,iyp))
               OO=sqrt(gravr)*rad**(-1.5)
+              fp(k,ivpx) =  0.0
+              fp(k,ivpy) =  0.0
+              fp(k,ivpz) =  OO*rad
             endif
           enddo
 !
