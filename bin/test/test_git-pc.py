@@ -41,6 +41,49 @@ if not (sys.hexversion >= 0x02060000):
     sys.exit('Python 2.6 or later is required')
 
 
+# Backport Python 2.7 subprocess commands if necessary:
+try:
+    from subprocess import CalledProcessError, check_call, check_output
+except ImportError:
+    # Use definition from Python 2.7 subprocess module:
+    class CalledProcessError(Exception):
+        def __init__(self, returncode, cmd, output=None):
+            self.returncode = returncode
+            self.cmd = cmd
+            self.output = output
+
+        def __str__(self):
+            return "Command '%s' returned non-zero exit status %d" \
+                % (self.cmd, self.returncode)
+
+    # Use definitions from Python 2.7 subprocess module:
+    def check_call(*popenargs, **kwargs):
+        retcode = subprocess.call(*popenargs, **kwargs)
+        if retcode:
+            cmd = kwargs.get("args")
+            if cmd is None:
+                cmd = popenargs[0]
+                raise CalledProcessError(retcode, cmd)
+                return 0
+
+    def check_output(*popenargs, **kwargs):
+        if 'stdout' in kwargs:
+            raise ValueError(
+                'stdout argument not allowed, it will be overridden.'
+            )
+        process = subprocess.Popen(
+            stdout=subprocess.PIPE, *popenargs, **kwargs
+        )
+        output, unused_err = process.communicate()
+        retcode = process.poll()
+        if retcode:
+            cmd = kwargs.get("args")
+            if cmd is None:
+                cmd = popenargs[0]
+            raise CalledProcessError(retcode, cmd, output=output)
+        return output
+
+
 current_git_time = 0            # Our test commits all occurred in 1970...
 
 
@@ -267,10 +310,10 @@ def run_system_cmd_get_output(cmd_line, dir=None):
         pwd = os.getcwd()
         if dir:
             os.chdir(dir)
-        output = subprocess.check_output(cmd_line)
+        output = check_output(cmd_line)
         os.chdir(pwd)
         return output.splitlines()
-    except subprocess.CalledProcessError, e:
+    except CalledProcessError, e:
         print e
         sys.exit(1)
 
