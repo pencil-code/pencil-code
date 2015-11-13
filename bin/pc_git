@@ -40,6 +40,9 @@ from distutils import spawn
 
 from optparse import OptionParser
 
+if not (sys.hexversion >= 0x02060000):
+    sys.exit('Python 2.6 or later is required')
+
 
 usage_text = '\n'.join([
     'Usage:',

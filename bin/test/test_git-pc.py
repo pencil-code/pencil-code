@@ -37,6 +37,9 @@ from proboscis import test, TestProgram
 #                              assert_true, \
 #                              assert_false
 
+if not (sys.hexversion >= 0x02060000):
+    sys.exit('Python 2.6 or later is required')
+
 
 current_git_time = 0            # Our test commits all occurred in 1970...
 
