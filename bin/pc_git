@@ -71,7 +71,7 @@ def usage(exit_status):
     global usage_text
     cmd_overview = ''
     for cmd in create_command_list():
-        cmd_overview += '  {: <15} -- {: <10}\n'.format(cmd.name, cmd.overview)
+        cmd_overview += '  %-15s -- %-10s\n' % (cmd.name, cmd.overview)
     print usage_text % (cmd_overview, )
     sys.exit(exit_status)
 
