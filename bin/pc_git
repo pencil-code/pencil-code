@@ -160,6 +160,14 @@ def git_branch_name():
             raise Exception(e)
 
 
+def git_branch_exists(branch_name):
+    return git(
+        ['rev-parse', '--verify', branch_name],
+        catch_errors=True,
+        quiet=True
+    )
+
+
 def git_commits_equal(c1, c2):
     '''Do the two commit-ishs represent the same commit?'''
     return git_hash(c1) == git_hash(c2)
