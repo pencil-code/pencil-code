@@ -30,6 +30,7 @@ because he considers it better to use the proper git (porcelain) commands:
 '''
 
 
+import os
 import subprocess
 import sys
 import time
@@ -169,7 +170,7 @@ def git_hash(commit):
     return git_output(['rev-parse', '--verify', '%s^{commit}' % (commit, )])
 
 
-def git(cmd_list):
+def git(cmd_list, catch_errors=False, quiet=False):
     '''Run git with the given commands.
 
     E.g.
@@ -178,10 +179,19 @@ def git(cmd_list):
     Prints all output from the command to the terminal and aborts if the
     git command returned a non-zero exit status.
 
+    Arguments:
+    cmd_line     -- the git subcommand to run
+    catch_errors -- if True, catch process errors
+    quiet        -- if True, suppress any output from the git command
+
+    Return:
+    True  -- if command execution was successful
+    False -- if catch_errors is set and an error occurred
+
     '''
     cmd_line = ['git']
     cmd_line.extend(cmd_list)
-    run_system_cmd(cmd_line)
+    return run_system_cmd(cmd_line, catch_errors, quiet)
 
 
 def git_output(cmd_list):
@@ -210,14 +220,33 @@ def git_outputs(cmd_list):
     return run_system_cmd_get_output(cmd_line)
 
 
-def run_system_cmd(cmd_line):
-    '''Run a system command, writing output to the terminal'''
+def run_system_cmd(cmd_line, catch_errors=False, quiet=False):
+    '''Run a system command, writing output to the terminal.
+
+    Arguments:
+    cmd_line     -- the command to run
+    catch_errors -- catch any process errors
+    quiet        -- if True, suppress any output from the command
+
+    Return:
+    True  -- if command execution was successful
+    False -- if catch_errors is set and an error occurred
+
+    '''
     print ' '.join(cmd_line)
     try:
-        check_call(cmd_line)
+        if quiet:
+            devnull = open(os.devnull, 'w')
+            check_call(cmd_line, stdout=devnull, stderr=devnull)
+        else:
+            check_call(cmd_line)
+        return True
     except CalledProcessError, e:
-        print e
-        sys.exit(1)
+        if catch_errors:
+            return False
+        else:
+            print e
+            sys.exit(1)
 
 
 def run_system_cmd_get_output(cmd_line):
