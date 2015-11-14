@@ -349,10 +349,11 @@ def setup_git_with_server(name, root_dir=None):
         )
     git1 = GitSandbox(
         'git1', root_dir=root_dir, create_tmp_dir=False,
-        initial_commit=True
+        user='Git1', initial_commit=True
         )
     git2 = GitSandbox(
-        'git2', root_dir=root_dir, create_tmp_dir=False
+        'git2', root_dir=root_dir, create_tmp_dir=False,
+        user='Git2'
         )
     git1('remote', 'add', 'origin', server.directory)
     git1('remote')
@@ -378,7 +379,7 @@ class GitSandbox(object):
     def __init__(
             self, name,
             bare=None, initial_commit=False, root_dir=None,
-            create_tmp_dir=True
+            create_tmp_dir=True, user='User'
             ):
         '''Arguments:
         name           -- the name of the repository
@@ -388,7 +389,9 @@ class GitSandbox(object):
                           repository
         create_tmp_dir -- if true (default), create a temporary directory
                           based on a prefix + NAME.
-                          Otherwise, create a directory called NAME.
+                          Otherwise, create a directory called NAME
+        user           -- user name to use for commits
+
         '''
         if create_tmp_dir:
             dir_basename = 'git-pc-test_' + name
@@ -421,6 +424,9 @@ class GitSandbox(object):
             self.__call__('init', '--bare')
         else:
             self.__call__('init')
+            email = user.lower().replace(' ', '_') + '@inter.net'
+            self.__call__('config', 'user.name', user)
+            self.__call__('config', 'user.email', email)
         if initial_commit:
             self.__call__(
                 'commit', '--allow-empty',
