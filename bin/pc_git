@@ -152,7 +152,8 @@ def git_head():
 def git_branch_name():
     '''Return the name of the current branch, or None (if detached)'''
     try:
-        return git_output(['symbolic-ref', '-q', '--short', 'HEAD'])
+        long_name = git_output(['symbolic-ref', '-q', 'HEAD'])
+        return long_name.replace('refs/heads/', '')
     except CalledProcessError, e:
         if e.returncode == 1:  # detached HEAD
             return None
@@ -444,10 +445,14 @@ class PanicCommand(Command):
 
         This includes in particular dropped stashes.
 
+        Note that 'git fsck --dangling' would do, but git 1.7 doesn't know
+        that option yet.
         '''
         return [
             line.split()[2]
-            for line in git_outputs(['fsck', '--dangling', '--no-reflog'])
+            for line in git_outputs([
+                'fsck', '--unreachable', '--no-reflog'
+                ])
             if 'dangling commit' in line
             ]
 
@@ -575,7 +580,9 @@ class ReverseMergeCommand(Command):
         git(['tag', temp_tag])
 
         temp_branch = 'reverse-merge-work-%s' % (work_branch, )
-        git(['checkout', '-B', temp_branch, other_branch])
+        if git_branch_exists(temp_branch):
+            git(['branch', '-D', 'temp_branch'])
+        git(['checkout', '-b', temp_branch, other_branch])
         message = 'Merge branch \'%s\' into %s using \'%s\'' \
             % (work_branch, other_branch, 'git pc reverse-merge')
         git(['merge', work_branch, '-m', message])
