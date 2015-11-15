@@ -2893,10 +2893,12 @@ module Chemistry
 !
         if (lfilter .and. .not. lfilter_strict) then
           do i=1,mx
-            if ((f(i,m,n,ichemspec(k))+df(i,m,n,ichemspec(k))*dt)<-1e-25 ) &
-                df(i,m,n,ichemspec(k))=-1e-25*dt
-            if ((f(i,m,n,ichemspec(k))+df(i,m,n,ichemspec(k))*dt)>1. ) &
-                df(i,m,n,ichemspec(k))=1.*dt
+            if ((f(i,m,n,ichemspec(k))+df(i,m,n,ichemspec(k))*dt)<-1e-25 ) then
+              df(i,m,n,ichemspec(k))=-1e-25*dt
+            endif
+            if ((f(i,m,n,ichemspec(k))+df(i,m,n,ichemspec(k))*dt)>1. ) then
+              df(i,m,n,ichemspec(k))=1.*dt
+            endif
           enddo
         endif
 !
@@ -3422,15 +3424,15 @@ module Chemistry
         call parse_name(iname,cname(iname),cform(iname),'dY17m',idiag_dY17m)
         call parse_name(iname,cname(iname),cform(iname),'dY18m',idiag_dY18m)
         call parse_name(iname,cname(iname),cform(iname),'dY19m',idiag_dY19m)
-        call parse_name(iname,cname(iname),cform(iname),'dY1m',idiag_dY1max)
-        call parse_name(iname,cname(iname),cform(iname),'dY2m',idiag_dY2max)
-        call parse_name(iname,cname(iname),cform(iname),'dY3m',idiag_dY3max)
-        call parse_name(iname,cname(iname),cform(iname),'dY4m',idiag_dY4max)
-        call parse_name(iname,cname(iname),cform(iname),'dY5m',idiag_dY5max)
-        call parse_name(iname,cname(iname),cform(iname),'dY6m',idiag_dY6max)
-        call parse_name(iname,cname(iname),cform(iname),'dY7m',idiag_dY7max)
-        call parse_name(iname,cname(iname),cform(iname),'dY8m',idiag_dY8max)
-        call parse_name(iname,cname(iname),cform(iname),'dY9m',idiag_dY9max)
+        call parse_name(iname,cname(iname),cform(iname),'dY1max',idiag_dY1max)
+        call parse_name(iname,cname(iname),cform(iname),'dY2max',idiag_dY2max)
+        call parse_name(iname,cname(iname),cform(iname),'dY3max',idiag_dY3max)
+        call parse_name(iname,cname(iname),cform(iname),'dY4max',idiag_dY4max)
+        call parse_name(iname,cname(iname),cform(iname),'dY5max',idiag_dY5max)
+        call parse_name(iname,cname(iname),cform(iname),'dY6max',idiag_dY6max)
+        call parse_name(iname,cname(iname),cform(iname),'dY7max',idiag_dY7max)
+        call parse_name(iname,cname(iname),cform(iname),'dY8max',idiag_dY8max)
+        call parse_name(iname,cname(iname),cform(iname),'dY9max',idiag_dY9max)
         call parse_name(iname,cname(iname),cform(iname),'dY10max',idiag_dY10max)
         call parse_name(iname,cname(iname),cform(iname),'dY11max',idiag_dY11max)
         call parse_name(iname,cname(iname),cform(iname),'dY12max',idiag_dY12max)

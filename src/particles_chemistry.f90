@@ -22,7 +22,7 @@
 !***************************************************************
 !
 module Particles_chemistry
-!
+
   use Cdata
   use Cparam
   use General, only: keep_compiler_quiet
@@ -2199,11 +2199,12 @@ module Particles_chemistry
 !  Get surface-chemistry dependent variables!
 !  oct-14/Jonas: coded
 !
-    subroutine get_surface_chemistry(Cg_targ,ndot_targ)
-      real, dimension(:,:), optional :: ndot_targ
+    subroutine get_surface_chemistry(Cg_targ,ndot_targ,enth_targ)
+      real, dimension(:,:), optional :: ndot_targ,enth_targ
       real, dimension(:) :: Cg_targ
 !
       if (present(ndot_targ)) ndot_targ = ndot
+      if (present(enth_targ)) enth_targ = surface_species_enthalpy
       Cg_targ = Cg
 !
     endsubroutine get_surface_chemistry

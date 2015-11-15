@@ -786,6 +786,7 @@ module Equ
 !
           if (lchemistry .and. .not.llsode) then
             dt1_reac = reac_chem/cdtc
+!           dt1_preac= reac_pchem/cdtc
             dt1_max = max(dt1_max,dt1_reac)
           endif
 !
