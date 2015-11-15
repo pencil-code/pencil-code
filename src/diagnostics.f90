@@ -879,13 +879,25 @@ module Diagnostics
 !  `xyaver.in'
 !
 !   6-jun-02/axel: coded
+!  15-nov-15/ccyang: added unformatted writing.
 !
-      if (lroot.and.nnamez>0) then
-        open(1,file=trim(datadir)//'/xyaverages.dat',position='append')
-        write(1,'(1pe12.5)') t1ddiagnos
-        write(1,'(1p,8e14.5e3)') fnamez(:,:,1:nnamez)
-        close(1)
-      endif
+      integer, parameter :: UNIT = 1
+      character(len=fnlen) :: file
+!
+      xyavg: if (lroot .and. nnamez > 0) then
+        file = trim(datadir) // '/xyaverages.dat'
+        bin: if (lwrite_avg1d_binary) then
+          open(UNIT, file=file, form='unformatted', position='append')
+          write(UNIT) t1ddiagnos
+          write(UNIT) fnamez(:,:,1:nnamez)
+          close(UNIT)
+        else bin
+          open(UNIT, file=file, position='append')
+          write(UNIT,'(1pe12.5)') t1ddiagnos
+          write(UNIT,'(1p,8e14.5e3)') fnamez(:,:,1:nnamez)
+          close(UNIT)
+        endif bin
+      endif xyavg
 !
     endsubroutine write_xyaverages
 !***********************************************************************
@@ -895,13 +907,25 @@ module Diagnostics
 !  `xzaver.in'
 !
 !  12-oct-05/anders: adapted from write_xyaverages
+!  15-nov-15/ccyang: added unformatted writing.
 !
-      if (lroot.and.nnamey>0) then
-        open(1,file=trim(datadir)//'/xzaverages.dat',position='append')
-        write(1,'(1pe12.5)') t1ddiagnos
-        write(1,'(1p,8e14.5e3)') fnamey(:,:,1:nnamey)
-        close(1)
-      endif
+      integer, parameter :: UNIT = 1
+      character(len=fnlen) :: file
+!
+      xzavg: if (lroot .and. nnamey > 0) then
+        file = trim(datadir) // '/xzaverages.dat'
+        bin: if (lwrite_avg1d_binary) then
+          open(UNIT, file=file, form='unformatted', position='append')
+          write(UNIT) t1ddiagnos
+          write(UNIT) fnamey(:,:,1:nnamey)
+          close(UNIT)
+        else bin
+          open(UNIT, file=file, position='append')
+          write(UNIT,'(1pe12.5)') t1ddiagnos
+          write(UNIT,'(1p,8e14.5e3)') fnamey(:,:,1:nnamey)
+          close(UNIT)
+        endif bin
+      endif xzavg
 !
     endsubroutine write_xzaverages
 !***********************************************************************
@@ -911,13 +935,25 @@ module Diagnostics
 !  `yzaver.in'
 !
 !   2-oct-05/anders: adapted from write_xyaverages
+!  15-nov-15/ccyang: added unformatted writing.
 !
-      if (lroot.and.nnamex>0) then
-        open(1,file=trim(datadir)//'/yzaverages.dat',position='append')
-        write(1,'(1pe12.5)') t1ddiagnos
-        write(1,'(1p,8e14.5e3)') fnamex(:,:,1:nnamex)
-        close(1)
-      endif
+      integer, parameter :: UNIT = 1
+      character(len=fnlen) :: file
+!
+      yzavg: if (lroot .and. nnamex > 0) then
+        file = trim(datadir) // '/yzaverages.dat'
+        bin: if (lwrite_avg1d_binary) then
+          open(UNIT, file=file, form='unformatted', position='append')
+          write(UNIT) t1ddiagnos
+          write(UNIT) fnamex(:,:,1:nnamex)
+          close(UNIT)
+        else bin
+          open(UNIT, file=file, position='append')
+          write(UNIT,'(1pe12.5)') t1ddiagnos
+          write(UNIT,'(1p,8e14.5e3)') fnamex(:,:,1:nnamex)
+          close(UNIT)
+        endif bin
+      endif yzavg
 !
     endsubroutine write_yzaverages
 !***********************************************************************

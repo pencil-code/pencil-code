@@ -75,7 +75,7 @@ module Param_IO
   namelist /init_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower,&
       coord_system, lpole, &
-      lequidist, coeff_grid, zeta_grid0, grid_func, xyz_star, lwrite_ic, &
+      lequidist, coeff_grid, zeta_grid0, grid_func, xyz_star, lwrite_ic, lwrite_avg1d_binary, &
       lnowrite, luniform_z_mesh_aspect_ratio, unit_system, unit_length, &
       lmodify,modify_filename, &
       unit_velocity, unit_density, unit_temperature, unit_magnetic, c_light, &
