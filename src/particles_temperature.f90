@@ -33,6 +33,7 @@ module Particles_temperature
   logical :: lpart_temp_backreac=.true.
   logical :: lrad_part=.false.
   logical :: lpart_nuss_const=.false.
+  logical :: lstefan_flow = .true.
   real :: init_part_temp, emissivity=0.0
   real :: Twall=0.0
   real :: cp_part=0.711e7 ! wolframalpha, erg/(g*K)
@@ -42,7 +43,7 @@ module Particles_temperature
       init_particle_temperature, init_part_temp, emissivity, cp_part
 !
   namelist /particles_TT_run_pars/ emissivity, cp_part, lpart_temp_backreac,&
-      lrad_part,Twall, lpart_nuss_const
+      lrad_part,Twall, lpart_nuss_const,lstefan_flow
 !
   integer :: idiag_Tpm=0, idiag_etpm=0
 !
@@ -212,15 +213,13 @@ module Particles_temperature
 !  The Ranz-Marshall correlation for the Sherwood number needs the particle Reynolds number
 !  Precalculate partrticle Reynolds numbers.
 !
-        getrep: if (lpart_temp_backreac .and. .not. lpart_nuss_const) then
-          allocate(rep(k1_imn(imn):k2_imn(imn)))
-          if (.not. allocated(rep)) call fatal_error('dvvp_dt_pencil', &
-              'unable to allocate sufficient memory for rep', .true.)
-          allocate(nu(k1_imn(imn):k2_imn(imn)))
-          if (.not. allocated(nu)) call fatal_error('dvvp_dt_pencil', &
-              'unable to allocate sufficient memory for nu', .true.)
-          call calc_pencil_rep_nu(fp, rep,nu)
-        endif getrep
+        allocate(rep(k1_imn(imn):k2_imn(imn)))
+        if (.not. allocated(rep)) call fatal_error('dvvp_dt_pencil', &
+            'unable to allocate sufficient memory for rep', .true.)
+        allocate(nu(k1_imn(imn):k2_imn(imn)))
+        if (.not. allocated(nu)) call fatal_error('dvvp_dt_pencil', &
+            'unable to allocate sufficient memory for nu', .true.)
+        call calc_pencil_rep_nu(fp, rep,nu)
 !
         k1 = k1_imn(imn)
         k2 = k2_imn(imn)
@@ -233,8 +232,6 @@ module Particles_temperature
         allocate(q_reac(k1:k2))
         allocate(mass_loss(k1:k2))
         call get_temperature_chemistry(q_reac,mass_loss)
-!
-        if (lpart_nuss_const) Nuss_p=2.0
 !
 !  Loop over all particles in current pencil.
 !
@@ -254,11 +251,13 @@ module Particles_temperature
           if (.not. lpart_nuss_const) then
             Prandtl= nu(k)*p%cp(inx0)*p%rho(inx0)/cond
             Nuss_p(k)=2.0 + 0.6*sqrt(rep(k))*Prandtl**(1./3.)
+          else
+            Nuss_p(k)=2.0
           endif
 !
           Ap = 4.*pi*fp(k,iap)**2
 !
-!  Radiative heat transfer, has yet to be filled with life
+!  Radiative heat transfer, simple direct model
 !
           if (lrad_part) then
             Qrad=Ap*(Twall**4-fp(k,iTp)**4)*sigmaSB
@@ -268,8 +267,12 @@ module Particles_temperature
 !
 !  Calculation of stefan flow constant stefan_b
 !
-          stefan_b = mass_loss(k)*p%cv(inx0)/&
-              (2*pi*fp(k,iap)*Nuss_p(k)*cond)
+          if (lstefan_flow) then
+            stefan_b = mass_loss(k)*p%cv(inx0)/&
+                (2*pi*fp(k,iap)*Nuss_p(k)*cond)
+          else
+            stefan_b=0.0
+          endif
 !
           if (stefan_b .gt. 1e-5) then
 !

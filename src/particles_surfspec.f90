@@ -416,7 +416,11 @@ module Particles_surfspec
 ! Species enthalpy at the gas phase temperature
 !
 !                  print*,'enthalpydata', jmap(i),p%H0_RT(ix0-nghost,:)*Rgas*p%TT(ix0-nghost)
-!                  denth=denth+ndot(k,i)*A_p*p%H0_RT(ix0-nghost,jmap(i))*Rgas*p%TT(ix0-nghost)
+                  if (lpencil(i_H0_RT)) then
+                    denth=denth+ndot(k,i)*A_p*p%H0_RT(ix0-nghost,jmap(i))*Rgas*p%TT(ix0-nghost)
+                  else
+                    call fatal_error('particles_surfspec','mass bound enthalpy transfer needs p%H0_RT')
+                  endif
                 endif
               endif
             enddo
