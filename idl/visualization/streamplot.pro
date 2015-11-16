@@ -170,8 +170,8 @@ function my_rk4, x0, y0, ytr=ytr, stotal=stotal, backward=bw
         (new_yb ne yb) then begin
 
         ; --- new square, so check and colour. quit if required.
-        if blank[new_yb,new_xb] eq 0 then begin
-           blank[new_yb,new_xb] = 1
+        if blank[new_yb,new_xb] lt max_lin_per_cell then begin
+           blank[new_yb,new_xb] = +1
 
            bx_changes = [ bx_changes, new_xb ]
            by_changes = [ by_changes, new_yb ]
@@ -221,13 +221,13 @@ function flow_integrate, x0, y0
 
   if (stotal gt 0.1) and (nbl gt 2) then begin  
 
-     bl = blank_pos(x0, y0) &  blank[bl[1],bl[0]] = 1
+     bl = blank_pos(x0, y0) &  blank[bl[1],bl[0]] += 1
      return, [[x_traj], [y_traj]]
 
   endif else begin  ; --- otherwise erase the line segment's tracks
 
      for i=0,nbl-1 do $
-        blank[ by_changes[i], bx_changes[i] ] = 0
+        blank[ by_changes[i], bx_changes[i] ] -= 1
      return, -1
 
   endelse
@@ -275,7 +275,7 @@ end
 
 ; ------------------------------------------------------------------------------
 
-pro streamplot, uu, vv, xx, yy, density=density, _extra=extr, hsize=hsize
+pro streamplot, uu, vv, xx, yy, density=density, _extra=extr, hsize=hsize, max_lin_per_cell=max_lin_per_cell
 
   common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby
   common fields, u,v,x,y, speed, blank
@@ -287,6 +287,7 @@ pro streamplot, uu, vv, xx, yy, density=density, _extra=extr, hsize=hsize
 
   if not keyword_set(density) then density = 1.
   if ((size(density))[0] eq 0) then density=[density,density]
+  if not is_defined(max_lin_per_cell) then max_lin_per_cell = 1
 
   ; --- set defaults for arrow lengths
 
@@ -358,17 +359,22 @@ pro streamplot, uu, vv, xx, yy, density=density, _extra=extr, hsize=hsize
   ; --- Now we build up the trajectory set. I've found it best to look
   ;     for blank==0 along the edges first, and work inwards.
 
-  for indent = 0,max([nbx,nby])/2-1 do $
-     for xi = 0,max([nbx,nby])-2*indent-1 do begin
+  for indent = 0,nby/2-1 do $
+     for xi = 0,nbx-2*indent-1 do begin
 
         traj, xi + indent,  indent,       _extra=extr, hsize=hsize
         traj, xi + indent,  nby-1-indent, _extra=extr, hsize=hsize
-        traj, indent,       xi + indent,  _extra=extr, hsize=hsize
-        traj, nbx-1-indent, xi + indent,  _extra=extr, hsize=hsize
 
      endfor
 
-  return
+  for indent = 0,nbx/2-1 do $
+     for yi = 0,nby-2*indent-1 do begin
+
+        traj, indent,       yi + indent,  _extra=extr, hsize=hsize
+        traj, nbx-1-indent, yi + indent,  _extra=extr, hsize=hsize
+
+     endfor
+
 end
 
 ; ------------------------------------------------------------------------------
