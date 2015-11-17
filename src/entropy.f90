@@ -83,7 +83,7 @@ module Energy
   real :: Pres_cutoff=impossible
   real :: pclaw=0.0, xchit=0.
   real, target :: hcond0_kramers=0.0, nkramers=0.0
-  real :: chimax_kramers=0., chimin_kramers=0.
+  real :: chimax_kramers=0., chimin_kramers=0., zheat_uniform_range=0.
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
@@ -193,7 +193,7 @@ module Energy
       center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
       Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
       cool_type,ichit,xchit,pclaw,lenergy_slope_limited,h_slope_limited,islope_limiter, &
-      chi_sld_thresh
+      chi_sld_thresh, zheat_uniform_range
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -4867,7 +4867,13 @@ module Energy
 !
 !  Add spatially uniform heating.
 !
-      if (heat_uniform/=0.0) heat=heat+heat_uniform
+      if (heat_uniform/=0.0) then
+        if (zheat_uniform_range/=0.) then
+          if (abs(z(n)) <= zheat_uniform_range) heat=heat+heat_uniform
+        else
+          heat=heat+heat_uniform
+        endif
+      endif
 !
 !  Add spatially uniform cooling in Ds/Dt equation.
 !

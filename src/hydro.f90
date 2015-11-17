@@ -5389,11 +5389,15 @@ module Hydro
         prof_amp3=ampl1_diffrot
       endif
       if (.not.lcalc_uumeanxz) then
+        !df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1* f(l1:l2,m,n,iux)
         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy) &
-        -prof_amp3(n)*cos(2.*pi*kz_diffrot*((x(l1:l2))-x0)/Lx))
+          -prof_amp3(n)*cos(kx_diffrot*x(l1:l2)))
+          !-prof_amp3(n)*cos(2.*pi*kx_diffrot*((x(l1:l2))-x0)/Lx))
       else
         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(uumxz(l1:l2,n,2) &
-        -prof_amp3(n)*cos(2.*pi*kz_diffrot*((x(l1:l2))-x0)/Lx))
+!         -prof_amp3(n)*cos(2.*pi*kz_diffrot*((x(l1:l2))-x0)/Lx))
+!AB: should be kx_diffrot
+          -prof_amp3(n)*cos(2.*pi*kx_diffrot*((x(l1:l2))-x0)/Lx))
       endif
 !
 !  Shear profile linear in x
