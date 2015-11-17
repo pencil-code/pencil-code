@@ -86,8 +86,8 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-   real :: diffmu5, lambda5, theta5_const=0., mu5_const=0.
-   real :: meanmu5
+   real :: diffmu5, lambda5, gtheta5_const=0., mu5_const=0.
+   real :: meanmu5, kx_gtheta5=1., ky_gtheta5=1.
    real, pointer :: eta
    integer :: igtheta5, imu5
    logical :: lupw_gtheta5=.false.
@@ -97,7 +97,8 @@ module Special
   character (len=labellen) :: initspecial='nothing'
 !
   namelist /special_init_pars/ &
-      initspecial, theta5_const, mu5_const
+      initspecial, gtheta5_const, mu5_const, &
+      kx_gtheta5, ky_gtheta5
 !
   namelist /special_run_pars/ &
       diffmu5, lambda5, theta_prof, lupw_gtheta5
@@ -198,10 +199,20 @@ module Special
         case ('zero')
           f(:,:,:,igtheta5) = 0.
           f(:,:,:,imu5) = 0.
+        case ('gtheta5x_sinx')
+          do n=n1,n2; do m=m1,m2
+            f(:,m,n,igtheta5)=gtheta5_const*sin(kx_gtheta5*x)
+          enddo; enddo 
+          f(:,:,:,imu5) = mu5_const
+        case ('gtheta5y_siny')
+          do n=n1,n2; do m=m1,m2
+            f(:,m,n,igtheta5+1)=gtheta5_const*sin(ky_gtheta5*y(m))
+          enddo; enddo 
+          f(:,:,:,imu5) = mu5_const
         case ('theta_profile')
-        do n=n1,n2; do m=m1,m2
-          f(l1:l2,m,n,igtheta5)=theta5_const*cos(2.*pi*(y(m)-y0)/Ly)
-        enddo; enddo 
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,igtheta5)=gtheta5_const*cos(2.*pi*(y(m)-y0)/Ly)
+          enddo; enddo 
           f(:,:,:,imu5) = mu5_const
         case default
           call fatal_error("init_special: No such value for initspecial:" &
@@ -341,6 +352,13 @@ module Special
         call multsv(p%bgtheta5,p%uxb,uxbbgtheta5)
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+uxbbgtheta5
       endif
+!
+!  Contribution from linear shear
+!
+      if (lshear) then
+        df(l1:l2,m,n,igtheta5)=df(l1:l2,m,n,igtheta5)-Sshear*p%gtheta5(:,2)
+      endif
+!
 !  Contribution to the time-step
 !
       if (lfirst.and.ldt) then

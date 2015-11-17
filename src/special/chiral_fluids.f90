@@ -280,7 +280,7 @@ module Special
       if (lpencil(i_mu5)) p%mu5=f(l1:l2,m,n,imu5)
       if (lpencil(i_theta5)) p%theta5=f(l1:l2,m,n,itheta5)
       if (lpencil(i_del2mu5)) call del2(f,imu5,p%del2mu5)
-      if (lpencil(i_gtheta5)) call grad(f,imu5,p%gtheta5)
+      if (lpencil(i_gtheta5)) call grad(f,itheta5,p%gtheta5)
       if (lpencil(i_ugtheta5)) call dot(p%uu,p%gtheta5,p%ugtheta5)
       if (lpencil(i_bgtheta5)) call dot(p%bb,p%gtheta5,p%bgtheta5)
 !
