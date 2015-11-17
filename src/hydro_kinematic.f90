@@ -1052,6 +1052,28 @@ module Hydro
         if (lpenc_loc(i_divu)) p%divu=0.
         !if (lpenc_loc(i_oo)) p%oo=-kx_uukin*p%uu
 !
+!  Fence-like flow
+!  Define ampl_kinflow > 0 for downflow; therefore the minus sign below.
+!
+      case ('Fence')
+        if (headtt) print*,'Fence flow; kx_uukin,Lx,Lz=',kx_uukin,Lx,Lz
+        zmax=Lxyz(3)*(1.-2./2**tree_lmax)
+        if (zinfty_kinflow==0.) then
+          fac=-ampl_kinflow
+        else
+          fac=-ampl_kinflow*((zinfty_kinflow-z(n))/Lz)**(-1.5)
+        endif
+! uu
+        if (lpenc_loc(i_uu)) then
+          argx=x(l1:l2)
+          prof=(.5+.5*cos(kx_uukin*argx))**kappa_kinflow
+          p%uu(:,1)=0.
+          p%uu(:,2)=0.
+          p%uu(:,3)=fac*prof
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+        !if (lpenc_loc(i_oo)) p%oo=-kx_uukin*p%uu
+!
 !  Galloway-Proctor flow with random temporal phase
 !
       case ('Galloway-Proctor-RandomTemporalPhase')
