@@ -133,6 +133,7 @@ module Cosmicrayflux
 !
       lpenc_requested(i_gecr) = .true.
       lpenc_requested(i_bb) = .true.
+      lpenc_requested(i_bunit) = .true.
 !
     endsubroutine pencil_criteria_cosmicrayflux
 !***********************************************************************
@@ -175,7 +176,7 @@ module Cosmicrayflux
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(nx,3) :: BuiBujgecr, bunit
+      real, dimension(nx,3) :: BuiBujgecr
       real, dimension(nx)   :: b2, b21, b_abs
       real, dimension(nx)   :: tmp
       real, dimension (nx,3,3) :: gfcr
@@ -195,15 +196,10 @@ module Cosmicrayflux
         call identify_bcs('Fecz',ifcrz)
       endif
 !
-      call dot2_mn(p%bb,b2)
-!  with frequency omega_Bz_ext
-      b21 = 1./max(tini,b2)
-      call multsv_mn(sqrt(b21),p%bb,bunit)
-!
       do i=1,3
         tmp = 0.
         do j=1, 3
-          tmp = tmp + bunit(:,i)*bunit(:,j)*p%gecr(:,j)
+          tmp = tmp + p%bunit(:,i)*p%bunit(:,j)*p%gecr(:,j)
         enddo
         BuiBujgecr(:,i) = tmp
       enddo
@@ -215,7 +211,7 @@ module Cosmicrayflux
         vKpara(:) = kpara
 !       Perpendicular diffusion (dependence on B field)
 !       Kperp = kperp0/[|B|/Bmin + exp(-B/Bmin)]
-        b_abs = sqrt(b2)
+        b_abs = abs(p%bb)
         b_exp = b_abs/bmin + exp(-b_abs/bmin)
         vKperp(:) = kperp/b_exp
 !
