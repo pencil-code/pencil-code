@@ -36,7 +36,7 @@
 
 function blank_pos, xi, yi
 
-  common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby
+  common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby,max_lin
 
   ; --- takes grid space coords and 
   ;     returns nearest space in the blank array
@@ -119,7 +119,7 @@ end
 
 function my_rk4, x0, y0, ytr=ytr, stotal=stotal, backward=bw
 
-  common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby
+  common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby,max_lin
   common fields, u,v,x,y, speed, blank
   common changes, bx_changes, by_changes
 
@@ -170,8 +170,8 @@ function my_rk4, x0, y0, ytr=ytr, stotal=stotal, backward=bw
         (new_yb ne yb) then begin
 
         ; --- new square, so check and colour. quit if required.
-        if blank[new_yb,new_xb] lt max_lin_per_cell then begin
-           blank[new_yb,new_xb] = +1
+        if blank[new_yb,new_xb] lt max_lin then begin
+           blank[new_yb,new_xb] += 1
 
            bx_changes = [ bx_changes, new_xb ]
            by_changes = [ by_changes, new_yb ]
@@ -264,8 +264,33 @@ pro traj, xb,yb, _extra=extr, arrow=arrow
           nn = n_elements(tx)/2
           if (nn gt 8) then $ ; jitter arrow position
              nn += long(0.16*nn*(randomn(system_seed)-0.5))
-          arrow_pc, tx[nn-2], ty[nn-2], tx[nn], ty[nn], $
-                    /data, _extra=extr
+          
+          ok = 1
+
+          if has_tag(extr,'xr') then begin
+
+            if has_tag(extr,'polar') then $
+              xarr=[tx[nn]*cos(ty[nn]),tx[nn-2]*cos(ty[nn-2])] $
+            else $
+              xarr=tx([nn,nn-2])
+
+            ok = ok and xarr[1] le extr.xr(1) and xarr[1] ge extr.xr(0) $
+                    and xarr[0] le extr.xr(1) and xarr[0] ge extr.xr(0)
+          endif
+
+          if has_tag(extr,'yr') then begin
+
+            if has_tag(extr,'polar') then $
+              yarr=[tx[nn]*sin(ty[nn]),tx[nn-2]*sin(ty[nn-2])] $
+            else $
+              yarr=ty([nn,nn-2])
+
+            ok = ok and yarr[1] le extr.yr(1) and yarr[1] ge extr.yr(0) $
+                    and yarr[0] le extr.yr(1) and yarr[0] ge extr.yr(0)
+          endif
+
+          if ok then arrow_pc, tx[nn-2], ty[nn-2], tx[nn], ty[nn], $
+                               /data, _extra=extr
         endif
      endif
   endif
@@ -277,7 +302,7 @@ end
 
 pro streamplot, uu, vv, xx, yy, density=density, _extra=extr, hsize=hsize, max_lin_per_cell=max_lin_per_cell
 
-  common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby
+  common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby,max_lin
   common fields, u,v,x,y, speed, blank
 
   ;  - x and y are 1d arrays defining an *evenly spaced* grid.
@@ -287,7 +312,7 @@ pro streamplot, uu, vv, xx, yy, density=density, _extra=extr, hsize=hsize, max_l
 
   if not keyword_set(density) then density = 1.
   if ((size(density))[0] eq 0) then density=[density,density]
-  if not is_defined(max_lin_per_cell) then max_lin_per_cell = 1
+  if not is_defined(max_lin_per_cell) then max_lin = 1 else max_lin = max_lin_per_cell
 
   ; --- set defaults for arrow lengths
 
