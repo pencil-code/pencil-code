@@ -10,6 +10,8 @@
 ;
 ; call structure (same as IDL's "velovect")
 ; optional keyword 'density' specifies sampling density in [x,y]
+; optional keyword 'max_lin_per_cell' defines maxímum number of lines per cell (default: 1)
+; optional keywords 'xrange', 'yrange' define plot area outside which no arrows must be drawn
 ;
 ; IDL> streamplot, u, v, x, y, density=density, _extra=extr
 ;
@@ -236,7 +238,7 @@ end
 
 ; ------------------------------------------------------------------------------
 
-pro traj, xb,yb, _extra=extr, arrow=arrow
+pro traj, xb,yb, _extra=extr, arrow=arrow, xrange=xr, yrange=yr
 
   common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby
   common fields, u,v,x,y, speed, blank
@@ -267,26 +269,24 @@ pro traj, xb,yb, _extra=extr, arrow=arrow
           
           ok = 1
 
-          if has_tag(extr,'xr') then begin
-
+          if keyword_set(xr) then begin
             if has_tag(extr,'polar') then $
-              xarr=[tx[nn]*cos(ty[nn]),tx[nn-2]*cos(ty[nn-2])] $
+              xarr=tx([nn,nn-2])*cos(ty([nn,nn-2])) $
             else $
               xarr=tx([nn,nn-2])
 
-            ok = ok and xarr[1] le extr.xr(1) and xarr[1] ge extr.xr(0) $
-                    and xarr[0] le extr.xr(1) and xarr[0] ge extr.xr(0)
+            ok = ok and xarr[1] le xr(1) and xarr[1] ge xr(0) $
+                    and xarr[0] le xr(1) and xarr[0] ge xr(0)
           endif
 
-          if has_tag(extr,'yr') then begin
-
+          if keyword_set(yr) then begin
             if has_tag(extr,'polar') then $
-              yarr=[tx[nn]*sin(ty[nn]),tx[nn-2]*sin(ty[nn-2])] $
+              yarr=tx([nn,nn-2])*sin(ty([nn,nn-2])) $
             else $
               yarr=ty([nn,nn-2])
 
-            ok = ok and yarr[1] le extr.yr(1) and yarr[1] ge extr.yr(0) $
-                    and yarr[0] le extr.yr(1) and yarr[0] ge extr.yr(0)
+            ok = ok and yarr[1] le yr(1) and yarr[1] ge yr(0) $
+                    and yarr[0] le yr(1) and yarr[0] ge yr(0)
           endif
 
           if ok then arrow_pc, tx[nn-2], ty[nn-2], tx[nn], ty[nn], $
@@ -366,9 +366,10 @@ pro streamplot, uu, vv, xx, yy, density=density, _extra=extr, hsize=hsize, max_l
   v *= ngy
 
   ; --- Blank array: This is the heart of the algorithm. It begins life
-  ;     zeroed, but is set to one when a streamline passes through each
-  ;     box. Then streamlines are only allowed to pass through zeroed
-  ;     boxes. The lower resolution of this grid determines the
+  ;     zeroed, but is increased by one when a streamline passes through each
+  ;     box. Then streamlines are only allowed to pass through
+  ;     boxes through which less then max_lin_per_cell lines pass.
+  ;     The lower resolution of this grid determines the
   ;     approximate spacing between trajectories.
 
   nbx = byte(30*density[0])
