@@ -1767,7 +1767,8 @@ module Particles_map
 !
       use Particles_cdata
 !
-      if (interp%luu .and. (.not.lhydro)) then
+      if (interp%luu .and. (.not. &
+          (lhydro.or.(lhydro_kinematic.and.lkinflow_as_aux)))) then
         call warning('initialize_particles','interpolated uu '// &
           'is set to zero because there is no Hydro module!')
       endif
@@ -1782,9 +1783,13 @@ module Particles_map
           'impossible without the Entropy (or temperature_idealgas) module!')
       endif
 !
-      if (interp%lrho .and. (.not.ldensity) .and. (.not.lanelastic)) then
-        call fatal_error('initialize_particles','interpolation of rho '// &
-          'impossible without the Density module!')
+!  allow for kinematic flows as well
+!
+      if (.not.lhydro_kinematic) then
+        if (interp%lrho .and. (.not.ldensity) .and. (.not.lanelastic)) then
+          call fatal_error('initialize_particles','interpolation of rho '// &
+            'impossible without the Density module!')
+        endif
       endif
 !
     endsubroutine interpolation_consistency_check
@@ -1818,7 +1823,10 @@ module Particles_map
                  'sufficient memory for interp_uu'
           call fatal_error('interpolate_quantities','')
         endif
-        if (lhydro) then
+!
+!  For kinematic flow, we must have the flow in the f-array
+!
+        if (lhydro.or.(lhydro_kinematic.and.lkinflow_as_aux)) then
           call interp_field_pencil_wrap(f,iux,iuz,fp,ineargrid,interp_uu, &
             interp%pol_uu)
         else
@@ -1893,8 +1901,12 @@ module Particles_map
                  'sufficient memory for interp_rho'
           call fatal_error('interpolate_quantities','')
         endif
-        call interp_field_pencil_wrap(f,ilnrho,ilnrho,fp,ineargrid,&
+        if (ldensity) then
+          call interp_field_pencil_wrap(f,ilnrho,ilnrho,fp,ineargrid,&
             interp_rho,interp%pol_rho)
+        else
+          interp_rho=1. !(should be made general)
+        endif
         if (.not.ldensity_nolog) then
           interp_rho=exp(interp_rho)
         endif
