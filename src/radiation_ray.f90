@@ -68,7 +68,7 @@ module Radiation
   real, dimension (maxdir,3) :: unit_vec
   real, dimension (maxdir) :: weight, weightn, mu
   real, dimension (mnu) :: scalefactor_Srad=1.0, scalefactor_kappa=1.0
-  real, dimension (mnu) :: kappa_cst=1.0, kappa2_cst=0.0, kappa20_cst=0.0
+  real, dimension (mnu) :: kappa_cst=1.0, kappa20_cst=0.0
   real, dimension (:), allocatable :: lnTT_table
   real, dimension (:,:), allocatable :: lnSS_table
   real :: arad
@@ -135,7 +135,7 @@ module Radiation
 !
   namelist /radiation_init_pars/ &
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kapparho_cst, &
-      kappa_cst, kappa2_cst, kappa20_cst, &
+      kappa_cst, kappa20_cst, &
       TT_top, TT_bot, tau_top, tau_bot, source_function_type, opacity_type, &
       nnu, lsingle_ray, single_ray, Srad_const, amplSrad, radius_Srad, nIsurf, &
       kappa_Kconst, kapparho_const, amplkapparho, radius_kapparho, lintrinsic, &
@@ -149,7 +149,7 @@ module Radiation
 !
   namelist /radiation_run_pars/ &
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kapparho_cst, &
-      kappa_cst, kappa2_cst, kappa20_cst, &
+      kappa_cst, kappa20_cst, &
       TT_top, TT_bot, tau_top, tau_bot, source_function_type, opacity_type, &
       nnu, lsingle_ray, single_ray, Srad_const, amplSrad, radius_Srad, nIsurf, &
       kx_Srad, ky_Srad, kz_Srad, kx_kapparho, ky_kapparho, kz_kapparho, &
@@ -1747,7 +1747,7 @@ module Radiation
             kappa1=kappa_cst(inu)* &
                 (rho/ref_rho_opa)**expo_rho_opa* &
                 (TT/ref_temp_opa)**expo_temp_opa
-            kappa2=kappa20_cst(inu)+kappa2_cst(inu)* &
+            kappa2=kappa20_cst(inu)+kappa_cst(inu)* &
                 (rho/ref_rho_opa)**expo2_rho_opa* &
                 (TT/ref_temp_opa)**expo2_temp_opa
             f(:,m,n,ikapparho)=rho/(1./kappa1+1./kappa2)
