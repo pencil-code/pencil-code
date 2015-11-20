@@ -688,10 +688,14 @@ module Particles_radius
               endif
             endif
 !
-            if (ldensity_nolog) then
-              df(ix0,m,n,irho)   = df(ix0,m,n,irho)   + drhocdt
-            else
-              df(ix0,m,n,ilnrho) = df(ix0,m,n,ilnrho) + drhocdt*p%rho1(ix)
+!  feedback, but should not be used if we don't have density
+!
+            if (ldensity) then
+              if (ldensity_nolog) then
+                df(ix0,m,n,irho)   = df(ix0,m,n,irho)   + drhocdt
+              else
+                df(ix0,m,n,ilnrho) = df(ix0,m,n,ilnrho) + drhocdt*p%rho1(ix)
+              endif
             endif
 !
             if (lpscalar_nolog) then
