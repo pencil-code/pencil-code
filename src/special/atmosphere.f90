@@ -84,14 +84,14 @@ module Special
 ! Keep some over used pencils
 !
 ! start parameters
-  namelist /atmosphere_init_pars/  &
+  namelist /special_init_pars/  &
       lbuoyancy_z,lbuoyancy_x,lbuoyancy_y, sigma, Period,dsize_max,dsize_min, lbuoyancy_z_model,&
       TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, dYw1, dYw2, &
       nd0, r0, r02, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot,  PP, TT0, qwater0, aerosol_present, &
       lACTOS, lsmall_part,  llarge_part, lsmall_large_part, Ntot_ratio, UY_ref, llognormal, Ntot_input
 
 ! run parameters
-  namelist /atmosphere_run_pars/  &
+  namelist /special_run_pars/  &
       lbuoyancy_z,lbuoyancy_x, sigma,dYw,lbuffer_zone_uy, lbuffer_zone_T, lnTT1,lnTT2
 !
 !
@@ -302,7 +302,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=atmosphere_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -310,7 +310,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=atmosphere_init_pars)
+      write(unit, NML=special_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -320,7 +320,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=atmosphere_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -328,7 +328,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=atmosphere_run_pars)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
