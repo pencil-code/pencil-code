@@ -136,7 +136,7 @@ module Particles
   logical :: l_shell=.false.       !using special/shell.f90 for gas velocities
 !
   real, dimension(3) :: uup_shared=0
-  real :: turnover_shared=0, nu_draglaw=0., nu_noviscosity=0.
+  real :: turnover_shared=0, nu_draglaw=0.
   logical :: vel_call=.false., turnover_call=.false.
   logical :: lreassign_strat_rhom=.true., lnu_draglaw=.false.
 !
@@ -213,7 +213,7 @@ module Particles
       linsert_particles_continuously, particles_insert_rate, &
       max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, &
       np_const, rhop_const, particle_radius, &
-      Deltauy_gas_friction, nu_noviscosity, &
+      Deltauy_gas_friction, &
       loutput_psize_dist, log_ap_min_dist, log_ap_max_dist, nbin_ap_dist, &
       lsinkparticle_1, rsinkparticle_1, lthermophoretic_forces, temp_grad0, &
       thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, &
@@ -4995,26 +4995,29 @@ module Particles
       real :: nu_
       integer :: k
 !
-      if (lviscosity) then
-      call getnu(nu_input=nu_,IVIS=ivis)
-      if (ivis=='nu-const') then
-        nu=nu_
-      elseif (ivis=='nu-mixture') then
-        nu=interp_nu
-      elseif (ivis=='rho-nu-const') then
-        nu=nu_/interp_rho(k1_imn(imn):k2_imn(imn))
-      elseif (ivis=='sqrtrho-nu-const') then
-        nu=nu_/sqrt(interp_rho(k1_imn(imn):k2_imn(imn)))
-      elseif (ivis=='nu-therm') then
-        nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))
-      elseif (ivis=='mu-therm') then
-        nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))&
-            /interp_rho(k1_imn(imn):k2_imn(imn))
+!  Find the kinematic viscosity.
+!  Check whether we want to override the usual viscosity for the drag law.
+!
+      if (lnu_draglaw) then
+        nu=nu_draglaw
       else
-        call fatal_error('calc_pencil_rep','No such ivis!')
-      endif
-      else
-        nu=nu_noviscosity
+        call getnu(nu_input=nu_,IVIS=ivis)
+        if (ivis=='nu-const') then
+          nu=nu_
+        elseif (ivis=='nu-mixture') then
+          nu=interp_nu
+        elseif (ivis=='rho-nu-const') then
+          nu=nu_/interp_rho(k1_imn(imn):k2_imn(imn))
+        elseif (ivis=='sqrtrho-nu-const') then
+          nu=nu_/sqrt(interp_rho(k1_imn(imn):k2_imn(imn)))
+        elseif (ivis=='nu-therm') then
+          nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))
+        elseif (ivis=='mu-therm') then
+          nu=nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))&
+              /interp_rho(k1_imn(imn):k2_imn(imn))
+        else
+          call fatal_error('calc_pencil_rep','No such ivis!')
+        endif
       endif
 !
       if (maxval(nu) == 0.0) call fatal_error('calc_pencil_rep', 'nu (kinematic visc.) must be non-zero!')
