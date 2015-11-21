@@ -2810,7 +2810,8 @@ module Chemistry
 !   13-aug-07/steveb: coded
 !    8-jan-08/natalia: included advection/diffusion
 !   20-feb-08/axel: included reactions
-!   22-jun-10/julien: modified evaluation of enthalpy fluxes with constant Lewis numbers
+!   22-jun-10/julien: modified evaluation of enthalpy fluxes with 
+!                     constant Lewis numbers
 !   10-jan-11/julien: modified to solve chemistry with LSODE
 !
       use Diagnostics
@@ -2823,7 +2824,7 @@ module Chemistry
       real, dimension (nx) :: ugchemspec, sum_DYDT, sum_dhhk=0.
       real, dimension (nx) :: sum_dk_ghk,dk_dhhk,sum_hhk_DYDt_reac
       type (pencil_case) :: p
-      real, dimension (nx) :: RHS_T_full  !, sum_Y
+      real, dimension (nx) :: RHS_T_full
 !
 !  indices
 !
@@ -2831,7 +2832,8 @@ module Chemistry
       integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9,i10=10
       integer :: i11=11,i12=12,i13=13,i14=14,i15=15,i16=16,i17=17,i18=18,i19=19
       integer :: iz1=1,iz2=2,iz3=3,iz4=4,iz5=5,iz6=6,iz7=7,iz8=8,iz9=9,iz10=10
-      integer :: iz11=11,iz12=12,iz13=13,iz14=14,iz15=15,iz16=16,iz17=17,iz18=18,iz19=19
+      integer :: iz11=11,iz12=12,iz13=13,iz14=14,iz15=15,iz16=16,iz17=17
+      integer :: iz18=18,iz19=19
 !
       intent(in) :: p,f
       intent(inout) :: df
@@ -2847,8 +2849,6 @@ module Chemistry
 !  Interface for your personal subroutines calls
 !
       if (lspecial) call special_calc_chemistry(f,df,p)
-!
-!     !if (headtt) call identify_bcs('ss',iss)
 !
 !  loop over all chemicals
 !
@@ -2922,19 +2922,9 @@ module Chemistry
       if (l1step_test) then
         sum_DYDt=0.
         do i=1,nx
-!
           sum_DYDt(i)=-p%rho(1)*(p%TT(i)-Tinf)*p%TT1(i) &
              *Cp_const/lambda_const*beta*(beta-1.)*f(l1,m,n,iux)*f(l1,m,n,iux)
-!
-      !   if (p%TT(i)>Tc) then
-      !     if (x(i)>0.) then
-!
-    !        sum_DYDt(i)=f(l1,m,n,iux)**2*(Tinf-p%TT(i))/p%TT(i) & !(-p%TT(i)+Tinf)
-    !        *Cp_const/lambda_const*p%rho(1)*beta*(beta-1.)* &
-    !        (1.-f(l1-1+i,m,n,ichemspec(ipr)))
-      !   endif
         enddo
-!
       else
         sum_DYDt=0.
         sum_hhk_DYDt_reac=0.
@@ -3025,24 +3015,12 @@ module Chemistry
 !
         df(l1:l2,m,n,ichemspec(index_H2O))=df(l1:l2,m,n,ichemspec(index_H2O)) &
               - p%ccondens
-!        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
-!              + 2.5e6/1005.*p%ccondens*p%TT1
-!
-! this is for debuging purposes: one check that the sum of all mass fractions is 1
-!
-!        sum_Y=0.
-!        do k=1,nchemspec
-!          sum_Y=sum_Y+f(l1:l2,m,n,ichemspec(k))
-!        enddo
-!        if (maxval(abs(sum_Y(:)-1))>1e-10)  then
-!          print*,sum_Y(:)
-!            call fatal_error('dchemistry_dt','sum_Y is not unity')
-!        endif
-!
         do i=1,mx
-            if ((f(i,m,n,ichemspec(index_H2O))+df(i,m,n,ichemspec(index_H2O))*dt)>=1. ) &
+          if ((f(i,m,n,ichemspec(index_H2O))&
+              +df(i,m,n,ichemspec(index_H2O))*dt)>=1. ) &
               df(i,m,n,ichemspec(index_H2O))=0.
-            if ((f(i,m,n,ichemspec(index_H2O))+df(i,m,n,ichemspec(index_H2O))*dt)<0. ) &
+          if ((f(i,m,n,ichemspec(index_H2O))&
+              +df(i,m,n,ichemspec(index_H2O))*dt)<0. ) &
               df(i,m,n,ichemspec(index_H2O))=0.
         enddo
       endif
@@ -5263,8 +5241,8 @@ module Chemistry
 !
 !  Calculate diffusion term, p%DYDt_diff
 !
-!  22-jun-10/julien: Evaluation of mass diffusion fluxes using Fick's law for simplified
-!                    diffusion using constant Lewis numbers
+!  22-jun-10/julien: Evaluation of mass diffusion fluxes using Fick's 
+!                    law for simplified diffusion using constant Lewis numbers
 !
       use Sub, only: del2,grad,dot_mn
 !
@@ -5273,9 +5251,9 @@ module Chemistry
       real, dimension (nx) :: Xk_Yk
       real, dimension (nx,3) :: gDiff_full_add, gchemspec, gXk_Yk
       real, dimension (nx) :: del2chemspec
-      real, dimension (nx) :: diff_op,diff_op1,diff_op2,diff_op3,del2XX,  del2lnpp!del2pp,
-      real, dimension (nx) :: glnpp_gXkYk,glnrho_glnpp,gD_glnpp, glnpp_glnpp, glnmu_glnpp
-      real, dimension (nx) :: sum_gdiff=0.,gY_sumdiff
+      real, dimension (nx) :: diff_op,diff_op1,diff_op2,diff_op3,del2XX,del2lnpp
+      real, dimension (nx) :: glnpp_gXkYk,glnrho_glnpp, gD_glnpp, glnpp_glnpp
+      real, dimension (nx) :: sum_gdiff=0.,gY_sumdiff, glnmu_glnpp
       real, dimension (nx,3)  :: sum_diff=0., dk_D
       real :: diff_k
       integer :: k,i
@@ -5310,62 +5288,65 @@ module Chemistry
 !
 !  Detailed chemistry and transport using CHEMKIN formalism.
 !
-         if (ldiffusion) then
+          if (ldiffusion) then
 !
 !  Calculate diffusion coefficient gradients gDiff_full_add in 3 cases:
 !    1) Simplified diffusion coefficients
 !    2) Constant Lewis numbers and heat conductivity
 !    3) Detailed transport
 !
-          if (lDiff_simple) then
-            do i=1,3
-              gDiff_full_add(:,i)=p%Diff_penc_add(:,k)*(0.7*p%glnTT(:,i)-p%glnrho(:,i))
-            enddo
-          else if (lDiff_lewis .and. lew_exist) then
-            do i=1,3
-              gDiff_full_add(:,i)=(p%glambda(:,i)*p%lambda1(:)-p%glncp(:,i)-p%glnrho(:,i)) &
-                  *p%Diff_penc_add(:,k)
-            enddo
-          else if (lDiff_lewis .and. l1step_test) then
-            do i=1,3
-              gDiff_full_add(:,i)=(p%glambda(:,i)*p%lambda1(:)-p%glncp(:,i)-p%glnrho(:,i)) &
-                  *p%Diff_penc_add(:,k)
-            enddo
-          else
-            call grad(Diff_full_add(:,:,:,k),gDiff_full_add)
-          endif
+            if (lDiff_simple) then
+              do i=1,3
+                gDiff_full_add(:,i)=p%Diff_penc_add(:,k)&
+                    *(0.7*p%glnTT(:,i)-p%glnrho(:,i))
+              enddo
+            else if (lDiff_lewis .and. lew_exist) then
+              do i=1,3
+                gDiff_full_add(:,i)=&
+                    (p%glambda(:,i)*p%lambda1(:)-p%glncp(:,i)-p%glnrho(:,i)) &
+                    *p%Diff_penc_add(:,k)
+              enddo
+            else if (lDiff_lewis .and. l1step_test) then
+              do i=1,3
+                gDiff_full_add(:,i)=&
+                    (p%glambda(:,i)*p%lambda1(:)-p%glncp(:,i)-p%glnrho(:,i)) &
+                    *p%Diff_penc_add(:,k)
+              enddo
+            else
+              call grad(Diff_full_add(:,:,:,k),gDiff_full_add)
+            endif
 !
 !  Calculate the terms needed by the diffusion fluxes in 3 cases:
 !    1) Fickian diffusion law (gradient of species MASS fractions)
 !    2) Simplified fluxes (gradient of species MOLAR fractions)
 !    3) Detailed transport (with pressure gradients included)
 !
-          if (lDiff_fick) then
-            call del2(f,ichemspec(k),del2chemspec)
-            call grad(f,ichemspec(k),gchemspec)
-            call dot_mn(p%glnrho,gchemspec,diff_op1)
-            call dot_mn(gDiff_full_add,gchemspec,diff_op2)
-          else if (lFlux_simple) then
-            call del2(XX_full(:,:,:,k),del2XX)
-            call dot_mn(p%glnrho,p%gXXk(:,:,k),diff_op1)
-            call dot_mn(gDiff_full_add,p%gXXk(:,:,k),diff_op2)
-            call dot_mn(p%glnmu,p%gXXk(:,:,k),diff_op3)
-          else
-            call del2(XX_full(:,:,:,k),del2XX)
-            call dot_mn(p%glnrho,p%gXXk(:,:,k),diff_op1)
-            call dot_mn(gDiff_full_add,p%gXXk(:,:,k),diff_op2)
-            call dot_mn(p%glnmu,p%gXXk(:,:,k),diff_op3)
-            call dot_mn(p%glnpp,p%glnpp,glnpp_glnpp)
-            do i=1,3
-              gXk_Yk(:,i)=p%gXXk(:,i,k)-p%gYYk(:,i,k)
-            enddo
-            del2lnpp=p%del2pp/p%pp-glnpp_glnpp
-            Xk_Yk=XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k))
-            call dot_mn(p%glnrho,p%glnpp,glnrho_glnpp)
-            call dot_mn(gDiff_full_add,p%glnpp,gD_glnpp)
-            call dot_mn(gXk_Yk,p%glnpp,glnpp_gXkYk)
-            call dot_mn(p%glnmu,p%glnpp,glnmu_glnpp)
-          endif
+            if (lDiff_fick) then
+              call del2(f,ichemspec(k),del2chemspec)
+              call grad(f,ichemspec(k),gchemspec)
+              call dot_mn(p%glnrho,gchemspec,diff_op1)
+              call dot_mn(gDiff_full_add,gchemspec,diff_op2)
+            else if (lFlux_simple) then
+              call del2(XX_full(:,:,:,k),del2XX)
+              call dot_mn(p%glnrho,p%gXXk(:,:,k),diff_op1)
+              call dot_mn(gDiff_full_add,p%gXXk(:,:,k),diff_op2)
+              call dot_mn(p%glnmu,p%gXXk(:,:,k),diff_op3)
+            else
+              call del2(XX_full(:,:,:,k),del2XX)
+              call dot_mn(p%glnrho,p%gXXk(:,:,k),diff_op1)
+              call dot_mn(gDiff_full_add,p%gXXk(:,:,k),diff_op2)
+              call dot_mn(p%glnmu,p%gXXk(:,:,k),diff_op3)
+              call dot_mn(p%glnpp,p%glnpp,glnpp_glnpp)
+              do i=1,3
+                gXk_Yk(:,i)=p%gXXk(:,i,k)-p%gYYk(:,i,k)
+              enddo
+              del2lnpp=p%del2pp/p%pp-glnpp_glnpp
+              Xk_Yk=XX_full(l1:l2,m,n,k)-f(l1:l2,m,n,ichemspec(k))
+              call dot_mn(p%glnrho,p%glnpp,glnrho_glnpp)
+              call dot_mn(gDiff_full_add,p%glnpp,gD_glnpp)
+              call dot_mn(gXk_Yk,p%glnpp,glnpp_gXkYk)
+              call dot_mn(p%glnmu,p%glnpp,glnmu_glnpp)
+            endif
 !
 !  Calculate the diffusion fluxes and dk_D in 3 cases:
 !    1) Fickian diffusion law (gradient of species MASS fractions)
@@ -5375,46 +5356,51 @@ module Chemistry
 !  of species diffusion coefficients as before. It indeed depends on the diffusion
 !  flux formulation and not on the diffusive properties of each species.
 !
-          if (lDiff_fick) then
-           p%DYDt_diff(:,k)=p%Diff_penc_add(:,k)*(del2chemspec+diff_op1)+diff_op2
-           do i=1,3
-            dk_D(:,i)=p%Diff_penc_add(:,k)*gchemspec(:,i)
-           enddo
-          else if (lFlux_simple) then
-           p%DYDt_diff(:,k)=p%Diff_penc_add(:,k)*p%mukmu1(:,k)*(del2XX+diff_op1-diff_op3)+&
-               p%mukmu1(:,k)*diff_op2
-           do i=1,3
-            dk_D(:,i)=p%Diff_penc_add(:,k)*p%mukmu1(:,k)*p%gXXk(:,i,k)
-           enddo
-          else
-           p%DYDt_diff(:,k)=p%Diff_penc_add(:,k)*p%mukmu1(:,k)*(del2XX+diff_op1-diff_op3)+&
-               p%mukmu1(:,k)*diff_op2+ &
-               p%Diff_penc_add(:,k)*p%mukmu1(:,k)*Xk_Yk(:)*(del2lnpp+glnrho_glnpp-glnmu_glnpp)+ &
-               Xk_Yk(:)*p%mukmu1(:,k)*gD_glnpp+p%Diff_penc_add(:,k)*p%mukmu1(:,k)*glnpp_gXkYk
-           do i=1,3
-            dk_D(:,i)=p%Diff_penc_add(:,k)*p%mukmu1(:,k)*(p%gXXk(:,i,k)+ &
-                Xk_Yk(:)*p%glnpp(:,i))
-           enddo
-          endif
+            if (lDiff_fick) then
+              p%DYDt_diff(:,k)=p%Diff_penc_add(:,k)*(del2chemspec+diff_op1)&
+                  +diff_op2
+              do i=1,3
+                dk_D(:,i)=p%Diff_penc_add(:,k)*gchemspec(:,i)
+              enddo
+            else if (lFlux_simple) then
+              p%DYDt_diff(:,k)=p%Diff_penc_add(:,k)*p%mukmu1(:,k)&
+                  *(del2XX+diff_op1-diff_op3)+&
+                  p%mukmu1(:,k)*diff_op2
+              do i=1,3
+                dk_D(:,i)=p%Diff_penc_add(:,k)*p%mukmu1(:,k)*p%gXXk(:,i,k)
+              enddo
+            else
+              p%DYDt_diff(:,k)=p%Diff_penc_add(:,k)*p%mukmu1(:,k)&
+                  *(del2XX+diff_op1-diff_op3)+&
+                  p%mukmu1(:,k)*diff_op2+ &
+                  p%Diff_penc_add(:,k)*p%mukmu1(:,k)*Xk_Yk(:)&
+                  *(del2lnpp+glnrho_glnpp-glnmu_glnpp)+ &
+                  Xk_Yk(:)*p%mukmu1(:,k)*gD_glnpp+p%Diff_penc_add(:,k)&
+                  *p%mukmu1(:,k)*glnpp_gXkYk
+              do i=1,3
+                dk_D(:,i)=p%Diff_penc_add(:,k)*p%mukmu1(:,k)*(p%gXXk(:,i,k)+ &
+                    Xk_Yk(:)*p%glnpp(:,i))
+              enddo
+            endif
 !
-         if (ldiff_corr) then
-           do i=1,3
-             sum_diff(:,i) = sum_diff(:,i)+dk_D(:,i)
-           enddo
-           sum_gdiff(:) = sum_gdiff(:)+ p%DYDt_diff(:,k)
-         endif
+            if (ldiff_corr) then
+              do i=1,3
+                sum_diff(:,i) = sum_diff(:,i)+dk_D(:,i)
+              enddo
+              sum_gdiff(:) = sum_gdiff(:)+ p%DYDt_diff(:,k)
+            endif
+          endif
         endif
-       endif
       enddo
 !
 !  Adding correction diffusion velocity to ensure mass balance
 !
       if (ldiffusion.and.ldiff_corr) then
         do k=1,nchemspec
-         call grad(f,ichemspec(k),gchemspec)
-         call dot_mn(gchemspec(:,:),sum_diff,gY_sumdiff)
-         p%DYDt_diff(:,k)=p%DYDt_diff(:,k)-   &
-            (gY_sumdiff+f(l1:l2,m,n,ichemspec(k))*sum_gdiff(:))
+          call grad(f,ichemspec(k),gchemspec)
+          call dot_mn(gchemspec(:,:),sum_diff,gY_sumdiff)
+          p%DYDt_diff(:,k)=p%DYDt_diff(:,k)-   &
+              (gY_sumdiff+f(l1:l2,m,n,ichemspec(k))*sum_gdiff(:))
         enddo
       endif
 !
@@ -5433,31 +5419,26 @@ module Chemistry
       type (pencil_case) :: p
       real, dimension(nx) :: g2TT, g2TTlambda=0., tmp1
 !
-!
-     if (ltemperature_nolog) then
-      call dot(p%gTT,p%glambda,g2TTlambda)
-     else
-      call dot(p%glnTT,p%glambda,g2TTlambda)
-      call dot(p%glnTT,p%glnTT,g2TT)
-     endif
+      if (ltemperature_nolog) then
+        call dot(p%gTT,p%glambda,g2TTlambda)
+      else
+        call dot(p%glnTT,p%glambda,g2TTlambda)
+        call dot(p%glnTT,p%glnTT,g2TT)
+      endif
 !
 !  Add heat conduction to RHS of temperature equation
 !
       if (l1step_test) then
-       tmp1= p%lambda(:)*(p%del2lnTT+g2TT)*p%cv1/p%rho(:)
+        tmp1= p%lambda(:)*(p%del2lnTT+g2TT)*p%cv1/p%rho(:)
       else
-      if (ltemperature_nolog) then
-       tmp1= (p%lambda(:)*p%del2lnTT+g2TTlambda)*p%cv1/p%rho(:)
-       df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + tmp1
-      else
-       tmp1= (p%lambda(:)*(p%del2lnTT+g2TT)+g2TTlambda)*p%cv1/p%rho(:)
-       df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp1
+        if (ltemperature_nolog) then
+          tmp1= (p%lambda(:)*p%del2lnTT+g2TTlambda)*p%cv1/p%rho(:)
+          df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + tmp1
+        else
+          tmp1= (p%lambda(:)*(p%del2lnTT+g2TT)+g2TTlambda)*p%cv1/p%rho(:)
+          df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp1
+        endif
       endif
-      endif
-!
-!      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp1
-!
-!      RHS_T_full(l1:l2,m,n)=RHS_T_full(l1:l2,m,n) + tmp1
 !
       call keep_compiler_quiet(f)
 !
@@ -5472,21 +5453,22 @@ module Chemistry
 !
     endsubroutine get_RHS_Y_full
 !***********************************************************************
-   subroutine get_cs2_full(cs2_full)
+    subroutine get_cs2_full(cs2_full)
 !
       real, dimension (mx,my,mz) :: cs2_full
       intent(out) :: cs2_full
       integer :: j,k
 !
-     do j=1,my
-     do k=1,mz
-      if (minval(cv_full(:,j,k))<=0) then
-       cs2_full(:,j,k)=0.
-      else
-       cs2_full(:,j,k)=cp_full(:,j,k)/cv_full(:,j,k)*mu1_full(:,j,k)*TT_full(:,j,k)*Rgas
-      endif
-     enddo
-     enddo
+      do j=1,my
+        do k=1,mz
+          if (minval(cv_full(:,j,k))<=0) then
+            cs2_full(:,j,k)=0.
+          else
+            cs2_full(:,j,k)=cp_full(:,j,k)/cv_full(:,j,k)*mu1_full(:,j,k)&
+                *TT_full(:,j,k)*Rgas
+          endif
+        enddo
+      enddo
 !
     endsubroutine get_cs2_full
 !***********************************************************************
