@@ -124,7 +124,7 @@ module Particles_chemistry
   real, dimension(:), allocatable :: q_reac
   real, dimension(:), allocatable :: mass_loss
 !
-  real :: mol_mass_carbon=12.0 !g/mol
+  real :: mol_mass_carbon=12.0107 !g/mol
   real :: Sgc_init=3e6 ! cm^2/g
 !
 !  is already in the code (R_CGS), with ergs as unit!!!
@@ -406,7 +406,7 @@ module Particles_chemistry
         enddo
       else
         do k = k1,k2
-          St(k)= 4.*pi*fp(k,iap)**2
+          St(k)= 4.*pi*(fp(k,iap)**2)
         enddo
       endif
 !        
@@ -1184,7 +1184,7 @@ module Particles_chemistry
 !
     subroutine calc_ndot_mdot_R_j_hat(fp)
       real, dimension(:,:) :: fp
-      integer :: n, i, j, k, l, k1, k2
+      integer :: n, i, j, k, l, k1, k2,index1
 !
       ndot = 0.
       k1 = k1_imn(imn)
@@ -1217,11 +1217,16 @@ module Particles_chemistry
       endif
 !
 ! Find mdot_ck
+      mass_loss=0.0
       do k = k1,k2
         do l = 1,N_surface_reactions
           mdot_ck(k,l) = -St(k)*Rck(k,l)
         enddo
-        mass_loss(k) = sum(mdot_ck(k,:))
+!        mass_loss(k) = sum(mdot_ck(k,:))
+        do i=1,N_surface_species
+          index1=jmap(i)
+          mass_loss(k) = mass_loss(k)+ndot(k,i)*(fp(k,iap)**2)*4.*pi*species_constants(index1,imass)
+        enddo
       enddo
 !
 ! Find the sum of all molar fluxes at the surface
@@ -2166,10 +2171,10 @@ module Particles_chemistry
 !  oct-14/Jonas: coded
 !
     subroutine get_mass_chemistry(mass_loss_targ,St_targ,Rck_max_targ)
-      real, dimension(:) :: mass_loss_targ, St_targ
+      real, dimension(:) :: St_targ,mass_loss_targ
       real, dimension(:,:) :: Rck_max_targ
 !
-      mass_loss_targ = mass_loss
+      mass_loss_targ=mass_loss
       St_targ = St
       Rck_max_targ = Rck_max
     endsubroutine get_mass_chemistry
@@ -2199,13 +2204,16 @@ module Particles_chemistry
 !  Get surface-chemistry dependent variables!
 !  oct-14/Jonas: coded
 !
-    subroutine get_surface_chemistry(Cg_targ,ndot_targ,enth_targ)
+    subroutine get_surface_chemistry(Cg_targ,ndot_targ,enth_targ,mass_loss_targ)
       real, dimension(:,:), optional :: ndot_targ,enth_targ
       real, dimension(:) :: Cg_targ
+      real, dimension(:), optional :: mass_loss_targ
 !
       if (present(ndot_targ)) ndot_targ = ndot
       if (present(enth_targ)) enth_targ = surface_species_enthalpy
+      if (present(mass_loss_targ)) mass_loss_targ=mass_loss
       Cg_targ = Cg
+      
 !
     endsubroutine get_surface_chemistry
 ! ****************************************************************************

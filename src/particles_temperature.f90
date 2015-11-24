@@ -286,7 +286,7 @@ module Particles_temperature
           else
             heat_trans_coef = Nuss_p(k)*cond/(2*fp(k,iap))
           endif
-
+!
           Qc = heat_trans_coef*Ap*(fp(k,iTp)-interp_TT(k))
 !
 !  Calculate the change in particle temperature based on the cooling/heating

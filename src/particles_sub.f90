@@ -1122,6 +1122,12 @@ module Particles_sub
         weight=1.
       endif
 !
+      if (lpart_box) then
+        weight = 1./5.
+        if (nygrid/=1) weight=weight/5.
+        if (nzgrid/=1) weight=weight/5.
+      endif
+!
     end subroutine find_interpolation_weight
 !***********************************************************************
     subroutine find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1,&
@@ -1176,6 +1182,21 @@ module Particles_sub
         iyy1=iyy0
         izz0=n
         izz1=izz0
+      endif
+!
+      if (lpart_box) then
+        if (nxgrid/=1) then
+          ixx0=ix0-2
+          ixx1=ix0+2
+        endif
+        if (nygrid/=1) then
+          iyy0=iy0-2
+          iyy1=iy0+2
+        endif
+        if (nxgrid/=1) then
+          izz0=iz0-2
+          izz1=iz0+2
+        endif
       endif
 !
     end subroutine find_interpolation_indeces

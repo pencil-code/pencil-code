@@ -219,7 +219,8 @@ module Particles
       thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, &
       lcommunicate_np, lcylindrical_gravity_par, &
       l_shell, k_shell, lparticlemesh_pqs_assignment, pscalar_sink_rate, &
-      lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw,lbubble
+      lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw,lbubble,&
+      lpart_box
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0

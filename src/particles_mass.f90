@@ -218,7 +218,7 @@ module Particles_mass
       real, dimension(nx) :: volume_pencil
       real :: volume_cell, rho1_point, weight, dmass, Vp
       real :: mass_per_radius, rho_init
-      integer :: k, ix0, iy0, iz0, k1, k2
+      integer :: k, ix0, iy0, iz0, k1, k2,i,index1
       integer :: izz, izz0, izz1, iyy, iyy0, iyy1, ixx, ixx0, ixx1
       real, dimension(:), allocatable :: mass_loss, St
       real, dimension(:,:), allocatable :: Rck_max
@@ -236,16 +236,11 @@ module Particles_mass
         k1 = k1_imn(imn)
         k2 = k2_imn(imn)
 !
-        allocate(mass_loss(k1:k2))
         allocate(St(k1:k2))
         allocate(Rck_max(k1:k2,1:N_surface_reactions))
+        allocate(mass_loss(k1:k2))
 !
         call get_mass_chemistry(mass_loss,St,Rck_max)
-!
-!  JONAS: this place is better for new "pencil-calling" of variables
-!
-!  Get total surface area and molar reaction rate of carbon
-!
 !
 ! Loop over all particles in current pencil.
         do k = k1,k2
@@ -256,8 +251,7 @@ module Particles_mass
 !  Calculate the change in particle mass
 !  dmass positive --> particle is gaining mass
 !
-            dmass = mass_loss(k)
-!
+            dmass = -mass_loss(k)
           else
             dmass = -dmpdt
           endif
@@ -269,7 +263,7 @@ module Particles_mass
 !  determine how evolve the particle radius (it should not start to
 !  decrease before the outer shell is entirly consumed).
 !
-          Vp = 4*pi*fp(k,iap)**3/3.
+          Vp = 4.*pi*fp(k,iap)**3/3.
 !
           if (fp(k,irhosurf)>=0.0) then
             dfp(k,irhosurf) = dfp(k,irhosurf)-sum(Rck_max(k,:))*St(k)/Vp
@@ -309,6 +303,7 @@ module Particles_mass
                   endif
 !
 ! Add the source to the df-array
+!
                   if (ldensity_nolog) then
                     df(ixx,iyy,izz,irho) = df(ixx,iyy,izz,irho) &
                         -dmass*weight/volume_cell

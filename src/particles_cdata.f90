@@ -65,6 +65,7 @@ module Particles_cdata
   logical :: linterpolate_spline=.true.
   logical :: lparticlemesh_cic=.true., lparticlemesh_tsc=.false.
   logical :: lparticlemesh_pqs_assignment=.false.
+  logical :: lpart_box = .false.
   logical :: linterp_reality_check=.false., lmigration_redo=.false.
   logical :: lnocalc_np=.false., lnocalc_rhop=.false.
   logical :: lmigration_real_check=.true.

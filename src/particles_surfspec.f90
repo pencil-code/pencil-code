@@ -1,4 +1,4 @@
-! $Id: particles_surfspec.f90 21950 2014-07-08 08:53:00Z jonas.kruger $
+!$Id: particles_surfspec.f90 21950 2014-07-08 08:53:00Z jonas.kruger $
 !
 !  This module takes care of everything related to reactive particles.
 !
@@ -303,7 +303,7 @@ module Particles_surfspec
       real, dimension(mpar_loc,mpvar) :: dfp
       real, dimension(nx,nchemspec) :: chem_reac
       real, dimension(:,:), allocatable :: term, ndot,enth
-      real, dimension(:), allocatable :: Cg
+      real, dimension(:), allocatable :: Cg,mass_loss
       real :: porosity
       type (pencil_case) :: p
       integer, dimension(mpar_loc,3) :: ineargrid
@@ -312,6 +312,7 @@ module Particles_surfspec
       real :: mean_molar_mass, dmass, A_p,denth
       real :: reac_pchem_weight,max_reac_pchem
       real :: dmass_frac_dt,summan,m1_cell
+      real :: dmass_ndot
       integer :: ix1, iy1, iz1, ierr
       integer :: ixx, iyy, izz
       integer :: ixx0, iyy0, izz0
@@ -343,19 +344,20 @@ module Particles_surfspec
         allocate(ndot(k1:k2,1:N_surface_species))
         if (lpchem_mass_enth) allocate(enth(k1:k2,1:N_surface_species))
         allocate(Cg(k1:k2))
+        allocate(mass_loss(k1:k2))
 !
         call get_shared_variable('true_density_carbon',true_density_carbon,ierr)
 !
         call calc_mass_trans_reactants()
-        call get_surface_chemistry(Cg,ndot,enth)
+        call get_surface_chemistry(Cg,ndot,enth,mass_loss)
 !
 !  set surface gas species composition
 !  (infinite diffusion, set as far field and convert from
 !  mass fractions to mole fractions)
 !
         do k = k1,k2
-          porosity = 1 - (fp(k,imp)/(fp(k,iap)**3*4./3.*pi))/true_density_carbon
-          A_p = fp(k1,iap)**2*4.*pi
+          porosity = 1.0 - (fp(k,imp)/(fp(k,iap)**3*4./3.*pi))/true_density_carbon
+          A_p = 4.*pi*(fp(k,iap)**2)
           mean_molar_mass = (interp_rho(k)*Rgas*interp_TT(k)/ interp_pp(k))
 !
           if (lboundary_explicit) then
@@ -394,8 +396,10 @@ module Particles_surfspec
                 fp,k,ix0,iy0,iz0)
 !
 ! positive dmass means particle is losing mass
+!
             dmass = 0.
             denth = 0.
+!
             do i = 1,N_surface_species
               index1 = jmap(i)
               dmass = dmass+ndot(k,i)*species_constants(index1,imass)*A_p
@@ -408,9 +412,22 @@ module Particles_surfspec
 !  to convert to erg, the value has to be multiplied with 1e7 for values fetched from 
 !  particles_chemistry
 !
-                  denth=denth+ndot(k,i)*A_p*enth(k,i)*1e7
+!  Enthalpy from the Stanford code calculation
+!
+!                  denth=denth+ndot(k,i)*A_p*enth(k,i)*1e7
+!
+!  Enthalpy from Pencil code at particles temperature
+!                 
+                  if (lpencil(i_H0_RT)) then
+                    denth=denth+ndot(k,i)*A_p*p%H0_RT(ix0-nghost,jmap(i))*Rgas*fp(k,iTp)
+                  else
+                    call fatal_error('particles_surfspec','mass bound enthalpy transfer needs p%H0_RT')
+                  endif
 !                  print*, 'phase_enthalpydata',enth(k,i)*1e7,&
 !                      p%H0_RT(ix0-nghost,jmap(i))*Rgas*p%TT(ix0-nghost)
+!                  print*, 'production', ndot(k,i)*A_p*enth(k,i)*1e7
+!                  print*, 'production', ndot(k,i),enth(k,i)*1e7
+!                  print*, 'production2', ndot(k,i),p%H0_RT(ix0-nghost,jmap(i))*Rgas*fp(k,iTp)
                 else
 !
 ! Species enthalpy at the gas phase temperature
@@ -418,13 +435,14 @@ module Particles_surfspec
 !                  print*,'enthalpydata', jmap(i),p%H0_RT(ix0-nghost,:)*Rgas*p%TT(ix0-nghost)
                   if (lpencil(i_H0_RT)) then
                     denth=denth+ndot(k,i)*A_p*p%H0_RT(ix0-nghost,jmap(i))*Rgas*p%TT(ix0-nghost)
+!                    print*, 'consumption', ndot(k,i)*A_p*p%H0_RT(ix0-nghost,jmap(i))*Rgas*p%TT(ix0-nghost)
+!                    print*, 'consumption', ndot(k,i),p%H0_RT(ix0-nghost,jmap(i))*Rgas*p%TT(ix0-nghost)
                   else
                     call fatal_error('particles_surfspec','mass bound enthalpy transfer needs p%H0_RT')
                   endif
                 endif
               endif
             enddo
-!            print*, 'dmass',dmass
 !
 !  Prepare the max_reac_pchem
 !
@@ -445,8 +463,8 @@ module Particles_surfspec
                   else
                     rho1_point = p%rho1(ixx-nghost)
                   endif
-!                  m1_cell=1/(volume_cell/rho1_point)
-                  m1_cell=1/(volume_cell/rho1_point+dmass*dt)
+                  m1_cell=1/(volume_cell/rho1_point)
+!                  m1_cell=1/(volume_cell/rho1_point+dmass*dt)
 !
 !  Sum for testing  
 !
@@ -459,13 +477,14 @@ module Particles_surfspec
 !  from particles_chemistry which is needed to access ndot, since this only contains 
 !  surface species 
 !
+
                   do i = 1,nchemspec-1
                     reac_pchem_weight= 0.0
                     if ( find_index(i,jmap,N_surface_species) > 0 ) then
                       index1 = jmap(find_index(i,jmap,N_surface_species))
                       index2 = ichemspec(index1)
                       dmass_frac_dt = (A_p*ndot(k,find_index(i,jmap,N_surface_species))*&
-                          species_constants(index1,imass)-&
+                          species_constants(index1,imass)+&
                           dmass*interp_species(k,index1))*weight*&
                           m1_cell
 !                      dmass_frac_dt = (A_p*ndot(k,find_index(i,jmap,N_surface_species))*&
@@ -474,6 +493,9 @@ module Particles_surfspec
 !                          rho1_point/volume_cell
                       df(ixx,iyy,izz,index2) = df(ixx,iyy,izz,index2) + dmass_frac_dt
                       summan=summan+dmass_frac_dt
+!                      if (i==nchemspec-1) then
+!                        print*, 'summan',summan
+!                      endif
                       if (lfirst .and. ldt)&
                           reac_pchem_weight = max(reac_pchem_weight,abs(dmass_frac_dt/&
                           max(f(ixx,iyy,izz,index2),1e-10)))
@@ -482,12 +504,20 @@ module Particles_surfspec
                           m1_cell
                       df(ixx,iyy,izz,ichemspec(i)) = df(ixx,iyy,izz,ichemspec(i)) + dmass_frac_dt
                       summan=summan+dmass_frac_dt
+!                      if (i==nchemspec-1) then
+!                        print*, 'summan',summan
+!                      endif
                     endif
                   enddo
+!                  print*, 'velocity', df(ixx,iyy,izz,iux)
+!                  print*,'summan',summan
+!                  print*,'df(ixx,iyy,izz,ichemspec(i))',df(ixx,iyy,izz,ichemspec(nchemspec))
 !
 !  Solving for all but the other values, setting the last one to the negative values of all others.
 !
                   df(ixx,iyy,izz,ichemspec(nchemspec)) = df(ixx,iyy,izz,ichemspec(nchemspec))-summan
+!                  df(ixx,iyy,izz,ichemspec(nchemspec)) = df(ixx,iyy,izz,ichemspec(nchemspec))-&
+!                      sum(df(ixx,iyy,izz,ichemspec(:)))
 !
 !  Sum for checking
 !
@@ -522,6 +552,12 @@ module Particles_surfspec
           endif
         enddo
 !
+!  JONAS NASTY: This makes the N2 take the most heat from whatever is causing the
+!  Non-conserved mass fractions
+!
+!          df(:,m,n,ichemspec(nchemspec)) = df(:,m,n,ichemspec(nchemspec))-&
+!              sum(df(:,m,n,ichemspec(:)),DIM=2)
+!
         if (ldiagnos .and. idiag_dtpchem/=0) then
           call max_name(reac_pchem/cdtc,idiag_dtpchem,l_dt=.true.)
         endif
@@ -529,6 +565,7 @@ module Particles_surfspec
         if (allocated(term)) deallocate(term)
         if (allocated(ndot)) deallocate(ndot)
         if (allocated(Cg))   deallocate(Cg)
+        if (allocated(mass_loss))   deallocate(mass_loss)
         if (allocated(enth)) deallocate(enth)
       endif
 !
