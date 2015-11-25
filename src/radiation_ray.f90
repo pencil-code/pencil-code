@@ -88,7 +88,7 @@ module Radiation
   real :: ref_rho_opa=1.0, ref_temp_opa=1.0
   real :: knee_temp_opa=0.0, width_temp_opa=1.0
   real :: ampl_Isurf=0.0, radius_Isurf=0.0
-  real :: lnTT_table0=0.0, dlnTT_table=0.0
+  real :: lnTT_table0=0.0, dlnTT_table=0.0, kapparho_floor=0.0
 !
   integer :: radx=0, rady=0, radz=1, rad2max=1, nnu=1
   integer, dimension (maxdir,3) :: dir
@@ -145,7 +145,7 @@ module Radiation
       lfix_radweight_1d, expo_rho_opa, expo_temp_opa, expo_temp_opa_buff, &
       expo2_rho_opa, expo2_temp_opa, &
       ref_rho_opa, ref_temp_opa, knee_temp_opa, width_temp_opa, &
-      lread_source_function
+      lread_source_function, kapparho_floor
 !
   namelist /radiation_run_pars/ &
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kapparho_cst, &
@@ -162,7 +162,7 @@ module Radiation
       expo2_rho_opa, expo2_temp_opa, &
       ref_rho_opa, expo_temp_opa_buff, ref_temp_opa, knee_temp_opa, &
       width_temp_opa, ampl_Isurf, radius_Isurf, scalefactor_cooling, &
-      lread_source_function
+      lread_source_function, kapparho_floor
 !
   contains
 !***********************************************************************
@@ -1668,7 +1668,7 @@ module Radiation
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,kapparho=tmp)
-          f(:,m,n,ikapparho)=tmp*scalefactor_kappa(inu)
+          f(:,m,n,ikapparho)=kapparho_floor+tmp*scalefactor_kappa(inu)
         enddo
         enddo
 !
@@ -1676,7 +1676,7 @@ module Radiation
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnrho=lnrho)
-          f(:,m,n,ikapparho)=kappa_es*exp(lnrho)
+          f(:,m,n,ikapparho)=kapparho_floor+kappa_es*exp(lnrho)
         enddo
         enddo
 !
@@ -1684,14 +1684,14 @@ module Radiation
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnrho=lnrho)
-          f(:,m,n,ikapparho)=kappa_cst(inu)*exp(lnrho)
+          f(:,m,n,ikapparho)=kapparho_floor+kappa_cst(inu)*exp(lnrho)
         enddo
         enddo
 !
       case ('kapparho_cst')
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
-          f(:,m,n,ikapparho)=kapparho_cst
+          f(:,m,n,ikapparho)=kapparho_floor+kapparho_cst
         enddo
         enddo
 !
@@ -1704,7 +1704,7 @@ module Radiation
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnTT=lnTT)
           TT=exp(lnTT)
-          f(:,m,n,ikapparho)=kappa0*TT**3
+          f(:,m,n,ikapparho)=kapparho_floor+kappa0*TT**3
         enddo
         enddo
 !
@@ -1716,7 +1716,7 @@ module Radiation
           rho=exp(lnrho)
           TT=exp(lnTT)
           if (knee_temp_opa==0.0) then
-            f(:,m,n,ikapparho)=rho*kappa_cst(inu)* &
+            f(:,m,n,ikapparho)=kapparho_floor+rho*kappa_cst(inu)* &
                 (rho/ref_rho_opa)**expo_rho_opa* &
                 (TT/ref_temp_opa)**expo_temp_opa
           else
@@ -1725,7 +1725,7 @@ module Radiation
 !  temperature.
 !
             profile=1.0-cubic_step(TT,knee_temp_opa,width_temp_opa)
-            f(:,m,n,ikapparho)=profile*rho*kappa_cst(inu)* &
+            f(:,m,n,ikapparho)=kapparho_floor+profile*rho*kappa_cst(inu)* &
                 (rho/ref_rho_opa)**expo_rho_opa* &
                 (TT/ref_temp_opa)**expo_temp_opa + &
                 (1.0-profile)*rho*kappa_cst(inu)* &
@@ -1750,7 +1750,7 @@ module Radiation
             kappa2=kappa20_cst(inu)+kappa_cst(inu)* &
                 (rho/ref_rho_opa)**expo2_rho_opa* &
                 (TT/ref_temp_opa)**expo2_temp_opa
-            f(:,m,n,ikapparho)=rho/(1./kappa1+1./kappa2)
+            f(:,m,n,ikapparho)=kapparho_floor+rho/(1./kappa1+1./kappa2)
         enddo; enddo
 !
 !AB: the following looks suspicious with *_cgs
@@ -1760,7 +1760,7 @@ module Radiation
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnrho=lnrho,lnTT=lnTT)
-          f(:,m,n,ikapparho)=exp(lnrho)*kappa0*((exp(lnTT))**2)
+          f(:,m,n,ikapparho)=kapparho_floor+exp(lnrho)*kappa0*((exp(lnTT))**2)
         enddo
         enddo
 !
@@ -1770,7 +1770,7 @@ module Radiation
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnrho=lnrho,lnTT=lnTT)
-          f(:,m,n,ikapparho)=kappa0*(exp(lnrho)**2)*(exp(lnTT))**(-3.5)
+          f(:,m,n,ikapparho)=kapparho_floor+kappa0*(exp(lnrho)**2)*(exp(lnTT))**(-3.5)
         enddo
         enddo
 !
@@ -1789,13 +1789,13 @@ module Radiation
               tmp(i)=exp(k2)
             endif
           enddo
-          f(:,m,n,ikapparho)=exp(lnrho)*tmp
+          f(:,m,n,ikapparho)=kapparho_floor+exp(lnrho)*tmp
         enddo
         enddo
 !
       case ('blob')
         if (lfirst) then
-          f(:,:,:,ikapparho)=kapparho_const + amplkapparho &
+          f(:,:,:,ikapparho)=kapparho_floor+kapparho_const + amplkapparho &
                   *spread(spread(exp(-(x/radius_kapparho)**2),2,my),3,mz) &
                   *spread(spread(exp(-(y/radius_kapparho)**2),1,mx),3,mz) &
                   *spread(spread(exp(-(z/radius_kapparho)**2),1,mx),2,my)
@@ -1804,7 +1804,7 @@ module Radiation
 !
       case ('cos')
         if (lfirst) then
-          f(:,:,:,ikapparho)=kapparho_const + amplkapparho &
+          f(:,:,:,ikapparho)=kapparho_floor+kapparho_const + amplkapparho &
                   *spread(spread(cos(kx_kapparho*x),2,my),3,mz) &
                   *spread(spread(cos(ky_kapparho*y),1,mx),3,mz) &
                   *spread(spread(cos(kz_kapparho*z),1,mx),2,my)
@@ -1818,7 +1818,7 @@ module Radiation
         do n= n1-radz, n2+radz
         do m= m1-rady, m2+rady
           call eoscalc(f,mx,lnrho=lnrho,yH=yH)
-          f(:,m,n,ikapparho)= sigmaH_*(1 - yH)*exp(2*lnrho+log(m_H))
+          f(:,m,n,ikapparho)=kapparho_floor+ sigmaH_*(1 - yH)*exp(2*lnrho+log(m_H))
         enddo
         enddo
 !
@@ -1931,7 +1931,7 @@ module Radiation
           call gij(f,iaa,aij,1)
           call curl_mn(aij,bb,aa)
           call dot2_mn(bb,b2)
-          f(l1:l2,m,n,ikapparho)=b2
+          f(l1:l2,m,n,ikapparho)=kapparho_floor+b2
 !
 !  in the ghost zones, put the magnetic field equal to the value
 !  in the layer layer inside the domain.
@@ -1980,7 +1980,7 @@ module Radiation
           call curl_mn(uij,oo,uu)
           call dot2_mn(bb,b2)
           call dot2_mn(oo,o2)
-          f(l1:l2,m,n,ikapparho)=b2+o2
+          f(l1:l2,m,n,ikapparho)=kapparho_floor+b2+o2
 !
 !  In the ghost zones, put the magnetic field equal to the value
 !  in the layer layer inside the domain.
