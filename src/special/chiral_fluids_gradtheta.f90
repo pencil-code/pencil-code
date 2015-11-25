@@ -40,8 +40,8 @@
 ! MVAR CONTRIBUTION 4
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED mu5; gmu5(3); del2mu5
-! PENCILS PROVIDED gtheta5(3); gtheta5ij(3,3); uggtheta5(3); bgtheta5
+! PENCILS PROVIDED mu5; gmu5(3); del2mu5; del2gtheta5
+! PENCILS PROVIDED ugmu5; gtheta5(3); gtheta5ij(3,3); uggtheta5(3); bgtheta5
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -86,7 +86,7 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-   real :: diffmu5, lambda5, gtheta5_const=0., mu5_const=0.
+   real :: diffmu5, diffgtheta5, lambda5, gtheta5_const=0., mu5_const=0.
    real :: meanmu5, kx_gtheta5=1., ky_gtheta5=1.
    real, pointer :: eta
    integer :: igtheta5, imu5
@@ -101,7 +101,7 @@ module Special
       kx_gtheta5, ky_gtheta5
 !
   namelist /special_run_pars/ &
-      diffmu5, lambda5, theta_prof, lupw_gtheta5
+      diffgtheta5, diffmu5, lambda5, theta_prof, lupw_gtheta5
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -206,7 +206,7 @@ module Special
           f(:,:,:,imu5) = mu5_const
         case ('gtheta5y_siny')
           do n=n1,n2; do m=m1,m2
-            f(:,m,n,igtheta5+1)=gtheta5_const*sin(ky_gtheta5*y(m))
+            f(:,m,n,igtheta5+1)=-gtheta5_const*sin(ky_gtheta5*y(m))
           enddo; enddo 
           f(:,:,:,imu5) = mu5_const
         case ('theta_profile')
@@ -232,12 +232,15 @@ module Special
       lpenc_requested(i_b2)=.true.
       lpenc_requested(i_mu5)=.true.
       lpenc_requested(i_gmu5)=.true.
+      if (ldt) lpenc_requested(i_rho1)=.true.
+      if (lhydro.or.lhydro_kinematic) lpenc_requested(i_ugmu5)=.true.
       lpenc_requested(i_gtheta5)=.true.
       lpenc_requested(i_gtheta5ij)=.true.
       if (diffmu5/=0.) lpenc_requested(i_del2mu5)=.true.
-      if (lhydro) lpenc_requested(i_uggtheta5)=.true.
+      if (diffgtheta5/=0.) lpenc_requested(i_del2gtheta5)=.true.
+      if (lhydro.or.lhydro_kinematic) lpenc_requested(i_uggtheta5)=.true.
       if (lmagnetic) lpenc_requested(i_bgtheta5)=.true.
-      if (lhydro) lpenc_requested(i_uu)=.true.
+      if (lhydro.or.lhydro_kinematic) lpenc_requested(i_uu)=.true.
       if (lmagnetic) lpenc_requested(i_bb)=.true.
       if (lmagnetic.and.lhydro) lpenc_requested(i_ub)=.true.
       if (lmagnetic.and.lhydro) lpenc_requested(i_jb)=.true.
@@ -263,7 +266,7 @@ module Special
 !
 !  24-nov-04/tony: coded
 !
-      use Sub, only: del2, grad, dot, u_dot_grad, gij
+      use Sub, only: del2, del2v_etc, grad, dot, u_dot_grad, gij
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -277,7 +280,11 @@ module Special
       if (lpencil(i_gtheta5)) p%gtheta5=f(l1:l2,m,n,igtheta5:igtheta5+2)
       if (lpencil(i_gtheta5ij)) call gij(f,igtheta5,p%gtheta5ij,1)
       if (lpencil(i_gmu5)) call grad(f,imu5,p%gmu5)
+      if (lpencil(i_ugmu5)) call dot(p%uu,p%gmu5,p%ugmu5)
       if (lpencil(i_del2mu5)) call del2(f,imu5,p%del2mu5)
+!      if (lpencil(i_del2gtheta5)) call del2(f,igtheta5,p%del2gtheta5)
+       if (lpencil(i_del2gtheta5)) call del2v_etc(f,igtheta5,DEL2=p%del2gtheta5)
+!                                  call del2v_etc(f,iuu,DEL2=p%del2u)
       if (lpencil(i_uggtheta5)) call u_dot_grad(f,igtheta5,p%gtheta5ij, &
         p%uu,p%uggtheta5,UPWIND=lupw_gtheta5)
       if (lpencil(i_bgtheta5)) call dot(p%bb,p%gtheta5,p%bgtheta5)
@@ -310,7 +317,7 @@ module Special
       intent(inout) :: df
 !
       real, dimension (nx) :: dtheta5, gtheta52, EB
-      real, dimension (nx,3) :: mu5bb, dtheta5_bb, uxbbgtheta5, ubgtheta5
+      real, dimension (nx,3) :: mu5bb, dtheta5_bb, uxbbgtheta5r, ubgtheta5
       real, dimension (nx,3) :: uijtransgtheta5
       real, parameter :: alpha_fine_structure=1./137.
 !
@@ -326,15 +333,16 @@ module Special
 !
 !  Evolution of mu5
 !
-      df(l1:l2,m,n,imu5)=df(l1:l2,m,n,imu5) &
+      df(l1:l2,m,n,imu5)=df(l1:l2,m,n,imu5) - p%ugmu5 &
         +diffmu5*p%del2mu5+lambda5*EB
 !
-!  Evolution of theta5
+!  Evolution of gtheta5
 !
       if (lhydro) then
         call dot_mn_vm_trans(p%gtheta5,p%uij,uijtransgtheta5)
         df(l1:l2,m,n,igtheta5:igtheta5+2)=df(l1:l2,m,n,igtheta5:igtheta5+2) &
-         -p%uggtheta5-uijtransgtheta5+p%gmu5
+        -p%uggtheta5-uijtransgtheta5+p%gmu5
+       +diffgtheta5*p%del2gtheta5
       endif
 !      print*,       df(l1:l2,m,n,igtheta5), f(l1:l2,m,n,igtheta5)
 !
@@ -342,15 +350,15 @@ module Special
 !
       if (lmagnetic) then
         call multsv(p%mu5,p%bb,mu5bb)
-        call multsv(p%ub,p%gtheta5,ubgtheta5)
+        call multsv(p%bgtheta5,p%uu,ubgtheta5)
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+eta*(mu5bb-ubgtheta5)
       endif
 !
 !  Additions to evolution of uu
 !
       if (lhydro) then
-        call multsv(p%bgtheta5,p%uxb,uxbbgtheta5)
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+uxbbgtheta5
+        call multsv(p%bgtheta5*p%rho1,p%uxb,uxbbgtheta5r)
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+uxbbgtheta5r
       endif
 !
 !  Contribution from linear shear
