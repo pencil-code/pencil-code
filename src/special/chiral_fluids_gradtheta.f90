@@ -40,7 +40,7 @@
 ! MVAR CONTRIBUTION 4
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED mu5; gmu5(3); del2mu5; del2gtheta5
+! PENCILS PROVIDED mu5; gmu5(3); del2mu5; del2gtheta5(3)
 ! PENCILS PROVIDED ugmu5; gtheta5(3); gtheta5ij(3,3); uggtheta5(3); bgtheta5
 !***************************************************************
 !
@@ -282,9 +282,7 @@ module Special
       if (lpencil(i_gmu5)) call grad(f,imu5,p%gmu5)
       if (lpencil(i_ugmu5)) call dot(p%uu,p%gmu5,p%ugmu5)
       if (lpencil(i_del2mu5)) call del2(f,imu5,p%del2mu5)
-!      if (lpencil(i_del2gtheta5)) call del2(f,igtheta5,p%del2gtheta5)
-       if (lpencil(i_del2gtheta5)) call del2v_etc(f,igtheta5,DEL2=p%del2gtheta5)
-!                 call del2v_etc(f,iuu,DEL2=p%del2u)
+      if (lpencil(i_del2gtheta5)) call del2v_etc(f,igtheta5,DEL2=p%del2gtheta5)
       if (lpencil(i_uggtheta5)) call u_dot_grad(f,igtheta5,p%gtheta5ij, &
         p%uu,p%uggtheta5,UPWIND=lupw_gtheta5)
       if (lpencil(i_bgtheta5)) call dot(p%bb,p%gtheta5,p%bgtheta5)
@@ -341,8 +339,8 @@ module Special
       if (lhydro) then
         call dot_mn_vm_trans(p%gtheta5,p%uij,uijtransgtheta5)
         df(l1:l2,m,n,igtheta5:igtheta5+2)=df(l1:l2,m,n,igtheta5:igtheta5+2) &
-        -p%uggtheta5-uijtransgtheta5+p%gmu5
-       +diffgtheta5*p%del2gtheta5
+        -p%uggtheta5-uijtransgtheta5+p%gmu5 &
+        +diffgtheta5*p%del2gtheta5
       endif
 !      print*,       df(l1:l2,m,n,igtheta5), f(l1:l2,m,n,igtheta5)
 !
