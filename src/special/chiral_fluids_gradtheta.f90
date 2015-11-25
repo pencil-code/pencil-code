@@ -229,8 +229,7 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-      lpenc_requested(i_b2)=.all del2v_etc(f,iuu,DEL2=p%del2u)
-        elseif (lpenc_loc(i_graddivu)) thentrue.
+      lpenc_requested(i_b2)=.true.
       lpenc_requested(i_mu5)=.true.
       lpenc_requested(i_gmu5)=.true.
       if (ldt) lpenc_requested(i_rho1)=.true.
@@ -285,7 +284,7 @@ module Special
       if (lpencil(i_del2mu5)) call del2(f,imu5,p%del2mu5)
 !      if (lpencil(i_del2gtheta5)) call del2(f,igtheta5,p%del2gtheta5)
        if (lpencil(i_del2gtheta5)) call del2v_etc(f,igtheta5,DEL2=p%del2gtheta5)
-!                                  call del2v_etc(f,iuu,DEL2=p%del2u)
+!                 call del2v_etc(f,iuu,DEL2=p%del2u)
       if (lpencil(i_uggtheta5)) call u_dot_grad(f,igtheta5,p%gtheta5ij, &
         p%uu,p%uggtheta5,UPWIND=lupw_gtheta5)
       if (lpencil(i_bgtheta5)) call dot(p%bb,p%gtheta5,p%bgtheta5)
