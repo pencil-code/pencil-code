@@ -40,7 +40,8 @@
 ! MVAR CONTRIBUTION 2
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED mu5; theta5; del2mu5; gtheta5(3); ugtheta5; bgtheta5
+! PENCILS PROVIDED mu5; theta5; del2mu5; del2theta5; gmu5(3); gtheta5(3)
+! PENCILS PROVIDED ugmu5; ugtheta5; bgtheta5
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -85,8 +86,8 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-   real :: diffmu5, lambda5, theta5_const=0., mu5_const=0.
-   real :: meanmu5, kx_theta5=1., ky_theta5=1., kz_theta5=1., kx_mu5=1.
+   real :: diffmu5, difftheta5, lambda5, theta5_const=0., mu5_const=0.
+   real :: meanmu5, kx_theta5=1., ky_theta5=1., kx_mu5=1.
    real, pointer :: eta
    integer :: itheta5, imu5
    character (len=labellen) :: theta_prof='nothing'
@@ -98,7 +99,7 @@ module Special
       initspecial, theta5_const, mu5_const
 !
   namelist /special_run_pars/ &
-      diffmu5, lambda5, theta_prof, kx_theta5, ky_theta5, kx_mu5, ky_theta5
+      diffmu5, difftheta5, lambda5, theta_prof, kx_theta5, ky_theta5, kx_mu5
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -218,12 +219,6 @@ module Special
           enddo; enddo 
           f(:,:,:,imu5) = mu5_const
 !
-        case ('theta5_cosz')
-          do n=n1,n2; do m=m1,m2
-            f(:,m,n,itheta5)=theta5_const*cos(kz_theta5*x)
-            f(:,m,n,imu5)=mu5_const
-          enddo; enddo 
-!
         case default
           call fatal_error("init_special: No such value for initspecial:" &
               ,trim(initspecial))
@@ -244,10 +239,13 @@ module Special
       lpenc_requested(i_theta5)=.true.
       if (ldt) lpenc_requested(i_rho)=.true.
       if (diffmu5/=0.) lpenc_requested(i_del2mu5)=.true.
+      if (difftheta5/=0.) lpenc_requested(i_del2theta5)=.true.
       if (lhydro) lpenc_requested(i_gtheta5)=.true.
       if (lhydro) lpenc_requested(i_ugtheta5)=.true.
+      if (lhydro) lpenc_requested(i_gmu5)=.true.
+      if (lhydro) lpenc_requested(i_ugmu5)=.true.
       if (lmagnetic) lpenc_requested(i_bgtheta5)=.true.
-      if (lhydro .or. lhydro_kinematic) lpenc_requested(i_uu)=.true.
+      if (lhydro) lpenc_requested(i_uu)=.true.
       if (lmagnetic) lpenc_requested(i_bb)=.true.
       if (lmagnetic.and.lhydro) lpenc_requested(i_ub)=.true.
       if (lmagnetic.and.lhydro) lpenc_requested(i_jb)=.true.
@@ -287,6 +285,7 @@ module Special
       if (lpencil(i_theta5)) p%theta5=f(l1:l2,m,n,itheta5)
       if (lpencil(i_del2mu5)) call del2(f,imu5,p%del2mu5)
       if (lpencil(i_gtheta5)) call grad(f,itheta5,p%gtheta5)
+      if (lpencil(i_ugmu5)) call dot(p%uu,p%gmu5,p%ugmu5)
       if (lpencil(i_ugtheta5)) call dot(p%uu,p%gtheta5,p%ugtheta5)
       if (lpencil(i_bgtheta5)) call dot(p%bb,p%gtheta5,p%bgtheta5)
 !
@@ -318,7 +317,7 @@ module Special
       intent(inout) :: df
 !
       real, dimension (nx) :: dtheta5, EB
-      real, dimension (nx,3) :: ubgtheta5, dtheta5_bb, mu5bb, uxbbgtheta5, ubvgtheta5
+      real, dimension (nx,3) :: ubgtheta5, dtheta5_bb, mu5bb, uxbbgtheta5
       real, parameter :: alpha_fine_structure=1./137.
 !
 !  Identify module and boundary conditions.
@@ -333,14 +332,14 @@ module Special
 !
 !  Evolution of mu5
 !
-      df(l1:l2,m,n,imu5)=df(l1:l2,m,n,imu5) &
+      df(l1:l2,m,n,imu5)=df(l1:l2,m,n,imu5)-p%ugmu5 &
         +diffmu5*p%del2mu5+lambda5*EB
 !
 !  Evolution of theta5
 !
       if (lhydro) then
       df(l1:l2,m,n,itheta5)=df(l1:l2,m,n,itheta5)-p%ugtheta5+p%mu5 &
-        - meanmu5
+        +difftheta5*p%del2theta5- meanmu5
       endif
 !      print*,       df(l1:l2,m,n,itheta5), f(l1:l2,m,n,itheta5)
 !
@@ -349,8 +348,7 @@ module Special
       if (lmagnetic) then
         call multsv(p%mu5,p%bb,mu5bb)
         call multsv(p%ub,p%gtheta5,ubgtheta5)
-        call multsv(p%bgtheta5,p%uu,ubvgtheta5)
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+eta*(mu5bb-ubvgtheta5)
+        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+eta*(mu5bb-ubgtheta5)
       endif
 !
 !  Additions to evolution of uu
