@@ -229,7 +229,8 @@ module Special
 !
 !  18-07-06/tony: coded
 !
-      lpenc_requested(i_b2)=.true.
+      lpenc_requested(i_b2)=.all del2v_etc(f,iuu,DEL2=p%del2u)
+        elseif (lpenc_loc(i_graddivu)) thentrue.
       lpenc_requested(i_mu5)=.true.
       lpenc_requested(i_gmu5)=.true.
       if (ldt) lpenc_requested(i_rho1)=.true.
