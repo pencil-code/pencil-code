@@ -773,8 +773,13 @@ module Density
       call initialize_density_methods
 
       lslope_limit_diff=lslope_limit_diff .or. ldensity_slope_limited
-
-      call keep_compiler_quiet(f)
+!
+!  Find the total mass for later use if lconserve_total_mass = .true.
+!
+      mtot: if (lrun .and. total_mass < 0.0) then
+        total_mass = mean_density(f) * box_volume
+        if (lreference_state) total_mass = total_mass + reference_state_mass
+      endif mtot
 !
     endsubroutine initialize_density
 !***********************************************************************
@@ -1419,11 +1424,6 @@ module Density
 !
       if (notanumber(f(l1:l2,m1:m2,n1:n2,ilnrho))) &
         call error('init_lnrho', 'Imaginary density values')
-!
-      if (total_mass<0.) then
-        total_mass=mean_density(f)*box_volume
-        if (lreference_state) total_mass=total_mass+reference_state_mass
-      endif
 !
     endsubroutine init_lnrho
 !***********************************************************************
