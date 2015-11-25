@@ -81,8 +81,10 @@ module Cdata
   real :: ybot_slice=0.0,ytop_slice=1.0
   real :: zbot_slice=0.0,ztop_slice=1.0
   real :: glnCrossSec0=0.0, CrossSec_x1=-1., CrossSec_x2=1., CrossSec_w=.1
-  logical, dimension(3) :: lperi, lshift_origin, lshift_origin_lower, lpole
-  logical, dimension(3) :: lequidist=(/.true.,.true.,.true. /)
+  logical, dimension(3) :: lperi=.true., &                                       ! all directions periodic
+                           lshift_origin=.false., lshift_origin_lower=.false., & ! don't shift origin
+                           lpole=.false., &                                      ! in spherical coords: pole excluded
+                           lequidist=.true.                                      ! grid equidistant in every direction
   character (len=labellen), dimension(3) :: grid_func='linear'
   character (len=labellen) :: pipe_func='error_function'
   real, dimension(0:nprocx) :: procx_bounds
@@ -96,7 +98,7 @@ module Cdata
 !
 !  Box dimensions.
 !
-  real, dimension(3) :: Lxyz,xyz0,xyz1=impossible,xyz_star=(/0.0,0.0,0.0/)
+  real, dimension(3) :: Lxyz=impossible,xyz0=-pi,xyz1=impossible,xyz_star=0.0
   real, dimension(3) :: Lxyz_loc,xyz0_loc,xyz1_loc
   real :: x0,y0,z0,Lx,Ly,Lz
   real :: r_int=0.,r_ext=impossible   ! for spherical shell problems

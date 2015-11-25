@@ -101,7 +101,7 @@ program start
 !
 !  Get processor numbers and define whether we are root.
 !
-  call mpicomm_init()
+  call mpicomm_init
 !
 !  Check if parallelization and chosen grid numbers make sense.
 !
@@ -126,7 +126,7 @@ program start
 !
 !  Initialize the message subsystem, eg. color setting etc.
 !
-  call initialize_messages()
+  call initialize_messages
 !
 !  Allocate large arrays. We need to make them allocatable in order to
 !  avoid segfaults at 128^3 (7 variables) with Intel compiler on 32-bit
@@ -145,17 +145,6 @@ program start
   f =huge(1.0)
   df=huge(1.0)
 !
-!  Set default values: box of size (2pi)^3.
-!
-  xyz0=(/       -pi,        -pi,       -pi /) ! first corner
-  xyz1=(/impossible, impossible, impossible/) ! last corner
-  Lxyz=(/impossible, impossible, impossible/) ! box lengths
-  lperi        =(/.true. ,.true. ,.true. /)   ! all directions periodic
-  lequidist    =(/.true. ,.true. ,.true. /)   ! all directions equidistant grid
-  lshift_origin=(/.false.,.false.,.false./)   ! don't shift origin
-  lshift_origin_lower=(/.false.,.false.,.false./) ! don't shift origin
-  lpole        =(/.false.,.false.,.false./)   ! radial origin, pole excluded
-!
 !  Calculate dimensionality of the run.
 !
   dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
@@ -166,16 +155,16 @@ program start
 !
 !  Initialise MPI communication.
 !
-  call initialize_mpicomm()
+  call initialize_mpicomm
 !
 !  Read initialization parameters from "start.in".
 !
-  call read_all_init_pars()
+  call read_all_init_pars
 !
 !  Register variables in the f array.
 !
-  call register_modules()
-  if (lparticles) call particles_register_modules()
+  call register_modules
+  if (lparticles) call particles_register_modules
 !
 !  Call rprint_list to initialize diagnostics and write indices to file.
 !
@@ -205,7 +194,7 @@ program start
 !
 !  Set up directory names and check whether the directories exist.
 !
-  call directory_names()
+  call directory_names
 !
 !  Unfortunately the following test for existence of directory fails under
 !  OSF1:
@@ -613,7 +602,7 @@ program start
 !
 !  Write information about pencils to disc.
 !
-  call write_pencil_info()
+  call write_pencil_info
 !
 !  Gvie all modules the possibility to exit properly.
 !
@@ -624,25 +613,26 @@ program start
   call mpifinalize
 !
 !  Free any allocated memory.
+!  MR: do we need all these cleanups? The process ends immediately afterwards and all memory is released anyway.
 !
-  call farray_clean_up()
-  call sharedvars_clean_up()
-  call initial_condition_clean_up()
-  if (lparticles) call particles_cleanup()
+  call farray_clean_up
+  call sharedvars_clean_up
+  call initial_condition_clean_up
+  if (lparticles) call particles_cleanup
 !
 !  Before reading the rprint_list deallocate the arrays allocated for
 !  1-D and 2-D diagnostics.
 !
-  call fnames_clean_up()
-  call xyaverages_clean_up()
-  call xzaverages_clean_up()
-  call yzaverages_clean_up()
-  if (lwrite_yaverages)    call yaverages_clean_up()
-  if (lwrite_zaverages)    call zaverages_clean_up()
-  if (lwrite_phiaverages)  call phiaverages_clean_up()
-  if (lwrite_phizaverages) call phizaverages_clean_up()
-  if (lwrite_phiaverages)  call phiaverages_clean_up()
-  if (lwrite_sound)        call sound_clean_up()
+  call fnames_clean_up
+  call xyaverages_clean_up
+  call xzaverages_clean_up
+  call yzaverages_clean_up
+  if (lwrite_yaverages)    call yaverages_clean_up
+  if (lwrite_zaverages)    call zaverages_clean_up
+  if (lwrite_phiaverages)  call phiaverages_clean_up
+  if (lwrite_phizaverages) call phizaverages_clean_up
+  if (lwrite_phiaverages)  call phiaverages_clean_up
+  if (lwrite_sound)        call sound_clean_up
 !
 ! announce completion.
 !
