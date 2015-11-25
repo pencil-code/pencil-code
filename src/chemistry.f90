@@ -90,7 +90,11 @@ module Chemistry
      real, allocatable, dimension(:) :: kreactions_profile_width, kreactions_alpha
 !
      integer :: mreactions
-     integer, allocatable, dimension(:,:) :: stoichio,Sijm,Sijp
+!
+!  The stociometric factors need to be reals for arbitrary reaction orders
+!
+     real, allocatable, dimension(:,:) :: stoichio,Sijm,Sijp
+!     integer, allocatable, dimension(:,:) :: stoichio,Sijm,Sijp
      real,    allocatable, dimension(:,:) :: kreactions_z
      real,    allocatable, dimension(:)   :: kreactions_m,kreactions_p
      logical, allocatable, dimension(:) :: back
@@ -2716,8 +2720,8 @@ module Chemistry
           enddo
 990       close(19)
           nreactions=j-1
-          Sijm=-min(stoichio,0)
-          Sijp=+max(stoichio,0)
+          Sijm=-min(stoichio,0.0)
+          Sijp=+max(stoichio,0.0)
         else
           if (lroot) print*,'no chemistry.dat file to be read.'
           lreactions=.false.
@@ -3739,40 +3743,52 @@ module Chemistry
       integer, intent(in) :: StartInd,StopInd,k
       character (len=*), intent(in) :: ChemInpLine
       logical, intent(in) :: product
-      integer :: StartSpecie,ind_glob,ind_chem,stoi
-      logical :: found_specie
+      integer :: StartSpecie,ind_glob,ind_chem
+      real :: stoi
+      logical :: found_specie,lreal=.false.
+      integer :: stoi_int
 !
       if ((ChemInpLine(StartInd:StopInd) /= "M" ) &
           .and. (ChemInpLine(StartInd:StartInd+1) /= "hv" )) then
         StartSpecie=verify(ChemInpLine(StartInd:StopInd),&
             "1234567890")+StartInd-1
-        call find_species_index(ChemInpLine(StartSpecie:StopInd),&
-            ind_glob,ind_chem,found_specie)
 !
-        if (.not. found_specie) then
-          print*,'ChemInpLine=',ChemInpLine
-          print*,'StartSpecie,StopInd=',StartSpecie,StopInd
-          print*,'ChemInpLine(StartSpecie:StopInd)=',ChemInpLine(StartSpecie:StopInd)
-          print*,'ind_glob,ind_chem=',ind_glob,ind_chem
-!          if (.not. lpencil_check_small) then
+!  Call to a routine that checks for arbitrary stoiciometric coefficents
+!  removes them and shifts the begin of the species index in cheminpline
+!        
+        if (StopInd-StartSpecie >= 3 .and. StartSpecie > 1) &
+            call find_remove_real_stoic(ChemInpLine(StartSpecie-1:StopInd),lreal,stoi,StartSpecie)
+!
+          call find_species_index(ChemInpLine(StartSpecie:StopInd),&
+              ind_glob,ind_chem,found_specie)
+          if (.not. found_specie) then
+            print*,'ChemInpLine=',ChemInpLine
+            print*,'StartSpecie,StopInd=',StartSpecie,StopInd
+            print*,'ChemInpLine(StartSpecie:StopInd)=',ChemInpLine(StartSpecie:StopInd)
+            print*,'ind_glob,ind_chem=',ind_glob,ind_chem
+            !          if (.not. lpencil_check_small) then
 !          if (.not. lpencil_check) then
             call stop_it("build_stoich_matrix: Did not find species!")
 !          endif
 !          endif
-        endif
+          endif
+        
 !        if (found_specie) then
-        if (StartSpecie==StartInd) then
-          stoi=1
-        else
-          read (unit=ChemInpLine(StartInd:StartInd),fmt='(I1)') stoi
+          if (StartSpecie==StartInd) then
+              stoi=1.0
+          else
+            if (.not. lreal) then
+              read (unit=ChemInpLine(StartInd:StartInd),fmt='(I1)') stoi_int
+            endif
+          endif
         endif
+!
         if (product) then
           Sijm(ind_chem,k)=Sijm(ind_chem,k)+stoi
         else
           Sijp(ind_chem,k)=Sijp(ind_chem,k)+stoi
         endif
 !        endif
-      endif
 !
     endsubroutine build_stoich_matrix
 !***********************************************************************
@@ -3804,14 +3820,16 @@ module Chemistry
         do spec=1,nchemspec
           if (Sijp(spec,reac)>0) then
             Sijp_string=''
-            if (Sijp(spec,reac)>1) Sijp_string=itoa(Sijp(spec,reac))
+            if (Sijp(spec,reac)/=1) write(Sijp_string,'(F3.1)') Sijp(spec,reac)
+!            if (Sijp(spec,reac)>1) Sijp_string=itoa(Sijp(spec,reac))
             reac_string=trim(reac_string)//trim(separatorp)//&
                 trim(Sijp_string)//trim(varname(ichemspec(spec)))
             separatorp='+'
           endif
           if (Sijm(spec,reac)>0) then
             Sijm_string=''
-            if (Sijm(spec,reac)>1) Sijm_string=itoa(Sijm(spec,reac))
+            if (Sijm(spec,reac)/=1) write(Sijm_string,'(F3.1)') Sijm(spec,reac)
+!            if (Sijm(spec,reac)>1) Sijm_string=itoa(Sijm(spec,reac))
             product_string=trim(product_string)//trim(separatorm)//&
                 trim(Sijm_string)//trim(varname(ichemspec(spec)))
             separatorm='+'
@@ -3985,8 +4003,8 @@ module Chemistry
 !
 !  Initialize data
 !
-      Sijp=0
-      Sijm=0
+      Sijp=0.
+      Sijm=0.0
       back=.true.
 !
 !  read chemistry data
@@ -4015,12 +4033,12 @@ module Chemistry
          enddo
          write(file_id,*) 'stoichio='
          do i=1,nreactions
-          write(file_id,100) stoichio(:,i)
+          write(file_id,100) i,stoichio(:,i)
          enddo
         close(file_id)
       endif
 !
-100   format(16i4)
+100   format(I1,16f4.1)
 !
       call keep_compiler_quiet(f)
 !
@@ -4483,14 +4501,14 @@ module Chemistry
             endif
           enddo
           do k=1,nchemspec
-            if (abs(Sijm(k,reac))==1) then
+            if (abs(Sijm(k,reac))==1.0) then
               prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
                   /species_constants(k,imass))
-            else if (abs(Sijm(k,reac))==2) then
+            else if (abs(Sijm(k,reac))==2.0) then
               prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
                   /species_constants(k,imass))*(f(l1:l2,m,n,ichemspec(k))&
                   *rho_cgs(:)/species_constants(k,imass))
-            else if (abs(Sijm(k,reac))>0) then
+            else if (abs(Sijm(k,reac))>0.0) then
               prod2=prod2*(f(l1:l2,m,n,ichemspec(k))*rho_cgs(:)&
                   /species_constants(k,imass))**Sijm(k,reac)
             endif
@@ -6474,5 +6492,21 @@ module Chemistry
   if (allocated(Diff_full_add))  deallocate(Diff_full_add)
 !
   endsubroutine chemistry_clean_up
+!***********************************************************************
+  subroutine find_remove_real_stoic(Speciesstring,lreal,stoi,startindex)
+!
+    character(len=*), intent(in) :: Speciesstring
+    logical, intent(inout) :: lreal
+    real, intent(inout) :: stoi
+    integer, intent(inout) :: startindex
+    integer :: lreadable
+!
+    read(Speciesstring(1:3),'(F3.1)',iostat=lreadable) stoi
+    if (lreadable == 0) then
+      startindex=startindex+2
+      lreal = .True.
+    endif
+!
+  endsubroutine find_remove_real_stoic
 !***********************************************************************
 endmodule Chemistry
