@@ -86,7 +86,7 @@ module Special
 ! Declare index of new variables in f array (if any).
 !
    real :: diffmu5, lambda5, theta5_const=0., mu5_const=0.
-   real :: meanmu5, kx_theta5=1., ky_theta5=1., kx_mu5=1.
+   real :: meanmu5, kx_theta5=1., ky_theta5=1., kz_theta5=1., kx_mu5=1.
    real, pointer :: eta
    integer :: itheta5, imu5
    character (len=labellen) :: theta_prof='nothing'
@@ -98,7 +98,7 @@ module Special
       initspecial, theta5_const, mu5_const
 !
   namelist /special_run_pars/ &
-      diffmu5, lambda5, theta_prof, kx_theta5, ky_theta5, kx_mu5
+      diffmu5, lambda5, theta_prof, kx_theta5, ky_theta5, kx_mu5, ky_theta5
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -218,6 +218,12 @@ module Special
           enddo; enddo 
           f(:,:,:,imu5) = mu5_const
 !
+        case ('theta5_cosz')
+          do n=n1,n2; do m=m1,m2
+            f(:,m,n,itheta5)=theta5_const*cos(kz_theta5*x)
+            f(:,m,n,imu5)=mu5_const
+          enddo; enddo 
+!
         case default
           call fatal_error("init_special: No such value for initspecial:" &
               ,trim(initspecial))
@@ -241,7 +247,7 @@ module Special
       if (lhydro) lpenc_requested(i_gtheta5)=.true.
       if (lhydro) lpenc_requested(i_ugtheta5)=.true.
       if (lmagnetic) lpenc_requested(i_bgtheta5)=.true.
-      if (lhydro) lpenc_requested(i_uu)=.true.
+      if (lhydro .or. lhydro_kinematic) lpenc_requested(i_uu)=.true.
       if (lmagnetic) lpenc_requested(i_bb)=.true.
       if (lmagnetic.and.lhydro) lpenc_requested(i_ub)=.true.
       if (lmagnetic.and.lhydro) lpenc_requested(i_jb)=.true.
@@ -312,7 +318,7 @@ module Special
       intent(inout) :: df
 !
       real, dimension (nx) :: dtheta5, EB
-      real, dimension (nx,3) :: ubgtheta5, dtheta5_bb, mu5bb, uxbbgtheta5
+      real, dimension (nx,3) :: ubgtheta5, dtheta5_bb, mu5bb, uxbbgtheta5, ubvgtheta5
       real, parameter :: alpha_fine_structure=1./137.
 !
 !  Identify module and boundary conditions.
@@ -343,7 +349,8 @@ module Special
       if (lmagnetic) then
         call multsv(p%mu5,p%bb,mu5bb)
         call multsv(p%ub,p%gtheta5,ubgtheta5)
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+eta*(mu5bb-ubgtheta5)
+        call multsv(p%bgtheta5,p%uu,ubvgtheta5)
+        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+eta*(mu5bb-ubvgtheta5)
       endif
 !
 !  Additions to evolution of uu
