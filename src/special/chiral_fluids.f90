@@ -355,10 +355,6 @@ module Special
         call multsv(p%bgtheta5,p%uu,ubgtheta5)
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+eta*(mu5bb-ubgtheta5)
       endif
-if (m.eq.24) then
-print*,'JEN,','aa from f', f(l1,m,n,iax), f(l1,m,n,iay), f(l1,m,n,iaz)
-print*,'JEN,','bb pencil', p%bb(l1,0), p%bb(l1,1), p%bb(l1,2)
-endif
 !
 !  Additions to evolution of uu
 !
