@@ -384,7 +384,8 @@ module Hydro
   integer :: idiag_uguzm=0      ! DIAG_DOC:
   integer :: idiag_ugurmsx=0    ! DIAG_DOC: $\left<\left(\uv\nabla\uv\right)^2\right>^{1/2}$
                                 ! DIAG_DOC: for the hydro_xaver_range
-  integer :: idiag_ugu2m=0      ! DIAG_DOC:
+  integer :: idiag_ugu2m=0      ! DIAG_DOC: $\left<\uv\nabla\uv\right>^2$
+  integer :: idiag_dudx=0        ! DIAG_DOC: $\left<\frac{\delta \uv}{\delta x}\right>$ 
   integer :: idiag_Marms=0      ! DIAG_DOC: $\left<\uv^2/\cs^2\right>$
                                 ! DIAG_DOC:   \quad(rms Mach number)
   integer :: idiag_Mamax=0      ! DIAG_DOC: $\max |\uv|/\cs$
@@ -2671,6 +2672,9 @@ module Hydro
         if (idiag_uguxm/=0) call sum_mn_name(p%ugu(:,1),idiag_uguxm)
         if (idiag_uguym/=0) call sum_mn_name(p%ugu(:,2),idiag_uguym)
         if (idiag_uguzm/=0) call sum_mn_name(p%ugu(:,3),idiag_uguzm)
+        if (idiag_dudx/=0) then 
+          call sum_mn_name(p%uij(:,1,1),idiag_dudx)
+        endif
         if (idiag_ugu2m/=0) call sum_mn_name(p%ugu2,idiag_ugu2m)
         if (idiag_ugurmsx/=0) call sum_mn_name(p%ugu2*xmask_hyd,idiag_ugurmsx,lsqrt=.true.)
         if (idiag_fkinzm/=0) call sum_mn_name(.5*p%rho*p%u2*p%uu(:,3),idiag_fkinzm)
@@ -4265,6 +4269,7 @@ module Hydro
         idiag_uguym=0
         idiag_uguzm=0
         idiag_ugu2m=0
+        idiag_dudx=0
         idiag_ugurmsx=0
         idiag_uguxmx=0
         idiag_uguymx=0
@@ -4423,6 +4428,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'uguxm',idiag_uguxm)
         call parse_name(iname,cname(iname),cform(iname),'uguym',idiag_uguym)
         call parse_name(iname,cname(iname),cform(iname),'uguzm',idiag_uguzm)
+        call parse_name(iname,cname(iname),cform(iname),'dudx',idiag_dudx)
         call parse_name(iname,cname(iname),cform(iname),'ugu2m',idiag_ugu2m)
         call parse_name(iname,cname(iname),cform(iname),'ugurmsx',idiag_ugurmsx)
         call parse_name(iname,cname(iname),cform(iname),'uxglnrym',idiag_uxglnrym)
