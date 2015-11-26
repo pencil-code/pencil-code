@@ -106,6 +106,7 @@ module Special
   integer :: idiag_mu5m=0      ! DIAG_DOC: $\left<\mu_5\right>$
   integer :: idiag_mu5rms=0    ! DIAG_DOC: $\left<\mu_5^2\right>^{1/2}$
   integer :: idiag_bgmu5rms=0  ! DIAG_DOC: $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$
+  integer :: idiag_bgtheta5rms=0  ! DIAG_DOC: $\left<(\Bv\cdot\nabla\theta_5)^2\right>^{1/2}$
   integer :: idiag_theta5m=0   ! DIAG_DOC: $\left<\theta_5\right>$
   integer :: idiag_theta5rms=0 ! DIAG_DOC: $\left<\theta_5^2\right>^{1/2}$
 !
@@ -239,6 +240,7 @@ module Special
       lpenc_requested(i_mu5)=.true.
       lpenc_diagnos(i_theta5)=.true.
       if (ldt) lpenc_requested(i_rho)=.true.
+      if (ldt) lpenc_requested(i_rho1)=.true.
       if (diffmu5/=0.) lpenc_requested(i_del2mu5)=.true.
       if (difftheta5/=0.) lpenc_requested(i_del2theta5)=.true.
       if (lhydro.or.lhydro_kinematic) lpenc_requested(i_gtheta5)=.true.
@@ -319,7 +321,7 @@ module Special
       intent(in) :: f,p
       intent(inout) :: df
 !
-      real, dimension (nx) :: dtheta5, bgmu5, EB
+      real, dimension (nx) :: dtheta5, bgmu5, bgtheta5, EB
       real, dimension (nx,3) :: ubgtheta5, dtheta5_bb, mu5bb, uxbbgtheta5r
       real, parameter :: alpha_fine_structure=1./137.
 !
@@ -353,6 +355,10 @@ module Special
         call multsv(p%bgtheta5,p%uu,ubgtheta5)
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+eta*(mu5bb-ubgtheta5)
       endif
+if (m.eq.24) then
+print*,'JEN,','aa from f', f(l1,m,n,iax), f(l1,m,n,iay), f(l1,m,n,iaz)
+print*,'JEN,','bb pencil', p%bb(l1,0), p%bb(l1,1), p%bb(l1,2)
+endif
 !
 !  Additions to evolution of uu
 !
@@ -383,6 +389,10 @@ module Special
         if (idiag_bgmu5rms/=0) then
           call dot_mn(p%bb,p%gmu5,bgmu5)
           call sum_mn_name(bgmu5**2,idiag_bgmu5rms,lsqrt=.true.)
+        endif
+        if (idiag_bgtheta5rms/=0) then
+          call dot_mn(p%bb,p%gtheta5,bgtheta5)
+          call sum_mn_name(bgtheta5**2,idiag_bgtheta5rms,lsqrt=.true.)
         endif
         if (idiag_theta5m/=0) call sum_mn_name(p%theta5,idiag_theta5m)
         if (idiag_theta5rms/=0) call sum_mn_name(p%theta5**2,idiag_theta5rms,lsqrt=.true.)
@@ -445,13 +455,14 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_mu5m=0; idiag_mu5rms=0; idiag_bgmu5rms=0; idiag_theta5m=0; idiag_theta5rms=0
+        idiag_mu5m=0; idiag_mu5rms=0; idiag_bgmu5rms=0; idiag_bgtheta5rms=0; idiag_theta5m=0; idiag_theta5rms=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'mu5m',idiag_mu5m)
         call parse_name(iname,cname(iname),cform(iname),'mu5rms',idiag_mu5rms)
         call parse_name(iname,cname(iname),cform(iname),'bgmu5rms',idiag_bgmu5rms)
+        call parse_name(iname,cname(iname),cform(iname),'bgtheta5rms',idiag_bgtheta5rms)
         call parse_name(iname,cname(iname),cform(iname),'theta5m',idiag_theta5m)
         call parse_name(iname,cname(iname),cform(iname),'theta5rms',idiag_theta5rms)
       enddo
