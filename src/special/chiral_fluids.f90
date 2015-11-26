@@ -105,6 +105,7 @@ module Special
 !
   integer :: idiag_mu5m=0      ! DIAG_DOC: $\left<\mu_5\right>$
   integer :: idiag_mu5rms=0    ! DIAG_DOC: $\left<\mu_5^2\right>^{1/2}$
+  integer :: idiag_bgmu5rms=0  ! DIAG_DOC: $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$
   integer :: idiag_theta5m=0   ! DIAG_DOC: $\left<\theta_5\right>$
   integer :: idiag_theta5rms=0 ! DIAG_DOC: $\left<\theta_5^2\right>^{1/2}$
 !
@@ -307,7 +308,7 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use Sub, only: multsv
+      use Sub, only: multsv, dot_mn
       use Diagnostics, only: sum_mn_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -318,8 +319,8 @@ module Special
       intent(in) :: f,p
       intent(inout) :: df
 !
-      real, dimension (nx) :: dtheta5, EB
-      real, dimension (nx,3) :: ubgtheta5, dtheta5_bb, mu5bb, uxbbgtheta5
+      real, dimension (nx) :: dtheta5, bgmu5, EB
+      real, dimension (nx,3) :: ubgtheta5, dtheta5_bb, mu5bb, uxbbgtheta5r
       real, parameter :: alpha_fine_structure=1./137.
 !
 !  Identify module and boundary conditions.
@@ -341,7 +342,7 @@ module Special
 !
       if (lhydro) then
       df(l1:l2,m,n,itheta5)=df(l1:l2,m,n,itheta5)-p%ugtheta5+p%mu5 &
-        +difftheta5*p%del2theta5- meanmu5
+        +difftheta5*p%del2theta5 !-meanmu5
       endif
 !      print*,       df(l1:l2,m,n,itheta5), f(l1:l2,m,n,itheta5)
 !
@@ -349,15 +350,15 @@ module Special
 !
       if (lmagnetic) then
         call multsv(p%mu5,p%bb,mu5bb)
-        call multsv(p%ub,p%gtheta5,ubgtheta5)
+        call multsv(p%bgtheta5,p%uu,ubgtheta5)
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+eta*(mu5bb-ubgtheta5)
       endif
 !
 !  Additions to evolution of uu
 !
       if (lhydro) then
-        call multsv(p%bgtheta5,p%uxb,uxbbgtheta5)
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+uxbbgtheta5
+        call multsv(p%rho1*p%bgtheta5,p%uxb,uxbbgtheta5r)
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+uxbbgtheta5r
       endif
 !  Contribution to the time-step
 !
@@ -379,6 +380,10 @@ module Special
       if (ldiagnos) then
         if (idiag_mu5m/=0) call sum_mn_name(p%mu5,idiag_mu5m)
         if (idiag_mu5rms/=0) call sum_mn_name(p%mu5**2,idiag_mu5rms,lsqrt=.true.)
+        if (idiag_bgmu5rms/=0) then
+          call dot_mn(p%bb,p%gmu5,bgmu5)
+          call sum_mn_name(bgmu5**2,idiag_bgmu5rms,lsqrt=.true.)
+        endif
         if (idiag_theta5m/=0) call sum_mn_name(p%theta5,idiag_theta5m)
         if (idiag_theta5rms/=0) call sum_mn_name(p%theta5**2,idiag_theta5rms,lsqrt=.true.)
       endif
@@ -440,12 +445,13 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_mu5m=0; idiag_mu5rms=0; idiag_theta5m=0; idiag_theta5rms=0
+        idiag_mu5m=0; idiag_mu5rms=0; idiag_bgmu5rms=0; idiag_theta5m=0; idiag_theta5rms=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'mu5m',idiag_mu5m)
         call parse_name(iname,cname(iname),cform(iname),'mu5rms',idiag_mu5rms)
+        call parse_name(iname,cname(iname),cform(iname),'bgmu5rms',idiag_bgmu5rms)
         call parse_name(iname,cname(iname),cform(iname),'theta5m',idiag_theta5m)
         call parse_name(iname,cname(iname),cform(iname),'theta5rms',idiag_theta5rms)
       enddo

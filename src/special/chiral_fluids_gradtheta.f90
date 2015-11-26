@@ -107,6 +107,7 @@ module Special
 !
   integer :: idiag_mu5m=0      ! DIAG_DOC: $\left<\mu_5\right>$
   integer :: idiag_mu5rms=0    ! DIAG_DOC: $\left<\mu_5^2\right>^{1/2}$
+  integer :: idiag_bgmu5rms=0  ! DIAG_DOC: $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$
   integer :: idiag_gtheta5rms=0! DIAG_DOC: $\left<(\nabla\theta_5)^2\right>^{1/2}$
 !
   contains
@@ -303,7 +304,7 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use Sub, only: multsv, dot2_mn, dot_mn_vm_trans
+      use Sub, only: multsv, dot_mn, dot2_mn, dot_mn_vm_trans
       use Diagnostics, only: sum_mn_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -314,7 +315,7 @@ module Special
       intent(in) :: f,p
       intent(inout) :: df
 !
-      real, dimension (nx) :: dtheta5, gtheta52, EB
+      real, dimension (nx) :: dtheta5, gtheta52, bgmu5, EB
       real, dimension (nx,3) :: mu5bb, dtheta5_bb, uxbbgtheta5r, ubgtheta5
       real, dimension (nx,3) :: uijtransgtheta5
       real, parameter :: alpha_fine_structure=1./137.
@@ -331,7 +332,7 @@ module Special
 !
 !  Evolution of mu5
 !
-      df(l1:l2,m,n,imu5)=df(l1:l2,m,n,imu5) - p%ugmu5 &
+      df(l1:l2,m,n,imu5)=df(l1:l2,m,n,imu5)-p%ugmu5 &
         +diffmu5*p%del2mu5+lambda5*EB
 !
 !  Evolution of gtheta5
@@ -355,7 +356,7 @@ module Special
 !  Additions to evolution of uu
 !
       if (lhydro) then
-        call multsv(p%bgtheta5*p%rho1,p%uxb,uxbbgtheta5r)
+        call multsv(p%rho1*p%bgtheta5,p%uxb,uxbbgtheta5r)
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+uxbbgtheta5r
       endif
 !
@@ -389,6 +390,10 @@ module Special
       if (ldiagnos) then
         if (idiag_mu5m/=0) call sum_mn_name(p%mu5,idiag_mu5m)
         if (idiag_mu5rms/=0) call sum_mn_name(p%mu5**2,idiag_mu5rms,lsqrt=.true.)
+        if (idiag_bgmu5rms/=0) then
+          call dot_mn(p%bb,p%gmu5,bgmu5)
+          call sum_mn_name(bgmu5**2,idiag_bgmu5rms,lsqrt=.true.)
+        endif
         if (idiag_gtheta5rms/=0) then
           call dot2_mn(p%gtheta5,gtheta52)
           call sum_mn_name(gtheta52,idiag_gtheta5rms,lsqrt=.true.)
@@ -452,12 +457,13 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_mu5m=0; idiag_mu5rms=0; idiag_gtheta5rms=0
+        idiag_mu5m=0; idiag_mu5rms=0; idiag_bgmu5rms=0; idiag_gtheta5rms=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'mu5m',idiag_mu5m)
         call parse_name(iname,cname(iname),cform(iname),'mu5rms',idiag_mu5rms)
+        call parse_name(iname,cname(iname),cform(iname),'bgmu5rms',idiag_bgmu5rms)
         call parse_name(iname,cname(iname),cform(iname),'gtheta5rms',idiag_gtheta5rms)
       enddo
 !
