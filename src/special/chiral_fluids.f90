@@ -236,7 +236,7 @@ module Special
 !
       lpenc_requested(i_b2)=.true.
       lpenc_requested(i_mu5)=.true.
-      lpenc_requested(i_theta5)=.true.
+      lpenc_diagnos(i_theta5)=.true.
       if (ldt) lpenc_requested(i_rho)=.true.
       if (diffmu5/=0.) lpenc_requested(i_del2mu5)=.true.
       if (difftheta5/=0.) lpenc_requested(i_del2theta5)=.true.
@@ -285,6 +285,7 @@ module Special
       if (lpencil(i_theta5)) p%theta5=f(l1:l2,m,n,itheta5)
       if (lpencil(i_del2mu5)) call del2(f,imu5,p%del2mu5)
       if (lpencil(i_del2theta5)) call del2(f,itheta5,p%del2theta5)
+      if (lpencil(i_gmu5)) call grad(f,imu5,p%gmu5)
       if (lpencil(i_gtheta5)) call grad(f,itheta5,p%gtheta5)
       if (lpencil(i_ugmu5)) call dot(p%uu,p%gmu5,p%ugmu5)
       if (lpencil(i_ugtheta5)) call dot(p%uu,p%gtheta5,p%ugtheta5)
