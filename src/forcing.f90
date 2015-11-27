@@ -103,6 +103,7 @@ module Forcing
   real, dimension(n_forcing_cont_max) :: fcont_ampl=1., ABC_A=1., ABC_B=1., ABC_C=1.
   real :: ampl_diffrot,omega_exponent
   real :: omega_tidal, R0_tidal, phi_tidal
+  real :: cs0eff=impossible
 !
 !  auxiliary functions for continuous forcing function
 !
@@ -142,7 +143,7 @@ module Forcing
        z_bb,width_bb,eta_bb,fcont_ampl, &
        ampl_diffrot,omega_exponent,kx_2df,ky_2df,xminf,xmaxf,yminf,ymaxf, &
        lavoid_xymean,lavoid_ymean,lavoid_zmean, omega_tidal, R0_tidal, phi_tidal, &
-       n_hel_sin_pow,kzlarge
+       n_hel_sin_pow, kzlarge, cs0eff
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -1209,6 +1210,7 @@ print*,'NS: z_center=',z_center_fcont
 !  06-dec-13/nishant: made kkx etc allocatable
 !  20-aug-14/MR: discard wavevectors analogously to forcing_irrot
 !  21-jan-15/MR: changes for use of reference state.
+!  26-nov-15/AB: The cs0eff factor used for normalization can now be set.
 !
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
@@ -1233,7 +1235,6 @@ print*,'NS: z_center=',z_center_fcont
       logical, save :: lfirst_call=.true.
       integer, save :: nk
       integer :: ik,j,jf,j2f
-      real, save :: cs0eff
       real :: kx0,kx,ky,kz,k2,k,force_ampl,pi_over_Lx
       real :: ex,ey,ez,kde,sig,fact,kex,key,kez,kkex,kkey,kkez
       real, dimension(3) :: e1,e2,ee,kk
@@ -1266,11 +1267,13 @@ print*,'NS: z_center=',z_center_fcont
 !
 !  At the moment, cs0 is used for normalization.
 !
-        if (cs0==impossible) then
-          cs0eff=1.
-          if (headt) print*,'forcing_hel: for normalization, use cs0eff=',cs0eff
-        else
-          cs0eff=cs0
+        if (cs0eff==impossible) then
+          if (cs0==impossible) then
+            cs0eff=1.
+            if (headt) print*,'forcing_hel: for normalization, use cs0eff=',cs0eff
+          else
+            cs0eff=cs0
+          endif
         endif
 !
       endif
