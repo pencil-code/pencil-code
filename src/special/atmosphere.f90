@@ -735,6 +735,13 @@ module Special
 !             call bc_satur_x(f,bc)
          endselect
          bc%done=.true.
+         case ('fff')
+         select case (bc%location)
+         case (iBC_X_BOT)
+           call bc_file_x_special(f,bc)
+!             call bc_satur_x(f,bc)
+         endselect
+         bc%done=.true.
       endselect
 !
     endsubroutine special_boundconds
@@ -1407,6 +1414,218 @@ subroutine bc_satur_x(f,bc)
         endif
 !
      endsubroutine set_init_parameters
+!***********************************************************************
+     subroutine bc_file_x_special(f,bc)
+
+       use Cdata
+!
+!      real, dimension (mx,my,mz,mvar+maux) :: f
+!      integer :: sgn
+!      type (boundary_condition) :: bc
+!      integer :: i,j,vr
+!      integer :: jjj,kkk
+!      real :: value1, value2, rad_2
+!      real, dimension (2) :: jet_center=0.
+!      real, dimension (my,mz) :: u_profile
+!      
+!      
+!       character (len=bclen), intent (in) :: topbot
+      type (boundary_condition) :: bc
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (1000, 1000) :: TTx
+!
+ !     real, dimension (:,:,:,:), allocatable :: bc_file_x_array
+       real, dimension (:,:,:,:), allocatable :: bc_file_x_array
+       real, dimension (:,:), allocatable :: bc_T_x_array
+       real, dimension (100) :: tmp
+      integer :: i,j,lbc0,lbc1,lbc2,stat,iszx,io_code,vr
+      real :: lbc,frac
+      logical, save :: lbc_file_x=.true.
+      logical, save :: lbc_T_x=.true.
+ !     
+!
+!  Allocate memory for large array.
+!
+!      allocate(bc_file_x_array(mx,my,mz,mvar),stat=stat)
+      allocate(bc_file_x_array(mx,my,mz,mvar),stat=stat)
+      if (stat>0) call fatal_error('bc_file_x', &
+          'Could not allocate memory for bc_file_x_array')
+!
+      if (lbc_file_x) then
+        if (lroot) then
+          print*,'opening bc_file_x.dat'
+!          open(9,file=trim(directory_dist)//'/bc_file_x.dat',form='unformatted')
+          open(9,file='bc_file_x.dat',form='unformatted')
+          read(9,iostat=io_code) bc_file_x_array
+!          
+!          print*,maxval(bc_file_x_array)
+!
+          if (io_code < 0) then
+            ! end of file
+            if (lroot) print*,'need file with dimension: for fil2 ',mx,my,mz, mvar
+            deallocate(bc_file_x_array)
+ !           call stop_it("boundary file bc_file_x.dat has incorrect size")
+          endif
+          close(9)
+        endif
+        lbc_file_x=.false.
+      endif
+!      
+      allocate(bc_T_x_array(64,61),stat=stat)
+      if (stat>0) call fatal_error('bc_file_x', &
+          'Could not allocate memory for bc_file_x_array')
+!
+      if (lbc_T_x) then
+        if (lroot) then
+          print*,'opening T.dat'
+          open(9,file='T.dat')
+!          
+          do i = 1,60
+            read(9,*) (tmp(j),j=1,64)
+            bc_T_x_array(:,i)=tmp(:)
+          enddo
+!          
+!         print*,bc_T_x_array(:,60)
+!
+!
+          if (io_code < 0) then
+            ! end of file
+            if (lroot) print*,'need file with dimension: for fil2 633 62 '
+            deallocate(bc_file_x_array)
+ !           call stop_it("boundary file bc_file_x.dat has incorrect size")
+          endif
+          close(9)
+        endif
+        lbc_T_x=.false.
+      endif
+!      
+      vr=bc%ivar
+!      value1=bc%value1
+!      value2=bc%value2
+!      
+      iszx=size(f,1)
+!
+!  x - Udrift_bc*t = dx * (ix - Udrift_bc*t/dx)
+!
+      if (bc%location==iBC_Y_BOT) then
+        lbc=Udrift_bc*t*dx_1(1)+1.
+        lbc0=int(lbc)
+        frac=mod(lbc,real(lbc0))
+        lbc1=iszx+mod(-lbc0,iszx)
+        lbc2=iszx+mod(-lbc0-1,iszx)
+        do i=1,nghost
+          f(l1-i,:,:,vr)=(1-frac)*bc_file_x_array(lbc1,:,:,vr) &
+                           +frac*bc_file_x_array(lbc2,:,:,vr)
+        enddo
+      elseif (bc%location==iBC_X_TOP) then
+!
+!  note: this "top" thing hasn't been adapted or tested yet.
+!  The -lbc0-1 has been changed to +lbc0+1, but has not been tested yet.
+!
+        lbc=Udrift_bc*t*dx_1(1)+1.
+        lbc0=int(lbc)
+        frac=mod(lbc,real(lbc0))
+        lbc1=iszx+mod(+lbc0,iszx)
+        lbc2=iszx+mod(+lbc0+1,iszx)
+        do i=1,nghost
+          f(l2+i,:,:,vr)=(1-frac)*bc_file_x_array(lbc1,:,:,vr) &
+                           +frac*bc_file_x_array(lbc2,:,:,vr)
+        enddo
+
+        
+      else
+        print*, "bc_satur_x: ", bc%location, " should be `top(", &
+                        iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
+      endif
+!        
+!
+      deallocate(bc_file_x_array)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!      do jjj=1,my
+!      do kkk=1,mz
+!        rad_2=((y(jjj)-jet_center(1))**2+(z(kkk)-jet_center(1))**2)
+!        u_profile(jjj,kkk)=exp(-rad_2/sigma**2)
+!      enddo
+!      enddo
+!
+!      vr=bc%ivar
+!      value1=bc%value1
+!      value2=bc%value2
+!
+!      if (bc%location==iBC_X_BOT) then
+      ! bottom boundary
+!        f(l1,m1:m2,n1:n2,vr) = value1*u_profile(m1:m2,n1:n2)
+!        do i=0,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)+sgn*f(l1+i,:,:,vr); enddo
+!      elseif (bc%location==iBC_X_TOP) then
+      ! top boundary
+!        f(l2,m1:m2,n1:n2,vr) = value2*u_profile(m1:m2,n1:n2)
+!        do i=1,nghost; f(l2+i,:,:,vr)=2*f(l2,:,:,vr)+sgn*f(l2-i,:,:,vr); enddo
+!      else
+!        print*, "bc_BL_x: ", bc%location, " should be `top(", &
+!                        iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
+!      endif
+!
+!  Allocate memory for large array.
+!
+!      allocate(bc_file_x_array(mx,my,mz,mvar),stat=stat)
+!      if (stat>0) call fatal_error('bc_file_x', &
+!         'Could not allocate memory for bc_file_x_array')
+!
+!      if (lbc_file_x) then
+!        if (lroot) then
+!         print*,'opening bc_file_x.dat'
+!         open(9,file=trim(directory_dist)//'/bc_file_x.dat',form='unformatted')
+!          read(9,iostat=io_code) bc_file_x_array
+!          if (io_code < 0) then
+!            ! end of file
+!            if (lroot) print*,'need file with dimension: ',mx,my,mz,mvar
+!            deallocate(bc_file_x_array)
+!           call stop_it("boundary file bc_file_x.dat has incorrect size")
+!          endif
+!          close(9)
+!        endif
+!        lbc_file_x=.false.
+!      endif
+      
+!      iszx=size(f,1)
+!
+!      select case (topbot)
+!
+!  x - Udrift_bc*t = dx * (ix - Udrift_bc*t/dx)
+!
+!      case ('bot')               ! bottom boundary
+!        lbc=Udrift_bc*t*dx_1(1)+1.
+!        lbc0=int(lbc)
+!        frac=mod(lbc,real(lbc0))
+!        lbc1=iszx+mod(-lbc0,iszx)
+!        lbc2=iszx+mod(-lbc0-1,iszx)
+!        do i=1,nghost
+!          f(l1-i,:,:,j)=(1-frac)*bc_file_x_array(lbc1,:,:,j) &
+!                           +frac*bc_file_x_array(lbc2,:,:,j)
+!        enddo
+!      case ('top')               ! top boundary
+!
+!  note: this "top" thing hasn't been adapted or tested yet.
+!  The -lbc0-1 has been changed to +lbc0+1, but has not been tested yet.
+!
+!        lbc=Udrift_bc*t*dx_1(1)+1.
+!        lbc0=int(lbc)
+!        frac=mod(lbc,real(lbc0))
+!        lbc1=iszx+mod(+lbc0,iszx)
+!        lbc2=iszx+mod(+lbc0+1,iszx)
+!        do i=1,nghost
+!          f(l2+i,:,:,j)=(1-frac)*bc_file_x_array(lbc1,:,:,j) &
+!                           +frac*bc_file_x_array(lbc2,:,:,j)
+!        enddo
+!      case default
+!        call warning('bc_fix_x',topbot//" should be 'top' or 'bot'")
+!
+!      endselect
+!
+!      deallocate(bc_file_x_array)
+!
+    endsubroutine bc_file_x_special
 !***********************************************************************
 !********************************************************************
 !
