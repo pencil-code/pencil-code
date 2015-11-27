@@ -1247,7 +1247,8 @@ module Boundcond
 !  Periodic boundary condition across the pole
 !
 !  15-jun-10/dhruba: aped
-!  15-oct-15/fred NB use for scalars and radial vector components
+!  15-oct-15/fred NB use sgn= 1 for scalars and radial vector components
+!                        sgn=-1 for theta and phi vector components
 !            In principle similar conditions could apply for R=0
 !            for sph/cyl coords, but not yet implemented
 !
