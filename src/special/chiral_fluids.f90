@@ -88,6 +88,7 @@ module Special
 !
    real :: diffmu5, difftheta5, lambda5, theta5_const=0., mu5_const=0.
    real :: meanmu5, kx_theta5=1., ky_theta5=1., kx_mu5=1.
+   real :: cdtchiral
    real, pointer :: eta
    integer :: itheta5, imu5
    character (len=labellen) :: theta_prof='nothing'
@@ -99,7 +100,8 @@ module Special
       initspecial, theta5_const, mu5_const
 !
   namelist /special_run_pars/ &
-      diffmu5, difftheta5, lambda5, theta_prof, kx_theta5, ky_theta5, kx_mu5
+      diffmu5, difftheta5, lambda5, theta_prof, kx_theta5, ky_theta5, kx_mu5, &
+      cdtchiral
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -365,7 +367,7 @@ module Special
 !  Contribution to the time-step
 !
       if (lfirst.and.ldt) then
-        diffus_special= max(p%b2*p%theta5/(p%rho)*sqrt(dxyz_2),   &
+        diffus_special= cdtchiral*max(p%b2*p%theta5/(p%rho)*sqrt(dxyz_2),   &
                             eta*p%mu5*sqrt(dxyz_2),   &
                             eta*p%theta5*sqrt(p%u2)*dxyz_2,   &
                             diffmu5*dxyz_2,   &
