@@ -88,7 +88,7 @@ module Special
 !
    real :: diffmu5, difftheta5, lambda5, theta5_const=0., mu5_const=0.
    real :: meanmu5, kx_theta5=1., ky_theta5=1., kx_mu5=1.
-   real :: cdtchiral
+   real :: cdtchiral=1.
    real, pointer :: eta
    integer :: itheta5, imu5
    character (len=labellen) :: theta_prof='nothing'
@@ -317,7 +317,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: chiraldiffusion
+      real, dimension (nx) :: diffus_chiral
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -365,17 +365,16 @@ module Special
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+uxbbgtheta5r
       endif
 !  Contribution to the time-step
-!
       if (lfirst.and.ldt) then
-        diffus_special= cdtchiral*max(p%b2*p%theta5/(p%rho)*sqrt(dxyz_2),   &
-                            eta*p%mu5*sqrt(dxyz_2),   &
-                            eta*p%theta5*sqrt(p%u2)*dxyz_2,   &
-                            diffmu5*dxyz_2,   &
-                            lambda5*eta*p%b2/(p%mu5)*sqrt(dxyz_2),   &
-                            lambda5*eta*p%b2,   &
-                            !lambda5*eta*p%b2*sqrt(p%u2)*p%theta5/(p%mu5)*sqrt(dxyz_2), &
-                            !p%mu5/p%theta5   &
-                            lambda5*eta*p%b2*sqrt(p%u2)*p%theta5/(p%mu5)*sqrt(dxyz_2) &
+        diffus_special= cdtchiral*max(eta*p%mu5*sqrt(dxyz_2),   &
+                                      eta*sqrt(p%u2)*p%theta5*dxyz_2,   &
+                                      diffmu5*sqrt(dxyz_2),   &
+                                      lambda5*eta*p%b2/(p%mu5)*sqrt(dxyz_2),   &
+                                      lambda5*eta*p%b2,   &  
+                                      lambda5*eta*sqrt(p%u2)*p%b2*p%theta5/(p%mu5)*sqrt(dxyz_2), &     
+                                      sqrt(p%u2)*sqrt(dxyz_2),   &                
+                                      p%mu5/p%theta5,   & 
+                                      p%b2*p%theta5*p%rho1*sqrt(dxyz_2)   & 
                           )  
       endif
 !
