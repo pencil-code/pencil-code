@@ -145,7 +145,9 @@ module Energy
   real, dimension (mz) :: ssmz,cs2mz
   real, dimension (nz,3) :: gssmz
   real, dimension (nz) :: del2ssmz
-  real, dimension (nx) :: cs2mx, ssmx
+  real, dimension (mx) :: ssmx
+  real, dimension (nx,3) :: gssmx
+  real, dimension (nx) :: cs2mx, del2ssmx
   real, dimension (nx,my) :: cs2mxy, ssmxy
 !
 !  Input parameters.
@@ -282,8 +284,10 @@ module Energy
 ! yz averaged diagnostics given in yzaver.in
 !
   integer :: idiag_ssmx=0       ! YZAVG_DOC: $\left< s \right>_{yz}$
+  integer :: idiag_ss2mx=0      ! YZAVG_DOC: $\left< s^2 \right>_{yz}$
   integer :: idiag_ppmx=0       ! YZAVG_DOC: $\left< p \right>_{yz}$
   integer :: idiag_TTmx=0       ! YZAVG_DOC: $\left< T \right>_{yz}$
+  integer :: idiag_TT2mx=0      ! YZAVG_DOC: $\left< T^2 \right>_{yz}$
   integer :: idiag_uxTTmx=0     ! YZAVG_DOC: $\left< u_x T \right>_{yz}$
   integer :: idiag_uyTTmx=0     ! YZAVG_DOC: $\left< u_y T \right>_{yz}$
   integer :: idiag_uzTTmx=0     ! YZAVG_DOC: $\left< u_z T \right>_{yz}$
@@ -2655,7 +2659,8 @@ module Energy
       endif
       if (idiag_ssruzm/=0 .or. idiag_ssuzm/=0 .or. idiag_ssm/=0 .or. &
           idiag_ss2m/=0 .or. idiag_ssmz/=0 .or. idiag_ss2mz/=0 .or. & 
-          idiag_ssmy/=0 .or. idiag_ssmx/=0 .or. idiag_ssmr/=0) & 
+          idiag_ssmy/=0 .or. idiag_ssmx/=0 .or. idiag_ss2mx/=0 .or. & 
+          idiag_ssmr/=0) & 
           lpenc_diagnos(i_ss)=.true.
       if (idiag_ppmx/=0 .or. idiag_ppmy/=0 .or. idiag_ppmz/=0) &
          lpenc_diagnos(i_pp)=.true.
@@ -2701,8 +2706,8 @@ module Energy
       if (idiag_TTm/=0 .or. idiag_TTmx/=0 .or. idiag_TTmy/=0 .or. &
           idiag_TTmz/=0 .or. idiag_TTmr/=0 .or. idiag_TTmax/=0 .or. &
           idiag_TTmin/=0 .or. idiag_uxTTmz/=0 .or.idiag_uyTTmz/=0 .or. &
-          idiag_uzTTmz/=0 .or. idiag_TT2mz/=0 .or. idiag_uxTTmx/=0 .or. &
-          idiag_uyTTmx/=0 .or. idiag_uzTTmx/=0) &
+          idiag_uzTTmz/=0 .or. idiag_TT2mx/=0 .or. idiag_TT2mz/=0 .or. &
+          idiag_uxTTmx/=0 .or. idiag_uyTTmx/=0 .or. idiag_uzTTmx/=0) &
           lpenc_diagnos(i_TT)=.true.
       if (idiag_gTmax/=0) then
         lpenc_diagnos(i_glnTT) =.true.
@@ -3187,6 +3192,7 @@ module Energy
         call xysum_mn_name_z(p%cp*p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
         call yzsum_mn_name_x(p%cp*p%rho*p%uu(:,1)*p%TT,idiag_fconvxmx)
         call yzsum_mn_name_x(p%ss,idiag_ssmx)
+        call yzsum_mn_name_x(p%ss**2,idiag_ss2mx)
         call xzsum_mn_name_y(p%ss,idiag_ssmy)
         call xysum_mn_name_z(p%ss,idiag_ssmz)
         call xysum_mn_name_z(p%ss**2,idiag_ss2mz)
@@ -3196,6 +3202,7 @@ module Energy
         call yzsum_mn_name_x(p%TT,idiag_TTmx)
         call xzsum_mn_name_y(p%TT,idiag_TTmy)
         call xysum_mn_name_z(p%TT,idiag_TTmz)
+        call yzsum_mn_name_x(p%TT**2,idiag_TT2mx)
         call xysum_mn_name_z(p%TT**2,idiag_TT2mz)
         call xysum_mn_name_z(p%uu(:,1)*p%TT,idiag_uxTTmz)
         call yzsum_mn_name_x(p%uu(:,1)*p%TT,idiag_uxTTmx)
@@ -3291,7 +3298,7 @@ module Energy
 !  17-apr-10/axel: adapted from calc_lmagnetic_pars
 !  12-feb-15/MR  : changed for reference state; not yet done in averages of entropy.
 !
-      use Deriv, only: der_z, der2_z
+      use Deriv, only: der_x, der2_x, der_z, der2_z
       use Mpicomm, only: mpiallreduce_sum
       use Sub, only: finalize_aver,calc_all_diff_fluxes,div
       use EquationOfState, only : lnrho0, cs20, get_cv1
@@ -3326,10 +3333,15 @@ module Energy
 !  Radial (yz) average
 !
         fact=1./nyzgrid
-        do l=1,nx
-          ssmx(l)=fact*sum(f(l+nghost,m1:m2,n1:n2,iss))
+        do l=1,mx
+          ssmx(l)=fact*sum(f(l,m1:m2,n1:n2,iss))
         enddo
         call finalize_aver(nprocyz,23,ssmx)
+!
+        gssmx(:,2:3)=0.
+        call der_x(ssmx,gssmx(:,1))
+        call der2_x(ssmx,del2ssmx)
+        if (lspherical_coords) del2ssmx=del2ssmx+2.*gssmx(:,1)/x(l1:l2)
 !
 !  Azimuthal (z) average
 !
@@ -4399,11 +4411,14 @@ module Energy
       if (chi_t/=0.0) then
         call chit_profile(chit_prof)
         call gradlogchit_profile(glnchit_prof)
-      endif
 !
-      if (lcalc_ssmean) then
-        do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n-n1+1,j); enddo
-        del2ss1=p%del2ss-del2ssmz(n-n1+1)
+        if (lcalc_ssmean) then
+          do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n-n1+1,j); enddo
+          del2ss1=p%del2ss-del2ssmz(n-n1+1)
+        else if (lcalc_ssmeanxy) then
+          do j=1,3; gss1(:,j)=p%gss(:,j)-gssmx(:,j); enddo
+          del2ss1=p%del2ss-del2ssmx
+        endif
         call dot(p%glnrho+p%glnTT,gss1,g2)
         thdiff=thdiff+chi_t*chit_prof*(del2ss1+g2)
         call dot(glnchit_prof,gss1,g2)
@@ -4671,9 +4686,14 @@ module Energy
 !
 !  ... + div(rho*T*chi*grads) = ... + chi*[del2s + (glnrho+glnTT+glnchi).grads]
 !
-        if (lcalc_ssmean) then
-          do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n-n1+1,j); enddo
-          del2ss1=p%del2ss-del2ssmz(n-n1+1)
+        if (lcalc_ssmean .or. lcalc_ssmeanxy) then
+          if (lcalc_ssmean) then
+            do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n-n1+1,j); enddo
+            del2ss1=p%del2ss-del2ssmz(n-n1+1)
+          else if (lcalc_ssmeanxy) then
+            do j=1,3; gss1(:,j)=p%gss(:,j)-gssmx(:,j); enddo
+            del2ss1=p%del2ss-del2ssmx
+          endif
           call dot(p%glnrho+p%glnTT,gss1,g2)
           thdiff=thdiff+chi_t*chit_prof*(del2ss1+g2)
           call dot(glnchit_prof,gss1,g2)
@@ -5184,7 +5204,12 @@ module Energy
       case default
         call fatal_error('get_heat_cool_gravz','please select a cooltype')
       endselect
-      heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
+!
+      if (lcalc_cs2mz_mean) then
+        heat = heat - cool*prof*(cs2mz(n)-cs2cool)/cs2cool
+      else
+        heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
+      endif
 !
 !  Write out cooling profile (during first time step only) and apply.
 !  MR: Later to be moved to initialization!
@@ -5393,7 +5418,7 @@ module Energy
         if (rcool==0.0) rcool=r_ext
         prof = step(x(l1:l2),rcool1,wcool)-step(x(l1:l2),rcool2,wcool)
         prof1= 1.+deltaT*cos(2.*pi*(y(m)-y0)/Ly)
-        heat = heat - cool*prof*(ssmxy(:,m)-prof1*ssmx)
+        heat = heat - cool*prof*(ssmxy(:,m)-prof1*ssmx(l1+nghost:l2+nghost))
 !
         prof2= step(x(l1:l2),rcool,wcool)
         heat = heat - cool*prof2*(p%cs2-cs2cool)/cs2cool
@@ -5421,7 +5446,7 @@ module Energy
 !  Subroutine to calculate the heat/cool term in cartesian coordinates
 !  with gravity along x direction.
 !
-!  This is equivalent to the revious rutine.
+!  This is equivalent to the previous routine.
 !
 !   4-aug-10/gustavo: coded
 !
@@ -5469,7 +5494,7 @@ module Energy
         heat = heat - cool*prof*(p%cs2-cs2cool)/cs2cool
       case default
         write(unit=errormsg,fmt=*) &
-            'calc_heat_cool: No such value for cooltype: ', trim(cooltype)
+            'get_heat_cool_gravx_cartesian: No such value for cooltype: ', trim(cooltype)
         call fatal_error('calc_heat_cool',errormsg)
       endselect
 !
@@ -5479,7 +5504,7 @@ module Energy
 !
 !  Subroutine to calculate the heat/cool term for hot corona
 !  Assume a linearly increasing reference profile.
-!  This 1/rho1 business is clumpsy, but so would be obvious alternatives...
+!  This 1/rho1 business is clumsy, but so would be obvious alternatives...
 !
 !  17-may-10/dhruba: coded
 !
@@ -5720,12 +5745,13 @@ module Energy
         idiag_gTrms=0; idiag_gsrms=0; idiag_gTxgsrms=0
         idiag_fconvm=0; idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0
         idiag_fturbz=0; idiag_ppmx=0; idiag_ppmy=0; idiag_ppmz=0
-        idiag_ssmx=0; idiag_ssmy=0; idiag_ssmz=0; idiag_ss2mz=0; idiag_ssmr=0; idiag_TTmr=0
+        idiag_ssmx=0; idiag_ss2mx=0; idiag_ssmy=0; idiag_ssmz=0; idiag_ss2mz=0
+        idiag_ssmr=0; idiag_TTmr=0
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0; idiag_TTmxz=0
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
         idiag_ssmxy=0; idiag_ssmxz=0; idiag_fradz_Kprof=0; idiag_uxTTmxy=0
-        idiag_uyTTmxy=0; idiag_uzTTmxy=0; idiag_TT2mz=0; idiag_uxTTmx=0;
-        idiag_uyTTmx=0; idiag_uzTTmx=0;
+        idiag_uyTTmxy=0; idiag_uzTTmxy=0; idiag_TT2mx=0; idiag_TT2mz=0
+        idiag_uxTTmx=0; idiag_uyTTmx=0; idiag_uzTTmx=0;
         idiag_fturbxy=0; idiag_fturbrxy=0; idiag_fturbthxy=0; idiag_fturbmx=0
         idiag_fradxy_Kprof=0; idiag_fconvxy=0; idiag_fradmx=0
         idiag_fradx_kramers=0; idiag_fradz_kramers=0; idiag_fradxy_kramers=0
@@ -5781,8 +5807,10 @@ module Energy
 !
       do inamex=1,nnamex
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ssmx',idiag_ssmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'ss2mx',idiag_ss2mx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'ppmx',idiag_ppmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'TTmx',idiag_TTmx)
+        call parse_name(inamex,cnamex(inamex),cformx(inamex),'TT2mx',idiag_TT2mx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'fconvxmx',idiag_fconvxmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'uxTTmx',idiag_uxTTmx)
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'uyTTmx',idiag_uyTTmx)
