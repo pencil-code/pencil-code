@@ -20,6 +20,7 @@ module Deriv
   public :: der, der2, der3, der4, der5, der6, derij, der5i1j, der5_single
   public :: der6_other, der_pencil, der2_pencil
   public :: deri_3d_inds
+  public :: der_x,der2_x
   public :: der_z,der2_z
   public :: der_upwind1st
   public :: der_onesided_4_slice
@@ -154,6 +155,53 @@ module Deriv
       endif
 !
     endsubroutine der_main
+!***********************************************************************
+    subroutine der_x(f,df)
+!
+!  x derivative operating on an x-dependent 1-D array
+!
+!  23-jun-15/pete: adapted from der_z; note that f is not the f array!
+!
+      real, dimension (mx), intent(in)  :: f
+      real, dimension (nx), intent(out) :: df
+!
+      real, dimension (nx) :: fac
+!
+      if (nxgrid/=1) then
+        fac=(1./60)*dx_1(l1:l2)
+        df=fac*(+ 45.0*(f(l1+1:l2+1)-f(l1-1:l2-1)) &
+                -  9.0*(f(l1+2:l2+2)-f(l1-2:l2-2)) &
+                +      (f(l1+3:l2+3)-f(l1-3:l2-3)))
+      else
+        df=0.
+        if (ip<=5) print*, 'der_x: Degenerate case in x-direction'
+      endif
+!
+    endsubroutine der_x
+!***********************************************************************
+    subroutine der2_x(f,df2)
+!
+!  Second x derivative operating on an x-dependent 1-D array
+!
+!  23-jun-15/pete: adapted from der2_z
+!
+      real, dimension (mx), intent(in)  :: f
+      real, dimension (nx), intent(out) :: df2
+!
+      real, dimension (nx) :: fac
+!
+      if (nxgrid/=1) then
+        fac=(1./180)*dx_1(l1:l2)**2
+        df2=fac*(-490.0*f(l1:l2) &
+                 +270.0*(f(l1+1:l2+1)+f(l1-1:l2-1)) &
+                 - 27.0*(f(l1+2:l2+2)+f(l1-2:l2-2)) &
+                 +  2.0*(f(l1+3:l2+3)+f(l1-3:l2-3)))
+      else
+        df2=0.
+        if (ip<=5) print*, 'der2_x: Degenerate case in x-direction'
+      endif
+!
+    endsubroutine der2_x
 !***********************************************************************
     subroutine der_z(f,df)
 !
