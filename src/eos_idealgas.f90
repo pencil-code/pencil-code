@@ -2339,10 +2339,9 @@ module EquationOfState
 !    4-jun-2015/MR: corrected sign of dsdz_xy for bottom boundary; 
 !                   added branches for Kramers heat conductivity (using sigmaSBt!)
 !
-      logical, pointer :: lmeanfield_chitB
-      real, pointer :: chi,chi_t,chi_t0,hcondzbot,hcondztop,chit_prof1,chit_prof2
-      real, pointer :: hcond0_kramers, nkramers
-      logical, pointer :: lheatc_kramers
+      logical, pointer :: lmeanfield_chitB, lheatc_kramers
+      real, pointer :: chi,chi_t,chi_t0,hcondzbot,hcondztop
+      real, pointer :: chit_prof1,chit_prof2,hcond0_kramers, nkramers
       real, dimension(:,:), pointer :: reference_state
 !
       character (len=3) :: topbot
@@ -2439,7 +2438,6 @@ module EquationOfState
 
         call getrho(f(:,:,n2,ilnrho),rho_xy)              ! here rho_xy=rho
         TT_xy=cs2_xy/(gamma_m1*cp)
-!print*, 'TT_xy=', TT_xy(4,4)
         dlnrhodz_xy= coeffs_1_z(1,2)*(f(:,:,n2+1,ilnrho)-f(:,:,n2-1,ilnrho)) &
                     +coeffs_1_z(2,2)*(f(:,:,n2+2,ilnrho)-f(:,:,n2-2,ilnrho)) &
                     +coeffs_1_z(3,2)*(f(:,:,n2+3,ilnrho)-f(:,:,n2-3,ilnrho))
@@ -2465,8 +2463,9 @@ module EquationOfState
 !                    or: sigmaSBt*TT^4 = - chi_xy*rho*cp dT/dz - chi_t*rho*T*ds/dz.
 !
         if (lheatc_kramers) then
-          dsdz_xy=-cv*( (sigmaSBt/hcond0_kramers)*TT_xy**(3-6.5*nkramers)*rho_xy**(2.*nkramers) &
-                       +gamma_m1*dlnrhodz_xy)      ! no turbulent diffusivity considered here!
+          dsdz_xy=-cv*(sigmaSBt*TT_xy**3+hcond0_kramers*TT_xy**(6.5*nkramers)*rho_xy**(-2.*nkramers)* &
+                       gamma_m1*dlnrhodz_xy)/(hcond0_kramers*TT_xy**(6.5*nkramers)*rho_xy**(-2.*nkramers) &
+                       + chit_prof2*chi_t*rho_xy/gamma)
         elseif (hcondztop==impossible) then
           dsdz_xy=-(sigmaSBt*TT_xy**3+chi_xy*rho_xy*cp*gamma_m1*dlnrhodz_xy)/ &
                    (chit_prof2*chi_t*rho_xy+chi_xy*rho_xy*cp/cv)
