@@ -396,21 +396,20 @@ module Particles_surfspec
                 fp,k,ix0,iy0,iz0)
 !
 ! positive dmass means particle is losing mass
-!
+! jmap: gives the ichemspec of a surface specie
             dmass = 0.
             denth = 0.
 !
             do i = 1,N_surface_species
               index1 = jmap(i)
-              dmass = dmass+ndot(k,i)*species_constants(index1,imass)*A_p
+              dmass = dmass-ndot(k,i)*species_constants(index1,imass)*A_p
               if (lpchem_mass_enth) then
-!                print*,'species',ndot(k,i),index1,species_constants(index1,imass)
                 if (ndot(k,i)>0.0) then
 !
 !  Species enthalpy at the particle phase temperature
 !  Qenth = ndot(mol/s/m2)*A(m2)*enth(J/mol)=J/s
-!  to convert to erg, the value has to be multiplied with 1e7 for values fetched from 
-!  particles_chemistry
+!  to convert to erg, the value has to be multiplied with 1e7 for values 
+!  fetched from particles_chemistry
 !
 !  Enthalpy from the Stanford code calculation
 !
@@ -423,8 +422,6 @@ module Particles_surfspec
                   else
                     call fatal_error('particles_surfspec','mass bound enthalpy transfer needs p%H0_RT')
                   endif
-!                  print*, 'phase_enthalpydata',enth(k,i)*1e7,&
-!                      p%H0_RT(ix0-nghost,jmap(i))*Rgas*p%TT(ix0-nghost)
 !                  print*, 'production', ndot(k,i)*A_p*enth(k,i)*1e7
 !                  print*, 'production', ndot(k,i),enth(k,i)*1e7
 !                  print*, 'production2', ndot(k,i),p%H0_RT(ix0-nghost,jmap(i))*Rgas*fp(k,iTp)
@@ -432,13 +429,14 @@ module Particles_surfspec
 !
 ! Species enthalpy at the gas phase temperature
 !
-!                  print*,'enthalpydata', jmap(i),p%H0_RT(ix0-nghost,:)*Rgas*p%TT(ix0-nghost)
                   if (lpencil(i_H0_RT)) then
-                    denth=denth+ndot(k,i)*A_p*p%H0_RT(ix0-nghost,jmap(i))*Rgas*p%TT(ix0-nghost)
+                    denth=denth+ndot(k,i)*A_p*p%H0_RT(ix0-nghost,jmap(i))&
+                        *Rgas*p%TT(ix0-nghost)
 !                    print*, 'consumption', ndot(k,i)*A_p*p%H0_RT(ix0-nghost,jmap(i))*Rgas*p%TT(ix0-nghost)
 !                    print*, 'consumption', ndot(k,i),p%H0_RT(ix0-nghost,jmap(i))*Rgas*p%TT(ix0-nghost)
                   else
-                    call fatal_error('particles_surfspec','mass bound enthalpy transfer needs p%H0_RT')
+                    call fatal_error('particles_surfspec',&
+                        'mass bound enthalpy transfer needs p%H0_RT')
                   endif
                 endif
               endif
@@ -463,71 +461,67 @@ module Particles_surfspec
                   else
                     rho1_point = p%rho1(ixx-nghost)
                   endif
-                  m1_cell=1/(volume_cell/rho1_point)
-!                  m1_cell=1/(volume_cell/rho1_point+dmass*dt)
+                  m1_cell=rho1_point/volume_cell
 !
 !  Sum for testing  
 !
                   summan=0.0
 !
-!  The whole following with find_index... ... is a workaround
+!  The whole following with find_index is a workaround
 !  to enable the accessing of nonreacting gas phase species by this routine
 !  since they are as well affected when the particle is adding species to the
-!  gas phase. find_index... ... maps the i from the gas phase chemistry to the surface_species
-!  from particles_chemistry which is needed to access ndot, since this only contains 
-!  surface species 
+!  gas phase. 
+!  find_index maps the i from the gas phase chemistry to the surface_species
+!  from particles_chemistry which is needed to access ndot, since this 
+!  only contains surface species 
 !
 
                   do i = 1,nchemspec-1
                     reac_pchem_weight= 0.0
-                    if ( find_index(i,jmap,N_surface_species) > 0 ) then
+                    if (find_index(i,jmap,N_surface_species) > 0 ) then
+!NILS: Isn't index1=i?
                       index1 = jmap(find_index(i,jmap,N_surface_species))
                       index2 = ichemspec(index1)
-                      dmass_frac_dt = (A_p*ndot(k,find_index(i,jmap,N_surface_species))*&
+                      dmass_frac_dt = (A_p*&
+                          ndot(k,find_index(i,jmap,N_surface_species))*&
                           species_constants(index1,imass)+&
                           dmass*interp_species(k,index1))*weight*&
                           m1_cell
-!                      dmass_frac_dt = (A_p*ndot(k,find_index(i,jmap,N_surface_species))*&
-!                          species_constants(index1,imass)-&
-!                          dmass*interp_species(k,index1))*weight*&
-!                          rho1_point/volume_cell
-                      df(ixx,iyy,izz,index2) = df(ixx,iyy,izz,index2) + dmass_frac_dt
-                      summan=summan+dmass_frac_dt
+                      df(ixx,iyy,izz,index2)=df(ixx,iyy,izz,index2)+dmass_frac_dt
 !                      if (i==nchemspec-1) then
 !                        print*, 'summan',summan
 !                      endif
                       if (lfirst .and. ldt)&
-                          reac_pchem_weight = max(reac_pchem_weight,abs(dmass_frac_dt/&
+                          reac_pchem_weight = max(reac_pchem_weight,&
+                          abs(dmass_frac_dt/&
                           max(f(ixx,iyy,izz,index2),1e-10)))
                     else
-                      dmass_frac_dt = -dmass*interp_species(k,i)*weight*&
+                      dmass_frac_dt = dmass*interp_species(k,i)*weight*&
                           m1_cell
-                      df(ixx,iyy,izz,ichemspec(i)) = df(ixx,iyy,izz,ichemspec(i)) + dmass_frac_dt
-                      summan=summan+dmass_frac_dt
+                      df(ixx,iyy,izz,ichemspec(i)) = &
+                          df(ixx,iyy,izz,ichemspec(i)) + dmass_frac_dt
 !                      if (i==nchemspec-1) then
 !                        print*, 'summan',summan
 !                      endif
                     endif
+                    summan=summan+dmass_frac_dt
                   enddo
 !                  print*, 'velocity', df(ixx,iyy,izz,iux)
 !                  print*,'summan',summan
 !                  print*,'df(ixx,iyy,izz,ichemspec(i))',df(ixx,iyy,izz,ichemspec(nchemspec))
 !
-!  Solving for all but the other values, setting the last one to the negative values of all others.
+!  Solving for all but the other values, setting the last one to the 
+!  negative values of all others.
 !
-                  df(ixx,iyy,izz,ichemspec(nchemspec)) = df(ixx,iyy,izz,ichemspec(nchemspec))-summan
+                  df(ixx,iyy,izz,ichemspec(nchemspec)) = &
+                      df(ixx,iyy,izz,ichemspec(nchemspec))-summan
 !                  df(ixx,iyy,izz,ichemspec(nchemspec)) = df(ixx,iyy,izz,ichemspec(nchemspec))-&
 !                      sum(df(ixx,iyy,izz,ichemspec(:)))
 !
-!  Sum for checking
-!
-!                  print*, 'summan: ',summan
-!
-!                  print*,'df',df(ixx,iyy,izz,ichemspec(1))+df(ixx,iyy,izz,ichemspec(2))+&
-!                      df(ixx,iyy,izz,ichemspec(3))+df(ixx,iyy,izz,ichemspec(4))
 !  Compare the current maximum reaction rate to the previous one
 !
-                  if (lfirst .and. ldt) max_reac_pchem = max(max_reac_pchem, reac_pchem_weight)
+                  if (lfirst .and. ldt) max_reac_pchem = &
+                      max(max_reac_pchem, reac_pchem_weight)
 !
 !  Enthalpy transfer via mass transfer!
 !
