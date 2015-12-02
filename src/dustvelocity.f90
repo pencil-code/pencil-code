@@ -1584,20 +1584,18 @@ module Dustvelocity
         tausd1(:,k) = betad(k)/rhod
       case ('stokes_cst_tausd')
         tausd1(:,k) = betad(k)
-!DHRUBA
       case ('stokes_varmass')
         tausd1(:,k) = betad(k)
-!  Added correction term that account also for larger particle Reynolds
+!
+!  Correction term that account also for larger particle Reynolds
 !  numbers (see e.g. Haugen and Kragset 2010)
+!
         if (lstokes_highspeed_corr) then
-          !call dot2(f(l1:l2,m,n,iudx(k):iudz(k))-f(l1:l2,m,n,iux:iuz),deltaud2)
-          call dot2(uud(:,iudx(k):iudz(k))-uu,deltaud2)
+          call dot2(p%uud(:,:,k)-p%uu,deltaud2)
           Rep=2*ad(k)*rho*sqrt(deltaud2)/mu_ext
           tausd1(:,k) = tausd1(:,k)*(1+0.15*Rep**0.687)
         endif
-!        stokes_prefactor=6*pi*mucube_by_four_third_pi_grain_density
-!        stokes_prefactor=6*pi*mucube_graind
-!        tausd1(:,k) = stokes_prefactor*p%md(:,k)**(-2./3.)
+!
       case ('epstein_var')
         call dot2(uud(:,iudx(k):iudz(k))-uu,deltaud2)
         csrho       = sqrt(cs2+deltaud2)*rho
