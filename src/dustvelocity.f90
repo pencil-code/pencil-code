@@ -204,9 +204,6 @@ module Dustvelocity
 !
       if (shorttauslimit/=0.0) shorttaus1limit=1/shorttauslimit
 !
-!--   if (ldustcoagulation .or. ldustcondensation) then
-!AB: comment out for now. I think it is ok also in general and can be deleted.
-!
 !  Grain chemistry
 !
         if (lroot) &
@@ -605,7 +602,7 @@ module Dustvelocity
                   rhod = f(l1:l2,m,n,ind(k))*md(k)
                 endif
                 call pressure_gradient(f,cs2,cp1tilde)
-                call get_stoppingtime(f,rho,cs2,rhod,k)
+                call get_stoppingtime(f(l1:l2,m,n,iudx(k):iudz(k)),f(l1:l2,m,n,iux:iuz),rho,cs2,rhod,k)
                 f(l1:l2,m,n,iudz(k)) = &
                     f(l1:l2,m,n,iudz(k)) - tausd1(:,k)**(-1)*nu_epicycle**2*z(n)
               enddo
@@ -1044,7 +1041,7 @@ module Dustvelocity
 !
 !  Inverse friction time pencil tausp1 is set in separate subroutine.
 !
-        call get_stoppingtime(f,p%rho,p%cs2,p%rhod(:,k),k)
+        call get_stoppingtime(p%uud(:,:,k),p%uu,p%rho,p%cs2,p%rhod(:,k),k)
 !
 !  Short stopping time approximation.
 !  Calculated from master equation d(wx-ux)/dt = A + B*(wx-ux) = 0.
@@ -1566,13 +1563,15 @@ module Dustvelocity
 !
     endsubroutine get_dustcrosssection
 !***********************************************************************
-    subroutine get_stoppingtime(f,rho,cs2,rhod,k)
+    subroutine get_stoppingtime(uud,uu,rho,cs2,rhod,k)
 !
 !  Calculate stopping time depending on choice of drag law.
 !
       use Sub, only: dot2
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      !real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3) :: uu
+      real, dimension (nx,3) :: uud
       real, dimension (nx) :: rho,rhod,csrho,cs2,deltaud2, Rep
       integer :: k
       real :: stokes_prefactor
@@ -1591,7 +1590,8 @@ module Dustvelocity
 !  Added correction term that account also for larger particle Reynolds
 !  numbers (see e.g. Haugen and Kragset 2010)
         if (lstokes_highspeed_corr) then
-          call dot2(f(l1:l2,m,n,iudx(k):iudz(k))-f(l1:l2,m,n,iux:iuz),deltaud2)
+          !call dot2(f(l1:l2,m,n,iudx(k):iudz(k))-f(l1:l2,m,n,iux:iuz),deltaud2)
+          call dot2(uud(:,iudx(k):iudz(k))-uu,deltaud2)
           Rep=2*ad(k)*rho*sqrt(deltaud2)/mu_ext
           tausd1(:,k) = tausd1(:,k)*(1+0.15*Rep**0.687)
         endif
@@ -1599,7 +1599,7 @@ module Dustvelocity
 !        stokes_prefactor=6*pi*mucube_graind
 !        tausd1(:,k) = stokes_prefactor*p%md(:,k)**(-2./3.)
       case ('epstein_var')
-        call dot2(f(l1:l2,m,n,iudx(k):iudz(k))-f(l1:l2,m,n,iux:iuz),deltaud2)
+        call dot2(uud(:,iudx(k):iudz(k))-uu,deltaud2)
         csrho       = sqrt(cs2+deltaud2)*rho
         tausd1(:,k) = csrho*rhodsad1(k)
       case ('epstein_gaussian_z')
