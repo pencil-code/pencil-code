@@ -43,11 +43,11 @@ module InitialCondition
 !
      real :: init_ux=impossible,init_uy=impossible,init_uz=impossible
      integer :: spot_number=10
-     integer :: index_H2O=3
-     integer :: index_N2=4, i_point=1
+     integer :: index_H2O=2
+     integer :: index_N2=3, i_point=1
      integer :: Ndata=10, Nadd_points=0
      real :: dYw=1.,dYw1=1.,dYw2=1., init_water1=0., init_water2=0.
-     real :: init_x1=0.,init_x2=0.,init_TT1, init_TT2
+     real :: init_x1=0.,init_x2=0.,init_TT1=0., init_TT2=0.
      real, dimension(nchemspec) :: init_Yk_1, init_Yk_2
      real :: X_wind=impossible, spot_size=10.
      real :: AA=0.66e-4, d0=2.4e-6 , BB0=1.5*1e-16
@@ -188,7 +188,7 @@ module InitialCondition
                init_water1_tmp,init_water2_tmp
       !real, dimension (mx,my,mz), intent(inout) :: f
       real, dimension (ndustspec) ::  lnds
-      real :: ddsize, ddsize0, del, air_mass, PP
+      real :: ddsize, ddsize0, del, air_mass, PP, TT
       integer :: i, ii
       logical ::  lstart1=.false., lstart2=.false.
 !
@@ -211,10 +211,10 @@ module InitialCondition
       if (lACTOS) then
        call ACTOS_data(f)
       else
-       call air_field_local(f, air_mass, PP)
+       call air_field_local(f, air_mass, PP, TT)
       endif
 !
-      call reinitialization(f, air_mass, PP)
+      call reinitialization(f, air_mass, PP, TT)
 !
     endsubroutine initial_condition_chemistry
 !***********************************************************************
@@ -330,7 +330,7 @@ module InitialCondition
 !
     endsubroutine write_initial_condition_pars
 !***********************************************************************
-    subroutine air_field_local(f, air_mass, PP)
+    subroutine air_field_local(f, air_mass, PP, TT)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: sum_Y, tmp
@@ -342,8 +342,8 @@ module InitialCondition
       character (len=10) :: specie_string
       character (len=1)  :: tmp_string
       integer :: i,j,k=1,index_YY, j1,j2,j3, iter
-      real :: YY_k, air_mass, TT=300.
-      real, intent(out) :: PP ! (in dynes = 1atm)
+      real :: YY_k, air_mass
+      real, intent(out) :: PP, TT ! (in dynes = 1atm)
       real, dimension(nchemspec)    :: stor2
       integer, dimension(nchemspec) :: stor1
 !
@@ -644,7 +644,7 @@ module InitialCondition
             do k=1,mz
             do j=1,my
             do i=1,mx
-              read(143,'(f8.5)') tmp2
+              read(143,'(e9.5)') tmp2
               ux_data(i,j,k)=tmp2
               f(i,j,k,iux)=ux_data(i,j,k)
             enddo 
@@ -891,7 +891,7 @@ module InitialCondition
     endsubroutine ACTOS_data
 
 !***********************************************************************
-    subroutine reinitialization(f, air_mass, PP)
+    subroutine reinitialization(f, air_mass, PP, TT)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: sum_Y, air_mass_ar, tmp
@@ -901,7 +901,7 @@ module InitialCondition
       real , dimension (mz) :: init_x1_arz, init_x2_arz, del_arz, del_ar1z, del_ar2z
 !
       integer :: i,j,k, j1,j2,j3, iter
-      real :: YY_k, air_mass,  PP, del, psat1, psat2, psf_1, psf_2 
+      real :: YY_k, air_mass,  PP, TT, del, psat1, psat2, psf_1, psf_2 
       real :: air_mass_1, air_mass_2, sum1, sum2, init_water_1, init_water_2 
       logical :: spot_exist=.true., lmake_spot, lline_profile=.false.
       real ::  Rgas_loc=8.314472688702992E+7, T_tmp
@@ -984,19 +984,23 @@ module InitialCondition
           endif
         enddo
 !        
-        if (ldensity_nolog) then
+       else
+         f(:,:,:,ilnTT)=alog(TT)
+       endif
+!      
+!      if (ldensity_nolog) then
 !          f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
 !            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
-        else
-          tmp=(PP/(k_B_cgs/m_u_cgs)*&
-            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
-          f(:,:,:,ilnrho)=alog(tmp)
-        endif
-      endif
+!      else
+!          tmp=(PP/(k_B_cgs/m_u_cgs)*&
+!            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
+!          f(:,:,:,ilnrho)=alog(tmp)
+!      endif
 !
        if (lreinit_water) then
 !
-       if (init_TT2==0) init_TT2=init_TT1
+        if (init_TT1==0.) init_TT1=TT 
+        if (init_TT2==0.) init_TT2=init_TT1
 !
         T_tmp=init_TT1-273.15
         psat1=(aa0 + aa1*T_tmp    + aa2*T_tmp**2  &
@@ -1008,11 +1012,7 @@ module InitialCondition
                    + aa5*T_tmp**5 + aa6*T_tmp**6)*1e3
 !
         psf_1=psat1 
-        if (r02 /= 0) then
-          psf_2=psat2
-        else
-          psf_2=psat2
-        endif
+        psf_2=psat2
 !
 ! Recalculation of the air_mass for different boundary conditions
 !
@@ -1050,6 +1050,7 @@ module InitialCondition
 
            init_water_1=init_Yk_1(index_H2O)
            init_water_2=init_Yk_2(index_H2O)
+           
 !
 ! End of Recalculation of the air_mass for different boundary conditions
 !
@@ -1063,15 +1064,16 @@ module InitialCondition
                    *(exp(x(i)/del)-exp(-x(i)/del)) &
                    /(exp(x(i)/del)+exp(-x(i)/del))
              enddo
+!             
            elseif (lwet_spots) then
               f(:,:,:,ilnTT)=log(init_TT1)
               f(:,:,:,ichemspec(index_H2O))=init_water_1
               call spot_init(f,init_TT2,init_water_2)
-           elseif (.not. lwet_spots) then
+           else
 ! Initial conditions for the  0dcase: cond_evap
-             f(:,:,:,ichemspec(index_H2O))=init_Yk_1(index_H2O)
+!  and all other conditions except ltanh_prof_
+             f(:,:,:,ichemspec(index_H2O))=init_water_1
            endif
-!
 !
            sum_Y=0.
            do k=1,nchemspec
@@ -1090,6 +1092,8 @@ module InitialCondition
 ! end of loot do iter=1,2
 !         enddo
 !
+       endif 
+!  
          if (ldensity_nolog) then
            f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)&
             *air_mass_ar/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
@@ -1117,7 +1121,6 @@ module InitialCondition
          if  ((lroot) .and. (nx >1 )) then
             print*, 'temperature', exp(f(l1,4,4,ilnTT)), exp(f(l2,4,4,ilnTT))
           endif
-       endif
 !
     endsubroutine reinitialization
 !*********************************************************************************************************

@@ -1437,109 +1437,157 @@ subroutine bc_satur_x(f,bc)
  !     real, dimension (:,:,:,:), allocatable :: bc_file_x_array
        real, dimension (:,:,:,:), allocatable :: bc_file_x_array
        real, dimension (:,:), allocatable :: bc_T_x_array
-       real, dimension (100) :: tmp
-      integer :: i,j,lbc0,lbc1,lbc2,stat,iszx,io_code,vr
-      real :: lbc,frac
+       real, dimension (100) :: tmp, time, LES_x
+       real, dimension (my,mz) :: bc_T_x_adopt
+      integer :: i,j,statio_code,vr, Npoints, i1,i2, time_position, io_code, stat
+      real :: lbc,frac, d_LESx
       logical, save :: lbc_file_x=.true.
       logical, save :: lbc_T_x=.true.
+ 
+ print*,'enter',t
+ 
  !     
 !
 !  Allocate memory for large array.
 !
 !      allocate(bc_file_x_array(mx,my,mz,mvar),stat=stat)
-      allocate(bc_file_x_array(mx,my,mz,mvar),stat=stat)
-      if (stat>0) call fatal_error('bc_file_x', &
-          'Could not allocate memory for bc_file_x_array')
+ !     allocate(bc_file_x_array(mx,my,mz,mvar),stat=stat)
+ !     if (stat>0) call fatal_error('bc_file_x', &
+ !         'Could not allocate memory for bc_file_x_array')
 !
-      if (lbc_file_x) then
-        if (lroot) then
-          print*,'opening bc_file_x.dat'
+!      if (lbc_file_x) then
+!        if (lroot) then
+!          print*,'opening bc_file_x.dat'
 !          open(9,file=trim(directory_dist)//'/bc_file_x.dat',form='unformatted')
-          open(9,file='bc_file_x.dat',form='unformatted')
-          read(9,iostat=io_code) bc_file_x_array
+!          open(9,file='bc_file_x.dat',form='unformatted')
+!          read(9,iostat=io_code) bc_file_x_array
 !          
 !          print*,maxval(bc_file_x_array)
 !
-          if (io_code < 0) then
+!          if (io_code < 0) then
             ! end of file
-            if (lroot) print*,'need file with dimension: for fil2 ',mx,my,mz, mvar
-            deallocate(bc_file_x_array)
+!            if (lroot) print*,'need file with dimension: for fil2 ',mx,my,mz, mvar
+!            deallocate(bc_file_x_array)
  !           call stop_it("boundary file bc_file_x.dat has incorrect size")
-          endif
-          close(9)
-        endif
-        lbc_file_x=.false.
-      endif
+!          endif
+!          close(9)
+!        endif
+!        lbc_file_x=.false.
+!        print*,'oshibka',lbc_T_x
+!      endif
+      
 !      
       allocate(bc_T_x_array(64,61),stat=stat)
       if (stat>0) call fatal_error('bc_file_x', &
           'Could not allocate memory for bc_file_x_array')
 !
-      if (lbc_T_x) then
+!      if (lbc_T_x) then
         if (lroot) then
           print*,'opening T.dat'
           open(9,file='T.dat')
 !          
           do i = 1,60
-            read(9,*) (tmp(j),j=1,64)
+            read(9,*,iostat=io_code) (tmp(j),j=1,64)
             bc_T_x_array(:,i)=tmp(:)
           enddo
-!          
-!         print*,bc_T_x_array(:,60)
-!
-!
-          if (io_code < 0) then
+          
+            if (io_code < 0) then
             ! end of file
-            if (lroot) print*,'need file with dimension: for fil2 633 62 '
-            deallocate(bc_file_x_array)
+              if (lroot) print*,'need file with dimension: for fil2 633 62 '
+              deallocate(bc_T_x_array)
  !           call stop_it("boundary file bc_file_x.dat has incorrect size")
-          endif
+            endif
           close(9)
+!          
+!          print*,bc_T_x_array(:,2)
+!
+          do i = 2,60
+            time(i-1)=(bc_T_x_array(1,i)-bc_T_x_array(1,2))/10.
+!            print*,time(i-1)
+          enddo
+          
+!          print*,time  
+          i=1
+!          print*,'t',t,time(i+1)
+          do while (t>=time(i)) 
+            time_position=i
+!            print*, i,t+30, time(i)
+            i=i+1
+          enddo
+!          
+          do i = 2,64
+            LES_x(i-1)=bc_T_x_array(i,1)/10.
+          enddo
+!          
+          d_LESx=LES_x(2)-LES_x(1)
+!          
+          Npoints=nint(d_LESx/dx)
+!          
+!          
+!          print*,'d_LESx=  ',d_LESx,'dx=',dx,'Npoints=',Npoints,' int(my/Npoints) ',nint(d_LESx/dx), d_LESx/dx
+!          
+          do i=1,64-1
+            if ((i-1)*Npoints+1<my+1) then
+              bc_T_x_adopt((i-1)*Npoints+1,:)=bc_T_x_array(i+1,2)
+            endif
+          enddo
+!
+!          print*,bc_T_a_adopt(:,3)
+!          
+          do i=1,my
+ !         do j=1,mz
+!          print*,i
+! 
+            if (bc_T_x_adopt(i,time_position)>1.) then 
+              i1=i
+              i2=i+Npoints
+ !             print*,'cheking',bc_T_a_adopt(i1,2),bc_T_a_adopt(i2,2), i1,i2
+            else
+!              print*,i, i1,i2, (i-i1)*1./(i2-i1)
+              bc_T_x_adopt(i,time_position)= &
+                    bc_T_x_adopt(i1,time_position)+(i-i1)*(bc_T_x_adopt(i2,time_position)-bc_T_x_adopt(i1,time_position))/(i2-i1)
+              
+            endif
+ !         enddo
+          enddo
+!          
+!          print*,     'cheking',bc_T_x_adopt(:,2)
+!          
+!         print*,'LES_x=',LES_x(2)
+!         print*,'time_step=',time(3)
+!
+!        endif
+!        lbc_T_x=.false.
         endif
-        lbc_T_x=.false.
-      endif
-!      
+!
       vr=bc%ivar
 !      value1=bc%value1
 !      value2=bc%value2
 !      
-      iszx=size(f,1)
+!      iszx=size(f,1)
+      
 !
 !  x - Udrift_bc*t = dx * (ix - Udrift_bc*t/dx)
 !
-      if (bc%location==iBC_Y_BOT) then
-        lbc=Udrift_bc*t*dx_1(1)+1.
-        lbc0=int(lbc)
-        frac=mod(lbc,real(lbc0))
-        lbc1=iszx+mod(-lbc0,iszx)
-        lbc2=iszx+mod(-lbc0-1,iszx)
-        do i=1,nghost
-          f(l1-i,:,:,vr)=(1-frac)*bc_file_x_array(lbc1,:,:,vr) &
-                           +frac*bc_file_x_array(lbc2,:,:,vr)
-        enddo
+      if (bc%location==iBC_X_BOT) then
+        if (vr==ilnTT) then
+          do i=m1,m2
+            f(l1,i,:,vr)=alog(bc_T_x_adopt(i-3,time_position))
+          enddo
+      
+!   print*,  f(l1,m1:m2,3,vr), l1,m1 
+          endif
       elseif (bc%location==iBC_X_TOP) then
 !
-!  note: this "top" thing hasn't been adapted or tested yet.
-!  The -lbc0-1 has been changed to +lbc0+1, but has not been tested yet.
-!
-        lbc=Udrift_bc*t*dx_1(1)+1.
-        lbc0=int(lbc)
-        frac=mod(lbc,real(lbc0))
-        lbc1=iszx+mod(+lbc0,iszx)
-        lbc2=iszx+mod(+lbc0+1,iszx)
-        do i=1,nghost
-          f(l2+i,:,:,vr)=(1-frac)*bc_file_x_array(lbc1,:,:,vr) &
-                           +frac*bc_file_x_array(lbc2,:,:,vr)
-        enddo
-
-        
       else
-        print*, "bc_satur_x: ", bc%location, " should be `top(", &
-                        iBC_X_TOP,")' or `bot(",iBC_X_BOT,")'"
+!        print*, "bc_satur_x: ", bc%location, " should be `top(", &
       endif
+!      deallocate(bc_file_x_array)
+     deallocate(bc_T_x_array)
+!        print*,'closing bc_file_x.dat'
 !        
 !
-      deallocate(bc_file_x_array)
+  
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !      do jjj=1,my
