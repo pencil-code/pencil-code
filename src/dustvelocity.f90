@@ -1591,13 +1591,13 @@ module Dustvelocity
 !  numbers (see e.g. Haugen and Kragset 2010)
 !
         if (lstokes_highspeed_corr) then
-          call dot2(p%uud(:,:,k)-p%uu,deltaud2)
+          call dot2(uud-uu,deltaud2)
           Rep=2*ad(k)*rho*sqrt(deltaud2)/mu_ext
           tausd1(:,k) = tausd1(:,k)*(1+0.15*Rep**0.687)
         endif
 !
       case ('epstein_var')
-        call dot2(uud(:,iudx(k):iudz(k))-uu,deltaud2)
+        call dot2(uud-uu,deltaud2)
         csrho       = sqrt(cs2+deltaud2)*rho
         tausd1(:,k) = csrho*rhodsad1(k)
       case ('epstein_gaussian_z')
