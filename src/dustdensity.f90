@@ -49,9 +49,11 @@ module Dustdensity
   real, dimension(ndustspec,ndustspec0) :: init_distr_ki
   real, dimension(ndustspec0) :: dsize0, BB=0.
   real, dimension(ndustspec) :: dsize,init_distr2,init_distr_log,amplnd_rel=0.
+  real, dimension(ndustspec) :: diffnd_ndustspec
   real, dimension(mx,ndustspec) :: init_distr
   real, dimension(0:5) :: coeff_smooth=0.0
   real, dimension (3) :: diffnd_anisotropic=0.0
+  real :: diffnd_exponent=0.0, adref_diffnd=0.0
   real :: diffnd=0.0, diffnd_hyper3=0.0, diffnd_shock=0.0
   real :: diffmd=0.0, diffmi=0.0, ndmin_for_mdvar=0.0
   real :: nd_const=1.0, dkern_cst=0.0, eps_dtog=0.0, Sigmad=1.0
@@ -72,6 +74,7 @@ module Dustdensity
   character (len=labellen), dimension (ndiffd_max) :: idiffd=''
   character (len=labellen) :: bordernd='nothing'
   character (len=labellen) :: advec_ddensity='normal'
+  character (len=labellen) :: diffnd_law='const'
   logical :: ludstickmax=.false., lno_deltavd=.false.
   logical :: lcalcdkern=.true., lkeepinitnd=.false., ldustcontinuity=.true.
   logical :: ldustnulling=.false., lupw_ndmdmi=.false.
@@ -115,6 +118,7 @@ module Dustdensity
       diffnd_shock,lresetuniform_dustdensity,nd_reuni, lnoaerosol, &
       lnocondens_term,advec_ddensity, bordernd, dustdensity_floor, &
       diffnd_anisotropic,reinitialize_nd, &
+      diffnd_law, diffnd_exponent, adref_diffnd, &
       G_condensparam, supsatratio_given, supsatratio_given0, &
       supsatratio_omega, ndmin_for_mdvar, &
       lsemi_chemistry, lradius_binning, dkern_cst, lzero_upper_kern
@@ -400,6 +404,21 @@ module Dustdensity
         Kern_max=maxval(dkern)
         if (lroot) print*,'Kern_max=',Kern_max
       endif
+!
+!  Choice of different diffusion laws
+!
+      select case (diffnd_law)
+      case ('const')
+        do k=1,ndustspec
+          diffnd_ndustspec(k)=diffnd
+        enddo
+      case ('ad_exponential')
+        diffnd_ndustspec=diffnd*(ad/adref_diffnd)**diffnd_exponent
+      case default
+        if (lroot) print*, 'No such value for diffnd_law: ', trim(diffnd_law)
+        call fatal_error('initialize_dustdensity','')
+      endselect
+      if (lroot) print*, 'initialize_dustdensity: diffnd=',diffnd
 !
 !  Initialize dust diffusion.
 !
@@ -1903,11 +1922,11 @@ module Dustdensity
 !
         if (ldiffd_simplified) then
           if (ldustdensity_log) then
-            fdiffd = fdiffd + diffnd*(p%del2lnnd(:,k) + p%glnnd2(:,k))
+            fdiffd=fdiffd+diffnd_ndustspec(k)*(p%del2lnnd(:,k)+p%glnnd2(:,k))
           else
-            fdiffd = fdiffd + diffnd*p%del2nd(:,k)
+            fdiffd=fdiffd+ diffnd_ndustspec(k)*p%del2nd(:,k)
           endif
-          if (lfirst.and.ldt) diffus_diffnd=diffus_diffnd+diffnd*dxyz_2
+          if (lfirst.and.ldt) diffus_diffnd=diffus_diffnd+diffnd_ndustspec(k)*dxyz_2
         endif
 !
 !  calculate maximum of *relative* reaction rate
@@ -1933,13 +1952,13 @@ module Dustdensity
 !
         if (ldiffd_dusttogasratio) then
           if (ldustdensity_log) then
-            fdiffd = fdiffd + diffnd*(p%del2lnnd(:,k) + p%glnnd2(:,k) - &
+            fdiffd = fdiffd + diffnd_ndustspec(k)*(p%del2lnnd(:,k) + p%glnnd2(:,k) - &
                 p%glnndglnrho(:,k) - p%del2lnrho)
           else
-            fdiffd = fdiffd + diffnd*(p%del2nd(:,k) - p%gndglnrho(:,k) - &
+            fdiffd = fdiffd + diffnd_ndustspec(k)*(p%del2nd(:,k) - p%gndglnrho(:,k) - &
                 p%nd(:,k)*p%del2lnrho)
           endif
-          if (lfirst.and.ldt) diffus_diffnd=diffus_diffnd+diffnd*dxyz_2
+          if (lfirst.and.ldt) diffus_diffnd=diffus_diffnd+diffnd_ndustspec(k)*dxyz_2
         endif
 !
         if (ldiffd_hyper3) then

@@ -51,7 +51,7 @@ module Dustvelocity
   real :: rhods=1.0, nd0=1.0, md0=1.0, rhod0=1.0, mu_ext=0.
   real :: ad0=0.0, ad1=0.0, dimd1=0.333333, deltamd=1.0
   real :: nud_all=0.0, betad_all=0.0, tausd_all=0.0
-  real :: viscd_exponent=0.0
+  real :: viscd_exponent=0.0, adref_nud=0.0
   real :: mmon, mumon, mumon1, surfmon, ustcst, unit_md=1.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0,cdtd=0.2
   real :: gravx_dust=0.0
@@ -94,7 +94,7 @@ module Dustvelocity
 !
   namelist /dustvelocity_run_pars/ &
       nud, nud_all, iviscd, betad, betad_all, tausd, tausd_all, draglaw, &
-      viscd_law, viscd_exponent, &
+      viscd_law, viscd_exponent, adref_nud, &
       ldragforce_dust, ldragforce_gas, ldustvelocity_shorttausd, mu_ext, &
       ladvection_dust, lcoriolisforce_dust, gravx_dust, &
       beta_dPdr_dust, tausgmin, cdtd, nud_shock, &
@@ -206,86 +206,86 @@ module Dustvelocity
 !
 !  Grain chemistry
 !
-        if (lroot) &
-            print*, 'initialize_dustvelocity: dust_chemistry = ', dust_chemistry
+      if (lroot) &
+          print*, 'initialize_dustvelocity: dust_chemistry = ', dust_chemistry
 !
-        select case (dust_chemistry)
+      select case (dust_chemistry)
 
-        case ('nothing')
-          gsurften   = 0.0
-          Eyoung     = 1.0
-          nu_Poisson = 0.0
-          Eyoungred  = 1.0
-          unit_md = 1.0
-          mumon   = 1.0
-          mmon    = 1.0
+      case ('nothing')
+        gsurften   = 0.0
+        Eyoung     = 1.0
+        nu_Poisson = 0.0
+        Eyoungred  = 1.0
+        unit_md = 1.0
+        mumon   = 1.0
+        mmon    = 1.0
 
-        case ('ice')
+      case ('ice')
 !
 !  Surface tension and Young's modulus for sticking velocity
 !
-          gsurften   = 370. ! erg cm^-2
-          Eyoung     = 7e10 ! dyn cm^-2
-          nu_Poisson = 0.25 !
-          Eyoungred  = Eyoung/(2*(1-nu_Poisson**2))
+        gsurften   = 370. ! erg cm^-2
+        Eyoung     = 7e10 ! dyn cm^-2
+        nu_Poisson = 0.25 !
+        Eyoungred  = Eyoung/(2*(1-nu_Poisson**2))
 
-          mumon = 18.0
-          mmon  = mumon*1.6733e-24
-          unit_md = mmon
+        mumon = 18.0
+        mmon  = mumon*1.6733e-24
+        unit_md = mmon
 !
 !  for the following few items, no action is needed
 !
-        case ('pscalar')
-        case ('hat(om*t)')
-        case ('cos(om*t)')
-        case ('simplified')
+      case ('pscalar')
+      case ('hat(om*t)')
+      case ('cos(om*t)')
+      case ('simplified')
 
-        case default
-          call fatal_error &
-              ('initialize_dustvelocity','No valid dust chemistry specified.')
+      case default
+        call fatal_error &
+            ('initialize_dustvelocity','No valid dust chemistry specified.')
 
-        endselect
+      endselect
 
-        mumon1=1/mumon
+      mumon1=1/mumon
 !
 !  Constant used in determination of sticking velocity
 !    (extra factor 2 from Dominik & Tielens, 1997, end of Sec. 3.2)
 !
-        ustcst = sqrt(2* 2*9.6 * gsurften**(5/3.) * Eyoungred**(-2/3.))
+      ustcst = sqrt(2* 2*9.6 * gsurften**(5/3.) * Eyoungred**(-2/3.))
 !
 !  Dust physics parameters.
 !  Note that md(1) = md0*(1+deltamd)/2, so md0 = [2/(1+deltamd)] md(1).
 !  With md(1)=4/3.*pi*ad0**3*rhods, we have md0=8*pi*ad0**3*rhods/[3(1+deltamd)]
 !  So in practice we want to set ad1.
 !
-        if (ad0/=0.) md0 = 4/3.*pi*ad0**3*rhods/unit_md
-        if (ad1/=0.) md0 = 8*pi/(3*(1.+deltamd))*ad1**3*rhods
-        if (lroot) print*,'recalculated: md0=',md0
+      if (ad0/=0.) md0 = 4/3.*pi*ad0**3*rhods/unit_md
+      if (ad1/=0.) md0 = 8*pi/(3*(1.+deltamd))*ad1**3*rhods
+      if (lroot) print*,'recalculated: md0=',md0
 !
 !  Choice between different spacings.
 !  First, linearly spaced radius bins:
 !
-        if (llin_radiusbins) then
-          do k=1,ndustspec
-            ad(k)=ad0+ad1*(k-1)
-          enddo
-          md=4/3.*pi*ad**3*rhods
-          llog_massbins=.false.
+      if (llin_radiusbins) then
+        do k=1,ndustspec
+          ad(k)=ad0+ad1*(k-1)
+        enddo
+        md=4/3.*pi*ad**3*rhods
+        llog_massbins=.false.
 !
 !  Logarithmically spaced mass bins:
 !  (Do we really need unit_md? When would it not be 1?)
 !
-        elseif (llog_massbins) then
-          do k=1,ndustspec
-            mdminus(k) = md0*deltamd**(k-1)
-            mdplus(k)  = md0*deltamd**k
-            md(k) = 0.5*(mdminus(k)+mdplus(k))
-          enddo
-          ad=(0.75*md*unit_md/(pi*rhods))**onethird
-          llin_radiusbins=.false.
-        endif
+      elseif (llog_massbins) then
+        do k=1,ndustspec
+          mdminus(k) = md0*deltamd**(k-1)
+          mdplus(k)  = md0*deltamd**k
+          md(k) = 0.5*(mdminus(k)+mdplus(k))
+        enddo
+        ad=(0.75*md*unit_md/(pi*rhods))**onethird
+        llin_radiusbins=.false.
+      endif
 
-        if (lroot) print*,'initialize_dustvelocity: ad=',ad
+      if (lroot) print*,'initialize_dustvelocity: ad=',ad
 !
 !  Calculate betad.
 !  By default (betad0=0), use Stokes formula, where Fd=6pi*mu_ext*ad*u.
@@ -293,42 +293,41 @@ module Dustvelocity
 !  constant (better so than the kinematic one, which is given in the code
 !  and which is often chosen larger based on numerical considerations).
 !
-        select case (draglaw)
-        case ('stokes_varmass')
-          if (lroot) print*,'initialize_dustvelocity: draglaw=',draglaw
-          if (betad0/=0) then
-            betad=betad0*md**(-2./3.)
-          elseif (mu_ext/=0) then
-            betad=4.5*mu_ext/(rhods*ad**2)
-          else
-            call fatal_error('initialize_dustvelocity','betad not calculated')
-          endif
-          if (lroot) print*,'initialize_dustvelocity: betad=',betad
+      select case (draglaw)
+      case ('stokes_varmass')
+        if (lroot) print*,'initialize_dustvelocity: draglaw=',draglaw
+        if (betad0/=0) then
+          betad=betad0*md**(-2./3.)
+        elseif (mu_ext/=0) then
+          betad=4.5*mu_ext/(rhods*ad**2)
+        else
+          call fatal_error('initialize_dustvelocity','betad not calculated')
+        endif
+        if (lroot) print*,'initialize_dustvelocity: betad=',betad
 !
 !  Do nothing by default.
 !
-        case default
-          if (lroot) print*, 'initialize_dustvelocity: '// &
-            'doing nothing'
-        endselect
+      case default
+        if (lroot) print*, 'initialize_dustvelocity: '// &
+          'doing nothing'
+      endselect
 !
 !  Grain geometry
 !
-        select case (dust_geometry)
+      select case (dust_geometry)
 
-        case ('sphere')
-          dimd1 = onethird
-          if (lroot) print*, 'initialize_dustvelocity: dust geometry = sphere'
-          call get_dustsurface
-          call get_dustcrosssection
-          surfmon = surfd(1)*(mmon/(md(1)*unit_md))**(1.-dimd1)
+      case ('sphere')
+        dimd1 = onethird
+        if (lroot) print*, 'initialize_dustvelocity: dust geometry = sphere'
+        call get_dustsurface
+        call get_dustcrosssection
+        surfmon = surfd(1)*(mmon/(md(1)*unit_md))**(1.-dimd1)
 
-        case default
-          call fatal_error( &
-              'initialize_dustvelocity','No valid dust geometry specified.')
+      case default
+        call fatal_error( &
+            'initialize_dustvelocity','No valid dust geometry specified.')
 
-        endselect
-!--   endif
+      endselect
 !
 !  Auxiliary variables necessary for different drag laws
 !
@@ -357,6 +356,8 @@ module Dustvelocity
           enddo
         case ('md_exponential')
           nud=nud_all*md**viscd_exponent
+        case ('ad_exponential')
+          nud=nud_all*(ad/adref_nud)**viscd_exponent
         case default
           if (lroot) print*, 'No such value for viscd_law: ', trim(viscd_law)
           call fatal_error('initialize_dustvelocity','')
