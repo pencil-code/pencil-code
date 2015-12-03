@@ -927,6 +927,18 @@ module Hydro
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
+!  sinusoidal 1-D flow
+!
+      case ('sinusoidal')
+        if (headtt) print*,'sinusoidal motion; kz_uukin=',kz_uukin
+! uu
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,1)=0.
+          p%uu(:,2)=0.
+          p%uu(:,3)=ampl_kinflow*sin(kz_uukin*z(n))
+        endif
+        if (lpenc_loc(i_divu)) p%divu=ampl_kinflow*kz_uukin*cos(kz_uukin*z(n))
+!
 !  Galloway-Proctor flow, U=-z x grad(psi) - z k psi, where
 !  psi = U0/kH * (cosX+cosY), so U = U0 * (-sinY, sinX, -cosX-cosY).
 !  This makes sense only for kx_uukin=ky_uukin
