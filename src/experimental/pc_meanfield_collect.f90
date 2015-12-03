@@ -818,7 +818,7 @@ program pc_meanfield_collect
           call H5Pcreate_F(H5P_DATASET_CREATE_F, phdf_plist_ids(ianalyzer,iavg), hdferr)
           call H5Pset_chunk_f(phdf_plist_ids(ianalyzer, iavg), 4, phdf_chunkdims(:,ianalyzer), hdferr)
           call H5Dcreate_F(phdf_fieldgroups(iavg), trim(analyzernames(ianalyzer)), &
-                           H5T_IEEE_F32LE, phdf_spaces(ianalyzer,iavg), &
+                           H5T_IEEE_F64LE, phdf_spaces(ianalyzer,iavg), &
                            phdf_datasets(ianalyzer,iavg), hdferr, phdf_plist_ids(ianalyzer,iavg))
           
           call H5Sclose_F(phdf_spaces(ianalyzer,iavg), hdferr)
