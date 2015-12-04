@@ -29,7 +29,6 @@ program pc_distribute_z
 !
   lstart = .true.
   lmpicomm = .false.
-  root = 0
   ipx = 0
   ipy = 0
   ipz = 0

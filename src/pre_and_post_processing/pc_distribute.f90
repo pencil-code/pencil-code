@@ -33,7 +33,6 @@ program pc_distribute
   lstart = .false.
   lrun = .true.
   lmpicomm = .false.
-  root = 0
   lroot = .true.
   ipx = 0
   ipy = 0
