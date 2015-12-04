@@ -113,6 +113,10 @@ module Cparam
   real, parameter :: impossible=3.9085e37
   integer, parameter :: impossible_int=-max_int/100
 !
+! MPI
+!
+   integer, parameter :: root=0
+!
 !  Diagnostic variable types.
 !
 !  Values > 0 get maxed across all processors before any
@@ -138,6 +142,7 @@ module Cparam
   real, parameter :: sqrt2=1.41421356237309504880168872420970D0
   real, parameter :: four_pi_over_three=4.0/3.0*pi,onethird=1./3.
   real, parameter :: twopi = 6.2831853071795864769252867665590
+  real, parameter :: dtor = pi/180.
 !
 !  first zeros of Bessel functions of order 0 and 1
 !  k2bessel0 is the second zero of Bessel function of order 0

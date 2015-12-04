@@ -59,6 +59,7 @@ module Cdata
   logical :: luse_latitude=.false., luse_oldgrid=.true., luse_xyz1=.false.
   logical :: lcylindrical_gravity=.false.
   logical :: luniform_z_mesh_aspect_ratio=.false.
+  logical :: lyinyang=.false., lyang=.false.
   real :: drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
   real, dimension (nx) :: r_mn,r1_mn,r2_mn,r2_weight
   real, dimension (my) :: sinth,sin1th,sin2th,costh,cotth,sinth_weight
@@ -209,7 +210,7 @@ module Cdata
 !
 !  Rotation and shear parameters.
 !
-  real :: Omega=0.0, theta=0.0, qshear=0.0, Sshear=0.0, deltay=0.0
+  real :: Omega=0.0, theta=0.0, phi=0.0, qshear=0.0, Sshear=0.0, deltay=0.0
 !DM : Omega is now used in the viscosity routine too, for Lambda effect in rotating
 ! coordinate. This should be taken care of by 'shared variables' if in future
 ! Omega should be moved from cdata to hydro.
@@ -332,7 +333,7 @@ module Cdata
   integer :: ix=-1,iy=-1,iy2=-1,iz=-1,iz2=-1,iz3=-1,iz4=-1
   integer :: ix_loc=-1,iy_loc=-1, iy2_loc=-1
   integer :: iz_loc=-1,iz2_loc=-1, iz3_loc=-1, iz4_loc=-1
-  integer :: iproc,ipx,ipy,ipz,root=0
+  integer :: iproc=0,ipx,ipy,ipz,iproc_world
   logical :: lprocz_slowest=.true.
   integer :: xlneigh,ylneigh,zlneigh ! `lower' processor neighbours
   integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
