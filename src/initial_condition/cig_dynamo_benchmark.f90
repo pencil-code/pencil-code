@@ -187,7 +187,7 @@ module InitialCondition
 !
 !  print outs to put in run.in
 !
-       if (iproc .eq. root) then
+       if (lroot) then
          print*,''
          print*,'cs2top = ', cs20*(Tout)*cv*gamma*(gamma-1.)
          print*,'cs2bot = ', cs20*(Tout+DeltaT)*cv*gamma*(gamma-1.)

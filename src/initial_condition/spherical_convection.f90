@@ -140,9 +140,8 @@ module InitialCondition
          wtran=wtran*Rstar
          Rmin=Rsurf+(Rtran-Rsurf)/6.
          wmin=wtran/2.0
-         if (iproc .eq. root) then
+         if (lroot) &
            print*,'initial_condition: you are using a coronal envelope'
-         endif
          do i=1,nx
            if (x(l1+i)>=Rsurf) then
              nsurf=i-1
@@ -305,7 +304,7 @@ module InitialCondition
 !
 !  Write kappa and gkappa to file to be read by run.in
 !
-      if (iproc .eq. root) then 
+      if (lroot) then 
         call safe_character_assign(wfile,'hcond_glhc.dat')
         open(unit,file=wfile,status='unknown')
         do ix=1,nxgrid
@@ -317,7 +316,7 @@ module InitialCondition
 !  Write cs2 to a file to be used in cooling
 !
       if (lwrite_cooling_profile) then
-        if (iproc .eq. root) then 
+        if (lroot) then 
           call safe_character_assign(wfile,'cooling_profile.dat')
           open(unit,file=wfile,status='unknown')
           do ix=1,nxgrid
@@ -372,7 +371,7 @@ module InitialCondition
 !
       volume=((x0+Lxyz(1))**3-x0**3)*(cos(y0)-cos(y0+Lxyz(2)))*((z0+Lxyz(3))-z0)/3.
 !
-      if (iproc .eq. root) then
+      if (lroot) then
          print*,''
          print*,'initial_condition: Fbottom    =',Fbottom
          print*,'initial_condition: SigmaSBt   =',sigma
