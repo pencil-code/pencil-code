@@ -84,6 +84,7 @@ module Energy
   real :: pclaw=0.0, xchit=0.
   real, target :: hcond0_kramers=0.0, nkramers=0.0
   real :: chimax_kramers=0., chimin_kramers=0., zheat_uniform_range=0.
+  real :: pheat_factor
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
@@ -118,6 +119,7 @@ module Energy
   logical :: ltau_cool_variable=.false.
   logical :: lprestellar_cool_iso=.false.
   logical :: lphotoelectric_heating=.false.
+  logical :: lphotoelectric_heating_alt=.false.
   logical, pointer :: lreduced_sound_speed
   logical, pointer :: lscale_to_cs2top
   logical, save :: lfirstcall_hcond=.true.
@@ -195,7 +197,7 @@ module Energy
       center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
       Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
       cool_type,ichit,xchit,pclaw,lenergy_slope_limited,h_slope_limited,islope_limiter, &
-      chi_sld_thresh, zheat_uniform_range
+      chi_sld_thresh, zheat_uniform_range, pheat_factor, lphotoelectric_heating_alt
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -2622,7 +2624,7 @@ module Energy
 !
 !  for photoelectric dust heating in debris disks
 !
-        if (lphotoelectric_heating) lpenc_requested(i_rhop)=.true.
+        if (lphotoelectric_heating .or. lphotoelectric_heating_alt) lpenc_requested(i_rhop)=.true.
       endif
 !
       if (tau_cool2/=0.0) lpenc_requested(i_rho)=.true.
@@ -4928,6 +4930,8 @@ module Energy
           call calc_heat_cool_variable(heat,p)
         endif
       endif
+!
+      if (lphotoelectric_heating_alt) heat=heat+pheat_factor*p%rhop
 !
 !  Cooling/heating with respect to cs2mz(n)-cs2cool.
 !  There is also the possibility to do cooling with respect to
