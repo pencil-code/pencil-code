@@ -301,7 +301,7 @@ module Mpicomm
 !
   contains
 !***********************************************************************
-    subroutine mpicomm_init()
+    subroutine mpicomm_init
 !
 !  29-jul-2010/anders: dummy
 !
@@ -309,13 +309,15 @@ module Mpicomm
 !
     endsubroutine mpicomm_init
 !***********************************************************************
-    subroutine initialize_mpicomm()
+    subroutine initialize_mpicomm
 !
 !  Make a quick consistency check.
 !
-      if (ncpus>1) then
+      if (ncpus>1) &
         call stop_it('Inconsistency: MPICOMM=nompicomm, but ncpus>=2')
-      endif
+!
+      if (lyinyang) &
+         call stop_it('Inconsistency: Yin-Yang grid requires MPI and >= 2 processors')
 !
 !  For a single CPU run, set processor to zero.
 !
@@ -495,7 +497,7 @@ module Mpicomm
     subroutine radboundary_yz_periodic_ray(Qrad_yz,tau_yz, &
                                            Qrad_yz_all,tau_yz_all)
 !
-!  Trivial counterpart of radboundary_yz_periodic_ray() from mpicomm.f90
+!  Trivial counterpart of radboundary_yz_periodic_ray from mpicomm.f90
 !
 !  17-nov-14/axel: adapted from radboundary_zx_periodic_ray
 !
@@ -510,7 +512,7 @@ module Mpicomm
     subroutine radboundary_zx_periodic_ray(Qrad_zx,tau_zx, &
                                            Qrad_zx_all,tau_zx_all)
 !
-!  Trivial counterpart of radboundary_zx_periodic_ray() from mpicomm.f90
+!  Trivial counterpart of radboundary_zx_periodic_ray from mpicomm.f90
 !
 !  19-jul-05/tobi: coded
 !
@@ -1345,19 +1347,19 @@ module Mpicomm
 !
     endsubroutine mpireduce_and_arr
 !***********************************************************************
-    subroutine start_serialize()
+    subroutine start_serialize
 !
     endsubroutine start_serialize
 !***********************************************************************
-    subroutine end_serialize()
+    subroutine end_serialize
 !
     endsubroutine end_serialize
 !***********************************************************************
-    subroutine mpibarrier()
+    subroutine mpibarrier
 !
     endsubroutine mpibarrier
 !***********************************************************************
-    subroutine mpifinalize()
+    subroutine mpifinalize
 !
     endsubroutine mpifinalize
 !***********************************************************************
@@ -1401,28 +1403,14 @@ module Mpicomm
 !
     endfunction mpiwtick
 !***********************************************************************
-    subroutine touch_file(file)
-!
-!  Touches a given file (used for code locking).
-!
-!  25-may-03/axel: coded
-!  24-mar-10/Bourdin.KIS: moved here from sub.f90
-!
-      character(len=*) :: file
-!
-      integer :: unit = 1
-!
-      open (unit, FILE=file)
-      close (unit)
-!
-    endsubroutine touch_file
-!***********************************************************************
-    subroutine die_gracefully()
+    subroutine die_gracefully
 !
 !  Stop... perform any necessary shutdown stuff.
 !
 !  29-jun-05/tony: coded
 !
+      use General, only: touch_file
+
       call touch_file('ERROR')
 !
       call mpifinalize
@@ -1430,12 +1418,14 @@ module Mpicomm
 !
     endsubroutine die_gracefully
 !***********************************************************************
-    subroutine die_immediately()
+    subroutine die_immediately
 !
 !  Stop... perform any necessary shutdown stuff.
 !
 !  29-jun-05/tony: coded
 !
+      use General, only: touch_file
+
       call touch_file('ERROR')
 !
       STOP 2                    ! Return nonzero exit status
@@ -1480,7 +1470,7 @@ module Mpicomm
 !
     endsubroutine stop_it_if_any
 !***********************************************************************
-    subroutine check_emergency_brake()
+    subroutine check_emergency_brake
 !
 !  Check the lemergency_brake flag and stop with any provided
 !  message if it is set.
@@ -2726,16 +2716,16 @@ module Mpicomm
 !
     endsubroutine mpimerge_1d
 !***********************************************************************
-  logical function report_clean_output(flag, message)
+    logical function report_clean_output(flag, message)
 !
-    logical,             intent(IN)  :: flag
-    character (LEN=120), intent(OUT) :: message
+      logical,             intent(IN)  :: flag
+      character (LEN=120), intent(OUT) :: message
 !
-    message = ''
-    report_clean_output = .false.
+      message = ''
+      report_clean_output = .false.
 !
-    if (ALWAYS_FALSE) print*,flag,message
+      if (ALWAYS_FALSE) print*,flag,message
 !
-  end function report_clean_output
+    endfunction report_clean_output
 !***********************************************************************
 endmodule Mpicomm

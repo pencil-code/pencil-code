@@ -46,6 +46,10 @@ module General
   public :: backskip_to_time
   public :: ranges_dimensional
   public :: staggered_mean_scal, staggered_mean_vec
+  public :: directory_names_std
+  public :: touch_file
+  public :: var_is_vec
+  public :: transform_cart_spher_yy, transform_spher_cart_yy, yy_transform_strip
 !
   include 'record_types.h'
 !
@@ -3776,5 +3780,156 @@ module General
       endif
 
     endsubroutine staggered_mean_scal
+!***********************************************************************
+    subroutine directory_names_std(lproc)
+!
+!  Set up the directory names:
+!  set directory name for the output (one subdirectory for each processor)
+!  if datadir_snap (where var.dat, VAR# go) is empty, initialize to datadir
+!
+!  02-oct-2002/wolf: coded
+!
+      use Cdata, only: iproc, directory, datadir, datadir_snap, directory_dist, directory_snap, directory_collect
+
+      logical, optional :: lproc
+
+      character (len=intlen) :: chproc
+!
+      chproc=itoa(iproc)
+      call safe_character_assign(directory, trim(datadir)//'/proc'//chproc)
+      call safe_character_assign(directory_dist, &
+                                            trim(datadir_snap)//'/proc'//chproc)
+      if (loptest(lproc)) then
+        call safe_character_assign(directory_snap, &
+                                              trim(datadir_snap)//'/proc'//chproc)
+      else
+        call safe_character_assign(directory_snap, &
+                                              trim(datadir_snap)//'/allprocs')
+      endif
+      call safe_character_assign(directory_collect, &
+                                            trim (datadir_snap)//'/allprocs')
+!
+    endsubroutine directory_names_std
+!****************************************************************************  
+    subroutine touch_file(file)
+!
+!  Touches a given file (used for code locking).
+!
+!  25-may-03/axel: coded
+!  24-mar-10/Bourdin.KIS: moved here from sub.f90
+!
+      character(len=*) :: file
+!
+      integer :: unit = 1
+!
+      open (unit, FILE=file)
+      close (unit)
+!
+    endsubroutine touch_file
+!***********************************************************************
+    logical function var_is_vec(j)
+
+      use Cdata, only: iuu,iux,iuz,iaa,iax,iaz,iaatest,ntestfield,iuutest,ntestflow
+
+      integer :: j
+
+      var_is_vec = iuu>0.and.j>=iux.and.j<=iuz .or.  &
+                   iaa>0.and.j>=iax.and.j<=iaz .or.  &
+                   iaatest>0.and.j>=iaatest.and.j<=iaatest+ntestfield-1 .or. &
+                   iuutest>0.and.j>=iuutest.and.j<=iuutest+ntestflow-1
+
+    endfunction var_is_vec
+!***********************************************************************
+    subroutine transform_cart_spher_yy(f,ith1,ith2,iph1,iph2,j)
+
+      use Cdata, only: mx, cosph, sinph, costh, sinth
+
+      real, dimension(:,:,:,:) :: f
+      integer :: ith1, ith2, iph1, iph2, j
+
+      real, dimension(mx) :: tmp12
+      integer :: ith,iph
+
+      do ith=ith1,ith2; do iph=iph1,iph2
+
+        tmp12=cosph(iph)*f(:,ith,iph,j)+sinph(iph)*f(:,ith,iph,j+2)
+
+        f(:,ith,iph,j+2) = -(-sinph(iph)*f(:,ith,iph,j)+cosph(iph)*f(:,ith,iph,j+1))
+        f(:,ith,iph,j  ) = -( sinth(ith)*tmp12 + costh(ith)*f(:,ith,iph,j+1))
+        f(:,ith,iph,j+1) = -( costh(ith)*tmp12 - sinth(ith)*f(:,ith,iph,j+1))
+
+      enddo; enddo
+
+    endsubroutine transform_cart_spher_yy
+!***********************************************************************
+    subroutine transform_spher_cart_yy(f,ith1,ith2,iph1,iph2,dest,ith,iph)
+
+      use Cdata, only: mx, cosph, sinph, costh, sinth
+
+      real, dimension(:,:,:,:) :: f
+      integer :: ith1, ith2, iph1, iph2, ith, iph
+      real, dimension(:,:,:,:) :: dest
+
+      real, dimension(mx) :: tmp12
+      integer :: i,j,itd,ipd
+
+      do i=ith1,ith2; do j=iph1,iph2
+
+        tmp12=sinth(i)*f(:,i,j,1)+costh(i)*f(:,i,j,3)
+
+        itd=ith+i-1; ipd=iph+i-1
+        dest(:,itd,ipd,3) = -(costh(i)*f(:,i,j,1)-sinth(i)*f(:,i,j,3))
+        dest(:,itd,ipd,1) = -(cosph(j)*tmp12 - sinph(j)*f(:,i,j,2))
+        dest(:,itd,ipd,2) = -(sinph(j)*tmp12 + cosph(j)*f(:,i,j,2))
+
+      enddo; enddo
+
+    endsubroutine transform_spher_cart_yy
+!***********************************************************************
+    subroutine yy_transform_strip(ith1,ith2,iph1,iph2,thphprime)
+!
+!  transform own ghost zones to other grid
+!
+      use Cdata, only: y,z
+
+      integer :: ith1,ith2,iph1,iph2
+      real, dimension(:,:,:) :: thphprime
+
+      integer :: i,j,itp,jtp
+      real :: sth, cth, xprime, yprime, zprime, sprime
+      logical :: ltransp
+
+      ltransp = (iph2-iph1+1==nghost)
+!
+!  Rotate by Pi about z axis, then by Pi/2 about x axis.
+!
+      do i=ith1,ith2
+
+        sth=sin(y(i)); cth=cos(y(i))
+
+        do j=iph1,iph2
+!
+!  No distinction between Yin and Yang as transformation matrix is self-inverse.
+!
+          xprime = -cos(z(j))*sth
+          yprime = -cth
+          zprime = -sin(z(j))*sth
+
+          sprime = sqrt(xprime**2 + yprime**2)
+ 
+          if (ltransp) then
+            itp = i-ith1+1; jtp = j-iph1+1
+          else
+            jtp = i-ith1+1; itp = j-iph1+1
+          endif
+
+          thphprime(1,itp,jtp) = atan2(sprime,zprime)
+          thphprime(2,itp,jtp) = atan2(yprime,xprime)
+          if (thphprime(2,itp,jtp)<0.) thphprime(2,itp,jtp) = thphprime(2,itp,jtp) + 2.*pi
+
+        enddo
+      enddo
+
+    endsubroutine yy_transform_strip
 !****************************************************************************  
 endmodule General
