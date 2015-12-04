@@ -75,8 +75,17 @@ set nprocx = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocx\s*=\s*([0-9]*)/i && p
 set nprocy = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocy\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
 set nprocz = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocz\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
 set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
+set lyinyang = `perl -ne '$_ =~ /^\s*lyinyang\s*=\s*([TF])/i && print $1' start.in`
 if (! $ncpus) then
   @ ncpus = $nprocx * $nprocy * $nprocz
+endif
+if ( $lyinyang == '') then
+  set lyinyang = F
+endif
+
+if ( $mpi && ($lyinyang == T) ) then
+  @ ncpus = 2 * $ncpus
+  echo "Yin-Yang grid run."
 endif
 echo "$ncpus CPUs"
 
@@ -133,7 +142,6 @@ else
   set hostname=$hn
 endif
 echo "USER = ${USER}"
-echo "hn = $hn"
 #
 if ($mpi) echo "Running under MPI"
 set mpirunops  = ''  # options before -np $ncpus
@@ -156,7 +164,6 @@ if ($?SNIC_RESOURCE) then
 endif
 if ("$masterhost" =~ gardar*) set hn = 'gardar'
 if ("$masterhost" =~ triolith) set hn = 'triolith'
-echo $hn
 if ($?PBS_JOBID) then
   if ("$PBS_JOBID" =~ *.obelix*) set masterhost = 'obelix'
 endif
