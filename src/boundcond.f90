@@ -41,6 +41,8 @@ module Boundcond
   endinterface
 !
   integer, parameter :: BOT=1, TOP=2
+  logical :: is_vec=.false.
+  integer :: jdone=0
 !
   contains
 !***********************************************************************
@@ -457,6 +459,7 @@ module Boundcond
 !   8-jul-02/axel: split up into different routines for x,y and z directions
 !  11-nov-02/wolf: unified bot/top, now handled by loop
 !
+      use General, only: var_is_vec
       use Special, only: special_boundconds
       use EquationOfState
 !
@@ -491,6 +494,7 @@ module Boundcond
             ip_ok=llast_proc_y
           endif
 !
+          jdone=0
           do j=ivar1,ivar2
 !
 ! Natalia: the next line is for the dustdensity case.
@@ -504,6 +508,8 @@ module Boundcond
 !
             if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcy',k,'(',j,')=',bcy12(j,k)
             if (ip_ok) then
+           
+              is_vec = var_is_vec(j)
               select case (bcy12(j,k))
               case ('0')
                 ! BCY_DOC: zero value in ghost zones, free value on boundary
@@ -514,6 +520,9 @@ module Boundcond
               case ('pp')
                 ! BCY_DOC: periodic across the pole
                 call bc_pper_y(f,+1,topbot,j)
+              case ('yy')
+                ! BCY_DOC: Yin-Yang grid
+                call bc_yy_y(f,topbot,j)
               case ('ap')
                 ! BCY_DOC: anti-periodic across the pole
                 call bc_pper_y(f,-1,topbot,j)
@@ -683,6 +692,7 @@ module Boundcond
 !                  + symmetry about boundary; added 'fa' for alternative reference to
 !                  already existing freezing condition (includes antisymmetry)
 !
+      use General, only: var_is_vec
       use Special, only: special_boundconds
       use EquationOfState
 !
@@ -717,9 +727,13 @@ module Boundcond
             ip_ok=llast_proc_z
           endif
 !
+          jdone=0
           do j=ivar1,ivar2
             if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcz',k,'(',j,')=',bcz12(j,k)
             if (ip_ok) then
+
+              is_vec = var_is_vec(j)
+
               select case (bcz12(j,k))
               case ('0')
                 ! BCZ_DOC: zero value in ghost zones, free value on boundary
@@ -727,6 +741,9 @@ module Boundcond
               case ('p')
                 ! BCZ_DOC: periodic
                 call bc_per_z(f,topbot,j)
+              case ('yy')
+                ! BCZ_DOC: Yin-Yang grid
+                call bc_yy_z(f,topbot,j)
               case ('s')
                 ! BCZ_DOC: symmetry
                 call bc_sym_z(f,+1,topbot,j)
@@ -1186,6 +1203,42 @@ module Boundcond
 !
     endsubroutine bc_per_y
 !***********************************************************************
+    subroutine bc_yy_y(f,topbot,j)
+!
+!  After-communication handling of vector quantities for Yin-Yang grid
+!
+!  30-nov-15/MR: coded
+!
+      use General, only: transform_cart_spher_yy
+
+      real, dimension (:,:,:,:) :: f
+      integer :: j
+      character (len=bclen) :: topbot
+
+      real, dimension(mx,nghost,mz,3) :: buffer
+!
+      if (.not.lyinyang) &
+        call fatal_error_local('bc_yy_y','BC not legal as no Yin-Yang grid run.')
+
+      if (j<=jdone) return
+
+      if (is_vec) then
+!
+!  Vector quantities need to be transformed from the Cartesian basis of the other grid to 
+!  the local spherical coordinate basis.
+!
+        jdone=j+2     ! requires adjacent vector components
+        if (topbot=='bot') then
+          call transform_cart_spher_yy(f,1,nghost,1,mz,j)    ! in-place!
+        else
+          call transform_cart_spher_yy(f,m2+1,my,1,mz,j)
+        endif
+      else
+        jdone=0
+      endif
+
+    endsubroutine bc_yy_y
+!***********************************************************************
     subroutine bc_pper_y(f,sgn,topbot,j)
 !
 !  Periodic boundary condition across the pole
@@ -1249,6 +1302,40 @@ module Boundcond
       endselect
 !
     endsubroutine bc_per_z
+!***********************************************************************
+    subroutine bc_yy_z(f,topbot,j)
+!
+!  After-communication handling of vector quantities for Yin-Yang grid.
+!
+!  30-nov-15/MR: coded
+!
+      use General, only: transform_cart_spher_yy
+
+      real, dimension (:,:,:,:) :: f
+      integer :: j
+      character (len=bclen) :: topbot
+!
+      if (.not.lyinyang) &
+        call fatal_error_local('bc_yy_z','BC not legal as no Yin-Yang grid run.')
+
+      if (j<=jdone) return
+
+      if (is_vec) then
+!
+!  Vector quantities need to be transformed from the Cartesian basis of the other grid to 
+!  the local spherical coordinate basis.
+!
+        jdone=j+2     ! requires adjacent vector components
+        if (topbot=='bot') then
+          call transform_cart_spher_yy(f,1,my,1,nghost,j)    ! in-place!
+        else
+          call transform_cart_spher_yy(f,1,my,n2+1,mz,j)
+        endif
+      else
+        jdone=0
+      endif
+
+    endsubroutine bc_yy_z
 !***********************************************************************
     subroutine bc_a2r_x(f,topbot,j)
 !
