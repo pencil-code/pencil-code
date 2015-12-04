@@ -222,8 +222,8 @@ module Streamlines
     y_proc = ipy + floor((grid_pos(2)-1)/real(ny))
     z_proc = ipz + floor((grid_pos(3)-1)/real(nz))
     proc_id = x_proc + nprocx*y_proc + nprocx*nprocy*z_proc
-    if (proc_id > (nprocx*nprocy*nprocz-1)) &
-        call fatal_error("streamlines", "proc_id > nprocs")
+    if (proc_id > ncpus-1) &
+        call fatal_error("streamlines", "proc_id > ncpus")
 !
 !   find the grid position in the other core
     grid_pos_send(1) = grid_pos(1) - (x_proc - ipx)*nx
