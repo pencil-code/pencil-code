@@ -411,10 +411,10 @@ module Register
 ! 14-aug-2011/Bourdin.KIS: coded
 ! 26-mar-2012/MR: finalize_deriv introduced
 !
-      use Boundcond,        only: finalize_boundcond
+      use Boundcond,      only: finalize_boundcond
       use Cdata
-      use Special,          only: finalize_special
-      use Deriv,            only: finalize_deriv
+      use Special,        only: finalize_special
+      use Deriv,          only: finalize_deriv
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !

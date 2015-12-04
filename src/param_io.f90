@@ -99,7 +99,7 @@ module Param_IO
       lforce_shear_bc,lread_from_other_prec, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w,&
       lcorotational_frame, rcorot, lproper_averages, &
-      ldirect_access, ltolerate_namelist_errors
+      ldirect_access, ltolerate_namelist_errors, lyinyang
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
@@ -361,6 +361,17 @@ module Param_IO
         print*, 'lperi= ', lperi
       endif
 !
+      if (lyinyang.and.coord_system/='spherical'.and.coord_system/='spherical_coords') then
+        if (lroot) call warning('read_all_init_pars', 'Yin-Yang grid only implemented for spherical coordinates')
+        lyinyang=.false.
+      endif
+!
+! Set proper BC code for Yin-Yang grid
+!
+      if (lyinyang) then
+        lperi(2:3) = .false.; lpole = .false.
+        bcy12='yy'; bcz12='yy'
+      endif
       call check_consistency_of_lperi('read_all_init_pars')
 !
     endsubroutine read_all_init_pars

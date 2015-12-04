@@ -1013,7 +1013,7 @@ print*,'NS: z_center=',z_center_fcont
 !  21-jan-15/MR: changes for use of reference state.
 !
       use General, only: random_number_wrapper
-      use Mpicomm, only: mpifinalize,mpireduce_sum,mpibcast_real
+      use Mpicomm, only: mpireduce_sum,mpibcast_real
       use Sub, only: del2v_etc,dot
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1768,7 +1768,6 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
       use Diagnostics, only: sum_mn_name
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
-      use Mpicomm, only: mpifinalize
       use Sub, only: del2v_etc,curl,cross,dot,dot2
 !
       real :: phase,ffnorm,irufm
@@ -2191,7 +2190,6 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
-      use Mpicomm, only: mpifinalize
       use Sub
 !
       real :: phase,ffnorm
