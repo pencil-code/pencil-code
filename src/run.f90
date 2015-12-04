@@ -64,7 +64,7 @@ program run
   use Filter
   use Fixed_point,     only: fixed_points_prepare, wfixed_points
   use Forcing,         only: forcing_clean_up,addforce
-  use General,         only: random_seed_wrapper
+  use General,         only: random_seed_wrapper, touch_file
   use Hydro,           only: hydro_clean_up,kinematic_random_phase
   use ImplicitPhysics, only: calc_heatcond_ADI
   use Interstellar,    only: check_SN,addmassflux
