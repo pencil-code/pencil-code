@@ -3150,22 +3150,6 @@ module Mpicomm
 !
     endfunction mpiwtick
 !***********************************************************************
-    subroutine touch_file(file)
-!
-!  Touches a given file (used for code locking).
-!
-!  25-may-03/axel: coded
-!  24-mar-10/Bourdin.KIS: moved here from sub.f90
-!
-      character(len=*) :: file
-!
-      integer :: unit = 1
-!
-      open (unit, FILE=file)
-      close (unit)
-!
-    endsubroutine touch_file
-!***********************************************************************
     subroutine die_gracefully()
 !
 !  Stop having shutdown MPI neatly
@@ -3177,6 +3161,8 @@ module Mpicomm
 !  Tell the world something went wrong -- mpirun may not propagate
 !  an error status.
 !
+      use General, only: touch_file
+
       call touch_file('ERROR')
 !
       call mpifinalize
@@ -3199,6 +3185,8 @@ module Mpicomm
 !  Tell the world something went wrong -- mpirun may not propagate
 !  an error status.
 !
+      use General, only: touch_file
+
       call touch_file('ERROR')
 !
       if (lroot) then
