@@ -295,7 +295,7 @@ module power_spectrum
 !
 !  append to diagnostics file
 !
-  if (iproc==root) then
+  if (lroot) then
     if (ip<10) print*,'Writing power spectra of variable',trim(sp) &
          ,'to ',trim(datadir)//'/power'//trim(sp)//'.dat'
     spectrum_sum=.5*spectrum_sum
@@ -403,7 +403,7 @@ module power_spectrum
 !
 !  append to diagnostics file
 !
-  if (iproc==root) then
+  if (lroot) then
     if (ip<10) print*,'Writing power spectra of variable',sp &
          ,'to ',trim(datadir)//'/power'//trim(sp)//'_2d.dat'
     spectrum_sum=.5*spectrum_sum
@@ -830,7 +830,7 @@ module power_spectrum
 !
   endif
 !
-  call mpibarrier()          ! necessary ?
+  call mpibarrier          ! necessary ?
 !  print*, 'nach barrier:', iproc, ipy, ipz
 !
   if (lintegrate_shell) then
@@ -1096,7 +1096,7 @@ module power_spectrum
   !
   !  append to diagnostics file
   !
-  if (iproc==root) then
+  if (lroot) then
     if (ip<10) print*,'Writing power spectrum ',sp &
          ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
     !
@@ -1283,7 +1283,7 @@ module power_spectrum
   !
   !  append to diagnostics file
   !
-  if (iproc==root) then
+  if (lroot) then
     if (ip<10) print*,'Writing power spectrum ',sp &
          ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
     !
@@ -1451,7 +1451,7 @@ module power_spectrum
   !
   !  append to diagnostics file
   !
-  if (iproc==root) then
+  if (lroot) then
     if (ip<10) print*,'Writing power spectrum ',sp &
          ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
 !AB: the following line does not make sense for passive scalars
@@ -1663,7 +1663,7 @@ module power_spectrum
 !
 !  Append to diagnostics file
 !
-    if (iproc==root) then
+    if (lroot) then
       if (lroot.and.ip<10) print*, 'Writing power spectra of variable', sp, &
           'to ', trim(datadir)//'/power'//trim(sp)//trim(suffix)
       open(1,file=trim(datadir)//'/power'//trim(sp)//trim(suffix), &
@@ -1968,7 +1968,7 @@ endsubroutine pdf
 !
 !  append to diagnostics file
 !
-  if (iproc==root) then
+  if (lroot) then
     if (ip<10) print*,'Writing power spectra of variable',trim(sp) &
          ,'to ',trim(datadir)//'/power_phi'//trim(sp)//'.dat'
     open(1,file=trim(datadir)//'/power_phi'//trim(sp)//'.dat',position='append')
@@ -2108,7 +2108,7 @@ endsubroutine pdf
 !
 !  append to diagnostics file
 !
-   if (iproc==root) then
+   if (lroot) then
      if (ip<10) print*,'Writing power spectrum ',sp &
        ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
 !
@@ -2207,7 +2207,7 @@ endsubroutine pdf
 !
 !  append to diagnostics file
 !
-  if (iproc==root) then
+  if (lroot) then
      if (ip<10) print*,'Writing power spectra of variable',trim(sp) &
           ,'to ',trim(datadir)//'/power'//trim(sp)//'.dat'
      spectrum_sum=.5*spectrum_sum
