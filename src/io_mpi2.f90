@@ -145,25 +145,17 @@ module Io
 !
 !  02-oct-2002/wolf: coded
 !
-      use General, only: safe_character_assign, itoa
-!
-      character (len=intlen) :: chproc
+      use General, only: directory_names_std
 !
 !  check whether directory_snap contains `/allprocs' -- if so, revert to the
 !  default name.
 !  Rationale: if directory_snap was not explicitly set in start.in, it
 !  will be written to param.nml as 'data/allprocs'.
 !
-      if ((datadir_snap == '') .or. (index(datadir_snap,'allprocs')>0)) then
+      if ((datadir_snap == '') .or. (index(datadir_snap,'allprocs')>0)) &
         datadir_snap = datadir
-      endif
-!
-      chproc = itoa (iproc)
-      call safe_character_assign (directory, trim (datadir)//'/proc'//chproc)
-      call safe_character_assign (directory_dist, &
-                                            trim (datadir_snap)//'/proc'//chproc)
-      call safe_character_assign (directory_snap, trim (datadir_snap)//'/allprocs')
-      call safe_character_assign (directory_collect, trim (datadir_snap)//'/allprocs')
+
+      call directory_names_std
 !
     endsubroutine directory_names
 !***********************************************************************

@@ -101,9 +101,7 @@ module Io
 !  02-oct-2002/wolf: coded
 !  04-Sep-2015/PABourdin: adapted from 'io_collect_xy'
 !
-      use General, only: safe_character_assign, itoa
-!
-      character (len=intlen) :: chproc
+      use General, only: directory_names_std
 !
 !  check whether directory_snap contains `/proc0' -- if so, revert to the
 !  default name.
@@ -111,16 +109,10 @@ module Io
 !  will be written to param.nml as 'data/proc0', but this should in fact
 !  be data/procN on processor N.
 !
-      if ((datadir_snap == '') .or. (index (datadir_snap,'proc0') > 0)) then
+      if ((datadir_snap == '') .or. (index (datadir_snap,'proc0') > 0)) &
         datadir_snap = datadir
-      endif
 !
-      chproc = itoa (iproc)
-      call safe_character_assign (directory, trim (datadir)//'/proc'//chproc)
-      call safe_character_assign (directory_dist, &
-                                            trim (datadir_snap)//'/proc'//chproc)
-      call safe_character_assign (directory_snap, trim (datadir_snap)//'/proc'//chproc)
-      call safe_character_assign (directory_collect, trim (datadir_snap)//'/allprocs')
+      call directory_names_std(.true.)
 !
     endsubroutine directory_names
 !***********************************************************************
