@@ -153,23 +153,27 @@ program start
 !
   lenergy=lentropy.or.ltemperature.or.lthermal_energy
 !
-!  Initialise MPI communication.
-!
-  call initialize_mpicomm
-!
 !  Read initialization parameters from "start.in".
 !
   call read_all_init_pars
-!
-!  Register variables in the f array.
-!
-  call register_modules
-  if (lparticles) call particles_register_modules
 !
 !  Call rprint_list to initialize diagnostics and write indices to file.
 !
   call rprint_list(.false.)
   if (lparticles) call particles_rprint_list(.false.)
+!
+!  Set up directory names and check whether the directories exist.
+!
+  call directory_names
+!
+!  Initialise MPI communication.
+!
+  call initialize_mpicomm
+!
+!  Register variables in the f array.
+!
+  call register_modules
+  if (lparticles) call particles_register_modules
 !
 !  The logical headtt is sometimes referred to in start.x, even though it is
 !  not yet defined. So we set it simply to lroot here.
@@ -191,10 +195,6 @@ program start
 !  Print resolution.
 !
   if (lroot) print*, 'nxgrid, nygrid, nzgrid=', nxgrid, nygrid, nzgrid
-!
-!  Set up directory names and check whether the directories exist.
-!
-  call directory_names
 !
 !  Unfortunately the following test for existence of directory fails under
 !  OSF1:
@@ -267,6 +267,12 @@ program start
       endif
     endif
   enddo
+  if (lyinyang) then
+    if (lroot) &
+      print*, 'Setting latitude and longitude intervals for Yin-Yang grid, ignoring input'
+    xyz0(2:3) = (/ 1./4., 1./4. /)*pi
+    Lxyz(2:3) = (/ 1./2., 3./2. /)*pi
+  endif
   xyz1=xyz0+Lxyz
 !
 !  Abbreviations
@@ -620,7 +626,7 @@ program start
   call initial_condition_clean_up
   if (lparticles) call particles_cleanup
 !
-!  Before reading the rprint_list deallocate the arrays allocated for
+!  Deallocate the arrays allocated for
 !  1-D and 2-D diagnostics.
 !
   call fnames_clean_up
