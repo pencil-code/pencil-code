@@ -4568,7 +4568,7 @@ module Initcond
 !
 !  08-sep-14/axel: adapted from power_randomphase
 !
-      use Fourier, only: fft_xyz_parallel
+      use Fourier, only: fft_xyz_parallel, fourier_transform
 !
       logical, intent(in), optional :: lscale_tobox
       logical :: lvectorpotential, lscale_tobox1
@@ -4680,16 +4680,7 @@ module Initcond
           fact=kpeak1**1.5
           if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+1.))
         endif
-!
-!  By mistake, a second ampl factor got introduced, so
-!  the resulting amplitudes depended quadratically on ampl.
-!  To keep continuity and reproduce old runs, put lno_second_ampl=F.
-!
-        if (lno_second_ampl) then
-          r=fact*((k2*kpeak21)**mhalf)/(1.+(k2*kpeak21)**nexp1)**nexp2
-        else
-          r=ampl*((k2*kpeak21)**mhalf)/(1.+(k2*kpeak21)**nexp1)**nexp2
-        endif
+        r=fact*((k2*kpeak21)**mhalf)/(1.+(k2*kpeak21)**nexp1)**nexp2
 !
 !  cutoff (changed to hyperviscous cutoff filter).
 !  The 1/2 factor is needed to account for the fact that the
@@ -4789,8 +4780,16 @@ module Initcond
 !
 !  back to real space
 !
+!AB: I plan to remove the lno_second_ampl switch, which was used for
+!AB: something else. Right now, I use it to invoke fft_xyz_parallel
+!AB: by setting lno_second_ampl=F (which is not the default).
+!
         do i=1,3
-          call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
+          if (lno_second_ampl) then
+            call fourier_transform(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
+          else
+            call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
+          endif
         enddo !i
         f(l1:l2,m1:m2,n1:n2,i1:i2)=u_re
 !
