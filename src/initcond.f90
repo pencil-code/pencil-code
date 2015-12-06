@@ -4638,8 +4638,6 @@ module Initcond
 !  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
 !  the full nx extent (which, currently, must be equal to nxgrid).
 !
-        if (lroot .AND. ip<10) &
-             print*,'power_randomphase:fft done; now integrate over shells...'
         do iky=1,nz
           do ikx=1,ny
             do ikz=1,nx
@@ -4749,10 +4747,11 @@ module Initcond
         enddo
         endif
 !
-!  Make it helical, i.e., multiply by delta_ij + epsilon_ijk ik_k*sigma.
+!  Make it helical, i.e., multiply by delta_ij + epsilon_ijk ikhat_k*sigma.
 !  Use r=sigma/k for normalization of sigma*khat_i = sigma*ki/sqrt(k2).
 !
         r=relhel/sqrt(k2)
+        r(1,1,1)=0.
         do iky=1,nz
           do ikx=1,ny
             do ikz=1,nx
