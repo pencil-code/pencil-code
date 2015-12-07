@@ -37,6 +37,7 @@ module Particles
   complex, dimension (7) :: coeff=(0.0,0.0)
   real, target, dimension (npar_species) :: tausp_species=0.0
   real, target, dimension (npar_species) :: tausp1_species=0.0
+  real, target, dimension (npar_species) :: rpbeta_species=0.0
   real, dimension (3) :: temp_grad0=(/0.0,0.0,0.0/)
   real, dimension (3) :: pos_sphere=(/0.0,0.0,0.0/)
   real, dimension (3) :: pos_ellipsoid=(/0.0,0.0,0.0/)
@@ -45,7 +46,7 @@ module Particles
   real :: xp2=0.0, yp2=0.0, zp2=0.0, vpx2=0.0, vpy2=0.0, vpz2=0.0
   real :: xp3=0.0, yp3=0.0, zp3=0.0, vpx3=0.0, vpy3=0.0, vpz3=0.0
   real :: Lx0=0.0, Ly0=0.0, Lz0=0.0
-  real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0
+  real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, rpbeta=0.0
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
   real :: tausg_min=0.0, tausg1_max=0.0, epsp_friction_increase=100.0
@@ -181,7 +182,8 @@ module Particles
       yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
       xp3, yp3, zp3, vpx3, vpy3, vpz3, lsinkparticle_1, rsinkparticle_1, &
       lcalc_uup, temp_grad0, thermophoretic_eq, cond_ratio, interp_pol_gradTT, &
-      lreassign_strat_rhom, lparticlemesh_pqs_assignment
+      lreassign_strat_rhom, lparticlemesh_pqs_assignment, &
+      rpbeta_species, rpbeta
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -219,8 +221,8 @@ module Particles
       thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, &
       lcommunicate_np, lcylindrical_gravity_par, &
       l_shell, k_shell, lparticlemesh_pqs_assignment, pscalar_sink_rate, &
-      lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw,lbubble,&
-      lpart_box
+      lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw,lbubble, &
+      lpart_box, rpbeta_species, rpbeta
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -2912,7 +2914,7 @@ module Particles
       integer, dimension (mpar_loc,3), intent (in) :: ineargrid
 !
       real, dimension(3) :: ggp
-      real :: rr=0, vv=0, OO2
+      real :: rr=0, vv=0, OO2, rpbeta_tmp=0
       integer :: k
       logical :: lheader, lfirstcall=.true.
 !
@@ -3014,13 +3016,19 @@ module Particles
           if (lheader) &
                print*, 'dvvp_dt: Newtonian gravity from a fixed central object'
           do k=1,npar_loc
+            if (npar_species>1) then
+              jspec=npar_species*(ipar(k)-1)/npar+1
+              rpbeta_tmp=rpbeta_species(jspec)
+            else
+              rpbeta_tmp=rpbeta
+            endif
             if (lcartesian_coords) then
               if (lcylindrical_gravity_par) then
                 rr=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+gravsmooth2)
               else
                 rr=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2+gravsmooth2)
               endif
-              OO2=rr**(-3.)*gravr
+              OO2=rr**(-3.)*gravr*(1.0-rpbeta_tmp)
               ggp(1) = -fp(k,ixp)*OO2
               ggp(2) = -fp(k,iyp)*OO2
               if (lcylindrical_gravity_par) then
@@ -3035,7 +3043,7 @@ module Particles
               else
                 rr=sqrt(fp(k,ixp)**2+fp(k,izp)**2+gravsmooth2)
               endif
-              OO2=rr**(-3.)*gravr
+              OO2=rr**(-3.)*gravr*(1.0-rpbeta_tmp)
               ggp(1) = -fp(k,ixp)*OO2
               ggp(2) = 0.0
               if (lcylindrical_gravity_par) then
@@ -3046,7 +3054,7 @@ module Particles
               dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
             elseif (lspherical_coords) then
               rr=sqrt(fp(k,ixp)**2+gravsmooth2)
-              OO2=rr**(-3)*gravr
+              OO2=rr**(-3)*gravr*(1.0-rpbeta_tmp)
               ggp(1) = -fp(k,ixp)*OO2
               ggp(2) = 0.0; ggp(3) = 0.0
               if (lcylindrical_gravity_par) call fatal_error("dvvp_dt",&
