@@ -2915,7 +2915,7 @@ module Particles
 !
       real, dimension(3) :: ggp
       real :: rr=0, vv=0, OO2, rpbeta_tmp=0
-      integer :: k
+      integer :: k, jspec
       logical :: lheader, lfirstcall=.true.
 !
       call keep_compiler_quiet(f,df)
