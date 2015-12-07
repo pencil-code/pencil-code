@@ -1436,57 +1436,87 @@ subroutine bc_satur_x(f,bc)
 !
  !     real, dimension (:,:,:,:), allocatable :: bc_file_x_array
        real, dimension (:,:,:,:), allocatable :: bc_file_x_array
-       real, dimension (:,:), allocatable :: bc_T_x_array
+!       real, dimension (:,:), allocatable :: bc_T_x_array
+         real, dimension(66,64) :: bc_T_x_array
        real, dimension (100) :: tmp, time, LES_x
-       real, dimension (my,mz) :: bc_T_x_adopt
-      integer :: i,j,statio_code,vr, Npoints, i1,i2, time_position, io_code, stat
-      real :: lbc,frac, d_LESx
+       real, dimension (64,64), save :: bc_T_x_adopt
+      integer :: i,j,ii,statio_code,vr, Npoints, i1,i2, io_code, stat
+      integer,save :: time_position=1
+      real, save :: time_LES=0
+      real :: lbc,frac, d_LESx,ttt
       logical, save :: lbc_file_x=.true.
       logical, save :: lbc_T_x=.true.
  
-!      
-      allocate(bc_T_x_array(64,61),stat=stat)
-      if (stat>0) call fatal_error('bc_file_x', &
-          'Could not allocate memory for bc_file_x_array')
+!     
+
+      if (t>=time_LES) lbc_T_x=.true.
+
+      if (lbc_T_x) then
+!      allocate(bc_T_x_array(65,61),stat=stat)
+ !     if (stat>0) call fatal_error('bc_file_x', &
+ !         'Could not allocate memory for bc_file_x_array')
 !
-!      if (lbc_T_x) then
+      
         if (lroot) then
 !          print*,'opening T.dat'
-          open(9,file='T.dat')
+          open(9,file='T2.dat')
 !          
-          do i = 1,60
-            read(9,*,iostat=io_code) (tmp(j),j=1,64)
-            bc_T_x_array(:,i)=tmp(:)
+!          ii=1 
+!          do i = 1,60
+!          do  j= 1,64
+!            read(9,*,iostat=io_code) (tmp(ii),ii=1,1)
+!            if (j==1) bc_T_x_array(1,i)=tmp(1)
+!          enddo
+!          enddo
+   
+   
+!   print*,'time_position',time_position
+   
+          read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
+          do i = 1,59
+!          
+          if (i==time_position) then  
+            do  j= 1,64
+              read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
+              do ii=1,66
+                bc_T_x_array(ii,j)=tmp(ii)
+              enddo
+ !              print*,'j',j,'   ',bc_T_x_array(1,j),bc_T_x_array(66,j), bc_T_x_array(66,1)
+            enddo
+            
+            time(i)=tmp(1)
+ !           print*,'proverka1',bc_T_x_array(66,1)       !,bc_T_x_array(66,64)
+          else
+            do  j= 1,64
+              read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
+              if (j==1) time(i)=tmp(1)
+            enddo
+          endif
+!          
+!          print*,'time(i)',i,time(i)       
+
           enddo
-          
-            if (io_code < 0) then
-            ! end of file
-              if (lroot) print*,'need file with dimension: for fil2 633 62 '
-              deallocate(bc_T_x_array)
- !           call stop_it("boundary file bc_file_x.dat has incorrect size")
-            endif
-          close(9)
 !          
-!          print*,bc_T_x_array(:,2)
+           ttt=time(1)
+           do i = 1,60
+            time(i)=time(i)-ttt
+!            print*,i, time(i)
+          enddo
 !
-          do i = 2,60
-            time(i-1)=(bc_T_x_array(1,i)-bc_T_x_array(1,2))
-!            print*,time(i-1)
-          enddo
-          
-!          print*,time  
+!          print*,time(1:3)
+          !          
           i=1
-          print*,'t',t,time(i+1)
+!          print*,'t',t,time(i+1)
           do while (t>=time(i)) 
 !            print*, i,t+30, time(i)
-             i=i+1
             time_position=i
-           
+            time_LES=time(time_position)
+            i=i+1
           enddo
-          print*,'time_position',time_position
+ !         print*,'time_position',time_position,'t=',t,' time_LES=  ',time_LES
 !          
-          do i = 2,64
-            LES_x(i-1)=bc_T_x_array(i,1)
+          do i = 3,66
+            LES_x(i-2)=bc_T_x_array(i,1)
           enddo
 !          
           d_LESx=LES_x(2)-LES_x(1)
@@ -1507,11 +1537,16 @@ subroutine bc_satur_x(f,bc)
 !          print*,time_position
 !          
           if (Npoints==1) then
-            do i=1,64-1
-                bc_T_x_adopt(i,:)=bc_T_x_array(i+1,time_position)
-            enddo   
+            do i=1,64
+            do j=1,64
+                bc_T_x_adopt(i,j)=bc_T_x_array(i+2,j)
+            enddo
+            enddo
+    !        
+    !        print*,'proverka',bc_T_x_adopt(1,1),bc_T_x_adopt(1,64),bc_T_x_adopt(64,1),bc_T_x_adopt(64,64)
           else
-          do i=1,my
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!notready!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!          
+            do i=1,my
  !         do j=1,mz
 !          print*,i
 ! 
@@ -1526,19 +1561,38 @@ subroutine bc_satur_x(f,bc)
               
             endif
  !         enddo
-          enddo
-          endif
+            enddo
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
+           endif
+         
+            if (io_code < 0) then
+            ! end of file
+!              if (lroot) print*,'need file with dimension: for fil2 633 62 '
+!              deallocate(bc_T_x_array)
+ !           call stop_it("boundary file bc_file_x.dat has incorrect size")
+            endif
+          close(9)
+        endif
+        lbc_T_x=.false.
+   !      print*,'after allocation',  lbc_T_x, time_position
+      endif
+          
+       
+!          
+!          print*,bc_T_x_array(:,2)
+!
+!          print*,time  
+!          
+        
 !          
 !          print*,     'cheking',bc_T_x_adopt(:,2)
 !          
 !         print*,'LES_x=',LES_x(2)
 !         print*,'time_step=',time(3)
 !
-!        endif
-!        lbc_T_x=.false.
-        endif
+       
 !
-      print*,'time_position',time_position
+!      print*,'time_position',time_position
       
       vr=bc%ivar
 !      value1=bc%value1
@@ -1551,14 +1605,20 @@ subroutine bc_satur_x(f,bc)
 !
       if (bc%location==iBC_X_BOT) then
         if (vr==ilnTT) then
+ !         do j=n1,n2
+ !         do i=m1,m2
+ !           f(l1,i,j,vr)=alog(bc_T_x_adopt(i,j))
+ !         enddo
+ !         enddo
           do i=m1,m2
-            f(l1,i,:,vr)=alog(bc_T_x_adopt(i-3,time_position))
+            f(l1,i,:,vr)=alog(bc_T_x_adopt(i,1))
           enddo
-          do i=1,nghost
-            f(l1-i,:,:,vr)=f(l1,:,:,vr)
-          enddo
-      
-!   print*,  f(l1,m1:m2,3,vr), l1,m1 
+          
+!          do i=1,nghost
+            do i=1,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
+!          enddo
+!      
+!   print*,  exp(f(l1,m1:m2,3,vr)), l1,m1 
           endif
       elseif (bc%location==iBC_X_TOP) then
 !
@@ -1566,7 +1626,7 @@ subroutine bc_satur_x(f,bc)
 !        print*, "bc_satur_x: ", bc%location, " should be `top(", &
       endif
 !      deallocate(bc_file_x_array)
-     deallocate(bc_T_x_array)
+!     deallocate(bc_T_x_array)
 !        print*,'closing bc_file_x.dat'
 !        
 !
