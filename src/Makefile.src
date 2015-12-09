@@ -1138,6 +1138,15 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #CFLAGS=-O3 -DFUNDERSC=1 #(nl6)
 #FFLAGS_DOUBLE=-autodouble #(nl6)
 ##include $(PENCIL_HOME)/src/Makefile_ifort.incl #(nl6)
+#
+#FC=gfortran #(nl6)
+#FFLAGS=-fbounds-check -frecord-marker=4 -fimplicit-none -I/usr/include  -I. #(nl6)
+#FFLAGS_DOUBLE=-fdefault-real-8  #(nl6)
+#CC=gcc #(nl6)
+#CFLAGS= #(nl6)
+#CFLAGS=-DFUNDERSC=1 #(nl6)
+#LD_MPI= #(nl6)
+#LIBMPISUFFIX= #(nl6)
 ##
 ## Giuseppe on giuseppe-desktop (gfortran)
 ##
