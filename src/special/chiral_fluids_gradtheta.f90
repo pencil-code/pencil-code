@@ -41,7 +41,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED mu5; gmu5(3); del2mu5; del2gtheta5(3)
-! PENCILS PROVIDED ugmu5; gtheta5(3); gtheta5ij(3,3); uggtheta5(3); bgtheta5
+! PENCILS PROVIDED ugmu5; gtheta5(3); gtheta5ij(3,3); uggtheta5(3);gtheta522; bgtheta5
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -89,6 +89,8 @@ module Special
    real :: diffmu5, diffgtheta5, lambda5, gtheta5_const=0., mu5_const=0.
    real :: meanmu5, kx_gtheta5=1., ky_gtheta5=1.
    real, pointer :: eta
+   real :: cdtchiral=1., cdtchiral1=1., cdtchiral2=0., cdtchiral3=1.
+   real :: cdtchiral4=1., cdtchiral5=1., cdtchiral6=0., cdtchiral7=1.
    integer :: igtheta5, imu5
    logical :: lupw_gtheta5=.false.
    character (len=labellen) :: theta_prof='nothing'
@@ -101,7 +103,9 @@ module Special
       kx_gtheta5, ky_gtheta5
 !
   namelist /special_run_pars/ &
-      diffgtheta5, diffmu5, lambda5, theta_prof, lupw_gtheta5
+      diffgtheta5, diffmu5, lambda5, theta_prof, lupw_gtheta5, &
+      cdtchiral, cdtchiral1, cdtchiral2, cdtchiral3, cdtchiral4, cdtchiral5, &
+      cdtchiral6, cdtchiral7
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -240,6 +244,7 @@ module Special
       if (diffmu5/=0.) lpenc_requested(i_del2mu5)=.true.
       if (diffgtheta5/=0.) lpenc_requested(i_del2gtheta5)=.true.
       if (lhydro.or.lhydro_kinematic) lpenc_requested(i_uggtheta5)=.true.
+      if (lhydro.or.lhydro_kinematic) lpenc_requested(i_gtheta522)=.true.
       if (lmagnetic) lpenc_requested(i_bgtheta5)=.true.
       if (lhydro.or.lhydro_kinematic) lpenc_requested(i_uu)=.true.
       if (lmagnetic) lpenc_requested(i_bb)=.true.
@@ -267,7 +272,8 @@ module Special
 !
 !  24-nov-04/tony: coded
 !
-      use Sub, only: del2, del2v_etc, grad, dot, u_dot_grad, gij
+      use Sub, only: del2, dot2_mn, del2v_etc, grad, dot, u_dot_grad, gij
+      use Sub, only: multsv
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -287,6 +293,9 @@ module Special
       if (lpencil(i_uggtheta5)) call u_dot_grad(f,igtheta5,p%gtheta5ij, &
         p%uu,p%uggtheta5,UPWIND=lupw_gtheta5)
       if (lpencil(i_bgtheta5)) call dot(p%bb,p%gtheta5,p%bgtheta5)
+      if (lpencil(i_gtheta522)) then
+          call dot2_mn(p%gtheta5,p%gtheta522)
+      endif
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -367,21 +376,14 @@ module Special
       endif
 !
 !  Contribution to the time-step
-!
       if (lfirst.and.ldt) then
-!---    diffus_special= max(p%b2*p%theta5/(p%rho)*sqrt(dxyz_2),   &
-!AB: p%theta5 doesn't exist here. Note sure we need something like this here
-        diffus_special= max( &
-                            eta*p%mu5*sqrt(dxyz_2),   &
-!--                         eta*p%theta5*sqrt(p%u2)*dxyz_2,   &
-!AB: p%theta5 doesn't exist here. Note sure we need something like this here
-                            diffmu5*dxyz_2,   &
-                            lambda5*eta*p%b2/(p%mu5)*sqrt(dxyz_2),   &
-                            lambda5*eta*p%b2 &
-!--                         lambda5*eta*p%b2,   &
-!--                         lambda5*eta*p%b2*sqrt(p%u2)*p%theta5/(p%mu5)*sqrt(dxyz_2), &
-!--                         p%mu5/p%theta5   &
-!AB: p%theta5 doesn't exist here. Note sure we need something like this here
+        diffus_special= cdtchiral*max(cdtchiral1*eta*p%mu5*sqrt(dxyz_2),   &
+                                      cdtchiral2*eta*sqrt(p%u2)*sqrt(p%gtheta522)*sqrt(dxyz_2),   &
+                                      cdtchiral3*diffmu5*dxyz_2,   &
+                                      cdtchiral4*lambda5*eta*p%b2/(p%mu5)*sqrt(dxyz_2),   &
+                                      cdtchiral5*lambda5*eta*p%b2,   &  
+                                      cdtchiral6*lambda5*eta*sqrt(p%u2)*p%b2*sqrt(p%gtheta522)/(p%mu5), &     
+                                      cdtchiral7*p%b2*sqrt(p%gtheta522)*p%rho1   & 
                           )  
       endif
 !
