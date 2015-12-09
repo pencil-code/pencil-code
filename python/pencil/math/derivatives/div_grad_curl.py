@@ -5,7 +5,7 @@
 
 """
 import numpy as N
-from der import *
+from .der import *
 from sys import exit
 
 def div(f,dx,dy,dz):
@@ -13,7 +13,7 @@ def div(f,dx,dy,dz):
     take divervenge of pencil code vector array
     """
     if (f.ndim != 4):
-        print "div: must have vector 4-D array f[mvar,mz,my,mx] for divergence"
+        print("div: must have vector 4-D array f[mvar,mz,my,mx] for divergence")
         raise ValueError
    
     return xder(f[0,...],dx) + yder(f[1,...],dy) + zder(f[2,...],dz)
@@ -23,7 +23,7 @@ def grad(f,dx,dy,dz):
     take the curl of a pencil code scalar array.
     """
     if (f.ndim != 3):
-        print "grad: must have scalar 3-D array f[mz,my,mx] for gradient"
+        print("grad: must have scalar 3-D array f[mz,my,mx] for gradient")
         raise ValueError
     
     grad = N.empty((3,)+f.shape)
@@ -48,7 +48,7 @@ def curl(f,dx,dy,dz,run2D=False):
     with pure 2-D snapshots (solved the (x,z)-plane pb)
     """
     if (f.shape[0] != 3):
-        print "curl: must have vector 4-D array f[3,mz,my,mx] for curl"
+        print("curl: must have vector 4-D array f[3,mz,my,mx] for curl")
         raise ValueError
 
     curl = N.empty_like(f)
@@ -75,7 +75,7 @@ def curl2(f,dx,dy,dz):
     CARTESIAN COORDINATES ONLY!!
     """
     if (f.ndim != 4 or f.shape[0] != 3):
-        print "curl2: must have vector 4-D array f[3,mz,my,mx] for curl2"
+        print("curl2: must have vector 4-D array f[3,mz,my,mx] for curl2")
         raise ValueError
 
     curl2 = N.empty(f.shape)

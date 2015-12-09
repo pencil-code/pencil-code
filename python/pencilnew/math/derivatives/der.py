@@ -5,7 +5,7 @@
 this is a wrapper for the actual derivatives, currently 6th order with
 ghost zones included (pencil-code style).
 """
-import der_6th_order_w_ghosts as der
+from .. import der_6th_order_w_ghosts as der
 xder = der.xder_6th
 yder = der.yder_6th
 zder = der.zder_6th

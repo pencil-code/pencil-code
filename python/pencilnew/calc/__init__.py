@@ -4,4 +4,4 @@
 ##
 ################
 
-from streamlines import *
+from .streamlines import *

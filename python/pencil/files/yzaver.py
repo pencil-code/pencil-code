@@ -7,11 +7,11 @@
 #
 import os
 import re
-from commands import getoutput
+from subprocess import getoutput
 import numpy as N
 
 #from param import read_param 
-from dim import read_dim
+from .dim import read_dim
 
 class YzAver:
     pass
@@ -41,11 +41,11 @@ def read_yzaver(varfile='yzaverages.dat',datadir='data/'):
     if nx%8:
         rec_length += 1
     n_data_records = n_lines/rec_length
-    print "%s: reading %i records" % (__name__,n_data_records)
+    print(("%s: reading %i records" % (__name__,n_data_records)))
     
     # change the hardcode dtype!
     t = []
-    var_tmp = dict(zip(variables,[[] for var in variables]))
+    var_tmp = dict(list(zip(variables,[[] for var in variables])))
     for i in range(n_data_records):
         t.extend(N.fromfile(datafile,dtype='float32',count=1,sep=' '))
         for var in variables:

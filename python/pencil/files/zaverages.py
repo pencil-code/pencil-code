@@ -14,7 +14,7 @@ class ZAverage():
                     record_length=4,read_deltay=False):
 
     from re import compile
-    from dim import read_dim
+    from .dim import read_dim
     from numpy import float32,float64,array
 
     p = compile('mxy$')
@@ -43,7 +43,7 @@ class ZAverage():
     self.__read_deltay = read_deltay
 
 
-  def next(self):
+  def __next__(self):
     from numpy import fromfile
 
     file = self.__file

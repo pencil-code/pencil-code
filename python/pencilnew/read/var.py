@@ -16,9 +16,9 @@ import sys
 import re
 from pencilnew.io.npfile import npfile as npfile
 from pencilnew.math.derivatives import curl, curl2
-from param import param as read_param
-from index import index as read_index
-from dim import dim as read_dim
+from .param import param as read_param
+from .index import index as read_index
+from .dim import dim as read_dim
 
 def natural_sort(l): 
     convert = lambda text: int(text) if text.isdigit() else text.lower() 
@@ -122,8 +122,7 @@ class DataCube(object):
                 varfile='VAR'+str(ivar)
 
         if proc < 0:
-            procdirs = natural_sort(filter(lambda s:s.startswith('proc'),
-                              os.listdir(datadir)))
+            procdirs = natural_sort([s for s in os.listdir(datadir) if s.startswith('proc')])
         else:
             procdirs = ['proc'+str(proc)]
 
@@ -144,8 +143,8 @@ class DataCube(object):
             proc = int(directory[4:])
             procdim = read_dim(datadir, proc)
             if (not quiet):
-                print "reading data from processor %i of %i ..." \
-                      % (proc, len(procdirs))
+                print(("reading data from processor %i of %i ..." \
+                      % (proc, len(procdirs))))
 
             mxloc = procdim.mx
             myloc = procdim.my
@@ -304,14 +303,14 @@ class DataCube(object):
 
         # Assign an attribute to self for each variable defined in
         # 'data/index.pro' so that e.g. self.ux is the x-velocity
-        for key,value in index.items():
+        for key,value in list(index.items()):
 #          print key,value
           if key != 'global_gg':
             setattr(self,key,self.f[value-1,...])
         # Special treatment for vector quantities
-        if index.has_key('uu'):
+        if 'uu' in index:
           self.uu = self.f[index['ux']-1:index['uz'],...]
-        if index.has_key('aa'):
+        if 'aa' in index:
           self.aa = self.f[index['ax']-1:index['az'],...]
 
         self.t = t

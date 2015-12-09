@@ -18,7 +18,7 @@ class PcPdim:
         self.npar = npar
         self.mpvar = mpvar
         self.npar_stalk = npar_stalk
-	self.mpaux = mpaux
+        self.mpaux = mpaux
 
         
 def read_pdim(datadir='data'):
@@ -29,21 +29,21 @@ def read_pdim(datadir='data'):
     filename = datadir+'/pdim.dat' # global particle properties
 
     try:
-	filename = os.path.expanduser(filename)
+        filename = os.path.expanduser(filename)
         file = open(filename,"r")
     except IOError:
-        print "File",filename,"could not be opened."
+        print(("File",filename,"could not be opened."))
         return -1
     else:
         lines = file.readlines()[0].split()
         file.close()
         if N.size(lines) == 3:
 	  # old code - case: 'npar','mpvar','mpaux'	(before fall 2014)
-	  npar,mpvar,mpaux = tuple(map(int,lines))
-	  npar_stalk = 0
-	if N.size(lines) == 4:
+          npar,mpvar,mpaux = tuple(map(int,lines))
+          npar_stalk = 0
+        if N.size(lines) == 4:
 	  # new code - case: 'npar','mpvar','npar_stalk','mpaux'
-	  npar,mpvar,npar_stalk,mpaux = tuple(map(int,lines))
+          npar,mpvar,npar_stalk,mpaux = tuple(map(int,lines))
 
     pdim = PcPdim(npar,mpvar,npar_stalk,mpaux)
 

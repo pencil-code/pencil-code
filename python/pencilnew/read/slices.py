@@ -9,8 +9,8 @@ import os
 import numpy as N
 import pylab as P
 from pencilnew.io.npfile import npfile
-from param import param as read_param 
-from dim import dim as read_dim 
+from .param import param as read_param 
+from .dim import dim as read_dim 
 from time import sleep 
 
 import sys

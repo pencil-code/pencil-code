@@ -4,4 +4,4 @@
 ##
 ################
 
-from npfile import npfile
+from .npfile import npfile

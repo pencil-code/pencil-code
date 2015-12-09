@@ -11,12 +11,12 @@
 # 03/08 : T. Gastine (tgastine@ast.obs-mip.fr)
 
 import numpy as np
-from npfile import npfile
+from .npfile import npfile
 import os
 import sys
-from param import read_param
-from index import read_index
-from dim import read_dim
+from .param import read_param
+from .index import read_index
+from .dim import read_dim
 from pencil.math.derivatives import curl, curl2
 import re
 
@@ -124,8 +124,7 @@ class DataCube(object):
                 varfile = 'VAR'+str(ivar)
 
         if proc < 0:
-            procdirs = natural_sort(filter(lambda s:s.startswith('proc'),
-                                    os.listdir(datadir)))
+            procdirs = natural_sort([s for s in os.listdir(datadir) if s.startswith('proc')])
         else:
             procdirs = ['proc'+str(proc)]
 
@@ -146,8 +145,8 @@ class DataCube(object):
             proc = int(directory[4:])
             procdim = read_dim(datadir, proc)
             if (not quiet):
-                print "reading data from processor %i of %i ..." \
-                      % (proc, len(procdirs))
+                print(("reading data from processor %i of %i ..." \
+                      % (proc, len(procdirs))))
 
             mxloc = procdim.mx
             myloc = procdim.my
@@ -303,17 +302,17 @@ class DataCube(object):
 
         # Assign an attribute to self for each variable defined in
         # 'data/index.pro' so that e.g. self.ux is the x-velocity.
-        for key,value in index.items():
+        for key,value in list(index.items()):
             # print key,value.
             if key != 'global_gg':
                 setattr(self,key,self.f[value-1,...])
         # special treatment for vector quantities
-        if index.has_key('uu'):
+        if 'uu' in index:
             self.uu = self.f[index['ux']-1:index['uz'],...]
-        if index.has_key('aa'):
+        if 'aa' in index:
             self.aa = self.f[index['ax']-1:index['az'],...]
         # Also treat Fcr (from cosmicrayflux) as a vector.
-        if index.has_key('fcr'):  
+        if 'fcr' in index:  
             self.fcr = self.f[index['fcr']-1:index['fcr']+2,...]
             self.fcrx = self.fcr[0]
             self.fcry = self.fcr[1]

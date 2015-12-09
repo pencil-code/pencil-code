@@ -4,5 +4,5 @@
 ##
 ################
 
-from tracers import *
-from fixed_points import *
+from .tracers import *
+from .fixed_points import *

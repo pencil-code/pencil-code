@@ -58,7 +58,7 @@ def power2vtk(powerFiles = ['mag_spec.dat'], destination = 'spectra.vtk', mulz =
     fd.write('SPACING {0:8.12} {1:8.12} {2:8.12}\n'.format(1.0, dt, 1.0))
     fd.write('POINT_DATA {0:9}\n'.format(np.size(power)*mulz))
 
-    print 'writing ', pfile[:-4]
+    print(('writing ', pfile[:-4]))
     fd.write('SCALARS '+pfile[:-4]+' float\n')
     fd.write('LOOKUP_TABLE default\n')
     for k in range(mulz):
@@ -70,7 +70,7 @@ def power2vtk(powerFiles = ['mag_spec.dat'], destination = 'spectra.vtk', mulz =
     if (len(powerFiles[0]) > 1):        
         for pfile in powerFiles[1:]:        
             t, power = pc.read_power('data/'+pfile)
-            print 'writing ', pfile[:-4]
+            print(('writing ', pfile[:-4]))
             fd.write('SCALARS '+pfile[:-4]+' float\n')
             fd.write('LOOKUP_TABLE default\n')        
             for k in range(mulz):

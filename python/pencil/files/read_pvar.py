@@ -3,10 +3,10 @@
 import pencil as pc
 import numpy as np
 
-from npfile import npfile
+from .npfile import npfile
 import os
 import sys
-from string import maketrans
+#from string import maketrans
 
 def read_pvar(*args, **kwargs):
     """ read pvar files from pencil code. if proc is not provided
@@ -30,7 +30,7 @@ class pcpvar(object):
             for i in places:
                 setattr(self,keys[int(i)-1].replace('(','P').replace(')','P'),int(i)-1)
             if (proc==-1):
-                procdirs = filter(lambda s:s.startswith('proc'),os.listdir(casedir+datadir))
+                procdirs = [s for s in os.listdir(casedir+datadir) if s.startswith('proc')]
                 nprocs=len(procdirs)
                 ipars,pvars = collect_class_pdata(casedir=casedir,pfile=varfile,datadir=datadir,nprocs=nprocs,verbose=verbose)
             else:
@@ -83,7 +83,7 @@ def read_class_npvar_red(casedir='.',datadir='/data',pfile='pvar.dat',proc=0,ver
     pdims = pc.read_pdim(casedir+datadir)
     npar_loc = read_npar_loc(casedir=casedir,datadir=datadir,pfile=pfile,proc=proc)
     if (verbose):
-		print npar_loc,' particles on processor: ',proc
+        print((npar_loc,' particles on processor: ',proc))
     mvars = pdims.mpaux+pdims.mpvar
     ltot = npar_loc*mvars
     if (dims.precision == 'S'):
@@ -117,19 +117,19 @@ def read_class_npvar_red(casedir='.',datadir='/data',pfile='pvar.dat',proc=0,ver
     
 def collect_class_pdata(casedir='.',pfile='pvar.dat',datadir='/data',nprocs='0',verbose=False):
     if (nprocs==0):
-        print "this should be greater than zero"
+        print("this should be greater than zero")
     else:
-        procs=range(nprocs)
+        procs=list(range(nprocs))
     for i in procs:
-		dom_ipar,dom_pvar = read_class_npvar_red(casedir=casedir,pfile=pfile,datadir=datadir,proc=i)
-		if i == 0:
-			ipars = dom_ipar
-			pvars = dom_pvar
-		else:
-			ipars = np.hstack((ipars,dom_ipar))
-			pvars = np.hstack((pvars,dom_pvar))
-		if (verbose):
-			print 'Reading processor '+ str(i)+'.'
+        dom_ipar,dom_pvar = read_class_npvar_red(casedir=casedir,pfile=pfile,datadir=datadir,proc=i)
+        if i == 0:
+            ipars = dom_ipar
+            pvars = dom_pvar
+        else:
+            ipars = np.hstack((ipars,dom_ipar))
+            pvars = np.hstack((pvars,dom_pvar))
+            if (verbose):
+                print(('Reading processor '+ str(i)+'.'))
     return ipars,pvars
     
 

@@ -86,8 +86,8 @@ def animate_slices(field='uu1',datadir='data/',proc=-1,extension='xz',format='na
             manager.canvas.draw()
             
             if ifirst:
-                print "----islice----------t---------min-------max-------delta"
-            print "%10i %10.3e %10.3e %10.3e %10.3e" % (islice,t,plane.min(),plane.max(),plane.max()-plane.min())
+                print("----islice----------t---------min-------max-------delta")
+            print(("%10i %10.3e %10.3e %10.3e %10.3e" % (islice,t,plane.min(),plane.max(),plane.max()-plane.min())))
                 
             ifirst = False
             islice += 1

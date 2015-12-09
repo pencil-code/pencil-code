@@ -55,11 +55,11 @@ def make_movie(data,tmin=0,tmax=0,dt=1,output="/tmp/out.avi",dim=-1,min=-1,max=1
         tmp=T.NamedTemporaryFile(suffix=".png")
         fname=tmp.name
         flist+=[tmp]
-        print 'Saving frame', t
+        print(('Saving frame', t))
         fig.savefig(fname)
         files+=fname+","
             
-    print 'Making movie animation.mpg - this make take a while'
+    print('Making movie animation.mpg - this make take a while')
     os.system("mencoder mf:/"+files[:-1]+" -mf type=png:fps=24 -ovc lavc -lavcopts vcodec=wmv2 -oac copy -o "+output)
     for i in flist:
         del i            # Purge temp files

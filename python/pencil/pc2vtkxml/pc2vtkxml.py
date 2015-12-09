@@ -182,7 +182,7 @@ def pc2vtkxml(varfile = 'var.dat', datadir = 'data/', proc = -1,
     w.addData("points", (X,Y,Z))
     w.closeElement("Points")
 
-    w.openData("Point", scalars = scalardata.keys(), vectors = vectordata.keys())
+    w.openData("Point", scalars = list(scalardata.keys()), vectors = list(vectordata.keys()))
     for key in scalardata:
       w.addData(key,scalardata[key])
     for key in vectordata:

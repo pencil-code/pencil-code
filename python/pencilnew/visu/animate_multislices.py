@@ -97,8 +97,8 @@ def animate_multislices(field=['uu1'],datadir='data/',proc=-1,extension='xz',for
             manager.canvas.draw()
             
             if ifirst:
-                print "----islice----------t---------min-------max-------delta"
-            print "%10i %10.3e %10.3e %10.3e %10.3e" % (islice,t,plotplane.min(),plotplane.max(),plotplane.max()-plotplane.min())
+                print("----islice----------t---------min-------max-------delta")
+            print(("%10i %10.3e %10.3e %10.3e %10.3e" % (islice,t,plotplane.min(),plotplane.max(),plotplane.max()-plotplane.min())))
             if outfile != "":
                 outslice.write("%10i %10.3e %10.3e %10.3e %10.3e" % (islice,t,plotplane.min(),plotplane.max(),plotplane.max()-plotplane.min()))
                 outslice.write("\n")

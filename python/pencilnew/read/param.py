@@ -24,16 +24,16 @@ def param(datadir='data/', param2=False, quiet=False):
 
   # execute output of nl2python script
   if (not os.path.exists(filen)):
-      print "read_param: no such file",filen
+      print(("read_param: no such file",filen))
       raise ValueError
   
   cmd = 'nl2python '+filen
   script = os.popen(cmd).read()
-  if (not quiet): print script;
+  if (not quiet): print(script);
   if (len(script) != 0):
       exec(script)
   else:
-      print "read_param: nl2python returned nothing! is $PENCIL_HOME/bin in the path?"
+      print("read_param: nl2python returned nothing! is $PENCIL_HOME/bin in the path?")
       return -1
   
   ret = Params() # par is the name of the class
