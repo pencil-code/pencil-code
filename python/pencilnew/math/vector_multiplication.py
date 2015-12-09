@@ -11,7 +11,7 @@ def dot(a,b):
 
     if (a.ndim != 4 or a.shape[0] != 3 or
         b.ndim != 4 or b.shape[0] != 3):
-        print("dot: both vectors must be 4-D array f[3,mz,my,mx] for dot")
+        print "dot: both vectors must be 4-D array f[3,mz,my,mx] for dot"
         raise ValueError
 
     return a[0,...]*b[0,...]+ a[1,...]*b[1,...] + a[2,...]*b[2,...]
@@ -34,7 +34,7 @@ def cross(a,b):
     """
     if (a.ndim != 4 or a.shape[0] != 3 or
         a.shape != b.shape):
-        print("cross: both vectors must be 4-D array f[3,mz,my,mx] for dot")
+        print "cross: both vectors must be 4-D array f[3,mz,my,mx] for dot"
         raise ValueError
     
     cross = N.empty(a.shape)

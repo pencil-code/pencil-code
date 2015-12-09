@@ -187,7 +187,7 @@ class FixedPoint(object):
                             (fixed_point[0] > tracers.x0[ix+1, iy, 0]) or
                             (fixed_point[1] < tracers.y0[ix, iy, 0]) or
                             (fixed_point[1] > tracers.y0[ix, iy+1, 0])):
-                            print("warning: fixed point lies outside the cell")
+                            print "warning: fixed point lies outside the cell"
                         else:
                             fixed.append(fixed_point)
                             fixed_sign.append(np.sign(poincare))
@@ -311,7 +311,7 @@ class FixedPoint(object):
 
                 if it > 20:
                     fixed_point = point
-                    print("warning: Newton did not converged")
+                    print "warning: Newton did not converged"
                     break
 
                 it += 1
@@ -365,7 +365,7 @@ class FixedPoint(object):
 
         # Multi core setup.
         if not(np.isscalar(n_proc)) or (n_proc%1 != 0):
-            print("error: invalid processor number")
+            print "error: invalid processor number"
             return -1
         queue = mp.Queue()
 
@@ -389,7 +389,7 @@ class FixedPoint(object):
 
         # Multi core setup.
         if not(np.isscalar(n_proc)) or (n_proc%1 != 0):
-            print("error: invalid processor number")
+            print "error: invalid processor number"
             return -1
 
         # Make sure to read the var files with the correct magic.
@@ -454,8 +454,8 @@ class FixedPoint(object):
         self.fidx = np.zeros((tf-ti+1)*series + (1-series))
         self.poincare = np.zeros([int(trace_sub*dim.nx),
                                   int(trace_sub*dim.ny)])
-        ix0 = list(range(0, int(self.params.nx*trace_sub)-1))
-        iy0 = list(range(0, int(self.params.ny*trace_sub)-1))
+        ix0 = range(0, int(self.params.nx*trace_sub)-1)
+        iy0 = range(0, int(self.params.ny*trace_sub)-1)
 
         # Start the parallelized fixed point finding for the initial time.
         proc = []
@@ -660,7 +660,7 @@ class FixedPoint(object):
         # Extract parameters.
         params = f['params']
         self.params = TracersParameterClass()
-        for param in list(params.attrs.keys()):
+        for param in params.attrs.keys():
             setattr(self.params, param, params.attrs[param])
 
         # Read the time series.

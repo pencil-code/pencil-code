@@ -10,7 +10,7 @@ import h5py
 import os
 import datetime
 import numpy as N
-from .npfile import npfile
+from npfile import npfile
 
 VERSION='v0.2'
 
@@ -33,9 +33,9 @@ def read_cut_line(data,prec):
     if line.startswith('#'):
         line=data.readline()    # would be cleaner with a while loop, but I assumed that you never have two successive comment lines
     if prec=='d':
-        line=list(map(N.float64,line.strip().split()))
+        line=map(N.float64,line.strip().split())
     else:
-        line=list(map(N.float32,line.strip().split()))
+        line=map(N.float32,line.strip().split())
     return line    
 
 class param_file:
@@ -140,9 +140,9 @@ class param_file:
                     var[i]=True
                 elif var[i].startswith('('):  # array (assume all arrays in param are float.... should be checked)
                     if self.precision=='d':
-                        var[i]=list(map(N.float64,var[i][1:-1].split(';')))
+                        var[i]=map(N.float64,var[i][1:-1].split(';'))
                     else:
-                        var[i]=list(map(N.float32,var[i][1:-1].split(';')))
+                        var[i]=map(N.float32,var[i][1:-1].split(';'))
                 else:              # float
                     if self.precision=='d':
                         var[i]=N.float64(var[i])
@@ -211,18 +211,18 @@ class h5file:
             self.set_data()
         else:            # Open an existing file and setup the class members. No modif made here.
             if self.f.attrs.get('name','none') != 'PencilCode':
-                print("Warning! Probably not a pencil code hdf5 file!!!")
+                print "Warning! Probably not a pencil code hdf5 file!!!"
             else:
                 if workdir==None:
                     workdir=self.f.attrs.get('WorkDir','Unset!')
                 self.datadir=os.path.join(workdir,'data') 
                 self.workdir=os.path.abspath(workdir)
-                print("Pencil code hdf5 file version ",self.f.attrs.get('ver','Unset!')," of the dataset ", self.workdir)
+                print "Pencil code hdf5 file version ",self.f.attrs.get('ver','Unset!')," of the dataset ", self.workdir
                 if self.f.attrs.get('ver','Unset!') != VERSION:
-                    print("Warning! This file is of a different version than this program ("+VERSION+")")
-                print("Created on: ",self.f.attrs.get('dateC','Unset!'))
-                print("Last modified on:",self.f.attrs.get('dateM','Unset!'))
-                print("Last accessed on:",self.f.attrs.get('dateA','Unset!'))
+                    print "Warning! This file is of a different version than this program ("+VERSION+")"
+                print "Created on: ",self.f.attrs.get('dateC','Unset!')
+                print "Last modified on:",self.f.attrs.get('dateM','Unset!')
+                print "Last accessed on:",self.f.attrs.get('dateA','Unset!')
                 self.__set_tree()
                 try:
                     self.__last_timeslice=self.data['slices_time'].shape[0]
@@ -267,7 +267,7 @@ class h5file:
         ''' Read dim.dat file and write corresponding data
             Should only be called by set_param'''
         if self.__updating:
-            print("Reading dim.dat...", end=' ')
+            print "Reading dim.dat...",
             fpar=file(os.path.join(self.datadir,'dim.dat'))  # read data from file
             line=fpar.readline().split()
             if len(line) == 6:
@@ -389,12 +389,12 @@ class h5file:
                 self.param['dim/m2'][i+1]=m2
                 self.param['dim/n1'][i+1]=n1
                 self.param['dim/n2'][i+1]=n2
-            print("Done.")
+            print "Done."
     def __read_param(self):
         ''' Read params.log file and write corresponding data
             Should only be called by set_param'''
         if self.__updating:
-            print("Reading params.log...", end=' ')
+            print "Reading params.log...",
             fpar=param_file(os.path.join(self.datadir,'params.log'),precision=self.precision)
             while True:
                 (descr,res)=fpar.readline()
@@ -434,7 +434,7 @@ class h5file:
                                 try:
                                     subsec.create_dataset(res[0],data=dat.reshape([1]+list(dat.shape)),maxshape=tuple([None]+list(dat.shape)))
                                 except ValueError:
-                                    print("Warning! Multiple presence of "+res[0]+" in params.log run parameters")
+                                    print "Warning! Multiple presence of "+res[0]+" in params.log run parameters"
                                     subsec[res[0]][0]=res[1]
                         else:
                             try:
@@ -446,21 +446,21 @@ class h5file:
                             try:
                                 subsec.create_dataset(res[0],data=res[1])
                             except ValueError:
-                                print("Warning! Multiple presence of "+res[0]+" in params.log init parameters")
-                                print("Old value: ",subsec[res[0]][...])
-                                print("New value: ",res[1])
+                                print "Warning! Multiple presence of "+res[0]+" in params.log init parameters"
+                                print "Old value: ",subsec[res[0]][...]
+                                print "New value: ",res[1]
                                 subsec[res[0]][...]=res[1]
                         else:
                             subsec[res[0]][...]=res[1]
                 elif descr=='e':
                     break
             del(fpar)
-            print("Done.")
+            print "Done."
     def __read_index(self):
         ''' Read index.pro file and write corresponding data
             Should only be called by set_param'''
         if self.__updating:
-            print("Reading index.pro...", end=' ')
+            print "Reading index.pro...",
             fpar=param_file(os.path.join(self.datadir,'index.pro'),False,precision=self.precision)
             while True:
                 (descr,res)=fpar.readline()
@@ -478,12 +478,12 @@ class h5file:
                 elif descr=='e':
                     break
             del(fpar)
-            print("Done.")
+            print "Done."
     def __read_timeseries(self,override):
         ''' Read time_series.dat file and write corresponding data
             Should only be called by set_data'''
         if self.__updating:
-            print("Reading time_series.dat...", end=' ')
+            print "Reading time_series.dat...",
             fdat=file(os.path.join(self.datadir,'time_series.dat'),'r')
             columns=fdat.readline().replace("-"," ").strip("#\n").split()
             nbcol=len(columns)
@@ -502,7 +502,7 @@ class h5file:
                 try:
                     self.data['time_series_names'][...]=columns
                 except TypeError:
-                    print("Number of data in time_series seems to have changed !")
+                    print "Number of data in time_series seems to have changed !"
                     del self.data['time_series_names']
                     del self.data['time_series']
                     self.data.create_dataset('time_series_names',data=columns)
@@ -519,14 +519,14 @@ class h5file:
                 line=read_cut_line(fdat,self.precision)
                 line_num+=1
             fdat.close()
-            print("Done.")
+            print "Done."
     def __read_slices(self,override):
         ''' Read all the slices and organize them in the hdf5 file
         I assume that format is native, and not an oldfile format (that I suppose to be outadated)
          Should only be called by set_data
         '''
         if self.__updating:
-            print("Reading slices:", end=' ')
+            print "Reading slices:",
             fvid=file(os.path.join(self.workdir,'video.in'),'r')
             names=[]
             while 1:
@@ -542,7 +542,7 @@ class h5file:
                     self.data['slices_names'][...]=names
                 except TypeError:
                     if self.__creating==False:
-                        print("Warning: Number of slices seems to have changed from last time !")
+                        print "Warning: Number of slices seems to have changed from last time !"
                     del self.data['slices_names']
                     self.data.create_dataset('slices_names',data=names)
             self.nbslices=len(names)
@@ -553,10 +553,10 @@ class h5file:
                     createtime=self.__read_slice(override,timeslice=createtime,field=i,extension='xy2',proc=j)
                     createtime=self.__read_slice(override,timeslice=createtime,field=i,extension='xz',proc=j)
                     createtime=self.__read_slice(override,timeslice=createtime,field=i,extension='yz',proc=j)
-                    print()
-                print()
+                    print
+                print
             self.__last_timeslice=self.data['slices_time'].shape[0]
-            print("All done.")
+            print "All done."
     def __read_slice(self,override,timeslice=False,field=0, extension='xz',proc=-1,format='native',oldfile=False):
         """
         read one 2D slice files and write the array of (nslices,vsize,hsize) in '/data/slices'.
@@ -564,13 +564,13 @@ class h5file:
         for all slices. By default, it is not stocked. Set timeslice to True for updating it (erase it if present)
         Should only called by __read_slices.
         """
-        print(self.data['slices_names'][field]+"; "+extension+"; proc"+str(proc)+" ...", end=' ')
+        print self.data['slices_names'][field]+"; "+extension+"; proc"+str(proc)+" ...",
         if timeslice:
             if self.data.listnames().count('slices_time')>0:
                 del(self.data['slices_time'])
             t=self.data.create_dataset('slices_time',(1,),dtype=self.precision,maxshape=(None,))
         if proc < 0:
-            print("Please provide the proc number.")
+            print "Please provide the proc number."
             return timeslice  
         filename = os.path.join(self.datadir,'proc'+str(proc),'slice_'+self.data['slices_names'][field]+'.'+extension)
         try:
@@ -602,7 +602,7 @@ class h5file:
             offh= hsizep*self.param['dim/ipy'][proc+1]  # local offset
             offv= vsizep*self.param['dim/ipz'][proc+1] 
         else:
-            print("Bad slice name "+extension)
+            print "Bad slice name "+extension
             return timeslice
         if self.data.listnames().count('slices_'+extension)==0:
             slices=self.data.create_dataset('slices_'+extension,(1,self.nbslices,vsize,hsize),dtype=self.precision,maxshape=(None,self.nbslices,vsize,hsize))
@@ -656,7 +656,7 @@ class h5file:
             self.notes[num]=text
             self.__modified()
         else:
-            print("Wrong number note.")
+            print "Wrong number note."
     def set_param(self,force_single=False):
         ''' Create or Update parameter data.
         Be careful if you set force_single by a direct call of self_param,

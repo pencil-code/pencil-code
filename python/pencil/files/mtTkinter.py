@@ -53,9 +53,9 @@ created.
 Author: Allen B. Taylor, a.b.taylor@gmail.com
 '''
 
-from tkinter import *
+from Tkinter import *
 import threading
-import queue
+import Queue
 
 class _Tk(object):
     """
@@ -66,7 +66,7 @@ class _Tk(object):
         self._tk = tk
 
         # Create the incoming event queue.
-        self._eventQueue = queue.Queue(1)
+        self._eventQueue = Queue.Queue(1)
 
         # Identify the thread from which this object is being created so we can
         # tell later whether an event is coming from another thread.
@@ -103,15 +103,15 @@ class _TkAttr(object):
             if self._tk._debug >= 8 or \
                self._tk._debug >= 3 and self._attr.__name__ == 'call' and \
                len(args) >= 1 and args[0] == 'after':
-                print(('Calling event directly:', \
-                    self._attr.__name__, args, kwargs))
+                print 'Calling event directly:', \
+                    self._attr.__name__, args, kwargs
             return self._attr(*args, **kwargs)
         else:
             # We're in a different thread than the creation thread; enqueue
             # the event, and then wait for the response.
-            responseQueue = queue.Queue(1)
+            responseQueue = Queue.Queue(1)
             if self._tk._debug >= 1:
-                print(('Marshalling event:', self._attr.__name__, args, kwargs))
+                print 'Marshalling event:', self._attr.__name__, args, kwargs
             self._tk._eventQueue.put((self._attr, args, kwargs, responseQueue))
             isException, response = responseQueue.get()
 
@@ -119,7 +119,7 @@ class _TkAttr(object):
             # an exception.
             if isException:
                 exType, exValue, exTb = response
-                raise exType(exValue).with_traceback(exTb)
+                raise exType, exValue, exTb
             else:
                 return response
 
@@ -129,7 +129,7 @@ def _Tk__init__(self, *args, **kwargs):
     # doesn't expect, so separate those out before doing anything else.
     new_kwnames = ('mtCheckPeriod', 'mtDebug')
     new_kwargs = {}
-    for name, value in list(kwargs.items()):
+    for name, value in kwargs.items():
         if name in new_kwnames:
             new_kwargs[name] = value
             del kwargs[name]
@@ -167,13 +167,13 @@ def _CheckEvents(tk):
                 # the result back to the caller via the response queue.
                 used = True
                 if tk.tk._debug >= 2:
-                    print(('Calling event from main thread:', \
-                        method.__name__, args, kwargs))
+                    print 'Calling event from main thread:', \
+                        method.__name__, args, kwargs
                 try:
                     responseQueue.put((False, method(*args, **kwargs)))
-                except SystemExit as ex:
-                    raise SystemExit(ex)
-                except Exception as ex:
+                except SystemExit, ex:
+                    raise SystemExit, ex
+                except Exception, ex:
                     # Calling the event caused an exception; return the
                     # exception back to the caller so that it can be raised
                     # in the caller's thread.
@@ -193,7 +193,7 @@ def _testThread(root):
     text = "This is Tcl/Tk version %s" % TclVersion
     if TclVersion >= 8.1:
         try:
-            text = text + str("\nThis should be a cedilla: \347",
+            text = text + unicode("\nThis should be a cedilla: \347",
                                   "iso-8859-1")
         except NameError:
             pass # no unicode support

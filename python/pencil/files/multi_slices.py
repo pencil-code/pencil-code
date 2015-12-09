@@ -33,7 +33,7 @@ import pylab as P
 import pencil as pc
 import sys
 import time
-import tkinter as Tk # for GUI
+import Tkinter as Tk # for GUI
 import Pmw # for GUI
 
 # some constants
@@ -263,7 +263,7 @@ def replot(axes):
 def updatePlots(val):
     global data, plot
     
-    print("updatePlot")
+    print "updatePlot"
     #ti = time.time()
     data.timeStep = round((plot.slider.val-data.t[0])/(data.t[-1]-data.t[0])*(len(data.t)-1))
     #print "updatePlots round(): dt = ", time.time()-ti

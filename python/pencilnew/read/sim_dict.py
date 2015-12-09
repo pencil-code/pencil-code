@@ -22,7 +22,7 @@ class sim_dict(object):
     """
     Read simulation data and store it in a dictionaly like object.
     """
-    print('## Loading simulation parameters..')
+    print '## Loading simulation parameters..'
     simuDict = io.load_obj(simuDict_name)
     if not simuDict:
       simuDict = {}

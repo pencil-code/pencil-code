@@ -122,7 +122,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
       
     try:
         index = variables.index('rho')
-        print('writing rho')
+        print 'writing rho'
         fd.write('SCALARS rho float\n')
         fd.write('LOOKUP_TABLE default\n')    
         for k in range(dimz):
@@ -134,7 +134,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     
     try:
         index = variables.index('lnrho')
-        print('writing lnrho')
+        print 'writing lnrho'
         fd.write('SCALARS lnrho float\n')
         fd.write('LOOKUP_TABLE default\n')    
         for k in range(dimz):
@@ -146,7 +146,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
                 
     try:
         index = variables.index('uu')
-        print('writing uu')
+        print 'writing uu'
         fd.write('VECTORS vfield float\n')
         for k in range(dimz):
             for j in range(dimy):
@@ -159,7 +159,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     
     try:
         index = variables.index('bb')
-        print('writing bb')
+        print 'writing bb'
         fd.write('VECTORS bfield float\n')
         for k in range(dimz):
             for j in range(dimy):
@@ -173,7 +173,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     try:
         index = variables.index('b_mag')
         b_mag = np.sqrt(pc.dot2(var.bb))
-        print('writing b_mag')
+        print 'writing b_mag'
         fd.write('SCALARS b_mag float\n')
         fd.write('LOOKUP_TABLE default\n')        
         for k in range(dimz):
@@ -185,7 +185,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     
     try:
         index = variables.index('jj')
-        print('writing jj')
+        print 'writing jj'
         fd.write('VECTORS jfield float\n')
         for k in range(dimz):
             for j in range(dimy):
@@ -199,7 +199,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     try:
         index = variables.index('j_mag')
         j_mag = np.sqrt(pc.dot2(var.jj))
-        print('writing j_mag')
+        print 'writing j_mag'
         fd.write('SCALARS j_mag float\n')
         fd.write('LOOKUP_TABLE default\n')    
         for k in range(dimz):
@@ -211,7 +211,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     
     try:
         index = variables.index('aa')
-        print('writing aa')
+        print 'writing aa'
         fd.write('VECTORS afield float\n')
         for k in range(dimz):
             for j in range(dimy):
@@ -225,7 +225,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     try:
         index = variables.index('ab')
         ab = pc.dot(var.aa, var.bb)
-        print('writing ab')
+        print 'writing ab'
         fd.write('SCALARS ab float\n')
         fd.write('LOOKUP_TABLE default\n')    
         for k in range(dimz):
@@ -237,7 +237,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     
     try:
         index = variables.index('TT')
-        print('writing TT')
+        print 'writing TT'
         fd.write('SCALARS TT float\n')
         fd.write('LOOKUP_TABLE default\n')    
         for k in range(dimz):
@@ -249,7 +249,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
 
     try:
         index = variables.index('lnTT')
-        print('writing lnTT')
+        print 'writing lnTT'
         fd.write('SCALARS lnTT float\n')
         fd.write('LOOKUP_TABLE default\n')    
         for k in range(dimz):
@@ -261,7 +261,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
                     
     try:
         index = variables.index('cc')
-        print('writing cc')
+        print 'writing cc'
         fd.write('SCALARS cc float\n')
         fd.write('LOOKUP_TABLE default\n')    
         for k in range(dimz):
@@ -273,7 +273,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
 
     try:
         index = variables.index('lncc')
-        print('writing lncc')
+        print 'writing lncc'
         fd.write('SCALARS lncc float\n')
         fd.write('LOOKUP_TABLE default\n')    
         for k in range(dimz):
@@ -285,7 +285,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     
     try:
         index = variables.index('ss')
-        print('writing ss')
+        print 'writing ss'
         fd.write('SCALARS ss float\n')
         fd.write('LOOKUP_TABLE default\n')    
         for k in range(dimz):
@@ -297,7 +297,7 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
       
     try:
         index = variables.index('vort')
-        print('writing vort')
+        print 'writing vort'
         fd.write('VECTORS vorticity float\n')
         for k in range(dimz):
             for j in range(dimy):
@@ -433,7 +433,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
               
         try:
             index = variables.index('rho')
-            print('writing rho')
+            print 'writing rho'
             fd.write('SCALARS rho float\n')
             fd.write('LOOKUP_TABLE default\n')    
             for k in range(dimz):
@@ -445,7 +445,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         
         try:
             index = variables.index('lnrho')
-            print('writing lnrho')
+            print 'writing lnrho'
             fd.write('SCALARS lnrho float\n')
             fd.write('LOOKUP_TABLE default\n')    
             for k in range(dimz):
@@ -457,7 +457,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
                     
         try:
             index = variables.index('uu')
-            print('writing uu')
+            print 'writing uu'
             fd.write('VECTORS vfield float\n')
             for k in range(dimz):
                 for j in range(dimy):
@@ -470,7 +470,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         
         try:
             index = variables.index('bb')
-            print('writing bb')
+            print 'writing bb'
             fd.write('VECTORS bfield float\n')
             for k in range(dimz):
                 for j in range(dimy):
@@ -484,7 +484,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         try:
             index = variables.index('b_mag')
             b_mag = np.sqrt(pc.dot2(var.bb))
-            print('writing b_mag')
+            print 'writing b_mag'
             fd.write('SCALARS b_mag float\n')
             fd.write('LOOKUP_TABLE default\n')        
             for k in range(dimz):
@@ -496,7 +496,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         
         try:
             index = variables.index('jj')
-            print('writing jj')
+            print 'writing jj'
             fd.write('VECTORS jfield float\n')
             for k in range(dimz):
                 for j in range(dimy):
@@ -510,7 +510,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         try:
             index = variables.index('j_mag')
             j_mag = np.sqrt(pc.dot2(var.jj))
-            print('writing j_mag')
+            print 'writing j_mag'
             fd.write('SCALARS j_mag float\n')
             fd.write('LOOKUP_TABLE default\n')    
             for k in range(dimz):
@@ -522,7 +522,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         
         try:
             index = variables.index('aa')
-            print('writing aa')
+            print 'writing aa'
             fd.write('VECTORS afield float\n')
             for k in range(dimz):
                 for j in range(dimy):
@@ -536,7 +536,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         try:
             index = variables.index('ab')
             ab = pc.dot(var.aa, var.bb)
-            print('writing ab')
+            print 'writing ab'
             fd.write('SCALARS ab float\n')
             fd.write('LOOKUP_TABLE default\n')    
             for k in range(dimz):
@@ -548,7 +548,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         
         try:
             index = variables.index('TT')
-            print('writing TT')
+            print 'writing TT'
             fd.write('SCALARS TT float\n')
             fd.write('LOOKUP_TABLE default\n')    
             for k in range(dimz):
@@ -560,7 +560,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
 
         try:
             index = variables.index('lnTT')
-            print('writing lnTT')
+            print 'writing lnTT'
             fd.write('SCALARS lnTT float\n')
             fd.write('LOOKUP_TABLE default\n')    
             for k in range(dimz):
@@ -572,7 +572,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
 
         try:
             index = variables.index('cc')
-            print('writing cc')
+            print 'writing cc'
             fd.write('SCALARS cc float\n')
             fd.write('LOOKUP_TABLE default\n')    
             for k in range(dimz):
@@ -584,7 +584,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
 
         try:
             index = variables.index('lncc')
-            print('writing lncc')
+            print 'writing lncc'
             fd.write('SCALARS lncc float\n')
             fd.write('LOOKUP_TABLE default\n')    
             for k in range(dimz):
@@ -596,7 +596,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         
         try:
             index = variables.index('ss')
-            print('writing ss')
+            print 'writing ss'
             fd.write('SCALARS ss float\n')
             fd.write('LOOKUP_TABLE default\n')    
             for k in range(dimz):
@@ -608,7 +608,7 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
 
         try:
             index = variables.index('vort')
-            print('writing vort')
+            print 'writing vort'
             fd.write('VECTORS vorticity float\n')
             for k in range(dimz):
                 for j in range(dimy):
@@ -685,7 +685,7 @@ def slices2vtk(variables = ['rho'], extensions = ['xy', 'xy2', 'xz', 'yz'],
     for field in variables:
         # run through all specified extensions
         for ext in extensions:
-            print(("read ", field, ' ', ext))
+            print "read ", field, ' ', ext
             slices, t = pc.read_slices(field=field, datadir=datadir, proc=proc, extension=ext, format=format)            
             
             dim_p = slices.shape[2]
@@ -800,7 +800,7 @@ def aver2vtk(varfile = 'xyaverages.dat', datadir = 'data/',
         print("aver2vtk: ERROR: cannot determine average file\n")
         print("aver2vtk: The name of the file has to be either xyaver.dat, xzaver.dat or yzaver.dat\n")
         return -1
-    keys = list(aver.__dict__.keys())
+    keys = aver.__dict__.keys()
     t = aver.t
     keys.remove('t')
     

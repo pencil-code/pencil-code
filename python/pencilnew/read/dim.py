@@ -74,7 +74,7 @@ def dim(datadir='data',proc=-1):
 	filename = os.path.expanduser(filename)
         file = open(filename,"r")
     except IOError:
-        print(("File",filename,"could not be opened."))
+        print "File",filename,"could not be opened."
         return -1
     else:
         lines = file.readlines()

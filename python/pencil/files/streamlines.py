@@ -111,7 +111,7 @@ class stream:
                 if (dist2 > tol2):
                     dh = 0.5*dh
                     if (abs(dh) < hMin):
-                        print("Error: stepsize underflow")
+                        print "Error: stepsize underflow"
                         break
                 else:
                     l += np.sqrt(np.sum((xx-xDouble)**2))
@@ -144,7 +144,7 @@ class stream:
                 if (delta2 > tol2):
                     dh = dh*(0.9*abs(tol/delta))**0.2
                     if (abs(dh) < hMin):
-                        print("Error: step size underflow")
+                        print "Error: step size underflow"
                         break
                 else:
                     l += np.sqrt(np.sum((xx-xNew)**2))

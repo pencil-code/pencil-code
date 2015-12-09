@@ -77,18 +77,18 @@ def make_movie(field='uu1',datadir='data/',proc=-1,extension='xz',format='native
             ax.cla()
             ax.imshow(plane)
             fname = '_tmp%03d.png'%islice
-            print(('Saving frame', fname))
+            print 'Saving frame', fname
             fig.savefig(fname)
             files.append(fname)
             
             if ifirst:
-                print("----islice----------t---------min-------max-------delta")
-            print(("%10i %10.3e %10.3e %10.3e %10.3e" % (islice,t,plane.min(),plane.max(),plane.max()-plane.min())))
+                print "----islice----------t---------min-------max-------delta"
+            print "%10i %10.3e %10.3e %10.3e %10.3e" % (islice,t,plane.min(),plane.max(),plane.max()-plane.min())
                 
             ifirst = False
             islice += 1
 
-    print('Making movie animation.mpg - this make take a while')
+    print 'Making movie animation.mpg - this make take a while'
     os.system("mencoder 'mf://_tmp*.png' -mf type=png:fps=24 -ovc lavc -lavcopts vcodec=wmv2 -oac copy -o animation.mpg")
     os.system("rm _tmp*.png")
     infile.close()

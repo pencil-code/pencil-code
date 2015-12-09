@@ -30,7 +30,8 @@ class grid(object):
 	  precision = 'f'
 
       if proc < 0:
-	  procdirs = [s for s in os.listdir(datadir) if s.startswith('proc')]
+	  procdirs = filter(lambda s:s.startswith('proc'),
+			    os.listdir(datadir))
       else:
 	  procdirs = ['proc'+str(proc)]
 
@@ -49,8 +50,8 @@ class grid(object):
 	  proc = int(directory[4:])
 	  procdim = read_dim(datadir, proc)
 	  if not quiet:
-	      print(("reading data from processor %i of %i ..." \
-		    % (proc, len(procdirs))))
+	      print "reading data from processor %i of %i ..." \
+		    % (proc, len(procdirs))
 
 	  mxloc = procdim.mx
 	  myloc = procdim.my

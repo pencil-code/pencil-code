@@ -188,7 +188,7 @@ class Tracers(object):
 
         # Multi core setup.
         if not(np.isscalar(n_proc)) or (n_proc%1 != 0):
-            print("error: invalid processor number")
+            print "error: invalid processor number"
             return -1
         queue = mp.Queue()
 
@@ -387,15 +387,15 @@ class Tracers(object):
         self.z1 = f['z1'].value
         self.l = f['l'].value
         self.mapping = f['mapping'].value
-        if any(np.array(list(f.keys())) == 'curly_A'):
+        if any(np.array(f.keys()) == 'curly_A'):
             self.curly_A = f['curly_A'].value
-        if any(np.array(list(f.keys())) == 'ee'):
+        if any(np.array(f.keys()) == 'ee'):
             self.ee = f['ee'].value
 
         # Extract parameters.
         params = f['params']
         self.params = TracersParameterClass()
-        for param in list(params.attrs.keys()):
+        for param in params.attrs.keys():
             setattr(self.params, param, params.attrs[param])
 
         f.close()

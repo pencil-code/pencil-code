@@ -246,7 +246,7 @@ def fixed_points(datadir = 'data/', fileName = 'fixed_points_post.dat', varfile 
                         
                         if (it > 20):
                             fixedPoint = point
-                            print("warning: Newton did not converged")
+                            print "warning: Newton did not converged"
                             break
                         
                         it += 1
@@ -254,7 +254,7 @@ def fixed_points(datadir = 'data/', fileName = 'fixed_points_post.dat', varfile 
                     # check if fixed point lies inside the cell
                     if ((fixedPoint[0] < tracers[iy, ix, 0, 0]) or (fixedPoint[0] > tracers[iy, ix+1, 0, 0]) or
                         (fixedPoint[1] < tracers[iy, ix, 0, 1]) or (fixedPoint[1] > tracers[iy+1, ix, 0, 1])):
-                        print("warning: fixed point lies outside the cell")
+                        print "warning: fixed point lies outside the cell"
                     else:
                         x.append(fixedPoint[0])
                         y.append(fixedPoint[1])
@@ -282,7 +282,7 @@ def fixed_points(datadir = 'data/', fileName = 'fixed_points_post.dat', varfile 
     # read the cpu structure
     dim = pc.read_dim(datadir = datadir)
     if (dim.nprocz > 1):
-        print("error: number of cores in z-direction > 1")
+        print "error: number of cores in z-direction > 1"
 
     var = pc.read_var(varfile = varfile, datadir = datadir, magic = magic, quiet = True, trimall = True)
     grid = pc.read_grid(datadir = datadir, quiet = True, trim = True)
@@ -303,8 +303,8 @@ def fixed_points(datadir = 'data/', fileName = 'fixed_points_post.dat', varfile 
     # find fixed points
     fixed = pc.fixed_struct()
     xyq = []    # list of  return values from subFixed
-    ix0 = list(range(0,p.nx*trace_sub-1))   # set of grid indices for the cores
-    iy0 = list(range(0,p.ny*trace_sub-1))   # set of grid indices for the cores
+    ix0 = range(0,p.nx*trace_sub-1)   # set of grid indices for the cores
+    iy0 = range(0,p.ny*trace_sub-1)   # set of grid indices for the cores
     subFixedLambda = lambda queue, ix0, iy0, vv, p, tracers, iproc: \
         subFixed(queue, ix0, iy0, vv, p, tracers, iproc, hMin = hMin, hMax = hMax, lMax = lMax, tol = tol,
                  interpolation = interpolation, integration = integration)
@@ -362,7 +362,7 @@ def read_fixed_points(datadir = 'data/', fileName = 'fixed_points.dat', hm = 1):
     # read the cpu structure
     dim = pc.read_dim(datadir = datadir)
     if (dim.nprocz > 1):
-        print("error: number of cores in z-direction > 1")
+        print "error: number of cores in z-direction > 1"
 
     data = []
 

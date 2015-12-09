@@ -401,7 +401,7 @@ class NullPoint(object):
                 normal = np.cross(fan_vectors[0], fan_vectors[1])
                 normal = normal/np.sqrt(np.sum(normal**2))
             else:
-                print(("Warning: Jacobian singular = ",  np.linalg.det(grad_field), grad_field))
+                print "Warning: Jacobian singular = ",  np.linalg.det(grad_field), grad_field
                 eigen_values = np.zeros(3)
                 eigen_vectors = np.zeros((3, 3))
                 sign_trace = 0
@@ -706,7 +706,7 @@ class Separatrix(object):
                     point_idx += 1
 
                 # Connectivity array between old and new ring.
-                connectivity_rings = np.ones((2, len(ring)), dtype = 'int')*list(range(len(ring)))
+                connectivity_rings = np.ones((2, len(ring)), dtype = 'int')*range(len(ring))
                 
                 # Add points if distance becomes too large.
                 ring_new = []

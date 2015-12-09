@@ -69,16 +69,16 @@ class TimeSeries(object):
                     self.keys = keys_new
             else:
                 try:
-                    row = N.array(list(map(float, re.split(" +", line.strip(" \n")))))
+                    row = N.array(map(float, re.split(" +", line.strip(" \n"))))
                     data[nlines, :] = row
                     nlines += 1
                 except ValueError:
-                    print(("Invalid data on line %i. Skipping." % nlines))
+                    print "Invalid data on line %i. Skipping." % nlines
         #clean up data
         data = N.resize(data, (nlines, len(self.keys)))
 
         if (not quiet):
-            print(("Read",nlines,"lines."))
+            print "Read",nlines,"lines."
 
         #assemble into a TimeSeries class
         for i in range(0, len(self.keys)):
@@ -93,4 +93,4 @@ class TimeSeries(object):
 
 
 if __name__=='__main__':
-    print((TimeSeries.__doc__))
+    print TimeSeries.__doc__

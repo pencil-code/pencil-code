@@ -90,8 +90,8 @@ def time_slices(field=['uu1'],datadir='data/',proc=-1,extension='xz',format='nat
                 plotplane += tempplane.tolist()
             
                 if ifirst:
-                    print("----islice----------t---------min-------max-------delta")
-                print(("%10i %10.3e %10.3e %10.3e %10.3e" % (islice,t,tempplane.min(),tempplane.max(),tempplane.max()-tempplane.min())))
+                    print "----islice----------t---------min-------max-------delta"
+                print "%10i %10.3e %10.3e %10.3e %10.3e" % (islice,t,tempplane.min(),tempplane.max(),tempplane.max()-tempplane.min())
                 if outfile != "":
                     outslice.write("%10i %10.3e %10.3e %10.3e %10.3e" % (islice,t,tempplane.min(),tempplane.max(),tempplane.max()-tempplane.min()))
                     outslice.write("\n")

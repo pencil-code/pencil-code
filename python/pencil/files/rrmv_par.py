@@ -5,7 +5,7 @@ import os as os
 import re as re
 import shutil as shutil
 import numpy as np
-from .npfile import * 
+import npfile as npfile
 #-------------------------
 def get_mpvar(datadir):
   srcdir=datadir+'/../src/';
@@ -26,7 +26,7 @@ def get_rmv_info():
   fname='data/proc0/rmv_par.dat'
   mpvar=get_mpvar(datadir);
   precision=get_precision(datadir);
-  npf = npfile(fname)
+  npf = npfile.npfile(fname)
   lno=0
   temp_pos=[];
   temp_vel=[];

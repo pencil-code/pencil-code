@@ -286,7 +286,7 @@ def read_tracers(datadir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
     # read the cpu structure
     dim = pc.read_dim(datadir = datadir)
     if (dim.nprocz > 1):
-        print(": number of cores in z-direction > 1")
+        print ": number of cores in z-direction > 1"
         return -1
 
     # read the parameters
@@ -461,7 +461,7 @@ def tracer_movie(datadir = 'data/', tracerFile = 'tracers.dat',
     # determine the colors for the fixed points
     colors = np.zeros(np.shape(fixed.q) + (3,))
     colors[:,:,:] = 0.
-    print((np.shape(colors)))
+    print np.shape(colors)
     for j in range(len(colors[:,0,0])):
         for k in range(len(colors[0,:,0])):
             if fixed.q[j,k] >= 0:
@@ -482,7 +482,7 @@ def tracer_movie(datadir = 'data/', tracerFile = 'tracers.dat',
 
     for k in range(len(fixed.x[0,:])):
         dots = plt.plot(fixed.x[0,k], fixed.y[0,k], 'o', c = colors[0,k,:])
-    image = plt.imshow(list(zip(*mapping[:,::-1,0,:])), interpolation = 'nearest', extent = domain)
+    image = plt.imshow(zip(*mapping[:,::-1,0,:]), interpolation = 'nearest', extent = domain)
     j = 0
     frameName = imageDir + 'images%06d.png'%j
     imageFiles = []
@@ -494,7 +494,7 @@ def tracer_movie(datadir = 'data/', tracerFile = 'tracers.dat',
         figure.clear()
         for k in range(len(fixed.x[j,:])):
             dots = plt.plot(fixed.x[j,k], fixed.y[j,k], 'o', c = colors[j,k,:])
-        image = plt.imshow(list(zip(*mapping[:,::-1,np.floor(j/advance),:])), interpolation = 'nearest', extent = domain)
+        image = plt.imshow(zip(*mapping[:,::-1,np.floor(j/advance),:]), interpolation = 'nearest', extent = domain)
         frameName = imageDir + 'images%06d.png'%j
         imageFiles.append(frameName)
         figure.savefig(frameName)
