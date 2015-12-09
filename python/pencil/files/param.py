@@ -32,7 +32,8 @@ def read_param(datadir='data/',param2=False,quiet=False):
     script = os.popen(cmd).read()
     if (not quiet): print script;
     if (len(script) != 0):
-        exec(script)
+        class Params: pass
+        exec(script.replace("\n    ","\nParams.")[198:])
     else:
         print "read_param: nl2python returned nothing! is $PENCIL_HOME/bin in the path?"
         return -1
