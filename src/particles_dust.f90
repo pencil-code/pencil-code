@@ -50,7 +50,7 @@ module Particles
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
   real :: tausg_min=0.0, tausg1_max=0.0, epsp_friction_increase=100.0
-  real :: cdtp=0.2, cdtpgrav=0.1
+  real :: cdtp=0.2, cdtpgrav=0.1, cdtp_drag=0.2
   real :: gravx=0.0, gravz=0.0, gravr=1.0, kx_gg=1.0, kz_gg=1.0
   real :: gravsmooth=0.0, gravsmooth2=0.0, Ri0=0.25, eps1=0.5
   real :: kx_xxp=0.0, ky_xxp=0.0, kz_xxp=0.0, amplxxp=0.0
@@ -191,7 +191,7 @@ module Particles
       rhop_swarm, eps_dtog, cdtp, cdtpgrav, lpar_spec, linterp_reality_check, &
       nu_epicycle, gravx_profile, gravz_profile, gravr_profile, gravx, gravz, &
       gravr, gravsmooth, kx_gg, kz_gg, lmigration_redo, tstart_dragforce_par, &
-      tstart_grav_par, tstart_grav_x_par, &
+      tstart_grav_par, tstart_grav_x_par, cdtp_drag, &
       tstart_grav_z_par, tstart_grav_r_par, lparticle_gravity, &
       particle_mesh, lparticlemesh_cic, lparticlemesh_tsc, taucool, &
       lcollisional_cooling_taucool, lcollisional_cooling_rms, &
@@ -3740,7 +3740,7 @@ module Particles
             else
               dt1_drag=dt1_drag_dust
             endif
-            dt1_drag=dt1_drag/cdtp
+            dt1_drag=dt1_drag/cdtp_drag
             dt1_max=max(dt1_max,dt1_drag)
           endif
         else
