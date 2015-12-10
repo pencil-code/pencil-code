@@ -7,10 +7,10 @@ REQUIRES: nl2python perl script (based on Wolfgang Dobler's nl2idl script)
 
 todo: think about single/double precision; make things into numpy arrays?
 """
-import numpy as N
+#import numpy as N
 import os
 
-def read_param(datadir='data/',param2=False,quiet=False):
+def read_param(datadir='data/',param2=False,quiet=False,asdict=False,nestdict=False):
 
 
     datadir = os.path.expanduser(datadir)
@@ -27,18 +27,24 @@ def read_param(datadir='data/',param2=False,quiet=False):
     if (not os.path.exists(filen)):
         print "read_param: no such file",filen
         raise ValueError
-    
-    cmd = 'nl2python '+filen
-    script = os.popen(cmd).read()
-    if (not quiet): print script;
-    if (len(script) != 0):
-        class Params: pass
-        exec(script.replace("\n    ","\nParams.")[198:])
+
+    if asdict:
+        import paramdict
+        if nestdict: ret = paramdict.ReadNML(filen,nest=True)
+        else: ret = paramdict.ReadNML(filen)
+        if not quiet: print ret
     else:
-        print "read_param: nl2python returned nothing! is $PENCIL_HOME/bin in the path?"
-        return -1
-    
-    ret = Params() # par is the name of the class
+        cmd = 'nl2python '+filen
+        script = os.popen(cmd).read()
+        if (not quiet): print script;
+        if (len(script) != 0):
+            class Params: pass
+            exec(script.replace("\n    ","\nParams.")[198:])
+        else:
+            print "read_param: nl2python returned nothing! is $PENCIL_HOME/bin in the path?"
+            return -1
+        
+        ret = Params() # par is the name of the class
 
     return ret
 
