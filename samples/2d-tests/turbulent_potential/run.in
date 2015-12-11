@@ -1,0 +1,53 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.2 2014/04/15 10:45:53 wlyra Exp $',
+  ip=9,
+  nt=100, it1=10, it1d=100000,  isave=5000, itorder=3
+  cdt=0.4,
+  cdtv=0.4,
+  dtmin=1e-6,
+  dsnap=10. 
+  dvid=0.5
+!
+  wborder_int=0.1
+  wborder_ext=0.05
+  tborder=1.
+!
+  lpencil_check=F
+  lpencil_check_small=F
+  max_walltime=85500
+!
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  borderuu='initial-condition'
+/
+&density_run_pars
+  borderlnrho='initial-condition'
+  idiff='hyper3-cyl' !,'shock'
+  diffrho_hyper3=5e-3 !,diffrho_shock=1.0
+/
+&grav_run_pars
+/
+&viscosity_run_pars
+  ivisc='hyper3-cyl' !,'nu-shock'
+  nu_hyper3=5e-3 !,nu_shock=1.
+/
+&special_run_pars
+  lcap_modes_at_m6=F
+/
+&shock_run_pars
+/
+&entropy_run_pars
+  TTref_cool=2.5e-2
+  TT_powerlaw=1.
+  tau_cool=1
+  ltau_cool_variable=T
+  borderss='initial-condition'
+  iheatcond='hyper3-cyl' !,'shock'
+  chi_hyper3=5e-3 !,chi_shock=1.0
+/
