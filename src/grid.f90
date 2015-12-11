@@ -839,10 +839,6 @@ module Grid
       real :: fact
       integer :: xj,yj,zj,itheta
 !
-! Box volume
-!
-      call box_vol
-!
 ! Set flags.
 !
       lcartesian_coords=.false.
@@ -868,6 +864,10 @@ module Grid
         lpipe_coords=.true.
       elseif (coord_system=='Lobachevskii') then
       endif
+!
+! Box volume
+!
+      call box_vol
 !
 !  For curvilinear coordinate systems, calculate auxiliary quantities as, e.g., for spherical coordinates 1/r, cot(theta)/r, etc.
 !
@@ -1155,7 +1155,7 @@ module Grid
 !
 !  Clean up profile files.
 !
-      call remove_zprof()
+      call remove_zprof
       lwrite_prof=.true.
 !
 !  Set the the serial grid arrays, that contain the coordinate values
@@ -1330,7 +1330,7 @@ module Grid
 ! 6-mar-14/MR: changed into subroutine setting global variable box_volume
 !
       box_volume=1.
-      if (coord_system=='cartesian') then
+      if (lcartesian_coords) then
 !
 !  x,y,z-extent
 !
@@ -1340,8 +1340,7 @@ module Grid
 !
 !  Spherical coordinate system
 !
-      elseif (coord_system=='spherical' &
-          .or.coord_system=='spherical_coords') then
+      elseif (lspherical_coords) then 
 !
 !  Assume that sinth=1 if there is no theta extent.
 !  This should always give a volume of 4pi/3*(r2^3-r1^3) for constant integrand
@@ -1367,8 +1366,7 @@ module Grid
           box_volume = box_volume*2.*pi
         endif
 !
-      elseif (coord_system=='cylindric' &
-          .or.coord_system=='cylindrical_coords') then
+      elseif (lcylindrical_coords) then
 !
 !  Box volume and volume element.
 !
@@ -2210,12 +2208,10 @@ module Grid
       dc(-nghost+1:0)= dc(nghost:1:-1)
 !print*, 'DX,Y,Z=', dx,dy,dz
       call calc_coeffs_1(dc,coeffs(:,BOT))
-!print*, 'coeffs(:,BOT)=', coeffs_1_x(:,BOT)
       dc(-nghost+1:0)= coors(sc-2*nghost+1:sc-nghost)-coors(sc-2*nghost:sc-nghost-1)
       dc( 1:nghost)  = dc(0:-nghost+1:-1)
 
       call calc_coeffs_1(dc,coeffs(:,TOP))
-!print*, 'coeffs(:,TOP)=', coeffs(:,TOP)
 
     endsubroutine calc_bound_coeffs
 !***********************************************************************
