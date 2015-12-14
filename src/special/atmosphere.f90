@@ -1582,33 +1582,33 @@ subroutine bc_satur_x(f,bc)
           
        
        
-      if (lbc_T_x) then
+      if (lbc_u_x) then
 !      allocate(bc_T_x_array(65,61),stat=stat)
  !     if (stat>0) call fatal_error('bc_file_x', &
  !         'Could not allocate memory for bc_file_x_array')
 !
       
         if (lroot) then
-!          print*,'opening T.dat'
-          open(9,file='=u2.dat')
+!          print*,'opening u2.dat'
+          open(99,file='u2.dat')
          
-             read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
+          read(99,*,iostat=io_code) (tmp(ii),ii=1,66)
           do i = 1,59
 !          
           if (i==time_position) then  
             do  j= 1,64
-              read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
+              read(99,*,iostat=io_code) (tmp(ii),ii=1,66)
               do ii=1,66
                 bc_u_x_array(ii,j)=tmp(ii)
               enddo
- !              print*,'j',j,'   ',bc_T_x_array(1,j),bc_T_x_array(66,j), bc_T_x_array(66,1)
+ !              print*,'j',j,'   ',bc_u_x_array(1,j),bc_u_x_array(66,j), bc_u_x_array(66,1)
             enddo
             
             time(i)=tmp(1)
  !           print*,'proverka1',bc_T_x_array(66,1)       !,bc_T_x_array(66,64)
           else
             do  j= 1,64
-              read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
+              read(99,*,iostat=io_code) (tmp(ii),ii=1,66)
               if (j==1) time(i)=tmp(1)
             enddo
           endif
@@ -1663,7 +1663,7 @@ subroutine bc_satur_x(f,bc)
             enddo
             enddo
     !        
-    !        print*,'proverka',bc_T_x_adopt(1,1),bc_T_x_adopt(1,64),bc_T_x_adopt(64,1),bc_T_x_adopt(64,64)
+!            print*,'proverka ux',bc_u_x_adopt(1,1),bc_u_x_adopt(1,64),bc_u_x_adopt(64,1),bc_u_x_adopt(64,64)
           else
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!notready!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!          
             do i=1,my
@@ -1691,7 +1691,7 @@ subroutine bc_satur_x(f,bc)
 !              deallocate(bc_T_x_array)
  !           call stop_it("boundary file bc_file_x.dat has incorrect size")
             endif
-          close(9)
+          close(99)
         endif
         lbc_u_x=.false.
    !      print*,'after allocation',  lbc_T_x, time_position
@@ -1736,14 +1736,19 @@ subroutine bc_satur_x(f,bc)
       
  !     print*,maxval(bc_T_x_adopt(m1,1)*bc_u_x_adopt(m1,1)/f(l1,m1,:,iux)),minval(bc_T_x_adopt(m1,1)*bc_u_x_adopt(m1,1)/f(l1,m1,:,iux))
 !          do i=1,nghost
-            do i=1,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
+ !           do i=1,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
 !          enddo
 !      
 !   print*,  exp(f(l1,m1:m2,3,vr)), l1,m1 
           elseif (vr==iux) then
+           do j=n1,n2
            do i=m1,m2
-             f(l1,i,:,vr)=bc_u_x_adopt(i,1)*bc_T_x_adopt(i,1)/exp(f(l1,i,:,ilnTT))
+             f(l1,i,j,vr)=bc_u_x_adopt(i,1)*bc_T_x_adopt(i,1)/exp(f(l1,i,j,ilnTT))
            enddo
+           enddo
+           
+  !         print*,f(l1,:,3,vr)
+           
             do i=1,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
           endif
       elseif (bc%location==iBC_X_TOP) then
