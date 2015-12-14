@@ -537,7 +537,7 @@ def proc_pvar(datadir='./data', pdim=None, proc=0, varfile='pvar.dat'):
         varfile
             Name of the snapshot file.
     """
-    # Chao-Chin Yang, 2015-07-12
+    # Chao-Chin Yang, 2015-12-14
     from collections import namedtuple
     import numpy as np
     from struct import calcsize, unpack
@@ -552,12 +552,16 @@ def proc_pvar(datadir='./data', pdim=None, proc=0, varfile='pvar.dat'):
     f = open(datadir.strip() + '/proc' + str(proc) + '/' + varfile.strip(), 'rb')
     f.read(hsize)
     npar_loc = unpack(fmti, f.read(nbi))[0]
-    fpdim = np.array((npar_loc, mparray))
     # Read particle data.
-    f.read(2*hsize)
-    ipar = np.frombuffer(f.read(nbi*npar_loc), dtype='i4')
-    f.read(2*hsize)
-    fp = np.frombuffer(f.read(nb*fpdim.prod()), dtype=dtype).reshape(fpdim, order='F')
+    if npar_loc > 0:
+        fpdim = np.array((npar_loc, mparray))
+        f.read(2*hsize)
+        ipar = np.frombuffer(f.read(nbi*npar_loc), dtype='i4')
+        f.read(2*hsize)
+        fp = np.frombuffer(f.read(nb*fpdim.prod()), dtype=dtype).reshape(fpdim, order='F')
+    else:
+        fp = None
+        ipar = None
     # Read the time and grid.
     f.read(2*hsize)
     t = unpack(fmt, f.read(nb))[0]
@@ -636,7 +640,7 @@ def pvar(datadir='./data', ivar=None, varfile='pvar.dat', verbose=True):
         verbose
             Verbose output or not.
     """
-    # Chao-Chin Yang, 2015-08-06
+    # Chao-Chin Yang, 2015-12-14
     import numpy as np
     # Get the dimensions.
     dim = dimensions(datadir=datadir)
@@ -660,6 +664,7 @@ def pvar(datadir='./data', ivar=None, varfile='pvar.dat', verbose=True):
         if verbose:
             print("Reading", datadir.strip() + "/proc" + str(proc) + "/" + varfile.strip(), "...")
         p = proc_pvar(datadir=datadir, pdim=pdim, proc=proc, varfile=varfile) 
+        if p.npar_loc <= 0: continue
         ipar = p.ipar - 1
         # Check the integrity of the time and particle IDs.
         if any(exist[ipar]):
