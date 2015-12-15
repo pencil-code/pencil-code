@@ -601,6 +601,10 @@ module Mpicomm
 !
     endsubroutine initialize_mpicomm
 !***********************************************************************
+    subroutine yyinit
+
+    endsubroutine yyinit
+!***********************************************************************
     subroutine initiate_isendrcv_bdry(f,ivar1_opt,ivar2_opt)
 !
 !  Isend and Irecv boundary values. Called in the beginning of pde.
