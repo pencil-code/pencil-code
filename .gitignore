@@ -3,6 +3,8 @@
 *~
 ./python/pencilnew
 doc/www
+.*.swp
+host-ID
 # left-over files from auto-test and samples
 .pc_build_history 
 .run_directories.log
