@@ -82,6 +82,7 @@ module Particles
   real :: r_insert=0.0
   real :: frac_start_particles=1.0
   real :: tstart_insert_particles=0.0
+  real :: tstart_rpbeta=0.0
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
@@ -186,7 +187,7 @@ module Particles
       xp3, yp3, zp3, vpx3, vpy3, vpz3, lsinkparticle_1, rsinkparticle_1, &
       lcalc_uup, temp_grad0, thermophoretic_eq, cond_ratio, interp_pol_gradTT, &
       lreassign_strat_rhom, lparticlemesh_pqs_assignment, &
-      rpbeta_species, rpbeta, frac_start_particles, tstart_insert_particles
+      rpbeta_species, rpbeta, frac_start_particles, tstart_insert_particles, tstart_rpbeta
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -225,7 +226,7 @@ module Particles
       lcommunicate_np, lcylindrical_gravity_par, &
       l_shell, k_shell, lparticlemesh_pqs_assignment, pscalar_sink_rate, &
       lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw,lbubble, &
-      lpart_box, rpbeta_species, rpbeta, r_insert, tstart_insert_particles
+      lpart_box, rpbeta_species, rpbeta, r_insert, tstart_insert_particles, tstart_rpbeta
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -3045,11 +3046,15 @@ module Particles
           if (lheader) &
                print*, 'dvvp_dt: Newtonian gravity from a fixed central object'
           do k=1,npar_loc
-            if (npar_species>1) then
-              jspec=npar_species*(ipar(k)-1)/npar+1
-              rpbeta_tmp=rpbeta_species(jspec)
+            if (t>=tstart_rpbeta) then
+              if (npar_species>1) then
+                jspec=npar_species*(ipar(k)-1)/npar+1
+                rpbeta_tmp=rpbeta_species(jspec)
+              else
+                rpbeta_tmp=rpbeta
+              endif
             else
-              rpbeta_tmp=rpbeta
+              rpbeta_tmp=0.0
             endif
             if (lcartesian_coords) then
               if (lcylindrical_gravity_par) then
