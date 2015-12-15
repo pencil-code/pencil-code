@@ -1128,14 +1128,12 @@ module Particles
             endif
 !
           enddo
-          print*,iproc,npar_loc
           if (frac_start_particles < 1.0) then
             n_kill = nint((1.0-frac_start_particles)*real(npar_loc))
             do k=1,n_kill
               call remove_particle(fp,ipar,k)
             enddo
           endif
-          print*,iproc,npar_loc
 !
         case ('np-constant')
           if (lroot) print*, 'init_particles: Constant number density'
