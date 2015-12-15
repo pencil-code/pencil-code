@@ -1880,12 +1880,10 @@ module Particles
 !
             case ('r-insert','r_insert')
               if (lcylindrical_coords) then
-                do k=npar_loc_old+1,npar_loc
-                  fp(k,ixp) = r_insert
-                  call random_number_wrapper(fp(k,iyp))
-                  fp(k,iyp) = xyz0(2)+fp(k,iyp)*Lxyz(2)
-                  fp(k,izp) = 0.0
-                enddo
+                fp(npar_loc_old+1:npar_loc,ixp) = r_insert
+                call random_number_wrapper(fp(npar_loc_old+1:npar_loc,iyp))
+                fp(npar_loc_old+1:npar_loc,iyp) = xyz0(2)+fp(npar_loc_old+1:npar_loc,iyp)*Lxyz(2)
+                fp(npar_loc_old+1:npar_loc,izp) = 0.0
               endif
 !
             case ('nothing')
