@@ -2615,14 +2615,17 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_sum_int_arr
 !***********************************************************************
-    subroutine mpiallreduce_max_scl(fmax_tmp,fmax)
+    subroutine mpiallreduce_max_scl(fmax_tmp,fmax,comm)
 !
 !  Calculate total maximum element and return to all processors.
 !
+      use General, only: ioptest
+
       real :: fmax_tmp,fmax
+      integer, optional :: comm
 !
       call MPI_ALLREDUCE(fmax_tmp, fmax, 1, MPI_REAL, MPI_MAX, &
-                         MPI_COMM_WORLD, mpierr)
+                         ioptest(comm,MPI_COMM_WORLD), mpierr)
 !
     endsubroutine mpiallreduce_max_scl
 !***********************************************************************
@@ -2648,17 +2651,20 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_min_scl_dbl
 !***********************************************************************
-    subroutine mpiallreduce_max_arr(fmax_tmp,fmax,nreduce)
+    subroutine mpiallreduce_max_arr(fmax_tmp,fmax,nreduce,comm)
 !
 !  Calculate total maximum for each array element and return to all processors.
 !
+      use General, only: ioptest
+
       integer :: nreduce
       real, dimension(nreduce) :: fmax_tmp,fmax
+      integer, optional :: comm
 !
       if (nreduce==0) return
 !
       call MPI_ALLREDUCE(fmax_tmp, fmax, nreduce, MPI_REAL, MPI_MAX, &
-                         MPI_COMM_WORLD, mpierr)
+                         ioptest(comm,MPI_COMM_WORLD), mpierr)
 !
     endsubroutine mpiallreduce_max_arr
 !***********************************************************************
