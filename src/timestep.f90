@@ -24,7 +24,7 @@ module Timestep
       use Boundcond, only: update_ghosts
       use BorderProfiles, only: border_quenching
       use Equ, only: pde, impose_floors_ceilings
-      use Mpicomm, only: mpifinalize, mpiallreduce_max
+      use Mpicomm, only: mpifinalize, mpiallreduce_max, MPI_COMM_WORLD
       use Particles_main, only: particles_timestep_first, &
           particles_timestep_second
       use Shear, only: advance_shear
@@ -91,7 +91,7 @@ module Timestep
           dt1_local=maxval(dt1_max(1:nx))
           ! Timestep growth limiter
           if (real(ddt) > 0.) dt1_local=max(dt1_local,dt1_last)
-          call mpiallreduce_max(dt1_local,dt1)
+          call mpiallreduce_max(dt1_local,dt1,MPI_COMM_WORLD)
           dt=1.0/dt1
           if (loutput_varn_at_exact_tsnap) call shift_dt(dt)
           ! Timestep growth limiter

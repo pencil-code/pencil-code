@@ -156,7 +156,7 @@ module Timestep
     subroutine stiff(f, df, p, errmax)
 ! Stiff algorithm for time stepping
 !
-      use Mpicomm, only: mpiallreduce_max
+      use Mpicomm, only: mpiallreduce_max,MPI_COMM_WORLD
       use Equ, only: pde
       use Sub, only: ludcmp, lubksb
       use Chemistry, only: jacobn
@@ -340,7 +340,7 @@ module Timestep
 !
       errmaxs=errmaxs/eps_stiff
 !
-      call mpiallreduce_max(errmaxs,errmax)
+      call mpiallreduce_max(errmaxs,errmax,MPI_COMM_WORLD)
 !
     endsubroutine stiff
 !***********************************************************************

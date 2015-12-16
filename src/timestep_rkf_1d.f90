@@ -108,7 +108,7 @@ module Timestep
     subroutine rkck(f, df, p, errmax)
     ! Explicit fifth order Runge--Kutta--Fehlberg time stepping
       use Cdata
-      use Mpicomm, only: mpiallreduce_max
+      use Mpicomm, only: mpiallreduce_max,MPI_COMM_WORLD
       use Messages
       use Equ
     ! RK parameters by Cash and Karp
@@ -279,7 +279,7 @@ module Timestep
         !
         errmaxs=errmaxs/eps_rkf
         !
-      call mpiallreduce_max(errmaxs,errmax)
+      call mpiallreduce_max(errmaxs,errmax,MPI_COMM_WORLD)
 !
     endsubroutine rkck
 !***********************************************************************

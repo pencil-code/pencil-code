@@ -34,7 +34,7 @@ module Timestep
 !
       use BorderProfiles, only: border_quenching
       use Equ, only: pde
-      use Mpicomm, only: mpiallreduce_max
+      use Mpicomm, only: mpiallreduce_max,MPI_COMM_WORLD
       use Special, only: special_after_timestep
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -64,7 +64,7 @@ module Timestep
           dt1_local=maxval(dt1_max(1:nx))
 !  Timestep growth limiter
           if (ddt > 0.) dt1_local=max(dt1_local,dt1_last)
-          call mpiallreduce_max(dt1_local,dt1)
+          call mpiallreduce_max(dt1_local,dt1,MPI_COMM_WORLD)
           dt=1.0/dt1
           if (ddt/=0.) dt1_last=dt1_local/ddt
 !
