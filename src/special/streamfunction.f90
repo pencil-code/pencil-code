@@ -9,6 +9,7 @@
 ! CPARAM logical, parameter :: lspecial = .true.
 !
 ! MVAR CONTRIBUTION 1
+! MAUX CONTRIBUTION 1 
 ! COMMUNICATED AUXILIARIES 0
 !
 !***************************************************************
@@ -104,7 +105,7 @@ module Special
 !  6-oct-03/tony: coded
 !  01-aug-11/wlad: adapted
 !
-      use FArrayManager, only: farray_register_pde,farray_register_auxiliary
+      use FArrayManager, only: farray_register_pde
 !
       if (lroot) call svn_id( &
           "$Id: alphadisk.f90 19193 2012-06-30 12:55:46Z wdobler $")
