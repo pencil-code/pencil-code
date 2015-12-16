@@ -220,7 +220,7 @@ module Radiation
         write(3,*) 'ikapparho=',ikapparho
         write(3,*) 'iSrad=',iSrad
         write(3,*) 'ikappa=',ikappa
-        write(3,*) 'ilnTT=',ilnTT
+        !write(3,*) 'ilnTT=',ilnTT
         write(3,*) 'iKR_Frad=',iKR_Frad
         write(3,*) 'iKR_Fradx=',iKR_Fradx
         write(3,*) 'iKR_Frady=',iKR_Frady
