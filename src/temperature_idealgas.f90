@@ -2019,7 +2019,13 @@ module Energy
 !
       if (lwr) then
         write(3,*) 'nname=',nname
-        write(3,*) 'ilnTT=',ilnTT
+        if (ltemperature_nolog) then
+          write(3,*) 'ilnTT=0'
+          write(3,*) 'iTT=', iTT
+        else
+          write(3,*) 'ilnTT=', ilnTT
+          write(3,*) 'iTT=0'
+        endif
         write(3,*) 'iyH=',iyH
         write(3,*) 'iss=',iss
       endif
