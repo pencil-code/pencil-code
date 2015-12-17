@@ -23,7 +23,7 @@
 ;   Again as idlinit but used when two mesh sizes are required at once.
 ;   see idlvarloc
 ;
-function pc_varcontent, datadir=datadir, dim=dim, param=param, $
+function pc_varcontent, datadir=datadir, dim=dim, ivar=ivar, param=param, par2=param2, $
     run2D=run2D, scalar=scalar, noaux=noaux, quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -31,7 +31,9 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 if (not keyword_set(datadir)) then datadir = pc_get_datadir()
 if (n_elements(dim) eq 0) then pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
+if (n_elements(ivar) eq 0) then ivar=-1
 if (n_elements(param) eq 0) then pc_read_param, obj=param, datadir=datadir, dim=dim, quiet=quiet
+if (n_elements(par2) eq 0) then pc_read_param, param2=param2, datadir=datadir, dim=dim, quiet=quiet
 default, noaux, 0
 
 ; 
@@ -158,6 +160,7 @@ indices_aux = [ $
   { name:'ispecaux', label:'Special auxiliary variable', dims:1 } $
   ; don't forget to add a comma above when extending
 ]
+naux=n_elements(indices_aux)
 
 ; Inconsistent names (IDL-name is inconsistent with name in the main code):
 inconsistent = [ $
@@ -221,11 +224,18 @@ endif
 ;  are writing auxiliary data or not. Auxiliary variables can be turned
 ;  off by hand by setting noaux=1, e.g. for reading derivative snapshots.
 ;
+if (not keyword_set (noaux)) then begin
 
-if (keyword_set (param.lwrite_aux) and not keyword_set (noaux)) then begin
-  indices = [ indices, indices_aux ]
+  if (keyword_set(param2)) then $
+    lpar2aux=keyword_set(param2.lwrite_aux) $
+  else $
+    lpar2aux=0
+
+  if ( (keyword_set(param.lwrite_aux) and lpar2aux) or $
+       (keyword_set(param.lwrite_aux) and ivar eq 0) or $
+       (lpar2aux and ivar gt 0) ) then $
+    indices = [ indices, indices_aux ]
 endif
-
 ;
 ;  Predefine some variable types used regularly.
 ;
