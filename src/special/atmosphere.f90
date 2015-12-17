@@ -411,7 +411,7 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real :: gg=9.81e2!, TT0=293, qwater0=9.9e-3
+      real :: gg=9.81e2!,  qwater0=9.9e-3
       real :: eps=0.5 !!????????????????????????
       real :: rho_water=1., const_tmp=0.
 !
@@ -1437,7 +1437,7 @@ subroutine bc_satur_x(f,bc)
  !     real, dimension (:,:,:,:), allocatable :: bc_file_x_array
        real, dimension (:,:,:,:), allocatable :: bc_file_x_array
 !       real, dimension (:,:), allocatable :: bc_T_x_array
-         real, dimension(66,64) :: bc_T_x_array, bc_u_x_array
+         real, dimension(66,64),save :: bc_T_x_array, bc_u_x_array
        real, dimension (100) :: tmp, time, LES_x
        real, dimension (64,64), save :: bc_T_x_adopt, bc_u_x_adopt
       integer :: i,j,ii,statio_code,vr, Npoints, i1,i2, io_code, stat
@@ -1454,14 +1454,17 @@ subroutine bc_satur_x(f,bc)
         lbc_U_x=.true.
       endif  
 
+      print*,'lbc_T_x',lbc_T_x, lroot
+
+
       if (lbc_T_x) then
 !      allocate(bc_T_x_array(65,61),stat=stat)
  !     if (stat>0) call fatal_error('bc_file_x', &
  !         'Could not allocate memory for bc_file_x_array')
 !
       
-        if (lroot) then
-!          print*,'opening T.dat'
+   !     if (lroot) then
+          print*,'opening T2.dat'
           open(9,file='T2.dat')
 !          
 !          ii=1 
@@ -1546,7 +1549,7 @@ subroutine bc_satur_x(f,bc)
             enddo
             enddo
     !        
-    !        print*,'proverka',bc_T_x_adopt(1,1),bc_T_x_adopt(1,64),bc_T_x_adopt(64,1),bc_T_x_adopt(64,64)
+!            print*,'proverka1',bc_T_x_adopt(1,1),bc_T_x_adopt(1,32),bc_T_x_adopt(32,1),bc_T_x_adopt(32,32)
           else
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!notready!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!          
             do i=1,my
@@ -1575,12 +1578,16 @@ subroutine bc_satur_x(f,bc)
  !           call stop_it("boundary file bc_file_x.dat has incorrect size")
             endif
           close(9)
-        endif
+           print*,'closing file'
+!        endif
         lbc_T_x=.false.
    !      print*,'after allocation',  lbc_T_x, time_position
-      endif
+       endif
+!      endif
           
+        print*,'lbc_T_x1',lbc_T_x,'lroot',lroot
        
+
        
       if (lbc_u_x) then
 !      allocate(bc_T_x_array(65,61),stat=stat)
@@ -1589,8 +1596,8 @@ subroutine bc_satur_x(f,bc)
 !
       
         if (lroot) then
-!          print*,'opening u2.dat'
-          open(99,file='u2.dat')
+!          print*,'opening w2.dat'
+          open(99,file='w2.dat')
          
           read(99,*,iostat=io_code) (tmp(ii),ii=1,66)
           do i = 1,59
@@ -1659,11 +1666,11 @@ subroutine bc_satur_x(f,bc)
           if (Npoints==1) then
             do i=1,64
             do j=1,64
-                bc_u_x_adopt(i,j)=bc_u_x_array(i+2,j)
+                bc_u_x_adopt(i,j)=bc_u_x_array(i+2,j)*100.
             enddo
             enddo
     !        
-!            print*,'proverka ux',bc_u_x_adopt(1,1),bc_u_x_adopt(1,64),bc_u_x_adopt(64,1),bc_u_x_adopt(64,64)
+    !        print*,'proverka ux',bc_u_x_adopt(1,1),bc_u_x_adopt(1,64),bc_u_x_adopt(64,1),bc_u_x_adopt(64,64)
           else
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!notready!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!          
             do i=1,my
@@ -1714,6 +1721,9 @@ subroutine bc_satur_x(f,bc)
 !
 !      print*,'time_position',time_position
       
+
+      print*,'lbc_T_x2',lbc_T_x
+
       vr=bc%ivar
 !      value1=bc%value1
 !      value2=bc%value2
@@ -1725,27 +1735,39 @@ subroutine bc_satur_x(f,bc)
 !
       if (bc%location==iBC_X_BOT) then
         if (vr==ilnTT) then
- !         do j=n1,n2
- !         do i=m1,m2
- !           f(l1,i,j,vr)=alog(bc_T_x_adopt(i,j))
- !         enddo
- !         enddo
+   !       print*,bc_T_x_adopt(:,1)
+   !       print*,'test',bc_T_x_adopt(1,1),bc_T_x_adopt(16,1),bc_T_x_adopt(32,1), y(m1),y(m2),m1,m2
+
+          do j=n1,n2
+          do i=m1,m2
+            f(l1,i,j,vr)=alog(bc_T_x_adopt(i,j))
+            if ( (i==m1))  then
+              print*,'i ',i,' m1 ',m1,'adopt',bc_T_x_adopt(i,j), y(i)
+            endif
+         enddo
+          enddo
+
  !         do i=m1,m2
  !           f(l1,i,:,vr)=alog(bc_T_x_adopt(i,1)*bc_u_x_adopt(i,1)/f(l1,i,:,iux))
  !         enddo
       
  !     print*,maxval(bc_T_x_adopt(m1,1)*bc_u_x_adopt(m1,1)/f(l1,m1,:,iux)),minval(bc_T_x_adopt(m1,1)*bc_u_x_adopt(m1,1)/f(l1,m1,:,iux))
 !          do i=1,nghost
- !           do i=1,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
-!          enddo
+            do i=1,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
+!         enddo
 !      
 !   print*,  exp(f(l1,m1:m2,3,vr)), l1,m1 
+   
           elseif (vr==iux) then
            do j=n1,n2
            do i=m1,m2
              f(l1,i,j,vr)=bc_u_x_adopt(i,1)*bc_T_x_adopt(i,1)/exp(f(l1,i,j,ilnTT))
            enddo
            enddo
+             f(l1,m1,:,vr)=0.
+             f(l1,m2,:,vr)=0.
+             f(l1,:,n1,vr)=0.
+             f(l1,:,n2,vr)=0.  
            
   !         print*,f(l1,:,3,vr)
            
