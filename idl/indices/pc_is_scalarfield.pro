@@ -3,8 +3,10 @@
 ;;
 function pc_is_scalarfield, variable, $
     subscripts=subscripts, dim=dim, $
-    TRIM=TRIM, NOVECTORS=NOVECTORS, _EXTRA=e
+    TRIM=TRIM, NOVECTORS=NOVECTORS, YINYANG=yinyang, _EXTRA=e
 COMPILE_OPT IDL2,HIDDEN
+;
+  if not keyword_set(yinyang) then yinyang=0 & yinyang=logical_true(yinyang)
 ;
   varsize=size(variable)
 ;
@@ -26,20 +28,18 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Special: 0-D runs are represented in a 1-D array with one element.
     result=1
   endif else begin
-    if ( varsize[0] gt ndim ) then result=0
+    if ( varsize[0] gt ndim+yinyang ) then result=0
   endelse
 ;
 ;  Find proper subscripts in case of trimmed/non-trimmed variables.
 ;
   if ( (result eq 1) and (arg_present(subscripts)) ) then begin
-    if (trim) then begin
-      subscripts=make_array(varsize[0],/STRING,value='*')
-    endif else begin
-      subscripts=make_array(varsize[0],/STRING,value='*')
+    subscripts=make_array(varsize[0],/STRING,value='*')
+    if (not trim) then begin
       subscripts[0]=string(dim.l1)+':'+string(dim.l2)
       subscripts[1]=string(dim.m1)+':'+string(dim.m2)             
       subscripts[2]=string(dim.n1)+':'+string(dim.n2)             
-    endelse
+    endif
   endif
 
   if ( (result eq 0) and (n_elements(subscripts) ne 0) ) then $

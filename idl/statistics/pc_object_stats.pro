@@ -5,7 +5,7 @@
 ;;  omit ghost zones in the analysis
 ;;
 pro pc_object_stats,object,tags=tags,skiptags=skiptags, dim=dim,  $
-    TRIM=TRIM, NOVECTORS=NOVECTORS, QUIET=QUIET, _EXTRA=e
+    TRIM=TRIM, NOVECTORS=NOVECTORS, QUIET=QUIET, YINYANG=yinyang, _EXTRA=e
 COMPILE_OPT IDL2,HIDDEN
 ;
   default,tags,tag_names(object)
@@ -18,7 +18,7 @@ COMPILE_OPT IDL2,HIDDEN
   for iv=0L,n_elements(tags)-1 do begin
     res=execute("pc_variable_stats,object." + tags[iv] + $
                 ",varname=tags[iv],TRIM=TRIM,NOVECTORS=NOVECTORS," + $
-                  "dim=dim,NOHEADER=donefirst")
+                  "dim=dim,NOHEADER=donefirst,YINYANG=yinyang")
     donefirst=1
   endfor
 ;

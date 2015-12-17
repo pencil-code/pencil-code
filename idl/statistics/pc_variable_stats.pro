@@ -6,8 +6,11 @@
 ;;
 pro pc_variable_stats,variable, varname=varname, dim=dim, $
     MINIMUM=MINIMUM_, MAXIMUM=MAXIMUM_, MEAN=MEAN_, RMS=RMS_, $
-    TRIM=TRIM, NOHEADER=NOHEADER, NOVECTORS=NOVECTORS, _EXTRA=e
+    TRIM=TRIM, NOHEADER=NOHEADER, NOVECTORS=NOVECTORS, YINYANG=yinyang, _EXTRA=e
 COMPILE_OPT IDL2,HIDDEN
+;
+if not keyword_set(yinyang) then yinyang=0 
+yinyang = logical_true(yinyang)
 ;
 xyz = ['x', 'y', 'z']
 ;
@@ -72,11 +75,11 @@ if ( (varname eq 'X') or (varname eq 'Y') or (varname eq 'Z') or $
 varsize=size(variable)
 ;
 fmt='('+arraytostring(stat_formats[where(requested_stats)],LIST=',',/NOLEAD)+')'
+
+if ( pc_is_scalarfield(variable, dim=dim, $
+    subscripts=subscripts, TRIM=TRIM, NOVECTORS=NOVECTORS, YINYANG=yinyang) ) then begin
 ;
 ;  The array is a scalar field....
-;
-if ( pc_is_scalarfield(variable, dim=dim, $
-    subscripts=subscripts, TRIM=TRIM, NOVECTORS=NOVECTORS) ) then begin
 ;
   stats[0]="' '+strmid(strlowcase(varname)+'          ',0,10)"
 ; 
@@ -87,14 +90,14 @@ if ( pc_is_scalarfield(variable, dim=dim, $
   cmd = "print, FORMAT=fmt" + $
       arraytostring(stats[where(requested_stats)])  
   if (execute(cmd,1) ne 1) then message, 'Error printing stats for ' + stats[0] 
+
+endif else if ( pc_is_vectorfield(variable, dim=dim, $
+   subscripts=subscripts, TRIM=TRIM, NOVECTORS=NOVECTORS, YINYANG=yinyang) ) then begin
 ;
 ;  The array is a vector field...
 ;
-endif else if ( pc_is_vectorfield(variable, dim=dim, $
-   subscripts=subscripts, TRIM=TRIM, NOVECTORS=NOVECTORS) ) then begin
-;
   for j=0,2 do begin
-    subscripts[varsize[0]-1]=string(j)
+    subscripts[varsize[0]-1-yinyang]=string(j)
     stats[0]="' '+strmid(strlowcase(varname)+'_'+xyz[j]+'          ',0,10)"
 ;
     if (execute("statvar=variable[" + $
