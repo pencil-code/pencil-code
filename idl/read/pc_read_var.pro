@@ -74,7 +74,7 @@
 pro pc_read_var,                                                  $
     object=object, varfile=varfile_, associate=associate,         $
     variables=variables, tags=tags, magic=magic,                  $
-    bbtoo=bbtoo, ootoo=ootoo,                                     $
+    bbtoo=bbtoo, ootoo=ootoo, TTtoo=TTtoo,                        $
     allprocs=allprocs, reduced=reduced,                           $
     trimxyz=trimxyz, trimall=trimall, unshear=unshear,            $
     nameobject=nameobject, validate_variables=validate_variables, $
@@ -165,6 +165,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
   endif else begin
     default, varfile_, 'var.dat'
     varfile=varfile_
+    ivar=-1
   endelse
 ;
 ; Downsampled snapshot?
@@ -183,6 +184,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
     endif else begin
       print, 'Could not find '+datadir+'/param2.nml'
       if (magic) then print, 'This may give problems with magic variables.'
+      undefine, par2
     endelse
   endif
   if (n_elements(grid) eq 0) then $
@@ -190,10 +192,18 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
       proc=proc, allprocs=allprocs, reduced=reduced, $
       swap_endian=swap_endian, /quiet, down=ldownsampled
 ;
-; We know from start.in whether we have to read 2-D or 3-D data.
+; We know from param whether we have to read 2-D or 3-D data.
 ;
   default, run2D, 0
   if (param.lwrite_2d) then run2D=1
+;
+; We know from param whether we have a Yin-Yang grid.
+;
+  default, yinyang, 0
+  if (param.lyinyang) then yinyang=1
+;
+  if yinyang then $
+    print, 'ATTENTION: This is a Yin-Yang grid run. Data are read in without any transformations!'
 ;
 ; Set the coordinate system.
 ;
@@ -294,8 +304,8 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
 ;  Read meta data and set up variable/tag lists.
 ;
-  default, varcontent, pc_varcontent(datadir=datadir,dim=dim, $
-      param=param,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D)
+  default, varcontent, pc_varcontent(datadir=datadir,dim=dim, ivar=ivar, $
+      param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D)
   totalvars=(size(varcontent))[1]
 ;
   if (n_elements(variables) ne 0) then begin
@@ -323,6 +333,14 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
   default, ootoo, 0
   if (ootoo) then begin
     variables=[variables,'oo']
+    magic=1
+  endif
+;
+; Shortcut for getting temperature.
+;
+  default, TTtoo, 0
+  if (TTtoo) then begin
+    variables=[variables,'tt']
     magic=1
   endif
 ;
@@ -373,7 +391,14 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
     if (varcontent[iv].variable eq 'UNKNOWN') then $
         message, 'Unknown variable at position ' + str(iv)  $
         + ' needs declaring in varcontent.pro', /info
-    if (execute(varcontent[iv].idlvar+'='+varcontent[iv].idlinit,0) ne 1) then $
+
+    strg=varcontent[iv].idlinit
+    if yinyang then begin
+      pos=strpos(strg,',type')
+      strg=strmid(strg,0,pos)+',2'+strmid(strg,pos)
+    endif
+
+    if (execute(varcontent[iv].idlvar+'='+strg,0) ne 1) then $
         message, 'Error initialising ' + varcontent[iv].variable $
         +' - '+ varcontent[iv].idlvar, /info
 ;
@@ -393,9 +418,14 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
     print, ''
   endif
 ;
+; Loop over grids (two for Yin-Yang).
+;
+  ia=0 
+  for iyy=0,yinyang do begin
+;
 ; Loop over processors.
 ;
-  for i=0,nprocs-1 do begin
+  for i=ia,ia+nprocs-1 do begin
 ;
 ; Build the full path and filename.
 ;
@@ -412,7 +442,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
         filename=datadir+'/proc'+str(i)+'/'+varfile
         if (not keyword_set(quiet)) then $
             print, 'Loading chunk ', strtrim(str(i+1)), ' of ', $
-            strtrim(str(nprocs)), ' (', $
+            strtrim(str((yinyang+1)*nprocs)), ' (', $
             strtrim(datadir+'/proc'+str(i)+'/'+varfile), ')...'
         pc_read_dim, object=procdim, datadir=datadir, proc=i, /quiet, down=ldownsampled
       endelse
@@ -552,7 +582,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
       endif else begin
         ; multiple processor distributed files
         if (param.lshear) then begin
-           readu, file, t, xloc, yloc, zloc, dx, dy, dz, deltay
+          readu, file, t, xloc, yloc, zloc, dx, dy, dz, deltay
         endif else begin
           readu, file, t, xloc, yloc, zloc, dx, dy, dz
         endelse
@@ -572,6 +602,8 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
         y[i0y:i1y] = yloc[i0yloc:i1yloc]
         z[i0z:i1z] = zloc[i0zloc:i1zloc]
       endelse
+;
+; Fill data into global arrays.
 ;
 ; Loop over variables.
 ;
@@ -605,9 +637,9 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ; Regular 3-D run.
 ;
           cmd =   varcontent[iv].idlvar $
-              + "[i0x:i1x,i0y:i1y,i0z:i1z,*,*]=" $
+              + (varcontent[iv].skip eq 0 ? "[i0x:i1x,i0y:i1y,i0z:i1z,iyy]=" : "[i0x:i1x,i0y:i1y,i0z:i1z,*,iyy]=" ) $
               + varcontent[iv].idlvarloc $
-              +"[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*,*]"
+              +"[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*]"
         endelse
         if (execute(cmd) ne 1) then $
             message, 'Error combining data for ' + varcontent[iv].variable
@@ -624,6 +656,10 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
       free_lun,file
     endif
   endfor
+
+  if yinyang then ia=nprocs
+
+  endfor
 ;
 ; Tidy memory a little.
 ;
@@ -631,9 +667,8 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
     undefine,xloc
     undefine,yloc
     undefine,zloc
-    for iv=0L,totalvars-1L do begin
-      undefine, varcontent[iv].idlvarloc
-    endfor
+    for iv=0L,totalvars-1L do $ 
+      dum=execute('undefine,'+varcontent[iv].idlvarloc)
   endif
 ;
 ; Set ghost zones on derived variables (not default).
@@ -670,17 +705,16 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
     endif
   endif
 ;
-; Save changs to the variables array (but don't include the effect of /TRIMALL).
+; Save changes to the variables array (but don't include the effect of /TRIMALL).
 ;
   variables_in=variables
 ;
 ; Trim x, y and z if requested.
 ;
-  if (keyword_set(trimxyz)) then begin
-    xyzstring="x[dim.l1:dim.l2],y[dim.m1:dim.m2],z[dim.n1:dim.n2]"
-  endif else begin
+  if (keyword_set(trimxyz)) then $
+    xyzstring="x[dim.l1:dim.l2],y[dim.m1:dim.m2],z[dim.n1:dim.n2]" $
+  else $
     xyzstring="x,y,z"
-  endelse
 ;
 ; Remove ghost zones if requested.
 ;
@@ -720,7 +754,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
       print, '                             Variable summary:'
       print, ''
     endif
-    pc_object_stats, object, dim=dim, trim=trimall, quiet=quiet
+    pc_object_stats, object, dim=dim, trim=trimall, quiet=quiet, yinyang=yinyang
     print, ' t = ', t
     print, ''
   endif
