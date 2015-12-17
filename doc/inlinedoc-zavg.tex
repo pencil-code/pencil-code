@@ -9,6 +9,7 @@
 %%   magnetic.f90
 %%   density_stratified.f90
 %%   gravity_simple.f90
+%%   magnetic_shearboxJ.f90
 %%   temperature_idealgas.f90
 %%   thermal_energy.f90
 %%   viscosity.f90
@@ -135,6 +136,38 @@
   \var{epotuxmxy} & $\left<\varrho \Phi_{\rm grav}
                     u_x \right>_{z}$
                     \quad(potential energy flux) \\
+\midrule
+  \multicolumn{2}{c}{Module \file{magnetic_shearboxJ.f90}} \\
+\midrule
+  \var{bxmxy}     & $\left< B_x \right>_{z}$ \\
+  \var{bymxy}     & $\left< B_y \right>_{z}$ \\
+  \var{bzmxy}     & $\left< B_z \right>_{z}$ \\
+  \var{jxmxy}     & $\left< J_x \right>_{z}$ \\
+  \var{jymxy}     & $\left< J_y \right>_{z}$ \\
+  \var{jzmxy}     & $\left< J_z \right>_{z}$ \\
+  \var{axmxy}     & $\left< A_x \right>_{z}$ \\
+  \var{aymxy}     & $\left< A_y \right>_{z}$ \\
+  \var{azmxy}     & $\left< A_z \right>_{z}$ \\
+  \var{bx2mxy}    & $\left< B_x^2 \right>_{z}$ \\
+  \var{by2mxy}    & $\left< B_y^2 \right>_{z}$ \\
+  \var{bz2mxy}    & $\left< B_z^2 \right>_{z}$ \\
+  \var{bxbymxy}   & $\left< B_x B_y \right>_{z}$ \\
+  \var{bxbzmxy}   & $\left< B_x B_z \right>_{z}$ \\
+  \var{bybzmxy}   & $\left< B_y B_z \right>_{z}$ \\
+  \var{poynxmxy}  & $\left< \Ev\times\Bv \right>_{x}$ \\
+  \var{poynymxy}  & $\left< \Ev\times\Bv \right>_{y}$ \\
+  \var{poynzmxy}  & $\left< \Ev\times\Bv \right>_{z}$ \\
+  \var{jbmxy}     & $\left< \Jv\cdot\Bv \right>_{z}$ \\
+  \var{abmxy}     & $\left< \Av\cdot\Bv \right>_{z}$ \\
+  \var{examxy1}   & $\left< \Ev\times\Av \right>_{z}|_x$ \\
+  \var{examxy2}   & $\left< \Ev\times\Av \right>_{z}|_y$ \\
+  \var{examxy3}   & $\left< \Ev\times\Av \right>_{z}|_z$ \\
+  \var{StokesImxy} & $\left< \epsilon_{B\perp} \right>_{z}|_z$ \\
+  \var{StokesQmxy} & $-\left<\epsilon_{B\perp} \cos2\chi \right>_{z}|_z$ \\
+  \var{StokesUmxy} & $-\left<\epsilon_{B\perp} \sin2\chi \right>_{z}|_z$ \\
+  \var{StokesQ1mxy} & $+\left<F\epsilon_{B\perp} \sin2\chi \right>_{z}|_z$ \\
+  \var{StokesU1mxy} & $-\left<F\epsilon_{B\perp} \cos2\chi \right>_{z}|_z$ \\
+  \var{beta1mxy}  & $\left< \Bv^2/(2\mu_0 p) \right>_{z}|_z$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{temperature_idealgas.f90}} \\
 \midrule

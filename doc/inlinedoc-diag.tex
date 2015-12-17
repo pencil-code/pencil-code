@@ -15,6 +15,7 @@
 %%   bfield.f90
 %%   chemistry.f90
 %%   chiral_fluids.f90
+%%   chiral_fluids_gradtheta.f90
 %%   coronae.f90
 %%   cosmicray_current.f90
 %%   density_stratified.f90
@@ -24,6 +25,7 @@
 %%   gravity_simple.f90
 %%   heatflux.f90
 %%   lorenz_gauge.f90
+%%   magnetic_shearboxJ.f90
 %%   meanfield.f90
 %%   meanfield_demfdt.f90
 %%   noentropy.f90
@@ -202,6 +204,8 @@
   \var{oumphi}    & $\left<\omv\cdot\uv\right>_\varphi$ \\
   \var{ugurmsx}   & $\left<\left(\uv\nabla\uv\right)^2\right>^{1/2}$
                     for the hydro_xaver_range \\
+  \var{ugu2m}     & $\left<\uv\nabla\uv\right>^2$ \\
+  \var{dudx}      & $\left<\frac{\delta \uv}{\delta x}\right>$ \\
   \var{Marms}     & $\left<\uv^2/\cs^2\right>$
                     \quad(rms Mach number) \\
   \var{Mamax}     & $\max |\uv|/\cs$
@@ -233,6 +237,7 @@
   \var{rhomin}    & $\min(\rho)$ \\
   \var{rhomax}    & $\max(\rho)$ \\
   \var{ugrhom}    & $\left<\uv\cdot\nabla\varrho\right>$ \\
+  \var{uglnrhom}  & $\left<\uv\cdot\nabla\ln\varrho\right>$ \\
   \var{totmass}   & $\int\varrho\,dV$ \\
   \var{mass}      & $\int\varrho\,dV$ \\
   \var{vol}       & $\int\,dV$ (volume) \\
@@ -331,6 +336,15 @@
   \var{uzbzm}     & $\left<u_zB_z\right>$ \\
   \var{cosubm}    & $\left<\Uv\cdot\Bv/(|\Uv|\,|\Bv|)
                     \right>$ \\
+  \var{jxbxm}     & $\left<j_xB_x\right>$ \\
+  \var{jybxm}     & $\left<j_yB_x\right>$ \\
+  \var{jzbxm}     & $\left<j_zB_x\right>$ \\
+  \var{jxbym}     & $\left<j_xB_y\right>$ \\
+  \var{jybym}     & $\left<j_yB_y\right>$ \\
+  \var{jzbym}     & $\left<j_zB_y\right>$ \\
+  \var{jxbzm}     & $\left<j_xB_z\right>$ \\
+  \var{jybzm}     & $\left<j_yB_z\right>$ \\
+  \var{jzbzm}     & $\left<j_zB_z\right>$ \\
   \var{uam}       & $\left<\uv\cdot\Av\right>$ \\
   \var{ujm}       & $\left<\uv\cdot\Jv\right>$ \\
   \var{fbm}       & $\left<\fv\cdot\Bv\right>$ \\
@@ -723,8 +737,17 @@
 \midrule
   \var{mu5m}      & $\left<\mu_5\right>$ \\
   \var{mu5rms}    & $\left<\mu_5^2\right>^{1/2}$ \\
+  \var{bgmu5rms}  & $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$ \\
+  \var{bgtheta5rms} & $\left<(\Bv\cdot\nabla\theta_5)^2\right>^{1/2}$ \\
   \var{theta5m}   & $\left<\theta_5\right>$ \\
   \var{theta5rms} & $\left<\theta_5^2\right>^{1/2}$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{chiral_fluids_gradtheta.f90}} \\
+\midrule
+  \var{mu5m}      & $\left<\mu_5\right>$ \\
+  \var{mu5rms}    & $\left<\mu_5^2\right>^{1/2}$ \\
+  \var{bgmu5rms}  & $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$ \\
+  \var{gtheta5rms} & $\left<(\nabla\theta_5)^2\right>^{1/2}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{coronae.f90}} \\
 \midrule
@@ -813,6 +836,257 @@
   \var{phip2}     & $\phi(x2,y2,z2)$ \\
   \var{phibzm}    & $\left<\phi B_z\right>$ \\
   \var{phibzmz}   & $\left<\phi B_z\right>_{xy}$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{magnetic_shearboxJ.f90}} \\
+\midrule
+  \var{ab_int}    & $\int\Av\cdot\Bv\;dV$ \\
+  \var{jb_int}    & $\int\jv\cdot\Bv\;dV$ \\
+  \var{b2tm}      & $\left<\bv(t)\cdot\int_0^t\bv(t')
+                    dt'\right>$ \\
+  \var{bjtm}      & $\left<\bv(t)\cdot\int_0^t\jv(t')
+                    dt'\right>$ \\
+  \var{jbtm}      & $\left<\jv(t)\cdot\int_0^t\bv(t')
+                    dt'\right>$ \\
+  \var{b2ruzm}    & $\left<\Bv^2\rho u_z\right>$ \\
+  \var{b2uzm}     & $\left<\Bv^2u_z\right>$ \\
+  \var{ubbzm}     & $\left<(\uv\cdot\Bv)B_z\right>$ \\
+  \var{b1m}       & $\left<|\Bv|\right>$ \\
+  \var{b2m}       & $\left<\Bv^2\right>$ \\
+  \var{bm2}       & $\max(\Bv^2)$ \\
+  \var{j2m}       & $\left<\jv^2\right>$ \\
+  \var{jm2}       & $\max(\jv^2)$ \\
+  \var{abm}       & $\left<\Av\cdot\Bv\right>$ \\
+  \var{abumx}     & $\left<u_x\Av\cdot\Bv\right>$ \\
+  \var{abumy}     & $\left<u_y\Av\cdot\Bv\right>$ \\
+  \var{abumz}     & $\left<u_z\Av\cdot\Bv\right>$ \\
+  \var{abmh}      & $\left<\Av\cdot\Bv\right>$ (temp) \\
+  \var{abmn}      & $\left<\Av\cdot\Bv\right>$ (north) \\
+  \var{abms}      & $\left<\Av\cdot\Bv\right>$ (south) \\
+  \var{abrms}     & $\left<(\Av\cdot\Bv)^2\right>^{1/2}$ \\
+  \var{jbrms}     & $\left<(\jv\cdot\Bv)^2\right>^{1/2}$ \\
+  \var{ajm}       & $\left<\jv\cdot\Av\right>$ \\
+  \var{jbm}       & $\left<\jv\cdot\Bv\right>$ \\
+  \var{jbmh}      & $\left<\Jv\cdot\Bv\right>$ (temp) \\
+  \var{jbmn}      & $\left<\Jv\cdot\Bv\right>$ (north) \\
+  \var{jbms}      & $\left<\Jv\cdot\Bv\right>$ (south) \\
+  \var{ubm}       & $\left<\uv\cdot\Bv\right>$ \\
+  \var{dubrms}    & $\left<(\uv-\Bv)^2\right>^{1/2}$ \\
+  \var{dobrms}    & $\left<(\boldsymbol{\omega}-\Bv)^2
+                    \right>^{1/2}$ \\
+  \var{uxbxm}     & $\left<u_xB_x\right>$ \\
+  \var{uybxm}     & $\left<u_yB_x\right>$ \\
+  \var{uzbxm}     & $\left<u_zB_x\right>$ \\
+  \var{uxbym}     & $\left<u_xB_y\right>$ \\
+  \var{uybym}     & $\left<u_yB_y\right>$ \\
+  \var{uzbym}     & $\left<u_zB_y\right>$ \\
+  \var{uxbzm}     & $\left<u_xB_z\right>$ \\
+  \var{uybzm}     & $\left<u_yB_z\right>$ \\
+  \var{uzbzm}     & $\left<u_zB_z\right>$ \\
+  \var{cosubm}    & $\left<\Uv\cdot\Bv/(|\Uv|\,|\Bv|)
+                    \right>$ \\
+  \var{jxbxm}     & $\left<j_xB_x\right>$ \\
+  \var{jybxm}     & $\left<j_yB_x\right>$ \\
+  \var{jzbxm}     & $\left<j_zB_x\right>$ \\
+  \var{jxbym}     & $\left<j_xB_y\right>$ \\
+  \var{jybym}     & $\left<j_yB_y\right>$ \\
+  \var{jzbym}     & $\left<j_zB_y\right>$ \\
+  \var{jxbzm}     & $\left<j_xB_z\right>$ \\
+  \var{jybzm}     & $\left<j_yB_z\right>$ \\
+  \var{jzbzm}     & $\left<j_zB_z\right>$ \\
+  \var{uam}       & $\left<\uv\cdot\Av\right>$ \\
+  \var{ujm}       & $\left<\uv\cdot\Jv\right>$ \\
+  \var{fbm}       & $\left<\fv\cdot\Bv\right>$ \\
+  \var{fxbxm}     & $\left<f_x B_x\right>$ \\
+  \var{epsM}      & $\left<\eta\mu_0\jv^2\right>$ \\
+  \var{epsAD}     & $\left<\rho^{-1} t_{\rm AD}
+                    (\vec{J}\times\vec{B})^2\right>$
+                    (heating by ion-neutrals friction) \\
+  \var{bxpt}      & $B_x(x_1,y_1,z_1,t)$ \\
+  \var{bypt}      & $B_y(x_1,y_1,z_1,t)$ \\
+  \var{bzpt}      & $B_z(x_1,y_1,z_1,t)$ \\
+  \var{jxpt}      & $J_x(x_1,y_1,z_1,t)$ \\
+  \var{jypt}      & $J_y(x_1,y_1,z_1,t)$ \\
+  \var{jzpt}      & $J_z(x_1,y_1,z_1,t)$ \\
+  \var{Expt}      & ${\cal E}_x(x_1,y_1,z_1,t)$ \\
+  \var{Eypt}      & ${\cal E}_y(x_1,y_1,z_1,t)$ \\
+  \var{Ezpt}      & ${\cal E}_z(x_1,y_1,z_1,t)$ \\
+  \var{axpt}      & $A_x(x_1,y_1,z_1,t)$ \\
+  \var{aypt}      & $A_y(x_1,y_1,z_1,t)$ \\
+  \var{azpt}      & $A_z(x_1,y_1,z_1,t)$ \\
+  \var{bxp2}      & $B_x(x_2,y_2,z_2,t)$ \\
+  \var{byp2}      & $B_y(x_2,y_2,z_2,t)$ \\
+  \var{bzp2}      & $B_z(x_2,y_2,z_2,t)$ \\
+  \var{jxp2}      & $J_x(x_2,y_2,z_2,t)$ \\
+  \var{jyp2}      & $J_y(x_2,y_2,z_2,t)$ \\
+  \var{jzp2}      & $J_z(x_2,y_2,z_2,t)$ \\
+  \var{Exp2}      & ${\cal E}_x(x_2,y_2,z_2,t)$ \\
+  \var{Eyp2}      & ${\cal E}_y(x_2,y_2,z_2,t)$ \\
+  \var{Ezp2}      & ${\cal E}_z(x_2,y_2,z_2,t)$ \\
+  \var{axp2}      & $A_x(x_2,y_2,z_2,t)$ \\
+  \var{ayp2}      & $A_y(x_2,y_2,z_2,t)$ \\
+  \var{azp2}      & $A_z(x_2,y_2,z_2,t)$ \\
+  \var{exabot}    & $\int\Ev\times\Av\,dS|_{\rm bot}$ \\
+  \var{exatop}    & $\int\Ev\times\Av\,dS|_{\rm top}$ \\
+  \var{emag}      & $\int_V{1\over2\mu_0}\Bv^2\, dV$ \\
+  \var{brms}      & $\left<\Bv^2\right>^{1/2}$ \\
+  \var{bfrms}     & $\left<{\Bv'}^2\right>^{1/2}$ \\
+  \var{bmax}      & $\max(|\Bv|)$ \\
+  \var{bxmin}     & $\min(|B_x|)$ \\
+  \var{bymin}     & $\min(|B_y|)$ \\
+  \var{bzmin}     & $\min(|B_z|)$ \\
+  \var{bxmax}     & $\max(|B_x|)$ \\
+  \var{bymax}     & $\max(|B_y|)$ \\
+  \var{bzmax}     & $\max(|B_z|)$ \\
+  \var{bbxmax}    & $\max(|B_x|) excluding Bv_{ext}$ \\
+  \var{bbymax}    & $\max(|B_y|) excluding Bv_{ext}$ \\
+  \var{bbzmax}    & $\max(|B_z|) excluding Bv_{ext}$ \\
+  \var{jxmax}     & $\max(|jv_x|)$ \\
+  \var{jymax}     & $\max(|jv_y|)$ \\
+  \var{jzmax}     & $\max(|jv_z|)$ \\
+  \var{jrms}      & $\left<\jv^2\right>^{1/2}$ \\
+  \var{hjrms}     & $\left<\jv^2\right>^{1/2}$ \\
+  \var{jmax}      & $\max(|\jv|)$ \\
+  \var{vArms}     & $\left<\Bv^2/\varrho\right>^{1/2}$ \\
+  \var{vAmax}     & $\max(\Bv^2/\varrho)^{1/2}$ \\
+  \var{dtb}       & $\delta t / [c_{\delta t}\,\delta x
+                    /v_{\rm A,max}]$
+                    \quad(time step relative to
+                    Alfv{\'e}n time step;
+                    see \S~\ref{time-step}) \\
+  \var{dteta}     & $\delta t/[c_{\delta t,{\rm v}}\,
+                    \delta x^2/\eta_{\rm max}]$
+                    \quad(time step relative to
+                    resistive time step;
+                    see \S~\ref{time-step}) \\
+  \var{a2m}       & $\left<\Av^2\right>$ \\
+  \var{arms}      & $\left<\Av^2\right>^{1/2}$ \\
+  \var{amax}      & $\max(|\Av|)$ \\
+  \var{divarms}   & $\langle(\nabla\cdot\Av)^2\rangle^{1/2}$ \\
+  \var{beta1m}    & $\left<\Bv^2/(2\mu_0 p)\right>$
+                    \quad(mean inverse plasma beta) \\
+  \var{beta1max}  & $\max[\Bv^2/(2\mu_0 p)]$
+                    \quad(maximum inverse plasma beta) \\
+  \var{betam}     & $\langle\beta\rangle$ \\
+  \var{betamax}   & $\max\beta$ \\
+  \var{betamin}   & $\min\beta$ \\
+  \var{bxm}       & $\left<B_x\right>$ \\
+  \var{bym}       & $\left<B_y\right>$ \\
+  \var{bzm}       & $\left<B_z\right>$ \\
+  \var{bxbym}     & $\left<B_x B_y\right>$ \\
+  \var{bmx}       & $\left<\left<\Bv\right>_{yz}^2
+                    \right>^{1/2}$
+                    \quad(energy of $yz$-averaged
+                    mean field) \\
+  \var{bmy}       & $\left<\left<\Bv\right>_{xz}^2
+                    \right>^{1/2}$
+                    \quad(energy of $xz$-averaged
+                    mean field) \\
+  \var{bmz}       & $\left<\left<\Bv\right>_{xy}^2
+                    \right>^{1/2}$
+                    \quad(energy of $xy$-averaged
+                    mean field) \\
+  \var{bmzS2}     & $\left<\left<\Bv_S\right>_{xy}^2\right>$ \\
+  \var{bmzA2}     & $\left<\left<\Bv_A\right>_{xy}^2\right>$ \\
+  \var{jmx}       & $\left<\left<\Jv\right>_{yz}^2
+                    \right>^{1/2}$
+                    \quad(energy of $yz$-averaged
+                    mean current density) \\
+  \var{jmy}       & $\left<\left<\Jv\right>_{xz}^2
+                    \right>^{1/2}$
+                    \quad(energy of $xz$-averaged
+                    mean current density) \\
+  \var{jmz}       & $\left<\left<\Jv\right>_{xy}^2
+                    \right>^{1/2}$
+                    \quad(energy of $xy$-averaged
+                    mean current density) \\
+  \var{bmzph}     & Phase of a Beltrami field \\
+  \var{bmzphe}    & Error of phase of a Beltrami field \\
+  \var{bsinphz}   & sine of phase of a Beltrami field \\
+  \var{bcosphz}   & cosine of phase of a Beltrami field \\
+  \var{emxamz3}   & $\left<\left<\Ev\right>_{xy}\times\left<\Av\right>_{xy}
+                    \right>$ \quad($xy$-averaged
+                    mean field helicity flux) \\
+  \var{embmz}     & $\left<\left<\Ev\right>_{xy}\cdot\left<\Bv\right>_{xy}
+                    \right>$ \quad($xy$-averaged
+                    mean field helicity production ) \\
+  \var{ambmz}     & $\left<\left<\Av\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>$
+                    \quad (magnetic helicity of $xy$-averaged mean field) \\
+  \var{ambmzh}    & $\left<\left<\Av\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>$
+                    \quad (magnetic helicity of $xy$-averaged mean field, temp) \\
+  \var{ambmzn}    & $\left<\left<\Av\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>$
+                    \quad (magnetic helicity of $xy$-averaged mean field, north) \\
+  \var{ambmzs}    & $\left<\left<\Av\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>$
+                    \quad (magnetic helicity of $xy$-averaged mean field, south) \\
+  \var{jmbmz}     & $\left<\left<\Jv\right>_{xy}\cdot\left<\Bv\right>_{xy}
+                    \right>$ \quad(current helicity
+                    of $xy$-averaged mean field) \\
+  \var{kx_aa}     & $k_x$ \\
+  \var{kmz}       & $\left<\left<\Jv\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>/
+                    \left<\left<\Bv\right>_{xy}^2\right>$ \\
+  \var{bx2m}      & $\left< B_x^2 \right>$ \\
+  \var{by2m}      & $\left< B_y^2 \right>$ \\
+  \var{bz2m}      & $\left< B_z^2 \right>$ \\
+  \var{uxbm}      & $\left<\uv\times\Bv\right>\cdot\Bv_0/B_0^2$ \\
+  \var{jxbm}      & $\left<\jv\times\Bv\right>\cdot\Bv_0/B_0^2$ \\
+  \var{magfricmax} & Magneto-Frictional velocity $\left<\jv\times\Bv\right>\cdot\Bv^2$ \\
+  \var{b3b21m}    & $\left<B_3 B_{2,1} \right>$ \\
+  \var{b3b12m}    & $\left<B_3 B_{1,2} \right>$ \\
+  \var{b1b32m}    & $\left<B_1 B_{3,2} \right>$ \\
+  \var{b1b23m}    & $\left<B_1 B_{2,3} \right>$ \\
+  \var{b2b13m}    & $\left<B_2 B_{1,3} \right>$ \\
+  \var{b2b31m}    & $\left<B_2 B_{3,1} \right>$ \\
+  \var{uxbmx}     & $\left<(\uv\times\Bv)_x\right>$ \\
+  \var{uxbmy}     & $\left<(\uv\times\Bv)_y\right>$ \\
+  \var{uxbmz}     & $\left<(\uv\times\Bv)_z\right>$ \\
+  \var{jxbmx}     & $\left<(\jv\times\Bv)_x\right>$ \\
+  \var{jxbmy}     & $\left<(\jv\times\Bv)_y\right>$ \\
+  \var{jxbmz}     & $\left<(\jv\times\Bv)_z\right>$ \\
+  \var{examx}     & $\left<\Ev\times\Av\right>|_x$ \\
+  \var{examy}     & $\left<\Ev\times\Av\right>|_y$ \\
+  \var{examz}     & $\left<\Ev\times\Av\right>|_z$ \\
+  \var{exjmx}     & $\left<\Ev\times\Jv\right>|_x$ \\
+  \var{exjmy}     & $\left<\Ev\times\Jv\right>|_y$ \\
+  \var{exjmz}     & $\left<\Ev\times\Jv\right>|_z$ \\
+  \var{dexbmx}    & $\left<\nabla\times\Ev\times\Bv\right>|_x$ \\
+  \var{dexbmy}    & $\left<\nabla\times\Ev\times\Bv\right>|_y$ \\
+  \var{dexbmz}    & $\left<\nabla\times\Ev\times\Bv\right>|_z$ \\
+  \var{phibmx}    & $\left<\phi\Bv\right>|_x$ \\
+  \var{phibmy}    & $\left<\phi\Bv\right>|_y$ \\
+  \var{phibmz}    & $\left<\phi\Bv\right>|_z$ \\
+  \var{b2divum}   & $\left<\Bv^2\nabla\cdot\uv\right>$ \\
+  \var{ujxbm}     & $\left<\uv\cdot(\Jv\times\Bv)\right>$ \\
+  \var{jxbrmax}   & $\max(|\Jv\times\Bv/\rho|)$ \\
+  \var{jxbr2m}    & $\left<(\Jv\times\Bv/\rho)^2\right>$ \\
+  \var{bmxy_rms}  & $\sqrt{[\left<b_x\right>_z(x,y)]^2 +
+                    [\left<b_y\right>_z(x,y)]^2 +
+                    [\left<b_z\right>_z(x,y)]^2} $ \\
+  \var{etasmagm}  & Mean of Smagorinsky resistivity \\
+  \var{etasmagmin} & Min of Smagorinsky resistivity \\
+  \var{etasmagmax} & Max of Smagorinsky resistivity \\
+  \var{etavamax}  & Max of artificial resistivity
+                    $\eta\sim v_A$ \\
+  \var{etajmax}   & Max of artificial resistivity
+                    $\eta\sim J / \sqrt{\rho}$ \\
+  \var{etaj2max}  & Max of artificial resistivity
+                    $\eta\sim J^2 / \rho$ \\
+  \var{etajrhomax} & Max of artificial resistivity
+                    $\eta\sim J / \rho$ \\
+  \var{cosjbm}    & $\left<\Jv\cdot\Bv/(|\Jv|\,|\Bv|)\right>$ \\
+  \var{jparallelm} & Mean value of the component
+                    of J parallel to B \\
+  \var{jperpm}    & Mean value of the component
+                    of J perpendicular to B \\
+  \var{hjparallelm} & Mean value of the component
+                    of $J_{\rm hyper}$ parallel to B \\
+  \var{hjperpm}   & Mean value of the component
+                    of $J_{\rm hyper}$ perpendicular to B \\
+  \var{brmsx}     & $\left<\Bv^2\right>^{1/2}$ for
+                    the magnetic_xaver_range \\
+  \var{brmsz}     & $\left<\Bv^2\right>^{1/2}$ for
+                    the magnetic_zaver_range \\
+  \var{Exmxy}     & $\left<{\cal E}_x\right>_{z}$ \\
+  \var{Eymxy}     & $\left<{\cal E}_y\right>_{z}$ \\
+  \var{Ezmxy}     & $\left<{\cal E}_z\right>_{z}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{meanfield.f90}} \\
 \midrule
@@ -1697,6 +1971,7 @@
   \var{nusmagm}   & Mean value of Smagorinsky viscosity \\
   \var{nusmagmin} & Min value of Smagorinsky viscosity \\
   \var{nusmagmax} & Max value of Smagorinsky viscosity \\
+  \var{nusldmax}  & Max value of slope-limited viscosity \\
   \var{visc_heatm} & Mean value of viscous heating \\
   \var{qfviscm}   & $\left<\qv\cdot
                     \fv_{\rm visc}\right>$ \\
@@ -1707,6 +1982,7 @@
                     \quad(time step relative to
                     viscous time step;
                     see \S~\ref{time-step}) \\
+  \var{dtnusld}   & Slope-limited viscous time step \\
   \var{meshRemax} & Max mesh Reynolds number \\
   \var{Reshock}   & Mesh Reynolds number at shock \\
 %
