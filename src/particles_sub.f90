@@ -1060,6 +1060,8 @@ module Particles_sub
 !
       real :: weight
       real :: weight_x, weight_y, weight_z
+!      real, dimension(4) :: weightf=(/0.17934024,0.16847457,0.13967032,0.10218499/) ! sigma=4
+      real, dimension(4) :: weightf=(/0.284,0.222,0.106,0.0300/)  ! sigma=2
       integer, intent(in) :: k,ixx,iyy,izz,ix0,iy0,iz0
       real, dimension (mpar_loc,mparray), intent(in) :: fp
 !
@@ -1122,10 +1124,14 @@ module Particles_sub
         weight=1.
       endif
 !
+!  One should make the choise of particle mesh into a "case"
+!  JONAS: fix
+!
       if (lpart_box) then
-        weight = 1./5.
-        if (nygrid/=1) weight=weight/5.
-        if (nzgrid/=1) weight=weight/5.
+        weight = 1.
+        if (nxgrid/=1) weight=weight*weightf(abs(ixx-ix0)+1)
+        if (nygrid/=1) weight=weight*weightf(abs(iyy-iy0)+1)
+        if (nzgrid/=1) weight=weight*weightf(abs(izz-iz0)+1)
       endif
 !
     end subroutine find_interpolation_weight
