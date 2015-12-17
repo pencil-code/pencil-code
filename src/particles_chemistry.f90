@@ -1942,13 +1942,9 @@ module Particles_chemistry
 !
       if (t < startup_time) then
         startup_quench = (tanh(6*(t-startup_time/2)/(startup_time))+1.0)/2.
-        if (iter < 1) startup_quench = 0.
+        if (startup_quench .lt. 1e-15) startup_quench=1e-15
         K_k = K_k*startup_quench
       endif
-!      print*,'k_k   ', k_k
-!      print*,'B_k   ', B_k
-!      print*,'ER_k  ', ER_k
-!      print*,'fp(T) ',fp(:,iTp)
 !
     endsubroutine calc_K_k
 ! ******************************************************************************
