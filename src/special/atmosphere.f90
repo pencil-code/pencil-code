@@ -1439,7 +1439,7 @@ subroutine bc_satur_x(f,bc)
 !       real, dimension (:,:), allocatable :: bc_T_x_array
          real, dimension(66,64) :: bc_T_x_array, bc_u_x_array
           real, dimension(64), save :: xx_bc, yy_bc
-       real, dimension (66) :: tmp, LES_x
+       real, dimension (66) :: tmp, tmp2, LES_x
        real, dimension (60), save :: time
        real, dimension (64,64), save :: bc_T_x_adopt, bc_u_x_adopt
       integer :: i,j,ii,statio_code,vr, Npoints, i1,i2, io_code, stat
@@ -1447,7 +1447,7 @@ subroutine bc_satur_x(f,bc)
       real, save :: time_LES=0
       real :: lbc,frac, d_LESx,ttt
       logical, save :: lbc_file_x=.true.
-      logical, save :: lbc_T_x=.true., lbc_U_x=.false.
+      logical, save :: lbc_T_x=.true.!, lbc_U_x=.false.
  
     
 
@@ -1466,18 +1466,22 @@ subroutine bc_satur_x(f,bc)
       if (lroot) then
           print*,'opening T2.dat'
           open(9,file='T2.dat')
+          open(99,file='u2.dat')
 !          
 !   print*,'time_position',time_position
    
           read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
+          read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
             xx_bc(1:64)=tmp(3:66)
           do i = 1,60
 !          
           if (i==time_position) then  
             do  j= 1,64
               read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
+              read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
               do ii=1,66
                 bc_T_x_array(ii,j)=tmp(ii)
+                bc_u_x_array(ii,j)=tmp2(ii)
               enddo
                yy_bc(j)=bc_T_x_array(2,j)
 !               print*,j,bc_T_x_array(2,j)
@@ -1486,6 +1490,7 @@ subroutine bc_satur_x(f,bc)
           else
             do  j= 1,64
               read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
+              read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
               if (j==1) time(i)=tmp(1)
             enddo
           endif
@@ -1501,6 +1506,7 @@ subroutine bc_satur_x(f,bc)
  !           call stop_it("boundary file bc_file_x.dat has incorrect size")
             endif
           close(9)
+          close(99)
            print*,'closing file'
 !        endif
 
@@ -1536,6 +1542,7 @@ subroutine bc_satur_x(f,bc)
             do i=1,64
             do j=1,64
                 bc_T_x_adopt(i,j)=bc_T_x_array(i+2,j)
+                bc_u_x_adopt(i,j)=bc_u_x_array(i+2,j)
             enddo
             enddo
     !        
@@ -1615,13 +1622,13 @@ subroutine bc_satur_x(f,bc)
            do i=m1,m2
 !             f(l1,i,j,vr)=bc_u_x_adopt(i,1)*bc_T_x_adopt(i,1)/exp(f(l1,i,j,ilnTT))
 !            f(l1,i,j,vr)=f(l1,i,j,vr)*bc_T_x_adopt(i-3,j-3)/exp(f(l1,i,j,ilnTT))  
-             f(l1,i,j,vr)=1.*bc_T_x_adopt(i-3,j-3)/exp(f(l1,i,j,ilnTT))
+             f(l1,i,j,vr)=bc_u_x_adopt(i-3,j-3)*bc_T_x_adopt(i-3,j-3)/exp(f(l1,i,j,ilnTT))
            enddo
            enddo
-             f(l1,m1,:,vr)=0.
-             f(l1,m2,:,vr)=0.
-             f(l1,:,n1,vr)=0.
-             f(l1,:,n2,vr)=0.  
+!             f(l1,m1,:,vr)=0.
+!             f(l1,m2,:,vr)=0.
+!             f(l1,:,n1,vr)=0.
+!             f(l1,:,n2,vr)=0.  
            
   !         print*,f(l1,:,3,vr)
            
