@@ -1456,8 +1456,8 @@ subroutine bc_satur_x(f,bc)
 !        lbc_U_x=.true.
       endif  
 
-       print*,'t, time_LES, time_position', t,time_LES, time_position
-       print*,'lbc_T_x',lbc_T_x
+!       print*,'t, time_LES, time_position', t,time_LES, time_position
+!       print*,'lbc_T_x',lbc_T_x
       
 !      print*,'lbc_T_x',lbc_T_x, lroot
 
@@ -1507,7 +1507,7 @@ subroutine bc_satur_x(f,bc)
          ttt=time(1)
            do i = 1,60
 !            time(i)=(time(i)-ttt)
-            time(i)=(time(i)-ttt)/60.
+            time(i)=(time(i)-ttt)
 !            print*,i, time(i)
           enddo
 !
@@ -1539,7 +1539,7 @@ subroutine bc_satur_x(f,bc)
             enddo
             enddo
     !        
-    !        print*,'proverka1',bc_T_x_adopt(1,1),bc_T_x_adopt(1,16),bc_T_x_adopt(16,1),bc_T_x_adopt(16,16)
+ !           print*,'proverka1',bc_T_x_adopt(1,1),bc_T_x_adopt(1,32),bc_T_x_adopt(32,1),bc_T_x_adopt(32,32)
           else
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!notready!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!          
             do i=1,my
@@ -1592,10 +1592,12 @@ subroutine bc_satur_x(f,bc)
   !          endif
          enddo
           enddo
-            f(l1,m1,:,vr)=alog(291.)
-             f(l1,m2,:,vr)=alog(291.)
-             f(l1,:,n1,vr)=alog(291.)
-             f(l1,:,n2,vr)=alog(291.)
+          
+          
+    !        f(l1,m1,:,vr)=alog(291.)
+    !         f(l1,m2,:,vr)=alog(291.)
+    !         f(l1,:,n1,vr)=alog(291.)
+    !         f(l1,:,n2,vr)=alog(291.)
 
  !         do i=m1,m2
  !           f(l1,i,:,vr)=alog(bc_T_x_adopt(i,1)*bc_u_x_adopt(i,1)/f(l1,i,:,iux))
@@ -1611,7 +1613,9 @@ subroutine bc_satur_x(f,bc)
           elseif (vr==iux) then
            do j=n1,n2
            do i=m1,m2
-             f(l1,i,j,vr)=bc_u_x_adopt(i,1)*bc_T_x_adopt(i,1)/exp(f(l1,i,j,ilnTT))
+!             f(l1,i,j,vr)=bc_u_x_adopt(i,1)*bc_T_x_adopt(i,1)/exp(f(l1,i,j,ilnTT))
+!            f(l1,i,j,vr)=f(l1,i,j,vr)*bc_T_x_adopt(i-3,j-3)/exp(f(l1,i,j,ilnTT))  
+             f(l1,i,j,vr)=1.*bc_T_x_adopt(i-3,j-3)/exp(f(l1,i,j,ilnTT))
            enddo
            enddo
              f(l1,m1,:,vr)=0.
