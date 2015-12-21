@@ -1442,7 +1442,7 @@ subroutine bc_satur_x(f,bc)
        real, dimension (66) :: tmp, tmp2, LES_x
        real, dimension (60), save :: time
        real, dimension (64,64), save :: bc_T_x_adopt, bc_u_x_adopt
-      integer :: i,j,ii,statio_code,vr, Npoints, i1,i2, io_code, stat
+      integer :: i,j,ii,statio_code,vr, Npoints, i1,i2, io_code, stat,mm1,mm2
       integer,save :: time_position=1
       real, save :: time_LES=0
       real :: lbc,frac, d_LESx,ttt
@@ -1572,80 +1572,44 @@ subroutine bc_satur_x(f,bc)
            time_LES=time(time_position)
       endif
       endif
-          
-          
-!      print*,'lbc_T_x1',lbc_T_x,'lroot',lroot
-!      print*,'lbc_T_x2',lbc_T_x
-
-      vr=bc%ivar
-!      value1=bc%value1
-!      value2=bc%value2
-!      
-!      iszx=size(f,1)
-      
 !
-!  x - Udrift_bc*t = dx * (ix - Udrift_bc*t/dx)
+      vr=bc%ivar
 !
       if (bc%location==iBC_X_BOT) then
         if (vr==ilnTT) then
-   !       print*,bc_T_x_adopt(:,1)
-   !       print*,'test',bc_T_x_adopt(1,1),bc_T_x_adopt(16,1),bc_T_x_adopt(32,1), y(m1),y(m2),m1,m2
-
+!
+!       print*,bc_T_x_adopt(:,1)
+!       print*,'test',bc_T_x_adopt(1,1),bc_T_x_adopt(16,1),bc_T_x_adopt(32,1), y(m1),y(m2),m1,m2
+!
           do j=n1,n2
           do i=m1,m2
             f(l1,i,j,vr)=alog(bc_T_x_adopt(i-3,j-3))
-  !          if ( (j==n1))  then
-  !            print*,'i ',i,' m1 ',m1,'adopt',bc_T_x_adopt(i-3,j-3) !, y(i)
-  !          endif
-         enddo
           enddo
-          
-          
-    !        f(l1,m1,:,vr)=alog(291.)
-    !         f(l1,m2,:,vr)=alog(291.)
-    !         f(l1,:,n1,vr)=alog(291.)
-    !         f(l1,:,n2,vr)=alog(291.)
-
- !         do i=m1,m2
- !           f(l1,i,:,vr)=alog(bc_T_x_adopt(i,1)*bc_u_x_adopt(i,1)/f(l1,i,:,iux))
- !         enddo
-      
- !     print*,maxval(bc_T_x_adopt(m1,1)*bc_u_x_adopt(m1,1)/f(l1,m1,:,iux)),minval(bc_T_x_adopt(m1,1)*bc_u_x_adopt(m1,1)/f(l1,m1,:,iux))
-!          do i=1,nghost
-            do i=1,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
-!         enddo
-!      
-!   print*,  exp(f(l1,m1:m2,3,vr)), l1,m1 
-   
-          elseif (vr==iux) then
+          enddo
+!           
+          do i=1,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
+!   
+        elseif (vr==iux) then
+           
+           mm1=4
+           mm2=mm1+(m2-m1)
+           do while (xx_bc(mm1)<x(m1))
+             mm1=mm1+(m2-m1)
+             mm2=mm1+(m2-m1)
+           enddo 
+              
            do j=n1,n2
-           do i=m1,m2
-!             f(l1,i,j,vr)=bc_u_x_adopt(i,1)*bc_T_x_adopt(i,1)/exp(f(l1,i,j,ilnTT))
-!            f(l1,i,j,vr)=f(l1,i,j,vr)*bc_T_x_adopt(i-3,j-3)/exp(f(l1,i,j,ilnTT))  
+           do i=mm1,mm2
              f(l1,i,j,vr)=bc_u_x_adopt(i-3,j-3)*bc_T_x_adopt(i-3,j-3)/exp(f(l1,i,j,ilnTT))
            enddo
            enddo
-!             f(l1,m1,:,vr)=0.
-!             f(l1,m2,:,vr)=0.
-!             f(l1,:,n1,vr)=0.
-!             f(l1,:,n2,vr)=0.  
-           
-  !         print*,f(l1,:,3,vr)
-           
-            do i=1,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
-          endif
+!           
+           do i=1,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
+        endif
       elseif (bc%location==iBC_X_TOP) then
 !
       else
-!        print*, "bc_satur_x: ", bc%location, " should be `top(", &
       endif
-!      deallocate(bc_file_x_array)
-!     deallocate(bc_T_x_array)
-!        print*,'closing bc_file_x.dat'
-!        
-!
-  
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !      do jjj=1,my
 !      do kkk=1,mz
