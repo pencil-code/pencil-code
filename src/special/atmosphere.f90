@@ -1466,7 +1466,7 @@ subroutine bc_satur_x(f,bc)
       if (lroot) then
           print*,'opening T2.dat'
           open(9,file='T2.dat')
-          open(99,file='u2.dat')
+          open(99,file='w2.dat')
 !          
 !   print*,'time_position',time_position
    
@@ -1481,7 +1481,7 @@ subroutine bc_satur_x(f,bc)
               read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
               do ii=1,66
                 bc_T_x_array(ii,j)=tmp(ii)
-                bc_u_x_array(ii,j)=tmp2(ii)
+                bc_u_x_array(ii,j)=tmp2(ii)*100.
               enddo
                yy_bc(j)=bc_T_x_array(2,j)
 !               print*,j,bc_T_x_array(2,j)
