@@ -46,6 +46,7 @@ module General
   public :: backskip_to_time
   public :: ranges_dimensional
   public :: staggered_mean_scal, staggered_mean_vec
+  public :: staggered_max_scal, staggered_max_vec
   public :: directory_names_std
   public :: touch_file
   public :: var_is_vec
@@ -3780,6 +3781,156 @@ module General
       endif
 
     endsubroutine staggered_mean_scal
+!***********************************************************************
+    subroutine staggered_max_vec(f,k,jmax,weight)
+!
+!   Calculates max values of modulus of a vector quantity in the centre of a grid cell.
+!
+!   22-dec-15/JW: coded, adapted from staggered_mean_vec
+!
+      use Cdata, only: dimensionality
+
+      real, dimension (mx,my,mz,mfarray), intent(inout):: f
+      integer,                            intent(in)   :: k,jmax
+      real,                               intent(in)   :: weight
+      integer                                          :: ll,mm,nn
+!
+      if (dimensionality==3) then 
+!        
+        do ll=2,mx-2; do mm=2,my-2; do nn=2,mz-2 
+          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+          +weight*max(maxval(abs(f(ll,mm,nn,      k:k+2))) &
+                     ,maxval(abs(f(ll,mm,nn+1,    k:k+2))) &
+                     ,maxval(abs(f(ll,mm+1,nn,    k:k+2))) &
+                     ,maxval(abs(f(ll,mm+1,nn+1,  k:k+2))) &
+                     ,maxval(abs(f(ll+1,mm,nn,    k:k+2))) &
+                     ,maxval(abs(f(ll+1,mm,nn+1,  k:k+2))) &
+                     ,maxval(abs(f(ll+1,mm+1,nn,  k:k+2))) &
+                     ,maxval(abs(f(ll+1,mm+1,nn+1,k:k+2))))
+        enddo; enddo; enddo
+
+      elseif (dimensionality==1) then 
+        if (nxgrid/=1) then
+          do ll=2,mx-2; do mm=m1,m2; do nn=n1,n2 
+            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+            +weight*max(maxval(abs(f(ll,mm,nn,  k:k+2))) &
+                       ,maxval(abs(f(ll+1,mm,nn,k:k+2))))
+          enddo; enddo; enddo
+        elseif (nygrid/=1) then
+          do ll=l1,l2; do mm=2,my-2; do nn=n1,n2 
+            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+            +weight*max(maxval(abs(f(ll,mm,nn,  k:k+2))) &
+                       ,maxval(abs(f(ll,mm+1,nn,k:k+2))))
+          enddo; enddo; enddo
+        else
+          do ll=l1,l2; do mm=m1,m2; do nn=2,mz-2 
+            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+            +weight*max(maxval(abs(f(ll,mm,nn,  k:k+2))) &
+                       ,maxval(abs(f(ll+1,mm,nn,k:k+2))))
+          enddo; enddo; enddo          
+        endif
+      elseif (nzgrid==1) then   !  x-y
+        do ll=2,mx-2; do mm=2,my-2; do nn=n1,n2 
+          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+          +weight*max(maxval(abs(f(ll,mm,nn,    k:k+2))) &
+                     ,maxval(abs(f(ll,mm+1,nn,  k:k+2))) &
+                     ,maxval(abs(f(ll+1,mm,nn,  k:k+2))) &                     
+                     ,maxval(abs(f(ll+1,mm+1,nn,k:k+2))))
+        enddo; enddo; enddo
+      elseif (nygrid==1) then   !  x-z
+         do ll=2,mx-2; do mm=m1,m2; do nn=2,mz-2 
+          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+          +weight*max(maxval(abs(f(ll,mm,nn,    k:k+2))) &
+                     ,maxval(abs(f(ll,mm,nn+1,  k:k+2))) &
+                     ,maxval(abs(f(ll+1,mm,nn,  k:k+2))) &                     
+                     ,maxval(abs(f(ll+1,mm,nn+1,k:k+2))))
+        enddo; enddo; enddo
+      else                      !  y-z
+        do ll=l1,l2; do mm=2,my-2; do nn=2,mz-2 
+          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+          +weight*max(maxval(abs(f(ll,mm,nn,    k:k+2))) &
+                     ,maxval(abs(f(ll,mm,nn+1,  k:k+2))) &
+                     ,maxval(abs(f(ll,mm+1,nn,  k:k+2))) &                     
+                     ,maxval(abs(f(ll,mm+1,nn+1,k:k+2))))
+        enddo; enddo; enddo
+      endif
+
+    endsubroutine staggered_max_vec
+!***********************************************************************
+    subroutine staggered_max_scal(f,k,jmax,weight)
+!
+!   Calculates max values of modulus of a scalar quantity in the centre of a grid cell.
+!
+!   22-dec-15/JW: coded, adapted from staggered_mean_scal
+!
+      use Cdata, only: dimensionality
+
+      real, dimension (mx,my,mz,mfarray), intent(inout):: f
+      integer,                            intent(in)   :: k,jmax
+      real,                               intent(in)   :: weight
+      integer                                          :: ll,mm,nn
+!
+      if (dimensionality==3) then 
+!        
+        do ll=2,mx-2; do mm=2,my-2; do nn=2,mz-2 
+          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+          +weight*max(abs(f(ll,mm,nn,      k)) &
+                     ,abs(f(ll,mm,nn+1,    k)) &
+                     ,abs(f(ll,mm+1,nn,    k)) &
+                     ,abs(f(ll,mm+1,nn+1,  k)) &
+                     ,abs(f(ll+1,mm,nn,    k)) &
+                     ,abs(f(ll+1,mm,nn+1,  k)) &
+                     ,abs(f(ll+1,mm+1,nn,  k)) &
+                     ,abs(f(ll+1,mm+1,nn+1,k)))
+        enddo; enddo; enddo
+
+      elseif (dimensionality==1) then 
+        if (nxgrid/=1) then
+          do ll=2,mx-2; do mm=m1,m2; do nn=n1,n2 
+            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+            +weight*max(abs(f(ll,mm,nn,  k)) &
+                       ,abs(f(ll+1,mm,nn,k)))
+          enddo; enddo; enddo
+        elseif (nygrid/=1) then
+          do ll=l1,l2; do mm=2,my-2; do nn=n1,n2 
+            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+            +weight*max(abs(f(ll,mm,nn,  k)) &
+                       ,abs(f(ll,mm+1,nn,k)))
+          enddo; enddo; enddo
+        else
+          do ll=l1,l2; do mm=m1,m2; do nn=2,mz-2 
+            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+            +weight*max(abs(f(ll,mm,nn,  k)) &
+                       ,abs(f(ll+1,mm,nn,k)))
+          enddo; enddo; enddo
+        endif
+      elseif (nzgrid==1) then   !  x-y
+        do ll=2,mx-2; do mm=2,my-2; do nn=n1,n2 
+          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+          +weight*max(abs(f(ll,mm,nn,    k)) &
+                     ,abs(f(ll,mm+1,nn,  k)) &
+                     ,abs(f(ll+1,mm,nn,  k)) &                     
+                     ,abs(f(ll+1,mm+1,nn,k)))
+        enddo; enddo; enddo
+      elseif (nygrid==1) then   !  x-z
+         do ll=2,mx-2; do mm=m1,m2; do nn=2,mz-2 
+          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+          +weight*max(abs(f(ll,mm,nn,    k)) &
+                     ,abs(f(ll,mm,nn+1,  k)) &
+                     ,abs(f(ll+1,mm,nn,  k)) &                     
+                     ,abs(f(ll+1,mm,nn+1,k)))
+        enddo; enddo; enddo
+      else                      !  y-z
+        do ll=l1,l2; do mm=2,my-2; do nn=2,mz-2 
+          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+          +weight*max(abs(f(ll,mm,nn,    k)) &
+                     ,abs(f(ll,mm,nn+1,  k)) &
+                     ,abs(f(ll,mm+1,nn,  k)) &                     
+                     ,abs(f(ll,mm+1,nn+1,k)))
+        enddo; enddo; enddo
+      endif
+
+    endsubroutine staggered_max_scal
 !***********************************************************************
     subroutine directory_names_std(lproc)
 !
