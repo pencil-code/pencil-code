@@ -200,7 +200,8 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ; We know from param whether we have a Yin-Yang grid.
 ;
   default, yinyang, 0
-  if (param.lyinyang) then yinyang=1
+  if tag_exists(param,'LYINYANG') then $
+    if (param.lyinyang) then yinyang=1
 ;
   if yinyang then $
     print, 'ATTENTION: This is a Yin-Yang grid run. Data are read in without any transformations!'
