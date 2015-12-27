@@ -40,6 +40,7 @@ common cdat_coords, coord_system
 default, quiet, 0
 default, proc, 0
 default, varfile, 'var.dat'
+default, lperi, 1
 
 ;
 ;  Read the grid, dimensions and startup parameters
