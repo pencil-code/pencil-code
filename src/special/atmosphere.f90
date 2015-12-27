@@ -735,10 +735,16 @@ module Special
 !             call bc_satur_x(f,bc)
          endselect
          bc%done=.true.
-         case ('fff')
+         case ('ff1')
          select case (bc%location)
          case (iBC_X_BOT)
            call bc_file_x_special(f,bc)
+!             call bc_satur_x(f,bc)
+         endselect
+         case ('ff2')
+         select case (bc%location)
+         case (iBC_X_BOT)
+           call bc_file_z_special(f,bc)
 !             call bc_satur_x(f,bc)
          endselect
          bc%done=.true.
@@ -1435,35 +1441,39 @@ subroutine bc_satur_x(f,bc)
       real, dimension (1000, 1000) :: TTx
 !
  !     real, dimension (:,:,:,:), allocatable :: bc_file_x_array
-       real, dimension (:,:,:,:), allocatable :: bc_file_x_array
+!       real, dimension (:,:,:,:), allocatable :: bc_file_x_array
 !       real, dimension (:,:), allocatable :: bc_T_x_array
          real, dimension(66,64) :: bc_T_x_array, bc_u_x_array
           real, dimension(64), save :: xx_bc, yy_bc
        real, dimension (66) :: tmp, tmp2, LES_x
        real, dimension (60), save :: time
        real, dimension (64,64), save :: bc_T_x_adopt, bc_u_x_adopt
-      integer :: i,j,ii,statio_code,vr, Npoints, i1,i2, io_code, stat,mm1,mm2
+      integer :: i,j,ii,statio_code,vr, Npoints, i1,i2, io_code, stat
+      integer ::  mm1,mm2,nn1,nn2
       integer,save :: time_position=1
       real, save :: time_LES=0
       real :: lbc,frac, d_LESx,ttt
       logical, save :: lbc_file_x=.true.
       logical, save :: lbc_T_x=.true.!, lbc_U_x=.false.
- 
-    
-
+!
       if (time_LES<=t) then
         lbc_T_x=.true.
-!        lbc_U_x=.true.
       endif  
-
+!
 !       print*,'t, time_LES, time_position', t,time_LES, time_position
 !       print*,'lbc_T_x',lbc_T_x
-      
 !      print*,'lbc_T_x',lbc_T_x, lroot
-
-
+!
       if (lbc_T_x) then
-      if (lroot) then
+!      if (lroot) then
+!!-------------------------------------
+!! it should be read from file
+!! but now the grid is not regular
+         do i = 1,64
+           xx_bc(i)=50.*(i-1)*100.
+           yy_bc(i)=50.*(i-1)*100.
+         enddo 
+!-------------------------------------
           print*,'opening T2.dat'
           open(9,file='T2.dat')
           open(99,file='w2.dat')
@@ -1472,7 +1482,7 @@ subroutine bc_satur_x(f,bc)
    
           read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
           read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
-            xx_bc(1:64)=tmp(3:66)
+!            xx_bc(1:64)=tmp(3:66)
           do i = 1,60
 !          
           if (i==time_position) then  
@@ -1483,7 +1493,7 @@ subroutine bc_satur_x(f,bc)
                 bc_T_x_array(ii,j)=tmp(ii)
                 bc_u_x_array(ii,j)=tmp2(ii)*100.
               enddo
-               yy_bc(j)=bc_T_x_array(2,j)
+!               yy_bc(j)=bc_T_x_array(2,j)
 !               print*,j,bc_T_x_array(2,j)
             enddo
             time(i)=bc_T_x_array(1,1)
@@ -1571,7 +1581,7 @@ subroutine bc_satur_x(f,bc)
            time_position=time_position+1
            time_LES=time(time_position)
       endif
-      endif
+!      endif
 !
       vr=bc%ivar
 !
@@ -1590,19 +1600,25 @@ subroutine bc_satur_x(f,bc)
           do i=1,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
 !   
         elseif (vr==iux) then
-           
-           mm1=4
-           mm2=mm1+(m2-m1)
-           do while (xx_bc(mm1)<x(m1))
-             mm1=mm1+(m2-m1)
-             mm2=mm1+(m2-m1)
-           enddo 
-              
+
+!print*,'bab'
+           mm1=(y(m1)-xyz0(2))/dy+1
+           mm2=(y(m2)-xyz0(2))/dy+1
+           nn1=(z(n1)-xyz0(3))/dz+1
+           nn2=(z(n2)-xyz0(3))/dz+1
+
+!       print*,'mm1=',mm1,'mm2=',mm2,'nn1=',nn1,'nn2=',nn2
+
            do j=n1,n2
-           do i=mm1,mm2
-             f(l1,i,j,vr)=bc_u_x_adopt(i-3,j-3)*bc_T_x_adopt(i-3,j-3)/exp(f(l1,i,j,ilnTT))
+             i2=nn1+j-4
+           do i=m1,m2
+             i1=mm1+i-4
+             f(l1,i,j,vr)=bc_u_x_adopt(i1,i2)*bc_T_x_adopt(i1,i2)/exp(f(l1,i,j,ilnTT))
+ !             f(l1,i,j,vr)=bc_T_x_adopt(i1,i2)
            enddo
            enddo
+
+!     print*, bc_T_x_adopt(mm1,nn1),bc_T_x_adopt(mm2,nn1)
 !           
            do i=1,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
         endif
