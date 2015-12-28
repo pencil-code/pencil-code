@@ -78,7 +78,7 @@ module EquationOfState
 !
 !
 !NILS: Why do we spend a lot of memory allocating these variables here????
- real, dimension (mx,my,mz), SAVE :: mu1_full, pp_full, rho_full, TT_full
+ real, dimension (mx,my,mz), SAVE :: mu1_full, pp_full
 !
   namelist /eos_init_pars/  mu, cp, cs0, rho0, gamma, error_cp
 !
@@ -650,18 +650,17 @@ module EquationOfState
 !
     endsubroutine ioncalc
 !***********************************************************************
-   subroutine getdensity(f,EE,TT,yH,rho_full_tmp)
+   subroutine getdensity(f,EE,TT,yH,rho_full)
 !
      real, dimension (mx,my,mz,mfarray) :: f
-     real, dimension (mx,my,mz), intent(out) :: rho_full_tmp
+     real, dimension (mx,my,mz), intent(out) :: rho_full
      real, intent(in), optional :: EE,TT,yH
 !
       if (ldensity_nolog) then
-        rho_full_tmp=f(:,:,:,ilnrho)
+        rho_full=f(:,:,:,ilnrho)
       else
-        rho_full_tmp=exp(f(:,:,:,ilnrho))
+        rho_full=exp(f(:,:,:,ilnrho))
       endif
-      rho_full=rho_full_tmp
 !
       call keep_compiler_quiet(present(yH))
       call keep_compiler_quiet(present(EE))
@@ -669,33 +668,26 @@ module EquationOfState
 !
    endsubroutine getdensity
 !***********************************************************************
-   subroutine gettemperature(f,TT_full_tmp)
+   subroutine gettemperature(f,TT_full)
 !
      real, dimension (mx,my,mz,mfarray) :: f
-     real, dimension (mx,my,mz), intent(out) :: TT_full_tmp
+     real, dimension (mx,my,mz), intent(out) :: TT_full
 !
       if (ltemperature_nolog) then
-        TT_full_tmp=f(:,:,:,ilnTT)
+        TT_full=f(:,:,:,ilnTT)
       else
-        TT_full_tmp=exp(f(:,:,:,ilnTT))
+        TT_full=exp(f(:,:,:,ilnTT))
       endif
-        TT_full=TT_full_tmp
 !
    endsubroutine gettemperature
 !***********************************************************************
-  subroutine getpressure(pp_full_tmp)
+  subroutine getpressure(pp,TT,rho,mu1)
 !
-     real, dimension (mx,my,mz), intent(out) :: pp_full_tmp
+     real, dimension (nx), intent(out) :: pp
+     real, dimension (nx), intent(in) :: TT, rho, mu1
      integer :: j2,j3
 !
-       do j2=mm1,mm2
-       do j3=nn1,nn2
-         pp_full_tmp(:,j2,j3)=Rgas*mu1_full(:,j2,j3) &
-                   *rho_full(:,j2,j3)*TT_full(:,j2,j3)
-       enddo
-       enddo
-!
-       pp_full=pp_full_tmp
+     pp=Rgas*mu1*rho*TT
 !
    endsubroutine getpressure
 !***********************************************************************

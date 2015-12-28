@@ -2313,7 +2313,12 @@ module Chemistry
             endif
           enddo
 !
-          call  getpressure(pp_full,TT_full,rho_full)
+          do m=m1,m2
+            do n=n1,n2
+              call  getpressure(pp_full(l1:l2,m,n),TT_full(l1:l2,m,n),&
+                  rho_full(l1:l2,m,n),mu1_full(l1:l2,m,n))
+            enddo
+          enddo
 !
 !  Specific heat at constant pressure
 !

@@ -2314,7 +2314,7 @@ module Dustdensity
 !  But only if not lsemi_chemistry, because then we run Natalia's stuff.
 !
       if (.not.lsemi_chemistry) then
-        call get_mfluxcond(f,mfluxcond,p%rho,p%TT1,cc_tmp)
+        call get_mfluxcond(f,mfluxcond,p%rho,p%TT1,cc_tmp,p)
 !
 !  upwinding, first for radius bins
 !
@@ -2429,7 +2429,7 @@ module Dustdensity
 !
 ! NILS: I don't undestand where cc_tmp comes from - it seems to me that
 ! NILS: it is not defined anywhere.....
-        call get_mfluxcond(f,mfluxcond,p%rho,p%TT1,cc_tmp)
+        call get_mfluxcond(f,mfluxcond,p%rho,p%TT1,cc_tmp,p)
 !
 !  Loop over pencil
 !
@@ -2470,7 +2470,7 @@ module Dustdensity
 !
     endsubroutine dust_condensation_lmdvar
 !***********************************************************************
-    subroutine get_mfluxcond(f,mfluxcond,rho,TT1,cc)
+    subroutine get_mfluxcond(f,mfluxcond,rho,TT1,cc,p)
 !
 !  Calculate mass flux of condensing monomers
 !
@@ -2478,10 +2478,10 @@ module Dustdensity
       use EquationOfState, only: getmu,eoscalc,ilnrho_ss,getpressure
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: pp_full
       real, dimension (nx) :: mfluxcond,rho,TT1,cc,pp,ppmon,ppsat,vth
       real, dimension (nx) :: supsatratio1
       real, save :: mu
+      type (pencil_case) :: p
 !
       select case (dust_chemistry)
 !
@@ -2501,8 +2501,8 @@ module Dustdensity
       case ('aerosol')
 !        if (it == 1) call getmu_array(f,mu1_array)
 !        call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),pp=pp)
-        call getpressure(pp_full)
-        ppmon = pp_full(l1:l2,m,n)
+        if (it == 1) call getmu(f,mu)
+        call getpressure(ppmon,1./TT1,rho,p%mu1)
         ppsat = 6.035e12*exp(-5938*TT1)
         vth = (3*k_B/(TT1*mmon))**0.5
         supsatratio1 = ppsat/ppmon

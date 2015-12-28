@@ -1108,13 +1108,19 @@ module EquationOfState
 !
    endsubroutine gettemperature
 !***********************************************************************
-   subroutine getpressure(pp_tmp)
+    subroutine getpressure(pp_tmp,TT_tmp,rho_tmp,mu1_tmp)
 !
-     real, dimension (mx,my,mz), intent(out) :: pp_tmp
+     real, dimension (nx), intent(out) :: pp_tmp
+     real, dimension (nx), intent(in)  :: TT_tmp,rho_tmp,mu1_tmp
+!
+     call fatal_error('getpressure','Should not be called with noeos.')
 !
      call keep_compiler_quiet(pp_tmp)
+     call keep_compiler_quiet(TT_tmp)
+     call keep_compiler_quiet(rho_tmp)
+     call keep_compiler_quiet(mu1_tmp)
 !
-   endsubroutine getpressure
+    endsubroutine getpressure
 !***********************************************************************
     subroutine get_cp1(cp1_)
 !
