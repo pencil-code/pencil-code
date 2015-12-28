@@ -2347,7 +2347,8 @@ include 'NSCBC.h'
           T_1_z(:,:)=-dmom3_dz(m1:m2,n1:n2)/rho0(m1:m2,n1:n2)
           T_2_y(:,:)=-f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,1,2)
           T_2_z(:,:)=-f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,1,3) !&
-                !   -nu_full(lll,m1:m2,n1:n2)*(d2u1_dy2+d2u1_dz2)
+                !   -nu_full(lll,m1:m2,n1:n2)*(d2u1_dy2+d2u1_dz2) 
+!NILS: nu_full has now been made an auxilliary: f(:,:,:,ivisc)
           T_3_y(:,:)=-f(lll,m1:m2,n1:n2,iuy)*dui_dxj(:,:,2,2) &
                      -grad_pp(:,:,2)/rho0(m1:m2,n1:n2)
          T_3_z(:,:)=-f(lll,m1:m2,n1:n2,iuz)*dui_dxj(:,:,2,3)

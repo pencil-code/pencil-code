@@ -8,7 +8,7 @@
 ! CPARAM logical, parameter :: lchemistry = .true.
 !
 ! MVAR CONTRIBUTION 1
-! MAUX CONTRIBUTION 0
+! MAUX CONTRIBUTION 1
 !
 ! PENCILS PROVIDED cv; cv1; cp; cp1; glncp(3);  gXXk(3,nchemspec); gYYk(3,nchemspec)
 ! PENCILS PROVIDED nu; gradnu(3);
@@ -36,7 +36,7 @@ module Chemistry
   include 'chemistry.h'
 !
      real :: Rgas, Rgas_unit_sys=1.
-     real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, nu_full, pp_full
+     real, dimension (mx,my,mz) :: cp_full,cv_full,mu1_full, pp_full
      real, dimension (mx,my,mz) :: lambda_full, rho_full, TT_full
      real, dimension (mx,my,mz,nchemspec) :: cv_R_spec_full
  !real, dimension (mx,my,mz) ::  e_int_full,cp_R_spec
@@ -377,6 +377,18 @@ module Chemistry
       do k=1,nchemspec
         ichemspec(k)=ichemspec_tmp+k-1
       enddo
+!
+!  Register viscosity
+!
+      call farray_register_auxiliary('viscosity',iviscosity,communicated=.false.)
+!
+!  Writing files for use with IDL
+!
+      if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=',viscosity $'
+      if (naux+naux_com == maux+maux_com) aux_var(aux_count)=',viscosity'
+      aux_count=aux_count+1
+      if (lroot) write(4,*) ',visocsity $'
+      if (lroot) write(15,*) 'viscosity = fltarr(mx,my,mz)*one'
 !
 !  Read species to be used from chem.inp (if the file exists).
 !
@@ -897,13 +909,13 @@ module Chemistry
           if (visc_const<impossible) then
            p%nu=visc_const
           else
-           p%nu=nu_full(l1:l2,m,n)
+           p%nu=f(l1:l2,m,n,iviscosity)
           endif
            if (lpencil(i_gradnu)) then
              if (visc_const<impossible) then
                p%gradnu=0.
              else
-               call grad(nu_full,p%gradnu)
+               call grad(f(:,:,:,iviscosity),p%gradnu)
              endif
            endif
          endif
@@ -2255,7 +2267,6 @@ module Chemistry
       real, dimension (mx) ::  tmp_sum,tmp_sum2, nu_dyn,nuk_nuj,Phi
       real, dimension (mx) :: cp_R_spec,T_loc,T_loc_2,T_loc_3,T_loc_4
 !
-      intent(in) :: f
       integer :: k,j,j2,j3
       real :: T_up, T_mid, T_low
       real :: mk_mj
@@ -2302,6 +2313,7 @@ module Chemistry
             endif
           enddo
 !
+!          call  getpressure(pp_full,TT_full,rho_full)
           call  getpressure(pp_full)
 !
 !  Specific heat at constant pressure
@@ -2399,7 +2411,7 @@ module Chemistry
         do j2=mm1,mm2
 !
           if  (lone_spec) then
-            nu_full(:,j2,j3)=species_viscosity(:,j2,j3,1)/rho_full(:,j2,j3)
+            f(:,j2,j3,iviscosity)=species_viscosity(:,j2,j3,1)/rho_full(:,j2,j3)
           else
             nu_dyn=0.
             do k=1,nchemspec
@@ -2414,7 +2426,7 @@ module Chemistry
                 nu_dyn=nu_dyn + XX_full(:,j2,j3,k)*species_viscosity(:,j2,j3,k)/tmp_sum2
               endif
             enddo
-            nu_full(:,j2,j3)=nu_dyn/rho_full(:,j2,j3)
+            f(:,j2,j3,iviscosity)=nu_dyn/rho_full(:,j2,j3)
           endif
 !
         enddo
@@ -3147,7 +3159,7 @@ module Chemistry
 !
         if (idiag_lambdam/=0) call sum_mn_name(lambda_full(l1:l2,m,n),&
                              idiag_lambdam)
-        if (idiag_num/=0) call sum_mn_name(nu_full(l1:l2,m,n),&
+        if (idiag_num/=0) call sum_mn_name(f(l1:l2,m,n,iviscosity),&
                              idiag_num)
         if (idiag_diff1m/=0) call sum_mn_name(diff_full(l1:l2,m,n,i1),&
                              idiag_diff1m)
