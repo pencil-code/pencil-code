@@ -923,9 +923,6 @@ module Viscosity
         lpenc_requested(i_uij) = .true.
         lpenc_requested(i_del2u) = .true.
       endif shksmp
-      if (lvisc_slope_limited) then
-        lpenc_requested(i_del2u)=.true.
-      endif
       if (llambda_effect) then
         lpenc_requested(i_uij)=.true.
         lpenc_requested(i_glnrho)=.true.
