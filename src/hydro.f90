@@ -86,7 +86,7 @@ module Hydro
   real, dimension(nx) :: prof_om
   real, dimension(2) :: hydro_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: hydro_zaver_range=(/-max_real,max_real/)
-  real :: u_out_kep=0.0, velocity_ceiling=-1.0, w_sld_char=1.0
+  real :: u_out_kep=0.0, velocity_ceiling=-1.0, w_sldchar_hyd=1.0
   real :: mu_omega=0., gap=0., r_omega=0., w_omega=0.
   integer :: nb_rings=0
   integer :: neddy=0
@@ -214,7 +214,7 @@ module Hydro
       hydro_xaver_range, Ra, Pr, llinearized_hydro, lremove_mean_angmom, &
       lpropagate_borderuu, hydro_zaver_range, index_rSH, &
       uzjet, ydampint, ydampext, mean_momentum, lshear_in_coriolis, &
-      w_sld_char
+      w_sldchar_hyd
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -2376,6 +2376,7 @@ module Hydro
     subroutine update_char_vel_hydro(f)
 !
 !   25-sep-15/MR+joern: coded
+!   23-dec-15/joern: changed to staggered_max_vec
 !
 !   calculation of characteristic velocity
 !   for slope limited diffusion
@@ -2386,7 +2387,8 @@ module Hydro
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
 !
-      if (lslope_limit_diff) call staggered_max_vec(f,iux,iFF_char_c,w_sld_char)
+!      if (lslope_limit_diff) call staggered_mean_vec(f,iux,iFF_char_c,weight)
+      if (lslope_limit_diff) call staggered_max_vec(f,iux,iFF_char_c,w_sldchar_hyd)
 !
     endsubroutine update_char_vel_hydro
 !***********************************************************************
