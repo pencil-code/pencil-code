@@ -46,7 +46,7 @@ module Energy
   real :: Kgperp=0.0, Kgpara=0.0, tdown=0.0, allp=2.0, TT_powerlaw=1.0
   real :: ss_left=1.0, ss_right=1.0
   real :: ss0=0.0, khor_ss=1.0, ss_const=0.0
-  real :: pp_const=0.0
+  real :: pp_const=0.0, w_sldchar_ent=0.1
   real :: tau_ss_exterior=0.0, T0=0.0
   real :: mixinglength_flux=0.0, entropy_flux=0.0
   real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
@@ -191,7 +191,7 @@ module Energy
       chit_aniso_prof1, chit_aniso_prof2, lchit_aniso_simplified, &
       lconvection_gravx, ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, &
       hcond0_kramers, nkramers, chimax_kramers, chimin_kramers, &
-      xbot_aniso, xtop_aniso, entropy_floor, &
+      xbot_aniso, xtop_aniso, entropy_floor, w_sldchar_ent, &
       lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor, &
       reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, &
       center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
@@ -3495,13 +3495,14 @@ module Energy
 !
 !  25-sep-15/MR+joern: coded
 !   9-oct-15/MR: added uodateing of characteristic velocity by sound speed
+!  29-dec-15/joern: changed to staggered_max_scale
 !
       use EquationOfState, only: eoscalc
-      use General, only: staggered_mean_scal
+!      use General, only: staggered_mean_scal
+      use General, only: staggered_max_scal
 !
       real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
 !
-      real, parameter :: weight=0.01
       real, dimension(mx) :: cs2
 !
       if (lslope_limit_diff) then
@@ -3511,12 +3512,11 @@ module Energy
         f(:,:,:,iFF_diff) = 0.
         do n=1,mz; do m=1,my
           call eoscalc(f,mx,cs2=cs2)
-          f(:,m,n,iFF_diff) = sqrt(cs2)   ! sqrt needed as staggered_mean is performing a square again
+          f(:,m,n,iFF_diff) = sqrt(cs2)   ! sqrt needed as we need the speed.
         enddo; enddo
 !
-        call staggered_mean_scal(f,iFF_diff,iFF_char_c,weight)
-
-        !f(:,:,:,iFF_char_c)=f(:,:,:,iFF_char_c) + 0.01*cs20
+!        call staggered_mean_scal(f,iFF_diff,iFF_char_c,weight)
+        call staggered_max_scal(f,iFF_diff,iFF_char_c,w_sldchar_ent)
 !
       endif
 !
