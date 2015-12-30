@@ -17,7 +17,7 @@
 ! PENCILS PROVIDED Diff_penc_add(nchemspec); H0_RT(nchemspec); hhk_full(nchemspec)
 ! PENCILS PROVIDED ghhk(3,nchemspec); S0_R(nchemspec); cs2
 !
-! PENCILS PROVIDED glnpp(3); del2pp; mu1; mukmu1(nchemspec); gmu1(3); glnmu(3)
+! PENCILS PROVIDED glnpp(3); del2pp; mukmu1(nchemspec); glnmu(3)
 ! PENCILS PROVIDED ccondens; ppwater
 ! PENCILS PROVIDED Ywater
 !
@@ -36,7 +36,7 @@ module Chemistry
   include 'chemistry.h'
 !
   real :: Rgas, Rgas_unit_sys=1.
-  real, dimension(mx,my,mz) :: cp_full, cv_full, mu1_full, pp_full
+  real, dimension(mx,my,mz) :: cp_full, cv_full, mu1_full
   real, dimension(mx,my,mz) :: lambda_full, rho_full, TT_full
   real, dimension(mx,my,mz,nchemspec) :: cv_R_spec_full
 !real, dimension (mx,my,mz) ::  e_int_full,cp_R_spec
@@ -2313,12 +2313,12 @@ module Chemistry
             endif
           enddo
 !
-          do m=m1,m2
-            do n=n1,n2
-              call  getpressure(pp_full(l1:l2,m,n),TT_full(l1:l2,m,n),&
-                  rho_full(l1:l2,m,n),mu1_full(l1:l2,m,n))
-            enddo
-          enddo
+!          do m=m1,m2
+!            do n=n1,n2
+!              call  getpressure(pp_full(l1:l2,m,n),TT_full(l1:l2,m,n),&
+!                  rho_full(l1:l2,m,n),mu1_full(l1:l2,m,n))
+!            enddo
+!          enddo
 !
 !  Specific heat at constant pressure
 !

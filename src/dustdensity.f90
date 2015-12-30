@@ -2501,8 +2501,9 @@ module Dustdensity
       case ('aerosol')
 !        if (it == 1) call getmu_array(f,mu1_array)
 !        call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),pp=pp)
-        if (it == 1) call getmu(f,mu)
-        call getpressure(ppmon,1./TT1,rho,p%mu1)
+!        if (it == 1) call getmu(f,mu)
+!        call getpressure(ppmon,1./TT1,rho,p%mu1)
+        ppmon=p%pp
         ppsat = 6.035e12*exp(-5938*TT1)
         vth = (3*k_B/(TT1*mmon))**0.5
         supsatratio1 = ppsat/ppmon

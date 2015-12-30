@@ -78,7 +78,7 @@ module EquationOfState
 !
 !
 !NILS: Why do we spend a lot of memory allocating these variables here????
- real, dimension (mx,my,mz), SAVE :: mu1_full, pp_full
+ real, dimension (mx,my,mz), SAVE :: mu1_full
 !
   namelist /eos_init_pars/  mu, cp, cs0, rho0, gamma, error_cp
 !
@@ -427,18 +427,18 @@ module EquationOfState
 !
       if (ltemperature_nolog) then
         lpenc_requested(i_gTT)=.true.
-      else
-        lpenc_requested(i_glnTT)=.true.
       endif
+      lpenc_requested(i_glnTT)=.true.
+      lpenc_requested(i_glnrho)=.true.
+      lpenc_requested(i_glnrho2)=.true.
+      lpenc_requested(i_del2lnrho)=.true.
 !
-   !   if (lcheminp_eos) then
-       lpenc_requested(i_glnpp)=.true.
-       lpenc_requested(i_del2pp)=.true.
-       lpenc_requested(i_mu1)=.true.
-       lpenc_requested(i_gmu1)=.true.
-       lpenc_requested(i_pp)=.true.
-       lpenc_requested(i_rho1gpp)=.true.
-   !   endif
+      lpenc_requested(i_glnpp)=.true.
+      lpenc_requested(i_del2pp)=.true.
+      lpenc_requested(i_mu1)=.true.
+      lpenc_requested(i_gmu1)=.true.
+      lpenc_requested(i_pp)=.true.
+      lpenc_requested(i_rho1gpp)=.true.
 !
     endsubroutine pencil_criteria_eos
 !***********************************************************************
@@ -450,17 +450,11 @@ module EquationOfState
 !
 ! Modified by Natalia. Taken from  eos_temperature_ionization module
 !
-   logical, dimension(npencils) :: lpencil_in
+      logical, dimension(npencils) :: lpencil_in
 !
-        if (ltemperature_nolog) then
-        ! if (lpencil_in(i_TT))   lpencil_in(i_lnTT)=.true.
-        else
-!         if (lpencil_in(i_TT))   lpencil_in(i_lnTT)=.true.
-        endif
+      if (lpencil_in(i_TT1))    lpencil_in(i_TT)=.true.
 !
-       if (lpencil_in(i_TT1))    lpencil_in(i_TT)=.true.
-!
-       if (lpencil_in(i_pp))  then
+      if (lpencil_in(i_pp))  then
          lpencil_in(i_mu1)=.true.
          lpencil_in(i_rho)=.true.
          lpencil_in(i_TT)=.true.
@@ -470,7 +464,6 @@ module EquationOfState
          lpencil_in(i_gmu1)=.true.
          lpencil_in(i_pp)=.true.
          lpencil_in(i_rho)=.true.
-         lpencil_in(i_glnrho)=.true.
          lpencil_in(i_glnTT)=.true.
        endif
        if (lpencil_in(i_glnpp))  then
@@ -510,11 +503,13 @@ module EquationOfState
 !  02-apr-06/tony: coded
 !  09-oct-15/MR: added mask parameter lpenc_loc.
 !
-      use Sub, only: grad, del2
+      use Sub, only: grad, del2, dot2
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
+      real, dimension(nx) :: glnTT2,TT1del2TT,del2lnrho
+      real, dimension(nx) :: rho1del2rho,del2mu1,gmu12,glnpp2
 !
       intent(in) :: f, lpenc_loc
       intent(inout) :: p
@@ -565,28 +560,22 @@ module EquationOfState
         endif
 !
         if (ltemperature_nolog) then
-         if (lpenc_loc(i_gTT)) call grad(f,iTT,p%gTT)
+          if (lpenc_loc(i_gTT)) call grad(f,iTT,p%gTT)
          !NILS: The call below does not yield del2lnTT but rather del2TT,
          !NILS: this should be fixed before used. One should also look
          !NILS: through the chemistry module to make sure del2lnTT is used
          !NILS: corectly.
-         if (lpenc_loc(i_del2lnTT)) call del2(f,iTT,p%del2lnTT)
-         call fatal_error('calc_pencils_eos',&
-             'del2lnTT is not correctly implemented - this must be fixed!')
+          if (lpenc_loc(i_del2lnTT)) call del2(f,iTT,p%del2lnTT)
+          call fatal_error('calc_pencils_eos',&
+              'del2lnTT is not correctly implemented - this must be fixed!')
         else
-         if (lpenc_loc(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
+          if (lpenc_loc(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
         endif
-!
-!       if (lcheminp_eos) then
 !
 !  Mean molecular weight
 !
-        if (lpenc_loc(i_mu1)) then
-          p%mu1=mu1_full(l1:l2,m,n)
-        endif
-!
+        if (lpenc_loc(i_mu1)) p%mu1=mu1_full(l1:l2,m,n)
         if (lpenc_loc(i_gmu1)) call grad(mu1_full,p%gmu1)
-!
 !
 !  Pressure
 !
@@ -601,7 +590,7 @@ module EquationOfState
           enddo
         endif
 !
-! Gradient of the lnpp
+! Gradient of lnpp
 !
        if (lpenc_loc(i_glnpp)) then
             do i=1,3
@@ -612,7 +601,17 @@ module EquationOfState
 ! Laplasian of pressure
 !
        if (lpenc_loc(i_del2pp)) then
-         call del2(pp_full(:,:,:),p%del2pp)
+         call dot2(p%glnTT,glnTT2)
+         TT1del2TT=p%del2lnTT+glnTT2
+         rho1del2rho=p%del2lnrho+p%glnrho2
+         call dot2(p%gmu1,gmu12)
+         call dot2(p%glnpp,glnpp2)
+         call del2(mu1_full,del2mu1)
+         p%del2pp&
+             =p%pp*glnpp2&
+             +p%pp*(rho1del2rho+TT1del2TT+del2mu1/p%mu1)&
+             -p%pp*(p%glnrho2+glnTT2+gmu12/p%mu1**2)
+
        endif
 !
 !  Energy per unit mass (this has been moved to chemistry.f90 in order
