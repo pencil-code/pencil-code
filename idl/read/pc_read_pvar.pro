@@ -161,6 +161,11 @@ varcontent[iaps].variable = 'Particle sink radius (aps)'
 varcontent[iaps].idlvar   = 'aps'
 varcontent[iaps].idlinit  = INIT_SCALAR
 ;
+default, imp, 0
+varcontent[imp].variable = 'Particle mass (mp)'
+varcontent[imp].idlvar   = 'mp'
+varcontent[imp].idlinit  = INIT_SCALAR
+;
 ;  Check if there is other pvar data written by the special module. 
 ;
 file_special=datadir+'/index_special_particles.pro'
