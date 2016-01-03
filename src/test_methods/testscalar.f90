@@ -674,17 +674,17 @@ module Testscalar
 !
 !  Check whether njtestscalar is large enough.
 !
+        if (idiag_kap13/=0.or.idiag_kap23/=0.or.idiag_kap33/=0.or.&
+            idiag_kap13z/=0.or.idiag_kap23z/=0.or.idiag_kap33z/=0) then
+          if (njtestscalar<2) call stop_it('dcctest_dt: njtestscalar < 2 is insufficient')
+        endif
         if (idiag_kap11/=0.or.idiag_kap21/=0.or.idiag_kap31/=0.or.&
             idiag_kap11z/=0.or.idiag_kap21z/=0.or.idiag_kap31z/=0) then
-          if (njtestscalar<4) call stop_it('dcctest_dt: njtestscalar < 2 is insufficient')
+          if (njtestscalar<4) call stop_it('dcctest_dt: njtestscalar < 4 is insufficient')
         endif
         if (idiag_kap12/=0.or.idiag_kap22/=0.or.idiag_kap32/=0.or.&
             idiag_kap12z/=0.or.idiag_kap22z/=0.or.idiag_kap32z/=0) then
           if (njtestscalar<6) call stop_it('dcctest_dt: njtestscalar < 6 is insufficient')
-        endif
-        if (idiag_kap13/=0.or.idiag_kap23/=0.or.idiag_kap33/=0.or.&
-            idiag_kap13z/=0.or.idiag_kap23z/=0.or.idiag_kap33z/=0) then
-          if (njtestscalar<2) call stop_it('dcctest_dt: njtestscalar < 4 is insufficient')
         endif
 !
 !  First consider results from  z-dependent test fields.
