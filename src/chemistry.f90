@@ -854,17 +854,10 @@ module Chemistry
       integer :: ii1=1, ii2=2, ii3=3, ii4=4, ii5=5, ii6=6, ii7=7
       real :: T_low, T_up, T_mid
       real, dimension(nx) :: T_loc, TT_2, TT_3, TT_4
-!
       logical :: ldiffusion2
+!
       ldiffusion2 = ldiffusion .and. (.not. lchemonly)
 !
-!  Mass fraction YY
-!
-!      if (lpencil(i_YY) .and. lreactions ) then
-!        do k=1,nchemspec;  p%YY(:,k)=f(l1:l2,m,n,ichemspec(k)); enddo
-!      endif
-!
-!      if (lpencil(i_gYYk) .and. ldiffusion2) then
       if (lpencil(i_gYYk)) then
         do k = 1,nchemspec
           call grad(f(:,:,:,ichemspec(k)),gXX_tmp)
@@ -874,7 +867,6 @@ module Chemistry
         enddo
       endif
 !
-!      if (lpencil(i_gXXk) .and. ldiffusion2) then
       if (lpencil(i_gXXk)) then
         do k = 1,nchemspec
           call grad(XX_full(:,:,:,k),gXX_tmp)
@@ -884,7 +876,6 @@ module Chemistry
         enddo
       endif
 !
-!      if (lpencil(i_mukmu1) .and. ldiffusion2) then
       if (lpencil(i_mukmu1)) then
         do k = 1,nchemspec
           p%mukmu1(:,k) = species_constants(k,imass)/unit_mass*p%mu1(:)
@@ -908,11 +899,8 @@ module Chemistry
 !  Specific heat at constant volume (i.e. density)
 !
         if (lpencil(i_cv)) p%cv = cv_full(l1:l2,m,n)
-!
         if (lpencil(i_cv1)) p%cv1 = 1./p%cv
-!
         if (lpencil(i_cp)) p%cp = cp_full(l1:l2,m,n)
-!
         if (lpencil(i_cp1)) p%cp1 = 1./p%cp
 !
         TT_2 = p%TT*p%TT
@@ -979,7 +967,6 @@ module Chemistry
 !  Enthalpy flux
 !
           if (lpencil(i_hhk_full) ) then
-!          if (lpencil(i_hhk_full) .and.lreactions) then
             do k = 1,nchemspec
               if (species_constants(k,imass) > 0.)  then
                 p%hhk_full(:,k) = p%H0_RT(:,k)*Rgas*T_loc &
@@ -988,11 +975,9 @@ module Chemistry
             enddo
           endif
 !
-!          if (lpencil(i_ghhk) .and. lreactions .and. (.not.lchemonly)) then
           if (lpencil(i_ghhk)  .and. (.not. lchemonly)) then
             do k = 1,nchemspec
               if (species_constants(k,imass) > 0.)  then
-                !  call grad(hhk_full(:,:,:,k),ghhk_tmp)
                 do i = 1,3
                   p%ghhk(:,i,k) = (cv_R_spec_full(l1:l2,m,n,k)+1) &
                       /species_constants(k,imass)*Rgas*p%glnTT(:,i)*T_loc(:)
@@ -1059,15 +1044,15 @@ module Chemistry
 !
 ! Calculate the thermal diffusivity
 !
-!      if (ldiffusion2 .and. lpencil(i_lambda) .and. lheatc_chemistry) then
       if (lpencil(i_lambda) .and. lheatc_chemistry) then
         if ((lThCond_simple) .or. (lambda_const < impossible)) then
-!
           if (lThCond_simple) then
 !
 !  04-18-11/Julien: Modified the computation of simple heat conductivity according
-!                   to Smooke & Giovangigli 1991. lambda_const is now equal to 2.58e-4
-!                   instead of 1e4, and represents the ratio \lambda0/cp0. Formula:
+!                   to Smooke & Giovangigli 1991. lambda_const is now equal 
+!                   to 2.58e-4
+!                   instead of 1e4, and represents the ratio \lambda0/cp0. 
+!                   Formula:
 !                   \lambda = lambda_const*cp*(T/T0)**0.7, with T0 now = 298K
 !
             if (lambda_const == impossible) lambda_const = 2.58e-4
@@ -1095,7 +1080,8 @@ module Chemistry
 ! There are 4 cases:
 ! 1) the case of simplifyed expression for the difusion coef. (Oran paper,)
 ! 2) the case of constant diffusion coefficients
-! 3) the case of constant Lewis numbers with diffusion coef. depending on heat diffusivity
+! 3) the case of constant Lewis numbers with diffusion coef. depending 
+!    on heat diffusivity
 ! 4) full complex diffusion coefficients
 !
         if (lpencil(i_Diff_penc_add)) then
@@ -1103,14 +1089,17 @@ module Chemistry
 !
 !  04-18-11/Julien: Changed the value of Diff_coef_const from 10 to 2.58e-4
 !                   according to Smooke & Giovangigli 1991. Now Diff_coef_const
-!                   does not represent a constant diffusion coefficient, but \rho0 D0.
+!                   does not represent a constant diffusion coefficient, 
+!                   but \rho0 D0.
 !                   Diff_penc_add are still the diffusion coefficients. Formula:
 !                   D = Diff_coef_const/\rho*(T/T0)**n0.7, with T0 now = 298K.
 !
             if (Diff_coef_const == impossible) Diff_coef_const = 2.58e-4
             do k = 1,nchemspec
-              p%Diff_penc_add(:,k) = Diff_coef_const*p%rho1*exp(0.7*log(p%TT(:)/298.))
-              if (lew_exist) p%Diff_penc_add(:,k) = p%Diff_penc_add(:,k)*Lewis_coef1(k)
+              p%Diff_penc_add(:,k) = &
+                  Diff_coef_const*p%rho1*exp(0.7*log(p%TT(:)/298.))
+              if (lew_exist) p%Diff_penc_add(:,k) = &
+                  p%Diff_penc_add(:,k)*Lewis_coef1(k)
             enddo
 !
 !  Constant diffusion coefficients
@@ -1120,7 +1109,8 @@ module Chemistry
               p%Diff_penc_add(:,k) = Diff_coef_const*p%rho1
             enddo
 !
-!  Diffusion coefficient of a mixture with constant Lewis numbers and given heat conductivity
+!  Diffusion coefficient of a mixture with constant Lewis numbers and 
+!  given heat conductivity
 !
           elseif (lDiff_lewis .and. lew_exist) then
             do k = 1,nchemspec
