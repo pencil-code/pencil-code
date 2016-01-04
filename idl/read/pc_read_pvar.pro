@@ -375,6 +375,7 @@ endif else begin
 ;  but converted to integer afterwards.
 ;
         array_loc=fltarr(nfields,nrmv)*one
+        get_lun, file1 & close, file1
         openr, file1, filename1
         readf, file1, array_loc
         close, file1 & free_lun, file1
