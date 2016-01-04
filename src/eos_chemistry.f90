@@ -12,7 +12,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED lnTT;  glnTT(3); TT; TT1; gTT(3)
-! PENCILS PROVIDED pp; del2pp; mu1; gmu1(3)
+! PENCILS PROVIDED pp; del2pp; mu1; gmu1(3); glnmu(3)
 ! PENCILS PROVIDED rho1gpp(3); glnpp(3); del2lnTT
 !
 ! PENCILS PROVIDED hss(3,3); hlnTT(3,3); del2ss; del6ss; del6lnTT
@@ -576,6 +576,11 @@ module EquationOfState
 !
         if (lpenc_loc(i_mu1)) p%mu1=mu1_full(l1:l2,m,n)
         if (lpenc_loc(i_gmu1)) call grad(mu1_full,p%gmu1)
+        if (lpenc_loc(i_glnmu)) then
+          do i = 1,3
+            p%glnmu(:,i) = -p%gmu1(:,i)/p%mu1(:)
+          enddo
+        endif
 !
 !  Pressure
 !

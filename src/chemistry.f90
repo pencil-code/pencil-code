@@ -10,14 +10,13 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 1
 !
-! PENCILS PROVIDED cv; cv1; cp; cp1; glncp(3);  gXXk(3,nchemspec); gYYk(3,nchemspec)
-! PENCILS PROVIDED nu; gradnu(3);
+! PENCILS PROVIDED cv; cv1; cp; cp1; glncp(3);  gXXk(3,nchemspec)
+! PENCILS PROVIDED nu; gradnu(3); gYYk(3,nchemspec)
 ! PENCILS PROVIDED DYDt_reac(nchemspec); DYDt_diff(nchemspec)
 ! PENCILS PROVIDED lambda; glambda(3); lambda1
 ! PENCILS PROVIDED Diff_penc_add(nchemspec); H0_RT(nchemspec); hhk_full(nchemspec)
 ! PENCILS PROVIDED ghhk(3,nchemspec); S0_R(nchemspec); cs2
-!
-! PENCILS PROVIDED glnpp(3); del2pp; mukmu1(nchemspec); glnmu(3)
+! PENCILS PROVIDED glnpp(3); del2pp; mukmu1(nchemspec)
 ! PENCILS PROVIDED ccondens; ppwater
 ! PENCILS PROVIDED Ywater
 !
@@ -879,11 +878,6 @@ module Chemistry
       if (lpencil(i_mukmu1)) then
         do k = 1,nchemspec
           p%mukmu1(:,k) = species_constants(k,imass)/unit_mass*p%mu1(:)
-        enddo
-      endif
-      if (lpencil(i_glnmu)) then
-        do i = 1,3
-          p%glnmu(:,i) = -p%gmu1(:,i)/p%mu1(:)
         enddo
       endif
 !
