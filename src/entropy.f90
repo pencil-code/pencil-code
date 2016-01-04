@@ -4931,7 +4931,7 @@ module Energy
         endif
       endif
 !
-      if (lphotoelectric_heating_alt) heat=heat+pheat_factor*p%rhop
+      if (lphotoelectric_heating_alt) heat=heat+pheat_factor*p%rhop*((r_ref/x(l1:l2))**2.0)
 !
 !  Cooling/heating with respect to cs2mz(n)-cs2cool.
 !  There is also the possibility to do cooling with respect to
