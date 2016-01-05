@@ -6,14 +6,6 @@ module Cparam
 !
   implicit none
 !
-!  Number of slots in initlnrho etc.
-!  This parameter must be set here such that we can overwrite it in
-!  cparam.local if a larger value is required. This is particularly
-!  useful for cases where many different particle radii must
-!  be specified in start.in. 
-!
-  integer, parameter :: ninit=5
-!
   include 'cparam.local'
 !
   integer, parameter :: nx=nxgrid/nprocx,ny=nygrid/nprocy,nz=nzgrid/nprocz
@@ -75,6 +67,10 @@ module Cparam
 !
   integer, parameter :: mreduce=6
   integer :: ip=14
+!
+!  Number of slots in initlnrho etc.
+!
+  integer, parameter :: ninit=5
 !
 !  Name:          Maximum string length of a:
 !  --------------------------------------------
