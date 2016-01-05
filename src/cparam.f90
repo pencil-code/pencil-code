@@ -6,6 +6,14 @@ module Cparam
 !
   implicit none
 !
+!  Number of slots in initlnrho etc.
+!  This parameter must be set here such that we can overwrite it in
+!  cparam.local if a larger value is required. This is particularly
+!  useful for cases where many different particle radii must
+!  be specified in start.in. 
+!
+  integer, parameter :: ninit=5
+!
   include 'cparam.local'
 !
   integer, parameter :: nx=nxgrid/nprocx,ny=nygrid/nprocy,nz=nzgrid/nprocz
@@ -81,10 +89,6 @@ module Cparam
 !
   integer, parameter :: fnlen=135,intlen=21,bclen=3,labellen=25,linelen=256
   integer, parameter :: datelen=30,max_col_width=30,nscbc_len=24
-!
-!  Number of slots in initlnrho etc.
-!
-  integer, parameter :: ninit=5
 !
 !  Significant length of random number generator state.
 !  Different compilers have different lengths:
