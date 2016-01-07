@@ -101,6 +101,11 @@ module Syscalls
       integer :: exists = -1
 !
       call directory_exists_c(trim(path)//char(0), exists)
+      if (exists == -1) then
+        write (*,*) 'WARNING: failure while checking if "'//trim(path)//'" exists!'
+        ! This line is temporary code to allow Nils debugging further.
+        exists = 1
+      end
 !
       directory_exists = (exists == 1)
 !
