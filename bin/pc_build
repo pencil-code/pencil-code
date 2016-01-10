@@ -357,7 +357,7 @@ sub usage {
         s/^\s*# ?//mg;
         last;                        # ignore body
     }
-    return $_ or "<No usage information found>\n";
+    return $_ || "<No usage information found>\n";
 }
 # ---------------------------------------------------------------------- #
 sub version {
