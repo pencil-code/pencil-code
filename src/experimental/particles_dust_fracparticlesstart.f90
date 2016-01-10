@@ -79,7 +79,7 @@ module Particles
   real :: Deltauy_gas_friction=0.0
   real :: cond_ratio=0.0
   real :: pscalar_sink_rate=0.0
-  real :: r_insert=0.0
+  real :: r_insert=0.0, r_insert_width=-1.0
   real :: frac_start_particles=1.0
   real :: tstart_insert_particles=0.0
   real :: tstart_rpbeta=0.0
@@ -117,6 +117,7 @@ module Particles
   logical :: lpscalar_sink=.false.
   logical :: lsherwood_const=.false.
   logical :: lbubble=.false.
+  logical :: linsert_as_many_as_possible=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -226,7 +227,8 @@ module Particles
       lcommunicate_np, lcylindrical_gravity_par, &
       l_shell, k_shell, lparticlemesh_pqs_assignment, pscalar_sink_rate, &
       lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw,lbubble, &
-      lpart_box, rpbeta_species, rpbeta, r_insert, tstart_insert_particles, tstart_rpbeta
+      lpart_box, rpbeta_species, rpbeta, r_insert, r_insert_width, &
+      tstart_insert_particles, tstart_rpbeta, linsert_as_many_as_possible
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -1829,6 +1831,7 @@ module Particles
         n_insert=int(avg_n_insert + remaining_particles)
 ! Remaining particles saved for subsequent timestep:
         remaining_particles=avg_n_insert + remaining_particles - n_insert
+        if (linsert_as_many_as_possible) n_insert=min((mpar_loc-npar_total),n_insert)
         if ((n_insert+npar_total <= mpar_loc) &
             .and. (t<max_particle_insert_time) .and. (t>tstart_insert_particles)) then
           linsertmore=.true.
@@ -1880,7 +1883,21 @@ module Particles
 !
             case ('r-insert','r_insert')
               if (lcylindrical_coords) then
-                fp(npar_loc_old+1:npar_loc,ixp) = r_insert
+                if (r_insert_width>0.0) then
+                  call random_number_wrapper(fp(npar_loc_old+1:npar_loc,ixp))
+                  fp(npar_loc_old+1:npar_loc,ixp) = r_insert+fp(npar_loc_old+1:npar_loc,ixp)*r_insert_width
+                else
+                  fp(npar_loc_old+1:npar_loc,ixp) = r_insert
+                endif
+                call random_number_wrapper(fp(npar_loc_old+1:npar_loc,iyp))
+                fp(npar_loc_old+1:npar_loc,iyp) = xyz0(2)+fp(npar_loc_old+1:npar_loc,iyp)*Lxyz(2)
+                fp(npar_loc_old+1:npar_loc,izp) = 0.0
+              endif
+!
+            case ('random-cylindrical','random-cyl')
+              if (lcylindrical_coords) then
+                call random_number_wrapper(fp(npar_loc_old+1:npar_loc,ixp))
+                fp(npar_loc_old+1:npar_loc,ixp) = xyz0(1)+fp(npar_loc_old+1:npar_loc,ixp)*Lxyz(1)
                 call random_number_wrapper(fp(npar_loc_old+1:npar_loc,iyp))
                 fp(npar_loc_old+1:npar_loc,iyp) = xyz0(2)+fp(npar_loc_old+1:npar_loc,iyp)*Lxyz(2)
                 fp(npar_loc_old+1:npar_loc,izp) = 0.0
@@ -1917,11 +1934,13 @@ module Particles
                 fp(npar_loc_old+1:npar_loc,ivpz)=vpz0
               endif
 !
-            case ('r-insert','r_insert')
+            case ('Keplerian','r-insert','r_insert')
               call get_shared_variable('gravr',gravr)
-              fp(npar_loc_old+1:npar_loc,ivpx) = 0.0
-              fp(npar_loc_old+1:npar_loc,ivpy) = sqrt(gravr/r_insert)
-              fp(npar_loc_old+1:npar_loc,ivpz) = 0.0
+              if (lcylindrical_coords) then
+                fp(npar_loc_old+1:npar_loc,ivpx) = 0.0
+                fp(npar_loc_old+1:npar_loc,ivpy) = sqrt(gravr/fp(npar_loc_old+1:npar_loc,ixp))
+                fp(npar_loc_old+1:npar_loc,ivpz) = 0.0
+              endif
 !
             case default
               call fatal_error_local('init_particles','Unknown value initvvp="'//trim(initvvp(j))//'"')
