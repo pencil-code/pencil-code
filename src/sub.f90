@@ -7014,6 +7014,7 @@ nameloop: do
         return
       endif
 !
+      ierr = 0 ! G95 complains 'ierr' is used but not set, even though 'reader' has intent(out).
       call reader(ierr)
 !
       if (ierr /= 0) then
