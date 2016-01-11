@@ -1,4 +1,4 @@
 import numpy as N
 
-from vector_multiplication import *
-from derivatives import *
+from pencil.math.vector_multiplication import *
+from pencil.math.derivatives import *

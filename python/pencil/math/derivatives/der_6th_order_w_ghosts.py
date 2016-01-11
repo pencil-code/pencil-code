@@ -17,7 +17,7 @@ import numpy as N
 def xder_6th(f,dx):
 
     if (f.ndim != 3 and f.ndim != 4):
-        print "%s dimension arrays not handled." % (str(f.ndim))
+        print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
 
     dx2 = 1./(60.*dx)
@@ -35,7 +35,7 @@ def xder_6th(f,dx):
 def yder_6th(f,dy):
 
     if (f.ndim != 3 and f.ndim != 4):
-        print "%s dimension arrays not handled." % (str(f.ndim))
+        print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
 
     dy2 = 1./(60.*dy)
@@ -55,7 +55,7 @@ def yder_6th(f,dy):
 def zder_6th(f,dz,run2D=False):
     
     if (f.ndim != 3 and f.ndim != 4):
-        print "%s dimension arrays not handled." % (str(f.ndim))
+        print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
 
     dz2 = 1./(60.*dz)
@@ -89,7 +89,7 @@ def zder_6th(f,dz,run2D=False):
 def xder2_6th(f,dx):
 
     if (f.ndim != 3 and f.ndim != 4):
-        print "%s dimension arrays not handled." % (str(f.ndim))
+        print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
 
 
@@ -110,7 +110,7 @@ def xder2_6th(f,dx):
 def yder2_6th(f,dy):
 
     if (f.ndim != 3 and f.ndim != 4):
-        print "%s dimension arrays not handled." % (str(f.ndim))
+        print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
     
     dy2 = 1./(180.*dy**2.)
@@ -129,7 +129,7 @@ def yder2_6th(f,dy):
 def zder2_6th(f,dz):
 
     if (f.ndim != 3 and f.ndim != 4):
-        print "%s dimension arrays not handled." % (str(f.ndim))
+        print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
 
     dz2 = 1./(180.*dz**2.)
@@ -147,7 +147,7 @@ def zder2_6th(f,dz):
 
 def xder6_6th(f,dx):
     if (f.ndim != 3 and f.ndim != 4):
-        print "%s dimension arrays not handled." % (str(f.ndim))
+        print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
 
     fac=1/dx**6
@@ -165,7 +165,7 @@ def xder6_6th(f,dx):
 
 def yder6_6th(f,dy):
     if (f.ndim != 3 and f.ndim != 4):
-        print "%s dimension arrays not handled." % (str(f.ndim))
+        print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
 
     fac=1/dy**6
@@ -183,7 +183,7 @@ def yder6_6th(f,dy):
 
 def zder6_6th(f,dz):
     if (f.ndim != 3 and f.ndim != 4):
-        print "%s dimension arrays not handled." % (str(f.ndim))
+        print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
     fac=1/dz**6
     n1 = 3
