@@ -84,7 +84,7 @@ module Energy
   real :: pclaw=0.0, xchit=0.
   real, target :: hcond0_kramers=0.0, nkramers=0.0
   real :: chimax_kramers=0., chimin_kramers=0., zheat_uniform_range=0.
-  real :: pheat_factor
+  real :: pheat_factor, heat_ceiling=-1.0
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
@@ -128,6 +128,7 @@ module Energy
              lchi_shock_density_dep=.false., &
              lhcond0_density_dep=.false.
   logical :: lenergy_slope_limited=.false.
+  logical :: limpose_heat_ceiling=.false.
   real :: h_slope_limited=0., chi_sld_thresh=0.
   character (len=labellen) :: islope_limiter=''
   character (len=labellen), dimension(ninit) :: initss='nothing'
@@ -166,7 +167,8 @@ module Energy
       lviscosity_heat, r_bcz, luminosity, wheat, hcond0, tau_cool, &
       tau_cool_ss, cool2, TTref_cool, lhcond_global, cool_fac, cs0hs, H0hs, &
       rho0hs, tau_cool2, rho0ts, T0hs, lconvection_gravx, Fbot, &
-      hcond0_kramers, nkramers, alpha_MLT, lprestellar_cool_iso, lread_hcond
+      hcond0_kramers, nkramers, alpha_MLT, lprestellar_cool_iso, lread_hcond, &
+      limpose_heat_ceiling, heat_ceiling
 !
 !  Run parameters.
 !
@@ -197,7 +199,8 @@ module Energy
       center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
       Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
       cool_type,ichit,xchit,pclaw,lenergy_slope_limited,h_slope_limited,islope_limiter, &
-      chi_sld_thresh, zheat_uniform_range, pheat_factor, lphotoelectric_heating_alt
+      chi_sld_thresh, zheat_uniform_range, pheat_factor, lphotoelectric_heating_alt, &
+      limpose_heat_ceiling, heat_ceiling
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -4965,6 +4968,8 @@ module Energy
         heat=heat+profile_buffer*p%ss* &
             (TTheat_buffer-1/p%TT1)/(p%rho1*tauheat_buffer)
       endif
+!
+      if (limpose_heat_ceiling) where(heat>heat_ceiling) heat=heat_ceiling
 !
 !  Add heating/cooling to entropy equation.
 !
