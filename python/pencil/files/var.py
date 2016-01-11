@@ -11,12 +11,12 @@
 # 03/08 : T. Gastine (tgastine@ast.obs-mip.fr)
 
 import numpy as np
-from npfile import npfile
+from pencil.files.npfile import npfile
 import os
 import sys
-from param import read_param
-from index import read_index
-from dim import read_dim
+from pencil.files.param import read_param
+from pencil.files.index import read_index
+from pencil.files.dim import read_dim
 from pencil.math.derivatives import curl, curl2
 import re
 
@@ -146,8 +146,9 @@ class DataCube(object):
             proc = int(directory[4:])
             procdim = read_dim(datadir, proc)
             if (not quiet):
-                print "reading data from processor %i of %i ..." \
-                      % (proc, len(procdirs))
+                #print "reading data from processor %i of %i ..." \ # Python 2
+                      #% (proc, len(procdirs)) # Python 2
+                print("reading data from processor {0} of {1} ...".format(proc, len(procdirs)))
 
             mxloc = procdim.mx
             myloc = procdim.my
@@ -308,12 +309,12 @@ class DataCube(object):
             if key != 'global_gg':
                 setattr(self,key,self.f[value-1,...])
         # special treatment for vector quantities
-        if index.has_key('uu'):
+        if 'uu' in index.keys():
             self.uu = self.f[index['ux']-1:index['uz'],...]
-        if index.has_key('aa'):
+        if 'aa' in index.keys():
             self.aa = self.f[index['ax']-1:index['az'],...]
         # Also treat Fcr (from cosmicrayflux) as a vector.
-        if index.has_key('fcr'):  
+        if 'fcr' in index.keys():
             self.fcr = self.f[index['fcr']-1:index['fcr']+2,...]
             self.fcrx = self.fcr[0]
             self.fcry = self.fcr[1]

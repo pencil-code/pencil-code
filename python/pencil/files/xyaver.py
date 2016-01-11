@@ -7,11 +7,13 @@
 #
 import os
 import re
-from commands import getoutput
+# SC: commands i depracated since python 2.6
+#from commands import getoutput
+from subprocess import check_output
 import numpy as N
 
 #from param import read_param 
-from dim import read_dim
+from pencil.files.dim import read_dim
 
 class XyAver:
     pass
@@ -32,17 +34,18 @@ def read_xyaver(varfile='xyaverages.dat',datadir='data/', quiet=0):
     infile.close()
     
     #gotta be a better way to do this...
-    n_lines = int(getoutput('wc '+datadir+'/'+varfile).split()[0])
+    n_lines = int(check_output('wc '+datadir+'/'+varfile).split()[0])
 
     datafile = open(datadir+'/'+varfile)    
     n_vars = len(variables)
     # each line of data has 8 values
-    rec_length = 1 + n_vars*nz/8
+    rec_length = 1 + int(n_vars*nz/8) # integer division?
     if nz%8:
         rec_length += 1
-    n_data_records = n_lines/rec_length
+    n_data_records = int(n_lines/rec_length) # integer division?
     if (not quiet):
-        print "%s: reading %i records" % (__name__,n_data_records)
+        #print "%s: reading %i records" % (__name__,n_data_records) # Python 2
+        print(__name__ + ": reading {0} records".format(n_data_records))
     
     # change the hardcode dtype!
     t = []

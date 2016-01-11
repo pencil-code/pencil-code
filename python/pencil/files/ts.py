@@ -67,16 +67,18 @@ class TimeSeries(object):
                     self.keys = keys_new
             else:
                 try:
-                    row = np.array(map(float, re.split(" +", line.strip(" \n"))))
+                    row = np.array(list(map(float, re.split(" +", line.strip(" \n")))))
                     data[nlines, :] = row
                     nlines += 1
                 except ValueError:
-                    print "Invalid data on line %i. Skipping." % nlines
+                    #print "Invalid data on line %i. Skipping." % nlines # Python 2
+                    print("Invalid data on line {0}. Skipping.".format(nlines))
         # Clean up data.
         data = np.resize(data, (nlines, len(self.keys)))
 
         if (not quiet):
-            print "Read",nlines,"lines."
+            #print "Read",nlines,"lines." # Python 2
+            print("Read {0} lines.".format(nlines))
 
         # Assemble into a TimeSeries class.
         for i in range(0, len(self.keys)):
@@ -95,7 +97,7 @@ class TimeSeries(object):
             variables other than `it' and `dt*'
         """
 
-	import pylab as plt
+        import pylab as plt
 
         plt.ioff() # speed up graphics (in connection with an ending plt.show())
         listargs = self.keys    # all data columns of the TimeSeries object
@@ -148,4 +150,5 @@ class TimeSeries(object):
 
 
 if __name__=='__main__':
-    print TimeSeries.__doc__
+    #print TimeSeries.__doc__ # Python 2
+    print(TimeSeries.__doc__)

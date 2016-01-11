@@ -11,9 +11,9 @@ import os
 import re
 import numpy as N
 
-from npfile import npfile
-from param import read_param 
-from dim import read_dim 
+from pencil.files.npfile import npfile
+from pencil.files.param import read_param 
+from pencil.files.dim import read_dim 
 
 def read_yaver(datadir='data/',format='native',point=(-1,-1)):
 
@@ -61,10 +61,12 @@ def read_yaver(datadir='data/',format='native',point=(-1,-1)):
         try:
             raw_data = infile.fort_read(precision,shape=yaver_shape)
         except ValueError:
-            print "Problem: seems there is a t without corresponding data. yaverages.dat may be corrupted"
+            #print "Problem: seems there is a t without corresponding data. yaverages.dat may be corrupted" # Python 2
+            print("Problem: seems there is a t without corresponding data. yaverages.dat may be corrupted")
             break
         except TypeError:
-            print "Problem: seems there is a t without corresponding data. yaverages.dat may be corrupted"
+            #print "Problem: seems there is a t without corresponding data. yaverages.dat may be corrupted" # Python 2
+            print("Problem: seems there is a t without corresponding data. yaverages.dat may be corrupted")
             break
         yaver.append(raw_data)
         ntime += 1

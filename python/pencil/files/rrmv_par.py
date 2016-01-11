@@ -5,7 +5,7 @@ import os as os
 import re as re
 import shutil as shutil
 import numpy as np
-import npfile as npfile
+import pencil.files.npfile as npfile
 #-------------------------
 def get_mpvar(datadir):
   srcdir=datadir+'/../src/';

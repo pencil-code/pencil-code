@@ -8,8 +8,8 @@
 import numpy as np
 import os.path
 # Pencil routines
-from pdim import read_pdim
-from dim  import read_dim
+from pencil.files.pdim import read_pdim
+from pencil.files.dim import read_dim
 
 
 class par_rmv:
@@ -113,7 +113,8 @@ def fetch_particle_data(datadir, dims, pdims):
     # Check if any removed particles are found. If not, print statement
     # and return None-object to avoid errors.
     if (not 'index_rmv' in locals()):
-        print 'Warning: No particles removed from simulation'
+        #print 'Warning: No particles removed from simulation' # Python 2
+        print('Warning: No particles removed from simulation')
         index_rmv = None
         time_rmv = None
         part_rmv = np.array([[None]*5])

@@ -179,9 +179,9 @@ def tracers(traceField = 'bb', hMin = 2e-3, hMax = 2e4, lMax = 500, tol = 1e-2,
         # initialize the tracers
         for ix in range(int(trace_sub*dim.nx)):
             for iy in range(int(trace_sub*dim.ny)):
-                tracers[ix, iy, tIdx, 0] = grid.x[0] + grid.dx/trace_sub*ix
+                tracers[ix, iy, tIdx, 0] = grid.x[0] + int(grid.dx/trace_sub)*ix
                 tracers[ix, iy, tIdx, 2] = tracers[ix, iy, tIdx, 0]
-                tracers[ix, iy, tIdx, 1] = grid.y[0] + grid.dy/trace_sub*iy
+                tracers[ix, iy, tIdx, 1] = grid.y[0] + int(grid.dy/trace_sub)*iy
                 tracers[ix, iy, tIdx, 3] = tracers[ix, iy, tIdx, 1]
                 tracers[ix, iy, tIdx, 4] = grid.z[0]
             
@@ -286,7 +286,7 @@ def read_tracers(datadir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
     # read the cpu structure
     dim = pc.read_dim(datadir = datadir)
     if (dim.nprocz > 1):
-        print ": number of cores in z-direction > 1"
+        print(": number of cores in z-direction > 1")
         return -1
 
     # read the parameters
@@ -317,8 +317,8 @@ def read_tracers(datadir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
         tracers_core = tracers
         mapping_core = mapping
     else:
-        tracers_core = np.zeros((int(dim.nx*trace_sub)/dim.nprocx, int(dim.ny*trace_sub)/dim.nprocy, n_times, 7))
-        mapping_core = np.zeros((int(dim.nx*trace_sub)/dim.nprocx, np.floor(dim.ny*trace_sub)/dim.nprocy, n_times, 3))
+        tracers_core = np.zeros((int(int(dim.nx*trace_sub)/dim.nprocx), int(int(dim.ny*trace_sub)/dim.nprocy), n_times, 7))
+        mapping_core = np.zeros((int(int(dim.nx*trace_sub)/dim.nprocx), int(np.floor(dim.ny*trace_sub)/dim.nprocy), n_times, 3))
 
     # set the upper z-limit to the domain boundary
     if zlim == []:
@@ -358,21 +358,21 @@ def read_tracers(datadir = 'data/', fileName = 'tracers.dat', zlim = [], head_si
 
             # Squeeze the data into 2d array. This make the visualization much faster.
             for l in range(len(data.xi)):
-                tracers_core[l%(int(dim_core.nx*trace_sub)),l/(int(dim_core.nx*trace_sub)),j,:] = \
+                tracers_core[l%(int(dim_core.nx*trace_sub)),int(l/(int(dim_core.nx*trace_sub))),j,:] = \
                 [data.xi[l], data.yi[l], data.xf[l], data.yf[l], data.zf[l], data.l[l], data.q[l]]
                 if data.zf[l] >= zlim:
                     if (data.xi[l] - data.xf[l]) > 0:
                         if (data.yi[l] - data.yf[l]) > 0:
-                            mapping_core[l%(int(dim_core.nx*trace_sub)),l/(int(dim_core.nx*trace_sub)),j,:] = [0,1,0]
+                            mapping_core[l%(int(dim_core.nx*trace_sub)),int(l/(int(dim_core.nx*trace_sub))),j,:] = [0,1,0]
                         else:
-                            mapping_core[l%(int(dim_core.nx*trace_sub)),l/(int(dim_core.nx*trace_sub)),j,:] = [1,1,0]
+                            mapping_core[l%(int(dim_core.nx*trace_sub)),int(l/(int(dim_core.nx*trace_sub))),j,:] = [1,1,0]
                     else:
                         if (data.yi[l] - data.yf[l]) > 0:
-                            mapping_core[l%(int(dim_core.nx*trace_sub)),l/(int(dim_core.nx*trace_sub)),j,:] = [0,0,1]
+                            mapping_core[l%(int(dim_core.nx*trace_sub)),int(l/(int(dim_core.nx*trace_sub))),j,:] = [0,0,1]
                         else:
-                            mapping_core[l%(int(dim_core.nx*trace_sub)),l/(int(dim_core.nx*trace_sub)),j,:] = [1,0,0]
+                            mapping_core[l%(int(dim_core.nx*trace_sub)),int(l/(int(dim_core.nx*trace_sub))),j,:] = [1,0,0]
                 else:
-                    mapping_core[l%(int(dim_core.nx*trace_sub)),l/(int(dim_core.nx*trace_sub)),j,:] = [1,1,1]
+                    mapping_core[l%(int(dim_core.nx*trace_sub)),int(l/(int(dim_core.nx*trace_sub))),j,:] = [1,1,1]
 
             # copy single core data into total data arrays
             if (not(post)):
@@ -461,7 +461,7 @@ def tracer_movie(datadir = 'data/', tracerFile = 'tracers.dat',
     # determine the colors for the fixed points
     colors = np.zeros(np.shape(fixed.q) + (3,))
     colors[:,:,:] = 0.
-    print np.shape(colors)
+    print(np.shape(colors))
     for j in range(len(colors[:,0,0])):
         for k in range(len(colors[0,:,0])):
             if fixed.q[j,k] >= 0:

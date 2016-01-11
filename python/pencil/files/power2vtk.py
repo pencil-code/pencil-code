@@ -38,9 +38,9 @@ def power2vtk(powerFiles = ['mag_spec.dat'], destination = 'spectra.vtk', mulz =
     fd = open(destination, 'wb')
     
     # write the header
-    fd.write('# vtk DataFile Version 2.0\n')
-    fd.write('power spectra\n')
-    fd.write('BINARY\n')
+    fd.write('# vtk DataFile Version 2.0\n'.encode('utf-8'))
+    fd.write('power spectra\n'.encode('utf-8'))
+    fd.write('BINARY\n'.encode('utf-8'))
 
     # rad the first power spectrum
     if (len(powerFiles[0]) > 1):        
@@ -52,15 +52,15 @@ def power2vtk(powerFiles = ['mag_spec.dat'], destination = 'spectra.vtk', mulz =
     dimt = len(t)
     dt = t[1]-t[0]
     
-    fd.write('DATASET STRUCTURED_POINTS\n')
-    fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(dimk, dimt, mulz))
-    fd.write('ORIGIN {0:8.12} {1:8.12} {2:8.12}\n'.format(0.0, 0.0, 0.0))
-    fd.write('SPACING {0:8.12} {1:8.12} {2:8.12}\n'.format(1.0, dt, 1.0))
+    fd.write('DATASET STRUCTURED_POINTS\n'.encode('utf-8'))
+    fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(dimk, dimt, mulz).encode('utf-8'))
+    fd.write('ORIGIN {0:8.12} {1:8.12} {2:8.12}\n'.format(0.0, 0.0, 0.0).encode('utf-8'))
+    fd.write('SPACING {0:8.12} {1:8.12} {2:8.12}\n'.format(1.0, dt, 1.0).encode('utf-8'))
     fd.write('POINT_DATA {0:9}\n'.format(np.size(power)*mulz))
 
-    print 'writing ', pfile[:-4]
-    fd.write('SCALARS '+pfile[:-4]+' float\n')
-    fd.write('LOOKUP_TABLE default\n')
+    print('writing ' + pfile[:-4])
+    fd.write(('SCALARS '+pfile[:-4]+' float\n').encode('utf-8'))
+    fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
     for k in range(mulz):
         for j in range(dimt):
             for i in range(dimk):
@@ -70,9 +70,9 @@ def power2vtk(powerFiles = ['mag_spec.dat'], destination = 'spectra.vtk', mulz =
     if (len(powerFiles[0]) > 1):        
         for pfile in powerFiles[1:]:        
             t, power = pc.read_power('data/'+pfile)
-            print 'writing ', pfile[:-4]
-            fd.write('SCALARS '+pfile[:-4]+' float\n')
-            fd.write('LOOKUP_TABLE default\n')        
+            print('writing ' + pfile[:-4])
+            fd.write(('SCALARS '+pfile[:-4]+' float\n').encode('utf-8'))
+            fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
             for k in range(mulz):
                 for j in range(dimt):
                     for i in range(dimk):

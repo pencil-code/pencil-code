@@ -103,15 +103,17 @@ class _TkAttr(object):
             if self._tk._debug >= 8 or \
                self._tk._debug >= 3 and self._attr.__name__ == 'call' and \
                len(args) >= 1 and args[0] == 'after':
-                print 'Calling event directly:', \
-                    self._attr.__name__, args, kwargs
+                #print 'Calling event directly:', \ # Python 2
+                    #self._attr.__name__, args, kwargs # Python 2
+                print('Calling event directly: '+self._attr.__name__+' '+args+' '+kwargs)
             return self._attr(*args, **kwargs)
         else:
             # We're in a different thread than the creation thread; enqueue
             # the event, and then wait for the response.
             responseQueue = Queue.Queue(1)
             if self._tk._debug >= 1:
-                print 'Marshalling event:', self._attr.__name__, args, kwargs
+                #print 'Marshalling event:', self._attr.__name__, args, kwargs # Python 2
+                print('Marshalling event: '+self._attr.__name__+' '+args+' '+kwargs)
             self._tk._eventQueue.put((self._attr, args, kwargs, responseQueue))
             isException, response = responseQueue.get()
 
@@ -167,8 +169,9 @@ def _CheckEvents(tk):
                 # the result back to the caller via the response queue.
                 used = True
                 if tk.tk._debug >= 2:
-                    print 'Calling event from main thread:', \
-                        method.__name__, args, kwargs
+                    #print 'Calling event from main thread:', \ # Python 2
+                        #method.__name__, args, kwargs # Python 2
+                    print('Calling event from main thread: '+method.__name__+' '+args+' '+kwargs)
                 try:
                     responseQueue.put((False, method(*args, **kwargs)))
                 except SystemExit, ex:

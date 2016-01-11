@@ -43,7 +43,7 @@ class ZProfile(object):
         """
 
         if (dim==None): dim=read_dim()
-        nz=dim.nzgrid/dim.nprocz
+        nz=int(dim.nzgrid/dim.nprocz)
         self.z=zeros(nz*dim.nprocz,'f')
         if nfield>1:
             self.prof=zeros((nfield,dim.nzgrid),'f')

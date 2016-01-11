@@ -147,7 +147,7 @@ def button2axes(button):
 
     # find out the x- and y-coordinates of the buttons
     # NB: here i use integer division
-    buttonY = button/BTNS_X
+    buttonY = int(button/BTNS_X)
     buttonX = button - buttonY*BTNS_X
     axes = buttonX + buttonY*plot.axesX
     return axes
@@ -158,7 +158,7 @@ def axes2button(axes):
 
     # find out the x- and y-coordinates of the axes
     # NB: here i use integer division
-    axesY = axes/plot.axesX
+    axesY = int(axes/plot.axesX)
     axesX = axes - axesY*plot.axesX
     button = axesX + axesY*BTNS_X
     return button
@@ -263,7 +263,7 @@ def replot(axes):
 def updatePlots(val):
     global data, plot
     
-    print "updatePlot"
+    print("updatePlot")
     #ti = time.time()
     data.timeStep = round((plot.slider.val-data.t[0])/(data.t[-1]-data.t[0])*(len(data.t)-1))
     #print "updatePlots round(): dt = ", time.time()-ti

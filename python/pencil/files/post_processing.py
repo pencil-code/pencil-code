@@ -36,9 +36,9 @@ def post_compute(variables = ['b2m'], datadir = 'data'):
     fd = open(datadir + '/post_evaluation.dat', 'w')
     
     # write the header
-    fd.write('#--t-------------')
+    fd.write('#--t-------------'.encode('utf-8'))
     for variable in variables:
-        fd.write('--{0:15}'.format((variable+'--------------------')[:15]))
+        fd.write('--{0:15}'.format((variable+'--------------------')[:15]).encode('utf-8'))
     fd.write('\n')
     
     # read the list of all VAR files
@@ -93,7 +93,7 @@ def post_compute(variables = ['b2m'], datadir = 'data'):
                        ((bb[2,:,:,:]) * np.mean(np.mean(np.sqrt(pc.dot2(bb)), axis = 2), axis = 1)))
                 out_string += '{0:1.9e}  '.format(np.float64(gffz))
                     
-        fd.write(out_string+'\n')
+        fd.write((out_string+'\n').encode('utf-8'))
             
     fd.close()
 
