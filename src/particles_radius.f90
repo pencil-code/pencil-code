@@ -449,6 +449,9 @@ module Particles_radius
         k1 = k1_imn(imn)
         k2 = k2_imn(imn)
 !
+!  mass loss has a positive value -> particle is losing mass
+!  (the mass vector is pointing out of the particle)
+!
         allocate(mass_loss(k1:k2))
         allocate(effectiveness_factor(k1:k2))
 !
@@ -459,7 +462,7 @@ module Particles_radius
             if (fp(k,irhosurf) < 0) then
               rho = fp(k,imp) / (fp(k,iap)**3 * 4./3. * pi )
               mass_per_radius = 4. * pi * rho * fp(k,iap)**2
-              dfp(k,iap) = dfp(k,iap) + mass_loss(k) *(1-effectiveness_factor(k))/mass_per_radius
+              dfp(k,iap) = dfp(k,iap) - mass_loss(k) *(1-effectiveness_factor(k))/mass_per_radius
             endif
             fp(k,ieffp) = effectiveness_factor(k)
           enddo
@@ -467,7 +470,7 @@ module Particles_radius
           do k = k1,k2
             rho = fp(k,imp) / (fp(k,iap)**3 * 4./3. * pi )
             mass_per_radius = 4. * pi * rho * fp(k,iap)**2
-            dfp(k,iap) = dfp(k,iap) + mass_loss(k)/mass_per_radius
+            dfp(k,iap) = dfp(k,iap) - mass_loss(k)/mass_per_radius
           enddo
         endif
         deallocate(mass_loss)
