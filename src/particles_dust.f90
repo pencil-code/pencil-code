@@ -183,7 +183,7 @@ module Particles
       xp3, yp3, zp3, vpx3, vpy3, vpz3, lsinkparticle_1, rsinkparticle_1, &
       lcalc_uup, temp_grad0, thermophoretic_eq, cond_ratio, interp_pol_gradTT, &
       lreassign_strat_rhom, lparticlemesh_pqs_assignment, &
-      rpbeta_species, rpbeta
+      rpbeta_species, rpbeta, gab_width
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -222,7 +222,7 @@ module Particles
       lcommunicate_np, lcylindrical_gravity_par, &
       l_shell, k_shell, lparticlemesh_pqs_assignment, pscalar_sink_rate, &
       lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw,lbubble, &
-      lpart_box, rpbeta_species, rpbeta
+      rpbeta_species, rpbeta, gab_width
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -530,6 +530,8 @@ module Particles
 !
         if (lparticlemesh_cic .or. lparticlemesh_tsc) lfold_df=.true.
       endif
+!
+      if (lparticlemesh_gab) lfold_df_3points=.true.
 !
       if (lcollisional_cooling_twobody) then
         allocate(kneighbour(mpar_loc))
