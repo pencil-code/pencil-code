@@ -31,7 +31,7 @@ module Particles_temperature
   include 'particles_temperature.h'
 !
   logical :: lpart_temp_backreac=.true.
-  logical :: lrad_part=.false.
+  logical :: lrad_part=.false.,lconv_heating=.true.
   logical :: lpart_nuss_const=.false.
   logical :: lstefan_flow = .true.
   real :: init_part_temp, emissivity=0.0
@@ -43,7 +43,7 @@ module Particles_temperature
       init_particle_temperature, init_part_temp, emissivity, cp_part
 !
   namelist /particles_TT_run_pars/ emissivity, cp_part, lpart_temp_backreac,&
-      lrad_part,Twall, lpart_nuss_const,lstefan_flow
+      lrad_part,Twall, lpart_nuss_const,lstefan_flow,lconv_heating
 !
   integer :: idiag_Tpm=0, idiag_etpm=0
 !
@@ -231,6 +231,10 @@ module Particles_temperature
         allocate(Nuss_p(k1:k2))
         allocate(q_reac(k1:k2))
         allocate(mass_loss(k1:k2))
+!
+!  The mass vector is pointing outward of the particle ->
+!  mass loss > 0 means the particle is losing mass
+!
         call get_temperature_chemistry(q_reac,mass_loss)
 !
 !  Loop over all particles in current pencil.
@@ -239,20 +243,25 @@ module Particles_temperature
 !
 !  Calculate convective and conductive heat, all in CGS units
 !
-          ix0 = ineargrid(k,1)
-          iy0 = ineargrid(k,2)
-          iz0 = ineargrid(k,3)
-          inx0 = ix0-nghost
-          cond = p%tcond(inx0)
+            ix0 = ineargrid(k,1)
+            iy0 = ineargrid(k,2)
+            iz0 = ineargrid(k,3)
+            inx0 = ix0-nghost
+!
+!  Possibility to deactivate conductive and convective heating
+!
+          if (lconv_heating) then
+            cond = p%tcond(inx0)
 !
 !  Calculation of the Nusselt number according to the 
 !  Ranz-Marshall correlation. Nu= 2+ 0.6*sqrt(Re_p)Pr**1/3
 !
-          if (.not. lpart_nuss_const) then
-            Prandtl= nu(k)*p%cp(inx0)*p%rho(inx0)/cond
-            Nuss_p(k)=2.0 + 0.6*sqrt(rep(k))*Prandtl**(1./3.)
-          else
-            Nuss_p(k)=2.0
+            if (.not. lpart_nuss_const) then
+              Prandtl= nu(k)*p%cp(inx0)*p%rho(inx0)/cond
+              Nuss_p(k)=2.0 + 0.6*sqrt(rep(k))*Prandtl**(1./3.)
+            else
+              Nuss_p(k)=2.0
+            endif
           endif
 !
           Ap = 4.*pi*fp(k,iap)**2
@@ -267,27 +276,31 @@ module Particles_temperature
 !
 !  Calculation of stefan flow constant stefan_b
 !
-          if (lstefan_flow) then
-            stefan_b = mass_loss(k)*p%cv(inx0)/&
-                (2*pi*fp(k,iap)*Nuss_p(k)*cond)
-          else
-            stefan_b=0.0
-          endif
+          if (lconv_heating) then
+            if (lstefan_flow) then
+              stefan_b = mass_loss(k)*p%cv(inx0)/&
+                  (2*pi*fp(k,iap)*Nuss_p(k)*cond)
+            else
+              stefan_b=0.0
+            endif
 !
-          if (stefan_b .gt. 1e-5) then
+            if (stefan_b .gt. 1e-5) then
 !
 !  Convective heat transfer including the Stefan Flow
 !
-            heat_trans_coef = Nuss_p(k)*cond/(2*fp(k,iap))*&
-                (stefan_b/(exp(stefan_b)-1.0))
+              heat_trans_coef = Nuss_p(k)*cond/(2*fp(k,iap))*&
+                  (stefan_b/(exp(stefan_b)-1.0))
 !
 !  Convective heat transfer without the Stefan Flow
 !
-          else
-            heat_trans_coef = Nuss_p(k)*cond/(2*fp(k,iap))
-          endif
+            else
+              heat_trans_coef = Nuss_p(k)*cond/(2*fp(k,iap))
+            endif
 !
-          Qc = heat_trans_coef*Ap*(fp(k,iTp)-interp_TT(k))
+            Qc = heat_trans_coef*Ap*(fp(k,iTp)-interp_TT(k))
+          else
+            Qc = 0.0
+          endif
 !
 !  Calculate the change in particle temperature based on the cooling/heating
 !  rates on the particle
