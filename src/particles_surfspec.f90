@@ -279,6 +279,9 @@ module Particles_surfspec
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
 !
+      df(:,:,:,ichemspec(nchemspec)) = df(:,:,:,ichemspec(nchemspec))-&
+          sum(df(:,:,:,ichemspec(:)),DIM=4)
+!
       if (ldiagnos) then
         do i = 1,N_surface_species
           if (idiag_surf(i) /= 0) then
@@ -349,7 +352,11 @@ module Particles_surfspec
         call get_shared_variable('true_density_carbon',true_density_carbon,ierr)
 !
         call calc_mass_trans_reactants()
-        call get_surface_chemistry(Cg,ndot,enth,mass_loss)
+        if (lpchem_mass_enth) then
+          call get_surface_chemistry(Cg,ndot,mass_loss,enth)
+        else
+          call get_surface_chemistry(Cg,ndot,mass_loss)
+      endif
 !
 !  set surface gas species composition
 !  (infinite diffusion, set as far field and convert from
@@ -418,22 +425,21 @@ module Particles_surfspec
 !  Enthalpy from Pencil code at particles temperature
 !                 
                   if (lpencil(i_H0_RT)) then
-                    denth=denth+ndot(k,i)*A_p*p%H0_RT(ix0-nghost,jmap(i))*Rgas*fp(k,iTp)
+                    denth=denth+ndot(k,i)*A_p*p%cv(ix0-nghost)*(fp(k,iTp)-298.15)
+!  Old version, most probably not correct
+!                    denth=denth+ndot(k,i)*A_p*p%H0_RT(ix0-nghost,jmap(i))*Rgas*fp(k,iTp)
                   else
                     call fatal_error('particles_surfspec','mass bound enthalpy transfer needs p%H0_RT')
                   endif
-!                  print*, 'production', ndot(k,i)*A_p*enth(k,i)*1e7
-!                  print*, 'production', ndot(k,i),enth(k,i)*1e7
-!                  print*, 'production2', ndot(k,i),p%H0_RT(ix0-nghost,jmap(i))*Rgas*fp(k,iTp)
                 else
 !
 ! Species enthalpy at the gas phase temperature
 !
                   if (lpencil(i_H0_RT)) then
-                    denth=denth+ndot(k,i)*A_p*p%H0_RT(ix0-nghost,jmap(i))&
-                        *Rgas*p%TT(ix0-nghost)
-!                    print*, 'consumption', ndot(k,i)*A_p*p%H0_RT(ix0-nghost,jmap(i))*Rgas*p%TT(ix0-nghost)
-!                    print*, 'consumption', ndot(k,i),p%H0_RT(ix0-nghost,jmap(i))*Rgas*p%TT(ix0-nghost)
+                    denth=denth+ndot(k,i)*A_p*p%cv(ix0-nghost)*(p%TT(ix0-nghost)-298.15)
+!  Old version, most probably not correct
+!                    denth=denth+ndot(k,i)*A_p*p%H0_RT(ix0-nghost,jmap(i))&
+!                        *Rgas*p%TT(ix0-nghost)
                   else
                     call fatal_error('particles_surfspec',&
                         'mass bound enthalpy transfer needs p%H0_RT')
@@ -480,17 +486,14 @@ module Particles_surfspec
                     reac_pchem_weight= 0.0
                     if (find_index(i,jmap,N_surface_species) > 0 ) then
 !NILS: Isn't index1=i?
-                      index1 = jmap(find_index(i,jmap,N_surface_species))
-                      index2 = ichemspec(index1)
+!                      index1 = jmap(find_index(i,jmap,N_surface_species))
+                      index2 = ichemspec(i)
                       dmass_frac_dt = (A_p*&
                           ndot(k,find_index(i,jmap,N_surface_species))*&
-                          species_constants(index1,imass)+&
-                          dmass*interp_species(k,index1))*weight*&
+                          species_constants(i,imass)+&
+                          dmass*interp_species(k,i))*weight*&
                           m1_cell
                       df(ixx,iyy,izz,index2)=df(ixx,iyy,izz,index2)+dmass_frac_dt
-!                      if (i==nchemspec-1) then
-!                        print*, 'summan',summan
-!                      endif
                       if (lfirst .and. ldt)&
                           reac_pchem_weight = max(reac_pchem_weight,&
                           abs(dmass_frac_dt/&
@@ -513,8 +516,8 @@ module Particles_surfspec
 !  Solving for all but the other values, setting the last one to the 
 !  negative values of all others.
 !
-                  df(ixx,iyy,izz,ichemspec(nchemspec)) = &
-                      df(ixx,iyy,izz,ichemspec(nchemspec))-summan
+!                  df(ixx,iyy,izz,ichemspec(nchemspec)) = &
+!                      df(ixx,iyy,izz,ichemspec(nchemspec))-summan
 !                  df(ixx,iyy,izz,ichemspec(nchemspec)) = df(ixx,iyy,izz,ichemspec(nchemspec))-&
 !                      sum(df(ixx,iyy,izz,ichemspec(:)))
 !
@@ -541,7 +544,7 @@ module Particles_surfspec
 !  Compare the current maximum reaction rate to the current maximum 
 !  reaction rate in the current pencil
 !
-            if (lfirst .and. ldt) reac_pchem = max(reac_pchem,max_reac_pchem)
+          if (lfirst .and. ldt) reac_pchem = max(reac_pchem,max_reac_pchem)
 !
           endif
         enddo
@@ -562,6 +565,9 @@ module Particles_surfspec
         if (allocated(mass_loss))   deallocate(mass_loss)
         if (allocated(enth)) deallocate(enth)
       endif
+
+      df(:,m,n,ichemspec(nchemspec)) = df(:,m,n,ichemspec(nchemspec))-&
+          sum(df(:,m,n,ichemspec(:)),DIM=2)
 !
     endsubroutine dpsurf_dt_pencil
 ! ******************************************************************************
