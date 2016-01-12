@@ -18,7 +18,7 @@ module GhostFold
 !
   private
 !
-  public :: fold_df, fold_f
+  public :: fold_df, fold_f,fold_df_3points
 !
   contains
 !***********************************************************************
@@ -149,5 +149,57 @@ module GhostFold
       endif
 !
     endsubroutine fold_f
+!***********************************************************************
+    subroutine fold_df_3points(df,ivar1,ivar2)
+!
+!  Fold whole ghost zone of df into main part of df.
+!  This is used for when the gaussian scheme is used for
+!  source term distribution, used when reactive particles
+!  interact with the flow
+!  15-may-2006/anders: coded
+!  11-jan-2015/jonas: adapted to fold the whole ghost zone
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      integer :: ivar1,ivar2
+!
+      real, dimension (ny,nz) :: df_tmp_yz
+      integer :: ivar
+!
+!  Fold z-direction first (including all ghost zones in x and y).
+!
+      if (nzgrid/=1) then
+        df(l1-3:l2+3,m1-3:m2+3,n1:n1+2,ivar1:ivar2)= &
+            df(l1-3:l2+3,m1-3:m2+3,n1:n1+2,ivar1:ivar2) + &
+            df(l1-3:l2+3,m1-3:m2+3,n2+1:n2+3,ivar1:ivar2)
+        df(l1-3:l2+3,m1-3:m2+3,n2-2:n2,ivar1:ivar2)= &
+            df(l1-3:l2+3,m1-1:m2+1,n2-2:n2,ivar1:ivar2) + &
+            df(l1-3:l2+3,m1-1:m2+1,n1-3:n1-1,ivar1:ivar2)
+        df(l1-3:l2+3,m1-3:m2+3,n1-3:n1-1,ivar1:ivar2)=0.0
+        df(l1-3:l2+3,m1-3:m2+3,n2+1:n2+3,ivar1:ivar2)=0.0
+      endif
+!
+!  Then fold y-direction (including all ghost zones in x).
+!
+      if (nygrid/=1) then
+        df(l1-3:l2+3,m1:m1+2,n1:n2,ivar1:ivar2)= &
+            df(l1-3:l2+3,m1:m1+2,n1:n2,ivar1:ivar2) + &
+            df(l1-3:l2+3,m2+1:m2+3,n1:n2,ivar1:ivar2)
+        df(l1-3:l2+3,m2-2:m2,n1:n2,ivar1:ivar2)= &
+            df(l1-3:l2+3,m2-2:m2,n1:n2,ivar1:ivar2) + &
+            df(l1-3:l2+3,m1-3:m1-1,n1:n2,ivar1:ivar2)
+      endif
+!
+!  Finally fold the x-direction.
+!
+      if (nxgrid/=1) then
+        df(l1:l1+2,m1:m2,n1:n2,ivar1:ivar2)=df(l1:l1+2,m1:m2,n1:n2,ivar1:ivar2) + &
+            df(l2+1:l2+3,m1:m2,n1:n2,ivar1:ivar2)
+        df(l2-2:l2,m1:m2,n1:n2,ivar1:ivar2)=df(l2-2:l2,m1:m2,n1:n2,ivar1:ivar2) + &
+            df(l1-3:l1-1,m1:m2,n1:n2,ivar1:ivar2)
+        df(l1-3:l1-1,m1:m2,n1:n2,ivar1:ivar2)=0.0
+        df(l2+1:l2+3,m1:m2,n1:n2,ivar1:ivar2)=0.0
+      endif
+!
+    endsubroutine fold_df_3points
 !***********************************************************************
 endmodule GhostFold

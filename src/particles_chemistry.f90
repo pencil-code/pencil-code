@@ -2200,7 +2200,7 @@ module Particles_chemistry
 !  Get surface-chemistry dependent variables!
 !  oct-14/Jonas: coded
 !
-    subroutine get_surface_chemistry(Cg_targ,ndot_targ,enth_targ,mass_loss_targ)
+    subroutine get_surface_chemistry(Cg_targ,ndot_targ,mass_loss_targ,enth_targ)
       real, dimension(:,:), optional :: ndot_targ,enth_targ
       real, dimension(:) :: Cg_targ
       real, dimension(:), optional :: mass_loss_targ

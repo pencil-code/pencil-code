@@ -9,7 +9,7 @@ module GhostFold
 !
   private
 !
-  public :: fold_df, fold_f
+  public :: fold_df, fold_f, fold_df_3points
 !
   contains
 !***********************************************************************
@@ -36,5 +36,17 @@ module GhostFold
       call keep_compiler_quiet(ivar1,ivar2)
 !
     endsubroutine fold_f
+!***********************************************************************
+    subroutine fold_df_3points(df,ivar1,ivar2)
+!
+!  12-Jan-2015/jonas: dummy
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      integer :: ivar1,ivar2
+!
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(ivar1,ivar2)
+!
+    endsubroutine fold_df_3points
 !***********************************************************************
 endmodule GhostFold

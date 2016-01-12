@@ -581,6 +581,14 @@ module Cdata
 !
   logical :: lfold_df=.false.
 !
+!  Reactive particles need their source terms for particle-fluid interaction
+!  distributed over a large number of points to avoid shocks. 
+!  This means that nodes removed up to 3 nodes from the nearest grid point
+!  are affected. This neccissitates folding all the ghost zones into the main 
+!  domain.
+!
+  logical :: lfold_df_3points=.false.
+!
 !  Shift data cube by one grid point each time-step.
 !
   logical :: lshift_datacube_x=.false.

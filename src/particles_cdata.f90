@@ -34,6 +34,8 @@ module Particles_cdata
   real :: rsinkparticle_1=0.0
   real :: t_nextinsert=0. !The time at which new particles are going to be inserted.
   real :: dustdensity_powerlaw=0.
+  real, dimension(4) :: gab_weights
+  real :: gab_width=3.0
 !
   integer, dimension(-1:1,-1:1,-1:1) :: neighbors_par = -1
   integer, dimension (nx) :: kshepherd
@@ -65,7 +67,7 @@ module Particles_cdata
   logical :: linterpolate_spline=.true.
   logical :: lparticlemesh_cic=.true., lparticlemesh_tsc=.false.
   logical :: lparticlemesh_pqs_assignment=.false.
-  logical :: lpart_box = .false.
+  logical :: lparticlemesh_gab = .false.
   logical :: linterp_reality_check=.false., lmigration_redo=.false.
   logical :: lnocalc_np=.false., lnocalc_rhop=.false.
   logical :: lmigration_real_check=.true.

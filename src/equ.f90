@@ -45,7 +45,7 @@ module Equ
                          forcing_continuous
 ! To check ghost cell consistency, please uncomment the following line:
 !     use Ghost_check, only: check_ghosts_consistency
-      use GhostFold, only: fold_df
+      use GhostFold, only: fold_df, fold_df_3points
       use Gravity
       use Grid, only: calc_pencils_grid, get_grid_mn
       use Heatflux
@@ -909,6 +909,7 @@ module Equ
 !  Currently only needed for smoothed out particle drag force.
 !
       if (lhydro .and. lfold_df) call fold_df(df,iux,iuz)
+      if (lfold_df_3points) call fold_df_3points(df,iux,iuz)
 !
 !  -------------------------------------------------------------
 !  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)
