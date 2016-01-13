@@ -228,7 +228,7 @@ module Particles
       lcommunicate_np, lcylindrical_gravity_par, &
       l_shell, k_shell, lparticlemesh_pqs_assignment, pscalar_sink_rate, &
       lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw,lbubble, &
-      lpart_box, rpbeta_species, rpbeta, r_insert, r_insert_width, lgaussian_r_insert, &
+      rpbeta_species, rpbeta, r_insert, r_insert_width, lgaussian_r_insert, &
       tstart_insert_particles, tstart_rpbeta, linsert_as_many_as_possible
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
