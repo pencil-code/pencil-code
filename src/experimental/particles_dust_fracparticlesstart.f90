@@ -118,6 +118,7 @@ module Particles
   logical :: lsherwood_const=.false.
   logical :: lbubble=.false.
   logical :: linsert_as_many_as_possible=.false.
+  logical :: lgaussian_r_insert=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -227,7 +228,7 @@ module Particles
       lcommunicate_np, lcylindrical_gravity_par, &
       l_shell, k_shell, lparticlemesh_pqs_assignment, pscalar_sink_rate, &
       lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw,lbubble, &
-      lpart_box, rpbeta_species, rpbeta, r_insert, r_insert_width, &
+      lpart_box, rpbeta_species, rpbeta, r_insert, r_insert_width, lgaussian_r_insert, &
       tstart_insert_particles, tstart_rpbeta, linsert_as_many_as_possible
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
@@ -1806,7 +1807,7 @@ module Particles
 ! Works only for particles_dust - add neccessary variable
 ! declarations in particles_tracers to make it work here.
 !
-      use General, only: random_number_wrapper
+      use General, only: random_number_wrapper, normal_deviate
       use Particles_diagnos_state, only: insert_particles_diagnos_state
       use SharedVariables, only: get_shared_variable
       use Mpicomm, only: mpireduce_sum_int
@@ -1884,7 +1885,13 @@ module Particles
             case ('r-insert','r_insert')
               if (lcylindrical_coords) then
                 if (r_insert_width>0.0) then
-                  call random_number_wrapper(fp(npar_loc_old+1:npar_loc,ixp))
+                  if (lgaussian_r_insert) then
+                    do k=npar_loc_old+1,npar_loc
+                      call normal_deviate(fp(k,ixp))
+                    enddo
+                  else
+                    call random_number_wrapper(fp(npar_loc_old+1:npar_loc,ixp))
+                  endif
                   fp(npar_loc_old+1:npar_loc,ixp) = r_insert+fp(npar_loc_old+1:npar_loc,ixp)*r_insert_width
                 else
                   fp(npar_loc_old+1:npar_loc,ixp) = r_insert
