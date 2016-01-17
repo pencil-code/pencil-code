@@ -285,7 +285,7 @@ module Interstellar
 !
 !  SN type flags
 !
-  logical :: lSNI=.true., lSNII=.false.
+  logical :: lSNI=.true., lSNII=.true.
 !
 !  Cooling & heating flags
 !
