@@ -73,10 +73,8 @@ module Energy
   real :: deltaT_poleq=0.0, beta_hand=1.0, r_bcz=0.0
   real :: tau_cool=0.0, tau_diff=0.0, TTref_cool=0.0, tau_cool2=0.0
   real :: tau_cool_ss=0.0
-  real :: cs0hs=0.0, H0hs=0.0, rho0hs=0.0, rho0ts=impossible
+  real :: cs0hs=0.0, H0hs=0.0, rho0hs=0.0
   real :: ss_volaverage=0.
-  real, target :: T0hs=impossible
-  real :: rho0ts_cgs=1.67262158e-24, T0hs_cgs=7.202e3
   real :: xbot=0.0, xtop=0.0, alpha_MLT=1.5, xbot_aniso=0.0, xtop_aniso=0.0
   real :: zz1=impossible, zz2=impossible
   real :: rescale_TTmeanxy=1.
@@ -166,7 +164,7 @@ module Energy
       ampl_TT, kx_ss, ky_ss, kz_ss, beta_glnrho_global, ladvection_entropy, &
       lviscosity_heat, r_bcz, luminosity, wheat, hcond0, tau_cool, &
       tau_cool_ss, cool2, TTref_cool, lhcond_global, cool_fac, cs0hs, H0hs, &
-      rho0hs, tau_cool2, rho0ts, T0hs, lconvection_gravx, Fbot, &
+      rho0hs, tau_cool2, lconvection_gravx, Fbot, &
       hcond0_kramers, nkramers, alpha_MLT, lprestellar_cool_iso, lread_hcond, &
       limpose_heat_ceiling, heat_ceiling
 !
@@ -1154,8 +1152,6 @@ module Energy
             enddo; enddo
           case('Ferriere'); call ferriere(f)
           case('Ferriere-hs'); call ferriere_hs(f,rho0hs)
-          case('thermal-hs')
-            call thermal_hs_equilibrium_ism(f)
           case('Galactic-hs'); call galactic_hs(f,rho0hs,cs0hs,H0hs)
           case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
           case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
@@ -2171,90 +2167,6 @@ module Energy
       if (lroot) print*, 'Ferriere-hs: cs2bot=',cs2bot, ' cs2top=',cs2top
 !
     endsubroutine ferriere_hs
-!***********************************************************************
-    subroutine thermal_hs_equilibrium_ism(f)
-!
-!  This routine calculates a vertical profile for density for an appropriate
-!  isothermal entropy designed to balance the vertical 'Ferriere' gravity
-!  profile used in interstellar.
-!  T0 and rho0 are chosen to ensure uv-heating approx 0.0147 at z=0.
-!  Initial thermal & hydrostatice equilibrium is achieved by ensuring
-!  Lambda*rho(z)=Gamma(z) in interstellar.
-!
-!  Requires gravz_profile='Ferriere' in gravity_simple.f90,
-!  initlnrho='Galactic-hs' in density.f90 and heating_select='thermal-hs'
-!  in interstellar.f90. Constants g_A..D from gravz_profile.
-!
-!  22-mar-10/fred: coded
-!  12-aug-10/fred: moved to interstellar and added shared variables
-!  20-jan-15/MR: changes for use of reference state.
-!
-      use EquationOfState , only: eoscalc, ilnrho_lnTT, getmu
-      use SharedVariables, only: get_shared_variable
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      real :: lnrho,ss,lnTT,TT
-      real, dimension(:), pointer :: zrho
-      real, pointer :: T0hs
-      real :: g_A, g_C
-      real, parameter ::  g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
-      double precision :: g_B ,g_D
-      double precision, parameter :: g_B_cgs=6.172D20 , g_D_cgs=3.086D21
-!
-!  identifier
-!
-      if (headtt) print*,'thermal_hs_equilibrium_ism: ENTER'
-!
-!  Set up physical units.
-!
-      if (unit_system=='cgs') then
-        g_A = g_A_cgs/unit_velocity*unit_time
-        g_C = g_C_cgs/unit_velocity*unit_time
-        g_D = g_D_cgs/unit_length
-        g_B = g_B_cgs/unit_length
-      else if (unit_system=='SI') then
-        call fatal_error('initialize_entropy', &
-            'SI unit conversions not inplemented')
-      endif
-!
-!  Obtain vertical density profile and isothermal temperature from
-!  interstellar: thermal_hs
-!
-      call get_shared_variable('zrho', zrho, caller='thermal_hs_equilibrium_ism')
-      call get_shared_variable('T0hs', T0hs)
-      if (lroot) print*, &
-          'thermal_hs_equilibrium_ism: zrho received', &
-          ' from interstellar, T0hs =',T0hs
-!
-!  Allocate density profile to f and derive entropy profile from
-!  temperature and density
-!
-      do n=n1,n2
-        lnrho=log(zrho(n))
-        if (ldensity_nolog) then
-          if (lreference_state) then
-            do m=m1,m2
-              f(l1:l2,m,n,irho)=zrho(n)-reference_state(:,iref_rho)
-            enddo
-          else
-            f(:,:,n,irho)=zrho(n)
-          endif
-        else
-          f(:,:,n,ilnrho)=lnrho
-        endif
-!
-        TT=T0hs/(g_A*g_B)* &
-            (g_A*sqrt(g_B**2+(z(n))**2)+0.5*g_C*(z(n))**2/g_D)
-        lnTT=log(TT)
-!
-        call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
-!
-        f(:,:,n,iss)=ss
-!
-      enddo
-!
-    endsubroutine thermal_hs_equilibrium_ism
 !***********************************************************************
     subroutine galactic_hs(f,rho0hs,cs0hs,H0hs)
 !
