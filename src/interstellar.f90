@@ -1412,10 +1412,19 @@ module Interstellar
 !
 !  Average SN heating (due to SNI and SNII)
 !  The amplitudes of both types is assumed the same (=ampl_SN)
+!  Added option to gradually remove average heating as SN are introduced when
+!  initial condition is in equilibrium prepared in 1D 
 !
       if (laverage_SN_heating) then
-        heat=heat+average_SNI_heating *exp(-(z(n)/h_SNI )**2)
-        heat=heat+average_SNII_heating*exp(-(z(n)/h_SNII)**2)
+        if (lSNI.or.lSNII) then
+          heat=heat+average_SNI_heating *exp(-(z(n)/h_SNI )**2)*&
+              t_interval_SNI/(t_interval_SNI + t) 
+          heat=heat+average_SNII_heating*exp(-(z(n)/h_SNII)**2)*&
+              t_interval_SNII/(t_interval_SNII + t) 
+        else 
+          heat=heat+average_SNI_heating *exp(-(z(n)/h_SNI )**2)
+          heat=heat+average_SNII_heating*exp(-(z(n)/h_SNII)**2)
+        endif
       endif
 !
 !  Prepare diagnostic output
