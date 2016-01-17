@@ -201,6 +201,14 @@ module InitialCondition
       integer :: stat, q
       logical :: exist
 !
+!  Set up physical units.
+!
+      if (unit_system=='cgs') then
+        if (Tinit == impossible) Tinit = Tinit_cgs/unit_temperature
+      else if (unit_system=='SI') then
+        call fatal_error('initial_condition_lnrho','SI unit conversions not inplemented')
+      endif
+!
 !  Read rho and TT and write into an array.
 !  If file is not found in run directory, search under trim(directory).
 !
@@ -229,10 +237,9 @@ module InitialCondition
 !
 !  Assuming no ghost zones in init_ism.dat.
 !
-!
       do n=n1,n2
-        f(:,:,n,ilnrho)=log(tmp1(n-nghost+ipz*nz))
-        lnTT(n)        =log(tmp2(n-nghost+ipz*nz))
+        f(l1:l2,m1:m2,n,ilnrho)=log(tmp1(n-nghost+ipz*nz))
+        lnTT(n)                =log(tmp2(n-nghost+ipz*nz))
       enddo
 !
       if (notanumber(f(l1:l2,m1:m2,n1:n2,ilnrho))) &
@@ -260,7 +267,7 @@ module InitialCondition
 !
         call eoscalc(ilnrho_lnTT,lnrho,lnTT(n),ss=ss)
 !
-        f(:,:,n,iss)=ss
+        f(l1:l2,m1:m2,n,iss)=ss
 !
       enddo
 !
