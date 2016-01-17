@@ -223,8 +223,8 @@ module Interstellar
 !  Limit placed of minimum density resulting from cavity creation and
 !  parameters for thermal_hse(hydrostatic equilibrium) assuming RBNr
 !
-  real, parameter :: rho_min_cgs=1.E-34, rho0ts_cgs=3.5E-24, T0hs_cgs=7.088E2
-  real :: rho0ts=impossible, T0hs=impossible, rho_min=impossible
+  real, parameter :: rho_min_cgs=1.E-34, rho0ts_cgs=3.5E-24, Tinit_cgs=7.088E2
+  real :: rho0ts=impossible, Tinit=impossible, rho_min=impossible
 !
 !  Cooling timestep limiter coefficient
 !  (This value 0.08 is overly restrictive. cdt_tauc=0.5 is a better value.)
@@ -360,7 +360,7 @@ module Interstellar
       frac_ecr, frac_eth, thermal_profile, velocity_profile, mass_profile, &
       luniform_zdist_SNI, inner_shell_proportion, outer_shell_proportion, &
       cooling_select, heating_select, heating_rate, rho0ts, &
-      T0hs, TT_SN_max, rho_SN_min, N_mass, lSNII_gaussian, rho_SN_max, &
+      Tinit, TT_SN_max, rho_SN_min, N_mass, lSNII_gaussian, rho_SN_max, &
       lthermal_hse, lheatz_min, kperp, kpara
 !
 ! run parameters
@@ -379,7 +379,7 @@ module Interstellar
       center_SN_x, center_SN_y, center_SN_z, rho_SN_min, TT_SN_max, &
       lheating_UV, cooling_select, heating_select, heating_rate, &
       heatcool_shock_cutoff, heatcool_shock_cutoff_rate, ladd_massflux, &
-      N_mass, addrate, T0hs, rho0ts, &
+      N_mass, addrate, Tinit, rho0ts, &
       lSNII_gaussian, rho_SN_max, lSN_mass_rate, lthermal_hse, lheatz_min, &
       p_OB, SN_clustering_time, SN_clustering_radius, lOB_cluster, kperp, kpara
 !
@@ -485,7 +485,7 @@ module Interstellar
           endif
         endif
         if (rho_min == impossible) rho_min=rho_min_cgs/unit_temperature
-        if (T0hs == impossible) T0hs=T0hs_cgs/unit_temperature
+        if (Tinit == impossible) Tinit=Tinit_cgs/unit_temperature
         if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
         if (lroot) &
             print*,'initialize_interstellar: ampl_SN, kampl_SN = ', &
@@ -1308,8 +1308,8 @@ module Interstellar
 !
       do n=1,mz
         if (lthermal_hse) then
-          logrho = log(rho0ts)+(a_S*z_S*m_u*mu/k_B/T0hs)*(log(T0hs)- &
-              log(T0hs/(a_S*z_S)* &
+          logrho = log(rho0ts)+(a_S*z_S*m_u*mu/k_B/Tinit)*(log(Tinit)- &
+              log(Tinit/(a_S*z_S)* &
               (a_S*sqrt(z_S**2+(z(n))**2)+0.5*a_D*(z(n))**2/z_D)))
         else
           logrho = log(rho0ts)-0.015*(- &
@@ -1318,7 +1318,7 @@ module Interstellar
         endif
         if (logrho < -40.0) logrho=-40.0
         zrho(n)=exp(logrho)
-        TT=T0hs/(a_S*z_S)* &
+        TT=Tinit/(a_S*z_S)* &
             (a_S*sqrt(z_S**2+(z(n))**2)+0.5*a_D*(z(n))**2/z_D)
         lnTT(n)=log(TT)
         zheat(n)=GammaUV*exp(-abs(z(n))/H_z)
