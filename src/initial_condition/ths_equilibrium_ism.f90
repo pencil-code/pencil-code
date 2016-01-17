@@ -232,7 +232,6 @@ module InitialCondition
         read(31,*,iostat=stat) var1,var2
         if (stat<0) exit
         if (ip<5) print*,'rho, TT: ',var1,var2
-        if (lroot) print*,'rho, TT: ',var1,var2
         tmp1(q)=var1
         tmp2(q)=var2
       enddo
