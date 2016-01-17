@@ -1,0 +1,21 @@
+Use this 1D model to calculate the density and temperatue profile for the 
+initial condition in the 3D supernova driven turbulence models of the ISM,
+that has identical vertical grid and hydrodynamic run parameters.
+A example is given in sample ../HD3D
+Magnetic field and cosmic rays can be added to the 3D model
+
+Convergence typically requires about 1 Gyr depending on the parameters and 
+vertical extent, but in 1D this can be computed in under an hour. 
+The vertical oscillations in the 3D simulations of Gent et al 2012 due to
+the initial vertical pressure imbalance persisted for about 400 Myr, and this
+evidentally persists longer with greater vertical extent, so the preparation
+appears justified.
+
+The averaged SN heating substitutes for the SN driven turbulence and will be
+smoothly superceded by the SN explosions in the 3D model.
+
+To obtain the 1D data file run
+> python ism_save.dat
+from the command line then copy the init_ism.dat file into the new 3D run
+directory
+
