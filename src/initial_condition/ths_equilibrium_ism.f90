@@ -192,7 +192,7 @@ module InitialCondition
 !
 !  07-jul-15/fred: coded
 !
-      use EquationOfState, only: getmu, get_cp1
+      use Sub, only: notanumber
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer, parameter :: ntotal=nz*nprocz
@@ -200,16 +200,6 @@ module InitialCondition
       real :: var1, var2
       integer :: stat, q
       logical :: exist
-!
-!  Set up physical units.
-!
-      if (unit_system=='cgs') then
-        rho_fraction = nfraction_cgs * m_u_cgs/unit_density
-        hscale = hscale_cgs/unit_length
-        if (Tinit == impossible) Tinit = Tinit_cgs/unit_temperature
-      else if (unit_system=='SI') then
-        call fatal_error('initial_condition_lnrho','SI unit conversions not inplemented')
-      endif
 !
 !  Read rho and TT and write into an array.
 !  If file is not found in run directory, search under trim(directory).
@@ -241,9 +231,12 @@ module InitialCondition
 !
 !
       do n=n1,n2
-        f(:,:,n,ilnrho)=log(tmp1(n-nghost+ipz*nzgrid))
-        lnTT(n)        =log(tmp2(n-nghost+ipz*nzgrid))
+        f(:,:,n,ilnrho)=log(tmp1(n-nghost+ipz*nz))
+        lnTT(n)        =log(tmp2(n-nghost+ipz*nz))
       enddo
+!
+      if (notanumber(f(l1:l2,m1:m2,n1:n2,ilnrho))) &
+        call error('initial_condition_lnrho', 'Imaginary density values')
 !
     endsubroutine initial_condition_lnrho
 !***********************************************************************
