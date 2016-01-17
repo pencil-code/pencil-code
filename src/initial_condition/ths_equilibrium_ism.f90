@@ -198,7 +198,7 @@ module InitialCondition
       integer, parameter :: ntotal=nz*nprocz
       real, dimension(nz*nprocz) :: tmp1,tmp2
       real :: var1, var2
-      integer :: stat, q, lun
+      integer :: stat, q
       logical :: exist
 !
 !  Set up physical units.
@@ -214,14 +214,13 @@ module InitialCondition
 !  Read rho and TT and write into an array.
 !  If file is not found in run directory, search under trim(directory).
 !
-      lun = 30
       inquire(file='init_ism.dat',exist=exist)
       if (exist) then
-        open(lun,file='init_ism.dat')
+        open(31,file='init_ism.dat')
       else
         inquire(file=trim(directory)//'/init_ism.ascii',exist=exist)
         if (exist) then
-          open(lun,file=trim(directory)//'/init_ism.ascii')
+          open(31,file=trim(directory)//'/init_ism.ascii')
         else
           call fatal_error('initial_lnrho','error - no init_ism input file')
         endif
@@ -230,14 +229,14 @@ module InitialCondition
 !  Read profiles.
 !
       do q=1,ntotal
-        read(lun,*,iostat=stat) var1,var2
+        read(31,*,iostat=stat) var1,var2
         if (stat<0) exit
         if (ip<5) print*,'rho, TT: ',var1,var2
         if (lroot) print*,'rho, TT: ',var1,var2
         tmp1(q)=var1
         tmp2(q)=var2
       enddo
-      close(lun)
+      close(31)
 !
 !  Assuming no ghost zones in init_ism.dat.
 !
