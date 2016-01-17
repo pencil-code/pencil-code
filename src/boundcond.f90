@@ -860,6 +860,9 @@ module Boundcond
               case ('cdz')
                 ! BCZ_DOC: for interstellar runs limit rho
                 call bc_cdz(f,topbot,j)
+              case ('ism')
+                ! BCZ_DOC: for interstellar runs limit rho
+                call bc_ism(f,topbot,j)
               case ('asT')
                 ! BCZ_DOC: select entropy for uniform ghost temperature
                 ! BCZ_DOC: matching fluctuating boundary value,
@@ -8043,6 +8046,80 @@ module Boundcond
       endselect
 !
     endsubroutine bc_cdz
+!***********************************************************************
+    subroutine bc_ism(f,topbot,j)
+!
+!  30-nov-15/fred: Replaced bc_ctz and bc_cdz.
+!  Apply observed scale height locally from Reynolds 1991, Manchester & Taylor
+!  1981 for warm ionized gas - dominant scale height above 500 parsecs.
+!  Apply constant local temperature across boundary for entropy.
+!  Motivation to prevent numerical spikes in shock fronts, which cannot be 
+!  absorbed in only three ghost cells, but boundary thermodynamics still 
+!  responsive to interior dynamics.
+!
+      use EquationOfState, only: get_cv1,get_cp1
+!
+      character (len=bclen) :: topbot
+      real, dimension (:,:,:,:) :: f
+      integer :: j,k
+      real, parameter :: density_scale_cgs=2.7774e21 !900pc Reynolds 91, etc
+      real :: density_scale
+      real :: cv1,cp1,cv,cp
+!
+      density_scale=density_scale_cgs/unit_length
+      call get_cv1(cv1); cv=1./cv1
+      call get_cp1(cp1); cp=1./cp1
+!
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+          do k=1,3
+            if (j==irho .or. j==ilnrho) then
+              if (ldensity_nolog) then
+                f(:,:,k,j)=f(:,:,n1,j)*exp(-(z(n1)-z(k))/density_scale)
+              else
+                f(:,:,k,j)=f(:,:,n1,j) - (z(n1)-z(k))/density_scale
+              endif
+            else if (j==iss) then
+              if (ldensity_nolog) then
+                f(:,:,n1-k,j)=f(:,:,n1-k+1,j)+(cp-cv)*&
+                 (log(f(:,:,n1-k+1,j-1))-log(f(:,:,n1-k,j-1)))
+              else
+                f(:,:,n1-k,j)=f(:,:,n1-k+1,j)+(cp-cv)*&
+                 (f(:,:,n1-k+1,j-1)-f(:,:,n1-k,j-1))
+              endif
+            else
+              call fatal_error('bc_ism','only for irho, ilnrho or iss')
+            endif
+          enddo
+!
+      case ('top')               ! top boundary
+          do k=1,3
+            if (j==irho .or. j==ilnrho) then
+              if (ldensity_nolog) then
+                f(:,:,n2+k,j)=f(:,:,n2,j)*exp(-(z(n2+k)-z(n2))/density_scale)
+              else
+                f(:,:,n2+k,j)=f(:,:,n2,j) - (z(n2+k)-z(n2))/density_scale
+              endif
+            else if (j==iss) then
+              if (ldensity_nolog) then
+                f(:,:,n2+k,j)=f(:,:,n2+k-1,j)+(cp-cv)*&
+                 (log(f(:,:,n2+k-1,j-1))-log(f(:,:,n2+k,j-1)))
+              else
+                f(:,:,n2+k,j)=f(:,:,n2+k-1,j)+(cp-cv)*&
+                 (f(:,:,n2+k-1,j-1)-f(:,:,n2+k,j-1))
+              endif
+            else
+              call fatal_error('bc_ism','only for irho, ilnrho or iss')
+            endif
+          enddo
+!
+      case default
+        print*, "bc_ism ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_ism
 !***********************************************************************
     subroutine set_consistent_density_boundary(f,dirn,boundtype,tb,rhob,lsuccess)
 !
