@@ -1,0 +1,64 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  run parameters for interstellar
+!
+&run_pars
+  cvsid='$Id$',
+  nt=1001, it1=100, isave=5000, itorder=3
+  cdt=0.1, cdtv=0.1, dtmin=1e-9, cdts=0.1
+  dsnap=0.2, dvid=20., 
+  ip=20
+  lpencil_check=T
+  lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  diffrho=0.004
+  diffrho_shock=10.0
+  lmassdiff_fixkin=T
+  idiff='normal','shock'
+/
+&grav_run_pars
+/
+&entropy_run_pars
+  iheatcond='chi-therm','shock'
+  chi_th=0.004,chi_shock=10.0
+/
+&interstellar_run_pars
+  laverage_SN_heating=T
+  cdt_tauc=0.1
+  width_SN=0.032
+  lSN_scale_rad=T
+  N_mass=80.0
+  !frac_eth=1.0
+  !frac_ecr=0.0
+  !lSN_ecr=F
+  lSNII=T
+  lSNI=T
+  !t_next_SNII=0.0
+  !t_next_SNI=0.0
+  lSN_mass=F
+  energy_width_ratio=1.0
+  velocity_width_ratio=1.0
+  thermal_profile='gaussian3'
+  !mass_width_ratio=1.0
+  !mass_profile='gaussian3'
+  velocity_profile='gaussian3'
+  lSN_velocity=T
+!  ampl_SN=3.182093016 !without kinetic energy
+  ampl_SN=1.591046508 !with 50% kinetic energy
+  kampl_SN=1.591046508 !with 50% kinetic energy
+  !mass_SN=2.531673204e-7 !4 solar masses
+  heatcool_shock_cutoff_rate=0.01
+/
+&viscosity_run_pars
+  ivisc='nu-therm','nu-shock'
+  nu=0.004,nu_shock=10.0
+/
+&shock_run_pars
+  lshock_first=T
+  lshock_max5=F
+/

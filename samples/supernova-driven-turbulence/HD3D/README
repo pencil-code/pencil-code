@@ -1,0 +1,16 @@
+Use the 1D model (an example is given in sample ../1D_ism_init) to obtain
+the file init_ism.dat containing density and temperatue profiles for the 
+initial condition in this 3D supernova driven turbulence model of the ISM.
+The 1D model has identical vertical grid and hydrodynamic run parameters.
+Magnetic field and cosmic rays can be added to this 3D model
+
+The averaged SN heating substitutes for the SN driven turbulence and will be
+smoothly superceded by the SN explosions as the turbulence evolves.
+
+SN are spatially distributed according to a uniform distribution in the 
+horizontal plane and gaussian distribution vertically centred about the 
+centre of mass, which fluctuates near to the midlplane. Default SN frequency
+rates are milky way estimates and default mass and gravitional acceleration
+are taken from the solar vicinity.
+
+

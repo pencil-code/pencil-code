@@ -1,7 +1,7 @@
 Use this 1D model to calculate the density and temperatue profile for the 
 initial condition in the 3D supernova driven turbulence models of the ISM,
 that has identical vertical grid and hydrodynamic run parameters.
-A example is given in sample ../HD3D
+An example is given in sample ../HD3D
 Magnetic field and cosmic rays can be added to the 3D model
 
 Convergence typically requires about 1 Gyr depending on the parameters and 
