@@ -536,9 +536,9 @@ module Grid
           a=dy/trans_width(2)
           b=dxi_fact(2)
           if (lpole(2)) b = 0.5*pi
-          xi2star = xi2lo + (xi2up-xi2lo) / (1.0 + (Ly/(xyz_star(2)-y00) - 1.0)
-/ b)
-          call grid_profile(a*(xi2-xi2star),grid_func(2),g2,g2der1,g2der2,param=b)
+          xi2star=xi2lo+(xi2up-xi2lo)/(1.0 + (Ly/(xyz_star(2)-y00) - 1.0)/b)
+          call grid_profile(a*(xi2-xi2star),grid_func(2),g2,g2der1,&
+                            g2der2,param=b)
 !
           y     =g2
           yprim =g2der1
