@@ -528,6 +528,26 @@ module Grid
             g2proc=y00+Ly*(g2proc  -  g2lo)/(g2up-g2lo)
           endif
 !
+        case ('pole')
+          ! Large spacing near the pole reducing towards the equator
+          ! dy is symmetric about the pole for periodic bc across the pole
+          if (lpole(2)) dy = Ly/nygrid
+          !NB ratio of dymax/dymin approx sinh((Ly-dxi_fact(2))/trans_width)
+          a=dy/trans_width(2)
+          b=dxi_fact(2)
+          if (lpole(2)) b = 0.5*pi
+          xi2star = xi2lo + (xi2up-xi2lo) / (1.0 + (Ly/(xyz_star(2)-y00) - 1.0)
+/ b)
+          call grid_profile(a*(xi2-xi2star),grid_func(2),g2,g2der1,g2der2,param=b)
+!
+          y     =g2
+          yprim =g2der1
+          yprim2=g2der2
+!
+          if (lparticles .or. lsolid_cells) then
+            call grid_profile(a*(xi2proc-xi2star),grid_func(2),g2proc,param=b)
+          endif
+!
         case ('arsinh')
           ! Approximately linear in infinity, linear in the middle
           a=pi*dy/trans_width(2)
@@ -1659,6 +1679,46 @@ module Grid
           elsewhere
             gder2 = 0.5 * (m - 1) * cos (xi)
           endwhere
+        endif
+!
+      case ('pole')
+        ! Max grid separation at poles, min at equator for sphericl coords
+        ! with pole boundary condition in theta. dy proportional to sinh(y)
+        ! range from 0 to pi 
+        ! g= 0.5*Ly*(1+sinh(a(y-b) param(b) is inflection point typically
+        ! equator 1/trans_width (a) controls ratio of dy at equator to dy 
+        ! at pole
+!
+        g = 0.5*Ly*(1.+sinh(xi+0.5*dy/trans_width(2)-param/trans_width(2))/&
+                       sinh(Ly/trans_width(2)-param/trans_width(2)))
+        if (lpole(2)) then
+          if (lfirst_proc_y.and.size(g)==my) g(1:nghost) = &
+              -g(2*nghost:nghost+1:-1)
+          if (llast_proc_y.and.size(g)==my) g(my-nghost+1:) = &
+              2*pi-g(my-nghost:my-2*nghost+1:-1)
+        endif
+        !mirror the ghost points across -0 and +pi
+        if (present (gder1)) then
+          gder1 = 0.5*Ly/trans_width(2)*&
+              cosh(xi+0.5*dy/trans_width(2)-param/trans_width(2))/&
+              sinh(Ly/trans_width(2)-param/trans_width(2))
+          if (lpole(2)) then
+            if (lfirst_proc_y.and.size(g)==my) gder1(1:nghost) = &
+                gder1(2*nghost:nghost+1:-1)
+            if (llast_proc_y.and.size(g)==my) gder1(my-nghost+1:) = &
+                gder1(my-nghost:my-2*nghost+1:-1)
+          endif
+        endif
+        if (present (gder2)) then
+          gder2 = 0.5*Ly/trans_width(2)**2* &
+              sinh(xi+0.5*dy/trans_width(2)-param/trans_width(2))/&
+              sinh(Ly/trans_width(2)-param/trans_width(2))
+          if (lpole(2)) then
+            if (lfirst_proc_y.and.size(g)==my) gder2(1:nghost) = &
+                -gder2(2*nghost:nghost+1:-1)
+            if (llast_proc_y.and.size(g)==my) gder2(my-nghost+1:) = &
+                -gder2(my-nghost:my-2*nghost+1:-1)
+          endif
         endif
 !
       case ('arsinh')

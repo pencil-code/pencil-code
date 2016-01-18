@@ -227,8 +227,15 @@ program start
                   'origin/pole not included for components or coordinates')
             endif
           else
-            call fatal_error('start',&
-                'origin/pole not yet implemented for non-equidistant grid')
+            if (i==2 .and. coord_system == 'spherical') then
+              xyz0(i) = 0.
+              Lxyz(i) = pi 
+              xyz0(3) = 0.
+              Lxyz(3) = 2*pi
+            else
+              call fatal_error('start',&
+                  'origin/pole not included for components or coordinates')
+            endif
           endif
         else
           Lxyz(i)=2*pi    ! default value
@@ -254,8 +261,15 @@ program start
                   'origin/pole not included for components or coordinates')
             endif
           else
-            call fatal_error('start',&
-                'origin/pole not yet implemented for non-equidistant grid')
+           if (i==2 .and. coord_system == 'spherical') then
+              xyz0(i) = 0.
+              Lxyz(i) = pi 
+              xyz0(3) = 0.
+              xyz1(3) = 2*pi
+            else
+              call fatal_error('start',&
+                  'origin/pole not included for components or coordinates')
+            endif
           endif
         else
           Lxyz(i)=xyz1(i)-xyz0(i)
