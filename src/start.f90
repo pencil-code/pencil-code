@@ -213,63 +213,40 @@ program start
         if (i==3.and.luniform_z_mesh_aspect_ratio) then
           Lxyz(i)=2*pi*real(nzgrid)/real(nxgrid)
           xyz0(i)=-pi*real(nzgrid)/real(nxgrid)
+!
+!  FG: force theta coordinate to spam 0:pi for periodic across pole 
+!
         elseif (lpole(i)) then
           if (lperi(i)) call fatal_error('start',&
             'lperi and lpole cannot be used together in same component')
           if (coord_system/='spherical') call fatal_error('start',&
             'lpole only implemented for spherical coordinates')
-          if (lequidist(i)) then
-            if (i==2 .and. coord_system == 'spherical') then
-              xyz0(i) = pi/(2*nygrid)
-              Lxyz(i) = pi - 2*xyz0(i)
-            else
-              call fatal_error('start',&
-                  'origin/pole not included for components or coordinates')
-            endif
+          if (i==2 .and. coord_system == 'spherical') then
+            xyz0(i) = 0.
+            Lxyz(i) = pi 
+            xyz0(3) = 0.
+            Lxyz(3) = 2*pi
           else
-            if (i==2 .and. coord_system == 'spherical') then
-              xyz0(i) = 0.
-              Lxyz(i) = pi 
-              xyz0(3) = 0.
-              Lxyz(3) = 2*pi
-            else
-              call fatal_error('start',&
-                  'origin/pole not included for components or coordinates')
-            endif
+            call fatal_error('start',&
+                'origin/pole not included for components or coordinates')
           endif
         else
           Lxyz(i)=2*pi    ! default value
         endif
       else
-!
-!  FG: forcing theta coordinate to be spanning 0:pi overwriting xyz0 and
-!      xyz1 if lpole is selected + plus sanity checks
-!
-        if (lpole(i)) then
+        if (lpole(i)) then ! overwirte xyz0 and xyz1 to 0:pi 
           if (lperi(i)) call fatal_error('start',&
             'lperi and lpole cannot be used together in same component')
           if (coord_system/='spherical') call fatal_error('start',&
             'lpole only implemented for spherical coordinates')
-          if (lequidist(i)) then
-            if (i==2 .and. coord_system == 'spherical') then
-              xyz0(i) = pi/(2*nygrid)
-              Lxyz(i) = pi - 2*xyz0(i)
-              xyz0(3) = 0.
-              xyz1(3) = 2*pi
-            else
-              call fatal_error('start',&
-                  'origin/pole not included for components or coordinates')
-            endif
+          if (i==2 .and. coord_system == 'spherical') then
+            xyz0(i) = 0.
+            Lxyz(i) = pi 
+            xyz0(3) = 0.
+            xyz1(3) = 2*pi
           else
-            if (i==2 .and. coord_system == 'spherical') then
-              xyz0(i) = 0.
-              Lxyz(i) = pi 
-              xyz0(3) = 0.
-              xyz1(3) = 2*pi
-            else
-              call fatal_error('start',&
-                  'origin/pole not included for components or coordinates')
-            endif
+            call fatal_error('start',&
+                'origin/pole not included for components or coordinates')
           endif
         else
           Lxyz(i)=xyz1(i)-xyz0(i)
