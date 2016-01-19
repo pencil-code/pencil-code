@@ -2210,13 +2210,13 @@ module Mpicomm
 !
     endsubroutine mpibcast_real_scl
 !***********************************************************************
-    subroutine mpibcast_real_arr(bcast_array,nbcast_array,proc)
+    subroutine mpibcast_real_arr(bcast_array,nbcast_array,proc,comm)
 !
 !  Communicate real array between processors.
 !
       integer :: nbcast_array
       real, dimension(nbcast_array) :: bcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
       integer :: ibcast_proc
 !
       if (nbcast_array == 0) return
@@ -2461,7 +2461,7 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_sum_scl
 !***********************************************************************
-    subroutine mpiallreduce_sum_arr(fsum_tmp,fsum,nreduce,idir)
+    subroutine mpiallreduce_sum_arr(fsum_tmp,fsum,nreduce,idir,comm)
 !
 !  Calculate total sum for each array element and return to all processors.
 !
@@ -2469,7 +2469,7 @@ module Mpicomm
 !
       integer :: nreduce
       real, dimension(nreduce) :: fsum_tmp,fsum
-      integer, optional :: idir
+      integer, optional :: idir,comm
 !
       integer :: mpiprocs
 !
@@ -2486,7 +2486,7 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_sum_arr
 !***********************************************************************
-    subroutine mpiallreduce_sum_arr2(fsum_tmp,fsum,nreduce,idir)
+    subroutine mpiallreduce_sum_arr2(fsum_tmp,fsum,nreduce,idir,comm)
 !
 !  Calculate total sum for each array element and return to all processors.
 !
@@ -2494,7 +2494,7 @@ module Mpicomm
 !
       integer, dimension(2) :: nreduce
       real, dimension(nreduce(1),nreduce(2)) :: fsum_tmp,fsum
-      integer, optional :: idir
+      integer, optional :: idir,comm
 !
       integer :: mpiprocs, num_elements
 !
@@ -2871,13 +2871,13 @@ module Mpicomm
 !
     endsubroutine mpireduce_sum_scl
 !***********************************************************************
-    subroutine mpireduce_sum_arr(fsum_tmp,fsum,nreduce,idir)
+    subroutine mpireduce_sum_arr(fsum_tmp,fsum,nreduce,idir,comm)
 !
 !  Calculate total sum for each array element and return to root.
 !
       integer :: nreduce
       real, dimension(nreduce) :: fsum_tmp,fsum
-      integer, optional :: idir
+      integer, optional :: idir,comm
 !
       integer :: mpiprocs
 !
