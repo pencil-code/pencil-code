@@ -791,7 +791,7 @@ module Density
 !  28-jun-02/axel: added isothermal
 !  15-oct-03/dave: added spherical shell (kws)
 !
-      use General, only: itoa,complex_phase
+      use General, only: itoa,complex_phase,notanumber
       use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential
       use Initcond
       use Mpicomm
@@ -2024,7 +2024,8 @@ module Density
 !  13-05-10/dhruba: stolen parts of earlier calc_pencils_density
 !
       use WENO_transport
-      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn, notanumber
+      use General, only: notanumber
+      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p

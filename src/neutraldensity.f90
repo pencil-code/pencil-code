@@ -258,7 +258,7 @@ module NeutralDensity
                           lnumerical_equilibrium
       use Initcond
       use InitialCondition, only: initial_condition_lnrhon
-      use Sub, only: notanumber
+      use General, only: notanumber
       use EquationOfState, only: cs20, cs2bot,cs2top
 !
       real, dimension (mx,my,mz,mfarray) :: f

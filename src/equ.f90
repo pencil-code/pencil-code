@@ -45,6 +45,7 @@ module Equ
                          forcing_continuous
 ! To check ghost cell consistency, please uncomment the following line:
 !     use Ghost_check, only: check_ghosts_consistency
+      use General, only: notanumber
       use GhostFold, only: fold_df, fold_df_3points
       use Gravity
       use Grid, only: calc_pencils_grid, get_grid_mn

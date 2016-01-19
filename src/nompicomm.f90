@@ -308,8 +308,8 @@ module Mpicomm
 !
 !  Make a quick consistency check.
 !
-      if (ncpus>1) &
-        call stop_it('Inconsistency: MPICOMM=nompicomm, but ncpus>=2')
+      if (ncpus>1 .or. nprocx>1 .or. nprocy>1 .or. nprocz>1) &
+        call stop_it('Inconsistency: MPICOMM=nompicomm, but ncpus>=2 or nproc[xyz]>=2')
 !
       mpi_precision = -1
 !
@@ -899,13 +899,13 @@ module Mpicomm
 !
     endsubroutine mpibcast_real_scl
 !***********************************************************************
-    subroutine mpibcast_real_arr(bcast_array,nbcast_array,proc)
+    subroutine mpibcast_real_arr(bcast_array,nbcast_array,proc,comm)
 !
       integer :: nbcast_array
       real, dimension(nbcast_array) :: bcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
 !
-      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc, comm
 !
     endsubroutine mpibcast_real_arr
 !***********************************************************************
@@ -1019,25 +1019,25 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_sum_scl
 !***********************************************************************
-    subroutine mpiallreduce_sum_arr(fsum_tmp,fsum,nreduce,idir)
+    subroutine mpiallreduce_sum_arr(fsum_tmp,fsum,nreduce,idir,comm)
 !
       integer :: nreduce
       real, dimension(nreduce) :: fsum_tmp, fsum
-      integer, optional :: idir
+      integer, optional :: idir, comm
 !
       fsum=fsum_tmp
-      if (present(idir).and.ALWAYS_FALSE) print*,idir
+      if (present(idir).and.ALWAYS_FALSE) print*,idir,comm
 !
     endsubroutine mpiallreduce_sum_arr
 !***********************************************************************
-    subroutine mpiallreduce_sum_arr2(fsum_tmp,fsum,nreduce,idir)
+    subroutine mpiallreduce_sum_arr2(fsum_tmp,fsum,nreduce,idir,comm)
 !
       integer, dimension(2) :: nreduce
       real, dimension(nreduce(1),nreduce(2)) :: fsum_tmp, fsum
-      integer, optional :: idir
+      integer, optional :: idir,comm
 !
       fsum=fsum_tmp
-      if (present(idir).and.ALWAYS_FALSE) print*,idir
+      if (present(idir).and.ALWAYS_FALSE) print*,idir,comm
 !
     endsubroutine mpiallreduce_sum_arr2
 !***********************************************************************
@@ -1247,14 +1247,14 @@ module Mpicomm
 !
     endsubroutine mpireduce_sum_scl
 !***********************************************************************
-    subroutine mpireduce_sum_arr(fsum_tmp,fsum,nreduce,idir)
+    subroutine mpireduce_sum_arr(fsum_tmp,fsum,nreduce,idir,comm)
 !
       integer :: nreduce
       real, dimension(nreduce) :: fsum_tmp,fsum
-      integer, optional :: idir
+      integer, optional :: idir,comm
 !
       fsum=fsum_tmp
-      if (present(idir).and.ALWAYS_FALSE) print*,idir
+      if (present(idir).and.ALWAYS_FALSE) print*,idir,comm
 !
     endsubroutine mpireduce_sum_arr
 !***********************************************************************
@@ -1885,11 +1885,6 @@ module Mpicomm
       real, intent(in) :: in
       real, dimension(:,:), intent(out), optional :: out
       integer, intent(in), optional :: dest_proc
-!
-      if (nprocx /= size (out, 1)) &
-          call stop_it ('collect_xy_0D: output x dim must be nprocx')
-      if (nprocy /= size (out, 2)) &
-          call stop_it ('collect_xy_0D: output y dim must be nprocy')
 !
       if (present (out) .or. present (dest_proc)) out = in
 !

@@ -141,7 +141,8 @@ module Special
 !  03-oct-12/wlad: coded
 !
       use EquationOfState, only: cs20,rho0,gamma_m1,get_cp1,get_cv1
-      use Sub, only: grad,dot,notanumber
+      use Sub, only: grad,dot
+      use General, only: notanumber
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(nx) :: rho,TT
@@ -374,7 +375,7 @@ module Special
 !
 !  01-aug-11/wlad: coded
 !
-      use Sub, only: notanumber
+      use General, only: notanumber
       use Mpicomm, only: stop_it
 !
       real, intent(in) :: TT,rho
@@ -540,7 +541,7 @@ endsubroutine read_special_run_pars
       use Cdata
       use Diagnostics
       use EquationOfState, only: cs20,gamma_m1,gamma1
-      use Sub, only: notanumber
+      use General, only: notanumber
 !      
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df

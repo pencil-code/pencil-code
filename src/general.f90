@@ -50,7 +50,9 @@ module General
   public :: directory_names_std
   public :: touch_file
   public :: var_is_vec
-  public :: transform_cart_spher_yy, transform_spher_cart_yy, yy_transform_strip
+  public :: transform_cart_spher, transform_spher_cart_yy, yy_transform_strip
+  public :: transpose_mn
+  public :: notanumber, notanumber_0d
 !
   include 'record_types.h'
 !
@@ -127,6 +129,14 @@ module General
   interface operator (.in.)
     module procedure in_array_int
     module procedure in_array_char
+  endinterface
+!
+  interface notanumber          ! Overload the `notanumber' function
+    module procedure notanumber_0
+    module procedure notanumber_1
+    module procedure notanumber_2
+    module procedure notanumber_3
+    module procedure notanumber_4
   endinterface
 !
 !  State and default generator of random numbers.
@@ -3940,7 +3950,8 @@ module General
 !
 !  02-oct-2002/wolf: coded
 !
-      use Cdata, only: iproc, directory, datadir, datadir_snap, directory_dist, directory_snap, directory_collect
+      use Cdata, only: iproc, directory, datadir, datadir_snap, directory_dist, &
+                       directory_snap, directory_collect
 
       logical, optional :: lproc
 
@@ -3979,7 +3990,13 @@ module General
     endsubroutine touch_file
 !***********************************************************************
     logical function var_is_vec(j)
-
+!
+!  Checks whether variable (starting) at slot j in f array is vector field.
+!  At the moment magnetic field, including testfields and velocity including
+!  testflows are taken into account.
+!
+! 4-dec-2015/MR: coded
+!
       use Cdata, only: iuu,iux,iuz,iaa,iax,iaz,iaatest,ntestfield,iuutest,ntestflow
 
       integer :: j
@@ -3991,47 +4008,65 @@ module General
 
     endfunction var_is_vec
 !***********************************************************************
-    subroutine transform_cart_spher_yy(f,ith1,ith2,iph1,iph2,j)
-
+    subroutine transform_cart_spher(f,ith1,ith2,iph1,iph2,j)
+!
+!  Transforms a vector given in f array in slots j to j+2 on the rectangle
+!  ith1:ith2 x iph1:iph2 from Cartesian to spherical basis. Works in-place.
+!
+! 4-dec-2015/MR: coded
+!
       use Cdata, only: mx, cosph, sinph, costh, sinth
 
       real, dimension(:,:,:,:) :: f
       integer :: ith1, ith2, iph1, iph2, j
 
-      real, dimension(mx) :: tmp12
+      real, dimension(size(f,1)) :: tmp12,tmp3
       integer :: ith,iph
 
       do ith=ith1,ith2; do iph=iph1,iph2
 
-        tmp12=cosph(iph)*f(:,ith,iph,j)+sinph(iph)*f(:,ith,iph,j+2)
-
-        f(:,ith,iph,j+2) = -(-sinph(iph)*f(:,ith,iph,j)+cosph(iph)*f(:,ith,iph,j+1))
-        f(:,ith,iph,j  ) = -( sinth(ith)*tmp12 + costh(ith)*f(:,ith,iph,j+1))
-        f(:,ith,iph,j+1) = -( costh(ith)*tmp12 - sinth(ith)*f(:,ith,iph,j+1))
+        tmp12=cosph(iph)*f(:,ith,iph,j)+sinph(iph)*f(:,ith,iph,j+1)
+        tmp3 =f(:,ith,iph,j+2)
+        f(:,ith,iph,j+2) = -sinph(iph)*f(:,ith,iph,j)+cosph(iph)*f(:,ith,iph,j+1)
+        f(:,ith,iph,j  ) =  sinth(ith)*tmp12 + costh(ith)*tmp3
+        f(:,ith,iph,j+1) =  costh(ith)*tmp12 - sinth(ith)*tmp3
 
       enddo; enddo
 
-    endsubroutine transform_cart_spher_yy
+    endsubroutine transform_cart_spher
 !***********************************************************************
-    subroutine transform_spher_cart_yy(f,ith1,ith2,iph1,iph2,dest,ith,iph)
-
+    subroutine transform_spher_cart_yy(f,ith1,ith2,iph1,iph2,dest,lyy)
+!
+!  Transforms a vector given on the rectangle ith1:ith2 x iph1:ip2 from spherical
+!  to Cartesian basis. For lyy=T in addition the Yin-Yang transform is performed.
+!  Not in-place capable!
+!
+! 4-dec-2015/MR: coded
+!
       use Cdata, only: mx, cosph, sinph, costh, sinth
 
       real, dimension(:,:,:,:) :: f
-      integer :: ith1, ith2, iph1, iph2, ith, iph
-      real, dimension(:,:,:,:) :: dest
+      integer :: ith1, ith2, iph1, iph2
+      real, dimension(size(f,1),ith2-ith1+1,iph2-iph1+1,3) :: dest
+      logical, optional :: lyy
 
       real, dimension(mx) :: tmp12
       integer :: i,j,itd,ipd
 
       do i=ith1,ith2; do j=iph1,iph2
 
-        tmp12=sinth(i)*f(:,i,j,1)+costh(i)*f(:,i,j,3)
+        tmp12=sinth(i)*f(:,i,j,1)+costh(i)*f(:,i,j,2)
 
-        itd=ith+i-1; ipd=iph+i-1
-        dest(:,itd,ipd,3) = -(costh(i)*f(:,i,j,1)-sinth(i)*f(:,i,j,3))
-        dest(:,itd,ipd,1) = -(cosph(j)*tmp12 - sinph(j)*f(:,i,j,2))
-        dest(:,itd,ipd,2) = -(sinph(j)*tmp12 + cosph(j)*f(:,i,j,2))
+        itd=i-ith1+1; ipd=j-iph1+1
+        if (loptest(lyy)) then
+          dest(:,itd,ipd,1) = -(cosph(j)*tmp12 - sinph(j)*f(:,i,j,3))
+          dest(:,itd,ipd,2) = -(costh(i)*f(:,i,j,1)-sinth(i)*f(:,i,j,2))
+          dest(:,itd,ipd,3) = -(sinph(j)*tmp12 + cosph(j)*f(:,i,j,3))
+        else
+          dest(:,itd,ipd,1) = cosph(j)*tmp12 - sinph(j)*f(:,i,j,3)
+          dest(:,itd,ipd,2) = sinph(j)*tmp12 + cosph(j)*f(:,i,j,3)
+          dest(:,itd,ipd,3) = costh(i)*f(:,i,j,1)-sinth(i)*f(:,i,j,2)
+        endif
 
       enddo; enddo
 
@@ -4039,9 +4074,11 @@ module General
 !***********************************************************************
     subroutine yy_transform_strip(ith1,ith2,iph1,iph2,thphprime)
 !
-!  transform own ghost zones to other grid
+!  Transform coordinates of ghost zones of Yin or Yang grid to other grid.
 !
-      use Cdata, only: y,z
+! 4-dec-2015/MR: coded
+!
+      use Cdata, only: y,z,costh,sinth,cosph,sinph, iproc_world, lroot
 
       integer :: ith1,ith2,iph1,iph2
       real, dimension(:,:,:) :: thphprime
@@ -4050,37 +4087,165 @@ module General
       real :: sth, cth, xprime, yprime, zprime, sprime
       logical :: ltransp
 
-      ltransp = (iph2-iph1+1==nghost)
-!
-!  Rotate by Pi about z axis, then by Pi/2 about x axis.
+      ltransp = (ith2-ith1+1 /= size(thphprime,2))
 !
       do i=ith1,ith2
 
-        sth=sin(y(i)); cth=cos(y(i))
+        sth=sinth(i); cth=costh(i)
 
         do j=iph1,iph2
 !
+!  Rotate by Pi about z axis, then by Pi/2 about x axis.
 !  No distinction between Yin and Yang as transformation matrix is self-inverse.
 !
-          xprime = -cos(z(j))*sth
+          xprime = -cosph(j)*sth
           yprime = -cth
-          zprime = -sin(z(j))*sth
+          zprime = -sinph(j)*sth
 
           sprime = sqrt(xprime**2 + yprime**2)
  
           if (ltransp) then
-            itp = i-ith1+1; jtp = j-iph1+1
-          else
             jtp = i-ith1+1; itp = j-iph1+1
+          else
+            itp = i-ith1+1; jtp = j-iph1+1
           endif
 
           thphprime(1,itp,jtp) = atan2(sprime,zprime)
           thphprime(2,itp,jtp) = atan2(yprime,xprime)
           if (thphprime(2,itp,jtp)<0.) thphprime(2,itp,jtp) = thphprime(2,itp,jtp) + 2.*pi
 
+!if (iproc_world==0) print*, "the',phi'=", thphprime(:,itp,jtp)
         enddo
       enddo
-
+!if (lroot.and.ltransp) then
+if (.false.) then
+print*, 'size(thphprime)=', size(thphprime,1), size(thphprime,2), size(thphprime,3)
+print*, 'th=', y(ith1:ith2)
+print*, 'ph=', z(iph1:iph2)
+print*, 'thphprime=', thphprime(:,1:iph2-iph1+1,1:ith2-ith1+1)
+endif
     endsubroutine yy_transform_strip
+!***********************************************************************
+    subroutine transpose_mn(a,b,ladd)
+!
+!  Transpose mxn pencil array, b=transpose(a), on pencil arrays.
+!
+!   7-aug-10/dhruba: coded
+!
+      real, dimension (:,:,:) :: a,b
+      logical, optional :: ladd
+!
+      intent(in) :: a
+      intent(out) :: b
+      integer :: i,j
+!
+      if (size(a,2)/=size(b,3) .or. size(a,3)/=size(b,2)) stop
+      do i=1,size(b,2)
+        do j=1,size(b,3)
+          if (loptest(ladd)) then
+            b(:,i,j)=b(:,i,j)+a(:,j,i)
+          else
+            b(:,i,j)=a(:,j,i)
+          endif
+        enddo
+      enddo
+!
+    endsubroutine transpose_mn
+!***********************************************************************
+    function notanumber_0(f)
+!
+!  Check for NaN or Inf values.
+!  Not well tested with all compilers and options, but avoids false
+!  positives in a case where the previous implementation had problems
+!  Version for scalars
+!
+!  22-Jul-11/sven+philippe: coded
+!
+      logical :: notanumber_0
+      real :: f
+!
+      notanumber_0 = .not. ((f <= huge(f)) .or. (f > huge(0.0)))
+!
+    endfunction notanumber_0
+!***********************************************************************
+   function notanumber_0d(f)
+!
+!  Check for NaN or Inf values.
+!  Not well tested with all compilers and options, but avoids false
+!  positives in a case where the previous implementation had problems
+!  Version for scalars
+!
+!  27-Jul-15/MR: adapted
+!
+     logical :: notanumber_0d
+     double precision :: f
+!
+     notanumber_0d = .not. ((f <= huge(f)) .or. (f > huge(0.d0)))
+!
+    endfunction notanumber_0d
+!***********************************************************************
+    function notanumber_1(f)
+!
+!  Check for NaN or Inf values.
+!  Not well tested with all compilers and options, but avoids false
+!  positives in a case where the previous implementation had problems
+!  Version for 1-d arrays
+!
+!  22-Jul-11/sven+philippe: coded
+!
+      logical :: notanumber_1
+      real, dimension(:) :: f
+!
+      notanumber_1 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+!
+    endfunction notanumber_1
+!***********************************************************************
+    function notanumber_2(f)
+!
+!  Check for NaN or Inf values.
+!  Not well tested with all compilers and options, but avoids false
+!  positives in a case where the previous implementation had problems
+!  Version for 2-d arrays
+!
+!  22-Jul-11/sven+philippe: coded
+!
+      logical :: notanumber_2
+      real, dimension(:,:) :: f
+!
+      notanumber_2 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+!
+    endfunction notanumber_2
+!***********************************************************************
+    function notanumber_3(f)
+!
+!  Check for NaN or Inf values.
+!  Not well tested with all compilers and options, but avoids false
+!  positives in a case where the previous implementation had problems
+!  Version for 3-d arrays
+!
+!  22-Jul-11/sven+philippe: coded
+!
+      logical :: notanumber_3
+      real, dimension(:,:,:) :: f
+!
+      notanumber_3 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+!
+    endfunction notanumber_3
+!***********************************************************************
+    function notanumber_4(f)
+!
+!  Check for NaN or Inf values.
+!  Not well tested with all compilers and options, but avoids false
+!  positives in a case where the previous implementation had problems
+!  Version for 4-d arrays
+!
+!  22-Jul-11/sven+philippe: coded
+!
+      logical :: notanumber_4
+      real, dimension(:,:,:,:) :: f
+!
+      notanumber_4 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+!
+    endfunction notanumber_4
 !****************************************************************************  
 endmodule General

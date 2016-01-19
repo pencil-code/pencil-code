@@ -953,8 +953,8 @@ module Special
       use EquationOfState, only: gamma
       use Diagnostics, only: max_mn_name
       use General, only: random_number_wrapper,random_seed_wrapper, &
-          normal_deviate
-      use Sub, only: cubic_step, dot2, notanumber
+          normal_deviate,notanumber
+      use Sub, only: cubic_step, dot2
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: heatinput,doors_heat,doors_a

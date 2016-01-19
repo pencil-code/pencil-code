@@ -92,6 +92,7 @@ module Cdata
   real, dimension(0:nprocy) :: procy_bounds
   real, dimension(0:nprocz) :: procz_bounds
   integer :: nghost_read_fewer=0
+  integer, dimension(3) :: dim_mask=(/1,2,3/)
 !
 !  Derivative parameters
 !
@@ -106,7 +107,6 @@ module Cdata
   real :: r_int_border=impossible,r_ext_border=impossible
   real :: r_ref=1.,rsmooth=0.,box_volume=1.0
   real :: Area_xy=1., Area_yz=1., Area_xz=1.
-  real, dimension(3) :: k1xyz=0.
 !
 !  Time integration parameters.
 !
@@ -304,7 +304,7 @@ module Cdata
   integer :: ivisc_heat=0,ibb=0,ibx=0,iby=0,ibz=0,ijj=0,ijx=0,ijy=0,ijz=0
   integer :: iEE=0,iEEx=0,iEEy=0,iEEz=0
   integer :: iFF_diff=0, iFF_diff1=0,  iFF_diff2=0, &
-             iFF_div_uu=0, iFF_div_aa=0, iFF_div_ss=0, iFF_div_rho=0, iFF_char_c=0
+             iFF_div_uu=0, iFF_div_aa=0, iFF_div_ss=0, iFF_div_rho=0, iFF_char_c=0, iFF_heat=0
   integer :: i_adv_der=0,i_adv_derx=0,i_adv_dery=0,i_adv_derz=0
   integer :: iuxb=0,iugu=0,iugh=0
   integer :: ishock=0,ishock_perp=0

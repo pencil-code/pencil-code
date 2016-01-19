@@ -608,8 +608,8 @@ module Energy
               print*,'initialize_energy: hcondxbot, hcondxtop, FbotKbot =', &
                 hcondxbot, hcondxtop, FbotKbot
           else
-            call warning('initialize_energy: setting hcondxbot,', &
-              'hcondxtop, and FbotKbot is not implemented for iheatcond\=K-const')
+            if (lroot) call warning('initialize_energy', &
+              'setting hcondxbot, hcondxtop, and FbotKbot is not implemented for iheatcond\=K-const')
           endif
         endif
       endif
@@ -2019,7 +2019,7 @@ module Energy
 !  AJ: PLEASE IDENTIFY AUTHOR
 !
       use EquationOfState, only: eoscalc, ilnrho_pp, eosperturb
-      use Mpicomm, only: mpibcast_real
+      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: absz
@@ -2087,10 +2087,10 @@ module Energy
           call eosperturb(f,nx,pp=pp)
 !
           fmpi1=cs2bot
-          call mpibcast_real(fmpi1,0)
+          call mpibcast_real(fmpi1,0,comm=MPI_COMM_WORLD)
           cs2bot=fmpi1
           fmpi1=cs2top
-          call mpibcast_real(fmpi1,ncpus-1)
+          call mpibcast_real(fmpi1,ncpus-1,comm=MPI_COMM_WORLD)
           cs2top=fmpi1
 !
         endif
@@ -2113,7 +2113,7 @@ module Energy
 !  20-jan-15/MR: changes for use of reference state.
 !
       use EquationOfState , only: eosperturb, getmu
-      use Mpicomm, only: mpibcast_real
+      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: rho,pp
@@ -2155,10 +2155,10 @@ module Energy
           call eosperturb(f,nx,pp=pp)
 !
           fmpi1=cs2bot
-          call mpibcast_real(fmpi1,0)
+          call mpibcast_real(fmpi1,0,comm=MPI_COMM_WORLD)
           cs2bot=fmpi1
           fmpi1=cs2top
-          call mpibcast_real(fmpi1,ncpus-1)
+          call mpibcast_real(fmpi1,ncpus-1,comm=MPI_COMM_WORLD)
           cs2top=fmpi1
 !
          endif
@@ -2181,7 +2181,7 @@ module Energy
 !   20-jan-15/MR: changes for use of reference state.
 !
       use EquationOfState, only: eosperturb
-      use Mpicomm, only: mpibcast_real
+      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
 !
       real, dimension (mx,my,mz,mfarray) :: f
 
@@ -2214,10 +2214,10 @@ module Energy
           endif
 
           fmpi1=cs2bot
-          call mpibcast_real(fmpi1,0)
+          call mpibcast_real(fmpi1,0,comm=MPI_COMM_WORLD)
           cs2bot=fmpi1
           fmpi1=cs2top
-          call mpibcast_real(fmpi1,ncpus-1)
+          call mpibcast_real(fmpi1,ncpus-1,comm=MPI_COMM_WORLD)
           cs2top=fmpi1
 !
         endif
@@ -4301,7 +4301,8 @@ module Energy
 !
       use Diagnostics
       use Debug_IO, only: output_pencil
-      use Sub, only: dot, notanumber
+      use Sub, only: dot
+      use General, only: notanumber
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -4418,7 +4419,8 @@ module Energy
 !
       use Diagnostics
       use Debug_IO, only: output_pencil
-      use Sub, only: dot, notanumber, g2ij, write_zprof
+      use Sub, only: dot, g2ij, write_zprof
+      use General, only: notanumber
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -6438,10 +6440,10 @@ module Energy
 !
 !  11-dec-2014/pete: aped from read_hcond
 !
-      use Mpicomm, only: mpibcast_real_arr
+      use Mpicomm, only: mpibcast_real_arr, MPI_COMM_WORLD
 !
       real, dimension(nx), intent(out) :: cs2cool_x
-      integer, parameter :: ntotal=nx*nprocx
+      integer, parameter :: ntotal=nx*nprocx       !MR: Isn't this nxgrid?
       real, dimension(nx*nprocx) :: tmp1
       real :: var1
       logical :: exist
@@ -6475,7 +6477,7 @@ module Energy
 !
       endif
 !
-      call mpibcast_real_arr(tmp1, ntotal)
+      call mpibcast_real_arr(tmp1, ntotal, comm=MPI_COMM_WORLD)
 !
 !  Assuming no ghost zones in cooling_profile.dat
 !

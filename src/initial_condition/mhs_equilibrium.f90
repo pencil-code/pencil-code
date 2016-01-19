@@ -422,7 +422,6 @@ module InitialCondition
 !  07-may-09/wlad: coded
 !
       use EquationOfState, only: gamma,gamma_m1,get_cp1,cs20,lnrho0
-      use Sub, only: notanumber
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: cs2,lnrho

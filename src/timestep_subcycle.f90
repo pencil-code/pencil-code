@@ -32,7 +32,7 @@ module Timestep
       use Energy
       use Special
       use Boundcond
-      use Sub, only: notanumber
+      use General, only: notanumber
 !
       real, dimension (mx,my,mz,mfarray) :: f,fsub,fm1
       real, dimension (mx,my,mz) :: fm2, fj

@@ -1898,7 +1898,8 @@ module Special
 !  04-sep-10/bing: coded
 !
       use EquationOfState, only: gamma
-      use Sub, only: dot2, cubic_step,gij,notanumber
+      use Sub, only: dot2, cubic_step,gij
+      use General, only: notanumber
 !
       real, dimension (mx,my,mz,mvar),intent(inout) :: df
       real,dimension (mx,my,mz) :: LoopLength
@@ -2882,8 +2883,7 @@ module Special
 !***********************************************************************
     subroutine make_new_point(level)
 !
-      use General, only: random_number_wrapper
-      use Sub, only: notanumber
+      use General, only: random_number_wrapper,notanumber
 !
       integer, intent(in) :: level
       integer :: kfind,count,ipos,jpos,i,j
@@ -3247,7 +3247,7 @@ module Special
 !
 ! 16-sep-10/bing: coded
 !
-      use Sub, only: notanumber
+      use General, only: notanumber
 !
       integer, intent(in) :: level
 !
@@ -3721,8 +3721,8 @@ module Special
     subroutine mark_boundary(f)
 !
       use Mpicomm, only: mpisend_real,mpirecv_real
-      use General, only: itoa, safe_character_assign
-      use Sub, only: notanumber, cubic_step
+      use General, only: itoa, safe_character_assign,notanumber
+      use Sub, only: cubic_step
 !
       real, dimension(mx,my,mz,mfarray), intent(inout):: f
 !

@@ -25,7 +25,7 @@ module Particles_adaptation
   use Particles_cdata
   use Particles_map
   use Particles_sub
-  use Sub, only: notanumber
+  use General, only: notanumber
 !
   implicit none
 !
