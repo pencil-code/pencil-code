@@ -420,10 +420,10 @@ module Hydro
       real :: sqrt2, sqrt21k1, eps1=1., WW=0.25, k21
       real :: Balpha
       real :: ro
-      real :: xi,slopei,zl1,zlm1,zmax
+      real :: xi, slopei, zl1, zlm1, zmax, kappa_kinflow_n, nn_eff
       real :: theta,theta1
       real :: exp_kinflow1,exp_kinflow2
-      integer :: modeN, ell, ll, nn, ii
+      integer :: modeN, ell, ll, nn, ii, nn_max
 !
 !  Choose from a list of different flow profiles.
 !  Begin with a
@@ -1032,6 +1032,40 @@ module Hydro
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
         if (lpenc_loc(i_oo)) p%oo=-kx_uukin*p%uu
+!
+!  Tree-like flow
+!  Define ampl_kinflow > 0 for downflow; therefore the minus sign below.
+!
+      case ('FatTree')
+        if (headtt) print*,'Tree flow; kx_uukin,Lx,Lz=',kx_uukin,Lx,Lz
+        zmax=Lxyz(3)*(1.-2./2**tree_lmax)
+        nn_max=2**tree_lmax
+        fac=-ampl_kinflow*((zinfty_kinflow-z(n))/Lz)**(-1.5)
+! uu
+        if (lpenc_loc(i_uu)) then
+          ll=int(alog(2.*Lxyz(3)/(xyz1(3)-min(z(n),zmax)))/alog(2.))
+          nn=2**ll
+          zl1 =(xyz1(3)-xyz0(3))*(1.-1./nn)  !(=z_l)
+          zlm1=(xyz1(3)-xyz0(3))*(1.-2./nn)  !(=z_{l-1})
+          prof=0.
+          prof1=0.
+          do ii=1,nn
+            xi=real(ii)/nn-.5-.5/nn
+            slopei=.5*(-1)**ii/nn
+            theta=xi-slopei*(zl1-z(n))/(zl1-zlm1)
+            argx=x(l1:l2)-Lx*theta
+            nn_eff=1./(1.-min(z(n),zmax))
+            kappa_kinflow_n=kappa_kinflow*(nn_eff/real(nn_max))**2
+            if (ip.le.6) write(*,fmt='(2f10.4)') z(n),theta
+            prof=prof+(.5+.5*cos(kx_uukin*argx))**kappa_kinflow_n/nn
+            prof1=prof1+(.5+.5*cos(kx_uukin*argx))**kappa_kinflow_n/nn*(-1.)**ii
+          enddo
+          p%uu(:,1)=fac*prof1*Lx/(2.*Lz)
+          p%uu(:,2)=0.
+          p%uu(:,3)=fac*prof
+        endif
+        if (lpenc_loc(i_divu)) p%divu=0.
+        !if (lpenc_loc(i_oo)) p%oo=-kx_uukin*p%uu
 !
 !  Tree-like flow
 !  Define ampl_kinflow > 0 for downflow; therefore the minus sign below.
