@@ -310,7 +310,7 @@ module Density
 !***********************************************************************
     subroutine update_char_vel_density(f)
 !
-!  Updates characteristic veelocity for slope-limited diffusion.
+!  Updates characteristic velocity for slope-limited diffusion.
 !  Most likely not yet a good method
 !
 !  21-oct-15/MR: coded

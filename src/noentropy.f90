@@ -137,7 +137,7 @@ module Energy
 !***********************************************************************
     subroutine update_char_vel_energy(f)
 !
-!  Updates characteristic veelocity for slope-limited diffusion.
+!  Updates characteristic velocity for slope-limited diffusion.
 !
 !  25-sep-15/MR+joern: coded
 !

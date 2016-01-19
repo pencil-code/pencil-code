@@ -124,8 +124,12 @@ module Particles_main
 !  07-jan-05/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+
       integer :: i
       real :: total_gab_weights
+
+      if (lyinyang) &
+        call fatal_error('particles_initialize_modules','Particles not implemented on Yin-Yang grid')
 !
 !  Check the particle-mesh interpolation method.
 !
