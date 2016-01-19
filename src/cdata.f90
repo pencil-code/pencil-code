@@ -107,6 +107,7 @@ module Cdata
   real :: r_int_border=impossible,r_ext_border=impossible
   real :: r_ref=1.,rsmooth=0.,box_volume=1.0
   real :: Area_xy=1., Area_yz=1., Area_xz=1.
+  real, dimension(3) :: k1xyz=0.
 !
 !  Time integration parameters.
 !
