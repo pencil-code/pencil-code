@@ -807,7 +807,7 @@ module Energy
           if (.not. lshock) &
             call stop_it('initialize_energy: shock diffusity'// &
                            ' but module setting SHOCK=noshock')
-         case ('chi-shock-profr')
+        case ('chi-shock-profr')
           lheatc_shock_profr=.true.
           if (lroot) print*, 'initialize_energy: shock with a radial profile'
           if (.not. lshock) &
@@ -816,7 +816,7 @@ module Energy
         case ('hyper3_ss','hyper3')
           lheatc_hyper3ss=.true.
           if (lroot) print*, 'heat conduction: hyperdiffusivity of ss'
-       case ('hyper3_aniso','hyper3-aniso')
+        case ('hyper3_aniso','hyper3-aniso')
           if (lroot) print*, 'heat conduction: anisotropic '//&
                'hyperdiffusivity of ss'
           lheatc_hyper3ss_aniso=.true.
@@ -2986,7 +2986,7 @@ module Energy
 !
 !  Enforce maximum heating rate timestep constraint
 !
-!      if (lfirst.and.ldt) dt1_max=max(dt1_max,Hmax/p%ee/cdts)
+      if (lfirst.and.ldt) dt1_max=max(dt1_max,Hmax/p%ee/cdts)
 !
 !  Calculate entropy related diagnostics.
 !
@@ -5563,7 +5563,7 @@ module Energy
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss)-rtv_cool
 !
       if (lfirst.and.ldt) then
-         dt1_max=max(dt1_max,tmp)
+        dt1_max=max(dt1_max,tmp)
       endif
 !
     endsubroutine calc_heat_cool_RTV
