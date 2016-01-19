@@ -1212,7 +1212,7 @@ module Boundcond
 !
 !  30-nov-15/MR: coded
 !
-      use General, only: transform_cart_spher_yy
+      use General, only: transform_cart_spher
 
       real, dimension (:,:,:,:) :: f
       integer :: j
@@ -1232,9 +1232,9 @@ module Boundcond
 !
         jdone=j+2     ! requires adjacent vector components
         if (topbot=='bot') then
-          call transform_cart_spher_yy(f,1,nghost,1,mz,j)    ! in-place!
+          call transform_cart_spher(f,1,nghost,1,mz,j)    ! in-place!
         else
-          call transform_cart_spher_yy(f,m2+1,my,1,mz,j)
+          call transform_cart_spher(f,m2+1,my,1,mz,j)
         endif
       else
         jdone=0
@@ -1313,7 +1313,7 @@ module Boundcond
 !
 !  30-nov-15/MR: coded
 !
-      use General, only: transform_cart_spher_yy
+      use General, only: transform_cart_spher
 
       real, dimension (:,:,:,:) :: f
       integer :: j
@@ -1331,9 +1331,9 @@ module Boundcond
 !
         jdone=j+2     ! requires adjacent vector components
         if (topbot=='bot') then
-          call transform_cart_spher_yy(f,1,my,1,nghost,j)    ! in-place!
+          call transform_cart_spher(f,1,my,1,nghost,j)    ! in-place!
         else
-          call transform_cart_spher_yy(f,1,my,n2+1,mz,j)
+          call transform_cart_spher(f,1,my,n2+1,mz,j)
         endif
       else
         jdone=0
