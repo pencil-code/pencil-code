@@ -2084,12 +2084,12 @@ module Mpicomm
 !
     endsubroutine mpisend_int_arr2
 !***********************************************************************
-    subroutine mpibcast_logical_scl(lbcast_array,proc)
+    subroutine mpibcast_logical_scl(lbcast_array,proc,comm)
 !
 !  Communicate logical scalar between processors.
 !
       logical :: lbcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
       integer :: ibcast_proc
 !
       if (present(proc)) then
@@ -2103,13 +2103,13 @@ module Mpicomm
 !
     endsubroutine mpibcast_logical_scl
 !***********************************************************************
-    subroutine mpibcast_logical_arr(lbcast_array,nbcast_array,proc)
+    subroutine mpibcast_logical_arr(lbcast_array,nbcast_array,proc,comm)
 !
 !  Communicate logical array between processors.
 !
       integer :: nbcast_array
       logical, dimension (nbcast_array) :: lbcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
       integer :: ibcast_proc
 !
       if (nbcast_array == 0) return
@@ -2150,12 +2150,12 @@ module Mpicomm
 !
     endsubroutine mpibcast_logical_arr2
 !***********************************************************************
-    subroutine mpibcast_int_scl(ibcast_array,proc)
+    subroutine mpibcast_int_scl(ibcast_array,proc,comm)
 !
 !  Communicate integer scalar between processors.
 !
       integer :: ibcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
       integer :: ibcast_proc
 !
       if (present(proc)) then
@@ -2169,13 +2169,13 @@ module Mpicomm
 !
     endsubroutine mpibcast_int_scl
 !***********************************************************************
-    subroutine mpibcast_int_arr(ibcast_array,nbcast_array,proc)
+    subroutine mpibcast_int_arr(ibcast_array,nbcast_array,proc,comm)
 !
 !  Communicate integer array between processors.
 !
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: ibcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
       integer :: ibcast_proc
 !
       if (nbcast_array == 0) return
@@ -2191,12 +2191,12 @@ module Mpicomm
 !
     endsubroutine mpibcast_int_arr
 !***********************************************************************
-    subroutine mpibcast_real_scl(bcast_array,proc)
+    subroutine mpibcast_real_scl(bcast_array,proc,comm)
 !
 !  Communicate real scalar between processors.
 !
       real :: bcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
       integer :: ibcast_proc
 !
       if (present(proc)) then
@@ -2746,11 +2746,12 @@ module Mpicomm
 !
     endsubroutine mpireduce_min_arr
 !***********************************************************************
-    subroutine mpireduce_sum_int_scl(fsum_tmp,fsum)
+    subroutine mpireduce_sum_int_scl(fsum_tmp,fsum,comm)
 !
 !  Calculate sum and return to root.
 !
       integer :: fsum_tmp,fsum
+      integer, optional :: comm
 !
       if (nprocs==1) then
         fsum=fsum_tmp
@@ -3003,13 +3004,14 @@ module Mpicomm
 !
     endsubroutine mpireduce_sum_arr4
 !***********************************************************************
-    subroutine mpireduce_or_scl(flor_tmp,flor)
+    subroutine mpireduce_or_scl(flor_tmp,flor,comm)
 !
 !  Calculate logical or over all procs and return to root.
 !
 !  17-sep-05/anders: coded
 !
       logical :: flor_tmp, flor
+      integer, optional :: comm
 !
       if (nprocs==1) then
         flor=flor_tmp
@@ -3020,7 +3022,7 @@ module Mpicomm
 !
     endsubroutine mpireduce_or_scl
 !***********************************************************************
-    subroutine mpireduce_or_arr(flor_tmp,flor,nreduce)
+    subroutine mpireduce_or_arr(flor_tmp,flor,nreduce,comm)
 !
 !  Calculate logical or over all procs and return to root.
 !
@@ -3028,6 +3030,7 @@ module Mpicomm
 !
       integer :: nreduce
       logical, dimension(nreduce) :: flor_tmp, flor
+      integer, optional :: comm
 !
       if (nreduce==0) return
 !
@@ -3040,13 +3043,14 @@ module Mpicomm
 !
     endsubroutine mpireduce_or_arr
 !***********************************************************************
-    subroutine mpireduce_and_scl(fland_tmp,fland)
+    subroutine mpireduce_and_scl(fland_tmp,fland,comm)
 !
 !  Calculate logical and over all procs and return to root.
 !
 !  17-sep-05/anders: coded
 !
       logical :: fland_tmp, fland
+      integer, optional :: comm
 !
       if (nprocs==1) then
         fland=fland_tmp
