@@ -261,7 +261,7 @@ program start
                   'origin/pole not included for components or coordinates')
             endif
           else
-           if (i==2 .and. coord_system == 'spherical') then
+            if (i==2 .and. coord_system == 'spherical') then
               xyz0(i) = 0.
               Lxyz(i) = pi 
               xyz0(3) = 0.
