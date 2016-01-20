@@ -53,6 +53,7 @@ module Particles_chemistry
   real, dimension(:), allocatable :: dngas
   integer, dimension(:), allocatable :: dependent_reactant
   real, dimension(:,:), allocatable, save :: part_power
+  integer, dimension(:), allocatable :: RR_method
 !
   real, dimension(nchemspec) :: molar_mass=1.0
   real, dimension(50) :: reaction_enhancement=1
@@ -177,6 +178,8 @@ module Particles_chemistry
             'If lbaum_and_street, lsurface_nopores hast to be True!')
       endif
 !
+      if (lpchem_debug) call print_debug_info()
+!
     endsubroutine register_particles_chem
 ! ******************************************************************************
 !  Allocation of variables that are independent of the local particle number
@@ -202,6 +205,9 @@ module Particles_chemistry
       allocate(sigma_k(N_surface_reactions),STAT=stat)
       if (stat > 0) call fatal_error('register_indep_pchem', &
           'Could not allocate memory for sigma_k')
+      allocate(RR_method(N_surface_reactions),STAT=stat)
+      if (stat > 0) call fatal_error('register_indep_pchem', &
+          'Could not allocate memory for RR_method')
       allocate(reaction_order(N_surface_reactions),STAT=stat)
       if (stat > 0) call fatal_error('register_indep_psurfchem', &
           'Could not allocate memory for reaction_order')
@@ -226,7 +232,19 @@ module Particles_chemistry
 ! Define the Arrhenius coefficients. The term ER_k is the activation energy
 ! divided by the gas constant (R)
 !
+!  Select the method of calculating the reaction rate:
+!  The method '2' stands for the Arrhenius coefficients, where
+!  kk = B_k * T^n * exp(ER_k/R/T), 
+!  where ER_k is already divided by R at the end of the read-in
+!
+!
+      call set_RR(part, RR_method)
+!
+! Define the Arrhenius coefficients. The term ER_k is the activation energy
+! divided by the gas constant (R)
+!
       call create_arh_param(part,B_k,ER_k,sigma_k)
+!
     endsubroutine register_indep_pchem
 ! ******************************************************************************
 !  Allocate memory for chemical variables that change from particle to particle
@@ -314,8 +332,7 @@ module Particles_chemistry
 !
 ! Count heterogeneous species
       call count_species(part,species,reactants,products)
-      call count_species_type(species(:ns),N_adsorbed_species, &
-          N_surface_species,ns)
+      call count_species_type(species(:ns),N_adsorbed_species,N_surface_species,ns)
       call count_species_type(reactants,N_trash,N_surface_reactants,nr)
 !
       if (trim(string) == 'N_surface_species') variable = N_surface_species
@@ -457,6 +474,8 @@ module Particles_chemistry
           enddo
         endif
       enddo
+!
+!  ER_k is in J/mol!!!
 !
       ER_k = ER_k/gas_constant
     endsubroutine create_arh_param
@@ -739,6 +758,7 @@ module Particles_chemistry
             if ((.not. any(temp_reac  ==  element)) .and. lhs) then
               temp_reac(place_reac) = element
               place_reac = place_reac+1
+!              print*, 'reactant found',  element, lhs, place_reac
             endif
 !
             if ((.not. any(temp_prod == element)) .and. (lhs .eqv. .false.)) then
@@ -757,6 +777,16 @@ module Particles_chemistry
       ns = place-1
       nr = place_reac-1
       np = place_prod-1
+!      print*, 'species'
+!      print*, species
+!      print*, 'reactants'
+!      print*, reactants
+!      print*, 'products'
+!      print*, products
+!      print*, 'temp_reac'
+!      print*, temp_reac(:place_reac-1)
+!      print*, 'place_reac'
+!      print*, place_reac
     endsubroutine count_species
 ! ******************************************************************************
 !  If the reaction contains '<>', the string is passed to this subroutine
@@ -1052,8 +1082,8 @@ module Particles_chemistry
       type (pencil_case) :: p
       real, dimension(mpar_loc,mparray) :: fp
       real, dimension(mx,my,mz,mfarray) :: f
-      real :: pre_Cg, pre_Cs, pre_RR_hat,pre_dia,pre_k
-      real :: pre_kkcg
+      real :: pre_Cg, pre_Cs, pre_RR_hat,pre_k
+      real :: pre_kk
       real ::  k_im, kkcg, x_mod, root_term
       integer :: i, j, k, k1, k2,l,ix0
       integer, dimension(mpar_loc,3) :: ineargrid
@@ -1062,22 +1092,21 @@ module Particles_chemistry
       k2 = k2_imn(imn)
 !
 !  The heterogeneous kinetics in the mechanism file is always given in SI units.
-!  Here we intorduce correction factors if cgs units are used.
+!  J, mol, s, m
+!  This means that K_K is in the units of m/s (and applicable, when more reactants are
+!  involved)
+!  Here we introduce correction factors if cgs units are used.
 !
       if (unit_system == 'cgs') then
         pre_Cg = 1e6
         pre_Cs = 1e4
         pre_RR_hat = 1e-4
-        pre_dia = 1e2
-        pre_k=1e1
-        pre_kkcg=1e3
+        pre_kk=1e2
       else
         pre_Cg = 1.
         pre_Cs = 1.
         pre_RR_hat = 1.
-        pre_dia = 1.
-        pre_k=1.
-        pre_kkcg=1.
+        pre_kk=1.
       endif
 !
       do k = k1,k2
@@ -1104,19 +1133,20 @@ module Particles_chemistry
                 if (nu(i,j) > 0) then
                   ix0 = ineargrid(k,1)
 !
-!  k_im and kk are here without Cg as it cancels out!
+!  k_im and kk are here with Cg although it cancels out!
+!  k_im is only in the units used in the system
+!  for the quadratic equation, Cg(k) can be used without prefactor as it cancels out
+!  for kkcg, RR_hat (formerly K_k further up)  
+!  has to be converted to the unit used in the system (m/s to cm/s)
 !
-                  k_im = Cg(k)*p%Diff_penc_add(ix0-nghost,jmap(i))/fp(k,iap)*pre_k
-                  kkcg= RR_hat(k,j)*Cg(k)*pre_kkcg
+                  k_im = Cg(k)*p%Diff_penc_add(ix0-nghost,jmap(i))/fp(k,iap)
+                  kkcg= RR_hat(k,j)*Cg(k)*pre_kk
+!                  print*, 'k_im: ',k_im, 'kkcg: ', kkcg, 'ratio: ', kkcg/k_im
                   root_term = sqrt(k_im**2 + kkcg**2 + 2*k_im*kkcg + 4*k_im*fp(k,isurf-1+i)*kkcg)
-!                print*, 'k_im: ', k_im
-!                print*,'kkcg: ', kkcg
-!                print*, 'root_term:',root_term
-!                print*, 'x_infty:', fp(k,isurf-1+i)
                   x_mod = (-k_im-kkcg+root_term)/2/kkcg
-!                print*,'x_mod: ', x_mod
                   RR_hat(k,j) = RR_hat(k,j)* &
                       (pre_Cg * Cg(k)*x_mod)**nu(i,j)
+!                  print*, 'x_infty, xmod, ratio', fp(k,isurf-1+i), x_mod, x_mod/fp(k,isurf-1+i)
                 endif
               enddo
             else
@@ -1848,43 +1878,46 @@ module Particles_chemistry
     subroutine print_debug_info()
       integer :: k
 !
-      writeformat = '(A12," ",I4,  F7.2)'
-      write (writeformat(13:14),'(I2)') N_surface_species
+      print*, 'N_surface_species'
+      print*, N_surface_species
+!
+      print*, 'N_surface_reactants'
+      print*, N_surface_reactants
+      print*, 'N_adsorbed_species'
+      print*, N_adsorbed_species
 !
       do k = 1,N_surface_reactions
-        write (*,writeformat) 'nu=',k,nu(:,k)
-      enddo
-!
-      do k = 1,N_surface_reactions
-        write (*,writeformat) 'nu_prime=',k,nu_prime(:,k)
-      enddo
-!
-      write (writeformat(13:14),'(I2)') N_adsorbed_species
-!
-      do k = 1,N_surface_reactions
-        write (*,writeformat) 'mu=',k,mu(:,k)
+        print*, 'nu=',k,nu(:,k)
       enddo
 !
       do k = 1,N_surface_reactions
-        write (*,writeformat) 'mu_prime=',k,mu_prime(:,k)
+        print*, 'nu_prime=',k,nu_prime(:,k)
       enddo
 !
       do k = 1,N_surface_reactions
-        write (*,'(A12,I4,2E12.5)') 'ER_k, B_k=',k,B_k(k),ER_k(k)/ (gas_constant)
-      enddo
-      do k = 1,N_surface_reactions
-        write (*,'(A12,I4,E12.5)') 'Dngas',k,dngas(k)
-      enddo
-      do k = 1,N_surface_reactions
-        write (*,'(A12,I4,E12.5)') 'sigma',k,sigma_k(k)
-      enddo
-      do k = 1,N_surface_reactions
-        write (*,'(A12,I4,I4)') 'dep',k,dependent_reactant(k)
+        print*, 'mu=',k,mu(:,k)
       enddo
 !
-      write (*,'(A20," ",10I4)') 'jmap=', jmap
-      write (*,'(A20," ",10F4.0)') 'ac=',ac
-      write (*,'(A20," ",10F4.0)') 'site_occupancy=',aac
+      do k = 1,N_surface_reactions
+        print*, 'mu_prime=',k,mu_prime(:,k)
+      enddo
+!
+      do k = 1,N_surface_reactions
+        print*,  'ER_k, B_k=',k,B_k(k),ER_k(k)
+      enddo
+      do k = 1,N_surface_reactions
+        print*, 'Dngas',k,dngas(k)
+      enddo
+      do k = 1,N_surface_reactions
+        print*, 'sigma',k,sigma_k(k)
+      enddo
+     ! do k = 1,N_surface_reactions
+     !   print*,  'dep',k,dependent_reactant(k)
+     ! enddo
+!
+      print*,   'jmap=', jmap
+      print*,    'ac=',ac
+      print*,    'site_occupancy=',aac
     endsubroutine print_debug_info
 ! ******************************************************************************
 !  Calculation of K_k from the Arrhenius factors
@@ -2263,4 +2296,22 @@ module Particles_chemistry
 !
     endsubroutine register_unit_system
 ! ******************************************************************************
+  subroutine set_RR(part,RR_method)
+    integer :: i,j,stat,RR
+    integer, dimension(:) :: RR_method
+    character(10), dimension(:,:) :: part
+    character(10) :: element
+!    
+    do i=1,size(part,2)
+      do j=1,size(part,1)
+        element = part(j,i)
+        if (element(:2) == 'RR') then
+          read(element(3:4),'(I1.1)',iostat=stat) RR
+          RR_method(i) = RR
+        else
+        end if
+      end do
+    end do
+ end subroutine set_RR
+! *****************************************************************************
 endmodule Particles_chemistry
