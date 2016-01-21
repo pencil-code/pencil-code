@@ -425,7 +425,7 @@ module Io
 !                                 T, tstart specified: use this value
 !
       use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, mpiallreduce_or, &
-                         stop_it, mpiallreduce_min_sgl, MPI_COMM_WORLD
+                         stop_it, mpiallreduce_min_sgl
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
@@ -506,9 +506,8 @@ module Io
         if (.not. lreset_tstart .or. (tstart == impossible)) then
 !
           t_test = t_sp
-          call mpibcast_real(t_test,comm=MPI_COMM_WORLD)
-          call mpiallreduce_or((t_test /= t_sp) .and. .not. lread_from_other_prec &
-                                .or. (abs(t_test-t_sp) > 1.e-6),ltest,MPI_COMM_WORLD)
+          call mpibcast_real(t_test)
+          call mpiallreduce_or((t_test /= t_sp) .and. .not. lread_from_other_prec .or. (abs(t_test-t_sp) > 1.e-6),ltest)
 !
 !  If timestamps deviate at any processor
 !
@@ -517,7 +516,7 @@ module Io
 !
 !  If reset of tstart enabled and tstart unspecified, use minimum of all t_sp
 !
-              call mpiallreduce_min_sgl(t_sp,t_sgl,MPI_COMM_WORLD)
+              call mpiallreduce_min_sgl(t_sp,t_sgl)
               tstart=t_sgl
               if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT. Using t=', tstart,'.'
             else
@@ -563,7 +562,7 @@ module Io
 !                                =T, tstart specified: use this value
 !                             
       use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, mpiallreduce_or, &
-                         stop_it, mpiallreduce_min_dbl, MPI_COMM_WORLD
+                         stop_it, mpiallreduce_min_dbl
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
@@ -643,9 +642,8 @@ module Io
         if (.not. lreset_tstart .or. (tstart == impossible)) then
 !
           t_test = t_sp
-          call mpibcast_real(t_test,comm=MPI_COMM_WORLD)
-          call mpiallreduce_or((t_test /= t_sp) .and. .not. lread_from_other_prec &
-                               .or. (abs(t_test-t_sp) > 1.e-6),ltest, MPI_COMM_WORLD)
+          call mpibcast_real(t_test)
+          call mpiallreduce_or((t_test /= t_sp) .and. .not. lread_from_other_prec .or. (abs(t_test-t_sp) > 1.e-6),ltest)
 !
 !  If timestamp deviates at any processor
 !
@@ -654,9 +652,9 @@ module Io
 !
 !  If reset of tstart enabled and tstart unspecified, use minimum of all t_sp
 !
-              call mpiallreduce_min_dbl(t_sp,t_dbl,MPI_COMM_WORLD)
+              call mpiallreduce_min_dbl(t_sp,t_dbl)
               tstart=t_dbl
-              if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT. Using t=', tstart, '.'
+              if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT. Using t=', tstart,iproc, '.'
             else
               write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)// &
                           ' IS INCONSISTENT: t=', t_sp
@@ -707,7 +705,7 @@ module Io
 !
 !  13-Dec-2011/Bourdin.KIS: coded
 !
-      use Mpicomm, only: mpibcast_logical, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_logical
       use General, only: file_exists
 !
       character (len=*), intent(in), optional :: file
@@ -716,7 +714,7 @@ module Io
 !
       if (present (file)) then
         if (lroot) init_read_persist = .not. file_exists (trim (directory_snap)//'/'//file)
-        call mpibcast_logical(init_read_persist,comm=MPI_COMM_WORLD)
+        call mpibcast_logical (init_read_persist)
         if (init_read_persist) return
       endif
 !
@@ -737,7 +735,7 @@ module Io
 !
 !  17-Feb-2012/Bourdin.KIS: coded
 !
-      use Mpicomm, only: mpibcast_int, MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_int
 !
       character (len=*), intent(in) :: label
       integer, intent(out) :: id
@@ -757,7 +755,7 @@ module Io
         read (lun_input) id
       endif
 !
-      call mpibcast_int(id,comm=MPI_COMM_WORLD)
+      call mpibcast_int (id)
 !
       read_persist_id = .false.
       if (id == -max_int) read_persist_id = .true.

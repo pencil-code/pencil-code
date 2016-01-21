@@ -44,10 +44,10 @@ module File_io
 !                  (seems to be necessary)
 !   6-oct-15/MR: parameter lbinary added for reading data as a byte stream
 !
-      use Mpicomm, only: lroot, mpibcast_int, mpibcast_char, MPI_COMM_WORLD
+      use Mpicomm, only: lroot, mpibcast_int, mpibcast_char
       use General, only: loptest, parser, file_exists, file_size
       use Messages, only: fatal_error
-      use Cdata, only: comment_char
+      use Cdata, only: comment_char, root
 
       character (len=*), intent(in)            :: file
       logical,           intent(in),  optional :: remove_comments
@@ -145,14 +145,14 @@ module File_io
 
         ! broadcast number of valid records and maximum record length
         if (lroot) nitems=ni
-        call mpibcast_int(nitems,comm=MPI_COMM_WORLD)
+        call mpibcast_int(nitems)
         if (nitems==0) return
         !call mpibcast_int(indmax)
         allocate(parallel_unit_vec(nitems))
 
       else
       ! Broadcast the size of parallel_unit.
-        call mpibcast_int(lenbuf,comm=MPI_COMM_WORLD)
+        call mpibcast_int(lenbuf)
       endif
 
       ! prepare broadcasting of parallel_unit.
@@ -179,9 +179,9 @@ module File_io
 !
       ! broadcast parallel_unit
       if (present(nitems)) then
-        call mpibcast_char(parallel_unit_vec, nitems, comm=MPI_COMM_WORLD)
+        call mpibcast_char(parallel_unit_vec, nitems, root)
       else  
-        call mpibcast_char(parallel_unit(1:lenbuf), comm=MPI_COMM_WORLD)
+        call mpibcast_char(parallel_unit(1:lenbuf), root)
       endif
 !
     endsubroutine parallel_read
@@ -239,15 +239,16 @@ module File_io
       use Cdata, only: comment_char
       use General, only: lower_case, operator(.in.)
       use Messages, only: warning
-      use Mpicomm, only: lroot, mpibcast,MPI_COMM_WORLD
+      use Mpicomm, only: lroot, mpibcast
 !
       character(len=*), intent(in) :: name
       logical :: lfound
 !
       integer :: pos, len, max_len
 !
+      lfound = .false.
+!
       if (lroot) then
-        lfound = .false.
         len = len_trim (name) + 1
         ! need to subtract two chars for the end marker of an empty namelist
         max_len = len_trim (parallel_unit) - len + 1 - 2
@@ -267,7 +268,7 @@ module File_io
         if (.not. lfound) call warning ('find_namelist', 'namelist "'//trim(name)//'" is missing!')
       endif
 !
-      call mpibcast (lfound,comm=MPI_COMM_WORLD)
+      call mpibcast (lfound)
 !
     !endfunction find_namelist
     endsubroutine find_namelist

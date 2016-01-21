@@ -418,7 +418,7 @@ module Io
         else
           call distribute_grid (x, y, z)
         endif
-        call mpibcast_real (t_sp,comm=MPI_COMM_WORLD)
+        call mpibcast_real (t_sp)
         t = t_sp
       endif
 !
@@ -809,7 +809,7 @@ module Io
 !
       if (present (file)) then
         if (lroot) init_read_persist = .not. file_exists (trim (directory_snap)//'/'//file)
-        call mpibcast_logical (init_read_persist,comm=MPI_COMM_WORLD)
+        call mpibcast_logical (init_read_persist)
         if (init_read_persist) return
       endif
 !
@@ -851,7 +851,7 @@ module Io
         endif
       endif
 !
-      call mpibcast_int (id,comm=MPI_COMM_WORLD)
+      call mpibcast_int (id)
 !
       read_persist_id = .false.
       if (id == -max_int) read_persist_id = .true.
@@ -1256,12 +1256,12 @@ module Io
         call distribute_grid (dx_tilde, dy_tilde, dz_tilde)
       endif
 !
-      call mpibcast_real (dx,comm=MPI_COMM_WORLD)
-      call mpibcast_real (dy,comm=MPI_COMM_WORLD)
-      call mpibcast_real (dz,comm=MPI_COMM_WORLD)
-      call mpibcast_real (Lx,comm=MPI_COMM_WORLD)
-      call mpibcast_real (Ly,comm=MPI_COMM_WORLD)
-      call mpibcast_real (Lz,comm=MPI_COMM_WORLD)
+      call mpibcast_real (dx)
+      call mpibcast_real (dy)
+      call mpibcast_real (dz)
+      call mpibcast_real (Lx)
+      call mpibcast_real (Ly)
+      call mpibcast_real (Lz)
 !
 !  Find minimum/maximum grid spacing. Note that
 !    minval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) > 1) )

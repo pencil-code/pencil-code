@@ -168,7 +168,7 @@ module Param_IO
 !  25-oct-02/axel: default is taken from cdata.f90 where it's defined
 !  14-jan-15/MR  : corrected call of mpibcast_char
 !
-      use Mpicomm, only: mpibcast_logical, mpibcast_char,MPI_COMM_WORLD
+      use Mpicomm, only: mpibcast_logical, mpibcast_char
 !
       character (len=*) :: dir
       logical :: exists
@@ -187,11 +187,11 @@ module Param_IO
 !
 !  Tell other processors whether we need to communicate dir (i.e. datadir).
 !
-      call mpibcast_logical(exists,comm=MPI_COMM_WORLD)
+      call mpibcast_logical(exists)
 !
 !  Let root processor communicate dir (i.e. datadir) to all other processors.
 !
-      if (exists) call mpibcast_char(dir,comm=MPI_COMM_WORLD)
+      if (exists) call mpibcast_char(dir)
 !
     endsubroutine get_datadir
 !***********************************************************************
