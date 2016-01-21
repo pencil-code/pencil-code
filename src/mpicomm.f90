@@ -1,4 +1,4 @@
-reduce_max! $Id$
+! $Id$
 !
 !  This module takes care of MPI communication.
 !
