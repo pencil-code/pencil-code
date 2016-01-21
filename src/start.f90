@@ -157,11 +157,6 @@ program start
 !
   call read_all_init_pars
 !
-!  Call rprint_list to initialize diagnostics and write indices to file.
-!
-  call rprint_list(.false.)
-  if (lparticles) call particles_rprint_list(.false.)
-!
 !  Set up directory names and check whether the directories exist.
 !
   call directory_names
@@ -174,6 +169,11 @@ program start
 !
   call register_modules
   if (lparticles) call particles_register_modules
+!
+!  Call rprint_list to initialize diagnostics and write indices to file.
+!
+  call rprint_list(.false.)
+  if (lparticles) call particles_rprint_list(.false.)
 !
 !  The logical headtt is sometimes referred to in start.x, even though it is
 !  not yet defined. So we set it simply to lroot here.
