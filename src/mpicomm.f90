@@ -2711,12 +2711,13 @@ module Mpicomm
 !
     endsubroutine mpireduce_max_scl_int
 !***********************************************************************
-    subroutine mpireduce_max_arr(fmax_tmp,fmax,nreduce)
+    subroutine mpireduce_max_arr(fmax_tmp,fmax,nreduce,comm)
 !
 !  Calculate total maximum for each array element and return to root.
 !
       integer :: nreduce
       real, dimension(nreduce) :: fmax_tmp,fmax
+      integer, optional :: comm
 !
       if (nreduce==0) return
 !
