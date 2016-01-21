@@ -1,6 +1,6 @@
 it(i8)
-t(f8.5)
-dt(e10,3)
+t(f9.7)
+dt(e10.3)
 urms(e10.3)
 !orms(e10.3)
 !umax(e10.3)
