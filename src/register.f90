@@ -242,7 +242,7 @@ module Register
 !
 !  Defaults for some logicals; will later be set to true if needed.
 !
-      lpenc_requested(:) = .false.
+      lpenc_requested = .false.
 !
 !  Evaluate physical units. Used currently only in eos, but later also
 !  in the interstellar and radiation modules, for example.
@@ -329,7 +329,7 @@ module Register
         close (1)
       endif
 !
-!  Coordinate-related issues, initialize specific grid variables
+!  Coordinate-related issues, initialize specific grid variables and Yin-Yang grid.
 !
       call initialize_grid
 !

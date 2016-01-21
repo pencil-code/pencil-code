@@ -78,7 +78,7 @@ module File_io
 !
       use Cdata, only: comment_char
       use General, only: lower_case
-      use Mpicomm, only: lroot, mpibcast
+      use Mpicomm, only: lroot, mpibcast, MPI_COMM_WORLD
       use Messages, only: warning
 !
       character(len=*), intent(in) :: name
@@ -88,9 +88,9 @@ module File_io
       character(len=36000) :: line
       character :: ch
 !
-      lfound = .false.
-!
       if (lroot) then
+        lfound = .false.
+!
         max_len = len (name)
         ierr = 0
         do while (ierr == 0)
@@ -136,7 +136,7 @@ module File_io
         if (.not. lfound) call warning ('find_namelist', 'namelist "'//trim(name)//'" is missing!')
       endif
 !
-      call mpibcast (lfound)
+      call mpibcast (lfound,comm=MPI_COMM_WORLD)
 !
     endsubroutine find_namelist
     !endfunction find_namelist

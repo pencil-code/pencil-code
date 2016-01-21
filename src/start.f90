@@ -157,6 +157,11 @@ program start
 !
   call read_all_init_pars
 !
+!  Call rprint_list to initialize diagnostics and write indices to file.
+!
+  call rprint_list(.false.)
+  if (lparticles) call particles_rprint_list(.false.)
+!
 !  Set up directory names and check whether the directories exist.
 !
   call directory_names
@@ -169,11 +174,6 @@ program start
 !
   call register_modules
   if (lparticles) call particles_register_modules
-!
-!  Call rprint_list to initialize diagnostics and write indices to file.
-!
-  call rprint_list(.false.)
-  if (lparticles) call particles_rprint_list(.false.)
 !
 !  The logical headtt is sometimes referred to in start.x, even though it is
 !  not yet defined. So we set it simply to lroot here.
@@ -320,12 +320,12 @@ program start
     xyz0_loc(1) = xyz0(1)+ipx*Lxyz_loc(1)
     xyz1_loc(1) = xyz0_loc(1)+Lxyz_loc(1)
   else
-!
-!  In the equidistant grid, the processor boundaries (xyz[01]_loc) do NOT 
-!  coincide with the l[mn]1[2] points. Also, xyz0_loc[ipx+1]=xyz1_loc[ipx], i.e.,
-!  the inner boundary of one is exactly the outer boundary of the other. Reproduce
-!  this behavior also for non-equidistant grids. 
-!
+    !
+    !  In the equidistant grid, the processor boundaries (xyz[01]_loc) do NOT 
+    !  coincide with the l[mn]1[2] points. Also, xyz0_loc[ipx+1]=xyz1_loc[ipx], i.e.,
+    !  the inner boundary of one is exactly the outer boundary of the other. Reproduce
+    !  this behavior also for non-equidistant grids. 
+    !
     if (ipx==0) then 
       xyz0_loc(1) = x(l1)
     else
