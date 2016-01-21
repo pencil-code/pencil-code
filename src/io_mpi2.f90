@@ -65,7 +65,7 @@ module Io
   integer :: persist_last_id=-max_int
 !
   integer :: local_type, global_type, mpi_err
-  integer, parameter :: mpi_comm=comm=MPI_COMM_WORLD
+  integer, parameter :: mpi_comm=MPI_COMM_WORLD
   integer, dimension(MPI_STATUS_SIZE) :: status
   integer (kind=MPI_OFFSET_KIND), parameter :: displacement=0
   integer, parameter :: io_dims=4, order=MPI_ORDER_FORTRAN, io_info=MPI_INFO_NULL
