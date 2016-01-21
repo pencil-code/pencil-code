@@ -18,3 +18,4 @@ public ::  rprint_solid_cells
 public ::  pencil_criteria_solid_cells
 public ::  close_interpolation
 public ::  solid_cells_clean_up 
+public ::  register_solid_cells

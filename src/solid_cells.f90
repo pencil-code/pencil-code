@@ -86,6 +86,12 @@ module Solid_Cells
 !
   contains
 !***********************************************************************
+    subroutine register_solid_cells()
+!
+!  Dummy routine
+!
+    end subroutine register_solid_cells
+!***********************************************************************
     subroutine initialize_solid_cells(f)
 !
 !  Define the geometry of the solids.

@@ -27,6 +27,12 @@ module Solid_Cells
 !
   contains
 !***********************************************************************
+    subroutine register_solid_cells()
+!
+!  Dummy routine
+!
+    end subroutine register_solid_cells
+!***********************************************************************
     subroutine initialize_solid_cells(f)
 !
 !  19-nov-08/nils: dummy

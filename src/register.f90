@@ -67,6 +67,7 @@ module Register
       use Testscalar,       only: register_testscalar
       use Viscosity,        only: register_viscosity
       use ImplicitPhysics,  only: register_implicit_physics
+      use Solid_Cells,      only: register_solid_cells
 !
       integer :: ierr
 !
@@ -154,6 +155,7 @@ module Register
       call register_implicit_physics
       call register_special
       call register_heatflux
+      call register_solid_cells
 !
 !  Writing files for use with IDL.
 !
