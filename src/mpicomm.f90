@@ -2352,12 +2352,12 @@ module Mpicomm
 !
     endsubroutine mpibcast_double_arr
 !***********************************************************************
-    subroutine mpibcast_char_scl(cbcast_array,proc)
+    subroutine mpibcast_char_scl(cbcast_array,proc,comm)
 !
 !  Communicate character scalar between processors.
 !
       character(LEN=*) :: cbcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
       integer :: ibcast_proc
 !
       if (present(proc)) then
@@ -2371,13 +2371,13 @@ module Mpicomm
 !
     endsubroutine mpibcast_char_scl
 !***********************************************************************
-    subroutine mpibcast_char_arr(cbcast_array,nbcast_array,proc)
+    subroutine mpibcast_char_arr(cbcast_array,nbcast_array,proc,comm)
 !
 !  Communicate character array between processors.
 !
       integer :: nbcast_array
       character(LEN=*), dimension(nbcast_array) :: cbcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
       integer :: ibcast_proc
 !
       if (nbcast_array == 0) return
@@ -2629,22 +2629,24 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_max_scl
 !***********************************************************************
-    subroutine mpiallreduce_min_scl_sgl(fmin_tmp,fmin)
+    subroutine mpiallreduce_min_scl_sgl(fmin_tmp,fmin,comm)
 !
 !  Calculate total minimum and return to all processors.
 !
       real(KIND=rkind4) :: fmin_tmp,fmin
+      integer, optional :: comm
 !
       call MPI_ALLREDUCE(fmin_tmp, fmin, 1, MPI_REAL, MPI_MIN, &
                          MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpiallreduce_min_scl_sgl
 !***********************************************************************
-    subroutine mpiallreduce_min_scl_dbl(fmin_tmp,fmin)
+    subroutine mpiallreduce_min_scl_dbl(fmin_tmp,fmin,comm)
 !
 !  Calculate total minimum and return to all processors.
 !
       real(KIND=rkind8) :: fmin_tmp,fmin
+      integer, optional :: comm
 !
       call MPI_ALLREDUCE(fmin_tmp, fmin, 1, MPI_DOUBLE_PRECISION, MPI_MIN, &
                          MPI_COMM_WORLD, mpierr)
@@ -2668,14 +2670,15 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_max_arr
 !***********************************************************************
-    subroutine mpiallreduce_or_scl(flor_tmp, flor)
+    subroutine mpiallreduce_or_scl(flor_tmp, flor, comm)
 !
 !  Calculate logical or over all procs and return to all processors.
 !
 !  14-feb-14/ccyang: coded
 !
       logical, intent(in) :: flor_tmp
-      logical, intent(out) :: flor
+      logical, intent(out):: flor
+      integer, intent(in), optional :: comm
 !
       if (nprocs == 1) then
         flor = flor_tmp
@@ -2685,11 +2688,12 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_or_scl
 !***********************************************************************
-    subroutine mpireduce_max_scl(fmax_tmp,fmax)
+    subroutine mpireduce_max_scl(fmax_tmp,fmax,comm)
 !
 !  Calculate total maximum for each array element and return to root.
 !
       real :: fmax_tmp,fmax
+      integer, intent(in), optional :: comm
 !
       call MPI_REDUCE(fmax_tmp, fmax, 1, MPI_REAL, MPI_MAX, root, &
                       MPI_COMM_WORLD, mpierr)
