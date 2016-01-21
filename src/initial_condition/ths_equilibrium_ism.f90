@@ -192,7 +192,7 @@ module InitialCondition
 !
 !  07-jul-15/fred: coded
 !
-      use Sub, only: notanumber
+      use General, only: notanumber
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer, parameter :: ntotal=nz*nprocz
