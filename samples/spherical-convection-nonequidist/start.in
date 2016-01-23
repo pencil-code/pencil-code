@@ -1,0 +1,40 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Convection in a spherical wedge
+!
+&init_pars
+  coord_system='spherical'
+  lperi=T, F, T
+  lpole=F, T, F
+  lequidist=T, F, T
+  grid_func='linear','step-linear','linear'
+  xyz_step = 0.0,0.47123889803846897,0.0, 0.0, 2.670353755551324,0.0
+  xi_step_frac =  0.0,0.055, 0.0,0.0,0.945,0.0
+  xi_step_width = 0.0,10.,     0.0,0.0,10.    ,0.0
+  xyz0=0.7, 0.0, 0.
+  xyz1=1.0, 3.14158867730, 6.283185307179586
+  bcx='a','sfr','sfr','a2','c1:Fgs'
+  bcy='pp','ap'  ,'ap','pp','pp'
+/
+&initial_condition_pars
+  star_luminosity=3e-5
+  Rstar=1., nad=1.5
+  npoly1=1.5, npoly_jump=2.5, xi0=0.012
+/
+&eos_init_pars
+  gamma=1.6666666
+  rho0=1.
+  cs0=1.0
+  sigmaSBt=0.1
+/
+&hydro_init_pars
+  urand=1e-4
+/
+&density_init_pars
+/
+&grav_init_pars
+  gravx_profile='kepler',gravx=3.,
+  gravz_profile='zero'
+/
+&entropy_init_pars
+/
