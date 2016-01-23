@@ -593,18 +593,25 @@ module Grid
 !
         case ('step-linear')
 !
-          xi_step(2,1)=xi_step_frac(2,1)*(nygrid-1.0)
-          xi_step(2,2)=xi_step_frac(2,2)*(nygrid-1.0)
+          xi_step(2,1)=xi_step_frac(2,1)*merge(nygrid+0.,nygrid-1.,lpole(2))
+          xi_step(2,2)=xi_step_frac(2,2)*merge(nygrid+0.,nygrid-1.,lpole(2))
           dxyz_step(2,1)=(xyz_step(2,1)-y00)/(xi_step(2,1)-0.0)
           dxyz_step(2,2)=(xyz_step(2,2)-xyz_step(2,1))/ &
-                                (xi_step(2,2)-xi_step(2,1))
-          dxyz_step(2,3)=(y00+Ly-xyz_step(2,2))/(nygrid-1.0-xi_step(2,2))
+              (xi_step(2,2)-xi_step(2,1))
+          dxyz_step(2,3)=(y00+Ly-xyz_step(2,2))/&
+              (merge(nygrid+0.,nygrid-1.,lpole(2))-xi_step(2,2))
 !
-          call grid_profile(xi2,grid_func(2),g2,g2der1,g2der2, &
-           dxyz=dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
-          call grid_profile(xi2lo,grid_func(2),g2lo, &
-           dxyz=dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
-          y     = y00 + g2-g2lo
+          call grid_profile(xi2,grid_func(2),g2,g2der1,g2der2,dxyz= &
+              dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
+          call grid_profile(xi2lo,grid_func(2),g2lo,dxyz= &
+              dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
+          if (lpole(2)) then
+            call grid_profile(xi2up,grid_func(2),g2up,dxyz= &
+                dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
+            y = y00 + g2 -0.5*(g2lo+g2up-pi)
+          else
+            y = y00 + g2-g2lo
+          endif
           yprim = g2der1
           yprim2= g2der2
 !
