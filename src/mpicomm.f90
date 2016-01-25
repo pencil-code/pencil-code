@@ -445,6 +445,8 @@ module Mpicomm
         mpi_precision = MPI_DOUBLE_PRECISION
       endif
 !
+      iproc_world=iproc
+!
     endsubroutine mpicomm_init
 !***********************************************************************
     subroutine initialize_mpicomm()
