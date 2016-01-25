@@ -45,6 +45,7 @@ module Particles_coagulation
   logical :: lconstant_deltav=.false.   ! use constant relative velocity
   logical :: lmaxwell_deltav=.false.    ! use maxwellian relative velocity
   logical :: ldroplet_coagulation=.false.
+  character (len=labellen) :: droplet_coagulation_model='standard'
 !
   real, dimension(:,:), allocatable :: r_ik_mat, cum_func_sec_ik
   real, dimension(:), allocatable :: r_i_tot, cum_func_first_i
@@ -62,7 +63,7 @@ module Particles_coagulation
       GNewton, deltav_grav_floor, critical_mass_ratio_sticking, &
       minimum_particle_mass, minimum_particle_radius, lzsomdullemond, &
       lconstant_deltav, lmaxwell_deltav, deltav, maxwell_param, &
-      ldroplet_coagulation
+      ldroplet_coagulation, droplet_coagulation_model
 !
   contains
 !***********************************************************************
@@ -363,6 +364,20 @@ module Particles_coagulation
 !
                   deltavjk=sqrt(sum((vpk-vpj)**2))
 !
+! Check for consistensy
+!
+                  if (droplet_coagulation_model=='standard') then
+                    if (lcoag_simultaneous) then
+                      call fatal_error('particles_coagulation_pencils',&
+                          'One can not set droplet_coagulation_model=standard for lcoag_simultaneous=T')
+                    endif
+                  else if (droplet_coagulation_model=='shima') then
+                    if (.not. lcoag_simultaneous) then
+                      call fatal_error('particles_coagulation_pencils',&
+                          'One can not set droplet_coagulation_model=shima for lcoag_simultaneous=F')
+                    endif
+                  endif
+!
 !  The time-scale for collisions between a representative particle from
 !  superparticle k and the particle swarm in superparticle j is
 !
@@ -406,6 +421,11 @@ module Particles_coagulation
                   else
                     if (ldroplet_coagulation .and. .not. lcoag_simultaneous) then
                       tau_coll1=deltavjk*pi*(fp(k,iap)+fp(j,iap))**2*npswarmj
+                    elseif (ldroplet_coagulation .and. &
+                            lcoag_simultaneous   .and. &
+                            droplet_coagulation_model=='shima') then
+                      tau_coll1=deltavjk*pi*(fp(k,iap)+fp(j,iap))**2* &
+                          max(npswarmj,npswarmk)
                     else
                       tau_coll1=deltavjk*pi*(fp(k,iap)+fp(j,iap))**2* &
                           min(npswarmj,npswarmk)
@@ -540,19 +560,22 @@ module Particles_coagulation
 !***********************************************************************
     subroutine coagulation_fragmentation(fp,j,k,deltavjk,xpj,xpk,vpj,vpk)
 !
-!  Change the particle size to the new size, but keep the total mass in the
-!  particle swarm the same.
+!  Change the particle size to the new size. 
+!  If droplet_coagulation_model does not equal 'shima' the total mass in the
+!  particle swarm is kept constant.
 !
 !  A representative particle k colliding with a swarm of larger particles j
 !  simply obtains the new mass m_k -> m_k + m_j.
 !
 !  A representative particle k colliding with a swarm of smaller particles j
-!  obtains the new mass m_k -> 2*m_k.
+!  obtains the new mass m_k -> 2*m_k (this is true only when 
+!  ldroplet_coagulation=F.)
 !
 !  24-nov-10/anders: coded
+!  25-jan-16/Xiang-yu and nils: added the model of Shima et al. (2009)
 !
       real, dimension (mpar_loc,mparray) :: fp
-      integer :: j, k
+      integer :: j, k, swarm_index1, swarm_index2
       real :: deltavjk
       real, dimension (3) :: xpj, xpk, vpj, vpk, vpnew
 !
@@ -689,16 +712,48 @@ module Particles_coagulation
             apk = fp(k,iap)
             mpk = four_pi_rhopmat_over_three*fp(k,iap)**3
             npk = fp(k,inpswarm)
-            mpnew=mpj+mpk
-            apnew=(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
+            if (droplet_coagulation_model=='standard') then
+              mpnew=mpj+mpk
+              apnew=(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
 !            npnew=(mpj*npk+mpk*npk)/(2.*mpnew)
-            npnew=mpk*npk/mpnew
-            vpnew=(&
-                fp(j,ivpx:ivpz)*four_pi_rhopmat_over_three*fp(j,iap)**3+&
-                fp(k,ivpx:ivpz)*four_pi_rhopmat_over_three*fp(k,iap)**3)/mpnew
-            fp(k,iap)=apnew
-            fp(k,inpswarm)=npnew
-            fp(k,ivpx:ivpz)=vpnew
+              npnew=mpk*npk/mpnew
+              vpnew=(&
+                  fp(j,ivpx:ivpz)*four_pi_rhopmat_over_three*fp(j,iap)**3+&
+                  fp(k,ivpx:ivpz)*four_pi_rhopmat_over_three*fp(k,iap)**3)/mpnew
+              fp(k,iap)=apnew
+              fp(k,inpswarm)=npnew
+              fp(k,ivpx:ivpz)=vpnew
+            else if (droplet_coagulation_model=='shima') then
+!
+!  Identify the swarm with the highest particle number density
+!
+              if (npk<npj) then
+                swarm_index1=k
+                swarm_index2=j
+              else
+                swarm_index1=j
+                swarm_index2=k
+              endif
+!
+!  Set particle radius. The radius of the swarm with the highes particle 
+!  number density does not change since its mass doesn't change.
+!
+              mpnew=mpj+mpk
+              fp(swarm_index1,iap)=(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
+!
+!  Set particle number densities. Only the the swarm with the highest 
+!  particle number density, changes its particle number density.
+!
+              fp(swarm_index2,inpswarm)=abs(npj-npk)
+!
+!  Set particle velocities. Only the swarm with the lowest 
+!  particle number density, changes its particle velcity.
+!
+              vpnew=(fp(j,ivpx:ivpz)*mpj+fp(k,ivpx:ivpz)*mpk)/mpnew
+              fp(swarm_index1,ivpx:ivpz)=vpnew
+            else
+              call fatal_error('','No such droplet_coagulation_model')
+            endif
           else
 
 !
