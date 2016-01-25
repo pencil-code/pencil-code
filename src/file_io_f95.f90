@@ -62,7 +62,7 @@ module File_io
       call stop_it_if_any(.false.,'')
 !
       ! Broadcast the file size.
-      call mpibcast_int(bytes)
+      call mpibcast_int(bytes,comm=MPI_COMM_WORLD)
       parallel_read = bytes
 !
       ! Allocate temporary memory.
@@ -81,7 +81,7 @@ module File_io
       endif
 !
       ! Broadcast buffer to all MPI ranks.
-      call mpibcast_char(buffer, bytes)
+      call mpibcast_char(buffer, bytes, comm=MPI_COMM_WORLD)
 !
     endfunction parallel_read
 !***********************************************************************
@@ -94,6 +94,7 @@ module File_io
 !   5-Aug-2015/MR: added (dummy) parameter nitems
 
       use Cparam, only: fnlen
+      use Cdata, only: iproc_world
 !
       character (len=*),           intent(in) :: file
       character (len=*), optional, intent(in) :: form
@@ -117,7 +118,7 @@ module File_io
         pos = scan(filename, '/')
       enddo
       tmp_prefix = get_tmp_prefix()
-      write(filename,'(A,I0)') trim(tmp_prefix)//trim(filename)//'-', iproc
+      write(filename,'(A,I0)') trim(tmp_prefix)//trim(filename)//'-', iproc_world
 !
       ! Write temporary file into local RAM disk (/tmp).
       call write_binary_file(filename, bytes, buffer)
@@ -284,9 +285,10 @@ module File_io
       character(len=36000) :: line
       character :: ch
 !
-      lfound = .false.
-!
       if (lroot) then
+!
+        lfound = .false.
+!
         max_len = len (name)
         ierr = 0
         do while (ierr == 0)
@@ -328,11 +330,12 @@ module File_io
             state = -1
           enddo
         enddo
+
         call parallel_rewind
         if (.not. lfound) call warning ('find_namelist', 'namelist "'//trim(name)//'" is missing!')
       endif
 !
-      call mpibcast (lfound)
+      call mpibcast (lfound,comm=MPI_COMM_WORLD)
 !
     endsubroutine find_namelist
     !endfunction find_namelist

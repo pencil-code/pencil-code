@@ -314,8 +314,6 @@ module Mpicomm
       mpi_precision = -1
 !
       lmpicomm = .false.
-      iproc = 0
-      lroot = .true.
 
     endsubroutine mpicomm_init
 !***********************************************************************

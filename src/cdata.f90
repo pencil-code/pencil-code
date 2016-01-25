@@ -107,7 +107,6 @@ module Cdata
   real :: r_int_border=impossible,r_ext_border=impossible
   real :: r_ref=1.,rsmooth=0.,box_volume=1.0
   real :: Area_xy=1., Area_yz=1., Area_xz=1.
-  real, dimension(3) :: k1xyz=0.
 !
 !  Time integration parameters.
 !
@@ -334,7 +333,7 @@ module Cdata
   integer :: ix=-1,iy=-1,iy2=-1,iz=-1,iz2=-1,iz3=-1,iz4=-1
   integer :: ix_loc=-1,iy_loc=-1, iy2_loc=-1
   integer :: iz_loc=-1,iz2_loc=-1, iz3_loc=-1, iz4_loc=-1
-  integer :: iproc=0,ipx,ipy,ipz,iproc_world
+  integer :: iproc=0,ipx,ipy,ipz,iproc_world=0
   logical :: lprocz_slowest=.true.
   integer :: xlneigh,ylneigh,zlneigh ! `lower' processor neighbours
   integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
