@@ -278,9 +278,10 @@ module Equ
 ! NOT fully functional
 !        call update_char_vel_magnetic(f)
         call update_char_vel_hydro(f)
-!        call update_char_vel_density(f)
-!        f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=sqrt(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
+        call update_char_vel_density(f)
+        !f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=sqrt(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
 !  JW: for hydro it is done without sqrt
+        !if (ldiagnos) print*, 'max(char_c)=', maxval(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
       endif
 !
 !  For calculating the pressure gradient directly from the pressure (which is
@@ -293,7 +294,7 @@ module Equ
 !
       if (lfirst.and.ldt) then
         if (dtmax/=0.0) then
-          dt1_max=1/dtmax
+          dt1_max=1./dtmax
         else
           dt1_max=0.0
         endif
@@ -525,7 +526,7 @@ module Equ
 !  --------------------------------------------------------
 !
 !  hydro, density, and entropy evolution
-!  Note that pressure gradient is added in denergy_dt to momentum,
+!  Note that pressure gradient is added in denergy_dt of noentropy to momentum,
 !  even if lentropy=.false.
 !
         call duu_dt(f,df,p)
@@ -639,6 +640,7 @@ module Equ
         endif
 !
 !  General phiaverage quantities -- useful for debugging.
+!  MR: Result is constant in time, so why here?
 !
         if (l2davgfirst) then
           call phisum_mn_name_rz(p%rcyl_mn,idiag_rcylmphi)
