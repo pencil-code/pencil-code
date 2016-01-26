@@ -44,8 +44,8 @@ module Opacity
 !***********************************************************************
       subroutine get_opacity(tt,rho,kappa,dkap_dtt,dkap_drho)
 
-      real, dimension(:), intent(in) :: tt, rho
-      real, dimension(:), intent(out):: kappa,dkap_dtt,dkap_drho
+      real, dimension(:) :: tt, rho
+      real, dimension(:) :: kappa,dkap_dtt,dkap_drho
 
       call keep_compiler_quiet(tt)
       call keep_compiler_quiet(rho)
