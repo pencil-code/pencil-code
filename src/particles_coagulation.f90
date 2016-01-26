@@ -618,18 +618,73 @@ module Particles_coagulation
 !  the sum of the two initial droplet masses.  
 !
           if (ldroplet_coagulation) then
-            mpnew=mpsma+mpbig
-            apnew=(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
-            npnew=(rhopsma+rhopbig)/(2.*mpnew)
-            vpnew=(&
-                fp(j,ivpx:ivpz)*four_pi_rhopmat_over_three*fp(j,iap)**3+&
-                fp(k,ivpx:ivpz)*four_pi_rhopmat_over_three*fp(k,iap)**3)/mpnew
-            fp(j,iap)=apnew
-            fp(k,iap)=apnew
-            fp(j,inpswarm)=npnew
-            fp(k,inpswarm)=npnew
-            fp(j,ivpx:ivpz)=vpnew
-            fp(k,ivpx:ivpz)=vpnew
+            if (droplet_coagulation_model=='standard') then
+              mpnew=mpsma+mpbig
+              apnew=(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
+              npnew=(rhopsma+rhopbig)/(2.*mpnew)
+              vpnew=(&
+                  fp(j,ivpx:ivpz)*four_pi_rhopmat_over_three*fp(j,iap)**3+&
+                  fp(k,ivpx:ivpz)*four_pi_rhopmat_over_three*fp(k,iap)**3)/mpnew
+              fp(j,iap)=apnew
+              fp(k,iap)=apnew
+              fp(j,inpswarm)=npnew
+              fp(k,inpswarm)=npnew
+              fp(j,ivpx:ivpz)=vpnew
+              fp(k,ivpx:ivpz)=vpnew
+            else if (droplet_coagulation_model=='shima') then
+              mpj = four_pi_rhopmat_over_three*fp(j,iap)**3
+              npj = fp(j,inpswarm)
+              mpk = four_pi_rhopmat_over_three*fp(k,iap)**3
+              npk = fp(k,inpswarm)
+!
+!  Identify the swarm with the highest particle number density
+!
+              if (npk<npj) then
+                swarm_index1=k
+                swarm_index2=j
+              else
+                swarm_index1=j
+                swarm_index2=k
+              endif
+!
+!  Check if we have the special case where the particle number 
+!  densities are equal. This will typically be the case in the beginning of 
+!  a simulation.
+!
+              if (npk == npj) then
+                fp(swarm_index1,inpswarm)=fp(swarm_index1,inpswarm)/2.
+                fp(swarm_index2,inpswarm)=fp(swarm_index2,inpswarm)/2.
+                mpnew=mpj+mpk
+                fp(swarm_index1,iap)&
+                    =(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
+                fp(swarm_index2,iap)&
+                    =(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
+                vpnew=(fp(j,ivpx:ivpz)*mpj+fp(k,ivpx:ivpz)*mpk)/mpnew
+                fp(swarm_index1,ivpx:ivpz)=vpnew
+                fp(swarm_index2,ivpx:ivpz)=vpnew
+              else
+!
+!  Set particle radius. The radius of the swarm with the highes particle 
+!  number density does not change since its mass doesn't change.
+!
+                mpnew=mpj+mpk
+                fp(swarm_index1,iap)&
+                    =(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
+!
+!  Set particle number densities. Only the the swarm with the highest 
+!  particle number density, changes its particle number density.
+!
+                fp(swarm_index2,inpswarm)=abs(npj-npk)
+!
+!  Set particle velocities. Only the swarm with the lowest 
+!  particle number density, changes its particle velcity.
+!
+                vpnew=(fp(j,ivpx:ivpz)*mpj+fp(k,ivpx:ivpz)*mpk)/mpnew
+                fp(swarm_index1,ivpx:ivpz)=vpnew
+              endif
+            else
+              call fatal_error('','No such droplet_coagulation_model')
+            endif
           else
 !
 !  Calculate the coefficient of restitution. We base in here on the
@@ -717,9 +772,7 @@ module Particles_coagulation
               apnew=(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
 !            npnew=(mpj*npk+mpk*npk)/(2.*mpnew)
               npnew=mpk*npk/mpnew
-              vpnew=(&
-                  fp(j,ivpx:ivpz)*four_pi_rhopmat_over_three*fp(j,iap)**3+&
-                  fp(k,ivpx:ivpz)*four_pi_rhopmat_over_three*fp(k,iap)**3)/mpnew
+              vpnew=(fp(j,ivpx:ivpz)*mpj+fp(k,ivpx:ivpz)*mpk)/mpnew
               fp(k,iap)=apnew
               fp(k,inpswarm)=npnew
               fp(k,ivpx:ivpz)=vpnew
@@ -735,22 +788,41 @@ module Particles_coagulation
                 swarm_index2=k
               endif
 !
+!  Check if we have the special case where the particle number 
+!  densities are equal. This will typically be the case in the beginning of 
+!  a simulation.
+!
+              if (npk == npj) then
+                fp(swarm_index1,inpswarm)=fp(swarm_index1,inpswarm)/2.
+                fp(swarm_index2,inpswarm)=fp(swarm_index2,inpswarm)/2.
+                mpnew=mpj+mpk
+                fp(swarm_index1,iap)&
+                    =(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
+                fp(swarm_index2,iap)&
+                    =(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
+                vpnew=(fp(j,ivpx:ivpz)*mpj+fp(k,ivpx:ivpz)*mpk)/mpnew
+                fp(swarm_index1,ivpx:ivpz)=vpnew
+                fp(swarm_index2,ivpx:ivpz)=vpnew
+              else
+!
 !  Set particle radius. The radius of the swarm with the highes particle 
 !  number density does not change since its mass doesn't change.
 !
-              mpnew=mpj+mpk
-              fp(swarm_index1,iap)=(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
+                mpnew=mpj+mpk
+                fp(swarm_index1,iap)&
+                    =(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
 !
 !  Set particle number densities. Only the the swarm with the highest 
 !  particle number density, changes its particle number density.
 !
-              fp(swarm_index2,inpswarm)=abs(npj-npk)
+                fp(swarm_index2,inpswarm)=abs(npj-npk)
 !
 !  Set particle velocities. Only the swarm with the lowest 
 !  particle number density, changes its particle velcity.
 !
-              vpnew=(fp(j,ivpx:ivpz)*mpj+fp(k,ivpx:ivpz)*mpk)/mpnew
-              fp(swarm_index1,ivpx:ivpz)=vpnew
+                vpnew=(fp(j,ivpx:ivpz)*mpj+fp(k,ivpx:ivpz)*mpk)/mpnew
+                fp(swarm_index1,ivpx:ivpz)=vpnew
+              endif
             else
               call fatal_error('','No such droplet_coagulation_model')
             endif
