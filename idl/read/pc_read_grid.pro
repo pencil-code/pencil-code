@@ -59,6 +59,8 @@ if (not keyword_set(down)) then $
 else $
   gridfile='grid_down.dat'
 ;
+  default, swap_endian, 0
+;
 ; Default allprocs.
 ;
 default, allprocs, -1
@@ -204,11 +206,11 @@ for i=0,ncpus-1 do begin
 
   check=check_ftn_consistency(filename,swap_endian)
   if check eq -1 then begin
-    print, 'File "'+trim(filename)+'" corrupted!'
+    print, 'File "'+strtrim(filename,2)+'" corrupted!'
     return
   endif else $
     if check eq 1 then $
-      print, 'Try to read file "'+trim(filename)+'" with reversed endian swapp!'
+      print, 'Try to read file "'+strtrim(filename,2)+'" with reversed endian swapp!'
  
   if (not keyword_set(quiet)) then print, 'Reading ' , filename , '...'
 
