@@ -1,13 +1,14 @@
-  function check_ftn_consistency, file
+  function check_ftn_consistency, file, swap
 ;
 ; Checks whether <file> has a consistent FORTRAN record structure.
-; Tries with swapped endian when failing with unswapped.
-; Returns -1 for total failure, 0 and 1 for success with unswapped and swapped endian, respectively.
+; Tries with endian swapping according to <swap>, when failing with reverse swap.
+; Returns -1 for failure and 0 or 1 for success with unreversed or reversed swap, respectively.
 ; Missing: considering of 8 byte record length markers.
 ;
 ; 27-jan-16/MR: coded
 ;
-    swap=0
+    swapped=0
+
     while (1) do begin
 
       openr, 11, file, SWAP_ENDIAN=swap
@@ -36,10 +37,12 @@
 
       close, 11
       if fail then begin
-        if swap then $
+        if swapped then $
           break $
-        else $
-          swap=1
+        else begin
+          swap=1-swap
+          swapped=1
+        endelse
       endif else $
         break
 
@@ -47,10 +50,10 @@
 
     if not fail then begin
       info=file_info(file)
-      if info.size ne len then fail=1
+      fail = info.size ne len
     endif
 
-    return, fail ? -1 : swap
+    return, fail ? -1 : swapped
 
   end
 

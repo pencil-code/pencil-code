@@ -202,15 +202,13 @@ for i=0,ncpus-1 do begin
     message, 'ERROR: cannot find file '+ filename
   endif
 
-  check=check_ftn_consistency(filename)
+  check=check_ftn_consistency(filename,swap_endian)
   if check eq -1 then begin
     print, 'File "'+trim(filename)+'" corrupted!'
     return
   endif else $
-   if check eq 1 then begin
-      print, 'Try to read file "'+trim(filename)+'" with swapped endian!'
-      swap_endian=1-swap_endian
-    endif
+    if check eq 1 then $
+      print, 'Try to read file "'+trim(filename)+'" with reversed endian swapp!'
  
   if (not keyword_set(quiet)) then print, 'Reading ' , filename , '...'
 
