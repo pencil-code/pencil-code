@@ -6963,11 +6963,25 @@ endif
       real, dimension(:), intent(IN) :: diff_left, diff_right
       real, dimension(:), intent(OUT):: limited
       character(LEN=*),   intent(IN) :: type
+      integer :: len, ii
+
+      len=size(diff_right)
 
       select case (type)
       case ('minmod') 
-        limited=min(2.*abs(diff_left),2.*abs(diff_right), &
-                    0.5*abs(diff_right+diff_left))
+!        limited=min(2.*abs(diff_left),2.*abs(diff_right), &
+!                    0.5*abs(diff_right+diff_left))
+! joern: this is not really minmod
+         do ii=1, len-1
+           if (diff_left(ii)*diff_right(ii)>0) then
+             if (diff_left(ii)>0) limited(ii)=max(2.*diff_left(ii),2.*diff_right(ii), &
+                                    0.5*(diff_right(ii)+diff_left(ii)))
+             if (diff_left(ii)<0) limited(ii)=min(2.*diff_left(ii),2.*diff_right(ii), &
+                                    0.5*(diff_right(ii)+diff_left(ii)))
+           else
+             limited(ii)=0
+           endif
+         enddo
       case ('superbee')
         limited=0.
         call fatal_error('slope_limiter','limiter not implemented')
