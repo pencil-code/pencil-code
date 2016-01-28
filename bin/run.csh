@@ -219,16 +219,17 @@ if (-e "NEWDIR") then
     (echo "stopped run:"; date; echo "new run directory:"; echo $newdir; echo "")\
        >> "$datadir/directory_change.log"
     cd "$newdir"
-    rm "$olddir/NEWDIR"
     touch "$datadir/directory_change.log"
     (date; echo "original run script is in:"; echo $olddir; echo "")\
        >> "$datadir/directory_change.log"
     echo
     echo "====================================================================="
-    echo "Rerunning in new directory; current run status: $run_status"
-    echo "We are now in: " `pwd`
+    echo "Rerunning in new directory:"
+    pwd
+    echo "Current status: $run_status"
     echo "====================================================================="
     echo
+    rm "$olddir/NEWDIR"
     goto newdir
   else
     rm -f NEWDIR LOCK data/LOCK
