@@ -6953,47 +6953,52 @@ endif
           
     endsubroutine calc_diffusive_flux
 !***********************************************************************
-    elemental subroutine slope_limiter(diff_right,diff_left,limited,type)
+    subroutine slope_limiter(diff_right,diff_left,limited,type)
 !
 !  Returns limited slope in parameter limited, see Rempel (2014). 
 !  Presently only limiter minmod is implemented. 
 !
 !  25-sep-15/MR,joern: coded
+!  27-jan-16/MR: converted into non-elemental subroutine
 !
-      real,             intent(IN) :: diff_left, diff_right
-      real,             intent(OUT):: limited
-      character(LEN=*), intent(IN) :: type
+      real, dimension(:), intent(IN) :: diff_left, diff_right
+      real, dimension(:), intent(OUT):: limited
+      character(LEN=*),   intent(IN) :: type
 
       select case (type)
       case ('minmod') 
         limited=min(2.*abs(diff_left),2.*abs(diff_right), &
                     0.5*abs(diff_right+diff_left))
-
       case ('superbee')
         limited=0.
+        call fatal_error('slope_limiter','limiter not implemented')
       case ('')
         limited=0.
+        call fatal_error('slope_limiter','limiter not implemented')
       case default
         limited=0.
+        call fatal_error('slope_limiter','limiter not implemented')
       end select
     
     endsubroutine slope_limiter
 !***********************************************************************
-    elemental subroutine diff_flux(h, diff_right, diff_lr, phi)
+     subroutine diff_flux(h, diff_right, diff_lr, phi)
 !
 !  Calculates diffusive flux for one coordinate direction from u_i+1-u_i and u_r-u_l 
 !  and returns it in parameter phi, see Rempel (2014). 
 !
 !  25-sep-15/MR,joern: coded
+!  27-jan-16/MR: converted into non-elemental subroutine, because of malcompilation by gcc version 4.6.3
 !
-      real, intent(IN)  :: h, diff_lr, diff_right
-      real, intent(OUT) :: phi
+      real, intent(IN) :: h
+      real, dimension(:), intent(IN)  :: diff_lr, diff_right
+      real, dimension(:), intent(OUT) :: phi
 
-      if (diff_right*diff_lr>0.) then
-        phi=max(0.,1.+h*(diff_lr/diff_right-1.)) 
-      else
+      where (diff_right*diff_lr>0.)
+        phi=max(0.,1.+h*(diff_lr/diff_right-1.))
+      elsewhere
         phi=0.
-      endif
+      endwhere
 
     endsubroutine diff_flux
 !***********************************************************************
@@ -7015,7 +7020,7 @@ endif
       real, dimension(my-1) :: tmpy
       real, dimension(mz-1) :: tmpz
 
-      !f(:,:,:,iFF_diff1:iFF_diff2)=0.
+      f(:,:,:,iFF_diff1:iFF_diff2)=0.
 
       iff=iFF_diff
 
