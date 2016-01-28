@@ -53,6 +53,7 @@ module General
   public :: transform_cart_spher, transform_spher_cart_yy, yy_transform_strip
   public :: transpose_mn
   public :: notanumber, notanumber_0d
+  public :: reduce_grad_dim
 !
   include 'record_types.h'
 !
@@ -4247,5 +4248,22 @@ endif
       notanumber_4 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
 !
     endfunction notanumber_4
+!***********************************************************************
+    subroutine reduce_grad_dim(g)
+!
+!  Compresses a gradient vector according to dimensionality using precalculated
+!  dim_mask.
+!
+!  28-Jan-16/MR: coded
+!
+      use Cdata, only: dimensionality, dim_mask
+
+      real, dimension(:,:) :: g
+
+      if (dimensionality==3) return
+
+      g(:,1:dimensionality)=g(:,dim_mask(1:dimensionality))
+
+    endsubroutine reduce_grad_dim
 !****************************************************************************  
 endmodule General
