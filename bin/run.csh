@@ -216,11 +216,11 @@ if (-e "NEWDIR") then
     set olddir=$cwd
     set newdir=`cat NEWDIR`
     (echo "stopped run:"; date; echo "new run directory:"; echo $newdir; echo "")\
-       >> $datadir/directory_change.log
-    cd $newdir
-    rm $olddir/NEWDIR
+       >> "$datadir/directory_change.log"
+    cd "$newdir"
+    rm "$olddir/NEWDIR"
     (date; echo "original run script is in:"; echo $olddir; echo "")\
-       >> $datadir/directory_change.log
+       >> "$datadir/directory_change.log"
     echo
     echo "====================================================================="
     echo "Rerunning in new directory; current run status: $run_status"
