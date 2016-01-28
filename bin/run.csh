@@ -215,10 +215,12 @@ if (-e "NEWDIR") then
     rm -f LOCK data/LOCK
     set olddir=$cwd
     set newdir=`cat NEWDIR`
+    touch "$datadir/directory_change.log"
     (echo "stopped run:"; date; echo "new run directory:"; echo $newdir; echo "")\
        >> "$datadir/directory_change.log"
     cd "$newdir"
     rm "$olddir/NEWDIR"
+    touch "$datadir/directory_change.log"
     (date; echo "original run script is in:"; echo $olddir; echo "")\
        >> "$datadir/directory_change.log"
     echo
