@@ -101,7 +101,6 @@ module Sub
   public :: fseek_pos, parallel_file_exists, parallel_count_lines, read_namelist
   public :: meanyz
   public :: calc_all_diff_fluxes
-  public :: grad_reduce_dim
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -7059,15 +7058,5 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       endif
 !
     endsubroutine calc_all_diff_fluxes
-!***********************************************************************
-    subroutine grad_reduce_dim(g)
-
-      real, dimension(:,:) :: g
-
-      if (dimensionality==3) return
-
-      g(:,1:dimensionality)=g(:,dim_mask(1:dimensionality))
-
-    endsubroutine grad_reduce_dim
 !***********************************************************************
 endmodule Sub
