@@ -6974,9 +6974,9 @@ endif
 ! joern: this is not really minmod
          do ii=1, len-1
            if (diff_left(ii)*diff_right(ii)>0) then
-             if (diff_left(ii)>0) limited(ii)=max(2.*diff_left(ii),2.*diff_right(ii), &
+             if (diff_left(ii)>0) limited(ii)=min(2.*diff_left(ii),2.*diff_right(ii), &
                                     0.5*(diff_right(ii)+diff_left(ii)))
-             if (diff_left(ii)<0) limited(ii)=min(2.*diff_left(ii),2.*diff_right(ii), &
+             if (diff_left(ii)<0) limited(ii)=max(2.*diff_left(ii),2.*diff_right(ii), &
                                     0.5*(diff_right(ii)+diff_left(ii)))
            else
              limited(ii)=0
