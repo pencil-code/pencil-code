@@ -912,7 +912,7 @@ module Equ
 !  Currently only needed for smoothed out particle drag force.
 !
       if (lhydro .and. lfold_df) call fold_df(df,iux,iuz)
-      if (lfold_df_3points) call fold_df_3points(df,iux,iuz)
+      if (lfold_df_3points) call fold_df_3points(df,iux,ichemspec(nchemspec))
 !
 !  -------------------------------------------------------------
 !  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)
