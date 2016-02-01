@@ -1452,7 +1452,7 @@ subroutine bc_satur_x(f,bc)
       integer :: i,j,ii,statio_code,vr, Npoints, i1,i2, io_code, stat
       integer ::  mm1,mm2,nn1,nn2
       integer,save :: time_position=1
-      real, save :: time_LES=0
+      real, save :: time_LES=0, bc_T_aver, bc_u_aver
       real :: lbc,frac, d_LESx,ttt
       logical, save :: lbc_file_x=.true.
       logical, save :: lbc_T_x=.true.!, lbc_U_x=.false.
@@ -1556,6 +1556,9 @@ subroutine bc_satur_x(f,bc)
                 bc_u_x_adopt(i,j)=bc_u_x_array(i+2,j)
             enddo
             enddo
+
+           bc_T_aver=sum(bc_T_x_adopt)/64/64
+           bc_u_aver=sum(bc_u_x_adopt)/64/64
     !        
  !           print*,'proverka1',bc_T_x_adopt(1,1),bc_T_x_adopt(1,32),bc_T_x_adopt(32,1),bc_T_x_adopt(32,32)
           else
@@ -1594,7 +1597,8 @@ subroutine bc_satur_x(f,bc)
 !
           do j=n1,n2
           do i=m1,m2
-            f(l1,i,j,vr)=alog(bc_T_x_adopt(i-3,j-3))
+!            f(l1,i,j,vr)=alog(bc_T_x_adopt(i-3,j-3))
+             f(l1,i,j,vr)=alog(bc_T_aver)
           enddo
           enddo
 !           
@@ -1614,8 +1618,9 @@ subroutine bc_satur_x(f,bc)
              i2=nn1+j-4
            do i=m1,m2
              i1=mm1+i-4
-             f(l1,i,j,vr)=bc_u_x_adopt(i1,i2)*bc_T_x_adopt(i1,i2)/exp(f(l1,i,j,ilnTT))
- !             f(l1,i,j,vr)=bc_T_x_adopt(i1,i2)
+ !            f(l1,i,j,vr)=bc_u_x_adopt(i1,i2)*bc_T_x_adopt(i1,i2)/exp(f(l1,i,j,ilnTT))
+              f(l1,i,j,vr)=(bc_u_aver*bc_T_aver)/exp(f(l1,i,j,ilnTT))
+
            enddo
            enddo
 
@@ -1644,7 +1649,7 @@ subroutine bc_satur_x(f,bc)
       integer :: i,j,ii,statio_code,vr, Npoints, i1,i2, io_code, stat
       integer ::  ll1,ll2,mm1,mm2
       integer,save :: time_position=1
-      real, save :: time_LES=0
+      real, save :: time_LES=0, bc_T_aver, bc_u_aver
       real :: lbc,frac, d_LESx,ttt
       logical, save :: lbc_file_x=.true.
       logical, save :: lbc_T_z=.true.!, lbc_U_x=.false.
@@ -1736,6 +1741,10 @@ subroutine bc_satur_x(f,bc)
                 bc_u_x_adopt(i,j)=bc_u_x_array(i+2,j)
             enddo
             enddo
+             
+            bc_T_aver=sum(bc_T_x_adopt)/64/64
+            bc_u_aver=sum(bc_u_x_adopt)/64/64
+
     !        
  !           print*,'proverka1',bc_T_x_adopt(1,1),bc_T_x_adopt(1,32),bc_T_x_adopt(32,1),bc_T_x_adopt(32,32)
           else
@@ -1774,7 +1783,9 @@ subroutine bc_satur_x(f,bc)
 !
           do j=m1,m2
           do i=l1,l2
-            f(i,j,n1,vr)=alog(bc_T_x_adopt(i-3,j-3))
+!            f(i,j,n1,vr)=alog(bc_T_x_adopt(i-3,j-3))
+            f(i,j,n1,vr)=alog(bc_T_aver)
+
           enddo
           enddo
 !           
@@ -1793,7 +1804,8 @@ subroutine bc_satur_x(f,bc)
              i2=ll1+j-4
            do i=m1,m2
              i1=mm1+i-4
-             f(j,i,n1,vr)=bc_u_x_adopt(i1,i2)*bc_T_x_adopt(i1,i2)/exp(f(j,i,n1,ilnTT))
+!             f(j,i,n1,vr)=bc_u_x_adopt(i1,i2)*bc_T_x_adopt(i1,i2)/exp(f(j,i,n1,ilnTT))
+              f(j,i,n1,vr)=bc_u_aver*bc_T_aver/exp(f(j,i,n1,ilnTT))
  !             f(l1,i,j,vr)=bc_T_x_adopt(i1,i2)
            enddo
            enddo
