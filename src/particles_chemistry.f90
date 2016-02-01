@@ -157,14 +157,12 @@ module Particles_chemistry
 !
     subroutine register_particles_chem()
       integer :: ierr
-      if (lroot) call svn_id( &
-          "$Id: particles_chemistry.f90 20843 2014-10-06 18:45:43Z jonas.kruger $")
+!      if (lroot) call svn_id( &
+!          "$Id: particles_chemistry.f90 20843 2014-10-06 18:45:43Z jonas.kruger $")
 !
       call register_unit_system()
 !
       call get_pchem_info(species,'N_species',N_species,'quiet')
-!    print*, 'Number of species in mechanics file: ', N_species
-!    print*, 'Species found: ', species(:N_species)
       call register_indep_pchem()
       call register_dep_pchem()
 !
@@ -178,7 +176,7 @@ module Particles_chemistry
             'If lbaum_and_street, lsurface_nopores hast to be True!')
       endif
 !
-      if (lpchem_debug) call print_debug_info()
+      if (lpchem_debug .and. lroot) call print_debug_info()
 !
     endsubroutine register_particles_chem
 ! ******************************************************************************
