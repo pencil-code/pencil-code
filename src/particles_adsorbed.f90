@@ -316,29 +316,33 @@ module Particles_adsorbed
       intent(inout) :: dfp
       intent(in) :: fp
 !
-      if (npar_imn(imn) /= 0) then
+      if (lpreactions) then
 !
-        k1 = k1_imn(imn)
-        k2 = k2_imn(imn)
-        n_ads = iads_end - iads +1
+        if (npar_imn(imn) /= 0) then
 !
-        if (N_adsorbed_species > 1) then
-          allocate(mod_surf_area(k1:k2))
-          allocate(R_c_hat(k1:k2))
-          allocate(R_j_hat(k1:k2,1:n_ads))
-          call calc_get_mod_surf_area(mod_surf_area,fp)
-          call get_shared_variable('total_carbon_sites',total_carbon_sites,ierr)
-          call get_adsorbed_chemistry(R_j_hat,R_c_hat)
-          if (ierr /= 0) call fatal_error('dpads_dt_pencil', 'unable to get total_carbon')
-          do k = k1,k2
-            dfp(k,iads:iads_end) = R_j_hat(k,1:n_ads)/ &
-                total_carbon_sites + mod_surf_area(k)* &
-                R_c_hat(k)*fp(k,iads:iads_end)
-          enddo
-          deallocate(mod_surf_area)
-          deallocate(R_c_hat)
-          deallocate(R_j_hat)
+          k1 = k1_imn(imn)
+          k2 = k2_imn(imn)
+          n_ads = iads_end - iads +1
+!
+          if (N_adsorbed_species > 1) then
+            allocate(mod_surf_area(k1:k2))
+            allocate(R_c_hat(k1:k2))
+            allocate(R_j_hat(k1:k2,1:n_ads))
+            call calc_get_mod_surf_area(mod_surf_area,fp)
+            call get_shared_variable('total_carbon_sites',total_carbon_sites,ierr)
+            call get_adsorbed_chemistry(R_j_hat,R_c_hat)
+            if (ierr /= 0) call fatal_error('dpads_dt_pencil', 'unable to get total_carbon')
+            do k = k1,k2
+              dfp(k,iads:iads_end) = R_j_hat(k,1:n_ads)/ &
+                  total_carbon_sites + mod_surf_area(k)* &
+                  R_c_hat(k)*fp(k,iads:iads_end)
+            enddo
+            deallocate(mod_surf_area)
+            deallocate(R_c_hat)
+            deallocate(R_j_hat)
+          endif
         endif
+!
       endif
 !
     endsubroutine dpads_dt_pencil

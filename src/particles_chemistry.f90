@@ -89,6 +89,7 @@ module Particles_chemistry
   real :: startup_quench
   real :: pre_energy=1.0
 !
+  logical :: lpreactions=.true.
   logical :: first_pchem=.true.
   logical :: lpchem_debug = .false.
   logical :: lthiele=.false.
@@ -144,9 +145,13 @@ module Particles_chemistry
       true_density_carbon, &
       startup_time, &
       lsurface_nopores,&
-      lbaum_and_street
+      lbaum_and_street,&
+      lpreactions
 !
-  namelist /particles_chem_run_pars/ chemplaceholder, lthiele, lreactive_heating
+  namelist /particles_chem_run_pars/ chemplaceholder, &
+      lthiele, &
+      lreactive_heating, &
+      lpreactions
 !
   contains
 ! ******************************************************************************
