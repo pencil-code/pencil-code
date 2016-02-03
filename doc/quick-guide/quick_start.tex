@@ -235,19 +235,30 @@ If you plan to use MPI, please also provide the full output of:
 
 \section{Data post-processing}
 
-Visualizing the output can be done with \verb|IDL| or \verb|Python|, see below.
-
 \subsection{IDL visualization (optional, recommended)}
 % The goal of this section is to demonstrate the general work flow with a very simple example.
 
-\subsubsection{GUI-based visualization}
+\subsubsection{GUI-based visualization (recommended for quick inspection)}
 The most simple approach to visualize a cartesian grid setup is to run the Pencil Code GUI and to select the files and physical quantities you want to see:
 \begin{verbatim}
 IDL> .r pc_gui
 \end{verbatim}
 If you miss some physical quantities, you might want to extend the two IDL routines \verb|pc_get_quantity| and \verb|pc_check_quantities|. Anything implemented there will be available in the GUI, too.
 
-\subsubsection{Command-line based and scripting}
+\subsubsection{Command-line based processing of "big data"}
+Plese check the documentation inside these files:
+\begin{center}
+\begin{tabular}{|l|l|}\hline
+  \verb|pencil-code/idl/read/pc_read_var_raw.pro| & efficient reading of raw data\\\hline
+  \verb|pencil-code/idl/read/pc_read_subvol_raw.pro| & reading of sub-volumes\\\hline
+  \verb|pencil-code/idl/read/pc_read_slice_raw.pro| & reading of any 2D slice from 3D snapshots\\\hline
+  \verb|pencil-code/idl/pc_get_quantity.pro| & compute physical quantities out of raw data\\\hline
+  \verb|pencil-code/idl/pc_check_quantities.pro| & dependency ckecking of physical quantities\\\hline
+\end{tabular}
+\end{center}
+in order to read data efficiently and compute quantities in physical units.
+
+\subsubsection{Command-line based data analysis (may be inefficient)}
 Several \verb|idl|-procedures have been written
 (see in \verb|pencil-code/idl| ) to facilitate inspecting the data
 that can be found in raw format in \verb|jeans-x/data| directory.
@@ -257,8 +268,12 @@ IDL> pc_read_ts, obj=ts
 \end{verbatim}
 The structure \verb|ts| contains several variables that can be inspected by
 \begin{verbatim}
-IDL> print, tag_names(ts)
-IT T UMAX RHOMAX
+IDL> help, ts, /structure
+** Structure <911fa8>, 4 tags, length=320, data length=320, refs=1:
+   IT              LONG      Array[20]
+   T               FLOAT     Array[20]
+   UMAX            FLOAT     Array[20]
+   RHOMAX          FLOAT     Array[20]
 \end{verbatim}
 The diagnostic \verb|UMAX|, the maximal velocity, is available since it was set
 in \verb|jeans-x/print.in|. Please check manual for more information.
@@ -292,16 +307,6 @@ Of course, for scripting one might use any quantity from the \verb|ff| structure
 \begin{verbatim}
 IDL> print, mean(exp(ff.lnrho))
 \end{verbatim}
-
-Also one should check the documentation inside:
-\begin{center}
-\begin{tabular}{|l|l|}\hline
-  \verb|pencil-code/idl/read/pc_read_var_raw.pro| & efficient reading of raw data\\\hline
-  \verb|pencil-code/idl/read/pc_read_subvol_raw.pro| & reading of sub-volumes\\\hline
-  \verb|pencil-code/idl/pc_get_quantity.pro| & compute physical quantities out of raw data\\\hline
-\end{tabular}
-\end{center}
-in order to read data efficiently and compute quantities in physical units.
 
 
 \subsection{Python visualization (optional)}
