@@ -1669,7 +1669,7 @@ subroutine bc_satur_x(f,bc)
 !-------------------------------------
 !  can be also from file
          do i = 1,64
-           time(i)=(i-1)*60./10.
+           time(i)=(i-1)*60.
          enddo 
 !-------------------------------------
 
@@ -1809,8 +1809,8 @@ subroutine bc_satur_x(f,bc)
                *(bc_T_aver2-bc_T_aver) 
             
     !        
-      print*,'proverka',bc_T_aver, bc_T_aver_final, bc_T_aver2
-      print*,'t=', t, time(time_position),time_position
+  !    print*,'proverka',bc_T_aver, bc_T_aver_final, bc_T_aver2
+  !    print*,'t=', t, time(time_position),time_position
 
 
       vr=bc%ivar
