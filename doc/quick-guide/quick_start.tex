@@ -200,7 +200,14 @@ Welcome to the world of Pencil Code!
 
 \subsection{Troubleshooting...}
 
-If one of these steps fails, you may report to our mailing list: \url{http://pencil-code.nordita.org/contact.php}.
+If compiling fails, please try first (yes, \verb|cleann| is correct):
+\begin{verbatim}
+  make cleann
+  pc_setupsrc
+  pc_build
+\end{verbatim}
+
+If one of the above steps fails, you may report to our mailing list: \url{http://pencil-code.nordita.org/contact.php}.
 In your report, please state the exact point in this quick start quide that fails for you (including the full error message) --- and be sure you precisely followed all non-optional instructions from the beginning.
 
 In addition to that, please report your operating system (if not \verb|Linux|-based) and the shell you use (if not \verb|bash|).
@@ -214,6 +221,7 @@ Also please give the full output of these commands:
   cd samples/1d-tests/jeans-x/
   gcc --version
   gfortran --version
+  make cleann
   pc_setupsrc
   pc_build -d
 \end{verbatim}
