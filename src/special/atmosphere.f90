@@ -1641,15 +1641,16 @@ subroutine bc_satur_x(f,bc)
       type (boundary_condition) :: bc
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (1000, 1000) :: TTx
-      real, dimension(66,64) :: bc_T_x_array, bc_u_x_array
+      real, dimension(66,64) :: bc_T_x_array, bc_u_x_array, bc_T_x_array2, bc_u_x_array2
       real, dimension(64), save :: xx_bc, yy_bc
       real, dimension (66) :: tmp, tmp2, LES_x
       real, dimension (60), save :: time
-      real, dimension (64,64), save :: bc_T_x_adopt, bc_u_x_adopt
+      real, dimension (64,64), save :: bc_T_x_adopt, bc_u_x_adopt, bc_T_x_next, bc_u_x_next
       integer :: i,j,ii,statio_code,vr, Npoints, i1,i2, io_code, stat
       integer ::  ll1,ll2,mm1,mm2
       integer,save :: time_position=1
-      real, save :: time_LES=0, bc_T_aver, bc_u_aver
+      real, save :: time_LES=0, bc_T_aver, bc_u_aver, bc_T_aver2, bc_u_aver2
+      real :: bc_T_aver_final, bc_u_aver_final
       real :: lbc,frac, d_LESx,ttt
       logical, save :: lbc_file_x=.true.
       logical, save :: lbc_T_z=.true.!, lbc_U_x=.false.
@@ -1658,8 +1659,6 @@ subroutine bc_satur_x(f,bc)
         lbc_T_z=.true.
       endif  
 !
-      if (lbc_T_z) then
-!      if (lroot) then
 !!-------------------------------------
 !! it should be read from file
 !! but now the grid is not regular
@@ -1668,6 +1667,15 @@ subroutine bc_satur_x(f,bc)
            yy_bc(i)=50.*(i-1)*100.
          enddo 
 !-------------------------------------
+!  can be also from file
+         do i = 1,64
+           time(i)=(i-1)*60./10.
+         enddo 
+!-------------------------------------
+
+      if (lbc_T_z) then
+!      if (lroot) then
+
           print*,'opening T2.dat'
           open(9,file='T2.dat')
           open(99,file='w2.dat')
@@ -1677,30 +1685,42 @@ subroutine bc_satur_x(f,bc)
           read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
           read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
 !            xx_bc(1:64)=tmp(3:66)
+
           do i = 1,60
 !          
           if (i==time_position) then  
             do  j= 1,64
               read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
               read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
+              
+!              print*,'tmp(1)',tmp(1)
               do ii=1,66
                 bc_T_x_array(ii,j)=tmp(ii)
                 bc_u_x_array(ii,j)=tmp2(ii)*100.
               enddo
-!               yy_bc(j)=bc_T_x_array(2,j)
-!               print*,j,bc_T_x_array(2,j)
             enddo
-            time(i)=bc_T_x_array(1,1)
-          else
+!            time(i)=bc_T_x_array(1,1)
+!            print*, time(i),i
+          elseif (i==time_position+1) then  
             do  j= 1,64
               read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
               read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
-              if (j==1) time(i)=tmp(1)
+              do ii=1,66
+                bc_T_x_array2(ii,j)=tmp(ii)
+                bc_u_x_array2(ii,j)=tmp2(ii)*100.
+              enddo
             enddo
+!            time(i)=bc_T_x_array(1,1)
+!            print*,time(i),i
+!          else
+!          do  j= 1,64
+!            read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
+!            read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
+!            if (j==1) time(i)=tmp(1)
+!          enddo
+!           print*,time(i),i
           endif
 !          
-!          print*,'time(i)',i,time(i)       
-
           enddo
           
           close(9)
@@ -1708,10 +1728,12 @@ subroutine bc_satur_x(f,bc)
           print*,'closing file'
 !        endif
 
-         ttt=time(1)
-          do i = 1,60
-            time(i)=(time(i)-ttt)
-          enddo
+!         ttt=time(1)
+!          do i = 1,60
+  !        print*,ttt,time(i)
+!            time(i)=(time(i)-ttt)
+!              print*,time(i),i, ttt
+!          enddo
 !
           do i = 3,66
             LES_x(i-2)=bc_T_x_array(i,1)
@@ -1739,14 +1761,18 @@ subroutine bc_satur_x(f,bc)
             do j=1,64
                 bc_T_x_adopt(i,j)=bc_T_x_array(i+2,j)
                 bc_u_x_adopt(i,j)=bc_u_x_array(i+2,j)
+                bc_T_x_next(i,j)=bc_T_x_array2(i+2,j)
+                bc_u_x_next(i,j)=bc_u_x_array2(i+2,j)
             enddo
             enddo
              
             bc_T_aver=sum(bc_T_x_adopt)/64/64
             bc_u_aver=sum(bc_u_x_adopt)/64/64
-
-    !        
- !           print*,'proverka1',bc_T_x_adopt(1,1),bc_T_x_adopt(1,32),bc_T_x_adopt(32,1),bc_T_x_adopt(32,32)
+            
+            bc_T_aver2=sum(bc_T_x_next)/64/64
+            bc_u_aver2=sum(bc_u_x_next)/64/64
+            
+           
           else
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!notready!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!          
             do i=1,my
@@ -1773,6 +1799,20 @@ subroutine bc_satur_x(f,bc)
       endif
 !      endif
 !
+
+       bc_T_aver_final=bc_T_aver  &
+               +(t-time(time_position-1))/(time(time_position)-time(time_position-1))    &
+               *(bc_T_aver2-bc_T_aver)
+               
+       bc_u_aver_final=bc_T_aver  &
+               +(t-time(time_position-1))/(time(time_position)-time(time_position-1))    &
+               *(bc_T_aver2-bc_T_aver) 
+            
+    !        
+      print*,'proverka',bc_T_aver, bc_T_aver_final, bc_T_aver2
+      print*,'t=', t, time(time_position),time_position
+
+
       vr=bc%ivar
 !
       if (bc%location==iBC_Z_BOT) then
@@ -1784,7 +1824,7 @@ subroutine bc_satur_x(f,bc)
           do j=m1,m2
           do i=l1,l2
 !            f(i,j,n1,vr)=alog(bc_T_x_adopt(i-3,j-3))
-            f(i,j,n1,vr)=alog(bc_T_aver)
+            f(i,j,n1,vr)=alog(bc_T_aver_final)
 
           enddo
           enddo
@@ -1805,7 +1845,7 @@ subroutine bc_satur_x(f,bc)
            do i=m1,m2
              i1=mm1+i-4
 !             f(j,i,n1,vr)=bc_u_x_adopt(i1,i2)*bc_T_x_adopt(i1,i2)/exp(f(j,i,n1,ilnTT))
-              f(j,i,n1,vr)=bc_u_aver*bc_T_aver/exp(f(j,i,n1,ilnTT))
+              f(j,i,n1,vr)=bc_u_aver_final*bc_T_aver_final/exp(f(j,i,n1,ilnTT))
  !             f(l1,i,j,vr)=bc_T_x_adopt(i1,i2)
            enddo
            enddo
