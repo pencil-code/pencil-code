@@ -1681,12 +1681,12 @@ subroutine bc_satur_x(f,bc)
           open(99,file='w2.dat')
 !          
 !   print*,'time_position',time_position
-   
+
           read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
           read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
-!            xx_bc(1:64)=tmp(3:66)
 
           do i = 1,60
+!          print*,'time_position',time_position          
 !          
           if (i==time_position) then  
             do  j= 1,64
@@ -1712,12 +1712,12 @@ subroutine bc_satur_x(f,bc)
             enddo
 !            time(i)=bc_T_x_array(1,1)
 !            print*,time(i),i
-!          else
-!          do  j= 1,64
-!            read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
-!            read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
+          else
+            do  j= 1,64
+              read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
+              read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
 !            if (j==1) time(i)=tmp(1)
-!          enddo
+            enddo
 !           print*,time(i),i
           endif
 !          
@@ -1809,8 +1809,8 @@ subroutine bc_satur_x(f,bc)
                *(bc_T_aver2-bc_T_aver) 
             
     !        
-  !    print*,'proverka',bc_T_aver, bc_T_aver_final, bc_T_aver2
-  !    print*,'t=', t, time(time_position),time_position
+!      print*,'proverka',bc_T_aver, bc_T_aver_final, bc_T_aver2
+!      print*,'t=', t, time(time_position),time_position
 
 
       vr=bc%ivar
