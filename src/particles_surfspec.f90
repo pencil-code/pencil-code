@@ -241,9 +241,14 @@ module Particles_surfspec
 ! This ensures that we don't have unphysical values as init
           sum_surf_spec = sum(init_surf_mol_frac(1:N_surface_species))
           if (sum_surf_spec > 1) then
-            print*, 'Sum of all surface fractions >1, normalizing...'
+            if (lroot)  print*, 'Sum of all surface fractions >1, normalizing...'
             init_surf_mol_frac(1:N_surface_species) = &
                 init_surf_mol_frac(1:N_surface_species) / sum_surf_spec
+          endif
+!
+          if (sum_surf_spec == 0.0) then
+            if (lroot) print*, 'No initial surface fration, setting last one to 1'
+            init_surf_mol_frac(N_surface_species) = 1.0
           endif
 !
           do k = 1,mpar_loc
