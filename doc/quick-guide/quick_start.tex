@@ -21,6 +21,13 @@
 \usepackage{hyperref}
 %\usepackage{fmtcount}
 \usepackage{parskip}
+
+\newcommand{\command}[1]{\texttt{#1}}
+\newcommand{\file}[1]{``\texttt{#1}''}
+\newcommand{\directory}[1]{`\texttt{#1}'}
+\newcommand{\name}[1]{\textsc{#1}}
+\newcommand{\code}[1]{\texttt{#1}}
+
 \frenchspacing
 
 \graphicspath{{./fig/}{./png/}}
@@ -44,25 +51,25 @@
 
 
 \section{Download the Pencil Code}
-The Pencil Code is an open source code written mainly in \verb|Fortran| and available under GPL.
+The Pencil Code is an open source code written mainly in \name{Fortran} and available under GPL.
 General information can be found at our official homepage:
 
 \url{http://pencil-code.nordita.org/}.
 
-The latest version of the code can be downloaded with \verb|svn|. In the
+The latest version of the code can be downloaded with \command{svn}. In the
 directory where you want to put the code, type:
 \begin{verbatim}
-svn checkout http://pencil-code.googlecode.com/svn/trunk/ pencil-code
+  svn checkout http://pencil-code.googlecode.com/svn/trunk/ pencil-code
 \end{verbatim}
 
-The downloaded \verb|pencil-code| directory contains several sub-directories
+The downloaded \directory{pencil-code} directory contains several sub-directories:
 \begin{enumerate}
-  \item \verb|doc|: you may build the latest manual as PDF by issuing the command \verb|make| inside this directory
-  \item \verb|samples|: contains many sample problems
-  \item \verb|config|: has all the configuration files
-  \item \verb|src|: the actual source code
-  \item \verb|bin| and \verb|lib|: supplemental scripts
-  \item \verb|idl|, \verb|python|, \verb|julia|, etc.: data processing for diverse languages
+  \item \directory{doc}: you may build the latest manual as PDF by issuing the command \command{make} inside this directory
+  \item \directory{samples}: contains many sample problems
+  \item \directory{config}: has all the configuration files
+  \item \directory{src}: the actual source code
+  \item \directory{bin} and \directory{lib}: supplemental scripts
+  \item \directory{idl}, \directory{python}, \directory{julia}, etc.: data processing for diverse languages
 \end{enumerate}
 
 
@@ -70,52 +77,46 @@ The downloaded \verb|pencil-code| directory contains several sub-directories
 
 For a quick start, you need to load some environment variable into your shell.
 First, you enter to the freshly downloaded directory:
-
 \begin{verbatim}
   cd pencil-code
 \end{verbatim}
 
 Depending on which shell you use, you can do that by a simple command:
-
 \begin{verbatim}
   . sourceme.sh
 \end{verbatim}
 
-that will work for \verb|bash| and all \verb|sh|-compatible shells, while this command:
-
+that will work for \command{bash} and all \command{sh}-compatible shells, while this command:
 \begin{verbatim}
   source sourceme.csh
 \end{verbatim}
 
-is for \verb|tcsh| and any \verb|csh|-compatible shell.
+is for \command{tcsh} and any \command{csh}-compatible shell.
 
 
 \section{Fortran}
 
-A \verb|Fortran| and a \verb|C| compiler are needed to compile the code.
+A \name{Fortran} and a \name{C} compiler are needed to compile the code.
 Both compilers should belong to the same distribution package and version (e.g. GNU GCC 4.8.3, 64 bit Linux).
 
-\subsection{Fortran on a Mac}
-For \verb|Mac|, you first need to install \verb|Xcode| from the \verb|AppleDeveloper|
-site \url{http://developer.apple.com/}. This requires you to first register as a
-member. An easy to install \verb|gfortran| can be found at \newline
-\url{http://gcc.gnu.org/wiki/GFortranBinaries}. Just download it and it comes
-with an installer. It installs in the directory \verb|/usr/local/gfortran| with
-a symbolic link in \verb|/usr/local/bin/gfortran|. It might be necessary to add
-the following line in the \verb|.cshrc|-file in the home folder:
-\begin{verbatim} 
-  setenv PATH /usr/local/bin:\$PATH 
+\subsection{Fortran on a \name{Mac}}
+For \name{Mac}, you first need to install \name{Xcode} from the
+website \url{http://developer.apple.com/}, where you have to register as a member.
+Alternatively, an easy to install \command{gfortran} binary package can be found at the website \url{http://gcc.gnu.org/wiki/GFortranBinaries}. Just download the archive and use the installer contained therein.
+It installs into \directory{/usr/local/gfortran} with
+a symbolic link in \directory{/usr/local/bin/gfortran}. It might be necessary to add
+the following line to the \file{.cshrc}-file in your \directory{/home} folder:
+\begin{verbatim}
+  setenv PATH /usr/local/bin:\$PATH
 \end{verbatim}
 
 
 \section{Try a sample}
 
 Go to a folder that contains one of the many available samples, e.g.:
-
 \begin{verbatim}
   cd samples/1d-tests/jeans-x
 \end{verbatim}
-
 You may also start with a fresh directory and copy over the files from one of the samples.
 
 \subsection{Setting up...}
@@ -128,7 +129,7 @@ One command sets up all needed symbolic links to the original Pencil Code direct
 
 \subsection{Makefile}
 
-Two basic configuration files define a simulation setup: \verb|src/Makefile.local| contains a list of modules that are being used, and \verb|src/cparam.local| defines the grid size and the number of processors to be used.
+Two basic configuration files define a simulation setup: \file{src/Makefile.local} contains a list of modules that are being used, and \file{src/cparam.local} defines the grid size and the number of processors to be used.
 Take a quick look at these files...
 
 
@@ -138,28 +139,28 @@ An example using the module for only one processor would look like:
 MPICOMM=nompicomm
 \end{verbatim}
 
-For most modules there is also a \verb|no|-variant which switches that functionality off.
+For most modules there is also a \file{no}-variant which switches that functionality off.
 
-In \verb|src/cparam.local| the number of processors needs to be set to \verb|1| accordingly:
+In \file{src/cparam.local} the number of processors needs to be set to \code{1} accordingly:
 \begin{verbatim}
-integer, parameter :: ncpus=1,nprocx=1,nprocy=1,nprocz=ncpus/(nprocx*nprocy)
-integer, parameter :: nxgrid=128,nygrid=1,nzgrid=128
+  integer, parameter :: ncpus=1,nprocx=1,nprocy=1,nprocz=ncpus/(nprocx*nprocy)
+  integer, parameter :: nxgrid=128,nygrid=1,nzgrid=128
 \end{verbatim}
 
 \subsubsection{Multi-processor}
-If you like to use MPI for multi-processors simulations, be sure that you have a MPI library installed and change \verb|src/Makefile.local| to use MPI:
+If you like to use MPI for multi-processors simulations, be sure that you have a MPI library installed and change \file{src/Makefile.local} to use MPI:
 \begin{verbatim}
-MPICOMM=mpicomm
+  MPICOMM=mpicomm
 \end{verbatim}
 
-Change the \verb|ncpus| setting in \verb|src/cparam.local|.
+Change the \code{ncpus} setting in \file{src/cparam.local}.
 Think about how you want to distribute the volume on the processors --- usually, you should have 128 grid points in the x-direction to take advantage of the SIMD processor unit.
-For compilation, you have to use a configuration file that includes the \verb|_MPI| suffix, see below.
+For compilation, you have to use a configuration file that includes the \file{\_MPI} suffix, see below.
 
 \subsection{Compiling...}
 
 In order to compile the code, you can use a pre-defined configuration file corresponding to your compiler package.
-E.g. the default compilers are \verb|gfortran| together with \verb|gcc| and the code is being built with default options by issuing the command:
+E.g. the default compilers are \command{gfortran} together with \command{gcc} and the code is being built with default options by issuing the command:
 
 \begin{verbatim}
   pc_build
@@ -167,31 +168,31 @@ E.g. the default compilers are \verb|gfortran| together with \verb|gcc| and the 
 
 \subsubsection{Using a different compiler (optional)}
 
-If you prefer to use a different compiler package (e.g. using \verb|ifort| or \verb|MPI|), you may try:
+If you prefer to use a different compiler package (e.g. using \command{ifort} or \command{MPI}), you may try:
 
 \begin{verbatim}
   pc_build -f Intel
   pc_build -f GNU-GCC_MPI
 \end{verbatim}
 
-More pre-defined configurations are found in the directory \verb|pencil-code/config/compilers/*.conf|.
+More pre-defined configurations are found in the directory \file{pencil-code/config/compilers/*.conf}.
 
 \subsubsection{Changing compiler options (optional)}
 
-Of course you can also create a configuration file in any subdirectory of \verb|pencil-code/config/hosts/|.
-By default, \verb|pc_build| looks for a config file that is based on your \verb|host-ID|, which you may see with the command:
+Of course you can also create a configuration file in any subdirectory of \directory{pencil-code/config/hosts/}.
+By default, \command{pc\_build} looks for a config file that is based on your \code{host-ID}, which you may see with the command:
 \begin{verbatim}
   pc_build -i
 \end{verbatim}
-You may add your modified configuration with the filename \verb|host-ID.conf|, where you can change compiler options according to the Pencil Code manual.
-A good host configuration example, that you may clone and adapt according to your needs, is \verb|pencil-code/config/hosts/IWF/host-andromeda-GNU_Linux-Linux.conf|.
+You may add your modified configuration with the filename \file{host-ID.conf}, where you can change compiler options according to the Pencil Code manual.
+A good host configuration example, that you may clone and adapt according to your needs, is \file{pencil-code/config/hosts/IWF/host-andromeda-GNU\_Linux-Linux.conf}.
 
 \subsection{Running...}
 
-The initial conditions are set in \verb|start.in| and the parameters for the main simulation run can be found in \verb|run.in|.
-In \verb|print.in| you can choose which physical quantities are written to the file \verb|data/time_series.dat|.
+The initial conditions are set in \file{start.in} and the parameters for the main simulation run can be found in \file{run.in}.
+In \file{print.in} you can choose which physical quantities are written to the file \file{data/time\_series.dat}.
 
-Be sure you have created an empty \verb|data| directory. It is now time to run the code:
+Be sure you have created an empty \directory{data} directory. It is now time to run the code:
 \begin{verbatim}
   mkdir data
   pc_run
@@ -200,17 +201,17 @@ Welcome to the world of Pencil Code!
 
 \subsection{Troubleshooting...}
 
-If compiling fails, please try first (yes, \verb|cleann| is correct):
+If compiling fails, please try first (yes, \command{cleann} is correct):
 \begin{verbatim}
   make cleann
   pc_setupsrc
   pc_build
 \end{verbatim}
 
-If one of the above steps fails, you may report to our mailing list: \url{http://pencil-code.nordita.org/contact.php}.
+If some step still fails, you may report to our mailing list: \url{http://pencil-code.nordita.org/contact.php}.
 In your report, please state the exact point in this quick start quide that fails for you (including the full error message) --- and be sure you precisely followed all non-optional instructions from the beginning.
 
-In addition to that, please report your operating system (if not \verb|Linux|-based) and the shell you use (if not \verb|bash|).
+In addition to that, please report your operating system (if not \name{Linux}-based) and the shell you use (if not \command{bash}).
 Also please give the full output of these commands:
 \begin{verbatim}
   bash
@@ -243,30 +244,30 @@ The most simple approach to visualize a cartesian grid setup is to run the Penci
 \begin{verbatim}
 IDL> .r pc_gui
 \end{verbatim}
-If you miss some physical quantities, you might want to extend the two IDL routines \verb|pc_get_quantity| and \verb|pc_check_quantities|. Anything implemented there will be available in the GUI, too.
+If you miss some physical quantities, you might want to extend the two IDL routines \command{pc\_get\_quantity} and \command{pc\_check\_quantities}. Anything implemented there will be available in the GUI, too.
 
-\subsubsection{Command-line based processing of "big data"}
+\subsubsection{Command-line based processing of ``big data''}
 Plese check the documentation inside these files:
 \begin{center}
 \begin{tabular}{|l|l|}\hline
-  \verb|pencil-code/idl/read/pc_read_var_raw.pro| & efficient reading of raw data\\\hline
-  \verb|pencil-code/idl/read/pc_read_subvol_raw.pro| & reading of sub-volumes\\\hline
-  \verb|pencil-code/idl/read/pc_read_slice_raw.pro| & reading of any 2D slice from 3D snapshots\\\hline
-  \verb|pencil-code/idl/pc_get_quantity.pro| & compute physical quantities out of raw data\\\hline
-  \verb|pencil-code/idl/pc_check_quantities.pro| & dependency ckecking of physical quantities\\\hline
+  \file{pencil-code/idl/read/pc\_read\_var\_raw.pro} & efficient reading of raw data\\\hline
+  \file{pencil-code/idl/read/pc\_read\_subvol\_raw.pro} & reading of sub-volumes\\\hline
+  \file{pencil-code/idl/read/pc\_read\_slice\_raw.pro} & reading of any 2D slice from 3D snapshots\\\hline
+  \file{pencil-code/idl/pc\_get\_quantity.pro} & compute physical quantities out of raw data\\\hline
+  \file{pencil-code/idl/pc\_check\_quantities.pro} & dependency ckecking of physical quantities\\\hline
 \end{tabular}
 \end{center}
 in order to read data efficiently and compute quantities in physical units.
 
 \subsubsection{Command-line based data analysis (may be inefficient)}
-Several \verb|idl|-procedures have been written
-(see in \verb|pencil-code/idl| ) to facilitate inspecting the data
-that can be found in raw format in \verb|jeans-x/data| directory.
+Several \name{idl}-procedures have been written
+(see in \directory{pencil-code/idl}) to facilitate inspecting the data
+that can be found in raw format in \directory{jeans-x/data}.
 For example, let us inspect the time series data
 \begin{verbatim}
 IDL> pc_read_ts, obj=ts
 \end{verbatim}
-The structure \verb|ts| contains several variables that can be inspected by
+The structure \code{ts} contains several variables that can be inspected by
 \begin{verbatim}
 IDL> help, ts, /structure
 ** Structure <911fa8>, 4 tags, length=320, data length=320, refs=1:
@@ -275,24 +276,24 @@ IDL> help, ts, /structure
    UMAX            FLOAT     Array[20]
    RHOMAX          FLOAT     Array[20]
 \end{verbatim}
-The diagnostic \verb|UMAX|, the maximal velocity, is available since it was set
-in \verb|jeans-x/print.in|. Please check manual for more information.
+The diagnostic \code{UMAX}, the maximal velocity, is available since it was set
+in \file{jeans-x/print.in}. Please check the manual for more information about the input files.
 
-We can now plot the evolution of the maximal velocity after the initial perturbation we inserted in \verb|start.in|:
+We plot now the evolution of \code{UMAX} after the initial perturbation that is defined in \file{start.in}:
 \begin{verbatim}
 IDL> plot, ts.t, alog(ts.umax)
 \end{verbatim}
 % TODO Include screen shot
 
-The complete state of the simulation is saved as snapshots in
-\verb|jeans-x/data/proc0/VAR*| every \verb|dsnap| time units,
-as defined in \verb|jeans-x/run.in|.
-These states are loaded with, for example:
+The complete state of the simulation is saved as snapshot files in
+\file{jeans-x/data/proc0/VAR*} every \code{dsnap} time units,
+as defined in \file{jeans-x/run.in}.
+These snapshots, for example \file{VAR5}, can be loaded with:
 \begin{verbatim}
-IDL> pc_read_var, obj=ff, ivar=1, /trimall
+IDL> pc_read_var, obj=ff, varfile="VAR5", /trimall
 \end{verbatim}
 
-Similarly \verb|tag_names| will provide us with the available variables:
+Similarly \code{tag\_names} will provide us with the available variables:
 \begin{verbatim}
 IDL> print, tag_names(ff)
 T X Y Z DX DY DZ UU LNRHO POTSELF
@@ -303,20 +304,20 @@ The logarithm of the density can be inspected by using a GUI:
 IDL> cslice, ff.lnrho
 \end{verbatim}
 
-Of course, for scripting one might use any quantity from the \verb|ff| structure, like calculating the average density:
+Of course, for scripting one might use any quantity from the \code{ff} structure, like calculating the average density:
 \begin{verbatim}
 IDL> print, mean(exp(ff.lnrho))
 \end{verbatim}
 
 
 \subsection{Python visualization (optional)}
-Be advised that the \verb|Python| support is still not complete or as feature-rich as for \verb|IDL|.
+Be advised that the \name{Python} support is still not complete or as feature-rich as for \name{IDL}.
 
 \subsubsection{Python module requirements}
-For this example we use the modules: \verb|numpy| and \verb|matplotlib|.
+For this example we use the modules: \code{numpy} and \code{matplotlib}.
 
 \subsubsection{Using the 'pencil' module}
-After executing the \verb|sourceme.sh| script (see above), you should be able to import the \verb|pencil| module:
+After sourcing the \file{sourceme.sh} script (see above), you should be able to import the \code{pencil} module:
 
 \begin{verbatim}
 import pencil as pc
@@ -325,9 +326,9 @@ import pencil as pc
 Some useful functions:
 \begin{center}
 \begin{tabular}{|l|l|}\hline
-\verb|pc.read_ts| & read \verb|time_series.dat| file. Parameters are added as members of the class\\\hline
-\verb|pc.read_slices| & read 2D slice files and return two arrays: (nslices,vsize,hsize) and (time)\\\hline
-\verb|pc.animate_interactive| & assemble a 2D animation from a 3D array\\\hline
+\file{pc.read\_ts} & read \file{time\_series.dat} file. Parameters are added as members of the class\\\hline
+\file{pc.read\_slices} & read 2D slice files and return two arrays: (nslices,vsize,hsize) and (time)\\\hline
+\file{pc.animate\_interactive} & assemble a 2D animation from a 3D array\\\hline
 %× & ×\\\hline
 %× & ×\\\hline
 %× & ×\\\hline
