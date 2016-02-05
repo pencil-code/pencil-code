@@ -75,6 +75,7 @@ module Special
   logical :: lbuffer_zone_T=.false., lbuffer_zone_chem=.false., lbuffer_zone_uy=.false.
   logical :: llognormal=.false., lACTOS=.false.
   logical :: lsmall_part=.false.,  llarge_part=.false., lsmall_large_part=.false. 
+  logical :: laverage=.false.
 !
   real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.,AA=0.66e-4
   real :: nd0, r0, r02, delta, uy_bz, ux_bz,  dYw1, dYw2, PP, Ntot=1e3
@@ -88,7 +89,8 @@ module Special
       lbuoyancy_z,lbuoyancy_x,lbuoyancy_y, sigma, Period,dsize_max,dsize_min, lbuoyancy_z_model,&
       TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, dYw1, dYw2, &
       nd0, r0, r02, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot,  PP, TT0, qwater0, aerosol_present, &
-      lACTOS, lsmall_part,  llarge_part, lsmall_large_part, Ntot_ratio, UY_ref, llognormal, Ntot_input
+      lACTOS, lsmall_part,  llarge_part, lsmall_large_part, Ntot_ratio, UY_ref, llognormal, Ntot_input, &
+      laverage
 
 ! run parameters
   namelist /special_run_pars/  &
@@ -1650,7 +1652,7 @@ subroutine bc_satur_x(f,bc)
       integer ::  ll1,ll2,mm1,mm2
       integer,save :: time_position=1
       real, save :: time_LES=0, bc_T_aver, bc_u_aver, bc_T_aver2, bc_u_aver2
-      real :: bc_T_aver_final, bc_u_aver_final
+      real, dimension (64,64) :: bc_T_aver_final, bc_u_aver_final
       real :: lbc,frac, d_LESx,ttt
       logical, save :: lbc_file_x=.true.
       logical, save :: lbc_T_z=.true.!, lbc_U_x=.false.
@@ -1800,13 +1802,24 @@ subroutine bc_satur_x(f,bc)
 !      endif
 !
 
-       bc_T_aver_final=bc_T_aver  &
+      if (laverage) then
+        bc_T_aver_final(:,:)=bc_T_aver  &
                +(t-time(time_position-1))/(time(time_position)-time(time_position-1))    &
                *(bc_T_aver2-bc_T_aver)
                
-       bc_u_aver_final=bc_T_aver  &
+        bc_u_aver_final(:,:)=bc_T_aver  &
                +(t-time(time_position-1))/(time(time_position)-time(time_position-1))    &
-               *(bc_T_aver2-bc_T_aver) 
+               *(bc_T_aver2-bc_T_aver)
+       else
+         bc_T_aver_final(:,:)=bc_T_x_adopt(:,:) &
+               +(t-time(time_position-1))/(time(time_position)-time(time_position-1))    &
+               *(bc_T_x_next(:,:)-bc_T_x_adopt(:,:))
+               
+        bc_u_aver_final(:,:)=bc_T_x_adopt(:,:)  &
+               +(t-time(time_position-1))/(time(time_position)-time(time_position-1))    &
+               *(bc_T_x_next(:,:)-bc_T_x_adopt(:,:))
+       
+       endif
             
     !        
 !      print*,'proverka',bc_T_aver, bc_T_aver_final, bc_T_aver2
@@ -1818,14 +1831,17 @@ subroutine bc_satur_x(f,bc)
       if (bc%location==iBC_Z_BOT) then
         if (vr==ilnTT) then
 !
-!       print*,bc_T_x_adopt(:,1)
-!       print*,'test',bc_T_x_adopt(1,1),bc_T_x_adopt(16,1),bc_T_x_adopt(32,1), y(m1),y(m2),m1,m2
-!
-          do j=m1,m2
-          do i=l1,l2
-!            f(i,j,n1,vr)=alog(bc_T_x_adopt(i-3,j-3))
-            f(i,j,n1,vr)=alog(bc_T_aver_final)
+          ll1=(x(l1)-xyz0(1))/dx+1
+          ll2=(x(l2)-xyz0(1))/dx+1
+          mm1=(y(m1)-xyz0(2))/dy+1
+          mm2=(y(m2)-xyz0(2))/dy+1
 
+          do j=l1,l2
+            i2=ll1+j-4
+          do i=m1,m2
+            i1=mm1+i-4
+!            f(i,j,n1,vr)=alog(bc_T_x_adopt(i-3,j-3))
+            f(j,i,n1,vr)=alog(bc_T_aver_final(i1,i2))
           enddo
           enddo
 !           
@@ -1845,7 +1861,7 @@ subroutine bc_satur_x(f,bc)
            do i=m1,m2
              i1=mm1+i-4
 !             f(j,i,n1,vr)=bc_u_x_adopt(i1,i2)*bc_T_x_adopt(i1,i2)/exp(f(j,i,n1,ilnTT))
-              f(j,i,n1,vr)=bc_u_aver_final*bc_T_aver_final/exp(f(j,i,n1,ilnTT))
+              f(j,i,n1,vr)=bc_u_aver_final(i1,i2)*bc_T_aver_final(i1,i2)/exp(f(j,i,n1,ilnTT))
  !             f(l1,i,j,vr)=bc_T_x_adopt(i1,i2)
            enddo
            enddo
