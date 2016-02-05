@@ -37,27 +37,24 @@ module Special
 !
 !  Variables for calculating the Rayleigh number. Default are Europa values.
 !
-  real ::  gravity_z = 1.3  ! gravity in m/s^2
-  real ::  rho0_bq = 917.   ! density in Kg/m^3, Boussinesq value
-  real ::  alpha_thermal = 1.65d-4  ! Thermal expansivity in K^-1
-  real ::  kappa = 1d-6     ! Thermal diffusivity in m^2/s
-  !real ::  cp = 2000.      ! Specific heat in J Kg^-1 K^-1
-  real ::  eta_0 = 1d13     ! Viscosity at melting temperature in Pa s
-  !real ::  dslab_km = 20.  ! Ice shell thikness in km
+  real ::  gravity_z = 1.3           ! gravity in m/s^2
+  real ::  rho0_bq = 917.            ! density in Kg/m^3, Boussinesq value
+  real ::  alpha_thermal = 1.65d-4   ! Thermal expansivity in K^-1
+  real ::  kappa = 1d-6              ! Thermal diffusivity in m^2/s
+  !real ::  cp = 2000.               ! Specific heat in J Kg^-1 K^-1
+  real ::  eta_0 = 1d13              ! Viscosity at melting temperature in Pa s
+  !real ::  dslab_km = 20.           ! Ice shell thikness in km
   real :: Tbot=270, Tupp=100
 !
 !  Variables for variable viscosity
 !
-  real ::  TT_melt = 270.   ! Melting tempertature in K
-  real ::  Avisc = 4.00     ! constants for viscosity prescriptions
-  real ::  Bvisc = 0.00
-  real ::  Cvisc = 0.00
-  real ::  deltaT1, Lz1
+  real ::  T_m = 270.                ! Melting tempertature in K
+  real ::  Avisc = 4.00              ! constant
 !
 !  Variables for tidal heating
 !
-  real :: mu_ice = 4d9     ! Rigidity of ice in Pa s
-  real :: epsi_0 = 2.1d-5  ! Amplitude of original tidal flexing
+  real :: mu_ice = 4d9               ! Rigidity of ice in Pa s
+  real :: epsi_0 = 2.1d-5            ! Amplitude of original tidal flexing
   real :: EuropaPeriod = 3.0682204d5 ! Period of Europa, in seconds  
   real :: mu1_ice, OmegaEuropa, kappa1
 !
@@ -67,6 +64,7 @@ module Special
      real, dimension(nx,3)   :: uu
      real, dimension(nx) :: ugTT,u2,qtidal,eta,devsigzz
   endtype InternalPencils
+!
   type (InternalPencils) :: q
 !
   character (len=labellen) :: initpsi='nothing'
@@ -75,34 +73,24 @@ module Special
 !
   logical :: lprint_residual=.false.,ltidal_heating=.true.
   logical :: ltemperature_advection=.true.,ltemperature_diffusion=.true.
-  logical :: lmultigrid=.true.
-!  
+  
   integer :: maxit=1000
 !
   real :: Ra=impossible
   logical :: lsave_residual=.true.
   real :: kx_TT=2*pi, kz_TT=pi, ampltt=0.01
-  logical :: lpoisson_test=.false.
-  logical :: ldirect_solver=.true.
-  logical :: lprint_residual_svl=.false.
 !
-  integer :: npost=5,npre=5
-  integer :: gamma=1,n_vcycles=1
-  integer :: nx_coarsest=3
-!
-  namelist /special_init_pars/ amplpsi,alpha_sor,lprint_residual,&
-       tolerance,maxit,gravity_z,rho0_bq,alpha_thermal,kappa,eta_0,&
-       iviscosity,Avisc,Bvisc,Cvisc,&
-       Tbot,Tupp,Ra,iorder_sor_solver,lsave_residual,&
-       kx_TT,kz_TT,ampltt,initpsi,lmultigrid,lpoisson_test,npost,npre,gamma,n_vcycles,&
-       ldirect_solver,nx_coarsest,lprint_residual_svl
+  namelist /special_init_pars/ amplpsi,alpha_sor,Avisc,lprint_residual,&
+       tolerance,maxit,&
+       gravity_z,rho0_bq,alpha_thermal,kappa,eta_0,iviscosity,Tbot,Tupp,&
+       Ra,iorder_sor_solver,lsave_residual,kx_TT,kz_TT,ampltt,initpsi
 !
   namelist /special_run_pars/ amplpsi,alpha_sor,Avisc,lprint_residual,&
-       tolerance,maxit,gravity_z,rho0_bq,alpha_thermal,kappa,eta_0,&
-       iviscosity,Avisc,Bvisc,Cvisc,&
-       Tbot,Tupp,Ra,iorder_sor_solver,lsave_residual,&
-       ltidal_heating,ltemperature_advection,ltemperature_diffusion,lmultigrid,&
-       npost,npre,gamma,n_vcycles,ldirect_solver,lprint_residual_svl
+       tolerance,maxit,ltidal_heating,ltemperature_advection,ltemperature_diffusion,&
+       gravity_z,rho0_bq,alpha_thermal,kappa,eta_0,iviscosity,Tbot,Tupp,&
+       Ra,iorder_sor_solver,lsave_residual
+!
+  !real, dimension(:,:), allocatable :: dummy_table
 !
 !  Declare index of new variables in f array. Surface density, midplane
 !  temperature, and mass accretion rate.
@@ -126,17 +114,12 @@ module Special
   integer :: icount_save
   real :: residual_save
 !  
-  logical :: lviscosity_const
-  logical :: lviscosity_var_newtonian
-  logical :: lviscosity_var_blankenbach
+  !interface sigma_to_mdot
+   !  module procedure sigma_to_mdot_mn
+   !  module procedure sigma_to_mdot_pt
+   !endinterface
 !
-  type GridPointers
-     real, pointer :: u(:,:),r(:,:)
-  endtype GridPointers
-  type(GridPointers), allocatable :: grid(:)
-  integer :: ngrid
-!
-contains
+  contains
 !***********************************************************************
     subroutine register_special()
 !
@@ -177,7 +160,6 @@ contains
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: dslab,delta_T,delta
-      integer :: nx_grid,nc_grid
 !
       if (Lxyz(1)/nxgrid .ne. Lxyz(3)/nzgrid) then 
         call fatal_error("initialize_special","dx ne dz")
@@ -185,25 +167,27 @@ contains
 !
 !  Pre-calculate Rayleigh number in case it is not given
 !
-      delta_T=Tbot-Tupp
-      deltaT1=1./delta_T
-      dslab = Lxyz(3)
-      Lz1 = 1./Lxyz(3)  
-!      
       if (Ra==impossible) then
+!      
+        delta_T=Tbot-Tupp
+        dslab = Lxyz(3)
         Ra = (gravity_z*alpha_thermal*rho0_bq*delta_T*dslab**3)/(kappa*eta_0)
-      endif !else it is given in the initial condition
+!
+!  Some definitions of the Rayleigh number do not use density. That is the
+!  case in the benchmarking paper of Blankenbach. In this case remove the
+!  density from the definition. Simply divide by rho0_bq instead of an if
+!  statement, for legibility, since we are in start time.       
+!
+     endif !else it is given in the initial condition
 !
      if (lroot) print*,'Rayleigh number=',Ra
 !
-!  Stuff for the coefficient of SOR. Should be between 0 and 2 for stability.
-!     
      if (alpha_sor == impossible) then
-        delta=min(dx,dy,dz)
+! delta is mesh spacing
+        delta=min(dx,dy,dz)/dslab
         alpha_sor= 2./(1+sin(pi*delta))
-      endif
-!
-!  Europa-specific stuff
+     endif
+     if (lroot) print*,'alpha for SOR=',alpha_sor
 !
       mu1_ice=1./mu_ice
       OmegaEuropa=1./EuropaPeriod
@@ -225,46 +209,6 @@ contains
         call fatal_error('initialize_special',errormsg)
       endselect
 !
-!  Multigrid
-!      
-      nx_grid=nint(log(nx-1.0)/log(2.0))
-!      
-      if (mod(log(nx_coarsest-1.0),log(2.0)) /= 0) then
-         print*,'nx_coarsest=',nx_coarsest
-         print*,'log_2(nx_coarsest-1)=',log(nx_coarsest-1.0)/log(2.0)
-         print*,'This number is not integer'
-         call fatal_error("initialize_special",&
-              "nx_coarsest-1 must be a power of 2 for multigrid")
-      endif
-!     
-      nc_grid=nint(log(nx_coarsest-1.0)/log(2.0))
-      ngrid = nx_grid - nc_grid + 1
-      if (nx /= 2**nx_grid+1) call fatal_error("initialize_special",&
-           "nx-1 must be a power of 2 for multigrid")
-!
-!  Viscosity
-!      
-      select case (iviscosity)
-!
-      case ('constant')
-         lviscosity_const=.true.
-         lviscosity_var_newtonian=.false.
-         lviscosity_var_blankenbach=.false.
-      case ('Newtonian') 
-         lviscosity_const=.false.
-         lviscosity_var_newtonian=.true.
-         lviscosity_var_blankenbach=.false.
-      case ('Blankenbach-variable') 
-         lviscosity_const=.false.
-         lviscosity_var_newtonian=.false.
-         lviscosity_var_blankenbach=.true.
-      case default
-        write(unit=errormsg,fmt=*) &
-             'initialize_special: No such value for iviscosity: ', &
-             trim(iviscosity)
-        call fatal_error('initialize_special',errormsg)
-      endselect
-!
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
@@ -280,6 +224,7 @@ contains
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: amplpsi_
+      integer :: i
 !
 !  Give an initial guess for psi
 !      
@@ -289,16 +234,16 @@ contains
          print*,'gaussian noise initialization'
          call gaunoise(amplpsi,f,ipsi)
       case ('single-mode')
-         print*,'single-mode initialization for constant viscosity'
-         print*,'derived from the solution of the dispersion relation'
+         print*,'single-mode initialization'
          amplpsi_ = -ampltt * Ra*kx_TT/(kz_TT**2 + kx_TT**2)**2
          do n=n1,n2
             do m=m1,m2
+      !         f(l1:l2,m,n,iTT) = f(l1:l2,m,n,iTT) + &
+      !                ampltt*cos(kx_TT*x(l1:l2))*sin(kz_TT*z(n))
                f(l1:l2,m,n,ipsi) = f(l1:l2,m,n,ipsi) + &
                     amplpsi_*sin(kx_TT*x(l1:l2))*sin(kz_TT*z(n))
            enddo
-        enddo
-        print*,'done single-mode initialization'
+          enddo
 !
       case ('nothing')
           
@@ -310,8 +255,8 @@ contains
           call fatal_error('init_special',errormsg)
 !
       endselect
-      !
-      call special_after_boundary(f)
+!
+      call special_after_boundary(f)!solve_for_psi(f)
 !
     endsubroutine init_special
 !***********************************************************************
@@ -372,15 +317,10 @@ contains
           idiag_devsigzz2 /=0 .or. &
           idiag_devsigzz3 /=0 .or. &
           idiag_devsigzz4 /=0) then 
-         if (lviscosity_const) then 
+         if (.true.) then 
             q%eta=1.
-         else if (lviscosity_var_newtonian) then
-            q%eta=exp(Avisc*(TT_melt*p%TT1 - 1.))
-         else if (lviscosity_var_blankenbach) then
-            q%eta=exp(-Bvisc*p%TT*deltaT1 + Cvisc*(1-z(n))*Lz1)
-         else   
-            call fatal_error("calc_pencils_special",&
-                 "The world is flat, and we never got here.")
+         else
+            q%eta=exp(Avisc*(T_m*p%TT1 - 1.))
          endif
       endif
 !
@@ -428,70 +368,41 @@ contains
     subroutine solve_for_psi(f)
 !
       real, dimension (mx,my,mz,mfarray) :: f   
-      real, dimension (mx,mz) :: psi,psi_old,eta
-      real, dimension (nx,nx) :: rhs
-      integer :: icount,i
-      real :: resid,aout,alpha,beta,dTTdx      
-!
-!  Define r.h.s.
-!
-      if (lpoisson_test) then
-         psi=0. 
-         rhs=1.
-      else
-!
-         call calc_viscosity(f,eta)
-!      
-         do n=n1,n2; do m=m1,m2
-            do i=l1,l2
-               call f_function(eta,aout,i,n) ; alpha = aout/eta(i,n)
-               call g_function(eta,aout,i,n) ; beta = aout/eta(i,n)
-!
-               dTTdx=dx_1(i)/60*(+ 45.0*(f(i+1,m,n,iTT)-f(i-1,m,n,iTT)) &
-                                 -  9.0*(f(i+2,m,n,iTT)-f(i-2,m,n,iTT)) &
-                                 +      (f(i+3,m,n,iTT)-f(i-3,m,n,iTT)))            
-               rhs(i-l1+1,n-n1+1) = Ra*dTTdx/eta(i,n)
-            enddo;enddo
-         enddo
-
-         psi(l1:l2,n1:n2)=f(l1:l2,mpoint,n1:n2,ipsi)
-!      
-         call update_bounds_psi(psi)
-      endif
-!
+      real, dimension (mx,mz) :: psi,eta
+      integer :: icount
+      real :: residual !,rms_psi
 !
 !  Initial residual
 !
-         resid=1e33
+      residual=1e33
 !
 !  Start counter
 !      
-         icount=0
+      icount=0
 !
-!  LHS and RHS set. Now iterate.
-!      
-      do while (resid > tolerance)
+      psi(l1:l2,n1:n2)=f(l1:l2,mpoint,n1:n2,ipsi)
+      
+      call update_bounds_psi(psi)
 !
-!  Calculate psi via multigrid
+      call calc_viscosity(f,eta)
 !
-         psi_old=psi
-
-         if (lmultigrid) then
-            call multigrid(psi,rhs)
-         else
-            call successive_over_relaxation(psi,rhs)
-         endif
+      do while (residual > tolerance)
+      !do while (icount < maxit)
 !
-         call update_bounds_psi(psi)
-         resid=sqrt(sum((psi(l1:l2,n1:n2)-psi_old(l1:l2,n1:n2))**2)/(nx*nz))
+!  Calculate psi via SOR
+!
+        call successive_over_relaxation(f,psi,eta,residual)
+        call update_bounds_psi(psi)
 !
 ! Increase counter. 
 !
         icount=icount+1
         if (lprint_residual) &
-             print*, icount,resid,tolerance
+             print*, icount,residual,tolerance
         if (lsave_residual) then
-           write(9,*) icount,resid
+           !open(9,file=trim(datadir)//'/index_special.pro',status='replace')
+           write(9,*) icount,residual
+           !close(9)
         endif
 !
         if (icount >= maxit) then
@@ -508,67 +419,67 @@ contains
       if (lsave_residual) close(9)
 !
       icount_save=icount
-      residual_save=resid
+      residual_save=residual
 !
     endsubroutine solve_for_psi
 !***********************************************************************
-    subroutine successive_over_relaxation(u,r,h)
+    subroutine successive_over_relaxation(f,psi,eta,residual)
 !
-      real, dimension (:,:) :: u
-      real, dimension (:,:) :: r
-      real :: cc,ufactor,vterm,u_new,alpha_sor_
-      real, optional :: h
-      integer :: ii,nn,k,l
-      integer :: nu,nr,nn1,nn2,ll1,ll2
-      !real, allocatable, dimension(:,:) :: eta 
+      use Deriv, only: der
 !
-      real :: alpha,beta,aout
+      real, dimension (mx,my,mz,mfarray) :: f   
+      real, dimension (mx,mz), intent(in) :: eta
+      real, dimension (mx,mz) :: psi,psi_old
+      real, dimension (nx,nz) :: tmp
+      real :: alpha, beta, cc, u, v, aout, dTTdx
+      real :: psi_ast,dpsi
+      real, intent(out) :: residual
+      integer :: i
+      real :: factor
 !
-      nu=assert_equal((/size(u,1),size(u,2)/),'successive_over_relaxation')
-      nr=assert_equal((/size(r,1),size(r,2)/),'successive_over_relaxation')
-      nn1=nghost+1; nn2=nu-nghost; ll1=nn1; ll2=nn2
+      psi_old=psi
+      factor=alpha_thermal*rho0_bq*gravity_z
 !
-      if (present(h)) then 
-         alpha_sor_=1./(2+pi*h)
-      else
-         alpha_sor_=alpha_sor
-      endif
+      do n=n1,n2; do m=m1,m2
+        do i=l1,l2
 !
-      !allocate(eta(nu,nu))
-      !eta = 1. 
+!  These quantities do not depend on psi
 !
-      do nn=nn1+1,nn2-1
-         k=nn-nn1+1
-         do ii=ll1+1,ll2-1
-            l=ii-l1+1
-!     
-            !call f_function(eta,aout,ii,nn) ; alpha = aout/eta(ii,nn)
-            !call g_function(eta,aout,ii,nn) ;  beta = aout/eta(ii,nn)
-            alpha=0.0
-            beta=0.0
+         call f_function(eta,aout,i,n) ; alpha = aout/eta(i,n)
+         call g_function(eta,aout,i,n) ; beta = aout/eta(i,n)
+         !call der(f,iTT,dTTdx,1) 
+         dTTdx=dx_1(i)/60*(+ 45.0*(f(i+1,m,n,iTT)-f(i-1,m,n,iTT)) &
+                           -  9.0*(f(i+2,m,n,iTT)-f(i-2,m,n,iTT)) &
+                           +      (f(i+3,m,n,iTT)-f(i-3,m,n,iTT)))            
+         !cc = Ra*dTTdx/eta(i,n)
+         !cc = factor*dTTdx/eta(i,n) 
+         cc = factor*dTTdx / eta(i,n)
 !
-            cc = r(l,k)
-!     
-            if (lsolver_highorder) then
-               call solve_highorder(u,alpha,beta,ufactor,vterm,ii,nn)
-            else
-               if (present(h)) then
-                  call solve_loworder(u,alpha,beta,ufactor,vterm,ii,nn)
-               else
-                  call solve_loworder(u,alpha,beta,ufactor,vterm,ii,nn,h)
-               endif
-            endif
-!     
-            u_new=(cc-vterm)/ufactor
-            u(ii,nn) = u(ii,nn)*(1-alpha_sor_) +  alpha_sor_*u_new
-        enddo
-     enddo
+         if (lsolver_highorder) then
+            call solve_highorder(psi,alpha,beta,u,v,i,n)
+         else
+            call solve_loworder(psi,alpha,beta,u,v,i,n)
+         endif
 !
-     !deallocate(eta)
+         psi_ast=(cc-v)/u
+!
+         dpsi = psi_ast - psi_old(i,n)
+         psi(i,n) = alpha_sor*dpsi + psi_old(i,n)
+!
+         enddo
+      enddo; enddo
+!
+!  Psi updated. Now prepare for next iteration. Calculate residual.
+!
+      tmp=(psi(l1:l2,n1:n2) - psi_old(l1:l2,n1:n2))**2
+!
+!  Residual: L2 norm of dphi over L2 norm of phi itself
+!      
+      residual = sqrt(sum(tmp)/sum(psi(l1:l2,n1:n2)**2))
 !
     endsubroutine successive_over_relaxation
 !***********************************************************************
-    subroutine solve_highorder(a,alpha,beta,u,v,i,k,h)
+    subroutine solve_highorder(a,alpha,beta,u,v,i,k)
 !
 !   Solve the momentum equation of mantle convection for the streamfunction
 !      
@@ -576,7 +487,7 @@ contains
 !         
 !   d4/dx4 + d4/dz4 + 2*d4dx2dz2 + A*d2/dz2 - A*d2dx2 + B*d2dxdz = C 
 !         
-      real, dimension (:,:), intent(in) :: a
+      real, dimension (mx,mz), intent(in) :: a
       real, intent(in) :: alpha,beta
       real, intent(out) :: u,v
       real :: dx1,dz1,fac,fac2
@@ -584,15 +495,8 @@ contains
 !
       integer :: i,k
 !
-      real, optional :: h
-!
-      if (present(h)) then
-         dx1 = 1./h
-         dz1 = 1./h
-      else
-         dx1=dx_1(i)
-         dz1=dz_1(k)
-      endif
+      dx1=dx_1(i)
+      dz1=dz_1(n)
 !      
 !  The quantity u collects all terms that multiply psi[i,k]
 !  v collects everything else. 
@@ -722,9 +626,9 @@ contains
 !
     endsubroutine solve_highorder
 !***********************************************************************
-    subroutine solve_loworder(a,alpha,beta,u,v,i,k,h)
+    subroutine solve_loworder(a,alpha,beta,u,v,i,k)
 !
-      real, dimension (:,:), intent(in) :: a
+      real, dimension (mx,mz), intent(in) :: a
       real, intent(in) :: alpha,beta
       real, intent(out) :: u,v
 !
@@ -732,15 +636,8 @@ contains
       real :: v51,v52,v53,dx1,dz1
       integer :: i,k
 !
-      real, optional :: h
-!
-      if (present(h)) then
-         dx1 = 1./h
-         dz1 = 1./h
-      else
-         dx1=dx_1(i)
-         dz1=dz_1(k)
-      endif
+      dx1=dx_1(i)
+      dz1=dz_1(n)
 !      
       u = 2*alpha*(dx1**2 - dz1**2) + 6.*(dx1**4 + dz1**4) + 4.*beta*dx1*dz1 + 8.*dx1**2*dz1**2
 !
@@ -770,16 +667,10 @@ contains
       select case (iviscosity)
 !
       case ('constant')
-        eta = 1.
+        eta = eta_0
 !
       case ('Netwonian') 
-        eta = exp(Avisc * (TT_melt/f(:,mpoint,:,iTT) - 1.))
-!
-      case ('Blankenbach-variable')
-         do n=1,mz
-            eta(:,n) = exp(-Bvisc * f(:,mpoint,n,iTT)*deltaT1 + &
-                            Cvisc * (1-z(n))*Lz1 )
-         enddo
+        eta = eta_0*exp(Avisc * (T_m/f(:,mpoint,:,iTT) - 1.))
 !
       case default  
         write(unit=errormsg,fmt=*) &
@@ -853,45 +744,40 @@ contains
 !
     endsubroutine g_function
 !***********************************************************************
-    subroutine update_bounds_psi(a)
+    subroutine update_bounds_psi(psi)
 !
-      real, dimension(:,:) :: a
-      integer :: i,nn1,nn2,ll1,ll2,na
-!
-      na=assert_equal((/size(a,1),size(a,2)/),'update_bounds_psi')
-      nn1=nghost+1; nn2=na-nghost
-      ll1=nn1; ll2=nn2
+      real, dimension(mx,mz) :: psi
+      integer :: i
 !
 !  Set boundary of psi - vertical, zero
 !
-      a(:,nn1)=0.
-      a(:,nn2)=0.
+      psi(:,n1)=0.
+      psi(:,n2)=0.
 !
 !  Zero also the second derivative
 !
       do i=1,nghost
-        a(:,nn1-i) = 2*a(:,nn1) - a(:,nn1+i)
+        psi(:,n1-i) = 2*psi(:,n1) - psi(:,n1+i)
       enddo
       do i=1,nghost
-        a(:,nn2+i) = 2*a(:,nn2) - a(:,nn2-i)
+        psi(:,n2+i) = 2*psi(:,n2) - psi(:,n2-i)
       enddo
 !
       if (lperi(1)) then 
 !
 !  Periodic in the lateral 
 !
-         call fatal_error("update_bounds_psi","not set for periodic")
-         !psi(1   :l1-1,:) = psi(l2i:l2,:)
-         !psi(l2+1:mx  ,:) = psi(l1:l1i,:)
+         psi(1   :l1-1,:) = psi(l2i:l2,:)
+         psi(l2+1:mx  ,:) = psi(l1:l1i,:)
       else
-         a(ll1,:)=0.
-         a(ll2,:)=0.
+         psi(l1,:)=0.
+         psi(l2,:)=0.
 !
          do i=1,nghost
-            a(ll1-i,:) = 2*a(ll1,:) - a(ll1+i,:)
+            psi(l1-i,:) = 2*psi(l1,:) - psi(l1+i,:)
          enddo
          do i=1,nghost
-            a(ll2+i,:) = 2*a(ll2,:) - a(ll2-i,:)
+            psi(l2+i,:) = 2*psi(l2,:) - psi(l2-i,:)
          enddo
       endif
 !
@@ -915,7 +801,7 @@ contains
 !  Conduction (diffusion)
 !
       if (ltemperature_diffusion) & 
-           df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + p%del2TT
+           df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + kappa*p%del2TT
 !
 !  Tidal heating 
 !
@@ -927,7 +813,7 @@ contains
                       abs(q%uu(:,2))*dy_1(  m  )+ &
                       abs(q%uu(:,3))*dz_1(  n  )       
 !
-        diffus_special=diffus_special + dxyz_2
+        diffus_special=diffus_special + kappa*dxyz_2
       endif
 !
       if (headtt.or.ldebug) then
@@ -1034,7 +920,7 @@ contains
 !  record position as well
 
          if (idiag_TTmax_cline/=0) then
-            if (z(n) .ge. 0.5) then
+            if (z(n) .ge. 0.5*Lxyz(3)) then
                TTmax_cline=p%TT(nx/2)
             else
                TTmax_cline=-impossible
@@ -1043,7 +929,7 @@ contains
          endif
 
          if (idiag_TTmin_cline/=0) then
-            if (z(n) .lt. 0.5) then
+            if (z(n) .lt. 0.5*Lxyz(3)) then
                TTmin_cline=p%TT(nx/2)
             else
                TTmin_cline=impossible
@@ -1279,378 +1165,7 @@ contains
 !
     endsubroutine calc_lspecial_pars
 !***********************************************************************
-!***********************************************************************
-!***********************************************************************
 !
-!  Stuff for multigrid
-!
-!***********************************************************************
-!***********************************************************************
-!***********************************************************************    
-    subroutine multigrid(psi,rhs)
-!
-      implicit none
-!      
-      real, dimension(mx,mz) :: psi
-      real, dimension(nx,nz) :: rhs
-!
-      integer :: m,n,ng,j,nn,i
-!
-      m=assert_equal((/size(psi,1),size(psi,2)/),'mglin')
-      n=assert_equal((/size(rhs,1),size(rhs,2)/),'mglin')
-!
-      allocate(grid(ngrid))
-      allocate(grid(ngrid)%u(m,m))
-      allocate(grid(ngrid)%r(n,n))
-      grid(ngrid)%u=psi
-      grid(ngrid)%r=rhs
-!
-      nn=n
-      ng=ngrid
-      do
-         if (nn <= nx_coarsest) exit
-         nn=nn/2+1
-         ng=ng-1
-         allocate(grid(ng)%u(nn+2*nghost,nn+2*nghost))
-         allocate(grid(ng)%r(nn,nn))
-      enddo
-!
-      call downward(ngrid,grid(ngrid)%u,grid(ngrid)%r)
-!
-      grid(1)%u=0.
-      call solve_coarsest(grid(1)%u,grid(1)%r,.false.)
-!
-      call upward(2,grid(1)%u)
-!
-      psi=grid(ngrid)%u
-!
-      do j=1,ng
-         deallocate(grid(j)%u)
-         deallocate(grid(j)%r)
-      enddo
-      deallocate(grid)
-!
-    endsubroutine multigrid
-!***********************************************************************    
-    recursive subroutine downward(j,u,rhs)
-
-      implicit none
-      real, dimension(:,:) :: u
-      real, dimension(:,:) :: rhs
-      integer :: j,jpre
-!
-      real, dimension((size(rhs,1)+1)/2,(size(rhs,2)+1)/2) :: res
-      real, dimension((size(rhs,1)+1)/2+2*nghost,(size(rhs,2)+1)/2+2*nghost) :: v
-!        
-      if (j/=1) then
-!           
-         do jpre=1,npre
-            call relaxation(u,rhs)
-         enddo
-!
-         grid(j)%u = u
-         grid(j)%r = rhs
-
-         res=restrict(residual(u,rhs))           
-!        
-         v=0.0
-
-         grid(j-1)%u = v
-         grid(j-1)%r = res
-
-         call downward(j-1,v,res)
-      endif
-!    
-    endsubroutine downward
-!***********************************************************************    
-    recursive subroutine upward(j,v)
-!
-      real, dimension(:,:) :: v
-      real, dimension(2*size(v,1)-2*nghost-1,2*size(v,2)-2*nghost-1) :: u
-      integer :: mv,mu,lu1,lu2,lv1,lv2,jpost,j
-!
-      u=grid(j)%u
-      mv=assert_equal((/size(v,1),size(v,2)/),'upward'); lv1=nghost+1; lv2=mv-nghost
-      mu=assert_equal((/size(u,1),size(u,2)/),'upward'); lu1=nghost+1; lu2=mu-nghost
-      u(lu1:lu2,lu1:lu2)=u(lu1:lu2,lu1:lu2)+prolongate(v(lv1:lv2,lv1:lv2))
-!
-!  Post-smoothing.
-!
-      do jpost=1,npost
-         call relaxation(u,grid(j)%r)
-      enddo
-      grid(j)%u=u
-!
-      if (j/=ngrid) call upward(j+1,grid(j)%u)
-!
-    endsubroutine upward
-!***********************************************************************    
-    function restrict(uf)
-!
-!  Half-weighting restriction. If Nc is the coarse-grid dimension, the
-!  fine-grid solution is input in the (2Nc − 1) × (2Nc − 1) array uf,
-!  the coarse-grid solution is returned in the Nc × Nc array restrict.
-!
-!  13-jan-16/wlad: from numerical recipes.
-!
-      implicit none
-      real, dimension(:,:), intent(in) :: uf
-      real, dimension((size(uf,1)+1)/2,(size(uf,2)+1)/2) :: restrict
-      integer :: nc,nf
-!
-      nf=assert_equal((/size(uf,1),size(uf,2)/),'restrict')
-      nc=(nf+1)/2
-!
-!  Interior points
-!      
-      restrict(2:nc-1,2:nc-1) =   0.5 *uf(3:nf-2:2,3:nf-2:2) + &
-                              0.125*(uf(4:nf-1:2,3:nf-2:2) + uf(2:nf-3:2,3:nf-2:2)+&
-                                     uf(3:nf-2:2,4:nf-1:2) + uf(3:nf-2:2,2:nf-3:2))
-!
-!  Boundary points      
-!
-      restrict(1:nc,1)  = uf(1:nf:2,1)
-      restrict(1:nc,nc) = uf(1:nf:2,nf)
-      restrict(1,1:nc)  = uf(1,1:nf:2)
-      restrict(nc,1:nc) = uf(nf,1:nf:2)
-!      
-    endfunction restrict
-!********************************************************************
-    function prolongate(uc)
-!      
-!  Coarse-to-fine prolongation by bilinear interpolation. If Nf is the
-!  fine-grid dimension and Nc the coarse-grid dimension, then
-!  Nf = 2Nc − 1. The coarse-grid solution is input as uc, the fine-grid
-!  solution is returned in prolongate.
-!
-!  13-jan-16/wlad: from numerical recipes.
-!
-      implicit none
-      real, dimension(:,:), intent(in) :: uc
-      real, dimension(2*size(uc,1)-1,2*size(uc,2)-1) :: prolongate
-      integer :: nc,nf
-!
-      nc=assert_equal((/size(uc,1),size(uc,2)/),'prolongate')
-      nf=2*nc-1
-!
-! Do elements that are copies.
-!
-      prolongate(1:nf:2,1:nf:2)=uc(1:nc,1:nc)
-!
-! Do odd-numbered columns, interpolating vertically.
-!
-      prolongate(2:nf-1:2,1:nf:2) = 0.5*(prolongate(3:nf:2,1:nf:2) + prolongate(1:nf-2:2,1:nf:2))
-!
-! Do even-numbered columns, interpolating horizontally.
-!
-      prolongate(1:nf,2:nf-1:2) = 0.5*(prolongate(1:nf,3:nf:2) + prolongate(1:nf,1:nf-2:2))
-!
-    endfunction prolongate
-!********************************************************************
-    subroutine solve_coarsest(u,rhs,lboundary)
-!
-!  Solution of the model problem on the coarsest grid, where h = 1 . 
-!  input in rhs(1:3,1:3) and the solution is returned in u(1:3,1:3). 
-!
-!  13-jan-16/wlad: from numerical recipes.
-!
-      implicit none
-      real, dimension(:,:), intent(inout) :: u
-      real, dimension(:,:), intent(in) :: rhs
-      real, dimension(size(rhs,1),size(rhs,2)) :: u_old
-      real :: h,fac
-      logical :: lboundary
-!
-      real :: res,tol,ufactor,vterm
-      integer :: icount,iu,nu,nr,nn1,nn2,i
-!
-      nu=assert_equal((/size(u,1),size(u,2)/),'solve_coarsest')
-      nr=assert_equal((/size(rhs,1),size(rhs,2)/),'solve_coarsest')
-      nn1=nghost+1; nn2=nu-nghost
-!      
-      tol=1e-15
-      res=1e33
-!
-      u = 0.0
-      h = 1./(nr-1)
-!
-      if (ldirect_solver) then
-         if (nx_coarsest /= 3) call fatal_error("solve_coarsest",&
-              "direct solver only for nx=3 in the coarsest grid")
-         iu=(nu+1)/2
-         if (lpoisson_test) then 
-            u(iu,iu) = -h**2 * rhs(2,2)/4.0
-         else
-            if (lsolver_highorder) then 
-               call solve_highorder(u,0.0,0.0,ufactor,vterm,iu,iu,h)
-            else
-               call solve_loworder(u,0.0,0.0,ufactor,vterm,iu,iu,h)
-            endif
-            !u(iu,iu) = h**4 * rhs(2,2)/20.0
-            u(iu,iu) =  rhs(2,2)/ufactor 
-         endif
-      else
-         icount=0
-!
-         do while (res > tol)
-!
-            icount=icount+1
-            u_old=u(nn1:nn2,nn1:nn2)
-            !call successive_over_relaxation(u,rhs,h)
-            call relaxation(u,rhs)
-            res = sqrt(sum((u(nn1:nn2,nn1:nn2)-u_old)**2)/nr**2)
-            if (lprint_residual_svl) print*,'solve_coarsest',icount,res
-         enddo
-!
-      endif
-!
-    endsubroutine solve_coarsest
-!********************************************************************
-    subroutine relaxation(u,rhs)
-!
-!  Red-black Gauss-Seidel relaxation for model problem. The current
-!  value of the solution u is updated, using the right-hand-side
-!  function rhs. u and rhs are square arrays of the same odd dimension.
-!
-!  13-jan-16/wlad: from numerical recipes.
-!
-      implicit none
-      real, dimension(:,:), intent(inout) :: u
-      real, dimension(:,:), intent(in) :: rhs
-      integer :: n,m,l,k
-      real :: h,h2
-!
-      real :: cc,ufactor,vterm,alpha,beta
-      integer :: ii,nn
-!
-      m=assert_equal((/size(u,1),size(u,2)/),'relax')
-      n=assert_equal((/size(rhs,1),size(rhs,2)/),'relax')
-!
-      h=1.0/(n-1)
-!
-! Convection
-!
-      if (.not.lpoisson_test) then
-         call update_bounds_psi(u)
-         alpha=0.0
-         beta=0.0
-         do ii=2,n-1
-            l=ii+nghost
-            do nn=2,n-1
-               k=nn+nghost
-               cc = rhs(ii,nn)
-               if (lsolver_highorder) then
-                  call solve_highorder(u,alpha,beta,ufactor,vterm,l,k,h)
-               else
-                  call solve_loworder(u,alpha,beta,ufactor,vterm,l,k,h)
-               endif
-               u(l,k) = (cc-vterm)/ufactor
-            enddo
-         enddo
-         call update_bounds_psi(u)
-      else
-!
-! Poisson
-!     
-         h2=h**2
-!
-         do ii=2,n-1
-            l=ii+nghost
-            do nn=2,n-1
-               k=nn+nghost
-               u(l,k) = 0.25*(u(l+1,k) + u(l-1,k) + &
-                              u(l,k+1) + u(l,k-1) - h2*rhs(ii,nn))
-            enddo
-         enddo
-      endif
-!
-    endsubroutine relaxation
-!********************************************************************
-    function residual(u,rhs)
-!
-!  Returns minus the residual for the model problem. Input quantities are u and rhs,
-!  while the residual is returned in resid. All three quantities are square arrays
-!  with the same odd dimension.
-!
-!  13-jan-16/wlad: from numerical recipes.
-!
-      implicit none
-      real, dimension(:,:), intent(in) :: u
-      real, dimension(:,:), intent(in) :: rhs
-      real, dimension(size(rhs,1),size(rhs,2)) :: residual
-      integer :: n,l,k
-      real :: h,h2i,alpha,beta
-!
-      real :: ufactor,vterm,lhs
-      integer :: ii,nn
-!
-      m=assert_equal((/size(u,1),size(u,2)/),'resid')
-      n=assert_equal((/size(rhs,1),size(rhs,2)/),'resid')
-!
-      h=1.0/(n-1)
-!
-!  Interior points.
-!
-      if (lpoisson_test) then 
-         h2i=1.0/(h**2)
-         do ii=2,n-1
-            l=ii+nghost
-            do nn=2,n-1
-               k=nn+nghost
-               residual(ii,nn) = -h2i*(u(l+1,k) + u(l-1,k) + &
-                                       u(l,k+1) + u(l,k-1) - &
-                                   4.0*u(l,k))+rhs(ii,nn)
-            enddo
-         enddo
-      else
-         alpha=0.0
-         beta=0.0
-         do ii=2,n-1
-            l=ii+nghost
-            do nn=2,n-1
-               k=nn+nghost
-               if (lsolver_highorder) then 
-                  call solve_highorder(u,alpha,beta,ufactor,vterm,l,k,h)
-               else
-                  call solve_loworder(u,alpha,beta,ufactor,vterm,l,k,h)
-               endif
-               lhs = ufactor*u(l,k) + vterm
-               residual(ii,nn) = rhs(ii,nn) - lhs
-            enddo
-         enddo
-      endif
-!
-!  Boundary points.
-!      
-      residual(1:n,1)=0.0
-      residual(1:n,n)=0.0
-      residual(1,1:n)=0.0
-      residual(n,1:n)=0.0
-!
-    endfunction residual
-!********************************************************************
-    function assert_equal(a,schar)
-!
-      integer, dimension(:), intent(in) :: a
-      integer :: assert_equal
-      character (len=*) :: schar
-      integer :: i,s
-!
-      s=size(a)
-      if (s == 1) then
-        assert_equal = a(1)
-      else
-        do i=1,s-1
-          if (a(i)==a(i+1)) then 
-            assert_equal = a(1)
-          else
-            assert_equal = impossible_int 
-            call fatal_error(schar,"grid not square")
-          endif
-        enddo
-      endif
-!
-    endfunction assert_equal
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************

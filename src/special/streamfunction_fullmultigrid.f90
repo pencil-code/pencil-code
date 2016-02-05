@@ -32,7 +32,7 @@ module Special
 !  Code constants
 !
   real :: amplpsi=1d-5   !amplitude of initial perturbation for psi
-  real :: tolerance=1d-3
+  real :: tolerance=1d-6
   real :: alpha_sor=impossible
 !
 !  Variables for calculating the Rayleigh number. Default are Europa values.
@@ -67,6 +67,7 @@ module Special
      real, dimension(nx,3)   :: uu
      real, dimension(nx) :: ugTT,u2,qtidal,eta,devsigzz
   endtype InternalPencils
+!
   type (InternalPencils) :: q
 !
   character (len=labellen) :: initpsi='nothing'
@@ -84,7 +85,6 @@ module Special
   real :: kx_TT=2*pi, kz_TT=pi, ampltt=0.01
   logical :: lpoisson_test=.false.
   logical :: ldirect_solver=.true.
-  logical :: lprint_residual_svl=.false.
 !
   integer :: npost=5,npre=5
   integer :: gamma=1,n_vcycles=1
@@ -95,14 +95,14 @@ module Special
        iviscosity,Avisc,Bvisc,Cvisc,&
        Tbot,Tupp,Ra,iorder_sor_solver,lsave_residual,&
        kx_TT,kz_TT,ampltt,initpsi,lmultigrid,lpoisson_test,npost,npre,gamma,n_vcycles,&
-       ldirect_solver,nx_coarsest,lprint_residual_svl
+       ldirect_solver,nx_coarsest
 !
   namelist /special_run_pars/ amplpsi,alpha_sor,Avisc,lprint_residual,&
        tolerance,maxit,gravity_z,rho0_bq,alpha_thermal,kappa,eta_0,&
        iviscosity,Avisc,Bvisc,Cvisc,&
        Tbot,Tupp,Ra,iorder_sor_solver,lsave_residual,&
        ltidal_heating,ltemperature_advection,ltemperature_diffusion,lmultigrid,&
-       npost,npre,gamma,n_vcycles,ldirect_solver,lprint_residual_svl
+       npost,npre,gamma,n_vcycles,ldirect_solver,nx_coarsest
 !
 !  Declare index of new variables in f array. Surface density, midplane
 !  temperature, and mass accretion rate.
@@ -130,13 +130,7 @@ module Special
   logical :: lviscosity_var_newtonian
   logical :: lviscosity_var_blankenbach
 !
-  type GridPointers
-     real, pointer :: u(:,:),r(:,:)
-  endtype GridPointers
-  type(GridPointers), allocatable :: grid(:)
-  integer :: ngrid
-!
-contains
+    contains
 !***********************************************************************
     subroutine register_special()
 !
@@ -177,7 +171,6 @@ contains
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: dslab,delta_T,delta
-      integer :: nx_grid,nc_grid
 !
       if (Lxyz(1)/nxgrid .ne. Lxyz(3)/nzgrid) then 
         call fatal_error("initialize_special","dx ne dz")
@@ -225,25 +218,6 @@ contains
         call fatal_error('initialize_special',errormsg)
       endselect
 !
-!  Multigrid
-!      
-      nx_grid=nint(log(nx-1.0)/log(2.0))
-!      
-      if (mod(log(nx_coarsest-1.0),log(2.0)) /= 0) then
-         print*,'nx_coarsest=',nx_coarsest
-         print*,'log_2(nx_coarsest-1)=',log(nx_coarsest-1.0)/log(2.0)
-         print*,'This number is not integer'
-         call fatal_error("initialize_special",&
-              "nx_coarsest-1 must be a power of 2 for multigrid")
-      endif
-!     
-      nc_grid=nint(log(nx_coarsest-1.0)/log(2.0))
-      ngrid = nx_grid - nc_grid + 1
-      if (nx /= 2**nx_grid+1) call fatal_error("initialize_special",&
-           "nx-1 must be a power of 2 for multigrid")
-!
-!  Viscosity
-!      
       select case (iviscosity)
 !
       case ('constant')
@@ -429,9 +403,13 @@ contains
 !
       real, dimension (mx,my,mz,mfarray) :: f   
       real, dimension (mx,mz) :: psi,psi_old,eta
-      real, dimension (nx,nx) :: rhs
+      real, dimension (nx,nz) :: rhs
+!
+      real, dimension (nx,nz) :: alpha_factor,beta_factor
+!
       integer :: icount,i
-      real :: resid,aout,alpha,beta,dTTdx      
+      real :: residual,aout,dTTdx
+      real :: alpha=impossible,beta=impossible
 !
 !  Define r.h.s.
 !
@@ -441,130 +419,130 @@ contains
       else
 !
          call calc_viscosity(f,eta)
-!      
+!
          do n=n1,n2; do m=m1,m2
             do i=l1,l2
                call f_function(eta,aout,i,n) ; alpha = aout/eta(i,n)
-               call g_function(eta,aout,i,n) ; beta = aout/eta(i,n)
+               call g_function(eta,aout,i,n) ; beta  = aout/eta(i,n)
 !
                dTTdx=dx_1(i)/60*(+ 45.0*(f(i+1,m,n,iTT)-f(i-1,m,n,iTT)) &
                                  -  9.0*(f(i+2,m,n,iTT)-f(i-2,m,n,iTT)) &
                                  +      (f(i+3,m,n,iTT)-f(i-3,m,n,iTT)))            
                rhs(i-l1+1,n-n1+1) = Ra*dTTdx/eta(i,n)
+!
+               alpha_factor(i-l1+1,n-n1+1)=alpha
+               beta_factor(i-l1+1,n-n1+1)=beta
+!
             enddo;enddo
          enddo
-
+!         
          psi(l1:l2,n1:n2)=f(l1:l2,mpoint,n1:n2,ipsi)
-!      
+      
          call update_bounds_psi(psi)
       endif
 !
+      if (lmultigrid) then
+         call multigrid(psi,rhs,alpha_factor,beta_factor)
+         call update_bounds_psi(psi)
+      else
 !
 !  Initial residual
 !
-         resid=1e33
+         residual=1e33
 !
 !  Start counter
 !      
          icount=0
-!
-!  LHS and RHS set. Now iterate.
-!      
-      do while (resid > tolerance)
+!         
+         do while (residual > tolerance)
 !
 !  Calculate psi via multigrid
 !
-         psi_old=psi
-
-         if (lmultigrid) then
-            call multigrid(psi,rhs)
-         else
-            call successive_over_relaxation(psi,rhs)
-         endif
+            psi_old=psi
 !
-         call update_bounds_psi(psi)
-         resid=sqrt(sum((psi(l1:l2,n1:n2)-psi_old(l1:l2,n1:n2))**2)/(nx*nz))
+            call successive_over_relaxation(psi,rhs,alpha_factor,beta_factor)
+             
+            call update_bounds_psi(psi)
+!
+            residual=sqrt(sum((psi(l1:l2,n1:n2)-psi_old(l1:l2,n1:n2))**2)/(nx*nz))
 !
 ! Increase counter. 
 !
-        icount=icount+1
-        if (lprint_residual) &
-             print*, icount,resid,tolerance
-        if (lsave_residual) then
-           write(9,*) icount,resid
-        endif
+            icount=icount+1
+            if (lprint_residual) &
+                 print*, icount,residual,tolerance
+            if (lsave_residual) then
+               write(9,*) icount,residual
+            endif
 !
-        if (icount >= maxit) then
-           call fatal_error("solve_for_psi","reached limit of iterations: did not converge.")
-           if (lsave_residual) close(9)
-        endif
+            if (icount >= maxit) then
+               call fatal_error("solve_for_psi","reached limit of iterations: did not converge.")
+               if (lsave_residual) close(9)
+            endif
 !
-      enddo
+         enddo
+!
+         if (lsave_residual) close(9)
+!
+         icount_save=icount
+         residual_save=residual
+      endif
 !
       do m=m1,m2
-        f(:,m,:,ipsi)=psi
+         f(:,m,:,ipsi)=psi
       enddo
-!
-      if (lsave_residual) close(9)
-!
-      icount_save=icount
-      residual_save=resid
 !
     endsubroutine solve_for_psi
 !***********************************************************************
-    subroutine successive_over_relaxation(u,r,h)
+    subroutine successive_over_relaxation(u,r,alp,bet,h)
 !
       real, dimension (:,:) :: u
       real, dimension (:,:) :: r
+      real, dimension (:,:) :: alp,bet
       real :: cc,ufactor,vterm,u_new,alpha_sor_
+      real :: alpha=impossible,beta=impossible
       real, optional :: h
       integer :: ii,nn,k,l
       integer :: nu,nr,nn1,nn2,ll1,ll2
-      !real, allocatable, dimension(:,:) :: eta 
-!
-      real :: alpha,beta,aout
 !
       nu=assert_equal((/size(u,1),size(u,2)/),'successive_over_relaxation')
       nr=assert_equal((/size(r,1),size(r,2)/),'successive_over_relaxation')
       nn1=nghost+1; nn2=nu-nghost; ll1=nn1; ll2=nn2
 !
       if (present(h)) then 
-         alpha_sor_=1./(2+pi*h)
+         alpha_sor_=2./(1+sin(pi*h))
       else
          alpha_sor_=alpha_sor
       endif
-!
-      !allocate(eta(nu,nu))
-      !eta = 1. 
 !
       do nn=nn1+1,nn2-1
          k=nn-nn1+1
          do ii=ll1+1,ll2-1
             l=ii-l1+1
 !     
-            !call f_function(eta,aout,ii,nn) ; alpha = aout/eta(ii,nn)
-            !call g_function(eta,aout,ii,nn) ;  beta = aout/eta(ii,nn)
-            alpha=0.0
-            beta=0.0
-!
-            cc = r(l,k)
+           cc    =   r(l,k)
+           alpha = alp(l,k)
+           beta  = bet(l,k)
 !     
-            if (lsolver_highorder) then
-               call solve_highorder(u,alpha,beta,ufactor,vterm,ii,nn)
-            else
-               if (present(h)) then
-                  call solve_loworder(u,alpha,beta,ufactor,vterm,ii,nn)
-               else
-                  call solve_loworder(u,alpha,beta,ufactor,vterm,ii,nn,h)
-               endif
-            endif
+           if (lsolver_highorder) then
+              if (present(h)) then
+                 call solve_highorder(u,alpha,beta,ufactor,vterm,ii,nn)
+              else
+                 call solve_highorder(u,alpha,beta,ufactor,vterm,ii,nn,h)
+              endif
+           else
+              if (present(h)) then
+                 call solve_loworder(u,alpha,beta,ufactor,vterm,ii,nn)
+              else
+                 call solve_loworder(u,alpha,beta,ufactor,vterm,ii,nn,h)
+              endif
+           endif
 !     
-            u_new=(cc-vterm)/ufactor
-            u(ii,nn) = u(ii,nn)*(1-alpha_sor_) +  alpha_sor_*u_new
+           u_new=(cc-vterm)/ufactor
+           u(ii,nn) = u(ii,nn)*(1-alpha_sor_) +  alpha_sor_*u_new
+!     
         enddo
-     enddo
-!
-     !deallocate(eta)
+      enddo
 !
     endsubroutine successive_over_relaxation
 !***********************************************************************
@@ -742,7 +720,8 @@ contains
          dz1=dz_1(k)
       endif
 !      
-      u = 2*alpha*(dx1**2 - dz1**2) + 6.*(dx1**4 + dz1**4) + 4.*beta*dx1*dz1 + 8.*dx1**2*dz1**2
+      u = 2*alpha*(dx1**2 - dz1**2) + 6.*(dx1**4 + dz1**4) + &
+           4.*beta*dx1*dz1 + 8.*dx1**2*dz1**2
 !
 !  These do, and a is updated on the fly. So, do it swiping, so that a(i-1), that is updated, gets used for a(i)
 !
@@ -811,10 +790,6 @@ contains
                 +  2.0*(a(i,n+3)+a(i,n-3)))
 
       aout = df2z-df2x
-
-      !ax = (a(i+1,n) - 2.*a(i,n) + a(i-1,n)) * dx_1(i)**2
-      !az = (a(i,n+1) - 2.*a(i,n) + a(i,n-1)) * dz_1(n)**2
-      !aout=az-ax
 !
     endsubroutine f_function
 !***********************************************************************
@@ -848,18 +823,15 @@ contains
                        +(a(i+3,n-3)-a(i-3,n-3))))&
                    )
 !
-      !aout = ( (a(i,n) - a(i,n-1)) - &
-      !         (a(i-1,n) - a(i-1,n-1)) ) * dx_1(i)*dz_1(n)
-!
     endsubroutine g_function
 !***********************************************************************
     subroutine update_bounds_psi(a)
 !
       real, dimension(:,:) :: a
-      integer :: i,nn1,nn2,ll1,ll2,na
+      integer :: i,nn1,nn2,ll1,ll2,ma,ll1i,ll2i
 !
-      na=assert_equal((/size(a,1),size(a,2)/),'update_bounds_psi')
-      nn1=nghost+1; nn2=na-nghost
+      ma=assert_equal((/size(a,1),size(a,2)/),'solve_coarsest')
+      nn1=nghost+1; nn2=ma-nghost
       ll1=nn1; ll2=nn2
 !
 !  Set boundary of psi - vertical, zero
@@ -880,9 +852,9 @@ contains
 !
 !  Periodic in the lateral 
 !
-         call fatal_error("update_bounds_psi","not set for periodic")
-         !psi(1   :l1-1,:) = psi(l2i:l2,:)
-         !psi(l2+1:mx  ,:) = psi(l1:l1i,:)
+         ll1i=ll1+nghost-1;ll2i=ll2-nghost+1
+         a(1   :ll1-1,:) = a(ll2i:ll2,:)
+         a(ll2+1:ma  ,:) = a(ll1:ll1i,:)
       else
          a(ll1,:)=0.
          a(ll2,:)=0.
@@ -927,7 +899,7 @@ contains
                       abs(q%uu(:,2))*dy_1(  m  )+ &
                       abs(q%uu(:,3))*dz_1(  n  )       
 !
-        diffus_special=diffus_special + dxyz_2
+        diffus_special = dxyz_2
       endif
 !
       if (headtt.or.ldebug) then
@@ -1287,104 +1259,240 @@ contains
 !***********************************************************************
 !***********************************************************************
 !***********************************************************************    
-    subroutine multigrid(psi,rhs)
+    subroutine multigrid(psi,rhs,alpha_factor,beta_factor)
 !
-      implicit none
-!      
       real, dimension(mx,mz) :: psi
       real, dimension(nx,nz) :: rhs
+      real, dimension(nx,nz) :: alpha_factor,beta_factor
 !
-      integer :: m,n,ng,j,nn,i
+      call full_multigrid(psi,rhs,alpha_factor,beta_factor,n_vcycles)
 !
-      m=assert_equal((/size(psi,1),size(psi,2)/),'mglin')
-      n=assert_equal((/size(rhs,1),size(rhs,2)/),'mglin')
+    endsubroutine multigrid
+!***********************************************************************
+!***********************************************************************
+!***********************************************************************
+!
+!  Stuff for multigrid, adapted from numerical recipes. 
+!
+!***********************************************************************
+!***********************************************************************
+!***********************************************************************    
+    subroutine full_multigrid(psi,r,alp,bet,ncycle)
+!
+!  Full Multigrid Algorithm for solution of linear elliptic equations.
+!  On input u contains the right-hand side ρ in an N × N array,
+!  while on output it returns the solution. The dimension N is related
+!  to the number of grid levels used in the solution, ng below, by N = 2**ng+1.
+!  ncycle is the number of V-cycles to be used at each level.
+!
+!  13-jan-16/wlad: from numerical recipes.
+!
+      implicit none
+      real, dimension(mx,mz), intent(inout) :: psi
+      real, dimension(nx,nz), intent(in) :: r
+      real, dimension(nx,nz), intent(in) :: alp,bet
+      integer, intent(in) :: ncycle
+      integer :: j,jcycle,n,ng,ngrid,nn,m,nn1,nn2,nn1_,nn2_,mm
+!
+      real :: residuals
+      integer :: icount
+      integer :: nu1,nu2
+!
+!  Define a type so we can have an array of pointers to arrays of grid variables.
+!
+      type ptr2d
+         real, pointer :: rhs(:,:)
+         real, pointer :: alpha(:,:)
+         real, pointer :: beta(:,:)
+      endtype ptr2d
+      type(ptr2d), allocatable :: grid(:)
+      real, dimension(:,:), pointer :: uj,uj_1
+      real, dimension(:,:), allocatable :: uj_old
+!       
+      m=assert_equal((/size(psi,1),size(psi,2)/),'full_multigrid')
+      n=assert_equal((/size(r,1),size(r,2)/),'full_multigrid')
+      ngrid=nint(log(n-1.0)/log(2.0))
+      if (n /= 2**ngrid+1) call fatal_error("full_multigrid","n-1 must be a power of 2 in full_multigrid")
 !
       allocate(grid(ngrid))
-      allocate(grid(ngrid)%u(m,m))
-      allocate(grid(ngrid)%r(n,n))
-      grid(ngrid)%u=psi
-      grid(ngrid)%r=rhs
-!
       nn=n
       ng=ngrid
+!
+!  Allocate storage for r.h.s. on grid ng, and fill it with the input r.h.s.
+!
+      allocate(grid(ng)%rhs(nn,nn))
+      grid(ng)%rhs=r
+
+      allocate(grid(ng)%alpha(nn,nn))
+      grid(ng)%alpha=alp
+      allocate(grid(ng)%beta(nn,nn))
+      grid(ng)%beta=bet
+      
+!
+!  Similarly allocate storage and fill r.h.s. on all coarse grids by restricting from finer grids.
+!
       do
-         if (nn <= nx_coarsest) exit
+         if (nn <= 3) exit
          nn=nn/2+1
          ng=ng-1
-         allocate(grid(ng)%u(nn+2*nghost,nn+2*nghost))
-         allocate(grid(ng)%r(nn,nn))
+         allocate(grid(ng)%rhs(nn,nn))
+         grid(ng)%rhs=restrict(grid(ng+1)%rhs)
+!
+         allocate(grid(ng)%alpha(nn,nn))
+         grid(ng)%alpha=restrict(grid(ng+1)%alpha)
+         allocate(grid(ng)%beta(nn,nn))
+         grid(ng)%beta=restrict(grid(ng+1)%beta)
       enddo
 !
-      call downward(ngrid,grid(ngrid)%u,grid(ngrid)%r)
+!  Initial solution on coarsest grid.
 !
-      grid(1)%u=0.
-      call solve_coarsest(grid(1)%u,grid(1)%r,.false.)
+      nn=3
+      mm=nn+2*nghost
+      allocate(uj(mm,mm))
+      uj=0.0
+      call solve_coarsest(uj,grid(1)%rhs,grid(1)%alpha,grid(1)%beta)
 !
-      call upward(2,grid(1)%u)
+!  Nested iteration loop. 
 !
-      psi=grid(ngrid)%u
+      do j=2,ngrid
+         nn1_=nghost+1; nn2_=mm-nghost
+!         
+         nn=2*nn-1
+         mm=nn+2*nghost
 !
-      do j=1,ng
-         deallocate(grid(j)%u)
-         deallocate(grid(j)%r)
+         nn1=nghost+1; nn2=mm-nghost
+!
+         uj_1=>uj
+         allocate(uj(mm,mm))
+         uj=0.0
+!
+!  Prolongate (interpolate) from grid j-1 to next finer grid j. 
+!
+         uj(nn1:nn2,nn1:nn2)=prolongate(uj_1(nn1_:nn2_,nn1_:nn2_))
+         deallocate(uj_1)
+!
+!  V-cycle loop. Iterate until convergence. 
+!
+         residuals=1e33
+         icount=0
+         do while (residuals > tolerance)
+            nu1=size(uj,1); nu2=size(uj,2)
+            allocate(uj_old(nu1,nu2))
+            uj_old=uj
+            !do jcycle=1,ncycle
+            call vcycle(j,uj,grid(j)%rhs,grid(j)%alpha,grid(j)%beta)
+            !enddo
+            residuals=sqrt(sum((uj-uj_old)**2)/(nu1*nu2))
+            icount=icount+1
+            if (lprint_residual) print*,icount,residuals,j
+            if (lsave_residual) write(9,*) icount,residuals,j
+            deallocate(uj_old)
+            if (icount >= maxit) call fatal_error("full multigrid",&
+                 "reached limit of iterations: did not converge.")
+         enddo
+      enddo
+      if (lsave_residual) close(9)
+      icount_save=icount
+      residual_save=residuals
+!      
+!  Return solution in psi.
+!
+      psi=uj
+!
+!  Deallocate all grids
+!
+      deallocate(uj)
+      do j=1,ngrid
+         deallocate(grid(j)%rhs)
+!
+         deallocate(grid(j)%alpha)
+         deallocate(grid(j)%beta)
+!         
       enddo
       deallocate(grid)
 !
-    endsubroutine multigrid
-!***********************************************************************    
-    recursive subroutine downward(j,u,rhs)
-
-      implicit none
-      real, dimension(:,:) :: u
-      real, dimension(:,:) :: rhs
-      integer :: j,jpre
+      contains
+!--------------------------------------------------------------------
+      recursive subroutine vcycle(j,u,rhs,alp,bet)
 !
-      real, dimension((size(rhs,1)+1)/2,(size(rhs,2)+1)/2) :: res
-      real, dimension((size(rhs,1)+1)/2+2*nghost,(size(rhs,2)+1)/2+2*nghost) :: v
+!  Recursive multigrid iteration. On input, j is the current level,
+!  u is the current value of the solution, and rhs is the right-hand
+!  side. On output u contains the improved solution at the current level.
+!  Parameters: npre and npost are the number of relaxation sweeps before
+!  and after the coarse-grid correction is computed.
+!
+!  13-jan-16/wlad: from numerical recipes.
 !        
-      if (j/=1) then
-!           
-         do jpre=1,npre
-            call relaxation(u,rhs)
-         enddo
-!
-         grid(j)%u = u
-         grid(j)%r = rhs
+        implicit none
+        integer, intent(in) :: j
+        real, dimension(:,:), intent(inout) :: u
+        real, dimension(:,:), intent(in) :: rhs
 
-         res=restrict(residual(u,rhs))           
+        real, dimension(:,:), intent(in) :: alp,bet
+        
+        integer :: jpost,jpre,n,m,ll1,ll2,nu,nv
+        integer :: mv,lv1,lv2,mu,lu1,lu2,ng,i
+        real, dimension((size(rhs,1)+1)/2,(size(rhs,1)+1)/2) :: res
+!
+        real, dimension((size(rhs,1)+1)/2,(size(rhs,1)+1)/2) :: alp_,bet_
 !        
-         v=0.0
-
-         grid(j-1)%u = v
-         grid(j-1)%r = res
-
-         call downward(j-1,v,res)
-      endif
-!    
-    endsubroutine downward
-!***********************************************************************    
-    recursive subroutine upward(j,v)
+        real, dimension((size(rhs,1)+1)/2+2*nghost,(size(rhs,1)+1)/2+2*nghost) :: v
 !
-      real, dimension(:,:) :: v
-      real, dimension(2*size(v,1)-2*nghost-1,2*size(v,2)-2*nghost-1) :: u
-      integer :: mv,mu,lu1,lu2,lv1,lv2,jpost,j
+        m=assert_equal((/size(u,1),size(u,2)/),'vcycle')
+        n=assert_equal((/size(rhs,1),size(rhs,2)/),'vcycle')
+        ll1=nghost+1; ll2=m-nghost
 !
-      u=grid(j)%u
-      mv=assert_equal((/size(v,1),size(v,2)/),'upward'); lv1=nghost+1; lv2=mv-nghost
-      mu=assert_equal((/size(u,1),size(u,2)/),'upward'); lu1=nghost+1; lu2=mu-nghost
-      u(lu1:lu2,lu1:lu2)=u(lu1:lu2,lu1:lu2)+prolongate(v(lv1:lv2,lv1:lv2))
+        ng=nint(log(nx-1.0)/log(2.0))
+!        
+        if (j == 1) then
+!
+!  Bottom of V: Solve on coarsest grid.
+!
+           call solve_coarsest(u,rhs,alp,bet)
+        else
+!
+!  On downward stroke of the V.
+!
+!  Pre-smoothing.              
+!
+           do jpre=1,npre
+              call relaxation(u,rhs,alp,bet)
+           enddo
+!
+!  Restriction of the residual is the next r.h.s.
+!
+           res=restrict(resid(u,rhs,alp,bet))
+!
+           alp_=restrict(alp)
+           bet_=restrict(bet)
+!
+!  Zero for initial guess in next relaxation.
+!
+           v=0.0
+!
+!  Recursive call for the coarse grid correction.
+!
+           do i=1,merge(gamma,1,j/=2)
+              call vcycle(j-1,v,res,alp_,bet_)
+           enddo
+!
+!  On upward stroke of V.
+!
+           mv=assert_equal((/size(v,1),size(v,2)/),'vcycle'); lv1=nghost+1; lv2=mv-nghost
+           mu=assert_equal((/size(u,1),size(u,2)/),'vcycle'); lu1=nghost+1; lu2=mu-nghost
+           u(lu1:lu2,lu1:lu2)=u(lu1:lu2,lu1:lu2)+prolongate(v(lv1:lv2,lv1:lv2))
 !
 !  Post-smoothing.
 !
-      do jpost=1,npost
-         call relaxation(u,grid(j)%r)
-      enddo
-      grid(j)%u=u
+           do jpost=1,npost
+              call relaxation(u,rhs,alp,bet)
+           enddo
+        endif
 !
-      if (j/=ngrid) call upward(j+1,grid(j)%u)
-!
-    endsubroutine upward
-!***********************************************************************    
+      endsubroutine vcycle
+!--------------------------------------------------------------------
+    endsubroutine full_multigrid
+!********************************************************************                
     function restrict(uf)
 !
 !  Half-weighting restriction. If Nc is the coarse-grid dimension, the
@@ -1395,7 +1503,7 @@ contains
 !
       implicit none
       real, dimension(:,:), intent(in) :: uf
-      real, dimension((size(uf,1)+1)/2,(size(uf,2)+1)/2) :: restrict
+      real, dimension((size(uf,1)+1)/2,(size(uf,1)+1)/2) :: restrict
       integer :: nc,nf
 !
       nf=assert_equal((/size(uf,1),size(uf,2)/),'restrict')
@@ -1427,7 +1535,7 @@ contains
 !
       implicit none
       real, dimension(:,:), intent(in) :: uc
-      real, dimension(2*size(uc,1)-1,2*size(uc,2)-1) :: prolongate
+      real, dimension(2*size(uc,1)-1,2*size(uc,1)-1) :: prolongate
       integer :: nc,nf
 !
       nc=assert_equal((/size(uc,1),size(uc,2)/),'prolongate')
@@ -1447,7 +1555,7 @@ contains
 !
     endfunction prolongate
 !********************************************************************
-    subroutine solve_coarsest(u,rhs,lboundary)
+    subroutine solve_coarsest(u,rhs,alp,bet)
 !
 !  Solution of the model problem on the coarsest grid, where h = 1 . 
 !  input in rhs(1:3,1:3) and the solution is returned in u(1:3,1:3). 
@@ -1457,12 +1565,15 @@ contains
       implicit none
       real, dimension(:,:), intent(inout) :: u
       real, dimension(:,:), intent(in) :: rhs
+
+      real, dimension(:,:), intent(in) :: alp,bet
+
       real, dimension(size(rhs,1),size(rhs,2)) :: u_old
-      real :: h,fac
-      logical :: lboundary
+      real :: h
+      real :: alpha=impossible,beta=impossible
 !
       real :: res,tol,ufactor,vterm
-      integer :: icount,iu,nu,nr,nn1,nn2,i
+      integer :: icount,iu,nu,nr,nn1,nn2
 !
       nu=assert_equal((/size(u,1),size(u,2)/),'solve_coarsest')
       nr=assert_equal((/size(rhs,1),size(rhs,2)/),'solve_coarsest')
@@ -1481,12 +1592,13 @@ contains
          if (lpoisson_test) then 
             u(iu,iu) = -h**2 * rhs(2,2)/4.0
          else
+            alpha=alp(2,2)
+            beta=bet(2,2)
             if (lsolver_highorder) then 
-               call solve_highorder(u,0.0,0.0,ufactor,vterm,iu,iu,h)
+               call solve_highorder(u,alpha,beta,ufactor,vterm,iu,iu,h)
             else
-               call solve_loworder(u,0.0,0.0,ufactor,vterm,iu,iu,h)
+               call solve_loworder(u,alpha,beta,ufactor,vterm,iu,iu,h)
             endif
-            !u(iu,iu) = h**4 * rhs(2,2)/20.0
             u(iu,iu) =  rhs(2,2)/ufactor 
          endif
       else
@@ -1497,16 +1609,16 @@ contains
             icount=icount+1
             u_old=u(nn1:nn2,nn1:nn2)
             !call successive_over_relaxation(u,rhs,h)
-            call relaxation(u,rhs)
+            call relaxation(u,rhs,alp,bet)
             res = sqrt(sum((u(nn1:nn2,nn1:nn2)-u_old)**2)/nr**2)
-            if (lprint_residual_svl) print*,'solve_coarsest',icount,res
+            print*,'solve_coarsest',icount,res
          enddo
 !
       endif
 !
     endsubroutine solve_coarsest
 !********************************************************************
-    subroutine relaxation(u,rhs)
+    subroutine relaxation(u,rhs,alp,bet)
 !
 !  Red-black Gauss-Seidel relaxation for model problem. The current
 !  value of the solution u is updated, using the right-hand-side
@@ -1517,10 +1629,14 @@ contains
       implicit none
       real, dimension(:,:), intent(inout) :: u
       real, dimension(:,:), intent(in) :: rhs
+
+      real, dimension(:,:), intent(in) :: alp,bet
+
       integer :: n,m,l,k
       real :: h,h2
 !
-      real :: cc,ufactor,vterm,alpha,beta
+      real :: cc,ufactor,vterm
+      real :: alpha=impossible,beta=impossible
       integer :: ii,nn
 !
       m=assert_equal((/size(u,1),size(u,2)/),'relax')
@@ -1530,7 +1646,7 @@ contains
 !
 ! Convection
 !
-      if (.not.lpoisson_test) then
+      if (.not.lpoisson_test) then 
          call update_bounds_psi(u)
          alpha=0.0
          beta=0.0
@@ -1539,6 +1655,8 @@ contains
             do nn=2,n-1
                k=nn+nghost
                cc = rhs(ii,nn)
+               alpha=alp(ii,nn)
+               beta=bet(ii,nn)
                if (lsolver_highorder) then
                   call solve_highorder(u,alpha,beta,ufactor,vterm,l,k,h)
                else
@@ -1566,7 +1684,7 @@ contains
 !
     endsubroutine relaxation
 !********************************************************************
-    function residual(u,rhs)
+    function resid(u,rhs,alp,bet)
 !
 !  Returns minus the residual for the model problem. Input quantities are u and rhs,
 !  while the residual is returned in resid. All three quantities are square arrays
@@ -1577,11 +1695,15 @@ contains
       implicit none
       real, dimension(:,:), intent(in) :: u
       real, dimension(:,:), intent(in) :: rhs
-      real, dimension(size(rhs,1),size(rhs,2)) :: residual
+
+      real, dimension(:,:), intent(in) :: alp,bet
+
+      real, dimension(size(rhs,1),size(rhs,1)) :: resid
       integer :: n,l,k
-      real :: h,h2i,alpha,beta
+      real :: h,h2i
 !
       real :: ufactor,vterm,lhs
+      real :: alpha=impossible,beta=impossible
       integer :: ii,nn
 !
       m=assert_equal((/size(u,1),size(u,2)/),'resid')
@@ -1597,37 +1719,37 @@ contains
             l=ii+nghost
             do nn=2,n-1
                k=nn+nghost
-               residual(ii,nn) = -h2i*(u(l+1,k) + u(l-1,k) + &
-                                       u(l,k+1) + u(l,k-1) - &
-                                   4.0*u(l,k))+rhs(ii,nn)
+               resid(ii,nn) = -h2i*(u(l+1,k) + u(l-1,k) + &
+                                    u(l,k+1) + u(l,k-1) - &
+                                    4.0*u(l,k))+rhs(ii,nn)
             enddo
          enddo
       else
-         alpha=0.0
-         beta=0.0
          do ii=2,n-1
             l=ii+nghost
             do nn=2,n-1
                k=nn+nghost
-               if (lsolver_highorder) then 
+               alpha=alp(ii,nn)
+               beta=bet(ii,nn)
+               if (lsolver_highorder) then
                   call solve_highorder(u,alpha,beta,ufactor,vterm,l,k,h)
                else
                   call solve_loworder(u,alpha,beta,ufactor,vterm,l,k,h)
                endif
                lhs = ufactor*u(l,k) + vterm
-               residual(ii,nn) = rhs(ii,nn) - lhs
+               resid(ii,nn) = rhs(ii,nn) - lhs
             enddo
          enddo
       endif
 !
 !  Boundary points.
 !      
-      residual(1:n,1)=0.0
-      residual(1:n,n)=0.0
-      residual(1,1:n)=0.0
-      residual(n,1:n)=0.0
+      resid(1:n,1)=0.0
+      resid(1:n,n)=0.0
+      resid(1,1:n)=0.0
+      resid(n,1:n)=0.0
 !
-    endfunction residual
+    endfunction resid
 !********************************************************************
     function assert_equal(a,schar)
 !
