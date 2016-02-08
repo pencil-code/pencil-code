@@ -1807,7 +1807,7 @@ subroutine bc_satur_x(f,bc)
                +(t-time(time_position-1))/(time(time_position)-time(time_position-1))    &
                *(bc_T_aver2-bc_T_aver)
                
-        bc_u_aver_final(:,:)=bc_T_aver  &
+       bc_u_aver_final=bc_u_aver  &
                +(t-time(time_position-1))/(time(time_position)-time(time_position-1))    &
                *(bc_T_aver2-bc_T_aver)
        else
@@ -1869,7 +1869,44 @@ subroutine bc_satur_x(f,bc)
 !     print*, bc_T_x_adopt(ll1,mm1),bc_T_x_adopt(ll2,mm1)
 !           
           do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+1,vr); enddo
+      elseif (vr==iux) then
+!
+           ll1=(x(l1)-xyz0(1))/dx+1
+           ll2=(x(l2)-xyz0(1))/dx+1
+           mm1=(y(m1)-xyz0(2))/dy+1
+           mm2=(y(m2)-xyz0(2))/dy+1
+!
+           do j=l1,l2
+             i2=ll1+j-4
+           do i=m1,m2
+             i1=mm1+i-4
+              f(j,i,n1,vr)=10.*bc_T_aver_final/exp(f(j,i,n1,ilnTT))
+           enddo
+           enddo
+
+          do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+1,vr); enddo
+        elseif (vr==iuy) then
+!
+           ll1=(x(l1)-xyz0(1))/dx+1
+           ll2=(x(l2)-xyz0(1))/dx+1
+           mm1=(y(m1)-xyz0(2))/dy+1
+           mm2=(y(m2)-xyz0(2))/dy+1
+!
+           do j=l1,l2
+             i2=ll1+j-4
+           do i=m1,m2
+             i1=mm1+i-4
+              f(j,i,n1,vr)=10.*bc_T_aver_final/exp(f(j,i,n1,ilnTT))
+           enddo
+           enddo
+
+          do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+1,vr); enddo
+
+
+
         endif
+
+
       elseif (bc%location==iBC_Z_TOP) then
 !
       else
