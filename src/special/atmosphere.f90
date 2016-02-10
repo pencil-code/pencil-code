@@ -1854,8 +1854,6 @@ subroutine bc_satur_x(f,bc)
            mm1=(y(m1)-xyz0(2))/dy+1
            mm2=(y(m2)-xyz0(2))/dy+1
 !
-!       print*,'mm1=',mm1,'mm2=',mm2,'nn1=',nn1,'nn2=',nn2
-!
            do j=l1,l2
              i2=ll1+j-4
            do i=m1,m2
@@ -1880,7 +1878,7 @@ subroutine bc_satur_x(f,bc)
              i2=ll1+j-4
            do i=m1,m2
              i1=mm1+i-4
-              f(j,i,n1,vr)=10.*bc_T_aver_final/exp(f(j,i,n1,ilnTT))
+              f(j,i,n1,vr)=10.*bc_T_aver_final(i1,i2)/exp(f(j,i,n1,ilnTT))
            enddo
            enddo
 
@@ -1896,7 +1894,7 @@ subroutine bc_satur_x(f,bc)
              i2=ll1+j-4
            do i=m1,m2
              i1=mm1+i-4
-              f(j,i,n1,vr)=10.*bc_T_aver_final/exp(f(j,i,n1,ilnTT))
+              f(j,i,n1,vr)=10.*bc_T_aver_final(i1,i2)/exp(f(j,i,n1,ilnTT))
            enddo
            enddo
 
