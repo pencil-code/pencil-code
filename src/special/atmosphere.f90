@@ -737,13 +737,6 @@ module Special
 !             call bc_satur_x(f,bc)
          endselect
          bc%done=.true.
-         case ('ffx')
-         select case (bc%location)
-         case (iBC_X_BOT)
-           call bc_file_x_special(f,bc)
-!             call bc_satur_x(f,bc)
-         endselect
-         bc%done=.true.
          case ('ffz')
          select case (bc%location)
          case (iBC_Z_BOT)
@@ -1424,218 +1417,6 @@ subroutine bc_satur_x(f,bc)
 !
      endsubroutine set_init_parameters
 !***********************************************************************
-     subroutine bc_file_x_special(f,bc)
-
-       use Cdata
-!
-!      real, dimension (mx,my,mz,mvar+maux) :: f
-!      integer :: sgn
-!      type (boundary_condition) :: bc
-!      integer :: i,j,vr
-!      integer :: jjj,kkk
-!      real :: value1, value2, rad_2
-!      real, dimension (2) :: jet_center=0.
-!      real, dimension (my,mz) :: u_profile
-!      
-!      
-!       character (len=bclen), intent (in) :: topbot
-      type (boundary_condition) :: bc
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (1000, 1000) :: TTx
-!
- !     real, dimension (:,:,:,:), allocatable :: bc_file_x_array
-!       real, dimension (:,:,:,:), allocatable :: bc_file_x_array
-!       real, dimension (:,:), allocatable :: bc_T_x_array
-         real, dimension(66,64) :: bc_T_x_array, bc_u_x_array
-          real, dimension(64), save :: xx_bc, yy_bc
-       real, dimension (66) :: tmp, tmp2, LES_x
-       real, dimension (60), save :: time
-       real, dimension (64,64), save :: bc_T_x_adopt, bc_u_x_adopt
-      integer :: i,j,ii,statio_code,vr, Npoints, i1,i2, io_code, stat
-      integer ::  mm1,mm2,nn1,nn2
-      integer,save :: time_position=1
-      real, save :: time_LES=0, bc_T_aver, bc_u_aver
-      real :: lbc,frac, d_LESx,ttt
-      logical, save :: lbc_file_x=.true.
-      logical, save :: lbc_T_x=.true.!, lbc_U_x=.false.
-!
-      if (time_LES<=t) then
-        lbc_T_x=.true.
-      endif  
-!
-!       print*,'t, time_LES, time_position', t,time_LES, time_position
-!       print*,'lbc_T_x',lbc_T_x
-!      print*,'lbc_T_x',lbc_T_x, lroot
-!
-      if (lbc_T_x) then
-!      if (lroot) then
-!!-------------------------------------
-!! it should be read from file
-!! but now the grid is not regular
-         do i = 1,64
-           xx_bc(i)=50.*(i-1)*100.
-           yy_bc(i)=50.*(i-1)*100.
-         enddo 
-!-------------------------------------
-          print*,'opening T2.dat'
-          open(9,file='T2.dat')
-          open(99,file='w2.dat')
-!          
-!   print*,'time_position',time_position
-   
-          read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
-          read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
-!            xx_bc(1:64)=tmp(3:66)
-          do i = 1,60
-!          
-          if (i==time_position) then  
-            do  j= 1,64
-              read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
-              read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
-              do ii=1,66
-                bc_T_x_array(ii,j)=tmp(ii)
-                bc_u_x_array(ii,j)=tmp2(ii)*100.
-              enddo
-!               yy_bc(j)=bc_T_x_array(2,j)
-!               print*,j,bc_T_x_array(2,j)
-            enddo
-            time(i)=bc_T_x_array(1,1)
-          else
-            do  j= 1,64
-              read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
-              read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
-              if (j==1) time(i)=tmp(1)
-            enddo
-          endif
-!          
-!          print*,'time(i)',i,time(i)       
-
-          enddo
-          
-           if (io_code < 0) then
-            ! end of file
-!              if (lroot) print*,'need file with dimension: for fil2 633 62 '
-!              deallocate(bc_T_x_array)
- !           call stop_it("boundary file bc_file_x.dat has incorrect size")
-            endif
-          close(9)
-          close(99)
-           print*,'closing file'
-!        endif
-
-         ttt=time(1)
-           do i = 1,60
-!            time(i)=(time(i)-ttt)
-            time(i)=(time(i)-ttt)
-!            print*,i, time(i)
-          enddo
-!
-          do i = 3,66
-            LES_x(i-2)=bc_T_x_array(i,1)
-          enddo
-!          
-          d_LESx=LES_x(2)-LES_x(1)
-!          
-          Npoints=1 !nint(d_LESx/dx)
-!          
-!          
-!          print*,'d_LESx=  ',d_LESx,'dx=',dx,'Npoints=',Npoints,' int(my/Npoints) ',nint(d_LESx/dx), d_LESx/dx
-!          
-          if (Npoints>1) then
-            do i=1,64-1
-              if ((i-1)*Npoints+1<my+1) then
-                bc_T_x_adopt((i-1)*Npoints+1,:)=bc_T_x_array(i+1,time_position)
-              endif
-            enddo
-          endif  
-!
-!          print*,time_position
-!          
-          if (Npoints==1) then
-            do i=1,64
-            do j=1,64
-                bc_T_x_adopt(i,j)=bc_T_x_array(i+2,j)
-                bc_u_x_adopt(i,j)=bc_u_x_array(i+2,j)
-            enddo
-            enddo
-
-           bc_T_aver=sum(bc_T_x_adopt)/64/64
-           bc_u_aver=sum(bc_u_x_adopt)/64/64
-    !        
- !           print*,'proverka1',bc_T_x_adopt(1,1),bc_T_x_adopt(1,32),bc_T_x_adopt(32,1),bc_T_x_adopt(32,32)
-          else
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!notready!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!          
-            do i=1,my
- !         do j=1,mz
-!          print*,i
-! 
-            if (bc_T_x_adopt(i,time_position)>1.) then 
-              i1=i
-              i2=i+Npoints
- !             print*,'cheking',bc_T_a_adopt(i1,2),bc_T_a_adopt(i2,2), i1,i2
-            else
-!              print*,i, i1,i2, (i-i1)*1./(i2-i1)
-              bc_T_x_adopt(i,time_position)= &
-                    bc_T_x_adopt(i1,time_position)+(i-i1)*(bc_T_x_adopt(i2,time_position)-bc_T_x_adopt(i1,time_position))/(i2-i1)
-              
-            endif
- !         enddo
-            enddo
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
-           endif
-           lbc_T_x=.false.
-           time_position=time_position+1
-           time_LES=time(time_position)
-      endif
-!      endif
-!
-      vr=bc%ivar
-!
-      if (bc%location==iBC_X_BOT) then
-        if (vr==ilnTT) then
-!
-!       print*,bc_T_x_adopt(:,1)
-!       print*,'test',bc_T_x_adopt(1,1),bc_T_x_adopt(16,1),bc_T_x_adopt(32,1), y(m1),y(m2),m1,m2
-!
-          do j=n1,n2
-          do i=m1,m2
-!            f(l1,i,j,vr)=alog(bc_T_x_adopt(i-3,j-3))
-             f(l1,i,j,vr)=alog(bc_T_aver)
-          enddo
-          enddo
-!           
-          do i=1,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
-!   
-        elseif (vr==iux) then
-
-!print*,'bab'
-           mm1=(y(m1)-xyz0(2))/dy+1
-           mm2=(y(m2)-xyz0(2))/dy+1
-           nn1=(z(n1)-xyz0(3))/dz+1
-           nn2=(z(n2)-xyz0(3))/dz+1
-
-!       print*,'mm1=',mm1,'mm2=',mm2,'nn1=',nn1,'nn2=',nn2
-
-           do j=n1,n2
-             i2=nn1+j-4
-           do i=m1,m2
-             i1=mm1+i-4
- !            f(l1,i,j,vr)=bc_u_x_adopt(i1,i2)*bc_T_x_adopt(i1,i2)/exp(f(l1,i,j,ilnTT))
-              f(l1,i,j,vr)=(bc_u_aver*bc_T_aver)/exp(f(l1,i,j,ilnTT))
-
-           enddo
-           enddo
-
-!     print*, bc_T_x_adopt(mm1,nn1),bc_T_x_adopt(mm2,nn1)
-!           
-           do i=1,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
-        endif
-      elseif (bc%location==iBC_X_TOP) then
-!
-      else
-      endif
-    endsubroutine bc_file_x_special
-!***********************************************************************
     subroutine bc_file_z_special(f,bc)
 
        use Cdata
@@ -1645,15 +1426,15 @@ subroutine bc_satur_x(f,bc)
       real, dimension (1000, 1000) :: TTx
       real, dimension(66,64) :: bc_T_x_array, bc_u_x_array, bc_T_x_array2, bc_u_x_array2
       real, dimension(64), save :: xx_bc, yy_bc
-      real, dimension (66) :: tmp, tmp2, LES_x
+      real, dimension (66) :: tmp, tmp2
       real, dimension (60), save :: time
       real, dimension (64,64), save :: bc_T_x_adopt, bc_u_x_adopt, bc_T_x_next, bc_u_x_next
       integer :: i,j,ii,statio_code,vr, Npoints, i1,i2, io_code, stat
       integer ::  ll1,ll2,mm1,mm2
       integer,save :: time_position=1
-      real, save :: time_LES=0, bc_T_aver, bc_u_aver, bc_T_aver2, bc_u_aver2
+      real, save ::  time_LES, bc_T_aver, bc_u_aver, bc_T_aver2, bc_u_aver2
       real, dimension (64,64) :: bc_T_aver_final, bc_u_aver_final
-      real :: lbc,frac, d_LESx,ttt
+      real :: lbc,frac, ttt
       logical, save :: lbc_file_x=.true.
       logical, save :: lbc_T_z=.true.!, lbc_U_x=.false.
 !
@@ -1671,19 +1452,48 @@ subroutine bc_satur_x(f,bc)
 !-------------------------------------
 !  can be also from file
          do i = 1,64
-           time(i)=(i-1)*60.
+           time(i)=(i-1)*180.
          enddo 
 !-------------------------------------
 
       if (lbc_T_z) then
-!      if (lroot) then
+!-----------------------------
+        if (laverage) then
+          print*,'opening T1.dat'
+          open(9,file='T1.dat')
+          open(99,file='w1.dat')
+!          
 
+          do i = 1,37
+!          print*,'time_position',time_position          
+!          
+          if (i==time_position) then  
+              read(9,*,iostat=io_code) (tmp(ii),ii=1,2)
+              read(99,*,iostat=io_code) (tmp2(ii),ii=1,2)
+                bc_T_aver=tmp(2)
+                bc_u_aver=tmp2(2)
+          elseif (i==time_position+1) then  
+              read(9,*,iostat=io_code) (tmp(ii),ii=1,2)
+              read(99,*,iostat=io_code) (tmp2(ii),ii=1,2)
+              bc_T_aver=tmp(2)
+              bc_u_aver=tmp2(2)
+          else
+              read(9,*,iostat=io_code) (tmp(ii),ii=1,2)
+              read(99,*,iostat=io_code) (tmp2(ii),ii=1,2)
+          endif
+!          
+          enddo
+          
+          close(9)
+          close(99)
+          print*,'closing file'
+       
+       else
+!---------------------------      
           print*,'opening T2.dat'
           open(9,file='T2.dat')
           open(99,file='w2.dat')
 !          
-!   print*,'time_position',time_position
-
           read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
           read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
 
@@ -1728,37 +1538,8 @@ subroutine bc_satur_x(f,bc)
           close(9)
           close(99)
           print*,'closing file'
-!        endif
+       
 
-!         ttt=time(1)
-!          do i = 1,60
-  !        print*,ttt,time(i)
-!            time(i)=(time(i)-ttt)
-!              print*,time(i),i, ttt
-!          enddo
-!
-          do i = 3,66
-            LES_x(i-2)=bc_T_x_array(i,1)
-          enddo
-!          
-          d_LESx=LES_x(2)-LES_x(1)
-!          
-          Npoints=1 !nint(d_LESx/dx)
-!          
-!          
-!          print*,'d_LESx=  ',d_LESx,'dx=',dx,'Npoints=',Npoints,' int(my/Npoints) ',nint(d_LESx/dx), d_LESx/dx
-!          
-          if (Npoints>1) then
-            do i=1,64-1
-              if ((i-1)*Npoints+1<my+1) then
-                bc_T_x_adopt((i-1)*Npoints+1,:)=bc_T_x_array(i+1,time_position)
-              endif
-            enddo
-          endif  
-!
-!          print*,time_position
-!          
-          if (Npoints==1) then
             do i=1,64
             do j=1,64
                 bc_T_x_adopt(i,j)=bc_T_x_array(i+2,j)
@@ -1774,32 +1555,13 @@ subroutine bc_satur_x(f,bc)
             bc_T_aver2=sum(bc_T_x_next)/64/64
             bc_u_aver2=sum(bc_u_x_next)/64/64
             
-           
-          else
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!notready!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!          
-            do i=1,my
- !         do j=1,mz
-!          print*,i
-! 
-            if (bc_T_x_adopt(i,time_position)>1.) then 
-              i1=i
-              i2=i+Npoints
- !             print*,'cheking',bc_T_a_adopt(i1,2),bc_T_a_adopt(i2,2), i1,i2
-            else
-!              print*,i, i1,i2, (i-i1)*1./(i2-i1)
-              bc_T_x_adopt(i,time_position)= &
-                    bc_T_x_adopt(i1,time_position)+(i-i1)*(bc_T_x_adopt(i2,time_position)-bc_T_x_adopt(i1,time_position))/(i2-i1)
-              
-            endif
- !         enddo
-            enddo
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
-           endif
+          endif
+            
+!---------------------------------           
            lbc_T_z=.false.
            time_position=time_position+1
            time_LES=time(time_position)
       endif
-!      endif
 !
 
       if (laverage) then
