@@ -231,7 +231,8 @@ module Chemistry
       use FArrayManager
 !
       integer :: k, ichemspec_tmp
-      character(len=fnlen) :: input_file='chem.inp'
+      character(len=fnlen) :: input_file
+      logical ::  chemin, cheminp
 !
 !  Initialize some index pointers
 !
@@ -272,7 +273,16 @@ module Chemistry
 !
 !  Read species to be used from chem.inp (if the file exists).
 !
-      inquire (FILE=input_file, EXIST=lcheminp)
+      inquire (FILE='chem.inp', EXIST=lcheminp)
+      if (.not. lcheminp) inquire (FILE='chem.in', EXIST=lcheminp)
+      
+      inquire (FILE='chem.inp', EXIST=cheminp)
+      inquire (FILE='chem.in', EXIST=chemin)
+      if (cheminp .and. chemin) call fatal_error('chemistry', &
+          'chem.inp and chem.in found, please decide for one')
+      if (cheminp) input_file='chem.inp'
+      if (chemin) input_file='chem.in'
+!
       if (lcheminp) call read_species(input_file)
 !
 !  Read data on the thermodynamical properties of the different species.
@@ -555,10 +565,13 @@ module Chemistry
         case ('air')
           if (lroot ) print*, 'init_chem: air '
           inquire (file='air.dat',exist=air_exist)
+          if (.not. air_exist) then
+            inquire (file='air.in',exist=air_exist)
+          endif
           if (air_exist) then
             call air_field(f,PP)
           else
-            call stop_it('there is no air.dat file')
+            call stop_it('there is no air.in/dat file')
           endif
         case ('flame_front')
           call flame_front(f)
@@ -3540,14 +3553,24 @@ module Chemistry
 !  21-jul-10/julien: Reading lewis.dat file to collect constant Lewis numbers
 !                     for each species
 !
-      character(len=fnlen) :: input_file='chem.inp'
+      character(len=fnlen) :: input_file
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: stat, k,i
       character(len=fnlen) :: input_file2="./data/stoich.out"
       integer :: file_id=123
+      logical :: chemin,cheminp
 !
+      inquire(file='chem.inp',exist=cheminp)
+      inquire(file='chem.in',exist=chemin)
+      if (chemin .and. cheminp) call fatal_error('chemistry',&
+          'chem.in and chem.inp found, please decide for one')
+      if (cheminp) input_file='chem.inp'
+      if (chemin) input_file='chem.in'
 !
       inquire (file='tran.dat',exist=tran_exist)
+      if (.not. tran_exist) then
+        inquire (file='tran.in',exist=tran_exist)
+      endif
       inquire (file='lewis.dat',exist=lew_exist)
 !
 !  Allocate binary diffusion coefficient array
@@ -3573,7 +3596,7 @@ module Chemistry
 !
       if (tran_exist) then
         if (lroot) then
-          print*,'tran.dat file with transport data is found.'
+          print*,'tran.in/dat file with transport data is found.'
         endif
         call read_transport_data
       endif
@@ -5162,12 +5185,21 @@ module Chemistry
 !
       integer :: StartInd, StopInd, StartInd_1, StopInd_1
       integer :: iostat
+      logical :: airdat=.false.,airin=.false.
 !
       air_mass = 0.
       StartInd_1 = 1
       StopInd_1 = 0
-      open(file_id,file="air.dat")
-
+!
+      inquire (file='air.dat',exist=airdat)
+      inquire (file='air.in',exist=airin)
+      if (airdat .and. airin) then
+        call fatal_error('chemistry',&
+            'air.in and air.dat found. Please decide for one')
+      endif
+      if (airdat) open(file_id,file='air.dat')
+      if (airin) open(file_id,file='air.in')
+!
       if (lroot) print*, 'the following parameters and '//&
           'species are found in air.dat (volume fraction fraction in %): '
 

@@ -62,7 +62,7 @@ module EquationOfState
   logical :: leos_isothermal=.false., leos_isentropic=.false.
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
-  character (len=20) :: input_file='chem.inp'
+  character (len=20) :: input_file
   logical, SAVE ::  lcheminp_eos=.false.
   logical :: l_gamma_m1=.false.
   logical :: l_gamma=.false.
@@ -111,6 +111,8 @@ module EquationOfState
 !
       use Mpicomm, only: stop_it
 !
+      logical :: chemin=.false.,cheminp=.false.
+!
 ! Initialize variable selection code (needed for RELOADing)
 !
       ieosvars=-1
@@ -128,7 +130,15 @@ module EquationOfState
         Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
       endif
 !
-      inquire(FILE=input_file, EXIST=lcheminp_eos)
+      inquire(file='chem.inp',exist=cheminp)
+      inquire(file='chem.in',exist=chemin)
+      if(chemin .and. cheminp) call fatal_error('eos_chemistry',&
+          'chem.inp and chem.in found. Please decide for one')
+!
+      if (cheminp) input_file='chem.inp'
+      if (chemin) input_file='chem.in'
+      lcheminp_eos = cheminp .or. chemin
+!      inquire(FILE=input_file, EXIST=lcheminp_eos)
 !
       if (lroot) then
 !
@@ -1742,14 +1752,25 @@ module EquationOfState
       character (len=10) :: specie_string
       integer :: VarNumber
       integer :: StartInd,StopInd,StartInd_1,StopInd_1
+      logical :: tranin=.false.
+      logical :: trandat=.false.
 !
       emptyFile=.true.
 !
       StartInd_1=1; StopInd_1 =0
-      open(file_id,file="tran.dat")
+      
+      inquire (file='tran.dat',exist=trandat)
+      inquire (file='tran.in',exist=tranin)
+      if (tranin .and. trandat) then
+        call fatal_error('eos_chemistry',&
+            'tran.in and tran.dat found. Please decide which one to use.')
+      endif
+
+      if (tranin) open(file_id,file='tran.in')
+      if (trandat) open(file_id,file='tran.dat')
 !
       if (lroot) print*, 'the following species are found '//&
-          'in tran.dat: beginning of the list:'
+          'in tran.in/dat: beginning of the list:'
 !
       dataloop: do
 !

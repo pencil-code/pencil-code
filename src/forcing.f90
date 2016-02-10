@@ -1033,14 +1033,24 @@ print*,'NS: z_center=',z_center_fcont
       integer, save :: nk
       integer :: ik,j,jf
       logical :: lk_dot_dat_exists
+      logical :: lk_dot_in_exists
+      character (len=5) :: forcing_filename
 !
       call keep_compiler_quiet(force_ampl)
 !
       if (lfirst_call) then
-        if (lroot) print*,'forcing_irro: opening k.dat'
+        if (lroot) print*,'forcing_irro: opening k.in/dat'
         inquire(FILE="k.dat", EXIST=lk_dot_dat_exists)
-        if (lk_dot_dat_exists) then
-          open(9,file='k.dat',status='old')
+        inquire(FILE="k.in", EXIST=lk_dot_in_exists)
+        if (lk_dot_dat_exists .and. lk_dot_in_exists) then
+          call fatal_error('forcing',&
+              'k.dat and k.in found. Please decide which one')
+        endif
+        if (lk_dot_dat_exists) forcing_filename='k.dat'
+        if (lk_dot_in_exists) forcing_filename='k.in'
+!
+        if (lk_dot_dat_exists .or. lk_dot_in_exists) then
+          open(9,file=forcing_filename,status='old')
           read(9,*) nk,kav
           if (lroot) print*,'forcing_irro: average k=',kav
           allocate(kkx(nk),kky(nk),kkz(nk))
@@ -1050,7 +1060,7 @@ print*,'NS: z_center=',z_center_fcont
           close(9)
         else
           call inevitably_fatal_error ('forcing_irro:', &
-              'you must give an input k.dat file')
+              'you must give an input k.in/dat file')
         endif
         extent(1)=nx/=1
         extent(2)=ny/=1
@@ -1240,15 +1250,24 @@ print*,'NS: z_center=',z_center_fcont
       real, dimension(3) :: e1,e2,ee,kk
       real :: norm,phi
       real :: fd,fd2
-      logical :: lk_dot_dat_exists
+      logical :: lk_dot_dat_exists,lk_dot_in_exists
+      character (len=5) :: forcing_filename
 !
 !  additional stuff for test fields
 !
       if (lfirst_call) then
         if (lroot.and.ip<14) print*,'forcing_hel: opening k.dat'
         inquire(FILE="k.dat", EXIST=lk_dot_dat_exists)
-        if (lk_dot_dat_exists) then
-          open(9,file='k.dat',status='old')
+        inquire(FILE="k.in", EXIST=lk_dot_in_exists)
+        if (lk_dot_dat_exists .and. lk_dot_in_exists) then
+          call fatal_error('forcing',&
+              'k.dat and k.in found. Please decide which one')
+        endif
+        if (lk_dot_dat_exists) forcing_filename='k.dat'
+        if (lk_dot_in_exists) forcing_filename='k.in'
+!
+        if (lk_dot_dat_exists .or. lk_dot_in_exists) then
+          open(9,file=forcing_filename,status='old')
           read(9,*) nk,kav
           if (lroot.and.ip<14) print*,'forcing_hel: average k=',kav
           allocate(kkx(nk),kky(nk),kkz(nk))
@@ -1258,7 +1277,7 @@ print*,'NS: z_center=',z_center_fcont
           close(9)
         else
           call inevitably_fatal_error ('forcing_hel:', &
-              'you must give an input k.dat file')
+              'you must give an input k.in/dat file')
         endif
         extent(1)=nx/=1
         extent(2)=ny/=1
@@ -1792,16 +1811,25 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
       real, dimension(3) :: e1,e2,ee,kk
       real :: norm,phi
       real :: fd,fd2
-      logical :: lk_dot_dat_exists
+      logical :: lk_dot_dat_exists,lk_dot_in_exists
+      character (len=5) :: forcing_filename
 !
 !  additional stuff for test fields
 !
       if (lfirst_call) then
-        if (lroot) print*,'forcing_hel_kprof: opening k.dat'
+        if (lroot) print*,'forcing_hel_kprof: opening k.in/dat'
         inquire(FILE="k.dat", EXIST=lk_dot_dat_exists)
-        if (lk_dot_dat_exists) then
-          if (lroot.and.ip<14) print*,'forcing_hel_kprof: opening k.dat'
-          open(9,file='k.dat',status='old')
+        inquire(FILE="k.in", EXIST=lk_dot_in_exists)
+        if (lk_dot_dat_exists .and. lk_dot_in_exists) then
+          call fatal_error('forcing',&
+              'k.dat and k.in found. Please decide which one')
+        endif
+        if (lk_dot_dat_exists) forcing_filename='k.dat'
+        if (lk_dot_in_exists) forcing_filename='k.in'
+!
+        if (lk_dot_dat_exists .or. lk_dot_in_exists) then
+          if (lroot.and.ip<14) print*,'forcing_hel_kprof: opening k.in/dat'
+          open(9,file=forcing_filename,status='old')
           read(9,*) nk,kav
           if (lroot.and.ip<14) print*,'forcing_hel_kprof: average k=',kav
           allocate(kkx(nk),kky(nk),kkz(nk))
