@@ -72,7 +72,7 @@ module Equ
       use Solid_Cells, only: update_solid_cells, freeze_solid_cells, &
           dsolid_dt,dsolid_dt_integrate,update_solid_cells_pencil
       use Special, only: special_before_boundary, calc_lspecial_pars, &
-          calc_pencils_special, dspecial_dt
+          calc_pencils_special, dspecial_dt, special_after_boundary
       use Sub
       use Testfield
       use Testflow
@@ -345,7 +345,7 @@ module Equ
       if (ltestflow)              call calc_ltestflow_nonlin_terms(f,df)
       if (lspecial)               call calc_lspecial_pars(f)
 !AB: could be renamed to special_after_boundary etc
-      !if (lspecial)               call special_after_boundary(f)
+      if (lspecial)               call special_after_boundary(f)
 !
 !  Calculate quantities for a chemical mixture
 !
