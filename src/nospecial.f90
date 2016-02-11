@@ -563,6 +563,19 @@ module Special
 !
     endsubroutine special_before_boundary
 !***********************************************************************
+    subroutine special_after_boundary(f)
+!
+!  Possibility to modify the f array after the boundaries are
+!  communicated.
+!
+!  06-jul-06/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine special_after_boundary
+!***********************************************************************
     subroutine special_boundconds(f,bc)
 !
 !  Some precalculated pencils of data are passed in for efficiency,
