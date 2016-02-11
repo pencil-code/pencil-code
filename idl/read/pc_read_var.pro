@@ -551,9 +551,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
     if (allprocs eq 1) then begin
       ; collectively written files
       if (f77 eq 0) then begin
-        close, file
-        openr, file, filename, /f77, swap_endian=swap_endian
-        point_lun, file, long64(dim.mx)*long64(dim.my)*long64(dim.mz)*long64(mvar_io*bytes)
+        idum=0L & readu, file, idum   ; read Fortran record marker as next record is sequentially written
       endif
       readu, file, t, x, y, z, dx, dy, dz
     endif else if (allprocs ne 2 and nprocs eq 1) then begin
@@ -567,10 +565,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
       if (allprocs eq 2) then begin
         ; xy-collectively written files for each ipz-layer
         if (f77 eq 0) then begin
-          close, file
-          openr, file, filename, /f77, swap_endian=swap_endian
-          if (precision eq 'D') then bytes=8 else bytes=4
-          point_lun, file, long64(dim.mx)*long64(dim.my)*long64(procdim.mz)*long64(mvar_io*bytes)
+          idum=0L & readu, file, idum   ; read Fortran record marker as next record is sequentially written
         endif
         if (i eq 0) then begin
           readu, file, t
