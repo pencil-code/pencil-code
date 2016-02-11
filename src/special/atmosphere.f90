@@ -1452,7 +1452,7 @@ subroutine bc_satur_x(f,bc)
 !-------------------------------------
 !  can be also from file
          do i = 1,64
-           time(i)=(i-1)*180.
+           time(i)=(i-1)*1800.
          enddo 
 !-------------------------------------
 
@@ -1475,8 +1475,8 @@ subroutine bc_satur_x(f,bc)
           elseif (i==time_position+1) then  
               read(9,*,iostat=io_code) (tmp(ii),ii=1,2)
               read(99,*,iostat=io_code) (tmp2(ii),ii=1,2)
-              bc_T_aver=tmp(2)
-              bc_u_aver=tmp2(2)
+              bc_T_aver2=tmp(2)
+              bc_u_aver2=tmp2(2)
           else
               read(9,*,iostat=io_code) (tmp(ii),ii=1,2)
               read(99,*,iostat=io_code) (tmp2(ii),ii=1,2)
@@ -1571,7 +1571,7 @@ subroutine bc_satur_x(f,bc)
                
        bc_u_aver_final=bc_u_aver  &
                +(t-time(time_position-1))/(time(time_position)-time(time_position-1))    &
-               *(bc_T_aver2-bc_T_aver)
+               *(bc_u_aver2-bc_u_aver)
        else
          bc_T_aver_final(:,:)=bc_T_x_adopt(:,:) &
                +(t-time(time_position-1))/(time(time_position)-time(time_position-1))    &
@@ -1579,13 +1579,13 @@ subroutine bc_satur_x(f,bc)
                
         bc_u_aver_final(:,:)=bc_T_x_adopt(:,:)  &
                +(t-time(time_position-1))/(time(time_position)-time(time_position-1))    &
-               *(bc_T_x_next(:,:)-bc_T_x_adopt(:,:))
+               *(bc_u_x_next(:,:)-bc_u_x_adopt(:,:))
        
        endif
             
     !        
-!      print*,'proverka',bc_T_aver, bc_T_aver_final, bc_T_aver2
-!      print*,'t=', t, time(time_position),time_position
+    !  print*,'proverka',bc_T_aver, maxval(bc_T_aver_final), bc_T_aver2
+    !  print*,'t=', t, time(time_position),time_position
 
 
       vr=bc%ivar
@@ -1602,11 +1602,12 @@ subroutine bc_satur_x(f,bc)
             i2=ll1+j-4
           do i=m1,m2
             i1=mm1+i-4
-!            f(i,j,n1,vr)=alog(bc_T_x_adopt(i-3,j-3))
-            f(j,i,n1,vr)=alog(bc_T_aver_final(i1,i2))
+            f(j,i,n1,vr)=alog(bc_T_aver_final(i2,i1))
           enddo
           enddo
 !           
+!          print*,maxval(exp(f(:,:,n1,vr)))
+      
           do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+1,vr); enddo
 !   
         elseif (vr==iuz) then
@@ -1621,7 +1622,7 @@ subroutine bc_satur_x(f,bc)
            do i=m1,m2
              i1=mm1+i-4
 !             f(j,i,n1,vr)=bc_u_x_adopt(i1,i2)*bc_T_x_adopt(i1,i2)/exp(f(j,i,n1,ilnTT))
-              f(j,i,n1,vr)=bc_u_aver_final(i1,i2)*bc_T_aver_final(i1,i2)/exp(f(j,i,n1,ilnTT))
+              f(j,i,n1,vr)=bc_u_aver_final(i2,i1)*bc_T_aver_final(i2,i1)/exp(f(j,i,n1,ilnTT))
  !             f(l1,i,j,vr)=bc_T_x_adopt(i1,i2)
            enddo
            enddo
@@ -1640,7 +1641,7 @@ subroutine bc_satur_x(f,bc)
              i2=ll1+j-4
            do i=m1,m2
              i1=mm1+i-4
-              f(j,i,n1,vr)=10.*bc_T_aver_final(i1,i2)/exp(f(j,i,n1,ilnTT))
+              f(j,i,n1,vr)=10.*bc_T_aver_final(i2,i1)/exp(f(j,i,n1,ilnTT))
            enddo
            enddo
 
@@ -1656,7 +1657,7 @@ subroutine bc_satur_x(f,bc)
              i2=ll1+j-4
            do i=m1,m2
              i1=mm1+i-4
-              f(j,i,n1,vr)=10.*bc_T_aver_final(i1,i2)/exp(f(j,i,n1,ilnTT))
+              f(j,i,n1,vr)=10.*bc_T_aver_final(i2,i1)/exp(f(j,i,n1,ilnTT))
            enddo
            enddo
 
