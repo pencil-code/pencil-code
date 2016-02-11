@@ -1611,7 +1611,6 @@ module Special
             !call successive_over_relaxation(u,rhs,h)
             call relaxation(u,rhs,alp,bet)
             res = sqrt(sum((u(nn1:nn2,nn1:nn2)-u_old)**2)/nr**2)
-            print*,'solve_coarsest',icount,res
          enddo
 !
       endif
