@@ -739,9 +739,10 @@ module Special
          bc%done=.true.
          case ('ffz')
          select case (bc%location)
-         case (iBC_Z_BOT)
-           call bc_file_z_special(f,bc)
-!             call bc_satur_x(f,bc)
+           case (iBC_Z_BOT)
+             call bc_file_z_special(f,bc)
+           case (iBC_Z_TOP)
+             call bc_file_z_special(f,bc)
          endselect
          bc%done=.true.
       endselect
@@ -1423,60 +1424,55 @@ subroutine bc_satur_x(f,bc)
 !
       type (boundary_condition) :: bc
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (1000, 1000) :: TTx
       real, dimension(66,64) :: bc_T_x_array, bc_u_x_array, bc_T_x_array2, bc_u_x_array2
-      real, dimension(64), save :: xx_bc, yy_bc
       real, dimension (66) :: tmp, tmp2
-      real, dimension (60), save :: time
+      real, dimension (60), save :: time_top, time_bot
       real, dimension (64,64), save :: bc_T_x_adopt, bc_u_x_adopt, bc_T_x_next, bc_u_x_next
-      integer :: i,j,ii,statio_code,vr, Npoints, i1,i2, io_code, stat
+      integer :: i,j,ii,statio_code,vr, i1,i2, io_code, stat
       integer ::  ll1,ll2,mm1,mm2
-      integer,save :: time_position=1
-      real, save ::  time_LES, bc_T_aver, bc_u_aver, bc_T_aver2, bc_u_aver2
+      integer, save :: time_position_top=1, time_position_bot=1
+      real, save ::  t_bot=0., t_top=0.
+      real, save ::  bc_T_aver_top, bc_u_aver_top, bc_T_aver2_top, bc_u_aver2_top
+      real, save ::  bc_T_aver_bot, bc_u_aver_bot, bc_T_aver2_bot, bc_u_aver2_bot
       real, dimension (64,64) :: bc_T_aver_final, bc_u_aver_final
       real :: lbc,frac, ttt
-      logical, save :: lbc_file_x=.true.
-      logical, save :: lbc_T_z=.true.!, lbc_U_x=.false.
+      logical, save :: lbc_top=.false., lbc_bot=.false.
 !
-      if (time_LES<=t) then
-        lbc_T_z=.true.
-      endif  
+   
 !
-!!-------------------------------------
-!! it should be read from file
-!! but now the grid is not regular
-         do i = 1,64
-           xx_bc(i)=50.*(i-1)*100.
-           yy_bc(i)=50.*(i-1)*100.
-         enddo 
-!-------------------------------------
+      vr=bc%ivar
+!
+     if (bc%location==iBC_Z_BOT) then
+      
+       if (t_bot<=t) then
+         lbc_bot=.true.
+       endif  
+!---------------------------------
 !  can be also from file
-         do i = 1,64
-           time(i)=(i-1)*1800.
-         enddo 
+       do i = 1,64
+         time_bot(i)=(i-1)*1800.
+       enddo 
 !-------------------------------------
-
-      if (lbc_T_z) then
+      if (lbc_bot) then
 !-----------------------------
         if (laverage) then
-          print*,'opening T1.dat'
+          print*,'opening *1.dat'
           open(9,file='T1.dat')
           open(99,file='w1.dat')
 !          
-
           do i = 1,37
 !          print*,'time_position',time_position          
 !          
-          if (i==time_position) then  
+          if (i==time_position_bot) then  
               read(9,*,iostat=io_code) (tmp(ii),ii=1,2)
               read(99,*,iostat=io_code) (tmp2(ii),ii=1,2)
-                bc_T_aver=tmp(2)
-                bc_u_aver=tmp2(2)
-          elseif (i==time_position+1) then  
+                bc_T_aver_bot=tmp(2)
+                bc_u_aver_bot=tmp2(2)
+          elseif (i==time_position_bot+1) then  
               read(9,*,iostat=io_code) (tmp(ii),ii=1,2)
               read(99,*,iostat=io_code) (tmp2(ii),ii=1,2)
-              bc_T_aver2=tmp(2)
-              bc_u_aver2=tmp2(2)
+              bc_T_aver2_bot=tmp(2)
+              bc_u_aver2_bot=tmp2(2)
           else
               read(9,*,iostat=io_code) (tmp(ii),ii=1,2)
               read(99,*,iostat=io_code) (tmp2(ii),ii=1,2)
@@ -1490,7 +1486,7 @@ subroutine bc_satur_x(f,bc)
        
        else
 !---------------------------      
-          print*,'opening T2.dat'
+          print*,'opening *2.dat'
           open(9,file='T2.dat')
           open(99,file='w2.dat')
 !          
@@ -1500,7 +1496,7 @@ subroutine bc_satur_x(f,bc)
           do i = 1,60
 !          print*,'time_position',time_position          
 !          
-          if (i==time_position) then  
+          if (i==time_position_bot) then  
             do  j= 1,64
               read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
               read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
@@ -1511,9 +1507,8 @@ subroutine bc_satur_x(f,bc)
                 bc_u_x_array(ii,j)=tmp2(ii)*100.
               enddo
             enddo
-!            time(i)=bc_T_x_array(1,1)
 !            print*, time(i),i
-          elseif (i==time_position+1) then  
+          elseif (i==time_position_bot+1) then  
             do  j= 1,64
               read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
               read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
@@ -1534,12 +1529,11 @@ subroutine bc_satur_x(f,bc)
           endif
 !          
           enddo
-          
+!          
           close(9)
           close(99)
           print*,'closing file'
-       
-
+!       
             do i=1,64
             do j=1,64
                 bc_T_x_adopt(i,j)=bc_T_x_array(i+2,j)
@@ -1548,56 +1542,49 @@ subroutine bc_satur_x(f,bc)
                 bc_u_x_next(i,j)=bc_u_x_array2(i+2,j)
             enddo
             enddo
-             
-            bc_T_aver=sum(bc_T_x_adopt)/64/64
-            bc_u_aver=sum(bc_u_x_adopt)/64/64
+!             
+            bc_T_aver_bot=sum(bc_T_x_adopt)/64/64
+            bc_u_aver_bot=sum(bc_u_x_adopt)/64/64
             
-            bc_T_aver2=sum(bc_T_x_next)/64/64
-            bc_u_aver2=sum(bc_u_x_next)/64/64
-            
+            bc_T_aver2_bot=sum(bc_T_x_next)/64/64
+            bc_u_aver2_bot=sum(bc_u_x_next)/64/64
+!            
           endif
-            
 !---------------------------------           
-           lbc_T_z=.false.
-           time_position=time_position+1
-           time_LES=time(time_position)
+           lbc_bot=.false.
+           time_position_bot=time_position_bot+1
+           t_bot=time_bot(time_position_bot)
       endif
 !
-
       if (laverage) then
-        bc_T_aver_final(:,:)=bc_T_aver  &
-               +(t-time(time_position-1))/(time(time_position)-time(time_position-1))    &
-               *(bc_T_aver2-bc_T_aver)
+         bc_T_aver_final(:,:)=bc_T_aver_bot  &
+               +(t-time_bot(time_position_bot-1)) &
+               /(time_bot(time_position_bot)-time_bot(time_position_bot-1))    &
+               *(bc_T_aver2_bot-bc_T_aver_bot)
                
-       bc_u_aver_final=bc_u_aver  &
-               +(t-time(time_position-1))/(time(time_position)-time(time_position-1))    &
-               *(bc_u_aver2-bc_u_aver)
+         bc_u_aver_final=bc_u_aver_bot  &
+               +(t-time_bot(time_position_bot-1)) &
+               /(time_bot(time_position_bot)-time_bot(time_position_bot-1))    &
+               *(bc_u_aver2_bot-bc_u_aver_bot)
        else
          bc_T_aver_final(:,:)=bc_T_x_adopt(:,:) &
-               +(t-time(time_position-1))/(time(time_position)-time(time_position-1))    &
+               +(t-time_bot(time_position_bot-1)) &
+               /(time_bot(time_position_bot)-time_bot(time_position_bot-1))    &
                *(bc_T_x_next(:,:)-bc_T_x_adopt(:,:))
                
-        bc_u_aver_final(:,:)=bc_T_x_adopt(:,:)  &
-               +(t-time(time_position-1))/(time(time_position)-time(time_position-1))    &
+         bc_u_aver_final(:,:)=bc_u_x_adopt(:,:)  &
+               +(t-time_bot(time_position_bot-1)) &
+               /(time_bot(time_position_bot)-time_bot(time_position_bot-1))    &
                *(bc_u_x_next(:,:)-bc_u_x_adopt(:,:))
-       
-       endif
-            
-    !        
-    !  print*,'proverka',bc_T_aver, maxval(bc_T_aver_final), bc_T_aver2
-    !  print*,'t=', t, time(time_position),time_position
-
-
-      vr=bc%ivar
+       endif    
 !
-      if (bc%location==iBC_Z_BOT) then
-        if (vr==ilnTT) then
+       if (vr==ilnTT) then
 !
           ll1=(x(l1)-xyz0(1))/dx+1
           ll2=(x(l2)-xyz0(1))/dx+1
           mm1=(y(m1)-xyz0(2))/dy+1
           mm2=(y(m2)-xyz0(2))/dy+1
-
+!
           do j=l1,l2
             i2=ll1+j-4
           do i=m1,m2
@@ -1606,9 +1593,7 @@ subroutine bc_satur_x(f,bc)
           enddo
           enddo
 !           
-!          print*,maxval(exp(f(:,:,n1,vr)))
-      
-          do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+1,vr); enddo
+          do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+i,vr); enddo
 !   
         elseif (vr==iuz) then
 !
@@ -1621,15 +1606,14 @@ subroutine bc_satur_x(f,bc)
              i2=ll1+j-4
            do i=m1,m2
              i1=mm1+i-4
-!             f(j,i,n1,vr)=bc_u_x_adopt(i1,i2)*bc_T_x_adopt(i1,i2)/exp(f(j,i,n1,ilnTT))
-              f(j,i,n1,vr)=bc_u_aver_final(i2,i1)*bc_T_aver_final(i2,i1)/exp(f(j,i,n1,ilnTT))
- !             f(l1,i,j,vr)=bc_T_x_adopt(i1,i2)
+              f(j,i,n1,vr)=bc_u_aver_final(i1,i2) &
+                  *bc_T_aver_final(i1,i2)/exp(f(j,i,n1,ilnTT))
            enddo
            enddo
-
+!
 !     print*, bc_T_x_adopt(ll1,mm1),bc_T_x_adopt(ll2,mm1)
 !           
-          do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+1,vr); enddo
+          do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+i,vr); enddo
       elseif (vr==iux) then
 !
            ll1=(x(l1)-xyz0(1))/dx+1
@@ -1641,11 +1625,11 @@ subroutine bc_satur_x(f,bc)
              i2=ll1+j-4
            do i=m1,m2
              i1=mm1+i-4
-              f(j,i,n1,vr)=10.*bc_T_aver_final(i2,i1)/exp(f(j,i,n1,ilnTT))
+              f(j,i,n1,vr)=10.*bc_T_aver_final(i1,i2)/exp(f(j,i,n1,ilnTT))
            enddo
            enddo
-
-          do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+1,vr); enddo
+!
+          do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+i,vr); enddo
         elseif (vr==iuy) then
 !
            ll1=(x(l1)-xyz0(1))/dx+1
@@ -1657,19 +1641,106 @@ subroutine bc_satur_x(f,bc)
              i2=ll1+j-4
            do i=m1,m2
              i1=mm1+i-4
-              f(j,i,n1,vr)=10.*bc_T_aver_final(i2,i1)/exp(f(j,i,n1,ilnTT))
+              f(j,i,n1,vr)=10.*bc_T_aver_final(i1,i2)/exp(f(j,i,n1,ilnTT))
            enddo
            enddo
-
-          do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+1,vr); enddo
-
-
-
+!
+          do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+i,vr); enddo
+!
         endif
-
-
       elseif (bc%location==iBC_Z_TOP) then
 !
+        if (t_top<=t) then
+         lbc_top=.true.
+       endif  
+!---------------------------------
+!  can be also from file
+       do i = 1,64
+         time_top(i)=(i-1)*7200.
+       enddo 
+!-------------------------------------
+       if (lbc_top) then
+
+          print*,'opening *_top.dat'
+          open(9,file='T_top.dat')
+          open(99,file='w_top.dat')
+!          
+          do i = 1,37
+!          print*,'time_position',time_position          
+!          
+          if (i==time_position_top) then  
+              read(9,*,iostat=io_code) (tmp(ii),ii=1,2)
+              read(99,*,iostat=io_code) (tmp2(ii),ii=1,2)
+                bc_T_aver_top=tmp(2)
+                bc_u_aver_top=tmp2(2)
+          elseif (i==time_position_top+1) then  
+              read(9,*,iostat=io_code) (tmp(ii),ii=1,2)
+              read(99,*,iostat=io_code) (tmp2(ii),ii=1,2)
+              bc_T_aver2_top=tmp(2)
+              bc_u_aver2_top=tmp2(2)
+          else
+              read(9,*,iostat=io_code) (tmp(ii),ii=1,2)
+              read(99,*,iostat=io_code) (tmp2(ii),ii=1,2)
+          endif
+!          
+          enddo
+!          
+          close(9)
+          close(99)
+          print*,'closing file'
+! 
+           lbc_top=.false.
+           time_position_top=time_position_top+1
+           t_top=time_top(time_position_top)
+!
+       endif
+        bc_T_aver_top=bc_T_aver_top  &
+               +(t-time_top(time_position_top-1)) &
+               /(time_top(time_position_top)-time_top(time_position_top-1))    &
+               *(bc_T_aver2_top-bc_T_aver_top)
+!               
+        bc_u_aver_top=bc_u_aver_top  &
+               +(t-time_top(time_position_top-1)) &
+               /(time_top(time_position_top)-time_top(time_position_top-1))    &
+               *(bc_u_aver2_top-bc_u_aver_top)
+!
+       if (vr==ilnTT) then
+!
+          ll1=(x(l1)-xyz0(1))/dx+1
+          ll2=(x(l2)-xyz0(1))/dx+1
+          mm1=(y(m1)-xyz0(2))/dy+1
+          mm2=(y(m2)-xyz0(2))/dy+1
+!
+          do j=l1,l2
+            i2=ll1+j-4
+          do i=m1,m2
+            i1=mm1+i-4
+            f(j,i,n2,vr)=alog(bc_T_aver_top)
+          enddo
+          enddo
+          
+!          print*,'bc_T_aver_top=',bc_T_aver_top
+!           
+          do i=1,nghost; f(:,:,n2+i,vr)=2*f(:,:,n2,vr)-f(:,:,n2-i,vr); enddo
+!   
+        elseif (vr==iuz) then
+!
+           ll1=(x(l1)-xyz0(1))/dx+1
+           ll2=(x(l2)-xyz0(1))/dx+1
+           mm1=(y(m1)-xyz0(2))/dy+1
+           mm2=(y(m2)-xyz0(2))/dy+1
+!
+           do j=l1,l2
+           do i=m1,m2
+              f(j,i,n2,vr)=bc_u_aver_top*bc_T_aver_top/exp(f(j,i,n2,ilnTT))
+           enddo
+           enddo
+!
+!     print*, bc_T_x_adopt(ll1,mm1),bc_T_x_adopt(ll2,mm1)
+!           
+          do i=1,nghost; f(:,:,n2+i,vr)=2*f(:,:,n2,vr)-f(:,:,n2-i,vr); enddo
+        endif
+!        
       else
       endif
     endsubroutine bc_file_z_special
