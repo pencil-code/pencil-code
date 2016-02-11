@@ -69,7 +69,7 @@ module Special
   type (InternalPencils) :: q
 !
   character (len=labellen), dimension(ninit) :: initpsi='nothing'
-  character (len=labellen) :: iviscosity='Newtonian'
+  character (len=labellen) :: iconv_viscosity='Newtonian'
   character (len=labellen) :: iorder_matrix_solver='6th_order'
 !
   logical :: lprint_residual=.false.,ltidal_heating=.true.
@@ -81,12 +81,12 @@ module Special
 !
   namelist /special_init_pars/ amplpsi,alpha_sor,Avisc,lprint_residual,&
        tolerance,maxit,&
-       gravity_z,rho0_bq,alpha,kappa,eta_0,iviscosity,Tbot,Tupp,&
+       gravity_z,rho0_bq,alpha,kappa,eta_0,iconv_viscosity,Tbot,Tupp,&
        lrayleigh_nodensity,Ra,iorder_matrix_solver
 !
   namelist /special_run_pars/ amplpsi,alpha_sor,Avisc,lprint_residual,&
        tolerance,maxit,ltidal_heating,ltemperature_advection,ltemperature_diffusion,&
-       gravity_z,rho0_bq,alpha,kappa,eta_0,iviscosity,Tbot,Tupp,&
+       gravity_z,rho0_bq,alpha,kappa,eta_0,iconv_viscosity,Tbot,Tupp,&
        lrayleigh_nodensity,Ra,iorder_matrix_solver
 !
   !real, dimension(:,:), allocatable :: dummy_table
@@ -677,7 +677,7 @@ module Special
 !
 !  Viscosities normalized by eta_0
 !
-      select case (iviscosity)
+      select case (iconv_viscosity)
 !
       case ('constant')
         eta = 1.
@@ -687,8 +687,8 @@ module Special
 !
       case default  
         write(unit=errormsg,fmt=*) &
-             'calc_viscosity: No such value for iviscosity: ', &
-             trim(iviscosity)
+             'calc_viscosity: No such value for iconv_viscosity: ', &
+             trim(iconv_viscosity)
         call fatal_error('calc_viscosity',errormsg)
       endselect
 !     

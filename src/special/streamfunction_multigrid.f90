@@ -70,7 +70,7 @@ module Special
   type (InternalPencils) :: q
 !
   character (len=labellen) :: initpsi='nothing'
-  character (len=labellen) :: iviscosity='Newtonian'
+  character (len=labellen) :: iconv_viscosity='Newtonian'
   character (len=labellen) :: iorder_sor_solver='high_order'
 !
   logical :: lprint_residual=.false.,ltidal_heating=.true.
@@ -92,14 +92,14 @@ module Special
 !
   namelist /special_init_pars/ amplpsi,alpha_sor,lprint_residual,&
        tolerance,maxit,gravity_z,rho0_bq,alpha_thermal,kappa,eta_0,&
-       iviscosity,Avisc,Bvisc,Cvisc,&
+       iconv_viscosity,Avisc,Bvisc,Cvisc,&
        Tbot,Tupp,Ra,iorder_sor_solver,lsave_residual,&
        kx_TT,kz_TT,ampltt,initpsi,lmultigrid,lpoisson_test,npost,npre,gamma,n_vcycles,&
        ldirect_solver,nx_coarsest,lprint_residual_svl
 !
   namelist /special_run_pars/ amplpsi,alpha_sor,Avisc,lprint_residual,&
        tolerance,maxit,gravity_z,rho0_bq,alpha_thermal,kappa,eta_0,&
-       iviscosity,Avisc,Bvisc,Cvisc,&
+       iconv_viscosity,Avisc,Bvisc,Cvisc,&
        Tbot,Tupp,Ra,iorder_sor_solver,lsave_residual,&
        ltidal_heating,ltemperature_advection,ltemperature_diffusion,lmultigrid,&
        npost,npre,gamma,n_vcycles,ldirect_solver,lprint_residual_svl
@@ -244,7 +244,7 @@ contains
 !
 !  Viscosity
 !      
-      select case (iviscosity)
+      select case (iconv_viscosity)
 !
       case ('constant')
          lviscosity_const=.true.
@@ -260,8 +260,8 @@ contains
          lviscosity_var_blankenbach=.true.
       case default
         write(unit=errormsg,fmt=*) &
-             'initialize_special: No such value for iviscosity: ', &
-             trim(iviscosity)
+             'initialize_special: No such value for iconv_viscosity: ', &
+             trim(iconv_viscosity)
         call fatal_error('initialize_special',errormsg)
       endselect
 !
@@ -767,7 +767,7 @@ contains
 !
 !  Viscosities normalized by eta_0
 !
-      select case (iviscosity)
+      select case (iconv_viscosity)
 !
       case ('constant')
         eta = 1.
@@ -783,8 +783,8 @@ contains
 !
       case default  
         write(unit=errormsg,fmt=*) &
-             'calc_viscosity: No such value for iviscosity: ', &
-             trim(iviscosity)
+             'calc_viscosity: No such value for iconv_viscosity: ', &
+             trim(iconv_viscosity)
         call fatal_error('calc_viscosity',errormsg)
       endselect
 !     
