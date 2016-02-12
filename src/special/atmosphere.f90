@@ -72,7 +72,8 @@ module Special
   real :: dsize_max=0.,dsize_min=0.
   real :: dsize0_max=0.,dsize0_min=0., UY_ref=0.
   real :: TT2=0., TT1=0., dYw=1., pp_init=3.013e5
-  logical :: lbuffer_zone_T=.false., lbuffer_zone_chem=.false., lbuffer_zone_uy=.false.
+  logical :: lbuffer_zone_T=.false., lbuffer_zone_chem=.false.
+  logical :: lbuffer_zone_uy=.false., lbuffer_zone_uz=.false.
   logical :: llognormal=.false., lACTOS=.false.
   logical :: lsmall_part=.false.,  llarge_part=.false., lsmall_large_part=.false. 
   logical :: laverage=.false.
@@ -90,7 +91,7 @@ module Special
       TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, dYw1, dYw2, &
       nd0, r0, r02, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot,  PP, TT0, qwater0, aerosol_present, &
       lACTOS, lsmall_part,  llarge_part, lsmall_large_part, Ntot_ratio, UY_ref, llognormal, Ntot_input, &
-      laverage
+      laverage, lbuffer_zone_uz
 
 ! run parameters
   namelist /special_run_pars/  &
@@ -423,7 +424,7 @@ module Special
       real    :: del,width
       integer :: l_sz
       integer :: i, j  !, sz_l_y,sz_r_y,
-      integer ::  mm1,mm2, sz_y
+      integer ::  mm1,mm2, sz_y, nn1, nn2, sz_z
       real    :: dt1, bs,Ts,dels
       logical :: lzone_left, lzone_right
 !
@@ -490,8 +491,23 @@ module Special
 !
         enddo
         endif
+        
+        if (lbuffer_zone_uz .and. (nzgrid/=1)) then
+        do j=1,2
 !
+         if (j==1) then
+            nn1=nzgrid-sz_z
+            nn2=nzgrid
 !
+           if ((z(n) >= zgrid(nn1)) .and. (z(n) <= zgrid(nn2))) lzone_right=.true.
+           if (lzone_right) then
+             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(f(l1:l2,m,n,iuz)-0.)*dt1
+           endif
+         else if (j==2) then
+         endif
+!
+        enddo
+        endif
 !
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
