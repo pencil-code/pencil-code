@@ -895,7 +895,7 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: sum_Y, tmp, air_mass
-      real, dimension (20000) ::  PP_data, rhow_data, TT_data, tmp_data
+      real, dimension (2000) ::  PP_data, rhow_data, TT_data, tmp_data, w_data
 !      real, dimension (20000) ::  ttime2
       real, dimension (mx,my,mz) ::  ux_data, uy_data, uz_data
 !      real, dimension (1340) ::  ttime
@@ -926,8 +926,7 @@ module InitialCondition
         do i=1,Ndata 
           read(143,*,iostat=io_code) (input_data(ii),ii=1,2)
           TT_data(i)=input_data(2)
-          
-          print*,i,'    ',TT_data(i)
+!          print*,i,'    ',TT_data(i)
         enddo
         close(143)
 !
@@ -942,6 +941,15 @@ module InitialCondition
         do i=1,Ndata 
           read(143,*,iostat=io_code) (input_data(ii),ii=1,2)
           rhow_data(i)=input_data(2)   !dyn
+          
+!          print*,i,'   ',rhow_data(i)
+        enddo
+        close(143)
+        
+         open(143,file="w_init.dat")
+        do i=1,Ndata 
+          read(143,*,iostat=io_code) (input_data(ii),ii=1,2)
+          w_data(i)=input_data(2)   !dyn
           
 !          print*,i,'   ',rhow_data(i)
         enddo
@@ -996,6 +1004,7 @@ module InitialCondition
        sum_Y=0.
        do k=1,nchemspec
          sum_Y=sum_Y + f(:,:,:,ichemspec(k))/species_constants(k,imass)
+!         print*,k,'   ',species_constants(k,imass)
        enddo
        air_mass=1./sum_Y
 !
@@ -1006,8 +1015,10 @@ module InitialCondition
              f(:,:,i,ilnrho)=alog(rho_aver)
            else
              f(:,:,i,ilnrho)=tmp5(:,:,i)
-           endif  
-         enddo
+           endif 
+             f(:,:,i,iuz)=w_data(nn1+i-3)
+
+          enddo
          
 !
 !       if (iter<4) then
