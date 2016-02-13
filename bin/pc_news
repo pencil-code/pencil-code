@@ -1,7 +1,7 @@
 #!/bin/sh
 #$Id$
 echo ""
-echo "==> The Pencil Code User Meeting 2015 will be in Trondheim; see"
-echo "                   11th to 15th May 2015" 
-echo "   http://agenda.albanova.se/conferenceDisplay.py?confId=4701"
+echo "==> The Pencil Code User Meeting 2016 will be in Graz"
+echo "                   8th to 12th August 2016" 
+echo "   https://groups.google.com/forum/?#!topic/pencil-code-discuss/Ji7dUO1bVi0"
 echo ""
