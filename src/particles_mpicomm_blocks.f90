@@ -2447,32 +2447,15 @@ module Particles_mpicomm
       integer, dimension(3), intent(out), optional :: ineargrid
       integer, intent(out), optional :: status
 !
-      logical :: lfirstcall = .true.
-      integer, save :: nbxy, npxy
-      real, save :: dx1, dy1, dz1
-!
       integer :: ix0, iy0, iz0
       integer :: ibx0, iby0, ibz0
       integer :: ipx0, ipy0, ipz0
-!
-      if (lfirstcall) then
-!
-!  Save the inverse grid spacing.
-!
-        nbxy = nbx * nby
-        npxy = nprocx * nprocy
-        dx1 = 1. / dx
-        dy1 = 1. / dy
-        dz1 = 1. / dz
-!
-        lfirstcall = .false.
-      endif
 !
 !  Find processor and brick x-coordinate
 !
       if (nxgrid/=1) then
         if (lequidist(1)) then
-          ix0=nint((xxp(1)-xref_par)*dx1)+1
+          ix0=nint((xxp(1)-xref_par)*dx_1(1))+1
         else
           call find_index_by_bisection(xxp(1),xgrid,ix0)
         endif
@@ -2490,7 +2473,7 @@ module Particles_mpicomm
 !
       if (nygrid/=1) then
         if (lequidist(2)) then
-          iy0=nint((xxp(2)-yref_par)*dy1)+1
+          iy0=nint((xxp(2)-yref_par)*dy_1(1))+1
         else
           call find_index_by_bisection(xxp(2),ygrid,iy0)
         endif
@@ -2508,7 +2491,7 @@ module Particles_mpicomm
 !
       if (nzgrid/=1) then
         if (lequidist(3)) then
-          iz0=nint((xxp(3)-zref_par)*dz1)+1
+          iz0=nint((xxp(3)-zref_par)*dz_1(1))+1
         else
           call find_index_by_bisection(xxp(3),zgrid,iz0)
         endif
@@ -2540,8 +2523,8 @@ module Particles_mpicomm
 !
 !  Calculate processor and brick index.
 !
-      ibrick_rec = ibx0 + iby0 * nbx + ibz0 * nbxy
-      iproc_rec  = ipx0 + ipy0 * nprocx + ipz0 * npxy
+      ibrick_rec = ibx0 + nbx * (iby0 + nby * ibz0)
+      iproc_rec  = ipx0 + ipy0 * nprocx + ipz0 * nprocxy
 !
 !  Save the nearest grid point.
 !
