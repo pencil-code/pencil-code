@@ -1461,8 +1461,8 @@ subroutine bc_satur_x(f,bc)
 !---------------------------------
 !  can be also from file
         do i = 1,60
-          time_bot(i)=(i-1)*180.
-          time_top(i)=(i-1)*720.
+          time_bot(i)=(i-1)*1800.
+          time_top(i)=(i-1)*7200.
         enddo 
 !-------------------------------------
       endif
