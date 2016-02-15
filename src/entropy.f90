@@ -46,7 +46,7 @@ module Energy
   real :: Kgperp=0.0, Kgpara=0.0, tdown=0.0, allp=2.0, TT_powerlaw=1.0
   real :: ss_left=1.0, ss_right=1.0
   real :: ss0=0.0, khor_ss=1.0, ss_const=0.0
-  real :: pp_const=0.0, w_sldchar_ent=0.1
+  real :: pp_const=0.0
   real :: tau_ss_exterior=0.0, T0=0.0
   real :: mixinglength_flux=0.0, entropy_flux=0.0
   real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
@@ -128,7 +128,7 @@ module Energy
              lhcond0_density_dep=.false.
   logical :: lenergy_slope_limited=.false.
   logical :: limpose_heat_ceiling=.false.
-  real :: h_slope_limited=0., chi_sld_thresh=0.
+  real :: h_slope_limited=0.
   character (len=labellen) :: islope_limiter=''
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
@@ -198,7 +198,7 @@ module Energy
       center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
       Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
       cool_type,ichit,xchit,pclaw,lenergy_slope_limited,h_slope_limited,islope_limiter, &
-      chi_sld_thresh, zheat_uniform_range, pheat_factor, lphotoelectric_heating_alt, &
+      zheat_uniform_range, pheat_factor, lphotoelectric_heating_alt, &
       limpose_heat_ceiling, heat_ceiling
 !
 !  Diagnostic variables for print.in
@@ -2826,7 +2826,7 @@ module Energy
       real, dimension (nx) :: Hmax,gT2,gs2,gTxgs2
       real, dimension (nx,3) :: gTxgs
       real :: ztop,xi,profile_cor,uT,fradz,TTtop
-      real, dimension(nx) :: ufpres, uduu, glnTT2, Ktmp, chi_sld
+      real, dimension(nx) :: ufpres, uduu, glnTT2, Ktmp
       integer :: j,ju
       integer :: i
 !
@@ -2947,13 +2947,8 @@ module Energy
       if (lheatc_hyper3ss_mesh)  call calc_heatcond_hyper3_mesh(f,df)
       if (lheatc_hyper3ss_aniso) call calc_heatcond_hyper3_aniso(f,df)
 
-      if (lenergy_slope_limited.and.lfirst) then
+      if (lenergy_slope_limited.and.lfirst) &
         df(:,m,n,iss)=df(:,m,n,iss)-f(l1:l2,m,n,iFF_div_ss)
-        if (ldt) then
-          chi_sld=abs(f(l1:l2,m,n,iFF_div_ss))/dxyz_2
-          diffus_chi=diffus_chi+chi_sld
-        endif
-      endif
 !
       !if(lfirst .and. ldiagnos) print*,'DIV:iproc,m,f=',iproc,m,f(l1:l2,m,n,iFF_div_ss)
 !
@@ -3230,7 +3225,6 @@ module Energy
 !
       integer :: l,m,n,lf
       real :: fact, cv1, tmp1
-      real, dimension(nx) :: tmp
 !
 !  Compute horizontal average of entropy. Include the ghost zones,
 !  because they have just been set.
@@ -3402,8 +3396,6 @@ module Energy
 
         do n=n1,n2; do m=m1,m2
           call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_ss),.true.)
-!          call div(f,iFF_diff,tmp,.true.)
-!          f(l1:l2,m,n,iFF_div_ss)=tmp
         enddo; enddo
 
       endif
@@ -3430,7 +3422,6 @@ module Energy
 !
 !  Calculate sound speed and store temporarily in first slot of diffusive fluxes.
 !
-        f(:,:,:,iFF_diff) = 0.
         do n=1,mz; do m=1,my
           call eoscalc(f,mx,cs2=cs2)
           f(:,m,n,iFF_diff) = sqrt(cs2)   ! sqrt needed as we need the speed.
