@@ -83,7 +83,7 @@ module Energy
   real :: pclaw=0.0, xchit=0.
   real, target :: hcond0_kramers=0.0, nkramers=0.0
   real :: chimax_kramers=0., chimin_kramers=0., zheat_uniform_range=0.
-  real :: pheat_factor, heat_ceiling=-1.0
+  real :: pheat_factor=1., heat_ceiling=-1.0
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
@@ -840,6 +840,7 @@ module Energy
 !
 !  A word of warning...
 !
+      if (lroot) then
       if (lheatc_Kprof .and. hcond0==0.0) then
         call warning('initialize_energy', 'hcond0 is zero!')
       endif
@@ -875,18 +876,19 @@ module Energy
            call warning('initialize_energy','chi_hyper3 is zero!')
       if (lheatc_hyper3ss_mesh .and. chi_hyper3_mesh==0.0) &
            call warning('initialize_energy','chi_hyper3_mesh is zero!')
-      if ( (lheatc_hyper3ss_aniso) .and.  &
-           ((chi_hyper3_aniso(1)==0. .and. nxgrid/=1 ).or. &
-            (chi_hyper3_aniso(2)==0. .and. nygrid/=1 ).or. &
-            (chi_hyper3_aniso(3)==0. .and. nzgrid/=1 )) ) &
-           call fatal_error('initialize_energy', &
-           'A diffusivity coefficient of chi_hyper3 is zero!')
       if (lheatc_shock .and. chi_shock==0.0) then
         call warning('initialize_energy','chi_shock is zero!')
       endif
       if (lheatc_shock_profr .and. chi_shock==0.0) then
         call warning('initialize_energy','chi_shock is zero!')
       endif
+      endif
+      if ( (lheatc_hyper3ss_aniso) .and.  &
+           ((chi_hyper3_aniso(1)==0. .and. nxgrid/=1 ).or. &
+            (chi_hyper3_aniso(2)==0. .and. nygrid/=1 ).or. &
+            (chi_hyper3_aniso(3)==0. .and. nzgrid/=1 )) ) &
+           call fatal_error('initialize_energy', &
+           'A diffusivity coefficient of chi_hyper3 is zero!')
 !
 !  Dynamical hyper-diffusivity operates only for mesh formulation of hyper-diffusion
 !
@@ -3413,7 +3415,7 @@ module Energy
 !  Updates characteristic veelocity for slope-limited diffusion.
 !
 !  25-sep-15/MR+joern: coded
-!   9-oct-15/MR: added uodateing of characteristic velocity by sound speed
+!   9-oct-15/MR: added updating of characteristic velocity by sound speed
 !  29-dec-15/joern: changed to staggered_max_scale
 !
       use EquationOfState, only: eoscalc
@@ -3434,7 +3436,7 @@ module Energy
           f(:,m,n,iFF_diff) = sqrt(cs2)   ! sqrt needed as we need the speed.
         enddo; enddo
 !
-!        call staggered_mean_scal(f,iFF_diff,iFF_char_c,weight)
+!        call staggered_mean_scal(f,iFF_diff,iFF_char_c,w_sldchar_ent)
         call staggered_max_scal(f,iFF_diff,iFF_char_c,w_sldchar_ent)
 !
       endif
