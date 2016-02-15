@@ -1507,11 +1507,10 @@ module Density
 
 !
 !  Slope limited diffusion following Rempel (2014).
-!  No distinction between log and nolog density at the moment.
+!  No distinction between log and nolog density at the moment!
 !
       if (ldensity_slope_limited.and.lfirst) then
 
-        f(:,:,:,iFF_diff1:iFF_diff2)=0.
         call calc_all_diff_fluxes(f,ilnrho,islope_limiter,h_slope_limited)
 
         do n=n1,n2; do m=m1,m2
