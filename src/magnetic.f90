@@ -263,9 +263,10 @@ module Magnetic
   logical :: ladd_global_field=.true. 
   logical :: ladd_efield=.false.
   logical :: lmagnetic_slope_limited=.false.
-  real :: h_slope_limited=0., eta_sld_thresh=0.
+  real :: h_slope_limited=0.
   character (LEN=labellen) :: islope_limiter=''
   real :: ampl_efield=0.
+  real :: w_sldchar_mag=1.
   character (len=labellen) :: A_relaxprofile='0,coskz,0'
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: ydep_profile='two-step'
@@ -307,7 +308,7 @@ module Magnetic
       lpropagate_borderaa, lremove_meanaz, lremove_meanaxy, eta_jump_shock, eta_zshock, &
       eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z, & 
       ladd_efield,ampl_efield,lmagnetic_slope_limited,islope_limiter, &
-      h_slope_limited,eta_sld_thresh, eta_cspeed
+      h_slope_limited,w_sldchar_mag, eta_cspeed
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -2515,7 +2516,7 @@ module Magnetic
 !
 !   25-sep-15/MR+joern: coded
 !
-      use General, only: staggered_mean_vec
+      use General, only: staggered_mean_vec, staggered_max_vec
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -2533,7 +2534,8 @@ module Magnetic
           f(l1:l2,m,n,iFF_diff) = sqrt(p%va2)
         enddo; enddo
 !
-        call staggered_mean_vec(f,iFF_diff,iFF_char_c,1.)
+        !call staggered_mean_vec(f,iFF_diff,iFF_char_c,w_sldchar_mag)
+        call staggered_max_vec(f,iFF_diff,iFF_char_c,w_sldchar_mag)
 
       endif
 !
