@@ -198,14 +198,16 @@ module Viscosity
         endif
         call farray_register_auxiliary('Div_flux_diff_uu',iFF_div_uu,vector=3)
         iFF_char_c=iFF_div_uu+2
-        if (iFF_div_aa>0) iFF_char_c=max(iFF_char_c,iFF_div_aa+2)
-        if (iFF_div_ss>0) iFF_char_c=max(iFF_char_c,iFF_div_ss)
+        if (iFF_div_aa >0) iFF_char_c=max(iFF_char_c,iFF_div_aa+2)
+        if (iFF_div_ss >0) iFF_char_c=max(iFF_char_c,iFF_div_ss)
         if (iFF_div_rho>0) iFF_char_c=max(iFF_char_c,iFF_div_rho)
+
+        call farray_register_auxiliary('Flux_diff_heat',iFF_heat)
       endif
 !
     endsubroutine register_viscosity
 !***********************************************************************
-    subroutine initialize_viscosity()
+    subroutine initialize_viscosity
 !
 !  20-nov-02/tony: coded
 !
@@ -473,6 +475,12 @@ module Viscosity
                "Dynamical diffusion requires mesh hyper-diffusion, switch ivisc='hyper3-mesh'")
         endif
 !
+      endif
+
+      if (lyinyang) then
+        if (lvisc_nu_prof.or.lvisc_nu_shock_profz.or.lvisc_nut_from_magnetic) &
+          call fatal_error("initialize_viscosity",&
+               "z dependent profiles not implemented for Yin-Yang grid")
       endif
 
       if (lvisc_nu_prof) then
@@ -795,7 +803,7 @@ module Viscosity
 !
     endsubroutine rprint_viscosity
 !***********************************************************************
-    subroutine pencil_criteria_viscosity()
+    subroutine pencil_criteria_viscosity
 !
 !  All pencils that the Viscosity module depends on are specified here.
 !
@@ -1823,7 +1831,7 @@ module Viscosity
 !  Heating term
 !
           if (lpencil(i_visc_heat)) & 
-            call dot_mn(p%uu,f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2),p%visc_heat,ladd=.true.)   ! tb checked
+            p%visc_heat=p%visc_heat-f(l1:l2,m,n,iFF_heat)
         endif        
       endif
 !
@@ -1857,11 +1865,16 @@ module Viscosity
 !***********************************************************************
     subroutine viscosity_after_boundary(f)
 
-      use Sub, only: div, calc_all_diff_fluxes
+      use Sub, only: div, calc_all_diff_fluxes, grad, dot_mn
+      use General, only: reduce_grad_dim,notanumber
+      use DensityMethods, only: getrho
 
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
 
-      integer :: j
+      integer :: j,k
+      real, dimension(nx,3) :: gj, guj
+      real, dimension(nx) :: rho
+      real maxh
 !
 !  Slope limited diffusion following Rempel (2014)
 !  First calculating the flux in a subroutine below
@@ -1871,18 +1884,58 @@ module Viscosity
 
       if (lvisc_slope_limited.and.lfirst) then
 !
-!print*, 'iFF etc.=', iFF_diff, iFF_diff1,iFF_diff2, iFF_div_uu, iFF_char_c
+!if (lroot) print*, 'iFF etc.=', iFF_diff1,iFF_diff2, iFF_div_uu, iFF_div_ss, iFF_char_c, iFF_heat
 !        f(:,:,:,iFF_diff1:iFF_diff2)=0.
 !
+        if (lviscosity_heat) f(:,:,:,iFF_heat)=0.
+
         do j=1,3
 
           call calc_all_diff_fluxes(f,iuu+j-1,islope_limiter,h_slope_limited)
-
+!
+          
           do n=n1,n2; do m=m1,m2
-            call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_uu+j-1),.true.)            
-          enddo; enddo
+!
+!  Divergence of flux = force.
+!
+            call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_uu+j-1),.true.)
+!
+!  Heating term.
+!
+            if (lviscosity_heat) then
 
+              call getrho(f(:,m,n,ilnrho),rho)
+              call grad(f,ilnrho,gj)                    ! grad(rho) or grad(lnrho)
+              call reduce_grad_dim(gj)
+
+              do k=1,dimensionality
+                gj(:,k)=gj(:,k)*f(l1:l2,m,n,iuu+j-1)    ! grad(ln(rho))*u_j or grad(rho)*u_j
+              enddo
+
+              call grad(f,iuu+j-1,guj)                  ! grad(u_j)
+              call reduce_grad_dim(guj)
+
+              if (ldensity_nolog) then
+                do k=1,dimensionality
+                  gj(:,k)=gj(:,k)+rho*guj(:,k)          ! grad(rho)*u_j+rho*grad(u_j))=grad(rho*u_j)                  
+                enddo
+              else
+                do k=1,dimensionality
+                  gj(:,k)=rho*(gj(:,k)+guj(:,k))        ! rho*(grad(ln(rho))*u_j+grad(u_j))=grad(rho*u_j)                  
+                enddo
+              endif
+
+              call dot_mn(gj(:,1:dimensionality),f(l1:l2,m,n,iFF_diff1:iFF_diff2), &  ! \partial_k(rho*u_j) f_jk (summation over j by loop)
+                          f(l1:l2,m,n,iFF_heat),ladd=.true.)
+              !!!f(l1:l2,m,n,iFF_heat)=min(f(l1:l2,m,n,iFF_heat),0.)                     ! no cooling admitted (Why?)
+            endif
+ 
+          enddo; enddo
         enddo
+!maxh=maxval(abs(f(l1:l2,m1:m2,n1:n2,iFF_heat)))
+!if (ldiagnos.and.maxh>1.) print*, 'heat:', iproc, maxh    !, minval(f(l1:l2,m1:m2,n1:n2,iFF_heat))
+!if (ldiagnos) print*, 'grhouj:', iproc, maxval(gj(:,1:dimensionality)), minval(gj(:,1:dimensionality))
+!f(l1:l2,m1:m2,n1:n2,iFF_heat)=0.   !!!
       endif
 
     endsubroutine viscosity_after_boundary
