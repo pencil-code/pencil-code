@@ -1305,15 +1305,14 @@ module Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: g
-      real, dimension (nx) :: tmp
       integer :: k
 !
       intent(in) :: f,k
       intent(out) :: g
 !
-      call der(f,k,tmp,1); g(:,1)=tmp
-      call der(f,k,tmp,2); g(:,2)=tmp
-      call der(f,k,tmp,3); g(:,3)=tmp
+      call der(f,k,g(:,1),1)
+      call der(f,k,g(:,2),2)
+      call der(f,k,g(:,3),3)
 !
     endsubroutine grad_main
 !***********************************************************************
@@ -1391,7 +1390,7 @@ module Sub
 !
       if (loptest(ldiff_fluxes)) then
         call ranges_dimensional(jrange)
-        g=0
+        g=0.
         do i=1,dimensionality
           call der_4th_stag(f,k1+i,tmp,jrange(i))
           g=g+tmp
@@ -1451,8 +1450,8 @@ module Sub
 !  Only valid for equidistant grids!
 !
 !  30-sep-15/MR: coded
+!   4-feb-16/MR: checked again
 !
-
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(out) :: df
       integer, intent(in) :: j, k
@@ -6941,7 +6940,7 @@ nameloop: do
       len=size(diffs)
 
       call slope_limiter(diffs(2:),diffs(:len-1),slope,islope_limiter)
-      flux = diffs(2:len-1) - 0.5*(slope(2:) + slope(1:len-2))
+      flux = diffs(2:len-1) - 0.5*(slope(2:) + slope(1:len-2))        ! = u_r - u_l
 
       call diff_flux(h_slope_limited, diffs(2:len-1), flux, phi)
       flux = -0.5*c_char*phi*flux
@@ -6968,16 +6967,20 @@ endif
       len=size(diff_right)
 
       select case (type)
+      case ('minmod-mine')
+        where( sign(diff_left,1.)==sign(diff_right,1.))
+          limited = sign(diff_left,1.)*min( 2.*abs(diff_left), 2.*abs(diff_right), &
+                                           0.5*abs(diff_right+diff_left) )
+        elsewhere
+          limited = 0.
+        endwhere
       case ('minmod') 
-!        limited=min(2.*abs(diff_left),2.*abs(diff_right), &
-!                    0.5*abs(diff_right+diff_left))
-! joern: this is not really minmod
-         do ii=1, len-1
+         do ii=1,len
            if (diff_left(ii)*diff_right(ii)>0) then
              if (diff_left(ii)>0) limited(ii)=min(2.*diff_left(ii),2.*diff_right(ii), &
-                                    0.5*(diff_right(ii)+diff_left(ii)))
+                                                  0.5*(diff_right(ii)+diff_left(ii)))
              if (diff_left(ii)<0) limited(ii)=max(2.*diff_left(ii),2.*diff_right(ii), &
-                                    0.5*(diff_right(ii)+diff_left(ii)))
+                                                  0.5*(diff_right(ii)+diff_left(ii)))
            else
              limited(ii)=0
            endif
@@ -7033,6 +7036,10 @@ endif
       real, dimension(my-1) :: tmpy
       real, dimension(mz-1) :: tmpz
 
+      if (.not.lcartesian_coords) &
+        call fatal_error('calc_all_diff_fluxes', &
+                         'Slope-limited diffusion not implemented for curvilinear coordinates.')
+
       f(:,:,:,iFF_diff1:iFF_diff2)=0.
 
       iff=iFF_diff
@@ -7054,8 +7061,6 @@ if (notanumber(f(2:mx-2,mm,nn,iff))) print*, 'DIFFX:k,mm,nn=', k,mm,nn
 if (notanumber(tmpy)) print*, 'TMPY:k,mm,nn=', k,mm,nn
 !if (j==2) print*, 'UY, iproc=:', iproc    !, '1-5,my-5:my-1'
 !if (j==2) print'(16(e13.6,1x))', f(ll,:,nn,iuu+j-1)
-!!if (j==2) print*, tmpy(47:56)
-!!if (j==2) print*, tmpy(my-5:)
           call calc_diffusive_flux(tmpy,f(ll,2:my-2,nn,iFF_char_c),islope_limiter,h_slope_limited,f(ll,2:my-2,nn,iff))
 if (notanumber(f(ll,2:my-2,nn,iff))) print*, 'DIFFY:k,ll,mm=', k,ll,mm
         enddo; enddo
@@ -7064,6 +7069,8 @@ if (notanumber(f(ll,2:my-2,nn,iff))) print*, 'DIFFY:k,ll,mm=', k,ll,mm
 
       if (nzgrid>1) then
         do mm=m1,m2; do ll=l1,l2
+if (notanumber(f(ll,mm,n1:n2,k))) print*, 'FARRAY(n1:n2):k,ll,mm=', k,ll,mm
+if (notanumber(f(ll,mm,:,k))) print*, 'FARRAY(:):k,ll,mm=', k,ll,mm
           tmpz = f(ll,mm,2:,k)-f(ll,mm,:mz-1,k)
 if (notanumber(tmpz)) print*, 'TMPZ:k,ll,mm=', k,ll,mm
           call calc_diffusive_flux(tmpz,f(ll,mm,2:mz-2,iFF_char_c),islope_limiter,h_slope_limited,f(ll,mm,2:mz-2,iff))
