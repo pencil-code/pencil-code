@@ -6948,7 +6948,7 @@ if (notanumber(c_char)) then
    print*, 'CALC_DIFFUSIVE_FLUX: c_char=', len
    stop
 endif 
-          
+
     endsubroutine calc_diffusive_flux
 !***********************************************************************
     subroutine slope_limiter(diff_right,diff_left,limited,type)
@@ -6968,9 +6968,9 @@ endif
 
       select case (type)
       case ('minmod-mine')
-        where( sign(diff_left,1.)==sign(diff_right,1.))
-          limited = sign(diff_left,1.)*min( 2.*abs(diff_left), 2.*abs(diff_right), &
-                                           0.5*abs(diff_right+diff_left) )
+        where( sign(1.,diff_left)*sign(1.,diff_right)>0)
+          limited = sign(min( 2.*abs(diff_left), 2.*abs(diff_right), &
+                             0.5*abs(diff_right+diff_left) ), diff_left )
         elsewhere
           limited = 0.
         endwhere
