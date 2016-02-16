@@ -305,7 +305,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
 ;  Read meta data and set up variable/tag lists.
 ;
-  if (isa(par2) eq 1) then begin
+  if (is_defined(par2)) then begin
     default, varcontent, pc_varcontent(datadir=datadir,dim=dim, ivar=ivar, $
       param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D)
   endif else begin
