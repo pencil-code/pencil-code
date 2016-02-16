@@ -198,6 +198,8 @@ module Special
 !
       select case (initspecial)
         case ('nothing'); if (lroot) print*,'init_special: nothing'
+        case ('gtheta5x_const')
+          f(:,:,:,igtheta5)=f(:,:,:,igtheta5)+gtheta5_const
         case ('const')
           f(:,:,:,igtheta5) = 0.
           f(:,:,:,imu5) = mu5_const
