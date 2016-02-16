@@ -420,6 +420,7 @@ module Viscosity
 !  corresponds to the chosen viscosity type is not set.
 !
       if (lrun) then
+        if (lroot) then
         if ((lvisc_simplified.or.lvisc_rho_nu_const.or. &
              lvisc_sqrtrho_nu_const.or.lvisc_nu_const.or. &
              lvisc_nu_tdep.or.lvisc_nu_therm.or.&
@@ -429,6 +430,7 @@ module Viscosity
         if ((lvisc_rho_nu_const_bulk).and.zeta==0.0) &
             call warning('initialize_viscosity', &
             'Viscosity coefficient zeta is zero!')
+        endif
         if (lvisc_hyper2_simplified.and.nu_hyper2==0.0) &
             call fatal_error('initialize_viscosity', &
             'Viscosity coefficient nu_hyper2 is zero!')
@@ -1876,16 +1878,12 @@ module Viscosity
       real, dimension(nx) :: rho
       real maxh
 !
-!  Slope limited diffusion following Rempel (2014)
+!  Slope limited diffusion following Rempel (2014).
 !  First calculating the flux in a subroutine below
 !  using a slope limiting procedure then storing in the
-!  auxilaries variables in the f array (done above).
+!  auxiliary variables in the f array (done above).
 !
-
       if (lvisc_slope_limited.and.lfirst) then
-!
-!if (lroot) print*, 'iFF etc.=', iFF_diff1,iFF_diff2, iFF_div_uu, iFF_div_ss, iFF_char_c, iFF_heat
-!        f(:,:,:,iFF_diff1:iFF_diff2)=0.
 !
         if (lviscosity_heat) f(:,:,:,iFF_heat)=0.
 
