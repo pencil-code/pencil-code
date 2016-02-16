@@ -96,28 +96,13 @@ program start
   real, allocatable, dimension (:,:,:,:) :: f, df
   integer :: i, ifilter, stat
   logical :: lnoerase=.false.
+  real :: dang
 !
   lstart = .true.
 !
-!  Get processor numbers and define whether we are root.
+!  Check processor layout, get processor numbers and define whether we are root.
 !
   call mpicomm_init
-!
-!  Check if parallelization and chosen grid numbers make sense.
-!
-  if ((nprocx>1.and.nxgrid==1).or. &
-      (nprocy>1.and.nygrid==1).or. &
-      (nprocz>1.and.nzgrid==1)) then
-    call fatal_error('start', &
-        'parallelization in a dimension with ngrid==1 does not work')
-  endif
-  if (mod(nxgrid,nprocx)/=0.or. &
-      mod(nygrid,nprocy)/=0.or. &
-      mod(nzgrid,nprocz)/=0) then
-    call fatal_error('start', &
-        'in each dimension the number of grid points has to be '// &
-        'divisible by the number of processors')
-  endif
 !
 !  Identify version.
 !
@@ -157,13 +142,11 @@ program start
 !
   call read_all_init_pars
 !
+  call set_coords_switches
+!
 !  Set up directory names and check whether the directories exist.
 !
   call directory_names
-!
-!  Initialise MPI communication.
-!
-  call initialize_mpicomm
 !
 !  Register variables in the f array.
 !
@@ -219,31 +202,32 @@ program start
         elseif (lpole(i)) then
           if (lperi(i)) call fatal_error('start',&
             'lperi and lpole cannot be used together in same component')
-          if (coord_system/='spherical') call fatal_error('start',&
+          if (.not.lspherical_coords) call fatal_error('start',&
             'lpole only implemented for spherical coordinates')
-          if (i==2 .and. coord_system == 'spherical') then
+
+          if (i==2) then
             xyz0(i) = 0.
             Lxyz(i) = pi 
             xyz0(3) = 0.
-            Lxyz(3) = 2*pi
+            Lxyz(3) = 2.*pi
           else
             call fatal_error('start',&
                 'origin/pole not included for components or coordinates')
           endif
         else
-          Lxyz(i)=2*pi    ! default value
+          Lxyz(i)=2.*pi    ! default value
         endif
       else
         if (lpole(i)) then ! overwirte xyz0 and xyz1 to 0:pi 
           if (lperi(i)) call fatal_error('start',&
             'lperi and lpole cannot be used together in same component')
-          if (coord_system/='spherical') call fatal_error('start',&
+          if (.not. lspherical_coords) call fatal_error('start',&
             'lpole only implemented for spherical coordinates')
-          if (i==2 .and. coord_system == 'spherical') then
+          if (i==2) then
             xyz0(i) = 0.
             Lxyz(i) = pi 
             xyz0(3) = 0.
-            xyz1(3) = 2*pi
+            xyz1(3) = 2.*pi
           else
             call fatal_error('start',&
                 'origin/pole not included for components or coordinates')
@@ -252,18 +236,21 @@ program start
           Lxyz(i)=xyz1(i)-xyz0(i)
         endif
       endif
-    else                  ! Lxyz was set
+    else                            ! Lxyz was set
       if (xyz1(i)/=impossible) then ! both Lxyz and xyz1 are set
         call fatal_error('start','Cannot set Lxyz and xyz1 at the same time')
       endif
     endif
   enddo
+
   if (lyinyang) then
     if (lroot) &
       print*, 'Setting latitude and longitude intervals for Yin-Yang grid, ignoring input'
-    xyz0(2:3) = (/ 1./4., 1./4. /)*pi
-    Lxyz(2:3) = (/ 1./2., 3./2. /)*pi
+    dang=.99*min(1./nygrid,3./nzgrid)*0.5*pi      ! only valid for equidistant grid!!
+    xyz0(2:3) = (/ 1./4., 1./4. /)*pi+0.5*dang
+    Lxyz(2:3) = (/ 1./2., 3./2. /)*pi-dang
   endif
+
   xyz1=xyz0+Lxyz
 !
 !  Abbreviations
@@ -308,12 +295,17 @@ program start
   seed(1)=-((seed0-1812+1)*10+iproc)
   call random_seed_wrapper(PUT=seed)
 !
-!  Generate grid.
+!  Initialise MPI communication.
+!
+  call initialize_mpicomm
+!
+!  Generate grid and initialize specific grid variables.
 !
   call construct_grid(x,y,z,dx,dy,dz)
 !
 !  Size of box at local processor. The if-statement is for
 !  backward compatibility.
+!  MR: the following code doubled in run.f90. Perhaps to be put in initialize_grid?
 !
   if (lequidist(1)) then
     Lxyz_loc(1) = Lxyz(1)/nprocx
@@ -442,6 +434,9 @@ program start
       f(:,:,:,1:mvar)=0.0
     endif
   endif
+!
+  if (lyinyang) &
+    call warning('start','Any initial condition depending on y or z will not be set correctly on Yin-Yang grid.')
 !
 !  The following init routines only need to add to f.
 !  wd: also in the case where we have read in an existing snapshot??

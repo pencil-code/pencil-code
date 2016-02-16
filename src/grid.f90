@@ -33,6 +33,7 @@ module Grid
   public :: coords_aux
   public :: inverse_grid
   public :: grid_bound_data
+  public :: set_coords_switches
 !
   interface grid_profile
     module procedure grid_profile_0D
@@ -62,7 +63,6 @@ module Grid
 !  should suffice in most cases.
 !
 !  25-jun-04/tobi+wolf: coded
-!  20-aug-14/MR: minimal wavevectors k1xyz added
 !   3-mar-15/MR: calculation of d[xyz]2_bound added: contain twice the distances of
 !                three neighbouring points from the boundary point
 !
@@ -101,10 +101,6 @@ module Grid
       Lx = Lxyz(1)
       Ly = Lxyz(2)
       Lz = Lxyz(3)
-!
-!  minimal wavenumbers
-!
-      where( Lxyz/=0.) k1xyz=2.*pi/Lxyz
 !
 !  Set the lower boundary and the grid size.
 !
@@ -631,19 +627,21 @@ module Grid
 ! From now on dy = d\theta but dy_1 = 1/rd\theta and similarly for \phi.
 ! corresponding r and rsin\theta factors for equ.f90 (where CFL timesteps
 ! are estimated) are removed.
+!
 
-        if (lpole(2)) then !apply grid symmetry across the poles 
+        if (lpole(2)) then                       !apply grid symmetry across the poles 
           if (lfirst_proc_y) then
             y(     1:nghost) = -y(     m1i:m1:-1)
             yprim( 1:nghost) =  yprim( m1i:m1:-1)
             yprim2(1:nghost) = -yprim2(m1i:m1:-1)
           endif
           if (llast_proc_y) then
-            y(     m2+1:m2+nghost) = 2*pi-y(     m2:m2i:-1)
-            yprim( m2+1:m2+nghost) =      yprim( m2:m2i:-1)
-            yprim2(m2+1:m2+nghost) =     -yprim2(m2:m2i:-1)
+            y(     m2+1:m2+nghost) = 2.*pi-y(     m2:m2i:-1)
+            yprim( m2+1:m2+nghost) =       yprim( m2:m2i:-1)
+            yprim2(m2+1:m2+nghost) =      -yprim2(m2:m2i:-1)
           endif
         endif
+
         dy_1=1./yprim
         dy_tilde=-yprim2/yprim**2
 !
@@ -844,24 +842,11 @@ module Grid
 !
     endsubroutine construct_grid
 !***********************************************************************
-    subroutine initialize_grid
+    subroutine set_coords_switches
 !
-!  Coordinate-related issues: nonuniform meshes, different coordinate systems
+!   Sets switches for the different coordinate systems.
 !
-!  20-jul-10/wlad: moved here from register
-!  3-mar-14/MR: outsourced calculation of box_volume into box_vol
-!  29-sep-14/MR: outsourced calculation of auxiliary quantities for curvilinear
-!                coordinates into coords_aux; set coordinate switches at the
-!                beginning
-!   9-jun-15/MR: calculation of Area_* added
-!
-      use Sub, only: remove_zprof
-      use Mpicomm
-!
-      real :: fact
-      integer :: xj,yj,zj,itheta
-!
-! Set flags.
+!  18-dec-15/MR: outsourced from initialize_grid
 !
       lcartesian_coords=.false.
       lspherical_coords=.false.
@@ -873,27 +858,68 @@ module Grid
 !
 !  Introduce new names (spherical_coords), in addition to the old ones.
 !
-      elseif (coord_system=='spherical' &
-        .or.coord_system=='spherical_coords') then
+      elseif (    coord_system=='spherical' &
+              .or.coord_system=='spherical_coords') then
         lspherical_coords=.true.
 !
 !  Introduce new names (cylindrical_coords), in addition to the old ones.
 !
-      elseif (coord_system=='cylindric' &
-          .or.coord_system=='cylindrical_coords') then
+      elseif (    coord_system=='cylindric' &
+              .or.coord_system=='cylindrical_coords') then
         lcylindrical_coords=.true.
       else if (coord_system=='pipeflows') then
         lpipe_coords=.true.
       elseif (coord_system=='Lobachevskii') then
+        call fatal_error('set_coords_switches', &
+                         'Lobachevskii ccordinates not implemented')
       endif
+
+    endsubroutine set_coords_switches
+!***********************************************************************
+    subroutine initialize_grid
+!
+!  Coordinate-related issues: nonuniform meshes, different coordinate systems
+!
+!  20-jul-10/wlad: moved here from register
+!  3-mar-14/MR: outsourced calculation of box_volume into box_vol
+!  29-sep-14/MR: outsourced calculation of auxiliary quantities for curvilinear
+!                coordinates into coords_aux; set coordinate switches at the
+!                beginning
+!   9-jun-15/MR: calculation of Area_* added
+!  18-dec-15/MR: outsourced setting of switches to set_coords_switches; added 
+!                initialization of Yin-Yang grid; added dimensionality mask:
+!                lists the indices of the non-degenerate directions in the first 
+!                dimensionality elements of dim_mask 
+!
+      use Sub, only: remove_zprof
+      use Mpicomm
+!
+      real :: fact
+      integer :: xj,yj,zj,itheta
+!
+!  Initialize dimensionality mask.
+!
+      if (nxgrid==1) then
+        if (nygrid==1) then
+          dim_mask(1)=3 
+        else
+          dim_mask(1:2)=(/2,3/) 
+        endif
+      else
+        if (nygrid==1) dim_mask(1:2)=(/1,3/)
+      endif
+!
+!  For curvilinear coordinate systems, calculate auxiliary quantities as, e.g., for spherical coordinates 1/r, cot(theta)/r, etc.
+!
+      call coords_aux(x,y,z)
 !
 ! Box volume
 !
       call box_vol
 !
-!  For curvilinear coordinate systems, calculate auxiliary quantities as, e.g., for spherical coordinates 1/r, cot(theta)/r, etc.
+!  Initialize Yin-Yang grid.
 !
-      call coords_aux(x,y,z)
+      if (lyinyang) call yyinit
 !
 !  Volume element and area of coordinate surfaces.
 !  Note that in the area a factor depending only on the coordinate x_i which defines the surface by x_i=const. is dropped.
@@ -1129,8 +1155,8 @@ module Grid
 !
 !  Broadcast the values of r_int and r_ext
 !
-          call mpibcast_real(r_int)
-          call mpibcast_real(r_ext)
+          call mpibcast_real(r_int,comm=MPI_COMM_WORLD)
+          call mpibcast_real(r_ext,comm=MPI_COMM_WORLD)
         else
 !
 !  Serial-x. Just get the local grid values.
@@ -1971,7 +1997,7 @@ module Grid
 !  08-may-12/ccyang: include dx_1, dx_tilde, ... arrays
 !  25-feb-13/ccyang: construct global coordinates including ghost cells.
 !
-      use Mpicomm, only: mpisend_real,mpirecv_real,mpibcast_real, mpiallreduce_sum_int
+      use Mpicomm, only: mpisend_real,mpirecv_real,mpibcast_real, mpiallreduce_sum_int, MPI_COMM_WORLD
 !
       real, dimension(nx) :: xrecv, x1recv, x2recv
       real, dimension(ny) :: yrecv, y1recv, y2recv
@@ -2030,9 +2056,9 @@ module Grid
 !  Serial array constructed. Broadcast the result. Repeat the
 !  procedure for y and z arrays.
 !
-      call mpibcast_real(xgrid,nxgrid)
-      call mpibcast_real(dx1grid,nxgrid)
-      call mpibcast_real(dxtgrid,nxgrid)
+      call mpibcast_real(xgrid,nxgrid,comm=MPI_COMM_WORLD)
+      call mpibcast_real(dx1grid,nxgrid,comm=MPI_COMM_WORLD)
+      call mpibcast_real(dxtgrid,nxgrid,comm=MPI_COMM_WORLD)
 !
 !  Serial y-array
 !

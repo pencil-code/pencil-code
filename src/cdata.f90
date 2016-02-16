@@ -107,7 +107,6 @@ module Cdata
   real :: r_int_border=impossible,r_ext_border=impossible
   real :: r_ref=1.,rsmooth=0.,box_volume=1.0
   real :: Area_xy=1., Area_yz=1., Area_xz=1.
-  real, dimension(3) :: k1xyz=0.
 !
 !  Time integration parameters.
 !
@@ -426,7 +425,7 @@ module Cdata
   real :: yequator=0.,zequator=0.
   logical :: lequatory,lequatorz
   integer, parameter :: mname_half=20
-  integer, dimension (mname_half) :: itype_name_half=0.
+  integer, dimension (mname_half) :: itype_name_half=0
   real, dimension (mname_half,2) :: fname_half
   integer :: name_half_max=0
   character (len=30) :: cname_half(mname_half)

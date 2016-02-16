@@ -155,11 +155,12 @@ module Forcing
 ! Auxiliaries
 !
   real, dimension(:,:), pointer :: reference_state
+  real, dimension(3) :: k1xyz=0.
 !
   contains
 !
 !***********************************************************************
-    subroutine register_forcing()
+    subroutine register_forcing
 !
 !  add forcing in timestep()
 !  11-may-2002/wolf: coded
@@ -171,7 +172,7 @@ module Forcing
 !
     endsubroutine register_forcing
 !***********************************************************************
-    subroutine initialize_forcing()
+    subroutine initialize_forcing
 !
 !  read seed field parameters
 !  nothing done from start.f90
@@ -180,6 +181,7 @@ module Forcing
 !  23-jan-2015/MR: reference state now fetched here and stored in module variable
 !  15-feb-2015/MR: returning before entering continuous forcing section when
 !                  no such forcing is requested
+!  18-dec-2015/MR: minimal wavevectors k1xyz moved here from grid
 !
       use General, only: bessj
       use Mpicomm, only: stop_it
@@ -742,6 +744,10 @@ print*,'NS: z_center=',z_center_fcont
       if (lroot .and. n_forcing_cont==0) &
         call warning('forcing','no valid continuous iforcing_cont specified')
 !
+!  minimal wavenumbers
+!
+      where( Lxyz/=0.) k1xyz=2.*pi/Lxyz
+!
     endsubroutine initialize_forcing
 !***********************************************************************
     subroutine addforce(f)
@@ -1180,7 +1186,7 @@ print*,'NS: z_center=',z_center_fcont
 !
       if (lout) then
         if (idiag_qfm/=0) then
-          fsum_tmp=iqfm/(nwgrid)
+          fsum_tmp=iqfm/nwgrid
           call mpireduce_sum(fsum_tmp,fsum)
           iqfm=fsum
           call mpibcast_real(iqfm)
@@ -4762,7 +4768,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
     endsubroutine calc_lforcing_cont_pars
 !***********************************************************************
-    subroutine pencil_criteria_forcing()
+    subroutine pencil_criteria_forcing
 !
 !  All pencils that the Forcing module depends on are specified here.
 !
