@@ -765,7 +765,7 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use EquationOfState, only: beta_glnrho_global, cs20
-      use General, only: random_number_wrapper
+      use General, only: random_number_wrapper, normal_deviate
       use Mpicomm, only: mpireduce_sum, mpibcast_real
       use InitialCondition, only: initial_condition_xxp, initial_condition_vvp
       use Particles_diagnos_dv, only: repeated_init
