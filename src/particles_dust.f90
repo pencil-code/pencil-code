@@ -79,6 +79,8 @@ module Particles
   real :: Deltauy_gas_friction=0.0
   real :: cond_ratio=0.0
   real :: pscalar_sink_rate=0.0
+  real :: frac_init_particles=1.0, particles_insert_ramp_time=0.0
+  real :: tstart_insert_particles=0.0
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
@@ -113,6 +115,9 @@ module Particles
   logical :: lpscalar_sink=.false.
   logical :: lsherwood_const=.false.
   logical :: lbubble=.false.
+  logical :: linsert_as_many_as_possible=.false.
+  logical :: lwithhold_init_particles=.false.
+
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -182,7 +187,8 @@ module Particles
       yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
       xp3, yp3, zp3, vpx3, vpy3, vpz3, lsinkparticle_1, rsinkparticle_1, &
       lcalc_uup, temp_grad0, thermophoretic_eq, cond_ratio, interp_pol_gradTT, &
-      lreassign_strat_rhom, lparticlemesh_pqs_assignment
+      lreassign_strat_rhom, lparticlemesh_pqs_assignment, lwithhold_init_particles, &
+      frac_init_particles
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -214,14 +220,13 @@ module Particles
       linsert_particles_continuously, particles_insert_rate, &
       max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, &
       np_const, rhop_const, particle_radius, &
-      Deltauy_gas_friction, &
-      loutput_psize_dist, log_ap_min_dist, log_ap_max_dist, nbin_ap_dist, &
-      lsinkparticle_1, rsinkparticle_1, lthermophoretic_forces, temp_grad0, &
+      Deltauy_gas_friction, loutput_psize_dist, log_ap_min_dist, log_ap_max_dist, &
+      nbin_ap_dist, lsinkparticle_1, rsinkparticle_1, lthermophoretic_forces, temp_grad0, &
       thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, &
       lcommunicate_np, lcylindrical_gravity_par, &
       l_shell, k_shell, lparticlemesh_pqs_assignment, pscalar_sink_rate, &
       lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw,lbubble, &
-      rpbeta_species, rpbeta, gab_width
+      rpbeta_species, rpbeta, gab_width, initxxp, initvvp
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -769,7 +774,7 @@ module Particles
       real :: r, p, q, px, py, pz, eps, cs, k2_xxp, rp2
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
       real :: rad,rad_scl,phi,tht,tmp,OO,xx0,yy0,r2
-      integer :: l, j, k, ix0, iy0, iz0
+      integer :: l, j, k, ix0, iy0, iz0, n_kill
       logical :: lequidistant=.false.
       real :: rpar_int,rpar_ext
 !
@@ -1759,6 +1764,17 @@ module Particles
 !
       if (linitial_condition) call initial_condition_vvp(f,fp)
 !
+!  Optionally withhold some number of particles, to be inserted in 
+!  insert_particles. The particle indices to be removed are not randomized, 
+!  so any randomization needs to be taken care of in the above initxxp cases.
+!
+      if (lwithhold_init_particles .and. frac_init_particles < 1.0-tini) then
+        n_kill = nint((1.0-frac_init_particles)*real(npar_loc))
+        do k=1,n_kill
+          call remove_particle(fp,ipar,k)
+        enddo
+      endif
+!
 !  Map particle velocity on the grid.
 !
       call map_vvp_grid(f,fp,ineargrid)
@@ -1795,29 +1811,42 @@ module Particles
 ! Works only for particles_dust - add neccessary variable
 ! declarations in particles_tracers to make it work here.
 !
-      use General, only: random_number_wrapper
+      use General, only: random_number_wrapper, normal_deviate
       use Particles_diagnos_state, only: insert_particles_diagnos_state
+      use SharedVariables, only: get_shared_variable
+      use Mpicomm, only: mpireduce_sum_int
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray), intent (inout) :: fp
+      real, dimension (mpar_loc) :: r_tmp, az_tmp
+      real, dimension (3) :: Lxyz_par, xyz0_par, xyz1_par
       integer, dimension (mpar_loc,3), intent (inout) :: ineargrid
 !
       logical, save :: linsertmore=.true.
-      real :: xx0, yy0, r2, r
-      integer :: j, k, n_insert, npar_loc_old, iii
+      real :: xx0, yy0, r2, r, tmp, rpar_int, rpar_ext
+      integer :: j, k, n_insert, npar_loc_old, iii, particles_insert_rate_tmp
 !
-! Stop call to this routine when maximum number of particles is reached!
+! Stop call to this routine when maximum number of particles is reached,
+! unless linsert_as_many_as_possible is set.
 ! Since root inserts all new particles, make sure
 ! npar_total + n_insert < mpar
 ! so that a processor can not exceed its maximum number of particles.
 !
+      if (t>tstart_insert_particles+particles_insert_ramp_time) then
+        particles_insert_rate_tmp = particles_insert_rate
+      else
+        particles_insert_rate_tmp = int(real(particles_insert_rate)*(t-tstart_insert_particles)/particles_insert_ramp_time)
+      endif
+      call mpireduce_sum_int(npar_loc,npar_total)
+!
       if (lroot) then
-        avg_n_insert=particles_insert_rate*dt
+        avg_n_insert=particles_insert_rate_tmp*dt
         n_insert=int(avg_n_insert + remaining_particles)
 ! Remaining particles saved for subsequent timestep:
         remaining_particles=avg_n_insert + remaining_particles - n_insert
+        if (linsert_as_many_as_possible) n_insert=min((mpar_loc-npar_total),n_insert)
         if ((n_insert+npar_total <= mpar_loc) &
-            .and. (t<max_particle_insert_time)) then
+            .and. (t<max_particle_insert_time) .and. (t>tstart_insert_particles)) then
           linsertmore=.true.
         else
           linsertmore=.false.
@@ -1828,7 +1857,6 @@ module Particles
           do iii=npar_loc+1,npar_loc+n_insert
             ipar(iii)=npar_total+iii-npar_loc
           enddo
-          npar_total=npar_total+n_insert
           npar_loc_old=npar_loc
           npar_loc=npar_loc + n_insert
 !
@@ -1920,10 +1948,11 @@ module Particles
         endif
       endif ! if (lroot) then
 !
-!  Redistribute particles only when t < max_particle_insert_time.
+!  Redistribute particles only when t < max_particle_insert_time
+!  and t>tstart_insert_particles.
 !  Could have included some other tests here aswell......
 !
-      if (t<max_particle_insert_time) then
+      if (t<max_particle_insert_time .and. t>tstart_insert_particles) then
 !
 !  Redistribute particles among processors.
 !
