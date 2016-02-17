@@ -3459,6 +3459,9 @@ module Particles
                     if ((lpscalar_sink .and. lpscalar) .or. &
                         (ldragforce_gas_par .and. ldraglaw_steadystate)) & 
                         call find_grid_volume(ixx,iyy,izz,volume_cell)
+! alexrichert: above call to find_grid_volume is superfluous, not sure why
+! conditions are different from call below. Perhaps lparticles_radius or
+! iap>0 would be a better condition than eps_dtog/ldraglaw_steadystate?
                     if (lhydro .and. ldragforce_gas_par) then
                       if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
                         call find_grid_volume(ixx,iyy,izz,volume_cell)
