@@ -3462,7 +3462,13 @@ module Particles
                         call find_grid_volume(ixx,iyy,izz,volume_cell)
                     if (lhydro .and. ldragforce_gas_par) then
                       if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
+                        call find_grid_volume(ixx,iyy,izz,volume_cell)
                         mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
+                        if (lparticles_number) then
+                          mp_vcell = mp_vcell*fp(k,inpswarm)
+                        elseif (np_swarm .gt. 0) then
+                          mp_vcell = mp_vcell*np_swarm
+                        endif
                       else
                         mp_vcell=rhop_swarm_par
                       endif
@@ -3551,7 +3557,13 @@ module Particles
                             rhop_swarm_par)
 !  Calculate the particle mass divided by the cell volume
                         if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
+                          call find_grid_volume(ixx,iyy,izz,volume_cell)
                           mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
+                          if (lparticles_number) then
+                            mp_vcell = mp_vcell*fp(k,inpswarm)
+                          elseif (np_swarm .gt. 0) then
+                            mp_vcell = mp_vcell*np_swarm
+                          endif
                         else
                           mp_vcell=rhop_swarm_par
                         endif
@@ -3636,7 +3648,13 @@ module Particles
                             rhop_swarm_par)
 !  Calculate the particle mass divided by the cell volume
                         if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
+                          call find_grid_volume(ixx,iyy,izz,volume_cell)
                           mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
+                          if (lparticles_number) then
+                            mp_vcell = mp_vcell*fp(k,inpswarm)
+                          elseif (np_swarm .gt. 0) then
+                            mp_vcell = mp_vcell*np_swarm
+                          endif
                         else
                           mp_vcell=rhop_swarm_par
                         endif
@@ -3667,7 +3685,13 @@ module Particles
                     call get_rhopswarm(mp_swarm,fp,k,l,m,n,rhop_swarm_par)
 !  Calculate the particle mass divided by the cell volume
                     if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
+                      call find_grid_volume(ixx,iyy,izz,volume_cell)
                       mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
+                      if (lparticles_number) then
+                        mp_vcell = mp_vcell*fp(k,inpswarm)
+                      elseif (np_swarm .gt. 0) then
+                        mp_vcell = mp_vcell*np_swarm
+                      endif
                     else
                       mp_vcell=rhop_swarm_par
                     endif
@@ -3691,6 +3715,11 @@ module Particles
               if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
                 call find_grid_volume(ix0,iy0,iz0,volume_cell) 
                 mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
+                if (lparticles_number) then
+                  mp_vcell = mp_vcell*fp(k,inpswarm)
+                elseif (np_swarm .gt. 0) then
+                  mp_vcell = mp_vcell*np_swarm
+                endif
               else
                 call get_rhopswarm(mp_swarm,fp,k,ix0,iy0,iz0,rhop_swarm_par)
                 mp_vcell=rhop_swarm_par
