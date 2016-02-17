@@ -84,7 +84,7 @@ program run
   use Solid_Cells,     only: solid_cells_clean_up
   use Streamlines,     only: tracers_prepare, wtracers
   use Sub
-  use Grid,            only: construct_grid, box_vol, grid_bound_data
+  use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coords_switches
   use IO,              only: wgrid
   use Syscalls,        only: is_nan
   use Testscalar,      only: rescaling_testscalar
@@ -119,11 +119,11 @@ program run
 !
 !  Initialize the message subsystem, eg. color setting etc.
 !
-  call initialize_messages()
+  call initialize_messages
 !
 !  Initialise MPI communication.
 !
-  call initialize_mpicomm()
+  call initialize_mpicomm
 !
 !  Define the lenergy logical
 !
@@ -131,11 +131,13 @@ program run
 !
 !  Read parameters from start.x (default values; overwritten by 'read_all_run_pars').
 !
-  call read_all_init_pars()
+  call read_all_init_pars
+!
+  call set_coords_switches
 !
 !  Read parameters and output parameter list.
 !
-  call read_all_run_pars()
+  call read_all_run_pars
 !
 !  Derived parameters (that may still be overwritten).
 !  [might better be put into another routine, possibly in 'read_all_run_pars']
@@ -145,7 +147,7 @@ program run
 !
 !  Set up directory names.
 !
-  call directory_names()
+  call directory_names
 !
 !  Read coordinates (if luse_oldgrid=T, otherwise regenerate grid).
 !  luse_oldgrid=T can be useful if nghost_read_fewer > 0,
@@ -230,8 +232,8 @@ program run
 !
 !  Register physics modules.
 !
-  call register_modules()
-  if (lparticles) call particles_register_modules()
+  call register_modules
+  if (lparticles) call particles_register_modules
 !
 !  Only after register it is possible to write the correct dim.dat
 !  file with the correct number of variables
@@ -413,7 +415,7 @@ program run
 !  Determine slice positions and whether slices are to be written on this
 !  processor. This can only be done after the grid has been established.
 !
-  call setup_slices()
+  call setup_slices
 !
 !  Allow modules to do any physics modules do parameter dependent
 !  initialization. And final pre-timestepping setup.
@@ -430,7 +432,7 @@ program run
 !  Write parameters to log file (done after reading var.dat, since we
 !  want to output time t.
 !
-  call write_all_run_pars()
+  call write_all_run_pars
 !
 !  Initialize ionization array.
 !
@@ -456,8 +458,8 @@ program run
 !  Find out which pencils are needed and write information about required,
 !  requested and diagnostic pencils to disc.
 !
-  call choose_pencils()
-  call write_pencil_info()
+  call choose_pencils
+  call write_pencil_info
 !
   if (mglobal/=0)  &
       call output_globals('global.dat', &
@@ -501,7 +503,7 @@ program run
 !
 !  Prepare signal catching
 !
-  call signal_prepare()
+  call signal_prepare
 !
 !  Do loop in time.
 !
@@ -556,25 +558,25 @@ program run
 !  Before reading the rprint_list deallocate the arrays allocated for
 !  1-D and 2-D diagnostics.
 !
-                                 call vnames_clean_up()
-                                 call xyaverages_clean_up()
-                                 call xzaverages_clean_up()
-                                 call yzaverages_clean_up()
-        if (lwrite_phizaverages) call phizaverages_clean_up()
-        if (lwrite_yaverages)    call yaverages_clean_up()
-        if (lwrite_zaverages)    call zaverages_clean_up()
-        if (lwrite_phiaverages)  call phiaverages_clean_up()
-        if (lwrite_sound)        call sound_clean_up()
-        if (lforcing)            call forcing_clean_up()
-        if (lhydro_kinematic)    call hydro_clean_up()
-        if (lsolid_cells)        call solid_cells_clean_up()
+                                 call vnames_clean_up
+                                 call xyaverages_clean_up
+                                 call xzaverages_clean_up
+                                 call yzaverages_clean_up
+        if (lwrite_phizaverages) call phizaverages_clean_up
+        if (lwrite_yaverages)    call yaverages_clean_up
+        if (lwrite_zaverages)    call zaverages_clean_up
+        if (lwrite_phiaverages)  call phiaverages_clean_up
+        if (lwrite_sound)        call sound_clean_up
+        if (lforcing)            call forcing_clean_up
+        if (lhydro_kinematic)    call hydro_clean_up
+        if (lsolid_cells)        call solid_cells_clean_up
         call rprint_list(LRESET=.true.) !(Re-read output list)
         call initialize_modules(f)
         if (lparticles) then
           call particles_rprint_list(.false.)
           call particles_initialize_modules(f)
         endif
-        call choose_pencils()
+        call choose_pencils
         call write_all_run_pars('IDL')
 !
         lreload_file=control_file_exists('RELOAD', DELETE=.true.)
@@ -607,13 +609,13 @@ program run
 !  If we want to write out video data, wvid_prepare sets lvideo=.true.
 !  This allows pde to prepare some of the data.
 !
-    if (lwrite_slices) call wvid_prepare()
-    if (lwrite_2daverages) call write_2daverages_prepare()
+    if (lwrite_slices) call wvid_prepare
+    if (lwrite_2daverages) call write_2daverages_prepare
 !
 !   Prepare for the writing of the trcers and the fixed points.
 !
-    if (lwrite_tracers) call tracers_prepare()
-    if (lwrite_fixed_points) call fixed_points_prepare()
+    if (lwrite_tracers) call tracers_prepare
+    if (lwrite_fixed_points) call fixed_points_prepare
 !
 !  Find out which pencils to calculate at current time-step.
 !
@@ -630,7 +632,7 @@ program run
 !
 !  A random phase for the hydro_kinematic module
 !
-    if (lhydro_kinematic) call kinematic_random_phase()
+    if (lhydro_kinematic) call kinematic_random_phase
 !
 !  Time advance.
 !
@@ -639,11 +641,11 @@ program run
 !  Print diagnostic averages to screen and file.
 !
     if (lout) then
-      call prints()
+      call prints
       if (lchemistry_diag) call write_net_reaction
     endif
-    if (l1davg) call write_1daverages()
-    if (l2davg) call write_2daverages()
+    if (l1davg) call write_1daverages
+    if (l2davg) call write_2daverages
 !
     if (lout_sound) then
       call write_sound(tsound)
@@ -787,7 +789,7 @@ program run
 !  Fatal errors sometimes occur only on a specific processor. In that case all
 !  processors must be informed about the problem before the code can stop.
 !
-    call fatal_error_local_collect()
+    call fatal_error_local_collect
     call timing('run','at the end of Time_loop',INSTRUCT='finalize')
 !
     it=it+1
@@ -874,21 +876,21 @@ program run
 !
 !  Free any allocated memory.
 !
-  call farray_clean_up()
-  call sharedvars_clean_up()
-  call chemistry_clean_up()
-  call NSCBC_clean_up()
-  call fnames_clean_up()
-  call vnames_clean_up()
-  call xyaverages_clean_up()
-  call xzaverages_clean_up()
-  call yzaverages_clean_up()
-  if (lparticles) call particles_cleanup()
-  if (lwrite_phizaverages) call phizaverages_clean_up()
-  if (lwrite_yaverages)    call yaverages_clean_up()
-  if (lwrite_zaverages)    call zaverages_clean_up()
-  if (lwrite_phiaverages)  call phiaverages_clean_up()
-  if (lwrite_sound)        call sound_clean_up()
+  call farray_clean_up
+  call sharedvars_clean_up
+  call chemistry_clean_up
+  call NSCBC_clean_up
+  call fnames_clean_up
+  call vnames_clean_up
+  call xyaverages_clean_up
+  call xzaverages_clean_up
+  call yzaverages_clean_up
+  if (lparticles) call particles_cleanup
+  if (lwrite_phizaverages) call phizaverages_clean_up
+  if (lwrite_yaverages)    call yaverages_clean_up
+  if (lwrite_zaverages)    call zaverages_clean_up
+  if (lwrite_phiaverages)  call phiaverages_clean_up
+  if (lwrite_sound)        call sound_clean_up
 !
 endprogram run
 !**************************************************************************
