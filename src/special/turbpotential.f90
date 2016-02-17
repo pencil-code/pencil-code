@@ -161,8 +161,8 @@ module Special
 !
 !  Break for Cartesian
 !
-      if (lcartesian_coords) &
-           call fatal_error("initialize_special",&
+      if (.not.lspherical_coords.and..not.lcylindrical_coords) &
+        call fatal_error("initialize_special",&
            "turbulent potential coded only for spherical and cylindrical coordinates")
 !
 !  Useful constants
@@ -179,8 +179,7 @@ module Special
 !  Scale the amplitude by r**2 * Omega**2
 !
       if (lgravr) then 
-        call get_shared_variable('gsum',gsum,ierr)
-        if (ierr/=0) call fatal_error("initialize_special","there was an error getting gsum")
+        call get_shared_variable('gsum',gsum,caller='initialize_special')
       else
         call fatal_error("initialize_special",&
              "this turbulent potential should be used with gravity_r")
