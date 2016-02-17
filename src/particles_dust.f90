@@ -3177,7 +3177,7 @@ module Particles
       real :: added_mass_beta = 0.0
       real :: rho1_point, tausp1_par, up2
       real :: weight, weight_x, weight_y, weight_z
-      real :: rhop_swarm_par, dxp, dyp, dzp, volume_cell
+      real :: dxp, dyp, dzp, volume_cell
       integer :: k, l, ix0, iy0, iz0, ierr, irad
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       integer, dimension (3) :: inear
@@ -3455,7 +3455,6 @@ module Particles
                       rho1_point = p%rho1(ixx-nghost)
                     endif
 !  Add friction force to grid point.
-                    call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,rhop_swarm_par)
 !NILS: The grid volume should be put into a pencil when required
                     if ((lpscalar_sink .and. lpscalar) .or. &
                         (ldragforce_gas_par .and. ldraglaw_steadystate)) & 
@@ -3470,7 +3469,7 @@ module Particles
                           mp_vcell = mp_vcell*np_swarm
                         endif
                       else
-                        mp_vcell=rhop_swarm_par
+                        call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,mp_vcell)
                       endif
                       df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
                           mp_vcell*rho1_point*dragforce*weight
@@ -3553,8 +3552,6 @@ module Particles
                           call find_grid_volume(ixx,iyy,izz,volume_cell)
 !  Add friction force to grid point.
                       if (lhydro .and. ldragforce_gas_par) then
-                        call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz, &
-                            rhop_swarm_par)
 !  Calculate the particle mass divided by the cell volume
                         if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
                           call find_grid_volume(ixx,iyy,izz,volume_cell)
@@ -3565,7 +3562,7 @@ module Particles
                             mp_vcell = mp_vcell*np_swarm
                           endif
                         else
-                          mp_vcell=rhop_swarm_par
+                          call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,mp_vcell)
                         endif
                         df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
                             mp_vcell*rho1_point*dragforce*weight
@@ -3644,8 +3641,6 @@ module Particles
                           (ldragforce_gas_par .and. ldraglaw_steadystate)) & 
                           call find_grid_volume(ixx,iyy,izz,volume_cell) 
                       if (lhydro .and. ldragforce_gas_par) then
-                        call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz, &
-                            rhop_swarm_par)
 !  Calculate the particle mass divided by the cell volume
                         if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
                           call find_grid_volume(ixx,iyy,izz,volume_cell)
@@ -3656,7 +3651,7 @@ module Particles
                             mp_vcell = mp_vcell*np_swarm
                           endif
                         else
-                          mp_vcell=rhop_swarm_par
+                          call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz, mp_vcell)
                         endif
                         df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
                             mp_vcell*rho1_point*dragforce*weight
@@ -3682,7 +3677,6 @@ module Particles
                       (ldragforce_gas_par .and. ldraglaw_steadystate)) & 
                       call find_grid_volume(ix0,iy0,iz0,volume_cell) 
                   if (lhydro .and. ldragforce_gas_par) then
-                    call get_rhopswarm(mp_swarm,fp,k,l,m,n,rhop_swarm_par)
 !  Calculate the particle mass divided by the cell volume
                     if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
                       call find_grid_volume(ixx,iyy,izz,volume_cell)
@@ -3693,7 +3687,7 @@ module Particles
                         mp_vcell = mp_vcell*np_swarm
                       endif
                     else
-                      mp_vcell=rhop_swarm_par
+                      call get_rhopswarm(mp_swarm,fp,k,l,m,n,mp_vcell)
                     endif
                     df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
                         mp_vcell*p%rho1(l-nghost)*dragforce
@@ -3721,8 +3715,7 @@ module Particles
                   mp_vcell = mp_vcell*np_swarm
                 endif
               else
-                call get_rhopswarm(mp_swarm,fp,k,ix0,iy0,iz0,rhop_swarm_par)
-                mp_vcell=rhop_swarm_par
+                call get_rhopswarm(mp_swarm,fp,k,ix0,iy0,iz0,mp_vcell)
               endif
 !
 !  Heating of gas due to drag force.
