@@ -365,6 +365,11 @@ module Particles_radius
 !
           enddo
 !
+        case ('power-law')
+          call random_number_wrapper(fp(npar_low:npar_high,iap))
+          fp(npar_low:npar_high,iap) = ((aphigh**(qplaw+1.0)-aplow**(qplaw+1.0)) &
+            *fp(npar_low:npar_high,iap)+aplow**(qplaw+1.0))**(1.0/(qplaw+1.0))
+!
         case default
           if (lroot) print*, 'init_particles_radius: '// &
               'No such such value for initap: ', trim(initap(j))
