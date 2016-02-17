@@ -37,7 +37,7 @@ module Particles_radius
   real :: ztop_ocean=0.0, TTocean=300.0
   real :: aplow=1.0, aphigh=2.0, mbar=1.0
   real :: ap1=1.0, qplaw=0.0, GS_condensation=0.
-  real :: sigma_initdist=0.2, a0_initdist=5e-6
+  real :: sigma_initdist=0.2, a0_initdist=5e-6, rpbeta0=0.0
   integer :: nbin_initdist=20
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
@@ -52,7 +52,7 @@ module Particles_radius
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
       lborder_driving_ocean, ztop_ocean, radii_distribution, TTocean, &
       aplow, aphigh, mbar, ap1, qplaw, eps_dtog, nbin_initdist, &
-      sigma_initdist, a0_initdist
+      sigma_initdist, a0_initdist, lparticles_radius_rpbeta, rpbeta0
 !
   namelist /particles_radius_run_pars/ &
       rhopmat, vthresh_sweepup, deltavp12_floor, &
@@ -60,7 +60,7 @@ module Particles_radius
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
       lborder_driving_ocean, ztop_ocean, TTocean, &
-      lcondensation_simplified, GS_condensation
+      lcondensation_simplified, GS_condensation, rpbeta0
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
@@ -85,6 +85,12 @@ module Particles_radius
 !  Increase npvar accordingly.
 !
       npvar=npvar+1
+!
+      if (lparticles_radius_rpbeta) then
+        irpbeta=npvar+1
+        pvarname(npvar+1)='irpbeta'
+        npvar=npvar+1
+      endif
 !
 !  Check that the fp and dfp arrays are big enough.
 !
@@ -369,6 +375,8 @@ module Particles_radius
 !  Set initial particle radius if lparticles_mass=T
 !
       if (lparticles_mass) fp(:,iapinit)=fp(:,iap)
+!
+      if (lparticles_radius_rpbeta) fp(npar_low:npar_high,irpbeta) = rpbeta0/fp(npar_low:npar_high,iap)
 !
       call keep_compiler_quiet(f)
 !
