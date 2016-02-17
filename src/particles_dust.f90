@@ -231,7 +231,7 @@ module Particles
       lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw,lbubble, &
       rpbeta_species, rpbeta, gab_width, initxxp, initvvp, particles_insert_ramp_time, &
       particles_insert_ramp_time, tstart_insert_particles, birthring_r, birthring_width, &
-      tstart_rpbeta, lvector_gravity
+      tstart_rpbeta, linsert_as_many_as_possible, lvector_gravity
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
