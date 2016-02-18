@@ -145,6 +145,13 @@ module Shear
         call ludcmp(bspline_ay, bspline_iy)
       endif bsplines
 !
+!  Hand over shear acceleration to Particles_drag.
+!
+      drag: if (lparticles_drag .and. lshear_acceleration) then
+        lshear_acceleration = .false.
+        if (lroot) print *, 'initialize_shear: turned off and hand over shear acceleration to Particles_drag. '
+      endif drag
+!
     endsubroutine initialize_shear
 !***********************************************************************
     subroutine read_shear_init_pars(iostat)

@@ -357,6 +357,19 @@ module Particles
         call fatal_error('initialize_particles','')
       endif
 !
+!  Hand over Coriolis force and shear acceleration to Particles_drag.
+!
+      drag: if (lparticles_drag) then
+        coriolis: if (lcoriolis_force_par) then
+          lcoriolis_force_par = .false.
+          if (lroot) print *, 'initialize_particles: turned off and hand over Coriolis force to Particles_drag. '
+        endif coriolis
+        shacc: if (lshear .and. lshear_accel_par) then
+          lshear_accel_par = .false.
+          if (lroot) print *, 'initialize_particles: turned off and hand over shear acceleration to Particles_drag. '
+        endif shacc
+      endif drag
+!
 !  Check if shear advection is on and decide if it needs to be included in the timestep condition.
 !
       shear: if (lshear) then

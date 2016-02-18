@@ -798,6 +798,13 @@ module Hydro
         if (borderuu(j)/='nothing') call request_border_driving(borderuu(j))
       enddo
 !
+!  Hand over Coriolis force to Particles_drag.
+!
+      drag: if (lparticles_drag .and. lcoriolis_force) then
+        lcoriolis_force = .false.
+        if (lroot) print *, 'initialize_hydro: turned off and hand over Coriolis force to Particles_drag. '
+      endif drag
+!
 !  Share lcoriolis_force and lcentrifugal_force so the Particles module
 !  knows whether to apply them or not.
 !
