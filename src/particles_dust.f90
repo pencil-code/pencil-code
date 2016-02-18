@@ -191,7 +191,7 @@ module Particles
       xp3, yp3, zp3, vpx3, vpy3, vpz3, lsinkparticle_1, rsinkparticle_1, &
       lcalc_uup, temp_grad0, thermophoretic_eq, cond_ratio, interp_pol_gradTT, &
       lreassign_strat_rhom, lparticlemesh_pqs_assignment, lwithhold_init_particles, &
-      frac_init_particles, lvector_gravity
+      frac_init_particles, lvector_gravity, birthring_r, birthring_width, lgaussian_birthring
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -773,6 +773,7 @@ module Particles
       real, dimension (mx,my,mz,mfarray), intent (out) :: f
       real, dimension (mpar_loc,mparray), intent (out) :: fp
       integer, dimension (mpar_loc,3), intent (out) :: ineargrid
+      real, dimension (mpar_loc) :: rr_tmp, az_tmp
 !
       real, dimension (3) :: uup, Lxyz_par, xyz0_par, xyz1_par
       real :: vpx_sum, vpy_sum, vpz_sum
@@ -1457,23 +1458,35 @@ module Particles
           call constant_richardson(fp,f)
 !
         case ('birthring')
-          if (lcylindrical_coords) then
-            if (birthring_width>0.0) then
-              if (lgaussian_birthring) then
-                do k=1,npar_loc
-                  call normal_deviate(fp(k,ixp))
-                enddo
-              else
-                call random_number_wrapper(fp(1:npar_loc,ixp))
-              endif
-              fp(1:npar_loc,ixp) = birthring_r+fp(1:npar_loc,ixp)*birthring_width
+          if (birthring_width>tini) then
+            if (lgaussian_birthring) then
+              do k=1,npar_loc
+                call normal_deviate(rr_tmp(k))
+              enddo
             else
-              fp(1:npar_loc,ixp) = birthring_r
+              call random_number_wrapper(rr_tmp(k))
             endif
-            call random_number_wrapper(fp(1:npar_loc,iyp))
-            fp(1:npar_loc,iyp) = xyz0(2)+fp(1:npar_loc,iyp)*Lxyz(2)
-            fp(1:npar_loc,izp) = 0.0
+            rr_tmp(1:npar_loc) = birthring_r+rr_tmp(1:npar_loc)*birthring_width
+          else
+            rr_tmp(1:npar_loc) = birthring_r
           endif
+          call random_number_wrapper(az_tmp(1:npar_loc))
+          az_tmp(1:npar_loc) = xyz0(2)+az_tmp(1:npar_loc)*Lxyz(2)
+          if (lcartesian_coords) then
+            fp(1:npar_loc,ixp) = rr_tmp(1:npar_loc)*cos(az_tmp(1:npar_loc))
+            fp(1:npar_loc,iyp) = rr_tmp(1:npar_loc)*sin(az_tmp(1:npar_loc))
+            fp(1:npar_loc,izp) = 0.0
+          else
+            fp(1:npar_loc,ixp) = rr_tmp(1:npar_loc)
+            if (lcylindrical_coords) then
+              fp(1:npar_loc,iyp) = az_tmp(1:npar_loc)
+              fp(1:npar_loc,izp) = 0.0
+            elseif (lspherical_coords) then
+              fp(1:npar_loc,iyp) = pi/2.0
+              fp(1:npar_loc,izp) = az_tmp(1:npar_loc)
+            endif
+          endif
+          if (lroot .and. nzgrid/=0) print*,"Warning, birthring only implemented for 2D"
 !
         case default
           call fatal_error('init_particles','Unknown value initxxp="'//trim(initxxp(j))//'"')
@@ -1842,9 +1855,9 @@ module Particles
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray), intent (inout) :: fp
-      real, dimension (mpar_loc) :: r_tmp, az_tmp
       real, dimension (3) :: Lxyz_par, xyz0_par, xyz1_par
       integer, dimension (mpar_loc,3), intent (inout) :: ineargrid
+      real, dimension (mpar_loc) :: rr_tmp, az_tmp
 !
       logical, save :: linsertmore=.true.
       real :: xx0, yy0, r2, r, tmp, rpar_int, rpar_ext
@@ -1952,10 +1965,10 @@ module Particles
                 rpar_ext = xyz1_loc(1)
               endif
 
-              call random_number_wrapper(r_tmp(npar_loc_old+1:npar_loc))
-              r_tmp(npar_loc_old+1:npar_loc) = rpar_int**tmp + &
-                r_tmp(npar_loc_old+1:npar_loc)*(rpar_ext**tmp-rpar_int**tmp)
-              r_tmp(npar_loc_old+1:npar_loc) = r_tmp(npar_loc_old+1:npar_loc)**(1./tmp)
+              call random_number_wrapper(rr_tmp(npar_loc_old+1:npar_loc))
+              rr_tmp(npar_loc_old+1:npar_loc) = rpar_int**tmp + &
+                rr_tmp(npar_loc_old+1:npar_loc)*(rpar_ext**tmp-rpar_int**tmp)
+              rr_tmp(npar_loc_old+1:npar_loc) = rr_tmp(npar_loc_old+1:npar_loc)**(1./tmp)
               if ((lcartesian_coords) .or. (lcylindrical_coords .and. nygrid/=1) .or. (lspherical_coords .and. nzgrid/=1)) then
                 call random_number_wrapper(az_tmp(npar_loc_old+1:npar_loc))
                 az_tmp(npar_loc_old+1:npar_loc) = -pi + 2.0*pi*az_tmp(npar_loc_old+1:npar_loc)
@@ -1966,38 +1979,49 @@ module Particles
 
               if (lcartesian_coords) then
                 fp(npar_loc_old+1:npar_loc,iyp) = az_tmp(npar_loc_old+1:npar_loc)*2.0*pi
-                if (nxgrid/=1) fp(npar_loc_old+1:npar_loc,ixp) = r_tmp(npar_loc_old+1:npar_loc) &
+                if (nxgrid/=1) fp(npar_loc_old+1:npar_loc,ixp) = rr_tmp(npar_loc_old+1:npar_loc) &
                   *cos(az_tmp(npar_loc_old+1:npar_loc))
-                if (nygrid/=1) fp(npar_loc_old+1:npar_loc,iyp) = r_tmp(npar_loc_old+1:npar_loc) &
+                if (nygrid/=1) fp(npar_loc_old+1:npar_loc,iyp) = rr_tmp(npar_loc_old+1:npar_loc) &
                   *sin(az_tmp(npar_loc_old+1:npar_loc))
                 if (nzgrid/=1) fp(npar_loc_old+1:npar_loc,izp) = xyz0_par(3)+fp(npar_loc_old+1:npar_loc,izp)*Lxyz_par(3)
               elseif (lcylindrical_coords) then
-                if (nxgrid/=1) fp(npar_loc_old+1:npar_loc,ixp) = r_tmp(npar_loc_old+1:npar_loc)
+                if (nxgrid/=1) fp(npar_loc_old+1:npar_loc,ixp) = rr_tmp(npar_loc_old+1:npar_loc)
                 if (nygrid/=1) fp(npar_loc_old+1:npar_loc,iyp) = xyz0_par(2)+az_tmp(npar_loc_old+1:npar_loc)*Lxyz_par(2)
                 if (nzgrid/=1) fp(npar_loc_old+1:npar_loc,izp) = xyz0_par(3)+fp(npar_loc_old+1:npar_loc,izp)*Lxyz_par(3)
               elseif (lspherical_coords) then
-                if (nxgrid/=1) fp(npar_loc_old+1:npar_loc,ixp) = r_tmp(npar_loc_old+1:npar_loc)
+                if (nxgrid/=1) fp(npar_loc_old+1:npar_loc,ixp) = rr_tmp(npar_loc_old+1:npar_loc)
                 if (nygrid/=1) fp(npar_loc_old+1:npar_loc,iyp) = xyz0_par(2)+az_tmp(npar_loc_old+1:npar_loc)*Lxyz_par(2)
                 if (nzgrid/=1) fp(npar_loc_old+1:npar_loc,izp) = xyz0_par(3)+fp(npar_loc_old+1:npar_loc,izp)*Lxyz_par(3)
               endif
 !
             case ('birthring')
-              if (lcylindrical_coords) then
-                if (birthring_width>0.0) then
-                  if (lgaussian_birthring) then
-                    do k=npar_loc_old+1,npar_loc
-                      call normal_deviate(fp(k,ixp))
-                    enddo
-                  else
-                    call random_number_wrapper(fp(npar_loc_old+1:npar_loc,ixp))
-                  endif
-                  fp(npar_loc_old+1:npar_loc,ixp) = birthring_r+fp(npar_loc_old+1:npar_loc,ixp)*birthring_width
+              if (birthring_width>tini) then
+                if (lgaussian_birthring) then
+                  do k=npar_loc_old+1,npar_loc
+                    call normal_deviate(rr_tmp(k))
+                  enddo
                 else
-                  fp(npar_loc_old+1:npar_loc,ixp) = birthring_r
+                  call random_number_wrapper(rr_tmp(k))
                 endif
-                call random_number_wrapper(fp(npar_loc_old+1:npar_loc,iyp))
-                fp(npar_loc_old+1:npar_loc,iyp) = xyz0(2)+fp(npar_loc_old+1:npar_loc,iyp)*Lxyz(2)
+                rr_tmp(npar_loc_old+1:npar_loc) = birthring_r+rr_tmp(npar_loc_old+1:npar_loc)*birthring_width
+              else
+                rr_tmp(npar_loc_old+1:npar_loc) = birthring_r
+              endif
+              call random_number_wrapper(az_tmp(npar_loc_old+1:npar_loc))
+              az_tmp(npar_loc_old+1:npar_loc) = xyz0(2)+az_tmp(npar_loc_old+1:npar_loc)*Lxyz(2)
+              if (lcartesian_coords) then
+                fp(npar_loc_old+1:npar_loc,ixp) = rr_tmp(npar_loc_old+1:npar_loc)*cos(az_tmp(npar_loc_old+1:npar_loc))
+                fp(npar_loc_old+1:npar_loc,iyp) = rr_tmp(npar_loc_old+1:npar_loc)*sin(az_tmp(npar_loc_old+1:npar_loc))
                 fp(npar_loc_old+1:npar_loc,izp) = 0.0
+              else
+                fp(npar_loc_old+1:npar_loc,ixp) = rr_tmp(npar_loc_old+1:npar_loc)
+                if (lcylindrical_coords) then
+                  fp(npar_loc_old+1:npar_loc,iyp) = az_tmp(npar_loc_old+1:npar_loc)
+                  fp(npar_loc_old+1:npar_loc,izp) = 0.0
+                elseif (lspherical_coords) then
+                  fp(npar_loc_old+1:npar_loc,iyp) = pi/2.0
+                  fp(npar_loc_old+1:npar_loc,izp) = az_tmp(npar_loc_old+1:npar_loc)
+                endif
               endif
 !
             case ('nothing')
