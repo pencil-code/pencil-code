@@ -1477,7 +1477,7 @@ module Particles
                 call normal_deviate(rr_tmp(k))
               enddo
             else
-              call random_number_wrapper(rr_tmp(k))
+              call random_number_wrapper(rr_tmp(1:npar_loc))
             endif
             rr_tmp(1:npar_loc) = birthring_r+rr_tmp(1:npar_loc)*birthring_width
           else
@@ -2014,7 +2014,7 @@ module Particles
                     call normal_deviate(rr_tmp(k))
                   enddo
                 else
-                  call random_number_wrapper(rr_tmp(k))
+                  call random_number_wrapper(rr_tmp(npar_loc_old+1:npar_loc))
                 endif
                 rr_tmp(npar_loc_old+1:npar_loc) = birthring_r+rr_tmp(npar_loc_old+1:npar_loc)*birthring_width
               else
