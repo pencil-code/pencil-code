@@ -62,9 +62,10 @@ module Poisson
   real, dimension (ny,0:ncpus-1) :: yrecv
   real, dimension (nz,0:ncpus-1) :: zrecv
   integer, allocatable :: themap(:,:)
+  logical, allocatable :: updatedist(:)
   real, allocatable :: regdist1(:)
   real, allocatable :: regsmooth(:)
-  integer :: nreg, ireg, irl, iru, jrl, jru, krl, kru
+  integer :: nregions, iregion, irl, iru, jrl, jru, krl, kru
   integer, parameter :: nlt = 1e7 ! 1e5 for quad. interp.
   real :: lkmin, lkmax, dxlt
   real, dimension(nlt) :: xlt, sinlt, coslt
@@ -212,13 +213,14 @@ module Poisson
     ! First pass only counts regions, second pass actually populates 'themap'
     do iprecalc=1,2
       if (lprecalc) then
-        if (lroot) print*,"# regions on proc 0:",nreg
-        allocate(themap(10,nreg))
-        allocate(regsmooth(nreg))
+        if (lroot) print*,"# regions on proc 0:",nregions
+        allocate(themap(10,nregions))
+        allocate(regsmooth(nregions))
         regsmooth = 1.0
-        if (lprecalcdists) allocate(regdist1(nreg))
+        allocate(updatedist(nregions))
+        allocate(regdist1(nregions))
       endif
-      nreg = 0 ! Advanced inside 'mkmap'
+      nregions = 0 ! Advanced inside 'mkmap'
       do pp=0,ncpus-1
         if (lsquareregions) then
           do kk=1,nz/sz(pp)
@@ -253,6 +255,13 @@ module Poisson
       lprecalc = .true.
     enddo
 !
+    updatedist=.true.
+    do iregion=1,nregions
+      if (themap(4,iregion)==themap(5,iregion) .and. &
+        themap(6,iregion)==themap(7,iregion) .and. &
+        themap(8,iregion)==themap(9,iregion)) updatedist(iregion)=.false.
+    enddo
+!
     endsubroutine initialize_poisson
 !***********************************************************************
     subroutine do_barneshut(phi) ! 'phi' is density from selfgravity module,
@@ -282,16 +291,16 @@ module Poisson
 !
     phi = 0.0
 !
-    do ireg=1,nreg
-      i   = themap(1, ireg) ; irl = themap(4,ireg) ; iru = themap(5,ireg)
-      j   = themap(2, ireg) ; jrl = themap(6,ireg) ; jru = themap(7,ireg)
-      k   = themap(3, ireg) ; krl = themap(8,ireg) ; kru = themap(9,ireg)
-      pp  = themap(10,ireg)
-      if (lprecalcdists) then
-        phi(i,j,k) = phi(i,j,k) - regsmooth(ireg)* &
-          sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))*regdist1(ireg)
+    do iregion=1,nregions
+      i   = themap(1, iregion) ; irl = themap(4,iregion) ; iru = themap(5,iregion)
+      j   = themap(2, iregion) ; jrl = themap(6,iregion) ; jru = themap(7,iregion)
+      k   = themap(3, iregion) ; krl = themap(8,iregion) ; kru = themap(9,iregion)
+      pp  = themap(10,iregion)
+      if (lprecalcdists .or. updatedist(iregion)) then
+        phi(i,j,k) = phi(i,j,k) - regsmooth(iregion)* &
+          sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))*regdist1(iregion)
       else
-        summreg = sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))*regsmooth(ireg)
+        summreg = sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))*regsmooth(iregion)
         xreg = sum(xrecv(irl:iru,pp) &
           *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),3),2))/summreg
         yreg = sum(yrecv(jrl:jru,pp) &
@@ -360,13 +369,13 @@ module Poisson
           enddo
         enddo
       elseif (.not. lsplit .and. dist .lt. octree_maxdist) then
-        nreg = nreg+1
+        nregions = nregions+1
         if (laddreg) then
-          themap(:,nreg) = (/ipos(1),ipos(2),ipos(3), xsind(1),xsind(dimi(1)), &
+          themap(:,nregions) = (/ipos(1),ipos(2),ipos(3), xsind(1),xsind(dimi(1)), &
             ysind(1),ysind(dimi(2)),zsind(1),zsind(dimi(3)),ppi/)
-          if (lprecalcdists) regdist1(nreg) = 1.0/dist
+          if (lprecalcdists) regdist1(nregions) = 1.0/dist
           if (dist .gt. (octree_maxdist-octree_smoothdist)) then
-           regsmooth(nreg) = 0.5* &
+           regsmooth(nregions) = 0.5* &
             (cos(pi*((octree_maxdist-dist)/octree_smoothdist+1.0))+1.0)
           endif
         endif
