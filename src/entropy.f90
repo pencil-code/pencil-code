@@ -236,6 +236,11 @@ module Energy
                                 ! DIAG_DOC:   \quad(time step relative to time
                                 ! DIAG_DOC:   step based on heat conductivity;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
+  integer :: idiag_dtH=0       ! DIAG_DOC: $\delta t / [c_{\delta t,{\rm s}}\, 
+                                ! DIAG_DOC:  c_{\rm v}T /H_{\rm max}]$
+                                ! DIAG_DOC:   \quad(time step relative to time
+                                ! DIAG_DOC:   step based on heat sources;
+                                ! DIAG_DOC:   see \S~\ref{time-step})
   integer :: idiag_ssmphi=0     ! PHIAVG_DOC: $\left<s\right>_\varphi$
   integer :: idiag_cs2mphi=0    ! PHIAVG_DOC: $\left<c^2_s\right>_\varphi$
   integer :: idiag_yHm=0        ! DIAG_DOC: mean hydrogen ionization
@@ -2572,6 +2577,7 @@ module Energy
       lpenc_diagnos2d(i_ss)=.true.
 !
       if (idiag_dtchi/=0) lpenc_diagnos(i_rho1)=.true.
+      if (idiag_dtH/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_ethdivum/=0) lpenc_diagnos(i_divu)=.true.
       if (idiag_csm/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
@@ -2993,6 +2999,9 @@ module Energy
       if (ldiagnos) then
         !uT=unit_temperature !(define shorthand to avoid long lines below)
         uT=1. !(AB: for the time being; to keep compatible with auto-test
+        if (idiag_dtchi/=0) &
+            call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+        if (idiag_dtH/=0) call max_mn_name(Hmax/p%ee/cdts,idiag_dtH,l_dt=.true.)
         if (idiag_ssmax/=0)  call max_mn_name(p%ss*uT,idiag_ssmax)
         if (idiag_ssmin/=0)  call max_mn_name(-p%ss*uT,idiag_ssmin,lneg=.true.)
         if (idiag_TTmax/=0)  call max_mn_name(p%TT*uT,idiag_TTmax)
@@ -3558,8 +3567,8 @@ module Energy
           diffus_chi=diffus_chi+chi*dxyz_2
         endif
         if (chi_t/=0.) diffus_chi = diffus_chi+chi_t*chit_prof*dxyz_2
-        if (ldiagnos.and.idiag_dtchi/=0) &
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+!        if (ldiagnos.and.idiag_dtchi/=0) &
+!          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
       endif
 !
     endsubroutine calc_heatcond_constchi
@@ -3649,9 +3658,9 @@ module Energy
         else
           diffus_chi=diffus_chi+(thchi+chi_t)*dxyz_2
         endif
-        if (ldiagnos.and.idiag_dtchi/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-        endif
+!        if (ldiagnos.and.idiag_dtchi/=0) then
+!          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+!        endif
       endif
 !
     endsubroutine calc_heatcond_thermchi
@@ -3739,9 +3748,9 @@ module Energy
         else
           diffus_chi=diffus_chi+(rhochi+chi_t)*dxyz_2
         endif
-        if (ldiagnos.and.idiag_dtchi/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-        endif
+!        if (ldiagnos.and.idiag_dtchi/=0) then
+!          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+!        endif
       endif
 !
     endsubroutine calc_heatcond_sqrtrhochi
@@ -3958,9 +3967,9 @@ module Energy
         else
           diffus_chi=diffus_chi+(chi_shock*p%shock)*dxyz_2
         endif
-        if (ldiagnos.and.idiag_dtchi/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-        endif
+!        if (ldiagnos.and.idiag_dtchi/=0) then
+!          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+!        endif
       endif
 !
     endsubroutine calc_heatcond_shock
@@ -4032,9 +4041,9 @@ module Energy
         else
           diffus_chi=diffus_chi+(pchi_shock*p%shock)*dxyz_2
         endif
-        if (ldiagnos.and.idiag_dtchi/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-        endif
+!        if (ldiagnos.and.idiag_dtchi/=0) then
+!          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+!        endif
       endif
 !
     endsubroutine calc_heatcond_shock_profr
@@ -4118,9 +4127,9 @@ module Energy
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chix*dxyz_2
-        if (ldiagnos.and.idiag_dtchi/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-        endif
+!        if (ldiagnos.and.idiag_dtchi/=0) then
+!          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+!        endif
       endif
 !
     endsubroutine calc_heatcond_constK
@@ -4229,9 +4238,9 @@ module Energy
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+ cosbgT*gamma*Kgpara*exp(-p%lnrho)/p%cp*dxyz_2
-        if (ldiagnos.and.idiag_dtchi/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-        endif
+!        if (ldiagnos.and.idiag_dtchi/=0) then
+!          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+!        endif
       endif
 !
     endsubroutine calc_heatcond_tensor
@@ -4398,9 +4407,9 @@ module Energy
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+(gamma*chix+chi_t)*dxyz_2
-        if (ldiagnos.and.idiag_dtchi/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-        endif
+!        if (ldiagnos.and.idiag_dtchi/=0) then
+!          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+!        endif
       endif
 !
     endsubroutine calc_heatcond_kramers
@@ -4721,8 +4730,8 @@ module Energy
         else
           diffus_chi=diffus_chi+(gamma*chix+chi_t*chit_prof)*dxyz_2
         endif
-        if (ldiagnos.and.idiag_dtchi/=0) &
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+!        if (ldiagnos.and.idiag_dtchi/=0) &
+!          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
       endif
 !
     endsubroutine calc_heatcond
@@ -5689,6 +5698,7 @@ module Energy
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'dtc',idiag_dtc)
         call parse_name(iname,cname(iname),cform(iname),'dtchi',idiag_dtchi)
+        call parse_name(iname,cname(iname),cform(iname),'dtH',idiag_dtH)
         call parse_name(iname,cname(iname),cform(iname),'ethtot',idiag_ethtot)
         call parse_name(iname,cname(iname),cform(iname),'ethdivum',idiag_ethdivum)
         call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
