@@ -282,28 +282,28 @@ module Poisson
 !
     use Mpicomm
 !
-    real, dimension (nx,ny,nz,0:ncpus-1) :: phirecv
+    real, dimension (nx,ny,nz,0:ncpus-1) :: phirecv=0.0
     real, dimension (nx,ny,nz) :: phi
     real :: xreg, yreg, zreg, summreg, summreg1
-    real :: tstart, tstop
+    real :: tstart_loop, tstop_loop, tstart_mpi, tstop_mpi
 !
-    if (lshowtime .and. lroot) call cpu_time(tstart)
-!
-    phirecv = 0.0
     phi = phi*vols ! 'phi' now in mass units
 !
     ! Send masses to other processors
+    if (lroot .and. lshowtime) call cpu_time(tstart_mpi)
     do pp=0,ncpus-1
       if (pp/=iproc) then
         call mpisendrecv_real(phi,(/nx,ny,nz/),pp,117, &
                               phirecv(:,:,:,pp),pp,117)
       endif
     enddo
+    if (lroot .and. lshowtime) call cpu_time(tstop_mpi)
 !
     phirecv(:,:,:,iproc) = phi
 !
     phi = 0.0
 !
+    if (lroot .and. lshowtime) call cpu_time(tstart_loop)
     do iregion=1,nprecalc
       i   = themap(1, iregion) ; irl = themap(4,iregion) ; iru = themap(5,iregion)
       j   = themap(2, iregion) ; jrl = themap(6,iregion) ; jru = themap(7,iregion)
@@ -327,13 +327,14 @@ module Poisson
         *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),2),1))*summreg1
       phi(i,j,k) = phi(i,j,k) - summreg/get_dist((/i,j,k/),(/xreg,yreg,zreg/))
     enddo
+    if (lroot .and. lshowtime) call cpu_time(tstop_loop)
 !
     phi = phi/(4.0*pi) ! The selfgravity module is going to multiply by a factor
                        ! of 4pi that we don't want (I think).
 !
-    if (lshowtime .and. lroot) then
-      call cpu_time(tstop)
-      print '("Octree integration time = ",f6.3," seconds.")',tstop-tstart
+    if (lroot .and. lshowtime) then
+      print '("barneshut: MPI time = ",f6.3," seconds.")',tstop_mpi-tstart_mpi
+      print '("barneshut: Loop time = ",f6.3," seconds.")',tstop_loop-tstart_loop
     endif
 !
     endsubroutine do_barneshut
