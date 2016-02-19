@@ -63,6 +63,7 @@ module Param_IO
   public :: read_all_init_pars, read_all_run_pars
   public :: write_all_init_pars, write_all_run_pars
   public :: write_pencil_info
+  public :: get_downpars
 !
   logical :: lforce_shear_bc = .true.
 !
@@ -495,30 +496,16 @@ module Param_IO
 !
       call check_consistency_of_lperi('read_all_run_pars')
 !
-      if (any(downsampl>1)) then
-!
-!  If downsampling, calculate local start indices and number of data in
-!  output for each direction; inner ghost zones are here disregarded
-!
-        ldownsampl = .true.
-        if (dsnap_down<=0.) dsnap_down=dsnap
-!
-        call get_downpars(1,nx,ipx)
-        call get_downpars(2,ny,ipy)
-        call get_downpars(3,nz,ipz)
-!
-      endif
-
     endsubroutine read_all_run_pars
 !***********************************************************************
     subroutine get_downpars(ind,n,ip)
 !
 ! Calculates start indices & lengths for downsampled output
+! Parameters: coordinate direction, number of inner grid points, processor number
 !
 ! 13-feb-14/MR: coded
 ! 19-aug-15/PABourdin: moved, please do not use 'contains' in subroutines
 !                      MR: Why not?
-! Parameters: coordinate direction, number of inner grid points, processor number
 !
       integer, intent(IN) :: ind, n, ip
 !
