@@ -41,10 +41,6 @@ program pc_distribute
   zlneigh = 0
   yuneigh = 0
   zuneigh = 0
-  llcorn = 0
-  lucorn = 0
-  uucorn = 0
-  ulcorn = 0
 !
   deltay = 0.0   ! Shearing not available due to missing fseek in Fortran
 !
