@@ -345,10 +345,6 @@ module Mpicomm
       zlneigh = 0
       yuneigh = 0
       zuneigh = 0
-      llcorn = 0
-      lucorn = 0
-      uucorn = 0
-      ulcorn = 0
 !
     endsubroutine initialize_mpicomm
 !***********************************************************************

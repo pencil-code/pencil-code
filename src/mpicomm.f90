@@ -333,9 +333,7 @@ module Mpicomm
 !    module procedure mpigather_and_out_cmplx
 !  endinterface
 !
-!  initialize debug parameter for this routine
-!
-  logical :: ldebug_mpi=.false., lcommunicate_y=.false.
+  logical :: lcommunicate_y=.false.
   integer :: mpi_precision
 !
 !  For f-array processor boundaries
@@ -349,14 +347,16 @@ module Mpicomm
   real, dimension (mx,nghost,nghost,mcom) :: nbbufi,nfbufi,sfbufi,sbbufi
   real, dimension (mx,nghost,nghost,mcom) :: nbbufo,nfbufo,sfbufo,sbbufo
 !
-  real, dimension (nghost,my-2*nghost,mz,mcom) :: fahi,falo,fbhi,fblo ! For shear
+  real, dimension (nghost,my-2*nghost,mz,mcom) :: fahi,falo,fbhi,fblo         ! For shear
   real, dimension (nghost,my-2*nghost,mz,mcom) :: fahihi,falolo,fbhihi,fblolo ! For shear
-  real, dimension (nghost,my-2*nghost,mz,mcom) :: fao,fbo ! For shear
-  integer :: ipx_partner, displs ! For shear
+  real, dimension (nghost,my-2*nghost,mz,mcom) :: fao,fbo                     ! For shear
+  integer :: ipx_partner, displs                                              ! For shear
   integer :: nextnextya, nextya, lastya, lastlastya ! For shear
   integer :: nextnextyb, nextyb, lastyb, lastlastyb ! For shear
-  integer :: llcornr, lucornr, ulcornr, uucornr ! Receiving corner ids
-  integer :: llcorns, lucorns, ulcorns, uucorns ! Sending corner ids
+  integer :: llcorn,lucorn,uucorn,ulcorn            ! (the 4 corners in yz-plane)
+  integer :: psfcrn,psbcrn,pnfcrn,pnbcrn            ! (the 4 'pole' corners)
+  integer :: llcornr, lucornr, ulcornr, uucornr     ! Receiving corner ids
+  integer :: llcorns, lucorns, ulcorns, uucorns     ! Sending corner ids
   integer :: nprocs, mpierr
   integer :: serial_level = 0
 !
@@ -447,6 +447,41 @@ module Mpicomm
 !
       iproc_world=iproc
 !
+!  Check consistency in processor layout.
+!
+      if (ncpus/=nprocx*nprocy*nprocz) then
+        if (lroot) then
+          print*, 'Laid out for ncpus (per grid) = ', ncpus, &
+              ', but nprocx*nprocy*nprocz=', nprocx*nprocy*nprocz
+        endif
+        call stop_it('mpicomm_init')
+      endif
+!
+!  Check if parallelization and chosen grid numbers make sense.
+!
+      if ((nprocx>1.and.nxgrid==1).or. &
+          (nprocy>1.and.nygrid==1).or. &
+          (nprocz>1.and.nzgrid==1)) then
+        print*, 'Parallelization in a dimension with ngrid==1 does not work.'
+        call stop_it('mpicomm_init')
+      endif
+      if (mod(nxgrid,nprocx)/=0.or. &
+          mod(nygrid,nprocy)/=0.or. &
+          mod(nzgrid,nprocz)/=0) then
+        print*, 'In each dimension the number of grid points has to be '// &
+                'divisible by the number of processors.'
+        call stop_it('mpicomm_init')
+      endif
+!
+!  Avoid overlapping ghost zones.
+!
+      if ((nx<nghost) .and. (nxgrid/=1)) &
+           call stop_it('Overlapping ghost zones in x-direction: reduce nprocx')
+      if ((ny<nghost) .and. (nygrid/=1)) &
+           call stop_it('Overlapping ghost zones in y-direction: reduce nprocy')
+      if ((nz<nghost) .and. (nzgrid/=1)) &
+           call stop_it('Overlapping ghost zones in z-direction: reduce nprocz')
+!
     endsubroutine mpicomm_init
 !***********************************************************************
     subroutine initialize_mpicomm()
@@ -469,34 +504,15 @@ module Mpicomm
 !
       if (lroot) print *, 'initialize_mpicomm: enabled MPI'
 !
-!  Check consistency in processor layout.
-!
-      if (ncpus/=nprocx*nprocy*nprocz) then
-        if (lroot) then
-          print*, 'Compiled with ncpus = ', ncpus, &
-              ', but nprocx*nprocy*nprocz=', nprocx*nprocy*nprocz
-        endif
-        call stop_it('initialize_mpicomm')
-      endif
-!
 !  Check total number of processors.
 !
       if (nprocs/=nprocx*nprocy*nprocz) then
         if (lroot) then
           print*, 'Compiled with ncpus = ', ncpus, &
-              ', but running on ', nprocs, ' processors'
+                  ', but running on ', nprocs, ' processors'
         endif
         call stop_it('initialize_mpicomm')
       endif
-!
-!  Avoid overlapping ghost zones.
-!
-      if ((nx<nghost) .and. (nxgrid/=1)) &
-           call stop_it('Overlapping ghost zones in x-direction: reduce nprocx')
-      if ((ny<nghost) .and. (nygrid/=1)) &
-           call stop_it('Overlapping ghost zones in y-direction: reduce nprocy')
-      if ((nz<nghost) .and. (nzgrid/=1)) &
-           call stop_it('Overlapping ghost zones in z-direction: reduce nprocz')
 !
 !  Position on the processor grid.
 !  x is fastest direction, z slowest (this is the default)
@@ -576,10 +592,8 @@ module Mpicomm
 !  should print (3,15,12,13,1,5,4,7) for iproc=0
 !
 !  Print processor numbers and those of their neighbors.
-!  NOTE: the ip print parameter has *not* yet been read at this point.
-!  Therefore it must be invoked by resetting ldebug_mpi appropriately.
 !
-      if (ldebug_mpi) write(6,'(A,I4,"(",3I4,"): ",8I4)') &
+      if (ip<=7) write(6,'(A,I4,"(",3I4,"): ",8I4)') &
         'initialize_mpicomm: MPICOMM neighbors ', &
         iproc,ipx,ipy,ipz, &
         ylneigh,llcorn,zlneigh,ulcorn,yuneigh,uucorn,zuneigh,lucorn
