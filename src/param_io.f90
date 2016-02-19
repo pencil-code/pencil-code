@@ -157,7 +157,7 @@ module Param_IO
       theta_lower_border, wborder_theta_lower, theta_upper_border, &
       wborder_theta_upper, fraction_tborder, lmeridional_border_drive, &
       lread_from_other_prec, downsampl, lfullvar_in_slices, lsubstract_reference_state, &
-      ldirect_access, lproper_averages, &
+      ldirect_access, lproper_averages, lmaximal_cdt, lmaximal_cdtv, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w
 !
   contains
@@ -365,6 +365,14 @@ module Param_IO
       endif
 !
       call check_consistency_of_lperi('read_all_init_pars')
+!
+!  Option to use maximal rather than total distance for courant time
+!
+      if (old_cdtv) then
+        lmaximal_cdtv = old_cdtv
+        if (lroot) call warning('read_all_init_pars', &
+              'obsolete old_cdtv now replaced by more general lmaximal_cdtv')
+      endif
 !
 !  Print SVN id from first line.
 !
