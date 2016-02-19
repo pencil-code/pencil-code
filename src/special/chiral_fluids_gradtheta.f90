@@ -200,15 +200,16 @@ module Special
         case ('nothing'); if (lroot) print*,'init_special: nothing'
         case ('gtheta5x_const')
           f(:,:,:,igtheta5)=f(:,:,:,igtheta5)+gtheta5_const
+          f(:,:,:,imu5) = mu5_const
         case ('const')
-          f(:,:,:,igtheta5) = 0.
+          f(:,:,:,igtheta5) = gtheta5_const
           f(:,:,:,imu5) = mu5_const
         case ('zero')
           f(:,:,:,igtheta5) = 0.
           f(:,:,:,imu5) = 0.
-        case ('gtheta5x_sinx')
-          do n=n1,n2; do m=m1,m2
-            f(:,m,n,igtheta5)=gtheta5_const*sin(kx_gtheta5*x)
+        case ('gtheta5x_sinz')
+        do n=n1,n2; do m=m1,m2
+            f(:,m,n,igtheta5)=gtheta5_const*sin(2.*pi*z(n)/Lx)
           enddo; enddo 
           f(:,:,:,imu5) = mu5_const
         case ('gtheta5y_siny')
