@@ -1484,7 +1484,7 @@ module Particles
             rr_tmp(1:npar_loc) = birthring_r
           endif
           call random_number_wrapper(az_tmp(1:npar_loc))
-          az_tmp(1:npar_loc) = xyz0(2)+az_tmp(1:npar_loc)*Lxyz(2)
+          az_tmp(1:npar_loc) = -pi+az_tmp(1:npar_loc)*2.0*pi
           if (lcartesian_coords) then
             fp(1:npar_loc,ixp) = rr_tmp(1:npar_loc)*cos(az_tmp(1:npar_loc))
             fp(1:npar_loc,iyp) = rr_tmp(1:npar_loc)*sin(az_tmp(1:npar_loc))
@@ -2021,7 +2021,7 @@ module Particles
                 rr_tmp(npar_loc_old+1:npar_loc) = birthring_r
               endif
               call random_number_wrapper(az_tmp(npar_loc_old+1:npar_loc))
-              az_tmp(npar_loc_old+1:npar_loc) = xyz0(2)+az_tmp(npar_loc_old+1:npar_loc)*Lxyz(2)
+              az_tmp(npar_loc_old+1:npar_loc) = -pi+az_tmp(npar_loc_old+1:npar_loc)*2.0*pi
               if (lcartesian_coords) then
                 fp(npar_loc_old+1:npar_loc,ixp) = rr_tmp(npar_loc_old+1:npar_loc)*cos(az_tmp(npar_loc_old+1:npar_loc))
                 fp(npar_loc_old+1:npar_loc,iyp) = rr_tmp(npar_loc_old+1:npar_loc)*sin(az_tmp(npar_loc_old+1:npar_loc))
