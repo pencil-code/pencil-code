@@ -61,12 +61,11 @@ module Poisson
   real, dimension (nx,0:ncpus-1) :: xrecv
   real, dimension (ny,0:ncpus-1) :: yrecv
   real, dimension (nz,0:ncpus-1) :: zrecv
-  integer, allocatable :: themap(:,:)
-  logical, allocatable :: updatedist(:)
+  integer, allocatable :: themap(:,:), themap_sort(:,:)
   real, allocatable :: regdist1(:)
   real, allocatable :: regsmooth(:)
-  integer :: nregions, iregion, irl, iru, jrl, jru, krl, kru
-  integer, parameter :: nlt = 1e7 ! 1e5 for quad. interp.
+  integer :: nregions, iregion, irl, iru, jrl, jru, krl, kru, nprecalc=0
+  integer, parameter :: nlt = 1e7 ! 3*80MB for 1e7
   real :: lkmin, lkmax, dxlt
   real, dimension(nlt) :: xlt, sinlt, coslt
 !
@@ -215,9 +214,9 @@ module Poisson
       if (lprecalc) then
         if (lroot) print*,"# regions on proc 0:",nregions
         allocate(themap(10,nregions))
+        allocate(themap_sort(10,nregions))
         allocate(regsmooth(nregions))
         regsmooth = 1.0
-        allocate(updatedist(nregions))
         allocate(regdist1(nregions))
       endif
       nregions = 0 ! Advanced inside 'mkmap'
@@ -255,12 +254,26 @@ module Poisson
       lprecalc = .true.
     enddo
 !
-    updatedist=.true.
-    do iregion=1,nregions
-      if (themap(4,iregion)==themap(5,iregion) .and. &
-        themap(6,iregion)==themap(7,iregion) .and. &
-        themap(8,iregion)==themap(9,iregion)) updatedist(iregion)=.false.
-    enddo
+    if (lprecalcdists) then
+      nprecalc = nregions
+    else
+      ! sorting 'themap' so that all precalculated regions are at the 
+      ! beginning of the array, i.e.,
+      ! precalc: themap(1:nprecalc,:)
+      ! non-precalc: themap(nprecalc+1:nregions)
+      do iregion=1,nregions
+        if (themap(4,iregion) .eq. themap(5,iregion) .and. &
+        themap(6,iregion) .eq. themap(7,iregion) .and. &
+        themap(8,iregion) .eq. themap(9,iregion)) then
+          nprecalc = nprecalc+1
+          themap_sort(:,nprecalc) = themap(:,iregion)
+        else
+          themap_sort(:,nregions-(iregion-nprecalc)+1) = themap(:,iregion)
+        endif
+      enddo
+      themap = themap_sort
+      deallocate(themap_sort)
+    endif
 !
     endsubroutine initialize_poisson
 !***********************************************************************
@@ -271,7 +284,7 @@ module Poisson
 !
     real, dimension (nx,ny,nz,0:ncpus-1) :: phirecv
     real, dimension (nx,ny,nz) :: phi
-    real :: xreg, yreg, zreg, summreg
+    real :: xreg, yreg, zreg, summreg, summreg1
     real :: tstart, tstop
 !
     if (lshowtime .and. lroot) call cpu_time(tstart)
@@ -291,24 +304,28 @@ module Poisson
 !
     phi = 0.0
 !
-    do iregion=1,nregions
+    do iregion=1,nprecalc
       i   = themap(1, iregion) ; irl = themap(4,iregion) ; iru = themap(5,iregion)
       j   = themap(2, iregion) ; jrl = themap(6,iregion) ; jru = themap(7,iregion)
       k   = themap(3, iregion) ; krl = themap(8,iregion) ; kru = themap(9,iregion)
       pp  = themap(10,iregion)
-      if (lprecalcdists .or. updatedist(iregion)) then
-        phi(i,j,k) = phi(i,j,k) - regsmooth(iregion)* &
-          sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))*regdist1(iregion)
-      else
-        summreg = sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))*regsmooth(iregion)
-        xreg = sum(xrecv(irl:iru,pp) &
-          *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),3),2))/summreg
-        yreg = sum(yrecv(jrl:jru,pp) &
-          *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),3),1))/summreg
-        zreg = sum(zrecv(krl:kru,pp) &
-          *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),2),1))/summreg
-        phi(i,j,k) = phi(i,j,k) - summreg/get_dist((/i,j,k/),(/xreg,yreg,zreg/))
-      endif
+      phi(i,j,k) = phi(i,j,k) - regsmooth(iregion)* &
+        sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))*regdist1(iregion)
+    enddo
+    do iregion=nprecalc+1,nregions
+      i   = themap(1, iregion) ; irl = themap(4,iregion) ; iru = themap(5,iregion)
+      j   = themap(2, iregion) ; jrl = themap(6,iregion) ; jru = themap(7,iregion)
+      k   = themap(3, iregion) ; krl = themap(8,iregion) ; kru = themap(9,iregion)
+      pp  = themap(10,iregion)
+      summreg = sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))*regsmooth(iregion)
+      summreg1 = 1.0/summreg
+      xreg = sum(xrecv(irl:iru,pp) &
+        *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),3),2))*summreg1
+      yreg = sum(yrecv(jrl:jru,pp) &
+        *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),3),1))*summreg1
+      zreg = sum(zrecv(krl:kru,pp) &
+        *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),2),1))*summreg1
+      phi(i,j,k) = phi(i,j,k) - summreg/get_dist((/i,j,k/),(/xreg,yreg,zreg/))
     enddo
 !
     phi = phi/(4.0*pi) ! The selfgravity module is going to multiply by a factor
