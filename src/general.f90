@@ -265,10 +265,8 @@ module General
       endif
 !
 !  Debugging output to be analysed with $PENCIL_HOME/utils/check-mm-nn.
-!  Uncommenting manually, since we can't use ip here (as it is not yet
-!  read from run.in).
 !
-      if (.false.) then
+      if (ip<=6) then
         if (lroot) then
           do imn=1,ny*nz
             if (necessary(imn)) write(*,'(A)') '==MM==NN==> Necessary'
