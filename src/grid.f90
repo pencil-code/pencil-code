@@ -597,6 +597,12 @@ module Grid
           dxyz_step(2,3)=(y00+Ly-xyz_step(2,2))/&
               (merge(nygrid+0.,nygrid-1.,lpole(2))-xi_step(2,2))
 !
+          if (lpole(2)) then 
+            do i=1,my
+              xi2(i)=0.5-nghost+0.5+(ipy*ny+i-1)*&
+                (nygrid+2.*(nghost-0.5)-1)/(nygrid+2.*nghost-1)
+            enddo
+          endif
           call grid_profile(xi2,grid_func(2),g2,g2der1,g2der2,dxyz= &
               dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
           call grid_profile(xi2lo,grid_func(2),g2lo,dxyz= &
@@ -2161,11 +2167,11 @@ module Grid
 !
 !  03-jul-13/ccyang: extracted from Equ.
 !
-      obsolete: if (old_cdtv) then
+!      obsolete: if (old_cdtv) then
 !       The following is only kept for backwards compatibility. Will be deleted in the future.
-        dxyz_2 = max(dx_1(l1:l2)**2, dy_1(m)**2, dz_1(n)**2)
+!        dxyz_2 = max(dx_1(l1:l2)**2, dy_1(m)**2, dz_1(n)**2)
 !
-      else obsolete
+!      else obsolete
         dline: if (lspherical_coords) then
           dline_1(:,1) = dx_1(l1:l2)
           dline_1(:,2) = r1_mn * dy_1(m)
@@ -2194,11 +2200,17 @@ module Grid
         if (nygrid /= 1) dxmin_pencil = min(1.0 / dy_1(m), dxmin_pencil)
         if (nzgrid /= 1) dxmin_pencil = min(1.0 / dz_1(n), dxmin_pencil)
 !
-        dxyz_2 = dline_1(:,1)**2 + dline_1(:,2)**2 + dline_1(:,3)**2
-        dxyz_4 = dline_1(:,1)**4 + dline_1(:,2)**4 + dline_1(:,3)**4
-        dxyz_6 = dline_1(:,1)**6 + dline_1(:,2)**6 + dline_1(:,3)**6
+        if (lmaximal_cdtv) then
+          dxyz_2 = max(dline_1(:,1)**2, dline_1(:,2)**2, dline_1(:,3)**2)
+          dxyz_4 = max(dline_1(:,1)**4, dline_1(:,2)**4, dline_1(:,3)**4)
+          dxyz_6 = max(dline_1(:,1)**6, dline_1(:,2)**6, dline_1(:,3)**6)
+        else
+          dxyz_2 = dline_1(:,1)**2 + dline_1(:,2)**2 + dline_1(:,3)**2
+          dxyz_4 = dline_1(:,1)**4 + dline_1(:,2)**4 + dline_1(:,3)**4
+          dxyz_6 = dline_1(:,1)**6 + dline_1(:,2)**6 + dline_1(:,3)**6
+        endif
 !
-      endif obsolete
+!      endif obsolete
 !
     endsubroutine get_grid_mn
 !***********************************************************************
