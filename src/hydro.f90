@@ -2561,19 +2561,31 @@ module Hydro
 !  ``uu/dx'' for timestep
 !
       if (lfirst.and.ldt.and.ladvection_velocity) then
-        if (lspherical_coords) then
-          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
-                   abs(p%uu(:,2))*dy_1(  m  )*r1_mn+ &
-                   abs(p%uu(:,3))*dz_1(  n  )*r1_mn*sin1th(m)
-        elseif (lcylindrical_coords) then
-          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
-                   abs(p%uu(:,2))*dy_1(  m  )*rcyl_mn1+ &
-                   abs(p%uu(:,3))*dz_1(  n  )
+        if (lmaximal_cdt) then
+          advec_uu=max(abs(p%uu(:,1))*dline_1(:,1),&
+                       abs(p%uu(:,2))*dline_1(:,2),&
+                       abs(p%uu(:,3))*dline_1(:,3))
         else
-          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
-                   abs(p%uu(:,2))*dy_1(  m  )+ &
-                   abs(p%uu(:,3))*dz_1(  n  )
+          advec_uu=    abs(p%uu(:,1))*dline_1(:,1)+&
+                       abs(p%uu(:,2))*dline_1(:,2)+&
+                       abs(p%uu(:,3))*dline_1(:,3)
         endif
+!        if (lspherical_coords) then
+!          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
+!                   abs(p%uu(:,2))*dy_1(  m  )*r1_mn+ &
+!                   abs(p%uu(:,3))*dz_1(  n  )*r1_mn*sin1th(m)
+!          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
+!                   abs(p%uu(:,2))*dy_1(  m  )*r1_mn+ &
+!                   abs(p%uu(:,3))*dz_1(  n  )*r1_mn*sin1th(m)
+!        elseif (lcylindrical_coords) then
+!          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
+!                   abs(p%uu(:,2))*dy_1(  m  )*rcyl_mn1+ &
+!                   abs(p%uu(:,3))*dz_1(  n  )
+!        else
+!          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
+!                   abs(p%uu(:,2))*dy_1(  m  )+ &
+!                   abs(p%uu(:,3))*dz_1(  n  )
+!        endif
       endif
 !
 !  Empirically, it turns out that we need to take the full 3-D velocity
