@@ -121,10 +121,6 @@ program run
 !
   call initialize_messages
 !
-!  Initialise MPI communication.
-!
-  call initialize_mpicomm
-!
 !  Define the lenergy logical
 !
   lenergy=lentropy.or.ltemperature.or.lthermal_energy
@@ -133,11 +129,15 @@ program run
 !
   call read_all_init_pars
 !
-  call set_coords_switches
-!
 !  Read parameters and output parameter list.
 !
   call read_all_run_pars
+!
+  call set_coords_switches
+!
+!  Initialise MPI communication.
+!
+  call initialize_mpicomm
 !
 !  Derived parameters (that may still be overwritten).
 !  [might better be put into another routine, possibly in 'read_all_run_pars']

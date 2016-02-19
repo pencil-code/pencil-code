@@ -148,6 +148,10 @@ program start
 !
   call directory_names
 !
+!  Initialise MPI communication.
+!
+  call initialize_mpicomm
+!
 !  Register variables in the f array.
 !
   call register_modules
@@ -294,10 +298,6 @@ program start
 !
   seed(1)=-((seed0-1812+1)*10+iproc)
   call random_seed_wrapper(PUT=seed)
-!
-!  Initialise MPI communication.
-!
-  call initialize_mpicomm
 !
 !  Generate grid and initialize specific grid variables.
 !
