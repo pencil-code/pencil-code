@@ -137,18 +137,28 @@ module Equ
 !  the grid spacing is calculated in the (m,n) loop below.
 !
       if (lcartesian_coords .and. all(lequidist)) then
-        if (old_cdtv) then
-          dxyz_2 = max(dx_1(l1:l2)**2,dy_1(m1)**2,dz_1(n1)**2)
-        else
+!  FAG replaced old_cdtv flag with more general coordinate independent lmaximal   
+!        if (old_cdtv) then
+!          dxyz_2 = max(dx_1(l1:l2)**2,dy_1(m1)**2,dz_1(n1)**2)
+!        else
           dline_1(:,1)=dx_1(l1:l2)
           dline_1(:,2)=dy_1(m1)
           dline_1(:,3)=dz_1(n1)
-          dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
-          dxyz_4 = dline_1(:,1)**4+dline_1(:,2)**4+dline_1(:,3)**4
-          dxyz_6 = dline_1(:,1)**6+dline_1(:,2)**6+dline_1(:,3)**6
+          if (lmaximal_cdtv) then
+            dxyz_2 = max(dline_1(:,1)**2, dline_1(:,2)**2, dline_1(:,3)**2)
+            dxyz_4 = max(dline_1(:,1)**4, dline_1(:,2)**4, dline_1(:,3)**4)
+            dxyz_6 = max(dline_1(:,1)**6, dline_1(:,2)**6, dline_1(:,3)**6)
+          else
+            dxyz_2 = dline_1(:,1)**2 + dline_1(:,2)**2 + dline_1(:,3)**2
+            dxyz_4 = dline_1(:,1)**4 + dline_1(:,2)**4 + dline_1(:,3)**4
+            dxyz_6 = dline_1(:,1)**6 + dline_1(:,2)**6 + dline_1(:,3)**6
+          endif
+        !  dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
+        !  dxyz_4 = dline_1(:,1)**4+dline_1(:,2)**4+dline_1(:,3)**4
+        !  dxyz_6 = dline_1(:,1)**6+dline_1(:,2)**6+dline_1(:,3)**6
           dxmax_pencil(:) = dxmax
           dxmin_pencil(:) = dxmin
-        endif
+!        endif
       endif
 !
 !  Shift entire data cube by one grid point at the beginning of each
@@ -773,7 +783,7 @@ module Equ
           dt1_advec  = maxadvec/cdt
           dt1_diffus = maxdiffus/cdtv + maxdiffus2/cdtv2 + maxdiffus3/cdtv3
           dt1_src    = 5.0 * maxsrc
-          dt1_max    = max(dt1_max, sqrt(dt1_advec**2 + dt1_diffus**2 + dt1_src**2))
+          dt1_max  = max(dt1_max, sqrt(dt1_advec**2 + dt1_diffus**2 + dt1_src**2))
 !
 !  time step constraint from the coagulation kernel
 !
