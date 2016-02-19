@@ -830,17 +830,18 @@ module Deriv
         igndx = ignoredx
       else
         if (.not. lequidist(j)) then
-          call fatal_error('der6','for non-equidistant grid only '//&
-              'if dx is ignored.')
+!          call fatal_error('der6','for non-equidistant grid only '//&
+!              'if dx is ignored.')
+          igndx = .true.
         endif
         igndx = .false.
       endif
 !
       if (present(upwind)) then
-        if (.not. lequidist(j)) then
-          call fatal_error('der6','upwind cannot be used with '//&
-              'non-equidistant grid.')
-        endif
+        !if (.not. lequidist(j)) then
+        !  call fatal_error('der6','upwind cannot be used with '//&
+        !      'non-equidistant grid.')
+        !endif
         upwnd = upwind
       else
         upwnd = .false.
