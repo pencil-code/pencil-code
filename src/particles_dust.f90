@@ -185,7 +185,7 @@ module Particles
       lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, &
       Lz0, lglobalrandom, linsert_particles_continuously, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, &
-      np_const, rhop_const, particle_radius, &
+      np_const, rhop_const, particle_radius, lignore_rhop_swarm, &
       ldragforce_equi_noback, rhopmat, Deltauy_gas_friction, xp1, &
       yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
       xp3, yp3, zp3, vpx3, vpy3, vpz3, lsinkparticle_1, rsinkparticle_1, &
@@ -226,7 +226,7 @@ module Particles
       Deltauy_gas_friction, loutput_psize_dist, log_ap_min_dist, log_ap_max_dist, &
       nbin_ap_dist, lsinkparticle_1, rsinkparticle_1, lthermophoretic_forces, temp_grad0, &
       thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, &
-      lcommunicate_np, lcylindrical_gravity_par, &
+      lcommunicate_np, lcylindrical_gravity_par, lignore_rhop_swarm, &
       l_shell, k_shell, lparticlemesh_pqs_assignment, pscalar_sink_rate, &
       lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw,lbubble, &
       rpbeta_species, rpbeta, gab_width, initxxp, initvvp, particles_insert_ramp_time, &

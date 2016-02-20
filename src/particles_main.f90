@@ -235,6 +235,10 @@ module Particles_main
         if (rhop_swarm==0.0) rhop_swarm=mpmat*np_swarm
       endif
 !
+      if (lparticles_radius .and. rhopmat>0.0 .and. &
+        (np_swarm>0.0 .or. lparticles_number)) lignore_rhop_swarm=.true.
+
+!
 !  Initialize individual modules.
 !
       call initialize_particles_mpicomm      (f)
@@ -275,7 +279,8 @@ module Particles_main
 !
 !  Stop if rhop_swarm is zero.
 !
-      if (irhop/=0 .and. rhop_swarm==0.0 .and. (.not.lparticles_density)) then
+      if (irhop/=0 .and. rhop_swarm==0.0 .and. (.not.lparticles_density) &
+      .and. (.not.lignore_rhop_swarm)) then
         if (lroot) then
           print*, 'particles_initialize_modules: rhop_swarm is zero'
           print*, 'particles_initialize_modules: '// &

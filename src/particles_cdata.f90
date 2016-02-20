@@ -81,6 +81,7 @@ module Particles_cdata
   logical :: lcommunicate_rhop=.false.
   logical :: lcommunicate_np=.false.
   logical :: lparticles_radius_rpbeta=.false.
+  logical :: lignore_rhop_swarm=.false.
 !
   character (len=2*bclen+1) :: bcpx='p', bcpy='p', bcpz='p'
   character (len=2*bclen+1) :: bcspx='p', bcspy='p', bcspz='p'
