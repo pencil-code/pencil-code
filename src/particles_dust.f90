@@ -13,7 +13,7 @@
 ! CPARAM logical, parameter :: lparticles_potential=.false.
 !
 ! PENCILS PROVIDED np; rhop
-! PENCILS PROVIDED np_rad(5); npvz(5)
+! PENCILS PROVIDED np_rad(5); npvz(5); sherwood
 ! PENCILS PROVIDED epsp; grhop(3)
 !
 !***************************************************************
@@ -264,6 +264,7 @@ module Particles
   integer :: idiag_eccpxm=0, idiag_eccpym=0, idiag_eccpzm=0
   integer :: idiag_eccpx2m=0, idiag_eccpy2m=0, idiag_eccpz2m=0
   integer :: idiag_vprms=0, idiag_vpyfull2m=0, idiag_deshearbcsm=0
+  integer :: idiag_Shm=0
   integer, dimension(ninit)  :: idiag_npvzmz=0, idiag_nptz=0
 !
   contains
@@ -2634,6 +2635,7 @@ module Particles
 !
       if (maxval(idiag_npvzmz) > 0) lpenc_requested(i_npvz)=.true.
       if (maxval(idiag_nptz) > 0)   lpenc_requested(i_np_rad)=.true.
+      if (idiag_Shm /= 0) lpenc_requested(i_sherwood)=.true.
 !
     endsubroutine pencil_criteria_particles
 !***********************************************************************
@@ -3453,8 +3455,9 @@ module Particles
 !
 !  Initialize the pencils that are calculated within this subroutine
 !
-      if (lpenc_requested(i_npvz))    p%npvz=0.
-      if (lpenc_requested(i_np_rad)) p%np_rad=0.
+      if (lpenc_requested(i_npvz))     p%npvz=0.
+      if (lpenc_requested(i_np_rad))   p%np_rad=0.
+      if (lpenc_requested(i_sherwood)) p%sherwood=0.
 !
 !  Precalculate certain quantities, if necessary.
 !
@@ -3676,6 +3679,11 @@ module Particles
                   else
                     Sherwood = 2.0 + 0.69*sqrt(rep(k))*(nu(k)/pscalar_diff)**(1./3.)
                   endif
+!
+                  if (lpenc_requested(i_sherwood)) then
+                    p%sherwood(ix0-nghost)=p%sherwood(ix0-nghost)+Sherwood
+                  endif
+!
                   mass_trans_coeff=gas_consentration*Sherwood*pscalar_diff/ &
                       (2*fp(k,iap))
                   lambda_tilde=pscalar_sink_rate*mass_trans_coeff/ &
@@ -4112,6 +4120,7 @@ module Particles
         if (idiag_epspmax/=0)  call max_mn_name(p%epsp,idiag_epspmax)
         if (idiag_epspmin/=0)  call max_mn_name(-p%epsp,idiag_epspmin,lneg=.true.)
         if (idiag_dedragp/=0)  call sum_mn_name(drag_heat,idiag_dedragp)
+        if (idiag_Shm/=0)      call sum_mn_name(p%sherwood/npar*nwgrid,idiag_Shm)
         if (idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. &
             idiag_dvpm  /=0 .or. idiag_dvpmax/=0) &
             call calculate_rms_speed(fp,ineargrid,p)
@@ -5752,7 +5761,7 @@ module Particles
         idiag_eccpx2m=0; idiag_eccpy2m=0; idiag_eccpz2m=0
         idiag_npargone=0; idiag_vpyfull2m=0; idiag_deshearbcsm=0
         idiag_npmxy=0; idiag_vprms=0
-        idiag_npvzmz=0; idiag_nptz=0
+        idiag_npvzmz=0; idiag_nptz=0; idiag_Shm=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -5834,6 +5843,7 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'npargone',idiag_npargone)
         call parse_name(iname,cname(iname),cform(iname),'vpyfull2m',idiag_vpyfull2m)
         call parse_name(iname,cname(iname),cform(iname),'vprms',idiag_vprms)
+        call parse_name(iname,cname(iname),cform(iname),'Shm',idiag_Shm)
         call parse_name(iname,cname(iname),cform(iname),'deshearbcsm',idiag_deshearbcsm)
       enddo
 !
