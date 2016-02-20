@@ -554,7 +554,11 @@ module Particles
         if (lparticlemesh_cic .or. lparticlemesh_tsc) lfold_df=.true.
       endif
 !
-      if (lparticlemesh_gab) lfold_df_3points=.true.
+      if (lparticlemesh_gab) then
+        lfold_df_3points=.true.
+        if (lpscalar) call fatal_error('initialize_particles',&
+            'The gab scheme is currently not working with passive scalars!')
+      endif
 !
       if (lcollisional_cooling_twobody) then
         allocate(kneighbour(mpar_loc))
