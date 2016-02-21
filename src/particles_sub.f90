@@ -21,7 +21,7 @@ module Particles_sub
   public :: remove_particle, get_particles_interdistance
   public :: count_particles, output_particle_size_dist
   public :: get_rhopswarm, find_grid_volume, find_interpolation_weight
-  public :: find_interpolation_indeces, get_gas_density
+  public :: find_interpolation_indeces, get_gas_density, precalc_cell_volumes
 !
   interface get_rhopswarm
     module procedure get_rhopswarm_ineargrid
@@ -1250,5 +1250,44 @@ module Particles_sub
       endif
 !
     endfunction get_gas_density
+!***********************************************************************
+    subroutine precalc_cell_volumes(f)
+!
+      real, dimension (mx,my,mz,mfarray), intent(out) :: f
+      integer :: k1, k2, k3
+      logical :: l2d
+!
+      l2d = (((lcartesian_coords .or. lcylindrical_coords) .and. (nzgrid==1)) &
+        .or. (lspherical_coords .and. nygrid==1))
+      if (lcartesian_coords) then
+        if (l2d) then
+          f(:,:,:,ivol) = dx*dy
+        else
+          f(:,:,:,ivol) = dx*dy*dz
+        endif
+      elseif (lcylindrical_coords) then
+        do k1=n1,n2
+          do k2=m1,m2
+            if (l2d) then
+              f(:,k2,k1,ivol) = x*dy
+            else
+              f(:,k2,k1,ivol) = x*dx*dy*dz
+            endif
+          enddo
+        enddo
+      elseif (lspherical_coords) then
+        do k1=n1,n2
+          do k2=m1,m2
+            do k3=l1,l2
+              if (l2d) then
+                f(k3,k2,k1,ivol) = x(k3)*dz
+              else
+                f(k3,k2,k1,ivol) = dx*dy*dz*sin(y(k2))*x(k3)**2.0
+              endif
+            enddo
+          enddo
+        enddo
+      endif
+    endsubroutine precalc_cell_volumes
 !***********************************************************************
 endmodule Particles_sub
