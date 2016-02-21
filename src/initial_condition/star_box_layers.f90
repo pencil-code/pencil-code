@@ -22,7 +22,7 @@ module InitialCondition
 !
   implicit none
 !
-  include 'initial_condition.h'
+  include '../initial_condition.h'
 !
   real, pointer :: hcond0
   real :: wheat,luminosity,r_bcz,widthss,alpha_MLT
@@ -254,6 +254,6 @@ module InitialCondition
 !**  copies dummy routines from noinitial_condition.f90 for any    **
 !**  InitialCondition routines not implemented in this file        **
 !**                                                                **
-    include 'initial_condition_dummies.inc'
+    include '../initial_condition_dummies.inc'
 !********************************************************************
 endmodule InitialCondition
