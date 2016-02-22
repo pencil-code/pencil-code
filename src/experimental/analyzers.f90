@@ -1,6 +1,6 @@
 
 module Analyzers
-  use EMD, only: analyzer_emd
+  !use EMD, only: analyzer_emd
   implicit none
 
   abstract interface
@@ -12,9 +12,10 @@ module Analyzers
     end function AnalyzerTemplate
   end interface
 
-  integer, parameter :: npossibleanalyzers = 4
+  integer, parameter :: npossibleanalyzers = 3
   character(len=30), dimension(npossibleanalyzers), parameter :: possibleanalyzers = &
-                                       [ character(len=30) :: 'sum', 'average', 'identity', 'emd']
+                                       [ character(len=30) :: 'sum', 'average', 'identity']
+!                                       [ character(len=30) :: 'sum', 'average', 'identity', 'emd']
   
   contains
 
@@ -35,10 +36,10 @@ module Analyzers
       resultlen1  = resultlen1
       resultlen2  = 1
       analyzer => analyzer_identity
-    else if (trim(analyzername) == 'emd') then
-      resultlen1  = resultlen1
-      resultlen2  = 10
-      analyzer => analyzer_emd
+    !else if (trim(analyzername) == 'emd') then
+    !  resultlen1  = resultlen1
+    !  resultlen2  = 10
+    !  analyzer => analyzer_emd
     else
       resultlen1  = -1
       resultlen2  = -1
