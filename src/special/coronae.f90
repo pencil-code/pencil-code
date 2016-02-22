@@ -2428,7 +2428,7 @@ module Special
       if (b_tau > 0.0) then
         f(l1:l2,m1:m2,n1,iax) = f(l1:l2,m1:m2,n1,iax)*(1.0-dt*b_tau) + &
                                 ((time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl)*dt*b_tau
-        f(l1:l2,m1:m2,n1,iay) = f(l1:l2,m1:m2,n1,iax)*(1.0-dt*b_tau) + &
+        f(l1:l2,m1:m2,n1,iay) = f(l1:l2,m1:m2,n1,iay)*(1.0-dt*b_tau) + &
                                 ((time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl)*dt*b_tau
       else
         f(l1:l2,m1:m2,n1,iax) = (time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl
