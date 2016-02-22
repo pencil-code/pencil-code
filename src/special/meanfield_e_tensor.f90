@@ -94,10 +94,23 @@ module Special
   
   integer(HID_T) :: hdf_file_plist, hdf_alpha_id_D, hdf_alpha_id_S, hdf_beta_id_D, hdf_beta_id_S, hdf_gamma_id_D, hdf_gamma_id_S, hdf_kappa_id_D, hdf_kappa_id_S
   integer(HSIZE_T) :: alpha_tlen
+
+  character (len=10), dimension(1) , parameter :: interp_name = ['none']
+  character (len=10) :: alpha_interp, beta_interp, gamma_interp, kappa_interp
                     
   logical :: hdf_exists
+
+  integer(HSIZE_T) :: alpha_dims(5), beta_dims(5), gamma_dims(4), delta_dims(4), kappa_dims(6)
   
-  real(kind=8), dimension(:,:,:,:,:)  , allocatable   :: dataarray
+  real, dimension(:,:,:,:,:)  , :: alpha_data, beta_data
+  real, dimension(:,:,:,:)    ,  :: gamma_data,delta_data
+  real, dimension(:,:,:,:,:,:), allocatable :: kappa_data
+  
+  real, dimension(3,3,nx,ny)      :: alpha_val, beta_val
+  real, dimension(3,nx,ny,50)     :: gamma_val, delta_val
+  real, dimension(3,3,3,nx,ny,50) :: kappa_data
+
+  integer :: t_index
 
   character (len=fnlen) :: hdf_mftensors_filename
 
@@ -125,6 +138,8 @@ module Special
 !
       if (lroot) call svn_id( &
            "$Id$")
+      alpha_interp = 'none'
+      print *,'Register special <----------------'
 !
 !!      call farray_register_pde('special',ispecial)
 !!      call farray_register_auxiliary('specaux',ispecaux)
@@ -194,12 +209,12 @@ module Special
         call fatal_error('initialize_special','group /zaver/ does not exist!')
       end if
 
+      ! Open datasets
       call H5Lexists_F(hdf_mftensors_fileid,'/zaver/alpha', lalpha, hdferr)
       if (lalpha) then
         hdf_alpha_id_D = -1
-        call openDataset('/zaver/alpha', hdf_alpha_id_D, hdf_alpha_id_S, alpha_tlen)
+        call openDataset('/zaver/alpha', hdf_alpha_id_D, hdf_alpha_id_S, alpha_dims, 5)
         print *,hdf_alpha_id_D
-        call closeDataset(hdf_alpha_id_D, hdf_alpha_id_S)
       end if
       call H5Lexists_F(hdf_mftensors_fileid,'/zaver/beta',  lbeta, hdferr)
       if (lbeta) then
@@ -231,7 +246,12 @@ module Special
         call H5close_F(hdferr)
         call fatal_error('initialize_special','No fields have been found from'//trim(hdf_mftensors_filename)//'!')
       end if
-!
+
+      ! Load initial dataset values
+
+
+      call closeDataset(hdf_alpha_id_D, hdf_alpha_id_S)
+
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -713,19 +733,20 @@ module Special
     endsubroutine  set_init_parameters
 !***********************************************************************
 
-    subroutine openDataset(dataname, dataset_id_D, dataset_id_S, dataset_tlen)
+    subroutine openDataset(dataname, dataset_id_D, dataset_id_S, dataset_dims, dataset_ndims)
       ! Load a certain timestep from input array
       character(len=*), intent(in)    :: dataname
       integer(HID_T), intent(inout)   :: dataset_id_D, dataset_id_S
-      integer(HSIZE_T), intent(inout) :: dataset_tlen
+      integer, intent(in) :: dataset_ndims
+      integer(HSIZE_T), dimension(dataset_ndims),  intent(inout) :: dataset_dims
       integer                         :: ndims
-      integer(HSIZE_T), dimension(10) :: dimsizes, maxdimsizes
+      integer(HSIZE_T), dimension(10) :: maxdimsizes
       call H5Dopen_F(hdf_mftensors_fileid, dataname, dataset_id_D, hdferr)
       call H5Dget_space_F(dataset_id_D, dataset_id_S, hdferr)
-      call H5Sget_simple_extent_ndims_F(dataset_id_S, ndims, hdferr)
-      call H5Sget_simple_extent_dims_F(dataset_id_S, dimsizes, maxdimsizes, hdferr)
+      !call H5Sget_simple_extent_ndims_F(dataset_id_S, ndims, hdferr)
+      call H5Sget_simple_extent_dims_F(dataset_id_S, dataset_dims, maxdimsizes, hdferr)
       print *,ndims
-      print *,dimsizes(1:ndims)
+      print *,dataset_dims(1:ndims)
       print *,maxdimsizes(1:ndims)
 
     end subroutine openDataset
@@ -737,5 +758,9 @@ module Special
       call H5Dclose_F(dataset_id_D, hdferr)
 
     end subroutine closeDataset
+
+    subroutine loadDataset(interpolation, dataset_id_D, dataset_id_S, dataset_dims, dataset_ndims)
+
+    end subroutine loadDataset
 
 endmodule Special
