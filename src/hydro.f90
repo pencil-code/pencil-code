@@ -805,14 +805,6 @@ module Hydro
         if (lroot) print *, 'initialize_hydro: turned off and hand over Coriolis force to Particles_drag. '
       endif drag
 !
-!  Share lcoriolis_force and lcentrifugal_force so the Particles module
-!  knows whether to apply them or not.
-!
-      if (lparticles.and.Omega/=0.0) then
-        call put_shared_variable('lcoriolis_force', lcoriolis_force)
-        call put_shared_variable('lcentrifugal_force', lcentrifugal_force)
-      endif
-!
       lshear_in_coriolis=lshear_in_coriolis.and.lcoriolis_force.and.lshear
 !
 !  Compute mask for x-averaging where x is in hydro_xaver_range.
