@@ -201,10 +201,9 @@ Welcome to the world of Pencil Code!
 
 \subsection{Troubleshooting...}
 
-If compiling fails, please try first (yes, \command{cleann} is correct):
+If compiling fails, please try first:
 \begin{verbatim}
-  make cleann
-  pc_setupsrc
+  pc_build --cleanall
   pc_build
 \end{verbatim}
 
@@ -222,8 +221,7 @@ Also please give the full output of these commands:
   cd samples/1d-tests/jeans-x/
   gcc --version
   gfortran --version
-  make cleann
-  pc_setupsrc
+  pc_build --cleanall
   pc_build -d
 \end{verbatim}
 
