@@ -151,6 +151,7 @@ module Cdata
   real, dimension (3) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0
   logical :: lfirstpoint=.false.,llastpoint=.false.
   logical :: lmaxadvec_sum=.false.,old_cdtv=.false.
+  logical :: lmaximal_cdtv=.false., lmaximal_cdt=.false.
   character (len=20), dimension(mvar) :: timestep_scaling='cons_err'
 !
 !  Use of LSODE to solve the chemistry in a separate step
