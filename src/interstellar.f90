@@ -217,14 +217,14 @@ module Interstellar
 !  Parameters for 'averaged'-SN heating
 !
   real :: r_SNI_yrkpc2=4.E-6, r_SNII_yrkpc2=3.E-5
-  real :: r_SNI=3.E+4, r_SNII=4.E+3
-  real :: average_SNI_heating=0., average_SNII_heating=0.
+  real :: r_SNI, r_SNII
+  real :: average_SNI_heating=impossible, average_SNII_heating=impossible
 !
 !  Limit placed of minimum density resulting from cavity creation and
 !  parameters for thermal_hse(hydrostatic equilibrium) assuming RBNr
 !
-  real, parameter :: rho_min_cgs=1.E-34, rho0ts_cgs=3.5E-24, Tinit_cgs=7.088E2
-  real :: rho0ts=impossible, Tinit=impossible, rho_min=impossible
+  real, parameter :: rho_min_cgs=1.E-34, rho0ts_cgs=3.5E-24, T_init_cgs=7.088E2
+  real :: rho0ts=impossible, T_init=impossible, rho_min=impossible
 !
 !  Cooling timestep limiter coefficient
 !  (This value 0.08 is overly restrictive. cdt_tauc=0.5 is a better value.)
@@ -360,8 +360,9 @@ module Interstellar
       frac_ecr, frac_eth, thermal_profile, velocity_profile, mass_profile, &
       luniform_zdist_SNI, inner_shell_proportion, outer_shell_proportion, &
       cooling_select, heating_select, heating_rate, rho0ts, &
-      Tinit, TT_SN_max, rho_SN_min, N_mass, lSNII_gaussian, rho_SN_max, &
-      lthermal_hse, lheatz_min, kperp, kpara
+      T_init, TT_SN_max, rho_SN_min, N_mass, lSNII_gaussian, rho_SN_max, &
+      lthermal_hse, lheatz_min, kperp, kpara, average_SNII_heating, &
+      average_SNI_heating
 !
 ! run parameters
 !
@@ -379,9 +380,10 @@ module Interstellar
       center_SN_x, center_SN_y, center_SN_z, rho_SN_min, TT_SN_max, &
       lheating_UV, cooling_select, heating_select, heating_rate, &
       heatcool_shock_cutoff, heatcool_shock_cutoff_rate, ladd_massflux, &
-      N_mass, addrate, Tinit, rho0ts, &
+      N_mass, addrate, T_init, rho0ts, &
       lSNII_gaussian, rho_SN_max, lSN_mass_rate, lthermal_hse, lheatz_min, &
-      p_OB, SN_clustering_time, SN_clustering_radius, lOB_cluster, kperp, kpara
+      p_OB, SN_clustering_time, SN_clustering_radius, lOB_cluster, kperp, &
+      kpara, average_SNII_heating, average_SNI_heating
 !
   contains
 !
@@ -485,7 +487,7 @@ module Interstellar
           endif
         endif
         if (rho_min == impossible) rho_min=rho_min_cgs/unit_temperature
-        if (Tinit == impossible) Tinit=Tinit_cgs/unit_temperature
+        if (T_init == impossible) T_init=T_init_cgs/unit_temperature
         if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
         if (lroot) &
             print*,'initialize_interstellar: ampl_SN, kampl_SN = ', &
@@ -536,9 +538,9 @@ module Interstellar
 !
       t_interval_SNI  = 1./(SNI_area_rate  * Lxyz(1) * Lxyz(2))
       t_interval_SNII = 1./(SNII_area_rate * Lxyz(1) * Lxyz(2))
-      average_SNI_heating = &
+      if (average_SNI_heating == impossible) average_SNI_heating = &
           r_SNI *ampl_SN/(sqrt(pi)*h_SNI )*heatingfunction_scalefactor
-      average_SNII_heating= &
+      if (average_SNII_heating == impossible) average_SNII_heating = &
           r_SNII*ampl_SN/(sqrt(pi)*h_SNII)*heatingfunction_scalefactor
       if (lroot) print*,'initialize_interstellar: t_interval_SNI =', &
           t_interval_SNI,Lxyz(1),Lxyz(2),SNI_area_rate
@@ -1011,8 +1013,11 @@ module Interstellar
       endif
 !
       lpenc_requested(i_ee)=.true.
+      lpenc_requested(i_cv1)=.true.
       lpenc_requested(i_lnTT)=.true.
       lpenc_requested(i_TT1)=.true.
+      lpenc_requested(i_lnrho)=.true.
+      lpenc_requested(i_rho1)=.true.
 !
 !  iname runs through all possible names that may be listed in print.in
 !
@@ -1308,8 +1313,8 @@ module Interstellar
 !
       do n=1,mz
         if (lthermal_hse) then
-          logrho = log(rho0ts)+(a_S*z_S*m_u*mu/k_B/Tinit)*(log(Tinit)- &
-              log(Tinit/(a_S*z_S)* &
+          logrho = log(rho0ts)+(a_S*z_S*m_u*mu/k_B/T_init)*(log(T_init)- &
+              log(T_init/(a_S*z_S)* &
               (a_S*sqrt(z_S**2+(z(n))**2)+0.5*a_D*(z(n))**2/z_D)))
         else
           logrho = log(rho0ts)-0.015*(- &
@@ -1318,7 +1323,7 @@ module Interstellar
         endif
         if (logrho < -40.0) logrho=-40.0
         zrho(n)=exp(logrho)
-        TT=Tinit/(a_S*z_S)* &
+        TT=T_init/(a_S*z_S)* &
             (a_S*sqrt(z_S**2+(z(n))**2)+0.5*a_D*(z(n))**2/z_D)
         lnTT(n)=log(TT)
         zheat(n)=GammaUV*exp(-abs(z(n))/H_z)
@@ -1379,11 +1384,33 @@ module Interstellar
       call calc_cool_func(cool,p%lnTT,p%lnrho)
       call calc_heat(heat,p%lnTT)
 !
+!  Average SN heating (due to SNI and SNII)
+!  The amplitudes of both types is assumed the same (=ampl_SN)
+!  Added option to gradually remove average heating as SN are introduced when
+!  initial condition is in equilibrium prepared in 1D
+!  Division by density to balance LHS of entropy equation
+!
+      if (laverage_SN_heating) then
+        if (lSNI.or.lSNII) then
+          heat=heat+p%rho1*average_SNI_heating *exp(-(z(n)/h_SNI )**2)*&
+              t_interval_SNI/(t_interval_SNI + t)
+          heat=heat+p%rho1*average_SNII_heating*exp(-(z(n)/h_SNII)**2)*&
+              t_interval_SNII/(t_interval_SNII + t)
+        else
+          heat=heat+p%rho1*average_SNI_heating *exp(-(z(n)/h_SNI )**2)
+          heat=heat+p%rho1*average_SNII_heating*exp(-(z(n)/h_SNII)**2)
+        endif
+      endif
+!
 !  For clarity we have constructed the rhs in erg/s/g [=T*Ds/Dt] so therefore
 !  we now need to multiply by TT1. 
 !
       if (ltemperature) then
-        heatcool=p%TT1*(heat-cool)*gamma
+        if (ltemperature_nolog) then
+          heatcool=(heat-cool)*p%cv1
+        else
+          heatcool=(heat-cool)/p%ee
+        endif
       elseif (pretend_lnTT) then
         heatcool=p%TT1*(heat-cool)*gamma
       else
@@ -1407,25 +1434,8 @@ module Interstellar
 !  Save result in aux variables
 !  cool=rho*Lambda, heatcool=(Gamma-rho*Lambda)/TT
 !
-      f(l1:l2,m,n,icooling)=cool
-      f(l1:l2,m,n,iheatcool)=heatcool
-!
-!  Average SN heating (due to SNI and SNII)
-!  The amplitudes of both types is assumed the same (=ampl_SN)
-!  Added option to gradually remove average heating as SN are introduced when
-!  initial condition is in equilibrium prepared in 1D 
-!
-      if (laverage_SN_heating) then
-        if (lSNI.or.lSNII) then
-          heat=heat+average_SNI_heating *exp(-(z(n)/h_SNI )**2)*&
-              t_interval_SNI/(t_interval_SNI + t) 
-          heat=heat+average_SNII_heating*exp(-(z(n)/h_SNII)**2)*&
-              t_interval_SNII/(t_interval_SNII + t) 
-        else 
-          heat=heat+average_SNI_heating *exp(-(z(n)/h_SNI )**2)
-          heat=heat+average_SNII_heating*exp(-(z(n)/h_SNII)**2)
-        endif
-      endif
+      f(l1:l2,m,n,icooling) = p%TT1*cool
+      f(l1:l2,m,n,iheatcool)= heatcool
 !
 !  Prepare diagnostic output
 !  Since these variables are divided by Temp when applied it is useful to
@@ -1433,12 +1443,12 @@ module Interstellar
 !
       if (ldiagnos) then
         if (idiag_Hmax/=0) then
-          netheat=heatcool
+          netheat=heatcool/p%TT1
           where (heatcool<0.0) netheat=0.0
           call max_mn_name(netheat/p%ee,idiag_Hmax)
         endif
         if (idiag_taucmin/=0) then
-          netcool=-heatcool
+          netcool=-heatcool/p%TT1
           where (heatcool>=0.0) netcool=1.0
           call max_mn_name(netcool/p%ee,idiag_taucmin,lreciprocal=.true.)
         endif
@@ -1458,9 +1468,18 @@ module Interstellar
 !  dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee)
 !
       if (lfirst.and.ldt) then
-        dt1_max=max(dt1_max,(-heatcool)/(p%ee*cdt_tauc))
-        where (heatcool>0.0) Hmax=Hmax+heatcool
-        dt1_max=max(dt1_max,Hmax/(p%ee*cdt_tauc))
+        dt1_max=max(dt1_max,(-heatcool/p%TT1)/(p%ee*cdt_tauc))
+        if (ltemperature) then
+          if (ltemperature_nolog) then
+            Hmax=Hmax+heatcool/p%cv1
+          else
+            Hmax=Hmax+heatcool*p%ee
+          endif
+        elseif (pretend_lnTT) then
+          Hmax=Hmax+heatcool/(p%TT1*gamma)
+        else
+          Hmax=Hmax+heatcool/p%TT1
+        endif
       endif
 !
 !  Apply heating/cooling to temperature/entropy variable
@@ -2481,7 +2500,7 @@ module Interstellar
         SNR%feat%radius=width_SN
         if (lSN_scale_rad) &
             SNR%feat%radius=(0.75*solar_mass/SNR%site%rho*pi_1*N_mass)**(1.0/3.0)
-        SNR%feat%radius=max(SNR%feat%radius,1.75*dxmax) ! minimum grid resolution
+        SNR%feat%radius=max(SNR%feat%radius,2*dxmax) ! minimum grid resolution
 !
         m=SNR%indx%m
         n=SNR%indx%n
@@ -2575,12 +2594,12 @@ module Interstellar
       if (lSN_scale_rad) then
         do i=1,20
           SNR%feat%radius=(0.75*solar_mass/SNR%feat%rhom*pi_1*N_mass)**(1.0/3.0)
-          SNR%feat%radius=max(SNR%feat%radius,1.75*dxmax)
+          SNR%feat%radius=max(SNR%feat%radius,2*dxmax)
           call get_properties(f,SNR,rhom,ekintot)
           SNR%feat%rhom=rhom
         enddo
         SNR%feat%radius=(0.75*solar_mass/SNR%feat%rhom*pi_1*N_mass)**(1.0/3.0)
-        SNR%feat%radius=max(SNR%feat%radius,1.75*dxmax)
+        SNR%feat%radius=max(SNR%feat%radius,2*dxmax)
       endif
       call get_properties(f,SNR,rhom,ekintot)
       SNR%feat%rhom=rhom
