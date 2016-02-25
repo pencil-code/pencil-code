@@ -42,7 +42,7 @@ module Energy
   real :: chi_jump_shock=1.0, xchi_shock=0.0,widthchi_shock=0.02
   real, target :: chi=0.0
   real :: chi_t=0.0, chi_shock=0.0, chi_hyper3=0.0
-  real :: chi_hyper3_mesh=5.0, chi_th=0.0, chi_rho=0.0
+  real :: chi_hyper3_mesh=5.0, chi_cs=0.0, chi_rho=0.0
   real :: Kgperp=0.0, Kgpara=0.0, tdown=0.0, allp=2.0, TT_powerlaw=1.0
   real :: ss_left=1.0, ss_right=1.0
   real :: ss0=0.0, khor_ss=1.0, ss_const=0.0
@@ -95,7 +95,7 @@ module Energy
   logical :: lheatc_tensordiffusion=.false., lheatc_spitzer=.false.
   logical :: lheatc_hubeny=.false.,lheatc_sqrtrhochiconst=.false.
   logical, target :: lheatc_kramers=.false.
-  logical :: lheatc_corona=.false.,lheatc_chitherm=.false.
+  logical :: lheatc_corona=.false.,lheatc_chi_cspeed=.false.
   logical :: lheatc_shock=.false., lheatc_hyper3ss=.false.
   logical :: lheatc_hyper3ss_polar=.false., lheatc_hyper3ss_aniso=.false.
   logical :: lheatc_hyper3ss_mesh=.false., lheatc_shock_profr=.false.
@@ -157,7 +157,7 @@ module Energy
   namelist /entropy_init_pars/ &
       initss, pertss, grads0, radius_ss, ampl_ss, widthss, epsilon_ss, &
       mixinglength_flux, entropy_flux, &
-      chi_t, chi_th, chi_rho, pp_const, ss_left, ss_right, &
+      chi_t, chi_cs, chi_rho, pp_const, ss_left, ss_right, &
       ss_const, mpoly0, mpoly1, mpoly2, isothtop, khor_ss, &
 !      ss_const, mpoly0, mpoly1, mpoly2, khor_ss, &
       thermal_background, thermal_peak, thermal_scaling, cs2cool, cs2cool2, &
@@ -176,7 +176,7 @@ module Energy
       luminosity, wheat, cooling_profile, cooltype, cool, cs2cool, rcool, &
       rcool1, rcool2, deltaT, cs2cool2, cool2, zcool, ppcool, wcool, wcool2, Fbot, &
       lcooling_general, lcooling_ss_mz, &
-      ss_const, chi_t, chi_th, chi_rho, chit_prof1, zcool2, &
+      ss_const, chi_t, chi_cs, chi_rho, chit_prof1, zcool2, &
       chit_prof2, chi_shock, chi, iheatcond, Kgperp, Kgpara, cool_RTV, &
       tau_ss_exterior, lmultilayer, Kbot, tau_cor, TT_cor, z_cor, &
       tauheat_buffer, TTheat_buffer, zheat_buffer, dheat_buffer1, &
@@ -785,8 +785,8 @@ module Energy
         case ('chi-const')
           lheatc_chiconst=.true.
           if (lroot) print*, 'heat conduction: constant chi'
-        case ('chi-therm')
-          lheatc_chitherm=.true.
+        case ('chi-cspeed')
+          lheatc_chi_cspeed=.true.
           if (lroot) print*, 'heat conduction: chi scaled with c_s'
         case ('sqrtrhochi-const')
           lheatc_sqrtrhochiconst=.true.
@@ -852,8 +852,8 @@ module Energy
       if (lheatc_chiconst .and. (chi==0.0 .and. chi_t==0.0)) then
         call warning('initialize_energy','chi and chi_t are zero!')
       endif
-      if (lheatc_chitherm .and. (chi_th==0.0 .and. chi_t==0.0)) then
-        call warning('initialize_energy','chi_th and chi_t are zero!')
+      if (lheatc_chi_cspeed .and. (chi_cs==0.0 .and. chi_t==0.0)) then
+        call warning('initialize_energy','chi_cs and chi_t are zero!')
       endif
       if (lheatc_sqrtrhochiconst .and. (chi_rho==0.0 .and. chi_t==0.0)) then
         call warning('initialize_energy','chi_rho and chi_t are zero!')
@@ -2482,7 +2482,7 @@ module Energy
            endif
         endif
       endif
-      if (lheatc_chitherm) then
+      if (lheatc_chi_cspeed) then
         lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
@@ -2935,7 +2935,7 @@ module Energy
       if (lheatc_Kprof)    call calc_heatcond(f,df,p)
       if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
-      if (lheatc_chitherm) call calc_heatcond_thermchi(df,p)
+      if (lheatc_chi_cspeed) call calc_heatcond_cspeed_chi(df,p)
       if (lheatc_sqrtrhochiconst) call calc_heatcond_sqrtrhochi(df,p)
       if (lheatc_shock)    call calc_heatcond_shock(df,p)
       if (lheatc_shock_profr)    call calc_heatcond_shock_profr(df,p)
@@ -3573,14 +3573,14 @@ module Energy
 !
     endsubroutine calc_heatcond_constchi
 !***********************************************************************
-    subroutine calc_heatcond_thermchi(df,p)
+    subroutine calc_heatcond_cspeed_chi(df,p)
 !
 !  Adapted from Heat conduction for constant value to
 !  include temperature dependence to handle high temperatures
 !  in hot diffuse cores of SN remnants in interstellar chi propto sqrt(T)
 !  This routine also adds in turbulent diffusion, if chi_t /= 0.
 !  Ds/Dt = ... + 1/(rho*T) grad(flux), where
-!  flux = chi_th*rho*gradT + chi_t*rho*T*grads
+!  flux = chi_cs*rho*gradT + chi_t*rho*T*grads
 !  This routine is currently not correct when ionization is used.
 !
 !  19-mar-10/fred: adapted from calc_heatcond_constchi - still need to test
@@ -3598,7 +3598,7 @@ module Energy
 !
 !  Check that chi is ok.
 !
-      if (headtt) print*,'calc_heatcond_thermchi: chi_th=',chi_th
+      if (headtt) print*,'calc_heatcond_cspeed_chi: chi_cs=',chi_cs
 !
 !  Heat conduction
 !  Note: these routines require revision when ionization turned on
@@ -3618,7 +3618,7 @@ module Energy
 !  for interstellar hydro runs to contrain SNr core temp
 !
 !
-      thchi=chi_th*exp(0.5*p%lnTT)
+      thchi=chi_cs*exp(0.5*p%lnTT)
       if (pretend_lnTT) then
         call dot(p%glnrho+1.5*p%glnTT,p%glnTT,g2)
         thdiff=gamma*thchi*(p%del2lnTT+g2)
@@ -3646,7 +3646,7 @@ module Energy
 !  Add heat conduction to entropy equation.
 !
       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+thdiff
-      if (headtt) print*,'calc_heatcond_thermchi: added thdiff'
+      if (headtt) print*,'calc_heatcond_cspeed_chi: added thdiff'
 !
 !  Check maximum diffusion from thermal diffusion.
 !  With heat conduction, the second-order term for entropy is
@@ -3663,7 +3663,7 @@ module Energy
 !        endif
       endif
 !
-    endsubroutine calc_heatcond_thermchi
+    endsubroutine calc_heatcond_cspeed_chi
 !***********************************************************************
     subroutine calc_heatcond_sqrtrhochi(df,p)
 !
@@ -3672,7 +3672,7 @@ module Energy
 !  in hot diffuse cores of SN remnants in interstellar chi propto sqrt(rho)
 !  This routine also adds in turbulent diffusion, if chi_t /= 0.
 !  Ds/Dt = ... + 1/(rho*T) grad(flux), where
-!  flux = chi_th*rho*gradT + chi_t*rho*T*grads
+!  flux = chi_cs*rho*gradT + chi_t*rho*T*grads
 !  This routine is currently not correct when ionization is used.
 !
 !  19-mar-10/fred: adapted from calc_heatcond_constchi - still need to test
@@ -4894,7 +4894,7 @@ module Energy
 !  Add heating/cooling to entropy equation.
 !
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*p%rho1*heat
-      if (lfirst.and.ldt) Hmax=Hmax+heat*p%rho1
+      if (lfirst.and.ldt) Hmax=Hmax+heat!*p%rho1
 !
 !  Volume heating/cooling term on the mean entropy with respect to ss_const.
 !  Allow for local heating/cooling w.r.t. ss when lcalc_ss_volaverage=F
