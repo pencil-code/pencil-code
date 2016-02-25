@@ -4894,7 +4894,7 @@ module Energy
 !  Add heating/cooling to entropy equation.
 !
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + p%TT1*p%rho1*heat
-      if (lfirst.and.ldt) Hmax=Hmax+heat!*p%rho1
+      if (lfirst.and.ldt) Hmax=Hmax+heat*p%rho1
 !
 !  Volume heating/cooling term on the mean entropy with respect to ss_const.
 !  Allow for local heating/cooling w.r.t. ss when lcalc_ss_volaverage=F
