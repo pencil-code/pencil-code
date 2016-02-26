@@ -361,17 +361,17 @@ program pc_meanfield_collect
         averagelen  = datalen/naverages 
         ndim2runs   = int(ndim2/ndim2read)
         
-        do i=0,ntimesteps-1
-          pos=1+i*tsteplen
-          read(1, pos=pos, IOSTAT=ierr) tmpval_i
-          write(*,*) 'tmpval (tlen): ', i, tmpval_i
-          pos=5+i*tsteplen
-          read(1, pos=pos, IOSTAT=ierr) tmpval_r
-          write(*,*) 'tmpval (tvalue): ', i, tmpval_r
-          pos=13+tlen+datalen
-          read(1, pos=pos, IOSTAT=ierr) tmpval_i
-          write(*,*) 'tmpval (datalen): ', tmpval_i
-        end do
+        !do i=0,ntimesteps-1
+        !  pos=1+i*tsteplen
+        !  read(1, pos=pos, IOSTAT=ierr) tmpval_i
+        !  write(*,*) 'tmpval (tlen): ', i, tmpval_i
+        !  pos=5+i*tsteplen
+        !  read(1, pos=pos, IOSTAT=ierr) tmpval_r
+        !  write(*,*) 'tmpval (tvalue): ', i, tmpval_r
+        !  pos=13+tlen+datalen
+        !  read(1, pos=pos, IOSTAT=ierr) tmpval_i
+        !  write(*,*) 'tmpval (datalen): ', tmpval_i
+        !end do
 
         write(*,*) 'root part:', iproc,ndim2,ndim2_full, ndim2read, ndim2runs, nprocy, averagelen, data_stride
 
