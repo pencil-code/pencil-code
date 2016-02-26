@@ -37,10 +37,6 @@ program pc_meanfield_collect
 
   character (len=fnlen), dimension(:)  , allocatable :: avgnames, avgfields, &
                                                      analyzernames
-  namelist /collect_config/ avgnames
-  namelist /xaver_config/ avgfields, ndim2read, analyzernames, maxtimesteps
-  namelist /zaver_config/ avgfields, ndim2read, analyzernames, maxtimesteps
-
   integer :: hdferr
   integer(HID_T) :: hdfmemtype, phdf_fileid, phdf_avggroup, phdf_dataspace
   integer(HID_T), dimension(:), allocatable :: phdf_fieldgroups
@@ -92,16 +88,22 @@ program pc_meanfield_collect
   real(kind=8), dimension(:,:,:)    , allocatable   :: tmparray
   real(kind=8), dimension(:)        , allocatable   :: t_values
 
-  integer                :: datalen, tlen, data_stride, &
+  integer(kind=4)                :: datalen, tlen, data_stride, &
                             data_start, tsteplen, dim2stride, pos, &
                             averagelen, ndim2runs, resultdim1, resultdim2, &
-                            filesize_check
-  integer(kind=8)        :: filesize
+                            filesize_check, tmpval_i
+  real(kind=4)                  :: tmpval_r
+  integer(kind=4)               :: filesize
   
   integer , parameter   :: t_start = 5
 
   ! Analyzer parameters
   procedure(AnalyzerTemplate), pointer :: analyzerfunction
+  
+  namelist /collect_config/ avgnames
+  namelist /xaver_config/ avgfields, ndim2read, analyzernames, maxtimesteps
+  namelist /zaver_config/ avgfields, ndim2read, analyzernames, maxtimesteps
+
 
 ! Initialize MPI
 
@@ -344,6 +346,7 @@ program pc_meanfield_collect
           write(*,*) 'Error reading datalen'
           initerror = .true.
         end if
+
         data_stride = datalen/(naverages*ndim1*ndim2)
 
         dim2stride  = data_stride*ndim1
@@ -357,8 +360,20 @@ program pc_meanfield_collect
         tsteplen    = 16 + tlen + datalen
         averagelen  = datalen/naverages 
         ndim2runs   = int(ndim2/ndim2read)
+        
+        do i=0,ntimesteps-1
+          pos=1+i*tsteplen
+          read(1, pos=pos, IOSTAT=ierr) tmpval_i
+          write(*,*) 'tmpval (tlen): ', i, tmpval_i
+          pos=5+i*tsteplen
+          read(1, pos=pos, IOSTAT=ierr) tmpval_r
+          write(*,*) 'tmpval (tvalue): ', i, tmpval_r
+          pos=13+tlen+datalen
+          read(1, pos=pos, IOSTAT=ierr) tmpval_i
+          write(*,*) 'tmpval (datalen): ', tmpval_i
+        end do
 
-        write(*,*) 'root part:', iproc,ndim2,ndim2_full, ndim2read, ndim2runs, nprocy, averagelen
+        write(*,*) 'root part:', iproc,ndim2,ndim2_full, ndim2read, ndim2runs, nprocy, averagelen, data_stride
 
         write(*,'(a30)')     ' Analysis information          '
         write(*,'(a30)')     ' ----------------------------- '
