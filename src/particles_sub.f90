@@ -1254,40 +1254,33 @@ module Particles_sub
     subroutine precalc_cell_volumes(f)
 !
       real, dimension (mx,my,mz,mfarray), intent(out) :: f
-      integer :: k1, k2, k3
-      logical :: l2d
+      integer :: ixx, iyy, izz
+      real :: dx1, dy1, dz1, cell_volume1
 !
-      l2d = (((lcartesian_coords .or. lcylindrical_coords) .and. (nzgrid==1)) &
-        .or. (lspherical_coords .and. nygrid==1))
-      if (lcartesian_coords) then
-        if (l2d) then
-          f(:,:,:,ivol) = dx*dy
-        else
-          f(:,:,:,ivol) = dx*dy*dz
-        endif
-      elseif (lcylindrical_coords) then
-        do k1=n1,n2
-          do k2=m1,m2
-            if (l2d) then
-              f(:,k2,k1,ivol) = x*dy
-            else
-              f(:,k2,k1,ivol) = x*dx*dy*dz
+      do ixx=l1,l2
+        do iyy=m1,m2
+          do izz=n1,n2
+            dx1=dx_1(ixx)
+            dy1=dy_1(iyy)
+            dz1=dz_1(izz)
+            cell_volume1 = 1.0
+            if (lcartesian_coords) then
+              if (nxgrid/=1) cell_volume1 = cell_volume1*dx1
+              if (nygrid/=1) cell_volume1 = cell_volume1*dy1
+              if (nzgrid/=1) cell_volume1 = cell_volume1*dz1
+            elseif (lcylindrical_coords) then
+              if (nxgrid/=1) cell_volume1 = cell_volume1*dx1
+              if (nygrid/=1) cell_volume1 = cell_volume1*dy1/x(ixx)
+              if (nzgrid/=1) cell_volume1 = cell_volume1*dz1
+            elseif (lspherical_coords) then
+              if (nxgrid/=1) cell_volume1 = cell_volume1*dx1
+              if (nygrid/=1) cell_volume1 = cell_volume1*dy1/x(ixx)
+              if (nzgrid/=1) cell_volume1 = cell_volume1*dz1/(sin(y(iyy))*x(ixx))
             endif
+            f(ixx,iyy,izz,ivol) = 1.0/cell_volume1
           enddo
         enddo
-      elseif (lspherical_coords) then
-        do k1=n1,n2
-          do k2=m1,m2
-            do k3=l1,l2
-              if (l2d) then
-                f(k3,k2,k1,ivol) = x(k3)*dz
-              else
-                f(k3,k2,k1,ivol) = dx*dy*dz*sin(y(k2))*x(k3)**2.0
-              endif
-            enddo
-          enddo
-        enddo
-      endif
+      enddo
     endsubroutine precalc_cell_volumes
 !***********************************************************************
 endmodule Particles_sub
