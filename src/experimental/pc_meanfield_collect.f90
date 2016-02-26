@@ -38,7 +38,7 @@ program pc_meanfield_collect
   character (len=fnlen), dimension(:)  , allocatable :: avgnames, avgfields, &
                                                      analyzernames
   integer :: hdferr
-  integer(HID_T) :: hdfmemtype, phdf_fileid, phdf_avggroup, phdf_dataspace
+  integer(HID_T) :: hdfmemtype, hdffiletype, phdf_fileid, phdf_avggroup, phdf_dataspace
   integer(HID_T), dimension(:), allocatable :: phdf_fieldgroups
   integer(HID_T), dimension(:,:), allocatable :: phdf_spaces, phdf_chunkspaces, phdf_datasets, &
                                                  phdf_plist_ids
@@ -84,15 +84,14 @@ program pc_meanfield_collect
   integer, dimension(:), allocatable :: avgdims
   integer, dimension(:,:), allocatable :: offsets
 
-  real(kind=8), dimension(:,:,:,:)  , allocatable   :: dataarray
-  real(kind=8), dimension(:,:,:)    , allocatable   :: tmparray
-  real(kind=8), dimension(:)        , allocatable   :: t_values
+  real, dimension(:,:,:,:)  , allocatable   :: dataarray
+  real, dimension(:,:,:)    , allocatable   :: tmparray
+  real, dimension(:)        , allocatable   :: t_values
 
   integer(kind=4)                :: datalen, tlen, data_stride, &
                             data_start, tsteplen, dim2stride, pos, &
                             averagelen, ndim2runs, resultdim1, resultdim2, &
-                            filesize_check, tmpval_i
-  real(kind=4)                  :: tmpval_r
+                            filesize_check
   integer(kind=4)               :: filesize
   
   integer , parameter   :: t_start = 5
@@ -119,6 +118,7 @@ program pc_meanfield_collect
 
   ndim2runs  = -1
   datalen   = -1
+  maxtimesteps = huge(maxtimesteps)
   
   initerror = .false.
   runerror = .false.
@@ -373,7 +373,7 @@ program pc_meanfield_collect
         !  write(*,*) 'tmpval (datalen): ', tmpval_i
         !end do
 
-        write(*,*) 'root part:', iproc,ndim2,ndim2_full, ndim2read, ndim2runs, nprocy, averagelen, data_stride
+        !write(*,*) 'root part:', iproc,ndim2,ndim2_full, ndim2read, ndim2runs, nprocy, averagelen, data_stride
 
         write(*,'(a30)')     ' Analysis information          '
         write(*,'(a30)')     ' ----------------------------- '
@@ -779,11 +779,18 @@ program pc_meanfield_collect
     subroutine OpenH5Groups()
     
       if (data_stride == 4) then
-        hdfmemtype = H5T_NATIVE_REAL
+        hdfmemtype  = H5T_NATIVE_REAL
+        hdffiletype = H5T_IEEE_F32LE
       else if (data_stride == 8) then
-        hdfmemtype = H5T_NATIVE_DOUBLE
+        hdfmemtype  = H5T_NATIVE_DOUBLE
+        hdffiletype = H5T_IEEE_F64LE
       else
         write(*,*) 'Could not determine the data type.'
+        initerror = .true.
+      end if
+
+      if (data_stride /= sizeof_real()) then
+        write(*,*) 'Data real precision has different precision than the collector.'
         initerror = .true.
       end if
 
@@ -843,7 +850,7 @@ program pc_meanfield_collect
             call H5Pcreate_F(H5P_DATASET_CREATE_F, phdf_plist_ids(ianalyzer,iavg), hdferr)
             call H5Pset_chunk_f(phdf_plist_ids(ianalyzer, iavg), 4, phdf_chunkdims(:,ianalyzer), hdferr)
             call H5Dcreate_F(phdf_fieldgroups(iavg), trim(analyzernames(ianalyzer)), &
-                             H5T_IEEE_F64LE, phdf_spaces(ianalyzer,iavg), &
+                             hdffiletype, phdf_spaces(ianalyzer,iavg), &
                              phdf_datasets(ianalyzer,iavg), hdferr, phdf_plist_ids(ianalyzer,iavg))
             
             call H5Sclose_F(phdf_spaces(ianalyzer,iavg), hdferr)

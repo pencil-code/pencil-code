@@ -7,8 +7,8 @@ module Analyzers
     function AnalyzerTemplate(dataset,xdim1,xdim2,tlen,resultlen1,resultlen2) result(analysis)
       implicit none
       integer,intent(in) :: xdim1,xdim2,tlen,resultlen1,resultlen2
-      real(kind=8), dimension(xdim1,xdim2,tlen), intent(in) :: dataset
-      real(kind=8), dimension(xdim1,xdim2,resultlen1,resultlen2) :: analysis
+      real, dimension(xdim1,xdim2,tlen), intent(in) :: dataset
+      real, dimension(xdim1,xdim2,resultlen1,resultlen2) :: analysis
     end function AnalyzerTemplate
   end interface
 
@@ -50,24 +50,24 @@ module Analyzers
   function analyzer_sum(dataset, xdim1, xdim2, tlen, resultlen1, resultlen2) result(analysis)
     implicit none
     integer,intent(in) :: xdim1,xdim2,tlen,resultlen1,resultlen2
-    real(kind=8), dimension(xdim1,xdim2,tlen), intent(in) :: dataset
-    real(kind=8), dimension(xdim1,xdim2,resultlen1,resultlen2) :: analysis
+    real, dimension(xdim1,xdim2,tlen), intent(in) :: dataset
+    real, dimension(xdim1,xdim2,resultlen1,resultlen2) :: analysis
     analysis(1:xdim1,1:xdim2,1,1) = sum(dataset,dim=3)
   end function
 
   function analyzer_average(dataset, xdim1, xdim2, tlen, resultlen1, resultlen2) result(analysis)
     implicit none
     integer,intent(in) :: xdim1,xdim2,tlen,resultlen1,resultlen2
-    real(kind=8), dimension(xdim1,xdim2,tlen), intent(in) :: dataset
-    real(kind=8), dimension(xdim1,xdim2,resultlen1,resultlen2) :: analysis
+    real, dimension(xdim1,xdim2,tlen), intent(in) :: dataset
+    real, dimension(xdim1,xdim2,resultlen1,resultlen2) :: analysis
     analysis(1:xdim1,1:xdim2,1,1) = sum(dataset,dim=3)/tlen
   end function
 
   function analyzer_identity(dataset, xdim1, xdim2, tlen, resultlen1, resultlen2) result(analysis)
     implicit none
     integer,intent(in) :: xdim1,xdim2,tlen,resultlen1,resultlen2
-    real(kind=8), dimension(xdim1,xdim2,tlen), intent(in) :: dataset
-    real(kind=8), dimension(xdim1,xdim2,resultlen1,resultlen2) :: analysis
+    real, dimension(xdim1,xdim2,tlen), intent(in) :: dataset
+    real, dimension(xdim1,xdim2,resultlen1,resultlen2) :: analysis
     write(*,*) 'analyzing...identity', xdim1, xdim2, tlen, resultlen1, resultlen2
     analysis(:,:,1:tlen,1) = dataset(:,:,1:tlen)
   end function
