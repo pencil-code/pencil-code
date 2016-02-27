@@ -467,7 +467,7 @@ module Shear
 !  05-jun-12/ccyang: move SAFI to subroutine sheared_advection_fft
 !
       use Diagnostics, only: save_name
-      use Mpicomm, only: isendrcv_bdry_x
+      use Mpicomm, only: update_neighbors, isendrcv_bdry_x
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -490,6 +490,10 @@ module Shear
 !
       deltay=deltay-Sshear*Lx*dt_shear
       deltay=deltay-int(deltay/Ly)*Ly
+!
+!  Update process neighbors.
+!
+      call update_neighbors()
 !
 !  Solve for advection by shear motion by shifting all variables and their
 !  time derivative (following Gammie 2001). Removes time-step constraint

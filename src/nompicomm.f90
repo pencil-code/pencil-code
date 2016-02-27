@@ -348,6 +348,17 @@ module Mpicomm
 !
     endsubroutine initialize_mpicomm
 !***********************************************************************
+    subroutine update_neighbors()
+!
+! Update neighbor processes for communication.
+!
+! 27-feb-16/ccyang: coded
+!
+      iproc_comm = -1
+      nproc_comm = 0
+!
+    endsubroutine update_neighbors
+!***********************************************************************
     subroutine yyinit
 
     endsubroutine yyinit

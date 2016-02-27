@@ -549,8 +549,7 @@ module Mpicomm
 !
 !  Set up all neighbors.
 !
-      forall(i=-1:1, j=-1:1, k=-1:1) &
-          neighbors(i,j,k) = modulo(ipx+i,nprocx) + modulo(ipy+j,nprocy) * nprocx + modulo(ipz+k,nprocz) * nprocxy
+      call update_neighbors()
 !
 !  Set up `lower' and `upper' neighbours.
 !
@@ -616,6 +615,49 @@ module Mpicomm
           MPI_COMM_YZPLANE, mpierr)
 !
     endsubroutine initialize_mpicomm
+!***********************************************************************
+    subroutine update_neighbors()
+!
+! Update neighbor processes for communication.
+!
+! 27-feb-16/ccyang: adapted from particles_mpicomm and
+!                   particles_mpicomm_blocks
+!
+      integer :: dipx, dipy, dipz
+      integer :: ipx_rec, ipy_rec, ipz_rec
+      integer :: iproc_rec
+!
+      iproc_comm = -1
+      nproc_comm = 0
+!
+      yscan: do dipy = -1, 1
+        ipy_rec = ipy + dipy
+        shear: if (lshear) then
+          if (ipx_rec < 0) ipy_rec = ipy_rec - ceiling(deltay / Lxyz_loc(2) - 0.5)
+          if (ipx_rec > nprocx - 1) ipy_rec = ipy_rec + ceiling(deltay / Lxyz_loc(2) - 0.5)
+        endif shear
+        ipy_rec = modulo(ipy_rec, nprocy)  ! assuming periodic boundary conditions
+!
+        xscan: do dipx = -1, 1
+          ipx_rec = modulo(ipx + dipx, nprocx)  ! assuming periodic boundary conditions
+!
+          zscan: do dipz = -1, 1
+            ipz_rec = modulo(ipz + dipz, nprocz)  ! assuming periodic boundary conditions
+!
+            iproc_rec = ipx_rec + nprocx * (ipy_rec + ipz_rec * nprocy)
+            neighbors(dipx,dipy,dipz) = iproc_rec
+            add: if (iproc_rec /= iproc .and. .not. any(iproc_comm(1:nproc_comm) == iproc_rec)) then
+              nproc_comm = nproc_comm + 1
+              iproc_comm(nproc_comm) = iproc_rec
+            endif add
+!
+          enddo zscan
+!
+        enddo xscan
+!
+      enddo yscan
+!
+    endsubroutine update_neighbors
 !***********************************************************************
     subroutine yyinit
 

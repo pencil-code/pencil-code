@@ -330,6 +330,8 @@ module Cdata
 !  Parameters related to message passing.
 !
   integer, dimension(-1:1,-1:1,-1:1) :: neighbors = 0
+  integer, dimension(26) :: iproc_comm = -1
+  integer :: nproc_comm = 0
   integer :: ix=-1,iy=-1,iy2=-1,iz=-1,iz2=-1,iz3=-1,iz4=-1
   integer :: ix_loc=-1,iy_loc=-1, iy2_loc=-1
   integer :: iz_loc=-1,iz2_loc=-1, iz3_loc=-1, iz4_loc=-1
