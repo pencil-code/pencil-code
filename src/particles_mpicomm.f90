@@ -305,8 +305,6 @@ module Particles_mpicomm
       integer, dimension (0:ncpus-1) :: nmig_leave, nmig_enter
       integer, dimension (0:ncpus-1) :: ileave_low, ileave_high
       integer, dimension (0:ncpus-1) :: iproc_rec_count
-      integer, dimension (26), save :: iproc_comm=-1
-      integer, save :: nproc_comm=0
       integer, save :: nmig_max = 0
       integer :: dipx, dipy, dipz
       integer :: i, j, k, iproc_rec, ipx_rec, ipy_rec, ipz_rec

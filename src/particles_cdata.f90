@@ -38,6 +38,8 @@ module Particles_cdata
   real :: gab_width=3.0
 !
   integer, dimension(-1:1,-1:1,-1:1) :: neighbors_par = -1
+  integer, dimension(26) :: iproc_comm = -1
+  integer :: nproc_comm = 0
   integer, dimension (nx) :: kshepherd
   integer, allocatable, dimension (:) :: kneighbour
   integer, dimension (mpar_loc) :: ipar
