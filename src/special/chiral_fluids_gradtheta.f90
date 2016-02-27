@@ -204,6 +204,13 @@ module Special
         case ('const')
           f(:,:,:,igtheta5) = gtheta5_const
           f(:,:,:,imu5) = mu5_const
+        case ('gtheta5y_const')
+          do n=n1,n2; do m=m1,m2
+            f(:,:,:,igtheta5) = 0.
+            f(:,m,n,igtheta5+1) = gtheta5_const
+            f(:,:,:,igtheta5+2) = 0.
+          enddo; enddo 
+          f(:,:,:,imu5) = mu5_const
         case ('zero')
           f(:,:,:,igtheta5) = 0.
           f(:,:,:,imu5) = 0.
