@@ -623,11 +623,14 @@ module Mpicomm
 ! 27-feb-16/ccyang: adapted from particles_mpicomm and
 !                   particles_mpicomm_blocks
 !
-      use General, only: find_proc
+      use General, only: find_proc, quick_sort
 !
+      integer, dimension(:), allocatable :: list, order
       integer :: dipx, dipy, dipz
       integer :: ipx_rec, ipy_rec, ipz_rec
       integer :: iproc_rec
+!
+!  Collect the neighbors.
 !
       iproc_comm = -1
       nproc_comm = 0
@@ -658,6 +661,16 @@ module Mpicomm
         enddo xscan
 !
       enddo yscan
+!
+!  Sort the process list.
+!
+      neighb: if (nproc_comm > 0) then
+        allocate (list(nproc_comm), order(nproc_comm))
+        list = iproc_comm(1:nproc_comm)
+        call quick_sort(list, order)
+        iproc_comm(1:nproc_comm) = list
+        deallocate (list, order)
+      endif neighb
 !
     endsubroutine update_neighbors
 !***********************************************************************
