@@ -623,6 +623,8 @@ module Mpicomm
 ! 27-feb-16/ccyang: adapted from particles_mpicomm and
 !                   particles_mpicomm_blocks
 !
+      use General, only: find_proc
+!
       integer :: dipx, dipy, dipz
       integer :: ipx_rec, ipy_rec, ipz_rec
       integer :: iproc_rec
@@ -644,7 +646,7 @@ module Mpicomm
           zscan: do dipz = -1, 1
             ipz_rec = modulo(ipz + dipz, nprocz)  ! assuming periodic boundary conditions
 !
-            iproc_rec = ipx_rec + nprocx * (ipy_rec + ipz_rec * nprocy)
+            iproc_rec = find_proc(ipx_rec, ipy_rec, ipz_rec)
             neighbors(dipx,dipy,dipz) = iproc_rec
             add: if (iproc_rec /= iproc .and. .not. any(iproc_comm(1:nproc_comm) == iproc_rec)) then
               nproc_comm = nproc_comm + 1
