@@ -5,7 +5,7 @@
 
   public :: remap_to_pencil_xy_2D_other, unmap_from_pencil_xy_2D_other
 
-  public :: update_neighbors
+  public :: update_neighbors, index_to_iproc_comm
 
   public :: mpicomm_init, initialize_mpicomm, mpifinalize, yyinit
   public :: mpibarrier

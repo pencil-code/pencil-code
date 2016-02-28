@@ -359,6 +359,31 @@ module Mpicomm
 !
     endsubroutine update_neighbors
 !***********************************************************************
+    elemental integer function index_to_iproc_comm(iproc_in, mask)
+!
+!  Converts iproc_in to the index to iproc_comm, returns 0 if iproc_in
+!  is iproc itself, and -1 if none of the elements in iproc_comm matches
+!  iproc_in.
+!
+!  iproc_in itself is returned if mask = .false..
+!
+!  28-feb-16/ccyang: coded.
+!
+      logical, intent(in) :: mask
+      integer, intent(in) :: iproc_in
+!
+      active: if (mask) then
+        if (iproc_in == iproc) then
+          index_to_iproc_comm = 0
+        else
+          index_to_iproc_comm = -1
+        endif
+      else active
+        index_to_iproc_comm = iproc_in
+      endif active
+!
+    endfunction index_to_iproc_comm
+!***********************************************************************
     subroutine yyinit
 
     endsubroutine yyinit

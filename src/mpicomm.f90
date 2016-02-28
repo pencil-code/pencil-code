@@ -674,6 +674,70 @@ module Mpicomm
 !
     endsubroutine update_neighbors
 !***********************************************************************
+    elemental integer function index_to_iproc_comm(iproc_in, mask)
+!
+!  Converts iproc_in to the index to iproc_comm, returns 0 if iproc_in
+!  is iproc itself, and -1 if none of the elements in iproc_comm matches
+!  iproc_in.
+!
+!  iproc_in itself is returned if mask = .false..
+!
+!  28-feb-16/ccyang: coded.
+!
+      logical, intent(in) :: mask
+      integer, intent(in) :: iproc_in
+!
+      logical, dimension(nproc_comm) :: lflags
+      integer :: lower, upper, mid
+      integer :: k
+!
+      active: if (mask) then
+!
+        nonlocal: if (iproc_in /= iproc) then
+!
+          lflags = iproc_comm(1:nproc_comm) == iproc_in
+          search: if (any(lflags)) then
+!
+            lower = iproc_comm(1)
+            upper = iproc_comm(nproc_comm)
+            endpt: if (iproc_in == lower) then
+              k = 1
+!
+            elseif (iproc_in == upper) then endpt
+              k = nproc_comm
+!
+            else endpt
+              binary: do while (abs(upper - lower) > 1)
+                mid = (lower + upper) / 2
+                k = iproc_comm(mid)
+                if (iproc_in == k) then
+                  exit binary
+                elseif (iproc_in > k) then
+                  lower = mid 
+                else
+                  upper = mid
+                endif
+              enddo binary
+              k = mid
+!
+            endif endpt
+!
+          else search
+            k = -1
+          endif search
+!
+        else nonlocal
+          k = 0
+        endif nonlocal
+!
+      else active
+        k = iproc_in
+      endif active
+!
+      index_to_iproc_comm = k
+!
+    endfunction index_to_iproc_comm
+!***********************************************************************
     subroutine yyinit
 
     endsubroutine yyinit
