@@ -688,6 +688,8 @@ module Mpicomm
 !
 !  29-feb-16/ccyang: coded.
 !
+      use General, only: binary_search
+!
       integer, intent(in) :: iproc_in
       logical, intent(in), optional :: mask
 !
@@ -705,34 +707,12 @@ module Mpicomm
 !
       active: if (lactive) then
         nonlocal: if (iproc_in /= iproc) then
-          search: if (any(iproc_comm(1:nproc_comm) == iproc_in)) then
 !
 !  Binary search iproc_comm.
 !
-            lower = 1
-            upper = nproc_comm
-            endpt: if (iproc_in == iproc_comm(lower)) then
-              index_to_iproc_comm = 1
-            elseif (iproc_in == iproc_comm(upper)) then endpt
-              index_to_iproc_comm = nproc_comm
-            else endpt
-              binary: do while (abs(upper - lower) > 1)
-                mid = (lower + upper) / 2
-                iproc_target = iproc_comm(mid)
-                if (iproc_in == iproc_target) then
-                  exit binary
-                elseif (iproc_in > iproc_target) then
-                  lower = mid 
-                else
-                  upper = mid
-                endif
-              enddo binary
-              index_to_iproc_comm = mid
-            endif endpt
-          else search
-!
-!  No matching element.
-!
+          search: if (any(iproc_comm(1:nproc_comm) == iproc_in)) then
+            index_to_iproc_comm = binary_search(iproc_in, iproc_comm(1:nproc_comm))
+          else
             index_to_iproc_comm = -1
           endif search
         else nonlocal

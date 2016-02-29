@@ -35,7 +35,7 @@ module General
   public :: read_range, merge_ranges, get_range_no, write_by_ranges, &
             write_by_ranges_1d_real, write_by_ranges_1d_cmplx, &
             write_by_ranges_2d_real, write_by_ranges_2d_cmplx
-  public :: quick_sort
+  public :: quick_sort, binary_search
   public :: date_time_string
   public :: backskip
   public :: lextend_vector
@@ -3376,6 +3376,37 @@ module General
       endif
 
     endfunction coptest
+!***********************************************************************
+    pure integer function binary_search(x, v)
+!
+!  Uses binary search to find the index of the element in array v that
+!  matches x; return 0 if no match is found.
+!
+!  v must already be in ascending order.
+!
+!  29-feb-16/ccyang: coded.
+!
+      integer, dimension(:), intent(in) :: v
+      integer, intent(in) :: x
+!
+      integer :: low, high, mid
+!
+      binary_search = 0
+      low = 1
+      high = size(v)
+      binary: do while (low <= high)
+        mid = (low + high) / 2
+        if (x < v(mid)) then
+          high = mid - 1
+        elseif (x > v(mid)) then
+          low = mid + 1
+        else
+          binary_search = mid
+          exit binary
+        endif
+      enddo binary
+!
+    endfunction binary_search
 !***********************************************************************
     RECURSIVE SUBROUTINE quick_sort(list, order)
 !
