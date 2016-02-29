@@ -682,59 +682,67 @@ module Mpicomm
 !
 !  iproc_in itself is returned if mask = .false..
 !
-!  28-feb-16/ccyang: coded.
+!  29-feb-16/ccyang: coded.
 !
-      logical, intent(in) :: mask
       integer, intent(in) :: iproc_in
+      logical, intent(in), optional :: mask
 !
-      logical, dimension(nproc_comm) :: lflags
+      logical :: lactive
       integer :: lower, upper, mid
-      integer :: k
+      integer :: iproc_target
 !
-      active: if (mask) then
+!  Check the mask.
 !
+      if (present(mask)) then
+        lactive = mask
+      else
+        lactive = .true.
+      endif
+!
+      active: if (lactive) then
         nonlocal: if (iproc_in /= iproc) then
+          search: if (any(iproc_comm(1:nproc_comm) == iproc_in)) then
 !
-          lflags = iproc_comm(1:nproc_comm) == iproc_in
-          search: if (any(lflags)) then
+!  Binary search iproc_comm.
 !
-            lower = iproc_comm(1)
-            upper = iproc_comm(nproc_comm)
-            endpt: if (iproc_in == lower) then
-              k = 1
-!
-            elseif (iproc_in == upper) then endpt
-              k = nproc_comm
-!
+            lower = 1
+            upper = nproc_comm
+            endpt: if (iproc_in == iproc_comm(lower)) then
+              index_to_iproc_comm = 1
+            elseif (iproc_in == iproc_comm(upper)) then endpt
+              index_to_iproc_comm = nproc_comm
             else endpt
               binary: do while (abs(upper - lower) > 1)
                 mid = (lower + upper) / 2
-                k = iproc_comm(mid)
-                if (iproc_in == k) then
+                iproc_target = iproc_comm(mid)
+                if (iproc_in == iproc_target) then
                   exit binary
-                elseif (iproc_in > k) then
+                elseif (iproc_in > iproc_target) then
                   lower = mid 
                 else
                   upper = mid
                 endif
               enddo binary
-              k = mid
-!
+              index_to_iproc_comm = mid
             endif endpt
-!
           else search
-            k = -1
+!
+!  No matching element.
+!
+            index_to_iproc_comm = -1
           endif search
-!
         else nonlocal
-          k = 0
+!
+!  The case of iproc_in == iproc.
+!
+          index_to_iproc_comm = 0
         endif nonlocal
-!
       else active
-        k = iproc_in
-      endif active
 !
-      index_to_iproc_comm = k
+!  Do nothing if mask = .false.
+!
+        index_to_iproc_comm = iproc_in
+      endif active
 !
     endfunction index_to_iproc_comm
 !***********************************************************************
