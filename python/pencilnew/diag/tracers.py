@@ -134,18 +134,18 @@ class Tracers(object):
                     stream = Stream(field, self.params, interpolation=interpolation,
                                     h_min=h_min, h_max=h_max, len_max=len_max, tol=tol,
                                     iter_max=iter_max, xx=xx[int(ix/n_proc), iy, :])
-                    sub_x1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len-1, 0]
-                    sub_y1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len-1, 1]
-                    sub_z1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len-1, 2]
+                    sub_x1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len, 0]
+                    sub_y1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len, 1]
+                    sub_z1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len, 2]
                     sub_l[int(ix/n_proc), iy] = stream.len
                     if any(np.array(self.params.int_q) == 'curly_A'):
-                        for l in range(stream.stream_len-1):
+                        for l in range(stream.stream_len):
                             aaInt = vec_int((stream.tracers[l+1] + stream.tracers[l])/2,
                                              var, aa, interpolation=self.params.interpolation)
                             sub_curly_A[int(ix/n_proc), iy] += \
                                 np.dot(aaInt, (stream.tracers[l+1] - stream.tracers[l]))
                     if any(np.array(self.params.int_q) == 'ee'):
-                        for l in range(stream.stream_len-1):
+                        for l in range(stream.stream_len):
                             eeInt = vec_int((stream.tracers[l+1] + stream.tracers[l])/2,
                                              var, ee, interpolation=self.params.interpolation)
                             sub_ee[int(ix/n_proc), iy] += \
@@ -319,7 +319,7 @@ class Tracers(object):
         """
 
         self.params.destination = destination
-        
+
         # Write the results into hdf5 file.
         if destination != '':
             f = h5py.File(os.path.join(data_dir, destination), 'w')
@@ -374,7 +374,7 @@ class Tracers(object):
         *file_name*:
           File with the tracer data.
         """
-    
+
         # Open the file.
         f = h5py.File(os.path.join(data_dir, file_name), 'r')
 
@@ -531,7 +531,7 @@ class Tracers(object):
 
 
 # Class containing simulation and tracing parameters.
-class TracersParameterClass:
+class TracersParameterClass(object):
     """
     __TracersParameterClass -- Holds the simulation and tracing parameters.
     """
