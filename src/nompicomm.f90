@@ -348,7 +348,7 @@ module Mpicomm
 !
     endsubroutine initialize_mpicomm
 !***********************************************************************
-    subroutine update_neighbors()
+    subroutine update_neighbors
 !
 ! Update neighbor processes for communication.
 !
@@ -2027,11 +2027,7 @@ module Mpicomm
 !***********************************************************************
     subroutine globalize_xy(in, out, dest_proc, source_pz)
 !
-!  Globalizes local 4D data first along the x, then along the y-direction to
-!  the destination processor. The local data is supposed to include the ghost
-!  cells. Inner ghost layers are cut away during the combination of the data.
-!  'dest_proc' is the destination iproc number relative to the first processor
-!  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
+!  Dummy routine: out := in.
 !
 !  23-Apr-2012/Bourdin.KIS: adapted from non-torus-type globalize_xy
 !

@@ -1100,7 +1100,7 @@ module Equ
 !  Check for NaNs in the advection time-step.
 !
       if (notanumber(dt1_advec)) then
-        print*, 'pde: dt1_advec contains a NaN at iproc=', iproc
+        print*, 'pde: dt1_advec contains a NaN at iproc=', iproc_world
         if (lhydro)           print*, 'advec_uu   =',advec_uu
         if (lshear)           print*, 'advec_shear=',advec_shear
         if (lmagnetic)        print*, 'advec_hall =',advec_hall

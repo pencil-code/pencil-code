@@ -196,7 +196,6 @@ module Register
       use Param_IO
       use Mpicomm,          only: mpireduce_sum,mpibcast_real,&
                                   mpisend_real,mpirecv_real
-      use Sub,              only: remove_zprof
       use BorderProfiles,   only: initialize_border_profiles
       use Chemistry,        only: initialize_chemistry
       use Chiral,           only: initialize_chiral
@@ -249,8 +248,8 @@ module Register
 !  Evaluate physical units. Used currently only in eos, but later also
 !  in the interstellar and radiation modules, for example.
 !
-      call units_general()
-      call units_eos()
+      call units_general
+      call units_eos
 !
 !  Calculated derived units.
 !
@@ -574,40 +573,40 @@ module Register
       use Particles_main,  only: particles_pencil_criteria
       use Solid_cells,     only: pencil_criteria_solid_cells
 !
-      call pencil_criteria_grid()
-      call pencil_criteria_borderprofiles()
-      call pencil_criteria_density()
-      call pencil_criteria_forcing()
-      call pencil_criteria_eos()
-      call pencil_criteria_hydro()
-      call pencil_criteria_heatflux()
-      call pencil_criteria_shock()
-      call pencil_criteria_viscosity()
-      call pencil_criteria_energy()
-!      call pencil_criteria_conductivity()
-      call pencil_criteria_gravity()
-      call pencil_criteria_selfgravity()
-      call pencil_criteria_pscalar()
-      call pencil_criteria_interstellar()
-      call pencil_criteria_chemistry()
-      call pencil_criteria_dustvelocity()
-      call pencil_criteria_dustdensity()
-      call pencil_criteria_neutralvelocity()
-      call pencil_criteria_neutraldensity()
-      call pencil_criteria_magnetic()
-      call pencil_criteria_lorenz_gauge()
-      call pencil_criteria_polymer()
-      call pencil_criteria_testscalar()
-      call pencil_criteria_testfield()
-      call pencil_criteria_testflow()
-      call pencil_criteria_cosmicray()
-      call pencil_criteria_cosmicrayflux()
-      call pencil_criteria_chiral()
-      call pencil_criteria_radiation()
-      call pencil_criteria_shear()
-      call pencil_criteria_special()
-      call pencil_criteria_solid_cells()
-      if (lparticles) call particles_pencil_criteria()
+      call pencil_criteria_grid
+      call pencil_criteria_borderprofiles
+      call pencil_criteria_density
+      call pencil_criteria_forcing
+      call pencil_criteria_eos
+      call pencil_criteria_hydro
+      call pencil_criteria_heatflux
+      call pencil_criteria_shock
+      call pencil_criteria_viscosity
+      call pencil_criteria_energy
+!      call pencil_criteria_conductivity
+      call pencil_criteria_gravity
+      call pencil_criteria_selfgravity
+      call pencil_criteria_pscalar
+      call pencil_criteria_interstellar
+      call pencil_criteria_chemistry
+      call pencil_criteria_dustvelocity
+      call pencil_criteria_dustdensity
+      call pencil_criteria_neutralvelocity
+      call pencil_criteria_neutraldensity
+      call pencil_criteria_magnetic
+      call pencil_criteria_lorenz_gauge
+      call pencil_criteria_polymer
+      call pencil_criteria_testscalar
+      call pencil_criteria_testfield
+      call pencil_criteria_testflow
+      call pencil_criteria_cosmicray
+      call pencil_criteria_cosmicrayflux
+      call pencil_criteria_chiral
+      call pencil_criteria_radiation
+      call pencil_criteria_shear
+      call pencil_criteria_special
+      call pencil_criteria_solid_cells
+      if (lparticles) call particles_pencil_criteria
 !
     endsubroutine pencil_criteria
 !***********************************************************************
@@ -1102,9 +1101,9 @@ module Register
 !
 !  Expand shorthand names
 !
-      if (lhydro                  ) call expand_shands_hydro()
-      if (lmagnetic               ) call expand_shands_magnetic()
-      if (lentropy.or.ltemperature) call expand_shands_energy()
+      if (lhydro                  ) call expand_shands_hydro
+      if (lmagnetic               ) call expand_shands_magnetic
+      if (lentropy.or.ltemperature) call expand_shands_energy
 !
 !  phi-averages
 !
@@ -1137,7 +1136,7 @@ module Register
 ! LOCAL SUBROUTINES START BELOW HERE.
 !***********************************************************************
 !***********************************************************************
-    subroutine write_varname()
+    subroutine write_varname
 !
 !  Writes varname to file varname.dat.
 !

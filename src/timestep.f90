@@ -101,7 +101,7 @@ module Timestep
 !  Calculate dt_beta_ts.
 !
         if (ldt) dt_beta_ts=dt*beta_ts
-        if (ip<=6) print*, 'time_step: iproc, dt=', iproc, dt  !(all have same dt?)
+        if (ip<=6) print*, 'time_step: iproc, dt=', iproc_world, dt  !(all have same dt?)
         dtsub = ds * dt_beta_ts(itsub)
 !
 !  Time evolution of grid variables.

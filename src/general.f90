@@ -165,7 +165,7 @@ module General
 !
     endfunction find_proc
 !***********************************************************************
-    subroutine setup_mm_nn()
+    subroutine setup_mm_nn
 !
 !  Produce index-array for the sequence of points to be worked through:
 !  Before the communication has been completed, the nghost=3 layers next
@@ -2368,7 +2368,7 @@ module General
       else
         print*, 'linear_interpolate: Interpolation point does not ' // &
             'lie within the calculated grid point interval.'
-        print*, 'iproc = ', iproc
+        print*, 'iproc = ', iproc_world
         print*, 'mx, x(1), x(mx) = ', mx, x(1), x(mx)
         print*, 'my, y(1), y(my) = ', my, y(1), y(my)
         print*, 'mz, z(1), z(mz) = ', mz, z(1), z(mz)
@@ -3503,6 +3503,7 @@ module General
       logical :: exists
 
       inquire(FILE=file, EXIST=exists)
+
       if (exists) then
         open (lun, FILE=file)
         close(lun, status='delete')
@@ -3949,14 +3950,14 @@ module General
 !
 !  02-oct-2002/wolf: coded
 !
-      use Cdata, only: iproc, directory, datadir, datadir_snap, directory_dist, &
+      use Cdata, only: iproc_world, directory, datadir, datadir_snap, directory_dist, &
                        directory_snap, directory_collect
 
       logical, optional :: lproc
 
       character (len=intlen) :: chproc
 !
-      chproc=itoa(iproc)
+      chproc=itoa(iproc_world)
       call safe_character_assign(directory, trim(datadir)//'/proc'//chproc)
       call safe_character_assign(directory_dist, &
                                             trim(datadir_snap)//'/proc'//chproc)

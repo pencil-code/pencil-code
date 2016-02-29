@@ -94,7 +94,7 @@ module Timestep
 !  Calculate dt_beta_ts.
 !
         if (ldt) dt_beta_ts=dt*beta_ts
-        if (ip<=6) print*, 'time_step: iproc, dt=', iproc, dt  !(all have same dt?)
+        if (ip<=6) print*, 'time_step: iproc, dt=', iproc_world, dt  !(all have same dt?)
 !
 !  Time evolution of grid variables.
 !  (do this loop in pencils, for cache efficiency)
@@ -188,7 +188,7 @@ module Timestep
         enddo; enddo
 !
         if (notanumber(fsub(:,:,:,ienergy))) then
-           print*, 'fsub contains NaN in proc',iproc, 'in No.',j,'subcycle'
+           print*, 'fsub contains NaN in proc',iproc_world, 'in No.',j,'subcycle'
            STOP
         endif
 !

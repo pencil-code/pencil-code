@@ -250,7 +250,8 @@ program start
   if (lyinyang) then
     if (lroot) &
       print*, 'Setting latitude and longitude intervals for Yin-Yang grid, ignoring input'
-    dang=.99*min(1./nygrid,3./nzgrid)*0.5*pi      ! only valid for equidistant grid!!
+    !!!dang=.99*min(1./nygrid,3./nzgrid)*0.5*pi      ! only valid for equidistant grid!!
+    dang=.0*min(1./nygrid,3./nzgrid)*0.5*pi      ! only valid for equidistant grid!!
     xyz0(2:3) = (/ 1./4., 1./4. /)*pi+0.5*dang
     Lxyz(2:3) = (/ 1./2., 3./2. /)*pi-dang
   endif
@@ -296,7 +297,7 @@ program start
 !  Different initial seed (seed0) and random numbers on different CPUs
 !  The default is seed0=1812 for some obscure Napoleonic reason
 !
-  seed(1)=-((seed0-1812+1)*10+iproc)
+  seed(1)=-((seed0-1812+1)*10+iproc_world)
   call random_seed_wrapper(PUT=seed)
 !
 !  Generate grid and initialize specific grid variables.
@@ -435,7 +436,7 @@ program start
     endif
   endif
 !
-  if (lyinyang) &
+  if (lyinyang.and.lroot) &
     call warning('start','Any initial condition depending on y or z will not be set correctly on Yin-Yang grid.')
 !
 !  The following init routines only need to add to f.

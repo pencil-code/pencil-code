@@ -90,7 +90,7 @@ module Timestep
       ! Time step that was actually performed
       dt_did = dt
 !
-      if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc,dt  !(all have same dt?)
+      if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc_world,dt  !(all have same dt?)
       ! Increase time
       t = t+dt
       ! Time step to try next time

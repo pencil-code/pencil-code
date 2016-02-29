@@ -4302,7 +4302,7 @@ module Sub
               '" encountered in the variable ', varname(d)
           print*,'nan_inform: ', varname(d), ' = ', f(a,b,c,d)
           print*,'nan_inform: t, it, itsub   = ', t, it, itsub
-          print*,'nan_inform: l, m, n, iproc = ', a, b, c, iproc
+          print*,'nan_inform: l, m, n, iproc = ', a, b, c, iproc_world
           print*,'----------------------------'
           if (present(lstop)) then
             if (lstop) call fatal_error('nan_stop','')
@@ -4826,7 +4826,7 @@ nameloop: do
 !
     endsubroutine read_zprof
 !***********************************************************************
-    subroutine remove_zprof()
+    subroutine remove_zprof
 !
 !  Remove z-profile file.
 !
@@ -4846,7 +4846,7 @@ nameloop: do
 !
 !  Read list of file and remove them one by one.
 !
-      open(unit,file=listfile,iostat=ierr)
+      open(unit,file=listfile,status='old',iostat=ierr)
       if (ierr /= 0) return
       do while ((it <= nt) .and. (ierr == 0))
         read(unit,*,iostat=ierr) fname

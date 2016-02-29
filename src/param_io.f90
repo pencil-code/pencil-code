@@ -324,18 +324,19 @@ module Param_IO
       endif
       call stop_it_if_any (.false., '')
       lparam_nml = .false.
+
+      if (lyinyang.and.coord_system/='spherical'.and.coord_system/='spherical_coords') then
+        if (lroot) call warning('read_all_init_pars', 'Yin-Yang grid only implemented for spherical coordinates')
+        lyinyang=.false.
+      endif
 !
-!  Print SVN id from first line.
+! Set proper BC code for Yin-Yang grid
 !
-      if (lroot) call svn_id(cvsid)
-!
-!  Give online feedback if called with the PRINT optional argument.
-!
-      if (loptest(print)) call write_all_init_pars
-!
-!  Write parameters to log file.
-!
-      if (lstart) call write_all_init_pars(FILE=trim(datadir)//'/params.log')
+      if (lyinyang) then
+        if (lroot) call information('read_all_init_pars', 'all BCs for y and z ignored because of Yin-Yang grid')
+        lperi(2:3) = .false.; lpole = .false.
+        bcy='yy'; bcz='yy'
+      endif
 !
 !  Parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries.
@@ -362,18 +363,19 @@ module Param_IO
         print*, 'lperi= ', lperi
       endif
 !
-      if (lyinyang.and.coord_system/='spherical'.and.coord_system/='spherical_coords') then
-        if (lroot) call warning('read_all_init_pars', 'Yin-Yang grid only implemented for spherical coordinates')
-        lyinyang=.false.
-      endif
-!
-! Set proper BC code for Yin-Yang grid
-!
-      if (lyinyang) then
-        lperi(2:3) = .false.; lpole = .false.
-        bcy12='yy'; bcz12='yy'
-      endif
       call check_consistency_of_lperi('read_all_init_pars')
+!
+!  Print SVN id from first line.
+!
+      if (lroot) call svn_id(cvsid)
+!
+!  Give online feedback if called with the PRINT optional argument.
+!
+      if (loptest(print)) call write_all_init_pars
+!
+!  Write parameters to log file.
+!
+      if (lstart) call write_all_init_pars(FILE=trim(datadir)//'/params.log')
 !
     endsubroutine read_all_init_pars
 !***********************************************************************
@@ -457,6 +459,14 @@ module Param_IO
         call stop_it_if_any (.true., 'read_all_run_pars: Please fix all above WARNINGs for file "'//trim(file)//'"')
       endif
       call stop_it_if_any (.false., '')
+!
+! Set proper BC code for Yin-Yang grid
+!
+      if (lyinyang) then
+        if (lroot) call information('read_all_run_pars', 'all BCs for y and z ignored because of Yin-Yang grid')
+        lperi(2:3) = .false.; lpole = .false.
+        bcy='yy'; bcz='yy'
+      endif
 !
 !  Print SVN id from first line.
 !
@@ -972,7 +982,7 @@ module Param_IO
 !
     endsubroutine write_IDL_logicals
 !***********************************************************************
-    subroutine write_pencil_info()
+    subroutine write_pencil_info
 !
 !  Write information about requested and diagnostic pencils.
 !  Do this only when on root processor.

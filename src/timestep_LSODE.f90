@@ -125,7 +125,7 @@ module Timestep
 !  Calculate dt_beta_ts (e.g. for t=t+dt_beta_ts(itsub)*ds or for Dustdensity)
 !
         if (ldt) dt_beta_ts=dt*beta_ts
-        if (ip<=6) print*, 'time_step: iproc, dt=', iproc, dt  !(all have same dt?)
+        if (ip<=6) print*, 'time_step: iproc, dt=', iproc_world, dt  !(all have same dt?)
 !
 !  Time evolution of grid variables.
 !  (do this loop in pencils, for cache efficiency)
