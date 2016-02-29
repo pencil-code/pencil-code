@@ -96,10 +96,10 @@ class Stream(object):
         self.tracers[0, :] = xx
         outside = False
         stream_len = 0
-        len = 0
+        length = 0
 
         if integration == 'simple':
-            while ((len < len_max) and (stream_len < iter_max-1) and
+            while ((length < len_max) and (stream_len < iter_max-1) and
             (not np.isnan(xx[0])) and (outside == False)):
                 # (a) single step (midpoint method)
                 xMid = xx + 0.5*dh*vec_int_no_var(xx, field, params, interpolation)
@@ -121,7 +121,7 @@ class Stream(object):
                         print "Error: stepsize underflow"
                         break
                 else:
-                    len += np.sqrt(np.sum((xx-xDouble)**2))
+                    length += np.sqrt(np.sum((xx-xDouble)**2))
                     xx = xDouble.copy()
                     if abs(dh) < h_min:
                         dh = 2*dh
@@ -138,7 +138,7 @@ class Stream(object):
                         outside = True
 
         if integration == 'RK6':
-            while ((len < len_max) and (stream_len < iter_max-1) and
+            while ((length < len_max) and (stream_len < iter_max-1) and
             (not np.isnan(xx[0])) and (outside == False)):
                 k[0, :] = dh*vec_int_no_var(xx, field, params, interpolation)
                 k[1, :] = dh*vec_int_no_var(xx + b[1, 0]*k[0, :], field, params,
@@ -170,7 +170,7 @@ class Stream(object):
                         print "Error: step size underflow"
                         break
                 else:
-                    len += np.sqrt(np.sum((xx-xNew)**2))
+                    length += np.sqrt(np.sum((xx-xNew)**2))
                     xx = xNew
                     if abs(dh) < h_min:
                         dh = 2*dh
@@ -188,7 +188,12 @@ class Stream(object):
                 if (dh > h_max) or (delta == 0) or (np.isnan(dh)):
                     dh = h_max
 
-        self.tracers = np.resize(self.tracers, (stream_len, 3))
-        self.len = len
+        # Linearly interpolate if the last point lies above.
+        if outside and (xx[2] > params.Oz+params.Lz):
+            weight = (params.Oz+params.Lz - self.tracers[stream_len-1, 2])/(self.tracers[stream_len, 2] - self.tracers[stream_len-1, 2])
+            self.tracers[stream_len, :] = weight*(self.tracers[stream_len, :] - self.tracers[stream_len-1, :]) + self.tracers[stream_len-1, :]
+        
+        self.tracers = np.resize(self.tracers, (stream_len+1, 3))
+        self.len = length
         self.stream_len = stream_len
         self.params = params
