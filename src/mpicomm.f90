@@ -635,16 +635,16 @@ module Mpicomm
       iproc_comm = -1
       nproc_comm = 0
 !
-      yscan: do dipy = -1, 1
-        ipy_rec = ipy + dipy
-        shear: if (lshear) then
-          if (ipx_rec < 0) ipy_rec = ipy_rec - ceiling(deltay / Lxyz_loc(2) - 0.5)
-          if (ipx_rec > nprocx - 1) ipy_rec = ipy_rec + ceiling(deltay / Lxyz_loc(2) - 0.5)
-        endif shear
-        ipy_rec = modulo(ipy_rec, nprocy)  ! assuming periodic boundary conditions
+      xscan: do dipx = -1, 1
+        ipx_rec = modulo(ipx + dipx, nprocx)  ! assuming periodic boundary conditions
 !
-        xscan: do dipx = -1, 1
-          ipx_rec = modulo(ipx + dipx, nprocx)  ! assuming periodic boundary conditions
+        yscan: do dipy = -1, 1
+          ipy_rec = ipy + dipy
+          shear: if (lshear) then
+            if (ipx_rec < 0) ipy_rec = ipy_rec - ceiling(deltay / Lxyz_loc(2) - 0.5)
+            if (ipx_rec > nprocx - 1) ipy_rec = ipy_rec + ceiling(deltay / Lxyz_loc(2) - 0.5)
+          endif shear
+          ipy_rec = modulo(ipy_rec, nprocy)  ! assuming periodic boundary conditions
 !
           zscan: do dipz = -1, 1
             ipz_rec = modulo(ipz + dipz, nprocz)  ! assuming periodic boundary conditions
@@ -658,9 +658,9 @@ module Mpicomm
 !
           enddo zscan
 !
-        enddo xscan
+        enddo yscan
 !
-      enddo yscan
+      enddo xscan
 !
 !  Sort the process list.
 !
