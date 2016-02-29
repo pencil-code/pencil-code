@@ -50,10 +50,6 @@ program pc_reduce
   zlneigh = 0
   yuneigh = 0
   zuneigh = 0
-  llcorn = 0
-  lucorn = 0
-  uucorn = 0
-  ulcorn = 0
 !
 !  Set up flags for leading processors in each possible direction and plane
 !

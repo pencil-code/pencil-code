@@ -87,8 +87,8 @@ module InitialCondition
   real :: z_S, z_D
   real, parameter :: z_S_cgs=6.172e20, z_D_cgs=3.086e21
 !
-  real, parameter :: rho0ts_cgs=3.5E-24, T0hs_cgs=7.088E2
-  real :: rho0ts=impossible, T0hs=impossible
+  real, parameter :: rho0ts_cgs=3.5E-24, Tinit_cgs=7.088E2
+  real :: rho0ts=impossible, Tinit=impossible
 !
 !
 !  TT & z-dependent uv-heating profile
@@ -104,7 +104,7 @@ module InitialCondition
 !  start parameters
 !
   namelist /initial_condition_pars/ &
-      rho0ts, T0hs, lthermal_hse, amplaa
+      rho0ts, Tinit, lthermal_hse, amplaa
 !
   contains
 !***********************************************************************
@@ -191,7 +191,7 @@ module InitialCondition
         a_D = a_D_cgs/unit_velocity*unit_time
         z_D = z_D_cgs/unit_length
         if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
-        if (T0hs == impossible) T0hs=T0hs_cgs/unit_temperature
+        if (Tinit == impossible) Tinit=Tinit_cgs/unit_temperature
       else if (unit_system=='SI') then
         call fatal_error('initial_condition_lnrho','SI unit conversions not inplemented')
       endif
@@ -203,8 +203,8 @@ module InitialCondition
 !
       do n=1,mz
         if (lthermal_hse) then
-          logrho = log(rho0ts)+(a_S*z_S*m_u*muhs/k_B/T0hs)*(log(T0hs)- &
-              log(T0hs/(a_S*z_S)* &
+          logrho = log(rho0ts)+(a_S*z_S*m_u*muhs/k_B/Tinit)*(log(Tinit)- &
+              log(Tinit/(a_S*z_S)* &
               (a_S*sqrt(z_S**2+(z(n))**2)+0.5*a_D*(z(n))**2/z_D)))
         else
           logrho = log(rho0ts)-0.015*(- &
@@ -217,7 +217,7 @@ module InitialCondition
       do n=n1,n2
         f(:,:,n,ilnrho)=log(zrho(n))
       enddo
-      if (lroot) print*, 'zhro =',minval(zrho),maxval(zrho),'T0hs =',T0hs,'rho0ts =',rho0ts
+      if (lroot) print*, 'zhro =',minval(zrho),maxval(zrho),'Tinit =',Tinit,'rho0ts =',rho0ts
 !
       call keep_compiler_quiet(f)
 !
@@ -241,7 +241,7 @@ module InitialCondition
         z_S = z_S_cgs/unit_length
         a_D = a_D_cgs/unit_velocity*unit_time
         z_D = z_D_cgs/unit_length
-        if (T0hs == impossible) T0hs=T0hs_cgs/unit_temperature
+        if (Tinit == impossible) Tinit=Tinit_cgs/unit_temperature
       else if (unit_system=='SI') then
         call fatal_error('initial_condition_lnrho','SI unit conversions not inplemented')
       endif
@@ -255,7 +255,7 @@ module InitialCondition
           lnrho=f(1,1,n,ilnrho)
         endif
 !
-        TT=T0hs/(a_S*z_S)* &
+        TT=Tinit/(a_S*z_S)* &
             (a_S*sqrt(z_S**2+(z(n))**2)+0.5*a_D*(z(n))**2/z_D)
         lnTT=log(TT)
 !

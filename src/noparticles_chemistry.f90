@@ -37,6 +37,7 @@ module Particles_chemistry
   integer :: dependent_reactant = 0
   logical :: lbaum_and_street = .false.
   logical :: lsurface_nopores
+  logical :: lpreactions=.false.
   real, dimension(2) :: mass_loss
 
   contains

@@ -4716,7 +4716,7 @@ module Magnetic
 !   2-jan-10/axel: adapted from calc_lhydro_pars
 !  10-jan-13/MR: added possibility to remove evolving mean field
 !
-      use Sub, only: notanumber
+      use General, only: notanumber
       use Deriv, only: der_z,der2_z
       use Sub, only: finalize_aver, div, calc_diffusive_flux
 

@@ -330,7 +330,6 @@ module Mpicomm
 !
 !  initialize debug parameter for this routine
 !
-  logical :: ldebug_mpi=.false.
   integer :: mpi_precision
 !
 !  For f-array processor boundaries
@@ -348,6 +347,7 @@ module Mpicomm
   integer :: ipx_partner, displs ! For shear
   integer :: nextnextya, nextya, lastya, lastlastya ! For shear
   integer :: nextnextyb, nextyb, lastyb, lastlastyb ! For shear
+  integer :: llcorn,lucorn,uucorn,ulcorn            ! (the 4 corners in yz-plane)
   integer :: nprocs, mpierr
   integer :: serial_level = 0
 !
@@ -554,10 +554,8 @@ module Mpicomm
 !  should print (3,15,12,13,1,5,4,7) for iproc=0
 !
 !  Print processor numbers and those of their neighbors.
-!  NOTE: the ip print parameter has *not* yet been read at this point.
-!  Therefore it must be invoked by resetting ldebug_mpi appropriately.
 !
-      if (ldebug_mpi) write(6,'(A,I4,"(",3I4,"): ",8I4)') &
+      if (ip<=7) write(6,'(A,I4,"(",3I4,"): ",8I4)') &
         'initialize_mpicomm: MPICOMM neighbors ', &
         iproc,ipx,ipy,ipz, &
         ylneigh,llcorn,zlneigh,ulcorn,yuneigh,uucorn,zuneigh,lucorn

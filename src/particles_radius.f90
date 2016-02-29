@@ -37,7 +37,7 @@ module Particles_radius
   real :: ztop_ocean=0.0, TTocean=300.0
   real :: aplow=1.0, aphigh=2.0, mbar=1.0
   real :: ap1=1.0, qplaw=0.0, GS_condensation=0.
-  real :: sigma_initdist=0.2, a0_initdist=5e-6
+  real :: sigma_initdist=0.2, a0_initdist=5e-6, rpbeta0=0.0
   integer :: nbin_initdist=20
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
@@ -52,7 +52,7 @@ module Particles_radius
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
       lborder_driving_ocean, ztop_ocean, radii_distribution, TTocean, &
       aplow, aphigh, mbar, ap1, qplaw, eps_dtog, nbin_initdist, &
-      sigma_initdist, a0_initdist
+      sigma_initdist, a0_initdist, lparticles_radius_rpbeta, rpbeta0
 !
   namelist /particles_radius_run_pars/ &
       rhopmat, vthresh_sweepup, deltavp12_floor, &
@@ -60,7 +60,7 @@ module Particles_radius
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
       lborder_driving_ocean, ztop_ocean, TTocean, &
-      lcondensation_simplified, GS_condensation
+      lcondensation_simplified, GS_condensation, rpbeta0
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
@@ -85,6 +85,12 @@ module Particles_radius
 !  Increase npvar accordingly.
 !
       npvar=npvar+1
+!
+      if (lparticles_radius_rpbeta) then
+        irpbeta=npvar+1
+        pvarname(npvar+1)='irpbeta'
+        npvar=npvar+1
+      endif
 !
 !  Check that the fp and dfp arrays are big enough.
 !
@@ -359,6 +365,11 @@ module Particles_radius
 !
           enddo
 !
+        case ('power-law')
+          call random_number_wrapper(fp(npar_low:npar_high,iap))
+          fp(npar_low:npar_high,iap) = ((aphigh**(qplaw+1.0)-aplow**(qplaw+1.0)) &
+            *fp(npar_low:npar_high,iap)+aplow**(qplaw+1.0))**(1.0/(qplaw+1.0))
+!
         case default
           if (lroot) print*, 'init_particles_radius: '// &
               'No such such value for initap: ', trim(initap(j))
@@ -369,6 +380,8 @@ module Particles_radius
 !  Set initial particle radius if lparticles_mass=T
 !
       if (lparticles_mass) fp(:,iapinit)=fp(:,iap)
+!
+      if (lparticles_radius_rpbeta) fp(npar_low:npar_high,irpbeta) = rpbeta0/fp(npar_low:npar_high,iap)
 !
       call keep_compiler_quiet(f)
 !
@@ -449,6 +462,9 @@ module Particles_radius
         k1 = k1_imn(imn)
         k2 = k2_imn(imn)
 !
+!  mass loss has a positive value -> particle is losing mass
+!  (the mass vector is pointing out of the particle)
+!
         allocate(mass_loss(k1:k2))
         allocate(effectiveness_factor(k1:k2))
 !
@@ -459,7 +475,7 @@ module Particles_radius
             if (fp(k,irhosurf) < 0) then
               rho = fp(k,imp) / (fp(k,iap)**3 * 4./3. * pi )
               mass_per_radius = 4. * pi * rho * fp(k,iap)**2
-              dfp(k,iap) = dfp(k,iap) + mass_loss(k) *(1-effectiveness_factor(k))/mass_per_radius
+              dfp(k,iap) = dfp(k,iap) - mass_loss(k) *(1-effectiveness_factor(k))/mass_per_radius
             endif
             fp(k,ieffp) = effectiveness_factor(k)
           enddo
@@ -467,7 +483,7 @@ module Particles_radius
           do k = k1,k2
             rho = fp(k,imp) / (fp(k,iap)**3 * 4./3. * pi )
             mass_per_radius = 4. * pi * rho * fp(k,iap)**2
-            dfp(k,iap) = dfp(k,iap) + mass_loss(k)/mass_per_radius
+            dfp(k,iap) = dfp(k,iap) - mass_loss(k)/mass_per_radius
           enddo
         endif
         deallocate(mass_loss)

@@ -85,8 +85,11 @@ module InitialCondition
   real :: Tupp=100.  ! Surface temperature in K
   real :: Tbot=270.  ! Ocean temperature in K 
   real :: ampltt=1.  ! Random initial temperature amplitude
+  real :: kx_TT=2*pi ! 
+  real :: kz_TT=pi   !
+  character (len=labellen) :: initTT='nothing'
 !
-  namelist /initial_condition_pars/ Tupp,Tbot, ampltt
+  namelist /initial_condition_pars/ Tupp,Tbot, ampltt, kx_TT, kz_TT, initTT
 !
   contains
 !***********************************************************************
@@ -118,36 +121,53 @@ module InitialCondition
 !  Initial condition for temperature
 !
       use Initcond, only: gaunoise
+      use Boundcond, only: update_ghosts
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: deltaT
-      integer :: i
 !
 !  Amplitude of fluctuation
 !
-      call gaunoise(ampltt,f,iTT)
+      select case (initTT) 
+        case ('single-mode')
+        do n=n1,n2
+          do m=m1,m2
+            f(l1:l2,m,n,iTT) = f(l1:l2,m,n,iTT) + &
+                 ampltt*cos(kx_TT*x(l1:l2)/Lxyz(1))*sin(kz_TT*z(n)/Lxyz(3))
+          enddo
+        enddo
+!          
+        case ('gaussian-noise')  
+          call gaunoise(ampltt,f,iTT)
+        case ('nothing')
+!
+        case default
+!
+!  Catch unknown values.
+!
+          write(unit=errormsg,fmt=*) 'No such value initTT = ',trim(initTT)
+          call fatal_error('initial_condition_ss',errormsg)
+!
+      endselect
 !
 !  Add to that the temperature gradient
 !
-      deltaT=(Tupp-Tbot)/nzgrid
+      deltaT=(Tupp-Tbot)/(n2-n1)
       do n=n1,n2
         do m=m1,m2
           f(l1:l2,m,n,iTT) = f(l1:l2,m,n,iTT) + Tbot + (n-n1)*deltaT
         enddo
       enddo
 !
-!  Apply boundaries - lateral (periodic)
+!  Is it needed to apply boundaries here? The code will do it already,
+!  unless it is needed for the streamfunction iteration.       
 !
-      f(1   :l1-1,:,:,iTT) = f(l2i:l2,:,:,iTT)
-      f(l2+1:mx  ,:,:,iTT) = f(l1:l1i,:,:,iTT)
+      call update_ghosts(f,iTT)
 !
-!  Bottom: zero gradient
-!
-      do i=1,nghost; f(:,:,n1-i,iTT)=f(:,:,n1+i,iTT); enddo
-!
-!  Top: constant gradient 
-!
-      do i=1,nghost; f(:,:,n2+i,iTT)=2*f(:,:,n2,iTT) - f(:,:,n2-i,iTT); enddo
+      print*,'initial condition for temperature set'
+      print*,'sum,max,min TT',sum(   f(l1:l2,m1:m2,n1:n2,iTT)),&
+                              maxval(f(l1:l2,m1:m2,n1:n2,iTT)),&
+                              minval(f(l1:l2,m1:m2,n1:n2,iTT))      
 !
     endsubroutine initial_condition_ss
 !***********************************************************************

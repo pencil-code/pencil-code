@@ -46,7 +46,7 @@ module Energy
   real :: Kgperp=0.0, Kgpara=0.0, tdown=0.0, allp=2.0, TT_powerlaw=1.0
   real :: ss_left=1.0, ss_right=1.0
   real :: ss0=0.0, khor_ss=1.0, ss_const=0.0
-  real :: pp_const=0.0, w_sldchar_ent=0.1
+  real :: pp_const=0.0
   real :: tau_ss_exterior=0.0, T0=0.0
   real :: mixinglength_flux=0.0, entropy_flux=0.0
   real :: center1_x=0.0, center1_y=0.0, center1_z=0.0
@@ -58,8 +58,9 @@ module Energy
   real, target :: hcond0=impossible, hcond1=impossible
   real, target :: hcondxbot=impossible, hcondxtop=impossible
   real, target :: hcondzbot=impossible, hcondztop=impossible
-  real, target :: Fbot=impossible, FbotKbot=impossible
-  real, target :: Ftop=impossible, FtopKtop=impossible
+  real, target :: Fbot=impossible, FbotKbot=0. !set default to 0 vs impossible
+  ! FbotKbot normally overwritten, but to remain finite if not
+  real, target :: Ftop=impossible, FtopKtop=0. !also 0 not impossible
   real, target :: chit_prof1=1.0, chit_prof2=1.0
   real, pointer :: reduce_cs2
   real :: Kbot=impossible, Ktop=impossible
@@ -73,10 +74,8 @@ module Energy
   real :: deltaT_poleq=0.0, beta_hand=1.0, r_bcz=0.0
   real :: tau_cool=0.0, tau_diff=0.0, TTref_cool=0.0, tau_cool2=0.0
   real :: tau_cool_ss=0.0
-  real :: cs0hs=0.0, H0hs=0.0, rho0hs=0.0, rho0ts=impossible
+  real :: cs0hs=0.0, H0hs=0.0, rho0hs=0.0
   real :: ss_volaverage=0.
-  real, target :: T0hs=impossible
-  real :: rho0ts_cgs=1.67262158e-24, T0hs_cgs=7.202e3
   real :: xbot=0.0, xtop=0.0, alpha_MLT=1.5, xbot_aniso=0.0, xtop_aniso=0.0
   real :: zz1=impossible, zz2=impossible
   real :: rescale_TTmeanxy=1.
@@ -84,7 +83,7 @@ module Energy
   real :: pclaw=0.0, xchit=0.
   real, target :: hcond0_kramers=0.0, nkramers=0.0
   real :: chimax_kramers=0., chimin_kramers=0., zheat_uniform_range=0.
-  real :: pheat_factor
+  real :: pheat_factor=1., heat_ceiling=-1.0
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
@@ -128,7 +127,8 @@ module Energy
              lchi_shock_density_dep=.false., &
              lhcond0_density_dep=.false.
   logical :: lenergy_slope_limited=.false.
-  real :: h_slope_limited=0., chi_sld_thresh=0.
+  logical :: limpose_heat_ceiling=.false.
+  real :: h_slope_limited=0.
   character (len=labellen) :: islope_limiter=''
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: borderss='nothing'
@@ -165,8 +165,9 @@ module Energy
       ampl_TT, kx_ss, ky_ss, kz_ss, beta_glnrho_global, ladvection_entropy, &
       lviscosity_heat, r_bcz, luminosity, wheat, hcond0, tau_cool, &
       tau_cool_ss, cool2, TTref_cool, lhcond_global, cool_fac, cs0hs, H0hs, &
-      rho0hs, tau_cool2, rho0ts, T0hs, lconvection_gravx, Fbot, &
-      hcond0_kramers, nkramers, alpha_MLT, lprestellar_cool_iso, lread_hcond
+      rho0hs, tau_cool2, lconvection_gravx, Fbot, &
+      hcond0_kramers, nkramers, alpha_MLT, lprestellar_cool_iso, lread_hcond, &
+      limpose_heat_ceiling, heat_ceiling
 !
 !  Run parameters.
 !
@@ -197,7 +198,8 @@ module Energy
       center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
       Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
       cool_type,ichit,xchit,pclaw,lenergy_slope_limited,h_slope_limited,islope_limiter, &
-      chi_sld_thresh, zheat_uniform_range, pheat_factor, lphotoelectric_heating_alt
+      zheat_uniform_range, pheat_factor, lphotoelectric_heating_alt, &
+      limpose_heat_ceiling, heat_ceiling
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -606,8 +608,8 @@ module Energy
               print*,'initialize_energy: hcondxbot, hcondxtop, FbotKbot =', &
                 hcondxbot, hcondxtop, FbotKbot
           else
-            call warning('initialize_energy: setting hcondxbot,', &
-              'hcondxtop, and FbotKbot is not implemented for iheatcond\=K-const')
+            if (lroot) call warning('initialize_energy', &
+              'setting hcondxbot, hcondxtop, and FbotKbot is not implemented for iheatcond\=K-const')
           endif
         endif
       endif
@@ -805,7 +807,7 @@ module Energy
           if (.not. lshock) &
             call stop_it('initialize_energy: shock diffusity'// &
                            ' but module setting SHOCK=noshock')
-         case ('chi-shock-profr')
+        case ('chi-shock-profr')
           lheatc_shock_profr=.true.
           if (lroot) print*, 'initialize_energy: shock with a radial profile'
           if (.not. lshock) &
@@ -814,7 +816,7 @@ module Energy
         case ('hyper3_ss','hyper3')
           lheatc_hyper3ss=.true.
           if (lroot) print*, 'heat conduction: hyperdiffusivity of ss'
-       case ('hyper3_aniso','hyper3-aniso')
+        case ('hyper3_aniso','hyper3-aniso')
           if (lroot) print*, 'heat conduction: anisotropic '//&
                'hyperdiffusivity of ss'
           lheatc_hyper3ss_aniso=.true.
@@ -838,6 +840,7 @@ module Energy
 !
 !  A word of warning...
 !
+      if (lroot) then
       if (lheatc_Kprof .and. hcond0==0.0) then
         call warning('initialize_energy', 'hcond0 is zero!')
       endif
@@ -873,18 +876,19 @@ module Energy
            call warning('initialize_energy','chi_hyper3 is zero!')
       if (lheatc_hyper3ss_mesh .and. chi_hyper3_mesh==0.0) &
            call warning('initialize_energy','chi_hyper3_mesh is zero!')
-      if ( (lheatc_hyper3ss_aniso) .and.  &
-           ((chi_hyper3_aniso(1)==0. .and. nxgrid/=1 ).or. &
-            (chi_hyper3_aniso(2)==0. .and. nygrid/=1 ).or. &
-            (chi_hyper3_aniso(3)==0. .and. nzgrid/=1 )) ) &
-           call fatal_error('initialize_energy', &
-           'A diffusivity coefficient of chi_hyper3 is zero!')
       if (lheatc_shock .and. chi_shock==0.0) then
         call warning('initialize_energy','chi_shock is zero!')
       endif
       if (lheatc_shock_profr .and. chi_shock==0.0) then
         call warning('initialize_energy','chi_shock is zero!')
       endif
+      endif
+      if ( (lheatc_hyper3ss_aniso) .and.  &
+           ((chi_hyper3_aniso(1)==0. .and. nxgrid/=1 ).or. &
+            (chi_hyper3_aniso(2)==0. .and. nygrid/=1 ).or. &
+            (chi_hyper3_aniso(3)==0. .and. nzgrid/=1 )) ) &
+           call fatal_error('initialize_energy', &
+           'A diffusivity coefficient of chi_hyper3 is zero!')
 !
 !  Dynamical hyper-diffusivity operates only for mesh formulation of hyper-diffusion
 !
@@ -1151,8 +1155,6 @@ module Energy
             enddo; enddo
           case('Ferriere'); call ferriere(f)
           case('Ferriere-hs'); call ferriere_hs(f,rho0hs)
-          case('thermal-hs')
-            call thermal_hs_equilibrium_ism(f)
           case('Galactic-hs'); call galactic_hs(f,rho0hs,cs0hs,H0hs)
           case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
           case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
@@ -2019,7 +2021,7 @@ module Energy
 !  AJ: PLEASE IDENTIFY AUTHOR
 !
       use EquationOfState, only: eoscalc, ilnrho_pp, eosperturb
-      use Mpicomm, only: mpibcast_real
+      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: absz
@@ -2087,10 +2089,10 @@ module Energy
           call eosperturb(f,nx,pp=pp)
 !
           fmpi1=cs2bot
-          call mpibcast_real(fmpi1,0)
+          call mpibcast_real(fmpi1,0,comm=MPI_COMM_WORLD)
           cs2bot=fmpi1
           fmpi1=cs2top
-          call mpibcast_real(fmpi1,ncpus-1)
+          call mpibcast_real(fmpi1,ncpus-1,comm=MPI_COMM_WORLD)
           cs2top=fmpi1
 !
         endif
@@ -2113,7 +2115,7 @@ module Energy
 !  20-jan-15/MR: changes for use of reference state.
 !
       use EquationOfState , only: eosperturb, getmu
-      use Mpicomm, only: mpibcast_real
+      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(nx) :: rho,pp
@@ -2155,10 +2157,10 @@ module Energy
           call eosperturb(f,nx,pp=pp)
 !
           fmpi1=cs2bot
-          call mpibcast_real(fmpi1,0)
+          call mpibcast_real(fmpi1,0,comm=MPI_COMM_WORLD)
           cs2bot=fmpi1
           fmpi1=cs2top
-          call mpibcast_real(fmpi1,ncpus-1)
+          call mpibcast_real(fmpi1,ncpus-1,comm=MPI_COMM_WORLD)
           cs2top=fmpi1
 !
          endif
@@ -2168,90 +2170,6 @@ module Energy
       if (lroot) print*, 'Ferriere-hs: cs2bot=',cs2bot, ' cs2top=',cs2top
 !
     endsubroutine ferriere_hs
-!***********************************************************************
-    subroutine thermal_hs_equilibrium_ism(f)
-!
-!  This routine calculates a vertical profile for density for an appropriate
-!  isothermal entropy designed to balance the vertical 'Ferriere' gravity
-!  profile used in interstellar.
-!  T0 and rho0 are chosen to ensure uv-heating approx 0.0147 at z=0.
-!  Initial thermal & hydrostatice equilibrium is achieved by ensuring
-!  Lambda*rho(z)=Gamma(z) in interstellar.
-!
-!  Requires gravz_profile='Ferriere' in gravity_simple.f90,
-!  initlnrho='Galactic-hs' in density.f90 and heating_select='thermal-hs'
-!  in interstellar.f90. Constants g_A..D from gravz_profile.
-!
-!  22-mar-10/fred: coded
-!  12-aug-10/fred: moved to interstellar and added shared variables
-!  20-jan-15/MR: changes for use of reference state.
-!
-      use EquationOfState , only: eoscalc, ilnrho_lnTT, getmu
-      use SharedVariables, only: get_shared_variable
-!
-      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
-!
-      real :: lnrho,ss,lnTT,TT
-      real, dimension(:), pointer :: zrho
-      real, pointer :: T0hs
-      real :: g_A, g_C
-      real, parameter ::  g_A_cgs=4.4e-9, g_C_cgs=1.7e-9
-      double precision :: g_B ,g_D
-      double precision, parameter :: g_B_cgs=6.172D20 , g_D_cgs=3.086D21
-!
-!  identifier
-!
-      if (headtt) print*,'thermal_hs_equilibrium_ism: ENTER'
-!
-!  Set up physical units.
-!
-      if (unit_system=='cgs') then
-        g_A = g_A_cgs/unit_velocity*unit_time
-        g_C = g_C_cgs/unit_velocity*unit_time
-        g_D = g_D_cgs/unit_length
-        g_B = g_B_cgs/unit_length
-      else if (unit_system=='SI') then
-        call fatal_error('initialize_entropy', &
-            'SI unit conversions not inplemented')
-      endif
-!
-!  Obtain vertical density profile and isothermal temperature from
-!  interstellar: thermal_hs
-!
-      call get_shared_variable('zrho', zrho, caller='thermal_hs_equilibrium_ism')
-      call get_shared_variable('T0hs', T0hs)
-      if (lroot) print*, &
-          'thermal_hs_equilibrium_ism: zrho received', &
-          ' from interstellar, T0hs =',T0hs
-!
-!  Allocate density profile to f and derive entropy profile from
-!  temperature and density
-!
-      do n=n1,n2
-        lnrho=log(zrho(n))
-        if (ldensity_nolog) then
-          if (lreference_state) then
-            do m=m1,m2
-              f(l1:l2,m,n,irho)=zrho(n)-reference_state(:,iref_rho)
-            enddo
-          else
-            f(:,:,n,irho)=zrho(n)
-          endif
-        else
-          f(:,:,n,ilnrho)=lnrho
-        endif
-!
-        TT=T0hs/(g_A*g_B)* &
-            (g_A*sqrt(g_B**2+(z(n))**2)+0.5*g_C*(z(n))**2/g_D)
-        lnTT=log(TT)
-!
-        call eoscalc(ilnrho_lnTT,lnrho,lnTT,ss=ss)
-!
-        f(:,:,n,iss)=ss
-!
-      enddo
-!
-    endsubroutine thermal_hs_equilibrium_ism
 !***********************************************************************
     subroutine galactic_hs(f,rho0hs,cs0hs,H0hs)
 !
@@ -2265,7 +2183,7 @@ module Energy
 !   20-jan-15/MR: changes for use of reference state.
 !
       use EquationOfState, only: eosperturb
-      use Mpicomm, only: mpibcast_real
+      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
 !
       real, dimension (mx,my,mz,mfarray) :: f
 
@@ -2298,10 +2216,10 @@ module Energy
           endif
 
           fmpi1=cs2bot
-          call mpibcast_real(fmpi1,0)
+          call mpibcast_real(fmpi1,0,comm=MPI_COMM_WORLD)
           cs2bot=fmpi1
           fmpi1=cs2top
-          call mpibcast_real(fmpi1,ncpus-1)
+          call mpibcast_real(fmpi1,ncpus-1,comm=MPI_COMM_WORLD)
           cs2top=fmpi1
 !
         endif
@@ -2411,7 +2329,10 @@ module Energy
       if (lheatc_Kconst .or. lheatc_chiconst .or. lheatc_Kprof .or. &
           tau_cor>0 .or. &
           lheatc_sqrtrhochiconst) lpenc_requested(i_cp1)=.true.
-      if (ldt) lpenc_requested(i_cs2)=.true.
+      if (ldt) then
+        lpenc_requested(i_cs2)=.true.
+        lpenc_requested(i_ee)=.true.
+      endif
       if (lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
       if (ladvection_entropy) then
         if (lweno_transport) then
@@ -2905,7 +2826,7 @@ module Energy
       real, dimension (nx) :: Hmax,gT2,gs2,gTxgs2
       real, dimension (nx,3) :: gTxgs
       real :: ztop,xi,profile_cor,uT,fradz,TTtop
-      real, dimension(nx) :: ufpres, uduu, glnTT2, Ktmp, chi_sld
+      real, dimension(nx) :: ufpres, uduu, glnTT2, Ktmp
       integer :: j,ju
       integer :: i
 !
@@ -3026,13 +2947,8 @@ module Energy
       if (lheatc_hyper3ss_mesh)  call calc_heatcond_hyper3_mesh(f,df)
       if (lheatc_hyper3ss_aniso) call calc_heatcond_hyper3_aniso(f,df)
 
-      if (lenergy_slope_limited.and.lfirst) then
+      if (lenergy_slope_limited.and.lfirst) &
         df(:,m,n,iss)=df(:,m,n,iss)-f(l1:l2,m,n,iFF_div_ss)
-        if (ldt) then
-          chi_sld=abs(f(l1:l2,m,n,iFF_div_ss))/dxyz_2
-          diffus_chi=diffus_chi+chi_sld
-        endif
-      endif
 !
       !if(lfirst .and. ldiagnos) print*,'DIV:iproc,m,f=',iproc,m,f(l1:l2,m,n,iFF_div_ss)
 !
@@ -3070,7 +2986,7 @@ module Energy
 !
 !  Enforce maximum heating rate timestep constraint
 !
-!      if (lfirst.and.ldt) dt1_max=max(dt1_max,Hmax/p%ee/cdts)
+      if (lfirst.and.ldt) dt1_max=max(dt1_max,Hmax/p%ee/cdts)
 !
 !  Calculate entropy related diagnostics.
 !
@@ -3309,7 +3225,6 @@ module Energy
 !
       integer :: l,m,n,lf
       real :: fact, cv1, tmp1
-      real, dimension(nx) :: tmp
 !
 !  Compute horizontal average of entropy. Include the ghost zones,
 !  because they have just been set.
@@ -3481,8 +3396,6 @@ module Energy
 
         do n=n1,n2; do m=m1,m2
           call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_ss),.true.)
-!          call div(f,iFF_diff,tmp,.true.)
-!          f(l1:l2,m,n,iFF_div_ss)=tmp
         enddo; enddo
 
       endif
@@ -3494,7 +3407,7 @@ module Energy
 !  Updates characteristic veelocity for slope-limited diffusion.
 !
 !  25-sep-15/MR+joern: coded
-!   9-oct-15/MR: added uodateing of characteristic velocity by sound speed
+!   9-oct-15/MR: added updating of characteristic velocity by sound speed
 !  29-dec-15/joern: changed to staggered_max_scale
 !
       use EquationOfState, only: eoscalc
@@ -3509,13 +3422,12 @@ module Energy
 !
 !  Calculate sound speed and store temporarily in first slot of diffusive fluxes.
 !
-        f(:,:,:,iFF_diff) = 0.
         do n=1,mz; do m=1,my
           call eoscalc(f,mx,cs2=cs2)
           f(:,m,n,iFF_diff) = sqrt(cs2)   ! sqrt needed as we need the speed.
         enddo; enddo
 !
-!        call staggered_mean_scal(f,iFF_diff,iFF_char_c,weight)
+!        call staggered_mean_scal(f,iFF_diff,iFF_char_c,w_sldchar_ent)
         call staggered_max_scal(f,iFF_diff,iFF_char_c,w_sldchar_ent)
 !
       endif
@@ -4385,7 +4297,8 @@ module Energy
 !
       use Diagnostics
       use Debug_IO, only: output_pencil
-      use Sub, only: dot, notanumber
+      use Sub, only: dot
+      use General, only: notanumber
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -4502,7 +4415,8 @@ module Energy
 !
       use Diagnostics
       use Debug_IO, only: output_pencil
-      use Sub, only: dot, notanumber, g2ij, write_zprof
+      use Sub, only: dot, g2ij, write_zprof
+      use General, only: notanumber
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -4965,6 +4879,8 @@ module Energy
         heat=heat+profile_buffer*p%ss* &
             (TTheat_buffer-1/p%TT1)/(p%rho1*tauheat_buffer)
       endif
+!
+      if (limpose_heat_ceiling) where(heat>heat_ceiling) heat=heat_ceiling
 !
 !  Add heating/cooling to entropy equation.
 !
@@ -5645,7 +5561,7 @@ module Energy
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss)-rtv_cool
 !
       if (lfirst.and.ldt) then
-         dt1_max=max(dt1_max,tmp)
+        dt1_max=max(dt1_max,tmp)
       endif
 !
     endsubroutine calc_heat_cool_RTV
@@ -6520,10 +6436,10 @@ module Energy
 !
 !  11-dec-2014/pete: aped from read_hcond
 !
-      use Mpicomm, only: mpibcast_real_arr
+      use Mpicomm, only: mpibcast_real_arr, MPI_COMM_WORLD
 !
       real, dimension(nx), intent(out) :: cs2cool_x
-      integer, parameter :: ntotal=nx*nprocx
+      integer, parameter :: ntotal=nx*nprocx       !MR: Isn't this nxgrid?
       real, dimension(nx*nprocx) :: tmp1
       real :: var1
       logical :: exist
@@ -6557,7 +6473,7 @@ module Energy
 !
       endif
 !
-      call mpibcast_real_arr(tmp1, ntotal)
+      call mpibcast_real_arr(tmp1, ntotal, comm=MPI_COMM_WORLD)
 !
 !  Assuming no ghost zones in cooling_profile.dat
 !

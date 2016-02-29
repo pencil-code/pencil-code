@@ -1174,7 +1174,7 @@ module Special
 !
 !  01-aug-11/wlad: coded
 !
-      use Sub, only: notanumber
+      use General, only: notanumber
 !
       real :: left,right,sigma,omega,mdot,phileft,phiright
       real :: x1,x2,xl,xh,rts,dxold,deltax

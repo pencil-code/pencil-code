@@ -72,9 +72,11 @@ module Special
   real :: dsize_max=0.,dsize_min=0.
   real :: dsize0_max=0.,dsize0_min=0., UY_ref=0.
   real :: TT2=0., TT1=0., dYw=1., pp_init=3.013e5
-  logical :: lbuffer_zone_T=.false., lbuffer_zone_chem=.false., lbuffer_zone_uy=.false.
+  logical :: lbuffer_zone_T=.false., lbuffer_zone_chem=.false.
+  logical :: lbuffer_zone_uy=.false., lbuffer_zone_uz=.false.
   logical :: llognormal=.false., lACTOS=.false.
   logical :: lsmall_part=.false.,  llarge_part=.false., lsmall_large_part=.false. 
+  logical :: laverage=.false.
 !
   real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.,AA=0.66e-4
   real :: nd0, r0, r02, delta, uy_bz, ux_bz,  dYw1, dYw2, PP, Ntot=1e3
@@ -88,7 +90,8 @@ module Special
       lbuoyancy_z,lbuoyancy_x,lbuoyancy_y, sigma, Period,dsize_max,dsize_min, lbuoyancy_z_model,&
       TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, dYw1, dYw2, &
       nd0, r0, r02, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot,  PP, TT0, qwater0, aerosol_present, &
-      lACTOS, lsmall_part,  llarge_part, lsmall_large_part, Ntot_ratio, UY_ref, llognormal, Ntot_input
+      lACTOS, lsmall_part,  llarge_part, lsmall_large_part, Ntot_ratio, UY_ref, llognormal, Ntot_input, &
+      laverage, lbuffer_zone_uz
 
 ! run parameters
   namelist /special_run_pars/  &
@@ -421,7 +424,7 @@ module Special
       real    :: del,width
       integer :: l_sz
       integer :: i, j  !, sz_l_y,sz_r_y,
-      integer ::  mm1,mm2, sz_y
+      integer ::  mm1,mm2, sz_y, nn1, nn2, sz_z
       real    :: dt1, bs,Ts,dels
       logical :: lzone_left, lzone_right
 !
@@ -488,8 +491,23 @@ module Special
 !
         enddo
         endif
+        
+        if (lbuffer_zone_uz .and. (nzgrid/=1)) then
+        do j=1,2
 !
+         if (j==1) then
+            nn1=nzgrid-sz_z
+            nn2=nzgrid
 !
+           if ((z(n) >= zgrid(nn1)) .and. (z(n) <= zgrid(nn2))) lzone_right=.true.
+           if (lzone_right) then
+             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(f(l1:l2,m,n,iuz)-0.)*dt1
+           endif
+         else if (j==2) then
+         endif
+!
+        enddo
+        endif
 !
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
@@ -735,18 +753,12 @@ module Special
 !             call bc_satur_x(f,bc)
          endselect
          bc%done=.true.
-         case ('ffx')
-         select case (bc%location)
-         case (iBC_X_BOT)
-           call bc_file_x_special(f,bc)
-!             call bc_satur_x(f,bc)
-         endselect
-         bc%done=.true.
          case ('ffz')
          select case (bc%location)
-         case (iBC_Z_BOT)
-           call bc_file_z_special(f,bc)
-!             call bc_satur_x(f,bc)
+           case (iBC_Z_BOT)
+             call bc_file_z_special(f,bc)
+           case (iBC_Z_TOP)
+             call bc_file_z_special(f,bc)
          endselect
          bc%done=.true.
       endselect
@@ -1422,363 +1434,118 @@ subroutine bc_satur_x(f,bc)
 !
      endsubroutine set_init_parameters
 !***********************************************************************
-     subroutine bc_file_x_special(f,bc)
-
-       use Cdata
-!
-!      real, dimension (mx,my,mz,mvar+maux) :: f
-!      integer :: sgn
-!      type (boundary_condition) :: bc
-!      integer :: i,j,vr
-!      integer :: jjj,kkk
-!      real :: value1, value2, rad_2
-!      real, dimension (2) :: jet_center=0.
-!      real, dimension (my,mz) :: u_profile
-!      
-!      
-!       character (len=bclen), intent (in) :: topbot
-      type (boundary_condition) :: bc
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (1000, 1000) :: TTx
-!
- !     real, dimension (:,:,:,:), allocatable :: bc_file_x_array
-!       real, dimension (:,:,:,:), allocatable :: bc_file_x_array
-!       real, dimension (:,:), allocatable :: bc_T_x_array
-         real, dimension(66,64) :: bc_T_x_array, bc_u_x_array
-          real, dimension(64), save :: xx_bc, yy_bc
-       real, dimension (66) :: tmp, tmp2, LES_x
-       real, dimension (60), save :: time
-       real, dimension (64,64), save :: bc_T_x_adopt, bc_u_x_adopt
-      integer :: i,j,ii,statio_code,vr, Npoints, i1,i2, io_code, stat
-      integer ::  mm1,mm2,nn1,nn2
-      integer,save :: time_position=1
-      real, save :: time_LES=0
-      real :: lbc,frac, d_LESx,ttt
-      logical, save :: lbc_file_x=.true.
-      logical, save :: lbc_T_x=.true.!, lbc_U_x=.false.
-!
-      if (time_LES<=t) then
-        lbc_T_x=.true.
-      endif  
-!
-!       print*,'t, time_LES, time_position', t,time_LES, time_position
-!       print*,'lbc_T_x',lbc_T_x
-!      print*,'lbc_T_x',lbc_T_x, lroot
-!
-      if (lbc_T_x) then
-!      if (lroot) then
-!!-------------------------------------
-!! it should be read from file
-!! but now the grid is not regular
-         do i = 1,64
-           xx_bc(i)=50.*(i-1)*100.
-           yy_bc(i)=50.*(i-1)*100.
-         enddo 
-!-------------------------------------
-          print*,'opening T2.dat'
-          open(9,file='T2.dat')
-          open(99,file='w2.dat')
-!          
-!   print*,'time_position',time_position
-   
-          read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
-          read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
-!            xx_bc(1:64)=tmp(3:66)
-          do i = 1,60
-!          
-          if (i==time_position) then  
-            do  j= 1,64
-              read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
-              read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
-              do ii=1,66
-                bc_T_x_array(ii,j)=tmp(ii)
-                bc_u_x_array(ii,j)=tmp2(ii)*100.
-              enddo
-!               yy_bc(j)=bc_T_x_array(2,j)
-!               print*,j,bc_T_x_array(2,j)
-            enddo
-            time(i)=bc_T_x_array(1,1)
-          else
-            do  j= 1,64
-              read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
-              read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
-              if (j==1) time(i)=tmp(1)
-            enddo
-          endif
-!          
-!          print*,'time(i)',i,time(i)       
-
-          enddo
-          
-           if (io_code < 0) then
-            ! end of file
-!              if (lroot) print*,'need file with dimension: for fil2 633 62 '
-!              deallocate(bc_T_x_array)
- !           call stop_it("boundary file bc_file_x.dat has incorrect size")
-            endif
-          close(9)
-          close(99)
-           print*,'closing file'
-!        endif
-
-         ttt=time(1)
-           do i = 1,60
-!            time(i)=(time(i)-ttt)
-            time(i)=(time(i)-ttt)
-!            print*,i, time(i)
-          enddo
-!
-          do i = 3,66
-            LES_x(i-2)=bc_T_x_array(i,1)
-          enddo
-!          
-          d_LESx=LES_x(2)-LES_x(1)
-!          
-          Npoints=1 !nint(d_LESx/dx)
-!          
-!          
-!          print*,'d_LESx=  ',d_LESx,'dx=',dx,'Npoints=',Npoints,' int(my/Npoints) ',nint(d_LESx/dx), d_LESx/dx
-!          
-          if (Npoints>1) then
-            do i=1,64-1
-              if ((i-1)*Npoints+1<my+1) then
-                bc_T_x_adopt((i-1)*Npoints+1,:)=bc_T_x_array(i+1,time_position)
-              endif
-            enddo
-          endif  
-!
-!          print*,time_position
-!          
-          if (Npoints==1) then
-            do i=1,64
-            do j=1,64
-                bc_T_x_adopt(i,j)=bc_T_x_array(i+2,j)
-                bc_u_x_adopt(i,j)=bc_u_x_array(i+2,j)
-            enddo
-            enddo
-    !        
- !           print*,'proverka1',bc_T_x_adopt(1,1),bc_T_x_adopt(1,32),bc_T_x_adopt(32,1),bc_T_x_adopt(32,32)
-          else
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!notready!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!          
-            do i=1,my
- !         do j=1,mz
-!          print*,i
-! 
-            if (bc_T_x_adopt(i,time_position)>1.) then 
-              i1=i
-              i2=i+Npoints
- !             print*,'cheking',bc_T_a_adopt(i1,2),bc_T_a_adopt(i2,2), i1,i2
-            else
-!              print*,i, i1,i2, (i-i1)*1./(i2-i1)
-              bc_T_x_adopt(i,time_position)= &
-                    bc_T_x_adopt(i1,time_position)+(i-i1)*(bc_T_x_adopt(i2,time_position)-bc_T_x_adopt(i1,time_position))/(i2-i1)
-              
-            endif
- !         enddo
-            enddo
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
-           endif
-           lbc_T_x=.false.
-           time_position=time_position+1
-           time_LES=time(time_position)
-      endif
-!      endif
-!
-      vr=bc%ivar
-!
-      if (bc%location==iBC_X_BOT) then
-        if (vr==ilnTT) then
-!
-!       print*,bc_T_x_adopt(:,1)
-!       print*,'test',bc_T_x_adopt(1,1),bc_T_x_adopt(16,1),bc_T_x_adopt(32,1), y(m1),y(m2),m1,m2
-!
-          do j=n1,n2
-          do i=m1,m2
-            f(l1,i,j,vr)=alog(bc_T_x_adopt(i-3,j-3))
-          enddo
-          enddo
-!           
-          do i=1,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
-!   
-        elseif (vr==iux) then
-
-!print*,'bab'
-           mm1=(y(m1)-xyz0(2))/dy+1
-           mm2=(y(m2)-xyz0(2))/dy+1
-           nn1=(z(n1)-xyz0(3))/dz+1
-           nn2=(z(n2)-xyz0(3))/dz+1
-
-!       print*,'mm1=',mm1,'mm2=',mm2,'nn1=',nn1,'nn2=',nn2
-
-           do j=n1,n2
-             i2=nn1+j-4
-           do i=m1,m2
-             i1=mm1+i-4
-             f(l1,i,j,vr)=bc_u_x_adopt(i1,i2)*bc_T_x_adopt(i1,i2)/exp(f(l1,i,j,ilnTT))
- !             f(l1,i,j,vr)=bc_T_x_adopt(i1,i2)
-           enddo
-           enddo
-
-!     print*, bc_T_x_adopt(mm1,nn1),bc_T_x_adopt(mm2,nn1)
-!           
-           do i=1,nghost; f(l1-i,:,:,vr)=2*f(l1,:,:,vr)-f(l1+i,:,:,vr); enddo
-        endif
-      elseif (bc%location==iBC_X_TOP) then
-!
-      else
-      endif
-    endsubroutine bc_file_x_special
-!***********************************************************************
     subroutine bc_file_z_special(f,bc)
 
        use Cdata
 !
       type (boundary_condition) :: bc
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (1000, 1000) :: TTx
-      real, dimension(66,64) :: bc_T_x_array, bc_u_x_array
-      real, dimension(64), save :: xx_bc, yy_bc
-      real, dimension (66) :: tmp, tmp2, LES_x
-      real, dimension (60), save :: time
-      real, dimension (64,64), save :: bc_T_x_adopt, bc_u_x_adopt
-      integer :: i,j,ii,statio_code,vr, Npoints, i1,i2, io_code, stat
+      real, dimension(64), save :: bc_T_array_bot, bc_u_array_bot, bc_T_array_top, bc_u_array_top
+!      real, dimension(66,64), save :: bc_T_x_array, bc_u_x_array, bc_T_x_array2, bc_u_x_array2
+      real, dimension (66) :: tmp, tmp2
+      real, dimension (60)  :: time_top, time_bot
+      integer :: i,j,ii,statio_code,vr, i1,i2, io_code, stat
       integer ::  ll1,ll2,mm1,mm2
-      integer,save :: time_position=1
-      real, save :: time_LES=0
-      real :: lbc,frac, d_LESx,ttt
-      logical, save :: lbc_file_x=.true.
-      logical, save :: lbc_T_z=.true.!, lbc_U_x=.false.
+      integer :: time_position_top, time_position_bot
+!      real, save ::  t_bot, t_top
+      real ::  bc_T_aver_top, bc_u_aver_top, bc_T_aver2_top, bc_u_aver2_top
+      real ::  bc_T_aver_bot, bc_u_aver_bot, bc_T_aver2_bot, bc_u_aver2_bot
+      real :: bc_T_aver_final, bc_u_aver_final
+      real :: lbc,frac, ttt, bc_T_final_top, bc_u_final_top
+!      logical :: lbc_top, lbc_bot
+      logical, save :: lbc_file_top=.true., lbc_file_bot=.true.
+      real :: t1,t2
 !
-      if (time_LES<=t) then
-        lbc_T_z=.true.
-      endif  
-!
-      if (lbc_T_z) then
-!      if (lroot) then
-!!-------------------------------------
-!! it should be read from file
-!! but now the grid is not regular
-         do i = 1,64
-           xx_bc(i)=50.*(i-1)*100.
-           yy_bc(i)=50.*(i-1)*100.
-         enddo 
-!-------------------------------------
-          print*,'opening T2.dat'
-          open(9,file='T2.dat')
-          open(99,file='w2.dat')
-!          
-!   print*,'time_position',time_position
-   
-          read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
-          read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
-!            xx_bc(1:64)=tmp(3:66)
-          do i = 1,60
-!          
-          if (i==time_position) then  
-            do  j= 1,64
-              read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
-              read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
-              do ii=1,66
-                bc_T_x_array(ii,j)=tmp(ii)
-                bc_u_x_array(ii,j)=tmp2(ii)*100.
-              enddo
-!               yy_bc(j)=bc_T_x_array(2,j)
-!               print*,j,bc_T_x_array(2,j)
-            enddo
-            time(i)=bc_T_x_array(1,1)
-          else
-            do  j= 1,64
-              read(9,*,iostat=io_code) (tmp(ii),ii=1,66)
-              read(99,*,iostat=io_code) (tmp2(ii),ii=1,66)
-              if (j==1) time(i)=tmp(1)
-            enddo
-          endif
-!          
-!          print*,'time(i)',i,time(i)       
+!   
+      if (lroot) then
+      do i = 1,60
+        time_bot(i)=(i-1)*1800.
+        time_top(i)=(i-1)*7200.
+      enddo 
 
-          enddo
-          
-          close(9)
-          close(99)
-          print*,'closing file'
-!        endif
-
-         ttt=time(1)
-          do i = 1,60
-            time(i)=(time(i)-ttt)
-          enddo
-!
-          do i = 3,66
-            LES_x(i-2)=bc_T_x_array(i,1)
-          enddo
-!          
-          d_LESx=LES_x(2)-LES_x(1)
-!          
-          Npoints=1 !nint(d_LESx/dx)
-!          
-!          
-!          print*,'d_LESx=  ',d_LESx,'dx=',dx,'Npoints=',Npoints,' int(my/Npoints) ',nint(d_LESx/dx), d_LESx/dx
-!          
-          if (Npoints>1) then
-            do i=1,64-1
-              if ((i-1)*Npoints+1<my+1) then
-                bc_T_x_adopt((i-1)*Npoints+1,:)=bc_T_x_array(i+1,time_position)
-              endif
-            enddo
-          endif  
-!
-!          print*,time_position
-!          
-          if (Npoints==1) then
-            do i=1,64
-            do j=1,64
-                bc_T_x_adopt(i,j)=bc_T_x_array(i+2,j)
-                bc_u_x_adopt(i,j)=bc_u_x_array(i+2,j)
-            enddo
-            enddo
-    !        
- !           print*,'proverka1',bc_T_x_adopt(1,1),bc_T_x_adopt(1,32),bc_T_x_adopt(32,1),bc_T_x_adopt(32,32)
-          else
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!notready!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!          
-            do i=1,my
- !         do j=1,mz
-!          print*,i
-! 
-            if (bc_T_x_adopt(i,time_position)>1.) then 
-              i1=i
-              i2=i+Npoints
- !             print*,'cheking',bc_T_a_adopt(i1,2),bc_T_a_adopt(i2,2), i1,i2
-            else
-!              print*,i, i1,i2, (i-i1)*1./(i2-i1)
-              bc_T_x_adopt(i,time_position)= &
-                    bc_T_x_adopt(i1,time_position)+(i-i1)*(bc_T_x_adopt(i2,time_position)-bc_T_x_adopt(i1,time_position))/(i2-i1)
-              
-            endif
- !         enddo
-            enddo
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!            
-           endif
-           lbc_T_z=.false.
-           time_position=time_position+1
-           time_LES=time(time_position)
       endif
-!      endif
-!
+
+    
       vr=bc%ivar
 !
-      if (bc%location==iBC_Z_BOT) then
-        if (vr==ilnTT) then
+     if (bc%location==iBC_Z_BOT) then
+     
+       do i = 1,60
+!      
+         t1=time_bot(i)
+         t2=time_bot(i+1)
+         if ((t>=t1) .and. (t<t2)) then
+           time_position_bot=i
+         endif
+!        if (t>=time_top(i)) .and. (t<time_top(i+1)) then
+!          time_position=i
+!        endif
+!      
+       enddo
 !
-!       print*,bc_T_x_adopt(:,1)
-!       print*,'test',bc_T_x_adopt(1,1),bc_T_x_adopt(16,1),bc_T_x_adopt(32,1), y(m1),y(m2),m1,m2
+        if (lbc_file_bot) then
+          if (lroot) then
 !
-          do j=m1,m2
-          do i=l1,l2
-            f(i,j,n1,vr)=alog(bc_T_x_adopt(i-3,j-3))
+            print*,'opening *1.dat'
+            open(9,file='T1.dat')
+            open(99,file='w1.dat')
+!          
+            do i = 1,37
+             read(9,*,iostat=io_code) (tmp(ii),ii=1,2)
+             read(99,*,iostat=io_code) (tmp2(ii),ii=1,2)
+             bc_T_array_bot(i)=tmp(2)
+             bc_u_array_bot(i)=tmp2(2)
+            enddo
+!          
+            close(9)
+            close(99)
+            print*,'closing file'
+          endif
+          lbc_file_bot=.false.
+        endif
+!          
+           do i = 1,37
+            if (i==time_position_bot) then
+              bc_T_aver_bot=bc_T_array_bot(i)
+              bc_u_aver_bot=bc_u_array_bot(i)
+              bc_T_aver2_bot=bc_T_array_bot(i+1)
+              bc_u_aver2_bot=bc_u_array_bot(i+1)
+            endif
+           enddo
+!
+!      print*,'time_position_bot=', time_position_bot, time_bot(time_position_bot)
+!      print*, bc_T_aver_bot, bc_T_aver2_bot
+!
+         bc_T_aver_final=bc_T_aver_bot  &
+               +(t-time_bot(time_position_bot)) &
+               /(time_bot(time_position_bot+1)-time_bot(time_position_bot))    &
+               *(bc_T_aver2_bot-bc_T_aver_bot)
+               
+         bc_u_aver_final=bc_u_aver_bot  &
+               +(t-time_bot(time_position_bot)) &
+               /(time_bot(time_position_bot+1)-time_bot(time_position_bot))    &
+               *(bc_u_aver2_bot-bc_u_aver_bot)
+!
+
+!    print*,time_bot(time_position_bot-1),t,time_bot(time_position_bot)
+!    print*, bc_T_aver_bot,bc_T_aver_final, bc_T_aver2_bot
+
+       if (vr==ilnTT) then
+!
+          ll1=(x(l1)-xyz0(1))/dx+1
+          ll2=(x(l2)-xyz0(1))/dx+1
+          mm1=(y(m1)-xyz0(2))/dy+1
+          mm2=(y(m2)-xyz0(2))/dy+1
+!
+          do j=l1,l2
+            i2=ll1+j-4
+          do i=m1,m2
+            i1=mm1+i-4
+            f(j,i,n1,vr)=alog(bc_T_aver_final)
           enddo
           enddo
 !           
-          do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+1,vr); enddo
+          do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+i,vr); enddo
 !   
         elseif (vr==iuz) then
 !
@@ -1787,23 +1554,140 @@ subroutine bc_satur_x(f,bc)
            mm1=(y(m1)-xyz0(2))/dy+1
            mm2=(y(m2)-xyz0(2))/dy+1
 !
-!       print*,'mm1=',mm1,'mm2=',mm2,'nn1=',nn1,'nn2=',nn2
-!
            do j=l1,l2
-             i2=ll1+j-4
            do i=m1,m2
-             i1=mm1+i-4
-             f(j,i,n1,vr)=bc_u_x_adopt(i1,i2)*bc_T_x_adopt(i1,i2)/exp(f(j,i,n1,ilnTT))
- !             f(l1,i,j,vr)=bc_T_x_adopt(i1,i2)
+              f(j,i,n1,vr)=bc_u_aver_final &
+                  *bc_T_aver_final/exp(f(j,i,n1,ilnTT))
            enddo
            enddo
-
+!
 !     print*, bc_T_x_adopt(ll1,mm1),bc_T_x_adopt(ll2,mm1)
 !           
-          do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+1,vr); enddo
+          do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+i,vr); enddo
+      elseif (vr==iux) then
+!
+           ll1=(x(l1)-xyz0(1))/dx+1
+           ll2=(x(l2)-xyz0(1))/dx+1
+           mm1=(y(m1)-xyz0(2))/dy+1
+           mm2=(y(m2)-xyz0(2))/dy+1
+!
+           do j=l1,l2
+           do i=m1,m2
+              f(j,i,n1,vr)=10.*bc_T_aver_final/exp(f(j,i,n1,ilnTT))
+           enddo
+           enddo
+!
+          do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+i,vr); enddo
+        elseif (vr==iuy) then
+!
+           ll1=(x(l1)-xyz0(1))/dx+1
+           ll2=(x(l2)-xyz0(1))/dx+1
+           mm1=(y(m1)-xyz0(2))/dy+1
+           mm2=(y(m2)-xyz0(2))/dy+1
+!
+           do j=l1,l2
+           do i=m1,m2
+              f(j,i,n1,vr)=10.*bc_T_aver_final/exp(f(j,i,n1,ilnTT))
+           enddo
+           enddo
+!
+          do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+i,vr); enddo
+!
         endif
       elseif (bc%location==iBC_Z_TOP) then
 !
+       do i = 1,60
+         t1=time_top(i)
+         t2=time_top(i+1)
+         if ((t>=t1) .and. (t<t2)) then
+           time_position_top=i
+         endif
+       enddo
+!
+       if (lbc_file_top) then
+       if (lroot) then
+!
+         print*,'opening *_top.dat'
+         open(9,file='T_top.dat')
+         open(99,file='w_top.dat')
+!          
+         do i = 1,37
+           read(9,*,iostat=io_code) (tmp(ii),ii=1,2)
+           read(99,*,iostat=io_code) (tmp2(ii),ii=1,2)
+           bc_T_array_top(i)=tmp(2)
+           bc_u_array_top(i)=tmp2(2)
+         enddo
+!          
+          close(9)
+          close(99)
+          print*,'closing file'
+          
+       endif   
+        lbc_file_top=.false.
+! 
+       endif
+!       
+          do i = 1,37
+            if (i==time_position_top) then
+              bc_T_aver_top=bc_T_array_top(i)
+              bc_u_aver_top=bc_u_array_top(i)
+              bc_T_aver2_top=bc_T_array_top(i+1)
+              bc_u_aver2_top=bc_u_array_top(i+1)
+            endif
+           enddo
+!       
+        bc_T_final_top=bc_T_aver_top  &
+               +(t-time_top(time_position_top)) &
+               /(time_top(time_position_top+1)-time_top(time_position_top))    &
+               *(bc_T_aver2_top-bc_T_aver_top)
+!               
+        bc_u_final_top=bc_u_aver_top  &
+               +(t-time_top(time_position_top)) &
+               /(time_top(time_position_top+1)-time_top(time_position_top))    &
+               *(bc_u_aver2_top-bc_u_aver_top)
+               
+!    print*, time_position_top    
+!    print*,time_top(time_position_top-1),t,time_top(time_position_top)
+!    print*, bc_T_aver_top,bc_T_final_top, bc_T_aver2_top
+!        
+!
+       if (vr==ilnTT) then
+!
+          ll1=(x(l1)-xyz0(1))/dx+1
+          ll2=(x(l2)-xyz0(1))/dx+1
+          mm1=(y(m1)-xyz0(2))/dy+1
+          mm2=(y(m2)-xyz0(2))/dy+1
+!
+          do j=l1,l2
+            i2=ll1+j-4
+          do i=m1,m2
+            i1=mm1+i-4
+            f(j,i,n2,vr)=alog(bc_T_final_top)
+          enddo
+          enddo
+          
+!          print*,'bc_T_aver_top=',bc_T_aver_top
+!           
+          do i=1,nghost; f(:,:,n2+i,vr)=2*f(:,:,n2,vr)-f(:,:,n2-i,vr); enddo
+!   
+        elseif (vr==iuz) then
+!
+           ll1=(x(l1)-xyz0(1))/dx+1
+           ll2=(x(l2)-xyz0(1))/dx+1
+           mm1=(y(m1)-xyz0(2))/dy+1
+           mm2=(y(m2)-xyz0(2))/dy+1
+!
+           do j=l1,l2
+           do i=m1,m2
+              f(j,i,n2,vr)=bc_u_final_top*bc_T_final_top/exp(f(j,i,n2,ilnTT))
+           enddo
+           enddo
+!
+!     print*, bc_T_x_adopt(ll1,mm1),bc_T_x_adopt(ll2,mm1)
+!           
+          do i=1,nghost; f(:,:,n2+i,vr)=2*f(:,:,n2,vr)-f(:,:,n2-i,vr); enddo
+        endif
+!        
       else
       endif
     endsubroutine bc_file_z_special

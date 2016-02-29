@@ -45,7 +45,8 @@ module Equ
                          forcing_continuous
 ! To check ghost cell consistency, please uncomment the following line:
 !     use Ghost_check, only: check_ghosts_consistency
-      use GhostFold, only: fold_df
+      use General, only: notanumber
+      use GhostFold, only: fold_df, fold_df_3points
       use Gravity
       use Grid, only: calc_pencils_grid, get_grid_mn
       use Heatflux
@@ -71,7 +72,7 @@ module Equ
       use Solid_Cells, only: update_solid_cells, freeze_solid_cells, &
           dsolid_dt,dsolid_dt_integrate,update_solid_cells_pencil
       use Special, only: special_before_boundary, calc_lspecial_pars, &
-          calc_pencils_special, dspecial_dt
+          calc_pencils_special, dspecial_dt, special_after_boundary
       use Sub
       use Testfield
       use Testflow
@@ -277,9 +278,10 @@ module Equ
 ! NOT fully functional
 !        call update_char_vel_magnetic(f)
         call update_char_vel_hydro(f)
-!        call update_char_vel_density(f)
-!        f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=sqrt(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
+        !call update_char_vel_density(f)
+        !f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=sqrt(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
 !  JW: for hydro it is done without sqrt
+        !if (ldiagnos) print*, 'max(char_c)=', maxval(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
       endif
 !
 !  For calculating the pressure gradient directly from the pressure (which is
@@ -292,7 +294,7 @@ module Equ
 !
       if (lfirst.and.ldt) then
         if (dtmax/=0.0) then
-          dt1_max=1/dtmax
+          dt1_max=1./dtmax
         else
           dt1_max=0.0
         endif
@@ -343,7 +345,7 @@ module Equ
       if (ltestflow)              call calc_ltestflow_nonlin_terms(f,df)
       if (lspecial)               call calc_lspecial_pars(f)
 !AB: could be renamed to special_after_boundary etc
-      !if (lspecial)               call special_after_boundary(f)
+      if (lspecial)               call special_after_boundary(f)
 !
 !  Calculate quantities for a chemical mixture
 !
@@ -524,7 +526,7 @@ module Equ
 !  --------------------------------------------------------
 !
 !  hydro, density, and entropy evolution
-!  Note that pressure gradient is added in denergy_dt to momentum,
+!  Note that pressure gradient is added in denergy_dt of noentropy to momentum,
 !  even if lentropy=.false.
 !
         call duu_dt(f,df,p)
@@ -638,6 +640,7 @@ module Equ
         endif
 !
 !  General phiaverage quantities -- useful for debugging.
+!  MR: Result is constant in time, so why here?
 !
         if (l2davgfirst) then
           call phisum_mn_name_rz(p%rcyl_mn,idiag_rcylmphi)
@@ -906,9 +909,17 @@ module Equ
 !--   if (lradiation_fld) f(:,:,:,idd)=DFF_new
 !
 !  Fold df from first ghost zone into main df.
-!  Currently only needed for smoothed out particle drag force.
 !
-      if (lhydro .and. lfold_df) call fold_df(df,iux,iuz)
+      if (lfold_df) then
+        if (lhydro .and. (.not. lpscalar) .and. (.not. lchemistry)) then
+          call fold_df(df,iux,iuz)
+        else
+          call fold_df(df,iux,mvar)
+        endif
+      endif
+      if (lfold_df_3points) then
+        call fold_df_3points(df,iux,mvar)
+      endif
 !
 !  -------------------------------------------------------------
 !  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)
@@ -1089,7 +1100,7 @@ module Equ
 !  Check for NaNs in the advection time-step.
 !
       if (notanumber(dt1_advec)) then
-        print*, 'pde: dt1_advec contains a NaN at iproc=', iproc
+        print*, 'pde: dt1_advec contains a NaN at iproc=', iproc_world
         if (lhydro)           print*, 'advec_uu   =',advec_uu
         if (lshear)           print*, 'advec_shear=',advec_shear
         if (lmagnetic)        print*, 'advec_hall =',advec_hall

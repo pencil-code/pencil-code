@@ -157,7 +157,12 @@ indices_aux = [ $
   { name:'ihypvis', label:'Hyperviscosity', dims:3 }, $
   { name:'ihypres', label:'Hyperresistivity', dims:3 }, $
   { name:'ippaux', label:'Auxiliary pressure', dims:1 }, $
-  { name:'ispecaux', label:'Special auxiliary variable', dims:1 } $
+  { name:'ispecaux', label:'Special auxiliary variable', dims:1 }, $
+  { name:'ipsi', label:'Streamfunction', dims:1 }, $
+  { name:'isigma', label:'Column density', dims:1 }, $
+  { name:'imdot', label:'Mass accretion rate', dims:1 }, $
+  { name:'itmid', label:'Midplane temperature', dims:1 }, $
+  { name:'ipotturb', label:'Turbulent potential', dims:1 } $
   ; don't forget to add a comma above when extending
 ]
 naux=n_elements(indices_aux)
@@ -177,13 +182,8 @@ inconsistent = [ $
 
 ; Inconsistent names in special modules (IDL-name is inconsistent with name in the main code):
 inconsistent_special = [ $
-  { name:'isigma', inconsistent_name:'sigma' }, $
-  { name:'imdot', inconsistent_name:'mdot' }, $
-  { name:'itmid', inconsistent_name:'tmid' }, $
   { name:'ikappar', inconsistent_name:'kappar' }, $
-  { name:'ilambda', inconsistent_name:'lambda' }, $
-  { name:'ipsi', inconsistent_name:'psi' }, $
-  { name:'ipotturb', inconsistent_name:'potturb' } $
+  { name:'ilambda', inconsistent_name:'lambda' }  $
   ; don't forget to add a comma above when extending
 ]
 

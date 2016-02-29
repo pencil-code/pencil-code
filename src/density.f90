@@ -791,7 +791,7 @@ module Density
 !  28-jun-02/axel: added isothermal
 !  15-oct-03/dave: added spherical shell (kws)
 !
-      use General, only: itoa,complex_phase
+      use General, only: itoa,complex_phase,notanumber
       use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential
       use Initcond
       use Mpicomm
@@ -1507,11 +1507,10 @@ module Density
 
 !
 !  Slope limited diffusion following Rempel (2014).
-!  No distinction between log and nolog density at the moment.
+!  No distinction between log and nolog density at the moment!
 !
       if (ldensity_slope_limited.and.lfirst) then
 
-        f(:,:,:,iFF_diff1:iFF_diff2)=0.
         call calc_all_diff_fluxes(f,ilnrho,islope_limiter,h_slope_limited)
 
         do n=n1,n2; do m=m1,m2
@@ -1584,7 +1583,7 @@ module Density
           tmp = 1.0 + beta1*(z(n)-zint)/cs2int
 ! Abort if args of log() are negative
           if ( (tmp<=0.0) .and. (z(n)<=zblend) ) then
-            call fatal_error('polytropic_lnrho_z', &
+            call fatal_error_local('polytropic_lnrho_z', &
                 'Imaginary density values -- your z_inf is too low.')
           endif
           tmp = max(tmp,epsi)  ! ensure arg to log is positive
@@ -1649,7 +1648,7 @@ module Density
           tmp = 1.0 + beta1*(z(n)**2-zint**2)/cs2int/2.
 ! Abort if args of log() are negative
           if ( (tmp<=0.0) .and. (z(n)<=zblend) ) then
-            call fatal_error('polytropic_lnrho_disc', &
+            call fatal_error_local('polytropic_lnrho_disc', &
                 'Imaginary density values -- your z_inf is too low.')
           endif
           tmp = max(tmp,epsi)  ! ensure arg to log is positive
@@ -2024,7 +2023,8 @@ module Density
 !  13-05-10/dhruba: stolen parts of earlier calc_pencils_density
 !
       use WENO_transport
-      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn, notanumber
+      use General, only: notanumber
+      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -2043,9 +2043,11 @@ module Density
       if (lpencil(i_glnrho).or.lpencil(i_grho)) then
         call grad(f,ilnrho,p%glnrho)
         if (notanumber(p%glnrho)) then
-          print*, 'it,n,m=', it,n,m
-          print*, f(4,4,1:6,ilnrho)
-          call fatal_error('calc_pencils_density','NaNs in p%glnrho)')
+          print*, 'density:iproc,it,m,n=', iproc,it,m,n
+          !print*, 'it,m,n=', it,m,n
+          print*, "density:f(:,m,n,ilnrho)=",f(:,m,n,ilnrho)
+          !print*, f(4,4,1:6,ilnrho)
+          call fatal_error_local('calc_pencils_density','NaNs in p%glnrho)')
         endif
         if (lpencil(i_grho)) then
           do i=1,3

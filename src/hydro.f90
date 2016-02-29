@@ -798,13 +798,12 @@ module Hydro
         if (borderuu(j)/='nothing') call request_border_driving(borderuu(j))
       enddo
 !
-!  Share lcoriolis_force and lcentrifugal_force so the Particles module
-!  knows whether to apply them or not.
+!  Hand over Coriolis force to Particles_drag.
 !
-      if (lparticles.and.Omega/=0.0) then
-        call put_shared_variable('lcoriolis_force', lcoriolis_force)
-        call put_shared_variable('lcentrifugal_force', lcentrifugal_force)
-      endif
+      drag: if (lparticles_drag .and. lcoriolis_force) then
+        lcoriolis_force = .false.
+        if (lroot) print *, 'initialize_hydro: turned off and hand over Coriolis force to Particles_drag. '
+      endif drag
 !
       lshear_in_coriolis=lshear_in_coriolis.and.lcoriolis_force.and.lshear
 !
@@ -2377,18 +2376,17 @@ module Hydro
 !
 !   25-sep-15/MR+joern: coded
 !   23-dec-15/joern: changed to staggered_max_vec
+!   26-jan-16/MR: removed if clause around call as it is already in the caller
 !
 !   calculation of characteristic velocity
 !   for slope limited diffusion
 !
-!      use General, only: staggered_mean_vec
-      use General, only: staggered_max_vec
+      use General, only: staggered_mean_vec, staggered_max_vec
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-!
-!      if (lslope_limit_diff) call staggered_mean_vec(f,iux,iFF_char_c,weight)
-      if (lslope_limit_diff) call staggered_max_vec(f,iux,iFF_char_c,w_sldchar_hyd)
+      !call staggered_mean_vec(f,iux,iFF_char_c,w_sldchar_hyd)
+      call staggered_max_vec(f,iux,iFF_char_c,w_sldchar_hyd)
 !
     endsubroutine update_char_vel_hydro
 !***********************************************************************
@@ -2642,10 +2640,10 @@ module Hydro
           call sum_mn_name(p%u2-2.*p%uu(:,2)*uref+uref**2,idiag_durms)
         endif
 ! urlm 
-! This is being always calcualted but written out only when asked. 
+! This is being always calculated but written out only when asked. 
 ! It should not be done this way, but calculated only is must be written out.
 !
-        if (lspherical_coords) call amp_lm(p%uu(:,1),urlm,profile_SH,p)
+        if (lspherical_coords) call amp_lm(p%uu(:,1),urlm,profile_SH)
         do k=1,Nmodes_SH
           if (idiag_urlm(k)/=0) call sum_mn_name(urlm(:,k),idiag_urlm(k))
         enddo
@@ -5764,22 +5762,24 @@ module Hydro
 !
     endsubroutine expand_shands_hydro
 !***********************************************************************
-    subroutine amp_lm(psi,psilm,rselect,p)
+    subroutine amp_lm(psi,psilm,rselect)
 
       use Sub, only: ylm
-      type (pencil_case) :: p
+
       real,dimension(nx),intent(in):: psi,rselect
       real,dimension(nx,Nmodes_SH),intent(out) :: psilm
       real :: sph_har
       integer :: ell,emm,imode
       real,dimension(nx) :: one_by_rsqr
+
       one_by_rsqr=1./(x(l1:l2)*x(l1:l2))
       if ((m.eq.1).and.(n.eq.1)) write(*,*) rselect
+
       do ell=0,lSH_max
         do emm=-ell,ell
           imode=(ell+1)*(ell+1)-ell+emm
           call ylm(y(m),z(n),ell,emm,sph_har)
-          psilm(:,imode) = psi(:)*rselect(:)*sph_har*one_by_rsqr(:)
+          psilm(:,imode) = psi*rselect*sph_har*one_by_rsqr
         enddo
       enddo
 

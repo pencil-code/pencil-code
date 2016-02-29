@@ -63,6 +63,7 @@ module Param_IO
   public :: read_all_init_pars, read_all_run_pars
   public :: write_all_init_pars, write_all_run_pars
   public :: write_pencil_info
+  public :: get_downpars
 !
   logical :: lforce_shear_bc = .true.
 !
@@ -168,7 +169,7 @@ module Param_IO
 !  25-oct-02/axel: default is taken from cdata.f90 where it's defined
 !  14-jan-15/MR  : corrected call of mpibcast_char
 !
-      use Mpicomm, only: mpibcast_logical, mpibcast_char
+      use Mpicomm, only: mpibcast_logical, mpibcast_char,MPI_COMM_WORLD
 !
       character (len=*) :: dir
       logical :: exists
@@ -187,11 +188,11 @@ module Param_IO
 !
 !  Tell other processors whether we need to communicate dir (i.e. datadir).
 !
-      call mpibcast_logical(exists)
+      call mpibcast_logical(exists,comm=MPI_COMM_WORLD)
 !
 !  Let root processor communicate dir (i.e. datadir) to all other processors.
 !
-      if (exists) call mpibcast_char(dir)
+      if (exists) call mpibcast_char(dir,comm=MPI_COMM_WORLD)
 !
     endsubroutine get_datadir
 !***********************************************************************
@@ -323,18 +324,19 @@ module Param_IO
       endif
       call stop_it_if_any (.false., '')
       lparam_nml = .false.
+
+      if (lyinyang.and.coord_system/='spherical'.and.coord_system/='spherical_coords') then
+        if (lroot) call warning('read_all_init_pars', 'Yin-Yang grid only implemented for spherical coordinates')
+        lyinyang=.false.
+      endif
 !
-!  Print SVN id from first line.
+! Set proper BC code for Yin-Yang grid
 !
-      if (lroot) call svn_id(cvsid)
-!
-!  Give online feedback if called with the PRINT optional argument.
-!
-      if (loptest(print)) call write_all_init_pars
-!
-!  Write parameters to log file.
-!
-      if (lstart) call write_all_init_pars(FILE=trim(datadir)//'/params.log')
+      if (lyinyang) then
+        if (lroot) call information('read_all_init_pars', 'all BCs for y and z ignored because of Yin-Yang grid')
+        lperi(2:3) = .false.; lpole = .false.
+        bcy='yy'; bcz='yy'
+      endif
 !
 !  Parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries.
@@ -361,18 +363,19 @@ module Param_IO
         print*, 'lperi= ', lperi
       endif
 !
-      if (lyinyang.and.coord_system/='spherical'.and.coord_system/='spherical_coords') then
-        if (lroot) call warning('read_all_init_pars', 'Yin-Yang grid only implemented for spherical coordinates')
-        lyinyang=.false.
-      endif
-!
-! Set proper BC code for Yin-Yang grid
-!
-      if (lyinyang) then
-        lperi(2:3) = .false.; lpole = .false.
-        bcy12='yy'; bcz12='yy'
-      endif
       call check_consistency_of_lperi('read_all_init_pars')
+!
+!  Print SVN id from first line.
+!
+      if (lroot) call svn_id(cvsid)
+!
+!  Give online feedback if called with the PRINT optional argument.
+!
+      if (loptest(print)) call write_all_init_pars
+!
+!  Write parameters to log file.
+!
+      if (lstart) call write_all_init_pars(FILE=trim(datadir)//'/params.log')
 !
     endsubroutine read_all_init_pars
 !***********************************************************************
@@ -457,6 +460,14 @@ module Param_IO
       endif
       call stop_it_if_any (.false., '')
 !
+! Set proper BC code for Yin-Yang grid
+!
+      if (lyinyang) then
+        if (lroot) call information('read_all_run_pars', 'all BCs for y and z ignored because of Yin-Yang grid')
+        lperi(2:3) = .false.; lpole = .false.
+        bcy='yy'; bcz='yy'
+      endif
+!
 !  Print SVN id from first line.
 !
       if (lroot) call svn_id(cvsid)
@@ -495,30 +506,16 @@ module Param_IO
 !
       call check_consistency_of_lperi('read_all_run_pars')
 !
-      if (any(downsampl>1)) then
-!
-!  If downsampling, calculate local start indices and number of data in
-!  output for each direction; inner ghost zones are here disregarded
-!
-        ldownsampl = .true.
-        if (dsnap_down<=0.) dsnap_down=dsnap
-!
-        call get_downpars(1,nx,ipx)
-        call get_downpars(2,ny,ipy)
-        call get_downpars(3,nz,ipz)
-!
-      endif
-
     endsubroutine read_all_run_pars
 !***********************************************************************
     subroutine get_downpars(ind,n,ip)
 !
 ! Calculates start indices & lengths for downsampled output
+! Parameters: coordinate direction, number of inner grid points, processor number
 !
 ! 13-feb-14/MR: coded
 ! 19-aug-15/PABourdin: moved, please do not use 'contains' in subroutines
 !                      MR: Why not?
-! Parameters: coordinate direction, number of inner grid points, processor number
 !
       integer, intent(IN) :: ind, n, ip
 !
@@ -985,7 +982,7 @@ module Param_IO
 !
     endsubroutine write_IDL_logicals
 !***********************************************************************
-    subroutine write_pencil_info()
+    subroutine write_pencil_info
 !
 !  Write information about requested and diagnostic pencils.
 !  Do this only when on root processor.

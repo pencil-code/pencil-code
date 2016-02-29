@@ -16,10 +16,10 @@
 &initial_condition_pars
   ! for RBN cooling
   !rho0ts=3.5
-  !T0hs=15.8421
+  !Tinit=15.8421
   !for WSW cooling
   rho0ts=2.75
-  T0hs=20.259
+  Tinit=20.259
   lthermal_hse=T
   !amplaa=0.01
   !initaa='Ferriere-uniform-By'

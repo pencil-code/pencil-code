@@ -124,6 +124,12 @@ module Particles_main
 !  07-jan-05/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+
+      integer :: i
+      real :: total_gab_weights
+
+      if (lyinyang) &
+        call fatal_error('particles_initialize_modules','Particles not implemented on Yin-Yang grid')
 !
 !  Check the particle-mesh interpolation method.
 !
@@ -132,17 +138,33 @@ module Particles_main
 !       Nearest-Grid-Point
         lparticlemesh_cic = .false.
         lparticlemesh_tsc = .false.
+        lparticlemesh_gab = .false.
         if (lroot) print *, 'particles_initialize_modules: selected nearest-grid-point for particle-mesh method. '
       case ('cic', 'CIC') pm
 !       Cloud-In-Cell
         lparticlemesh_cic = .true.
         lparticlemesh_tsc = .false.
+        lparticlemesh_gab = .false.
         if (lroot) print *, 'particles_initialize_modules: selected cloud-in-cell for particle-mesh method. '
       case ('tsc', 'TSC') pm
 !       Triangular-Shaped-Cloud
         lparticlemesh_cic = .false.
         lparticlemesh_tsc = .true.
+        lparticlemesh_gab = .false.
         if (lroot) print *, 'particles_initialize_modules: selected triangular-shaped-cloud for particle-mesh method. '
+      case ('gab', 'GAB') pm
+!       Gaussian box
+        lparticlemesh_cic = .false.
+        lparticlemesh_tsc = .false.
+        lparticlemesh_gab = .true.
+        if (lroot) print *, 'particles_initialize_modules: selected gaussian-box for particle-mesh method. '
+        do i = 1,4
+          gab_weights(i) = exp(-(real(i)-1.)**2/(gab_width**2))
+        enddo
+        total_gab_weights = sum(gab_weights)+sum(gab_weights(2:4))
+        gab_weights = gab_weights/total_gab_weights
+        if (lroot) print *,'The number of cells representing one standard deviation is: ', gab_width
+        if (lroot) print *,'The weights for the gaussian box are: ', gab_weights
       case ('') pm
 !       Let the logical switches decide.
 !       TSC assignment/interpolation overwrites CIC in case they are both set.
@@ -213,6 +235,10 @@ module Particles_main
         if (rhop_swarm==0.0) rhop_swarm=mpmat*np_swarm
       endif
 !
+      if (lparticles_radius .and. rhopmat>0.0 .and. &
+        (np_swarm>0.0 .or. lparticles_number)) lignore_rhop_swarm=.true.
+
+!
 !  Initialize individual modules.
 !
       call initialize_particles_mpicomm      (f)
@@ -253,7 +279,8 @@ module Particles_main
 !
 !  Stop if rhop_swarm is zero.
 !
-      if (irhop/=0 .and. rhop_swarm==0.0 .and. (.not.lparticles_density)) then
+      if (irhop/=0 .and. rhop_swarm==0.0 .and. (.not.lparticles_density) &
+      .and. (.not.lignore_rhop_swarm)) then
         if (lroot) then
           print*, 'particles_initialize_modules: rhop_swarm is zero'
           print*, 'particles_initialize_modules: '// &

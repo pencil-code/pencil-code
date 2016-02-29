@@ -66,6 +66,7 @@
   public :: dependent_reactant
   public :: lbaum_and_street
   public :: lsurface_nopores
+  public :: lpreactions
 
 
   

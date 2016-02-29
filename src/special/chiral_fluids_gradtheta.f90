@@ -198,15 +198,25 @@ module Special
 !
       select case (initspecial)
         case ('nothing'); if (lroot) print*,'init_special: nothing'
+        case ('gtheta5x_const')
+          f(:,:,:,igtheta5)=f(:,:,:,igtheta5)+gtheta5_const
+          f(:,:,:,imu5) = mu5_const
         case ('const')
-          f(:,:,:,igtheta5) = 0.
+          f(:,:,:,igtheta5) = gtheta5_const
+          f(:,:,:,imu5) = mu5_const
+        case ('gtheta5y_const')
+          do n=n1,n2; do m=m1,m2
+            f(:,:,:,igtheta5) = 0.
+            f(:,m,n,igtheta5+1) = gtheta5_const
+            f(:,:,:,igtheta5+2) = 0.
+          enddo; enddo 
           f(:,:,:,imu5) = mu5_const
         case ('zero')
           f(:,:,:,igtheta5) = 0.
           f(:,:,:,imu5) = 0.
-        case ('gtheta5x_sinx')
-          do n=n1,n2; do m=m1,m2
-            f(:,m,n,igtheta5)=gtheta5_const*sin(kx_gtheta5*x)
+        case ('gtheta5x_sinz')
+        do n=n1,n2; do m=m1,m2
+            f(:,m,n,igtheta5)=gtheta5_const*sin(2.*pi*z(n)/Lx)
           enddo; enddo 
           f(:,:,:,imu5) = mu5_const
         case ('gtheta5y_siny')
@@ -724,6 +734,19 @@ module Special
       call keep_compiler_quiet(f)
 !
     endsubroutine special_before_boundary
+!***********************************************************************
+    subroutine special_after_boundary(f)
+!
+!  Possibility to modify the f array after the boundaries are
+!  communicated.
+!
+!  06-jul-06/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine special_after_boundary
 !***********************************************************************
     subroutine special_boundconds(f,bc)
 !

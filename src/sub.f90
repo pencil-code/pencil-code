@@ -27,7 +27,7 @@ module Sub
   public :: identify_bcs, parse_bc, parse_bc_rad, parse_bc_radg
   public :: inverse_parse_bc
 !
-  public :: poly, notanumber
+  public :: poly
   public :: blob, vecout
   public :: cubic_step, cubic_der_step, quintic_step, quintic_der_step, erfunc
   public :: sine_step, interp1
@@ -58,7 +58,7 @@ module Sub
   public :: matrix2linarray, linarray2matrix
 !
   public :: dot, dot2, dot_mn, dot_mn_sv, dot_mn_sm, dot2_mn, dot_add, dot_sub, dot2fj
-  public :: dot_mn_vm, dot_mn_vm_trans, div_mn_2tensor, trace_mn, transpose_mn
+  public :: dot_mn_vm, dot_mn_vm_trans, div_mn_2tensor, trace_mn
   public :: dyadic2
   public :: cross, cross_mn, cross_mixed
   public :: sum_mn, max_mn
@@ -116,14 +116,6 @@ module Sub
   interface del2                 ! Overload the `del2' function
     module procedure del2_main
     module procedure del2_other
-  endinterface
-!
-  interface notanumber          ! Overload the `notanumber' function
-    module procedure notanumber_0
-    module procedure notanumber_1
-    module procedure notanumber_2
-    module procedure notanumber_3
-    module procedure notanumber_4
   endinterface
 !
   interface cross
@@ -573,41 +565,29 @@ module Sub
 !
       use General, only: loptest
 !
-      real, dimension (nx,3) :: a,b
-      real, dimension (nx) :: c
+      real, dimension (:,:) :: a,b
+      real, dimension (:) :: c
 !
       logical, optional :: ladd
 !
       intent(in) :: a,b,ladd
       intent(inout) :: c
 !
-      if (loptest(ladd)) then
-        c=c+a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3)
-      else
-        c=  a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3)
-      endif
+      integer :: i
+      logical :: l0
 !
-    endsubroutine dot_mn
-!***********************************************************************
-    subroutine transpose_mn(a,b)
-!
-!  Transpose 3x3 pencil array, b=transpose(a), on pencil arrays.
-!
-!   7-aug-10/dhruba: coded
-!
-      real, dimension (nx,3,3) :: a,b
-!
-      intent(in) :: a
-      intent(out) :: b
-      integer :: i,j
-!
-      do i=1,3
-        do j=1,3
-          b(:,i,j)=a(:,j,i)
-        enddo
+      l0 = .not.loptest(ladd)
+
+      do i=1,size(a,2)
+        if (l0) then
+          c=a(:,i)*b(:,i)
+          l0=.false.
+        else
+          c=c+a(:,i)*b(:,i)
+        endif
       enddo
 !
-    endsubroutine transpose_mn
+    endsubroutine dot_mn
 !***********************************************************************
     subroutine vec_dot_3tensor(a,b,c)
 !
@@ -1325,15 +1305,14 @@ module Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: g
-      real, dimension (nx) :: tmp
       integer :: k
 !
       intent(in) :: f,k
       intent(out) :: g
 !
-      call der(f,k,tmp,1); g(:,1)=tmp
-      call der(f,k,tmp,2); g(:,2)=tmp
-      call der(f,k,tmp,3); g(:,3)=tmp
+      call der(f,k,g(:,1),1)
+      call der(f,k,g(:,2),2)
+      call der(f,k,g(:,3),3)
 !
     endsubroutine grad_main
 !***********************************************************************
@@ -1411,7 +1390,7 @@ module Sub
 !
       if (loptest(ldiff_fluxes)) then
         call ranges_dimensional(jrange)
-        g=0
+        g=0.
         do i=1,dimensionality
           call der_4th_stag(f,k1+i,tmp,jrange(i))
           g=g+tmp
@@ -1471,8 +1450,8 @@ module Sub
 !  Only valid for equidistant grids!
 !
 !  30-sep-15/MR: coded
+!   4-feb-16/MR: checked again
 !
-
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(out) :: df
       integer, intent(in) :: j, k
@@ -3287,7 +3266,7 @@ module Sub
 !   9-sep-01/axel: adapted for MPI
 !  10-sep-15/MR  : tout set to t if file is missing and dtout>0
 !
-      use Mpicomm, only: mpibcast_real
+      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
 !
       character (len=*), intent(in) :: file
       real, intent(out) :: tout
@@ -3339,7 +3318,7 @@ module Sub
         bcast_array(2) = nout
       endif
 !
-      call mpibcast_real(bcast_array,nbcast_array)
+      call mpibcast_real(bcast_array,nbcast_array,comm=MPI_COMM_WORLD)
       tout = bcast_array(1)
       nout = bcast_array(2)
 !
@@ -3356,7 +3335,7 @@ module Sub
 !                  when crashing, a big number of unmotivated snapshots
 !                  is output -> test of NaN in t
 !
-      use General, only: itoa
+      use General, only: itoa, notanumber_0d
 !
       character (len=*), intent(in) :: file
       real, intent(inout) :: tout
@@ -4255,102 +4234,6 @@ module Sub
 !
     endfunction sine_step_mn
 !***********************************************************************
-    function notanumber_0(f)
-!
-!  Check for NaN or Inf values.
-!  Not well tested with all compilers and options, but avoids false
-!  positives in a case where the previous implementation had problems
-!  Version for scalars
-!
-!  22-Jul-11/sven+philippe: coded
-!
-      logical :: notanumber_0
-      real :: f
-!
-      notanumber_0 = .not. ((f <= huge(f)) .or. (f > huge(0.0)))
-!
-    endfunction notanumber_0
-!***********************************************************************
-   function notanumber_0d(f)
-!
-!  Check for NaN or Inf values.
-!  Not well tested with all compilers and options, but avoids false
-!  positives in a case where the previous implementation had problems
-!  Version for scalars
-!
-!  27-Jul-15/MR: adapted
-!
-     logical :: notanumber_0d
-     double precision :: f
-!
-     notanumber_0d = .not. ((f <= huge(f)) .or. (f > huge(0.d0)))
-!
-    endfunction notanumber_0d
-!***********************************************************************
-    function notanumber_1(f)
-!
-!  Check for NaN or Inf values.
-!  Not well tested with all compilers and options, but avoids false
-!  positives in a case where the previous implementation had problems
-!  Version for 1-d arrays
-!
-!  22-Jul-11/sven+philippe: coded
-!
-      logical :: notanumber_1
-      real, dimension(:) :: f
-!
-      notanumber_1 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
-!
-    endfunction notanumber_1
-!***********************************************************************
-    function notanumber_2(f)
-!
-!  Check for NaN or Inf values.
-!  Not well tested with all compilers and options, but avoids false
-!  positives in a case where the previous implementation had problems
-!  Version for 2-d arrays
-!
-!  22-Jul-11/sven+philippe: coded
-!
-      logical :: notanumber_2
-      real, dimension(:,:) :: f
-!
-      notanumber_2 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
-!
-    endfunction notanumber_2
-!***********************************************************************
-    function notanumber_3(f)
-!
-!  Check for NaN or Inf values.
-!  Not well tested with all compilers and options, but avoids false
-!  positives in a case where the previous implementation had problems
-!  Version for 3-d arrays
-!
-!  22-Jul-11/sven+philippe: coded
-!
-      logical :: notanumber_3
-      real, dimension(:,:,:) :: f
-!
-      notanumber_3 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
-!
-    endfunction notanumber_3
-!***********************************************************************
-    function notanumber_4(f)
-!
-!  Check for NaN or Inf values.
-!  Not well tested with all compilers and options, but avoids false
-!  positives in a case where the previous implementation had problems
-!  Version for 4-d arrays
-!
-!  22-Jul-11/sven+philippe: coded
-!
-      logical :: notanumber_4
-      real, dimension(:,:,:,:) :: f
-!
-      notanumber_4 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
-!
-    endfunction notanumber_4
-!***********************************************************************
     subroutine nan_inform(f,msg,region,int1,int2,int3,int4,lstop)
 !
 !  Check input array (f or df) for NaN, -Inf, Inf, and output location in
@@ -4358,6 +4241,8 @@ module Sub
 !
 !  30-apr-04/anders: coded
 !  12-jun-04/anders: region or intervals supplied in call
+!
+      use General, only: notanumber
 !
       real, dimension(:,:,:,:) :: f
       character (len=*) :: msg
@@ -4417,7 +4302,7 @@ module Sub
               '" encountered in the variable ', varname(d)
           print*,'nan_inform: ', varname(d), ' = ', f(a,b,c,d)
           print*,'nan_inform: t, it, itsub   = ', t, it, itsub
-          print*,'nan_inform: l, m, n, iproc = ', a, b, c, iproc
+          print*,'nan_inform: l, m, n, iproc = ', a, b, c, iproc_world
           print*,'----------------------------'
           if (present(lstop)) then
             if (lstop) call fatal_error('nan_stop','')
@@ -4941,7 +4826,7 @@ nameloop: do
 !
     endsubroutine read_zprof
 !***********************************************************************
-    subroutine remove_zprof()
+    subroutine remove_zprof
 !
 !  Remove z-profile file.
 !
@@ -4961,7 +4846,7 @@ nameloop: do
 !
 !  Read list of file and remove them one by one.
 !
-      open(unit,file=listfile,iostat=ierr)
+      open(unit,file=listfile,status='old',iostat=ierr)
       if (ierr /= 0) return
       do while ((it <= nt) .and. (ierr == 0))
         read(unit,*,iostat=ierr) fname
@@ -6686,7 +6571,7 @@ nameloop: do
 !  19-aug-2011/ccyang: coded
 !  12-sep-2013/MR: outsourced from hydro
 !
-      use Mpicomm, only: mpiallreduce_max
+      use Mpicomm, only: mpiallreduce_max, MPI_COMM_WORLD
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       integer, intent(in) :: iv
@@ -6698,7 +6583,7 @@ nameloop: do
       umax1 = sqrt(maxval(  f(l1:l2,m1:m2,n1:n2,iv  )**2 &
                           + f(l1:l2,m1:m2,n1:n2,iv+1)**2 &
                           + f(l1:l2,m1:m2,n1:n2,iv+2)**2  ))
-      call mpiallreduce_max(umax1, find_max_fvec)
+      call mpiallreduce_max(umax1, find_max_fvec, MPI_COMM_WORLD)
 !
     endfunction find_max_fvec
 !***********************************************************************
@@ -6928,14 +6813,14 @@ nameloop: do
 !  28-May-2015/Bourdin.KIS: reworked
 !
       use General, only: count_lines
-      use Mpicomm, only: mpibcast_int
+      use Mpicomm, only: mpibcast_int, MPI_COMM_WORLD
 
       integer :: parallel_count_lines
       character (len=*), intent(in) :: file
       logical, optional, intent(in) :: ignore_comments
 !
       if (lroot) parallel_count_lines = count_lines(file,ignore_comments)
-      call mpibcast_int(parallel_count_lines)
+      call mpibcast_int(parallel_count_lines,comm=MPI_COMM_WORLD)
 !
     endfunction parallel_count_lines
 !***********************************************************************
@@ -6951,7 +6836,7 @@ nameloop: do
 !  23-mar-10/Bourdin.KIS: implemented
 !
       use General, only: file_exists, loptest
-      use Mpicomm, only: mpibcast_logical
+      use Mpicomm, only: mpibcast_logical, MPI_COMM_WORLD
 
       character (len=*) :: file
       logical :: parallel_file_exists
@@ -6960,7 +6845,7 @@ nameloop: do
       ! Let the root node do the dirty work
       if (lroot) parallel_file_exists = file_exists(file,loptest(delete))
 !
-      call mpibcast_logical(parallel_file_exists)
+      call mpibcast_logical(parallel_file_exists,comm=MPI_COMM_WORLD)
 !
     endfunction parallel_file_exists
 !***********************************************************************
@@ -7009,20 +6894,24 @@ nameloop: do
 !
       !if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
       call find_namelist (trim(name)//trim(type)//trim(suffix),found)
+
       if (.not. found) then
         if (.not. lparam_nml) lnamelist_error = .true.
         return
       endif
 !
+      ierr = 0 ! G95 complains 'ierr' is used but not set, even though 'reader' has intent(out).
       call reader(ierr)
 !
       if (ierr /= 0) then
         lnamelist_error = .true.
-        if (lroot .and. (ierr == -1)) then
-          call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)//'" is missing!')
-        elseif (lroot) then
-          call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)// &
-              '" has an error ('//trim(itoa(ierr))//')!')
+        if (lroot) then
+          if (ierr == -1) then
+            call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)//'" is missing!')
+          else
+            call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)// &
+                          '" has an error ('//trim(itoa(ierr))//')!')
+          endif
         endif
       endif
 !
@@ -7037,6 +6926,8 @@ nameloop: do
 !
 !  23-sep-15/MR,joern,fred,petri: coded
 !
+      use General, only: notanumber
+
       real, dimension(:),intent(in) :: diffs,c_char
       real,              intent(in) :: h_slope_limited
       character(LEN=*),  intent(in) :: islope_limiter
@@ -7049,7 +6940,7 @@ nameloop: do
       len=size(diffs)
 
       call slope_limiter(diffs(2:),diffs(:len-1),slope,islope_limiter)
-      flux = diffs(2:len-1) - 0.5*(slope(2:) + slope(1:len-2))
+      flux = diffs(2:len-1) - 0.5*(slope(2:) + slope(1:len-2))        ! = u_r - u_l
 
       call diff_flux(h_slope_limited, diffs(2:len-1), flux, phi)
       flux = -0.5*c_char*phi*flux
@@ -7057,50 +6948,73 @@ if (notanumber(c_char)) then
    print*, 'CALC_DIFFUSIVE_FLUX: c_char=', len
    stop
 endif 
-          
+
     endsubroutine calc_diffusive_flux
 !***********************************************************************
-    elemental subroutine slope_limiter(diff_right,diff_left,limited,type)
+    subroutine slope_limiter(diff_right,diff_left,limited,type)
 !
 !  Returns limited slope in parameter limited, see Rempel (2014). 
 !  Presently only limiter minmod is implemented. 
 !
 !  25-sep-15/MR,joern: coded
+!  27-jan-16/MR: converted into non-elemental subroutine
 !
-      real,             intent(IN) :: diff_left, diff_right
-      real,             intent(OUT):: limited
-      character(LEN=*), intent(IN) :: type
+      real, dimension(:), intent(IN) :: diff_left, diff_right
+      real, dimension(:), intent(OUT):: limited
+      character(LEN=*),   intent(IN) :: type
+      integer :: len, ii
+
+      len=size(diff_right)
 
       select case (type)
+      case ('minmod-mine')
+        where( sign(1.,diff_left)*sign(1.,diff_right)>0)
+          limited = sign(min( 2.*abs(diff_left), 2.*abs(diff_right), &
+                             0.5*abs(diff_right+diff_left) ), diff_left )
+        elsewhere
+          limited = 0.
+        endwhere
       case ('minmod') 
-        limited=min(2.*abs(diff_left),2.*abs(diff_right), &
-                    0.5*abs(diff_right+diff_left))
-
+         do ii=1,len
+           if (diff_left(ii)*diff_right(ii)>0) then
+             if (diff_left(ii)>0) limited(ii)=min(2.*diff_left(ii),2.*diff_right(ii), &
+                                                  0.5*(diff_right(ii)+diff_left(ii)))
+             if (diff_left(ii)<0) limited(ii)=max(2.*diff_left(ii),2.*diff_right(ii), &
+                                                  0.5*(diff_right(ii)+diff_left(ii)))
+           else
+             limited(ii)=0
+           endif
+         enddo
       case ('superbee')
         limited=0.
+        call fatal_error('slope_limiter','limiter not implemented')
       case ('')
         limited=0.
+        call fatal_error('slope_limiter','limiter not implemented')
       case default
         limited=0.
+        call fatal_error('slope_limiter','limiter not implemented')
       end select
     
     endsubroutine slope_limiter
 !***********************************************************************
-    elemental subroutine diff_flux(h, diff_right, diff_lr, phi)
+     subroutine diff_flux(h, diff_right, diff_lr, phi)
 !
 !  Calculates diffusive flux for one coordinate direction from u_i+1-u_i and u_r-u_l 
 !  and returns it in parameter phi, see Rempel (2014). 
 !
 !  25-sep-15/MR,joern: coded
+!  27-jan-16/MR: converted into non-elemental subroutine, because of malcompilation by gcc version 4.6.3
 !
-      real, intent(IN)  :: h, diff_lr, diff_right
-      real, intent(OUT) :: phi
+      real, intent(IN) :: h
+      real, dimension(:), intent(IN)  :: diff_lr, diff_right
+      real, dimension(:), intent(OUT) :: phi
 
-      if (diff_right*diff_lr>0.) then
-        phi=max(0.,1.+h*(diff_lr/diff_right-1.)) 
-      else
+      where (diff_right*diff_lr>0.)
+        phi=max(0.,1.+h*(diff_lr/diff_right-1.))
+      elsewhere
         phi=0.
-      endif
+      endwhere
 
     endsubroutine diff_flux
 !***********************************************************************
@@ -7109,6 +7023,8 @@ endif
 !  Calculates all <=3 components of the diffusive flux according to dimensionality. 
 !
 !  8-oct-15/MR: carved out from viscosity
+!
+      use General, only: notanumber
 !
       real, dimension (:,:,:,:), intent(INOUT):: f
       integer,                   intent(IN)   :: k
@@ -7120,7 +7036,11 @@ endif
       real, dimension(my-1) :: tmpy
       real, dimension(mz-1) :: tmpz
 
-      !f(:,:,:,iFF_diff1:iFF_diff2)=0.
+      if (.not.lcartesian_coords) &
+        call fatal_error('calc_all_diff_fluxes', &
+                         'Slope-limited diffusion not implemented for curvilinear coordinates.')
+
+      f(:,:,:,iFF_diff1:iFF_diff2)=0.
 
       iff=iFF_diff
 
@@ -7141,8 +7061,6 @@ if (notanumber(f(2:mx-2,mm,nn,iff))) print*, 'DIFFX:k,mm,nn=', k,mm,nn
 if (notanumber(tmpy)) print*, 'TMPY:k,mm,nn=', k,mm,nn
 !if (j==2) print*, 'UY, iproc=:', iproc    !, '1-5,my-5:my-1'
 !if (j==2) print'(16(e13.6,1x))', f(ll,:,nn,iuu+j-1)
-!!if (j==2) print*, tmpy(47:56)
-!!if (j==2) print*, tmpy(my-5:)
           call calc_diffusive_flux(tmpy,f(ll,2:my-2,nn,iFF_char_c),islope_limiter,h_slope_limited,f(ll,2:my-2,nn,iff))
 if (notanumber(f(ll,2:my-2,nn,iff))) print*, 'DIFFY:k,ll,mm=', k,ll,mm
         enddo; enddo
@@ -7151,6 +7069,8 @@ if (notanumber(f(ll,2:my-2,nn,iff))) print*, 'DIFFY:k,ll,mm=', k,ll,mm
 
       if (nzgrid>1) then
         do mm=m1,m2; do ll=l1,l2
+if (notanumber(f(ll,mm,n1:n2,k))) print*, 'FARRAY(n1:n2):k,ll,mm=', k,ll,mm
+if (notanumber(f(ll,mm,:,k))) print*, 'FARRAY(:):k,ll,mm=', k,ll,mm
           tmpz = f(ll,mm,2:,k)-f(ll,mm,:mz-1,k)
 if (notanumber(tmpz)) print*, 'TMPZ:k,ll,mm=', k,ll,mm
           call calc_diffusive_flux(tmpz,f(ll,mm,2:mz-2,iFF_char_c),islope_limiter,h_slope_limited,f(ll,mm,2:mz-2,iff))

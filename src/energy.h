@@ -1,5 +1,6 @@
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
   private
+  real :: w_sldchar_ent=0.01
 
   public :: register_energy, initialize_energy
   public :: read_energy_init_pars, write_energy_init_pars

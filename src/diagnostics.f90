@@ -79,7 +79,7 @@ module Diagnostics
 !
   contains
 !***********************************************************************
-    subroutine initialize_diagnostics()
+    subroutine initialize_diagnostics
 !
 !  Setup variables needed for output of diagnostic quantities and
 !  averages.
@@ -472,7 +472,7 @@ module Diagnostics
 !***********************************************************************
     subroutine get_average_density(mass_per_proc,average_density)
 !
-!  Finalize calculation of diagnostic quantities (0-D).
+!  Calculation of average density.
 !
 !   1-dec-09/dhruba+piyali: adapted from diagnostic
 !   3-may-12/axel+MR: to divide by box_volume, not nw
@@ -490,7 +490,7 @@ module Diagnostics
 !  The result is present everywhere
 !
       average_density=mass/box_volume
-      call mpibcast_real(average_density)
+      call mpibcast_real(average_density,comm=MPI_COMM_WORLD)
 !
     endsubroutine get_average_density
 !**********************************************************************
@@ -552,10 +552,9 @@ module Diagnostics
 !
 !  Communicate over all processors.
 !
-      call mpireduce_max(fmax_tmp,fmax,nmax_count)
-!
-      call mpireduce_sum(fsum_tmp,fsum,nsum_count)
-      if (lweight_comm) call mpireduce_sum(fweight_tmp,fweight,nsum_count)
+      call mpireduce_max(fmax_tmp,fmax,nmax_count,MPI_COMM_WORLD)
+      call mpireduce_sum(fsum_tmp,fsum,nsum_count,comm=MPI_COMM_WORLD)                        ! wrong if Yin-Yang overlap
+      if (lweight_comm) call mpireduce_sum(fweight_tmp,fweight,nsum_count,comm=MPI_COMM_WORLD)!   ~
 !
 !  The result is present only on the root processor.
 !
@@ -659,7 +658,7 @@ module Diagnostics
 !
     endsubroutine initialize_time_integrals
 !***********************************************************************
-    subroutine xyaverages_z()
+    subroutine xyaverages_z
 !
 !  Calculate xy-averages (still depending on z)
 !  NOTE: these averages depend on z, so after summation in x and y they
@@ -687,7 +686,7 @@ module Diagnostics
 !
     endsubroutine xyaverages_z
 !***********************************************************************
-    subroutine xzaverages_y()
+    subroutine xzaverages_y
 !
 !  Calculate xz-averages (still depending on y).
 !
@@ -706,7 +705,7 @@ module Diagnostics
 !
     endsubroutine xzaverages_y
 !***********************************************************************
-    subroutine yzaverages_x()
+    subroutine yzaverages_x
 !
 !  Calculate yz-averages (still depending on x).
 !
@@ -725,7 +724,7 @@ module Diagnostics
 !
     endsubroutine yzaverages_x
 !***********************************************************************
-    subroutine phizaverages_r()
+    subroutine phizaverages_r
 !
 !  Calculate phiz-averages (still depending on r).
 !
@@ -751,7 +750,7 @@ module Diagnostics
 !
     endsubroutine phizaverages_r
 !***********************************************************************
-    subroutine yaverages_xz()
+    subroutine yaverages_xz
 !
 !  Calculate y-averages (still depending on x and z).
 !
@@ -769,7 +768,7 @@ module Diagnostics
 !
     endsubroutine yaverages_xz
 !***********************************************************************
-    subroutine zaverages_xy()
+    subroutine zaverages_xy
 !
 !  Calculate z-averages (still depending on x and y).
 !
@@ -787,7 +786,7 @@ module Diagnostics
 !
     endsubroutine zaverages_xy
 !***********************************************************************
-    subroutine phiaverages_rz()
+    subroutine phiaverages_rz
 !
 !  Calculate azimuthal averages (as functions of r_cyl,z).
 !  NOTE: these averages depend on (r and) z, so after summation they
@@ -814,7 +813,7 @@ module Diagnostics
 !
     endsubroutine phiaverages_rz
 !***********************************************************************
-    subroutine write_1daverages()
+    subroutine write_1daverages
 !
 !  Write 1d averages (z-averages, .., i.e. quantities that are only  1d
 !  after averaging). These are written every it1d (default it1) timesteps
@@ -822,14 +821,14 @@ module Diagnostics
 !
 !   7-aug-03/wolf: coded
 !
-      call write_xyaverages()
-      call write_xzaverages()
-      call write_yzaverages()
-      call write_phizaverages()
+      call write_xyaverages
+      call write_xzaverages
+      call write_yzaverages
+      call write_phizaverages
 !
     endsubroutine write_1daverages
 !***********************************************************************
-    subroutine write_2daverages_prepare()
+    subroutine write_2daverages_prepare
 !
 !  Prepare l2davg for writing 2D averages.
 !  This needs to be done in the beginning of each time step, so
@@ -856,7 +855,7 @@ module Diagnostics
 !
     endsubroutine write_2daverages_prepare
 !***********************************************************************
-    subroutine write_2daverages()
+    subroutine write_2daverages
 !
 !  Write 2d averages (z-averages, phi-averages, .., i.e. quantities that
 !  are still 2d after averaging) if it is time.
@@ -865,15 +864,15 @@ module Diagnostics
 !
 !   7-aug-03/wolf: adapted from wsnap
 !
-      if (lwrite_yaverages)   call write_yaverages()
-      if (lwrite_zaverages)   call write_zaverages()
+      if (lwrite_yaverages)   call write_yaverages
+      if (lwrite_zaverages)   call write_zaverages
       if (lwrite_phiaverages) call write_phiaverages(ch2davg)
 !
       if (ip<=10) write(*,*) 'write_2daverages: wrote phi(etc.)avgs'//ch2davg
 !
     endsubroutine write_2daverages
 !***********************************************************************
-    subroutine write_xyaverages()
+    subroutine write_xyaverages
 !
 !  Write xy-averages (which are 1d data) that have been requested via
 !  `xyaver.in'
@@ -901,7 +900,7 @@ module Diagnostics
 !
     endsubroutine write_xyaverages
 !***********************************************************************
-    subroutine write_xzaverages()
+    subroutine write_xzaverages
 !
 !  Write xz-averages (which are 1d data) that have been requested via
 !  `xzaver.in'
@@ -929,7 +928,7 @@ module Diagnostics
 !
     endsubroutine write_xzaverages
 !***********************************************************************
-    subroutine write_yzaverages()
+    subroutine write_yzaverages
 !
 !  Write yz-averages (which are 1d data) that have been requested via
 !  `yzaver.in'
@@ -957,7 +956,7 @@ module Diagnostics
 !
     endsubroutine write_yzaverages
 !***********************************************************************
-    subroutine write_phizaverages()
+    subroutine write_phizaverages
 !
 !  Write phiz-averages (which are 1d data) that have been requested via
 !  `phizaver.in'
@@ -983,7 +982,7 @@ module Diagnostics
 !
     endsubroutine write_phizaverages
 !***********************************************************************
-    subroutine write_yaverages()
+    subroutine write_yaverages
 !
 !  Write y-averages (which are 2d data) that have been requested via yaver.in.
 !
@@ -998,7 +997,7 @@ module Diagnostics
 !
     endsubroutine write_yaverages
 !***********************************************************************
-    subroutine write_zaverages()
+    subroutine write_zaverages
 !
 !  Write z-averages (which are 2d data) that have been requested via zaver.in.
 !
@@ -1514,7 +1513,7 @@ module Diagnostics
     subroutine sum_mn_name_arr2(a,iname,lsqrt,lint,ipart)
 !
 !  20-aug-13/MR: derived from sum_mn_name; behaves as before if extent of
-!                first dimension of a is 1; if it is 2 considers a a complex
+!                first dimension of a is 1; if it is 2 considers a to be a complex
 !                pencil - stores real(imaginary) part in fname(fname_keep),
 !                sets type of diagnostic to complex
 !
@@ -1626,7 +1625,6 @@ module Diagnostics
 !  Normal method.
 !
         else
-
           if (lproper_averages) then
             call integrate_mn(a,fname(iname))
           else

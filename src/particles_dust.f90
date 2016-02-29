@@ -8,12 +8,12 @@
 ! variables and auxiliary variables added by this module
 !
 ! MPVAR CONTRIBUTION 6
-! MAUX CONTRIBUTION 2
+! MAUX CONTRIBUTION 3
 ! CPARAM logical, parameter :: lparticles=.true.
 ! CPARAM logical, parameter :: lparticles_potential=.false.
 !
-! PENCILS PROVIDED np; rhop
-! PENCILS PROVIDED np_rad(5); npvz(5)
+! PENCILS PROVIDED np; rhop; vol
+! PENCILS PROVIDED np_rad(5); npvz(5); sherwood
 ! PENCILS PROVIDED epsp; grhop(3)
 !
 !***************************************************************
@@ -79,6 +79,10 @@ module Particles
   real :: Deltauy_gas_friction=0.0
   real :: cond_ratio=0.0
   real :: pscalar_sink_rate=0.0
+  real :: frac_init_particles=1.0, particles_insert_ramp_time=0.0
+  real :: tstart_insert_particles=0.0
+  real :: birthring_r=1.0, birthring_width=0.1
+  real :: tstart_rpbeta=0.0
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
@@ -113,6 +117,11 @@ module Particles
   logical :: lpscalar_sink=.false.
   logical :: lsherwood_const=.false.
   logical :: lbubble=.false.
+  logical :: linsert_as_many_as_possible=.false.
+  logical :: lwithhold_init_particles=.false.
+  logical :: lgaussian_birthring=.false.
+  logical :: lvector_gravity=.false.
+  logical :: lprecalc_cell_volumes=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -167,7 +176,7 @@ module Particles
       ldraglaw_eps_stk_transonic, dustdensity_powerlaw, rad_sphere, pos_sphere, ldragforce_stiff, &
       a_ellipsoid, b_ellipsoid, c_ellipsoid, pos_ellipsoid, &
       ldraglaw_steadystate, tstart_liftforce_par, &
-      ldraglaw_purestokes,& 
+      ldraglaw_purestokes,rpbeta_species, rpbeta, gab_width, & 
       tstart_brownian_par, tstart_sink_par, &
       lbrownian_forces,lthermophoretic_forces,lenforce_policy, &
       interp_pol_uu,interp_pol_oo,interp_pol_TT,interp_pol_rho, &
@@ -176,14 +185,14 @@ module Particles
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
       lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, &
       Lz0, lglobalrandom, linsert_particles_continuously, &
-      lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, &
-      np_const, rhop_const, particle_radius, &
+      lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, lprecalc_cell_volumes, &
+      np_const, rhop_const, particle_radius, lignore_rhop_swarm, &
       ldragforce_equi_noback, rhopmat, Deltauy_gas_friction, xp1, &
       yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
       xp3, yp3, zp3, vpx3, vpy3, vpz3, lsinkparticle_1, rsinkparticle_1, &
       lcalc_uup, temp_grad0, thermophoretic_eq, cond_ratio, interp_pol_gradTT, &
-      lreassign_strat_rhom, lparticlemesh_pqs_assignment, &
-      rpbeta_species, rpbeta
+      lreassign_strat_rhom, lparticlemesh_pqs_assignment, lwithhold_init_particles, &
+      frac_init_particles, lvector_gravity, birthring_r, birthring_width, lgaussian_birthring
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -214,15 +223,16 @@ module Particles
       rsinkpoint, lshear_accel_par, lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, &
       linsert_particles_continuously, particles_insert_rate, &
       max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, &
-      np_const, rhop_const, particle_radius, &
-      Deltauy_gas_friction, &
-      loutput_psize_dist, log_ap_min_dist, log_ap_max_dist, nbin_ap_dist, &
-      lsinkparticle_1, rsinkparticle_1, lthermophoretic_forces, temp_grad0, &
+      np_const, rhop_const, particle_radius, lprecalc_cell_volumes, &
+      Deltauy_gas_friction, loutput_psize_dist, log_ap_min_dist, log_ap_max_dist, &
+      nbin_ap_dist, lsinkparticle_1, rsinkparticle_1, lthermophoretic_forces, temp_grad0, &
       thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, &
-      lcommunicate_np, lcylindrical_gravity_par, &
+      lcommunicate_np, lcylindrical_gravity_par, lignore_rhop_swarm, &
       l_shell, k_shell, lparticlemesh_pqs_assignment, pscalar_sink_rate, &
       lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw,lbubble, &
-      lpart_box, rpbeta_species, rpbeta
+      rpbeta_species, rpbeta, gab_width, initxxp, initvvp, particles_insert_ramp_time, &
+      particles_insert_ramp_time, tstart_insert_particles, birthring_r, birthring_width, &
+      lgaussian_birthring, tstart_rpbeta, linsert_as_many_as_possible, lvector_gravity
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -255,6 +265,7 @@ module Particles
   integer :: idiag_eccpxm=0, idiag_eccpym=0, idiag_eccpzm=0
   integer :: idiag_eccpx2m=0, idiag_eccpy2m=0, idiag_eccpz2m=0
   integer :: idiag_vprms=0, idiag_vpyfull2m=0, idiag_deshearbcsm=0
+  integer :: idiag_Shm=0
   integer, dimension(ninit)  :: idiag_npvzmz=0, idiag_nptz=0
 !
   contains
@@ -302,6 +313,9 @@ module Particles
         call farray_register_auxiliary('uup',iuup,communicated=.true.,vector=3)
         iupx=iuup; iupy=iuup+1; iupz=iuup+2
       endif
+      if (lprecalc_cell_volumes) then
+        call farray_register_auxiliary('vol',ivol,communicated=.false.)
+      endif
 !
 !  Special variable for stiff drag force equations.
 !
@@ -347,6 +361,19 @@ module Particles
         endif
         call fatal_error('initialize_particles','')
       endif
+!
+!  Hand over Coriolis force and shear acceleration to Particles_drag.
+!
+      drag: if (lparticles_drag) then
+        coriolis: if (lcoriolis_force_par) then
+          lcoriolis_force_par = .false.
+          if (lroot) print *, 'initialize_particles: turned off and hand over Coriolis force to Particles_drag. '
+        endif coriolis
+        shacc: if (lshear .and. lshear_accel_par) then
+          lshear_accel_par = .false.
+          if (lroot) print *, 'initialize_particles: turned off and hand over shear acceleration to Particles_drag. '
+        endif shacc
+      endif drag
 !
 !  Check if shear advection is on and decide if it needs to be included in the timestep condition.
 !
@@ -529,6 +556,12 @@ module Particles
 !  region needs to be folded back into the df array after pde is finished,
 !
         if (lparticlemesh_cic .or. lparticlemesh_tsc) lfold_df=.true.
+      endif
+!
+      if (lparticlemesh_gab) then
+        lfold_df_3points=.true.
+        if (lpscalar) call fatal_error('initialize_particles',&
+            'The gab scheme is currently not working with passive scalars!')
       endif
 !
       if (lcollisional_cooling_twobody) then
@@ -743,6 +776,8 @@ module Particles
         close (1)
       endif
 !
+      if (lprecalc_cell_volumes) call precalc_cell_volumes(f)
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_particles
@@ -754,7 +789,7 @@ module Particles
 !  29-dec-04/anders: coded
 !
       use EquationOfState, only: beta_glnrho_global, cs20
-      use General, only: random_number_wrapper
+      use General, only: random_number_wrapper, normal_deviate
       use Mpicomm, only: mpireduce_sum, mpibcast_real
       use InitialCondition, only: initial_condition_xxp, initial_condition_vvp
       use Particles_diagnos_dv, only: repeated_init
@@ -762,13 +797,14 @@ module Particles
       real, dimension (mx,my,mz,mfarray), intent (out) :: f
       real, dimension (mpar_loc,mparray), intent (out) :: fp
       integer, dimension (mpar_loc,3), intent (out) :: ineargrid
+      real, dimension (mpar_loc) :: rr_tmp, az_tmp
 !
       real, dimension (3) :: uup, Lxyz_par, xyz0_par, xyz1_par
       real :: vpx_sum, vpy_sum, vpz_sum
       real :: r, p, q, px, py, pz, eps, cs, k2_xxp, rp2
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
       real :: rad,rad_scl,phi,tht,tmp,OO,xx0,yy0,r2
-      integer :: l, j, k, ix0, iy0, iz0
+      integer :: l, j, k, ix0, iy0, iz0, n_kill
       logical :: lequidistant=.false.
       real :: rpar_int,rpar_ext
 !
@@ -1445,6 +1481,37 @@ module Particles
         case ('constant-Ri')
           call constant_richardson(fp,f)
 !
+        case ('birthring')
+          if (birthring_width>tini) then
+            if (lgaussian_birthring) then
+              do k=1,npar_loc
+                call normal_deviate(rr_tmp(k))
+              enddo
+            else
+              call random_number_wrapper(rr_tmp(1:npar_loc))
+            endif
+            rr_tmp(1:npar_loc) = birthring_r+rr_tmp(1:npar_loc)*birthring_width
+          else
+            rr_tmp(1:npar_loc) = birthring_r
+          endif
+          call random_number_wrapper(az_tmp(1:npar_loc))
+          az_tmp(1:npar_loc) = -pi+az_tmp(1:npar_loc)*2.0*pi
+          if (lcartesian_coords) then
+            fp(1:npar_loc,ixp) = rr_tmp(1:npar_loc)*cos(az_tmp(1:npar_loc))
+            fp(1:npar_loc,iyp) = rr_tmp(1:npar_loc)*sin(az_tmp(1:npar_loc))
+            fp(1:npar_loc,izp) = 0.0
+          else
+            fp(1:npar_loc,ixp) = rr_tmp(1:npar_loc)
+            if (lcylindrical_coords) then
+              fp(1:npar_loc,iyp) = az_tmp(1:npar_loc)
+              fp(1:npar_loc,izp) = 0.0
+            elseif (lspherical_coords) then
+              fp(1:npar_loc,iyp) = pi/2.0
+              fp(1:npar_loc,izp) = az_tmp(1:npar_loc)
+            endif
+          endif
+          if (lroot .and. nzgrid/=0) print*,"Warning, birthring only implemented for 2D"
+!
         case default
           call fatal_error('init_particles','Unknown value initxxp="'//trim(initxxp(j))//'"')
 !
@@ -1758,6 +1825,17 @@ module Particles
 !
       if (linitial_condition) call initial_condition_vvp(f,fp)
 !
+!  Optionally withhold some number of particles, to be inserted in 
+!  insert_particles. The particle indices to be removed are not randomized, 
+!  so any randomization needs to be taken care of in the above initxxp cases.
+!
+      if (lwithhold_init_particles .and. frac_init_particles < 1.0-tini) then
+        n_kill = nint((1.0-frac_init_particles)*real(npar_loc))
+        do k=1,n_kill
+          call remove_particle(fp,ipar,k)
+        enddo
+      endif
+!
 !  Map particle velocity on the grid.
 !
       call map_vvp_grid(f,fp,ineargrid)
@@ -1794,29 +1872,43 @@ module Particles
 ! Works only for particles_dust - add neccessary variable
 ! declarations in particles_tracers to make it work here.
 !
-      use General, only: random_number_wrapper
+      use General, only: random_number_wrapper, normal_deviate
       use Particles_diagnos_state, only: insert_particles_diagnos_state
+      use SharedVariables, only: get_shared_variable
+      use Mpicomm, only: mpireduce_sum_int
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray), intent (inout) :: fp
+      real, dimension (3) :: Lxyz_par, xyz0_par, xyz1_par
       integer, dimension (mpar_loc,3), intent (inout) :: ineargrid
+      real, dimension (mpar_loc) :: rr_tmp, az_tmp
 !
       logical, save :: linsertmore=.true.
-      real :: xx0, yy0, r2, r
-      integer :: j, k, n_insert, npar_loc_old, iii
+      real :: xx0, yy0, r2, r, tmp, rpar_int, rpar_ext
+      integer :: j, k, n_insert, npar_loc_old, iii, particles_insert_rate_tmp
+      real, pointer :: gravr
 !
-! Stop call to this routine when maximum number of particles is reached!
+! Stop call to this routine when maximum number of particles is reached,
+! unless linsert_as_many_as_possible is set.
 ! Since root inserts all new particles, make sure
 ! npar_total + n_insert < mpar
 ! so that a processor can not exceed its maximum number of particles.
 !
+      if (t>tstart_insert_particles+particles_insert_ramp_time) then
+        particles_insert_rate_tmp = particles_insert_rate
+      else
+        particles_insert_rate_tmp = int(real(particles_insert_rate)*(t-tstart_insert_particles)/particles_insert_ramp_time)
+      endif
+      call mpireduce_sum_int(npar_loc,npar_total)
+!
       if (lroot) then
-        avg_n_insert=particles_insert_rate*dt
+        avg_n_insert=particles_insert_rate_tmp*dt
         n_insert=int(avg_n_insert + remaining_particles)
 ! Remaining particles saved for subsequent timestep:
         remaining_particles=avg_n_insert + remaining_particles - n_insert
+        if (linsert_as_many_as_possible) n_insert=min((mpar_loc-npar_total),n_insert)
         if ((n_insert+npar_total <= mpar_loc) &
-            .and. (t<max_particle_insert_time)) then
+            .and. (t<max_particle_insert_time) .and. (t>tstart_insert_particles)) then
           linsertmore=.true.
         else
           linsertmore=.false.
@@ -1827,7 +1919,6 @@ module Particles
           do iii=npar_loc+1,npar_loc+n_insert
             ipar(iii)=npar_total+iii-npar_loc
           enddo
-          npar_total=npar_total+n_insert
           npar_loc_old=npar_loc
           npar_loc=npar_loc + n_insert
 !
@@ -1864,6 +1955,99 @@ module Particles
                 endif
               enddo
 !
+! Maybe random-cylindrical case should be combined with normal initxxp case
+!
+            case ('random-cylindrical','random-cyl')
+              if (lglobalrandom) then
+                Lxyz_par=Lxyz
+                xyz0_par=xyz0
+                xyz1_par=xyz1
+              else
+                Lxyz_par=Lxyz_loc
+                xyz0_par=xyz0_loc
+                xyz1_par=xyz1_loc
+              endif
+              if (lcylindrical_coords.or.lcartesian_coords) then
+                tmp=2-dustdensity_powerlaw
+              elseif (lspherical_coords) then
+                tmp=3-dustdensity_powerlaw
+              else
+                call fatal_error("init_particles",&
+                     "The world is flat, and we never got here")
+              endif
+  !
+              if (lcartesian_coords) then
+                if (nprocx==1) then
+                  rpar_int=rp_int
+                  rpar_ext=rp_ext
+                else
+                  call fatal_error("init_particles",&
+                       "random-cyl not yet ready for nprocx/=1 in Cartesian. Parallelize in y or z")
+                endif
+              else
+                rpar_int = xyz0_loc(1)
+                rpar_ext = xyz1_loc(1)
+              endif
+
+              call random_number_wrapper(rr_tmp(npar_loc_old+1:npar_loc))
+              rr_tmp(npar_loc_old+1:npar_loc) = rpar_int**tmp + &
+                rr_tmp(npar_loc_old+1:npar_loc)*(rpar_ext**tmp-rpar_int**tmp)
+              rr_tmp(npar_loc_old+1:npar_loc) = rr_tmp(npar_loc_old+1:npar_loc)**(1./tmp)
+              if ((lcartesian_coords) .or. (lcylindrical_coords .and. nygrid/=1) .or. (lspherical_coords .and. nzgrid/=1)) then
+                call random_number_wrapper(az_tmp(npar_loc_old+1:npar_loc))
+                az_tmp(npar_loc_old+1:npar_loc) = -pi + 2.0*pi*az_tmp(npar_loc_old+1:npar_loc)
+              endif
+              if ((lcartesian_coords) .or. (lcylindrical_coords .and. nzgrid/=1) .or. (lspherical_coords .and. nygrid/=1)) then
+                call random_number_wrapper(fp(npar_loc_old+1:npar_loc,izp))
+              endif
+
+              if (lcartesian_coords) then
+                fp(npar_loc_old+1:npar_loc,iyp) = az_tmp(npar_loc_old+1:npar_loc)*2.0*pi
+                if (nxgrid/=1) fp(npar_loc_old+1:npar_loc,ixp) = rr_tmp(npar_loc_old+1:npar_loc) &
+                  *cos(az_tmp(npar_loc_old+1:npar_loc))
+                if (nygrid/=1) fp(npar_loc_old+1:npar_loc,iyp) = rr_tmp(npar_loc_old+1:npar_loc) &
+                  *sin(az_tmp(npar_loc_old+1:npar_loc))
+                if (nzgrid/=1) fp(npar_loc_old+1:npar_loc,izp) = xyz0_par(3)+fp(npar_loc_old+1:npar_loc,izp)*Lxyz_par(3)
+              elseif (lcylindrical_coords) then
+                if (nxgrid/=1) fp(npar_loc_old+1:npar_loc,ixp) = rr_tmp(npar_loc_old+1:npar_loc)
+                if (nygrid/=1) fp(npar_loc_old+1:npar_loc,iyp) = xyz0_par(2)+az_tmp(npar_loc_old+1:npar_loc)*Lxyz_par(2)
+                if (nzgrid/=1) fp(npar_loc_old+1:npar_loc,izp) = xyz0_par(3)+fp(npar_loc_old+1:npar_loc,izp)*Lxyz_par(3)
+              elseif (lspherical_coords) then
+                if (nxgrid/=1) fp(npar_loc_old+1:npar_loc,ixp) = rr_tmp(npar_loc_old+1:npar_loc)
+                if (nygrid/=1) fp(npar_loc_old+1:npar_loc,iyp) = xyz0_par(2)+az_tmp(npar_loc_old+1:npar_loc)*Lxyz_par(2)
+                if (nzgrid/=1) fp(npar_loc_old+1:npar_loc,izp) = xyz0_par(3)+fp(npar_loc_old+1:npar_loc,izp)*Lxyz_par(3)
+              endif
+!
+            case ('birthring')
+              if (birthring_width>tini) then
+                if (lgaussian_birthring) then
+                  do k=npar_loc_old+1,npar_loc
+                    call normal_deviate(rr_tmp(k))
+                  enddo
+                else
+                  call random_number_wrapper(rr_tmp(npar_loc_old+1:npar_loc))
+                endif
+                rr_tmp(npar_loc_old+1:npar_loc) = birthring_r+rr_tmp(npar_loc_old+1:npar_loc)*birthring_width
+              else
+                rr_tmp(npar_loc_old+1:npar_loc) = birthring_r
+              endif
+              call random_number_wrapper(az_tmp(npar_loc_old+1:npar_loc))
+              az_tmp(npar_loc_old+1:npar_loc) = -pi+az_tmp(npar_loc_old+1:npar_loc)*2.0*pi
+              if (lcartesian_coords) then
+                fp(npar_loc_old+1:npar_loc,ixp) = rr_tmp(npar_loc_old+1:npar_loc)*cos(az_tmp(npar_loc_old+1:npar_loc))
+                fp(npar_loc_old+1:npar_loc,iyp) = rr_tmp(npar_loc_old+1:npar_loc)*sin(az_tmp(npar_loc_old+1:npar_loc))
+                fp(npar_loc_old+1:npar_loc,izp) = 0.0
+              else
+                fp(npar_loc_old+1:npar_loc,ixp) = rr_tmp(npar_loc_old+1:npar_loc)
+                if (lcylindrical_coords) then
+                  fp(npar_loc_old+1:npar_loc,iyp) = az_tmp(npar_loc_old+1:npar_loc)
+                  fp(npar_loc_old+1:npar_loc,izp) = 0.0
+                elseif (lspherical_coords) then
+                  fp(npar_loc_old+1:npar_loc,iyp) = pi/2.0
+                  fp(npar_loc_old+1:npar_loc,izp) = az_tmp(npar_loc_old+1:npar_loc)
+                endif
+              endif
+!
             case ('nothing')
               if (j==1) print*, 'init_particles: nothing'
 !
@@ -1879,6 +2063,14 @@ module Particles
             select case (initvvp(j))
             case ('nothing')
               if (j==1) print*, 'init_particles: No particle velocity set'
+!
+            case ('Keplerian','keplerian')
+              call get_shared_variable('gravr',gravr)
+              if (lcylindrical_coords) then
+                fp(npar_loc_old+1:npar_loc,ivpx) = 0.0
+                fp(npar_loc_old+1:npar_loc,ivpy) = sqrt(gravr/fp(npar_loc_old+1:npar_loc,ixp))
+                fp(npar_loc_old+1:npar_loc,ivpz) = 0.0
+              endif
 !
             case ('constant')
               if (lcylindrical_coords) then
@@ -1919,10 +2111,11 @@ module Particles
         endif
       endif ! if (lroot) then
 !
-!  Redistribute particles only when t < max_particle_insert_time.
+!  Redistribute particles only when t < max_particle_insert_time
+!  and t>tstart_insert_particles.
 !  Could have included some other tests here aswell......
 !
-      if (t<max_particle_insert_time) then
+      if (t<max_particle_insert_time .and. t>tstart_insert_particles) then
 !
 !  Redistribute particles among processors.
 !
@@ -2452,6 +2645,7 @@ module Particles
 !
       if (maxval(idiag_npvzmz) > 0) lpenc_requested(i_npvz)=.true.
       if (maxval(idiag_nptz) > 0)   lpenc_requested(i_np_rad)=.true.
+      if (idiag_Shm /= 0) lpenc_requested(i_sherwood)=.true.
 !
     endsubroutine pencil_criteria_particles
 !***********************************************************************
@@ -2906,12 +3100,16 @@ module Particles
 !  11-oct-12/dhruba: copied from dvvp_dt
 !
       use Diagnostics
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
       real, dimension (mpar_loc,mparray), intent (in) :: fp
       real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
       integer, dimension (mpar_loc,3), intent (in) :: ineargrid
+      real, dimension (mpar_loc) :: rpbeta_tmp_arr, OO2_arr, rr_arr, vv_arr
+      real, dimension(mpar_loc,3) :: gpp_arr
+      integer, dimension(mpar_loc) :: jspec_arr
 !
       real, dimension(3) :: ggp
       real :: rr=0, vv=0, OO2, rpbeta_tmp=0
@@ -3015,65 +3213,135 @@ module Particles
               'gravr_profile=''newtonian'' on particles_init')
           if (lheader) &
                print*, 'dvvp_dt: Newtonian gravity from a fixed central object'
-          do k=1,npar_loc
-            if (npar_species>1) then
-              jspec=npar_species*(ipar(k)-1)/npar+1
-              rpbeta_tmp=rpbeta_species(jspec)
+          if (lvector_gravity) then
+            if (t>=tstart_rpbeta) then
+              if (lparticles_radius .and. lparticles_radius_rpbeta) then
+                rpbeta_tmp_arr(1:npar_loc)=fp(1:npar_loc,irpbeta)
+              elseif (npar_species>1) then
+                jspec_arr(1:npar_loc)=npar_species*(ipar(1:npar_loc)-1)/npar+1
+              else
+                rpbeta_tmp_arr(1:npar_loc)=rpbeta
+              endif
             else
-              rpbeta_tmp=rpbeta
+              rpbeta_tmp_arr(1:npar_loc)=0.0
             endif
             if (lcartesian_coords) then
               if (lcylindrical_gravity_par) then
-                rr=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+gravsmooth2)
+                rr_arr(1:npar_loc)=sqrt(fp(1:npar_loc,ixp)**2+fp(1:npar_loc,iyp)**2+gravsmooth2)
               else
-                rr=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2+gravsmooth2)
+                rr_arr(1:npar_loc)=sqrt(fp(1:npar_loc,ixp)**2+fp(1:npar_loc,iyp)**2+fp(1:npar_loc,izp)**2+gravsmooth2)
               endif
-              OO2=rr**(-3.)*gravr*(1.0-rpbeta_tmp)
-              ggp(1) = -fp(k,ixp)*OO2
-              ggp(2) = -fp(k,iyp)*OO2
+              OO2_arr(1:npar_loc)=rr_arr(1:npar_loc)**(-3.)*gravr*(1.0-rpbeta_tmp_arr(1:npar_loc))
+              gpp_arr(1:npar_loc,1) = -fp(1:npar_loc,ixp)*OO2_arr(1:npar_loc)
+              gpp_arr(1:npar_loc,2) = -fp(1:npar_loc,iyp)*OO2_arr(1:npar_loc)
               if (lcylindrical_gravity_par) then
-                ggp(3) = 0.
+                gpp_arr(1:npar_loc,3) = 0.
               else
-                ggp(3) = -fp(k,izp)*OO2
+                gpp_arr(1:npar_loc,3) = -fp(1:npar_loc,izp)*OO2_arr(1:npar_loc)
               endif
-              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
+              dfp(1:npar_loc,ivpx:ivpz) = dfp(1:npar_loc,ivpx:ivpz) + gpp_arr(1:npar_loc,:)
             elseif (lcylindrical_coords) then
               if (lcylindrical_gravity_par) then
-                rr=sqrt(fp(k,ixp)**2+gravsmooth2)
+                rr_arr(1:npar_loc)=sqrt(fp(1:npar_loc,ixp)**2+gravsmooth2)
               else
-                rr=sqrt(fp(k,ixp)**2+fp(k,izp)**2+gravsmooth2)
+                rr_arr(1:npar_loc)=sqrt(fp(1:npar_loc,ixp)**2+fp(1:npar_loc,izp)**2+gravsmooth2)
               endif
-              OO2=rr**(-3.)*gravr*(1.0-rpbeta_tmp)
-              ggp(1) = -fp(k,ixp)*OO2
-              ggp(2) = 0.0
+              OO2_arr(1:npar_loc)=rr_arr(1:npar_loc)**(-3.)*gravr*(1.0-rpbeta_tmp_arr(1:npar_loc))
+              gpp_arr(1:npar_loc,1) = -fp(1:npar_loc,ixp)*OO2_arr(1:npar_loc)
+              gpp_arr(1:npar_loc,2) = 0.0
               if (lcylindrical_gravity_par) then
-                ggp(3) = 0.
+                gpp_arr(1:npar_loc,3) = 0.
               else
-                ggp(3) = -fp(k,izp)*OO2
+                gpp_arr(1:npar_loc,3) = -fp(1:npar_loc,izp)*OO2_arr(1:npar_loc)
               endif
-              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
+              dfp(1:npar_loc,ivpx:ivpz) = dfp(1:npar_loc,ivpx:ivpz) + gpp_arr(1:npar_loc,:)
             elseif (lspherical_coords) then
-              rr=sqrt(fp(k,ixp)**2+gravsmooth2)
-              OO2=rr**(-3)*gravr*(1.0-rpbeta_tmp)
-              ggp(1) = -fp(k,ixp)*OO2
-              ggp(2) = 0.0; ggp(3) = 0.0
+              rr_arr(1:npar_loc)=sqrt(fp(1:npar_loc,ixp)**2+gravsmooth2)
+              OO2_arr(1:npar_loc)=rr_arr(1:npar_loc)**(-3)*gravr*(1.0-rpbeta_tmp_arr(1:npar_loc))
+              gpp_arr(1:npar_loc,1) = -fp(1:npar_loc,ixp)*OO2_arr(1:npar_loc)
+              gpp_arr(1:npar_loc,2) = 0.0; gpp_arr(1:npar_loc,3) = 0.0
               if (lcylindrical_gravity_par) call fatal_error("dvvp_dt",&
                    "No cylindrical gravity in spherical coordinates.")
-              dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
+              dfp(1:npar_loc,ivpx:ivpz) = dfp(1:npar_loc,ivpx:ivpz) + gpp_arr(1:npar_loc,:)
             endif
 !  Limit time-step if particles close to gravity source.
             if (ldt_grav_par.and.(lfirst.and.ldt)) then
               if (lcartesian_coords) then
-                vv=sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)
+                vv_arr(1:npar_loc)=sqrt(fp(1:npar_loc,ivpx)**2+fp(1:npar_loc,ivpy)**2+fp(1:npar_loc,ivpz)**2)
               elseif (lcylindrical_coords) then
-                vv=sqrt(fp(k,ivpx)**2+fp(k,ivpz)**2)
+                vv_arr(1:npar_loc)=sqrt(fp(1:npar_loc,ivpx)**2+fp(1:npar_loc,ivpz)**2)
               elseif (lspherical_coords) then
-                vv=abs(fp(k,ivpx))
+                vv_arr(1:npar_loc)=abs(fp(1:npar_loc,ivpx))
               endif
-              dt1_max(ineargrid(k,1)-nghost)= &
-                  max(dt1_max(ineargrid(k,1)-nghost),vv/rr/cdtpgrav)
+              do k=1,npar_loc
+                dt1_max(ineargrid(k,1)-nghost) = max(dt1_max(ineargrid(k,1)-nghost),vv_arr(k)/rr_arr(k)/cdtpgrav)
+              enddo
             endif
-          enddo
+          else
+            do k=1,npar_loc
+              if (t>=tstart_rpbeta) then
+                if (npar_species>1) then
+                  jspec=npar_species*(ipar(k)-1)/npar+1
+                  rpbeta_tmp=rpbeta_species(jspec)
+                else
+                  rpbeta_tmp=rpbeta
+                endif
+              else
+                rpbeta_tmp=0.0
+              endif
+              if (lcartesian_coords) then
+                if (lcylindrical_gravity_par) then
+                  rr=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+gravsmooth2)
+                else
+                  rr=sqrt(fp(k,ixp)**2+fp(k,iyp)**2+fp(k,izp)**2+gravsmooth2)
+                endif
+                OO2=rr**(-3.)*gravr*(1.0-rpbeta_tmp)
+                ggp(1) = -fp(k,ixp)*OO2
+                ggp(2) = -fp(k,iyp)*OO2
+                if (lcylindrical_gravity_par) then
+                  ggp(3) = 0.
+                else
+                  ggp(3) = -fp(k,izp)*OO2
+                endif
+                dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
+              elseif (lcylindrical_coords) then
+                if (lcylindrical_gravity_par) then
+                  rr=sqrt(fp(k,ixp)**2+gravsmooth2)
+                else
+                  rr=sqrt(fp(k,ixp)**2+fp(k,izp)**2+gravsmooth2)
+                endif
+                OO2=rr**(-3.)*gravr*(1.0-rpbeta_tmp)
+                ggp(1) = -fp(k,ixp)*OO2
+                ggp(2) = 0.0
+                if (lcylindrical_gravity_par) then
+                  ggp(3) = 0.
+                else
+                  ggp(3) = -fp(k,izp)*OO2
+                endif
+                dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
+              elseif (lspherical_coords) then
+                rr=sqrt(fp(k,ixp)**2+gravsmooth2)
+                OO2=rr**(-3)*gravr*(1.0-rpbeta_tmp)
+                ggp(1) = -fp(k,ixp)*OO2
+                ggp(2) = 0.0; ggp(3) = 0.0
+                if (lcylindrical_gravity_par) call fatal_error("dvvp_dt",&
+                     "No cylindrical gravity in spherical coordinates.")
+                dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + ggp
+              endif
+  !  Limit time-step if particles close to gravity source.
+              if (ldt_grav_par.and.(lfirst.and.ldt)) then
+                if (lcartesian_coords) then
+                  vv=sqrt(fp(k,ivpx)**2+fp(k,ivpy)**2+fp(k,ivpz)**2)
+                elseif (lcylindrical_coords) then
+                  vv=sqrt(fp(k,ivpx)**2+fp(k,ivpz)**2)
+                elseif (lspherical_coords) then
+                  vv=abs(fp(k,ivpx))
+                endif
+                dt1_max(ineargrid(k,1)-nghost)= &
+                    max(dt1_max(ineargrid(k,1)-nghost),vv/rr/cdtpgrav)
+              endif
+            enddo
+          endif
 !
         case default
           call fatal_error('dvvp_dt','chosen gravr_profile is not valid!')
@@ -3176,7 +3444,7 @@ module Particles
       real :: added_mass_beta = 0.0
       real :: rho1_point, tausp1_par, up2
       real :: weight, weight_x, weight_y, weight_z
-      real :: rhop_swarm_par, dxp, dyp, dzp, volume_cell
+      real :: dxp, dyp, dzp, volume_cell
       integer :: k, l, ix0, iy0, iz0, ierr, irad
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       integer, dimension (3) :: inear
@@ -3197,8 +3465,9 @@ module Particles
 !
 !  Initialize the pencils that are calculated within this subroutine
 !
-      if (lpenc_requested(i_npvz))    p%npvz=0.
-      if (lpenc_requested(i_np_rad)) p%np_rad=0.
+      if (lpenc_requested(i_npvz))     p%npvz=0.
+      if (lpenc_requested(i_np_rad))   p%np_rad=0.
+      if (lpenc_requested(i_sherwood)) p%sherwood=0.
 !
 !  Precalculate certain quantities, if necessary.
 !
@@ -3420,6 +3689,11 @@ module Particles
                   else
                     Sherwood = 2.0 + 0.69*sqrt(rep(k))*(nu(k)/pscalar_diff)**(1./3.)
                   endif
+!
+                  if (lpenc_requested(i_sherwood)) then
+                    p%sherwood(ix0-nghost)=p%sherwood(ix0-nghost)+Sherwood
+                  endif
+!
                   mass_trans_coeff=gas_consentration*Sherwood*pscalar_diff/ &
                       (2*fp(k,iap))
                   lambda_tilde=pscalar_sink_rate*mass_trans_coeff/ &
@@ -3454,16 +3728,28 @@ module Particles
                       rho1_point = p%rho1(ixx-nghost)
                     endif
 !  Add friction force to grid point.
-                    call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,rhop_swarm_par)
 !NILS: The grid volume should be put into a pencil when required
                     if ((lpscalar_sink .and. lpscalar) .or. &
                         (ldragforce_gas_par .and. ldraglaw_steadystate)) & 
                         call find_grid_volume(ixx,iyy,izz,volume_cell)
+! alexrichert: above call to find_grid_volume is superfluous, not sure why
+! conditions are different from call below. Perhaps lparticles_radius or
+! iap>0 would be a better condition than eps_dtog/ldraglaw_steadystate?
                     if (lhydro .and. ldragforce_gas_par) then
                       if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
+                        if (lprecalc_cell_volumes) then
+                          volume_cell = f(ixx,iyy,izz,ivol)
+                        else
+                          call find_grid_volume(ixx,iyy,izz,volume_cell)
+                        endif
                         mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
+                        if (lparticles_number) then
+                          mp_vcell = mp_vcell*fp(k,inpswarm)
+                        elseif (np_swarm .gt. 0) then
+                          mp_vcell = mp_vcell*np_swarm
+                        endif
                       else
-                        mp_vcell=rhop_swarm_par
+                        call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,mp_vcell)
                       endif
                       df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
                           mp_vcell*rho1_point*dragforce*weight
@@ -3546,13 +3832,21 @@ module Particles
                           call find_grid_volume(ixx,iyy,izz,volume_cell)
 !  Add friction force to grid point.
                       if (lhydro .and. ldragforce_gas_par) then
-                        call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz, &
-                            rhop_swarm_par)
 !  Calculate the particle mass divided by the cell volume
                         if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
+                          if (lprecalc_cell_volumes) then
+                            volume_cell = f(ixx,iyy,izz,ivol)
+                          else
+                            call find_grid_volume(ixx,iyy,izz,volume_cell)
+                          endif
                           mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
+                          if (lparticles_number) then
+                            mp_vcell = mp_vcell*fp(k,inpswarm)
+                          elseif (np_swarm .gt. 0) then
+                            mp_vcell = mp_vcell*np_swarm
+                          endif
                         else
-                          mp_vcell=rhop_swarm_par
+                          call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,mp_vcell)
                         endif
                         df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
                             mp_vcell*rho1_point*dragforce*weight
@@ -3631,13 +3925,21 @@ module Particles
                           (ldragforce_gas_par .and. ldraglaw_steadystate)) & 
                           call find_grid_volume(ixx,iyy,izz,volume_cell) 
                       if (lhydro .and. ldragforce_gas_par) then
-                        call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz, &
-                            rhop_swarm_par)
 !  Calculate the particle mass divided by the cell volume
                         if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
+                          if (lprecalc_cell_volumes) then
+                            volume_cell = f(ixx,iyy,izz,ivol)
+                          else
+                            call find_grid_volume(ixx,iyy,izz,volume_cell)
+                          endif
                           mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
+                          if (lparticles_number) then
+                            mp_vcell = mp_vcell*fp(k,inpswarm)
+                          elseif (np_swarm .gt. 0) then
+                            mp_vcell = mp_vcell*np_swarm
+                          endif
                         else
-                          mp_vcell=rhop_swarm_par
+                          call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz, mp_vcell)
                         endif
                         df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
                             mp_vcell*rho1_point*dragforce*weight
@@ -3663,12 +3965,21 @@ module Particles
                       (ldragforce_gas_par .and. ldraglaw_steadystate)) & 
                       call find_grid_volume(ix0,iy0,iz0,volume_cell) 
                   if (lhydro .and. ldragforce_gas_par) then
-                    call get_rhopswarm(mp_swarm,fp,k,l,m,n,rhop_swarm_par)
 !  Calculate the particle mass divided by the cell volume
                     if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
+                      if (lprecalc_cell_volumes) then
+                        volume_cell = f(ixx,iyy,izz,ivol)
+                      else
+                        call find_grid_volume(ixx,iyy,izz,volume_cell)
+                      endif
                       mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
+                      if (lparticles_number) then
+                        mp_vcell = mp_vcell*fp(k,inpswarm)
+                      elseif (np_swarm .gt. 0) then
+                        mp_vcell = mp_vcell*np_swarm
+                      endif
                     else
-                      mp_vcell=rhop_swarm_par
+                      call get_rhopswarm(mp_swarm,fp,k,l,m,n,mp_vcell)
                     endif
                     df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
                         mp_vcell*p%rho1(l-nghost)*dragforce
@@ -3690,9 +4001,13 @@ module Particles
               if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
                 call find_grid_volume(ix0,iy0,iz0,volume_cell) 
                 mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
+                if (lparticles_number) then
+                  mp_vcell = mp_vcell*fp(k,inpswarm)
+                elseif (np_swarm .gt. 0) then
+                  mp_vcell = mp_vcell*np_swarm
+                endif
               else
-                call get_rhopswarm(mp_swarm,fp,k,ix0,iy0,iz0,rhop_swarm_par)
-                mp_vcell=rhop_swarm_par
+                call get_rhopswarm(mp_swarm,fp,k,ix0,iy0,iz0,mp_vcell)
               endif
 !
 !  Heating of gas due to drag force.
@@ -3831,6 +4146,7 @@ module Particles
         if (idiag_epspmax/=0)  call max_mn_name(p%epsp,idiag_epspmax)
         if (idiag_epspmin/=0)  call max_mn_name(-p%epsp,idiag_epspmin,lneg=.true.)
         if (idiag_dedragp/=0)  call sum_mn_name(drag_heat,idiag_dedragp)
+        if (idiag_Shm/=0)      call sum_mn_name(p%sherwood/npar*nwgrid,idiag_Shm)
         if (idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. &
             idiag_dvpm  /=0 .or. idiag_dvpmax/=0) &
             call calculate_rms_speed(fp,ineargrid,p)
@@ -5471,7 +5787,7 @@ module Particles
         idiag_eccpx2m=0; idiag_eccpy2m=0; idiag_eccpz2m=0
         idiag_npargone=0; idiag_vpyfull2m=0; idiag_deshearbcsm=0
         idiag_npmxy=0; idiag_vprms=0
-        idiag_npvzmz=0; idiag_nptz=0
+        idiag_npvzmz=0; idiag_nptz=0; idiag_Shm=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -5553,6 +5869,7 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'npargone',idiag_npargone)
         call parse_name(iname,cname(iname),cform(iname),'vpyfull2m',idiag_vpyfull2m)
         call parse_name(iname,cname(iname),cform(iname),'vprms',idiag_vprms)
+        call parse_name(iname,cname(iname),cform(iname),'Shm',idiag_Shm)
         call parse_name(iname,cname(iname),cform(iname),'deshearbcsm',idiag_deshearbcsm)
       enddo
 !

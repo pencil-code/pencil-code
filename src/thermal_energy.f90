@@ -1224,7 +1224,7 @@ module Energy
         close (unit=lun, iostat=stat)
         if (stat /= 0) call fatal_error('init_cooling_SD93', 'cannot close the cooling table; ' // trim(msg), force=.true.)
       endif get_nt
-      call mpibcast_int(SD_nt)
+      call mpibcast_int(SD_nt,comm=MPI_COMM_WORLD)
 !
 !  Allocate the cooling table.
 !
@@ -1242,8 +1242,8 @@ module Energy
         enddo reading
         close (unit=lun)
       endif table
-      call mpibcast_real(SD_logTT, SD_nt)
-      call mpibcast_real(SD_logLambda, SD_nt)
+      call mpibcast_real(SD_logTT, SD_nt, comm=MPI_COMM_WORLD)
+      call mpibcast_real(SD_logLambda, SD_nt,comm=MPI_COMM_WORLD)
 !
       if (lroot) print *, 'init_cooling_SD93: read the Sutherland & Dopita (1993) cooling table. '
 !

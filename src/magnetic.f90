@@ -263,9 +263,10 @@ module Magnetic
   logical :: ladd_global_field=.true. 
   logical :: ladd_efield=.false.
   logical :: lmagnetic_slope_limited=.false.
-  real :: h_slope_limited=0., eta_sld_thresh=0.
+  real :: h_slope_limited=0.
   character (LEN=labellen) :: islope_limiter=''
   real :: ampl_efield=0.
+  real :: w_sldchar_mag=1.
   character (len=labellen) :: A_relaxprofile='0,coskz,0'
   character (len=labellen) :: zdep_profile='fs'
   character (len=labellen) :: ydep_profile='two-step'
@@ -307,7 +308,7 @@ module Magnetic
       lpropagate_borderaa, lremove_meanaz, lremove_meanaxy, eta_jump_shock, eta_zshock, &
       eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z, & 
       ladd_efield,ampl_efield,lmagnetic_slope_limited,islope_limiter, &
-      h_slope_limited,eta_sld_thresh, eta_cspeed
+      h_slope_limited,w_sldchar_mag, eta_cspeed
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -1187,8 +1188,11 @@ module Magnetic
         endselect
       enddo
 !
+      if (lyinyang) then
+        if (lresi_eta_shock_profz.or.lresi_xydep.or.lresi_ydep.or.lresi_zdep) &
+          call fatal_error('initialize_magnetic','y or z dependent profiles not implemented on Yin-Yang grid.')
+      endif
       if (lresi_eta_shock_profz .or. lresi_eta_shock_profr) then
-
         eta_shock_jump1 = eta_shock*(eta_jump_shock-1.)
         if (lresi_eta_shock_profz) &
           call write_zprof('resi_shock', eta_shock + eta_shock_jump1*step(z(n1:n2), eta_zshock, -eta_width_shock))
@@ -1274,6 +1278,13 @@ module Magnetic
 !  precalculating fixed (on timescales larger than tau) vectorpotential
 !
   if (tau_relprof/=0.0) then
+
+    if (lyinyang) then
+      if (A_relaxprofile/='') &
+        call fatal_error('initialize_magnetic', &
+        'z dependent relaxation profiles for A not implemented on Yin-Yang grid.')
+    endif
+
     tau_relprof1=1./tau_relprof
     select case (A_relaxprofile)
     case('0,coskz,0')
@@ -1428,7 +1439,11 @@ module Magnetic
 !
       lslope_limit_diff=lslope_limit_diff .or. lmagnetic_slope_limited
 !
-     if (lremove_meanaxy) allocate(aamxy(mx,my))
+      if (lremove_meanaxy) then
+        if (lyinyang) &
+          call fatal_error('initialize_magnetic','Removing xy average of A not implemented on Yin-Yang grid.')
+        allocate(aamxy(mx,my))
+      endif
 
     endsubroutine initialize_magnetic
 !***********************************************************************
@@ -2501,7 +2516,7 @@ module Magnetic
 !
 !   25-sep-15/MR+joern: coded
 !
-      use General, only: staggered_mean_vec
+      use General, only: staggered_mean_vec, staggered_max_vec
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -2519,7 +2534,8 @@ module Magnetic
           f(l1:l2,m,n,iFF_diff) = sqrt(p%va2)
         enddo; enddo
 !
-        call staggered_mean_vec(f,iFF_diff,iFF_char_c,1.)
+        !call staggered_mean_vec(f,iFF_diff,iFF_char_c,w_sldchar_mag)
+        call staggered_max_vec(f,iFF_diff,iFF_char_c,w_sldchar_mag)
 
       endif
 !
@@ -4806,13 +4822,13 @@ module Magnetic
         endif
       endif
 !
-!  Compute mean field (z verage).
+!  Remove mean field (z verage).
 !
       if (lremove_meanaxy) then
 !
         fact=1./nzgrid
         do j=1,3
-          aamxy=fact*sum(f(:,:,n1:n2,iaa+j-1),3)
+          aamxy=fact*sum(f(:,:,n1:n2,iaa+j-1),3)  ! requires equidistant grid
           call finalize_aver(nprocz,3,aamxy)
 !
           do n=1,mz
@@ -5523,7 +5539,7 @@ module Magnetic
 !  A = Atarget - factor*(Aactual-Atarget).
 !
       ampl_beltrami=ampl_ff-forcing_continuous_aa_amplfact*(bmz-ampl_ff)
-      call mpibcast_real(ampl_beltrami)
+      call mpibcast_real(ampl_beltrami,comm=MPI_COMM_WORLD)
 !
     endsubroutine calc_mfield
 !***********************************************************************

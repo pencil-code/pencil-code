@@ -913,6 +913,7 @@ module Magnetic_meanfield
             meanfield_etat_tmp=meanfield_etat_tmp/sqrt(1.+p%b2/meanfield_etaB2)
 !           call quench_simple(p%b2,meanfield_etaB2,meanfield_etat_tmp)
           endif
+        endif
 !
 !  Here we initialize alpha_total.
 !  Allow for the possibility of dynamical alpha.
@@ -923,12 +924,12 @@ module Magnetic_meanfield
 !
         if (lalpm .and. .not. lmeanfield_noalpm) then
           if (lalpha_profile_total) then
-             alpha_total=(alpha_effect+f(l1:l2,m,n,ialpm))*alpha_tmp
-             if (headtt) print*,'use alp=(alpK+alpM)*profile'
-           else
-             alpha_total=alpha_effect*alpha_tmp+f(l1:l2,m,n,ialpm)
-             if (headtt) print*,'use alp=alpK*profile+alpM'
-           endif
+            alpha_total=(alpha_effect+f(l1:l2,m,n,ialpm))*alpha_tmp
+            if (headtt) print*,'use alp=(alpK+alpM)*profile'
+          else
+            alpha_total=alpha_effect*alpha_tmp+f(l1:l2,m,n,ialpm)
+            if (headtt) print*,'use alp=alpK*profile+alpM'
+          endif
 !
 !  Possibility of *alternate* dynamical alpha.
 !  Here we initialize alpha_total.
@@ -938,10 +939,10 @@ module Magnetic_meanfield
           prefact=meanfield_etat_tmp*(kf_tmp/meanfield_Beq)**2
           alpm=prefact*(f(l1:l2,m,n,ialpm)-p%ab)
           if (lalpha_profile_total) then
-             alpha_total=(alpha_effect+alpm)*alpha_tmp
-           else
-             alpha_total=alpha_effect*alpha_tmp+alpm
-           endif
+            alpha_total=(alpha_effect+alpm)*alpha_tmp
+          else
+            alpha_total=alpha_effect*alpha_tmp+alpm
+          endif
         else
           alpha_total=alpha_effect*alpha_tmp
         endif
@@ -1012,6 +1013,7 @@ module Magnetic_meanfield
 !
 !  apply pumping effect in the vertical direction: EMF=...-.5*grad(etat) x B
 !
+!AB: indentation?
           if (lmeanfield_pumping) then
             fact=.5*meanfield_pumping
             p%mf_EMF(:,1)=p%mf_EMF(:,1)+fact*meanfield_getat_tmp(:,3)*p%bb(:,2)
@@ -1041,7 +1043,8 @@ module Magnetic_meanfield
           if (ietat/=0) then
             call multsv_mn_add(-f(l1:l2,m,n,ietat),p%jj,p%mf_EMF)
           endif
-        endif
+!???    endif
+!AB: end of indentation problem
 !
 !  Possibility of adding contribution from large-scale velocity.
 !
@@ -1162,6 +1165,8 @@ module Magnetic_meanfield
             endif
           endif
 !       endif
+!?? end of wrong indentation??
+!?? end of chit and chiB apparently (!AB)
       endif
 !
 !  Calculate diagnostics.
@@ -1248,7 +1253,8 @@ module Magnetic_meanfield
           df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%mf_EMF
         endif
 !
-!  Apply Omega effect.
+!  Apply Omega effect. This is currently applied directly to A
+!  and is therefore not part of the pencil p%mf_EMF.
 !
         if (lOmega_effect) call Omega_effect(f,df,p)
       endif

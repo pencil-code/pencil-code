@@ -360,6 +360,7 @@ module Entropy
       use Sub
       use IO
       use Gravity
+      use General, only: notanumber
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df

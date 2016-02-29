@@ -34,7 +34,7 @@ module Special
   real :: width_newton=0.,gauss_newton=0.
   logical :: lgranulation=.false.,luse_ext_vel_field,lmag_time_bound=.false.
   real :: increase_vorticity=15.,Bavoid=huge1
-  real :: Bz_flux=0.,quench=0.
+  real :: Bz_flux=0.,quench=0., b_tau=0.
   real :: init_time=0.,init_width=0.,hcond_grad=0.,hcond_grad_iso=0.
   real :: init_time2=0.
   real :: limiter_tensordiff=3
@@ -75,7 +75,7 @@ module Special
       Bavoid,Bz_flux,init_time,init_width,quench,hyper3_eta,hyper3_nu, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
-      heat_par_b2,irefz,tau_inv_spitzer,maxvA, &
+      heat_par_b2,irefz,tau_inv_spitzer,maxvA, b_tau,&
       mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi,R_hyper3, &
       ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI,lwrite_granules, &
       lfilter_farray,filter_strength,lreset_heatflux,aa_tau_inv, &
@@ -1898,7 +1898,8 @@ module Special
 !  04-sep-10/bing: coded
 !
       use EquationOfState, only: gamma
-      use Sub, only: dot2, cubic_step,gij,notanumber
+      use Sub, only: dot2, cubic_step,gij
+      use General, only: notanumber
 !
       real, dimension (mx,my,mz,mvar),intent(inout) :: df
       real,dimension (mx,my,mz) :: LoopLength
@@ -2422,13 +2423,29 @@ module Special
 !
       endif
 !
-      f(l1:l2,m1:m2,n1,iax) = (time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl
-      f(l1:l2,m1:m2,n1,iay) = (time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl
-      Bz_fluxm=sum((time_SI - (tl+delta_t)) * (abs(Bz0r) - abs(Bz0l)) / (tr - tl) + abs(Bz0l))
-      Bzfluxm =sum(abs((time_SI - (tl+delta_t)) * (Bz0r - Bz0l) / (tr - tl) + Bz0l))
+!      f(l1:l2,m1:m2,n1,iax) = (time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl
+!      f(l1:l2,m1:m2,n1,iay) = (time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl
+      if (b_tau > 0.0) then
+        f(l1:l2,m1:m2,n1,iax) = f(l1:l2,m1:m2,n1,iax)*(1.0-dt*b_tau) + &
+                                ((time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl)*dt*b_tau
+        f(l1:l2,m1:m2,n1,iay) = f(l1:l2,m1:m2,n1,iay)*(1.0-dt*b_tau) + &
+                                ((time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl)*dt*b_tau
+      else
+        f(l1:l2,m1:m2,n1,iax) = (time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl
+        f(l1:l2,m1:m2,n1,iay) = (time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl
+      endif
+!
+!      Bz_fluxm=sum((time_SI - (tl+delta_t)) * (abs(Bz0r) - abs(Bz0l)) / (tr - tl) + abs(Bz0l))
+!      Bzfluxm =sum(abs((time_SI - (tl+delta_t)) * (Bz0r - Bz0l) / (tr - tl) + Bz0l))
 !!print*,Bz_fluxm/Bzfluxm
 !      
-      f(l1:l2,m1:m2,n1,iax:iaz) = f(l1:l2,m1:m2,n1,iax:iaz) * Bz_fluxm/Bzfluxm
+!      f(l1:l2,m1:m2,n1,iax:iaz) = f(l1:l2,m1:m2,n1,iax:iaz) * Bz_fluxm/Bzfluxm
+!
+!      f(l1:l2,m1:m2,n1,iax) = 0.9*f(l1:l2,m1:m2,n1,iax) & 
+!                            + 0.1* ((time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl)
+!      f(l1:l2,m1:m2,n1,iay) = 0.9*f(l1:l2,m1:m2,n1,iay) &
+!                            + 0.1*((time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl)
+
 !
     endsubroutine mag_time_bound
 !***********************************************************************
@@ -2882,8 +2899,7 @@ module Special
 !***********************************************************************
     subroutine make_new_point(level)
 !
-      use General, only: random_number_wrapper
-      use Sub, only: notanumber
+      use General, only: random_number_wrapper,notanumber
 !
       integer, intent(in) :: level
       integer :: kfind,count,ipos,jpos,i,j
@@ -3247,7 +3263,7 @@ module Special
 !
 ! 16-sep-10/bing: coded
 !
-      use Sub, only: notanumber
+      use General, only: notanumber
 !
       integer, intent(in) :: level
 !
@@ -3721,8 +3737,8 @@ module Special
     subroutine mark_boundary(f)
 !
       use Mpicomm, only: mpisend_real,mpirecv_real
-      use General, only: itoa, safe_character_assign
-      use Sub, only: notanumber, cubic_step
+      use General, only: itoa, safe_character_assign,notanumber
+      use Sub, only: cubic_step
 !
       real, dimension(mx,my,mz,mfarray), intent(inout):: f
 !

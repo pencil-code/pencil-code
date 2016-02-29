@@ -75,7 +75,7 @@ module Cdata
 !
   real, dimension(3) :: coeff_grid=1.0
   real, dimension(3) :: dxi_fact=1.0
-  real, dimension(3) :: trans_width=0.0
+  real, dimension(3) :: trans_width=1.0
   real, dimension(3,2) :: xyz_step,xi_step_frac,xi_step_width=1.5
   real :: zeta_grid0=0.0
   real :: xbot_slice=0.0,xtop_slice=1.0
@@ -92,6 +92,7 @@ module Cdata
   real, dimension(0:nprocy) :: procy_bounds
   real, dimension(0:nprocz) :: procz_bounds
   integer :: nghost_read_fewer=0
+  integer, dimension(3) :: dim_mask=(/1,2,3/)
 !
 !  Derivative parameters
 !
@@ -104,9 +105,8 @@ module Cdata
   real :: x0,y0,z0,Lx,Ly,Lz
   real :: r_int=0.,r_ext=impossible   ! for spherical shell problems
   real :: r_int_border=impossible,r_ext_border=impossible
-  real :: r_ref=1.,rsmooth=0.,box_volume=1.0
+  real :: r_ref=1.,rsmooth=0.,box_volume=1.0 
   real :: Area_xy=1., Area_yz=1., Area_xz=1.
-  real, dimension(3) :: k1xyz=0.
 !
 !  Time integration parameters.
 !
@@ -304,7 +304,7 @@ module Cdata
   integer :: ivisc_heat=0,ibb=0,ibx=0,iby=0,ibz=0,ijj=0,ijx=0,ijy=0,ijz=0
   integer :: iEE=0,iEEx=0,iEEy=0,iEEz=0
   integer :: iFF_diff=0, iFF_diff1=0,  iFF_diff2=0, &
-             iFF_div_uu=0, iFF_div_aa=0, iFF_div_ss=0, iFF_div_rho=0, iFF_char_c=0
+             iFF_div_uu=0, iFF_div_aa=0, iFF_div_ss=0, iFF_div_rho=0, iFF_char_c=0, iFF_heat=0
   integer :: i_adv_der=0,i_adv_derx=0,i_adv_dery=0,i_adv_derz=0
   integer :: iuxb=0,iugu=0,iugh=0
   integer :: ishock=0,ishock_perp=0
@@ -330,16 +330,16 @@ module Cdata
 !  Parameters related to message passing.
 !
   integer, dimension(-1:1,-1:1,-1:1) :: neighbors = 0
+  integer, dimension(26) :: iproc_comm = -1
+  integer :: nproc_comm = 0
   integer :: ix=-1,iy=-1,iy2=-1,iz=-1,iz2=-1,iz3=-1,iz4=-1
   integer :: ix_loc=-1,iy_loc=-1, iy2_loc=-1
   integer :: iz_loc=-1,iz2_loc=-1, iz3_loc=-1, iz4_loc=-1
-  integer :: iproc=0,ipx,ipy,ipz,iproc_world
+  integer :: iproc=0,ipx=0,ipy=0,ipz=0,iproc_world=0
   logical :: lprocz_slowest=.true.
   integer :: xlneigh,ylneigh,zlneigh ! `lower' processor neighbours
   integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
-  integer :: poleneigh              ! `pole' processor neighbours
-  integer :: llcorn,lucorn,uucorn,ulcorn ! (the 4 corners in yz-plane)
-  integer :: psfcrn,psbcrn,pnfcrn,pnbcrn ! (the 4 'pole' corners)
+  integer :: poleneigh               ! `pole' processor neighbours
 !
 !  Variables to count the occurance of derivative calls per timestep
 !  for optimisation purposes.  To use uncomment the array and
@@ -425,7 +425,7 @@ module Cdata
   real :: yequator=0.,zequator=0.
   logical :: lequatory,lequatorz
   integer, parameter :: mname_half=20
-  integer, dimension (mname_half) :: itype_name_half=0.
+  integer, dimension (mname_half) :: itype_name_half=0
   real, dimension (mname_half,2) :: fname_half
   integer :: name_half_max=0
   character (len=30) :: cname_half(mname_half)
@@ -580,6 +580,14 @@ module Cdata
 !  on the ghost zones onto the other side of the physical domain.
 !
   logical :: lfold_df=.false.
+!
+!  Reactive particles need their source terms for particle-fluid interaction
+!  distributed over a large number of points to avoid shocks. 
+!  This means that nodes removed up to 3 nodes from the nearest grid point
+!  are affected. This neccissitates folding all the ghost zones into the main 
+!  domain.
+!
+  logical :: lfold_df_3points=.false.
 !
 !  Shift data cube by one grid point each time-step.
 !

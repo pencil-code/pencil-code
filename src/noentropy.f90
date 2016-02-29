@@ -137,18 +137,16 @@ module Energy
 !***********************************************************************
     subroutine update_char_vel_energy(f)
 !
-!  Updates characteristic veelocity for slope-limited diffusion.
+!  Updates characteristic velocity for slope-limited diffusion.
 !
 !  25-sep-15/MR+joern: coded
 !
       use EquationOfState, only: cs20
 !
       real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
-
-      real, parameter :: weight=0.01 
 !
       if (lslope_limit_diff) f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) &
-                            =f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) + weight*cs20
+                            =f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) + w_sldchar_ent*sqrt(cs20)
 !
     endsubroutine update_char_vel_energy
 !***********************************************************************

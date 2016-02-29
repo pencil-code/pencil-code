@@ -1,0 +1,41 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+!  run parameters for interstellar
+!
+&run_pars
+  cvsid='$Id$',
+  nt=1000, it1=100, isave=5000, itorder=3
+  cdt=0.1, cdtv=0.1, dtmin=1e-9, cdts=0.1
+  dsnap=0.2, dvid=20., 
+  ip=20
+  lpencil_check=T
+  lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  diffrho=0.004
+  diffrho_shock=10.0
+  lmassdiff_fixkin=T
+  idiff='normal','shock'
+/
+&grav_run_pars
+/
+&entropy_run_pars
+  iheatcond='chi-therm','shock'
+  chi_th=0.004,chi_shock=10.0
+/
+&interstellar_run_pars
+  laverage_SN_heating=True
+  cdt_tauc=0.1
+/
+&viscosity_run_pars
+  ivisc='nu-therm','nu-shock'
+  nu=0.004,nu_shock=10.0
+/
+&shock_run_pars
+  lshock_first=T
+  lshock_max5=F
+/

@@ -68,7 +68,7 @@ COMPILE_OPT IDL2,HIDDEN
     filename = datadir+'/param.nml'
     outfile = idl_subdir+'/start_param.pro'
     if (not file_test(filename)) then $
-        message, "ERROR: datadir is not initialized, please execute 'start.csh' first."
+        message, "ERROR: '"+filename+"' not found - datadir may not be initialized, please execute 'start.csh'."
   endelse
 ;
 ; Check if we are prepared for reading anything.

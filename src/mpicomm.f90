@@ -333,9 +333,7 @@ module Mpicomm
 !    module procedure mpigather_and_out_cmplx
 !  endinterface
 !
-!  initialize debug parameter for this routine
-!
-  logical :: ldebug_mpi=.false., lcommunicate_y=.false.
+  logical :: lcommunicate_y=.false.
   integer :: mpi_precision
 !
 !  For f-array processor boundaries
@@ -349,14 +347,16 @@ module Mpicomm
   real, dimension (mx,nghost,nghost,mcom) :: nbbufi,nfbufi,sfbufi,sbbufi
   real, dimension (mx,nghost,nghost,mcom) :: nbbufo,nfbufo,sfbufo,sbbufo
 !
-  real, dimension (nghost,my-2*nghost,mz,mcom) :: fahi,falo,fbhi,fblo ! For shear
+  real, dimension (nghost,my-2*nghost,mz,mcom) :: fahi,falo,fbhi,fblo         ! For shear
   real, dimension (nghost,my-2*nghost,mz,mcom) :: fahihi,falolo,fbhihi,fblolo ! For shear
-  real, dimension (nghost,my-2*nghost,mz,mcom) :: fao,fbo ! For shear
-  integer :: ipx_partner, displs ! For shear
+  real, dimension (nghost,my-2*nghost,mz,mcom) :: fao,fbo                     ! For shear
+  integer :: ipx_partner, displs                                              ! For shear
   integer :: nextnextya, nextya, lastya, lastlastya ! For shear
   integer :: nextnextyb, nextyb, lastyb, lastlastyb ! For shear
-  integer :: llcornr, lucornr, ulcornr, uucornr ! Receiving corner ids
-  integer :: llcorns, lucorns, ulcorns, uucorns ! Sending corner ids
+  integer :: llcorn,lucorn,uucorn,ulcorn            ! (the 4 corners in yz-plane)
+  integer :: psfcrn,psbcrn,pnfcrn,pnbcrn            ! (the 4 'pole' corners)
+  integer :: llcornr, lucornr, ulcornr, uucornr     ! Receiving corner ids
+  integer :: llcorns, lucorns, ulcorns, uucorns     ! Sending corner ids
   integer :: nprocs, mpierr
   integer :: serial_level = 0
 !
@@ -445,6 +445,43 @@ module Mpicomm
         mpi_precision = MPI_DOUBLE_PRECISION
       endif
 !
+      iproc_world=iproc
+!
+!  Check consistency in processor layout.
+!
+      if (ncpus/=nprocx*nprocy*nprocz) then
+        if (lroot) then
+          print*, 'Laid out for ncpus (per grid) = ', ncpus, &
+              ', but nprocx*nprocy*nprocz=', nprocx*nprocy*nprocz
+        endif
+        call stop_it('mpicomm_init')
+      endif
+!
+!  Check if parallelization and chosen grid numbers make sense.
+!
+      if ((nprocx>1.and.nxgrid==1).or. &
+          (nprocy>1.and.nygrid==1).or. &
+          (nprocz>1.and.nzgrid==1)) then
+        print*, 'Parallelization in a dimension with ngrid==1 does not work.'
+        call stop_it('mpicomm_init')
+      endif
+      if (mod(nxgrid,nprocx)/=0.or. &
+          mod(nygrid,nprocy)/=0.or. &
+          mod(nzgrid,nprocz)/=0) then
+        print*, 'In each dimension the number of grid points has to be '// &
+                'divisible by the number of processors.'
+        call stop_it('mpicomm_init')
+      endif
+!
+!  Avoid overlapping ghost zones.
+!
+      if ((nx<nghost) .and. (nxgrid/=1)) &
+           call stop_it('Overlapping ghost zones in x-direction: reduce nprocx')
+      if ((ny<nghost) .and. (nygrid/=1)) &
+           call stop_it('Overlapping ghost zones in y-direction: reduce nprocy')
+      if ((nz<nghost) .and. (nzgrid/=1)) &
+           call stop_it('Overlapping ghost zones in z-direction: reduce nprocz')
+!
     endsubroutine mpicomm_init
 !***********************************************************************
     subroutine initialize_mpicomm()
@@ -467,34 +504,15 @@ module Mpicomm
 !
       if (lroot) print *, 'initialize_mpicomm: enabled MPI'
 !
-!  Check consistency in processor layout.
-!
-      if (ncpus/=nprocx*nprocy*nprocz) then
-        if (lroot) then
-          print*, 'Compiled with ncpus = ', ncpus, &
-              ', but nprocx*nprocy*nprocz=', nprocx*nprocy*nprocz
-        endif
-        call stop_it('initialize_mpicomm')
-      endif
-!
 !  Check total number of processors.
 !
       if (nprocs/=nprocx*nprocy*nprocz) then
         if (lroot) then
           print*, 'Compiled with ncpus = ', ncpus, &
-              ', but running on ', nprocs, ' processors'
+                  ', but running on ', nprocs, ' processors'
         endif
         call stop_it('initialize_mpicomm')
       endif
-!
-!  Avoid overlapping ghost zones.
-!
-      if ((nx<nghost) .and. (nxgrid/=1)) &
-           call stop_it('Overlapping ghost zones in x-direction: reduce nprocx')
-      if ((ny<nghost) .and. (nygrid/=1)) &
-           call stop_it('Overlapping ghost zones in y-direction: reduce nprocy')
-      if ((nz<nghost) .and. (nzgrid/=1)) &
-           call stop_it('Overlapping ghost zones in z-direction: reduce nprocz')
 !
 !  Position on the processor grid.
 !  x is fastest direction, z slowest (this is the default)
@@ -531,8 +549,7 @@ module Mpicomm
 !
 !  Set up all neighbors.
 !
-      forall(i=-1:1, j=-1:1, k=-1:1) &
-          neighbors(i,j,k) = modulo(ipx+i,nprocx) + modulo(ipy+j,nprocy) * nprocx + modulo(ipz+k,nprocz) * nprocxy
+      call update_neighbors()
 !
 !  Set up `lower' and `upper' neighbours.
 !
@@ -574,10 +591,8 @@ module Mpicomm
 !  should print (3,15,12,13,1,5,4,7) for iproc=0
 !
 !  Print processor numbers and those of their neighbors.
-!  NOTE: the ip print parameter has *not* yet been read at this point.
-!  Therefore it must be invoked by resetting ldebug_mpi appropriately.
 !
-      if (ldebug_mpi) write(6,'(A,I4,"(",3I4,"): ",8I4)') &
+      if (ip<=7) write(6,'(A,I4,"(",3I4,"): ",8I4)') &
         'initialize_mpicomm: MPICOMM neighbors ', &
         iproc,ipx,ipy,ipz, &
         ylneigh,llcorn,zlneigh,ulcorn,yuneigh,uucorn,zuneigh,lucorn
@@ -600,6 +615,120 @@ module Mpicomm
           MPI_COMM_YZPLANE, mpierr)
 !
     endsubroutine initialize_mpicomm
+!***********************************************************************
+    subroutine update_neighbors()
+!
+! Update neighbor processes for communication.
+!
+! 27-feb-16/ccyang: adapted from particles_mpicomm and
+!                   particles_mpicomm_blocks
+!
+      use General, only: find_proc, quick_sort
+!
+      integer, dimension(:), allocatable :: list, order
+      logical :: left, right
+      integer :: dipx, dipy, dipz
+      integer :: ipx_rec, ipy_rec, ipz_rec
+      integer :: iproc_rec
+!
+!  Collect the neighbors.
+!
+      iproc_comm = -1
+      nproc_comm = 0
+!
+      xscan: do dipx = -1, 1
+        ipx_rec = ipx + dipx
+        left = ipx_rec < 0
+        right = ipx_rec > nprocx - 1
+        ipx_rec = modulo(ipx_rec, nprocx)  ! assuming periodic boundary conditions
+!
+        yscan: do dipy = -1, 1
+          ipy_rec = ipy + dipy
+          shear: if (lshear) then
+            if (left) ipy_rec = ipy_rec - ceiling(deltay / Lxyz_loc(2) - 0.5)
+            if (right) ipy_rec = ipy_rec + ceiling(deltay / Lxyz_loc(2) - 0.5)
+          endif shear
+          ipy_rec = modulo(ipy_rec, nprocy)  ! assuming periodic boundary conditions
+!
+          zscan: do dipz = -1, 1
+            ipz_rec = modulo(ipz + dipz, nprocz)  ! assuming periodic boundary conditions
+!
+            iproc_rec = find_proc(ipx_rec, ipy_rec, ipz_rec)
+            neighbors(dipx,dipy,dipz) = iproc_rec
+            add: if (iproc_rec /= iproc .and. .not. any(iproc_comm(1:nproc_comm) == iproc_rec)) then
+              nproc_comm = nproc_comm + 1
+              iproc_comm(nproc_comm) = iproc_rec
+            endif add
+!
+          enddo zscan
+!
+        enddo yscan
+!
+      enddo xscan
+!
+!  Sort the process list.
+!
+      neighb: if (nproc_comm > 0) then
+        allocate (list(nproc_comm), order(nproc_comm))
+        list = iproc_comm(1:nproc_comm)
+        call quick_sort(list, order)
+        iproc_comm(1:nproc_comm) = list
+        deallocate (list, order)
+      endif neighb
+!
+    endsubroutine update_neighbors
+!***********************************************************************
+    elemental integer function index_to_iproc_comm(iproc_in, mask)
+!
+!  Converts iproc_in to the index to iproc_comm, returns 0 if iproc_in
+!  is iproc itself, and -1 if none of the elements in iproc_comm matches
+!  iproc_in.
+!
+!  iproc_in itself is returned if mask = .false..
+!
+!  29-feb-16/ccyang: coded.
+!
+      use General, only: binary_search
+!
+      integer, intent(in) :: iproc_in
+      logical, intent(in), optional :: mask
+!
+      logical :: lactive
+      integer :: lower, upper, mid
+      integer :: iproc_target
+!
+!  Check the mask.
+!
+      if (present(mask)) then
+        lactive = mask
+      else
+        lactive = .true.
+      endif
+!
+      active: if (lactive) then
+        nonlocal: if (iproc_in /= iproc) then
+!
+!  Binary search iproc_comm.
+!
+          search: if (any(iproc_comm(1:nproc_comm) == iproc_in)) then
+            index_to_iproc_comm = binary_search(iproc_in, iproc_comm(1:nproc_comm))
+          else
+            index_to_iproc_comm = -1
+          endif search
+        else nonlocal
+!
+!  The case of iproc_in == iproc.
+!
+          index_to_iproc_comm = 0
+        endif nonlocal
+      else active
+!
+!  Do nothing if mask = .false.
+!
+        index_to_iproc_comm = iproc_in
+      endif active
+!
+    endfunction index_to_iproc_comm
 !***********************************************************************
     subroutine yyinit
 
@@ -2084,12 +2213,12 @@ module Mpicomm
 !
     endsubroutine mpisend_int_arr2
 !***********************************************************************
-    subroutine mpibcast_logical_scl(lbcast_array,proc)
+    subroutine mpibcast_logical_scl(lbcast_array,proc,comm)
 !
 !  Communicate logical scalar between processors.
 !
       logical :: lbcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
       integer :: ibcast_proc
 !
       if (present(proc)) then
@@ -2103,13 +2232,13 @@ module Mpicomm
 !
     endsubroutine mpibcast_logical_scl
 !***********************************************************************
-    subroutine mpibcast_logical_arr(lbcast_array,nbcast_array,proc)
+    subroutine mpibcast_logical_arr(lbcast_array,nbcast_array,proc,comm)
 !
 !  Communicate logical array between processors.
 !
       integer :: nbcast_array
       logical, dimension (nbcast_array) :: lbcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
       integer :: ibcast_proc
 !
       if (nbcast_array == 0) return
@@ -2150,12 +2279,12 @@ module Mpicomm
 !
     endsubroutine mpibcast_logical_arr2
 !***********************************************************************
-    subroutine mpibcast_int_scl(ibcast_array,proc)
+    subroutine mpibcast_int_scl(ibcast_array,proc,comm)
 !
 !  Communicate integer scalar between processors.
 !
       integer :: ibcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
       integer :: ibcast_proc
 !
       if (present(proc)) then
@@ -2169,13 +2298,13 @@ module Mpicomm
 !
     endsubroutine mpibcast_int_scl
 !***********************************************************************
-    subroutine mpibcast_int_arr(ibcast_array,nbcast_array,proc)
+    subroutine mpibcast_int_arr(ibcast_array,nbcast_array,proc,comm)
 !
 !  Communicate integer array between processors.
 !
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: ibcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
       integer :: ibcast_proc
 !
       if (nbcast_array == 0) return
@@ -2191,12 +2320,12 @@ module Mpicomm
 !
     endsubroutine mpibcast_int_arr
 !***********************************************************************
-    subroutine mpibcast_real_scl(bcast_array,proc)
+    subroutine mpibcast_real_scl(bcast_array,proc,comm)
 !
 !  Communicate real scalar between processors.
 !
       real :: bcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
       integer :: ibcast_proc
 !
       if (present(proc)) then
@@ -2210,13 +2339,13 @@ module Mpicomm
 !
     endsubroutine mpibcast_real_scl
 !***********************************************************************
-    subroutine mpibcast_real_arr(bcast_array,nbcast_array,proc)
+    subroutine mpibcast_real_arr(bcast_array,nbcast_array,proc,comm)
 !
 !  Communicate real array between processors.
 !
       integer :: nbcast_array
       real, dimension(nbcast_array) :: bcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
       integer :: ibcast_proc
 !
       if (nbcast_array == 0) return
@@ -2352,12 +2481,12 @@ module Mpicomm
 !
     endsubroutine mpibcast_double_arr
 !***********************************************************************
-    subroutine mpibcast_char_scl(cbcast_array,proc)
+    subroutine mpibcast_char_scl(cbcast_array,proc,comm)
 !
 !  Communicate character scalar between processors.
 !
       character(LEN=*) :: cbcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
       integer :: ibcast_proc
 !
       if (present(proc)) then
@@ -2371,13 +2500,13 @@ module Mpicomm
 !
     endsubroutine mpibcast_char_scl
 !***********************************************************************
-    subroutine mpibcast_char_arr(cbcast_array,nbcast_array,proc)
+    subroutine mpibcast_char_arr(cbcast_array,nbcast_array,proc,comm)
 !
 !  Communicate character array between processors.
 !
       integer :: nbcast_array
       character(LEN=*), dimension(nbcast_array) :: cbcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
       integer :: ibcast_proc
 !
       if (nbcast_array == 0) return
@@ -2461,7 +2590,7 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_sum_scl
 !***********************************************************************
-    subroutine mpiallreduce_sum_arr(fsum_tmp,fsum,nreduce,idir)
+    subroutine mpiallreduce_sum_arr(fsum_tmp,fsum,nreduce,idir,comm)
 !
 !  Calculate total sum for each array element and return to all processors.
 !
@@ -2469,7 +2598,7 @@ module Mpicomm
 !
       integer :: nreduce
       real, dimension(nreduce) :: fsum_tmp,fsum
-      integer, optional :: idir
+      integer, optional :: idir,comm
 !
       integer :: mpiprocs
 !
@@ -2486,7 +2615,7 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_sum_arr
 !***********************************************************************
-    subroutine mpiallreduce_sum_arr2(fsum_tmp,fsum,nreduce,idir)
+    subroutine mpiallreduce_sum_arr2(fsum_tmp,fsum,nreduce,idir,comm)
 !
 !  Calculate total sum for each array element and return to all processors.
 !
@@ -2494,7 +2623,7 @@ module Mpicomm
 !
       integer, dimension(2) :: nreduce
       real, dimension(nreduce(1),nreduce(2)) :: fsum_tmp,fsum
-      integer, optional :: idir
+      integer, optional :: idir,comm
 !
       integer :: mpiprocs, num_elements
 !
@@ -2629,22 +2758,24 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_max_scl
 !***********************************************************************
-    subroutine mpiallreduce_min_scl_sgl(fmin_tmp,fmin)
+    subroutine mpiallreduce_min_scl_sgl(fmin_tmp,fmin,comm)
 !
 !  Calculate total minimum and return to all processors.
 !
       real(KIND=rkind4) :: fmin_tmp,fmin
+      integer, optional :: comm
 !
       call MPI_ALLREDUCE(fmin_tmp, fmin, 1, MPI_REAL, MPI_MIN, &
                          MPI_COMM_WORLD, mpierr)
 !
     endsubroutine mpiallreduce_min_scl_sgl
 !***********************************************************************
-    subroutine mpiallreduce_min_scl_dbl(fmin_tmp,fmin)
+    subroutine mpiallreduce_min_scl_dbl(fmin_tmp,fmin,comm)
 !
 !  Calculate total minimum and return to all processors.
 !
       real(KIND=rkind8) :: fmin_tmp,fmin
+      integer, optional :: comm
 !
       call MPI_ALLREDUCE(fmin_tmp, fmin, 1, MPI_DOUBLE_PRECISION, MPI_MIN, &
                          MPI_COMM_WORLD, mpierr)
@@ -2668,14 +2799,15 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_max_arr
 !***********************************************************************
-    subroutine mpiallreduce_or_scl(flor_tmp, flor)
+    subroutine mpiallreduce_or_scl(flor_tmp, flor, comm)
 !
 !  Calculate logical or over all procs and return to all processors.
 !
 !  14-feb-14/ccyang: coded
 !
       logical, intent(in) :: flor_tmp
-      logical, intent(out) :: flor
+      logical, intent(out):: flor
+      integer, intent(in), optional :: comm
 !
       if (nprocs == 1) then
         flor = flor_tmp
@@ -2685,11 +2817,12 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_or_scl
 !***********************************************************************
-    subroutine mpireduce_max_scl(fmax_tmp,fmax)
+    subroutine mpireduce_max_scl(fmax_tmp,fmax,comm)
 !
 !  Calculate total maximum for each array element and return to root.
 !
       real :: fmax_tmp,fmax
+      integer, intent(in), optional :: comm
 !
       call MPI_REDUCE(fmax_tmp, fmax, 1, MPI_REAL, MPI_MAX, root, &
                       MPI_COMM_WORLD, mpierr)
@@ -2707,12 +2840,13 @@ module Mpicomm
 !
     endsubroutine mpireduce_max_scl_int
 !***********************************************************************
-    subroutine mpireduce_max_arr(fmax_tmp,fmax,nreduce)
+    subroutine mpireduce_max_arr(fmax_tmp,fmax,nreduce,comm)
 !
 !  Calculate total maximum for each array element and return to root.
 !
       integer :: nreduce
       real, dimension(nreduce) :: fmax_tmp,fmax
+      integer, optional :: comm
 !
       if (nreduce==0) return
 !
@@ -2746,11 +2880,12 @@ module Mpicomm
 !
     endsubroutine mpireduce_min_arr
 !***********************************************************************
-    subroutine mpireduce_sum_int_scl(fsum_tmp,fsum)
+    subroutine mpireduce_sum_int_scl(fsum_tmp,fsum,comm)
 !
 !  Calculate sum and return to root.
 !
       integer :: fsum_tmp,fsum
+      integer, optional :: comm
 !
       if (nprocs==1) then
         fsum=fsum_tmp
@@ -2871,13 +3006,13 @@ module Mpicomm
 !
     endsubroutine mpireduce_sum_scl
 !***********************************************************************
-    subroutine mpireduce_sum_arr(fsum_tmp,fsum,nreduce,idir)
+    subroutine mpireduce_sum_arr(fsum_tmp,fsum,nreduce,idir,comm)
 !
 !  Calculate total sum for each array element and return to root.
 !
       integer :: nreduce
       real, dimension(nreduce) :: fsum_tmp,fsum
-      integer, optional :: idir
+      integer, optional :: idir,comm
 !
       integer :: mpiprocs
 !
@@ -3003,13 +3138,14 @@ module Mpicomm
 !
     endsubroutine mpireduce_sum_arr4
 !***********************************************************************
-    subroutine mpireduce_or_scl(flor_tmp,flor)
+    subroutine mpireduce_or_scl(flor_tmp,flor,comm)
 !
 !  Calculate logical or over all procs and return to root.
 !
 !  17-sep-05/anders: coded
 !
       logical :: flor_tmp, flor
+      integer, optional :: comm
 !
       if (nprocs==1) then
         flor=flor_tmp
@@ -3020,7 +3156,7 @@ module Mpicomm
 !
     endsubroutine mpireduce_or_scl
 !***********************************************************************
-    subroutine mpireduce_or_arr(flor_tmp,flor,nreduce)
+    subroutine mpireduce_or_arr(flor_tmp,flor,nreduce,comm)
 !
 !  Calculate logical or over all procs and return to root.
 !
@@ -3028,6 +3164,7 @@ module Mpicomm
 !
       integer :: nreduce
       logical, dimension(nreduce) :: flor_tmp, flor
+      integer, optional :: comm
 !
       if (nreduce==0) return
 !
@@ -3040,13 +3177,14 @@ module Mpicomm
 !
     endsubroutine mpireduce_or_arr
 !***********************************************************************
-    subroutine mpireduce_and_scl(fland_tmp,fland)
+    subroutine mpireduce_and_scl(fland_tmp,fland,comm)
 !
 !  Calculate logical and over all procs and return to root.
 !
 !  17-sep-05/anders: coded
 !
       logical :: fland_tmp, fland
+      integer, optional :: comm
 !
       if (nprocs==1) then
         fland=fland_tmp

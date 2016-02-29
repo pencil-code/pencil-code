@@ -552,7 +552,7 @@ module Dustdensity
       use InitialCondition, only: initial_condition_nd
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
-      use Sub, only: notanumber
+      use General, only: notanumber
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !

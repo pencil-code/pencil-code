@@ -27,7 +27,8 @@ module Particles_nbody
   real, dimension(nspar,mspvar) :: fsp
   real, dimension(nspar) :: xsp0=0.0, ysp0=0.0, zsp0=0.0
   real, dimension(nspar) :: vspx0=0.0, vspy0=0.0, vspz0=0.0
-  real, dimension(nspar) :: pmass=0.0, r_smooth=0.0, pmass1
+  real, dimension(nspar) :: pmass=0.0, r_smooth=impossible, pmass1
+  real, dimension(nspar) :: frac_smooth=0.3
   real, dimension(nspar) :: accrete_hills_frac=0.2, final_ramped_mass=0.0
   real :: eccentricity=0.0, semimajor_axis=1.0
   real :: delta_vsp0=1.0, totmass, totmass1
@@ -127,7 +128,7 @@ module Particles_nbody
         npvar=npvar+3
       !endif
 !
-    endsubroutine register_particles_nbody
+      endsubroutine register_particles_nbody
 !***********************************************************************
     subroutine initialize_particles_nbody(f)
 !
@@ -225,6 +226,18 @@ module Particles_nbody
         call fatal_error('initialize_particles_nbody','inconsitency '//&
             'between lcylindrical_gravity from cdata and the '//&
             'one from nbody')
+      endif
+!
+!  Smoothing radius 
+!
+      if (any(r_smooth == impossible)) then 
+        do ks=1,mspar
+          if (ks/=istar) then
+            r_smooth(ks) = frac_smooth(ks) * xsp0(ks) * (pmass(ks)/3.)**(1./3)
+          else
+            r_smooth(ks) = rsmooth
+          endif
+        enddo
       endif
 !
       if (rsmooth/=r_smooth(istar)) then

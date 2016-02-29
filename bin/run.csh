@@ -214,18 +214,22 @@ if (-e "NEWDIR") then
     # Remove LOCK files before going to other directory
     rm -f LOCK data/LOCK
     set olddir=$cwd
-    cd `cat NEWDIR`
-    rm $olddir/NEWDIR
-    (echo "stopped run:"; date; echo "new run directory:"; echo $cwd; echo "")\
-       >> $olddir/$datadir/directory_change.log
+    set newdir=`cat NEWDIR`
+    touch "$datadir/directory_change.log"
+    (echo "stopped run:"; date; echo "new run directory:"; echo $newdir; echo "")\
+       >> "$datadir/directory_change.log"
+    cd "$newdir"
+    touch "$datadir/directory_change.log"
     (date; echo "original run script is in:"; echo $olddir; echo "")\
-       >> $datadir/directory_change.log
+       >> "$datadir/directory_change.log"
     echo
     echo "====================================================================="
-    echo "Rerunning in new directory; current run status: $run_status"
-    echo "We are now in: " `pwd`
+    echo "Rerunning in new directory:"
+    pwd
+    echo "Current status: $run_status"
     echo "====================================================================="
     echo
+    rm "$olddir/NEWDIR"
     goto newdir
   else
     rm -f NEWDIR LOCK data/LOCK
