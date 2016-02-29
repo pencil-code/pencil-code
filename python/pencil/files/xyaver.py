@@ -34,7 +34,7 @@ def read_xyaver(varfile='xyaverages.dat',datadir='data/', quiet=0):
     infile.close()
     
     #gotta be a better way to do this...
-    n_lines = int(check_output('wc '+datadir+'/'+varfile).split()[0])
+    n_lines = int(check_output(["wc", datadir+'/'+varfile]).split()[0])
 
     datafile = open(datadir+'/'+varfile)    
     n_vars = len(variables)
