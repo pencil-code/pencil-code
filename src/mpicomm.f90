@@ -626,6 +626,7 @@ module Mpicomm
       use General, only: find_proc, quick_sort
 !
       integer, dimension(:), allocatable :: list, order
+      logical :: left, right
       integer :: dipx, dipy, dipz
       integer :: ipx_rec, ipy_rec, ipz_rec
       integer :: iproc_rec
@@ -636,13 +637,16 @@ module Mpicomm
       nproc_comm = 0
 !
       xscan: do dipx = -1, 1
-        ipx_rec = modulo(ipx + dipx, nprocx)  ! assuming periodic boundary conditions
+        ipx_rec = ipx + dipx
+        left = ipx_rec < 0
+        right = ipx_rec > nprocx - 1
+        ipx_rec = modulo(ipx_rec, nprocx)  ! assuming periodic boundary conditions
 !
         yscan: do dipy = -1, 1
           ipy_rec = ipy + dipy
           shear: if (lshear) then
-            if (ipx_rec < 0) ipy_rec = ipy_rec - ceiling(deltay / Lxyz_loc(2) - 0.5)
-            if (ipx_rec > nprocx - 1) ipy_rec = ipy_rec + ceiling(deltay / Lxyz_loc(2) - 0.5)
+            if (left) ipy_rec = ipy_rec - ceiling(deltay / Lxyz_loc(2) - 0.5)
+            if (right) ipy_rec = ipy_rec + ceiling(deltay / Lxyz_loc(2) - 0.5)
           endif shear
           ipy_rec = modulo(ipy_rec, nprocy)  ! assuming periodic boundary conditions
 !
