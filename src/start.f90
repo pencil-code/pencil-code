@@ -152,6 +152,10 @@ program start
 !
   call initialize_mpicomm
 !
+!  Update the list of neighboring processes.
+!
+  call update_neighbors()
+!
 !  Register variables in the f array.
 !
   call register_modules
