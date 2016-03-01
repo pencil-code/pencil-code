@@ -431,6 +431,10 @@ program run
 !
   call setup_slices
 !
+!  Initialize the list of neighboring processes.
+!
+  call update_neighbors()
+!
 !  Allow modules to do any physics modules do parameter dependent
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)

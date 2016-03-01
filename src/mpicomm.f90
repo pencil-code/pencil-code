@@ -547,10 +547,6 @@ module Mpicomm
       llast_proc_xz = llast_proc_x .and. llast_proc_z
       llast_proc_xyz = llast_proc_x .and. llast_proc_y .and. llast_proc_z
 !
-!  Set up all neighbors.
-!
-      call update_neighbors()
-!
 !  Set up `lower' and `upper' neighbours.
 !
       xlneigh = modulo(ipx-1,nprocx) + ipy*nprocx + ipz*nprocxy
