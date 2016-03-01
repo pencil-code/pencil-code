@@ -113,6 +113,9 @@ module Special
   integer :: idiag_mu5rms=0    ! DIAG_DOC: $\left<\mu_5^2\right>^{1/2}$
   integer :: idiag_bgmu5rms=0  ! DIAG_DOC: $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$
   integer :: idiag_gtheta5rms=0! DIAG_DOC: $\left<(\nabla\theta_5)^2\right>^{1/2}$
+  integer :: idiag_gtheta5mx=0 ! DIAG_DOC: $\left<\nabla\theta_5_x\right>$
+  integer :: idiag_gtheta5my=0 ! DIAG_DOC: $\left<\nabla\theta_5_y\right>$
+  integer :: idiag_gtheta5mz=0 ! DIAG_DOC: $\left<\nabla\theta_5_z\right>$
 !
   contains
 !***********************************************************************
@@ -209,7 +212,7 @@ module Special
             f(:,:,:,igtheta5) = 0.
             f(:,m,n,igtheta5+1) = gtheta5_const
             f(:,:,:,igtheta5+2) = 0.
-          enddo; enddo 
+          enddo; enddo
           f(:,:,:,imu5) = mu5_const
         case ('zero')
           f(:,:,:,igtheta5) = 0.
@@ -217,17 +220,17 @@ module Special
         case ('gtheta5x_sinz')
         do n=n1,n2; do m=m1,m2
             f(:,m,n,igtheta5)=gtheta5_const*sin(2.*pi*z(n)/Lx)
-          enddo; enddo 
+          enddo; enddo
           f(:,:,:,imu5) = mu5_const
         case ('gtheta5y_siny')
           do n=n1,n2; do m=m1,m2
             f(:,m,n,igtheta5+1)=-gtheta5_const*sin(ky_gtheta5*y(m))
-          enddo; enddo 
+          enddo; enddo
           f(:,:,:,imu5) = mu5_const
         case ('theta_profile')
           do n=n1,n2; do m=m1,m2
             f(l1:l2,m,n,igtheta5)=gtheta5_const*cos(2.*pi*(y(m)-y0)/Ly)
-          enddo; enddo 
+          enddo; enddo
           f(:,:,:,imu5) = mu5_const
         case default
           call fatal_error("init_special: No such value for initspecial:" &
@@ -391,10 +394,10 @@ module Special
                                       cdtchiral2*eta*sqrt(p%u2)*sqrt(p%gtheta522)*sqrt(dxyz_2),   &
                                       cdtchiral3*diffmu5*dxyz_2,   &
                                       cdtchiral4*lambda5*eta*p%b2/(p%mu5)*sqrt(dxyz_2),   &
-                                      cdtchiral5*lambda5*eta*p%b2,   &  
-                                      cdtchiral6*lambda5*eta*sqrt(p%u2)*p%b2*sqrt(p%gtheta522)/(p%mu5), &     
-                                      cdtchiral7*p%b2*sqrt(p%gtheta522)*p%rho1   & 
-                          )  
+                                      cdtchiral5*lambda5*eta*p%b2,   & 
+                                      cdtchiral6*lambda5*eta*sqrt(p%u2)*p%b2*sqrt(p%gtheta522)/(p%mu5), &    
+                                      cdtchiral7*p%b2*sqrt(p%gtheta522)*p%rho1   &
+                          ) 
       endif
 !
 !  diagnostics
@@ -409,6 +412,9 @@ module Special
         if (idiag_gtheta5rms/=0) then
           call dot2_mn(p%gtheta5,gtheta52)
           call sum_mn_name(gtheta52,idiag_gtheta5rms,lsqrt=.true.)
+        if (idiag_gtheta5mx/=0) call sum_mn_name(p%gtheta5(:,1),idiag_gtheta5mx)
+        if (idiag_gtheta5my/=0) call sum_mn_name(p%gtheta5(:,2),idiag_gtheta5my)
+        if (idiag_gtheta5mz/=0) call sum_mn_name(p%gtheta5(:,3),idiag_gtheta5mz)
         endif
       endif
 !
@@ -469,7 +475,8 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_mu5m=0; idiag_mu5rms=0; idiag_bgmu5rms=0; idiag_gtheta5rms=0
+        idiag_mu5m=0; idiag_mu5rms=0; idiag_bgmu5rms=0; idiag_gtheta5rms=0;
+    idiag_gtheta5mx=0; idiag_gtheta5my=0; idiag_gtheta5mz=0
       endif
 !
       do iname=1,nname
@@ -477,6 +484,9 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'mu5rms',idiag_mu5rms)
         call parse_name(iname,cname(iname),cform(iname),'bgmu5rms',idiag_bgmu5rms)
         call parse_name(iname,cname(iname),cform(iname),'gtheta5rms',idiag_gtheta5rms)
+        call parse_name(iname,cname(iname),cform(iname),'gtheta5mx',idiag_gtheta5mx)
+        call parse_name(iname,cname(iname),cform(iname),'gtheta5my',idiag_gtheta5my)
+        call parse_name(iname,cname(iname),cform(iname),'gtheta5mz',idiag_gtheta5mz)
       enddo
 !
     endsubroutine rprint_special
