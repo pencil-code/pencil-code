@@ -152,10 +152,6 @@ program start
 !
   call initialize_mpicomm
 !
-!  Update the list of neighboring processes.
-!
-  call update_neighbors()
-!
 !  Register variables in the f array.
 !
   call register_modules
@@ -376,6 +372,10 @@ program start
 !
   call wgrid('grid.dat')
   if (lparticles) call wproc_bounds(trim(directory)//'/proc_bounds.dat')
+!
+!  Update the list of neighboring processes.
+!
+  call update_neighbors()
 !
 !  Write .general file for data explorer.
 !
