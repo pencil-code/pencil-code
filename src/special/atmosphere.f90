@@ -76,12 +76,13 @@ module Special
   logical :: lbuffer_zone_uy=.false., lbuffer_zone_uz=.false.
   logical :: llognormal=.false., lACTOS=.false.
   logical :: lsmall_part=.false.,  llarge_part=.false., lsmall_large_part=.false. 
-  logical :: laverage=.false.
+  logical :: laverage=.false., lgrav_LES=.false.
 !
   real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.,AA=0.66e-4
   real :: nd0, r0, r02, delta, uy_bz, ux_bz,  dYw1, dYw2, PP, Ntot=1e3
   real :: lnTT1, lnTT2, Ntot_ratio=1., Ntot_input, TT0, qwater0, aerosol_present=1.
-
+  real :: logrho_ref_bot, logrho_ref2_bot, logrho_ref_top, logrho_ref2_top, TT_ref_top, TT_ref_bot, t_final
+  real :: uz_ref_top=0., uz_ref_bot=0.
 
 ! Keep some over used pencils
 !
@@ -91,11 +92,12 @@ module Special
       TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, dYw1, dYw2, &
       nd0, r0, r02, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot,  PP, TT0, qwater0, aerosol_present, &
       lACTOS, lsmall_part,  llarge_part, lsmall_large_part, Ntot_ratio, UY_ref, llognormal, Ntot_input, &
-      laverage, lbuffer_zone_uz
+      laverage, lbuffer_zone_uz, logrho_ref_top, logrho_ref2_top, TT_ref_top, TT_ref_bot, & 
+      t_final, logrho_ref_bot, logrho_ref2_bot, lgrav_LES, uz_ref_bot,uz_ref_top
 
 ! run parameters
   namelist /special_run_pars/  &
-      lbuoyancy_z,lbuoyancy_x, sigma,dYw,lbuffer_zone_uy, lbuffer_zone_T, lnTT1,lnTT2
+      lbuoyancy_z,lbuoyancy_x, sigma,dYw,lbuffer_zone_uy, lbuffer_zone_T, lnTT1, lnTT2
 !
 !
   integer :: idiag_dtcrad=0
@@ -425,9 +427,14 @@ module Special
       integer :: l_sz
       integer :: i, j  !, sz_l_y,sz_r_y,
       integer ::  mm1,mm2, sz_y, nn1, nn2, sz_z
-      real    :: dt1, bs,Ts,dels
+      real    :: dt1, bs,Ts,dels, logrho_tmp, tmp, tmp2
       logical :: lzone_left, lzone_right
 !
+
+      if (lgrav_LES) then
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) - gg
+      endif     
+
        const_tmp=4./3.*PI*rho_water
       if (lbuoyancy_z) then
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
@@ -474,7 +481,7 @@ module Special
            if (lzone_right) then
 !             dt1=(m-(m2-sz_y))/sz_y/(8.*dt)
 !             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-UY_ref)*dt1
-             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-UY_ref)*dt1
+!             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-UY_ref)*dt1
 !             df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)-(f(l1:l2,m,n,ilnTT)-alog(lnTT2))*dt1
            endif
          else if (j==2) then
@@ -484,7 +491,7 @@ module Special
            if (lzone_left) then
 !             dt1=(sz_y-m)/(sz_y-1)/(8.*dt)
 !             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-0.)*dt1
-             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-UY_ref)*dt1
+!             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-UY_ref)*dt1
 !             df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)-(f(l1:l2,m,n,ilnTT)-alog(lnTT1))*dt1
            endif
          endif
@@ -493,6 +500,13 @@ module Special
         endif
         
         if (lbuffer_zone_uz .and. (nzgrid/=1)) then
+
+!        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)*0.
+
+        logrho_tmp=logrho_ref_top
+          !+(logrho_ref2_top-logrho_ref_top)*t/t_final
+
+        sz_z=int(del*nzgrid)
         do j=1,2
 !
          if (j==1) then
@@ -501,9 +515,70 @@ module Special
 !
            if ((z(n) >= zgrid(nn1)) .and. (z(n) <= zgrid(nn2))) lzone_right=.true.
            if (lzone_right) then
-             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(f(l1:l2,m,n,iuz)-0.)*dt1
+       !      df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(f(l1:l2,m,n,iuz)-uz_ref_top)*dt1
+
+       !      if (t<=t_final) then
+ 
+       
+!          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+!            -(f(l1:l2,m,n,ilnrho)-alog(exp(logrho_ref_top) &
+!             *TT_ref_top/exp(f(l1:l2,m,n,ilnTT)) ))*dt1
+!          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) & 
+!            -(f(l1:l2,m,n,ilnTT)-alog(exp(logrho_ref_top) &
+!             *TT_ref_top/exp(f(l1:l2,m,n,ilnrho)) ))*dt1    
+
+       !      else
+       !         df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+       !             -(f(l1:l2,m,n,ilnrho)-alog(exp(logrho_ref2_top)*TT_ref_top/exp(f(l1:l2,m,n,ilnTT)) ))*dt1
+       !      endif
+
+       !      df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) -(f(l1:l2,m,n,ilnTT)-f(l1:l2,m,n1,ilnTT))*dt1
+       !       df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-0.)*dt1
+       !       df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-0.)*dt1
+       !    df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+       !            -(f(l1:l2,m,n,ilnrho)-alog(exp(logrho_ref_top)*TT_ref_top/exp(f(l1:l2,m,n,ilnTT))  ))*dt1
+  !          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) &
+  !                 -(f(l1:l2,m,n,ilnTT)-alog(TT_ref_top) )*dt1
+
+!            df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+!               -(f(l1:l2,m,n,ilnrho)-logrho_ref_top)*dt1
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(f(l1:l2,m,n,iuz)-uz_ref_top)*dt1
+
            endif
          else if (j==2) then
+            nn1=1
+            nn2=1+sz_z
+! 
+!           logrho_tmp=logrho_ref_bot  
+!                +(logrho_ref2_bot-logrho_ref_bot)*t/t_final
+!
+           if ((z(n) >= zgrid(nn1)) .and. (z(n) <= zgrid(nn2))) lzone_left=.true.
+           if (lzone_left) then
+!              df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-0.)*dt1
+!              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-0.)*dt1
+!              df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) -(f(l1:l2,m,n,ilnTT)-f(l1:l2,m,n1,ilnTT))*dt1
+
+!             if (t<=t_final) then
+!                df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+!                     -(f(l1:l2,m,n,ilnrho)-logrho_tmp)*dt1
+!                    -(f(l1:l2,m,n,ilnrho)-alog(exp(logrho_tmp)*TT_ref_bot/exp(f(l1:l2,m,n,ilnTT)) ))*dt1
+!             endif
+
+!          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) & 
+!            -(f(l1:l2,m,n,ilnrho)-alog(exp(logrho_ref_bot) &
+!             *TT_ref_bot/exp(f(l1:l2,m,n,ilnTT)) ))*dt1
+!          df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT) &
+!            -(f(l1:l2,m,n,ilnTT)-alog(exp(logrho_ref_bot) &
+!             *TT_ref_bot/exp(f(l1:l2,m,n,ilnrho)) ))*dt1
+
+ 
+ !        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) &
+ !             -(f(l1:l2,m,n,ilnrho)-logrho_ref_bot)*dt1 
+            
+         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(f(l1:l2,m,n,iuz)-uz_ref_bot)*dt1
+
+           endif
+!
          endif
 !
         enddo
@@ -1456,14 +1531,14 @@ subroutine bc_satur_x(f,bc)
       logical, save :: lbc_file_top=.true., lbc_file_bot=.true.
       real :: t1,t2
 !
-!   
-      if (lroot) then
+!   NNNNNN
+!      if (lroot) then
       do i = 1,60
         time_bot(i)=(i-1)*1800.
         time_top(i)=(i-1)*7200.
       enddo 
 
-      endif
+!      endif
 
     
       vr=bc%ivar
@@ -1484,7 +1559,7 @@ subroutine bc_satur_x(f,bc)
        enddo
 !
         if (lbc_file_bot) then
-          if (lroot) then
+!          if (lroot) then
 !
             print*,'opening *1.dat'
             open(9,file='T1.dat')
@@ -1500,7 +1575,7 @@ subroutine bc_satur_x(f,bc)
             close(9)
             close(99)
             print*,'closing file'
-          endif
+!          endif
           lbc_file_bot=.false.
         endif
 !          
@@ -1517,10 +1592,12 @@ subroutine bc_satur_x(f,bc)
 !      print*, bc_T_aver_bot, bc_T_aver2_bot
 !
          bc_T_aver_final=bc_T_aver_bot  &
-               +(t-time_bot(time_position_bot)) &
-               /(time_bot(time_position_bot+1)-time_bot(time_position_bot))    &
-               *(bc_T_aver2_bot-bc_T_aver_bot)
-               
+                +(t-time_bot(time_position_bot)) &
+                /(time_bot(time_position_bot+1)-time_bot(time_position_bot))    &
+                *(bc_T_aver2_bot-bc_T_aver_bot)
+   
+!           bc_T_aver_final=bc_T_aver_bot
+            
          bc_u_aver_final=bc_u_aver_bot  &
                +(t-time_bot(time_position_bot)) &
                /(time_bot(time_position_bot+1)-time_bot(time_position_bot))    &
@@ -1605,7 +1682,7 @@ subroutine bc_satur_x(f,bc)
        enddo
 !
        if (lbc_file_top) then
-       if (lroot) then
+!       if (lroot) then
 !
          print*,'opening *_top.dat'
          open(9,file='T_top.dat')
@@ -1622,7 +1699,7 @@ subroutine bc_satur_x(f,bc)
           close(99)
           print*,'closing file'
           
-       endif   
+!       endif   
         lbc_file_top=.false.
 ! 
        endif
@@ -1679,7 +1756,8 @@ subroutine bc_satur_x(f,bc)
 !
            do j=l1,l2
            do i=m1,m2
-              f(j,i,n2,vr)=bc_u_final_top*bc_T_final_top/exp(f(j,i,n2,ilnTT))
+!              f(j,i,n2,vr)=bc_u_final_top*bc_T_final_top/exp(f(j,i,n2,ilnTT))
+              f(j,i,n2,vr)=2481.*bc_T_final_top/exp(f(j,i,n2,ilnTT))
            enddo
            enddo
 !
