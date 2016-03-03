@@ -19,3 +19,5 @@ public ::  pencil_criteria_solid_cells
 public ::  close_interpolation
 public ::  solid_cells_clean_up 
 public ::  register_solid_cells
+public ::  solid_cells_timestep_first
+public ::  solid_cells_timestep_second

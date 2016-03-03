@@ -239,4 +239,27 @@ module Solid_Cells
 !
     endsubroutine solid_cells_clean_up
 !***********************************************************************
+    subroutine solid_cells_timestep_first(f)
+!
+!  Setup dfs in the beginning of each itsub.
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    end subroutine solid_cells_timestep_first
+!***********************************************************************
+    subroutine solid_cells_timestep_second(f,int_dt,int_ds)
+!
+!  Time evolution of solid_cells variables.
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real :: int_dt, int_ds
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(int_dt)
+      call keep_compiler_quiet(int_ds)
+!
+    endsubroutine solid_cells_timestep_second
+!***********************************************************************
 endmodule Solid_Cells

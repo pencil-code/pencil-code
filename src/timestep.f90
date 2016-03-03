@@ -27,6 +27,8 @@ module Timestep
       use Mpicomm, only: mpifinalize, mpiallreduce_max, MPI_COMM_WORLD
       use Particles_main, only: particles_timestep_first, &
           particles_timestep_second
+      use Solid_Cells, only: solid_cells_timestep_first, &
+          solid_cells_timestep_second
       use Shear, only: advance_shear
       use Special, only: special_after_timestep
       use Snapshot, only: shift_dt
@@ -78,6 +80,10 @@ module Timestep
 !
         if (lparticles) call particles_timestep_first(f)
 !
+!  Set up solid_cells time advance
+!
+        if (lsolid_cells) call solid_cells_timestep_first(f)
+!
 !  Change df according to the chosen physics modules.
 !
         call pde(f,df,p)
@@ -117,6 +123,10 @@ module Timestep
 !  Time evolution of particle variables.
 !
         if (lparticles) call particles_timestep_second(f)
+!
+!  Time evolution of solid_cells.
+!
+        if (lsolid_cells) call solid_cells_timestep_second(f,dt_beta_ts(itsub),ds)
 !
 !  Advance deltay of the shear (and, optionally, perform shear advection
 !  by shifting all variables and their derivatives).
