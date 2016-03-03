@@ -1165,13 +1165,14 @@ k_loop:   do while (.not. (k>npar_loc))
             call fill_blocks_with_bricks(f,fb,mfarray,ilnrho)
           endif
 !
+          eps = 0.0
           if (ldragforce_equi_global_eps) eps = eps_dtog
 !
           if (lroot) print*, 'init_particles: average dust-to-gas ratio=', eps
 !  Set gas velocity field.
           do l=l1,l2; do m=m1,m2; do n=n1,n2
 !  Take either global or local dust-to-gas ratio.
-            if (.not. ldragforce_equi_global_eps) eps = f(l,m,n,irhop) / get_gas_density(f, l, m, n)
+            if (.not. ldragforce_equi_global_eps .and. ldragforce_gas_par) eps = f(l,m,n,irhop) / get_gas_density(f, l, m, n)
 !
             f(l,m,n,iux) = f(l,m,n,iux) - &
                 beta_glnrho_global(1)*eps*Omega*tausp/ &
@@ -1184,7 +1185,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Set particle velocity field.
           do k=1,npar_loc
 !  Take either global or local dust-to-gas ratio.
-            if (.not. ldragforce_equi_global_eps) then
+            if (.not. ldragforce_equi_global_eps .and. ldragforce_gas_par) then
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               ib=inearblock(k)
               eps = fb(ix0,iy0,iz0,irhop,ib) / get_gas_density_strat(fb,ix0,iy0,iz0,ib)
