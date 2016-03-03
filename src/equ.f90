@@ -247,6 +247,14 @@ module Equ
         call boundconds_z(f)
       endif
 !
+!  Remove unphysical values of the mass fractions. This must be done
+!  before the call to update_solid_cells in order to avoid corrections
+!  within the solid structure.
+!
+      if (lsolid_cells .and. lchemistry) then
+        call chemspec_normalization_N2(f)
+      endif
+!
 ! update solid cell "ghost points". This must be done in order to get the
 ! correct boundary layer close to the solid geometry, i.e. no-slip conditions.
 !

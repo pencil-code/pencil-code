@@ -157,13 +157,16 @@ module Chemistry
 ! input parameters
   namelist /chemistry_init_pars/ &
       initchem, amplchem, kx_chem, ky_chem, kz_chem, widthchem, &
-      amplchemk,amplchemk2, chem_diff,nu_spec,lDiff_simple, lDiff_lewis,lFlux_simple, &
+      amplchemk,amplchemk2, chem_diff,nu_spec,lDiff_simple, &
+      lDiff_lewis,lFlux_simple, &
       lThCond_simple,lambda_const, visc_const,Cp_const,Cv_const,Diff_coef_const, &
-      init_x1,init_x2,init_y1,init_y2,init_z1,init_z2,init_TT1,init_TT2,init_rho, &
+      init_x1,init_x2,init_y1,init_y2,init_z1,init_z2,init_TT1,&
+      init_TT2,init_rho, &
       init_ux,init_uy,init_uz,l1step_test,Sc_number,init_pressure,lfix_Sc, &
       str_thick,lfix_Pr,lT_tanh,lT_const,lheatc_chemistry, &
       ldamp_zone_for_NSCBC, latmchem, lcloud, prerun_directory, &
-      lchemistry_diag,lfilter_strict,linit_temperature, linit_density, init_rho2, &
+      lchemistry_diag,lfilter_strict,linit_temperature, &
+      linit_density, init_rho2, &
       file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
       reac_rate_method,global_phi
 !
@@ -175,7 +178,8 @@ module Chemistry
       lreactions,lchem_cdtc,lheatc_chemistry, lchemistry_diag, &
       lmobility,mobility, lfilter,lT_tanh,lDiff_simple,lDiff_lewis,lFlux_simple, &
       lThCond_simple,visc_const,cp_const,reinitialize_chemistry,init_from_file, &
-      lfilter_strict,init_TT1,init_TT2,init_x1,init_x2, linit_temperature, linit_density, &
+      lfilter_strict,init_TT1,init_TT2,init_x1,init_x2, linit_temperature, &
+      linit_density, &
       ldiff_corr, lDiff_fick, lreac_as_aux, reac_rate_method,global_phi
 !
 ! diagnostic variables (need to be consistent with reset list below)
@@ -3748,7 +3752,6 @@ module Chemistry
       character(len=*) :: input_file
 
       if (present(NrOfReactions)) NrOfReactions=0
-
       k=1
       open(file_id,file=input_file)
       dataloop3: do
@@ -6139,5 +6142,23 @@ module Chemistry
       endif
 !
     endsubroutine find_remove_real_stoic
+!!***********************************************************************
+    subroutine chemspec_normalization_N2(f)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz) :: sum_Y !, sum_Y2
+      integer :: k ,isN2, ichemsN2
+      logical :: lsN2
+!
+      call find_species_index('N2', isN2, ichemsN2, lsN2 )
+      sum_Y=0.0 !; sum_Y2=0.0
+      do k=1,nchemspec
+        if (k/=ichemsN2) then
+          sum_Y=sum_Y+f(:,:,:,ichemspec(k))
+        endif
+      enddo
+      f(:,:,:,isN2)=1.0-sum_Y
+!
+    endsubroutine chemspec_normalization_N2
 !***********************************************************************
 endmodule Chemistry

@@ -267,5 +267,13 @@ module Chemistry
       call keep_compiler_quiet(p)
 !
     endsubroutine get_reac_rate
+!!***********************************************************************
+    subroutine chemspec_normalization_N2(f)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine chemspec_normalization_N2
 !***********************************************************************
 endmodule Chemistry
