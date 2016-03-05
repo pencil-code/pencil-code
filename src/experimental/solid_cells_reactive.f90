@@ -24,10 +24,10 @@ module Solid_Cells
   include 'solid_cells.h'
 !
   integer, parameter            :: max_items=5
-  integer                       :: ncylinders=0,nspheres=0,dummy,cc_layer=1
+  integer                       :: ncylinders=0,nspheres=0,dummy
   integer                       :: nobjects,nlong,nlat,nforcepoints=200,nsvar=0
   integer                       :: ixs=0,iys=0,izs=0,ius=0,ivs=0,iws=0,iRs=0,iTs=0
-  integer                       :: irhocount, osci_dir=1, inlet_layer=1, outlet_layer=1
+  integer                       :: irhocount, osci_dir=1
   real, dimension(max_items)    :: cylinder_radius, sphere_radius
   real, dimension(max_items)    :: cylinder_temp=330.0, sphere_temp=330.0
   real, dimension(max_items)    :: cylinder_xpos, cylinder_ypos
@@ -43,7 +43,8 @@ module Solid_Cells
   logical :: lnointerception=.false.,lcheck_ba=.false.
   logical :: lerror_norm=.false.,lNusselt_output=.false.
   logical :: lset_flow_dir=.false.,lpos_advance=.false.,lradius_advance=.false.
-  logical :: linlet_correction=.false.,loutlet_correction=.false.
+  logical :: lsecondorder_rho=.true., lsecondorder_chem=.true.
+  logical :: lstefan_flow=.true.
   real    :: rhosum,flow_dir,T0,flow_dir_set,theta_shift=0.0
   real    :: skin_depth=0,init_uu=0,ampl_noise=0,object_skin=0
   real    :: limit_close_linear=0.7, ineargridshift=1.0
@@ -78,9 +79,8 @@ module Solid_Cells
 !
   namelist /solid_cells_run_pars/  &
        lnointerception,lcheck_ba,lerror_norm,lpos_advance,lradius_advance, &
-       lNusselt_output,osci_A,osci_f,osci_dir,osci_t,linlet_correction, &
-       loutlet_correction,inlet_layer,outlet_layer,cc_layer, &
-       solid_reactions_intro_time
+       lNusselt_output,osci_A,osci_f,osci_dir,osci_t, lsecondorder_rho, &
+       lsecondorder_chem, solid_reactions_intro_time, lstefan_flow
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -368,41 +368,6 @@ module Solid_Cells
           print*,'objects(',iobj,')%r=',objects(iobj)%r
           print*,'objects(',iobj,')%T=',objects(iobj)%T
         enddo
-      endif
-!
-!  This part of code is designed to renew the inlet or outlet boundary
-!  variables when some variables go to divergence. The correction_layer
-!  means the layer of grid inside the domain which need to be modified.
-!
-      if (linlet_correction .or. loutlet_correction) then
-!
-!  The inlet correction is only used when 'set' is used.
-!
-        if (linlet_correction .and. x(l1)<=-4.99) then
-          do i=1, inlet_layer
-            f(l1+i,:,:,1:mvar)=f(l1,:,:,1:mvar)
-          enddo
-        endif
-!
-!  The outlet correction is only used when 'e2' is used.
-!
-        if (loutlet_correction .and. outlet_layer==2)then
-          if (llast_proc_x) then
-            do i=1,mx
-            do j=1,my
-            do k=1,mz
-              if (f(i,j,k,iux)>2.0*f(l1,j,k,iux) .or. f(i,j,k,iux)<0.0 ) then
-                if (i>11) then
-                  f(i,j,k,1:iuz)=f(l1,j,k,1:iuz)
-                else
-                  f(i,j,k,1:iuz)=f(l1,j,k,1:iuz)
-                endif
-              endif
-            enddo
-            enddo
-            enddo  
-          endif
-        endif
       endif
 !
     endsubroutine initialize_solid_cells
@@ -1157,8 +1122,7 @@ module Solid_Cells
           xghost=x(i); yghost=y(j); zghost=z(k)
           iobj=ba(i,j,k,4)
           call interpolate_point(f,f_tmp,iobj,xghost,yghost,zghost)
-          f(i,j,k,1:mvar)=f_tmp
-!print*,'f(i,j,k,ilnrho)=',f(i,j,k,ilnrho),xghost,yghost,zghost
+          f(i,j,k,1:mvar)=f_tmp(1:mvar)
         endif
       enddo
       enddo
@@ -1206,28 +1170,6 @@ module Solid_Cells
         enddo
       endif
 !
-!  The outlet boundary correction procedure is temporarily added here.
-!
-!      if (loutlet_correction .and. mod(it,cc_layer)==0) then
-!        if (llast_proc_x) then
-!          do i=1,mx
-!          do j=1,my
-!          do k=1,mz
-!            if (f(i,j,k,iux)>1.5*f(l1,j,k,iux) .or. f(i,j,k,iux)<0.0 ) then
-!              do iv=1, iuz
-!                if (i>11) then
-!                  f(i,j,k,iv)=sum( f(i-11:i-1,j,k,iv) )/10.0
-!                else
-!                  f(i,j,k,iv)=sum( f(1:i-1,j,k,iv) )/(i-1)
-!                endif
-!              enddo
-!            endif
-!          enddo
-!          enddo
-!          enddo
-!        endif
-!      endif
-!
     end subroutine update_solid_cells
 !***********************************************************************
     subroutine interpolate_point(f,f_tmp,iobj,xghost,yghost,zghost)
@@ -1250,14 +1192,13 @@ module Solid_Cells
       real :: x_obj, y_obj, z_obj, Tobj, xmir1, ymir1, zmir1
       real :: rho_gp, T_gp, rg, r_sg, xmir0, ymir0, zmir0, rho_fp0, rho_fp1
       real :: sumspecies,x_ib,y_ib,z_ib,rho_ib, mu1_fp0, mu1_fp1, mu1_gp
-      real :: mu_fp0, mu_fp1, rp
+      real :: mu_fp0, mu_fp1, rp, coe_a, coe_b, coe_c
       integer :: lower_i, upper_i, lower_j, upper_j, lower_k, upper_k
       integer :: lower_i0,upper_i0,lower_j0,upper_j0,lower_k0,upper_k0
       integer :: lower_i1,upper_i1,lower_j1,upper_j1,lower_k1,upper_k1
       integer :: kchem
       integer, dimension(3) :: inear0, inear1, inear_ib
       character(len=10) :: form
-      logical :: log_den
 !
       x_obj=objects(iobj)%x(1)
       y_obj=objects(iobj)%x(2)
@@ -1268,10 +1209,23 @@ module Solid_Cells
       if (form=='cylinder') then
         rg=sqrt((xghost-x_obj)**2+(yghost-y_obj)**2)
         rp0=2.0*rs-rg
+!
+!  The distance of the probe points need to satisfy two conditions:
+!  1. The first point must have four neighbouring fluid point, untill
+!     we find another proper way to calculate it;
+!  2. The second point cannot be 3 grid away from the boundary, which
+!     is a constraint for the moving boundary case.
+!
         if ((rp0-rs) <= (0.5*sqrt(2.0)*dxmin)) then
           rp0=rp0+0.5*sqrt(2.0)*dxmin
+          rp1=rp0+sqrt(2.0)*dxmin
+        elseif ((rp0-rs) >= (3.0*dxmin)) then
+          rp1=3.0*dxmin
+          rp0=rp1-+sqrt(2.0)*dxmin
+        else
+          rp1=rp0+sqrt(2.0)*dxmin
         endif
-        rp1=rp0+sqrt(2.0)*dxmin
+        
         !
         xmir0=(xghost-x_obj)/rg*rp0+x_obj
         ymir0=(yghost-y_obj)/rg*rp0+y_obj
@@ -1290,8 +1244,13 @@ module Solid_Cells
         rp0=2.0*rs-rg
         if ((rp0-rs) <= (0.5*sqrt(2.0)*dxmin)) then
           rp0=rp0+0.5*sqrt(2.0)*dxmin
+          rp1=rp0+sqrt(2.0)*dxmin
+        elseif ((rp0-rs) >= (3.0*dxmin)) then
+          rp1=3.0*dxmin
+          rp0=rp1-+sqrt(2.0)*dxmin
+        else
+          rp1=rp0+sqrt(2.0)*dxmin
         endif
-        rp1=rp0+sqrt(2.0)*dxmin
         !
         xmir0=(xghost-x_obj)*rp0/rg+x_obj
         ymir0=(yghost-y_obj)*rp0/rg+y_obj
@@ -1411,28 +1370,24 @@ module Solid_Cells
       ibchem(1:nchemspec)=f_ib(ichemspec(1:nchemspec))*rho_ib
 !
       call calc_reaction_rate(f,iobj,ibchem,reac_rate,char_reac)
-
-!      reac_rate=0.0; char_reac=0.0
 !
 !  Calcualte diffusion coefficient at the boundary intersection point.
 !
       Diff_ib=2.58e-4/rho_ib*exp(0.7*log(Tobj/298.0))
       do kchem=1, nchemspec
-        f_tmp(ichemspec(kchem))= &
-            ((Diff_ib*rho_ib+r_sg*char_reac)*chem_fp0(kchem)&
-            +(r_sg+r_sp0)*reac_rate(kchem)) &
-            /(Diff_ib*rho_ib-r_sp0*char_reac)
-
-!           reac_rate(kchem)*(r_sg+r_sp0)/(2.0*Diff_ib*rho_ib-char_reac*r_sp0) &
-!           +Diff_ib*rho_ib*(chem_fp0(kchem)+chem_fp1(kchem))/(2.0*Diff_ib*rho_ib-char_reac*r_sp0) &
-!           +char_reac*r_sg*chem_fp0(kchem)/(2.0*Diff_ib*rho_ib-char_reac*r_sp0) &
-!           +(r_sp1+r_sg)/(r_sp1-r_sp0)*Diff_ib*rho_ib*(chem_fp0(kchem)-chem_fp1(kchem)) &
-!           /(2.0*Diff_ib*rho_ib-char_reac*r_sp0)
-!
+        if (lsecondorder_chem) then
+          coe_b=(-chem_fp0(kchem)-reac_rate(kchem)/char_reac &
+               +(chem_fp1(kchem)-chem_fp0(kchem))/(r_sp1**2-r_sp0**2)*r_sp0**2) &
+               /(-r_sp0*r_sp1/(r_sp0+r_sp1)+rho_ib*Diff_ib/char_reac)
+          coe_a=-(reac_rate(kchem)+rho_ib*Diff_ib*coe_b)/char_reac
+          coe_c=(chem_fp1(kchem)-chem_fp0(kchem)-coe_b*(r_sp1-r_sp0))/(r_sp1**2-r_sp0**2)
+          f_tmp(ichemspec(kchem))=coe_a-coe_b*r_sg+coe_c*r_sg**2
+        else
+          f_tmp(ichemspec(kchem))= &
+           ((Diff_ib*rho_ib+r_sg*char_reac)*chem_fp0(kchem)+(r_sg+r_sp0)*reac_rate(kchem)) &
+           /(Diff_ib*rho_ib-r_sp0*char_reac)
+        endif
       enddo
-!
-!      sumspecies=0.0; sumspecies=sum(f_tmp(ichemspec(1:nchemspec)))
-!      f_tmp(ichemspec(1:nchemspec))=f_tmp(ichemspec(1:nchemspec))/sumspecies
 !
       mu1_gp=0.0; mu1_fp0=0.0; mu1_fp1=0.0
       do kchem=1, nchemspec
@@ -1441,18 +1396,14 @@ module Solid_Cells
         mu1_gp=mu1_gp+f_tmp(ichemspec(kchem))/Mspecies(kchem)
       enddo
       mu_fp0=1.0/mu1_fp0; mu_fp1=1.0/mu1_fp1
-      log_den=.false.
-      if (log_den) then
-        rho_gp=log(rho_fp0)+log(T_fp0)+log(mu1_fp0)-log(T_gp)-log(mu1_gp)
-        if (ldensity_nolog) then
-          f_tmp(ilnrho)=exp(rho_gp)
-        else
-          f_tmp(ilnrho)=rho_gp
-        endif
+!
+      if (lsecondorder_rho) then
+        rho_gp=(rho_fp0*T_fp0*mu1_fp0+(rho_fp1*T_fp1*mu1_fp1-rho_fp0*T_fp0*mu1_fp0)*(r_sg**2-r_sp0**2) &
+            /(r_sp1**2-r_sp0**2))/mu1_gp/T_gp
       else
-        rho_gp=1.0/(T_gp*mu1_gp)*(0.5*mu1_fp0*mu1_fp1*(mu_fp1*rho_fp0*T_fp0+mu_fp0*rho_fp1*T_fp1) &
-            +0.5*(r_sp1+r_sg)/(r_sp1-r_sp0)*(mu1_fp0*rho_fp0*T_fp0-mu1_fp1*rho_fp1*T_fp1) )
-
+        rho_gp=rho_fp0*T_fp0*mu1_fp0/T_gp/mu1_gp
+      endif
+!
 !        if ((xghost .lt. -0.229) .and. (xghost .gt. -0.23) .and. &
 !            (yghost .lt.  4.08e-3 ) .and. (yghost .gt.  4.07e-3)) then
 !          print*,'rho_gp=',rho_gp
@@ -1462,21 +1413,24 @@ module Solid_Cells
 !          print*,'r_sp1, r_sg, r_sp0=',r_sp1, r_sg, r_sp0
 !          print*,'xghost,yghost=',xghost,yghost
 !          print*,'f_tmp(ichemspec(:))=',f_tmp(ichemspec(:))
+!          print*,'reac_rate(:)=',reac_rate(:)
 !        endif
 !
-        if (ldensity_nolog) then
-          f_tmp(ilnrho)=rho_gp
-        else
-          f_tmp(ilnrho)=log(rho_gp)
-        endif
+      if (ldensity_nolog) then
+        f_tmp(ilnrho)=rho_gp
+      else
+        f_tmp(ilnrho)=log(rho_gp)
       endif
 !
 !  The boundary velocity should be calculated for every ghost point, since the
 !  particle shrinking process in lradius_advance make the velocity at IB change
 !  according to the location.
 !
-      call calc_boundary_velocity(f,iobj,rp0,xxp,rho_ib,char_reac,ibvel)
-!      ibvel=0.0
+      if (lstefan_flow) then
+        call calc_boundary_velocity(f,iobj,rp0,xxp,rho_ib,char_reac,ibvel)
+      else
+        ibvel=0.0
+      endif
       f_tmp(1:3)=((r_sg+r_sp0)*ibvel-r_sg*f_mir0(1:3))/r_sp0
 !
     end subroutine interpolate_point
@@ -2899,6 +2853,18 @@ module Solid_Cells
 !
      prod(1)=ibchem(ichemsO2)/Mspecies(ichemsO2)
      prod(2)=ibchem(ichemsCO2)/Mspecies(ichemsCO2)
+!
+!  The mass fraction of O2 and CO2 could be negative because of large
+!  negative values at the ghost points. If a large negative value appears
+!  at the ghost point species value, it means that the concentration of this
+!  species has been zero at the boundary location.
+!
+     if (prod(1)<0.0) then
+       prod(1)=0.0
+     endif
+     if (prod(2)<0.0) then
+       prod(2)=0.0
+     endif
 !
 !  Calculate the forward reaction rate. The reactions are irrevisible,
 !  so the backward reaction rate is not calculated.
