@@ -31,7 +31,7 @@ import sys
 import tempfile
 
 
-from proboscis import test, TestProgram
+from proboscis_dummy import test, TestProgram
 #from proboscis.asserts import assert_equal, \
 #                              assert_not_equal, \
 #                              assert_true, \
