@@ -222,20 +222,7 @@ def run_system_cmd(cmd_line, catch_errors=False):
     False -- if catch_errors is set and an error occurred
 
     """
-    if log_level >= PRINT_GIT_COMMANDS:
-        print ' '.join(cmd_line)
-    process = subprocess.Popen(
-        cmd_line,
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE
-        )
-    # FIXME: for huge outpout, this will hang
-    std_output, err_output = process.communicate()
-    std_output = std_output.splitlines()
-    err_output = err_output.splitlines()
-    retcode = process.poll()
-    if retcode or log_level >= PRINT_OUTPUT:
-        log_output('STDOUT:', std_output)
-        log_output('STDERR:', err_output)
+    retcode, std_output = _run(cmd_line)
     if retcode:
         if catch_errors:
             return False
@@ -246,6 +233,14 @@ def run_system_cmd(cmd_line, catch_errors=False):
 
 def run_system_cmd_get_output(cmd_line):
     """Run a system command and return output as array of lines"""
+    retcode, std_output = _run(cmd_line)
+    if retcode:
+        raise CalledProcessError(retcode, cmd_line)
+    else:
+        return std_output
+
+
+def _run(cmd_line):
     if log_level >= PRINT_GIT_COMMANDS:
         print ' '.join(cmd_line)
     process = subprocess.Popen(
@@ -260,10 +255,7 @@ def run_system_cmd_get_output(cmd_line):
     if retcode or log_level >= PRINT_OUTPUT:
         log_output('STDOUT:', std_output)
         log_output('STDERR:', err_output)
-    if retcode:
-        raise CalledProcessError(retcode, cmd_line)
-    else:
-        return std_output
+    return retcode, std_output
 
 
 def log_output(prefix, lines):
