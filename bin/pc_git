@@ -48,9 +48,15 @@ except ImportError:
 
 usage_text = '\n'.join([
     'Usage:',
-    '  git pc <command> [options] [arguments]',
+    '  git pc [options] <command> [command_options] [arguments]',
     'where <command> is one of',
     '%s',
+    'Options:',
+    '  --log-level N  -- set the log level to N, an integer out of',
+    '                      0: don\'t print anything unnecessary,',
+    '                      1: print output from git commands,',
+    '                      2: also print the git commands before executing.',
+    '',
     'Run',
     '  git pc <command> --help',
     'to get help for a specific git-pc command',
