@@ -13,16 +13,6 @@ git:
  - git pc reverse-pull
  - git-pc-update-and-push
 
-Note that the original author (wd) will probably never use any of them
-because he considers it better to use the proper git (porcelain) commands:
- - The git commands are far more atomic, so if something goes wrong you
-   know which step failed and you can solve the exact problem you have.
- - You can ask or search on the web for information regarding the git
-   commands. Nobody will know what 'git pc' is.
- - You can use the git commands on any computer with git installed.
-   Sooner or later you will want to use git on a computer without git-pc
-   in your path.
-
 """
 
 
