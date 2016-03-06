@@ -94,13 +94,28 @@ usage_text = '\n'.join([
     'to get help for a specific git-pc command',
 ])
 
+# Log level:
+# 0: be quiet if operations succeed, but print all output from failed git
+#    commands
+# 1: print output from all git commands
+# 2: print the git commands
+BE_QUIET = 0
+PRINT_OUTPUT = 1
+PRINT_GIT_COMMANDS = 2
+log_level = BE_QUIET
+
 
 def main():
     args = sys.argv[1:]
     if len(args) < 1 or args[0] == '-h' or args[0] == '--help':
         abort_with_usage(0)
-    (cmd, cmd_args) = (args[0], args[1:])
 
+    global log_level
+    if args[0] == '--log-level':
+        args.pop(0)
+        log_level = int(args.pop(0))
+
+    (cmd, cmd_args) = (args[0], args[1:])
     for command in create_command_list():
         if cmd == command.name:
             command.execute(cmd_args)
@@ -238,7 +253,8 @@ def run_system_cmd(cmd_line, catch_errors=False, quiet=False):
     False -- if catch_errors is set and an error occurred
 
     """
-    print ' '.join(cmd_line)
+    if log_level >= PRINT_GIT_COMMANDS:
+        print ' '.join(cmd_line)
     try:
         if quiet:
             devnull = open(os.devnull, 'w')
@@ -256,7 +272,8 @@ def run_system_cmd(cmd_line, catch_errors=False, quiet=False):
 
 def run_system_cmd_get_output(cmd_line):
     """Run a system command and return output as array of lines"""
-    print ' '.join(cmd_line)
+    if log_level >= PRINT_GIT_COMMANDS:
+        print ' '.join(cmd_line)
     try:
         output = check_output(cmd_line)
         return output.splitlines()
