@@ -26,7 +26,6 @@ because he considers it better to use the proper git (porcelain) commands:
 """
 
 
-import os
 import subprocess
 import sys
 import time
@@ -43,7 +42,7 @@ if not (sys.hexversion >= 0x02060000):
 
 # Backport Python 2.7 subprocess commands if necessary:
 try:
-    from subprocess import CalledProcessError, check_call, check_output
+    from subprocess import CalledProcessError
 except ImportError:
     # Use definition from Python 2.7 subprocess module:
     class CalledProcessError(Exception):
@@ -55,33 +54,6 @@ except ImportError:
         def __str__(self):
             return "Command '%s' returned non-zero exit status %d" \
                 % (self.cmd, self.returncode)
-
-    # Use definitions from Python 2.7 subprocess module:
-    def check_call(*popenargs, **kwargs):
-        retcode = subprocess.call(*popenargs, **kwargs)
-        if retcode:
-            cmd = kwargs.get("args")
-            if cmd is None:
-                cmd = popenargs[0]
-            raise CalledProcessError(retcode, cmd)
-        return 0
-
-    def check_output(*popenargs, **kwargs):
-        if 'stdout' in kwargs:
-            raise ValueError(
-                'stdout argument not allowed, it will be overridden.'
-            )
-        process = subprocess.Popen(
-            stdout=subprocess.PIPE, *popenargs, **kwargs
-        )
-        output, unused_err = process.communicate()
-        retcode = process.poll()
-        if retcode:
-            cmd = kwargs.get("args")
-            if cmd is None:
-                cmd = popenargs[0]
-            raise CalledProcessError(retcode, cmd, output=output)
-        return output
 
 
 usage_text = '\n'.join([
@@ -175,8 +147,7 @@ def git_branch_name():
 def git_branch_exists(branch_name):
     return git(
         ['rev-parse', '--verify', branch_name],
-        catch_errors=True,
-        quiet=True
+        catch_errors=True
     )
 
 
@@ -190,7 +161,7 @@ def git_hash(commit):
     return git_output(['rev-parse', '--verify', '%s^{commit}' % (commit, )])
 
 
-def git(cmd_list, catch_errors=False, quiet=False):
+def git(cmd_list, catch_errors=False):
     """Run git with the given commands.
 
     E.g.
@@ -202,7 +173,6 @@ def git(cmd_list, catch_errors=False, quiet=False):
     Arguments:
     cmd_line     -- the git subcommand to run
     catch_errors -- if True, catch process errors
-    quiet        -- if True, suppress any output from the git command
 
     Return:
     True  -- if command execution was successful
@@ -211,7 +181,7 @@ def git(cmd_list, catch_errors=False, quiet=False):
     """
     cmd_line = ['git']
     cmd_line.extend(cmd_list)
-    return run_system_cmd(cmd_line, catch_errors, quiet)
+    return run_system_cmd(cmd_line, catch_errors)
 
 
 def git_output(cmd_list):
@@ -240,13 +210,12 @@ def git_outputs(cmd_list):
     return run_system_cmd_get_output(cmd_line)
 
 
-def run_system_cmd(cmd_line, catch_errors=False, quiet=False):
+def run_system_cmd(cmd_line, catch_errors=False):
     """Run a system command, writing output to the terminal.
 
     Arguments:
     cmd_line     -- the command to run
     catch_errors -- catch any process errors
-    quiet        -- if True, suppress any output from the command
 
     Return:
     True  -- if command execution was successful
@@ -255,31 +224,51 @@ def run_system_cmd(cmd_line, catch_errors=False, quiet=False):
     """
     if log_level >= PRINT_GIT_COMMANDS:
         print ' '.join(cmd_line)
-    try:
-        if quiet:
-            devnull = open(os.devnull, 'w')
-            check_call(cmd_line, stdout=devnull, stderr=devnull)
-        else:
-            check_call(cmd_line)
-        return True
-    except CalledProcessError, e:
+    process = subprocess.Popen(
+        cmd_line,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+    # FIXME: for huge outpout, this will hang
+    std_output, err_output = process.communicate()
+    std_output = std_output.splitlines()
+    err_output = err_output.splitlines()
+    retcode = process.poll()
+    if retcode or log_level >= PRINT_OUTPUT:
+        log_output('STDOUT:', std_output)
+        log_output('STDERR:', err_output)
+    if retcode:
         if catch_errors:
             return False
-        else:
-            print e
-            sys.exit(1)
+        raise CalledProcessError(retcode, cmd_line)
+    else:
+        return True
 
 
 def run_system_cmd_get_output(cmd_line):
     """Run a system command and return output as array of lines"""
     if log_level >= PRINT_GIT_COMMANDS:
         print ' '.join(cmd_line)
-    try:
-        output = check_output(cmd_line)
-        return output.splitlines()
-    except CalledProcessError, e:
-        print e
-        sys.exit(1)
+    process = subprocess.Popen(
+        cmd_line,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+    # FIXME: for huge outpout, this will hang
+    std_output, err_output = process.communicate()
+    std_output = std_output.splitlines()
+    err_output = err_output.splitlines()
+    retcode = process.poll()
+    if retcode or log_level >= PRINT_OUTPUT:
+        log_output('STDOUT:', std_output)
+        log_output('STDERR:', err_output)
+    if retcode:
+        raise CalledProcessError(retcode, cmd_line)
+    else:
+        return std_output
+
+
+def log_output(prefix, lines):
+    for line in lines:
+        print prefix, line
 
 
 class Command(object):
