@@ -725,10 +725,6 @@ class OptionFlag(object):
             else:
                 raise Exception('Unknown status %s' % (str(status), ))
 
-    def get_overview(self):
-        """Return the overview line for 'git pc -h'"""
-        return self.overview
-
     def add_to(self, parser):
         """Add this option to an optparse.OptionParser"""
         parser.add_option(
