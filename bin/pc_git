@@ -1,7 +1,7 @@
 #!/usr/bin/python2
 # -*- coding: utf-8 -*-   vim: set fileencoding=utf-8 :
 
-'''
+"""
 
 THIS SCRIPT IS STILL IN ITS EARLY TESTING PHASE.
 DON'T USE UNLESS YOU ARE EXPLICITLY ASKED TO.
@@ -27,7 +27,7 @@ because he considers it better to use the proper git (porcelain) commands:
    Sooner or later you will want to use git on a computer without git-pc
    in your path.
 
-'''
+"""
 
 
 import os
@@ -136,7 +136,7 @@ def create_command_list():
 
 
 def create_tag_name(prefix):
-    '''Create a tag name including a time stamp.'''
+    """Create a tag name including a time stamp."""
     tag = '%s-%s' % (
         prefix,
         time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
@@ -145,12 +145,12 @@ def create_tag_name(prefix):
 
 
 def git_head():
-    '''Return the SHA1 of the current HEAD'''
+    """Return the SHA1 of the current HEAD"""
     return git_hash('HEAD')
 
 
 def git_branch_name():
-    '''Return the name of the current branch, or None (if detached)'''
+    """Return the name of the current branch, or None (if detached)"""
     try:
         long_name = git_output(['symbolic-ref', '-q', 'HEAD'])
         return long_name.replace('refs/heads/', '')
@@ -170,17 +170,17 @@ def git_branch_exists(branch_name):
 
 
 def git_commits_equal(c1, c2):
-    '''Do the two commit-ishs represent the same commit?'''
+    """Do the two commit-ishs represent the same commit?"""
     return git_hash(c1) == git_hash(c2)
 
 
 def git_hash(commit):
-    '''Return the SHA1 of the current HEAD'''
+    """Return the SHA1 of the current HEAD"""
     return git_output(['rev-parse', '--verify', '%s^{commit}' % (commit, )])
 
 
 def git(cmd_list, catch_errors=False, quiet=False):
-    '''Run git with the given commands.
+    """Run git with the given commands.
 
     E.g.
       git(['checkout', 'master'])
@@ -197,19 +197,19 @@ def git(cmd_list, catch_errors=False, quiet=False):
     True  -- if command execution was successful
     False -- if catch_errors is set and an error occurred
 
-    '''
+    """
     cmd_line = ['git']
     cmd_line.extend(cmd_list)
     return run_system_cmd(cmd_line, catch_errors, quiet)
 
 
 def git_output(cmd_list):
-    '''Run git with the given commands; return the first line of output.
+    """Run git with the given commands; return the first line of output.
 
     E.g.
       head = git_output(['rev-parse', 'HEAD'])
 
-    '''
+    """
     outputs = git_outputs(cmd_list)
     if (outputs):
         return outputs[0]
@@ -218,19 +218,19 @@ def git_output(cmd_list):
 
 
 def git_outputs(cmd_list):
-    '''Run git with the given commands; return the output as array of lines.
+    """Run git with the given commands; return the output as array of lines.
 
     E.g.
       status_lines = git_output(['status', '--short'])
 
-    '''
+    """
     cmd_line = ['git']
     cmd_line.extend(cmd_list)
     return run_system_cmd_get_output(cmd_line)
 
 
 def run_system_cmd(cmd_line, catch_errors=False, quiet=False):
-    '''Run a system command, writing output to the terminal.
+    """Run a system command, writing output to the terminal.
 
     Arguments:
     cmd_line     -- the command to run
@@ -241,7 +241,7 @@ def run_system_cmd(cmd_line, catch_errors=False, quiet=False):
     True  -- if command execution was successful
     False -- if catch_errors is set and an error occurred
 
-    '''
+    """
     print ' '.join(cmd_line)
     try:
         if quiet:
@@ -259,7 +259,7 @@ def run_system_cmd(cmd_line, catch_errors=False, quiet=False):
 
 
 def run_system_cmd_get_output(cmd_line):
-    '''Run a system command and return output as array of lines'''
+    """Run a system command and return output as array of lines"""
     print ' '.join(cmd_line)
     try:
         output = check_output(cmd_line)
@@ -270,12 +270,12 @@ def run_system_cmd_get_output(cmd_line):
 
 
 class Command(object):
-    '''A subcommand of \'git pc\''''
+    """A subcommand of 'git pc'"""
 
     __metaclass__ = ABCMeta
 
     def __init__(self, name, overview, usage, flags=()):
-        '''Describe the subcommand and define its interface.
+        """Describe the subcommand and define its interface.
 
         Options:
           name         -- name for calling the subcommand
@@ -284,7 +284,8 @@ class Command(object):
           flags        -- a list of OptionFlag objects defining the
                           options of the subcommand
           args         -- the raw arguments given on the command line
-        '''
+
+        """
         self.name = name
         self.overview = overview
         self.parser = OptionParser(usage=usage)
@@ -423,12 +424,12 @@ class PanicCommand(Command):
         run_system_cmd(cmd)
 
     def _get_common_args(self, include_dangling):
-        '''Return a list of arguments.
+        """Return a list of arguments.
 
         These arguments make the 'git log' family of commands show
         practically every kown commit.
 
-        '''
+        """
         args = ['--reflog', '--all']
         stashes = [
             line.split(':')[0]
@@ -441,13 +442,14 @@ class PanicCommand(Command):
         return args
 
     def _dangling_commits(self):
-        '''Return a list of dangling commits.
+        """Return a list of dangling commits.
 
         This includes in particular dropped stashes.
 
         Note that 'git fsck --dangling' would do, but git 1.7 doesn't know
         that option yet.
-        '''
+
+        """
         return [
             line.split()[2]
             for line in git_outputs([
@@ -458,13 +460,13 @@ class PanicCommand(Command):
 
 
 class FfUpdateCommand(Command):
-    '''Fast-forward update a branch without checking it out.
+    """Fast-forward update a branch without checking it out.
 
     Adopted and simplified from
     http://stackoverflow.com/questions/4156957/
           /merging-branches-without-checkout/4157435#4157435
 
-    '''
+    """
 
     def __init__(self):
         Command.__init__(
@@ -698,7 +700,7 @@ class UpdateAndPushCommand(Command):
 
 
 class OptionFlag(object):
-    '''Specification for a command-line option'''
+    """Specification for a command-line option"""
 
     def __init__(
             self, short, long, help, action=None, dest=None, default=None,
@@ -719,11 +721,11 @@ class OptionFlag(object):
                 raise Exception('Unknown status %s' % (str(status), ))
 
     def get_overview(self):
-        '''Return the overview line for \'git pc -h\''''
+        """Return the overview line for 'git pc -h'"""
         return self.overview
 
     def add_to(self, parser):
-        '''Add this option to an optparse.OptionParser'''
+        """Add this option to an optparse.OptionParser"""
         parser.add_option(
             self.short, self.long,
             action=self.action,
@@ -734,7 +736,7 @@ class OptionFlag(object):
 
 
 class UnrecordedChanges(object):
-    '''Record and remove unrecorded changes that we want to restore later.
+    """Record and remove unrecorded changes that we want to restore later.
 
     Conceptually, this is similar to a stash, but our implementation does
     not use 'git stash --include-untracked', because the untracked files
@@ -746,7 +748,7 @@ class UnrecordedChanges(object):
     It creates a detached commit (which is not stored anywhere in the
     ref namespace).
 
-    '''
+    """
 
     def __init__(self, log_message='Unrecorded changes', reset=False):
         self.log_message = log_message
