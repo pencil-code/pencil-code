@@ -98,6 +98,9 @@ pc_configtest:
 pc_tecplot:
 	( cd src && \
 	  $(MAKE) FROM_PARENT=src/ pre_and_post_processing/pc_tecplot.x )
+pc_tecplot_solid:
+	( cd src && \
+	  $(MAKE) FROM_PARENT=src/ pre_and_post_processing/pc_tecplot_solid.x )
 pc_meanfield_collect:
 	( cd src && \
 	  $(MAKE) FROM_PARENT=src/ experimental/pc_meanfield_collect.x )
