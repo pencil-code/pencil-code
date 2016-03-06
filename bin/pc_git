@@ -512,7 +512,7 @@ class FfUpdateCommand(Command):
 
         merge_base = git_output(['merge-base', branch, upstream])
         if git_commits_equal(merge_base, upstream):
-            print 'Branch %s is ahead of upstream'
+            print 'Branch %s is ahead of upstream' % (branch, )
             return
 
         is_ff = git_commits_equal(merge_base, branch)
