@@ -249,8 +249,8 @@ def _run(cmd_line):
     err_output = err_output.splitlines()
     retcode = process.poll()
     if retcode or log_level >= PRINT_OUTPUT:
-        log_output('STDOUT:', std_output)
-        log_output('STDERR:', err_output)
+        log_output('OUT:', std_output)
+        log_output('ERR:', err_output)
     return retcode, std_output
 
 
