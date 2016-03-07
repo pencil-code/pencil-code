@@ -2213,9 +2213,12 @@ pre_and_post_processing/pc_tecplot_solid.x: pre_and_post_processing/pc_tecplot_s
 #
 experimental/analyzers.o experimental/analyzers.mod:
 experimental/emd.o experimental/emd.mod:
-experimental/pc_meanfield_collect.o: experimental/pc_meanfield_collect.f90 $(start) |  experimental/emd.o experimental/analyzers.o
+experimental/pc_meanfield_collect.o: experimental/pc_meanfield_collect.f90 $(start) | experimental/analyzers.o
 experimental/pc_meanfield_collect.x: experimental/pc_meanfield_collect.o
 	$(LD) experimental/analyzers.o experimental/pc_meanfield_collect.o $(LDFLAGS) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) $(start) -o experimental/pc_meanfield_collect.x
+experimental/pc_h5collect.o: experimental/pc_h5collect.f90 $(start) | experimental/analyzers.o
+experimental/pc_h5collect.x: experimental/pc_h5collect.o
+	$(LD) experimental/analyzers.o experimental/pc_h5collect.o $(LDFLAGS) $(LD_MPI) $(LD_FOURIER) $(LD_GSL) $(start) -o experimental/pc_h5collect.x
 #
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c combine_videofiles.f90 read_videofiles.f90 read_all_videofiles.f90
 PC_XMLEXPORT=$(PENCIL_HOME)/bin/pc_xmlexport

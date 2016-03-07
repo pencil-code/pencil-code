@@ -4,72 +4,55 @@ module Analyzers
   implicit none
 
   abstract interface
-    function AnalyzerTemplate(dataset,xdim1,xdim2,tlen,resultlen1,resultlen2) result(analysis)
+    function AnalyzerTemplate(dataset,xdim1,xdim2,xdim3,tlen,resultlen) result(analysis)
       implicit none
-      integer,intent(in) :: xdim1,xdim2,tlen,resultlen1,resultlen2
-      real, dimension(xdim1,xdim2,tlen), intent(in) :: dataset
-      real, dimension(xdim1,xdim2,resultlen1,resultlen2) :: analysis
+      integer,intent(in) :: xdim1,xdim2,xdim3,tlen,resultlen
+      real, dimension(xdim1,xdim2,xdim3,tlen), intent(in) :: dataset
+      real, dimension(xdim1,xdim2,xdim3,resultlen) :: analysis
     end function AnalyzerTemplate
   end interface
 
-  integer, parameter :: npossibleanalyzers = 3
+  integer, parameter :: npossibleanalyzers = 2
   character(len=30), dimension(npossibleanalyzers), parameter :: possibleanalyzers = &
-                                       [ character(len=30) :: 'sum', 'average', 'identity']
+                                       [ character(len=30) :: 'mean', 'data']
 !                                       [ character(len=30) :: 'sum', 'average', 'identity', 'emd']
   
   contains
 
-  subroutine getAnalyzer(analyzername,analyzer,resultlen1,resultlen2)
+  subroutine getAnalyzer(analyzername,analyzer,resultlen)
     implicit none
     character(len=30), intent(in) :: analyzername
     procedure(AnalyzerTemplate), pointer , intent(inout):: analyzer
-    integer, intent(inout) :: resultlen1,resultlen2
-    if (trim(analyzername) == 'sum') then
-      resultlen1  = 1
-      resultlen2  = 1
-      analyzer => analyzer_sum
-    else if (trim(analyzername) == 'average') then
-      resultlen1  = 1
-      resultlen2  = 1
-      analyzer => analyzer_average
-    else if (trim(analyzername) == 'identity') then
-      resultlen1  = resultlen1
-      resultlen2  = 1
-      analyzer => analyzer_identity
+    integer, intent(inout) :: resultlen
+    if (trim(analyzername) == 'mean') then
+      resultlen  = 1
+      analyzer => analyzer_mean
+    else if (trim(analyzername) == 'data') then
+      resultlen  = resultlen
+      analyzer => analyzer_data
     !else if (trim(analyzername) == 'emd') then
-    !  resultlen1  = resultlen1
-    !  resultlen2  = 10
+    !  resultlen  = resultlen
     !  analyzer => analyzer_emd
     else
-      resultlen1  = -1
-      resultlen2  = -1
+      resultlen  = -1
       nullify(analyzer)
     end if
   end subroutine getAnalyzer
 
-  function analyzer_sum(dataset, xdim1, xdim2, tlen, resultlen1, resultlen2) result(analysis)
+  function analyzer_mean(dataset, xdim1, xdim2, xdim3, tlen, resultlen) result(analysis)
     implicit none
-    integer,intent(in) :: xdim1,xdim2,tlen,resultlen1,resultlen2
-    real, dimension(xdim1,xdim2,tlen), intent(in) :: dataset
-    real, dimension(xdim1,xdim2,resultlen1,resultlen2) :: analysis
-    analysis(1:xdim1,1:xdim2,1,1) = sum(dataset,dim=3)
+    integer,intent(in) :: xdim1,xdim2,xdim3,tlen,resultlen
+    real, dimension(xdim1,xdim2,xdim3,tlen), intent(in) :: dataset
+    real, dimension(xdim1,xdim2,xdim3,resultlen) :: analysis
+    analysis(1:xdim1,1:xdim2,1:xdim3,1) = sum(dataset,dim=4)/tlen
   end function
 
-  function analyzer_average(dataset, xdim1, xdim2, tlen, resultlen1, resultlen2) result(analysis)
+  function analyzer_data(dataset, xdim1, xdim2, xdim3, tlen, resultlen) result(analysis)
     implicit none
-    integer,intent(in) :: xdim1,xdim2,tlen,resultlen1,resultlen2
-    real, dimension(xdim1,xdim2,tlen), intent(in) :: dataset
-    real, dimension(xdim1,xdim2,resultlen1,resultlen2) :: analysis
-    analysis(1:xdim1,1:xdim2,1,1) = sum(dataset,dim=3)/tlen
-  end function
-
-  function analyzer_identity(dataset, xdim1, xdim2, tlen, resultlen1, resultlen2) result(analysis)
-    implicit none
-    integer,intent(in) :: xdim1,xdim2,tlen,resultlen1,resultlen2
-    real, dimension(xdim1,xdim2,tlen), intent(in) :: dataset
-    real, dimension(xdim1,xdim2,resultlen1,resultlen2) :: analysis
-    write(*,*) 'analyzing...identity', xdim1, xdim2, tlen, resultlen1, resultlen2
-    analysis(:,:,1:tlen,1) = dataset(:,:,1:tlen)
+    integer,intent(in) :: xdim1,xdim2,xdim3,tlen,resultlen
+    real, dimension(xdim1,xdim2,xdim3,tlen), intent(in) :: dataset
+    real, dimension(xdim1,xdim2,xdim3,resultlen) :: analysis
+    analysis(1:xdim1,1:xdim2,1:xdim3,1:tlen) = dataset(1:xdim1,1:xdim2,1:xdim3,1:tlen)
   end function
 
 end module Analyzers

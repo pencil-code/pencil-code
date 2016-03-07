@@ -292,4 +292,5 @@ pre_and_post_processing/pc_tecplot_solid.o: $(physics) $(technical_nompi) $(EQU_
 experimental/analyzers.o:
 #
 experimental/pc_meanfield_collect.o: experimental/analyzers.o
+experimental/pc_h5collect.o: experimental/analyzers.o
 #
