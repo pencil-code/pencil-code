@@ -178,7 +178,7 @@ module Pencil_check
           if (lfound_nan(iv)) then
             print*, 'pencil_consistency_check: NaNs in "df" at variable', &
                 iv, ' for pencil ', trim(pencil_names(penc))
-            print*, '                          Numbers of variables are in "data/index.pro".'
+            print*, 'pencil_consistency_check: numbers of variables are in "data/index.pro".'
           endif
         enddo
 !
@@ -272,7 +272,7 @@ f_loop:   do iv=1,mvar
       do iv=1,mvar
         if (lfound_nan(iv)) then
           print*, 'pencil_consistency_check: NaNs in df at variable', iv
-          print*, '                          Numbers of variables are in "data/index.pro".'
+          print*, 'pencil_consistency_check: numbers of variables are in "data/index.pro".'
         endif
       enddo
 !
