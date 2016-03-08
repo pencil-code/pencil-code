@@ -306,7 +306,7 @@ Examples:
                     # referece.out{,.double} file
   pc_auto-test --level=1         # run all level 1 tests
   pc_auto-test -l --max-level=1  # list test dirs in levels 0 and 1
-  pc_auto-test -al  # list all dirs `pc_auto-test -a' would run in
+  pc_auto-test -al  # list all dirs 'pc_auto-test -a' would run in
   pc_auto-test -aL  # list all run dirs under samples/, even those without
                     # reference data
   pc_auto-test --script-tests    # standard program, plus all supported
@@ -440,7 +440,7 @@ chomp($host);
 
 my $nice = "";
 if ($niceval != 0) { $nice = "\\nice -n $niceval" };
-# Note: Csh's builtin `nice' cmd has a different calling syntax, so we
+# Note: Csh's builtin 'nice' cmd has a different calling syntax, so we
 # need to use ther real nice cmd here.
 
 my @testdirs;                   # full names of all dirs to run tests in
@@ -509,7 +509,7 @@ my $t0_global = get_time();         # remember start time
 
 if (@ARGV) {
     ## Process dirs given in cmd line
-    @ARGV = map { s{^(?!/)}{$cwd/}; $_ } @ARGV; # Make `.' and similar work
+    @ARGV = map { s{^(?!/)}{$cwd/}; $_ } @ARGV; # Make '.' and similar work
     $ntests = @ARGV;
     for my $d (@ARGV) {
         test_rundir("$d", $makeopts);
@@ -647,12 +647,12 @@ sub get_lock {
         } elsif ($pid_cmd =~ /auto-test\s*$/) { # pid belongs to auto-test
             print "Failed getting lock (lock file is $lockfile):\n"
                   . "Another auto test is running as pid $pid\n"
-                  . "Use `pc_auto-test --nolock' to ignore the lock file\n";
+                  . "Use 'pc_auto-test --nolock' to ignore the lock file\n";
             return 0;
         } else {                # pid belongs to other process
             print "Failed getting lock (lock file is <$lockfile>):\n"
                   . "Another process runs as pid $pid (this is weird...)\n"
-                  . "Use `pc_auto-test --nolock' to ignore the lock file\n";
+                  . "Use 'pc_auto-test --nolock' to ignore the lock file\n";
             return 0;
         }
     } else {
@@ -734,7 +734,7 @@ sub my_ok {
         $timestr = '';
     }
 
-    # Allow for calls like `ok(0)' or `ok(1)':
+    # Allow for calls like 'ok(0)' or 'ok(1)':
     if (!defined($arg2)) {
         $arg2 = $arg1 ? $arg1 : 1;
     }
@@ -786,12 +786,12 @@ sub find_test_dirs {
 }
 # ---------------------------------------------------------------------- #
 sub FF_wanted {
-# `wanted' function for File::Find, i.e. callback function that is called
+# 'wanted' function for File::Find, i.e. callback function that is called
 # from each file or directory found.
 
     my $name = $File::Find::name;
 
-    # Suppress spurious `used only once' warning:
+    # Suppress spurious 'used only once' warning:
     my $dummy = "$File::Find::prune $File::Find::name";
 
     if (-d $name) {
@@ -814,7 +814,7 @@ sub test_shell_cmd {
     my $cmd   = shift;
     my $dir   = (shift || "<Unknown directory>");
     my $phase = (shift || "<Unknown phase>");
-    my $quiet = (shift || 0);   # flag for suppressing the `ok'
+    my $quiet = (shift || 0);   # flag for suppressing the 'ok'
     my $t_ref = shift;
 
     print STDERR "\nRunning `$nice $cmd`" if ($debug);
@@ -860,7 +860,7 @@ sub test_perl_cmd {
     return test_timelimited_perl_cmd($cmd, 0, @_);
     my $dir   = (shift || "<Unknown directory>");
     my $phase = (shift || "<Unknown phase>");
-    my $quiet = (shift || 0);   # flag for suppressing the `ok'
+    my $quiet = (shift || 0);   # flag for suppressing the 'ok'
     my $t_ref = shift;
 
     print STDERR "\nRunning Perl command" if ($debug);
@@ -886,7 +886,7 @@ sub test_timelimited_perl_cmd {
     my $time_limit   = shift;
     my $dir   = (shift || "<Unknown directory>");
     my $phase = (shift || "<Unknown phase>");
-    my $quiet = (shift || 0);   # flag for suppressing the `ok'
+    my $quiet = (shift || 0);   # flag for suppressing the 'ok'
     my $t_ref = shift;
 
     print STDERR "\nRunning Perl command" if ($debug);
@@ -1262,7 +1262,7 @@ sub test_rundir {
     $itest++;
 
     # Make sure we have everything we need
-    if (! defined(-e 'src/run.f90')) { # has `pc_setupsrc' been run yet?
+    if (! defined(-e 'src/run.f90')) { # has 'pc_setupsrc' been run yet?
         my $res = `pc_setupsrc --pencil-home $pencil_home 2>&1`;
         if ($?) {
             print "    Problems running pc_setupsrc:\n", $res;
@@ -1435,7 +1435,7 @@ sub quote {
 sub compactify {
 # Remove uninteresting parts from a rund directory's file name
     my ($text) = @_;
-    $text =~ s{/+\\\.$}{};      # drop trailing `/.' from path names
+    $text =~ s{/+\\\.$}{};      # drop trailing '/.' from path names
     $text =~ s|.*$ENV{PENCIL_HOME}/||;
     $text =~ s{.*/pencil-(code|auto-test)/}{};
     return $text;
@@ -1496,7 +1496,7 @@ sub postprocess {
 
     print STDERR "  PP: Cleaning compiler output with <$postproc>\n"
       if ($debug);
-    # open read/write pipe to postprocessor (see `man perlipc')
+    # open read/write pipe to postprocessor (see 'man perlipc')
     my $pid = open2(\*POSTPROCD,\*UNPROCD, "$postproc 2>&1");
     die "Couldn't start $postproc" unless defined($pid);
     # fork() a child to avoid deadlock if $text is large
@@ -1536,7 +1536,7 @@ sub write_to_file {
         open(FILE,"> $file") or die "Cannot open file $file for writing\n";
         if ($header) {
             my $shortfile = $file;
-            $shortfile =~ s{/\./}{/}g; # remove `./' path components
+            $shortfile =~ s{/\./}{/}g; # remove './' path components
             $shortfile =~ s{^.*?([^/]*/?[^/]*)$}{$1}g; # keep only last path component
             print FILE "$shortfile\n";
             print FILE "-" x length($shortfile), "\n";
@@ -1576,8 +1576,8 @@ sub get_maintainers {
     my @emails = ();
     my $reader = Pencil::ReadmeReader->new($readme);
     foreach my $maint ($reader->get_content('Maintainer')) {
-        $maint =~ s{(\[at\]|\@)}{/}; # obfuscate `@' (may end up on the web)
-        $maint =~ s{(\[dot\]|\.)}{:}g;   # obfuscate `.'
+        $maint =~ s{(\[at\]|\@)}{/}; # obfuscate '@' (may end up on the web)
+        $maint =~ s{(\[dot\]|\.)}{:}g;   # obfuscate '.'
         $maint =~ s{^\s*(.*?)\s*$}{$1}; # strip surrounding whitespace
         if ($maint =~ /<([^>]*)>/) {
             $maint = $1;
