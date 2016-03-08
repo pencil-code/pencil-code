@@ -430,6 +430,10 @@ module Particles_sink
             iproc, it, itsub
       endif
 !
+!  ineargrid (and inearblock) neads to be updated.
+!
+      call map_nearest_grid(fp, ineargrid)
+!
 !  Allocate array for keeping track of accretion attempts.
 !
       if (lsubgrid_accretion) then
