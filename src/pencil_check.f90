@@ -124,10 +124,12 @@ module Pencil_check
         if (lroot) then
           print*, 'pencil_consistency_check: the presence of NaNs '// &
                'in df_ref makes this test impossible'
-          print*, 'pencil_consistency_check: quitting pencil check'
+          call stop_it_if_any(.true.,'pencil_consistency_check: '// &
+              'quitting pencil check')
         endif
-        stop
       endif
+      call stop_it_if_any(.false.,'')
+!
       if (notanumber(dt1_max_ref)) &
           print*, 'pencil_consistency_check: NaNs in dt1_max_ref'
 !
