@@ -118,7 +118,7 @@ program pc_h5collect
   end interface
 
   
-  namelist /collect_config/ datagroups
+  namelist /collect_config/ datagroups, ldebug
   namelist /xaver_config/ analyzernames, maxtimesteps
   namelist /zaver_config/ analyzernames, maxtimesteps
 
@@ -139,8 +139,9 @@ program pc_h5collect
   maxtimesteps = huge(maxtimesteps)
   
   initerror = .false.
-  runerror = .false.
-  received = .false.
+  runerror  = .false.
+  received  = .false.
+  ldebug    = .false.
 
   lroot = (iproc==root)
 
@@ -450,7 +451,6 @@ program pc_h5collect
           call OpenH5File()
         else if (command == command_hdfclose) then
           call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
-          write(*,*) 'HDF close call', iproc
           call CloseH5File()
         else if (command == command_analyze) then
           ! MPI communication part
@@ -464,7 +464,7 @@ program pc_h5collect
           call MPI_SEND(received, 1, &
                         MPI_LOGICAL, root, 3, MPI_COMM_WORLD, mpierr)
           chproc = itoa (fake_proc)
-          call directory_names_std()
+          call safe_character_assign(directory, trim(datadir)//'/proc'//chproc)
           call safe_character_assign (datafile, &
                trim(directory)//'/'//trim(datafilename))
 
@@ -473,18 +473,17 @@ program pc_h5collect
       
           call Analyze()
         else
-          write(*,*) 'Received shutdown command at ', iproc
           exit
         end if
       end do
     end if
   end if
 
-  write(*,*) 'Time taken: ', MPI_WTIME() - analysisstart
   call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
   call H5close_F(hdferr)
   call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
-  write(*,*) 'Everything works ', iproc
+  write(*,*) 'Worker ', iproc, ' finished.'
+  write(*,*) 'Time taken: ', MPI_WTIME() - analysisstart
   call MPI_FINALIZE(mpierr)
 
   contains
@@ -544,9 +543,16 @@ program pc_h5collect
         end if
       end if
       if (.not. allocated(dataarray_full)) then
-        allocate(dataarray_full(nfields,dims(1),dims(2),dims(3),ntimesteps),stat=ierr)
+        allocate(dataarray_full(dims(1),dims(2),dims(3),nfields, ntimesteps),stat=ierr)
         if (ierr /= 0) then
           write(2,*) 'Error allocating dataarray_full'
+          runerror = .true.
+        end if
+      end if
+      if (.not. allocated(dataarray)) then
+        allocate(dataarray(dims(1),dims(2),dims(3),nfields),stat=ierr)
+        if (ierr /= 0) then
+          write(2,*) 'Error allocating dataarray'
           runerror = .true.
         end if
       end if
@@ -561,11 +567,9 @@ program pc_h5collect
           action='read', status='old', IOSTAT=ierr)
       do i=1,ntimesteps
         read(1, IOSTAT=ierr) t_values(i)
-        read(1, IOSTAT=ierr) dataarray_full(1:nfields, 1:dims(1), 1:dims(2), 1:dims(3), i)
+        read(1, IOSTAT=ierr) dataarray_full(1:dims(1), 1:dims(2), 1:dims(3), 1:nfields, i)
       end do
-    
-      write(*,*) t_values(1:ntimesteps)
-       
+
       do ianalyzer=1,nanalyzers
         nullify(analyzerfunction)
         resultlen = ntimesteps
@@ -583,15 +587,15 @@ program pc_h5collect
         end if
 
         do ifield=1,nfields
-          dataarray(1:dims(1),1:dims(2),1:dims(3),1:resultlen) = analyzerfunction(dataarray_full(ifield,:,:,:,:), &
+          dataarray(1:dims(1),1:dims(2),1:dims(3),1:resultlen) = analyzerfunction(dataarray_full(:,:,:,ifield,:), &
                                  dims(1), dims(2), dims(3), ntimesteps, resultlen)
-
+          
           ! Parallel data writing to HDF file
           call H5Dget_space_F(hdf_datasets(ianalyzer,ifield), hdf_filespace, hdferr)
           hdf_offsets  = [ offsets(1,1), offsets(2,1), offsets(3,1), offsets(4,1) ]
           hdf_stride   = [ 1, 1, 1, 1 ]
-          hdf_block    = [ dims(1), dims(2), dims(3), resultlen ]
-          hdf_count    = [ 1, 1, 1, 1 ]
+          hdf_block    = [ dims(1), dims(2), dims(3), 1 ]
+          hdf_count    = [ 1, 1, 1, resultlen ]
 
           call H5Sselect_hyperslab_F(hdf_filespace, H5S_SELECT_SET_F, hdf_offsets, hdf_count, &
                                      hdferr, hdf_stride, hdf_block)
@@ -602,17 +606,6 @@ program pc_h5collect
                                      file_space_id  = hdf_filespace, &
                                      mem_space_id   = hdf_chunkspaces(ianalyzer, ifield))
 
-          if (hdferr /= 0) then
-            write(*,*) 'Dims: ', dims, ntimesteps
-            write(*,*) 'Offsets: ',offsets
-            write(*,*) 'HDF dims: ', hdf_dims(:,ianalyzer)
-            write(*,*) 'HDF chunkdims: ', hdf_chunkdims
-            write(*,*) 'Error writing dataset'
-            write(2,*) 'Error writing dataset'
-            exit
-          end if
-          !call sleep(10)
-          call H5Fflush_F(hdf_fileid, H5F_SCOPE_LOCAL_F, hdferr)
           call H5Sclose_F(hdf_filespace, hdferr)
 
         end do
@@ -620,8 +613,8 @@ program pc_h5collect
       end do
 
       t_taken_full = MPI_WTIME() - t_taken_full
-      write(*,*) 'Time taken by the whole analysis: ' , t_taken_full
-      write(2,*) 'Time taken by the whole analysis: ' , t_taken_full
+      write(*,*) 'Worker '//trim(chproc)//' finished analyzing '//trim(datagroup)//'. Time taken: ' , t_taken_full
+      write(2,*) 'Worker '//trim(chproc)//' finished analyzing '//trim(datagroup)//'. Time taken: ' , t_taken_full
 
       close(1)
 
@@ -764,7 +757,6 @@ program pc_h5collect
         do ianalyzer=1,nanalyzers
           resultlen = ntimesteps
           call getAnalyzer(analyzernames(ianalyzer),analyzerfunction,resultlen)
-          write(*,*) iproc, ianalyzer, dims_full, resultlen
           hdf_dims_full(:,ianalyzer) = [dims_full(1), dims_full(2), dims_full(3), resultlen]
           hdf_dims(:,ianalyzer)      = [dims(1), dims(2), dims(3), resultlen]
           hdf_maxdims(:,ianalyzer) = [dims_full(1), dims_full(2), dims_full(3), -1]
@@ -779,13 +771,13 @@ program pc_h5collect
         hdf_chunkdims(4) = 1
 
         call H5Gcreate_F(hdf_fileid, "/"//trim(datagroup), hdf_datagroup, hdferr)
-        if (lroot) then
+        if (lroot .and. ldebug) then
           write(*,*) 'CreatedG: ', "/"//trim(datagroup)
         end if
         do ifield=1,nfields
           call H5Gcreate_F(hdf_datagroup, "/"//trim(datagroup)//"/"//fields(ifield), &
                          hdf_fieldgroups(ifield), hdferr)
-          if (lroot) then
+          if (lroot .and. ldebug) then
             write(*,*) 'CreatedG: ', "/"//trim(datagroup)//"/"//fields(ifield)
           end if
           do ianalyzer=1,nanalyzers
@@ -793,7 +785,7 @@ program pc_h5collect
                                     hdf_spaces(ianalyzer,ifield), hdferr, hdf_maxdims)
             call H5Screate_simple_F(4, hdf_dims(:,ianalyzer), &
                                     hdf_chunkspaces(ianalyzer,ifield), hdferr, hdf_maxdims)
-            if (lroot) then
+            if (lroot .and. ldebug) then
               write(*,*) 'CreatedS: ', trim(analyzernames(ianalyzer))
             end if
             call H5Pcreate_F(H5P_DATASET_CREATE_F, hdf_plist_ids(ianalyzer,ifield), hdferr)
@@ -808,7 +800,7 @@ program pc_h5collect
             call H5DSset_label_F(hdf_datasets(ianalyzer,ifield),1,'t', hdferr)
             
             call H5Sclose_F(hdf_spaces(ianalyzer,ifield), hdferr)
-            if (lroot) then
+            if (lroot .and. ldebug) then
               write(*,*) 'CreatedD: ', trim(analyzernames(ianalyzer))
             end if
           end do
@@ -826,21 +818,21 @@ program pc_h5collect
         do ianalyzer=1,nanalyzers
           call H5Dclose_F(hdf_datasets(ianalyzer,ifield),hdferr)
           call H5Pclose_F(hdf_plist_ids(ianalyzer,ifield), hdferr)
-          if (lroot) then
+          if (lroot .and. ldebug) then
             write(*,*) 'ClosedD: ', trim(analyzernames(ianalyzer))
           end if
           call H5Sclose_F(hdf_chunkspaces(ianalyzer,ifield), hdferr)
-          if (lroot) then
+          if (lroot .and. ldebug) then
             write(*,*) 'ClosedS: ', trim(analyzernames(ianalyzer))
           end if
         end do
         call H5Gclose_F(hdf_fieldgroups(ifield), hdferr)
-        if (lroot) then
+        if (lroot .and. ldebug) then
           write(*,*) 'ClosedG: ', "/"//trim(datagroup)//"/"//fields(ifield)
         end if
       end do
       call H5Gclose_F(hdf_datagroup, hdferr)
-      if (lroot) then
+      if (lroot .and. ldebug) then
         write(*,*) 'ClosedG: ', "/"//trim(datagroup)
       end if
       

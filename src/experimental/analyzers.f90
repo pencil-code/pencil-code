@@ -52,7 +52,7 @@ module Analyzers
     integer,intent(in) :: xdim1,xdim2,xdim3,tlen,resultlen
     real, dimension(xdim1,xdim2,xdim3,tlen), intent(in) :: dataset
     real, dimension(xdim1,xdim2,xdim3,resultlen) :: analysis
-    analysis(1:xdim1,1:xdim2,1:xdim3,1:tlen) = dataset(1:xdim1,1:xdim2,1:xdim3,1:tlen)
+    analysis(1:xdim1,1:xdim2,1:xdim3,1:resultlen) = dataset(1:xdim1,1:xdim2,1:xdim3,1:tlen)
   end function
 
 end module Analyzers
