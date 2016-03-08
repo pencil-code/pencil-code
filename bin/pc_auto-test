@@ -1006,25 +1006,37 @@ sub test_start {
 # Test starting only
     my $dir   = shift;
     my $t_ref = shift;          # start time
+    my $out;
 
     if ($t_start) {
         print "    Starting..             ";
         printf "$indi_fmt ", '';
 
+        # Start the initialization
         my $start_cmd = "@pc_run start";
         if ($time_limit) {
-            test_timelimited_shell_cmd(
+            $out = test_timelimited_shell_cmd(
                 $start_cmd,
                 $time_limit, 'start.x',
                 $dir, "starting",
                 NOQUIET, $t_ref
             );
         } else {
-            test_shell_cmd(
+            $out = test_shell_cmd(
                 $start_cmd,
                 $dir, "starting",
                 NOQUIET, $t_ref
             );
+        }
+
+        # Check for broken pencil check or floating-point exception
+        if ($out =~ /pencil_consistency_check:.*?\s+failed([\s,.]|$)/is) {
+            my_ok(0, 1, "Pencil consistency check failed.", $dir, "starting");
+            return;
+        }
+        if ($out =~ /floating[\s\-]point exception/is) {
+            my_ok(0, 1, "Floating-point exception.", $dir, "starting");
+            return;
         }
     }
 }
@@ -1066,6 +1078,16 @@ sub test_run {
                 $dir, "running",
                 NOQUIET, $t_ref
             );
+        }
+
+        # Check for broken pencil check or floating-point exception
+        if ($res =~ /pencil_consistency_check:.*?\s+failed([\s,.]|$)/is) {
+            my_ok(0, 1, "Pencil consistency check failed.", $dir, "running");
+            return;
+        }
+        if ($res =~ /floating[\s\-]point exception/is) {
+            my_ok(0, 1, "Floating-point exception.", $dir, "running");
+            return;
         }
 
         # Clean up
