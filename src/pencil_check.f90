@@ -116,23 +116,24 @@ module Pencil_check
       call mpibcast_logical(lfound_nan,mfarray,comm=MPI_COMM_WORLD)
       if (lroot) then
         do iv=1,mvar
-          if (lfound_nan(iv)) &
-            print*, 'pencil_consistency_check: NaNs in reference df "df_ref" at variable', iv
-            print*, '                          Numbers of variables are in "data/index.pro".'
+          if (lfound_nan(iv)) then
+            print*, 'pencil_consistency_check: NaNs in reference "df_ref" at variable', iv
+            print*, 'pencil_consistency_check: numbers of variables are given in "data/index.pro"'
+          endif
         enddo
       endif
       if (any(lfound_nan)) then
         if (lroot) then
           print*, 'pencil_consistency_check: the presence of NaNs '// &
-               'in df_ref makes this test impossible'
+               'in "df_ref" makes this test impossible'
           call stop_it_if_any(.true.,'pencil_consistency_check: '// &
-              'quitting pencil check')
+              'generation of reference failed, quitting pencil check')
         endif
       endif
       call stop_it_if_any(.false.,'')
 !
       if (notanumber(dt1_max_ref)) &
-          print*, 'pencil_consistency_check: NaNs in dt1_max_ref'
+          print*, 'pencil_consistency_check: NaNs in "dt1_max_ref"'
 !
       nite=npencils
       if ((.not.lpencil_check).and.lpencil_check_small) nite=0
@@ -174,9 +175,11 @@ module Pencil_check
           if (notanumber(df(:,m,n,iv))) lfound_nan(iv)=.true.
         enddo; enddo; enddo
         do iv=1,mvar
-          if (lfound_nan(iv)) &
-              print*, 'pencil_consistency_check: NaNs in df at variable', &
-              iv, ' for pencil ', trim(pencil_names(penc))
+          if (lfound_nan(iv)) then
+            print*, 'pencil_consistency_check: NaNs in "df" at variable', &
+                iv, ' for pencil ', trim(pencil_names(penc))
+            print*, '                          Numbers of variables are in "data/index.pro".'
+          endif
         enddo
 !
 !  Compare results.
@@ -267,8 +270,10 @@ f_loop:   do iv=1,mvar
         if (notanumber(df(:,m,n,iv))) lfound_nan(iv)=.true.
       enddo; enddo; enddo
       do iv=1,mvar
-        if (lfound_nan(iv)) &
-            print*, 'pencil_consistency_check: NaNs in df at variable', iv
+        if (lfound_nan(iv)) then
+          print*, 'pencil_consistency_check: NaNs in df at variable', iv
+          print*, '                          Numbers of variables are in "data/index.pro".'
+        endif
       enddo
 !
 !  Compare results.
