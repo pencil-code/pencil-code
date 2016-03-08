@@ -117,7 +117,8 @@ module Pencil_check
       if (lroot) then
         do iv=1,mvar
           if (lfound_nan(iv)) &
-            print*, 'pencil_consistency_check: NaNs in df_ref at variable', iv
+            print*, 'pencil_consistency_check: NaNs in reference df "df_ref" at variable', iv
+            print*, '                          Numbers of variables are in "data/index.pro".'
         enddo
       endif
       if (any(lfound_nan)) then
