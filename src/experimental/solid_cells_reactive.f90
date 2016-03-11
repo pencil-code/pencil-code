@@ -1221,7 +1221,7 @@ module Solid_Cells
           rp1=rp0+sqrt(2.0)*dxmin
         elseif ((rp0-rs) >= (3.0*dxmin)) then
           rp1=3.0*dxmin
-          rp0=rp1-+sqrt(2.0)*dxmin
+          rp0=rp1-sqrt(2.0)*dxmin
         else
           rp1=rp0+sqrt(2.0)*dxmin
         endif
@@ -1247,7 +1247,7 @@ module Solid_Cells
           rp1=rp0+sqrt(2.0)*dxmin
         elseif ((rp0-rs) >= (3.0*dxmin)) then
           rp1=3.0*dxmin
-          rp0=rp1-+sqrt(2.0)*dxmin
+          rp0=rp1-sqrt(2.0)*dxmin
         else
           rp1=rp0+sqrt(2.0)*dxmin
         endif
