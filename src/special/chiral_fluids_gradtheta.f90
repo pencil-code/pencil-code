@@ -203,33 +203,37 @@ module Special
 !
         case ('nothing'); if (lroot) print*,'init_special: nothing'
 !
-        case ('gtheta5x_const')
-          f(:,:,:,igtheta5)=f(:,:,:,igtheta5)+gtheta5_const
-          f(:,:,:,imu5) = mu5_const
+        case ('zero')
+          f(:,:,:,igtheta5) = 0.
+          f(:,:,:,igtheta5+1) = 0.
+          f(:,:,:,igtheta5+2) = 0.
+          f(:,:,:,imu5) = 0.
 !
         case ('const')
           f(:,:,:,igtheta5) = gtheta5_const
+          f(:,:,:,igtheta5+1) = gtheta5_const
+          f(:,:,:,igtheta5+2) = gtheta5_const
           f(:,:,:,imu5) = mu5_const
 !
-        case ('mu_sinz__getheta_const')
+        case ('gtheta5x_const')
+          f(:,:,:,igtheta5) = gtheta5_const
+          f(:,:,:,igtheta5+1) = 0.
+          f(:,:,:,igtheta5+2) = 0.
+          f(:,:,:,imu5) = mu5_const
+!
+        case ('gtheta5y_const')
+          f(:,:,:,igtheta5) = 0.
+          f(:,:,:,igtheta5+1) = gtheta5_const
+          f(:,:,:,igtheta5+2) = 0.
+          f(:,:,:,imu5) = mu5_const
+!
+        case ('mu_sinz__gtheta5_const')
           f(:,:,:,igtheta5) = gtheta5_const
           f(:,:,:,igtheta5+1) = gtheta5_const
           f(:,:,:,igtheta5+2) = gtheta5_const
           do n=n1,n2; do m=m1,m2
 	    f(:,m,n,imu5) = mu5_const*sin(2.*pi*z(n)/Lz)*sin(2.*pi*z(n)/Lz)
           enddo; enddo
-!
-        case ('gtheta5y_const')
-          do n=n1,n2; do m=m1,m2
-            f(:,:,:,igtheta5) = 0.
-            f(:,:,:,igtheta5+1) = gtheta5_const
-            f(:,:,:,igtheta5+2) = 0.
-          enddo; enddo
-          f(:,m,n,imu5) = mu5_const
-!
-        case ('zero')
-          f(:,:,:,igtheta5) = 0.
-          f(:,:,:,imu5) = 0.
 !
         case ('gtheta5x_sinz')
           do n=n1,n2; do m=m1,m2
@@ -239,13 +243,13 @@ module Special
 !
         case ('gtheta5y_siny')
           do n=n1,n2; do m=m1,m2
-            f(:,m,n,igtheta5+1)=-gtheta5_const*sin(ky_gtheta5*y(m))
+            f(:,m,n,igtheta5+1)=gtheta5_const*sin(ky_gtheta5*y(m))
           enddo; enddo
           f(:,:,:,imu5) = mu5_const
 !
-        case ('theta_profile')
+        case ('gtheta5x_cosy')
           do n=n1,n2; do m=m1,m2
-            f(l1:l2,m,n,igtheta5)=gtheta5_const*cos(2.*pi*(y(m)-y0)/Ly)
+            f(:,m,n,igtheta5)=gtheta5_const*cos(2.*pi*(y(m)-y0)/Ly)
           enddo; enddo
           f(:,:,:,imu5) = mu5_const
 !
