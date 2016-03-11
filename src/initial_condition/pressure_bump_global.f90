@@ -81,7 +81,6 @@ module InitialCondition
   include '../initial_condition.h'
 !
   real :: g0=1.,density_power_law=0.,temperature_power_law=1.
-  real :: radial_percent_smooth=10.0,rshift=0.0
   real :: gravitational_const=0.
 !
   real, dimension(0:6) :: coeff_cs2=(/0.,0.,0.,0.,0.,0.,0./)
@@ -99,13 +98,15 @@ module InitialCondition
 !  Quantities for the pressure bump
 !
   real :: bump_radius = 1.,bump_ampl = 0.4, bump_width = 0.1
+  character (len=labellen) :: ipressurebump='gaussian'
 !
   namelist /initial_condition_pars/ g0,density_power_law,&
-       temperature_power_law,radial_percent_smooth,rshift,&
+       temperature_power_law,&
        gravitational_const,r0_pot,qgshear,n_pot,&
        lcorrect_pressuregradient,lpolynomial_fit_cs2,&
        ladd_noise_propto_cs,ampluu_cs_factor,&
-       bump_radius,bump_ampl,bump_width
+       bump_radius,bump_ampl,bump_width,&
+       ipressurebump
 !
   contains
 !***********************************************************************
@@ -338,8 +339,8 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx)   :: strat,tmp1,tmp2,cs2
-      real, dimension (mx)   :: rr_sph,rr,rr_cyl,lnrhomid,rho_tmp
-      real                   :: lat
+      real, dimension (mx)   :: rr_sph,rr,rr_cyl,lnrhomid,rho,pp
+      real                   :: lat,TT0,pp0
       integer, pointer       :: iglobal_cs2,iglobal_glnTT
       integer                :: ics2
       logical                :: lheader,lpresent_zed
@@ -358,10 +359,46 @@ module InitialCondition
         call fatal_error("initial_condition_lnrho","")
       endif
 !
+!  Pencilize the density allocation.
+!
+      do n=1,mz;do m=1,my
+!
+        lheader=lroot.and.(m==1).and.(n==1)
+!
+!  Midplane density
+!
+        call get_radial_distance(rr_sph,rr_cyl)
+        if (lcylindrical_gravity.or.lcylinder_in_a_box.or.lcylindrical_coords) then
+          rr=rr_cyl
+        elseif (lsphere_in_a_box.or.lspherical_coords) then
+          rr=rr_sph
+        endif
+!
+        select case (ipressurebump)
+        case ('gaussian')
+           rho = 1 + (bump_ampl-1)*exp(-(rr_cyl - bump_radius)**2/(2*bump_width**2))
+        case ('step')
+           rho = 1 + .5*bump_ampl*(tanh((rr_cyl-bump_radius)/bump_width) + 1)
+        case default
+           if (lroot) print*, 'No such value for ipressurebump: ', trim(ipressurebump)
+           call fatal_error("initial_condition_lnrho","")
+        endselect
+        rho = rho * rho0 * rr_cyl**(-density_power_law)
+        lnrhomid = log(rho)
+!
+        f(:,m,n,ilnrho) = f(:,m,n,ilnrho) + lnrhomid
+      enddo;enddo
+!
 !  Set the sound speed
 !
       do m=1,my; do n=1,mz
         lheader=((m==1).and.(n==1).and.lroot)
+        !
+        pp0 = rho0*cs20/gamma
+        rho = exp(f(:,m,n,ilnrho))
+        pp = pp0 * (rho/rho0)**gamma
+        cs2 = gamma*pp/rho
+!        
         call get_radial_distance(rr_sph,rr_cyl)
         if (lcylindrical_gravity.or.lcylinder_in_a_box.or.lcylindrical_coords) then 
           rr=rr_cyl 
@@ -373,11 +410,6 @@ module InitialCondition
         endif
 !
         if (llocal_iso.or.lenergy) then 
-          if (.not.lpolynomial_fit_cs2) then 
-            call power_law(cs20,rr,temperature_power_law,cs2,r_ref)
-          else 
-            call poly_fit(cs2)
-          endif  
 !
 !  Store cs2 in one of the free slots of the f-array
 !
@@ -400,108 +432,6 @@ module InitialCondition
         endif
       enddo;enddo
 !
-!  Stratification is only coded for 3D runs. But as
-!  cylindrical and spherical coordinates store the
-!  vertical direction in different slots, one has to
-!  do this trick below to decide whether this run is
-!  2D or 3D.
-!
-      lpresent_zed=.false.
-      if (lspherical_coords) then
-        if (nygrid/=1) lpresent_zed=.true.
-      else
-        if (nzgrid/=1) lpresent_zed=.true.
-      endif
-!
-!  Pencilize the density allocation.
-!
-      do n=1,mz
-      do m=1,my
-!
-        lheader=lroot.and.(m==1).and.(n==1)
-!
-!  Midplane density
-!
-        call get_radial_distance(rr_sph,rr_cyl)
-        if (lcylindrical_gravity.or.lcylinder_in_a_box.or.lcylindrical_coords) then
-          rr=rr_cyl
-        elseif (lsphere_in_a_box.or.lspherical_coords) then
-          rr=rr_sph
-        endif
-!
-        rho_tmp = (1 + bump_ampl*exp(-(rr_cyl - bump_radius)**2/(2*bump_width**2))) * rr_cyl**(-density_power_law)
-        lnrhomid = log(rho_tmp)
-        !lnrhomid=log(rho0) -.5*density_power_law*log((rr/r_ref)**2+rsmooth**2)
-!
-!  Vertical stratification, if needed
-!
-        if (.not.lcylindrical_gravity.and.lpresent_zed) then
-          if (lheader) &
-               print*,"Adding vertical stratification with "//&
-               "scale height h/r=",cs0
-!
-!  Get the sound speed
-!
-          if (lenergy.or.llocal_iso) then 
-            cs2=f(:,m,n,ics2)
-          else
-            cs2=cs20
-          endif
-!
-          if (lspherical_coords.or.lsphere_in_a_box) then
-            ! uphi2/r = -gr + dp/dr
-            if (lgrav) then
-              call acceleration(tmp1)
-            elseif (lparticles_nbody) then
-              !call get_totalmass(g0) 
-              tmp1=-g0/rr_sph**2
-            else
-              print*,"both gravity and particles_nbody are switched off"
-              print*,"there is no gravity to determine the stratification"
-              call fatal_error("local_isothermal_density","")
-            endif
-!
-            tmp2=-tmp1*rr_sph - &
-                 cs2*(density_power_law + temperature_power_law)/gamma
-            lat=pi/2-y(m)
-            strat=(tmp2*gamma/cs2) * log(cos(lat))
-          else
-!
-!  The subroutine "potential" yields the whole gradient.
-!  I want the function that partially derived in
-!  z gives g0/r^3 * z. This is NOT -g0/r
-!  The second call takes care of normalizing it
-!  i.e., there should be no correction at midplane
-!
-            if (lgrav) then
-              call potential(POT=tmp1,RMN=rr_sph)
-              call potential(POT=tmp2,RMN=rr_cyl)
-            elseif (lparticles_nbody) then
-              !call get_totalmass(g0)
-              tmp1=-g0/rr_sph 
-              tmp2=-g0/rr_cyl
-            else
-              print*,"both gravity and particles_nbody are switched off"
-              print*,"there is no gravity to determine the stratification"
-              call fatal_error("local_isothermal_density","")
-            endif
-            strat=-(tmp1-tmp2)/cs2
-            if (lenergy) strat=gamma*strat
-          endif
-!
-        else
-!  No stratification
-          strat=0.
-        endif
-        f(:,m,n,ilnrho) = f(:,m,n,ilnrho) + lnrhomid + strat
-      enddo
-      enddo
-!
-!  Correct the velocities by this pressure gradient
-!
-      if (lcorrect_pressuregradient) &
-           call correct_pressure_gradient(f,ics2,temperature_power_law)
-!
 !  Set the thermodynamical variable
 !
       if (llocal_iso) then
@@ -510,6 +440,11 @@ module InitialCondition
       else if (lenergy) then 
         call set_thermodynamical_quantities(f,temperature_power_law,ics2)
       endif
+!
+!  Correct the velocities by this pressure gradient
+!
+      if (lcorrect_pressuregradient) &
+           call correct_pressure_gradient(f)
 !
     endsubroutine initial_condition_lnrho
 !***********************************************************************
@@ -677,7 +612,7 @@ module InitialCondition
 !
     endsubroutine set_thermodynamical_quantities
 !***********************************************************************
-    subroutine correct_pressure_gradient(f,ics2,temperature_power_law)
+    subroutine correct_pressure_gradient(f)
 !
 !  Correct for pressure gradient term in the centrifugal force.
 !  For now, it only works for flat (isothermal) or power-law
@@ -688,20 +623,20 @@ module InitialCondition
 !
       use FArrayManager
       use Sub,    only: get_radial_distance,grad
+      use EquationOfState, only: get_cv1,get_cp1
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,3) :: glnrho
+      real, dimension (nx,3) :: glnrho,gss
       real, dimension (nx)   :: rr,rr_cyl,rr_sph
-      real, dimension (nx)   :: cs2,fpres_thermal,gslnrho,gslnTT
-      integer                :: ics2
+      real, dimension (nx)   :: cs2,fpres_thermal,gslnrho,gsss
+      real :: cp1,cv1
       logical                :: lheader
-      real :: temperature_power_law
-!
-      real, dimension(nx) :: xi
-      real, dimension(0:6) :: c
 !
       if (lroot) print*,'Correcting density gradient on the '//&
            'centrifugal force'
+!
+      call get_cv1(cv1)
+      call get_cp1(cp1)
 !
       do n=n1,n2 ; do m=m1,m2
         lheader=(lfirstpoint.and.lroot)
@@ -726,24 +661,13 @@ module InitialCondition
 !
 !  Get sound speed and calculate the temperature gradient
 !
-        if (llocal_iso.or.lenergy) then
-          cs2=f(l1:l2,m,n,ics2)
-          if (.not.lpolynomial_fit_cs2) then 
-             gslnTT=-temperature_power_law/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
-          else
-             xi=x(l1:l2)
-             c=coeff_cs2
-             gslnTT = c(1)  + c(2) * 2*xi + c(3) * 3*xi**2 + &
-                  c(4) * 4*xi**3 + c(5) * 5*xi**4 + c(6) * 6*xi**5
-          endif   
-       else
-          cs2=cs20
-          gslnTT=0.
-       endif
+        call grad(f,iss,gss)
+        gsss=gss(:,1)
 !
 !  Correct for cartesian or spherical
 !
-        fpres_thermal=(gslnrho+gslnTT)*cs2/gamma
+        cs2=cs20*exp(cv1*f(l1:l2,m,n,iss)+gamma_m1*(f(l1:l2,m,n,ilnrho)-lnrho0))
+        fpres_thermal=(gsss*cp1 + gslnrho)*cs2
 !
         call correct_azimuthal_velocity(f,fpres_thermal)
 !
