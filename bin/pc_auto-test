@@ -1013,6 +1013,7 @@ sub test_start {
 
         # Start the initialization
         my $start_cmd = "@pc_run start";
+        my $out = "";
         if ($time_limit) {
             $out = test_timelimited_shell_cmd(
                 $start_cmd,
@@ -1029,6 +1030,7 @@ sub test_start {
         }
 
         # Check for broken pencil check or floating-point exception
+        my $res = "";
         if ($res =~ /pencil_consistency_check:.*?\s+failed([\s,.]|$)/is) {
             my_ok(0, 1, "Pencil consistency check failed.", $dir, "starting");
             return;
