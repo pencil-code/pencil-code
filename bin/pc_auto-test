@@ -1030,14 +1030,17 @@ sub test_start {
         }
 
         # Check for broken pencil check or floating-point exception
-        my $res = "";
+        my $res = $out;
         if ($res =~ /pencil_consistency_check:.*?\s+failed([\s,.]|$)/is) {
             my_ok(0, 1, "Pencil consistency check failed.", $dir, "starting");
             return;
         }
-        if ($res =~ /floating[\s\-]point exception/is) {
+        if ($res =~ /floating[\s\-]point exception([\s:.]|$)/is) {
             my_ok(0, 1, "Floating-point exception.", $dir, "starting");
             return;
+        }
+        if ($res =~ /floating[\s\-]point exceptions recorded:[^\n]*\n+(.*?)(?=\n\S)/is) {
+            print "\t(Floating-point exceptions recorded.)\n";
         }
     }
 }
@@ -1086,9 +1089,14 @@ sub test_run {
             my_ok(0, 1, "Pencil consistency check failed.", $dir, "running");
             return;
         }
-        if ($res =~ /floating[\s\-]point exception/is) {
+        if ($res =~ /floating[\s\-]point exception([\s:.]|$)/is) {
             my_ok(0, 1, "Floating-point exception.", $dir, "running");
             return;
+        }
+        if ($res =~ /floating[\s\-]point exceptions recorded:[^\n]*\n+(.*?)(?=\n\S)/is) {
+            my $exceptions = $1;
+            $exceptions =~ s/^\s+/\t* /gm;
+            print "\tFloating-point exceptions:\n".$exceptions."\n";
         }
 
         # Clean up
