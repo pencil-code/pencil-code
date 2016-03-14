@@ -490,69 +490,73 @@ program pc_h5collect
 
     subroutine Analyze
 
-      ! Open logfile
-      logfile = trim(directory)//'/'//trim(field)//'_h5collect.log'
-      open(2, file=logfile, action='write', status='replace', iostat=ierr)
       runerror = .false.
 
       ! Check datafile properties
 
       open(1,file=datafile, access='stream',form='unformatted', action='read', status='old', iostat=ierr)
       if (ierr /= 0) then
-        write(2,*) 'Error opening datafile: '//datafile
+        write(*,*) 'Error opening datafile: '//datafile
         runerror = .true.
       end if
       
       inquire(1, size=filesize_check)
       if (filesize_check /= filesize) then
-        write(2,*) 'File sizes differ between procs'
+        write(*,*) 'File sizes differ between procs: '//chproc
         runerror = .true.
       end if
-
-      ! Log analysis parameters
-
-      write(2,'(a30)')     ' Analysis information          '
-      write(2,'(a30)')     ' ----------------------------- '
-      write(2,'(a30,a30)') &
-      ' Worker:                       ', ljustify(fake_proc)
-      write(2,'(a30,a30)') &
-      ' Dimension 1 size:             ', ljustify(dims(1))
-      write(2,'(a30,a30)') &
-      ' Dimension 2 size:             ', ljustify(dims(2))
-      write(2,'(a30,a)') &
-      ' Datafile:                     ', trim(datafile)
-      write(2,'(a30,a30)') &
-      ' Number of fields:             ', ljustify(nfields)
-      write(2,'(a30,i30)') &
-      ' File size (bytes):            ', filesize
-      write(2,'(a30,a30)') &
-      ' Number of timesteps:          ', ljustify(ntimesteps)
-      write(2,'(a30,a30)') &
-      ' Datapoints per timestep:      ', ljustify(datalen/data_stride)
-      write(2,'(a30,a30)') &
-      ' Single precision time values: ', ljustify(tlen==4)
-      write(2,'(a30,a30)') &
-      ' Single precision data values: ', ljustify(data_stride==4)
       close(1)
+
+
+      if (ldebug) then
+        ! Open logfile
+        logfile = trim(directory)//'/'//trim(field)//'_h5collect.log'
+        open(2, file=logfile, action='write', status='replace', iostat=ierr)
+        ! Log analysis parameters
+
+        write(2,'(a30)')     ' Analysis information          '
+        write(2,'(a30)')     ' ----------------------------- '
+        write(2,'(a30,a30)') &
+        ' Worker:                       ', ljustify(fake_proc)
+        write(2,'(a30,a30)') &
+        ' Dimension 1 size:             ', ljustify(dims(1))
+        write(2,'(a30,a30)') &
+        ' Dimension 2 size:             ', ljustify(dims(2))
+        write(2,'(a30,a)') &
+        ' Datafile:                     ', trim(datafile)
+        write(2,'(a30,a30)') &
+        ' Number of fields:             ', ljustify(nfields)
+        write(2,'(a30,i30)') &
+        ' File size (bytes):            ', filesize
+        write(2,'(a30,a30)') &
+        ' Number of timesteps:          ', ljustify(ntimesteps)
+        write(2,'(a30,a30)') &
+        ' Datapoints per timestep:      ', ljustify(datalen/data_stride)
+        write(2,'(a30,a30)') &
+        ' Single precision time values: ', ljustify(tlen==4)
+        write(2,'(a30,a30)') &
+        ' Single precision data values: ', ljustify(data_stride==4)
+        close(2)
+      end if
 
       if (.not. allocated(t_values)) then
         allocate(t_values(ntimesteps),stat=ierr) 
         if (ierr /= 0) then
-          write(2,*) 'Error allocating t_values'
+          write(*,*) 'Proc '//chproc//': Error allocating t_values'
           runerror = .true.
         end if
       end if
       if (.not. allocated(dataarray_full)) then
         allocate(dataarray_full(dims(1),dims(2),dims(3),nfields, ntimesteps),stat=ierr)
         if (ierr /= 0) then
-          write(2,*) 'Error allocating dataarray_full'
+          write(*,*) 'Proc '//chproc//': Error allocating dataarray_full'
           runerror = .true.
         end if
       end if
       if (.not. allocated(dataarray)) then
         allocate(dataarray(dims(1),dims(2),dims(3),nfields),stat=ierr)
         if (ierr /= 0) then
-          write(2,*) 'Error allocating dataarray'
+          write(*,*) 'Proc '//chproc//': Error allocating dataarray'
           runerror = .true.
         end if
       end if
@@ -580,7 +584,7 @@ program pc_h5collect
         if (.not. allocated(dataarray)) then
           allocate(dataarray(dims(1),dims(2),dims(3),resultlen),stat=ierr)
           if (ierr /= 0) then
-            write(2,*) 'Error allocating dataarray'
+            write(*,*) 'Proc '//chproc//': Error allocating dataarray'
             runerror = .true.
             exit
           end if
@@ -614,7 +618,6 @@ program pc_h5collect
 
       t_taken_full = MPI_WTIME() - t_taken_full
       write(*,*) 'Worker '//trim(chproc)//' finished analyzing '//trim(datagroup)//'. Time taken: ' , t_taken_full
-      write(2,*) 'Worker '//trim(chproc)//' finished analyzing '//trim(datagroup)//'. Time taken: ' , t_taken_full
 
       close(1)
 
@@ -630,8 +633,6 @@ program pc_h5collect
         deallocate(dataarray_full)
       end if
       nullify(analyzerfunction)
-
-      close(2)
 
     end subroutine Analyze
 
@@ -768,7 +769,11 @@ program pc_h5collect
             chunksize = chunksize*dims(i)
           end if
         end do
-        hdf_chunkdims(4) = 1
+        if (chunksize < 10*1024*1024) then
+          hdf_chunkdims(4) = 10
+        else
+          hdf_chunkdims(4) = 1
+        end if
 
         call H5Gcreate_F(hdf_fileid, "/"//trim(datagroup), hdf_datagroup, hdferr)
         if (lroot .and. ldebug) then
@@ -790,6 +795,7 @@ program pc_h5collect
             end if
             call H5Pcreate_F(H5P_DATASET_CREATE_F, hdf_plist_ids(ianalyzer,ifield), hdferr)
             call H5Pset_chunk_F(hdf_plist_ids(ianalyzer, ifield), 4, hdf_chunkdims, hdferr)
+            !call H5Pset_deflate_F(hdf_plist_ids(ianalyzer,ifield), 6, hdferr)
             !call H5Pset_chunk_F(hdf_plist_ids(ianalyzer, ifield), 4, hdf_dims(:,ianalyzer), hdferr)
             call H5Dcreate_F(hdf_fieldgroups(ifield), trim(analyzernames(ianalyzer)), &
                              hdffiletype, hdf_spaces(ianalyzer,ifield), &
