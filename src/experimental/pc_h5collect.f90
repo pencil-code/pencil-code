@@ -303,25 +303,26 @@ program pc_h5collect
         !     trim(datadir)//'/proc'//chproc)
         call safe_character_assign (datafile, &
              trim(directory)//'/'//trim(datafilename))
-        open(1,file=datafile, access='stream',form='unformatted', action='read', status='old', iostat=ierr)
+        open(3,file=datafile, access='stream',form='unformatted', action='read', status='old', iostat=ierr)
         if (ierr /= 0) then
-          write(2,*) 'Error opening datafile: '//datafile
+          write(*,*) 'Error opening datafile: '//datafile
           initerror = .true.
         end if
 
-        inquire(1, size=filesize)
+        inquire(3, size=filesize)
         pos=1
-        read(1, pos=pos, IOSTAT=ierr) tlen
+        read(3, pos=pos, IOSTAT=ierr) tlen
         if (ierr /= 0) then
           write(*,*) 'Error reading tlen'
           initerror = .true.
         end if
         pos=9+tlen
-        read(1, pos=pos, IOSTAT=ierr) datalen
+        read(3, pos=pos, IOSTAT=ierr) datalen
         if (ierr /= 0) then
           write(*,*) 'Error reading datalen'
           initerror = .true.
         end if
+        close(3)
 
         data_stride = datalen/(nfields*dims(1)*dims(2)*dims(3))
 
@@ -361,7 +362,6 @@ program pc_h5collect
         ' Single precision time values: ', ljustify(tlen==4)
         write(*,'(a30,a30)') &
         ' Single precision data values: ', ljustify(data_stride==4)
-        close(1)
 
         !c
 
@@ -494,18 +494,18 @@ program pc_h5collect
 
       ! Check datafile properties
 
-      open(1,file=datafile, access='stream',form='unformatted', action='read', status='old', iostat=ierr)
+      open(3,file=datafile, access='stream',form='unformatted', action='read', status='old', iostat=ierr)
       if (ierr /= 0) then
         write(*,*) 'Error opening datafile: '//datafile
         runerror = .true.
       end if
       
-      inquire(1, size=filesize_check)
+      inquire(3, size=filesize_check)
       if (filesize_check /= filesize) then
         write(*,*) 'File sizes differ between procs: '//chproc
         runerror = .true.
       end if
-      close(1)
+      close(3)
 
 
       if (ldebug) then
@@ -567,12 +567,13 @@ program pc_h5collect
       t_values    = 0
 
       t_taken_full = MPI_WTIME()
-      open(1,file=datafile, form='unformatted', &
+      open(3,file=datafile, form='unformatted', &
           action='read', status='old', IOSTAT=ierr)
       do i=1,ntimesteps
-        read(1, IOSTAT=ierr) t_values(i)
-        read(1, IOSTAT=ierr) dataarray_full(1:dims(1), 1:dims(2), 1:dims(3), 1:nfields, i)
+        read(3, IOSTAT=ierr) t_values(i)
+        read(3, IOSTAT=ierr) dataarray_full(1:dims(1), 1:dims(2), 1:dims(3), 1:nfields, i)
       end do
+      close(3)
 
       do ianalyzer=1,nanalyzers
         nullify(analyzerfunction)
@@ -612,14 +613,13 @@ program pc_h5collect
 
           call H5Sclose_F(hdf_filespace, hdferr)
 
+
         end do
 
       end do
 
       t_taken_full = MPI_WTIME() - t_taken_full
       write(*,*) 'Worker '//trim(chproc)//' finished analyzing '//trim(datagroup)//'. Time taken: ' , t_taken_full
-
-      close(1)
 
       !call H5SCLOSE_F(hdfspace, hdferr)
       
@@ -698,8 +698,8 @@ program pc_h5collect
       ! Open hdf5-file
       inquire(file=outfile, exist=hdf_exists)
       if (hdf_exists) then
-        open(11, file=outfile, action='write', status='replace', iostat=ierr)
-        close(11, status='delete')
+        open(3, file=outfile, action='write', status='replace', iostat=ierr)
+        close(3, status='delete')
       end if
       call H5Fcreate_F(outfile, H5F_ACC_TRUNC_F, hdf_fileid, hdferr, access_prp = hdf_file_plist)
       call H5Pclose_F(hdf_file_plist,hdferr)
