@@ -90,24 +90,27 @@ module Special
   integer :: gamma=1,n_vcycles=1
   integer :: nx_coarsest=3
 !
+  logical :: lsave_residual_grid=.false.
+  logical :: ladimensional=.true.
+!
   namelist /special_init_pars/ amplpsi,alpha_sor,lprint_residual,&
        tolerance,maxit,gravity_z,rho0_bq,alpha_thermal,kappa,eta_0,&
        iconv_viscosity,Avisc,Bvisc,Cvisc,&
        Tbot,Tupp,Ra,iorder_sor_solver,lsave_residual,&
        kx_TT,kz_TT,ampltt,initpsi,lmultigrid,lpoisson_test,npost,npre,gamma,n_vcycles,&
-       ldirect_solver,nx_coarsest
+       ldirect_solver,nx_coarsest,lsave_residual_grid,ladimensional
 !
   namelist /special_run_pars/ amplpsi,alpha_sor,Avisc,lprint_residual,&
        tolerance,maxit,gravity_z,rho0_bq,alpha_thermal,kappa,eta_0,&
        iconv_viscosity,Avisc,Bvisc,Cvisc,&
        Tbot,Tupp,Ra,iorder_sor_solver,lsave_residual,&
        ltidal_heating,ltemperature_advection,ltemperature_diffusion,lmultigrid,&
-       npost,npre,gamma,n_vcycles,ldirect_solver,nx_coarsest
+       npost,npre,gamma,n_vcycles,ldirect_solver,nx_coarsest,lsave_residual_grid
 !
 !  Declare index of new variables in f array. Surface density, midplane
 !  temperature, and mass accretion rate.
 !
-  integer :: ipsi=0
+  integer :: ipsi=0, iresidual=0
 !
 !  Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -139,20 +142,23 @@ module Special
 !  6-oct-03/tony: coded
 !  01-aug-11/wlad: adapted
 !
-      use FArrayManager, only: farray_register_pde
+      use FArrayManager, only: farray_register_pde,farray_register_auxiliary
 !
       if (lroot) call svn_id( &
           "$Id: alphadisk.f90 19193 2012-06-30 12:55:46Z wdobler $")
 !
-!  Register the streamfunction
+!  Register the streamfunction. The streamfunction needs to be a pde so it
+!  can have boundaries. 
 !
       call farray_register_pde('psi',ipsi)
+      call farray_register_auxiliary('residual',iresidual)
 !
 ! Write to read special variables with pc_varcontent
 !
       if (lroot) then
         open(4,file=trim(datadir)//'/index_special.pro',status='replace')
         write(4,*) 'ipsi= ',ipsi
+        write(4,*) 'iresidual= ',iresidual
         close(4)
       endif
 !
@@ -192,7 +198,7 @@ module Special
 !  Stuff for the coefficient of SOR. Should be between 0 and 2 for stability.
 !     
      if (alpha_sor == impossible) then
-        delta=min(dx,dy,dz)
+        delta=min(dx,dy,dz)/dslab
         alpha_sor= 2./(1+sin(pi*delta))
       endif
 !
@@ -202,6 +208,17 @@ module Special
       OmegaEuropa=1./EuropaPeriod
 !
       kappa1=1./kappa
+!
+      if (ladimensional) then
+         if (eta_0 /= 1.0)   call fatal_error("initialize_special",&
+              "You are using dimensionless variables, set eta_0=1 and vary Ra")
+         if (kappa /= 1.0)   call fatal_error("initialize_special",&
+              "You are using dimensionless variables, set kappa=1 and vary Ra")
+         if (delta_T /= 1.0) call fatal_error("initialize_special",&
+              "You are using dimensionless variables, set Tupp=0 and Tbot=1 and vary Ra")
+         if (dslab /= 1.0)   call fatal_error("initialize_special",&
+              "You are using dimensionless variables, set Lxyz(3)=1 and vary Ra")
+      endif
 !
       select case (iorder_sor_solver)
 !
@@ -263,16 +280,18 @@ module Special
          print*,'gaussian noise initialization'
          call gaunoise(amplpsi,f,ipsi)
       case ('single-mode')
+         if (.not.ladimensional) call fatal_error("init_special",&
+              "not yet coded for dimensioned variables. Use initpsi='noise' instead")
          print*,'single-mode initialization for constant viscosity'
          print*,'derived from the solution of the dispersion relation'
          amplpsi_ = -ampltt * Ra*kx_TT/(kz_TT**2 + kx_TT**2)**2
          do n=n1,n2
-            do m=m1,m2
-               f(l1:l2,m,n,ipsi) = f(l1:l2,m,n,ipsi) + &
-                    amplpsi_*sin(kx_TT*x(l1:l2))*sin(kz_TT*z(n))
+           do m=m1,m2
+             f(l1:l2,m,n,ipsi) = f(l1:l2,m,n,ipsi) + &
+                  amplpsi_*sin(kx_TT*x(l1:l2))*sin(kz_TT*z(n))
            enddo
-        enddo
-        print*,'done single-mode initialization'
+         enddo
+         print*,'done single-mode initialization'
 !
       case ('nothing')
           
@@ -347,11 +366,11 @@ module Special
           idiag_devsigzz3 /=0 .or. &
           idiag_devsigzz4 /=0) then 
          if (lviscosity_const) then 
-            q%eta=1.
+            q%eta=eta_0
          else if (lviscosity_var_newtonian) then
-            q%eta=exp(Avisc*(TT_melt*p%TT1 - 1.))
+            q%eta=eta_0*exp(Avisc*(TT_melt*p%TT1 - 1.))
          else if (lviscosity_var_blankenbach) then
-            q%eta=exp(-Bvisc*p%TT*deltaT1 + Cvisc*(1-z(n))*Lz1)
+            q%eta=eta_0*exp(-Bvisc*p%TT*deltaT1 + Cvisc*(1-z(n))*Lz1)
          else   
             call fatal_error("calc_pencils_special",&
                  "The world is flat, and we never got here.")
@@ -403,13 +422,20 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f   
       real, dimension (mx,mz) :: psi,psi_old,eta
-      real, dimension (nx,nz) :: rhs
+      real, dimension (nx,nz) :: rhs,tmp
 !
       real, dimension (nx,nz) :: alpha_factor,beta_factor
 !
       integer :: icount,i
       real :: residual,aout,dTTdx
       real :: alpha=impossible,beta=impossible
+      real :: factor
+!
+      if (ladimensional) then
+         factor=Ra
+      else
+         factor=alpha_thermal*rho0_bq*gravity_z
+      endif
 !
 !  Define r.h.s.
 !
@@ -428,7 +454,8 @@ module Special
                dTTdx=dx_1(i)/60*(+ 45.0*(f(i+1,m,n,iTT)-f(i-1,m,n,iTT)) &
                                  -  9.0*(f(i+2,m,n,iTT)-f(i-2,m,n,iTT)) &
                                  +      (f(i+3,m,n,iTT)-f(i-3,m,n,iTT)))            
-               rhs(i-l1+1,n-n1+1) = Ra*dTTdx/eta(i,n)
+!
+               rhs(i-l1+1,n-n1+1) = factor*dTTdx/eta(i,n)
 !
                alpha_factor(i-l1+1,n-n1+1)=alpha
                beta_factor(i-l1+1,n-n1+1)=beta
@@ -442,7 +469,7 @@ module Special
       endif
 !
       if (lmultigrid) then
-         call multigrid(psi,rhs,alpha_factor,beta_factor)
+         call multigrid(f,psi,rhs,alpha_factor,beta_factor)
          call update_bounds_psi(psi)
       else
 !
@@ -456,7 +483,7 @@ module Special
 !         
          do while (residual > tolerance)
 !
-!  Calculate psi via multigrid
+!  Calculate psi via SOR
 !
             psi_old=psi
 !
@@ -464,7 +491,14 @@ module Special
              
             call update_bounds_psi(psi)
 !
-            residual=sqrt(sum((psi(l1:l2,n1:n2)-psi_old(l1:l2,n1:n2))**2)/(nx*nz))
+            tmp=(psi(l1:l2,n1:n2) - psi_old(l1:l2,n1:n2))**2
+            residual = sqrt(sum(tmp)/sum(psi(l1:l2,n1:n2)**2))
+!
+            if (lsave_residual_grid) then
+               do m=1,my
+                  f(:,m,:,iresidual) = psi-psi_old
+               enddo
+            endif
 !
 ! Increase counter. 
 !
@@ -478,10 +512,13 @@ module Special
             if (icount >= maxit) then
                call fatal_error("solve_for_psi","reached limit of iterations: did not converge.")
                if (lsave_residual) close(9)
+               goto 200
             endif
 !
          enddo
 !
+200      continue
+         
          if (lsave_residual) close(9)
 !
          icount_save=icount
@@ -749,15 +786,15 @@ module Special
       select case (iconv_viscosity)
 !
       case ('constant')
-        eta = 1.
+        eta = eta_0
 !
       case ('Netwonian') 
-        eta = exp(Avisc * (TT_melt/f(:,mpoint,:,iTT) - 1.))
+        eta = eta_0*exp(Avisc * (TT_melt/f(:,mpoint,:,iTT) - 1.))
 !
       case ('Blankenbach-variable')
          do n=1,mz
-            eta(:,n) = exp(-Bvisc * f(:,mpoint,n,iTT)*deltaT1 + &
-                            Cvisc * (1-z(n))*Lz1 )
+            eta(:,n) = eta_0*exp(-Bvisc * f(:,mpoint,n,iTT)*deltaT1 + &
+                                  Cvisc * (1-z(n))*Lz1 )
          enddo
 !
       case default  
@@ -887,7 +924,7 @@ module Special
 !  Conduction (diffusion)
 !
       if (ltemperature_diffusion) & 
-           df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + p%del2TT
+           df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + kappa*p%del2TT
 !
 !  Tidal heating 
 !
@@ -899,7 +936,7 @@ module Special
                       abs(q%uu(:,2))*dy_1(  m  )+ &
                       abs(q%uu(:,3))*dz_1(  n  )       
 !
-        diffus_special = dxyz_2
+        diffus_special = diffus_special + kappa*dxyz_2
       endif
 !
       if (headtt.or.ldebug) then
@@ -1006,7 +1043,7 @@ module Special
 !  record position as well
 
          if (idiag_TTmax_cline/=0) then
-            if (z(n) .ge. 0.5) then
+            if (z(n) .ge. 0.5*Lxyz(3)) then
                TTmax_cline=p%TT(nx/2)
             else
                TTmax_cline=-impossible
@@ -1015,7 +1052,7 @@ module Special
          endif
 
          if (idiag_TTmin_cline/=0) then
-            if (z(n) .lt. 0.5) then
+            if (z(n) .lt. 0.5*Lxyz(3)) then
                TTmin_cline=p%TT(nx/2)
             else
                TTmin_cline=impossible
@@ -1259,13 +1296,14 @@ module Special
 !***********************************************************************
 !***********************************************************************
 !***********************************************************************    
-    subroutine multigrid(psi,rhs,alpha_factor,beta_factor)
+    subroutine multigrid(f,psi,rhs,alpha_factor,beta_factor)
 !
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,mz) :: psi
       real, dimension(nx,nz) :: rhs
       real, dimension(nx,nz) :: alpha_factor,beta_factor
 !
-      call full_multigrid(psi,rhs,alpha_factor,beta_factor,n_vcycles)
+      call full_multigrid(f,psi,rhs,alpha_factor,beta_factor,n_vcycles)
 !
     endsubroutine multigrid
 !***********************************************************************
@@ -1277,7 +1315,7 @@ module Special
 !***********************************************************************
 !***********************************************************************
 !***********************************************************************    
-    subroutine full_multigrid(psi,r,alp,bet,ncycle)
+    subroutine full_multigrid(f,psi,r,alp,bet,ncycle)
 !
 !  Full Multigrid Algorithm for solution of linear elliptic equations.
 !  On input u contains the right-hand side ρ in an N × N array,
@@ -1288,11 +1326,12 @@ module Special
 !  13-jan-16/wlad: from numerical recipes.
 !
       implicit none
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,mz), intent(inout) :: psi
       real, dimension(nx,nz), intent(in) :: r
       real, dimension(nx,nz), intent(in) :: alp,bet
       integer, intent(in) :: ncycle
-      integer :: j,jcycle,n,ng,ngrid,nn,m,nn1,nn2,nn1_,nn2_,mm
+      integer :: j,jcycle,n,ng,ngrid,nn,m,nn1,nn2,nn1_,nn2_,mm,i
 !
       real :: residuals
       integer :: icount
@@ -1312,7 +1351,7 @@ module Special
       m=assert_equal((/size(psi,1),size(psi,2)/),'full_multigrid')
       n=assert_equal((/size(r,1),size(r,2)/),'full_multigrid')
       ngrid=nint(log(n-1.0)/log(2.0))
-      if (n /= 2**ngrid+1) call fatal_error("full_multigrid","n-1 must be a power of 2 in full_multigrid")
+      if (n /= 2**ngrid+1) call fatal_error("full_multigrid","nxgrid-1 must be a power of 2 in full_multigrid")
 !
       allocate(grid(ngrid))
       nn=n
@@ -1382,14 +1421,21 @@ module Special
             !do jcycle=1,ncycle
             call vcycle(j,uj,grid(j)%rhs,grid(j)%alpha,grid(j)%beta)
             !enddo
+            if (j==ngrid.and.lsave_residual_grid) then
+              do m=1,my
+                f(:,m,:,iresidual) = uj-uj_old
+              enddo
+            endif
             residuals=sqrt(sum((uj-uj_old)**2)/(nu1*nu2))
             icount=icount+1
             if (lprint_residual) print*,icount,residuals,j
             if (lsave_residual) write(9,*) icount,residuals,j
             deallocate(uj_old)
-            if (icount >= maxit) call fatal_error("full multigrid",&
-                 "reached limit of iterations: did not converge.")
+            if (icount >= maxit) goto 100
+            !call fatal_error("full multigrid",&
+            !     "reached limit of iterations: did not converge.")
          enddo
+100      continue 
       enddo
       if (lsave_residual) close(9)
       icount_save=icount
@@ -1430,7 +1476,7 @@ module Special
 
         real, dimension(:,:), intent(in) :: alp,bet
         
-        integer :: jpost,jpre,n,m,ll1,ll2,nu,nv
+        integer :: jpost,jpre,n,m,ll1,ll2 !,nu,nv
         integer :: mv,lv1,lv2,mu,lu1,lu2,ng,i
         real, dimension((size(rhs,1)+1)/2,(size(rhs,1)+1)/2) :: res
 !
@@ -1557,8 +1603,8 @@ module Special
 !********************************************************************
     subroutine solve_coarsest(u,rhs,alp,bet)
 !
-!  Solution of the model problem on the coarsest grid, where h = 1 . 
-!  input in rhs(1:3,1:3) and the solution is returned in u(1:3,1:3). 
+!  Solution of the model problem on the coarsest grid. 
+!  Input in rhs(1:3,1:3) and the solution is returned in u(1:3,1:3). 
 !
 !  13-jan-16/wlad: from numerical recipes.
 !
@@ -1583,7 +1629,7 @@ module Special
       res=1e33
 !
       u = 0.0
-      h = 1./(nr-1)
+      h = Lxyz(3)/(nr-1)
 !
       if (ldirect_solver) then
          if (nx_coarsest /= 3) call fatal_error("solve_coarsest",&
@@ -1641,7 +1687,7 @@ module Special
       m=assert_equal((/size(u,1),size(u,2)/),'relax')
       n=assert_equal((/size(rhs,1),size(rhs,2)/),'relax')
 !
-      h=1.0/(n-1)
+      h=Lxyz(3)/(n-1)
 !
 ! Convection
 !
@@ -1708,7 +1754,7 @@ module Special
       m=assert_equal((/size(u,1),size(u,2)/),'resid')
       n=assert_equal((/size(rhs,1),size(rhs,2)/),'resid')
 !
-      h=1.0/(n-1)
+      h=Lxyz(3)/(n-1)
 !
 !  Interior points.
 !
