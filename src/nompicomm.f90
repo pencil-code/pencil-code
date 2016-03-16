@@ -299,6 +299,7 @@ module Mpicomm
 !
   integer :: mpi_precision
   integer, parameter :: MPI_COMM_WORLD=0
+  character(LEN=4) :: cyinyang=' '
 !
   contains
 !***********************************************************************
