@@ -1209,7 +1209,7 @@ module Grid
 !  Set the the serial grid arrays, that contain the coordinate values
 !  from all processors.
 !
-      call construct_serial_arrays()
+      call construct_serial_arrays
 !
     endsubroutine initialize_grid
 !***********************************************************************
@@ -1439,7 +1439,7 @@ module Grid
 !
     endsubroutine box_vol
 !***********************************************************************
-    subroutine pencil_criteria_grid()
+    subroutine pencil_criteria_grid
 !
 !  All pencils that this special module depends on are specified here.
 !
@@ -2155,7 +2155,7 @@ module Grid
 !
     endsubroutine construct_serial_arrays
 !***********************************************************************
-    subroutine get_grid_mn()
+    subroutine get_grid_mn
 !
 !  Gets the geometry of the pencil at each (m,n) in the mn-loop.
 !

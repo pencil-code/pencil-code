@@ -174,7 +174,8 @@ module Equ
                      ltestscalar.or.ltestfield.or.ltestflow.or. &
                      lparticles_spin.or.lsolid_cells.or. &
                      lchemistry.or.lweno_transport .or. lbfield .or. & 
-                     lslope_limit_diff
+                     lslope_limit_diff &
+                     .or. lyinyang
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.
 !  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
@@ -657,13 +658,11 @@ module Equ
           call phisum_mn_name_rz(p%r_mn,idiag_rmphi)
         endif
 !
-!  Do the vorticity integration here, before the omega pencil is overwritten.
+!  Do the time integrations here, before the pencils are overwritten.
 !
-        if (ltime_integrals) then
-          if (llast) then
-            if (lhydro)    call time_integrals_hydro(f,p)
-            if (lmagnetic) call time_integrals_magnetic(f,p)
-          endif
+        if (ltime_integrals.and.llast) then
+          if (lhydro)    call time_integrals_hydro(f,p)
+          if (lmagnetic) call time_integrals_magnetic(f,p)
         endif
 !
 !  In max_mn maximum values of u^2 (etc) are determined sucessively

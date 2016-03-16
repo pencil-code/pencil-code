@@ -3408,7 +3408,7 @@ module General
 !
     endfunction binary_search
 !***********************************************************************
-    RECURSIVE SUBROUTINE quick_sort(list, order)
+    SUBROUTINE quick_sort(list, order)
 !
 ! Quick sort routine from:
 ! Brainerd, W.S., Goldberg, C.H. & Adams, J.C. (1990) "Programmer's Guide to
@@ -4118,7 +4118,7 @@ module General
       real :: sth, cth, xprime, yprime, zprime, sprime
       logical :: ltransp
 
-      ltransp = (ith2-ith1+1 /= size(thphprime,2))
+      ltransp = ith2-ith1+1 /= size(thphprime,2)
 !
       do i=ith1,ith2
 
@@ -4145,16 +4145,11 @@ module General
           thphprime(2,itp,jtp) = atan2(yprime,xprime)
           if (thphprime(2,itp,jtp)<0.) thphprime(2,itp,jtp) = thphprime(2,itp,jtp) + 2.*pi
 
-!if (iproc_world==0) print*, "the',phi'=", thphprime(:,itp,jtp)
+!if (iproc_world==0.and.size(thphprime,3)==41) &
+!  print'(4(f7.4,1x),4(i2,1x))', y(i), z(j), thphprime(:,itp,jtp), i,j,itp,jtp
         enddo
       enddo
-!if (lroot.and.ltransp) then
-if (.false.) then
-print*, 'size(thphprime)=', size(thphprime,1), size(thphprime,2), size(thphprime,3)
-print*, 'th=', y(ith1:ith2)
-print*, 'ph=', z(iph1:iph2)
-print*, 'thphprime=', thphprime(:,1:iph2-iph1+1,1:ith2-ith1+1)
-endif
+
     endsubroutine yy_transform_strip
 !***********************************************************************
     subroutine transpose_mn(a,b,ladd)
@@ -4163,17 +4158,25 @@ endif
 !
 !   7-aug-10/dhruba: coded
 !
-      real, dimension (:,:,:) :: a,b
+      use Cdata, only: lroot
+!
+      real, dimension(:,:,:) :: a,b
       logical, optional :: ladd
 !
       intent(in) :: a
       intent(out) :: b
       integer :: i,j
+      logical :: ladd_
 !
-      if (size(a,2)/=size(b,3) .or. size(a,3)/=size(b,2)) stop
+      if (size(a,2)/=size(b,3) .or. size(a,3)/=size(b,2)) then
+        if (lroot) print*, 'ERROR -- transpose_mn: inconsistent dimensions of a and b!'
+        stop
+      endif
+
+      ladd_=loptest(ladd)
       do i=1,size(b,2)
         do j=1,size(b,3)
-          if (loptest(ladd)) then
+          if (ladd_) then
             b(:,i,j)=b(:,i,j)+a(:,j,i)
           else
             b(:,i,j)=a(:,j,i)
