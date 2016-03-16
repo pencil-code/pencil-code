@@ -1370,15 +1370,19 @@ module Magnetic
 !  arrays are already allocated and must not be allocated again.
 !
       if (lbb_as_aux .or. lbb_as_comaux) call register_report_aux('bb', ibb, ibx, iby, ibz, communicated=lbb_as_comaux)
-!
       if (ljj_as_aux ) call register_report_aux('jj',ijj,ijx,ijy,ijz)
 !
-      if (lbbt_as_aux) call register_report_aux('bbt',ibbt,ibxt,ibyt,ibzt)
+      if (lbbt_as_aux) then
+        call register_report_aux('bbt',ibbt,ibxt,ibyt,ibzt)
+        ltime_integrals=.true.
+      endif
 !
-      if (ljjt_as_aux) call register_report_aux('jjt',ijjt,ijxt,ijyt,ijzt)
+      if (ljjt_as_aux) then
+        call register_report_aux('jjt',ijjt,ijxt,ijyt,ijzt)
+        ltime_integrals=.true.
+      endif
 !
       if (lua_as_aux ) call register_report_aux('ua',iua)
-!
       if (ljxb_as_aux) call register_report_aux('jxb',ijxb,ijxbx,ijxby,ijxbz)
 !
 !  Initialize individual modules, but need to do this only if
@@ -2747,7 +2751,7 @@ module Magnetic
         p%va2=p%b2*mu01*p%rho1
         if (lcheck_positive_va2 .and. minval(p%va2)<0.0) then
           print*, 'calc_pencils_magnetic: Alfven speed is imaginary!'
-          print*, 'calc_pencils_magnetic: it, itsub, iproc=', it, itsub, iproc
+          print*, 'calc_pencils_magnetic: it, itsub, iproc=', it, itsub, iproc_world
           print*, 'calc_pencils_magnetic: m, y(m), n, z(n)=', m, y(m), n, z(n)
           p%va2=abs(p%va2)
         endif
@@ -5017,8 +5021,8 @@ module Magnetic
 !  until the next restart
 !
       if (nbvec>nbvecmax.and.lfirstpoint) then
-        print*,'calc_bthresh: processor ',iproc,': bthresh_scl,nbvec,nbvecmax=', &
-                                                   bthresh_scl,nbvec,nbvecmax
+        print*,'calc_bthresh: processor ',iproc_world,': bthresh_scl,nbvec,nbvecmax=', &
+                                          bthresh_scl,nbvec,nbvecmax
         bthresh_scl=bthresh_scl*1.2
       endif
 !

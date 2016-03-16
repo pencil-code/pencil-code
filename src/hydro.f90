@@ -574,6 +574,7 @@ module Hydro
 !  Auxiliary variables
 !
   real, dimension(:,:), pointer :: reference_state
+  real, dimension(3) :: Omegav=0.
 !
   interface calc_pencils_hydro
     module procedure calc_pencils_hydro_pencpar
@@ -660,7 +661,9 @@ module Hydro
 !  24-nov-02/tony: coded
 !  13-oct-03/dave: check parameters and warn (if nec.) about velocity damping
 !  26-mar-10/axel: lreinitialize_uu added
-!
+!  23-dec-15/MR: Cartesian vector Omegav intro'd; ltime_integrals set; rotation 
+!                of \vec{Omega} on Yang grid added.
+! 
       use BorderProfiles, only: request_border_driving
       use Initcond
       use SharedVariables, only: put_shared_variable,get_shared_variable
@@ -720,16 +723,29 @@ module Hydro
           write(*,*) 'initialize_hydro: inner radius not yet set, dampuint= ',dampuint
         endif
       endif
+
+      if (Omega/=0.) then
 !
-!  defining a r-depend profile for Omega. The Coriolis force will be suppressed
+!  defining an r-dependent profile for Omega. The Coriolis force will be suppressed
 !  in r < r_omega with the width w_omega, for having the supression for r> r_omega,
 !  choose a negativ w_omega.
 !
-      prof_om = 1.0
-      if (r_omega /= 0.0) then
-        prof_om = step(x(l1:l2),r_omega,w_omega)
-      endif
+        prof_om = 1.0
+        if (r_omega /= 0.0) &
+          prof_om = step(x(l1:l2),r_omega,w_omega)
 !
+!  Cartesian components of \vec{Omega} (not yet used).
+!
+        if (lyang) then
+          Omegav(1) = -Omega*sin(theta*dtor)*cos(phi*dtor)
+          Omegav(2) = -Omega*cos(theta*dtor)
+          Omegav(3) = -Omega*sin(theta*dtor)*sin(phi*dtor)
+        else
+          Omegav(1) = Omega*sin(theta*dtor)*cos(phi*dtor)
+          Omegav(2) = Omega*sin(theta*dtor)*sin(phi*dtor)
+          Omegav(3) = Omega*cos(theta*dtor)
+        endif        
+      endif        
 !
 !  damping parameters for damping velocities outside an embedded sphere
 !  04-feb-2008/dintrans: corriged because otherwise rdampext=r_ext all the time
@@ -864,10 +880,14 @@ module Hydro
 !  in the beginning of your src/cparam.local file, *before* setting
 !  ncpus, nprocy, etc.
 !
-      if (luut_as_aux) call register_report_aux('uut', iuut, iuxt, iuyt, iuzt)
-!
-      if (loot_as_aux) call register_report_aux('oot', ioot, ioxt, ioyt, iozt)
-!
+      if (luut_as_aux) then
+        call register_report_aux('uut', iuut, iuxt, iuyt, iuzt)
+        ltime_integrals=.true.
+      endif
+      if (loot_as_aux) then
+        call register_report_aux('oot', ioot, ioxt, ioyt, iozt)
+        ltime_integrals=.true.
+      endif
       if (loo_as_aux) call register_report_aux('oo', ioo, iox, ioy, ioz, communicated=.true.)
 !
       if (force_lower_bound == 'vel_time' .or. force_upper_bound == 'vel_time') then
@@ -897,6 +917,21 @@ module Hydro
         call get_shared_variable('reference_state',reference_state)
 !
       lcalc_uumeanz=lcalc_uumean                 ! for compatibility
+!
+      if (Omega/=0. .and. lyinyang) then
+        if (phi==0.) then
+!
+!  Rotate \vec{Omega} on Yang grid.
+!
+          if (lyang) then
+            Omega = -Omega
+            phi   = 90.-theta
+            theta = 90.
+          endif
+        else
+          call fatal_error('initialize_hydro', 'phi /= 0. not allowed for Yin-Yang grid')
+        endif
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -1035,6 +1070,7 @@ module Hydro
       use Initcond
       use InitialCondition, only: initial_condition_uu
       use Sub
+      use Mpicomm, only: lyang
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (3) :: tmpvec
@@ -2381,7 +2417,7 @@ module Hydro
 !   calculation of characteristic velocity
 !   for slope limited diffusion
 !
-      use General, only: staggered_mean_vec, staggered_max_vec
+      use General, only: staggered_mean_vec,staggered_max_vec
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -3430,8 +3466,8 @@ module Hydro
 !  until the next restart
 !
       if (novec>novecmax.and.lfirstpoint) then
-        print*,'calc_othresh: processor ',iproc,': othresh_scl,novec,novecmax=', &
-                                                   othresh_scl,novec,novecmax
+        print*,'calc_othresh: processor ',iproc_world,': othresh_scl,novec,novecmax=', &
+                                          othresh_scl,novec,novecmax
         othresh_scl=othresh_scl*1.2
       endif
 !
@@ -3515,10 +3551,13 @@ module Hydro
         endif
 !
       else
+
+        if (phi/=0.) &
+          call fatal_error("coriolis_cartesian:","not coded if Omega has a y component")
 !
 !  Add Coriolis force with an angle (defined such that theta=60,
 !  for example, would correspond to 30 degrees latitude).
-!  Omega=(-sin_theta, 0, cos_theta).
+!  Omega=(-sin(theta), 0, cos(theta)).
 !
         if (lcoriolis_force) then
 !
@@ -3586,50 +3625,76 @@ module Hydro
 !  coriolis_spherical terms using spherical polars
 !
 !  21-feb-07/axel+dhruba: coded
+!  22-dec-15/MR: extended for situation with Omega along y axis (relevant for Yin-Yang grid).
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real :: c2,s2,Om2
+      real :: c2,s2,Om2,cp2,cs2,ss2
 !
       intent(in) :: p
       intent(inout) :: df
 !
 !  info about coriolis_spherical term
 !
-      if (headtt) then
-        print*, 'coriolis_spherical: Omega=', Omega
+      if (headtt) print*, 'coriolis_spherical: Omega=', Omega
+!
+! Not yet coded for angular velocity at an angle with z or y axis.
+!
+      if (.not.(theta==.0.or.theta==90..and.phi==90.)) then
+        if (lroot) print*, 'coriolis_spherical: Omega,theta,phi=', Omega,theta, phi
+        call fatal_error("coriolis_spherical:","not coded if Omega isn't aligned with z or y axis")
       endif
-!
-! Not yet coded for angular velocity at an angle with the z axis.
-!
-      if (theta/=0) then
-         print*, 'coriolis_spherical: Omega=,theta=', Omega,theta
-         call fatal_error("coriolis_spherical:","not coded if the angular velocity is at an angle to the z axis. ")
-      endif
-!
-!  In (r,theta,phi) coords, we have Omega=(costh, -sinth, 0). Thus,
-!
-!                    ( costh)   (u1)     (+sinth*u3)
-!  -2*Omega x U = -2*(-sinth) X (u2) = 2*(+costh*u3)
-!                    (   0  )   (u3)     (-costh*u2-sinth*u1)
-!
-!  With c2=2*Omega*costh and s2=-2*Omega*sinth we have then
-!
-!                (-s2*u3)
-!  -2*Omega x U = (+c2*u3)
-!                (-c2*u2+s2*u1)
-!
+
       if (lcoriolis_force) then
         c2= 2*Omega*costh(m)
         s2=-2*Omega*sinth(m)
-        if (r_omega /= 0.) then
-          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-s2*p%uu(:,3)*prof_om
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+c2*p%uu(:,3)*prof_om
-          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(c2*p%uu(:,2)+s2*p%uu(:,1))*prof_om
-        else
-          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-s2*p%uu(:,3)
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+c2*p%uu(:,3)
-          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-c2*p%uu(:,2)+s2*p%uu(:,1)
+      endif
+
+      if (theta==.0) then
+!
+!  Omega along z axis: In (r,theta,phi) coords, we have \vec{Omega}=Omega*(costh, -sinth, 0). Thus,
+!
+!                                ( costh)   (u1)           (+sinth*u3)
+!  -2*\vec{Omega} x U = -2*Omega*(-sinth) X (u2) = 2*Omega*(+costh*u3)
+!                                (   0  )   (u3)           (-costh*u2-sinth*u1)
+!
+!  With c2=2*Omega*costh and s2=-2*Omega*sinth we have then
+!
+!                       (-s2*u3)
+!  -2*\vec{Omega} x U = (+c2*u3)
+!                       (-c2*u2+s2*u1)
+!
+        if (lcoriolis_force) then
+          if (r_omega /= 0.) then
+            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)- s2*p%uu(:,3)              *prof_om
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+ c2*p%uu(:,3)              *prof_om
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(c2*p%uu(:,2)-s2*p%uu(:,1))*prof_om
+          else
+            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-s2*p%uu(:,3)
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+c2*p%uu(:,3)
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-c2*p%uu(:,2)+s2*p%uu(:,1)
+          endif
+        endif
+      else
+!
+!  Omega along y axis: In (r,theta,phi) coords, we have \vec{Omega}=Omega*(sinth*sinph, costh*sinph, cosph). Thus,
+!
+!                                (sinth*sinph)   (u1)           (-costh*sinph*u3+cosph*      u2)   (-cs2*u3 + cp2*u2)
+!  -2*\vec{Omega} x U = -2*Omega*(costh*sinph) X (u2) = 2*Omega*(-cosph*      u1+sinth*sinph*u3) = (-cp2*u1 - ss2*u3)
+!                                (      cosph)   (u3)           (-sinth*sinph*u2+costh*sinph*u1)   ( ss2*u2 + cs2*u1)
+
+        cp2=2*Omega*cosph(n); cs2=c2*sinph(n); ss2=s2*sinph(n)
+
+        if (lcoriolis_force) then
+          if (r_omega /= 0.) then
+            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+(-cs2*p%uu(:,3) + cp2*p%uu(:,2))*prof_om
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+(-cp2*p%uu(:,1) - ss2*p%uu(:,3))*prof_om
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+(+ss2*p%uu(:,2) + cs2*p%uu(:,1))*prof_om
+          else
+            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) - cs2*p%uu(:,3) + cp2*p%uu(:,2)
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) - cp2*p%uu(:,1) - ss2*p%uu(:,3)
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) + ss2*p%uu(:,2) + cs2*p%uu(:,1)
+          endif
         endif
       endif
 !
@@ -3637,8 +3702,14 @@ module Hydro
 !  The term added is F_{centrifugal} = - \Omega X \Omega X r
 !
       if (lcentrifugal_force) then
+
         Om2=amp_centforce*Omega**2
-        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-Om2*x(l1:l2)*sinth(m)
+        if (theta==.0) then
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-Om2*x(l1:l2)*sinth(m)
+        else
+          call fatal_error("coriolis_spherical:","Centrifugal force not coded if Omega isn't aligned with z axis.")
+        endif
+
       endif
 !
     endsubroutine coriolis_spherical
@@ -3654,15 +3725,13 @@ module Hydro
 !
 !  info about coriolis_spherical term
 !
-      if (headtt) then
-        print*, 'coriolis_spherical: Omega=', Omega
-      endif
+      if (headtt) print*, 'coriolis_spherical: Omega=', Omega
 !
 ! Not yet coded for angular velocity at an angle with the z axis.
 !
       if (theta/=0) then
-         print*, 'coriolis_spherical: Omega=,theta=', Omega,theta
-         call fatal_error("coriolis_spherical:","not coded if the angular velocity is at an angle to the z axis. ")
+        print*, 'coriolis_spherical: Omega=,theta=', Omega,theta
+        call fatal_error("coriolis_spherical:","not coded if Omega is at an angle with the z axis. ")
       endif
 !
 !  In (r,theta,phi) coords, we have Omega=(costh, -sinth, 0). Thus,
