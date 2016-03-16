@@ -1208,7 +1208,7 @@ module Boundcond
 !***********************************************************************
     subroutine bc_yy_y(f,topbot,j)
 !
-!  After-communication handling of vector quantities for Yin-Yang grid
+!  After-communication transformation of vector quantities for Yin-Yang grid.
 !
 !  30-nov-15/MR: coded
 !
@@ -1234,8 +1234,9 @@ module Boundcond
         if (topbot=='bot') then
           call transform_cart_spher(f,1,nghost,1,mz,j)    ! in-place!
         else
-          call transform_cart_spher(f,m2+1,my,1,mz,j)
+          call transform_cart_spher(f,m2+1,my,1,mz,j)     !  ~
         endif
+!
       else
         jdone=0
       endif
@@ -1312,12 +1313,16 @@ module Boundcond
 !  After-communication handling of vector quantities for Yin-Yang grid.
 !
 !  30-nov-15/MR: coded
+!  29-feb-16/MR: avoided double transformation in ghost zone corners 
+!                which is already done in bc_yy_y
 !
       use General, only: transform_cart_spher
 
       real, dimension (:,:,:,:) :: f
       integer :: j
       character (len=bclen) :: topbot
+
+      integer :: iya, iye
 !
       if (.not.lyinyang) &
         call fatal_error_local('bc_yy_z','BC not legal as no Yin-Yang grid run.')
@@ -1330,10 +1335,15 @@ module Boundcond
 !  the local spherical coordinate basis.
 !
         jdone=j+2     ! requires adjacent vector components
+
+        iya=1; iye=my          
+        if (lfirst_proc_y) iya=m1
+        if (llast_proc_y) iye=m2
+      
         if (topbot=='bot') then
-          call transform_cart_spher(f,1,my,1,nghost,j)    ! in-place!
+          call transform_cart_spher(f,iya,iye,1,nghost,j)  ! in-place!
         else
-          call transform_cart_spher(f,1,my,n2+1,mz,j)
+          call transform_cart_spher(f,iya,iye,n2+1,mz,j)   ! ~  
         endif
       else
         jdone=0

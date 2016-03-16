@@ -250,8 +250,10 @@ program start
   if (lyinyang) then
     if (lroot) &
       print*, 'Setting latitude and longitude intervals for Yin-Yang grid, ignoring input'
-    !!!dang=.99*min(1./nygrid,3./nzgrid)*0.5*pi      ! only valid for equidistant grid!!
-    dang=.0*min(1./nygrid,3./nzgrid)*0.5*pi      ! only valid for equidistant grid!!
+!
+! Min(dy,dz) put between Yin and Yang grid at closest distance to minimize overlap.
+!
+    dang=.999*min(1./nygrid,3./nzgrid)*0.5*pi      ! only valid for equidistant grid!!
     xyz0(2:3) = (/ 1./4., 1./4. /)*pi+0.5*dang
     Lxyz(2:3) = (/ 1./2., 3./2. /)*pi-dang
   endif
@@ -306,7 +308,7 @@ program start
 !
 !  Size of box at local processor. The if-statement is for
 !  backward compatibility.
-!  MR: the following code doubled in run.f90. Perhaps to be put in initialize_grid?
+!  MR: the following code doubled in run.f90. Perhaps to be put in construct_grid?
 !
   if (lequidist(1)) then
     Lxyz_loc(1) = Lxyz(1)/nprocx
@@ -375,7 +377,7 @@ program start
 !
 !  Update the list of neighboring processes.
 !
-  call update_neighbors()
+  call update_neighbors
 !
 !  Write .general file for data explorer.
 !

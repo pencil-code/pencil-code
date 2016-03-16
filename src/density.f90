@@ -2043,7 +2043,7 @@ module Density
       if (lpencil(i_glnrho).or.lpencil(i_grho)) then
         call grad(f,ilnrho,p%glnrho)
         if (notanumber(p%glnrho)) then
-          print*, 'density:iproc,it,m,n=', iproc,it,m,n
+          print*, 'density:iproc,it,m,n=', iproc_world,it,m,n
           !print*, 'it,m,n=', it,m,n
           print*, "density:f(:,m,n,ilnrho)=",f(:,m,n,ilnrho)
           !print*, f(4,4,1:6,ilnrho)
