@@ -414,6 +414,8 @@ module Mpicomm
   integer, dimension (MPI_STATUS_SIZE) :: isend_stat_spole,irecv_stat_spole, &
                                           isend_stat_npole,irecv_stat_npole
 !
+  character(LEN=4) :: cyinyang=' '
+!
   contains
 !
 !***********************************************************************
