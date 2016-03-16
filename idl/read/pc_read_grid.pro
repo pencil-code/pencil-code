@@ -210,7 +210,7 @@ for i=0,ncpus-1 do begin
     return
   endif else $
     if check eq 1 then $
-      print, 'Try to read file "'+strtrim(filename,2)+'" with reversed endian swapp!'
+      print, 'Try to read file "'+strtrim(filename,2)+'" with reversed endian swap!'
  
   if (not keyword_set(quiet)) then print, 'Reading ' , filename , '...'
 

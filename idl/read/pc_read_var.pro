@@ -50,6 +50,7 @@
 ;   /nostats: Suppress only summary statistics.
 ;     /stats: Force printing of summary statistics even if /quiet is set.
 ;      /help: Display this usage information, and exit.
+;    /sphere: For Yin-Yang grid only: create the triangulation on the unit sphere
 ;
 ; EXAMPLES:
 ;       pc_read_var, obj=vars            ;; read all vars into vars struct
@@ -85,7 +86,7 @@ pro pc_read_var,                                                  $
     swap_endian=swap_endian, f77=f77, varcontent=varcontent,      $
     global=global, scalar=scalar, run2D=run2D, noaux=noaux,       $
     ghost=ghost, bcx=bcx, bcy=bcy, bcz=bcz,                       $
-    exit_status=exit_status
+    exit_status=exit_status, sphere=sphere
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -204,7 +205,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
     if (param.lyinyang) then yinyang=1
 ;
   if yinyang then $
-    print, 'ATTENTION: This is a Yin-Yang grid run. Data are read in without any transformations!'
+    print, 'This is a Yin-Yang grid run. Data are retrieved both in separate and in merged arrays.'
 ;
 ; Set the coordinate system.
 ;
@@ -725,19 +726,64 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
   if (keyword_set(unshear)) then variables = 'pc_unshear('+variables+',param=param,xax=x[dim.l1:dim.l2],t=t)'
 ;
+  if yinyang then begin
+;
+;  Merge Yang and Yin grids; yz[2,*] is merged coordinate array; inds is index vector for Yang points outside Yin into its *1D* coordinate vectors
+;
+    merge_yin_yang, y[m1:m2], z[n1:n2], dy, dz, yz, inds
+;
+    if keyword_set(sphere) then begin
+      triangulate, yz[0,*], yz[1,*], triangles ;, sphere=sphere_data $  ; not operational, IDL bug?
+      sphere_data=''
+    endif else $
+      triangulate, yz[0,*], yz[1,*], triangles
+;
+;  Merge data. Variables have names "*_merge"
+;
+    for i=0,n_elements(tags)-1 do begin
+      idum=execute( 'isvec = not pc_is_scalarfield('+tags[i]+',dim=dim,yinyang=yinyang)')
+      if isvec then $
+;
+;  Transformation of theta and phi components in Yang missing yet.
+;
+        idum=execute( tags[i]+'_merge=[[ reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,*,0],[0,2,1,3]),nx,ny*nz,3)],'+ $ 
+                                      '[(reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,*,1],[0,2,1,3]),nx,ny*nz,3))[*,inds,*]]]' ) $
+      else $
+        idum=execute( tags[i]+'_merge=[[ reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,0],[0,2,1]),nx,ny*nz)],'+ $ 
+                                      '[(reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,1],[0,2,1]),nx,ny*nz))[*,inds]]]' )
+
+    endfor
+  endif
+;
 ; Make structure out of the variables.
 ;
-  if (param.lshear) then begin
-    makeobject = "object = "+ $
-        "CREATE_STRUCT(name=objectname,['t','x','y','z','dx','dy','dz','deltay'" + $
-        arraytostring(tags,QUOTE="'") + "],t,"+xyzstring+",dx,dy,dz,deltay" + $
-        arraytostring(variables) + ")"
-  endif else begin
-    makeobject = "object = "+ $
-        "CREATE_STRUCT(name=objectname,['t','x','y','z','dx','dy','dz'" + $
-        arraytostring(tags,QUOTE="'") + "],t,"+xyzstring+",dx,dy,dz" + $
-        arraytostring(variables) + ")"
-  endelse
+  tagnames="'t','x','y','z','dx','dy','dz'" 
+  if (param.lshear) then tagnames += ",'deltay'"
+;
+;  Merged coordinates and triangulation into object.
+;
+  if yinyang then begin
+    tagnames += ",'yz','triangles'" 
+    if keyword_set(sphere) then tagnames += ",'sphere_data'"
+  endif 
+  tagnames += arraytostring(tags,QUOTE="'") 
+;
+;  Merged data into object.
+;
+  if yinyang then $
+    tagnames += arraytostring(tags+'_merge',QUOTE="'") 
+
+  makeobject = "object = "+ $
+      "CREATE_STRUCT(name=objectname,["+tagnames+"],t,"+xyzstring+",dx,dy,dz"
+  if (param.lshear) then makeobject+=",deltay"
+  if yinyang then begin
+    makeobject += ",yz,triangles"
+    if keyword_set(sphere) then makeobject += ",sphere_data"
+  endif
+  makeobject += arraytostring(variables)
+  if yinyang then $
+    makeobject += arraytostring(variables+'_merge') 
+  makeobject += ")"      
 ;
 ; Execute command to make the structure.
 ;
@@ -755,9 +801,10 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
       print, '                             Variable summary:'
       print, ''
     endif
+
     pc_object_stats, object, dim=dim, trim=trimall, quiet=quiet, yinyang=yinyang
     print, ' t = ', t
     print, ''
   endif
-;
+
 end
