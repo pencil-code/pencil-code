@@ -236,6 +236,8 @@ module Energy
                                 ! DIAG_DOC:   \quad(time step relative to time
                                 ! DIAG_DOC:   step based on heat conductivity;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
+  integer :: idiag_Hmax=0       ! DIAG_DOC: $H_{\rm max}$\quad(net heat sources
+                                ! DIAG_DOC: summed see \S~\ref{time-step})
   integer :: idiag_dtH=0       ! DIAG_DOC: $\delta t / [c_{\delta t,{\rm s}}\, 
                                 ! DIAG_DOC:  c_{\rm v}T /H_{\rm max}]$
                                 ! DIAG_DOC:   \quad(time step relative to time
@@ -1004,7 +1006,7 @@ module Energy
         call get_shared_variable('reference_state',reference_state)
 !
       lslope_limit_diff=lslope_limit_diff .or. lenergy_slope_limited
-
+!
     endsubroutine initialize_energy
 !***********************************************************************
     subroutine rescale_TT_in_ss(f)
@@ -2483,7 +2485,7 @@ module Energy
         endif
       endif
       if (lheatc_chi_cspeed) then
-        lpenc_requested(i_cp1)=.true.
+        lpenc_requested(i_cp)=.true.
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
@@ -2578,6 +2580,7 @@ module Energy
 !
       if (idiag_dtchi/=0) lpenc_diagnos(i_rho1)=.true.
       if (idiag_dtH/=0) lpenc_diagnos(i_ee)=.true.
+      if (idiag_Hmax/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_ethdivum/=0) lpenc_diagnos(i_divu)=.true.
       if (idiag_csm/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
@@ -3002,6 +3005,7 @@ module Energy
         if (idiag_dtchi/=0) &
             call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         if (idiag_dtH/=0) call max_mn_name(Hmax/p%ee/cdts,idiag_dtH,l_dt=.true.)
+        if (idiag_Hmax/=0)   call max_mn_name(Hmax/p%ee,idiag_Hmax)
         if (idiag_ssmax/=0)  call max_mn_name(p%ss*uT,idiag_ssmax)
         if (idiag_ssmin/=0)  call max_mn_name(-p%ss*uT,idiag_ssmin,lneg=.true.)
         if (idiag_TTmax/=0)  call max_mn_name(p%TT*uT,idiag_TTmax)
@@ -3628,7 +3632,7 @@ module Energy
         endif
       else
         call dot(p%glnrho+1.5*p%glnTT,p%glnTT,g2)
-        thdiff=thchi*(p%del2lnTT+g2)/p%cp1
+        thdiff=thchi*(p%del2lnTT+g2)*p%cp
         if (chi_t/=0.) then
           call dot(p%glnrho+p%glnTT,p%gss,g2)
 !
@@ -3938,14 +3942,14 @@ module Energy
       if (pretend_lnTT) then
         thdiff=gamma*chi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)
       else
-         if (lchi_shock_density_dep) then
-           call dot(p%gshock,p%gss,gshockgss)
-           call dot(0.66666666667*p%glnrho+p%glnTT,p%gss,g2)
-           thdiff=exp(-0.3333333333332*p%lnrho)*chi_shock* &
-                  (p%shock*(exp(0.6666666666667*p%lnrho)*p%del2ss+g2)+gshockgss)
-         else
-           thdiff=chi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)
-         endif
+        if (lchi_shock_density_dep) then
+          call dot(p%gshock,p%gss,gshockgss)
+          call dot(0.66666666667*p%glnrho+p%glnTT,p%gss,g2)
+          thdiff=exp(-0.3333333333332*p%lnrho)*chi_shock* &
+                 (p%shock*(exp(0.6666666666667*p%lnrho)*p%del2ss+g2)+gshockgss)
+        else
+          thdiff=chi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)
+        endif
       endif
 !
 !  Add heat conduction to entropy equation.
@@ -5691,6 +5695,7 @@ module Energy
         idiag_gTxgsxmxy=0;idiag_gTxgsymxy=0;idiag_gTxgszmxy=0
         idiag_fradymxy_Kprof=0; idiag_fturbymxy=0; idiag_fconvxmx=0
         idiag_Kkramersm=0; idiag_Kkramersmx=0; idiag_Kkramersmz=0
+        idiag_Hmax=0; idiag_dtH=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -5699,6 +5704,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'dtc',idiag_dtc)
         call parse_name(iname,cname(iname),cform(iname),'dtchi',idiag_dtchi)
         call parse_name(iname,cname(iname),cform(iname),'dtH',idiag_dtH)
+        call parse_name(iname,cname(iname),cform(iname),'Hmax',idiag_Hmax)
         call parse_name(iname,cname(iname),cform(iname),'ethtot',idiag_ethtot)
         call parse_name(iname,cname(iname),cform(iname),'ethdivum',idiag_ethdivum)
         call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
