@@ -18,7 +18,7 @@ from pencilnew.math.interpolation import vec_int
 
 class FixedPoint(object):
     """
-    fixed_points -- Holds the fixed points and additional integrated quantities.
+    FixedPoint -- Holds the fixed points and additional integrated quantities.
     """
 
     def __init__(self):
@@ -32,6 +32,7 @@ class FixedPoint(object):
         self.fixed_points = []
         self.fixed_sign = []
         self.poincare = []
+        self.tracers = []
 
 
     def find_fixed(self, data_dir='data/', destination='fixed_points.hf5',
@@ -106,11 +107,9 @@ class FixedPoint(object):
         """
 
 
-        # Return the fixed points for a subset of the domain for the initial
-        # fixed points.
-        def __sub_fixed_init(queue, ix0, iy0, field, tracers, var, i_proc):
+        # Return the fixed points for a subset of the domain.
+        def __sub_fixed(queue, ix0, iy0, field, tracers, tidx, var, i_proc):
             diff = np.zeros((4, 2))
-
             fixed = []
             fixed_sign = []
             fidx = 0
@@ -120,34 +119,34 @@ class FixedPoint(object):
             for ix in ix0[i_proc::self.params.n_proc]:
                 for iy in iy0:
                     # Compute Poincare index around this cell (!= 0 for potential fixed point).
-                    diff[0, :] = np.array([tracers.x1[ix, iy, 0] - tracers.x0[ix, iy, 0],
-                                           tracers.y1[ix, iy, 0] - tracers.y0[ix, iy, 0]])
-                    diff[1, :] = np.array([tracers.x1[ix+1, iy, 0] - tracers.x0[ix+1, iy, 0],
-                                           tracers.y1[ix+1, iy, 0] - tracers.y0[ix+1, iy, 0]])
-                    diff[2, :] = np.array([tracers.x1[ix+1, iy+1, 0] - tracers.x0[ix+1, iy+1, 0],
-                                           tracers.y1[ix+1, iy+1, 0] - tracers.y0[ix+1, iy+1, 0]])
-                    diff[3, :] = np.array([tracers.x1[ix, iy+1, 0] - tracers.x0[ix, iy+1, 0],
-                                           tracers.y1[ix, iy+1, 0] - tracers.y0[ix, iy+1, 0]])
+                    diff[0, :] = np.array([tracers.x1[ix, iy, tidx] - tracers.x0[ix, iy, tidx],
+                                           tracers.y1[ix, iy, tidx] - tracers.y0[ix, iy, tidx]])
+                    diff[1, :] = np.array([tracers.x1[ix+1, iy, tidx] - tracers.x0[ix+1, iy, tidx],
+                                           tracers.y1[ix+1, iy, tidx] - tracers.y0[ix+1, iy, tidx]])
+                    diff[2, :] = np.array([tracers.x1[ix+1, iy+1, tidx] - tracers.x0[ix+1, iy+1, tidx],
+                                           tracers.y1[ix+1, iy+1, tidx] - tracers.y0[ix+1, iy+1, tidx]])
+                    diff[3, :] = np.array([tracers.x1[ix, iy+1, tidx] - tracers.x0[ix, iy+1, tidx],
+                                           tracers.y1[ix, iy+1, tidx] - tracers.y0[ix, iy+1, tidx]])
                     if sum(np.sum(diff**2, axis=1) != 0):
                         diff = np.swapaxes(np.swapaxes(diff, 0, 1) /
                                np.sqrt(np.sum(diff**2, axis=1)), 0, 1)
-                    poincare = __poincare_index(field, tracers.x0[ix:ix+2, iy, 0],
-                                                tracers.y0[ix, iy:iy+2, 0], diff)
+                    poincare = __poincare_index(field, tracers.x0[ix:ix+2, iy, tidx],
+                                                tracers.y0[ix, iy:iy+2, tidx], diff)
                     poincare_array[ix/n_proc, iy] = poincare
 
                     if abs(poincare) > 5: # Use 5 instead of 2*pi to account for rounding errors.
                         # Subsample to get starting point for iteration.
                         nt = 4
-                        xmin = tracers.x0[ix, iy, 0]
-                        ymin = tracers.y0[ix, iy, 0]
-                        xmax = tracers.x0[ix+1, iy, 0]
-                        ymax = tracers.y0[ix, iy+1, 0]
+                        xmin = tracers.x0[ix, iy, tidx]
+                        ymin = tracers.y0[ix, iy, tidx]
+                        xmax = tracers.x0[ix+1, iy, tidx]
+                        ymax = tracers.y0[ix, iy+1, tidx]
                         xx = np.zeros((nt**2, 3))
                         tracers_part = np.zeros((nt**2, 5))
                         i1 = 0
                         for j1 in range(nt):
                             for k1 in range(nt):
-                                xx[i1, 0] = xmin + j1/(nt-1.)*(xmax-xmin)
+                                xx[i1, tidx] = xmin + j1/(nt-1.)*(xmax-xmin)
                                 xx[i1, 1] = ymin + k1/(nt-1.)*(ymax-ymin)
                                 xx[i1, 2] = self.params.Oz
                                 i1 += 1
@@ -183,11 +182,11 @@ class FixedPoint(object):
                         fixed_point = __null_point(point, var)
 
                         # Check if fixed point lies inside the cell.
-                        if ((fixed_point[0] < tracers.x0[ix, iy, 0]) or
-                            (fixed_point[0] > tracers.x0[ix+1, iy, 0]) or
-                            (fixed_point[1] < tracers.y0[ix, iy, 0]) or
-                            (fixed_point[1] > tracers.y0[ix, iy+1, 0])):
-                            print "warning: fixed point lies outside the cell"
+                        if ((fixed_point[0] < tracers.x0[ix, iy, tidx]) or
+                            (fixed_point[0] > tracers.x0[ix+1, iy, tidx]) or
+                            (fixed_point[1] < tracers.y0[ix, iy, tidx]) or
+                            (fixed_point[1] > tracers.y0[ix, iy+1, tidx])):
+                                pass
                         else:
                             fixed.append(fixed_point)
                             fixed_sign.append(np.sign(poincare))
@@ -196,7 +195,7 @@ class FixedPoint(object):
             queue.put((i_proc, fixed, fixed_sign, fidx, poincare_array))
 
 
-        # Finds the Poincare index of this grid cell.
+        # Find the Poincare index of this grid cell.
         def __poincare_index(field, sx, sy, diff):
             poincare = 0
             poincare += __edge(field, [sx[0], sx[1]], [sy[0], sy[0]],
@@ -311,7 +310,6 @@ class FixedPoint(object):
 
                 if it > 20:
                     fixed_point = point
-                    print "warning: Newton did not converged"
                     break
 
                 it += 1
@@ -387,11 +385,6 @@ class FixedPoint(object):
         self.params.destination = destination
         self.params.n_proc = n_proc
 
-        # Multi core setup.
-        if not(np.isscalar(n_proc)) or (n_proc%1 != 0):
-            print "error: invalid processor number"
-            return -1
-
         # Make sure to read the var files with the correct magic.
         magic = []
         if trace_field == 'bb':
@@ -439,12 +432,12 @@ class FixedPoint(object):
         self.params.ny = dim.ny
         self.params.nz = dim.nz
 
-        # Create the initial mapping.
+        # Create the mapping for all times.
         tracers = Tracers()
-        tracers.find_tracers(trace_field='bb', h_min=h_min, h_max=h_max,
+        tracers.find_tracers(trace_field=trace_field, h_min=h_min, h_max=h_max,
                              len_max=len_max, tol=tol,
                              interpolation=interpolation,
-                             trace_sub=trace_sub, varfile=varfile,
+                             trace_sub=trace_sub, varfile=varfile, ti=ti, tf=tf,
                              integration=integration, data_dir=data_dir,
                              int_q=int_q, n_proc=n_proc)
         self.tracers = tracers
@@ -453,59 +446,26 @@ class FixedPoint(object):
         self.t = np.zeros((tf-ti+1)*series + (1-series))
         self.fidx = np.zeros((tf-ti+1)*series + (1-series))
         self.poincare = np.zeros([int(trace_sub*dim.nx),
-                                  int(trace_sub*dim.ny)])
+                                  int(trace_sub*dim.ny), n_times])
         ix0 = range(0, int(self.params.nx*trace_sub)-1)
         iy0 = range(0, int(self.params.ny*trace_sub)-1)
 
-        # Start the parallelized fixed point finding for the initial time.
-        proc = []
-        sub_data = []
-        fixed = []
-        fixed_sign = []
-        for i_proc in range(n_proc):
-            proc.append(mp.Process(target=__sub_fixed_init,
-                                   args=(queue, ix0, iy0, field, tracers, var,
-                                         i_proc)))
-        for i_proc in range(n_proc):
-            proc[i_proc].start()
-        for i_proc in range(n_proc):
-            sub_data.append(queue.get())
-        for i_proc in range(n_proc):
-            proc[i_proc].join()
-        for i_proc in range(n_proc):
-            # Extract the data from the single cores. Mind the order.
-            sub_proc = sub_data[i_proc][0]
-            fixed.extend(sub_data[i_proc][1])
-            fixed_sign.extend(sub_data[i_proc][2])
-            self.fidx[0] += sub_data[i_proc][3]
-            self.poincare[sub_proc::n_proc, :] = sub_data[i_proc][4]
-        for i_proc in range(n_proc):
-            proc[i_proc].terminate()
-
-        # Discard fixed points which lie too close to each other.
-        fixed, fixed_sign = __discard_close_fixed_points(np.array(fixed),
-                                                         np.array(fixed_sign),
-                                                         var)
-        self.fixed_points.append(np.array(fixed))
-        self.fixed_sign.append(np.array(fixed_sign))
-
-        # Find the fixed points for the remaining times.
-        for t_idx in range(1, n_times):
-            # Read the data.
-            varfile = 'VAR' + str(t_idx+ti)
-            var = pc.read_var(varfile=varfile, datadir=data_dir, magic=magic,
-                              quiet=True, trimall=True)
-            field = getattr(var, trace_field)
-            self.t[t_idx] = var.t
-
-            # Find the new fixed points.
+        # Start the parallelized fixed point finding.
+        for tidx in range(n_times):
+            if tidx > 0:
+                var = pc.read_var(varfile='VAR'+str(tidx+ti), datadir=data_dir,
+                                  magic=magic, quiet=True, trimall=True)
+                field = getattr(var, trace_field)
+                self.t[tidx] = var.t
+            
             proc = []
             sub_data = []
             fixed = []
             fixed_sign = []
             for i_proc in range(n_proc):
-                proc.append(mp.Process(target=__sub_fixed_series,
-                                       args=(queue, t_idx, field, var, i_proc)))
+                proc.append(mp.Process(target=__sub_fixed,
+                                       args=(queue, ix0, iy0, field, self.tracers,
+                                             tidx, var, i_proc)))
             for i_proc in range(n_proc):
                 proc[i_proc].start()
             for i_proc in range(n_proc):
@@ -517,6 +477,8 @@ class FixedPoint(object):
                 sub_proc = sub_data[i_proc][0]
                 fixed.extend(sub_data[i_proc][1])
                 fixed_sign.extend(sub_data[i_proc][2])
+                self.fidx[tidx] += sub_data[i_proc][3]
+                self.poincare[sub_proc::n_proc, :, tidx] = sub_data[i_proc][4]
             for i_proc in range(n_proc):
                 proc[i_proc].terminate()
 
@@ -526,9 +488,8 @@ class FixedPoint(object):
                                                              var)
             self.fixed_points.append(np.array(fixed))
             self.fixed_sign.append(np.array(fixed_sign))
-            self.fidx[t_idx] = np.sum(fixed_sign)
 
-        # Compute the traced quantities.
+        # Compute the traced quantities along the fixed point streamlines.
         if any(np.array(self.params.int_q) == 'curly_A') or \
         any(np.array(self.params.int_q) == 'ee'):
             for t_idx in range(0, n_times):
