@@ -35,7 +35,6 @@ module Particles_surfspec
   character(len=labellen), dimension(ninit) :: init_surf='nothing'
   character(len=10), dimension(:), allocatable :: solid_species
   real, dimension(10) :: init_surf_mol_frac
-  real :: surfplaceholder=0.0
   real, dimension(:,:), allocatable :: nu_power
   integer :: Ysurf
   logical :: lspecies_transfer=.true.
@@ -43,6 +42,7 @@ module Particles_surfspec
   logical :: lboundary_explicit=.true.
   logical :: lpchem_cdtc=.false.
   logical :: lpchem_mass_enth=.true.
+  logical :: lwrite=.true.
 !
   integer :: jH2, jO2, jCO2, jCO, jCH4, jN2, jH2O
   integer :: jOH, jAR, jO, jH, jCH, jCH2, jHCO, jCH3
@@ -59,7 +59,6 @@ module Particles_surfspec
   namelist /particles_surf_init_pars/ init_surf, init_surf_mol_frac
 !
   namelist /particles_surf_run_pars/ &
-      surfplaceholder, &
       lboundary_explicit, &
       linfinite_diffusion, &
       lspecies_transfer, &
@@ -171,6 +170,11 @@ module Particles_surfspec
 ! Find the mole production of the forward reaction
       call create_dngas()
 !
+      if (lwrite) then
+        call write_outputfile()
+      endif
+      lwrite=.false.
+!
     endsubroutine register_indep_psurfspec
 ! ******************************************************************************
     subroutine register_dep_psurfspec()
@@ -217,24 +221,26 @@ module Particles_surfspec
 !
 !  01-sep-14/jonas: coded
 !
-    subroutine init_particles_surf(f,fp)
+    subroutine init_particles_surf(f,fp,ineargrid)
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mpar_loc,mparray) :: fp
+      integer, dimension(mpar_loc,3) :: ineargrid
       real :: sum_surf_spec
-      integer :: i, j,k
+      real :: mean_molar_mass
+      integer :: i, j,k,ix0,igas,iy0,iz0
 !
       intent(in) :: f
       intent(out) :: fp
-!
-      call keep_compiler_quiet(f)
 !
       fp(:,isurf:isurf_end) = 0.
       do j = 1,ninit
 !
 ! Writing the initial surface species fractions
         select case (init_surf(j))
+!
         case ('nothing')
           if (lroot .and. j == 1) print*, 'init_particles_surf,gas phase: nothing'
+!
         case ('constant')
           if (lroot) print*, 'init_particles_surf: Initial Surface Fractions'
 !
@@ -247,14 +253,42 @@ module Particles_surfspec
           endif
 !
           if (sum_surf_spec == 0.0) then
-            if (lroot) print*, 'No initial surface fration, setting last one to 1'
-            init_surf_mol_frac(N_surface_species) = 1.0
+            call fatal_error('particles_surfspec', &
+                'initial molefraction was given without value. '// &
+                'please specify the initial gas fraction')
           endif
 !
           do k = 1,mpar_loc
             fp(k,isurf:isurf_end) = fp(k,isurf:isurf_end) + &
                 init_surf_mol_frac(1:N_surface_species)
           enddo
+        case ('gas')
+!
+!  The starting particle surface mole fraction is equal to the 
+!  gas phase composition at the particles position.
+!  This is not functional, and this would need the initialization of
+!  The gas field before
+          do k = 1,mpar_loc
+            ix0 = ineargrid(k,1)
+            iy0 = ineargrid(k,2)
+            iz0 = ineargrid(k,3)
+            mean_molar_mass = 0.0
+!
+            do i = 1,nchemspec
+              mean_molar_mass = mean_molar_mass + &
+                  species_constants(i,imass) * f(ix0,iy0,iz0,ichemspec(i))
+            enddo
+! 
+           do i = 1, N_surface_species
+              igas = ichemspec(jmap(i))
+!              print*, 'igas',igas
+!              print*, 'f',f(ix0,iy0,iz0,igas)
+!              print*, 'mass',species_constants(jmap(i),imass)
+              fp(k,isurf+i-1) = f(ix0,iy0,iz0,igas) / &
+                  species_constants(jmap(i),imass)*mean_molar_mass
+            enddo
+          enddo
+!
         case default
           if (lroot) &
               print*, 'init_particles_ads: No such such value for init_surf: ', &
@@ -382,7 +416,8 @@ module Particles_surfspec
 !
 ! the term 3/fp(k,iap) is ratio of the surface of a sphere to its volume
 !
-                dfp(k,isurf+i-1) = 3*term(k,i)/(porosity*Cg(k)*fp(k,iap))
+                dfp(k,isurf+i-1) = dfp(k,isurf+i-1) + 3*term(k,i)/(porosity*Cg(k)*fp(k,iap))
+                print*, 'dfp(k,isurf+i-1): ',k,i,dfp(k,isurf+i-1)
               enddo
             else
               if (linfinite_diffusion .or. lbaum_and_street) then
@@ -849,5 +884,44 @@ module Particles_surfspec
       enddo
 !
     endfunction find_index
-! ******************************************************************************
+!***********************************************************************
+    subroutine write_outputfile()
+!
+!  Write particle chemistry info to ./data/particle_chemistry.out
+!
+      integer :: file_id=123
+      integer :: k
+      character(len=20) :: writeformat
+      character(len=30) :: output='./data/particle_chemistry.out' 
+!
+      open (file_id,file=output,position='append')
+!     
+      writeformat = '(  A8)'
+      write (writeformat(2:3),'(I2)') N_surface_species
+      write (file_id,*) 'Gas phase surface species'
+      write (file_id,writeformat) solid_species
+      write (file_id,*) ''
+!
+      writeformat = '(I2,  F5.2)'
+      write (writeformat(5:6),'(I2)') N_surface_species
+      write (file_id,*) 'Nu'
+      do k = 1,N_surface_reactions
+        write (file_id,writeformat) k,nu(:,k)
+      enddo
+      write (file_id,*) ''
+!
+      write (file_id,*) 'Nu*'
+      do k = 1,N_surface_reactions
+        write(file_id,writeformat) k,nu_prime(:,k)
+      enddo
+      write (file_id,*) ''
+!
+      writeformat = '(  I3)'
+      write (writeformat(2:3),'(I2)') N_surface_species
+      write (file_id,*) 'J_map, mapping to nchemspec'
+      write (file_id,writeformat) jmap
+      write (file_id,*) ''
+!
+    endsubroutine write_outputfile
+!***********************************************************************
 endmodule Particles_surfspec
