@@ -559,4 +559,3 @@ class TracersParameterClass(object):
         self.data_dir = 'data/'
         self.destination = 'tracers.hdf5'
         self.n_proc = 1
-
