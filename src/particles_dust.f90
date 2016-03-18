@@ -3968,9 +3968,9 @@ module Particles
 !  Calculate the particle mass divided by the cell volume
                     if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
                       if (lprecalc_cell_volumes) then
-                        volume_cell = f(ixx,iyy,izz,ivol)
+                        volume_cell = f(ix0,iy0,iz0,ivol)
                       else
-                        call find_grid_volume(ixx,iyy,izz,volume_cell)
+                        call find_grid_volume(ix0,iy0,iz0,volume_cell)
                       endif
                       mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
                       if (lparticles_number) then
