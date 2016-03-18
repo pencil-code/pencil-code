@@ -692,7 +692,7 @@ module Forcing
             siny(:,i)=embedy(:,i)*siny(:,i); cosy(:,i)=embedy(:,i)*cosy(:,i)
             cosz(:,i)=embedz(:,i)*cosz(:,i)
           endif
-        elseif (iforcing_cont(i)=='cosx(:,i)*cosy(:,i)*cosz(:,i)') then
+        elseif (iforcing_cont(i)=='cosx*cosy*cosz') then
           if (lroot) print*,'forcing_cont: cosx(:,i)*cosy(:,i)*cosz(:,i)'
           sinx(:,i)=sin(kf_fcont(i)*x); cosx(:,i)=cos(kf_fcont(i)*x)
           siny(:,i)=sin(kf_fcont(i)*y); cosy(:,i)=cos(kf_fcont(i)*y)
