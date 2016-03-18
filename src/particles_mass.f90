@@ -188,7 +188,7 @@ module Particles_mass
       if (ldiagnos) then
         if (idiag_mpm /= 0)   call sum_par_name(fp(1:npar_loc,imp),idiag_mpm)
         if (idiag_convm /= 0) call sum_par_name(1.-fp(1:npar_loc,imp) &
-            /fp(1:mpar_loc,impinit),idiag_convm)
+            /fp(1:npar_loc,impinit),idiag_convm)
         if (idiag_rhosurf /= 0)   call sum_par_name(fp(1:npar_loc,irhosurf),idiag_rhosurf)
         if (idiag_chrhopm /= 0) then
           call sum_par_name(fp(1:npar_loc,imp)/(4./3.*pi*fp(1:npar_loc,iap)**3),idiag_chrhopm)
@@ -236,11 +236,13 @@ module Particles_mass
         k1 = k1_imn(imn)
         k2 = k2_imn(imn)
 !
-        allocate(St(k1:k2))
-        allocate(Rck_max(k1:k2,1:N_surface_reactions))
-        allocate(mass_loss(k1:k2))
+        if (lparticles_chemistry) then
+          allocate(St(k1:k2))
+          allocate(Rck_max(k1:k2,1:N_surface_reactions))
+          allocate(mass_loss(k1:k2))
 !
-        call get_mass_chemistry(mass_loss,St,Rck_max)
+          call get_mass_chemistry(mass_loss,St,Rck_max)
+        endif
 !
 ! Loop over all particles in current pencil.
         do k = k1,k2
