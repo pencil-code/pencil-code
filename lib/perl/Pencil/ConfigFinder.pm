@@ -78,9 +78,12 @@ sub locate_config_files {
 
     my @config_files;
     file: for my $file (@files) {
+        $file =~ s/\.conf$//is;
         if ($file =~ m{^/}) {   # absolute path
             if (-e $file) {
                 push @config_files, $file;
+            } elsif (-e $file.'.conf') {
+                push @config_files, $file.'.conf';
             } else {
                 croak("No such file: $file\n") unless ($quiet);
             }
@@ -91,8 +94,12 @@ sub locate_config_files {
                     push @config_files, $filepath;
                     next file;
                 }
+                if (-e $filepath.'.conf') {
+                    push @config_files, $filepath.'.conf';
+                    next file;
+                }
             }
-            warn("Found no config file $file\n");
+            warn("Found no config file: $file\n");
             return ();
         }
     }
@@ -161,6 +168,7 @@ sub locate_config_file {
 # If no file is found, return undef;
 #
     my ($root, $id, $recurse) = @_;
+print "==> search: ".$root." : ".$id." R:".$recurse."\n";
     return undef unless (-d $root);
 
     # Recursive
