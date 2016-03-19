@@ -88,8 +88,13 @@ sub locate_config_files {
         } else {
             dir: for my $dir (@config_path) {
                 my $filepath = "$dir/$file";
+                my $filepath_short = $filepath;
+                $filepath_short =~ s/\.conf$//is;
                 if (-e $filepath) {
                     push @config_files, $filepath;
+                    next file;
+                } elsif (-e $filepath_short) {
+                    push @config_files, $filepath_short;
                     next file;
                 }
             }
