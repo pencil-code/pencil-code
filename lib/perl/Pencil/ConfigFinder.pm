@@ -144,7 +144,8 @@ sub find_config_file_for {
     for my $dir (@config_path) {
         my $subdir_path = "${dir}/${subdir}";
         my $file = locate_config_file($subdir_path, $id.'.conf', $recurse);
-        my $file = locate_config_file($subdir_path, $id, $recurse);
+        return $file if defined $file;
+        $file = locate_config_file($subdir_path, $id, $recurse);
         return $file if defined $file;
     }
 
