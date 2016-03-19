@@ -84,13 +84,6 @@ sub locate_config_files {
             } else {
                 croak("No such file: $file\n") unless ($quiet);
             }
-            if ($file !~ /\.conf$/) {
-                if (-e $file.'.conf') {
-                    push @config_files, $file.'.conf';
-                } else {
-                    croak("No such file: $file.conf\n") unless ($quiet);
-                }
-            }
         } else {
             dir: for my $dir (@config_path) {
                 my $filepath = "$dir/$file";
@@ -98,15 +91,8 @@ sub locate_config_files {
                     push @config_files, $filepath;
                     next file;
                 }
-                if ($filepath !~ /\.conf$/) {
-                    if (-e $filepath.'.conf') {
-                        push @config_files, $filepath.'.conf';
-                        next file;
-                    }
-                }
             }
             warn("Found no config file $file\n");
-            if ($file !~ /\.conf$/) { warn("Found no config file $file.conf\n"); }
             return ();
         }
     }
@@ -153,9 +139,11 @@ sub find_config_file_for {
 
     # Replace whitespace and '/' by _ to avoid problems in file names
     $id =~ s{(\s|/)+}{_}g;
+    $id =~ s/\.conf$//is;
 
     for my $dir (@config_path) {
         my $subdir_path = "${dir}/${subdir}";
+        my $file = locate_config_file($subdir_path, $id.'.conf', $recurse);
         my $file = locate_config_file($subdir_path, $id, $recurse);
         return $file if defined $file;
     }
@@ -187,19 +175,16 @@ sub locate_config_file {
     }
 
     # Non-recursive
-    my $file = "${root}/${id}.conf";
-    unless (-e $file) {
-        debug("No such file: <$file>\n");
-        return undef;
-    }
-
-    debug("Found file: <$file>\n");
-    if (-f $file) {
-        return $file;
-    } else {
+    my $file = "${root}/${id}";
+    if (-e $file) {
+        if (-f $file) {
+            debug("Found file: <$file>\n");
+            return $file;
+        }
         warn "Not a regular file: <$file>\n";
+    } else {
+        debug("No such file: <$file>\n");
     }
-
     return undef;
 }
 
