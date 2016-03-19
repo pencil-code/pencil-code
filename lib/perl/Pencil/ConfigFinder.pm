@@ -168,7 +168,6 @@ sub locate_config_file {
 # If no file is found, return undef;
 #
     my ($root, $id, $recurse) = @_;
-print "==> search: ".$root." : ".$id." R:".$recurse."\n";
     return undef unless (-d $root);
 
     # Recursive
