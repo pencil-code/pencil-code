@@ -78,29 +78,35 @@ sub locate_config_files {
 
     my @config_files;
     file: for my $file (@files) {
-        my $file_ext = $file;
-        $file_ext .= '.conf' unless ($file =~ /\.conf$/); # add suffix if necessary
         if ($file =~ m{^/}) {   # absolute path
             if (-e $file) {
                 push @config_files, $file;
-            } elsif (-e $file_ext) {
-                push @config_files, $file_ext;
             } else {
                 croak("No such file: $file\n") unless ($quiet);
+            }
+            if ($file !~ /\.conf$/) {
+                if (-e $file.'.conf') {
+                    push @config_files, $file.'.conf';
+                } else {
+                    croak("No such file: $file.conf\n") unless ($quiet);
+                }
             }
         } else {
             dir: for my $dir (@config_path) {
                 my $filepath = "$dir/$file";
-                my $filepath_ext = "$dir/$file_ext";
                 if (-e $filepath) {
                     push @config_files, $filepath;
                     next file;
-                } elsif (-e $filepath_ext) {
-                    push @config_files, $filepath_ext;
-                    next file;
+                }
+                if ($filepath !~ /\.conf$/) {
+                    if (-e $filepath.'.conf') {
+                        push @config_files, $filepath.'.conf';
+                        next file;
+                    }
                 }
             }
             warn("Found no config file $file\n");
+            if ($file !~ /\.conf$/) { warn("Found no config file $file.conf\n"); }
             return ();
         }
     }
