@@ -304,7 +304,7 @@ module Special
 !
       if((deltat_alpm/=1.) .and. (t .gt. 1.)) then
         dtalpm_double=dble(deltat_alpm)
-        modulot=modulo(t,dtalpm_double)
+        modulot=nint(modulo(t,dtalpm_double))
         if(modulot.eq.0) then
           f(l1:l2,m,n,ialpm)=0
           df(l1:l2,m,n,ialpm)=0
