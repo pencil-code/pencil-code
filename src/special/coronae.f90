@@ -2195,12 +2195,12 @@ module Special
       if (lvideo) then
 !
 ! slices
-        newton_yz(m-m1+1,n-n1+1)=newton(ix_loc-l1+1)
-        if (m == iy_loc)  newton_xz(:,n-n1+1)= newton
-        if (n == iz_loc)  newton_xy(:,m-m1+1)= newton
-        if (n == iz2_loc) newton_xy2(:,m-m1+1)= newton
-        if (n == iz3_loc) newton_xy3(:,m-m1+1)= newton
-        if (n == iz4_loc) newton_xy4(:,m-m1+1)= newton
+        newton_yz(m-m1+1,n-n1+1)= -1 ! this is undefined: newton(ix_loc-l1+1)
+        if (m == iy_loc)  newton_xz(:,n-n1+1)= -1 ! this is undefined: newton
+        if (n == iz_loc)  newton_xy(:,m-m1+1)= -1 ! this is undefined: newton
+        if (n == iz2_loc) newton_xy2(:,m-m1+1)= -1 ! this is undefined: newton
+        if (n == iz3_loc) newton_xy3(:,m-m1+1)= -1 ! this is undefined: newton
+        if (n == iz4_loc) newton_xy4(:,m-m1+1)= -1 ! this is undefined: newton
       endif
 !
       if (lfirst.and.ldt) then
