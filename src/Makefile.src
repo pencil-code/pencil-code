@@ -2314,7 +2314,7 @@ cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
 	fi
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o cparam.o -c cparam.f90
 #
-special_dummies.inc:  nospecial.f90 $(SPECIAL).f90
+special_dummies.inc:  nospecial.f90 $(SPECIAL).f90 Makefile.local
 	scripts/mkdummyinc -d nospecial.f90 -s $(SPECIAL).f90 > special_dummies.inc
 #
 initial_condition_dummies.inc:  noinitial_condition.f90 $(INITIAL_CONDITION).f90
