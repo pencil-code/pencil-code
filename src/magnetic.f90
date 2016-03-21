@@ -7141,13 +7141,26 @@ module Magnetic
 !
         case ('powerlaw-x','powerlaw_x')
 !
-!  eta proportional to chosen power of z...
+!  eta proportional to chosen power of x...
 !
           eta_x = eta*(1.+(x-x0)/eta_x0)**eta_power_x
 !
 !  ... and its gradient.
 !
           geta_x = eta_power_x*eta_x/(eta_x0+x)
+!
+!  Powerlaw-x2: same profile as for viscosity (will produce eta=0 if 
+!  x crosses zero)
+!
+        case ('powerlaw-x2','powerlaw_x2')
+!
+!  eta proportional to chosen power of x...
+!
+          eta_x = eta*(x/eta_x0)**eta_power_x
+!
+!  ... and its gradient.
+!
+          geta_x = eta_power_x*eta_x/eta_x0
 !
       endselect
 !
