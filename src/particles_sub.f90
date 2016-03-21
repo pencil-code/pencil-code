@@ -22,6 +22,7 @@ module Particles_sub
   public :: count_particles, output_particle_size_dist
   public :: get_rhopswarm, find_grid_volume, find_interpolation_weight
   public :: find_interpolation_indeces, get_gas_density, precalc_cell_volumes
+  public :: precalc_weights
 !
   interface get_rhopswarm
     module procedure get_rhopswarm_ineargrid
@@ -1282,5 +1283,22 @@ module Particles_sub
         enddo
       enddo
     endsubroutine precalc_cell_volumes
+!***********************************************************************
+    subroutine precalc_weights(weight_array)
+!
+      real, dimension(:,:,:) :: weight_array
+      integer :: i,j,k
+!
+      weight_array=1.0
+      do i=1,7
+        do j=1,7
+          do k=1,7
+            weight_array(i,j,k) = gab_weights(abs(i-4)+1)* &
+                gab_weights(abs(j-4)+1) * gab_weights(abs(k-4)+1)
+          enddo
+        enddo
+      enddo
+!
+    endsubroutine precalc_weights
 !***********************************************************************
 endmodule Particles_sub

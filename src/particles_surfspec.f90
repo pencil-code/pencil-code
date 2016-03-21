@@ -55,6 +55,7 @@ module Particles_surfspec
   real, dimension(:,:), allocatable :: X_infty_reactants
   real, dimension(:,:), allocatable :: mass_trans_coeff_reactants
   real, dimension(:,:), allocatable :: mass_trans_coeff_species
+  real, dimension(7,7,7) :: weight_array
 !
   namelist /particles_surf_init_pars/ init_surf, init_surf_mol_frac
 !
@@ -188,6 +189,9 @@ module Particles_surfspec
     subroutine initialize_particles_surf(f)
       real, dimension(mx,my,mz,mfarray) :: f
 !
+      if (lparticlemesh_gab) call precalc_weights(weight_array)
+!      print*, weight_array
+!
       call keep_compiler_quiet(f)
     endsubroutine initialize_particles_surf
 ! ******************************************************************************
@@ -318,8 +322,8 @@ module Particles_surfspec
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
 !
-      df(:,:,:,ichemspec(nchemspec)) = df(:,:,:,ichemspec(nchemspec))- &
-          sum(df(:,:,:,ichemspec(:)),DIM=4)
+!      df(:,:,:,ichemspec(nchemspec)) = df(:,:,:,ichemspec(nchemspec))- &
+!          sum(df(:,:,:,ichemspec(:)),DIM=4)
 !
       if (ldiagnos) then
         do i = 1,N_surface_species
@@ -373,6 +377,9 @@ module Particles_surfspec
 !  Set the particle reaction time to 0 if no particles are present
 !
       reac_pchem = 0.0
+!
+      if (lparticlemesh_gab) volume_cell = 1/(dx_1(1)*dy_1(1)*dz_1(1))
+!
       if (lpreactions) then
 !
 !  Do only if particles are present on the current pencil
@@ -439,8 +446,17 @@ module Particles_surfspec
               ix0 = ineargrid(k,1)
               iy0 = ineargrid(k,2)
               iz0 = ineargrid(k,3)
-              call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1, &
-                  fp,k,ix0,iy0,iz0)
+              if (lparticlemesh_gab) then
+                ixx0 = ix0 -3 
+                iyy0 = iy0 -3 
+                izz0 = iz0 -3 
+                ixx1 = ix0 +3 
+                iyy1 = iy0 +3 
+                izz1 = iz0 +3 
+              else
+                call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1, &
+                    fp,k,ix0,iy0,iz0)
+              endif
 !
 ! positive dmass means particle is losing mass
 ! jmap: gives the ichemspec of a surface specie
@@ -500,8 +516,15 @@ module Particles_surfspec
 !
 !  reac_pchem and dmass_frac_dt are here to obtain a heterogeneous timestep
 !
-                    call find_interpolation_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
-                    call find_grid_volume(ixx,iyy,izz,volume_cell)
+                    if (lparticlemesh_gab) then
+                      weight = weight_array(ixx-ixx0+1,iyy-iyy0+1,izz-izz0+1)
+!
+!  JONAS nasty: volume_cell is precalculated at the beginning of this subroutine
+!
+                    else
+                      call find_interpolation_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
+                      call find_grid_volume(ixx,iyy,izz,volume_cell)
+                    endif
                     if ( (iyy /= m).or.(izz /= n).or.(ixx < l1).or.(ixx > l2) ) then
                       rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
                     else
@@ -604,9 +627,6 @@ module Particles_surfspec
           if (allocated(mass_loss))   deallocate(mass_loss)
           if (allocated(enth)) deallocate(enth)
         endif
-!
-        df(:,m,n,ichemspec(nchemspec)) = df(:,m,n,ichemspec(nchemspec))- &
-            sum(df(:,m,n,ichemspec(:)),DIM=2)
 !
       endif
 !
