@@ -681,7 +681,8 @@ module InitialCondition
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(nx), intent(in) :: corr
-      real, dimension(nx) :: rr_sph, rr_cyl, rr, tmp1, tmp2
+      real, dimension(nx) :: rr_sph, rr_cyl, rr, tmp1, tmp2, OO
+      real :: OOcorot
 !
       call get_radial_distance(rr_sph,rr_cyl)
 !
@@ -705,15 +706,23 @@ module InitialCondition
       endif
       call reality_check(tmp2,rr)
 !
+      if (lcorotational_frame) then 
+         OOcorot=rcorot**(-1.5)
+      else
+         OOcorot=0.
+      endif
+!
+      OO=sqrt(tmp2)-OOcorot
+!
 !  Correct the velocities
 !
       if (lcartesian_coords) then
-        f(l1:l2,m,n,iux)=-sqrt(tmp2)*y(  m  )
-        f(l1:l2,m,n,iuy)= sqrt(tmp2)*x(l1:l2)
+        f(l1:l2,m,n,iux)=-OO*y(  m  )
+        f(l1:l2,m,n,iuy)= OO*x(l1:l2)
       elseif (lcylindrical_coords) then
-        f(l1:l2,m,n,iuy)= sqrt(tmp2)*rr_cyl
+        f(l1:l2,m,n,iuy)= OO*rr_cyl
       elseif (lspherical_coords) then
-        f(l1:l2,m,n,iuz)= sqrt(tmp2)*rr_sph
+        f(l1:l2,m,n,iuz)= OO*rr_sph
       endif
 !
     endsubroutine correct_azimuthal_velocity
