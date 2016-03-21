@@ -20,8 +20,7 @@ CHIRAL                =   chiral
 COSMICRAY             =   cosmicray
 COSMICRAYFLUX         =   cosmicrayflux
 INTERSTELLAR          =   interstellar
-EOS                   =   eos_idealgas
-# removed "eos_ionization" because this is a rarely used module that can be tested in more specific auto-tests.
+EOS                   =   eos_ionization
 TESTFIELD             =   inactive/testfield
 DUSTDENSITY           =   dustdensity
 DUSTVELOCITY          =   dustvelocity
@@ -34,7 +33,7 @@ PARTICLES_RADIUS      =   particles_radius
 PARTICLES_SELFGRAVITY =   particles_selfgravity
 PARTICLES_SUB         =   particles_sub
 
-SPECIAL               =   special/solar_corona
+SPECIAL               =   coronae
 # deactivated "special/meanfield_alpm", because it is broken (NaNs in "df_ref" in pencil-check).
 
 GRAVITY               =   gravity_simple
