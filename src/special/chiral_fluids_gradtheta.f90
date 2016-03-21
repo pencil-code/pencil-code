@@ -41,7 +41,8 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED mu5; gmu5(3); del2mu5; del2gtheta5(3)
-! PENCILS PROVIDED ugmu5; gtheta5(3); gtheta5ij(3,3); uggtheta5(3);gtheta522; bgtheta5
+! PENCILS PROVIDED ugmu5; gtheta5(3); gtheta5ij(3,3); uggtheta5(3)
+! PENCILS PROVIDED bgtheta5; gtheta52
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -89,8 +90,7 @@ module Special
    real :: diffmu5, diffgtheta5, lambda5, gtheta5_const=0., mu5_const=0.
    real :: meanmu5, kx_gtheta5=1., ky_gtheta5=1.
    real, pointer :: eta
-   real :: cdtchiral=1., cdtchiral1=1., cdtchiral2=0., cdtchiral3=1.
-   real :: cdtchiral4=1., cdtchiral5=1., cdtchiral6=0., cdtchiral7=1.
+   real :: cdtchiral=1.
    integer :: igtheta5, imu5
    logical :: lupw_gtheta5=.false.
    character (len=labellen) :: theta_prof='nothing'
@@ -104,8 +104,7 @@ module Special
 !
   namelist /special_run_pars/ &
       diffgtheta5, diffmu5, lambda5, theta_prof, lupw_gtheta5, &
-      cdtchiral, cdtchiral1, cdtchiral2, cdtchiral3, cdtchiral4, cdtchiral5, &
-      cdtchiral6, cdtchiral7
+      cdtchiral
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -232,7 +231,7 @@ module Special
           f(:,:,:,igtheta5+1) = gtheta5_const
           f(:,:,:,igtheta5+2) = gtheta5_const
           do n=n1,n2; do m=m1,m2
-	    f(:,m,n,imu5) = mu5_const*sin(2.*pi*z(n)/Lz)*sin(2.*pi*z(n)/Lz)
+        f(:,m,n,imu5) = mu5_const*sin(2.*pi*z(n)/Lz)*sin(2.*pi*z(n)/Lz)
           enddo; enddo
 !
         case ('gtheta5x_sinz')
@@ -278,7 +277,7 @@ module Special
       if (diffmu5/=0.) lpenc_requested(i_del2mu5)=.true.
       if (diffgtheta5/=0.) lpenc_requested(i_del2gtheta5)=.true.
       if (lhydro.or.lhydro_kinematic) lpenc_requested(i_uggtheta5)=.true.
-      if (lhydro.or.lhydro_kinematic) lpenc_requested(i_gtheta522)=.true.
+      if (lhydro.or.lhydro_kinematic) lpenc_requested(i_gtheta52)=.true.
       if (lmagnetic) lpenc_requested(i_bgtheta5)=.true.
       if (lhydro.or.lhydro_kinematic) lpenc_requested(i_uu)=.true.
       if (lmagnetic) lpenc_requested(i_bb)=.true.
@@ -327,9 +326,7 @@ module Special
       if (lpencil(i_uggtheta5)) call u_dot_grad(f,igtheta5,p%gtheta5ij, &
         p%uu,p%uggtheta5,UPWIND=lupw_gtheta5)
       if (lpencil(i_bgtheta5)) call dot(p%bb,p%gtheta5,p%bgtheta5)
-      if (lpencil(i_gtheta522)) then
-          call dot2_mn(p%gtheta5,p%gtheta522)
-      endif
+      if (lpencil(i_gtheta52)) call dot(p%gtheta5,p%gtheta5,p%gtheta52)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -377,48 +374,54 @@ module Special
 !
       df(l1:l2,m,n,imu5)=df(l1:l2,m,n,imu5)-p%ugmu5 &
         +diffmu5*p%del2mu5+lambda5*EB
-!
+!                          
 !  Evolution of gtheta5
 !
       if (lhydro) then
         call dot_mn_vm_trans(p%gtheta5,p%uij,uijtransgtheta5)
-        df(l1:l2,m,n,igtheta5:igtheta5+2)=df(l1:l2,m,n,igtheta5:igtheta5+2) &
+        df(l1:l2,m,n,igtheta5:igtheta5+2) = df(l1:l2,m,n,igtheta5:igtheta5+2) &
         -p%uggtheta5-uijtransgtheta5+p%gmu5 &
         +diffgtheta5*p%del2gtheta5
       endif
-!      print*,       df(l1:l2,m,n,igtheta5), f(l1:l2,m,n,igtheta5)
 !
 !  Additions to evolution of bb
 !
       if (lmagnetic) then
         call multsv(p%mu5,p%bb,mu5bb)
         call multsv(p%bgtheta5,p%uu,ubgtheta5)
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+eta*(mu5bb-ubgtheta5)
+        df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz)+eta*(mu5bb-ubgtheta5)
       endif
 !
 !  Additions to evolution of uu
 !
       if (lhydro) then
         call multsv(p%rho1*p%bgtheta5,p%uxb,uxbbgtheta5r)
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+uxbbgtheta5r
-      endif
-!
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)+uxbbgtheta5r
+      endif   
+!     
 !  Contribution from linear shear
 !
       if (lshear) then
-        df(l1:l2,m,n,igtheta5)=df(l1:l2,m,n,igtheta5)-Sshear*p%gtheta5(:,2)
+        df(l1:l2,m,n,igtheta5) = df(l1:l2,m,n,igtheta5)-Sshear*p%gtheta5(:,2)
       endif
 !
 !  Contribution to the time-step
+!
       if (lfirst.and.ldt) then
-        diffus_special= cdtchiral*max(cdtchiral1*eta*p%mu5*sqrt(dxyz_2),   &
-                                      cdtchiral2*eta*sqrt(p%u2)*sqrt(p%gtheta522)*sqrt(dxyz_2),   &
-                                      cdtchiral3*diffmu5*dxyz_2,   &
-                                      cdtchiral4*lambda5*eta*p%b2/(p%mu5)*sqrt(dxyz_2),   &
-                                      cdtchiral5*lambda5*eta*p%b2,   & 
-                                      cdtchiral6*lambda5*eta*sqrt(p%u2)*p%b2*sqrt(p%gtheta522)/(p%mu5), &    
-                                      cdtchiral7*p%b2*sqrt(p%gtheta522)*p%rho1   &
-                          ) 
+        diffus_special = cdtchiral*max(  &
+!  Contribution from mu5 equation
+        lambda5*eta*p%b2/(p%mu5)*sqrt(dxyz_2), &
+        lambda5*eta*p%b2, &
+        lambda5*eta*sqrt(p%u2)*p%b2*sqrt(p%gtheta52)/(p%mu5), &
+        diffmu5*dxyz_2, &
+!  Contribution from gtheta5 equation
+        diffgtheta5*dxyz_2, &
+        p%mu5*sqrt(dxyz_2)/sqrt(p%gtheta52), &
+!  Contribution from bb equation
+        eta*p%mu5*sqrt(dxyz_2), &
+        eta*sqrt(p%u2)*sqrt(p%gtheta52)*sqrt(dxyz_2), &
+!  Contribution from uu equation
+        p%b2*sqrt(p%gtheta52)*p%rho1)
       endif
 !
 !  diagnostics
