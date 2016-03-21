@@ -86,7 +86,7 @@ module Hydro
       ampl_kinflow, &
       kx_uukin,ky_uukin,kz_uukin, &
       cx_uukin,cy_uukin,cz_uukin, &
-      phasez_uukin, &
+      phasex_uukin, phasey_uukin, phasez_uukin, &
       lrandom_location,lwrite_random_location,location_fixed,dtforce, &
       radial_shear, uphi_at_rzero, uphi_rmax, uphi_rbot, uphi_rtop, &
       uphi_step_width,gcs_rzero, &
