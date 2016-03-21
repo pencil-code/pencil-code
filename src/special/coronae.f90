@@ -33,7 +33,7 @@ module Special
   real :: tau_inv_top=0.,tau_inv_newton_mark=0.,chi_spi=0.,tau_inv_spitzer=0.
   real :: width_newton=0.,gauss_newton=0.
   logical :: lgranulation=.false.,luse_ext_vel_field,lmag_time_bound=.false.
-  real :: increase_vorticity=15.,Bavoid=huge1
+  real :: increase_vorticity=15.,Bavoid=0.0
   real :: Bz_flux=0.,quench=0., b_tau=0.
   real :: init_time=0.,init_width=0.,hcond_grad=0.,hcond_grad_iso=0.
   real :: init_time2=0.
@@ -634,7 +634,7 @@ module Special
       if (ipz == 0 .and. mark) call mark_boundary(f)
 !
       if (ipz == 0) then
-        if ((lcompute_gran.and.Bavoid<huge1).or.Bz_flux /= 0.) call set_B2(f)
+        if ((lcompute_gran.and.Bavoid>0.0).or.Bz_flux /= 0.) call set_B2(f)
 !
 ! Set sum(abs(Bz)) to  a given flux.
         if (Bz_flux /= 0.) then
@@ -2758,7 +2758,7 @@ module Special
 !
       call reset_arrays
 !
-      if (Bavoid < huge1) call fill_B_avoidarr(level)
+      if (Bavoid > 0.0) call fill_B_avoidarr(level)
 !
       if (.not.associated(current%next)) then
         call read_points(level)
