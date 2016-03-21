@@ -68,7 +68,7 @@ module Hydro
   real :: circ_amp=0.,circ_rmax=0.,circ_step_width=0.
   real :: kx_uukin=1., ky_uukin=1., kz_uukin=1.
   real :: cx_uukin=0., cy_uukin=0., cz_uukin=0.
-  real :: phasez_uukin=0.
+  real :: phasex_uukin=0., phasey_uukin=0., phasez_uukin=0.
   real :: radial_shear=0.,uphi_at_rzero=0.,uphi_at_rmax=0.,uphi_rmax=1.
   real :: uphi_rbot=1., uphi_rtop=1., uphi_step_width=0.
   real :: gcs_rzero=0.,gcs_psizero=0.
@@ -921,9 +921,12 @@ module Hydro
         if (lpenc_loc(i_uu)) then
           fac=ampl_kinflow
           fac2=-(dimensionality-1)*fac
-          p%uu(:,1)= fac*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*cos(kz_uukin*z(n))
-          p%uu(:,2)= fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))*cos(kz_uukin*z(n))
-          p%uu(:,3)=fac2*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))*sin(kz_uukin*z(n))
+          argx=kx_uukin*x(l1:l2)+phasex_uukin
+          argy=ky_uukin*y(m)+phasey_uukin
+          argz=kz_uukin*z(n)+phasez_uukin
+          p%uu(:,1)= fac*sin(argx)*cos(argy)*cos(argz)
+          p%uu(:,2)= fac*cos(argx)*sin(argy)*cos(argz)
+          p%uu(:,3)=fac2*cos(argx)*cos(argy)*sin(argz)
         endif
         if (lpenc_loc(i_divu)) p%divu=0.
 !
