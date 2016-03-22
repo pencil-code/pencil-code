@@ -174,7 +174,7 @@ module Particles_surfspec
       if (lwrite) then
         call write_outputfile()
       endif
-      lwrite=.false.
+      lwrite = .false.
 !
     endsubroutine register_indep_psurfspec
 ! ******************************************************************************
@@ -231,7 +231,7 @@ module Particles_surfspec
       integer, dimension(mpar_loc,3) :: ineargrid
       real :: sum_surf_spec
       real :: mean_molar_mass
-      integer :: i, j,k,ix0,igas,iy0,iz0
+      integer :: i, j, k, ix0, igas, iy0, iz0
 !
       intent(in) :: f
       intent(out) :: fp
@@ -268,7 +268,7 @@ module Particles_surfspec
           enddo
         case ('gas')
 !
-!  The starting particle surface mole fraction is equal to the 
+!  The starting particle surface mole fraction is equal to the
 !  gas phase composition at the particles position.
 !  This is not functional, and this would need the initialization of
 !  The gas field before
@@ -282,8 +282,8 @@ module Particles_surfspec
               mean_molar_mass = mean_molar_mass + &
                   species_constants(i,imass) * f(ix0,iy0,iz0,ichemspec(i))
             enddo
-! 
-           do i = 1, N_surface_species
+!
+            do i = 1, N_surface_species
               igas = ichemspec(jmap(i))
 !              print*, 'igas',igas
 !              print*, 'f',f(ix0,iy0,iz0,igas)
@@ -341,7 +341,6 @@ module Particles_surfspec
 !
 !  23-sep-14/Nils: coded
 !
-!
       use Diagnostics
 !
       real, dimension(mx,my,mz,mfarray) :: f
@@ -358,7 +357,8 @@ module Particles_surfspec
       real :: weight, volume_cell, rho1_point
       real :: mean_molar_mass, dmass, A_p, denth
       real :: reac_pchem_weight, max_reac_pchem
-      real :: dmass_frac_dt, summan, m1_cell
+      real, dimension(7,7,7) :: dmass_frac_dt
+      real :: summan, m1_cell
       real :: dmass_ndot
       integer :: ix1, iy1, iz1, ierr
       integer :: ixx, iyy, izz
@@ -366,6 +366,7 @@ module Particles_surfspec
       integer :: ixx1, iyy1, izz1
       integer :: index1, index2
       real, pointer :: true_density_carbon
+      integer :: density_index
 !
       intent(in) :: f, ineargrid
       intent(inout) :: dfp, df, fp
@@ -447,12 +448,12 @@ module Particles_surfspec
               iy0 = ineargrid(k,2)
               iz0 = ineargrid(k,3)
               if (lparticlemesh_gab) then
-                ixx0 = ix0 -3 
-                iyy0 = iy0 -3 
-                izz0 = iz0 -3 
-                ixx1 = ix0 +3 
-                iyy1 = iy0 +3 
-                izz1 = iz0 +3 
+                ixx0 = ix0 -3
+                iyy0 = iy0 -3
+                izz0 = iz0 -3
+                ixx1 = ix0 +3
+                iyy1 = iy0 +3
+                izz1 = iz0 +3
               else
                 call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1, &
                     fp,k,ix0,iy0,iz0)
@@ -510,31 +511,28 @@ module Particles_surfspec
 !
 ! Loop over all neighbouring grid points
 !
-              do izz = izz0,izz1
-                do iyy = iyy0,iyy1
-                  do ixx = ixx0,ixx1
 !
 !  reac_pchem and dmass_frac_dt are here to obtain a heterogeneous timestep
 !
-                    if (lparticlemesh_gab) then
-                      weight = weight_array(ixx-ixx0+1,iyy-iyy0+1,izz-izz0+1)
+!                    if (lparticlemesh_gab) then
+!                      weight = weight_array(ixx-ixx0+1,iyy-iyy0+1,izz-izz0+1)
 !
 !  JONAS nasty: volume_cell is precalculated at the beginning of this subroutine
 !
-                    else
-                      call find_interpolation_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
-                      call find_grid_volume(ixx,iyy,izz,volume_cell)
-                    endif
-                    if ( (iyy /= m).or.(izz /= n).or.(ixx < l1).or.(ixx > l2) ) then
-                      rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
-                    else
-                      rho1_point = p%rho1(ixx-nghost)
-                    endif
-                    m1_cell = rho1_point/volume_cell
+!                    else
+!                      call find_interpolation_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
+!                      call find_grid_volume(ixx,iyy,izz,volume_cell)
+!                    endif
+!                    if ( (iyy /= m).or.(izz /= n).or.(ixx < l1).or.(ixx > l2) ) then
+!                      rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
+!                    else
+!                      rho1_point = p%rho1(ixx-nghost)
+!                    endif
+!                    m1_cell = rho1_point/volume_cell
 !
 !  Sum for testing
 !
-                    summan = 0.0
+              summan = 0.0
 !
 !  The whole following with find_index is a workaround
 !  to enable the accessing of nonreacting gas phase species by this routine
@@ -544,33 +542,65 @@ module Particles_surfspec
 !  from particles_chemistry which is needed to access ndot, since this
 !  only contains surface species
 !
-                    do i = 1,nchemspec-1
-                      reac_pchem_weight = 0.0
-                      if (find_index(i,jmap,N_surface_species) > 0 ) then
+              if (ldensity_nolog) then
+                do i = 1,nchemspec-1
+                  reac_pchem_weight = 0.0
+                  if (find_index(i,jmap,N_surface_species) > 0 ) then
 !NILS: Isn't index1=i?
 !                      index1 = jmap(find_index(i,jmap,N_surface_species))
-                        index2 = ichemspec(i)
-                        dmass_frac_dt = (A_p* &
-                            ndot(k,find_index(i,jmap,N_surface_species))* &
-                            species_constants(i,imass)+ &
-                            dmass*interp_species(k,i))*weight* &
-                            m1_cell
-                        df(ixx,iyy,izz,index2) = df(ixx,iyy,izz,index2)+dmass_frac_dt
-                        if (lfirst .and. ldt) &
-                            reac_pchem_weight = max(reac_pchem_weight, &
-                            abs(dmass_frac_dt/ &
-                            max(f(ixx,iyy,izz,index2),1e-10)))
-                      else
-                        dmass_frac_dt = dmass*interp_species(k,i)*weight* &
-                            m1_cell
-                        df(ixx,iyy,izz,ichemspec(i)) = &
-                            df(ixx,iyy,izz,ichemspec(i)) + dmass_frac_dt
+                    index2 = ichemspec(i)
+                    dmass_frac_dt = (A_p* &
+                        ndot(k,find_index(i,jmap,N_surface_species))* &
+                        species_constants(i,imass)+ &
+                        dmass*interp_species(k,i))*weight_array/ &
+                        (f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*volume_cell)
+                    df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2) = &
+                        df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2)+dmass_frac_dt
+                    if (lfirst .and. ldt) &
+                        reac_pchem_weight = max(reac_pchem_weight, &
+                        abs(maxval(dmass_frac_dt)/ &
+                        max(maxval(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2)),1e-10)))
+                  else
+                    dmass_frac_dt = dmass*interp_species(k,i)*weight_array/ &
+                        (f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*volume_cell)
+                    df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ichemspec(i)) = &
+                        df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ichemspec(i)) + dmass_frac_dt
 !                      if (i==nchemspec-1) then
 !                        print*, 'summan',summan
 !                      endif
-                      endif
-                      summan = summan+dmass_frac_dt
-                    enddo
+                  endif
+!                  summan = summan+dmass_frac_dt
+                enddo
+              else
+                do i = 1,nchemspec-1
+                  reac_pchem_weight = 0.0
+                  if (find_index(i,jmap,N_surface_species) > 0 ) then
+!NILS: Isn't index1=i?
+!                      index1 = jmap(find_index(i,jmap,N_surface_species))
+                    index2 = ichemspec(i)
+                    dmass_frac_dt = (A_p* &
+                        ndot(k,find_index(i,jmap,N_surface_species))* &
+                        species_constants(i,imass)+ &
+                        dmass*interp_species(k,i))*weight_array/ &
+                        (exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*volume_cell)
+                    df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2) = &
+                        df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2)+dmass_frac_dt
+                    if (lfirst .and. ldt) &
+                        reac_pchem_weight = max(reac_pchem_weight, &
+                        abs(maxval(dmass_frac_dt)/ &
+                        max(maxval(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2)),1e-10)))
+                  else
+                    dmass_frac_dt = dmass*interp_species(k,i)*weight_array/ &
+                        (exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho))*volume_cell)
+                    df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ichemspec(i)) = &
+                        df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ichemspec(i)) + dmass_frac_dt
+!                      if (i==nchemspec-1) then
+!                        print*, 'summan',summan
+!                      endif
+                  endif
+!                  summan = summan+dmass_frac_dt
+                enddo
+              endif
 !                  print*, 'velocity', df(ixx,iyy,izz,iux)
 !                  print*,'summan',summan
 !                  print*,'df(ixx,iyy,izz,ichemspec(i))',df(ixx,iyy,izz,ichemspec(nchemspec))
@@ -585,23 +615,34 @@ module Particles_surfspec
 !
 !  Compare the current maximum reaction rate to the previous one
 !
-                    if (lfirst .and. ldt) max_reac_pchem = &
-                        max(max_reac_pchem, reac_pchem_weight)
+              if (lfirst .and. ldt) max_reac_pchem = &
+                  max(max_reac_pchem, reac_pchem_weight)
 !
 !  Enthalpy transfer via mass transfer!
 !
-                    if (lpchem_mass_enth) then
-                      if (ltemperature_nolog) then
-                        df(ixx,iyy,izz,iTT) = df(ixx,iyy,izz,iTT) &
-                            +denth*p%cv1(ix0-nghost)*weight*m1_cell
-                      else
-                        df(ixx,iyy,izz,ilnTT) = df(ixx,iyy,izz,ilnTT) &
-                            +denth*p%cv1(ix0-nghost)*p%TT1(ix0-nghost)*weight*m1_cell
-                      endif
-                    endif
-                  enddo
-                enddo
-              enddo
+              if (lpchem_mass_enth) then
+                if (ldensity_nolog) then
+                  if (ltemperature_nolog) then
+                    df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) &
+                        +denth*p%cv1(ix0-nghost)*weight_array/ &
+                        (f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*volume_cell)
+                  else
+                    df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) &
+                        +denth*p%cv1(ix0-nghost)*p%TT1(ix0-nghost)*weight_array/ &
+                        (f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*volume_cell)
+                  endif
+                else
+                  if (ltemperature_nolog) then
+                    df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) &
+                        +denth*p%cv1(ix0-nghost)*weight_array/ &
+                        (exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*volume_cell)
+                  else
+                    df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) &
+                        +denth*p%cv1(ix0-nghost)*p%TT1(ix0-nghost)*weight_array/ &
+                        (exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*volume_cell)
+                  endif
+                endif
+              endif
 !
 !  Compare the current maximum reaction rate to the current maximum
 !  reaction rate in the current pencil
@@ -912,10 +953,10 @@ module Particles_surfspec
       integer :: file_id=123
       integer :: k
       character(len=20) :: writeformat
-      character(len=30) :: output='./data/particle_chemistry.out' 
+      character(len=30) :: output='./data/particle_chemistry.out'
 !
       open (file_id,file=output,position='append')
-!     
+!
       writeformat = '(  A8)'
       write (writeformat(2:3),'(I2)') N_surface_species
       write (file_id,*) 'Gas phase surface species'
@@ -932,7 +973,7 @@ module Particles_surfspec
 !
       write (file_id,*) 'Nu*'
       do k = 1,N_surface_reactions
-        write(file_id,writeformat) k,nu_prime(:,k)
+        write (file_id,writeformat) k,nu_prime(:,k)
       enddo
       write (file_id,*) ''
 !
