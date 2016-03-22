@@ -32,6 +32,7 @@ module Particles_mass
   logical :: lpart_mass_backreac=.true.
   logical :: lpart_mass_momentum_backreac=.true.
   real :: mass_const=0.0, dmpdt=1e-3
+  real, dimension(7,7,7) :: weight_array
   character(len=labellen), dimension(ninit) :: init_particle_mass='nothing'
 !
   namelist /particles_mass_init_pars/ init_particle_mass, mass_const
@@ -99,6 +100,8 @@ module Particles_mass
       use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mfarray) :: f
+!
+      if (lparticlemesh_gab) call precalc_weights(weight_array)
 !
       call keep_compiler_quiet(f)
 !
@@ -233,6 +236,8 @@ module Particles_mass
 !
       if (npar_imn(imn) /= 0) then
 !
+      if (lparticlemesh_gab) volume_cell = 1/(dx_1(1)*dy_1(1)*dz_1(1))
+!
         k1 = k1_imn(imn)
         k2 = k2_imn(imn)
 !
@@ -286,49 +291,42 @@ module Particles_mass
             call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1, &
                 fp,k,ix0,iy0,iz0)
 !
-! Loop over all neighbouring points
-            do izz = izz0,izz1
-              do iyy = iyy0,iyy1
-                do ixx = ixx0,ixx1
-!
-! Find the relative weight of the current grid point
-                  call find_interpolation_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
-!
-! Find the volume of the grid cell of interest
-                  call find_grid_volume(ixx,iyy,izz,volume_cell)
-!
-! Find the gas phase density
-                  if ( (iyy /= m).or.(izz /= n).or.(ixx < l1).or.(ixx > l2) ) then
-                    rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
-                  else
-                    rho1_point = p%rho1(ixx-nghost)
-                  endif
-!
 ! Add the source to the df-array
 !
-                  if (ldensity_nolog) then
-                    df(ixx,iyy,izz,irho) = df(ixx,iyy,izz,irho) &
-                        -dmass*weight/volume_cell
-                  else
-                    df(ixx,iyy,izz,ilnrho) = df(ixx,iyy,izz,ilnrho) &
-                        -dmass*rho1_point*weight/volume_cell
-                  endif
+            if (ldensity_nolog) then
+              df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho) &
+                  -dmass*weight_array/volume_cell
+            else
+              df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho) &
+                  -dmass*weight_array/volume_cell/exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))
+            endif
 !
 !  Momentum transfer via mass transfer between particle and gas phase
 !
-                  if (lpart_mass_momentum_backreac) then
-                    if (interp%luu) then
-                      df(ixx,iyy,izz,iux:iuz) = df(ixx,iyy,izz,iux:iuz) &
-                          -dmass*weight/volume_cell*rho1_point*&
-                          (fp(k,ivpx:ivpz)-interp_uu(k,:))
-                    else
-                      call fatal_error('dpmass_dt_pencil',&
-                          'momentum transfer via mass transfer needs interp%uu')
-                    endif
-                  endif
-                enddo
-              enddo
-            enddo
+!
+! JONAS nasty: The index goes from iux to iuz, and assuming that all velocity components are after each
+! other also from ivpx to ivpz and 1 to 3. This was the only way to deal with the make the array ranks
+! consistent
+            if (lpart_mass_momentum_backreac) then
+              if (interp%luu) then
+                if (ldensity_nolog) then
+                  do i = iux,iuz
+                    df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,i) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,i) &
+                        -dmass*weight_array/volume_cell/f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*&
+                        (fp(k,i-iux+ivpx)-interp_uu(k,i-iux+1))
+                  enddo
+                else
+                  do i = iux,iuz
+                    df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,i) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,i) &
+                        -dmass*weight_array/volume_cell/exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*&
+                        (fp(k,i-iux+ivpx)-interp_uu(k,i-iux+1))
+                  enddo
+                endif
+              else
+                call fatal_error('dpmass_dt_pencil',&
+                    'momentum transfer via mass transfer needs interp%uu')
+              endif
+            endif
           endif
         enddo
 !
