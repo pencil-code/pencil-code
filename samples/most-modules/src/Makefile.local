@@ -33,7 +33,7 @@ PARTICLES_RADIUS      =   particles_radius
 PARTICLES_SELFGRAVITY =   particles_selfgravity
 PARTICLES_SUB         =   particles_sub
 
-SPECIAL               =   special/coronae
+SPECIAL               = nospecial
 # deactivated "special/meanfield_alpm", because it is broken (NaNs in "df_ref" in pencil-check).
 
 GRAVITY               =   gravity_simple
