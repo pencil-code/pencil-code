@@ -35,6 +35,7 @@ module Particles_temperature
   logical :: lpart_nuss_const=.false.
   logical :: lstefan_flow = .true.
   real :: init_part_temp, emissivity=0.0
+  real, dimension(7,7,7) :: weight_array
   real :: Twall=0.0
   real :: cp_part=0.711e7 ! wolframalpha, erg/(g*K)
   character(len=labellen), dimension(ninit) :: init_particle_temperature='nothing'
@@ -86,6 +87,8 @@ module Particles_temperature
 !  28-aug-14/jonas+nils: coded
 !
       real, dimension(mx,my,mz,mfarray) :: f
+!
+      if (lparticlemesh_gab) call precalc_weights(weight_array)
 !
     endsubroutine initialize_particles_TT
 !***********************************************************************
@@ -206,9 +209,12 @@ module Particles_temperature
 !
       feed_back = 0.
 !
+!
 !  Do only if particles are present on the current pencil
 !
       if (npar_imn(imn) /= 0) then
+!
+        if (lparticlemesh_gab) volume_cell = 1/(dx_1(1)*dy_1(1)*dz_1(1))
 !
 !  The Ranz-Marshall correlation for the Sherwood number needs the particle Reynolds number
 !  Precalculate partrticle Reynolds numbers.
@@ -319,43 +325,33 @@ module Particles_temperature
             call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1, &
                 fp,k,ix0,iy0,iz0)
 !
-!  Loop over all neighbouring points
-!
-            do izz = izz0,izz1
-              do iyy = iyy0,iyy1
-                do ixx = ixx0,ixx1
-!
-!  Find the relative weight of the current grid point
-!
-                  call find_interpolation_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
-!
-!  Find the volume of the grid cell of interest
-!
-                  call find_grid_volume(ixx,iyy,izz,volume_cell)
-!
-!  Find the gas phase density
-!
-                  if ( (iyy /= m).or.(izz /= n).or.(ixx < l1).or.(ixx > l2) ) then
-                    rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
-                  else
-                    rho1_point = p%rho1(ixx-nghost)
-                  endif
-!
 !  Add the source to the df-array
 !  NILS: The values of cv and Tg are currently found from the nearest grid
 !  NILS: point also for CIC and TSC. This should be fixed!
 !
-                  if (ltemperature_nolog) then
-                    df(ixx,iyy,izz,iTT) = df(ixx,iyy,izz,iTT) &
-                        +Qc*p%cv1(inx0)*rho1_point*weight/volume_cell
-                  else
-                    df(ixx,iyy,izz,ilnTT) = df(ixx,iyy,izz,ilnTT) &
-                        +Qc*p%cv1(inx0)*rho1_point*p%TT1(inx0)*weight/volume_cell
-!                    print*, 'dTgdt: ', Qc*p%cv1(inx0)*rho1_point*p%TT1(inx0)*weight/volume_cell
-                  endif
-                enddo
-              enddo
-            enddo
+            if (ldensity_nolog) then
+              if (ltemperature_nolog) then
+                df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) &
+                    +Qc*p%cv1(inx0)*weight_array/&
+                    (f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*volume_cell)
+              else
+                df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) &
+                    +Qc*p%cv1(inx0)*p%TT1(inx0)*weight_array/&
+                    (f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*volume_cell)
+ !                    print*, 'dTgdt: ', Qc*p%cv1(inx0)*rho1_point*p%TT1(inx0)*weight/volume_cell
+              endif
+            else
+              if (ltemperature_nolog) then
+                df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) &
+                    +Qc*p%cv1(inx0)*weight_array/&
+                    (exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*volume_cell)
+              else
+                df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) &
+                    +Qc*p%cv1(inx0)*p%TT1(inx0)*weight_array/&
+                    (exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*volume_cell)
+ !                    print*, 'dTgdt: ', Qc*p%cv1(inx0)*rho1_point*p%TT1(inx0)*weight/volume_cell
+              endif
+            endif
           endif
         enddo
 !
