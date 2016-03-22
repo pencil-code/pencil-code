@@ -40,6 +40,9 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
+! PENCILS PROVIDED alpha_emf(3,3); beta_emf(3,3); gamma_emf(3)
+! PENCILS PROVIDED delta_emf(3); kappa_emf(3,3,3)
+!
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -78,6 +81,7 @@ module Special
   use General, only: keep_compiler_quiet
   use Messages, only: svn_id, fatal_error
   use Mpicomm, only: mpibarrier
+  use Sub, only: numeric_precision
   use HDF5
 !
   implicit none
@@ -86,21 +90,36 @@ module Special
   include '../special.h'
 
   integer :: hdferr, loaderr
-  integer(HID_T) :: hdfmemtype, &
+  integer(HID_T) :: hdf_memtype, &
                     hdf_emftensors_file,  &
                     hdf_emftensors_plist, &
                     hdf_emftensors_group
   !integer(HID_T), dimension(:), allocatable :: hdf_fieldgroups
   !integer(HID_T), dimension(:,:), allocatable :: hdf_spaces, phdf_chunkspaces, phdf_datasets, phdf_plist_ids
-  integer(HSIZE_T) , dimension(4) :: hdf_stride, hdf_count, hdf_block, hdf_offsets
+  integer(HSIZE_T),dimension(4) :: hdf_stride, hdf_count, hdf_block, hdf_offsets
 
-  integer(HSIZE_T) , dimension(:,:), allocatable :: phdf_dims, phdf_chunkdims
+  integer(HSIZE_T),dimension(:,:),allocatable :: phdf_dims, phdf_chunkdims
+
+  !integer :: i_alpha, i_beta, i_gamma, i_delta, i_kappa
   
-  integer(HID_T) :: alpha_id_G, alpha_id_D, alpha_id_S, &
-                    beta_id_G, beta_id_D, beta_id_S,    &
-                    gamma_id_G, gamma_id_D, gamma_id_S, &
-                    delta_id_G, delta_id_D, delta_id_S, &
-                    kappa_id_G, kappa_id_D, kappa_id_S
+  !integer(HID_T) :: alpha_id_G, alpha_id_D, alpha_id_S, &
+  !                  beta_id_G, beta_id_D, beta_id_S,    &
+  !                  gamma_id_G, gamma_id_D, gamma_id_S, &
+  !                  delta_id_G, delta_id_D, delta_id_S, &
+  !                  kappa_id_G, kappa_id_D, kappa_id_S
+  integer(HID_T),   dimension(5) :: tensor_id_G, tensor_id_D, &
+                                    tensor_id_S, tensor_id_memS
+  integer(HSIZE_T), dimension(5,7) :: tensor_dims
+  integer, dimension(5),parameter :: tensor_ndims = (/ 6, 6, 5, 5, 7 /) 
+  integer,parameter :: alpha_id=1, beta_id=2, &
+                       gamma_id=3, delta_id=4, &
+                       kappa_id=5
+  !integer(HSIZE_T) :: alpha_dims(6), &
+  !                    beta_dims(6),  &
+  !                    gamma_dims(5), &
+  !                    delta_dims(5), &
+  !                    kappa_dims(7)
+  
   integer(HSIZE_T) :: alpha_tlen
 
   character (len=10) :: interpname
@@ -110,12 +129,6 @@ module Special
                     
   logical :: hdf_exists
 
-  integer(HSIZE_T) :: alpha_dims(6), &
-                      beta_dims(6),  &
-                      gamma_dims(6), &
-                      delta_dims(5), &
-                      kappa_dims(7)
-  
   integer :: dataload_len
   !real, dimension(3,3,  nx,ny,nz,dataload_len) :: alpha_data, beta_data
  ! real, dimension(3,    nx,ny,nz,dataload_len) :: gamma_data, delta_data
@@ -166,10 +179,9 @@ module Special
       lgamma=.false.
       lkappa=.false.
       dataname = 'data'
-      print *,'Register special <----------------'
 
       if (trim(interpname) == 'none') then
-        dataload_len = 1 
+        dataload_len = 100
       else
         call fatal_error('initialize_special','File '//trim(hdf_emftensors_filename)//' does not exist!')
       end if
@@ -221,6 +233,17 @@ module Special
       hdf_emftensors_file  = -1
 
       call H5open_F(hdferr)
+
+      hdf_memtype=-1
+      if (numeric_precision() == 'S') then
+        write(*,*) 'Register special: loading data as single precision'
+        hdf_memtype = H5T_NATIVE_REAL
+        !hdf_memtype = H5T_IEEE_F64LE
+      else
+        write(*,*) 'Register special: loading data as double precision'
+        hdf_memtype = H5T_NATIVE_DOUBLE
+        !hdf_memtype = H5T_IEEE_F64LE
+      end if
       
       print *,'Setting parallel HDF5 IO for data file reading'
       call H5Pcreate_F(H5P_FILE_ACCESS_F, hdf_emftensors_plist, hdferr)
@@ -254,14 +277,10 @@ module Special
       ! Open datasets
 
       ! alpha
-      alpha_id_G = -1
-      alpha_id_D = -1
-      alpha_id_S = -1
       lalpha_open = .false.
-      call openDataset('alpha', alpha_id_G, &
-                       alpha_id_D, alpha_id_S, &
-                       alpha_dims, lalpha_exists, & 
-                       6, loaderr)
+      call openDataset('alpha', alpha_id, &
+                       lalpha_exists, & 
+                       loaderr)
       if (loaderr == 0) then
         lalpha_open = .true.
         write(*,*) 'initialize_special: alpha found. Using dataset /zaver/alpha/'//trim(dataname)
@@ -270,14 +289,10 @@ module Special
       end if
 
       ! beta
-      beta_id_G = -1
-      beta_id_D = -1
-      beta_id_S = -1
       lbeta_open = .false.
-      call openDataset('beta', beta_id_G, &
-                       beta_id_D, beta_id_S, &
-                       beta_dims, lbeta_exists, & 
-                       6, loaderr)
+      call openDataset('beta', beta_id, &
+                       lbeta_exists, & 
+                       loaderr)
       if (loaderr == 0) then
         lbeta_open = .true.
         write(*,*) 'initialize_special: beta found. Using dataset /zaver/beta/'//trim(dataname)
@@ -286,14 +301,10 @@ module Special
       end if
 
       ! gamma
-      gamma_id_G = -1
-      gamma_id_D = -1
-      gamma_id_S = -1
       lgamma_open = .false.
-      call openDataset('gamma', gamma_id_G, &
-                       gamma_id_D, gamma_id_S, &
-                       gamma_dims, lgamma_exists, & 
-                       5, loaderr)
+      call openDataset('gamma', gamma_id, &
+                       lgamma_exists, & 
+                       loaderr)
       if (loaderr == 0) then
         lgamma_open = .true.
         write(*,*) 'initialize_special: gamma found. Using dataset /zaver/gamma/'//trim(dataname)
@@ -304,14 +315,10 @@ module Special
       end if
 
       ! delta
-      delta_id_G = -1
-      delta_id_D = -1
-      delta_id_S = -1
       ldelta_open = .false.
-      call openDataset('delta', delta_id_G, &
-                       delta_id_D, delta_id_S, &
-                       delta_dims, ldelta_exists, & 
-                       5, loaderr)
+      call openDataset('delta', delta_id, &
+                       ldelta_exists, & 
+                       loaderr)
       if (loaderr == 0) then
         ldelta_open = .true.
         write(*,*) 'initialize_special: delta found. Using dataset /zaver/delta/'//trim(dataname)
@@ -320,14 +327,10 @@ module Special
       end if
       
       ! kappa
-      kappa_id_G = -1
-      kappa_id_D = -1
-      kappa_id_S = -1
       lkappa_open = .false.
-      call openDataset('kappa', kappa_id_G, &
-                       kappa_id_D, kappa_id_S, &
-                       kappa_dims, lkappa_exists, & 
-                       7, loaderr)
+      call openDataset('kappa', kappa_id, &
+                       lkappa_exists, & 
+                       loaderr)
       if (loaderr == 0) then
         lkappa_open = .true.
         write(*,*) 'initialize_special: kappa found. Using dataset /zaver/kappa/'//trim(dataname)
@@ -337,7 +340,13 @@ module Special
       
       ! Load initial dataset values
 
-      call loadDataset(gamma_id_D, gamma_id_S, gamma_data, 1)
+      call loadDataset(gamma_data, gamma_id, 0)
+      write(*,*) sum(gamma_data), maxval(gamma_data), minval(gamma_data)
+      write(*,*) sum(gamma_data(1,:,:,:,2)), maxval(gamma_data(1,:,:,:,2)), minval(gamma_data(1,:,:,:,2))
+      write(*,*) gamma_data(1,10,10,1,10)
+      write(*,*) gamma_data(1,11,10,1,10)
+      write(*,*) gamma_data(1,10,11,1,10)
+      write(*,*) gamma_data(1,10,10,1,11)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -361,19 +370,19 @@ module Special
       print *,'Closing emftensors.h5'
       
       if (lalpha_open) then
-        call closeDataset(alpha_id_G, alpha_id_D, alpha_id_S)
+        call closeDataset(alpha_id)
       end if
       if (lbeta_open) then
-        call closeDataset(beta_id_G, beta_id_D, beta_id_S)
+        call closeDataset(beta_id)
       end if
       if (lgamma_open) then
-        call closeDataset(gamma_id_G, gamma_id_D, gamma_id_S)
+        call closeDataset(gamma_id)
       end if
       if (ldelta_open) then
-        call closeDataset(delta_id_G, delta_id_D, delta_id_S)
+        call closeDataset(delta_id)
       end if
       if (lkappa_open) then
-        call closeDataset(kappa_id_G, kappa_id_D, kappa_id_S)
+        call closeDataset(kappa_id)
       end if
 
       call H5Gclose_F(hdf_emftensors_group, hdferr)
@@ -410,6 +419,16 @@ module Special
     subroutine pencil_criteria_special()
 !
 !  All pencils that this special module depends on are specified here.
+      lpenc_requested(i_uu)=.true.
+      lpenc_requested(i_bb)=.true.
+      lpenc_requested(i_jj)=.true.
+      lpenc_requested(i_alpha_emf)=.true.
+      lpenc_requested(i_beta_emf)=.true.
+      lpenc_requested(i_gamma_emf)=.true.
+      lpenc_requested(i_delta_emf)=.true.
+      lpenc_requested(i_kappa_emf)=.true.
+
+      write(*,*) 'pencil_criteria_special: Pencils requested'
 !
 !  18-07-06/tony: coded
 !
@@ -861,24 +880,18 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
 !***********************************************************************
 
     subroutine openDataset(datagroup,      &
-                           dataset_id_G,   &
-                           dataset_id_D,   &
-                           dataset_id_S,   &
-                           dataset_dims,   &
+                           tensor_id,     &
                            dataset_exists, &
-                           dataset_ndims,  &
                            loaderr)
 
       ! Load a certain timestep from input array
       character(len=*), intent(in)    :: datagroup
-      integer(HID_T), intent(inout)   :: dataset_id_G, & 
-                                         dataset_id_D, &
-                                         dataset_id_S
-      integer, intent(in) :: dataset_ndims
-      integer, intent(out) :: loaderr
-      integer(HSIZE_T), dimension(dataset_ndims),  intent(inout) :: dataset_dims
-      integer(HSIZE_T), dimension(10) :: maxdimsizes
+      integer, intent(in)             :: tensor_id
       logical, intent(inout)          :: dataset_exists
+      integer, intent(out) :: loaderr
+!
+      integer(HSIZE_T), dimension(10) :: maxdimsizes
+      integer :: ndims
       
       dataset_exists = .true.
 
@@ -890,78 +903,90 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
         return
       end if
       ! Open datagroup
-      call H5Gopen_F(hdf_emftensors_group, datagroup, dataset_id_G, hdferr)
+      call H5Gopen_F(hdf_emftensors_group, datagroup, tensor_id_G(tensor_id), hdferr)
       if (hdferr /= 0) then
         loaderr = 2
         return
       end if
 
       ! Check that dataset e.g. /zaver/alpha/data exists
-      call H5Lexists_F(dataset_id_G, dataname, dataset_exists, hdferr)
+      call H5Lexists_F(tensor_id_G(tensor_id), dataname, dataset_exists, hdferr)
       if (hdferr /= 0) then
         loaderr = 3
-        call H5Gclose_F(dataset_id_G, hdferr)
+        call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
         dataset_exists = .false.
         return
       end if
       ! Open dataset
-      call H5Dopen_F(dataset_id_G, dataname, dataset_id_D, loaderr)
+      call H5Dopen_F(tensor_id_G(tensor_id), dataname, tensor_id_D(tensor_id), loaderr)
       if (hdferr /= 0) then
         loaderr = 4
-        call H5Gclose_F(dataset_id_G, hdferr)
+        call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
         return
       end if
       ! Get dataspace
-      call H5Dget_space_F(dataset_id_D, dataset_id_S, hdferr)
+      call H5Dget_space_F(tensor_id_D(tensor_id), tensor_id_S(tensor_id), hdferr)
       if (hdferr /= 0) then
         loaderr = 5
-        call H5Dclose_F(dataset_id_D, hdferr)
-        call H5Gclose_F(dataset_id_G, hdferr)
+        call H5Dclose_F(tensor_id_D(tensor_id), hdferr)
+        call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
         return
       end if
       !call H5Sget_simple_extent_ndims_F(dataset_id_S, ndims, hdferr)
-      call H5Sget_simple_extent_dims_F(dataset_id_S, dataset_dims, maxdimsizes, hdferr)
-      print *,dataset_dims(1:dataset_ndims)
-      print *,maxdimsizes(1:dataset_ndims)
+      ndims = tensor_ndims(tensor_id)
+      call H5Sget_simple_extent_dims_F(tensor_id_S(tensor_id), &
+                                       tensor_dims(tensor_id,1:ndims), &
+                                       maxdimsizes, hdferr)
+      print *,tensor_dims(tensor_id,1:tensor_ndims(tensor_id))
+      print *,maxdimsizes(1:tensor_ndims(tensor_id))
       loaderr = 0
 
     end subroutine openDataset
 
-    subroutine closeDataset(dataset_id_G, dataset_id_D, dataset_id_S)
+    subroutine closeDataset(tensor_id)
+      implicit none
+      integer :: tensor_id
       ! Load a certain timestep from input array
-      integer(HID_T), intent(inout)   :: dataset_id_G, &
-                                         dataset_id_D, &
-                                         dataset_id_S
-      call H5Sclose_F(dataset_id_S, hdferr)
-      call H5Dclose_F(dataset_id_D, hdferr)
-      call H5Gclose_F(dataset_id_G, hdferr)
+      call H5Sclose_F(tensor_id_S(tensor_id), hdferr)
+      call H5Dclose_F(tensor_id_D(tensor_id), hdferr)
+      call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
 
     end subroutine closeDataset
 
-    subroutine loadDataset_rank1(dataset_id_D, dataset_id_S, dataarray, loadstart)
+    subroutine loadDataset_rank1(dataarray, tensor_id, loadstart)
       implicit none
-      integer(HID_T), intent(inout)   :: dataset_id_D, &
-                                         dataset_id_S
       real, dimension(:,:,:,:,:), intent(inout) :: dataarray
+      integer, intent(in) :: tensor_id
       integer, intent(in) :: loadstart
+      integer(HSIZE_T), dimension(5) :: dataarray_dims
       integer(HSIZE_T), dimension(5) :: hdf_offsets, hdf_stride, &
-                                        hdf_block,   hdf_count
-      integer(HID_T)  :: dataspace
-      integer         :: tlen
+                                        hdf_block,   hdf_count, &
+                                        hdf_memoffsets, hdf_memcount
+      integer(HID_T)  :: hdf_memspace
+!
+!      call H5Dget_space_F(dataset_id_D, hdf_dataspace, hdferr)
+      dataarray_dims = tensor_dims(tensor_id,1:5)
+      hdf_offsets  = [ 0, ipx*nx, ipy*ny, ipz*nz, loadstart ]
+      hdf_stride   = [ 1, 1, 1, 1, 1 ]
+      hdf_block    = [ 1, 1, 1, 1, 1 ]
+      hdf_count    = [ 3, nx, ny, nz, dataload_len ]
+!
+      call H5Sselect_hyperslab_F(tensor_id_S(tensor_id), H5S_SELECT_SET_F, &
+                                 hdf_offsets, hdf_count, &
+                                 hdferr, hdf_stride, hdf_block)
 
-      !call H5Dget_space_F(hdf_datasets(ianalyzer,ifield), hdf_filespace, hdferr)
-      !if (ndims == 5) then
-      !  hdf_offsets  = [ 1, ipx*nx, ipy*ny, ipz*nz, datastart ]
-      !  hdf_stride   = [ 1, 1, 1, 1, 1 ]
-      !  hdf_block    = [ 3, 3, nx, ny, nz, 1 ]
-      !  hdf_count    = [ 1, 1, 1, dataload_len ]
+      hdf_memoffsets = [ 0 , 0 , 0 , 0 , 0 ]
+      hdf_memcount  = [ 3, nx, ny , nz, dataload_len ]
+      call H5Screate_simple_F(5, hdf_memcount, hdf_memspace, hdferr)
+      call H5Sselect_hyperslab_F(hdf_memspace, H5S_SELECT_SET_F, &
+                                 hdf_memoffsets, hdf_memcount, &
+                                 hdferr)
 
-      write(*,*) shape(dataarray)
+      call H5Dread_F(tensor_id_D(tensor_id), hdf_memtype, dataarray, dataarray_dims, hdferr, &
+                     hdf_memspace, tensor_id_S(tensor_id))
+      call H5Sclose_F(hdf_memspace, hdferr)
+      !call H5Sclose_F(hdf_dataspace, hdferr)
 
-      !call H5Sselect_hyperslab_F(hdf_filespace, H5S_SELECT_SET_F, hdf_offsets, hdf_count, &
-      !                           hdferr, hdf_stride, hdf_block)
-      !call H5Sselect_hyperslab_F(hdf_filespace, H5S_SELECT_SET_F, hdf_offsets, hdf_count, &
-      !                          hdferr)
     end subroutine loadDataset_rank1
 
 endmodule Special
