@@ -365,14 +365,11 @@ module Particles_chemistry
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
 !
-      R_c_hat = 0.0
 !
 !  R_c_hat is the molar flux of carbon (the mass loss) per real
 !  particle surface
 !
-      do k =k1,k2
-        R_c_hat(k) = -sum(mdot_ck(k,:))/(St(k)*mol_mass_carbon)
-      enddo
+        R_c_hat = -sum(mdot_ck(k1:k2,:),DIM=2)/(St(k1:k2)*mol_mass_carbon)
 !
     endsubroutine calc_R_c_hat
 ! ******************************************************************************
@@ -396,18 +393,19 @@ module Particles_chemistry
 !  mod_all: Middle term in eq. 40 of 8th US combustion meeting, coal and
 !  biomass combustion and gasification.
 !
-      do k = k1,k2
-        mod_all(k) = (Sgc_init*fp(k,impinit))**2*structural_parameter* &
-            (1.-conversion(k)) * (1.-conversion(k)) / &
-            (2*St(k)**2)
+!      do k = k1,k2
+      mod_all = (Sgc_init*fp(k1:k2,impinit))*(Sgc_init*fp(k1:k2,impinit))*&
+          structural_parameter* &
+          (1.-conversion(k1:k2)) * (1.-conversion(k1:k2)) / &
+          (2*St(k1:k2)*St(k1:k2))
 !
 !  This was 
 !        Sgc(k) = St(k)/ rho_p(k)
 !  before
 !
-        Sgc(k) = St(k)/ fp(k,imp)
-        mod_surf_area(k) = (1-mod_all(k))*Sgc(k)*mol_mass_carbon
-      enddo
+      Sgc = St(k1:k2)/ fp(k1:k2,imp)
+      mod_surf_area = (1-mod_all(k1:k2))*Sgc(k1:k2)*mol_mass_carbon
+!      enddo
 !
       deallocate(mod_all)
       deallocate(Sgc)
@@ -446,9 +444,7 @@ module Particles_chemistry
           if (St(k)/=St(k)) call fatal_error('St(k)', 'is nan')
         enddo
       else
-        do k = k1,k2
-          St(k)= 4.*pi*(fp(k,iap)**2)
-        enddo
+          St= 4.*pi*(fp(k1:k2,iap)*fp(k1:k2,iap))
       endif
 !        
     endsubroutine calc_St
@@ -1643,24 +1639,23 @@ module Particles_chemistry
       k2 = k2_imn(imn)
 !
 ! Unit: J/(mol)
-      do k = k1,k2
-        if (inuH2O > 0) surface_species_enthalpy(k,inuH2O) = &
-            -242.18e3-(5.47*fp(k,iTp))
-        if (inuO2 > 0)  surface_species_enthalpy(k,inuO2) = 0.
-        if (inuCO2 > 0) surface_species_enthalpy(k,inuCO2) = &
-            -392.52e3-(2.109*fp(k,iTp))
-        if (inuH2 > 0)  surface_species_enthalpy(k,inuH2 ) = 0.
-        if (inuCO > 0)  surface_species_enthalpy(k,inuCO ) = &
-            -105.95e3-6.143*fp(k,iTp)
-        if (inuCH > 0)  surface_species_enthalpy(k,inuCH ) = 594.13e3
-        if (inuHCO > 0) surface_species_enthalpy(k,inuHCO) = &
-            45.31e3-(5.94*fp(k,iTp))
-        if (inuCH2 > 0) surface_species_enthalpy(k,inuCH2) = &
-            387.93e3-(5.8*fp(k,iTp))
-        if (inuCH4 > 0) surface_species_enthalpy(k,inuCH4) = -75e3
-        if (inuCH3 > 0) surface_species_enthalpy(k,inuCH3) = &
-            144.65e3-(6.79*fp(k,iTp))
-      enddo
+        if (inuH2O > 0) surface_species_enthalpy(k1:k2,inuH2O) = &
+            -242.18e3-(5.47*fp(k1:k2,iTp))
+        if (inuO2 > 0)  surface_species_enthalpy(k1:k2,inuO2) = 0.
+        if (inuCO2 > 0) surface_species_enthalpy(k1:k2,inuCO2) = &
+            -392.52e3-(2.109*fp(k1:k2,iTp))
+        if (inuH2 > 0)  surface_species_enthalpy(k1:k2,inuH2 ) = 0.
+        if (inuCO > 0)  surface_species_enthalpy(k1:k2,inuCO ) = &
+            -105.95e3-6.143*fp(k1:k2,iTp)
+        if (inuCH > 0)  surface_species_enthalpy(k1:k2,inuCH ) = 594.13e3
+        if (inuHCO > 0) surface_species_enthalpy(k1:k2,inuHCO) = &
+            45.31e3-(5.94*fp(k1:k2,iTp))
+        if (inuCH2 > 0) surface_species_enthalpy(k1:k2,inuCH2) = &
+            387.93e3-(5.8*fp(k1:k2,iTp))
+        if (inuCH4 > 0) surface_species_enthalpy(k1:k2,inuCH4) = -75e3
+        if (inuCH3 > 0) surface_species_enthalpy(k1:k2,inuCH3) = &
+            144.65e3-(6.79*fp(k1:k2,iTp))
+!
     endsubroutine calc_surf_enthalpy
 ! ******************************************************************************
 !  Calculate the specific entropy of the gas phase species at the
@@ -1676,31 +1671,29 @@ module Particles_chemistry
       k2 = k2_imn(imn)
 !
 ! JONAS: units are in j/(mol*K)
-      do k = k1,k2
-        if (inuH2O > 0) surface_species_entropy(k,inuH2O) = &
-            189.00+(0.0425*fp(k,iTp))
-        if (inuO2 > 0)  surface_species_entropy(k,inuO2) = &
-            222.55+(0.0219*fp(k,iTp))
-        if (inuCO2 > 0) surface_species_entropy(k,inuCO2) = &
-            212.19+(0.0556*fp(k,iTp))
-        if (inuH2 > 0)  surface_species_entropy(k,inuH2 ) = &
-            133.80+(0.0319*fp(k,iTp))
-        if (inuCO > 0)  surface_species_entropy(k,inuCO ) = &
-            199.35+(0.0342*fp(k,iTp))
+        if (inuH2O > 0) surface_species_entropy(k1:k2,inuH2O) = &
+            189.00+(0.0425*fp(k1:k2,iTp))
+        if (inuO2 > 0)  surface_species_entropy(k1:k2,inuO2) = &
+            222.55+(0.0219*fp(k1:k2,iTp))
+        if (inuCO2 > 0) surface_species_entropy(k1:k2,inuCO2) = &
+            212.19+(0.0556*fp(k1:k2,iTp))
+        if (inuH2 > 0)  surface_species_entropy(k1:k2,inuH2 ) = &
+            133.80+(0.0319*fp(k1:k2,iTp))
+        if (inuCO > 0)  surface_species_entropy(k1:k2,inuCO ) = &
+            199.35+(0.0342*fp(k1:k2,iTp))
 !
 ! taken from chemistry  webbook (1bar)
-        if (inuCH > 0)  surface_species_entropy(k,inuCH ) = 183.00
-        if (inuHCO > 0) surface_species_entropy(k,inuHCO) = &
-            223.114+(0.0491*fp(k,iTp))
-        if (inuCH2 > 0) surface_species_entropy(k,inuCH2) = &
-            193.297+(0.0467*fp(k,iTp))
+        if (inuCH > 0)  surface_species_entropy(k1:k2,inuCH ) = 183.00
+        if (inuHCO > 0) surface_species_entropy(k1:k2,inuHCO) = &
+            223.114+(0.0491*fp(k1:k2,iTp))
+        if (inuCH2 > 0) surface_species_entropy(k1:k2,inuCH2) = &
+            193.297+(0.0467*fp(k1:k2,iTp))
 !
 ! taken from chemistry webbook (1bar)
-        if (inuCH4 > 0) surface_species_entropy(k,inuCH4) = 189.00
-        if (inuCH3 > 0) surface_species_entropy(k,inuCH3) = &
-            190.18+(0.0601*fp(k,iTp))
+        if (inuCH4 > 0) surface_species_entropy(k1:k2,inuCH4) = 189.00
+        if (inuCH3 > 0) surface_species_entropy(k1:k2,inuCH3) = &
+            190.18+(0.0601*fp(k1:k2,iTp))
 !
-      enddo
     endsubroutine calc_surf_entropy
 ! ******************************************************************************
 !  Calculate the specific entropy of adsorbed species for each particle
@@ -1715,36 +1708,34 @@ module Particles_chemistry
       k2 = k2_imn(imn)
 !
 ! Unit: J/(mol*K)
-      do k = k1,k2
 !
         if (imuadsO > 0)    then
-          adsorbed_species_entropy(k,imuadsO) = &
-              (164.19+(0.0218*fp(k,iTp)))*0.72 - (3.3*gas_constant)
+          adsorbed_species_entropy(k1:k2,imuadsO) = &
+              (164.19+(0.0218*fp(k1:k2,iTp)))*0.72 - (3.3*gas_constant)
         endif
 !
 ! this is guessed
         if (imuadsO2 > 0)   then
-          adsorbed_species_entropy(k,imuadsO2) =  &
-              2*adsorbed_species_entropy(k,imuadsO)
+          adsorbed_species_entropy(k1:k2,imuadsO2) =  &
+              2*adsorbed_species_entropy(k1:k2,imuadsO)
         endif
         if (imuadsOH > 0)   then
-          adsorbed_species_entropy(k,imuadsOH) = &
-              ((0.0319*fp(k,iTp)) + 186.88) * 0.7 - (3.3*gas_constant)
+          adsorbed_species_entropy(k1:k2,imuadsOH) = &
+              ((0.0319*fp(k1:k2,iTp)) + 186.88) * 0.7 - (3.3*gas_constant)
         endif
         if (imuadsH > 0)    then
-          adsorbed_species_entropy(k,imuadsH) = &
-              (117.49+(0.0217*fp(k,iTp)))*0.54 - (3.3*gas_constant)
+          adsorbed_species_entropy(k1:k2,imuadsH) = &
+              (117.49+(0.0217*fp(k1:k2,iTp)))*0.54 - (3.3*gas_constant)
         endif
         if (imuadsCO > 0)   then
-          adsorbed_species_entropy(k,imuadsCO) = &
-              (199.35+(0.0342*fp(k,iTp))) * &
-              0.6*(1+(1.44e-4*fp(k,iTp))) - (3.3*gas_constant)
+          adsorbed_species_entropy(k1:k2,imuadsCO) = &
+              (199.35+(0.0342*fp(k1:k2,iTp))) * &
+              0.6*(1+(1.44e-4*fp(k1:k2,iTp))) - (3.3*gas_constant)
         endif
 !
 ! taken from nist
-        if (imufree > 0)    adsorbed_species_entropy(k,imufree) = 0
+        if (imufree > 0)    adsorbed_species_entropy(k1:k2,imufree) = 0
 !
-      enddo
     endsubroutine calc_ads_entropy
 ! ******************************************************************************
 !  Calculate the specific enthalpy of adsorbed species for each particle
@@ -1770,6 +1761,7 @@ module Particles_chemistry
       if (imuadsCO > 0)   adsorbed_species_enthalpy(k1:k2,imuadsCO) = &
           -199.94e3 - (0.0167e3*(fp(k1:k2,iTp)-273.15))
       if (imufree > 0)    adsorbed_species_enthalpy(k1:k2,imufree) = 0.
+!
     endsubroutine calc_ads_enthalpy
 ! ******************************************************************************
 !  Wrapper routine to calculate all terms needed to be used in the variables to
@@ -2008,9 +2000,8 @@ module Particles_chemistry
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
 !
-      do k = k1,k2
-        rho_p(k) = fp(k,imp) / (4./3. *pi * fp(k,iap)**3)
-      enddo
+        rho_p(k1:k2) = fp(k1:k2,imp) / (4./3. *pi * fp(k1:k2,iap)*fp(k1:k2,iap)*fp(k1:k2,iap))
+!
     endsubroutine calc_rho_p
 ! ******************************************************************************
 !  Looks for terms of ^x.yz after the species for arbitrary reaction order
@@ -2170,17 +2161,20 @@ module Particles_chemistry
       real, dimension(:,:) :: fp
       integer :: k, k1, k2
       integer :: ix0
-      real :: Tfilm
+      real, dimension(:), allocatable :: Tfilm
       type (pencil_case) :: p
       integer, dimension(:,:) :: ineargrid
 !
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
 !
-      do k = k1,k2
-        Tfilm=fp(k,iTp)+(interp_TT(k)-fp(k,iTp))/3.
-        Cg(k) = interp_pp(k)/(Rgas*Tfilm)
-      enddo
+      allocate(Tfilm(k1:k2))
+!
+      Tfilm(k1:k2)=fp(k1:k2,iTp)+(interp_TT(k1:k2)-fp(k1:k2,iTp))/3.
+      Cg(k1:k2) = interp_pp(k1:k2)/(Rgas*Tfilm(k1:k2))
+!      
+      deallocate(Tfilm)
+! 
     endsubroutine calc_Cg
 ! ******************************************************************************
 !  Calculate particle surface area
@@ -2195,6 +2189,7 @@ module Particles_chemistry
       k2 = k2_imn(imn)
 !
       A_p(k1:k2) = 4 * pi * fp(k1:k2,iap) * fp(k1:k2,iap)
+!
     endsubroutine calc_A_p
 ! ******************************************************************************
 !  calculate site concentration
@@ -2208,12 +2203,10 @@ module Particles_chemistry
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
 !
-      do k = k1,k2
         do i = 1,N_adsorbed_species-1
-          Cs(k,i) = fp(k,iads+i-1)
+          Cs(k1:k2,i) = fp(k1:k2,iads+i-1)
         enddo
-        Cs(k,N_adsorbed_species) = 1 - sum(Cs(k,1:N_adsorbed_species-1))
-      enddo
+        Cs(k1:k2,N_adsorbed_species) = 1 - sum(Cs(k1:k2,1:N_adsorbed_species-1),DIM=2)
 !
       Cs = Cs * total_carbon_sites
     endsubroutine calc_Cs
