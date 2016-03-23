@@ -1148,6 +1148,7 @@ module Hydro
         case ('Beltrami-x'); call beltrami(ampluu(j),f,iuu,kx=kx_uu)
         case ('Beltrami-y'); call beltrami(ampluu(j),f,iuu,ky=ky_uu)
         case ('Beltrami-z'); call beltrami(ampluu(j),f,iuu,kz=kz_uu)
+        case ('Straining'); call straining(ampluu(j),f,iuu,kx_uu,ky_uu,kz_uu,dimensionality)
         case ('rolls'); call rolls(ampluu(j),f,iuu,kx_uu,kz_uu)
         case ('trilinear-x'); call trilinear(f,iux,ampl_ux(j),ampl_uy(j),ampl_uz(j))
         case ('trilinear-y'); call trilinear(f,iuy,ampl_ux(j),ampl_uy(j),ampl_uz(j))

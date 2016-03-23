@@ -26,7 +26,7 @@ module Initcond
   public :: gaunoise_rprof
   public :: gaussian, gaussian3d, gaussianpos, beltrami, bessel_x, bessel_az_x
   public :: beltrami_complex, beltrami_old, bhyperz
-  public :: rolls, tor_pert
+  public :: straining, rolls, tor_pert
   public :: jump, bjump, bjumpz, stratification, stratification_x
   public :: stratification_xz
   public :: modes, modev, modeb, crazy, exponential
@@ -1826,6 +1826,38 @@ module Initcond
       endif
 !
     endsubroutine bessel_az_x
+!***********************************************************************
+    subroutine straining(ampl,f,i,kx,ky,kz,dimensionality)
+!
+!  convection straining (as initial condition)
+!
+!  23-mar-16/axel: coded
+!
+      integer :: i,j,dimensionality
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl,kx,ky,kz
+!
+!  check input parameters
+!
+      if (lroot) print*,'straining: i,kx,ky,kz=',i,kx,ky,kz
+!
+!  set stream function psi=sin(kx*x)*sin(kz*(z-zbot))
+!
+      j=i
+      f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(sin(kx*x),2,my),3,mz)&
+                                *spread(spread(cos(ky*y),1,mx),3,mz)&
+                                *spread(spread(cos(kz*z),1,mx),2,my)
+      j=i+1
+      f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(cos(kx*x),2,my),3,mz)&
+                                *spread(spread(sin(ky*y),1,mx),3,mz)&
+                                *spread(spread(cos(kz*z),1,mx),2,my)
+      j=i+2
+      f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(cos(kx*x),2,my),3,mz)&
+                                *spread(spread(cos(ky*y),1,mx),3,mz)&
+                                *spread(spread(sin(kz*z),1,mx),2,my)&
+                                *(-1.)*(dimensionality-1)
+!
+    endsubroutine straining
 !***********************************************************************
     subroutine rolls(ampl,f,i,kx,kz)
 !

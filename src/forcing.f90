@@ -4897,6 +4897,10 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=fact*sinz(n    ,i)
           force(:,2)=fact*sinx(l1:l2,i)
           force(:,3)=fact*siny(m    ,i)
+!
+!  Amplitude is given by ampl_ff/nu*k^2, and k^2=2 in a 2-D box
+!  of size (2pi)^2, for example.
+!
         case('Straining')
           fact=ampl_ff(i)
           fact2=-(dimensionality-1)*ampl_ff(i)
