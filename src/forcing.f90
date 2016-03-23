@@ -642,14 +642,15 @@ module Forcing
         else
           if (kf_fcont(i)  ==impossible) kf_fcont(i)  =k1_ff
           if (kf_fcont_x(i)==impossible) kf_fcont_x(i)=kx_ff
-!          if (kf_fcont_y(i)==impossible) kf_fcont_x(i)=ky_ff
-!NS: bug; replaced kf_fcont_x(i) -> kf_fcont_y(i)
           if (kf_fcont_y(i)==impossible) kf_fcont_y(i)=ky_ff
           if (kf_fcont_z(i)==impossible) kf_fcont_z(i)=kz_ff
           if (z_center_fcont(i)==0.) z_center_fcont(i)=z_center
         endif
-
-        if (iforcing_cont(i)=='ABC') then
+!
+!  all 3 sin and cos functions needed
+!
+        if (iforcing_cont(i)=='ABC' .or. &
+            iforcing_cont(i)=='Straining') then
           if (lroot) print*,'forcing_cont: ABC--calc sinx, cosx, etc'
           sinx(:,i)=sin(kf_fcont(i)*x); cosx(:,i)=cos(kf_fcont(i)*x)
           siny(:,i)=sin(kf_fcont(i)*y); cosy(:,i)=cos(kf_fcont(i)*y)
@@ -4896,6 +4897,12 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=fact*sinz(n    ,i)
           force(:,2)=fact*sinx(l1:l2,i)
           force(:,3)=fact*siny(m    ,i)
+        case('Straining')
+          fact=ampl_ff(i)
+          fact2=-(dimensionality-1)*ampl_ff(i)
+          force(:,1)=fact *sinx(l1:l2,i)*cosy(m,i)*cosz(n,i)
+          force(:,2)=fact *cosx(l1:l2,i)*siny(m,i)*cosz(n,i)
+          force(:,3)=fact2*cosx(l1:l2,i)*cosy(m,i)*sinz(n,i)
         case('RobertsFlow')
           fact=ampl_ff(i)
           force(:,1)=-fact*cosx(l1:l2,i)*siny(m,i)
