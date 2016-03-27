@@ -115,6 +115,11 @@ module Special
                        kappa_id=5
   integer, dimension(5),parameter :: tensor_ndims = (/ 6, 6, 5, 5, 7 /) 
   ! Dataset logical variables
+  logical, dimension(3,3)   :: lalpha_arr, lbeta_arr
+  logical, dimension(3)     :: lgamma_arr, ldelta_arr
+  logical, dimension(3,3,3) :: lkappa_arr
+  logical, dimension(6)     :: lalpha_c, lbeta_c
+  logical, dimension(3)     :: lgamma_c, ldelta_c
   logical :: lalpha, lalpha_exists, lalpha_open, &
              lbeta,  lbeta_exists,  lbeta_open, &
              lgamma, lgamma_exists, lgamma_open, &
@@ -129,9 +134,13 @@ module Special
   character (len=10) :: dataname
   ! Input namelist
   namelist /special_init_pars/ &
-       lalpha, lbeta, lgamma, ldelta, lkappa, dataname, interpname
+       lalpha,   lbeta,   lgamma,   ldelta,   &
+       lalpha_c, lbeta_c, lgamma_c, ldelta_c, &
+       dataname, interpname
   namelist /special_run_pars/ &
-       lalpha, lbeta, lgamma, ldelta, lkappa, dataname, interpname
+       lalpha,   lbeta,   lgamma,   ldelta,   &
+       lalpha_c, lbeta_c, lgamma_c, ldelta_c, &
+       dataname, interpname
   ! loadDataset interface
   interface loadDataset
     module procedure loadDataset_rank1
@@ -150,7 +159,7 @@ module Special
       if (lroot) call svn_id( &
            "$Id$")
       if (trim(interpname) == 'none') then
-        dataload_len = 1
+        dataload_len = 100
       else
         call fatal_error('register_special','Unknown interpolation chosen!')
       end if
@@ -167,15 +176,15 @@ module Special
                         [ 0, 0, 0, ipx*nx, ipy*ny, ipz*nz, 0 ]
       !  Set dataset counts
       tensor_counts(alpha_id,1:tensor_ndims(alpha_id))  = &
-                        [ 3, 3, nx, ny, nz, dataload_len ]
+                        [ 1, 1, nx, ny, nz, dataload_len ]
       tensor_counts(beta_id,1:tensor_ndims(beta_id))  = &
-                        [ 3, 3, nx, ny, nz, dataload_len ]
+                        [ 1, 1, nx, ny, nz, dataload_len ]
       tensor_counts(gamma_id,1:tensor_ndims(gamma_id))  = &
-                        [ 3, nx, ny, nz, dataload_len ]
+                        [ 1, nx, ny, nz, dataload_len ]
       tensor_counts(delta_id,1:tensor_ndims(delta_id))  = &
-                        [ 3, nx, ny, nz, dataload_len ]
+                        [ 1, nx, ny, nz, dataload_len ]
       tensor_counts(kappa_id,1:tensor_ndims(kappa_id))  = &
-                        [ 3, 3, 3, nx, ny, nz, dataload_len ]
+                        [ 1, 1, 1, nx, ny, nz, dataload_len ]
       !  Set dataset memory offsets
       tensor_memoffsets = 0
       !  Set dataset memory counts
@@ -238,7 +247,7 @@ module Special
       call H5Pcreate_F(H5P_FILE_ACCESS_F, hdf_emftensors_plist, hdferr)
       call H5Pset_fapl_mpio_F(hdf_emftensors_plist, MPI_COMM_WORLD, MPI_INFO_NULL, hdferr)
 
-      print *, 'initialize special: opening emftensors.h5 and loading relevant fields of  it into memory...'
+      print *, 'initialize special: opening emftensors.h5 and loading relevant fields of it into memory...'
 
       hdf_emftensors_filename = trim(datadir_snap)//'/emftensors.h5'
 
@@ -329,36 +338,35 @@ module Special
 
       ! Allocate data arrays
       if (lalpha) then
-        allocate(alpha_data(3,3,  nx,ny,nz,dataload_len))
+        allocate(alpha_data(3,3,nx,ny,nz,dataload_len))
         alpha_data = 0
-        call loadDataset(alpha_data, alpha_id, 0)
-        write (*,*) 'Loaded alpha. sum: ', sum(alpha_data)
+        call loadDataset(alpha_data, lalpha_arr, alpha_id, 0)
+        write (*,*) 'Loaded alpha. sum/maxval/minval: ', sum(alpha_data), maxval(alpha_data), minval(alpha_data)
       end if
       if (lbeta) then
-        allocate( beta_data(3,3,  nx,ny,nz,dataload_len))
+        allocate(beta_data(3,3,nx,ny,nz,dataload_len))
         beta_data  = 0
-        call loadDataset( beta_data,  beta_id, 0)
-        write (*,*) 'Loaded beta. sum: ', sum(beta_data)
+        call loadDataset(beta_data, lbeta_arr, beta_id, 0)
+        write (*,*) 'Loaded beta. sum/maxval/minval: ', sum(beta_data), maxval(beta_data), minval(beta_data)
       end if
       if (lgamma) then
-        allocate(gamma_data(3,    nx,ny,nz,dataload_len))
+        allocate(gamma_data(3,nx,ny,nz,dataload_len))
         gamma_data = 0
-        call loadDataset(gamma_data, gamma_id, 0)
-        write (*,*) 'Loaded gamma. sum: ', sum(gamma_data)
+        call loadDataset(gamma_data, lgamma_arr, gamma_id, 0)
+        write (*,*) 'Loaded gamma. sum/maxval/minval: ', sum(gamma_data), maxval(gamma_data), minval(gamma_data)
       end if
       if (ldelta) then
-        allocate(delta_data(3,    nx,ny,nz,dataload_len))
+        allocate(delta_data(3,nx,ny,nz,dataload_len))
         delta_data = 0
-        call loadDataset(delta_data, delta_id, 0)
-        write (*,*) 'Loaded delta. sum: ', sum(delta_data)
+        call loadDataset(delta_data, ldelta_arr, delta_id, 0)
+        write (*,*) 'Loaded delta. sum/maxval/minval: ', sum(delta_data), maxval(delta_data), minval(delta_data)
       end if
       if (lkappa) then
         allocate(kappa_data(3,3,3,nx,ny,nz,dataload_len))
         kappa_data = 0
-        !call loadDataset(kappa_data, kappa_id, 0)
-        write (*,*) 'Loaded kappa. sum: ', sum(kappa_data)
+        !call loadDataset(kappa_data, lkappa_arr, kappa_id, 0)
+        write (*,*) 'Loaded kappa. sum/maxval/minval: ', sum(kappa_data), maxval(kappa_data), minval(kappa_data)
       end if
-      write(*,*) lalpha,lgamma
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -532,16 +540,10 @@ module Special
       integer, intent(out) :: iostat
       write (*,*) 'read_special_init_pars running...'
 !
-      interpname = 'none'
-      lalpha=.false.
-      lbeta =.false.
-      lgamma=.false.
-      lkappa=.false.
-      dataname = 'data'
-      write(*,*) lalpha,lgamma
-      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
-      write(*,*) lalpha,lgamma
       iostat = 0
+      call setParameterDefaults()
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+      call parseParameters()
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -559,16 +561,10 @@ module Special
 !
       iostat = 0
       
-      interpname = 'none'
-      lalpha=.false.
-      lbeta =.false.
-      lgamma=.false.
-      lkappa=.false.
-      dataname = 'data'
       write (*,*) 'read_special_run_pars running...'
-      write(*,*) lalpha,lgamma
+      call setParameterDefaults()
       read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
-      write(*,*) lalpha,lgamma
+      call parseParameters()
 !
 !
     endsubroutine read_special_run_pars
@@ -971,12 +967,8 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
                                        tensor_dims(tensor_id,1:ndims), &
                                        maxdimsizes, hdferr)
       ! Create a memory space mapping for input data
-      call H5Screate_simple_F(ndims, tensor_memcounts(tensor_id,1:ndims), &
+      call H5Screate_simple_F(ndims, tensor_dims(tensor_id,1:ndims), &
                               tensor_id_memS(tensor_id), hdferr)
-      call H5Sselect_hyperslab_F(tensor_id_memS(tensor_id), H5S_SELECT_SET_F, &
-                                 tensor_memoffsets(tensor_id,1:ndims),        &
-                                 tensor_memcounts(tensor_id,1:ndims),         &
-                                 hdferr)
       if (hdferr /= 0) then
         loaderr = 6
         call H5Sclose_F(tensor_id_S(tensor_id), hdferr)
@@ -998,44 +990,143 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
 
     end subroutine closeDataset
 
-    subroutine loadDataset_rank1(dataarray, tensor_id, loadstart)
+    subroutine loadDataset_rank1(dataarray, datamask, tensor_id, loadstart)
       ! Load a chunk of data for a vector, beginning at loadstart
       implicit none
       real, dimension(:,:,:,:,:), intent(inout) :: dataarray
+      logical, dimension(3), intent(in) :: datamask
       integer, intent(in) :: tensor_id
       integer, intent(in) :: loadstart
       integer :: ndims
-      ! Set the new offset for data reading
+      integer(HSIZE_T) :: mask_i
       ndims = tensor_ndims(tensor_id)
       tensor_offsets(tensor_id,ndims) = loadstart
-      call H5Sselect_hyperslab_F(tensor_id_S(tensor_id), H5S_SELECT_SET_F, &
-                                 tensor_offsets(tensor_id,1:ndims), &
-                                 tensor_counts(tensor_id,1:ndims), &
-                                 hdferr)
-      ! Read data into memory
-      call H5Dread_F(tensor_id_D(tensor_id), hdf_memtype, dataarray, &
-                     tensor_dims(tensor_id,1:ndims), hdferr, &
-                     tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
+      do mask_i=1,3
+        ! Load only wanted datasets
+        if (datamask(mask_i)) then
+          ! Set the new offset for data reading
+          tensor_offsets(tensor_id,1)    = mask_i-1
+          tensor_memoffsets(tensor_id,1) = mask_i-1
+          ! Hyperslab for data
+          call H5Sselect_hyperslab_F(tensor_id_S(tensor_id), H5S_SELECT_SET_F, &
+                                     tensor_offsets(tensor_id,1:ndims), &
+                                     tensor_counts(tensor_id,1:ndims), &
+                                     hdferr)
+          ! Hyperslab for memory
+          call H5Sselect_hyperslab_F(tensor_id_memS(tensor_id), H5S_SELECT_SET_F, &
+                                     tensor_memoffsets(tensor_id,1:ndims),        &
+                                     tensor_memcounts(tensor_id,1:ndims),         &
+                                     hdferr)
+          ! Read data into memory
+          call H5Dread_F(tensor_id_D(tensor_id), hdf_memtype, dataarray, &
+                         tensor_dims(tensor_id,1:ndims), hdferr, &
+                         tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
+        end if
+      end do
     end subroutine loadDataset_rank1
     
-    subroutine loadDataset_rank2(dataarray, tensor_id, loadstart)
+    subroutine loadDataset_rank2(dataarray, datamask, tensor_id, loadstart)
       ! Load a chunk of data for a 2-rank tensor, beginning at loadstart
       implicit none
       real, dimension(:,:,:,:,:,:), intent(inout) :: dataarray
+      logical, dimension(3,3), intent(in) :: datamask
       integer, intent(in) :: tensor_id
       integer, intent(in) :: loadstart
       integer :: ndims
+      integer(HSIZE_T) :: mask_i, mask_j
       ! Set the new offset for data reading
       ndims = tensor_ndims(tensor_id)
       tensor_offsets(tensor_id,ndims) = loadstart
-      call H5Sselect_hyperslab_F(tensor_id_S(tensor_id), H5S_SELECT_SET_F, &
-                                 tensor_offsets(tensor_id,1:ndims), &
-                                 tensor_counts(tensor_id,1:ndims), &
-                                 hdferr)
+      do mask_i=1,3; do mask_j=1,3
+        if (datamask(mask_i,mask_j)) then
+          tensor_offsets(tensor_id,1)    = mask_i-1
+          tensor_offsets(tensor_id,2)    = mask_j-1
+          tensor_memoffsets(tensor_id,1) = mask_i-1
+          tensor_memoffsets(tensor_id,2) = mask_j-1
+          call H5Sselect_hyperslab_F(tensor_id_S(tensor_id), H5S_SELECT_SET_F, &
+                                     tensor_offsets(tensor_id,1:ndims), &
+                                     tensor_counts(tensor_id,1:ndims), &
+                                     hdferr)
+          call H5Sselect_hyperslab_F(tensor_id_memS(tensor_id), H5S_SELECT_SET_F, &
+                                     tensor_memoffsets(tensor_id,1:ndims),        &
+                                     tensor_memcounts(tensor_id,1:ndims),         &
+                                     hdferr)
+        end if
+      end do; end do
       ! Read data into memory
       call H5Dread_F(tensor_id_D(tensor_id), hdf_memtype, dataarray, &
                      tensor_dims(tensor_id,1:ndims), hdferr, &
                      tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
     end subroutine loadDataset_rank2
+
+    subroutine setParameterDefaults
+      implicit none
+      interpname = 'none'
+      lalpha=.false.
+      lbeta =.false.
+      lgamma=.false.
+      ldelta=.false.
+      lkappa=.false.
+      lalpha_c=.false.
+      lbeta_c =.false.
+      lgamma_c=.false.
+      ldelta_c=.false.
+      dataname = 'data'
+    end subroutine setParameterDefaults
+
+    subroutine parseParameters
+      implicit none
+      ! Load boolean array for alpha
+      if (any(lalpha_c)) then
+        lalpha = .true.
+        lalpha_arr(1,1) = lalpha_c(1)
+        lalpha_arr(2,1) = lalpha_c(2)
+        lalpha_arr(1,2) = lalpha_c(2)
+        lalpha_arr(3,1) = lalpha_c(3)
+        lalpha_arr(1,3) = lalpha_c(3)
+        lalpha_arr(2,2) = lalpha_c(4)
+        lalpha_arr(2,3) = lalpha_c(5)
+        lalpha_arr(3,2) = lalpha_c(5)
+        lalpha_arr(3,3) = lalpha_c(6)
+      else if (lalpha) then
+        lalpha     = .true.
+        lalpha_arr = .true.
+      end if
+      ! Load boolean array for beta
+      if (any(lbeta_c)) then
+        lbeta = .true.
+        lbeta_arr(1,1) = lbeta_c(1)
+        lbeta_arr(2,1) = lbeta_c(2)
+        lbeta_arr(1,2) = lbeta_c(2)
+        lbeta_arr(3,1) = lbeta_c(3)
+        lbeta_arr(1,3) = lbeta_c(3)
+        lbeta_arr(2,2) = lbeta_c(4)
+        lbeta_arr(2,3) = lbeta_c(5)
+        lbeta_arr(3,2) = lbeta_c(5)
+        lbeta_arr(3,3) = lbeta_c(6)
+      else if (lbeta) then
+        lbeta     = .true.
+        lbeta_arr = .true.
+      end if
+      ! Load boolean array for gamma
+      if (any(lgamma_c)) then
+        lgamma_arr  = lgamma_c
+      else if (lgamma) then
+        lgamma      = .true.
+        lgamma_arr  = .true.
+      end if
+      ! Load boolean array for delta
+      if (any(ldelta_c)) then
+        ldelta_arr  = ldelta_c
+      else if (ldelta) then
+        ldelta      = .true.
+        ldelta_arr  = .true.
+      end if
+            
+      write(*,*) lalpha
+      write(*,*) lalpha_arr
+      write(*,*) lgamma
+      write(*,*) lgamma_arr
+    end subroutine parseParameters
 
 endmodule Special
