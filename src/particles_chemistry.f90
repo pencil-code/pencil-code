@@ -369,7 +369,10 @@ module Particles_chemistry
 !  R_c_hat is the molar flux of carbon (the mass loss) per real
 !  particle surface
 !
-        R_c_hat = -sum(mdot_ck(k1:k2,:),DIM=2)/(St(k1:k2)*mol_mass_carbon)
+!      print*, 'infos: ', mdot_ck(k1:k2,:)
+!      print*, 'infos2: ', St(k1:k2)
+      R_c_hat(k1:k2) = -sum(mdot_ck(k1:k2,:),DIM=2)/(St(k1:k2)*mol_mass_carbon)
+!      print*, 'made it'
 !
     endsubroutine calc_R_c_hat
 ! ******************************************************************************
