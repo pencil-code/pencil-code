@@ -46,6 +46,57 @@ module Particles_map
 !
   contains
 !***********************************************************************
+    subroutine initialize_particles_map()
+!
+!  Perform any post-parameter-read initialization.
+!
+!  29-mar-16/ccyang: coded.
+!
+!  Note: Currently, this subroutine is called after modules
+!    Particles_mpicomm and Particles.
+!
+!  Check the particle-mesh interpolation method.
+!
+      pm: select case (particle_mesh)
+!
+      case ('ngp', 'NGP') pm
+!       Nearest-Grid-Point
+        lparticlemesh_cic = .false.
+        lparticlemesh_tsc = .false.
+        if (lroot) print *, 'particles_initialize_modules: selected nearest-grid-point for particle-mesh method. '
+!
+      case ('cic', 'CIC') pm
+!       Cloud-In-Cell
+        lparticlemesh_cic = .true.
+        lparticlemesh_tsc = .false.
+        if (lroot) print *, 'particles_initialize_modules: selected cloud-in-cell for particle-mesh method. '
+!
+      case ('tsc', 'TSC') pm
+!       Triangular-Shaped-Cloud
+        lparticlemesh_cic = .false.
+        lparticlemesh_tsc = .true.
+        if (lroot) print *, 'particles_initialize_modules: selected triangular-shaped-cloud for particle-mesh method. '
+!
+      case ('') pm
+!       Let the logical switches decide.
+!       TSC assignment/interpolation overwrites CIC in case they are both set.
+        switch: if (lparticlemesh_tsc) then
+          lparticlemesh_cic = .false.
+          particle_mesh = 'tsc'
+        elseif (lparticlemesh_cic) then switch
+          particle_mesh = 'cic'
+        else switch
+          particle_mesh = 'ngp'
+        endif switch
+        if (lroot) print *, 'particles_initialize_modules: particle_mesh = ' // trim(particle_mesh)
+!
+      case default pm
+        call fatal_error('particles_initialize_modules', 'unknown particle-mesh type ' // trim(particle_mesh))
+!
+      endselect pm
+!
+    endsubroutine initialize_particles_map
+!***********************************************************************
     subroutine map_nearest_grid(fp,ineargrid,k1_opt,k2_opt)
 !
 !  Find processor, brick, and grid point index of all or some of the
