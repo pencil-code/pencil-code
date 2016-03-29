@@ -54,25 +54,25 @@ module Particles_map
         lparticlemesh_cic = .false.
         lparticlemesh_tsc = .false.
         lparticlemesh_gab = .false.
-        if (lroot) print *, 'particles_initialize_modules: selected nearest-grid-point for particle-mesh method. '
+        if (lroot) print *, 'initialize_particles_map: selected nearest-grid-point for particle-mesh method. '
       case ('cic', 'CIC') pm
 !       Cloud-In-Cell
         lparticlemesh_cic = .true.
         lparticlemesh_tsc = .false.
         lparticlemesh_gab = .false.
-        if (lroot) print *, 'particles_initialize_modules: selected cloud-in-cell for particle-mesh method. '
+        if (lroot) print *, 'initialize_particles_map: selected cloud-in-cell for particle-mesh method. '
       case ('tsc', 'TSC') pm
 !       Triangular-Shaped-Cloud
         lparticlemesh_cic = .false.
         lparticlemesh_tsc = .true.
         lparticlemesh_gab = .false.
-        if (lroot) print *, 'particles_initialize_modules: selected triangular-shaped-cloud for particle-mesh method. '
+        if (lroot) print *, 'initialize_particles_map: selected triangular-shaped-cloud for particle-mesh method. '
       case ('gab', 'GAB') pm
 !       Gaussian box
         lparticlemesh_cic = .false.
         lparticlemesh_tsc = .false.
         lparticlemesh_gab = .true.
-        if (lroot) print *, 'particles_initialize_modules: selected gaussian-box for particle-mesh method. '
+        if (lroot) print *, 'initialize_particles_map: selected gaussian-box for particle-mesh method. '
         do i = 1,4
           gab_weights(i) = exp(-(real(i)-1.)**2/(gab_width**2))
         enddo
@@ -91,9 +91,9 @@ module Particles_map
         else switch
           particle_mesh = 'ngp'
         endif switch
-        if (lroot) print *, 'particles_initialize_modules: particle_mesh = ' // trim(particle_mesh)
+        if (lroot) print *, 'initialize_particles_map: particle_mesh = ' // trim(particle_mesh)
       case default pm
-        call fatal_error('particles_initialize_modules', 'unknown particle-mesh type ' // trim(particle_mesh))
+        call fatal_error('initialize_particles_map', 'unknown particle-mesh type ' // trim(particle_mesh))
       endselect pm
 !
     endsubroutine initialize_particles_map
