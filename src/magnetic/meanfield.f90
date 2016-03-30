@@ -75,7 +75,7 @@ module Magnetic_meanfield
 ! Run parameters
 !
   real :: alpha_rmax=0.0, alpha_width=0.0, alpha_width2=0.0, alpha_exp=0.
-  real :: meanfield_etat_width=0.0
+  real :: meanfield_etat_width=0.0, meanfield_Beq_width=0.0
   real :: meanfield_kf=1.0, meanfield_kf_width=0.0, meanfield_kf_width2=0.0
   real :: Omega_rmax=0.0, Omega_rwidth=0.0
   real :: rhs_term_kx=0.0, rhs_term_ampl=0.0
@@ -106,7 +106,7 @@ module Magnetic_meanfield
       qp_model,&
       ldelta_profile, delta_effect, delta_profile, &
       meanfield_etat, meanfield_etat_height, meanfield_etat_profile, &
-      meanfield_etat_width, meanfield_etat_exp, &
+      meanfield_etat_width, meanfield_etat_exp, meanfield_Beq_width, &
       meanfield_kf, meanfield_kf_profile, &
       meanfield_kf_width, meanfield_kf_width2, &
       meanfield_Beq, meanfield_Beq_height, meanfield_Beq2_height, &
@@ -694,9 +694,8 @@ module Magnetic_meanfield
 !         call multsv_mn(meanfield_qs_func,p%jxb,tmp_jxb); p%jxb_mf=tmp_jxb
 !--
 !
-!  The follwing (not lmeanfield_jxb_with_vA2) has been used for the
+!  The following (not lmeanfield_jxb_with_vA2) has been used for the
 !  various publications so far.
-!
 !
 !        else
           select case (meanfield_Beq_profile)
@@ -710,14 +709,24 @@ module Magnetic_meanfield
           case ('exp(z/2H)');
 !           H = density scale height, more straightforward
             Beq21=1./meanfield_Beq**2*exp(z(n)/meanfield_Beq2_height)
+!
+!  Beq profile for constant uturb
+!
           case ('uturbconst');
-!           allows to take into account a shifted equilibrium solution caused by the additional pressure contribution
+!
+!  allows to take into account a shifted equilibrium solution
+!  caused by the additional pressure contribution
+!
             Beq21=mu01*p%rho1/(uturb**2)
-!         case ('uturbconst_surface');
+!
 !  Beq21 becomes large in the corona
-!X
-!           Beq21=mu01*p%rho1/(uturb**2)
-!       0.5*(1.-erfunc((x(l1:l2)-x_surface)/alpha_width))*cos(y(m))
+!
+          case ('uturb_surface');
+            Beq21=mu01*p%rho1/(uturb**2)* &
+              0.5*(1.-erfunc((z(n)-z_surface)/meanfield_Beq_width))
+!
+!  default
+!
           case default;
             Beq21=1./meanfield_Beq**2
           endselect
