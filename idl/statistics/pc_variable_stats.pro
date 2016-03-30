@@ -68,9 +68,12 @@ if (not keyword_set(NOHEADER)) then $
 ;
 ;  We do not want averages of grid and time parameters.
 ;
-if ( (varname eq 'X') or (varname eq 'Y') or (varname eq 'Z') or $
-   (varname eq 'DX') or (varname eq 'DY') or (varname eq 'DZ') or $
-   (varname eq 'T') ) then return
+if ((varname eq 'X')  or (varname eq 'Y')  or (varname eq 'Z') or $
+    (varname eq 'DX') or (varname eq 'DY') or (varname eq 'DZ') or $
+    (varname eq 'T')  or (varname eq 'YZ') or (varname eq 'TRIANGLES') or $
+    (varname eq 'SPHERE_DATA')) then return
+  if yinyang then $
+    if strpos(varname,'MERGE') ge 0 then return
 ;
 varsize=size(variable)
 ;

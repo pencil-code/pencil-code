@@ -742,13 +742,14 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
     for i=0,n_elements(tags)-1 do begin
       idum=execute( 'isvec = not pc_is_scalarfield('+tags[i]+',dim=dim,yinyang=yinyang)')
-      if isvec then $
+      if isvec then begin
 ;
 ;  Transformation of theta and phi components in Yang missing yet.
 ;
+        idum=execute( 'trformed=transform_thph_yy(y[m1:m2],z[n1:n2],'+tags[i]+'[l1:l2,m1:m2,n1:n2,*,1])' )
         idum=execute( tags[i]+'_merge=[[ reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,*,0],[0,2,1,3]),nx,ny*nz,3)],'+ $ 
-                                      '[(reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,*,1],[0,2,1,3]),nx,ny*nz,3))[*,inds,*]]]' ) $
-      else $
+                                      '[(reform(transpose(trformed,[0,2,1,3]),nx,ny*nz,3))[*,inds,*]]]' ) 
+      endif else $
         idum=execute( tags[i]+'_merge=[[ reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,0],[0,2,1]),nx,ny*nz)],'+ $ 
                                       '[(reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,1],[0,2,1]),nx,ny*nz))[*,inds]]]' )
 
