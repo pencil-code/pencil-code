@@ -98,6 +98,7 @@ module Particles_chemistry
   logical :: lbaum_and_street=.false.
   logical :: lsherwood_const=.false.
   logical :: lwrite=.true.
+  logical :: reverse_reactions_present=.false.
 !
 !*********************************************************************!
 !             Particle dependent variables below here                 !
@@ -271,9 +272,11 @@ module Particles_chemistry
       allocate(heating_k(mpar_loc,N_surface_reactions),STAT=stat)
       if (stat > 0) call fatal_error('register_dep_pchem', &
           'Could not allocate memory for heating_k')
-      allocate(entropy_k(mpar_loc,N_surface_reactions),STAT=stat)
-      if (stat > 0) call fatal_error('register_dep_pchem', &
-          'Could not allocate memory for heating_k')
+      if (reverse_reactions_present) then
+        allocate(entropy_k(mpar_loc,N_surface_reactions),STAT=stat)
+        if (stat > 0) call fatal_error('register_dep_pchem', &
+            'Could not allocate memory for entropy_k')
+      endif
 !
     endsubroutine register_dep_pchem
 !***********************************************************************
@@ -965,6 +968,7 @@ module Particles_chemistry
               ireaction = ireaction + 1
               if (index(string,'<>') > 0) then
                 call flip_and_parse(string,ireaction,target_list,reaction_direction)
+                reverse_reactions_present = .true.
                 ireaction = ireaction + 1
               endif
             endif
@@ -1018,20 +1022,19 @@ module Particles_chemistry
 !
       do l = 1,N_surface_reactions
         do i = 1,N_surface_species
-          entropy_k(k1:k2,l) = entropy_k(k1:k2,l) &
-              +nu_prime(i,l)*surface_species_entropy(k1:k2,i) &
-              -nu(i,l)*surface_species_entropy(k1:k2,i)
+          entropy_k(k1:k2,l) =  entropy_k(k1:k2,l) &
+              +(nu_prime(i,l)-nu(i,l))*surface_species_entropy(k1:k2,i)
         enddo
         if (N_adsorbed_species > 1) then
           do j = 1,N_adsorbed_species
             entropy_k(k1:k2,l) = entropy_k(k1:k2,l) &
-                +mu_prime(j,l)*adsorbed_species_entropy(k1:k2,j) &
-                -mu(j,l)*adsorbed_species_entropy(k1:k2,j)
+                +(mu_prime(j,l)-mu(j,l))*adsorbed_species_entropy(k1:k2,j)
           enddo
         endif
-!  This is the cgs-SI switch
-        entropy_k(k1:k2,l) = entropy_k(k1:k2,l) * pre_energy
       enddo
+!  This is the cgs-SI switch
+        entropy_k(k1:k2,:) = entropy_k(k1:k2,:) * pre_energy
+!
     endsubroutine calc_entropy_of_reaction
 ! ******************************************************************************
 !  Starting from the K_k of the forward reaction, calculate the K_k
@@ -1098,19 +1101,18 @@ module Particles_chemistry
       do l = 1,N_surface_reactions
         do i = 1,N_surface_species
           heating_k(k1:k2,l) = heating_k(k1:k2,l) &
-              +nu_prime(i,l)*surface_species_enthalpy(k1:k2,i) &
-              -nu(i,l)*surface_species_enthalpy(k1:k2,i)
+              +(nu_prime(i,l)-nu_prime(i,l))*surface_species_enthalpy(k1:k2,i)
         enddo
         if (N_adsorbed_species > 1) then
           do j = 1,N_adsorbed_species
             heating_k(k1:k2,l) = heating_k(k1:k2,l) &
-                +mu_prime(j,l)*adsorbed_species_enthalpy(k1:k2,j) &
-                -mu(j,l)*adsorbed_species_enthalpy(k1:k2,j)
+                +(mu_prime(j,l)-mu(j,l))*adsorbed_species_enthalpy(k1:k2,j)
           enddo
         endif
-!  This is the cgs-SI switch
-        heating_k(k1:k2,l) = heating_k(k1:k2,l) * pre_energy
       enddo
+!  This is the cgs-SI switch
+      heating_k(k1:k2,:) = heating_k(k1:k2,:) * pre_energy
+!
     endsubroutine calc_enthalpy_of_reaction
 ! ******************************************************************************
 !  01-oct-2014/jonas:coded
@@ -1802,7 +1804,7 @@ module Particles_chemistry
         call calc_surf_enthalpy(fp)
 !
         call calc_enthalpy_of_reaction()
-        call calc_entropy_of_reaction()
+        if (reverse_reactions_present) call calc_entropy_of_reaction()
 !
         call calc_K_k(f,fp,p,ineargrid)
         call calc_Cg(fp,p,ineargrid)

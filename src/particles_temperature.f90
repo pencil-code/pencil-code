@@ -276,6 +276,8 @@ module Particles_temperature
 !
           if (lrad_part) then
             Qrad=Ap*(Twall**4-fp(k,iTp)**4)*sigmaSB
+            call fatal_error('particles_temperature',&
+                'Particle radiation is not yet fully implemented')
           else
             Qrad = 0.0
           endif

@@ -2147,6 +2147,7 @@ module Chemistry
       logical, save :: lwrite=.true.
 !
       character(len=fnlen) :: output_file="./data/mix_quant.out"
+      character(len=15) :: writeformat
       integer :: file_id=123
       integer :: ii1=1, ii2=2, ii3=3, ii4=4, ii5=5
 !
@@ -2419,6 +2420,15 @@ module Chemistry
                   Diff_full_add(l1,m1,n1,k)*unit_length**2/unit_time, &
                   Diff_full_add(l2,m2,n2,k)*unit_length**2/unit_time
             enddo
+          endif
+          if (lparticles_chemistry) then
+            write (file_id,*) ''
+            writeformat = '(  E12.4)'
+            write (writeformat(2:3),'(I2)') nchemspec
+            write (file_id,*) 'Mass fraction, -'
+            write (file_id,writeformat) f(l1,m1,n1,ichemspec(1):ichemspec(nchemspec))
+            write (file_id,*) ''
+            write (file_id,writeformat) species_constants(:,imass)
           endif
         endif
         write (file_id,*) ''
