@@ -4168,7 +4168,9 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !***********************************************************************
     subroutine forcing_diffrot(f,force_ampl)
 !
-!  add differential rotation
+!  Add differential rotation. This routine does not employ continuous
+!  forcing, which would be better. It is therefore inferior to the
+!  differential rotation procedure implemented directly in hydro.
 !
 !  26-jul-02/axel: coded
 !

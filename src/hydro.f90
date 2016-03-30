@@ -58,6 +58,13 @@ module Hydro
 !
   real, dimension (mz) :: c2z,s2z,cz,sz
 !
+!  Profiles for setting differential rotation
+!  (analogously to hydro_kinematic.f90).
+!
+  real, dimension(nx) :: profx_diffrot1=1., profx_diffrot2=1., profx_diffrot3=1.
+  real, dimension(my) :: profy_diffrot1=1., profy_diffrot2=1., profy_diffrot3=1.
+  real, dimension(mz) :: profz_diffrot1=1., profz_diffrot2=1., profz_diffrot3=1.
+!
 !  Precession matrices.
 !
   real, dimension (3,3) :: mat_cori=0.,mat_cent=0.
@@ -166,6 +173,7 @@ module Hydro
   real :: ekman_friction=0.0, uzjet=0.0
   real :: ampl_forc=0., k_forc=impossible, w_forc=0., x_forc=0., dx_forc=0.1
   real :: ampl_fcont_uu=1., k_diffrot=1., amp_centforce=1.
+  real :: uphi_rbot=1., uphi_rtop=1., uphi_step_width=0.
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
@@ -214,7 +222,7 @@ module Hydro
       hydro_xaver_range, Ra, Pr, llinearized_hydro, lremove_mean_angmom, &
       lpropagate_borderuu, hydro_zaver_range, index_rSH, &
       uzjet, ydampint, ydampext, mean_momentum, lshear_in_coriolis, &
-      w_sldchar_hyd
+      w_sldchar_hyd, uphi_rbot, uphi_rtop, uphi_step_width
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -670,7 +678,7 @@ module Hydro
       use BorderProfiles, only: request_border_driving
       use Initcond
       use SharedVariables, only: put_shared_variable,get_shared_variable
-      use Sub, only: step, register_report_aux
+      use Sub, only: step, erfunc, register_report_aux
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: c, s
@@ -825,6 +833,23 @@ module Hydro
       endif drag
 !
       lshear_in_coriolis=lshear_in_coriolis.and.lcoriolis_force.and.lshear
+!
+!  Set profiles for forcing differential rotation.
+!
+      select case (uuprof)
+!
+!  spoke-like-NSSL (analogous to that in hydro_kinematic)
+!
+      case ('spoke-like-NSSL')
+        profx_diffrot1=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rbot)/uphi_step_width)))
+        profx_diffrot2=+0.5*(1.-erfunc(((x(l1:l2)-uphi_rtop)/uphi_step_width)))
+        profx_diffrot3=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rtop)/uphi_step_width)))
+        profx_diffrot2=(x(l1:l2)-uphi_rbot)*profx_diffrot1*profx_diffrot2 !(redefined)
+        profy_diffrot1=-1.5*(5.*cos(y)**2-1.)
+        profy_diffrot2=-1.0*(4.*cos(y)**2-3.)
+        profy_diffrot3=-1.0
+        profz_diffrot1=+1.
+      endselect
 !
 !  Compute mask for x-averaging where x is in hydro_xaver_range.
 !  Normalize such that the average over the full domain
@@ -5425,7 +5450,7 @@ module Hydro
       real :: slope,uinn,uext,zbot,prof_amp_scl
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: prof_amp1,prof_amp2
+      real, dimension (nx) :: prof_amp1, prof_amp2, local_Omega
       real, dimension (mz) :: prof_amp3
       real, dimension (my) :: prof_amp4
       character (len=labellen) :: prof_diffrot
@@ -5748,10 +5773,23 @@ module Hydro
          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp_scl*(uumxy(l1:l2,m,3)-uzjet)
       endif
 !
+!  spoke-like-NSSL (analogous to that in hydro_kinematic)
+!
+      case ('spoke-like-NSSL')
+      if (.not.lcalc_uumeanxy) then
+        call fatal_error("hydro_kinematic","you need lcalc_uumeanxy=T in hydro_run_pars")
+      else
+        local_Omega=profx_diffrot1*profy_diffrot1(m) &
+                   +profx_diffrot2*profy_diffrot2(m) &
+                   +profx_diffrot3*profy_diffrot3(m)
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1* &
+          (uumxy(l1:l2,m,3)-ampl1_diffrot*local_Omega*x(l1:l2)*sinth(m))
+      endif
+!
 !  no profile matches
 !
       case default
-          if (lroot) print*,'duu_dt: No such profile ',trim(prof_diffrot)
+         if (lroot) print*,'duu_dt: No such profile ',trim(prof_diffrot)
       endselect
 !
     endsubroutine impose_profile_diffrot
