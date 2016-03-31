@@ -1079,11 +1079,13 @@ module Particles_chemistry
 !
     subroutine calc_conversion(fp)
       real, dimension(:,:) :: fp
-      integer :: k
+      integer :: k1,k2
 !
-      do k = k1_imn(imn),k2_imn(imn)
-        conversion(k) = 1. - fp(k,imp) / fp(k,impinit)
-      enddo
+      k1 = k1_imn(imn)
+      k2 = k2_imn(imn)
+!
+        conversion(k1:k2) = 1. - fp(k1:k2,imp) / fp(k1:k2,impinit)
+!
     endsubroutine calc_conversion
 ! ******************************************************************************
 !  Calculate the heating of each reaction by taking the difference of
@@ -1098,18 +1100,20 @@ module Particles_chemistry
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
 !
-      do l = 1,N_surface_reactions
-        do i = 1,N_surface_species
+      do i = 1,N_surface_species
+        do l = 1,N_surface_reactions
           heating_k(k1:k2,l) = heating_k(k1:k2,l) &
               +(nu_prime(i,l)-nu_prime(i,l))*surface_species_enthalpy(k1:k2,i)
         enddo
-        if (N_adsorbed_species > 1) then
-          do j = 1,N_adsorbed_species
+      enddo
+      if (N_adsorbed_species > 1) then
+        do j = 1,N_adsorbed_species
+          do l = 1,N_surface_reactions
             heating_k(k1:k2,l) = heating_k(k1:k2,l) &
                 +(mu_prime(j,l)-mu(j,l))*adsorbed_species_enthalpy(k1:k2,j)
           enddo
-        endif
-      enddo
+        enddo
+      endif
 !  This is the cgs-SI switch
       heating_k(k1:k2,:) = heating_k(k1:k2,:) * pre_energy
 !
@@ -1402,9 +1406,8 @@ module Particles_chemistry
 !
 ! Find the sum of all molar fluxes at the surface
 !
-      do k = k1,k2
-        ndot_total(k) = sum(ndot(k,:))
-      enddo
+        ndot_total(k1:k2) = sum(ndot(k1:k2,:),DIM=2)
+!
     endsubroutine calc_ndot_mdot_R_j_hat
 ! ******************************************************************************
 !  Get area specific molar reaction rate
@@ -1798,9 +1801,9 @@ module Particles_chemistry
         call calc_conversion(fp)
         call calc_St(fp)
 !
-        call calc_ads_entropy(fp)
+        if (reverse_reactions_present) call calc_ads_entropy(fp)
         call calc_ads_enthalpy(fp)
-        call calc_surf_entropy(fp)
+        if (reverse_reactions_present) call calc_surf_entropy(fp)
         call calc_surf_enthalpy(fp)
 !
         call calc_enthalpy_of_reaction()
@@ -1857,10 +1860,12 @@ module Particles_chemistry
       allocate(surface_species_enthalpy(k1:k2,N_surface_species), STAT=stat)
       if (stat > 0) call fatal_error('allocate_variable_pencils', &
           'Could not allocate memory for surface_species_enthalpy')
-      allocate(surface_species_entropy(k1:k2,N_surface_species), STAT=stat)
-      allocate(adsorbed_species_entropy(k1:k2,N_adsorbed_species), STAT=stat)
-      if (stat > 0) call fatal_error('allocate_variable_pencils', &
-          'Could not allocate memory for adsorbed_species_entropy')
+      if (reverse_reactions_present) then
+        allocate(surface_species_entropy(k1:k2,N_surface_species), STAT=stat)
+        allocate(adsorbed_species_entropy(k1:k2,N_adsorbed_species), STAT=stat)
+        if (stat > 0) call fatal_error('allocate_variable_pencils', &
+            'Could not allocate memory for adsorbed_species_entropy')
+      endif
       allocate(adsorbed_species_enthalpy(k1:k2,N_adsorbed_species), STAT=stat)
       if (stat > 0) call fatal_error('allocate_variable_pencils', &
           'Could not allocate memory for adsorbed_species_enthalpy')
@@ -1926,8 +1931,8 @@ module Particles_chemistry
 !
       if (npar_imn(imn) /= 0) then
         deallocate(surface_species_enthalpy)
-        deallocate(surface_species_entropy)
-        deallocate(adsorbed_species_entropy)
+        if (reverse_reactions_present) deallocate(surface_species_entropy)
+        if (reverse_reactions_present) deallocate(adsorbed_species_entropy)
         deallocate(adsorbed_species_enthalpy)
         deallocate(thiele)
         deallocate(effectiveness_factor)
@@ -2005,7 +2010,8 @@ module Particles_chemistry
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
 !
-        rho_p(k1:k2) = fp(k1:k2,imp) / (4./3. *pi * fp(k1:k2,iap)*fp(k1:k2,iap)*fp(k1:k2,iap))
+        rho_p(k1:k2) = fp(k1:k2,imp) / &
+            (4./3. *pi * fp(k1:k2,iap)*fp(k1:k2,iap)*fp(k1:k2,iap))
 !
     endsubroutine calc_rho_p
 ! ******************************************************************************
@@ -2228,11 +2234,9 @@ module Particles_chemistry
       k2 = k2_imn(imn)
 !
       q_reac = 0.0
-      do k = k1,k2
-        do i = 1,N_surface_reactions
-          q_reac(k) = q_reac(k)+RR_hat(k,i)*St(k)*(-heating_k(k,i))
-        enddo
-      enddo
+      q_reac(k1:k2) = sum(RR_hat(k1:k2,1:N_surface_reactions)*&
+          (-heating_k(k1:k2,1:N_surface_reactions)),DIM=2)
+      q_reac(k1:k2)=q_reac(k1:k2)*St(k1:k2)
 !
     endsubroutine calc_q_reac
 ! *******************************************************************************
