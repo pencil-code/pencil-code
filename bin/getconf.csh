@@ -11,7 +11,6 @@
 set debug = 1
 # set verbose
 # set echo
-
 # Just as a keepsake
 set dollar = '$'
 # Set up PATH for people who don't include $PENCIL_HOME/bin by default
@@ -902,6 +901,24 @@ else if ($hn =~ beskow-login*.pdc.kth.se*) then
   set mpi = 1
   set mpirunops = ''
   set mpirun = 'aprun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 1
+  set local_binary = 0
+#----------------------------------------------
+#----------------------------------------------
+#xiangyu, HEBBE
+else if ($hn =~ hebbe*) then
+  echo "*********************************"
+  echo " PDC machine HEBBE "
+  set start_x=$cwd/src/start.x
+  set run_x=$cwd/src/run.x
+  echo "*********************************"
+  echo "***---------------------------------**" >>$PENCIL_HOME/.pencil_runs.txt
+  set mpi = 1
+  set mpirunops = ''
+  set mpirun = 'mpirun'
   set npops = "-n $ncpus"
   set local_disc = 0
   set one_local_disc = 0
@@ -1997,6 +2014,10 @@ if ($debug) then
   echo '$particles      = ' "<$lparticles>"
   echo '$particles_nbody= ' "<$lparticles_nbody>"
 endif
+#Xiangyu on Hebbe
+#set mpirun = /c3se/apps/Common/intel/ips_xe_ce_2016/impi/5.1.1.109/bin64/mpiexec
+#set /c3se/apps/Common/intel/ips_xe_ce_2016/impi/5.1.1.109/bin64/mpiexec = mpirun
+#set mpiexec = mpirun
 
 exit
 
