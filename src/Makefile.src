@@ -1082,6 +1082,19 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS_DOUBLE=-r8 #(t-mn01.hpc2n.umu.se)
 #LIBMPISUFFIX=#(t-mn01.hpc2n.umu.se)
 ##
+## Xiangyu on Hebbe
+##
+#FC=ifort #(hebbe)
+#FFLAGS= -O2 #(hebbe)
+#FC=mpiifort #(hebbe)
+##FC=mpif90 #(hebbe)
+#CC=mpiicc #(hebbe)
+##CC=mpicc #(hebbe)
+#CFLAGS=-O3 -DFUNDERSC=1 #(hebbe)
+#LD_MPI= #(hebbe)
+##FFLAGS_DOUBLE=-fdefault-real-8 #(hebbe)
+#FFLAGS_DOUBLE=-r8 #(hebbe)
+#LIBMPISUFFIX=#(hebbe)
 ## Axel on Gardar
 ##
 #FC=mpif90 #(gardar*)
