@@ -41,7 +41,8 @@ module Solid_Cells
   character (len=labellen), dimension(ninit) :: initsolid_cells='nothing'
   character (len=10), dimension(8) :: svarname
   logical :: lnointerception=.false.,lcheck_ba=.false.
-  logical :: lerror_norm=.false.,lNusselt_output=.false.
+  logical :: lerror_norm=.false.,lNusselt_output=.false.,locdensity_error=.false.
+  logical :: locchemspec_error=.false.
   logical :: lset_flow_dir=.false.,lpos_advance=.false.,lradius_advance=.false.
   logical :: lsecondorder_rho=.true., lsecondorder_chem=.true.
   logical :: lstefan_flow=.true.
@@ -80,7 +81,8 @@ module Solid_Cells
   namelist /solid_cells_run_pars/  &
        lnointerception,lcheck_ba,lerror_norm,lpos_advance,lradius_advance, &
        lNusselt_output,osci_A,osci_f,osci_dir,osci_t, lsecondorder_rho, &
-       lsecondorder_chem, solid_reactions_intro_time, lstefan_flow
+       lsecondorder_chem, solid_reactions_intro_time, lstefan_flow, locdensity_error, &
+       locchemspec_error
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -1176,7 +1178,7 @@ module Solid_Cells
 !
 !  Interpolate value in a mirror point from the eight corner values
 !
-      use General, only: linear_interpolate
+      use General, only: linear_interpolate, notanumber
       use Messages, only: fatal_error
       use Sub
 !
@@ -1379,8 +1381,14 @@ module Solid_Cells
           coe_b=(-chem_fp0(kchem)-reac_rate(kchem)/char_reac &
                +(chem_fp1(kchem)-chem_fp0(kchem))/(r_sp1**2-r_sp0**2)*r_sp0**2) &
                /(-r_sp0*r_sp1/(r_sp0+r_sp1)+rho_ib*Diff_ib/char_reac)
+!         coe_b=-reac_rate(kchem)/rho_ib*Diff_ib
           coe_a=-(reac_rate(kchem)+rho_ib*Diff_ib*coe_b)/char_reac
+!         coe_a=chem_fp0(kchem)+r_sp0*reac_rate(kchem)/rho_ib*Diff_ib+r_sp0**2/ &
+!              (r_sp0**2-r_sp1**2)*(chem_fp0(kchem)-chem_fp1(kchem))+r_sp0**2/(r_sp0+r_sp1)* &
+!              reac_rate(kchem)/rho_ib*Diff_ib
           coe_c=(chem_fp1(kchem)-chem_fp0(kchem)-coe_b*(r_sp1-r_sp0))/(r_sp1**2-r_sp0**2)
+!         coe_c=(chem_fp0(kchem)-chem_fp1(kchem))/(r_sp0**2-r_sp1**2)+ &
+!               reac_rate(kchem)/rho_ib*Diff_ib/(r_sp0+r_sp1)
           f_tmp(ichemspec(kchem))=coe_a-coe_b*r_sg+coe_c*r_sg**2
         else
           f_tmp(ichemspec(kchem))= &
@@ -1404,8 +1412,7 @@ module Solid_Cells
         rho_gp=rho_fp0*T_fp0*mu1_fp0/T_gp/mu1_gp
       endif
 !
-!        if ((xghost .lt. -0.229) .and. (xghost .gt. -0.23) .and. &
-!            (yghost .lt.  4.08e-3 ) .and. (yghost .gt.  4.07e-3)) then
+!        if (notanumber(rho_gp) .or. rho_gp<0.0) then
 !          print*,'rho_gp=',rho_gp
 !          print*,'T_gp, T_fp0, T_fp1 =',T_gp, T_fp0, T_fp1 
 !          print*,'mu1_gp, mu1_fp0, mu1_fp1=',mu1_gp, mu1_fp0, mu1_fp1
@@ -1414,6 +1421,7 @@ module Solid_Cells
 !          print*,'xghost,yghost=',xghost,yghost
 !          print*,'f_tmp(ichemspec(:))=',f_tmp(ichemspec(:))
 !          print*,'reac_rate(:)=',reac_rate(:)
+!          call fatal_error('interpolate_point','ghost point density is unvalid')
 !        endif
 !
       if (ldensity_nolog) then
@@ -2826,6 +2834,14 @@ module Solid_Cells
 ! |   (2)  |   C + CO2 => 2CO  |  1.291e5  |    0.0    |  191022.464  |
 ! ---------------------------------------------------------------------
 !
+! ---------------------------------------------------------------------
+! | Number |     Reactions     |    B_n    |  alpha_n  |  E_an(J/mol) |
+! ---------------------------------------------------------------------
+! |   (1)  |   2C + O2 => 2CO  |   3.007e5  |    0.0    |   149370  |
+! ---------------------------------------------------------------------
+! |   (2)  |   C + CO2 => 2CO  |   4.016e8  |    0.0    |   247670  |
+! ---------------------------------------------------------------------
+!
 !  The reaction rate is expressed using Arrhenius equation:
 !     k_i=B_n(i)*T**alpha_n(i)*exp(-E_an(i)/Rcal/T_loc)
 !
@@ -2840,8 +2856,10 @@ module Solid_Cells
      integer :: kchem, i
 !
      alpha=0.0
-     B_n=(/1.97e9,1.291e7/)  ! cm/s
-     E_an=(/47301.701,45635.267/)  ! cal/mol
+!    B_n=(/1.97e9,1.291e7/)  ! cm/s
+!    E_an=(/47301.701,45635.267/)  ! cal/mol
+     B_n=(/3.007e7,4.016e10/)  ! cm/s
+     E_an=(/35684.493,59168.363/)  ! cal/mol
 !
      if (unit_system == 'cgs') then
        Rgas_unit_sys=k_B_cgs/m_u_cgs
@@ -2981,7 +2999,8 @@ module Solid_Cells
      real    :: twopi, nvec(3), surfaceelement, surfacecoeff
      real    :: deltaT, Tobj, drag_norm, nusselt_norm, char_reac, prodout(2)
      real    :: fpx, fpy, fpz, xobj, yobj, zobj, theta, phi, c_press
-     real, dimension(3) :: fp_location, fp_vel, vel_error, t_error
+     real, dimension(3) :: fp_location, fp_vel, vel_error, t_error,chemspec_error
+     real, dimension(1) :: rho_error
      real, dimension(nchemspec) :: fpchem, reac_rate
      integer, dimension(3) :: inear_error
      character (len=fnlen) :: file1, file2, file3
@@ -3152,22 +3171,47 @@ module Solid_Cells
                close(87)
              endif
 !
-             if (lerror_norm) then
-               call safe_character_assign(file2,trim(datadir)//'/error_norm.dat')
-               open(unit=89,file=file2,position='APPEND')
-               call find_near_indeces(lower_i,upper_i,lower_j,upper_j,&
-                   lower_k,upper_k,x,y,z,fp_location)
-               inear_error=(/lower_i,lower_j,lower_k/)
-               if(.not. linear_interpolate(f,iux,iuz,fp_location,vel_error,inear_error,.false.))&
+             if (it==nt) then
+               if (lerror_norm) then
+                 call safe_character_assign(file2,trim(datadir)//'/error_norm.dat')
+                 open(unit=89,file=file2,position='APPEND')
+                 call find_near_indeces(lower_i,upper_i,lower_j,upper_j,&
+                     lower_k,upper_k,x,y,z,fp_location)
+                 inear_error=(/lower_i,lower_j,lower_k/)
+                 if(.not. linear_interpolate(f,iux,iuz,fp_location,vel_error,inear_error,.false.))&
                    call fatal_error('linear_interpolate','')
-               if(.not. linear_interpolate(f,ilnTT,ilnTT,fp_location,t_error(1),inear_error,.false.))&
+                 if(.not. linear_interpolate(f,ilnTT,ilnTT,fp_location,t_error(1),inear_error,.false.))&
                    call fatal_error('linear_interpolate','')
-               write(solid_cell_error,"(1I8)") it-1
-               write(error_string,94) theta,vel_error(1),vel_error(2),t_error(1)
-               call safe_character_append(solid_cell_error,error_string)
-               write(89,*) trim(solid_cell_error)
-               close(89)
-             endif
+                 write(solid_cell_error,"(1I8)") it-1
+                 write(error_string,94) theta,vel_error(1),vel_error(2),t_error(1)
+                 call safe_character_append(solid_cell_error,error_string)
+                 write(89,*) trim(solid_cell_error)
+                 close(89)
+               endif
+             endif ! finalize if "it==nt"
+!
+! Output Local density
+             if (it==nt) then
+               if(locdensity_error) then
+                 open(unit=86,file='data/locdensity_error.dat',position='APPEND')
+                 if(.not. linear_interpolate(f,ilnrho,ilnrho,fp_location,rho_error,inear_error,.false.))&
+                   call fatal_error('linear_interpolate','')
+                 write(86,*) theta, rho_error
+                 close(86)
+               endif
+             endif ! Finalize if "(it==nt)"
+!
+! Output Local species mass fraction
+             if (it==nt) then
+               if(locchemspec_error) then
+                 open(unit=88,file='data/locchemspec_error.dat',position='APPEND')
+                 if(.not. linear_interpolate(f,ichemspec(1),ichemspec(nchemspec),&
+                    fp_location,chemspec_error,inear_error,.false.))&
+                   call fatal_error('linear_interpolate','')
+                 write(88,*) theta, chemspec_error(:)
+                 close(88)
+               endif
+             endif ! Finalize if "(it==nt)"
 !
              fpchem(1:nchemspec)=f(ix0,iy0,iz0,ichemspec(1):ichemspec(nchemspec))*loc_density
              call calc_reaction_rate(f,iobj,fpchem,reac_rate,char_reac)
