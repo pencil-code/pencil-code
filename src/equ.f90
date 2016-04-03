@@ -88,7 +88,6 @@ module Equ
       real, dimension (nx) :: advec2,advec2_hypermesh
       real, dimension (nx) :: pfreeze,pfreeze_int,pfreeze_ext
       real, dimension(1)   :: mass_per_proc
-      real, dimension(nz) :: ucz
       integer :: iv
       integer :: ivar1,ivar2
       real :: uc = 0.0
@@ -271,9 +270,7 @@ module Equ
 !
 !  Dynamical (hyper-)diffusion coefficients
 !
-      dyndiff: if (ldyndiff_urmsmxy) then
-        ucz = find_xyrms_fvec(f, iuu)
-      else if (ldynamical_diffusion) then dyndiff
+      dyndiff: if (ldynamical_diffusion) then
         uc = find_rms_fvec(f, iuu)
         call set_dyndiff_coeff(uc)
       endif dyndiff
@@ -373,10 +370,6 @@ module Equ
         m=mm(imn)
         lfirstpoint=(imn==1)      ! true for very first m-n loop
         llastpoint=(imn==(ny*nz)) ! true for very last m-n loop
-!
-!  Dynamical (hyper-)diffusion coefficients in each horizontal plane.
-!
-        if (ldyndiff_urmsmxy .and. (imn == 1 .or. nn(max(imn-1,1)) /= n)) call set_dyndiff_coeff(ucz(n-nghost))
 !
 !  Store the velocity part of df array in a temporary array
 !  while solving the anelastic case.
