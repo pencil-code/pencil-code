@@ -121,13 +121,13 @@ module Conductivity
 !
     endsubroutine heat_conductivity
 !***********************************************************************
-    subroutine dynamical_thermal_diffusion(umax)
+    subroutine dynamical_thermal_diffusion(uc)
 !
 !  Dummy 
 !
-      real, intent(in) :: umax
+      real, intent(in) :: uc
 !
-      call keep_compiler_quiet(umax)
+      call keep_compiler_quiet(uc)
       call fatal_error('dynamical_thermal_diffusion', 'not implemented yet')
 !
     endsubroutine dynamical_thermal_diffusion

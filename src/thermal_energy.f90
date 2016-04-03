@@ -902,17 +902,21 @@ module Energy
 !
     endsubroutine impose_energy_floor
 !***********************************************************************
-    subroutine dynamical_thermal_diffusion(urms)
+    subroutine dynamical_thermal_diffusion(uc)
 !
 !  Dynamically set thermal diffusion coefficient given fixed mesh Reynolds number.
 !
 !  02-aug-11/ccyang: coded
 !
-      real, intent(in) :: urms
+!  Input Argument
+!      uc
+!          Characteristic velocity of the system.
+!
+      real, intent(in) :: uc
 !
 !  Hyper-diffusion coefficient
 !
-      if (chi_hyper3_mesh /= 0.) chi_hyper3_mesh = pi5_1 * urms / re_mesh / sqrt(real(dimensionality))
+      if (chi_hyper3_mesh /= 0.0) chi_hyper3_mesh = pi5_1 * uc / re_mesh / sqrt(real(dimensionality))
 !
     endsubroutine dynamical_thermal_diffusion
 !***********************************************************************

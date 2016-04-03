@@ -6864,14 +6864,20 @@ module Energy
 !
     endsubroutine impose_energy_floor
 !***********************************************************************
-    subroutine dynamical_thermal_diffusion(umax)
+    subroutine dynamical_thermal_diffusion(uc)
 !
-!  Dummy subroutine
+!  Dynamically set thermal diffusion coefficient given fixed mesh Reynolds number.
 !
-      real, intent(in) :: umax
+!  02-aug-11/ccyang: coded
 !
-      if (chi_hyper3 /= 0.) chi_hyper3 = pi5_1 * umax * dxmax**5 / re_mesh
-      if (chi_hyper3_mesh /= 0.) chi_hyper3_mesh = pi5_1 * umax / re_mesh / sqrt(real(dimensionality))
+!  Input Argument
+!      uc
+!          Characteristic velocity of the system.
+!
+      real, intent(in) :: uc
+!
+      if (chi_hyper3 /= 0.0) chi_hyper3 = pi5_1 * uc * dxmax**5 / re_mesh
+      if (chi_hyper3_mesh /= 0.0) chi_hyper3_mesh = pi5_1 * uc / re_mesh / sqrt(real(dimensionality))
 !
     endsubroutine dynamical_thermal_diffusion
 !***********************************************************************

@@ -348,13 +348,13 @@ module Magnetic
 !
     endfunction output_persistent_magnetic
 !***********************************************************************
-    subroutine dynamical_resistivity(urms)
+    subroutine dynamical_resistivity(uc)
 !
 !  dummy
 !
-      real, intent(in) :: urms
+      real, intent(in) :: uc
 !
-      call keep_compiler_quiet(urms)
+      call keep_compiler_quiet(uc)
 !
     endsubroutine dynamical_resistivity
 !***********************************************************************

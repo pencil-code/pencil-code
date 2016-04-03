@@ -7973,18 +7973,22 @@ module Magnetic
 !
     endsubroutine rprint_magnetic
 !***********************************************************************
-    subroutine dynamical_resistivity(urms)
+    subroutine dynamical_resistivity(uc)
 !
 !  Dynamically set resistivity coefficient given fixed mesh Reynolds number.
 !
 !  27-jul-11/ccyang: coded
 !
-      real, intent(in) :: urms
+!  Input Argument
+!      uc
+!          Characteristic velocity of the system.
+!
+      real, intent(in) :: uc
 !
 !  Hyper-resistivity coefficient
 !
-      if (eta_hyper3 /= 0.) eta_hyper3 = pi5_1 * urms * dxmax**5 / re_mesh
-      if (eta_hyper3_mesh /= 0.) eta_hyper3_mesh = pi5_1 * urms / re_mesh / sqrt(real(dimensionality))
+      if (eta_hyper3 /= 0.0) eta_hyper3 = pi5_1 * uc * dxmax**5 / re_mesh
+      if (eta_hyper3_mesh /= 0.0) eta_hyper3_mesh = pi5_1 * uc / re_mesh / sqrt(real(dimensionality))
 !
     endsubroutine dynamical_resistivity
 !***********************************************************************

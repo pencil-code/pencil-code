@@ -969,17 +969,21 @@ module Magnetic
 !
     endsubroutine get_slices_magnetic
 !***********************************************************************
-    subroutine dynamical_resistivity(urms)
+    subroutine dynamical_resistivity(uc)
 !
 !  Dynamically set resistivity coefficient given fixed mesh Reynolds number.
 !
 !  19-may-14/ccyang: coded
 !
-      real, intent(in) :: urms
+!  Input Argument
+!      uc
+!          Characteristic velocity of the system.
+!
+      real, intent(in) :: uc
 !
 !  Mesh hyper-resistivity coefficient
 !
-      if (lresis_hyper3_mesh) eta_hyper3_mesh = pi5_1 * urms / re_mesh / sqrt(real(dimensionality))
+      if (lresis_hyper3_mesh) eta_hyper3_mesh = pi5_1 * uc / re_mesh / sqrt(real(dimensionality))
 !
     endsubroutine dynamical_resistivity
 !***********************************************************************

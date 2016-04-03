@@ -181,13 +181,13 @@ module Viscosity
 !
     endsubroutine getnu
 !***********************************************************************
-    subroutine dynamical_viscosity(urms)
+    subroutine dynamical_viscosity(uc)
 !
 !  Dummy routine
 !
-      real, intent(in) :: urms
+      real, intent(in) :: uc
 !
-      call keep_compiler_quiet(urms)
+      call keep_compiler_quiet(uc)
 !
     endsubroutine dynamical_viscosity
 !***********************************************************************
