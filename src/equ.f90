@@ -90,7 +90,6 @@ module Equ
       real, dimension(1)   :: mass_per_proc
       integer :: iv
       integer :: ivar1,ivar2
-      real :: uc = 0.0
 !
       intent(inout)  :: f       ! inout due to  lshift_datacube_x,
                                 ! density floor, or velocity ceiling
@@ -268,12 +267,9 @@ module Equ
       if (lhyperviscosity_strict)   call hyperviscosity_strict(f)
       if (lhyperresistivity_strict) call hyperresistivity_strict(f)
 !
-!  Dynamical (hyper-)diffusion coefficients
+!  Dynamically set the (hyper-)diffusion coefficients
 !
-      dyndiff: if (ldynamical_diffusion) then
-        uc = find_rms_fvec(f, iuu)
-        call set_dyndiff_coeff(uc)
-      endif dyndiff
+      if (ldynamical_diffusion) call set_dyndiff_coeff(f)
 !
 !  Calculate the characteristic velocity
 !  for slope limited diffusion
@@ -1225,23 +1221,37 @@ module Equ
 !
     endsubroutine output_crash_files
 !***********************************************************************
-    subroutine set_dyndiff_coeff(us)
+    subroutine set_dyndiff_coeff(f)
 !
 !  Set dynamical diffusion coefficients.
 !
 !  18-jul-14/ccyang: coded.
+!  03-apr-16/ccyang: add switch ldyndiff_useumax
 !
       use Density,   only: dynamical_diffusion
-      use Magnetic,  only: dynamical_resistivity
       use Energy,    only: dynamical_thermal_diffusion
+      use Magnetic,  only: dynamical_resistivity
+      use Sub,       only: find_max_fvec, find_rms_fvec
       use Viscosity, only: dynamical_viscosity
 !
-      real, intent(in) :: us
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
-      if (ldensity)                      call dynamical_diffusion(us)
-      if (lmagnetic .and. .not. lbfield) call dynamical_resistivity(us)
-      if (lenergy)                       call dynamical_thermal_diffusion(us)
-      if (lviscosity)                    call dynamical_viscosity(us)
+      real :: uc
+!
+!  Find the characteristic speed, either the absolute maximum or the rms.
+!
+      if (ldyndiff_useumax) then
+        uc = find_max_fvec(f, iuu)
+      else
+        uc = find_rms_fvec(f, iuu)
+      endif
+!
+!  Ask each module to set the diffusion coefficients.
+!
+      if (ldensity)                      call dynamical_diffusion(uc)
+      if (lmagnetic .and. .not. lbfield) call dynamical_resistivity(uc)
+      if (lenergy)                       call dynamical_thermal_diffusion(uc)
+      if (lviscosity)                    call dynamical_viscosity(uc)
 !
     endsubroutine set_dyndiff_coeff
 !***********************************************************************
