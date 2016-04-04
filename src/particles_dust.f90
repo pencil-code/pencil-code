@@ -152,6 +152,9 @@ module Particles
 !
   logical :: lcdtp_shear = .true.
 !
+  logical :: lcompensate_sedimentation=.true.
+  real :: compensate_sedimentation=1.
+!
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
       ldragforce_gas_par, ldragforce_dust_par, bcpx, bcpy, bcpz, tausp, &
@@ -232,7 +235,8 @@ module Particles
       lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw,lbubble, &
       rpbeta_species, rpbeta, gab_width, initxxp, initvvp, particles_insert_ramp_time, &
       particles_insert_ramp_time, tstart_insert_particles, birthring_r, birthring_width, &
-      lgaussian_birthring, tstart_rpbeta, linsert_as_many_as_possible, lvector_gravity
+      lgaussian_birthring, tstart_rpbeta, linsert_as_many_as_possible, lvector_gravity, &
+      lcompensate_sedimentation,compensate_sedimentation
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -3848,8 +3852,13 @@ module Particles
                         else
                           call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,mp_vcell)
                         endif
-                        df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                            mp_vcell*rho1_point*dragforce*weight
+                        if (nzgrid/=1.or.(.not.lcompensate_sedimentation)) then 
+                          df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                               mp_vcell*rho1_point*dragforce*weight
+                        else
+                          df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                               mp_vcell*rho1_point*dragforce*weight*compensate_sedimentation
+                        endif
                       endif
                       if (lpscalar_sink .and. lpscalar) then
                         if (ilncc == 0) then
@@ -3941,9 +3950,14 @@ module Particles
                         else
                           call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz, mp_vcell)
                         endif
-                        df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                            mp_vcell*rho1_point*dragforce*weight
-                      endif
+                        if (nzgrid/=1.or.(.not.lcompensate_sedimentation)) then 
+                          df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                               mp_vcell*rho1_point*dragforce*weight
+                        else
+                          df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                               mp_vcell*rho1_point*dragforce*weight*compensate_sedimentation
+                        endif
+                    endif
                       if (lpscalar_sink .and. lpscalar) then
                         if (ilncc == 0) then
                           call fatal_error('dvvp_dt_pencil',&
@@ -3981,8 +3995,13 @@ module Particles
                     else
                       call get_rhopswarm(mp_swarm,fp,k,l,m,n,mp_vcell)
                     endif
-                    df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
-                        mp_vcell*p%rho1(l-nghost)*dragforce
+                    if (nzgrid/=1.or.(.not.lcompensate_sedimentation)) then 
+                      df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
+                           mp_vcell*p%rho1(l-nghost)*dragforce
+                    else
+                      df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
+                           mp_vcell*p%rho1(l-nghost)*dragforce*compensate_sedimentation
+                    endif
                   endif
                   if (lpscalar_sink .and. lpscalar) then
                     if (ilncc == 0) then
