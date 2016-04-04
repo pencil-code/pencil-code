@@ -152,7 +152,7 @@ module Particles
 !
   logical :: lcdtp_shear = .true.
 !
-  logical :: lcompensate_sedimentation=.true.
+  logical :: lcompensate_sedimentation=.false.
   real :: compensate_sedimentation=1.
 !
   namelist /particles_init_pars/ &
