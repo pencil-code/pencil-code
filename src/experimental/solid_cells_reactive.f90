@@ -50,6 +50,7 @@ module Solid_Cells
   real    :: skin_depth=0,init_uu=0,ampl_noise=0,object_skin=0
   real    :: limit_close_linear=0.7, ineargridshift=1.0
   real    :: osci_A=0.5,osci_f=4.0,osci_t, solid_reactions_intro_time=0.0
+  integer :: isolid_reac_mech=2
 !
 ! For chemestry
 !
@@ -81,8 +82,8 @@ module Solid_Cells
   namelist /solid_cells_run_pars/  &
        lnointerception,lcheck_ba,lerror_norm,lpos_advance,lradius_advance, &
        lNusselt_output,osci_A,osci_f,osci_dir,osci_t, lsecondorder_rho, &
-       lsecondorder_chem, solid_reactions_intro_time, lstefan_flow, locdensity_error, &
-       locchemspec_error
+       lsecondorder_chem, solid_reactions_intro_time, lstefan_flow, &
+       locdensity_error, locchemspec_error, isolid_reac_mech
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -2856,10 +2857,15 @@ module Solid_Cells
      integer :: kchem, i
 !
      alpha=0.0
-!    B_n=(/1.97e9,1.291e7/)  ! cm/s
-!    E_an=(/47301.701,45635.267/)  ! cal/mol
-     B_n=(/3.007e7,4.016e10/)  ! cm/s
-     E_an=(/35684.493,59168.363/)  ! cal/mol
+     if (isolid_reac_mech .eq. 1) then
+       B_n=(/1.97e9,1.291e7/)  ! cm/s
+       E_an=(/47301.701,45635.267/)  ! cal/mol
+     elseif (isolid_reac_mech .eq. 2) then
+       B_n=(/3.007e7,4.016e10/)  ! cm/s
+       E_an=(/35684.493,59168.363/)  ! cal/mol
+     else
+       call fatal_error('calc_reaction_rate','No such isolid_reac_mech!')
+     endif
 !
      if (unit_system == 'cgs') then
        Rgas_unit_sys=k_B_cgs/m_u_cgs
