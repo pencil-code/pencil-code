@@ -21,7 +21,7 @@ module General
   public :: keep_compiler_quiet
 !
   public :: setup_mm_nn
-  public :: find_index_range, find_index
+  public :: find_index_range, find_index, find_index_range_hill, pos_in_array
   public :: find_proc
 !
   public :: spline, tridag, pendag, complex_phase, erfcc
@@ -50,7 +50,9 @@ module General
   public :: directory_names_std
   public :: touch_file
   public :: var_is_vec
-  public :: transform_cart_spher, transform_spher_cart_yy, yy_transform_strip
+  public :: transform_cart_spher, transform_spher_cart_yy
+  public :: yy_transform_strip, yy_transform_strip_other
+  public :: transform_thph_yy
   public :: transpose_mn
   public :: notanumber, notanumber_0d
   public :: reduce_grad_dim
@@ -1063,6 +1065,43 @@ module General
       enddo
 !
     endsubroutine find_index_range
+!***********************************************************************
+    function find_index_range_hill(aa,planes) result(range)
+!
+!  Find index range (ii1,ii2) if a "hill" between to "planes" with levels planes(1)
+!  and planes(2) (possibly different). Inner "valleys" of the hill to the
+!  planes' levels are not considered.
+!
+!   9-mar-16/MR: derived from find_index_range
+!
+      integer, dimension(:), intent(in) :: aa
+      integer, dimension(2), intent(in) :: planes
+      integer, dimension(2) :: range
+!
+      integer :: naa,ii
+!
+!  Find lower index.
+!
+      naa=size(aa)
+      range(1)=naa
+      do ii=1,naa
+        if (aa(ii)/=planes(1)) then
+          range(1)=ii
+          exit
+        endif
+      enddo
+!
+!  Find upper index.
+!
+      range(2)=1
+      do ii=naa,1,-1
+        if (aa(ii)/=planes(2)) then
+          range(2)=ii
+          return
+        endif
+      enddo
+!
+    endfunction find_index_range_hill
 !***********************************************************************
     pure integer function find_index(xa, x)
 !
@@ -3213,12 +3252,10 @@ module General
     integer, dimension(:), intent(in) :: haystack
     integer :: pos
 
-    pos_in_array_int = -1
-
     do pos = 1, size(haystack)
       if (needle == haystack(pos)) then
-         pos_in_array_int = pos
-         return
+        pos_in_array_int = pos
+        return
       endif
     enddo
 
@@ -4103,35 +4140,60 @@ module General
 
     endsubroutine transform_spher_cart_yy
 !***********************************************************************
-    subroutine yy_transform_strip(ith1,ith2,iph1,iph2,thphprime)
+    subroutine yy_transform_strip(ith1_,ith2_,iph1_,iph2_,thphprime)
 !
 !  Transform coordinates of ghost zones of Yin or Yang grid to other grid.
+!  Strip is defined by index ranges (ith1_,ith2_), (iph1_,iph2_) with respect
+!  to local grid, in particular sinth, costh etc.
 !
-! 4-dec-2015/MR: coded
+!  4-dec-15/MR: coded
+! 12-mar-16/MR: entry yy_transform_strip_other added
 !
-      use Cdata, only: y,z,costh,sinth,cosph,sinph, iproc_world, lroot
+      use Cdata, only: y,z,costh,sinth,cosph,sinph,iproc_world
 
-      integer :: ith1,ith2,iph1,iph2
-      real, dimension(:,:,:) :: thphprime
+      integer,               intent(IN) :: ith1_,ith2_,iph1_,iph2_
+      real, dimension(:,:,:),intent(OUT):: thphprime
+      real, dimension(:),    intent(IN) :: th,ph
 
-      integer :: i,j,itp,jtp
+      integer :: i,j,itp,jtp,ith1,ith2,iph1,iph2
       real :: sth, cth, xprime, yprime, zprime, sprime
-      logical :: ltransp
+      logical :: ltransp, lother
 
-      ltransp = ith2-ith1+1 /= size(thphprime,2)
+      lother=.false.
+      ith1=ith1_; ith2=ith2_; iph1=iph1_; iph2=iph2_
+      goto 1
+
+    entry yy_transform_strip_other(th,ph,thphprime)
+!
+!  Here strip is given by vectors th and ph not related to local grid.
+!
+      lother=.true.
+      ith1=1; ith2=size(th)
+      iph1=1; iph2=size(ph)
+
+ 1    ltransp = ith2-ith1+1 /= size(thphprime,2)
 !
       do i=ith1,ith2
 
-        sth=sinth(i); cth=costh(i)
+        if (lother) then
+          sth=sin(th(i)); cth=cos(th(i))
+        else
+          sth=sinth(i); cth=costh(i)
+        endif
 
         do j=iph1,iph2
 !
 !  Rotate by Pi about z axis, then by Pi/2 about x axis.
 !  No distinction between Yin and Yang as transformation matrix is self-inverse.
 !
-          xprime = -cosph(j)*sth
+          if (lother) then
+            xprime = -cos(ph(j))*sth
+            zprime = -sin(ph(j))*sth
+          else
+            xprime = -cosph(j)*sth
+            zprime = -sinph(j)*sth
+          endif
           yprime = -cth
-          zprime = -sinph(j)*sth
 
           sprime = sqrt(xprime**2 + yprime**2)
  
@@ -4151,6 +4213,66 @@ module General
       enddo
 
     endsubroutine yy_transform_strip
+!***********************************************************************
+    subroutine transform_thph_yy( vec, powers, transformed )
+!
+!  Transforms theta and phi components of vector vec defined with the Yang
+!  grid basis
+!  to the Yin grid basis using theta and phi coordinates of the Yang grid.
+!  For use on pencils within mn-loop.
+!  Note that components of transformed are undefined if correspondig power is 0.
+!
+! 30-mar-2016/MR: coded
+!
+      use Cdata, only: costh, sinth, cosph, sinph, m, n
+
+      real,    dimension(nx,3),intent(IN) :: vec
+      integer, dimension(3),   intent(IN) :: powers
+      real,    dimension(nx,3),intent(OUT):: transformed
+
+      real :: sinth1, a, b
+
+      sinth1=1./sqrt(costh(m)**2+sinth(m)**2*cosph(n)**2)
+      a=-cosph(n)*sinth1; b=sinph(n)*costh(m)*sinth1
+
+      if (powers(1)/=0) &
+        transformed(:,1) = vec(:,1)
+      if (powers(2)/=0) &
+        transformed(:,2) = b*vec(:,2) - a*vec(:,3)
+      if (powers(3)/=0) &
+        transformed(:,3) = a*vec(:,2) + b*vec(:,3)
+
+    endsubroutine transform_thph_yy
+!***********************************************************************
+    subroutine transform_thph_yy_other( vec, vec_transformed )
+!
+!  Transforms theta and phi components of a vector field vec defined with the Yang grid basis
+!  to the Yin grid basis using theta and phi coordinates of the Yang grid.
+!  For use outside mn-loop.
+!
+! 30-mar-2016/MR: coded
+!
+      use Cdata, only: costh, sinth, cosph, sinph
+
+      real, dimension(:,:,:,:), intent(IN) :: vec
+      real, dimension(:,:,:,:), intent(OUT):: vec_transformed
+
+      integer :: i,j
+      real :: sinth1, a, b
+
+      do i=n1,n2 
+        do j=m1,m2
+
+          sinth1=1./sqrt(costh(j)**2+sinth(j)**2*cosph(i)**2)
+          a=-cosph(i)*sinth1; b=sinph(i)*costh(j)*sinth1
+
+          vec_transformed(:,j,i,2) = b*vec(:,j,i,2) - a*vec(:,j,i,3)
+          vec_transformed(:,j,i,3) = a*vec(:,j,i,2) + b*vec(:,j,i,3)
+
+        enddo
+      enddo
+
+    endsubroutine transform_thph_yy_other
 !***********************************************************************
     subroutine transpose_mn(a,b,ladd)
 !
