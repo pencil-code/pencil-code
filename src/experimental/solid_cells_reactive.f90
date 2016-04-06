@@ -42,7 +42,7 @@ module Solid_Cells
   character (len=10), dimension(8) :: svarname
   logical :: lnointerception=.false.,lcheck_ba=.false.
   logical :: lerror_norm=.false.,lNusselt_output=.false.,locdensity_error=.false.
-  logical :: locchemspec_error=.false.
+  logical :: locchemspec_error=.false.,loutput_local_reaction_rate=.false.
   logical :: lset_flow_dir=.false.,lpos_advance=.false.,lradius_advance=.false.
   logical :: lsecondorder_rho=.true., lsecondorder_chem=.true.
   logical :: lstefan_flow=.true.
@@ -83,7 +83,8 @@ module Solid_Cells
        lnointerception,lcheck_ba,lerror_norm,lpos_advance,lradius_advance, &
        lNusselt_output,osci_A,osci_f,osci_dir,osci_t, lsecondorder_rho, &
        lsecondorder_chem, solid_reactions_intro_time, lstefan_flow, &
-       locdensity_error, locchemspec_error, isolid_reac_mech
+       locdensity_error, locchemspec_error,loutput_local_reaction_rate, &
+       isolid_reac_mech
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -2990,6 +2991,7 @@ module Solid_Cells
      use Viscosity, only: getnu
      use General, only: safe_character_assign,safe_character_append
      use General, only: linear_interpolate
+     use General, only: itoa
 !
      real, dimension (mx,my,mz,mfarray), intent(in):: f
      real, dimension (mx,my,mz,mvar), intent(in)   :: df
@@ -3015,6 +3017,7 @@ module Solid_Cells
      character(len=100):: error_string, reac_string
      character(len=120):: solid_cell_Nus
      character(len=150):: solid_cell_error, solid_cell_reac
+     character(len=10) :: chproc
 !
 !  Reset cumulating quantities before calculations in first pencil
 !
@@ -3163,8 +3166,10 @@ module Solid_Cells
                Nusselt(iobj)=Nusselt(iobj)+loc_Nus/nforcepoints
              endif
 !
+             chproc=itoa(iproc)
+!
              if(lNusselt_output) then
-               call safe_character_assign(file1,trim(datadir)//'/local_Nusselt.dat')
+               call safe_character_assign(file1,trim(datadir)//'/local_Nusselt.dat'//chproc)
                open(unit=87,file=file1,position='APPEND')
                write(solid_cell_Nus,98) it-1, t
                if (ilnTT>0) then
@@ -3179,7 +3184,7 @@ module Solid_Cells
 !
              if (it==nt) then
                if (lerror_norm) then
-                 call safe_character_assign(file2,trim(datadir)//'/error_norm.dat')
+                 call safe_character_assign(file2,trim(datadir)//'/error_norm.dat'//chproc)
                  open(unit=89,file=file2,position='APPEND')
                  call find_near_indeces(lower_i,upper_i,lower_j,upper_j,&
                      lower_k,upper_k,x,y,z,fp_location)
@@ -3199,7 +3204,7 @@ module Solid_Cells
 ! Output Local density
              if (it==nt) then
                if(locdensity_error) then
-                 open(unit=86,file='data/locdensity_error.dat',position='APPEND')
+                 open(unit=86,file='data/locdensity_error.dat'//chproc,position='APPEND')
                  if(.not. linear_interpolate(f,ilnrho,ilnrho,fp_location,rho_error,inear_error,.false.))&
                    call fatal_error('linear_interpolate','')
                  write(86,*) theta, rho_error
@@ -3210,7 +3215,7 @@ module Solid_Cells
 ! Output Local species mass fraction
              if (it==nt) then
                if(locchemspec_error) then
-                 open(unit=88,file='data/locchemspec_error.dat',position='APPEND')
+                 open(unit=88,file='data/locchemspec_error.dat'//chproc,position='APPEND')
                  if(.not. linear_interpolate(f,ichemspec(1),ichemspec(nchemspec),&
                     fp_location,chemspec_error,inear_error,.false.))&
                    call fatal_error('linear_interpolate','')
@@ -3219,17 +3224,24 @@ module Solid_Cells
                endif
              endif ! Finalize if "(it==nt)"
 !
-             fpchem(1:nchemspec)=f(ix0,iy0,iz0,ichemspec(1):ichemspec(nchemspec))*loc_density
-             call calc_reaction_rate(f,iobj,fpchem,reac_rate,char_reac)
+! Output Local reaction rate
+             if (it==nt) then
+               if (loutput_local_reaction_rate) then
+                 fpchem(1:nchemspec)=f(ix0,iy0,iz0,ichemspec(1):ichemspec(nchemspec))*loc_density
+                 call calc_reaction_rate(f,iobj,fpchem,reac_rate,char_reac)
 !
-             call safe_character_assign(file3,trim(datadir)//'/local_reaction.dat')
-             open(unit=91,file=file3,position='APPEND')
-             write(solid_cell_reac,"(1I8)") it-1
-             write(reac_string,"(5F12.7)") theta,reac_rate(ichemsO2),reac_rate(ichemsCO),&
-                reac_rate(ichemsCO2),char_reac
-             call safe_character_append(solid_cell_reac,reac_string)
-             write(91,*) trim(solid_cell_reac)
-             close(91)
+                 call safe_character_assign(file3,trim(datadir)//'/local_reaction.dat'//chproc)
+                 open(unit=91,file=file3,position='APPEND')
+!                write(solid_cell_reac,"(1I8)") it-1
+!                write(reac_string,"(5F12.7)") theta,reac_rate(ichemsO2),reac_rate(ichemsCO),&
+!                 reac_rate(ichemsCO2),char_reac
+                 write(91,"(5F12.7)") theta,reac_rate(ichemsO2),reac_rate(ichemsCO),&
+                  reac_rate(ichemsCO2),char_reac
+!                call safe_character_append(solid_cell_reac,reac_string)
+!                write(91,*) trim(solid_cell_reac)
+                 close(91)
+               endif ! Finalize if "loutput_local_reaction_rate"
+             endif ! Finalize if "it==nt"
 !
 98  format(1I8,1F15.8)
 96  format(3F15.8)
