@@ -68,6 +68,7 @@ module Dustdensity
   real :: Rgas_unit_sys, m_w=18., m_s=60.
   real :: AA=0.66e-4,  Ntot
   real :: nd_reuni,init_x1, init_x2, a0=0., a1=0.
+  real :: dndfac_sum
   integer :: iglobal_nd=0
   integer :: spot_number=1
   character (len=labellen), dimension (ninit) :: initnd='nothing'
@@ -123,6 +124,7 @@ module Dustdensity
       supsatratio_omega, ndmin_for_mdvar, &
       lsemi_chemistry, lradius_binning, dkern_cst, lzero_upper_kern
 !
+  integer :: idiag_KKm=0     ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdmtot=0
   integer :: idiag_rhodmxy=0, idiag_ndmxy=0
@@ -2130,6 +2132,7 @@ module Dustdensity
 !
 !  end of do loop for dust species above.
 !
+        if (idiag_KKm/=0) call sum_mn_name(spread((-dndfac_sum/nx),1,nx), idiag_KKm)
         if (idiag_adm/=0) call sum_mn_name(sum(spread((md/(4/3.*pi*rhods))**(1/3.),1,nx)*p%nd,2)/sum(p%nd,2), idiag_adm)
         if (idiag_mdmtot/=0) call sum_mn_name(sum(spread(md,1,nx)*p%nd,2), idiag_mdmtot)
 !
@@ -2730,9 +2733,11 @@ module Dustdensity
 !
 !  Carry out integration over all bins.
 !
+      dndfac_sum=0.
       do l=1,nx
         do i=1,ndustspec; do j=i,ndustspec
           dndfac = -dkern(l,i,j)*p%nd(l,i)*p%nd(l,j)
+          dndfac_sum = dndfac_sum + dndfac
           if (dndfac/=0.0) then
             if (lradius_binning) then
               df(3+l,m,n,ind(i)) = df(3+l,m,n,ind(i)) + dndfac*p%ad(l,i)*dlnad
@@ -2872,7 +2877,7 @@ module Dustdensity
 !  Reset everything in case of reset.
 !
       if (lreset) then
-        idiag_mdm=0
+        idiag_mdm=0; idiag_KKm=0
         idiag_ndm=0; idiag_ndmin=0; idiag_ndmax=0; idiag_ndmt=0; idiag_rhodm=0
         idiag_rhodmin=0; idiag_rhodmax=0; idiag_rhodmxy=0; idiag_ndmxy=0
         idiag_nd2m=0; idiag_rhodmt=0; idiag_rhoimt=0; idiag_epsdrms=0
@@ -2952,6 +2957,7 @@ module Dustdensity
 !  Non-species-dependent diagnostics.
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'KKm',idiag_KKm)
         call parse_name(iname,cname(iname),cform(iname),'ndmt',idiag_ndmt)
         call parse_name(iname,cname(iname),cform(iname),'rhodmt',idiag_rhodmt)
         call parse_name(iname,cname(iname),cform(iname),'rhoimt',idiag_rhoimt)
