@@ -795,8 +795,6 @@ module Shear
 !  25-feb-13/ccyang: coded.
 !  16-sep-14/ccyang: relax the nprocx=1 restriction.
 !
-      use Mpicomm, only: mpisend_real, mpirecv_real, mpibarrier
-!
       real, dimension(:,:,:,:), intent(inout) :: f
       integer, intent(in) :: ivar1, ivar2
       logical, intent(in), optional :: ldf
