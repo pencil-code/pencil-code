@@ -50,7 +50,7 @@ module Solid_Cells
   real    :: skin_depth=0,init_uu=0,ampl_noise=0,object_skin=0
   real    :: limit_close_linear=0.7, ineargridshift=1.0
   real    :: osci_A=0.5,osci_f=4.0,osci_t, solid_reactions_intro_time=0.0
-  integer :: isolid_reac_mech=2
+  integer :: isolid_reac_mech=1
 !
 ! For chemestry
 !
