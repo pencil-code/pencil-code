@@ -289,7 +289,10 @@ module Solid_Cells
 !
       if (lradius_advance)  allocate(vs_normal(nobjects))
       allocate(heat_cond(nobjects))
+      heat_cond=0.0
+
       allocate(char_consumption(nobjects))
+      char_consumption=0.0
 !
 !  Prepare the solid geometry
 !
@@ -925,6 +928,8 @@ module Solid_Cells
     character(len=100) :: numberstring, time_string
     character(len=200) :: solid_cell_drag, solid_cell_time
 !
+    heat_all=0.
+    char_consumption_all=0.
     call mpireduce_sum(heat_cond,heat_all,nobjects)
     call mpireduce_sum(char_consumption,char_consumption_all,nobjects)
     heat_cond(1:nobjects)=heat_all(1:nobjects)
@@ -980,8 +985,8 @@ module Solid_Cells
             c_dragy_p = c_dragy_p_all * norm
             c_dragz_p = c_dragz_p_all * norm
 !
-!  Write drag coefficients for all objects (may need to expand solid_cell_drag to more
-!  characters if large number of objects).
+!  Write drag coefficients for all objects (may need to expand 
+!  solid_cell_drag to more characters if large number of objects).
 !
             call safe_character_assign(file1,trim(datadir)//'/dragcoeffs.dat')
             open(unit=81, file=file1, position='APPEND')
