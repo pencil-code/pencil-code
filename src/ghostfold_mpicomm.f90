@@ -449,7 +449,7 @@ subroutine fold_df_3points(df,ivar1,ivar2)
         first: if (lfirst_proc_x) then
           comp1: do ivar = ivar1, ivar2
             work = f(l1-ng:l1-1,m1:m2,n1:n2,ivar)
-            call yshift_fft(ng, work, -deltay)
+            call yshift_block(ng, work, -deltay)
             f(l1-ng:l1-1,m1:m2,n1:n2,ivar) = work
           enddo comp1
         endif first
@@ -459,14 +459,35 @@ subroutine fold_df_3points(df,ivar1,ivar2)
         last: if (llast_proc_x) then
           comp2: do ivar = ivar1, ivar2
             work = f(l2+1:l2+ng,m1:m2,n1:n2,ivar)
-            call yshift_fft(ng, work, +deltay)
+            call yshift_block(ng, work, +deltay)
             f(l2+1:l2+ng,m1:m2,n1:n2,ivar) = work
           enddo comp2
         endif last
 !
     endsubroutine yshift_ghost
 !*******************************************************************************
-    subroutine yshift_fft(ng, a, shift)
+    subroutine yshift_block(ng, a, shift)
+!
+!  Wrapper for shifting a block of data a in y by shift.
+!
+!  07-apr-16/ccyang: coded.
+!
+      integer, intent(in) :: ng
+      real, dimension(ng,ny,nz), intent(inout) :: a
+      real, intent(in) :: shift
+!
+!  If lghostfold_usebspline is set .true., use B-spline interpolation; use
+!  Fourier interpolation, otherwise.
+!
+      if (lghostfold_usebspline) then
+        call yshift_block_bspline(ng, a, shift)
+      else
+        call yshift_block_fft(ng, a, shift)
+      endif
+!
+    endsubroutine yshift_block
+!*******************************************************************************
+    subroutine yshift_block_fft(ng, a, shift)
 !
 !  Shift a block of data a in y by shift using the Fourier interpolation.
 !
@@ -487,6 +508,52 @@ subroutine fold_df_3points(df,ivar1,ivar2)
         a(i,:,:) = work
       enddo fft
 !
-    endsubroutine yshift_fft
+    endsubroutine yshift_block_fft
+!*******************************************************************************
+    subroutine yshift_block_bspline(ng, a, shift)
+!
+!  Shift a block of data a in y by shift using the B-spline interpolation.
+!
+!  07-apr-16/ccyang: coded.
+!
+      use Mpicomm, only: remap_to_pencil_y, unmap_from_pencil_y
+      use Sub, only: bspline_precondition, bspline_interpolation, ludcmp
+!
+      integer, intent(in) :: ng
+      real, dimension(ng,ny,nz), intent(inout) :: a
+      real, intent(in) :: shift
+!
+      integer, parameter :: bspline_k = 7
+      real, dimension(nygrid,nygrid) :: bspline_ay = 0.0
+      integer, dimension(nygrid) :: bspline_iy = 0
+      logical :: lfirstcall = .true.
+!
+      real, dimension(ng,nygrid,nz) :: work
+      real, dimension(nygrid) :: penc
+      integer :: i, k
+      real :: s
+!
+!  Precondition the B-spline.
+!
+      precon: if (lfirstcall) then
+        call bspline_precondition(nygrid, bspline_k, bspline_ay)
+        call ludcmp(bspline_ay, bspline_iy)
+        lfirstcall = .false.
+      endif precon
+!
+!  Make the interpolation.
+!
+      s = shift / dy
+      call remap_to_pencil_y(a, work)
+      zscan: do k = 1, nz
+        xscan: do i = 1, ng
+          penc = work(i,:,k)
+          call bspline_interpolation(nygrid, bspline_k, penc, bspline_ay, bspline_iy, s)
+          work(i,:,k) = penc
+        enddo xscan
+      enddo zscan
+      call unmap_from_pencil_y(work, a)
+!
+    endsubroutine yshift_block_bspline
 !*******************************************************************************
 endmodule GhostFold

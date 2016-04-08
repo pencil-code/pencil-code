@@ -267,6 +267,7 @@ module Cdata
   logical :: lstart=.false., lrun=.false., lreloading=.false.
   logical :: lenergy=.false.
   logical :: ladv_der_as_aux=.false.
+  logical :: lghostfold_usebspline = .false.
 !
 !  Variable indices (default zero, set later by relevant physics modules).
 !

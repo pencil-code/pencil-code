@@ -151,8 +151,8 @@ module Param_IO
       lini_t_eq_zero, lav_smallx, xav_max, ldt_paronly, lweno_transport, &
       it_timing, har_spec, hav_spec, j_spec, jb_spec, lread_less, lformat, ltec, &
       llsode, lsplit_second, nu_sts, permute_sts, lfargo_advection, &
-      ldynamical_diffusion, ldyndiff_useumax, re_mesh, lreset_seed, &
-      loutput_varn_at_exact_tsnap, lstop_on_ioerror, mailaddress, &
+      ldynamical_diffusion, ldyndiff_useumax, re_mesh, lghostfold_usebspline, &
+      lreset_seed, loutput_varn_at_exact_tsnap, lstop_on_ioerror, mailaddress, &
       theta_lower_border, wborder_theta_lower, theta_upper_border, &
       wborder_theta_upper, fraction_tborder, lmeridional_border_drive, &
       lread_from_other_prec, downsampl, lfullvar_in_slices, lsubstract_reference_state, &
