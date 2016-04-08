@@ -2254,6 +2254,7 @@ module Chemistry
 ! Check if the temperature are within bounds
 !
                     if (maxval(T_loc) > T_up .or. minval(T_loc) < T_low) then
+                      print*,'iproc=',iproc
                       print*,'TT_full(:,j2,j3)=',T_loc
                       print*,'j2,j3=',j2,j3
                       call inevitably_fatal_error('calc_for_chem_mixture', &
