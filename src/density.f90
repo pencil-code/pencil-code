@@ -814,6 +814,11 @@ module Density
 !
       intent(inout) :: f
 !
+!  Sanity check.
+!
+      if (lread_oldsnap .and. ldensity_nolog .and. .not. all(initlnrho == 'nothing')) &
+          call fatal_error('init_lnrho', 'cannot add initial conditions to the old snapshot. ')
+!
 !  Define bottom and top height.
 !
       zbot=xyz0(3)
@@ -1418,7 +1423,7 @@ module Density
 !  If unlogarithmic density considered, take exp of lnrho resulting from
 !  initlnrho
 !
-      if (ldensity_nolog) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))   !???
+      if (ldensity_nolog .and. .not. lread_oldsnap) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))   !???
 !
 !  sanity check
 !
