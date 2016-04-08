@@ -146,7 +146,7 @@ class FixedPoint(object):
                         i1 = 0
                         for j1 in range(nt):
                             for k1 in range(nt):
-                                xx[i1, tidx] = xmin + j1/(nt-1.)*(xmax-xmin)
+                                xx[i1, 0] = xmin + j1/(nt-1.)*(xmax-xmin)
                                 xx[i1, 1] = ymin + k1/(nt-1.)*(ymax-ymin)
                                 xx[i1, 2] = self.params.Oz
                                 i1 += 1
@@ -336,18 +336,19 @@ class FixedPoint(object):
         # Discard fixed points which are too close to each other.
         def __discard_close_fixed_points(fixed, fixed_sign, var):
             fixed_new = []
-            fixed_new.append(fixed[0])
             fixed_sign_new = []
-            fixed_sign_new.append(fixed_sign[0])
-
-            dx = fixed[:, 0] - np.reshape(fixed[:, 0], (fixed.shape[0], 1))
-            dy = fixed[:, 1] - np.reshape(fixed[:, 1], (fixed.shape[0], 1))
-            mask = (abs(dx) > var.dx/2) + (abs(dy) > var.dy/2)
-
-            for idx in range(1, fixed.shape[0]):
-                if all(mask[idx, :idx]):
-                    fixed_new.append(fixed[idx])
-                    fixed_sign_new.append(fixed_sign[idx])
+            if len(fixed) > 0:
+                fixed_new.append(fixed[0])
+                fixed_sign_new.append(fixed_sign[0])
+    
+                dx = fixed[:, 0] - np.reshape(fixed[:, 0], (fixed.shape[0], 1))
+                dy = fixed[:, 1] - np.reshape(fixed[:, 1], (fixed.shape[0], 1))
+                mask = (abs(dx) > var.dx/2) + (abs(dy) > var.dy/2)
+    
+                for idx in range(1, fixed.shape[0]):
+                    if all(mask[idx, :idx]):
+                        fixed_new.append(fixed[idx])
+                        fixed_sign_new.append(fixed_sign[idx])
 
             return np.array(fixed_new), np.array(fixed_sign_new)
 
