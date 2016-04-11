@@ -62,15 +62,14 @@ module InitialCondition
      logical :: llog_distribution=.true., lcurved_xy=.false.
      logical :: lACTOS=.false.,lACTOS_read=.true., lACTOS_write=.true., lsinhron=.false.
      logical :: ladd_points=.false., lrho_const=.false., lregriding=.false.
-     logical :: lLES=.false.
-
+     logical :: lLES=.false., lP_aver=.false.
 !
     namelist /initial_condition_pars/ &
      init_ux, init_uy,init_uz,init_x1,init_x2, init_water1, init_water2, &
      lreinit_water, dYw,dYw1, dYw2, X_wind, spot_number, spot_size, lwet_spots, &
      linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, r02, d0, lcurved_xz, lcurved_xy, &
      ltanh_prof_xz,ltanh_prof_xy, Period, BB0, index_N2, index_H2O, lACTOS, lACTOS_read, lACTOS_write, &
-     i_point,Ndata, lsinhron, delta, Nadd_points, ladd_points, lrho_const, lregriding, lLES
+     i_point,Ndata, lsinhron, delta, Nadd_points, ladd_points, lrho_const, lregriding, lLES, lP_aver
 !
   contains
 !***********************************************************************
@@ -121,20 +120,22 @@ module InitialCondition
     !    endif
 !
         if ((init_uy /=impossible) .and. (X_wind /= impossible)) then
-          do j=1,mx
-             f(j,:,:,iuy)=f(j,:,:,iuy) &
-              +(init_uy+0.)*0.5+((init_uy-0.)*0.5)  &
-              *(exp((x(j)+X_wind)/del)-exp(-(x(j)+X_wind)/del)) &
-              /(exp((x(j)+X_wind)/del)+exp(-(x(j)+X_wind)/del))
+          do j=1,mz
+             f(:,:,j,iuy)= init_uy*(z(j)-xyz0(3))/(Lxyz(3)-xyz0(3))
+
+!              +(init_uy+0.)*0.5+((init_uy-0.)*0.5)  &
+!              *(exp((x(j)+X_wind)/del)-exp(-(x(j)+X_wind)/del)) &
+!             /(exp((x(j)+X_wind)/del)+exp(-(x(j)+X_wind)/del))
           enddo
         endif
 !
-        if ((init_uz /=impossible) .and. (X_wind /= impossible)) then
+        if ((init_ux /=impossible) .and. (X_wind /= impossible)) then
           do j=1,mx
-             f(j,:,:,iuz)=f(j,:,:,iuz) &
-              +(init_uz+0.)*0.5+((init_uz-0.)*0.5)  &
-              *(exp((x(j)+X_wind)/del)-exp(-(x(j)+X_wind)/del)) &
-              /(exp((x(j)+X_wind)/del)+exp(-(x(j)+X_wind)/del))
+             f(:,:,j,iux)=init_ux*(z(j)-xyz0(3))/(Lxyz(3)-xyz0(3))
+!
+!              +(init_uz+0.)*0.5+((init_uz-0.)*0.5)  &
+!              *(exp((x(j)+X_wind)/del)-exp(-(x(j)+X_wind)/del)) &
+!              /(exp((x(j)+X_wind)/del)+exp(-(x(j)+X_wind)/del))
           enddo
          endif
 !
@@ -142,7 +143,22 @@ module InitialCondition
           f(:,:,:,iuy)=f(:,:,:,iuy)+init_uy
         endif
         if ((init_uz /=impossible) .and. (X_wind == impossible)) then
-          f(:,:,:,iuz)=f(:,:,:,iuz)+init_uz
+!
+!          f(:,:,:,iuz)=f(:,:,:,iuz)+init_uz
+! 
+          do i=l1,l2
+          if (x(i)>0) then
+            f(i,:,:,iuz)=init_uz
+          else
+            f(i,:,:,iuz)=-init_uz
+          endif
+          enddo
+
+!
+        endif
+
+        if ((init_ux /=impossible) .and. (X_wind == impossible))  then
+          f(:,:,:,iux)=init_ux
         endif
 !
       call keep_compiler_quiet(f)
@@ -891,7 +907,7 @@ module InitialCondition
     endsubroutine ACTOS_data
 
 !***********************************************************************
- subroutine LES_data(f)
+    subroutine LES_data(f)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: sum_Y, tmp, air_mass
@@ -951,16 +967,19 @@ module InitialCondition
           read(143,*,iostat=io_code) (input_data(ii),ii=1,2)
           w_data(i)=input_data(2)   !dyn
           
-!          print*,i,'   ',rhow_data(i)
+          print*,i,'   ',w_data(i)
         enddo
         close(143)
-        
-!
-!       PP_aver=0.
-!       do i=1,Ndata   
-!         PP_aver=PP_aver+PP_data(i)
-!       enddo
-!       PP_data=PP_aver/Ndata
+
+        if (lP_aver) then
+          PP_aver=0.
+          do i=1,Ndata   
+            PP_aver=PP_aver+PP_data(i)
+          enddo
+          PP_data=PP_aver/Ndata
+        endif
+
+
 !
 !       print*,'PP_aver=',PP_aver/Ndata
 !      
@@ -1016,10 +1035,12 @@ module InitialCondition
            else
              f(:,:,i,ilnrho)=tmp5(:,:,i)
            endif 
-             f(:,:,i,iuz)=w_data(nn1+i-3)
+!             f(:,:,i,iuz)=w_data(nn1+i-3)*0.
 
-          enddo
-         
+!print*,w_data(nn1+i-3),i, nn1+i-3
+
+        enddo  
+           
 !
 !       if (iter<4) then
 !         do i=n1,n2
@@ -1045,7 +1066,6 @@ module InitialCondition
     endsubroutine LES_data
 
 !***********************************************************************
-
    subroutine reinitialization(f, air_mass, PP, TT)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
