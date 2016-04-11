@@ -91,12 +91,13 @@ module Dustdensity
   logical :: reinitialize_nd=.false., ldustcondensation_simplified=.false.
   logical :: lsemi_chemistry=.false., lradius_binning=.false.
   logical :: lzero_upper_kern=.false., ldustcoagulation_simplified=.false.
+  logical :: lself_collisions=.false.
   integer :: iadvec_ddensity=0
   logical, pointer :: llin_radiusbins
   real, pointer :: deltamd
   real    :: dustdensity_floor=-1, Kern_min=0., Kern_max=0.
   real    :: G_condensparam=0., supsatratio_given=0., supsatratio_given0=0.
-  real    :: supsatratio_omega=0.
+  real    :: supsatratio_omega=0., self_collision_factor=1.
   real    :: dlnmd, dlnad, GS_condensparam, GS_condensparam0
 !
   namelist /dustdensity_init_pars/ &
@@ -122,6 +123,7 @@ module Dustdensity
       diffnd_law, diffnd_exponent, adref_diffnd, &
       G_condensparam, supsatratio_given, supsatratio_given0, &
       supsatratio_omega, ndmin_for_mdvar, &
+      lself_collisions, self_collision_factor, &
       lsemi_chemistry, lradius_binning, dkern_cst, lzero_upper_kern
 !
   integer :: idiag_KKm=0     ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
@@ -2565,7 +2567,7 @@ module Dustdensity
       real, dimension (nx) :: vmean_ik, gamma_i, gamma_k, omega_i, omega_k, sigma_ik
 !
       real :: deltavd,deltavd_drift=0,deltavd_therm=0
-      real :: deltavd_turbu=0,deltavd_drift2=0
+      real :: deltavd_turbu=0,deltavd_drift2=0, fact
       real :: ust,tl01,teta1,mu_air,rho_air, kB=1.38e-16, Rik 
       integer :: i,j,l,k
 !      
@@ -2589,10 +2591,21 @@ module Dustdensity
         do i=1,ndustspec
           do j=i,ndustspec
 !
-!  Relative macroscopic speed
+!  Relative macroscopic speed; allow for possibility of finite kernel
+!  even for i=j if self-collisions are turned on (lself_collisions=T).
 !
-            call dot2 (f(3+l,m,n,iudx(j):iudz(j)) - &
-                f(3+l,m,n,iudx(i):iudz(i)),deltavd_drift2)
+            if (i==j) then
+              if (lself_collisions) then
+                fact=.5*self_collision_factor
+                call dot2(fact*(f(3+l,m,n,iudx(j):iudz(j))+ &
+                                f(3+l,m,n,iudx(i):iudz(i))),deltavd_drift2)
+              else
+                deltavd_drift2=0.
+              endif
+            else
+              call dot2(f(3+l,m,n,iudx(j):iudz(j))- &
+                        f(3+l,m,n,iudx(i):iudz(i)),deltavd_drift2)
+            endif
             deltavd_drift = sqrt(deltavd_drift2)
 !
 !  Relative thermal speed is only important for very light particles
