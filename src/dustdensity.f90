@@ -76,6 +76,7 @@ module Dustdensity
   character (len=labellen) :: bordernd='nothing'
   character (len=labellen) :: advec_ddensity='normal'
   character (len=labellen) :: diffnd_law='const'
+  character (len=labellen) :: self_collisions='nothing'
   logical :: ludstickmax=.false., lno_deltavd=.false.
   logical :: lcalcdkern=.true., lkeepinitnd=.false., ldustcontinuity=.true.
   logical :: ldustnulling=.false., lupw_ndmdmi=.false.
@@ -123,7 +124,7 @@ module Dustdensity
       diffnd_law, diffnd_exponent, adref_diffnd, &
       G_condensparam, supsatratio_given, supsatratio_given0, &
       supsatratio_omega, ndmin_for_mdvar, &
-      lself_collisions, self_collision_factor, &
+      self_collisions, self_collision_factor, &
       lsemi_chemistry, lradius_binning, dkern_cst, lzero_upper_kern
 !
   integer :: idiag_KKm=0     ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
@@ -425,6 +426,14 @@ module Dustdensity
         call fatal_error('initialize_dustdensity','')
       endselect
       if (lroot) print*, 'initialize_dustdensity: diffnd=',diffnd
+!
+!  check for self-collisions
+!
+      if (self_collisions=='nothing') then
+        lself_collisions=.false.
+      else
+        lself_collisions=.true.
+      endif
 !
 !  Initialize dust diffusion.
 !
@@ -2567,7 +2576,8 @@ module Dustdensity
       real, dimension (nx) :: vmean_ik, gamma_i, gamma_k, omega_i, omega_k, sigma_ik
 !
       real :: deltavd,deltavd_drift=0,deltavd_therm=0
-      real :: deltavd_turbu=0,deltavd_drift2=0, fact
+      real :: deltavd_turbu=0, fact
+      real :: deltavd_drift2=0, deltavd_drift2a=0, deltavd_drift2b=0
       real :: ust,tl01,teta1,mu_air,rho_air, kB=1.38e-16, Rik 
       integer :: i,j,l,k
 !      
@@ -2596,9 +2606,41 @@ module Dustdensity
 !
             if (i==j) then
               if (lself_collisions) then
-                fact=.5*self_collision_factor
-                call dot2(fact*(f(3+l,m,n,iudx(j):iudz(j))+ &
-                                f(3+l,m,n,iudx(i):iudz(i))),deltavd_drift2)
+                select case (self_collisions)
+                case ('average')
+                  fact=.5*self_collision_factor
+                  call dot2(fact*(f(3+l,m,n,iudx(j):iudz(j))+ &
+                                  f(3+l,m,n,iudx(i):iudz(i))),deltavd_drift2)
+                case ('neighbor')
+                  fact=self_collision_factor
+                  if (i==1) then
+                    call dot2(fact*(f(3+l,m,n,iudx(i+1):iudz(i+1))- &
+                                    f(3+l,m,n,iudx(i):iudz(i))),deltavd_drift2)
+                  elseif (i==ndustspec) then
+                    call dot2(fact*(f(3+l,m,n,iudx(i-1):iudz(i-1))- &
+                                    f(3+l,m,n,iudx(i):iudz(i))),deltavd_drift2)
+                  else
+                    fact=.5*self_collision_factor
+                    call dot2(fact*(f(3+l,m,n,iudx(i+1):iudz(i+1))- &
+                                    f(3+l,m,n,iudx(i):iudz(i))), &
+                              deltavd_drift2a)
+                    call dot2(fact*(f(3+l,m,n,iudx(i-1):iudz(i-1))- &
+                                    f(3+l,m,n,iudx(i):iudz(i))), &
+                              deltavd_drift2b)
+                    deltavd_drift2=deltavd_drift2a+deltavd_drift2b
+                  endif
+                case ('neighbor_asymmetric')
+                  fact=self_collision_factor
+                  if (i==ndustspec) then
+                    call dot2(fact*(f(3+l,m,n,iudx(i-1):iudz(i-1))- &
+                                    f(3+l,m,n,iudx(i):iudz(i))),deltavd_drift2)
+                  else
+                    call dot2(fact*(f(3+l,m,n,iudx(i+1):iudz(i+1))- &
+                                    f(3+l,m,n,iudx(i):iudz(i))),deltavd_drift2)
+                  endif
+                case default
+                  call fatal_error('dustdensity:coag_kernel','internal error')
+                endselect
               else
                 deltavd_drift2=0.
               endif
