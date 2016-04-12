@@ -177,7 +177,10 @@ module Viscosity
 !
       if (present(nu_input))  nu_input=0.0
       if (present(nu_pencil)) nu_pencil=0.0
-      if (present(ivis))     ivis='zero'
+!
+!  use ivis to make the particle modules work.
+!
+      if (present(ivis))     ivis='nu-const'
 !
     endsubroutine getnu
 !***********************************************************************
