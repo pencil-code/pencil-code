@@ -514,13 +514,23 @@ module Special
            if ((z(n) >= zgrid(nn1)) .and. (z(n) <= zgrid(nn2))) lzone_right=.true.
            if (lzone_right) then
 
+!              df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-0.)*dt1
+!              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-0.)*dt1
+!
+           endif
+!
+         elseif (j==2) then
             nn1=1
-            nn2=1+sz_z
+            nn2=sz_z
+!
+           if ((z(n) >= zgrid(nn1)) .and. (z(n) <= zgrid(nn2))) lzone_left=.true.
+           if (lzone_left) then
+
               df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-0.)*dt1
               df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-0.)*dt1
 !
            endif
-!
+             
          endif
 !
         enddo
