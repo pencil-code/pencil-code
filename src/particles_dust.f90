@@ -254,6 +254,7 @@ module Particles
   integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0
   integer :: idiag_dtdragp=0
   integer :: idiag_nparmin=0, idiag_nparmax=0, idiag_npargone=0
+  integer :: idiag_nparsum
   integer :: idiag_rhopm=0, idiag_rhoprms=0, idiag_rhop2m=0, idiag_rhopmax=0
   integer :: idiag_rhopmin=0, idiag_decollp=0, idiag_rhopmphi=0
   integer :: idiag_epspmin=0, idiag_epspmax=0
@@ -2895,6 +2896,7 @@ module Particles
 !  Diagnostic output
 !
       if (ldiagnos) then
+        if (idiag_nparsum/=0) call sum_name(npar_loc,idiag_nparsum)
         if (idiag_nparmin/=0) call max_name(-npar_loc,idiag_nparmin,lneg=.true.)
         if (idiag_nparmax/=0) call max_name(+npar_loc,idiag_nparmax)
         if (idiag_nparpmax/=0) call max_name(maxval(npar_imn),idiag_nparpmax)
@@ -5793,7 +5795,8 @@ module Particles
         idiag_rhopm=0; idiag_rhoprms=0; idiag_rhop2m=0; idiag_rhopmax=0
         idiag_rhopmin=0; idiag_decollp=0; idiag_rhopmphi=0
         idiag_epspmin=0; idiag_epspmax=0
-        idiag_nparmin=0; idiag_nparmax=0; idiag_nmigmax=0; idiag_nmigmmax=0; idiag_mpt=0
+        idiag_nparmin=0; idiag_nparmax=0; idiag_nparsum=0
+        idiag_nmigmax=0; idiag_nmigmmax=0; idiag_mpt=0
         idiag_npmx=0; idiag_npmy=0; idiag_npmz=0; idiag_epotpm=0
         idiag_rhopmx=0; idiag_rhopmy=0; idiag_rhopmz=0
         idiag_rhop2mx=0; idiag_rhop2my=0; idiag_rhop2mz=0
@@ -5813,6 +5816,7 @@ module Particles
 !
       if (lroot .and. ip<14) print*,'rprint_particles: run through parse list'
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'nparsum',idiag_nparsum)
         call parse_name(iname,cname(iname),cform(iname),'nparmin',idiag_nparmin)
         call parse_name(iname,cname(iname),cform(iname),'nparmax',idiag_nparmax)
         call parse_name(iname,cname(iname),cform(iname),'nparpmax',idiag_nparpmax)

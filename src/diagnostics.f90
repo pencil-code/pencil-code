@@ -54,6 +54,11 @@ module Diagnostics
     module procedure max_name_real
   endinterface max_name
 !
+  interface sum_name
+    module procedure sum_name_int
+    module procedure sum_name_real
+  endinterface sum_name
+!
   interface expand_cname
     module procedure expand_cname_short
     module procedure expand_cname_full
@@ -1452,7 +1457,7 @@ module Diagnostics
 !
     endsubroutine max_name_real
 !***********************************************************************
-    subroutine sum_name(a,iname)
+    subroutine sum_name_real(a,iname)
 !
 !  Calculate the summation of a, which is supplied at each call.
 !
@@ -1470,7 +1475,28 @@ module Diagnostics
 !
       itype_name(iname)=ilabel_surf
 !
-    endsubroutine sum_name
+    endsubroutine sum_name_real
+!***********************************************************************
+    subroutine sum_name_int(a,iname)
+!
+!  Calculate the summation of a, which is supplied at each call.
+!
+!  19-jun-11/anders: changed to sum single number of all cores
+!  17-jun-09/ccyang: adapted from max_name
+!  03-sep-09/MR: corrected to real sum
+!  12-apr-16/Jørgen+Nils: overloading with int
+!
+      integer, intent(in) :: a
+      integer, intent(in) :: iname
+!
+      fname(iname)=a
+!
+!  Set corresponding entry in itype_name.
+!  Need to set ilabel_surf to avoid multiplication by volume later (to fix).
+!
+      itype_name(iname)=ilabel_surf
+!
+    endsubroutine sum_name_int
 !***********************************************************************
     subroutine max_mn_name(a,iname,lsqrt,l_dt,lneg,lreciprocal)
 !
