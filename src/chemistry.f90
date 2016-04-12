@@ -81,6 +81,7 @@ module Chemistry
   logical :: ldiff_corr=.false.
   logical, save :: tran_exist=.false.
   logical, save :: lew_exist=.false.
+  logical :: lSmag_heat_transport=.false.
 !
   logical :: lfilter=.false.
   logical :: lkreactions_profile=.false., lkreactions_alpha=.false.
@@ -168,7 +169,7 @@ module Chemistry
       lchemistry_diag,lfilter_strict,linit_temperature, &
       linit_density, init_rho2, &
       file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
-      reac_rate_method,global_phi
+      reac_rate_method,global_phi, lSmag_heat_transport
 !
 !
 ! run parameters
@@ -948,6 +949,13 @@ module Chemistry
             p%lambda = lambda_const
             if (lpencil(i_glambda)) p%glambda = 0.
           endif
+        elseif (lSmag_heat_transport) then
+!
+! Natalia 
+! turbulent heat transport in Smagorinsky case
+! probably it should be moved to vescosity module
+!
+            p%lambda=(0.15*dxmax)**2.*sqrt(2*p%sij2)/.3*p%cp*p%rho
         else
           p%lambda = lambda_full(l1:l2,m,n)
           if (lpencil(i_glambda)) call grad(lambda_full,p%glambda)
