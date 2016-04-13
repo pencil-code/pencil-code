@@ -6111,11 +6111,11 @@ module Chemistry
       type (pencil_case) :: p
 !
       ydot = p%DYDt_reac
-      f(l1:l2,m,n,ireaci(1):ireaci(nchemspec)) =   &
-          f(l1:l2,m,n,ireaci(1):ireaci(nchemspec))+ydot
+      f(l1:l2,m,n,ireaci(1):ireaci(nchemspec)) = ydot
+!         f(l1:l2,m,n,ireaci(1):ireaci(nchemspec))+ydot
 !
-      if (maux == nchemspec+1) f(l1:l2,m,n,ireaci(nchemspec)+1) =   &
-          f(l1:l2,m,n,ireaci(nchemspec)+1)+wt
+      if (maux == nchemspec+1) f(l1:l2,m,n,ireaci(nchemspec)+1) = wt
+!         f(l1:l2,m,n,ireaci(nchemspec)+1)+wt
 !
     endsubroutine get_reac_rate
 !***********************************************************************
