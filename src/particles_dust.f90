@@ -254,7 +254,7 @@ module Particles
   integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0
   integer :: idiag_dtdragp=0
   integer :: idiag_nparmin=0, idiag_nparmax=0, idiag_npargone=0
-  integer :: idiag_nparsum
+  integer :: idiag_nparsum=0
   integer :: idiag_rhopm=0, idiag_rhoprms=0, idiag_rhop2m=0, idiag_rhopmax=0
   integer :: idiag_rhopmin=0, idiag_decollp=0, idiag_rhopmphi=0
   integer :: idiag_epspmin=0, idiag_epspmax=0
