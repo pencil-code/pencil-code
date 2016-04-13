@@ -659,6 +659,7 @@ module Chemistry
           lpenc_requested(i_lambda) = .true.
           lpenc_requested(i_glambda) = .true.
           lpenc_requested(i_lambda1) = .true.
+          if (lSmag_heat_transport) lpenc_requested(i_sij2) = .true.
         endif
 !
         if (latmchem .or. lcloud) then
@@ -953,7 +954,7 @@ module Chemistry
 !
 ! Natalia 
 ! turbulent heat transport in Smagorinsky case
-! probably it should be moved to vescosity module
+! probably it should be moved to viscosity module
 !
             p%lambda=(0.15*dxmax)**2.*sqrt(2*p%sij2)/.3*p%cp*p%rho
         else
