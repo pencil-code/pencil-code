@@ -141,7 +141,8 @@ program read_videofiles
 !  If Yin-Yang grid generate (Yin or Yang) grid (assumed uniform) and merge both into yz.
 !
       allocate(yzyang(2,nyzgrid),yz(2,2*nyzgrid),inds(nyzgrid))
-      dy=pi/2./(nygrid-1); dz=3.*pi/2./(nzgrid-1)
+      dy=pi/2./max(nygrid-1,1)
+      dz=3.*pi/2./max(nzgrid-1,1)
       y=(indgen(nygrid)-1)*dy+pi/4.
       z=(indgen(nzgrid)-1)*dz+pi/4
       costh=cos(y); cosph=cos(z); sinth=sin(y); sinph=sin(z)
@@ -151,6 +152,8 @@ program read_videofiles
 !  Hand over merged grid to allow for merging of read-in data.
 !
       call read_slice(ipx1,'yz',min_yz,max_yz,yz(:,1:nyzgrid+ninds),inds(1:ninds))
+    else
+      stop 'Yin-Yang requires 3D setup'
     endif
   else
     call read_slice(ipx1,'yz',min_yz,max_yz)
