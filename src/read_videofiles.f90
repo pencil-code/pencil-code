@@ -44,9 +44,9 @@ program read_videofiles
 !
 !  read name of the field (must coincide with file extension)
 !
-  !!!write(*,'(a)',ADVANCE='NO') 'enter variable (lnrho, uu1, ..., bb3) and stride (e.g. 10): '
-  !!!read(*,'(a)') cfield
-  cfield='oo2'
+  write(*,'(a)',ADVANCE='NO') 'enter variable (lnrho, uu1, ..., bb3) and stride (e.g. 10): '
+  read(*,'(a)') cfield
+  !cfield='oo2'
 !
 !  read stride from internal reader
 !
@@ -136,20 +136,22 @@ program read_videofiles
 !  YZ-plane:
 !
   if (lyinyang) then
+    if (nygrid>1.and.nzgrid>1) then
 !
 !  If Yin-Yang grid generate (Yin or Yang) grid (assumed uniform) and merge both into yz.
 !
-    allocate(yzyang(2,nyzgrid),yz(2,2*nyzgrid),inds(nyzgrid))
-    dy=pi/2./(nygrid-1); dz=3.*pi/2./(nzgrid-1)
-    y=(indgen(nygrid)-1)*dy+pi/4.
-    z=(indgen(nzgrid)-1)*dz+pi/4
-    costh=cos(y); cosph=cos(z); sinth=sin(y); sinph=sin(z)
-    call yin2yang_coors(costh,sinth,cosph,sinph,yzyang)
-    ninds=merge_yin_yang(y,z,dy,dz,yzyang,yz,inds)
+      allocate(yzyang(2,nyzgrid),yz(2,2*nyzgrid),inds(nyzgrid))
+      dy=pi/2./(nygrid-1); dz=3.*pi/2./(nzgrid-1)
+      y=(indgen(nygrid)-1)*dy+pi/4.
+      z=(indgen(nzgrid)-1)*dz+pi/4
+      costh=cos(y); cosph=cos(z); sinth=sin(y); sinph=sin(z)
+      call yin2yang_coors(costh,sinth,cosph,sinph,yzyang)
+      ninds=merge_yin_yang(y,z,dy,dz,yzyang,yz,inds)
 !
 !  Hand over merged grid to allow for merging of read-in data.
 !
-    call read_slice(ipx1,'yz',min_yz,max_yz,yz(:,1:nyzgrid+ninds),inds(1:ninds))
+      call read_slice(ipx1,'yz',min_yz,max_yz,yz(:,1:nyzgrid+ninds),inds(1:ninds))
+    endif
   else
     call read_slice(ipx1,'yz',min_yz,max_yz)
   endif
