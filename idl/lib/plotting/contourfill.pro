@@ -18,6 +18,8 @@
 ;;;     COLORBAR  --  add color bar (1 or 'bottom': place at bottom;
 ;;;                  'right': place to the right
 ;;;
+;;;   Modifications:
+;;;   13-apr-16/MR: modifications for use of irregular/triangulated grid analogous to contour
 
 pro contourfill, z, x, y, $
                  NLEVELS=nlevels, LEVELS=levels_, FILL=fill, GRID=grid, $
@@ -28,15 +30,16 @@ pro contourfill, z, x, y, $
   default, fill, 1
   default, debug, 0
 
+  irreg = is_in(tag_names(_extra), 'triangulate', /abbrev) or $
+          is_in(tag_names(_extra), 'irregular', /abbrev)
+
 ; Contour does not reset !z.type to zero if called with /ZLOG. This is
 ; silly (although it allows subsequent calls with /over to work
 ; correctly [and in most cases unexpectedly, so we just do not care]). 
   oldztype = !z.type            ; Save this to restore later
 
-  if (debug) then begin
-    print, FORMAT='(A, 10(I3))', $
-        'CONTOURFILL: Initial !p.multi = ', !p.multi
-  endif
+  if (debug) then $
+    print, FORMAT='(A, 10(I3))', 'CONTOURFILL: Initial !p.multi = ', !p.multi
 
   if (n_elements(colbar) gt 0) then begin
     ;; Determine data type
@@ -60,14 +63,15 @@ pro contourfill, z, x, y, $
     array = array[*,*]
   endif
 ;
-
-  s = size(array)
-  if (n_elements(x) eq 0) then x = indgen(s[1])
-  if (n_elements(y) eq 0) then y = indgen(s[2])
+  if ~irreg then begin
+    s = size(array)
+    if (n_elements(x) eq 0) then x = indgen(s[1])
+    if (n_elements(y) eq 0) then y = indgen(s[2])
+  endif
 ;
-
   xmarg = !x.margin             ; Store and reset later
   ymarg = !y.margin
+  
   if (colbar eq 1) then !y.margin = ymarg + [3,0]
   if (colbar eq 2) then !x.margin = xmarg + [0,8]
 
@@ -79,10 +83,11 @@ pro contourfill, z, x, y, $
   contour, array, x, y, LEVELS=levels, FILL=fill, _EXTRA=_extra
 ;
   if (keyword_set(grid)) then begin
-    if (debug ne 0) then print,'s = ', s
-    plots, spread(x, 1, s[2]), $
-        spread(y, 0, s[1]), $
-        PSYM=3, NOCLIP=0
+    if ~irreg then begin
+      if (debug ne 0) then print,'s = ', s
+      plots, spread(x, 1, s[2]), spread(y, 0, s[1]), PSYM=3, NOCLIP=0
+    endif else $
+      oplot, x, y, PSYM=3, COLOR=0 
   endif
 
   if (colbar ne 0) then begin
