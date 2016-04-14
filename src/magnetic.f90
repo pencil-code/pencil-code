@@ -3042,7 +3042,8 @@ module Magnetic
 !   9-apr-12/MR: upwinding for ladvective_gauge=F generalized
 !  31-mar-13/axel: Stokes parameter integration from synchrotron emission
 !  25-aug-13/MR: simplified calls of save_name_sound
-! 15-oct-15/MR: changes for slope-limited diffusion
+!  15-oct-15/MR: changes for slope-limited diffusion
+!  14-apr-16/MR: changes for Yin-Yang: only yz slices at the moment!
 !
       use Debug_IO, only: output_pencil
       use Deriv, only: der6
@@ -3050,7 +3051,8 @@ module Magnetic
       use Mpicomm, only: stop_it
       use Special, only: special_calc_magnetic
       use Sub
-!
+      use General, only: transform_thph_yy
+
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -3076,6 +3078,7 @@ module Magnetic
       real, dimension (nx) :: vdrift
       real, dimension (nx) :: del2aa_ini, tanhx2  
       real, dimension(3) :: B_ext
+      real, dimension(1,3) :: tmpvec
       real :: tmp,eta_out1,maxetaBB=0.
       real, parameter :: OmegaSS=1.0
       integer :: i,j,k,ju,ix
@@ -4636,21 +4639,31 @@ module Magnetic
 !
       if (lvideo.and.lfirst) then
         do j=1,3
-          bb_yz(m-m1+1,n-n1+1,j)=p%bb(ix_loc-l1+1,j)
+          if (.not.lyang) &
+            bb_yz(m-m1+1,n-n1+1,j)=p%bb(ix_loc-l1+1,j)
           if (m==iy_loc)  bb_xz(:,n-n1+1,j)=p%bb(:,j)
           if (n==iz_loc)  bb_xy(:,m-m1+1,j)=p%bb(:,j)
           if (n==iz2_loc) bb_xy2(:,m-m1+1,j)=p%bb(:,j)
           if (n==iz3_loc) bb_xy3(:,m-m1+1,j)=p%bb(:,j)
           if (n==iz4_loc) bb_xy4(:,m-m1+1,j)=p%bb(:,j)
         enddo
+        if (lyang) then
+          call transform_thph_yy(p%bb(ix_loc-l1+1:ix_loc-l1+1,:),(/1,1,1/),tmpvec)
+          bb_yz(m-m1+1,n-n1+1,:)=tmpvec(1,:)
+        endif
         do j=1,3
-          jj_yz(m-m1+1,n-n1+1,j)=p%jj(ix_loc-l1+1,j)
+          if (.not.lyang) &
+            jj_yz(m-m1+1,n-n1+1,j)=p%jj(ix_loc-l1+1,j)
           if (m==iy_loc)  jj_xz(:,n-n1+1,j)=p%jj(:,j)
           if (n==iz_loc)  jj_xy(:,m-m1+1,j)=p%jj(:,j)
           if (n==iz2_loc) jj_xy2(:,m-m1+1,j)=p%jj(:,j)
           if (n==iz3_loc) jj_xy3(:,m-m1+1,j)=p%jj(:,j)
           if (n==iz4_loc) jj_xy4(:,m-m1+1,j)=p%jj(:,j)
         enddo
+        if (lyang) then
+          call transform_thph_yy(p%jj(ix_loc-l1+1:ix_loc-l1+1,:),(/1,1,1/),tmpvec)
+          jj_yz(m-m1+1,n-n1+1,:)=tmpvec(1,:)
+        endif
         b2_yz(m-m1+1,n-n1+1)=p%b2(ix_loc-l1+1)
         if (m==iy_loc)  b2_xz(:,n-n1+1)=p%b2
         if (m==iy2_loc) b2_xz2(:,n-n1+1)=p%b2
@@ -4681,8 +4694,9 @@ module Magnetic
         call vecout(41,trim(directory)//'/bvec',p%bb,bthresh,nbvec)
 !
         call cross(p%uxb,p%bb,uxbxb)
-        do j=1,3
-          poynting(:,j) = etatotal * p%jxb(:,j) - mu01 * uxbxb(:,j)
+        do j=1,3 
+          if (.not.lyang) &
+            poynting(:,j) = etatotal*p%jxb(:,j) - mu01*uxbxb(:,j)
           poynting_yz(m-m1+1,n-n1+1,j)=poynting(ix_loc-l1+1,j)
           if (m==iy_loc)  poynting_xz(:,n-n1+1,j)=poynting(:,j)
           if (n==iz_loc)  poynting_xy(:,m-m1+1,j)=poynting(:,j)
@@ -4690,6 +4704,10 @@ module Magnetic
           if (n==iz3_loc) poynting_xy3(:,m-m1+1,j)=poynting(:,j)
           if (n==iz4_loc) poynting_xy4(:,m-m1+1,j)=poynting(:,j)
         enddo
+        if (lyang) then
+          call transform_thph_yy(poynting(ix_loc-l1+1:ix_loc-l1+1,:),(/1,1,1/),tmpvec)
+          poynting_yz(m-m1+1,n-n1+1,:)=tmpvec(1,:)
+        endif
 !
         ab_yz(m-m1+1,n-n1+1)=p%ab(ix_loc-l1+1)
         if (m==iy_loc)  ab_xz(:,n-n1+1)=p%ab
@@ -5350,9 +5368,13 @@ module Magnetic
 !  Write slices for animation of Magnetic variables.
 !
 !  26-jul-06/tony: coded
+!  14-apr-16/MR: changes for Yin-Yang
 !
+      use General, only: transform_thph_yy_other
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
+      real, dimension(:,:,:,:), allocatable, save :: transformed
 !
 !  Loop over slices
 !
@@ -5365,7 +5387,15 @@ module Magnetic
             slices%ready=.false.
           else
             slices%index=slices%index+1
-            slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,iax-1+slices%index)
+            if (lyang.and.slices%index>=2) then
+              if (slices%index==2) then
+                if (.not.allocated(transformed)) allocate(transformed(1,ny,nz,2))
+                call transform_thph_yy_other(f(ix_loc:ix_loc,m1:m2,n1:n2,iay:iaz), transformed)
+              endif
+              slices%yz =transformed(1,:,:,slices%index-1)
+            else
+              slices%yz =f(ix_loc,m1:m2,n1:n2,iax-1+slices%index)
+            endif
             slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,iax-1+slices%index)
             slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,iax-1+slices%index)
             slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,iax-1+slices%index)

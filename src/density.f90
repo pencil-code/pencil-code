@@ -1539,8 +1539,6 @@ module Density
 !
       real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
 !
-      type(pencil_case) :: p
-      logical, dimension(npencils) :: lpenc_loc=.false.
       real, parameter :: weight=.0
 !
       if (lslope_limit_diff) &

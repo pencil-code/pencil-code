@@ -153,7 +153,7 @@ program read_videofiles
 !
       call read_slice(ipx1,'yz',min_yz,max_yz,yz(:,1:nyzgrid+ninds),inds(1:ninds))
     else
-      stop 'Yin-Yang requires 3D setup'
+      stop 'Yin-Yang requires non-zero extent in y and z directions'
     endif
   else
     call read_slice(ipx1,'yz',min_yz,max_yz)
