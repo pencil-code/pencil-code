@@ -36,6 +36,7 @@ pro contourfill, z, x, y, $
 ; Contour does not reset !z.type to zero if called with /ZLOG. This is
 ; silly (although it allows subsequent calls with /over to work
 ; correctly [and in most cases unexpectedly, so we just do not care]). 
+
   oldztype = !z.type            ; Save this to restore later
 
   if (debug) then $
@@ -77,6 +78,7 @@ pro contourfill, z, x, y, $
 
   ;; non-trivial to keep IDL from using very first or very last color:
   ;; currently doesn't work for z-logarithmic plots
+;
   if (n_elements(levels_) gt 0) then levels=levels_
   default, levels, linspace(minmax(array,/NAN),nlevels,GHOST=1,/UNIQUE)
 
@@ -108,11 +110,11 @@ pro contourfill, z, x, y, $
 
   if (debug) then begin
     print, FORMAT='(A, 10(I3))', $
-        'CONTOURFILL: Final !p.multi   = ', !p.multi
+           'CONTOURFILL: Final !p.multi   = ', !p.multi
     print, '------------------------------------------------'
   endif
 
-  !z.type = oldztype            ; Save this to restore later
+  !z.type = oldztype            ; Restore saved.
 
 end
 ; End of file contourfill.pro
