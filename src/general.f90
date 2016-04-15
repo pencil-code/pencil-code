@@ -3317,7 +3317,7 @@ module General
 
   endfunction in_array_char
 !***********************************************************************
-    logical function loptest(lopt,ldef)
+    pure logical function loptest(lopt,ldef)
 !
 !  returns value of optional logical parameter opt if present,
 !  otherwise the default value ldef, if present, .false. if not
@@ -3337,7 +3337,7 @@ module General
 
     endfunction loptest
 !***********************************************************************
-    integer function ioptest(iopt,idef)
+    pure integer function ioptest(iopt,idef)
 !
 !  returns value of optional integer parameter iopt if present,
 !  otherwise the default value idef, if present, zero, if not.
@@ -3356,7 +3356,7 @@ module General
 
     endfunction ioptest
 !***********************************************************************
-    real function roptest(ropt,rdef)
+    pure real function roptest(ropt,rdef)
 !
 !  returns value of optional real parameter ropt if present,
 !  otherwise the default value rdef, if present, zero, if not.
@@ -3375,7 +3375,7 @@ module General
 
     endfunction roptest
 !***********************************************************************
-    real(KIND=rkind8) function doptest(dopt,ddef)
+    pure real(KIND=rkind8) function doptest(dopt,ddef)
 !
 !  returns value of optional real*8 parameter dopt if present,
 !  otherwise the default value ddef, if present, zero, if not.
@@ -3394,7 +3394,7 @@ module General
 
     endfunction doptest
 !***********************************************************************
-      function coptest(copt,cdef)
+    pure function coptest(copt,cdef)
 !
 !  returns value of optional character parameter copt if present,
 !  otherwise the default value cdef, if present, '', if not.
