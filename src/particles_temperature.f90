@@ -35,7 +35,7 @@ module Particles_temperature
   logical :: lpart_nuss_const=.false.
   logical :: lstefan_flow = .true.
   real :: init_part_temp, emissivity=0.0
-  real, dimension(7,7,7) :: weight_array
+  real, dimension(:,:,:), allocatable :: weight_array
   real :: Twall=0.0
   real :: cp_part=0.711e7 ! wolframalpha, erg/(g*K)
   character(len=labellen), dimension(ninit) :: init_particle_temperature='nothing'
@@ -88,7 +88,11 @@ module Particles_temperature
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
-      if (lparticlemesh_gab) call precalc_weights(weight_array)
+      if (lparticlemesh_gab) allocate (weight_array(7,7,7))
+      if (lparticlemesh_tsc) allocate (weight_array(3,3,3))
+      if (lparticlemesh_cic) allocate (weight_array(2,2,2))
+      if (.not. allocated(weight_array)) allocate(weight_array(1,1,1))
+      call precalc_weights(weight_array)
 !
     endsubroutine initialize_particles_TT
 !***********************************************************************
@@ -214,7 +218,7 @@ module Particles_temperature
 !
       if (npar_imn(imn) /= 0) then
 !
-        if (lparticlemesh_gab) volume_cell = 1/(dx_1(1)*dy_1(1)*dz_1(1))
+        volume_cell = (lxyz(1)*lxyz(2)*lxyz(3))/(nx*ny*nz)
 !
 !  The Ranz-Marshall correlation for the Sherwood number needs the particle Reynolds number
 !  Precalculate partrticle Reynolds numbers.
@@ -276,8 +280,8 @@ module Particles_temperature
 !
           if (lrad_part) then
             Qrad=Ap*(Twall**4-fp(k,iTp)**4)*sigmaSB
-            call fatal_error('particles_temperature',&
-                'Particle radiation is not yet fully implemented')
+!            call fatal_error('particles_temperature',&
+!                'Particle radiation is not yet fully implemented')
           else
             Qrad = 0.0
           endif
@@ -351,6 +355,13 @@ module Particles_temperature
                 df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) &
                     +Qc*p%cv1(inx0)*p%TT1(inx0)*weight_array/&
                     (exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*volume_cell)
+!                print*, 'df infos:', df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT)
+!                print*, 'Qc: ', Qc
+!                print*, 'cv: ', 1/p%cv1(inx0)
+!                print*, 'tt: ', 1/p%TT1(inx0) 
+!                print*, 'weight_array: ' ,weight_array
+!                print*, 'rho',exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))
+!                print*, 'volume_cell:',volume_cell
  !                    print*, 'dTgdt: ', Qc*p%cv1(inx0)*rho1_point*p%TT1(inx0)*weight/volume_cell
               endif
             endif

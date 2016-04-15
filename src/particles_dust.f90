@@ -563,12 +563,6 @@ module Particles
         if (lparticlemesh_cic .or. lparticlemesh_tsc) lfold_df=.true.
       endif
 !
-      if (lparticlemesh_gab) then
-        lfold_df_3points=.true.
-        if (lpscalar) call fatal_error('initialize_particles',&
-            'The gab scheme is currently not working with passive scalars!')
-      endif
-!
       if (lcollisional_cooling_twobody) then
         allocate(kneighbour(mpar_loc))
         lshepherd_neighbour=.true.
@@ -3772,7 +3766,7 @@ module Particles
 !
 !  Triangular Shaped Cloud (TSC) scheme.
 !
-                elseif (lparticlemesh_tsc) then
+                elseif (lparticlemesh_tsc .or. lparticlemesh_gab) then
                   if (.not. lparticlemesh_pqs_assignment) then
 !
 !  Particle influences the 27 surrounding grid points, but has a density that

@@ -242,6 +242,11 @@ module Particles_adsorbed
           select case (init_adsorbed(j))
           case ('nothing')
             if (lroot .and. j == 1) print*, 'init_particles_ads,adsorbed: nothing'
+          case ('zero')
+            if (lroot .and. j == 1) print*, 'init_particles_ads,adsorbed: zero'            
+            do i = 1,mpar_loc
+              fp(i,iads:iads_end) = 0.0
+            enddo
           case ('constant')
             if (lroot) print*, 'init_particles_ads: Initial Adsorbed Fractions'
             sum_ads = sum(init_surf_ads_frac(1:N_adsorbed_species))
@@ -255,7 +260,7 @@ module Particles_adsorbed
             endif
 !
             do i = 1,mpar_loc
-              fp(i,iads:iads_end) = init_surf_ads_frac(1:(iads_end-iads+1))
+              fp(i,iads:iads_end) = init_surf_ads_frac(1:N_adsorbed_species-1)
             enddo
           case default
             if (lroot) &
@@ -321,7 +326,7 @@ module Particles_adsorbed
       real, dimension(:,:), allocatable :: R_j_hat
       type (pencil_case) :: p
       integer, dimension(mpar_loc,3) :: ineargrid
-      integer :: n_ads, stat, k1, k2, k
+      integer :: n_ads, stat, k1, k2, i
 !
       intent(inout) :: dfp
       intent(in) :: fp
@@ -336,19 +341,41 @@ module Particles_adsorbed
 !
           if (N_adsorbed_species > 1) then
             allocate(mod_surf_area(k1:k2))
+            mod_surf_area=0.0
             allocate(R_c_hat(k1:k2))
+            R_c_hat=0.0
             allocate(R_j_hat(k1:k2,1:n_ads))
+            R_j_hat=0.0
             call calc_get_mod_surf_area(mod_surf_area,fp)
             call get_adsorbed_chemistry(R_j_hat,R_c_hat)
-            if (ierr /= 0) call fatal_error('dpads_dt_pencil', 'unable to get total_carbon')
+!            print*, '-----------------------------------------'
+!            write(*,'(A12,10E12.3)' )'R_j_hatbef', R_j_hat(k1:k2,1)
+!            write(*,'(A12,10E12.3)' )'R_j_hatbef', R_j_hat(k1:k2,2)
+!            write(*,'(A12,10E12.3)' )'R_j_hatbef', R_j_hat(k1:k2,3)
 !
-            do k = k1,k2
-              dfp(k,iads:iads_end) = dfp(k,iads:iads_end) + R_j_hat(k,1:n_ads)/ &
-                  total_carbon_sites + mod_surf_area(k)* &
-                  R_c_hat(k)*fp(k,iads:iads_end)
+            do i = iads, iads_end
+              dfp(k1:k2,i) = dfp(k1:k2,i) + R_j_hat(k1:k2,i-iads+1)/ &
+                  total_carbon_sites + mod_surf_area(k1:k2) * &
+                  R_c_hat(k1:k2) * fp(k1:k2,i)
+!            print*, 'dfp(k1:k2,iads:iads_end)', i,  dfp(k1:k2,i)
+!             print*, 'fp(k1:k2,iads:iads_end)', i,  fp(k1:k2,i)
+!            print*,  'R_j_hat(k1,i-iads+n_ads+1)', R_j_hat(k1,i-iads+n_ads+1)
+!            print*,   'mod_surf_area(k1)',  mod_surf_area(k1) 
+!            print*,  'R_c_hat(k1)',  R_c_hat(k1) 
+!              write(*,'(A9,10E12.3)' )'R_j_hat', R_j_hat(k1:k2,i-iads+1)
+!            write(*,'(A9,10E12.5)' )'mod', mod_surf_area(k1:k2)
+!              write(*,'(A9,10E12.3)' ) 'R_c_hat', R_c_hat(k1:k2)
+!              write(*,'(A9,10E12.3)' ) 'dfp(k1,i)', dfp(k1:k2,i)
+!            write(*,'(A8,10E12.5)')   'fp(k1,i)',  fp(k1:k2,i)
             enddo
 ! 
-           deallocate(mod_surf_area)
+!            print*, 'dfp(k1:k2,iads:iads_end)', dfp(k1:k2,iads:iads_end)
+!            print*, '-----------------------------'
+!            print*,  'R_c_hat(k1)',  R_c_hat(k1) 
+!            write(*,'(A9,10E12.3)' )'R_j_hat', R_j_hat(k1,:)
+!            print*, ' fp(k1:k2,iads:iads_end)', fp(k1,iads:iads_end)
+!            print*, 'dfp(k1:k2,iads:iads_end)', dfp(k1,iads:iads_end)
+            deallocate(mod_surf_area)
             deallocate(R_c_hat)
             deallocate(R_j_hat)
           endif
@@ -414,7 +441,7 @@ module Particles_adsorbed
 !
       lwr = .false.
       if (present(lwrite)) lwr = lwrite
-      if (lwr) write (3,*) 'iads=', iads
+!     if (lwr) write (3,*) 'iads=', iads
 !
       if (lreset) then
         idiag_ads = 0

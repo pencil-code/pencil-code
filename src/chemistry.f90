@@ -3515,7 +3515,9 @@ module Chemistry
         do spec = 1,nchemspec
           if (Sijp(spec,reac) > 0) then
             Sijp_string = ''
-            if (Sijp(spec,reac) /= 1) write (Sijp_string,'(F3.1)') Sijp(spec,reac)
+            if (Sijp(spec,reac) /= 1) then
+              write (Sijp_string,'(F3.1)') Sijp(spec,reac)
+            endif
 !            if (Sijp(spec,reac)>1) Sijp_string=itoa(Sijp(spec,reac))
             reac_string = trim(reac_string)//trim(separatorp)// &
                 trim(Sijp_string)//trim(varname(ichemspec(spec)))
@@ -3729,6 +3731,9 @@ module Chemistry
         open (file_id,file=input_file2,POSITION='rewind',FORM='FORMATTED')
         write (file_id,*) 'STOICHIOMETRIC MATRIX'
 !
+        write (file_id,*) 'Species names'
+        write (file_id,101) varname(ichemspec(:))
+!
         write (file_id,*) 'Sijm'
         do i = 1,nreactions
           write (file_id,100) i,Sijm(:,i)
@@ -3744,7 +3749,8 @@ module Chemistry
         close (file_id)
       endif
 !
-100   format(I1,16f4.1)
+100   format(I1,16f6.1)
+101   format('    ',16A6)
 !
       call keep_compiler_quiet(f)
 !
