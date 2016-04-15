@@ -2467,10 +2467,12 @@ module Hydro
 !  23-jun-02/axel: glnrho and fvisc are now calculated in here
 !  17-jun-03/ulf: ux2, uy2 and uz2 added as diagnostic quantities
 !  27-jun-07/dhruba: differential rotation as subroutine call
+!  12-apr-16/MR: changes for Yin-Yang: only yz slices at the moment!
 !
       use Diagnostics
       use Special, only: special_calc_hydro
       use Sub, only: vecout, dot, dot2, identify_bcs, cross, multsv_mn_add
+      use General, only: transform_thph_yy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2479,6 +2481,7 @@ module Hydro
       real, dimension (nx,3) :: curlru,uxo
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
       real, dimension (nx) :: odel2um,curlru2,uref,curlo2,qo,quxo,graddivu2
+      real, dimension (1,3) :: tmp
       real :: kx
       integer :: j, ju, k
 !
@@ -2665,13 +2668,22 @@ module Hydro
         if (n==iz3_loc) divu_xy3(:,m-m1+1)=p%divu
         if (n==iz4_loc) divu_xy4(:,m-m1+1)=p%divu
         do j=1,3
-          oo_yz(m-m1+1,n-n1+1,j)=p%oo(ix_loc-l1+1,j)
+          if (.not.lyang) &
+            oo_yz(m-m1+1,n-n1+1,j)=p%oo(ix_loc-l1+1,j)
           if (m==iy_loc)  oo_xz(:,n-n1+1,j)=p%oo(:,j)
           if (n==iz_loc)  oo_xy(:,m-m1+1,j)=p%oo(:,j)
           if (n==iz2_loc) oo_xy2(:,m-m1+1,j)=p%oo(:,j)
           if (n==iz3_loc) oo_xy3(:,m-m1+1,j)=p%oo(:,j)
           if (n==iz4_loc) oo_xy4(:,m-m1+1,j)=p%oo(:,j)
         enddo
+!
+!  On Yang grid: transform theta and phi components of oo to Yin-grid basis.
+!
+        if (lyang) then
+          call transform_thph_yy(p%oo(ix_loc-l1+1:ix_loc-l1+1,:),(/1,1,1/),tmp)
+          oo_yz(m-m1+1,n-n1+1,:)=tmp(1,:)
+        endif
+
         u2_yz(m-m1+1,n-n1+1)=p%u2(ix_loc-l1+1)
         if (m==iy_loc)  u2_xz(:,n-n1+1)=p%u2
         if (n==iz_loc)  u2_xy(:,m-m1+1)=p%u2
@@ -3173,8 +3185,12 @@ module Hydro
             call ysum_mn_name_xz(p%ou,idiag_oumxz)
 !
         if (idiag_uxmxy/=0) call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
-        if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu(:,2),idiag_uymxy)
-        if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu(:,3),idiag_uzmxy)
+!
+!  Changed call for compatibility with Yin-Yang grid:
+!  all non-scalars must be treated correpondingly (not yet done).
+!
+        if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu,idiag_uymxy,(/0,1,0/))
+        if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu,idiag_uzmxy,(/0,0,1/))
         if (idiag_uxuymxy/=0) &
             call zsum_mn_name_xy(p%uu(:,1)*p%uu(:,2),idiag_uxuymxy)
         if (idiag_uxuzmxy/=0) &
@@ -3202,8 +3218,11 @@ module Hydro
             call zsum_mn_name_xy(p%rho*p%uu(:,2)**2,idiag_ruy2mxy)
         if (idiag_ruz2mxy/=0) &
             call zsum_mn_name_xy(p%rho*p%uu(:,3)**2,idiag_ruz2mxy)
+!
+!  Changed call for compatibility with Yin-Yang grid:
+!
         if (idiag_ruxuymxy/=0) &
-            call zsum_mn_name_xy(p%rho*p%uu(:,1)*p%uu(:,2),idiag_ruxuymxy)
+            call zsum_mn_name_xy(p%uu,idiag_ruxuymxy,(/1,1,0/),p%rho)
         if (idiag_ruxuzmxy/=0) &
             call zsum_mn_name_xy(p%rho*p%uu(:,1)*p%uu(:,3),idiag_ruxuzmxy)
         if (idiag_ruyuzmxy/=0) &
@@ -4820,9 +4839,14 @@ module Hydro
 !  Write slices for animation of Hydro variables.
 !
 !  26-jul-06/tony: coded
+!  12-apr-16/MR: modifications for Yin-Yang grid
 !
+      use General, only: transform_thph_yy_other
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
+
+      real, dimension(:,:,:,:), allocatable, save :: transformed
 !
 !  Loop over slices
 !
@@ -4835,8 +4859,23 @@ module Hydro
             slices%ready=.false.
           else
             slices%index=slices%index+1
-            slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,iux-1+slices%index)
-            slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,iux-1+slices%index)
+            if (lyang.and.slices%index>=2) then
+!
+!  On Yang grid: transform theta and phi components of uu to Yin-grid basis.
+!  (phi component is saved in transformed for use in next call.
+!
+              if (slices%index==2) then
+                if (.not.allocated(transformed)) allocate(transformed(1,ny,nz,2))
+                call transform_thph_yy_other(f(ix_loc:ix_loc,m1:m2,n1:n2,iuy:iuz), transformed)
+              endif
+!
+!  theta component is used immediately.
+!
+              slices%yz=transformed(1,:,:,slices%index-1)
+            else
+              slices%yz=f(ix_loc,m1:m2,n1:n2,iux-1+slices%index)
+            endif
+            slices%xz =f(l1:l2 ,iy_loc,n1:n2,iux-1+slices%index)
             slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,iux-1+slices%index)
             slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,iux-1+slices%index)
             if (lwrite_slice_xy3) &

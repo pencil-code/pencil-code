@@ -299,7 +299,6 @@ module Mpicomm
 !
   integer :: mpi_precision
   integer, parameter :: MPI_COMM_WORLD=0
-  character(LEN=4) :: cyinyang=' '
 !
   contains
 !***********************************************************************
@@ -609,13 +608,14 @@ module Mpicomm
 !
     endsubroutine mpirecv_real_arr2
 !***********************************************************************
-    subroutine mpirecv_real_arr3(bcast_array,nb,proc_src,tag_id)
+    subroutine mpirecv_real_arr3(bcast_array,nb,proc_src,tag_id,comm,noblock)
 !
       integer, dimension(3) :: nb
       real, dimension(nb(1),nb(2),nb(3)) :: bcast_array
       integer :: proc_src, tag_id
+      integer, optional :: comm,noblock
 !
-      if (ALWAYS_FALSE) print*, bcast_array, nb, proc_src, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array, nb, proc_src, tag_id,comm,noblock
 !
     endsubroutine mpirecv_real_arr3
 !***********************************************************************
@@ -638,11 +638,12 @@ module Mpicomm
 !
     endsubroutine mpirecv_int_scl
 !***********************************************************************
-    subroutine mpirecv_int_arr(bcast_array,nbcast_array,proc_src,tag_id)
+    subroutine mpirecv_int_arr(bcast_array,nbcast_array,proc_src,tag_id,comm,nonblock)
 !
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: bcast_array
       integer :: proc_src, tag_id
+      integer, optional :: comm, nonblock
 !
       if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_src, tag_id
 !
@@ -696,13 +697,14 @@ module Mpicomm
 !
     endsubroutine mpisend_real_arr2
 !***********************************************************************
-    subroutine mpisend_real_arr3(bcast_array,nb,proc_rec,tag_id)
-!
+    subroutine mpisend_real_arr3(bcast_array,nb,proc_rec,tag_id,comm,nonblock)
+
       integer, dimension(3) :: nb
       real, dimension(nb(1),nb(2),nb(3)) :: bcast_array
       integer :: proc_rec, tag_id
+      integer, optional :: comm, nonblock
 !
-      if (ALWAYS_FALSE) print*, bcast_array, nb, proc_rec, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array,nb,proc_rec,tag_id,comm,nonblock
 !
     endsubroutine mpisend_real_arr3
 !***********************************************************************
@@ -863,13 +865,14 @@ module Mpicomm
 !
     endsubroutine mpisend_int_scl
 !***********************************************************************
-    subroutine mpisend_int_arr(bcast_array,nbcast_array,proc_rec,tag_id)
+    subroutine mpisend_int_arr(bcast_array,nbcast_array,proc_rec,tag_id,comm)
 !
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: bcast_array
       integer :: proc_rec, tag_id
+      integer, optional :: comm
 !
-      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_rec, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_rec, tag_id, comm
 !
     endsubroutine mpisend_int_arr
 !***********************************************************************
@@ -2776,4 +2779,19 @@ module Mpicomm
 !
     endfunction report_clean_output
 !***********************************************************************
+    function prep_bilin_interp(thphprime,indcoeffs,range) result (nok)
+!
+!  Returns number of points in thphprime which lie inside the processor region
+!  of iproc.
+!
+      real, dimension(:,:,:) :: thphprime
+      type(ind_coeffs) :: indcoeffs
+      integer, dimension(2) :: range
+      integer :: nok
+
+      if (ALWAYS_FALSE) print*,thphprime
+      nok=0
+
+    endfunction prep_bilin_interp
+!**************************************************************************
 endmodule Mpicomm

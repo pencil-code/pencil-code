@@ -340,10 +340,15 @@ module Mpicomm
 !
   real, dimension (nghost,ny,nz,mcom) :: lbufxi,ubufxi,lbufxo,ubufxo
   real, dimension (nx,nghost,nz,mcom) :: npbufyi,npbufyo,spbufyi,spbufyo
-  real, dimension (mx,nghost,nz,mcom) :: lbufyi,ubufyi,lbufyo,ubufyo
-  real, dimension (mx,ny,nghost,mcom) :: lbufzi,ubufzi,lbufzo,ubufzo
-  real, dimension (mx,nghost,nghost,mcom) :: llbufi,lubufi,uubufi,ulbufi
-  real, dimension (mx,nghost,nghost,mcom) :: llbufo,lubufo,uubufo,ulbufo
+  real, dimension (:,:,:,:), allocatable :: lbufyi,ubufyi,lbufyo,ubufyo
+  real, dimension (:,:,:,:), allocatable :: lbufzi,ubufzi,lbufzo,ubufzo
+  real, dimension (:,:,:,:), allocatable :: llbufi,lubufi,uubufi,ulbufi
+  real, dimension (:,:,:,:), allocatable :: llbufo,lubufo,uubufo,ulbufo
+  integer, dimension(4,2) :: bufsizes_yz
+  integer, dimension(2,4,2) :: bufsizes_yz_corn
+  integer, parameter :: INYU=1, INZU=2, INYL=3, INZL=4
+  integer, parameter :: INUU=1, INLU=2, INLL=3, INUL=4
+  integer, parameter :: IRCV=1, ISND=2
   real, dimension (mx,nghost,nghost,mcom) :: nbbufi,nfbufi,sfbufi,sbbufi
   real, dimension (mx,nghost,nghost,mcom) :: nbbufo,nfbufo,sfbufo,sbbufo
 !
@@ -362,13 +367,13 @@ module Mpicomm
 !
 !  mpi tags
 !
-  integer :: tolowx=13,touppx=14,tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
-  integer :: tolowyr,touppyr,tolowys,touppys ! msg. tags placeholders
-  integer :: TOll=7,TOul=8,TOuu=9,TOlu=10 ! msg. tags for corners
-  integer :: TOllr,TOulr,TOuur,TOlur,TOlls,TOuls,TOuus,TOlus ! placeholder tags
-  integer :: io_perm=20,io_succ=21
-  integer :: shiftn=22,shifts=23
-  integer :: TOnf=24,TOnb=25,TOsf=26,TOsb=27 ! msg. tags for pole corners
+  integer, parameter :: tolowx=13,touppx=14,tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
+  integer, parameter :: TOll=7,TOul=8,TOuu=9,TOlu=10 ! msg. tags for corners
+  !integer :: tolowx=13,touppx=14,tolowy=MPI_ANY_TAG,touppy=MPI_ANY_TAG,tolowz=MPI_ANY_TAG,touppz=MPI_ANY_TAG ! msg. tags
+  !integer :: TOll=MPI_ANY_TAG,TOul=MPI_ANY_TAG,TOuu=MPI_ANY_TAG,TOlu=MPI_ANY_TAG ! msg. tags for corners
+  integer, parameter :: io_perm=20,io_succ=21
+  integer, parameter :: shiftn=22,shifts=23
+  integer, parameter :: TOnf=24,TOnb=25,TOsf=26,TOsb=27 ! msg. tags for pole corners
 !
 !  mpi tags for radiation
 !  the values for those have to differ by a number greater than maxdir=190
@@ -380,6 +385,7 @@ module Mpicomm
 !
   integer :: MPI_COMM_XBEAM,MPI_COMM_YBEAM,MPI_COMM_ZBEAM
   integer :: MPI_COMM_XYPLANE,MPI_COMM_XZPLANE,MPI_COMM_YZPLANE
+  integer :: MPI_COMM_GRID
 !
   integer :: isend_rq_tolowx,isend_rq_touppx,irecv_rq_fromlowx,irecv_rq_fromuppx
   integer :: irecv_rq_banshift,isend_rq_fonshift
@@ -414,7 +420,16 @@ module Mpicomm
   integer, dimension (MPI_STATUS_SIZE) :: isend_stat_spole,irecv_stat_spole, &
                                           isend_stat_npole,irecv_stat_npole
 !
-  character(LEN=4) :: cyinyang=' '
+  logical :: lcorner_yz=.false.
+!
+!  Data for Yin-Yang communication.
+!
+  type (ind_coeffs), dimension(:), allocatable :: intcoeffs
+
+  integer, parameter :: LEFT=1, MID=2, RIGHT=3, MIDY=MID, BILIN=1, NIL=0
+  integer :: MIDZ=MID, MIDC=MID
+  integer :: len_cornbuf
+  integer, dimension(3) :: yy_buflens
 !
   contains
 !
@@ -432,7 +447,7 @@ module Mpicomm
       call MPI_INIT(mpierr)
       call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, mpierr)
       call MPI_COMM_RANK(MPI_COMM_WORLD, iproc, mpierr)
-      lroot = (iproc==root)
+      lroot = (iproc==root)                              ! refers to root of MPI_COMM_WORLD!
 !
       if (sizeof_real() < 8) then
         mpi_precision = MPI_REAL
@@ -446,7 +461,8 @@ module Mpicomm
       else
         mpi_precision = MPI_DOUBLE_PRECISION
       endif
-!
+
+      MPI_COMM_GRID=MPI_COMM_WORLD
       iproc_world=iproc
 !
 !  Check consistency in processor layout.
@@ -464,14 +480,16 @@ module Mpicomm
       if ((nprocx>1.and.nxgrid==1).or. &
           (nprocy>1.and.nygrid==1).or. &
           (nprocz>1.and.nzgrid==1)) then
-        print*, 'Parallelization in a dimension with ngrid==1 does not work.'
+        if (lroot) &
+          print*, 'Parallelization in a dimension with ngrid==1 does not work.'
         call stop_it('mpicomm_init')
       endif
       if (mod(nxgrid,nprocx)/=0.or. &
           mod(nygrid,nprocy)/=0.or. &
           mod(nzgrid,nprocz)/=0) then
-        print*, 'In each dimension the number of grid points has to be '// &
-                'divisible by the number of processors.'
+        if (lroot) &
+          print*, 'In each dimension the number of grid points has to be '// &
+                  'divisible by the number of processors.'
         call stop_it('mpicomm_init')
       endif
 !
@@ -486,7 +504,7 @@ module Mpicomm
 !
     endsubroutine mpicomm_init
 !***********************************************************************
-    subroutine initialize_mpicomm()
+    subroutine initialize_mpicomm
 !
 !  Initialise MPI communication and set up some variables.
 !  The arrays leftneigh and rghtneigh give the processor numbers
@@ -499,6 +517,7 @@ module Mpicomm
 !   6-jun-02/axel: generalized to allow for ny=1
 !  23-nov-02/axel: corrected problem with ny=4 or less
 !  21-oct-15/fred: adapted periodic y-boundary across the pole
+!  20-dec-16/MR: extensions for Yin-Yang grid.
 !
       integer :: i, j, k
 !
@@ -508,15 +527,43 @@ module Mpicomm
 !
 !  Check total number of processors.
 !
-      if (nprocs/=nprocx*nprocy*nprocz) then
+      if ( .not.lyinyang.and.nprocs/=ncpus .or. lyinyang.and.nprocs/=2*ncpus) then
         if (lroot) then
-          print*, 'Compiled with ncpus = ', ncpus, &
-                  ', but running on ', nprocs, ' processors'
+          if (lyinyang) then
+            print*, 'Compiled with 2*ncpus = ', 2*ncpus, &
+                ', but running on ', nprocs, ' processors'
+          else
+            print*, 'Compiled with ncpus = ', ncpus, &
+                ', but running on ', nprocs, ' processors'
+          endif
         endif
         call stop_it('initialize_mpicomm')
       endif
 !
-!  Position on the processor grid.
+      if (lyinyang) then
+
+        if (nprocy>5) then
+          print*, 'Processor layout with nprocz>15, nprocy>5 not implemented for Yin-Yang grid.'
+          call stop_it('initialize_mpicomm')
+        endif
+        if (nprocz/=3*nprocy) then
+          print*, 'Processor layout with nprocz/=3*nprocy not implemented for Yin-Yang grid.'
+          call stop_it('initialize_mpicomm')
+        endif
+
+        lyang=iproc>=ncpus        ! if this proc is in first half of all it is in YIN grid otherwise in YANG grid
+
+        call MPI_COMM_SPLIT(MPI_COMM_WORLD, int(iproc/ncpus), mod(iproc,ncpus), MPI_COMM_GRID, mpierr)   ! MPI_COMM_GRID refers to Yin or Yang grid
+        
+        if (lyang) then
+          iproc=iproc-ncpus
+          cyinyang='Yang'
+        else
+          cyinyang='Yin'
+        endif
+      endif
+!
+!  Position on the processor grid (WITHIN Yin or Yang grid!).
 !  x is fastest direction, z slowest (this is the default)
 !
       if (lprocz_slowest) then
@@ -549,7 +596,11 @@ module Mpicomm
       llast_proc_xz = llast_proc_x .and. llast_proc_z
       llast_proc_xyz = llast_proc_x .and. llast_proc_y .and. llast_proc_z
 !
-!  Set up `lower' and `upper' neighbours.
+!  Am I a yz corner?
+!
+      lcorner_yz=(lfirst_proc_y.or.llast_proc_y).and.(lfirst_proc_z.or.llast_proc_z)
+!
+!  Set up `lower' and `upper' neighbours, refer to MPI_COMM_GRID.
 !
       xlneigh = modulo(ipx-1,nprocx) + ipy*nprocx + ipz*nprocxy
       xuneigh = modulo(ipx+1,nprocx) + ipy*nprocx + ipz*nprocxy
@@ -565,14 +616,42 @@ module Mpicomm
       uucorn = ipx + modulo(ipy+1,nprocy)*nprocx + modulo(ipz+1,nprocz)*nprocxy
       lucorn = ipx + modulo(ipy-1,nprocy)*nprocx + modulo(ipz+1,nprocz)*nprocxy
 !
-!  Set stanard processor ids
+!  Overwrite with settings for boundary processors in Yin-Yang grid.
+!
+      if (lyinyang) call set_yy_neighbors
+!
+!  Settings for Yin-Yang grid are done later in yyinit.
+!
+      bufsizes_yz(:,IRCV)=(/nz,ny,nz,ny/) 
+      bufsizes_yz(:,ISND)=(/nz,ny,nz,ny/) 
+
+      bufsizes_yz_corn=nghost
+
+      if (.not.lyinyang) then
+!
+!  Allocations for Yin-Yang grid are done later in yyinit.
+!
+        allocate( lbufyi(mx,nghost,bufsizes_yz(INYL,IRCV),mcom),ubufyi(mx,nghost,bufsizes_yz(INYU,IRCV),mcom), &
+                  lbufyo(mx,nghost,bufsizes_yz(INYL,ISND),mcom),ubufyo(mx,nghost,bufsizes_yz(INYU,ISND),mcom), &
+                  lbufzi(mx,bufsizes_yz(INZL,IRCV),nghost,mcom),ubufzi(mx,bufsizes_yz(INZU,IRCV),nghost,mcom), &
+                  lbufzo(mx,bufsizes_yz(INZL,ISND),nghost,mcom),ubufzo(mx,bufsizes_yz(INZU,ISND),nghost,mcom)   )
+  
+        allocate( llbufi(mx,bufsizes_yz_corn(1,INLL,IRCV),bufsizes_yz_corn(2,INLL,IRCV),mcom), &
+                  llbufo(mx,bufsizes_yz_corn(1,INLL,ISND),bufsizes_yz_corn(2,INLL,ISND),mcom), &
+                  lubufi(mx,bufsizes_yz_corn(1,INLU,IRCV),bufsizes_yz_corn(2,INLU,IRCV),mcom), &
+                  lubufo(mx,bufsizes_yz_corn(1,INLU,ISND),bufsizes_yz_corn(2,INLU,ISND),mcom), &
+                  ulbufi(mx,bufsizes_yz_corn(1,INUL,IRCV),bufsizes_yz_corn(2,INUL,IRCV),mcom), &
+                  ulbufo(mx,bufsizes_yz_corn(1,INUL,ISND),bufsizes_yz_corn(2,INUL,ISND),mcom), &
+                  uubufi(mx,bufsizes_yz_corn(1,INUU,IRCV),bufsizes_yz_corn(2,INUU,IRCV),mcom), &
+                  uubufo(mx,bufsizes_yz_corn(1,INUU,ISND),bufsizes_yz_corn(2,INUU,ISND),mcom)   )
+      endif
+!
+!  Set standard processor ids
 !
       llcornr = llcorn; llcorns = llcorn
       ulcornr = ulcorn; ulcorns = ulcorn
       uucornr = uucorn; uucorns = uucorn
       lucornr = lucorn; lucorns = lucorn
-
-!  This value is not yet the one read in, but the one initialized in cparam.f90.
 !
 !  Print neighbors in counterclockwise order (including the corners),
 !  starting with left neighbor.
@@ -592,38 +671,40 @@ module Mpicomm
 !
       if (ip<=7) write(6,'(A,I4,"(",3I4,"): ",8I4)') &
         'initialize_mpicomm: MPICOMM neighbors ', &
-        iproc,ipx,ipy,ipz, &
+        iproc_world,ipx,ipy,ipz, &
         ylneigh,llcorn,zlneigh,ulcorn,yuneigh,uucorn,zuneigh,lucorn
 !
 !  Define MPI communicators that include all processes sharing the same value
-!  of ipx, ipy, or ipz. The rank within MPI_COMM_WORLD is given by a
+!  of ipx, ipy, or ipz. Refer to MPI_COMM_GRID! 
+!  The rank within MPI_COMM_GRID is given by a
 !  combination of the two other directional processor indices.
 !
-      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipy+nprocy*ipz, ipx, &
-          MPI_COMM_XBEAM, mpierr)
-      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipx+nprocx*ipz, ipy, &
-          MPI_COMM_YBEAM, mpierr)
-      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipx+nprocx*ipy, ipz, &
-          MPI_COMM_ZBEAM, mpierr)
-      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipz, ipx+nprocx*ipy, &
-          MPI_COMM_XYPLANE, mpierr)
-      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipy, ipx+nprocx*ipz, &
-          MPI_COMM_XZPLANE, mpierr)
-      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipx, ipy+nprocy*ipz, &
-          MPI_COMM_YZPLANE, mpierr)
+      call MPI_COMM_SPLIT(MPI_COMM_GRID, ipy+nprocy*ipz, ipx, &
+                          MPI_COMM_XBEAM, mpierr)
+      call MPI_COMM_SPLIT(MPI_COMM_GRID, ipx+nprocx*ipz, ipy, &
+                          MPI_COMM_YBEAM, mpierr)
+      call MPI_COMM_SPLIT(MPI_COMM_GRID, ipx+nprocx*ipy, ipz, &
+                          MPI_COMM_ZBEAM, mpierr)
+      call MPI_COMM_SPLIT(MPI_COMM_GRID, ipz, ipx+nprocx*ipy, &
+                          MPI_COMM_XYPLANE, mpierr)
+      call MPI_COMM_SPLIT(MPI_COMM_GRID, ipy, ipx+nprocx*ipz, &
+                          MPI_COMM_XZPLANE, mpierr)
+      call MPI_COMM_SPLIT(MPI_COMM_GRID, ipx, ipy+nprocy*ipz, &
+                          MPI_COMM_YZPLANE, mpierr)
 !
     endsubroutine initialize_mpicomm
 !***********************************************************************
-    subroutine update_neighbors()
+    subroutine update_neighbors
 !
 ! Update neighbor processes for communication.
 !
 ! 27-feb-16/ccyang: adapted from particles_mpicomm and
 !                   particles_mpicomm_blocks
+!  3-mar-16/MR: simplified sorting code
 !
       use General, only: find_proc, quick_sort
 !
-      integer, dimension(:), allocatable :: list, order
+      integer, dimension(:), allocatable :: order
       logical :: left, right
       integer :: dipx, dipy, dipz
       integer :: ipx_rec, ipy_rec, ipz_rec
@@ -667,11 +748,9 @@ module Mpicomm
 !  Sort the process list.
 !
       neighb: if (nproc_comm > 0) then
-        allocate (list(nproc_comm), order(nproc_comm))
-        list = iproc_comm(1:nproc_comm)
-        call quick_sort(list, order)
-        iproc_comm(1:nproc_comm) = list
-        deallocate (list, order)
+        allocate (order(nproc_comm))
+        call quick_sort(iproc_comm(:nproc_comm), order)
+        deallocate (order)
       endif neighb
 !
     endsubroutine update_neighbors
@@ -685,25 +764,17 @@ module Mpicomm
 !  iproc_in itself is returned if mask = .false..
 !
 !  29-feb-16/ccyang: coded.
+!   3-mar-16/MR: use loptest
 !
-      use General, only: binary_search
+      use General, only: binary_search, loptest
 !
       integer, intent(in) :: iproc_in
       logical, intent(in), optional :: mask
 !
-      logical :: lactive
       integer :: lower, upper, mid
       integer :: iproc_target
 !
-!  Check the mask.
-!
-      if (present(mask)) then
-        lactive = mask
-      else
-        lactive = .true.
-      endif
-!
-      active: if (lactive) then
+      active: if (loptest(mask,.true.)) then
         nonlocal: if (iproc_in /= iproc) then
 !
 !  Binary search iproc_comm.
@@ -729,24 +800,531 @@ module Mpicomm
     endfunction index_to_iproc_comm
 !***********************************************************************
     subroutine yyinit
+!
+!  For Yin-Yang grid runs: allocate all communication buffers both for
+!  initialization of interpolation (gridbuf_*) and real data exchange.
+!  Requires set_yy_neighbors to be run first.
+!
+!  20-dec-15/MR: coded
+!
+      real, dimension(:,:,:), allocatable :: gridbuf_midy, gridbuf_midz, &! contains grid request of direct neighbour(s)
+                                             gridbuf_left, &              !             ~         of left corner neighbour
+                                             gridbuf_right                !             ~         of right corner neighbour
+      if (lcorner_yz) then
+!
+!  Procs at yz corners have four outer neighbors: two direct ones for both corner edges
+!  and two corner neighbors in the directions away from the yz corner.
+!  (A fifth neighbor at the yz corner could be needed, too, for ncpus>75.)         
+!
+        if (nprocy>=6) then
+          allocate(intcoeffs(5))
+        else
+          allocate(intcoeffs(4))
+        endif
+        MIDZ=4
+      else
+!
+!  Otherwise only three neighbors.
+!
+        allocate(intcoeffs(3))
+        MIDZ=2
+      endif
+!
+!  Set the grid transmission buffer sizes and allocate buffers.
+!
+      if (lfirst_proc_z.or.llast_proc_z) then
+        if (lfirst_proc_z) then
+          bufsizes_yz(INZL,ISND)=yy_buflens(MID)
+          bufsizes_yz_corn(:,INLL,ISND)=(/yy_buflens(RIGHT),nghost/)
+          bufsizes_yz_corn(:,INUL,ISND)=(/yy_buflens(LEFT),nghost/)
+        endif
+        if (llast_proc_z ) then
+          bufsizes_yz(INZU,ISND)=yy_buflens(MID)
+          bufsizes_yz_corn(:,INLU,ISND)=(/yy_buflens(LEFT),nghost/)
+          bufsizes_yz_corn(:,INUU,ISND)=(/yy_buflens(RIGHT),nghost/)
+        endif
+
+        if (.not.((llast_proc_y.and.lfirst_proc_z).or.(llast_proc_z.and.lfirst_proc_y))) &
+          allocate(gridbuf_left(2,yy_buflens(LEFT),nghost))
+
+        if (.not.((lfirst_proc_y.and.lfirst_proc_z).or.(llast_proc_z.and.llast_proc_y))) &
+          allocate(gridbuf_right(2,yy_buflens(RIGHT),nghost))
+
+        allocate(gridbuf_midy(2,yy_buflens(MID),nghost))
+
+      endif
+
+      if (lfirst_proc_y.or.llast_proc_y) then
+        if (lfirst_proc_y) then
+          bufsizes_yz(INYL,ISND)=yy_buflens(MID)
+          bufsizes_yz_corn(:,INLL,ISND)=(/nghost,yy_buflens(LEFT)/)
+          bufsizes_yz_corn(:,INLU,ISND)=(/nghost,yy_buflens(RIGHT)/)
+        endif
+        if (llast_proc_y ) then
+          bufsizes_yz(INYU,ISND)=yy_buflens(MID)
+          bufsizes_yz_corn(:,INUU,ISND)=(/nghost,yy_buflens(LEFT)/)
+          bufsizes_yz_corn(:,INUL,ISND)=(/nghost,yy_buflens(RIGHT)/)
+        endif
+
+        if (.not.((lfirst_proc_y.and.lfirst_proc_z).or.(llast_proc_z.and.llast_proc_y))) &
+          allocate(gridbuf_left(2,nghost,yy_buflens(LEFT)))
+
+        if (.not.((llast_proc_y.and.lfirst_proc_z).or.(llast_proc_z.and.lfirst_proc_y))) &
+          allocate(gridbuf_right(2,nghost,yy_buflens(RIGHT)))
+
+        allocate(gridbuf_midz(2,nghost,yy_buflens(MID)))
+
+      endif
+!
+!  Create interpolation data.
+!
+      call setup_interp_yy(gridbuf_left, gridbuf_midy, gridbuf_midz, gridbuf_right)
+!
+!  Allocate data communication buffers.
+!
+      allocate( lbufyi(mx,nghost,bufsizes_yz(INYL,IRCV),mcom),ubufyi(mx,nghost,bufsizes_yz(INYU,IRCV),mcom), &
+                lbufzi(mx,bufsizes_yz(INZL,IRCV),nghost,mcom),ubufzi(mx,bufsizes_yz(INZU,IRCV),nghost,mcom))
+
+      if (lfirst_proc_z) then
+        allocate(lbufzo(mx,nghost,bufsizes_yz(INZL,ISND),mcom))
+      else
+        allocate(lbufzo(mx,bufsizes_yz(INZL,ISND),nghost,mcom))
+      endif
+
+      if (llast_proc_z) then
+        allocate(ubufzo(mx,nghost,bufsizes_yz(INZU,ISND),mcom))
+      else
+        allocate(ubufzo(mx,bufsizes_yz(INZU,ISND),nghost,mcom))
+      endif
+
+      if (lfirst_proc_y.and.ipz>=nprocz/3.and.ipz<2*nprocz/3.) then
+        allocate(lbufyo(mx,bufsizes_yz(INYL,ISND),nghost,mcom))
+      else
+        allocate(lbufyo(mx,nghost,bufsizes_yz(INYL,ISND),mcom))
+      endif
+
+      if (llast_proc_y.and.ipz>=nprocz/3.and.ipz<2*nprocz/3.) then
+        allocate(ubufyo(mx,bufsizes_yz(INYU,ISND),nghost,mcom))
+      else
+        allocate(ubufyo(mx,nghost,bufsizes_yz(INYU,ISND),mcom))
+      endif
+
+      allocate( llbufi(mx,bufsizes_yz_corn(1,INLL,IRCV),bufsizes_yz_corn(2,INLL,IRCV),mcom), &
+                lubufi(mx,bufsizes_yz_corn(1,INLU,IRCV),bufsizes_yz_corn(2,INLU,IRCV),mcom), &
+                ulbufi(mx,bufsizes_yz_corn(1,INUL,IRCV),bufsizes_yz_corn(2,INUL,IRCV),mcom), &
+                uubufi(mx,bufsizes_yz_corn(1,INUU,IRCV),bufsizes_yz_corn(2,INUU,IRCV),mcom))
+
+      if (lfirst_proc_z.or.lfirst_proc_y.and.ipz>=nprocz/3.and.ipz<2*nprocz/3.) then
+        allocate(llbufo(mx,bufsizes_yz_corn(2,INLL,ISND),bufsizes_yz_corn(1,INLL,ISND),mcom))
+      else
+        allocate(llbufo(mx,bufsizes_yz_corn(1,INLL,ISND),bufsizes_yz_corn(2,INLL,ISND),mcom))
+      endif
+
+      if (lfirst_proc_z.or.llast_proc_y.and.ipz>=nprocz/3.and.ipz<2*nprocz/3.) then
+        allocate(ulbufo(mx,bufsizes_yz_corn(2,INUL,ISND),bufsizes_yz_corn(1,INUL,ISND),mcom) )
+      else
+        allocate(ulbufo(mx,bufsizes_yz_corn(1,INUL,ISND),bufsizes_yz_corn(2,INUL,ISND),mcom) )
+      endif
+
+      if (llast_proc_z.or.llast_proc_y.and.ipz>=nprocz/3.and.ipz<2*nprocz/3.) then
+        allocate(uubufo(mx,bufsizes_yz_corn(2,INUU,ISND),bufsizes_yz_corn(1,INUU,ISND),mcom))
+      else
+        allocate(uubufo(mx,bufsizes_yz_corn(1,INUU,ISND),bufsizes_yz_corn(2,INUU,ISND),mcom))
+      endif
+
+      if (llast_proc_z.or.lfirst_proc_y.and.ipz>=nprocz/3.and.ipz<2*nprocz/3.) then
+        allocate(lubufo(mx,bufsizes_yz_corn(2,INLU,ISND),bufsizes_yz_corn(1,INLU,ISND),mcom) )
+      else
+        allocate(lubufo(mx,bufsizes_yz_corn(1,INLU,ISND),bufsizes_yz_corn(2,INLU,ISND),mcom) )
+      endif
+
+      call mpibarrier
 
     endsubroutine yyinit
+!***********************************************************************
+    subroutine setup_interp_yy(gridbuf_left, gridbuf_midy, gridbuf_midz, gridbuf_right)
+!
+!  Initializes interpolation of data to be communicated between the grids:
+!  Each proc at a grid boundary tells its neighbors at which points it needs
+!  data from them. The neighbors determine the corresponding interpolation data
+!  and store them in intcoeffs.
+!
+!  20-dec-15/MR: coded
+!
+      use General, only: yy_transform_strip, transpose_mn, itoa
+
+      real, dimension(:,:,:) :: gridbuf_midy, gridbuf_midz, gridbuf_left, gridbuf_right
+      real, dimension(:,:,:), allocatable :: thphprime_strip_y, thphprime_strip_z, tmp
+
+      integer :: len, len_neigh, lenbuf, i, jj
+      integer :: nok, noks, noks_all, nstrip_total
+
+      noks=0
+!
+      if (lfirst_proc_z.or.llast_proc_z) then                ! executing proc is at z boundary
+!
+!  z-boundary procs: communicate only to y-boundary ones -> z strip (nghost x ...) expected.
+!
+        if (lcorner_yz) then
+          lenbuf=len_cornbuf
+        else
+          lenbuf=my
+        endif
+
+        allocate(thphprime_strip_z(2,nghost,lenbuf))         ! buffer for full y or corner strip
+        len_neigh=2*nghost*lenbuf                            ! buffer length for direct neighbors
+        len=2*nghost*my                                      ! buffer length for corner neighbors
+
+        if (lfirst_proc_z) then                              ! lower z boundary
+
+          bufsizes_yz(INZL,IRCV) = lenbuf
+          bufsizes_yz_corn(:,INLL,IRCV) = (/my,nghost/)
+          bufsizes_yz_corn(:,INUL,IRCV) = (/my,nghost/)
+
+          call yy_transform_strip(1,my,1,n1-1,thphprime_strip_z(:,:,:my))          ! transformed coordinates into y strip 
+!
+!  At yz corner: create a "cornerstrip"
+!
+          if (lfirst_proc_y) then
+            call yy_transform_strip(1,m1-1,n1,mz,thphprime_strip_z(:,:,my+1:))     ! ll corner strip completed by adding truncated z strip
+          elseif (llast_proc_y) then
+            call yy_transform_strip(m2+1,my,n1,mz,thphprime_strip_z(:,:,my+1:))    ! ul corner strip completed by ~
+          endif
+!  print*, 'proc ',iproc_world,', sends thphprime_strip to ', zlneigh, size(thphprime_strip_z,1), &
+!          size(thphprime_strip_z,2), size(thphprime_strip_z,3)
+
+          call MPI_ISEND(thphprime_strip_z,len_neigh,MPI_REAL, &                   ! send strip to direct neighbor
+                         zlneigh,iproc_world,MPI_COMM_WORLD,isend_rq_tolowz,mpierr)
+                                !tolowz
+          call MPI_IRECV(gridbuf_midy,2*nghost*yy_buflens(MID),MPI_REAL, &         ! receive strip from ~
+                         zlneigh,zlneigh,MPI_COMM_WORLD,irecv_rq_fromlowz,mpierr)
+                                !MPI_ANY_TAG
+          if (llcorn>=0) then
+!print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(RIGHT), 'from ', llcorn
+            call MPI_ISEND(thphprime_strip_z(:,:,:my),len,MPI_REAL, &              ! send strip (without corner part) to right corner neighbor
+                           llcorn,TOll,MPI_COMM_WORLD,isend_rq_TOll,mpierr)
+            call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),MPI_REAL, &    ! receive strip from ~
+                           llcorn,MPI_ANY_TAG,MPI_COMM_WORLD,irecv_rq_FRll,mpierr)
+          endif
+
+          if (ulcorn>=0) then
+!print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(LEFT), 'from ', ulcorn
+            call MPI_ISEND(thphprime_strip_z(:,:,:my),len,MPI_REAL, &              ! send strip (without corner part) to left corner neighbor
+                           ulcorn,TOul,MPI_COMM_WORLD,isend_rq_TOul,mpierr)
+            call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_REAL, &      ! receive strip from ~ 
+                           ulcorn,MPI_ANY_TAG,MPI_COMM_WORLD,irecv_rq_FRul,mpierr)
+          endif
+        endif
+
+        if (llast_proc_z) then                                                     ! upper z boundary
+
+          bufsizes_yz(INZU,IRCV) = lenbuf
+          bufsizes_yz_corn(:,INLU,IRCV) = (/my,nghost/)
+          bufsizes_yz_corn(:,INUU,IRCV) = (/my,nghost/)
+
+          call yy_transform_strip(1,my,n2+1,mz,thphprime_strip_z(:,:,:my))         ! transformed coordinates into y strip
+!
+!  At yz corner: create a "cornerstrip"
+!
+          if (lfirst_proc_y) then
+            call yy_transform_strip(1,m1-1,1,n2,thphprime_strip_z(:,:,my+1:))      ! lu corner strip completed by adding truncated z strip
+          elseif (llast_proc_y) then
+            call yy_transform_strip(m2+1,my,1,n2,thphprime_strip_z(:,:,my+1:))     ! uu corner strip completed by adding truncated z strip
+          endif
+
+!print*, 'proc ',iproc_world,', sends thphprime_strip to ', zuneigh, &
+!size(thphprime_strip_z,1), size(thphprime_strip_z,2), size(thphprime_strip_z,3)
+          call MPI_ISEND(thphprime_strip_z,len_neigh,MPI_REAL, &                   ! send strip to direct neighbor
+                         zuneigh,iproc_world,MPI_COMM_WORLD,isend_rq_touppz,mpierr)
+                                !touppz
+          call MPI_IRECV(gridbuf_midy,2*nghost*yy_buflens(MID),MPI_REAL, &         ! receive strip from ~
+                         zuneigh,zuneigh,MPI_COMM_WORLD,irecv_rq_fromuppz,mpierr)
+                                !MPI_ANY_TAG
+          if (lucorn>=0) then
+!print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(LEFT), 'from ', lucorn
+            call MPI_ISEND(thphprime_strip_z(:,:,:my),len,MPI_REAL, &              ! send strip (without corner part) to left corner neighbor
+                           lucorn,TOlu,MPI_COMM_WORLD,isend_rq_TOlu,mpierr)
+
+            call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_REAL, &      ! receive strip from ~
+                           lucorn,MPI_ANY_TAG,MPI_COMM_WORLD,irecv_rq_FRlu,mpierr)
+          endif
+
+          if (uucorn>=0) then
+!print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(RIGHT), 'from ', uucorn
+            call MPI_ISEND(thphprime_strip_z(:,:,:my),len,MPI_REAL, &              ! send strip to right corner neighbor
+                           uucorn,TOuu,MPI_COMM_WORLD,isend_rq_TOuu,mpierr)
+
+            call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),MPI_REAL, &    ! receive strip from ~
+                           uucorn,MPI_ANY_TAG,MPI_COMM_WORLD,irecv_rq_FRuu,mpierr)
+          endif
+        endif
+      endif
+
+      if (lfirst_proc_y.or.llast_proc_y) then
+!
+!  y-boundary processors: communicate to y- or z-boundary ones -> z strip (nghost x ...) or y strip (... x nghost) expected.
+!
+        if (lcorner_yz) then
+          lenbuf=len_cornbuf
+        else
+          lenbuf=mz
+        endif
+
+        allocate(thphprime_strip_y(2,nghost,lenbuf))                               ! for communication to y boundary
+
+        len_neigh=2*nghost*lenbuf
+        len=2*nghost*mz
+
+        if (lfirst_proc_y) then                                                    ! lower y boundary
+
+          bufsizes_yz(INYL,IRCV) = lenbuf
+          bufsizes_yz_corn(:,INLL,IRCV) = (/nghost,mz/)
+          bufsizes_yz_corn(:,INLU,IRCV) = (/nghost,mz/)
+
+          call yy_transform_strip(1,m1-1,1,mz,thphprime_strip_y(:,:,:mz))          ! full z strip
+!
+!  At yz corner: create a "cornerstrip"
+!
+          if (lfirst_proc_z) then
+            call yy_transform_strip(m1,my,1,n1-1,thphprime_strip_y(:,:,mz+1:))     ! left lower corner completed
+          elseif (llast_proc_z) then
+            call yy_transform_strip(m1,my,n2+1,mz,thphprime_strip_y(:,:,mz+1:))    ! left upper corner completed
+          endif
+
+          if (ipz>=nprocz/3.and.ipz<2*nprocz/3) then
+!
+!  Transposition of thphprime_strip_y, can perhaps be avoided.
+!
+            allocate(tmp(2,nghost,lenbuf))
+            tmp=thphprime_strip_y
+            deallocate(thphprime_strip_y)
+            allocate(thphprime_strip_y(2,lenbuf,nghost))
+            call transpose_mn(tmp,thphprime_strip_y)
+            deallocate(tmp)
+          endif
+!print*, 'proc ',iproc_world,', sends thphprime_strip to ', ylneigh, &
+!size(thphprime_strip_y,1), size(thphprime_strip_y,2), size(thphprime_strip_y,3)
+        
+!print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(MID), 'from ', ylneigh
+          call MPI_ISEND(thphprime_strip_y,len_neigh,MPI_REAL, &                   ! send strip to direct neighbor
+                         ylneigh,iproc_world,MPI_COMM_WORLD,isend_rq_tolowy,mpierr)
+                                !tolowy
+          call MPI_IRECV(gridbuf_midz,2*nghost*yy_buflens(MID),MPI_REAL, &         ! receive strip from ~
+                         ylneigh,ylneigh,MPI_COMM_WORLD,irecv_rq_fromlowy,mpierr)
+                                !MPI_ANY_TAG
+          if (llcorn>=0) then
+!print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(LEFT), 'from ', llcorn
+            call MPI_ISEND(thphprime_strip_y,len,MPI_REAL, &                       ! send strip to left corner neighbor
+                           llcorn,TOll,MPI_COMM_WORLD,isend_rq_TOll,mpierr)
+
+            call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_REAL, &      ! receive strip from ~
+                           llcorn,MPI_ANY_TAG,MPI_COMM_WORLD,irecv_rq_FRll,mpierr)
+          endif
+
+          if (lucorn>=0) then 
+!print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(RIGHT), 'from ', lucorn
+            call MPI_ISEND(thphprime_strip_y,len,MPI_REAL, &                       ! send strip to right corner neighbor
+                           lucorn,TOlu,MPI_COMM_WORLD,isend_rq_TOlu,mpierr)
+
+            call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),MPI_REAL, &    ! receive strip from ~ 
+                           lucorn,MPI_ANY_TAG,MPI_COMM_WORLD,irecv_rq_FRlu,mpierr) 
+          endif
+        endif
+
+        if (llast_proc_y) then
+
+          bufsizes_yz(INYU,IRCV) = lenbuf
+          bufsizes_yz_corn(:,INUL,IRCV) = (/nghost,mz/)
+          bufsizes_yz_corn(:,INUU,IRCV) = (/nghost,mz/)
+
+          call yy_transform_strip(m2+1,my,1,mz,thphprime_strip_y(:,:,:mz))         ! full z ghost-strip
+          if (lfirst_proc_z) then
+            call yy_transform_strip(1,m2,1,n1-1,thphprime_strip_y(:,:,mz+1:))      ! right lower corner completed
+          elseif (llast_proc_z) then
+            call yy_transform_strip(1,m2,n2+1,mz,thphprime_strip_y(:,:,mz+1:))     ! right upper corner completed
+          endif
+
+          if (ipz>=nprocz/3.and.ipz<2*nprocz/3) then
+!
+!  Transposition of thphprime_strip_y, can perhaps be avoided.
+!
+            allocate(tmp(2,nghost,lenbuf))
+            tmp=thphprime_strip_y
+            deallocate(thphprime_strip_y)
+            allocate(thphprime_strip_y(2,lenbuf,nghost))
+            call transpose_mn(tmp,thphprime_strip_y)
+            deallocate(tmp)
+          endif
+!print*, 'proc ',iproc_world,', sends thphprime_strip to ', yuneigh, &
+!size(thphprime_strip_y,1), size(thphprime_strip_y,2), size(thphprime_strip_y,3)
+
+!print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(MID), 'from ', yuneigh
+          call MPI_ISEND(thphprime_strip_y,len_neigh,MPI_REAL, &                    ! send strip to direct neighbor
+                         yuneigh,iproc_world,MPI_COMM_WORLD,isend_rq_touppy,mpierr)
+                                !touppy
+
+!print*, 'at IRECV: proc ,',iproc_world,',  from ', yuneigh, size(gridbuf_midz,1), size(gridbuf_midz,2), size(gridbuf_midz,3)
+          call MPI_IRECV(gridbuf_midz,2*nghost*yy_buflens(MID),MPI_REAL, &          ! receive strip from ~
+                         yuneigh,yuneigh,MPI_COMM_WORLD,irecv_rq_fromuppy,mpierr)
+                                !MPI_ANY_TAG
+          if (ulcorn>=0) then
+!print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(RIGHT), 'from ', ulcorn
+            call MPI_ISEND(thphprime_strip_y,len,MPI_REAL, &                        ! send strip to right corner neighbor
+                           ulcorn,TOul,MPI_COMM_WORLD,isend_rq_TOul,mpierr)
+
+            call MPI_IRECV(gridbuf_right,2*nghost*yy_buflens(RIGHT),MPI_REAL, &     ! receive strip from ~
+                           ulcorn,MPI_ANY_TAG,MPI_COMM_WORLD,irecv_rq_FRul,mpierr)
+          endif
+          if (uucorn>=0) then
+!print*, 'proc ', iproc_world, 'receives ', nghost*yy_buflens(LEFT), 'from ', uucorn
+            call MPI_ISEND(thphprime_strip_y,len,MPI_REAL, &                        ! send strip to left corner neighbor
+                           uucorn,TOuu,MPI_COMM_WORLD,isend_rq_TOuu,mpierr)
+            call MPI_IRECV(gridbuf_left,2*nghost*yy_buflens(LEFT),MPI_REAL, &       ! receive strip from ~
+                           uucorn,MPI_ANY_TAG,MPI_COMM_WORLD,irecv_rq_FRuu,mpierr)
+          endif
+        endif
+
+      endif
+!call  mpifinalize
+!stop
+!
+!  Now finalize all communications and determine the interpolation elements for the transmitted coordinates.
+!
+      if (lfirst_proc_y) then
+
+        call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,mpierr)
+        nok=prep_bilin_interp(gridbuf_midz,intcoeffs(MIDZ)); noks=noks+nok
+!  print*, 'proc ,',iproc_world,',  from ', ylneigh, size(gridbuf_midz,1), size(gridbuf_midz,2), size(gridbuf_midz,3)   !, size(intcoeffs(MIDZ)%inds,1), size(intcoeffs(MIDZ)%inds,2)
+!  print'(3(i3,1x))', intcoeffs(MIDZ)%inds(:,:,1)
+!print*, 'lowy: ', iproc_world, nok 
+!,maxval(abs(intcoeffs(MIDZ)%coeffs)),maxval(intcoeffs(MIDZ)%inds),minval(intcoeffs(MIDZ)%inds)
+        call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,mpierr)
+        if (llcorn>=0) then
+          call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,mpierr)
+          nok=prep_bilin_interp(gridbuf_left,intcoeffs(LEFT)); noks=noks+nok
+!print*,'ll:', iproc_world,nok
+!,maxval(abs(intcoeffs(LEFT)%coeffs)),maxval(intcoeffs(LEFT)%inds),minval(intcoeffs(LEFT)%inds)
+          call MPI_WAIT(isend_rq_TOll,isend_stat_Tll,mpierr)
+        endif
+
+        if (lucorn>=0) then
+          call MPI_WAIT(irecv_rq_FRlu,irecv_stat_Flu,mpierr)
+          nok=prep_bilin_interp(gridbuf_right,intcoeffs(RIGHT)); noks=noks+nok
+!print*,'lu:',iproc_world,nok
+!maxval(abs(intcoeffs(RIGHT)%coeffs)),maxval(intcoeffs(RIGHT)%inds),minval(intcoeffs(RIGHT)%inds)
+          call MPI_WAIT(isend_rq_TOlu,isend_stat_Tlu,mpierr)
+        endif
+
+      endif
+
+      if (llast_proc_y) then
+!
+        call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,mpierr)
+        nok=prep_bilin_interp(gridbuf_midz,intcoeffs(MIDZ)); noks=noks+nok
+!print*,'uppy:',iproc,iproc_world,nok,maxval(abs(intcoeffs(MIDZ)%coeffs)),maxval(intcoeffs(MIDZ)%inds),minval(intcoeffs(MIDZ)%inds)
+        call MPI_WAIT(isend_rq_touppy,isend_stat_tu,mpierr)
+
+        if (ulcorn>=0) then
+          call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,mpierr)
+          nok=prep_bilin_interp(gridbuf_right,intcoeffs(RIGHT)); noks=noks+nok
+!print*,'ul:',iproc,iproc_world,nok,maxval(abs(intcoeffs(RIGHT)%coeffs)),maxval(intcoeffs(RIGHT)%inds),minval(intcoeffs(RIGHT)%inds)
+          call MPI_WAIT(isend_rq_TOul,isend_stat_Tul,mpierr)
+        endif
+
+        if (uucorn>=0) then
+          call MPI_WAIT(irecv_rq_FRuu,irecv_stat_Fuu,mpierr)
+          nok=prep_bilin_interp(gridbuf_left,intcoeffs(LEFT)); noks=noks+nok
+!print*,'uu:',iproc,iproc_world,nok,maxval(abs(intcoeffs(LEFT)%coeffs)),maxval(intcoeffs(LEFT)%inds),minval(intcoeffs(LEFT)%inds)
+          call MPI_WAIT(isend_rq_TOuu,isend_stat_Tuu,mpierr)
+        endif
+
+      endif
+
+      if (lfirst_proc_z) then
+!
+        call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,mpierr)
+        nok=prep_bilin_interp(gridbuf_midy,intcoeffs(MIDY)); noks=noks+nok
+!print*,'lowz:',iproc,iproc_world,nok,maxval(abs(intcoeffs(MIDY)%coeffs)),maxval(intcoeffs(MIDY)%inds),minval(intcoeffs(MIDY)%inds)
+        call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,mpierr)
+!
+        if (llcorn>=0) then
+          call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,mpierr)
+          nok=prep_bilin_interp(gridbuf_right,intcoeffs(RIGHT)); noks=noks+nok
+!print*,'ll:',iproc,iproc_world,nok,maxval(abs(intcoeffs(RIGHT)%coeffs)),maxval(intcoeffs(RIGHT)%inds),minval(intcoeffs(RIGHT)%inds)
+          call MPI_WAIT(isend_rq_TOll,isend_stat_Tll,mpierr)
+        endif
+    
+        if (ulcorn>=0) then
+          call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,mpierr)
+          nok=prep_bilin_interp(gridbuf_left,intcoeffs(LEFT)); noks=noks+nok
+!print*,'ul:',iproc,iproc_world,nok,maxval(abs(intcoeffs(LEFT)%coeffs)),maxval(intcoeffs(LEFT)%inds),minval(intcoeffs(LEFT)%inds)
+          call MPI_WAIT(isend_rq_TOul,isend_stat_Tul,mpierr)
+        endif
+
+      endif
+
+      if (llast_proc_z) then
+!
+        call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,mpierr)
+        nok=prep_bilin_interp(gridbuf_midy,intcoeffs(MIDY)); noks=noks+nok
+!  print*, 'proc ,',iproc_world,',  from ', zuneigh, size(gridbuf_midy,1), &
+!size(gridbuf_midy,2), size(gridbuf_midy,3), size(intcoeffs(MIDY)%inds,1), size(intcoeffs(MIDY)%inds,2)
+!  print'(22(f8.5,1x))', gridbuf_midy(1,:,:)
+!  print'(22(i3,1x))', intcoeffs(MIDY)%inds(:,:,1)
+!print*,'upz:',iproc,iproc_world,nok,maxval(abs(intcoeffs(MIDY)%coeffs)),maxval(intcoeffs(MIDY)%inds),minval(intcoeffs(MIDY)%inds)
+        call MPI_WAIT(isend_rq_touppz,isend_stat_tu,mpierr)
+!
+        if (lucorn>=0) then
+          call MPI_WAIT(irecv_rq_FRlu,irecv_stat_Flu,mpierr)
+          nok=prep_bilin_interp(gridbuf_left,intcoeffs(LEFT)); noks=noks+nok
+!print*,'lu:',iproc,iproc_world,nok,maxval(abs(intcoeffs(LEFT)%coeffs)),maxval(intcoeffs(LEFT)%inds),minval(intcoeffs(LEFT)%inds)
+          call MPI_WAIT(isend_rq_TOlu,isend_stat_Tlu,mpierr)
+        endif
+
+        if (uucorn>=0) then
+          call MPI_WAIT(irecv_rq_FRuu,irecv_stat_Fuu,mpierr,.true.)
+          nok=prep_bilin_interp(gridbuf_right,intcoeffs(RIGHT)); noks=noks+nok
+!print*,'uu:',iproc,iproc_world,nok,maxval(abs(intcoeffs(RIGHT)%coeffs)),maxval(intcoeffs(RIGHT)%inds),minval(intcoeffs(RIGHT)%inds)
+          call MPI_WAIT(isend_rq_TOuu,isend_stat_Tuu,mpierr)
+        endif
+
+      endif
+!
+!  Over each of the two grids, sum up numbers of points (nok) for which interpolation data
+!  could be generated. Sum (noks_all) must agree with total number of ghost zone points
+!  along boundary of each grid (nstrip_total).
+!
+      call mpireduce_sum_int(noks, noks_all)
+      if (iproc==root) then
+        nstrip_total=2*(nprocz*mz + (nprocy-2)*my + 2*(my-nghost))*nghost
+        if (noks_all<nstrip_total) &
+          print*, 'setup_interp_yy -- WARNING: ',cyinyang//' grid: number of caught points '// &
+                       trim(itoa(noks_all))//' smaller than goal ', trim(itoa(nstrip_total))
+      endif
+!call  mpifinalize
+!stop
+    endsubroutine setup_interp_yy
 !***********************************************************************
     subroutine initiate_isendrcv_bdry(f,ivar1_opt,ivar2_opt)
 !
 !  Isend and Irecv boundary values. Called in the beginning of pde.
 !  Does not wait for the receives to finish (done in finalize_isendrcv_bdry)
-!  leftneigh and rghtneigh are initialized by mpicomm_init.
+!  leftneigh and rightneigh are initialized by mpicomm_init.
 !
 !  21-may-02/axel: communication of corners added
 !  11-aug-07/axel: communication in the x-direction added
 !  22-oct-15/fred: communication for spherical polar coords across poles
 !                  added yz corner communication
+!  20-dec-15/MR: modified for Yin-Yang grid
 !
+      use General, only: transpose_mn, notanumber
+
       real, dimension(:,:,:,:), intent(inout):: f
       integer, optional,        intent(in)   :: ivar1_opt, ivar2_opt
 !
-      integer :: ivar1, ivar2, nbufy, nbufz, nbufyz, mxl
+      integer :: tolowyr,touppyr,tolowys,touppys,tolowzr,touppzr,tolowzs,touppzs ! msg. tags placeholders
+      integer :: TOllr,TOulr,TOuur,TOlur,TOlls,TOuls,TOuus,TOlus                 ! placeholder tags
+      integer :: ivar1, ivar2, nbufy, nbufz, nbufyz, mxl, comm, bufact, dir
 !
       ivar1=1; ivar2=min(mcom,size(f,4))
       if (present(ivar1_opt)) ivar1=ivar1_opt
@@ -762,16 +1340,17 @@ module Mpicomm
 !  Set communication across y-planes.
 !  Standard message tags from defaults for surfaces and yz-corners.
 !
-      tolowyr=tolowy; TOlls=TOll; TOllr=TOll
-      tolowys=tolowy; TOlus=TOlu; TOlur=TOlu
-      touppyr=touppy; TOuus=TOuu; TOuur=TOuu
-      touppys=touppy; TOuls=TOul; TOulr=TOul
+      tolowyr=tolowy; tolowzr=tolowz; TOlls=TOll; TOllr=TOll
+      tolowys=tolowy; tolowzs=tolowz; TOlus=TOlu; TOlur=TOlu
+      touppyr=touppy; touppzr=touppz; TOuus=TOuu; TOuur=TOuu
+      touppys=touppy; touppzs=touppz; TOuls=TOul; TOulr=TOul
 !
 !  For spherical polar boundary condition across the pole set up edge and corner
 !  neighbours. Assumes the domain is binary communication between z processors.
 !  NB nprocz=2*n, n>=1, comms across y-plane parallel in z! 
 !
-      if (nprocz>1 .and. lpole(2)) lcommunicate_y = .True.
+      lcommunicate_y = (nprocz>1 .and. lpole(2))
+
       if (lcommunicate_y) then
         poleneigh = modulo(ipz+nprocz/2,nprocz)*nprocxy+ipy*nprocx+ipx
         pnbcrn = modulo(ipz-1+nprocz/2,nprocz)*nprocxy+0*nprocx+ipx !N rev
@@ -782,67 +1361,133 @@ module Mpicomm
 !
 !  Allocate and send/receive buffers across y-planes
 !
-      if (nprocy>1 .or. lcommunicate_y) then
+      bufact=mxl*nghost*(ivar2-ivar1+1)
+
+      if (nprocy>1 .or. lcommunicate_y .or. lyinyang) then
 !
-!  Internal and periodic y-plane buffers.
+!  Internal, periodic and Yin-Yang-exchange y-plane buffers.
 !
-        lbufyo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n1:n2,ivar1:ivar2) !!(lower y-zone)
-        ubufyo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n1:n2,ivar1:ivar2) !!(upper y-zone)
-        nbufy=mxl*nz*nghost*(ivar2-ivar1+1)
+        if (lyinyang.and.lfirst_proc_y) then
+!
+!  Interpolate variables ivar1 ... ivar2 for lower y neighbor in other grid.
+!  Result in lbufyo.
+!
+          call interpolate_yy(f,ivar1,ivar2,lbufyo,MIDZ,BILIN) !
+if (notanumber(lbufyo)) print*, 'lbufyo: iproc=', iproc, iproc_world
+!print*, 'lbufyo:', iproc_world, minval(sum(lbufyo(:,:,:,1:3)**2,4)), maxval(sum(lbufyo(:,:,:,1:3)**2,4))
+          comm=MPI_COMM_WORLD; touppyr=MPI_ANY_TAG
+        else
+          lbufyo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n1:n2,ivar1:ivar2)         !(lower y-zone)
+          if (lcommunicate_y) then
+            if (lfirst_proc_y) then                                       !N-pole
+              lbufyo(:,:,:,ivar1:ivar2)=f(:,m1i:m1:-1,n1:n2,ivar1:ivar2)
+              tolowys=shiftn; touppyr=shiftn; ylneigh=poleneigh
+            endif
+          endif
+          comm=MPI_COMM_GRID
+        endif
+
+        nbufy=bufact*bufsizes_yz(INYL,IRCV)
+!if(ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz(INYL,IRCV), ' from', ylneigh
+        call MPI_IRECV(lbufyi(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
+                       ylneigh,touppyr,comm,irecv_rq_fromlowy,mpierr)
+
+        nbufy=bufact*bufsizes_yz(INYL,ISND)
+        call MPI_ISEND(lbufyo(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
+                       ylneigh,tolowys,comm,isend_rq_tolowy,mpierr)
+
+        if (lyinyang.and.llast_proc_y) then
+!
+!  Interpolate variables ivar1 ... ivar2 for upper y neighbor in other grid.
+!  Result in ubufyo.
+!
+! print*, 'size(ubufyo)=', size(ubufyo,1), size(ubufyo,2), size(ubufyo,3), size(ubufyo,4)
+          call interpolate_yy(f,ivar1,ivar2,ubufyo,MIDZ,BILIN)
+if (notanumber(ubufyo)) print*, 'ubufyo: iproc=', iproc, iproc_world
+!if (iproc_world==41) print*, 'ubufyo:', iproc_world, minval(sum(ubufyo(:,:,:,1:3)**2,4)), maxval(sum(ubufyo(:,:,:,1:3)**2,4))
+          comm=MPI_COMM_WORLD; tolowyr=MPI_ANY_TAG
+        else
+          ubufyo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n1:n2,ivar1:ivar2) !!(upper y-zone)
 !
 !  North/south-pole y-plane buffers and message tags. NB N:0/S:pi radians.
 !  Swap N(S) lower(upper) buffers between pi-shifted iprocz same y-plane.
 !
-        if (lcommunicate_y) then
-          if (lfirst_proc_y) then !N-pole
-            lbufyo(:,:,:,ivar1:ivar2)= f(:,m1i:m1:-1,n1:n2,ivar1:ivar2)
-            tolowys=shiftn; touppyr=shiftn; ylneigh=poleneigh
+          if (lcommunicate_y) then
+            if (llast_proc_y) then !S-pole
+              ubufyo(:,:,:,ivar1:ivar2)=f(:,m2:m2i:-1,n1:n2,ivar1:ivar2)
+              tolowyr=shifts; touppys=shifts; yuneigh=poleneigh
+            endif
           endif
-          if (llast_proc_y) then !S-pole
-            ubufyo(:,:,:,ivar1:ivar2)= f(:,m2:m2i:-1,n1:n2,ivar1:ivar2)
-            tolowyr=shifts; touppys=shifts; yuneigh=poleneigh
-          endif
+          comm=MPI_COMM_GRID
         endif
 !
+        nbufy=bufact*bufsizes_yz(INYU,IRCV)
         call MPI_IRECV(ubufyi(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
-            yuneigh,tolowyr,MPI_COMM_WORLD,irecv_rq_fromuppy,mpierr)
-        call MPI_IRECV(lbufyi(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
-            ylneigh,touppyr,MPI_COMM_WORLD,irecv_rq_fromlowy,mpierr)
-        call MPI_ISEND(lbufyo(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
-            ylneigh,tolowys,MPI_COMM_WORLD,isend_rq_tolowy,mpierr)
+                       yuneigh,tolowyr,comm,irecv_rq_fromuppy,mpierr)
+
+        nbufy=bufact*bufsizes_yz(INYU,ISND)
         call MPI_ISEND(ubufyo(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
-            yuneigh,touppys,MPI_COMM_WORLD,isend_rq_touppy,mpierr)
+                       yuneigh,touppys,comm,isend_rq_touppy,mpierr)
       endif
 !
 !  Set communication across z-planes.
 !
       if (nprocz>1) then
-        lbufzo(:,:,:,ivar1:ivar2)=f(:,m1:m2,n1:n1i,ivar1:ivar2) !lower z-planes
-        ubufzo(:,:,:,ivar1:ivar2)=f(:,m1:m2,n2i:n2,ivar1:ivar2) !upper z-planes
-        nbufz=mxl*ny*nghost*(ivar2-ivar1+1)
-        call MPI_IRECV(ubufzi(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
-            zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,mpierr)
+!        
+        if (lyinyang.and.lfirst_proc_z) then
+!
+!  Interpolate variables ivar1 ... ivar2 for lower z neighbor in other grid.
+!  Result in lbufzo.
+!
+          call interpolate_yy(f,ivar1,ivar2,lbufzo,MIDY,BILIN)
+!if (iproc_world==1) print*, 'lbufzo:', iproc_world, minval(sum(lbufzo(:,:,:,1:3)**2,4)), maxval(sum(lbufzo(:,:,:,1:3)**2,4))
+          comm=MPI_COMM_WORLD; touppzr=MPI_ANY_TAG
+        else
+          lbufzo(:,:,:,ivar1:ivar2)=f(:,m1:m2,n1:n1i,ivar1:ivar2) !lower z-planes
+          comm=MPI_COMM_GRID
+        endif
+
+        nbufz=bufact*bufsizes_yz(INZL,IRCV)
+!if(ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz(INZL,IRCV), ' from', zlneigh
         call MPI_IRECV(lbufzi(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
-            zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,mpierr)
+                       zlneigh,touppzr,comm,irecv_rq_fromlowz,mpierr)
+
+        nbufz=bufact*bufsizes_yz(INZL,ISND)
         call MPI_ISEND(lbufzo(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
-            zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,mpierr)
+                       zlneigh,tolowz,comm,isend_rq_tolowz,mpierr)
+!
+        if (lyinyang.and.llast_proc_z) then
+!
+!  Interpolate variables ivar1 ... ivar2 for upper z neighbor in other grid.
+!  Result in ubufyo.
+!
+          call interpolate_yy(f,ivar1,ivar2,ubufzo,MIDY,BILIN)
+!print*, 'ubufzo:', iproc_world, minval(sum(ubufzo(:,:,:,1:3)**2,4)), maxval(sum(ubufzo(:,:,:,1:3)**2,4))
+          comm=MPI_COMM_WORLD; tolowzr=MPI_ANY_TAG
+        else
+          ubufzo(:,:,:,ivar1:ivar2)=f(:,m1:m2,n2i:n2,ivar1:ivar2) !upper z-planes
+          comm=MPI_COMM_GRID
+        endif
+
+        nbufz=bufact*bufsizes_yz(INZU,IRCV)
+        call MPI_IRECV(ubufzi(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
+                       zuneigh,tolowzr,comm,irecv_rq_fromuppz,mpierr)
+
+        nbufz=bufact*bufsizes_yz(INZU,ISND)
         call MPI_ISEND(ubufzo(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
-            zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,mpierr)
+                       zuneigh,touppz,comm,isend_rq_touppz,mpierr)
+
       endif
 !
 !  The four corners (in counter-clockwise order).
 !  (NOTE: this should work even for nprocx>1)
 !
-      if (nprocy>1.and.nprocz>1) then
+      if (nprocz>1.and.(nprocy>1.or.lyinyang)) then
 !
 !  Internal and periodic yz-corner buffers.
 !
-        llbufo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n1:n1i,ivar1:ivar2)
-        ulbufo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n1:n1i,ivar1:ivar2)
-        uubufo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n2i:n2,ivar1:ivar2)
-        lubufo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n2i:n2,ivar1:ivar2)
-        nbufyz=mxl*nghost*nghost*(ivar2-ivar1+1)
-!
+        bufact=mxl*(ivar2-ivar1+1)
+
 !  North/south-pole yz-corner buffers and message tags. NB N:0/S:pi radians.
 !  Send N(S) lower(upper) buffers to pi-shifted iprocz +/-1 and receive
 !  pi-shifted iprocz -/+1 on the same y-plane.
@@ -862,22 +1507,133 @@ module Mpicomm
           endif
         endif
 !
-        call MPI_IRECV(uubufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            uucornr,TOllr,MPI_COMM_WORLD,irecv_rq_FRuu,mpierr)
-        call MPI_IRECV(lubufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            lucornr,TOulr,MPI_COMM_WORLD,irecv_rq_FRlu,mpierr)
-        call MPI_IRECV(llbufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            llcornr,TOuur,MPI_COMM_WORLD,irecv_rq_FRll,mpierr)
-        call MPI_IRECV(ulbufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            ulcornr,TOlur,MPI_COMM_WORLD,irecv_rq_FRul,mpierr)
-        call MPI_ISEND(llbufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            llcorns,TOlls,MPI_COMM_WORLD,isend_rq_TOll,mpierr)
-        call MPI_ISEND(ulbufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            ulcorns,TOuls,MPI_COMM_WORLD,isend_rq_TOul,mpierr)
-        call MPI_ISEND(uubufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            uucorns,TOuus,MPI_COMM_WORLD,isend_rq_TOuu,mpierr)
-        call MPI_ISEND(lubufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-            lucorns,TOlus,MPI_COMM_WORLD,isend_rq_TOlu,mpierr)
+!  Lower y, lower z.
+!
+        if (lyinyang.and.(lfirst_proc_z.or.lfirst_proc_y)) then
+!
+!  "Translation" from (lower y, upper y) x (lower z, upper z) to "LEFT/RIGHT",
+!  the latter with respect to looking out of one grid towards the other.
+!
+          if (lfirst_proc_yz) then
+            dir=NIL
+          elseif (lfirst_proc_z) then
+            dir=RIGHT
+          else
+            dir=LEFT
+          endif
+!
+!  Interpolate variables ivar1 ... ivar2 for lower-lower corner neighbor in other grid.
+!  Result in llbufo.
+!
+          if (llcorns>=0) call interpolate_yy(f,ivar1,ivar2,llbufo,dir,BILIN)
+!if (llcorns>=0) print*, 'llbufo:', iproc_world, minval(sum(llbufo(:,:,:,1:3)**2,4)), maxval(sum(llbufo(:,:,:,1:3)**2,4))
+          comm=MPI_COMM_WORLD; TOuur=MPI_ANY_TAG
+        elseif (.not.lcommunicate_y) then
+          llbufo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n1:n1i,ivar1:ivar2)
+          comm=MPI_COMM_GRID
+        endif
+
+        nbufyz=bufact*product(bufsizes_yz_corn(:,INLL,IRCV))
+        if (llcornr>=0) call MPI_IRECV(llbufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+                                       llcornr,TOuur,comm,irecv_rq_FRll,mpierr)
+
+        nbufyz=bufact*product(bufsizes_yz_corn(:,INLL,ISND))
+        if (llcorns>=0) call MPI_ISEND(llbufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+                                       llcorns,TOlls,comm,isend_rq_TOll,mpierr)
+!
+!  Upper y, lower z.
+!
+        if (lyinyang.and.(lfirst_proc_z.or.llast_proc_y)) then
+          if (lfirst_proc_z.and.llast_proc_y) then
+            dir=NIL
+          elseif (lfirst_proc_z) then
+            dir=LEFT
+          else
+            dir=RIGHT
+          endif
+!if (iproc_world==44) print*, 'size(intcoeffs)=', size(intcoeffs(RIGHT)%inds,1), size(intcoeffs(RIGHT)%inds,2), size(intcoeffs(RIGHT)%inds,3)
+!
+!  Interpolate variables ivar1 ... ivar2 for upper-lower corner neighbor in other grid.
+!  Result in ulbufo.
+!
+          if (ulcorns>=0) call interpolate_yy(f,ivar1,ivar2,ulbufo,dir,BILIN)
+!if (iproc_world==44) print*, 'ulbufo:', iproc_world, minval(sum(ulbufo(:,:,:,1:3)**2,4)), maxval(sum(ulbufo(:,:,:,1:3)**2,4))
+          comm=MPI_COMM_WORLD; TOlur=MPI_ANY_TAG
+        elseif (.not.lcommunicate_y) then
+          ulbufo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n1:n1i,ivar1:ivar2)
+          comm=MPI_COMM_GRID
+        endif
+
+        nbufyz=bufact*product(bufsizes_yz_corn(:,INUL,IRCV))
+!if(ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz_corn(:,INUL,IRCV), ' from', ulcornr
+        if (ulcornr>=0) call MPI_IRECV(ulbufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+                                       ulcornr,TOlur,comm,irecv_rq_FRul,mpierr)
+
+        nbufyz=bufact*product(bufsizes_yz_corn(:,INUL,ISND))
+        if (ulcorns>=0) call MPI_ISEND(ulbufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+                                       ulcorns,TOuls,comm,isend_rq_TOul,mpierr)
+!
+!  Upper y, upper z.
+!
+        if (lyinyang.and.(llast_proc_z.or.llast_proc_y)) then
+          if (llast_proc_y.and.llast_proc_z) then
+            dir=NIL
+          elseif (llast_proc_z) then
+            dir=RIGHT
+          else
+            dir=LEFT
+          endif
+!
+!  Interpolate variables ivar1 ... ivar2 for upper_upper corner neighbor in other grid.
+!  Result in uubufo.
+!
+          if (uucorns>=0) call interpolate_yy(f,ivar1,ivar2,uubufo,dir,BILIN)
+!if (uucorns>=0) print*, 'uubufo:', iproc_world, minval(sum(uubufo(:,:,:,1:3)**2,4)), maxval(sum(uubufo(:,:,:,1:3)**2,4))
+          comm=MPI_COMM_WORLD; TOllr=MPI_ANY_TAG
+        elseif (.not.lcommunicate_y) then
+          uubufo(:,:,:,ivar1:ivar2)=f(:,m2i:m2,n2i:n2,ivar1:ivar2)
+          comm=MPI_COMM_GRID
+        endif
+
+        nbufyz=bufact*product(bufsizes_yz_corn(:,INUU,IRCV))
+        if (uucornr>=0) call MPI_IRECV(uubufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+                                       uucornr,TOllr,comm,irecv_rq_FRuu,mpierr)
+
+        nbufyz=bufact*product(bufsizes_yz_corn(:,INUU,ISND))
+        if (uucorns>=0) call MPI_ISEND(uubufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+                                       uucorns,TOuus,comm,isend_rq_TOuu,mpierr)
+!
+!  Lower y, upper z.
+!
+        if (lyinyang.and.(llast_proc_z.or.lfirst_proc_y)) then
+          if (lfirst_proc_y.and.llast_proc_z) then
+            dir=NIL
+          elseif (llast_proc_z) then
+            dir=LEFT
+          else
+            dir=RIGHT
+          endif
+!
+!  Interpolate variables ivar1 ... ivar2 for lower_upper corner neighbor in other grid.
+!  Result in lubufo.
+!
+          if (lucorns>=0) call interpolate_yy(f,ivar1,ivar2,lubufo,dir,BILIN)
+!if (lucorns>=0) print*, 'lubufo:', iproc_world, minval(sum(lubufo(:,:,:,1:3)**2,4)), maxval(sum(lubufo(:,:,:,1:3)**2,4))
+          comm=MPI_COMM_WORLD; TOulr=MPI_ANY_TAG
+        elseif (.not.lcommunicate_y) then
+          lubufo(:,:,:,ivar1:ivar2)=f(:,m1:m1i,n2i:n2,ivar1:ivar2)
+          comm=MPI_COMM_GRID
+        endif
+
+        nbufyz=bufact*product(bufsizes_yz_corn(:,INLU,IRCV))
+!if(ldiagnos.and.lfirst.and.iproc_world==0) print*, iproc_world, ' receives', bufsizes_yz_corn(:,INLU,IRCV), ' from', lucornr
+        if (lucornr>=0) call MPI_IRECV(lubufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+                                       lucornr,TOulr,comm,irecv_rq_FRlu,mpierr)
+
+        nbufyz=bufact*product(bufsizes_yz_corn(:,INLU,ISND))
+        if (lucorns>=0) call MPI_ISEND(lubufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
+                                       lucorns,TOlus,comm,isend_rq_TOlu,mpierr)
+!
       endif
 !
 !  communication sample
@@ -898,7 +1654,10 @@ module Mpicomm
 !  21-may-02/axel: communication of corners added
 !  22-oct-15/fred: communication for spherical polar coords across poles
 !                  added yz corner communication
+!  20-dec-15/MR: modified for Yin-Yang grid
 !
+      use General, only: transpose_mn, notanumber
+
       real, dimension(:,:,:,:), intent(inout):: f
       integer, optional,        intent(in)   :: ivar1_opt, ivar2_opt
 !
@@ -915,100 +1674,241 @@ module Mpicomm
 !
 !  Communication across y-planes (includes periodic bc)
 !
-      if (nprocy>1) then
+      if (nprocy>1.or.lyinyang) then
+
         call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,mpierr)
         call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,mpierr)
+
         do j=ivar1,ivar2
-          if (.not. lfirst_proc_y .or. bcy12(j,1)=='p') then
-            f(:, 1:m1-1,n1:n2,j)=lbufyi(:,:,:,j)  !!(set lower buffer)
+
+          if (.not. lfirst_proc_y .or. bcy12(j,1)=='p' .or. lyinyang) then  ! communication should happen only under these conditions
+            if (lfirst_proc_y.and.lyinyang) then
+              f(:,:m1-1,:,j)=lbufyi(:,:,:mz,j)                              ! fill left vertical ghost strip
+!if (ldiagnos.and.lfirst.and.iproc_world==0.and.j==1) print'("lowy:"/3(e11.4,1x))', lbufyi(10,:,:mz,j)    !f(10,:m1-1,:,j)
+              if (lfirst_proc_z) then
+                call transpose_mn( lbufyi(:,:,mz+1:,j), f(:,m1:,:n1-1,j))   ! fill lower horizontal ghost strip
+!if (ldiagnos.and.lfirst.and.iproc_world==0.and.j==1) print'(a,i2/,19(e10.3,1x))', 'lower horizontal1', iproc_world, f(10,m1:,:n1-1,j)
+              elseif (llast_proc_z) then
+                call transpose_mn( lbufyi(:,:,mz+1:,j), f(:,m1:,n2+1:,j))   ! fill upper horizontal ghost strip
+              endif
+if (notanumber(f(:,:,:,j))) print*, 'lbufyi: iproc,j=', iproc, iproc_world, j
+            else
+              f(:,1:m1-1,n1:n2,j)=lbufyi(:,:,:,j)                           ! set lower buffer
+            endif
           endif
-          if (.not. llast_proc_y .or. bcy12(j,2)=='p') then
-            f(:,m2+1:  ,n1:n2,j)=ubufyi(:,:,:,j)  !!(set upper buffer)
+
+          if (.not. llast_proc_y .or. bcy12(j,2)=='p' .or.lyinyang) then
+            if (llast_proc_y.and.lyinyang) then
+              f(:,m2+1:,:,j)=ubufyi(:,:,:mz,j)                             ! fill right vertical ghost strip
+!if (ldiagnos.and.lfirst.and.iproc_world==3.and.j==1) print'(a,i2/,6(e10.3,1x))', 'right vertical1', iproc_world,f(10,m2-2:,:,j)
+              if (lfirst_proc_z) then
+                call transpose_mn( ubufyi(:,:,mz+1:,j), f(:,1:m2,:n1-1,j)) ! fill lower horizontal ghost strip
+              elseif (llast_proc_z) then
+                call transpose_mn( ubufyi(:,:,mz+1:,j), f(:,1:m2,n2+1:,j)) ! fill upper horizontal ghost strip
+              endif
+if (notanumber(f(:,:,:,j))) print*, 'ubufyi: iproc,j=', iproc, iproc_world, j
+            else
+              f(:,m2+1:,n1:n2,j)=ubufyi(:,:,:,j)                           ! set upper buffer
+            endif
           endif
+!
 !  Spherical y-planes across the poles
-          if (lcommunicate_y .and. lfirst_proc_y) then
-            if (bcy12(j,1)=='pp') f(:, 1:m1-1,n1:n2,j)= lbufyi(:,:,:,j) !N-pole
-            if (bcy12(j,1)=='ap') f(:, 1:m1-1,n1:n2,j)=-lbufyi(:,:,:,j) !N-pole
+!
+          if (lcommunicate_y) then
+            if (lfirst_proc_y) then
+              if (bcy12(j,1)=='pp') f(:, 1:m1-1,n1:n2,j)= lbufyi(:,:,:,j) !N-pole
+              if (bcy12(j,1)=='ap') f(:, 1:m1-1,n1:n2,j)=-lbufyi(:,:,:,j) !N-pole
+            endif
+            if (llast_proc_y) then
+              if (bcy12(j,2)=='pp') f(:,m2+1:  ,n1:n2,j)= ubufyi(:,:,:,j) !S-pole
+              if (bcy12(j,2)=='ap') f(:,m2+1:  ,n1:n2,j)=-ubufyi(:,:,:,j) !S-pole
+            endif
           endif
-          if (lcommunicate_y .and. llast_proc_y) then
-            if (bcy12(j,2)=='pp') f(:,m2+1:  ,n1:n2,j)= ubufyi(:,:,:,j) !S-pole
-            if (bcy12(j,2)=='ap') f(:,m2+1:  ,n1:n2,j)=-ubufyi(:,:,:,j) !S-pole
-          endif
+
         enddo
+
         call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,mpierr)
         call MPI_WAIT(isend_rq_touppy,isend_stat_tu,mpierr)
+
       endif
 !
 !  Communication in z (includes periodic bc)
 !
       if (nprocz>1) then
+
         call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,mpierr)
         call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,mpierr)
+
         do j=ivar1,ivar2
-          if (.not. lfirst_proc_z .or. bcz12(j,1)=='p') then
-            f(:,m1:m2, 1:n1-1,j)=lbufzi(:,:,:,j)  !!(set lower buffer)
+
+          if (.not. lfirst_proc_z .or. bcz12(j,1)=='p'.or.lyinyang) then
+            if (lfirst_proc_z.and.lyinyang) then
+              if (lcorner_yz) then
+                f(:,:,:n1-1,j)=f(:,:,:n1-1,j)+lbufzi(:,:my,:,j)                         ! fill lower horizontal ghost strip 
+!if (ldiagnos.and.lfirst.and.iproc_world==0.and.j==1) print'(a,i2/,22(e10.3,1x))', 'lower horizontal2', iproc_world, f(10,:,:n1-1,j)
+                if (lfirst_proc_y) then
+                  call transpose_mn( lbufzi(:,my+1:,:,j), f(:,:m1-1,n1:,j),ladd=.true.) ! fill left vertical ghost strip       
+!if (ldiagnos.and.lfirst.and.iproc_world==0.and.j==1) print'(a,i2/,3(e10.3,1x))', 'left vertical2', iproc_world, f(10,:m1-1,n1:,j)
+                elseif (llast_proc_y) then
+                  call transpose_mn( lbufzi(:,my+1:,:,j), f(:,m2+1:,n1:,j),ladd=.true.) ! fill right vertical ghost strip      
+                endif
+if (notanumber(f(:,:,:,j))) print*, 'lbufzi: iproc,j=', iproc, iproc_world, j
+              else
+                f(:,:,:n1-1,j)=lbufzi(:,:my,:,j)
+              endif
+            else
+              f(:,m1:m2,1:n1-1,j)=lbufzi(:,:,:,j)  ! set lower buffer
+            endif
           endif
-          if (.not. llast_proc_z .or. bcz12(j,2)=='p') then
-            f(:,m1:m2,n2+1:  ,j)=ubufzi(:,:,:,j)  !!(set upper buffer)
+
+          if (.not. llast_proc_z .or. bcz12(j,2)=='p'.or.lyinyang) then 
+            if (llast_proc_z.and.lyinyang) then
+              if (lcorner_yz) then
+                f(:,:,n2+1:,j)=f(:,:,n2+1:,j)+ubufzi(:,:my,:,j)                         ! fill upper horizontal ghost strip
+                if (lfirst_proc_y) then
+                  call transpose_mn( ubufzi(:,my+1:,:,j), f(:,:m1-1,:n2,j),ladd=.true.) ! fill left vertical ghost strip        
+                elseif (llast_proc_y) then
+                  call transpose_mn( ubufzi(:,my+1:,:,j), f(:,m2+1:,:n2,j),ladd=.true.) ! fill right vertical ghost strip 
+                endif
+              else
+                f(:,:,n2+1:,j)=ubufzi(:,:my,:,j)                                        ! fill upper horizontal ghost strip
+              endif
+if (notanumber(f(:,:,:,j))) print*, 'ubufzi: iproc,j=', iproc, iproc_world, j
+            else
+              f(:,m1:m2,n2+1:,j)=ubufzi(:,:,:,j)  ! set upper buffer
+            endif
           endif
+
         enddo
         call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,mpierr)
         call MPI_WAIT(isend_rq_touppz,isend_stat_tu,mpierr)
+
       endif
 !
 !  The four yz-corners (in counter-clockwise order)
 !
-      if (nprocy>1.and.nprocz>1) then
+       if (nprocz>1.and.(nprocy>1.or.lyinyang)) then
 
-        call MPI_WAIT(irecv_rq_FRuu,irecv_stat_Fuu,mpierr)
-        call MPI_WAIT(irecv_rq_FRlu,irecv_stat_Flu,mpierr)
-        call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,mpierr)
-        call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,mpierr)
+        if (uucornr>=0) call MPI_WAIT(irecv_rq_FRuu,irecv_stat_Fuu,mpierr)
+        if (lucornr>=0) call MPI_WAIT(irecv_rq_FRlu,irecv_stat_Flu,mpierr)
+        if (llcornr>=0) call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,mpierr)
+        if (ulcornr>=0) call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,mpierr)
 
         do j=ivar1,ivar2
-          if (.not. lfirst_proc_z .or. bcz12(j,1)=='p') then
-            if (.not. lfirst_proc_y .or. bcy12(j,1)=='p') then
-              f(:, 1:m1-1, 1:n1-1,j)=llbufi(:,:,:,j)  !!(set ll corner)
+!
+!  Set ll corner
+!
+          if (.not. lfirst_proc_z .or. bcz12(j,1)=='p' .or. lyinyang) then
+
+            if (.not. lfirst_proc_y .or. bcy12(j,1)=='p' .or. lyinyang) then
+
+              if ((.not.lfirst_proc_z.or.bcz12(j,1)=='p').and. &
+                  (.not.lfirst_proc_y.or.bcy12(j,1)=='p')) then    ! inner or periodic proc boundaries
+                f(:,1:m1-1,1:n1-1,j)=llbufi(:,:,:,j)               ! fill lower left corner
+              elseif (llcornr>=0.and.lyinyang) then
+                if (lfirst_proc_z) then
+!if (iproc_world==1.and.j==1) print'("ll:"/22(e11.4,1x))', llbufi(10,:,:,j)
+                  f(:,:,1:n1-1,j)=f(:,:,1:n1-1,j)+llbufi(:,:,:,j)  ! complete lower horizontal strip
+                elseif (lfirst_proc_y) then
+                  f(:,1:m1-1,:,j)=f(:,1:m1-1,:,j)+llbufi(:,:,:,j)  ! complete left vertical strip
+                endif
+if (notanumber(f(:,:,:,j))) print*, 'llcorn: iproc,j=', iproc, iproc_world, j
+              endif
+
             endif
-            if (.not. llast_proc_y .or. bcy12(j,2)=='p') then
-              f(:,m2+1:  , 1:n1-1,j)=ulbufi(:,:,:,j)  !!(set ul corner)
+!
+!  Set ul corner
+!
+            if (.not. llast_proc_y .or. bcy12(j,2)=='p' .or. lyinyang) then
+              if ((.not.lfirst_proc_z.or.bcz12(j,1)=='p').and. &
+                  (.not.llast_proc_y .or.bcy12(j,2)=='p')) then    ! inner or periodic proc boundaries
+                f(:,m2+1:,1:n1-1,j)=ulbufi(:,:,:,j)                ! fill lower right corner
+              elseif (ulcornr>=0.and.lyinyang) then
+                if (lfirst_proc_z) then
+!if (iproc_world==1.and.j==1) print'("ul:"/22(e11.4,1x))', ulbufi(10,:,:,j)
+                  f(:,:,1:n1-1,j)=f(:,:,1:n1-1,j)+ulbufi(:,:,:,j)  ! complete lower horizontal strip
+                elseif (llast_proc_y) then
+                  f(:,m2+1:,:,j)=f(:,m2+1:,:,j)+ulbufi(:,:,:,j)    ! complete right vertical strip
+!if (ldiagnos.and.lfirst.and.iproc_world==3.and.j==1) print'(a,i2/,6(e10.3,1x))', 'right vertical2', iproc_world, f(10,m2-2:,:,j)
+                endif
+if (notanumber(f(:,:,:,j))) print*, 'ulcorn: iproc,j=', iproc, iproc_world, j
+              endif
             endif
+
           endif
-          if (.not. llast_proc_z .or. bcz12(j,2)=='p') then
-            if (.not. llast_proc_y .or. bcy12(j,2)=='p') then
-              f(:,m2+1:  ,n2+1:,j)=uubufi(:,:,:,j)  !!(set uu corner)
+!
+!  Set uu corner
+!
+          if (.not. llast_proc_z .or. bcz12(j,2)=='p' .or. lyinyang) then
+
+            if (.not. llast_proc_y .or. bcy12(j,2)=='p' .or. lyinyang) then
+              if ((.not.llast_proc_z.or.bcz12(j,2)=='p').and. &   ! inner or periodic proc boundaries
+                  (.not.llast_proc_y.or.bcy12(j,2)=='p')) then
+                f(:,m2+1:,n2+1:,j)=uubufi(:,:,:,j)                ! fill upper right corner
+              elseif (uucornr>=0.and.lyinyang) then
+                if (llast_proc_z) then
+                  f(:,:,n2+1:,j)=f(:,:,n2+1:,j)+uubufi(:,:,:,j)   ! complete upper horizontal strip
+                elseif (llast_proc_y) then
+                  f(:,m2+1:,:,j)=f(:,m2+1:,:,j)+uubufi(:,:,:,j)   ! complete right vertical strip
+!if (ldiagnos.and.lfirst.and.iproc_world==3.and.j==1) print'(a,i2/,6(e10.3,1x))', 'right vertical3', iproc_world,f(10,m2-2:,:,j)
+                endif
+if (notanumber(f(:,:,:,j))) print*, 'uucorn: iproc,j=', iproc, iproc_world, j
+              endif
             endif
-            if (.not. lfirst_proc_y .or. bcy12(j,1)=='p') then
-              f(:, 1:m1-1,n2+1:,j)=lubufi(:,:,:,j)  !!(set lu corner)
+!
+!  Set lu corner
+!
+            if (.not. lfirst_proc_y .or. bcy12(j,1)=='p' .or. lyinyang) then
+              if ((.not.llast_proc_z .or.bcz12(j,2)=='p').and. &   ! inner or periodic proc boundaries
+                  (.not.lfirst_proc_y.or.bcy12(j,1)=='p')) then 
+                f(:,1:m1-1,n2+1:,j)=lubufi(:,:,:,j)                ! fill upper left corner
+              elseif (lucornr>=0.and.lyinyang) then
+                if (llast_proc_z) then
+                  f(:,:,n2+1:,j)=f(:,:,n2+1:,j)+lubufi(:,:,:,j)    ! complete upper horizontal strip
+                elseif (lfirst_proc_y) then
+                  f(:,1:m1-1,:,j)=f(:,1:m1-1,:,j)+lubufi(:,:,:,j)  ! complete left vertical strip
+!if (ldiagnos.and.lfirst.and.iproc_world==0.and.j==1) print'("lu:"/3(e11.4,1x))', lubufi(10,:,:,j)   !f(10,1:m1-1,:,j)
+                endif
+if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
+              endif
             endif
+
           endif
+!
 !  Spherical yz-corners across the poles. If lcommunicate_y then periodic in z
-          if (lcommunicate_y .and. lfirst_proc_y) then
-            if (bcy12(j,1)=='pp') then !N-pole periodic
-              f(:,:m1-1,:n1-1,j)= lubufi(:,:,:,j)  !(set ll corner)
-              f(:,:m1-1,n2+1:,j)= llbufi(:,:,:,j)  !(set lu corner)
+!
+          if (lcommunicate_y) then
+
+            if (lfirst_proc_y) then
+              if (bcy12(j,1)=='pp') then !N-pole periodic
+                f(:,:m1-1,:n1-1,j)= lubufi(:,:,:,j)  !(set ll corner)
+                f(:,:m1-1,n2+1:,j)= llbufi(:,:,:,j)  !(set lu corner)
+              endif
+              if (bcy12(j,1)=='ap') then !N-pole antiperiodic
+                f(:,:m1-1,:n1-1,j)=-lubufi(:,:,:,j)  !(set ll corner)
+                f(:,:m1-1,n2+1:,j)=-llbufi(:,:,:,j)  !(set lu corner)
+              endif
             endif
-            if (bcy12(j,1)=='ap') then !N-pole aperiodic
-              f(:,:m1-1,:n1-1,j)=-lubufi(:,:,:,j)  !(set ll corner)
-              f(:,:m1-1,n2+1:,j)=-llbufi(:,:,:,j)  !(set lu corner)
+
+            if (llast_proc_y) then
+              if (bcy12(j,2)=='pp') then !S-pole periodic
+                f(:,m2+1:,:n1-1,j)= uubufi(:,:,:,j)  !(set ul corner)
+                f(:,m2+1:,n2+1:,j)= ulbufi(:,:,:,j)  !(set uu corner)
+              endif
+              if (bcy12(j,2)=='ap') then !S-pole antiperiodic
+                f(:,m2+1:,:n1-1,j)=-uubufi(:,:,:,j)  !(set ul corner)
+                f(:,m2+1:,n2+1:,j)=-ulbufi(:,:,:,j)  !(set uu corner)
+              endif
             endif
-          endif
-          if (lcommunicate_y .and. llast_proc_y) then
-            if (bcy12(j,2)=='pp') then !S-pole periodic
-              f(:,m2+1:,:n1-1,j)= uubufi(:,:,:,j)  !(set ul corner)
-              f(:,m2+1:,n2+1:,j)= ulbufi(:,:,:,j)  !(set uu corner)
-            endif
-            if (bcy12(j,2)=='ap') then !S-pole aperiodic
-              f(:,m2+1:,:n1-1,j)=-uubufi(:,:,:,j)  !(set ul corner)
-              f(:,m2+1:,n2+1:,j)=-ulbufi(:,:,:,j)  !(set uu corner)
-            endif
+
           endif
         enddo
         
-        call MPI_WAIT(isend_rq_TOll,isend_stat_Tll,mpierr)
-        call MPI_WAIT(isend_rq_TOul,isend_stat_Tul,mpierr)
-        call MPI_WAIT(isend_rq_TOuu,isend_stat_Tuu,mpierr)
-        call MPI_WAIT(isend_rq_TOlu,isend_stat_Tlu,mpierr)
+        if (llcorns>=0) call MPI_WAIT(isend_rq_TOll,isend_stat_Tll,mpierr)
+        if (ulcorns>=0) call MPI_WAIT(isend_rq_TOul,isend_stat_Tul,mpierr)
+        if (uucorns>=0) call MPI_WAIT(isend_rq_TOuu,isend_stat_Tuu,mpierr)
+        if (lucorns>=0) call MPI_WAIT(isend_rq_TOlu,isend_stat_Tlu,mpierr)
+
       endif
 !
 !  communication sample
@@ -1021,7 +1921,9 @@ module Mpicomm
 !  make sure the other processors don't carry on sending new data
 !  which could be mistaken for an earlier time
 !
-     call mpibarrier()
+     call mpibarrier
+!call mpifinalize
+!stop
 !
     endsubroutine finalize_isendrcv_bdry
 !***********************************************************************
@@ -1042,22 +1944,26 @@ module Mpicomm
       if (present(ivar1_opt)) ivar1=ivar1_opt
       if (present(ivar2_opt)) ivar2=ivar2_opt
 !
-!  Periodic boundary conditions in x
-!
       if (nprocx>1) then
+
         lbufxo(:,:,:,ivar1:ivar2)=f(l1:l1i,m1:m2,n1:n2,ivar1:ivar2) !!(lower x-zone)
         ubufxo(:,:,:,ivar1:ivar2)=f(l2i:l2,m1:m2,n1:n2,ivar1:ivar2) !!(upper x-zone)
         nbufx=ny*nz*nghost*(ivar2-ivar1+1)
+
         call MPI_IRECV(ubufxi(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
-            xuneigh,tolowx,MPI_COMM_WORLD,irecv_rq_fromuppx,mpierr)
+            xuneigh,tolowx,MPI_COMM_GRID,irecv_rq_fromuppx,mpierr)
         call MPI_IRECV(lbufxi(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
-            xlneigh,touppx,MPI_COMM_WORLD,irecv_rq_fromlowx,mpierr)
+            xlneigh,touppx,MPI_COMM_GRID,irecv_rq_fromlowx,mpierr)
         call MPI_ISEND(lbufxo(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
-            xlneigh,tolowx,MPI_COMM_WORLD,isend_rq_tolowx,mpierr)
+            xlneigh,tolowx,MPI_COMM_GRID,isend_rq_tolowx,mpierr)
         call MPI_ISEND(ubufxo(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
-            xuneigh,touppx,MPI_COMM_WORLD,isend_rq_touppx,mpierr)
+            xuneigh,touppx,MPI_COMM_GRID,isend_rq_touppx,mpierr)
         call MPI_WAIT(irecv_rq_fromuppx,irecv_stat_fu,mpierr)
         call MPI_WAIT(irecv_rq_fromlowx,irecv_stat_fl,mpierr)
+!
+!  Inner communication or (shear-)periodic boundary conditions in x
+!  MR: Communication should only happen under these conditions.
+!
         do j=ivar1,ivar2
           if (.not. lfirst_proc_x .or. bcx12(j,1)=='p' .or. &
               (bcx12(j,1)=='she'.and.nygrid==1)) then
@@ -1068,8 +1974,10 @@ module Mpicomm
             f(l2+1:,m1:m2,n1:n2,j)=ubufxi(:,:,:,j)  !!(set upper buffer)
           endif
         enddo
+
         call MPI_WAIT(isend_rq_tolowx,isend_stat_tl,mpierr)
         call MPI_WAIT(isend_rq_touppx,isend_stat_tu,mpierr)
+
       endif
 !
     endsubroutine isendrcv_bdry_x
@@ -1185,90 +2093,90 @@ module Mpicomm
 !         Calls to fill the b-side recieve buffers
           if (lastlastya/=iproc) then
             call MPI_ISEND(fao(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastlastya, &
-                tonextnextyb,MPI_COMM_WORLD,isend_rq_tolastlastya,mpierr)
+                tonextnextyb,MPI_COMM_GRID,isend_rq_tolastlastya,mpierr)
           endif
           if (nextnextyb==iproc) then
             fbhihi(:,:,:,ivar1:ivar2)=fao(:,:,:,ivar1:ivar2)
           else
             call MPI_IRECV(fbhihi(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextnextyb, &
-                tonextnextyb,MPI_COMM_WORLD,irecv_rq_fromnextnextyb,mpierr)
+                tonextnextyb,MPI_COMM_GRID,irecv_rq_fromnextnextyb,mpierr)
           endif
 ! 
           if (lastya/=iproc) then
             call MPI_ISEND(fao(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastya, &
-                tonextyb,MPI_COMM_WORLD,isend_rq_tolastya,mpierr)
+                tonextyb,MPI_COMM_GRID,isend_rq_tolastya,mpierr)
           endif
           if (nextyb==iproc) then
             fbhi(:,:,:,ivar1:ivar2)=fao(:,:,:,ivar1:ivar2)
           else
             call MPI_IRECV(fbhi(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextyb, &
-                tonextyb,MPI_COMM_WORLD,irecv_rq_fromnextyb,mpierr)
+                tonextyb,MPI_COMM_GRID,irecv_rq_fromnextyb,mpierr)
           endif
 ! 
          if (nextya/=iproc) then
             call MPI_ISEND(fao(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextya, &
-                tolastyb,MPI_COMM_WORLD,isend_rq_tonextya,mpierr)
+                tolastyb,MPI_COMM_GRID,isend_rq_tonextya,mpierr)
           endif
           if (lastyb==iproc) then
             fblo(:,:,:,ivar1:ivar2)=fao(:,:,:,ivar1:ivar2)
           else
             call MPI_IRECV(fblo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastyb, &
-                tolastyb,MPI_COMM_WORLD,irecv_rq_fromlastyb,mpierr)
+                tolastyb,MPI_COMM_GRID,irecv_rq_fromlastyb,mpierr)
           endif
 !
           if (nextnextya/=iproc) then
             call MPI_ISEND(fao(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextnextya, &
-                tolastlastyb,MPI_COMM_WORLD,isend_rq_tonextnextya,mpierr)
+                tolastlastyb,MPI_COMM_GRID,isend_rq_tonextnextya,mpierr)
           endif
           if (lastlastyb==iproc) then
             fblolo(:,:,:,ivar1:ivar2)=fao(:,:,:,ivar1:ivar2)
           else
             call MPI_IRECV(fblolo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastlastyb, &
-                tolastlastyb,MPI_COMM_WORLD,irecv_rq_fromlastlastyb,mpierr)
+                tolastlastyb,MPI_COMM_GRID,irecv_rq_fromlastlastyb,mpierr)
           endif
 !         Now fill a-side recieve buffers
           if (lastlastyb/=iproc) then
             call MPI_ISEND(fbo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastlastyb, &
-                tonextnextya,MPI_COMM_WORLD,isend_rq_tolastlastyb,mpierr)
+                tonextnextya,MPI_COMM_GRID,isend_rq_tolastlastyb,mpierr)
           endif
           if (nextnextya==iproc) then
             fahihi(:,:,:,ivar1:ivar2)=fbo(:,:,:,ivar1:ivar2)
           else
             call MPI_IRECV(fahihi(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextnextya, &
-                tonextnextya,MPI_COMM_WORLD,irecv_rq_fromnextnextya,mpierr)
+                tonextnextya,MPI_COMM_GRID,irecv_rq_fromnextnextya,mpierr)
           endif
 !
           if (lastyb/=iproc) then
             call MPI_ISEND(fbo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastyb, &
-                tonextya,MPI_COMM_WORLD,isend_rq_tolastyb,mpierr)
+                tonextya,MPI_COMM_GRID,isend_rq_tolastyb,mpierr)
           endif
           if (nextya==iproc) then
             fahi(:,:,:,ivar1:ivar2)=fbo(:,:,:,ivar1:ivar2)
           else
             call MPI_IRECV(fahi(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextya, &
-                tonextya,MPI_COMM_WORLD,irecv_rq_fromnextya,mpierr)
+                tonextya,MPI_COMM_GRID,irecv_rq_fromnextya,mpierr)
           endif
 !
           if (nextyb/=iproc) then
             call MPI_ISEND(fbo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextyb, &
-                tolastya,MPI_COMM_WORLD,isend_rq_tonextyb,mpierr)
+                tolastya,MPI_COMM_GRID,isend_rq_tonextyb,mpierr)
           endif
           if (lastya==iproc) then
             falo(:,:,:,ivar1:ivar2)=fbo(:,:,:,ivar1:ivar2)
           else
             call MPI_IRECV(falo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastya, &
-                tolastya,MPI_COMM_WORLD,irecv_rq_fromlastya,mpierr)
+                tolastya,MPI_COMM_GRID,irecv_rq_fromlastya,mpierr)
           endif
 !
           if (nextnextyb/=iproc) then
             call MPI_ISEND(fbo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,nextnextyb, &
-                tolastlastya,MPI_COMM_WORLD,isend_rq_tonextnextyb,mpierr)
+                tolastlastya,MPI_COMM_GRID,isend_rq_tonextnextyb,mpierr)
           endif
           if (lastlastya==iproc) then
             falolo(:,:,:,ivar1:ivar2)=fbo(:,:,:,ivar1:ivar2)
           else
             call MPI_IRECV(falolo(:,:,:,ivar1:ivar2),nbufx_gh,MPI_REAL,lastlastya, &
-                tolastlastya,MPI_COMM_WORLD,irecv_rq_fromlastlastya,mpierr)
+                tolastlastya,MPI_COMM_GRID,irecv_rq_fromlastlastya,mpierr)
           endif
 !
         endif
@@ -1418,7 +2326,7 @@ module Mpicomm
 !  actual MPI call
 !
       call MPI_RECV(Qrecv_zx,mx*mz,MPI_REAL,isource,Qtag_zx+idir, &
-                    MPI_COMM_WORLD,irecv_zx,mpierr)
+                    MPI_COMM_GRID,irecv_zx,mpierr)
 !
     endsubroutine radboundary_zx_recv
 !***********************************************************************
@@ -1446,7 +2354,7 @@ module Mpicomm
 !  actual MPI call
 !
       call MPI_RECV(Qrecv_xy,mx*my,MPI_REAL,isource,Qtag_xy+idir, &
-                    MPI_COMM_WORLD,irecv_xy,mpierr)
+                    MPI_COMM_GRID,irecv_xy,mpierr)
 !
     endsubroutine radboundary_xy_recv
 !***********************************************************************
@@ -1474,7 +2382,7 @@ module Mpicomm
 !  actual MPI call
 !
       call MPI_SEND(Qsend_zx,mx*mz,MPI_REAL,idest,Qtag_zx+idir, &
-                    MPI_COMM_WORLD,mpierr)
+                    MPI_COMM_GRID,mpierr)
 !
     endsubroutine radboundary_zx_send
 !***********************************************************************
@@ -1502,7 +2410,7 @@ module Mpicomm
 !  actual MPI call
 !
       call MPI_SEND(Qsend_xy,mx*my,MPI_REAL,idest,Qtag_xy+idir, &
-                    MPI_COMM_WORLD,mpierr)
+                    MPI_COMM_GRID,mpierr)
 !
     endsubroutine radboundary_xy_send
 !***********************************************************************
@@ -1530,7 +2438,7 @@ module Mpicomm
 !
       call MPI_SENDRECV(Qsend_yz,my*mz,MPI_REAL,idest,Qtag_yz+idir, &
                         Qrecv_yz,my*mz,MPI_REAL,isource,Qtag_yz+idir, &
-                        MPI_COMM_WORLD,isendrecv_yz,mpierr)
+                        MPI_COMM_GRID,isendrecv_yz,mpierr)
 !
     endsubroutine radboundary_yz_sendrecv
 !***********************************************************************
@@ -1558,7 +2466,7 @@ module Mpicomm
 !
       call MPI_SENDRECV(Qsend_zx,mx*mz,MPI_REAL,idest,Qtag_zx+idir, &
                         Qrecv_zx,mx*mz,MPI_REAL,isource,Qtag_zx+idir, &
-                        MPI_COMM_WORLD,isendrecv_zx,mpierr)
+                        MPI_COMM_GRID,isendrecv_zx,mpierr)
 !
     endsubroutine radboundary_zx_sendrecv
 !***********************************************************************
@@ -1623,7 +2531,7 @@ module Mpicomm
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       call MPI_RECV(bcast_array, 1, MPI_LOGICAL, proc_src, &
-                    tag_id, MPI_COMM_WORLD, stat, mpierr)
+                    tag_id, MPI_COMM_GRID, stat, mpierr)
 !
     endsubroutine mpirecv_logical_scl
 !***********************************************************************
@@ -1641,7 +2549,7 @@ module Mpicomm
       if (nbcast_array == 0) return
 !
       call MPI_RECV(bcast_array, nbcast_array, MPI_LOGICAL, proc_src, &
-                    tag_id, MPI_COMM_WORLD, stat, mpierr)
+                    tag_id, MPI_COMM_GRID, stat, mpierr)
 !
     endsubroutine mpirecv_logical_arr
 !***********************************************************************
@@ -1658,39 +2566,50 @@ module Mpicomm
       intent(out) :: bcast_array
 !
       call MPI_RECV(bcast_array, 1, MPI_REAL, proc_src, &
-                    tag_id, MPI_COMM_WORLD, stat, mpierr)
+                    tag_id, MPI_COMM_GRID, stat, mpierr)
 !
     endsubroutine mpirecv_real_scl
 !***********************************************************************
-    subroutine mpirecv_real_arr(bcast_array,nbcast_array,proc_src,tag_id)
+    subroutine mpirecv_real_arr(bcast_array,nbcast_array,proc_src,tag_id,comm, nonblock)
 !
 !  Receive real array from other processor.
 !
 !  02-jul-05/anders: coded
 !
+      use General, only: ioptest
+
       integer :: nbcast_array
       real, dimension(nbcast_array) :: bcast_array
       integer :: proc_src, tag_id
       integer, dimension(MPI_STATUS_SIZE) :: stat
+      integer, optional :: comm, nonblock
 !
       intent(out) :: bcast_array
 !
       if (nbcast_array == 0) return
 !
-      call MPI_RECV(bcast_array, nbcast_array, MPI_REAL, proc_src, &
-                    tag_id, MPI_COMM_WORLD, stat, mpierr)
+      if (present(nonblock)) then
+        call MPI_IRECV(bcast_array, nbcast_array, MPI_REAL, proc_src, &
+                       tag_id, ioptest(comm,MPI_COMM_GRID), nonblock, mpierr)
+      else
+        call MPI_RECV(bcast_array, nbcast_array, MPI_REAL, proc_src, &
+                      tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+      endif
 !
     endsubroutine mpirecv_real_arr
 !***********************************************************************
-    subroutine mpirecv_real_arr2(bcast_array,nbcast_array,proc_src,tag_id)
+    subroutine mpirecv_real_arr2(bcast_array,nbcast_array,proc_src,tag_id,comm)
 !
 !  Receive real array(:,:) from other processor.
 !
 !  02-jul-05/anders: coded
 !
+      use General, only: ioptest
+
       integer, dimension(2) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
       integer :: proc_src, tag_id, num_elements
+      integer, optional :: comm
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       intent(out) :: bcast_array
@@ -1699,19 +2618,22 @@ module Mpicomm
 !
       num_elements = product(nbcast_array)
       call MPI_RECV(bcast_array, num_elements, MPI_REAL, proc_src, &
-                    tag_id, MPI_COMM_WORLD, stat, mpierr)
+                    tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
 !
     endsubroutine mpirecv_real_arr2
 !***********************************************************************
-    subroutine mpirecv_real_arr3(bcast_array,nbcast_array,proc_src,tag_id)
+    subroutine mpirecv_real_arr3(bcast_array,nbcast_array,proc_src,tag_id,comm,nonblock)
 !
 !  Receive real array(:,:,:) from other processor.
 !
 !  20-may-06/anders: adapted
 !
+      use General, only: ioptest
+
       integer, dimension(3) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3)) :: bcast_array
       integer :: proc_src, tag_id, num_elements
+      integer, optional :: comm,nonblock
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       intent(out) :: bcast_array
@@ -1719,8 +2641,13 @@ module Mpicomm
       if (any(nbcast_array == 0)) return
 !
       num_elements = product(nbcast_array)
-      call MPI_RECV(bcast_array, num_elements, MPI_REAL, proc_src, &
-                    tag_id, MPI_COMM_WORLD, stat, mpierr)
+      if (present(nonblock)) then
+        call MPI_IRECV(bcast_array, num_elements, MPI_REAL, proc_src, &
+                       tag_id, ioptest(comm,MPI_COMM_GRID), nonblock, mpierr)
+      else
+        call MPI_RECV(bcast_array, num_elements, MPI_REAL, proc_src, &
+                      tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+      endif
 !
     endsubroutine mpirecv_real_arr3
 !***********************************************************************
@@ -1741,7 +2668,7 @@ module Mpicomm
 !
       num_elements = product(nbcast_array)
       call MPI_RECV(bcast_array, num_elements, MPI_REAL, proc_src, &
-                    tag_id, MPI_COMM_WORLD, stat, mpierr)
+                    tag_id, MPI_COMM_GRID, stat, mpierr)
 !
     endsubroutine mpirecv_real_arr4
 !***********************************************************************
@@ -1756,25 +2683,33 @@ module Mpicomm
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
       call MPI_RECV(bcast_array, 1, MPI_INTEGER, proc_src, &
-                    tag_id, MPI_COMM_WORLD, stat, mpierr)
+                    tag_id, MPI_COMM_GRID, stat, mpierr)
 !
     endsubroutine mpirecv_int_scl
 !***********************************************************************
-    subroutine mpirecv_int_arr(bcast_array,nbcast_array,proc_src,tag_id)
+    subroutine mpirecv_int_arr(bcast_array,nbcast_array,proc_src,tag_id,comm,nonblock)
 !
 !  Receive integer array from other processor.
 !
 !  02-jul-05/anders: coded
-!
+! 
+      use General, only: ioptest
+
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: bcast_array
       integer :: proc_src, tag_id
       integer, dimension(MPI_STATUS_SIZE) :: stat
+      integer, optional :: comm, nonblock
 !
       if (nbcast_array == 0) return
 !
-      call MPI_RECV(bcast_array, nbcast_array, MPI_INTEGER, proc_src, &
-                    tag_id, MPI_COMM_WORLD, stat, mpierr)
+      if (present(nonblock)) then
+        call MPI_IRECV(bcast_array, nbcast_array, MPI_INTEGER, proc_src, &
+                       tag_id, ioptest(comm,MPI_COMM_GRID), nonblock, mpierr)
+      else
+        call MPI_RECV(bcast_array, nbcast_array, MPI_INTEGER, proc_src, &
+                      tag_id, ioptest(comm,MPI_COMM_GRID), stat, mpierr)
+      endif
 !
     endsubroutine mpirecv_int_arr
 !***********************************************************************
@@ -1795,7 +2730,7 @@ module Mpicomm
 !
       num_elements = product(nbcast_array)
       call MPI_RECV(bcast_array, num_elements, MPI_INTEGER, proc_src, &
-                    tag_id, MPI_COMM_WORLD, stat, mpierr)
+                    tag_id, MPI_COMM_GRID, stat, mpierr)
 !
     endsubroutine mpirecv_int_arr2
 !***********************************************************************
@@ -1809,7 +2744,7 @@ module Mpicomm
       integer :: proc_rec, tag_id
 !
       call MPI_SEND(bcast_array, 1, MPI_LOGICAL, proc_rec, &
-                    tag_id, MPI_COMM_WORLD, mpierr)
+                    tag_id, MPI_COMM_GRID, mpierr)
 !
     endsubroutine mpisend_logical_scl
 !***********************************************************************
@@ -1826,7 +2761,7 @@ module Mpicomm
       if (nbcast_array == 0) return
 !
       call MPI_SEND(bcast_array, nbcast_array, MPI_LOGICAL, proc_rec, &
-                    tag_id, MPI_COMM_WORLD, mpierr)
+                    tag_id, MPI_COMM_GRID, mpierr)
 !
     endsubroutine mpisend_logical_arr
 !***********************************************************************
@@ -1840,7 +2775,7 @@ module Mpicomm
       integer :: proc_rec, tag_id
 !
       call MPI_SEND(bcast_array, 1, MPI_REAL, proc_rec, &
-                    tag_id, MPI_COMM_WORLD, mpierr)
+                    tag_id, MPI_COMM_GRID, mpierr)
 !
     endsubroutine mpisend_real_scl
 !***********************************************************************
@@ -1857,43 +2792,54 @@ module Mpicomm
       if (nbcast_array == 0) return
 !
       call MPI_SEND(bcast_array, nbcast_array, MPI_REAL, proc_rec, &
-                    tag_id, MPI_COMM_WORLD,mpierr)
+                    tag_id, MPI_COMM_GRID,mpierr)
 !
     endsubroutine mpisend_real_arr
 !***********************************************************************
-    subroutine mpisend_real_arr2(bcast_array,nbcast_array,proc_rec,tag_id)
+    subroutine mpisend_real_arr2(bcast_array,nbcast_array,proc_rec,tag_id,comm)
 !
 !  Send real array(:,:) to other processor.
 !
 !  02-jul-05/anders: coded
 !
+      use General, only: ioptest
+
       integer, dimension(2) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
       integer :: proc_rec, tag_id, num_elements
+      integer, optional :: comm
 !
       if (any(nbcast_array == 0)) return
 !
       num_elements = product(nbcast_array)
       call MPI_SEND(bcast_array, num_elements, MPI_REAL, proc_rec, &
-                    tag_id, MPI_COMM_WORLD,mpierr)
+                    tag_id, ioptest(comm,MPI_COMM_GRID),mpierr)
 !
     endsubroutine mpisend_real_arr2
 !***********************************************************************
-    subroutine mpisend_real_arr3(bcast_array,nbcast_array,proc_rec,tag_id)
+    subroutine mpisend_real_arr3(bcast_array,nbcast_array,proc_rec,tag_id,comm,nonblock)
 !
 !  Send real array(:,:,:) to other processor.
 !
 !  20-may-06/anders: adapted
 !
+      use General, only: ioptest
+
       integer, dimension(3) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3)) :: bcast_array
       integer :: proc_rec, tag_id, num_elements
+      integer, optional :: comm,nonblock
 !
       if (any(nbcast_array == 0)) return
 !
       num_elements = product(nbcast_array)
-      call MPI_SEND(bcast_array, num_elements, MPI_REAL, proc_rec, &
-                    tag_id, MPI_COMM_WORLD,mpierr)
+      if (present(nonblock)) then
+        call MPI_ISEND(bcast_array, num_elements, MPI_REAL, proc_rec, &
+                       tag_id,ioptest(comm,MPI_COMM_GRID),nonblock, mpierr)
+      else
+        call MPI_SEND(bcast_array, num_elements, MPI_REAL, proc_rec, &
+                      tag_id,ioptest(comm,MPI_COMM_GRID),mpierr)
+      endif
 !
     endsubroutine mpisend_real_arr3
 !***********************************************************************
@@ -1911,7 +2857,7 @@ module Mpicomm
 !
       num_elements = product(nbcast_array)
       call MPI_SEND(bcast_array, num_elements, MPI_REAL, proc_rec, &
-                    tag_id, MPI_COMM_WORLD,mpierr)
+                    tag_id, MPI_COMM_GRID,mpierr)
 !
     endsubroutine mpisend_real_arr4
 !***********************************************************************
@@ -1926,7 +2872,7 @@ module Mpicomm
 
       call MPI_SENDRECV(send_array,1,MPI_REAL,proc_dest,sendtag, &
                         recv_array,1,MPI_REAL,proc_src,recvtag, &
-                        MPI_COMM_WORLD,stat,mpierr)
+                        MPI_COMM_GRID,stat,mpierr)
 
     endsubroutine mpisendrecv_real_scl
 !***********************************************************************
@@ -1945,7 +2891,7 @@ module Mpicomm
 
       call MPI_SENDRECV(send_array,sendcnt,MPI_REAL,proc_dest,sendtag, &
                         recv_array,sendcnt,MPI_REAL,proc_src,recvtag, &
-                        MPI_COMM_WORLD,stat,mpierr)
+                        MPI_COMM_GRID,stat,mpierr)
 !
     endsubroutine mpisendrecv_real_arr
 !***********************************************************************
@@ -1964,7 +2910,7 @@ module Mpicomm
       num_elements = product(nbcast_array)
       call MPI_SENDRECV(send_array,num_elements,MPI_REAL,proc_dest,sendtag, &
                         recv_array,num_elements,MPI_REAL,proc_src,recvtag, &
-                        MPI_COMM_WORLD,stat,mpierr)
+                        MPI_COMM_GRID,stat,mpierr)
 
     endsubroutine mpisendrecv_real_arr2
 !***********************************************************************
@@ -1983,7 +2929,7 @@ module Mpicomm
       num_elements = product(nbcast_array)
       call MPI_SENDRECV(send_array,num_elements,MPI_REAL,proc_dest,sendtag, &
                         recv_array,num_elements,MPI_REAL,proc_src,recvtag, &
-                        MPI_COMM_WORLD,stat,mpierr)
+                        MPI_COMM_GRID,stat,mpierr)
 
     endsubroutine mpisendrecv_real_arr3
 !***********************************************************************
@@ -2002,7 +2948,7 @@ module Mpicomm
       num_elements = product(nbcast_array)
       call MPI_SENDRECV(send_array,num_elements,MPI_REAL,proc_dest,sendtag, &
                         recv_array,num_elements,MPI_REAL,proc_src,recvtag, &
-                        MPI_COMM_WORLD,stat,mpierr)
+                        MPI_COMM_GRID,stat,mpierr)
 
     endsubroutine mpisendrecv_real_arr4
 !***********************************************************************
@@ -2016,7 +2962,7 @@ module Mpicomm
       integer :: proc_rec, tag_id
 !
       call MPI_SEND(bcast_array, 1, MPI_INTEGER, proc_rec, &
-                    tag_id, MPI_COMM_WORLD, mpierr)
+                    tag_id, MPI_COMM_GRID, mpierr)
 !
     endsubroutine mpisend_int_scl
 !***********************************************************************
@@ -2030,7 +2976,7 @@ module Mpicomm
       integer :: proc_src, tag_id, ireq
 !
       call MPI_IRECV(bcast_array, 1, MPI_INTEGER, proc_src, &
-                     tag_id, MPI_COMM_WORLD, ireq, mpierr)
+                     tag_id, MPI_COMM_GRID, ireq, mpierr)
 !
     endsubroutine mpirecv_nonblock_int_scl
 !***********************************************************************
@@ -2047,7 +2993,7 @@ module Mpicomm
       if (nbcast_array == 0) return
 !
       call MPI_IRECV(bcast_array, nbcast_array, MPI_INTEGER, proc_src, &
-                     tag_id, MPI_COMM_WORLD, ireq, mpierr)
+                     tag_id, MPI_COMM_GRID, ireq, mpierr)
 !
     endsubroutine mpirecv_nonblock_int_arr
 !***********************************************************************
@@ -2066,7 +3012,7 @@ module Mpicomm
       if (nbcast_array == 0) return
 !
       call MPI_IRECV(bcast_array, nbcast_array, MPI_REAL, proc_src, &
-                     tag_id, MPI_COMM_WORLD, ireq, mpierr)
+                     tag_id, MPI_COMM_GRID, ireq, mpierr)
 !
     endsubroutine mpirecv_nonblock_real_arr
 !***********************************************************************
@@ -2086,7 +3032,7 @@ module Mpicomm
 !
       num_elements = product(nbcast_array)
       call MPI_IRECV(bcast_array, num_elements, MPI_REAL, proc_src, &
-                     tag_id, MPI_COMM_WORLD, ireq, mpierr)
+                     tag_id, MPI_COMM_GRID, ireq, mpierr)
 !
     endsubroutine mpirecv_nonblock_real_arr2
 !***********************************************************************
@@ -2106,7 +3052,7 @@ module Mpicomm
 !
       num_elements = product(nbcast_array)
       call MPI_IRECV(bcast_array, num_elements, MPI_REAL, proc_src, &
-                     tag_id, MPI_COMM_WORLD, ireq, mpierr)
+                     tag_id, MPI_COMM_GRID, ireq, mpierr)
 !
     endsubroutine mpirecv_nonblock_real_arr4
 !***********************************************************************
@@ -2123,7 +3069,7 @@ module Mpicomm
       if (nbcast_array == 0) return
 !
       call MPI_ISEND(bcast_array, nbcast_array, MPI_REAL, proc_rec, &
-                     tag_id, MPI_COMM_WORLD, ireq, mpierr)
+                     tag_id, MPI_COMM_GRID, ireq, mpierr)
 !
     endsubroutine mpisend_nonblock_real_arr
 !***********************************************************************
@@ -2141,7 +3087,7 @@ module Mpicomm
 !
       num_elements = product(nbcast_array)
       call MPI_ISEND(bcast_array, num_elements, MPI_REAL, proc_rec, &
-                     tag_id, MPI_COMM_WORLD,ireq,mpierr)
+                     tag_id, MPI_COMM_GRID,ireq,mpierr)
 !
     endsubroutine mpisend_nonblock_real_arr4
 !***********************************************************************
@@ -2155,7 +3101,7 @@ module Mpicomm
       integer :: proc_rec, tag_id, ireq
 !
       call MPI_ISEND(bcast_array, 1, MPI_INTEGER, proc_rec, &
-                     tag_id, MPI_COMM_WORLD, ireq, mpierr)
+                     tag_id, MPI_COMM_GRID, ireq, mpierr)
 !
     endsubroutine mpisend_nonblock_int_scl
 !***********************************************************************
@@ -2172,24 +3118,27 @@ module Mpicomm
       if (nbcast_array == 0) return
 !
       call MPI_ISEND(bcast_array, nbcast_array, MPI_INTEGER, proc_rec, &
-          tag_id, MPI_COMM_WORLD, ireq, mpierr)
+          tag_id, MPI_COMM_GRID, ireq, mpierr)
 !
     endsubroutine mpisend_nonblock_int_arr
 !***********************************************************************
-    subroutine mpisend_int_arr(bcast_array,nbcast_array,proc_rec,tag_id)
+    subroutine mpisend_int_arr(bcast_array,nbcast_array,proc_rec,tag_id,comm)
 !
 !  Send integer array to other processor.
 !
 !  02-jul-05/anders: coded
 !
+      use General, only: ioptest
+
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: bcast_array
       integer :: proc_rec, tag_id
+      integer, optional :: comm
 !
       if (nbcast_array == 0) return
 !
       call MPI_SEND(bcast_array, nbcast_array, MPI_INTEGER, proc_rec, &
-                    tag_id, MPI_COMM_WORLD,mpierr)
+                    tag_id, ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpisend_int_arr
 !***********************************************************************
@@ -2207,7 +3156,7 @@ module Mpicomm
 !
       num_elements = product(nbcast_array)
       call MPI_SEND(bcast_array, num_elements, MPI_INTEGER, proc_rec, &
-                    tag_id, MPI_COMM_WORLD,mpierr)
+                    tag_id, MPI_COMM_GRID,mpierr)
 !
     endsubroutine mpisend_int_arr2
 !***********************************************************************
@@ -2215,18 +3164,13 @@ module Mpicomm
 !
 !  Communicate logical scalar between processors.
 !
+      use General, only: ioptest
+
       logical :: lbcast_array
       integer, optional :: proc,comm
-      integer :: ibcast_proc
 !
-      if (present(proc)) then
-        ibcast_proc=proc
-      else
-        ibcast_proc=root
-      endif
-!
-      call MPI_BCAST(lbcast_array,1,MPI_LOGICAL,ibcast_proc, &
-                     MPI_COMM_WORLD,mpierr)
+      call MPI_BCAST(lbcast_array,1,MPI_LOGICAL,ioptest(proc,root), &
+                     ioptest(comm,MPI_COMM_GRID),mpierr)
 !
     endsubroutine mpibcast_logical_scl
 !***********************************************************************
@@ -2234,46 +3178,35 @@ module Mpicomm
 !
 !  Communicate logical array between processors.
 !
+      use General, only: ioptest
+
       integer :: nbcast_array
       logical, dimension (nbcast_array) :: lbcast_array
       integer, optional :: proc,comm
-      integer :: ibcast_proc
 !
       if (nbcast_array == 0) return
 !
-      if (present(proc)) then
-        ibcast_proc=proc
-      else
-        ibcast_proc=root
-      endif
-!
-      call MPI_BCAST(lbcast_array,nbcast_array,MPI_LOGICAL,ibcast_proc, &
-                     MPI_COMM_WORLD,mpierr)
+      call MPI_BCAST(lbcast_array,nbcast_array,MPI_LOGICAL,ioptest(proc,root), &
+                     ioptest(comm,MPI_COMM_GRID),mpierr)
 !
     endsubroutine mpibcast_logical_arr
 !***********************************************************************
-    subroutine mpibcast_logical_arr2(lbcast_array,nbcast_array,proc)
+    subroutine mpibcast_logical_arr2(lbcast_array,nbcast_array,proc,comm)
 !
 !  Communicate logical array(:,:) to other processor.
 !
 !  25-may-08/wlad: adapted
 !
+      use General, only: ioptest
+
       integer, dimension(2) :: nbcast_array
       logical, dimension(nbcast_array(1),nbcast_array(2)) :: lbcast_array
-      integer, optional :: proc
-      integer :: ibcast_proc, num_elements
+      integer, optional :: proc,comm
 !
       if (any(nbcast_array == 0)) return
 !
-      if (present(proc)) then
-        ibcast_proc=proc
-      else
-        ibcast_proc=root
-      endif
-!
-      num_elements = product(nbcast_array)
-      call MPI_BCAST(lbcast_array, num_elements, MPI_LOGICAL, ibcast_proc, &
-                     MPI_COMM_WORLD,mpierr)
+      call MPI_BCAST(lbcast_array, product(nbcast_array), MPI_LOGICAL, ioptest(proc,root), &
+                     ioptest(comm,MPI_COMM_GRID),mpierr)
 !
     endsubroutine mpibcast_logical_arr2
 !***********************************************************************
@@ -2281,18 +3214,13 @@ module Mpicomm
 !
 !  Communicate integer scalar between processors.
 !
+      use General, only: ioptest
+
       integer :: ibcast_array
-      integer, optional :: proc,comm
-      integer :: ibcast_proc
-!
-      if (present(proc)) then
-        ibcast_proc=proc
-      else
-        ibcast_proc=root
-      endif
-!
-      call MPI_BCAST(ibcast_array,1,MPI_INTEGER,ibcast_proc, &
-                     MPI_COMM_WORLD,mpierr)
+      integer, optional :: proc, comm
+
+      call MPI_BCAST(ibcast_array,1,MPI_INTEGER,ioptest(proc,root), &
+                     ioptest(comm,MPI_COMM_GRID),mpierr)
 !
     endsubroutine mpibcast_int_scl
 !***********************************************************************
@@ -2300,21 +3228,16 @@ module Mpicomm
 !
 !  Communicate integer array between processors.
 !
+      use General, only: ioptest
+
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: ibcast_array
       integer, optional :: proc,comm
-      integer :: ibcast_proc
 !
       if (nbcast_array == 0) return
 !
-      if (present(proc)) then
-        ibcast_proc=proc
-      else
-        ibcast_proc=root
-      endif
-!
-      call MPI_BCAST(ibcast_array,nbcast_array,MPI_INTEGER,ibcast_proc, &
-                     MPI_COMM_WORLD,mpierr)
+      call MPI_BCAST(ibcast_array,nbcast_array,MPI_INTEGER,ioptest(proc,root), &
+                     ioptest(comm,MPI_COMM_GRID),mpierr)
 !
     endsubroutine mpibcast_int_arr
 !***********************************************************************
@@ -2322,18 +3245,13 @@ module Mpicomm
 !
 !  Communicate real scalar between processors.
 !
+      use General, only: ioptest
+
       real :: bcast_array
-      integer, optional :: proc,comm
-      integer :: ibcast_proc
-!
-      if (present(proc)) then
-        ibcast_proc=proc
-      else
-        ibcast_proc=root
-      endif
-!
-      call MPI_BCAST(bcast_array,1,MPI_REAL,ibcast_proc, &
-                     MPI_COMM_WORLD,mpierr)
+      integer, optional :: proc, comm
+
+      call MPI_BCAST(bcast_array,1,MPI_REAL,ioptest(proc,root), &
+                     ioptest(comm,MPI_COMM_GRID),mpierr)
 !
     endsubroutine mpibcast_real_scl
 !***********************************************************************
@@ -2341,21 +3259,16 @@ module Mpicomm
 !
 !  Communicate real array between processors.
 !
+      use General, only: ioptest
+
       integer :: nbcast_array
       real, dimension(nbcast_array) :: bcast_array
       integer, optional :: proc,comm
-      integer :: ibcast_proc
 !
       if (nbcast_array == 0) return
 !
-      if (present(proc)) then
-        ibcast_proc=proc
-      else
-        ibcast_proc=root
-      endif
-!
-      call MPI_BCAST(bcast_array,nbcast_array,MPI_REAL,ibcast_proc, &
-                     MPI_COMM_WORLD,mpierr)
+      call MPI_BCAST(bcast_array,nbcast_array,MPI_REAL,ioptest(proc,root), &
+                     ioptest(comm,MPI_COMM_GRID),mpierr)
 !
     endsubroutine mpibcast_real_arr
 !***********************************************************************
@@ -2382,7 +3295,7 @@ module Mpicomm
 !
       num_elements = product(nbcast_array)
       call MPI_BCAST(bcast_array, num_elements, MPI_REAL, ibcast_proc, &
-                     MPI_COMM_WORLD,mpierr)
+                     MPI_COMM_GRID,mpierr)
 !
     endsubroutine mpibcast_real_arr2
 !***********************************************************************
@@ -2409,7 +3322,7 @@ module Mpicomm
 !
       num_elements = product(nbcast_array)
       call MPI_BCAST(bcast_array, num_elements, MPI_REAL, ibcast_proc, &
-                     MPI_COMM_WORLD,mpierr)
+                     MPI_COMM_GRID,mpierr)
 !
     endsubroutine mpibcast_real_arr3
 !***********************************************************************
@@ -2434,26 +3347,21 @@ module Mpicomm
 !
       num_elements = product(nbcast_array)
       call MPI_BCAST(bcast_array, num_elements, MPI_REAL, ibcast_proc, &
-                     MPI_COMM_WORLD,mpierr)
+                     MPI_COMM_GRID,mpierr)
 !
     endsubroutine mpibcast_real_arr4
 !***********************************************************************
-    subroutine mpibcast_double_scl(bcast_array,proc)
+    subroutine mpibcast_double_scl(bcast_array,proc,comm)
 !
 !  Communicate real scalar between processors.
 !
+      use General, only: ioptest
+
       double precision :: bcast_array
-      integer, optional :: proc
-      integer :: ibcast_proc
+      integer, optional :: proc,comm
 !
-      if (present(proc)) then
-        ibcast_proc=proc
-      else
-        ibcast_proc=root
-      endif
-!
-      call MPI_BCAST(bcast_array,1,MPI_DOUBLE_PRECISION,ibcast_proc, &
-                     MPI_COMM_WORLD,mpierr)
+      call MPI_BCAST(bcast_array,1,MPI_DOUBLE_PRECISION,ioptest(proc,root), &
+                     ioptest(comm,MPI_COMM_GRID),mpierr)
 !
     endsubroutine mpibcast_double_scl
 !***********************************************************************
@@ -2475,7 +3383,7 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(bcast_array,nbcast_array,MPI_DOUBLE_PRECISION,ibcast_proc, &
-                     MPI_COMM_WORLD,mpierr)
+                     MPI_COMM_GRID,mpierr)
 !
     endsubroutine mpibcast_double_arr
 !***********************************************************************
@@ -2483,18 +3391,13 @@ module Mpicomm
 !
 !  Communicate character scalar between processors.
 !
+      use General, only: ioptest
+
       character(LEN=*) :: cbcast_array
       integer, optional :: proc,comm
-      integer :: ibcast_proc
 !
-      if (present(proc)) then
-        ibcast_proc=proc
-      else
-        ibcast_proc=root
-      endif
-!
-      call MPI_BCAST(cbcast_array,len(cbcast_array),MPI_CHARACTER,ibcast_proc, &
-                     MPI_COMM_WORLD,mpierr)
+      call MPI_BCAST(cbcast_array,len(cbcast_array),MPI_CHARACTER,ioptest(proc,root), &
+                     ioptest(comm,MPI_COMM_GRID),mpierr)
 !
     endsubroutine mpibcast_char_scl
 !***********************************************************************
@@ -2502,21 +3405,17 @@ module Mpicomm
 !
 !  Communicate character array between processors.
 !
+      use General, only: ioptest
+!
       integer :: nbcast_array
+!
       character(LEN=*), dimension(nbcast_array) :: cbcast_array
       integer, optional :: proc,comm
-      integer :: ibcast_proc
 !
       if (nbcast_array == 0) return
 !
-      if (present(proc)) then
-        ibcast_proc=proc
-      else
-        ibcast_proc=root
-      endif
-!
       call MPI_BCAST(cbcast_array,len(cbcast_array(1))*nbcast_array,MPI_CHARACTER, &
-                     ibcast_proc,MPI_COMM_WORLD,mpierr)
+                     ioptest(proc,root),ioptest(comm,MPI_COMM_GRID),mpierr)
 !
     endsubroutine mpibcast_char_arr
 !***********************************************************************
@@ -2538,7 +3437,7 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(bcast_array,nbcast_array,MPI_DOUBLE_COMPLEX,ibcast_proc, &
-                     MPI_COMM_WORLD,mpierr)
+                     MPI_COMM_GRID,mpierr)
 !
     endsubroutine mpibcast_cmplx_arr_dbl
 !***********************************************************************
@@ -2560,20 +3459,22 @@ module Mpicomm
       endif
 !
       call MPI_BCAST(bcast_array,nbcast_array,MPI_COMPLEX,ibcast_proc, &
-                     MPI_COMM_WORLD,mpierr)
+                     MPI_COMM_GRID,mpierr)
 !
     endsubroutine mpibcast_cmplx_arr_sgl
 !***********************************************************************
-    subroutine mpiallreduce_sum_scl(fsum_tmp,fsum,idir)
+    subroutine mpiallreduce_sum_scl(fsum_tmp,fsum,idir,comm)
 !
 !  Calculate total sum for each array element and return to all processors.
 !
+      use General, only: ioptest
+
       real :: fsum_tmp,fsum
-      integer, optional :: idir
+      integer, optional :: idir,comm
 !
       integer :: mpiprocs
 !
-!  Sum over all processors and return to root (MPI_COMM_WORLD).
+!  Sum over all processors and return to root (MPI_COMM_GRID).
 !  Sum over x beams and return to the ipx=0 processors (MPI_COMM_XBEAM).
 !  Sum over y beams and return to the ipy=0 processors (MPI_COMM_YBEAM).
 !  Sum over z beams and return to the ipz=0 processors (MPI_COMM_ZBEAM).
@@ -2581,7 +3482,7 @@ module Mpicomm
       if (present(idir)) then
         mpiprocs=mpigetcomm(idir)
       else
-        mpiprocs=MPI_COMM_WORLD
+        mpiprocs=ioptest(comm,MPI_COMM_GRID)
       endif
 !
       call MPI_ALLREDUCE(fsum_tmp, fsum, 1, MPI_REAL, MPI_SUM, mpiprocs, mpierr)
@@ -2605,7 +3506,7 @@ module Mpicomm
       if (present(idir)) then
         mpiprocs=mpigetcomm(idir)
       else
-        mpiprocs=MPI_COMM_WORLD
+        mpiprocs=MPI_COMM_GRID
       endif
 !
       call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, &
@@ -2630,7 +3531,7 @@ module Mpicomm
       if (present(idir)) then
         mpiprocs=mpigetcomm(idir)
       else
-        mpiprocs=MPI_COMM_WORLD
+        mpiprocs=MPI_COMM_GRID
       endif
 !
       num_elements = product(nreduce)
@@ -2656,7 +3557,7 @@ module Mpicomm
       if (present(idir)) then
         mpiprocs=mpigetcomm(idir)
       else
-        mpiprocs=MPI_COMM_WORLD
+        mpiprocs=MPI_COMM_GRID
       endif
 !
       num_elements = product(nreduce)
@@ -2682,7 +3583,7 @@ module Mpicomm
       if (present(idir)) then
         mpiprocs=mpigetcomm(idir)
       else
-        mpiprocs=MPI_COMM_WORLD
+        mpiprocs=MPI_COMM_GRID
       endif
 !
       num_elements = product(nreduce)
@@ -2708,7 +3609,7 @@ module Mpicomm
       if (present(idir)) then
         mpiprocs=mpigetcomm(idir)
       else
-        mpiprocs=MPI_COMM_WORLD
+        mpiprocs=MPI_COMM_GRID
       endif
 !
       num_elements = product(nreduce)
@@ -2717,14 +3618,17 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_sum_arr5
 !***********************************************************************
-    subroutine mpiallreduce_sum_int_scl(fsum_tmp,fsum)
+    subroutine mpiallreduce_sum_int_scl(fsum_tmp,fsum,comm)
 !
 !  Calculate total sum for each array element and return to all processors.
 !
+      use General, only: ioptest
+
       integer :: fsum_tmp,fsum
+      integer, optional :: comm
 !
       call MPI_ALLREDUCE(fsum_tmp, fsum, 1, MPI_INTEGER, MPI_SUM, &
-                         MPI_COMM_WORLD, mpierr)
+                         ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpiallreduce_sum_int_scl
 !***********************************************************************
@@ -2738,7 +3642,7 @@ module Mpicomm
       if (nreduce==0) return
 
       call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, &
-                         MPI_COMM_WORLD, mpierr)
+                         MPI_COMM_GRID, mpierr)
 !
     endsubroutine mpiallreduce_sum_int_arr
 !***********************************************************************
@@ -2752,7 +3656,7 @@ module Mpicomm
       integer, optional :: comm
 !
       call MPI_ALLREDUCE(fmax_tmp, fmax, 1, MPI_REAL, MPI_MAX, &
-                         ioptest(comm,MPI_COMM_WORLD), mpierr)
+                         ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpiallreduce_max_scl
 !***********************************************************************
@@ -2760,11 +3664,13 @@ module Mpicomm
 !
 !  Calculate total minimum and return to all processors.
 !
+      use General, only: ioptest
+
       real(KIND=rkind4) :: fmin_tmp,fmin
       integer, optional :: comm
 !
       call MPI_ALLREDUCE(fmin_tmp, fmin, 1, MPI_REAL, MPI_MIN, &
-                         MPI_COMM_WORLD, mpierr)
+                         ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpiallreduce_min_scl_sgl
 !***********************************************************************
@@ -2772,11 +3678,13 @@ module Mpicomm
 !
 !  Calculate total minimum and return to all processors.
 !
+      use General, only: ioptest
+
       real(KIND=rkind8) :: fmin_tmp,fmin
       integer, optional :: comm
 !
       call MPI_ALLREDUCE(fmin_tmp, fmin, 1, MPI_DOUBLE_PRECISION, MPI_MIN, &
-                         MPI_COMM_WORLD, mpierr)
+                         ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpiallreduce_min_scl_dbl
 !***********************************************************************
@@ -2793,7 +3701,7 @@ module Mpicomm
       if (nreduce==0) return
 !
       call MPI_ALLREDUCE(fmax_tmp, fmax, nreduce, MPI_REAL, MPI_MAX, &
-                         ioptest(comm,MPI_COMM_WORLD), mpierr)
+                         ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpiallreduce_max_arr
 !***********************************************************************
@@ -2803,6 +3711,8 @@ module Mpicomm
 !
 !  14-feb-14/ccyang: coded
 !
+      use General, only: ioptest
+
       logical, intent(in) :: flor_tmp
       logical, intent(out):: flor
       integer, intent(in), optional :: comm
@@ -2810,7 +3720,7 @@ module Mpicomm
       if (nprocs == 1) then
         flor = flor_tmp
       else
-        call MPI_ALLREDUCE(flor_tmp, flor, 1, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, mpierr)
+        call MPI_ALLREDUCE(flor_tmp, flor, 1, MPI_LOGICAL, MPI_LOR, ioptest(comm,MPI_COMM_GRID), mpierr)
       endif
 !
     endsubroutine mpiallreduce_or_scl
@@ -2819,22 +3729,27 @@ module Mpicomm
 !
 !  Calculate total maximum for each array element and return to root.
 !
+      use General, only: ioptest
+
       real :: fmax_tmp,fmax
       integer, intent(in), optional :: comm
 !
       call MPI_REDUCE(fmax_tmp, fmax, 1, MPI_REAL, MPI_MAX, root, &
-                      MPI_COMM_WORLD, mpierr)
+                      ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpireduce_max_scl
 !***********************************************************************
-    subroutine mpireduce_max_scl_int(fmax_tmp,fmax)
+    subroutine mpireduce_max_scl_int(fmax_tmp,fmax,comm)
 !
 !  Calculate total maximum for each array element and return to root.
 !
+      use General, only: ioptest
+
       integer :: fmax_tmp,fmax
+      integer, optional :: comm
 !
       call MPI_REDUCE(fmax_tmp, fmax, 1, MPI_INTEGER, MPI_MAX, root, &
-                      MPI_COMM_WORLD, mpierr)
+                      ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpireduce_max_scl_int
 !***********************************************************************
@@ -2842,6 +3757,8 @@ module Mpicomm
 !
 !  Calculate total maximum for each array element and return to root.
 !
+      use General, only: ioptest
+
       integer :: nreduce
       real, dimension(nreduce) :: fmax_tmp,fmax
       integer, optional :: comm
@@ -2849,32 +3766,38 @@ module Mpicomm
       if (nreduce==0) return
 !
       call MPI_REDUCE(fmax_tmp, fmax, nreduce, MPI_REAL, MPI_MAX, root, &
-                      MPI_COMM_WORLD, mpierr)
+                      ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpireduce_max_arr
 !***********************************************************************
-    subroutine mpireduce_min_scl(fmin_tmp,fmin)
+    subroutine mpireduce_min_scl(fmin_tmp,fmin,comm)
 !
 !  Calculate total minimum for each array element and return to root.
 !
+      use General, only: ioptest
+
       real :: fmin_tmp,fmin
+      integer, optional :: comm
 !
       call MPI_REDUCE(fmin_tmp, fmin, 1, MPI_REAL, MPI_MIN, root, &
-                      MPI_COMM_WORLD, mpierr)
+                      ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpireduce_min_scl
 !***********************************************************************
-    subroutine mpireduce_min_arr(fmin_tmp,fmin,nreduce)
+    subroutine mpireduce_min_arr(fmin_tmp,fmin,nreduce,comm)
 !
 !  Calculate total maximum for each array element and return to root.
 !
+      use General, only: ioptest
+
       integer :: nreduce
       real, dimension(nreduce) :: fmin_tmp,fmin
+      integer, optional :: comm
 !
       if (nreduce==0) return
 !
       call MPI_REDUCE(fmin_tmp, fmin, nreduce, MPI_REAL, MPI_MIN, root, &
-                      MPI_COMM_WORLD, mpierr)
+                      ioptest(comm,MPI_COMM_GRID), mpierr)
 !
     endsubroutine mpireduce_min_arr
 !***********************************************************************
@@ -2882,6 +3805,8 @@ module Mpicomm
 !
 !  Calculate sum and return to root.
 !
+      use General, only: ioptest
+
       integer :: fsum_tmp,fsum
       integer, optional :: comm
 !
@@ -2889,17 +3814,20 @@ module Mpicomm
         fsum=fsum_tmp
       else
         call MPI_REDUCE(fsum_tmp, fsum, 1, MPI_INTEGER, MPI_SUM, root, &
-                        MPI_COMM_WORLD, mpierr)
+                        ioptest(comm,MPI_COMM_GRID), mpierr)
       endif
 !
     endsubroutine mpireduce_sum_int_scl
 !***********************************************************************
-    subroutine mpireduce_sum_int_arr(fsum_tmp,fsum,nreduce)
+    subroutine mpireduce_sum_int_arr(fsum_tmp,fsum,nreduce,comm)
 !
 !  Calculate total sum for each array element and return to root.
 !
+      use General, only: ioptest
+
       integer :: nreduce
       integer, dimension(nreduce) :: fsum_tmp,fsum
+      integer, optional :: comm
 !
       if (nreduce==0) return
 !
@@ -2907,70 +3835,70 @@ module Mpicomm
         fsum=fsum_tmp
       else
         call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, root, &
-                        MPI_COMM_WORLD, mpierr)
+                        ioptest(comm,MPI_COMM_GRID), mpierr)
       endif
 !
     endsubroutine mpireduce_sum_int_arr
 !***********************************************************************
-    subroutine mpireduce_sum_int_arr2(fsum_tmp,fsum,nreduce)
+    subroutine mpireduce_sum_int_arr2(fsum_tmp,fsum,nreduce,comm)
 !
 !  Calculate total sum for each array element and return to root.
 !
+      use General, only: ioptest
+
       integer, dimension(2) :: nreduce
       integer, dimension(nreduce(1),nreduce(2)) :: fsum_tmp,fsum
-!
-      integer :: num_elements
+      integer, optional :: comm
 !
       if (any(nreduce==0)) return
 !
       if (nprocs==1) then
         fsum=fsum_tmp
       else
-        num_elements = product(nreduce)
-        call MPI_REDUCE(fsum_tmp, fsum, num_elements, MPI_INTEGER, MPI_SUM, root, &
-                        MPI_COMM_WORLD, mpierr)
+        call MPI_REDUCE(fsum_tmp, fsum, product(nreduce), MPI_INTEGER, MPI_SUM, root, &
+                        ioptest(comm,MPI_COMM_GRID), mpierr)
       endif
 !
     endsubroutine mpireduce_sum_int_arr2
 !***********************************************************************
-    subroutine mpireduce_sum_int_arr3(fsum_tmp,fsum,nreduce)
+    subroutine mpireduce_sum_int_arr3(fsum_tmp,fsum,nreduce,comm)
 !
 !  Calculate total sum for each array element and return to root.
 !
+      use General, only: ioptest
+
       integer, dimension(3) :: nreduce
       integer, dimension(nreduce(1),nreduce(2),nreduce(3)) :: fsum_tmp,fsum
-!
-      integer :: num_elements
+      integer, optional :: comm
 !
       if (any(nreduce==0)) return
 !
       if (nprocs==1) then
         fsum=fsum_tmp
       else
-        num_elements = product(nreduce)
-        call MPI_REDUCE(fsum_tmp, fsum, num_elements, MPI_INTEGER, MPI_SUM, root, &
-                        MPI_COMM_WORLD, mpierr)
+        call MPI_REDUCE(fsum_tmp, fsum, product(nreduce), MPI_INTEGER, MPI_SUM, root, &
+                        ioptest(comm,MPI_COMM_GRID), mpierr)
       endif
 !
     endsubroutine mpireduce_sum_int_arr3
 !***********************************************************************
-    subroutine mpireduce_sum_int_arr4(fsum_tmp,fsum,nreduce)
+    subroutine mpireduce_sum_int_arr4(fsum_tmp,fsum,nreduce,comm)
 !
 !  Calculate total sum for each array element and return to root.
 !
+      use General, only: ioptest
+
       integer, dimension(4) :: nreduce
       integer, dimension(nreduce(1),nreduce(2),nreduce(3),nreduce(4)) :: fsum_tmp,fsum
-!
-      integer :: num_elements
+      integer, optional :: comm
 !
       if (any(nreduce==0)) return
 !
       if (nprocs==1) then
         fsum=fsum_tmp
       else
-        num_elements = product(nreduce)
-        call MPI_REDUCE(fsum_tmp, fsum, num_elements, MPI_INTEGER, MPI_SUM, root, &
-                        MPI_COMM_WORLD, mpierr)
+        call MPI_REDUCE(fsum_tmp, fsum, product(nreduce), MPI_INTEGER, MPI_SUM, root, &
+                        ioptest(comm,MPI_COMM_GRID), mpierr)
       endif
 !
     endsubroutine mpireduce_sum_int_arr4
@@ -2988,7 +3916,7 @@ module Mpicomm
         fsum=fsum_tmp
       else
 !
-!  Sum over all processors and return to root (MPI_COMM_WORLD).
+!  Sum over all processors and return to root (MPI_COMM_GRID).
 !  Sum over x beams and return to the ipx=0 processors (MPI_COMM_XBEAM).
 !  Sum over y beams and return to the ipy=0 processors (MPI_COMM_YBEAM).
 !  Sum over z beams and return to the ipz=0 processors (MPI_COMM_ZBEAM).
@@ -2996,10 +3924,10 @@ module Mpicomm
         if (present(idir)) then
           mpiprocs=mpigetcomm(idir)
         else
-          mpiprocs=MPI_COMM_WORLD
+          mpiprocs=MPI_COMM_GRID
         endif
         call MPI_REDUCE(fsum_tmp, fsum, 1, MPI_REAL, MPI_SUM, root, &
-            mpiprocs, mpierr)
+                        mpiprocs, mpierr)
       endif
 !
     endsubroutine mpireduce_sum_scl
@@ -3008,6 +3936,8 @@ module Mpicomm
 !
 !  Calculate total sum for each array element and return to root.
 !
+      use General, only: ioptest
+
       integer :: nreduce
       real, dimension(nreduce) :: fsum_tmp,fsum
       integer, optional :: idir,comm
@@ -3025,7 +3955,7 @@ module Mpicomm
         if (present(idir)) then
           mpiprocs=mpigetcomm(idir)
         else
-          mpiprocs=MPI_COMM_WORLD
+          mpiprocs=ioptest(comm,MPI_COMM_GRID)
         endif
         call MPI_REDUCE(fsum_tmp, fsum, nreduce, MPI_REAL, MPI_SUM, root, &
                         mpiprocs, mpierr)
@@ -3057,7 +3987,7 @@ module Mpicomm
         if (present(idir)) then
           mpiprocs=mpigetcomm(idir)
         else
-          mpiprocs=MPI_COMM_WORLD
+          mpiprocs=MPI_COMM_GRID
         endif
         if (present(inplace)) then
           inplace_opt=inplace
@@ -3097,7 +4027,7 @@ module Mpicomm
         if (present(idir)) then
           mpiprocs=mpigetcomm(idir)
         else
-          mpiprocs=MPI_COMM_WORLD
+          mpiprocs=MPI_COMM_GRID
         endif
         num_elements = product(nreduce)
         call MPI_REDUCE(fsum_tmp, fsum, num_elements, MPI_REAL, MPI_SUM, &
@@ -3127,7 +4057,7 @@ module Mpicomm
         if (present(idir)) then
           mpiprocs=mpigetcomm(idir)
         else
-          mpiprocs=MPI_COMM_WORLD
+          mpiprocs=MPI_COMM_GRID
         endif
         num_elements = product(nreduce)
         call MPI_REDUCE(fsum_tmp, fsum, num_elements, MPI_REAL, MPI_SUM, &
@@ -3142,6 +4072,8 @@ module Mpicomm
 !
 !  17-sep-05/anders: coded
 !
+      use General, only: ioptest
+
       logical :: flor_tmp, flor
       integer, optional :: comm
 !
@@ -3149,7 +4081,7 @@ module Mpicomm
         flor=flor_tmp
       else
         call MPI_REDUCE(flor_tmp, flor, 1, MPI_LOGICAL, MPI_LOR, root, &
-                        MPI_COMM_WORLD, mpierr)
+                        ioptest(comm,MPI_COMM_GRID), mpierr)
       endif
 !
     endsubroutine mpireduce_or_scl
@@ -3160,6 +4092,8 @@ module Mpicomm
 !
 !  17-sep-05/anders: coded
 !
+      use General, only: ioptest
+
       integer :: nreduce
       logical, dimension(nreduce) :: flor_tmp, flor
       integer, optional :: comm
@@ -3170,7 +4104,7 @@ module Mpicomm
         flor=flor_tmp
       else
         call MPI_REDUCE(flor_tmp, flor, nreduce, MPI_LOGICAL, MPI_LOR, root, &
-                        MPI_COMM_WORLD, mpierr)
+                        ioptest(comm,MPI_COMM_GRID), mpierr)
       endif
 !
     endsubroutine mpireduce_or_arr
@@ -3181,6 +4115,8 @@ module Mpicomm
 !
 !  17-sep-05/anders: coded
 !
+      use General, only: ioptest
+
       logical :: fland_tmp, fland
       integer, optional :: comm
 !
@@ -3188,19 +4124,22 @@ module Mpicomm
         fland=fland_tmp
       else
         call MPI_REDUCE(fland_tmp, fland, 1, MPI_LOGICAL, MPI_LAND, root, &
-                        MPI_COMM_WORLD, mpierr)
+                        ioptest(comm,MPI_COMM_GRID), mpierr)
       endif
 !
     endsubroutine mpireduce_and_scl
 !***********************************************************************
-    subroutine mpireduce_and_arr(fland_tmp,fland,nreduce)
+    subroutine mpireduce_and_arr(fland_tmp,fland,nreduce,comm)
 !
 !  Calculate logical and over all procs and return to root.
 !
 !  11-mar-09/anders: coded
 !
+      use General, only: ioptest
+
       integer :: nreduce
       logical, dimension(nreduce) :: fland_tmp, fland
+      integer, optional :: comm
 !
       if (nreduce==0) return
 !
@@ -3208,12 +4147,12 @@ module Mpicomm
         fland=fland_tmp
       else
         call MPI_REDUCE(fland_tmp, fland, nreduce, MPI_LOGICAL, MPI_LAND, root,&
-                        MPI_COMM_WORLD, mpierr)
+                        ioptest(comm,MPI_COMM_GRID), mpierr)
       endif
 !
     endsubroutine mpireduce_and_arr
 !***********************************************************************
-    subroutine start_serialize()
+    subroutine start_serialize
 !
 !  Do block between start_serialize and end_serialize serially in iproc
 !  order. root goes first, then sends proc1 permission, waits for succes,
@@ -3229,12 +4168,12 @@ module Mpicomm
 !
       buf = 0
       if (.not. lroot) then     ! root starts, others wait for permission
-        call MPI_RECV(buf,1,MPI_INTEGER,root,io_perm,MPI_COMM_WORLD,status,mpierr)
+        call MPI_RECV(buf,1,MPI_INTEGER,root,io_perm,MPI_COMM_GRID,status,mpierr)
       endif
 !
     endsubroutine start_serialize
 !***********************************************************************
-    subroutine end_serialize()
+    subroutine end_serialize
 !
 !  Do block between start_serialize and end_serialize serially in iproc order.
 !
@@ -3251,16 +4190,16 @@ module Mpicomm
       buf = 0
       if (lroot) then
         do i=1,ncpus-1            ! send permission, wait for success message
-          call MPI_SEND(buf,1,MPI_INTEGER,i,io_perm,MPI_COMM_WORLD,mpierr)
-          call MPI_RECV(buf,1,MPI_INTEGER,i,io_succ,MPI_COMM_WORLD,status,mpierr)
+          call MPI_SEND(buf,1,MPI_INTEGER,i,io_perm,MPI_COMM_GRID,mpierr)
+          call MPI_RECV(buf,1,MPI_INTEGER,i,io_succ,MPI_COMM_GRID,status,mpierr)
         enddo
       else                  ! tell root we're done
-        call MPI_SEND(buf,1,MPI_INTEGER,root,io_succ,MPI_COMM_WORLD,mpierr)
+        call MPI_SEND(buf,1,MPI_INTEGER,root,io_succ,MPI_COMM_GRID,mpierr)
       endif
 !
     endsubroutine end_serialize
 !***********************************************************************
-    subroutine mpibarrier()
+    subroutine mpibarrier
 !
 !  Synchronize nodes.
 !
@@ -3270,7 +4209,7 @@ module Mpicomm
 !
     endsubroutine mpibarrier
 !***********************************************************************
-    subroutine mpifinalize()
+    subroutine mpifinalize
 !
       call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
       call MPI_FINALIZE(mpierr)
@@ -3296,11 +4235,11 @@ module Mpicomm
 !
     endfunction mpiwtick
 !***********************************************************************
-    subroutine die_gracefully()
+    subroutine die_gracefully
 !
 !  Stop having shutdown MPI neatly
 !  With at least some MPI implementations, this only stops if all
-!  processors agree to call die_gracefully().
+!  processors agree to call die_gracefully.
 !
 !  29-jun-05/tony: coded
 !
@@ -3320,7 +4259,7 @@ module Mpicomm
 !
     endsubroutine die_gracefully
 !***********************************************************************
-    subroutine die_immediately()
+    subroutine die_immediately
 !
 !  Stop without shuting down MPI
 !  For those MPI implementations, which only finalize when all
@@ -3360,9 +4299,9 @@ module Mpicomm
       if (lroot .or. immediately) write(*,'(A,A)') 'STOPPED FATAL: ', msg
 !
       if (immediately) then
-        call die_immediately()
+        call die_immediately
       else
-        call die_gracefully()
+        call die_gracefully
       endif
 !
     endsubroutine stop_fatal
@@ -3371,8 +4310,8 @@ module Mpicomm
 !
 !  Print message and stop.
 !  With at least some MPI implementations, this only stops if all
-!  processors agree to call stop_it(). To stop (collectively) if only one
-!  or a few processors find some condition, use stop_it_if_any().
+!  processors agree to call stop_it. To stop (collectively) if only one
+!  or a few processors find some condition, use stop_it_if_any.
 !
 !  6-nov-01/wolf: coded
 !  4-nov-11/MR: optional parameter code added
@@ -3392,7 +4331,7 @@ module Mpicomm
         endif
       endif
 !
-      call die_gracefully()
+      call die_gracefully
 !
     endsubroutine stop_it
 !***********************************************************************
@@ -3413,7 +4352,7 @@ module Mpicomm
       logical :: global_stop_flag, identical_stop_flag
 !
 !  Get global OR of stop_flag and distribute it, so all processors agree
-!  on whether to call stop_it():
+!  on whether to call stop_it:
 !
       call MPI_ALLREDUCE(stop_flag,global_stop_flag,1,MPI_LOGICAL, &
                          MPI_LOR,MPI_COMM_WORLD,mpierr)
@@ -3422,17 +4361,13 @@ module Mpicomm
 !
       if (global_stop_flag) then
         if ((.not. lroot) .and. (.not. identical_stop_flag) .and. (msg/='')) &
-            write(*,'(A,I8,A,A)') 'RANK ', iproc, ' STOPPED: ', msg
-        if (present (code)) then
-          call stop_it(msg, code)
-        else
-          call stop_it(msg)
-        endif
+            write(*,'(A,I8,A,A)') 'RANK ', iproc_world, ' STOPPED: ', msg
+        call stop_it(msg, code)
       endif
 !
     endsubroutine stop_it_if_any
 !***********************************************************************
-    subroutine check_emergency_brake()
+    subroutine check_emergency_brake
 !
 !  Check the lemergency_brake flag and stop with any provided
 !  message if it is set.
@@ -3442,7 +4377,7 @@ module Mpicomm
       logical :: global_stop_flag
 !
 !  Get global OR of lemergency_brake and distribute it, so all
-!  processors agree on whether to call stop_it():
+!  processors agree on whether to call stop_it:
 !
       call MPI_ALLREDUCE(lemergency_brake,global_stop_flag,1,MPI_LOGICAL, &
                          MPI_LOR,MPI_COMM_WORLD,mpierr)
@@ -3542,11 +4477,11 @@ module Mpicomm
               ix=ibox*nprocy*ny+px*ny
               send_buf_y=a(ix+1:ix+ny,:,:)
               if (px<ipy) then      ! above diagonal: send first, receive then
-                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ystag,MPI_COMM_WORLD,mpierr)
-                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,yrtag,MPI_COMM_WORLD,stat,mpierr)
+                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ystag,MPI_COMM_GRID,mpierr)
+                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,yrtag,MPI_COMM_GRID,stat,mpierr)
               elseif (px>ipy) then  ! below diagonal: receive first, send then
-                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ystag,MPI_COMM_WORLD,stat,mpierr)
-                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,yrtag,MPI_COMM_WORLD,mpierr)
+                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ystag,MPI_COMM_GRID,stat,mpierr)
+                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,yrtag,MPI_COMM_GRID,mpierr)
               endif
               a(ix+1:ix+ny,:,:)=recv_buf_y
             endif
@@ -3602,11 +4537,11 @@ module Mpicomm
             partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
             send_buf_z=a(px*nz+1:(px+1)*nz,:,:)
             if (px<ipz) then      ! above diagonal: send first, receive then
-              call MPI_SEND (send_buf_z,sendc_z,MPI_REAL,partner,zstag,MPI_COMM_WORLD,mpierr)
-              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,zrtag,MPI_COMM_WORLD,stat,mpierr)
+              call MPI_SEND (send_buf_z,sendc_z,MPI_REAL,partner,zstag,MPI_COMM_GRID,mpierr)
+              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,zrtag,MPI_COMM_GRID,stat,mpierr)
             elseif (px>ipz) then  ! below diagonal: receive first, send then
-              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,zstag,MPI_COMM_WORLD,stat,mpierr)
-              call MPI_SEND(send_buf_z,sendc_z,MPI_REAL,partner,zrtag,MPI_COMM_WORLD,mpierr)
+              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,zstag,MPI_COMM_GRID,stat,mpierr)
+              call MPI_SEND(send_buf_z,sendc_z,MPI_REAL,partner,zrtag,MPI_COMM_GRID,mpierr)
             endif
             a(px*nz+1:(px+1)*nz,:,:)=recv_buf_z
           endif
@@ -3706,11 +4641,11 @@ module Mpicomm
             iy=(ibox*nprocy+px)*ny
             send_buf_y=a(iy+1:iy+ny,:)
             if (px<ipy) then      ! above diagonal: send first, receive then
-              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,mpierr)
-              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,mpierr)
+              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,mpierr)
+              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,stat,mpierr)
             elseif (px>ipy) then  ! below diagonal: receive first, send then
-              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,mpierr)
-              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,mpierr)
+              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,stat,mpierr)
+              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,mpierr)
             endif
             a(iy+1:iy+ny,:)=recv_buf_y
           endif
@@ -3816,11 +4751,11 @@ module Mpicomm
             iy=(ibox*nprocy+px)*ny_other
             send_buf_y=a(iy+1:iy+ny_other,:)
             if (px<ipy) then      ! above diagonal: send first, receive then
-              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,mpierr)
-              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,mpierr)
+              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,mpierr)
+              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,stat,mpierr)
             elseif (px>ipy) then  ! below diagonal: receive first, send then
-              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,mpierr)
-              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,mpierr)
+              call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,stat,mpierr)
+              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,mpierr)
             endif
             a(iy+1:iy+ny_other,:)=recv_buf_y
           endif
@@ -3936,11 +4871,11 @@ module Mpicomm
               ix=(ibox*nprocy+px)*ny_other
               send_buf_y=a(ix+1:ix+ny_other,:,:)
               if (px<ipy) then      ! above diagonal: send first, receive then
-                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,mpierr)
-                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,mpierr)
+                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,mpierr)
+                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,stat,mpierr)
               elseif (px>ipy) then  ! below diagonal: receive first, send then
-                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,mpierr)
-                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,mpierr)
+                call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,stat,mpierr)
+                call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_GRID,mpierr)
               endif
               a(ix+1:ix+ny_other,:,:)=recv_buf_y
             endif
@@ -3997,11 +4932,11 @@ module Mpicomm
             partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
             send_buf_z=a(px*nz_other+1:(px+1)*nz_other,:,:)
             if (px<ipz) then      ! above diagonal: send first, receive then
-              call MPI_SEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,mpierr)
-              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,mpierr)
+              call MPI_SEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_GRID,mpierr)
+              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_GRID,stat,mpierr)
             elseif (px>ipz) then  ! below diagonal: receive first, send then
-              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,mpierr)
-              call MPI_SEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,mpierr)
+              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_GRID,stat,mpierr)
+              call MPI_SEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_GRID,mpierr)
             endif
             a(px*nz_other+1:(px+1)*nz_other,:,:)=recv_buf_z
           endif
@@ -4056,7 +4991,7 @@ module Mpicomm
         if (px/=ipz) then
           partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
           buf=a(px*nxt+1:(px+1)*nxt,:)
-          call MPI_SENDRECV_REPLACE(buf,sendc,MPI_REAL,partner,ztag,partner,ztag,MPI_COMM_WORLD,stat,mpierr)
+          call MPI_SENDRECV_REPLACE(buf,sendc,MPI_REAL,partner,ztag,partner,ztag,MPI_COMM_GRID,stat,mpierr)
           b(px*nz+1:(px+1)*nz,:)=transpose(buf)
         endif
       enddo
@@ -4096,7 +5031,7 @@ module Mpicomm
         if (px/=ipz) then
           partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
           buf=a(px*nz+1:(px+1)*nz,:)
-          call MPI_SENDRECV_REPLACE(buf,sendc,MPI_REAL,partner,ztag,partner,ztag,MPI_COMM_WORLD,stat,mpierr)
+          call MPI_SENDRECV_REPLACE(buf,sendc,MPI_REAL,partner,ztag,partner,ztag,MPI_COMM_GRID,stat,mpierr)
           b(px*nxt+1:(px+1)*nxt,:)=transpose(buf)
         endif
       enddo
@@ -4142,13 +5077,13 @@ module Mpicomm
         nbufy=nx*nghost*(nghost+1)*3
 !
         call MPI_IRECV(ubufyi,nbufy,MPI_REAL,yuneigh,tolowy, &
-                       MPI_COMM_WORLD,irecv_rq_fromuppy,mpierr)
+                       MPI_COMM_GRID,irecv_rq_fromuppy,mpierr)
         call MPI_IRECV(lbufyi,nbufy,MPI_REAL,ylneigh,touppy, &
-                       MPI_COMM_WORLD,irecv_rq_fromlowy,mpierr)
+                       MPI_COMM_GRID,irecv_rq_fromlowy,mpierr)
         call MPI_ISEND(lbufyo,nbufy,MPI_REAL,ylneigh,tolowy, &
-                       MPI_COMM_WORLD,isend_rq_tolowy,mpierr)
+                       MPI_COMM_GRID,isend_rq_tolowy,mpierr)
         call MPI_ISEND(ubufyo,nbufy,MPI_REAL,yuneigh,touppy, &
-                       MPI_COMM_WORLD,isend_rq_touppy,mpierr)
+                       MPI_COMM_GRID,isend_rq_touppy,mpierr)
 !
         call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,mpierr)
         call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,mpierr)
@@ -4176,13 +5111,13 @@ module Mpicomm
         nbufx=nghost*size(f,2)*(nghost+1)*3
 !
         call MPI_IRECV(ubufxi,nbufx,MPI_REAL,xuneigh,tolowx, &
-                       MPI_COMM_WORLD,irecv_rq_fromuppx,mpierr)
+                       MPI_COMM_GRID,irecv_rq_fromuppx,mpierr)
         call MPI_IRECV(lbufxi,nbufx,MPI_REAL,xlneigh,touppx, &
-                       MPI_COMM_WORLD,irecv_rq_fromlowx,mpierr)
+                       MPI_COMM_GRID,irecv_rq_fromlowx,mpierr)
         call MPI_ISEND(lbufxo,nbufx,MPI_REAL,xlneigh,tolowx, &
-                       MPI_COMM_WORLD,isend_rq_tolowx,mpierr)
+                       MPI_COMM_GRID,isend_rq_tolowx,mpierr)
         call MPI_ISEND(ubufxo,nbufx,MPI_REAL,xuneigh,touppx, &
-                       MPI_COMM_WORLD,isend_rq_touppx,mpierr)
+                       MPI_COMM_GRID,isend_rq_touppx,mpierr)
 !
         call MPI_WAIT(irecv_rq_fromuppx,irecv_stat_fu,mpierr)
         call MPI_WAIT(irecv_rq_fromlowx,irecv_stat_fl,mpierr)
@@ -4224,13 +5159,13 @@ module Mpicomm
         nbufy = nx * nghost
 !
         call MPI_IRECV (ubufyi, nbufy, MPI_REAL, yuneigh, tolowy, &
-                       MPI_COMM_WORLD, irecv_rq_fromuppy, mpierr)
+                       MPI_COMM_GRID, irecv_rq_fromuppy, mpierr)
         call MPI_IRECV (lbufyi, nbufy, MPI_REAL, ylneigh, touppy, &
-                       MPI_COMM_WORLD, irecv_rq_fromlowy, mpierr)
+                       MPI_COMM_GRID, irecv_rq_fromlowy, mpierr)
         call MPI_ISEND (lbufyo, nbufy, MPI_REAL, ylneigh, tolowy, &
-                       MPI_COMM_WORLD, isend_rq_tolowy, mpierr)
+                       MPI_COMM_GRID, isend_rq_tolowy, mpierr)
         call MPI_ISEND (ubufyo, nbufy, MPI_REAL, yuneigh, touppy, &
-                       MPI_COMM_WORLD, isend_rq_touppy, mpierr)
+                       MPI_COMM_GRID, isend_rq_touppy, mpierr)
 !
         call MPI_WAIT (irecv_rq_fromuppy, irecv_stat_fu, mpierr)
         call MPI_WAIT (irecv_rq_fromlowy, irecv_stat_fl, mpierr)
@@ -4258,13 +5193,13 @@ module Mpicomm
         nbufx = nghost * size(data,2)
 !
         call MPI_IRECV (ubufxi, nbufx, MPI_REAL, xuneigh, tolowx, &
-                       MPI_COMM_WORLD, irecv_rq_fromuppx, mpierr)
+                       MPI_COMM_GRID, irecv_rq_fromuppx, mpierr)
         call MPI_IRECV (lbufxi, nbufx, MPI_REAL, xlneigh, touppx, &
-                       MPI_COMM_WORLD, irecv_rq_fromlowx, mpierr)
+                       MPI_COMM_GRID, irecv_rq_fromlowx, mpierr)
         call MPI_ISEND (lbufxo, nbufx, MPI_REAL, xlneigh, tolowx, &
-                       MPI_COMM_WORLD, isend_rq_tolowx, mpierr)
+                       MPI_COMM_GRID, isend_rq_tolowx, mpierr)
         call MPI_ISEND (ubufxo, nbufx, MPI_REAL, xuneigh, touppx, &
-                       MPI_COMM_WORLD, isend_rq_touppx, mpierr)
+                       MPI_COMM_GRID, isend_rq_touppx, mpierr)
 !
         call MPI_WAIT (irecv_rq_fromuppx, irecv_stat_fu, mpierr)
         call MPI_WAIT (irecv_rq_fromlowx, irecv_stat_fl, mpierr)
@@ -4309,14 +5244,14 @@ module Mpicomm
         nbuf=nghost*3
 !
         call MPI_IRECV(ubufi,nbuf,MPI_REAL, &
-                       zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,mpierr)
+                       zuneigh,tolowz,MPI_COMM_GRID,irecv_rq_fromuppz,mpierr)
         call MPI_IRECV(lbufi,nbuf,MPI_REAL, &
-                       zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,mpierr)
+                       zlneigh,touppz,MPI_COMM_GRID,irecv_rq_fromlowz,mpierr)
 !
         call MPI_ISEND(lbufo,nbuf,MPI_REAL, &
-                       zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,mpierr)
+                       zlneigh,tolowz,MPI_COMM_GRID,isend_rq_tolowz,mpierr)
         call MPI_ISEND(ubufo,nbuf,MPI_REAL, &
-                       zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,mpierr)
+                       zuneigh,touppz,MPI_COMM_GRID,isend_rq_touppz,mpierr)
 !
         call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,mpierr)
         call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,mpierr)
@@ -4420,13 +5355,13 @@ module Mpicomm
               out = in
             else
               ! send to partner
-              call MPI_SEND (in, 1, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+              call MPI_SEND (in, 1, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
             endif
           enddo
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (out, 1, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
+        call MPI_RECV (out, 1, MPI_REAL, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
       endif
 !
     endsubroutine distribute_xy_0D
@@ -4473,13 +5408,13 @@ module Mpicomm
             else
               ! send to partner
               call MPI_SEND (in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny), &
-                  nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+                  nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
             endif
           enddo
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (out, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
+        call MPI_RECV (out, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
       endif
 !
     endsubroutine distribute_xy_2D
@@ -4529,13 +5464,13 @@ module Mpicomm
             else
               ! send to partner
               call MPI_SEND (in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:), &
-                  nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+                  nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
             endif
           enddo
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (out, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
+        call MPI_RECV (out, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
       endif
 !
     endsubroutine distribute_xy_3D
@@ -4588,13 +5523,13 @@ module Mpicomm
             else
               ! send to partner
               call MPI_SEND (in(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:,:), &
-                  nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+                  nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
             endif
           enddo
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (out, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
+        call MPI_RECV (out, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
       endif
 !
     endsubroutine distribute_xy_4D
@@ -4636,14 +5571,14 @@ module Mpicomm
               out(px+1,py+1) = in
             else
               ! receive from partner
-              call MPI_RECV (buffer, 1, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+              call MPI_RECV (buffer, 1, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
               out(px+1,py+1) = buffer
             endif
           enddo
         enddo
       else
         ! send to collector
-        call MPI_SEND (in, 1, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
+        call MPI_SEND (in, 1, MPI_REAL, collector, ytag, MPI_COMM_GRID, mpierr)
       endif
 !
     endsubroutine collect_xy_0D
@@ -4694,7 +5629,7 @@ module Mpicomm
               out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny) = in
             else
               ! receive from partner
-              call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+              call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
               out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny) = buffer
             endif
           enddo
@@ -4703,7 +5638,7 @@ module Mpicomm
         deallocate (buffer)
       else
         ! send to collector
-        call MPI_SEND (in, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
+        call MPI_SEND (in, nbox, MPI_REAL, collector, ytag, MPI_COMM_GRID, mpierr)
       endif
 !
     endsubroutine collect_xy_2D
@@ -4755,7 +5690,7 @@ module Mpicomm
               out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:) = in
             else
               ! receive from partner
-              call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+              call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
               out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:) = buffer
             endif
           enddo
@@ -4764,7 +5699,7 @@ module Mpicomm
         deallocate (buffer)
       else
         ! send to collector
-        call MPI_SEND (in, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
+        call MPI_SEND (in, nbox, MPI_REAL, collector, ytag, MPI_COMM_GRID, mpierr)
       endif
 !
     endsubroutine collect_xy_3D
@@ -4821,7 +5756,7 @@ module Mpicomm
               out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:,:) = in
             else
               ! receive from partner
-              call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+              call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
               out(px*bnx+1:(px+1)*bnx,py*bny+1:(py+1)*bny,:,:) = buffer
             endif
           enddo
@@ -4830,7 +5765,7 @@ module Mpicomm
         deallocate (buffer)
       else
         ! send to collector
-        call MPI_SEND (in, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
+        call MPI_SEND (in, nbox, MPI_REAL, collector, ytag, MPI_COMM_GRID, mpierr)
       endif
 !
     endsubroutine collect_xy_4D
@@ -4878,12 +5813,12 @@ module Mpicomm
             out = in(:,:,pz*bnz+1:(pz+1)*bnz)
           else
             ! send to partner
-            call MPI_SEND (in(:,:,pz*bnz+1:(pz+1)*bnz), nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_SEND (in(:,:,pz*bnz+1:(pz+1)*bnz), nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
           endif
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (out, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
+        call MPI_RECV (out, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
       endif
 !
     endsubroutine distribute_z_3D
@@ -4934,12 +5869,12 @@ module Mpicomm
             out = in(:,:,pz*bnz+1:(pz+1)*bnz,:)
           else
             ! send to partner
-            call MPI_SEND (in(:,:,pz*bnz+1:(pz+1)*bnz,:), nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_SEND (in(:,:,pz*bnz+1:(pz+1)*bnz,:), nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
           endif
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (out, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
+        call MPI_RECV (out, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
       endif
 !
     endsubroutine distribute_z_4D
@@ -4992,7 +5927,7 @@ module Mpicomm
             out(:,:,pz*bnz+1:(pz+1)*bnz) = in
           else
             ! receive from partner
-            call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
             out(:,:,pz*bnz+1:(pz+1)*bnz) = buffer
           endif
         enddo
@@ -5000,7 +5935,7 @@ module Mpicomm
         deallocate (buffer)
       else
         ! send to collector
-        call MPI_SEND (in, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
+        call MPI_SEND (in, nbox, MPI_REAL, collector, ytag, MPI_COMM_GRID, mpierr)
       endif
 !
     endsubroutine collect_z_3D
@@ -5056,7 +5991,7 @@ module Mpicomm
             out(:,:,pz*bnz+1:(pz+1)*bnz,:) = in
           else
             ! receive from partner
-            call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
             out(:,:,pz*bnz+1:(pz+1)*bnz,:) = buffer
           endif
         enddo
@@ -5064,7 +5999,7 @@ module Mpicomm
         deallocate (buffer)
       else
         ! send to collector
-        call MPI_SEND (in, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
+        call MPI_SEND (in, nbox, MPI_REAL, collector, ytag, MPI_COMM_GRID, mpierr)
       endif
 !
     endsubroutine collect_z_4D
@@ -5137,7 +6072,7 @@ module Mpicomm
             y_row(:,py*cny+1+y_add:py*cny+my,:,:) = in(:,1+y_add:my,:,:)
           else
             ! receive from y-row partner
-            call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
             y_row(:,py*cny+1+y_add:py*cny+my-y_sub,:,:) = buffer(:,1+y_add:my-y_sub,:,:)
           endif
         enddo
@@ -5146,14 +6081,14 @@ module Mpicomm
 !
         if (iproc /= collector) then
           ! send to collector
-          call MPI_SEND (y_row, nrow, MPI_REAL, collector, xtag, MPI_COMM_WORLD, mpierr)
+          call MPI_SEND (y_row, nrow, MPI_REAL, collector, xtag, MPI_COMM_GRID, mpierr)
           deallocate (y_row)
         endif
 !
       elseif (ipz == pz) then
         ! send to collector of the y-row (lfirst_proc_y)
         partner = ipx + ipz*nprocxy
-        call MPI_SEND (in, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+        call MPI_SEND (in, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
       endif
 !
       if (iproc == collector) then
@@ -5173,7 +6108,7 @@ module Mpicomm
             deallocate (y_row)
           else
             ! receive from partner
-            call MPI_RECV (buffer, nrow, MPI_REAL, partner, xtag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_RECV (buffer, nrow, MPI_REAL, partner, xtag, MPI_COMM_GRID, stat, mpierr)
             out(px*cnx+1+x_add:px*cnx+mx-x_sub,:,:,:) = buffer(1+x_add:mx-x_sub,:,:,:)
           endif
         enddo
@@ -5278,7 +6213,7 @@ module Mpicomm
           else
             ! send to partner
             buffer = in(px*cnx+1:px*cnx+mx,:,:,:)
-            call MPI_SEND (buffer, nrow, MPI_REAL, partner, xtag, MPI_COMM_WORLD, mpierr)
+            call MPI_SEND (buffer, nrow, MPI_REAL, partner, xtag, MPI_COMM_GRID, mpierr)
           endif
         enddo
         deallocate (buffer)
@@ -5287,7 +6222,7 @@ module Mpicomm
       if (lfirst_proc_y .and. (ipz == pz)) then
         if (iproc /= broadcaster) then
           ! receive y-row from broadcaster
-          call MPI_RECV (y_row, nrow, MPI_REAL, broadcaster, xtag, MPI_COMM_WORLD, stat, mpierr)
+          call MPI_RECV (y_row, nrow, MPI_REAL, broadcaster, xtag, MPI_COMM_GRID, stat, mpierr)
         endif
 !
         allocate (buffer(bnx,bny,bnz,bna), stat=alloc_err)
@@ -5301,14 +6236,14 @@ module Mpicomm
           else
             ! send to partner
             buffer = y_row(:,py*cny+1:py*cny+my,:,:)
-            call MPI_SEND (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_SEND (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
           endif
         enddo
         deallocate (buffer)
       elseif (ipz == pz) then
         ! receive local data from y-row partner (lfirst_proc_y)
         partner = ipx + ipz*nprocxy
-        call MPI_RECV (out, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+        call MPI_RECV (out, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
       endif
 !
       if (ipz == pz) deallocate (y_row)
@@ -5352,7 +6287,7 @@ module Mpicomm
             out(pz*nz+1+z_add:pz*nz+mz) = in(1+z_add:mz)
           else
             ! receive from partner
-            call MPI_RECV (buffer, mz, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_RECV (buffer, mz, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
             out(pz*nz+1+z_add:pz*nz+mz) = buffer(1+z_add:mz)
           endif
         enddo
@@ -5360,7 +6295,7 @@ module Mpicomm
         deallocate (buffer)
       else
         ! send to collector
-        call MPI_SEND (in, mz, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
+        call MPI_SEND (in, mz, MPI_REAL, collector, ytag, MPI_COMM_GRID, mpierr)
       endif
 !
     endsubroutine globalize_z
@@ -5395,12 +6330,12 @@ module Mpicomm
             out = in(pz*nz+1:pz*nz+mz)
           else
             ! send to partner
-            call MPI_SEND (in(pz*nz+1:pz*nz+mz), mz, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_SEND (in(pz*nz+1:pz*nz+mz), mz, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
           endif
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (out, mz, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
+        call MPI_RECV (out, mz, MPI_REAL, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
       endif
 !
     endsubroutine localize_z
@@ -5451,12 +6386,12 @@ module Mpicomm
           else
             ! send to partner
             buffer = in(:,bny*ibox+1:bny*(ibox+1))
-            call MPI_SEND (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_SEND (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
           endif
         enddo
       else
         ! receive from broadcaster
-        call MPI_RECV (buffer, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_WORLD, stat, mpierr)
+        call MPI_RECV (buffer, nbox, MPI_REAL, broadcaster, ytag, MPI_COMM_GRID, stat, mpierr)
         out = buffer
       endif
 !
@@ -5509,14 +6444,14 @@ module Mpicomm
             out(:,bny*ibox+1:bny*(ibox+1)) = in
           else
             ! receive from partner
-            call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_RECV (buffer, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
             out(:,bny*ibox+1:bny*(ibox+1)) = buffer
           endif
         enddo
       else
         ! send to collector
         buffer = in
-        call MPI_SEND (buffer, nbox, MPI_REAL, collector, ytag, MPI_COMM_WORLD, mpierr)
+        call MPI_SEND (buffer, nbox, MPI_REAL, collector, ytag, MPI_COMM_GRID, mpierr)
       endif
 !
       deallocate (buffer)
@@ -5547,11 +6482,11 @@ module Mpicomm
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nx, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nx, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nx, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nx, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nx, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (in, nx, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nx, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nx, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(nx*ibox+1:nx*(ibox+1)) = recv_buf
         endif
@@ -5598,11 +6533,11 @@ module Mpicomm
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, ny, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, ny, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, ny, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, ny, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, ny, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (in, ny, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, ny, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, ny, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(ny*ibox+1:ny*(ibox+1)) = recv_buf
         endif
@@ -5636,11 +6571,11 @@ module Mpicomm
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(:,ny*ibox+1:ny*(ibox+1)) = recv_buf
         endif
@@ -5690,11 +6625,11 @@ module Mpicomm
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(:,ny*ibox+1:ny*(ibox+1),:) = recv_buf
         endif
@@ -5749,11 +6684,11 @@ module Mpicomm
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(:,ny*ibox+1:ny*(ibox+1),:,:) = recv_buf
         endif
@@ -5847,11 +6782,11 @@ module Mpicomm
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nz, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nz, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nz, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nz, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nz, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (in, nz, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nz, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nz, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(nz*ibox+1:nz*(ibox+1)) = recv_buf
         endif
@@ -5898,11 +6833,11 @@ module Mpicomm
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(nz*ibox+1:nz*(ibox+1),:) = recv_buf
         endif
@@ -5954,11 +6889,11 @@ module Mpicomm
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(:,:,nz*ibox+1:nz*(ibox+1)) = recv_buf
         endif
@@ -6013,11 +6948,11 @@ module Mpicomm
         else
           ! communicate with partner
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (in, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(:,:,nz*ibox+1:nz*(ibox+1),:) = recv_buf
         endif
@@ -6136,11 +7071,11 @@ module Mpicomm
           ! communicate with partner
           send_buf = in(:,bny*ibox+1:bny*(ibox+1))
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(bnx*ibox+1:bnx*(ibox+1),:) = recv_buf
         endif
@@ -6202,11 +7137,11 @@ module Mpicomm
           ! communicate with partner
           send_buf = in(:,bny*ibox+1:bny*(ibox+1))
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(bnx*ibox+1:bnx*(ibox+1),:) = recv_buf
         endif
@@ -6285,11 +7220,11 @@ module Mpicomm
         else local                         ! communicate with partner
           send_buf = in(:,bny*ibox+1:bny*(ibox+1)+2*ngc,:)
           commun: if (iproc > partner) then  ! above diagonal: send first, receive then
-            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else commun                        ! below diagonal: receive first, send then
-            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
           endif commun
         endif local
         out(ngc+bnx*ibox+1:ngc+bnx*(ibox+1),:,:) = recv_buf(ngc+1:ngc+bnx,:,:)
@@ -6363,11 +7298,11 @@ module Mpicomm
           ! communicate with partner
           send_buf = in(:,bny*ibox+1:bny*(ibox+1),:,:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(bnx*ibox+1:bnx*(ibox+1),:,:,:) = recv_buf
         endif
@@ -6426,11 +7361,11 @@ module Mpicomm
           ! communicate with partner
           send_buf = in(bnx*ibox+1:bnx*(ibox+1),:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(:,bny*ibox+1:bny*(ibox+1)) = recv_buf
         endif
@@ -6495,11 +7430,11 @@ module Mpicomm
           ! communicate with partner
           send_buf = in(bnx*ibox+1:bnx*(ibox+1),:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(:,bny*ibox+1:bny*(ibox+1)) = recv_buf
         endif
@@ -6579,11 +7514,11 @@ module Mpicomm
         else local                         ! communicate with partner
           send_buf = in(bnx*ibox+1:bnx*(ibox+1)+2*ngc,:,:)
           commun: if (iproc > partner) then  ! above diagonal: send first, receive then
-            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else commun                        ! below diagonal: receive first, send then
-            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
           endif commun
         endif local
         out(:,ngc+bny*ibox+1:ngc+bny*(ibox+1),:) = recv_buf(:,ngc+1:ngc+bny,:)
@@ -6657,11 +7592,11 @@ module Mpicomm
           ! communicate with partner
           send_buf = in(bnx*ibox+1:bnx*(ibox+1),:,:,:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(:,bny*ibox+1:bny*(ibox+1),:,:) = recv_buf
         endif
@@ -6728,11 +7663,11 @@ module Mpicomm
           ! communicate with partner
           send_buf = transpose (in(bny*ibox+1:bny*(ibox+1),:))
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(bnx*ibox+1:bnx*(ibox+1),:) = recv_buf
         endif
@@ -6806,11 +7741,11 @@ module Mpicomm
         else local                        ! communicate with partner
           send_buf = in(bnx*ibox+1:bnx*(ibox+1)+2*ngc,:,:)
           commun: if (iproc > partner) then  ! above diagonal: send first, receive then
-            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else commun                        ! below diagonal: receive first, send then
-            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV(recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND(send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
           endif commun
         endif local
         zscan: do iz = 1, inz
@@ -6901,11 +7836,11 @@ module Mpicomm
             enddo
           enddo
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, utag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ltag, MPI_COMM_GRID, mpierr)
           endif
           out(bnx*ibox+1:bnx*(ibox+1),:,:,:) = recv_buf
         endif
@@ -6969,11 +7904,11 @@ module Mpicomm
           ! communicate with partner
           send_buf = in(:,bny*ibox+1:bny*(ibox+1),:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
           endif
 !
           out(:,:,bnz*ibox+1:bnz*(ibox+1)) = recv_buf
@@ -7042,11 +7977,11 @@ module Mpicomm
           ! communicate with partner
           send_buf = in(:,bny*ibox+1:bny*(ibox+1),:,:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
           endif
           out(:,:,bnz*ibox+1:bnz*(ibox+1),:) = recv_buf
         endif
@@ -7110,11 +8045,11 @@ module Mpicomm
           ! communicate with partner
           send_buf = in(:,:,bnz*ibox+1:bnz*(ibox+1))
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
           endif
           out(:,bny*ibox+1:bny*(ibox+1),:) = recv_buf
         endif
@@ -7182,11 +8117,11 @@ module Mpicomm
           ! communicate with partner
           send_buf = in(:,:,bnz*ibox+1:bnz*(ibox+1),:)
           if (iproc > partner) then ! above diagonal: send first, receive then
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
           else                      ! below diagonal: receive first, send then
-            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, stat, mpierr)
-            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_WORLD, mpierr)
+            call MPI_RECV (recv_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, stat, mpierr)
+            call MPI_SEND (send_buf, nbox, MPI_REAL, partner, ytag, MPI_COMM_GRID, mpierr)
           endif
           out(:,bny*ibox+1:bny*(ibox+1),:,:) = recv_buf
         endif
@@ -7390,7 +8325,7 @@ module Mpicomm
 !
       do i=1,nz
         call MPI_GATHERV(sendbuf(1,1,i), ncnt, MPI_REAL, recvbuf(1,1,i), counts, shifts, &
-                         MPI_REAL, root, MPI_COMM_WORLD, mpierr)
+                         MPI_REAL, root, MPI_COMM_GRID, mpierr)
       enddo
 !
     endsubroutine mpigather
@@ -7591,10 +8526,10 @@ module Mpicomm
                               endif
                             else
                               if (lcomplex) then
-                                call MPI_RECV(rowbuf_cmplx, nsend, MPI_COMPLEX, ig, tag, MPI_COMM_WORLD, status, mpierr)
+                                call MPI_RECV(rowbuf_cmplx, nsend, MPI_COMPLEX, ig, tag, MPI_COMM_GRID, status, mpierr)
                                 !print*, 'iy,irx,ixa:ixe:ixs,kxrangel(:,irx)=', iy,irx,ixa,ixe,ixs , kxrangel(:,irx)
                               else
-                                call MPI_RECV(rowbuf, nsend, MPI_REAL, ig, tag, MPI_COMM_WORLD, status, mpierr)
+                                call MPI_RECV(rowbuf, nsend, MPI_REAL, ig, tag, MPI_COMM_GRID, status, mpierr)
                               endif
                             endif
                             if (lcomplex) then
@@ -7607,18 +8542,18 @@ module Mpicomm
                             if (lcomplex) then
                               if (ltrans) then
                                 call MPI_SEND(sendbuf_cmplx(iy,ixa:ixe:ixs,iz,ic), &
-                                              nsend, MPI_COMPLEX, root, tag, MPI_COMM_WORLD, mpierr)
+                                              nsend, MPI_COMPLEX, root, tag, MPI_COMM_GRID, mpierr)
                               else
                                 call MPI_SEND(sendbuf_cmplx(ixa:ixe:ixs,iy,iz,ic), &
-                                              nsend, MPI_COMPLEX, root, tag, MPI_COMM_WORLD, mpierr)
+                                              nsend, MPI_COMPLEX, root, tag, MPI_COMM_GRID, mpierr)
                               endif
                             else
                               if (ltrans) then
                                 call MPI_SEND(sendbuf(iy,ixa:ixe:ixs,iz), &
-                                              nsend, MPI_REAL, root, tag, MPI_COMM_WORLD, mpierr)
+                                              nsend, MPI_REAL, root, tag, MPI_COMM_GRID, mpierr)
                               else
                                 call MPI_SEND(sendbuf(ixa:ixe:ixs,iy,iz), &
-                                              nsend, MPI_REAL, root, tag, MPI_COMM_WORLD, mpierr)
+                                              nsend, MPI_REAL, root, tag, MPI_COMM_GRID, mpierr)
                               endif
                             endif
 !
@@ -7626,7 +8561,7 @@ module Mpicomm
                         endif
                       enddo
                     enddo
-                    call MPI_BARRIER(MPI_COMM_WORLD, mpierr)
+                    call MPI_BARRIER(MPI_COMM_GRID, mpierr)
                   enddo
                 enddo
               enddo
@@ -7691,7 +8626,7 @@ module Mpicomm
       if (present(idir)) then
         mpiprocs=mpigetcomm(idir)
       else
-        mpiprocs=MPI_COMM_WORLD
+        mpiprocs=MPI_COMM_GRID
       endif
 !
       call MPI_OP_CREATE( merge_1d, .false., merge, mpierr )
@@ -7722,7 +8657,7 @@ module Mpicomm
         case(23)
           mpigetcomm=MPI_COMM_YZPLANE
         case default
-          mpigetcomm=MPI_COMM_WORLD
+          mpigetcomm=MPI_COMM_GRID
       endselect
 !
     endfunction mpigetcomm
@@ -7791,5 +8726,531 @@ module Mpicomm
       call MPI_BCAST(report_clean_output,1,MPI_LOGICAL,root,MPI_COMM_WORLD,mpierr)
 !
     end function report_clean_output
+!**************************************************************************
+    subroutine set_yy_neighbors
+!
+!  Determines for the boundary processors of one (Yin or Yang) grid the neighbors 
+!  (direct or corner) in the other. Determines further the length of the buffers 
+!  for data exchange between the neighbors and stores them in yy_buflens.
+!  Implemented for nprocz/nprocy=3 only!
+! 
+!  At return neighbor ranks refer to MPI_COMM_WORLD.
+!
+!  20-dec-15/MR: coded
+!
+      use General, only: find_proc
+
+        integer, parameter :: nprocz_rd=nprocz/3
+        
+        len_cornbuf=my+nz+nghost                          ! length of a "cornerstrip"
+!
+!  At lower theta boundary (northern hemisphere).
+!
+        if (lfirst_proc_y) then
+          if (ipz<nprocz_rd) then                         ! for first third in phi direction
+
+            yy_buflens=mz                                 ! extent along boundary with ghost zones.
+!
+!  Direct neighbor.
+!
+            ylneigh=find_proc(ipx,nprocy-1,ipz+2*nprocz_rd)
+!
+!  Lower left corner neighbor.
+!
+            if (lfirst_proc_z) then                       ! not used at yz-corner
+              llcorn=-1
+            else
+              llcorn=find_proc(ipx,nprocy-1,ipz+2*nprocz_rd-1)
+            endif
+!
+!  Lower right corner neighbor.
+!
+            if (ipz==nprocz_rd-1) then
+              lucorn=-1                                   ! last proc in first third = corner opposite
+              yy_buflens=(/mz,len_cornbuf,0/)
+            else
+              lucorn=find_proc(ipx,nprocy-1,ipz+2*nprocz_rd+1)
+            endif
+
+          elseif (ipz>=2*nprocz_rd) then                  ! for last third in phi direction
+
+            yy_buflens=mz
+!
+!  Direct neighbor.
+!
+            ylneigh=find_proc(ipx,0,5*nprocz_rd-ipz-1)
+!
+!  Lower left corner neighbor.
+!
+            if (ipz==2*nprocz_rd) then                    ! first proc in last third = corner opposite
+              llcorn=-1
+              yy_buflens=(/0,len_cornbuf,mz/)
+            else
+              llcorn=find_proc(ipx,0,5*nprocz_rd-ipz)
+            endif
+!
+!  Upper left corner neighbor.
+!
+            if (llast_proc_z) then                        ! not used at yz-corner
+              lucorn=-1
+            else
+              lucorn=find_proc(ipx,0,5*nprocz_rd-ipz-2)
+            endif
+
+          else                                            ! for middle third in phi direction                 
+
+            yy_buflens=my
+!
+!  Direct neighbor.
+!
+            ylneigh=find_proc(ipx,nprocy-1-(ipz-nprocz_rd),nprocz-1)
+!
+!  Lower left corner neighbor.
+!
+            if (ipz==nprocz_rd) then                      ! first proc in middle third = corner opposite
+              llcorn=-1
+              yy_buflens=(/0,len_cornbuf,my/)
+            else
+              llcorn=find_proc(ipx,nprocy-(ipz-nprocz_rd),nprocz-1)
+            endif
+!
+!  Upper left corner neighbor.
+!
+            if (ipz==2*nprocz_rd-1) then                  ! last proc in midlle third = corner opposite
+              lucorn=-1
+              yy_buflens=(/my,len_cornbuf,0/)
+            else
+              lucorn=find_proc(ipx,nprocy-2-(ipz-nprocz_rd),nprocz-1)
+            endif
+
+          endif
+
+          if (.not.lyang) then
+!
+!  For Yin grid: neighbors are in upper half of overall proc number range.
+! 
+            ylneigh=ylneigh+ncpus
+            if (llcorn/=-1) llcorn=llcorn+ncpus
+            if (lucorn/=-1) lucorn=lucorn+ncpus
+          endif
+
+        endif
+!
+!  At upper theta boundary (southern hemisphere).
+!
+        if (llast_proc_y) then
+          if (ipz<nprocz_rd) then                              ! for first third in phi direction
+
+            yy_buflens=mz
+!
+!  Direct neighbor.
+!
+            yuneigh=find_proc(ipx,nprocy-1,nprocz_rd-1-ipz)
+!
+!  Upper right neighbor.
+!
+            if (lfirst_proc_z) then
+              ulcorn=-1                                        ! not used at yz-corner
+            else
+              ulcorn=find_proc(ipx,nprocy-1,nprocz_rd-ipz)
+            endif
+!
+!  Upper left neighbor.
+!
+            if (ipz==nprocz_rd-1) then                         ! last proc in first third = corner opposite
+              uucorn=-1
+              yy_buflens=(/0,len_cornbuf,mz/)
+            else 
+              uucorn=find_proc(ipx,nprocy-1,nprocz_rd-2-ipz)
+            endif
+ 
+          elseif (ipz>=2*nprocz_rd) then                       ! for last third in phi direction
+
+            yy_buflens=mz
+!
+!  Direct neighbor.
+!
+            yuneigh=find_proc(ipx,0,ipz-2*nprocz_rd)
+!
+!  Upper right neighbor.
+!
+            if (ipz==2*nprocz_rd) then                         ! first proc in last third = corner opposite
+              ulcorn=-1
+              yy_buflens=(/mz,len_cornbuf,0/)
+            else
+              ulcorn=find_proc(ipx,0,ipz-2*nprocz_rd-1)
+            endif
+!
+!  Upper left neighbor.
+!
+            if (llast_proc_z) then
+              uucorn=-1                                       ! not used at yz-corner                          
+            else
+              uucorn=find_proc(ipx,0,ipz-2*nprocz_rd+1)
+            endif
+
+          else                                                ! middle third in phi direction                   
+!
+!  Direct neighbor.
+!
+            yy_buflens=my
+
+            yuneigh=find_proc(ipx,nprocy-1-(ipz-nprocz_rd),0)
+!
+!  Upper right neighbor.
+!
+            if (ipz==nprocz_rd) then                          ! first proc in middle third = corner opposite
+              ulcorn=-1
+              yy_buflens=(/my,len_cornbuf,0/)
+            else
+              ulcorn=find_proc(ipx,nprocy-(ipz-nprocz_rd),0)
+            endif
+!
+!  Upper left neighbor.
+!
+            if (ipz==2*nprocz_rd-1) then                      ! last proc in middle third = corner opposite
+              uucorn=-1
+              yy_buflens=(/0,len_cornbuf,my/)
+            else
+              uucorn=find_proc(ipx,nprocy-2-(ipz-nprocz_rd),0)
+            endif
+
+          endif
+
+          if (.not.lyang) then
+!
+!  For Yin grid: neighbors are in upper half of overall proc number range.
+! 
+            yuneigh=yuneigh+ncpus
+            if (ulcorn/=-1) ulcorn=ulcorn+ncpus
+            if (uucorn/=-1) uucorn=uucorn+ncpus
+          endif
+
+        endif
+!
+!  At lower phi boundary.
+!
+        if (lfirst_proc_z) then
+!
+!  Direct neighbor.
+!
+          zlneigh=find_proc(ipx,nprocy-1,2*nprocz_rd-1-ipy)
+!
+!  Lower right neighbor.
+!
+          if (lfirst_proc_y) then
+            llcorn=-1                                       ! not used at yz-corner
+          else
+            llcorn=find_proc(ipx,nprocy-1,2*nprocz_rd-ipy)
+          endif
+!
+!  Lower left neighbor.
+!
+          if (llast_proc_y) then
+            ulcorn=-1                                       ! not used at yz-corner
+          else
+            ulcorn=find_proc(ipx,nprocy-1,2*nprocz_rd-2-ipy)
+          endif
+
+          yy_buflens=mz
+
+          if (.not.lyang) then
+!
+!  For Yin grid: neighbors are in upper half of overall proc number range.
+! 
+            zlneigh=zlneigh+ncpus
+            if (llcorn/=-1) llcorn=llcorn+ncpus
+            if (ulcorn/=-1) ulcorn=ulcorn+ncpus
+          endif
+
+        endif
+!
+!  At upper phi boundary.
+!
+        if (llast_proc_z) then
+!
+!  Direct neighbor.
+!
+          zuneigh=find_proc(ipx,0,2*nprocz_rd-1-ipy)
+!
+!  Upper left neighbor.
+!
+          if (lfirst_proc_y) then
+            lucorn=-1                                 ! not used at yz-corner
+          else
+            lucorn=find_proc(ipx,0,2*nprocz_rd-ipy)
+          endif
+!
+!  Upper right neighbor.
+!
+          if (llast_proc_y) then
+            uucorn=-1                                 ! not used at yz-corner
+          else
+            uucorn=find_proc(ipx,0,2*nprocz_rd-2-ipy)
+          endif
+
+          yy_buflens=mz
+
+          if (.not.lyang) then
+!
+!  For Yin grid: neighbors are in upper half of overall proc number range.
+! 
+            zuneigh=zuneigh+ncpus
+            if (lucorn/=-1) lucorn=lucorn+ncpus
+            if (uucorn/=-1) uucorn=uucorn+ncpus
+          endif
+
+        endif
+
+    endsubroutine set_yy_neighbors
+!***********************************************************************
+    subroutine interpolate_yy(f,ivar1,ivar2,buffer,pos,type)
+!
+!  Performs bilinear interpolation for a whole ghost zone strip of the
+!  complementary (Yin or Yang) grid and all variables ivar1:ivar2. Selection
+!  of the strip (from direct, left or right corner neighbor) by pos. Parameter
+!  type is for later use with other interpolation schemes.
+!  Result returned in buffer.
+!
+!  20-dec-15/MR: coded
+!
+     use General, only: var_is_vec
+
+      real, dimension(:,:,:,:), intent(IN) :: f
+      integer,                  intent(IN) :: ivar1, ivar2, pos, type
+      real, dimension(:,:,:,:), intent(OUT):: buffer
+
+      integer :: nth, nph, i, j, indth, indph, iv, ive, ibuf, jbuf
+      logical :: ltransp
+
+      if (pos==NIL) return
+
+      if (type==BILIN) then
+  
+        nth=size(intcoeffs(pos)%inds,1); nph=size(intcoeffs(pos)%inds,2)
+        ltransp = size(buffer,3)==nth .and. size(buffer,2)==nph
+
+        buffer=0.
+!
+!  Loop over all variables.
+!
+        iv=ivar1
+        do while (iv<=ivar2) 
+
+          if (var_is_vec(iv)) then
+!
+!  All components of Vectorial variables are interpolated at the same time as transformation is
+!  needed.
+!
+            ive=iv+2
+          else
+            ive=iv
+          endif
+
+          do i=1,nth; do j=1,nph
+            if (ltransp) then
+              ibuf=j; jbuf=i
+            else
+              ibuf=i; jbuf=j
+            endif
+            call bilin_interp(intcoeffs(pos),i,j,f(:,:,:,iv:ive), buffer(:,:,:,iv:ive),ibuf,jbuf)
+          enddo; enddo
+          iv=ive+1
+
+        enddo
+      else
+        call stop_it('interpolate_yy: Only bilinear interpolation implemented')
+      endif
+
+    endsubroutine interpolate_yy
+!**************************************************************************
+    subroutine bilin_interp(indcoeffs, ith, iph, f, buffer, i2buf, i3buf)
+!
+!  Performs bilinear interpolation for a pencil at position (ith, iph) of the
+!  original strip from values in f-array using the precalculated weights
+!  in indcoeffs%coeffs. Result is returned in buffer(i2buf,i3buf)=(ith,iph)
+!  or buffer(i2buf,i3buf)=(iph,ith), the latter if transposition is required.
+!
+!  20-dec-15/MR: coded
+! 
+      use General, only: transform_spher_cart_yy, notanumber
+
+      type(ind_coeffs),         intent(IN) :: indcoeffs 
+      integer,                  intent(IN) :: ith, iph, i2buf, i3buf
+      real, dimension(:,:,:,:), intent(IN) :: f
+      real, dimension(:,:,:,:), intent(OUT):: buffer
+
+      integer :: indth, indph
+      real, dimension(:,:,:,:), allocatable :: tmp
+      
+      indth=indcoeffs%inds(ith,iph,1)
+      indph=indcoeffs%inds(ith,iph,2)
+
+      if (indth==0 .or. indph==0) return
+
+      if (size(buffer,4)==3) then
+!
+!  Vector field, is transformed to Cartesian basis of *other* grid before being interpolated 
+!
+        allocate (tmp(size(buffer,1),2,2,3))
+        call transform_spher_cart_yy(f,indth-1,indth,indph-1,indph,tmp,lyy=.true.) 
+
+        buffer(:,i2buf,i3buf,:) = indcoeffs%coeffs(ith,iph,1)*tmp(:,1,1,:) &
+                                 +indcoeffs%coeffs(ith,iph,2)*tmp(:,1,2,:) &
+                                 +indcoeffs%coeffs(ith,iph,3)*tmp(:,2,1,:) &
+                                 +indcoeffs%coeffs(ith,iph,4)*tmp(:,2,2,:)
+if (notanumber(buffer(:,i2buf,i3buf,:))) print*, 'indth,indph, i2buf,i3buf=', indth,indph, i2buf,i3buf
+      else
+!
+!  Scalar field - no transformation.
+!
+        buffer(:,i2buf,i3buf,1) = indcoeffs%coeffs(ith,iph,1)*f(:,indth-1,indph-1,1) &
+                                 +indcoeffs%coeffs(ith,iph,2)*f(:,indth-1,indph  ,1) &
+                                 +indcoeffs%coeffs(ith,iph,3)*f(:,indth  ,indph-1,1) &
+                                 +indcoeffs%coeffs(ith,iph,4)*f(:,indth  ,indph  ,1)
+if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
+  ',indth,indph, i2buf,i3buf=', indth,indph,ith,iph,i2buf,i3buf
+      endif
+
+    endsubroutine bilin_interp
+!***********************************************************************
+    function prep_bilin_interp(thphprime,indcoeffs,th_range) result (nok)
+!
+!  For each of the points in the strip thphprime (with shape 2 x thprime-extent x
+!  phprime-extent), arbitrarily positioned in the yz-plane, determine in
+!  which cell of the grid y(ma:me) x z(na:ne) it lies, store indices of the
+!  cells upper right corner in indcoeffs%inds and the weights of bilinear
+!  interpolation for the four corners in indcoeffs%coeffs. If no cell is found
+!  for a point, indcoeffs%inds and indcoeffs%coeffs are set zero.
+!  If present, return in th_range the interval in thprime-extent in which
+!  interpolation cells could be assigned to any points.
+!  Returns number of points in thphprime for which interpolation cell could be
+!  found.
+!
+!  20-dec-15/MR: coded
+!
+      use General, only: find_index_range_hill
+
+      real, dimension(:,:,:),          intent(IN) :: thphprime
+      type(ind_coeffs),                intent(OUT):: indcoeffs
+      integer, dimension(2), optional, intent(OUT):: th_range
+
+      integer :: nok
+
+      integer :: ip, jp, indth, indph, sz1, sz2, ma, na, me, ne, i1, i2
+      real :: dth, dph, dthp, dphp, qth1, qth2, qph1, qph2
+      logical :: okt, okp
+
+      sz1=size(thphprime,2); sz2=size(thphprime,3)
+
+      if (.not.allocated(indcoeffs%inds)) then
+        allocate(indcoeffs%inds(sz1,sz2,2))
+        indcoeffs%inds=0
+      endif
+
+      nok=0
+      ma=m1-1; me=m2
+!
+!  In order to catch points which lie in gaps between the domains of procs,
+!  the first lower ghost cell in y direction is included, except for the first
+!  proc where it is the first upper, the next proc (ipy=1) then doesn't need a
+!  ghost cell.
+!
+      if (lfirst_proc_y) then
+        ma=m1; me=m2+1
+      elseif (ipy==1) then
+        ma=m1 
+      endif
+!
+!  Likewise for z direction.
+!
+      na=n1-1; ne=n2
+      if (lfirst_proc_z) then
+        na=n1; ne=n2+1
+      elseif (ipz==1) then
+        na=n1
+      endif
+
+      do ip=1,sz1
+        do jp=1,sz2
+!
+!  For all points in strip,
+!
+          okt=.false.; okp=.false.
+          if ( y(ma)<=thphprime(1,ip,jp) ) then
+!
+!  detect between which y lines it lies.
+!
+            do indth=ma+1,me
+              if ( y(indth)>=thphprime(1,ip,jp) ) then
+                indcoeffs%inds(ip,jp,1) = indth
+                okt=.true.
+                exit
+              endif
+            enddo
+          endif
+
+          if (okt) then
+            if ( z(na)<=thphprime(2,ip,jp) ) then
+!
+!  detect between which z lines it lies.
+!
+              do indph=na+1,ne
+                if ( z(indph)>=thphprime(2,ip,jp) ) then
+                  indcoeffs%inds(ip,jp,2) = indph
+                  okp=.true.
+                  exit
+                endif
+              enddo
+            endif
+            if (.not.okp) indcoeffs%inds(ip,jp,1)=0
+          endif
+
+          if (okt.and.okp) then
+
+            if (.not.allocated(indcoeffs%coeffs)) then
+              allocate(indcoeffs%coeffs(sz1,sz2,4))
+              indcoeffs%coeffs=0.
+            endif
+!
+!  If both detections positive, calculate interpolation weights.
+!
+            nok=nok+1
+
+            dth=y(indth)-y(indth-1); dph=z(indph)-z(indph-1)
+            dthp=thphprime(1,ip,jp)-y(indth-1)
+            dphp=thphprime(2,ip,jp)-z(indph-1)
+
+            qth2 = dthp/dth; qth1 = 1.-qth2
+            qph2 = dphp/dph; qph1 = 1.-qph2
+
+            indcoeffs%coeffs(ip,jp,:) = (/qth1*qph1,qth1*qph2,qth2*qph1,qth2*qph2/)
+!if (iproc_world==0) &
+  !print*, 'iproc_world, coeffs=', iproc_world, indcoeffs%inds(ip,jp,:)
+          endif
+
+        enddo
+      enddo
+ 
+      if (present(th_range)) then
+        if (nok>0) then
+! 
+!  If any points caught, go through all sz2 columns of thphprime and determine
+!  for each the range of rows in which points were caught. th_range is the union of all
+!  these ranges.
+!
+          i2=0; i1=sz1+1
+          do ip=1,sz2
+            th_range=find_index_range_hill(indcoeffs%inds(:,ip,1),(/0,0/))
+            if (th_range(1)<i1) i1=th_range(1)
+            if (th_range(2)>i2) i2=th_range(2)
+          enddo
+          th_range=(/i1,i2/)
+        else
+          th_range=(/0,0/)
+        endif
+      endif
+
+    endfunction prep_bilin_interp
 !**************************************************************************
 endmodule Mpicomm
