@@ -36,7 +36,7 @@
 ;                 is !P.Color..
 ;
 ;       DIVISIONS: The number of divisions to divide the bar into. There will
-;                 be (divisions + 1) annotations. The default is 6.
+;                 be (divisions + 1) annotations. The default is 5.
 ;
 ;       FONT:     Sets the font of the annotation. Hershey: -1, Hardware:0, True-Type: 1.
 ;
@@ -230,7 +230,7 @@ IF N_ELEMENTS(range) NE 0 THEN BEGIN
    minrange = range[0]
    maxrange = range[1]
 ENDIF
-IF N_ELEMENTS(divisions) EQ 0 THEN divisions = 6
+IF N_ELEMENTS(divisions) EQ 0 THEN divisions = 5
 IF N_ELEMENTS(font) EQ 0 THEN font = !P.Font
 IF N_ELEMENTS(title) EQ 0 THEN title = ''
 
@@ -335,7 +335,7 @@ IF KEYWORD_SET(vertical) THEN BEGIN
    IF KEYWORD_SET(right) THEN BEGIN
 
       PLOT, [minrange,maxrange], [minrange,maxrange], /NODATA, XTICKS=1, $
-         YTICKS=divisions, XSTYLE=1, YSTYLE=9, $
+         YTICKS=divisions, XSTYLE=1, YSTYLE=9, XMINOR=1, $
          POSITION=position, COLOR=color, CHARSIZE=charsize, /NOERASE, $
          YTICKFORMAT='(A1)', XTICKFORMAT='(A1)', YTICKLEN=ticklen , $
          YRANGE=[minrange, maxrange], FONT=font, _EXTRA=extra, YMINOR=minor
@@ -347,7 +347,7 @@ IF KEYWORD_SET(vertical) THEN BEGIN
    ENDIF ELSE BEGIN
 
       PLOT, [minrange,maxrange], [minrange,maxrange], /NODATA, XTICKS=1, $
-         YTICKS=divisions, XSTYLE=1, YSTYLE=9, YMINOR=minor, $
+         YTICKS=divisions, XSTYLE=1, YSTYLE=9, YMINOR=minor, XMINOR=1, $
          POSITION=position, COLOR=color, CHARSIZE=charsize, /NOERASE, $
          YTICKFORMAT=format, XTICKFORMAT='(A1)', YTICKLEN=ticklen , $
          YRANGE=[minrange, maxrange], FONT=font, YTITLE=title, _EXTRA=extra
