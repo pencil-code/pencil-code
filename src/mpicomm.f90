@@ -1282,7 +1282,7 @@ module Mpicomm
         endif
 
         if (uucorn>=0) then
-          call MPI_WAIT(irecv_rq_FRuu,irecv_stat_Fuu,mpierr,.true.)
+          call MPI_WAIT(irecv_rq_FRuu,irecv_stat_Fuu,mpierr)
           nok=prep_bilin_interp(gridbuf_right,intcoeffs(RIGHT)); noks=noks+nok
 !print*,'uu:',iproc,iproc_world,nok,maxval(abs(intcoeffs(RIGHT)%coeffs)),maxval(intcoeffs(RIGHT)%inds),minval(intcoeffs(RIGHT)%inds)
           call MPI_WAIT(isend_rq_TOuu,isend_stat_Tuu,mpierr)
