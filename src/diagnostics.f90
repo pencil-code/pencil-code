@@ -3279,7 +3279,7 @@ module Diagnostics
 
       integer, intent(OUT) :: nlines
 
-      type(ind_coeffs), allocatable :: intcoeffs
+      type(ind_coeffs), dimension(:), allocatable :: intcoeffs
       real, dimension(:,:,:), allocatable :: thphprime
       real, dimension(:), allocatable :: yloc, zloc
       integer, dimension(:), allocatable :: requests
@@ -3298,7 +3298,7 @@ module Diagnostics
 !  These procs may see phi coordinate lines which continue from Yin grid into the gap.
 !
           nzl=nzgrid/3            ! number of points in gap.
-          allocate(thphprime(2,ny,nzl),yloc(ny),zloc(nzl),intcoeffs)
+          allocate(thphprime(2,ny,nzl),yloc(ny),zloc(nzl),intcoeffs(1))
           yloc=xyz0(2)+(indgen(ny)-1)*dy
           zloc=xyz1(3)+indgen(nzl)*dz
 
@@ -3313,10 +3313,10 @@ module Diagnostics
 !  yloc x zloc: strip of Yin-phi coordinate lines from Yin-proc iproc_yin.
 !
             call yy_transform_strip_other(yloc,zloc,thphprime)
-            nok=prep_bilin_interp(thphprime,intcoeffs,thrange_gap(:,ifound+1))
+            nok=prep_bilin_interp(thphprime,intcoeffs(1),thrange_gap(:,ifound+1))
 !
 !  nok: number of points of the strip claimed by executing proc; 
-!  intcoeffs: interpolation data for these points; thrange_gap: y-range of claimed points,
+!  intcoeffs(1): interpolation data for these points; thrange_gap: y-range of claimed points,
 !  indices refer to local numbering of proc iproc_yin
 !            
             if (nok>0) then
@@ -3330,7 +3330,7 @@ module Diagnostics
 !  Derive from interpolation data to which phi-coordinate lines a point (m,n)
 !  contributes with which weight.
 !
-              call coeffs_to_weights(intcoeffs,indweights_zaver_gap(ifound))
+              call coeffs_to_weights(intcoeffs(1),indweights_zaver_gap(ifound))
               where (indweights_zaver_gap(ifound)%inds>0) &
                 indweights_zaver_gap(ifound)%inds=indweights_zaver_gap(ifound)%inds-(thrange_gap(1,ifound)-1)+offset
 !
@@ -3373,7 +3373,7 @@ module Diagnostics
 !
           nycap=nygrid/2.-1                   ! number of Yin-phi coordinate lines in polar cap
                                               ! could be reduced for bigger pole distance of closest line.
-          allocate(thphprime(2,nycap,nzgrid_eff),yloc(nycap),zloc(nzgrid_eff),intcoeffs)
+          allocate(thphprime(2,nycap,nzgrid_eff),yloc(nycap),zloc(nzgrid_eff),intcoeffs(1))
           zloc=indgen(nzgrid_eff)*dz
 !if (iproc==0) print*, 'zloc=', zloc(1), zloc(nzgrid_eff)
           if (ipz<=nprocz/3) then
@@ -3396,10 +3396,10 @@ module Diagnostics
 !  yloc x zloc: strip of all Yin-phi coordinate lines in cap.
 !
           call yy_transform_strip_other(yloc,zloc,thphprime)
-          nok=prep_bilin_interp(thphprime,intcoeffs,thrange_cap)
+          nok=prep_bilin_interp(thphprime,intcoeffs(1),thrange_cap)
 !
 !  nok: number of points of the strip claimed by executing proc; 
-!  intcoeffs: interpolation data for these points; thrange_cap: y-range of claimed points,
+!  intcoeffs(1): interpolation data for these points; thrange_cap: y-range of claimed points,
 !  indices refer to bunch of all Yin-phi coordinate lines in cap.
 !            
           if (nok>0) then
@@ -3409,7 +3409,7 @@ module Diagnostics
 !  Derive from interpolation data to which phi-coordinate lines a point (m,n)
 !  contributes with which weight.
 !
-            call coeffs_to_weights(intcoeffs,indweights_zaver_cap)
+            call coeffs_to_weights(intcoeffs(1),indweights_zaver_cap)
 !print*, 'CAP: iproc_world, thrange_cap=', iproc_world, thrange_cap, &
 !minval(indweights_zaver_cap%inds), maxval(indweights_zaver_cap%inds)
             where (indweights_zaver_cap%inds>0) &
