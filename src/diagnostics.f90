@@ -3502,107 +3502,12 @@ module Diagnostics
 !
 !   20-mar-16/MR: coded
 !
-      use General, only: pos_in_array, itoa
-      use Messages, only: warning
+      type(ind_coeffs), intent(IN) :: intcoeffs
+      type(ind_coeffs), intent(OUT):: indweights
 
-      type(ind_coeffs) :: intcoeffs,indweights
+      indweights%inds=0
+      indweights%coeffs=0.
  
-      integer :: mm, nn, i, j, indth, indph, dindth, dindph, sz1, sz2, thpos, ith
-      real :: coeff
-      integer, parameter :: nlines_max=16   ! perhaps too small.
-      logical :: ltoo_many_lines
-
-       if (allocated(indweights%inds)) deallocate(indweights%inds)
-       if (allocated(indweights%coeffs)) deallocate(indweights%coeffs)
-       allocate(indweights%inds(m1:m2,n1:n2,nlines_max),indweights%coeffs(m1:m2,n1:n2,nlines_max))
-
-       sz1=size(intcoeffs%inds,1); sz2=size(intcoeffs%inds,2)
-       indweights%inds=0
-
-       ltoo_many_lines=.false.
-!
-!  Iterate over all (non-ghost) points (mm,nn) in the y-z plane of the local grid.
-!
-       do nn=n1,n2
-         do mm=m1,m2
-           ith=0
-           do i=1,sz1
-             do j=1,sz2
-
-               indth=intcoeffs%inds(i,j,1); indph=intcoeffs%inds(i,j,2)
-               if (indth==0) cycle
-!
-!  Iterate over all points (i,j) of the strip for which interpolation is (potentially) performed as
-!  they lie within the local grid. (indth,indph) refers to the grid point which
-!  is employed in interpolation.
-!
-               dindth=indth-mm; dindph=indph-nn
-
-               if ((dindth==1.or.dindth==0) .and. (dindph==1.or.dindph==0)) then
-!
-!  Grid point (mm,nn) coincides with one of the four (bilinear interpolation!)
-!  grid points employed in interpolation and hence contributes to coordinate line i of strip.
-!
-                 if (ith==0) then
-                   thpos=0
-                 else
-!
-!  Has this point already contributed to a line? Then thpos>0.
-!
-                   thpos=pos_in_array(indth,indweights%inds(mm,nn,:ith))
-                 endif
-
-                 if (thpos==0) then
-!
-!  Not yet contributed -> check for overflow over nlines_max.
-!
-                   if (ith==nlines_max.and..not.ltoo_many_lines) then
-                     call warning('coeffs_to_weights', 'More than '//itoa(nlines_max)// &
-                          ' points contributed to in proc '//itoa(iproc_world))
-                     ltoo_many_lines=.true.
-                   else
-                     ith=ith+1
-                   endif
-!
-!  If point (mm,nn) contributes to too many lines, ignore this and any further
-!  contributions to additional lines. (problematic!)
-!
-                   if (ltoo_many_lines) cycle
-                   thpos=ith
-!
-!  Store y-index i of line for point (mm,nn), initialize weight.
-!
-                   indweights%inds(mm,nn,ith)=i
-                   indweights%coeffs(mm,nn,ith)=0.
-                 endif
-!
-!  Detect with which "corner" of interpolation cell point (mm,nn) coincides and retrieve interpolation
-!  coefficient = weight.
-!              
-                 if (dindth==1) then
-                   if (dindph==1) then
-                     coeff=intcoeffs%coeffs(i,j,1)
-                   else
-                     coeff=intcoeffs%coeffs(i,j,2)
-                   endif
-                 else
-                   if (dindph==1) then
-                     coeff=intcoeffs%coeffs(i,j,3)
-                   else
-                     coeff=intcoeffs%coeffs(i,j,4)
-                   endif
-                 endif
-!
-!  Accumulate weights.
-!
-                 indweights%coeffs(mm,nn,thpos)=indweights%coeffs(mm,nn,thpos)+coeff
-
-               endif
-             enddo
-           enddo
-         enddo
-       enddo
-
     endsubroutine coeffs_to_weights
 !*******************************************************************
     subroutine allocate_phiaverages(nnamel)

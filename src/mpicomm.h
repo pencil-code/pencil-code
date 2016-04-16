@@ -80,8 +80,8 @@
   character(LEN=4), public :: cyinyang=' '
 !
   type ind_coeffs
-    integer, dimension(:,:,:), allocatable :: inds
-    real, dimension(:,:,:), allocatable :: coeffs
+    integer, dimension(1,1,1) :: inds
+    real, dimension(1,1,1) :: coeffs
   end type
   public :: ind_coeffs
 

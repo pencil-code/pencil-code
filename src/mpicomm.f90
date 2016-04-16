@@ -9073,44 +9073,12 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !
 !  20-dec-15/MR: coded
 ! 
-      use General, only: transform_spher_cart_yy, notanumber
-
       type(ind_coeffs),         intent(IN) :: indcoeffs 
       integer,                  intent(IN) :: ith, iph, i2buf, i3buf
       real, dimension(:,:,:,:), intent(IN) :: f
       real, dimension(:,:,:,:), intent(OUT):: buffer
 
-      integer :: indth, indph
-      real, dimension(:,:,:,:), allocatable :: tmp
-      
-      indth=indcoeffs%inds(ith,iph,1)
-      indph=indcoeffs%inds(ith,iph,2)
-
-      if (indth==0 .or. indph==0) return
-
-      if (size(buffer,4)==3) then
-!
-!  Vector field, is transformed to Cartesian basis of *other* grid before being interpolated 
-!
-        allocate (tmp(size(buffer,1),2,2,3))
-        call transform_spher_cart_yy(f,indth-1,indth,indph-1,indph,tmp,lyy=.true.) 
-
-        buffer(:,i2buf,i3buf,:) = indcoeffs%coeffs(ith,iph,1)*tmp(:,1,1,:) &
-                                 +indcoeffs%coeffs(ith,iph,2)*tmp(:,1,2,:) &
-                                 +indcoeffs%coeffs(ith,iph,3)*tmp(:,2,1,:) &
-                                 +indcoeffs%coeffs(ith,iph,4)*tmp(:,2,2,:)
-if (notanumber(buffer(:,i2buf,i3buf,:))) print*, 'indth,indph, i2buf,i3buf=', indth,indph, i2buf,i3buf
-      else
-!
-!  Scalar field - no transformation.
-!
-        buffer(:,i2buf,i3buf,1) = indcoeffs%coeffs(ith,iph,1)*f(:,indth-1,indph-1,1) &
-                                 +indcoeffs%coeffs(ith,iph,2)*f(:,indth-1,indph  ,1) &
-                                 +indcoeffs%coeffs(ith,iph,3)*f(:,indth  ,indph-1,1) &
-                                 +indcoeffs%coeffs(ith,iph,4)*f(:,indth  ,indph  ,1)
-if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
-  ',indth,indph, i2buf,i3buf=', indth,indph,ith,iph,i2buf,i3buf
-      endif
+      buffer=0.
 
     endsubroutine bilin_interp
 !***********************************************************************
@@ -9129,128 +9097,17 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
 !
 !  20-dec-15/MR: coded
 !
-      use General, only: find_index_range_hill
-
       real, dimension(:,:,:),          intent(IN) :: thphprime
       type(ind_coeffs),                intent(OUT):: indcoeffs
       integer, dimension(2), optional, intent(OUT):: th_range
 
       integer :: nok
 
-      integer :: ip, jp, indth, indph, sz1, sz2, ma, na, me, ne, i1, i2
-      real :: dth, dph, dthp, dphp, qth1, qth2, qph1, qph2
-      logical :: okt, okp
-
-      sz1=size(thphprime,2); sz2=size(thphprime,3)
-
-      if (.not.allocated(indcoeffs%inds)) then
-        allocate(indcoeffs%inds(sz1,sz2,2))
-        indcoeffs%inds=0
-      endif
-
       nok=0
-      ma=m1-1; me=m2
+      indcoeffs%inds=0
+      indcoeffs%coeffs=0.
+      if (present(th_range)) th_range=0.
 !
-!  In order to catch points which lie in gaps between the domains of procs,
-!  the first lower ghost cell in y direction is included, except for the first
-!  proc where it is the first upper, the next proc (ipy=1) then doesn't need a
-!  ghost cell.
-!
-      if (lfirst_proc_y) then
-        ma=m1; me=m2+1
-      elseif (ipy==1) then
-        ma=m1 
-      endif
-!
-!  Likewise for z direction.
-!
-      na=n1-1; ne=n2
-      if (lfirst_proc_z) then
-        na=n1; ne=n2+1
-      elseif (ipz==1) then
-        na=n1
-      endif
-
-      do ip=1,sz1
-        do jp=1,sz2
-!
-!  For all points in strip,
-!
-          okt=.false.; okp=.false.
-          if ( y(ma)<=thphprime(1,ip,jp) ) then
-!
-!  detect between which y lines it lies.
-!
-            do indth=ma+1,me
-              if ( y(indth)>=thphprime(1,ip,jp) ) then
-                indcoeffs%inds(ip,jp,1) = indth
-                okt=.true.
-                exit
-              endif
-            enddo
-          endif
-
-          if (okt) then
-            if ( z(na)<=thphprime(2,ip,jp) ) then
-!
-!  detect between which z lines it lies.
-!
-              do indph=na+1,ne
-                if ( z(indph)>=thphprime(2,ip,jp) ) then
-                  indcoeffs%inds(ip,jp,2) = indph
-                  okp=.true.
-                  exit
-                endif
-              enddo
-            endif
-            if (.not.okp) indcoeffs%inds(ip,jp,1)=0
-          endif
-
-          if (okt.and.okp) then
-
-            if (.not.allocated(indcoeffs%coeffs)) then
-              allocate(indcoeffs%coeffs(sz1,sz2,4))
-              indcoeffs%coeffs=0.
-            endif
-!
-!  If both detections positive, calculate interpolation weights.
-!
-            nok=nok+1
-
-            dth=y(indth)-y(indth-1); dph=z(indph)-z(indph-1)
-            dthp=thphprime(1,ip,jp)-y(indth-1)
-            dphp=thphprime(2,ip,jp)-z(indph-1)
-
-            qth2 = dthp/dth; qth1 = 1.-qth2
-            qph2 = dphp/dph; qph1 = 1.-qph2
-
-            indcoeffs%coeffs(ip,jp,:) = (/qth1*qph1,qth1*qph2,qth2*qph1,qth2*qph2/)
-!if (iproc_world==0) &
-  !print*, 'iproc_world, coeffs=', iproc_world, indcoeffs%inds(ip,jp,:)
-          endif
-
-        enddo
-      enddo
- 
-      if (present(th_range)) then
-        if (nok>0) then
-! 
-!  If any points caught, go through all sz2 columns of thphprime and determine
-!  for each the range of rows in which points were caught. th_range is the union of all
-!  these ranges.
-!
-          i2=0; i1=sz1+1
-          do ip=1,sz2
-            th_range=find_index_range_hill(indcoeffs%inds(:,ip,1),(/0,0/))
-            if (th_range(1)<i1) i1=th_range(1)
-            if (th_range(2)>i2) i2=th_range(2)
-          enddo
-          th_range=(/i1,i2/)
-        else
-          th_range=(/0,0/)
-        endif
-      endif
-
     endfunction prep_bilin_interp
 !**************************************************************************
 endmodule Mpicomm
