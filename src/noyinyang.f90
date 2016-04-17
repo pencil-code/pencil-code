@@ -6,6 +6,8 @@
 !
 module Yinyang
 !
+  use Cdata, only: lroot
+
   include 'yinyang.h'
 
   type ind_coeffs
