@@ -68,9 +68,6 @@
   public :: radboundary_yz_sendrecv, radboundary_zx_sendrecv
   public :: radboundary_yz_periodic_ray, radboundary_zx_periodic_ray
 
-! Yin-Yang routines
-  public :: prep_bilin_interp
-
 ! Variables
   public :: ipx, ipy, ipz, lroot, iproc, mpi_precision
   public :: lfirst_proc_x, lfirst_proc_y, lfirst_proc_z, lfirst_proc_xy, lfirst_proc_yz, lfirst_proc_xz, lfirst_proc_xyz
@@ -78,10 +75,3 @@
   public :: MPI_COMM_WORLD, lyang
 
   character(LEN=4), public :: cyinyang=' '
-!
-  type ind_coeffs
-    integer, dimension(1,1,1) :: inds
-    real, dimension(1,1,1) :: coeffs
-  end type
-  public :: ind_coeffs
-

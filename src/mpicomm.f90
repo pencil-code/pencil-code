@@ -47,6 +47,7 @@ module Mpicomm
 !
   use Cdata
   use Cparam
+  use Yinyang
 !
   implicit none
 !
@@ -9063,51 +9064,5 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
       endif
 
     endsubroutine interpolate_yy
-!**************************************************************************
-    subroutine bilin_interp(indcoeffs, ith, iph, f, buffer, i2buf, i3buf)
-!
-!  Performs bilinear interpolation for a pencil at position (ith, iph) of the
-!  original strip from values in f-array using the precalculated weights
-!  in indcoeffs%coeffs. Result is returned in buffer(i2buf,i3buf)=(ith,iph)
-!  or buffer(i2buf,i3buf)=(iph,ith), the latter if transposition is required.
-!
-!  20-dec-15/MR: coded
-! 
-      type(ind_coeffs),         intent(IN) :: indcoeffs 
-      integer,                  intent(IN) :: ith, iph, i2buf, i3buf
-      real, dimension(:,:,:,:), intent(IN) :: f
-      real, dimension(:,:,:,:), intent(OUT):: buffer
-
-      buffer=0.
-
-    endsubroutine bilin_interp
-!***********************************************************************
-    function prep_bilin_interp(thphprime,indcoeffs,th_range) result (nok)
-!
-!  For each of the points in the strip thphprime (with shape 2 x thprime-extent x
-!  phprime-extent), arbitrarily positioned in the yz-plane, determine in
-!  which cell of the grid y(ma:me) x z(na:ne) it lies, store indices of the
-!  cells upper right corner in indcoeffs%inds and the weights of bilinear
-!  interpolation for the four corners in indcoeffs%coeffs. If no cell is found
-!  for a point, indcoeffs%inds and indcoeffs%coeffs are set zero.
-!  If present, return in th_range the interval in thprime-extent in which
-!  interpolation cells could be assigned to any points.
-!  Returns number of points in thphprime for which interpolation cell could be
-!  found.
-!
-!  20-dec-15/MR: coded
-!
-      real, dimension(:,:,:),          intent(IN) :: thphprime
-      type(ind_coeffs),                intent(OUT):: indcoeffs
-      integer, dimension(2), optional, intent(OUT):: th_range
-
-      integer :: nok
-
-      nok=0
-      indcoeffs%inds=0
-      indcoeffs%coeffs=0.
-      if (present(th_range)) th_range=0.
-!
-    endfunction prep_bilin_interp
 !**************************************************************************
 endmodule Mpicomm

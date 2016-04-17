@@ -2778,20 +2778,5 @@ module Mpicomm
       if (ALWAYS_FALSE) print*,flag,message
 !
     endfunction report_clean_output
-!***********************************************************************
-    function prep_bilin_interp(thphprime,indcoeffs,range) result (nok)
-!
-!  Returns number of points in thphprime which lie inside the processor region
-!  of iproc.
-!
-      real, dimension(:,:,:) :: thphprime
-      type(ind_coeffs) :: indcoeffs
-      integer, dimension(2) :: range
-      integer :: nok
-
-      if (ALWAYS_FALSE) print*,thphprime
-      nok=0
-
-    endfunction prep_bilin_interp
 !**************************************************************************
 endmodule Mpicomm
