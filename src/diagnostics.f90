@@ -11,6 +11,7 @@ module Diagnostics
   use Cdata
   use Messages
   use Mpicomm
+  use Yinyang, only: ind_coeffs
 !
   implicit none
 !
@@ -3275,7 +3276,8 @@ module Diagnostics
 !   11-mar-16/MR: coded
 !
       use General, only: indgen, yy_transform_strip_other, find_proc, itoa
-      use Mpicomm, only: prep_bilin_interp, ind_coeffs, mpireduce_sum_int
+      use Mpicomm, only: mpireduce_sum_int
+      use Yinyang, only: prep_bilin_interp, coeffs_to_weights
 
       integer, intent(OUT) :: nlines
 
@@ -3491,24 +3493,6 @@ module Diagnostics
       call mpibarrier
 
     endsubroutine initialize_zaver_yy
-!*******************************************************************
-    subroutine coeffs_to_weights(intcoeffs,indweights)
-!
-!  Transforms interpolation data w.r.t to a yz strip of (non-grid) points to
-!  a representation in which for each (m,n) in the local range (m1,m2)x(n1,n2)
-!  it is stored to which phi-coordinate line of the strip (its theta index)
-!  a grid point with (m,n) contributes and with which weight. As the use is
-!  within z sums (or averages) the contributions are summed up. 
-!
-!   20-mar-16/MR: coded
-!
-      type(ind_coeffs), intent(IN) :: intcoeffs
-      type(ind_coeffs), intent(OUT):: indweights
-
-      indweights%inds=0
-      indweights%coeffs=0.
- 
-    endsubroutine coeffs_to_weights
 !*******************************************************************
     subroutine allocate_phiaverages(nnamel)
 !
