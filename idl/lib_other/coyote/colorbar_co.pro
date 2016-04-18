@@ -122,7 +122,8 @@
 ;       4/28/00. Made !P.Font default value for FONT keyword. DWF.
 ;       9/26/00. Made the code more general for scalable pixel devices. DWF.
 ;       1/16/01. Added INVERTCOLORS keyword. DWF.
-;-
+;       4/17/16. MR: new pars horizontal, bottom, left for positioning of annotation;
+;                par bottom -> botcol for bottom color
 ;
 ;###########################################################################
 ;
@@ -157,10 +158,10 @@
 ;###########################################################################
 
 
-PRO COLORBAR_CO, BOTTOM=bottom, CHARSIZE=charsize, COLOR=color, DIVISIONS=divisions, $
+PRO COLORBAR_CO, BOTCOL=botcol, CHARSIZE=charsize, COLOR=color, DIVISIONS=divisions, $
    FORMAT=format, POSITION=position, MAXRANGE=maxrange, MINRANGE=minrange, NCOLORS=ncolors, $
-   TITLE=title, VERTICAL=vertical, TOP=top, RIGHT=right, MINOR=minor, $
-   RANGE=range, FONT=font, TICKLEN=ticklen, _EXTRA=extra, INVERTCOLORS=invertcolors
+   TITLE=title, VERTICAL=vertical, TOP=top, RIGHT=right, HORIZONTAL=horizontal, BOTTOM=bottom, $
+   LEFT=left, MINOR=minor, RANGE=range, FONT=font, TICKLEN=ticklen, _EXTRA=extra, INVERTCOLORS=invertcolors
 
    ; Return to caller on error.
 
@@ -218,19 +219,40 @@ IF N_ELEMENTS(ncolors) EQ 0 THEN BEGIN
       SET_PLOT, oldDevice
     ENDIF ELSE ncolors = !D.TABLE_SIZE
 ENDIF
-IF N_ELEMENTS(bottom) EQ 0 THEN bottom = 0B
+IF N_ELEMENTS(botcol) EQ 0 THEN botcol = 0B
+IF N_ELEMENTS(bottom) EQ 0 THEN bottom = 1B
+IF N_ELEMENTS(top) EQ 0 THEN bottom = 1B ELSE bottom =~top
+IF N_ELEMENTS(left) EQ 0 THEN left = 1B
+IF N_ELEMENTS(right) EQ 0 THEN left = 1B ELSE left =~right
+IF N_ELEMENTS(vertical) EQ 0 THEN vertical = 1B
+IF N_ELEMENTS(horizontal) EQ 0 THEN vertical = 1B ELSE vertical=horizontal
 IF N_ELEMENTS(charsize) EQ 0 THEN charsize = 1.0
-IF N_ELEMENTS(format) EQ 0 THEN format = '(I5)'
+; MR: too specific
+;IF N_ELEMENTS(format) EQ 0 THEN format = '(I5)'
 IF N_ELEMENTS(color) EQ 0 THEN color = !P.Color
 IF N_ELEMENTS(minrange) EQ 0 THEN minrange = 0
 IF N_ELEMENTS(maxrange) EQ 0 THEN maxrange = ncolors
 IF N_ELEMENTS(ticklen) EQ 0 THEN ticklen = 0.2
-IF N_ELEMENTS(minor) EQ 0 THEN minor = 2
 IF N_ELEMENTS(range) NE 0 THEN BEGIN
    minrange = range[0]
    maxrange = range[1]
 ENDIF
-IF N_ELEMENTS(divisions) EQ 0 THEN divisions = 5
+IF vertical THEN BEGIN
+  IF N_ELEMENTS(divisions) EQ 0 THEN $
+    IF IS_IN(TAG_NAMES(extra),'YTICKS') THEN divisions=extra.yticks $
+    ELSE divisions = 4
+  IF N_ELEMENTS(minor) EQ 0 THEN $
+    IF IS_IN(TAG_NAMES(extra),'YMINOR') then minor=extra.yminor $
+    ELSE minor = 1
+ENDIF ELSE BEGIN
+  IF N_ELEMENTS(divisions) EQ 0 THEN $
+    IF IS_IN(TAG_NAMES(extra),'XTICKS') THEN divisions=extra.xticks $
+    ELSE divisions = 4
+  IF N_ELEMENTS(minor) EQ 0 THEN $
+    IF IS_IN(TAG_NAMES(extra),'XMINOR') then minor=extra.xminor $
+    ELSE minor = 1
+ENDELSE
+
 IF N_ELEMENTS(font) EQ 0 THEN font = !P.Font
 IF N_ELEMENTS(title) EQ 0 THEN title = ''
 
@@ -262,7 +284,7 @@ ENDELSE
 
    ; Scale the color bar.
 
- bar = BYTSCL(bar, TOP=(ncolors-1 < (255-bottom))) + bottom
+ bar = BYTSCL(bar, TOP=(ncolors-1 < (255-botcol))) + botcol
 
    ; Get starting locations in NORMAL coordinates.
 
@@ -333,28 +355,23 @@ ENDELSE
 IF KEYWORD_SET(vertical) THEN BEGIN
 
    IF KEYWORD_SET(right) THEN BEGIN
-
       PLOT, [minrange,maxrange], [minrange,maxrange], /NODATA, XTICKS=1, $
-         YTICKS=divisions, XSTYLE=1, YSTYLE=9, XMINOR=1, $
+         YTICKS=divisions, XSTYLE=1, YSTYLE=9, XMINOR=1, YMINOR=minor,$
          POSITION=position, COLOR=color, CHARSIZE=charsize, /NOERASE, $
-         YTICKFORMAT='(A1)', XTICKFORMAT='(A1)', YTICKLEN=ticklen , $
-         YRANGE=[minrange, maxrange], FONT=font, _EXTRA=extra, YMINOR=minor
+         YTICKNAME=replicate(' ',divisions+1), XTICKFORMAT='(A1)', YTICKLEN=ticklen , $
+         YRANGE=[minrange, maxrange], FONT=font, _EXTRA=extra
 
       AXIS, YAXIS=1, YRANGE=[minrange, maxrange], YTICKFORMAT=format, YTICKS=divisions, $
-         YTICKLEN=ticklen, YSTYLE=1, COLOR=color, CHARSIZE=charsize, $
-         FONT=font, YTITLE=title, _EXTRA=extra, YMINOR=minor
+            YMINOR=minor, YTICKLEN=ticklen, YSTYLE=1, COLOR=color, CHARSIZE=charsize, $
+            FONT=font, _EXTRA=extra
 
    ENDIF ELSE BEGIN
 
       PLOT, [minrange,maxrange], [minrange,maxrange], /NODATA, XTICKS=1, $
-         YTICKS=divisions, XSTYLE=1, YSTYLE=9, YMINOR=minor, XMINOR=1, $
+         YTICKS=divisions, XSTYLE=1, YSTYLE=1, YMINOR=minor, XMINOR=1, $
          POSITION=position, COLOR=color, CHARSIZE=charsize, /NOERASE, $
          YTICKFORMAT=format, XTICKFORMAT='(A1)', YTICKLEN=ticklen , $
          YRANGE=[minrange, maxrange], FONT=font, YTITLE=title, _EXTRA=extra
-
-      AXIS, YAXIS=1, YRANGE=[minrange, maxrange], YTICKFORMAT='(A1)', YTICKS=divisions, $
-         YTICKLEN=ticklen, YSTYLE=1, COLOR=color, CHARSIZE=charsize, $
-         FONT=font, _EXTRA=extra, YMINOR=minor
 
    ENDELSE
 
@@ -363,22 +380,22 @@ ENDIF ELSE BEGIN
    IF KEYWORD_SET(top) THEN BEGIN
 
       PLOT, [minrange,maxrange], [minrange,maxrange], /NODATA, XTICKS=divisions, $
-         YTICKS=1, XSTYLE=9, YSTYLE=1, $
+         YTICKS=1, YMINOR=1, XSTYLE=9, YSTYLE=1, TITLE=title, $
          POSITION=position, COLOR=color, CHARSIZE=charsize, /NOERASE, $
-         YTICKFORMAT='(A1)', XTICKFORMAT='(A1)', XTICKLEN=ticklen, $
-         XRANGE=[minrange, maxrange], FONT=font, _EXTRA=extra, XMINOR=minor
+         XTICKNAME=replicate(' ',divisions+1), YTICKFORMAT='(A1)', XTICKLEN=ticklen, $
+         XRANGE=[minrange, maxrange], FONT=font, XMinor=minor, _EXTRA=extra
 
       AXIS, XTICKS=divisions, XSTYLE=1, COLOR=color, CHARSIZE=charsize, $
          XTICKFORMAT=format, XTICKLEN=ticklen, XRANGE=[minrange, maxrange], XAXIS=1, $
          FONT=font, XTITLE=title, _EXTRA=extra, XCHARSIZE=charsize, XMINOR=minor
 
-   ENDIF ELSE BEGIN
+    ENDIF ELSE BEGIN
 
-      PLOT, [minrange,maxrange], [minrange,maxrange], /NODATA, XTICKS=divisions, $
-         YTICKS=1, XSTYLE=1, YSTYLE=1, TITLE=title, $
+       PLOT, [minrange,maxrange], [minrange,maxrange], /NODATA, XTICKS=divisions, $
+         YTICKS=1, YMINOR=1, XSTYLE=1, YSTYLE=1, $
          POSITION=position, COLOR=color, CHARSIZE=charsize, /NOERASE, $
          YTICKFORMAT='(A1)', XTICKFORMAT=format, XTICKLEN=ticklen, $
-         XRANGE=[minrange, maxrange], FONT=font, XMinor=minor, _EXTRA=extra
+         XRANGE=[minrange, maxrange], FONT=font, _EXTRA=extra, XMINOR=minor
 
     ENDELSE
 
