@@ -6332,16 +6332,16 @@ nameloop: do
           del6f(:,ii) = 0.
         else
 !
-!          if ( lequidist(ii) ) then
+          if ( lequidist(ii) ) then
             call der6(f,k,del6f(1,ii),ii,UPWIND=.true.)
-!          else
-!            where( uu(:,ii)>=0 )
-!              indxs = 7
-!            elsewhere
-!              indxs = 8
-!            endwhere
-!            call deri_3d_inds(f(1,1,1,k),del6f(1,ii),indxs,ii,lnometric=.true.)
-!          endif
+          else
+            where( uu(:,ii)>=0 )
+              indxs = 7
+            elsewhere
+              indxs = 8
+            endwhere
+            call deri_3d_inds(f(1,1,1,k),del6f(1,ii),indxs,ii,lnometric=.true.)
+          endif
 !
           del6f(:,ii) = abs(uu(:,ii))*del6f(:,ii)
 !
