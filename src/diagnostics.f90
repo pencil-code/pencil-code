@@ -628,6 +628,9 @@ module Diagnostics
               if (itype==ilabel_sum_sqrt)       &
                   vname(iname)=sqrt(fsum(isum_count)*dVol_rel1)
 !
+              if (itype==ilabel_sum_log10)       &
+                  vname(iname)=log10(fsum(isum_count)*dVol_rel1)
+!
               if (itype==ilabel_sum_par)        &
                   vname(iname)=fsum(isum_count)/fweight(isum_count)
 !
@@ -1685,7 +1688,7 @@ module Diagnostics
 !
     endsubroutine max_mn_name
 !***********************************************************************
-    subroutine sum_mn_name_arr2(a,iname,lsqrt,lint,ipart)
+    subroutine sum_mn_name_arr2(a,iname,lsqrt,llog10,lint,ipart)
 !
 !  20-aug-13/MR: derived from sum_mn_name; behaves as before if extent of
 !                first dimension of a is 1; if it is 2 considers a to be a complex
@@ -1695,13 +1698,13 @@ module Diagnostics
       real, dimension(:,:), intent(IN) :: a
       integer,              intent(IN) :: iname
       integer, optional,    intent(IN) :: ipart
-      logical, optional,    intent(IN) :: lsqrt, lint
+      logical, optional,    intent(IN) :: lsqrt, llog10, lint
 
       if (size(a,1)==1) then
-        call sum_mn_name_std(a(1,:),iname,lsqrt,lint,ipart)
+        call sum_mn_name_std(a(1,:),iname,lsqrt,llog10,lint,ipart)
       else
 
-        call sum_mn_name_real(a(1,:),iname,fname,lsqrt,lint,ipart)
+        call sum_mn_name_real(a(1,:),iname,fname,lsqrt,llog10,lint,ipart)
         call sum_mn_name_real(a(2,:),iname,fname_keep)
         itype_name(iname)=itype_name(iname)+ilabel_complex
 
@@ -1709,7 +1712,7 @@ module Diagnostics
 !
     endsubroutine sum_mn_name_arr2
 !***********************************************************************
-    subroutine sum_mn_name_std(a,iname,lsqrt,lint,ipart)
+    subroutine sum_mn_name_std(a,iname,lsqrt,llog10,lint,ipart)
 !
 !  20-aug-13/MR: derived from sum_mn_name, behaves as before
 !
@@ -1718,18 +1721,19 @@ module Diagnostics
       real, dimension(nx), intent(IN) :: a
       integer,             intent(IN) :: iname
       integer, optional,   intent(IN) :: ipart
-      logical, optional,   intent(IN) :: lsqrt, lint
+      logical, optional,   intent(IN) :: lsqrt, llog10, lint
 
-      call sum_mn_name_real(a,iname,fname,lsqrt,lint,ipart)
+      call sum_mn_name_real(a,iname,fname,lsqrt,llog10,lint,ipart)
 
     endsubroutine sum_mn_name_std
 !***********************************************************************
-    subroutine sum_mn_name_real(a,iname,fname,lsqrt,lint,ipart)
+    subroutine sum_mn_name_real(a,iname,fname,lsqrt,llog10,lint,ipart)
 !
 !  Successively calculate sum of a, which is supplied at each call.
 !  In subroutine 'diagnostic', the mean is calculated; if 'lint' is
 !  explicitly given and true, the integral is calculated, instead.
 !  With 'lsqrt=.true.', a square root is applied after building the mean.
+!  With 'llog10=.true.', a log10 is applied after building the mean.
 !  Start from zero if lfirstpoint=.true.
 !  TODO: for nonperiodic arrays we want to multiply boundary data by 1/2.
 !  TODO: rename 'ilabel_sum{_sqrt}' as 'ilabel_mean{_sqrt}'.
@@ -1759,7 +1763,7 @@ module Diagnostics
       real :: ppart,qpart
       integer :: iname
       integer, optional :: ipart
-      logical, optional :: lsqrt, lint
+      logical, optional :: lsqrt, llog10, lint
 !
       intent(in) :: iname
 !
@@ -1771,6 +1775,8 @@ module Diagnostics
 !
         if (present(lsqrt)) then
           itype_name(iname)=ilabel_sum_sqrt
+        elseif (present(llog10)) then
+          itype_name(iname)=ilabel_sum_log10
         elseif (present(lint)) then
           itype_name(iname)=ilabel_integrate
         else
