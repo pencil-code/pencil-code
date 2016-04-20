@@ -1893,10 +1893,13 @@ module Particles
       integer :: j, k, n_insert, npar_loc_old, iii, particles_insert_rate_tmp
       real, pointer :: gravr
 !
-! Stop call to this routine when maximum number of particles is reached,
-! unless linsert_as_many_as_possible is set.
+! Insertion of particles is stopped when maximum number of particles is reached,
+! unless linsert_as_many_as_possible is set. 
+! Maximum numer of particles allowed in system is defined by max_particles,
+! initialized to npar. Note that this may cause errors at a processor further 
+! downstream, if particles accumulate and mpar_loc is too small.
 ! Since root inserts all new particles, make sure
-! npar_total + n_insert < mpar
+! npar_loc + n_insert < mpar_loc
 ! so that a processor can not exceed its maximum number of particles.
 !
       if (t>tstart_insert_particles+particles_insert_ramp_time) then
@@ -1906,26 +1909,47 @@ module Particles
       endif
       call mpireduce_sum_int(npar_loc,npar_total)
 !
+      print*, 'Particles at node is',npar_loc
       if (lroot) then
         avg_n_insert=particles_insert_rate_tmp*dt
         n_insert=int(avg_n_insert + remaining_particles)
 ! Remaining particles saved for subsequent timestep:
         remaining_particles=avg_n_insert + remaining_particles - n_insert
-        if (linsert_as_many_as_possible) n_insert=min((mpar_loc-npar_total),n_insert)
-        if ((n_insert+npar_total <= mpar_loc) &
+!
+! Insert particles if maximum count is not reached
+!
+        if ((n_insert+npar_loc <= mpar_loc) .and. (npar_inserted_tot+n_insert <= max_particles) &
             .and. (t<max_particle_insert_time) .and. (t>tstart_insert_particles)) then
           linsertmore=.true.
+          print*, 'Insert particles. npar_loc,n_insert:',npar_loc,n_insert
         else
           linsertmore=.false.
+        endif
+!
+! Continue inserting even if  max_particles is reached, if linsert_as_many_as_possible
+! is set.
+!
+        if (linsert_as_many_as_possible) then
+          n_insert=min((mpar_loc-npar_loc),n_insert)
+          if ((n_insert+npar_loc <= mpar_loc)  &
+            .and. (t<max_particle_insert_time) .and. (t>tstart_insert_particles)) then
+            linsertmore=.true.
+          endif
         endif
 !
         if (linsertmore) then
 ! Actual (integer) number of particles to be inserted at this timestep:
           do iii=npar_loc+1,npar_loc+n_insert
-            ipar(iii)=npar_total+iii-npar_loc
+            ipar(iii)=npar_inserted_tot+iii-npar_loc
           enddo
           npar_loc_old=npar_loc
           npar_loc=npar_loc + n_insert
+!
+! Update total number of inserted particles, npar_inserted_tot.
+! Not the same as npar_total, which is the number of particles in the system, 
+! without couting removed particles
+!
+          npar_inserted_tot = n_insert + npar_inserted_tot
 !
 ! Insert particles in chosen position (as in init_particles).
 !
