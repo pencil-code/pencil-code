@@ -11,6 +11,7 @@ module Diagnostics
   use Cdata
   use Messages
   use Mpicomm
+  use Yinyang, only: ind_coeffs
 !
   implicit none
 !
@@ -39,7 +40,7 @@ module Diagnostics
   public :: allocate_fnames,allocate_vnames,allocate_sound
   public :: allocate_xyaverages, allocate_xzaverages, allocate_yzaverages
   public :: allocate_phizaverages
-  public :: allocate_yaverages, allocate_zaverages, allocate_phiaverages
+  public :: allocate_yaverages, allocate_zaverages, allocate_phiaverages, allocate_zaverages_data
   public :: fnames_clean_up,vnames_clean_up,sound_clean_up
   public :: xyaverages_clean_up, xzaverages_clean_up, yzaverages_clean_up
   public :: phizaverages_clean_up
@@ -75,12 +76,36 @@ module Diagnostics
     module procedure sum_mn_name_arr2
     module procedure sum_mn_name_std
   endinterface sum_mn_name
+
+  interface zsum_mn_name_xy
+    module procedure zsum_mn_name_xy_scal
+    module procedure zsum_mn_name_xy_vec
+  endinterface zsum_mn_name_xy
+
+  interface zsum_mn_name_xy_mpar
+    module procedure zsum_mn_name_xy_mpar_scal
+    module procedure zsum_mn_name_xy_mpar_vec
+  endinterface zsum_mn_name_xy_mpar
 !
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
   real :: dVol_rel1
 
   integer :: mnamer
   character (len=intlen) :: ch2davg
+  integer :: nzgrid_eff
+!
+! Variables for Yin-Yang grid: z-averages.
+!
+  integer, dimension(2,3) :: thrange_gap=0
+  integer, dimension(3) :: yinprocs=-1
+  type(ind_coeffs), dimension(3) :: indweights_zaver_gap
+!
+  integer, dimension(2) :: thrange_cap=0, capzprocs=-1
+  type(ind_coeffs) :: indweights_zaver_cap
+!
+  integer, dimension(:,:,:), allocatable :: thranges_gap, thranges_cap
+  real, dimension(:,:,:), allocatable :: fnamexy_cap
+  integer :: offset_cap=0, caproot=-1, nycap=0
 !
   contains
 !***********************************************************************
@@ -603,6 +628,9 @@ module Diagnostics
               if (itype==ilabel_sum_sqrt)       &
                   vname(iname)=sqrt(fsum(isum_count)*dVol_rel1)
 !
+              if (itype==ilabel_sum_log10)       &
+                  vname(iname)=log10(fsum(isum_count)*dVol_rel1)
+!
               if (itype==ilabel_sum_par)        &
                   vname(iname)=fsum(isum_count)/fweight(isum_count)
 !
@@ -778,15 +806,132 @@ module Diagnostics
 !  Calculate z-averages (still depending on x and y).
 !
 !  19-jun-02/axel: coded
+!  25-mar-16/MR: extensions for Yin-Yang grid
 !
-      real, dimension (nx,ny,nnamexy) :: fsumxy
+      use General, only: find_proc
+
+      real, dimension(:,:,:), allocatable :: fsumxy, buffer
+!
+      integer :: iprocy, iprocz, iproc_yin, iproc_yang, i, offset, len, source, irequest
+      integer, dimension(2) :: rng
+      integer, dimension(3) :: requests
+      real :: fac
 !
 !  Communicate over all processors along z beams.
-!  The result is only present on the z-root processors.
+!  The result is only present on the z-root processors (of Yin grid).
+!  On Yang grid, procs (ipx,0,0) and (ipx,nprocy-1,nprocz-1) collect data 
+!  for Yin-phi coordinate lines in polar caps.
 !
       if (nnamexy>0) then
-        call mpireduce_sum(fnamexy,fsumxy,(/nx,ny,nnamexy/),idir=3)
-        if (lfirst_proc_z) fnamexy(:,:,1:nnamexy)=fsumxy(:,:,1:nnamexy)/nzgrid
+        if (iproc==caproot) then
+          allocate(fsumxy(nx,size(fnamexy_cap,2),nnamexy))
+          fsumxy=0.
+        else
+          allocate(fsumxy(nx,size(fnamexy,2),nnamexy))
+        endif
+!
+!  Summation of local fnamexy arrays (of Yin grid) into fsumxy of z root processors of Yin grid.
+!
+        if (.not.lyang) &
+          call mpireduce_sum(fnamexy,fsumxy,(/nx,size(fnamexy,2),nnamexy/),idir=3)
+
+        if (lyinyang) then
+          if (lyang) then
+!
+!  If processor in Yang grid contributes to any phi coordinate line in gap send data:    
+! 
+            if (thrange_gap(1,1)>0) then
+
+              offset=0; irequest=0
+              do i=1,3              ! These lines can come from at most 3 z root procs Yin grid.
+                iproc_yin=yinprocs(i)
+                if (iproc_yin==-1) exit
+                rng=thrange_gap(:,i)-(thrange_gap(1,i)-1)+offset; len=rng(2)-rng(1)+1
+!
+!print'(a,4i3)', 'GAP: SEND: iproc_world, iproc_yin, rng=', iproc_world, iproc_yin, rng
+!  Local sum sent to relevant Yin zroot proc (non-blocking).
+!
+                irequest=irequest+1
+                call mpisend_real(fnamexy(:,rng(1):rng(2),:),(/nx,len,nnamexy/), &
+                                  iproc_yin,iproc_world,MPI_COMM_WORLD,nonblock=requests(irequest))
+                offset=offset+len   !  Update, as contributions for the <=3 procs are stacked in fnamexy.
+              enddo
+              do i=1,irequest
+                call mpiwait(requests(irequest))
+              enddo
+            endif
+
+            if (iproc==caproot) then               ! If proc is cap collector,
+              do iprocz=capzprocs(1),capzprocs(2)  ! iterate over all Yang procs
+                do iprocy=0,nprocy-1               ! in cap.
+                  rng=thranges_cap(:,iprocy,iprocz)
+                  if (rng(1)==0) cycle
+!
+!  If processor in Yang grid contributes to any phi coordinate line in cap:
+! 
+                  source=find_proc(ipx,iprocy,iprocz)
+                  if (source==iproc) then          ! no self-communication
+                    fsumxy(:,rng(1):rng(2),:)=fnamexy(:,1+offset_cap:rng(2)-rng(1)+1+offset_cap,:)
+                  else                             ! accumulate contribs from all cap procs.
+                    len=rng(2)-rng(1)+1
+                    allocate(buffer(nx,len,nnamexy))
+!
+!print*, 'CAP: RECV: iproc, source, rng=', iproc, source
+!  Receive data from relevant Yang proc (blocking).
+!
+                    call mpirecv_real(buffer,(/nx,len,nnamexy/),source,source)
+                    fsumxy(:,rng(1):rng(2),:) = fsumxy(:,rng(1):rng(2),:)+buffer
+                    deallocate(buffer)
+                  endif
+                enddo
+              enddo
+
+            elseif (thrange_cap(1)>0) then
+!
+!  If proc is not cap collector, send to it if necessary (blocking).
+!
+              rng=thrange_cap-(thrange_cap(1)-1)+offset_cap
+!print*, 'CAP:SEND,iproc, caproot=', iproc, caproot, rng
+              call mpisend_real(fnamexy(:,rng(1):rng(2),:),(/nx,rng(2)-rng(1)+1,nnamexy/), &
+                                caproot,iproc)
+            endif
+          elseif (lfirst_proc_z) then
+!
+!  Root processors of z beams in Yin grid accumulate contributions from
+!  all Yang grid processors in gap.
+!
+            do iprocz=nprocz/3-1,2*nprocz/3       
+              do iprocy=0,nprocy-1  
+!
+!  Range of theta of phi coordinate lines to which processor (ipx,iprocy,iprocz)
+!  contributes.
+! 
+                rng=thranges_gap(:,iprocy,iprocz)
+                if (rng(1)>0) then                                        ! if range non-empty
+                  len=rng(2)-rng(1)+1
+                  allocate(buffer(nx,len,nnamexy))
+                  iproc_yang=find_proc(ipx,iprocy,iprocz)+ncpus           ! world rank of source proc                
+!print'(a,4i3)', 'GAP: RECV: iproc_world, iproc_yang, rng=', iproc_world, iproc_yang, rng
+                  call mpirecv_real(buffer,(/nx,len,nnamexy/),iproc_yang,iproc_yang,MPI_COMM_WORLD) 
+                  fsumxy(:,rng(1):rng(2),:nnamexy) = fsumxy(:,rng(1):rng(2),:nnamexy)+buffer
+                  deallocate(buffer)
+                endif
+
+              enddo
+            enddo
+          endif
+
+          call mpibarrier
+        endif
+
+        fac=1./nzgrid_eff   ! nzgrid_eff=4/3*nzgrid for Yin-Yang
+
+        if (.not.lyang .and. lfirst_proc_z) then
+          fnamexy=fac*fsumxy
+        elseif (iproc==caproot) then
+          fnamexy_cap=fac*fsumxy
+        endif
+
       endif
 !
     endsubroutine zaverages_xy
@@ -849,9 +994,9 @@ module Diagnostics
       character (len=fnlen) :: file
 !
       file=trim(datadir)//'/t2davg.dat'
-      if (first) then
+      if (first) &
         call read_snaptime(trim(file),t2davg,n2davg,d2davg,t)
-      endif
+
       first = .false.
 !
 !  This routine sets l2davg=T whenever its time to write 2D averages
@@ -994,7 +1139,7 @@ module Diagnostics
 !   7-jun-05/axel: adapted from write_zaverages
 !
       if (lfirst_proc_y.and.nnamexz>0) then
-        open(1, file=trim(directory_dist)//'/yaverages.dat', form='unformatted', position='append')
+        open (1, file=trim(directory_dist)//'/yaverages.dat', form='unformatted', position='append')
         write(1) t2davgfirst
         write(1) fnamexz(:,:,1:nnamexz)
         close(1)
@@ -1007,12 +1152,19 @@ module Diagnostics
 !  Write z-averages (which are 2d data) that have been requested via zaver.in.
 !
 !  19-jun-02/axel: adapted from write_xyaverages
+!  31-mar-16/MR: extensions for Yin-Yang grid
 !
-      if (lfirst_proc_z.and.nnamexy>0) then
-        open(1, file=trim(directory_dist)//'/zaverages.dat', form='unformatted', position='append')
-        write(1) t2davgfirst
-        write(1) fnamexy(:,:,1:nnamexy)
-        close(1)
+      if (nnamexy>0) then
+        if (.not.lyang.and.lfirst_proc_z .or. iproc==caproot ) then  ! Output from roots of z beams or cap root.
+          open (1, file=trim(directory_dist)//'/zaverages.dat', form='unformatted', position='append')
+          write(1) t2davgfirst
+          if (iproc==caproot) then
+            write(1) fnamexy_cap       ! from cap root (Yang)
+          else
+            write(1) fnamexy           ! from z beam root (Yin)
+          endif
+          close(1)
+        endif
       endif
 !
     endsubroutine write_zaverages
@@ -1536,7 +1688,7 @@ module Diagnostics
 !
     endsubroutine max_mn_name
 !***********************************************************************
-    subroutine sum_mn_name_arr2(a,iname,lsqrt,lint,ipart)
+    subroutine sum_mn_name_arr2(a,iname,lsqrt,llog10,lint,ipart)
 !
 !  20-aug-13/MR: derived from sum_mn_name; behaves as before if extent of
 !                first dimension of a is 1; if it is 2 considers a to be a complex
@@ -1546,13 +1698,13 @@ module Diagnostics
       real, dimension(:,:), intent(IN) :: a
       integer,              intent(IN) :: iname
       integer, optional,    intent(IN) :: ipart
-      logical, optional,    intent(IN) :: lsqrt, lint
+      logical, optional,    intent(IN) :: lsqrt, llog10, lint
 
       if (size(a,1)==1) then
-        call sum_mn_name_std(a(1,:),iname,lsqrt,lint,ipart)
+        call sum_mn_name_std(a(1,:),iname,lsqrt,llog10,lint,ipart)
       else
 
-        call sum_mn_name_real(a(1,:),iname,fname,lsqrt,lint,ipart)
+        call sum_mn_name_real(a(1,:),iname,fname,lsqrt,llog10,lint,ipart)
         call sum_mn_name_real(a(2,:),iname,fname_keep)
         itype_name(iname)=itype_name(iname)+ilabel_complex
 
@@ -1560,7 +1712,7 @@ module Diagnostics
 !
     endsubroutine sum_mn_name_arr2
 !***********************************************************************
-    subroutine sum_mn_name_std(a,iname,lsqrt,lint,ipart)
+    subroutine sum_mn_name_std(a,iname,lsqrt,llog10,lint,ipart)
 !
 !  20-aug-13/MR: derived from sum_mn_name, behaves as before
 !
@@ -1569,18 +1721,19 @@ module Diagnostics
       real, dimension(nx), intent(IN) :: a
       integer,             intent(IN) :: iname
       integer, optional,   intent(IN) :: ipart
-      logical, optional,   intent(IN) :: lsqrt, lint
+      logical, optional,   intent(IN) :: lsqrt, llog10, lint
 
-      call sum_mn_name_real(a,iname,fname,lsqrt,lint,ipart)
+      call sum_mn_name_real(a,iname,fname,lsqrt,llog10,lint,ipart)
 
     endsubroutine sum_mn_name_std
 !***********************************************************************
-    subroutine sum_mn_name_real(a,iname,fname,lsqrt,lint,ipart)
+    subroutine sum_mn_name_real(a,iname,fname,lsqrt,llog10,lint,ipart)
 !
 !  Successively calculate sum of a, which is supplied at each call.
 !  In subroutine 'diagnostic', the mean is calculated; if 'lint' is
 !  explicitly given and true, the integral is calculated, instead.
 !  With 'lsqrt=.true.', a square root is applied after building the mean.
+!  With 'llog10=.true.', a log10 is applied after building the mean.
 !  Start from zero if lfirstpoint=.true.
 !  TODO: for nonperiodic arrays we want to multiply boundary data by 1/2.
 !  TODO: rename 'ilabel_sum{_sqrt}' as 'ilabel_mean{_sqrt}'.
@@ -1610,7 +1763,7 @@ module Diagnostics
       real :: ppart,qpart
       integer :: iname
       integer, optional :: ipart
-      logical, optional :: lsqrt, lint
+      logical, optional :: lsqrt, llog10, lint
 !
       intent(in) :: iname
 !
@@ -1622,6 +1775,8 @@ module Diagnostics
 !
         if (present(lsqrt)) then
           itype_name(iname)=ilabel_sum_sqrt
+        elseif (present(llog10)) then
+          itype_name(iname)=ilabel_sum_log10
         elseif (present(lint)) then
           itype_name(iname)=ilabel_integrate
         else
@@ -2346,60 +2501,206 @@ module Diagnostics
 !
     endsubroutine ysum_mn_name_xz_npar
 !***********************************************************************
-    subroutine zsum_mn_name_xy(a,iname,lint)
+    subroutine zsum_mn_name_xy_scal(a,iname,lint)
 !
 !  Successively calculate sum over z of a, which is supplied at each call.
 !  The result fnamexy is xy-dependent.
 !  Start from zero if lfirstpoint=.true.
-!
+!     
 !  19-jun-02/axel: adapted from xysum_mn_name
 !  08-feb-12/ccyang: add option for integration
-!   3-sep-13/MR: derived from zsum_mn_name_xy
-!
+!   3-sep-13/MR: outsourced zsum_mn_name_xy_mpar
+!     
       use General, only: loptest
-      use Cdata,   only: n,m
+      use Cdata,   only: n,m 
 !
       real, dimension(nx), intent(in) :: a
       integer,             intent(in) :: iname
       logical,   optional, intent(in) :: lint
-!
+
       if (iname==0) return
-!
+!         
 !  Scale factor for integration
-!
+!       
       if (loptest(lint)) then
-        call zsum_mn_name_xy_mpar((real(nzgrid)*zprim(n))*a,m,iname)
+        call zsum_mn_name_xy_mpar((real(nzgrid_eff)*zprim(n))*a,m,iname)
       else
         call zsum_mn_name_xy_mpar(a,m,iname)
+      endif                                                                                                 
+!
+    endsubroutine zsum_mn_name_xy_scal
+!***********************************************************************
+    subroutine zsum_mn_name_xy_vec(avec,iname,powers,scal,lint)
+!
+!  Wrapper for zsum_mn_name_xy_mpar_vec..
+!
+!  19-jun-02/axel: adapted from xysum_mn_name
+!  08-feb-12/ccyang: add option for integration
+!   3-sep-13/MR: outsourced zsum_mn_name_xy_mpar
+!  31-mar-16/MR: derived from zsum_mn_name_xy
+!
+      use General, only: loptest
+      use Cdata,   only: n,m
+!
+      real,    dimension(nx,3),        intent(in) :: avec
+      integer,                         intent(in) :: iname
+      integer, dimension(3),           intent(in) :: powers
+      real,    dimension(:), optional, intent(in) :: scal
+      logical,               optional, intent(in) :: lint
+!
+      if (loptest(lint)) then
+!
+!  Mulitply with scale factor for integration.
+!  Not correct for Yin-Yang with non-equidistant z grid (would this happen?). 
+!
+        if (present(scal)) then
+          call zsum_mn_name_xy_mpar(avec,m,iname,powers,(real(nzgrid_eff)*zprim(n))*scal)
+        else
+          call zsum_mn_name_xy_mpar(avec,m,iname,powers,(/real(nzgrid_eff)*zprim(n)/))
+        endif
+      else
+        call zsum_mn_name_xy_mpar(avec,m,iname,powers,scal)
       endif
 !
-    endsubroutine zsum_mn_name_xy
+    endsubroutine zsum_mn_name_xy_vec
 !***********************************************************************
-    subroutine zsum_mn_name_xy_mpar(a,m,iname)
+    subroutine zsum_mn_name_xy_mpar_vec(avec,m,iname,powers,scal)
 !
-!  Initialize to zero, including other parts of the xy-array
+!  Calculates a general tensor component from vector avec as 
+!  avec(1)**power(1)*avec(2)**power(2)*avec(3)**power(3),
+!  optionally the scalar scal (a pencil or one-element vector)
+!  is multiplied finally.
+!  On Yang procs, avec is first transformed properly.
+!
+!  31-mar-16/MR: coded
+!
+      use General, only: transform_thph_yy
+
+      real, dimension(nx,3),        intent(in) :: avec
+      integer,                      intent(in) :: iname, m
+      integer, dimension(3),        intent(in) :: powers
+      real, dimension(:), optional, intent(in) :: scal
+!
+      real, dimension(nx,3) :: work
+      real, dimension(nx) :: quan
+      integer :: i
+      logical :: lfirst
+
+      if (iname==0) return
+
+      if (lyang) then
+!
+! On Yang procs: transform theta and phi components if necessary. 
+!
+        call transform_thph_yy(avec,powers,work)
+      else
+        work=avec
+      endif
+!
+!  Perform product of powers of vector components..
+!
+      lfirst=.true.
+      do i=1,3
+        if (powers(i)/=0) then
+          if (lfirst) then
+            lfirst=.false.
+            if (powers(i)==1) then
+              quan=work(:,i)
+            else
+              quan=work(:,i)**powers(i)
+            endif
+          else
+            if (powers(i)==1) then
+              quan=quan*work(:,i)
+            else
+              quan=quan*work(:,i)**powers(i)
+            endif
+          endif
+        endif
+      enddo
+!
+!  Multiply with scalar if present.
+!
+      if (present(scal)) then
+        if (size(scal)==1) then
+          quan=quan*scal(1)
+        else
+          quan=quan*scal
+        endif
+      endif
+!
+!  Sum up result like a scalar.
+!
+      call zsum_mn_name_xy_mpar(quan,m,iname)
+
+    endsubroutine zsum_mn_name_xy_mpar_vec
+!***********************************************************************
+    subroutine zsum_mn_name_xy_mpar_scal(a,m,iname)
+!
+!  Accumulates contributions to z-sum within an mn-loop
 !  which are later merged with an mpi reduce command.
+!  In the Yang part of a Yin-Yang grid, the contributions
+!  to the sum along a (extended) phi coordinate line of the Yin 
+!  grid are calculated by use of predetermined weights.
+!  Likewise for those coordinate lines of the Yin-phi which lie completely
+!  within the Yang grid (i.e. the polar caps).
 !
-!   3-sep-13/MR: derived from zsum_mn_name_xy, m now parameter
-!                no optional lint because of compiler error in g95 and gfortran
-!                when using the subroutine as an actual parameter
+!   3-apr-16/MR: derived from zsum_mn_name_xy_mpar; extensions for Yin-Yang grid
 !
+      use Cdata, only: n
+
       real, dimension(nx), intent(in) :: a
       integer,             intent(in) :: iname, m
-!
-      integer :: ml
+
+      integer :: ml,i,j,ith
 !
       if (iname==0) return
 !
       if (lfirstpoint) fnamexy(:,:,iname)=0.
 !
-!  m starts with nghost+1=4, so the correct index is m-nghost.
+!  m starts with nghost+1, so the correct index is m-nghost.
 !
       ml=m-nghost
+
+      if (lyang) then
 !
-      fnamexy(:,ml,iname)=fnamexy(:,ml,iname)+a
+!  On Yang grid:
 !
-    endsubroutine zsum_mn_name_xy_mpar
+        if (thrange_gap(1,1)>0) then
+!
+!  collect contributions to the extended phi lines in the gap.
+!
+          do i=1,3
+!
+!  Such lines may come from at most 3 different Yin procs.
+!
+            if (yinprocs(i)==-1) exit
+
+            do j=1,size(indweights_zaver_gap(i)%inds,3) 
+              ith=indweights_zaver_gap(i)%inds(m,n,j)
+              if (ith==0) exit
+              fnamexy(:,ith,iname)=fnamexy(:,ith,iname)+a*indweights_zaver_gap(i)%coeffs(m,n,j)
+            enddo
+          enddo
+        endif
+!
+!  Collect contributions to the phi lines in the cap(s).
+!
+        if (thrange_cap(1)>0) then
+          do j=1,size(indweights_zaver_cap%inds,3)
+            ith=indweights_zaver_cap%inds(m,n,j) 
+            if (ith==0) exit
+            fnamexy(:,ith,iname)=fnamexy(:,ith,iname)+a*indweights_zaver_cap%coeffs(m,n,j)
+          enddo
+        endif
+      else
+!
+! Normal summing-up in Yin procs.
+! 
+        fnamexy(:,ml,iname)=fnamexy(:,ml,iname)+a
+      endif
+!
+    endsubroutine zsum_mn_name_xy_mpar_scal
 !***********************************************************************
     subroutine calc_phiavg_profile(p)
 !
@@ -2908,6 +3209,7 @@ module Diagnostics
 !
 !   12-aug-09/dhruba: coded
 !   11-jan-11/MR: parameter nnamel added
+!   11-mar-16/MR: outsourced allocation of fnamexy to allocate_zaverages_data
 !
       integer, intent(in) :: nnamel
 !
@@ -2922,26 +3224,281 @@ module Diagnostics
       endif
       cnamexy=''
 !
-      if (.not.allocated(fnamexy)) then
-        allocate(fnamexy(nx,ny,nnamel),stat=stat)
-        if (stat>0) call fatal_error('allocate_zaverages', &
-            'Could not allocate memory for fnamexy')
-        if (ldebug) print*, 'allocate_zaverages : allocated memory for '// &
-            'fnamexy with nnamexy =', nnamel
-      endif
-      fnamexy=0.0
-!
       if (.not.allocated(cformxy)) then
         allocate(cformxy(nnamel),stat=stat)
         if (stat>0) &
           call fatal_error('allocate_zaverages', &
             'Could not allocate memory for cformxy')
         if (ldebug) print*, 'allocate_zaverages : allocated memory for '// &
-            'fnamexy with cformxy =', nnamel
+            'cformxy with nnamel =', nnamel
       endif
       cformxy=''
-!
+
     endsubroutine allocate_zaverages
+!*******************************************************************
+    subroutine allocate_zaverages_data(nnamel)
+!
+!  Allocate data array needed for z-averages.
+!  Additional fnamexy_cap for collection of z-sums in polar caps of Yang grid.
+!
+!   11-mar-16/MR: outsourced from allocate_zaverages
+!
+      integer, intent(in) :: nnamel
+!
+      integer :: stat, nyl
+!
+      nyl=ny; nzgrid_eff=nzgrid
+      if (lyinyang) call initialize_zaver_yy(nyl)
+!
+      if (.not.allocated(fnamexy)) then
+        allocate(fnamexy(nx,nyl,nnamel),stat=stat)
+        if (stat>0) call fatal_error('allocate_zaverages_data', &
+                                     'Could not allocate memory for fnamexy')
+        if (ldebug) print*, 'allocate_zaverages_data: allocated memory for '// &
+                            'fnamexy with nnamexy =', nnamel
+      endif
+
+      fnamexy=0.
+
+      if (iproc==caproot) then
+        allocate(fnamexy_cap(nx,nycap,nnamel),stat=stat)
+        if (stat>0) call fatal_error('allocate_zaverages_data', &
+                                     'Could not allocate memory for fnamexy_cap')
+        if (ldebug) print*, 'allocate_zaverages_data: allocated memory for '// &
+                            'fnamexy_cap with nycap, nnamexy =', nycap, nnamel
+      endif
+
+    endsubroutine allocate_zaverages_data
+!***********************************************************************
+    subroutine initialize_zaver_yy(nlines)
+!
+!  Initializations for calculation of z-sums on Yin-Yang grid.
+!  Only valid for equidistant grid in y and z.
+!  Returns total number of Yin-phi coordinate lines which cross the executing proc.
+!  Can be lines in the "gap" of the Yin grid phi<= Pi/4, phi>=7Pi/4
+!  or lines which lie completely within Yang grid, then in the "polar caps"
+!  theta<=Pi/4, theta>=3Pi/4. Note that executing proc can have a share of both types.
+!
+!   11-mar-16/MR: coded
+!
+      use General, only: indgen, yy_transform_strip_other, find_proc, itoa
+      use Mpicomm, only: mpireduce_sum_int
+      use Yinyang, only: prep_bilin_interp, coeffs_to_weights
+
+      integer, intent(OUT) :: nlines
+
+      type(ind_coeffs), dimension(:), allocatable :: intcoeffs
+      real, dimension(:,:,:), allocatable :: thphprime
+      real, dimension(:), allocatable :: yloc, zloc
+      integer, dimension(:), allocatable :: requests
+      integer :: nok, noks, noks_all, nyl, nzl, iprocy, iprocz, ifound, irequest, &
+                 iproc_yin, iproc_yang, newlines, offset
+      integer, dimension(2) :: rng
+
+      if (lyang) then
+
+        nzgrid_eff=4./3.*nzgrid   ! total number of points on full Yin-phi coordinate line.
+                                  ! could be reduced in polar caps.
+        nlines=0; noks=0
+
+        if (ipz>=nprocz/3-1 .and. ipz<=2*nprocz/3) then
+!
+!  These procs may see phi coordinate lines which continue from Yin grid into the gap.
+!
+          nzl=nzgrid/3            ! number of points in gap.
+          allocate(thphprime(2,ny,nzl),yloc(ny),zloc(nzl),intcoeffs(1))
+          yloc=xyz0(2)+(indgen(ny)-1)*dy
+          zloc=xyz1(3)+indgen(nzl)*dz
+
+          ifound=0; offset=0
+!
+!  Loop over y-beam of processors with iprocz=0 in Yin grid.
+!
+          do iprocy=0,nprocy-1
+!  
+            iproc_yin=find_proc(ipx,iprocy,0)
+!
+!  yloc x zloc: strip of Yin-phi coordinate lines from Yin-proc iproc_yin.
+!
+            call yy_transform_strip_other(yloc,zloc,thphprime)
+            nok=prep_bilin_interp(thphprime,intcoeffs(1),thrange_gap(:,ifound+1))
+!
+!  nok: number of points of the strip claimed by executing proc; 
+!  intcoeffs(1): interpolation data for these points; thrange_gap: y-range of claimed points,
+!  indices refer to local numbering of proc iproc_yin
+!            
+            if (nok>0) then
+
+              ifound=ifound+1
+              newlines=thrange_gap(2,ifound)-thrange_gap(1,ifound)+1
+              nlines=nlines+newlines         ! accumulate detected lines.
+              yinprocs(ifound)=iproc_yin     ! store Yin-proc from which detected lines emanate.
+              noks=noks+nok                  ! accumulate claimed points.
+!
+!  Derive from interpolation data to which phi-coordinate lines a point (m,n)
+!  contributes with which weight.
+!
+              call coeffs_to_weights(intcoeffs(1),indweights_zaver_gap(ifound))
+              where (indweights_zaver_gap(ifound)%inds>0) &
+                indweights_zaver_gap(ifound)%inds=indweights_zaver_gap(ifound)%inds-(thrange_gap(1,ifound)-1)+offset
+!
+! Entries in indweights_zaver_gap%inds now refer to number of line in local fnamexy.    
+!
+!print*, 'GAP: iproc_world, ifound, thrange_gap=', iproc_world, ifound, thrange_gap(:,ifound)                     
+!if (ipz==nprocz/3.and.ipy==0) print*,'iproc_world,ifound,indweights_zaver_gap=', indweights_zaver_gap(ifound)
+
+              rng=thrange_gap(:,ifound)
+              offset=offset+newlines         ! offset of line number for proc iproc_yin in local fnamexy.
+            else
+              rng=(/0,0/)
+            endif
+!print*, 'rng, iproc_yin, iproc_world=', rng, iproc_yin, iproc_world
+!  Tell z-root proc of Yin grid, which of its phi coordinate lines are detected
+!  within executing proc (maybe none).
+!
+            call mpisend_int(rng,2,iproc_yin,iproc_world,MPI_COMM_WORLD)
+
+            if (ifound==3) stop              ! lines from at most 3 Yin procs expected.
+            yloc=yloc+Lxyz_loc(2)+dy/nprocy  ! shift y coordinates to next z-root proc of Yin grid.
+
+          enddo 
+
+          offset_cap=nlines                  ! total number of detected gap lines=offset for cap lines.              
+          deallocate(intcoeffs,thphprime,yloc,zloc)
+!print*, 'GAP: iproc_world,yinprocs=', iproc_world,yinprocs
+        endif
+
+        call mpireduce_sum_int(noks, noks_all) ! sum up number of claimed gap points over Yang grid.
+        if (iproc==0.and.noks_all<nygrid*nzl) &
+          call warning('initialize_zaver_yy',  &
+                       'only'//itoa(noks_all)//' points in Yin grid gap claimed by Yang procs (goal:' &
+                       //itoa(nygrid*nzl)//')')
+
+        if (ipz<=nprocz/3 .or. ipz>=2*nprocz/3-1) then
+!
+!  These procs may see Yin-phi coordinate lines which lie completely inside Yang
+!  grid that is, in the polar caps.
+!
+          nycap=nygrid/2.-1                   ! number of Yin-phi coordinate lines in polar cap
+                                              ! could be reduced for bigger pole distance of closest line.
+          allocate(thphprime(2,nycap,nzgrid_eff),yloc(nycap),zloc(nzgrid_eff),intcoeffs(1))
+          zloc=indgen(nzgrid_eff)*dz
+!if (iproc==0) print*, 'zloc=', zloc(1), zloc(nzgrid_eff)
+          if (ipz<=nprocz/3) then
+!
+! Southern cap
+!
+            yloc=xyz1(2)+indgen(nycap)*dy
+            caproot=find_proc(ipx,0,0)                 ! "cap collector" has lowest rank in layer ipx.
+            capzprocs=(/0,nprocz/3/)                   ! range of z ranks in cap.
+          elseif (ipz>=2*nprocz/3-1) then
+!
+! Northern cap
+!
+            yloc=xyz0(2)-(nycap+1-indgen(nycap))*dy
+            caproot=find_proc(ipx,nprocy-1,nprocz-1)   ! "cap collector" has highest rank in layer ipx. 
+            capzprocs=(/2*nprocz/3-1,nprocz-1/)        ! range of z ranks in cap. 
+          endif
+!if (iproc==caproot) print*, 'iproc, yloc=', iproc, yloc(1), yloc(nycap)
+!
+!  yloc x zloc: strip of all Yin-phi coordinate lines in cap.
+!
+          call yy_transform_strip_other(yloc,zloc,thphprime)
+          nok=prep_bilin_interp(thphprime,intcoeffs(1),thrange_cap)
+!
+!  nok: number of points of the strip claimed by executing proc; 
+!  intcoeffs(1): interpolation data for these points; thrange_cap: y-range of claimed points,
+!  indices refer to bunch of all Yin-phi coordinate lines in cap.
+!            
+          if (nok>0) then
+
+            nlines=nlines+thrange_cap(2)-thrange_cap(1)+1     ! accumulate detected lines.
+!
+!  Derive from interpolation data to which phi-coordinate lines a point (m,n)
+!  contributes with which weight.
+!
+            call coeffs_to_weights(intcoeffs(1),indweights_zaver_cap)
+!print*, 'CAP: iproc_world, thrange_cap=', iproc_world, thrange_cap, &
+!minval(indweights_zaver_cap%inds), maxval(indweights_zaver_cap%inds)
+            where (indweights_zaver_cap%inds>0) &
+              indweights_zaver_cap%inds=indweights_zaver_cap%inds-(thrange_cap(1)-1)+offset_cap
+!
+! Entries in indweights_zaver_cap%inds now refer to number of line in local fnamexy.    
+!
+          endif
+
+          if (iproc==caproot) then      ! if proc is cap collector
+            allocate(thranges_cap(2,0:nprocy-1,capzprocs(1):capzprocs(2)))
+!if (iproc==caproot) print*,'iproc_world, nycap=', iproc_world, nycap
+            allocate(requests(nprocy*(capzprocs(2)-capzprocs(1)+1)-1))
+!
+!  Cap collector receives from each Yang procs in cap, which of the cap lines are detected
+!  within proc (maybe none) and stores this in thranges_cap..
+!
+            irequest=1
+            do iprocz=capzprocs(1),capzprocs(2)       
+              do iprocy=0,nprocy-1
+                ipp=find_proc(ipx,iprocy,iprocz)
+                if (iproc==ipp) then            ! no self-communication
+                  thranges_cap(:,iprocy,iprocz)=thrange_cap
+                else
+                  call mpirecv_int(thranges_cap(:,iprocy,iprocz),2,ipp,ipp, &
+                                   nonblock=requests(irequest))
+                  irequest=irequest+1
+                endif
+              enddo
+            enddo
+
+            do irequest=1,size(requests)      
+              call mpiwait(requests(irequest))
+            enddo
+          else
+!
+!  Tell cap collector, which cap lines are detected
+!  within executing proc (maybe none).
+!
+            call mpisend_int(thrange_cap,2,caproot,iproc)
+          endif    
+!print*, 'iproc_world, offset_cap,nlines=', iproc_world, offset_cap,nlines
+        endif
+
+        call mpireduce_sum_int(nok, noks_all)  ! sum up number of claimed cap points (both caps) over Yang. 
+        if (iproc==0.and.noks_all<2*nycap*nzgrid_eff) &
+          call warning('initialize_zaver_yy',  &
+                       'only'//itoa(noks_all)//' points in polar caps claimed by Yang procs (goal:' &
+                       //itoa(2*nycap*nzgrid_eff)//')')
+
+      else
+
+        if (lfirst_proc_z) then
+!
+!  Yin z-beam root proc receives from each Yang procs in gap, which of the gap lines are detected
+!  within proc (maybe none) and stores this in thranges_gap..
+!
+          allocate(thranges_gap(2,0:nprocy-1,nprocz/3-1:2*nprocz/3))
+          allocate(requests(nprocy*(nprocz/3+2)))
+          irequest=1
+          do iprocz=nprocz/3-1,2*nprocz/3       
+            do iprocy=0,nprocy-1    
+              iproc_yang=find_proc(ipx,iprocy,iprocz)+ncpus
+              call mpirecv_int(thranges_gap(:,iprocy,iprocz),2,iproc_yang,iproc_yang, &
+                               MPI_COMM_WORLD,nonblock=requests(irequest))
+              irequest=irequest+1
+            enddo
+          enddo
+    
+          do irequest=1,size(requests) 
+            call mpiwait(requests(irequest))
+          enddo    
+        endif
+
+        nlines=ny
+
+      endif
+
+      call mpibarrier
+
+    endsubroutine initialize_zaver_yy
 !*******************************************************************
     subroutine allocate_phiaverages(nnamel)
 !
@@ -3075,6 +3632,7 @@ module Diagnostics
 !   12-aug-09/dhruba: coded
 !
       if (allocated(fnamexy)) deallocate(fnamexy)
+      if (allocated(fnamexy_cap)) deallocate(fnamexy_cap)
       if (allocated(cnamexy)) deallocate(cnamexy)
       if (allocated(cformxy)) deallocate(cformxy)
 !

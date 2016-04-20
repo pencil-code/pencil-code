@@ -1287,17 +1287,46 @@ module Particles_sub
     subroutine precalc_weights(weight_array)
 !
       real, dimension(:,:,:) :: weight_array
+      real, dimension(3) :: tsc_values = (/0.125, 0.75, 0.125/)
       integer :: i,j,k
 !
-      weight_array=1.0
-      do i=1,7
-        do j=1,7
-          do k=1,7
-            weight_array(i,j,k) = gab_weights(abs(i-4)+1)* &
-                gab_weights(abs(j-4)+1) * gab_weights(abs(k-4)+1)
+!  This makes sure that the weight array is 1 if the npg approach is chosen
+!
+      weight_array = 1.0
+!
+      if (lparticlemesh_gab) then
+        do i=1,7
+          do j=1,7
+            do k=1,7
+              weight_array(i,j,k) = gab_weights(abs(i-4)+1)* &
+                  gab_weights(abs(j-4)+1) * gab_weights(abs(k-4)+1)
+            enddo
           enddo
         enddo
-      enddo
+      endif
+
+      if (lparticlemesh_tsc) then
+          do i = 1,3
+            do j = 1,3
+              do k =1,3
+                if (nxgrid/=1) weight_array(i,j,k)=weight_array(i,j,k)*tsc_values(i)
+                if (nygrid/=1) weight_array(i,j,k)=weight_array(i,j,k)*tsc_values(j)
+                if (nzgrid/=1) weight_array(i,j,k)=weight_array(i,j,k)*tsc_values(k)
+            enddo
+          enddo
+        enddo
+      endif
+
+      if (lparticlemesh_cic) then
+        weight_array=1.0
+        if (nxgrid/=1) &
+            weight_array=weight_array*0.5
+        if (nygrid/=1) &
+            weight_array=weight_array*0.5
+        if (nzgrid/=1) &
+            weight_array=weight_array*0.5
+      endif
+      
 !
     endsubroutine precalc_weights
 !***********************************************************************

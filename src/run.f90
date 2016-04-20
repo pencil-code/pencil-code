@@ -438,7 +438,7 @@ program run
 !
 !  Initialize the list of neighboring processes.
 !
-  call update_neighbors()
+  call update_neighbors     !MR: Isn't this only needed for particles?
 !
 !  Allow modules to do any physics modules do parameter dependent
 !  initialization. And final pre-timestepping setup.
@@ -898,7 +898,7 @@ program run
   call mpifinalize
 !
 !  Free any allocated memory.
-!  MR: Is this needed? the program termminates anyway
+!  MR: Is this needed? the program terminates anyway
 !
   call farray_clean_up
   call sharedvars_clean_up

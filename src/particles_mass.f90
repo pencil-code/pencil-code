@@ -32,7 +32,7 @@ module Particles_mass
   logical :: lpart_mass_backreac=.true.
   logical :: lpart_mass_momentum_backreac=.true.
   real :: mass_const=0.0, dmpdt=1e-3
-  real, dimension(7,7,7) :: weight_array
+  real, dimension(:,:,:), allocatable :: weight_array
   character(len=labellen), dimension(ninit) :: init_particle_mass='nothing'
 !
   namelist /particles_mass_init_pars/ init_particle_mass, mass_const
@@ -101,7 +101,11 @@ module Particles_mass
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
-      if (lparticlemesh_gab) call precalc_weights(weight_array)
+      if (lparticlemesh_gab) allocate (weight_array(7,7,7))
+      if (lparticlemesh_tsc) allocate (weight_array(3,3,3))
+      if (lparticlemesh_cic) allocate (weight_array(2,2,2))
+      if (.not. allocated(weight_array)) allocate(weight_array(1,1,1))
+      call precalc_weights(weight_array)
 !
       call keep_compiler_quiet(f)
 !
@@ -236,7 +240,7 @@ module Particles_mass
 !
       if (npar_imn(imn) /= 0) then
 !
-      if (lparticlemesh_gab) volume_cell = 1/(dx_1(1)*dy_1(1)*dz_1(1))
+        volume_cell = (lxyz(1)*lxyz(2)*lxyz(3))/(nx*ny*nz)
 !
         k1 = k1_imn(imn)
         k2 = k2_imn(imn)
@@ -249,11 +253,13 @@ module Particles_mass
 !
           call get_mass_chemistry(mass_loss,St,Rck_max)
         endif
+!        print*, 'mass loss: ', mass_loss
 !
 ! Loop over all particles in current pencil.
 !
 ! Check if particles chemistry is turned on
         if (lparticles_chemistry) then
+ !         print*, 'mass_loss', mass_loss
           dfp(k1:k2,imp) = dfp(k1:k2,imp)-mass_loss(k1:k2)
         else
           dfp(k1:k2,imp) = dfp(k1:k2,imp)-dmpdt
@@ -285,17 +291,8 @@ module Particles_mass
 !
 !NILS: All this interpolation should be streamlined and made more efficient.
 !NILS: Is it possible to calculate it only once, and then re-use it later?
-              if (lparticlemesh_gab) then
-                ixx0 = ix0-3
-                iyy0 = iy0-3
-                izz0 = iz0-3
-                ixx1 = ix0+3
-                iyy1 = iy0+3
-                izz1 = iz0+3
-              else
-                call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1, &
-                    fp,k,ix0,iy0,iz0)
-              endif
+              call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1, &
+                  fp,k,ix0,iy0,iz0)
 !
 ! Add the source to the df-array
 !
@@ -303,6 +300,12 @@ module Particles_mass
                 df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho) &
                     +mass_loss(k)*weight_array/volume_cell
               else
+!                print*, 'df infos:', df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho)
+!                print*, 'weight_array: ' ,weight_array
+!                print*, 'rho',exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))
+!                print*, 'volume_cell:',volume_cell
+!                print*, 'mass loss(k)', mass_loss(k)
+ !                    print*, 'dTgdt: ', Qc*p%cv1(inx0)*rho1_point*p%TT1(inx0)*weight/volume_cell
                 df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho) &
                     +mass_loss(k)*weight_array/volume_cell/exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))
               endif

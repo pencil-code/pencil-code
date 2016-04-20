@@ -95,6 +95,12 @@ module Particles_map
       case default pm
         call fatal_error('initialize_particles_map', 'unknown particle-mesh type ' // trim(particle_mesh))
       endselect pm
+
+      if (lparticlemesh_gab) then
+        lfold_df_3points=.true.
+        if (lpscalar) call fatal_error('initialize_particles',&
+            'The gab scheme is currently not working with passive scalars!')
+      endif
 !
     endsubroutine initialize_particles_map
 !***********************************************************************

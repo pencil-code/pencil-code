@@ -51,8 +51,8 @@ module General
   public :: touch_file
   public :: var_is_vec
   public :: transform_cart_spher, transform_spher_cart_yy
-  public :: yy_transform_strip, yy_transform_strip_other
-  public :: transform_thph_yy
+  public :: yy_transform_strip, yy_transform_strip_other, yin2yang_coors
+  public :: transform_thph_yy, transform_thph_yy_other, merge_yin_yang
   public :: transpose_mn
   public :: notanumber, notanumber_0d
   public :: reduce_grad_dim
@@ -3317,7 +3317,7 @@ module General
 
   endfunction in_array_char
 !***********************************************************************
-    logical function loptest(lopt,ldef)
+    pure logical function loptest(lopt,ldef)
 !
 !  returns value of optional logical parameter opt if present,
 !  otherwise the default value ldef, if present, .false. if not
@@ -3337,7 +3337,7 @@ module General
 
     endfunction loptest
 !***********************************************************************
-    integer function ioptest(iopt,idef)
+    pure integer function ioptest(iopt,idef)
 !
 !  returns value of optional integer parameter iopt if present,
 !  otherwise the default value idef, if present, zero, if not.
@@ -3356,7 +3356,7 @@ module General
 
     endfunction ioptest
 !***********************************************************************
-    real function roptest(ropt,rdef)
+    pure real function roptest(ropt,rdef)
 !
 !  returns value of optional real parameter ropt if present,
 !  otherwise the default value rdef, if present, zero, if not.
@@ -3375,7 +3375,7 @@ module General
 
     endfunction roptest
 !***********************************************************************
-    real(KIND=rkind8) function doptest(dopt,ddef)
+    pure real(KIND=rkind8) function doptest(dopt,ddef)
 !
 !  returns value of optional real*8 parameter dopt if present,
 !  otherwise the default value ddef, if present, zero, if not.
@@ -3394,7 +3394,7 @@ module General
 
     endfunction doptest
 !***********************************************************************
-      function coptest(copt,cdef)
+    pure function coptest(copt,cdef)
 !
 !  returns value of optional character parameter copt if present,
 !  otherwise the default value cdef, if present, '', if not.
@@ -4220,20 +4220,23 @@ module General
 !  grid basis
 !  to the Yin grid basis using theta and phi coordinates of the Yang grid.
 !  For use on pencils within mn-loop.
-!  Note that components of transformed are undefined if correspondig power is 0.
+!  Note that components of transformed are undefined if corresponding power 
+!  in mask powers is 0.
 !
 ! 30-mar-2016/MR: coded
 !
       use Cdata, only: costh, sinth, cosph, sinph, m, n
 
-      real,    dimension(nx,3),intent(IN) :: vec
-      integer, dimension(3),   intent(IN) :: powers
-      real,    dimension(nx,3),intent(OUT):: transformed
+      real,    dimension(:,:),intent(IN) :: vec
+      integer, dimension(3),  intent(IN) :: powers
+      real,    dimension(:,:),intent(OUT):: transformed
 
       real :: sinth1, a, b
 
-      sinth1=1./sqrt(costh(m)**2+sinth(m)**2*cosph(n)**2)
-      a=-cosph(n)*sinth1; b=sinph(n)*costh(m)*sinth1
+      if (any(powers(2:3)/=0)) then
+        sinth1=1./sqrt(costh(m)**2+(sinth(m)*cosph(n))**2)
+        a=-cosph(n)*sinth1; b=sinph(n)*costh(m)*sinth1
+      endif
 
       if (powers(1)/=0) &
         transformed(:,1) = vec(:,1)
@@ -4248,6 +4251,7 @@ module General
 !
 !  Transforms theta and phi components of a vector field vec defined with the Yang grid basis
 !  to the Yin grid basis using theta and phi coordinates of the Yang grid.
+!  Both vec and vec_transformed must have shape (dimx,ny,nz,2).
 !  For use outside mn-loop.
 !
 ! 30-mar-2016/MR: coded
@@ -4257,17 +4261,18 @@ module General
       real, dimension(:,:,:,:), intent(IN) :: vec
       real, dimension(:,:,:,:), intent(OUT):: vec_transformed
 
-      integer :: i,j
-      real :: sinth1, a, b
+      integer :: i,j,ig,jg
+      real :: sinth1,a,b
 
-      do i=n1,n2 
-        do j=m1,m2
+      do i=1,nz 
+        do j=1,ny
 
-          sinth1=1./sqrt(costh(j)**2+sinth(j)**2*cosph(i)**2)
-          a=-cosph(i)*sinth1; b=sinph(i)*costh(j)*sinth1
+          ig=i+nghost; jg=j+nghost
+          sinth1=1./sqrt(costh(jg)**2+(sinth(jg)*cosph(ig))**2)
+          a=-cosph(ig)*sinth1; b=sinph(ig)*costh(jg)*sinth1
 
-          vec_transformed(:,j,i,2) = b*vec(:,j,i,2) - a*vec(:,j,i,3)
-          vec_transformed(:,j,i,3) = a*vec(:,j,i,2) + b*vec(:,j,i,3)
+          vec_transformed(:,j,i,1) = b*vec(:,j,i,1) - a*vec(:,j,i,2)
+          vec_transformed(:,j,i,2) = a*vec(:,j,i,1) + b*vec(:,j,i,2)
 
         enddo
       enddo
@@ -4420,5 +4425,93 @@ module General
       g(:,1:dimensionality)=g(:,dim_mask(1:dimensionality))
 
     endsubroutine reduce_grad_dim
+!****************************************************************************  
+    function merge_yin_yang(y,z,dy,dz,yzyang,yz,inds) result (nok)
+!
+!  Merges Yin and Yang grids: Yin, given by y,z,dy,dz, remains unchanged while Yang,
+!  given by yzyang of dimension 2 x size(y)*size(z) which is assumed to be
+!  transformed into Yin basis, is clipped by removing points which lie within Yin.
+!  Output is merged coordinate array yz[2,*] and index vector inds into 
+!  yzyang selecting the unclipped points. inds can be used to merge data arrays accordingly.
+!  Returns number of unclipped points in Yang.
+!
+!  30-mar-16/MR: cloned from corresp. IDL routine
+!
+    real, dimension(:),    intent(IN) :: y,z
+    real,                  intent(IN) :: dy,dz
+    real, dimension(:,:) , intent(IN) :: yzyang
+    real, dimension(:,:) , intent(OUT):: yz
+    integer, dimension(:), intent(OUT):: inds
+    integer :: nok
+
+    integer :: ind,i,ny,nz,nyz
+
+    ny=size(y); nz=size(z); nyz=ny*nz
+!
+!  Determine indices of unclipped points of Yang in yzyang.
+!
+    nok=0
+    do i=1,nyz
+      if (yzyang(1,i) < minval(y)-dy .or. yzyang(1,i) > maxval(y)+dy .or. &
+          yzyang(2,i) < minval(z)-dz .or. yzyang(2,i) > maxval(z)+dz) then
+        nok=nok+1
+        inds(nok)=i
+      endif
+    enddo
+!
+!  Put Yin coordinates in 2D array.
+!
+    ind=1
+    do i=1,ny
+      yz(1,ind:ind+nz-1) = y(i)
+      yz(2,ind:ind+nz-1) = z
+      ind=ind+nz
+    enddo
+!
+!  Add Yang coordinates.
+!
+    yz(:,nyz+1:nyz+nok)=yzyang(:,inds(:nok))
+
+  endfunction merge_yin_yang
+!****************************************************************************  
+  subroutine yin2yang_coors(costh,sinth,cosph,sinph,yz)
+!
+!  Transforms (theta,phi) coordinates of Yin or Yang grid, given by cos(theta)
+!  etc., into (theta',phi') coordinates of the other grid, stored in array yz
+!  of dimension 2 x size(theta)*size(phi).
+!
+!  30-mar-16/MR: cloned from corresp. IDL routine
+!
+      real, dimension(:)  , intent(IN) :: sinth, costh, sinph, cosph
+      real, dimension(:,:), intent(OUT):: yz
+
+      integer :: ind, i, j
+      real :: sth, cth, xprime, yprime, zprime, sprime
+
+      ind=1
+      do i=1,size(sinth)
+
+        sth=sinth(i); cth=costh(i)
+
+        do j=1,size(sinph)
+!
+!  Rotate by Pi about z axis, then by Pi/2 about x axis.
+!  No distinction between Yin and Yang as transformation matrix is self-inverse.
+!
+          xprime = -cosph(j)*sth
+          yprime = -cth
+          zprime = -sinph(j)*sth
+
+          sprime = sqrt(xprime**2 + yprime**2)
+
+          yz(1,ind) = atan2(sprime,zprime)
+          yz(2,ind) = atan2(yprime,xprime)
+          if (yz(2,ind) < 0.) yz(2,ind) = yz(2,ind)+2.*pi
+          ind = ind+1
+
+        enddo
+      enddo
+
+  endsubroutine yin2yang_coors
 !****************************************************************************  
 endmodule General

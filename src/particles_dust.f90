@@ -254,7 +254,7 @@ module Particles
   integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0
   integer :: idiag_dtdragp=0
   integer :: idiag_nparmin=0, idiag_nparmax=0, idiag_npargone=0
-  integer :: idiag_nparsum
+  integer :: idiag_nparsum=0
   integer :: idiag_rhopm=0, idiag_rhoprms=0, idiag_rhop2m=0, idiag_rhopmax=0
   integer :: idiag_rhopmin=0, idiag_decollp=0, idiag_rhopmphi=0
   integer :: idiag_epspmin=0, idiag_epspmax=0
@@ -561,12 +561,6 @@ module Particles
 !  region needs to be folded back into the df array after pde is finished,
 !
         if (lparticlemesh_cic .or. lparticlemesh_tsc) lfold_df=.true.
-      endif
-!
-      if (lparticlemesh_gab) then
-        lfold_df_3points=.true.
-        if (lpscalar) call fatal_error('initialize_particles',&
-            'The gab scheme is currently not working with passive scalars!')
       endif
 !
       if (lcollisional_cooling_twobody) then
@@ -3796,7 +3790,7 @@ module Particles
 !
 !  Triangular Shaped Cloud (TSC) scheme.
 !
-                elseif (lparticlemesh_tsc) then
+                elseif (lparticlemesh_tsc .or. lparticlemesh_gab) then
                   if (.not. lparticlemesh_pqs_assignment) then
 !
 !  Particle influences the 27 surrounding grid points, but has a density that

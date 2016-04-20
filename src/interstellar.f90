@@ -217,14 +217,14 @@ module Interstellar
 !  Parameters for 'averaged'-SN heating
 !
   real :: r_SNI_yrkpc2=4.E-6, r_SNII_yrkpc2=3.E-5
-  real :: r_SNI=3.E+4, r_SNII=4.E+3
-  real :: average_SNI_heating=0., average_SNII_heating=0.
+  real :: r_SNI, r_SNII
+  real :: average_SNI_heating=impossible, average_SNII_heating=impossible
 !
 !  Limit placed of minimum density resulting from cavity creation and
 !  parameters for thermal_hse(hydrostatic equilibrium) assuming RBNr
 !
-  real, parameter :: rho_min_cgs=1.E-34, rho0ts_cgs=3.5E-24, Tinit_cgs=7.088E2
-  real :: rho0ts=impossible, Tinit=impossible, rho_min=impossible
+  real, parameter :: rho_min_cgs=1.E-34, rho0ts_cgs=3.5E-24, T_init_cgs=7.088E2
+  real :: rho0ts=impossible, T_init=impossible, rho_min=impossible
 !
 !  Cooling timestep limiter coefficient
 !  (This value 0.08 is overly restrictive. cdt_tauc=0.5 is a better value.)
@@ -270,6 +270,7 @@ module Interstellar
 !
   real :: coolingfunction_scalefactor=1.
   real :: heatingfunction_scalefactor=1.
+  real :: heatingfunction_fadefactor=1.
 !
   real :: heating_rate = 0.015
   real :: heating_rate_code = impossible
@@ -320,7 +321,7 @@ module Interstellar
 !  Cooling time diagnostic
 !
   integer :: idiag_taucmin=0
-  integer :: idiag_Hmax=0
+  integer :: idiag_Hmax_ism=0
   integer :: idiag_Lamm=0
   integer :: idiag_nrhom=0
   integer :: idiag_rhoLm=0
@@ -341,6 +342,13 @@ module Interstellar
   real :: addrate=1.0
   real :: boldmass=0.0
   logical :: ladd_massflux = .false.
+!  switches required to override the persistent values when continuing a run
+  logical :: l_persist_overwrite_lSNI=.false., l_persist_overwrite_lSNII=.false.
+  logical :: l_persist_overwrite_tSNI=.false., l_persist_overwrite_tSNII=.false.
+  logical :: l_persist_overwrite_tcluster=.false., l_persist_overwrite_xcluster=.false.
+  logical :: l_persist_overwrite_ycluster=.false., l_persist_overwrite_zcluster=.false.
+  logical :: lreset_ism_seed=.false.
+  integer :: seed_reset=1963
 !
 !  Gravity constansts - rquired for pre-2015 vertical heating profile
 !
@@ -360,8 +368,9 @@ module Interstellar
       frac_ecr, frac_eth, thermal_profile, velocity_profile, mass_profile, &
       luniform_zdist_SNI, inner_shell_proportion, outer_shell_proportion, &
       cooling_select, heating_select, heating_rate, rho0ts, &
-      Tinit, TT_SN_max, rho_SN_min, N_mass, lSNII_gaussian, rho_SN_max, &
-      lthermal_hse, lheatz_min, kperp, kpara
+      T_init, TT_SN_max, rho_SN_min, N_mass, lSNII_gaussian, rho_SN_max, &
+      lthermal_hse, lheatz_min, kperp, kpara, average_SNII_heating, &
+      average_SNI_heating
 !
 ! run parameters
 !
@@ -375,13 +384,19 @@ module Interstellar
       h_SNI, h_SNII, TT_SN_min, lSN_scale_rad, &
       mass_SN_progenitor, cloud_tau, cdt_tauc, cloud_rho, cloud_TT, &
       laverage_SN_heating, coolingfunction_scalefactor,&
-      heatingfunction_scalefactor, t_settle, &
+      heatingfunction_scalefactor, heatingfunction_fadefactor, t_settle, &
       center_SN_x, center_SN_y, center_SN_z, rho_SN_min, TT_SN_max, &
       lheating_UV, cooling_select, heating_select, heating_rate, &
       heatcool_shock_cutoff, heatcool_shock_cutoff_rate, ladd_massflux, &
-      N_mass, addrate, Tinit, rho0ts, &
+      N_mass, addrate, T_init, rho0ts, &
       lSNII_gaussian, rho_SN_max, lSN_mass_rate, lthermal_hse, lheatz_min, &
-      p_OB, SN_clustering_time, SN_clustering_radius, lOB_cluster, kperp, kpara
+      p_OB, SN_clustering_time, SN_clustering_radius, lOB_cluster, kperp, &
+      kpara, average_SNII_heating, average_SNI_heating, seed_reset, &
+      l_persist_overwrite_lSNI, l_persist_overwrite_lSNII, &
+      l_persist_overwrite_tSNI, l_persist_overwrite_tSNII, &
+      l_persist_overwrite_tcluster, l_persist_overwrite_xcluster, &
+      l_persist_overwrite_ycluster, l_persist_overwrite_zcluster, &
+      lreset_ism_seed
 !
   contains
 !
@@ -485,7 +500,7 @@ module Interstellar
           endif
         endif
         if (rho_min == impossible) rho_min=rho_min_cgs/unit_temperature
-        if (Tinit == impossible) Tinit=Tinit_cgs/unit_temperature
+        if (T_init == impossible) T_init=T_init_cgs/unit_temperature
         if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
         if (lroot) &
             print*,'initialize_interstellar: ampl_SN, kampl_SN = ', &
@@ -536,12 +551,20 @@ module Interstellar
 !
       t_interval_SNI  = 1./(SNI_area_rate  * Lxyz(1) * Lxyz(2))
       t_interval_SNII = 1./(SNII_area_rate * Lxyz(1) * Lxyz(2))
-      average_SNI_heating = &
-          r_SNI *ampl_SN/(sqrt(pi)*h_SNI )*heatingfunction_scalefactor
-      average_SNII_heating= &
-          r_SNII*ampl_SN/(sqrt(pi)*h_SNII)*heatingfunction_scalefactor
+      if (average_SNI_heating == impossible) average_SNI_heating = &
+          r_SNI *ampl_SN/(sqrt(pi)*h_SNI )
+      if (average_SNII_heating == impossible) average_SNII_heating = &
+          r_SNII*ampl_SN/(sqrt(pi)*h_SNII)
       if (lroot) print*,'initialize_interstellar: t_interval_SNI =', &
           t_interval_SNI,Lxyz(1),Lxyz(2),SNI_area_rate
+      if (lroot) print*,'initialize_interstellar: average_SNI_heating =', &
+          average_SNI_heating  * t_interval_SNI / &
+          (t_interval_SNI  + t * heatingfunction_fadefactor) * &
+          heatingfunction_scalefactor
+      if (lroot) print*,'initialize_interstellar: average_SNII_heating =', &
+          average_SNII_heating * t_interval_SNII/ &
+          (t_interval_SNII + t * heatingfunction_fadefactor) * &
+          heatingfunction_scalefactor
 !
       if (lroot .and. (ip<14)) then
         print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
@@ -551,7 +574,7 @@ module Interstellar
       if (lroot .and. lstart) then
         open(1,file=trim(datadir)//'/sn_series.dat',position='append')
         write(1,'("#",4A)')  &
-            '---it----------t--------itype-iproc----l-----m----n---', &
+            '---it----------t-------itype---iproc---l-----m-----n--', &
             '-----x------------y------------z-------', &
             '----rho-----------TT-----------EE---------t_sedov----', &
             '--radius------site_mass------maxTT----t_interval---'
@@ -891,6 +914,7 @@ module Interstellar
 !  read and added new cluster variables. All now consistent with any io
 !
       use IO, only: read_persist, lun_input, lcollective_IO
+      use GENERAL, only: random_seed_wrapper
 !
       integer :: id
       logical :: done
@@ -925,33 +949,92 @@ module Interstellar
           done = .true.
         ! currently active tags:
         case (id_record_ISM_T_NEXT_SNI)
-          if (read_persist ('ISM_T_NEXT_SNI', t_next_SNI)) return
+          if (l_persist_overwrite_tSNI) then
+            return
+          else
+            call warning('input_persistent_interstellar','t_next_SNI from run.in '//&
+              'overwritten. Set l_persist_overwrite_tSNI=T to update')
+            if (read_persist ('ISM_T_NEXT_SNI', t_next_SNI)) return
+          endif
           done = .true.
         case (id_record_ISM_T_NEXT_SNII)
-          if (read_persist ('ISM_T_NEXT_SNII', t_next_SNII)) return
+          if (l_persist_overwrite_tSNII) then
+            return
+          else
+            call warning('input_persistent_interstellar','t_next_SNII from run.in '//&
+              'overwritten. Set l_persist_overwrite_tSNII=T to update')
+            if (read_persist ('ISM_T_NEXT_SNII', t_next_SNII)) return
+          endif
           done = .true.
         case (id_record_ISM_X_CLUSTER)
-          if (read_persist ('ISM_X_CLUSTER', x_cluster)) return
+          if (l_persist_overwrite_xcluster) then
+            return
+          else
+            call warning('input_persistent_interstellar','x_cluster from run.in '//&
+              'overwritten. Set l_persist_overwrite_xcluster=T to update')
+            if (read_persist ('ISM_X_CLUSTER', x_cluster)) return
+          endif
           done = .true.
         case (id_record_ISM_Y_CLUSTER)
-          if (read_persist ('ISM_Y_CLUSTER', y_cluster)) return
+          if (l_persist_overwrite_ycluster) then
+            return
+          else
+            call warning('input_persistent_interstellar','y_cluster from run.in '//&
+              'overwritten. Set l_persist_overwrite_ycluster=T to update')
+            if (read_persist ('ISM_Y_CLUSTER', y_cluster)) return
+          endif
           done = .true.
         case (id_record_ISM_Z_CLUSTER)
-          if (read_persist ('ISM_Z_CLUSTER', z_cluster)) return
+          if (l_persist_overwrite_zcluster) then
+            return
+          else
+            call warning('input_persistent_interstellar','z_cluster from run.in '//&
+              'overwritten. Set l_persist_overwrite_zcluster=T to update')
+            if (read_persist ('ISM_Z_CLUSTER', z_cluster)) return
+          endif
           done = .true.
         case (id_record_ISM_T_CLUSTER)
-          if (read_persist ('ISM_T_CLUSTER', t_cluster)) return
+          if (l_persist_overwrite_tcluster) then
+            return
+          else
+            call warning('input_persistent_interstellar','t_cluster from run.in '//&
+              'overwritten. Set l_persist_overwrite_tcluster=T to update')
+            if (read_persist ('ISM_T_CLUSTER', t_cluster)) return
+          endif
           done = .true.
         case (id_record_ISM_TOGGLE_SNI)
-          if (read_persist ('ISM_TOGGLE_SNI', lSNI)) return
+          if (l_persist_overwrite_lSNI) then
+            return
+          else
+            call warning('input_persistent_interstellar','lSNI from run.in '//&
+              'overwritten. Set l_persist_overwrite_lSNI=T to update')
+            if (read_persist ('ISM_TOGGLE_SNI', lSNI)) return
+          endif
           done = .true.
         case (id_record_ISM_TOGGLE_SNII)
-          if (read_persist ('ISM_TOGGLE_SNII', lSNII)) return
+          if (l_persist_overwrite_lSNII) then
+            return
+          else
+            call warning('input_persistent_interstellar','lSNII from run.in '//&
+              'overwritten. Set l_persist_overwrite_lSNII=T to update')
+            if (read_persist ('ISM_TOGGLE_SNII', lSNII)) return
+          endif
+          done = .true.
+        case (id_record_RANDOM_SEEDS)
+          call random_seed_wrapper (GET=seed)
+          if (lreset_ism_seed) then
+            seed=seed_reset
+          else
+            if (read_persist ('RANDOM_SEEDS', seed(1:nseed))) return
+          endif
+          call random_seed_wrapper (PUT=seed)
           done = .true.
       endselect
 !
       if (lroot) &
-          print *, 'input_persistent_interstellar: ', t_next_SNI, t_next_SNII
+        print *,'input_persistent_interstellar: ','lSNI', lSNI, 't_next_SNI', t_next_SNI
+      if (lroot) &
+        print *,'input_persistent_interstellar: ','lSNII',lSNII,'t_next_SNII',t_next_SNII
 !
     endsubroutine input_persistent_interstellar
 !*****************************************************************************
@@ -1003,7 +1086,7 @@ module Interstellar
 !
       if (lreset) then
         idiag_taucmin=0
-        idiag_Hmax=0
+        idiag_Hmax_ism=0
         idiag_Lamm=0
         idiag_nrhom=0
         idiag_rhoLm=0
@@ -1011,14 +1094,18 @@ module Interstellar
       endif
 !
       lpenc_requested(i_ee)=.true.
+      lpenc_requested(i_cv1)=.true.
       lpenc_requested(i_lnTT)=.true.
       lpenc_requested(i_TT1)=.true.
+      lpenc_requested(i_lnrho)=.true.
+      lpenc_requested(i_rho1)=.true.
+      lpenc_requested(i_rho)=.true.
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'taucmin',idiag_taucmin)
-        call parse_name(iname,cname(iname),cform(iname),'Hmax',idiag_Hmax)
+        call parse_name(iname,cname(iname),cform(iname),'Hmax_ism',idiag_Hmax_ism)
         call parse_name(iname,cname(iname),cform(iname),'Lamm',idiag_Lamm)
         call parse_name(iname,cname(iname),cform(iname),'nrhom',idiag_nrhom)
         call parse_name(iname,cname(iname),cform(iname),'rhoLm',idiag_rhoLm)
@@ -1308,8 +1395,8 @@ module Interstellar
 !
       do n=1,mz
         if (lthermal_hse) then
-          logrho = log(rho0ts)+(a_S*z_S*m_u*mu/k_B/Tinit)*(log(Tinit)- &
-              log(Tinit/(a_S*z_S)* &
+          logrho = log(rho0ts)+(a_S*z_S*m_u*mu/k_B/T_init)*(log(T_init)- &
+              log(T_init/(a_S*z_S)* &
               (a_S*sqrt(z_S**2+(z(n))**2)+0.5*a_D*(z(n))**2/z_D)))
         else
           logrho = log(rho0ts)-0.015*(- &
@@ -1318,7 +1405,7 @@ module Interstellar
         endif
         if (logrho < -40.0) logrho=-40.0
         zrho(n)=exp(logrho)
-        TT=Tinit/(a_S*z_S)* &
+        TT=T_init/(a_S*z_S)* &
             (a_S*sqrt(z_S**2+(z(n))**2)+0.5*a_D*(z(n))**2/z_D)
         lnTT(n)=log(TT)
         zheat(n)=GammaUV*exp(-abs(z(n))/H_z)
@@ -1379,11 +1466,37 @@ module Interstellar
       call calc_cool_func(cool,p%lnTT,p%lnrho)
       call calc_heat(heat,p%lnTT)
 !
+!  Average SN heating (due to SNI and SNII)
+!  The amplitudes of both types is assumed the same (=ampl_SN)
+!  Added option to gradually remove average heating as SN are introduced when
+!  initial condition is in equilibrium prepared in 1D
+!  Division by density to balance LHS of entropy equation
+!
+      if (laverage_SN_heating) then
+        if (lSNI.or.lSNII) then
+          heat=heat+average_SNI_heating *exp(-(z(n)/h_SNI )**2)*&
+              t_interval_SNI /(t_interval_SNI +t*heatingfunction_fadefactor)&
+                                         *p%rho1*heatingfunction_scalefactor
+          heat=heat+average_SNII_heating*exp(-(z(n)/h_SNII)**2)*&
+              t_interval_SNII/(t_interval_SNII+t*heatingfunction_fadefactor)&
+                                         *p%rho1*heatingfunction_scalefactor
+        else
+          heat=heat+average_SNI_heating *exp(-(z(n)/h_SNI )**2)*p%rho1*&
+                    heatingfunction_scalefactor
+          heat=heat+average_SNII_heating*exp(-(z(n)/h_SNII)**2)*p%rho1*&
+                    heatingfunction_scalefactor
+        endif
+      endif
+!
 !  For clarity we have constructed the rhs in erg/s/g [=T*Ds/Dt] so therefore
 !  we now need to multiply by TT1. 
 !
       if (ltemperature) then
-        heatcool=p%TT1*(heat-cool)*gamma
+        if (ltemperature_nolog) then
+          heatcool=(heat-cool)*p%cv1
+        else
+          heatcool=(heat-cool)/p%ee
+        endif
       elseif (pretend_lnTT) then
         heatcool=p%TT1*(heat-cool)*gamma
       else
@@ -1407,38 +1520,21 @@ module Interstellar
 !  Save result in aux variables
 !  cool=rho*Lambda, heatcool=(Gamma-rho*Lambda)/TT
 !
-      f(l1:l2,m,n,icooling)=cool
-      f(l1:l2,m,n,iheatcool)=heatcool
-!
-!  Average SN heating (due to SNI and SNII)
-!  The amplitudes of both types is assumed the same (=ampl_SN)
-!  Added option to gradually remove average heating as SN are introduced when
-!  initial condition is in equilibrium prepared in 1D 
-!
-      if (laverage_SN_heating) then
-        if (lSNI.or.lSNII) then
-          heat=heat+average_SNI_heating *exp(-(z(n)/h_SNI )**2)*&
-              t_interval_SNI/(t_interval_SNI + t) 
-          heat=heat+average_SNII_heating*exp(-(z(n)/h_SNII)**2)*&
-              t_interval_SNII/(t_interval_SNII + t) 
-        else 
-          heat=heat+average_SNI_heating *exp(-(z(n)/h_SNI )**2)
-          heat=heat+average_SNII_heating*exp(-(z(n)/h_SNII)**2)
-        endif
-      endif
+      f(l1:l2,m,n,icooling) = p%TT1*cool
+      f(l1:l2,m,n,iheatcool)= heatcool
 !
 !  Prepare diagnostic output
 !  Since these variables are divided by Temp when applied it is useful to
 !  monitor the actual applied values for diagnostics so TT1 included.
 !
       if (ldiagnos) then
-        if (idiag_Hmax/=0) then
-          netheat=heatcool
+        if (idiag_Hmax_ism/=0) then
+          netheat=heatcool/p%TT1
           where (heatcool<0.0) netheat=0.0
-          call max_mn_name(netheat/p%ee,idiag_Hmax)
+          call max_mn_name(netheat/p%ee,idiag_Hmax_ism)
         endif
         if (idiag_taucmin/=0) then
-          netcool=-heatcool
+          netcool=-heatcool/p%TT1
           where (heatcool>=0.0) netcool=1.0
           call max_mn_name(netcool/p%ee,idiag_taucmin,lreciprocal=.true.)
         endif
@@ -1458,9 +1554,18 @@ module Interstellar
 !  dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee)
 !
       if (lfirst.and.ldt) then
-        dt1_max=max(dt1_max,(-heatcool)/(p%ee*cdt_tauc))
-        where (heatcool>0.0) Hmax=Hmax+heatcool
-        dt1_max=max(dt1_max,Hmax/(p%ee*cdt_tauc))
+        dt1_max=max(dt1_max,(-heatcool/p%TT1)/(p%ee*cdt_tauc))
+        if (ltemperature) then
+          if (ltemperature_nolog) then
+            Hmax=Hmax+heatcool/p%cv1
+          else
+            Hmax=Hmax+heatcool*p%ee
+          endif
+        elseif (pretend_lnTT) then
+          Hmax=Hmax+heatcool/(p%TT1*gamma)
+        else
+          Hmax=Hmax+heatcool/p%TT1
+        endif
       endif
 !
 !  Apply heating/cooling to temperature/entropy variable
@@ -2491,6 +2596,9 @@ module Interstellar
         if (nxgrid/=1) SNR%feat%x=x(SNR%indx%l) +0.5*dx*(-1.)**SNR%indx%l
         if (nygrid/=1) SNR%feat%y=y(SNR%indx%m) +0.5*dy*(-1.)**SNR%indx%m
         if (nzgrid/=1) SNR%feat%z=z(SNR%indx%n) +0.5*dz*(-1.)**SNR%indx%n
+        if (center_SN_x/=impossible) SNR%feat%x=center_SN_x
+        if (center_SN_y/=impossible) SNR%feat%y=center_SN_y
+        if (center_SN_z/=impossible) SNR%feat%z=center_SN_z
 !
 !  Better initialise these to something on the other processors
 !

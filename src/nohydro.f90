@@ -11,7 +11,7 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED uu(3); u2; oo(3); ou; uij(3,3); sij(3,3)
+! PENCILS PROVIDED uu(3); u2; oo(3); ou; uij(3,3); sij(3,3); sij2
 ! PENCILS PROVIDED divu; uij5(3,3); graddivu(3); ugu(3)
 ! PENCILS PROVIDED del2u(3), curlo(3)
 !
@@ -247,6 +247,8 @@ module Hydro
       if (lpencil(i_uij)) p%uij=0.0
 ! sij
       if (lpencil(i_sij)) p%sij=0.0
+! sij2
+      if (lpencil(i_sij2)) p%sij2=0.0
 ! divu
       if (lpencil(i_divu)) p%divu=0.0
 ! uij5

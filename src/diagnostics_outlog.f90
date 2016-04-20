@@ -601,7 +601,7 @@ module Diagnostics
 !
 !  Communicate over all processors.
 !
-      call mpireduce_max(fmax_tmp,fmax,nmax_count)
+      call mpireduce_max(fmax_tmp,fmax,nmax_count,comm=MPI_COMM_WORLD) ! only for scalars!
 !
       call mpireduce_sum(fsum_tmp,fsum,nsum_count)
       if (lweight_comm) call mpireduce_sum(fweight_tmp,fweight,nsum_count)

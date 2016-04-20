@@ -36,7 +36,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,truepng=png_truecolor,tmin=tmin, $
     spherical_surface=spherical_surface, nlevels=nlevels, $
     doublebuffer=doublebuffer,wsx=wsx,wsy=wsy,title=title,log=log, $
     interp=interp,savefile=savefile, rotate=rotate,phi_shift=phi_shift, $
-    Beq=Beq,taud=taud
+    Beq=Beq,taud=taud,grid=gridplot,maptype=maptype
 ;
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
@@ -44,6 +44,7 @@ default,ix,-1
 default,iy,-1
 default,ps,0
 default,quiet,0
+default,gridplot,0
 ;
 ;  default extension
 ;
@@ -84,6 +85,10 @@ default,title,'rvid_plane'
 default,nlevels,30
 default,phi_shift,0.
 default,Beq,1.
+default,yinyang,0
+default,triangles,0
+default,maptype,'orthographic'
+;
 sample = ~keyword_set(interp)
 ;
 tini=1e-30 ; a small number
@@ -176,14 +181,33 @@ endif else begin
   massage = 0
 endelse
 ;
+yinyang=par.lyinyang
+;
 if (n_elements(proc) ne 0) then begin
   file_slice=datadir+'/proc'+str(proc)+'/slice_'+field+'.'+extension
 endif else begin
   file_slice=datadir+'/slice_'+field+'.'+extension
   if (not quiet) then print,'file_slice=',file_slice
 endelse
+
+case field of
+'uu1': quan='!8u!dx!n!6'
+'uu2': quan='!8u!dy!n!6'
+'uu3': quan='!8u!dz!n!6'
+'bb1': quan='!8B!dx!n!6'
+'bb2': quan='!8B!dy!n!6'
+'bb3': quan='!8B!dz!n!6'
+'rho': quan='!7q!6'
+'lnrho': quan='ln!7q!6'
+'ss': quan='!8s!6'
+else: quan=''
+endcase
 ;
 if (keyword_set(polar)) then begin
+  if yinyang then begin
+    print, 'Polar plot not meaningful for Yin-Yang data. Use contourplot or spherical_surface.'
+    return
+  endif
   if (anglecoord eq 'y') then begin
     theta = y
   end else if (anglecoord eq 'z') then begin
@@ -324,7 +348,7 @@ if (extension eq 'xy2') then plane=fltarr(nx,ny)*one
 if (extension eq 'xz') then plane=fltarr(nx,nz)*one
 if (extension eq 'yz') then plane=fltarr(ny,nz)*one
 size_plane=size(plane)
-if (not quiet) then print, 'Array size: ', size_plane[0:size_plane[0]]
+if yinyang then size_plane=[2,nz,nz]
 ;
 slice_xpos=0.0*one
 slice_ypos=0.0*one
@@ -360,9 +384,15 @@ endif else if (keyword_set(mpeg)) then begin
   mpegID = mpeg_open([Nwx,Nwy],filename=mpeg_name)
   itmpeg=0 ;(image counter)
 endif else if (not keyword_set(doublebuffer)) then begin
-  Nwx = zoom * size_plane[1]
-  Nwy = zoom * size_plane[2]
-  window, xsize=Nwx, ysize=Nwy, title=title
+  if keyword_set(spherical_surface) and not keyword_set(contourplot) then $
+    q=1. $
+  else begin
+    Nwx = zoom * size_plane[1]
+    Nwy = zoom * size_plane[2]
+    q=Nwy/Nwx
+    if yinyang then q=.5
+  endelse
+  window, xsize=700, ysize=q*700, title=title
 endif
 ;
 ;  Allow for skipping "stride" time slices.
@@ -372,6 +402,13 @@ istride=stride ;(make sure the first one is written)
 if (keyword_set(global_scaling)) then begin
   first=1L
   openr, lun, file_slice, /f77, /get_lun, swap_endian=swap_endian
+  if yinyang and extension eq 'yz' then begin
+    ninds=0L
+    readu, lun, ninds
+    yz=fltarr(2,ninds)
+    readu, lun, yz
+    plane=fltarr(ninds)*one
+  endif
   while (not eof(lun)) do begin
     if (keyword_set(oldfile)) then begin ; For files without position
       readu, lun, plane, t
@@ -431,7 +468,24 @@ if (keyword_set(global_scaling)) then begin
 endif
 ;
 openr, lun, file_slice, /f77, /get_lun, swap_endian=swap_endian
+;
+;  Read auxiliary date for Yin-Yang grid: number of points in merged (irregular) grid ngrid and merged grid itself.
+;
+if yinyang and extension eq 'yz' then begin
+  ngrid=0L
+  readu, lun, ngrid
+  yz_yy=fltarr(2,ngrid)*one
+  readu, lun, yz_yy
+  plane=fltarr(ngrid)*one
+  triangulate, yz_yy[0,*], yz_yy[1,*], triangles
+  size_plane=size(plane)
+endif
+
+if (not quiet) then print, 'Array size: ', size_plane[1:size_plane[0]], yinyang ? '(Yin-Yang grid)':''
+
+first=1
 while (not eof(lun)) do begin
+
   if (keyword_set(oldfile)) then begin ; For files without position
     readu, lun, plane, t
   end else begin
@@ -446,15 +500,27 @@ while (not eof(lun)) do begin
 ;  In future, we might want to choose better names than x2 and y2,
 ;    especially if they are later theta (theta2) and phi.
 ;
-  planesize=size(plane)
-  nx_plane=planesize[1]
-  ny_plane=planesize[2]
-  if extension eq 'xy' then begin
+  if not (yinyang and extension eq 'yz') then begin
+    nx_plane=size_plane[1]
+    ny_plane=size_plane[2]
+  endif
+  if zoom eq 1. then begin
+    if yinyang and extension eq 'yz' then begin
+      x2=reform(yz_yy(0,*)) & y2=reform(yz_yy(1,*))
+    endif else begin
+      x2=x & y2=y
+    endelse
+  endif else if extension eq 'xy' then begin
     x2=rebin(x,zoom*nx_plane,sample=sample)
     y2=rebin(y,zoom*ny_plane,sample=sample)
   endif else if (extension eq 'yz') then begin
-    x2=rebin(y,zoom*nx_plane,sample=sample)
-    y2=rebin(z,zoom*ny_plane,sample=sample)
+    if yinyang then begin       ; yet incorrect
+      x2=rebin(yz_yy[0,*],zoom*ngrid,sample=sample)
+      y2=rebin(yz_yy[1,*],zoom*ngrid,sample=sample)
+    endif else begin
+      x2=rebin(y,zoom*nx_plane,sample=sample)
+      y2=rebin(z,zoom*ny_plane,sample=sample)
+    endelse
   endif
 ;
 ;  if extension eq 'xz', then our y2 wasn't right.
@@ -474,9 +540,10 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
   endif else if (keyword_set(cubic)) then begin
      if (cubic gt 0.0) then cubic = -0.5
      plane2=congrid(plane,zoom*nx_plane,zoom*ny_plane,/center,cubic=cubic,interp=interp)
-  endif else begin
-     plane2=congrid(plane,zoom*nx_plane,zoom*ny_plane,/center,interp=interp)
-  endelse
+  endif else if (zoom ne 1.) then $
+     plane2=congrid(plane,zoom*nx_plane,zoom*ny_plane,/center,interp=interp) $
+  else $
+     plane2=plane
 ;
 ;  Do masking, if shell set.
 ;
@@ -524,45 +591,74 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
           window,xsize=wsx,ysize=wsy,/pixmap,/free
           pixID=!D.Window
         endif
+
         if (keyword_set(contourplot)) then begin
+
           lev=grange(amin,amax,60)
-          ;contourfill, plane2, x2, y2, levels=grange(amin,amax,60), $
-          contourfill, plane2, x2, y2, lev=lev, $
-          tit='!8t!6 ='+string(t/tunit,fo="(f7.1)"), _extra=_extra
-          colorbar_co,range=[min(lev),max(lev)],pos=[0.95,0.12,0.98,0.92],/vert, $
-              ytickformat='(f6.3)',yticks=2,ytickv=[min(lev),0.,max(lev)], $
-              yaxis=0,char=1.5,col=255,ytit='!6',xtit='!8B!dz!n!6'
-        end else if (keyword_set(polar)) then begin
+          xmargin=!x.margin-[4,-6]
+
+          title='!8t!6 = '+strtrim(string(t/tunit,fo="(f7.1)"),2)
+          if (keyword_set(spherical_surface)) then begin
+            xtitle='!7u!6' & ytitle='!7h!6'
+            if yinyang then $
+              contourfill, plane2, y2, x2, lev=lev, _extra=_extra, tri=triangles, title=title, $
+                           xtitle=xtitle, ytitle=ytitle, xmar=xmargin, grid=gridplot $
+            else $
+              contourfill, transpose(plane2), y2, x2, lev=lev, _extra=_extra, tri=triangles, $
+                           xtitle=xtitle, ytitle=ytitle, title=title, xmar=xmargin, grid=gridplot 
+          endif else begin
+            xtitle='!8y!6' & ytitle='!8z!6'
+            contourfill, plane2, x2, y2, lev=lev, title=title, _extra=_extra, tri=triangles, $
+                         xtitle=xtitle, ytitle=ytitle, xmar=xmargin, grid=gridplot
+          endelse
+          colorbar_co,range=[min(lev),max(lev)],pos=[0.975,0.18,0.99,0.93],/vert, $
+              yticks=4, yminor=1, $  ;format='(f6.4)', $;ytickv=[min(lev),0.,max(lev)], $
+              char=1.5,col=0,xtit=quan, xchars=1.
+
+        endif else if (keyword_set(polar)) then begin
           if (style_polar eq 'fill') then begin
             contourfill, plane2, x2, y2, levels=grange(amin,amax,60), $
-                tit='!8t!6 ='+string(t/tunit,fo="(f7.1)"), _extra=_extra
+                tit='!8t!6 ='+string(t/tunit,fo="(f7.1)"), _extra=_extra, grid=gridplot
           end else if (style_polar eq 'lines') then begin
             contour, plane2, x2, y2, nlevels=nlevels, $
                 tit='!8t!6 ='+string(t/tunit,fo="(f7.1)"), _extra=_extra
+            if keyword_set(gridplot) then oplot, x2, y2, psym=3
           endif
 ;
 ;  spherical surface plot in a good projection
 ;  still need to check whether /rotate is correct (see below)
 ;  added phi_shift keyword
+;
         end else if (keyword_set(spherical_surface)) then begin
           theta2=x2/!dtor
           phi=y2/!dtor
           if(keyword_set(phi_shift)) then phi=phi-phi_shift
           !p.background=255
-          map_set,/orthographic,/grid,/noborder,/isotropic,latdel=15,londel=15,limit=[0,-30,89,160],xmargin=0.5,ymargin=0.5,15,60,color=0
-          lev=grange(amin,amax,25)
-          if(keyword_set(rotate)) then tmp=rotate(plane2,3) else tmp=transpose(plane2)
-          if(keyword_set(Beq)) then  tmp=tmp/Beq
-          if(keyword_set(taud)) then t=t/taud
-          contour,clip(tmp,minmax(lev)),phi,90.-theta2,lev=lev,/fill,/overplot, $
-              col=0, _extra=_extra
+          map_set,15,60,/noborder,/isotropic,latdel=15,londel=15, $
+                  limit=[-80,-30,90,160],xmargin=[0.5,7],ymargin=1.5,color=0,name=maptype
+
+          lev=grange(.8*amin,amax,nlevels)
+          if yinyang then $
+            tmp=plane2 $
+          else $
+            if (keyword_set(rotate)) then tmp=rotate(plane2,3) else tmp=transpose(plane2)
+
+          if (keyword_set(Beq)) then  tmp=tmp/Beq
+          if (keyword_set(taud)) then t=t/taud
+
+          mima=minmax(lev)
+          contour,(tmp > mima(0)) < mima(1),phi,90.-theta2,lev=lev,/fill,/overplot, $
+                  col=0, _extra=_extra, tri=triangles
+          if keyword_set(gridplot) then $
+            oplot, phi,90.-theta2, psym=3 $
+          else $
+            map_grid,latdel=15,londel=15
+
           ;colorbar_co,range=[min(lev),max(lev)],pos=[0.07,0.3,0.10,0.65],/vert, $
-          colorbar_co,range=[min(lev),max(lev)],pos=[0.1,0.75,0.14,0.95],/vert, $
-              ytickformat='(F5.2)',yticks=2,ytickv=[min(lev),0.,max(lev)], $
-              yaxis=0,charsize=3,col=0 ;,xtit='!8U!dr!n!6/!8c!6!ds!n'
-          xyouts,480,800,'!8t!6/!7s!6 = '+str(t,fo='(f5.2)')+'', $
-              col=0,/device,charsize=4
-          ;xyouts,480,800,'!8t!6 = '+str(t,fo='(f5.1)')+'',col=0,/device,charsize=4
+          colorbar_co,range=[min(lev),max(lev)],pos=[0.97,0.15,0.99,0.85],/vert, $
+              format='(F6.3)',yticks=4, yminor=1, $ ;ytickv=[min(lev),0.,max(lev)], $
+              charsize=1.5,col=0, xtit=quan, xchars=1.5
+          xyouts,0.06,0.06,'!8t!6 = '+str(t,fo='(f5.1)')+'',col=0,/normal,charsize=2
         wait,wait
         endif else begin
           ;plotimage, plane2, range=[amin,amax]

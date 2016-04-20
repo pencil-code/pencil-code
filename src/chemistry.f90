@@ -659,6 +659,7 @@ module Chemistry
           lpenc_requested(i_lambda) = .true.
           lpenc_requested(i_glambda) = .true.
           lpenc_requested(i_lambda1) = .true.
+          if (lSmag_heat_transport) lpenc_requested(i_sij2) = .true.
         endif
 !
         if (latmchem .or. lcloud) then
@@ -953,7 +954,7 @@ module Chemistry
 !
 ! Natalia 
 ! turbulent heat transport in Smagorinsky case
-! probably it should be moved to vescosity module
+! probably it should be moved to viscosity module
 !
             p%lambda=(0.15*dxmax)**2.*sqrt(2*p%sij2)/.3*p%cp*p%rho
         else
@@ -3514,7 +3515,9 @@ module Chemistry
         do spec = 1,nchemspec
           if (Sijp(spec,reac) > 0) then
             Sijp_string = ''
-            if (Sijp(spec,reac) /= 1) write (Sijp_string,'(F3.1)') Sijp(spec,reac)
+            if (Sijp(spec,reac) /= 1) then
+              write (Sijp_string,'(F3.1)') Sijp(spec,reac)
+            endif
 !            if (Sijp(spec,reac)>1) Sijp_string=itoa(Sijp(spec,reac))
             reac_string = trim(reac_string)//trim(separatorp)// &
                 trim(Sijp_string)//trim(varname(ichemspec(spec)))
@@ -3728,6 +3731,9 @@ module Chemistry
         open (file_id,file=input_file2,POSITION='rewind',FORM='FORMATTED')
         write (file_id,*) 'STOICHIOMETRIC MATRIX'
 !
+        write (file_id,*) 'Species names'
+        write (file_id,101) varname(ichemspec(:))
+!
         write (file_id,*) 'Sijm'
         do i = 1,nreactions
           write (file_id,100) i,Sijm(:,i)
@@ -3743,7 +3749,8 @@ module Chemistry
         close (file_id)
       endif
 !
-100   format(I1,16f4.1)
+100   format(I1,16f6.1)
+101   format('    ',16A6)
 !
       call keep_compiler_quiet(f)
 !
@@ -6111,11 +6118,11 @@ module Chemistry
       type (pencil_case) :: p
 !
       ydot = p%DYDt_reac
-      f(l1:l2,m,n,ireaci(1):ireaci(nchemspec)) =   &
-          f(l1:l2,m,n,ireaci(1):ireaci(nchemspec))+ydot
+      f(l1:l2,m,n,ireaci(1):ireaci(nchemspec)) = ydot
+!         f(l1:l2,m,n,ireaci(1):ireaci(nchemspec))+ydot
 !
-      if (maux == nchemspec+1) f(l1:l2,m,n,ireaci(nchemspec)+1) =   &
-          f(l1:l2,m,n,ireaci(nchemspec)+1)+wt
+      if (maux == nchemspec+1) f(l1:l2,m,n,ireaci(nchemspec)+1) = wt
+!         f(l1:l2,m,n,ireaci(nchemspec)+1)+wt
 !
     endsubroutine get_reac_rate
 !***********************************************************************

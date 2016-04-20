@@ -42,7 +42,7 @@ module Energy
   real :: chi_jump_shock=1.0, xchi_shock=0.0,widthchi_shock=0.02
   real, target :: chi=0.0
   real :: chi_t=0.0, chi_shock=0.0, chi_hyper3=0.0
-  real :: chi_hyper3_mesh=5.0, chi_th=0.0, chi_rho=0.0
+  real :: chi_hyper3_mesh=5.0, chi_cs=0.0, chi_rho=0.0
   real :: Kgperp=0.0, Kgpara=0.0, tdown=0.0, allp=2.0, TT_powerlaw=1.0
   real :: ss_left=1.0, ss_right=1.0
   real :: ss0=0.0, khor_ss=1.0, ss_const=0.0
@@ -95,7 +95,7 @@ module Energy
   logical :: lheatc_tensordiffusion=.false., lheatc_spitzer=.false.
   logical :: lheatc_hubeny=.false.,lheatc_sqrtrhochiconst=.false.
   logical, target :: lheatc_kramers=.false.
-  logical :: lheatc_corona=.false.,lheatc_chitherm=.false.
+  logical :: lheatc_corona=.false.,lheatc_chi_cspeed=.false.
   logical :: lheatc_shock=.false., lheatc_hyper3ss=.false.
   logical :: lheatc_hyper3ss_polar=.false., lheatc_hyper3ss_aniso=.false.
   logical :: lheatc_hyper3ss_mesh=.false., lheatc_shock_profr=.false.
@@ -157,7 +157,7 @@ module Energy
   namelist /entropy_init_pars/ &
       initss, pertss, grads0, radius_ss, ampl_ss, widthss, epsilon_ss, &
       mixinglength_flux, entropy_flux, &
-      chi_t, chi_th, chi_rho, pp_const, ss_left, ss_right, &
+      chi_t, chi_cs, chi_rho, pp_const, ss_left, ss_right, &
       ss_const, mpoly0, mpoly1, mpoly2, isothtop, khor_ss, &
 !      ss_const, mpoly0, mpoly1, mpoly2, khor_ss, &
       thermal_background, thermal_peak, thermal_scaling, cs2cool, cs2cool2, &
@@ -176,7 +176,7 @@ module Energy
       luminosity, wheat, cooling_profile, cooltype, cool, cs2cool, rcool, &
       rcool1, rcool2, deltaT, cs2cool2, cool2, zcool, ppcool, wcool, wcool2, Fbot, &
       lcooling_general, lcooling_ss_mz, &
-      ss_const, chi_t, chi_th, chi_rho, chit_prof1, zcool2, &
+      ss_const, chi_t, chi_cs, chi_rho, chit_prof1, zcool2, &
       chit_prof2, chi_shock, chi, iheatcond, Kgperp, Kgpara, cool_RTV, &
       tau_ss_exterior, lmultilayer, Kbot, tau_cor, TT_cor, z_cor, &
       tauheat_buffer, TTheat_buffer, zheat_buffer, dheat_buffer1, &
@@ -235,6 +235,13 @@ module Energy
                                 ! DIAG_DOC:   \delta x^2/\chi_{\rm max}]$
                                 ! DIAG_DOC:   \quad(time step relative to time
                                 ! DIAG_DOC:   step based on heat conductivity;
+                                ! DIAG_DOC:   see \S~\ref{time-step})
+  integer :: idiag_Hmax=0       ! DIAG_DOC: $H_{\rm max}$\quad(net heat sources
+                                ! DIAG_DOC: summed see \S~\ref{time-step})
+  integer :: idiag_dtH=0       ! DIAG_DOC: $\delta t / [c_{\delta t,{\rm s}}\, 
+                                ! DIAG_DOC:  c_{\rm v}T /H_{\rm max}]$
+                                ! DIAG_DOC:   \quad(time step relative to time
+                                ! DIAG_DOC:   step based on heat sources;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
   integer :: idiag_ssmphi=0     ! PHIAVG_DOC: $\left<s\right>_\varphi$
   integer :: idiag_cs2mphi=0    ! PHIAVG_DOC: $\left<c^2_s\right>_\varphi$
@@ -780,8 +787,8 @@ module Energy
         case ('chi-const')
           lheatc_chiconst=.true.
           if (lroot) print*, 'heat conduction: constant chi'
-        case ('chi-therm')
-          lheatc_chitherm=.true.
+        case ('chi-cspeed')
+          lheatc_chi_cspeed=.true.
           if (lroot) print*, 'heat conduction: chi scaled with c_s'
         case ('sqrtrhochi-const')
           lheatc_sqrtrhochiconst=.true.
@@ -847,8 +854,8 @@ module Energy
       if (lheatc_chiconst .and. (chi==0.0 .and. chi_t==0.0)) then
         call warning('initialize_energy','chi and chi_t are zero!')
       endif
-      if (lheatc_chitherm .and. (chi_th==0.0 .and. chi_t==0.0)) then
-        call warning('initialize_energy','chi_th and chi_t are zero!')
+      if (lheatc_chi_cspeed .and. (chi_cs==0.0 .and. chi_t==0.0)) then
+        call warning('initialize_energy','chi_cs and chi_t are zero!')
       endif
       if (lheatc_sqrtrhochiconst .and. (chi_rho==0.0 .and. chi_t==0.0)) then
         call warning('initialize_energy','chi_rho and chi_t are zero!')
@@ -999,7 +1006,7 @@ module Energy
         call get_shared_variable('reference_state',reference_state)
 !
       lslope_limit_diff=lslope_limit_diff .or. lenergy_slope_limited
-
+!
     endsubroutine initialize_energy
 !***********************************************************************
     subroutine rescale_TT_in_ss(f)
@@ -2477,8 +2484,8 @@ module Energy
            endif
         endif
       endif
-      if (lheatc_chitherm) then
-        lpenc_requested(i_cp1)=.true.
+      if (lheatc_chi_cspeed) then
+        lpenc_requested(i_cp)=.true.
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
@@ -2572,6 +2579,8 @@ module Energy
       lpenc_diagnos2d(i_ss)=.true.
 !
       if (idiag_dtchi/=0) lpenc_diagnos(i_rho1)=.true.
+      if (idiag_dtH/=0) lpenc_diagnos(i_ee)=.true.
+      if (idiag_Hmax/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_ethdivum/=0) lpenc_diagnos(i_divu)=.true.
       if (idiag_csm/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
@@ -2929,7 +2938,7 @@ module Energy
       if (lheatc_Kprof)    call calc_heatcond(f,df,p)
       if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
-      if (lheatc_chitherm) call calc_heatcond_thermchi(df,p)
+      if (lheatc_chi_cspeed) call calc_heatcond_cspeed_chi(df,p)
       if (lheatc_sqrtrhochiconst) call calc_heatcond_sqrtrhochi(df,p)
       if (lheatc_shock)    call calc_heatcond_shock(df,p)
       if (lheatc_shock_profr)    call calc_heatcond_shock_profr(df,p)
@@ -2993,6 +3002,10 @@ module Energy
       if (ldiagnos) then
         !uT=unit_temperature !(define shorthand to avoid long lines below)
         uT=1. !(AB: for the time being; to keep compatible with auto-test
+        if (idiag_dtchi/=0) &
+            call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+        if (idiag_dtH/=0) call max_mn_name(Hmax/p%ee/cdts,idiag_dtH,l_dt=.true.)
+        if (idiag_Hmax/=0)   call max_mn_name(Hmax/p%ee,idiag_Hmax)
         if (idiag_ssmax/=0)  call max_mn_name(p%ss*uT,idiag_ssmax)
         if (idiag_ssmin/=0)  call max_mn_name(-p%ss*uT,idiag_ssmin,lneg=.true.)
         if (idiag_TTmax/=0)  call max_mn_name(p%TT*uT,idiag_TTmax)
@@ -3558,20 +3571,20 @@ module Energy
           diffus_chi=diffus_chi+chi*dxyz_2
         endif
         if (chi_t/=0.) diffus_chi = diffus_chi+chi_t*chit_prof*dxyz_2
-        if (ldiagnos.and.idiag_dtchi/=0) &
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+!        if (ldiagnos.and.idiag_dtchi/=0) &
+!          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
       endif
 !
     endsubroutine calc_heatcond_constchi
 !***********************************************************************
-    subroutine calc_heatcond_thermchi(df,p)
+    subroutine calc_heatcond_cspeed_chi(df,p)
 !
 !  Adapted from Heat conduction for constant value to
 !  include temperature dependence to handle high temperatures
 !  in hot diffuse cores of SN remnants in interstellar chi propto sqrt(T)
 !  This routine also adds in turbulent diffusion, if chi_t /= 0.
 !  Ds/Dt = ... + 1/(rho*T) grad(flux), where
-!  flux = chi_th*rho*gradT + chi_t*rho*T*grads
+!  flux = chi_cs*rho*gradT + chi_t*rho*T*grads
 !  This routine is currently not correct when ionization is used.
 !
 !  19-mar-10/fred: adapted from calc_heatcond_constchi - still need to test
@@ -3589,7 +3602,7 @@ module Energy
 !
 !  Check that chi is ok.
 !
-      if (headtt) print*,'calc_heatcond_thermchi: chi_th=',chi_th
+      if (headtt) print*,'calc_heatcond_cspeed_chi: chi_cs=',chi_cs
 !
 !  Heat conduction
 !  Note: these routines require revision when ionization turned on
@@ -3609,7 +3622,7 @@ module Energy
 !  for interstellar hydro runs to contrain SNr core temp
 !
 !
-      thchi=chi_th*exp(0.5*p%lnTT)
+      thchi=chi_cs*exp(0.5*p%lnTT)
       if (pretend_lnTT) then
         call dot(p%glnrho+1.5*p%glnTT,p%glnTT,g2)
         thdiff=gamma*thchi*(p%del2lnTT+g2)
@@ -3619,7 +3632,7 @@ module Energy
         endif
       else
         call dot(p%glnrho+1.5*p%glnTT,p%glnTT,g2)
-        thdiff=thchi*(p%del2lnTT+g2)/p%cp1
+        thdiff=thchi*(p%del2lnTT+g2)*p%cp
         if (chi_t/=0.) then
           call dot(p%glnrho+p%glnTT,p%gss,g2)
 !
@@ -3637,7 +3650,7 @@ module Energy
 !  Add heat conduction to entropy equation.
 !
       df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+thdiff
-      if (headtt) print*,'calc_heatcond_thermchi: added thdiff'
+      if (headtt) print*,'calc_heatcond_cspeed_chi: added thdiff'
 !
 !  Check maximum diffusion from thermal diffusion.
 !  With heat conduction, the second-order term for entropy is
@@ -3649,12 +3662,12 @@ module Energy
         else
           diffus_chi=diffus_chi+(thchi+chi_t)*dxyz_2
         endif
-        if (ldiagnos.and.idiag_dtchi/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-        endif
+!        if (ldiagnos.and.idiag_dtchi/=0) then
+!          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+!        endif
       endif
 !
-    endsubroutine calc_heatcond_thermchi
+    endsubroutine calc_heatcond_cspeed_chi
 !***********************************************************************
     subroutine calc_heatcond_sqrtrhochi(df,p)
 !
@@ -3663,7 +3676,7 @@ module Energy
 !  in hot diffuse cores of SN remnants in interstellar chi propto sqrt(rho)
 !  This routine also adds in turbulent diffusion, if chi_t /= 0.
 !  Ds/Dt = ... + 1/(rho*T) grad(flux), where
-!  flux = chi_th*rho*gradT + chi_t*rho*T*grads
+!  flux = chi_cs*rho*gradT + chi_t*rho*T*grads
 !  This routine is currently not correct when ionization is used.
 !
 !  19-mar-10/fred: adapted from calc_heatcond_constchi - still need to test
@@ -3739,9 +3752,9 @@ module Energy
         else
           diffus_chi=diffus_chi+(rhochi+chi_t)*dxyz_2
         endif
-        if (ldiagnos.and.idiag_dtchi/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-        endif
+!        if (ldiagnos.and.idiag_dtchi/=0) then
+!          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+!        endif
       endif
 !
     endsubroutine calc_heatcond_sqrtrhochi
@@ -3929,14 +3942,14 @@ module Energy
       if (pretend_lnTT) then
         thdiff=gamma*chi_shock*(p%shock*(p%del2lnrho+g2)+gshockglnTT)
       else
-         if (lchi_shock_density_dep) then
-           call dot(p%gshock,p%gss,gshockgss)
-           call dot(0.66666666667*p%glnrho+p%glnTT,p%gss,g2)
-           thdiff=exp(-0.3333333333332*p%lnrho)*chi_shock* &
-                  (p%shock*(exp(0.6666666666667*p%lnrho)*p%del2ss+g2)+gshockgss)
-         else
-           thdiff=chi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)
-         endif
+        if (lchi_shock_density_dep) then
+          call dot(p%gshock,p%gss,gshockgss)
+          call dot(0.66666666667*p%glnrho+p%glnTT,p%gss,g2)
+          thdiff=exp(-0.3333333333332*p%lnrho)*chi_shock* &
+                 (p%shock*(exp(0.6666666666667*p%lnrho)*p%del2ss+g2)+gshockgss)
+        else
+          thdiff=chi_shock*(p%shock*(p%del2lnTT+g2)+gshockglnTT)
+        endif
       endif
 !
 !  Add heat conduction to entropy equation.
@@ -3958,9 +3971,9 @@ module Energy
         else
           diffus_chi=diffus_chi+(chi_shock*p%shock)*dxyz_2
         endif
-        if (ldiagnos.and.idiag_dtchi/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-        endif
+!        if (ldiagnos.and.idiag_dtchi/=0) then
+!          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+!        endif
       endif
 !
     endsubroutine calc_heatcond_shock
@@ -4032,9 +4045,9 @@ module Energy
         else
           diffus_chi=diffus_chi+(pchi_shock*p%shock)*dxyz_2
         endif
-        if (ldiagnos.and.idiag_dtchi/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-        endif
+!        if (ldiagnos.and.idiag_dtchi/=0) then
+!          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+!        endif
       endif
 !
     endsubroutine calc_heatcond_shock_profr
@@ -4118,9 +4131,9 @@ module Energy
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+gamma*chix*dxyz_2
-        if (ldiagnos.and.idiag_dtchi/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-        endif
+!        if (ldiagnos.and.idiag_dtchi/=0) then
+!          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+!        endif
       endif
 !
     endsubroutine calc_heatcond_constK
@@ -4229,9 +4242,9 @@ module Energy
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+ cosbgT*gamma*Kgpara*exp(-p%lnrho)/p%cp*dxyz_2
-        if (ldiagnos.and.idiag_dtchi/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-        endif
+!        if (ldiagnos.and.idiag_dtchi/=0) then
+!          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+!        endif
       endif
 !
     endsubroutine calc_heatcond_tensor
@@ -4398,9 +4411,9 @@ module Energy
 !
       if (lfirst.and.ldt) then
         diffus_chi=diffus_chi+(gamma*chix+chi_t)*dxyz_2
-        if (ldiagnos.and.idiag_dtchi/=0) then
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
-        endif
+!        if (ldiagnos.and.idiag_dtchi/=0) then
+!          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+!        endif
       endif
 !
     endsubroutine calc_heatcond_kramers
@@ -4721,8 +4734,8 @@ module Energy
         else
           diffus_chi=diffus_chi+(gamma*chix+chi_t*chit_prof)*dxyz_2
         endif
-        if (ldiagnos.and.idiag_dtchi/=0) &
-          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+!        if (ldiagnos.and.idiag_dtchi/=0) &
+!          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
       endif
 !
     endsubroutine calc_heatcond
@@ -5682,6 +5695,7 @@ module Energy
         idiag_gTxgsxmxy=0;idiag_gTxgsymxy=0;idiag_gTxgszmxy=0
         idiag_fradymxy_Kprof=0; idiag_fturbymxy=0; idiag_fconvxmx=0
         idiag_Kkramersm=0; idiag_Kkramersmx=0; idiag_Kkramersmz=0
+        idiag_Hmax=0; idiag_dtH=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -5689,6 +5703,8 @@ module Energy
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'dtc',idiag_dtc)
         call parse_name(iname,cname(iname),cform(iname),'dtchi',idiag_dtchi)
+        call parse_name(iname,cname(iname),cform(iname),'dtH',idiag_dtH)
+        call parse_name(iname,cname(iname),cform(iname),'Hmax',idiag_Hmax)
         call parse_name(iname,cname(iname),cform(iname),'ethtot',idiag_ethtot)
         call parse_name(iname,cname(iname),cform(iname),'ethdivum',idiag_ethdivum)
         call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)

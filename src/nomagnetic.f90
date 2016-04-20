@@ -265,7 +265,7 @@ module Magnetic
 !  dummy routine
 !
 !   3-may-02/axel: coded
-!  26-aug-13/MR: uneeded output of idiag* removed
+!  26-aug-13/MR: unneeded output of idiag* removed
 !
       logical :: lreset,lwr
       logical, optional :: lwrite
@@ -306,6 +306,10 @@ module Magnetic
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       real, dimension (nx) :: quench
       character (len=*), intent(in) :: task
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(quench)
+      call keep_compiler_quiet(task)
       call fatal_error('bdry_magnetic','not to be called w/o B-field')
 !
     endsubroutine bdry_magnetic

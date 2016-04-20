@@ -732,7 +732,8 @@ module Register
         do
           read(parallel_unit_vec, *, iostat=io_err) cname_tmp
           if (io_err < 0) exit ! EOF
-          if (io_err > 0) call fatal_error('read_name_format','IO-error while reading "'//trim(in_file)//'"')
+          if (io_err > 0) call fatal_error('read_name_format', &
+                                           'IO-error while reading "'//trim(in_file)//'"')
           cname_tmp = adjustl(cname_tmp)
           if ((cname_tmp /= ' ') .and. (cname_tmp(1:1) /= '!') .and. (cname_tmp(1:1) /= comment_char)) then
             nnamel = nnamel+1
@@ -758,6 +759,7 @@ module Register
 !                print.in to avoid counting comment lines
 !  28-May-2015/Bourdin.KIS: renamed comment_chars to strip_comments
 !  24-Aug-2015/MR: broke up if ( read_name_format ... in two
+!  21-Mar-2016/MR: separate call for allocations of fnamexy* (due to Yin-Yang)
 !
 !  All numbers like nname etc. need to be initialized to zero in cdata!
 !
@@ -970,6 +972,7 @@ module Register
       if (nnamexy>0) then
         call allocate_zaverages(nnamexy)
         lwrite_zaverages = read_name_format(zaver_in_file,cnamexy,nnamexy)
+        if (lwrite_zaverages) call allocate_zaverages_data(nnamexy)
       endif
 
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamexy=', nnamexy

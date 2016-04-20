@@ -1217,8 +1217,6 @@ module Boundcond
       real, dimension (:,:,:,:) :: f
       integer :: j
       character (len=bclen) :: topbot
-
-      real, dimension(mx,nghost,mz,3) :: buffer
 !
       if (.not.lyinyang) &
         call fatal_error_local('bc_yy_y','BC not legal as no Yin-Yang grid run.')
