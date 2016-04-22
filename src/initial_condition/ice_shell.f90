@@ -88,8 +88,9 @@ module InitialCondition
   real :: kx_TT=2*pi ! 
   real :: kz_TT=pi   !
   character (len=labellen) :: initTT='nothing'
+  logical :: lsplit_temperature=.false.
 !
-  namelist /initial_condition_pars/ Tupp,Tbot, ampltt, kx_TT, kz_TT, initTT
+  namelist /initial_condition_pars/ Tupp,Tbot, ampltt, kx_TT, kz_TT, initTT, lsplit_temperature
 !
   contains
 !***********************************************************************
@@ -152,12 +153,14 @@ module InitialCondition
 !
 !  Add to that the temperature gradient
 !
-      deltaT=(Tupp-Tbot)/(n2-n1)
-      do n=n1,n2
-        do m=m1,m2
-          f(l1:l2,m,n,iTT) = f(l1:l2,m,n,iTT) + Tbot + (n-n1)*deltaT
-        enddo
-      enddo
+      if (.not.lsplit_temperature) then 
+         deltaT=(Tupp-Tbot)/(n2-n1)
+         do n=n1,n2
+            do m=m1,m2
+               f(l1:l2,m,n,iTT) = f(l1:l2,m,n,iTT) + Tbot + (n-n1)*deltaT
+            enddo
+         enddo
+      endif
 !
 !  Is it needed to apply boundaries here? The code will do it already,
 !  unless it is needed for the streamfunction iteration.       

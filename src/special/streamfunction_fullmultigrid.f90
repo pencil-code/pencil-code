@@ -92,20 +92,22 @@ module Special
 !
   logical :: lsave_residual_grid=.false.
   logical :: ladimensional=.true.
+  logical :: lsplit_temperature=.false.
 !
   namelist /special_init_pars/ amplpsi,alpha_sor,lprint_residual,&
        tolerance,maxit,gravity_z,rho0_bq,alpha_thermal,kappa,eta_0,&
        iconv_viscosity,Avisc,Bvisc,Cvisc,&
        Tbot,Tupp,Ra,iorder_sor_solver,lsave_residual,&
        kx_TT,kz_TT,ampltt,initpsi,lmultigrid,lpoisson_test,npost,npre,gamma,n_vcycles,&
-       ldirect_solver,nx_coarsest,lsave_residual_grid,ladimensional
+       ldirect_solver,nx_coarsest,lsave_residual_grid,ladimensional,lsplit_temperature
 !
   namelist /special_run_pars/ amplpsi,alpha_sor,Avisc,lprint_residual,&
        tolerance,maxit,gravity_z,rho0_bq,alpha_thermal,kappa,eta_0,&
        iconv_viscosity,Avisc,Bvisc,Cvisc,&
        Tbot,Tupp,Ra,iorder_sor_solver,lsave_residual,&
        ltidal_heating,ltemperature_advection,ltemperature_diffusion,lmultigrid,&
-       npost,npre,gamma,n_vcycles,ldirect_solver,nx_coarsest,lsave_residual_grid
+       npost,npre,gamma,n_vcycles,ldirect_solver,nx_coarsest,lsave_residual_grid,&
+       lsplit_temperature
 !
 !  Declare index of new variables in f array. Surface density, midplane
 !  temperature, and mass accretion rate.
@@ -133,7 +135,10 @@ module Special
   logical :: lviscosity_var_newtonian
   logical :: lviscosity_var_blankenbach
 !
-    contains
+  real, dimension(mz) :: Tbar = 0.0
+  real :: gTT_conductive = 0.0
+!
+  contains
 !***********************************************************************
     subroutine register_special()
 !
@@ -187,7 +192,17 @@ module Special
       delta_T=Tbot-Tupp
       deltaT1=1./delta_T
       dslab = Lxyz(3)
-      Lz1 = 1./Lxyz(3)  
+      Lz1 = 1./Lxyz(3)
+!
+!  Conductive (linear) Temperature Gradient, used if the T=Tbar(z) + theta(x,y,z,t)
+!  split is used. 
+!
+      if (lsplit_temperature) then
+         do n=n1,n2
+            Tbar(n) = Tbot + (n-n1)*(Tupp-Tbot)/(n2-n1)
+         enddo
+         gTT_conductive = -delta_T*Lz1
+      endif
 !      
       if (Ra==impossible) then
         Ra = (gravity_z*alpha_thermal*rho0_bq*delta_T*dslab**3)/(kappa*eta_0)
@@ -918,8 +933,12 @@ module Special
 !      
 !  Advection
 !
-      if (ltemperature_advection) & 
-           df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - q%ugTT
+      if (ltemperature_advection) then
+         df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - q%ugTT
+         if (lsplit_temperature) then
+            df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - q%uu(:,3)*gTT_conductive
+         endif
+      endif
 !
 !  Conduction (diffusion)
 !
@@ -983,7 +1002,7 @@ module Special
 !
          if (idiag_dTdz1/=0) then
            if (n == n2) then
-             dTdz1 = -p%gTT(1,3)
+             dTdz1 = -p%gTT(1,3) - gTT_conductive
            else
              dTdz1 = -impossible
            endif
@@ -992,7 +1011,7 @@ module Special
 !
          if (idiag_dTdz2/=0) then
            if (n == n2) then
-             dTdz2 = -p%gTT(nx,3)
+             dTdz2 = -p%gTT(nx,3) - gTT_conductive
            else
              dTdz2 = -impossible
            endif
@@ -1001,7 +1020,7 @@ module Special
 !
          if (idiag_dTdz3/=0) then
            if (n == n1) then
-             dTdz3 = -p%gTT(nx,3)
+             dTdz3 = -p%gTT(nx,3) - gTT_conductive
            else
              dTdz3 = -impossible
            endif
@@ -1010,7 +1029,7 @@ module Special
 !
          if (idiag_dTdz4/=0) then
            if (n == n1) then
-             dTdz4 = -p%gTT(1,3)
+             dTdz4 = -p%gTT(1,3) - gTT_conductive
            else
              dTdz4 = -impossible
            endif
@@ -1019,7 +1038,7 @@ module Special
 !
          if (idiag_nusselt_num/=0) then
            if (n == n2) then
-             nusselt_num=-p%gTT(:,3)
+             nusselt_num=-p%gTT(:,3) - gTT_conductive
            else
              nusselt_num=0.
            endif
@@ -1028,7 +1047,7 @@ module Special
 !         
          if (idiag_nusselt_den/=0) then
            if (n == n1) then
-             nusselt_den=p%TT
+             nusselt_den=p%TT + Tbar(n)
            else
              nusselt_den=0.
            endif
@@ -1044,7 +1063,7 @@ module Special
 
          if (idiag_TTmax_cline/=0) then
             if (z(n) .ge. 0.5*Lxyz(3)) then
-               TTmax_cline=p%TT(nx/2)
+               TTmax_cline=p%TT(nx/2) + Tbar(n)
             else
                TTmax_cline=-impossible
             endif
@@ -1053,7 +1072,7 @@ module Special
 
          if (idiag_TTmin_cline/=0) then
             if (z(n) .lt. 0.5*Lxyz(3)) then
-               TTmin_cline=p%TT(nx/2)
+               TTmin_cline=p%TT(nx/2) + Tbar(n)
             else
                TTmin_cline=impossible
             endif
