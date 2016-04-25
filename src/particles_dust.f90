@@ -1903,7 +1903,6 @@ module Particles
       endif
       call mpireduce_sum_int(npar_loc,npar_total)
 !
-      print*, 'Particles at node is',npar_loc
       if (lroot) then
         avg_n_insert=particles_insert_rate_tmp*dt
         n_insert=int(avg_n_insert + remaining_particles)
