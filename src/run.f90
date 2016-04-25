@@ -528,6 +528,10 @@ program run
 !
   call signal_prepare
 !
+!  Trim 1D-averages for times past the current time.
+!
+  call trim_1daverages()
+!
 !  Do loop in time.
 !
   Time_loop: do while (it<=nt)

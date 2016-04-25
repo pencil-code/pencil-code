@@ -41,6 +41,7 @@ module Diagnostics
   public :: allocate_xyaverages, allocate_xzaverages, allocate_yzaverages
   public :: allocate_phizaverages
   public :: allocate_yaverages, allocate_zaverages, allocate_phiaverages, allocate_zaverages_data
+  public :: trim_1daverages
   public :: fnames_clean_up,vnames_clean_up,sound_clean_up
   public :: xyaverages_clean_up, xzaverages_clean_up, yzaverages_clean_up
   public :: phizaverages_clean_up
@@ -1021,6 +1022,117 @@ module Diagnostics
       if (ip<=10) write(*,*) 'write_2daverages: wrote phi(etc.)avgs'//ch2davg
 !
     endsubroutine write_2daverages
+!***********************************************************************
+    subroutine trim_1daverages
+!
+!  Trim 1D-averages for times past the current time.
+!
+!  25-apr-16/ccyang: coded
+!
+      call trim_avg1d('xy')
+      call trim_avg1d('xz')
+      call trim_avg1d('yz')
+!
+    endsubroutine trim_1daverages
+!***********************************************************************
+    subroutine trim_avg1d(plane)
+!
+!  Trim a 1D-average file for times past the current time.
+!
+!  25-apr-16/ccyang: coded
+!
+      character(len=2) :: plane
+!
+      integer, parameter :: UNIT = 1
+      character(len=fnlen) :: file
+      real, dimension(:), allocatable :: avg
+      logical :: flag
+      integer :: navg, nrec, i
+      real :: tavg
+!
+!  Check the size of each record.
+!
+      poa: select case (plane)
+      case ("xy") poa
+        navg = nzgrid * nnamez
+      case ("xz") poa
+        navg = nygrid * nnamey
+      case ("yz") poa
+        navg = nxgrid * nnamex
+      endselect poa
+!
+!  Return if no work needs to be done.
+!
+      if (.not. lroot .or. navg <= 0) return
+!
+!  Check file existence.
+!
+      file = trim(datadir) // '/' // plane // 'averages.dat'
+      inquire (file=file, exist=flag)
+      if (.not. flag) return
+!
+!  Allocate working array.
+!
+      allocate (avg(navg))
+!
+!  Open file.
+!
+      if (lwrite_avg1d_binary) then
+        open(UNIT, file=file, form='unformatted', action='readwrite')
+      else
+        open(UNIT, file=file, action='readwrite')
+      endif
+!
+!  Count number of records.
+!
+      nrec = 0
+      flag = .false.
+      count: do while (.true.)
+        if (lwrite_avg1d_binary) then
+          read(UNIT, iostat=i) tavg
+        else
+          read(UNIT,*, iostat=i) tavg
+        endif
+!
+        if (i < 0) then
+          exit count
+        elseif (tavg >= t) then
+          flag = .true.
+          exit count
+        endif
+!
+        if (lwrite_avg1d_binary) then
+          read(UNIT) avg
+        else
+          read(UNIT,*) avg
+        endif
+!
+        nrec = nrec + 1
+      enddo count
+!
+!  Trim the records if needed.
+!
+      trimrec: if (flag) then
+        rewind(UNIT)
+        forward: do i = 1, nrec
+          bin: if (lwrite_avg1d_binary) then
+            read(UNIT) tavg
+            read(UNIT) avg
+          else bin
+            read(UNIT,'(1pe12.5)') tavg
+            read(UNIT,'(1p,8e14.5e3)') avg
+          endif bin
+        enddo forward
+        endfile (UNIT)
+        print *, 'trim_avg1d: trimmed ', plane, '-averages for t >= ', t
+      endif trimrec
+!
+!  Close file and clean up.
+!
+      close (UNIT)
+      deallocate (avg)
+!
+    endsubroutine trim_avg1d
 !***********************************************************************
     subroutine write_xyaverages
 !
