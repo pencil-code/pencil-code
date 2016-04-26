@@ -5579,7 +5579,7 @@ module Particles
 !
 !  Find kinematic viscosity
 !
-      call getnu(nu_input=nu_,ivis=ivis)
+      call getnu(nu_input=nu_,IVIS=ivis)
       if (ivis=='nu-const') then
         nu=nu_
       elseif (ivis=='nu-mixture') then
@@ -5617,6 +5617,15 @@ module Particles
 !
       Szero=216*nu*k_B*TT*pi_1/ &
            (dia**5*stocunn*rhop_swarm_par**2/interp_rho(k))
+!
+!  https://en.wikipedia.org/wiki/Brownian_motion
+!  .3 * urms * lmfp = D=kB*T/(6pi*eta*a)
+!  .3 * urms^2 * tau = D=kB*T/(6pi*eta*a)
+!
+!print*,'AXEL: nu,k_B,dia,stocunn,rhop_swarm_par,interp_rho(k)=', nu,k_B,dia,stocunn,rhop_swarm_par,interp_rho(k)
+!
+!  du/dt = sqrt(dt)
+!  .3 * urms^2 * tau = D=kB*T/(6pi*eta*a)
 !
       if (dt==0.0) then
         force=0.0
