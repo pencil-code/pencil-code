@@ -108,6 +108,7 @@ module Particles_main
       call rprint_particles_mass         (lreset,LWRITE=lroot)
       call rprint_particles_ads          (lreset,LWRITE=lroot)
       call rprint_particles_surf         (lreset,LWRITE=lroot)
+      call rprint_particles_chem         (lreset,LWRITE=lroot)
       call rprint_particles_coagulation  (lreset,LWRITE=lroot)
 !      call rprint_particles_potential    (lreset,LWRITE=lroot)
       call rprint_particles_collisions   (lreset,LWRITE=lroot)

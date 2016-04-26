@@ -215,6 +215,9 @@ module Particles_surfspec
      if (lparticlemesh_gab .or. lparticlemesh_tsc .or. lparticlemesh_cic) then
         allocate(weight_array(dimx,dimy,dimz))
       endif
+      if (.not. allocated(weight_array)) then
+        allocate(weight_array(1,1,1))
+      endif
       call precalc_weights(weight_array)
 !
       call keep_compiler_quiet(f)
@@ -681,8 +684,8 @@ module Particles_surfspec
 !          df(:,m,n,ichemspec(nchemspec)) = df(:,m,n,ichemspec(nchemspec))-&
 !              sum(df(:,m,n,ichemspec(:)),DIM=2)
 !
-          if (ldiagnos .and. idiag_dtpchem /= 0) then
-            call max_name(reac_pchem/cdtc,idiag_dtpchem,l_dt=.true.)
+          if (ldiagnos) then
+            if (idiag_dtpchem /= 0 ) call max_name(reac_pchem/cdtc,idiag_dtpchem,l_dt=.true.)
           endif
 !
           if (allocated(term)) deallocate(term)

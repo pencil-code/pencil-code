@@ -1292,7 +1292,7 @@ module Particles_sub
 !
 !  This makes sure that the weight array is 1 if the npg approach is chosen
 !
-      weight_array = 1.0
+      weight_array(:,:,:) = 1.0
 !
       if (lparticlemesh_gab) then
         do i=1,7

@@ -43,6 +43,7 @@
   public :: particles_chemistry_clean_up
   public :: calc_pencils_par_chem
   public :: pencil_criteria_par_chem
+  public :: rprint_particles_chem
 !
 !  Obligatory routines for reading in of the start and run namelists
 !
