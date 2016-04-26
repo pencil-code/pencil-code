@@ -10,6 +10,7 @@
 ! MPVAR CONTRIBUTION 6
 ! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
+! CPARAM logical, parameter :: lparticles_potential=.false.
 !
 ! PENCILS PROVIDED np; rhop
 ! PENCILS PROVIDED epsp; grhop(3)
@@ -2767,7 +2768,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !AXEL use Magnetic, only: get_bext
       use Particles_diagnos_dv, only: collisions
       use Particles_diagnos_state, only: persistence_check
-      use Particles_dragforce
+!--   use Particles_dragforce
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
