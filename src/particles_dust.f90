@@ -1914,7 +1914,6 @@ module Particles
         if ((n_insert+npar_loc <= mpar_loc) .and. (npar_inserted_tot+n_insert <= max_particles) &
             .and. (t<max_particle_insert_time) .and. (t>tstart_insert_particles)) then
           linsertmore=.true.
-          print*, 'Insert particles. npar_loc,n_insert:',npar_loc,n_insert
         else
           linsertmore=.false.
         endif
