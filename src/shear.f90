@@ -100,6 +100,9 @@ module Shear
 !
       use Sub, only: bspline_precondition, ludcmp
 !
+      if (lyinyang) &
+        call fatal_error('initialize_shear', 'Shear not implemented for Yin-Yang grid')
+!
 !  Calculate the shear velocity.
 !
       if (qshear/=0.0) then

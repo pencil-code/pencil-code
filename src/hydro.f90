@@ -3204,51 +3204,51 @@ module Hydro
         if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu,idiag_uymxy,(/0,1,0/))
         if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu,idiag_uzmxy,(/0,0,1/))
         if (idiag_uxuymxy/=0) &
-            call zsum_mn_name_xy(p%uu(:,1)*p%uu(:,2),idiag_uxuymxy)
+            call zsum_mn_name_xy(p%uu,idiag_uxuymxy,(/1,1,0/))
         if (idiag_uxuzmxy/=0) &
-            call zsum_mn_name_xy(p%uu(:,1)*p%uu(:,3),idiag_uxuzmxy)
+            call zsum_mn_name_xy(p%uu,idiag_uxuzmxy,(/1,0,1/))
         if (idiag_uyuzmxy/=0) &
-            call zsum_mn_name_xy(p%uu(:,2)*p%uu(:,3),idiag_uyuzmxy)
+            call zsum_mn_name_xy(p%uu,idiag_uyuzmxy,(/0,1,1/))
         if (idiag_oxmxy/=0) call zsum_mn_name_xy(p%oo(:,1),idiag_oxmxy)
-        if (idiag_oymxy/=0) call zsum_mn_name_xy(p%oo(:,2),idiag_oymxy)
-        if (idiag_ozmxy/=0) call zsum_mn_name_xy(p%oo(:,3),idiag_ozmxy)
+        if (idiag_oymxy/=0) call zsum_mn_name_xy(p%oo,idiag_oymxy,(/0,1,0/))
+        if (idiag_ozmxy/=0) call zsum_mn_name_xy(p%oo,idiag_ozmxy,(/0,0,1/))
         if (idiag_oumxy/=0) call zsum_mn_name_xy(p%ou,idiag_oumxy)
         if (idiag_pvzmxy/=0) &
-            call zsum_mn_name_xy((p%oo(:,3)+2.*Omega)/p%rho,idiag_pvzmxy)
+            call zsum_mn_name_xy((p%oo(:,3)+2.*Omega)/p%rho,idiag_pvzmxy)    ! yet incorrect for Yin-Yang
         if (idiag_ruxmxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,1),idiag_ruxmxy)
-        if (idiag_ruymxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,2),idiag_ruymxy)
-        if (idiag_ruzmxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,3),idiag_ruzmxy)
+        if (idiag_ruymxy/=0) call zsum_mn_name_xy(p%uu,idiag_ruymxy,(/0,1,0/),p%rho)
+        if (idiag_ruzmxy/=0) call zsum_mn_name_xy(p%uu,idiag_ruzmxy,(/0,0,1/),p%rho)
         if (idiag_ux2mxy/=0) &
             call zsum_mn_name_xy(p%uu(:,1)**2,idiag_ux2mxy)
         if (idiag_uy2mxy/=0) &
-            call zsum_mn_name_xy(p%uu(:,2)**2,idiag_uy2mxy)
+            call zsum_mn_name_xy(p%uu,idiag_uy2mxy,(/0,2,0/))
         if (idiag_uz2mxy/=0) &
-            call zsum_mn_name_xy(p%uu(:,3)**2,idiag_uz2mxy)
+            call zsum_mn_name_xy(p%uu,idiag_uz2mxy,(/0,0,2/))
         if (idiag_rux2mxy/=0) &
             call zsum_mn_name_xy(p%rho*p%uu(:,1)**2,idiag_rux2mxy)
         if (idiag_ruy2mxy/=0) &
-            call zsum_mn_name_xy(p%rho*p%uu(:,2)**2,idiag_ruy2mxy)
+            call zsum_mn_name_xy(p%uu,idiag_ruy2mxy,(/0,2,0/),p%rho)
         if (idiag_ruz2mxy/=0) &
-            call zsum_mn_name_xy(p%rho*p%uu(:,3)**2,idiag_ruz2mxy)
+            call zsum_mn_name_xy(p%uu,idiag_ruz2mxy,(/0,0,2/),p%rho)
 !
 !  Changed call for compatibility with Yin-Yang grid:
 !
         if (idiag_ruxuymxy/=0) &
             call zsum_mn_name_xy(p%uu,idiag_ruxuymxy,(/1,1,0/),p%rho)
         if (idiag_ruxuzmxy/=0) &
-            call zsum_mn_name_xy(p%rho*p%uu(:,1)*p%uu(:,3),idiag_ruxuzmxy)
+            call zsum_mn_name_xy(p%uu,idiag_ruxuzmxy,(/1,0,1/),p%rho)
         if (idiag_ruyuzmxy/=0) &
-            call zsum_mn_name_xy(p%rho*p%uu(:,2)*p%uu(:,3),idiag_ruyuzmxy)
+            call zsum_mn_name_xy(p%uu,idiag_ruyuzmxy,(/0,1,1/),p%rho)
         if (idiag_fkinxmxy/=0) &
             call zsum_mn_name_xy(p%ekin*p%uu(:,1),idiag_fkinxmxy)
         if (idiag_fkinymxy/=0) &
-            call zsum_mn_name_xy(p%ekin*p%uu(:,2),idiag_fkinymxy)
+            call zsum_mn_name_xy(p%uu,idiag_fkinymxy,(/0,1,0/),p%ekin)
         if (idiag_uguxmxy/=0) &
             call zsum_mn_name_xy(p%ugu(:,1),idiag_uguxmxy)
         if (idiag_uguymxy/=0) &
-            call zsum_mn_name_xy(p%ugu(:,2),idiag_uguymxy)
+            call zsum_mn_name_xy(p%ugu,idiag_uguymxy,(/0,1,0/))
         if (idiag_uguzmxy/=0) &
-            call zsum_mn_name_xy(p%ugu(:,3),idiag_uguzmxy)
+            call zsum_mn_name_xy(p%ugu,idiag_uguzmxy,(/0,0,1/))
       else
 !
 !  idiag_uxmxy and idiag_uymxy also need to be calculated when
@@ -3259,8 +3259,8 @@ module Hydro
 !
         if (ldiagnos) then
           if (idiag_uxmxy/=0) call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
-          if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu(:,2),idiag_uymxy)
-          if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu(:,3),idiag_uzmxy)
+          if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu,idiag_uymxy,(/0,1,0/))
+          if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu,idiag_uzmxy,(/0,0,1/))
         endif
       endif
       call timing('duu_dt','finished',mnloop=.true.)
@@ -4878,7 +4878,7 @@ module Hydro
 !
               if (slices%index==2) then
                 if (.not.allocated(transformed)) allocate(transformed(1,ny,nz,2))
-                call transform_thph_yy_other(f(ix_loc:ix_loc,m1:m2,n1:n2,iuy:iuz), transformed)
+                call transform_thph_yy_other(f(ix_loc:ix_loc,m1:m2,n1:n2,iuy:iuz),transformed)
               endif
 !
 !  theta component is used immediately.
@@ -5003,11 +5003,11 @@ module Hydro
           umx=0.
         else
           if (lfirst_proc_z) then
-            call mpireduce_sum(fnamexy(:,:,idiag_uxmxy),fsumxy,(/nx,ny/),idir=2)
+            call mpireduce_sum(fnamexy(idiag_uxmxy,:,:),fsumxy,(/nx,ny/),idir=2)
             uxmx=sum(fsumxy,dim=2)/nygrid
-            call mpireduce_sum(fnamexy(:,:,idiag_uymxy),fsumxy,(/nx,ny/),idir=2)
+            call mpireduce_sum(fnamexy(idiag_uymxy,:,:),fsumxy,(/nx,ny/),idir=2)
             uymx=sum(fsumxy,dim=2)/nygrid
-            call mpireduce_sum(fnamexy(:,:,idiag_uzmxy),fsumxy,(/nx,ny/),idir=2)
+            call mpireduce_sum(fnamexy(idiag_uzmxy,:,:),fsumxy,(/nx,ny/),idir=2)
             uzmx=sum(fsumxy,dim=2)/nygrid
           endif
           if (lfirst_proc_yz) &
@@ -5029,11 +5029,11 @@ module Hydro
           umy=0.
         else
           if (lfirst_proc_z) then
-            call mpireduce_sum(fnamexy(:,:,idiag_uxmxy),fsumxy,(/nx,ny/),idir=1)
+            call mpireduce_sum(fnamexy(idiag_uxmxy,:,:),fsumxy,(/nx,ny/),idir=1)
             uxmy=sum(fsumxy,dim=1)/nxgrid
-            call mpireduce_sum(fnamexy(:,:,idiag_uymxy),fsumxy,(/nx,ny/),idir=1)
+            call mpireduce_sum(fnamexy(idiag_uymxy,:,:),fsumxy,(/nx,ny/),idir=1)
             uymy=sum(fsumxy,dim=1)/nxgrid
-            call mpireduce_sum(fnamexy(:,:,idiag_uzmxy),fsumxy,(/nx,ny/),idir=1)
+            call mpireduce_sum(fnamexy(idiag_uzmxy,:,:),fsumxy,(/nx,ny/),idir=1)
             uzmy=sum(fsumxy,dim=1)/nxgrid
           endif
           if (lfirst_proc_xz) &

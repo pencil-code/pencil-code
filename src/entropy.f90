@@ -3155,27 +3155,27 @@ module Energy
         if (idiag_uxTTmxy/=0) &
             call zsum_mn_name_xy(p%uu(:,1)*p%TT,idiag_uxTTmxy)
         if (idiag_uyTTmxy/=0) &
-            call zsum_mn_name_xy(p%uu(:,2)*p%TT,idiag_uyTTmxy)
+            call zsum_mn_name_xy(p%uu,idiag_uyTTmxy,(/0,1,0/),p%TT)
         if (idiag_uzTTmxy/=0) &
-            call zsum_mn_name_xy(p%uu(:,3)*p%TT,idiag_uzTTmxy)
+            call zsum_mn_name_xy(p%uu,idiag_uzTTmxy,(/0,0,1/),p%TT)
         if (idiag_fconvxy/=0) &
             call zsum_mn_name_xy(p%cp*p%rho*p%uu(:,1)*p%TT,idiag_fconvxy)
         if (idiag_fconvyxy/=0) &
-            call zsum_mn_name_xy(p%cp*p%rho*p%uu(:,2)*p%TT,idiag_fconvyxy)
+            call zsum_mn_name_xy(p%uu,idiag_fconvyxy,(/0,1,0/),p%cp*p%rho*p%TT)
         if (idiag_fconvzxy/=0) &
-            call zsum_mn_name_xy(p%cp*p%rho*p%uu(:,3)*p%TT,idiag_fconvzxy)
+            call zsum_mn_name_xy(p%uu,idiag_fconvzxy,(/0,0,1/),p%cp*p%rho*p%TT)
         if (idiag_gTxmxy/=0) &
             call zsum_mn_name_xy(p%gTT(:,1),idiag_gTxmxy)
         if (idiag_gTymxy/=0) &
-            call zsum_mn_name_xy(p%gTT(:,2),idiag_gTymxy)
+            call zsum_mn_name_xy(p%gTT,idiag_gTymxy,(/0,1,0/))
         if (idiag_gTzmxy/=0) &
-            call zsum_mn_name_xy(p%gTT(:,3),idiag_gTzmxy)
+            call zsum_mn_name_xy(p%gTT,idiag_gTzmxy,(/0,0,1/))
         if (idiag_gsxmxy/=0) &
             call zsum_mn_name_xy(p%gss(:,1),idiag_gsxmxy)
         if (idiag_gsymxy/=0) &
-            call zsum_mn_name_xy(p%gss(:,2),idiag_gsymxy)
+            call zsum_mn_name_xy(p%gss,idiag_gsymxy,(/0,1,0/))
         if (idiag_gszmxy/=0) &
-            call zsum_mn_name_xy(p%gss(:,3),idiag_gszmxy)
+            call zsum_mn_name_xy(p%gss,idiag_gszmxy,(/0,0,1/))
       endif
 !
 !
@@ -3189,9 +3189,9 @@ module Energy
            if (idiag_gTxgsxmxy/=0) &
                call zsum_mn_name_xy(gTxgs(:,1),idiag_gTxgsxmxy)
            if (idiag_gTxgsymxy/=0) &
-               call zsum_mn_name_xy(gTxgs(:,2),idiag_gTxgsymxy)
+               call zsum_mn_name_xy(gTxgs,idiag_gTxgsymxy,(/0,1,0/))
            if (idiag_gTxgszmxy/=0) &
-               call zsum_mn_name_xy(gTxgs(:,3),idiag_gTxgszmxy)
+               call zsum_mn_name_xy(gTxgs,idiag_gTxgszmxy,(/0,0,1/))
          endif
        endif
 !
@@ -4439,6 +4439,7 @@ module Energy
       real, dimension (nx) :: thdiff,g2,del2ss1
       real, dimension (nx) :: glnrhoglnT
       real, dimension (nx) :: hcond,chit_prof,chit_aniso_prof
+      real, dimension (nx,3) :: tmpvec
       real, dimension (nx,3,3) :: tmp
       !real, save :: z_prev=-1.23e20
       real :: s2,c2,sc
@@ -4586,16 +4587,19 @@ module Energy
 !
       if (l2davgfirst) then
         if (idiag_fradxy_Kprof/=0) call zsum_mn_name_xy(-hcond*p%TT*p%glnTT(:,1),idiag_fradxy_Kprof)
-        if (idiag_fradymxy_Kprof/=0) call zsum_mn_name_xy(-hcond*p%TT*p%glnTT(:,2),idiag_fradymxy_Kprof)
+        if (idiag_fradymxy_Kprof/=0) call zsum_mn_name_xy(p%glnTT,idiag_fradymxy_Kprof,(/0,1,0/),-hcond*p%TT)
         if (chi_t/=0.) then
           if (idiag_fturbxy/=0  ) call zsum_mn_name_xy(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,1),idiag_fturbxy)
-          if (idiag_fturbymxy/=0) call zsum_mn_name_xy(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,2),idiag_fturbymxy)
+          if (idiag_fturbymxy/=0) call zsum_mn_name_xy(p%gss,idiag_fturbymxy,(/0,1,0/),-chi_t*chit_prof*p%rho*p%TT)
           if (idiag_fturbrxy/=0) &
             call zsum_mn_name_xy(-chi_t*chit_aniso_prof*chit_aniso*p%rho*p%TT* &
                                  (costh(m)**2*p%gss(:,1)-sinth(m)*costh(m)*p%gss(:,2)),idiag_fturbrxy)
-          if (idiag_fturbthxy/=0) &
-            call zsum_mn_name_xy(-chi_t*chit_aniso_prof*chit_aniso*p%rho*p%TT* &
-                                 (-sinth(m)*costh(m)*p%gss(:,1)+sinth(m)**2*p%gss(:,2)),idiag_fturbthxy)
+          if (idiag_fturbthxy/=0) then
+            tmpvec(:,(/1,3/))=0.
+            tmpvec(:,2)= -chi_t*chit_aniso_prof*chit_aniso*p%rho*p%TT* &
+                         (-sinth(m)*costh(m)*p%gss(:,1)+sinth(m)**2*p%gss(:,2))
+            call zsum_mn_name_xy(tmpvec,idiag_fturbthxy,(/0,1,0/))   ! not correct for Yin-Yang: phi component in tmpvec missing
+          endif
         endif
       endif
 !
@@ -5364,9 +5368,8 @@ module Energy
 !
 !  Write divergence of cooling flux.
 !
-      if (l1davgfirst) then
+      if (l1davgfirst) &
         call yzsum_mn_name_x(heat,idiag_dcoolx)
-      endif
 !
       if (l2davgfirst) then
         if (idiag_dcoolxy/=0) call zsum_mn_name_xy(heat,idiag_dcoolxy)

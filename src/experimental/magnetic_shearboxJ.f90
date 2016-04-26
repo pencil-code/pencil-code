@@ -5530,9 +5530,9 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
         bmx2=0.0
       else
         if (lfirst_proc_z) then
-          call mpireduce_sum(fnamexy(:,:,idiag_bymxy),fsumxy,(/nx,ny/),idir=2)
+          call mpireduce_sum(fnamexy(idiag_bymxy,:,:),fsumxy,(/nx,ny/),idir=2)
           bymx=sum(fsumxy,dim=2)/nygrid
-          call mpireduce_sum(fnamexy(:,:,idiag_bzmxy),fsumxy,(/nx,ny/),idir=2)
+          call mpireduce_sum(fnamexy(idiag_bzmxy,:,:),fsumxy,(/nx,ny/),idir=2)
           bzmx=sum(fsumxy,dim=2)/nygrid
         endif
         if (lfirst_proc_yz) then
@@ -5580,9 +5580,9 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
         bmy2=0.0
       else
         if (lfirst_proc_z) then
-          call mpireduce_sum(fnamexy(:,:,idiag_bxmxy),fsumxy,(/nx,ny/),idir=1)
+          call mpireduce_sum(fnamexy(idiag_bxmxy,:,:),fsumxy,(/nx,ny/),idir=1)
           bxmy=sum(fsumxy,dim=1)/nxgrid
-          call mpireduce_sum(fnamexy(:,:,idiag_bzmxy),fsumxy,(/nx,ny/),idir=1)
+          call mpireduce_sum(fnamexy(idiag_bzmxy,:,:),fsumxy,(/nx,ny/),idir=1)
           bzmy=sum(fsumxy,dim=1)/nxgrid
         endif
         if (lfirst_proc_xz) then
@@ -5747,9 +5747,9 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
         jmx2=0.
       else
         if (lfirst_proc_z) then
-          call mpireduce_sum(fnamexy(:,:,idiag_jymxy),fsumxy,(/nx,ny/),idir=2)
+          call mpireduce_sum(fnamexy(idiag_jymxy,:,:),fsumxy,(/nx,ny/),idir=2)
           jymx=sum(fsumxy,dim=2)/nygrid
-          call mpireduce_sum(fnamexy(:,:,idiag_jzmxy),fsumxy,(/nx,ny/),idir=2)
+          call mpireduce_sum(fnamexy(idiag_jzmxy,:,:),fsumxy,(/nx,ny/),idir=2)
           jzmx=sum(fsumxy,dim=2)/nygrid
         endif
         if (lfirst_proc_yz) then
@@ -5796,9 +5796,9 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
         jmy2=0.
       else
         if (lfirst_proc_z) then
-          call mpireduce_sum(fnamexy(:,:,idiag_jxmxy),fsumxy,(/nx,ny/),idir=1)
+          call mpireduce_sum(fnamexy(idiag_jxmxy,:,:),fsumxy,(/nx,ny/),idir=1)
           jxmy=sum(fsumxy,dim=1)/nxgrid
-          call mpireduce_sum(fnamexy(:,:,idiag_jzmxy),fsumxy,(/nx,ny/),idir=1)
+          call mpireduce_sum(fnamexy(idiag_jzmxy,:,:),fsumxy,(/nx,ny/),idir=1)
           jzmy=sum(fsumxy,dim=1)/nxgrid
         endif
         if (lfirst_proc_xz) then
@@ -6098,9 +6098,9 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
           b2mxy_local=0
           do l=1,nx
             do m=1,ny
-              btemp=fnamexy(l,m,idiag_bxmxy)**2 +&
-                    fnamexy(l,m,idiag_bymxy)**2 +&
-                    fnamexy(l,m,idiag_bzmxy)**2
+              btemp=fnamexy(idiag_bxmxy,l,m)**2 +&
+                    fnamexy(idiag_bymxy,l,m)**2 +&
+                    fnamexy(idiag_bzmxy,l,m)**2
               if (lspherical_coords) then
                  btemp=btemp*r2_weight(l)*sinth_weight(m)
                  nvol2d_local=r2_weight(l)*sinth_weight(m)

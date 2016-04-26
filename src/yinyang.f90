@@ -7,6 +7,8 @@
 !
 module Yinyang
 !
+  use Cdata, only: iproc_world
+
   include 'yinyang.h'
 
   type ind_coeffs
@@ -98,10 +100,9 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
 
       sz1=size(thphprime,2); sz2=size(thphprime,3)
 
-      if (.not.allocated(indcoeffs%inds)) then
-        allocate(indcoeffs%inds(sz1,sz2,2))
-        indcoeffs%inds=0
-      endif
+      if (allocated(indcoeffs%inds)) deallocate(indcoeffs%inds,indcoeffs%coeffs)
+      allocate(indcoeffs%inds(sz1,sz2,2))
+      indcoeffs%inds=0
 
       nok=0
       ma=m1-1; me=m2
@@ -224,9 +225,9 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
 
       type(ind_coeffs) :: intcoeffs,indweights
 
-      integer :: mm, nn, i, j, indth, indph, dindth, dindph, sz1, sz2, thpos, ith
+      integer :: mm, nn, i, j, indth, indph, dindth, dindph, sz1, sz2, thpos, ith, ithmax
       real :: coeff
-      integer, parameter :: nlines_max=16   ! perhaps too small.
+      integer, parameter :: nlines_max=128   ! perhaps too small.
       logical :: ltoo_many_lines
 
        if (allocated(indweights%inds)) deallocate(indweights%inds)
@@ -237,7 +238,7 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
        sz1=size(intcoeffs%inds,1); sz2=size(intcoeffs%inds,2)
        indweights%inds=0
 
-       ltoo_many_lines=.false.
+       ltoo_many_lines=.false.; ithmax=0
 !
 !  Iterate over all (non-ghost) points (mm,nn) in the y-z plane of the local grid.
 !
@@ -320,8 +321,10 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
                endif
              enddo
            enddo
+           ithmax=max(ith,ithmax)
          enddo
        enddo
+!print*, 'iproc,ithmax=', iproc_world,ithmax
 
     endsubroutine coeffs_to_weights
 !*******************************************************************

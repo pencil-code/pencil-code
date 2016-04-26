@@ -884,9 +884,10 @@ module Magnetic
       use EquationOfState, only: cs0
       use Initcond
       use Forcing, only: n_forcing_cont
+      use Diagnostics, only: initialize_zaver_yy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j
+      integer :: i,j,nyl
       real :: J_ext2
 !
 !  Share the external magnetic field with module Shear.
@@ -1444,8 +1445,10 @@ module Magnetic
       lslope_limit_diff=lslope_limit_diff .or. lmagnetic_slope_limited
 !
       if (lremove_meanaxy) then
-        if (lyinyang) &
+        if (lyinyang) then
           call fatal_error('initialize_magnetic','Removing xy average of A not implemented on Yin-Yang grid.')
+          call initialize_zaver_yy(nyl)
+        endif
         allocate(aamxy(mx,my))
       endif
 
@@ -4534,14 +4537,15 @@ module Magnetic
           call phisum_mn_name_rz(p%aa(:,3)                        ,idiag_azmphi)
         endif
         if (idiag_bxmxy/=0)  call zsum_mn_name_xy(p%bb(:,1),idiag_bxmxy)
-        if (idiag_bymxy/=0)  call zsum_mn_name_xy(p%bb(:,2),idiag_bymxy)
-        if (idiag_bzmxy/=0)  call zsum_mn_name_xy(p%bb(:,3),idiag_bzmxy)
+        if (idiag_bymxy/=0)  call zsum_mn_name_xy(p%bb,idiag_bymxy,(/0,1,0/))
+        if (idiag_bzmxy/=0)  call zsum_mn_name_xy(p%bb,idiag_bzmxy,(/0,0,1/))
         if (idiag_jxmxy/=0)  call zsum_mn_name_xy(p%jj(:,1),idiag_jxmxy)
-        if (idiag_jymxy/=0)  call zsum_mn_name_xy(p%jj(:,2),idiag_jymxy)
-        if (idiag_jzmxy/=0)  call zsum_mn_name_xy(p%jj(:,3),idiag_jzmxy)
+        if (idiag_jymxy/=0)  call zsum_mn_name_xy(p%jj,idiag_jymxy,(/0,1,0/))
+        if (idiag_jzmxy/=0)  call zsum_mn_name_xy(p%jj,idiag_jzmxy,(/0,0,1/))
         if (idiag_axmxy/=0)  call zsum_mn_name_xy(p%aa(:,1),idiag_axmxy)
-        if (idiag_aymxy/=0)  call zsum_mn_name_xy(p%aa(:,2),idiag_aymxy)
-        if (idiag_azmxy/=0)  call zsum_mn_name_xy(p%aa(:,3),idiag_azmxy)
+        if (idiag_aymxy/=0)  call zsum_mn_name_xy(p%aa,idiag_aymxy,(/0,1,0/))
+        if (idiag_azmxy/=0)  call zsum_mn_name_xy(p%aa,idiag_azmxy,(/0,0,1/))
+!
         if (idiag_b2mxz/=0)  call ysum_mn_name_xz(p%b2,idiag_b2mxz)
         if (idiag_axmxz/=0)  call ysum_mn_name_xz(p%aa(:,1),idiag_axmxz)
         if (idiag_aymxz/=0)  call ysum_mn_name_xz(p%aa(:,2),idiag_aymxz)
@@ -4558,38 +4562,46 @@ module Magnetic
         if (idiag_bx2mxz/=0) call ysum_mn_name_xz(p%bb(:,1)**2,idiag_bx2mxz)
         if (idiag_by2mxz/=0) call ysum_mn_name_xz(p%bb(:,2)**2,idiag_by2mxz)
         if (idiag_bz2mxz/=0) call ysum_mn_name_xz(p%bb(:,3)**2,idiag_bz2mxz)
+!
         if (idiag_bx2mxy/=0) call zsum_mn_name_xy(p%bb(:,1)**2,idiag_bx2mxy)
-        if (idiag_by2mxy/=0) call zsum_mn_name_xy(p%bb(:,2)**2,idiag_by2mxy)
-        if (idiag_bz2mxy/=0) call zsum_mn_name_xy(p%bb(:,3)**2,idiag_bz2mxy)
+        if (idiag_by2mxy/=0) call zsum_mn_name_xy(p%bb,idiag_by2mxy,(/0,2,0/))
+        if (idiag_bz2mxy/=0) call zsum_mn_name_xy(p%bb,idiag_bz2mxy,(/0,0,2/))
         if (idiag_jbmxy/=0)  call zsum_mn_name_xy(p%jb,idiag_jbmxy)
         if (idiag_abmxy/=0)  call zsum_mn_name_xy(p%ab,idiag_abmxy)
-        if (idiag_examxy1/=0)  call zsum_mn_name_xy(p%exa(:,1),idiag_examxy1)
-        if (idiag_examxy2/=0)  call zsum_mn_name_xy(p%exa(:,2),idiag_examxy2)
-        if (idiag_examxy3/=0)  call zsum_mn_name_xy(p%exa(:,3),idiag_examxy3)
+        if (idiag_examxy1/=0) call zsum_mn_name_xy(p%exa(:,1),idiag_examxy1)
+        if (idiag_examxy2/=0) call zsum_mn_name_xy(p%exa,idiag_examxy2,(/0,1,0/))
+        if (idiag_examxy3/=0) call zsum_mn_name_xy(p%exa,idiag_examxy3,(/0,0,1/))
         if (idiag_Exmxy/=0) call zsum_mn_name_xy(p%uxb(:,1),idiag_Exmxy)
-        if (idiag_Eymxy/=0) call zsum_mn_name_xy(p%uxb(:,2),idiag_Eymxy)
-        if (idiag_Ezmxy/=0) call zsum_mn_name_xy(p%uxb(:,3),idiag_Ezmxy)
+        if (idiag_Eymxy/=0) call zsum_mn_name_xy(p%uxb,idiag_Eymxy,(/0,1,0/))
+        if (idiag_Ezmxy/=0) call zsum_mn_name_xy(p%uxb,idiag_Ezmxy,(/0,0,1/))
         if (idiag_poynxmxy/=0) &
             call zsum_mn_name_xy(etatotal*p%jxb(:,1)-mu01* &
             (p%uxb(:,2)*p%bb(:,3)-p%uxb(:,3)*p%bb(:,2)),idiag_poynxmxy)
-        if (idiag_poynymxy/=0) &
-            call zsum_mn_name_xy(etatotal*p%jxb(:,2)-mu01* &
-            (p%uxb(:,3)*p%bb(:,1)-p%uxb(:,1)*p%bb(:,3)),idiag_poynymxy)
-        if (idiag_poynzmxy/=0) &
-            call zsum_mn_name_xy(etatotal*p%jxb(:,3)-mu01* &
-            (p%uxb(:,1)*p%bb(:,2)-p%uxb(:,2)*p%bb(:,1)),idiag_poynzmxy)
+        if (idiag_poynymxy/=0.or.idiag_poynzmxy/=0) then
+          tmp2(:,1)=0.
+          tmp2(:,2)=etatotal*p%jxb(:,2)-mu01*(p%uxb(:,3)*p%bb(:,1)-p%uxb(:,1)*p%bb(:,3))
+          tmp2(:,3)=etatotal*p%jxb(:,3)-mu01*(p%uxb(:,1)*p%bb(:,2)-p%uxb(:,2)*p%bb(:,1))
+          if (idiag_poynymxy/=0) &
+            call zsum_mn_name_xy(tmp2,idiag_poynymxy,(/0,1,0/))
+          if (idiag_poynzmxy/=0) &
+            call zsum_mn_name_xy(tmp2,idiag_poynzmxy,(/0,0,1/))
+        endif
         if (idiag_beta1mxy/=0) call zsum_mn_name_xy(p%beta1,idiag_beta1mxy)
+!
+! Stokes parameters correct for Yin-Yang?
+!
         if (idiag_StokesImxy/=0) call zsum_mn_name_xy(p%StokesI,idiag_StokesImxy)
         if (idiag_StokesQmxy/=0) call zsum_mn_name_xy(p%StokesQ,idiag_StokesQmxy)
         if (idiag_StokesUmxy/=0) call zsum_mn_name_xy(p%StokesU,idiag_StokesUmxy)
         if (idiag_StokesQ1mxy/=0) call zsum_mn_name_xy(p%StokesQ1,idiag_StokesQ1mxy)
         if (idiag_StokesU1mxy/=0) call zsum_mn_name_xy(p%StokesU1,idiag_StokesU1mxy)
         if (idiag_bxbymxy/=0) &
-            call zsum_mn_name_xy(p%bb(:,1)*p%bb(:,2),idiag_bxbymxy)
+            call zsum_mn_name_xy(p%bb,idiag_bxbymxy,(/1,1,0/))
         if (idiag_bxbzmxy/=0) &
-            call zsum_mn_name_xy(p%bb(:,1)*p%bb(:,3),idiag_bxbzmxy)
+            call zsum_mn_name_xy(p%bb,idiag_bxbzmxy,(/1,0,1/))
         if (idiag_bybzmxy/=0) &
-            call zsum_mn_name_xy(p%bb(:,2)*p%bb(:,3),idiag_bybzmxy)
+            call zsum_mn_name_xy(p%bb,idiag_bybzmxy,(/0,1,1/))
+!
         if (idiag_bxbymxz/=0) &
             call ysum_mn_name_xz(p%bb(:,1)*p%bb(:,2),idiag_bxbymxz)
         if (idiag_bxbzmxz/=0) &
@@ -4614,11 +4626,11 @@ module Magnetic
 !
         if (ldiagnos) then
           if (idiag_bxmxy/=0) call zsum_mn_name_xy(p%bb(:,1),idiag_bxmxy)
-          if (idiag_bymxy/=0) call zsum_mn_name_xy(p%bb(:,2),idiag_bymxy)
-          if (idiag_bzmxy/=0) call zsum_mn_name_xy(p%bb(:,3),idiag_bzmxy)
+          if (idiag_bymxy/=0) call zsum_mn_name_xy(p%bb,idiag_bymxy,(/0,1,0/))
+          if (idiag_bzmxy/=0) call zsum_mn_name_xy(p%bb,idiag_bzmxy,(/0,0,1/))
           if (idiag_jxmxy/=0) call zsum_mn_name_xy(p%jj(:,1),idiag_jxmxy)
-          if (idiag_jymxy/=0) call zsum_mn_name_xy(p%jj(:,2),idiag_jymxy)
-          if (idiag_jzmxy/=0) call zsum_mn_name_xy(p%jj(:,3),idiag_jzmxy)
+          if (idiag_jymxy/=0) call zsum_mn_name_xy(p%jj,idiag_jymxy,(/0,1,0/))
+          if (idiag_jzmxy/=0) call zsum_mn_name_xy(p%jj,idiag_jzmxy,(/0,0,1/))
         endif
       endif
 !
@@ -4695,9 +4707,9 @@ module Magnetic
 !
         call cross(p%uxb,p%bb,uxbxb)
         do j=1,3 
+          poynting(:,j) = etatotal*p%jxb(:,j) - mu01*uxbxb(:,j)
           if (.not.lyang) &
-            poynting(:,j) = etatotal*p%jxb(:,j) - mu01*uxbxb(:,j)
-          poynting_yz(m-m1+1,n-n1+1,j)=poynting(ix_loc-l1+1,j)
+            poynting_yz(m-m1+1,n-n1+1,j)=poynting(ix_loc-l1+1,j)
           if (m==iy_loc)  poynting_xz(:,n-n1+1,j)=poynting(:,j)
           if (n==iz_loc)  poynting_xy(:,m-m1+1,j)=poynting(:,j)
           if (n==iz2_loc) poynting_xy2(:,m-m1+1,j)=poynting(:,j)
@@ -5605,9 +5617,9 @@ module Magnetic
         bmx2=0.0
       else
         if (lfirst_proc_z) then
-          call mpireduce_sum(fnamexy(:,:,idiag_bymxy),fsumxy,(/nx,ny/),idir=2)
+          call mpireduce_sum(fnamexy(idiag_bymxy,:,:),fsumxy,(/nx,ny/),idir=2)
           bymx=sum(fsumxy,dim=2)/nygrid
-          call mpireduce_sum(fnamexy(:,:,idiag_bzmxy),fsumxy,(/nx,ny/),idir=2)
+          call mpireduce_sum(fnamexy(idiag_bzmxy,:,:),fsumxy,(/nx,ny/),idir=2)
           bzmx=sum(fsumxy,dim=2)/nygrid
         endif
         if (lfirst_proc_yz) then
@@ -5655,9 +5667,9 @@ module Magnetic
         bmy2=0.0
       else
         if (lfirst_proc_z) then
-          call mpireduce_sum(fnamexy(:,:,idiag_bxmxy),fsumxy,(/nx,ny/),idir=1)
+          call mpireduce_sum(fnamexy(idiag_bxmxy,:,:),fsumxy,(/nx,ny/),idir=1)
           bxmy=sum(fsumxy,dim=1)/nxgrid
-          call mpireduce_sum(fnamexy(:,:,idiag_bzmxy),fsumxy,(/nx,ny/),idir=1)
+          call mpireduce_sum(fnamexy(idiag_bzmxy,:,:),fsumxy,(/nx,ny/),idir=1)
           bzmy=sum(fsumxy,dim=1)/nxgrid
         endif
         if (lfirst_proc_xz) then
@@ -5822,9 +5834,9 @@ module Magnetic
         jmx2=0.
       else
         if (lfirst_proc_z) then
-          call mpireduce_sum(fnamexy(:,:,idiag_jymxy),fsumxy,(/nx,ny/),idir=2)
+          call mpireduce_sum(fnamexy(idiag_jymxy,:,:),fsumxy,(/nx,ny/),idir=2)
           jymx=sum(fsumxy,dim=2)/nygrid
-          call mpireduce_sum(fnamexy(:,:,idiag_jzmxy),fsumxy,(/nx,ny/),idir=2)
+          call mpireduce_sum(fnamexy(idiag_jzmxy,:,:),fsumxy,(/nx,ny/),idir=2)
           jzmx=sum(fsumxy,dim=2)/nygrid
         endif
         if (lfirst_proc_yz) then
@@ -5871,9 +5883,9 @@ module Magnetic
         jmy2=0.
       else
         if (lfirst_proc_z) then
-          call mpireduce_sum(fnamexy(:,:,idiag_jxmxy),fsumxy,(/nx,ny/),idir=1)
+          call mpireduce_sum(fnamexy(idiag_jxmxy,:,:),fsumxy,(/nx,ny/),idir=1)
           jxmy=sum(fsumxy,dim=1)/nxgrid
-          call mpireduce_sum(fnamexy(:,:,idiag_jzmxy),fsumxy,(/nx,ny/),idir=1)
+          call mpireduce_sum(fnamexy(idiag_jzmxy,:,:),fsumxy,(/nx,ny/),idir=1)
           jzmy=sum(fsumxy,dim=1)/nxgrid
         endif
         if (lfirst_proc_xz) then
@@ -6173,9 +6185,9 @@ module Magnetic
           b2mxy_local=0
           do l=1,nx
             do m=1,ny
-              btemp=fnamexy(l,m,idiag_bxmxy)**2 +&
-                    fnamexy(l,m,idiag_bymxy)**2 +&
-                    fnamexy(l,m,idiag_bzmxy)**2
+              btemp=fnamexy(idiag_bxmxy,l,m)**2 +&
+                    fnamexy(idiag_bymxy,l,m)**2 +&
+                    fnamexy(idiag_bzmxy,l,m)**2
               if (lspherical_coords) then
                  btemp=btemp*r2_weight(l)*sinth_weight(m)
                  nvol2d_local=r2_weight(l)*sinth_weight(m)
