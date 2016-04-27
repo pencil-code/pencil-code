@@ -1165,6 +1165,10 @@ module Particles_chemistry
 !
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
+
+      if (idiag_Shchm /= 0) then
+        call find_sh_counter(sh_counter)
+      endif
 !
       if (npar_imn(imn) /= 0) then
 !
@@ -1218,13 +1222,11 @@ module Particles_chemistry
 !
             if (fp(k,imp) < fp(k,impinit)*0.01) then
               RR_hat(k,:) = 0.
-              print*, 'Cg', Cg
               call fatal_error('particles_chemistry','particle consumed')
             else
 !
-              if (lpenc_requested(i_sherwood)) then
+              if (idiag_Shchm /= 0) then
                 Sh_mean = 0.0
-                sh_counter=0
               endif
               do j = 1,N_surface_reactions
                 RR_hat(k,j) = K_k(k,j)*reaction_enhancement(j)
@@ -1258,9 +1260,9 @@ module Particles_chemistry
                       if (.not. lsherwood_const) then
                         Sh = 2.0 + 0.69 * rep(k)**0.5 * &
                             (nuvisc(k)/p%Diff_penc_add(ix0-nghost,jmap(i)))**0.33
-                        if (lpenc_requested(i_sherwood)) then
+                        if (Sh<2.0) call fatal_error('Sh under 2', 'pchemistry')
+                        if (idiag_Shchm /=0) then
                           Sh_mean = Sh_mean + Sh
-                          sh_counter=sh_counter+1
                         endif
                       endif
                       k_im = Cg(k)*p%Diff_penc_add(ix0-nghost,jmap(i))*Sh/(2.0*fp(k,iap))
@@ -1269,7 +1271,7 @@ module Particles_chemistry
                       root_term = sqrt(k_im**2 + kkcg**2 + 2*k_im*kkcg + 4*k_im*fp(k,isurf-1+i)*kkcg)
                       x_mod = (-k_im-kkcg+root_term)/2/kkcg
                       RR_hat(k,j) = RR_hat(k,j) * (pre_Cg * Cg(k)*x_mod)**nu(i,j)
-!   print*, 'x_infty, xmod, ratio', fp(k,isurf-1+i), x_mod, x_mod/fp(k,isurf-1+i)
+!                      print*, 'x_infty, xmod, ratio', fp(k,isurf-1+i), x_mod, x_mod/fp(k,isurf-1+i)
 !                    print*, 'k_im', k_im
 !                    print*, 'kkcg', kkcg
 !                    print*, 'xmod infos Cg:', Cg
@@ -1326,23 +1328,11 @@ module Particles_chemistry
 !
 !  Add diagnostic output for the Sherwood number
 !
-            if (lpenc_requested(i_sherwood)) then
-              if (Sh_mean/sh_counter > 10.) then
-                print*, 'Sh_mean',Sh_mean
-                print*, 'sh_counter',sh_counter
-                call fatal_error('chemistry','whut')
-              endif
-              p%sherwood(ix0-nghost) = p%sherwood(ix0-nghost)+Sh_mean/sh_counter
-!              print*, 'counter',sh_counter
-!if (k==k1) print*, 'psherwood',p%sherwood
+            if (idiag_Shchm /= 0) then
+              p%sherwood(ix0-nghost) = p%sherwood(ix0-nghost)+Sh_mean
             endif
           enddo
         endif
-!      if (lparticles_adsorbed) then
-!        print*, 'X_surf ', fp(1,isurf:isurf+N_surface_reactants)
-!     print*, 'Cs(1,:) ',Cs(1,:)
-!      endif
-!
 !
 !  Control if RR_hat is always positive
 !
@@ -1415,15 +1405,17 @@ module Particles_chemistry
               'RR_hat is negative')
         endif
 !
-        if (idiag_Shchm /= 0) then
-          call sum_mn_name(p%sherwood/npar,idiag_Shchm)
-        endif
-!
         if (.not. lsherwood_const) then
           deallocate(rep)
           deallocate(nuvisc)
         endif
 !
+      endif
+!
+      if (ldiagnos) then
+        if (idiag_Shchm /= 0) then
+          call sum_mn_name(p%sherwood/npar/sh_counter*nwgrid,idiag_Shchm)
+        endif
       endif
 !
     endsubroutine calc_RR_hat
@@ -2755,4 +2747,19 @@ module Particles_chemistry
 !
     endsubroutine rprint_particles_chem
 !***********************************************************************
+    subroutine find_sh_counter(sh_counter)
+!
+      integer,intent(inout) :: sh_counter
+      integer :: j, i
+!
+      sh_counter = 0
+      do j = 1,N_surface_reactions
+        do i = 1,N_surface_reactants
+          if (nu(i,j) > 0) sh_counter=sh_counter+1
+        enddo
+      enddo
+!
+    endsubroutine find_sh_counter
+!***********************************************************************
+
 endmodule Particles_chemistry
