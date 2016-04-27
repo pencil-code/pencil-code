@@ -31,7 +31,7 @@ module Grid
   public :: box_vol
   public :: save_grid
   public :: coords_aux
-  public :: inverse_grid
+  public :: real_to_index, inverse_grid
   public :: grid_bound_data
   public :: set_coords_switches
 !
@@ -1906,6 +1906,33 @@ module Grid
       call fatal_error('find_star','maximum number of iterations exceeded')
 !
     endfunction find_star
+!***********************************************************************
+    subroutine real_to_index(n, x, xi)
+!
+!  Transforms coordinates in real space to those in index space.
+!
+!  10-sep-15/ccyang: coded.
+!
+      integer, intent(in) :: n
+      real, dimension(n,3), intent(in) :: x
+      real, dimension(n,3), intent(out) :: xi
+!
+      real, parameter :: ngp1 = nghost + 1
+      integer :: i
+!
+!  Work on each direction.
+!
+      nonzero: if (n > 0) then
+        dir: do i = 1, 3
+          if (lactive_dimension(i)) then
+            call inverse_grid(i, x(:,i), xi(:,i), local=.true.)
+          else
+            xi(:,i) = ngp1
+          endif
+        enddo dir
+      endif nonzero
+!
+    endsubroutine real_to_index
 !***********************************************************************
     subroutine inverse_grid(dir, x, xi, local)
 !
