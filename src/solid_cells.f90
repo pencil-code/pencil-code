@@ -1640,10 +1640,14 @@ module Solid_Cells
         upper_j,lower_k,upper_k,iobj,xmirror,ymirror,zmirror,ndims)
 !
 !  Interpolate value in a mirror point from the eight corner values
+!  Call only if close_interpolation_method is the default value 1.
+!  If close_interpolation_method >= 2, use interpolate_point_new()
 !
 !  23-dec-2008/nils: coded
 !  22-apr-2009/nils: added special treatment close to the solid surface
 !  20-apr-2011/MR: adapted calls to linear_interpolate, added corresp. calls to fatal_error
+!  27-apr-2016/Jorgen: removed outdated conditional statements. Routine only called for 
+!                      close interpolate_method=1
 !
       use General, only: linear_interpolate
       use Messages, only: fatal_error
@@ -1667,31 +1671,19 @@ module Solid_Cells
 !
       xxp = (/xmirror,ymirror,zmirror/)
       inear = (/lower_i,lower_j,lower_k/)
-      if (close_interpolation_method  >=  2 .and. ivar == iux) then
-        if ( .not. linear_interpolate(f,iux,iuz,xxp,gp,inear,.false.) ) &
-            call fatal_error('linear_interpolate','')
-        phi_ = gp
-      else
-        if ( .not. linear_interpolate(f,ivar,ivar,xxp,gp(1),inear,.false.) ) &
-            call fatal_error('linear_interpolate','')
-        phi_(1) = gp(1)
+      if ( .not. linear_interpolate(f,ivar,ivar,xxp,gp(1),inear,.false.) ) then
+        call fatal_error('linear_interpolate','')
       endif
+      phi_(1) = gp(1)
 !
 !  If the mirror point is very close to the surface of the object
 !  some special treatment is required.
 !
       if (lclose_interpolation .and. (ivar < 4 .or. ivar == ilnTT)) then
-        if (close_interpolation_method  >=  2 .and. ivar == iux) then
-          f_tmp(iux:iuz) = phi_
-          call close_interpolation(f,lower_i,lower_j,lower_k,iobj,xxp, &
-              f_tmp,.false.)
-          phi_ = f_tmp(iux:iuz)
-        else
-          f_tmp(ivar) = phi_(1)
-          call close_interpolation(f,lower_i,lower_j,lower_k,iobj,xxp, &
-              f_tmp,.false.)
-          phi_(1) = f_tmp(ivar)
-        endif
+        f_tmp(ivar) = phi_(1)
+        call close_interpolation(f,lower_i,lower_j,lower_k,iobj,xxp, &
+            f_tmp,.false.)
+        phi_(1) = f_tmp(ivar)
       endif
 !
     endsubroutine interpolate_point
