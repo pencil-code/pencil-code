@@ -3519,10 +3519,10 @@ module Particles
 !
 !  Drag force on particles and on gas.
 !
+      if (ldragforce_heat .or. (ldiagnos .and. idiag_dedragp/=0)) drag_heat = 0.0
+!
       if (ldragforce_dust_par .and. t>=tstart_dragforce_par) then
         if (headtt) print*,'dvvp_dt: Add drag force; tausp=', tausp
-!
-        if (ldragforce_heat.or.(ldiagnos.and.idiag_dedragp/=0)) drag_heat=0.0
 !
         if (npar_imn(imn)/=0) then
 !
