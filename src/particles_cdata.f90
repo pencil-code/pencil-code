@@ -74,6 +74,7 @@ module Particles_cdata
   logical :: lparticlemesh_gab = .false.
   logical :: linterp_reality_check=.false., lmigration_redo=.false.
   logical :: lnocalc_np=.false., lnocalc_rhop=.false.
+  logical :: lcalc_np=.true., lcalc_rhop=.true.
   logical :: lmigration_real_check=.true.
   logical :: lcheck_exact_frontier=.false.
   logical :: lshepherd_neighbour=.false.

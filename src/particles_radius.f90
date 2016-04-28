@@ -26,8 +26,8 @@ module Particles_radius
   include 'particles_radius.h'
 !
   real :: vthresh_sweepup=-1.0, deltavp12_floor=0.0
-  real, dimension (ninit) :: ap0=0.0
-  real, dimension (ninit) :: radii_distribution=0.0
+  real, dimension (ndustrad) :: ap0=0.0
+  real, dimension (ndustrad) :: radii_distribution=0.0
   real :: tstart_sweepup_par=0.0, cdtps=0.2, cdtpc=0.2
   real :: tstart_condensation_par=0.0
   real :: apmin=0.0, latent_heat_SI=2.257e6, alpha_cond=1.0, alpha_cond1=1.0
@@ -174,7 +174,7 @@ module Particles_radius
       logical, optional :: init
 !
       real, dimension (mpar_loc) :: r_mpar_loc, p_mpar_loc, tmp_mpar_loc
-      real, dimension (ninit) :: radii_cumulative
+      real, dimension (ndustrad) :: radii_cumulative
       real, dimension (nbin_initdist) :: n_initdist, a_initdist
       integer, dimension (nbin_initdist) :: nn_initdist
       real :: radius_fraction, mcen, mmin, mmax, fcen, p, rhopm
@@ -251,6 +251,7 @@ module Particles_radius
           call random_number_wrapper(p_mpar_loc)
           tmp_mpar_loc=sqrt(-2*log(r_mpar_loc))*sin(2*pi*p_mpar_loc)
           fp(:,iap)=a0_initdist*exp(sigma_initdist*tmp_mpar_loc)
+
 !
 !  Lognormal distribution. Here, ap1 is the largest value in the distribution
 !  and ap0 is the smallest radius initially.
@@ -820,7 +821,7 @@ module Particles_radius
 !  because not all parts of the code are adapted to work with more than one
 !  particle radius.
 !
-      do pos=1,ninit
+      do pos=1,ndustrad
         if (ap0(pos)/=0) then
           npart_radii=npart_radii+1
         endif

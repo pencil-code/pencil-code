@@ -32,6 +32,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 #     ! MSCRATCH CONTRIBUTION 1
 #     ! COMMUNICATED AUXILIARIES 1
 #     ! NDUSTSPEC CONTRIBUTION 17
+#     ! NDUSTRAD  CONTRIBUTION 10
 #     ! NCHEMSPEC CONTRIBUTION 3
 #     ! NPSCALAR CONTRIBUTION 3
 #   and accumulates the numbers mvar, maux, maux_com, mglobal, mscratch,
@@ -85,6 +86,7 @@ my $mglobal_decl  = '^\s*!\s*MGLOBAL\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $mscratch_decl = '^\s*!\s*MSCRATCH\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $maux_com_decl = '^\s*!\s*COMMUNICATED\s*AUXILIARIES\s*(-?[0-9]+)\s*$';
 my $mpvar_decl    = '^\s*!\s*MPVAR\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
+my $ndustrad_decl    = '^\s*!\s*NDUSTRAD\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $mpaux_decl    = '^\s*!\s*MPAUX\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $dust_decl     = '^\s*!\s*NDUSTSPEC\s*CONTRIBUTION\s*(-?[0-9]+\*[0-9])\s*$';
 my $chem_decl     = '^\s*!\s*NCHEMSPEC\s*CONTRIBUTION\s*(-?[0-9]+\*[0-9])\s*$';
@@ -101,6 +103,7 @@ use Getopt::Long;
 my $line;
 my $dust_string = '1*4';
 my $chem_string = '1';
+my $ndustrad = 5;
 my ($maux, $maux_com, $mvar, $mglobal, $mscratch, $mpvar, $mpaux) = (0) x 20;
 my ($ndustspec, $nchemspec, $mvar_per_dust, $mvar_per_chem) = (0) x 20;
 my $npscalar = 0;
@@ -157,7 +160,7 @@ file: foreach my $infile (@ARGV) {
     extract_decl ($line, $pscalar_decl , \$npscalar );
     extract_decl ($line, $nadsspec_decl, \$nadsspec );
     extract_decl ($line, $nsurfreacspec_decl, \$nsurfreacspec);
-
+    extract_decl_reset ($line, $ndustrad_decl, \$ndustrad );
     # Check for information about number of chemical and dust species
     # and discretization type:
     if ($line=~ /$chem_decl/) {$chem_string=$1;}
@@ -298,6 +301,7 @@ integer, parameter :: nchemspec=${\($nchemspec+0)}
 integer, parameter :: npscalar=${\($npscalar+0)}
 integer, parameter :: nadsspec=${\($nadsspec+0)}
 integer, parameter :: nsurfreacspec=${\($nsurfreacspec+0)}
+integer, parameter :: ndustrad=${\($ndustrad+0)}
 
 EOF
 
@@ -510,6 +514,20 @@ sub extract_decl {
 
     if ($line =~ /$regexp/) {
       $$counter_ref += $1;
+    }
+}
+
+# ---------------------------------------------------------------------- #
+sub extract_decl_reset {
+#
+# Extract declaration of contribution to mvar and similar.
+#
+    my $line = shift;
+    my $regexp = shift;
+    my $counter_ref = shift;
+
+    if ($line =~ /$regexp/) {
+      $$counter_ref = $1;
     }
 }
 
