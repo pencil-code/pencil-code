@@ -1476,6 +1476,7 @@ module Magnetic
       real, dimension (mz) :: tmp
       real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2,fact,cs2,lnrho_old,ssold,cs2old,x1,x2
+      real, dimension (nx) :: beq2_pencil
       real :: beq2,RFPradB12,RFPradJ12
       real :: s,c
       integer :: j
@@ -1862,7 +1863,10 @@ module Magnetic
                 f(l1:l2,m,n,iss)=cp*gamma1*(log(cs2/cs20)- &  ! generalised for cp /= 1
                   gamma_m1*(f(l1:l2,m,n,ilnrho)-lnrho0))      ! lnrho0 added for generality
               else
-                f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+fact/gamma_m1
+                !f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+fact/gamma_m1
+                beq2_pencil=2.*rho0*cs0**2*exp(gamma*(f(l1:l2,m,n,ilnrho)-lnrho0))
+                fact=max(1.0e-6,1.0-b2/beq2_pencil)
+                f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+alog(fact)/gamma
               endif
             endif
           endif
