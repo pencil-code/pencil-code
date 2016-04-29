@@ -104,6 +104,7 @@ my %tests = (
                          2d-tests/cylindrical_gdisk
                          spherical-globaldisk
                          spherical-globaldisk-mhd
+                         spherical-gdisk-planet-thermo
                          0d-tests/solar_system
                          mdwarf
                          sedimentation
