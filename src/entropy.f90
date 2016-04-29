@@ -2575,6 +2575,8 @@ module Energy
 !  magnetic chi-quenching
 !
       if (chiB/=0.0) lpenc_requested(i_b2)=.true.
+!      
+      if (borderss == 'initial-temperature') lpenc_requested(i_lnrho)=.true.
 !
       lpenc_diagnos2d(i_ss)=.true.
 !
@@ -3453,13 +3455,17 @@ module Energy
 !  of the ss variable.
 !
 !  28-jul-06/wlad: coded
+!  28-apr-16/wlad: added case initial-temperature
 !
       use BorderProfiles, only: border_driving, set_border_initcond
+      use EquationOfState, only: cs20,gamma,gamma_m1,lnrho0,get_cp1
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx) :: f_target
+      real, dimension(nx) :: lnrho_init,ss_init
+      real :: cp1
 !
       select case (borderss)
 !
@@ -3469,6 +3475,31 @@ module Energy
         f_target=ss_const
       case ('initial-condition')
         call set_border_initcond(f,iss,f_target)
+      case ('initial-temperature')
+!
+!  This boundary condition drives the entropy back not to the initial entropy,
+!  but to the initial _temperature_. It is useful for situations when the density
+!  in the boundary goes very low and the initial entropy corresponds to a very high         
+!  temperature, making the simulation break. The sounds speed is 
+!
+!    cs2=cs20*exp(ss/cv+gamma_m1*(lnrho-lnrho0))
+!
+!  So the entropy it corresponds to is 
+!
+!    ss = cv*(log(cs2/cs20)-gamma_m1*(lnrho-lnrho0))
+!         
+!  Keep the density and replace cs2 by the initial cs2 to drive ss to the initial temperature. 
+!
+        call set_border_initcond(f,ilnrho,lnrho_init)
+        call set_border_initcond(f,iss,ss_init)
+        call get_cp1(cp1)
+        !cs2_init = cs20*exp(gamma*cp1*ss_init+gamma_m1*(lnrho_init-lnrho0))
+        !f_target = 1./(gamma*cp1)*(log(cs2_init/cs20)-gamma_m1*(p%lnrho-lnrho0))
+!
+!  The two lines above reduce to the one below        
+!        
+        f_target = ss_init - gamma_m1/(gamma*cp1)*(p%lnrho-lnrho_init)
+        
       case ('nothing')
         if (lroot.and.ip<=5) &
             print*, "set_border_entropy: borderss='nothing'"
