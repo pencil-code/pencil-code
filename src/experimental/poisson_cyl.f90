@@ -4,12 +4,12 @@
 !  This module solves the Poisson equation in cylindrical coordinates
 !    (d^2/dr^2 +1/r*d/dr + 1/r^2*d^2/dy^2 + d^2/dz^2) f = RHS(x,y,z)
 !
-!  Another file was coded for the module because an extra tridimensional
+!  Another method was coded for the module because an extra tridimensional
 !  array bessel_grid is needed to store the bessel functions of the grid.
 !  Calculating them at every time would be time-consuming and unecessary
 !  Instead, they are calculated in start time and stored in the memory. 
 !
-!  For now, this file only solves the 2d cylindrical poisson equation, 
+!  For now, this method only solves the 2d cylindrical poisson equation, 
 !  with Hankel transforms, following the theory outlined by Toomre (1962)
 !  and in Binney and Tremaine's "Galactic Dynamics" p.74-76   
 !
