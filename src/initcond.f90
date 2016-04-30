@@ -2335,6 +2335,7 @@ module Initcond
 !
 !   8-apr-03/axel: coded
 !  23-may-04/anders: made structure for other input variables
+!  30-apr-16/axel: adapted for polytropic eos
 !
       use EquationOfState, only: eoscalc,ilnrho_lnTT
       use Sub, only: write_zprof
@@ -2365,6 +2366,7 @@ module Initcond
 !  Read data - first the entire stratification file.
 !
       select case (strati_type)
+!
       case ('lnrho_ss')
         do n=1,mzgrid
           read(19,*,iostat=stat) tmp,var1,var2
@@ -2392,6 +2394,18 @@ module Initcond
             exit
           endif
         enddo
+!
+      case ('lnrho')
+        do n=1,mzgrid
+          read(19,*,iostat=stat) tmp,var1
+          if (stat>=0) then
+            if (ip<5) print*, 'stratification: z, var1=', tmp, var1
+            if (ldensity) lnrho0(n)=var1
+          else
+            exit
+          endif
+!
+        enddo
       endselect
 !
 !  Select the right region for the processor afterwards.
@@ -2413,6 +2427,11 @@ module Initcond
             f(:,:,n,ilnTT)=lnTT0(ipz*nz+(n-nghost))
           enddo
         endif
+        if (.not.lentropy.and..not.ltemperature) then
+          do n=n1,n2
+            f(:,:,n,ilnrho)=lnrho0(ipz*nz+(n-nghost))
+          enddo
+        endif
 !
 !  With ghost zones.
 !
@@ -2427,6 +2446,11 @@ module Initcond
           do n=1,mz
             f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
             f(:,:,n,ilnTT)=lnTT0(ipz*nz+n)
+          enddo
+        endif
+        if (.not.lentropy.and..not.ltemperature) then
+          do n=1,mz
+            f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
           enddo
         endif
 !
@@ -2457,6 +2481,11 @@ module Initcond
             lnTT_mz(n)=lnTT0(ipz*nz+n)
           enddo
           call write_zprof('lnTT_mz',lnTT_mz)
+        endif
+        if (.not.lentropy.and..not.ltemperature) then
+          do n=1,mz
+            lnrho_mz(n)=lnrho0(ipz*nz+n)
+          enddo
         endif
 !
       close(19)
