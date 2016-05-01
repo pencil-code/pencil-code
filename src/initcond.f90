@@ -180,6 +180,7 @@ module Initcond
         f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(sin(kx1*x),2,my),3,mz)&
                                    *spread(spread(sin(ky1*y),1,mx),3,mz)&
                                    *spread(spread(sin(kz1*z),1,mx),2,my))
+!XXX
       endif
 !
     endsubroutine sinx_siny_sinz
@@ -5013,7 +5014,7 @@ module Initcond
 !
     endsubroutine random_isotropic_KS
 !***********************************************************************
-    subroutine random_isotropic_shell(f,jf,ampl0)
+    subroutine random_isotropic_shell(f,jf,ampl0,z1,z2)
 !
 !   random_isotropic_shell
 !
@@ -5028,7 +5029,7 @@ module Initcond
       integer :: jf,i,nvect,ivect
       real, dimension (3) :: ee,kk,exk
       real, dimension (nx) :: kdotx
-      real :: exk2,phik,ampl,ampl0
+      real :: exk2,phik,ampl,ampl0,prof,zeta,z1,z2
 !
 !  read header
 !
@@ -5045,12 +5046,26 @@ module Initcond
         call dot2(exk,exk2)
         exk=exk/sqrt(exk2)
 !
+!  allow for the possibility of a profile
+!
         do n=n1,n2
+          if (z1/=z2) then
+            if (z(n)>z1.and.z(n)<z2) then
+              zeta=(z(n)-z1)/(z2-z1)-.5
+              prof=cos(pi*zeta)**2
+            else
+              prof=0.
+            endif
+          else
+            prof=1.
+          endif
+          prof=prof*ampl0*ampl
+!
           do m=m1,m2
             kdotx=kk(1)*x(l1:l2)+kk(2)*y(m)+kk(3)*z(n)
             do i=1,3
               f(l1:l2,m,n,jf+i-1)=f(l1:l2,m,n,jf+i-1) &
-                +ampl0*ampl*exk(i)*real(exp(ii*(kdotx+phik)))
+                +prof*exk(i)*real(exp(ii*(kdotx+phik)))
             enddo
           enddo
         enddo

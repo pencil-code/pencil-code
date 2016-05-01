@@ -141,6 +141,7 @@ module Magnetic
   real, pointer :: cp
   real :: dipole_moment=0.0
   real :: eta_power_x=0., eta_power_z=0.
+  real :: z1_aa=0., z2_aa=0.
   integer :: nbvec,nbvecmax=nx*ny*nz/4, va2power_jxb=5, iua=0
   integer :: N_modes_aa=1, naareset
   integer :: nrings=2
@@ -202,7 +203,7 @@ module Magnetic
       lpress_equil, lpress_equil_via_ss, mu_r, mu_ext_pot, lB_ext_pot, &
       lforce_free_test, ampl_B0, N_modes_aa, &
       initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
-      kgaussian_aa, &
+      kgaussian_aa, z1_aa, z2_aa, &
       lcheck_positive_va2, lskip_projection_aa, lno_second_ampl_aa, &
       lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lEE_as_aux,&
       ljxb_as_aux, ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
@@ -1502,7 +1503,7 @@ module Magnetic
         case ('random-isotropic-KS')
           call random_isotropic_KS(initpower_aa,f,iax,N_modes_aa)
         case ('random_isotropic_shell')
-          call random_isotropic_shell(f,iax,amplaa(j))
+          call random_isotropic_shell(f,iax,amplaa(j),z1_aa,z2_aa)
         case ('gaussian-noise'); call gaunoise(amplaa(j),f,iax,iaz)
         case ('gaussian-noise-rprof')
           call gaunoise_rprof(amplaa(j),f,iax,iaz,rnoise_int,rnoise_ext)

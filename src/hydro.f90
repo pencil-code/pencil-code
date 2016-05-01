@@ -95,6 +95,7 @@ module Hydro
   real, dimension(2) :: hydro_zaver_range=(/-max_real,max_real/)
   real :: u_out_kep=0.0, velocity_ceiling=-1.0, w_sldchar_hyd=1.0
   real :: mu_omega=0., gap=0., r_omega=0., w_omega=0.
+  real :: z1_uu=0., z2_uu=0.
   integer :: nb_rings=0
   integer :: neddy=0
 !
@@ -148,7 +149,7 @@ module Hydro
       kx_ux, ky_ux, kz_ux, kx_uy, ky_uy, kz_uy, kx_uz, ky_uz, kz_uz, &
       uy_left, uy_right, uu_const, Omega, u_out_kep, &
       initpower, initpower2, cutoff, ncutoff, kpeak, kgaussian_uu, &
-      lskip_projection, lno_second_ampl, &
+      lskip_projection, lno_second_ampl, z1_uu, z2_uu, &
       N_modes_uu, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
       lprecession, omega_precession, alpha_precession, velocity_ceiling, &
       loo_as_aux, luut_as_aux, loot_as_aux, mu_omega, nb_rings, om_rings, gap, &
@@ -1161,7 +1162,7 @@ module Hydro
              f(ix,:,iz0,iux) = ampluu(j)*sin(kx_uu*x(ix))
           enddo 
         case ('random_isotropic_shell'); &
-          call random_isotropic_shell(f,iux,ampluu(j))
+          call random_isotropic_shell(f,iux,ampluu(j),z1_uu,z2_uu)
         case ('gaussian-noise'); call gaunoise(ampluu(j),f,iux,iuz)
         case ('gaussian-noise-x'); call gaunoise(ampluu(j),f,iux)
         case ('gaussian-noise-y'); call gaunoise(ampluu(j),f,iuy)
