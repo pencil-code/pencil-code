@@ -142,7 +142,7 @@ module Chemistry
   real, allocatable, dimension(:,:) :: low_coeff, high_coeff, troe_coeff, a_k4
   logical, allocatable, dimension(:) :: Mplus_case
   logical, allocatable, dimension(:) :: photochem_case
-  real :: lamb_low, lamb_up, Pr_turb=0.3
+  real :: lamb_low, lamb_up, Pr_turb=0.7
 !
 !   Atmospheric physics
 !
@@ -956,7 +956,7 @@ module Chemistry
 ! turbulent heat transport in Smagorinsky case
 ! probably it should be moved to viscosity module
 !
-            p%lambda=(0.15*dxmax)**2.*sqrt(2*p%sij2)/Pr_turb*p%cv*p%rho
+          p%lambda=(0.15*dxmax)**2.*sqrt(2*p%sij2)/Pr_turb*p%cv*p%rho
         else
           p%lambda = lambda_full(l1:l2,m,n)
           if (lpencil(i_glambda)) call grad(lambda_full,p%glambda)
