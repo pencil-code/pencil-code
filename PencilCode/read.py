@@ -9,7 +9,7 @@
 #=======================================================================
 hsize = 4    # Heading and trailing bytes in Fortran binary.
 #=======================================================================
-def avg1d(datadir='./data', plane='xy', tsize=None, unformatted=False, verbose=True):
+def avg1d(datadir='./data', plane='xy', tsize=None, unformatted=True, verbose=True):
     """Returns the time series of 1D averages.
 
     Keyword Arguments:
