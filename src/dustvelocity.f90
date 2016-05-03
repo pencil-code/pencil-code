@@ -1361,9 +1361,9 @@ module Dustvelocity
           if (idiag_udxmxy(k)/=0) &
               call zsum_mn_name_xy(p%uud(:,1,k),idiag_udxmxy(k))
           if (idiag_udymxy(k)/=0) &
-              call zsum_mn_name_xy(p%uud(:,2,k),idiag_udymxy(k))
+              call zsum_mn_name_xy(p%uud(:,:,k),idiag_udymxy(k),(/0,1,0/))
           if (idiag_udzmxy(k)/=0) &
-              call zsum_mn_name_xy(p%uud(:,3,k),idiag_udzmxy(k))
+              call zsum_mn_name_xy(p%uud(:,:,k),idiag_udzmxy(k),(/0,0,1/))
         enddo
       endif
 !

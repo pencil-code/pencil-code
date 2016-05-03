@@ -266,7 +266,7 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
                    thpos=0
                  else
 !
-!  Has this point already contributed to a line? Then thpos>0.
+!  Has this point already contributed to a line? Then determine thpos>0.
 !
                    thpos=pos_in_array(indth,indweights%inds(mm,nn,:ith))
                  endif
@@ -275,12 +275,15 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
 !
 !  Not yet contributed -> check for overflow over nlines_max.
 !
-                   if (ith==nlines_max.and..not.ltoo_many_lines) then
-                     !call warning(
-                     print*, 'coeffs_to_weights: WARNING -- ', &
-                          'More than '//itoa(nlines_max)// &
-                          ' points contributed to in proc '//itoa(iproc_world)
-                     ltoo_many_lines=.true.
+                   if (ith==nlines_max) then
+                     if (.not.ltoo_many_lines) then
+                       !call warning(
+                       print*, 'coeffs_to_weights: WARNING -- ', &
+                               'More than '//trim(itoa(nlines_max))// &
+                               ' lines contributed to by point at (m,n)=(', &
+                               trim(itoa(mm)),',',trim(itoa(nn)),') in proc '//trim(itoa(iproc_world))
+                       ltoo_many_lines=.true.
+                     endif
                    else
                      ith=ith+1
                    endif

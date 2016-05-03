@@ -2051,7 +2051,7 @@ module Viscosity
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: nu_smag,Reshock,fvisc2
-      real, dimension (nx,3) :: nuD2uxb
+      real, dimension (nx,3) :: nuD2uxb,fluxv
       type (pencil_case) :: p
       integer :: i
 !
@@ -2169,9 +2169,18 @@ module Viscosity
             call zsum_mn_name_xy(-2.*nu*( &
             p%uu(:,1)*p%sij(:,1,1)+p%uu(:,2)*p%sij(:,2,1)+ &
             p%uu(:,3)*p%sij(:,3,1)),idiag_fviscmxy)
-        if (idiag_fviscymxy/=0) call zsum_mn_name_xy(-2.*p%rho*nu*( &
+        if (idiag_fviscymxy/=0) then
+          if (lyang) then
+            fluxv(:,1)=0.
+            fluxv(:,2)=p%uu(:,1)*p%sij(:,1,2)+p%uu(:,2)*p%sij(:,2,2)+p%uu(:,3)*p%sij(:,3,2)
+            fluxv(:,3)=p%uu(:,1)*p%sij(:,1,3)+p%uu(:,2)*p%sij(:,2,3)+p%uu(:,3)*p%sij(:,3,3)
+            call zsum_mn_name_xy(fluxv,idiag_fviscymxy,(/0,1,0/),-2.*p%rho*nu)
+          else
+            call zsum_mn_name_xy(-2.*p%rho*nu*( &
             p%uu(:,1)*p%sij(:,1,2)+p%uu(:,2)*p%sij(:,2,2)+ &
             p%uu(:,3)*p%sij(:,3,2)),idiag_fviscymxy)
+          endif
+        endif
       endif
 !
     endsubroutine calc_viscous_force

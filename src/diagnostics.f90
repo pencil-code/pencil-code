@@ -50,7 +50,7 @@ module Diagnostics
   public :: init_xaver
   public :: gen_form_legend
   public :: ysum_mn_name_xz_npar, xysum_mn_name_z_npar, zsum_mn_name_xy_mpar, yzsum_mn_name_x_mpar
-  public :: initialize_zaver_yy
+  public :: initialize_zaver_yy, mpireduce_zsum_yy
 !
   interface max_name
     module procedure max_name_int
@@ -803,39 +803,43 @@ module Diagnostics
 !
     endsubroutine yaverages_xz
 !***********************************************************************
-    subroutine zaverages_xy
+    subroutine mpireduce_zsum_yy(arrm,temp)
 !
-!  Calculate z-averages (still depending on x and y).
+!  Calculate z-sums (still depending on x and y).
 !
-!  19-jun-02/axel: coded
-!  25-mar-16/MR: extensions for Yin-Yang grid
+!  25-apr-16/MR: outsourced from zaverages_xy
 !
       use General, only: find_proc
+ 
+      real, dimension(:,:,:) :: arrm
+      real, dimension(:,:,:), allocatable :: temp
 
-      real, dimension(:,:,:), allocatable :: fsumxy, buffer
+      real, dimension(:,:,:), allocatable :: buffer
 !
       integer :: iprocy, iprocz, iproc_yin, iproc_yang, i, offset, len, source, irequest
       integer, dimension(2) :: rng
-      integer, dimension(3) :: requests
-      real :: fac
+      integer, dimension(3) :: sz,requests
 !
 !  Communicate over all processors along z beams.
 !  The result is only present on the z-root processors (of Yin grid).
 !  On Yang grid, procs (ipx,0,0) and (ipx,nprocy-1,nprocz-1) collect data 
 !  for Yin-phi coordinate lines in polar caps.
 !
-      if (nnamexy>0) then
-        if (iproc==caproot) then
-          allocate(fsumxy(nnamexy,nx,size(fnamexy_cap,3)))
-          fsumxy=0.
+        sz=(/size(arrm,1),size(arrm,2),size(arrm,3)/)
+
+        if (lyang) then
+          if (iproc==caproot) then
+            allocate(temp(sz(1),sz(2),nycap))
+            temp=0.
+          endif
         else
-          allocate(fsumxy(nnamexy,nx,size(fnamexy,3)))
+          allocate(temp(sz(1),sz(2),sz(3)))
         endif
 !
 !  Summation of local fnamexy arrays (of Yin grid) into fsumxy of z root processors of Yin grid.
 !
         if (.not.lyang) &
-          call mpireduce_sum(fnamexy,fsumxy,(/nnamexy,nx,size(fnamexy,3)/),idir=3)
+          call mpireduce_sum(arrm,temp,sz,idir=3)
 
         if (lyinyang) then
           if (lyang) then
@@ -856,7 +860,7 @@ module Diagnostics
 !
                 irequest=irequest+1
 !print*, 'iproc_world, iproc_yin,fnamexy=', iproc_world, iproc_yin, maxval(fnamexy(:,rng(1):rng(2),:)), minval(fnamexy(:,rng(1):rng(2),:))
-                call mpisend_real(fnamexy(:,:,rng(1):rng(2)),(/nnamexy,nx,len/), &
+                call mpisend_real(arrm(:,:,rng(1):rng(2)),(/sz(1),sz(2),len/), &
                                   iproc_yin,iproc_world,comm=MPI_COMM_WORLD,nonblock=requests(irequest))
                 offset=offset+len   !  Update, as contributions for the <=3 procs are stacked in fnamexy.
               enddo
@@ -876,15 +880,15 @@ module Diagnostics
 ! 
                   source=find_proc(ipx,iprocy,iprocz)
                   if (source==iproc) then          ! no self-communication
-                    fsumxy(:,:,rng(1):rng(2))=fnamexy(:,:,1+offset_cap:rng(2)-rng(1)+1+offset_cap)
+                    temp(:,:,rng(1):rng(2))=arrm(:,:,1+offset_cap:rng(2)-rng(1)+1+offset_cap)
                   else                             ! accumulate contribs from all cap procs.
                     len=rng(2)-rng(1)+1
-                    allocate(buffer(nnamexy,nx,len))
+                    allocate(buffer(sz(1),sz(2),len))
 !
 !  Receive data from relevant Yang proc (blocking).
 !
-                    call mpirecv_real(buffer,(/nnamexy,nx,len/),source,source)
-                    fsumxy(:,:,rng(1):rng(2)) = fsumxy(:,:,rng(1):rng(2))+buffer
+                    call mpirecv_real(buffer,(/sz(1),sz(2),len/),source,source)
+                    temp(:,:,rng(1):rng(2)) = temp(:,:,rng(1):rng(2))+buffer
                     deallocate(buffer)
                   endif
                 enddo
@@ -896,7 +900,7 @@ module Diagnostics
 !
               rng=thrange_cap-(thrange_cap(1)-1)+offset_cap
 !print*, 'CAP:SEND,iproc, caproot=', iproc, caproot, rng
-              call mpisend_real(fnamexy(:,:,rng(1):rng(2)),(/nnamexy,nx,rng(2)-rng(1)+1/), &
+              call mpisend_real(arrm(:,:,rng(1):rng(2)),(/sz(1),sz(2),rng(2)-rng(1)+1/), &
                                 caproot,iproc)
             endif
           elseif (lfirst_proc_z) then
@@ -904,8 +908,8 @@ module Diagnostics
 !  Root processors of z beams in Yin grid accumulate contributions from
 !  all Yang grid processors in gap.
 !
-            do iprocz=nprocz/3-1,2*nprocz/3       
-              do iprocy=0,nprocy-1  
+            do iprocz=nprocz/3-1,2*nprocz/3
+              do iprocy=0,nprocy-1
 !
 !  Range of theta of phi coordinate lines to which processor (ipx,iprocy,iprocz)
 !  contributes.
@@ -913,13 +917,13 @@ module Diagnostics
                 rng=thranges_gap(:,iprocy,iprocz)
                 if (rng(1)>0) then                                        ! if range non-empty
                   len=rng(2)-rng(1)+1
-                  allocate(buffer(nnamexy,nx,len))
+                  allocate(buffer(sz(1),sz(2),len))
                   iproc_yang=find_proc(ipx,iprocy,iprocz)+ncpus           ! world rank of source proc                
-                  call mpirecv_real(buffer,(/nnamexy,nx,len/),iproc_yang,iproc_yang,comm=MPI_COMM_WORLD) 
+                  call mpirecv_real(buffer,(/sz(1),sz(2),len/),iproc_yang,iproc_yang,comm=MPI_COMM_WORLD)
 !if (iproc_world==0 .or. iproc_world==1) print'(a,3i3,3e12.5)', 'GAP: RECV: iproc_world, iproc_yang, len=', iproc_world, &
 !iproc_yang, len, sum(buffer),maxval(buffer), minval(buffer)
 !print*, 'iproc_world, iproc_yang,buffer=', iproc_world, iproc_yang, maxval(buffer), minval(buffer)
-                  fsumxy(:,:,rng(1):rng(2)) = fsumxy(:,:,rng(1):rng(2))+buffer
+                  temp(:,:,rng(1):rng(2)) = temp(:,:,rng(1):rng(2))+buffer
                   deallocate(buffer)
                 endif
 
@@ -929,11 +933,29 @@ module Diagnostics
 
           call mpibarrier
         endif
+!
+    endsubroutine mpireduce_zsum_yy
+!***********************************************************************
+    subroutine zaverages_xy
+!
+!  Calculate z-averages (still depending on x and y).
+!
+!  19-jun-02/axel: coded
+!  25-mar-16/MR: extensions for Yin-Yang grid
+!
+      use General, only: find_proc
+
+      real, dimension(:,:,:), allocatable :: fsumxy
+      real :: fac
+!
+      if (nnamexy>0) then
+
+        call mpireduce_zsum_yy(fnamexy,fsumxy)
 
         fac=1./nzgrid_eff   ! nzgrid_eff=4/3*nzgrid for Yin-Yang
 
-        if (.not.lyang .and. lfirst_proc_z) then
-          fnamexy=fac*fsumxy
+        if (.not.lyang) then
+          if (lfirst_proc_z) fnamexy=fac*fsumxy
         elseif (iproc==caproot) then
           fnamexy_cap=fac*fsumxy
         endif
