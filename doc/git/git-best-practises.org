@@ -321,7 +321,7 @@ one (but those are still accessible).
      git log origin/master..master
    #+end_src
 
-   Even if the new commit F' may represent introduce the same textual
+   Even if the new commit F' may introduce the same textual
    difference as the original commit F, the file-tree state it represents
    is completely new and there is no guarantee that it will e.g.\nbsp{}compile,
    even if both, C and F do.
@@ -502,7 +502,7 @@ Git did /not/ say you should run just =‘git pull’= without any arguments.
    #+begin_src sh
      git pull --rebase
    #+end_src
-   This is equivalent to ~git fetch; git rebase origin/master~, so this is
+   This is equivalent to ~git fetch; git rebase origin/master~, so it is
    exactly what we need[fn:14]
 
    \bigskip

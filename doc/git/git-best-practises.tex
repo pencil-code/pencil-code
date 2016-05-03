@@ -1,4 +1,4 @@
-% Created 2015-10-26 Mon 22:11
+% Created 2016-05-29 Sun 12:00
 \documentclass[12pt,pdftex]{article}
 \usepackage[postscript]{ucs}
 \usepackage[utf8x]{inputenc}
@@ -38,7 +38,7 @@
 \hypersetup{
  pdfkeywords={},
   pdfsubject={},
-  pdfcreator={Emacs 24.3.1 (Org mode 8.3beta)}}
+  pdfcreator={Emacs 24.5.1 (Org mode 8.3beta)}}
 \begin{document}
 
 \maketitle
@@ -379,7 +379,7 @@ tig origin/master..master
 git log origin/master..master
 \end{lstlisting}
 
-Even if the new commit F' may represent introduce the same textual
+Even if the new commit F' may introduce the same textual
 difference as the original commit F, the file-tree state it represents
 is completely new and there is no guarantee that it will e.g.~compile,
 even if both, C and F do.
@@ -559,7 +559,7 @@ have both in one command:
 \begin{lstlisting}
 git pull --rebase
 \end{lstlisting}
-This is equivalent to \verb~git fetch; git rebase origin/master~, so this is
+This is equivalent to \verb~git fetch; git rebase origin/master~, so it is
 exactly what we need\footnote{You can even set the \texttt{-{}-rebase} option via your git configuration,
 using\\
 \noindent\qquad\qquad  \texttt{git config -{}-global branch.master.rebase true}\\
@@ -723,6 +723,7 @@ There are some shorter variants to this procedure. You can use our
 \texttt{‘git pc’} script like this:
 \lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
 \begin{lstlisting}
+git fetch origin  #  update origin/master from the server
 git pc ff-update master  # update master without checking it out
 git merge master         # do the actual merge
 \end{lstlisting}
@@ -950,5 +951,5 @@ other commits got pushed first.
 And indeed something like this is how \texttt{tig} would have drawn the graph,
 had all of the merges been from tracking branch into the remote branch
 and not the other way around.
-% Emacs 24.3.1 (Org mode 8.3beta)
+% Emacs 24.5.1 (Org mode 8.3beta)
 \end{document}
