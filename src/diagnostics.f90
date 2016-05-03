@@ -811,8 +811,7 @@ module Diagnostics
 !
       use General, only: find_proc
  
-      real, dimension(:,:,:) :: arrm
-      real, dimension(:,:,:), allocatable :: temp
+      real, dimension(:,:,:) :: arrm, temp
 
       real, dimension(:,:,:), allocatable :: buffer
 !
@@ -826,15 +825,6 @@ module Diagnostics
 !  for Yin-phi coordinate lines in polar caps.
 !
         sz=(/size(arrm,1),size(arrm,2),size(arrm,3)/)
-
-        if (lyang) then
-          if (iproc==caproot) then
-            allocate(temp(sz(1),sz(2),nycap))
-            temp=0.
-          endif
-        else
-          allocate(temp(sz(1),sz(2),sz(3)))
-        endif
 !
 !  Summation of local fnamexy arrays (of Yin grid) into fsumxy of z root processors of Yin grid.
 !
@@ -947,9 +937,19 @@ module Diagnostics
 
       real, dimension(:,:,:), allocatable :: fsumxy
       real :: fac
+      integer :: nyl
 !
       if (nnamexy>0) then
 
+        if (lyang) then
+          if (iproc==caproot) then
+            allocate(fsumxy(size(fnamexy,1),size(fnamexy,2),nycap))
+            fsumxy=0.
+          endif
+        else
+          if (lfirst_proc_z) &
+            allocate(fsumxy(size(fnamexy,1),size(fnamexy,2),size(fnamexy,3)))
+        endif
         call mpireduce_zsum_yy(fnamexy,fsumxy)
 
         fac=1./nzgrid_eff   ! nzgrid_eff=4/3*nzgrid for Yin-Yang
