@@ -2016,7 +2016,7 @@ module Solid_Cells
       integer :: topbot, iobj, i, j,k
       real, dimension(3,2) :: cornervalue
       integer, dimension(3,2) :: cornerindex
-      logical :: fluid_point, lproper_inter
+      logical :: fluid_point
       integer :: lower_i, lower_j, lower_k, upper_i, upper_j, upper_k
       real :: phi, theta, rpp, drr
       real, dimension(3) :: nr_hat, ntheta_hat, nphi_hat, xc, A_g, xc_local
@@ -2035,22 +2035,16 @@ module Solid_Cells
 !  "limit_close_linear" give the number of grid sizes which "g" is
 !  away from "s".
 !
-      if (close_interpolation_method == 3) then
-        call find_g_global_circle(g_global,inear,rg,p_local,o_global,rs,rp)
-      elseif (close_interpolation_method == 2) then
+      if (close_interpolation_method <= 2) then
         call find_g_global_closest_gridplane(g_global,inear,rg,p_local, &
-            o_global,rs,rp,cornervalue,cornerindex)
+          o_global,rs,rp,cornervalue,cornerindex,constdir)
+      elseif (close_interpolation_method == 3) then
+        call find_g_global_circle(g_global,inear,rg,p_local,o_global,rs,rp)
       elseif (close_interpolation_method == 4) then
         call find_g_global_circle(g_global,inear,rg,p_local,o_global,rs,rp)
       else
         call fatal_error('close_inter_new', &
             'No such close_interpolation_method!')
-      endif
-!
-      if (close_interpolation_method == 4 .and. lclose_quad_rad_inter) then
-        lproper_inter = .true.
-      else
-        lproper_inter = .false.
       endif
 !
 !  For quadratic interpolation the unit vectors in "p" is needed.
@@ -2067,13 +2061,30 @@ module Solid_Cells
 !
 !  Let "fvar" be the physical value of the variables of interest on "gridplane".
 !  The value of "fvar" is then found by interpolation between the four corner
-!  points of "gridplane". For lclose_interpolation_method==4 the r, phi and
-!  theta velocities must be found already for the points used for interpolation
-!  such that the interpolation used to find "g" is also done correctly. (This
-!  essentially means that the radial veolcity is found using the quadratic
-!  interplation.)
+!  points of "gridplane". 
+!  For lclose_interpolation_method==1, ensure that the corners of the gridplane
+!  is outside the solid, and adjust if necessary. Currently this implementation 
+!  only works for cylinders.
+!  For lclose_interpolation_method==4 the r, phi and theta velocities
+!  must be found already for the points used for interpolation such that
+!  the interpolation used to find "g" is also done correctly. (This essentially
+!  means that the radial veolcity is found using the quadratic interplation.)
 !
-      if (lproper_inter) then
+      if (close_interpolation_method == 1) then
+        if (gridplane_need_adjust(inear,constdir,rs)) then
+!
+!  Adjust gridpoint and perform interpolation with using more than one surface
+!  point. This requires an extraordinary interpolation routine, as linear_interpolate
+!  from general.f90 requires all points used in the interpolation to be gridpoints.
+!
+        ! TODO: Write subroutine
+          call interpolate_g_extraordinary(f,fvar,g_global,nr_hat,ntheta_hat,nphi_hat, &
+            inear,vg_r,vg_phi,vg_theta)
+        else
+          call interpolate_g_ordinary(f,fvar,g_global,nr_hat,ntheta_hat,nphi_hat, &
+            inear,vg_r,vg_phi,vg_theta)
+        endif
+      elseif (close_interpolation_method == 4 .and. lclose_quad_rad_inter) then
         if (ilnTT > 0) then
           if ( .not. linear_interpolate(f,ilnTT,ilnTT,g_global,fvar(ilnTT), &
               inear,.false.) ) call fatal_error('close_inter_new','')
@@ -2081,21 +2092,8 @@ module Solid_Cells
         call r_theta_phi_velocity_in_point(f,g_global,inear,iobj,o_global, &
             rs,r_sg,vg_r,vg_theta,vg_phi)
       else
-        if ( .not. linear_interpolate(f,1,mvar,g_global,fvar,inear,.false.) ) &
-            call fatal_error('close_inter_new','')
-!
-!  If lclose_quad_rad_inter = true we must find the velocities in the r,
-!  theta and phi directions at the point "g".
-!
-        if (lclose_quad_rad_inter) then
-!
-!  Having found the unit vectors in the r, theta and phi directions we can now
-!  find the velocities in the same three directions at point "g".
-!
-          call dot(nr_hat,fvar(iux:iuz),vg_r)
-          call dot(nphi_hat,fvar(iux:iuz),vg_phi)
-          call dot(ntheta_hat,fvar(iux:iuz),vg_theta)
-        endif
+        call interpolate_g_ordinary(f,fvar,g_global,nr_hat,ntheta_hat,nphi_hat, &
+          inear,vg_r,vg_phi,vg_theta)
       endif
 !
 !  Now we know the value associated with any variable in the point "g",
@@ -2189,7 +2187,7 @@ module Solid_Cells
     endsubroutine find_unit_vectors
 !***********************************************************************
     subroutine find_g_global_closest_gridplane(g_global,inear,rg,p_local, &
-        o_global,rs,rp,cornervalue,cornerindex)
+        o_global,rs,rp,cornervalue,cornerindex,constdir)
 !
 ! Find g_global based on the gridplane which is first crossed by the normal
 ! from the surface.
@@ -2588,10 +2586,8 @@ module Solid_Cells
         f1x = 0
         f2x = 0
       endif
-!
-!  Find the interpolation values between the two endpoints of
-!  the line and the normal from the objects.
-!
+
+
       rint1 = xyint(dirvar)-x1
       rint2 = x2-xyint(dirvar)
 !
@@ -3669,5 +3665,154 @@ module Solid_Cells
       call keep_compiler_quiet(int_ds)
 !
     endsubroutine solid_cells_timestep_second
+!!  !***********************************************************************
+!!      subroutine move_interpolation_point(i,j,k,inear,ifar,o_global,rs,constdir)
+!!        integer, intent(in) :: i,j,k
+!!        integer, intent(inout), dimension(3) :: inear, ifar
+!!        real, intent(inout) :: g_global
+!!        real, intent(in) :: o_global
+!!        real, intent(in) :: rs, rp, r_plane
+!!        integer, intent(in) :: constdir ! Need this variable from gridplane computation
+!!  
+!!        if(constdir .eq. 1) then
+!!          if(y(j) < o_global(2)) then
+!!            y(j) = - sqrt(rs**2 - x(i)**2)
+!!          else
+!!            y(j) = sqrt(rs**2 - x(i)**2)
+!!          endif
+!!        elseif (constdir .eq. 2) then
+!!          if(x(i) < o_global(1)) then
+!!            x(i) = - sqrt(rs**2 - y(j)**2)
+!!          else
+!!            x(i) = sqrt(rs**2 - y(j)**2)
+!!          endif
+!!        elseif (constdir .eq. 3) then
+!!          call fatal_error('move_interpolation_point', &
+!!              'Not implemented for spheres!')
+!!        else
+!!          call fatal_error('move_interpolation_point', &
+!!              'No constant direction found!')
+!!        endif
+!!  
+!!        if(x(i)**2 + y(j)**2 + < rs) then
+!!          call fatal_error('move_interpolation_point', &
+!!              'Point not moved outside solid!')
+!!        endif
+!!  
+!!        
+!!      endsubroutine move_interpolation_point
+!!  !***********************************************************************
 !***********************************************************************
+    subroutine interpolate_g_ordinary(f,fvar,g_global,nr_hat,ntheta_hat,nphi_hat, &
+          inear,vg_r,vg_phi,vg_theta)
+!
+!  Compute the value of the velocity components in "g" by linear interpolation
+!
+!  03-may-2016: jorgen - code extracted from close_inter_new and made into this routine
+!
+      use General, only: linear_interpolate
+      use Messages, only: fatal_error
+      use Sub
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mvar), intent(inout) :: fvar
+      real, dimension(3), intent(in) :: g_global
+      real, dimension(3), intent(in) :: nr_hat, ntheta_hat, nphi_hat
+      integer, dimension(3), intent(in) :: inear
+      real, intent(out) :: vg_r, vg_phi, vg_theta
+!
+      if ( .not. linear_interpolate(f,1,mvar,g_global,fvar,inear,.false.) ) then
+        call fatal_error('close_interpolate_ordinary','')
+      endif
+!
+!  If lclose_quad_rad_inter = true we must find the velocities in the r,
+!  theta and phi directions at the point "g".
+!
+      if (lclose_quad_rad_inter) then
+!
+!  Having found the unit vectors in the r, theta and phi directions we can now
+!  find the velocities in the same three directions at point "g".
+!
+        call dot(nr_hat,fvar(iux:iuz),vg_r)
+        call dot(nphi_hat,fvar(iux:iuz),vg_phi)
+        call dot(ntheta_hat,fvar(iux:iuz),vg_theta)
+      endif
+    endsubroutine interpolate_g_ordinary
+!***********************************************************************
+    subroutine interpolate_g_extraordinary(f,fvar,g_global,nr_hat,ntheta_hat,nphi_hat, &
+          inear,vg_r,vg_phi,vg_theta)
+!
+!   Relocate gridplane points that are inside the solid body and compute an estimate of 
+!   the velocity components in the point "g" by interpolation
+!
+!   03-may-2016: jorgen - coded
+!
+      use General, only: linear_interpolate
+      use Messages, only: fatal_error
+      use Sub
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mvar), intent(inout) :: fvar
+      real, dimension(3), intent(in) :: g_global
+      real, dimension(3), intent(in) :: nr_hat, ntheta_hat, nphi_hat
+      integer, dimension(3), intent(in) :: inear
+      real, intent(out) :: vg_r, vg_phi, vg_theta
+!
+!  Start by relocating the points that are used in the interpolation
+!
+!
+! TODO: Implement
+!
+!  Interpolate velocity components
+!
+! TODO: Implement
+!
+!  If lclose_quad_rad_inter = true we must find the velocities in the r,
+!  theta and phi directions at the point "g".
+!
+      if (lclose_quad_rad_inter) then
+!
+!  Having found the unit vectors in the r, theta and phi directions we can now
+!  find the velocities in the same three directions at point "g".
+!
+        call dot(nr_hat,fvar(iux:iuz),vg_r)
+        call dot(nphi_hat,fvar(iux:iuz),vg_phi)
+        call dot(ntheta_hat,fvar(iux:iuz),vg_theta)
+      endif
+      !TODOTODO
+      print*, 'EXTRAORDINARY!'
+    endsubroutine interpolate_g_extraordinary
+!***********************************************************************
+    logical function gridplane_need_adjust(inear,constdir,rs)
+!
+!  Check if any gridpoints of the gridplane used for interpolation is inside
+!  the solid body.
+!
+!  03-may-2016: jorgen - coded
+!
+      use Messages, only: fatal_error
+      use Sub
+  
+      integer, dimension(3), intent(in) :: inear
+      integer, intent(in) :: constdir
+      real, intent(in) :: rs
+
+      real :: rspow2
+
+      gridplane_need_adjust= .false.
+      rspow2 = rs*rs
+      if (x(inear(1))**2 + y(inear(2))**2 < rspow2) then
+        gridplane_need_adjust= .true.
+      elseif (constdir == 1 .and. & 
+        (x(inear(1))**2 + y(inear(2)+1)**2 < rspow2)) then 
+        gridplane_need_adjust= .true.
+      elseif (constdir == 2 .and. &
+        (x(inear(1)+1)**2 + y(inear(2))**2 < rspow2)) then 
+        gridplane_need_adjust= .true.
+      elseif (constdir == 3) then
+        call fatal_error('gridplane_need_adjust', &
+            'Cannot use close_interpolation_method=1 for spheres!')
+      endif
+
+    endfunction gridplane_need_adjust
 endmodule Solid_Cells
