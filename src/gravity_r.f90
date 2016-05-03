@@ -58,23 +58,27 @@ module Gravity
   real :: nu_epicycle=1.0
   real :: t_ramp_mass=impossible,t1_ramp_mass
   character (len=labellen) :: gravz_profile='zero'
+  character (len=labellen) :: ipotential_secondary='plummer'
+!
   logical :: lnumerical_equilibrium=.false.
   logical :: lgravity_gas=.true.
   logical :: lgravity_neutrals=.true.
   logical :: lgravity_dust=.true.
   logical :: lindirect_terms=.false.
   logical :: lramp_mass=.false.
-  integer :: iglobal_gg=0
+  integer :: iglobal_gg=0  
 !
   namelist /grav_init_pars/ &
       ipotential,g0,r0_pot,r1_pot1,n_pot,n_pot1,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
-      lgravity_neutrals,g1,rp1_pot,lindirect_terms,lramp_mass,t_ramp_mass
+      lgravity_neutrals,g1,rp1_pot,lindirect_terms,lramp_mass,t_ramp_mass,&
+      ipotential_secondary
 !
   namelist /grav_run_pars/ &
       ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
-      lgravity_neutrals,g1,rp1_pot,lindirect_terms,lramp_mass,t_ramp_mass
+      lgravity_neutrals,g1,rp1_pot,lindirect_terms,lramp_mass,t_ramp_mass, &
+      ipotential_secondary
 !
   contains
 !***********************************************************************
@@ -969,37 +973,70 @@ module Gravity
 !  Add the gravity of a body fixed at position (rp1,0,0).
 !
 !  20-jul-14/wlad: coded
+!  03-may-16/wlad: added boley smoothing      
 !
       real, dimension(nx,3), intent(out) :: ggp
       real, dimension(nx) :: rr2_pm,gp
+      real :: rhill,rhill1
+      integer :: i
 !
+      rhill  = rp1*(g1/3.)**(1./3)
+      rhill1 = 1./rhill
+!      
       if (lcylindrical_coords) then
         if (lcylindrical_gravity) then
-          rr2_pm = x(l1:l2)**2 + rp1**2 -2*x(l1:l2)*rp1*cos(y(m)) + rp1_pot**2
+          rr2_pm = x(l1:l2)**2 + rp1**2 -2*x(l1:l2)*rp1*cos(y(m))
         else
-          rr2_pm = x(l1:l2)**2 + rp1**2 -2*x(l1:l2)*rp1*cos(y(m)) + z(n)**2 + rp1_pot**2
+          rr2_pm = x(l1:l2)**2 + rp1**2 -2*x(l1:l2)*rp1*cos(y(m)) + z(n)**2
         endif
-        if (lramp_mass.and.(t<=t_ramp_mass)) then 
-          gp = -g1*rr2_pm**(-1.5) * t*t1_ramp_mass
-        else
-          gp = -g1*rr2_pm**(-1.5) 
-        endif
+      elseif (lspherical_coords) then
+        rr2_pm = x(l1:l2)**2 + rp1**2 - 2*x(l1:l2)*rp1*sinth(m)*cosph(n)
+      else
+        call fatal_error("secondary_body_gravity","not coded for Cartesian")
+      endif
+!
+!  Select the potential smoothing for the secondary. 
+!      
+      select case (ipotential_secondary)
+!
+      case ('plummer')
+        gp = -g1*(rr2_pm+rp1_pot**2)**(-1.5)
+!           
+      case ('boley')
+!
+!  Correct potential outside Hill sphere
+!
+        do i=1,nx
+          if (rr2_pm(i) .gt. rhill**2) then 
+            gp(i) = -g1*rr2_pm(i)**(-1.5) 
+          else
+            gp(i) =  g1*(3*sqrt(rr2_pm(i))*rhill1 - 4)*rhill1**3
+          endif
+        enddo
+!           
+      case default
+!
+!  Catch unknown values
+!           
+        if (lroot) print*, 'secondary_body_gravity: '//&
+             'No such value for ipotential: ', trim(ipotential_secondary)
+        call fatal_error("","")
+!
+      endselect
+!
+      if (lramp_mass.and.(t<=t_ramp_mass)) gp = gp * t*t1_ramp_mass
+!       
+!  Set the acceleration
+!
+      if (lcylindrical_coords) then 
         ggp(:,1) =  gp * (x(l1:l2)-rp1*cos(y(m)))
         ggp(:,2) =  gp *           rp1*sin(y(m))
         ggp(:,3) =  gp *  z(  n  )
         if (lcylindrical_gravity) ggp(:,3)=0.
       else if (lspherical_coords) then
-        rr2_pm = x(l1:l2)**2 + rp1**2 - 2*x(l1:l2)*rp1*sinth(m)*cosph(n) + rp1_pot**2
-        if (lramp_mass.and.(t<=t_ramp_mass)) then 
-          gp = -g1*rr2_pm**(-1.5) * t*t1_ramp_mass
-        else
-          gp = -g1*rr2_pm**(-1.5) 
-        endif
         ggp(:,1) =  gp * (x(l1:l2) - rp1*sinth(m)*cosph(n))
         ggp(:,2) = -gp *             rp1*costh(m)*cosph(n)
         ggp(:,3) =  gp *             rp1*         sinph(n)
-      else
-        call fatal_error("secondary_body_gravity","not coded for Cartesian")
       endif
 !
     endsubroutine secondary_body_gravity
