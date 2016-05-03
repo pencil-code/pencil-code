@@ -3829,6 +3829,28 @@ module Magnetic
                  advec_va2=sqrt(p%va2*dxyz_2)
           endif
         endif
+!
+!mcnallcp: If hall_term is on, the the fastest alfven-type mode is the Whistler wave at the grid scale.
+! Since the Alfven waves split into the fast whistler mode, the old advec_va2 is not right anymore.
+!  This is the generalization for Hall-MHD.
+!
+        if (lhydro.and.hall_term/=0.0) then
+          if(lcartesian_coords) then
+            advec_va2 = ( &
+                  (p%bb(:,1)*dx_1(l1:l2)*( &
+                    hall_term*pi*dx_1(l1:l2)*mu01 &
+                    +sqrt(mu01*p%rho1 + (hall_term*pi*dx_1(l1:l2)*mu01)**2 ) ) )**2 &
+                 +(p%bb(:,2)*dy_1(  m  )*( &
+                    hall_term*pi*dy_1(  m  )*mu01 &
+                    +sqrt(mu01*p%rho1 + (hall_term*pi*dy_1(  m  )*mu01)**2 ) ) )**2 &
+                 +(p%bb(:,3)*dz_1(  n  )*( &
+                    hall_term*pi*dz_1(  n  )*mu01 &
+                    +sqrt(mu01*p%rho1 + (hall_term*pi*dz_1(  n  )*mu01)**2 ) ) )**2 &
+                        )
+          else
+            call fatal_error('daa_dt', 'Timestep advec_va2 with hall_term is not implemented in these coordinates.')
+          endif
+        endif
       endif
 !
 !  Apply border profiles.
