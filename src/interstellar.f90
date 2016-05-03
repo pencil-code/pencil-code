@@ -125,6 +125,12 @@ module Interstellar
              cnorm_para_SN = (/  1.33333333,  1.5707963, 1.6755161 /)
   real, parameter, dimension(3) :: &
              cnorm_quar_SN = (/  0.,  2.0943951, 0. /)
+  ! kinetic energy with lmass_SN=F
+  real, parameter, dimension(3) :: &
+             vnorm_SN = (/ 0.826505 , 1.1176980765438025 , 1.3124674954768478 /)
+  ! kinetic energy addition lmass_SN=T
+  real, parameter, dimension(3) :: &
+             vnorm2_SN = (/ 0.77859090429667066 , 0.97639920514136669 , 1.0716252226356628 /)
 !
 !  cp1=1/cp used to convert TT (and ss) into interstellar code units
 !  (useful, as many conditions conveniently expressed in terms of TT)
@@ -189,7 +195,7 @@ module Interstellar
 !  Total SNe energy
 !
   double precision, parameter :: ampl_SN_cgs=1D51
-  real :: frac_ecr=0.1, frac_eth=0.9
+  real :: frac_ecr=0.1, frac_eth=0.9, frac_kin=0.5
   real :: ampl_SN=impossible, kampl_SN=impossible, kperp=0.05, kpara=0.025
 !
 !  SNe composition
@@ -305,7 +311,7 @@ module Interstellar
 !
 !  Adjust SNR%feat%radius inversely with density
 !
-  logical :: lSN_scale_rad=.false.
+  logical :: lSN_scale_rad=.false., lSN_scale_kin=.false.
   real :: N_mass=60.0
 !
 !  Requested SNe location (used for test SN)
@@ -370,7 +376,7 @@ module Interstellar
       cooling_select, heating_select, heating_rate, rho0ts, &
       T_init, TT_SN_max, rho_SN_min, N_mass, lSNII_gaussian, rho_SN_max, &
       lthermal_hse, lheatz_min, kperp, kpara, average_SNII_heating, &
-      average_SNI_heating
+      average_SNI_heating, frac_kin, lSN_scale_kin
 !
 ! run parameters
 !
@@ -381,14 +387,14 @@ module Interstellar
       luniform_zdist_SNI, SNI_area_rate, SNII_area_rate, &
       inner_shell_proportion, outer_shell_proportion, &
       frac_ecr, frac_eth, thermal_profile,velocity_profile, mass_profile, &
-      h_SNI, h_SNII, TT_SN_min, lSN_scale_rad, &
+      h_SNI, h_SNII, TT_SN_min, lSN_scale_rad, lSN_scale_kin, &
       mass_SN_progenitor, cloud_tau, cdt_tauc, cloud_rho, cloud_TT, &
       laverage_SN_heating, coolingfunction_scalefactor,&
       heatingfunction_scalefactor, heatingfunction_fadefactor, t_settle, &
       center_SN_x, center_SN_y, center_SN_z, rho_SN_min, TT_SN_max, &
       lheating_UV, cooling_select, heating_select, heating_rate, &
       heatcool_shock_cutoff, heatcool_shock_cutoff_rate, ladd_massflux, &
-      N_mass, addrate, T_init, rho0ts, &
+      N_mass, addrate, T_init, rho0ts, frac_kin, &
       lSNII_gaussian, rho_SN_max, lSN_mass_rate, lthermal_hse, lheatz_min, &
       p_OB, SN_clustering_time, SN_clustering_radius, lOB_cluster, kperp, &
       kpara, average_SNII_heating, average_SNI_heating, seed_reset, &
@@ -495,8 +501,8 @@ module Interstellar
           if (.not.lSN_velocity) then
             kampl_SN=0.0
           else
-            ampl_SN=0.5*ampl_SN
-            kampl_SN=ampl_SN
+            kampl_SN=   frac_kin *ampl_SN
+            ampl_SN =(1-frac_kin)*ampl_SN
           endif
         endif
         if (rho_min == impossible) rho_min=rho_min_cgs/unit_temperature
@@ -2689,6 +2695,11 @@ module Interstellar
         enddo
         SNR%feat%radius=(0.75*solar_mass/SNR%feat%rhom*pi_1*N_mass)**(1.0/3.0)
         SNR%feat%radius=max(SNR%feat%radius,1.75*dxmax)
+        if (lSN_scale_kin) then
+           frac_kin=SNR%feat%radius
+           ampl_SN =(1-frac_kin-frac_ecr)*ampl_SN_cgs/unit_energy
+           kampl_SN=   frac_kin *ampl_SN_cgs/unit_energy
+        endif
       endif
       call get_properties(f,SNR,rhom,ekintot)
       SNR%feat%rhom=rhom
@@ -2745,19 +2756,28 @@ module Interstellar
 !  26-aug-10/fred:
 !  E_k=int(0.5*rho*vel^2)=approx 2pi*rhom*V0^2*int(r^2*v(r)dr).
 !  Total energy =  kinetic (kampl_SN) + thermal (ampl_SN).
+!  21-apr-16/fred:
+!  Only fully implemented for gaussian3 - normalisation only correct for
+!  constant ambient density and zero ambient velocity. Additional term 
+!  implemented for mass of ejecta mass_SN (vnorm2)   
+!
 !
       if (lSN_velocity) then
         if (velocity_profile=="gaussian3") then
           cvelocity_SN= &
-              sqrt(kampl_SN*pi_1/SNR%feat%rhom/0.4177713791/width_velocity**3)
+              sqrt(kampl_SN/(SNR%feat%rhom/(SNR%feat%rhom+cmass_SN)*&
+                  vnorm_SN(dimensionality)*width_velocity**dimensionality+&
+                            cmass_SN/(SNR%feat%rhom+cmass_SN)*&
+                 vnorm2_SN(dimensionality)*width_velocity**dimensionality)&
+                                     /(SNR%feat%rhom+cmass_SN) )
 !
         elseif (velocity_profile=="gaussian2") then
           cvelocity_SN= &
-              sqrt(kampl_SN*pi_1/SNR%feat%rhom/0.3643185655/width_velocity**3)
+              sqrt(kampl_SN/SNR%feat%rhom/0.3643185655*pi_1/width_velocity**dimensionality)
 !
         elseif (velocity_profile=="gaussian") then
           cvelocity_SN= &
-              sqrt(kampl_SN*pi_1/SNR%feat%rhom/0.313328534/width_velocity**3)
+              sqrt(kampl_SN/SNR%feat%rhom/0.313328534*pi_1/width_velocity**dimensionality)
 !
         endif
         if (lroot) print*, &
