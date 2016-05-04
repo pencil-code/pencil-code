@@ -4915,6 +4915,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
         case('StrainingExcact')
           call fatal_error("forcing_cont","not checked yet")
+          call getnu(nu_input=nu)
           kx=k1_ff; kz=k1_ff
           kf=sqrt(kx**2+kz**2)
           fact=ampl_ff(i)*kf**2*nu
