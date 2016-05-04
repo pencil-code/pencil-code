@@ -1935,44 +1935,26 @@ module Solid_Cells
 !        limit_close_linear*dxmin
 !    3)  this is a fluid point.
 !
-        if ( &
-            (minval(rij) < rs) .or. &
+        if ((minval(rij) < rs) .or. &
             (rp < rs+limit_close_linear*dxmin) .or. &
             fluid_point) then
 !
 !  Currently there are two implementations for the close surface treatment.
-!  The new one is more general and works both for spheres and cylinders,
-!  but it does not handle particles correctly
+!  The routine for close interpolation works for cylinders and spheres only if 
+!  close_interpolation_method is larger or equal to 2. For this parmeter
+!  set to 1 only cylinders can be used, but it has the advantage of working
 !  for the cases where one of the corner points of "gridplane" is inside
-!  the solid geometry.
+!  the solid geometry. This is important for particle simulations, and it
+!  is therefore recommended to use close_interpolation_method=1 for 
+!  simulations with particles.
+!
 !  Due to the relatively small gradients of density close
 !  to the boundary, and, even more importantly, the small effect of
 !  density on particle transport, the close interpolation
 !  does not treat density.
 !
-          if (close_interpolation_method  >=  2) then
             call close_inter_new(f,f_tmp,p_local,p_global,o_global,rs,rp, &
-                cornervalue,cornerindex, fluid_point,iobj)
-          else
-            call close_inter_old(f,gpp, rij, o_global, p_global, fluid_point, &
-                iobj, cornervalue, &
-                cornerindex,p_local, iux, rs, rp)
-            f_tmp(iux) = gpp(1)
-            call close_inter_old(f,gpp, rij, o_global, p_global, fluid_point, &
-                iobj, cornervalue, &
-                cornerindex,p_local, iuy, rs, rp)
-            f_tmp(iuy) = gpp(1)
-            call close_inter_old(f,gpp, rij, o_global, p_global, fluid_point, &
-                iobj, cornervalue, &
-                cornerindex,p_local, iuz, rs, rp)
-            f_tmp(iuz) = gpp(1)
-            if (ilnTT > 0) then
-              call close_inter_old(f,gpp, rij, o_global, p_global, fluid_point, &
-                  iobj, cornervalue, &
-                  cornerindex,p_local, ilnTT, rs, rp)
-              f_tmp(ilnTT) = gpp(1)
-            endif
-          endif
+                cornervalue,cornerindex,fluid_point,iobj)
         endif
       endif
 !
@@ -2001,7 +1983,7 @@ module Solid_Cells
     endsubroutine find_g_global_circle
 !***********************************************************************
     subroutine close_inter_new(f,f_tmp,p_local,p_global,o_global,rs,rp, &
-        cornervalue,cornerindex, fluid_point,iobj)
+        cornervalue,cornerindex,fluid_point,iobj)
 !
       use General, only: linear_interpolate
       use Messages, only: fatal_error
@@ -2009,7 +1991,7 @@ module Solid_Cells
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mvar) :: fvar, f_tmp
-      real, dimension(3) :: o_global, p_global, p_local, g_global, g_local
+      real, dimension(3) :: o_global, p_global, p_local, g_global
       integer, dimension(3) :: ngrids, inear
       real :: rp, rs, verylarge=1e9, rlmin, rl, rg, r_pg, r_sg, r_sp, surf_val
       integer :: ndir, ndims, dir, vardir1, vardir2, constdir, topbot_tmp
@@ -2071,15 +2053,14 @@ module Solid_Cells
 !  means that the radial veolcity is found using the quadratic interplation.)
 !
       if (close_interpolation_method == 1) then
-        if (gridplane_need_adjust(inear,constdir,rs)) then
+        if (gridplane_need_adjust(inear,constdir,rs,o_global)) then
 !
 !  Adjust gridpoint and perform interpolation with using more than one surface
 !  point. This requires an extraordinary interpolation routine, as linear_interpolate
 !  from general.f90 requires all points used in the interpolation to be gridpoints.
 !
-        ! TODO: Write subroutine
-          call interpolate_g_extraordinary(f,fvar,g_global,nr_hat,ntheta_hat,nphi_hat, &
-            inear,vg_r,vg_phi,vg_theta)
+          call interpolate_g_extraordinary(f,fvar,g_global,o_global, &
+          nr_hat,ntheta_hat,nphi_hat,inear,constdir,rs,vg_r,vg_phi,vg_theta)
         else
           call interpolate_g_ordinary(f,fvar,g_global,nr_hat,ntheta_hat,nphi_hat, &
             inear,vg_r,vg_phi,vg_theta)
@@ -2195,7 +2176,7 @@ module Solid_Cells
       use Messages, only: fatal_error
       use Sub
 !
-      real, dimension(3) :: o_global, p_local, g_global, g_local
+      real, dimension(3) :: o_global, p_local, g_global
       integer, dimension(3) :: ngrids, inear
       real :: rp, rs, verylarge=1e9, rlmin, rl, rg
       integer :: ndir, ndims, dir, vardir1, vardir2, constdir, topbot_tmp
@@ -3715,7 +3696,7 @@ module Solid_Cells
       use Sub
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(mvar), intent(inout) :: fvar
+      real, dimension(mvar), intent(out) :: fvar
       real, dimension(3), intent(in) :: g_global
       real, dimension(3), intent(in) :: nr_hat, ntheta_hat, nphi_hat
       integer, dimension(3), intent(in) :: inear
@@ -3739,34 +3720,144 @@ module Solid_Cells
       endif
     endsubroutine interpolate_g_ordinary
 !***********************************************************************
-    subroutine interpolate_g_extraordinary(f,fvar,g_global,nr_hat,ntheta_hat,nphi_hat, &
-          inear,vg_r,vg_phi,vg_theta)
+    subroutine interpolate_g_extraordinary(f,fvar,g_global,o_global, &
+          nr_hat,ntheta_hat,nphi_hat,inear,constdir,rs,vg_r,vg_phi,vg_theta)
 !
-!   Relocate gridplane points that are inside the solid body and compute an estimate of 
-!   the velocity components in the point "g" by interpolation
+!  Relocate gridplane points that are inside the solid body and compute an estimate of 
+!  the fluid properties in the point "g" by interpolation
 !
-!   03-may-2016: jorgen - coded
+!  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate using bilinear
+!  interpolation. 
 !
-      use General, only: linear_interpolate
+!    g(X,z) = A*X*z + B*X + C*z + D
+!
+!  The coefficients are determined by the 4 grid points surrounding the
+!  interpolation point. 
+!  The interpolation direction X is either x or y, set by the constdir parameter.
+!
+!  The points used for interpolation are (X0,z0),(X1,z0),(X0,z1),(X1,z1).
+!  Arrays related to these points are f00, f10, f01 and f11, respectively.
+!
+!  Trilinear interpolation is not needed, as only a 2D griplane is necessary to
+!  compute "g" in the case of a cylinder.
+!
+!  03-may-2016: jorgen - coded
+!
       use Messages, only: fatal_error
       use Sub
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
-      real, dimension(mvar), intent(inout) :: fvar
-      real, dimension(3), intent(in) :: g_global
+      real, dimension(3), intent(in) :: g_global, o_global
       real, dimension(3), intent(in) :: nr_hat, ntheta_hat, nphi_hat
       integer, dimension(3), intent(in) :: inear
+      integer, intent(in) :: constdir
+      real, intent(in) :: rs
+      real, dimension(mvar), intent(out) :: fvar
       real, intent(out) :: vg_r, vg_phi, vg_theta
+  
+
+      real :: x0,x1,y0,y1,z0,z1,r_ip
+      real :: dX1,dz1,g_Xp,g_zp
+      integer :: ix0,ix1,iy0,iy1,iz0,iz1,i
+      real, dimension(mvar) :: f00,f10,f01,f11
+      logical :: lcheck
+
+      integer :: j,k,bax
+      real :: rg0,rg1
+!      
+!  Set to true for testing purposes
 !
-!  Start by relocating the points that are used in the interpolation
+      lcheck = .false.
+!
+!  Check if the grid point interval is correct.
+!
+      ix0=inear(1); iy0=inear(2); iz0=inear(3)
+      ix1=inear(1)+1; iy1=inear(2)+1; iz1=inear(3)+1
+      x0=x(ix0); y0=y(iy0); z0=z(iz0)
+      x1=x(ix1); y1=y(iy1); z1=z(iz1)
+      if ((x0<=g_global(1) .and. x1>=g_global(1) .or. nxgrid==1) .and. &
+          (y0<=g_global(2) .and. y1>=g_global(2) .or. nygrid==1) .and. &
+          (z0<=g_global(3) .and. z1>=g_global(3) .or. nzgrid==1)) then
+        ! Everything okay
+      else
+        call fatal_error('g_interpolate_extraordinary', &
+          'Interpolation point does not lie within the calculated' // &
+          'grid point interval!')
+      endif
+!
+!  Locate and move the interpolation points that are inside the solid.
+!  Four different cases of interpolations points inside the cylinder.
+!
+      r_ip = sqrt((o_global(1)-abs(x0))**2 + (o_global(2)-abs(y0))**2)
+      if (constdir == 1) then
+        if (r_ip < rs) then
+          y0 = o_global(2) + sqrt(rs**2-(o_global(1)-abs(x0))**2)
+          f00(1:mvar) = 0
+          f10(1:mvar) = f(ix0,iy1,iz0,1:mvar)
+          f01(1:mvar) = 0
+          f11(1:mvar) = f(ix0,iy1,iz1,1:mvar)
+        else
+          y1 = o_global(2) - sqrt(rs**2-(o_global(1)-abs(x0))**2)
+          f00(1:mvar) = f(ix0,iy0,iz0,1:mvar)
+          f10(1:mvar) = 0
+          f01(1:mvar) = f(ix0,iy0,iz1,1:mvar)
+          f11(1:mvar) = 0
+        endif
+        dX1 = 1/(y1-y0)
+        g_Xp = g_global(2)-y0
+      elseif (constdir == 2) then
+        if (r_ip < rs) then
+          x0 = o_global(1) + sqrt(rs**2-(o_global(2)-abs(y0))**2)
+          f00(1:mvar) = 0
+          f10(1:mvar) = f(ix1,iy0,iz0,1:mvar)
+          f01(1:mvar) = 0
+          f11(1:mvar) = f(ix1,iy0,iz1,1:mvar)
+        else
+          x1 = o_global(1) - sqrt(rs**2-(o_global(2)-abs(y0))**2)
+          f00(1:mvar) = f(ix0,iy0,iz0,1:mvar)
+          f10(1:mvar) = 0
+          f01(1:mvar) = f(ix0,iy0,iz1,1:mvar)
+          f11(1:mvar) = 0
+        endif
+        dX1 = 1/(x1-x0)
+        g_Xp = g_global(1)-x0
+      else 
+        call fatal_error('g_interpolate_extraordinary', &
+            'Not implemented for spheres!')
+      endif
+!
+! In case of 2D flow
+!
+      if (nzgrid==1) then
+        dz1 = 1
+        g_zp = 0
+      else
+        dz1 = 1/(z1-z0)
+        g_zp = g_global(3)-z0
+      endif
 !
 !
-! TODO: Implement
+!  Interpolation formula.
 !
-!  Interpolate velocity components
+      fvar = f00 + g_Xp*dX1*(-f00+f10) + g_zp*dZ1*(-f00+f01) &
+        + g_Xp*g_zp*dX1*dz1*(f00-f10-f01+f11)
+
 !
-! TODO: Implement
+!  Do a reality check on the interpolation scheme.
 !
+      if (lcheck) then
+        do i=1,mvar
+          if (fvar(i)>max(f00(i),f10(i),f01(i),f11(i))) then
+            call fatal_error('g_interpolate_extraordinary', &
+                'Interpolation value larger than values at corner points!)')
+          endif
+          if (fvar(i)<min(f00(i),f10(i),f01(i),f11(i))) then
+            call fatal_error('g_interpolate_extraordinary', &
+                'Interpolation value smaller than values at corner points!)')
+          endif
+        enddo
+      endif
+!      
 !  If lclose_quad_rad_inter = true we must find the velocities in the r,
 !  theta and phi directions at the point "g".
 !
@@ -3779,11 +3870,9 @@ module Solid_Cells
         call dot(nphi_hat,fvar(iux:iuz),vg_phi)
         call dot(ntheta_hat,fvar(iux:iuz),vg_theta)
       endif
-      !TODOTODO
-      print*, 'EXTRAORDINARY!'
     endsubroutine interpolate_g_extraordinary
 !***********************************************************************
-    logical function gridplane_need_adjust(inear,constdir,rs)
+    logical function gridplane_need_adjust(inear,constdir,rs,o_global)
 !
 !  Check if any gridpoints of the gridplane used for interpolation is inside
 !  the solid body.
@@ -3793,6 +3882,7 @@ module Solid_Cells
       use Messages, only: fatal_error
       use Sub
   
+      real, dimension(3), intent(in) :: o_global
       integer, dimension(3), intent(in) :: inear
       integer, intent(in) :: constdir
       real, intent(in) :: rs
@@ -3801,13 +3891,13 @@ module Solid_Cells
 
       gridplane_need_adjust= .false.
       rspow2 = rs*rs
-      if (x(inear(1))**2 + y(inear(2))**2 < rspow2) then
+      if ((x(inear(1))-o_global(1))**2 + (y(inear(2))-o_global(2))**2 < rspow2) then
         gridplane_need_adjust= .true.
       elseif (constdir == 1 .and. & 
-        (x(inear(1))**2 + y(inear(2)+1)**2 < rspow2)) then 
+        ((x(inear(1))-o_global(1))**2 + (y(inear(2)+1)-o_global(2))**2 < rspow2)) then
         gridplane_need_adjust= .true.
       elseif (constdir == 2 .and. &
-        (x(inear(1)+1)**2 + y(inear(2))**2 < rspow2)) then 
+        ((x(inear(1)+1)-o_global(1))**2 + (y(inear(2))-o_global(2))**2 < rspow2)) then
         gridplane_need_adjust= .true.
       elseif (constdir == 3) then
         call fatal_error('gridplane_need_adjust', &
@@ -3815,4 +3905,87 @@ module Solid_Cells
       endif
 
     endfunction gridplane_need_adjust
+!!***********************************************************************
+!    subroutine insolid(inear,constdir,rs,o_global)
+!      
+!      use Sub
+!      integer, dimension(3) :: inear
+!      integer :: constdir
+!      real :: rs,rg
+!      real, dimension(3) :: o_global
+!      integer :: i,j,k
+!      real :: bax,rspow2
+!      logical :: insolid_t,r_less
+!
+!
+!      rspow2 = rs*rs
+!
+!      insolid_t = .false.
+!      if (constdir==1) then
+!        do j=inear(2),inear(2)+1
+!          do k=inear(3),inear(3)+1
+!            bax = ba(inear(1),j,k,1) 
+!            if(bax > -4 .and. bax < 4 .and. bax /= 0) then
+!              rg = sqrt((o_global(1)-abs(x(inear(1))))**2+(o_global(2)-abs(y(j)))**2)
+!              insolid_t = .true.
+!              if(rg >= rs) then
+!                print*, 'Inside solid'
+!                print*, 'constdir =', constdir
+!                print*, 'bax =', bax
+!                print*, 'rg,rs', rg,rs
+!              endif
+!            endif
+!          enddo
+!        enddo
+!      elseif (constdir==2) then
+!        do i=inear(1),inear(1)+1
+!          do k=inear(3),inear(3)+1
+!            bax = ba(i,inear(2),k,1) 
+!            if(bax > -4 .and. bax < 4 .and. bax /= 0) then
+!              insolid_t = .true.
+!              rg = sqrt((o_global(1)-abs(x(i)))**2+(o_global(2)-abs(y(inear(2))))**2)
+!              if(rg >= rs) then
+!                print*, 'Inside solid'
+!                print*, 'constdir =', constdir
+!                print*, 'bax =', bax
+!                print*, 'rg,rs', rg,rs
+!              endif
+!            endif
+!          enddo
+!        enddo
+!      elseif (constdir==3) then
+!        do i=inear(1),inear(1)+1
+!          do j=inear(2),inear(2)+1
+!            bax = ba(i,j,inear(3),1) 
+!            if(bax > -4 .and. bax < 4 .and. bax /= 0) then
+!              insolid_t = .true.
+!              print*, 'Inside solid'
+!              print*, 'constdir =', constdir
+!              print*, 'bax =', bax
+!            endif
+!          enddo
+!        enddo
+!      endif
+!
+!      r_less = .false.
+!      if(insolid_t) then
+!        if ((x(inear(1))-o_global(1))**2 + (y(inear(2))-o_global(2))**2 < rspow2) then
+!          r_less = .true.
+!        elseif (constdir == 1 .and. & 
+!          ((x(inear(1))-o_global(1))**2 + (y(inear(2)+1)-o_global(2))**2 < rspow2)) then
+!          r_less = .true.
+!        elseif (constdir == 2 .and. &
+!          ((x(inear(1)+1)-o_global(1))**2 + (y(inear(2))-o_global(2))**2 < rspow2)) then
+!          r_less = .true.
+!        endif
+!      endif
+!      if(insolid_t .and. (.not. r_less)) then
+!        print*, 'What?'
+!      elseif (insolid_t .and. r_less) then
+!        print*, 'Confirmed!'
+!        print*, 'constdir:', constdir
+!      endif
+!
+!    endsubroutine insolid
+        
 endmodule Solid_Cells
