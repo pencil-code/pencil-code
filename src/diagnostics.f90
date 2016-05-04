@@ -943,12 +943,11 @@ module Diagnostics
 
         if (lyang) then
           if (iproc==caproot) then
-            allocate(fsumxy(size(fnamexy,1),size(fnamexy,2),nycap))
+            allocate(fsumxy(nnamexy,nx,nycap))
             fsumxy=0.
           endif
         else
-          if (lfirst_proc_z) &
-            allocate(fsumxy(size(fnamexy,1),size(fnamexy,2),size(fnamexy,3)))
+          if (lfirst_proc_z) allocate(fsumxy(nnamexy,nx,ny))
         endif
         call mpireduce_zsum_yy(fnamexy,fsumxy)
 
