@@ -1939,7 +1939,6 @@ module Solid_Cells
             (rp < rs+limit_close_linear*dxmin) .or. &
             fluid_point) then
 !
-!  Currently there are two implementations for the close surface treatment.
 !  The routine for close interpolation works for cylinders and spheres only if 
 !  close_interpolation_method is larger or equal to 2. For this parmeter
 !  set to 1 only cylinders can be used, but it has the advantage of working
@@ -1953,14 +1952,14 @@ module Solid_Cells
 !  density on particle transport, the close interpolation
 !  does not treat density.
 !
-            call close_inter_new(f,f_tmp,p_local,p_global,o_global,rs,rp, &
+            call close_inter_new(f,f_tmp,p_local,o_global,rs,rp, &
                 cornervalue,cornerindex,fluid_point,iobj)
         endif
       endif
 !
     endsubroutine close_interpolation
 !***********************************************************************
-    subroutine find_g_global_circle(g_global,inear,rg,p_local, o_global,rs,rp)
+    subroutine find_g_global_circle(g_global,inear,rg,p_local,o_global,rs,rp)
 !
 ! Find g_global on a circle a distance limit_close_linear away
 ! from the solid surface.
@@ -1982,7 +1981,7 @@ module Solid_Cells
 !
     endsubroutine find_g_global_circle
 !***********************************************************************
-    subroutine close_inter_new(f,f_tmp,p_local,p_global,o_global,rs,rp, &
+    subroutine close_inter_new(f,f_tmp,p_local,o_global,rs,rp, &
         cornervalue,cornerindex,fluid_point,iobj)
 !
       use General, only: linear_interpolate
@@ -1991,7 +1990,7 @@ module Solid_Cells
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mvar) :: fvar, f_tmp
-      real, dimension(3) :: o_global, p_global, p_local, g_global
+      real, dimension(3) :: o_global, p_local, g_global
       integer, dimension(3) :: ngrids, inear
       real :: rp, rs, verylarge=1e9, rlmin, rl, rg, r_pg, r_sg, r_sp, surf_val
       integer :: ndir, ndims, dir, vardir1, vardir2, constdir, topbot_tmp
