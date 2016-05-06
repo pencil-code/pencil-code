@@ -12,7 +12,7 @@
 ! CPARAM logical, parameter :: lparticles=.true.
 ! CPARAM logical, parameter :: lparticles_potential=.false.
 !
-! PENCILS PROVIDED np; rhop; vol
+! PENCILS PROVIDED np; rhop; vol; peh
 ! PENCILS PROVIDED np_rad(5); npvz(5); sherwood
 ! PENCILS PROVIDED epsp; grhop(3)
 !
@@ -122,6 +122,7 @@ module Particles
   logical :: lgaussian_birthring=.false.
   logical :: lvector_gravity=.false.
   logical :: lprecalc_cell_volumes=.false.
+  logical :: lpeh_radius=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -236,7 +237,7 @@ module Particles
       rpbeta_species, rpbeta, gab_width, initxxp, initvvp, particles_insert_ramp_time, &
       particles_insert_ramp_time, tstart_insert_particles, birthring_r, birthring_width, &
       lgaussian_birthring, tstart_rpbeta, linsert_as_many_as_possible, lvector_gravity, &
-      lcompensate_sedimentation,compensate_sedimentation
+      lcompensate_sedimentation,compensate_sedimentation, lpeh_radius
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -312,6 +313,10 @@ module Particles
 !
       if (.not. lnocalc_np) call farray_register_auxiliary('np',inp,&
           communicated=lcommunicate_np)
+      if (lpeh_radius) then
+        lnocalc_rhop=.false.
+        call farray_register_auxiliary('peh',ipeh,communicated=.false.)
+      endif
       if (.not. lnocalc_rhop) call farray_register_auxiliary('rhop',irhop, &
           communicated=lparticles_sink.or.lcommunicate_rhop)
       if (lcalc_uup .or. ldragforce_stiff) then
@@ -2734,6 +2739,8 @@ module Particles
       endif
 !
       if (lpencil(i_epsp)) p%epsp=p%rhop*p%rho1
+!
+      if (ipeh>0) p%peh=f(l1:l2,m,n,ipeh)
 !
     endsubroutine calc_pencils_particles
 !***********************************************************************

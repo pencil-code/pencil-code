@@ -1389,8 +1389,9 @@ module Particles_map
 !       a density that falls linearly outwards.
 !       This is equivalent to a second order spline interpolation scheme.
 !
-      if ( (irhop/=0 .and. (.not. lnocalc_rhop)) .or. lmapsink) then
+      if ( (irhop/=0 .and. (.not. lnocalc_rhop)) .or. lmapsink .or. ipeh/=0) then
         f(:,:,:,irhop)=0.0
+        if (ipeh/=0) f(:,:,:,ipeh)=0.0
         if (lparticlemesh_cic) then
 !
 !  Cloud In Cell (CIC) scheme.
@@ -1429,13 +1430,28 @@ module Particles_map
 !
                 weight=weight0
                 if (nxgrid/=1) &
-                    weight=weight*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
+                  weight_x = 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx)
+                  weight=weight*weight_x
                 if (nygrid/=1) &
-                    weight=weight*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
+                  weight_y = 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy)
+                  weight=weight*weight_y
                 if (nzgrid/=1) &
-                    weight=weight*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
+                  weight_z = 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz)
+                  weight=weight*weight_z
 !
                 f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + weight
+!
+                if (ipeh/=0 .and. (lcylindrical_coords .or. lspherical_coords)) then
+                  if (lparticles_number) then
+                    weight = fp(k,inpswarm)*(fp(k,iap)**2.0)
+                  else
+                    weight = np_swarm*(fp(k,iap)**2.0)
+                  endif
+                  if (nxgrid/=1) weight=weight*weight_x
+                  if (nygrid/=1) weight=weight*weight_y
+                  if (nzgrid/=1) weight=weight*weight_z
+                  f(ixx,iyy,izz,ipeh) = f(ixx,iyy,izz,ipeh)+weight
+                endif
 !
               enddo; enddo; enddo
             endif
@@ -1520,6 +1536,18 @@ module Particles_map
 !
                 f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + weight
 !
+                if (ipeh/=0 .and. (lcylindrical_coords .or. lspherical_coords)) then
+                  if (lparticles_number) then
+                    weight = fp(k,inpswarm)*(fp(k,iap)**2.0)
+                  else
+                    weight = np_swarm*(fp(k,iap)**2.0)
+                  endif
+                  if (nxgrid/=1) weight=weight*weight_x
+                  if (nygrid/=1) weight=weight*weight_y
+                  if (nzgrid/=1) weight=weight*weight_z
+                  f(ixx,iyy,izz,ipeh) = f(ixx,iyy,izz,ipeh)+weight
+                endif
+!
               enddo; enddo; enddo
             endif
           enddo
@@ -1549,6 +1577,15 @@ module Particles_map
                 endif
 !
                 f(ix0,iy0,iz0,irhop)=f(ix0,iy0,iz0,irhop) + weight0
+!
+                if (ipeh/=0 .and. (lcylindrical_coords .or. lspherical_coords)) then
+                  if (lparticles_number) then
+                    weight0 = fp(k,inpswarm)*(fp(k,iap)**2.0)
+                  else
+                    weight0 = np_swarm*(fp(k,iap)**2.0)
+                  endif
+                  f(ixx,iyy,izz,ipeh) = f(ixx,iyy,izz,ipeh)+weight0
+                endif
 !
               endif
             enddo

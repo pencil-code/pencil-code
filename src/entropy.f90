@@ -83,7 +83,7 @@ module Energy
   real :: pclaw=0.0, xchit=0.
   real, target :: hcond0_kramers=0.0, nkramers=0.0
   real :: chimax_kramers=0., chimin_kramers=0., zheat_uniform_range=0.
-  real :: pheat_factor=1., heat_ceiling=-1.0
+  real :: peh_factor=1., heat_ceiling=-1.0
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
@@ -118,7 +118,7 @@ module Energy
   logical :: ltau_cool_variable=.false.
   logical :: lprestellar_cool_iso=.false.
   logical :: lphotoelectric_heating=.false.
-  logical :: lphotoelectric_heating_alt=.false.
+  logical :: lphotoelectric_heating_radius=.false.
   logical, pointer :: lreduced_sound_speed
   logical, pointer :: lscale_to_cs2top
   logical, save :: lfirstcall_hcond=.true.
@@ -198,7 +198,7 @@ module Energy
       center1_z, lborder_heat_variable, rescale_TTmeanxy, lread_hcond,&
       Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
       cool_type,ichit,xchit,pclaw,lenergy_slope_limited,h_slope_limited,islope_limiter, &
-      zheat_uniform_range, pheat_factor, lphotoelectric_heating_alt, &
+      zheat_uniform_range, peh_factor, lphotoelectric_heating_radius, &
       limpose_heat_ceiling, heat_ceiling
 !
 !  Diagnostic variables for print.in
@@ -2552,7 +2552,8 @@ module Energy
 !
 !  for photoelectric dust heating in debris disks
 !
-        if (lphotoelectric_heating .or. lphotoelectric_heating_alt) lpenc_requested(i_rhop)=.true.
+        if (lphotoelectric_heating) lpenc_requested(i_rhop)=.true.
+        if (lphotoelectric_heating_radius) lpenc_requested(i_peh)=.true.
       endif
 !
       if (tau_cool2/=0.0) lpenc_requested(i_rho)=.true.
@@ -4893,7 +4894,9 @@ module Energy
         endif
       endif
 !
-      if (lphotoelectric_heating_alt) heat=heat+pheat_factor*p%rhop*((r_ref/x(l1:l2))**2.0)
+      if (lphotoelectric_heating_radius) then
+        if (lcylindrical_coords .and. nzgrid==1) heat=heat+peh_factor*p%peh*dx_1(l1:l2)*dy_1(m)/p%r_mn
+      endif
 !
 !  Cooling/heating with respect to cs2mz(n)-cs2cool.
 !  There is also the possibility to do cooling with respect to
