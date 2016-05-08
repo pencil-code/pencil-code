@@ -186,6 +186,9 @@ ifneq ($(PARTICLES),noparticles)
     PARTICLES_MPICOMM =   particles_mpicomm
   endif
 endif
+ifeq ($(PARTICLES_DRAG), particles_drag)
+  PARTICLES_MAP = particles_map_index
+endif
 ifeq ($(PARTICLES_MAP),particles_map_blocks)
   PARTICLES_MPICOMM = noparticles_mpicomm
   ifeq ($(MPICOMM),mpicomm)

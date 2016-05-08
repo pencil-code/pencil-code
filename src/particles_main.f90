@@ -521,13 +521,13 @@ module Particles_main
 !
 !  Wrapper for operator split terms for particle dynamics.
 !
-!  24-may-15/ccyang: coded.
+!  08-may-16/ccyang: coded.
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: dt
 !
       drag: if (lparticles_drag) then
-        call boundconds_particles(fp, ipar)
+        call particles_boundconds(f)
         call integrate_drag(f, fp, dt)
       endif drag
 !
