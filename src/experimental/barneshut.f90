@@ -51,7 +51,7 @@ module Poisson
                             ! and provides a significant speedup.
   real :: octree_maxdist = huge(1.0)
   real :: octree_smoothdist = 0.15
-  real, dimension (nx,ny,nz) :: phi, vols
+  real, dimension (nx,ny,nz) :: vols
   integer :: pp, i, j, k, xs, ys, zs, ii, jj, kk
   integer, dimension (0:ncpus-1) :: sx, sy, sz
   real, dimension (nx) :: xc
