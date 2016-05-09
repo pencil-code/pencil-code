@@ -3661,8 +3661,7 @@ module Magnetic
 !  left hand side.
 !
         if (lupw_aa.and.headtt) then
-          print *,'calc_pencils_magnetic: upwinding advection term. '//&
-                  'Not well tested; use at own risk!'
+          print *,'daa_dt: use upwinding in advection term'
         endif
 !
 !  Add Lorentz force that results from the external field.

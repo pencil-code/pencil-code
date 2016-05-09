@@ -1124,6 +1124,28 @@ YINYANG_SRC=$(YINYANG).f90
 #FFLAGS_DOUBLE=-r8 #(ekhi*)
 #LIBMPISUFFIX=#(ekhi*)
 ##
+## Axel on LCD
+##
+#FC=mpif90 #(scylla*)
+#FFLAGS= -O3  #(scylla*)
+#CC=mpicc #(scylla*)
+#CFLAGS=-O3 -DFUNDERSC=1 #(scylla*)
+#LD_MPI= #(scylla*)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(scylla)
+#FFLAGS_DOUBLE=-r8 #(scylla*)
+#LIBMPISUFFIX=#(scylla*)
+##
+## Axel on LCD
+##
+#FC=mpif90 #(charybdis*)
+#FFLAGS= -O3  #(charybdis*)
+#CC=mpicc #(charybdis*)
+#CFLAGS=-O3 -DFUNDERSC=1 #(charybdis*)
+#LD_MPI= #(charybdis*)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(charybdis)
+#FFLAGS_DOUBLE=-r8 #(charybdis*)
+#LIBMPISUFFIX=#(charybdis*)
+##
 ## Axel on Sanssouci (ifc 9.1)
 ##
 #FC=mpif90 #(sanssouci|belvedere|octopus)
