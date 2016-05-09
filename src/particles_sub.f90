@@ -328,9 +328,8 @@ module Particles_sub
               tmp=3-dustdensity_powerlaw
             endif
               call random_number_wrapper(fp(k,ixp))
-              fp(k,ixp) = rp_int**tmp + fp(k,ixp)*(rp_ext**tmp-rp_int**tmp)
+              fp(k,ixp) = (rp_int**tmp + fp(k,ixp)*(rp_ext**tmp-rp_int**tmp))**(1.0/tmp)
               if (lcylindrical_coords) then
-                tmp=2-dustdensity_powerlaw
                 if (nygrid/=1) then
                   call random_number_wrapper(fp(k,iyp))
                   fp(k,iyp) = xyz0(2)+fp(k,iyp)*Lxyz(2)
@@ -340,7 +339,6 @@ module Particles_sub
                   fp(k,izp)=xyz0(3)+fp(k,izp)*Lxyz(3)
                 endif
               elseif (lspherical_coords) then
-                tmp=3-dustdensity_powerlaw
                 if (nygrid/=1) then
                   call random_number_wrapper(fp(k,iyp))
                   fp(k,iyp) = xyz0(2)+fp(k,iyp)*Lxyz(2)
