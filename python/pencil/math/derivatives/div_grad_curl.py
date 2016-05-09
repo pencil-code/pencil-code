@@ -7,6 +7,10 @@
 import numpy as N
 from pencil.math.derivatives.der import *
 from sys import exit
+from pencil.files.param import read_param
+from pencil.files.grid import read_grid
+from pencil.files.dim import read_dim
+
 
 def div(f,dx,dy,dz):
     """
@@ -15,8 +19,26 @@ def div(f,dx,dy,dz):
     if (f.ndim != 4):
         print("div: must have vector 4-D array f[mvar,mz,my,mx] for divergence")
         raise ValueError
+    param = read_param(quiet=True)
+
+    div = xder(f[0,...],dx) + yder(f[1,...],dy) + zder(f[2,...],dz)
+
+    if param.coord_system == 'cylindric':
+        gd  = read_grid(quiet=True)
+        dim  = read_dim()
+        div += f[0]/gd.x
+    if param.coord_system == 'spherical':
+        gd  = read_grid(quiet=True)
+        dim  = read_dim()
+        sin_y = N.sin(gd.y)
+        cos_y = N.cos(gd.y)
+        i_sin = N.where(N.abs(sin_y) < 1e-5)[0]
+        if i_sin.size > 0:
+            cos_y[i_sin] = 0.; sin_y[i_sin] = 1
+        x_1, cotth = N.meshgrid(1./gd.x, cos_y/sin_y)
+        div += 2*f[0]*x_1 + f[1]*x_1*cotth
    
-    return xder(f[0,...],dx) + yder(f[1,...],dy) + zder(f[2,...],dz)
+    return div
 
 def grad(f,dx,dy,dz):
     """

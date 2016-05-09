@@ -274,7 +274,7 @@ module Testfield
 !  28-aug-13/MR: coded
 !  02-dec-13/MR: fixed bugs: missing mapping in twod_need_1d, twod_need_2d added, wrong 'backmapping' removed
 !
-      use Diagnostics, only: zsum_mn_name_xy_mpar,yzsum_mn_name_x_mpar
+      use Diagnostics, only: zsum_mn_name_xy_mpar_scal,yzsum_mn_name_x_mpar
 !
       integer, dimension(idiag_base_end) :: idiags_map
       integer :: i,j
@@ -318,7 +318,7 @@ module Testfield
                               idiags(idiag_Eij_start:idiag_Eij_end),idiags_x(idiag_Eij_start:idiag_Eij_end),   &
                               idiags_xy(idiag_Eij_start:idiag_Eij_end), &
                               idiag_alp11h, idiag_eta122h, &
-                              tmp,Minv,zsum_mn_name_xy_mpar,yzsum_mn_name_x_mpar, &
+                              tmp,Minv,zsum_mn_name_xy_mpar_scal,yzsum_mn_name_x_mpar, &
                               twod_need_1d(abs(idiags_map)),twod_need_2d(abs(idiags_map)),needed2d,nz )
 !
 !  sign inversion if necessary

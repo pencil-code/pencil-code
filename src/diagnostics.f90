@@ -49,7 +49,8 @@ module Diagnostics
   public :: get_from_fname
   public :: init_xaver
   public :: gen_form_legend
-  public :: ysum_mn_name_xz_npar, xysum_mn_name_z_npar, zsum_mn_name_xy_mpar, yzsum_mn_name_x_mpar
+  public :: ysum_mn_name_xz_npar, xysum_mn_name_z_npar, yzsum_mn_name_x_mpar
+  public :: zsum_mn_name_xy_mpar_scal, zsum_mn_name_xy_mpar
   public :: initialize_zaver_yy, mpireduce_zsum_yy
 !
   interface max_name
