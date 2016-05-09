@@ -125,13 +125,14 @@ module Particles_sub
       use Mpicomm
       use General, only: random_number_wrapper
       use Particles_mpicomm
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc) :: ipar
       real, dimension (mpar_loc,mpvar), optional :: dfp
       logical, optional :: linsert
 !
-      real :: xold, yold, rad, r1old, OO
+      real :: xold, yold, rad, r1old, OO, tmp
       integer :: k, ik, k1, k2
       character (len=2*bclen+1) :: boundx, boundy, boundz
       logical :: lnbody
@@ -319,6 +320,37 @@ module Particles_sub
               fp(k,ixp)=2*xyz1(1)-fp(k,ixp)
               fp(k,ivpx)=-fp(k,ivpx)
             endif
+          elseif (boundx=='meq') then
+            if ((fp(k,ixp).lt.xyz0(1)) .or. (fp(k,ixp).gt.xyz1(1))) then
+            if (lcylindrical_coords) then
+              tmp=2-dustdensity_powerlaw
+            elseif (lspherical_coords) then
+              tmp=3-dustdensity_powerlaw
+            endif
+              call random_number_wrapper(fp(k,ixp))
+              fp(k,ixp) = rp_int**tmp + fp(k,ixp)*(rp_ext**tmp-rp_int**tmp)
+              if (lcylindrical_coords) then
+                tmp=2-dustdensity_powerlaw
+                if (nygrid/=1) then
+                  call random_number_wrapper(fp(k,iyp))
+                  fp(k,iyp) = xyz0(2)+fp(k,iyp)*Lxyz(2)
+                endif
+                if (nzgrid/=1) then
+                  call random_number_wrapper(fp(k,izp))
+                  fp(k,izp)=xyz0(3)+fp(k,izp)*Lxyz(3)
+                endif
+              elseif (lspherical_coords) then
+                tmp=3-dustdensity_powerlaw
+                if (nygrid/=1) then
+                  call random_number_wrapper(fp(k,iyp))
+                  fp(k,iyp) = xyz0(2)+fp(k,iyp)*Lxyz(2)
+                endif
+                if (nzgrid/=1) then
+                  call random_number_wrapper(fp(k,izp))
+                  fp(k,izp) = xyz0(3)+fp(k,izp)*Lxyz(3)
+                endif
+              endif
+            endif
           else
             print*, 'boundconds_particles: No such boundary condition =', boundx
             call stop_it('boundconds_particles')
@@ -464,13 +496,13 @@ module Particles_sub
 !
       if (lmpicomm) then
         if (present(dfp)) then
-          if (present(linsert)) then
+          if (present(linsert).or.(boundx=='meq')) then
             call migrate_particles(fp,ipar,dfp,linsert=.true.)
           else
             call migrate_particles(fp,ipar,dfp)
           endif
         else
-          if (present(linsert)) then
+          if (present(linsert).or.(boundx=='meq')) then
             call migrate_particles(fp,ipar,linsert=.true.)
           else
             call migrate_particles(fp,ipar)
