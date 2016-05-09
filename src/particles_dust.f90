@@ -632,6 +632,15 @@ module Particles
         tstart_grav_r_par = tstart_grav_par
       endif
 !
+!  Die if lcompensate_sedimentation is used and the vertical direction is present.
+!      
+      if (lcompensate_sedimentation.and.&
+           ( (nzgrid/=1.and.(lcartesian_coords.or.lcylindrical_coords)).or.&
+             (nygrid/=1.and.lspherical_coords)&
+           )&
+         ) call fatal_error("initialize_particles",&
+         "compensate_sedimentation should only be used when the vertical dimension is not present")
+!
 !  Set up interpolation logicals. These logicals can be OR'ed with some logical
 !  in the other particle modules' initialization subroutines to enable
 !  interpolation based on some condition local to that module.
@@ -3877,7 +3886,7 @@ module Particles
                         else
                           call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,mp_vcell)
                         endif
-                        if (nzgrid/=1.or.(.not.lcompensate_sedimentation)) then 
+                        if (.not.lcompensate_sedimentation) then 
                           df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
                                mp_vcell*rho1_point*dragforce*weight
                         else
@@ -3975,7 +3984,7 @@ module Particles
                         else
                           call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz, mp_vcell)
                         endif
-                        if (nzgrid/=1.or.(.not.lcompensate_sedimentation)) then 
+                        if (.not.lcompensate_sedimentation) then 
                           df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
                                mp_vcell*rho1_point*dragforce*weight
                         else
@@ -4020,7 +4029,7 @@ module Particles
                     else
                       call get_rhopswarm(mp_swarm,fp,k,l,m,n,mp_vcell)
                     endif
-                    if (nzgrid/=1.or.(.not.lcompensate_sedimentation)) then 
+                    if (.not.lcompensate_sedimentation) then 
                       df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
                            mp_vcell*p%rho1(l-nghost)*dragforce
                     else
