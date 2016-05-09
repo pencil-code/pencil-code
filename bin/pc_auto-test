@@ -125,6 +125,7 @@ my %tests = (
                          2d-tests/selfgravdisk-planet-dust
                          cylindrical-globaldisk-dzone
                          2d-tests/turbulent_potential
+                         2d-tests/shearwave-dust-par
                      )],
              # Level 3 for now contains all non-canonical tests that run
              # successfully
@@ -160,7 +161,6 @@ my %tests = (
              4 => [qw(
                          forced-boundary
                          sound-spherical-bufferzone
-                         2d-tests/shearwave-dust-par
                          2d-tests/selfgrav-shearwave-dust-par
                      )],
              # Level 5 for now contains all non-canonical tests that run,
