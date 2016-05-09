@@ -81,7 +81,7 @@ module Special
   use General, only: keep_compiler_quiet
   use Messages, only: svn_id, fatal_error
   use Mpicomm, only: mpibarrier
-  use Sub, only: numeric_precision, dot_mn_vm
+  use Sub, only: numeric_precision, dot_mn_vm, curl_mn
   use HDF5
   use File_io, only: parallel_unit
 !
@@ -420,6 +420,7 @@ module Special
 !
 !  All pencils that this special module depends on are specified here.
       lpenc_requested(i_bb)=.true.
+      lpenc_requested(i_bij)=.true.
       lpenc_requested(i_jj)=.true.
       lpenc_requested(i_alpha_emf)=.true.
       lpenc_requested(i_beta_emf)=.true.
@@ -760,7 +761,7 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-      real, dimension(nx,3) :: tmpvector, emfvector
+      real, dimension(nx,3) :: tmpvector, tmpvector2, emfvector
       integer :: i
 !!
 !!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
@@ -773,12 +774,17 @@ module Special
       call keep_compiler_quiet(p)
 !
       emfvector=0
+      tmpvector=0
+      tmpvector2=0
       if (lalpha) then
-        !do i=1,3
-        !  tmpvector(:,i)=p%alpha_emf(:,1)*b(:,i,1)+a(:,2)*b(:,i,2)+a(:,3)*b(:,i,3)
-        !enddo
         call dot_mn_vm(p%bb,p%alpha_emf,tmpvector)
         emfvector = emfvector + tmpvector
+      end if
+      tmpvector=0
+      tmpvector2=0
+      if (lbeta) then
+        call dot_mn_vm(p%jj,p%beta_emf,tmpvector)
+        emfvector = emfvector - tmpvector
       end if
 
       df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+emfvector
