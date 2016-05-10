@@ -385,6 +385,10 @@ module Particles_map
       if (present(lmapsink_opt)) call fatal_error('map_xxp_grid', 'lmapsink_opt is not implemented. ')
       if (lparticles_blocks) call fatal_error('map_xxp_grid', 'particles_blocks version is not implemented yet. ')
 !
+!  Find np.
+!
+      if (inp /= 0) call find_np(f, ineargrid)
+!
 !  Module Particles_drag has done this on the fly.
 !
       if (lrun .and. lparticles_drag .and. it > 1) return
@@ -547,6 +551,27 @@ module Particles_map
       endif opt2
 !
     endsubroutine block_of_influence
+!***********************************************************************
+    pure subroutine find_np(f, ineargrid)
+!
+!  Count particles in each cell.
+!
+!  10-may-16/ccyang: coded.
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      integer, dimension(mpar_loc,3), intent(in) :: ineargrid
+!
+      integer :: ix0, iy0, iz0, k
+!
+      f(:,:,:,inp) = 0.0
+      incr: do k = 1, npar_loc
+        ix0 = ineargrid(k,1)
+        iy0 = ineargrid(k,2)
+        iz0 = ineargrid(k,3)
+        f(ix0,iy0,iz0,inp) = f(ix0,iy0,iz0,inp) + 1.0
+      enddo incr
+!
+    endsubroutine find_np
 !***********************************************************************
     subroutine ghost_particles_collect(ghost, ngp_send, ngp_recv, dv)
 !
