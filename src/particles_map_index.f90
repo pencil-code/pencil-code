@@ -1516,13 +1516,14 @@ module Particles_map
       integer, dimension(3), intent(in) :: inear
       real, dimension(3), intent(in) :: xxp
       integer, intent(in) :: ivar1, ivar2, iblock, ipar
-      real, dimension(ivar2-ivar1+1), intent(in) :: gp
+      real, dimension(ivar2-ivar1+1), intent(out) :: gp
+!
+      gp = 0.0
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(ivar1)
       call keep_compiler_quiet(ivar2)
       call keep_compiler_quiet(xxp)
-      call keep_compiler_quiet(gp)
       call keep_compiler_quiet(inear)
       call keep_compiler_quiet(iblock)
       call keep_compiler_quiet(ipar)
@@ -1539,7 +1540,9 @@ module Particles_map
       integer, dimension(3), intent(in) :: inear
       real, dimension(3), intent(in) :: xxp
       integer, intent(in) :: ivar, iblock, ipar
-      real, intent(in) :: gp
+      real, intent(out) :: gp
+!
+      gp = 0.0
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(ivar)
