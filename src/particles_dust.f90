@@ -1993,15 +1993,6 @@ module Particles
 ! Maybe random-cylindrical case should be combined with normal initxxp case
 !
             case ('random-cylindrical','random-cyl')
-              if (lglobalrandom) then
-                Lxyz_par=Lxyz
-                xyz0_par=xyz0
-                xyz1_par=xyz1
-              else
-                Lxyz_par=Lxyz_loc
-                xyz0_par=xyz0_loc
-                xyz1_par=xyz1_loc
-              endif
               if (lcylindrical_coords.or.lcartesian_coords) then
                 tmp=2-dustdensity_powerlaw
               elseif (lspherical_coords) then
@@ -2011,19 +2002,9 @@ module Particles
                      "The world is flat, and we never got here")
               endif
   !
-              if (lcartesian_coords) then
-                if (nprocx==1) then
-                  rpar_int=rp_int
-                  rpar_ext=rp_ext
-                else
-                  call fatal_error("init_particles",&
-                       "random-cyl not yet ready for nprocx/=1 in Cartesian. Parallelize in y or z")
-                endif
-              else
-                rpar_int = xyz0_loc(1)
-                rpar_ext = xyz1_loc(1)
-              endif
-
+              rpar_int=rp_int
+              rpar_ext=rp_ext
+  !
               call random_number_wrapper(rr_tmp(npar_loc_old+1:npar_loc))
               rr_tmp(npar_loc_old+1:npar_loc) = rpar_int**tmp + &
                 rr_tmp(npar_loc_old+1:npar_loc)*(rpar_ext**tmp-rpar_int**tmp)
