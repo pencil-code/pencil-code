@@ -387,7 +387,7 @@ module Particles_map
 !
 !  Module Particles_drag has done this on the fly.
 !
-      if (lrun .and. lparticles_drag) return
+      if (lrun .and. lparticles_drag .and. it > 1) return
 !
 !  Distribute the particles.
 !
