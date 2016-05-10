@@ -82,10 +82,10 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: delrho=0.
+  real :: delrho=0., upert=.01
 !
 ! 
-  namelist /initial_condition_pars/ delrho
+  namelist /initial_condition_pars/ delrho, upert
 !
   contains
 !***********************************************************************
@@ -127,7 +127,7 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: sin2pix
-      real :: uflow=1., upert=.01, aflow=.05, sig=.2, y1=.5, y2=1.5, P0=10.
+      real :: uflow=1., aflow=.05, sig=.2, y1=.5, y2=1.5, P0=10.
       real :: tanh1, tanh2, exp1, exp2, sig2, lnP0
 !
 !  perturbation
@@ -142,11 +142,11 @@ module InitialCondition
           exp2=exp(-(y(m)-y2)**2/sig2)
           tanh1=tanh((y(m)-y1)/aflow)
           tanh2=tanh((y(m)-y2)/aflow)
-          f(l1:l2,m,n,ilnrho)=alog(1.+.5*delrho*(tanh1-tanh2))
-          f(l1:l2,m,n,iux)=uflow*(tanh1-tanh2-1.)
-          f(l1:l2,m,n,iuy)=sin2pix*(exp1+exp2)
-          f(l1:l2,m,n,iss)=gamma1*lnP0-f(l1:l2,m,n,ilnrho)
-          f(l1:l2,m,n,icc)=.5*(tanh2-tanh1+2.)
+          f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)+alog(1.+.5*delrho*(tanh1-tanh2))
+          f(l1:l2,m,n,iux)=f(l1:l2,m,n,iux)+uflow*(tanh1-tanh2-1.)
+          f(l1:l2,m,n,iuy)=f(l1:l2,m,n,iuy)+sin2pix*(exp1+exp2)
+          f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+gamma1*lnP0-f(l1:l2,m,n,ilnrho)
+          f(l1:l2,m,n,icc)=f(l1:l2,m,n,icc)+.5*(tanh2-tanh1+2.)
         enddo
       enddo
 !
