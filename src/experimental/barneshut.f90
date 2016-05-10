@@ -52,7 +52,6 @@ module Poisson
   real :: octree_maxdist = huge(1.0)
   real :: octree_smoothdist = 0.15
   real, dimension (nx,ny,nz) :: vols
-  integer :: pp, i, j, k, xs, ys, zs, ii, jj, kk
   integer, dimension (0:ncpus-1) :: sx, sy, sz
   real, dimension (nx) :: xc
   real, dimension (ny) :: yc
@@ -81,28 +80,29 @@ module Poisson
 !***********************************************************************
     subroutine inverse_laplacian(phi)
 !
-      use General, only: keep_compiler_quiet
+    use General, only: keep_compiler_quiet
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,ny,nz) :: phi
+    real, dimension (mx,my,mz,mfarray) :: f
+    real, dimension (nx,ny,nz) :: phi
 !
-      intent(inout) :: phi
+    integer :: pp, i, j, k, xs, ys, zs, ii, jj, kk
+    intent(inout) :: phi
 !
-      if (lcylindrical_coords) then 
-        if (lroot) print*,'You are using cylindrical coordinates. '//&
-             'Use poisson_cyl.f90 instead'
-        call fatal_error("barneshut","")
-      endif
-      if (modulo(log(real(nx))/log(2.0),1.0) .gt. tini .or. &
-        modulo(log(real(ny))/log(2.0),1.0) .gt. tini .or. &
-        modulo(log(real(nz))/log(2.0),1.0) .gt. tini) then
-        if (lroot) print*,'Grid zones per processor in each axis '//&
-            'must be a power of 2.'
-        call fatal_error("barneshut","")
-      endif
+    if (lcylindrical_coords) then 
+      if (lroot) print*,'You are using cylindrical coordinates. '//&
+           'Use poisson_cyl.f90 instead'
+      call fatal_error("barneshut","")
+    endif
+    if (modulo(log(real(nx))/log(2.0),1.0) .gt. tini .or. &
+      modulo(log(real(ny))/log(2.0),1.0) .gt. tini .or. &
+      modulo(log(real(nz))/log(2.0),1.0) .gt. tini) then
+      if (lroot) print*,'Grid zones per processor in each axis '//&
+          'must be a power of 2.'
+      call fatal_error("barneshut","")
+    endif
 !
-      call do_barneshut(phi)
-      call keep_compiler_quiet(f)
+    call do_barneshut(phi)
+    call keep_compiler_quiet(f)
 !
     endsubroutine inverse_laplacian
 !***********************************************************************
@@ -114,6 +114,7 @@ module Poisson
     integer, dimension (nx) :: xind
     integer, dimension (ny) :: yind
     integer, dimension (nz) :: zind
+    integer :: pp, i, j, k, xs, ys, zs, ii, jj, kk
     integer :: iprecalc
     logical :: lprecalc = .false.
 !
@@ -286,6 +287,7 @@ module Poisson
     real, dimension (nx,ny,nz) :: phi
     real :: xreg, yreg, zreg, summreg, summreg1
     real :: tstart_loop, tstop_loop, tstart_mpi, tstop_mpi
+    integer :: pp, i, j, k, xs, ys, zs, ii, jj, kk
 !
     phi = phi*vols ! 'phi' now in mass units
 !
