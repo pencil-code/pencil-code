@@ -321,7 +321,7 @@ module Particles_sub
               fp(k,ivpx)=-fp(k,ivpx)
             endif
           elseif (boundx=='meq') then
-            if ((fp(k,ixp).lt.xyz0(1)) .or. (fp(k,ixp).gt.xyz1(1))) then
+            if ((fp(k,ixp).lt.rp_int) .or. (fp(k,ixp).gt.rp_ext)) then
             if (lcylindrical_coords) then
               tmp=2-dustdensity_powerlaw
             elseif (lspherical_coords) then
