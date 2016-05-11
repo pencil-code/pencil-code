@@ -646,6 +646,5 @@ class FixedPoint(object):
         tracer_file_name = self.params.destination[:-5] + '_tracers' + \
                            self.params.destination[-5:]
         self.tracers = Tracers()
-        self.tracers.read(data_dir=self.params.data_dir,
-                          file_name=tracer_file_name)
+        self.tracers.read(data_dir=data_dir, file_name=tracer_file_name)
 
