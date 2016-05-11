@@ -70,10 +70,10 @@ def post_compute(variables = ['b2m'], datadir = 'data'):
         out_string = '{0:1.9e}  '.format(np.float64(var.t))
         aa = var.aa[:,var.n1:var.n2,var.m1:var.m2,var.l1:var.l2]
         if bb_flag:
-            bb = pc.curl(var.aa, var.dx, var.dy, var.dz)
+            bb = pc.curl(var.aa, var.dx, var.dy, var.dz, var.x, var.y, var.z)
             bb = bb[:,var.n1:var.n2,var.m1:var.m2,var.l1:var.l2]
         if jj_flag:
-            jj = pc.curl2(var.aa, var.dx, var.dy, var.dz)
+            jj = pc.curl2(var.aa, var.dx, var.dy, var.dz, var.x, var.y, var.z)
             jj = jj[:,var.n1:var.n2,var.m1:var.m2,var.l1:var.l2]
             
         for variable in variables:
