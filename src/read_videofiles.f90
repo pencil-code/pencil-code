@@ -77,7 +77,7 @@ program read_videofiles
 !  Loop over all processors to find the positions of the slices.
 !  iyy-loop: try to read from 2*ncpus procs as run could also be a Yin-Yang one.
 !
-  do iyy=0,ncpus,ncpus
+  do iyy=0,ncpus-1,ncpus
     do ipx=0,nprocx-1
       do ipy=0,nprocy-1
         do ipz=0,nprocz-1

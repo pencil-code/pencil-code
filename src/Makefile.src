@@ -1127,9 +1127,9 @@ YINYANG_SRC=$(YINYANG).f90
 ## Axel on LCD
 ##
 #FC=mpif90 #(scylla*)
-#FFLAGS= -O3  #(scylla*)
+#FFLAGS= -O1  #(scylla*)
 #CC=mpicc #(scylla*)
-#CFLAGS=-O3 -DFUNDERSC=1 #(scylla*)
+#CFLAGS=-O1 -DFUNDERSC=1 #(scylla*)
 #LD_MPI= #(scylla*)
 #FFLAGS_DOUBLE=-fdefault-real-8 #(scylla)
 #FFLAGS_DOUBLE=-r8 #(scylla*)
@@ -1138,9 +1138,9 @@ YINYANG_SRC=$(YINYANG).f90
 ## Axel on LCD
 ##
 #FC=mpif90 #(charybdis*)
-#FFLAGS= -O3  #(charybdis*)
+#FFLAGS= -O1  #(charybdis*)
 #CC=mpicc #(charybdis*)
-#CFLAGS=-O3 -DFUNDERSC=1 #(charybdis*)
+#CFLAGS=-O1 -DFUNDERSC=1 #(charybdis*)
 #LD_MPI= #(charybdis*)
 #FFLAGS_DOUBLE=-fdefault-real-8 #(charybdis)
 #FFLAGS_DOUBLE=-r8 #(charybdis*)
