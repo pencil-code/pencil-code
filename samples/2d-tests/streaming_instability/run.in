@@ -3,8 +3,8 @@
 !  Runtime parameters for linear streaming instability.
 !
 &run_pars
-    nt = 10000, it1 = 1000
-    tmax = 0.1
+    nt = 5000, it1 = 500
+    tmax = 0.05
 /
 &eos_run_pars
 /
