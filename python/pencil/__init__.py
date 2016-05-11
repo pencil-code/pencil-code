@@ -18,7 +18,7 @@ from pencil.files.yaver import *
 from pencil.files.zaver import *
 from pencil.files.zprof import *
 from pencil.files.power import *
-#from pencil.files.tensors import *
+from pencil.files.tensors import *
 try:
     from pencil.files.animate_interactive import *
 except:
