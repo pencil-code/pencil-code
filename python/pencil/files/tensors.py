@@ -1,21 +1,17 @@
-#!/usr/bin/env python
 # tensor.py
-#
-# Read VAR files. Based on the read_var.pro IDL script.
 #
 # NB: the tensor array is returned C-ordered: f[nt,ny,nx,3-rank,2-rank,1-rank]
 #     NOT Fortran as in Pencil (& IDL):  f[nx,ny,nz,nvar]
 #     facilitates easier matrix opertions on 
 #
 # Author: Fred Gent (fred.gent.ncl@gmail.com).
-#
+#------------------------------------------------------------------------------
+
 import os
 import re
 import pencil as pc
 import numpy as np
-""" Routine to compute test-field tensors in spherical coordinates from 
-phi-averages
-"""
+
 #------------------------------------------------------------------------------
 def calc_tensors(
                  datatopdir, 
@@ -150,3 +146,5 @@ def calc_tensors(
         kappa[:,:,:,iph,iph,i]= 1e-9
     return alpha, beta, gamma, delta, kappa,\
                           time[imask], urmst, etat0
+
+#------------------------------------------------------------------------------
