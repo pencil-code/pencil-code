@@ -13,15 +13,22 @@ end
 !x.title='!6year'
 !y.title='!6number of papers'
 ;
-a=rtable('times.txt',3)
+a=rtable('times.txt',4)
 n=a(0,*)
 y=a(1,*)
 c=a(2,*)
+o=a(3,*)
 print,n
 print
 print,total(n)
 plot,y,n,ps=10,yr=[0,64];,xr=[2002,2016]
 oplot,y,c,ps=10,col=122
+oplot,y,o,ps=10,col=55
 print,'total(n)=',total(n)
 print,'total(c)=',total(c)
+print,'total(o)=',total(o)
+;
+siz=2.0
+xyouts,2003.6,58,'w/o Brandenburg',col=55,siz=siz
+xyouts,2003.6,52,'comp & ref papers',col=122,siz=siz
 END
