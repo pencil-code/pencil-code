@@ -1,0 +1,15 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM =   mpicomm
+
+HYDRO   =   hydro
+DENSITY =   density
+SHEAR   =   shear
+
+PARTICLES      =   particles_dust
+PARTICLES_DRAG =   particles_drag
+
+REAL_PRECISION = double
