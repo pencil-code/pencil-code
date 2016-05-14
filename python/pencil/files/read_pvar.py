@@ -17,7 +17,6 @@ def read_pvar(*args, **kwargs):
             varfile=''
             datadir='data/'
             proc=-1
-            casedir='.'
     """
     return pcpvar(*args, **kwargs)
 
@@ -25,16 +24,16 @@ class pcpvar(object):
         """
         a class to hold the pvar data
         """
-        def __init__(self,varfile='pvar.dat',casedir='.',datadir='/data',proc=-1,verbose=False):
-            keys,places=get_pvarnames(casedir=casedir,datadir=datadir)
+        def __init__(self,varfile='pvar.dat',datadir='./data',proc=-1,verbose=False):
+            keys,places=get_pvarnames(datadir=datadir)
             for i in places:
                 setattr(self,keys[int(i)-1].replace('(','P').replace(')','P'),int(i)-1)
             if (proc==-1):
-                procdirs = list(filter(lambda s:s.startswith('proc'),os.listdir(casedir+datadir)))
+                procdirs = list(filter(lambda s:s.startswith('proc'),os.listdir(datadir)))
                 nprocs=len(procdirs)
-                ipars,pvars = collect_class_pdata(casedir=casedir,pfile=varfile,datadir=datadir,nprocs=nprocs,verbose=verbose)
+                ipars,pvars = collect_class_pdata(pfile=varfile,datadir=datadir,nprocs=nprocs,verbose=verbose)
             else:
-                ipars,pvars = read_class_npvar_red(casedir=casedir,datadir=datadir,proc=proc,verbose=verbose)
+                ipars,pvars = read_class_npvar_red(datadir=datadir,proc=proc,verbose=verbose)
             
             setattr(self,'ipars',ipars)
             for i in places:
@@ -42,9 +41,9 @@ class pcpvar(object):
                 
                 
                 
-def read_npar_loc(casedir='.',datadir='/data',pfile='pvar.dat',proc=0):
+def read_npar_loc(datadir='./data',pfile='pvar.dat',proc=0):
     array_npar_loc=np.dtype([('header','<i4'),('npar_loc','<i4')])
-    npars = np.fromfile(casedir+datadir+'/proc'+str(proc)+'/'+pfile,dtype=array_npar_loc)
+    npars = np.fromfile(datadir+'/proc'+str(proc)+'/'+pfile,dtype=array_npar_loc)
     return npars['npar_loc'][0]
 
 
@@ -52,10 +51,10 @@ def read_npar_loc(casedir='.',datadir='/data',pfile='pvar.dat',proc=0):
     
 
 
-def collect_pdata(casedir='.',datadir='/data'):
+def collect_pdata(datadir='./data'):
     procs = np.arange(32)
     for i in procs:
-        dom_ipar,dom_part_pos = read_npvar_red(casedir=casedir,datadir=datadir,proc=i)
+        dom_ipar,dom_part_pos = read_npvar_red(datadir=datadir,proc=i)
         if i == 0:
             ipars = dom_ipar
             part_pos = dom_part_pos
@@ -66,8 +65,8 @@ def collect_pdata(casedir='.',datadir='/data'):
     return ipars,part_pos
 
 
-def get_pvarnames(casedir='.',datadir='/data'):
-    with open(casedir+datadir+'/pvarname.dat') as file:
+def get_pvarnames(datadir='./data'):
+    with open(datadir+'/pvarname.dat') as file:
         lines = [line.rstrip('\n') for line in file]
     keys = []
     places = []
@@ -77,11 +76,10 @@ def get_pvarnames(casedir='.',datadir='/data'):
         places.append(place)
     return keys,places
 
-def read_class_npvar_red(casedir='.',datadir='/data',pfile='pvar.dat',proc=0,verbose=False):
-    
-    dims = pc.read_dim(casedir+datadir,proc)
-    pdims = pc.read_pdim(casedir+datadir)
-    npar_loc = read_npar_loc(casedir=casedir,datadir=datadir,pfile=pfile,proc=proc)
+def read_class_npvar_red(datadir='./data',pfile='pvar.dat',proc=0,verbose=False):
+    dims = pc.read_dim(datadir,proc)
+    pdims = pc.read_pdim(datadir)
+    npar_loc = read_npar_loc(datadir=datadir,pfile=pfile,proc=proc)
     if (verbose):
         #print npar_loc,' particles on processor: ',proc # Python 2
         print(npar_loc+' particles on processor: '+proc)
@@ -111,19 +109,19 @@ def read_class_npvar_red(casedir='.',datadir='/data',pfile='pvar.dat',proc=0,ver
                             ('dz',REAL),
                             ('footer4','<i4')])
     
-    p_data = np.fromfile(casedir+datadir+'/proc'+str(proc)+'/'+pfile,dtype=array_shape)
+    p_data = np.fromfile(datadir+'/proc'+str(proc)+'/'+pfile,dtype=array_shape)
     partpars = np.array(p_data['fp'].reshape(mvars,npar_loc))
     ipar = np.squeeze(p_data['ipar'].reshape(p_data['ipar'].size))
     return ipar,partpars
     
-def collect_class_pdata(casedir='.',pfile='pvar.dat',datadir='/data',nprocs='0',verbose=False):
+def collect_class_pdata(pfile='pvar.dat',datadir='/data',nprocs='0',verbose=False):
     if (nprocs==0):
         #print "this should be greater than zero" # Python 2
         print("this should be greater than zero")
     else:
         procs=range(nprocs)
     for i in procs:
-        dom_ipar,dom_pvar = read_class_npvar_red(casedir=casedir,pfile=pfile,datadir=datadir,proc=i)
+        dom_ipar,dom_pvar = read_class_npvar_red(pfile=pfile,datadir=datadir,proc=i)
         if i == 0:
             ipars = dom_ipar
             pvars = dom_pvar
