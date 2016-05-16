@@ -1892,12 +1892,11 @@ module Particles
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray), intent (inout) :: fp
-      real, dimension (3) :: Lxyz_par, xyz0_par, xyz1_par
       integer, dimension (mpar_loc,3), intent (inout) :: ineargrid
       real, dimension (mpar_loc) :: rr_tmp, az_tmp
 !
       logical, save :: linsertmore=.true.
-      real :: xx0, yy0, r2, r, tmp, rpar_int, rpar_ext
+      real :: xx0, yy0, r2, r, tmp
       integer :: j, k, n_insert, npar_loc_old, iii, particles_insert_rate_tmp
       real, pointer :: gravr
 !
@@ -2002,12 +2001,9 @@ module Particles
                      "The world is flat, and we never got here")
               endif
   !
-              rpar_int=rp_int
-              rpar_ext=rp_ext
-  !
               call random_number_wrapper(rr_tmp(npar_loc_old+1:npar_loc))
-              rr_tmp(npar_loc_old+1:npar_loc) = rpar_int**tmp + &
-                rr_tmp(npar_loc_old+1:npar_loc)*(rpar_ext**tmp-rpar_int**tmp)
+              rr_tmp(npar_loc_old+1:npar_loc) = rp_int**tmp + &
+                rr_tmp(npar_loc_old+1:npar_loc)*(rp_ext**tmp-rp_int**tmp)
               rr_tmp(npar_loc_old+1:npar_loc) = rr_tmp(npar_loc_old+1:npar_loc)**(1./tmp)
               if ((lcartesian_coords) .or. (lcylindrical_coords .and. nygrid/=1) .or. (lspherical_coords .and. nzgrid/=1)) then
                 call random_number_wrapper(az_tmp(npar_loc_old+1:npar_loc))
@@ -2023,15 +2019,15 @@ module Particles
                   *cos(az_tmp(npar_loc_old+1:npar_loc))
                 if (nygrid/=1) fp(npar_loc_old+1:npar_loc,iyp) = rr_tmp(npar_loc_old+1:npar_loc) &
                   *sin(az_tmp(npar_loc_old+1:npar_loc))
-                if (nzgrid/=1) fp(npar_loc_old+1:npar_loc,izp) = xyz0_par(3)+fp(npar_loc_old+1:npar_loc,izp)*Lxyz_par(3)
+                if (nzgrid/=1) fp(npar_loc_old+1:npar_loc,izp) = xyz0(3)+fp(npar_loc_old+1:npar_loc,izp)*Lxyz(3)
               elseif (lcylindrical_coords) then
                 if (nxgrid/=1) fp(npar_loc_old+1:npar_loc,ixp) = rr_tmp(npar_loc_old+1:npar_loc)
-                if (nygrid/=1) fp(npar_loc_old+1:npar_loc,iyp) = xyz0_par(2)+az_tmp(npar_loc_old+1:npar_loc)*Lxyz_par(2)
-                if (nzgrid/=1) fp(npar_loc_old+1:npar_loc,izp) = xyz0_par(3)+fp(npar_loc_old+1:npar_loc,izp)*Lxyz_par(3)
+                if (nygrid/=1) fp(npar_loc_old+1:npar_loc,iyp) = xyz0(2)+az_tmp(npar_loc_old+1:npar_loc)*Lxyz(2)
+                if (nzgrid/=1) fp(npar_loc_old+1:npar_loc,izp) = xyz0(3)+fp(npar_loc_old+1:npar_loc,izp)*Lxyz(3)
               elseif (lspherical_coords) then
                 if (nxgrid/=1) fp(npar_loc_old+1:npar_loc,ixp) = rr_tmp(npar_loc_old+1:npar_loc)
-                if (nygrid/=1) fp(npar_loc_old+1:npar_loc,iyp) = xyz0_par(2)+az_tmp(npar_loc_old+1:npar_loc)*Lxyz_par(2)
-                if (nzgrid/=1) fp(npar_loc_old+1:npar_loc,izp) = xyz0_par(3)+fp(npar_loc_old+1:npar_loc,izp)*Lxyz_par(3)
+                if (nygrid/=1) fp(npar_loc_old+1:npar_loc,iyp) = xyz0(2)+az_tmp(npar_loc_old+1:npar_loc)*Lxyz(2)
+                if (nzgrid/=1) fp(npar_loc_old+1:npar_loc,izp) = xyz0(3)+fp(npar_loc_old+1:npar_loc,izp)*Lxyz(3)
               endif
 !
             case ('birthring')
