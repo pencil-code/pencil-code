@@ -23,25 +23,26 @@ def calc_tensors(
                  l_mpi=True,
                  yindex=[] 
                 ):
-    if yindex.size==-1:
-        iy=np.arange(av.shape[2])
+    dim=pc.read_dim(quiet=True)
+    if len(yindex)==0:
+        iy=np.arange(dim.ny)
     else:
         iy=yindex
     os.chdir(datatopdir) # return to working directory
     if l_mpi:
         av=[]
-        if proc.size<8:
-            yproc=proc[0]/8
-            yndx=iy-yproc*32
+        if proc.size<dim.nprocz:
+            yproc=proc[0]/dim.nprocz
+            yndx=iy-yproc*(dim.nygrid/dim.nprocy)
             #print 'yndx[0], rank',yndx[0],iy[0], rank
             aav, time = pc.read_zaver(datadir, 
                                       proc=yproc
                                      )
             av=aav[:,:,yndx,:]
         else:
-            for iproc in range(0,proc.size,8):
+            for iproc in range(0,proc.size,dim.nprocz):
                 aav, time = pc.read_zaver(datadir, 
-                                          proc=iproc/8
+                                          proc=iproc/dim.nprocz
                                          )
                 if iproc ==0:
                     av=aav
