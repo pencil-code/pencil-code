@@ -43,10 +43,6 @@ module EquationOfState
   real :: xHe=0.1
   real :: yMetals=0
   real :: yHacc=1e-5
-! input parameters
-  namelist /eos_init_pars/ xHe,yMetals,yHacc,lpp_as_aux,lcp_as_aux
-! run parameters
-  namelist /eos_run_pars/ xHe,yMetals,yHacc,lpp_as_aux,lcp_as_aux
 !ajwm  Moved here from Density.f90
 !ajwm  Completely irrelevant to eos_ionization but density and entropy need
 !ajwm  reworking to be independent of these things first
@@ -58,6 +54,10 @@ module EquationOfState
   real :: gamma=impossible, gamma_m1=impossible,gamma1=impossible
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=impossible, cs2top=impossible
+! input parameters
+  namelist /eos_init_pars/ xHe,yMetals,yHacc,lpp_as_aux,lcp_as_aux
+! run parameters
+  namelist /eos_run_pars/ xHe,yMetals,yHacc,lpp_as_aux,lcp_as_aux
 !ajwm  Not sure this should exist either...
   real :: cs2cool=0.
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
