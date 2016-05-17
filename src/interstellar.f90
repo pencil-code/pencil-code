@@ -1105,7 +1105,7 @@ module Interstellar
       lpenc_requested(i_TT1)=.true.
       lpenc_requested(i_lnrho)=.true.
       lpenc_requested(i_rho1)=.true.
-      lpenc_requested(i_rho)=.true.
+!      lpenc_requested(i_rho)=.true.
 !
 !  iname runs through all possible names that may be listed in print.in
 !
