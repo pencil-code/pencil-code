@@ -3696,7 +3696,7 @@ To work with data from \file{var.dat} and similar snapshot files, you can
 e.g. use the following routines:
 \begin{alltt}
   \prompt{GDL> } pc_read_dim, OBJECT=dim
-  \prompt{GDL> } $$PENCIL_HOME/bin/nl2idl -d -m ./data/param.nml> ./param.pro
+  \prompt{GDL> } \$\$PENCIL_HOME/bin/nl2idl -d -m ./data/param.nml> ./param.pro
   \prompt{GDL> } pc_read_param, OBJECT=par
   \prompt{GDL> } pc_read_grid, OBJECT=grid
   \prompt{GDL> } pc_read_var, OBJECT=var
@@ -3954,54 +3954,171 @@ For some examples on how to use these routines, see Sect.~\ref{S-GDL}.
 \subsubsection{Python}
 \label{Python}
 
-Pencil also supports visualization using \name{python}. A number of scripts
-for such are placed in the subfolder \file{\$PENCIL_HOME/python}. A
-README file placed under that subfolder contains the information
+Pencil supports reading, processing and the visualization of data
+using \name{python}.
+A number of scripts are placed in the subfolder \file{\$PENCIL_HOME/python}.
+A {\rm README} file placed under that subfolder contains the information
 needed to read Pencil output data into python.
 
-To get started with visualizing Pencil-Code data in Python:
-\begin{enumerate}
+\paragraph{Installation}
+For modern operating systems, Python is generally installed together with
+the system.
+If not, it can be installed via your preferred package manager or downloaded
+from the website \url{https://www.python.org/}.
+For convenience, it is strongly recommend to also install IPython, which is a
+more convenient console for Python.
+You will also need the NumPy, matplotlib and Tk library.
 
-\item Install the matplotlib library (a package often called
-  \name{python-matplotlib}), which should install \name{numpy} as a
-  dependency.\\
-  You may also want to install ipython.
+Perhaps the easiest way to obtain all the required software mentioned above
+is to install either Continuum's Anaconda or Enthought's Canopy.
+These Python distributions also provide (or indeed are) integrated graphical
+development environments.
 
-\item Initialize you PYTHONPATH environment variable by sourcing 'sourceme.*'.
-
-\item Load all of the Python pencil modules using 'import pencil as pc'
-
-\item Load data using 'pc.read_ts()', etc.
-
-\end{enumerate}
-
-Example of using Python:
-
+In order for Python to find the Pencil Code commands you will have to add to your
+\texttt{.bashrc}:
 \begin{alltt}
-  \prompt{unix> } ipython -pylab
+export PYTHONPATH=\$PENCIL_HOME/python
 \end{alltt}
 
+\subparagraph{ipythonrc}
+If you use IPython, for convenience, you should modify your
+\texttt{.ipython/ipythonrc} (create it if it doesn't exist) and add:
 \begin{alltt}
-  \prompt{In [1]: } import pencil as pc
-  \prompt{In [2]: } ts = pc.read_ts()
+import_all pencil
+\end{alltt}
+Additional, add to your \texttt{.ipython/profile_default/startup/init.py}
+the following lines:
+\begin{alltt}
+import numpy as np
+import pylab as plt
+import pencil as pc
+import matplotlib
+from matplotlib import rc
+
+plt.ion()
+matplotlib.rcParams['savefig.directory'] = ''
 \end{alltt}
 
-\noindent While in IDL you would would type ``print,tag_names(ts)'' in
-the prompt to examine the structure, in python you type
-``ts.'' and  hit tab to see what is inside the class.
-
+\subparagraph{.pythonrc}
+In case you are on a cluster and don't have access to
+IPython you can edit your \texttt{.pythonrc}:
 \begin{alltt}
-  \prompt{In [3]: } ts.
-  ts.dt      ts.plot    ts.rhomax  ts.t       ts.xpar2   ts.ypar2
-  ts.it      ts.rhom    ts.rhomin  ts.xpar1   ts.ypar1
+#!/usr/bin/python
+import numpy as np
+import pylab as plt
+import pencil as pc
+import atexit
+#import readline
+import rlcompleter
+
+# enables search with CTR+r in the history
+try:
+    import readline
+except ImportError:
+    print "Module readline not available."
+else:
+    import rlcompleter
+    readline.parse_and_bind("tab: complete")
+# enables command history
+historyPath = os.path.expanduser("~/.pyhistory")
+def save_history(historyPath=historyPath):
+    import readline
+    readline.write_history_file(historyPath)
+if os.path.exists(historyPath):
+    readline.read_history_file(historyPath)
+atexit.register(save_history)
+del os, atexit, readline, rlcompleter, save_history, historyPath
+
+plt.ion()
+\end{alltt}
+create the file \texttt{.pythonhistory } and add to your \texttt{.bashrc}:
+\begin{alltt}
+export PYTHONSTARTUP=~/.pythonrc
 \end{alltt}
 
-Next, for plotting, type, for instance:
-
+\paragraph{Pencil Code Commands in General}
+For a list of all Pencil Code commands start IPython and type
+\texttt{pc. <TAB>} (as with auto completion).
+To access the help of any command just type the command followed by a '?'
+(no spaces), e.g.:
 \begin{alltt}
-\prompt{In [4]: } plot(ts.t,ts.rhomax)
+In [1]: pc.dot?
+Type:       function
+String Form:<function dot at 0x7f9d96cb0cf8>
+File:       ~/pencil-code/python/pencil/math/vector_multiplication.py
+Definition: pc.dot(a, b)
+Docstring:
+take dot product of two pencil-code vectors a & b with shabe
+
+a.shape = (3,mz,my,mx)
+\end{alltt}
+You can also use \texttt{help(pc.dot)} for a more complete documentation of the command.
+
+There are various reading routines for the Pencil Code data.
+All of them return an object with the data.
+To store the data into a user defined variable type e.g.
+\begin{alltt}
+In [1]: ts = pc.read_ts()
 \end{alltt}
 
+Most commands take some arguments.
+For most of them there is a default value, e.g.
+\begin{alltt}
+In [1]: pc.read_ts(filename='time_series.dat', datadir='data', plot_data=True)
+\end{alltt}
+You can change the values by simply typing e.g.
+\begin{alltt}
+In [1]: pc.read_ts(plot_data = False)
+\end{alltt}
+
+\paragraph{Reading and Plotting Time Series}
+Reading the time series file is very easy.
+Simply type
+\begin{alltt}
+In [1]: ts = pc.read_ts()
+\end{alltt}
+and Python stores the data in the variable \texttt{ts}.
+The physical quantities are members of the object \texttt{ts} and can be accessed
+accordingly, e.g.\ \texttt{ts.t}, \texttt{ts.emag}.
+To check which other variables are stored simply do the tab auto completion \texttt{ts. <TAB>}.
+
+Plot the data with the matplotlib commands:
+\begin{alltt}
+In [1]: plt.plot(ts.t, ts.emag)
+\end{alltt}
+The standard plots are not perfect and need a little polishing.
+See the online wiki for a few examples on how to make pretty plots
+(\url{https://github.com/pencil-code/pencil-code/wiki/PythonForPencil}).
+You can save the plot into a file using the GUI or with
+\begin{alltt}
+In [1]: plt.savefig('plot.eps')
+\end{alltt}
+
+\paragraph{Reading and Plotting VAR files and slice files}
+Read var files:
+\begin{alltt}
+In [1]: var = pc.read_var()
+\end{alltt}
+Read slice files:
+\begin{alltt}
+In [1]: slices, t = pc.read_slices(field='bb1', extension='xy')
+\end{alltt}
+This returns the array \texttt{slices} with indices \texttt{slices[nTimes, my, mx]}
+and the time array \texttt{t}.
+
+If you want to plot e.g.\ the x-component of the magnetic field at the central plane simply type:
+\begin{alltt}
+In [1]: plt.imshow(zip(*var.bb[0, 128, :, :]), origin='lower', extent=[-4, 4, -4, 4])
+\end{alltt}
+For a complete list of arguments of \texttt{plt.imshow} refer to its documentation.
+
+For a more interactive plot use:
+\begin{alltt}
+In [1]: pc.animate_interactive(slices, t)
+\end{alltt}
+\textbf{Be aware}: arrays from the reading routines are ordered
+\texttt{f[nvar, mz, my, mx]}, i.e.\ reversed to IDL.
+This affects reading var files and slice files.
 % ---------------------------------------------------------------------- %
 
 \subsection{Running on multi-processor computers}
