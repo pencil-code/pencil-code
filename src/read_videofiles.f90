@@ -46,7 +46,6 @@ program read_videofiles
 !
   write(*,'(a)',ADVANCE='NO') 'enter variable (lnrho, uu1, ..., bb3) and stride (e.g. 10): '
   read(*,'(a)') cfield
-  !cfield='oo2'
 !
 !  read stride from internal reader
 !
@@ -77,7 +76,7 @@ program read_videofiles
 !  Loop over all processors to find the positions of the slices.
 !  iyy-loop: try to read from 2*ncpus procs as run could also be a Yin-Yang one.
 !
-  do iyy=0,ncpus-1,ncpus
+  do iyy=0,ncpus,ncpus
     do ipx=0,nprocx-1
       do ipy=0,nprocy-1
         do ipz=0,nprocz-1
@@ -98,6 +97,8 @@ program read_videofiles
             if (iyy==0 .or. lyinyang) then
               print *, 'slice_position.dat for iproc=', iproc, 'not found!'
               stop
+            else
+              exit
             endif
           endif
           open(lun,file=trim(directory)//'/slice_position.dat',form='formatted',STATUS='old')
