@@ -237,20 +237,31 @@ IF N_ELEMENTS(range) NE 0 THEN BEGIN
    minrange = range[0]
    maxrange = range[1]
 ENDIF
+
+lextra=IS_DEFINED(extra)
+
 IF vertical THEN BEGIN
-  IF N_ELEMENTS(divisions) EQ 0 THEN $
-    IF IS_IN(TAG_NAMES(extra),'YTICKS') THEN divisions=extra.yticks $
-    ELSE divisions = 4
-  IF N_ELEMENTS(minor) EQ 0 THEN $
-    IF IS_IN(TAG_NAMES(extra),'YMINOR') then minor=extra.yminor $
-    ELSE minor = 1
+  IF N_ELEMENTS(divisions) EQ 0 THEN BEGIN
+    divisions = 4
+    IF lextra then $
+      IF IS_IN(TAG_NAMES(extra),'YTICKS') ge 0 THEN divisions=extra.yticks 
+  ENDIF 
+  IF N_ELEMENTS(minor) EQ 0 THEN BEGIN
+    minor = 1
+    IF lextra then $
+      IF IS_IN(TAG_NAMES(extra),'YMINOR') ge 0 then minor=extra.yminor
+  ENDIF 
 ENDIF ELSE BEGIN
-  IF N_ELEMENTS(divisions) EQ 0 THEN $
-    IF IS_IN(TAG_NAMES(extra),'XTICKS') THEN divisions=extra.xticks $
-    ELSE divisions = 4
-  IF N_ELEMENTS(minor) EQ 0 THEN $
-    IF IS_IN(TAG_NAMES(extra),'XMINOR') then minor=extra.xminor $
-    ELSE minor = 1
+  IF N_ELEMENTS(divisions) EQ 0 THEN BEGIN
+    divisions = 4
+    IF lextra then $
+      IF IS_IN(TAG_NAMES(extra),'XTICKS') ge 0 THEN divisions=extra.xticks
+  ENDIF 
+  IF N_ELEMENTS(minor) EQ 0 THEN BEGIN
+    minor = 1
+    IF lextra then $ 
+      IF IS_IN(TAG_NAMES(extra),'XMINOR') ge 0 then minor=extra.xminor
+  ENDIF 
 ENDELSE
 
 IF N_ELEMENTS(font) EQ 0 THEN font = !P.Font
