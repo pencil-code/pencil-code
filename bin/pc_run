@@ -194,6 +194,11 @@ my $mpi              = get_setting(\%settings, 'mpi'             );
 my $lparticles       = get_setting(\%settings, 'lparticles'      );
 my $lparticles_nbody = get_setting(\%settings, 'lparticles_nbody');
 my $hostname         = get_setting(\%settings, 'hostname'        );
+my $yinyang          = get_setting(\%settings, 'lyinyang'        );
+if ($yinyang) {
+  $Ncpus = 2 * $Ncpus;
+  print "YIN-YANG GRID run", "\n";
+}
 
 ## Environment variables for other processes we start
 # Set up PATH for users who don't include $PENCIL_HOME/bin by default
@@ -681,16 +686,26 @@ sub local_settings {
         }
     }
 
+    # Yin-Yang
+    $settings{'lyinyang'} = 0 + defined(match_line_ix(
+        '^[^!]*lyinyang *= *T', 'start.in'));
+
     # Number of CPUs (from cparam.local), etc.
     ($settings{'ncpus'}) = match_line_ix(
         '^ \s* integer\b [^\!]* ncpus \s*=\s* ([0-9]*)', 'src/cparam.local'
     );
-    print count_with_plural_s($settings{'ncpus'}, 'CPU'), "\n" unless $quiet;
 
     my @nodes = get_node_list($settings{'ncpus'});
-
     my $N = @nodes + 0;
     my $ppn = $settings{'ncpus'} / $N;
+
+    if (get_setting(\%settings, 'lyinyang')) {
+      $ppn *= 2;
+      print count_with_plural_s( 2*$settings{'ncpus'}, 'CPU'), "\n" unless $quiet;
+    } else {
+      print count_with_plural_s( $settings{'ncpus'}, 'CPU'), "\n" unless $quiet;
+    }
+
     $settings{'n_nodes'} = $N;
     $settings{'n_proc_per_node'} = $ppn;
     if ($settings{'mpi'} && ! $quiet) {
