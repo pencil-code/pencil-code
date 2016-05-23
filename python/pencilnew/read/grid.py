@@ -16,7 +16,7 @@ def grid(*args, **kwargs):
 
     call signature:
 
-    read(self, file_name='time_series.dat', data_dir='data',
+    grid(file_name='time_series.dat', data_dir='data',
          double=0, quiet=0, comment_char='#')
 
     Keyword arguments:
@@ -58,7 +58,7 @@ class Grid(object):
 
 
     def read(self, data_dir='data', proc=-1, quiet=False,
-  	      trim=False, data_format='native'):
+             trim=False, data_format='native'):
         """
         Read the grid data from the pencil code simulation.
         If proc < 0, then load all data and assemble.

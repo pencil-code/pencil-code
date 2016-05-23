@@ -15,8 +15,8 @@ def ts(*args, **kwargs):
 
     call signature:
 
-    read(file_name='time_series.dat', data_dir='data',
-         quiet=False, comment_char='#')
+    ts(file_name='time_series.dat', data_dir='data',
+       quiet=False, comment_char='#')
 
     Keyword arguments:
 

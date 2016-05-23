@@ -14,7 +14,7 @@ def dim(*args, **kwargs):
 
     call signature:
 
-    read(data_dir='data', proc=-1)
+    dim(data_dir='data', proc=-1)
 
     Keyword arguments:
 
@@ -34,7 +34,7 @@ def dim(*args, **kwargs):
 
 class Dim(object):
     """
-    PcDim -- holds pencil code dimension data.
+    Dim -- holds pencil code dimension data.
     """
 
     def __init__(self):
