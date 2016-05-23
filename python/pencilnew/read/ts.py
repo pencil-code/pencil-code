@@ -34,7 +34,7 @@ def ts(*args, **kwargs):
       Double precision data.
 
     *quiet*
-      Flag for switching of output.
+      Flag for switching off output.
 
     *comment_char*
       Comment character in the time series file.
