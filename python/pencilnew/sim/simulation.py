@@ -6,20 +6,19 @@ class Simulation:
     path:		path to simulation, default = '.'
 
     Properties:
-        self.name:		  name of simulation
-        self.hidden:	  Default is False, if True this simulation will be ignored by pencil (but still is part of
-        simdict)
-        self.status_hash: Hash key representing the state of a simulation
-        self.path:		  path to simulation
-        self.dir          same as self.path
-        self.data_dir:	  path to simulation data-dir (./data/)
-        self.pc_dir:	      path to simulation pc-dir (./.pc/)
-        self.pc_data_dir:  path to simulation pendir in data_dir (data/.pc/)
-        self.param:		  list of param file
-        self.grid:        grid object
+        self.name:          name of simulation
+        self.hidden:        Default is False, if True this simulation will be ignored by pencil (but still is part of simdict)
+        self.status_hash:   Hash key representing the state of a simulation
+        self.path:          path to simulation
+        self.dir:           same as self.path
+        self.data_dir:      path to simulation data-dir (./data/)
+        self.pc_dir:        path to simulation pc-dir (./.pc/)
+        self.pc_data_dir:   path to simulation pendir in data_dir (data/.pc/)
+        self.param:         list of param file
+        self.grid:          grid object
     """
 
-    def __init__(self, path, hidden=False, quiet=False):
+    def __init__(self, path='.', hidden=False, quiet=False):
         import os
         from os.path import join as __join__
         from os.path import exists as __exists__
@@ -91,6 +90,7 @@ class Simulation:
 
     def started(self):
         """Returns whether simulation has already started. This is indicated by existing time_Series.dat in data"""
+        from os.path import exists as __exists__
         return ___exists___(___join___(self.path, 'data', 'time_series.dat'))
 
     def get_varfiles(self, pos=False, particle=False):
@@ -130,3 +130,44 @@ class Simulation:
     def get_lastvarfilename(self):
         """Returns las varfile name as string."""
         return self.get_varfiles()[-1].split('VAR')[-1]
+
+
+
+def get_value_from_file(filepath, quantity):
+  import os
+  from pen.math import is_number
+  from pen.math import is_float
+  from pen.math import is_int
+
+  # open file and read content
+  with open(filepath, 'r') as file:
+    # read a list of lines into data
+    data = file.readlines()
+
+
+  # check lines for quantity
+  for id,line in enumerate(data):
+    if line.find(quantity) >= 0:
+      # special cases:
+      if quantity == 'Lxyz':
+        line = line.replace(' ', '')
+        line = line.split(quantity+'=')[-1]
+        return [float(i) for i in line.split(',')]
+
+      # default case:
+      for i in line.split(quantity+'=')[-1]:
+        if is_number(i) == False and not i in ['.','e', '-', '+']:
+          break
+      # extract existing quantity value (not needed here)
+      oldvalue = line.split(quantity+'=')[-1].split(i)[0]
+
+      if is_int(oldvalue): return int(oldvalue)
+      elif is_float(oldvalue): return float(oldvalue)
+      else:
+        print "?? WARNING: value from file is neither float nor int! value is: "+oldvalue
+        return oldvalue
+
+
+  else:
+    print '!! quantity '+quantity+' not found in '+filepath
+    return False
