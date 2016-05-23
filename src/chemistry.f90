@@ -142,7 +142,7 @@ module Chemistry
   real, allocatable, dimension(:,:) :: low_coeff, high_coeff, troe_coeff, a_k4
   logical, allocatable, dimension(:) :: Mplus_case
   logical, allocatable, dimension(:) :: photochem_case
-  real :: lamb_low, lamb_up
+  real :: lamb_low, lamb_up, Pr_turb=0.7
 !
 !   Atmospheric physics
 !
@@ -169,7 +169,7 @@ module Chemistry
       lchemistry_diag,lfilter_strict,linit_temperature, &
       linit_density, init_rho2, &
       file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
-      reac_rate_method,global_phi, lSmag_heat_transport
+      reac_rate_method,global_phi, lSmag_heat_transport, Pr_turb
 !
 !
 ! run parameters
@@ -956,7 +956,7 @@ module Chemistry
 ! turbulent heat transport in Smagorinsky case
 ! probably it should be moved to viscosity module
 !
-            p%lambda=(0.15*dxmax)**2.*sqrt(2*p%sij2)/.3*p%cp*p%rho
+          p%lambda=(0.15*dxmax)**2.*sqrt(2*p%sij2)/Pr_turb*p%cv*p%rho
         else
           p%lambda = lambda_full(l1:l2,m,n)
           if (lpencil(i_glambda)) call grad(lambda_full,p%glambda)
@@ -5088,7 +5088,8 @@ module Chemistry
 !
 !  Add heat conduction to RHS of temperature equation
 !
-      if (l1step_test) then
+!      if (l1step_test .or. lSmag_heat_transport) then
+       if (l1step_test) then
         tmp1 = p%lambda(:)*(p%del2lnTT+g2TT)*p%cv1/p%rho(:)
       else
         if (ltemperature_nolog) then

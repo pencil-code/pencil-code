@@ -172,8 +172,8 @@ module GhostFold
             df(l1-3:l2+3,m1-3:m2+3,n1:n1+2,ivar1:ivar2) + &
             df(l1-3:l2+3,m1-3:m2+3,n2+1:n2+3,ivar1:ivar2)
         df(l1-3:l2+3,m1-3:m2+3,n2-2:n2,ivar1:ivar2)= &
-            df(l1-3:l2+3,m1-1:m2+1,n2-2:n2,ivar1:ivar2) + &
-            df(l1-3:l2+3,m1-1:m2+1,n1-3:n1-1,ivar1:ivar2)
+            df(l1-3:l2+3,m1-3:m2+3,n2-2:n2,ivar1:ivar2) + &
+            df(l1-3:l2+3,m1-3:m2+3,n1-3:n1-1,ivar1:ivar2)
         df(l1-3:l2+3,m1-3:m2+3,n1-3:n1-1,ivar1:ivar2)=0.0
         df(l1-3:l2+3,m1-3:m2+3,n2+1:n2+3,ivar1:ivar2)=0.0
       endif

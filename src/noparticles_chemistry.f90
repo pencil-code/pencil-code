@@ -366,4 +366,13 @@ module Particles_chemistry
   subroutine particles_chemistry_clean_up()
   endsubroutine particles_chemistry_clean_up
 ! ******************************************************************************
+    subroutine rprint_particles_chem(lreset,lwrite)
+    logical :: lreset
+    logical, optional :: lwrite
+
+    if (present(lwrite)) call keep_compiler_quiet(lwrite)
+
+    call keep_compiler_quiet(lreset)
+    endsubroutine rprint_particles_chem
+! ******************************************************************************
 endmodule Particles_chemistry

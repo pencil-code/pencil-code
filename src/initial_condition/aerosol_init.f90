@@ -158,7 +158,7 @@ module InitialCondition
         endif
 
         if ((init_ux /=impossible) .and. (X_wind == impossible))  then
-          f(:,:,:,iux)=init_ux
+          f(:,:,:,iux)=f(:,:,:,iux)+init_ux
         endif
 !
       call keep_compiler_quiet(f)
@@ -962,12 +962,12 @@ module InitialCondition
         enddo
         close(143)
         
-         open(143,file="w_init.dat")
+         open(143,file="wind.dat")
         do i=1,Ndata 
           read(143,*,iostat=io_code) (input_data(ii),ii=1,2)
           w_data(i)=input_data(2)   !dyn
-          
-          print*,i,'   ',w_data(i)
+!          
+!          print*,i,'   ',w_data(i)
         enddo
         close(143)
 
@@ -997,7 +997,7 @@ module InitialCondition
        f(:,:,:,ichemspec(1))=1.-f(:,:,:,ichemspec(index_N2))-f(:,:,:,ichemspec(index_H2O))
      
      
-     print*,maxval(f(:,:,:,ichemspec(1))), minval(f(:,:,:,ichemspec(1)))
+!     print*,maxval(f(:,:,:,ichemspec(1))), minval(f(:,:,:,ichemspec(1)))
        
 !  Stop if air.dat is empty
 !
@@ -1035,9 +1035,10 @@ module InitialCondition
            else
              f(:,:,i,ilnrho)=tmp5(:,:,i)
            endif 
-!             f(:,:,i,iuz)=w_data(nn1+i-3)*0.
-
-!print*,w_data(nn1+i-3),i, nn1+i-3
+             f(:,:,i,iux)=w_data(nn1+i-3)*100.*sqrt(3.)/2.
+             f(:,:,i,iuy)=w_data(nn1+i-3)*100.*1./2.
+!
+             print*,w_data(nn1+i-3),i, nn1+i-3
 
         enddo  
            
@@ -1060,7 +1061,7 @@ module InitialCondition
        if (lroot) print*, 'local:R', k_B_cgs/m_u_cgs
 !
 
-      print*,'2',maxval(f(:,:,:,ichemspec(1))), minval(f(:,:,:,ichemspec(1)))
+ !     print*,'2',maxval(f(:,:,:,ichemspec(1))), minval(f(:,:,:,ichemspec(1)))
 
 
     endsubroutine LES_data

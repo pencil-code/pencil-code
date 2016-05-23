@@ -25,8 +25,8 @@
 &grav_run_pars
 /
 &entropy_run_pars
-  iheatcond='chi-therm','shock'
-  chi_th=0.2,chi_shock=1.0
+  iheatcond='chi-cspeed','shock'
+  chi_cs=0.2,chi_shock=1.0
 /
 &magnetic_run_pars
 !  llorentzforce=F
@@ -68,7 +68,7 @@
 &shear_run_pars
 /
 &viscosity_run_pars
-  ivisc='nu-therm','nu-shock'
+  ivisc='nu-cspeed','nu-shock'
   nu=0.2,nu_shock=10.0
 /
 &shock_run_pars

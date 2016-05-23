@@ -1,0 +1,40 @@
+!                              -*-f90-*-     (for emacs)
+!
+!  Initialization parameters for linear streaming instability.
+!
+&init_pars
+    xyz0 = -0.005235987755982988, -0.005235987755982988, -0.005235987755982988
+    Lxyz = 0.010471975511965976, 0.010471975511965976, 0.010471975511965976
+/
+&eos_init_pars
+    gamma = 1.0
+    rho0 = 1.0
+    cs0 = 6.283185307179586
+/
+&hydro_init_pars
+    Omega = 6.283185307179586
+/
+&density_init_pars
+    ldensity_nolog = .true.
+    beta_glnrho_global = -0.1, 0.0, 0.0
+/
+&shear_init_pars
+    qshear = 1.5
+/
+&particles_init_pars
+    lcalc_uup = .true.
+    particle_mesh = 'tsc'
+    initxxp = 'streaming_coldstart'
+    amplxxp = 1e-6
+    coeff = (-0.1398623,0.0372951), (0.1305628,0.0640574), (0.1639549,-0.0233277), (-0.1691398,0.0361553), (0.1336704,0.0591695), (0.1691389,-0.0361555), (2.24e-05,2.12e-05)
+    kx_xxp = 600.0, kz_xxp = 600.0
+    tausp = 0.015915494309189534
+    eps_dtog = 3.0
+    lmigration_redo = .true.
+/
+&particles_drag_init_pars
+    gx_gas = 3.947841760435743
+    lset_drag_equilibrium = .true., ldrag_equilibrium_global = .true.
+    ldrag_on_gas = .true., ldrag_on_par = .true.
+    taus = 0.1
+/

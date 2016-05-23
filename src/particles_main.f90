@@ -108,6 +108,7 @@ module Particles_main
       call rprint_particles_mass         (lreset,LWRITE=lroot)
       call rprint_particles_ads          (lreset,LWRITE=lroot)
       call rprint_particles_surf         (lreset,LWRITE=lroot)
+      call rprint_particles_chem         (lreset,LWRITE=lroot)
       call rprint_particles_coagulation  (lreset,LWRITE=lroot)
 !      call rprint_particles_potential    (lreset,LWRITE=lroot)
       call rprint_particles_collisions   (lreset,LWRITE=lroot)
@@ -520,13 +521,13 @@ module Particles_main
 !
 !  Wrapper for operator split terms for particle dynamics.
 !
-!  24-may-15/ccyang: coded.
+!  08-may-16/ccyang: coded.
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: dt
 !
       drag: if (lparticles_drag) then
-        call boundconds_particles(fp, ipar)
+        call particles_boundconds(f)
         call integrate_drag(f, fp, dt)
       endif drag
 !

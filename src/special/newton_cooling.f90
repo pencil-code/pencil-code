@@ -431,17 +431,14 @@ module Special
 ! 
     endsubroutine calc_opacity
 !***********************************************************************
-    subroutine read_special_init_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+    subroutine read_special_init_pars(iostat)
 !
-      if (present(iostat)) then
-        read(unit,NML=special_init_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=special_init_pars,ERR=99)
-      endif
+      use File_io, only: parallel_unit
 !
-99    return
+      integer, intent(out) :: iostat
+!
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+!
     endsubroutine read_special_init_pars
 !***********************************************************************
     subroutine write_special_init_pars(unit)
@@ -451,18 +448,15 @@ module Special
 
     endsubroutine write_special_init_pars
 !***********************************************************************
-    subroutine read_special_run_pars(unit,iostat)
-      integer, intent(in) :: unit
-      integer, intent(inout), optional :: iostat
+    subroutine read_special_run_pars(iostat)
 !
-      if (present(iostat)) then
-        read(unit,NML=special_run_pars,ERR=99, IOSTAT=iostat)
-      else
-        read(unit,NML=special_run_pars,ERR=99)
-      endif
+      use File_io, only: parallel_unit
 !
-99    return
-endsubroutine read_special_run_pars
+      integer, intent(out) :: iostat
+!
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
+!
+    endsubroutine read_special_run_pars
 !***********************************************************************
     subroutine write_special_run_pars(unit)
       integer, intent(in) :: unit

@@ -12,7 +12,7 @@
 ! CPARAM logical, parameter :: lparticles=.true.
 ! CPARAM logical, parameter :: lparticles_potential=.false.
 !
-! PENCILS PROVIDED np; rhop; vol
+! PENCILS PROVIDED np; rhop; vol; peh
 ! PENCILS PROVIDED np_rad(5); npvz(5); sherwood
 ! PENCILS PROVIDED epsp; grhop(3)
 !
@@ -122,6 +122,7 @@ module Particles
   logical :: lgaussian_birthring=.false.
   logical :: lvector_gravity=.false.
   logical :: lprecalc_cell_volumes=.false.
+  logical :: lpeh_radius=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -236,7 +237,7 @@ module Particles
       rpbeta_species, rpbeta, gab_width, initxxp, initvvp, particles_insert_ramp_time, &
       particles_insert_ramp_time, tstart_insert_particles, birthring_r, birthring_width, &
       lgaussian_birthring, tstart_rpbeta, linsert_as_many_as_possible, lvector_gravity, &
-      lcompensate_sedimentation,compensate_sedimentation
+      lcompensate_sedimentation,compensate_sedimentation, lpeh_radius
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -312,6 +313,10 @@ module Particles
 !
       if (.not. lnocalc_np) call farray_register_auxiliary('np',inp,&
           communicated=lcommunicate_np)
+      if (lpeh_radius) then
+        lnocalc_rhop=.false.
+        call farray_register_auxiliary('peh',ipeh,communicated=.false.)
+      endif
       if (.not. lnocalc_rhop) call farray_register_auxiliary('rhop',irhop, &
           communicated=lparticles_sink.or.lcommunicate_rhop)
       if (lcalc_uup .or. ldragforce_stiff) then
@@ -626,6 +631,15 @@ module Particles
         tstart_grav_z_par = tstart_grav_par
         tstart_grav_r_par = tstart_grav_par
       endif
+!
+!  Die if lcompensate_sedimentation is used and the vertical direction is present.
+!      
+      if (lcompensate_sedimentation.and.&
+           ( (nzgrid/=1.and.(lcartesian_coords.or.lcylindrical_coords)).or.&
+             (nygrid/=1.and.lspherical_coords)&
+           )&
+         ) call fatal_error("initialize_particles",&
+         "compensate_sedimentation should only be used when the vertical dimension is not present")
 !
 !  Set up interpolation logicals. These logicals can be OR'ed with some logical
 !  in the other particle modules' initialization subroutines to enable
@@ -1878,19 +1892,21 @@ module Particles
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray), intent (inout) :: fp
-      real, dimension (3) :: Lxyz_par, xyz0_par, xyz1_par
       integer, dimension (mpar_loc,3), intent (inout) :: ineargrid
       real, dimension (mpar_loc) :: rr_tmp, az_tmp
 !
       logical, save :: linsertmore=.true.
-      real :: xx0, yy0, r2, r, tmp, rpar_int, rpar_ext
+      real :: xx0, yy0, r2, r, tmp
       integer :: j, k, n_insert, npar_loc_old, iii, particles_insert_rate_tmp
       real, pointer :: gravr
 !
-! Stop call to this routine when maximum number of particles is reached,
-! unless linsert_as_many_as_possible is set.
+! Insertion of particles is stopped when maximum number of particles is reached,
+! unless linsert_as_many_as_possible is set. 
+! Maximum numer of particles allowed in system is defined by max_particles,
+! initialized to npar. Note that this may cause errors at a processor further 
+! downstream, if particles accumulate and mpar_loc is too small.
 ! Since root inserts all new particles, make sure
-! npar_total + n_insert < mpar
+! npar_loc + n_insert < mpar_loc
 ! so that a processor can not exceed its maximum number of particles.
 !
       if (t>tstart_insert_particles+particles_insert_ramp_time) then
@@ -1905,21 +1921,40 @@ module Particles
         n_insert=int(avg_n_insert + remaining_particles)
 ! Remaining particles saved for subsequent timestep:
         remaining_particles=avg_n_insert + remaining_particles - n_insert
-        if (linsert_as_many_as_possible) n_insert=min((mpar_loc-npar_total),n_insert)
-        if ((n_insert+npar_total <= mpar_loc) &
+!
+! Insert particles if maximum count is not reached
+!
+        if ((n_insert+npar_loc <= mpar_loc) .and. (npar_inserted_tot+n_insert <= max_particles) &
             .and. (t<max_particle_insert_time) .and. (t>tstart_insert_particles)) then
           linsertmore=.true.
         else
           linsertmore=.false.
         endif
 !
+! Continue inserting even if  max_particles is reached, if linsert_as_many_as_possible
+! is set.
+!
+        if (linsert_as_many_as_possible) then
+          n_insert=min((mpar_loc-npar_loc),n_insert)
+          if ((n_insert+npar_loc <= mpar_loc)  &
+            .and. (t<max_particle_insert_time) .and. (t>tstart_insert_particles)) then
+            linsertmore=.true.
+          endif
+        endif
+!
         if (linsertmore) then
 ! Actual (integer) number of particles to be inserted at this timestep:
           do iii=npar_loc+1,npar_loc+n_insert
-            ipar(iii)=npar_total+iii-npar_loc
+            ipar(iii)=npar_inserted_tot+iii-npar_loc
           enddo
           npar_loc_old=npar_loc
           npar_loc=npar_loc + n_insert
+!
+! Update total number of inserted particles, npar_inserted_tot.
+! Not the same as npar_total, which is the number of particles in the system, 
+! without couting removed particles
+!
+          npar_inserted_tot = n_insert + npar_inserted_tot
 !
 ! Insert particles in chosen position (as in init_particles).
 !
@@ -1957,15 +1992,6 @@ module Particles
 ! Maybe random-cylindrical case should be combined with normal initxxp case
 !
             case ('random-cylindrical','random-cyl')
-              if (lglobalrandom) then
-                Lxyz_par=Lxyz
-                xyz0_par=xyz0
-                xyz1_par=xyz1
-              else
-                Lxyz_par=Lxyz_loc
-                xyz0_par=xyz0_loc
-                xyz1_par=xyz1_loc
-              endif
               if (lcylindrical_coords.or.lcartesian_coords) then
                 tmp=2-dustdensity_powerlaw
               elseif (lspherical_coords) then
@@ -1975,22 +2001,9 @@ module Particles
                      "The world is flat, and we never got here")
               endif
   !
-              if (lcartesian_coords) then
-                if (nprocx==1) then
-                  rpar_int=rp_int
-                  rpar_ext=rp_ext
-                else
-                  call fatal_error("init_particles",&
-                       "random-cyl not yet ready for nprocx/=1 in Cartesian. Parallelize in y or z")
-                endif
-              else
-                rpar_int = xyz0_loc(1)
-                rpar_ext = xyz1_loc(1)
-              endif
-
               call random_number_wrapper(rr_tmp(npar_loc_old+1:npar_loc))
-              rr_tmp(npar_loc_old+1:npar_loc) = rpar_int**tmp + &
-                rr_tmp(npar_loc_old+1:npar_loc)*(rpar_ext**tmp-rpar_int**tmp)
+              rr_tmp(npar_loc_old+1:npar_loc) = rp_int**tmp + &
+                rr_tmp(npar_loc_old+1:npar_loc)*(rp_ext**tmp-rp_int**tmp)
               rr_tmp(npar_loc_old+1:npar_loc) = rr_tmp(npar_loc_old+1:npar_loc)**(1./tmp)
               if ((lcartesian_coords) .or. (lcylindrical_coords .and. nygrid/=1) .or. (lspherical_coords .and. nzgrid/=1)) then
                 call random_number_wrapper(az_tmp(npar_loc_old+1:npar_loc))
@@ -2006,15 +2019,15 @@ module Particles
                   *cos(az_tmp(npar_loc_old+1:npar_loc))
                 if (nygrid/=1) fp(npar_loc_old+1:npar_loc,iyp) = rr_tmp(npar_loc_old+1:npar_loc) &
                   *sin(az_tmp(npar_loc_old+1:npar_loc))
-                if (nzgrid/=1) fp(npar_loc_old+1:npar_loc,izp) = xyz0_par(3)+fp(npar_loc_old+1:npar_loc,izp)*Lxyz_par(3)
+                if (nzgrid/=1) fp(npar_loc_old+1:npar_loc,izp) = xyz0(3)+fp(npar_loc_old+1:npar_loc,izp)*Lxyz(3)
               elseif (lcylindrical_coords) then
                 if (nxgrid/=1) fp(npar_loc_old+1:npar_loc,ixp) = rr_tmp(npar_loc_old+1:npar_loc)
-                if (nygrid/=1) fp(npar_loc_old+1:npar_loc,iyp) = xyz0_par(2)+az_tmp(npar_loc_old+1:npar_loc)*Lxyz_par(2)
-                if (nzgrid/=1) fp(npar_loc_old+1:npar_loc,izp) = xyz0_par(3)+fp(npar_loc_old+1:npar_loc,izp)*Lxyz_par(3)
+                if (nygrid/=1) fp(npar_loc_old+1:npar_loc,iyp) = xyz0(2)+az_tmp(npar_loc_old+1:npar_loc)*Lxyz(2)
+                if (nzgrid/=1) fp(npar_loc_old+1:npar_loc,izp) = xyz0(3)+fp(npar_loc_old+1:npar_loc,izp)*Lxyz(3)
               elseif (lspherical_coords) then
                 if (nxgrid/=1) fp(npar_loc_old+1:npar_loc,ixp) = rr_tmp(npar_loc_old+1:npar_loc)
-                if (nygrid/=1) fp(npar_loc_old+1:npar_loc,iyp) = xyz0_par(2)+az_tmp(npar_loc_old+1:npar_loc)*Lxyz_par(2)
-                if (nzgrid/=1) fp(npar_loc_old+1:npar_loc,izp) = xyz0_par(3)+fp(npar_loc_old+1:npar_loc,izp)*Lxyz_par(3)
+                if (nygrid/=1) fp(npar_loc_old+1:npar_loc,iyp) = xyz0(2)+az_tmp(npar_loc_old+1:npar_loc)*Lxyz(2)
+                if (nzgrid/=1) fp(npar_loc_old+1:npar_loc,izp) = xyz0(3)+fp(npar_loc_old+1:npar_loc,izp)*Lxyz(3)
               endif
 !
             case ('birthring')
@@ -2712,6 +2725,8 @@ module Particles
       endif
 !
       if (lpencil(i_epsp)) p%epsp=p%rhop*p%rho1
+!
+      if (ipeh>0) p%peh=f(l1:l2,m,n,ipeh)
 !
     endsubroutine calc_pencils_particles
 !***********************************************************************
@@ -3497,10 +3512,10 @@ module Particles
 !
 !  Drag force on particles and on gas.
 !
+      if (ldragforce_heat .or. (ldiagnos .and. idiag_dedragp/=0)) drag_heat = 0.0
+!
       if (ldragforce_dust_par .and. t>=tstart_dragforce_par) then
         if (headtt) print*,'dvvp_dt: Add drag force; tausp=', tausp
-!
-        if (ldragforce_heat.or.(ldiagnos.and.idiag_dedragp/=0)) drag_heat=0.0
 !
         if (npar_imn(imn)/=0) then
 !
@@ -3848,7 +3863,7 @@ module Particles
                         else
                           call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,mp_vcell)
                         endif
-                        if (nzgrid/=1.or.(.not.lcompensate_sedimentation)) then 
+                        if (.not.lcompensate_sedimentation) then 
                           df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
                                mp_vcell*rho1_point*dragforce*weight
                         else
@@ -3946,7 +3961,7 @@ module Particles
                         else
                           call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz, mp_vcell)
                         endif
-                        if (nzgrid/=1.or.(.not.lcompensate_sedimentation)) then 
+                        if (.not.lcompensate_sedimentation) then 
                           df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
                                mp_vcell*rho1_point*dragforce*weight
                         else
@@ -3991,7 +4006,7 @@ module Particles
                     else
                       call get_rhopswarm(mp_swarm,fp,k,l,m,n,mp_vcell)
                     endif
-                    if (nzgrid/=1.or.(.not.lcompensate_sedimentation)) then 
+                    if (.not.lcompensate_sedimentation) then 
                       df(l,m,n,iux:iuz) = df(l,m,n,iux:iuz) - &
                            mp_vcell*p%rho1(l-nghost)*dragforce
                     else
@@ -5557,7 +5572,7 @@ module Particles
 !
 !  Find kinematic viscosity
 !
-      call getnu(nu_input=nu_,ivis=ivis)
+      call getnu(nu_input=nu_,IVIS=ivis)
       if (ivis=='nu-const') then
         nu=nu_
       elseif (ivis=='nu-mixture') then
@@ -5595,6 +5610,15 @@ module Particles
 !
       Szero=216*nu*k_B*TT*pi_1/ &
            (dia**5*stocunn*rhop_swarm_par**2/interp_rho(k))
+!
+!  https://en.wikipedia.org/wiki/Brownian_motion
+!  .3 * urms * lmfp = D=kB*T/(6pi*eta*a)
+!  .3 * urms^2 * tau = D=kB*T/(6pi*eta*a)
+!
+!print*,'AXEL: nu,k_B,dia,stocunn,rhop_swarm_par,interp_rho(k)=', nu,k_B,dia,stocunn,rhop_swarm_par,interp_rho(k)
+!
+!  du/dt = sqrt(dt)
+!  .3 * urms^2 * tau = D=kB*T/(6pi*eta*a)
 !
       if (dt==0.0) then
         force=0.0

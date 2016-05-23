@@ -4850,7 +4850,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
       real, dimension (nx), optional, intent(in) :: rho1
 !
       real, dimension (nx) :: tmp
-      real :: fact, fact2, fpara, dfpara, sqrt21k1, kf, kx, ky, nu, arg
+      real :: fact, fact1, fact2, fpara, dfpara, sqrt21k1, kf, kx, ky, kz, nu, arg
       integer :: i2d1=1,i2d2=2,i2d3=3
       integer :: ierr
 !
@@ -4909,6 +4909,21 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=fact *sinx(l1:l2,i)*cosy(m,i)*cosz(n,i)
           force(:,2)=fact *cosx(l1:l2,i)*siny(m,i)*cosz(n,i)
           force(:,3)=fact2*cosx(l1:l2,i)*cosy(m,i)*sinz(n,i)
+!
+!  Amplitude is given by ampl_ff/nu*k^2, and k^2=2 in a 2-D box
+!  of size (2pi)^2, for example.
+!
+        case('StrainingExcact')
+          call fatal_error("forcing_cont","not checked yet")
+          call getnu(nu_input=nu)
+          kx=k1_ff; kz=k1_ff
+          kf=sqrt(kx**2+kz**2)
+          fact=ampl_ff(i)*kf**2*nu
+          fact1=ampl_ff(i)*ampl_ff(i)*kx*kz
+          fact2=-(dimensionality-1)*ampl_ff(i)*kf**2*nu
+          force(:,1)=fact *sinx(l1:l2,i)*cosy(m,i)*cosz(n,i)-fact1*kz*cosx(l1:l2,i)*cosy(m,i)*sinz(n,i)
+          force(:,2)=fact *cosx(l1:l2,i)*siny(m,i)*cosz(n,i)
+          force(:,3)=fact2*cosx(l1:l2,i)*cosy(m,i)*sinz(n,i)-fact1*kx*sinx(l1:l2,i)*cosy(m,i)*cosz(n,i)
         case('RobertsFlow')
           fact=ampl_ff(i)
           force(:,1)=-fact*cosx(l1:l2,i)*siny(m,i)

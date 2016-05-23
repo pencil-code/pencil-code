@@ -8,8 +8,6 @@
 #  if this procedure is called with an argument,
 #  then first go into this directory and continue from there
 #
-#
-#
 if ($#argv >= 1) then
   set dirlist=($argv)
 else
@@ -31,8 +29,10 @@ foreach pdir ($dirlist)
   cd $dir
 #
 #  add directories and files to cvs
+#  also get a copy of their time stamps before checking in
 #
-  cvs add *.in alpha_in.dat k.dat kvect.dat parameters.pro testfield_info.dat chemistry*.dat chem.inp tran.dat air.dat stratification.dat nnu2.dat particles_initial.dat particles_initial_header.pro data
+  ls -l *.in *.dat *.pro src/*.local > .log
+  cvs add *.in alpha_in.dat k.dat kvect.dat parameters.pro testfield_info.dat chemistry*.dat chem.inp tran.dat air.dat stratification.dat nnu2.dat particles_initial.dat particles_initial_header.pro .log data
 #
   if (-e data) then
       cd data

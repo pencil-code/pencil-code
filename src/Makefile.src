@@ -80,6 +80,7 @@ TESTPERTURB       = notestperturb
 TESTSCALAR        = notestscalar
 VISCOSITY         =   viscosity
 WENO_TRANSPORT    = noweno_transport
+YINYANG           = noyinyang
 LSODE_FC          = nolsode_for_chemistry
 #
 # Particle modules (alphabetical order).
@@ -184,6 +185,9 @@ ifneq ($(PARTICLES),noparticles)
   ifeq ($(MPICOMM),mpicomm_double)
     PARTICLES_MPICOMM =   particles_mpicomm
   endif
+endif
+ifeq ($(PARTICLES_DRAG), particles_drag)
+  PARTICLES_MAP = particles_map_index
 endif
 ifeq ($(PARTICLES_MAP),particles_map_blocks)
   PARTICLES_MPICOMM = noparticles_mpicomm
@@ -698,6 +702,9 @@ VISCOSITY_SRC=$(VISCOSITY).f90
 WENO_TRANSPORT_OBJ=$(WENO_TRANSPORT).o
 WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #
+YINYANG_OBJ=$(YINYANG).o
+YINYANG_SRC=$(YINYANG).f90
+#
 # The following block (`Begin/End machine dependent') specifies compilers
 # and switches for given architectures and machine names. See
 # `perldoc adapt-mkfile' for full documentation of the syntax.
@@ -1117,6 +1124,50 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #FFLAGS_DOUBLE=-r8 #(ekhi*)
 #LIBMPISUFFIX=#(ekhi*)
 ##
+## Axel on LCD
+##
+#FC=mpif90 #(scylla*)
+#FFLAGS= -O1  #(scylla*)
+#CC=mpicc #(scylla*)
+#CFLAGS=-O1 -DFUNDERSC=1 #(scylla*)
+#LD_MPI= #(scylla*)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(scylla)
+#FFLAGS_DOUBLE=-r8 #(scylla*)
+#LIBMPISUFFIX=#(scylla*)
+##
+## Axel on LCD
+##
+#FC=mpif90 #(charybdis*)
+#FFLAGS= -O1  #(charybdis*)
+#CC=mpicc #(charybdis*)
+#CFLAGS=-O1 -DFUNDERSC=1 #(charybdis*)
+#LD_MPI= #(charybdis*)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(charybdis)
+#FFLAGS_DOUBLE=-r8 #(charybdis*)
+#LIBMPISUFFIX=#(charybdis*)
+##
+## Axel on LCD
+##
+#FC=mpif90 #(hydra*)
+#FFLAGS= -O3  #(hydra*)
+#CC=mpicc #(hydra*)
+#CFLAGS=-O3 -DFUNDERSC=1 #(hydra*)
+#LD_MPI= #(hydra*)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(hydra)
+#FFLAGS_DOUBLE=-r8 #(hydra*)
+#LIBMPISUFFIX=#(hydra*)
+##
+## Axel on LCD
+##
+#FC=mpif90 #(hydra2*)
+#FFLAGS= -O3  #(hydra2*)
+#CC=mpicc #(hydra2*)
+#CFLAGS=-O3 -DFUNDERSC=1 #(hydra2*)
+#LD_MPI= #(hydra2*)
+#FFLAGS_DOUBLE=-fdefault-real-8 #(hydra2)
+#FFLAGS_DOUBLE=-r8 #(hydra2*)
+#LIBMPISUFFIX=#(hydra2*)
+##
 ## Axel on Sanssouci (ifc 9.1)
 ##
 #FC=mpif90 #(sanssouci|belvedere|octopus)
@@ -1136,22 +1187,8 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 ##FFLAGS_DOUBLE = -r8 #(nl6)
 ##
 ##  Axel's laptop (nl6, 2.0 GHz)
-##  the -CB options checks for out of bounds arrays
+##  gfortran
 ##
-#FC=ifort #(nl6)
-#FSTD_95=-std95 #(nl6)
-#FC=ifort #(nl6)
-#FFLAGS=-O3 -I/usr/lib/openmpi/include -CB #(nl6)
-#FFLAGS=-O3 -I/usr/lib/openmpi/include #(nl6)
-#FFLAGS=-O1 -g -CB -I/usr/lib/openmpi/include -I/home/brandenb/library/include/gsl-1.9/include/ -L/home/brandenb/library/include/gsl-1.9/lib/ #(nl6)
-#FFLAGS=-O1 -g -CB -check bounds -I/usr/lib/openmpi/include -I/home/brandenb/library/include/gsl-1.9/include/ -L/home/brandenb/library/include/gsl-1.9/lib/ #(nl6)
-#FFLAGS=-O3 -I/usr/lib/openmpi/include -L/usr/lib#(nl6)
-#LD_MPI=-L/usr/lib/openmpi/lib -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(nl6)
-#CC=icc #(nl6)
-#CFLAGS=-O3 -DFUNDERSC=1 #(nl6)
-#FFLAGS_DOUBLE=-autodouble #(nl6)
-##include $(PENCIL_HOME)/src/Makefile_ifort.incl #(nl6)
-#
 #FC=gfortran #(nl6)
 #FFLAGS=-fbounds-check -frecord-marker=4 -fimplicit-none -I/usr/include  -I. #(nl6)
 #FFLAGS_DOUBLE=-fdefault-real-8  #(nl6)
@@ -1161,6 +1198,23 @@ WENO_TRANSPORT_SRC=$(WENO_TRANSPORT).f90
 #LD_MPI= #(nl6)
 #LIBMPISUFFIX= #(nl6)
 ##
+##  Axel's laptop (nl6, 2.0 GHz)
+##  the -CB options checks for out of bounds arrays
+##
+#FC=ifort #(nl6)
+#FSTD_95=-std95 #(nl6)
+#FC=ifort #(nl6)
+#FFLAGS=-O3 -I/usr/lib/openmpi/include -CB #(nl6)
+#FFLAGS=-O3 -I/usr/lib/openmpi/include #(nl6)
+#FFLAGS=-O1 -g -CB -I/usr/lib/openmpi/include -I/home/brandenb/library/include/gsl-1.9/include/ -L/home/brandenb/library/include/gsl-1.9/lib/ #(nl6)
+#FFLAGS=-O3 -I/usr/lib/openmpi/include -L/usr/lib#(nl6)
+#FFLAGS=-O1 -g -CB -check bounds -I/usr/lib/openmpi/include -I/home/brandenb/library/include/gsl-1.9/include/ -L/home/brandenb/library/include/gsl-1.9/lib/ #(nl6)
+#LD_MPI=-L/usr/lib/openmpi/lib -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(nl6)
+#CC=icc #(nl6)
+#CFLAGS=-O3 -DFUNDERSC=1 #(nl6)
+#FFLAGS_DOUBLE=-autodouble #(nl6)
+##include $(PENCIL_HOME)/src/Makefile_ifort.incl #(nl6)
+#
 ## Giuseppe on giuseppe-desktop (gfortran)
 ##
 #FC=gfortran #(giuseppe-desktop)
@@ -2150,7 +2204,7 @@ physics=$(CHEMISTRY_OBJ) $(CHIRAL_OBJ) $(COSMICRAY_OBJ) $(COSMICRAYFLUX_OBJ) $(D
 #  Short hand for technical modules.
 #  Please use alphabetical order.
 #
-technical=$(BORDER_PROFILES_OBJ) $(BOUNDCOND_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DEBUG_OBJ) $(DEBUG_IO_OBJ) $(DERIV_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(FIXED_POINT_OBJ) $(FOURIER_OBJ) $(GENERAL_OBJ) $(GHOST_CHECK_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(IMPLICIT_DIFFUSION_OBJ) $(INITCOND_OBJ) $(INITIAL_CONDITION_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(LSODE_FC_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(NSCBC_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(POWER_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SNAPSHOT_OBJ) $(SOLID_CELLS_OBJ) $(STREAMLINES_OBJ) $(STRUCT_FUNC_OBJ) $(SUB_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) magnetic.a $(PARTICLES_MAIN).a
+technical=$(BORDER_PROFILES_OBJ) $(BOUNDCOND_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DEBUG_OBJ) $(DEBUG_IO_OBJ) $(DERIV_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(FIXED_POINT_OBJ) $(FOURIER_OBJ) $(GENERAL_OBJ) $(GHOST_CHECK_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(IMPLICIT_DIFFUSION_OBJ) $(INITCOND_OBJ) $(INITIAL_CONDITION_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(LSODE_FC_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(NSCBC_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(POWER_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SNAPSHOT_OBJ) $(SOLID_CELLS_OBJ) $(STREAMLINES_OBJ) $(STRUCT_FUNC_OBJ) $(SUB_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(YINYANG_OBJ) magnetic.a $(PARTICLES_MAIN).a
 #
 #  Short hand notation for start.o dependencies.
 #
@@ -2190,7 +2244,7 @@ read_vectorfiles.o: $(basics)
 read_vectorfiles.x: read_vectorfiles.o
 	$(LD) $(LDFLAGS) read_vectorfiles.o $(basics) $(LD_MPI) -o read_vectorfiles.x
 #
-technical_nompi=$(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(DEBUG_IO_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(LSODE_FC_OBJ) $(NOMPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SOLID_CELLS_OBJ) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(STREAMLINES_OBJ) $(SUB_OBJ) magnetic.a $(PARTICLES_MAIN).a $(GHOST_CHECK_OBJ) $(IMPLICIT_DIFFUSION_OBJ)
+technical_nompi=$(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(DEBUG_IO_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(LSODE_FC_OBJ) $(NOMPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SOLID_CELLS_OBJ) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(STREAMLINES_OBJ) $(SUB_OBJ) $(YINYANG_OBJ) magnetic.a $(PARTICLES_MAIN).a $(GHOST_CHECK_OBJ) $(IMPLICIT_DIFFUSION_OBJ)
 #
 pre_and_post_processing/pc_collect.o: pre_and_post_processing/pc_collect.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_collect.x: pre_and_post_processing/pc_collect.o

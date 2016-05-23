@@ -97,8 +97,8 @@ module InitialCondition
   character (len=labellen) :: heating_select  = 'wolfire'
 !
 !
-  real, parameter :: Tinit_cgs=2e3
-  real :: Tinit=impossible
+  real, parameter :: T_init_cgs=7.088e2
+  real :: T_init=impossible
   real :: rhox=1 ! column density comparative to Milky Way default
 !
 !
@@ -118,7 +118,7 @@ module InitialCondition
 !  start parameters
 !
   namelist /initial_condition_pars/ &
-      Tinit, amplaa, cooling_select, rhox, &
+      T_init, amplaa, cooling_select, rhox, &
       heating_select, initaa, &
       ybias_aa
 !
@@ -204,7 +204,7 @@ module InitialCondition
 !  Set up physical units.
 !
       if (unit_system=='cgs') then
-        if (Tinit == impossible) Tinit = Tinit_cgs/unit_temperature
+        if (T_init == impossible) T_init = T_init_cgs/unit_temperature
       else if (unit_system=='SI') then
         call fatal_error('initial_condition_lnrho','SI unit conversions not inplemented')
       endif
@@ -230,8 +230,8 @@ module InitialCondition
         read(31,*,iostat=stat) var1,var2
         if (stat<0) exit
         if (ip<5) print*,'rho, TT: ',var1,var2
-        tmp1(q)=var1
-        tmp2(q)=var2
+        tmp1(q)=var1/unit_density
+        tmp2(q)=var2/unit_temperature
       enddo
       close(31)
 !

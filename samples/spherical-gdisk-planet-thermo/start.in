@@ -1,0 +1,68 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Initialisation parameters
+!
+&init_pars
+cvsid='$Id: start.in,v 1.1 2015/05/11 19:37:40 wlyra Exp $',
+  ip=14,                          ! debugging parameter
+!
+  !xyz0  = 0.4, 1.1507963,-0.78539816
+  !xyz1  = 2.5, 1.9907963, 0.78539816
+
+  xyz0  = 0.4, 1.2907963,-3.1415927
+  xyz1  = 2.5, 1.8507963, 3.1415927
+!
+  lperi = F  , F  , T,            ! periodic direction?
+!
+  bcx='out','s','a2','a2' ,'a2','s'
+  bcy='s','out','a2','str','a2','s'
+!
+  lwrite_ic=T
+  coord_system='spherical'
+  luse_latitude=T
+  grid_func='power-law','linear','linear'
+  coeff_grid=1e-3
+  lwrite_aux=T
+  lcorotational_frame=T
+  rcorot=1.
+!  
+  unit_system='cgs'
+  unit_length      = 7.785e13
+  unit_velocity    = 1.30600e6
+  unit_density     = 2e-11
+  unit_temperature = 1.
+!4652.9  ! that or 8000?
+!
+  !r_ref=7.785e13
+  !llocal_iso=T
+/
+&initial_condition_pars
+  density_power_law=1.5
+  temperature_power_law=1.0
+  lnumerical_mhsequilibrium=F
+/
+&eos_init_pars
+  cs0   = 0.07
+  rho0  = 1.00  
+  gamma=  1.40
+  mu   =  2.34
+  !mu   =  1.0
+/
+&hydro_init_pars
+/
+&density_init_pars
+  ldensity_nolog=F
+  density_floor=1e-7
+/
+&grav_init_pars
+  ipotential='no-smooth','zero','zero','zero','zero'
+  g0=0.995
+  g1=0.005
+  rp1_pot=0.12
+  lramp_mass=T
+  t_ramp_mass=62.831853
+/
+&entropy_init_pars
+/
+&special_init_pars
+/

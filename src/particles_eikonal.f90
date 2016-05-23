@@ -10,6 +10,7 @@
 ! MPVAR CONTRIBUTION 6
 ! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
+! CPARAM logical, parameter :: lparticles_potential=.false.
 !
 ! PENCILS PROVIDED np; rhop
 ! PENCILS PROVIDED epsp; grhop(3)
@@ -1356,8 +1357,8 @@ k_loop:   do while (.not. (k>npar_loc))
             print*, 'init_particles: read file, iproc=',iproc
             open (1,file='particles_initial.dat')
             do k=1,npar_loc
-              read(1,*) fp(k,ixp),fp(k,iyp),fp(k,izp),fp(k,ivpx),fp(k,ivpy),fp(k,ivpz)
-              !read(1,data_format) fp(k,ixp),fp(k,iyp),fp(k,izp),fp(k,ivpx),fp(k,ivpy),fp(k,ivpz)
+              !read(1,*) fp(k,ixp),fp(k,iyp),fp(k,izp),fp(k,ivpx),fp(k,ivpy),fp(k,ivpz)
+              read(1,data_format) fp(k,ixp),fp(k,iyp),fp(k,izp),fp(k,ivpx),fp(k,ivpy),fp(k,ivpz)
             enddo
             close(1)
             print*,'iproc,fp(:,1)=',iproc,fp(:,1)
@@ -2767,7 +2768,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !AXEL use Magnetic, only: get_bext
       use Particles_diagnos_dv, only: collisions
       use Particles_diagnos_state, only: persistence_check
-      use Particles_dragforce
+!--   use Particles_dragforce
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -3922,7 +3923,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
       vel_call=.true.
       uup_shared=fp(k1,ixp:izp)
-      call special_calc_particles(fp)
+!     call special_calc_particles(fp)
       uup=uup_shared
 !
     endsubroutine calc_gas_velocity_shell_call

@@ -2,6 +2,7 @@
 #import scipy as S
 
 from pencil.files.ts import *
+from pencil.files.sn import *
 from pencil.files.dim import *
 from pencil.files.pdim import *
 from pencil.files.param import *
@@ -17,6 +18,7 @@ from pencil.files.yaver import *
 from pencil.files.zaver import *
 from pencil.files.zprof import *
 from pencil.files.power import *
+from pencil.files.tensors import *
 try:
     from pencil.files.animate_interactive import *
 except:

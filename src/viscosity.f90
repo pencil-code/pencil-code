@@ -61,8 +61,8 @@ module Viscosity
   logical :: lvisc_rho_nu_const=.false.
   logical :: lvisc_rho_nu_const_bulk=.false.
   logical :: lvisc_sqrtrho_nu_const=.false.
-  logical :: lvisc_nu_therm=.false.
-  logical :: lvisc_mu_therm=.false.
+  logical :: lvisc_nu_cspeed=.false.
+  logical :: lvisc_mu_cspeed=.false.
   logical :: lvisc_nu_const=.false.
   logical :: lvisc_nu_tdep=.false.
   logical :: lvisc_nu_prof=.false.
@@ -229,8 +229,8 @@ module Viscosity
       lvisc_rho_nu_const=.false.
       lvisc_rho_nu_const_bulk=.false.
       lvisc_sqrtrho_nu_const=.false.
-      lvisc_nu_therm=.false.
-      lvisc_mu_therm=.false.
+      lvisc_nu_cspeed=.false.
+      lvisc_mu_cspeed=.false.
       lvisc_nu_const=.false.
       lvisc_nu_tdep=.false.
       lvisc_nu_prof=.false.
@@ -278,14 +278,14 @@ module Viscosity
           if (lroot) print*,'viscous force: mu/sqrt(rho)*(del2u+graddivu/3+S.glnrho)'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
           lvisc_sqrtrho_nu_const=.true.
-        case ('nu-therm')
+        case ('nu-cspeed')
           if (lroot) print*,'viscous force: mu*sqrt(TT)*(del2u+graddivu/3+2S.glnrho)'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
-          lvisc_nu_therm=.true.
-        case ('mu-therm')
+          lvisc_nu_cspeed=.true.
+        case ('mu-cspeed')
           if (lroot) print*,'viscous force: nu*sqrt(TT)/rho*(del2u+graddivu/3)'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
-          lvisc_mu_therm=.true.
+          lvisc_mu_cspeed=.true.
         case ('nu-const')
           if (lroot) print*,'viscous force: nu*(del2u+graddivu/3+2S.glnrho)'
           if (nu/=0.) lpenc_requested(i_sij)=.true.
@@ -423,8 +423,8 @@ module Viscosity
         if (lroot) then
         if ((lvisc_simplified.or.lvisc_rho_nu_const.or. &
              lvisc_sqrtrho_nu_const.or.lvisc_nu_const.or. &
-             lvisc_nu_tdep.or.lvisc_nu_therm.or.&
-             lvisc_mu_therm).and.nu==0.0) &
+             lvisc_nu_tdep.or.lvisc_nu_cspeed.or.&
+             lvisc_mu_cspeed).and.nu==0.0) &
             call warning('initialize_viscosity', &
             'Viscosity coefficient nu is zero!')
         if ((lvisc_rho_nu_const_bulk).and.zeta==0.0) &
@@ -815,27 +815,27 @@ module Viscosity
 !
       if ((lentropy.or.ltemperature) .and. &
           (lvisc_rho_nu_const .or. lvisc_rho_nu_const_bulk .or. &
-           lvisc_sqrtrho_nu_const .or. lvisc_nu_therm .or.&
+           lvisc_sqrtrho_nu_const .or. lvisc_nu_cspeed .or.&
            lvisc_nu_const .or. lvisc_nu_tdep .or. lvisc_nu_shock .or. &
            lvisc_nu_prof .or. lvisc_nu_profx .or. lvisc_spitzer .or. &
            lvisc_nu_profr .or. lvisc_nu_profr_powerlaw .or. &
            lvisc_nu_profr_twosteps .or. lvisc_nu_shock_profz .or. &
-           lvisc_nut_from_magnetic .or. lvisc_nu_shock_profr .or. lvisc_mu_therm))&
+           lvisc_nut_from_magnetic .or. lvisc_nu_shock_profr .or. lvisc_mu_cspeed))&
            lpenc_requested(i_TT1)=.true.
       if (lvisc_rho_nu_const .or. lvisc_rho_nu_const_bulk .or. &
           lvisc_sqrtrho_nu_const .or. &
-          lvisc_nu_const .or. lvisc_nu_tdep .or. lvisc_nu_therm .or. &
+          lvisc_nu_const .or. lvisc_nu_tdep .or. lvisc_nu_cspeed .or. &
           lvisc_nu_prof.or.lvisc_nu_profx.or.lvisc_spitzer .or. &
           lvisc_nu_profr.or.lvisc_nu_profr_powerlaw .or. &
           lvisc_nu_profr_twosteps .or. &
-          lvisc_nut_from_magnetic.or.lvisc_mu_therm.or. &
+          lvisc_nut_from_magnetic.or.lvisc_mu_cspeed.or. &
           (lvisc_simplified.and.lboussinesq) ) then
         if (lenergy.and.lviscosity_heat) lpenc_requested(i_sij2)=.true.
         lpenc_requested(i_graddivu)=.true.
       endif
       if (lthermal_energy.and.lviscosity_heat) lpenc_requested(i_rho)=.true.
       if ((lentropy.or.ltemperature).and. &
-          (lvisc_nu_therm.or.lvisc_mu_therm.or.lvisc_spitzer)) &
+          (lvisc_nu_cspeed.or.lvisc_mu_cspeed.or.lvisc_spitzer)) &
           lpenc_requested(i_lnTT)=.true.
       if (lvisc_smag_simplified .or. lvisc_smag_cross_simplified) &
           lpenc_requested(i_graddivu)=.true.
@@ -867,7 +867,7 @@ module Viscosity
           lvisc_nu_prof .or. lvisc_nu_profx .or. lvisc_spitzer .or. &
           lvisc_nu_profr_powerlaw .or. lvisc_nu_profr .or. &
           lvisc_nu_profr_twosteps .or. &
-          lvisc_nut_from_magnetic .or. lvisc_nu_therm .or. lvisc_mu_therm) &
+          lvisc_nut_from_magnetic .or. lvisc_nu_cspeed .or. lvisc_mu_cspeed) &
           lpenc_requested(i_del2u)=.true.
       if (.not. limplicit_viscosity .and. lvisc_simplified) lpenc_requested(i_del2u)=.true.
       if (lvisc_hyper3_simplified .or. lvisc_hyper3_rho_nu_const .or. &
@@ -884,12 +884,12 @@ module Viscosity
       if (lvisc_hyper2_simplified) lpenc_requested(i_del4u)=.true.
       if (lvisc_rho_nu_const .or. lvisc_rho_nu_const_bulk .or. &
           lvisc_sqrtrho_nu_const .or. &
-          lvisc_hyper3_rho_nu_const .or. lvisc_nu_therm .or.&
+          lvisc_hyper3_rho_nu_const .or. lvisc_nu_cspeed .or.&
           lvisc_hyper3_rho_nu_const_bulk .or. &
           lvisc_hyper3_rho_nu_const_aniso .or. &
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
           lvisc_hyper3_rho_nu_const_symm .or. &
-          lvisc_hyper3_mu_const_strict .or. lvisc_mu_therm .or. &
+          lvisc_hyper3_mu_const_strict .or. lvisc_mu_cspeed .or. &
           lvisc_spitzer) &
           lpenc_requested(i_rho1)=.true.
 !
@@ -898,10 +898,10 @@ module Viscosity
           lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
           lvisc_nu_profr_powerlaw .or. lvisc_nu_profr .or. &
           lvisc_nu_profr_twosteps .or. lvisc_sqrtrho_nu_const .or. &
-          lvisc_nut_from_magnetic.or.lvisc_nu_therm) &
+          lvisc_nut_from_magnetic.or.lvisc_nu_cspeed) &
           lpenc_requested(i_sglnrho)=.true.
 !
-      if (lvisc_spitzer .or. lvisc_mu_therm .or. lvisc_nu_therm) &
+      if (lvisc_spitzer .or. lvisc_mu_cspeed .or. lvisc_nu_cspeed) &
           lpenc_requested(i_sglnTT)=.true.
 !
       if (lvisc_nu_const .and. lmagfield_nu) lpenc_requested(i_b2)=.true.
@@ -1157,7 +1157,7 @@ module Viscosity
 !
 !  viscous force: nu*sqrt(TT)/rho*(del2u+graddivu/3+S.glnTT)
 !
-      if (lvisc_mu_therm) then
+      if (lvisc_mu_cspeed) then
         muTT=nu*p%rho1*exp(0.5*p%lnTT)
         do i=1,3
           p%fvisc(:,i)=p%fvisc(:,i) + &
@@ -1182,12 +1182,12 @@ module Viscosity
 !  viscous force: nu*sqrt(TT)*(del2u+graddivu/3+2S.glnrho)
 !  -- for numerical stability viscous force propto soundspeed in interstellar run
 !
-      if (lvisc_nu_therm) then
+      if (lvisc_nu_cspeed) then
         muTT=nu*exp(0.5*p%lnTT)
         if (ldensity) then
           do i=1,3
             p%fvisc(:,i) = p%fvisc(:,i) + 2*muTT*p%sglnrho(:,i)&
-                +muTT*(p%del2u(:,i) + 1./3.*p%graddivu(:,i))
+                +muTT*(p%del2u(:,i) + 1./3.*p%graddivu(:,i)+p%sglnTT(:,i))
           enddo
           ! Tobi: This is not quite the full story in the presence of linear
           ! shear. In this case the rate-of-strain tensor S has xy and yx
@@ -1208,7 +1208,7 @@ module Viscosity
           else
             do i=1,3
               p%fvisc(:,i)=p%fvisc(:,i)+muTT*(p%del2u(:,i)&
-                  +1.0/3.0*p%graddivu(:,i))
+                  +1.0/3.0*p%graddivu(:,i)+p%sglnTT(:,i))
             enddo
           endif
         endif
@@ -2051,7 +2051,7 @@ module Viscosity
 !
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: nu_smag,Reshock,fvisc2
-      real, dimension (nx,3) :: nuD2uxb
+      real, dimension (nx,3) :: nuD2uxb,fluxv
       type (pencil_case) :: p
       integer :: i
 !
@@ -2169,9 +2169,18 @@ module Viscosity
             call zsum_mn_name_xy(-2.*nu*( &
             p%uu(:,1)*p%sij(:,1,1)+p%uu(:,2)*p%sij(:,2,1)+ &
             p%uu(:,3)*p%sij(:,3,1)),idiag_fviscmxy)
-        if (idiag_fviscymxy/=0) call zsum_mn_name_xy(-2.*p%rho*nu*( &
+        if (idiag_fviscymxy/=0) then
+          if (lyang) then
+            fluxv(:,1)=0.
+            fluxv(:,2)=p%uu(:,1)*p%sij(:,1,2)+p%uu(:,2)*p%sij(:,2,2)+p%uu(:,3)*p%sij(:,3,2)
+            fluxv(:,3)=p%uu(:,1)*p%sij(:,1,3)+p%uu(:,2)*p%sij(:,2,3)+p%uu(:,3)*p%sij(:,3,3)
+            call zsum_mn_name_xy(fluxv,idiag_fviscymxy,(/0,1,0/),-2.*p%rho*nu)
+          else
+            call zsum_mn_name_xy(-2.*p%rho*nu*( &
             p%uu(:,1)*p%sij(:,1,2)+p%uu(:,2)*p%sij(:,2,2)+ &
             p%uu(:,3)*p%sij(:,3,2)),idiag_fviscymxy)
+          endif
+        endif
       endif
 !
     endsubroutine calc_viscous_force
@@ -2240,10 +2249,10 @@ module Viscosity
           nu_pencil=nu*p%rho1
         elseif (lvisc_rho_nu_const_bulk) then
           nu_pencil=zeta*p%rho1
-        elseif (lvisc_nu_therm) then
-          nu_pencil=nu*sqrt(exp(p%lnTT))
-        elseif (lvisc_mu_therm) then
-          nu_pencil=nu*sqrt(exp(p%lnTT))*p%rho1
+        elseif (lvisc_nu_cspeed) then
+          nu_pencil=nu*exp(0.5*p%lnTT)
+        elseif (lvisc_mu_cspeed) then
+          nu_pencil=nu*exp(0.5*p%lnTT)*p%rho1
         elseif (lvisc_nu_const) then
           nu_pencil=nu
         else

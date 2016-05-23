@@ -1,0 +1,24 @@
+!                              -*-f90-*-     (for emacs)
+!
+!  Runtime parameters for linear streaming instability.
+!
+&run_pars
+    nt = 1000, it1 = 100
+    tmax = 0.01, dsnap = 0.02
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+    lcheck_negative_density = .true.
+    beta_glnrho_global = 0.0, 0.0, 0.0
+/
+&shear_run_pars
+/
+&viscosity_run_pars
+/
+&particles_run_pars
+/
+&particles_drag_run_pars
+/

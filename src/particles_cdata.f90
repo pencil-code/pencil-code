@@ -57,12 +57,16 @@ module Particles_cdata
   integer :: ipss=0, ipst=0, ipxx=0, ipyy=0, ipzz=0
   integer :: iuup=0, iupx=0, iupy=0, iupz=0
   integer :: ipviscx=0, ipviscy=0, ipviscz=0
-  integer :: inp=0, irhop=0, irhops=0, ivol=0
+  integer :: inp=0, irhop=0, irhops=0, ivol=0, ipeh=0
   integer :: idiag_nmigmax=0, idiag_nmigmmax=0, npart_radii=0
   integer :: nbin_ap_dist=100
   integer :: iads=0, iads_end=0
   integer :: isurf=0,isurf_end=0
   integer :: ieffp=0
+  integer :: npar_inserted_tot=0
+! Define maximum number of inserted particles in total
+! Stop inserting after max_particles is reached
+  integer :: max_particles=npar
 !
   logical :: linterpolate_spline=.true.
   logical :: lparticlemesh_cic=.true., lparticlemesh_tsc=.false.
@@ -70,6 +74,7 @@ module Particles_cdata
   logical :: lparticlemesh_gab = .false.
   logical :: linterp_reality_check=.false., lmigration_redo=.false.
   logical :: lnocalc_np=.false., lnocalc_rhop=.false.
+  logical :: lcalc_np=.true., lcalc_rhop=.true.
   logical :: lmigration_real_check=.true.
   logical :: lcheck_exact_frontier=.false.
   logical :: lshepherd_neighbour=.false.

@@ -95,6 +95,7 @@ module Hydro
   real, dimension(2) :: hydro_zaver_range=(/-max_real,max_real/)
   real :: u_out_kep=0.0, velocity_ceiling=-1.0, w_sldchar_hyd=1.0
   real :: mu_omega=0., gap=0., r_omega=0., w_omega=0.
+  real :: z1_uu=0., z2_uu=0.
   integer :: nb_rings=0
   integer :: neddy=0
 !
@@ -148,7 +149,7 @@ module Hydro
       kx_ux, ky_ux, kz_ux, kx_uy, ky_uy, kz_uy, kx_uz, ky_uz, kz_uz, &
       uy_left, uy_right, uu_const, Omega, u_out_kep, &
       initpower, initpower2, cutoff, ncutoff, kpeak, kgaussian_uu, &
-      lskip_projection, lno_second_ampl, &
+      lskip_projection, lno_second_ampl, z1_uu, z2_uu, &
       N_modes_uu, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
       lprecession, omega_precession, alpha_precession, velocity_ceiling, &
       loo_as_aux, luut_as_aux, loot_as_aux, mu_omega, nb_rings, om_rings, gap, &
@@ -236,11 +237,11 @@ module Hydro
   integer :: idiag_u2m=0        ! DIAG_DOC: $\left<\uv^2\right>$
   integer :: idiag_um2=0        ! DIAG_DOC:
   integer :: idiag_uxpt=0       ! DIAG_DOC: $u_x(x_1,y_1,z_1,t)$
-  integer :: idiag_uypt=0       ! DIAG_DOC: $u_x(x_1,y_1,z_1,t)$
-  integer :: idiag_uzpt=0       ! DIAG_DOC: $u_x(x_1,y_1,z_1,t)$
+  integer :: idiag_uypt=0       ! DIAG_DOC: $u_y(x_1,y_1,z_1,t)$
+  integer :: idiag_uzpt=0       ! DIAG_DOC: $u_z(x_1,y_1,z_1,t)$
   integer :: idiag_uxp2=0       ! DIAG_DOC: $u_x(x_2,y_2,z_2,t)$
-  integer :: idiag_uyp2=0       ! DIAG_DOC: $u_x(x_2,y_2,z_2,t)$
-  integer :: idiag_uzp2=0       ! DIAG_DOC: $u_x(x_2,y_2,z_2,t)$
+  integer :: idiag_uyp2=0       ! DIAG_DOC: $u_y(x_2,y_2,z_2,t)$
+  integer :: idiag_uzp2=0       ! DIAG_DOC: $u_z(x_2,y_2,z_2,t)$
   integer :: idiag_urms=0       ! DIAG_DOC: $\left<\uv^2\right>^{1/2}$
   integer :: idiag_urmsx=0      ! DIAG_DOC: $\left<\uv^2\right>^{1/2}$ for
                                 ! DIAG_DOC: the hydro_xaver_range
@@ -1160,6 +1161,8 @@ module Hydro
              if ((iz0 .le. n2) .and. (iz0 .gt. n1) )  &
              f(ix,:,iz0,iux) = ampluu(j)*sin(kx_uu*x(ix))
           enddo 
+        case ('random_isotropic_shell')
+          call random_isotropic_shell(f,iux,ampluu(j),z1_uu,z2_uu)
         case ('gaussian-noise'); call gaunoise(ampluu(j),f,iux,iuz)
         case ('gaussian-noise-x'); call gaunoise(ampluu(j),f,iux)
         case ('gaussian-noise-y'); call gaunoise(ampluu(j),f,iuy)
@@ -2467,10 +2470,12 @@ module Hydro
 !  23-jun-02/axel: glnrho and fvisc are now calculated in here
 !  17-jun-03/ulf: ux2, uy2 and uz2 added as diagnostic quantities
 !  27-jun-07/dhruba: differential rotation as subroutine call
+!  12-apr-16/MR: changes for Yin-Yang: only yz slices at the moment!
 !
       use Diagnostics
       use Special, only: special_calc_hydro
       use Sub, only: vecout, dot, dot2, identify_bcs, cross, multsv_mn_add
+      use General, only: transform_thph_yy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2479,6 +2484,7 @@ module Hydro
       real, dimension (nx,3) :: curlru,uxo
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
       real, dimension (nx) :: odel2um,curlru2,uref,curlo2,qo,quxo,graddivu2
+      real, dimension (1,3) :: tmp
       real :: kx
       integer :: j, ju, k
 !
@@ -2558,19 +2564,31 @@ module Hydro
 !  ``uu/dx'' for timestep
 !
       if (lfirst.and.ldt.and.ladvection_velocity) then
-        if (lspherical_coords) then
-          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
-                   abs(p%uu(:,2))*dy_1(  m  )*r1_mn+ &
-                   abs(p%uu(:,3))*dz_1(  n  )*r1_mn*sin1th(m)
-        elseif (lcylindrical_coords) then
-          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
-                   abs(p%uu(:,2))*dy_1(  m  )*rcyl_mn1+ &
-                   abs(p%uu(:,3))*dz_1(  n  )
+        if (lmaximal_cdt) then
+          advec_uu=max(abs(p%uu(:,1))*dline_1(:,1),&
+                       abs(p%uu(:,2))*dline_1(:,2),&
+                       abs(p%uu(:,3))*dline_1(:,3))
         else
-          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
-                   abs(p%uu(:,2))*dy_1(  m  )+ &
-                   abs(p%uu(:,3))*dz_1(  n  )
+          advec_uu=    abs(p%uu(:,1))*dline_1(:,1)+&
+                       abs(p%uu(:,2))*dline_1(:,2)+&
+                       abs(p%uu(:,3))*dline_1(:,3)
         endif
+!        if (lspherical_coords) then
+!          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
+!                   abs(p%uu(:,2))*dy_1(  m  )*r1_mn+ &
+!                   abs(p%uu(:,3))*dz_1(  n  )*r1_mn*sin1th(m)
+!          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
+!                   abs(p%uu(:,2))*dy_1(  m  )*r1_mn+ &
+!                   abs(p%uu(:,3))*dz_1(  n  )*r1_mn*sin1th(m)
+!        elseif (lcylindrical_coords) then
+!          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
+!                   abs(p%uu(:,2))*dy_1(  m  )*rcyl_mn1+ &
+!                   abs(p%uu(:,3))*dz_1(  n  )
+!        else
+!          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
+!                   abs(p%uu(:,2))*dy_1(  m  )+ &
+!                   abs(p%uu(:,3))*dz_1(  n  )
+!        endif
       endif
 !
 !  Empirically, it turns out that we need to take the full 3-D velocity
@@ -2665,13 +2683,22 @@ module Hydro
         if (n==iz3_loc) divu_xy3(:,m-m1+1)=p%divu
         if (n==iz4_loc) divu_xy4(:,m-m1+1)=p%divu
         do j=1,3
-          oo_yz(m-m1+1,n-n1+1,j)=p%oo(ix_loc-l1+1,j)
+          if (.not.lyang) &
+            oo_yz(m-m1+1,n-n1+1,j)=p%oo(ix_loc-l1+1,j)
           if (m==iy_loc)  oo_xz(:,n-n1+1,j)=p%oo(:,j)
           if (n==iz_loc)  oo_xy(:,m-m1+1,j)=p%oo(:,j)
           if (n==iz2_loc) oo_xy2(:,m-m1+1,j)=p%oo(:,j)
           if (n==iz3_loc) oo_xy3(:,m-m1+1,j)=p%oo(:,j)
           if (n==iz4_loc) oo_xy4(:,m-m1+1,j)=p%oo(:,j)
         enddo
+!
+!  On Yang grid: transform theta and phi components of oo to Yin-grid basis.
+!
+        if (lyang) then
+          call transform_thph_yy(p%oo(ix_loc-l1+1:ix_loc-l1+1,:),(/1,1,1/),tmp)
+          oo_yz(m-m1+1,n-n1+1,:)=tmp(1,:)
+        endif
+
         u2_yz(m-m1+1,n-n1+1)=p%u2(ix_loc-l1+1)
         if (m==iy_loc)  u2_xz(:,n-n1+1)=p%u2
         if (n==iz_loc)  u2_xy(:,m-m1+1)=p%u2
@@ -3173,51 +3200,58 @@ module Hydro
             call ysum_mn_name_xz(p%ou,idiag_oumxz)
 !
         if (idiag_uxmxy/=0) call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
-        if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu(:,2),idiag_uymxy)
-        if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu(:,3),idiag_uzmxy)
+!
+!  Changed call for compatibility with Yin-Yang grid:
+!  all non-scalars must be treated correpondingly (not yet done).
+!
+        if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu,idiag_uymxy,(/0,1,0/))
+        if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu,idiag_uzmxy,(/0,0,1/))
         if (idiag_uxuymxy/=0) &
-            call zsum_mn_name_xy(p%uu(:,1)*p%uu(:,2),idiag_uxuymxy)
+            call zsum_mn_name_xy(p%uu,idiag_uxuymxy,(/1,1,0/))
         if (idiag_uxuzmxy/=0) &
-            call zsum_mn_name_xy(p%uu(:,1)*p%uu(:,3),idiag_uxuzmxy)
+            call zsum_mn_name_xy(p%uu,idiag_uxuzmxy,(/1,0,1/))
         if (idiag_uyuzmxy/=0) &
-            call zsum_mn_name_xy(p%uu(:,2)*p%uu(:,3),idiag_uyuzmxy)
+            call zsum_mn_name_xy(p%uu,idiag_uyuzmxy,(/0,1,1/))
         if (idiag_oxmxy/=0) call zsum_mn_name_xy(p%oo(:,1),idiag_oxmxy)
-        if (idiag_oymxy/=0) call zsum_mn_name_xy(p%oo(:,2),idiag_oymxy)
-        if (idiag_ozmxy/=0) call zsum_mn_name_xy(p%oo(:,3),idiag_ozmxy)
+        if (idiag_oymxy/=0) call zsum_mn_name_xy(p%oo,idiag_oymxy,(/0,1,0/))
+        if (idiag_ozmxy/=0) call zsum_mn_name_xy(p%oo,idiag_ozmxy,(/0,0,1/))
         if (idiag_oumxy/=0) call zsum_mn_name_xy(p%ou,idiag_oumxy)
         if (idiag_pvzmxy/=0) &
-            call zsum_mn_name_xy((p%oo(:,3)+2.*Omega)/p%rho,idiag_pvzmxy)
+            call zsum_mn_name_xy((p%oo(:,3)+2.*Omega)/p%rho,idiag_pvzmxy)    ! yet incorrect for Yin-Yang
         if (idiag_ruxmxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,1),idiag_ruxmxy)
-        if (idiag_ruymxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,2),idiag_ruymxy)
-        if (idiag_ruzmxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,3),idiag_ruzmxy)
+        if (idiag_ruymxy/=0) call zsum_mn_name_xy(p%uu,idiag_ruymxy,(/0,1,0/),p%rho)
+        if (idiag_ruzmxy/=0) call zsum_mn_name_xy(p%uu,idiag_ruzmxy,(/0,0,1/),p%rho)
         if (idiag_ux2mxy/=0) &
             call zsum_mn_name_xy(p%uu(:,1)**2,idiag_ux2mxy)
         if (idiag_uy2mxy/=0) &
-            call zsum_mn_name_xy(p%uu(:,2)**2,idiag_uy2mxy)
+            call zsum_mn_name_xy(p%uu,idiag_uy2mxy,(/0,2,0/))
         if (idiag_uz2mxy/=0) &
-            call zsum_mn_name_xy(p%uu(:,3)**2,idiag_uz2mxy)
+            call zsum_mn_name_xy(p%uu,idiag_uz2mxy,(/0,0,2/))
         if (idiag_rux2mxy/=0) &
             call zsum_mn_name_xy(p%rho*p%uu(:,1)**2,idiag_rux2mxy)
         if (idiag_ruy2mxy/=0) &
-            call zsum_mn_name_xy(p%rho*p%uu(:,2)**2,idiag_ruy2mxy)
+            call zsum_mn_name_xy(p%uu,idiag_ruy2mxy,(/0,2,0/),p%rho)
         if (idiag_ruz2mxy/=0) &
-            call zsum_mn_name_xy(p%rho*p%uu(:,3)**2,idiag_ruz2mxy)
+            call zsum_mn_name_xy(p%uu,idiag_ruz2mxy,(/0,0,2/),p%rho)
+!
+!  Changed call for compatibility with Yin-Yang grid:
+!
         if (idiag_ruxuymxy/=0) &
-            call zsum_mn_name_xy(p%rho*p%uu(:,1)*p%uu(:,2),idiag_ruxuymxy)
+            call zsum_mn_name_xy(p%uu,idiag_ruxuymxy,(/1,1,0/),p%rho)
         if (idiag_ruxuzmxy/=0) &
-            call zsum_mn_name_xy(p%rho*p%uu(:,1)*p%uu(:,3),idiag_ruxuzmxy)
+            call zsum_mn_name_xy(p%uu,idiag_ruxuzmxy,(/1,0,1/),p%rho)
         if (idiag_ruyuzmxy/=0) &
-            call zsum_mn_name_xy(p%rho*p%uu(:,2)*p%uu(:,3),idiag_ruyuzmxy)
+            call zsum_mn_name_xy(p%uu,idiag_ruyuzmxy,(/0,1,1/),p%rho)
         if (idiag_fkinxmxy/=0) &
             call zsum_mn_name_xy(p%ekin*p%uu(:,1),idiag_fkinxmxy)
         if (idiag_fkinymxy/=0) &
-            call zsum_mn_name_xy(p%ekin*p%uu(:,2),idiag_fkinymxy)
+            call zsum_mn_name_xy(p%uu,idiag_fkinymxy,(/0,1,0/),p%ekin)
         if (idiag_uguxmxy/=0) &
             call zsum_mn_name_xy(p%ugu(:,1),idiag_uguxmxy)
         if (idiag_uguymxy/=0) &
-            call zsum_mn_name_xy(p%ugu(:,2),idiag_uguymxy)
+            call zsum_mn_name_xy(p%ugu,idiag_uguymxy,(/0,1,0/))
         if (idiag_uguzmxy/=0) &
-            call zsum_mn_name_xy(p%ugu(:,3),idiag_uguzmxy)
+            call zsum_mn_name_xy(p%ugu,idiag_uguzmxy,(/0,0,1/))
       else
 !
 !  idiag_uxmxy and idiag_uymxy also need to be calculated when
@@ -3228,8 +3262,8 @@ module Hydro
 !
         if (ldiagnos) then
           if (idiag_uxmxy/=0) call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
-          if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu(:,2),idiag_uymxy)
-          if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu(:,3),idiag_uzmxy)
+          if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu,idiag_uymxy,(/0,1,0/))
+          if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu,idiag_uzmxy,(/0,0,1/))
         endif
       endif
       call timing('duu_dt','finished',mnloop=.true.)
@@ -4820,9 +4854,14 @@ module Hydro
 !  Write slices for animation of Hydro variables.
 !
 !  26-jul-06/tony: coded
+!  12-apr-16/MR: modifications for Yin-Yang grid
 !
+      use General, only: transform_thph_yy_other
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
+
+      real, dimension(:,:,:,:), allocatable, save :: transformed
 !
 !  Loop over slices
 !
@@ -4835,8 +4874,23 @@ module Hydro
             slices%ready=.false.
           else
             slices%index=slices%index+1
-            slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,iux-1+slices%index)
-            slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,iux-1+slices%index)
+            if (lyang.and.slices%index>=2) then
+!
+!  On Yang grid: transform theta and phi components of uu to Yin-grid basis.
+!  (phi component is saved in transformed for use in next call.
+!
+              if (slices%index==2) then
+                if (.not.allocated(transformed)) allocate(transformed(1,ny,nz,2))
+                call transform_thph_yy_other(f(ix_loc:ix_loc,m1:m2,n1:n2,iuy:iuz),transformed)
+              endif
+!
+!  theta component is used immediately.
+!
+              slices%yz=transformed(1,:,:,slices%index-1)
+            else
+              slices%yz=f(ix_loc,m1:m2,n1:n2,iux-1+slices%index)
+            endif
+            slices%xz =f(l1:l2 ,iy_loc,n1:n2,iux-1+slices%index)
             slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,iux-1+slices%index)
             slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,iux-1+slices%index)
             if (lwrite_slice_xy3) &
@@ -4952,11 +5006,11 @@ module Hydro
           umx=0.
         else
           if (lfirst_proc_z) then
-            call mpireduce_sum(fnamexy(:,:,idiag_uxmxy),fsumxy,(/nx,ny/),idir=2)
+            call mpireduce_sum(fnamexy(idiag_uxmxy,:,:),fsumxy,(/nx,ny/),idir=2)
             uxmx=sum(fsumxy,dim=2)/nygrid
-            call mpireduce_sum(fnamexy(:,:,idiag_uymxy),fsumxy,(/nx,ny/),idir=2)
+            call mpireduce_sum(fnamexy(idiag_uymxy,:,:),fsumxy,(/nx,ny/),idir=2)
             uymx=sum(fsumxy,dim=2)/nygrid
-            call mpireduce_sum(fnamexy(:,:,idiag_uzmxy),fsumxy,(/nx,ny/),idir=2)
+            call mpireduce_sum(fnamexy(idiag_uzmxy,:,:),fsumxy,(/nx,ny/),idir=2)
             uzmx=sum(fsumxy,dim=2)/nygrid
           endif
           if (lfirst_proc_yz) &
@@ -4978,11 +5032,11 @@ module Hydro
           umy=0.
         else
           if (lfirst_proc_z) then
-            call mpireduce_sum(fnamexy(:,:,idiag_uxmxy),fsumxy,(/nx,ny/),idir=1)
+            call mpireduce_sum(fnamexy(idiag_uxmxy,:,:),fsumxy,(/nx,ny/),idir=1)
             uxmy=sum(fsumxy,dim=1)/nxgrid
-            call mpireduce_sum(fnamexy(:,:,idiag_uymxy),fsumxy,(/nx,ny/),idir=1)
+            call mpireduce_sum(fnamexy(idiag_uymxy,:,:),fsumxy,(/nx,ny/),idir=1)
             uymy=sum(fsumxy,dim=1)/nxgrid
-            call mpireduce_sum(fnamexy(:,:,idiag_uzmxy),fsumxy,(/nx,ny/),idir=1)
+            call mpireduce_sum(fnamexy(idiag_uzmxy,:,:),fsumxy,(/nx,ny/),idir=1)
             uzmy=sum(fsumxy,dim=1)/nxgrid
           endif
           if (lfirst_proc_xz) &

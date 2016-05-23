@@ -93,6 +93,7 @@ module Dustdensity
   logical :: lsemi_chemistry=.false., lradius_binning=.false.
   logical :: lzero_upper_kern=.false., ldustcoagulation_simplified=.false.
   logical :: lself_collisions=.false.
+  logical :: llog10_for_admom_above10=.true.
   integer :: iadvec_ddensity=0
   logical, pointer :: llin_radiusbins
   real, pointer :: deltamd
@@ -125,7 +126,8 @@ module Dustdensity
       G_condensparam, supsatratio_given, supsatratio_given0, &
       supsatratio_omega, ndmin_for_mdvar, &
       self_collisions, self_collision_factor, &
-      lsemi_chemistry, lradius_binning, dkern_cst, lzero_upper_kern
+      lsemi_chemistry, lradius_binning, dkern_cst, lzero_upper_kern, &
+      llog10_for_admom_above10
 !
   integer :: idiag_KKm=0     ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
@@ -2156,7 +2158,11 @@ module Dustdensity
             if (lradius_binning) then
               call sum_mn_name(sum(p%ad**k*p%nd,2)*dlnad,idiag_admom(k))
             else
-              call sum_mn_name(sum(p%ad**k*p%nd,2),idiag_admom(k))
+              if (llog10_for_admom_above10.and.k>10) then
+                call sum_mn_name(sum(p%ad**k*p%nd,2),idiag_admom(k),llog10=.true.)
+              else
+                call sum_mn_name(sum(p%ad**k*p%nd,2),idiag_admom(k))
+              endif
             endif
           endif
         enddo
@@ -2651,6 +2657,7 @@ module Dustdensity
             deltavd_drift = sqrt(deltavd_drift2)
 !
 !  Relative thermal speed is only important for very light particles
+!  urms^2 = 8*kB*T/(pi*m_red)
 !
             if (ldeltavd_thermal) then
               deltavd_therm = &

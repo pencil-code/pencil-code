@@ -38,7 +38,8 @@ class FixedPoint(object):
     def find_fixed(self, data_dir='data/', destination='fixed_points.hf5',
                    varfile='VAR0', ti=-1, tf=-1, trace_field='bb', h_min=2e-3,
                    h_max=2e4, len_max=500, tol=1e-2, interpolation='trilinear',
-                   trace_sub=1, integration='simple', int_q=[''], n_proc=1):
+                   trace_sub=1, integration='simple', int_q=[''], n_proc=1,
+                   tracer_file_name=''):
         """
         Find the fixed points.
 
@@ -104,6 +105,10 @@ class FixedPoint(object):
 
          *n_proc*:
            Number of cores for multi core computation.
+
+         *tracer_file_name*
+           Name of the tracer file to be read.
+           If equal to '' it will compute the tracers.
         """
 
 
@@ -233,9 +238,11 @@ class FixedPoint(object):
                 stream_z1 = stream.tracers[stream.stream_len-1, 2]
 
                 # Discard any streamline which does not converge or hits the boundary.
-                if ((stream.len >= len_max) or
-                (stream_z1 < self.params.Oz+self.params.Lz-self.params.dz)):
-                    dtot = 0.
+#                if ((stream.len >= len_max) or
+#                (stream_z1 < self.params.Oz+self.params.Lz-10*self.params.dz)):
+#                    dtot = 0.
+                if False:
+                    pass
                 else:
                     diffm = np.array([stream_x1 - stream_x0, stream_y1 - stream_y0])
                     if sum(diffm**2) != 0:
@@ -433,14 +440,17 @@ class FixedPoint(object):
         self.params.ny = dim.ny
         self.params.nz = dim.nz
 
-        # Create the mapping for all times.
         tracers = Tracers()
-        tracers.find_tracers(trace_field=trace_field, h_min=h_min, h_max=h_max,
-                             len_max=len_max, tol=tol,
-                             interpolation=interpolation,
-                             trace_sub=trace_sub, varfile=varfile, ti=ti, tf=tf,
-                             integration=integration, data_dir=data_dir,
-                             int_q=int_q, n_proc=n_proc)
+        # Create the mapping for all times.
+        if not tracer_file_name:
+            tracers.find_tracers(trace_field=trace_field, h_min=h_min, h_max=h_max,
+                                 len_max=len_max, tol=tol,
+                                 interpolation=interpolation,
+                                 trace_sub=trace_sub, varfile=varfile, ti=ti, tf=tf,
+                                 integration=integration, data_dir=data_dir,
+                                 int_q=int_q, n_proc=n_proc)
+        else:
+            tracers.read(data_dir=data_dir, file_name=tracer_file_name)
         self.tracers = tracers
 
         # Set some default values.
@@ -646,6 +656,5 @@ class FixedPoint(object):
         tracer_file_name = self.params.destination[:-5] + '_tracers' + \
                            self.params.destination[-5:]
         self.tracers = Tracers()
-        self.tracers.read(data_dir=self.params.data_dir,
-                          file_name=tracer_file_name)
+        self.tracers.read(data_dir=data_dir, file_name=tracer_file_name)
 

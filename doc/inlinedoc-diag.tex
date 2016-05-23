@@ -20,6 +20,7 @@
 %%   cosmicray_current.f90
 %%   density_stratified.f90
 %%   detonate.f90
+%%   dustdensity.f90
 %%   entropy_anelastic.f90
 %%   gravitational_waves.f90
 %%   gravity_simple.f90
@@ -31,11 +32,14 @@
 %%   noentropy.f90
 %%   nolorenz_gauge.f90
 %%   nosolid_cells.f90
+%%   particles_chemistry.f90
+%%   particles_surfspec.f90
 %%   polymer.f90
 %%   shear.f90
 %%   shock.f90
 %%   shock_highorder.f90
 %%   solar_corona.f90
+%%   solid_cells_reactive.f90
 %%   temperature_idealgas.f90
 %%   temperature_ionization.f90
 %%   testfield_axisym.f90
@@ -82,11 +86,11 @@
   \var{fkinzm}    & $\left<{1\over2} \varrho\uv^2 u_z\right>$ \\
   \var{u2m}       & $\left<\uv^2\right>$ \\
   \var{uxpt}      & $u_x(x_1,y_1,z_1,t)$ \\
-  \var{uypt}      & $u_x(x_1,y_1,z_1,t)$ \\
-  \var{uzpt}      & $u_x(x_1,y_1,z_1,t)$ \\
+  \var{uypt}      & $u_y(x_1,y_1,z_1,t)$ \\
+  \var{uzpt}      & $u_z(x_1,y_1,z_1,t)$ \\
   \var{uxp2}      & $u_x(x_2,y_2,z_2,t)$ \\
-  \var{uyp2}      & $u_x(x_2,y_2,z_2,t)$ \\
-  \var{uzp2}      & $u_x(x_2,y_2,z_2,t)$ \\
+  \var{uyp2}      & $u_y(x_2,y_2,z_2,t)$ \\
+  \var{uzp2}      & $u_z(x_2,y_2,z_2,t)$ \\
   \var{urms}      & $\left<\uv^2\right>^{1/2}$ \\
   \var{urmsx}     & $\left<\uv^2\right>^{1/2}$ for
                     the hydro_xaver_range \\
@@ -273,6 +277,13 @@
                     \delta x^2/\chi_{\rm max}]$
                     \quad(time step relative to time
                     step based on heat conductivity;
+                    see \S~\ref{time-step}) \\
+  \var{Hmax}      & $H_{\rm max}$\quad(net heat sources
+                    summed see \S~\ref{time-step}) \\
+  \var{dtH}       & $\delta t / [c_{\delta t,{\rm s}}\,
+                    c_{\rm v}T /H_{\rm max}]$
+                    \quad(time step relative to time
+                    step based on heat sources;
                     see \S~\ref{time-step}) \\
   \var{yHm}       & mean hydrogen ionization \\
   \var{yHmax}     & max of hydrogen ionization \\
@@ -637,82 +648,7 @@
 \midrule
   \multicolumn{2}{c}{Module \file{chemistry.f90}} \\
 \midrule
-  \var{Y1m}       & $\left<Y_1\right>$ \\
-  \var{Y2m}       & $\left<Y_2\right>$ \\
-  \var{Y3m}       & $\left<Y_3\right>$ \\
-  \var{Y4m}       & $\left<Y_4\right>$ \\
-  \var{Y5m}       & $\left<Y_5\right>$ \\
-  \var{Y6m}       & $\left<Y_6\right>$ \\
-  \var{Y7m}       & $\left<Y_7\right>$ \\
-  \var{Y8m}       & $\left<Y_8\right>$ \\
-  \var{Y9m}       & $\left<Y_9\right>$ \\
-  \var{Y10m}      & $\left<Y_10\right>$ \\
-  \var{Y11m}      & $\left<Y_11\right>$ \\
-  \var{Y12m}      & $\left<Y_12\right>$ \\
-  \var{Y13m}      & $\left<Y_12\right>$ \\
-  \var{Y14m}      & $\left<Y_12\right>$ \\
-  \var{Y15m}      & $\left<Y_12\right>$ \\
-  \var{Y16m}      & $\left<Y_12\right>$ \\
-  \var{Y17m}      & $\left<Y_12\right>$ \\
-  \var{Y18m}      & $\left<Y_12\right>$ \\
-  \var{Y19m}      & $\left<Y_12\right>$ \\
-  \var{dY1m}      & $\left<dY_1\right>$ \\
-  \var{dY2m}      & $\left<dY_2\right>$ \\
-  \var{dY3m}      & $\left<dY_3\right>$ \\
-  \var{dY4m}      & $\left<dY_4\right>$ \\
-  \var{dY5m}      & $\left<dY_5\right>$ \\
-  \var{dY6m}      & $\left<dY_6\right>$ \\
-  \var{dY7m}      & $\left<dY_7\right>$ \\
-  \var{dY8m}      & $\left<dY_8\right>$ \\
-  \var{dY9m}      & $\left<dY_9\right>$ \\
-  \var{dY10m}     & $\left<dY_10\right>$ \\
-  \var{dY11m}     & $\left<dY_11\right>$ \\
-  \var{dY12m}     & $\left<dY_12\right>$ \\
-  \var{dY13m}     & $\left<dY_13\right>$ \\
-  \var{dY14m}     & $\left<dY_14\right>$ \\
-  \var{dY15m}     & $\left<dY_15\right>$ \\
-  \var{dY16m}     & $\left<dY_16\right>$ \\
-  \var{dY17m}     & $\left<dY_17\right>$ \\
-  \var{dY18m}     & $\left<dY_18\right>$ \\
-  \var{dY19m}     & $\left<dY_19\right>$ \\
-  \var{Y1max}     & $\left<Y_1\right>$ \\
-  \var{Y2max}     & $\left<Y_2\right>$ \\
-  \var{Y3max}     & $\left<Y_3\right>$ \\
-  \var{Y4max}     & $\left<Y_4\right>$ \\
-  \var{Y5max}     & $\left<Y_5\right>$ \\
-  \var{Y6max}     & $\left<Y_6\right>$ \\
-  \var{Y7max}     & $\left<Y_7\right>$ \\
-  \var{Y8max}     & $\left<Y_8\right>$ \\
-  \var{Y9max}     & $\left<Y_9\right>$ \\
-  \var{Y10max}    & $\left<Y_10\right>$ \\
-  \var{Y11max}    & $\left<Y_11\right>$ \\
-  \var{Y12max}    & $\left<Y_12\right>$ \\
-  \var{Y13max}    & $\left<Y_12\right>$ \\
-  \var{Y14max}    & $\left<Y_12\right>$ \\
-  \var{Y15max}    & $\left<Y_12\right>$ \\
-  \var{Y16max}    & $\left<Y_12\right>$ \\
-  \var{Y17max}    & $\left<Y_12\right>$ \\
-  \var{Y18max}    & $\left<Y_12\right>$ \\
-  \var{Y19max}    & $\left<Y_12\right>$ \\
-  \var{dY1max}    & $\left<dY_1\right>$ \\
-  \var{dY2max}    & $\left<dY_2\right>$ \\
-  \var{dY3max}    & $\left<dY_3\right>$ \\
-  \var{dY4max}    & $\left<dY_4\right>$ \\
-  \var{dY5max}    & $\left<dY_5\right>$ \\
-  \var{dY6max}    & $\left<dY_6\right>$ \\
-  \var{dY7max}    & $\left<dY_7\right>$ \\
-  \var{dY8max}    & $\left<dY_8\right>$ \\
-  \var{dY9max}    & $\left<dY_9\right>$ \\
-  \var{dY10max}   & $\left<dY_10\right>$ \\
-  \var{dY11max}   & $\left<dY_11\right>$ \\
-  \var{dY12max}   & $\left<dY_12\right>$ \\
-  \var{dY13max}   & $\left<dY_13\right>$ \\
-  \var{dY14max}   & $\left<dY_14\right>$ \\
-  \var{dY15max}   & $\left<dY_15\right>$ \\
-  \var{dY16max}   & $\left<dY_16\right>$ \\
-  \var{dY17max}   & $\left<dY_17\right>$ \\
-  \var{dY18max}   & $\left<dY_18\right>$ \\
-  \var{dY19max}   & $\left<dY_19\right>$ \\
+  \var{dtchem}    & $dt_{chem}$ \\
   \var{Y1mz}      & $\left<Y_1\right>_{xy}(z)$ \\
   \var{Y2mz}      & $\left<Y_2\right>_{xy}(z)$ \\
   \var{Y3mz}      & $\left<Y_3\right>_{xy}(z)$ \\
@@ -748,6 +684,9 @@
   \var{mu5rms}    & $\left<\mu_5^2\right>^{1/2}$ \\
   \var{bgmu5rms}  & $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$ \\
   \var{gtheta5rms} & $\left<(\nabla\theta_5)^2\right>^{1/2}$ \\
+  \var{gtheta5mx} & $\left<\nabla\theta_{5x}\right>$ \\
+  \var{gtheta5my} & $\left<\nabla\theta_{5y}\right>$ \\
+  \var{gtheta5mz} & $\left<\nabla\theta_{5z}\right>$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{coronae.f90}} \\
 \midrule
@@ -778,6 +717,10 @@
 \midrule
   \var{detn}      & Number of detonated sites (summed over time steps between adjacent outputs) \\
   \var{dettot}    & Total energy input (summed over time steps between adjacent outputs) \\
+\midrule
+  \multicolumn{2}{c}{Module \file{dustdensity.f90}} \\
+\midrule
+  \var{KKm}       & $\sum {\cal T}_k^{\rm coag}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{entropy_anelastic.f90}} \\
 \midrule
@@ -1133,6 +1076,14 @@
   \multicolumn{2}{c}{Module \file{nosolid_cells.f90}} \\
 \midrule
 \midrule
+  \multicolumn{2}{c}{Module \file{particles_chemistry.f90}} \\
+\midrule
+  \var{Shchm}     & $mean particle Sherwood number$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{particles_surfspec.f90}} \\
+\midrule
+  \var{dtpchem}   & $dt_{particle,chemistry}$ \\
+\midrule
   \multicolumn{2}{c}{Module \file{polymer.f90}} \\
 \midrule
   \var{polytrm}   & $\left\langle Tr[C_{ij}]\right\rangle$ \\
@@ -1163,6 +1114,9 @@
                     see \S~\ref{time-step}) \\
   \var{dtspitzer} & Spitzer heat conduction time step \\
   \var{mag_flux}  & Total vertical magnetic flux at \\
+\midrule
+  \multicolumn{2}{c}{Module \file{solid_cells_reactive.f90}} \\
+\midrule
 \midrule
   \multicolumn{2}{c}{Module \file{temperature_idealgas.f90}} \\
 \midrule

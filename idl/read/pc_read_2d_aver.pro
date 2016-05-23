@@ -72,11 +72,12 @@ COMPILE_OPT IDL2,HIDDEN
   default, bartitle, ''
   default, xshift, 0
   default, timefix, 0
-  default, readpar, 0
+  default, readpar, 1
   default, readgrid, 0
   default, debug, 0
   default, quiet, 0
   default, in_file, dir+'aver.in'
+  default, yinyang, 0
 ;
 ;  Read additional information.
 ;
@@ -92,6 +93,11 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   if (readpar or (xshift ne 0)) then begin
     pc_read_param, obj=par, datadir=datadir, /quiet
+;
+; We know from param whether we have a Yin-Yang grid.
+;
+    if tag_exists(par,'LYINYANG') then $
+      if (par.lyinyang) then yinyang=1
   endif
   if (readgrid or (xshift ne 0)) then begin
     pc_read_grid, obj=grid, /trim, datadir=datadir, /quiet
@@ -160,7 +166,10 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Define filenames to read data from - either from a single processor or
 ;  from all of them.
 ;
+  nycap=0
   if ((ipxread eq -1) and (ipyread eq -1)) then begin
+    nxg = nxgrid
+    nyg = nygrid
     if (dir eq 'y') then begin
       ipxarray = indgen(nprocx*nprocz) mod nprocx
       ipyarray = (indgen(nprocx*nprocz)/nprocx) mod nprocz
@@ -169,10 +178,15 @@ COMPILE_OPT IDL2,HIDDEN
       ipxarray = indgen(nprocx*nprocy) mod nprocx
       ipyarray = (indgen(nprocx*nprocy)/nprocx) mod nprocy
       iproc = ipxarray+ipyarray*nprocx
+      if yinyang then begin
+        ncpus=nprocx*nprocy*nprocz
+        iproc=[iproc,ncpus+indgen(nprocx),2*ncpus-nprocx+indgen(nprocx)]
+        ipxarray=[ipxarray,indgen(nprocx),indgen(nprocx)]
+        nycap=fix(nygrid/2.-1)
+        nyg+=2*nycap
+      endif
     end
     filename = datadir+'/proc'+strtrim(iproc,2)+'/'+varfile
-    nxg = nxgrid
-    nyg = nygrid
   endif else begin
     if ((ipxread lt 0) or (ipxread gt nprocx-1)) then begin
       print, 'ERROR: ipx is not within the proper bounds'
@@ -187,6 +201,10 @@ COMPILE_OPT IDL2,HIDDEN
     if (dir eq 'y') then begin
       iproc = ipxread+ipyread*nprocx*nprocy
     end else begin
+      if yinyang then begin
+        print, 'Reading from individual procs not implemented for Yin-Yang grid!'
+        stop
+      endif
       iproc = ipxread+ipyread*nprocx
     end
     filename = datadir+'/proc'+strtrim(iproc,2)+'/'+varfile
@@ -279,6 +297,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Method 1: Read in full data processor by processor. Does not allow plotting.
 ;
   if (iplot eq -1) then begin
+;
     array_local=fltarr(nx,ny,nvar_all)*one
     array_global=fltarr(nxg,nyg,ceil(nit/double(njump)),nvar_all)*one
     t=zero
@@ -286,8 +305,24 @@ COMPILE_OPT IDL2,HIDDEN
     for ip=0, num_files-1 do begin
       if (not quiet) then print, 'Loading chunk ', strtrim(ip+1,2), ' of ', $
           strtrim(num_files,2), ' (', filename[ip], ')'
+
+      if yinyang and ip ge num_files-2*nprocx then begin
+        nyl=nycap
+        if ip eq num_files-2*nprocx then $
+          array_local=fltarr(nx,nyl,nvar_all)*one
+        if ip lt num_files-nprocx then $
+          iya=nygrid+nycap $
+        else $
+          iya=0
+      endif else begin
+        nyl=ny
+        iya=ipyarray[ip]*ny+nycap
+
+      endelse
+
       ipx=ipxarray[ip]
-      ipy=ipyarray[ip]
+      iye=iya+nyl-1
+
       openr, lun, filename[ip], /f77, swap_endian=swap_endian, /get_lun
       it=0
       while (not eof(lun) and ((nit eq 0) or (it lt nit))) do begin
@@ -295,13 +330,15 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Read time.
 ;
         readu, lun, t
+
         if (it eq 0) then t0=t
 ;
 ;  Read full data, close and free lun after endwhile.
 ;
         if ( (t ge tmin) and (it mod njump eq 0) ) then begin
           readu, lun, array_local
-          array_global[ipx*nx:(ipx+1)*nx-1,ipy*ny:(ipy+1)*ny-1,it/njump,*]=array_local
+;print, 'array_local=', min(array_local), max(array_local)
+          array_global[ipx*nx:(ipx+1)*nx-1,iya:iye,it/njump,*]=array_local
           tt[it/njump]=t
         endif else begin
           dummy=zero
@@ -317,11 +354,13 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Diagnostics.
 ;
     if (not quiet) then begin
+      varnamsiz=(max(strlen(strtrim(variables,2)))+7)/2
+      filler=arraytostring(replicate('-',varnamsiz),list='')
+
       for it=0,ceil(nit/double(njump))-1 do begin
         if (it mod it1 eq 0) then begin
-          if (it eq 0 ) then begin
-            print, '  ------ it -------- t ---------- var ----- min(var) ------- max(var) ------'
-          endif
+          if (it eq 0 ) then $
+            print, '  ------ it -------- t ------'+filler+' var '+filler+'- min(var) ------- max(var) ------'
           for ivar=0,nvar-1 do begin
             print, it, tt[it], variables[ivar], $
                 min(array_global[*,*,it,ivarpos[ivar]]), $

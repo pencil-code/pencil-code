@@ -46,7 +46,6 @@ program read_videofiles
 !
   write(*,'(a)',ADVANCE='NO') 'enter variable (lnrho, uu1, ..., bb3) and stride (e.g. 10): '
   read(*,'(a)') cfield
-  !cfield='oo2'
 !
 !  read stride from internal reader
 !
@@ -98,6 +97,8 @@ program read_videofiles
             if (iyy==0 .or. lyinyang) then
               print *, 'slice_position.dat for iproc=', iproc, 'not found!'
               stop
+            else
+              exit
             endif
           endif
           open(lun,file=trim(directory)//'/slice_position.dat',form='formatted',STATUS='old')

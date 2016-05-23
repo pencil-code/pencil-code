@@ -279,16 +279,25 @@ module Timestep
 !  the grid spacing is calculated in the (m,n) loop below.
 !
       if (lcartesian_coords .and. all(lequidist)) then
-        if (old_cdtv) then
-          dxyz_2 = max(dx_1(l1:l2)**2,dy_1(m1)**2,dz_1(n1)**2)
-        else
+!        if (old_cdtv) then
+!          dxyz_2 = max(dx_1(l1:l2)**2,dy_1(m1)**2,dz_1(n1)**2)
+!        else
           dline_1(:,1)=dx_1(l1:l2)
           dline_1(:,2)=dy_1(m1)
           dline_1(:,3)=dz_1(n1)
-          dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
-          dxyz_4 = dline_1(:,1)**4+dline_1(:,2)**4+dline_1(:,3)**4
-          dxyz_6 = dline_1(:,1)**6+dline_1(:,2)**6+dline_1(:,3)**6
-        endif
+          if (lmaximal_cdtv) then
+            dxyz_2 = max(dline_1(:,1)**2, dline_1(:,2)**2, dline_1(:,3)**2)
+            dxyz_4 = max(dline_1(:,1)**4, dline_1(:,2)**4, dline_1(:,3)**4)
+            dxyz_6 = max(dline_1(:,1)**6, dline_1(:,2)**6, dline_1(:,3)**6)
+          else
+            dxyz_2 = dline_1(:,1)**2 + dline_1(:,2)**2 + dline_1(:,3)**2
+            dxyz_4 = dline_1(:,1)**4 + dline_1(:,2)**4 + dline_1(:,3)**4
+            dxyz_6 = dline_1(:,1)**6 + dline_1(:,2)**6 + dline_1(:,3)**6
+          endif
+        !  dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
+        !  dxyz_4 = dline_1(:,1)**4+dline_1(:,2)**4+dline_1(:,3)**4
+        !  dxyz_6 = dline_1(:,1)**6+dline_1(:,2)**6+dline_1(:,3)**6
+!        endif
       endif
 !
 !  Shift entire data cube by one grid point at the beginning of each
@@ -371,13 +380,13 @@ module Timestep
 !
         if (lspherical_coords.or.lcylindrical_coords.or. &
             .not.all(lequidist)) then
-          if (old_cdtv) then
+!          if (old_cdtv) then
 !
 !  The following is only kept for backwards compatibility. Will be deleted in
 !  the future.
 !
-            dxyz_2 = max(dx_1(l1:l2)**2,dy_1(m)**2,dz_1(n)**2)
-          else
+!            dxyz_2 = max(dx_1(l1:l2)**2,dy_1(m)**2,dz_1(n)**2)
+!          else
             if (lspherical_coords) then
               dline_1(:,1)=dx_1(l1:l2)
               dline_1(:,2)=r1_mn*dy_1(m)
@@ -400,10 +409,16 @@ module Timestep
             if (nygrid /= 1) dxmin_pencil=min(1./dy_1(m),dxmin_pencil)
             if (nzgrid /= 1) dxmin_pencil=min(1./dz_1(n),dxmin_pencil)
 !
-            dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
-            dxyz_4 = dline_1(:,1)**4+dline_1(:,2)**4+dline_1(:,3)**4
-            dxyz_6 = dline_1(:,1)**6+dline_1(:,2)**6+dline_1(:,3)**6
-          endif
+            if (lmaximal_cdtv) then
+              dxyz_2 = max(dline_1(:,1)**2,dline_1(:,2)**2,dline_1(:,3)**2)
+              dxyz_4 = max(dline_1(:,1)**4,dline_1(:,2)**4,dline_1(:,3)**4)
+              dxyz_6 = max(dline_1(:,1)**6,dline_1(:,2)**6,dline_1(:,3)**6)
+            else
+              dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
+              dxyz_4 = dline_1(:,1)**4+dline_1(:,2)**4+dline_1(:,3)**4
+              dxyz_6 = dline_1(:,1)**6+dline_1(:,2)**6+dline_1(:,3)**6
+            endif
+!          endif
         endif
 !
 !  Calculate grid/geometry related pencils.

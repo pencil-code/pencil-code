@@ -77,6 +77,7 @@ module Special
   logical :: llognormal=.false., lACTOS=.false.
   logical :: lsmall_part=.false.,  llarge_part=.false., lsmall_large_part=.false. 
   logical :: laverage=.false., lgrav_LES=.false.
+  logical :: lboundary_layer=.false.
 !
   real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.,AA=0.66e-4
   real :: nd0, r0, r02, delta, uy_bz, ux_bz,  dYw1, dYw2, PP, Ntot=1e3
@@ -85,7 +86,9 @@ module Special
   real :: uz_ref_top=0., uz_ref_bot=0., uz_bc=0.
   real :: ux_ref_top=0., uy_ref_top=0., T_ampl
   real :: bc_lnrho_aver_final, bc_qv_aver_final
-
+  real :: rotat_const=0., rotat_position=0., rotat_position2=0., rotat_power=0. 
+  real :: rotat_ux=0., rotat_uy=0., ux_bot=0., uy_bot=0.
+!
 ! Keep some over used pencils
 !
 ! start parameters
@@ -96,7 +99,9 @@ module Special
       lACTOS, lsmall_part,  llarge_part, lsmall_large_part, Ntot_ratio, UY_ref, llognormal, Ntot_input, &
       laverage, lbuffer_zone_uz, logrho_ref_top, logrho_ref2_top, TT_ref_top, TT_ref_bot, & 
       t_final, logrho_ref_bot, logrho_ref2_bot, lgrav_LES, uz_ref_bot,uz_ref_top, uz_bc, &
-      ux_ref_top, uy_ref_top, bc_lnrho_aver_final, bc_qv_aver_final, T_ampl
+      ux_ref_top, uy_ref_top, bc_lnrho_aver_final, bc_qv_aver_final, T_ampl, &
+      lboundary_layer, rotat_const, rotat_position, rotat_power, rotat_position2, &
+      rotat_ux, rotat_uy, ux_bot, uy_bot 
 
 ! run parameters
   namelist /special_run_pars/  &
@@ -414,6 +419,7 @@ module Special
 !   16-jul-06/natalia: coded
 !
       use Cdata
+      use Sub, only: dot
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
@@ -425,6 +431,7 @@ module Special
 !
       real, dimension (mx) :: func_x
       real, dimension (nx) ::  TT
+      real, dimension(nx) :: g2TT
       real, dimension (my) :: u_profile
       real    :: del,width
       integer :: l_sz
@@ -466,7 +473,7 @@ module Special
             )      
       endif
 !
-       dt1=1./(3.*dt)
+       dt1=1./(5.*dt)
        del=0.1
 !
          lzone_left=.false.
@@ -514,8 +521,16 @@ module Special
            if ((z(n) >= zgrid(nn1)) .and. (z(n) <= zgrid(nn2))) lzone_right=.true.
            if (lzone_right) then
 
+!               df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(f(l1:l2,m,n,iuz)-0.)*dt1
+
+
 !              df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-0.)*dt1
 !              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-0.)*dt1
+
+
+!               df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)  &
+!                   -(f(l1:l2,m,n,ilnTT)-f(l1:l2,m,nn2,ilnTT))*dt1
+
 !
            endif
 !
@@ -526,8 +541,19 @@ module Special
            if ((z(n) >= zgrid(nn1)) .and. (z(n) <= zgrid(nn2))) lzone_left=.true.
            if (lzone_left) then
 
-              df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-0.)*dt1
-              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-0.)*dt1
+!              df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(f(l1:l2,m,n,iuz)-0.)*dt1
+!!!!!!!!!!!!!!!!!!!!!!!!!!   
+              df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-ux_bot)*dt1
+              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-uy_bot)*dt1
+
+                df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)  &
+                   -(f(l1:l2,m,n,ilnTT)-f(l1:l2,m,n1,ilnTT))*dt1
+!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ 
+      !             call dot(p%glnTT,p%glnTT,g2TT)
+ !             df(l1:l2,m,n,ilnTT)=  &
+ !              1e-4*(0.15*dxmax)**2.*sqrt(2*p%sij2)/.3*(p%del2lnTT+g2TT)
+
 !
            endif
              
@@ -535,6 +561,33 @@ module Special
 !
         enddo
         endif
+
+       if (lboundary_layer) then
+         if (z(n)>rotat_position) then
+        
+          if (z(n)<rotat_position2) then
+         
+           df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) &
+            +rotat_const &
+            *((z(n)-rotat_position) &
+              /(rotat_position2-rotat_position))**(rotat_power)
+           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
+            +rotat_const &
+            *((z(n)-rotat_position) &
+              /(rotat_position2-rotat_position))**(rotat_power)
+
+          else
+            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) & 
+!                      -(f(l1:l2,m,n,iux)-rotat_ux*(1.+0.6*t/25000.))*dt1
+                      -(f(l1:l2,m,n,iux)-rotat_ux)*dt1
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
+!                      -(f(l1:l2,m,n,iuy)-rotat_uy*(1.+0.6*t/25000.))*dt1
+                       -(f(l1:l2,m,n,iuy)-rotat_uy)*dt1
+
+          endif
+
+         endif
+       endif
 !
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
@@ -1603,23 +1656,13 @@ subroutine bc_satur_x(f,bc)
 !                  *bc_T_aver_final/exp(f(j,i,n1,ilnTT))
  
            if (nxgrid>1) then
-!             if (x(j)>0.) then
-!               f(j,i,n1,vr)=10.*bc_T_aver_final/exp(f(j,i,n1,ilnTT))
-!             else
-!               f(j,i,n1,vr)=-10. *bc_T_aver_final/exp(f(j,i,n1,ilnTT))
-!             endif
-
-!            if (x(j)>0.) then
                f(j,i,n1,vr)=sin(Period*PI*x(j)/Lxyz(1))*uz_bc
-!            endif
            else
              f(j,i,n1,vr)=bc_u_aver_final*bc_T_aver_final/exp(f(j,i,n1,ilnTT))
            endif
 
            enddo
            enddo
-
-
 !
 !     print*, bc_T_x_adopt(ll1,mm1),bc_T_x_adopt(ll2,mm1)
 !           
@@ -1739,10 +1782,16 @@ subroutine bc_satur_x(f,bc)
 !
            do j=l1,l2
            do i=m1,m2
-!              f(j,i,n2,vr)=bc_u_final_top*bc_T_final_top/exp(f(j,i,n2,ilnTT))
-              f(j,i,n2,vr)=2481.*bc_T_final_top/exp(f(j,i,n2,ilnTT))
+!            f(j,i,n2,vr)=bc_u_final_top*bc_T_final_top/exp(f(j,i,n2,ilnTT))
+!            f(j,i,n2,vr)=2481.*bc_T_final_top/exp(f(j,i,n2,ilnTT))
+
+            if (nxgrid>1) then
+              f(j,i,n2,vr)=sin(Period*PI*x(j)/Lxyz(1))*uz_bc
+            endif
+!
            enddo
            enddo
+
 !
 !     print*, bc_T_x_adopt(ll1,mm1),bc_T_x_adopt(ll2,mm1)
 !           
