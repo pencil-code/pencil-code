@@ -15,7 +15,8 @@ class Simulation:
         self.datadir:	  path to simulation datadir (data/)
         self.pcdir:	  path to simulation pendir (.pc/)
         self.pcdatadir:  path to simulation pendir in datadir (data/.pc/)
-        self.param:		  list of all simulation parameters
+        self.param:		  list of param file
+        self.grid:          grid object
     """
 
     def __init__(self, path, hidden=False, quiet=False):
@@ -57,6 +58,11 @@ class Simulation:
               print '?? WARNING: Couldnt find param.nml in simulation '+self.name+'! Simulation is now hidden from calculations!'
               self.param['UNSTARTED'] = True
               self.hidden=True
+
+        try:
+            self.grid = pencilnew.read.grid()
+        except:
+            self.grid = None
 
 
     def hide(self):
