@@ -81,7 +81,7 @@ module Special
   use General, only: keep_compiler_quiet
   use Messages, only: svn_id, fatal_error
   use Mpicomm, only: mpibarrier
-  use Sub, only: numeric_precision, dot_mn_vm, curl_mn
+  use Sub, only: numeric_precision, dot_mn_vm, curl_mn, cross_mn
   use HDF5
   use File_io, only: parallel_unit
 !
@@ -125,23 +125,28 @@ module Special
   logical, dimension(3)     :: lgamma_c, ldelta_c
   logical :: lalpha, lbeta, lgamma, ldelta, lkappa
   real :: alpha_scale, beta_scale, gamma_scale, delta_scale
+  character (len=fnlen) :: alpha_name, beta_name,  &
+                           gamma_name, delta_name, &
+                           kappa_name
+  character (len=fnlen), dimension(ntensors) :: tensor_names
   real, dimension(ntensors) :: tensor_scales
   ! Interpolation parameters
   character (len=fnlen) :: interpname
   integer :: dataload_len
   ! Input dataset name
-  character (len=fnlen) :: dataname
   ! Input namelist
   namelist /special_init_pars/ &
       alpha_scale, beta_scale, gamma_scale, delta_scale, &
+      alpha_name,  beta_name,  gamma_name,  delta_name,  &
       lalpha,      lbeta,      lgamma,      ldelta,      &
       lalpha_c,    lbeta_c,    lgamma_c,    ldelta_c,    &
-      dataname,    interpname
+      interpname
   namelist /special_run_pars/ &
       alpha_scale, beta_scale, gamma_scale, delta_scale, &
+      alpha_name,  beta_name,  gamma_name,  delta_name,  &
       lalpha,      lbeta,      lgamma,      ldelta,      &
       lalpha_c,    lbeta_c,    lgamma_c,    ldelta_c,    &
-      dataname,    interpname
+      interpname
   ! loadDataset interface
   interface loadDataset
     module procedure loadDataset_rank1
@@ -275,30 +280,30 @@ module Special
         ! alpha
         if (lalpha) then
           call openDataset('alpha', alpha_id)
-          write(*,*) 'initialize_special: Using dataset /zaver/alpha/'//trim(dataname)//' for alpha'
+          write(*,*) 'initialize_special: Using dataset /zaver/alpha/'//trim(alpha_name)//' for alpha'
         end if
         ! beta
         if (lbeta) then
           call openDataset('beta', beta_id)
-          write(*,*) 'initialize_special: Using dataset /zaver/beta/'//trim(dataname)//' for beta'
+          write(*,*) 'initialize_special: Using dataset /zaver/beta/'//trim(beta_name)//' for beta'
         end if
 
         ! gamma
         if (lgamma) then
           call openDataset('gamma', gamma_id)
-          write(*,*) 'initialize_special: Using dataset /zaver/gamma/'//trim(dataname)//' for gamma'
+          write(*,*) 'initialize_special: Using dataset /zaver/gamma/'//trim(gamma_name)//' for gamma'
         end if
 
         ! delta
         if (ldelta) then
           call openDataset('delta', delta_id)
-          write(*,*) 'initialize_special: Using dataset /zaver/delta/'//trim(dataname)//' for delta'
+          write(*,*) 'initialize_special: Using dataset /zaver/delta/'//trim(delta_name)//' for delta'
         end if
         
         ! kappa
         if (lkappa) then
           call openDataset('kappa', kappa_id)
-          write(*,*) 'initialize_special: Using dataset /zaver/kappa/'//trim(dataname)//' for kappa'
+          write(*,*) 'initialize_special: Using dataset /zaver/kappa/'//trim(kappa_name)//' for kappa'
         end if
         
         ! Load initial dataset values
@@ -761,29 +766,29 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-      real, dimension(nx,3) :: tmpvector, tmpvector2, emfvector
+      real, dimension(nx,3) :: tmpvector, emfvector
       integer :: i
-!!
-!!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
-!!
-!!  df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + SOME NEW TERM
-!!  df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + SOME NEW TERM
-!!
+!
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
 !
       emfvector=0
+! Calculate alpha B
       tmpvector=0
-      tmpvector2=0
       if (lalpha) then
         call dot_mn_vm(p%bb,p%alpha_emf,tmpvector)
         emfvector = emfvector + tmpvector
       end if
+! Calculate beta (curl B)
       tmpvector=0
-      tmpvector2=0
       if (lbeta) then
         call dot_mn_vm(p%jj,p%beta_emf,tmpvector)
+        emfvector = emfvector - tmpvector
+      end if
+! Calculate gamma x (curl B)
+      tmpvector=0
+      if (lgamma) then
+        call cross_mn(p%gamma_emf,p%jj,tmpvector)
         emfvector = emfvector - tmpvector
       end if
 
@@ -955,6 +960,9 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
       integer(HSIZE_T), dimension(10) :: maxdimsizes
       integer :: ndims
       logical :: hdf_exists
+      character(len=fnlen)            :: dataname
+      
+      dataname = tensor_names(tensor_id)
       ! Check that datagroup e.g. /zaver/alpha exists
       call H5Lexists_F(hdf_emftensors_group, datagroup, hdf_exists, hdferr)
       if (.not. hdf_exists) then
@@ -1124,7 +1132,11 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
       beta_scale=1.0
       gamma_scale=1.0
       delta_scale=1.0
-      dataname='data'
+      alpha_name='data'
+      beta_name='data'
+      gamma_name='data'
+      delta_name='data'
+      kappa_name='data'
     end subroutine setParameterDefaults
 
     subroutine parseParameters
@@ -1175,11 +1187,16 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
         ldelta      = .true.
         ldelta_arr  = .true.
       end if
-
+      ! Store scales
       tensor_scales(alpha_id) = alpha_scale
       tensor_scales(beta_id)  = beta_scale
       tensor_scales(gamma_id) = gamma_scale
       tensor_scales(delta_id) = delta_scale
+      ! Store names
+      tensor_names(alpha_id)  = alpha_name
+      tensor_names(beta_id)  = beta_name
+      tensor_names(gamma_id)  = gamma_name
+      tensor_names(delta_id)  = delta_name
             
     end subroutine parseParameters
 
