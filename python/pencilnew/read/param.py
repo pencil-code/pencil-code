@@ -114,11 +114,12 @@ class Param(object):
                 exec(script.replace("\n    ", "\nParams.")[198:])
             else:
                 print("Param.read: nl2python returned nothing! Is $PENCIL_HOME/bin in the path?")
-                return -1
-        
+                return -1        
             param_list = Params()
 
-        return param_list
+        key_list = dir(param_list)
+        for key in key_list:
+            setattr(self, getattr(Params, key))
 
 
     def __param_formatter(self, string_part):
