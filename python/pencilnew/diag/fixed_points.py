@@ -4,7 +4,7 @@
 Creates the fixed point values.
 """
 
-import numpy as np
+#import numpy as np
 import pencil as pc
 import math as m
 import multiprocessing as mp
@@ -111,6 +111,8 @@ class FixedPoint(object):
            If equal to '' it will compute the tracers.
         """
 
+
+        import numpy as np
 
         # Return the fixed points for a subset of the domain.
         def __sub_fixed(queue, ix0, iy0, field, tracers, tidx, var, i_proc):
@@ -557,6 +559,8 @@ class FixedPoint(object):
           Destination file.
         """
 
+        import numpy as np
+
         self.params.destination = destination
         
         # Write the results into hdf5 file.
@@ -620,7 +624,9 @@ class FixedPoint(object):
         *file_name*:
           File with the tracer data.
         """
-    
+
+        import numpy as np
+
         # Open the file.
         f = h5py.File(os.path.join(data_dir, file_name), 'r')
 
