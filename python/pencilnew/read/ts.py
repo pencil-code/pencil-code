@@ -16,7 +16,7 @@ def ts(*args, **kwargs):
     call signature:
 
     read(file_name='time_series.dat', data_dir='data',
-         double=0, quiet=0, comment_char='#')
+         quiet=False, comment_char='#')
 
     Keyword arguments:
 
@@ -25,9 +25,6 @@ def ts(*args, **kwargs):
 
     *data_dir*:
       Directory where the data is stored.
-
-    *double*
-      Double precision data.
 
     *quiet*
       Flag for switching off output.
@@ -55,7 +52,7 @@ class TimeSeries(object):
 
 
     def read(self, file_name='time_series.dat', data_dir='data',
-             quiet=0, comment_char='#'):
+             quiet=False, comment_char='#'):
         """
         Rread Pencil Code time series data.
 
