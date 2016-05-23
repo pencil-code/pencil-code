@@ -28,12 +28,12 @@ def __is_sim_dir__(path='.'):
         return True
     return False
 
-def get_sim(path=''):
+def get_sim(path='.'):
     """Returns simulation object from 'path/.pc/' if already existing."""
     if __exists__(__join__(path,'.pc/sim.pkl')):
         return io.load('sim', folder='.pc')
     else:
-        return False
+        return sim.Simulation(path)
 
 # Startup and init. processes
 if __is_sim_dir__('.'):
