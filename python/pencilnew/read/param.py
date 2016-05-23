@@ -87,7 +87,7 @@ class Param(object):
         data_dir = os.path.expanduser(data_dir)
 
         if param2:
-            filen = os.path.join(data_dir, 'param2.nml')	
+            filen = os.path.join(data_dir, 'param2.nml')
         else:
             filen = os.path.join(data_dir, 'param.nml')
 
@@ -95,10 +95,10 @@ class Param(object):
         if not os.path.exists(filen):
             print("Param.read: no such file {0}.".format(filen))
             raise ValueError
-  
+
         if asdict:
             if nest_dict:
-                param_list = self.__read_nml(filen,nest=True)
+                param_list = self.__read_nml(filen, nest=True)
             else:
                 param_list = self.__read_nml(filen)
             if not quiet:
@@ -106,7 +106,7 @@ class Param(object):
         else:
             cmd = 'nl2python '+filen
             script = os.popen(cmd).read()
-            if (not quiet):
+            if not quiet:
                 print(script)
             if script:
                 class Params:
@@ -114,7 +114,7 @@ class Param(object):
                 exec(script.replace("\n    ", "\nParams.")[198:])
             else:
                 print("Param.read: nl2python returned nothing! Is $PENCIL_HOME/bin in the path?")
-                return -1        
+                return -1
             param_list = Params()
 
         key_list = dir(param_list)
@@ -125,7 +125,7 @@ class Param(object):
     def __param_formatter(self, string_part):
         """
         Formats the parameters from the files.
-        
+
         call signature:
 
         __param_formatter(self, string_part)
@@ -155,7 +155,7 @@ class Param(object):
     def __tuplecatch(self, string):
         """
         Catches name - value tuples in a string.
-        
+
         call signature:
 
         __tuplecatch(self, string)
@@ -178,7 +178,7 @@ class Param(object):
     def __read_nml(self, file_name, nest=False):
         """
         Reads in F90 namelist as dictionary object
-        
+
         call signature:
 
         __read_nml(self, file_name, nest=False)
@@ -187,11 +187,11 @@ class Param(object):
 
         *file_name*:
           Name of the file.
-          
+
         *nest*
           For nested dictionaries.
         """
-        
+
         import re
         r = re.compile(r'(?:[^,(]|\([^)]*\))+')
 
@@ -217,7 +217,7 @@ class Param(object):
                                 value += [self.__tuplecatch(s[1])]
                         else:
                             value += [self.__tuplecatch(parts[i])]
-                    if len(value)==1:
+                    if len(value) == 1:
                         value = value[0]
                     if nest:
                         params[super_name][name] = value
