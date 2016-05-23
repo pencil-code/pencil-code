@@ -13,31 +13,32 @@ class Simulation:
         self.path:		  path to simulation
         self.dir          same as self.path
         self.datadir:	  path to simulation datadir (data/)
-        self.pendir:	  path to simulation pendir (.pen/)
-        self.pendatadir:  path to simulation pendir in datadir (data/.pen/)
+        self.pcdir:	  path to simulation pendir (.pc/)
+        self.pcdatadir:  path to simulation pendir in datadir (data/.pc/)
         self.param:		  list of all simulation parameters
     """
 
     def __init__(self, path, hidden=False, quiet=False):
-        ## modules
         import os
-        from os.path import join
+        from os.path import join as __join__
+        from os.path import exists as __exists__
+        from os.path import split as __split__
         #from pen.intern.hash_sim import hash_sim
         from pencil import read_param
 
         ## find out name and store it
-        self.name = os.path.split(path)[-1]
+        self.name = __split__(path)[-1]
         if self.name == '.' or self.name == '':
-            self.name = os.path.split(os.getcwd())[-1]
+            self.name = __split__(os.getcwd())[-1]
 
         ## store paths
         self.path = os.path.abspath(path)
         self.dir = self.path
         if (not quiet):
             print '## Creating Simulation object for '+self.path
-        self.datadir = join(self.path,'data')		# SIM.datadir
-        self.pendir = join(self.path,'.pen')		# SIM.pendir
-        self.pendatadir = join(self.path,'data','.pen')	# SIM.pendatadir
+        self.datadir = __join__(self.path,'data')		# SIM.datadir
+        self.pcdir = __join__(self.path,'.pc')		# SIM.pcdir
+        self.pcdatadir = __join__(self.path,'data','.pc')	# SIM.pcdatadir
 
         ## generate status hash identification
         #self.status_hash = hash_sim(path)
@@ -47,7 +48,7 @@ class Simulation:
 
         ## read params into SIM object
         self.param = {}
-        if os.path.exists(join(self.datadir,'param.nml')):
+        if __exists__(__join__(self.datadir,'param.nml')):
               param = read_param(quiet=True, datadir=self.datadir)
               for key in dir(param):
                     if key.startswith('__'):
@@ -59,19 +60,18 @@ class Simulation:
               self.hidden=True
 
 
-      ### METHODS ###
-      def hide(self):
+    def hide(self):
         self.hidden = True; self.export(); pen.refresh()
 
-      def unhide(self):
+    def unhide(self):
         self.hidden = False; self.export(); pen.refresh()
 
-      def export(self):
+    def export(self):
         """Export simulation object to its root-pendir"""
-        from pen.intern.pkl_save import pkl_save
+        from pencilnew.io import save
         if self == False:
-          print '!! ERROR: Simulation object is bool object and False!'
-        pkl_save(self, 'SIM', folder=self.pendir)
+            print '!! ERROR: Simulation object is bool object and False!'
+        save(self, 'sim', folder=self.pcdir)
 
 
     #   def unchanged(self):
@@ -86,18 +86,11 @@ class Simulation:
     #     else:
     #       return False
 
-      def get_datadir(self):
-        """Return path to data dir."""
-        return self.datadir
+    def started(self):
+        """Returns whether simulation has already started. This is indicated by existing time_Series.dat in data"""
+        return ___exists___(___join___(self.path, 'data', 'time_series.dat'))
 
-      def started(self):
-        """Returns whether simulation has already started. This is indicated by existing time_Series.dat in
-        data"""
-        from os.path import exists
-        from os.path import join
-        return exists(join(self.path, 'data', 'time_series.dat'))
-
-      def get_varfiles(self, pos=False, particle=False):
+    def get_varfiles(self, pos=False, particle=False):
         """Get a list of all existing VAR### files.
 
         pos = False:            give full lust
@@ -105,12 +98,14 @@ class Simulation:
         post = list of numbers: give varfiles at this positions
         particle = True:        return PVAR isntead of VAR list"""
         import glob
-        from os.path import join
+        from os.path import join as __join__
         from os.path import basename
-        from pen.math import natural_sort
-        varlist = natural_sort([basename(i) for i in glob.glob(join(self.get_datadir(), 'proc0')+'/VAR*')])
+        from pencilnew.math import natural_sort
+        varlist = natural_sort([basename(i) for i in glob.glob(__join__(self.datadir, 'proc0')+'/VAR*')])
         if particle: varlist = ['P'+i for i in varlist]
-        if pos == 'first':
+        if pos == False:
+            return varlist
+        elif pos == 'first':
             return [varlist[0]]
         elif pos == 'last':
             return [varlist[-1]]
@@ -125,8 +120,10 @@ class Simulation:
         else:
             return varlist
 
-      def get_varlist(self, pos=False, particle=False):
-          return self.get_varfiles()
+    def get_varlist(self, pos=False, particle=False):
+        """Same as get_varfiles. """
+        return self.get_varfiles()
 
-      def get_lastvarfilename(self):
+    def get_lastvarfilename(self):
+        """Returns las varfile name as string."""
         return self.get_varfiles()[-1].split('VAR')[-1]
