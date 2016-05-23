@@ -74,11 +74,11 @@ def get_sims(path='.', depth=1):
         sim = Simulation(path)
 
 	    ## check if sim.name is already existing as name for a different simulation
-	    for s in new_sim_list:			# check for double names with already treated simulations
+        for s in new_sim_list:			# check for double names with already treated simulations
             if sim.name == s.name:
                 sim.name = sim.name+'#'		# add # to dublicate
-		        print "?? Warning: Found two simulatoins with the same name: "+sim.path+' and '+s.path
-		        print "?? Changed name of "+sim.path+' to '+sim.name
+                print "?? Warning: Found two simulatoins with the same name: "+sim.path+' and '+s.path
+                print "?? Changed name of "+sim.path+' to '+sim.name
 
 	if old_sim_list:
 	  ## take over hidden status from previouse simDICT if existing and unhide = False (which is default!)
@@ -97,12 +97,12 @@ def get_sims(path='.', depth=1):
 	new_sim_list.append(sim)
 	sim.export()
 
-  ## is new_sim_list empty?
-  if new_sim_list == []:
-    print '?? WARNING: simdict is empty!!'
+    ## is new_sim_list empty?
+    if new_sim_list == []:
+        print '?? WARNING: simdict is empty!!'
 
-  simDICT = Simdict(new_sim_list)
-  pkl_save(simDICT, 'simDICT', folder='.pen')
+    simDICT = Simdict(new_sim_list)
+    pkl_save(simDICT, 'simDICT', folder='.pen')
 
 
 # Startup and init. processes
