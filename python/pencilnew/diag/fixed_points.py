@@ -9,7 +9,10 @@ import pencil as pc
 import math as m
 import multiprocessing as mp
 import os
-import h5py
+try:
+    import h5py
+except:
+    print '!! ERR in diag/fixed_points.py: Dependency of h5py not fullfilled.'
 from pencilnew.diag.tracers import TracersParameterClass
 from pencilnew.diag.tracers import Tracers
 from pencilnew.calc.streamlines import Stream
@@ -347,11 +350,11 @@ class FixedPoint(object):
             if len(fixed) > 0:
                 fixed_new.append(fixed[0])
                 fixed_sign_new.append(fixed_sign[0])
-    
+
                 dx = fixed[:, 0] - np.reshape(fixed[:, 0], (fixed.shape[0], 1))
                 dy = fixed[:, 1] - np.reshape(fixed[:, 1], (fixed.shape[0], 1))
                 mask = (abs(dx) > var.dx/2) + (abs(dy) > var.dy/2)
-    
+
                 for idx in range(1, fixed.shape[0]):
                     if all(mask[idx, :idx]):
                         fixed_new.append(fixed[idx])
@@ -468,7 +471,7 @@ class FixedPoint(object):
                                   magic=magic, quiet=True, trimall=True)
                 field = getattr(var, trace_field)
                 self.t[tidx] = var.t
-            
+
             proc = []
             sub_data = []
             fixed = []
@@ -538,7 +541,7 @@ class FixedPoint(object):
                     self.curly_A[-1] = np.array(self.curly_A[-1])
                 if any(np.array(self.params.int_q) == 'ee'):
                     self.ee[-1] = np.array(self.ee[-1])
-                        
+
 
     def write(self, data_dir='./data', destination='fixed_points.hdf5'):
         """
@@ -558,7 +561,7 @@ class FixedPoint(object):
         """
 
         self.params.destination = destination
-        
+
         # Write the results into hdf5 file.
         if destination != '':
             f = h5py.File(os.path.join(data_dir, destination), 'w')
@@ -570,15 +573,15 @@ class FixedPoint(object):
             set_fidx[...] = self.fidx[...]
             set_poincare = f.create_dataset("poincare", self.poincare.shape,
                                             dtype=self.poincare.dtype)
-            set_poincare[...] = self.poincare[...]   
-            
+            set_poincare[...] = self.poincare[...]
+
             # Write the parameters into their own group.
             group_params = f.create_group('params')
             for key in dir(self.params):
                 if not key.startswith('_'):
                     value = getattr(self.params, key)
                     group_params.attrs[key] = value
-                    
+
             # Create a new group for each time step.
             fixed_groups = []
             for t_idx in range(len(self.t)):
@@ -591,7 +594,7 @@ class FixedPoint(object):
                     set_curly_A = fixed_groups[-1].create_dataset("curly_A", self.curly_A[t_idx].shape, dtype=self.curly_A[t_idx].dtype)
                     set_curly_A[...] = self.curly_A[t_idx]
                 if any(np.array(self.params.int_q) == 'ee'):
-                    set_ee = fixed_groups[-1].create_dataset("ee", self.ee[t_idx].shape, dtype=self.ee[t_idx].dtype)                
+                    set_ee = fixed_groups[-1].create_dataset("ee", self.ee[t_idx].shape, dtype=self.ee[t_idx].dtype)
                     set_ee[...] = self.ee[t_idx]
             f.close()
 
@@ -620,7 +623,7 @@ class FixedPoint(object):
         *file_name*:
           File with the tracer data.
         """
-    
+
         # Open the file.
         f = h5py.File(os.path.join(data_dir, file_name), 'r')
 
@@ -657,4 +660,3 @@ class FixedPoint(object):
                            self.params.destination[-5:]
         self.tracers = Tracers()
         self.tracers.read(data_dir=data_dir, file_name=tracer_file_name)
-
