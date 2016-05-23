@@ -14,7 +14,7 @@ def dim(*args, **kwargs):
 
     call signature:
 
-    read(data_dir='data', proc=-1)
+    dim(data_dir='data', proc=-1)
 
     Keyword arguments:
 
@@ -22,19 +22,19 @@ def dim(*args, **kwargs):
       Directory where the data is stored.
 
     *proc*
-      Porcessor to be read. If proc is -1, then read the 'global'
+      Processor to be read. If proc is -1, then read the 'global'
       dimensions. If proc is >=0, then read the dim.dat in the
       corresponding processor directory.
     """
 
-    dim_tmp = PcDim()
+    dim_tmp = Dim()
     dim_tmp.read(*args, **kwargs)
     return dim_tmp
 
 
-class PcDim(object):
+class Dim(object):
     """
-    PcDim -- holds pencil code dimension data.
+    Dim -- holds pencil code dimension data.
     """
 
     def __init__(self):
@@ -56,7 +56,7 @@ class PcDim(object):
           Directory where the data is stored.
 
         *proc*
-          Porcessor to be read. If proc is -1, then read the 'global'
+          Processor to be read. If proc is -1, then read the 'global'
           dimensions. If proc is >=0, then read the dim.dat in the
           corresponding processor directory.
         """
