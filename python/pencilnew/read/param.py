@@ -8,6 +8,39 @@
 Contains the parameters of the simulation.
 """
 
+
+def param(*args, **kwargs):
+    """
+    Read Pencil Code simulation parameters.
+    Requires: nl2python perl script (based on Wolfgang Dobler's nl2idl script).
+
+    call signature:
+
+    read(self, data_dir='data/', param2=False, quiet=False)
+
+    Keyword arguments:
+
+    *data_dir*:
+      Directory where the data is stored.
+
+    *param2*:
+      Selects the set of parameters.
+
+    *quiet*
+      Flag for switching of output.
+
+    *asdict*
+      Reads parameters as dictionary.
+
+    *nest_dict*
+      Reads parameters as nested dictionary.
+    """
+
+    param_tmp = Param()
+    param_tmp.read(*args, **kwargs)
+    return param_tmp
+
+
 class Param(object):
     """
     Param -- holds the simulation parameters.
