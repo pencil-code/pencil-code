@@ -119,7 +119,7 @@ class Param(object):
 
         key_list = dir(param_list)
         for key in key_list:
-            setattr(self, getattr(Params, key))
+            setattr(self, key, getattr(Params, key))
 
 
     def __param_formatter(self, string_part):
