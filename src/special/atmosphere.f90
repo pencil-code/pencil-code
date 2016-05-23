@@ -72,27 +72,40 @@ module Special
   real :: dsize_max=0.,dsize_min=0.
   real :: dsize0_max=0.,dsize0_min=0., UY_ref=0.
   real :: TT2=0., TT1=0., dYw=1., pp_init=3.013e5
-  logical :: lbuffer_zone_T=.false., lbuffer_zone_chem=.false., lbuffer_zone_uy=.false.
+  logical :: lbuffer_zone_T=.false., lbuffer_zone_chem=.false.
+  logical :: lbuffer_zone_uy=.false., lbuffer_zone_uz=.false.
   logical :: llognormal=.false., lACTOS=.false.
   logical :: lsmall_part=.false.,  llarge_part=.false., lsmall_large_part=.false. 
+  logical :: laverage=.false., lgrav_LES=.false.
+  logical :: lboundary_layer=.false.
 !
   real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.,AA=0.66e-4
   real :: nd0, r0, r02, delta, uy_bz, ux_bz,  dYw1, dYw2, PP, Ntot=1e3
   real :: lnTT1, lnTT2, Ntot_ratio=1., Ntot_input, TT0, qwater0, aerosol_present=1.
-
-
+  real :: logrho_ref_bot, logrho_ref2_bot, logrho_ref_top, logrho_ref2_top, TT_ref_top, TT_ref_bot, t_final
+  real :: uz_ref_top=0., uz_ref_bot=0., uz_bc=0.
+  real :: ux_ref_top=0., uy_ref_top=0., T_ampl
+  real :: bc_lnrho_aver_final, bc_qv_aver_final
+  real :: rotat_const=0., rotat_position=0., rotat_position2=0., rotat_power=0. 
+  real :: rotat_ux=0., rotat_uy=0., ux_bot=0., uy_bot=0.
+!
 ! Keep some over used pencils
 !
 ! start parameters
-  namelist /atmosphere_init_pars/  &
+  namelist /special_init_pars/  &
       lbuoyancy_z,lbuoyancy_x,lbuoyancy_y, sigma, Period,dsize_max,dsize_min, lbuoyancy_z_model,&
       TT2,TT1,dYw,lbuffer_zone_T, lbuffer_zone_chem, pp_init, dYw1, dYw2, &
       nd0, r0, r02, delta,lbuffer_zone_uy,ux_bz,uy_bz,dsize0_max,dsize0_min, Ntot,  PP, TT0, qwater0, aerosol_present, &
-      lACTOS, lsmall_part,  llarge_part, lsmall_large_part, Ntot_ratio, UY_ref, llognormal, Ntot_input
+      lACTOS, lsmall_part,  llarge_part, lsmall_large_part, Ntot_ratio, UY_ref, llognormal, Ntot_input, &
+      laverage, lbuffer_zone_uz, logrho_ref_top, logrho_ref2_top, TT_ref_top, TT_ref_bot, & 
+      t_final, logrho_ref_bot, logrho_ref2_bot, lgrav_LES, uz_ref_bot,uz_ref_top, uz_bc, &
+      ux_ref_top, uy_ref_top, bc_lnrho_aver_final, bc_qv_aver_final, T_ampl, &
+      lboundary_layer, rotat_const, rotat_position, rotat_power, rotat_position2, &
+      rotat_ux, rotat_uy, ux_bot, uy_bot 
 
 ! run parameters
-  namelist /atmosphere_run_pars/  &
-      lbuoyancy_z,lbuoyancy_x, sigma,dYw,lbuffer_zone_uy, lbuffer_zone_T, lnTT1,lnTT2
+  namelist /special_run_pars/  &
+      lbuoyancy_z,lbuoyancy_x, sigma,dYw,lbuffer_zone_uy, lbuffer_zone_T, lnTT1, lnTT2
 !
 !
   integer :: idiag_dtcrad=0
@@ -302,7 +315,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=atmosphere_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -310,7 +323,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=atmosphere_init_pars)
+      write(unit, NML=special_init_pars)
 !
     endsubroutine write_special_init_pars
 !***********************************************************************
@@ -320,7 +333,7 @@ module Special
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=atmosphere_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_special_run_pars
 !***********************************************************************
@@ -328,7 +341,7 @@ module Special
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=atmosphere_run_pars)
+      write(unit, NML=special_run_pars)
 !
     endsubroutine write_special_run_pars
 !***********************************************************************
@@ -406,25 +419,32 @@ module Special
 !   16-jul-06/natalia: coded
 !
       use Cdata
+      use Sub, only: dot
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real :: gg=9.81e2!, TT0=293, qwater0=9.9e-3
+      real :: gg=9.81e2!,  qwater0=9.9e-3
       real :: eps=0.5 !!????????????????????????
       real :: rho_water=1., const_tmp=0.
 !
       real, dimension (mx) :: func_x
       real, dimension (nx) ::  TT
+      real, dimension(nx) :: g2TT
       real, dimension (my) :: u_profile
       real    :: del,width
       integer :: l_sz
       integer :: i, j  !, sz_l_y,sz_r_y,
-      integer ::  mm1,mm2, sz_y
-      real    :: dt1, bs,Ts,dels
+      integer ::  mm1,mm2, sz_y, nn1, nn2, sz_z
+      real    :: dt1, bs,Ts,dels, logrho_tmp, tmp, tmp2
       logical :: lzone_left, lzone_right
 !
+
+      if (lgrav_LES) then
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) - gg
+      endif     
+
        const_tmp=4./3.*PI*rho_water
       if (lbuoyancy_z) then
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)&
@@ -453,7 +473,7 @@ module Special
             )      
       endif
 !
-       dt1=1./(8.*dt)
+       dt1=1./(5.*dt)
        del=0.1
 !
          lzone_left=.false.
@@ -471,7 +491,7 @@ module Special
            if (lzone_right) then
 !             dt1=(m-(m2-sz_y))/sz_y/(8.*dt)
 !             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-UY_ref)*dt1
-             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-UY_ref)*dt1
+!             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-UY_ref)*dt1
 !             df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)-(f(l1:l2,m,n,ilnTT)-alog(lnTT2))*dt1
            endif
          else if (j==2) then
@@ -481,15 +501,93 @@ module Special
            if (lzone_left) then
 !             dt1=(sz_y-m)/(sz_y-1)/(8.*dt)
 !             df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-0.)*dt1
-             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-UY_ref)*dt1
+!             df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-UY_ref)*dt1
 !             df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)-(f(l1:l2,m,n,ilnTT)-alog(lnTT1))*dt1
            endif
          endif
 !
         enddo
         endif
+        
+        if (lbuffer_zone_uz .and. (nzgrid/=1)) then
+
+        sz_z=int(del*nzgrid)
+        do j=1,2
 !
+         if (j==1) then
+            nn1=nzgrid-sz_z
+            nn2=nzgrid
 !
+           if ((z(n) >= zgrid(nn1)) .and. (z(n) <= zgrid(nn2))) lzone_right=.true.
+           if (lzone_right) then
+
+!               df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(f(l1:l2,m,n,iuz)-0.)*dt1
+
+
+!              df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-0.)*dt1
+!              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-0.)*dt1
+
+
+!               df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)  &
+!                   -(f(l1:l2,m,n,ilnTT)-f(l1:l2,m,nn2,ilnTT))*dt1
+
+!
+           endif
+!
+         elseif (j==2) then
+            nn1=1
+            nn2=sz_z
+!
+           if ((z(n) >= zgrid(nn1)) .and. (z(n) <= zgrid(nn2))) lzone_left=.true.
+           if (lzone_left) then
+
+!              df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(f(l1:l2,m,n,iuz)-0.)*dt1
+!!!!!!!!!!!!!!!!!!!!!!!!!!   
+              df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-ux_bot)*dt1
+              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-uy_bot)*dt1
+
+                df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)  &
+                   -(f(l1:l2,m,n,ilnTT)-f(l1:l2,m,n1,ilnTT))*dt1
+!!!!!!!!!!!!!!!!!!!!!!!!!!!
+ 
+      !             call dot(p%glnTT,p%glnTT,g2TT)
+ !             df(l1:l2,m,n,ilnTT)=  &
+ !              1e-4*(0.15*dxmax)**2.*sqrt(2*p%sij2)/.3*(p%del2lnTT+g2TT)
+
+!
+           endif
+             
+         endif
+!
+        enddo
+        endif
+
+       if (lboundary_layer) then
+         if (z(n)>rotat_position) then
+        
+          if (z(n)<rotat_position2) then
+         
+           df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) &
+            +rotat_const &
+            *((z(n)-rotat_position) &
+              /(rotat_position2-rotat_position))**(rotat_power)
+           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
+            +rotat_const &
+            *((z(n)-rotat_position) &
+              /(rotat_position2-rotat_position))**(rotat_power)
+
+          else
+            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) & 
+!                      -(f(l1:l2,m,n,iux)-rotat_ux*(1.+0.6*t/25000.))*dt1
+                      -(f(l1:l2,m,n,iux)-rotat_ux)*dt1
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
+!                      -(f(l1:l2,m,n,iuy)-rotat_uy*(1.+0.6*t/25000.))*dt1
+                       -(f(l1:l2,m,n,iuy)-rotat_uy)*dt1
+
+          endif
+
+         endif
+       endif
 !
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
@@ -733,6 +831,14 @@ module Special
          select case (bc%location)
            case (iBC_X_BOT)
 !             call bc_satur_x(f,bc)
+         endselect
+         bc%done=.true.
+         case ('ffz')
+         select case (bc%location)
+           case (iBC_Z_BOT)
+             call bc_file_z_special(f,bc)
+           case (iBC_Z_TOP)
+             call bc_file_z_special(f,bc)
          endselect
          bc%done=.true.
       endselect
@@ -1407,6 +1513,294 @@ subroutine bc_satur_x(f,bc)
         endif
 !
      endsubroutine set_init_parameters
+!***********************************************************************
+    subroutine bc_file_z_special(f,bc)
+
+       use Cdata
+!
+      type (boundary_condition) :: bc
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension(64), save :: bc_T_array_bot, bc_u_array_bot, bc_T_array_top, bc_u_array_top
+!      real, dimension(66,64), save :: bc_T_x_array, bc_u_x_array, bc_T_x_array2, bc_u_x_array2
+      real, dimension (66) :: tmp, tmp2
+      real, dimension (60)  :: time_top, time_bot
+      integer :: i,j,ii,statio_code,vr, i1,i2, io_code, stat
+      integer ::  ll1,ll2,mm1,mm2
+      integer :: time_position_top, time_position_bot
+!      real, save ::  t_bot, t_top
+      real ::  bc_T_aver_top, bc_u_aver_top, bc_T_aver2_top, bc_u_aver2_top
+      real ::  bc_T_aver_bot, bc_u_aver_bot, bc_T_aver2_bot, bc_u_aver2_bot
+      real :: bc_T_aver_final, bc_u_aver_final
+      real :: lbc,frac, ttt, bc_T_final_top, bc_u_final_top
+!      logical :: lbc_top, lbc_bot
+      logical, save :: lbc_file_top=.true., lbc_file_bot=.true.
+      real :: t1,t2, pp_tmp
+!
+!   'NNNNNN
+!      if (lroot) then
+      do i = 1,60
+        time_bot(i)=(i-1)*1800.
+        time_top(i)=(i-1)*7200.
+      enddo 
+
+!      endif
+
+    
+      vr=bc%ivar
+!
+     if (bc%location==iBC_Z_BOT) then
+     
+       do i = 1,60
+!      
+         t1=time_bot(i)
+         t2=time_bot(i+1)
+         if ((t>=t1) .and. (t<t2)) then
+           time_position_bot=i
+         endif
+!        if (t>=time_top(i)) .and. (t<time_top(i+1)) then
+!          time_position=i
+!        endif
+!      
+       enddo
+!
+        if (lbc_file_bot) then
+!          if (lroot) then
+!
+            print*,'opening *1.dat'
+            open(9,file='T1.dat')
+            open(99,file='w1.dat')
+!          
+            do i = 1,37
+             read(9,*,iostat=io_code) (tmp(ii),ii=1,2)
+             read(99,*,iostat=io_code) (tmp2(ii),ii=1,2)
+             bc_T_array_bot(i)=tmp(2)
+             bc_u_array_bot(i)=tmp2(2)
+            enddo
+!          
+            close(9)
+            close(99)
+            print*,'closing file'
+!          endif
+          lbc_file_bot=.false.
+        endif
+!          
+           do i = 1,37
+            if (i==time_position_bot) then
+              bc_T_aver_bot=bc_T_array_bot(i)
+              bc_u_aver_bot=bc_u_array_bot(i)
+              bc_T_aver2_bot=bc_T_array_bot(i+1)
+              bc_u_aver2_bot=bc_u_array_bot(i+1)
+            endif
+           enddo
+!
+!      print*,'time_position_bot=', time_position_bot, time_bot(time_position_bot)
+!      print*, bc_T_aver_bot, bc_T_aver2_bot
+!
+         bc_T_aver_final=bc_T_aver_bot  &
+                +(t-time_bot(time_position_bot)) &
+                /(time_bot(time_position_bot+1)-time_bot(time_position_bot))    &
+                *(bc_T_aver2_bot-bc_T_aver_bot)
+   
+!           bc_T_aver_final=bc_T_aver_bot
+            
+         bc_u_aver_final=bc_u_aver_bot  &
+               +(t-time_bot(time_position_bot)) &
+               /(time_bot(time_position_bot+1)-time_bot(time_position_bot))    &
+               *(bc_u_aver2_bot-bc_u_aver_bot)
+!
+
+!    print*,time_bot(time_position_bot-1),t,time_bot(time_position_bot)
+!    print*, bc_T_aver_bot,bc_T_aver_final, bc_T_aver2_bot
+
+       if (vr==ilnTT) then
+!
+          ll1=(x(l1)-xyz0(1))/dx+1
+          ll2=(x(l2)-xyz0(1))/dx+1
+          mm1=(y(m1)-xyz0(2))/dy+1
+          mm2=(y(m2)-xyz0(2))/dy+1
+!
+          do j=l1,l2
+            i2=ll1+j-4
+          do i=m1,m2
+            i1=mm1+i-4
+!             pp_tmp=bc_T_aver_final*exp(f(j,i,n1,ilnrho))*8.31e7/29.
+            f(j,i,n1,vr)=alog(bc_T_aver_final+T_ampl*sin(Period*PI*x(j)/Lxyz(1)))
+!             f(j,i,n1,vr)=alog(bc_T_aver_final*(1e6/pp_tmp)**0.286)
+          enddo
+          enddo
+!           
+          do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+i,vr); enddo
+!   
+
+        elseif (vr==ichemspec(ind_H2O)) then
+!
+          do j=l1,l2
+          do i=m1,m2
+            f(j,i,n1,vr)=bc_lnrho_aver_final*bc_qv_aver_final/ &
+               exp(f(j,i,n1,ilnrho))
+          enddo
+          enddo
+
+          do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+i,vr); enddo
+!
+        elseif (vr==iuz) then
+!
+           ll1=(x(l1)-xyz0(1))/dx+1
+           ll2=(x(l2)-xyz0(1))/dx+1
+           mm1=(y(m1)-xyz0(2))/dy+1
+           mm2=(y(m2)-xyz0(2))/dy+1
+!
+           do j=l1,l2
+           do i=m1,m2
+!              f(j,i,n1,vr)=bc_u_aver_final &
+!                  *bc_T_aver_final/exp(f(j,i,n1,ilnTT))
+ 
+           if (nxgrid>1) then
+               f(j,i,n1,vr)=sin(Period*PI*x(j)/Lxyz(1))*uz_bc
+           else
+             f(j,i,n1,vr)=bc_u_aver_final*bc_T_aver_final/exp(f(j,i,n1,ilnTT))
+           endif
+
+           enddo
+           enddo
+!
+!     print*, bc_T_x_adopt(ll1,mm1),bc_T_x_adopt(ll2,mm1)
+!           
+          do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+i,vr); enddo
+      elseif (vr==iux) then
+!
+           ll1=(x(l1)-xyz0(1))/dx+1
+           ll2=(x(l2)-xyz0(1))/dx+1
+           mm1=(y(m1)-xyz0(2))/dy+1
+           mm2=(y(m2)-xyz0(2))/dy+1
+!
+           do j=l1,l2
+           do i=m1,m2
+               f(j,i,n1,vr)=10.*bc_T_aver_final/exp(f(j,i,n1,ilnTT))
+           enddo
+           enddo
+!
+          do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+i,vr); enddo
+        elseif (vr==iuy) then
+!
+           ll1=(x(l1)-xyz0(1))/dx+1
+           ll2=(x(l2)-xyz0(1))/dx+1
+           mm1=(y(m1)-xyz0(2))/dy+1
+           mm2=(y(m2)-xyz0(2))/dy+1
+!
+           do j=l1,l2
+           do i=m1,m2
+              f(j,i,n1,vr)=10.*bc_T_aver_final/exp(f(j,i,n1,ilnTT))
+           enddo
+           enddo
+!
+          do i=1,nghost; f(:,:,n1-i,vr)=2*f(:,:,n1,vr)-f(:,:,n1+i,vr); enddo
+!
+        endif
+      elseif (bc%location==iBC_Z_TOP) then
+!
+       do i = 1,60
+         t1=time_top(i)
+         t2=time_top(i+1)
+         if ((t>=t1) .and. (t<t2)) then
+           time_position_top=i
+         endif
+       enddo
+!
+       if (lbc_file_top) then
+!       if (lroot) then
+!
+         print*,'opening *_top.dat'
+         open(9,file='T_top.dat')
+         open(99,file='w_top.dat')
+!          
+         do i = 1,37
+           read(9,*,iostat=io_code) (tmp(ii),ii=1,2)
+           read(99,*,iostat=io_code) (tmp2(ii),ii=1,2)
+           bc_T_array_top(i)=tmp(2)
+           bc_u_array_top(i)=tmp2(2)
+         enddo
+!          
+          close(9)
+          close(99)
+          print*,'closing file'
+          
+!       endif   
+        lbc_file_top=.false.
+! 
+       endif
+!       
+          do i = 1,37
+            if (i==time_position_top) then
+              bc_T_aver_top=bc_T_array_top(i)
+              bc_u_aver_top=bc_u_array_top(i)
+              bc_T_aver2_top=bc_T_array_top(i+1)
+              bc_u_aver2_top=bc_u_array_top(i+1)
+            endif
+           enddo
+!       
+        bc_T_final_top=bc_T_aver_top  &
+               +(t-time_top(time_position_top)) &
+               /(time_top(time_position_top+1)-time_top(time_position_top))    &
+               *(bc_T_aver2_top-bc_T_aver_top)
+!               
+        bc_u_final_top=bc_u_aver_top  &
+               +(t-time_top(time_position_top)) &
+               /(time_top(time_position_top+1)-time_top(time_position_top))    &
+               *(bc_u_aver2_top-bc_u_aver_top)
+               
+!    print*, time_position_top    
+!    print*,time_top(time_position_top-1),t,time_top(time_position_top)
+!    print*, bc_T_aver_top,bc_T_final_top, bc_T_aver2_top
+!        
+!
+       if (vr==ilnTT) then
+!
+          ll1=(x(l1)-xyz0(1))/dx+1
+          ll2=(x(l2)-xyz0(1))/dx+1
+          mm1=(y(m1)-xyz0(2))/dy+1
+          mm2=(y(m2)-xyz0(2))/dy+1
+!
+          do j=l1,l2
+            i2=ll1+j-4
+          do i=m1,m2
+            i1=mm1+i-4
+            f(j,i,n2,vr)=alog(bc_T_final_top)
+          enddo
+          enddo
+          
+!          print*,'bc_T_aver_top=',bc_T_aver_top
+!           
+          do i=1,nghost; f(:,:,n2+i,vr)=2*f(:,:,n2,vr)-f(:,:,n2-i,vr); enddo
+!   
+        elseif (vr==iuz) then
+!
+           ll1=(x(l1)-xyz0(1))/dx+1
+           ll2=(x(l2)-xyz0(1))/dx+1
+           mm1=(y(m1)-xyz0(2))/dy+1
+           mm2=(y(m2)-xyz0(2))/dy+1
+!
+           do j=l1,l2
+           do i=m1,m2
+!            f(j,i,n2,vr)=bc_u_final_top*bc_T_final_top/exp(f(j,i,n2,ilnTT))
+!            f(j,i,n2,vr)=2481.*bc_T_final_top/exp(f(j,i,n2,ilnTT))
+
+            if (nxgrid>1) then
+              f(j,i,n2,vr)=sin(Period*PI*x(j)/Lxyz(1))*uz_bc
+            endif
+!
+           enddo
+           enddo
+
+!
+!     print*, bc_T_x_adopt(ll1,mm1),bc_T_x_adopt(ll2,mm1)
+!           
+          do i=1,nghost; f(:,:,n2+i,vr)=2*f(:,:,n2,vr)-f(:,:,n2-i,vr); enddo
+        endif
+!        
+      else
+      endif
+    endsubroutine bc_file_z_special
 !***********************************************************************
 !********************************************************************
 !

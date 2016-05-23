@@ -10,6 +10,8 @@
 ;
 ; call structure (same as IDL's "velovect")
 ; optional keyword 'density' specifies sampling density in [x,y]
+; optional keyword 'max_lin_per_cell' defines maxímum number of lines per cell (default: 1)
+; optional keywords 'xrange', 'yrange' define plot area outside which no arrows must be drawn
 ;
 ; IDL> streamplot, u, v, x, y, density=density, _extra=extr
 ;
@@ -36,7 +38,7 @@
 
 function blank_pos, xi, yi
 
-  common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby
+  common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby,max_lin
 
   ; --- takes grid space coords and 
   ;     returns nearest space in the blank array
@@ -46,7 +48,7 @@ end
 
 ; ------------------------------------------------------------------------------
 
-function value_at, a, xi, yi, oob=oob
+function value_at, a, xi, yi, oob=oob, tstep=tstep
 
   common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby
 
@@ -70,7 +72,21 @@ function value_at, a, xi, yi, oob=oob
   a0 = a00*(1-xt) + a01*xt
   a1 = a10*(1-xt) + a11*xt
 
-  return, a0*(1-yt) + a1*yt
+  res = a0*(1-yt) + a1*yt
+
+  ; --- avoid zero return value if provided for setting of stepsize
+
+  if keyword_set(tstep) and (res eq 0.) then begin
+    if a01 ne 0. then begin
+      xi=xp & res=a01 
+    endif else if a10 ne 0. then begin
+      yi=yp & res=a10 
+    endif else if a11 ne 0. then begin
+      xi=xp & yi=yp & res=a11
+    endif
+  endif
+
+  return, res
 end
 
 ; ------------------------------------------------------------------------------
@@ -80,7 +96,10 @@ function f, xi, yi, bw=bw, oob=oob
   common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby
   common fields, u,v,x,y, speed, blank
 
-  dt_ds = 1./value_at(speed, xi, yi, oob=oob)
+  dt_ds = value_at(speed, xi, yi, oob=oob, /tstep)
+  if dt_ds  eq 0 then stop,'streamplot: Interpolated value of speed is zero'
+  dt_ds = 1./dt_ds
+
   ui = value_at(u, xi, yi)
   vi = value_at(v, xi, yi)
 
@@ -102,7 +121,7 @@ end
 
 function my_rk4, x0, y0, ytr=ytr, stotal=stotal, backward=bw
 
-  common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby
+  common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby,max_lin
   common fields, u,v,x,y, speed, blank
   common changes, bx_changes, by_changes
 
@@ -153,8 +172,8 @@ function my_rk4, x0, y0, ytr=ytr, stotal=stotal, backward=bw
         (new_yb ne yb) then begin
 
         ; --- new square, so check and colour. quit if required.
-        if blank[new_yb,new_xb] eq 0 then begin
-           blank[new_yb,new_xb] = 1
+        if blank[new_yb,new_xb] lt max_lin then begin
+           blank[new_yb,new_xb] += 1
 
            bx_changes = [ bx_changes, new_xb ]
            by_changes = [ by_changes, new_yb ]
@@ -204,13 +223,13 @@ function flow_integrate, x0, y0
 
   if (stotal gt 0.1) and (nbl gt 2) then begin  
 
-     bl = blank_pos(x0, y0) &  blank[bl[1],bl[0]] = 1
+     bl = blank_pos(x0, y0) &  blank[bl[1],bl[0]] += 1
      return, [[x_traj], [y_traj]]
 
   endif else begin  ; --- otherwise erase the line segment's tracks
 
      for i=0,nbl-1 do $
-        blank[ by_changes[i], bx_changes[i] ] = 0
+        blank[ by_changes[i], bx_changes[i] ] -= 1
      return, -1
 
   endelse
@@ -219,7 +238,7 @@ end
 
 ; ------------------------------------------------------------------------------
 
-pro traj, xb,yb, _extra=extr
+pro traj, xb,yb, _extra=extr, arrow=arrow, xrange=xr, yrange=yr
 
   common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby
   common fields, u,v,x,y, speed, blank
@@ -243,12 +262,36 @@ pro traj, xb,yb, _extra=extr
         oplot, tx, ty, _extra=extr
         
         ; add arrow
-        nn = n_elements(tx)/2
-        if (nn gt 8) then $ ; jitter arrow position
-           nn += long(0.16*nn*(randomn(system_seed)-0.5))
-        headsz = (!d.name eq 'X') ? 8 : 160
-        arrow, tx[nn-2], ty[nn-2], tx[nn], ty[nn], $
-               /data, hsize=headsz, _extra=extr
+        if keyword_set(arrow) then begin
+          nn = n_elements(tx)/2
+          if (nn gt 8) then $ ; jitter arrow position
+             nn += long(0.16*nn*(randomn(system_seed)-0.5))
+          
+          ok = 1
+
+          if keyword_set(xr) then begin
+            if has_tag(extr,'polar') then $
+              xarr=tx([nn,nn-2])*cos(ty([nn,nn-2])) $
+            else $
+              xarr=tx([nn,nn-2])
+
+            ok = ok and xarr[1] le xr(1) and xarr[1] ge xr(0) $
+                    and xarr[0] le xr(1) and xarr[0] ge xr(0)
+          endif
+
+          if keyword_set(yr) then begin
+            if has_tag(extr,'polar') then $
+              yarr=tx([nn,nn-2])*sin(ty([nn,nn-2])) $
+            else $
+              yarr=ty([nn,nn-2])
+
+            ok = ok and yarr[1] le yr(1) and yarr[1] ge yr(0) $
+                    and yarr[0] le yr(1) and yarr[0] ge yr(0)
+          endif
+
+          if ok then arrow_pc, tx[nn-2], ty[nn-2], tx[nn], ty[nn], $
+                               /data, _extra=extr
+        endif
      endif
   endif
 
@@ -257,9 +300,9 @@ end
 
 ; ------------------------------------------------------------------------------
 
-pro streamplot, uu, vv, xx, yy, density=density, _extra=extr
+pro streamplot, uu, vv, xx, yy, density=density, _extra=extr, hsize=hsize, max_lin_per_cell=max_lin_per_cell
 
-  common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby
+  common geomet, ngx,ngy, dx,dy, nbx,nby, dbx,dby,max_lin
   common fields, u,v,x,y, speed, blank
 
   ;  - x and y are 1d arrays defining an *evenly spaced* grid.
@@ -269,6 +312,21 @@ pro streamplot, uu, vv, xx, yy, density=density, _extra=extr
 
   if not keyword_set(density) then density = 1.
   if ((size(density))[0] eq 0) then density=[density,density]
+  if not is_defined(max_lin_per_cell) then max_lin = 1 else max_lin = max_lin_per_cell
+
+  ; --- set defaults for arrow lengths
+
+  if not keyword_set(hsize) then hsize = (!d.name eq 'X') ? 8 : 160
+
+  ; --- grid dimensions
+
+  ngx = n_elements(xx)
+  ngy = n_elements(yy)
+
+  ; --- in polar coordinates: r d\phi/dt = v_phi !
+
+  if keyword_set(extr.polar) then $
+    for i=0,ngy-1 do vv(*,i) /= xx  
 
   ; --- copy input variables to common block
 
@@ -278,9 +336,6 @@ pro streamplot, uu, vv, xx, yy, density=density, _extra=extr
   y = yy
 
   ; --- grid properties
-
-  ngx = n_elements(x)
-  ngy = n_elements(y)
 
   dx = x[1] - x[0]
   dy = y[1] - y[0]
@@ -311,9 +366,10 @@ pro streamplot, uu, vv, xx, yy, density=density, _extra=extr
   v *= ngy
 
   ; --- Blank array: This is the heart of the algorithm. It begins life
-  ;     zeroed, but is set to one when a streamline passes through each
-  ;     box. Then streamlines are only allowed to pass through zeroed
-  ;     boxes. The lower resolution of this grid determines the
+  ;     zeroed, but is increased by one when a streamline passes through each
+  ;     box. Then streamlines are only allowed to pass through
+  ;     boxes through which less then max_lin_per_cell lines pass.
+  ;     The lower resolution of this grid determines the
   ;     approximate spacing between trajectories.
 
   nbx = byte(30*density[0])
@@ -329,17 +385,22 @@ pro streamplot, uu, vv, xx, yy, density=density, _extra=extr
   ; --- Now we build up the trajectory set. I've found it best to look
   ;     for blank==0 along the edges first, and work inwards.
 
-  for indent = 0,max([nbx,nby])/2-1 do $
-     for xi = 0,max([nbx,nby])-2*indent-1 do begin
+  for indent = 0,nby/2-1 do $
+     for xi = 0,nbx-2*indent-1 do begin
 
-        traj, xi + indent,  indent,       _extra=extr
-        traj, xi + indent,  nby-1-indent, _extra=extr
-        traj, indent,       xi + indent,  _extra=extr
-        traj, nbx-1-indent, xi + indent,  _extra=extr
+        traj, xi + indent,  indent,       _extra=extr, hsize=hsize
+        traj, xi + indent,  nby-1-indent, _extra=extr, hsize=hsize
 
      endfor
 
-  return
+  for indent = 0,nbx/2-1 do $
+     for yi = 0,nby-2*indent-1 do begin
+
+        traj, indent,       yi + indent,  _extra=extr, hsize=hsize
+        traj, nbx-1-indent, yi + indent,  _extra=extr, hsize=hsize
+
+     endfor
+
 end
 
 ; ------------------------------------------------------------------------------

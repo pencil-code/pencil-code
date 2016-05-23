@@ -31,8 +31,9 @@ module Grid
   public :: box_vol
   public :: save_grid
   public :: coords_aux
-  public :: inverse_grid
+  public :: real_to_index, inverse_grid
   public :: grid_bound_data
+  public :: set_coords_switches
 !
   interface grid_profile
     module procedure grid_profile_0D
@@ -62,7 +63,6 @@ module Grid
 !  should suffice in most cases.
 !
 !  25-jun-04/tobi+wolf: coded
-!  20-aug-14/MR: minimal wavevectors k1xyz added
 !   3-mar-15/MR: calculation of d[xyz]2_bound added: contain twice the distances of
 !                three neighbouring points from the boundary point
 !
@@ -102,10 +102,6 @@ module Grid
       Ly = Lxyz(2)
       Lz = Lxyz(3)
 !
-!  minimal wavenumbers
-!
-      where( Lxyz/=0.) k1xyz=2.*pi/Lxyz
-!
 !  Set the lower boundary and the grid size.
 !
       x00 = x0
@@ -113,7 +109,7 @@ module Grid
       z00 = z0
 !
       dx = Lx / merge(nxgrid, max(nxgrid-1,1), lperi(1))
-      dy = Ly / merge(nygrid, max(nygrid-1,1), lperi(2))
+      dy = Ly / merge(nygrid, max(nygrid-1,1), (lperi(2).or.lpole(2)))
       dz = Lz / merge(nzgrid, max(nzgrid-1,1), lperi(3))
 !
 !  Shift the lower boundary if requested, but only for periodic directions.
@@ -138,7 +134,7 @@ module Grid
       do i=1,mz; xi3(i)=i-nghost-1+ipz*nz; enddo
 !
       if (lperi(1)) xi1 = xi1 + 0.5
-      if (lperi(2)) xi2 = xi2 + 0.5
+      if (lperi(2).or.lpole(2)) xi2 = xi2 + 0.5
       if (lperi(3)) xi3 = xi3 + 0.5
 !
 !  Produce index arrays for processor boundaries, which are needed for
@@ -168,8 +164,10 @@ module Grid
 !    Non-periodic: x(xi=0) = x0 and x(xi=N-1) = x1
 !
       xi1lo=0.; xi1up=nxgrid-merge(0.,1.,lperi(1))
-      xi2lo=0.; xi2up=nygrid-merge(0.,1.,lperi(2))
+      xi2lo=0.; xi2up=nygrid-merge(0.,1.,(lperi(2).or.lpole(2)))
       xi3lo=0.; xi3up=nzgrid-merge(0.,1.,lperi(3))
+!
+      if (lpole(2)) xyz_star(2) = pi/2.
 !
 !  Construct nonequidistant grid
 !
@@ -591,18 +589,31 @@ module Grid
 !
         case ('step-linear')
 !
-          xi_step(2,1)=xi_step_frac(2,1)*(nygrid-1.0)
-          xi_step(2,2)=xi_step_frac(2,2)*(nygrid-1.0)
+          xi_step(2,1)=xi_step_frac(2,1)*merge(nygrid+0.,nygrid-1.,lpole(2))
+          xi_step(2,2)=xi_step_frac(2,2)*merge(nygrid+0.,nygrid-1.,lpole(2))
           dxyz_step(2,1)=(xyz_step(2,1)-y00)/(xi_step(2,1)-0.0)
           dxyz_step(2,2)=(xyz_step(2,2)-xyz_step(2,1))/ &
-                                (xi_step(2,2)-xi_step(2,1))
-          dxyz_step(2,3)=(y00+Ly-xyz_step(2,2))/(nygrid-1.0-xi_step(2,2))
+              (xi_step(2,2)-xi_step(2,1))
+          dxyz_step(2,3)=(y00+Ly-xyz_step(2,2))/&
+              (merge(nygrid+0.,nygrid-1.,lpole(2))-xi_step(2,2))
 !
-          call grid_profile(xi2,grid_func(2),g2,g2der1,g2der2, &
-           dxyz=dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
-          call grid_profile(xi2lo,grid_func(2),g2lo, &
-           dxyz=dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
-          y     = y00 + g2-g2lo
+          if (lpole(2)) then 
+            do i=1,my
+              xi2(i)=0.5-nghost+0.5+(ipy*ny+i-1)*&
+                (nygrid+2.*(nghost-0.5)-1)/(nygrid+2.*nghost-1)
+            enddo
+          endif
+          call grid_profile(xi2,grid_func(2),g2,g2der1,g2der2,dxyz= &
+              dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
+          call grid_profile(xi2lo,grid_func(2),g2lo,dxyz= &
+              dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
+          if (lpole(2)) then
+            call grid_profile(xi2up,grid_func(2),g2up,dxyz= &
+                dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
+            y = y00 + g2 -0.5*(g2lo+g2up-pi)
+          else
+            y = y00 + g2-g2lo
+          endif
           yprim = g2der1
           yprim2= g2der2
 !
@@ -622,6 +633,21 @@ module Grid
 ! From now on dy = d\theta but dy_1 = 1/rd\theta and similarly for \phi.
 ! corresponding r and rsin\theta factors for equ.f90 (where CFL timesteps
 ! are estimated) are removed.
+!
+
+        if (lpole(2)) then                       !apply grid symmetry across the poles 
+          if (lfirst_proc_y) then
+            y(     1:nghost) = -y(     m1i:m1:-1)
+            yprim( 1:nghost) =  yprim( m1i:m1:-1)
+            yprim2(1:nghost) = -yprim2(m1i:m1:-1)
+          endif
+          if (llast_proc_y) then
+            y(     m2+1:m2+nghost) = 2.*pi-y(     m2:m2i:-1)
+            yprim( m2+1:m2+nghost) =       yprim( m2:m2i:-1)
+            yprim2(m2+1:m2+nghost) =      -yprim2(m2:m2i:-1)
+          endif
+        endif
+
         dy_1=1./yprim
         dy_tilde=-yprim2/yprim**2
 !
@@ -822,28 +848,11 @@ module Grid
 !
     endsubroutine construct_grid
 !***********************************************************************
-    subroutine initialize_grid
+    subroutine set_coords_switches
 !
-!  Coordinate-related issues: nonuniform meshes, different coordinate systems
+!   Sets switches for the different coordinate systems.
 !
-!  20-jul-10/wlad: moved here from register
-!  3-mar-14/MR: outsourced calculation of box_volume into box_vol
-!  29-sep-14/MR: outsourced calculation of auxiliary quantities for curvilinear
-!                coordinates into coords_aux; set coordinate switches at the
-!                beginning
-!   9-jun-15/MR: calculation of Area_* added
-!
-      use Sub, only: remove_zprof
-      use Mpicomm
-!
-      real :: fact
-      integer :: xj,yj,zj,itheta
-!
-! Box volume
-!
-      call box_vol
-!
-! Set flags.
+!  18-dec-15/MR: outsourced from initialize_grid
 !
       lcartesian_coords=.false.
       lspherical_coords=.false.
@@ -855,23 +864,68 @@ module Grid
 !
 !  Introduce new names (spherical_coords), in addition to the old ones.
 !
-      elseif (coord_system=='spherical' &
-        .or.coord_system=='spherical_coords') then
+      elseif (    coord_system=='spherical' &
+              .or.coord_system=='spherical_coords') then
         lspherical_coords=.true.
 !
 !  Introduce new names (cylindrical_coords), in addition to the old ones.
 !
-      elseif (coord_system=='cylindric' &
-          .or.coord_system=='cylindrical_coords') then
+      elseif (    coord_system=='cylindric' &
+              .or.coord_system=='cylindrical_coords') then
         lcylindrical_coords=.true.
       else if (coord_system=='pipeflows') then
         lpipe_coords=.true.
       elseif (coord_system=='Lobachevskii') then
+        call fatal_error('set_coords_switches', &
+                         'Lobachevskii ccordinates not implemented')
+      endif
+
+    endsubroutine set_coords_switches
+!***********************************************************************
+    subroutine initialize_grid
+!
+!  Coordinate-related issues: nonuniform meshes, different coordinate systems
+!
+!  20-jul-10/wlad: moved here from register
+!  3-mar-14/MR: outsourced calculation of box_volume into box_vol
+!  29-sep-14/MR: outsourced calculation of auxiliary quantities for curvilinear
+!                coordinates into coords_aux; set coordinate switches at the
+!                beginning
+!   9-jun-15/MR: calculation of Area_* added
+!  18-dec-15/MR: outsourced setting of switches to set_coords_switches; added 
+!                initialization of Yin-Yang grid; added dimensionality mask:
+!                lists the indices of the non-degenerate directions in the first 
+!                dimensionality elements of dim_mask 
+!
+      use Sub, only: remove_zprof
+      use Mpicomm
+!
+      real :: fact
+      integer :: xj,yj,zj,itheta
+!
+!  Initialize dimensionality mask.
+!
+      if (nxgrid==1) then
+        if (nygrid==1) then
+          dim_mask(1)=3 
+        else
+          dim_mask(1:2)=(/2,3/) 
+        endif
+      else
+        if (nygrid==1) dim_mask(1:2)=(/1,3/)
       endif
 !
 !  For curvilinear coordinate systems, calculate auxiliary quantities as, e.g., for spherical coordinates 1/r, cot(theta)/r, etc.
 !
       call coords_aux(x,y,z)
+!
+! Box volume
+!
+      call box_vol
+!
+!  Initialize Yin-Yang grid.
+!
+      if (lyinyang) call yyinit
 !
 !  Volume element and area of coordinate surfaces.
 !  Note that in the area a factor depending only on the coordinate x_i which defines the surface by x_i=const. is dropped.
@@ -1107,8 +1161,8 @@ module Grid
 !
 !  Broadcast the values of r_int and r_ext
 !
-          call mpibcast_real(r_int)
-          call mpibcast_real(r_ext)
+          call mpibcast_real(r_int,comm=MPI_COMM_WORLD)
+          call mpibcast_real(r_ext,comm=MPI_COMM_WORLD)
         else
 !
 !  Serial-x. Just get the local grid values.
@@ -1155,13 +1209,13 @@ module Grid
 !
 !  Clean up profile files.
 !
-      call remove_zprof()
+      call remove_zprof
       lwrite_prof=.true.
 !
 !  Set the the serial grid arrays, that contain the coordinate values
 !  from all processors.
 !
-      call construct_serial_arrays()
+      call construct_serial_arrays
 !
     endsubroutine initialize_grid
 !***********************************************************************
@@ -1330,7 +1384,7 @@ module Grid
 ! 6-mar-14/MR: changed into subroutine setting global variable box_volume
 !
       box_volume=1.
-      if (coord_system=='cartesian') then
+      if (lcartesian_coords) then
 !
 !  x,y,z-extent
 !
@@ -1340,8 +1394,7 @@ module Grid
 !
 !  Spherical coordinate system
 !
-      elseif (coord_system=='spherical' &
-          .or.coord_system=='spherical_coords') then
+      elseif (lspherical_coords) then 
 !
 !  Assume that sinth=1 if there is no theta extent.
 !  This should always give a volume of 4pi/3*(r2^3-r1^3) for constant integrand
@@ -1367,8 +1420,7 @@ module Grid
           box_volume = box_volume*2.*pi
         endif
 !
-      elseif (coord_system=='cylindric' &
-          .or.coord_system=='cylindrical_coords') then
+      elseif (lcylindrical_coords) then
 !
 !  Box volume and volume element.
 !
@@ -1393,7 +1445,7 @@ module Grid
 !
     endsubroutine box_vol
 !***********************************************************************
-    subroutine pencil_criteria_grid()
+    subroutine pencil_criteria_grid
 !
 !  All pencils that this special module depends on are specified here.
 !
@@ -1855,6 +1907,33 @@ module Grid
 !
     endfunction find_star
 !***********************************************************************
+    subroutine real_to_index(n, x, xi)
+!
+!  Transforms coordinates in real space to those in index space.
+!
+!  10-sep-15/ccyang: coded.
+!
+      integer, intent(in) :: n
+      real, dimension(n,3), intent(in) :: x
+      real, dimension(n,3), intent(out) :: xi
+!
+      real, parameter :: ngp1 = nghost + 1
+      integer :: i
+!
+!  Work on each direction.
+!
+      nonzero: if (n > 0) then
+        dir: do i = 1, 3
+          if (lactive_dimension(i)) then
+            call inverse_grid(i, x(:,i), xi(:,i), local=.true.)
+          else
+            xi(:,i) = ngp1
+          endif
+        enddo dir
+      endif nonzero
+!
+    endsubroutine real_to_index
+!***********************************************************************
     subroutine inverse_grid(dir, x, xi, local)
 !
 !  Transform the x coordinates in real space to the xi coordinates in
@@ -1951,7 +2030,7 @@ module Grid
 !  08-may-12/ccyang: include dx_1, dx_tilde, ... arrays
 !  25-feb-13/ccyang: construct global coordinates including ghost cells.
 !
-      use Mpicomm, only: mpisend_real,mpirecv_real,mpibcast_real, mpiallreduce_sum_int
+      use Mpicomm, only: mpisend_real,mpirecv_real,mpibcast_real, mpiallreduce_sum_int, MPI_COMM_WORLD
 !
       real, dimension(nx) :: xrecv, x1recv, x2recv
       real, dimension(ny) :: yrecv, y1recv, y2recv
@@ -2010,9 +2089,9 @@ module Grid
 !  Serial array constructed. Broadcast the result. Repeat the
 !  procedure for y and z arrays.
 !
-      call mpibcast_real(xgrid,nxgrid)
-      call mpibcast_real(dx1grid,nxgrid)
-      call mpibcast_real(dxtgrid,nxgrid)
+      call mpibcast_real(xgrid,nxgrid,comm=MPI_COMM_WORLD)
+      call mpibcast_real(dx1grid,nxgrid,comm=MPI_COMM_WORLD)
+      call mpibcast_real(dxtgrid,nxgrid,comm=MPI_COMM_WORLD)
 !
 !  Serial y-array
 !
@@ -2109,17 +2188,17 @@ module Grid
 !
     endsubroutine construct_serial_arrays
 !***********************************************************************
-    subroutine get_grid_mn()
+    subroutine get_grid_mn
 !
 !  Gets the geometry of the pencil at each (m,n) in the mn-loop.
 !
 !  03-jul-13/ccyang: extracted from Equ.
 !
-      obsolete: if (old_cdtv) then
+!      obsolete: if (old_cdtv) then
 !       The following is only kept for backwards compatibility. Will be deleted in the future.
-        dxyz_2 = max(dx_1(l1:l2)**2, dy_1(m)**2, dz_1(n)**2)
+!        dxyz_2 = max(dx_1(l1:l2)**2, dy_1(m)**2, dz_1(n)**2)
 !
-      else obsolete
+!      else obsolete
         dline: if (lspherical_coords) then
           dline_1(:,1) = dx_1(l1:l2)
           dline_1(:,2) = r1_mn * dy_1(m)
@@ -2148,11 +2227,17 @@ module Grid
         if (nygrid /= 1) dxmin_pencil = min(1.0 / dy_1(m), dxmin_pencil)
         if (nzgrid /= 1) dxmin_pencil = min(1.0 / dz_1(n), dxmin_pencil)
 !
-        dxyz_2 = dline_1(:,1)**2 + dline_1(:,2)**2 + dline_1(:,3)**2
-        dxyz_4 = dline_1(:,1)**4 + dline_1(:,2)**4 + dline_1(:,3)**4
-        dxyz_6 = dline_1(:,1)**6 + dline_1(:,2)**6 + dline_1(:,3)**6
+        if (lmaximal_cdtv) then
+          dxyz_2 = max(dline_1(:,1)**2, dline_1(:,2)**2, dline_1(:,3)**2)
+          dxyz_4 = max(dline_1(:,1)**4, dline_1(:,2)**4, dline_1(:,3)**4)
+          dxyz_6 = max(dline_1(:,1)**6, dline_1(:,2)**6, dline_1(:,3)**6)
+        else
+          dxyz_2 = dline_1(:,1)**2 + dline_1(:,2)**2 + dline_1(:,3)**2
+          dxyz_4 = dline_1(:,1)**4 + dline_1(:,2)**4 + dline_1(:,3)**4
+          dxyz_6 = dline_1(:,1)**6 + dline_1(:,2)**6 + dline_1(:,3)**6
+        endif
 !
-      endif obsolete
+!      endif obsolete
 !
     endsubroutine get_grid_mn
 !***********************************************************************
@@ -2210,12 +2295,10 @@ module Grid
       dc(-nghost+1:0)= dc(nghost:1:-1)
 !print*, 'DX,Y,Z=', dx,dy,dz
       call calc_coeffs_1(dc,coeffs(:,BOT))
-!print*, 'coeffs(:,BOT)=', coeffs_1_x(:,BOT)
       dc(-nghost+1:0)= coors(sc-2*nghost+1:sc-nghost)-coors(sc-2*nghost:sc-nghost-1)
       dc( 1:nghost)  = dc(0:-nghost+1:-1)
 
       call calc_coeffs_1(dc,coeffs(:,TOP))
-!print*, 'coeffs(:,TOP)=', coeffs(:,TOP)
 
     endsubroutine calc_bound_coeffs
 !***********************************************************************

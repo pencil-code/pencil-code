@@ -67,6 +67,7 @@ module Register
       use Testscalar,       only: register_testscalar
       use Viscosity,        only: register_viscosity
       use ImplicitPhysics,  only: register_implicit_physics
+      use Solid_Cells,      only: register_solid_cells
 !
       integer :: ierr
 !
@@ -154,6 +155,7 @@ module Register
       call register_implicit_physics
       call register_special
       call register_heatflux
+      call register_solid_cells
 !
 !  Writing files for use with IDL.
 !
@@ -194,7 +196,6 @@ module Register
       use Param_IO
       use Mpicomm,          only: mpireduce_sum,mpibcast_real,&
                                   mpisend_real,mpirecv_real
-      use Sub,              only: remove_zprof
       use BorderProfiles,   only: initialize_border_profiles
       use Chemistry,        only: initialize_chemistry
       use Chiral,           only: initialize_chiral
@@ -242,13 +243,13 @@ module Register
 !
 !  Defaults for some logicals; will later be set to true if needed.
 !
-      lpenc_requested(:) = .false.
+      lpenc_requested = .false.
 !
 !  Evaluate physical units. Used currently only in eos, but later also
 !  in the interstellar and radiation modules, for example.
 !
-      call units_general()
-      call units_eos()
+      call units_general
+      call units_eos
 !
 !  Calculated derived units.
 !
@@ -329,11 +330,7 @@ module Register
         close (1)
       endif
 !
-!  print summary of variable names
-!
-      call write_varname
-!
-!  Coordinate-related issues, initialize specific grid variables
+!  Coordinate-related issues, initialize specific grid variables and Yin-Yang grid.
 !
       call initialize_grid
 !
@@ -402,6 +399,10 @@ module Register
       call initialize_implicit_physics(f)
       call initialize_heatflux(f)
 !
+!  print summary of variable names
+!
+      call write_varname
+!
     endsubroutine initialize_modules
 !***********************************************************************
     subroutine finalize_modules(f)
@@ -411,10 +412,10 @@ module Register
 ! 14-aug-2011/Bourdin.KIS: coded
 ! 26-mar-2012/MR: finalize_deriv introduced
 !
-      use Boundcond,        only: finalize_boundcond
+      use Boundcond,      only: finalize_boundcond
       use Cdata
-      use Special,          only: finalize_special
-      use Deriv,            only: finalize_deriv
+      use Special,        only: finalize_special
+      use Deriv,          only: finalize_deriv
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -572,40 +573,40 @@ module Register
       use Particles_main,  only: particles_pencil_criteria
       use Solid_cells,     only: pencil_criteria_solid_cells
 !
-      call pencil_criteria_grid()
-      call pencil_criteria_borderprofiles()
-      call pencil_criteria_density()
-      call pencil_criteria_forcing()
-      call pencil_criteria_eos()
-      call pencil_criteria_hydro()
-      call pencil_criteria_heatflux()
-      call pencil_criteria_shock()
-      call pencil_criteria_viscosity()
-      call pencil_criteria_energy()
-!      call pencil_criteria_conductivity()
-      call pencil_criteria_gravity()
-      call pencil_criteria_selfgravity()
-      call pencil_criteria_pscalar()
-      call pencil_criteria_interstellar()
-      call pencil_criteria_chemistry()
-      call pencil_criteria_dustvelocity()
-      call pencil_criteria_dustdensity()
-      call pencil_criteria_neutralvelocity()
-      call pencil_criteria_neutraldensity()
-      call pencil_criteria_magnetic()
-      call pencil_criteria_lorenz_gauge()
-      call pencil_criteria_polymer()
-      call pencil_criteria_testscalar()
-      call pencil_criteria_testfield()
-      call pencil_criteria_testflow()
-      call pencil_criteria_cosmicray()
-      call pencil_criteria_cosmicrayflux()
-      call pencil_criteria_chiral()
-      call pencil_criteria_radiation()
-      call pencil_criteria_shear()
-      call pencil_criteria_special()
-      call pencil_criteria_solid_cells()
-      if (lparticles) call particles_pencil_criteria()
+      call pencil_criteria_grid
+      call pencil_criteria_borderprofiles
+      call pencil_criteria_density
+      call pencil_criteria_forcing
+      call pencil_criteria_eos
+      call pencil_criteria_hydro
+      call pencil_criteria_heatflux
+      call pencil_criteria_shock
+      call pencil_criteria_viscosity
+      call pencil_criteria_energy
+!      call pencil_criteria_conductivity
+      call pencil_criteria_gravity
+      call pencil_criteria_selfgravity
+      call pencil_criteria_pscalar
+      call pencil_criteria_interstellar
+      call pencil_criteria_chemistry
+      call pencil_criteria_dustvelocity
+      call pencil_criteria_dustdensity
+      call pencil_criteria_neutralvelocity
+      call pencil_criteria_neutraldensity
+      call pencil_criteria_magnetic
+      call pencil_criteria_lorenz_gauge
+      call pencil_criteria_polymer
+      call pencil_criteria_testscalar
+      call pencil_criteria_testfield
+      call pencil_criteria_testflow
+      call pencil_criteria_cosmicray
+      call pencil_criteria_cosmicrayflux
+      call pencil_criteria_chiral
+      call pencil_criteria_radiation
+      call pencil_criteria_shear
+      call pencil_criteria_special
+      call pencil_criteria_solid_cells
+      if (lparticles) call particles_pencil_criteria
 !
     endsubroutine pencil_criteria
 !***********************************************************************
@@ -731,7 +732,8 @@ module Register
         do
           read(parallel_unit_vec, *, iostat=io_err) cname_tmp
           if (io_err < 0) exit ! EOF
-          if (io_err > 0) call fatal_error('read_name_format','IO-error while reading "'//trim(in_file)//'"')
+          if (io_err > 0) call fatal_error('read_name_format', &
+                                           'IO-error while reading "'//trim(in_file)//'"')
           cname_tmp = adjustl(cname_tmp)
           if ((cname_tmp /= ' ') .and. (cname_tmp(1:1) /= '!') .and. (cname_tmp(1:1) /= comment_char)) then
             nnamel = nnamel+1
@@ -757,6 +759,7 @@ module Register
 !                print.in to avoid counting comment lines
 !  28-May-2015/Bourdin.KIS: renamed comment_chars to strip_comments
 !  24-Aug-2015/MR: broke up if ( read_name_format ... in two
+!  21-Mar-2016/MR: separate call for allocations of fnamexy* (due to Yin-Yang)
 !
 !  All numbers like nname etc. need to be initialized to zero in cdata!
 !
@@ -969,6 +972,7 @@ module Register
       if (nnamexy>0) then
         call allocate_zaverages(nnamexy)
         lwrite_zaverages = read_name_format(zaver_in_file,cnamexy,nnamexy)
+        if (lwrite_zaverages) call allocate_zaverages_data(nnamexy)
       endif
 
       if (lroot .and. (ip<14)) print*, 'rprint_list: nnamexy=', nnamexy
@@ -1100,9 +1104,9 @@ module Register
 !
 !  Expand shorthand names
 !
-      if (lhydro                  ) call expand_shands_hydro()
-      if (lmagnetic               ) call expand_shands_magnetic()
-      if (lentropy.or.ltemperature) call expand_shands_energy()
+      if (lhydro                  ) call expand_shands_hydro
+      if (lmagnetic               ) call expand_shands_magnetic
+      if (lentropy.or.ltemperature) call expand_shands_energy
 !
 !  phi-averages
 !
@@ -1135,7 +1139,7 @@ module Register
 ! LOCAL SUBROUTINES START BELOW HERE.
 !***********************************************************************
 !***********************************************************************
-    subroutine write_varname()
+    subroutine write_varname
 !
 !  Writes varname to file varname.dat.
 !

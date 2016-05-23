@@ -176,8 +176,9 @@ module Gravity
 !                For Kepler profile, gravitational_const is calculated from gravx and mass_cent_body.
 !
       use SharedVariables, only: put_shared_variable, get_shared_variable
-      use Sub, only: notanumber, cubic_step
-      use Mpicomm, only: mpibcast_real
+      use General, only: notanumber
+      use Sub, only: cubic_step
+      use Mpicomm, only: mpibcast_real, MPI_COMM_WORLD
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, pointer :: cs20,mpoly,gamma
@@ -539,7 +540,7 @@ module Gravity
             if (lroot) call warning('initialize_gravity', 'central body mass is ignored')
           else
             if (ipx==0) gravitational_const = -gravx_xpencil(l1)*x(l1)**2/mass_cent_body
-            if (nprocx>1) call mpibcast_real(gravitational_const)
+            if (nprocx>1) call mpibcast_real(gravitational_const,comm=MPI_COMM_WORLD)
           endif
         else
           if (gravitational_const<=0.) &

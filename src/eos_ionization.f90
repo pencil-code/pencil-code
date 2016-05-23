@@ -43,10 +43,6 @@ module EquationOfState
   real :: xHe=0.1
   real :: yMetals=0
   real :: yHacc=1e-5
-! input parameters
-  namelist /eos_init_pars/ xHe,yMetals,yHacc,lpp_as_aux,lcp_as_aux
-! run parameters
-  namelist /eos_run_pars/ xHe,yMetals,yHacc,lpp_as_aux,lcp_as_aux
 !ajwm  Moved here from Density.f90
 !ajwm  Completely irrelevant to eos_ionization but density and entropy need
 !ajwm  reworking to be independent of these things first
@@ -58,6 +54,10 @@ module EquationOfState
   real :: gamma=impossible, gamma_m1=impossible,gamma1=impossible
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=impossible, cs2top=impossible
+! input parameters
+  namelist /eos_init_pars/ xHe,yMetals,yHacc,lpp_as_aux,lcp_as_aux
+! run parameters
+  namelist /eos_run_pars/ xHe,yMetals,yHacc,lpp_as_aux,lcp_as_aux
 !ajwm  Not sure this should exist either...
   real :: cs2cool=0.
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
@@ -611,13 +611,19 @@ module EquationOfState
 !
    endsubroutine gettemperature
 !***********************************************************************
- subroutine getpressure(pp_tmp)
+    subroutine getpressure(pp_tmp,TT_tmp,rho_tmp,mu1_tmp)
 !
-     real, dimension (mx,my,mz), intent(out) :: pp_tmp
+     real, dimension (nx), intent(out) :: pp_tmp
+     real, dimension (nx), intent(in)  :: TT_tmp,rho_tmp,mu1_tmp
+!
+     call fatal_error('getpressure','Should not be called with noeos.')
 !
      call keep_compiler_quiet(pp_tmp)
+     call keep_compiler_quiet(TT_tmp)
+     call keep_compiler_quiet(rho_tmp)
+     call keep_compiler_quiet(mu1_tmp)
 !
-   endsubroutine getpressure
+    endsubroutine getpressure
 !***********************************************************************
     subroutine get_cp1(cp1_)
 !

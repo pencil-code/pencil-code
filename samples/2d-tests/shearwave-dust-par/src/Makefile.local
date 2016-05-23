@@ -3,30 +3,15 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM      = nompicomm
+MPICOMM      =   mpicomm
 
 HYDRO        =   hydro
 DENSITY      =   density
-ENTROPY      = noentropy
-MAGNETIC     = nomagnetic
-RADIATION    = noradiation
-PSCALAR      = nopscalar
-
-GRAVITY      = nogravity
-SELFGRAVITY  = noselfgravity
-POISSON      = nopoisson
-FORCING      = noforcing
 SHEAR        =   shear
 VISCOSITY    = noviscosity
 
-DUSTDENSITY  = nodustdensity
-DUSTVELOCITY = nodustvelocity
-
-PARTICLES             =   particles_dust
-PARTICLES_SELFGRAVITY = noparticles_selfgravity
-
-FOURIER      =   fourier_fftpack
-
+PARTICLES      =   particles_dust
+PARTICLES_DRAG =   particles_drag
 
 # Use double precision
 REAL_PRECISION = double

@@ -26,7 +26,7 @@ module Initcond
   public :: gaunoise_rprof
   public :: gaussian, gaussian3d, gaussianpos, beltrami, bessel_x, bessel_az_x
   public :: beltrami_complex, beltrami_old, bhyperz
-  public :: rolls, tor_pert
+  public :: straining, rolls, tor_pert
   public :: jump, bjump, bjumpz, stratification, stratification_x
   public :: stratification_xz
   public :: modes, modev, modeb, crazy, exponential
@@ -180,6 +180,7 @@ module Initcond
         f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(sin(kx1*x),2,my),3,mz)&
                                    *spread(spread(sin(ky1*y),1,mx),3,mz)&
                                    *spread(spread(sin(kz1*z),1,mx),2,my))
+!XXX
       endif
 !
     endsubroutine sinx_siny_sinz
@@ -1827,6 +1828,38 @@ module Initcond
 !
     endsubroutine bessel_az_x
 !***********************************************************************
+    subroutine straining(ampl,f,i,kx,ky,kz,dimensionality)
+!
+!  convection straining (as initial condition)
+!
+!  23-mar-16/axel: coded
+!
+      integer :: i,j,dimensionality
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: ampl,kx,ky,kz
+!
+!  check input parameters
+!
+      if (lroot) print*,'straining: i,kx,ky,kz=',i,kx,ky,kz
+!
+!  set stream function psi=sin(kx*x)*sin(kz*(z-zbot))
+!
+      j=i
+      f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(sin(kx*x),2,my),3,mz)&
+                                *spread(spread(cos(ky*y),1,mx),3,mz)&
+                                *spread(spread(cos(kz*z),1,mx),2,my)
+      j=i+1
+      f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(cos(kx*x),2,my),3,mz)&
+                                *spread(spread(sin(ky*y),1,mx),3,mz)&
+                                *spread(spread(cos(kz*z),1,mx),2,my)
+      j=i+2
+      f(:,:,:,j)=f(:,:,:,j)+ampl*spread(spread(cos(kx*x),2,my),3,mz)&
+                                *spread(spread(cos(ky*y),1,mx),3,mz)&
+                                *spread(spread(sin(kz*z),1,mx),2,my)&
+                                *(-1.)*(dimensionality-1)
+!
+    endsubroutine straining
+!***********************************************************************
     subroutine rolls(ampl,f,i,kx,kz)
 !
 !  convection rolls (as initial condition)
@@ -2303,6 +2336,7 @@ module Initcond
 !
 !   8-apr-03/axel: coded
 !  23-may-04/anders: made structure for other input variables
+!  30-apr-16/axel: adapted for polytropic eos
 !
       use EquationOfState, only: eoscalc,ilnrho_lnTT
       use Sub, only: write_zprof
@@ -2333,6 +2367,7 @@ module Initcond
 !  Read data - first the entire stratification file.
 !
       select case (strati_type)
+!
       case ('lnrho_ss')
         do n=1,mzgrid
           read(19,*,iostat=stat) tmp,var1,var2
@@ -2360,6 +2395,18 @@ module Initcond
             exit
           endif
         enddo
+!
+      case ('lnrho')
+        do n=1,mzgrid
+          read(19,*,iostat=stat) tmp,var1
+          if (stat>=0) then
+            if (ip<5) print*, 'stratification: z, var1=', tmp, var1
+            if (ldensity) lnrho0(n)=var1
+          else
+            exit
+          endif
+!
+        enddo
       endselect
 !
 !  Select the right region for the processor afterwards.
@@ -2381,6 +2428,11 @@ module Initcond
             f(:,:,n,ilnTT)=lnTT0(ipz*nz+(n-nghost))
           enddo
         endif
+        if (.not.lentropy.and..not.ltemperature) then
+          do n=n1,n2
+            f(:,:,n,ilnrho)=lnrho0(ipz*nz+(n-nghost))
+          enddo
+        endif
 !
 !  With ghost zones.
 !
@@ -2395,6 +2447,11 @@ module Initcond
           do n=1,mz
             f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
             f(:,:,n,ilnTT)=lnTT0(ipz*nz+n)
+          enddo
+        endif
+        if (.not.lentropy.and..not.ltemperature) then
+          do n=1,mz
+            f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
           enddo
         endif
 !
@@ -2425,6 +2482,11 @@ module Initcond
             lnTT_mz(n)=lnTT0(ipz*nz+n)
           enddo
           call write_zprof('lnTT_mz',lnTT_mz)
+        endif
+        if (.not.lentropy.and..not.ltemperature) then
+          do n=1,mz
+            lnrho_mz(n)=lnrho0(ipz*nz+n)
+          enddo
         endif
 !
       close(19)
@@ -2602,7 +2664,7 @@ module Initcond
 !  22-feb-03/axel: fixed 3-D background solution for enthalpy
 !  26-Jul-03/anders: Revived from June 1 version
 !
-      use Mpicomm, only: mpireduce_sum, mpibcast_real
+      use Mpicomm, only: mpireduce_sum, mpibcast_real, MPI_COMM_WORLD
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: hh, xi
@@ -2716,7 +2778,7 @@ module Initcond
 !  Calculate <rho> and send to all processors
 !
       if (lroot) rho0 = exp(-lnrhosum_wholebox/nwgrid)
-      call mpibcast_real(rho0)
+      call mpibcast_real(rho0,comm=MPI_COMM_WORLD)
       if (ip<14) print*,'planet_hc: iproc,rho0=',iproc,rho0
 !
 !  Multiply density by rho0 (divide by <rho>)
@@ -2731,7 +2793,7 @@ module Initcond
 !
 !   jun-03/anders: coded (adapted from old 'planet', now 'planet_hc')
 !
-      use Mpicomm, only: mpireduce_sum, mpibcast_real
+      use Mpicomm, only: mpireduce_sum, mpibcast_real, MPI_COMM_WORLD
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: hh, xi, r_ell
@@ -2831,7 +2893,7 @@ module Initcond
 !  Calculate <rho> and send to all processors
 !
       if (lroot) rho0 = exp(-lnrhosum_wholebox/nwgrid)
-      call mpibcast_real(rho0)
+      call mpibcast_real(rho0,comm=MPI_COMM_WORLD)
       if (ip<14) print*,'planet_hc: iproc,rho0=',iproc,rho0
 !
 !  Multiply density by rho0 (divide by <rho>)
@@ -4568,7 +4630,7 @@ module Initcond
 !
 !  08-sep-14/axel: adapted from power_randomphase
 !
-      use Fourier, only: fft_xyz_parallel
+      use Fourier, only: fft_xyz_parallel, fourier_transform
 !
       logical, intent(in), optional :: lscale_tobox
       logical :: lvectorpotential, lscale_tobox1
@@ -4638,8 +4700,6 @@ module Initcond
 !  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
 !  the full nx extent (which, currently, must be equal to nxgrid).
 !
-        if (lroot .AND. ip<10) &
-             print*,'power_randomphase:fft done; now integrate over shells...'
         do iky=1,nz
           do ikx=1,ny
             do ikz=1,nx
@@ -4682,16 +4742,7 @@ module Initcond
           fact=kpeak1**1.5
           if (kgaussian /= 0.) fact=fact*kgaussian**(-.5*(initpower+1.))
         endif
-!
-!  By mistake, a second ampl factor got introduced, so
-!  the resulting amplitudes depended quadratically on ampl.
-!  To keep continuity and reproduce old runs, put lno_second_ampl=F.
-!
-        if (lno_second_ampl) then
-          r=fact*((k2*kpeak21)**mhalf)/(1.+(k2*kpeak21)**nexp1)**nexp2
-        else
-          r=ampl*((k2*kpeak21)**mhalf)/(1.+(k2*kpeak21)**nexp1)**nexp2
-        endif
+        r=fact*((k2*kpeak21)**mhalf)/(1.+(k2*kpeak21)**nexp1)**nexp2
 !
 !  cutoff (changed to hyperviscous cutoff filter).
 !  The 1/2 factor is needed to account for the fact that the
@@ -4749,10 +4800,11 @@ module Initcond
         enddo
         endif
 !
-!  Make it helical, i.e., multiply by delta_ij + epsilon_ijk ik_k*sigma.
+!  Make it helical, i.e., multiply by delta_ij + epsilon_ijk ikhat_k*sigma.
 !  Use r=sigma/k for normalization of sigma*khat_i = sigma*ki/sqrt(k2).
 !
         r=relhel/sqrt(k2)
+        r(1,1,1)=0.
         do iky=1,nz
           do ikx=1,ny
             do ikz=1,nx
@@ -4790,8 +4842,16 @@ module Initcond
 !
 !  back to real space
 !
+!AB: I plan to remove the lno_second_ampl switch, which was used for
+!AB: something else. Right now, I use it to invoke fft_xyz_parallel
+!AB: by setting lno_second_ampl=F (which is not the default).
+!
         do i=1,3
-          call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
+          if (lno_second_ampl) then
+            call fourier_transform(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
+          else
+            call fft_xyz_parallel(u_re(:,:,:,i),u_im(:,:,:,i),linv=.true.)
+          endif
         enddo !i
         f(l1:l2,m1:m2,n1:n2,i1:i2)=u_re
 !
@@ -4954,7 +5014,7 @@ module Initcond
 !
     endsubroutine random_isotropic_KS
 !***********************************************************************
-    subroutine random_isotropic_shell(f,jf,ampl0)
+    subroutine random_isotropic_shell(f,jf,ampl0,z1,z2)
 !
 !   random_isotropic_shell
 !
@@ -4969,7 +5029,7 @@ module Initcond
       integer :: jf,i,nvect,ivect
       real, dimension (3) :: ee,kk,exk
       real, dimension (nx) :: kdotx
-      real :: exk2,phik,ampl,ampl0
+      real :: exk2,phik,ampl,ampl0,prof,zeta,z1,z2
 !
 !  read header
 !
@@ -4986,12 +5046,26 @@ module Initcond
         call dot2(exk,exk2)
         exk=exk/sqrt(exk2)
 !
+!  allow for the possibility of a profile
+!
         do n=n1,n2
+          if (z1/=z2) then
+            if (z(n)>z1.and.z(n)<z2) then
+              zeta=(z(n)-z1)/(z2-z1)-.5
+              prof=cos(pi*zeta)**2
+            else
+              prof=0.
+            endif
+          else
+            prof=1.
+          endif
+          prof=prof*ampl0*ampl
+!
           do m=m1,m2
             kdotx=kk(1)*x(l1:l2)+kk(2)*y(m)+kk(3)*z(n)
             do i=1,3
               f(l1:l2,m,n,jf+i-1)=f(l1:l2,m,n,jf+i-1) &
-                +ampl0*ampl*exk(i)*real(exp(ii*(kdotx+phik)))
+                +prof*exk(i)*real(exp(ii*(kdotx+phik)))
             enddo
           enddo
         enddo

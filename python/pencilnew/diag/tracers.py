@@ -4,7 +4,7 @@
 Reads the tracer files, composes a color map.
 """
 
-import numpy as np
+#import numpy as np
 import os
 import pencil as pc
 import pylab as plt
@@ -34,7 +34,7 @@ class Tracers(object):
         self.x1 = []
         self.y1 = []
         self.z1 = []
-        self.len = []
+        self.l = []
         self.mapping = []
         self.t = []
 
@@ -47,7 +47,7 @@ class Tracers(object):
         Trace streamlines from the VAR files and integrate quantity 'int_q'
         along them.
 
-        call signature::
+        call signature:
 
         find_tracers(self, trace_field='bb', h_min=2e-3, h_max=2e4, len_max=500,
                      tol=1e-2, iter_max=1e3, interpolation='trilinear',
@@ -114,6 +114,8 @@ class Tracers(object):
           Number of cores for multi core computation.
         """
 
+        import numpy as np
+
         # Return the tracers for the specified starting locations.
         def __sub_tracers(queue, var, field, t_idx, i_proc, n_proc):
             xx = np.zeros([(self.x0.shape[0]+n_proc-1-i_proc)/n_proc,
@@ -125,7 +127,7 @@ class Tracers(object):
             sub_x1 = np.zeros(xx[:, :, 0].shape)
             sub_y1 = np.zeros(xx[:, :, 0].shape)
             sub_z1 = np.zeros(xx[:, :, 0].shape)
-            sub_len = np.zeros(xx[:, :, 0].shape)
+            sub_l = np.zeros(xx[:, :, 0].shape)
             sub_curly_A = np.zeros(xx[:, :, 0].shape)
             sub_ee = np.zeros(xx[:, :, 0].shape)
             sub_mapping = np.zeros([xx[:, :, 0].shape[0], xx[:, :, 0].shape[1], 3])
@@ -134,18 +136,18 @@ class Tracers(object):
                     stream = Stream(field, self.params, interpolation=interpolation,
                                     h_min=h_min, h_max=h_max, len_max=len_max, tol=tol,
                                     iter_max=iter_max, xx=xx[int(ix/n_proc), iy, :])
-                    sub_x1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len-1, 0]
-                    sub_y1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len-1, 1]
-                    sub_z1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len-1, 2]
-                    sub_len[int(ix/n_proc), iy] = stream.len
+                    sub_x1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len, 0]
+                    sub_y1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len, 1]
+                    sub_z1[int(ix/n_proc), iy] = stream.tracers[stream.stream_len, 2]
+                    sub_l[int(ix/n_proc), iy] = stream.len
                     if any(np.array(self.params.int_q) == 'curly_A'):
-                        for l in range(stream.stream_len-1):
+                        for l in range(stream.stream_len):
                             aaInt = vec_int((stream.tracers[l+1] + stream.tracers[l])/2,
                                              var, aa, interpolation=self.params.interpolation)
                             sub_curly_A[int(ix/n_proc), iy] += \
                                 np.dot(aaInt, (stream.tracers[l+1] - stream.tracers[l]))
                     if any(np.array(self.params.int_q) == 'ee'):
-                        for l in range(stream.stream_len-1):
+                        for l in range(stream.stream_len):
                             eeInt = vec_int((stream.tracers[l+1] + stream.tracers[l])/2,
                                              var, ee, interpolation=self.params.interpolation)
                             sub_ee[int(ix/n_proc), iy] += \
@@ -166,7 +168,7 @@ class Tracers(object):
                     else:
                         sub_mapping[int(ix/n_proc), iy, :] = [1, 1, 1]
 
-            queue.put((i_proc, sub_x1, sub_y1, sub_z1, sub_len, sub_mapping,
+            queue.put((i_proc, sub_x1, sub_y1, sub_z1, sub_l, sub_mapping,
                        sub_curly_A, sub_ee))
 
 
@@ -223,7 +225,7 @@ class Tracers(object):
         self.x1 = np.zeros([int(trace_sub*dim.nx), int(trace_sub*dim.ny), nTimes])
         self.y1 = np.zeros([int(trace_sub*dim.nx), int(trace_sub*dim.ny), nTimes])
         self.z1 = np.zeros([int(trace_sub*dim.nx), int(trace_sub*dim.ny), nTimes])
-        self.len = np.zeros([int(trace_sub*dim.nx), int(trace_sub*dim.ny), nTimes])
+        self.l = np.zeros([int(trace_sub*dim.nx), int(trace_sub*dim.ny), nTimes])
         if any(np.array(int_q) == 'curly_A'):
             self.curly_A = np.zeros([int(trace_sub*dim.nx),
                                      int(trace_sub*dim.ny), nTimes])
@@ -291,7 +293,7 @@ class Tracers(object):
                 self.x1[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][1]
                 self.y1[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][2]
                 self.z1[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][3]
-                self.len[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][4]
+                self.l[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][4]
                 self.mapping[sub_proc::n_proc, :, t_idx, :] = sub_data[i_proc][5]
                 if any(np.array(int_q) == 'curly_A'):
                     self.curly_A[sub_proc::n_proc, :, t_idx] = sub_data[i_proc][6]
@@ -319,7 +321,7 @@ class Tracers(object):
         """
 
         self.params.destination = destination
-        
+
         # Write the results into hdf5 file.
         if destination != '':
             f = h5py.File(os.path.join(data_dir, destination), 'w')
@@ -329,20 +331,20 @@ class Tracers(object):
             set_x1 = f.create_dataset("x1", self.x1.shape, dtype=self.x1.dtype)
             set_y1 = f.create_dataset("y1", self.y1.shape, dtype=self.y1.dtype)
             set_z1 = f.create_dataset("z1", self.z1.shape, dtype=self.z1.dtype)
-            set_len = f.create_dataset("l", self.len.shape, dtype=self.len.dtype)
+            set_l = f.create_dataset("l", self.l.shape, dtype=self.l.dtype)
             set_x0[...] = self.x0[...]
             set_y0[...] = self.y0[...]
             set_x1[...] = self.x1[...]
             set_y1[...] = self.y1[...]
             set_z1[...] = self.z1[...]
-            set_len[...] = self.len[...]
+            set_l[...] = self.l[...]
             set_q = []
             for q in self.params.int_q:
                 if not q == '':
                     set_q.append(f.create_dataset(q, getattr(self, q).shape,
                                                   dtype=getattr(self, q).dtype))
                     set_q[-1][...] = getattr(self, q)[...]
-            set_t = f.create_dataset("t", self.t.shape, dtype=self.len.dtype)
+            set_t = f.create_dataset("t", self.t.shape, dtype=self.l.dtype)
             set_m = f.create_dataset("mapping", self.mapping.shape,
                                      dtype=self.mapping.dtype)
             set_t[...] = self.t[...]
@@ -374,7 +376,9 @@ class Tracers(object):
         *file_name*:
           File with the tracer data.
         """
-    
+
+        import numpy as np
+
         # Open the file.
         f = h5py.File(os.path.join(data_dir, file_name), 'r')
 
@@ -531,7 +535,7 @@ class Tracers(object):
 
 
 # Class containing simulation and tracing parameters.
-class TracersParameterClass:
+class TracersParameterClass(object):
     """
     __TracersParameterClass -- Holds the simulation and tracing parameters.
     """
@@ -559,4 +563,3 @@ class TracersParameterClass:
         self.data_dir = 'data/'
         self.destination = 'tracers.hdf5'
         self.n_proc = 1
-

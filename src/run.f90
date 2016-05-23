@@ -64,7 +64,7 @@ program run
   use Filter
   use Fixed_point,     only: fixed_points_prepare, wfixed_points
   use Forcing,         only: forcing_clean_up,addforce
-  use General,         only: random_seed_wrapper
+  use General,         only: random_seed_wrapper, touch_file
   use Hydro,           only: hydro_clean_up,kinematic_random_phase
   use ImplicitPhysics, only: calc_heatcond_ADI
   use Interstellar,    only: check_SN,addmassflux
@@ -84,7 +84,7 @@ program run
   use Solid_Cells,     only: solid_cells_clean_up
   use Streamlines,     only: tracers_prepare, wtracers
   use Sub
-  use Grid,            only: construct_grid, box_vol, grid_bound_data
+  use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coords_switches
   use IO,              only: wgrid
   use Syscalls,        only: is_nan
   use Testscalar,      only: rescaling_testscalar
@@ -119,23 +119,39 @@ program run
 !
 !  Initialize the message subsystem, eg. color setting etc.
 !
-  call initialize_messages()
-!
-!  Initialise MPI communication.
-!
-  call initialize_mpicomm()
+  call initialize_messages
 !
 !  Define the lenergy logical
 !
   lenergy=lentropy.or.ltemperature.or.lthermal_energy
 !
-!  Read parameters from start.x (default values; overwritten by 'read_all_run_pars').
+!  Read parameters from start.x (set in start.in/default values; possibly overwritten by 'read_all_run_pars').
 !
-  call read_all_init_pars()
+  call read_all_init_pars
 !
 !  Read parameters and output parameter list.
 !
-  call read_all_run_pars()
+  call read_all_run_pars
+!
+  call set_coords_switches
+!
+!  Initialise MPI communication.
+!
+  call initialize_mpicomm
+!
+  if (any(downsampl>1)) then
+!
+!  If downsampling, calculate local start indices and number of data in
+!  output for each direction; inner ghost zones are here disregarded
+!
+    ldownsampl = .true.
+    if (dsnap_down<=0.) dsnap_down=dsnap
+!
+      call get_downpars(1,nx,ipx)
+      call get_downpars(2,ny,ipy)
+      call get_downpars(3,nz,ipz)
+!
+    endif
 !
 !  Derived parameters (that may still be overwritten).
 !  [might better be put into another routine, possibly in 'read_all_run_pars']
@@ -145,7 +161,7 @@ program run
 !
 !  Set up directory names.
 !
-  call directory_names()
+  call directory_names
 !
 !  Read coordinates (if luse_oldgrid=T, otherwise regenerate grid).
 !  luse_oldgrid=T can be useful if nghost_read_fewer > 0,
@@ -160,7 +176,7 @@ program run
     if (luse_xyz1) Lxyz = xyz1-xyz0
     call construct_grid(x,y,z,dx,dy,dz)
   endif
-!
+!  
 !  Size of box at local processor. The if-statement is for
 !  backward compatibility.
 !
@@ -230,8 +246,8 @@ program run
 !
 !  Register physics modules.
 !
-  call register_modules()
-  if (lparticles) call particles_register_modules()
+  call register_modules
+  if (lparticles) call particles_register_modules
 !
 !  Only after register it is possible to write the correct dim.dat
 !  file with the correct number of variables
@@ -294,6 +310,21 @@ program run
   if (lequatory) yequator=xyz0(2)+0.5*Lxyz(2)
   if (lequatorz) zequator=xyz0(3)+0.5*Lxyz(3)
 !
+!  Print resolution and dimension of the simulation.
+!
+  if (lroot) then
+    write(*,'(a,i1,a)') ' This is a ', dimensionality, '-D run'
+    print*, 'nxgrid, nygrid, nzgrid=', nxgrid, nygrid, nzgrid
+    print*, 'Lx, Ly, Lz=', Lxyz
+    call box_vol
+    if (lyinyang) then
+     print*, '      Vbox(Yin,Yang)=', box_volume
+     print*, '      total volume  =', 4./3.*pi*(xyz1(1)**3-xyz0(1)**3)
+    else
+     print*, '      Vbox=', box_volume
+    endif
+  endif
+!
 !  Limits to xaveraging.
 !
   if (lav_smallx) call init_xaver
@@ -326,22 +357,12 @@ program run
     mvar_in=mvar
   endif
 !
-!  Print resolution and dimension of the simulation.
-!
-  if (lroot) then
-    write(*,'(a,i1,a)') ' This is a ', dimensionality, '-D run'
-    print*, 'nxgrid, nygrid, nzgrid=', nxgrid, nygrid, nzgrid
-    print*, 'Lx, Ly, Lz=', Lxyz
-    call box_vol
-    print*, '      Vbox=', box_volume
-  endif
-!
 !  Get state length of random number generator and put the default value.
 !  With lreset_seed (which is not the default) we can reset the seed during
 !  the run. This is necessary when lreinitialize_uu=T, inituu='gaussian-noise'.
 !
   if (lreset_seed) then
-    seed(1)=-((seed0-1812+1)*10+iproc)
+    seed(1)=-((seed0-1812+1)*10+iproc_world)
     call random_seed_wrapper(PUT=seed)
   else
     call get_nseed(nseed)
@@ -406,14 +427,18 @@ program run
 !  Do this even for uniform meshes, in which case xprim=dx, etc.
 !  Remember that dx_1=0 for runs without extent in that direction.
 !
-  if (nxgrid==1) then; xprim=1.0; else; xprim=1/dx_1; endif
-  if (nygrid==1) then; yprim=1.0; else; yprim=1/dy_1; endif
-  if (nzgrid==1) then; zprim=1.0; else; zprim=1/dz_1; endif
+  if (nxgrid==1) then; xprim=1.0; else; xprim=1./dx_1; endif
+  if (nygrid==1) then; yprim=1.0; else; yprim=1./dy_1; endif
+  if (nzgrid==1) then; zprim=1.0; else; zprim=1./dz_1; endif
 !
 !  Determine slice positions and whether slices are to be written on this
 !  processor. This can only be done after the grid has been established.
 !
-  call setup_slices()
+  call setup_slices
+!
+!  Initialize the list of neighboring processes.
+!
+  call update_neighbors     !MR: Isn't this only needed for particles?
 !
 !  Allow modules to do any physics modules do parameter dependent
 !  initialization. And final pre-timestepping setup.
@@ -430,7 +455,7 @@ program run
 !  Write parameters to log file (done after reading var.dat, since we
 !  want to output time t.
 !
-  call write_all_run_pars()
+  call write_all_run_pars
 !
 !  Initialize ionization array.
 !
@@ -456,8 +481,8 @@ program run
 !  Find out which pencils are needed and write information about required,
 !  requested and diagnostic pencils to disc.
 !
-  call choose_pencils()
-  call write_pencil_info()
+  call choose_pencils
+  call write_pencil_info
 !
   if (mglobal/=0)  &
       call output_globals('global.dat', &
@@ -501,7 +526,11 @@ program run
 !
 !  Prepare signal catching
 !
-  call signal_prepare()
+  call signal_prepare
+!
+!  Trim 1D-averages for times past the current time.
+!
+  call trim_1daverages()
 !
 !  Do loop in time.
 !
@@ -556,25 +585,25 @@ program run
 !  Before reading the rprint_list deallocate the arrays allocated for
 !  1-D and 2-D diagnostics.
 !
-                                 call vnames_clean_up()
-                                 call xyaverages_clean_up()
-                                 call xzaverages_clean_up()
-                                 call yzaverages_clean_up()
-        if (lwrite_phizaverages) call phizaverages_clean_up()
-        if (lwrite_yaverages)    call yaverages_clean_up()
-        if (lwrite_zaverages)    call zaverages_clean_up()
-        if (lwrite_phiaverages)  call phiaverages_clean_up()
-        if (lwrite_sound)        call sound_clean_up()
-        if (lforcing)            call forcing_clean_up()
-        if (lhydro_kinematic)    call hydro_clean_up()
-        if (lsolid_cells)        call solid_cells_clean_up()
+                                 call vnames_clean_up
+                                 call xyaverages_clean_up
+                                 call xzaverages_clean_up
+                                 call yzaverages_clean_up
+        if (lwrite_phizaverages) call phizaverages_clean_up
+        if (lwrite_yaverages)    call yaverages_clean_up
+        if (lwrite_zaverages)    call zaverages_clean_up
+        if (lwrite_phiaverages)  call phiaverages_clean_up
+        if (lwrite_sound)        call sound_clean_up
+        if (lforcing)            call forcing_clean_up
+        if (lhydro_kinematic)    call hydro_clean_up
+        if (lsolid_cells)        call solid_cells_clean_up
         call rprint_list(LRESET=.true.) !(Re-read output list)
         call initialize_modules(f)
         if (lparticles) then
           call particles_rprint_list(.false.)
           call particles_initialize_modules(f)
         endif
-        call choose_pencils()
+        call choose_pencils
         call write_all_run_pars('IDL')
 !
         lreload_file=control_file_exists('RELOAD', DELETE=.true.)
@@ -607,13 +636,13 @@ program run
 !  If we want to write out video data, wvid_prepare sets lvideo=.true.
 !  This allows pde to prepare some of the data.
 !
-    if (lwrite_slices) call wvid_prepare()
-    if (lwrite_2daverages) call write_2daverages_prepare()
+    if (lwrite_slices) call wvid_prepare
+    if (lwrite_2daverages) call write_2daverages_prepare
 !
 !   Prepare for the writing of the trcers and the fixed points.
 !
-    if (lwrite_tracers) call tracers_prepare()
-    if (lwrite_fixed_points) call fixed_points_prepare()
+    if (lwrite_tracers) call tracers_prepare
+    if (lwrite_fixed_points) call fixed_points_prepare
 !
 !  Find out which pencils to calculate at current time-step.
 !
@@ -630,7 +659,7 @@ program run
 !
 !  A random phase for the hydro_kinematic module
 !
-    if (lhydro_kinematic) call kinematic_random_phase()
+    if (lhydro_kinematic) call kinematic_random_phase
 !
 !  Time advance.
 !
@@ -639,11 +668,11 @@ program run
 !  Print diagnostic averages to screen and file.
 !
     if (lout) then
-      call prints()
+      call prints
       if (lchemistry_diag) call write_net_reaction
     endif
-    if (l1davg) call write_1daverages()
-    if (l2davg) call write_2daverages()
+    if (l1davg) call write_1daverages
+    if (l2davg) call write_2daverages
 !
     if (lout_sound) then
       call write_sound(tsound)
@@ -774,7 +803,7 @@ program run
 !
     if (max_walltime>0.0) then
       if (lroot.and.(wall_clock_time>max_walltime)) timeover=.true.
-      call mpibcast_logical(timeover)
+      call mpibcast_logical(timeover,comm=MPI_COMM_WORLD)
       if (timeover) then
         if (lroot) then
           print*
@@ -787,7 +816,7 @@ program run
 !  Fatal errors sometimes occur only on a specific processor. In that case all
 !  processors must be informed about the problem before the code can stop.
 !
-    call fatal_error_local_collect()
+    call fatal_error_local_collect
     call timing('run','at the end of Time_loop',INSTRUCT='finalize')
 !
     it=it+1
@@ -873,22 +902,23 @@ program run
   call mpifinalize
 !
 !  Free any allocated memory.
+!  MR: Is this needed? the program terminates anyway
 !
-  call farray_clean_up()
-  call sharedvars_clean_up()
-  call chemistry_clean_up()
-  call NSCBC_clean_up()
-  call fnames_clean_up()
-  call vnames_clean_up()
-  call xyaverages_clean_up()
-  call xzaverages_clean_up()
-  call yzaverages_clean_up()
-  if (lparticles) call particles_cleanup()
-  if (lwrite_phizaverages) call phizaverages_clean_up()
-  if (lwrite_yaverages)    call yaverages_clean_up()
-  if (lwrite_zaverages)    call zaverages_clean_up()
-  if (lwrite_phiaverages)  call phiaverages_clean_up()
-  if (lwrite_sound)        call sound_clean_up()
+  call farray_clean_up
+  call sharedvars_clean_up
+  call chemistry_clean_up
+  call NSCBC_clean_up
+  call fnames_clean_up
+  call vnames_clean_up
+  call xyaverages_clean_up
+  call xzaverages_clean_up
+  call yzaverages_clean_up
+  if (lparticles) call particles_cleanup
+  if (lwrite_phizaverages) call phizaverages_clean_up
+  if (lwrite_yaverages)    call yaverages_clean_up
+  if (lwrite_zaverages)    call zaverages_clean_up
+  if (lwrite_phiaverages)  call phiaverages_clean_up
+  if (lwrite_sound)        call sound_clean_up
 !
 endprogram run
 !**************************************************************************

@@ -68,6 +68,10 @@ module Cparam
   integer, parameter :: mreduce=6
   integer :: ip=14
 !
+!  Number of slots in initlnrho etc.
+!
+  integer, parameter :: ninit=5
+!
 !  Name:          Maximum string length of a:
 !  --------------------------------------------
 !  fnlen          file name
@@ -81,10 +85,6 @@ module Cparam
 !
   integer, parameter :: fnlen=135,intlen=21,bclen=3,labellen=25,linelen=256
   integer, parameter :: datelen=30,max_col_width=30,nscbc_len=24
-!
-!  Number of slots in initlnrho etc.
-!
-  integer, parameter :: ninit=5
 !
 !  Significant length of random number generator state.
 !  Different compilers have different lengths:
@@ -113,6 +113,10 @@ module Cparam
   real, parameter :: impossible=3.9085e37
   integer, parameter :: impossible_int=-max_int/100
 !
+! MPI
+!
+   integer, parameter :: root=0
+!
 !  Diagnostic variable types.
 !
 !  Values > 0 get maxed across all processors before any
@@ -123,12 +127,13 @@ module Cparam
 !
   integer, parameter :: ilabel_max=-1,ilabel_sum=1,ilabel_save=0
   integer, parameter :: ilabel_max_sqrt=-2,ilabel_sum_sqrt=2
+  integer, parameter :: ilabel_sum_log10=10
   integer, parameter :: ilabel_max_dt=-3,ilabel_max_neg=-4
   integer, parameter :: ilabel_max_reciprocal=-5
   integer, parameter :: ilabel_integrate=3,ilabel_surf=4
   integer, parameter :: ilabel_sum_par=5,ilabel_sum_sqrt_par=6
   integer, parameter :: ilabel_sum_weighted=7,ilabel_sum_weighted_sqrt=8
-  integer, parameter :: ilabel_sum_lim=9,ilabel_complex=10
+  integer, parameter :: ilabel_sum_lim=9,ilabel_complex=100
 !
 !  pi and its derivatives.
 !
@@ -138,6 +143,7 @@ module Cparam
   real, parameter :: sqrt2=1.41421356237309504880168872420970D0
   real, parameter :: four_pi_over_three=4.0/3.0*pi,onethird=1./3.
   real, parameter :: twopi = 6.2831853071795864769252867665590
+  real, parameter :: dtor = pi/180.
 !
 !  first zeros of Bessel functions of order 0 and 1
 !  k2bessel0 is the second zero of Bessel function of order 0

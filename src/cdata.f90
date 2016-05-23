@@ -59,6 +59,7 @@ module Cdata
   logical :: luse_latitude=.false., luse_oldgrid=.true., luse_xyz1=.false.
   logical :: lcylindrical_gravity=.false.
   logical :: luniform_z_mesh_aspect_ratio=.false.
+  logical :: lyinyang=.false., lyang=.false.
   real :: drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
   real, dimension (nx) :: r_mn,r1_mn,r2_mn,r2_weight
   real, dimension (my) :: sinth,sin1th,sin2th,costh,cotth,sinth_weight
@@ -74,21 +75,24 @@ module Cdata
 !
   real, dimension(3) :: coeff_grid=1.0
   real, dimension(3) :: dxi_fact=1.0
-  real, dimension(3) :: trans_width=0.0
+  real, dimension(3) :: trans_width=1.0
   real, dimension(3,2) :: xyz_step,xi_step_frac,xi_step_width=1.5
   real :: zeta_grid0=0.0
   real :: xbot_slice=0.0,xtop_slice=1.0
   real :: ybot_slice=0.0,ytop_slice=1.0
   real :: zbot_slice=0.0,ztop_slice=1.0
   real :: glnCrossSec0=0.0, CrossSec_x1=-1., CrossSec_x2=1., CrossSec_w=.1
-  logical, dimension(3) :: lperi, lshift_origin, lshift_origin_lower, lpole
-  logical, dimension(3) :: lequidist=(/.true.,.true.,.true. /)
+  logical, dimension(3) :: lperi=.true., &                                       ! all directions periodic
+                           lshift_origin=.false., lshift_origin_lower=.false., & ! don't shift origin
+                           lpole=.false., &                                      ! in spherical coords: pole excluded
+                           lequidist=.true.                                      ! grid equidistant in every direction
   character (len=labellen), dimension(3) :: grid_func='linear'
   character (len=labellen) :: pipe_func='error_function'
   real, dimension(0:nprocx) :: procx_bounds
   real, dimension(0:nprocy) :: procy_bounds
   real, dimension(0:nprocz) :: procz_bounds
   integer :: nghost_read_fewer=0
+  integer, dimension(3) :: dim_mask=(/1,2,3/)
 !
 !  Derivative parameters
 !
@@ -96,14 +100,13 @@ module Cdata
 !
 !  Box dimensions.
 !
-  real, dimension(3) :: Lxyz,xyz0,xyz1=impossible,xyz_star=(/0.0,0.0,0.0/)
+  real, dimension(3) :: Lxyz=impossible,xyz0=-pi,xyz1=impossible,xyz_star=0.0
   real, dimension(3) :: Lxyz_loc,xyz0_loc,xyz1_loc
   real :: x0,y0,z0,Lx,Ly,Lz
   real :: r_int=0.,r_ext=impossible   ! for spherical shell problems
   real :: r_int_border=impossible,r_ext_border=impossible
-  real :: r_ref=1.,rsmooth=0.,box_volume=1.0
+  real :: r_ref=1.,rsmooth=0.,box_volume=1.0 
   real :: Area_xy=1., Area_yz=1., Area_xz=1.
-  real, dimension(3) :: k1xyz=0.
 !
 !  Time integration parameters.
 !
@@ -144,9 +147,11 @@ module Cdata
   real, dimension (nx) :: dt1_advec, dt1_diffus, dt1_src, dt1_max
   real                 :: dt1_poly_relax, trelax_poly
   real, dimension (nx) :: dt1_reac, reac_chem, reac_dust
+  real :: reac_pchem,dt1_preac
   real, dimension (3) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0
   logical :: lfirstpoint=.false.,llastpoint=.false.
   logical :: lmaxadvec_sum=.false.,old_cdtv=.false.
+  logical :: lmaximal_cdtv=.false., lmaximal_cdt=.false.
   character (len=20), dimension(mvar) :: timestep_scaling='cons_err'
 !
 !  Use of LSODE to solve the chemistry in a separate step
@@ -169,6 +174,7 @@ module Cdata
   real :: crash_file_dtmin_factor=-1.0
   integer :: isave=100,ialive=0,isaveglobal=0
   logical :: lread_aux=.false., lwrite_aux=.false., lwrite_dvar=.false.
+  logical :: lwrite_avg1d_binary = .false.
   logical :: lread_oldsnap=.false., lread_oldsnap_nomag=.false.
   logical :: lread_oldsnap_lnrho2rho=.false.
   logical :: lread_oldsnap_nopscalar=.false.
@@ -205,7 +211,7 @@ module Cdata
 !
 !  Rotation and shear parameters.
 !
-  real :: Omega=0.0, theta=0.0, qshear=0.0, Sshear=0.0, deltay=0.0
+  real :: Omega=0.0, theta=0.0, phi=0.0, qshear=0.0, Sshear=0.0, deltay=0.0
 !DM : Omega is now used in the viscosity routine too, for Lambda effect in rotating
 ! coordinate. This should be taken care of by 'shared variables' if in future
 ! Omega should be moved from cdata to hydro.
@@ -262,6 +268,7 @@ module Cdata
   logical :: lstart=.false., lrun=.false., lreloading=.false.
   logical :: lenergy=.false.
   logical :: ladv_der_as_aux=.false.
+  logical :: lghostfold_usebspline = .false.
 !
 !  Variable indices (default zero, set later by relevant physics modules).
 !
@@ -299,12 +306,12 @@ module Cdata
   integer :: ivisc_heat=0,ibb=0,ibx=0,iby=0,ibz=0,ijj=0,ijx=0,ijy=0,ijz=0
   integer :: iEE=0,iEEx=0,iEEy=0,iEEz=0
   integer :: iFF_diff=0, iFF_diff1=0,  iFF_diff2=0, &
-             iFF_div_uu=0, iFF_div_aa=0, iFF_div_ss=0, iFF_div_rho=0, iFF_char_c=0
+             iFF_div_uu=0, iFF_div_aa=0, iFF_div_ss=0, iFF_div_rho=0, iFF_char_c=0, iFF_heat=0
   integer :: i_adv_der=0,i_adv_derx=0,i_adv_dery=0,i_adv_derz=0
   integer :: iuxb=0,iugu=0,iugh=0
   integer :: ishock=0,ishock_perp=0
   integer :: iyH=0,ihypvis=0,ihypres=0
-  integer :: iecr=0,ismagorinsky
+  integer :: iecr=0,ismagorinsky,iviscosity=0
   integer :: iQrad=0,iSrad=0,ikappa=0,ilnTT=0,iTT=0,ikapparho=0
   integer :: iKR_Frad=0,iKR_Fradx=0,iKR_Frady=0, iKR_Fradz=0
   integer :: igpotselfx=0, igpotselfy=0, igpotselfz=0
@@ -325,16 +332,16 @@ module Cdata
 !  Parameters related to message passing.
 !
   integer, dimension(-1:1,-1:1,-1:1) :: neighbors = 0
+  integer, dimension(26) :: iproc_comm = -1
+  integer :: nproc_comm = 0
   integer :: ix=-1,iy=-1,iy2=-1,iz=-1,iz2=-1,iz3=-1,iz4=-1
   integer :: ix_loc=-1,iy_loc=-1, iy2_loc=-1
   integer :: iz_loc=-1,iz2_loc=-1, iz3_loc=-1, iz4_loc=-1
-  integer :: iproc,ipx,ipy,ipz,root=0
+  integer :: iproc=0,ipx=0,ipy=0,ipz=0,iproc_world=0
   logical :: lprocz_slowest=.true.
   integer :: xlneigh,ylneigh,zlneigh ! `lower' processor neighbours
   integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
-  integer :: poleneigh              ! `pole' processor neighbours
-  integer :: llcorn,lucorn,uucorn,ulcorn ! (the 4 corners in yz-plane)
-  integer :: psfcrn,psbcrn,pnfcrn,pnbcrn ! (the 4 'pole' corners)
+  integer :: poleneigh               ! `pole' processor neighbours
 !
 !  Variables to count the occurance of derivative calls per timestep
 !  for optimisation purposes.  To use uncomment the array and
@@ -420,7 +427,7 @@ module Cdata
   real :: yequator=0.,zequator=0.
   logical :: lequatory,lequatorz
   integer, parameter :: mname_half=20
-  integer, dimension (mname_half) :: itype_name_half=0.
+  integer, dimension (mname_half) :: itype_name_half=0
   real, dimension (mname_half,2) :: fname_half
   integer :: name_half_max=0
   character (len=30) :: cname_half(mname_half)
@@ -576,6 +583,14 @@ module Cdata
 !
   logical :: lfold_df=.false.
 !
+!  Reactive particles need their source terms for particle-fluid interaction
+!  distributed over a large number of points to avoid shocks. 
+!  This means that nodes removed up to 3 nodes from the nearest grid point
+!  are affected. This neccissitates folding all the ghost zones into the main 
+!  domain.
+!
+  logical :: lfold_df_3points=.false.
+!
 !  Shift data cube by one grid point each time-step.
 !
   logical :: lshift_datacube_x=.false.
@@ -643,7 +658,7 @@ module Cdata
 !
   real :: re_mesh=0.5
   logical :: ldynamical_diffusion=.false.
-  logical :: ldyndiff_urmsmxy = .false.
+  logical :: ldyndiff_useumax = .true.
 !
 !  Background stratification.
 !

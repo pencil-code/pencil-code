@@ -33,7 +33,6 @@ program pc_collect
 !
   lstart = .true.
   lmpicomm = .false.
-  root = 0
 !
   inquire (IOLENGTH=io_len) 1.0
 !

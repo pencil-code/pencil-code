@@ -24,7 +24,7 @@ module Gravity
 !
   implicit none
 !
-  include 'gravity.h'
+  include '../gravity.h'
 !
   interface potential
     module procedure potential_global
@@ -51,7 +51,7 @@ module Gravity
   real :: qgshear=1.5  ! (global) shear parameter
                        !     1.5 for Keplerian disks, 1.0 for galaxies
   real :: ionbeta=0.0 ! Poynting-Robertson beta for ions experiencing rad pressure
-!
+  real, dimension(ndustspec) :: dustbeta=0.0
   character (len=labellen), dimension(ninit) :: ipotential='zero'
 !
   ! variables for compatibility with grav_z (used by Entropy and Density):
@@ -71,13 +71,13 @@ module Gravity
       ipotential,g0,r0_pot,r1_pot1,n_pot,n_pot1,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
       lgravity_neutrals,g1,rp1_pot,lindirect_terms,lramp_mass,t_ramp_mass, &
-      ionbeta !!!AJWR
+      ionbeta, dustbeta !!!AJWR
 !
   namelist /grav_run_pars/ &
       ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
       lgravity_neutrals,g1,rp1_pot,lindirect_terms,lramp_mass,t_ramp_mass, &
-      ionbeta !!!AJWR
+      ionbeta, dustbeta !!!AJWR
 !
   contains
 !***********************************************************************
@@ -477,7 +477,7 @@ module Gravity
 !
       if (ldustvelocity.and.lgravity_dust) then
         do k=1,ndustspec
-          df(l1:l2,m,n,iudx(k):iudz(k)) = df(l1:l2,m,n,iudx(k):iudz(k)) + p%gg
+          df(l1:l2,m,n,iudx(k):iudz(k)) = df(l1:l2,m,n,iudx(k):iudz(k)) + (1.0-dustbeta(k))*p%gg !!!AJWR
         enddo
       endif
 !

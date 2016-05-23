@@ -106,14 +106,14 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     dz = (np.max(grid.z) - np.min(grid.z))/(dimz-1)
     
     fd = open(destination + '.vtk', 'wb')
-    fd.write('# vtk DataFile Version 2.0\n')
-    fd.write('VAR files\n')
-    fd.write('BINARY\n')
-    fd.write('DATASET STRUCTURED_POINTS\n')
-    fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(dimx, dimy, dimz))
-    fd.write('ORIGIN {0:8.12} {1:8.12} {2:8.12}\n'.format(grid.x[0], grid.y[0], grid.z[0]))
-    fd.write('SPACING {0:8.12} {1:8.12} {2:8.12}\n'.format(dx, dy, dz))
-    fd.write('POINT_DATA {0:9}\n'.format(dim))
+    fd.write('# vtk DataFile Version 2.0\n'.encode('utf-8'))
+    fd.write('VAR files\n'.encode('utf-8'))
+    fd.write('BINARY\n'.encode('utf-8'))
+    fd.write('DATASET STRUCTURED_POINTS\n'.encode('utf-8'))
+    fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(dimx, dimy, dimz).encode('utf-8'))
+    fd.write('ORIGIN {0:8.12} {1:8.12} {2:8.12}\n'.format(grid.x[0], grid.y[0], grid.z[0]).encode('utf-8'))
+    fd.write('SPACING {0:8.12} {1:8.12} {2:8.12}\n'.format(dx, dy, dz).encode('utf-8'))
+    fd.write('POINT_DATA {0:9}\n'.format(dim).encode('utf-8'))
     
     # this should correct for the case the user type only one variable
     if (len(variables) > 0):
@@ -122,9 +122,9 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
       
     try:
         index = variables.index('rho')
-        print 'writing rho'
-        fd.write('SCALARS rho float\n')
-        fd.write('LOOKUP_TABLE default\n')    
+        print('writing rho')
+        fd.write('SCALARS rho float\n'.encode('utf-8'))
+        fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
         for k in range(dimz):
             for j in range(dimy):
                 for i in range(dimx):
@@ -134,9 +134,9 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     
     try:
         index = variables.index('lnrho')
-        print 'writing lnrho'
-        fd.write('SCALARS lnrho float\n')
-        fd.write('LOOKUP_TABLE default\n')    
+        print('writing lnrho')
+        fd.write('SCALARS lnrho float\n'.encode('utf-8'))
+        fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
         for k in range(dimz):
             for j in range(dimy):
                 for i in range(dimx):
@@ -146,8 +146,8 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
                 
     try:
         index = variables.index('uu')
-        print 'writing uu'
-        fd.write('VECTORS vfield float\n')
+        print('writing uu')
+        fd.write('VECTORS vfield float\n'.encode('utf-8'))
         for k in range(dimz):
             for j in range(dimy):
                 for i in range(dimx):
@@ -159,8 +159,8 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     
     try:
         index = variables.index('bb')
-        print 'writing bb'
-        fd.write('VECTORS bfield float\n')
+        print('writing bb')
+        fd.write('VECTORS bfield float\n'.encode('utf-8'))
         for k in range(dimz):
             for j in range(dimy):
                 for i in range(dimx):
@@ -173,9 +173,9 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     try:
         index = variables.index('b_mag')
         b_mag = np.sqrt(pc.dot2(var.bb))
-        print 'writing b_mag'
-        fd.write('SCALARS b_mag float\n')
-        fd.write('LOOKUP_TABLE default\n')        
+        print('writing b_mag')
+        fd.write('SCALARS b_mag float\n'.encode('utf-8'))
+        fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
         for k in range(dimz):
             for j in range(dimy):
                 for i in range(dimx):
@@ -185,8 +185,8 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     
     try:
         index = variables.index('jj')
-        print 'writing jj'
-        fd.write('VECTORS jfield float\n')
+        print('writing jj')
+        fd.write('VECTORS jfield float\n'.encode('utf-8'))
         for k in range(dimz):
             for j in range(dimy):
                 for i in range(dimx):
@@ -199,9 +199,9 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     try:
         index = variables.index('j_mag')
         j_mag = np.sqrt(pc.dot2(var.jj))
-        print 'writing j_mag'
-        fd.write('SCALARS j_mag float\n')
-        fd.write('LOOKUP_TABLE default\n')    
+        print('writing j_mag')
+        fd.write('SCALARS j_mag float\n'.encode('utf-8'))
+        fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
         for k in range(dimz):
             for j in range(dimy):
                 for i in range(dimx):
@@ -211,8 +211,8 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     
     try:
         index = variables.index('aa')
-        print 'writing aa'
-        fd.write('VECTORS afield float\n')
+        print('writing aa')
+        fd.write('VECTORS afield float\n'.encode('utf-8'))
         for k in range(dimz):
             for j in range(dimy):
                 for i in range(dimx):
@@ -225,9 +225,9 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     try:
         index = variables.index('ab')
         ab = pc.dot(var.aa, var.bb)
-        print 'writing ab'
-        fd.write('SCALARS ab float\n')
-        fd.write('LOOKUP_TABLE default\n')    
+        print('writing ab')
+        fd.write('SCALARS ab float\n'.encode('utf-8'))
+        fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
         for k in range(dimz):
             for j in range(dimy):
                 for i in range(dimx):
@@ -237,9 +237,9 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     
     try:
         index = variables.index('TT')
-        print 'writing TT'
-        fd.write('SCALARS TT float\n')
-        fd.write('LOOKUP_TABLE default\n')    
+        print('writing TT')
+        fd.write('SCALARS TT float\n'.encode('utf-8'))
+        fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
         for k in range(dimz):
             for j in range(dimy):
                 for i in range(dimx):
@@ -249,9 +249,9 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
 
     try:
         index = variables.index('lnTT')
-        print 'writing lnTT'
-        fd.write('SCALARS lnTT float\n')
-        fd.write('LOOKUP_TABLE default\n')    
+        print('writing lnTT')
+        fd.write('SCALARS lnTT float\n'.encode('utf-8'))
+        fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
         for k in range(dimz):
             for j in range(dimy):
                 for i in range(dimx):
@@ -261,9 +261,9 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
                     
     try:
         index = variables.index('cc')
-        print 'writing cc'
-        fd.write('SCALARS cc float\n')
-        fd.write('LOOKUP_TABLE default\n')    
+        print('writing cc')
+        fd.write('SCALARS cc float\n'.encode('utf-8'))
+        fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
         for k in range(dimz):
             for j in range(dimy):
                 for i in range(dimx):
@@ -273,9 +273,9 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
 
     try:
         index = variables.index('lncc')
-        print 'writing lncc'
-        fd.write('SCALARS lncc float\n')
-        fd.write('LOOKUP_TABLE default\n')    
+        print('writing lncc')
+        fd.write('SCALARS lncc float\n'.encode('utf-8'))
+        fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
         for k in range(dimz):
             for j in range(dimy):
                 for i in range(dimx):
@@ -285,9 +285,9 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
     
     try:
         index = variables.index('ss')
-        print 'writing ss'
-        fd.write('SCALARS ss float\n')
-        fd.write('LOOKUP_TABLE default\n')    
+        print('writing ss')
+        fd.write('SCALARS ss float\n'.encode('utf-8'))
+        fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
         for k in range(dimz):
             for j in range(dimy):
                 for i in range(dimx):
@@ -297,8 +297,8 @@ def pc2vtk(varfile = 'var.dat', datadir = 'data/', proc = -1,
       
     try:
         index = variables.index('vort')
-        print 'writing vort'
-        fd.write('VECTORS vorticity float\n')
+        print('writing vort')
+        fd.write('VECTORS vorticity float\n'.encode('utf-8'))
         for k in range(dimz):
             for j in range(dimy):
                 for i in range(dimx):
@@ -422,20 +422,20 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         
         #fd = open(destination + "{0:1.0f}".format(var.t*1e5) + '.vtk', 'wb')
         fd = open(destination + str(i) + '.vtk', 'wb')
-        fd.write('# vtk DataFile Version 2.0\n')
-        fd.write('density + magnetic field\n')
-        fd.write('BINARY\n')                
-        fd.write('DATASET STRUCTURED_POINTS\n')                
-        fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(dimx, dimy, dimz))
-        fd.write('ORIGIN {0:8.12} {1:8.12} {2:8.12}\n'.format(grid.x[0], grid.y[0], grid.z[0]))
-        fd.write('SPACING {0:8.12} {1:8.12} {2:8.12}\n'.format(dx, dy, dz))
-        fd.write('POINT_DATA {0:9}\n'.format(dim))
+        fd.write('# vtk DataFile Version 2.0\n'.encode('utf-8'))
+        fd.write('density + magnetic field\n'.encode('utf-8'))
+        fd.write('BINARY\n'.encode('utf-8'))
+        fd.write('DATASET STRUCTURED_POINTS\n'.encode('utf-8'))
+        fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(dimx, dimy, dimz).encode('utf-8'))
+        fd.write('ORIGIN {0:8.12} {1:8.12} {2:8.12}\n'.format(grid.x[0], grid.y[0], grid.z[0]).encode('utf-8'))
+        fd.write('SPACING {0:8.12} {1:8.12} {2:8.12}\n'.format(dx, dy, dz).encode('utf-8'))
+        fd.write('POINT_DATA {0:9}\n'.format(dim).encode('utf-8'))
               
         try:
             index = variables.index('rho')
-            print 'writing rho'
-            fd.write('SCALARS rho float\n')
-            fd.write('LOOKUP_TABLE default\n')    
+            print('writing rho')
+            fd.write('SCALARS rho float\n'.encode('utf-8'))
+            fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
             for k in range(dimz):
                 for j in range(dimy):
                     for i in range(dimx):
@@ -445,9 +445,9 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         
         try:
             index = variables.index('lnrho')
-            print 'writing lnrho'
-            fd.write('SCALARS lnrho float\n')
-            fd.write('LOOKUP_TABLE default\n')    
+            print('writing lnrho')
+            fd.write('SCALARS lnrho float\n'.encode('utf-8'))
+            fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
             for k in range(dimz):
                 for j in range(dimy):
                     for i in range(dimx):
@@ -457,8 +457,8 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
                     
         try:
             index = variables.index('uu')
-            print 'writing uu'
-            fd.write('VECTORS vfield float\n')
+            print('writing uu')
+            fd.write('VECTORS vfield float\n'.encode('utf-8'))
             for k in range(dimz):
                 for j in range(dimy):
                     for i in range(dimx):
@@ -470,8 +470,8 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         
         try:
             index = variables.index('bb')
-            print 'writing bb'
-            fd.write('VECTORS bfield float\n')
+            print('writing bb')
+            fd.write('VECTORS bfield float\n'.encode('utf-8'))
             for k in range(dimz):
                 for j in range(dimy):
                     for i in range(dimx):
@@ -484,9 +484,9 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         try:
             index = variables.index('b_mag')
             b_mag = np.sqrt(pc.dot2(var.bb))
-            print 'writing b_mag'
-            fd.write('SCALARS b_mag float\n')
-            fd.write('LOOKUP_TABLE default\n')        
+            print('writing b_mag')
+            fd.write('SCALARS b_mag float\n'.encode('utf-8'))
+            fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
             for k in range(dimz):
                 for j in range(dimy):
                     for i in range(dimx):
@@ -496,8 +496,8 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         
         try:
             index = variables.index('jj')
-            print 'writing jj'
-            fd.write('VECTORS jfield float\n')
+            print('writing jj')
+            fd.write('VECTORS jfield float\n'.encode('utf-8'))
             for k in range(dimz):
                 for j in range(dimy):
                     for i in range(dimx):
@@ -510,9 +510,9 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         try:
             index = variables.index('j_mag')
             j_mag = np.sqrt(pc.dot2(var.jj))
-            print 'writing j_mag'
-            fd.write('SCALARS j_mag float\n')
-            fd.write('LOOKUP_TABLE default\n')    
+            print('writing j_mag')
+            fd.write('SCALARS j_mag float\n'.encode('utf-8'))
+            fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
             for k in range(dimz):
                 for j in range(dimy):
                     for i in range(dimx):
@@ -522,8 +522,8 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         
         try:
             index = variables.index('aa')
-            print 'writing aa'
-            fd.write('VECTORS afield float\n')
+            print('writing aa')
+            fd.write('VECTORS afield float\n'.encode('utf-8'))
             for k in range(dimz):
                 for j in range(dimy):
                     for i in range(dimx):
@@ -536,9 +536,9 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         try:
             index = variables.index('ab')
             ab = pc.dot(var.aa, var.bb)
-            print 'writing ab'
-            fd.write('SCALARS ab float\n')
-            fd.write('LOOKUP_TABLE default\n')    
+            print('writing ab')
+            fd.write('SCALARS ab float\n'.encode('utf-8'))
+            fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
             for k in range(dimz):
                 for j in range(dimy):
                     for i in range(dimx):
@@ -548,9 +548,9 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         
         try:
             index = variables.index('TT')
-            print 'writing TT'
-            fd.write('SCALARS TT float\n')
-            fd.write('LOOKUP_TABLE default\n')    
+            print('writing TT')
+            fd.write('SCALARS TT float\n'.encode('utf-8'))
+            fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
             for k in range(dimz):
                 for j in range(dimy):
                     for i in range(dimx):
@@ -560,9 +560,9 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
 
         try:
             index = variables.index('lnTT')
-            print 'writing lnTT'
-            fd.write('SCALARS lnTT float\n')
-            fd.write('LOOKUP_TABLE default\n')    
+            print('writing lnTT')
+            fd.write('SCALARS lnTT float\n'.encode('utf-8'))
+            fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
             for k in range(dimz):
                 for j in range(dimy):
                     for i in range(dimx):
@@ -572,9 +572,9 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
 
         try:
             index = variables.index('cc')
-            print 'writing cc'
-            fd.write('SCALARS cc float\n')
-            fd.write('LOOKUP_TABLE default\n')    
+            print('writing cc')
+            fd.write('SCALARS cc float\n'.encode('utf-8'))
+            fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
             for k in range(dimz):
                 for j in range(dimy):
                     for i in range(dimx):
@@ -584,9 +584,9 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
 
         try:
             index = variables.index('lncc')
-            print 'writing lncc'
-            fd.write('SCALARS lncc float\n')
-            fd.write('LOOKUP_TABLE default\n')    
+            print('writing lncc')
+            fd.write('SCALARS lncc float\n'.encode('utf-8'))
+            fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
             for k in range(dimz):
                 for j in range(dimy):
                     for i in range(dimx):
@@ -596,9 +596,9 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
         
         try:
             index = variables.index('ss')
-            print 'writing ss'
-            fd.write('SCALARS ss float\n')
-            fd.write('LOOKUP_TABLE default\n')    
+            print('writing ss')
+            fd.write('SCALARS ss float\n'.encode('utf-8'))
+            fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
             for k in range(dimz):
                 for j in range(dimy):
                     for i in range(dimx):
@@ -608,8 +608,8 @@ def pc2vtk_vid(ti = 0, tf = 1, datadir = 'data/', proc = -1,
 
         try:
             index = variables.index('vort')
-            print 'writing vort'
-            fd.write('VECTORS vorticity float\n')
+            print('writing vort')
+            fd.write('VECTORS vorticity float\n'.encode('utf-8'))
             for k in range(dimz):
                 for j in range(dimy):
                     for i in range(dimx):
@@ -685,8 +685,8 @@ def slices2vtk(variables = ['rho'], extensions = ['xy', 'xy2', 'xz', 'yz'],
     for field in variables:
         # run through all specified extensions
         for ext in extensions:
-            print "read ", field, ' ', ext
-            slices, t = pc.read_slices(field=field, datadir=datadir, proc=proc, extension=ext, format=format)            
+            print("read " + field + ' ' + ext)
+            slices, t = pc.read_slices(field=field, datadir=datadir, proc=proc, extension=ext, format=format)
             
             dim_p = slices.shape[2]
             dim_q = slices.shape[1]
@@ -702,15 +702,15 @@ def slices2vtk(variables = ['rho'], extensions = ['xy', 'xy2', 'xz', 'yz'],
             if params.ix != -1:
                 x0 = grid.x[params.ix]
             elif params.slice_position == 'm':
-                x0 = grid.x[len(grid.x)/2]
+                x0 = grid.x[int(len(grid.x)/2)]
             if params.iy != -1:
                 y0 = grid.y[params.iy]
             elif params.slice_position == 'm':                
-                y0 = grid.y[len(grid.y)/2]
+                y0 = grid.y[int(len(grid.y)/2)]
             if params.iz != -1:
                 z0 = grid.z[params.iz]
             elif params.slice_position == 'm':
-                z0 = grid.z[len(grid.z)/2]
+                z0 = grid.z[int(len(grid.z)/2)]
 
             for i in range(slices.shape[0]):
                 # open the destination file for writing
@@ -784,17 +784,17 @@ def aver2vtk(varfile = 'xyaverages.dat', datadir = 'data/',
     if varfile[0:2] == 'xy':
         aver = pc.read_xyaver()
         line_len = int(np.round(grid.Lz/grid.dz))
-        l0 = grid.z[(len(grid.z)-line_len)/2]
+        l0 = grid.z[int((len(grid.z)-line_len)/2)]
         dl = grid.dz
     elif varfile[0:2] == 'xz':
         aver = pc.read_xzaver()
         line_len = int(np.round(grid.Ly/grid.dy))
-        l0 = grid.y[(len(grid.y)-line_len)/2]
+        l0 = grid.y[int((len(grid.y)-line_len)/2)]
         dl = grid.dy
     elif varfile[0:2] == 'yz':
         aver = pc.read_yzaver()
         line_len = int(np.round(grid.Lx/grid.dx))
-        l0 = grid.x[(len(grid.x)-line_len)/2]
+        l0 = grid.x[int((len(grid.x)-line_len)/2)]
         dl = grid.dx
     else:
         print("aver2vtk: ERROR: cannot determine average file\n")
@@ -807,19 +807,19 @@ def aver2vtk(varfile = 'xyaverages.dat', datadir = 'data/',
     # open the destination file
     fd = open(destination + '.vtk', 'wb')
     
-    fd.write('# vtk DataFile Version 2.0\n')
-    fd.write(varfile[0:2] + 'averages\n')
-    fd.write('BINARY\n') 
-    fd.write('DATASET STRUCTURED_POINTS\n')
-    fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(len(t), line_len, 1))
-    fd.write('ORIGIN {0:8.12} {1:8.12} {2:8.12}\n'.format(float(t[0]), l0, 0.))
-    fd.write('SPACING {0:8.12} {1:8.12} {2:8.12}\n'.format(t[1]-t[0], dl, 1.))
+    fd.write('# vtk DataFile Version 2.0\n'.encode('utf-8'))
+    fd.write(varfile[0:2] + 'averages\n'.encode('utf-8'))
+    fd.write('BINARY\n'.encode('utf-8'))
+    fd.write('DATASET STRUCTURED_POINTS\n'.encode('utf-8'))
+    fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(len(t), line_len, 1).encode('utf-8'))
+    fd.write('ORIGIN {0:8.12} {1:8.12} {2:8.12}\n'.format(float(t[0]), l0, 0.).encode('utf-8'))
+    fd.write('SPACING {0:8.12} {1:8.12} {2:8.12}\n'.format(t[1]-t[0], dl, 1.).encode('utf-8'))
     fd.write('POINT_DATA {0:9}\n'.format(len(t) * line_len))
                 
     # run through all variables
     for var in keys:
-        fd.write('SCALARS ' + var + ' float\n')
-        fd.write('LOOKUP_TABLE default\n')        
+        fd.write(('SCALARS ' + var + ' float\n').encode('utf-8'))
+        fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
         for j in range(line_len):
             for i in range(len(t)):
                     fd.write(struct.pack(">f", aver.__dict__[var][i,j]))
@@ -880,27 +880,27 @@ def power2vtk(powerfiles = ['power_mag.dat'],
     # read the first power spectrum
     t, power = pc.read_power(datadir + powerfiles[0])
     
-    fd.write('# vtk DataFile Version 2.0\n')
-    fd.write('power spectra\n')
-    fd.write('BINARY\n') 
-    fd.write('DATASET STRUCTURED_POINTS\n')
+    fd.write('# vtk DataFile Version 2.0\n'.encode('utf-8'))
+    fd.write('power spectra\n'.encode('utf-8'))
+    fd.write('BINARY\n'.encode('utf-8'))
+    fd.write('DATASET STRUCTURED_POINTS\n'.encode('utf-8'))
     if (thickness == 1):
-        fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(len(t), power.shape[1], 1))
+        fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(len(t), power.shape[1], 1).encode('utf-8'))
     else:
-        fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(len(t), power.shape[1], 2))
-    fd.write('ORIGIN {0:8.12} {1:8.12} {2:8.12}\n'.format(float(t[0]), k0, 0.))
-    fd.write('SPACING {0:8.12} {1:8.12} {2:8.12}\n'.format(t[1]-t[0], dk, 1.))
+        fd.write('DIMENSIONS {0:9} {1:9} {2:9}\n'.format(len(t), power.shape[1], 2).encode('utf-8'))
+    fd.write('ORIGIN {0:8.12} {1:8.12} {2:8.12}\n'.format(float(t[0]), k0, 0.).encode('utf-8'))
+    fd.write('SPACING {0:8.12} {1:8.12} {2:8.12}\n'.format(t[1]-t[0], dk, 1.).encode('utf-8'))
     if (thickness == 1):
-        fd.write('POINT_DATA {0:9}\n'.format(power.shape[0] * power.shape[1]))
+        fd.write('POINT_DATA {0:9}\n'.format(power.shape[0] * power.shape[1]).encode('utf-8'))
     else:
-        fd.write('POINT_DATA {0:9}\n'.format(power.shape[0] * power.shape[1] * 2))
+        fd.write('POINT_DATA {0:9}\n'.format(power.shape[0] * power.shape[1] * 2).encode('utf-8'))
     
     for powfile in powerfiles:
         # read the power spectrum
         t, power = pc.read_power(datadir + powfile)
 
-        fd.write('SCALARS ' + powfile[:-4] + ' float\n')
-        fd.write('LOOKUP_TABLE default\n')
+        fd.write(('SCALARS ' + powfile[:-4] + ' float\n').encode('utf-8'))
+        fd.write('LOOKUP_TABLE default\n'.encode('utf-8'))
         
         if (thickness == 1):
             for j in range(power.shape[1]):

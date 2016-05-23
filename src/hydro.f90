@@ -58,6 +58,13 @@ module Hydro
 !
   real, dimension (mz) :: c2z,s2z,cz,sz
 !
+!  Profiles for setting differential rotation
+!  (analogously to hydro_kinematic.f90).
+!
+  real, dimension(nx) :: profx_diffrot1=1., profx_diffrot2=1., profx_diffrot3=1.
+  real, dimension(my) :: profy_diffrot1=1., profy_diffrot2=1., profy_diffrot3=1.
+  real, dimension(mz) :: profz_diffrot1=1., profz_diffrot2=1., profz_diffrot3=1.
+!
 !  Precession matrices.
 !
   real, dimension (3,3) :: mat_cori=0.,mat_cent=0.
@@ -86,8 +93,9 @@ module Hydro
   real, dimension(nx) :: prof_om
   real, dimension(2) :: hydro_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: hydro_zaver_range=(/-max_real,max_real/)
-  real :: u_out_kep=0.0, velocity_ceiling=-1.0
+  real :: u_out_kep=0.0, velocity_ceiling=-1.0, w_sldchar_hyd=1.0
   real :: mu_omega=0., gap=0., r_omega=0., w_omega=0.
+  real :: z1_uu=0., z2_uu=0.
   integer :: nb_rings=0
   integer :: neddy=0
 !
@@ -141,7 +149,7 @@ module Hydro
       kx_ux, ky_ux, kz_ux, kx_uy, ky_uy, kz_uy, kx_uz, ky_uz, kz_uz, &
       uy_left, uy_right, uu_const, Omega, u_out_kep, &
       initpower, initpower2, cutoff, ncutoff, kpeak, kgaussian_uu, &
-      lskip_projection, lno_second_ampl, &
+      lskip_projection, lno_second_ampl, z1_uu, z2_uu, &
       N_modes_uu, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
       lprecession, omega_precession, alpha_precession, velocity_ceiling, &
       loo_as_aux, luut_as_aux, loot_as_aux, mu_omega, nb_rings, om_rings, gap, &
@@ -166,6 +174,7 @@ module Hydro
   real :: ekman_friction=0.0, uzjet=0.0
   real :: ampl_forc=0., k_forc=impossible, w_forc=0., x_forc=0., dx_forc=0.1
   real :: ampl_fcont_uu=1., k_diffrot=1., amp_centforce=1.
+  real :: uphi_rbot=1., uphi_rtop=1., uphi_step_width=0.
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
   logical :: lfreeze_uint=.false.,lfreeze_uext=.false.
@@ -213,7 +222,8 @@ module Hydro
       lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx, rescale_uu, &
       hydro_xaver_range, Ra, Pr, llinearized_hydro, lremove_mean_angmom, &
       lpropagate_borderuu, hydro_zaver_range, index_rSH, &
-      uzjet, ydampint, ydampext, mean_momentum, lshear_in_coriolis
+      uzjet, ydampint, ydampext, mean_momentum, lshear_in_coriolis, &
+      w_sldchar_hyd, uphi_rbot, uphi_rtop, uphi_step_width
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -227,11 +237,11 @@ module Hydro
   integer :: idiag_u2m=0        ! DIAG_DOC: $\left<\uv^2\right>$
   integer :: idiag_um2=0        ! DIAG_DOC:
   integer :: idiag_uxpt=0       ! DIAG_DOC: $u_x(x_1,y_1,z_1,t)$
-  integer :: idiag_uypt=0       ! DIAG_DOC: $u_x(x_1,y_1,z_1,t)$
-  integer :: idiag_uzpt=0       ! DIAG_DOC: $u_x(x_1,y_1,z_1,t)$
+  integer :: idiag_uypt=0       ! DIAG_DOC: $u_y(x_1,y_1,z_1,t)$
+  integer :: idiag_uzpt=0       ! DIAG_DOC: $u_z(x_1,y_1,z_1,t)$
   integer :: idiag_uxp2=0       ! DIAG_DOC: $u_x(x_2,y_2,z_2,t)$
-  integer :: idiag_uyp2=0       ! DIAG_DOC: $u_x(x_2,y_2,z_2,t)$
-  integer :: idiag_uzp2=0       ! DIAG_DOC: $u_x(x_2,y_2,z_2,t)$
+  integer :: idiag_uyp2=0       ! DIAG_DOC: $u_y(x_2,y_2,z_2,t)$
+  integer :: idiag_uzp2=0       ! DIAG_DOC: $u_z(x_2,y_2,z_2,t)$
   integer :: idiag_urms=0       ! DIAG_DOC: $\left<\uv^2\right>^{1/2}$
   integer :: idiag_urmsx=0      ! DIAG_DOC: $\left<\uv^2\right>^{1/2}$ for
                                 ! DIAG_DOC: the hydro_xaver_range
@@ -384,7 +394,8 @@ module Hydro
   integer :: idiag_uguzm=0      ! DIAG_DOC:
   integer :: idiag_ugurmsx=0    ! DIAG_DOC: $\left<\left(\uv\nabla\uv\right)^2\right>^{1/2}$
                                 ! DIAG_DOC: for the hydro_xaver_range
-  integer :: idiag_ugu2m=0      ! DIAG_DOC:
+  integer :: idiag_ugu2m=0      ! DIAG_DOC: $\left<\uv\nabla\uv\right>^2$
+  integer :: idiag_dudx=0        ! DIAG_DOC: $\left<\frac{\delta \uv}{\delta x}\right>$ 
   integer :: idiag_Marms=0      ! DIAG_DOC: $\left<\uv^2/\cs^2\right>$
                                 ! DIAG_DOC:   \quad(rms Mach number)
   integer :: idiag_Mamax=0      ! DIAG_DOC: $\max |\uv|/\cs$
@@ -511,9 +522,9 @@ module Hydro
   integer :: idiag_ox2mx=0      ! YZAVG_DOC: $\left<\omega_x^2\right>_{yz}$
   integer :: idiag_oy2mx=0      ! YZAVG_DOC: $\left<\omega_y^2\right>_{yz}$
   integer :: idiag_oz2mx=0      ! YZAVG_DOC: $\left<\omega_z^2\right>_{yz}$
-  integer :: idiag_uxuymx=0     ! YZAVG_DOC:
-  integer :: idiag_uxuzmx=0     ! YZAVG_DOC:
-  integer :: idiag_uyuzmx=0     ! YZAVG_DOC:
+  integer :: idiag_uxuymx=0     ! YZAVG_DOC: $\langle u_x u_y\rangle_{yz}$
+  integer :: idiag_uxuzmx=0     ! YZAVG_DOC: $\langle u_x u_z\rangle_{yz}$
+  integer :: idiag_uyuzmx=0     ! YZAVG_DOC: $\langle u_y u_z\rangle_{yz}$
   integer :: idiag_oumx=0       ! YZAVG_DOC: $\left<\boldsymbol{\omega}
                                 ! YZAVG_DOC: \cdot\uv\right>_{yz}$
   integer :: idiag_uguxmx=0     ! YZAVG_DOC:
@@ -541,6 +552,9 @@ module Hydro
   integer :: idiag_uxmxy=0      ! ZAVG_DOC: $\left< u_x \right>_{z}$
   integer :: idiag_uymxy=0      ! ZAVG_DOC: $\left< u_y \right>_{z}$
   integer :: idiag_uzmxy=0      ! ZAVG_DOC: $\left< u_z \right>_{z}$
+  integer :: idiag_uxuymxy=0    ! ZAVG_DOC: $\left< u_x u_y \right>_{z}$
+  integer :: idiag_uxuzmxy=0    ! ZAVG_DOC: $\left< u_x u_z \right>_{z}$
+  integer :: idiag_uyuzmxy=0    ! ZAVG_DOC: $\left< u_y u_z \right>_{z}$
   integer :: idiag_oxmxy=0      ! ZAVG_DOC: $\left< \omega_x \right>_{z}$
   integer :: idiag_oymxy=0      ! ZAVG_DOC: $\left< \omega_y \right>_{z}$
   integer :: idiag_ozmxy=0      ! ZAVG_DOC: $\left< \omega_z \right>_{z}$
@@ -572,6 +586,7 @@ module Hydro
 !  Auxiliary variables
 !
   real, dimension(:,:), pointer :: reference_state
+  real, dimension(3) :: Omegav=0.
 !
   interface calc_pencils_hydro
     module procedure calc_pencils_hydro_pencpar
@@ -658,11 +673,13 @@ module Hydro
 !  24-nov-02/tony: coded
 !  13-oct-03/dave: check parameters and warn (if nec.) about velocity damping
 !  26-mar-10/axel: lreinitialize_uu added
-!
+!  23-dec-15/MR: Cartesian vector Omegav intro'd; ltime_integrals set; rotation 
+!                of \vec{Omega} on Yang grid added.
+! 
       use BorderProfiles, only: request_border_driving
       use Initcond
       use SharedVariables, only: put_shared_variable,get_shared_variable
-      use Sub, only: step, register_report_aux
+      use Sub, only: step, erfunc, register_report_aux
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: c, s
@@ -718,16 +735,29 @@ module Hydro
           write(*,*) 'initialize_hydro: inner radius not yet set, dampuint= ',dampuint
         endif
       endif
+
+      if (Omega/=0.) then
 !
-!  defining a r-depend profile for Omega. The Coriolis force will be suppressed
+!  defining an r-dependent profile for Omega. The Coriolis force will be suppressed
 !  in r < r_omega with the width w_omega, for having the supression for r> r_omega,
 !  choose a negativ w_omega.
 !
-      prof_om = 1.0
-      if (r_omega /= 0.0) then
-        prof_om = step(x(l1:l2),r_omega,w_omega)
-      endif
+        prof_om = 1.0
+        if (r_omega /= 0.0) &
+          prof_om = step(x(l1:l2),r_omega,w_omega)
 !
+!  Cartesian components of \vec{Omega} (not yet used).
+!
+        if (lyang) then
+          Omegav(1) = -Omega*sin(theta*dtor)*cos(phi*dtor)
+          Omegav(2) = -Omega*cos(theta*dtor)
+          Omegav(3) = -Omega*sin(theta*dtor)*sin(phi*dtor)
+        else
+          Omegav(1) = Omega*sin(theta*dtor)*cos(phi*dtor)
+          Omegav(2) = Omega*sin(theta*dtor)*sin(phi*dtor)
+          Omegav(3) = Omega*cos(theta*dtor)
+        endif        
+      endif        
 !
 !  damping parameters for damping velocities outside an embedded sphere
 !  04-feb-2008/dintrans: corriged because otherwise rdampext=r_ext all the time
@@ -796,15 +826,31 @@ module Hydro
         if (borderuu(j)/='nothing') call request_border_driving(borderuu(j))
       enddo
 !
-!  Share lcoriolis_force and lcentrifugal_force so the Particles module
-!  knows whether to apply them or not.
+!  Hand over Coriolis force to Particles_drag.
 !
-      if (lparticles.and.Omega/=0.0) then
-        call put_shared_variable('lcoriolis_force', lcoriolis_force)
-        call put_shared_variable('lcentrifugal_force', lcentrifugal_force)
-      endif
+      drag: if (lparticles_drag .and. lcoriolis_force) then
+        lcoriolis_force = .false.
+        if (lroot) print *, 'initialize_hydro: turned off and hand over Coriolis force to Particles_drag. '
+      endif drag
 !
       lshear_in_coriolis=lshear_in_coriolis.and.lcoriolis_force.and.lshear
+!
+!  Set profiles for forcing differential rotation.
+!
+      select case (uuprof)
+!
+!  spoke-like-NSSL (analogous to that in hydro_kinematic)
+!
+      case ('spoke-like-NSSL')
+        profx_diffrot1=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rbot)/uphi_step_width)))
+        profx_diffrot2=+0.5*(1.-erfunc(((x(l1:l2)-uphi_rtop)/uphi_step_width)))
+        profx_diffrot3=+0.5*(1.+erfunc(((x(l1:l2)-uphi_rtop)/uphi_step_width)))
+        profx_diffrot2=(x(l1:l2)-uphi_rbot)*profx_diffrot1*profx_diffrot2 !(redefined)
+        profy_diffrot1=-1.5*(5.*cos(y)**2-1.)
+        profy_diffrot2=-1.0*(4.*cos(y)**2-3.)
+        profy_diffrot3=-1.0
+        profz_diffrot1=+1.
+      endselect
 !
 !  Compute mask for x-averaging where x is in hydro_xaver_range.
 !  Normalize such that the average over the full domain
@@ -863,10 +909,14 @@ module Hydro
 !  in the beginning of your src/cparam.local file, *before* setting
 !  ncpus, nprocy, etc.
 !
-      if (luut_as_aux) call register_report_aux('uut', iuut, iuxt, iuyt, iuzt)
-!
-      if (loot_as_aux) call register_report_aux('oot', ioot, ioxt, ioyt, iozt)
-!
+      if (luut_as_aux) then
+        call register_report_aux('uut', iuut, iuxt, iuyt, iuzt)
+        ltime_integrals=.true.
+      endif
+      if (loot_as_aux) then
+        call register_report_aux('oot', ioot, ioxt, ioyt, iozt)
+        ltime_integrals=.true.
+      endif
       if (loo_as_aux) call register_report_aux('oo', ioo, iox, ioy, ioz, communicated=.true.)
 !
       if (force_lower_bound == 'vel_time' .or. force_upper_bound == 'vel_time') then
@@ -896,6 +946,21 @@ module Hydro
         call get_shared_variable('reference_state',reference_state)
 !
       lcalc_uumeanz=lcalc_uumean                 ! for compatibility
+!
+      if (Omega/=0. .and. lyinyang) then
+        if (phi==0.) then
+!
+!  Rotate \vec{Omega} on Yang grid.
+!
+          if (lyang) then
+            Omega = -Omega
+            phi   = 90.-theta
+            theta = 90.
+          endif
+        else
+          call fatal_error('initialize_hydro', 'phi /= 0. not allowed for Yin-Yang grid')
+        endif
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -1034,6 +1099,7 @@ module Hydro
       use Initcond
       use InitialCondition, only: initial_condition_uu
       use Sub
+      use Mpicomm, only: lyang
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (3) :: tmpvec
@@ -1095,6 +1161,8 @@ module Hydro
              if ((iz0 .le. n2) .and. (iz0 .gt. n1) )  &
              f(ix,:,iz0,iux) = ampluu(j)*sin(kx_uu*x(ix))
           enddo 
+        case ('random_isotropic_shell')
+          call random_isotropic_shell(f,iux,ampluu(j),z1_uu,z2_uu)
         case ('gaussian-noise'); call gaunoise(ampluu(j),f,iux,iuz)
         case ('gaussian-noise-x'); call gaunoise(ampluu(j),f,iux)
         case ('gaussian-noise-y'); call gaunoise(ampluu(j),f,iuy)
@@ -1108,6 +1176,7 @@ module Hydro
         case ('Beltrami-x'); call beltrami(ampluu(j),f,iuu,kx=kx_uu)
         case ('Beltrami-y'); call beltrami(ampluu(j),f,iuu,ky=ky_uu)
         case ('Beltrami-z'); call beltrami(ampluu(j),f,iuu,kz=kz_uu)
+        case ('Straining'); call straining(ampluu(j),f,iuu,kx_uu,ky_uu,kz_uu,dimensionality)
         case ('rolls'); call rolls(ampluu(j),f,iuu,kx_uu,kz_uu)
         case ('trilinear-x'); call trilinear(f,iux,ampl_ux(j),ampl_uy(j),ampl_uz(j))
         case ('trilinear-y'); call trilinear(f,iuy,ampl_ux(j),ampl_uy(j),ampl_uz(j))
@@ -1154,6 +1223,12 @@ module Hydro
             f(:,m,n,iuz)=f(:,m,n,iuz)+ampluu(j)*sin(kx_uu*x)*exp(-10*z(n)**2)
           enddo; enddo
         !case ('hatwave-x'); call hatwave(ampluu(j),f,iux,widthuu,kx=kx_uu,power=initpower)
+        case ('45deg-sinwave-x-y')
+          if (lroot) print*, 'init_uu: damped_sinwave-z-x, ampluu=', ampluu(j)
+          do m=m1,m2; do n=n1,n2
+            f(:,m,n,iux)=f(:,m,n,iux)+ampluu(j)*sin(kx_uu*x+ky_uu*y(m))
+            f(:,m,n,iuy)=f(:,m,n,iuy)+ampluu(j)*sin(kx_uu*x+ky_uu*y(m))
+          enddo; enddo
         case ('coswave-x'); call coswave(ampluu(j),f,iux,kx=kx_uu,ky=ky_uu,kz=kz_uu)
         case ('coswave-y'); call coswave(ampluu(j),f,iuy,kx=kx_uu,ky=ky_uu,kz=kz_uu)
         case ('coswave-z'); call coswave(ampluu(j),f,iuz,kz=kz_uu)
@@ -1852,6 +1927,7 @@ module Hydro
       if (idiag_uxmxy/=0 .or. idiag_uymxy/=0 .or. idiag_uzmxy/=0 .or. &
           idiag_ux2mxy/=0 .or. idiag_uy2mxy/=0 .or. idiag_uz2mxy/=0 .or. &
           idiag_ruxmxy/=0 .or. idiag_ruymxy/=0 .or. idiag_ruzmxy/=0 .or.  &
+          idiag_uxuymxy/=0 .or. idiag_uxuzmxy/=0 .or. idiag_uyuzmxy/=0 .or. &
           idiag_ruxuymxy/=0 .or. idiag_ruxuzmxy/=0 .or. &
           idiag_ruyuzmxy/=0) then
         lpenc_diagnos2d(i_uu)=.true.
@@ -2368,15 +2444,18 @@ module Hydro
     subroutine update_char_vel_hydro(f)
 !
 !   25-sep-15/MR+joern: coded
+!   23-dec-15/joern: changed to staggered_max_vec
+!   26-jan-16/MR: removed if clause around call as it is already in the caller
 !
 !   calculation of characteristic velocity
 !   for slope limited diffusion
 !
-      use General, only: staggered_mean_vec
+      use General, only: staggered_mean_vec,staggered_max_vec
 
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
-      if (lslope_limit_diff) call staggered_mean_vec(f,iux,iFF_char_c,1.)
+      !call staggered_mean_vec(f,iux,iFF_char_c,w_sldchar_hyd)
+      call staggered_max_vec(f,iux,iFF_char_c,w_sldchar_hyd)
 !
     endsubroutine update_char_vel_hydro
 !***********************************************************************
@@ -2391,10 +2470,12 @@ module Hydro
 !  23-jun-02/axel: glnrho and fvisc are now calculated in here
 !  17-jun-03/ulf: ux2, uy2 and uz2 added as diagnostic quantities
 !  27-jun-07/dhruba: differential rotation as subroutine call
+!  12-apr-16/MR: changes for Yin-Yang: only yz slices at the moment!
 !
       use Diagnostics
       use Special, only: special_calc_hydro
       use Sub, only: vecout, dot, dot2, identify_bcs, cross, multsv_mn_add
+      use General, only: transform_thph_yy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2403,6 +2484,7 @@ module Hydro
       real, dimension (nx,3) :: curlru,uxo
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
       real, dimension (nx) :: odel2um,curlru2,uref,curlo2,qo,quxo,graddivu2
+      real, dimension (1,3) :: tmp
       real :: kx
       integer :: j, ju, k
 !
@@ -2482,19 +2564,31 @@ module Hydro
 !  ``uu/dx'' for timestep
 !
       if (lfirst.and.ldt.and.ladvection_velocity) then
-        if (lspherical_coords) then
-          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
-                   abs(p%uu(:,2))*dy_1(  m  )*r1_mn+ &
-                   abs(p%uu(:,3))*dz_1(  n  )*r1_mn*sin1th(m)
-        elseif (lcylindrical_coords) then
-          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
-                   abs(p%uu(:,2))*dy_1(  m  )*rcyl_mn1+ &
-                   abs(p%uu(:,3))*dz_1(  n  )
+        if (lmaximal_cdt) then
+          advec_uu=max(abs(p%uu(:,1))*dline_1(:,1),&
+                       abs(p%uu(:,2))*dline_1(:,2),&
+                       abs(p%uu(:,3))*dline_1(:,3))
         else
-          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
-                   abs(p%uu(:,2))*dy_1(  m  )+ &
-                   abs(p%uu(:,3))*dz_1(  n  )
+          advec_uu=    abs(p%uu(:,1))*dline_1(:,1)+&
+                       abs(p%uu(:,2))*dline_1(:,2)+&
+                       abs(p%uu(:,3))*dline_1(:,3)
         endif
+!        if (lspherical_coords) then
+!          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
+!                   abs(p%uu(:,2))*dy_1(  m  )*r1_mn+ &
+!                   abs(p%uu(:,3))*dz_1(  n  )*r1_mn*sin1th(m)
+!          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
+!                   abs(p%uu(:,2))*dy_1(  m  )*r1_mn+ &
+!                   abs(p%uu(:,3))*dz_1(  n  )*r1_mn*sin1th(m)
+!        elseif (lcylindrical_coords) then
+!          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
+!                   abs(p%uu(:,2))*dy_1(  m  )*rcyl_mn1+ &
+!                   abs(p%uu(:,3))*dz_1(  n  )
+!        else
+!          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &
+!                   abs(p%uu(:,2))*dy_1(  m  )+ &
+!                   abs(p%uu(:,3))*dz_1(  n  )
+!        endif
       endif
 !
 !  Empirically, it turns out that we need to take the full 3-D velocity
@@ -2589,13 +2683,22 @@ module Hydro
         if (n==iz3_loc) divu_xy3(:,m-m1+1)=p%divu
         if (n==iz4_loc) divu_xy4(:,m-m1+1)=p%divu
         do j=1,3
-          oo_yz(m-m1+1,n-n1+1,j)=p%oo(ix_loc-l1+1,j)
+          if (.not.lyang) &
+            oo_yz(m-m1+1,n-n1+1,j)=p%oo(ix_loc-l1+1,j)
           if (m==iy_loc)  oo_xz(:,n-n1+1,j)=p%oo(:,j)
           if (n==iz_loc)  oo_xy(:,m-m1+1,j)=p%oo(:,j)
           if (n==iz2_loc) oo_xy2(:,m-m1+1,j)=p%oo(:,j)
           if (n==iz3_loc) oo_xy3(:,m-m1+1,j)=p%oo(:,j)
           if (n==iz4_loc) oo_xy4(:,m-m1+1,j)=p%oo(:,j)
         enddo
+!
+!  On Yang grid: transform theta and phi components of oo to Yin-grid basis.
+!
+        if (lyang) then
+          call transform_thph_yy(p%oo(ix_loc-l1+1:ix_loc-l1+1,:),(/1,1,1/),tmp)
+          oo_yz(m-m1+1,n-n1+1,:)=tmp(1,:)
+        endif
+
         u2_yz(m-m1+1,n-n1+1)=p%u2(ix_loc-l1+1)
         if (m==iy_loc)  u2_xz(:,n-n1+1)=p%u2
         if (n==iz_loc)  u2_xy(:,m-m1+1)=p%u2
@@ -2630,10 +2733,10 @@ module Hydro
           call sum_mn_name(p%u2-2.*p%uu(:,2)*uref+uref**2,idiag_durms)
         endif
 ! urlm 
-! This is being always calcualted but written out only when asked. 
+! This is being always calculated but written out only when asked. 
 ! It should not be done this way, but calculated only is must be written out.
 !
-        if (lspherical_coords) call amp_lm(p%uu(:,1),urlm,profile_SH,p)
+        if (lspherical_coords) call amp_lm(p%uu(:,1),urlm,profile_SH)
         do k=1,Nmodes_SH
           if (idiag_urlm(k)/=0) call sum_mn_name(urlm(:,k),idiag_urlm(k))
         enddo
@@ -2665,6 +2768,9 @@ module Hydro
         if (idiag_uguxm/=0) call sum_mn_name(p%ugu(:,1),idiag_uguxm)
         if (idiag_uguym/=0) call sum_mn_name(p%ugu(:,2),idiag_uguym)
         if (idiag_uguzm/=0) call sum_mn_name(p%ugu(:,3),idiag_uguzm)
+        if (idiag_dudx/=0) then 
+          call sum_mn_name(p%uij(:,1,1),idiag_dudx)
+        endif
         if (idiag_ugu2m/=0) call sum_mn_name(p%ugu2,idiag_ugu2m)
         if (idiag_ugurmsx/=0) call sum_mn_name(p%ugu2*xmask_hyd,idiag_ugurmsx,lsqrt=.true.)
         if (idiag_fkinzm/=0) call sum_mn_name(.5*p%rho*p%u2*p%uu(:,3),idiag_fkinzm)
@@ -3094,45 +3200,58 @@ module Hydro
             call ysum_mn_name_xz(p%ou,idiag_oumxz)
 !
         if (idiag_uxmxy/=0) call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
-        if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu(:,2),idiag_uymxy)
-        if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu(:,3),idiag_uzmxy)
+!
+!  Changed call for compatibility with Yin-Yang grid:
+!  all non-scalars must be treated correpondingly (not yet done).
+!
+        if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu,idiag_uymxy,(/0,1,0/))
+        if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu,idiag_uzmxy,(/0,0,1/))
+        if (idiag_uxuymxy/=0) &
+            call zsum_mn_name_xy(p%uu,idiag_uxuymxy,(/1,1,0/))
+        if (idiag_uxuzmxy/=0) &
+            call zsum_mn_name_xy(p%uu,idiag_uxuzmxy,(/1,0,1/))
+        if (idiag_uyuzmxy/=0) &
+            call zsum_mn_name_xy(p%uu,idiag_uyuzmxy,(/0,1,1/))
         if (idiag_oxmxy/=0) call zsum_mn_name_xy(p%oo(:,1),idiag_oxmxy)
-        if (idiag_oymxy/=0) call zsum_mn_name_xy(p%oo(:,2),idiag_oymxy)
-        if (idiag_ozmxy/=0) call zsum_mn_name_xy(p%oo(:,3),idiag_ozmxy)
+        if (idiag_oymxy/=0) call zsum_mn_name_xy(p%oo,idiag_oymxy,(/0,1,0/))
+        if (idiag_ozmxy/=0) call zsum_mn_name_xy(p%oo,idiag_ozmxy,(/0,0,1/))
         if (idiag_oumxy/=0) call zsum_mn_name_xy(p%ou,idiag_oumxy)
         if (idiag_pvzmxy/=0) &
-            call zsum_mn_name_xy((p%oo(:,3)+2.*Omega)/p%rho,idiag_pvzmxy)
+            call zsum_mn_name_xy((p%oo(:,3)+2.*Omega)/p%rho,idiag_pvzmxy)    ! yet incorrect for Yin-Yang
         if (idiag_ruxmxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,1),idiag_ruxmxy)
-        if (idiag_ruymxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,2),idiag_ruymxy)
-        if (idiag_ruzmxy/=0) call zsum_mn_name_xy(p%rho*p%uu(:,3),idiag_ruzmxy)
+        if (idiag_ruymxy/=0) call zsum_mn_name_xy(p%uu,idiag_ruymxy,(/0,1,0/),p%rho)
+        if (idiag_ruzmxy/=0) call zsum_mn_name_xy(p%uu,idiag_ruzmxy,(/0,0,1/),p%rho)
         if (idiag_ux2mxy/=0) &
             call zsum_mn_name_xy(p%uu(:,1)**2,idiag_ux2mxy)
         if (idiag_uy2mxy/=0) &
-            call zsum_mn_name_xy(p%uu(:,2)**2,idiag_uy2mxy)
+            call zsum_mn_name_xy(p%uu,idiag_uy2mxy,(/0,2,0/))
         if (idiag_uz2mxy/=0) &
-            call zsum_mn_name_xy(p%uu(:,3)**2,idiag_uz2mxy)
+            call zsum_mn_name_xy(p%uu,idiag_uz2mxy,(/0,0,2/))
         if (idiag_rux2mxy/=0) &
             call zsum_mn_name_xy(p%rho*p%uu(:,1)**2,idiag_rux2mxy)
         if (idiag_ruy2mxy/=0) &
-            call zsum_mn_name_xy(p%rho*p%uu(:,2)**2,idiag_ruy2mxy)
+            call zsum_mn_name_xy(p%uu,idiag_ruy2mxy,(/0,2,0/),p%rho)
         if (idiag_ruz2mxy/=0) &
-            call zsum_mn_name_xy(p%rho*p%uu(:,3)**2,idiag_ruz2mxy)
+            call zsum_mn_name_xy(p%uu,idiag_ruz2mxy,(/0,0,2/),p%rho)
+!
+!  Changed call for compatibility with Yin-Yang grid:
+!
         if (idiag_ruxuymxy/=0) &
-            call zsum_mn_name_xy(p%rho*p%uu(:,1)*p%uu(:,2),idiag_ruxuymxy)
+            call zsum_mn_name_xy(p%uu,idiag_ruxuymxy,(/1,1,0/),p%rho)
         if (idiag_ruxuzmxy/=0) &
-            call zsum_mn_name_xy(p%rho*p%uu(:,1)*p%uu(:,3),idiag_ruxuzmxy)
+            call zsum_mn_name_xy(p%uu,idiag_ruxuzmxy,(/1,0,1/),p%rho)
         if (idiag_ruyuzmxy/=0) &
-            call zsum_mn_name_xy(p%rho*p%uu(:,2)*p%uu(:,3),idiag_ruyuzmxy)
+            call zsum_mn_name_xy(p%uu,idiag_ruyuzmxy,(/0,1,1/),p%rho)
         if (idiag_fkinxmxy/=0) &
             call zsum_mn_name_xy(p%ekin*p%uu(:,1),idiag_fkinxmxy)
         if (idiag_fkinymxy/=0) &
-            call zsum_mn_name_xy(p%ekin*p%uu(:,2),idiag_fkinymxy)
+            call zsum_mn_name_xy(p%uu,idiag_fkinymxy,(/0,1,0/),p%ekin)
         if (idiag_uguxmxy/=0) &
             call zsum_mn_name_xy(p%ugu(:,1),idiag_uguxmxy)
         if (idiag_uguymxy/=0) &
-            call zsum_mn_name_xy(p%ugu(:,2),idiag_uguymxy)
+            call zsum_mn_name_xy(p%ugu,idiag_uguymxy,(/0,1,0/))
         if (idiag_uguzmxy/=0) &
-            call zsum_mn_name_xy(p%ugu(:,3),idiag_uguzmxy)
+            call zsum_mn_name_xy(p%ugu,idiag_uguzmxy,(/0,0,1/))
       else
 !
 !  idiag_uxmxy and idiag_uymxy also need to be calculated when
@@ -3143,8 +3262,8 @@ module Hydro
 !
         if (ldiagnos) then
           if (idiag_uxmxy/=0) call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
-          if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu(:,2),idiag_uymxy)
-          if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu(:,3),idiag_uzmxy)
+          if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu,idiag_uymxy,(/0,1,0/))
+          if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu,idiag_uzmxy,(/0,0,1/))
         endif
       endif
       call timing('duu_dt','finished',mnloop=.true.)
@@ -3417,8 +3536,8 @@ module Hydro
 !  until the next restart
 !
       if (novec>novecmax.and.lfirstpoint) then
-        print*,'calc_othresh: processor ',iproc,': othresh_scl,novec,novecmax=', &
-                                                   othresh_scl,novec,novecmax
+        print*,'calc_othresh: processor ',iproc_world,': othresh_scl,novec,novecmax=', &
+                                          othresh_scl,novec,novecmax
         othresh_scl=othresh_scl*1.2
       endif
 !
@@ -3502,10 +3621,13 @@ module Hydro
         endif
 !
       else
+
+        if (phi/=0.) &
+          call fatal_error("coriolis_cartesian:","not coded if Omega has a y component")
 !
 !  Add Coriolis force with an angle (defined such that theta=60,
 !  for example, would correspond to 30 degrees latitude).
-!  Omega=(-sin_theta, 0, cos_theta).
+!  Omega=(-sin(theta), 0, cos(theta)).
 !
         if (lcoriolis_force) then
 !
@@ -3573,50 +3695,76 @@ module Hydro
 !  coriolis_spherical terms using spherical polars
 !
 !  21-feb-07/axel+dhruba: coded
+!  22-dec-15/MR: extended for situation with Omega along y axis (relevant for Yin-Yang grid).
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real :: c2,s2,Om2
+      real :: c2,s2,Om2,cp2,cs2,ss2
 !
       intent(in) :: p
       intent(inout) :: df
 !
 !  info about coriolis_spherical term
 !
-      if (headtt) then
-        print*, 'coriolis_spherical: Omega=', Omega
+      if (headtt) print*, 'coriolis_spherical: Omega=', Omega
+!
+! Not yet coded for angular velocity at an angle with z or y axis.
+!
+      if (.not.(theta==.0.or.theta==90..and.phi==90.)) then
+        if (lroot) print*, 'coriolis_spherical: Omega,theta,phi=', Omega,theta, phi
+        call fatal_error("coriolis_spherical:","not coded if Omega isn't aligned with z or y axis")
       endif
-!
-! Not yet coded for angular velocity at an angle with the z axis.
-!
-      if (theta/=0) then
-         print*, 'coriolis_spherical: Omega=,theta=', Omega,theta
-         call fatal_error("coriolis_spherical:","not coded if the angular velocity is at an angle to the z axis. ")
-      endif
-!
-!  In (r,theta,phi) coords, we have Omega=(costh, -sinth, 0). Thus,
-!
-!                    ( costh)   (u1)     (+sinth*u3)
-!  -2*Omega x U = -2*(-sinth) X (u2) = 2*(+costh*u3)
-!                    (   0  )   (u3)     (-costh*u2-sinth*u1)
-!
-!  With c2=2*Omega*costh and s2=-2*Omega*sinth we have then
-!
-!                (-s2*u3)
-!  -2*Omega x U = (+c2*u3)
-!                (-c2*u2+s2*u1)
-!
+
       if (lcoriolis_force) then
         c2= 2*Omega*costh(m)
         s2=-2*Omega*sinth(m)
-        if (r_omega /= 0.) then
-          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-s2*p%uu(:,3)*prof_om
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+c2*p%uu(:,3)*prof_om
-          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(c2*p%uu(:,2)+s2*p%uu(:,1))*prof_om
-        else
-          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-s2*p%uu(:,3)
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+c2*p%uu(:,3)
-          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-c2*p%uu(:,2)+s2*p%uu(:,1)
+      endif
+
+      if (theta==.0) then
+!
+!  Omega along z axis: In (r,theta,phi) coords, we have \vec{Omega}=Omega*(costh, -sinth, 0). Thus,
+!
+!                                ( costh)   (u1)           (+sinth*u3)
+!  -2*\vec{Omega} x U = -2*Omega*(-sinth) X (u2) = 2*Omega*(+costh*u3)
+!                                (   0  )   (u3)           (-costh*u2-sinth*u1)
+!
+!  With c2=2*Omega*costh and s2=-2*Omega*sinth we have then
+!
+!                       (-s2*u3)
+!  -2*\vec{Omega} x U = (+c2*u3)
+!                       (-c2*u2+s2*u1)
+!
+        if (lcoriolis_force) then
+          if (r_omega /= 0.) then
+            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)- s2*p%uu(:,3)              *prof_om
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+ c2*p%uu(:,3)              *prof_om
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(c2*p%uu(:,2)-s2*p%uu(:,1))*prof_om
+          else
+            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-s2*p%uu(:,3)
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+c2*p%uu(:,3)
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-c2*p%uu(:,2)+s2*p%uu(:,1)
+          endif
+        endif
+      else
+!
+!  Omega along y axis: In (r,theta,phi) coords, we have \vec{Omega}=Omega*(sinth*sinph, costh*sinph, cosph). Thus,
+!
+!                                (sinth*sinph)   (u1)           (-costh*sinph*u3+cosph*      u2)   (-cs2*u3 + cp2*u2)
+!  -2*\vec{Omega} x U = -2*Omega*(costh*sinph) X (u2) = 2*Omega*(-cosph*      u1+sinth*sinph*u3) = (-cp2*u1 - ss2*u3)
+!                                (      cosph)   (u3)           (-sinth*sinph*u2+costh*sinph*u1)   ( ss2*u2 + cs2*u1)
+
+        cp2=2*Omega*cosph(n); cs2=c2*sinph(n); ss2=s2*sinph(n)
+
+        if (lcoriolis_force) then
+          if (r_omega /= 0.) then
+            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+(-cs2*p%uu(:,3) + cp2*p%uu(:,2))*prof_om
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+(-cp2*p%uu(:,1) - ss2*p%uu(:,3))*prof_om
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+(+ss2*p%uu(:,2) + cs2*p%uu(:,1))*prof_om
+          else
+            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) - cs2*p%uu(:,3) + cp2*p%uu(:,2)
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) - cp2*p%uu(:,1) - ss2*p%uu(:,3)
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) + ss2*p%uu(:,2) + cs2*p%uu(:,1)
+          endif
         endif
       endif
 !
@@ -3624,8 +3772,14 @@ module Hydro
 !  The term added is F_{centrifugal} = - \Omega X \Omega X r
 !
       if (lcentrifugal_force) then
+
         Om2=amp_centforce*Omega**2
-        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-Om2*x(l1:l2)*sinth(m)
+        if (theta==.0) then
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-Om2*x(l1:l2)*sinth(m)
+        else
+          call fatal_error("coriolis_spherical:","Centrifugal force not coded if Omega isn't aligned with z axis.")
+        endif
+
       endif
 !
     endsubroutine coriolis_spherical
@@ -3641,15 +3795,13 @@ module Hydro
 !
 !  info about coriolis_spherical term
 !
-      if (headtt) then
-        print*, 'coriolis_spherical: Omega=', Omega
-      endif
+      if (headtt) print*, 'coriolis_spherical: Omega=', Omega
 !
 ! Not yet coded for angular velocity at an angle with the z axis.
 !
       if (theta/=0) then
-         print*, 'coriolis_spherical: Omega=,theta=', Omega,theta
-         call fatal_error("coriolis_spherical:","not coded if the angular velocity is at an angle to the z axis. ")
+        print*, 'coriolis_spherical: Omega=,theta=', Omega,theta
+        call fatal_error("coriolis_spherical:","not coded if Omega is at an angle with the z axis. ")
       endif
 !
 !  In (r,theta,phi) coords, we have Omega=(costh, -sinth, 0). Thus,
@@ -4160,6 +4312,9 @@ module Hydro
         idiag_uxmxy=0
         idiag_uymxy=0
         idiag_uzmxy=0
+        idiag_uxuymxy=0
+        idiag_uxuzmxy=0
+        idiag_uyuzmxy=0
         idiag_oxmxy=0
         idiag_oymxy=0
         idiag_ozmxy=0
@@ -4259,6 +4414,7 @@ module Hydro
         idiag_uguym=0
         idiag_uguzm=0
         idiag_ugu2m=0
+        idiag_dudx=0
         idiag_ugurmsx=0
         idiag_uguxmx=0
         idiag_uguymx=0
@@ -4417,6 +4573,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'uguxm',idiag_uguxm)
         call parse_name(iname,cname(iname),cform(iname),'uguym',idiag_uguym)
         call parse_name(iname,cname(iname),cform(iname),'uguzm',idiag_uguzm)
+        call parse_name(iname,cname(iname),cform(iname),'dudx',idiag_dudx)
         call parse_name(iname,cname(iname),cform(iname),'ugu2m',idiag_ugu2m)
         call parse_name(iname,cname(iname),cform(iname),'ugurmsx',idiag_ugurmsx)
         call parse_name(iname,cname(iname),cform(iname),'uxglnrym',idiag_uxglnrym)
@@ -4628,6 +4785,9 @@ module Hydro
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uxmxy',idiag_uxmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uymxy',idiag_uymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uzmxy',idiag_uzmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uxuymxy',idiag_uxuymxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uxuzmxy',idiag_uxuzmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uyuzmxy',idiag_uyuzmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'oxmxy',idiag_oxmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'oymxy',idiag_oymxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'ozmxy',idiag_ozmxy)
@@ -4694,9 +4854,14 @@ module Hydro
 !  Write slices for animation of Hydro variables.
 !
 !  26-jul-06/tony: coded
+!  12-apr-16/MR: modifications for Yin-Yang grid
 !
+      use General, only: transform_thph_yy_other
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
+
+      real, dimension(:,:,:,:), allocatable, save :: transformed
 !
 !  Loop over slices
 !
@@ -4709,8 +4874,23 @@ module Hydro
             slices%ready=.false.
           else
             slices%index=slices%index+1
-            slices%yz =f(ix_loc,m1:m2 ,n1:n2  ,iux-1+slices%index)
-            slices%xz =f(l1:l2 ,iy_loc,n1:n2  ,iux-1+slices%index)
+            if (lyang.and.slices%index>=2) then
+!
+!  On Yang grid: transform theta and phi components of uu to Yin-grid basis.
+!  (phi component is saved in transformed for use in next call.
+!
+              if (slices%index==2) then
+                if (.not.allocated(transformed)) allocate(transformed(1,ny,nz,2))
+                call transform_thph_yy_other(f(ix_loc:ix_loc,m1:m2,n1:n2,iuy:iuz),transformed)
+              endif
+!
+!  theta component is used immediately.
+!
+              slices%yz=transformed(1,:,:,slices%index-1)
+            else
+              slices%yz=f(ix_loc,m1:m2,n1:n2,iux-1+slices%index)
+            endif
+            slices%xz =f(l1:l2 ,iy_loc,n1:n2,iux-1+slices%index)
             slices%xy =f(l1:l2 ,m1:m2 ,iz_loc ,iux-1+slices%index)
             slices%xy2=f(l1:l2 ,m1:m2 ,iz2_loc,iux-1+slices%index)
             if (lwrite_slice_xy3) &
@@ -4826,11 +5006,11 @@ module Hydro
           umx=0.
         else
           if (lfirst_proc_z) then
-            call mpireduce_sum(fnamexy(:,:,idiag_uxmxy),fsumxy,(/nx,ny/),idir=2)
+            call mpireduce_sum(fnamexy(idiag_uxmxy,:,:),fsumxy,(/nx,ny/),idir=2)
             uxmx=sum(fsumxy,dim=2)/nygrid
-            call mpireduce_sum(fnamexy(:,:,idiag_uymxy),fsumxy,(/nx,ny/),idir=2)
+            call mpireduce_sum(fnamexy(idiag_uymxy,:,:),fsumxy,(/nx,ny/),idir=2)
             uymx=sum(fsumxy,dim=2)/nygrid
-            call mpireduce_sum(fnamexy(:,:,idiag_uzmxy),fsumxy,(/nx,ny/),idir=2)
+            call mpireduce_sum(fnamexy(idiag_uzmxy,:,:),fsumxy,(/nx,ny/),idir=2)
             uzmx=sum(fsumxy,dim=2)/nygrid
           endif
           if (lfirst_proc_yz) &
@@ -4852,11 +5032,11 @@ module Hydro
           umy=0.
         else
           if (lfirst_proc_z) then
-            call mpireduce_sum(fnamexy(:,:,idiag_uxmxy),fsumxy,(/nx,ny/),idir=1)
+            call mpireduce_sum(fnamexy(idiag_uxmxy,:,:),fsumxy,(/nx,ny/),idir=1)
             uxmy=sum(fsumxy,dim=1)/nxgrid
-            call mpireduce_sum(fnamexy(:,:,idiag_uymxy),fsumxy,(/nx,ny/),idir=1)
+            call mpireduce_sum(fnamexy(idiag_uymxy,:,:),fsumxy,(/nx,ny/),idir=1)
             uymy=sum(fsumxy,dim=1)/nxgrid
-            call mpireduce_sum(fnamexy(:,:,idiag_uzmxy),fsumxy,(/nx,ny/),idir=1)
+            call mpireduce_sum(fnamexy(idiag_uzmxy,:,:),fsumxy,(/nx,ny/),idir=1)
             uzmy=sum(fsumxy,dim=1)/nxgrid
           endif
           if (lfirst_proc_xz) &
@@ -5324,7 +5504,7 @@ module Hydro
       real :: slope,uinn,uext,zbot,prof_amp_scl
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: prof_amp1,prof_amp2
+      real, dimension (nx) :: prof_amp1, prof_amp2, local_Omega
       real, dimension (mz) :: prof_amp3
       real, dimension (my) :: prof_amp4
       character (len=labellen) :: prof_diffrot
@@ -5389,11 +5569,15 @@ module Hydro
         prof_amp3=ampl1_diffrot
       endif
       if (.not.lcalc_uumeanxz) then
+        !df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1* f(l1:l2,m,n,iux)
         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(f(l1:l2,m,n,iuy) &
-        -prof_amp3(n)*cos(2.*pi*kz_diffrot*((x(l1:l2))-x0)/Lx))
+          -prof_amp3(n)*cos(kx_diffrot*x(l1:l2)))
+          !-prof_amp3(n)*cos(2.*pi*kx_diffrot*((x(l1:l2))-x0)/Lx))
       else
         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*(uumxz(l1:l2,n,2) &
-        -prof_amp3(n)*cos(2.*pi*kz_diffrot*((x(l1:l2))-x0)/Lx))
+!         -prof_amp3(n)*cos(2.*pi*kz_diffrot*((x(l1:l2))-x0)/Lx))
+!AB: should be kx_diffrot
+          -prof_amp3(n)*cos(2.*pi*kx_diffrot*((x(l1:l2))-x0)/Lx))
       endif
 !
 !  Shear profile linear in x
@@ -5643,10 +5827,23 @@ module Hydro
          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp_scl*(uumxy(l1:l2,m,3)-uzjet)
       endif
 !
+!  spoke-like-NSSL (analogous to that in hydro_kinematic)
+!
+      case ('spoke-like-NSSL')
+      if (.not.lcalc_uumeanxy) then
+        call fatal_error("hydro_kinematic","you need lcalc_uumeanxy=T in hydro_run_pars")
+      else
+        local_Omega=profx_diffrot1*profy_diffrot1(m) &
+                   +profx_diffrot2*profy_diffrot2(m) &
+                   +profx_diffrot3*profy_diffrot3(m)
+        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1* &
+          (uumxy(l1:l2,m,3)-ampl1_diffrot*local_Omega*x(l1:l2)*sinth(m))
+      endif
+!
 !  no profile matches
 !
       case default
-          if (lroot) print*,'duu_dt: No such profile ',trim(prof_diffrot)
+         if (lroot) print*,'duu_dt: No such profile ',trim(prof_diffrot)
       endselect
 !
     endsubroutine impose_profile_diffrot
@@ -5743,22 +5940,24 @@ module Hydro
 !
     endsubroutine expand_shands_hydro
 !***********************************************************************
-    subroutine amp_lm(psi,psilm,rselect,p)
+    subroutine amp_lm(psi,psilm,rselect)
 
       use Sub, only: ylm
-      type (pencil_case) :: p
+
       real,dimension(nx),intent(in):: psi,rselect
       real,dimension(nx,Nmodes_SH),intent(out) :: psilm
       real :: sph_har
       integer :: ell,emm,imode
       real,dimension(nx) :: one_by_rsqr
+
       one_by_rsqr=1./(x(l1:l2)*x(l1:l2))
       if ((m.eq.1).and.(n.eq.1)) write(*,*) rselect
+
       do ell=0,lSH_max
         do emm=-ell,ell
           imode=(ell+1)*(ell+1)-ell+emm
           call ylm(y(m),z(n),ell,emm,sph_har)
-          psilm(:,imode) = psi(:)*rselect(:)*sph_har*one_by_rsqr(:)
+          psilm(:,imode) = psi*rselect*sph_har*one_by_rsqr
         enddo
       enddo
 

@@ -303,8 +303,11 @@ islice=0L
 ;
 while ((not eof(lun_1)) and (t le tmax)) do begin
 ;
+  readu, lun_1, xy2, t, slice_z2pos
+;
+;  Possible to set time interval and to skip over "stride" slices.
+;
   if ((t ge tmin) and (t le tmax) and (islice mod (stride+1) eq 0)) then begin
-    readu, lun_1, xy2, t, slice_z2pos
     readu, lun_2, xy, t, slice_zpos
     readu, lun_3, xz, t, slice_ypos
     readu, lun_4, yz, t, slice_xpos
@@ -322,18 +325,6 @@ while ((not eof(lun_1)) and (t le tmax)) do begin
       xz  = interpolate(xz,  iix, iiz, /grid)
       yz  = interpolate(yz,  iiy, iiz, /grid)
     endif
-  endif else begin
-    ; Read only time.
-    dummy=zero
-    readu, lun_1, xy2, t
-    readu, lun_2, dummy
-    readu, lun_3, dummy
-    readu, lun_4, dummy
-  endelse
-;
-;  Possible to set time interval and to skip over "stride" slices.
-;
-  if ( (t ge tmin) and (t le tmax) and (islice mod (stride+1) eq 0) ) then begin
 ;
 ;  Perform preset mathematical operation on data before plotting.
 ;
@@ -630,6 +621,10 @@ while ((not eof(lun_1)) and (t le tmax)) do begin
 ;
 ;  Skip this slice if not in time interval or if striding.
 ;
+    dummy=zero
+    readu, lun_2, dummy
+    readu, lun_3, dummy
+    readu, lun_4, dummy
     if (not quiet_skip) then $
         print, 'Skipping slice number '+strtrim(islice,2)+ $
                ' at time t=', t

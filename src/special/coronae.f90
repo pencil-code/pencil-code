@@ -33,8 +33,8 @@ module Special
   real :: tau_inv_top=0.,tau_inv_newton_mark=0.,chi_spi=0.,tau_inv_spitzer=0.
   real :: width_newton=0.,gauss_newton=0.
   logical :: lgranulation=.false.,luse_ext_vel_field,lmag_time_bound=.false.
-  real :: increase_vorticity=15.,Bavoid=huge1
-  real :: Bz_flux=0.,quench=0.
+  real :: increase_vorticity=15.,Bavoid=0.0
+  real :: Bz_flux=0.,quench=0., b_tau=0.
   real :: init_time=0.,init_width=0.,hcond_grad=0.,hcond_grad_iso=0.
   real :: init_time2=0.
   real :: limiter_tensordiff=3
@@ -48,7 +48,7 @@ module Special
   real :: hcond1=0.,dt_gran_SI=1.
   real :: aa_tau_inv=0.,chi_re=0.
   real :: t_start_mark=0.,t_mid_mark=0.,t_width_mark=0.,damp_amp=0.
-  real ::mach_chen=0.,maxvA=0.
+  real :: mach_chen=0.,maxvA=0., dA=1.
   logical :: sub_step_hcond=.false.
   logical :: lrad_loss=.false.,hyper_heating=.false.
 !
@@ -75,7 +75,7 @@ module Special
       Bavoid,Bz_flux,init_time,init_width,quench,hyper3_eta,hyper3_nu, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
-      heat_par_b2,irefz,tau_inv_spitzer,maxvA, &
+      heat_par_b2,irefz,tau_inv_spitzer,maxvA, b_tau,&
       mark,hyper3_diffrho,tau_inv_newton_mark,hyper3_spi,R_hyper3, &
       ldensity_floor_c,chi_spi,Kiso,hyper2_spi,dt_gran_SI,lwrite_granules, &
       lfilter_farray,filter_strength,lreset_heatflux,aa_tau_inv, &
@@ -611,7 +611,15 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       integer :: i,j,ipt
       logical :: lcompute_gran
-      real :: tmp,dA
+      real :: tmp
+!
+      if (nxgrid /= 1 .and. nygrid /= 1) then
+        dA=dx*dy*unit_length**2
+      elseif (nygrid == 1) then
+        dA=dx*unit_length
+      elseif (nxgrid == 1) then
+        dA=dy*unit_length
+      endif
 !
 ! Decide wether we want to compute granulation in the next step or not
 !
@@ -626,7 +634,7 @@ module Special
       if (ipz == 0 .and. mark) call mark_boundary(f)
 !
       if (ipz == 0) then
-        if ((lcompute_gran.and.Bavoid<huge1).or.Bz_flux /= 0.) call set_B2(f)
+        if ((lcompute_gran.and.Bavoid>0.0).or.Bz_flux /= 0.) call set_B2(f)
 !
 ! Set sum(abs(Bz)) to  a given flux.
         if (Bz_flux /= 0.) then
@@ -654,14 +662,6 @@ module Special
             enddo; enddo
           else
             call mpirecv_real(Bzflux,0,556+iproc)
-          endif
-!
-          if (nxgrid /= 1 .and. nygrid /= 1) then
-            dA=dx*dy*unit_length**2
-          elseif (nygrid == 1) then
-            dA=dx*unit_length
-          elseif (nxgrid == 1) then
-            dA=dy*unit_length
           endif
 !
           f(l1:l2,m1:m2,irefz,iax:iaz) = f(l1:l2,m1:m2,irefz,iax:iaz) * &
@@ -1898,7 +1898,8 @@ module Special
 !  04-sep-10/bing: coded
 !
       use EquationOfState, only: gamma
-      use Sub, only: dot2, cubic_step,gij,notanumber
+      use Sub, only: dot2, cubic_step,gij
+      use General, only: notanumber
 !
       real, dimension (mx,my,mz,mvar),intent(inout) :: df
       real,dimension (mx,my,mz) :: LoopLength
@@ -2194,12 +2195,12 @@ module Special
       if (lvideo) then
 !
 ! slices
-        newton_yz(m-m1+1,n-n1+1)=newton(ix_loc-l1+1)
-        if (m == iy_loc)  newton_xz(:,n-n1+1)= newton
-        if (n == iz_loc)  newton_xy(:,m-m1+1)= newton
-        if (n == iz2_loc) newton_xy2(:,m-m1+1)= newton
-        if (n == iz3_loc) newton_xy3(:,m-m1+1)= newton
-        if (n == iz4_loc) newton_xy4(:,m-m1+1)= newton
+        newton_yz(m-m1+1,n-n1+1)= -1 ! this is undefined: newton(ix_loc-l1+1)
+        if (m == iy_loc)  newton_xz(:,n-n1+1)= -1 ! this is undefined: newton
+        if (n == iz_loc)  newton_xy(:,m-m1+1)= -1 ! this is undefined: newton
+        if (n == iz2_loc) newton_xy2(:,m-m1+1)= -1 ! this is undefined: newton
+        if (n == iz3_loc) newton_xy3(:,m-m1+1)= -1 ! this is undefined: newton
+        if (n == iz4_loc) newton_xy4(:,m-m1+1)= -1 ! this is undefined: newton
       endif
 !
       if (lfirst.and.ldt) then
@@ -2280,13 +2281,13 @@ module Special
       real, save :: tl=0.,tr=0.,delta_t=0.
       integer :: ierr,lend,i,idx2,idy2,stat
 !
-      real, dimension (:,:), allocatable :: Bz0l,Bz0r
+      real, dimension (nxgrid,nygrid) :: Bz0l, Bz0r
       real, dimension (:,:), allocatable :: Bz0_i
       real, dimension (:,:), allocatable :: A_i,A_r
       real, dimension (:,:), allocatable :: kx,ky,k2
       real, dimension (nx,ny), save :: Axl,Axr,Ayl,Ayr
 !
-      real :: time_SI
+      real :: time_SI, Bz_fluxm, Bzfluxm
 !
       character (len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
       character (len=*), parameter :: mag_times_dat = 'driver/mag_times.dat'
@@ -2309,8 +2310,8 @@ module Special
 !
       if (tr+delta_t <= time_SI) then
 !
-        allocate(Bz0l(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
-        allocate(Bz0r(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
+!        allocate(Bz0l(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
+!        allocate(Bz0r(nxgrid,nygrid),stat=stat);   ierr=max(stat,ierr)
         allocate(Bz0_i(nxgrid,nygrid),stat=stat);  ierr=max(stat,ierr)
         allocate(A_r(nxgrid,nygrid),stat=stat);    ierr=max(stat,ierr)
         allocate(A_i(nxgrid,nygrid),stat=stat);    ierr=max(stat,ierr)
@@ -2411,8 +2412,8 @@ module Special
         call fourier_transform_other(A_r,A_i,linv=.true.)
         Ayr = A_r(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
 !
-        if (allocated(Bz0l)) deallocate(Bz0l)
-        if (allocated(Bz0r)) deallocate(Bz0r)
+!        if (allocated(Bz0l)) deallocate(Bz0l)
+!        if (allocated(Bz0r)) deallocate(Bz0r)
         if (allocated(Bz0_i)) deallocate(Bz0_i)
         if (allocated(A_r)) deallocate(A_r)
         if (allocated(A_i)) deallocate(A_i)
@@ -2422,8 +2423,29 @@ module Special
 !
       endif
 !
-      f(l1:l2,m1:m2,n1,iax) = (time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl
-      f(l1:l2,m1:m2,n1,iay) = (time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl
+!      f(l1:l2,m1:m2,n1,iax) = (time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl
+!      f(l1:l2,m1:m2,n1,iay) = (time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl
+      if (b_tau > 0.0) then
+        f(l1:l2,m1:m2,n1,iax) = f(l1:l2,m1:m2,n1,iax)*(1.0-dt*b_tau) + &
+                                ((time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl)*dt*b_tau
+        f(l1:l2,m1:m2,n1,iay) = f(l1:l2,m1:m2,n1,iay)*(1.0-dt*b_tau) + &
+                                ((time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl)*dt*b_tau
+      else
+        f(l1:l2,m1:m2,n1,iax) = (time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl
+        f(l1:l2,m1:m2,n1,iay) = (time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl
+      endif
+!
+!      Bz_fluxm=sum((time_SI - (tl+delta_t)) * (abs(Bz0r) - abs(Bz0l)) / (tr - tl) + abs(Bz0l))
+!      Bzfluxm =sum(abs((time_SI - (tl+delta_t)) * (Bz0r - Bz0l) / (tr - tl) + Bz0l))
+!!print*,Bz_fluxm/Bzfluxm
+!      
+!      f(l1:l2,m1:m2,n1,iax:iaz) = f(l1:l2,m1:m2,n1,iax:iaz) * Bz_fluxm/Bzfluxm
+!
+!      f(l1:l2,m1:m2,n1,iax) = 0.9*f(l1:l2,m1:m2,n1,iax) & 
+!                            + 0.1* ((time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl)
+!      f(l1:l2,m1:m2,n1,iay) = 0.9*f(l1:l2,m1:m2,n1,iay) &
+!                            + 0.1*((time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl)
+
 !
     endsubroutine mag_time_bound
 !***********************************************************************
@@ -2736,7 +2758,7 @@ module Special
 !
       call reset_arrays
 !
-      if (Bavoid < huge1) call fill_B_avoidarr(level)
+      if (Bavoid > 0.0) call fill_B_avoidarr(level)
 !
       if (.not.associated(current%next)) then
         call read_points(level)
@@ -2877,8 +2899,7 @@ module Special
 !***********************************************************************
     subroutine make_new_point(level)
 !
-      use General, only: random_number_wrapper
-      use Sub, only: notanumber
+      use General, only: random_number_wrapper,notanumber
 !
       integer, intent(in) :: level
       integer :: kfind,count,ipos,jpos,i,j
@@ -3242,7 +3263,7 @@ module Special
 !
 ! 16-sep-10/bing: coded
 !
-      use Sub, only: notanumber
+      use General, only: notanumber
 !
       integer, intent(in) :: level
 !
@@ -3716,8 +3737,8 @@ module Special
     subroutine mark_boundary(f)
 !
       use Mpicomm, only: mpisend_real,mpirecv_real
-      use General, only: itoa, safe_character_assign
-      use Sub, only: notanumber, cubic_step
+      use General, only: itoa, safe_character_assign,notanumber
+      use Sub, only: cubic_step
 !
       real, dimension(mx,my,mz,mfarray), intent(inout):: f
 !

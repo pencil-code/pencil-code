@@ -51,8 +51,7 @@ module Poisson
                             ! and provides a significant speedup.
   real :: octree_maxdist = huge(1.0)
   real :: octree_smoothdist = 0.15
-  real, dimension (nx,ny,nz) :: phi, vols
-  integer :: pp, i, j, k, xs, ys, zs, ii, jj, kk
+  real, dimension (nx,ny,nz) :: vols
   integer, dimension (0:ncpus-1) :: sx, sy, sz
   real, dimension (nx) :: xc
   real, dimension (ny) :: yc
@@ -61,11 +60,11 @@ module Poisson
   real, dimension (nx,0:ncpus-1) :: xrecv
   real, dimension (ny,0:ncpus-1) :: yrecv
   real, dimension (nz,0:ncpus-1) :: zrecv
-  integer, allocatable :: themap(:,:)
+  integer, allocatable :: themap(:,:), themap_sort(:,:)
   real, allocatable :: regdist1(:)
   real, allocatable :: regsmooth(:)
-  integer :: nreg, ireg, irl, iru, jrl, jru, krl, kru
-  integer, parameter :: nlt = 1e7 ! 1e5 for quad. interp.
+  integer :: nregions, iregion, irl, iru, jrl, jru, krl, kru, nprecalc=0
+  integer, parameter :: nlt = 1e7 ! 3*80MB for 1e7
   real :: lkmin, lkmax, dxlt
   real, dimension(nlt) :: xlt, sinlt, coslt
 !
@@ -81,28 +80,29 @@ module Poisson
 !***********************************************************************
     subroutine inverse_laplacian(phi)
 !
-      use General, only: keep_compiler_quiet
+    use General, only: keep_compiler_quiet
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx,ny,nz) :: phi
+    real, dimension (mx,my,mz,mfarray) :: f
+    real, dimension (nx,ny,nz) :: phi
 !
-      intent(inout) :: phi
+    integer :: pp, i, j, k, xs, ys, zs, ii, jj, kk
+    intent(inout) :: phi
 !
-      if (lcylindrical_coords) then 
-        if (lroot) print*,'You are using cylindrical coordinates. '//&
-             'Use poisson_cyl.f90 instead'
-        call fatal_error("barneshut","")
-      endif
-      if (modulo(log(real(nx))/log(2.0),1.0) .gt. tini .or. &
-        modulo(log(real(ny))/log(2.0),1.0) .gt. tini .or. &
-        modulo(log(real(nz))/log(2.0),1.0) .gt. tini) then
-        if (lroot) print*,'Grid zones per processor in each axis '//&
-            'must be a power of 2.'
-        call fatal_error("barneshut","")
-      endif
+    if (lcylindrical_coords) then 
+      if (lroot) print*,'You are using cylindrical coordinates. '//&
+           'Use poisson_cyl.f90 instead'
+      call fatal_error("barneshut","")
+    endif
+    if (modulo(log(real(nx))/log(2.0),1.0) .gt. tini .or. &
+      modulo(log(real(ny))/log(2.0),1.0) .gt. tini .or. &
+      modulo(log(real(nz))/log(2.0),1.0) .gt. tini) then
+      if (lroot) print*,'Grid zones per processor in each axis '//&
+          'must be a power of 2.'
+      call fatal_error("barneshut","")
+    endif
 !
-      call do_barneshut(phi)
-      call keep_compiler_quiet(f)
+    call do_barneshut(phi)
+    call keep_compiler_quiet(f)
 !
     endsubroutine inverse_laplacian
 !***********************************************************************
@@ -114,6 +114,7 @@ module Poisson
     integer, dimension (nx) :: xind
     integer, dimension (ny) :: yind
     integer, dimension (nz) :: zind
+    integer :: pp, i, j, k, xs, ys, zs, ii, jj, kk
     integer :: iprecalc
     logical :: lprecalc = .false.
 !
@@ -212,13 +213,14 @@ module Poisson
     ! First pass only counts regions, second pass actually populates 'themap'
     do iprecalc=1,2
       if (lprecalc) then
-        if (lroot) print*,"# regions on proc 0:",nreg
-        allocate(themap(10,nreg))
-        allocate(regsmooth(nreg))
+        if (lroot) print*,"# regions on proc 0:",nregions
+        allocate(themap(10,nregions))
+        allocate(themap_sort(10,nregions))
+        allocate(regsmooth(nregions))
         regsmooth = 1.0
-        if (lprecalcdists) allocate(regdist1(nreg))
+        allocate(regdist1(nregions))
       endif
-      nreg = 0 ! Advanced inside 'mkmap'
+      nregions = 0 ! Advanced inside 'mkmap'
       do pp=0,ncpus-1
         if (lsquareregions) then
           do kk=1,nz/sz(pp)
@@ -253,6 +255,27 @@ module Poisson
       lprecalc = .true.
     enddo
 !
+    if (lprecalcdists) then
+      nprecalc = nregions
+    else
+      ! sorting 'themap' so that all precalculated regions are at the 
+      ! beginning of the array, i.e.,
+      ! precalc: themap(1:nprecalc,:)
+      ! non-precalc: themap(nprecalc+1:nregions)
+      do iregion=1,nregions
+        if (themap(4,iregion) .eq. themap(5,iregion) .and. &
+        themap(6,iregion) .eq. themap(7,iregion) .and. &
+        themap(8,iregion) .eq. themap(9,iregion)) then
+          nprecalc = nprecalc+1
+          themap_sort(:,nprecalc) = themap(:,iregion)
+        else
+          themap_sort(:,nregions-(iregion-nprecalc)+1) = themap(:,iregion)
+        endif
+      enddo
+      themap = themap_sort
+      deallocate(themap_sort)
+    endif
+!
     endsubroutine initialize_poisson
 !***********************************************************************
     subroutine do_barneshut(phi) ! 'phi' is density from selfgravity module,
@@ -260,54 +283,60 @@ module Poisson
 !
     use Mpicomm
 !
-    real, dimension (nx,ny,nz,0:ncpus-1) :: phirecv
+    real, dimension (nx,ny,nz,0:ncpus-1) :: phirecv=0.0
     real, dimension (nx,ny,nz) :: phi
-    real :: xreg, yreg, zreg, summreg
-    real :: tstart, tstop
+    real :: xreg, yreg, zreg, summreg, summreg1
+    real :: tstart_loop, tstop_loop, tstart_mpi, tstop_mpi
+    integer :: pp, i, j, k, xs, ys, zs, ii, jj, kk
 !
-    if (lshowtime .and. lroot) call cpu_time(tstart)
-!
-    phirecv = 0.0
     phi = phi*vols ! 'phi' now in mass units
 !
     ! Send masses to other processors
+    if (lroot .and. lshowtime) call cpu_time(tstart_mpi)
     do pp=0,ncpus-1
       if (pp/=iproc) then
         call mpisendrecv_real(phi,(/nx,ny,nz/),pp,117, &
                               phirecv(:,:,:,pp),pp,117)
       endif
     enddo
+    if (lroot .and. lshowtime) call cpu_time(tstop_mpi)
 !
     phirecv(:,:,:,iproc) = phi
 !
     phi = 0.0
 !
-    do ireg=1,nreg
-      i   = themap(1, ireg) ; irl = themap(4,ireg) ; iru = themap(5,ireg)
-      j   = themap(2, ireg) ; jrl = themap(6,ireg) ; jru = themap(7,ireg)
-      k   = themap(3, ireg) ; krl = themap(8,ireg) ; kru = themap(9,ireg)
-      pp  = themap(10,ireg)
-      if (lprecalcdists) then
-        phi(i,j,k) = phi(i,j,k) - regsmooth(ireg)* &
-          sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))*regdist1(ireg)
-      else
-        summreg = sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))*regsmooth(ireg)
-        xreg = sum(xrecv(irl:iru,pp) &
-          *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),3),2))/summreg
-        yreg = sum(yrecv(jrl:jru,pp) &
-          *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),3),1))/summreg
-        zreg = sum(zrecv(krl:kru,pp) &
-          *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),2),1))/summreg
-        phi(i,j,k) = phi(i,j,k) - summreg/get_dist((/i,j,k/),(/xreg,yreg,zreg/))
-      endif
+    if (lroot .and. lshowtime) call cpu_time(tstart_loop)
+    do iregion=1,nprecalc
+      i   = themap(1, iregion) ; irl = themap(4,iregion) ; iru = themap(5,iregion)
+      j   = themap(2, iregion) ; jrl = themap(6,iregion) ; jru = themap(7,iregion)
+      k   = themap(3, iregion) ; krl = themap(8,iregion) ; kru = themap(9,iregion)
+      pp  = themap(10,iregion)
+      phi(i,j,k) = phi(i,j,k) - regsmooth(iregion)* &
+        sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))*regdist1(iregion)
     enddo
+    do iregion=nprecalc+1,nregions
+      i   = themap(1, iregion) ; irl = themap(4,iregion) ; iru = themap(5,iregion)
+      j   = themap(2, iregion) ; jrl = themap(6,iregion) ; jru = themap(7,iregion)
+      k   = themap(3, iregion) ; krl = themap(8,iregion) ; kru = themap(9,iregion)
+      pp  = themap(10,iregion)
+      summreg = sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))*regsmooth(iregion)
+      summreg1 = 1.0/summreg
+      xreg = sum(xrecv(irl:iru,pp) &
+        *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),3),2))*summreg1
+      yreg = sum(yrecv(jrl:jru,pp) &
+        *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),3),1))*summreg1
+      zreg = sum(zrecv(krl:kru,pp) &
+        *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),2),1))*summreg1
+      phi(i,j,k) = phi(i,j,k) - summreg/get_dist((/i,j,k/),(/xreg,yreg,zreg/))
+    enddo
+    if (lroot .and. lshowtime) call cpu_time(tstop_loop)
 !
     phi = phi/(4.0*pi) ! The selfgravity module is going to multiply by a factor
                        ! of 4pi that we don't want (I think).
 !
-    if (lshowtime .and. lroot) then
-      call cpu_time(tstop)
-      print '("Octree integration time = ",f6.3," seconds.")',tstop-tstart
+    if (lroot .and. lshowtime) then
+      print '("barneshut: MPI time = ",f6.3," seconds.")',tstop_mpi-tstart_mpi
+      print '("barneshut: Loop time = ",f6.3," seconds.")',tstop_loop-tstart_loop
     endif
 !
     endsubroutine do_barneshut
@@ -360,13 +389,13 @@ module Poisson
           enddo
         enddo
       elseif (.not. lsplit .and. dist .lt. octree_maxdist) then
-        nreg = nreg+1
+        nregions = nregions+1
         if (laddreg) then
-          themap(:,nreg) = (/ipos(1),ipos(2),ipos(3), xsind(1),xsind(dimi(1)), &
+          themap(:,nregions) = (/ipos(1),ipos(2),ipos(3), xsind(1),xsind(dimi(1)), &
             ysind(1),ysind(dimi(2)),zsind(1),zsind(dimi(3)),ppi/)
-          if (lprecalcdists) regdist1(nreg) = 1.0/dist
+          if (lprecalcdists) regdist1(nregions) = 1.0/dist
           if (dist .gt. (octree_maxdist-octree_smoothdist)) then
-           regsmooth(nreg) = 0.5* &
+           regsmooth(nregions) = 0.5* &
             (cos(pi*((octree_maxdist-dist)/octree_smoothdist+1.0))+1.0)
           endif
         endif

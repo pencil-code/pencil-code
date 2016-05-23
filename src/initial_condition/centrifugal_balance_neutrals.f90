@@ -254,23 +254,29 @@ module InitialCondition
           f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - y(  m  )*(OO-OOcorot)
           f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + x(l1:l2)*(OO-OOcorot)
           f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
-          f(l1:l2,m,n,iunx) = f(l1:l2,m,n,iunx) - y(  m  )*(OOn-OOcorot)
-          f(l1:l2,m,n,iuny) = f(l1:l2,m,n,iuny) + x(l1:l2)*(OOn-OOcorot)
-          f(l1:l2,m,n,iunz) = f(l1:l2,m,n,iunz) + 0.
-        elseif (coord_system=='cylindric') then
+          if (lneutralvelocity) then 
+             f(l1:l2,m,n,iunx) = f(l1:l2,m,n,iunx) - y(  m  )*(OOn-OOcorot)
+             f(l1:l2,m,n,iuny) = f(l1:l2,m,n,iuny) + x(l1:l2)*(OOn-OOcorot)
+             f(l1:l2,m,n,iunz) = f(l1:l2,m,n,iunz) + 0.
+          endif
+       elseif (coord_system=='cylindric') then
           f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + 0.
           f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + (OO-OOcorot)*rr_cyl
           f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
-          f(l1:l2,m,n,iunx) = f(l1:l2,m,n,iunx) + 0.
-          f(l1:l2,m,n,iuny) = f(l1:l2,m,n,iuny) + (OOn-OOcorot)*rr_cyl
-          f(l1:l2,m,n,iunz) = f(l1:l2,m,n,iunz) + 0.
+          if (lneutralvelocity) then 
+             f(l1:l2,m,n,iunx) = f(l1:l2,m,n,iunx) + 0.
+             f(l1:l2,m,n,iuny) = f(l1:l2,m,n,iuny) + (OOn-OOcorot)*rr_cyl
+             f(l1:l2,m,n,iunz) = f(l1:l2,m,n,iunz) + 0.
+          endif
         elseif (coord_system=='spherical') then
           f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + 0.
           f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + 0.
           f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + (OO-OOcorot)*rr_sph
-          f(l1:l2,m,n,iunx) = f(l1:l2,m,n,iunx) + 0.
-          f(l1:l2,m,n,iuny) = f(l1:l2,m,n,iuny) + 0.
-          f(l1:l2,m,n,iunz) = f(l1:l2,m,n,iunz) + (OOn-OOcorot)*rr_sph
+          if (lneutralvelocity) then 
+             f(l1:l2,m,n,iunx) = f(l1:l2,m,n,iunx) + 0.
+             f(l1:l2,m,n,iuny) = f(l1:l2,m,n,iuny) + 0.
+             f(l1:l2,m,n,iunz) = f(l1:l2,m,n,iunz) + (OOn-OOcorot)*rr_sph
+          endif
         endif
 !
       enddo
@@ -311,7 +317,7 @@ module InitialCondition
           endif
         endif
         call gaunoise_vect(ampluu_cs_factor*sqrt(cs2),f,iux,iuz)
-        call gaunoise_vect(ampluu_cs_factor*sqrt(cs2),f,iunx,iunz) !!!AJWR
+        if (lneutralvelocity) call gaunoise_vect(ampluu_cs_factor*sqrt(cs2),f,iunx,iunz) !!!AJWR
       enddo; enddo
 !
     endsubroutine add_noise
@@ -574,8 +580,9 @@ module InitialCondition
       else if (lenergy) then 
         call set_thermodynamical_quantities(f,temperature_power_law,ics2)
       endif
-
-      f(:,:,:,ilnrhon) = log(rhon_to_rho_ratio*exp(f(:,:,:,ilnrho))) !!!AJWR
+!
+      if (lneutraldensity) &
+           f(:,:,:,ilnrhon) = log(rhon_to_rho_ratio*exp(f(:,:,:,ilnrho))) !!!AJWR
 !
     endsubroutine initial_condition_lnrho
 !***********************************************************************
@@ -1157,16 +1164,16 @@ module InitialCondition
 !
         call get_radial_distance(rr_sph,rr_cyl)
         call grad(f,ilnrho,glnrho)
-        call grad(f,ilnrhon,glnrhon)
+        if (lneutraldensity) call grad(f,ilnrhon,glnrhon)
         if (lcartesian_coords) then
           gslnrho=(glnrho(:,1)*x(l1:l2) + glnrho(:,2)*y(m))/rr_cyl
-          gslnrhon=(glnrhon(:,1)*x(l1:l2) + glnrhon(:,2)*y(m))/rr_cyl !!!AJWR
+          if (lneutraldensity) gslnrhon=(glnrhon(:,1)*x(l1:l2) + glnrhon(:,2)*y(m))/rr_cyl !!!AJWR
         else if (lcylindrical_coords) then
           gslnrho=glnrho(:,1)
-          gslnrhon=glnrhon(:,1) !!!AJWR
+          if (lneutraldensity) gslnrhon=glnrhon(:,1) !!!AJWR
         else if (lspherical_coords) then
           gslnrho=glnrho(:,1)
-          gslnrhon=glnrhon(:,1) !!!AJWR
+          if (lneutraldensity) gslnrhon=glnrhon(:,1) !!!AJWR
         endif
 !
         if (lspherical_coords.or.lsphere_in_a_box) then 
@@ -1195,10 +1202,10 @@ module InitialCondition
 !  Correct for cartesian or spherical
 !
         fpres_thermal=(gslnrho+gslnTT)*cs2/gamma
-        fpres_thermal_neutrals=(gslnrhon+gslnTT)*cs2/gamma !!!AJWR
+        if (lneutraldensity) fpres_thermal_neutrals=(gslnrhon+gslnTT)*cs2/gamma !!!AJWR
 !
         call correct_azimuthal_velocity(f,fpres_thermal)
-        call correct_azimuthal_velocityn(f,fpres_thermal_neutrals) !!!AJWR
+        if (lneutraldensity) call correct_azimuthal_velocityn(f,fpres_thermal_neutrals) !!!AJWR
 !
       enddo;enddo
 !

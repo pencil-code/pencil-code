@@ -108,6 +108,7 @@ module Particles_main
       call rprint_particles_mass         (lreset,LWRITE=lroot)
       call rprint_particles_ads          (lreset,LWRITE=lroot)
       call rprint_particles_surf         (lreset,LWRITE=lroot)
+      call rprint_particles_chem         (lreset,LWRITE=lroot)
       call rprint_particles_coagulation  (lreset,LWRITE=lroot)
 !      call rprint_particles_potential    (lreset,LWRITE=lroot)
       call rprint_particles_collisions   (lreset,LWRITE=lroot)
@@ -125,39 +126,8 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-!  Check the particle-mesh interpolation method.
-!
-      pm: select case (particle_mesh)
-      case ('ngp', 'NGP') pm
-!       Nearest-Grid-Point
-        lparticlemesh_cic = .false.
-        lparticlemesh_tsc = .false.
-        if (lroot) print *, 'particles_initialize_modules: selected nearest-grid-point for particle-mesh method. '
-      case ('cic', 'CIC') pm
-!       Cloud-In-Cell
-        lparticlemesh_cic = .true.
-        lparticlemesh_tsc = .false.
-        if (lroot) print *, 'particles_initialize_modules: selected cloud-in-cell for particle-mesh method. '
-      case ('tsc', 'TSC') pm
-!       Triangular-Shaped-Cloud
-        lparticlemesh_cic = .false.
-        lparticlemesh_tsc = .true.
-        if (lroot) print *, 'particles_initialize_modules: selected triangular-shaped-cloud for particle-mesh method. '
-      case ('') pm
-!       Let the logical switches decide.
-!       TSC assignment/interpolation overwrites CIC in case they are both set.
-        switch: if (lparticlemesh_tsc) then
-          lparticlemesh_cic = .false.
-          particle_mesh = 'tsc'
-        elseif (lparticlemesh_cic) then switch
-          particle_mesh = 'cic'
-        else switch
-          particle_mesh = 'ngp'
-        endif switch
-        if (lroot) print *, 'particles_initialize_modules: particle_mesh = ' // trim(particle_mesh)
-      case default pm
-        call fatal_error('particles_initialize_modules', 'unknown particle-mesh type ' // trim(particle_mesh))
-      endselect pm
+      if (lyinyang) &
+        call fatal_error('particles_initialize_modules','Particles not implemented on Yin-Yang grid')
 !
 !  Check if there is enough total space allocated for particles.
 !
@@ -213,10 +183,15 @@ module Particles_main
         if (rhop_swarm==0.0) rhop_swarm=mpmat*np_swarm
       endif
 !
+      if (lparticles_radius .and. rhopmat>0.0 .and. &
+        (np_swarm>0.0 .or. lparticles_number)) lignore_rhop_swarm=.true.
+
+!
 !  Initialize individual modules.
 !
       call initialize_particles_mpicomm      (f)
       call initialize_particles              (f)
+      call initialize_particles_map
       call initialize_particles_adaptation   (f)
       call initialize_particles_density      (f)
       call initialize_particles_nbody        (f)
@@ -253,7 +228,8 @@ module Particles_main
 !
 !  Stop if rhop_swarm is zero.
 !
-      if (irhop/=0 .and. rhop_swarm==0.0 .and. (.not.lparticles_density)) then
+      if (irhop/=0 .and. rhop_swarm==0.0 .and. (.not.lparticles_density) &
+      .and. (.not.lignore_rhop_swarm)) then
         if (lroot) then
           print*, 'particles_initialize_modules: rhop_swarm is zero'
           print*, 'particles_initialize_modules: '// &
@@ -293,7 +269,7 @@ module Particles_main
       if (lparticles_mass)          call init_particles_mass(f,fp)
       if (lparticles_drag)          call init_particles_drag(f,fp)
       if (lparticles_adsorbed)      call init_particles_ads(f,fp)
-      if (lparticles_surfspec)      call init_particles_surf(f,fp)
+      if (lparticles_surfspec)      call init_particles_surf(f,fp,ineargrid)
       if (lparticles_diagnos_state) call init_particles_diagnos_state(fp)
 !
     endsubroutine particles_init
@@ -545,13 +521,13 @@ module Particles_main
 !
 !  Wrapper for operator split terms for particle dynamics.
 !
-!  24-may-15/ccyang: coded.
+!  08-may-16/ccyang: coded.
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: dt
 !
       drag: if (lparticles_drag) then
-        call boundconds_particles(fp, ipar)
+        call particles_boundconds(f)
         call integrate_drag(f, fp, dt)
       endif drag
 !

@@ -40,7 +40,7 @@
 !
 !--------------------------------------------------------------------
 !
-!   Equation of state from Lyra & Kuchner (2012), due to photoelectric
+!   Equation of state from Lyra & Kuchner (2013), due to photoelectric
 !   heating of the gas by the dust. A polytropic term is added for
 !   completeness and to provide support against gravity in stratified
 !   simulations. The pressure gradient itself is
@@ -62,11 +62,15 @@ module Special
   include '../special.h'
 !
   real :: mu=1.0, kappa=0.0, factor_localiso=0.0, factor_photoelectric=1.0
+  real, dimension(ndustspec) :: const_pr=0.0
   logical :: ldust_pressureforce=.true.
+  logical :: lradiation_PRdrag=.false.
 !
-  namelist /special_init_pars/ mu, kappa, factor_localiso, factor_photoelectric
+  namelist /special_init_pars/ mu, kappa, factor_localiso, factor_photoelectric, &
+       ldust_pressureforce, lradiation_PRdrag, const_pr
 !
-  namelist /special_run_pars/ mu, kappa, factor_localiso, factor_photoelectric, ldust_pressureforce
+  namelist /special_run_pars/ mu, kappa, factor_localiso, factor_photoelectric, &
+       ldust_pressureforce, lradiation_PRdrag, const_pr
 !
 !  integer, parameter :: nmode_max = 50
 !  real, dimension(nmode_max) :: gauss_ampl, rcenter, phicenter
@@ -168,6 +172,10 @@ module Special
       endif
 !
       lpenc_requested(i_cs2)=.true.
+!
+      if (lradiation_PRdrag) then
+        lpenc_requested(i_uud)=.true.
+      endif
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -318,7 +326,7 @@ module Special
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-      integer :: j,ju
+      integer :: j,ju,k
 !
       if (lfirst.and.ldt) advec_cs2 = (const3*p%cs2 + const2*gamma1 + const1) * dxyz_2
       if (headtt.or.ldebug) &
@@ -331,6 +339,13 @@ module Special
           ju=j+iuu-1
           df(l1:l2,m,n,ju) = df(l1:l2,m,n,ju) + q%fpres(:,j)
         enddo
+      endif
+!
+      if (lradiation_PRdrag) then
+         do k=1,ndustspec 
+            df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) - 2*const_pr(k)*p%uud(:,1,k)
+            df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) -   const_pr(k)*p%uud(:,2,k)
+         enddo
       endif
 !
       if (ldiagnos) then 

@@ -773,8 +773,13 @@ module Density
       call initialize_density_methods
 
       lslope_limit_diff=lslope_limit_diff .or. ldensity_slope_limited
-
-      call keep_compiler_quiet(f)
+!
+!  Find the total mass for later use if lconserve_total_mass = .true.
+!
+      mtot: if (lrun .and. total_mass < 0.0) then
+        total_mass = mean_density(f) * box_volume
+        if (lreference_state) total_mass = total_mass + reference_state_mass
+      endif mtot
 !
     endsubroutine initialize_density
 !***********************************************************************
@@ -786,7 +791,7 @@ module Density
 !  28-jun-02/axel: added isothermal
 !  15-oct-03/dave: added spherical shell (kws)
 !
-      use General, only: itoa,complex_phase
+      use General, only: itoa,complex_phase,notanumber
       use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential
       use Initcond
       use Mpicomm
@@ -808,6 +813,11 @@ module Density
       logical :: lnothing
 !
       intent(inout) :: f
+!
+!  Sanity check.
+!
+      if (lread_oldsnap .and. ldensity_nolog .and. .not. all(initlnrho == 'nothing')) &
+          call fatal_error('init_lnrho', 'cannot add initial conditions to the old snapshot. ')
 !
 !  Define bottom and top height.
 !
@@ -1413,17 +1423,12 @@ module Density
 !  If unlogarithmic density considered, take exp of lnrho resulting from
 !  initlnrho
 !
-      if (ldensity_nolog) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))   !???
+      if (ldensity_nolog .and. .not. lread_oldsnap) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))   !???
 !
 !  sanity check
 !
       if (notanumber(f(l1:l2,m1:m2,n1:n2,ilnrho))) &
         call error('init_lnrho', 'Imaginary density values')
-!
-      if (total_mass<0.) then
-        total_mass=mean_density(f)*box_volume
-        if (lreference_state) total_mass=total_mass+reference_state_mass
-      endif
 !
     endsubroutine init_lnrho
 !***********************************************************************
@@ -1507,11 +1512,10 @@ module Density
 
 !
 !  Slope limited diffusion following Rempel (2014).
-!  No distinction between log and nolog density at the moment.
+!  No distinction between log and nolog density at the moment!
 !
       if (ldensity_slope_limited.and.lfirst) then
 
-        f(:,:,:,iFF_diff1:iFF_diff2)=0.
         call calc_all_diff_fluxes(f,ilnrho,islope_limiter,h_slope_limited)
 
         do n=n1,n2; do m=m1,m2
@@ -1535,8 +1539,6 @@ module Density
 !
       real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
 !
-      type(pencil_case) :: p
-      logical, dimension(npencils) :: lpenc_loc=.false.
       real, parameter :: weight=.0
 !
       if (lslope_limit_diff) &
@@ -1584,7 +1586,7 @@ module Density
           tmp = 1.0 + beta1*(z(n)-zint)/cs2int
 ! Abort if args of log() are negative
           if ( (tmp<=0.0) .and. (z(n)<=zblend) ) then
-            call fatal_error('polytropic_lnrho_z', &
+            call fatal_error_local('polytropic_lnrho_z', &
                 'Imaginary density values -- your z_inf is too low.')
           endif
           tmp = max(tmp,epsi)  ! ensure arg to log is positive
@@ -1649,7 +1651,7 @@ module Density
           tmp = 1.0 + beta1*(z(n)**2-zint**2)/cs2int/2.
 ! Abort if args of log() are negative
           if ( (tmp<=0.0) .and. (z(n)<=zblend) ) then
-            call fatal_error('polytropic_lnrho_disc', &
+            call fatal_error_local('polytropic_lnrho_disc', &
                 'Imaginary density values -- your z_inf is too low.')
           endif
           tmp = max(tmp,epsi)  ! ensure arg to log is positive
@@ -2024,7 +2026,8 @@ module Density
 !  13-05-10/dhruba: stolen parts of earlier calc_pencils_density
 !
       use WENO_transport
-      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn, notanumber
+      use General, only: notanumber
+      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -2043,9 +2046,11 @@ module Density
       if (lpencil(i_glnrho).or.lpencil(i_grho)) then
         call grad(f,ilnrho,p%glnrho)
         if (notanumber(p%glnrho)) then
-          print*, 'it,n,m=', it,n,m
-          print*, f(4,4,1:6,ilnrho)
-          call fatal_error('calc_pencils_density','NaNs in p%glnrho)')
+          print*, 'density:iproc,it,m,n=', iproc_world,it,m,n
+          !print*, 'it,m,n=', it,m,n
+          print*, "density:f(:,m,n,ilnrho)=",f(:,m,n,ilnrho)
+          !print*, f(4,4,1:6,ilnrho)
+          call fatal_error_local('calc_pencils_density','NaNs in p%glnrho)')
         endif
         if (lpencil(i_grho)) then
           do i=1,3
@@ -3301,18 +3306,22 @@ module Density
 !
     endsubroutine anelastic_after_mn
 !***********************************************************************
-    subroutine dynamical_diffusion(urms)
+    subroutine dynamical_diffusion(uc)
 !
 !  Dynamically set mass diffusion coefficient given fixed mesh Reynolds number.
 !
 !  27-jul-11/ccyang: coded
 !
-      real, intent(in) :: urms
+!  Input Argument
+!      uc
+!          Characteristic velocity of the system.
+!
+      real, intent(in) :: uc
 !
 !  Hyper-diffusion coefficient
 !
-      if (diffrho_hyper3 /= 0.) diffrho_hyper3 = pi5_1 * urms * dxmax**5 / re_mesh
-      if (diffrho_hyper3_mesh /= 0.) diffrho_hyper3_mesh = pi5_1 * urms / re_mesh / sqrt(real(dimensionality))
+      if (diffrho_hyper3 /= 0.0) diffrho_hyper3 = pi5_1 * uc * dxmax**5 / re_mesh
+      if (diffrho_hyper3_mesh /= 0.0) diffrho_hyper3_mesh = pi5_1 * uc / re_mesh / sqrt(real(dimensionality))
 !
     endsubroutine dynamical_diffusion
 !***********************************************************************

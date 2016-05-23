@@ -145,26 +145,18 @@ module Io
 !
 !  02-oct-2002/wolf: coded
 !
-      use General, only: safe_character_assign, itoa
-!
-      character (len=intlen) :: chproc
+      use General, only: directory_names_std
 !
 !  check whether directory_snap contains `/allprocs' -- if so, revert to the
 !  default name.
 !  Rationale: if directory_snap was not explicitly set in start.in, it
 !  will be written to param.nml as 'data/allprocs'.
 !
-      if ((datadir_snap == '') .or. (index(datadir_snap,'allprocs')>0)) then
+      if ((datadir_snap == '') .or. (index(datadir_snap,'allprocs')>0)) &
         datadir_snap = datadir
-      endif
 !
-      chproc = itoa (iproc)
-      call safe_character_assign (directory, trim (datadir)//'/proc'//chproc)
-      call safe_character_assign (directory_dist, &
-                                            trim (datadir_snap)//'/proc'//chproc)
-      call safe_character_assign (directory_snap, trim (datadir_snap)//'/allprocs')
-      call safe_character_assign (directory_collect, trim (datadir_snap)//'/allprocs')
-!
+      call directory_names_std
+
     endsubroutine directory_names
 !***********************************************************************
     subroutine distribute_grid(x, y, z, gx, gy, gz)
@@ -402,7 +394,7 @@ module Io
 !  10-Mar-2015/MR: avoided use of fseek;
 !                  this subroutine seems not yet to be adapted to HDF5
 !
-      use Mpicomm, only: localize_xy, mpibcast_real, mpi_precision
+      use Mpicomm, only: localize_xy, mpibcast_real, mpi_precision, MPI_COMM_WORLD
       use General, only: backskip_to_time
 !
       character (len=*) :: file
@@ -480,7 +472,7 @@ module Io
         else
           call distribute_grid (x, y, z)
         endif
-        call mpibcast_real (t_sp)
+        call mpibcast_real (t_sp,comm=MPI_COMM_WORLD)
         t = t_sp
       endif
 !
@@ -857,7 +849,7 @@ module Io
 !
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
 !
-      use Mpicomm, only: mpibcast_logical
+      use Mpicomm, only: mpibcast_logical, MPI_COMM_WORLD
       use General, only: file_exists
 !
       character (len=*), intent(in), optional :: file
@@ -866,7 +858,7 @@ module Io
 !
       if (present (file)) then
         if (lroot) init_read_persist = .not. file_exists (trim (directory_snap)//'/'//file)
-        call mpibcast_logical (init_read_persist)
+        call mpibcast_logical (init_read_persist,comm=MPI_COMM_WORLD)
         if (init_read_persist) return
       endif
 !
@@ -886,7 +878,7 @@ module Io
 !
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
 !
-      use Mpicomm, only: mpibcast_int
+      use Mpicomm, only: mpibcast_int, MPI_COMM_WORLD
 !
       character (len=*), intent(in) :: label
       integer, intent(out) :: id
@@ -908,7 +900,7 @@ module Io
         endif
       endif
 !
-      call mpibcast_int (id)
+      call mpibcast_int (id,comm=MPI_COMM_WORLD)
 !
       read_persist_id = .false.
       if (id == -max_int) read_persist_id = .true.
@@ -1281,7 +1273,7 @@ module Io
 !
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
 !
-      use Mpicomm, only: mpibcast_int, mpibcast_real
+      use Mpicomm, only: mpibcast_int, mpibcast_real, MPI_COMM_WORLD
 !
       character (len=*) :: file
 !
@@ -1311,12 +1303,12 @@ module Io
         call distribute_grid (dx_tilde, dy_tilde, dz_tilde)
       endif
 !
-      call mpibcast_real (dx)
-      call mpibcast_real (dy)
-      call mpibcast_real (dz)
-      call mpibcast_real (Lx)
-      call mpibcast_real (Ly)
-      call mpibcast_real (Lz)
+      call mpibcast_real (dx,comm=MPI_COMM_WORLD)
+      call mpibcast_real (dy,comm=MPI_COMM_WORLD)
+      call mpibcast_real (dz,comm=MPI_COMM_WORLD)
+      call mpibcast_real (Lx,comm=MPI_COMM_WORLD)
+      call mpibcast_real (Ly,comm=MPI_COMM_WORLD)
+      call mpibcast_real (Lz,comm=MPI_COMM_WORLD)
 !
 !  Find minimum/maximum grid spacing. Note that
 !    minval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) > 1) )

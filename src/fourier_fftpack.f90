@@ -2772,11 +2772,11 @@ module Fourier
           if (lshear) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
           call cfftb (nygrid, ay, wsavey)
           t_re(:,l) = real (ay)
-          t_im(:,l) = aimag (ay)
+          if (lcompute_im) t_im(:,l) = aimag (ay)
         enddo
 !
         call transp_pencil_xy (t_re, p_re)
-        call transp_pencil_xy (t_im, p_im)
+        if (lcompute_im) call transp_pencil_xy (t_im, p_im)
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)
@@ -3094,12 +3094,12 @@ module Fourier
             if (lshear) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
             call cfftb (nygrid, ay, wsavey)
             t_re(:,l,pos_z) = real (ay)
-            t_im(:,l,pos_z) = aimag (ay)
+            if (lcompute_im) t_im(:,l,pos_z) = aimag (ay)
           enddo
         enddo
 !
         call transp_pencil_xy (t_re, p_re)
-        call transp_pencil_xy (t_im, p_im)
+        if (lcompute_im) call transp_pencil_xy (t_im, p_im)
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)
@@ -3279,13 +3279,13 @@ module Fourier
               if (lshear) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
               call cfftb (nygrid, ay, wsavey)
               t_re(:,l,pos_z,pos_a) = real (ay)
-              t_im(:,l,pos_z,pos_a) = aimag (ay)
+              if (lcompute_im) t_im(:,l,pos_z,pos_a) = aimag (ay)
             enddo
           enddo
         enddo
 !
         call transp_pencil_xy (t_re, p_re)
-        call transp_pencil_xy (t_im, p_im)
+        if (lcompute_im) call transp_pencil_xy (t_im, p_im)
 !
         ! Unmap the results back to normal shape.
         call unmap_from_pencil_xy (p_re, a_re)

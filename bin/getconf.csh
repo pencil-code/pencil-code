@@ -11,7 +11,6 @@
 set debug = 1
 # set verbose
 # set echo
-
 # Just as a keepsake
 set dollar = '$'
 # Set up PATH for people who don't include $PENCIL_HOME/bin by default
@@ -75,8 +74,17 @@ set nprocx = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocx\s*=\s*([0-9]*)/i && p
 set nprocy = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocy\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
 set nprocz = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*nprocz\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
 set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
+set lyinyang = `perl -ne '$_ =~ /^\s*lyinyang\s*=\s*([TF])/i && print $1' start.in`
 if (! $ncpus) then
   @ ncpus = $nprocx * $nprocy * $nprocz
+endif
+if ( $lyinyang == '') then
+  set lyinyang = F
+endif
+
+if ( $mpi && ($lyinyang == T) ) then
+  @ ncpus = 2 * $ncpus
+  echo "Yin-Yang grid run."
 endif
 echo "$ncpus CPUs"
 
@@ -133,7 +141,6 @@ else
   set hostname=$hn
 endif
 echo "USER = ${USER}"
-echo "hn = $hn"
 #
 if ($mpi) echo "Running under MPI"
 set mpirunops  = ''  # options before -np $ncpus
@@ -156,7 +163,6 @@ if ($?SNIC_RESOURCE) then
 endif
 if ("$masterhost" =~ gardar*) set hn = 'gardar'
 if ("$masterhost" =~ triolith) set hn = 'triolith'
-echo $hn
 if ($?PBS_JOBID) then
   if ("$PBS_JOBID" =~ *.obelix*) set masterhost = 'obelix'
 endif
@@ -707,6 +713,21 @@ else if ($hn =~ psi*) then
   set masternode=psi24
   echo "Setting master node to psi24, the only node that is accesible by rsh"
 #--------------------------------------------------
+else if (($hn =~ c*[1-9]) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cdstars* || $USER =~ warneche || $USER =~ mreinhar || $USER =~ fagent || $USER =~ pekkila)) then
+  echo "taito - CSC, Kajaani, Finland"
+  if ($?SLURM_JOBID) then
+    echo "Running job: $SLURM_JOBID"
+    setenv SLURM_WORKDIR `pwd`
+    touch $SLURM_WORKDIR/data/jobid.dat
+    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  endif
+  set mpirun = 'srun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 1
+  set local_binary = 0
+#--------------------------------------------------
 else if ($hn =~ clogin*) then
   echo "sisu - CSC, Kajaani, Finland"
   if ($?SLURM_JOBID) then
@@ -895,6 +916,24 @@ else if ($hn =~ beskow-login*.pdc.kth.se*) then
   set mpi = 1
   set mpirunops = ''
   set mpirun = 'aprun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 1
+  set local_binary = 0
+#----------------------------------------------
+#----------------------------------------------
+#xiangyu, HEBBE
+else if ($hn =~ hebbe*) then
+  echo "*********************************"
+  echo " PDC machine HEBBE "
+  set start_x=$cwd/src/start.x
+  set run_x=$cwd/src/run.x
+  echo "*********************************"
+  echo "***---------------------------------**" >>$PENCIL_HOME/.pencil_runs.txt
+  set mpi = 1
+  set mpirunops = ''
+  set mpirun = 'mpirun'
   set npops = "-n $ncpus"
   set local_disc = 0
   set one_local_disc = 0
@@ -1993,6 +2032,10 @@ if ($debug) then
   echo '$particles_nbody= ' "<$lparticles_nbody>"
   echo '--
 endif
+#Xiangyu on Hebbe
+#set mpirun = /c3se/apps/Common/intel/ips_xe_ce_2016/impi/5.1.1.109/bin64/mpiexec
+#set /c3se/apps/Common/intel/ips_xe_ce_2016/impi/5.1.1.109/bin64/mpiexec = mpirun
+#set mpiexec = mpirun
 
 exit
 

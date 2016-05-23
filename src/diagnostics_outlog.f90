@@ -601,7 +601,7 @@ module Diagnostics
 !
 !  Communicate over all processors.
 !
-      call mpireduce_max(fmax_tmp,fmax,nmax_count)
+      call mpireduce_max(fmax_tmp,fmax,nmax_count,comm=MPI_COMM_WORLD) ! only for scalars!
 !
       call mpireduce_sum(fsum_tmp,fsum,nsum_count)
       if (lweight_comm) call mpireduce_sum(fweight_tmp,fweight,nsum_count)
@@ -824,14 +824,14 @@ module Diagnostics
 !
 !  19-jun-02/axel: coded
 !
-      real, dimension (nx,ny,nnamexy) :: fsumxy
+      real, dimension (nnamexy,nx,ny) :: fsumxy
 !
 !  Communicate over all processors along z beams.
 !  The result is only present on the z-root processors.
 !
       if (nnamexy>0) then
-        call mpireduce_sum(fnamexy,fsumxy,(/nx,ny,nnamexy/),idir=3)
-        if (lfirst_proc_z) fnamexy(:,:,1:nnamexy)=fsumxy(:,:,1:nnamexy)/nzgrid
+        call mpireduce_sum(fnamexy,fsumxy,(/nnamexy,nx,ny/),idir=3)
+        if (lfirst_proc_z) fnamexy=fsumxy/nzgrid
       endif
 !
     endsubroutine zaverages_xy
@@ -1092,7 +1092,7 @@ module Diagnostics
 !
 !  19-jun-02/axel: adapted from write_xyaverages
 !
-      integer :: iostat
+      integer :: iostat, i
       character(LEN=linelen) :: iomsg
 !
       if (lfirst_proc_z.and.nnamexy>0) then
@@ -1105,7 +1105,7 @@ module Diagnostics
         write(1,IOSTAT=iostat,iomsg=iomsg) t2davgfirst
         if (outlog(iostat,'t2davgfirst',iomsg=iomsg)) return
 !
-        write(1,IOSTAT=iostat,iomsg=iomsg) fnamexy(:,:,1:nnamexy)
+        write(1,IOSTAT=iostat,iomsg=iomsg) (fnamexy(i,:,:),i=1,nnamexy)
         if (outlog(iostat,'fnamexy',iomsg=iomsg)) return
 !
         close(1,IOSTAT=iostat,iomsg=iomsg)
@@ -2490,13 +2490,13 @@ module Diagnostics
 !
       if (iname==0) return
 !
-      if (lfirstpoint) fnamexy(:,:,iname)=0.
+      if (lfirstpoint) fnamexy(iname,:,:)=0.
 !
 !  m starts with nghost+1=4, so the correct index is m-nghost.
 !
       ml=m-nghost
 !
-      fnamexy(:,ml,iname)=fnamexy(:,ml,iname)+a
+      fnamexy(iname,:,ml)=fnamexy(iname,:,ml)+a
 !
     endsubroutine zsum_mn_name_xy_mpar
 !***********************************************************************
@@ -3033,13 +3033,13 @@ module Diagnostics
       cnamexy=''
 !
       if (.not.allocated(fnamexy)) then
-        allocate(fnamexy(nx,ny,nnamel),stat=stat)
+        allocate(fnamexy(nnamel,nx,ny),stat=stat)
         if (stat>0) call fatal_error('allocate_zaverages', &
             'Could not allocate memory for fnamexy')
         if (ldebug) print*, 'allocate_zaverages : allocated memory for '// &
             'fnamexy with nnamexy =', nnamel
       endif
-      fnamexy=0.0
+      fnamexy=0.
 !
       if (.not.allocated(cformxy)) then
         allocate(cformxy(nnamel),stat=stat)

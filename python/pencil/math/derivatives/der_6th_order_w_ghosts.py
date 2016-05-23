@@ -13,11 +13,13 @@
 6th Order derivatives. currently only equidistant grids are supported.
 """
 import numpy as N
+from pencil.files.param import read_param
+from pencil.files.grid import read_grid
 
-def xder_6th(f,dx):
+def xder_6th(f,dx,x=[],y=[],z=[]):
 
     if (f.ndim != 3 and f.ndim != 4):
-        print "%s dimension arrays not handled." % (str(f.ndim))
+        print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
 
     dx2 = 1./(60.*dx)
@@ -32,11 +34,13 @@ def xder_6th(f,dx):
         dfdx = 0.
     return dfdx
 
-def yder_6th(f,dy):
+def yder_6th(f,dy,x=[],y=[],z=[]):
 
     if (f.ndim != 3 and f.ndim != 4):
-        print "%s dimension arrays not handled." % (str(f.ndim))
+        print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
+
+    param=read_param(quiet=True)
 
     dy2 = 1./(60.*dy)
     dfdy = N.zeros_like(f)
@@ -49,14 +53,21 @@ def yder_6th(f,dy):
                                   +(f[...,m1+3:m2+3,:]-f[...,m1-3:m2-3,:]) )
     else:
         dfdy = 0.
+    if param.coord_system == ('cylindric' or 'spherical'):
+        if len(x) < 1:
+            gd=read_grid(quiet=True)
+            x=gd.x
+        dfdy /= x
         
     return dfdy
 
-def zder_6th(f,dz,run2D=False):
+def zder_6th(f,dz,x=[],y=[],z=[],run2D=False):
     
     if (f.ndim != 3 and f.ndim != 4):
-        print "%s dimension arrays not handled." % (str(f.ndim))
+        print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
+
+    param=read_param(quiet=True)
 
     dz2 = 1./(60.*dz)
     dfdz = N.zeros_like(f)
@@ -84,12 +95,24 @@ def zder_6th(f,dz,run2D=False):
                                 +(f[...,n1+3:n2+3,:,:]-f[...,n1-3:n2-3,:,:]) )
     else:
         dfdz=0
+    if param.coord_system == 'spherical':
+        if (len(x) or len(y)) < 1:
+            gd=read_grid(quiet=True)
+            x=gd.x; y=gd.y
+        sin_y = N.sin(y)
+        siny1 = 1./sin_y
+        i_sin = N.where(N.abs(sin_y) < 1e-5)[0]
+        if i_sin.size > 0:
+            siny1[i_sin] = 0.
+        x_1, sin1th = N.meshgrid(1./x, siny1)
+        dfdz *= x_1*sin1th
+
     return dfdz
 
-def xder2_6th(f,dx):
+def xder2_6th(f,dx,x=[],y=[],z=[]):
 
     if (f.ndim != 3 and f.ndim != 4):
-        print "%s dimension arrays not handled." % (str(f.ndim))
+        print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
 
 
@@ -107,12 +130,14 @@ def xder2_6th(f,dx):
 
     return dfdx
 
-def yder2_6th(f,dy):
+def yder2_6th(f,dy,x=[],y=[],z=[]):
 
     if (f.ndim != 3 and f.ndim != 4):
-        print "%s dimension arrays not handled." % (str(f.ndim))
+        print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
     
+    param=read_param(quiet=True)
+
     dy2 = 1./(180.*dy**2.)
     dfdy = N.zeros_like(f)
     m1 = 3
@@ -124,13 +149,21 @@ def yder2_6th(f,dy):
                               +  2.*(f[...,m1-3:m2-3,:]+f[...,m1+3:m2+3,:]) )
     else:
         dfdy = 0.
+    if param.coord_system == ('cylindric' or 'spherical'):
+        if (len(x) or len(y)) < 1:
+            gd=read_grid(quiet=True)
+            x=gd.x; y=gd.y
+        dfdy /= x**2
+
     return dfdy
 
-def zder2_6th(f,dz):
+def zder2_6th(f,dz,x=[],y=[],z=[]):
 
     if (f.ndim != 3 and f.ndim != 4):
-        print "%s dimension arrays not handled." % (str(f.ndim))
+        print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
+
+    param=read_param(quiet=True)
 
     dz2 = 1./(180.*dz**2.)
     dfdz = N.zeros_like(f)
@@ -143,11 +176,23 @@ def zder2_6th(f,dz):
                               +  2.*(f[...,n1-3:n2-3,:,:]+f[...,n1+3:n2+3,:,:]) )
     else:
         dfdz = 0.
+    if param.coord_system == 'spherical':
+        if (len(x) or len(y)) < 1:
+            gd=read_grid(quiet=True)
+            x=gd.x; y=gd.y
+        sin_y = N.sin(y)
+        siny1 = 1./sin_y
+        i_sin = N.where(N.abs(sin_y) < 1e-5)[0]
+        if i_sin.size > 0:
+            siny1[i_sin] = 0.
+        x_2, sin2th = N.meshgrid(1./x**2, siny1**2)
+        dfdz *= x_2*sin2th
+
     return dfdz
 
-def xder6_6th(f,dx):
+def xder6_6th(f,dx,x=[],y=[],z=[]):
     if (f.ndim != 3 and f.ndim != 4):
-        print "%s dimension arrays not handled." % (str(f.ndim))
+        print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
 
     fac=1/dx**6
@@ -163,9 +208,9 @@ def xder6_6th(f,dx):
     return d6fdx
 
 
-def yder6_6th(f,dy):
+def yder6_6th(f,dy,x=[],y=[],z=[]):
     if (f.ndim != 3 and f.ndim != 4):
-        print "%s dimension arrays not handled." % (str(f.ndim))
+        print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
 
     fac=1/dy**6
@@ -181,9 +226,9 @@ def yder6_6th(f,dy):
     
     return d6fdy
 
-def zder6_6th(f,dz):
+def zder6_6th(f,dz,x=[],y=[],z=[]):
     if (f.ndim != 3 and f.ndim != 4):
-        print "%s dimension arrays not handled." % (str(f.ndim))
+        print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
     fac=1/dz**6
     n1 = 3

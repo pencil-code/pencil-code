@@ -61,7 +61,7 @@ module struct_func
       !
       !  Do structure functions
       !
-      if (iproc==root.and.ip<9) print*,'Doing structure functions'
+      if (lroot.and.ip<9) print*,'Doing structure functions'
       !
       if (varlabel == 'u') then
         vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
@@ -167,7 +167,7 @@ module struct_func
       !
       do direction=1,nr_directions
         do l=1,nx
-          if ((iproc==root) .and. (lpostproc)) print*,'l=',l
+          if (lroot .and. lpostproc) print*,'l=',l
           do lb_ll=1,lb_nxgrid*2-2
             exp2=mod((lb_ll),2)
             if (lb_ll == 1) exp2=0
@@ -278,7 +278,7 @@ module struct_func
       !
       !  Writing output file
       !
-      if (iproc==root) then
+      if (lroot) then
         if (llpdf) then
           if (ip<10) print*,'Writing pdf of variable ',trim(itoa(ivec)), &
                ' to ',trim(datadir)//trim(prefix)//trim(itoa(ivec))//'.dat'

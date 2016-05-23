@@ -10,6 +10,7 @@
 %%   magnetic.f90
 %%   anelastic.f90
 %%   entropy_anelastic.f90
+%%   magnetic_shearboxJ.f90
 
 % ---------------------------------------------------------------- %
 \begin{longtable}{lp{0.7\textwidth}}
@@ -85,6 +86,24 @@
 \midrule
   \var{ssmphi}    & $\left<s\right>_\varphi$ \\
   \var{cs2mphi}   & $\left<c^2_s\right>_\varphi$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{magnetic_shearboxJ.f90}} \\
+\midrule
+  \var{jbmphi}    & $\left<\Jv\cdot\Bv\right>_\varphi$ \\
+  \var{brmphi}    & $\left<B_\varpi\right>_\varphi$
+                    [cyl.\ polar coords
+                    $(\varpi,\varphi,z)$] \\
+  \var{bpmphi}    & $\left<B_\varphi\right>_\varphi$ \\
+  \var{bzmphi}    & $\left<B_z\right>_\varphi$ \\
+  \var{bbmphi}    & shorthand for \var{brmphi},
+                    \var{bpmphi} and \var{bzmphi}
+                    together \\
+  \var{bbsphmphi} & shorthand for \var{brsphmphi},
+                    \var{bthmphi} and \var{bpmphi}
+                    together \\
+  \var{b2mphi}    & $\left<\Bv^2\right>_\varphi$ \\
+  \var{brsphmphi} & $\left<B_r\right>_\varphi$ \\
+  \var{bthmphi}   & $\left<B_\vartheta\right>_\varphi$ \\
 %
 \bottomrule
 \end{longtable}

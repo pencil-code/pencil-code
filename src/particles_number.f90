@@ -16,6 +16,7 @@ module Particles_number
   use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
+  use General, only: itoa
   use Messages
   use Particles_cdata
   use Particles_sub
@@ -29,9 +30,12 @@ module Particles_number
   real :: tstart_fragmentation_par=0.0, cdtpf=0.2
   logical :: lfragmentation_par=.false.
   character (len=labellen), dimension(ninit) :: initnpswarm='nothing'
+  character (len=intlen) :: sdust
 !
-  integer :: idiag_npswarmm=0, idiag_dvp22mwnp=0, idiag_dvp22mwnp2=0
+  integer :: idiag_npswarmm=0, idiag_dvp22mwnp=0, idiag_dvp22mwnp2=0, k
   integer :: idiag_dtfragp=0, idiag_npsm=0
+  integer, parameter :: mmom=24
+  integer, dimension(0:mmom) :: idiag_admom=0
 !
   namelist /particles_number_init_pars/ &
       initnpswarm, np_swarm0, rhop_swarm0, vthresh_coagulation, &
@@ -351,6 +355,14 @@ module Particles_number
         if (idiag_npsm/=0) &
             call sum_par_name(fp(1:npar_loc,inpswarm)*npar/nwgrid,idiag_npsm)
       endif
+
+      if (ldiagnos) then
+           do k=0,mmom
+              if(idiag_admom(k)/=0) then 
+                call sum_par_name(fp(1:npar_loc,inpswarm)*fp(1:npar_loc,iap)**k*npar/nwgrid,idiag_admom(k))
+              endif
+           enddo
+      endif
 !
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(dfp)
@@ -418,7 +430,7 @@ module Particles_number
 !
       if (lreset) then
         idiag_npswarmm=0; idiag_dvp22mwnp=0; idiag_dvp22mwnp2=0
-        idiag_dtfragp=0; idiag_npsm=0
+        idiag_dtfragp=0; idiag_npsm=0; idiag_admom=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -430,6 +442,11 @@ module Particles_number
             'npswarmm',idiag_npswarmm)
         call parse_name(iname,cname(iname),cform(iname), &
             'npsm',idiag_npsm)
+        do k=0,mmom 
+           sdust=itoa(k)
+           call parse_name(iname,cname(iname),cform(iname),'admom',idiag_admom(k))
+           call parse_name(iname,cname(iname),cform(iname),'admom'//trim(sdust),idiag_admom(k))
+        enddo
         call parse_name(iname,cname(iname),cform(iname), &
             'dvp22mwnp',idiag_dvp22mwnp)
         call parse_name(iname,cname(iname),cform(iname), &

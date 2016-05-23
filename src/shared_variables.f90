@@ -66,6 +66,7 @@ module SharedVariables
     module procedure put_variable_real4d
     module procedure put_variable_int0d
     module procedure put_variable_int1d
+    module procedure put_variable_int3d
     module procedure put_variable_logical0d
     module procedure put_variable_logical1d
     module procedure put_variable_char0d
@@ -88,6 +89,7 @@ module SharedVariables
   integer, parameter :: iSHVAR_TYPE_INT0D=10
   integer, parameter :: iSHVAR_TYPE_INT1D=11
   integer, parameter :: iSHVAR_TYPE_INT2D=12
+  integer, parameter :: iSHVAR_TYPE_INT3D=13
   integer, parameter :: iSHVAR_TYPE_LOG0D=20
   integer, parameter :: iSHVAR_TYPE_LOG1D=21
   integer, parameter :: iSHVAR_TYPE_LOG2D=22
@@ -114,16 +116,17 @@ module SharedVariables
 !
 ! Possible data types
 !
-    real,                    pointer :: real0d
-    real, dimension(:),      pointer :: real1d
-    real, dimension(:,:),    pointer :: real2d
-    real, dimension(:,:,:),  pointer :: real3d
-    real, dimension(:,:,:,:),pointer :: real4d
-    integer,                 pointer :: int0d
-    integer, dimension(:),   pointer :: int1d
-    logical,                 pointer :: log0d
-    logical, dimension(:),   pointer :: log1d
-    character(len=linelen),  pointer :: char0D
+    real,                     pointer :: real0d
+    real, dimension(:),       pointer :: real1d
+    real, dimension(:,:),     pointer :: real2d
+    real, dimension(:,:,:),   pointer :: real3d
+    real, dimension(:,:,:,:), pointer :: real4d
+    integer,                  pointer :: int0d
+    integer, dimension(:),    pointer :: int1d
+    integer, dimension(:,:,:),pointer :: int3d
+    logical,                  pointer :: log0d
+    logical, dimension(:),    pointer :: log1d
+    character(len=linelen),   pointer :: char0D
 !
 ! Linked list link to next list element
 !
@@ -611,6 +614,35 @@ module SharedVariables
       new%int1D=>variable
 !
     endsubroutine put_variable_int1d
+!***********************************************************************
+    subroutine put_variable_int3d(varname,variable,ierr,caller)
+!
+!  Comment me.
+!
+      character (len=*) :: varname
+      integer, dimension(:,:,:), target :: variable
+      integer, optional :: ierr
+      character (len=*), optional :: caller
+!
+      intent(in)  :: varname,caller
+      intent(out) :: ierr
+!
+      type (shared_variable_list), pointer :: new
+!
+      if (present(ierr)) ierr=0
+!
+      new=>find_variable(varname)
+      if (associated(new)) then
+        if (associated(new%int3d,target=variable)) return
+        call put_error(varname,ierr,caller)
+      endif
+!
+      call new_item_atstart(thelist,new=new)
+      new%varname=varname
+      new%vartype=iSHVAR_TYPE_INT3D
+      new%int3D=>variable
+!
+    endsubroutine put_variable_int3d
 !***********************************************************************
     subroutine put_variable_real0d(varname,variable,ierr,caller)
 !

@@ -246,7 +246,7 @@ def fixed_points(datadir = 'data/', fileName = 'fixed_points_post.dat', varfile 
                         
                         if (it > 20):
                             fixedPoint = point
-                            print "warning: Newton did not converged"
+                            print("warning: Newton did not converged")
                             break
                         
                         it += 1
@@ -254,7 +254,7 @@ def fixed_points(datadir = 'data/', fileName = 'fixed_points_post.dat', varfile 
                     # check if fixed point lies inside the cell
                     if ((fixedPoint[0] < tracers[iy, ix, 0, 0]) or (fixedPoint[0] > tracers[iy, ix+1, 0, 0]) or
                         (fixedPoint[1] < tracers[iy, ix, 0, 1]) or (fixedPoint[1] > tracers[iy+1, ix, 0, 1])):
-                        print "warning: fixed point lies outside the cell"
+                        print("warning: fixed point lies outside the cell")
                     else:
                         x.append(fixedPoint[0])
                         y.append(fixedPoint[1])
@@ -282,7 +282,7 @@ def fixed_points(datadir = 'data/', fileName = 'fixed_points_post.dat', varfile 
     # read the cpu structure
     dim = pc.read_dim(datadir = datadir)
     if (dim.nprocz > 1):
-        print "error: number of cores in z-direction > 1"
+        print("error: number of cores in z-direction > 1")
 
     var = pc.read_var(varfile = varfile, datadir = datadir, magic = magic, quiet = True, trimall = True)
     grid = pc.read_grid(datadir = datadir, quiet = True, trim = True)
@@ -362,7 +362,7 @@ def read_fixed_points(datadir = 'data/', fileName = 'fixed_points.dat', hm = 1):
     # read the cpu structure
     dim = pc.read_dim(datadir = datadir)
     if (dim.nprocz > 1):
-        print "error: number of cores in z-direction > 1"
+        print("error: number of cores in z-direction > 1")
 
     data = []
 
@@ -378,7 +378,7 @@ def read_fixed_points(datadir = 'data/', fileName = 'fixed_points.dat', hm = 1):
         eof = 1
     while (eof == 0):
         data.t.append(struct.unpack("<"+str(hm+1)+"f", fixed_file.read(4*(hm+1)))[0])
-        n_fixed = int(struct.unpack("<"+str(2*hm+1)+"f", fixed_file.read(4*(2*hm+1)))[1+hm/2])
+        n_fixed = int(struct.unpack("<"+str(2*hm+1)+"f", fixed_file.read(4*(2*hm+1)))[1+int(hm/2)])
 
         x = list(np.zeros(n_fixed))
         y = list(np.zeros(n_fixed))

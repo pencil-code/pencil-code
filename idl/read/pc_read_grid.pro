@@ -9,6 +9,7 @@
 ;;
 ;;  27-nov-02/tony: coded
 ;;   2-oct-14/MR: keyword parameter down added for use with downsampled data
+;;  27-jan-16/MR: added check for FORTRAN consistency og grid data + automatic endian swapping if necessary
 ;;
 pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
     datadir=datadir, proc=proc, print=print, quiet=quiet, help=help, $
@@ -57,6 +58,8 @@ if (not keyword_set(down)) then $
   gridfile='grid.dat' $
 else $
   gridfile='grid_down.dat'
+;
+  default, swap_endian, 0
 ;
 ; Default allprocs.
 ;
@@ -201,9 +204,17 @@ for i=0,ncpus-1 do begin
     message, 'ERROR: cannot find file '+ filename
   endif
 
-  if (not keyword_set(quiet)) THEN print, 'Reading ' , filename , '...'
+  check=check_ftn_consistency(filename,swap_endian)
+  if check eq -1 then begin
+    print, 'File "'+strtrim(filename,2)+'" corrupted!'
+    return
+  endif else $
+    if check eq 1 then $
+      print, 'Try to read file "'+strtrim(filename,2)+'" with reversed endian swap!'
+ 
+  if (not keyword_set(quiet)) then print, 'Reading ' , filename , '...'
 
-  openr,file,filename,/F77,SWAP_ENDIAN=SWAP_ENDIAN
+  openr,file,filename,/F77,SWAP_ENDIAN=swap_endian
 
   if ((allprocs gt 0) or (n_elements(proc) ne 0) or keyword_set(reduced)) then begin
     readu,file, t,x,y,z

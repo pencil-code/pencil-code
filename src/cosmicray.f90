@@ -589,7 +589,6 @@ print*,"init_ecr: initecr = ", initecr
 !
       real, save :: ecr_floor_log
       logical, save :: lfirstcall=.true.
-      integer :: i, j, k
 !
 !  Impose the density floor.
 !

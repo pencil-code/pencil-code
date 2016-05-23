@@ -1,0 +1,18 @@
+Directory:
+    ${PENCIL_HOME}/samples/spherical-gdisk-planet-thermo
+SVN Id:
+    $Id: README 13517 2016-04-28 00:56:25Z wladimir.lyra $
+Maintainer:
+    Wladimir Lyra <wlyra/csun[dot]edu>
+Added:
+     28-apr-2016
+Status:
+    works since 28-apr-2016
+Recommended resolution:
+    256x128x768 (same hyperdiffusion as in sample)
+Comments:
+    Disk in spherical coordinates with planet in corotational frame, inertial and indirect terms,
+    plus Newton cooling with an optical depth dependant cooling time. 
+Reference:
+    Lyra, W., Richert, A.J.W., Boley, A., Turner, N., Mac Low, M.-M., Okuzumi, S., & Flock, M. 2016, ApJ, 817, 102.
+    On shocks driven by high-mass planets in radiatively inefficient disks. II. Three-dimensional global disk simulations.

@@ -40,8 +40,9 @@
 ! MVAR CONTRIBUTION 4
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED mu5; gmu5(3); del2mu5
-! PENCILS PROVIDED gtheta5(3); gtheta5ij(3,3); uggtheta5(3); bgtheta5
+! PENCILS PROVIDED mu5; gmu5(3); del2mu5; del2gtheta5(3)
+! PENCILS PROVIDED ugmu5; gtheta5(3); gtheta5ij(3,3); uggtheta5(3)
+! PENCILS PROVIDED bgtheta5; gtheta52
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -86,9 +87,10 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-   real :: diffmu5, lambda5, theta5_const=0., mu5_const=0.
-   real :: meanmu5
+   real :: diffmu5, diffgtheta5, lambda5, gtheta5_const=0., mu5_const=0.
+   real :: meanmu5, kx_gtheta5=1., ky_gtheta5=1.
    real, pointer :: eta
+   real :: cdtchiral=1.
    integer :: igtheta5, imu5
    logical :: lupw_gtheta5=.false.
    character (len=labellen) :: theta_prof='nothing'
@@ -97,16 +99,22 @@ module Special
   character (len=labellen) :: initspecial='nothing'
 !
   namelist /special_init_pars/ &
-      initspecial, theta5_const, mu5_const
+      initspecial, gtheta5_const, mu5_const, &
+      kx_gtheta5, ky_gtheta5
 !
   namelist /special_run_pars/ &
-      diffmu5, lambda5, theta_prof, lupw_gtheta5
+      diffgtheta5, diffmu5, lambda5, theta_prof, lupw_gtheta5, &
+      cdtchiral
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
   integer :: idiag_mu5m=0      ! DIAG_DOC: $\left<\mu_5\right>$
   integer :: idiag_mu5rms=0    ! DIAG_DOC: $\left<\mu_5^2\right>^{1/2}$
+  integer :: idiag_bgmu5rms=0  ! DIAG_DOC: $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$
   integer :: idiag_gtheta5rms=0! DIAG_DOC: $\left<(\nabla\theta_5)^2\right>^{1/2}$
+  integer :: idiag_gtheta5mx=0 ! DIAG_DOC: $\left<\nabla\theta_{5x}\right>$
+  integer :: idiag_gtheta5my=0 ! DIAG_DOC: $\left<\nabla\theta_{5y}\right>$
+  integer :: idiag_gtheta5mz=0 ! DIAG_DOC: $\left<\nabla\theta_{5z}\right>$
 !
   contains
 !***********************************************************************
@@ -191,18 +199,59 @@ module Special
 !  initial conditions
 !
       select case (initspecial)
+!
         case ('nothing'); if (lroot) print*,'init_special: nothing'
-        case ('const')
-          f(:,:,:,igtheta5) = theta5_const
-          f(:,:,:,imu5) = mu5_const
+!
         case ('zero')
           f(:,:,:,igtheta5) = 0.
+          f(:,:,:,igtheta5+1) = 0.
+          f(:,:,:,igtheta5+2) = 0.
           f(:,:,:,imu5) = 0.
-        case ('theta_profile')
-        do n=n1,n2; do m=m1,m2
-          f(l1:l2,m,n,igtheta5)=theta5_const*cos(2.*pi*(y(m)-y0)/Ly)
-        enddo; enddo 
+!
+        case ('const')
+          f(:,:,:,igtheta5) = gtheta5_const
+          f(:,:,:,igtheta5+1) = gtheta5_const
+          f(:,:,:,igtheta5+2) = gtheta5_const
           f(:,:,:,imu5) = mu5_const
+!
+        case ('gtheta5x_const')
+          f(:,:,:,igtheta5) = gtheta5_const
+          f(:,:,:,igtheta5+1) = 0.
+          f(:,:,:,igtheta5+2) = 0.
+          f(:,:,:,imu5) = mu5_const
+!
+        case ('gtheta5y_const')
+          f(:,:,:,igtheta5) = 0.
+          f(:,:,:,igtheta5+1) = gtheta5_const
+          f(:,:,:,igtheta5+2) = 0.
+          f(:,:,:,imu5) = mu5_const
+!
+        case ('mu_sinz__gtheta5_const')
+          f(:,:,:,igtheta5) = gtheta5_const
+          f(:,:,:,igtheta5+1) = gtheta5_const
+          f(:,:,:,igtheta5+2) = gtheta5_const
+          do n=n1,n2; do m=m1,m2
+        f(:,m,n,imu5) = mu5_const*sin(2.*pi*z(n)/Lz)*sin(2.*pi*z(n)/Lz)
+          enddo; enddo
+!
+        case ('gtheta5x_sinz')
+          do n=n1,n2; do m=m1,m2
+            f(:,m,n,igtheta5)=gtheta5_const*sin(2.*pi*z(n)/Lx)
+          enddo; enddo
+          f(:,:,:,imu5) = mu5_const
+!
+        case ('gtheta5y_siny')
+          do n=n1,n2; do m=m1,m2
+            f(:,m,n,igtheta5+1)=gtheta5_const*sin(ky_gtheta5*y(m))
+          enddo; enddo
+          f(:,:,:,imu5) = mu5_const
+!
+        case ('gtheta5x_cosy')
+          do n=n1,n2; do m=m1,m2
+            f(:,m,n,igtheta5)=gtheta5_const*cos(2.*pi*(y(m)-y0)/Ly)
+          enddo; enddo
+          f(:,:,:,imu5) = mu5_const
+!
         case default
           call fatal_error("init_special: No such value for initspecial:" &
               ,trim(initspecial))
@@ -218,14 +267,19 @@ module Special
 !
 !  18-07-06/tony: coded
 !
+      lpenc_requested(i_b2)=.true.
       lpenc_requested(i_mu5)=.true.
       lpenc_requested(i_gmu5)=.true.
+      if (ldt) lpenc_requested(i_rho1)=.true.
+      if (lhydro.or.lhydro_kinematic) lpenc_requested(i_ugmu5)=.true.
       lpenc_requested(i_gtheta5)=.true.
       lpenc_requested(i_gtheta5ij)=.true.
       if (diffmu5/=0.) lpenc_requested(i_del2mu5)=.true.
-      if (lhydro) lpenc_requested(i_uggtheta5)=.true.
+      if (diffgtheta5/=0.) lpenc_requested(i_del2gtheta5)=.true.
+      if (lhydro.or.lhydro_kinematic) lpenc_requested(i_uggtheta5)=.true.
+      if (lhydro.or.lhydro_kinematic) lpenc_requested(i_gtheta52)=.true.
       if (lmagnetic) lpenc_requested(i_bgtheta5)=.true.
-      if (lhydro) lpenc_requested(i_uu)=.true.
+      if (lhydro.or.lhydro_kinematic) lpenc_requested(i_uu)=.true.
       if (lmagnetic) lpenc_requested(i_bb)=.true.
       if (lmagnetic.and.lhydro) lpenc_requested(i_ub)=.true.
       if (lmagnetic.and.lhydro) lpenc_requested(i_jb)=.true.
@@ -251,7 +305,8 @@ module Special
 !
 !  24-nov-04/tony: coded
 !
-      use Sub, only: del2, grad, dot, u_dot_grad, gij
+      use Sub, only: del2, dot2_mn, del2v_etc, grad, dot, u_dot_grad, gij
+      use Sub, only: multsv
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -265,10 +320,13 @@ module Special
       if (lpencil(i_gtheta5)) p%gtheta5=f(l1:l2,m,n,igtheta5:igtheta5+2)
       if (lpencil(i_gtheta5ij)) call gij(f,igtheta5,p%gtheta5ij,1)
       if (lpencil(i_gmu5)) call grad(f,imu5,p%gmu5)
+      if (lpencil(i_ugmu5)) call dot(p%uu,p%gmu5,p%ugmu5)
       if (lpencil(i_del2mu5)) call del2(f,imu5,p%del2mu5)
+      if (lpencil(i_del2gtheta5)) call del2v_etc(f,igtheta5,DEL2=p%del2gtheta5)
       if (lpencil(i_uggtheta5)) call u_dot_grad(f,igtheta5,p%gtheta5ij, &
         p%uu,p%uggtheta5,UPWIND=lupw_gtheta5)
       if (lpencil(i_bgtheta5)) call dot(p%bb,p%gtheta5,p%bgtheta5)
+      if (lpencil(i_gtheta52)) call dot(p%gtheta5,p%gtheta5,p%gtheta52)
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -286,7 +344,7 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use Sub, only: multsv, dot2_mn, dot_mn_vm_trans
+      use Sub, only: multsv, dot_mn, dot2_mn, dot_mn_vm_trans
       use Diagnostics, only: sum_mn_name
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -297,8 +355,8 @@ module Special
       intent(in) :: f,p
       intent(inout) :: df
 !
-      real, dimension (nx) :: dtheta5, gtheta52, EB
-      real, dimension (nx,3) :: mu5bb, dtheta5_bb, uxbbgtheta5, ubgtheta5
+      real, dimension (nx) :: dtheta5, gtheta52, bgmu5, EB
+      real, dimension (nx,3) :: mu5bb, dtheta5_bb, uxbbgtheta5r, ubgtheta5
       real, dimension (nx,3) :: uijtransgtheta5
       real, parameter :: alpha_fine_structure=1./137.
 !
@@ -314,49 +372,56 @@ module Special
 !
 !  Evolution of mu5
 !
-      df(l1:l2,m,n,imu5)=df(l1:l2,m,n,imu5) &
+      df(l1:l2,m,n,imu5)=df(l1:l2,m,n,imu5)-p%ugmu5 &
         +diffmu5*p%del2mu5+lambda5*EB
-!
-!  Evolution of theta5
+!                          
+!  Evolution of gtheta5
 !
       if (lhydro) then
         call dot_mn_vm_trans(p%gtheta5,p%uij,uijtransgtheta5)
-        df(l1:l2,m,n,igtheta5:igtheta5+2)=df(l1:l2,m,n,igtheta5:igtheta5+2) &
-         -p%uggtheta5-uijtransgtheta5+p%gmu5
+        df(l1:l2,m,n,igtheta5:igtheta5+2) = df(l1:l2,m,n,igtheta5:igtheta5+2) &
+        -p%uggtheta5-uijtransgtheta5+p%gmu5 &
+        +diffgtheta5*p%del2gtheta5
       endif
-!      print*,       df(l1:l2,m,n,igtheta5), f(l1:l2,m,n,igtheta5)
 !
 !  Additions to evolution of bb
 !
       if (lmagnetic) then
         call multsv(p%mu5,p%bb,mu5bb)
-        call multsv(p%ub,p%gtheta5,ubgtheta5)
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+eta*(mu5bb-ubgtheta5)
+        call multsv(p%bgtheta5,p%uu,ubgtheta5)
+        df(l1:l2,m,n,iax:iaz) = df(l1:l2,m,n,iax:iaz)+eta*(mu5bb-ubgtheta5)
       endif
 !
 !  Additions to evolution of uu
 !
       if (lhydro) then
-        call multsv(p%bgtheta5,p%uxb,uxbbgtheta5)
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+uxbbgtheta5
+        call multsv(p%rho1*p%bgtheta5,p%uxb,uxbbgtheta5r)
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)+uxbbgtheta5r
+      endif   
+!     
+!  Contribution from linear shear
+!
+      if (lshear) then
+        df(l1:l2,m,n,igtheta5) = df(l1:l2,m,n,igtheta5)-Sshear*p%gtheta5(:,2)
       endif
+!
 !  Contribution to the time-step
 !
       if (lfirst.and.ldt) then
-!---    diffus_special= max(p%b2*p%theta5/(p%rho)*sqrt(dxyz_2),   &
-!AB: p%theta5 doesn't exist here. Note sure we need something like this here
-        diffus_special= max( &
-                            eta*p%mu5*sqrt(dxyz_2),   &
-!--                         eta*p%theta5*sqrt(p%u2)*dxyz_2,   &
-!AB: p%theta5 doesn't exist here. Note sure we need something like this here
-                            diffmu5*dxyz_2,   &
-                            lambda5*eta*p%b2/(p%mu5)*sqrt(dxyz_2),   &
-                            lambda5*eta*p%b2 &
-!--                         lambda5*eta*p%b2,   &
-!--                         lambda5*eta*p%b2*sqrt(p%u2)*p%theta5/(p%mu5)*sqrt(dxyz_2), &
-!--                         p%mu5/p%theta5   &
-!AB: p%theta5 doesn't exist here. Note sure we need something like this here
-                          )  
+        diffus_special = cdtchiral*max(  &
+!  Contribution from mu5 equation
+        lambda5*eta*p%b2/(p%mu5)*sqrt(dxyz_2), &
+        lambda5*eta*p%b2, &
+        lambda5*eta*sqrt(p%u2)*p%b2*sqrt(p%gtheta52)/(p%mu5), &
+        diffmu5*dxyz_2, &
+!  Contribution from gtheta5 equation
+        diffgtheta5*dxyz_2, &
+        p%mu5*sqrt(dxyz_2)/sqrt(p%gtheta52), &
+!  Contribution from bb equation
+        eta*p%mu5*sqrt(dxyz_2), &
+        eta*sqrt(p%u2)*sqrt(p%gtheta52)*sqrt(dxyz_2), &
+!  Contribution from uu equation
+        p%b2*sqrt(p%gtheta52)*p%rho1)
       endif
 !
 !  diagnostics
@@ -364,9 +429,16 @@ module Special
       if (ldiagnos) then
         if (idiag_mu5m/=0) call sum_mn_name(p%mu5,idiag_mu5m)
         if (idiag_mu5rms/=0) call sum_mn_name(p%mu5**2,idiag_mu5rms,lsqrt=.true.)
+        if (idiag_bgmu5rms/=0) then
+          call dot_mn(p%bb,p%gmu5,bgmu5)
+          call sum_mn_name(bgmu5**2,idiag_bgmu5rms,lsqrt=.true.)
+        endif
         if (idiag_gtheta5rms/=0) then
           call dot2_mn(p%gtheta5,gtheta52)
           call sum_mn_name(gtheta52,idiag_gtheta5rms,lsqrt=.true.)
+        if (idiag_gtheta5mx/=0) call sum_mn_name(p%gtheta5(:,1),idiag_gtheta5mx)
+        if (idiag_gtheta5my/=0) call sum_mn_name(p%gtheta5(:,2),idiag_gtheta5my)
+        if (idiag_gtheta5mz/=0) call sum_mn_name(p%gtheta5(:,3),idiag_gtheta5mz)
         endif
       endif
 !
@@ -427,13 +499,18 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_mu5m=0; idiag_mu5rms=0; idiag_gtheta5rms=0
+        idiag_mu5m=0; idiag_mu5rms=0; idiag_bgmu5rms=0; idiag_gtheta5rms=0;
+    idiag_gtheta5mx=0; idiag_gtheta5my=0; idiag_gtheta5mz=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'mu5m',idiag_mu5m)
         call parse_name(iname,cname(iname),cform(iname),'mu5rms',idiag_mu5rms)
+        call parse_name(iname,cname(iname),cform(iname),'bgmu5rms',idiag_bgmu5rms)
         call parse_name(iname,cname(iname),cform(iname),'gtheta5rms',idiag_gtheta5rms)
+        call parse_name(iname,cname(iname),cform(iname),'gtheta5mx',idiag_gtheta5mx)
+        call parse_name(iname,cname(iname),cform(iname),'gtheta5my',idiag_gtheta5my)
+        call parse_name(iname,cname(iname),cform(iname),'gtheta5mz',idiag_gtheta5mz)
       enddo
 !
     endsubroutine rprint_special
@@ -691,6 +768,19 @@ module Special
       call keep_compiler_quiet(f)
 !
     endsubroutine special_before_boundary
+!***********************************************************************
+    subroutine special_after_boundary(f)
+!
+!  Possibility to modify the f array after the boundaries are
+!  communicated.
+!
+!  06-jul-06/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine special_after_boundary
 !***********************************************************************
     subroutine special_boundconds(f,bc)
 !

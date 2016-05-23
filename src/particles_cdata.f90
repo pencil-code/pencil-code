@@ -34,6 +34,8 @@ module Particles_cdata
   real :: rsinkparticle_1=0.0
   real :: t_nextinsert=0. !The time at which new particles are going to be inserted.
   real :: dustdensity_powerlaw=0.
+  real, dimension(4) :: gab_weights
+  real :: gab_width=3.0
 !
   integer, dimension(-1:1,-1:1,-1:1) :: neighbors_par = -1
   integer, dimension (nx) :: kshepherd
@@ -43,7 +45,7 @@ module Particles_cdata
   integer, dimension (npar_species) :: ipar_fence_species=0
   integer, dimension(ny*nz) :: npar_imn, k1_imn, k2_imn
   integer :: npvar=0, npar_loc=0, mspar=0, npar_total=0, npaux=0
-  integer :: ixp=0, iyp=0, izp=0, ivpx=0, ivpy=0, ivpz=0, iap=0, iaps=0
+  integer :: ixp=0, iyp=0, izp=0, ivpx=0, ivpy=0, ivpz=0, iap=0, iaps=0, irpbeta=0
   integer :: isigmap11=0,isigmap12=0,isigmap13=0
   integer :: isigmap21=0,isigmap22=0,isigmap23=0
   integer :: isigmap31=0,isigmap32=0,isigmap33=0
@@ -55,18 +57,24 @@ module Particles_cdata
   integer :: ipss=0, ipst=0, ipxx=0, ipyy=0, ipzz=0
   integer :: iuup=0, iupx=0, iupy=0, iupz=0
   integer :: ipviscx=0, ipviscy=0, ipviscz=0
-  integer :: inp=0, irhop=0, irhops=0
+  integer :: inp=0, irhop=0, irhops=0, ivol=0, ipeh=0
   integer :: idiag_nmigmax=0, idiag_nmigmmax=0, npart_radii=0
   integer :: nbin_ap_dist=100
   integer :: iads=0, iads_end=0
   integer :: isurf=0,isurf_end=0
   integer :: ieffp=0
+  integer :: npar_inserted_tot=0
+! Define maximum number of inserted particles in total
+! Stop inserting after max_particles is reached
+  integer :: max_particles=npar
 !
   logical :: linterpolate_spline=.true.
   logical :: lparticlemesh_cic=.true., lparticlemesh_tsc=.false.
   logical :: lparticlemesh_pqs_assignment=.false.
+  logical :: lparticlemesh_gab = .false.
   logical :: linterp_reality_check=.false., lmigration_redo=.false.
   logical :: lnocalc_np=.false., lnocalc_rhop=.false.
+  logical :: lcalc_np=.true., lcalc_rhop=.true.
   logical :: lmigration_real_check=.true.
   logical :: lcheck_exact_frontier=.false.
   logical :: lshepherd_neighbour=.false.
@@ -77,6 +85,8 @@ module Particles_cdata
   logical :: linsert_particle=.false.
   logical :: lcommunicate_rhop=.false.
   logical :: lcommunicate_np=.false.
+  logical :: lparticles_radius_rpbeta=.false.
+  logical :: lignore_rhop_swarm=.false.
 !
   character (len=2*bclen+1) :: bcpx='p', bcpy='p', bcpz='p'
   character (len=2*bclen+1) :: bcspx='p', bcspy='p', bcspz='p'

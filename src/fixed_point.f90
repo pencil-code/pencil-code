@@ -452,7 +452,7 @@ module Fixed_point
               (fixed_points(fidx,1) > tracers2(j+1+(l-1)*(nx*trace_sub+addx),1)) .or. &
               (fixed_points(fidx,2) < tracers2(j+(l-1)*(nx*trace_sub+addx),2)) .or. &
               (fixed_points(fidx,2) > tracers2(j+l*(nx*trace_sub+addx),2))) then
-            write(*,*) iproc, "warning: fixed point lies outside the cell"
+            write(*,*) iproc_world, "warning: fixed point lies outside the cell"
           else
             fidx = fidx+1
           endif
@@ -462,6 +462,7 @@ module Fixed_point
     fidx = fidx - 1
 !
 !   Tell every other core that we have finished.
+!
     finished_rooting(:) = 0
     finished_rooting(iproc+1) = 1
     do proc_idx=0,(nprocx*nprocy*nprocz-1)

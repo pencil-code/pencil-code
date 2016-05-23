@@ -65,15 +65,15 @@ class npfile(object):
                  endian = 'dtype',
                  order = 'C'):
         if 'b' not in permission: permission += 'b'
-        if isinstance(file_name, basestring):
-            self.file = file(file_name, permission)
+        if isinstance(file_name, str):
+            self.file = open(file_name, permission)
         else:
             try:
                 closed = file_name.closed
             except AttributeError:
-                raise TypeError, 'Need filename or file object as input'
+                raise TypeError('Need filename or file object as input')
             if closed:
-                raise TypeError, 'File object should be open'
+                raise TypeError('File object should be open')
             self.file = file_name
         self.endian = endian
         self.order = order
@@ -99,7 +99,7 @@ class npfile(object):
         elif endian_code == 'dtype':
             return 'dtype'
         else:
-            raise ValueError, "Unrecognized endian code: " + endian_code
+            raise ValueError("Unrecognized endian code: " + endian_code)
         return
 
     def __del__(self):
@@ -250,7 +250,7 @@ class npfile(object):
         elif head_size == 8:
             nfmt+='L'
         else:
-            raise TypeError, "Unknown head_size. Valid vaules are 4 & 8."
+            raise TypeError("Unknown head_size. Valid vaules are 4 & 8.")
 
         #outstr = struct.pack(data.dtype,data.tostring(order=order))
         outstr = data.tostring(order=order)

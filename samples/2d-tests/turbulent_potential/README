@@ -1,0 +1,17 @@
+Directory:
+    ${PENCIL_HOME}/samples/2d-tests/turbulent_potential
+SVN Id:
+    $Id: README 13517 2010-03-23 00:56:25Z wladimir.lyra $
+Maintainer:
+    Wladimir Lyra <wlyra/csun[dot]edu>
+Added:
+     10-dec-2015
+Status:
+    works since 10-dec-2015
+Recommended resolution:
+    As high as 2D can be. 
+Comments:
+    Run using the turbulent potential prescription used in Horn et al. (2012), and before by Baruteau & Lin (2010), based on
+        Laughlin (2007?). 
+Reference:
+    Lyra, W., Turner, N., & McNally, C.P. (2015), A&A, 574, A10. Rossby wave instability does not require sharp resistivity gradients.

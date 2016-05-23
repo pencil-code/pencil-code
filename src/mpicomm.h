@@ -5,10 +5,11 @@
 
   public :: remap_to_pencil_xy_2D_other, unmap_from_pencil_xy_2D_other
 
-  public :: mpicomm_init, initialize_mpicomm, mpifinalize
+  public :: update_neighbors, index_to_iproc_comm
+
+  public :: mpicomm_init, initialize_mpicomm, mpifinalize, yyinit
   public :: mpibarrier
   public :: stop_it, stop_it_if_any
-  public :: touch_file
   public :: die_gracefully, die_immediately
   public :: check_emergency_brake
 
@@ -59,7 +60,6 @@
   public :: y2x, z2x
 
   public :: report_clean_output
-
   public :: mpiwait
 
 ! Radiation ray routines
@@ -72,4 +72,6 @@
   public :: ipx, ipy, ipz, lroot, iproc, mpi_precision
   public :: lfirst_proc_x, lfirst_proc_y, lfirst_proc_z, lfirst_proc_xy, lfirst_proc_yz, lfirst_proc_xz, lfirst_proc_xyz
   public :: llast_proc_x, llast_proc_y, llast_proc_z, llast_proc_xy, llast_proc_yz, llast_proc_xz, llast_proc_xyz
+  public :: MPI_COMM_WORLD, lyang
 
+  character(LEN=4), public :: cyinyang=' '

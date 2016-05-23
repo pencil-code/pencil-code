@@ -56,7 +56,6 @@ COMPILE_OPT IDL2,HIDDEN
 
 ; Get necessary dimensions
 pc_read_dim, mx=mx, my=my, mz=mz, datadir=datadir, proc=proc, QUIET=QUIET
-
 ;
 ; Initialize / set default returns for ALL variables
 ;

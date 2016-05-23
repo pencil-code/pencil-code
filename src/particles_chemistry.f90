@@ -53,11 +53,12 @@ module Particles_chemistry
   real, dimension(:), allocatable :: dngas
   integer, dimension(:), allocatable :: dependent_reactant
   real, dimension(:,:), allocatable, save :: part_power
+  integer, dimension(:), allocatable :: RR_method
 !
   real, dimension(nchemspec) :: molar_mass=1.0
-  real, dimension(50) :: reaction_enhancement=1
+  real, dimension(50) :: reaction_enhancement=1.0
   character(len=3), dimension(:), allocatable, save :: reaction_direction
-  character(len=3), dimension(:), allocatable ::flags
+  character(len=3), dimension(:), allocatable :: flags
   character(len=10), dimension(:,:), allocatable, save :: part
   character(len=10), dimension(50) :: species_name
   character(len=10), dimension(40) :: reactants, products
@@ -74,6 +75,7 @@ module Particles_chemistry
   integer :: imufree, imuadsO, imuadsO2, imuadsOH, imuadsH, imuadsCO
   integer :: iter=0
   integer, dimension(:), allocatable :: jmap
+  integer :: idiag_Shchm=0   ! DIAG_DOC: $mean particle Sherwood number$
   real :: x_s_total
   real :: effectiveness_factor_timeaver=1.
   real :: eta_int=0., delta_rho_surface=0.
@@ -83,17 +85,22 @@ module Particles_chemistry
   real :: chemplaceholder=0.0
   real :: tortuosity=3.
   real, target :: true_density_carbon=1.800 ! g/cm^3
-  real :: structural_parameter=8. ! [-]
+! The value of 8 is from 'A comprehensive model for char particle conversion in environments'
+  real :: structural_parameter=8. ! [-] can be 8, seems not right
   real :: startup_time=0.
   real :: startup_quench
   real :: pre_energy=1.0
 !
+  logical :: lpreactions=.true.
   logical :: first_pchem=.true.
   logical :: lpchem_debug = .false.
   logical :: lthiele=.false.
   logical :: lreactive_heating=.false.
   logical :: lsurface_nopores=.false.
   logical :: lbaum_and_street=.false.
+  logical :: lsherwood_const=.false.
+  logical :: lwrite=.true.
+  logical :: reverse_reactions_present=.false.
 !
 !*********************************************************************!
 !             Particle dependent variables below here                 !
@@ -122,16 +129,15 @@ module Particles_chemistry
   real, dimension(:), allocatable :: initial_density
   real, dimension(:), allocatable :: Cg, A_p
   real, dimension(:), allocatable :: q_reac
-  real, dimension(:), allocatable :: Nu_p
   real, dimension(:), allocatable :: mass_loss
 !
-  real :: mol_mass_carbon=12.0 !g/mol
+  real :: mol_mass_carbon=12.0107 !g/mol
   real :: Sgc_init=3e6 ! cm^2/g
 !
 !  is already in the code (R_CGS), with ergs as unit!!!
 !  this one is used for
 !
-  real :: gas_constant=8.3144727 ![J/mol/K] MUST ALWAYS BE IN SI UNITS!!!
+  real :: gas_constant=8.3144727 ![J/mol/K] MUST ALWAYS BE IN SI UNITS !
 !
   namelist /particles_chem_init_pars/ &
       reaction_enhancement, &
@@ -143,10 +149,15 @@ module Particles_chemistry
       lpchem_debug, &
       true_density_carbon, &
       startup_time, &
-      lsurface_nopores,&
-      lbaum_and_street
+      lsurface_nopores, &
+      lbaum_and_street, &
+      lpreactions, &
+      lsherwood_const
 !
-  namelist /particles_chem_run_pars/ chemplaceholder, lthiele, lreactive_heating
+  namelist /particles_chem_run_pars/ chemplaceholder, &
+      lthiele, &
+      lreactive_heating, &
+      lpreactions
 !
   contains
 ! ******************************************************************************
@@ -157,14 +168,12 @@ module Particles_chemistry
 !
     subroutine register_particles_chem()
       integer :: ierr
-      if (lroot) call svn_id( &
-          "$Id: particles_chemistry.f90 20843 2014-10-06 18:45:43Z jonas.kruger $")
+!      if (lroot) call svn_id( &
+!          "$Id: particles_chemistry.f90 20843 2014-10-06 18:45:43Z jonas.kruger $")
 !
       call register_unit_system()
 !
       call get_pchem_info(species,'N_species',N_species,'quiet')
-!    print*, 'Number of species in mechanics file: ', N_species
-!    print*, 'Species found: ', species(:N_species)
       call register_indep_pchem()
       call register_dep_pchem()
 !
@@ -172,11 +181,18 @@ module Particles_chemistry
       if (ierr /= 0) call fatal_error('register_particles_chem', 'unable to share total_carbon')
       call put_shared_variable('true_density_carbon',true_density_carbon,ierr)
       if (ierr /= 0) call fatal_error('register_particles_chem', 'unable to share true_density')
-
+!
       if (lbaum_and_street .and. .not. lsurface_nopores) then
-        call fatal_error('register_particles_chem',&
+        call fatal_error('register_particles_chem', &
             'If lbaum_and_street, lsurface_nopores hast to be True!')
       endif
+!
+      if (lpchem_debug .and. lroot) call print_debug_info()
+!
+      if (lwrite) then
+        call write_outputfile()
+      endif
+      lwrite = .false.
 !
     endsubroutine register_particles_chem
 ! ******************************************************************************
@@ -203,6 +219,9 @@ module Particles_chemistry
       allocate(sigma_k(N_surface_reactions),STAT=stat)
       if (stat > 0) call fatal_error('register_indep_pchem', &
           'Could not allocate memory for sigma_k')
+      allocate(RR_method(N_surface_reactions),STAT=stat)
+      if (stat > 0) call fatal_error('register_indep_pchem', &
+          'Could not allocate memory for RR_method')
       allocate(reaction_order(N_surface_reactions),STAT=stat)
       if (stat > 0) call fatal_error('register_indep_psurfchem', &
           'Could not allocate memory for reaction_order')
@@ -227,7 +246,18 @@ module Particles_chemistry
 ! Define the Arrhenius coefficients. The term ER_k is the activation energy
 ! divided by the gas constant (R)
 !
+!  Select the method of calculating the reaction rate:
+!  The method '2' stands for the Arrhenius coefficients, where
+!  kk = B_k * T^n * exp(ER_k/R/T),
+!  where ER_k is already divided by R at the end of the read-in
+!
+      call set_RR(part, RR_method)
+!
+! Define the Arrhenius coefficients. The term ER_k is the activation energy
+! divided by the gas constant (R)
+!
       call create_arh_param(part,B_k,ER_k,sigma_k)
+!
     endsubroutine register_indep_pchem
 ! ******************************************************************************
 !  Allocate memory for chemical variables that change from particle to particle
@@ -243,9 +273,12 @@ module Particles_chemistry
       allocate(heating_k(mpar_loc,N_surface_reactions),STAT=stat)
       if (stat > 0) call fatal_error('register_dep_pchem', &
           'Could not allocate memory for heating_k')
-      allocate(entropy_k(mpar_loc,N_surface_reactions),STAT=stat)
-      if (stat > 0) call fatal_error('register_dep_pchem', &
-          'Could not allocate memory for heating_k')
+      if (reverse_reactions_present) then
+        allocate(entropy_k(mpar_loc,N_surface_reactions),STAT=stat)
+        if (stat > 0) call fatal_error('register_dep_pchem', &
+            'Could not allocate memory for entropy_k')
+      endif
+!
     endsubroutine register_dep_pchem
 !***********************************************************************
     subroutine pencil_criteria_par_chem()
@@ -255,7 +288,11 @@ module Particles_chemistry
 !  16.09.2015/jonas + nils: coded
 !
       if (lthiele) then
-        lpenc_requested(i_Diff_penc_add)=.true.
+        lpenc_requested(i_Diff_penc_add) = .true.
+      endif
+!
+      if (idiag_Shchm /= 0) then
+        lpenc_requested(i_sherwood) = .true.
       endif
 !
     endsubroutine pencil_criteria_par_chem
@@ -267,7 +304,7 @@ module Particles_chemistry
 !
 !  16.09.2015/jonas + nils: coded
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       call keep_compiler_quiet(f)
@@ -315,8 +352,7 @@ module Particles_chemistry
 !
 ! Count heterogeneous species
       call count_species(part,species,reactants,products)
-      call count_species_type(species(:ns),N_adsorbed_species, &
-          N_surface_species,ns)
+      call count_species_type(species(:ns),N_adsorbed_species,N_surface_species,ns)
       call count_species_type(reactants,N_trash,N_surface_reactants,nr)
 !
       if (trim(string) == 'N_surface_species') variable = N_surface_species
@@ -332,16 +368,18 @@ module Particles_chemistry
 !
     subroutine calc_R_c_hat()
 !
-      integer :: k,k1,k2      
-!      
+      integer :: k, k1, k2
+!
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
 !
-      R_c_hat = 0.0
+!  R_c_hat is the molar flux of carbon (the mass loss) per real
+!  particle surface
 !
-      do k =k1,k2
-        R_c_hat(k) = -sum(mdot_ck(k,:))/(St(k)*mol_mass_carbon)
-      enddo
+!      print*, 'infos: ', mdot_ck(k1:k2,:)
+!      print*, 'infos2: ', St(k1:k2)
+      R_c_hat(k1:k2) = -sum(mdot_ck(k1:k2,:),DIM=2)/(St(k1:k2)*mol_mass_carbon)
+!      print*, 'made it'
 !
     endsubroutine calc_R_c_hat
 ! ******************************************************************************
@@ -365,16 +403,23 @@ module Particles_chemistry
 !  mod_all: Middle term in eq. 40 of 8th US combustion meeting, coal and
 !  biomass combustion and gasification.
 !
-      do k = k1,k2
-        mod_all(k) = (Sgc_init*fp(k,impinit))**2*structural_parameter* &
-            (1-conversion(k)) * (1-conversion(k)) / &
-            (2*St(k)**2)
-        Sgc(k) = St(k)/ rho_p(k)
-        mod_surf_area(k) = (1-mod_all(k))*Sgc(k)*mol_mass_carbon
-      enddo
+!      do k = k1,k2
+      mod_all(k1:k2) = (Sgc_init*fp(k1:k2,impinit))*(Sgc_init*fp(k1:k2,impinit))* &
+          structural_parameter* &
+          (1.-conversion(k1:k2)) * (1.-conversion(k1:k2)) / &
+          (2*St(k1:k2)*St(k1:k2))
+!
+!  This was
+!        Sgc(k) = St(k)/ rho_p(k)
+!  before
+!
+      Sgc = St(k1:k2)/ fp(k1:k2,imp)
+      mod_surf_area(k1:k2) = (1.-mod_all(k1:k2))*Sgc(k1:k2)*mol_mass_carbon
+!      enddo
 !
       deallocate(mod_all)
       deallocate(Sgc)
+!
     endsubroutine calc_get_mod_surf_area
 ! ******************************************************************************
 !  Evolution of the total surface area of each coal particle
@@ -394,23 +439,27 @@ module Particles_chemistry
 !
       St = 0.0
 !
-!  For global mechanisms, the total surface is usal just the surface 
+!  For global mechanisms, the total surface is usal just the surface
 !  of a sphere with the radius of the particle
-!  For detailed mechanisms, we have also internal surfaces and 
+!  For detailed mechanisms, we have also internal surfaces and
 !  evolve that
 !
       if (.not. lsurface_nopores) then
         do k = k1,k2
           rho_p_init = fp(k,impinit)/(4.*pi/3.*fp(k,iapinit)**3)
+!          print*, 'St, individ, subroutine', k,St(k)
+!          print*, 'mass,Sgc, struct, rhop,rhopinit',fp(k,imp),Sgc_init,structural_parameter
+!          print*, 'squareterm',structural_parameter*log(rho_p(k)/rho_p_init)
+!          print*, 'rhop',rho_p(k)
+!          print*, 'rho_p', rho_p,fp(k,imp),fp(k,iap)
           St(k) = fp(k,imp)*Sgc_init* &
               sqrt(1.0 - structural_parameter*log(rho_p(k)/rho_p_init))
+          if (St(k) /= St(k)) call fatal_error('St(k)', 'is nan')
         enddo
       else
-        do k = k1,k2
-          St(k)= 4.*pi*fp(k,iap)**2
-        enddo
+        St = 4.*pi*(fp(k1:k2,iap)*fp(k1:k2,iap))
       endif
-!        
+!
     endsubroutine calc_St
 ! ******************************************************************************
 !  Reading in of the Arrhenius parameters from the parsed mechanics.in file
@@ -459,7 +508,11 @@ module Particles_chemistry
         endif
       enddo
 !
+!  ER_k is in J/mol!!!
+!  sigma_k is in J/mol!!!
       ER_k = ER_k/gas_constant
+      sigma_k = sigma_k/gas_constant
+!
     endsubroutine create_arh_param
 ! ******************************************************************************
     subroutine create_dependency(nu,dependent_reactant,n_surface_reactions, &
@@ -569,6 +622,9 @@ module Particles_chemistry
       logical :: numeric
       real, dimension(:) :: ac
       character(len=10), dimension(:) :: list
+      character(len=20) :: writeformat
+      character(len=30) :: output='./data/particle_chemistry.out'
+      integer :: file_id=123
       ac = 0
 !
       do i = 1,nlist
@@ -584,6 +640,17 @@ module Particles_chemistry
           endif
         endif
       enddo
+!
+      open (file_id,file=output,position='append')
+      writeformat = '(  F5.2)'
+      write (writeformat(2:3),'(I2)') nlist
+!
+      write (file_id,*) ''
+      write (file_id,*) 'Carbon content  gas phase species'
+      write (file_id, writeformat) ac
+      write (file_id,*) ''
+      close (file_id)
+!
     endsubroutine get_ac
 ! ******************************************************************************
 !  This script reads in the order of the compounds as prescribed
@@ -705,6 +772,8 @@ module Particles_chemistry
       character(len=10), dimension(40) :: temp, temp_reac, temp_prod
 !
       temp = 'nothing'
+      temp_reac = 'nothing'
+      temp_prod = 'nothing'
       jmax = size(part,1)
       place = 1
       place_reac = 1
@@ -735,16 +804,19 @@ module Particles_chemistry
             if (.not. any(temp  ==  element)) then
               temp(place) = element
               place = place+1
+!              print*, 'new element found! ', element
             endif
 !
             if ((.not. any(temp_reac  ==  element)) .and. lhs) then
               temp_reac(place_reac) = element
               place_reac = place_reac+1
+!              print*, 'reactant found ',  element, lhs, place_reac
             endif
 !
             if ((.not. any(temp_prod == element)) .and. (lhs .eqv. .false.)) then
               temp_prod(place_prod) = element
               place_prod = place_prod+1
+!              print*, 'new product found! ', element
             endif
 !
           endif
@@ -758,6 +830,16 @@ module Particles_chemistry
       ns = place-1
       nr = place_reac-1
       np = place_prod-1
+!      print*, 'species'
+!      print*, species
+!       print*, 'reactants',reactants
+!      print*, reactants
+!      print*, 'products'
+!      print*, products
+!      print*, 'temp_reac'
+!      print*, temp_reac(:place_reac-1)
+!      print*, 'place_reac'
+!      print*, place_reac
     endsubroutine count_species
 ! ******************************************************************************
 !  If the reaction contains '<>', the string is passed to this subroutine
@@ -788,7 +870,7 @@ module Particles_chemistry
 !
         read (string(i:i+7),*,iostat=numerical) real_number
         if (numerical == 0) then
-          if (real_number < 10.) then
+          if (real_number < 0.) then
             numerical = 1
           endif
           if (i > len(string)-10) then
@@ -894,6 +976,7 @@ module Particles_chemistry
               ireaction = ireaction + 1
               if (index(string,'<>') > 0) then
                 call flip_and_parse(string,ireaction,target_list,reaction_direction)
+                reverse_reactions_present = .true.
                 ireaction = ireaction + 1
               endif
             endif
@@ -905,17 +988,18 @@ module Particles_chemistry
         call remove_save_T_k(target_list)
         call remove_save_powers(target_list)
 !
-        if (talk == 'verbose') then
-          open (29, file='mech_outputfile.dat',iostat=stat)
-          do i = 1,N_surface_reactions
-            write (*,writeformat) target_list(:,i),reaction_direction(i)
-            write (29,writeformat) target_list(:,i),reaction_direction(i)
-          enddo
-          close (29)
-        endif
+!        if (talk == 'verbose') then
+        open (29, file='/data/mech_outputfile.dat',iostat=stat)
+        do i = 1,N_surface_reactions
+!            write (*,writeformat) target_list(:,i),reaction_direction(i)
+          write (29,writeformat) target_list(:,i),reaction_direction(i)
+        enddo
+        close (29)
+!        endif
       else
         write (*,*) 'Could not open mechanics file'
       endif
+!
     endsubroutine read_mechanics_file
 ! ******************************************************************************
 !  Find the mole production of the forward reaction. This will later
@@ -944,24 +1028,21 @@ module Particles_chemistry
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
 !
-      do k = k1,k2
-        do l = 1,N_surface_reactions
-          do i = 1,N_surface_species
-            entropy_k(k,l) = entropy_k(k,l) &
-                +nu_prime(i,l)*surface_species_entropy(k,i) &
-                -nu(i,l)*surface_species_entropy(k,i)
-          enddo
-          if (N_adsorbed_species > 1) then
-            do j = 1,N_adsorbed_species
-              entropy_k(k,l) = entropy_k(k,l) &
-                  +mu_prime(j,l)*adsorbed_species_entropy(k,j) &
-                  -mu(j,l)*adsorbed_species_entropy(k,j)
-            enddo
-          endif
-!  This is the cgs-SI switch
-          entropy_k(k,l) = entropy_k(k,l) * pre_energy
+      do l = 1,N_surface_reactions
+        do i = 1,N_surface_species
+          entropy_k(k1:k2,l) =  entropy_k(k1:k2,l) &
+              +(nu_prime(i,l)-nu(i,l))*surface_species_entropy(k1:k2,i)
         enddo
+        if (N_adsorbed_species > 1) then
+          do j = 1,N_adsorbed_species
+            entropy_k(k1:k2,l) = entropy_k(k1:k2,l) &
+                +(mu_prime(j,l)-mu(j,l))*adsorbed_species_entropy(k1:k2,j)
+          enddo
+        endif
       enddo
+!  This is the cgs-SI switch
+      entropy_k(k1:k2,:) = entropy_k(k1:k2,:) * pre_energy
+!
     endsubroutine calc_entropy_of_reaction
 ! ******************************************************************************
 !  Starting from the K_k of the forward reaction, calculate the K_k
@@ -1006,11 +1087,13 @@ module Particles_chemistry
 !
     subroutine calc_conversion(fp)
       real, dimension(:,:) :: fp
-      integer :: k
+      integer :: k1, k2
 !
-      do k = k1_imn(imn),k2_imn(imn)
-        conversion(k) = 1 - fp(k,imp) / fp(k,impinit)
-      enddo
+      k1 = k1_imn(imn)
+      k2 = k2_imn(imn)
+!
+      conversion(k1:k2) = 1. - fp(k1:k2,imp) / fp(k1:k2,impinit)
+!
     endsubroutine calc_conversion
 ! ******************************************************************************
 !  Calculate the heating of each reaction by taking the difference of
@@ -1025,24 +1108,40 @@ module Particles_chemistry
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
 !
-      do k = k1,k2
+      do i = 1,N_surface_species
         do l = 1,N_surface_reactions
-          do i = 1,N_surface_species
-            heating_k(k,l) = heating_k(k,l) &
-                +nu_prime(i,l)*surface_species_enthalpy(k,i) &
-                -nu(i,l)*surface_species_enthalpy(k,i)
-          enddo
-          if (N_adsorbed_species > 0) then
-            do j = 1,N_adsorbed_species
-              heating_k(k,l) = heating_k(k,l) &
-                  +mu_prime(j,l)*adsorbed_species_enthalpy(k,j) &
-                  -mu(j,l)*adsorbed_species_enthalpy(k,j)
-            enddo
-          endif
-!  This is the cgs-SI switch
-          heating_k(k,l) = heating_k(k,l) * pre_energy
+          heating_k(k1:k2,l) = heating_k(k1:k2,l) &
+              +(nu_prime(i,l)-nu(i,l))*surface_species_enthalpy(k1:k2,i)
         enddo
       enddo
+      if (N_adsorbed_species > 1) then
+        do j = 1,N_adsorbed_species
+          do l = 1,N_surface_reactions
+            heating_k(k1:k2,l) = heating_k(k1:k2,l) &
+                +(mu_prime(j,l)-mu(j,l))*adsorbed_species_enthalpy(k1:k2,j)
+          enddo
+        enddo
+      endif
+!      do i = 1,N_surface_species
+!        do l = 1,N_surface_reactions
+!          heating_k(k1:k2,l) = heating_k(k1:k2,l) &
+!              +(nu_prime(i,l)-nu_prime(i,l))*surface_species_enthalpy(k1:k2,i)
+!        enddo
+!      enddo
+!      if (N_adsorbed_species > 1) then
+!        do j = 1,N_adsorbed_species
+!          do l = 1,N_surface_reactions
+!            heating_k(k1:k2,l) = heating_k(k1:k2,l) &
+!                +(mu_prime(j,l)-mu(j,l))*adsorbed_species_enthalpy(k1:k2,j)
+!          enddo
+!        enddo
+!      endif
+!  This is the cgs-SI switch
+      heating_k(k1:k2,:) = heating_k(k1:k2,:) * pre_energy
+!      print*, 'heating_k, calc_enth:', heating_k(k1:k2,:)
+!      print*, 'surfa_enth, calc_enth:',surface_species_enthalpy
+!      print*, 'nuss, calc_enth:',nu
+!
     endsubroutine calc_enthalpy_of_reaction
 ! ******************************************************************************
 !  01-oct-2014/jonas:coded
@@ -1050,130 +1149,273 @@ module Particles_chemistry
 !  Calculates the area specific molar reaction rate from K_k
 !
     subroutine calc_RR_hat(f,fp,ineargrid,p)
+!
+      use Diagnostics
+!
       type (pencil_case) :: p
       real, dimension(mpar_loc,mparray) :: fp
       real, dimension(mx,my,mz,mfarray) :: f
-      real :: pre_Cg, pre_Cs, pre_RR_hat,pre_dia,pre_k
-      real :: pre_kkcg
+      real :: pre_Cg, pre_Cs, pre_RR_hat, pre_k
+      real :: pre_kk, Sh, Sh_mean
       real ::  k_im, kkcg, x_mod, root_term
-      integer :: i, j, k, k1, k2,l,ix0
+      integer :: i, j, k, k1, k2, l, ix0,sh_counter
       integer, dimension(mpar_loc,3) :: ineargrid
+      real, dimension(:), allocatable :: rep, nuvisc
+      integer :: stat
 !
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
-!
-!  The heterogeneous kinetics in the mechanism file is always given in SI units.
-!  Here we intorduce correction factors if cgs units are used.
-!
-      if (unit_system == 'cgs') then
-        pre_Cg = 1e6
-        pre_Cs = 1e4
-        pre_RR_hat = 1e-4
-        pre_dia = 1e2
-        pre_k=1e1
-        pre_kkcg=1e3
-      else
-        pre_Cg = 1.
-        pre_Cs = 1.
-        pre_RR_hat = 1.
-        pre_dia = 1.
-        pre_k=1.
-        pre_kkcg=1.
+
+      if (idiag_Shchm /= 0) then
+        call find_sh_counter(sh_counter)
       endif
 !
-      do k = k1,k2
+      if (npar_imn(imn) /= 0) then
+!
+!  The heterogeneous kinetics in the mechanism file is always given in SI units.
+!  J, mol, s, m
+!  This means that K_K is in the units of m/s (and applicable, when more reactants are
+!  involved)
+!  Here we introduce correction factors if cgs units are used.
+!
+        if (lsherwood_const) then
+          Sh = 2.0
+        else
+          allocate(rep(k1:k2),STAT=stat)
+          if (stat > 0) call fatal_error('calc_RR_hat', &
+              'Could not allocate memory for rep')
+          allocate(nuvisc(k1:k2),STAT=stat)
+          if (stat > 0) call fatal_error('calc_RR_hat', &
+              'Could not allocate memory for nu')
+          call calc_pencil_rep_nu(fp,rep, nuvisc)
+        endif
+!
+        if (unit_system == 'cgs') then
+!
+!  was
+!
+          pre_Cg = 1e6
+          pre_Cs = 1e4
+!  before
+!        pre_Cg = 1e3
+!        pre_Cs = 1e1
+!        pre_RR_hat = 1e-1
+          pre_RR_hat = 1e-4
+          pre_kk = 1e2
+        else
+          pre_Cg = 1.
+          pre_Cs = 1.
+          pre_RR_hat = 1.
+          pre_kk = 1.
+        endif
+!
+!
+        if (.not. lpreactions) then
+          RR_hat(k1:k2,:) = 0.
+        else
+!
+          do k = k1,k2
 !
 !  The particle mass should not be allowed to decrease to less than
-!  one percent of ints initial mass. 
+!  one percent of ints initial mass. When particle reactions are
+!  switched off, the reaction rate is set to 0
 !
-        if (fp(k,imp) < fp(k,impinit)*0.01) then
-          RR_hat(k,:)=0.
-        else
-
-          do j = 1,N_surface_reactions
-            RR_hat(k,j) = K_k(k,j)*reaction_enhancement(j)
+            if (fp(k,imp) < fp(k,impinit)*0.01) then
+              RR_hat(k,:) = 0.
+              call fatal_error('particles_chemistry','particle consumed')
+            else
+!
+              if (idiag_Shchm /= 0) then
+                Sh_mean = 0.0
+              endif
+              do j = 1,N_surface_reactions
+                RR_hat(k,j) = K_k(k,j)*reaction_enhancement(j)
+!              if (k==k1) then
+!                print*, j,'-------------------------------------------'
+!                write(*,'(A12,12E12.3)' )'KK_kk       ', K_k(k1,:)
+!                write(*,'(A12,12E12.3)' )'RR_hat_kk   ', RR_hat(k1,:)
+!              endif
 !
 !  Take into account temperature dependance
 !
-            RR_hat(k,j) = RR_hat(k,j)*(fp(k,iTp)**T_k(j))
+                RR_hat(k,j) = RR_hat(k,j)*(fp(k,iTp)**T_k(j))
 !
-!  Calculation of the surface species concentration using the Baum and Street 
+!  Calculation of the surface species concentration using the Baum and Street
 !  algebraic equation
 !
-            if (lbaum_and_street) then
-              do i = 1,N_surface_reactants
-                if (nu(i,j) > 0) then
-                  ix0 = ineargrid(k,1)
+                if (lbaum_and_street) then
+                  do i = 1,N_surface_reactants
+                    if (nu(i,j) > 0) then
+                      ix0 = ineargrid(k,1)
 !
-!  k_im and kk are here without Cg as it cancels out!
+!  k_im and kk are here with Cg although it cancels out!
+!  k_im is only in the units used in the system
+!  for the quadratic equation, Cg(k) can be used without prefactor as it cancels out
+!  for kkcg, RR_hat (formerly K_k further up)
+!  has to be converted to the unit used in the system (m/s to cm/s)
 !
-                  k_im = Cg(k)*p%Diff_penc_add(ix0-nghost,jmap(i))/fp(k,iap)*pre_k
-                  kkcg= RR_hat(k,j)*Cg(k)*pre_kkcg
-                  root_term = sqrt(k_im**2 + kkcg**2 + 2*k_im*kkcg + 4*k_im*fp(k,isurf-1+i)*kkcg)
-!                print*, 'k_im: ', k_im
-!                print*,'kkcg: ', kkcg
-!                print*, 'root_term:',root_term
-!                print*, 'x_infty:', fp(k,isurf-1+i)
-                  x_mod = (-k_im-kkcg+root_term)/2/kkcg
-!                print*,'x_mod: ', x_mod
-                  RR_hat(k,j) = RR_hat(k,j)* &
-                      (pre_Cg * Cg(k)*x_mod)**nu(i,j)
+!  From Multiphase flows with Droplets and particles, p.62:
+!  Sh = 2+0.69*Re_rel**0.5 * Sc**0.33
+!
+                      if (.not. lsherwood_const) then
+                        Sh = 2.0 + 0.69 * rep(k)**0.5 * &
+                            (nuvisc(k)/p%Diff_penc_add(ix0-nghost,jmap(i)))**0.33
+                        if (Sh<2.0) call fatal_error('Sh under 2', 'pchemistry')
+                        if (idiag_Shchm /=0) then
+                          Sh_mean = Sh_mean + Sh
+                        endif
+                      endif
+                      k_im = Cg(k)*p%Diff_penc_add(ix0-nghost,jmap(i))*Sh/(2.0*fp(k,iap))
+                      kkcg = RR_hat(k,j)*Cg(k)*pre_kk
+!                  print*, 'k_im: ',k_im, 'kkcg: ', kkcg, 'ratio: ', kkcg/k_im
+                      root_term = sqrt(k_im**2 + kkcg**2 + 2*k_im*kkcg + 4*k_im*fp(k,isurf-1+i)*kkcg)
+                      x_mod = (-k_im-kkcg+root_term)/2/kkcg
+                      RR_hat(k,j) = RR_hat(k,j) * (pre_Cg * Cg(k)*x_mod)**nu(i,j)
+!                      print*, 'x_infty, xmod, ratio', fp(k,isurf-1+i), x_mod, x_mod/fp(k,isurf-1+i)
+!                    print*, 'k_im', k_im
+!                    print*, 'kkcg', kkcg
+!                    print*, 'xmod infos Cg:', Cg
+!                    print*, 'xmod:L ', x_mod
+!                    print*, 'RR_hat in xmod', RR_hat
+!                    print*, 'diff_coeff',p%Diff_penc_add(ix0-nghost,jmap(i))
+                    endif
+                  enddo
+!
+                else
+!
+!  Main loop for calculating the reaction rate, solid species
+!
+                  do i = 1,N_surface_reactants
+!
+                    if (nu(i,j) > 0.0) then
+                      RR_hat(k,j) = RR_hat(k,j)* (pre_Cg * Cg(k)*fp(k,isurf-1+i))**nu(i,j)
+!                   if (lparticles_adsorbed) print*, 'xsurf, intern: ', j,fp(k,isurf-1+i),nu(i,j)
+!                    print*, 'infos', RR_hat(k,j), pre_Cg, Cg(k), nu(i,j)
+                    endif
+!
+                    if (RR_hat(k,j) < 0.0 .or. RR_hat(k,j) /= RR_hat(k,j)) then
+                      print *, 'RR_hat(k,j), infos: ', RR_hat(k,j),j,i,fp(k,isurf-1+i)
+                      print *, 'pre_Cg, Cg(k),fp(k,isurf-1+i)),nu(i,j): ', &
+                          pre_Cg, Cg(k),fp(k,isurf-1+i),nu(i,j)
+                      call fatal_error('RR', 'RR_hat negative or not a number')
+                    endif
+!
+                  enddo
+!                if (k==k1 .and. j==N_surface_reactions) then
+!                  print*, 'Cg(k1)', Cg(k1)
+!                  write(*,'(A12,12E12.3)' )'RR_hat_surf   ', RR_hat(k1,:)
+!                endif
+!
                 endif
+!
+!  Main loop for calculating the reaction rate, adsorbed species
+!
+                if (N_adsorbed_species > 1) then
+                  do i = 1,N_adsorbed_species
+                    if (mu(i,j) > 0.0) then
+                      RR_hat(k,j) = RR_hat(k,j)*(pre_Cs*Cs(k,i))**mu(i,j)
+!                  if (lparticles_adsorbed) print*, 'adsorb, intern', j, Cs(k,i), mu(i,j)
+                    endif
+                  enddo
+!                if (k==k1) then
+!                  write(*,'(A12,12E12.3)' )'RR_hat_ads   ', RR_hat(k1,:)
+!                endif
+                endif
+!
               enddo
-            else
-              do i = 1,N_surface_reactants
-                if (nu(i,j) > 0) RR_hat(k,j) = RR_hat(k,j)* &
-                    (pre_Cg * Cg(k)*fp(k,isurf-1+i))**nu(i,j)
-              enddo
+!            print*, 'RR_hat2',RR_hat
             endif
-            if (N_adsorbed_species > 1) then
-              do i = 1,N_adsorbed_species
-                if (mu(i,j) > 0) RR_hat(k,j) = RR_hat(k,j)*(pre_Cs*Cs(k,i))**mu(i,j)
-              enddo
+!
+!  Add diagnostic output for the Sherwood number
+!
+            if (idiag_Shchm /= 0) then
+              p%sherwood(ix0-nghost) = p%sherwood(ix0-nghost)+Sh_mean
             endif
           enddo
         endif
-      enddo
+!
+!  Control if RR_hat is always positive
+!
+        if (minval(RR_hat) < 0.0) then
+!        writeformat = '(A12,I2,  E10.2)'
+          do k = k1,k2
+            print*, 'k, RR_hat: ',k, RR_hat(k,:)
+          enddo
+          call fatal_error('particles_chemistry after RR','RR_hat is negative')
+        endif
 !
 !  Make sure RR_hat is given in the right unit system (above it is always
 !  in SI units).
 !
-      RR_hat = pre_RR_hat*RR_hat
+        RR_hat = pre_RR_hat*RR_hat
+!      write(*,'(A20,12E12.3)' )'RR_hat after', RR_hat(k1,:)
 !
 ! Find the maximum possible carbon consumption rate (i.e. the rate
 ! experienced in the case where the effectiveness factor is unity).
 !
-      Rck_max = 0.
-      do k = k1,k2
-        do l = 1,N_surface_reactions
-          do i = 1,N_surface_species
-            Rck_max(k,l) = Rck_max(k,l)+mol_mass_carbon*RR_hat(k,l) &
-                *(nu_prime(i,l)-nu(i,l))*ac(i)
-          enddo
-        enddo
-      enddo
-!
-! Find molar reaction rate of adsorbed surface species
-      if (N_adsorbed_species > 1) then
+        Rck_max = 0.
         do k = k1,k2
           do l = 1,N_surface_reactions
-            do j = 1,N_adsorbed_species-1
+            do i = 1,N_surface_species
               Rck_max(k,l) = Rck_max(k,l)+mol_mass_carbon*RR_hat(k,l) &
-                  *(mu_prime(j,l)-mu(j,l))*aac(j)
+                  *(nu_prime(i,l)-nu(i,l))*ac(i)
             enddo
           enddo
         enddo
-      endif
+!
+! Find molar reaction rate of adsorbed surface species
+        if (N_adsorbed_species > 1) then
+          do k = k1,k2
+            do l = 1,N_surface_reactions
+              do j = 1,N_adsorbed_species-1
+                Rck_max(k,l) = Rck_max(k,l)+mol_mass_carbon*RR_hat(k,l) &
+                    *(mu_prime(j,l)-mu(j,l))*aac(j)
+              enddo
+            enddo
+          enddo
+        endif
 !
 !  Adapt the reaction rate according to the internal gradients,
 !  after thiele. (8th US combustion Meeting, Paper #070CO-0312)
 !  equation 56 ff.
 !
-      if (.not. lbaum_and_street .and. lthiele) then
-        call calc_effectiveness_factor(fp,ineargrid,p)
-        do j = 1,N_surface_reactions
-          RR_hat(:,j) = RR_hat(:,j) * effectiveness_factor_reaction(:,j)
+        if (.not. lbaum_and_street .and. lthiele) then
+          call calc_effectiveness_factor(fp,ineargrid,p)
+          do j = 1,N_surface_reactions
+            RR_hat(:,j) = RR_hat(:,j) * effectiveness_factor_reaction(:,j)
+          enddo
+        endif
+        do k = k1,k2
+          do l = 1, N_surface_reactions
+            if (RR_hat(k,l) /= RR_hat(k,l)) then
+              print*, 'infos from after effectiveness',RR_hat(k,l), effectiveness_factor_reaction(k,l)
+              call fatal_error('RR_hat', 'RR is nan')
+            endif
+          enddo
         enddo
+!       if (lparticles_adsorbed) print*, 'effectiveness_factor',effectiveness_factor_reaction
+!
+!  Control if RR_hat is always positive
+!
+        if (minval(RR_hat) < 0.0) then
+          do k = k1,k2
+            print*, 'k, RR_hat: ',k, RR_hat(k,:)
+          enddo
+          call fatal_error('particles_chemistry after effectiveness', &
+              'RR_hat is negative')
+        endif
+!
+        if (.not. lsherwood_const) then
+          deallocate(rep)
+          deallocate(nuvisc)
+        endif
+!
+      endif
+!
+      if (ldiagnos) then
+        if (idiag_Shchm /= 0) then
+          call sum_mn_name(p%sherwood/npar/sh_counter*nwgrid,idiag_Shchm)
+        endif
       endif
 !
     endsubroutine calc_RR_hat
@@ -1185,25 +1427,38 @@ module Particles_chemistry
 !
     subroutine calc_ndot_mdot_R_j_hat(fp)
       real, dimension(:,:) :: fp
-      integer :: n, i, j, k, l, k1, k2
+      integer :: n, i, j, k, l, k1, k2, index1
 !
       ndot = 0.
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
       Rck = 0.
 !
-      do k = k1,k2
-        do l = 1,N_surface_reactions
-          do i = 1,N_surface_species
-            Rck(k,l) = Rck(k,l)+mol_mass_carbon*RR_hat(k,l) &
-                *(nu_prime(i,l)-nu(i,l))*ac(i)
-            ndot(k,i) = ndot(k,i)+RR_hat(k,l)*(nu_prime(i,l)-nu(i,l))*St(k)/ &
-                (fp(k,iap)**2*4.*pi)
-          enddo
+      do l = 1,N_surface_reactions
+        do i = 1,N_surface_species
+          Rck(k1:k2,l) = Rck(k1:k2,l)+mol_mass_carbon*RR_hat(k1:k2,l) &
+              *(nu_prime(i,l)-nu(i,l))*ac(i)
+!
+!  ndot is the molar flux of species per particle sphere surface area.
+!  if lsurface_nopores, St and the sphere surface cancel each other
+!
+          ndot(k1:k2,i) = ndot(k1:k2,i)+RR_hat(k1:k2,l)*(nu_prime(i,l)-nu(i,l))*St(k1:k2)/ &
+              (fp(k1:k2,iap)*fp(k1:k2,iap)*4.*pi)
         enddo
       enddo
 !
+!         if (lparticles_adsorbed) then
+!        print*, 'RR_h after all: ', RR_hat
+!           print*, 'St:   ', St
+!        print*, 'ndot: ', ndot
+!         endif
+!
 ! Find molar reaction rate of adsorbed surface species
+! if the species is consumed (mu> 1) its contribution to R_j_hat
+! is negative, and correspondingly positive if it is produced
+! R_ck is the carbon mass loss per surface area, and a negative value means
+! that the particle is losing mass
+!
       if (N_adsorbed_species > 1) then
         R_j_hat = 0.
         do k = k1,k2
@@ -1216,19 +1471,35 @@ module Particles_chemistry
           enddo
         enddo
       endif
+!      do j = 1,N_adsorbed_species-1
+!        write(*,'(A12,10E12.5)' )'R_j_hatc', R_j_hat(k1:k2,j)
+!      enddo
+!
 !
 ! Find mdot_ck
+! mdot_ck is the mass loss per surface reaction,
+! a positive mdot_ck means the particle is losing mass
+!
+      mass_loss = 0.0
       do k = k1,k2
         do l = 1,N_surface_reactions
           mdot_ck(k,l) = -St(k)*Rck(k,l)
         enddo
-        mass_loss(k) = sum(mdot_ck(k,:))
+!        mass_loss(k) = sum(mdot_ck(k,:))
+        do i = 1,N_surface_species
+          index1 = jmap(i)
+          mass_loss(k) = mass_loss(k)+ndot(k,i)*fp(k,iap)**2*4.*pi*species_constants(index1,imass)
+        enddo
+!        if (lparticles_adsorbed) then
+!          print*, 'mdot, sum(mdot): ', mdot_ck, sum(mdot_ck)
+!          print*, 'massloss in chem: ', mass_loss
+!        endif
       enddo
 !
 ! Find the sum of all molar fluxes at the surface
-      do k = k1,k2
-        ndot_total(k) = sum(ndot(k,:))
-      enddo
+!
+      ndot_total(k1:k2) = sum(ndot(k1:k2,:),DIM=2)
+!
     endsubroutine calc_ndot_mdot_R_j_hat
 ! ******************************************************************************
 !  Get area specific molar reaction rate
@@ -1284,9 +1555,8 @@ module Particles_chemistry
       real, dimension(:), allocatable :: volume, porosity
       integer :: i, dep, k, k1, k2,l
       integer, dimension(mpar_loc,3) :: ineargrid
-      real :: r_f,test
+      real :: r_f
 !
-      test = 2.0
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
 !
@@ -1308,6 +1578,8 @@ module Particles_chemistry
           enddo
         enddo
       enddo
+!      print*, 'RR_hat(k,l)', RR_hat(1,:)
+!      print*, 'R_i_hat',R_i_hat(1,:)
 !
 ! Find particle volume
       do k = k1,k2
@@ -1325,32 +1597,58 @@ module Particles_chemistry
         do i = 1,N_surface_reactants
           tmp3 = 8*Rgas*fp(k,iTp)/(pi*(species_constants(jmap(i),imass)))
           Knudsen = 2*pore_radius(k)*porosity(k)*sqrt(tmp3)/(3*tortuosity)
+!
           tmp1 = 1./p%Diff_penc_add(ineargrid(k,1)-nghost,jmap(i))
           tmp2 = 1./Knudsen
           D_eff(k,i) = 1./(tmp1+tmp2)
+!          print*, 'tmp1',tmp1
+!          print*, 'tmp2',tmp2
         enddo
       enddo
+!      print*, 'Knudsen', Knudsen
+!      print*, 'diff',p%Diff_penc_add(ineargrid(1,1)-nghost,jmap(1:N_surface_reactants))
 !      print*,'D_eff', D_eff
 !
 !  Find thiele modulus and effectiveness factor
-!  JONAS: was with volume(k) before,
 !
       do k = k1,k2
         do i = 1,N_surface_reactants
-          if (R_i_hat(k,i) < 0.0) then
+          if (R_i_hat(k,i) < 0.0 .and. fp(k,isurf-1+1) > 0.0) then
             thiele(k,i) = fp(k,iap)*sqrt(-R_i_hat(k,i)*St(k)/ &
-                (fp(k,imp)*Cg(k)*fp(k,isurf-1+i)*D_eff(k,i)))
+                (volume(k)*Cg(k)*fp(k,isurf-1+i)*D_eff(k,i)))
           else
             thiele(k,i) = 1.e-2
           endif
-!          print*, 'thiele: ',thiele
+          if (thiele(k,i) /= thiele(k,i)) then
+            print*, 'eff rp', fp(k,iap)
+            print*, '-R_i_hat',-R_i_hat(k,i)
+            print*, 'St(k)',St(k)
+            print*, 'Cg(k)', Cg(k)
+            print*, 'fp(k,isurf)', fp(k,isurf-1+i)
+            print*, 'D_eff',D_eff(k,i)
+            call fatal_error('thiele','thiele is nan')
+          endif
+!
 !
 ! calculate the effectivenes factor (all particles, all reactants)
           effectiveness_factor_species(k,i) = 3/thiele(k,i)* &
               (1./tanh(thiele(k,i))-1./thiele(k,i))
+          if (effectiveness_factor_species(k,i) /= effectiveness_factor_species(k,i)) then
+            print*, 'eff infos', thiele(k,i)
+            call fatal_error('eff','eff is nan')
+          endif
 !          print*,'effectiveness', effectiveness_factor_species
         enddo
       enddo
+      print*, 'R_i_hat',R_i_hat(1,:)
+      print*, 'rp', fp(k,iap)
+      print*, 'St(k)',St(1)
+      print*, 'Cg(k)', Cg(1)
+      print*, 'volume', volume(:)
+      print*, 'fp(k,isurf)', fp(1,isurf:isurf+N_surface_reactants)
+      print*, 'D_eff',D_eff(1,:)
+      print*, 'thiele: ',thiele
+!      call fatal_error('thiele','thiele is nan')
 !
 !  The mean effectiveness factor can be found from the above by using R_i_max
 !  (all particles, all reactants)
@@ -1373,13 +1671,21 @@ module Particles_chemistry
                 +R_i_hat(k,i)*effectiveness_factor_species(k,i)
           endif
         enddo
+        if (sum_eta_i_R_i_hat_max(k) /= sum_eta_i_R_i_hat_max(k)) then
+          print*, 'rihat infos',sum_eta_i_R_i_hat_max(k),effectiveness_factor_species(k,:)
+          call fatal_error('rihat','is nan from eff')
+        endif
       enddo
 !      print*,'sum_eta_i_R_i_hat_max',sum_eta_i_R_i_hat_max
 !      print*,'sum_R_i_hat_max',sum_R_i_hat_max
 !
       do k = k1,k2
-        if (sum_R_i_hat_max(k)/=0.0) then
+        if (sum_R_i_hat_max(k) /= 0.0) then
           effectiveness_factor(k) = sum_eta_i_R_i_hat_max(k)/sum_R_i_hat_max(k)
+        endif
+        if (effectiveness_factor(k) /= effectiveness_factor(k)) then
+          print*, 'eff infos',sum_eta_i_R_i_hat_max(k),sum_R_i_hat_max(k)
+          call fatal_error('effectiveness factor','is nan from sum_eta')
         endif
       enddo
 !
@@ -1403,6 +1709,9 @@ module Particles_chemistry
             effectiveness_factor_reaction(k,l) = 1
           endif
         enddo
+        if (effectiveness_factor(k) /= effectiveness_factor(k)) then
+          call fatal_error('effectiveness factor','is nan from div')
+        endif
       enddo
 !
       deallocate(R_i_hat)
@@ -1428,24 +1737,23 @@ module Particles_chemistry
       k2 = k2_imn(imn)
 !
 ! Unit: J/(mol)
-      do k = k1,k2
-        if (inuH2O > 0) surface_species_enthalpy(k,inuH2O) = &
-            -242.18e3-(5.47*fp(k,iTp))
-        if (inuO2 > 0)  surface_species_enthalpy(k,inuO2) = 0.
-        if (inuCO2 > 0) surface_species_enthalpy(k,inuCO2) = &
-            -392.52e3-(2.109*fp(k,iTp))
-        if (inuH2 > 0)  surface_species_enthalpy(k,inuH2 ) = 0.
-        if (inuCO > 0)  surface_species_enthalpy(k,inuCO ) = &
-            -105.95e3-6.143*fp(k,iTp)
-        if (inuCH > 0)  surface_species_enthalpy(k,inuCH ) = 594.13e3
-        if (inuHCO > 0) surface_species_enthalpy(k,inuHCO) = &
-            45.31e3-(5.94*fp(k,iTp))
-        if (inuCH2 > 0) surface_species_enthalpy(k,inuCH2) = &
-            387.93e3-(5.8*fp(k,iTp))
-        if (inuCH4 > 0) surface_species_enthalpy(k,inuCH4) = -75e3
-        if (inuCH3 > 0) surface_species_enthalpy(k,inuCH3) = &
-            144.65e3-(6.79*fp(k,iTp))
-      enddo
+      if (inuH2O > 0) surface_species_enthalpy(k1:k2,inuH2O) = &
+          -242.18e3-(5.47*fp(k1:k2,iTp))
+      if (inuO2 > 0)  surface_species_enthalpy(k1:k2,inuO2) = 0.
+      if (inuCO2 > 0) surface_species_enthalpy(k1:k2,inuCO2) = &
+          -392.52e3-(2.109*fp(k1:k2,iTp))
+      if (inuH2 > 0)  surface_species_enthalpy(k1:k2,inuH2 ) = 0.
+      if (inuCO > 0)  surface_species_enthalpy(k1:k2,inuCO ) = &
+          -105.95e3-6.143*fp(k1:k2,iTp)
+      if (inuCH > 0)  surface_species_enthalpy(k1:k2,inuCH ) = 594.13e3
+      if (inuHCO > 0) surface_species_enthalpy(k1:k2,inuHCO) = &
+          45.31e3-(5.94*fp(k1:k2,iTp))
+      if (inuCH2 > 0) surface_species_enthalpy(k1:k2,inuCH2) = &
+          387.93e3-(5.8*fp(k1:k2,iTp))
+      if (inuCH4 > 0) surface_species_enthalpy(k1:k2,inuCH4) = -75e3
+      if (inuCH3 > 0) surface_species_enthalpy(k1:k2,inuCH3) = &
+          144.65e3-(6.79*fp(k1:k2,iTp))
+!
     endsubroutine calc_surf_enthalpy
 ! ******************************************************************************
 !  Calculate the specific entropy of the gas phase species at the
@@ -1461,31 +1769,29 @@ module Particles_chemistry
       k2 = k2_imn(imn)
 !
 ! JONAS: units are in j/(mol*K)
-      do k = k1,k2
-        if (inuH2O > 0) surface_species_entropy(k,inuH2O) = &
-            189.00+(0.0425*fp(k,iTp))
-        if (inuO2 > 0)  surface_species_entropy(k,inuO2) = &
-            222.55+(0.0219*fp(k,iTp))
-        if (inuCO2 > 0) surface_species_entropy(k,inuCO2) = &
-            212.19+(0.0556*fp(k,iTp))
-        if (inuH2 > 0)  surface_species_entropy(k,inuH2 ) = &
-            133.80+(0.0319*fp(k,iTp))
-        if (inuCO > 0)  surface_species_entropy(k,inuCO ) = &
-            199.35+(0.0342*fp(k,iTp))
+      if (inuH2O > 0) surface_species_entropy(k1:k2,inuH2O) = &
+          189.00+(0.0425*fp(k1:k2,iTp))
+      if (inuO2 > 0)  surface_species_entropy(k1:k2,inuO2) = &
+          222.55+(0.0219*fp(k1:k2,iTp))
+      if (inuCO2 > 0) surface_species_entropy(k1:k2,inuCO2) = &
+          212.19+(0.0556*fp(k1:k2,iTp))
+      if (inuH2 > 0)  surface_species_entropy(k1:k2,inuH2 ) = &
+          133.80+(0.0319*fp(k1:k2,iTp))
+      if (inuCO > 0)  surface_species_entropy(k1:k2,inuCO ) = &
+          199.35+(0.0342*fp(k1:k2,iTp))
 !
 ! taken from chemistry  webbook (1bar)
-        if (inuCH > 0)  surface_species_entropy(k,inuCH ) = 183.00
-        if (inuHCO > 0) surface_species_entropy(k,inuHCO) = &
-            223.114+(0.0491*fp(k,iTp))
-        if (inuCH2 > 0) surface_species_entropy(k,inuCH2) = &
-            193.297+(0.0467*fp(k,iTp))
+      if (inuCH > 0)  surface_species_entropy(k1:k2,inuCH ) = 183.00
+      if (inuHCO > 0) surface_species_entropy(k1:k2,inuHCO) = &
+          223.114+(0.0491*fp(k1:k2,iTp))
+      if (inuCH2 > 0) surface_species_entropy(k1:k2,inuCH2) = &
+          193.297+(0.0467*fp(k1:k2,iTp))
 !
 ! taken from chemistry webbook (1bar)
-        if (inuCH4 > 0) surface_species_entropy(k,inuCH4) = 189.00
-        if (inuCH3 > 0) surface_species_entropy(k,inuCH3) = &
-            190.18+(0.0601*fp(k,iTp))
+      if (inuCH4 > 0) surface_species_entropy(k1:k2,inuCH4) = 189.00
+      if (inuCH3 > 0) surface_species_entropy(k1:k2,inuCH3) = &
+          190.18+(0.0601*fp(k1:k2,iTp))
 !
-      enddo
     endsubroutine calc_surf_entropy
 ! ******************************************************************************
 !  Calculate the specific entropy of adsorbed species for each particle
@@ -1500,36 +1806,34 @@ module Particles_chemistry
       k2 = k2_imn(imn)
 !
 ! Unit: J/(mol*K)
-      do k = k1,k2
 !
-        if (imuadsO > 0)    then
-          adsorbed_species_entropy(k,imuadsO) = &
-              (164.19+(0.0218*fp(k,iTp)))*0.72 - (3.3*gas_constant)
-        endif
+      if (imuadsO > 0)    then
+        adsorbed_species_entropy(k1:k2,imuadsO) = &
+            (164.19+(0.0218*fp(k1:k2,iTp)))*0.72 - (3.3*gas_constant)
+      endif
 !
 ! this is guessed
-        if (imuadsO2 > 0)   then
-          adsorbed_species_entropy(k,imuadsO2) =  &
-              2*adsorbed_species_entropy(k,imuadsO)
-        endif
-        if (imuadsOH > 0)   then
-          adsorbed_species_entropy(k,imuadsOH) = &
-              ((0.0319*fp(k,iTp)) + 186.88) * 0.7 - (3.3*gas_constant)
-        endif
-        if (imuadsH > 0)    then
-          adsorbed_species_entropy(k,imuadsH) = &
-              (117.49+(0.0217*fp(k,iTp)))*0.54 - (3.3*gas_constant)
-        endif
-        if (imuadsCO > 0)   then
-          adsorbed_species_entropy(k,imuadsCO) = &
-              (199.35+(0.0342*fp(k,iTp))) * &
-              0.6*(1+(1.44e-4*fp(k,iTp))) - (3.3*gas_constant)
-        endif
+      if (imuadsO2 > 0)   then
+        adsorbed_species_entropy(k1:k2,imuadsO2) =  &
+            2*adsorbed_species_entropy(k1:k2,imuadsO)
+      endif
+      if (imuadsOH > 0)   then
+        adsorbed_species_entropy(k1:k2,imuadsOH) = &
+            ((0.0319*fp(k1:k2,iTp)) + 186.88) * 0.7 - (3.3*gas_constant)
+      endif
+      if (imuadsH > 0)    then
+        adsorbed_species_entropy(k1:k2,imuadsH) = &
+            (117.49+(0.0217*fp(k1:k2,iTp)))*0.54 - (3.3*gas_constant)
+      endif
+      if (imuadsCO > 0)   then
+        adsorbed_species_entropy(k1:k2,imuadsCO) = &
+            (199.35+(0.0342*fp(k1:k2,iTp))) * &
+            0.6*(1+(1.44e-4*fp(k1:k2,iTp))) - (3.3*gas_constant)
+      endif
 !
 ! taken from nist
-        if (imufree > 0)    adsorbed_species_entropy(k,imufree) = 0
+      if (imufree > 0)    adsorbed_species_entropy(k1:k2,imufree) = 0
 !
-      enddo
     endsubroutine calc_ads_entropy
 ! ******************************************************************************
 !  Calculate the specific enthalpy of adsorbed species for each particle
@@ -1555,6 +1859,7 @@ module Particles_chemistry
       if (imuadsCO > 0)   adsorbed_species_enthalpy(k1:k2,imuadsCO) = &
           -199.94e3 - (0.0167e3*(fp(k1:k2,iTp)-273.15))
       if (imufree > 0)    adsorbed_species_enthalpy(k1:k2,imufree) = 0.
+!
     endsubroutine calc_ads_enthalpy
 ! ******************************************************************************
 !  Wrapper routine to calculate all terms needed to be used in the variables to
@@ -1569,7 +1874,7 @@ module Particles_chemistry
       real, dimension(mx,my,mz,mfarray) :: f
       integer, dimension(mpar_loc,3) :: ineargrid
       type (pencil_case) :: p
-      integer :: k1,k2      
+      integer :: k1, k2
 !
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
@@ -1586,36 +1891,29 @@ module Particles_chemistry
         call calc_conversion(fp)
         call calc_St(fp)
 !
-        call calc_ads_entropy(fp)
+        if (reverse_reactions_present) call calc_ads_entropy(fp)
         call calc_ads_enthalpy(fp)
-        call calc_surf_entropy(fp)
+        if (reverse_reactions_present) call calc_surf_entropy(fp)
         call calc_surf_enthalpy(fp)
 !
         call calc_enthalpy_of_reaction()
-        call calc_entropy_of_reaction()
+        if (reverse_reactions_present) call calc_entropy_of_reaction()
 !
         call calc_K_k(f,fp,p,ineargrid)
-        call calc_Cg(fp,p,ineargrid)
+        call calc_Cg(f,fp,p,ineargrid)
         if (N_adsorbed_species > 1) call calc_Cs(fp)
         call calc_A_p(fp)
         call calc_RR_hat(f,fp,ineargrid,p)
 !
         if (lreactive_heating) then
           call calc_q_reac()
-!JONAS:  Commented out the calculation of the Nusselt number for now
-!JONAS:  since this has to be fixed before it can be used.
-!        call calc_Nusselt()
-          Nu_p = 2.
-!JONAS:  We also need to make a subroutine calculcating the Sherwood
-!JONAS:  number.
         else
-          Nu_p = 2.
           q_reac = 0.0
         endif
 !
         call calc_ndot_mdot_R_j_hat(fp)
         call calc_R_c_hat()
-    endif
+      endif
 !
     endsubroutine calc_pchemistry_pencils
 ! ******************************************************************************
@@ -1652,10 +1950,12 @@ module Particles_chemistry
       allocate(surface_species_enthalpy(k1:k2,N_surface_species), STAT=stat)
       if (stat > 0) call fatal_error('allocate_variable_pencils', &
           'Could not allocate memory for surface_species_enthalpy')
-      allocate(surface_species_entropy(k1:k2,N_surface_species), STAT=stat)
-      allocate(adsorbed_species_entropy(k1:k2,N_adsorbed_species), STAT=stat)
-      if (stat > 0) call fatal_error('allocate_variable_pencils', &
-          'Could not allocate memory for adsorbed_species_entropy')
+      if (reverse_reactions_present) then
+        allocate(surface_species_entropy(k1:k2,N_surface_species), STAT=stat)
+        allocate(adsorbed_species_entropy(k1:k2,N_adsorbed_species), STAT=stat)
+        if (stat > 0) call fatal_error('allocate_variable_pencils', &
+            'Could not allocate memory for adsorbed_species_entropy')
+      endif
       allocate(adsorbed_species_enthalpy(k1:k2,N_adsorbed_species), STAT=stat)
       if (stat > 0) call fatal_error('allocate_variable_pencils', &
           'Could not allocate memory for adsorbed_species_enthalpy')
@@ -1706,9 +2006,6 @@ module Particles_chemistry
       allocate(A_p(k1:k2), STAT=stat)
       if (stat > 0) call fatal_error('allocate_variable_pencils', &
           'Could not allocate memory for A_p')
-      allocate(Nu_p(k1:k2), STAT=stat)
-      if (stat > 0) call fatal_error('allocate_variable_pencils', &
-          'Could not allocate memory for Nu_p')
       allocate(mdot_ck(k1:k2,N_surface_reactions),STAT=stat)
       if (stat > 0) call fatal_error('register_dep_pchem', &
           'Could not allocate memory for mdot_ck')
@@ -1724,8 +2021,8 @@ module Particles_chemistry
 !
       if (npar_imn(imn) /= 0) then
         deallocate(surface_species_enthalpy)
-        deallocate(surface_species_entropy)
-        deallocate(adsorbed_species_entropy)
+        if (reverse_reactions_present) deallocate(surface_species_entropy)
+        if (reverse_reactions_present) deallocate(adsorbed_species_entropy)
         deallocate(adsorbed_species_enthalpy)
         deallocate(thiele)
         deallocate(effectiveness_factor)
@@ -1745,7 +2042,6 @@ module Particles_chemistry
         deallocate(Cg)
         deallocate(A_p)
         deallocate(q_reac)
-        deallocate(Nu_p)
         deallocate(mdot_ck)
         deallocate(mass_loss)
       endif
@@ -1804,9 +2100,9 @@ module Particles_chemistry
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
 !
-      do k = k1,k2
-        rho_p(k) = fp(k,imp) / (4./3. *pi * fp(k,iap)**3)
-      enddo
+      rho_p(k1:k2) = fp(k1:k2,imp) / &
+          (4./3. *pi * fp(k1:k2,iap)*fp(k1:k2,iap)*fp(k1:k2,iap))
+!
     endsubroutine calc_rho_p
 ! ******************************************************************************
 !  Looks for terms of ^x.yz after the species for arbitrary reaction order
@@ -1855,43 +2151,46 @@ module Particles_chemistry
     subroutine print_debug_info()
       integer :: k
 !
-      writeformat = '(A12," ",I4,  F7.2)'
-      write (writeformat(13:14),'(I2)') N_surface_species
+      print*, 'N_surface_species'
+      print*, N_surface_species
+!
+      print*, 'N_surface_reactants'
+      print*, N_surface_reactants
+      print*, 'N_adsorbed_species'
+      print*, N_adsorbed_species
 !
       do k = 1,N_surface_reactions
-        write (*,writeformat) 'nu=',k,nu(:,k)
-      enddo
-!
-      do k = 1,N_surface_reactions
-        write (*,writeformat) 'nu_prime=',k,nu_prime(:,k)
-      enddo
-!
-      write (writeformat(13:14),'(I2)') N_adsorbed_species
-!
-      do k = 1,N_surface_reactions
-        write (*,writeformat) 'mu=',k,mu(:,k)
+        print*, 'nu=',k,nu(:,k)
       enddo
 !
       do k = 1,N_surface_reactions
-        write (*,writeformat) 'mu_prime=',k,mu_prime(:,k)
+        print*, 'nu_prime=',k,nu_prime(:,k)
       enddo
 !
       do k = 1,N_surface_reactions
-        write (*,'(A12,I4,2E12.5)') 'ER_k, B_k=',k,B_k(k),ER_k(k)/ (gas_constant)
-      enddo
-      do k = 1,N_surface_reactions
-        write (*,'(A12,I4,E12.5)') 'Dngas',k,dngas(k)
-      enddo
-      do k = 1,N_surface_reactions
-        write (*,'(A12,I4,E12.5)') 'sigma',k,sigma_k(k)
-      enddo
-      do k = 1,N_surface_reactions
-        write (*,'(A12,I4,I4)') 'dep',k,dependent_reactant(k)
+        print*, 'mu=',k,mu(:,k)
       enddo
 !
-      write (*,'(A20," ",10I4)') 'jmap=', jmap
-      write (*,'(A20," ",10F4.0)') 'ac=',ac
-      write (*,'(A20," ",10F4.0)') 'site_occupancy=',aac
+      do k = 1,N_surface_reactions
+        print*, 'mu_prime=',k,mu_prime(:,k)
+      enddo
+!
+      do k = 1,N_surface_reactions
+        print*,  'ER_k, B_k=',k,B_k(k),ER_k(k)
+      enddo
+      do k = 1,N_surface_reactions
+        print*, 'Dngas',k,dngas(k)
+      enddo
+      do k = 1,N_surface_reactions
+        print*, 'sigma',k,sigma_k(k)
+      enddo
+! do k = 1,N_surface_reactions
+!   print*,  'dep',k,dependent_reactant(k)
+! enddo
+!
+      print*,   'jmap=', jmap
+      print*,    'ac=',ac
+      print*,    'site_occupancy=',aac
     endsubroutine print_debug_info
 ! ******************************************************************************
 !  Calculation of K_k from the Arrhenius factors
@@ -1919,7 +2218,7 @@ module Particles_chemistry
             delta_E = sigma_k(l)*6
             dE = 2*delta_E/(N_iter-1)
             energy = ER_k(l)*gas_constant-delta_E
-            if (energy < 0) then
+            if (energy < 0 .and. lroot) then
               print*,'k,delta_E,sigma_k(k),ER_k(k)=', l,delta_E,sigma_k(l),ER_k(l)
               call fatal_error('get_reaction_rates_solid', &
                   'delta_E is too large!')
@@ -1949,13 +2248,14 @@ module Particles_chemistry
 !
       if (t < startup_time) then
         startup_quench = (tanh(6*(t-startup_time/2)/(startup_time))+1.0)/2.
-        if (iter < 1) startup_quench = 0.
+        if (startup_quench  <  1e-15) startup_quench = 1e-15
         K_k = K_k*startup_quench
       endif
-!      print*,'k_k   ', k_k
-!      print*,'B_k   ', B_k
-!      print*,'ER_k  ', ER_k
-!      print*,'fp(T) ',fp(:,iTp)
+!
+!      print*, 'K_k infos in routine', K_k
+!      print*, 'B_k', B_k
+!      print*, 'ER_k', ER_k
+!      print*, 'fp', fp(1,iTp)
 !
     endsubroutine calc_K_k
 ! ******************************************************************************
@@ -1963,21 +2263,60 @@ module Particles_chemistry
 !
 !  oct-14/Jonas: coded
 !
-    subroutine calc_Cg(fp,p,ineargrid)
+    subroutine calc_Cg(f,fp,p,ineargrid)
       real, dimension(:,:) :: fp
+      real, dimension(:,:,:,:) :: f
       integer :: k, k1, k2
-      integer :: ix0
-      real :: Tfilm
+      integer, dimension(:), allocatable :: ix0
+      real, dimension(:), allocatable :: Tfilm
       type (pencil_case) :: p
       integer, dimension(:,:) :: ineargrid
 !
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
 !
-      do k = k1,k2
-        Tfilm=fp(k,iTp)+(interp_TT(k)-fp(k,iTp))/3.
-        Cg(k) = interp_pp(k)/(Rgas*Tfilm)
-      enddo
+      allocate(Tfilm(k1:k2))
+      allocate(ix0(k1:k2))
+!
+      if (nxgrid == 1 .and. nygrid == 1 .and. nzgrid == 1) then
+        if (ltemperature_nolog) then
+          Tfilm(k1:k2) = fp(k1:k2,iTp)+(f(4,4,4,iTT)-fp(k1:k2,iTp))/3.
+!         print*, 'nolog'
+        else
+          Tfilm(k1:k2) = fp(k1:k2,iTp)+(exp(f(4,4,4,ilnTT))-fp(k1:k2,iTp))/3.
+!          print*, 'log'
+        endif
+        ix0 = ineargrid(k1:k2,1)
+        Cg(k1:k2) = p%pp(ix0-nghost)/(Rgas*Tfilm(k1:k2))
+!        print*, 'p%pp(ix0-nghost)',  p%pp(ix0-nghost)
+!        print*,    'Cg(k1:k2)',   Cg(k1:k2)
+!        do k = k1,k2
+!          if (Cg(k)<0.0) then
+!            print*, 'Cg neg:', p%pp,Tfilm(k),Rgas,Cg(k),k
+!          endif
+!        enddo
+      else
+        Tfilm(k1:k2) = fp(k1:k2,iTp)+(interp_TT(k1:k2)-fp(k1:k2,iTp))/3.
+        Cg(k1:k2) = interp_pp(k1:k2)/(Rgas*Tfilm(k1:k2))
+      endif
+!
+!      print*, 'Cg infos', Cg(k1)
+!     print*, '------------------'
+!      print*,'tt on particle',f(4,4,4,iTT)
+!      print*,'tt on domain',f(:,:,:,iTT)
+!      print*,'lntt on domain',f(:,:,:,ilnTT)
+!     print*,f(4,4,4,ilnTT)
+!     print*, '------------------'
+!     print*,fp(k1,iTp)
+!     print*, '------------------'
+!      print*,'pp on particle',f(4,4,4,ipp)
+!      print*,'ppencil on particle',p%pp
+!      print*, ''
+!     print*,interp_pp(k1)
+!     print*, '------------------'
+      deallocate(Tfilm)
+      deallocate(ix0)
+!
     endsubroutine calc_Cg
 ! ******************************************************************************
 !  Calculate particle surface area
@@ -1992,6 +2331,7 @@ module Particles_chemistry
       k2 = k2_imn(imn)
 !
       A_p(k1:k2) = 4 * pi * fp(k1:k2,iap) * fp(k1:k2,iap)
+!
     endsubroutine calc_A_p
 ! ******************************************************************************
 !  calculate site concentration
@@ -2005,12 +2345,10 @@ module Particles_chemistry
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
 !
-      do k = k1,k2
-        do i = 1,N_adsorbed_species-1
-          Cs(k,i) = fp(k,iads+i-1)
-        enddo
-        Cs(k,N_adsorbed_species) = 1 - sum(Cs(k,1:N_adsorbed_species-1))
+      do i = 1,N_adsorbed_species-1
+        Cs(k1:k2,i) = fp(k1:k2,iads+i-1)
       enddo
+      Cs(k1:k2,N_adsorbed_species) = 1 - sum(Cs(k1:k2,1:N_adsorbed_species-1),DIM=2)
 !
       Cs = Cs * total_carbon_sites
     endsubroutine calc_Cs
@@ -2027,61 +2365,15 @@ module Particles_chemistry
       k2 = k2_imn(imn)
 !
       q_reac = 0.0
-      do k = k1,k2
-        do i = 1,N_surface_reactions
-          q_reac(k) = q_reac(k)+RR_hat(k,i)*St(k)*(-heating_k(k,i))
-        enddo
-      enddo
+      q_reac(k1:k2) = sum(RR_hat(k1:k2,1:N_surface_reactions)* &
+          (-heating_k(k1:k2,1:N_surface_reactions)),DIM = 2)
+      q_reac(k1:k2) = q_reac(k1:k2)*St(k1:k2)
+!      print*, 'q_reac, chemistry:', q_reac
+!      print*, 'RR_hat, chemistry:', RR_hat
+!      print*, 'heating_k, chemistry:', heating_k
 !
     endsubroutine calc_q_reac
-! ******************************************************************************
-!
-!  Calculate the Nusselt number of each particle. This is still incomplete
-!
-!  oct-14/Jonas: coded
-!
-    subroutine calc_Nusselt()
-!
-      use SharedVariables, only: put_shared_variable
-!
-      integer :: k, k1, k2
-      real :: Pr_g, Sc_g, rep, ierr
-!
-      k1 = k1_imn(imn)
-      k2 = k2_imn(imn)
-!
-!  JONAS: access to some chemistry variables as well to particles_dust for rep(k)
-!  for Pr and Sc is needed, these are only placeholders!!!
-!
-      call fatal_error('calc_Nusselt', &
-          'Prandtl, Schmidt and Reynolds number are wrong!')
-      !NILS: We must do this correctly now, otherwise we are likely to
-      !NILS: forget and we will get wrong results.
-      Pr_g = 0.7
-      Sc_g = 0.65
-      rep = 0.0002
-!
-      do k = k1,k2
-!  case from the paper "Dimensionless heat-mass transfer coefficients
-!  for forced convection around a sphere: a general low
-!  Reynolds number correlation
-        if (rep < 3.5) then
-          Nu_p(k) = 0.5+0.5*(1+2*rep*Pr_g)**(1./3.)
-!  First case in "The effect of particle packing on the Nusselt
-!  number in a cluster of particles
-        elseif (rep >= 3.5 .and. rep <= 7.6e4 .and. Pr_g >= 0.7 .and. Pr_g <= 380.) then
-          Nu_p(k) = 2.0+(0.4*rep**0.5+0.06*rep**0.67)* Pr_g**0.4
-        else
-          Nu_p = 2.0
-        endif
-      enddo
-!
-!    call put_shared_variable('Nu_p',Nu_p,ierr)
-!    if (ierr/=0) call fatal_error('particles_chemistry:',&
-!        'failed to put Nu_p')
-!
-    endsubroutine calc_Nusselt
-! ******************************************************************************
+! *******************************************************************************
 !  This subroutine parses trough the list of elements of the mechanics.in
 !  and looks for terms of the form T^x.yz where x.yz is a real number.
 !  This is saved in T_k and is for temperature dependent reactions
@@ -2225,12 +2517,16 @@ module Particles_chemistry
 !  oct-14/Jonas: coded
 !
     subroutine get_mass_chemistry(mass_loss_targ,St_targ,Rck_max_targ)
-      real, dimension(:) :: mass_loss_targ, St_targ
+      real, dimension(:) :: St_targ, mass_loss_targ
       real, dimension(:,:) :: Rck_max_targ
 !
       mass_loss_targ = mass_loss
       St_targ = St
       Rck_max_targ = Rck_max
+!      if (lparticles_adsorbed) then
+!        print*, 'mass chemistry',mass_loss
+!      endif
+!
     endsubroutine get_mass_chemistry
 ! ******************************************************************************
 !  Get radius-chemistry dependent variables!
@@ -2258,23 +2554,28 @@ module Particles_chemistry
 !  Get surface-chemistry dependent variables!
 !  oct-14/Jonas: coded
 !
-    subroutine get_surface_chemistry(Cg_targ,ndot_targ)
-      real, dimension(:,:), optional :: ndot_targ
+    subroutine get_surface_chemistry(Cg_targ,ndot_targ,mass_loss_targ,enth_targ)
+      real, dimension(:,:), optional :: ndot_targ, enth_targ
       real, dimension(:) :: Cg_targ
+      real, dimension(:), optional :: mass_loss_targ
 !
       if (present(ndot_targ)) ndot_targ = ndot
+      if (present(enth_targ)) enth_targ = surface_species_enthalpy
+      if (present(mass_loss_targ)) mass_loss_targ = mass_loss
+!      print*, 'Cg_targ',Cg_targ(k1:k2)
+!      print*, 'Cg',Cg(k1:k2)
       Cg_targ = Cg
+!
 !
     endsubroutine get_surface_chemistry
 ! ****************************************************************************
 !  Get temperature-chemistry dependent variables!
 !  dec-11/Jonas: coded
 !
-    subroutine get_temperature_chemistry(q_reac_targ,Nu_p_targ,mass_loss_targ)
-      real, dimension(:) :: q_reac_targ, Nu_p_targ
+    subroutine get_temperature_chemistry(q_reac_targ,mass_loss_targ)
+      real, dimension(:) :: q_reac_targ
       real, dimension(:), optional :: mass_loss_targ
 !
-      Nu_p_targ = Nu_p
       q_reac_targ = q_reac
       if (present(mass_loss_targ)) mass_loss_targ = mass_loss
 !      q_reac_targ = q_reac
@@ -2318,4 +2619,147 @@ module Particles_chemistry
 !
     endsubroutine register_unit_system
 ! ******************************************************************************
+    subroutine set_RR(part,RR_method)
+      integer :: i, j, stat, RR
+      integer, dimension(:) :: RR_method
+      character(len=10), dimension(:,:) :: part
+      character(len=10) :: element
+!
+      do i = 1,size(part,2)
+        do j = 1,size(part,1)
+          element = part(j,i)
+          if (element(:2) == 'RR') then
+            read (element(3:4),'(I1.1)',iostat=stat) RR
+            RR_method(i) = RR
+          endif
+        enddo
+      enddo
+    endsubroutine set_RR
+!***********************************************************************
+    subroutine calc_pencil_rep_nu(fp,rep, nuvisc)
+!
+!  Calculate particle Reynolds numbers
+!
+!  16-jul-08/kapelrud: coded
+!  05-feb-16/jonas : inserted and adapted
+!
+      use Viscosity, only: getnu
+!
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
+      real, dimension(k1_imn(imn):k2_imn(imn)), intent(out) :: rep
+!
+      real, dimension(k1_imn(imn):k2_imn(imn)), intent(out) :: nuvisc
+      character(len=labellen) :: ivis=''
+      real :: nu_
+      integer :: k
+!
+      call getnu(nu_input=nu_,IVIS=ivis)
+      if (ivis == 'nu-const') then
+        nuvisc = nu_
+      elseif (ivis == 'nu-mixture') then
+        nuvisc = interp_nu
+      elseif (ivis == 'rho-nu-const') then
+        nuvisc = nu_/interp_rho(k1_imn(imn):k2_imn(imn))
+      elseif (ivis == 'sqrtrho-nu-const') then
+        nuvisc = nu_/sqrt(interp_rho(k1_imn(imn):k2_imn(imn)))
+      elseif (ivis == 'nu-therm') then
+        nuvisc = nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn)))
+      elseif (ivis == 'mu-therm') then
+        nuvisc = nu_*sqrt(interp_TT(k1_imn(imn):k2_imn(imn))) &
+            /interp_rho(k1_imn(imn):k2_imn(imn))
+      else
+        call fatal_error('calc_pencil_rep','No such ivis!')
+      endif
+!
+      if (maxval(nuvisc) == 0.0) call fatal_error('calc_pencil_rep', &
+          'nu (kinematic visc.) must be non-zero!')
+!
+      do k = k1_imn(imn),k2_imn(imn)
+        rep(k) = 2.0 * sqrt(sum((interp_uu(k,:) - fp(k,ivpx:ivpz))**2)) / nuvisc(k)
+      enddo
+!
+      if (lparticles_radius) then
+        rep = rep * fp(k1_imn(imn):k2_imn(imn),iap)
+      elseif (particle_radius > 0.0) then
+        rep = rep * particle_radius
+      else
+        call fatal_error('calc_pencil_rep', &
+            'unable to calculate the particle Reynolds number without a particle radius. ')
+      endif
+!
+    endsubroutine calc_pencil_rep_nu
+!***********************************************************************
+    subroutine write_outputfile()
+!
+!  Write particle chemistry info to ./data/particle_chemistry.out
+!
+      integer :: file_id=123
+      integer :: k
+      character(len=20) :: writeformat
+      character(len=30) :: output='./data/particle_chemistry.out'
+!
+      open (file_id,file=output)
+!
+      write (file_id,*) 'Particle chemistry input data'
+      write (file_id,*) ''
+      write (file_id,*) ''
+      write (file_id,*) 'N_surface_species', N_surface_species
+      write (file_id,*) 'N_surface_reactants', N_surface_reactants
+      write (file_id,*) 'N_adsorbed_species', N_adsorbed_species
+      write (file_id,*) ''
+!
+      writeformat = '(1I4, 3E11.3, 1F5.2)'
+      write (file_id,*) 'Nr, B_k, ER_k, sigma_k, T_k'
+      do k = 1,N_surface_reactions
+        write (file_id,writeformat) k,B_k(k),ER_k(k),sigma_k(k),T_k(k)
+      enddo
+      write (file_id,*) ''
+      close (file_id)
+!
+    endsubroutine write_outputfile
+!**********************************************************************
+!  Read and register print parameters relevant for
+!  particles near field gas composition
+!
+!  06-oct-14/jonas: adapted
+!
+    subroutine rprint_particles_chem(lreset,lwrite)
+      use Diagnostics
+!
+      logical :: lreset
+      logical, optional :: lwrite
+!
+      logical :: lwr
+      integer :: iname,i
+!
+! Write information to index.pro
+      lwr = .false.
+      if (present(lwrite)) lwr = lwrite
+      if (lreset) then
+        idiag_Shchm = 0
+      endif
+!
+      if (lroot .and. ip < 14) print*,'rprint_particles_chem run through parse list'
+!
+      do iname = 1,nname
+        call parse_name(iname,cname(iname),cform(iname),'Shchm',idiag_Shchm)
+      enddo
+!
+    endsubroutine rprint_particles_chem
+!***********************************************************************
+    subroutine find_sh_counter(sh_counter)
+!
+      integer,intent(inout) :: sh_counter
+      integer :: j, i
+!
+      sh_counter = 0
+      do j = 1,N_surface_reactions
+        do i = 1,N_surface_reactants
+          if (nu(i,j) > 0) sh_counter=sh_counter+1
+        enddo
+      enddo
+!
+    endsubroutine find_sh_counter
+!***********************************************************************
+
 endmodule Particles_chemistry

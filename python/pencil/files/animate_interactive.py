@@ -198,7 +198,7 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
             try:
                 thread.start_new_thread(play, ("playThread", ))
             except:
-                print "Error: unable to start play thread"
+                print("Error: unable to start play thread")
 
 
     def pausing(event):               
@@ -231,7 +231,7 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
     
     # check if the data has the right dimensions
     if (len(data.shape) != 3 and len(data.shape) != 4):
-        print 'error: data dimensions are invalid: {0} instead of 3'.format(len(data.shape))
+        print("error: data dimensions are invalid: {0} instead of 3".format(len(data.shape)))
         return -1
         
     # transpose the data according to dimOrder
@@ -253,7 +253,7 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
             
             # check if the dimensions of the arrow arrays match each other
             if ((len(arrowsX[:,0,0]) != len(arrowsY[:,0,0])) or (len(arrowsX[0,:,0]) != len(arrowsY[0,:,0])) or (len(arrowsX[0,0,:]) != len(arrowsY[0,0,:]))):
-                print 'error: dimensions of arrowX do not match with dimensions of arrowY'
+                print("error: dimensions of arrowX do not match with dimensions of arrowY")
                 return -1
             else:
                 plotArrows = True
@@ -261,16 +261,16 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
     # check if time array has the right length
     nT = len(t)
     if (nT != len(data[:,0,0])):
-        print 'error: length of time array doesn\'t match length of data array'
+        print("error: length of time array doesn\'t match length of data array")
         return -1
         if plotArrows:
             if (nT != len(arrowsX[:,0,0]) or nT != len(arrowsX[:,0,0])):
-                print 'error: length of time array doesn\'t match length of arrows array'
+                print("error: length of time array doesn\'t match length of arrows array")
                 return -1
     
     # check if fps is positive
     if (fps < 0.0):
-        print 'error: fps is not positive, fps = {0}'.format(fps)
+        print("error: fps is not positive, fps = {0}".format(fps))
         return -1
 
     # determine the size of the array
@@ -317,7 +317,7 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
         if cBar == 0:
             cBar = 1
         # check if colormap is set, if not set it to 'copper'
-        if kwimshow.has_key('cmap') == False:
+        if not 'cmap' in kwimshow.keys():
             kwimshow['cmap'] = plt.cm.copper
         for i in range(len(data[:,0,0])):
             tmp = ls.shade(data[i,:,:], kwimshow['cmap'])
@@ -360,7 +360,7 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
         os.system(mencodeCommand)
         # clean up the image files
         if (keepImages == False):
-            print 'cleaning up files'
+            print("cleaning up files")
             for fname in movieFiles:
                 os.remove(fname)
 
@@ -400,4 +400,4 @@ def animate_interactive(data, t = [], dimOrder = (0,1,2),
     
         plt.show()
         
-    print 'done'
+    print("done")

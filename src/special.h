@@ -33,6 +33,7 @@
 
   public :: special_boundconds
   public :: special_before_boundary
+  public :: special_after_boundary
   public :: special_after_timestep
     
   public :: set_init_parameters   

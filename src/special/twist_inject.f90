@@ -1017,7 +1017,7 @@ module Special
 !  initial_condition cannot use
 !  the hydro module because of Makefile.depend
 !
-      use Mpicomm, only: mpiallreduce_max
+      use Mpicomm, only: mpiallreduce_max, MPI_COMM_WORLD
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, intent(out) :: umax
@@ -1029,7 +1029,7 @@ module Special
       umax1 = sqrt(maxval(f(l1,m1:m2,n1:n2,iux)**2 &
                         + f(l1,m1:m2,n1:n2,iuy)**2 &
                         + f(l1,m1:m2,n1:n2,iuz)**2))
-      call mpiallreduce_max(umax1, umax)
+      call mpiallreduce_max(umax1, umax, comm=MPI_COMM_WORLD)
 !
     endsubroutine find_umax
 !***********************************************************************

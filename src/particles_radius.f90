@@ -26,8 +26,8 @@ module Particles_radius
   include 'particles_radius.h'
 !
   real :: vthresh_sweepup=-1.0, deltavp12_floor=0.0
-  real, dimension (ninit) :: ap0=0.0
-  real, dimension (ninit) :: radii_distribution=0.0
+  real, dimension (ndustrad) :: ap0=0.0
+  real, dimension (ndustrad) :: radii_distribution=0.0
   real :: tstart_sweepup_par=0.0, cdtps=0.2, cdtpc=0.2
   real :: tstart_condensation_par=0.0
   real :: apmin=0.0, latent_heat_SI=2.257e6, alpha_cond=1.0, alpha_cond1=1.0
@@ -37,7 +37,7 @@ module Particles_radius
   real :: ztop_ocean=0.0, TTocean=300.0
   real :: aplow=1.0, aphigh=2.0, mbar=1.0
   real :: ap1=1.0, qplaw=0.0, GS_condensation=0.
-  real :: sigma_initdist=0.2, a0_initdist=5e-6
+  real :: sigma_initdist=0.2, a0_initdist=5e-6, rpbeta0=0.0
   integer :: nbin_initdist=20
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
@@ -52,7 +52,7 @@ module Particles_radius
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
       lborder_driving_ocean, ztop_ocean, radii_distribution, TTocean, &
       aplow, aphigh, mbar, ap1, qplaw, eps_dtog, nbin_initdist, &
-      sigma_initdist, a0_initdist
+      sigma_initdist, a0_initdist, lparticles_radius_rpbeta, rpbeta0
 !
   namelist /particles_radius_run_pars/ &
       rhopmat, vthresh_sweepup, deltavp12_floor, &
@@ -60,7 +60,7 @@ module Particles_radius
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
       lborder_driving_ocean, ztop_ocean, TTocean, &
-      lcondensation_simplified, GS_condensation
+      lcondensation_simplified, GS_condensation, rpbeta0
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
@@ -85,6 +85,12 @@ module Particles_radius
 !  Increase npvar accordingly.
 !
       npvar=npvar+1
+!
+      if (lparticles_radius_rpbeta) then
+        irpbeta=npvar+1
+        pvarname(npvar+1)='irpbeta'
+        npvar=npvar+1
+      endif
 !
 !  Check that the fp and dfp arrays are big enough.
 !
@@ -118,7 +124,6 @@ module Particles_radius
       use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: ierr
 !
 !  Calculate the number density of bodies within a superparticle.
 !
@@ -149,7 +154,7 @@ module Particles_radius
       if (tau_damp_evap/=0.0) tau_damp_evap1=1/tau_damp_evap
       if (tau_ocean_driving/=0.0) tau_ocean_driving1=1/tau_ocean_driving
 !
-      call put_shared_variable('ap0',ap0,ierr)
+      call put_shared_variable('ap0',ap0,caller='initialize_particles_radius')
 !
       call keep_compiler_quiet(f)
 !
@@ -169,7 +174,7 @@ module Particles_radius
       logical, optional :: init
 !
       real, dimension (mpar_loc) :: r_mpar_loc, p_mpar_loc, tmp_mpar_loc
-      real, dimension (ninit) :: radii_cumulative
+      real, dimension (ndustrad) :: radii_cumulative
       real, dimension (nbin_initdist) :: n_initdist, a_initdist
       integer, dimension (nbin_initdist) :: nn_initdist
       real :: radius_fraction, mcen, mmin, mmax, fcen, p, rhopm
@@ -246,6 +251,7 @@ module Particles_radius
           call random_number_wrapper(p_mpar_loc)
           tmp_mpar_loc=sqrt(-2*log(r_mpar_loc))*sin(2*pi*p_mpar_loc)
           fp(:,iap)=a0_initdist*exp(sigma_initdist*tmp_mpar_loc)
+
 !
 !  Lognormal distribution. Here, ap1 is the largest value in the distribution
 !  and ap0 is the smallest radius initially.
@@ -360,6 +366,11 @@ module Particles_radius
 !
           enddo
 !
+        case ('power-law')
+          call random_number_wrapper(fp(npar_low:npar_high,iap))
+          fp(npar_low:npar_high,iap) = ((aphigh**(qplaw+1.0)-aplow**(qplaw+1.0)) &
+            *fp(npar_low:npar_high,iap)+aplow**(qplaw+1.0))**(1.0/(qplaw+1.0))
+!
         case default
           if (lroot) print*, 'init_particles_radius: '// &
               'No such such value for initap: ', trim(initap(j))
@@ -370,6 +381,8 @@ module Particles_radius
 !  Set initial particle radius if lparticles_mass=T
 !
       if (lparticles_mass) fp(:,iapinit)=fp(:,iap)
+!
+      if (lparticles_radius_rpbeta) fp(npar_low:npar_high,irpbeta) = rpbeta0/fp(npar_low:npar_high,iap)
 !
       call keep_compiler_quiet(f)
 !
@@ -419,7 +432,7 @@ module Particles_radius
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
       logical :: lfirstcall=.true., lheader
-      integer :: k,i,k1,k2
+      integer :: k,k1,k2
       real :: mass_per_radius, rho
       real, dimension(:), allocatable :: effectiveness_factor, mass_loss
 !
@@ -450,18 +463,30 @@ module Particles_radius
         k1 = k1_imn(imn)
         k2 = k2_imn(imn)
 !
+!  mass loss has a positive value -> particle is losing mass
+!  (the mass vector is pointing out of the particle)
+!
         allocate(mass_loss(k1:k2))
         allocate(effectiveness_factor(k1:k2))
 !
         call get_radius_chemistry(mass_loss,effectiveness_factor)
-        do k = k1,k2
-          if (fp(k,irhosurf) < 0) then
+!
+        if (.not. lsurface_nopores) then
+          do k = k1,k2
+            if (fp(k,irhosurf) < 0) then
+              rho = fp(k,imp) / (fp(k,iap)**3 * 4./3. * pi )
+              mass_per_radius = 4. * pi * rho * fp(k,iap)**2
+              dfp(k,iap) = dfp(k,iap) - mass_loss(k) *(1-effectiveness_factor(k))/mass_per_radius
+            endif
+            fp(k,ieffp) = effectiveness_factor(k)
+          enddo
+        else
+          do k = k1,k2
             rho = fp(k,imp) / (fp(k,iap)**3 * 4./3. * pi )
             mass_per_radius = 4. * pi * rho * fp(k,iap)**2
-            dfp(k,iap) = dfp(k,iap) + mass_loss(k) *(1-effectiveness_factor(k))/mass_per_radius
-          endif
-          fp(k,ieffp) = effectiveness_factor(k)
-        enddo
+            dfp(k,iap) = dfp(k,iap) - mass_loss(k)/mass_per_radius
+          enddo
+        endif
         deallocate(mass_loss)
         deallocate(effectiveness_factor)
       endif
@@ -680,10 +705,14 @@ module Particles_radius
               endif
             endif
 !
-            if (ldensity_nolog) then
-              df(ix0,m,n,irho)   = df(ix0,m,n,irho)   + drhocdt
-            else
-              df(ix0,m,n,ilnrho) = df(ix0,m,n,ilnrho) + drhocdt*p%rho1(ix)
+!  feedback, but should not be used if we don't have density
+!
+            if (ldensity) then
+              if (ldensity_nolog) then
+                df(ix0,m,n,irho)   = df(ix0,m,n,irho)   + drhocdt
+              else
+                df(ix0,m,n,ilnrho) = df(ix0,m,n,ilnrho) + drhocdt*p%rho1(ix)
+              endif
             endif
 !
             if (lpscalar_nolog) then
@@ -792,7 +821,7 @@ module Particles_radius
 !  because not all parts of the code are adapted to work with more than one
 !  particle radius.
 !
-      do pos=1,ninit
+      do pos=1,ndustrad
         if (ap0(pos)/=0) then
           npart_radii=npart_radii+1
         endif

@@ -39,15 +39,12 @@ module ImplicitPhysics
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(:), pointer :: hole_params
-      integer :: ierr
 !
 !  Get the hole parameters if we want to run a kappa-mechanism simulation
 !  in the fully-explicit case (mainly for testing purposes)
 !
       if (ltemperature .and. leos_idealgas) then
-        call get_shared_variable('hole_params', hole_params, ierr)
-        if (ierr/=0) call stop_it("implicit_physics: "//&
-            "there was a problem when getting hole_params")
+        call get_shared_variable('hole_params', hole_params, caller='initialize_implicit_physics')
         Tbump=hole_params(1)
         Kmax=hole_params(2)
         Kmin=hole_params(3)
@@ -99,6 +96,7 @@ module ImplicitPhysics
 !
       arg=hole_slope*(TT-Tbump-hole_width)*(TT-Tbump+hole_width)
       hcond=Kmax+hole_alpha*(-pi/2.+atan(arg))
+
       if (present(dhcond)) &
         dhcond=2.*hole_alpha/(1.+arg**2)*hole_slope*(TT-Tbump)
 !

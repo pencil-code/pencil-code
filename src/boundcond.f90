@@ -41,6 +41,8 @@ module Boundcond
   endinterface
 !
   integer, parameter :: BOT=1, TOP=2
+  logical :: is_vec=.false.
+  integer :: jdone=0
 !
   contains
 !***********************************************************************
@@ -457,6 +459,7 @@ module Boundcond
 !   8-jul-02/axel: split up into different routines for x,y and z directions
 !  11-nov-02/wolf: unified bot/top, now handled by loop
 !
+      use General, only: var_is_vec
       use Special, only: special_boundconds
       use EquationOfState
 !
@@ -491,6 +494,7 @@ module Boundcond
             ip_ok=llast_proc_y
           endif
 !
+          jdone=0
           do j=ivar1,ivar2
 !
 ! Natalia: the next line is for the dustdensity case.
@@ -504,6 +508,8 @@ module Boundcond
 !
             if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcy',k,'(',j,')=',bcy12(j,k)
             if (ip_ok) then
+           
+              is_vec = var_is_vec(j)
               select case (bcy12(j,k))
               case ('0')
                 ! BCY_DOC: zero value in ghost zones, free value on boundary
@@ -514,6 +520,9 @@ module Boundcond
               case ('pp')
                 ! BCY_DOC: periodic across the pole
                 call bc_pper_y(f,+1,topbot,j)
+              case ('yy')
+                ! BCY_DOC: Yin-Yang grid
+                call bc_yy_y(f,topbot,j)
               case ('ap')
                 ! BCY_DOC: anti-periodic across the pole
                 call bc_pper_y(f,-1,topbot,j)
@@ -683,6 +692,7 @@ module Boundcond
 !                  + symmetry about boundary; added 'fa' for alternative reference to
 !                  already existing freezing condition (includes antisymmetry)
 !
+      use General, only: var_is_vec
       use Special, only: special_boundconds
       use EquationOfState
 !
@@ -717,9 +727,13 @@ module Boundcond
             ip_ok=llast_proc_z
           endif
 !
+          jdone=0
           do j=ivar1,ivar2
             if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcz',k,'(',j,')=',bcz12(j,k)
             if (ip_ok) then
+
+              is_vec = var_is_vec(j)
+
               select case (bcz12(j,k))
               case ('0')
                 ! BCZ_DOC: zero value in ghost zones, free value on boundary
@@ -727,6 +741,9 @@ module Boundcond
               case ('p')
                 ! BCZ_DOC: periodic
                 call bc_per_z(f,topbot,j)
+              case ('yy')
+                ! BCZ_DOC: Yin-Yang grid
+                call bc_yy_z(f,topbot,j)
               case ('s')
                 ! BCZ_DOC: symmetry
                 call bc_sym_z(f,+1,topbot,j)
@@ -843,6 +860,9 @@ module Boundcond
               case ('cdz')
                 ! BCZ_DOC: for interstellar runs limit rho
                 call bc_cdz(f,topbot,j)
+              case ('ism')
+                ! BCZ_DOC: for interstellar runs limit rho
+                call bc_ism(f,topbot,j)
               case ('asT')
                 ! BCZ_DOC: select entropy for uniform ghost temperature
                 ! BCZ_DOC: matching fluctuating boundary value,
@@ -1186,12 +1206,48 @@ module Boundcond
 !
     endsubroutine bc_per_y
 !***********************************************************************
+    subroutine bc_yy_y(f,topbot,j)
+!
+!  After-communication transformation of vector quantities for Yin-Yang grid.
+!
+!  30-nov-15/MR: coded
+!
+      use General, only: transform_cart_spher
+
+      real, dimension (:,:,:,:) :: f
+      integer :: j
+      character (len=bclen) :: topbot
+!
+      if (.not.lyinyang) &
+        call fatal_error_local('bc_yy_y','BC not legal as no Yin-Yang grid run.')
+
+      if (j<=jdone) return
+
+      if (is_vec) then
+!
+!  Vector quantities need to be transformed from the Cartesian basis of the other grid to 
+!  the local spherical coordinate basis.
+!
+        jdone=j+2     ! requires adjacent vector components
+        if (topbot=='bot') then
+          call transform_cart_spher(f,1,nghost,1,mz,j)    ! in-place!
+        else
+          call transform_cart_spher(f,m2+1,my,1,mz,j)     !  ~
+        endif
+!
+      else
+        jdone=0
+      endif
+
+    endsubroutine bc_yy_y
+!***********************************************************************
     subroutine bc_pper_y(f,sgn,topbot,j)
 !
 !  Periodic boundary condition across the pole
 !
 !  15-jun-10/dhruba: aped
-!  15-oct-15/fred NB use for scalars and radial vector components
+!  15-oct-15/fred NB use sgn= 1 for scalars and radial vector components
+!                        sgn=-1 for theta and phi vector components
 !            In principle similar conditions could apply for R=0
 !            for sph/cyl coords, but not yet implemented
 !
@@ -1249,6 +1305,49 @@ module Boundcond
       endselect
 !
     endsubroutine bc_per_z
+!***********************************************************************
+    subroutine bc_yy_z(f,topbot,j)
+!
+!  After-communication handling of vector quantities for Yin-Yang grid.
+!
+!  30-nov-15/MR: coded
+!  29-feb-16/MR: avoided double transformation in ghost zone corners 
+!                which is already done in bc_yy_y
+!
+      use General, only: transform_cart_spher
+
+      real, dimension (:,:,:,:) :: f
+      integer :: j
+      character (len=bclen) :: topbot
+
+      integer :: iya, iye
+!
+      if (.not.lyinyang) &
+        call fatal_error_local('bc_yy_z','BC not legal as no Yin-Yang grid run.')
+
+      if (j<=jdone) return
+
+      if (is_vec) then
+!
+!  Vector quantities need to be transformed from the Cartesian basis of the other grid to 
+!  the local spherical coordinate basis.
+!
+        jdone=j+2     ! requires adjacent vector components
+
+        iya=1; iye=my          
+        if (lfirst_proc_y) iya=m1
+        if (llast_proc_y) iye=m2
+      
+        if (topbot=='bot') then
+          call transform_cart_spher(f,iya,iye,1,nghost,j)  ! in-place!
+        else
+          call transform_cart_spher(f,iya,iye,n2+1,mz,j)   ! ~  
+        endif
+      else
+        jdone=0
+      endif
+
+    endsubroutine bc_yy_z
 !***********************************************************************
     subroutine bc_a2r_x(f,topbot,j)
 !
@@ -1489,52 +1588,90 @@ module Boundcond
 !
     endsubroutine bc_cpp_x
 
-!***********************************************************************
+!!***********************************************************************
+!    subroutine bc_spr_x(f,topbot,j)
+!!
+!!  This condition sets values for A_phi and A_theta at the radial boundary.
+!!  It solves  A"+2A'/R=0 and A=0 at the boundary.
+!!  We compute the A1 point using a 2nd-order formula,
+!!  Next, we compute A2 using a 4th-order formula,
+!!  and finally A3 using a 6th-order formula.
+!!  Has to be used togehter with 's' for A_r.
+!!
+!!  15-may-13/joern: coded
+!!
+!      character (len=bclen) :: topbot
+!      real, dimension (:,:,:,:) :: f
+!      integer :: j
+!      real :: tmp
+!!
+!      select case (topbot)
+!!
+!      case ('bot')               ! bottom boundary
+!        tmp=x(l1)*dx_1(l1)
+!!
+!        f(l1,:,:,j)  =0
+!        f(l1-1,:,:,j)=(f(l1+1,:,:,j)*(-tmp+1))/(tmp+1)
+!        f(l1-2,:,:,j)=(f(l1-1,:,:,j)*16*(tmp-1) &
+!                      +f(l1+1,:,:,j)*16*(tmp+1) &
+!                      +f(l1+2,:,:,j)*(-tmp-2))/(tmp-2)
+!        f(l1-3,:,:,j)=(f(l1-2,:,:,j)*27*(0.5*tmp-1) &
+!                      +f(l1-1,:,:,j)*135*(-tmp+1) &
+!                      +f(l1+1,:,:,j)*135*(-tmp-1) &
+!                      +f(l1+2,:,:,j)*27*(0.5*tmp+1) &
+!                      +f(l1+3,:,:,j)*(-tmp-3))/(tmp-3)
+!!
+!      case ('top')               ! top boundary
+!        tmp=x(l2)*dx_1(l2)
+!!
+!        f(l2,:,:,j)  =0
+!        f(l2+1,:,:,j)=(f(l2-1,:,:,j)*(tmp+1))/(-tmp+1)
+!        f(l2+2,:,:,j)=(f(l2+1,:,:,j)*16*(tmp+1) &
+!                      +f(l2-1,:,:,j)*16*(tmp-1) &
+!                      +f(l2-2,:,:,j)*(tmp-2))/(-tmp-2)
+!        f(l2+3,:,:,j)=(f(l2+2,:,:,j)*27*(0.5*tmp+1) &
+!                      +f(l2+1,:,:,j)*135*(-tmp-1) &
+!                      +f(l2-1,:,:,j)*135*(-tmp+1) &
+!                      +f(l2-2,:,:,j)*27*(0.5*tmp-1) &
+!                      +f(l2-3,:,:,j)*(-tmp+3))/(tmp+3)
+!!
+!      case default
+!        print*, "bc_spr_x: ", topbot, " should be 'top' or 'bot'"
+!!
+!      endselect
+!!
+!    endsubroutine bc_spr_x
+!!***********************************************************************
     subroutine bc_spr_x(f,topbot,j)
 !
 !  This condition sets values for A_phi and A_theta at the radial boundary.
 !  It solves  A"+2A'/R=0 and A=0 at the boundary.
-!  We compute the A1 point using a 2nd-order formula,
-!  Next, we compute A2 using a 4th-order formula,
-!  and finally A3 using a 6th-order formula.
 !  Has to be used togehter with 's' for A_r.
 !
-!  15-may-13/joern: coded
+!  09-may-16/fred: coded
 !
       character (len=bclen) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: j
-      real :: tmp
+!
+      if (.not.lspherical_coords) &
+        call fatal_error('bc_spr_x','only implemented for spherical coordinates')
 !
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
-        tmp=x(l1)*dx_1(l1)
 !
-        f(l1,:,:,j)  =0
-        f(l1-1,:,:,j)=(f(l1+1,:,:,j)*(-tmp+1))/(tmp+1)
-        f(l1-2,:,:,j)=(f(l1-1,:,:,j)*16*(tmp-1) &
-                      +f(l1+1,:,:,j)*16*(tmp+1) &
-                      +f(l1+2,:,:,j)*(-tmp-2))/(tmp-2)
-        f(l1-3,:,:,j)=(f(l1-2,:,:,j)*27*(0.5*tmp-1) &
-                      +f(l1-1,:,:,j)*135*(-tmp+1) &
-                      +f(l1+1,:,:,j)*135*(-tmp-1) &
-                      +f(l1+2,:,:,j)*27*(0.5*tmp+1) &
-                      +f(l1+3,:,:,j)*(-tmp-3))/(tmp-3)
+        f(l1,:,:,j) = 0.
+        do ix=1,nghost
+          f(l1-ix,:,:,j) = -f(l1+ix,:,:,j)*x(l1+ix)/x(l1-ix)
+        enddo
 !
       case ('top')               ! top boundary
-        tmp=x(l2)*dx_1(l2)
 !
-        f(l2,:,:,j)  =0
-        f(l2+1,:,:,j)=(f(l2-1,:,:,j)*(tmp+1))/(-tmp+1)
-        f(l2+2,:,:,j)=(f(l2+1,:,:,j)*16*(tmp+1) &
-                      +f(l2-1,:,:,j)*16*(tmp-1) &
-                      +f(l2-2,:,:,j)*(tmp-2))/(-tmp-2)
-        f(l2+3,:,:,j)=(f(l2+2,:,:,j)*27*(0.5*tmp+1) &
-                      +f(l2+1,:,:,j)*135*(-tmp-1) &
-                      +f(l2-1,:,:,j)*135*(-tmp+1) &
-                      +f(l2-2,:,:,j)*27*(0.5*tmp-1) &
-                      +f(l2-3,:,:,j)*(-tmp+3))/(tmp+3)
+        f(l2,:,:,j) = 0.
+        do ix=1,nghost
+          f(l2+ix,:,:,j) = -f(l2-ix,:,:,j)*x(l1-ix)/x(l1+ix)
+        enddo
 !
       case default
         print*, "bc_spr_x: ", topbot, " should be 'top' or 'bot'"
@@ -1599,7 +1736,7 @@ module Boundcond
 !
       character (len=bclen) :: topbot
       real, dimension (:,:,:,:) :: f
-      real, dimension (:), optional :: val
+      real, dimension (:) :: val
       integer :: i,j
 !
       select case (topbot)
@@ -2100,7 +2237,7 @@ module Boundcond
 !
       character (len=bclen) :: topbot
       real, dimension (:,:,:,:) :: f
-      real, dimension (:), optional :: val
+      real, dimension (:) :: val
       integer :: i,j
 !
       select case (topbot)
@@ -2127,7 +2264,7 @@ module Boundcond
       character (len=bclen) :: topbot
       real, dimension (:,:,:,:) :: f
       real, dimension (size(f,1),size(f,3)) :: derval
-      real, dimension (:), optional :: val
+      real, dimension (:) :: val
       integer :: i,j
 !
       derval=spread((xyz1(1)-x)*val(j),2,size(f,3))
@@ -7956,6 +8093,80 @@ module Boundcond
       endselect
 !
     endsubroutine bc_cdz
+!***********************************************************************
+    subroutine bc_ism(f,topbot,j)
+!
+!  30-nov-15/fred: Replaced bc_ctz and bc_cdz.
+!  Apply observed scale height locally from Reynolds 1991, Manchester & Taylor
+!  1981 for warm ionized gas - dominant scale height above 500 parsecs.
+!  Apply constant local temperature across boundary for entropy.
+!  Motivation to prevent numerical spikes in shock fronts, which cannot be 
+!  absorbed in only three ghost cells, but boundary thermodynamics still 
+!  responsive to interior dynamics.
+!
+      use EquationOfState, only: get_cv1,get_cp1
+!
+      character (len=bclen) :: topbot
+      real, dimension (:,:,:,:) :: f
+      integer :: j,k
+      real, parameter :: density_scale_cgs=2.7774e21 !900pc Reynolds 91, etc
+      real :: density_scale
+      real :: cv1,cp1,cv,cp
+!
+      density_scale=density_scale_cgs/unit_length
+      call get_cv1(cv1); cv=1./cv1
+      call get_cp1(cp1); cp=1./cp1
+!
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+          do k=1,3
+            if (j==irho .or. j==ilnrho) then
+              if (ldensity_nolog) then
+                f(:,:,k,j)=f(:,:,n1,j)*exp(-(z(n1)-z(k))/density_scale)
+              else
+                f(:,:,k,j)=f(:,:,n1,j) - (z(n1)-z(k))/density_scale
+              endif
+            else if (j==iss) then
+              if (ldensity_nolog) then
+                f(:,:,n1-k,j)=f(:,:,n1-k+1,j)+(cp-cv)*&
+                 (log(f(:,:,n1-k+1,j-1))-log(f(:,:,n1-k,j-1)))
+              else
+                f(:,:,n1-k,j)=f(:,:,n1-k+1,j)+(cp-cv)*&
+                 (f(:,:,n1-k+1,j-1)-f(:,:,n1-k,j-1))
+              endif
+            else
+              call fatal_error('bc_ism','only for irho, ilnrho or iss')
+            endif
+          enddo
+!
+      case ('top')               ! top boundary
+          do k=1,3
+            if (j==irho .or. j==ilnrho) then
+              if (ldensity_nolog) then
+                f(:,:,n2+k,j)=f(:,:,n2,j)*exp(-(z(n2+k)-z(n2))/density_scale)
+              else
+                f(:,:,n2+k,j)=f(:,:,n2,j) - (z(n2+k)-z(n2))/density_scale
+              endif
+            else if (j==iss) then
+              if (ldensity_nolog) then
+                f(:,:,n2+k,j)=f(:,:,n2+k-1,j)+(cp-cv)*&
+                 (log(f(:,:,n2+k-1,j-1))-log(f(:,:,n2+k,j-1)))
+              else
+                f(:,:,n2+k,j)=f(:,:,n2+k-1,j)+(cp-cv)*&
+                 (f(:,:,n2+k-1,j-1)-f(:,:,n2+k,j-1))
+              endif
+            else
+              call fatal_error('bc_ism','only for irho, ilnrho or iss')
+            endif
+          enddo
+!
+      case default
+        print*, "bc_ism ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_ism
 !***********************************************************************
     subroutine set_consistent_density_boundary(f,dirn,boundtype,tb,rhob,lsuccess)
 !

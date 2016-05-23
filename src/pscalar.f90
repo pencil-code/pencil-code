@@ -128,7 +128,6 @@ module Pscalar
       use SharedVariables, only: put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: ierr
 !
 !  Re-initialize scalar
 !
@@ -137,7 +136,7 @@ module Pscalar
         call init_lncc(f)
       endif
 !
-      call put_shared_variable('pscalar_diff',pscalar_diff,ierr)
+      call put_shared_variable('pscalar_diff',pscalar_diff,caller='initialize_pscalar')
 !
     endsubroutine initialize_pscalar
 !***********************************************************************
@@ -445,7 +444,7 @@ module Pscalar
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_rhoccm=0; idiag_ccmax=0; idiag_ccmin=0.; idiag_lnccm=0
+        idiag_rhoccm=0; idiag_ccmax=0; idiag_ccmin=0; idiag_lnccm=0
         idiag_ucm=0; idiag_uudcm=0; idiag_Cz2m=0; idiag_Cz4m=0
         idiag_Crmsm=0; idiag_mcct=0
         idiag_lnccmz=0; idiag_lnccmy=0; idiag_lnccmx=0
@@ -589,6 +588,7 @@ module Pscalar
 !  reads file
 !
 !  11-jul-02/axel: coded
+!  19-jan-16/MR: corrected bug in calls to dot_mn
 !
       use Sub
 !
@@ -609,19 +609,21 @@ module Pscalar
         read(1) bunit,hhh
         close(1)
         print*,'read bunit.dat; bunit=',bunit
+        first=.false.
       endif
+
+      iy=m-m1+1
+      iz=n-n1+1
 !
 !  tmp = (Bunit.G)^2 + H.G + Bi*Bj*Gij
 !  for details, see tex/mhd/thcond/tensor_der.tex
 !
-      call dot_mn(bunit,p%glncc,scr)
-      call dot_mn(hhh,p%glncc,tmp)
+      call dot_mn(bunit(:,iy,iz,:),p%glncc,scr)
+      call dot_mn(hhh(:,iy,iz,:),p%glncc,tmp)
       tmp=tmp+scr**2
 !
 !  dot with bi*bj
 !
-      iy=m-m1+1
-      iz=n-n1+1
       do j=1,3
       do i=1,3
         tmp=tmp+bunit(:,iy,iz,i)*bunit(:,iy,iz,j)*p%hlncc(:,i,j)
@@ -631,8 +633,6 @@ module Pscalar
 !  and add result to the dlncc/dt equation
 !
       df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)+tensor_pscalar_diff*tmp
-!
-      first=.false.
 !
     endsubroutine tensor_diff
 !***********************************************************************

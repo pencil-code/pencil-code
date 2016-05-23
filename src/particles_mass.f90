@@ -30,12 +30,15 @@ module Particles_mass
   include 'particles_mass.h'
 !
   logical :: lpart_mass_backreac=.true.
+  logical :: lpart_mass_momentum_backreac=.true.
   real :: mass_const=0.0, dmpdt=1e-3
+  real, dimension(:,:,:), allocatable :: weight_array
   character(len=labellen), dimension(ninit) :: init_particle_mass='nothing'
 !
   namelist /particles_mass_init_pars/ init_particle_mass, mass_const
 !
-  namelist /particles_mass_run_pars/ lpart_mass_backreac, dmpdt
+  namelist /particles_mass_run_pars/ lpart_mass_backreac, dmpdt,&
+      lpart_mass_momentum_backreac
 !
   integer :: idiag_mpm=0
   integer :: idiag_convm=0
@@ -97,6 +100,12 @@ module Particles_mass
       use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mfarray) :: f
+!
+      if (lparticlemesh_gab) allocate (weight_array(7,7,7))
+      if (lparticlemesh_tsc) allocate (weight_array(3,3,3))
+      if (lparticlemesh_cic) allocate (weight_array(2,2,2))
+      if (.not. allocated(weight_array)) allocate(weight_array(1,1,1))
+      call precalc_weights(weight_array)
 !
       call keep_compiler_quiet(f)
 !
@@ -186,7 +195,7 @@ module Particles_mass
       if (ldiagnos) then
         if (idiag_mpm /= 0)   call sum_par_name(fp(1:npar_loc,imp),idiag_mpm)
         if (idiag_convm /= 0) call sum_par_name(1.-fp(1:npar_loc,imp) &
-            /fp(1:mpar_loc,impinit),idiag_convm)
+            /fp(1:npar_loc,impinit),idiag_convm)
         if (idiag_rhosurf /= 0)   call sum_par_name(fp(1:npar_loc,irhosurf),idiag_rhosurf)
         if (idiag_chrhopm /= 0) then
           call sum_par_name(fp(1:npar_loc,imp)/(4./3.*pi*fp(1:npar_loc,iap)**3),idiag_chrhopm)
@@ -214,114 +223,127 @@ module Particles_mass
       type (pencil_case) :: p
       integer, dimension(mpar_loc,3) :: ineargrid
       real, dimension(nx) :: volume_pencil
-      real :: volume_cell, rho1_point, weight, dmass, Vp
+      real :: volume_cell, rho1_point, weight
       real :: mass_per_radius, rho_init
-      integer :: k, ix0, iy0, iz0, k1, k2
+      integer :: k, ix0, iy0, iz0, k1, k2,i,index1
       integer :: izz, izz0, izz1, iyy, iyy0, iyy1, ixx, ixx0, ixx1
-      real, dimension(:), allocatable :: mass_loss, St
+      real, dimension(:), allocatable :: mass_loss, St,Vp
       real, dimension(:,:), allocatable :: Rck_max
 !
       intent(in) :: f, fp, ineargrid
       intent(inout) :: dfp, df
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
+!      call keep_compiler_quiet(f)
+!      call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
       call keep_compiler_quiet(ineargrid)
 !
       if (npar_imn(imn) /= 0) then
 !
+        volume_cell = (lxyz(1)*lxyz(2)*lxyz(3))/(nx*ny*nz)
+!
         k1 = k1_imn(imn)
         k2 = k2_imn(imn)
 !
-        allocate(mass_loss(k1:k2))
-        allocate(St(k1:k2))
-        allocate(Rck_max(k1:k2,1:N_surface_reactions))
+        if (lparticles_chemistry) then
+          allocate(St(k1:k2))
+          allocate(Rck_max(k1:k2,1:N_surface_reactions))
+          allocate(mass_loss(k1:k2))
+          allocate(Vp(k1:k2))
 !
-        call get_mass_chemistry(mass_loss,St,Rck_max)
-!
-!  JONAS: this place is better for new "pencil-calling" of variables
-!
-!  Get total surface area and molar reaction rate of carbon
-!
+          call get_mass_chemistry(mass_loss,St,Rck_max)
+        endif
+!        print*, 'mass loss: ', mass_loss
 !
 ! Loop over all particles in current pencil.
-        do k = k1,k2
 !
 ! Check if particles chemistry is turned on
-          if (lparticles_chemistry) then
-!
-! Calculate the change in particle mass
-            dmass = mass_loss(k)
-!
-          else
-            dmass = -dmpdt
-          endif
-!
-! Add the change in particle mass to the dfp array
-          dfp(k,imp) = dfp(k,imp)+dmass
+        if (lparticles_chemistry) then
+ !         print*, 'mass_loss', mass_loss
+          dfp(k1:k2,imp) = dfp(k1:k2,imp)-mass_loss(k1:k2)
+        else
+          dfp(k1:k2,imp) = dfp(k1:k2,imp)-dmpdt
+        endif
 !
 !  Evolve the density at the outer particle shell. This is used to
 !  determine how evolve the particle radius (it should not start to
 !  decrease before the outer shell is entirly consumed).
 !
-          Vp = 4*pi*fp(k,iap)**3/3.
+        if (lparticles_chemistry) then
+          Vp(k1:k2) = 4.*pi*fp(k1:k2,iap)*fp(k1:k2,iap)*fp(k1:k2,iap)/3.
 !
-          if (fp(k,irhosurf)>=0.0) then
-            dfp(k,irhosurf) = dfp(k,irhosurf)-sum(Rck_max(k,:))*St(k)/Vp
-          endif
+          do k = k1,k2
+            if (fp(k,irhosurf)>=0.0) then
+              dfp(k,irhosurf) = dfp(k,irhosurf)-sum(Rck_max(k,:))*St(k)/Vp(k)
+            endif
+          enddo
 !
 ! Calculate feed back from the particles to the gas phase
           if (lpart_mass_backreac) then
+            do k = k1,k2
 !
-            ix0 = ineargrid(k,1)
-            iy0 = ineargrid(k,2)
-            iz0 = ineargrid(k,3)
+              ix0 = ineargrid(k,1)
+              iy0 = ineargrid(k,2)
+              iz0 = ineargrid(k,3)
 !
 !  Find the indeces of the neighboring points on which the source
 !  should be distributed.
 !
 !NILS: All this interpolation should be streamlined and made more efficient.
 !NILS: Is it possible to calculate it only once, and then re-use it later?
-            call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1, &
-                fp,k,ix0,iy0,iz0)
-!
-! Loop over all neighbouring points
-            do izz = izz0,izz1
-              do iyy = iyy0,iyy1
-                do ixx = ixx0,ixx1
-!
-! Find the relative weight of the current grid point
-                  call find_interpolation_weight(weight,fp,k,ixx,iyy,izz,ix0,iy0,iz0)
-!
-! Find the volume of the grid cell of interest
-                  call find_grid_volume(ixx,iyy,izz,volume_cell)
-!
-! Find the gas phase density
-                  if ( (iyy /= m).or.(izz /= n).or.(ixx < l1).or.(ixx > l2) ) then
-                    rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
-                  else
-                    rho1_point = p%rho1(ixx-nghost)
-                  endif
+              call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1, &
+                  fp,k,ix0,iy0,iz0)
 !
 ! Add the source to the df-array
-                  if (ldensity_nolog) then
-                    df(ixx,iyy,izz,irho) = df(ixx,iyy,izz,irho) &
-                        -dmass*weight/volume_cell
-                  else
-                    df(ixx,iyy,izz,ilnrho) = df(ixx,iyy,izz,ilnrho) &
-                        -dmass*rho1_point*weight/volume_cell
-                  endif
-                enddo
-              enddo
+!
+              if (ldensity_nolog) then
+                df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho) &
+                    +mass_loss(k)*weight_array/volume_cell
+              else
+!                print*, 'df infos:', df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho)
+!                print*, 'weight_array: ' ,weight_array
+!                print*, 'rho',exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))
+!                print*, 'volume_cell:',volume_cell
+!                print*, 'mass loss(k)', mass_loss(k)
+ !                    print*, 'dTgdt: ', Qc*p%cv1(inx0)*rho1_point*p%TT1(inx0)*weight/volume_cell
+                df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho) &
+                    +mass_loss(k)*weight_array/volume_cell/exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))
+              endif
+!
+!  Momentum transfer via mass transfer between particle and gas phase
+!
+!
+! JONAS nasty: The index goes from iux to iuz, and assuming that all velocity components are after each
+! other also from ivpx to ivpz and 1 to 3. This was the only way to make the array ranks
+! consistent
+              if (lpart_mass_momentum_backreac .and. interp%luu) then
+                if (ldensity_nolog) then
+                  do i = iux,iuz
+                    df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,i) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,i) &
+                        +mass_loss(k)*weight_array/volume_cell/f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*&
+                        (fp(k,i-iux+ivpx)-interp_uu(k,i-iux+1))
+                  enddo
+                else
+                  do i = iux,iuz
+                    df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,i) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,i) &
+                        +mass_loss(k)*weight_array/volume_cell/exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*&
+                        (fp(k,i-iux+ivpx)-interp_uu(k,i-iux+1))
+                  enddo
+                endif
+              else
+                if (lpart_mass_momentum_backreac .and. .not. interp%luu) &
+                    call fatal_error('particles_mass','Momentum back reaction needs interp%luu')
+              endif
             enddo
+            
+!
+            deallocate(mass_loss)
+            deallocate(St)
+            deallocate(Rck_max)
+            deallocate(Vp)
+!
           endif
-        enddo
-!
-        deallocate(mass_loss)
-        deallocate(St)
-        deallocate(Rck_max)
-!
+        endif
       endif
 !
     endsubroutine dpmass_dt_pencil

@@ -41,9 +41,8 @@ module Pencil_check
 !  18-apr-05/tony: coded
 !
       use Equ, only: initialize_pencils, pde
-      use General, only: random_number_wrapper, random_seed_wrapper
-      use Mpicomm, only: mpireduce_and, mpireduce_or, mpibcast_logical, stop_it_if_any
-      use Sub, only: notanumber
+      use General, only: random_number_wrapper, random_seed_wrapper, notanumber
+      use Mpicomm, only: mpireduce_and, mpireduce_or, mpibcast_logical, stop_it_if_any, MPI_COMM_WORLD
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
@@ -113,24 +112,28 @@ module Pencil_check
       do iv=1,mvar; do n=n1,n2; do m=m1,m2
         if (notanumber(df_ref(:,m,n,iv))) lfound_nan_loc(iv)=.true.
       enddo; enddo; enddo
-      call mpireduce_or(lfound_nan_loc,lfound_nan,mfarray)
-      call mpibcast_logical(lfound_nan,mfarray)
+      call mpireduce_or(lfound_nan_loc,lfound_nan,mfarray,MPI_COMM_WORLD)
+      call mpibcast_logical(lfound_nan,mfarray,comm=MPI_COMM_WORLD)
       if (lroot) then
         do iv=1,mvar
-          if (lfound_nan(iv)) &
-            print*, 'pencil_consistency_check: NaNs in df_ref at variable', iv
+          if (lfound_nan(iv)) then
+            print*, 'pencil_consistency_check: NaNs in reference "df_ref" at variable', iv
+            print*, 'pencil_consistency_check: numbers of variables are given in "data/index.pro"'
+          endif
         enddo
       endif
       if (any(lfound_nan)) then
         if (lroot) then
           print*, 'pencil_consistency_check: the presence of NaNs '// &
-               'in df_ref makes this test impossible'
-          print*, 'pencil_consistency_check: quitting pencil check'
+               'in "df_ref" makes this test impossible'
+          call stop_it_if_any(.true.,'pencil_consistency_check: '// &
+              'generation of reference failed, quitting pencil check')
         endif
-        stop
       endif
+      call stop_it_if_any(.false.,'')
+!
       if (notanumber(dt1_max_ref)) &
-          print*, 'pencil_consistency_check: NaNs in dt1_max_ref'
+          print*, 'pencil_consistency_check: NaNs in "dt1_max_ref"'
 !
       nite=npencils
       if ((.not.lpencil_check).and.lpencil_check_small) nite=0
@@ -172,9 +175,11 @@ module Pencil_check
           if (notanumber(df(:,m,n,iv))) lfound_nan(iv)=.true.
         enddo; enddo; enddo
         do iv=1,mvar
-          if (lfound_nan(iv)) &
-              print*, 'pencil_consistency_check: NaNs in df at variable', &
-              iv, ' for pencil ', trim(pencil_names(penc))
+          if (lfound_nan(iv)) then
+            print*, 'pencil_consistency_check: NaNs in "df" at variable', &
+                iv, ' for pencil ', trim(pencil_names(penc))
+            print*, 'pencil_consistency_check: numbers of variables are in "data/index.pro".'
+          endif
         enddo
 !
 !  Compare results.
@@ -196,7 +201,7 @@ f_loop:   do iv=1,mvar
           enddo f_loop
         endif
 !
-        call mpireduce_and(lconsistent,lconsistent_allproc)
+        call mpireduce_and(lconsistent,lconsistent_allproc,MPI_COMM_WORLD)
 !
         if (lroot) then
           if (penc>0) then
@@ -265,8 +270,10 @@ f_loop:   do iv=1,mvar
         if (notanumber(df(:,m,n,iv))) lfound_nan(iv)=.true.
       enddo; enddo; enddo
       do iv=1,mvar
-        if (lfound_nan(iv)) &
-            print*, 'pencil_consistency_check: NaNs in df at variable', iv
+        if (lfound_nan(iv)) then
+          print*, 'pencil_consistency_check: NaNs in df at variable', iv
+          print*, 'pencil_consistency_check: numbers of variables are in "data/index.pro".'
+        endif
       enddo
 !
 !  Compare results.
@@ -288,7 +295,7 @@ f_lop:  do iv=1,mvar
         enddo f_lop
       endif
 !
-      call mpireduce_and(lconsistent,lconsistent_allproc)
+      call mpireduce_and(lconsistent,lconsistent_allproc,MPI_COMM_WORLD)
       if (lroot) then
         if (.not. lconsistent_allproc) then
           print*, 'pencil_consistency_check: '// &
@@ -378,7 +385,7 @@ f_lop:  do iv=1,mvar
           if (.not.lconsistent) exit
         enddo
 !
-        call mpireduce_and(lconsistent,lconsistent_allproc)
+        call mpireduce_and(lconsistent,lconsistent_allproc,MPI_COMM_WORLD)
 !
 !  ref = result same as "correct" reference result
 !    d = swapped pencil set as diagnostic
@@ -480,7 +487,7 @@ f_lop:  do iv=1,mvar
         endif
       enddo
 !
-      call mpireduce_and(lconsistent,lconsistent_allproc)
+      call mpireduce_and(lconsistent,lconsistent_allproc,MPI_COMM_WORLD)
       if (lroot) then
         if (.not. lconsistent_allproc) then
           print*, 'pencil_consistency_check: '// &

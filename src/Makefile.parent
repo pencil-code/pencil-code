@@ -98,9 +98,15 @@ pc_configtest:
 pc_tecplot:
 	( cd src && \
 	  $(MAKE) FROM_PARENT=src/ pre_and_post_processing/pc_tecplot.x )
+pc_tecplot_solid:
+	( cd src && \
+	  $(MAKE) FROM_PARENT=src/ pre_and_post_processing/pc_tecplot_solid.x )
 pc_meanfield_collect:
 	( cd src && \
 	  $(MAKE) FROM_PARENT=src/ experimental/pc_meanfield_collect.x )
+pc_h5collect:
+	( cd src && \
+	  $(MAKE) FROM_PARENT=src/ experimental/pc_h5collect.x )
 
 # Create Makefile.inc, but need this to be a `phony' target (i.e. not a
 # filename as target), so this file is always written.

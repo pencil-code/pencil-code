@@ -969,17 +969,21 @@ module Magnetic
 !
     endsubroutine get_slices_magnetic
 !***********************************************************************
-    subroutine dynamical_resistivity(urms)
+    subroutine dynamical_resistivity(uc)
 !
 !  Dynamically set resistivity coefficient given fixed mesh Reynolds number.
 !
 !  19-may-14/ccyang: coded
 !
-      real, intent(in) :: urms
+!  Input Argument
+!      uc
+!          Characteristic velocity of the system.
+!
+      real, intent(in) :: uc
 !
 !  Mesh hyper-resistivity coefficient
 !
-      if (lresis_hyper3_mesh) eta_hyper3_mesh = pi5_1 * urms / re_mesh / sqrt(real(dimensionality))
+      if (lresis_hyper3_mesh) eta_hyper3_mesh = pi5_1 * uc / re_mesh / sqrt(real(dimensionality))
 !
     endsubroutine dynamical_resistivity
 !***********************************************************************
@@ -1232,8 +1236,7 @@ module Magnetic
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension(nx,3) :: pv
-      real, dimension(nx) :: eta3, hyper3x
-      real, dimension(nz) :: ucz
+      real, dimension(nx) :: eta3
       integer :: j
 !
 !  Reset maxdiffus_eta3 for time-step constraint.
@@ -1254,11 +1257,8 @@ module Magnetic
 !
 !  Get the hyper resistivity.
 !
-      if (lshear .and. lhyper3x_mesh) hyper3x = diff_hyper3x_mesh * abs(Sshear) * xprim(l1:l2)
-      if (ldyndiff_urmsmxy) then
-        ucz = find_xyrms_fvec(f, iuu)
-      else if (lshear .and. lhyper3x_mesh) then
-        eta3 = eta_hyper3_mesh + hyper3x
+      if (lshear .and. lhyper3x_mesh) then
+        eta3 = eta_hyper3_mesh + diff_hyper3x_mesh * abs(Sshear) * xprim(l1:l2)
       else
         eta3 = eta_hyper3_mesh
       endif
@@ -1268,14 +1268,6 @@ module Magnetic
       getd4jj: do imn = 1, ny * nz
         m = mm(imn)
         n = nn(imn)
-        zdep: if (ldyndiff_urmsmxy .and. (imn == 1 .or. nn(max(imn-1,1)) /= n)) then
-          call dynamical_resistivity(ucz(n-nghost))
-          if (lshear .and. lhyper3x_mesh) then
-            eta3 = eta_hyper3_mesh + hyper3x
-          else
-            eta3 = eta_hyper3_mesh
-          endif
-        endif zdep
         comp: do j = 1, 3
           call del4(f, ijj+j-1, pv(:,j), ignoredx=.true.)
           pv(:,j) = eta3 * pv(:,j)

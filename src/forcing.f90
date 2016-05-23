@@ -103,6 +103,7 @@ module Forcing
   real, dimension(n_forcing_cont_max) :: fcont_ampl=1., ABC_A=1., ABC_B=1., ABC_C=1.
   real :: ampl_diffrot,omega_exponent
   real :: omega_tidal, R0_tidal, phi_tidal
+  real :: cs0eff=impossible
 !
 !  auxiliary functions for continuous forcing function
 !
@@ -142,7 +143,7 @@ module Forcing
        z_bb,width_bb,eta_bb,fcont_ampl, &
        ampl_diffrot,omega_exponent,kx_2df,ky_2df,xminf,xmaxf,yminf,ymaxf, &
        lavoid_xymean,lavoid_ymean,lavoid_zmean, omega_tidal, R0_tidal, phi_tidal, &
-       n_hel_sin_pow,kzlarge
+       n_hel_sin_pow, kzlarge, cs0eff
 !
 ! other variables (needs to be consistent with reset list below)
 !
@@ -154,11 +155,12 @@ module Forcing
 ! Auxiliaries
 !
   real, dimension(:,:), pointer :: reference_state
+  real, dimension(3) :: k1xyz=0.
 !
   contains
 !
 !***********************************************************************
-    subroutine register_forcing()
+    subroutine register_forcing
 !
 !  add forcing in timestep()
 !  11-may-2002/wolf: coded
@@ -170,7 +172,7 @@ module Forcing
 !
     endsubroutine register_forcing
 !***********************************************************************
-    subroutine initialize_forcing()
+    subroutine initialize_forcing
 !
 !  read seed field parameters
 !  nothing done from start.f90
@@ -179,6 +181,7 @@ module Forcing
 !  23-jan-2015/MR: reference state now fetched here and stored in module variable
 !  15-feb-2015/MR: returning before entering continuous forcing section when
 !                  no such forcing is requested
+!  18-dec-2015/MR: minimal wavevectors k1xyz moved here from grid
 !
       use General, only: bessj
       use Mpicomm, only: stop_it
@@ -187,7 +190,6 @@ module Forcing
 !
       real :: zstar
       integer :: l,i
-      integer :: ierr
 !
       if (lstart) then
         if (ip<4) print*,'initialize_forcing: not needed in start'
@@ -629,7 +631,7 @@ module Forcing
 !  Get reference_state. Requires that density is initialized before forcing.
 !
       if (lreference_state) &
-          call get_shared_variable('reference_state',reference_state,caller='initialize_forcing')
+        call get_shared_variable('reference_state',reference_state,caller='initialize_forcing')
 
       if (.not.lforcing_cont) return
       
@@ -640,14 +642,15 @@ module Forcing
         else
           if (kf_fcont(i)  ==impossible) kf_fcont(i)  =k1_ff
           if (kf_fcont_x(i)==impossible) kf_fcont_x(i)=kx_ff
-!          if (kf_fcont_y(i)==impossible) kf_fcont_x(i)=ky_ff
-!NS: bug; replaced kf_fcont_x(i) -> kf_fcont_y(i)
           if (kf_fcont_y(i)==impossible) kf_fcont_y(i)=ky_ff
           if (kf_fcont_z(i)==impossible) kf_fcont_z(i)=kz_ff
           if (z_center_fcont(i)==0.) z_center_fcont(i)=z_center
         endif
-
-        if (iforcing_cont(i)=='ABC') then
+!
+!  all 3 sin and cos functions needed
+!
+        if (iforcing_cont(i)=='ABC' .or. &
+            iforcing_cont(i)=='Straining') then
           if (lroot) print*,'forcing_cont: ABC--calc sinx, cosx, etc'
           sinx(:,i)=sin(kf_fcont(i)*x); cosx(:,i)=cos(kf_fcont(i)*x)
           siny(:,i)=sin(kf_fcont(i)*y); cosy(:,i)=cos(kf_fcont(i)*y)
@@ -690,7 +693,7 @@ module Forcing
             siny(:,i)=embedy(:,i)*siny(:,i); cosy(:,i)=embedy(:,i)*cosy(:,i)
             cosz(:,i)=embedz(:,i)*cosz(:,i)
           endif
-        elseif (iforcing_cont(i)=='cosx(:,i)*cosy(:,i)*cosz(:,i)') then
+        elseif (iforcing_cont(i)=='cosx*cosy*cosz') then
           if (lroot) print*,'forcing_cont: cosx(:,i)*cosy(:,i)*cosz(:,i)'
           sinx(:,i)=sin(kf_fcont(i)*x); cosx(:,i)=cos(kf_fcont(i)*x)
           siny(:,i)=sin(kf_fcont(i)*y); cosy(:,i)=cos(kf_fcont(i)*y)
@@ -741,6 +744,10 @@ print*,'NS: z_center=',z_center_fcont
       enddo
       if (lroot .and. n_forcing_cont==0) &
         call warning('forcing','no valid continuous iforcing_cont specified')
+!
+!  minimal wavenumbers
+!
+      where( Lxyz/=0.) k1xyz=2.*pi/Lxyz
 !
     endsubroutine initialize_forcing
 !***********************************************************************
@@ -851,7 +858,7 @@ print*,'NS: z_center=',z_center_fcont
 !
       if (lfirst_call) then
 ! If this is the first time this routine is being called select a set of
-! k-vectors in two dimensions according to input parameters:
+! k-vectors in two dimensions according to inputparameters:
         if (lroot) print*,'forcing_2drandom_xy: selecting k vectors'
         call get_2dmodes (.true.)
         allocate(random2d_kmodes (2,random2d_nmodes))
@@ -1013,7 +1020,7 @@ print*,'NS: z_center=',z_center_fcont
 !  21-jan-15/MR: changes for use of reference state.
 !
       use General, only: random_number_wrapper
-      use Mpicomm, only: mpifinalize,mpireduce_sum,mpibcast_real
+      use Mpicomm, only: mpireduce_sum,mpibcast_real
       use Sub, only: del2v_etc,dot
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1180,7 +1187,7 @@ print*,'NS: z_center=',z_center_fcont
 !
       if (lout) then
         if (idiag_qfm/=0) then
-          fsum_tmp=iqfm/(nwgrid)
+          fsum_tmp=iqfm/nwgrid
           call mpireduce_sum(fsum_tmp,fsum)
           iqfm=fsum
           call mpibcast_real(iqfm)
@@ -1210,6 +1217,7 @@ print*,'NS: z_center=',z_center_fcont
 !  06-dec-13/nishant: made kkx etc allocatable
 !  20-aug-14/MR: discard wavevectors analogously to forcing_irrot
 !  21-jan-15/MR: changes for use of reference state.
+!  26-nov-15/AB: The cs0eff factor used for normalization can now be set.
 !
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
@@ -1234,7 +1242,6 @@ print*,'NS: z_center=',z_center_fcont
       logical, save :: lfirst_call=.true.
       integer, save :: nk
       integer :: ik,j,jf,j2f
-      real, save :: cs0eff
       real :: kx0,kx,ky,kz,k2,k,force_ampl,pi_over_Lx
       real :: ex,ey,ez,kde,sig,fact,kex,key,kez,kkex,kkey,kkez
       real, dimension(3) :: e1,e2,ee,kk
@@ -1267,11 +1274,13 @@ print*,'NS: z_center=',z_center_fcont
 !
 !  At the moment, cs0 is used for normalization.
 !
-        if (cs0==impossible) then
-          cs0eff=1.
-          if (headt) print*,'forcing_hel: for normalization, use cs0eff=',cs0eff
-        else
-          cs0eff=cs0
+        if (cs0eff==impossible) then
+          if (cs0==impossible) then
+            cs0eff=1.
+            if (headt) print*,'forcing_hel: for normalization, use cs0eff=',cs0eff
+          else
+            cs0eff=cs0
+          endif
         endif
 !
       endif
@@ -1766,7 +1775,6 @@ call fatal_error('forcing_hel','check that radial profile with rcyl_ff works ok'
       use Diagnostics, only: sum_mn_name
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
-      use Mpicomm, only: mpifinalize
       use Sub, only: del2v_etc,curl,cross,dot,dot2
 !
       real :: phase,ffnorm,irufm
@@ -2189,7 +2197,6 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
 !
       use EquationOfState, only: cs0
       use General, only: random_number_wrapper
-      use Mpicomm, only: mpifinalize
       use Sub
 !
       real :: phase,ffnorm
@@ -4161,7 +4168,9 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
 !***********************************************************************
     subroutine forcing_diffrot(f,force_ampl)
 !
-!  add differential rotation
+!  Add differential rotation. This routine does not employ continuous
+!  forcing, which would be better. It is therefore inferior to the
+!  differential rotation procedure implemented directly in hydro.
 !
 !  26-jul-02/axel: coded
 !
@@ -4383,8 +4392,8 @@ call fatal_error('forcing_hel_noshear','radial profile should be quenched')
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real :: force_ampl
-      real :: irufm,fsum_tmp,fsum
-      real, dimension (nx) :: ruf,rho, rho1
+      real :: irufm
+      real, dimension (nx) :: ruf,rho,rho1
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
 !      real, dimension (nx,3) :: bb,fxb
       integer :: j,jf,l
@@ -4762,7 +4771,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
     endsubroutine calc_lforcing_cont_pars
 !***********************************************************************
-    subroutine pencil_criteria_forcing()
+    subroutine pencil_criteria_forcing
 !
 !  All pencils that the Forcing module depends on are specified here.
 !
@@ -4841,7 +4850,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
       real, dimension (nx), optional, intent(in) :: rho1
 !
       real, dimension (nx) :: tmp
-      real :: fact, fact2, fpara, dfpara, sqrt21k1, kf, kx, ky, nu, arg
+      real :: fact, fact1, fact2, fpara, dfpara, sqrt21k1, kf, kx, ky, kz, nu, arg
       integer :: i2d1=1,i2d2=2,i2d3=3
       integer :: ierr
 !
@@ -4890,6 +4899,31 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,1)=fact*sinz(n    ,i)
           force(:,2)=fact*sinx(l1:l2,i)
           force(:,3)=fact*siny(m    ,i)
+!
+!  Amplitude is given by ampl_ff/nu*k^2, and k^2=2 in a 2-D box
+!  of size (2pi)^2, for example.
+!
+        case('Straining')
+          fact=ampl_ff(i)
+          fact2=-(dimensionality-1)*ampl_ff(i)
+          force(:,1)=fact *sinx(l1:l2,i)*cosy(m,i)*cosz(n,i)
+          force(:,2)=fact *cosx(l1:l2,i)*siny(m,i)*cosz(n,i)
+          force(:,3)=fact2*cosx(l1:l2,i)*cosy(m,i)*sinz(n,i)
+!
+!  Amplitude is given by ampl_ff/nu*k^2, and k^2=2 in a 2-D box
+!  of size (2pi)^2, for example.
+!
+        case('StrainingExcact')
+          call fatal_error("forcing_cont","not checked yet")
+          call getnu(nu_input=nu)
+          kx=k1_ff; kz=k1_ff
+          kf=sqrt(kx**2+kz**2)
+          fact=ampl_ff(i)*kf**2*nu
+          fact1=ampl_ff(i)*ampl_ff(i)*kx*kz
+          fact2=-(dimensionality-1)*ampl_ff(i)*kf**2*nu
+          force(:,1)=fact *sinx(l1:l2,i)*cosy(m,i)*cosz(n,i)-fact1*kz*cosx(l1:l2,i)*cosy(m,i)*sinz(n,i)
+          force(:,2)=fact *cosx(l1:l2,i)*siny(m,i)*cosz(n,i)
+          force(:,3)=fact2*cosx(l1:l2,i)*cosy(m,i)*sinz(n,i)-fact1*kx*sinx(l1:l2,i)*cosy(m,i)*cosz(n,i)
         case('RobertsFlow')
           fact=ampl_ff(i)
           force(:,1)=-fact*cosx(l1:l2,i)*siny(m,i)

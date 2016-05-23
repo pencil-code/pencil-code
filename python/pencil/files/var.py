@@ -11,12 +11,12 @@
 # 03/08 : T. Gastine (tgastine@ast.obs-mip.fr)
 
 import numpy as np
-from npfile import npfile
+from pencil.files.npfile import npfile
 import os
 import sys
-from param import read_param
-from index import read_index
-from dim import read_dim
+from pencil.files.param import read_param
+from pencil.files.index import read_index
+from pencil.files.dim import read_dim
 from pencil.math.derivatives import curl, curl2
 import re
 
@@ -146,8 +146,9 @@ class DataCube(object):
             proc = int(directory[4:])
             procdim = read_dim(datadir, proc)
             if (not quiet):
-                print "reading data from processor %i of %i ..." \
-                      % (proc, len(procdirs))
+                #print "reading data from processor %i of %i ..." \ # Python 2
+                      #% (proc, len(procdirs)) # Python 2
+                print("reading data from processor {0} of {1} ...".format(proc, len(procdirs)))
 
             mxloc = procdim.mx
             myloc = procdim.my
@@ -252,19 +253,19 @@ class DataCube(object):
             if ('bb' in magic):
                 # Compute the magnetic field before doing trimall.
                 aa = f[index['ax']-1:index['az'],...]
-                self.bb = curl(aa,dx,dy,dz,run2D=param.lwrite_2d)
+                self.bb = curl(aa,dx,dy,dz,x,y,z,run2D=param.lwrite_2d)
                 if (trimall): self.bb=self.bb[:, dim.n1:dim.n2+1,
                 dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             if ('jj' in magic):
                 # Compute the electric current field before doing trimall.
                 aa = f[index['ax']-1:index['az'],...]
-                self.jj = curl2(aa,dx,dy,dz)
+                self.jj = curl2(aa,dx,dy,dz,x,y,z)
                 if (trimall): self.jj=self.jj[:, dim.n1:dim.n2+1,
                 dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             if ('vort' in magic):
                 # Compute the vorticity field before doing trimall.
                 uu = f[index['ux']-1:index['uz'],...]
-                self.vort = curl(uu,dx,dy,dz,run2D=param.lwrite_2d)
+                self.vort = curl(uu,dx,dy,dz,x,y,z,run2D=param.lwrite_2d)
                 if (trimall):
                     if (param.lwrite_2d):
                         if (dim.nz == 1):
@@ -308,12 +309,12 @@ class DataCube(object):
             if key != 'global_gg':
                 setattr(self,key,self.f[value-1,...])
         # special treatment for vector quantities
-        if index.has_key('uu'):
+        if 'uu' in index.keys():
             self.uu = self.f[index['ux']-1:index['uz'],...]
-        if index.has_key('aa'):
+        if 'aa' in index.keys():
             self.aa = self.f[index['ax']-1:index['az'],...]
         # Also treat Fcr (from cosmicrayflux) as a vector.
-        if index.has_key('fcr'):  
+        if 'fcr' in index.keys():
             self.fcr = self.f[index['fcr']-1:index['fcr']+2,...]
             self.fcrx = self.fcr[0]
             self.fcry = self.fcr[1]

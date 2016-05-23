@@ -1,0 +1,41 @@
+!
+!  Run parameters for Solid cells combustion.
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2014-04-20 14:36:03 Zhuang ZJU $',
+  nt=10, it1=1, isave=30000, itorder=3,
+  dsnap=2e-3, dvid=0.2, dtmin=1e-30!,dt=5e-8
+  lpencil_check=F, lpencil_check_small=F, lpencil_check_no_zeros=F
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  lupw_lnrho=T
+/
+&entropy_run_pars
+  lupw_lnTT=T
+/
+&chemistry_run_pars
+  lreactions=T
+  lthcond_simple=F
+  lDiff_simple=F
+  lDiff_lewis=T
+  lfilter=T
+/
+&solid_cells_run_pars
+  lradius_advance=F
+  lpos_advance=F
+  lNusselt_output=F
+  isolid_reac_mech=1
+/
+&viscosity_run_pars
+  ivisc='nu-mixture'
+/
+&NSCBC_run_pars
+  nscbc_bc = 'part_ref_inlet:part_ref_outlet','',''
+  nscbc_sigma_out=0.5
+  nscbc_sigma_in=4.0
+  p_infty=1.013e6
+/

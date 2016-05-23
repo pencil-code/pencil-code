@@ -11,9 +11,9 @@ import os
 import re
 import numpy as N
 
-from npfile import npfile
-from param import read_param 
-from dim import read_dim 
+from pencil.files.npfile import npfile
+from pencil.files.param import read_param 
+from pencil.files.dim import read_dim 
 
 def read_zaver(datadir='data/',format='native',point=(-1,-1),proc=-1):
 
@@ -44,8 +44,8 @@ def read_zaver(datadir='data/',format='native',point=(-1,-1),proc=-1):
         precision = 'f'
 
     if proc < 0:
-        procdirs = filter(lambda s:s.startswith('proc'),
-                            os.listdir(datadir))
+        procdirs = list(filter(lambda s:s.startswith('proc'),
+                                 os.listdir(datadir)))
     else:
         procdirs = ['proc'+str(proc)]
             
@@ -80,10 +80,12 @@ def read_zaver(datadir='data/',format='native',point=(-1,-1),proc=-1):
             try:
                 raw_data = infile.fort_read(precision,shape=zaver_loc_shape)
             except ValueError:
-                print "Problem: seems there is a t without corresponding data. zaverages.dat may be corrupted"
+                #print "Problem: seems there is a t without corresponding data. zaverages.dat may be corrupted" # Python 2                
+                print("Problem: seems there is a t without corresponding data. zaverages.dat may be corrupted")
                 break
             except TypeError:
-                print "Problem: seems there is a t without corresponding data. zaverages.dat may be corrupted"
+                #print "Problem: seems there is a t without corresponding data. zaverages.dat may be corrupted" # Python
+                print("Problem: seems there is a t without corresponding data. zaverages.dat may be corrupted")
                 break
             zaver_local.append(raw_data)
             ntime += 1

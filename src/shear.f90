@@ -100,6 +100,9 @@ module Shear
 !
       use Sub, only: bspline_precondition, ludcmp
 !
+      if (lyinyang) &
+        call fatal_error('initialize_shear', 'Shear not implemented for Yin-Yang grid')
+!
 !  Calculate the shear velocity.
 !
       if (qshear/=0.0) then
@@ -144,6 +147,13 @@ module Shear
         call bspline_precondition(nygrid, bspline_k, bspline_ay)
         call ludcmp(bspline_ay, bspline_iy)
       endif bsplines
+!
+!  Hand over shear acceleration to Particles_drag.
+!
+      drag: if (lparticles_drag .and. lshear_acceleration) then
+        lshear_acceleration = .false.
+        if (lroot) print *, 'initialize_shear: turned off and hand over shear acceleration to Particles_drag. '
+      endif drag
 !
     endsubroutine initialize_shear
 !***********************************************************************
@@ -376,9 +386,9 @@ module Shear
 !
 !  Take shear into account for calculating time step.
 !
-      if (lfirst.and.ldt.and.(lhydro.or.ldensity).and. &
-          (.not.lshearadvection_as_shift)) &
-          advec_shear=abs(uy0*dy_1(m))
+      if (lfirst .and. ldt .and. (lhydro .or. ldensity) .and. &
+          nygrid > 1 .and. .not. lshearadvection_as_shift) &
+          advec_shear = abs(uy0 * dy_1(m))
 !
 !  Calculate shearing related diagnostics.
 !
@@ -460,7 +470,7 @@ module Shear
 !  05-jun-12/ccyang: move SAFI to subroutine sheared_advection_fft
 !
       use Diagnostics, only: save_name
-      use Mpicomm, only: isendrcv_bdry_x
+      use Mpicomm, only: update_neighbors, isendrcv_bdry_x
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -483,6 +493,10 @@ module Shear
 !
       deltay=deltay-Sshear*Lx*dt_shear
       deltay=deltay-int(deltay/Ly)*Ly
+!
+!  Update process neighbors.
+!
+      call update_neighbors()
 !
 !  Solve for advection by shear motion by shifting all variables and their
 !  time derivative (following Gammie 2001). Removes time-step constraint
@@ -783,8 +797,6 @@ module Shear
 !
 !  25-feb-13/ccyang: coded.
 !  16-sep-14/ccyang: relax the nprocx=1 restriction.
-!
-      use Mpicomm, only: mpisend_real, mpirecv_real, mpibarrier
 !
       real, dimension(:,:,:,:), intent(inout) :: f
       integer, intent(in) :: ivar1, ivar2

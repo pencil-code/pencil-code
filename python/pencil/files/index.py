@@ -47,7 +47,7 @@ class Index(dict):
             clean = line.strip()
             name=clean.split('=')[0].strip().replace('[','').replace(']','')
             if (clean.split('=')[1].strip().startswith('intarr(')):
-	      continue
+                continue
             val=int(clean.split('=')[1].strip())
            # val=int(float(clean.split('=')[1].strip())) # sean150513
 

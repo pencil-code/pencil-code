@@ -83,7 +83,7 @@ module Timestep
         dt_next = 5.0*dt
       endif
 !
-      if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc,dt  !(all have same dt?)
+      if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc_world,dt  !(all have same dt?)
 ! Increase time
       t = t+dt
 ! Time step to try next time
@@ -102,7 +102,7 @@ module Timestep
 !
 ! Explicit fifth order Runge--Kutta--Fehlberg time stepping
 !
-      use Mpicomm, only: mpiallreduce_max
+      use Mpicomm, only: mpiallreduce_max,MPI_COMM_WORLD
       use Equ, only: pde
 !
 ! RK parameters by Cash and Karp
@@ -247,7 +247,7 @@ module Timestep
 !
       errmaxs=errmaxs/eps_rkf
 !
-      call mpiallreduce_max(errmaxs,errmax)
+      call mpiallreduce_max(errmaxs,errmax,MPI_COMM_WORLD)
 !
     endsubroutine rkck
 !***********************************************************************

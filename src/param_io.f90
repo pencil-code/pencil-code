@@ -63,6 +63,7 @@ module Param_IO
   public :: read_all_init_pars, read_all_run_pars
   public :: write_all_init_pars, write_all_run_pars
   public :: write_pencil_info
+  public :: get_downpars
 !
   logical :: lforce_shear_bc = .true.
 !
@@ -75,13 +76,14 @@ module Param_IO
   namelist /init_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower,&
       coord_system, lpole, &
-      lequidist, coeff_grid, zeta_grid0, grid_func, xyz_star, lwrite_ic, &
+      lequidist, coeff_grid, zeta_grid0, grid_func, xyz_star, lwrite_ic, lwrite_avg1d_binary, &
       lnowrite, luniform_z_mesh_aspect_ratio, unit_system, unit_length, &
       lmodify,modify_filename, &
       unit_velocity, unit_density, unit_temperature, unit_magnetic, c_light, &
       G_Newton, hbar, random_gen, seed0, nfilter, lserial_io, der2_type, &
       lread_oldsnap, lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, &
+      lreset_tstart, tstart, lghostfold_usebspline, &
       lread_aux, lwrite_aux, pretend_lnTT, lprocz_slowest, &
       lcopysnapshots_exp, bcx, bcy, bcz, r_int, r_ext, r_ref, rsmooth, &
       r_int_border, r_ext_border, mu0, force_lower_bound, force_upper_bound, &
@@ -99,7 +101,7 @@ module Param_IO
       lforce_shear_bc,lread_from_other_prec, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w,&
       lcorotational_frame, rcorot, lproper_averages, &
-      ldirect_access, ltolerate_namelist_errors
+      ldirect_access, ltolerate_namelist_errors, lyinyang
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
@@ -117,8 +119,7 @@ module Param_IO
       lkinflow_as_aux, ampl_kinflow_x, ampl_kinflow_y, ampl_kinflow_z, &
       kx_kinflow, ky_kinflow, kz_kinflow, dtphase_kinflow, &
       random_gen, der2_type, lrmwig_rho, lrmwig_full, lrmwig_xyaverage, &
-      ltime_integrals, lnowrite, noghost_for_isave, nghost_read_fewer, &
-      lwrite_yaverages, lwrite_zaverages, lwrite_phiaverages, &
+      lnowrite, noghost_for_isave, nghost_read_fewer, &
       test_nonblocking, lwrite_tracers, lwrite_fixed_points, &
       lread_oldsnap_lnrho2rho, lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, &
@@ -150,12 +151,12 @@ module Param_IO
       lini_t_eq_zero, lav_smallx, xav_max, ldt_paronly, lweno_transport, &
       it_timing, har_spec, hav_spec, j_spec, jb_spec, lread_less, lformat, ltec, &
       llsode, lsplit_second, nu_sts, permute_sts, lfargo_advection, &
-      ldynamical_diffusion, ldyndiff_urmsmxy, re_mesh, lreset_seed, &
-      loutput_varn_at_exact_tsnap, lstop_on_ioerror, mailaddress, &
+      ldynamical_diffusion, ldyndiff_useumax, re_mesh, lghostfold_usebspline, &
+      lreset_seed, loutput_varn_at_exact_tsnap, lstop_on_ioerror, mailaddress, &
       theta_lower_border, wborder_theta_lower, theta_upper_border, &
       wborder_theta_upper, fraction_tborder, lmeridional_border_drive, &
       lread_from_other_prec, downsampl, lfullvar_in_slices, lsubstract_reference_state, &
-      ldirect_access, lproper_averages, &
+      ldirect_access, lproper_averages, lmaximal_cdt, lmaximal_cdtv, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w
 !
   contains
@@ -168,7 +169,7 @@ module Param_IO
 !  25-oct-02/axel: default is taken from cdata.f90 where it's defined
 !  14-jan-15/MR  : corrected call of mpibcast_char
 !
-      use Mpicomm, only: mpibcast_logical, mpibcast_char
+      use Mpicomm, only: mpibcast_logical, mpibcast_char,MPI_COMM_WORLD
 !
       character (len=*) :: dir
       logical :: exists
@@ -187,11 +188,11 @@ module Param_IO
 !
 !  Tell other processors whether we need to communicate dir (i.e. datadir).
 !
-      call mpibcast_logical(exists)
+      call mpibcast_logical(exists,comm=MPI_COMM_WORLD)
 !
 !  Let root processor communicate dir (i.e. datadir) to all other processors.
 !
-      if (exists) call mpibcast_char(dir)
+      if (exists) call mpibcast_char(dir,comm=MPI_COMM_WORLD)
 !
     endsubroutine get_datadir
 !***********************************************************************
@@ -284,7 +285,7 @@ module Param_IO
       call read_namelist(read_initial_condition_pars   ,'initial_condition_pars',linitial_condition)
       call read_namelist(read_streamlines_init_pars    ,'streamlines'    ,lstreamlines)
       call read_namelist(read_eos_init_pars            ,'eos'            ,leos)
-      call read_namelist(read_hydro_init_pars          ,'hydro'          ,lhydro .or. lhydro_kinematic)
+      call read_namelist(read_hydro_init_pars          ,'hydro'          ,lhydro)
       call read_namelist(read_density_init_pars        ,'density'        ,ldensity)
       call read_namelist(read_gravity_init_pars        ,'grav'           ,lgrav)
       call read_namelist(read_selfgravity_init_pars    ,'selfgrav'       ,lselfgravity)
@@ -323,18 +324,20 @@ module Param_IO
       endif
       call stop_it_if_any (.false., '')
       lparam_nml = .false.
+
+      if (lyinyang.and.coord_system/='spherical'.and.coord_system/='spherical_coords') then
+        if (lroot) call warning('read_all_init_pars', 'Yin-Yang grid only implemented for spherical coordinates')
+        lyinyang=.false.
+      endif
 !
-!  Print SVN id from first line.
+! Set proper BC code for Yin-Yang grid
 !
-      if (lroot) call svn_id(cvsid)
-!
-!  Give online feedback if called with the PRINT optional argument.
-!
-      if (loptest(print)) call write_all_init_pars
-!
-!  Write parameters to log file.
-!
-      if (lstart) call write_all_init_pars(FILE=trim(datadir)//'/params.log')
+      if (lyinyang) then
+        if (lroot.and..not.lrun) &
+          call information('read_all_init_pars', 'all BCs for y and z ignored because of Yin-Yang grid')
+        lperi(2:3) = .false.; lpole = .false.
+        bcy='yy'; bcz='yy'
+      endif
 !
 !  Parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries.
@@ -362,6 +365,26 @@ module Param_IO
       endif
 !
       call check_consistency_of_lperi('read_all_init_pars')
+!
+!  Option to use maximal rather than total distance for courant time
+!
+      if (old_cdtv) then
+        lmaximal_cdtv = old_cdtv
+        if (lroot) call warning('read_all_init_pars', &
+              'obsolete old_cdtv now replaced by more general lmaximal_cdtv')
+      endif
+!
+!  Print SVN id from first line.
+!
+      if (lroot) call svn_id(cvsid)
+!
+!  Give online feedback if called with the PRINT optional argument.
+!
+      if (loptest(print)) call write_all_init_pars
+!
+!  Write parameters to log file.
+!
+      if (lstart) call write_all_init_pars(FILE=trim(datadir)//'/params.log')
 !
     endsubroutine read_all_init_pars
 !***********************************************************************
@@ -446,6 +469,14 @@ module Param_IO
       endif
       call stop_it_if_any (.false., '')
 !
+! Set proper BC code for Yin-Yang grid
+!
+      if (lyinyang) then
+        if (lroot) call information('read_all_run_pars', 'all BCs for y and z ignored because of Yin-Yang grid')
+        lperi(2:3) = .false.; lpole = .false.
+        bcy='yy'; bcz='yy'
+      endif
+!
 !  Print SVN id from first line.
 !
       if (lroot) call svn_id(cvsid)
@@ -484,30 +515,16 @@ module Param_IO
 !
       call check_consistency_of_lperi('read_all_run_pars')
 !
-      if (any(downsampl>1)) then
-!
-!  If downsampling, calculate local start indices and number of data in
-!  output for each direction; inner ghost zones are here disregarded
-!
-        ldownsampl = .true.
-        if (dsnap_down<=0.) dsnap_down=dsnap
-!
-        call get_downpars(1,nx,ipx)
-        call get_downpars(2,ny,ipy)
-        call get_downpars(3,nz,ipz)
-!
-      endif
-
     endsubroutine read_all_run_pars
 !***********************************************************************
     subroutine get_downpars(ind,n,ip)
 !
 ! Calculates start indices & lengths for downsampled output
+! Parameters: coordinate direction, number of inner grid points, processor number
 !
 ! 13-feb-14/MR: coded
 ! 19-aug-15/PABourdin: moved, please do not use 'contains' in subroutines
 !                      MR: Why not?
-! Parameters: coordinate direction, number of inner grid points, processor number
 !
       integer, intent(IN) :: ind, n, ip
 !
@@ -974,7 +991,7 @@ module Param_IO
 !
     endsubroutine write_IDL_logicals
 !***********************************************************************
-    subroutine write_pencil_info()
+    subroutine write_pencil_info
 !
 !  Write information about requested and diagnostic pencils.
 !  Do this only when on root processor.

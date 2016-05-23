@@ -21,7 +21,7 @@ module General
   public :: keep_compiler_quiet
 !
   public :: setup_mm_nn
-  public :: find_index_range, find_index
+  public :: find_index_range, find_index, find_index_range_hill, pos_in_array
   public :: find_proc
 !
   public :: spline, tridag, pendag, complex_phase, erfcc
@@ -35,7 +35,7 @@ module General
   public :: read_range, merge_ranges, get_range_no, write_by_ranges, &
             write_by_ranges_1d_real, write_by_ranges_1d_cmplx, &
             write_by_ranges_2d_real, write_by_ranges_2d_cmplx
-  public :: quick_sort
+  public :: quick_sort, binary_search
   public :: date_time_string
   public :: backskip
   public :: lextend_vector
@@ -46,6 +46,16 @@ module General
   public :: backskip_to_time
   public :: ranges_dimensional
   public :: staggered_mean_scal, staggered_mean_vec
+  public :: staggered_max_scal, staggered_max_vec
+  public :: directory_names_std
+  public :: touch_file
+  public :: var_is_vec
+  public :: transform_cart_spher, transform_spher_cart_yy
+  public :: yy_transform_strip, yy_transform_strip_other, yin2yang_coors
+  public :: transform_thph_yy, transform_thph_yy_other, merge_yin_yang
+  public :: transpose_mn
+  public :: notanumber, notanumber_0d
+  public :: reduce_grad_dim
 !
   include 'record_types.h'
 !
@@ -124,6 +134,14 @@ module General
     module procedure in_array_char
   endinterface
 !
+  interface notanumber          ! Overload the `notanumber' function
+    module procedure notanumber_0
+    module procedure notanumber_1
+    module procedure notanumber_2
+    module procedure notanumber_3
+    module procedure notanumber_4
+  endinterface
+!
 !  State and default generator of random numbers.
 !
   integer, save, dimension(mseed) :: rstate=0
@@ -149,7 +167,7 @@ module General
 !
     endfunction find_proc
 !***********************************************************************
-    subroutine setup_mm_nn()
+    subroutine setup_mm_nn
 !
 !  Produce index-array for the sequence of points to be worked through:
 !  Before the communication has been completed, the nghost=3 layers next
@@ -249,10 +267,8 @@ module General
       endif
 !
 !  Debugging output to be analysed with $PENCIL_HOME/utils/check-mm-nn.
-!  Uncommenting manually, since we can't use ip here (as it is not yet
-!  read from run.in).
 !
-      if (.false.) then
+      if (ip<=6) then
         if (lroot) then
           do imn=1,ny*nz
             if (necessary(imn)) write(*,'(A)') '==MM==NN==> Necessary'
@@ -1049,6 +1065,43 @@ module General
       enddo
 !
     endsubroutine find_index_range
+!***********************************************************************
+    function find_index_range_hill(aa,planes) result(range)
+!
+!  Find index range (ii1,ii2) if a "hill" between to "planes" with levels planes(1)
+!  and planes(2) (possibly different). Inner "valleys" of the hill to the
+!  planes' levels are not considered.
+!
+!   9-mar-16/MR: derived from find_index_range
+!
+      integer, dimension(:), intent(in) :: aa
+      integer, dimension(2), intent(in) :: planes
+      integer, dimension(2) :: range
+!
+      integer :: naa,ii
+!
+!  Find lower index.
+!
+      naa=size(aa)
+      range(1)=naa
+      do ii=1,naa
+        if (aa(ii)/=planes(1)) then
+          range(1)=ii
+          exit
+        endif
+      enddo
+!
+!  Find upper index.
+!
+      range(2)=1
+      do ii=naa,1,-1
+        if (aa(ii)/=planes(2)) then
+          range(2)=ii
+          return
+        endif
+      enddo
+!
+    endfunction find_index_range_hill
 !***********************************************************************
     pure integer function find_index(xa, x)
 !
@@ -2354,7 +2407,7 @@ module General
       else
         print*, 'linear_interpolate: Interpolation point does not ' // &
             'lie within the calculated grid point interval.'
-        print*, 'iproc = ', iproc
+        print*, 'iproc = ', iproc_world
         print*, 'mx, x(1), x(mx) = ', mx, x(1), x(mx)
         print*, 'my, y(1), y(my) = ', my, y(1), y(my)
         print*, 'mz, z(1), z(mz) = ', mz, z(1), z(mz)
@@ -3199,12 +3252,10 @@ module General
     integer, dimension(:), intent(in) :: haystack
     integer :: pos
 
-    pos_in_array_int = -1
-
     do pos = 1, size(haystack)
       if (needle == haystack(pos)) then
-         pos_in_array_int = pos
-         return
+        pos_in_array_int = pos
+        return
       endif
     enddo
 
@@ -3266,7 +3317,7 @@ module General
 
   endfunction in_array_char
 !***********************************************************************
-    logical function loptest(lopt,ldef)
+    pure logical function loptest(lopt,ldef)
 !
 !  returns value of optional logical parameter opt if present,
 !  otherwise the default value ldef, if present, .false. if not
@@ -3286,7 +3337,7 @@ module General
 
     endfunction loptest
 !***********************************************************************
-    integer function ioptest(iopt,idef)
+    pure integer function ioptest(iopt,idef)
 !
 !  returns value of optional integer parameter iopt if present,
 !  otherwise the default value idef, if present, zero, if not.
@@ -3305,7 +3356,7 @@ module General
 
     endfunction ioptest
 !***********************************************************************
-    real function roptest(ropt,rdef)
+    pure real function roptest(ropt,rdef)
 !
 !  returns value of optional real parameter ropt if present,
 !  otherwise the default value rdef, if present, zero, if not.
@@ -3324,7 +3375,7 @@ module General
 
     endfunction roptest
 !***********************************************************************
-    real(KIND=rkind8) function doptest(dopt,ddef)
+    pure real(KIND=rkind8) function doptest(dopt,ddef)
 !
 !  returns value of optional real*8 parameter dopt if present,
 !  otherwise the default value ddef, if present, zero, if not.
@@ -3343,7 +3394,7 @@ module General
 
     endfunction doptest
 !***********************************************************************
-      function coptest(copt,cdef)
+    pure function coptest(copt,cdef)
 !
 !  returns value of optional character parameter copt if present,
 !  otherwise the default value cdef, if present, '', if not.
@@ -3363,7 +3414,38 @@ module General
 
     endfunction coptest
 !***********************************************************************
-    RECURSIVE SUBROUTINE quick_sort(list, order)
+    pure integer function binary_search(x, v)
+!
+!  Uses binary search to find the index of the element in array v that
+!  matches x; return 0 if no match is found.
+!
+!  v must already be in ascending order.
+!
+!  29-feb-16/ccyang: coded.
+!
+      integer, dimension(:), intent(in) :: v
+      integer, intent(in) :: x
+!
+      integer :: low, high, mid
+!
+      binary_search = 0
+      low = 1
+      high = size(v)
+      binary: do while (low <= high)
+        mid = (low + high) / 2
+        if (x < v(mid)) then
+          high = mid - 1
+        elseif (x > v(mid)) then
+          low = mid + 1
+        else
+          binary_search = mid
+          exit binary
+        endif
+      enddo binary
+!
+    endfunction binary_search
+!***********************************************************************
+    SUBROUTINE quick_sort(list, order)
 !
 ! Quick sort routine from:
 ! Brainerd, W.S., Goldberg, C.H. & Adams, J.C. (1990) "Programmer's Guide to
@@ -3489,6 +3571,7 @@ module General
       logical :: exists
 
       inquire(FILE=file, EXIST=exists)
+
       if (exists) then
         open (lun, FILE=file)
         close(lun, status='delete')
@@ -3776,5 +3859,659 @@ module General
       endif
 
     endsubroutine staggered_mean_scal
+!***********************************************************************
+    subroutine staggered_max_vec(f,k,jmax,weight)
+!
+!   Calculates max values of modulus of a vector quantity in the centre of a grid cell.
+!
+!   22-dec-15/JW: coded, adapted from staggered_mean_vec
+!
+      use Cdata, only: dimensionality
+
+      real, dimension (mx,my,mz,mfarray), intent(inout):: f
+      integer,                            intent(in)   :: k,jmax
+      real,                               intent(in)   :: weight
+      integer                                          :: ll,mm,nn
+!
+      if (dimensionality==3) then 
+!        
+        do ll=2,mx-2; do mm=2,my-2; do nn=2,mz-2 
+          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+          +weight*max(maxval(abs(f(ll,mm,nn,      k:k+2))) &
+                     ,maxval(abs(f(ll,mm,nn+1,    k:k+2))) &
+                     ,maxval(abs(f(ll,mm+1,nn,    k:k+2))) &
+                     ,maxval(abs(f(ll,mm+1,nn+1,  k:k+2))) &
+                     ,maxval(abs(f(ll+1,mm,nn,    k:k+2))) &
+                     ,maxval(abs(f(ll+1,mm,nn+1,  k:k+2))) &
+                     ,maxval(abs(f(ll+1,mm+1,nn,  k:k+2))) &
+                     ,maxval(abs(f(ll+1,mm+1,nn+1,k:k+2))))
+        enddo; enddo; enddo
+
+      elseif (dimensionality==1) then 
+        if (nxgrid/=1) then
+          do ll=2,mx-2; do mm=m1,m2; do nn=n1,n2 
+            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+            +weight*max(maxval(abs(f(ll,mm,nn,  k:k+2))) &
+                       ,maxval(abs(f(ll+1,mm,nn,k:k+2))))
+          enddo; enddo; enddo
+        elseif (nygrid/=1) then
+          do ll=l1,l2; do mm=2,my-2; do nn=n1,n2 
+            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+            +weight*max(maxval(abs(f(ll,mm,nn,  k:k+2))) &
+                       ,maxval(abs(f(ll,mm+1,nn,k:k+2))))
+          enddo; enddo; enddo
+        else
+          do ll=l1,l2; do mm=m1,m2; do nn=2,mz-2 
+            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+            +weight*max(maxval(abs(f(ll,mm,nn,  k:k+2))) &
+                       ,maxval(abs(f(ll+1,mm,nn,k:k+2))))
+          enddo; enddo; enddo          
+        endif
+      elseif (nzgrid==1) then   !  x-y
+        do ll=2,mx-2; do mm=2,my-2; do nn=n1,n2 
+          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+          +weight*max(maxval(abs(f(ll,mm,nn,    k:k+2))) &
+                     ,maxval(abs(f(ll,mm+1,nn,  k:k+2))) &
+                     ,maxval(abs(f(ll+1,mm,nn,  k:k+2))) &                     
+                     ,maxval(abs(f(ll+1,mm+1,nn,k:k+2))))
+        enddo; enddo; enddo
+      elseif (nygrid==1) then   !  x-z
+         do ll=2,mx-2; do mm=m1,m2; do nn=2,mz-2 
+          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+          +weight*max(maxval(abs(f(ll,mm,nn,    k:k+2))) &
+                     ,maxval(abs(f(ll,mm,nn+1,  k:k+2))) &
+                     ,maxval(abs(f(ll+1,mm,nn,  k:k+2))) &                     
+                     ,maxval(abs(f(ll+1,mm,nn+1,k:k+2))))
+        enddo; enddo; enddo
+      else                      !  y-z
+        do ll=l1,l2; do mm=2,my-2; do nn=2,mz-2 
+          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+          +weight*max(maxval(abs(f(ll,mm,nn,    k:k+2))) &
+                     ,maxval(abs(f(ll,mm,nn+1,  k:k+2))) &
+                     ,maxval(abs(f(ll,mm+1,nn,  k:k+2))) &                     
+                     ,maxval(abs(f(ll,mm+1,nn+1,k:k+2))))
+        enddo; enddo; enddo
+      endif
+
+    endsubroutine staggered_max_vec
+!***********************************************************************
+    subroutine staggered_max_scal(f,k,jmax,weight)
+!
+!   Calculates max values of modulus of a scalar quantity in the centre of a grid cell.
+!
+!   22-dec-15/JW: coded, adapted from staggered_mean_scal
+!
+      use Cdata, only: dimensionality
+
+      real, dimension (mx,my,mz,mfarray), intent(inout):: f
+      integer,                            intent(in)   :: k,jmax
+      real,                               intent(in)   :: weight
+      integer                                          :: ll,mm,nn
+!
+      if (dimensionality==3) then 
+!        
+        do ll=2,mx-2; do mm=2,my-2; do nn=2,mz-2 
+          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+          +weight*max(abs(f(ll,mm,nn,      k)) &
+                     ,abs(f(ll,mm,nn+1,    k)) &
+                     ,abs(f(ll,mm+1,nn,    k)) &
+                     ,abs(f(ll,mm+1,nn+1,  k)) &
+                     ,abs(f(ll+1,mm,nn,    k)) &
+                     ,abs(f(ll+1,mm,nn+1,  k)) &
+                     ,abs(f(ll+1,mm+1,nn,  k)) &
+                     ,abs(f(ll+1,mm+1,nn+1,k)))
+        enddo; enddo; enddo
+
+      elseif (dimensionality==1) then 
+        if (nxgrid/=1) then
+          do ll=2,mx-2; do mm=m1,m2; do nn=n1,n2 
+            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+            +weight*max(abs(f(ll,mm,nn,  k)) &
+                       ,abs(f(ll+1,mm,nn,k)))
+          enddo; enddo; enddo
+        elseif (nygrid/=1) then
+          do ll=l1,l2; do mm=2,my-2; do nn=n1,n2 
+            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+            +weight*max(abs(f(ll,mm,nn,  k)) &
+                       ,abs(f(ll,mm+1,nn,k)))
+          enddo; enddo; enddo
+        else
+          do ll=l1,l2; do mm=m1,m2; do nn=2,mz-2 
+            f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+            +weight*max(abs(f(ll,mm,nn,  k)) &
+                       ,abs(f(ll+1,mm,nn,k)))
+          enddo; enddo; enddo
+        endif
+      elseif (nzgrid==1) then   !  x-y
+        do ll=2,mx-2; do mm=2,my-2; do nn=n1,n2 
+          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+          +weight*max(abs(f(ll,mm,nn,    k)) &
+                     ,abs(f(ll,mm+1,nn,  k)) &
+                     ,abs(f(ll+1,mm,nn,  k)) &                     
+                     ,abs(f(ll+1,mm+1,nn,k)))
+        enddo; enddo; enddo
+      elseif (nygrid==1) then   !  x-z
+         do ll=2,mx-2; do mm=m1,m2; do nn=2,mz-2 
+          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+          +weight*max(abs(f(ll,mm,nn,    k)) &
+                     ,abs(f(ll,mm,nn+1,  k)) &
+                     ,abs(f(ll+1,mm,nn,  k)) &                     
+                     ,abs(f(ll+1,mm,nn+1,k)))
+        enddo; enddo; enddo
+      else                      !  y-z
+        do ll=l1,l2; do mm=2,my-2; do nn=2,mz-2 
+          f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
+          +weight*max(abs(f(ll,mm,nn,    k)) &
+                     ,abs(f(ll,mm,nn+1,  k)) &
+                     ,abs(f(ll,mm+1,nn,  k)) &                     
+                     ,abs(f(ll,mm+1,nn+1,k)))
+        enddo; enddo; enddo
+      endif
+
+    endsubroutine staggered_max_scal
+!***********************************************************************
+    subroutine directory_names_std(lproc)
+!
+!  Set up the directory names:
+!  set directory name for the output (one subdirectory for each processor)
+!  if datadir_snap (where var.dat, VAR# go) is empty, initialize to datadir
+!
+!  02-oct-2002/wolf: coded
+!
+      use Cdata, only: iproc_world, directory, datadir, datadir_snap, directory_dist, &
+                       directory_snap, directory_collect
+
+      logical, optional :: lproc
+
+      character (len=intlen) :: chproc
+!
+      chproc=itoa(iproc_world)
+      call safe_character_assign(directory, trim(datadir)//'/proc'//chproc)
+      call safe_character_assign(directory_dist, &
+                                            trim(datadir_snap)//'/proc'//chproc)
+      if (loptest(lproc)) then
+        call safe_character_assign(directory_snap, &
+                                              trim(datadir_snap)//'/proc'//chproc)
+      else
+        call safe_character_assign(directory_snap, &
+                                              trim(datadir_snap)//'/allprocs')
+      endif
+      call safe_character_assign(directory_collect, &
+                                            trim (datadir_snap)//'/allprocs')
+!
+    endsubroutine directory_names_std
+!****************************************************************************  
+    subroutine touch_file(file)
+!
+!  Touches a given file (used for code locking).
+!
+!  25-may-03/axel: coded
+!  24-mar-10/Bourdin.KIS: moved here from sub.f90
+!
+      character(len=*) :: file
+!
+      integer :: unit = 1
+!
+      open (unit, FILE=file)
+      close (unit)
+!
+    endsubroutine touch_file
+!***********************************************************************
+    logical function var_is_vec(j)
+!
+!  Checks whether variable (starting) at slot j in f array is vector field.
+!  At the moment magnetic field, including testfields and velocity including
+!  testflows are taken into account.
+!
+! 4-dec-2015/MR: coded
+!
+      use Cdata, only: iuu,iux,iuz,iaa,iax,iaz,iaatest,ntestfield,iuutest,ntestflow
+
+      integer :: j
+
+      var_is_vec = iuu>0.and.j>=iux.and.j<=iuz .or.  &
+                   iaa>0.and.j>=iax.and.j<=iaz .or.  &
+                   iaatest>0.and.j>=iaatest.and.j<=iaatest+ntestfield-1 .or. &
+                   iuutest>0.and.j>=iuutest.and.j<=iuutest+ntestflow-1
+
+    endfunction var_is_vec
+!***********************************************************************
+    subroutine transform_cart_spher(f,ith1,ith2,iph1,iph2,j)
+!
+!  Transforms a vector given in f array in slots j to j+2 on the rectangle
+!  ith1:ith2 x iph1:iph2 from Cartesian to spherical basis. Works in-place.
+!
+! 4-dec-2015/MR: coded
+!
+      use Cdata, only: mx, cosph, sinph, costh, sinth
+
+      real, dimension(:,:,:,:) :: f
+      integer :: ith1, ith2, iph1, iph2, j
+
+      real, dimension(size(f,1)) :: tmp12,tmp3
+      integer :: ith,iph
+
+      do ith=ith1,ith2; do iph=iph1,iph2
+
+        tmp12=cosph(iph)*f(:,ith,iph,j)+sinph(iph)*f(:,ith,iph,j+1)
+        tmp3 =f(:,ith,iph,j+2)
+        f(:,ith,iph,j+2) = -sinph(iph)*f(:,ith,iph,j)+cosph(iph)*f(:,ith,iph,j+1)
+        f(:,ith,iph,j  ) =  sinth(ith)*tmp12 + costh(ith)*tmp3
+        f(:,ith,iph,j+1) =  costh(ith)*tmp12 - sinth(ith)*tmp3
+
+      enddo; enddo
+
+    endsubroutine transform_cart_spher
+!***********************************************************************
+    subroutine transform_spher_cart_yy(f,ith1,ith2,iph1,iph2,dest,lyy)
+!
+!  Transforms a vector given on the rectangle ith1:ith2 x iph1:ip2 from spherical
+!  to Cartesian basis. For lyy=T in addition the Yin-Yang transform is performed.
+!  Not in-place capable!
+!
+! 4-dec-2015/MR: coded
+!
+      use Cdata, only: mx, cosph, sinph, costh, sinth
+
+      real, dimension(:,:,:,:) :: f
+      integer :: ith1, ith2, iph1, iph2
+      real, dimension(size(f,1),ith2-ith1+1,iph2-iph1+1,3) :: dest
+      logical, optional :: lyy
+
+      real, dimension(mx) :: tmp12
+      integer :: i,j,itd,ipd
+
+      do i=ith1,ith2; do j=iph1,iph2
+
+        tmp12=sinth(i)*f(:,i,j,1)+costh(i)*f(:,i,j,2)
+
+        itd=i-ith1+1; ipd=j-iph1+1
+        if (loptest(lyy)) then
+          dest(:,itd,ipd,1) = -(cosph(j)*tmp12 - sinph(j)*f(:,i,j,3))
+          dest(:,itd,ipd,2) = -(costh(i)*f(:,i,j,1)-sinth(i)*f(:,i,j,2))
+          dest(:,itd,ipd,3) = -(sinph(j)*tmp12 + cosph(j)*f(:,i,j,3))
+        else
+          dest(:,itd,ipd,1) = cosph(j)*tmp12 - sinph(j)*f(:,i,j,3)
+          dest(:,itd,ipd,2) = sinph(j)*tmp12 + cosph(j)*f(:,i,j,3)
+          dest(:,itd,ipd,3) = costh(i)*f(:,i,j,1)-sinth(i)*f(:,i,j,2)
+        endif
+
+      enddo; enddo
+
+    endsubroutine transform_spher_cart_yy
+!***********************************************************************
+    subroutine yy_transform_strip(ith1_,ith2_,iph1_,iph2_,thphprime)
+!
+!  Transform coordinates of ghost zones of Yin or Yang grid to other grid.
+!  Strip is defined by index ranges (ith1_,ith2_), (iph1_,iph2_) with respect
+!  to local grid, in particular sinth, costh etc.
+!
+!  4-dec-15/MR: coded
+! 12-mar-16/MR: entry yy_transform_strip_other added
+!
+      use Cdata, only: y,z,costh,sinth,cosph,sinph,iproc_world
+
+      integer,               intent(IN) :: ith1_,ith2_,iph1_,iph2_
+      real, dimension(:,:,:),intent(OUT):: thphprime
+      real, dimension(:),    intent(IN) :: th,ph
+
+      integer :: i,j,itp,jtp,ith1,ith2,iph1,iph2
+      real :: sth, cth, xprime, yprime, zprime, sprime
+      logical :: ltransp, lother
+
+      lother=.false.
+      ith1=ith1_; ith2=ith2_; iph1=iph1_; iph2=iph2_
+      goto 1
+
+    entry yy_transform_strip_other(th,ph,thphprime)
+!
+!  Here strip is given by vectors th and ph not related to local grid.
+!
+      lother=.true.
+      ith1=1; ith2=size(th)
+      iph1=1; iph2=size(ph)
+
+ 1    ltransp = ith2-ith1+1 /= size(thphprime,2)
+!
+      do i=ith1,ith2
+
+        if (lother) then
+          sth=sin(th(i)); cth=cos(th(i))
+        else
+          sth=sinth(i); cth=costh(i)
+        endif
+
+        do j=iph1,iph2
+!
+!  Rotate by Pi about z axis, then by Pi/2 about x axis.
+!  No distinction between Yin and Yang as transformation matrix is self-inverse.
+!
+          if (lother) then
+            xprime = -cos(ph(j))*sth
+            zprime = -sin(ph(j))*sth
+          else
+            xprime = -cosph(j)*sth
+            zprime = -sinph(j)*sth
+          endif
+          yprime = -cth
+
+          sprime = sqrt(xprime**2 + yprime**2)
+ 
+          if (ltransp) then
+            jtp = i-ith1+1; itp = j-iph1+1
+          else
+            itp = i-ith1+1; jtp = j-iph1+1
+          endif
+
+          thphprime(1,itp,jtp) = atan2(sprime,zprime)
+          thphprime(2,itp,jtp) = atan2(yprime,xprime)
+          if (thphprime(2,itp,jtp)<0.) thphprime(2,itp,jtp) = thphprime(2,itp,jtp) + 2.*pi
+
+!if (iproc_world==0.and.size(thphprime,3)==41) &
+!  print'(4(f7.4,1x),4(i2,1x))', y(i), z(j), thphprime(:,itp,jtp), i,j,itp,jtp
+        enddo
+      enddo
+
+    endsubroutine yy_transform_strip
+!***********************************************************************
+    subroutine transform_thph_yy( vec, powers, transformed )
+!
+!  Transforms theta and phi components of vector vec defined with the Yang
+!  grid basis
+!  to the Yin grid basis using theta and phi coordinates of the Yang grid.
+!  For use on pencils within mn-loop.
+!  Note that components of transformed are undefined if corresponding power 
+!  in mask powers is 0.
+!
+! 30-mar-2016/MR: coded
+!
+      use Cdata, only: costh, sinth, cosph, sinph, m, n
+
+      real,    dimension(:,:),intent(IN) :: vec
+      integer, dimension(3),  intent(IN) :: powers
+      real,    dimension(:,:),intent(OUT):: transformed
+
+      real :: sinth1, a, b
+
+      if (any(powers(2:3)/=0)) then
+        sinth1=1./sqrt(costh(m)**2+(sinth(m)*cosph(n))**2)
+        a=-cosph(n)*sinth1; b=sinph(n)*costh(m)*sinth1
+      endif
+
+      if (powers(1)/=0) &
+        transformed(:,1) = vec(:,1)
+      if (powers(2)/=0) &
+        transformed(:,2) = b*vec(:,2) - a*vec(:,3)
+      if (powers(3)/=0) &
+        transformed(:,3) = a*vec(:,2) + b*vec(:,3)
+
+    endsubroutine transform_thph_yy
+!***********************************************************************
+    subroutine transform_thph_yy_other( vec, vec_transformed )
+!
+!  Transforms theta and phi components of a vector field vec defined with the Yang grid basis
+!  to the Yin grid basis using theta and phi coordinates of the Yang grid.
+!  Both vec and vec_transformed must have shape (dimx,ny,nz,2).
+!  For use outside mn-loop.
+!
+! 30-mar-2016/MR: coded
+!
+      use Cdata, only: costh, sinth, cosph, sinph
+
+      real, dimension(:,:,:,:), intent(IN) :: vec
+      real, dimension(:,:,:,:), intent(OUT):: vec_transformed
+
+      integer :: i,j,ig,jg
+      real :: sinth1,a,b
+
+      do i=1,nz 
+        do j=1,ny
+
+          ig=i+nghost; jg=j+nghost
+          sinth1=1./sqrt(costh(jg)**2+(sinth(jg)*cosph(ig))**2)
+          a=-cosph(ig)*sinth1; b=sinph(ig)*costh(jg)*sinth1
+
+          vec_transformed(:,j,i,1) = b*vec(:,j,i,1) - a*vec(:,j,i,2)
+          vec_transformed(:,j,i,2) = a*vec(:,j,i,1) + b*vec(:,j,i,2)
+
+        enddo
+      enddo
+
+    endsubroutine transform_thph_yy_other
+!***********************************************************************
+    subroutine transpose_mn(a,b,ladd)
+!
+!  Transpose mxn pencil array, b=transpose(a), on pencil arrays.
+!
+!   7-aug-10/dhruba: coded
+!
+      use Cdata, only: lroot
+!
+      real, dimension(:,:,:) :: a,b
+      logical, optional :: ladd
+!
+      intent(in) :: a
+      intent(out) :: b
+      integer :: i,j
+      logical :: ladd_
+!
+      if (size(a,2)/=size(b,3) .or. size(a,3)/=size(b,2)) then
+        if (lroot) print*, 'ERROR -- transpose_mn: inconsistent dimensions of a and b!'
+        stop
+      endif
+
+      ladd_=loptest(ladd)
+      do i=1,size(b,2)
+        do j=1,size(b,3)
+          if (ladd_) then
+            b(:,i,j)=b(:,i,j)+a(:,j,i)
+          else
+            b(:,i,j)=a(:,j,i)
+          endif
+        enddo
+      enddo
+!
+    endsubroutine transpose_mn
+!***********************************************************************
+    function notanumber_0(f)
+!
+!  Check for NaN or Inf values.
+!  Not well tested with all compilers and options, but avoids false
+!  positives in a case where the previous implementation had problems
+!  Version for scalars
+!
+!  22-Jul-11/sven+philippe: coded
+!
+      logical :: notanumber_0
+      real :: f
+!
+      notanumber_0 = .not. ((f <= huge(f)) .or. (f > huge(0.0)))
+!
+    endfunction notanumber_0
+!***********************************************************************
+   function notanumber_0d(f)
+!
+!  Check for NaN or Inf values.
+!  Not well tested with all compilers and options, but avoids false
+!  positives in a case where the previous implementation had problems
+!  Version for scalars
+!
+!  27-Jul-15/MR: adapted
+!
+     logical :: notanumber_0d
+     double precision :: f
+!
+     notanumber_0d = .not. ((f <= huge(f)) .or. (f > huge(0.d0)))
+!
+    endfunction notanumber_0d
+!***********************************************************************
+    function notanumber_1(f)
+!
+!  Check for NaN or Inf values.
+!  Not well tested with all compilers and options, but avoids false
+!  positives in a case where the previous implementation had problems
+!  Version for 1-d arrays
+!
+!  22-Jul-11/sven+philippe: coded
+!
+      logical :: notanumber_1
+      real, dimension(:) :: f
+!
+      notanumber_1 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+!
+    endfunction notanumber_1
+!***********************************************************************
+    function notanumber_2(f)
+!
+!  Check for NaN or Inf values.
+!  Not well tested with all compilers and options, but avoids false
+!  positives in a case where the previous implementation had problems
+!  Version for 2-d arrays
+!
+!  22-Jul-11/sven+philippe: coded
+!
+      logical :: notanumber_2
+      real, dimension(:,:) :: f
+!
+      notanumber_2 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+!
+    endfunction notanumber_2
+!***********************************************************************
+    function notanumber_3(f)
+!
+!  Check for NaN or Inf values.
+!  Not well tested with all compilers and options, but avoids false
+!  positives in a case where the previous implementation had problems
+!  Version for 3-d arrays
+!
+!  22-Jul-11/sven+philippe: coded
+!
+      logical :: notanumber_3
+      real, dimension(:,:,:) :: f
+!
+      notanumber_3 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+!
+    endfunction notanumber_3
+!***********************************************************************
+    function notanumber_4(f)
+!
+!  Check for NaN or Inf values.
+!  Not well tested with all compilers and options, but avoids false
+!  positives in a case where the previous implementation had problems
+!  Version for 4-d arrays
+!
+!  22-Jul-11/sven+philippe: coded
+!
+      logical :: notanumber_4
+      real, dimension(:,:,:,:) :: f
+!
+      notanumber_4 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+!
+    endfunction notanumber_4
+!***********************************************************************
+    subroutine reduce_grad_dim(g)
+!
+!  Compresses a gradient vector according to dimensionality using precalculated
+!  dim_mask.
+!
+!  28-Jan-16/MR: coded
+!
+      use Cdata, only: dimensionality, dim_mask
+
+      real, dimension(:,:) :: g
+
+      if (dimensionality==3) return
+
+      g(:,1:dimensionality)=g(:,dim_mask(1:dimensionality))
+
+    endsubroutine reduce_grad_dim
+!****************************************************************************  
+    function merge_yin_yang(y,z,dy,dz,yzyang,yz,inds) result (nok)
+!
+!  Merges Yin and Yang grids: Yin, given by y,z,dy,dz, remains unchanged while Yang,
+!  given by yzyang of dimension 2 x size(y)*size(z) which is assumed to be
+!  transformed into Yin basis, is clipped by removing points which lie within Yin.
+!  Output is merged coordinate array yz[2,*] and index vector inds into 
+!  yzyang selecting the unclipped points. inds can be used to merge data arrays accordingly.
+!  Returns number of unclipped points in Yang.
+!
+!  30-mar-16/MR: cloned from corresp. IDL routine
+!
+    real, dimension(:),    intent(IN) :: y,z
+    real,                  intent(IN) :: dy,dz
+    real, dimension(:,:) , intent(IN) :: yzyang
+    real, dimension(:,:) , intent(OUT):: yz
+    integer, dimension(:), intent(OUT):: inds
+    integer :: nok
+
+    integer :: ind,i,ny,nz,nyz
+
+    ny=size(y); nz=size(z); nyz=ny*nz
+!
+!  Determine indices of unclipped points of Yang in yzyang.
+!
+    nok=0
+    do i=1,nyz
+      if (yzyang(1,i) < minval(y)-dy .or. yzyang(1,i) > maxval(y)+dy .or. &
+          yzyang(2,i) < minval(z)-dz .or. yzyang(2,i) > maxval(z)+dz) then
+        nok=nok+1
+        inds(nok)=i
+      endif
+    enddo
+!
+!  Put Yin coordinates in 2D array.
+!
+    ind=1
+    do i=1,ny
+      yz(1,ind:ind+nz-1) = y(i)
+      yz(2,ind:ind+nz-1) = z
+      ind=ind+nz
+    enddo
+!
+!  Add Yang coordinates.
+!
+    yz(:,nyz+1:nyz+nok)=yzyang(:,inds(:nok))
+
+  endfunction merge_yin_yang
+!****************************************************************************  
+  subroutine yin2yang_coors(costh,sinth,cosph,sinph,yz)
+!
+!  Transforms (theta,phi) coordinates of Yin or Yang grid, given by cos(theta)
+!  etc., into (theta',phi') coordinates of the other grid, stored in array yz
+!  of dimension 2 x size(theta)*size(phi).
+!
+!  30-mar-16/MR: cloned from corresp. IDL routine
+!
+      real, dimension(:)  , intent(IN) :: sinth, costh, sinph, cosph
+      real, dimension(:,:), intent(OUT):: yz
+
+      integer :: ind, i, j
+      real :: sth, cth, xprime, yprime, zprime, sprime
+
+      ind=1
+      do i=1,size(sinth)
+
+        sth=sinth(i); cth=costh(i)
+
+        do j=1,size(sinph)
+!
+!  Rotate by Pi about z axis, then by Pi/2 about x axis.
+!  No distinction between Yin and Yang as transformation matrix is self-inverse.
+!
+          xprime = -cosph(j)*sth
+          yprime = -cth
+          zprime = -sinph(j)*sth
+
+          sprime = sqrt(xprime**2 + yprime**2)
+
+          yz(1,ind) = atan2(sprime,zprime)
+          yz(2,ind) = atan2(yprime,xprime)
+          if (yz(2,ind) < 0.) yz(2,ind) = yz(2,ind)+2.*pi
+          ind = ind+1
+
+        enddo
+      enddo
+
+  endsubroutine yin2yang_coors
 !****************************************************************************  
 endmodule General

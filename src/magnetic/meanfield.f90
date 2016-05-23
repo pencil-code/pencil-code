@@ -13,6 +13,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED mf_EMF(3); mf_EMFdotB; jxb_mf(3); jxbr_mf(3); chiB_mf
+! PENCILS PROVIDED mf_qp; mf_Beq21
 !
 !***************************************************************
 module Magnetic_meanfield
@@ -75,7 +76,7 @@ module Magnetic_meanfield
 ! Run parameters
 !
   real :: alpha_rmax=0.0, alpha_width=0.0, alpha_width2=0.0, alpha_exp=0.
-  real :: meanfield_etat_width=0.0
+  real :: meanfield_etat_width=0.0, meanfield_Beq_width=0.0
   real :: meanfield_kf=1.0, meanfield_kf_width=0.0, meanfield_kf_width2=0.0
   real :: Omega_rmax=0.0, Omega_rwidth=0.0
   real :: rhs_term_kx=0.0, rhs_term_ampl=0.0
@@ -106,7 +107,7 @@ module Magnetic_meanfield
       qp_model,&
       ldelta_profile, delta_effect, delta_profile, &
       meanfield_etat, meanfield_etat_height, meanfield_etat_profile, &
-      meanfield_etat_width, meanfield_etat_exp, &
+      meanfield_etat_width, meanfield_etat_exp, meanfield_Beq_width, &
       meanfield_kf, meanfield_kf_profile, &
       meanfield_kf_width, meanfield_kf_width2, &
       meanfield_Beq, meanfield_Beq_height, meanfield_Beq2_height, &
@@ -436,6 +437,9 @@ module Magnetic_meanfield
       if (lqp_profile) then
         qp_profile=0.5*(1.-erfunc((z-z_surface)/qp_width))
         qp_profder=-exp(-((z-z_surface)/qp_width)**2)/(qp_width*sqrtpi)
+      else
+        qp_profile=1.
+        qp_profder=0.
       endif
 !
 !  Initialize module variables which are parameter dependent
@@ -570,7 +574,7 @@ module Magnetic_meanfield
       endif
 !
       if (lNEMPI_correction) then
-        lpenc_requested(i_grho)=.true.
+        lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_b2)=.true.
       endif
@@ -694,9 +698,8 @@ module Magnetic_meanfield
 !         call multsv_mn(meanfield_qs_func,p%jxb,tmp_jxb); p%jxb_mf=tmp_jxb
 !--
 !
-!  The follwing (not lmeanfield_jxb_with_vA2) has been used for the
+!  The following (not lmeanfield_jxb_with_vA2) has been used for the
 !  various publications so far.
-!
 !
 !        else
           select case (meanfield_Beq_profile)
@@ -710,17 +713,28 @@ module Magnetic_meanfield
           case ('exp(z/2H)');
 !           H = density scale height, more straightforward
             Beq21=1./meanfield_Beq**2*exp(z(n)/meanfield_Beq2_height)
+!
+!  Beq profile for constant uturb
+!
           case ('uturbconst');
-!           allows to take into account a shifted equilibrium solution caused by the additional pressure contribution
+!
+!  allows to take into account a shifted equilibrium solution
+!  caused by the additional pressure contribution
+!
             Beq21=mu01*p%rho1/(uturb**2)
-!         case ('uturbconst_surface');
+!
 !  Beq21 becomes large in the corona
-!X
-!           Beq21=mu01*p%rho1/(uturb**2)
-!       0.5*(1.-erfunc((x(l1:l2)-x_surface)/alpha_width))*cos(y(m))
+!
+          case ('uturb_surface');
+            Beq21=mu01*p%rho1/(uturb**2)* &
+              0.5*(1.-erfunc((z(n)-z_surface)/meanfield_Beq_width))
+!
+!  default
+!
           case default;
             Beq21=1./meanfield_Beq**2
           endselect
+          p%mf_Beq21=Beq21
 !
 !  Here, p%b2*meanfield_Bp21 = beta^2/beta_p^2, etc.
 !
@@ -734,7 +748,7 @@ module Magnetic_meanfield
 !  qp'=-qp0/(1+B^2*meanfield_Bp21)^2*meanfield_Bp21=-qp^2*meanfield_Bp21/qp0
 !
           if(qp_model=='rational') then
-            meanfield_qp_func=meanfield_qp/(1.+p%b2*meanfield_Bp21)
+            meanfield_qp_func=meanfield_qp/(1.+p%b2*meanfield_Bp21)*qp_profile(n)
             meanfield_qs_func=meanfield_qs/(1.+p%b2*meanfield_Bs21)
             meanfield_qe_func=meanfield_qe/(1.+p%b2*meanfield_Be21)
             meanfield_qa_func=meanfield_qa/(1.+p%b2*meanfield_Ba21)
@@ -743,13 +757,14 @@ module Magnetic_meanfield
             meanfield_qe_der=-meanfield_qe_func**2*meanfield_Be21*meanfield_qe1
             meanfield_qa_der=-meanfield_qa_func**2*meanfield_Ba21*meanfield_qa1
           else
-            meanfield_qp_func=meanfield_qp*(1.-2*pi_1*atan(p%b2*meanfield_Bp21))
+            meanfield_qp_func=meanfield_qp*(1.-2*pi_1*atan(p%b2*meanfield_Bp21))*qp_profile(n)
             meanfield_qs_func=meanfield_qs*(1.-2*pi_1*atan(p%b2*meanfield_Bs21))
             meanfield_qe_func=meanfield_qe*(1.-2*pi_1*atan(p%b2*meanfield_Be21))
             meanfield_qp_der=-2*pi_1*meanfield_qp*meanfield_Bp21/(1.+(p%b2*meanfield_Bp21)**2)
             meanfield_qs_der=-2*pi_1*meanfield_qs*meanfield_Bs21/(1.+(p%b2*meanfield_Bs21)**2)
             meanfield_qe_der=-2*pi_1*meanfield_qe*meanfield_Be21/(1.+(p%b2*meanfield_Be21)**2)
           endif
+          p%mf_qp=meanfield_qp_func
 !
 !  Add (1/2)*grad[qp*B^2]. This initializes p%jxb_mf.
 !  Note: p%jij is not J_i,j; omit extra term for the time being.
@@ -763,14 +778,11 @@ module Magnetic_meanfield
           else
             call multsv_mn(mu01*(meanfield_qp_func+p%b2*meanfield_qp_der),Bk_Bki,p%jxb_mf)
             if (lNEMPI_correction) then
-              call multsv_mn_add(-.5*mu01*p%rho1*p%b2**2*meanfield_qp_der,p%grho,p%jxb_mf)
+              call multsv_mn_add(-.5*mu01*p%b2**2*meanfield_qp_der,p%glnrho,p%jxb_mf)
             endif
-          endif
 !
 !  Allow for qp profile
 !
-          if (lqp_profile) then
-            call multsv_mn(qp_profile(n),p%jxb_mf,p%jxb_mf)
             p%jxb_mf(:,3)=p%jxb_mf(:,3)+.5*mu01*qp_profder(n)*meanfield_qp_func*p%b2
           endif
 !
@@ -913,6 +925,7 @@ module Magnetic_meanfield
             meanfield_etat_tmp=meanfield_etat_tmp/sqrt(1.+p%b2/meanfield_etaB2)
 !           call quench_simple(p%b2,meanfield_etaB2,meanfield_etat_tmp)
           endif
+        endif
 !
 !  Here we initialize alpha_total.
 !  Allow for the possibility of dynamical alpha.
@@ -923,12 +936,12 @@ module Magnetic_meanfield
 !
         if (lalpm .and. .not. lmeanfield_noalpm) then
           if (lalpha_profile_total) then
-             alpha_total=(alpha_effect+f(l1:l2,m,n,ialpm))*alpha_tmp
-             if (headtt) print*,'use alp=(alpK+alpM)*profile'
-           else
-             alpha_total=alpha_effect*alpha_tmp+f(l1:l2,m,n,ialpm)
-             if (headtt) print*,'use alp=alpK*profile+alpM'
-           endif
+            alpha_total=(alpha_effect+f(l1:l2,m,n,ialpm))*alpha_tmp
+            if (headtt) print*,'use alp=(alpK+alpM)*profile'
+          else
+            alpha_total=alpha_effect*alpha_tmp+f(l1:l2,m,n,ialpm)
+            if (headtt) print*,'use alp=alpK*profile+alpM'
+          endif
 !
 !  Possibility of *alternate* dynamical alpha.
 !  Here we initialize alpha_total.
@@ -938,10 +951,10 @@ module Magnetic_meanfield
           prefact=meanfield_etat_tmp*(kf_tmp/meanfield_Beq)**2
           alpm=prefact*(f(l1:l2,m,n,ialpm)-p%ab)
           if (lalpha_profile_total) then
-             alpha_total=(alpha_effect+alpm)*alpha_tmp
-           else
-             alpha_total=alpha_effect*alpha_tmp+alpm
-           endif
+            alpha_total=(alpha_effect+alpm)*alpha_tmp
+          else
+            alpha_total=alpha_effect*alpha_tmp+alpm
+          endif
         else
           alpha_total=alpha_effect*alpha_tmp
         endif
@@ -951,6 +964,7 @@ module Magnetic_meanfield
 !  Here we initialize p%mf_EMF.
 !  NOTE: the following with alpha_quenching*sqrt(kf_x) was a hardwired fix
 !  and and is now dealt with using meanfield_Beq_profile='sqrt(kf_x)'.
+!  NOTE2: the calculation of Beq21 is here repeated, which should be avoided.
 !
         if (alpha_quenching/=0.0) then
           select case (meanfield_Beq_profile)
@@ -1012,6 +1026,7 @@ module Magnetic_meanfield
 !
 !  apply pumping effect in the vertical direction: EMF=...-.5*grad(etat) x B
 !
+!AB: indentation?
           if (lmeanfield_pumping) then
             fact=.5*meanfield_pumping
             p%mf_EMF(:,1)=p%mf_EMF(:,1)+fact*meanfield_getat_tmp(:,3)*p%bb(:,2)
@@ -1041,7 +1056,8 @@ module Magnetic_meanfield
           if (ietat/=0) then
             call multsv_mn_add(-f(l1:l2,m,n,ietat),p%jj,p%mf_EMF)
           endif
-        endif
+!???    endif
+!AB: end of indentation problem
 !
 !  Possibility of adding contribution from large-scale velocity.
 !
@@ -1162,6 +1178,8 @@ module Magnetic_meanfield
             endif
           endif
 !       endif
+!?? end of wrong indentation??
+!?? end of chit and chiB apparently (!AB)
       endif
 !
 !  Calculate diagnostics.
@@ -1197,7 +1215,7 @@ module Magnetic_meanfield
 !
       use Diagnostics
 !
-      real, dimension (nx) :: Beq21, mf_qp
+      real, dimension (nx) :: Beq21
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
@@ -1248,7 +1266,8 @@ module Magnetic_meanfield
           df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+p%mf_EMF
         endif
 !
-!  Apply Omega effect.
+!  Apply Omega effect. This is currently applied directly to A
+!  and is therefore not part of the pencil p%mf_EMF.
 !
         if (lOmega_effect) call Omega_effect(f,df,p)
       endif
@@ -1289,9 +1308,7 @@ module Magnetic_meanfield
 !
       if (l2davgfirst) then
         if (idiag_peffmxz/=0)  then
-          Beq21=p%rho1/uturb**2
-          mf_qp=meanfield_qp/(1.+p%b2*Beq21/meanfield_Bp**2)
-          call ysum_mn_name_xz((1.-mf_qp)*p%b2/2*Beq21,idiag_peffmxz)
+          call ysum_mn_name_xz(.5*(1.-p%mf_qp)*p%b2*p%mf_Beq21,idiag_peffmxz)
         endif
       endif
 !  Note that this does not necessarily happen with ldiagnos=.true.

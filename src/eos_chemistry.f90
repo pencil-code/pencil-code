@@ -12,7 +12,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED lnTT;  glnTT(3); TT; TT1; gTT(3)
-! PENCILS PROVIDED pp; del2pp; mu1; gmu1(3)
+! PENCILS PROVIDED pp; del2pp; mu1; gmu1(3); glnmu(3)
 ! PENCILS PROVIDED rho1gpp(3); glnpp(3); del2lnTT
 !
 ! PENCILS PROVIDED hss(3,3); hlnTT(3,3); del2ss; del6ss; del6lnTT
@@ -62,7 +62,7 @@ module EquationOfState
   logical :: leos_isothermal=.false., leos_isentropic=.false.
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
-  character (len=20) :: input_file='chem.inp'
+  character (len=20) :: input_file
   logical, SAVE ::  lcheminp_eos=.false.
   logical :: l_gamma_m1=.false.
   logical :: l_gamma=.false.
@@ -78,7 +78,7 @@ module EquationOfState
 !
 !
 !NILS: Why do we spend a lot of memory allocating these variables here????
- real, dimension (mx,my,mz), SAVE :: mu1_full, pp_full, rho_full, TT_full
+ real, dimension (mx,my,mz), SAVE :: mu1_full
 !
   namelist /eos_init_pars/  mu, cp, cs0, rho0, gamma, error_cp
 !
@@ -111,6 +111,8 @@ module EquationOfState
 !
       use Mpicomm, only: stop_it
 !
+      logical :: chemin=.false.,cheminp=.false.
+!
 ! Initialize variable selection code (needed for RELOADing)
 !
       ieosvars=-1
@@ -128,7 +130,15 @@ module EquationOfState
         Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
       endif
 !
-      inquire(FILE=input_file, EXIST=lcheminp_eos)
+      inquire(file='chem.inp',exist=cheminp)
+      inquire(file='chem.in',exist=chemin)
+      if(chemin .and. cheminp) call fatal_error('eos_chemistry',&
+          'chem.inp and chem.in found. Please decide for one')
+!
+      if (cheminp) input_file='chem.inp'
+      if (chemin) input_file='chem.in'
+      lcheminp_eos = cheminp .or. chemin
+!      inquire(FILE=input_file, EXIST=lcheminp_eos)
 !
       if (lroot) then
 !
@@ -427,18 +437,18 @@ module EquationOfState
 !
       if (ltemperature_nolog) then
         lpenc_requested(i_gTT)=.true.
-      else
-        lpenc_requested(i_glnTT)=.true.
       endif
+      lpenc_requested(i_glnTT)=.true.
+      lpenc_requested(i_glnrho)=.true.
+      lpenc_requested(i_glnrho2)=.true.
+      lpenc_requested(i_del2lnrho)=.true.
 !
-   !   if (lcheminp_eos) then
-       lpenc_requested(i_glnpp)=.true.
-       lpenc_requested(i_del2pp)=.true.
-       lpenc_requested(i_mu1)=.true.
-       lpenc_requested(i_gmu1)=.true.
-       lpenc_requested(i_pp)=.true.
-       lpenc_requested(i_rho1gpp)=.true.
-   !   endif
+      lpenc_requested(i_glnpp)=.true.
+      lpenc_requested(i_del2pp)=.true.
+      lpenc_requested(i_mu1)=.true.
+      lpenc_requested(i_gmu1)=.true.
+      lpenc_requested(i_pp)=.true.
+      lpenc_requested(i_rho1gpp)=.true.
 !
     endsubroutine pencil_criteria_eos
 !***********************************************************************
@@ -450,17 +460,11 @@ module EquationOfState
 !
 ! Modified by Natalia. Taken from  eos_temperature_ionization module
 !
-   logical, dimension(npencils) :: lpencil_in
+      logical, dimension(npencils) :: lpencil_in
 !
-        if (ltemperature_nolog) then
-        ! if (lpencil_in(i_TT))   lpencil_in(i_lnTT)=.true.
-        else
-!         if (lpencil_in(i_TT))   lpencil_in(i_lnTT)=.true.
-        endif
+      if (lpencil_in(i_TT1))    lpencil_in(i_TT)=.true.
 !
-       if (lpencil_in(i_TT1))    lpencil_in(i_TT)=.true.
-!
-       if (lpencil_in(i_pp))  then
+      if (lpencil_in(i_pp))  then
          lpencil_in(i_mu1)=.true.
          lpencil_in(i_rho)=.true.
          lpencil_in(i_TT)=.true.
@@ -470,7 +474,6 @@ module EquationOfState
          lpencil_in(i_gmu1)=.true.
          lpencil_in(i_pp)=.true.
          lpencil_in(i_rho)=.true.
-         lpencil_in(i_glnrho)=.true.
          lpencil_in(i_glnTT)=.true.
        endif
        if (lpencil_in(i_glnpp))  then
@@ -510,11 +513,13 @@ module EquationOfState
 !  02-apr-06/tony: coded
 !  09-oct-15/MR: added mask parameter lpenc_loc.
 !
-      use Sub, only: grad, del2
+      use Sub, only: grad, del2, dot2
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
+      real, dimension(nx) :: glnTT2,TT1del2TT,del2lnrho
+      real, dimension(nx) :: rho1del2rho,del2mu1,gmu12,glnpp2
 !
       intent(in) :: f, lpenc_loc
       intent(inout) :: p
@@ -565,28 +570,27 @@ module EquationOfState
         endif
 !
         if (ltemperature_nolog) then
-         if (lpenc_loc(i_gTT)) call grad(f,iTT,p%gTT)
+          if (lpenc_loc(i_gTT)) call grad(f,iTT,p%gTT)
          !NILS: The call below does not yield del2lnTT but rather del2TT,
          !NILS: this should be fixed before used. One should also look
          !NILS: through the chemistry module to make sure del2lnTT is used
          !NILS: corectly.
-         if (lpenc_loc(i_del2lnTT)) call del2(f,iTT,p%del2lnTT)
-         call fatal_error('calc_pencils_eos',&
-             'del2lnTT is not correctly implemented - this must be fixed!')
+          if (lpenc_loc(i_del2lnTT)) call del2(f,iTT,p%del2lnTT)
+          call fatal_error('calc_pencils_eos',&
+              'del2lnTT is not correctly implemented - this must be fixed!')
         else
-         if (lpenc_loc(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
+          if (lpenc_loc(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
         endif
-!
-!       if (lcheminp_eos) then
 !
 !  Mean molecular weight
 !
-        if (lpenc_loc(i_mu1)) then
-          p%mu1=mu1_full(l1:l2,m,n)
-        endif
-!
+        if (lpenc_loc(i_mu1)) p%mu1=mu1_full(l1:l2,m,n)
         if (lpenc_loc(i_gmu1)) call grad(mu1_full,p%gmu1)
-!
+        if (lpenc_loc(i_glnmu)) then
+          do i = 1,3
+            p%glnmu(:,i) = -p%gmu1(:,i)/p%mu1(:)
+          enddo
+        endif
 !
 !  Pressure
 !
@@ -601,7 +605,7 @@ module EquationOfState
           enddo
         endif
 !
-! Gradient of the lnpp
+! Gradient of lnpp
 !
        if (lpenc_loc(i_glnpp)) then
             do i=1,3
@@ -612,7 +616,17 @@ module EquationOfState
 ! Laplasian of pressure
 !
        if (lpenc_loc(i_del2pp)) then
-         call del2(pp_full(:,:,:),p%del2pp)
+         call dot2(p%glnTT,glnTT2)
+         TT1del2TT=p%del2lnTT+glnTT2
+         rho1del2rho=p%del2lnrho+p%glnrho2
+         call dot2(p%gmu1,gmu12)
+         call dot2(p%glnpp,glnpp2)
+         call del2(mu1_full,del2mu1)
+         p%del2pp&
+             =p%pp*glnpp2&
+             +p%pp*(rho1del2rho+TT1del2TT+del2mu1/p%mu1)&
+             -p%pp*(p%glnrho2+glnTT2+gmu12/p%mu1**2)
+
        endif
 !
 !  Energy per unit mass (this has been moved to chemistry.f90 in order
@@ -650,18 +664,17 @@ module EquationOfState
 !
     endsubroutine ioncalc
 !***********************************************************************
-   subroutine getdensity(f,EE,TT,yH,rho_full_tmp)
+   subroutine getdensity(f,EE,TT,yH,rho_full)
 !
      real, dimension (mx,my,mz,mfarray) :: f
-     real, dimension (mx,my,mz), intent(out) :: rho_full_tmp
+     real, dimension (mx,my,mz), intent(out) :: rho_full
      real, intent(in), optional :: EE,TT,yH
 !
       if (ldensity_nolog) then
-        rho_full_tmp=f(:,:,:,ilnrho)
+        rho_full=f(:,:,:,ilnrho)
       else
-        rho_full_tmp=exp(f(:,:,:,ilnrho))
+        rho_full=exp(f(:,:,:,ilnrho))
       endif
-      rho_full=rho_full_tmp
 !
       call keep_compiler_quiet(present(yH))
       call keep_compiler_quiet(present(EE))
@@ -669,33 +682,26 @@ module EquationOfState
 !
    endsubroutine getdensity
 !***********************************************************************
-   subroutine gettemperature(f,TT_full_tmp)
+   subroutine gettemperature(f,TT_full)
 !
      real, dimension (mx,my,mz,mfarray) :: f
-     real, dimension (mx,my,mz), intent(out) :: TT_full_tmp
+     real, dimension (mx,my,mz), intent(out) :: TT_full
 !
       if (ltemperature_nolog) then
-        TT_full_tmp=f(:,:,:,ilnTT)
+        TT_full=f(:,:,:,ilnTT)
       else
-        TT_full_tmp=exp(f(:,:,:,ilnTT))
+        TT_full=exp(f(:,:,:,ilnTT))
       endif
-        TT_full=TT_full_tmp
 !
    endsubroutine gettemperature
 !***********************************************************************
-  subroutine getpressure(pp_full_tmp)
+  subroutine getpressure(pp,TT,rho,mu1)
 !
-     real, dimension (mx,my,mz), intent(out) :: pp_full_tmp
+     real, dimension (nx), intent(out) :: pp
+     real, dimension (nx), intent(in) :: TT, rho, mu1
      integer :: j2,j3
 !
-       do j2=mm1,mm2
-       do j3=nn1,nn2
-         pp_full_tmp(:,j2,j3)=Rgas*mu1_full(:,j2,j3) &
-                   *rho_full(:,j2,j3)*TT_full(:,j2,j3)
-       enddo
-       enddo
-!
-       pp_full=pp_full_tmp
+     pp=Rgas*mu1*rho*TT
 !
    endsubroutine getpressure
 !***********************************************************************
@@ -1746,14 +1752,25 @@ module EquationOfState
       character (len=10) :: specie_string
       integer :: VarNumber
       integer :: StartInd,StopInd,StartInd_1,StopInd_1
+      logical :: tranin=.false.
+      logical :: trandat=.false.
 !
       emptyFile=.true.
 !
       StartInd_1=1; StopInd_1 =0
-      open(file_id,file="tran.dat")
+      
+      inquire (file='tran.dat',exist=trandat)
+      inquire (file='tran.in',exist=tranin)
+      if (tranin .and. trandat) then
+        call fatal_error('eos_chemistry',&
+            'tran.in and tran.dat found. Please decide which one to use.')
+      endif
+
+      if (tranin) open(file_id,file='tran.in')
+      if (trandat) open(file_id,file='tran.dat')
 !
       if (lroot) print*, 'the following species are found '//&
-          'in tran.dat: beginning of the list:'
+          'in tran.in/dat: beginning of the list:'
 !
       dataloop: do
 !

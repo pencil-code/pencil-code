@@ -268,13 +268,13 @@ module Density
 !
     endsubroutine anelastic_after_mn
 !***********************************************************************
-    subroutine dynamical_diffusion(urms)
+    subroutine dynamical_diffusion(uc)
 !
 !  dummy routine
 !
-      real, intent(in) :: urms
+      real, intent(in) :: uc
 !
-      call keep_compiler_quiet(urms)
+      call keep_compiler_quiet(uc)
 !
     endsubroutine dynamical_diffusion
 !***********************************************************************
@@ -310,7 +310,7 @@ module Density
 !***********************************************************************
     subroutine update_char_vel_density(f)
 !
-!  Updates characteristic veelocity for slope-limited diffusion.
+!  Updates characteristic velocity for slope-limited diffusion.
 !  Most likely not yet a good method
 !
 !  21-oct-15/MR: coded

@@ -21,7 +21,8 @@ module Particles_sub
   public :: remove_particle, get_particles_interdistance
   public :: count_particles, output_particle_size_dist
   public :: get_rhopswarm, find_grid_volume, find_interpolation_weight
-  public :: find_interpolation_indeces, get_gas_density
+  public :: find_interpolation_indeces, get_gas_density, precalc_cell_volumes
+  public :: precalc_weights
 !
   interface get_rhopswarm
     module procedure get_rhopswarm_ineargrid
@@ -124,13 +125,14 @@ module Particles_sub
       use Mpicomm
       use General, only: random_number_wrapper
       use Particles_mpicomm
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc) :: ipar
       real, dimension (mpar_loc,mpvar), optional :: dfp
       logical, optional :: linsert
 !
-      real :: xold, yold, rad, r1old, OO
+      real :: xold, yold, rad, r1old, OO, tmp
       integer :: k, ik, k1, k2
       character (len=2*bclen+1) :: boundx, boundy, boundz
       logical :: lnbody
@@ -318,6 +320,35 @@ module Particles_sub
               fp(k,ixp)=2*xyz1(1)-fp(k,ixp)
               fp(k,ivpx)=-fp(k,ivpx)
             endif
+          elseif (boundx=='meq') then
+            if ((fp(k,ixp).lt.rp_int) .or. (fp(k,ixp).gt.rp_ext)) then
+            if (lcylindrical_coords) then
+              tmp=2-dustdensity_powerlaw
+            elseif (lspherical_coords) then
+              tmp=3-dustdensity_powerlaw
+            endif
+              call random_number_wrapper(fp(k,ixp))
+              fp(k,ixp) = (rp_int**tmp + fp(k,ixp)*(rp_ext**tmp-rp_int**tmp))**(1.0/tmp)
+              if (lcylindrical_coords) then
+                if (nygrid/=1) then
+                  call random_number_wrapper(fp(k,iyp))
+                  fp(k,iyp) = xyz0(2)+fp(k,iyp)*Lxyz(2)
+                endif
+                if (nzgrid/=1) then
+                  call random_number_wrapper(fp(k,izp))
+                  fp(k,izp)=xyz0(3)+fp(k,izp)*Lxyz(3)
+                endif
+              elseif (lspherical_coords) then
+                if (nygrid/=1) then
+                  call random_number_wrapper(fp(k,iyp))
+                  fp(k,iyp) = xyz0(2)+fp(k,iyp)*Lxyz(2)
+                endif
+                if (nzgrid/=1) then
+                  call random_number_wrapper(fp(k,izp))
+                  fp(k,izp) = xyz0(3)+fp(k,izp)*Lxyz(3)
+                endif
+              endif
+            endif
           else
             print*, 'boundconds_particles: No such boundary condition =', boundx
             call stop_it('boundconds_particles')
@@ -463,13 +494,13 @@ module Particles_sub
 !
       if (lmpicomm) then
         if (present(dfp)) then
-          if (present(linsert)) then
+          if (present(linsert).or.(boundx=='meq')) then
             call migrate_particles(fp,ipar,dfp,linsert=.true.)
           else
             call migrate_particles(fp,ipar,dfp)
           endif
         else
-          if (present(linsert)) then
+          if (present(linsert).or.(boundx=='meq')) then
             call migrate_particles(fp,ipar,linsert=.true.)
           else
             call migrate_particles(fp,ipar)
@@ -1062,7 +1093,7 @@ module Particles_sub
       real :: weight_x, weight_y, weight_z
       integer, intent(in) :: k,ixx,iyy,izz,ix0,iy0,iz0
       real, dimension (mpar_loc,mparray), intent(in) :: fp
-!
+! 
       if (lparticlemesh_cic) then
 !
 !  Cloud In Cell (CIC) scheme.
@@ -1115,6 +1146,16 @@ module Particles_sub
         if (nxgrid/=1) weight=weight*weight_x
         if (nygrid/=1) weight=weight*weight_y
         if (nzgrid/=1) weight=weight*weight_z
+      elseif (lparticlemesh_gab) then
+!
+!  Gaussian box approach. The particles influence is distributed over 
+!  the nearest grid point and 3 nodes in each dimension. The weighting of the 
+!  source term follows a gaussian distribution
+!
+        weight = 1.
+        if (nxgrid/=1) weight=weight*gab_weights(abs(ixx-ix0)+1)
+        if (nygrid/=1) weight=weight*gab_weights(abs(iyy-iy0)+1)
+        if (nzgrid/=1) weight=weight*gab_weights(abs(izz-iz0)+1)
       else
 !
 !  Nearest Grid Point (NGP) scheme.
@@ -1166,6 +1207,33 @@ module Particles_sub
         else
           izz0=iz0  ; izz1=iz0
         endif
+      elseif (lparticlemesh_gab) then
+!
+!  Gaussian box approach. The particles influence is distributed over 
+!  the nearest grid point and 3 nodes in each dimension, for a total
+!  of 81 influenced points in 3 dimensions
+!
+        if (nxgrid/=1) then 
+          ixx0=ix0-3 
+          ixx1=ix0+3
+        else
+          ixx0=ix0
+          ixx1=ix0
+        endif
+        if (nygrid/=1) then 
+          iyy0=iy0-3 
+          iyy1=iy0+3
+        else
+          iyy0=iy0
+          iyy1=iy0
+        endif
+        if (nzgrid/=1) then 
+          izz0=iz0-3 
+          izz1=iz0+3
+        else
+          izz0=iz0
+          izz1=iz0
+        endif
       else
 !
 !  Nearest Grid Point (NGP) scheme.
@@ -1213,5 +1281,83 @@ module Particles_sub
       endif
 !
     endfunction get_gas_density
+!***********************************************************************
+    subroutine precalc_cell_volumes(f)
+!
+      real, dimension (mx,my,mz,mfarray), intent(out) :: f
+      integer :: ixx, iyy, izz
+      real :: dx1, dy1, dz1, cell_volume1
+!
+      do ixx=l1,l2
+        do iyy=m1,m2
+          do izz=n1,n2
+            dx1=dx_1(ixx)
+            dy1=dy_1(iyy)
+            dz1=dz_1(izz)
+            cell_volume1 = 1.0
+            if (lcartesian_coords) then
+              if (nxgrid/=1) cell_volume1 = cell_volume1*dx1
+              if (nygrid/=1) cell_volume1 = cell_volume1*dy1
+              if (nzgrid/=1) cell_volume1 = cell_volume1*dz1
+            elseif (lcylindrical_coords) then
+              if (nxgrid/=1) cell_volume1 = cell_volume1*dx1
+              if (nygrid/=1) cell_volume1 = cell_volume1*dy1/x(ixx)
+              if (nzgrid/=1) cell_volume1 = cell_volume1*dz1
+            elseif (lspherical_coords) then
+              if (nxgrid/=1) cell_volume1 = cell_volume1*dx1
+              if (nygrid/=1) cell_volume1 = cell_volume1*dy1/x(ixx)
+              if (nzgrid/=1) cell_volume1 = cell_volume1*dz1/(sin(y(iyy))*x(ixx))
+            endif
+            f(ixx,iyy,izz,ivol) = 1.0/cell_volume1
+          enddo
+        enddo
+      enddo
+    endsubroutine precalc_cell_volumes
+!***********************************************************************
+    subroutine precalc_weights(weight_array)
+!
+      real, dimension(:,:,:) :: weight_array
+      real, dimension(3) :: tsc_values = (/0.125, 0.75, 0.125/)
+      integer :: i,j,k
+!
+!  This makes sure that the weight array is 1 if the npg approach is chosen
+!
+      weight_array(:,:,:) = 1.0
+!
+      if (lparticlemesh_gab) then
+        do i=1,7
+          do j=1,7
+            do k=1,7
+              weight_array(i,j,k) = gab_weights(abs(i-4)+1)* &
+                  gab_weights(abs(j-4)+1) * gab_weights(abs(k-4)+1)
+            enddo
+          enddo
+        enddo
+      endif
+
+      if (lparticlemesh_tsc) then
+          do i = 1,3
+            do j = 1,3
+              do k =1,3
+                if (nxgrid/=1) weight_array(i,j,k)=weight_array(i,j,k)*tsc_values(i)
+                if (nygrid/=1) weight_array(i,j,k)=weight_array(i,j,k)*tsc_values(j)
+                if (nzgrid/=1) weight_array(i,j,k)=weight_array(i,j,k)*tsc_values(k)
+            enddo
+          enddo
+        enddo
+      endif
+
+      if (lparticlemesh_cic) then
+        weight_array=1.0
+        if (nxgrid/=1) &
+            weight_array=weight_array*0.5
+        if (nygrid/=1) &
+            weight_array=weight_array*0.5
+        if (nzgrid/=1) &
+            weight_array=weight_array*0.5
+      endif
+      
+!
+    endsubroutine precalc_weights
 !***********************************************************************
 endmodule Particles_sub

@@ -96,28 +96,13 @@ program start
   real, allocatable, dimension (:,:,:,:) :: f, df
   integer :: i, ifilter, stat
   logical :: lnoerase=.false.
+  real :: dang
 !
   lstart = .true.
 !
-!  Get processor numbers and define whether we are root.
+!  Check processor layout, get processor numbers and define whether we are root.
 !
-  call mpicomm_init()
-!
-!  Check if parallelization and chosen grid numbers make sense.
-!
-  if ((nprocx>1.and.nxgrid==1).or. &
-      (nprocy>1.and.nygrid==1).or. &
-      (nprocz>1.and.nzgrid==1)) then
-    call fatal_error('start', &
-        'parallelization in a dimension with ngrid==1 does not work')
-  endif
-  if (mod(nxgrid,nprocx)/=0.or. &
-      mod(nygrid,nprocy)/=0.or. &
-      mod(nzgrid,nprocz)/=0) then
-    call fatal_error('start', &
-        'in each dimension the number of grid points has to be '// &
-        'divisible by the number of processors')
-  endif
+  call mpicomm_init
 !
 !  Identify version.
 !
@@ -126,7 +111,7 @@ program start
 !
 !  Initialize the message subsystem, eg. color setting etc.
 !
-  call initialize_messages()
+  call initialize_messages
 !
 !  Allocate large arrays. We need to make them allocatable in order to
 !  avoid segfaults at 128^3 (7 variables) with Intel compiler on 32-bit
@@ -145,17 +130,6 @@ program start
   f =huge(1.0)
   df=huge(1.0)
 !
-!  Set default values: box of size (2pi)^3.
-!
-  xyz0=(/       -pi,        -pi,       -pi /) ! first corner
-  xyz1=(/impossible, impossible, impossible/) ! last corner
-  Lxyz=(/impossible, impossible, impossible/) ! box lengths
-  lperi        =(/.true. ,.true. ,.true. /)   ! all directions periodic
-  lequidist    =(/.true. ,.true. ,.true. /)   ! all directions equidistant grid
-  lshift_origin=(/.false.,.false.,.false./)   ! don't shift origin
-  lshift_origin_lower=(/.false.,.false.,.false./) ! don't shift origin
-  lpole        =(/.false.,.false.,.false./)   ! radial origin, pole excluded
-!
 !  Calculate dimensionality of the run.
 !
   dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
@@ -164,18 +138,24 @@ program start
 !
   lenergy=lentropy.or.ltemperature.or.lthermal_energy
 !
-!  Initialise MPI communication.
-!
-  call initialize_mpicomm()
-!
 !  Read initialization parameters from "start.in".
 !
-  call read_all_init_pars()
+  call read_all_init_pars
+!
+  call set_coords_switches
+!
+!  Set up directory names and check whether the directories exist.
+!
+  call directory_names
+!
+!  Initialise MPI communication.
+!
+  call initialize_mpicomm
 !
 !  Register variables in the f array.
 !
-  call register_modules()
-  if (lparticles) call particles_register_modules()
+  call register_modules
+  if (lparticles) call particles_register_modules
 !
 !  Call rprint_list to initialize diagnostics and write indices to file.
 !
@@ -203,10 +183,6 @@ program start
 !
   if (lroot) print*, 'nxgrid, nygrid, nzgrid=', nxgrid, nygrid, nzgrid
 !
-!  Set up directory names and check whether the directories exist.
-!
-  call directory_names()
-!
 !  Unfortunately the following test for existence of directory fails under
 !  OSF1:
 !        inquire(FILE=trim(directory_snap), EXIST=exist)
@@ -224,60 +200,64 @@ program start
         if (i==3.and.luniform_z_mesh_aspect_ratio) then
           Lxyz(i)=2*pi*real(nzgrid)/real(nxgrid)
           xyz0(i)=-pi*real(nzgrid)/real(nxgrid)
+!
+!  FG: force theta coordinate to spam 0:pi for periodic across pole 
+!
         elseif (lpole(i)) then
           if (lperi(i)) call fatal_error('start',&
             'lperi and lpole cannot be used together in same component')
-          if (coord_system/='spherical') call fatal_error('start',&
+          if (.not.lspherical_coords) call fatal_error('start',&
             'lpole only implemented for spherical coordinates')
-          if (lequidist(i)) then
-            if (i==2 .and. coord_system == 'spherical') then
-              xyz0(i) = pi/(2*nygrid)
-              Lxyz(i) = pi - 2*xyz0(i)
-            else
-              call fatal_error('start',&
-                  'origin/pole not included for components or coordinates')
-            endif
+
+          if (i==2) then
+            xyz0(i) = 0.
+            Lxyz(i) = pi 
+            xyz0(3) = 0.
+            Lxyz(3) = 2.*pi
           else
             call fatal_error('start',&
-                'origin/pole not yet implemented for non-equidistant grid')
+                'origin/pole not included for components or coordinates')
           endif
         else
-          Lxyz(i)=2*pi    ! default value
+          Lxyz(i)=2.*pi    ! default value
         endif
       else
-!
-!  FG: forcing theta coordinate to be spanning 0:pi overwriting xyz0 and
-!      xyz1 if lpole is selected + plus sanity checks
-!
-        if (lpole(i)) then
+        if (lpole(i)) then ! overwirte xyz0 and xyz1 to 0:pi 
           if (lperi(i)) call fatal_error('start',&
             'lperi and lpole cannot be used together in same component')
-          if (coord_system/='spherical') call fatal_error('start',&
+          if (.not. lspherical_coords) call fatal_error('start',&
             'lpole only implemented for spherical coordinates')
-          if (lequidist(i)) then
-            if (i==2 .and. coord_system == 'spherical') then
-              xyz0(i) = pi/(2*nygrid)
-              Lxyz(i) = pi - 2*xyz0(i)
-              xyz0(3) = 0.
-              xyz1(3) = 2*pi
-            else
-              call fatal_error('start',&
-                  'origin/pole not included for components or coordinates')
-            endif
+          if (i==2) then
+            xyz0(i) = 0.
+            Lxyz(i) = pi 
+            xyz0(3) = 0.
+            xyz1(3) = 2.*pi
           else
             call fatal_error('start',&
-                'origin/pole not yet implemented for non-equidistant grid')
+                'origin/pole not included for components or coordinates')
           endif
         else
           Lxyz(i)=xyz1(i)-xyz0(i)
         endif
       endif
-    else                  ! Lxyz was set
+    else                            ! Lxyz was set
       if (xyz1(i)/=impossible) then ! both Lxyz and xyz1 are set
         call fatal_error('start','Cannot set Lxyz and xyz1 at the same time')
       endif
     endif
   enddo
+
+  if (lyinyang) then
+    if (lroot) &
+      print*, 'Setting latitude and longitude intervals for Yin-Yang grid, ignoring input'
+!
+! Min(dy,dz) put between Yin and Yang grid at closest distance to minimize overlap.
+!
+    dang=.999*min(1./nygrid,3./nzgrid)*0.5*pi      ! only valid for equidistant grid!!
+    xyz0(2:3) = (/ 1./4., 1./4. /)*pi+0.5*dang
+    Lxyz(2:3) = (/ 1./2., 3./2. /)*pi-dang
+  endif
+
   xyz1=xyz0+Lxyz
 !
 !  Abbreviations
@@ -319,15 +299,16 @@ program start
 !  Different initial seed (seed0) and random numbers on different CPUs
 !  The default is seed0=1812 for some obscure Napoleonic reason
 !
-  seed(1)=-((seed0-1812+1)*10+iproc)
+  seed(1)=-((seed0-1812+1)*10+iproc_world)
   call random_seed_wrapper(PUT=seed)
 !
-!  Generate grid.
+!  Generate grid and initialize specific grid variables.
 !
   call construct_grid(x,y,z,dx,dy,dz)
 !
 !  Size of box at local processor. The if-statement is for
 !  backward compatibility.
+!  MR: the following code doubled in run.f90. Perhaps to be put in construct_grid?
 !
   if (lequidist(1)) then
     Lxyz_loc(1) = Lxyz(1)/nprocx
@@ -394,6 +375,10 @@ program start
   call wgrid('grid.dat')
   if (lparticles) call wproc_bounds(trim(directory)//'/proc_bounds.dat')
 !
+!  Update the list of neighboring processes.
+!
+  call update_neighbors
+!
 !  Write .general file for data explorer.
 !
   if (lroot) call write_dx_general(trim(datadir)//'/var.general', &
@@ -457,6 +442,9 @@ program start
     endif
   endif
 !
+  if (lyinyang.and.lroot) &
+    call warning('start','Any initial condition depending on y or z will not be set correctly on Yin-Yang grid.')
+!
 !  The following init routines only need to add to f.
 !  wd: also in the case where we have read in an existing snapshot??
 !
@@ -503,14 +491,16 @@ program start
     call init_special(f)
   enddo
 !
+!  If desired, the f array can be initialized in one call.
+!
+  if (linitial_condition) call initial_condition_all(f)
+!
+!  Initialize particle modules.
+!
   if (lparticles) then 
     call particles_initialize_modules(f)
     call particles_init(f)
   endif
-!
-!  If desired, the f array can be initialized in one call.
-!
-  if (linitial_condition) call initial_condition_all(f)
 !
 !  If requested, write original (z-dependent) stratification to file.
 !
@@ -611,7 +601,7 @@ program start
 !
 !  Write information about pencils to disc.
 !
-  call write_pencil_info()
+  call write_pencil_info
 !
 !  Gvie all modules the possibility to exit properly.
 !
@@ -622,25 +612,26 @@ program start
   call mpifinalize
 !
 !  Free any allocated memory.
+!  MR: do we need all these cleanups? The process ends immediately afterwards and all memory is released anyway.
 !
-  call farray_clean_up()
-  call sharedvars_clean_up()
-  call initial_condition_clean_up()
-  if (lparticles) call particles_cleanup()
+  call farray_clean_up
+  call sharedvars_clean_up
+  call initial_condition_clean_up
+  if (lparticles) call particles_cleanup
 !
-!  Before reading the rprint_list deallocate the arrays allocated for
+!  Deallocate the arrays allocated for
 !  1-D and 2-D diagnostics.
 !
-  call fnames_clean_up()
-  call xyaverages_clean_up()
-  call xzaverages_clean_up()
-  call yzaverages_clean_up()
-  if (lwrite_yaverages)    call yaverages_clean_up()
-  if (lwrite_zaverages)    call zaverages_clean_up()
-  if (lwrite_phiaverages)  call phiaverages_clean_up()
-  if (lwrite_phizaverages) call phizaverages_clean_up()
-  if (lwrite_phiaverages)  call phiaverages_clean_up()
-  if (lwrite_sound)        call sound_clean_up()
+  call fnames_clean_up
+  call xyaverages_clean_up
+  call xzaverages_clean_up
+  call yzaverages_clean_up
+  if (lwrite_yaverages)    call yaverages_clean_up
+  if (lwrite_zaverages)    call zaverages_clean_up
+  if (lwrite_phiaverages)  call phiaverages_clean_up
+  if (lwrite_phizaverages) call phizaverages_clean_up
+  if (lwrite_phiaverages)  call phiaverages_clean_up
+  if (lwrite_sound)        call sound_clean_up
 !
 ! announce completion.
 !

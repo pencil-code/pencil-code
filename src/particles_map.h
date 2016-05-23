@@ -1,6 +1,7 @@
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
   private
  
+  public :: initialize_particles_map
   public :: interpolate_linear, interpolate_quadratic
   public :: interpolate_quadratic_spline
   public :: map_nearest_grid, map_xxp_grid, map_vvp_grid

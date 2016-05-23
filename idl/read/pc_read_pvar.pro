@@ -161,6 +161,11 @@ varcontent[iaps].variable = 'Particle sink radius (aps)'
 varcontent[iaps].idlvar   = 'aps'
 varcontent[iaps].idlinit  = INIT_SCALAR
 ;
+default, imp, 0
+varcontent[imp].variable = 'Particle mass (mp)'
+varcontent[imp].idlvar   = 'mp'
+varcontent[imp].idlinit  = INIT_SCALAR
+;
 ;  Check if there is other pvar data written by the special module. 
 ;
 file_special=datadir+'/index_special_particles.pro'
@@ -370,6 +375,7 @@ endif else begin
 ;  but converted to integer afterwards.
 ;
         array_loc=fltarr(nfields,nrmv)*one
+        get_lun, file1 & close, file1
         openr, file1, filename1
         readf, file1, array_loc
         close, file1 & free_lun, file1

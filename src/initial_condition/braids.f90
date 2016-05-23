@@ -48,7 +48,7 @@ module InitialCondition
   character (len=labellen) :: word = "AA"
 ! variables for the blob configurations  
   integer :: n_blobs = 0
-  real, dimension (6) :: xc, yc, zc, blob_sgn, l_blob
+  real, dimension (9) :: xc, yc, zc, blob_sgn, l_blob
   real :: blob_scale = 1.
 !
   namelist /initial_condition_pars/ &

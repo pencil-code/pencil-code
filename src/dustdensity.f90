@@ -22,7 +22,7 @@
 ! PENCILS PROVIDED del2mi(ndustspec); del6lnnd(ndustspec)
 ! PENCILS PROVIDED gndglnrho(ndustspec); glnndglnrho(ndustspec)
 ! PENCILS PROVIDED udrop(3,ndustspec); udropgnd(ndustspec)
-! PENCILS PROVIDED fcloud; ccondens; dndr(ndustspec); ppwater; ppsat
+! PENCILS PROVIDED fcloud; ccondens; ppwater; ppsat
 ! PENCILS PROVIDED ppsf(ndustspec); mu1; udropav(3)
 ! PENCILS PROVIDED glnrhod(3,ndustspec);
 ! PENCILS PROVIDED rhodsum; rhodsum1; grhodsum(3); glnrhodsum(3)
@@ -49,9 +49,11 @@ module Dustdensity
   real, dimension(ndustspec,ndustspec0) :: init_distr_ki
   real, dimension(ndustspec0) :: dsize0, BB=0.
   real, dimension(ndustspec) :: dsize,init_distr2,init_distr_log,amplnd_rel=0.
+  real, dimension(ndustspec) :: diffnd_ndustspec
   real, dimension(mx,ndustspec) :: init_distr
   real, dimension(0:5) :: coeff_smooth=0.0
   real, dimension (3) :: diffnd_anisotropic=0.0
+  real :: diffnd_exponent=0.0, adref_diffnd=0.0
   real :: diffnd=0.0, diffnd_hyper3=0.0, diffnd_shock=0.0
   real :: diffmd=0.0, diffmi=0.0, ndmin_for_mdvar=0.0
   real :: nd_const=1.0, dkern_cst=0.0, eps_dtog=0.0, Sigmad=1.0
@@ -66,12 +68,15 @@ module Dustdensity
   real :: Rgas_unit_sys, m_w=18., m_s=60.
   real :: AA=0.66e-4,  Ntot
   real :: nd_reuni,init_x1, init_x2, a0=0., a1=0.
+  real :: dndfac_sum
   integer :: iglobal_nd=0
   integer :: spot_number=1
   character (len=labellen), dimension (ninit) :: initnd='nothing'
   character (len=labellen), dimension (ndiffd_max) :: idiffd=''
   character (len=labellen) :: bordernd='nothing'
   character (len=labellen) :: advec_ddensity='normal'
+  character (len=labellen) :: diffnd_law='const'
+  character (len=labellen) :: self_collisions='nothing'
   logical :: ludstickmax=.false., lno_deltavd=.false.
   logical :: lcalcdkern=.true., lkeepinitnd=.false., ldustcontinuity=.true.
   logical :: ldustnulling=.false., lupw_ndmdmi=.false.
@@ -86,13 +91,15 @@ module Dustdensity
   logical :: lnoaerosol=.false., lnocondens_term=.false.
   logical :: reinitialize_nd=.false., ldustcondensation_simplified=.false.
   logical :: lsemi_chemistry=.false., lradius_binning=.false.
-  logical :: lzero_upper_kern=.false.
+  logical :: lzero_upper_kern=.false., ldustcoagulation_simplified=.false.
+  logical :: lself_collisions=.false.
+  logical :: llog10_for_admom_above10=.true.
   integer :: iadvec_ddensity=0
   logical, pointer :: llin_radiusbins
   real, pointer :: deltamd
   real    :: dustdensity_floor=-1, Kern_min=0., Kern_max=0.
   real    :: G_condensparam=0., supsatratio_given=0., supsatratio_given0=0.
-  real    :: supsatratio_omega=0.
+  real    :: supsatratio_omega=0., self_collision_factor=1.
   real    :: dlnmd, dlnad, GS_condensparam, GS_condensparam0
 !
   namelist /dustdensity_init_pars/ &
@@ -106,7 +113,7 @@ module Dustdensity
       lmdvar, lmice, ldcore, ndmin_for_mdvar, &
       lnocondens_term, Kern_min, &
       advec_ddensity, dustdensity_floor, init_x1, init_x2, lsubstep, a0, a1, &
-      ldustcondensation_simplified, lradius_binning, lzero_upper_kern
+      ldustcondensation_simplified, ldustcoagulation_simplified,lradius_binning, lzero_upper_kern
 !
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, lno_deltavd, initnd, &
@@ -115,10 +122,14 @@ module Dustdensity
       diffnd_shock,lresetuniform_dustdensity,nd_reuni, lnoaerosol, &
       lnocondens_term,advec_ddensity, bordernd, dustdensity_floor, &
       diffnd_anisotropic,reinitialize_nd, &
+      diffnd_law, diffnd_exponent, adref_diffnd, &
       G_condensparam, supsatratio_given, supsatratio_given0, &
       supsatratio_omega, ndmin_for_mdvar, &
-      lsemi_chemistry, lradius_binning, dkern_cst, lzero_upper_kern
+      self_collisions, self_collision_factor, &
+      lsemi_chemistry, lradius_binning, dkern_cst, lzero_upper_kern, &
+      llog10_for_admom_above10
 !
+  integer :: idiag_KKm=0     ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdmtot=0
   integer :: idiag_rhodmxy=0, idiag_ndmxy=0
@@ -282,6 +293,10 @@ module Dustdensity
       if (lroot) print*, 'initialize_dustdensity: '// &
           'ldustcoagulation,ldustcondensation =', &
           ldustcoagulation,ldustcondensation
+!          
+      if (lroot) print*, 'initialize_dustdensity: '// &
+          'ldustcoagulation_simplified,ldustcondensation_simplified =', &
+          ldustcoagulation_simplified,ldustcondensation_simplified
 !
       if (.not. ldustvelocity) call copy_bcs_dust_short
 !
@@ -311,6 +326,8 @@ module Dustdensity
           case ('old'); f(:,:,:,ind)=0.; call init_nd(f)
           case ('zero8'); f(:,:,:,ind(1):ind(min(ndustspec,8)))=0.
           case ('lognormal'); call initnd_lognormal(f,.true.)
+          case ('firsttwo'); f(:,:,:,ind) = 0.
+            do k=1,2; f(:,:,:,ind(k)) = nd0/2; enddo
           endselect
         enddo
       endif
@@ -395,6 +412,29 @@ module Dustdensity
       if (ldust_cdtc) then
         Kern_max=maxval(dkern)
         if (lroot) print*,'Kern_max=',Kern_max
+      endif
+!
+!  Choice of different diffusion laws
+!
+      select case (diffnd_law)
+      case ('const')
+        do k=1,ndustspec
+          diffnd_ndustspec(k)=diffnd
+        enddo
+      case ('ad_exponential')
+        diffnd_ndustspec=diffnd*(ad/adref_diffnd)**diffnd_exponent
+      case default
+        if (lroot) print*, 'No such value for diffnd_law: ', trim(diffnd_law)
+        call fatal_error('initialize_dustdensity','')
+      endselect
+      if (lroot) print*, 'initialize_dustdensity: diffnd=',diffnd
+!
+!  check for self-collisions
+!
+      if (self_collisions=='nothing') then
+        lself_collisions=.false.
+      else
+        lself_collisions=.true.
       endif
 !
 !  Initialize dust diffusion.
@@ -527,7 +567,7 @@ module Dustdensity
       use InitialCondition, only: initial_condition_nd
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
-      use Sub, only: notanumber
+      use General, only: notanumber
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -1037,7 +1077,7 @@ module Dustdensity
           lpenc_requested(i_udgmi)=.true.
         endif
       endif
-      if (ldustcoagulation) then
+      if (ldustcoagulation .or. ldustcoagulation_simplified) then
         lpenc_requested(i_TT1)=.true.
       endif
       if (ldustcondensation) then
@@ -1076,15 +1116,17 @@ module Dustdensity
         lpenc_requested(i_ppsat)=.true.
         lpenc_requested(i_ppsf)=.true.
         lpenc_requested(i_gnd)=.true.
-        lpenc_requested(i_dndr)=.true.
+        lpenc_requested(i_rho)=.true.
+        lpenc_requested(i_TT)=.true.
+!        lpenc_requested(i_dndr)=.true.
         lpenc_requested(i_ccondens)=.true.
         lpenc_requested(i_fcloud)=.true.
         if (lmdvar) lpenc_requested(i_md)=.true.
       endif
 !
-      if (lsemi_chemistry) then
-        lpenc_requested(i_dndr)=.true.
-      endif
+!      if (lsemi_chemistry) then
+!        lpenc_requested(i_dndr)=.true.
+!      endif
 !
       lpenc_diagnos(i_nd)=.true.
 !
@@ -1197,12 +1239,12 @@ module Dustdensity
 !
 !  this might not be right with lsemi_chemistry
 !
-        if (lpencil_in(i_dndr))  then
-          lpencil_in(i_rho)=.true.
-          lpencil_in(i_Ywater)=.true.
-          lpencil_in(i_ppsf)=.true.
-          lpencil_in(i_pp)=.true.
-        endif
+!        if (lpencil_in(i_dndr))  then
+!         lpencil_in(i_rho)=.true.
+!         lpencil_in(i_Ywater)=.true.
+!          lpencil_in(i_ppsf)=.true.
+!          lpencil_in(i_pp)=.true.
+!        endif
       endif
 !
     endsubroutine pencil_interdep_dustdensity
@@ -1222,8 +1264,8 @@ module Dustdensity
 !
       real, dimension (nx) :: tmp, Imr, T_tmp
       real, dimension (nx,3) :: tmp_pencil_3
-      real, dimension (nx,ndustspec) :: dndr_tmp, nd_substep, nd_substep_0, K1,K2,K3,K4
       real, dimension (ndustspec) :: ff_tmp,ttt
+      real, dimension (nx,ndustspec) :: Nd_rho, CoagS
       real :: aa0= 6.107799961, aa1= 4.436518521e-1
       real :: aa2= 1.428945805e-2, aa3= 2.650648471e-4
       real :: aa4= 3.031240396e-6, aa5= 2.034080948e-8, aa6= 6.136820929e-11, ddt=1e-7
@@ -1540,83 +1582,83 @@ module Dustdensity
 !
 !  dndr means rhs of dn/dt formula.
 !
-        if (lpencil(i_dndr)) then
-            if (lnoaerosol) then
-              p%dndr=0.
-            else
-              if (.not. ldcore) then
-                Imr=Dwater*m_w*p%ppsat/Rgas/p%TT/rho_w
-                if (lsubstep) then
-                  p%dndr=0.
+!        if (lpencil(i_dndr)) then
+!           if (lnoaerosol) then
+!              p%dndr=0.
+!            else
+!              if (.not. ldcore) then
+!                Imr=Dwater*m_w*p%ppsat/Rgas/p%TT/rho_w
+!                if (lsubstep) then
+!                  p%dndr=0.
 !
-                  do k=1,ndustspec
-                    nd_substep(:,k)=f(l1:l2,m,n,ind(k))
-                  enddo
+!                  do k=1,ndustspec
+!                    nd_substep(:,k)=f(l1:l2,m,n,ind(k))
+!                  enddo
 !
 !  fixed timestep [in seconds]
 !
-                  ddt=2e-7
-                  do i=1,int(dt/ddt)
-
-                    do k=1,ndustspec
-                      nd_substep_0(:,k)=nd_substep(:,k)
-                    enddo
+!                  ddt=2e-7
+!                  do i=1,int(dt/ddt)
 !
-                    call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
+!                    do k=1,ndustspec
+!                      nd_substep_0(:,k)=nd_substep(:,k)
+!                    enddo
 !
-                    do k=1,ndustspec
-                      K1(:,k)=-Imr*dndr_tmp(:,k)
-                    enddo
+!                    call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
+!
+!                    do k=1,ndustspec
+!                      K1(:,k)=-Imr*dndr_tmp(:,k)
+!                    enddo
 !
 !  key procedure
 !
-                    do k=1,ndustspec
-                      nd_substep(:,k)=nd_substep_0(:,k)+K1(:,k)*ddt/2.
-                    enddo
-                    call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
-                    do k=1,ndustspec
-                      K2(:,k)=-Imr*dndr_tmp(:,k)
-                    enddo
+!                    do k=1,ndustspec
+!                      nd_substep(:,k)=nd_substep_0(:,k)+K1(:,k)*ddt/2.
+!                    enddo
+!                    call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
+!                    do k=1,ndustspec
+!                      K2(:,k)=-Imr*dndr_tmp(:,k)
+!                    enddo
 !
-                    do k=1,ndustspec
-                      nd_substep(:,k)=nd_substep_0(:,k)+K2(:,k)*ddt/2.
-                    enddo
-                    call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
-                    do k=1,ndustspec
-                      K3(:,k)=-Imr*dndr_tmp(:,k)
-                    enddo
+!                    do k=1,ndustspec
+!                      nd_substep(:,k)=nd_substep_0(:,k)+K2(:,k)*ddt/2.
+!                    enddo
+!                    call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
+!                    do k=1,ndustspec
+!                      K3(:,k)=-Imr*dndr_tmp(:,k)
+!                    enddo
 !
-                    do k=1,ndustspec
-                      nd_substep(:,k)=nd_substep_0(:,k)+K3(:,k)*ddt
-                    enddo
-                    call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
-                    do k=1,ndustspec
-                      K4(:,k)=-Imr*dndr_tmp(:,k)
-                    enddo
+!                    do k=1,ndustspec
+!                      nd_substep(:,k)=nd_substep_0(:,k)+K3(:,k)*ddt
+!                    enddo
+!                    call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
+!                    do k=1,ndustspec
+!                      K4(:,k)=-Imr*dndr_tmp(:,k)
+!                    enddo
 !
-                    do k=1,ndustspec
-                      nd_substep(:,k)=nd_substep_0(:,k)+ddt/6.*(K1(:,k)+2.*K2(:,k)+2.*K3(:,k)+K4(:,k))
-                    enddo
+!                    do k=1,ndustspec
+!                      nd_substep(:,k)=nd_substep_0(:,k)+ddt/6.*(K1(:,k)+2.*K2(:,k)+2.*K3(:,k)+K4(:,k))
+!                    enddo
 !
-                  enddo
+!                  enddo
 !
-                  do k=1,ndustspec
-                    p%dndr(:,k)=(nd_substep(:,k)-f(l1:l2,m,n,ind(k)))/dt
-                  enddo
+!                  do k=1,ndustspec
+!                    p%dndr(:,k)=(nd_substep(:,k)-f(l1:l2,m,n,ind(k)))/dt
+!                  enddo
 !
 !  this is used with lsemi_chemistry
 !
-                else
-                  call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
-                  if (lsemi_chemistry) Imr=1.
-                  do k=1,ndustspec
-                    p%dndr(:,k)=-Imr*dndr_tmp(:,k)
-                  enddo
-                endif
+!                else
+!                  call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
+!                  if (lsemi_chemistry) Imr=1.
+!                  do k=1,ndustspec
+!                    p%dndr(:,k)=-Imr*dndr_tmp(:,k)
+!                  enddo
+!                endif
 !
-              endif
-            endif
-        endif
+!              endif
+!            endif
+!        endif
 ! udropav
 !        if (lpencil(i_udropav)) then
 !          if (lnoaerosol) then
@@ -1658,7 +1700,32 @@ module Dustdensity
             enddo
           endif
         endif
+! nd
+        if (ldustcoagulation_simplified) then
+          call coag_kernel(f,p%TT1)
+          do k=1,ndustspec
+            Nd_rho(:,k)=p%nd(:,k)*dsize(k)*p%rho
+!            p%nd(:,k)*(dsize(k+1)-dsize(k))*p%rho
+!          Ntot_tmp=Ntot_tmp+Nd_rho(1,k)
+          enddo 
+!         print*,'Ntot_tmp=',Ntot_tmp
+!          Nd_rho(:,ndustspec)=p%nd(:,ndustspec)*(dsize(ndustspec)-dsize(ndustspec-1))*p%rho
+!       
+          Coags=0.
+          do i=1,ndustspec
+          do k=1,ndustspec
+            CoagS(:,i)=CoagS(:,i)+Nd_rho(:,k)*dkern(:,i,k)
+          enddo  
+          enddo
 !
+          do k=1,ndustspec
+            p%nd(:,k)=(Nd_rho(:,k)-Nd_rho(:,k)*CoagS(:,k)*dt)/dsize(k)/p%rho
+          enddo 
+!          p%nd(:,ndustspec)=(Nd_rho(:,ndustspec)-CoagS(:,ndustspec)*dt)/(dsize(ndustspec)-dsize(ndustspec-1))/p%rho
+!
+        endif  
+        
+        !
     endsubroutine calc_pencils_dustdensity
 !***********************************************************************
     subroutine dndmd_dt(f,df,p)
@@ -1679,8 +1746,9 @@ module Dustdensity
       type (pencil_case) :: p
 !
       real, dimension (nx) :: mfluxcond,fdiffd,gshockgnd, Imr, tmp1, tmp2
-      real, dimension (nx,ndustspec) :: dndr_tmp=0.
-      integer :: k,i,j
+      real, dimension (nx,ndustspec) :: dndr_tmp=0.,  dndr
+      real, dimension (nx,ndustspec) :: nd_substep, nd_substep_0, K1,K2,K3,K4
+      integer :: k,i,j,jj
       real :: tmpl
 !
       intent(in)  :: f,p
@@ -1744,8 +1812,7 @@ module Dustdensity
 !          else
 !
             do k=1,ndustspec
-              df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) &
-                     - p%udropgnd(:,k) + p%dndr(:,k)
+              df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - p%udropgnd(:,k)
             enddo
 !
 !          endif
@@ -1756,24 +1823,106 @@ module Dustdensity
 !
 !  if lsemi_chemistry is true.
 !
-      if (lsemi_chemistry) then
-        do k=1,ndustspec
-          df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + p%dndr(:,k)
-        enddo
-      endif
+!      if (lsemi_chemistry) then
+!        do k=1,ndustspec
+!          df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + p%dndr(:,k)
+!        enddo
+!      endif
+!     
+!      
+      if (latm_chemistry .or. lsemi_chemistry) then 
+!  
+        if (lnoaerosol) then
+          dndr=0.
+        else
+          Imr=Dwater*m_w*p%ppsat/Rgas/p%TT/rho_w
+!              
+          if (lsubstep) then
+            dndr=0.
+            do k=1,ndustspec
+              nd_substep(:,k)=f(l1:l2,m,n,ind(k))
+            enddo
+!
+!  fixed timestep [in seconds]
+!
+            ddt=2e-7
+            do i=1,int(dt/ddt)
+              do k=1,ndustspec
+                nd_substep_0(:,k)=nd_substep(:,k)
+              enddo
+              call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
+              K1(:,:)=0.
+              do k=1,ndustspec
+                K1(:,k)=-Imr*dndr_tmp(:,k)
+              enddo
+!
+!  key procedure
+!
+              do k=1,ndustspec
+                nd_substep(:,k)=nd_substep_0(:,k)+K1(:,k)*ddt/2.
+              enddo
+              call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
+              K2(:,:)=0.
+              do k=1,ndustspec
+                K2(:,k)=-Imr*dndr_tmp(:,k)
+              enddo
+              do k=1,ndustspec
+                nd_substep(:,k)=nd_substep_0(:,k)+K2(:,k)*ddt/2.
+              enddo
+              call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
+              K3(:,:)=0.
+              do k=1,ndustspec
+                K3(:,k)=-Imr*dndr_tmp(:,k)
+              enddo
+              do k=1,ndustspec
+                nd_substep(:,k)=nd_substep_0(:,k)+K3(:,k)*ddt
+              enddo
+              K4(:,:)=0.
+              call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
+              do k=1,ndustspec
+                K4(:,k)=-Imr*dndr_tmp(:,k)
+              enddo
+              do k=1,ndustspec
+                nd_substep(:,k)=nd_substep_0(:,k)+ddt/6.*(K1(:,k)+2.*K2(:,k)+2.*K3(:,k)+K4(:,k))
+              enddo
+            enddo
+!            
+            do k=1,ndustspec
+              dndr(:,k)=(nd_substep(:,k)-f(l1:l2,m,n,ind(k)))/dt
+            enddo
+!
+          else
+!           
+            if (ldustcondensation_simplified) then
+              call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
+              if (lsemi_chemistry) Imr=1.
+              do k=1,ndustspec
+                dndr(:,k)=-Imr*dndr_tmp(:,k)
+              enddo
+            endif   
+!            
+          endif
+!--------------------------------------------------------               
+        endif
+          do k=1,ndustspec
+            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + dndr(:,k)
+          enddo
+      else  
 !
 !  Calculate kernel of coagulation equation
 !
-      if (ldustcoagulation) call coag_kernel(f,p%TT1)
+        if (ldustcoagulation) call coag_kernel(f,p%TT1)
 !
 !  Dust coagulation due to sticking
 !
-      if (ldustcoagulation) call dust_coagulation(f,df,p)
+        if (ldustcoagulation) call dust_coagulation(f,df,p)
 !
 !  Dust growth due to condensation on grains
 !  (This is not used by Natalia's routines, although it is not obvious why.)
 !
-      if (ldustcondensation) call dust_condensation(f,df,p,mfluxcond)
+        if (ldustcondensation) call dust_condensation(f,df,p,mfluxcond)
+      
+      endif
 !
 !  Loop over dust layers
 !  this is a non-atmospheric case (for latm_chemistry=F)
@@ -1790,11 +1939,11 @@ module Dustdensity
 !
         if (ldiffd_simplified) then
           if (ldustdensity_log) then
-            fdiffd = fdiffd + diffnd*(p%del2lnnd(:,k) + p%glnnd2(:,k))
+            fdiffd=fdiffd+diffnd_ndustspec(k)*(p%del2lnnd(:,k)+p%glnnd2(:,k))
           else
-            fdiffd = fdiffd + diffnd*p%del2nd(:,k)
+            fdiffd=fdiffd+ diffnd_ndustspec(k)*p%del2nd(:,k)
           endif
-          if (lfirst.and.ldt) diffus_diffnd=diffus_diffnd+diffnd*dxyz_2
+          if (lfirst.and.ldt) diffus_diffnd=diffus_diffnd+diffnd_ndustspec(k)*dxyz_2
         endif
 !
 !  calculate maximum of *relative* reaction rate
@@ -1820,13 +1969,13 @@ module Dustdensity
 !
         if (ldiffd_dusttogasratio) then
           if (ldustdensity_log) then
-            fdiffd = fdiffd + diffnd*(p%del2lnnd(:,k) + p%glnnd2(:,k) - &
+            fdiffd = fdiffd + diffnd_ndustspec(k)*(p%del2lnnd(:,k) + p%glnnd2(:,k) - &
                 p%glnndglnrho(:,k) - p%del2lnrho)
           else
-            fdiffd = fdiffd + diffnd*(p%del2nd(:,k) - p%gndglnrho(:,k) - &
+            fdiffd = fdiffd + diffnd_ndustspec(k)*(p%del2nd(:,k) - p%gndglnrho(:,k) - &
                 p%nd(:,k)*p%del2lnrho)
           endif
-          if (lfirst.and.ldt) diffus_diffnd=diffus_diffnd+diffnd*dxyz_2
+          if (lfirst.and.ldt) diffus_diffnd=diffus_diffnd+diffnd_ndustspec(k)*dxyz_2
         endif
 !
         if (ldiffd_hyper3) then
@@ -1996,6 +2145,7 @@ module Dustdensity
 !
 !  end of do loop for dust species above.
 !
+        if (idiag_KKm/=0) call sum_mn_name(spread((-dndfac_sum/nx),1,nx), idiag_KKm)
         if (idiag_adm/=0) call sum_mn_name(sum(spread((md/(4/3.*pi*rhods))**(1/3.),1,nx)*p%nd,2)/sum(p%nd,2), idiag_adm)
         if (idiag_mdmtot/=0) call sum_mn_name(sum(spread(md,1,nx)*p%nd,2), idiag_mdmtot)
 !
@@ -2008,7 +2158,11 @@ module Dustdensity
             if (lradius_binning) then
               call sum_mn_name(sum(p%ad**k*p%nd,2)*dlnad,idiag_admom(k))
             else
-              call sum_mn_name(sum(p%ad**k*p%nd,2),idiag_admom(k))
+              if (llog10_for_admom_above10.and.k>10) then
+                call sum_mn_name(sum(p%ad**k*p%nd,2),idiag_admom(k),llog10=.true.)
+              else
+                call sum_mn_name(sum(p%ad**k*p%nd,2),idiag_admom(k))
+              endif
             endif
           endif
         enddo
@@ -2180,7 +2334,7 @@ module Dustdensity
 !  But only if not lsemi_chemistry, because then we run Natalia's stuff.
 !
       if (.not.lsemi_chemistry) then
-        call get_mfluxcond(f,mfluxcond,p%rho,p%TT1,cc_tmp)
+        call get_mfluxcond(f,mfluxcond,p%rho,p%TT1,cc_tmp,p)
 !
 !  upwinding, first for radius bins
 !
@@ -2295,7 +2449,7 @@ module Dustdensity
 !
 ! NILS: I don't undestand where cc_tmp comes from - it seems to me that
 ! NILS: it is not defined anywhere.....
-        call get_mfluxcond(f,mfluxcond,p%rho,p%TT1,cc_tmp)
+        call get_mfluxcond(f,mfluxcond,p%rho,p%TT1,cc_tmp,p)
 !
 !  Loop over pencil
 !
@@ -2336,7 +2490,7 @@ module Dustdensity
 !
     endsubroutine dust_condensation_lmdvar
 !***********************************************************************
-    subroutine get_mfluxcond(f,mfluxcond,rho,TT1,cc)
+    subroutine get_mfluxcond(f,mfluxcond,rho,TT1,cc,p)
 !
 !  Calculate mass flux of condensing monomers
 !
@@ -2344,10 +2498,10 @@ module Dustdensity
       use EquationOfState, only: getmu,eoscalc,ilnrho_ss,getpressure
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: pp_full
       real, dimension (nx) :: mfluxcond,rho,TT1,cc,pp,ppmon,ppsat,vth
       real, dimension (nx) :: supsatratio1
       real, save :: mu
+      type (pencil_case) :: p
 !
       select case (dust_chemistry)
 !
@@ -2367,8 +2521,9 @@ module Dustdensity
       case ('aerosol')
 !        if (it == 1) call getmu_array(f,mu1_array)
 !        call eoscalc(ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),pp=pp)
-        call getpressure(pp_full)
-        ppmon = pp_full(l1:l2,m,n)
+!        if (it == 1) call getmu(f,mu)
+!        call getpressure(ppmon,1./TT1,rho,p%mu1)
+        ppmon=p%pp
         ppsat = 6.035e12*exp(-5938*TT1)
         vth = (3*k_B/(TT1*mmon))**0.5
         supsatratio1 = ppsat/ppmon
@@ -2422,12 +2577,17 @@ module Dustdensity
       use Sub, only: dot2
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: TT1
+      real, dimension (nx) :: TT1,TT
+      real, dimension (nx) :: Kn, cor_factor, D_coeff, Di, Dk, Dik, KBC, vmean_i, vmean_k
+      real, dimension (nx) :: vmean_ik, gamma_i, gamma_k, omega_i, omega_k, sigma_ik
 !
       real :: deltavd,deltavd_drift=0,deltavd_therm=0
-      real :: deltavd_turbu=0,deltavd_drift2=0
-      real :: ust,tl01,teta1
-      integer :: i,j,l
+      real :: deltavd_turbu=0, fact
+      real :: deltavd_drift2=0, deltavd_drift2a=0, deltavd_drift2b=0
+      real :: ust,tl01,teta1,mu_air,rho_air, kB=1.38e-16, Rik 
+      integer :: i,j,l,k
+!      
+      if (ldustcoagulation) then
 !
 !  As a test, can set kernel to a constant 
 !
@@ -2447,13 +2607,57 @@ module Dustdensity
         do i=1,ndustspec
           do j=i,ndustspec
 !
-!  Relative macroscopic speed
+!  Relative macroscopic speed; allow for possibility of finite kernel
+!  even for i=j if self-collisions are turned on (lself_collisions=T).
 !
-            call dot2 (f(3+l,m,n,iudx(j):iudz(j)) - &
-                f(3+l,m,n,iudx(i):iudz(i)),deltavd_drift2)
+            if (i==j) then
+              if (lself_collisions) then
+                select case (self_collisions)
+                case ('average')
+                  fact=.5*self_collision_factor
+                  call dot2(fact*(f(3+l,m,n,iudx(j):iudz(j))+ &
+                                  f(3+l,m,n,iudx(i):iudz(i))),deltavd_drift2)
+                case ('neighbor')
+                  fact=self_collision_factor
+                  if (i==1) then
+                    call dot2(fact*(f(3+l,m,n,iudx(i+1):iudz(i+1))- &
+                                    f(3+l,m,n,iudx(i):iudz(i))),deltavd_drift2)
+                  elseif (i==ndustspec) then
+                    call dot2(fact*(f(3+l,m,n,iudx(i-1):iudz(i-1))- &
+                                    f(3+l,m,n,iudx(i):iudz(i))),deltavd_drift2)
+                  else
+                    fact=.5*self_collision_factor
+                    call dot2(fact*(f(3+l,m,n,iudx(i+1):iudz(i+1))- &
+                                    f(3+l,m,n,iudx(i):iudz(i))), &
+                              deltavd_drift2a)
+                    call dot2(fact*(f(3+l,m,n,iudx(i-1):iudz(i-1))- &
+                                    f(3+l,m,n,iudx(i):iudz(i))), &
+                              deltavd_drift2b)
+                    deltavd_drift2=deltavd_drift2a+deltavd_drift2b
+                  endif
+                case ('neighbor_asymmetric')
+                  fact=self_collision_factor
+                  if (i==ndustspec) then
+                    call dot2(fact*(f(3+l,m,n,iudx(i-1):iudz(i-1))- &
+                                    f(3+l,m,n,iudx(i):iudz(i))),deltavd_drift2)
+                  else
+                    call dot2(fact*(f(3+l,m,n,iudx(i+1):iudz(i+1))- &
+                                    f(3+l,m,n,iudx(i):iudz(i))),deltavd_drift2)
+                  endif
+                case default
+                  call fatal_error('dustdensity:coag_kernel','internal error')
+                endselect
+              else
+                deltavd_drift2=0.
+              endif
+            else
+              call dot2(f(3+l,m,n,iudx(j):iudz(j))- &
+                        f(3+l,m,n,iudx(i):iudz(i)),deltavd_drift2)
+            endif
             deltavd_drift = sqrt(deltavd_drift2)
 !
 !  Relative thermal speed is only important for very light particles
+!  urms^2 = 8*kB*T/(pi*m_red)
 !
             if (ldeltavd_thermal) then
               deltavd_therm = &
@@ -2518,6 +2722,55 @@ module Dustdensity
         enddo
       enddo
       endif
+      
+      elseif (ldustcoagulation_simplified) then
+!     this is calculation of the coagulation coeficient (kernel) according to Kulmala et al., 
+!     Tellus (2001) 53B, 479-490 
+!
+!     air dymanic viscosity mu_air=0.02 (g/cm/s) and air density rho_air=0.12 (g/cm^3)  
+        mu_air=2.e-4
+        rho_air=1.2e-3 
+        TT=1./TT1
+        
+        
+       do i=1,ndustspec   
+       do k=i,ndustspec 
+!         
+         Rik=dsize(i)+dsize(k)
+!        
+!     Knudsen number Kn 
+!
+         Kn(:)=2.*mu_air/rho_air*sqrt(pi*2e-24/(2.8*kB*TT))/(Rik/2.)
+!
+!     Cunningham correction factor cor_factor
+!
+         cor_factor(:)=1.+Kn(:)*(1.142+0.558*exp(-0.999/Kn(:)))
+
+         D_coeff(:)=kB*cor_factor*TT/(6.*pi*mu_air) 
+         Di(:)=D_coeff(:)/dsize(i)
+         Dk(:)=D_coeff(:)/dsize(k)
+         Dik(:)=(Di(:)+Dk(:))
+         KBC(:)=4*pi*(dsize(i)+dsize(k))*(Di(:)+Dk(:))
+         vmean_i(:)=sqrt(8.*kB*TT/pi/(4./3*pi*dsize(i)**3))
+         vmean_k(:)=sqrt(8.*kB*TT/pi/(4./3*pi*dsize(k)**3))
+         vmean_ik(:)=sqrt(vmean_i(:)**2+vmean_k(:)**2)
+         gamma_i(:)=8.*Di(:)/pi/vmean_i(:)
+         gamma_k(:)=8.*Dk(:)/pi/vmean_k(:)
+         omega_i(:)=((Rik+gamma_i(:))**3-(Rik**2+gamma_i(:)**2)**1.5)/(3.*Rik*gamma_i(:))-Rik
+         omega_k(:)=((Rik+gamma_k(:))**3-(Rik**2+gamma_k(:)**2)**1.5)/(3.*Rik*gamma_k(:))-Rik
+         sigma_ik(:)=sqrt(omega_i**2+omega_k**2)
+!
+         dkern(:,i,k)=KBC(:)/( Rik/(Rik+sigma_ik(:)) + 4.*Dik(:)/(vmean_ik(:)*Rik) )
+!         
+       enddo
+       enddo
+       
+       do i=1,ndustspec   
+       do k=1,i-1 
+         dkern(:,i,k)=dkern(:,k,i)
+       enddo
+       enddo
+      endif
 !
     endsubroutine coag_kernel
 !***********************************************************************
@@ -2542,9 +2795,11 @@ module Dustdensity
 !
 !  Carry out integration over all bins.
 !
+      dndfac_sum=0.
       do l=1,nx
         do i=1,ndustspec; do j=i,ndustspec
           dndfac = -dkern(l,i,j)*p%nd(l,i)*p%nd(l,j)
+          dndfac_sum = dndfac_sum + dndfac
           if (dndfac/=0.0) then
             if (lradius_binning) then
               df(3+l,m,n,ind(i)) = df(3+l,m,n,ind(i)) + dndfac*p%ad(l,i)*dlnad
@@ -2684,7 +2939,7 @@ module Dustdensity
 !  Reset everything in case of reset.
 !
       if (lreset) then
-        idiag_mdm=0
+        idiag_mdm=0; idiag_KKm=0
         idiag_ndm=0; idiag_ndmin=0; idiag_ndmax=0; idiag_ndmt=0; idiag_rhodm=0
         idiag_rhodmin=0; idiag_rhodmax=0; idiag_rhodmxy=0; idiag_ndmxy=0
         idiag_nd2m=0; idiag_rhodmt=0; idiag_rhoimt=0; idiag_epsdrms=0
@@ -2764,6 +3019,7 @@ module Dustdensity
 !  Non-species-dependent diagnostics.
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'KKm',idiag_KKm)
         call parse_name(iname,cname(iname),cform(iname),'ndmt',idiag_ndmt)
         call parse_name(iname,cname(iname),cform(iname),'rhodmt',idiag_rhodmt)
         call parse_name(iname,cname(iname),cform(iname),'rhoimt',idiag_rhoimt)
@@ -3036,11 +3292,11 @@ module Dustdensity
       type (pencil_case) :: p
       real, dimension (nx,ndustspec) :: dndr_dr,dndr_dr_inter,ff_tmp,ff_tmp_inter
       real, dimension (nx,ndustspec) :: ff_tmp1,ff_tmp2,dndr_dr1,dndr_dr2
-      real, dimension (nx,ndustspec) :: ppsf_full_i, nd_substep
+      real, dimension (nx,ndustspec) :: ppsf_full_i, nd_substep,  nd_new
       integer :: k, i, jj, ll0=6, kk1,kk2 !, ind_tmp=6
       real, dimension (35) ::  x2, S
       real, dimension (6) ::  X1, Y1
-      real :: del =0.85, GS
+      real :: del =0.85, GS, Ntot_tmp=0.
 !
       intent(in) :: ppsf_full_i, i
       intent(out) :: dndr_dr
@@ -3061,25 +3317,22 @@ module Dustdensity
 !
 !  compute ff_tmp, which is a bit different from the earlier one.
 !
-         do k=1,ndustspec
-           if (ldcore) then
-             ff_tmp(:,k)=f(l1:l2,m,n,idcj(k,i))*(p%ppwater/p%ppsat-ppsf_full_i(:,k)/p%ppsat)
+!         do k=1,ndustspec
+!           if (ldcore) then
+!             ff_tmp(:,k)=f(l1:l2,m,n,idcj(k,i))*(p%ppwater/p%ppsat-ppsf_full_i(:,k)/p%ppsat)
 !             ff_tmp0(:,k)=init_distr_ki(k,i)*(p%ppwater/p%ppsat-ppsf_full_i(:,k)/p%ppsat)
-           endif
-         enddo
-         endif
+!           endif
+!         enddo
+       endif
 !
-         do jj=1,nx
-           do k=1,ndustspec
-!           do k=2,ndustspec-1
-!                if ((k>2.) .and. (k<ndustspec-1))  then
-!                 ff_tmp(jj,k)=1./16.*(p%nd(jj,k-2)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k-2))/dsize(k-2))  &
-!                             +2./16.*(p%nd(jj,k-1)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k-1))/dsize(k-1))  &
-!                           +10./16.*(p%nd(jj,k)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k))/dsize(k))  &
-!                             +2./16.*(p%nd(jj,k+1)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k+1))/dsize(k+1)) &
-!                             +1./16.*(p%nd(jj,k+2)/p%ppsat(jj)*(p%ppwater(jj)-p%ppsf(jj,k+2))/dsize(k+2))
+          
+        nd_new=p%nd
+       
+!       print*,'fgdfdfdffd',maxval(p%nd),maxval(nd_new), maxval(Nd_rho), maxval(CoagS), maxval(dkern)
+!       print*,'fgdfdfdffd',maxval(CoagS),maxval(Nd_rho),maxval(p%nd)
 
-!                else
+         do jj=1,nx
+         do k=1,ndustspec
 !
 !  The following corresponds to ff_tmp = G*S*n, but without 1/r factor here.
 !  Need to define some quantity for (p%ppwater(jj)/p%ppsat(jj)-p%ppsf(jj,k)/p%ppsat(jj))
@@ -3092,14 +3345,11 @@ module Dustdensity
                 endif
 !
                 if (lsubstep) then
-                  !ff_tmp(jj,k)=nd_substep(jj,k)*(p%ppwater(jj)/p%ppsat(jj)-p%ppsf(jj,k)/p%ppsat(jj))
                   ff_tmp(jj,k)=nd_substep(jj,k)*GS
                 else
-                  !ff_tmp(jj,k)=p%nd(jj,k)*(p%ppwater(jj)/p%ppsat(jj)-p%ppsf(jj,k)/p%ppsat(jj))
-                  ff_tmp(jj,k)=p%nd(jj,k)*GS
+                  ff_tmp(jj,k)=nd_new(jj,k)*GS
                 endif
-!                endif
-           enddo
+         enddo
          enddo
 !
 !  dndr_dr = (d/dr)(GSn), where ff_tmp=GSn
@@ -3110,16 +3360,16 @@ module Dustdensity
 !   where ff_tmp = GSn and dndr_dr=(d/dr)(GSn)
 !
          do jj=1,nx
-          do k=1,ndustspec
-             dndr_dr(jj,k)=-1./dsize(k)**2*ff_tmp(jj,k)+dndr_dr(jj,k)/dsize(k)
-           enddo
-        enddo
+         do k=1,ndustspec
+           dndr_dr(jj,k)=-1./dsize(k)**2*ff_tmp(jj,k)+dndr_dr(jj,k)/dsize(k)
+         enddo
+         enddo
 !
 ! boundary onditions:
-
+!
            if (ndustspec >3) then
-              kk1=ndustspec-2
-              kk2=ndustspec
+             kk1=ndustspec-2
+             kk2=ndustspec
              dndr_dr(:,kk1:kk2)=0.
            endif
 !

@@ -201,8 +201,8 @@ module Messages
 !  17-may-2006/anders: coded
 !
       if (.not.llife_support) then
-        call mpireduce_sum_int(fatal_errors,fatal_errors_total)
-        call mpibcast_int(fatal_errors_total)
+        call mpireduce_sum_int(fatal_errors,fatal_errors_total,MPI_COMM_WORLD)
+        call mpibcast_int(fatal_errors_total,comm=MPI_COMM_WORLD)
 !
         if (fatal_errors_total/=0) then
           if (lroot) then

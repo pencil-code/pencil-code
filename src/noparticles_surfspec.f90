@@ -39,13 +39,15 @@ module Particles_surfspec
   endsubroutine register_indep_psurfchem
 ! ******************************************************************************
 
-  subroutine init_particles_surf(f,fp)
+  subroutine init_particles_surf(f,fp,ineargrid)
     real, dimension(mx,my,mz,mfarray) :: f
     real, dimension(mpar_loc,mparray) :: fp
+    integer, dimension(mpar_loc,3) :: ineargrid
 
     ! 19.09.2014/Jonas:coded
     call keep_compiler_quiet(f)
     call keep_compiler_quiet(fp)
+    call keep_compiler_quiet(ineargrid)
   endsubroutine init_particles_surf
 ! ******************************************************************************
 !  19.09.2014/Jonas:coded

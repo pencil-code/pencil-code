@@ -186,7 +186,7 @@ module Testfield
 !  04-oct-13/MR  : removed p from parameter list, introd calculation of
 !                  hydro pencils (restricted); simplified communication
 !
-      use Sub, only: curl, cross_mn, finalize_aver, notanumber
+      use Sub, only: curl, cross_mn, finalize_aver
       use Hydro, only:  calc_pencils_hydro
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
@@ -274,7 +274,7 @@ module Testfield
 !  28-aug-13/MR: coded
 !  02-dec-13/MR: fixed bugs: missing mapping in twod_need_1d, twod_need_2d added, wrong 'backmapping' removed
 !
-      use Diagnostics, only: zsum_mn_name_xy_mpar,yzsum_mn_name_x_mpar
+      use Diagnostics, only: zsum_mn_name_xy_mpar_scal,yzsum_mn_name_x_mpar
 !
       integer, dimension(idiag_base_end) :: idiags_map
       integer :: i,j
@@ -318,7 +318,7 @@ module Testfield
                               idiags(idiag_Eij_start:idiag_Eij_end),idiags_x(idiag_Eij_start:idiag_Eij_end),   &
                               idiags_xy(idiag_Eij_start:idiag_Eij_end), &
                               idiag_alp11h, idiag_eta122h, &
-                              tmp,Minv,zsum_mn_name_xy_mpar,yzsum_mn_name_x_mpar, &
+                              tmp,Minv,zsum_mn_name_xy_mpar_scal,yzsum_mn_name_x_mpar, &
                               twod_need_1d(abs(idiags_map)),twod_need_2d(abs(idiags_map)),needed2d,nz )
 !
 !  sign inversion if necessary
@@ -337,7 +337,7 @@ module Testfield
       if (l2davgfirst .and. needed2d(2) .and. lfirst_proc_z) then
         do i=1,ny; do j=1,nx
           where(idiags_xy(1:idiag_base_end)/=0) &
-            fnamexy(j,i,idiags_xy(1:idiag_base_end)) = sign(1.,float(idiags_map))*fnamexy(j,i,idiags_xy(1:idiag_base_end))
+            fnamexy(idiags_xy(1:idiag_base_end),j,i) = sign(1.,float(idiags_map))*fnamexy(idiags_xy(1:idiag_base_end),j,i)
         enddo; enddo
       endif
 

@@ -45,7 +45,8 @@ module Equ
                          forcing_continuous
 ! To check ghost cell consistency, please uncomment the following line:
 !     use Ghost_check, only: check_ghosts_consistency
-      use GhostFold, only: fold_df
+      use General, only: notanumber
+      use GhostFold, only: fold_df, fold_df_3points
       use Gravity
       use Grid, only: calc_pencils_grid, get_grid_mn
       use Heatflux
@@ -71,7 +72,7 @@ module Equ
       use Solid_Cells, only: update_solid_cells, freeze_solid_cells, &
           dsolid_dt,dsolid_dt_integrate,update_solid_cells_pencil
       use Special, only: special_before_boundary, calc_lspecial_pars, &
-          calc_pencils_special, dspecial_dt
+          calc_pencils_special, dspecial_dt, special_after_boundary
       use Sub
       use Testfield
       use Testflow
@@ -87,10 +88,8 @@ module Equ
       real, dimension (nx) :: advec2,advec2_hypermesh
       real, dimension (nx) :: pfreeze,pfreeze_int,pfreeze_ext
       real, dimension(1)   :: mass_per_proc
-      real, dimension(nz) :: ucz
       integer :: iv
       integer :: ivar1,ivar2
-      real :: uc = 0.0
 !
       intent(inout)  :: f       ! inout due to  lshift_datacube_x,
                                 ! density floor, or velocity ceiling
@@ -138,18 +137,28 @@ module Equ
 !  the grid spacing is calculated in the (m,n) loop below.
 !
       if (lcartesian_coords .and. all(lequidist)) then
-        if (old_cdtv) then
-          dxyz_2 = max(dx_1(l1:l2)**2,dy_1(m1)**2,dz_1(n1)**2)
-        else
+!  FAG replaced old_cdtv flag with more general coordinate independent lmaximal   
+!        if (old_cdtv) then
+!          dxyz_2 = max(dx_1(l1:l2)**2,dy_1(m1)**2,dz_1(n1)**2)
+!        else
           dline_1(:,1)=dx_1(l1:l2)
           dline_1(:,2)=dy_1(m1)
           dline_1(:,3)=dz_1(n1)
-          dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
-          dxyz_4 = dline_1(:,1)**4+dline_1(:,2)**4+dline_1(:,3)**4
-          dxyz_6 = dline_1(:,1)**6+dline_1(:,2)**6+dline_1(:,3)**6
+          if (lmaximal_cdtv) then
+            dxyz_2 = max(dline_1(:,1)**2, dline_1(:,2)**2, dline_1(:,3)**2)
+            dxyz_4 = max(dline_1(:,1)**4, dline_1(:,2)**4, dline_1(:,3)**4)
+            dxyz_6 = max(dline_1(:,1)**6, dline_1(:,2)**6, dline_1(:,3)**6)
+          else
+            dxyz_2 = dline_1(:,1)**2 + dline_1(:,2)**2 + dline_1(:,3)**2
+            dxyz_4 = dline_1(:,1)**4 + dline_1(:,2)**4 + dline_1(:,3)**4
+            dxyz_6 = dline_1(:,1)**6 + dline_1(:,2)**6 + dline_1(:,3)**6
+          endif
+        !  dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
+        !  dxyz_4 = dline_1(:,1)**4+dline_1(:,2)**4+dline_1(:,3)**4
+        !  dxyz_6 = dline_1(:,1)**6+dline_1(:,2)**6+dline_1(:,3)**6
           dxmax_pencil(:) = dxmax
           dxmin_pencil(:) = dxmin
-        endif
+!        endif
       endif
 !
 !  Shift entire data cube by one grid point at the beginning of each
@@ -173,7 +182,8 @@ module Equ
                      ltestscalar.or.ltestfield.or.ltestflow.or. &
                      lparticles_spin.or.lsolid_cells.or. &
                      lchemistry.or.lweno_transport .or. lbfield .or. & 
-                     lslope_limit_diff
+                     lslope_limit_diff &
+                     .or. lyinyang
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.
 !  The user must have set crash_file_dtmin_factor>0.0 in &run_pars for
@@ -246,6 +256,14 @@ module Equ
         call boundconds_z(f)
       endif
 !
+!  Remove unphysical values of the mass fractions. This must be done
+!  before the call to update_solid_cells in order to avoid corrections
+!  within the solid structure.
+!
+      if (lsolid_cells .and. lchemistry) then
+        call chemspec_normalization_N2(f)
+      endif
+!
 ! update solid cell "ghost points". This must be done in order to get the
 ! correct boundary layer close to the solid geometry, i.e. no-slip conditions.
 !
@@ -259,14 +277,9 @@ module Equ
       if (lhyperviscosity_strict)   call hyperviscosity_strict(f)
       if (lhyperresistivity_strict) call hyperresistivity_strict(f)
 !
-!  Dynamical (hyper-)diffusion coefficients
+!  Dynamically set the (hyper-)diffusion coefficients
 !
-      dyndiff: if (ldyndiff_urmsmxy) then
-        ucz = find_xyrms_fvec(f, iuu)
-      else if (ldynamical_diffusion) then dyndiff
-        uc = find_rms_fvec(f, iuu)
-        call set_dyndiff_coeff(uc)
-      endif dyndiff
+      if (ldynamical_diffusion) call set_dyndiff_coeff(f)
 !
 !  Calculate the characteristic velocity
 !  for slope limited diffusion
@@ -277,8 +290,10 @@ module Equ
 ! NOT fully functional
 !        call update_char_vel_magnetic(f)
         call update_char_vel_hydro(f)
-        call update_char_vel_density(f)
-        f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=sqrt(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
+        !call update_char_vel_density(f)
+        !f(2:mx-2,2:my-2,2:mz-2,iFF_char_c)=sqrt(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
+!  JW: for hydro it is done without sqrt
+        !if (ldiagnos) print*, 'max(char_c)=', maxval(f(2:mx-2,2:my-2,2:mz-2,iFF_char_c))
       endif
 !
 !  For calculating the pressure gradient directly from the pressure (which is
@@ -291,7 +306,7 @@ module Equ
 !
       if (lfirst.and.ldt) then
         if (dtmax/=0.0) then
-          dt1_max=1/dtmax
+          dt1_max=1./dtmax
         else
           dt1_max=0.0
         endif
@@ -342,7 +357,7 @@ module Equ
       if (ltestflow)              call calc_ltestflow_nonlin_terms(f,df)
       if (lspecial)               call calc_lspecial_pars(f)
 !AB: could be renamed to special_after_boundary etc
-      !if (lspecial)               call special_after_boundary(f)
+      if (lspecial)               call special_after_boundary(f)
 !
 !  Calculate quantities for a chemical mixture
 !
@@ -361,10 +376,6 @@ module Equ
         m=mm(imn)
         lfirstpoint=(imn==1)      ! true for very first m-n loop
         llastpoint=(imn==(ny*nz)) ! true for very last m-n loop
-!
-!  Dynamical (hyper-)diffusion coefficients in each horizontal plane.
-!
-        if (ldyndiff_urmsmxy .and. (imn == 1 .or. nn(max(imn-1,1)) /= n)) call set_dyndiff_coeff(ucz(n-nghost))
 !
 !  Store the velocity part of df array in a temporary array
 !  while solving the anelastic case.
@@ -523,7 +534,7 @@ module Equ
 !  --------------------------------------------------------
 !
 !  hydro, density, and entropy evolution
-!  Note that pressure gradient is added in denergy_dt to momentum,
+!  Note that pressure gradient is added in denergy_dt of noentropy to momentum,
 !  even if lentropy=.false.
 !
         call duu_dt(f,df,p)
@@ -637,6 +648,7 @@ module Equ
         endif
 !
 !  General phiaverage quantities -- useful for debugging.
+!  MR: Result is constant in time, so why here?
 !
         if (l2davgfirst) then
           call phisum_mn_name_rz(p%rcyl_mn,idiag_rcylmphi)
@@ -645,13 +657,11 @@ module Equ
           call phisum_mn_name_rz(p%r_mn,idiag_rmphi)
         endif
 !
-!  Do the vorticity integration here, before the omega pencil is overwritten.
+!  Do the time integrations here, before the pencils are overwritten.
 !
-        if (ltime_integrals) then
-          if (llast) then
-            if (lhydro)    call time_integrals_hydro(f,p)
-            if (lmagnetic) call time_integrals_magnetic(f,p)
-          endif
+        if (ltime_integrals.and.llast) then
+          if (lhydro)    call time_integrals_hydro(f,p)
+          if (lmagnetic) call time_integrals_magnetic(f,p)
         endif
 !
 !  In max_mn maximum values of u^2 (etc) are determined sucessively
@@ -786,6 +796,7 @@ module Equ
 !
           if (lchemistry .and. .not.llsode) then
             dt1_reac = reac_chem/cdtc
+!           dt1_preac= reac_pchem/cdtc
             dt1_max = max(dt1_max,dt1_reac)
           endif
 !
@@ -904,9 +915,17 @@ module Equ
 !--   if (lradiation_fld) f(:,:,:,idd)=DFF_new
 !
 !  Fold df from first ghost zone into main df.
-!  Currently only needed for smoothed out particle drag force.
 !
-      if (lhydro .and. lfold_df) call fold_df(df,iux,iuz)
+      if (lfold_df) then
+        if (lhydro .and. (.not. lpscalar) .and. (.not. lchemistry)) then
+          call fold_df(df,iux,iuz)
+        else
+          call fold_df(df,iux,mvar)
+        endif
+      endif
+      if (lfold_df_3points) then
+        call fold_df_3points(df,iux,mvar)
+      endif
 !
 !  -------------------------------------------------------------
 !  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)
@@ -1087,7 +1106,7 @@ module Equ
 !  Check for NaNs in the advection time-step.
 !
       if (notanumber(dt1_advec)) then
-        print*, 'pde: dt1_advec contains a NaN at iproc=', iproc
+        print*, 'pde: dt1_advec contains a NaN at iproc=', iproc_world
         if (lhydro)           print*, 'advec_uu   =',advec_uu
         if (lshear)           print*, 'advec_shear=',advec_shear
         if (lmagnetic)        print*, 'advec_hall =',advec_hall
@@ -1212,23 +1231,37 @@ module Equ
 !
     endsubroutine output_crash_files
 !***********************************************************************
-    subroutine set_dyndiff_coeff(us)
+    subroutine set_dyndiff_coeff(f)
 !
 !  Set dynamical diffusion coefficients.
 !
 !  18-jul-14/ccyang: coded.
+!  03-apr-16/ccyang: add switch ldyndiff_useumax
 !
       use Density,   only: dynamical_diffusion
-      use Magnetic,  only: dynamical_resistivity
       use Energy,    only: dynamical_thermal_diffusion
+      use Magnetic,  only: dynamical_resistivity
+      use Sub,       only: find_max_fvec, find_rms_fvec
       use Viscosity, only: dynamical_viscosity
 !
-      real, intent(in) :: us
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
-      if (ldensity)                      call dynamical_diffusion(us)
-      if (lmagnetic .and. .not. lbfield) call dynamical_resistivity(us)
-      if (lenergy)                       call dynamical_thermal_diffusion(us)
-      if (lviscosity)                    call dynamical_viscosity(us)
+      real :: uc
+!
+!  Find the characteristic speed, either the absolute maximum or the rms.
+!
+      if (ldyndiff_useumax) then
+        uc = find_max_fvec(f, iuu)
+      else
+        uc = find_rms_fvec(f, iuu)
+      endif
+!
+!  Ask each module to set the diffusion coefficients.
+!
+      if (ldensity)                      call dynamical_diffusion(uc)
+      if (lmagnetic .and. .not. lbfield) call dynamical_resistivity(uc)
+      if (lenergy)                       call dynamical_thermal_diffusion(uc)
+      if (lviscosity)                    call dynamical_viscosity(uc)
 !
     endsubroutine set_dyndiff_coeff
 !***********************************************************************

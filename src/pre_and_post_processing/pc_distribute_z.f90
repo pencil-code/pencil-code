@@ -29,7 +29,6 @@ program pc_distribute_z
 !
   lstart = .true.
   lmpicomm = .false.
-  root = 0
   ipx = 0
   ipy = 0
   ipz = 0
@@ -37,10 +36,6 @@ program pc_distribute_z
   zlneigh = 0
   yuneigh = 0
   zuneigh = 0
-  llcorn = 0
-  lucorn = 0
-  uucorn = 0
-  ulcorn = 0
 !
   deltay = 0.0   ! Shearing not available due to missing fseek in Fortran
 !
@@ -165,7 +160,6 @@ subroutine read_and_distribute(filename,f,lonly_farray)
 
   character(LEN=*) :: filename
   real, dimension(:,:,:,:) :: f
-  integer :: mvar_in
   logical :: lonly_farray
 
   integer :: mvar

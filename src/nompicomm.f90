@@ -298,30 +298,32 @@ module Mpicomm
 !  endinterface
 !
   integer :: mpi_precision
+  integer, parameter :: MPI_COMM_WORLD=0
 !
   contains
 !***********************************************************************
-    subroutine mpicomm_init()
+    subroutine mpicomm_init
 !
 !  29-jul-2010/anders: dummy
 !
-      mpi_precision = -1
-!
-    endsubroutine mpicomm_init
-!***********************************************************************
-    subroutine initialize_mpicomm()
-!
 !  Make a quick consistency check.
 !
-      if (ncpus>1) then
-        call stop_it('Inconsistency: MPICOMM=nompicomm, but ncpus>=2')
-      endif
+      if (ncpus>1 .or. nprocx>1 .or. nprocy>1 .or. nprocz>1) &
+        call stop_it('Inconsistency: MPICOMM=nompicomm, but ncpus>=2 or nproc[xyz]>=2')
+!
+      mpi_precision = -1
+!
+      lmpicomm = .false.
+
+    endsubroutine mpicomm_init
+!***********************************************************************
+    subroutine initialize_mpicomm
+!
+      if (lyinyang) &
+         call stop_it('Inconsistency: Yin-Yang grid requires MPI and >= 6 processors')
 !
 !  For a single CPU run, set processor to zero.
 !
-      lmpicomm = .false.
-      iproc = 0
-      lroot = .true.
       ipx = 0
       ipy = 0
       ipz = 0
@@ -343,12 +345,48 @@ module Mpicomm
       zlneigh = 0
       yuneigh = 0
       zuneigh = 0
-      llcorn = 0
-      lucorn = 0
-      uucorn = 0
-      ulcorn = 0
 !
     endsubroutine initialize_mpicomm
+!***********************************************************************
+    subroutine update_neighbors
+!
+! Update neighbor processes for communication.
+!
+! 27-feb-16/ccyang: coded
+!
+      iproc_comm = -1
+      nproc_comm = 0
+!
+    endsubroutine update_neighbors
+!***********************************************************************
+    elemental integer function index_to_iproc_comm(iproc_in, mask)
+!
+!  Converts iproc_in to the index to iproc_comm, returns 0 if iproc_in
+!  is iproc itself, and -1 if none of the elements in iproc_comm matches
+!  iproc_in.
+!
+!  iproc_in itself is returned if mask = .false..
+!
+!  28-feb-16/ccyang: coded.
+!
+      logical, intent(in) :: mask
+      integer, intent(in) :: iproc_in
+!
+      active: if (mask) then
+        if (iproc_in == iproc) then
+          index_to_iproc_comm = 0
+        else
+          index_to_iproc_comm = -1
+        endif
+      else active
+        index_to_iproc_comm = iproc_in
+      endif active
+!
+    endfunction index_to_iproc_comm
+!***********************************************************************
+    subroutine yyinit
+
+    endsubroutine yyinit
 !***********************************************************************
     subroutine initiate_isendrcv_bdry(f,ivar1_opt,ivar2_opt)
 !
@@ -495,7 +533,7 @@ module Mpicomm
     subroutine radboundary_yz_periodic_ray(Qrad_yz,tau_yz, &
                                            Qrad_yz_all,tau_yz_all)
 !
-!  Trivial counterpart of radboundary_yz_periodic_ray() from mpicomm.f90
+!  Trivial counterpart of radboundary_yz_periodic_ray from mpicomm.f90
 !
 !  17-nov-14/axel: adapted from radboundary_zx_periodic_ray
 !
@@ -510,7 +548,7 @@ module Mpicomm
     subroutine radboundary_zx_periodic_ray(Qrad_zx,tau_zx, &
                                            Qrad_zx_all,tau_zx_all)
 !
-!  Trivial counterpart of radboundary_zx_periodic_ray() from mpicomm.f90
+!  Trivial counterpart of radboundary_zx_periodic_ray from mpicomm.f90
 !
 !  19-jul-05/tobi: coded
 !
@@ -570,13 +608,14 @@ module Mpicomm
 !
     endsubroutine mpirecv_real_arr2
 !***********************************************************************
-    subroutine mpirecv_real_arr3(bcast_array,nb,proc_src,tag_id)
+    subroutine mpirecv_real_arr3(bcast_array,nb,proc_src,tag_id,comm,noblock)
 !
       integer, dimension(3) :: nb
       real, dimension(nb(1),nb(2),nb(3)) :: bcast_array
       integer :: proc_src, tag_id
+      integer, optional :: comm,noblock
 !
-      if (ALWAYS_FALSE) print*, bcast_array, nb, proc_src, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array, nb, proc_src, tag_id,comm,noblock
 !
     endsubroutine mpirecv_real_arr3
 !***********************************************************************
@@ -599,11 +638,12 @@ module Mpicomm
 !
     endsubroutine mpirecv_int_scl
 !***********************************************************************
-    subroutine mpirecv_int_arr(bcast_array,nbcast_array,proc_src,tag_id)
+    subroutine mpirecv_int_arr(bcast_array,nbcast_array,proc_src,tag_id,comm,nonblock)
 !
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: bcast_array
       integer :: proc_src, tag_id
+      integer, optional :: comm, nonblock
 !
       if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_src, tag_id
 !
@@ -657,13 +697,14 @@ module Mpicomm
 !
     endsubroutine mpisend_real_arr2
 !***********************************************************************
-    subroutine mpisend_real_arr3(bcast_array,nb,proc_rec,tag_id)
-!
+    subroutine mpisend_real_arr3(bcast_array,nb,proc_rec,tag_id,comm,nonblock)
+
       integer, dimension(3) :: nb
       real, dimension(nb(1),nb(2),nb(3)) :: bcast_array
       integer :: proc_rec, tag_id
+      integer, optional :: comm, nonblock
 !
-      if (ALWAYS_FALSE) print*, bcast_array, nb, proc_rec, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array,nb,proc_rec,tag_id,comm,nonblock
 !
     endsubroutine mpisend_real_arr3
 !***********************************************************************
@@ -824,80 +865,81 @@ module Mpicomm
 !
     endsubroutine mpisend_int_scl
 !***********************************************************************
-    subroutine mpisend_int_arr(bcast_array,nbcast_array,proc_rec,tag_id)
+    subroutine mpisend_int_arr(bcast_array,nbcast_array,proc_rec,tag_id,comm)
 !
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: bcast_array
       integer :: proc_rec, tag_id
+      integer, optional :: comm
 !
-      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_rec, tag_id
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_rec, tag_id, comm
 !
     endsubroutine mpisend_int_arr
 !***********************************************************************
-    subroutine mpibcast_logical_scl(lbcast_array,proc)
+    subroutine mpibcast_logical_scl(lbcast_array,proc,comm)
 !
       logical :: lbcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
 !
       if (ALWAYS_FALSE) print*, lbcast_array, proc
 !
     endsubroutine mpibcast_logical_scl
 !***********************************************************************
-    subroutine mpibcast_logical_arr(lbcast_array,nbcast_array,proc)
+    subroutine mpibcast_logical_arr(lbcast_array,nbcast_array,proc,comm)
 !
       integer :: nbcast_array
       logical, dimension(nbcast_array) :: lbcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
 !
       if (ALWAYS_FALSE) print*, lbcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_logical_arr
 !***********************************************************************
-    subroutine mpibcast_logical_arr2(bcast_array,nbcast_array,proc)
+    subroutine mpibcast_logical_arr2(bcast_array,nbcast_array,proc,comm)
 !
       integer, dimension(2) :: nbcast_array
       logical, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
 !
       if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_logical_arr2
 !***********************************************************************
-    subroutine mpibcast_int_scl(ibcast_array,proc)
+    subroutine mpibcast_int_scl(ibcast_array,proc,comm)
 !
       integer :: ibcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
 !
       if (ALWAYS_FALSE) print*, ibcast_array,proc
 !
     endsubroutine mpibcast_int_scl
 !***********************************************************************
-    subroutine mpibcast_int_arr(ibcast_array,nbcast_array,proc)
+    subroutine mpibcast_int_arr(ibcast_array,nbcast_array,proc,comm)
 !
       integer :: nbcast_array
       integer, dimension(nbcast_array) :: ibcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
 !
       if (ALWAYS_FALSE) print*, ibcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_int_arr
 !***********************************************************************
-    subroutine mpibcast_real_scl(bcast_array,proc)
+    subroutine mpibcast_real_scl(bcast_array,proc,comm)
 !
       real :: bcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
 !
       if (ALWAYS_FALSE) print*, bcast_array, proc
 !
     endsubroutine mpibcast_real_scl
 !***********************************************************************
-    subroutine mpibcast_real_arr(bcast_array,nbcast_array,proc)
+    subroutine mpibcast_real_arr(bcast_array,nbcast_array,proc,comm)
 !
       integer :: nbcast_array
       real, dimension(nbcast_array) :: bcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
 !
-      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc, comm
 !
     endsubroutine mpibcast_real_arr
 !***********************************************************************
@@ -931,10 +973,10 @@ module Mpicomm
 !
     endsubroutine mpibcast_real_arr4
 !***********************************************************************
-    subroutine mpibcast_double_scl(bcast_array,proc)
+    subroutine mpibcast_double_scl(bcast_array,proc,comm)
 !
       double precision :: bcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
 !
       if (ALWAYS_FALSE) print*, bcast_array,proc
 !
@@ -950,20 +992,20 @@ module Mpicomm
 !
     endsubroutine mpibcast_double_arr
 !***********************************************************************
-    subroutine mpibcast_char_scl(cbcast_array,proc)
+    subroutine mpibcast_char_scl(cbcast_array,proc,comm)
 !
       character :: cbcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
 !
       if (ALWAYS_FALSE) print*, cbcast_array,proc
 !
     endsubroutine mpibcast_char_scl
 !***********************************************************************
-    subroutine mpibcast_char_arr(cbcast_array,nbcast_array,proc)
+    subroutine mpibcast_char_arr(cbcast_array,nbcast_array,proc,comm)
 !
       integer :: nbcast_array
       character, dimension(nbcast_array) :: cbcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
 !
       if (ALWAYS_FALSE) print*, cbcast_array, nbcast_array, proc
 !
@@ -1011,25 +1053,25 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_sum_scl
 !***********************************************************************
-    subroutine mpiallreduce_sum_arr(fsum_tmp,fsum,nreduce,idir)
+    subroutine mpiallreduce_sum_arr(fsum_tmp,fsum,nreduce,idir,comm)
 !
       integer :: nreduce
       real, dimension(nreduce) :: fsum_tmp, fsum
-      integer, optional :: idir
+      integer, optional :: idir, comm
 !
       fsum=fsum_tmp
-      if (present(idir).and.ALWAYS_FALSE) print*,idir
+      if (present(idir).and.ALWAYS_FALSE) print*,idir,comm
 !
     endsubroutine mpiallreduce_sum_arr
 !***********************************************************************
-    subroutine mpiallreduce_sum_arr2(fsum_tmp,fsum,nreduce,idir)
+    subroutine mpiallreduce_sum_arr2(fsum_tmp,fsum,nreduce,idir,comm)
 !
       integer, dimension(2) :: nreduce
       real, dimension(nreduce(1),nreduce(2)) :: fsum_tmp, fsum
-      integer, optional :: idir
+      integer, optional :: idir,comm
 !
       fsum=fsum_tmp
-      if (present(idir).and.ALWAYS_FALSE) print*,idir
+      if (present(idir).and.ALWAYS_FALSE) print*,idir,comm
 !
     endsubroutine mpiallreduce_sum_arr2
 !***********************************************************************
@@ -1066,128 +1108,143 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_sum_arr5
 !***********************************************************************
-    subroutine mpiallreduce_sum_int_scl(fsum_tmp,fsum)
+    subroutine mpiallreduce_sum_int_scl(fsum_tmp,fsum,comm)
 !
       integer :: fsum_tmp, fsum
+      integer, optional :: comm
 !
       fsum=fsum_tmp
 !
     endsubroutine mpiallreduce_sum_int_scl
 !***********************************************************************
-    subroutine mpiallreduce_sum_int_arr(fsum_tmp,fsum,nreduce)
+    subroutine mpiallreduce_sum_int_arr(fsum_tmp,fsum,nreduce,comm)
 !
       integer :: nreduce
       integer, dimension(nreduce) :: fsum_tmp, fsum
+      integer, optional :: comm
 !
       fsum=fsum_tmp
 !
     endsubroutine mpiallreduce_sum_int_arr
 !***********************************************************************
-    subroutine mpiallreduce_max_scl(fmax_tmp,fmax)
+    subroutine mpiallreduce_max_scl(fmax_tmp,fmax,comm)
 !
       real :: fmax_tmp, fmax
+      integer, optional :: comm
 !
       fmax=fmax_tmp
 !
     endsubroutine mpiallreduce_max_scl
 !***********************************************************************
-    subroutine mpiallreduce_max_arr(fmax_tmp,fmax,nreduce)
+    subroutine mpiallreduce_max_arr(fmax_tmp,fmax,nreduce,comm)
 !
       integer :: nreduce
       real, dimension(nreduce) :: fmax_tmp, fmax
+      integer, optional :: comm
 !
       fmax=fmax_tmp
 !
     endsubroutine mpiallreduce_max_arr
 !***********************************************************************
-    subroutine mpiallreduce_min_scl_dbl(fmin_tmp,fmin)
+    subroutine mpiallreduce_min_scl_dbl(fmin_tmp,fmin,comm)
 !
       real(KIND=rkind8) :: fmin_tmp,fmin
+      integer, optional :: comm
 !
       fmin=fmin_tmp
 !
     endsubroutine mpiallreduce_min_scl_dbl
 !***********************************************************************
-    subroutine mpiallreduce_min_scl_sgl(fmin_tmp,fmin)
+    subroutine mpiallreduce_min_scl_sgl(fmin_tmp,fmin,comm)
 !
       real(KIND=rkind4) :: fmin_tmp,fmin
+      integer, optional :: comm
 !
       fmin=fmin_tmp
 !
     endsubroutine mpiallreduce_min_scl_sgl
 !***********************************************************************
-    subroutine mpiallreduce_or_scl(flor_tmp, flor)
+    subroutine mpiallreduce_or_scl(flor_tmp, flor, comm)
 !
       logical, intent(in) :: flor_tmp
       logical, intent(out) :: flor
+      integer, optional :: comm
 !
       flor = flor_tmp
 !
     endsubroutine mpiallreduce_or_scl
 !***********************************************************************
-    subroutine mpireduce_max_scl_int(fmax_tmp,fmax)
+    subroutine mpireduce_max_scl_int(fmax_tmp,fmax,comm)
 !
       integer :: fmax_tmp, fmax
+      integer, optional :: comm
 !
       fmax=fmax_tmp
 !
     endsubroutine mpireduce_max_scl_int
 !***********************************************************************
-    subroutine mpireduce_max_scl(fmax_tmp,fmax)
+    subroutine mpireduce_max_scl(fmax_tmp,fmax,comm)
 !
       real :: fmax_tmp, fmax
+      integer, optional :: comm
 !
       fmax=fmax_tmp
 !
     endsubroutine mpireduce_max_scl
 !***********************************************************************
-    subroutine mpireduce_max_arr(fmax_tmp,fmax,nreduce)
+    subroutine mpireduce_max_arr(fmax_tmp,fmax,nreduce,comm)
 !
       integer :: nreduce
       real, dimension(nreduce) :: fmax_tmp, fmax
+      integer, optional :: comm
 !
       fmax=fmax_tmp
 !
     endsubroutine mpireduce_max_arr
 !***********************************************************************
-    subroutine mpireduce_min_scl(fmin_tmp,fmin)
+    subroutine mpireduce_min_scl(fmin_tmp,fmin,comm)
 !
       real :: fmin_tmp, fmin
+      integer, optional :: comm
 !
       fmin=fmin_tmp
 !
     endsubroutine mpireduce_min_scl
 !***********************************************************************
-    subroutine mpireduce_min_arr(fmin_tmp,fmin,nreduce)
+    subroutine mpireduce_min_arr(fmin_tmp,fmin,nreduce,comm)
 !
       integer :: nreduce
       real, dimension(nreduce) :: fmin_tmp, fmin
+      integer, optional :: comm
 !
       fmin=fmin_tmp
 !
     endsubroutine mpireduce_min_arr
 !***********************************************************************
-    subroutine mpireduce_sum_int_scl(fsum_tmp,fsum)
+    subroutine mpireduce_sum_int_scl(fsum_tmp,fsum,comm)
 !
       integer :: fsum_tmp,fsum
+      integer, optional :: comm
 !
       fsum=fsum_tmp
 !
     endsubroutine mpireduce_sum_int_scl
 !***********************************************************************
-    subroutine mpireduce_sum_int_arr(fsum_tmp,fsum,nreduce)
+    subroutine mpireduce_sum_int_arr(fsum_tmp,fsum,nreduce,comm)
 !
       integer :: nreduce
       integer, dimension(nreduce) :: fsum_tmp,fsum
+      integer, optional :: comm
 !
       fsum=fsum_tmp
 !
     endsubroutine mpireduce_sum_int_arr
 !***********************************************************************
-    subroutine mpireduce_sum_int_arr2(fsum_tmp,fsum,nreduce)
+    subroutine mpireduce_sum_int_arr2(fsum_tmp,fsum,nreduce,comm)
 !
       integer, dimension(2) :: nreduce
       integer, dimension(nreduce(1),nreduce(2)) :: fsum_tmp,fsum
+      integer, optional :: comm
 !
       fsum=fsum_tmp
 !
@@ -1213,24 +1270,25 @@ module Mpicomm
 !
     endsubroutine mpireduce_sum_int_arr4
 !***********************************************************************
-    subroutine mpireduce_sum_scl(fsum_tmp,fsum,idir)
+    subroutine mpireduce_sum_scl(fsum_tmp,fsum,idir,comm)
 !
       real :: fsum_tmp,fsum
       integer, optional :: idir
+      integer, optional :: comm
 !
       fsum=fsum_tmp
       if (present(idir).and.ALWAYS_FALSE) print*,idir
 !
     endsubroutine mpireduce_sum_scl
 !***********************************************************************
-    subroutine mpireduce_sum_arr(fsum_tmp,fsum,nreduce,idir)
+    subroutine mpireduce_sum_arr(fsum_tmp,fsum,nreduce,idir,comm)
 !
       integer :: nreduce
       real, dimension(nreduce) :: fsum_tmp,fsum
-      integer, optional :: idir
+      integer, optional :: idir,comm
 !
       fsum=fsum_tmp
-      if (present(idir).and.ALWAYS_FALSE) print*,idir
+      if (present(idir).and.ALWAYS_FALSE) print*,idir,comm
 !
     endsubroutine mpireduce_sum_arr
 !***********************************************************************
@@ -1311,53 +1369,57 @@ module Mpicomm
 !
     endsubroutine mpireduce_sum_double_arr4
 !***********************************************************************
-    subroutine mpireduce_or_scl(flor_tmp,flor)
+    subroutine mpireduce_or_scl(flor_tmp,flor,comm)
 !
       logical :: flor_tmp, flor
+      integer, optional :: comm
 !
       flor=flor_tmp
 !
     endsubroutine mpireduce_or_scl
 !***********************************************************************
-    subroutine mpireduce_or_arr(flor_tmp,flor,nreduce)
+    subroutine mpireduce_or_arr(flor_tmp,flor,nreduce,comm)
 !
       integer :: nreduce
       logical, dimension(nreduce) :: flor_tmp, flor
+      integer, optional :: comm
 !
       flor=flor_tmp
 !
     endsubroutine mpireduce_or_arr
 !***********************************************************************
-    subroutine mpireduce_and_scl(fland_tmp,fland)
+    subroutine mpireduce_and_scl(fland_tmp,fland,comm)
 !
       logical :: fland_tmp, fland
+      integer, optional :: comm
 !
       fland=fland_tmp
 !
     endsubroutine mpireduce_and_scl
 !***********************************************************************
-    subroutine mpireduce_and_arr(fland_tmp,fland,nreduce)
+    subroutine mpireduce_and_arr(fland_tmp,fland,nreduce,comm)
 !
       integer :: nreduce
       logical, dimension(nreduce) :: fland_tmp, fland
+      integer, optional :: comm
 !
       fland=fland_tmp
 !
     endsubroutine mpireduce_and_arr
 !***********************************************************************
-    subroutine start_serialize()
+    subroutine start_serialize
 !
     endsubroutine start_serialize
 !***********************************************************************
-    subroutine end_serialize()
+    subroutine end_serialize
 !
     endsubroutine end_serialize
 !***********************************************************************
-    subroutine mpibarrier()
+    subroutine mpibarrier
 !
     endsubroutine mpibarrier
 !***********************************************************************
-    subroutine mpifinalize()
+    subroutine mpifinalize
 !
     endsubroutine mpifinalize
 !***********************************************************************
@@ -1401,28 +1463,14 @@ module Mpicomm
 !
     endfunction mpiwtick
 !***********************************************************************
-    subroutine touch_file(file)
-!
-!  Touches a given file (used for code locking).
-!
-!  25-may-03/axel: coded
-!  24-mar-10/Bourdin.KIS: moved here from sub.f90
-!
-      character(len=*) :: file
-!
-      integer :: unit = 1
-!
-      open (unit, FILE=file)
-      close (unit)
-!
-    endsubroutine touch_file
-!***********************************************************************
-    subroutine die_gracefully()
+    subroutine die_gracefully
 !
 !  Stop... perform any necessary shutdown stuff.
 !
 !  29-jun-05/tony: coded
 !
+      use General, only: touch_file
+
       call touch_file('ERROR')
 !
       call mpifinalize
@@ -1430,12 +1478,14 @@ module Mpicomm
 !
     endsubroutine die_gracefully
 !***********************************************************************
-    subroutine die_immediately()
+    subroutine die_immediately
 !
 !  Stop... perform any necessary shutdown stuff.
 !
 !  29-jun-05/tony: coded
 !
+      use General, only: touch_file
+
       call touch_file('ERROR')
 !
       STOP 2                    ! Return nonzero exit status
@@ -1480,7 +1530,7 @@ module Mpicomm
 !
     endsubroutine stop_it_if_any
 !***********************************************************************
-    subroutine check_emergency_brake()
+    subroutine check_emergency_brake
 !
 !  Check the lemergency_brake flag and stop with any provided
 !  message if it is set.
@@ -1870,11 +1920,6 @@ module Mpicomm
       real, dimension(:,:), intent(out), optional :: out
       integer, intent(in), optional :: dest_proc
 !
-      if (nprocx /= size (out, 1)) &
-          call stop_it ('collect_xy_0D: output x dim must be nprocx')
-      if (nprocy /= size (out, 2)) &
-          call stop_it ('collect_xy_0D: output y dim must be nprocy')
-!
       if (present (out) .or. present (dest_proc)) out = in
 !
     endsubroutine collect_xy_0D
@@ -1986,11 +2031,7 @@ module Mpicomm
 !***********************************************************************
     subroutine globalize_xy(in, out, dest_proc, source_pz)
 !
-!  Globalizes local 4D data first along the x, then along the y-direction to
-!  the destination processor. The local data is supposed to include the ghost
-!  cells. Inner ghost layers are cut away during the combination of the data.
-!  'dest_proc' is the destination iproc number relative to the first processor
-!  in the corresponding xy-plane (Default: 0, equals lfirst_proc_xy).
+!  Dummy routine: out := in.
 !
 !  23-Apr-2012/Bourdin.KIS: adapted from non-torus-type globalize_xy
 !
@@ -2047,11 +2088,11 @@ module Mpicomm
 !  13-aug-2011/Bourdin.KIS: coded
 !
       real, dimension(:), intent(out) :: out
-      real, dimension(:), intent(in), optional :: in
+      real, dimension(:), intent(in) :: in
       integer, intent(in), optional :: source_proc
 !
       if (present (source_proc)) continue
-      if (present (in)) out = in
+      out = in
 !
     endsubroutine localize_z
 !***********************************************************************
@@ -2726,16 +2767,16 @@ module Mpicomm
 !
     endsubroutine mpimerge_1d
 !***********************************************************************
-  logical function report_clean_output(flag, message)
+    logical function report_clean_output(flag, message)
 !
-    logical,             intent(IN)  :: flag
-    character (LEN=120), intent(OUT) :: message
+      logical,             intent(IN)  :: flag
+      character (LEN=120), intent(OUT) :: message
 !
-    message = ''
-    report_clean_output = .false.
+      message = ''
+      report_clean_output = .false.
 !
-    if (ALWAYS_FALSE) print*,flag,message
+      if (ALWAYS_FALSE) print*,flag,message
 !
-  end function report_clean_output
-!***********************************************************************
+    endfunction report_clean_output
+!**************************************************************************
 endmodule Mpicomm

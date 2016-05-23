@@ -1,0 +1,44 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for shocktube problem
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2014/02/13 02:24:37 wlyra Exp $',
+  ip=20,                        ! debugging parameter
+  xyz0  =  0.4,-3.141592,-0.26,       ! first corner of box
+  xyz1  = 10.0, 3.141592, 0.26
+  lperi = F  , T  , T,         ! periodic direction?
+  bcx = 'a','s','s','a2','a2','s'
+  llocal_iso=F
+  lwrite_ic=T
+  lwrite_aux=T
+  coord_system='cylindrical'
+  lcylindrical_gravity=T
+  grid_func  = 'power-law', ,
+  coeff_grid = 1e-3, ,
+/
+&initial_condition_pars
+  density_power_law=0.5
+  temperature_power_law=1.0
+  rho_rms=0.0
+/
+&eos_init_pars
+  cs0  = 0.05
+  rho0 = 1.
+  gamma= 1.4
+/
+&hydro_init_pars
+/
+&density_init_pars
+  ldensity_nolog=T
+/
+&grav_init_pars
+  ipotential='no-smooth'
+  g0=1.
+/
+&entropy_init_pars
+/
+&special_init_pars
+  lcap_modes_at_m6=F
+  rmodes_int=6.
+/

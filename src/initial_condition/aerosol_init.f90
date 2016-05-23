@@ -43,11 +43,11 @@ module InitialCondition
 !
      real :: init_ux=impossible,init_uy=impossible,init_uz=impossible
      integer :: spot_number=10
-     integer :: index_H2O=3
-     integer :: index_N2=4, i_point=1
+     integer :: index_H2O=2
+     integer :: index_N2=3, i_point=1
      integer :: Ndata=10, Nadd_points=0
      real :: dYw=1.,dYw1=1.,dYw2=1., init_water1=0., init_water2=0.
-     real :: init_x1=0.,init_x2=0.,init_TT1, init_TT2
+     real :: init_x1=0.,init_x2=0.,init_TT1=0., init_TT2=0.
      real, dimension(nchemspec) :: init_Yk_1, init_Yk_2
      real :: X_wind=impossible, spot_size=10.
      real :: AA=0.66e-4, d0=2.4e-6 , BB0=1.5*1e-16
@@ -62,14 +62,14 @@ module InitialCondition
      logical :: llog_distribution=.true., lcurved_xy=.false.
      logical :: lACTOS=.false.,lACTOS_read=.true., lACTOS_write=.true., lsinhron=.false.
      logical :: ladd_points=.false., lrho_const=.false., lregriding=.false.
-
+     logical :: lLES=.false., lP_aver=.false.
 !
     namelist /initial_condition_pars/ &
      init_ux, init_uy,init_uz,init_x1,init_x2, init_water1, init_water2, &
      lreinit_water, dYw,dYw1, dYw2, X_wind, spot_number, spot_size, lwet_spots, &
      linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, r02, d0, lcurved_xz, lcurved_xy, &
      ltanh_prof_xz,ltanh_prof_xy, Period, BB0, index_N2, index_H2O, lACTOS, lACTOS_read, lACTOS_write, &
-     i_point,Ndata, lsinhron, delta, Nadd_points, ladd_points, lrho_const, lregriding
+     i_point,Ndata, lsinhron, delta, Nadd_points, ladd_points, lrho_const, lregriding, lLES, lP_aver
 !
   contains
 !***********************************************************************
@@ -111,29 +111,31 @@ module InitialCondition
            f(:,i,:,iux)=cos(Period*PI*y(i)/Lxyz(2))*init_ux
          enddo
         endif
-        if ((init_uz /=impossible) .and. (nzgrid>1)) then
-         bs=9.81e2*(293.-290.)/293.
-         do i=1,mx
-            f(i,:,:,iuz)=-sqrt(Lxyz(1)*bs) &
-                        *((exp(2.*x(i)/Lxyz(1))+exp(-2.*x(i)/Lxyz(1)))/2.)**(-2)
-         enddo
-        endif
+    !    if ((init_uz /=impossible) .and. (nzgrid>1)) then
+    !     bs=9.81e2*(293.-290.)/293.
+    !     do i=1,mx
+    !        f(i,:,:,iuz)=-sqrt(Lxyz(1)*bs) &
+    !                    *((exp(2.*x(i)/Lxyz(1))+exp(-2.*x(i)/Lxyz(1)))/2.)**(-2)
+    !     enddo
+    !    endif
 !
         if ((init_uy /=impossible) .and. (X_wind /= impossible)) then
-          do j=1,mx
-             f(j,:,:,iuy)=f(j,:,:,iuy) &
-              +(init_uy+0.)*0.5+((init_uy-0.)*0.5)  &
-              *(exp((x(j)+X_wind)/del)-exp(-(x(j)+X_wind)/del)) &
-              /(exp((x(j)+X_wind)/del)+exp(-(x(j)+X_wind)/del))
+          do j=1,mz
+             f(:,:,j,iuy)= init_uy*(z(j)-xyz0(3))/(Lxyz(3)-xyz0(3))
+
+!              +(init_uy+0.)*0.5+((init_uy-0.)*0.5)  &
+!              *(exp((x(j)+X_wind)/del)-exp(-(x(j)+X_wind)/del)) &
+!             /(exp((x(j)+X_wind)/del)+exp(-(x(j)+X_wind)/del))
           enddo
         endif
 !
-        if ((init_uz /=impossible) .and. (X_wind /= impossible)) then
+        if ((init_ux /=impossible) .and. (X_wind /= impossible)) then
           do j=1,mx
-             f(j,:,:,iuz)=f(j,:,:,iuz) &
-              +(init_uz+0.)*0.5+((init_uz-0.)*0.5)  &
-              *(exp((x(j)+X_wind)/del)-exp(-(x(j)+X_wind)/del)) &
-              /(exp((x(j)+X_wind)/del)+exp(-(x(j)+X_wind)/del))
+             f(:,:,j,iux)=init_ux*(z(j)-xyz0(3))/(Lxyz(3)-xyz0(3))
+!
+!              +(init_uz+0.)*0.5+((init_uz-0.)*0.5)  &
+!              *(exp((x(j)+X_wind)/del)-exp(-(x(j)+X_wind)/del)) &
+!              /(exp((x(j)+X_wind)/del)+exp(-(x(j)+X_wind)/del))
           enddo
          endif
 !
@@ -141,7 +143,22 @@ module InitialCondition
           f(:,:,:,iuy)=f(:,:,:,iuy)+init_uy
         endif
         if ((init_uz /=impossible) .and. (X_wind == impossible)) then
-          f(:,:,:,iuz)=f(:,:,:,iuz)+init_uz
+!
+!          f(:,:,:,iuz)=f(:,:,:,iuz)+init_uz
+! 
+          do i=l1,l2
+          if (x(i)>0) then
+            f(i,:,:,iuz)=init_uz
+          else
+            f(i,:,:,iuz)=-init_uz
+          endif
+          enddo
+
+!
+        endif
+
+        if ((init_ux /=impossible) .and. (X_wind == impossible))  then
+          f(:,:,:,iux)=f(:,:,:,iux)+init_ux
         endif
 !
       call keep_compiler_quiet(f)
@@ -188,7 +205,7 @@ module InitialCondition
                init_water1_tmp,init_water2_tmp
       !real, dimension (mx,my,mz), intent(inout) :: f
       real, dimension (ndustspec) ::  lnds
-      real :: ddsize, ddsize0, del, air_mass, PP
+      real :: ddsize, ddsize0, del, air_mass, PP, TT
       integer :: i, ii
       logical ::  lstart1=.false., lstart2=.false.
 !
@@ -209,12 +226,16 @@ module InitialCondition
       enddo
 !
       if (lACTOS) then
-       call ACTOS_data(f)
+        call ACTOS_data(f)
+        call reinitialization(f, air_mass, PP, TT)
+      elseif (lLES) then
+        call LES_data(f)
       else
-       call air_field_local(f, air_mass, PP)
+        call air_field_local(f, air_mass, PP, TT)
+        call reinitialization(f, air_mass, PP, TT)
       endif
 !
-      call reinitialization(f, air_mass, PP)
+!      call reinitialization(f, air_mass, PP, TT)
 !
     endsubroutine initial_condition_chemistry
 !***********************************************************************
@@ -330,7 +351,7 @@ module InitialCondition
 !
     endsubroutine write_initial_condition_pars
 !***********************************************************************
-    subroutine air_field_local(f, air_mass, PP)
+    subroutine air_field_local(f, air_mass, PP, TT)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: sum_Y, tmp
@@ -342,8 +363,8 @@ module InitialCondition
       character (len=10) :: specie_string
       character (len=1)  :: tmp_string
       integer :: i,j,k=1,index_YY, j1,j2,j3, iter
-      real :: YY_k, air_mass, TT=300.
-      real, intent(out) :: PP ! (in dynes = 1atm)
+      real :: YY_k, air_mass
+      real, intent(out) :: PP, TT ! (in dynes = 1atm)
       real, dimension(nchemspec)    :: stor2
       integer, dimension(nchemspec) :: stor1
 !
@@ -517,7 +538,7 @@ module InitialCondition
       logical :: lwrite_string=.false.
       
 !
-      if (lACTOS_write) then
+       if (lACTOS_write) then
 
 !       if (lsinhron) then
 !         open(143,file="coeff_part.dat")
@@ -527,97 +548,92 @@ module InitialCondition
 !         enddo
 !         close(143)
 !       endif
-
-
-!      air_mass=0.
-      StartInd_1=1; StopInd_1 =0 
-     open(file_id,file="ACTOS_data.out")
-      open(143,file="ACTOS_new.out")
-      open(144,file="coeff_part_new.out")
-!      open(file_id,file="ACTOS_xyz_data.out")
-!      open(143,file="ACTOS_xyz_new.out")
 !
-       j=1
-       i=1
-       lwrite_string=.true.
-       do  while (j<=780000) 
-        read(file_id,'(80A)',IOSTAT=iostat) ChemInpLine
-         StartInd=1; StopInd =0
-         StopInd=index(ChemInpLine(StartInd:),'	')+StartInd-1
+!       air_mass=0.
+        StartInd_1=1; StopInd_1 =0 
+        open(file_id,file="ACTOS_data.out")
+        open(143,file="ACTOS_new.out")
+        open(144,file="coeff_part_new.out")
+!       open(file_id,file="ACTOS_xyz_data.out")
+!       open(143,file="ACTOS_xyz_new.out")
 !
-         if ((i>1) .and. (i_point>1)) then
-          if (i<i_point) then
-           i=i+1
-           lwrite_string=.false.
-          elseif (i==i_point) then
+        j=1
+        i=1
+        lwrite_string=.true.
+        do  while (j<=780000) 
+          read(file_id,'(80A)',IOSTAT=iostat) ChemInpLine
+          StartInd=1; StopInd =0
+          StopInd=index(ChemInpLine(StartInd:),'	')+StartInd-1
+!
+          if ((i>1) .and. (i_point>1)) then
+            if (i<i_point) then
+             i=i+1
+             lwrite_string=.false.
+            elseif (i==i_point) then
+             lwrite_string=.true.
+             i=1
+            endif
+          elseif ((i>1) .and.(i_point==1)) then
            lwrite_string=.true.
-           i=1
-          endif
-         elseif ((i>1) .and.(i_point==1)) then
-           lwrite_string=.true.
-         endif  
-
-        if (lwrite_string) then
-         k=1
-        do  while (k<30) 
-         if (StopInd==StartInd) then
-            StartInd=StartInd+1
-          else
-           if (k<29) then
-            StopInd=index(ChemInpLine(StartInd:),'	')+StartInd-1
-           else
-            StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
-           endif
-            read (unit=ChemInpLine(StartInd:StopInd-1),fmt='(f12.6)') tmp2
-             input_data(k)=tmp2
-            StartInd=StopInd
-            k=k+1
-          endif
-        enddo
-!
-         if (lsinhron) then
-           ttime2(j)=input_data(23)
-           lfind=.false.
-!
-           do jj=1,1300 
-            if (abs(ttime(jj)-input_data(23))<.05) then 
-              lfind=.true.
+          endif  
+!------------------------------------------
+          if (lwrite_string) then
+            k=1
+            do  while (k<30) 
+            if (StopInd==StartInd) then
+              StartInd=StartInd+1
             else
+             if (k<29) then
+               StopInd=index(ChemInpLine(StartInd:),'	')+StartInd-1
+             else
+               StopInd=index(ChemInpLine(StartInd:),' ')+StartInd-1
+             endif
+             read (unit=ChemInpLine(StartInd:StopInd-1),fmt='(f12.6)') tmp2
+             input_data(k)=tmp2
+             StartInd=StopInd
+             k=k+1
+            endif
+            enddo
+!
+!*****************************************
+            if (lsinhron) then
+              ttime2(j)=input_data(23)
               lfind=.false.
-            endif
-!
-            if ((ttime2(j) == ttime2(j-1)) .or. (j==1)) lfind=.false.
-            if (lfind) then 
-              write(143,'(29f15.6)') input_data
-             print*, jj, input_data(23), ttime(jj), lfind,  abs(ttime(jj)-input_data(23))
-            endif
-           enddo
-         else
+              do jj=1,1300 
+              if (abs(ttime(jj)-input_data(23))<.05) then 
+                lfind=.true.
+              else
+                lfind=.false.
+              endif
+              if ((ttime2(j) == ttime2(j-1)) .or. (j==1)) lfind=.false.
+              if (lfind) then 
+                write(143,'(29f15.6)') input_data
+                print*, jj, input_data(23), ttime(jj), lfind,  abs(ttime(jj)-input_data(23))
+              endif
+              enddo
+            else
 ! 
-          lfind=.false.
-!
-!         if ((input_data(23)>53675.) .and. (input_data(23)<53725.)) then
-!          if ((input_data(23)>52800.) .and. (input_data(23)<52850.)) then
-!            if ((input_data(23)>50012.91) .and. (input_data(23)<50063.)) then
-!          if ((input_data(23)>49912.91) .and. (input_data(23)<49963.)) then
-!
-!          if ((input_data(23)>50012.) .and. (input_data(23)<50100.)) then
-                  if ((input_data(23)>54200.) .and. (input_data(23)<54240.)) then
-            write(143,'(29f15.6)') input_data
-          endif
-         endif
-           i=i+1
-           lwrite_string=.false.
-        endif
- 
-        j=j+1
-        enddo
+              lfind=.false.
+!! this is  full data
+             if (input_data(23)>52000.)  then
+!! this is  data for calculations
+!!             if ((input_data(23)>54200.) .and. (input_data(23)<54240.)) then
+                write(143,'(29f15.6)') input_data
+             endif
+            endif
+!**************************************
+             i=i+1
+             lwrite_string=.false.
+           endif
+!--------------------------------------
+           j=j+1
+         enddo
 !
       close(file_id)
       close(143)
       close(144)
 !
-     endif
+      endif
 
 !
 !        emptyFile=.false.
@@ -644,7 +660,7 @@ module InitialCondition
             do k=1,mz
             do j=1,my
             do i=1,mx
-              read(143,'(f8.5)') tmp2
+              read(143,'(e9.5)') tmp2
               ux_data(i,j,k)=tmp2
               f(i,j,k,iux)=ux_data(i,j,k)
             enddo 
@@ -891,7 +907,167 @@ module InitialCondition
     endsubroutine ACTOS_data
 
 !***********************************************************************
-    subroutine reinitialization(f, air_mass, PP)
+    subroutine LES_data(f)
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: sum_Y, tmp, air_mass
+      real, dimension (2000) ::  PP_data, rhow_data, TT_data, tmp_data, w_data
+!      real, dimension (20000) ::  ttime2
+      real, dimension (mx,my,mz) ::  ux_data, uy_data, uz_data
+!      real, dimension (1340) ::  ttime
+!      real, dimension (1300,6) ::  coeff_loc
+!      real, dimension (20000,7) :: coeff_loc2
+      real, dimension (20000,ndustspec) :: init_distr_loc, init_distr_tmp
+      real, dimension (6) ::  tmp3
+      real, dimension (ndustspec) ::  tmp4
+!
+      logical :: emptyfile=.true., lfind
+      logical :: found_specie
+      integer :: file_id=123, ind_glob, ind_chem,jj
+      character (len=800) :: ChemInpLine
+      integer :: i,j,k=1,index_YY,  iter,  nn1, ii, io_code
+      real ::  TT=300., ddsize, tmp2, right, left, PP_aver=0., rho_aver
+      double precision, dimension (mx,my,mz) :: tmp5
+!      real, intent(out) :: PP ! (in dynes = 1atm)
+      real, dimension(nchemspec)    :: stor2, stor1
+      real, dimension(2)    :: input_data
+!
+      real, dimension (7) :: ctmp
+
+      integer :: StartInd,StopInd,StartInd_1,StopInd_1
+      integer :: iostat, i1,i2,i3, i1_left,i1_right
+      logical :: lwrite_string=.false.
+!
+        open(143,file="T_init.dat")
+        do i=1,Ndata 
+          read(143,*,iostat=io_code) (input_data(ii),ii=1,2)
+          TT_data(i)=input_data(2)
+!          print*,i,'    ',TT_data(i)
+        enddo
+        close(143)
+!
+        open(143,file="pre_init.dat")
+        do i=1,Ndata 
+          read(143,*,iostat=io_code) (input_data(ii),ii=1,2)
+          PP_data(i)=input_data(2)*10.   !dyn
+        enddo
+        close(143)
+!        
+        open(143,file="qv_init.dat")
+        do i=1,Ndata 
+          read(143,*,iostat=io_code) (input_data(ii),ii=1,2)
+          rhow_data(i)=input_data(2)   !dyn
+          
+!          print*,i,'   ',rhow_data(i)
+        enddo
+        close(143)
+        
+         open(143,file="wind.dat")
+        do i=1,Ndata 
+          read(143,*,iostat=io_code) (input_data(ii),ii=1,2)
+          w_data(i)=input_data(2)   !dyn
+!          
+!          print*,i,'   ',w_data(i)
+        enddo
+        close(143)
+
+        if (lP_aver) then
+          PP_aver=0.
+          do i=1,Ndata   
+            PP_aver=PP_aver+PP_data(i)
+          enddo
+          PP_data=PP_aver/Ndata
+        endif
+
+
+!
+!       print*,'PP_aver=',PP_aver/Ndata
+!      
+!  print*,TT_data(int(0.05*nygrid)),TT_data(nygrid-int(0.05*nygrid))      
+!        
+
+        nn1=anint((z(n1)-xyz0(3))/dz)
+        
+        do i=n1,n2
+          f(:,:,i,ilnTT)=alog(TT_data(nn1+i-3))
+          f(:,:,i,ichemspec(index_H2O))=rhow_data(nn1+i-3)  
+        enddo
+!
+       f(:,:,:,ichemspec(index_N2))=0.7
+       f(:,:,:,ichemspec(1))=1.-f(:,:,:,ichemspec(index_N2))-f(:,:,:,ichemspec(index_H2O))
+     
+     
+!     print*,maxval(f(:,:,:,ichemspec(1))), minval(f(:,:,:,ichemspec(1)))
+       
+!  Stop if air.dat is empty
+!
+!      if (emptyFile)  call fatal_error("ACTOS data", "I can only set existing fields")
+!
+       if (lrho_const) then
+         sum_Y=0.
+         do k=1,nchemspec
+           sum_Y=sum_Y + f(:,:,:,ichemspec(k))/species_constants(k,imass)
+         enddo
+         air_mass=1./sum_Y
+!         
+         do i=1,Ndata
+           tmp_data(i)=PP_data(i)/TT_data(i)
+         enddo
+!         
+         rho_aver=sum(tmp_data)/Ndata*sum(air_mass)/mx/my/mz
+         rho_aver=rho_aver/(k_B_cgs/m_u_cgs)/unit_mass*unit_length**3
+       endif
+
+       do iter=1,4
+!   
+       sum_Y=0.
+       do k=1,nchemspec
+         sum_Y=sum_Y + f(:,:,:,ichemspec(k))/species_constants(k,imass)
+!         print*,k,'   ',species_constants(k,imass)
+       enddo
+       air_mass=1./sum_Y
+!
+         do i=n1,n2
+           tmp5(:,:,i)=dlog(PP_data(nn1+i-3)/(k_B_cgs/m_u_cgs)*air_mass(:,:,i) &
+                         /exp(f(:,:,i,ilnTT))/unit_mass*unit_length**3)
+           if (lrho_const) then
+             f(:,:,i,ilnrho)=alog(rho_aver)
+           else
+             f(:,:,i,ilnrho)=tmp5(:,:,i)
+           endif 
+             f(:,:,i,iux)=w_data(nn1+i-3)*100.*sqrt(3.)/2.
+             f(:,:,i,iuy)=w_data(nn1+i-3)*100.*1./2.
+!
+             print*,w_data(nn1+i-3),i, nn1+i-3
+
+        enddo  
+           
+!
+!       if (iter<4) then
+!         do i=n1,n2
+!           f(:,:,i,ichemspec(index_H2O))=rhow_data(nn1+i-3)/exp(f(:,:,i,ilnrho))*1.
+!         enddo
+!           f(:,:,:,ichemspec(1))=1.-f(:,:,:,ichemspec(index_N2))-f(:,:,:,ichemspec(index_H2O))
+!       endif
+!
+       enddo
+!
+       if (lroot) print*, 'local:Air temperature, K', maxval(exp(f(l1:l2,m1:m2,n1:n2,ilnTT))), &
+                                                     minval(exp(f(l1:l2,m1:m2,n1:n2,ilnTT)))
+       if (lroot) print*, 'local:Air pressure, dyn', maxval(PP_data), minval(PP_data)
+       if (lroot) print*, 'local:Air density, g/cm^3:'
+       if (lroot) print '(E10.3)',  maxval(exp(f(:,:,:,ilnrho))), minval(exp(f(:,:,:,ilnrho)))
+       if (lroot) print*, 'local:Air mean weight, g/mol', maxval(air_mass),minval(air_mass)
+       if (lroot) print*, 'local:R', k_B_cgs/m_u_cgs
+!
+
+ !     print*,'2',maxval(f(:,:,:,ichemspec(1))), minval(f(:,:,:,ichemspec(1)))
+
+
+    endsubroutine LES_data
+
+!***********************************************************************
+   subroutine reinitialization(f, air_mass, PP, TT)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: sum_Y, air_mass_ar, tmp
@@ -901,7 +1077,7 @@ module InitialCondition
       real , dimension (mz) :: init_x1_arz, init_x2_arz, del_arz, del_ar1z, del_ar2z
 !
       integer :: i,j,k, j1,j2,j3, iter
-      real :: YY_k, air_mass,  PP, del, psat1, psat2, psf_1, psf_2 
+      real :: YY_k, air_mass,  PP, TT, del, psat1, psat2, psf_1, psf_2 
       real :: air_mass_1, air_mass_2, sum1, sum2, init_water_1, init_water_2 
       logical :: spot_exist=.true., lmake_spot, lline_profile=.false.
       real ::  Rgas_loc=8.314472688702992E+7, T_tmp
@@ -984,19 +1160,23 @@ module InitialCondition
           endif
         enddo
 !        
-        if (ldensity_nolog) then
+       else
+         f(:,:,:,ilnTT)=alog(TT)
+       endif
+!      
+!      if (ldensity_nolog) then
 !          f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)*&
 !            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
-        else
-          tmp=(PP/(k_B_cgs/m_u_cgs)*&
-            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
-          f(:,:,:,ilnrho)=alog(tmp)
-        endif
-      endif
+!      else
+!          tmp=(PP/(k_B_cgs/m_u_cgs)*&
+!            air_mass/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
+!          f(:,:,:,ilnrho)=alog(tmp)
+!      endif
 !
        if (lreinit_water) then
 !
-       if (init_TT2==0) init_TT2=init_TT1
+        if (init_TT1==0.) init_TT1=TT 
+        if (init_TT2==0.) init_TT2=init_TT1
 !
         T_tmp=init_TT1-273.15
         psat1=(aa0 + aa1*T_tmp    + aa2*T_tmp**2  &
@@ -1008,11 +1188,7 @@ module InitialCondition
                    + aa5*T_tmp**5 + aa6*T_tmp**6)*1e3
 !
         psf_1=psat1 
-        if (r02 /= 0) then
-          psf_2=psat2
-        else
-          psf_2=psat2
-        endif
+        psf_2=psat2
 !
 ! Recalculation of the air_mass for different boundary conditions
 !
@@ -1050,6 +1226,7 @@ module InitialCondition
 
            init_water_1=init_Yk_1(index_H2O)
            init_water_2=init_Yk_2(index_H2O)
+           
 !
 ! End of Recalculation of the air_mass for different boundary conditions
 !
@@ -1063,15 +1240,16 @@ module InitialCondition
                    *(exp(x(i)/del)-exp(-x(i)/del)) &
                    /(exp(x(i)/del)+exp(-x(i)/del))
              enddo
+!             
            elseif (lwet_spots) then
               f(:,:,:,ilnTT)=log(init_TT1)
               f(:,:,:,ichemspec(index_H2O))=init_water_1
               call spot_init(f,init_TT2,init_water_2)
-           elseif (.not. lwet_spots) then
+           else
 ! Initial conditions for the  0dcase: cond_evap
-             f(:,:,:,ichemspec(index_H2O))=init_Yk_1(index_H2O)
+!  and all other conditions except ltanh_prof_
+             f(:,:,:,ichemspec(index_H2O))=init_water_1
            endif
-!
 !
            sum_Y=0.
            do k=1,nchemspec
@@ -1090,6 +1268,8 @@ module InitialCondition
 ! end of loot do iter=1,2
 !         enddo
 !
+       endif 
+!  
          if (ldensity_nolog) then
            f(:,:,:,ilnrho)=(PP/(k_B_cgs/m_u_cgs)&
             *air_mass_ar/exp(f(:,:,:,ilnTT)))/unit_mass*unit_length**3
@@ -1117,7 +1297,6 @@ module InitialCondition
          if  ((lroot) .and. (nx >1 )) then
             print*, 'temperature', exp(f(l1,4,4,ilnTT)), exp(f(l2,4,4,ilnTT))
           endif
-       endif
 !
     endsubroutine reinitialization
 !*********************************************************************************************************

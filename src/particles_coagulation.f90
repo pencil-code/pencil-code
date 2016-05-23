@@ -44,6 +44,8 @@ module Particles_coagulation
   logical :: lzsomdullemond=.false.     ! use Zsom and Dullemond method
   logical :: lconstant_deltav=.false.   ! use constant relative velocity
   logical :: lmaxwell_deltav=.false.    ! use maxwellian relative velocity
+  logical :: ldroplet_coagulation=.false.
+  character (len=labellen) :: droplet_coagulation_model='standard'
 !
   real, dimension(:,:), allocatable :: r_ik_mat, cum_func_sec_ik
   real, dimension(:), allocatable :: r_i_tot, cum_func_first_i
@@ -60,7 +62,8 @@ module Particles_coagulation
       kernel_pro, lnoselfcollision, lgravitational_cross_section, &
       GNewton, deltav_grav_floor, critical_mass_ratio_sticking, &
       minimum_particle_mass, minimum_particle_radius, lzsomdullemond, &
-      lconstant_deltav, lmaxwell_deltav, deltav, maxwell_param
+      lconstant_deltav, lmaxwell_deltav, deltav, maxwell_param, &
+      ldroplet_coagulation, droplet_coagulation_model
 !
   contains
 !***********************************************************************
@@ -353,11 +356,27 @@ module Particles_coagulation
 !
 !  Only consider collisions between particles approaching each other.
 !
-                if ((sum((vpk-vpj)*(xpk-xpj))<0.0).or.lkernel_test) then
+                if (ldroplet_coagulation .or. &
+                    (sum((vpk-vpj)*(xpk-xpj))<0.0) .or.&
+                    lkernel_test) then
 !
 !  Relative particle speed.
 !
                   deltavjk=sqrt(sum((vpk-vpj)**2))
+!
+! Check for consistensy
+!
+                  if (droplet_coagulation_model=='standard') then
+                    if (lcoag_simultaneous) then
+                      call fatal_error('particles_coagulation_pencils',&
+                          'One can not set droplet_coagulation_model=standard for lcoag_simultaneous=T')
+                    endif
+                  else if (droplet_coagulation_model=='shima') then
+                    if (.not. lcoag_simultaneous) then
+                      call fatal_error('particles_coagulation_pencils',&
+                          'One can not set droplet_coagulation_model=shima for lcoag_simultaneous=F')
+                    endif
+                  endif
 !
 !  The time-scale for collisions between a representative particle from
 !  superparticle k and the particle swarm in superparticle j is
@@ -400,13 +419,22 @@ module Particles_coagulation
                       tau_coll1=kernel*npswarmk
                     endif
                   else
-                    tau_coll1=deltavjk*pi*(fp(k,iap)+fp(j,iap))**2* &
-                        min(npswarmj,npswarmk)
-                    if (lgravitational_cross_section) then
-                      tau_coll1=tau_coll1*(1.0+2*GNewton* &
-                          four_pi_rhopmat_over_three* &
-                          (fp(j,iap)**3+fp(k,iap)**3)/((fp(k,iap)+fp(k,iap))* &
-                          (deltavjk+deltav_grav_floor)**2))
+                    if (ldroplet_coagulation .and. .not. lcoag_simultaneous) then
+                      tau_coll1=deltavjk*pi*(fp(k,iap)+fp(j,iap))**2*npswarmj
+                    elseif (ldroplet_coagulation .and. &
+                            lcoag_simultaneous   .and. &
+                            droplet_coagulation_model=='shima') then
+                      tau_coll1=deltavjk*pi*(fp(k,iap)+fp(j,iap))**2* &
+                          max(npswarmj,npswarmk)
+                    else
+                      tau_coll1=deltavjk*pi*(fp(k,iap)+fp(j,iap))**2* &
+                          min(npswarmj,npswarmk)
+                      if (lgravitational_cross_section) then
+                        tau_coll1=tau_coll1*(1.0+2*GNewton* &
+                            four_pi_rhopmat_over_three* &
+                            (fp(j,iap)**3+fp(k,iap)**3)/((fp(k,iap)+fp(k,iap))* &
+                            (deltavjk+deltav_grav_floor)**2))
+                      endif
                     endif
                   endif
 !
@@ -532,27 +560,31 @@ module Particles_coagulation
 !***********************************************************************
     subroutine coagulation_fragmentation(fp,j,k,deltavjk,xpj,xpk,vpj,vpk)
 !
-!  Change the particle size to the new size, but keep the total mass in the
-!  particle swarm the same.
+!  Change the particle size to the new size. 
+!  If droplet_coagulation_model does not equal 'shima' the total mass in the
+!  particle swarm is kept constant.
 !
 !  A representative particle k colliding with a swarm of larger particles j
 !  simply obtains the new mass m_k -> m_k + m_j.
 !
 !  A representative particle k colliding with a swarm of smaller particles j
-!  obtains the new mass m_k -> 2*m_k.
+!  obtains the new mass m_k -> 2*m_k (this is true only when 
+!  ldroplet_coagulation=F.)
 !
 !  24-nov-10/anders: coded
+!  25-jan-16/Xiang-yu and nils: added the model of Shima et al. (2009)
 !
       real, dimension (mpar_loc,mparray) :: fp
-      integer :: j, k
+      integer :: j, k, swarm_index1, swarm_index2
       real :: deltavjk
-      real, dimension (3) :: xpj, xpk, vpj, vpk
+      real, dimension (3) :: xpj, xpk, vpj, vpk, vpnew
 !
       real, dimension (3) :: vvcm, vvkcm, vvkcmnew, vvkcm_normal, vvkcm_parall
       real, dimension (3) :: nvec
       real :: mpsma, mpbig, npsma, npbig, npnew, mpnew, apnew
       real :: rhopsma, rhopbig, apsma, apbig
       real :: coeff_restitution, deltav_recoil, escape_speed
+      real :: apj,mpj,npj,apk,mpk,npk
 !
       if (lparticles_number) then
 !
@@ -581,10 +613,84 @@ module Particles_coagulation
           rhopsma=mpsma*npsma
           rhopbig=mpbig*npbig
 !
+!  If we are working on droploet coagulation all colliding droplets are
+!  assumed to coalesce. I.e. the mass of the new representative droplet equals
+!  the sum of the two initial droplet masses.  
+!
+          if (ldroplet_coagulation) then
+            if (droplet_coagulation_model=='standard') then
+              mpnew=mpsma+mpbig
+              apnew=(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
+              npnew=(rhopsma+rhopbig)/(2.*mpnew)
+              vpnew=(&
+                  fp(j,ivpx:ivpz)*four_pi_rhopmat_over_three*fp(j,iap)**3+&
+                  fp(k,ivpx:ivpz)*four_pi_rhopmat_over_three*fp(k,iap)**3)/mpnew
+              fp(j,iap)=apnew
+              fp(k,iap)=apnew
+              fp(j,inpswarm)=npnew
+              fp(k,inpswarm)=npnew
+              fp(j,ivpx:ivpz)=vpnew
+              fp(k,ivpx:ivpz)=vpnew
+            else if (droplet_coagulation_model=='shima') then
+              mpj = four_pi_rhopmat_over_three*fp(j,iap)**3
+              npj = fp(j,inpswarm)
+              mpk = four_pi_rhopmat_over_three*fp(k,iap)**3
+              npk = fp(k,inpswarm)
+!
+!  Identify the swarm with the highest particle number density
+!
+              if (npk<npj) then
+                swarm_index1=k
+                swarm_index2=j
+              else
+                swarm_index1=j
+                swarm_index2=k
+              endif
+!
+!  Check if we have the special case where the particle number 
+!  densities are equal. This will typically be the case in the beginning of 
+!  a simulation.
+!
+              if (npk == npj) then
+                fp(swarm_index1,inpswarm)=fp(swarm_index1,inpswarm)/2.
+                fp(swarm_index2,inpswarm)=fp(swarm_index2,inpswarm)/2.
+                mpnew=mpj+mpk
+                fp(swarm_index1,iap)&
+                    =(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
+                fp(swarm_index2,iap)&
+                    =(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
+                vpnew=(fp(j,ivpx:ivpz)*mpj+fp(k,ivpx:ivpz)*mpk)/mpnew
+                fp(swarm_index1,ivpx:ivpz)=vpnew
+                fp(swarm_index2,ivpx:ivpz)=vpnew
+              else
+!
+!  Set particle radius. The radius of the swarm with the highes particle 
+!  number density does not change since its mass doesn't change.
+!
+                mpnew=mpj+mpk
+                fp(swarm_index1,iap)&
+                    =(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
+!
+!  Set particle number densities. Only the the swarm with the highest 
+!  particle number density, changes its particle number density.
+!
+                fp(swarm_index2,inpswarm)=abs(npj-npk)
+!
+!  Set particle velocities. Only the swarm with the lowest 
+!  particle number density, changes its particle velcity.
+!
+                vpnew=(fp(j,ivpx:ivpz)*mpj+fp(k,ivpx:ivpz)*mpk)/mpnew
+                fp(swarm_index1,ivpx:ivpz)=vpnew
+              endif
+            else
+              call fatal_error('','No such droplet_coagulation_model')
+            endif
+          else
+!
 !  Calculate the coefficient of restitution. We base in here on the
 !  experimental fit of Higa et al. (1986) to ice at 100 K.
 !
-          coeff_restitution=(deltavjk/1.8)**(-alog10(deltavjk/1.8))
+            coeff_restitution=(deltavjk/1.8)**(-alog10(deltavjk/1.8))
 !
 !  Particles stick:
 !
@@ -593,71 +699,146 @@ module Particles_coagulation
 !
 !    b) when the recoil velocity is less than the escape speed
 !
-          nvec=(xpj-xpk)
-          nvec=nvec/sqrt(sum(nvec**2))
-          vvcm=0.5*(vpj+vpk)
-          vvkcm=vpk-vvcm
-          vvkcm_normal=nvec*(sum(vvkcm*nvec))
-          vvkcm_parall=vvkcm-vvkcm_normal
-          deltav_recoil=sqrt(sum((vvkcm_parall - &
-              coeff_restitution*vvkcm_normal)**2))
-          escape_speed =sqrt(2*GNewton*mpbig/apbig)
+            nvec=(xpj-xpk)
+            nvec=nvec/sqrt(sum(nvec**2))
+            vvcm=0.5*(vpj+vpk)
+            vvkcm=vpk-vvcm
+            vvkcm_normal=nvec*(sum(vvkcm*nvec))
+            vvkcm_parall=vvkcm-vvkcm_normal
+            deltav_recoil=sqrt(sum((vvkcm_parall - &
+                coeff_restitution*vvkcm_normal)**2))
+            escape_speed =sqrt(2*GNewton*mpbig/apbig)
 !
-          if (mpbig/mpsma>critical_mass_ratio_sticking .or. &
-              deltav_recoil<escape_speed .or. &
-              fp(j,inpswarm)==1/(dx*dy*dz) .or. &
-              fp(k,inpswarm)==1/(dx*dy*dz)) then
-            mpnew=mpbig+rhopsma/npbig
-          else
-            if (mpsma>2*minimum_particle_mass) then
-              mpnew=0.5*mpsma
+            if (mpbig/mpsma>critical_mass_ratio_sticking .or. &
+                deltav_recoil<escape_speed .or. &
+                fp(j,inpswarm)==1/(dx*dy*dz) .or. &
+                fp(k,inpswarm)==1/(dx*dy*dz)) then
+              mpnew=mpbig+rhopsma/npbig
             else
-              mpnew=minimum_particle_mass
+              if (mpsma>2*minimum_particle_mass) then
+                mpnew=0.5*mpsma
+              else
+                mpnew=minimum_particle_mass
+              endif
             endif
-          endif
 !
 !  The new radius is defined from the new particle mass, while the new
 !  particle number in each superparticle comes from total mass conservation.
 !
-          apnew=(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
-          npnew=0.5*(rhopsma+rhopbig)/mpnew
+            apnew=(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
+            npnew=0.5*(rhopsma+rhopbig)/mpnew
 !
 !  Turn into sink particle if number of physical particles is less than one.
 !
-          if (npnew*dx*dy*dz<1.0) then
-            if (fp(j,iap)<fp(k,iap)) then
-              fp(k,ivpx:ivpz)=(rhopsma*fp(j,ivpx:ivpz) + &
-                  rhopbig*fp(k,ivpx:ivpz))/(rhopsma+rhopbig)
-            else
-              fp(k,ivpx:ivpz)=(rhopbig*fp(j,ivpx:ivpz) + &
-                  rhopsma*fp(k,ivpx:ivpz))/(rhopsma+rhopbig)
-            endif
+            if (npnew*dx*dy*dz<1.0) then
+              if (fp(j,iap)<fp(k,iap)) then
+                fp(k,ivpx:ivpz)=(rhopsma*fp(j,ivpx:ivpz) + &
+                    rhopbig*fp(k,ivpx:ivpz))/(rhopsma+rhopbig)
+              else
+                fp(k,ivpx:ivpz)=(rhopbig*fp(j,ivpx:ivpz) + &
+                    rhopsma*fp(k,ivpx:ivpz))/(rhopsma+rhopbig)
+              endif
 !
 !  Tag particle for removal by making the radius negative.
 !
-            fp(j,iap)=-fp(j,iap)
-            fp(k,iap)=((rhopsma+rhopbig)*dx*dy*dz/ &
-                four_pi_rhopmat_over_three)**(1.0/3.0)
-            fp(k,inpswarm)=1/(dx*dy*dz)
-          else
-            fp(j,iap)=apnew
-            fp(k,iap)=apnew
-            fp(j,inpswarm)=npnew
-            fp(k,inpswarm)=npnew
+              fp(j,iap)=-fp(j,iap)
+              fp(k,iap)=((rhopsma+rhopbig)*dx*dy*dz/ &
+                  four_pi_rhopmat_over_three)**(1.0/3.0)
+              fp(k,inpswarm)=1/(dx*dy*dz)
+            else
+              fp(j,iap)=apnew
+              fp(k,iap)=apnew
+              fp(j,inpswarm)=npnew
+              fp(k,inpswarm)=npnew
 !            fp(j,ivpx:ivpz)=0.5*(fp(j,ivpx:ivpz)+fp(k,ivpx:ivpz))
 !            fp(k,ivpx:ivpz)=fp(j,ivpx:ivpz)
-          endif
+            endif
+          endif ! if (ldroplet_coagulation)
         else
+!
+!  If we are working on droploet coagulation all colliding droplets are
+!  assumed to coalesce. I.e. the mass of the new representative droplet equals
+!  the sum of the two initial droplet masses.  
+!
+          if (ldroplet_coagulation) then
+            apj = fp(j,iap)
+            mpj = four_pi_rhopmat_over_three*fp(j,iap)**3
+            npj = fp(j,inpswarm)
+            apk = fp(k,iap)
+            mpk = four_pi_rhopmat_over_three*fp(k,iap)**3
+            npk = fp(k,inpswarm)
+            if (droplet_coagulation_model=='standard') then
+              mpnew=mpj+mpk
+              apnew=(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
+!            npnew=(mpj*npk+mpk*npk)/(2.*mpnew)
+              npnew=mpk*npk/mpnew
+              vpnew=(fp(j,ivpx:ivpz)*mpj+fp(k,ivpx:ivpz)*mpk)/mpnew
+              fp(k,iap)=apnew
+              fp(k,inpswarm)=npnew
+              fp(k,ivpx:ivpz)=vpnew
+            else if (droplet_coagulation_model=='shima') then
+!
+!  Identify the swarm with the highest particle number density
+!
+              if (npk<npj) then
+                swarm_index1=k
+                swarm_index2=j
+              else
+                swarm_index1=j
+                swarm_index2=k
+              endif
+!
+!  Check if we have the special case where the particle number 
+!  densities are equal. This will typically be the case in the beginning of 
+!  a simulation.
+!
+              if (npk == npj) then
+                fp(swarm_index1,inpswarm)=fp(swarm_index1,inpswarm)/2.
+                fp(swarm_index2,inpswarm)=fp(swarm_index2,inpswarm)/2.
+                mpnew=mpj+mpk
+                fp(swarm_index1,iap)&
+                    =(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
+                fp(swarm_index2,iap)&
+                    =(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
+                vpnew=(fp(j,ivpx:ivpz)*mpj+fp(k,ivpx:ivpz)*mpk)/mpnew
+                fp(swarm_index1,ivpx:ivpz)=vpnew
+                fp(swarm_index2,ivpx:ivpz)=vpnew
+              else
+!
+!  Set particle radius. The radius of the swarm with the highes particle 
+!  number density does not change since its mass doesn't change.
+!
+                mpnew=mpj+mpk
+                fp(swarm_index1,iap)&
+                    =(mpnew*three_over_four_pi_rhopmat)**(1.0/3.0)
+!
+!  Set particle number densities. Only the the swarm with the highest 
+!  particle number density, changes its particle number density.
+!
+                fp(swarm_index2,inpswarm)=abs(npj-npk)
+!
+!  Set particle velocities. Only the swarm with the lowest 
+!  particle number density, changes its particle velcity.
+!
+                vpnew=(fp(j,ivpx:ivpz)*mpj+fp(k,ivpx:ivpz)*mpk)/mpnew
+                fp(swarm_index1,ivpx:ivpz)=vpnew
+              endif
+            else
+              call fatal_error('','No such droplet_coagulation_model')
+            endif
+          else
+
 !
 !  Physical particles in the two swarms collide asymmetrically.
 !
-          if (fp(k,iap)<fp(j,iap)) then
-            fp(k,inpswarm)=fp(k,inpswarm)* &
-                 (1/(1.0+(fp(j,iap)/fp(k,iap))**3))
-            fp(k,iap)=(fp(k,iap)**3+fp(j,iap)**3)**(1.0/3.0)
-          else
-            fp(k,inpswarm)=0.5*fp(k,inpswarm)
-            fp(k,iap)=2**(1.0/3.0)*fp(k,iap)
+            if (fp(k,iap)<fp(j,iap)) then
+              fp(k,inpswarm)=fp(k,inpswarm)* &
+                  (1/(1.0+(fp(j,iap)/fp(k,iap))**3))
+              fp(k,iap)=(fp(k,iap)**3+fp(j,iap)**3)**(1.0/3.0)
+            else
+              fp(k,inpswarm)=0.5*fp(k,inpswarm)
+              fp(k,iap)=2**(1.0/3.0)*fp(k,iap)
+            endif
           endif
         endif
       else

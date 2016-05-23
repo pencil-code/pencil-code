@@ -7,8 +7,8 @@
 #
 import os
 import numpy as np
-from npfile import npfile
-from dim import read_dim
+from pencil.files.npfile import npfile
+from pencil.files.dim import read_dim
 from time import sleep
 from os.path import join
 
@@ -163,9 +163,11 @@ def animate_slices(field='uu1', datadir='data/', proc=-1, extension='xz',
             manager.canvas.draw()
 
             if ifirst:
-                print "----islice----------t---------min-------max-------delta"
-            print "%10i %10.3e %10.3e %10.3e %10.3e" \
-                % (islice, t, plane.min(), plane.max(), plane.max() - plane.min())
+                #print "----islice----------t---------min-------max-------delta" # Python 2
+                print("----islice----------t---------min-------max-------delta")
+            #print "%10i %10.3e %10.3e %10.3e %10.3e" \ # Python 2
+                #% (islice, t, plane.min(), plane.max(), plane.max() - plane.min()) # Python 2
+            print("{0:10} {1:10.3e} {2:10.3e} {3:10.3e} {4:10.3e}".format(islice, t, plane.min(), plane.max(), plane.max() - plane.min()))
 
             ifirst = False
             islice += 1
@@ -201,7 +203,7 @@ def animate_multislices(field=['uu1'], datadir='data/', proc=-1,
 
     datadir = os.path.expanduser(datadir)
     if outfile != "":
-        outslice = file(outfile, "w")
+        outslice = open(outfile, "w")
     filename = []
     if proc < 0:
         for i in field:
@@ -277,14 +279,18 @@ def animate_multislices(field=['uu1'], datadir='data/', proc=-1,
             manager.canvas.draw()
 
             if ifirst:
-                print "----islice----------t---------min-------max-------delta"
-            print "%10i %10.3e %10.3e %10.3e %10.3e" % \
-                (islice, t, plotplane.min(), plotplane.max(),
-                 plotplane.max() - plotplane.min())
+                #print "----islice----------t---------min-------max-------delta" # Python 2
+                print("----islice----------t---------min-------max-------delta")
+            #print "%10i %10.3e %10.3e %10.3e %10.3e" % \ # Python 2
+                #(islice, t, plotplane.min(), plotplane.max(), # Python 2
+                 #plotplane.max() - plotplane.min()) # Python 2
+            print("{0:10} {1:10.3e} {2:10.3e} {3:10.3e} {4:10.3e}".format(islice, t, plotplane.min(), plotplane.max(),
+                 plotplane.max() - plotplane.min()))
             if outfile != "":
-                outslice.write("%10i %10.3e %10.3e %10.3e %10.3e" %
-                               (islice, t, plotplane.min(), plotplane.max(),
-                                plotplane.max() - plotplane.min()))
+                #outslice.write("%10i %10.3e %10.3e %10.3e %10.3e" % # Python 2
+                               #(islice, t, plotplane.min(), plotplane.max(), # Python 2
+                                #plotplane.max() - plotplane.min())) # Python 2
+                outslice.write("{0:10} {1:10.3e} {2:10.3e} {3:10.3e} {4:10.3e}".format(islice, t, plotplane.min(), plotplane.max(), plotplane.max() - plotplane.min()))
                 outslice.write("\n")
 
             ifirst = False
@@ -325,7 +331,7 @@ def time_slices(field=['uu1'], datadir='data/', proc=-1, extension='xz',
 
     datadir = os.path.expanduser(datadir)
     if outfile != "":
-        outslice = file(outfile, "w")
+        outslice = open(outfile, "w")
     filename = []
     if proc < 0:
         for i in field:
@@ -390,19 +396,28 @@ def time_slices(field=['uu1'], datadir='data/', proc=-1, extension='xz',
                 plotplane += tempplane.tolist()
 
                 if ifirst:
-                    print "----islice----------t---------min-------max-------delta"
-                print "%10i %10.3e %10.3e %10.3e %10.3e" % \
-                    (islice, t, tempplane.min(), tempplane.max(),
-                     tempplane.max() - tempplane.min())
+                    #print "----islice----------t---------min-------max-------delta" # Python 2
+                    print("----islice----------t---------min-------max-------delta")
+                #print "%10i %10.3e %10.3e %10.3e %10.3e" % \ # Python 2
+                    #(islice, t, tempplane.min(), tempplane.max(), # Python 2
+                     #tempplane.max() - tempplane.min()) # Python 2
+                print("{0:10} {1:10.3e} {2:10.3e} {3:10.3e} {4:10.3e}".format(islice, t, tempplane.min(), tempplane.max(), tempplane.max() - tempplane.min()))
                 if outfile != "":
                     outslice.write(
-                        "%10i %10.3e %10.3e %10.3e %10.3e" %
-                        (islice,
-                         t,
-                         tempplane.min(),
+                        #"%10i %10.3e %10.3e %10.3e %10.3e" % # Python 2
+                        #(islice, # Python 2
+                         #t, # Python 2
+                         #tempplane.min(), # Python 2
+                            #tempplane.max(), # Python 2
+                            #tempplane.max() - # Python 2
+                            #tempplane.min())) # Python 2
+                        "{0:10} {1:10.3e} {2:10.3e} {3:10.3e} {4:10.3e}".format(
+                            islice,
+                            t,
+                            tempplane.min(),
                             tempplane.max(),
                             tempplane.max() -
-                            tempplane.min()))
+                            tempplane.min()))                        
                     outslice.write("\n")
 
                 ifirst = False
@@ -512,19 +527,22 @@ def make_movie(field='uu1', datadir='data/', proc=-1, extension='xz',
             ax.cla()
             ax.imshow(plane, vmin=amin, vmax=amax)
             fname = '_tmp%03d.png' % islice
-            print 'Saving frame', fname
+            print('Saving frame' + fname)
             fig.savefig(fname)
             files.append(fname)
 
             if ifirst:
-                print "----islice----------t---------min-------max-------delta"
-            print "%10i %10.3e %10.3e %10.3e %10.3e" % \
-                (islice, t, plane.min(), plane.max(), plane.max() - plane.min())
+                #print "----islice----------t---------min-------max-------delta" # Python 2
+                print("----islice----------t---------min-------max-------delta")
+            #print "%10i %10.3e %10.3e %10.3e %10.3e" % \ # Python 2
+                #(islice, t, plane.min(), plane.max(), plane.max() - plane.min()) # Python 2
+            print("{0:10} {1:10.3e} {2:10.3e} {3:10.3e} {4:10.3e}".format(islice, t, plane.min(), plane.max(), plane.max() - plane.min()))
 
             ifirst = False
             islice += 1
 
-    print 'Making movie animation.mpg - this make take a while'
+    #print 'Making movie animation.mpg - this make take a while'
+    print('Making movie animation.mpg - this make take a while')
     # SC: Not all systems use mencoder. Need to change this into ffmpeg.
     os.system("mencoder 'mf://_tmp*.png' -mf type=png:fps=24 -ovc lavc -lavcopts vcodec=wmv2 -oac copy -o animation.mpg")
     os.system("rm _tmp*.png")

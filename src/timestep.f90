@@ -24,9 +24,11 @@ module Timestep
       use Boundcond, only: update_ghosts
       use BorderProfiles, only: border_quenching
       use Equ, only: pde, impose_floors_ceilings
-      use Mpicomm, only: mpifinalize, mpiallreduce_max
+      use Mpicomm, only: mpifinalize, mpiallreduce_max, MPI_COMM_WORLD
       use Particles_main, only: particles_timestep_first, &
           particles_timestep_second
+      use Solid_Cells, only: solid_cells_timestep_first, &
+          solid_cells_timestep_second
       use Shear, only: advance_shear
       use Special, only: special_after_timestep
       use Snapshot, only: shift_dt
@@ -78,6 +80,10 @@ module Timestep
 !
         if (lparticles) call particles_timestep_first(f)
 !
+!  Set up solid_cells time advance
+!
+        if (lsolid_cells) call solid_cells_timestep_first(f)
+!
 !  Change df according to the chosen physics modules.
 !
         call pde(f,df,p)
@@ -91,7 +97,7 @@ module Timestep
           dt1_local=maxval(dt1_max(1:nx))
           ! Timestep growth limiter
           if (real(ddt) > 0.) dt1_local=max(dt1_local,dt1_last)
-          call mpiallreduce_max(dt1_local,dt1)
+          call mpiallreduce_max(dt1_local,dt1,MPI_COMM_WORLD)
           dt=1.0/dt1
           if (loutput_varn_at_exact_tsnap) call shift_dt(dt)
           ! Timestep growth limiter
@@ -101,7 +107,7 @@ module Timestep
 !  Calculate dt_beta_ts.
 !
         if (ldt) dt_beta_ts=dt*beta_ts
-        if (ip<=6) print*, 'time_step: iproc, dt=', iproc, dt  !(all have same dt?)
+        if (ip<=6) print*, 'time_step: iproc, dt=', iproc_world, dt  !(all have same dt?)
         dtsub = ds * dt_beta_ts(itsub)
 !
 !  Time evolution of grid variables.
@@ -117,6 +123,10 @@ module Timestep
 !  Time evolution of particle variables.
 !
         if (lparticles) call particles_timestep_second(f)
+!
+!  Time evolution of solid_cells.
+!
+        if (lsolid_cells) call solid_cells_timestep_second(f,dt_beta_ts(itsub),ds)
 !
 !  Advance deltay of the shear (and, optionally, perform shear advection
 !  by shifting all variables and their derivatives).

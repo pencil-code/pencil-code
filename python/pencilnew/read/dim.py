@@ -1,102 +1,123 @@
-# $Id$
+# dim.py
 #
-# read dim.dat
+# Read the dimensions of the simulationp.
 #
-# Author: J. Oishi (joishi@amnh.org). based on idl pc_read_dim.pro.
-# 
-# 
-import sys
-import os
-import numpy as N
+# Authors: S. Candelaresi (iomsn1@gmail.com), J. Oishi (joishi@amnh.org).
+"""
+Contains the classes and methods to read the simulation dimensions.
+"""
 
-class PcDim:
+
+def dim(*args, **kwargs):
     """
-    a class to hold the dim.dat data.
+    Read the dim.dat file.
+
+    call signature:
+
+    read(data_dir='data', proc=-1)
+
+    Keyword arguments:
+
+    *data_dir*:
+      Directory where the data is stored.
+
+    *proc*
+      Porcessor to be read. If proc is -1, then read the 'global'
+      dimensions. If proc is >=0, then read the dim.dat in the
+      corresponding processor directory.
     """
-    def __init__(self,mx,my,mz,mvar,maux,precision,nghostx,nghosty,nghostz,nprocx,nprocy,nprocz,iprocz_slowest,ipx,ipy,ipz,mglobal):
-        #primative quantities read directly from file
-        self.mx = mx
-        self.my = my
-        self.mz = mz
-        self.mvar = mvar
-        self.maux = maux
-        self.precision = precision
-        self.nghostx = nghostx
-        self.nghosty = nghosty
-        self.nghostz = nghostz
-        self.nprocx = nprocx
-        self.nprocy = nprocy
-        self.nprocz = nprocz
-        self.iprocz_slowest = iprocz_slowest
-        self.ipx = ipx
-        self.ipy = ipy
-        self.ipz = ipz
-	self.mglobal = mglobal	
-        
-        #derived quantities
-        self.nx = mx - (2 * nghostx)
-        self.ny = my - (2 * nghosty)
-        self.nz = mz - (2 * nghostz)
-        self.mw = mx * my * mz      
-        self.l1 = nghostx           
-        self.l2 = mx-nghostx-1      
-        self.m1 = nghosty           
-        self.m2 = my-nghosty-1      
-        self.n1 = nghostz           
-        self.n2 = mz-nghostz-1      
-        if (ipx == ipy == ipz == -1):
+
+    dim_tmp = PcDim()
+    dim_tmp.read(*args, **kwargs)
+    return dim_tmp
+
+
+class PcDim(object):
+    """
+    PcDim -- holds pencil code dimension data.
+    """
+
+    def __init__(self):
+        """
+        Fille members with default values.
+        """
+
+    def read(self, data_dir='data', proc=-1):
+        """
+        Read the dim.dat file.
+
+        call signature:
+
+        read(self, data_dir='data', proc=-1)
+
+        Keyword arguments:
+
+        *data_dir*:
+          Directory where the data is stored.
+
+        *proc*
+          Porcessor to be read. If proc is -1, then read the 'global'
+          dimensions. If proc is >=0, then read the dim.dat in the
+          corresponding processor directory.
+        """
+
+        import os
+
+        if proc < 0:
+            file_name = os.path.join(data_dir, 'dim.dat')
+        else:
+            file_name = os.path.join(data_dir, 'proc{0}'.format(proc), 'dim.dat')
+
+        try:
+            file_name = os.path.expanduser(file_name)
+            dim_file = open(file_name, "r")
+        except IOError:
+            print("File {0} could not be opened.".format(file_name))
+            return -1
+        else:
+            lines = dim_file.readlines()
+            dim_file.close()
+
+        if len(lines[0].split()) == 6:
+            self.mx, self.my, self.mz, self.mvar, self.maux, self.mglobal = \
+            tuple(map(int, lines[0].split()))
+        else:
+            self.mx, self.my, self.mz, self.mvar, self.maux = \
+            tuple(map(int, lines[0].split()))
+            self.mglobal = 0
+
+        self.precision = lines[1].strip("\n")
+        self.nghostx, self.nghosty, self.nghostz = tuple(map(int, lines[2].split()))
+        if proc < 0:
+            # global
+            self.nprocx, self.nprocy, self.nprocz, self.iprocz_slowest = \
+            tuple(map(int, lines[3].split()))
+            self.ipx = self.ipy = self.ipz = -1
+        else:
+            # local processor
+            self.ipx, self.ipy, self.ipz = tuple(map(int, lines[3].split()))
+            self.nprocx = self.nprocy = self.nprocz = self.iprocz_slowest = -1
+
+        # Add derived quantities to the dim object.
+        self.nx = self.mx - (2 * self.nghostx)
+        self.ny = self.my - (2 * self.nghosty)
+        self.nz = self.mz - (2 * self.nghostz)
+        self.mw = self.mx * self.my * self.mz
+        self.l1 = self.nghostx
+        self.l2 = self.mx-self.nghostx-1
+        self.m1 = self.nghosty
+        self.m2 = self.my-self.nghosty-1
+        self.n1 = self.nghostz
+        self.n2 = self.mz-self.nghostz-1
+        if self.ipx == self.ipy == self.ipz == -1:
             # global
             self.nxgrid = self.nx
             self.nygrid = self.ny
             self.nzgrid = self.nz
-            self.mxgrid = self.nxgrid + (2 * nghostx)
-            self.mygrid = self.nygrid + (2 * nghosty)
-            self.mzgrid = self.nzgrid + (2 * nghostz)
+            self.mxgrid = self.nxgrid + (2 * self.nghostx)
+            self.mygrid = self.nygrid + (2 * self.nghosty)
+            self.mzgrid = self.nzgrid + (2 * self.nghostz)
         else:
             # local
             self.nxgrid = self.nygrid = self.nzgrid = 0
             self.mxgrid = self.mygrid = self.mzgrid = 0
-
-        
-def dim(datadir='data',proc=-1):
-    """
-    read the dim.dat file. if proc is -1, then read the 'global'
-    dimensions. if proc is >=0, then read the dim.dat in the
-    corresponding processor directory.
-    """
-    
-    if (proc < 0 ):
-        filename = datadir+'/dim.dat' # global box dimensions
-    else:
-        filename = datadir+'/proc'+str(proc)+'/dim.dat' # local proc. dimensions
-
-    try:
-	filename = os.path.expanduser(filename)
-        file = open(filename,"r")
-    except IOError:
-        print "File",filename,"could not be opened."
-        return -1
-    else:
-        lines = file.readlines()
-        file.close()
-
-    if len(lines[0].split()) == 6:
-    	mx,my,mz,mvar,maux,mglobal = tuple(map(int,lines[0].split()))
-    else:
-	mx,my,mz,mvar,maux = tuple(map(int,lines[0].split()))
-	mglobal = 0
-
-    precision = lines[1].strip("\n")
-    nghostx,nghosty,nghostz = tuple(map(int,lines[2].split()))
-    if (proc < 0):
-        #global
-        nprocx,nprocy,nprocz,iprocz_slowest = tuple(map(int,lines[3].split()))
-        ipx = ipy = ipz = -1
-    else:
-        #local processor
-        ipx,ipy,ipz = tuple(map(int,lines[3].split()))
-        nprocx = nprocy = nprocz = iprocz_slowest = -1
-
-    dim = PcDim(mx,my,mz,mvar,maux,precision,nghostx,nghosty,nghostz,nprocx,nprocy,nprocz,iprocz_slowest,ipx,ipy,ipz,mglobal)
-
-    return dim

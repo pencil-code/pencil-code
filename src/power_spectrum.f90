@@ -295,7 +295,7 @@ module power_spectrum
 !
 !  append to diagnostics file
 !
-  if (iproc==root) then
+  if (lroot) then
     if (ip<10) print*,'Writing power spectra of variable',trim(sp) &
          ,'to ',trim(datadir)//'/power'//trim(sp)//'.dat'
     spectrum_sum=.5*spectrum_sum
@@ -403,7 +403,7 @@ module power_spectrum
 !
 !  append to diagnostics file
 !
-  if (iproc==root) then
+  if (lroot) then
     if (ip<10) print*,'Writing power spectra of variable',sp &
          ,'to ',trim(datadir)//'/power'//trim(sp)//'_2d.dat'
     spectrum_sum=.5*spectrum_sum
@@ -830,7 +830,7 @@ module power_spectrum
 !
   endif
 !
-  call mpibarrier()          ! necessary ?
+  call mpibarrier          ! necessary ?
 !  print*, 'nach barrier:', iproc, ipy, ipz
 !
   if (lintegrate_shell) then
@@ -1096,7 +1096,7 @@ module power_spectrum
   !
   !  append to diagnostics file
   !
-  if (iproc==root) then
+  if (lroot) then
     if (ip<10) print*,'Writing power spectrum ',sp &
          ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
     !
@@ -1150,13 +1150,12 @@ module power_spectrum
     use Sub, only: gij, gij_etc, curl_mn, cross_mn
 !
   integer, parameter :: nk=nxgrid/2
-  integer :: i,k,ikx,iky,ikz,im,in,ivec,ivec_jj
+  integer :: i,k,ikx,iky,ikz,im,in,ivec
   real :: k2
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension (mx,my,mz,3) :: Lor
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
-  real, dimension(nx) :: bbi,jji
-  real, dimension(nx,3) :: uu,aa,bb,jj,jxb
+  real, dimension(nx,3) :: aa,bb,jj,jxb
   real, dimension(nx,3,3) :: aij,bij
   real, dimension(nk) :: nks=0.,nks_sum=0.
   real, dimension(nk) :: k2m=0.,k2m_sum=0.,krms
@@ -1167,12 +1166,6 @@ module power_spectrum
   real, dimension(nzgrid) :: kz
   character (len=3) :: sp
   logical, save :: lwrite_krms=.true.
-!
-!  passive scalar contributions (hardwired for now)
-!
-  integer :: itmp1=8,itmp2=9
-  real, dimension(nx,3) :: gtmp1,gtmp2
-  real :: BextEP=.1 !(hard-wired for now/Axel)
 !
 !  identify version
 !
@@ -1290,7 +1283,7 @@ module power_spectrum
   !
   !  append to diagnostics file
   !
-  if (iproc==root) then
+  if (lroot) then
     if (ip<10) print*,'Writing power spectrum ',sp &
          ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
     !
@@ -1458,7 +1451,7 @@ module power_spectrum
   !
   !  append to diagnostics file
   !
-  if (iproc==root) then
+  if (lroot) then
     if (ip<10) print*,'Writing power spectrum ',sp &
          ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
 !AB: the following line does not make sense for passive scalars
@@ -1670,7 +1663,7 @@ module power_spectrum
 !
 !  Append to diagnostics file
 !
-    if (iproc==root) then
+    if (lroot) then
       if (lroot.and.ip<10) print*, 'Writing power spectra of variable', sp, &
           'to ', trim(datadir)//'/power'//trim(sp)//trim(suffix)
       open(1,file=trim(datadir)//'/power'//trim(sp)//trim(suffix), &
@@ -1762,7 +1755,7 @@ module power_spectrum
 !
 !  initialize counter and set scaling factor
 !
-   pdf_yy=0.
+   pdf_yy=0
    pdf_scl=1./pdf_rms
 !
 !  m-n loop
@@ -1975,7 +1968,7 @@ endsubroutine pdf
 !
 !  append to diagnostics file
 !
-  if (iproc==root) then
+  if (lroot) then
     if (ip<10) print*,'Writing power spectra of variable',trim(sp) &
          ,'to ',trim(datadir)//'/power_phi'//trim(sp)//'.dat'
     open(1,file=trim(datadir)//'/power_phi'//trim(sp)//'.dat',position='append')
@@ -2115,7 +2108,7 @@ endsubroutine pdf
 !
 !  append to diagnostics file
 !
-   if (iproc==root) then
+   if (lroot) then
      if (ip<10) print*,'Writing power spectrum ',sp &
        ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
 !
@@ -2214,7 +2207,7 @@ endsubroutine pdf
 !
 !  append to diagnostics file
 !
-  if (iproc==root) then
+  if (lroot) then
      if (ip<10) print*,'Writing power spectra of variable',trim(sp) &
           ,'to ',trim(datadir)//'/power'//trim(sp)//'.dat'
      spectrum_sum=.5*spectrum_sum

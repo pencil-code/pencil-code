@@ -33,7 +33,8 @@ module Energy
 !
   real :: eth_left, eth_right, widtheth, eth_const=1.0
   real :: chi=0.0, chi_shock=0.0, chi_hyper3_mesh=0.
-  real :: energy_floor = 0.0, temperature_floor = 0.
+  real :: kappa_rosseland=1.0
+  real :: energy_floor = 0.0, temperature_floor = 0.0
   real :: rk_eps = 1.e-3
   real :: nu_z=0., cs_z=0.
   real :: TTref = 0., tau_cool = 1.
@@ -47,6 +48,7 @@ module Energy
   logical :: lSD93 = .false.
   logical :: lconst_cooling_time = .false.
   logical :: ljeans_floor=.false.
+  logical :: lchi_rosseland=.false.
   logical, pointer :: lpressuregradient_gas
   logical :: lenergy_slope_limited=.false.
   character (len=labellen), dimension(ninit) :: initeth='nothing'
@@ -62,6 +64,7 @@ module Energy
   namelist /entropy_run_pars/ &
       lviscosity_heat, lupw_eth, &
       chi, chi_shock, chi_hyper3_mesh, &
+      lchi_rosseland, kappa_rosseland, &
       energy_floor, temperature_floor, lcheck_negative_energy, &
       rk_eps, rk_nmax, lKI02, lSD93, nu_z, cs_z, &
       lconst_cooling_time, TTref, tau_cool, &
@@ -344,6 +347,13 @@ module Energy
         lpenc_requested(i_grho)=.true.
         lpenc_requested(i_gTT)=.true.
       endif
+      if (lchi_rosseland) then
+        lpenc_requested(i_rho)=.true.
+        lpenc_requested(i_rho1)=.true.
+        lpenc_requested(i_del2TT)=.true.
+        lpenc_requested(i_grho)=.true.
+        lpenc_requested(i_gTT)=.true.
+      endif
 !
       shock: if (chi_shock /= 0.0) then
         lpenc_requested(i_shock) = .true.
@@ -547,6 +557,19 @@ module Energy
             (abs(dline_1(:,1))+abs(dline_1(:,2))+abs(dline_1(:,3)))
       endif
 !
+!  Radiative diffusion (Rosseland approximation) through thermal energy diffusion.
+!
+      if (lchi_rosseland) then
+        df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + ( 16.0*sigmaSB/(3.0*kappa_rosseland))*p%TT*p%TT*p%rho1*(  &
+                                 3.0*sum(p%gTT*p%gTT, 2) &
+                                - p%TT*p%rho1*sum(p%grho*p%gTT, 2) &
+                                + p%TT*p%del2TT )
+!       This expression has an extra TT/eth = cv1*rho1  to convert to the right units - needed because of the sigmaSB
+!       The timestep gets the factor TT/eth = cv1*rho1
+        if (lfirst .and. ldt) diffus_chi = diffus_chi &
+            +(16.0*sigmaSB/(3.0*kappa_rosseland))*p%TT*p%TT*p%TT/p%rho *cv1*p%rho1 * dxyz_2
+     endif
+!
 !  Diagnostics.
 !
       if (ldiagnos) then
@@ -557,6 +580,7 @@ module Energy
         if (idiag_ethmin/=0) call max_mn_name(-p%eth,idiag_ethmin,lneg=.true.)
         if (idiag_ethmax/=0) call max_mn_name(p%eth,idiag_ethmax)
         if (idiag_eem/=0)    call sum_mn_name(p%ee,idiag_eem)
+        if (idiag_ppm/=0)    call sum_mn_name(p%pp,idiag_ppm)
         if (idiag_etot /= 0) call sum_mn_name(p%eth + p%ekin, idiag_etot)
         if (idiag_pdivum/=0) call sum_mn_name(p%pp*p%divu,idiag_pdivum)
       endif
@@ -878,17 +902,21 @@ module Energy
 !
     endsubroutine impose_energy_floor
 !***********************************************************************
-    subroutine dynamical_thermal_diffusion(urms)
+    subroutine dynamical_thermal_diffusion(uc)
 !
 !  Dynamically set thermal diffusion coefficient given fixed mesh Reynolds number.
 !
 !  02-aug-11/ccyang: coded
 !
-      real, intent(in) :: urms
+!  Input Argument
+!      uc
+!          Characteristic velocity of the system.
+!
+      real, intent(in) :: uc
 !
 !  Hyper-diffusion coefficient
 !
-      if (chi_hyper3_mesh /= 0.) chi_hyper3_mesh = pi5_1 * urms / re_mesh / sqrt(real(dimensionality))
+      if (chi_hyper3_mesh /= 0.0) chi_hyper3_mesh = pi5_1 * uc / re_mesh / sqrt(real(dimensionality))
 !
     endsubroutine dynamical_thermal_diffusion
 !***********************************************************************
@@ -1224,7 +1252,7 @@ module Energy
         close (unit=lun, iostat=stat)
         if (stat /= 0) call fatal_error('init_cooling_SD93', 'cannot close the cooling table; ' // trim(msg), force=.true.)
       endif get_nt
-      call mpibcast_int(SD_nt)
+      call mpibcast_int(SD_nt,comm=MPI_COMM_WORLD)
 !
 !  Allocate the cooling table.
 !
@@ -1242,8 +1270,8 @@ module Energy
         enddo reading
         close (unit=lun)
       endif table
-      call mpibcast_real(SD_logTT, SD_nt)
-      call mpibcast_real(SD_logLambda, SD_nt)
+      call mpibcast_real(SD_logTT, SD_nt, comm=MPI_COMM_WORLD)
+      call mpibcast_real(SD_logLambda, SD_nt,comm=MPI_COMM_WORLD)
 !
       if (lroot) print *, 'init_cooling_SD93: read the Sutherland & Dopita (1993) cooling table. '
 !

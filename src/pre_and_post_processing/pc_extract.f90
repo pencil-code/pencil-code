@@ -53,7 +53,6 @@ program pc_extract
 !
   lstart = .true.
   lmpicomm = .false.
-  root = 0
   lroot = .true.
   ipx = 0
   ipy = 0
@@ -62,10 +61,6 @@ program pc_extract
   zlneigh = 0
   yuneigh = 0
   zuneigh = 0
-  llcorn = 0
-  lucorn = 0
-  uucorn = 0
-  ulcorn = 0
 !
   inquire (IOLENGTH=io_len) 1.0
 !

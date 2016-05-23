@@ -30,9 +30,9 @@ program pc_distribute
   integer :: mvar_in, io_len, pz, pa, alloc_err, lun_global=87
   real :: t_sp   ! t in single precision for backwards compatibility
 !
-  lstart = .true.
+  lstart = .false.
+  lrun = .true.
   lmpicomm = .false.
-  root = 0
   lroot = .true.
   ipx = 0
   ipy = 0
@@ -41,10 +41,6 @@ program pc_distribute
   zlneigh = 0
   yuneigh = 0
   zuneigh = 0
-  llcorn = 0
-  lucorn = 0
-  uucorn = 0
-  ulcorn = 0
 !
   deltay = 0.0   ! Shearing not available due to missing fseek in Fortran
 !

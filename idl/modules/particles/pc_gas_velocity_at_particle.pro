@@ -2,7 +2,8 @@
 ;  $Id$
 ;
 ;  Calculate the gas velocity at the position of particles by interpolation from
-;  nearest grid points.
+;  nearest grid points. 
+;  WARNING: This is 3D only! If a grid components looks like [0,0,0,0,0,0,0] it wont work!
 ;
 ;  Author: Anders Johansen
 ;
