@@ -4,7 +4,7 @@
 Reads the tracer files, composes a color map.
 """
 
-import numpy as np
+#import numpy as np
 import os
 import pencil as pc
 import pylab as plt
@@ -47,7 +47,7 @@ class Tracers(object):
         Trace streamlines from the VAR files and integrate quantity 'int_q'
         along them.
 
-        call signature::
+        call signature:
 
         find_tracers(self, trace_field='bb', h_min=2e-3, h_max=2e4, len_max=500,
                      tol=1e-2, iter_max=1e3, interpolation='trilinear',
@@ -113,6 +113,8 @@ class Tracers(object):
         *n_proc*:
           Number of cores for multi core computation.
         """
+
+        import numpy as np
 
         # Return the tracers for the specified starting locations.
         def __sub_tracers(queue, var, field, t_idx, i_proc, n_proc):
@@ -374,6 +376,8 @@ class Tracers(object):
         *file_name*:
           File with the tracer data.
         """
+
+        import numpy as np
 
         # Open the file.
         f = h5py.File(os.path.join(data_dir, file_name), 'r')
