@@ -25,12 +25,11 @@ class Simulation:
         from os.path import exists as __exists__
         from os.path import split as __split__
         #from pen.intern.hash_sim import hash_sim
-        from pencilnew.read import param as read_param
+        import pencilnew
 
         # find out name and store it
         self.name = __split__(path)[-1]
-        if self.name == '.' or self.name == '':
-            self.name = __split__(os.getcwd())[-1]
+        if self.name == '.' or self.name == '': self.name = __split__(os.getcwd())[-1]
 
         # store paths
         self.path = os.path.abspath(path)
@@ -49,14 +48,14 @@ class Simulation:
         # read params into SIM object
         self.param = {}
         if __exists__(__join__(self.data_dir,'param.nml')):
-              param = read_param(quiet=True, data_dir=self.data_dir)
-              for key in dir(param):
-                    if key.startswith('__'): continue
-                    self.param[key] = getattr(param, key)
+            param = pencilnew.read.Param().read(quiet=True, data_dir=self.data_dir)
+            for key in dir(param):
+                if key.startswith('__'): continue
+                self.param[key] = getattr(param, key)
         else:
-              print '?? WARNING: Couldnt find param.nml in simulation '+self.name+'! Simulation is now hidden from calculations!'
-              self.param['UNSTARTED'] = True
-              self.hidden=True
+            print '?? WARNING: Couldnt find param.nml in simulation '+self.name+'! Simulation is now hidden from calculations!'
+            self.param['UNSTARTED'] = True
+            self.hidden=True
 
         try:
             self.grid = pencilnew.read.grid(data_dir=self.data_dir, trim=True, quiet=True)
@@ -64,7 +63,6 @@ class Simulation:
         except:
             self.grid = None
             self.ghost_grid = None
-
 
     def hide(self):
         self.hidden = True; self.export(); pen.refresh()
@@ -75,8 +73,7 @@ class Simulation:
     def export(self):
         """Export simulation object to its root-pendir"""
         from pencilnew.io import save
-        if self == False:
-            print '!! ERROR: Simulation object is bool object and False!'
+        if self == False: print '!! ERROR: Simulation object is bool object and False!'
         save(self, 'sim', folder=self.pc_dir)
 
 

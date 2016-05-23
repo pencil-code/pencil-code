@@ -36,14 +36,15 @@ def get_sim(path='.'):
         if __is_sim_dir__(path):
             return sim.Simulation(path)
         else:
-            print('?? WARNING: No simulation found in <'+path+'>. Try get_sims maybe?')
+            print('?? WARNING: No simulation found in '+path+'>. Try get_sims maybe?')
             return False
 
-def get_sims(path='.', depth=1):
+def get_sims(path='.', depth=1, nuhide=False):
     """Returns all found simulations as object list from all subdirs, not following symbolic links.
 
     Args:
         depth   depth of searching for simulations, default is only one level higher directories will be searched
+        unhide  unhides all simulation found if True, if False hidden sim will stay hidden
     """
     import os
     import numpy as np
@@ -61,48 +62,38 @@ def get_sims(path='.', depth=1):
     print '~ A list of pencil code simulations is generated from this dir downwards, this may take some time..'
     print '~ Symbolic links will not be followed, since this can lead to infinit recursion'
 
-    ## get overview of simulations in all lower dirs
+    # get overview of simulations in all lower dirs
     sim_paths = []
     for path,dirs,files in walklevel('.', depth):
       if 'start.in' in files and 'run.in' in files:
-        print '## Found Simulation in '+path
+        print '# Found Simulation in '+path
         sim_paths.append(path)
 
-    ## take care for each simulation found
-    ## generate new simulation object for all found simulations and append on new_sim_list
+    # take care for each simulation found
+    # generate new simulation object for all found simulations and append on new_sim_list
     for path in sim_paths:
         sim = Simulation(path)
 
-	    ## check if sim.name is already existing as name for a different simulation
-	    for s in new_sim_list:			# check for double names with already treated simulations
+        # check if sim.name is already existing as name for a different simulation
+        for s in new_sim_list:			# check for double names
             if sim.name == s.name:
                 sim.name = sim.name+'#'		# add # to dublicate
-		        print "?? Warning: Found two simulatoins with the same name: "+sim.path+' and '+s.path
-		        print "?? Changed name of "+sim.path+' to '+sim.name
+                print "?? Warning: Found two simulatoins with the same name: "+sim.path+' and '+s.path
+                print "?? Changed name of "+sim.path+' to '+sim.name
 
-	if old_sim_list:
-	  ## take over hidden status from previouse simDICT if existing and unhide = False (which is default!)
-	  if (not unhide):
-		for old_sim in old_sim_list.sims:
-		  if (sim.path == old_sim.path) and (old_sim.hidden==True):
-			sim.hide()
+        if old_sim_list:
+            if (not unhide):    # take over hidden status from previouse simDICT if existing and unhide = False (which is default!)
+                for old_sim in old_sim_list:
+                    if (sim.path == old_sim.path) and (old_sim.hidden==True): sim.hide()
 
-	### auto hide simulations which are not runned yet, i.e. without param.nml
-	#if not os.path.exists(os.path.join(sim.datadir,'param.nml')):
-		#print '?? WARNING: Couldnt find param.nml in simulation '+sim.name+'! Simulation is now hidden from calculations!'
-		#sim.param = False
-		#sim.hidden = True
+        ## ADD: auto hide simulations which are not runned yet, i.e. without param.nml
+        new_sim_list.append(sim)       # add new sim object to new_sim_list
+        sim.export()
 
-	## add new sim object to new_sim_list
-	new_sim_list.append(sim)
-	sim.export()
-
-  ## is new_sim_list empty?
-  if new_sim_list == []:
-    print '?? WARNING: simdict is empty!!'
-
-  simDICT = Simdict(new_sim_list)
-  pkl_save(simDICT, 'simDICT', folder='.pen')
+    # is new_sim_list empty?
+    if new_sim_list == []: print '?? WARNING: no simulations found!'
+    save(new_sim_list, 'sim_list', folder='.pen')
+    return new_sim_list
 
 
 # Startup and init. processes
