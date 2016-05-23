@@ -1,9 +1,9 @@
 
 
-def is_int(x):
-    """ Checks if x is an int. """
+def is_int(s):
+    """ Checks if string s is an int. """
     try:
-        a = float(x)
+        a = float(s)
         b = int(a)
     except ValueError:
         return False

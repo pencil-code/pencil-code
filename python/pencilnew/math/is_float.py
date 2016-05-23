@@ -1,8 +1,8 @@
 
-def is_float(x):
-    """ Checks if x is a float. """
+def is_float(s):
+    """ Checks if string s is a float. """
     try:
-        a = float(x)
+        a = float(s)
     except ValueError:
         return False
     else:

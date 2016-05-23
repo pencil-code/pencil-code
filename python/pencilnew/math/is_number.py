@@ -1,5 +1,6 @@
+
 def is_number(s):
-    """ Checks if s is a number. """
+    """ Checks if string s is a number. """
     try:
       float(s)
       return True

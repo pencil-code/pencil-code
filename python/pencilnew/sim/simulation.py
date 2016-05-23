@@ -133,41 +133,47 @@ class Simulation:
 
 
 
-def get_value_from_file(filepath, quantity):
-  import os
-  from pen.math import is_number
-  from pen.math import is_float
-  from pen.math import is_int
+    def get_value_from_file(self, filename, quantity):
+        """ Use to read in a quantity from *.in or *.local files.
 
-  # open file and read content
-  with open(filepath, 'r') as file:
-    # read a list of lines into data
-    data = file.readlines()
+        Args:
+            file:       can be "run.in", "start.in", "cparam.local"
+            quantity:   variable to read in from file
+        """
+        from os.path import join
+        from pencilnew.math import is_number
+        from pencilnew.math import is_float
+        from pencilnew.math import is_int
 
-
-  # check lines for quantity
-  for id,line in enumerate(data):
-    if line.find(quantity) >= 0:
-      # special cases:
-      if quantity == 'Lxyz':
-        line = line.replace(' ', '')
-        line = line.split(quantity+'=')[-1]
-        return [float(i) for i in line.split(',')]
-
-      # default case:
-      for i in line.split(quantity+'=')[-1]:
-        if is_number(i) == False and not i in ['.','e', '-', '+']:
-          break
-      # extract existing quantity value (not needed here)
-      oldvalue = line.split(quantity+'=')[-1].split(i)[0]
-
-      if is_int(oldvalue): return int(oldvalue)
-      elif is_float(oldvalue): return float(oldvalue)
-      else:
-        print "?? WARNING: value from file is neither float nor int! value is: "+oldvalue
-        return oldvalue
+        if filename in ['run.in', 'start.in']:
+            filepath = join(self.dir, filename)
+        elif filename in ['cparam.local']:
+            filepath = join(self.dir, 'src', filename)
+        else:
+            print('!! Quantity '+quantity+' not found in '+filepath); return False
 
 
-  else:
-    print '!! quantity '+quantity+' not found in '+filepath
-    return False
+        with open(filepath, 'r') as f: data = f.readlines()     # open file and read content
+
+        for id,line in enumerate(data):     # check lines for quantity
+            if line.find(quantity) >= 0:
+                # special cases:
+                if quantity == 'Lxyz':
+                    line = line.replace(' ', '')
+                    line = line.split(quantity+'=')[-1]
+                    return [float(i) for i in line.split(',')]
+
+                # default case:
+                for i in line.split(quantity+'=')[-1]:
+                    if is_number(i) == False and not i in ['.','e', '-', '+']: break
+                oldvalue = line.split(quantity+'=')[-1].split(i)[0]     # extract quantity value (not needed here)
+
+                if is_int(oldvalue): return int(float(oldvalue))
+                elif is_float(oldvalue): return float(oldvalue)
+                else:
+                    print('?? WARNING: value from file is neither float nor int! value is: '+oldvalue)
+                    return oldvalue
+
+
+        else:
+            print('!! quantity '+quantity+' not found in '+filepath); return False
