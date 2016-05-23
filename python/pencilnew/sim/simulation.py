@@ -51,8 +51,7 @@ class Simulation:
         if __exists__(__join__(self.data_dir,'param.nml')):
               param = read_param(quiet=True, data_dir=self.data_dir)
               for key in dir(param):
-                    if key.startswith('__'):
-                        continue
+                    if key.startswith('__'): continue
                     self.param[key] = getattr(param, key)
         else:
               print '?? WARNING: Couldnt find param.nml in simulation '+self.name+'! Simulation is now hidden from calculations!'
