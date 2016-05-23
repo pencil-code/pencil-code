@@ -11,11 +11,11 @@ Contains the classes and methods to read the time series file.
 
 def ts(*args, **kwargs):
     """
-    Rread Pencil Code time series data.
+    Read Pencil Code time series data.
 
     call signature:
 
-    read(self, file_name='time_series.dat', data_dir='data',
+    read(file_name='time_series.dat', data_dir='data',
          double=0, quiet=0, comment_char='#')
 
     Keyword arguments:
@@ -43,8 +43,7 @@ def ts(*args, **kwargs):
 
 class TimeSeries(object):
     """
-    TimeSeries -- holds pencil code time series data. each variable is
-    represented by a data member of the class.
+    TimeSeries -- holds pencil code time series data. 
     """
 
     def __init__(self):
