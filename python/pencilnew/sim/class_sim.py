@@ -40,7 +40,7 @@ class Simulation:
         self.pendatadir = join(self.path,'data','.pen')	# SIM.pendatadir
 
         ## generate status hash identification
-        self.status_hash = hash_sim(path)
+        #self.status_hash = hash_sim(path)
 
         ## hidden is default False
         self.hidden = hidden
@@ -74,17 +74,17 @@ class Simulation:
         pkl_save(self, 'SIM', folder=self.pendir)
 
 
-      def unchanged(self):
-        """Check if simulation hash has changed."""
-        from pen.intern.hash_sim import hash_sim
-
-        old_hash = self.status_hash
-        new_hash = hash_sim(self.path)
-
-        if old_hash == new_hash:
-          return True
-        else:
-          return False
+    #   def unchanged(self):
+    #     """Check if simulation hash has changed."""
+    #     from pen.intern.hash_sim import hash_sim
+      #
+    #     old_hash = self.status_hash
+    #     new_hash = hash_sim(self.path)
+      #
+    #     if old_hash == new_hash:
+    #       return True
+    #     else:
+    #       return False
 
       def get_datadir(self):
         """Return path to data dir."""
