@@ -96,6 +96,7 @@ def get_sims(path='.', depth=1, nuhide=False):
     return new_sim_list
 
 
+
 # Startup and init. processes
 if __is_sim_dir__('.'):
     print '~ Pencil Code Simulation found here! Creating Simulation object, accessible via pc.get_sim().'

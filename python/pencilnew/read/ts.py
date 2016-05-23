@@ -54,7 +54,7 @@ class TimeSeries(object):
     def read(self, file_name='time_series.dat', data_dir='data',
              quiet=False, comment_char='#'):
         """
-        Rread Pencil Code time series data.
+        Read Pencil Code time series data.
 
         call signature:
 
