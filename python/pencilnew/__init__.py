@@ -21,9 +21,8 @@ import export	   # exporter (e.g., vtk, xml)
 from pencilnew.sim.class_sim import Simulation as __Simulation__
 
 # internal routines
-def __is_sim__(path='.'):
+def __is_sim_dir__(path='.'):
     """ Checks if a path is pointing at a pencil code simulation."""
-    from pencilnew.header import *
     if __isdir__(__join__(path,'data')): return True
     if __exists__(__join__(path,'run.in')) and __exists__(__join__(path,'start.in')) and __exists__(__join__(path,'src/cparam.local')) and __exists__(__join__(path,'src/Makefile.local')):
         return True
@@ -37,6 +36,6 @@ def get_sim(path=''):
         return False
 
 # Startup and init. processes
-if __is_sim__('.'):
+if __is_sim_dir__('.'):
     print '~ Pencil Code Simulation found here! Creating Simulation object, accessible via pc.get_sim().'
     __sim__ = __Simulation__('.')
