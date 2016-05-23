@@ -60,9 +60,11 @@ class Simulation:
               self.hidden=True
 
         try:
-            self.grid = pencilnew.read.grid()
+            self.grid = pencilnew.read.grid(datadir=self.datadir, trim=True, quiet=True)
+            self.ghost_grid = pencilnew.read.grid(datadir=self.datadir, trim=False, quiet=True)
         except:
             self.grid = None
+            self.ghost_grid = None
 
 
     def hide(self):
