@@ -1,9 +1,10 @@
-# $Id$
+# ts.py
 #
-# read time_series.dat and return a TimeSeries class of 1D numpy
+# Read the time_series.dat and return a TimeSeries class of 1D numpy
 # arrrays
 #
-#
+# Author: S. Candelaresi (iomsn1@gmail.com).
+
 import os.path
 import re
 import numpy as N
