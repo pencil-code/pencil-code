@@ -25,7 +25,7 @@ class Simulation:
         from os.path import exists as __exists__
         from os.path import split as __split__
         #from pen.intern.hash_sim import hash_sim
-        from pencil import read_param
+        from pencilnew.read import param as read_param
 
         # find out name and store it
         self.name = __split__(path)[-1]
