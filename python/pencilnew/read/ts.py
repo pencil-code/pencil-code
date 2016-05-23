@@ -8,10 +8,6 @@
 Contains the classes and methods to read the time series file.
 """
 
-import os.path
-import re
-import numpy as np
-
 
 def ts(*args, **kwargs):
     """
@@ -83,6 +79,10 @@ class TimeSeries(object):
         *comment_char*
           Comment character in the time series file.
         """
+
+        import numpy as np
+        import os.path
+        import re
 
         data_dir = os.path.expanduser(data_dir)
         infile = open(os.path.join(data_dir, file_name), "r")
