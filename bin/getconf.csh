@@ -1442,6 +1442,7 @@ else if ($hn =~ vip*) then
 else if ($hn =~ hy[0-9]*) then
   echo "Hydra system at Rechenzentrum Garching"
   set mpirun = poe
+  set mpirunops2="-procs $ncpus"
 #---------------------------------------------------
 else if ($hn =~ aims* ) then
   echo "AIMS cluster at RZG"
@@ -1863,7 +1864,7 @@ if ($mpi) then
     set npops = "-nodes=${nnode}x${nprocpernode}"
   else if ("$mpirun" =~ *poe*) then
     set nprocpernode = 1
-    set x_ops = "$mpirunops -procs $ncpus"
+    set x_ops = "$mpirunops"
     set mpirunops = ""
     set npops = ""
   else if ("$mpirun" =~ *yod*) then
@@ -1967,6 +1968,7 @@ endif
 setenv NODELIST `echo $nodelist | perl -ne 'print join(":",split(/\s/,$_)),"\n"'`
 
 if ($debug) then
+  echo '-- DEBUG CONFIG --
   echo '$mpi            = ' "<$mpi>"
   echo '$ncpus          = ' "<$ncpus>"
   echo '$npops          = ' "<$npops>"
@@ -1989,6 +1991,7 @@ if ($debug) then
   echo '$copysnapshots  = ' "<$copysnapshots>"
   echo '$particles      = ' "<$lparticles>"
   echo '$particles_nbody= ' "<$lparticles_nbody>"
+  echo '--
 endif
 
 exit
