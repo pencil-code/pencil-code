@@ -12,11 +12,11 @@ class Simulation:
         self.status_hash: Hash key representing the state of a simulation
         self.path:		  path to simulation
         self.dir          same as self.path
-        self.datadir:	  path to simulation datadir (data/)
-        self.pcdir:	  path to simulation pendir (.pc/)
-        self.pcdatadir:  path to simulation pendir in datadir (data/.pc/)
+        self.data_dir:	  path to simulation data-dir (./data/)
+        self.pc_dir:	      path to simulation pc-dir (./.pc/)
+        self.pc_data_dir:  path to simulation pendir in data_dir (data/.pc/)
         self.param:		  list of param file
-        self.grid:          grid object
+        self.grid:        grid object
     """
 
     def __init__(self, path, hidden=False, quiet=False):
@@ -36,9 +36,9 @@ class Simulation:
         self.path = os.path.abspath(path)
         self.dir = self.path
         if (not quiet): print '# Creating Simulation object for '+self.path
-        self.datadir = __join__(self.path,'data')		# SIM.datadir
-        self.pcdir = __join__(self.path,'.pc')		# SIM.pcdir
-        self.pcdatadir = __join__(self.path,'data','.pc')	# SIM.pcdatadir
+        self.data_dir = __join__(self.path,'data')
+        self.pc_dir = __join__(self.path,'.pc')
+        self.pc_data_dir = __join__(self.path,'data','.pc')
 
         # generate status hash identification
         #self.status_hash = hash_sim(path)
@@ -48,8 +48,8 @@ class Simulation:
 
         # read params into SIM object
         self.param = {}
-        if __exists__(__join__(self.datadir,'param.nml')):
-              param = read_param(quiet=True, datadir=self.datadir)
+        if __exists__(__join__(self.data_dir,'param.nml')):
+              param = read_param(quiet=True, data_dir=self.data_dir)
               for key in dir(param):
                     if key.startswith('__'):
                         continue
@@ -60,8 +60,8 @@ class Simulation:
               self.hidden=True
 
         try:
-            self.grid = pencilnew.read.grid(datadir=self.datadir, trim=True, quiet=True)
-            self.ghost_grid = pencilnew.read.grid(datadir=self.datadir, trim=False, quiet=True)
+            self.grid = pencilnew.read.grid(data_dir=self.data_dir, trim=True, quiet=True)
+            self.ghost_grid = pencilnew.read.grid(data_dir=self.data_dir, trim=False, quiet=True)
         except:
             self.grid = None
             self.ghost_grid = None
@@ -78,7 +78,7 @@ class Simulation:
         from pencilnew.io import save
         if self == False:
             print '!! ERROR: Simulation object is bool object and False!'
-        save(self, 'sim', folder=self.pcdir)
+        save(self, 'sim', folder=self.pc_dir)
 
 
     #   def unchanged(self):
@@ -108,7 +108,7 @@ class Simulation:
         from os.path import join as __join__
         from os.path import basename
         from pencilnew.math import natural_sort
-        varlist = natural_sort([basename(i) for i in glob.glob(__join__(self.datadir, 'proc0')+'/VAR*')])
+        varlist = natural_sort([basename(i) for i in glob.glob(__join__(self.data_dir, 'proc0')+'/VAR*')])
         if particle: varlist = ['P'+i for i in varlist]
         if pos == False:
             return varlist
