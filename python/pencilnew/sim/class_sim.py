@@ -26,27 +26,27 @@ class Simulation:
         #from pen.intern.hash_sim import hash_sim
         from pencil import read_param
 
-        ## find out name and store it
+        # find out name and store it
         self.name = __split__(path)[-1]
         if self.name == '.' or self.name == '':
             self.name = __split__(os.getcwd())[-1]
 
-        ## store paths
+        # store paths
         self.path = os.path.abspath(path)
         self.dir = self.path
         if (not quiet):
-            print '## Creating Simulation object for '+self.path
+            print '# Creating Simulation object for '+self.path
         self.datadir = __join__(self.path,'data')		# SIM.datadir
         self.pcdir = __join__(self.path,'.pc')		# SIM.pcdir
         self.pcdatadir = __join__(self.path,'data','.pc')	# SIM.pcdatadir
 
-        ## generate status hash identification
+        # generate status hash identification
         #self.status_hash = hash_sim(path)
 
-        ## hidden is default False
+        # hidden is default False
         self.hidden = hidden
 
-        ## read params into SIM object
+        # read params into SIM object
         self.param = {}
         if __exists__(__join__(self.datadir,'param.nml')):
               param = read_param(quiet=True, datadir=self.datadir)
@@ -91,7 +91,7 @@ class Simulation:
         return ___exists___(___join___(self.path, 'data', 'time_series.dat'))
 
     def get_varfiles(self, pos=False, particle=False):
-        """Get a list of all existing VAR### files.
+        """Get a list of all existing VAR# files.
 
         pos = False:            give full lust
         pos = last/first:       give newest/first var file
