@@ -18,7 +18,7 @@ import tool_kit	   # all nice workarounds get stored here (e.g., resubmit script
 import export	   # exporter (e.g., vtk, xml)
 
 # shortcuts
-from pencilnew.sim.class_sim import Simulation as __Simulation__
+from pencilnew.sim.simulation import Simulation as __Simulation__
 
 # internal routines
 def __is_sim_dir__(path='.'):

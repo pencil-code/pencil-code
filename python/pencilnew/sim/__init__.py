@@ -1,2 +1,2 @@
 
-from class_sim import Simulation 
+from simulation import Simulation 

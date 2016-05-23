@@ -34,8 +34,7 @@ class Simulation:
         # store paths
         self.path = os.path.abspath(path)
         self.dir = self.path
-        if (not quiet):
-            print '# Creating Simulation object for '+self.path
+        if (not quiet): print '# Creating Simulation object for '+self.path
         self.datadir = __join__(self.path,'data')		# SIM.datadir
         self.pcdir = __join__(self.path,'.pc')		# SIM.pcdir
         self.pcdatadir = __join__(self.path,'data','.pc')	# SIM.pcdatadir
@@ -91,10 +90,10 @@ class Simulation:
         return ___exists___(___join___(self.path, 'data', 'time_series.dat'))
 
     def get_varfiles(self, pos=False, particle=False):
-        """Get a list of all existing VAR# files.
+        """Get a list of all existing VAR# file names.
 
-        pos = False:            give full lust
-        pos = last/first:       give newest/first var file
+        pos = False:            give full list
+        pos = 'last'/'first':       give newest/first var file
         post = list of numbers: give varfiles at this positions
         particle = True:        return PVAR isntead of VAR list"""
         import glob
