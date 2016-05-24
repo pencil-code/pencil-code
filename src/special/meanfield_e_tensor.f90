@@ -41,7 +41,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED alpha_emf(3,3); beta_emf(3,3); gamma_emf(3)
-! PENCILS PROVIDED delta_emf(3); kappa_emf(3,3,3)
+! PENCILS PROVIDED delta_emf(3); kappa_emf(3,3,3); utensor_emf(3)
 !
 !***************************************************************
 !
@@ -100,7 +100,7 @@ module Special
                     hdf_emftensors_plist, &
                     hdf_emftensors_group
   ! Dataset HDF object ids
-  integer, parameter :: ntensors = 5
+  integer, parameter :: ntensors = 6
   integer(HID_T),   dimension(ntensors) :: tensor_id_G, tensor_id_D, &
                                     tensor_id_S, tensor_id_memS
   integer(HSIZE_T), dimension(ntensors,10) :: tensor_dims, &
@@ -110,24 +110,25 @@ module Special
                                       
   ! Actual datasets
   real, dimension(:,:,:,:,:,:)  , allocatable :: alpha_data, beta_data
-  real, dimension(:,:,:,:,:)    , allocatable :: gamma_data, delta_data
+  real, dimension(:,:,:,:,:)    , allocatable :: gamma_data, delta_data, &
+                                                 utensor_data
   real, dimension(:,:,:,:,:,:,:), allocatable :: kappa_data
   ! Dataset mappings
-  integer,parameter :: alpha_id=1, beta_id=2, &
-                       gamma_id=3, delta_id=4, &
-                       kappa_id=5
-  integer, dimension(ntensors),parameter :: tensor_ndims = (/ 6, 6, 5, 5, 7 /) 
+  integer,parameter :: alpha_id=1, beta_id=2,   &
+                       gamma_id=3, delta_id=4,  &
+                       kappa_id=5, utensor_id=6
+  integer, dimension(ntensors),parameter :: tensor_ndims = (/ 6, 6, 5, 5, 7, 5 /) 
   ! Dataset logical variables
   logical, dimension(3,3)   :: lalpha_arr, lbeta_arr
-  logical, dimension(3)     :: lgamma_arr, ldelta_arr
+  logical, dimension(3)     :: lgamma_arr, ldelta_arr, lutensor_arr
   logical, dimension(3,3,3) :: lkappa_arr
   logical, dimension(6)     :: lalpha_c, lbeta_c
-  logical, dimension(3)     :: lgamma_c, ldelta_c
-  logical :: lalpha, lbeta, lgamma, ldelta, lkappa
-  real :: alpha_scale, beta_scale, gamma_scale, delta_scale
+  logical, dimension(3)     :: lgamma_c, ldelta_c, lutensor_c
+  logical :: lalpha, lbeta, lgamma, ldelta, lkappa, lutensor
+  real :: alpha_scale, beta_scale, gamma_scale, delta_scale, utensor_scale
   character (len=fnlen) :: alpha_name, beta_name,  &
                            gamma_name, delta_name, &
-                           kappa_name
+                           kappa_name, utensor_name
   character (len=fnlen), dimension(ntensors) :: tensor_names
   real, dimension(ntensors) :: tensor_scales
   ! Interpolation parameters
@@ -136,16 +137,16 @@ module Special
   ! Input dataset name
   ! Input namelist
   namelist /special_init_pars/ &
-      alpha_scale, beta_scale, gamma_scale, delta_scale, &
-      alpha_name,  beta_name,  gamma_name,  delta_name,  &
-      lalpha,      lbeta,      lgamma,      ldelta,      &
-      lalpha_c,    lbeta_c,    lgamma_c,    ldelta_c,    &
+      alpha_scale, beta_scale, gamma_scale, delta_scale, utensor_scale, &
+      alpha_name,  beta_name,  gamma_name,  delta_name,  utensor_name,  &
+      lalpha,      lbeta,      lgamma,      ldelta,      lutensor,      &
+      lalpha_c,    lbeta_c,    lgamma_c,    ldelta_c,    lutensor_c,    &
       interpname
   namelist /special_run_pars/ &
-      alpha_scale, beta_scale, gamma_scale, delta_scale, &
-      alpha_name,  beta_name,  gamma_name,  delta_name,  &
-      lalpha,      lbeta,      lgamma,      ldelta,      &
-      lalpha_c,    lbeta_c,    lgamma_c,    ldelta_c,    &
+      alpha_scale, beta_scale, gamma_scale, delta_scale, utensor_scale, &
+      alpha_name,  beta_name,  gamma_name,  delta_name,  utensor_name,  &
+      lalpha,      lbeta,      lgamma,      ldelta,      lutensor,      &
+      lalpha_c,    lbeta_c,    lgamma_c,    ldelta_c,    lutensor_c,    &
       interpname
   ! loadDataset interface
   interface loadDataset
@@ -287,23 +288,25 @@ module Special
           call openDataset('beta', beta_id)
           write(*,*) 'initialize_special: Using dataset /zaver/beta/'//trim(beta_name)//' for beta'
         end if
-
         ! gamma
         if (lgamma) then
           call openDataset('gamma', gamma_id)
           write(*,*) 'initialize_special: Using dataset /zaver/gamma/'//trim(gamma_name)//' for gamma'
         end if
-
         ! delta
         if (ldelta) then
           call openDataset('delta', delta_id)
           write(*,*) 'initialize_special: Using dataset /zaver/delta/'//trim(delta_name)//' for delta'
         end if
-        
         ! kappa
         if (lkappa) then
           call openDataset('kappa', kappa_id)
           write(*,*) 'initialize_special: Using dataset /zaver/kappa/'//trim(kappa_name)//' for kappa'
+        end if
+        ! utensor
+        if (lutensor) then
+          call openDataset('utensor', utensor_id)
+          write(*,*) 'initialize_special: Using dataset /zaver/utensor/'//trim(utensor_name)//' for utensor'
         end if
         
         ! Load initial dataset values
@@ -340,6 +343,12 @@ module Special
           !call loadDataset(kappa_data, lkappa_arr, kappa_id, 0)
           write (*,*) 'Loaded kappa. sum/maxval/minval: ', sum(kappa_data), maxval(kappa_data), minval(kappa_data)
         end if
+        if (lutensor) then
+          allocate(utensor_data(nx,ny,nz,dataload_len,3))
+          utensor_data = 0
+          call loadDataset(utensor_data, lutensor_arr, utensor_id, 0)
+          write (*,*) 'Loaded utensor. sum/maxval/minval: ', sum(utensor_data), maxval(utensor_data), minval(utensor_data)
+        end if
       end if
   !
     endsubroutine initialize_special
@@ -370,6 +379,9 @@ module Special
         if (allocated(kappa_data)) then
           deallocate(kappa_data)
         end if
+        if (allocated(utensor_data)) then
+          deallocate(utensor_data)
+        end if
 
         print *,'Closing emftensors.h5'
         
@@ -387,6 +399,9 @@ module Special
         end if
         if (lkappa) then
           call closeDataset(kappa_id)
+        end if
+        if (lutensor) then
+          call closeDataset(utensor_id)
         end if
 
         call H5Gclose_F(hdf_emftensors_group, hdferr)
@@ -432,6 +447,7 @@ module Special
       lpenc_requested(i_gamma_emf)=.true.
       lpenc_requested(i_delta_emf)=.true.
       lpenc_requested(i_kappa_emf)=.true.
+      lpenc_requested(i_utensor_emf)=.true.
 
       write(*,*) 'pencil_criteria_special: Pencils requested'
 !
@@ -508,8 +524,15 @@ module Special
           end if
         end do
       end if
-
-
+      if (lutensor) then
+        do i=1,3
+          if (lutensor_arr(i)) then
+            p%utensor_emf(1:nx,i)=emf_interpolate(utensor_data(1:nx,m-nghost,n-nghost,1:dataload_len,i))
+          else
+            p%utensor_emf(1:nx,i)=0
+          end if
+        end do
+      end if
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -1120,23 +1143,28 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
       lgamma=.false.
       ldelta=.false.
       lkappa=.false.
+      lutensor=.false.
       lalpha_c=.false.
       lbeta_c=.false.
       lgamma_c=.false.
       ldelta_c=.false.
+      lutensor_c=.false.
       lalpha_arr=.false.
       lbeta_arr=.false.
       lgamma_arr=.false.
       ldelta_arr=.false.
+      lutensor_arr=.false.
       alpha_scale=1.0
       beta_scale=1.0
       gamma_scale=1.0
       delta_scale=1.0
+      utensor_scale=1.0
       alpha_name='data'
       beta_name='data'
       gamma_name='data'
       delta_name='data'
       kappa_name='data'
+      utensor_name='data'
     end subroutine setParameterDefaults
 
     subroutine parseParameters
@@ -1187,16 +1215,25 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
         ldelta      = .true.
         ldelta_arr  = .true.
       end if
+      ! Load boolean array for utensor
+      if (any(lutensor_c)) then
+        lutensor_arr  = lutensor_c
+      else if (lutensor) then
+        lutensor      = .true.
+        lutensor_arr  = .true.
+      end if
       ! Store scales
-      tensor_scales(alpha_id) = alpha_scale
-      tensor_scales(beta_id)  = beta_scale
-      tensor_scales(gamma_id) = gamma_scale
-      tensor_scales(delta_id) = delta_scale
+      tensor_scales(alpha_id)   = alpha_scale
+      tensor_scales(beta_id)    = beta_scale
+      tensor_scales(gamma_id)   = gamma_scale
+      tensor_scales(delta_id)   = delta_scale
+      tensor_scales(utensor_id) = utensor_scale
       ! Store names
-      tensor_names(alpha_id)  = alpha_name
-      tensor_names(beta_id)  = beta_name
-      tensor_names(gamma_id)  = gamma_name
-      tensor_names(delta_id)  = delta_name
+      tensor_names(alpha_id)    = alpha_name
+      tensor_names(beta_id)     = beta_name
+      tensor_names(gamma_id)    = gamma_name
+      tensor_names(delta_id)    = delta_name
+      tensor_names(utensor_id)  = utensor_name
             
     end subroutine parseParameters
 
