@@ -339,8 +339,8 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx)   :: strat,tmp1,tmp2,cs2
-      real, dimension (mx)   :: rr_sph,rr,rr_cyl,lnrhomid,rho,pp
-      real                   :: lat,TT0,pp0
+      real, dimension (mx)   :: rr_sph,rr,rr_cyl,lnrhomid,rho
+      real                   :: lat
       integer, pointer       :: iglobal_cs2,iglobal_glnTT
       integer                :: ics2
       logical                :: lheader,lpresent_zed
@@ -393,13 +393,10 @@ module InitialCondition
 !
       do m=1,my; do n=1,mz
         lheader=((m==1).and.(n==1).and.lroot)
-        !
-        pp0 = rho0*cs20/gamma
-        rho = exp(f(:,m,n,ilnrho))
-        pp = pp0 * (rho/rho0)**gamma
-        cs2 = gamma*pp/rho
-!        
+!
         call get_radial_distance(rr_sph,rr_cyl)
+        cs2 = cs20 * rr_cyl**(-temperature_power_law)
+!
         if (lcylindrical_gravity.or.lcylinder_in_a_box.or.lcylindrical_coords) then 
           rr=rr_cyl 
         elseif (lsphere_in_a_box.or.lspherical_coords) then
@@ -463,7 +460,7 @@ module InitialCondition
     endsubroutine initial_condition_ss
 !***********************************************************************
     subroutine set_thermodynamical_quantities&
-         (f,temperature_power_law,ics2,iglobal_cs2,iglobal_glnTT)
+         (f,qt,ics2,iglobal_cs2,iglobal_glnTT)
 !
 !  Subroutine that sets the thermodynamical quantities
 !   - static sound speed, temperature or entropy -
@@ -488,11 +485,11 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: rr,rr_sph,rr_cyl,cs2,lnrho
       real, dimension (nx) :: gslnTT
-      real :: cp1,temperature_power_law
+      real :: cp1,qt
       integer, pointer, optional :: iglobal_cs2,iglobal_glnTT
       integer :: ics2
 !
-      intent(in)    :: temperature_power_law
+      intent(in)    :: qt
       intent(inout) :: f
 !
 !  Break if llocal_iso is used with entropy or temperature
@@ -549,7 +546,7 @@ module InitialCondition
           call get_radial_distance(rr_sph,rr_cyl);   rr=rr_cyl
           if (lspherical_coords.or.lsphere_in_a_box) rr=rr_sph
 !
-          gslnTT=-temperature_power_law/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
+          gslnTT=-qt/((rr/r_ref)**2+rsmooth**2)*rr/r_ref**2
 !
           if (lcartesian_coords) then
             f(l1:l2,m,n,iglobal_glnTT  )=gslnTT*x(l1:l2)/rr_cyl

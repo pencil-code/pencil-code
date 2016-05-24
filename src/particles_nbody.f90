@@ -151,6 +151,9 @@ module Particles_nbody
         if (pmass(ks)/=0.0) then
           mspar_orig=mspar_orig+1
           ipar_nbody(mspar_orig)=ks
+        else
+          call fatal_error("initialize_particles_nbody",&
+                "one of the bodies has zero mass")  
         endif
       enddo
 !
@@ -243,7 +246,7 @@ module Particles_nbody
       if (rsmooth/=r_smooth(istar)) then
         print*,'rsmooth from cdata=',rsmooth
         print*,'r_smooth(istar)=',r_smooth(istar)
-        call fatal_error('initialize_particles_nbody','inconsitency '//&
+        call fatal_error('initialize_particles_nbody','inconsistency '//&
             'between rsmooth from cdata and the '//&
             'one from nbody')
       endif

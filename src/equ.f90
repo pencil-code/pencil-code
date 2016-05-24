@@ -88,10 +88,8 @@ module Equ
       real, dimension (nx) :: advec2,advec2_hypermesh
       real, dimension (nx) :: pfreeze,pfreeze_int,pfreeze_ext
       real, dimension(1)   :: mass_per_proc
-      real, dimension(nz) :: ucz
       integer :: iv
       integer :: ivar1,ivar2
-      real :: uc = 0.0
 !
       intent(inout)  :: f       ! inout due to  lshift_datacube_x,
                                 ! density floor, or velocity ceiling
@@ -139,18 +137,28 @@ module Equ
 !  the grid spacing is calculated in the (m,n) loop below.
 !
       if (lcartesian_coords .and. all(lequidist)) then
-        if (old_cdtv) then
-          dxyz_2 = max(dx_1(l1:l2)**2,dy_1(m1)**2,dz_1(n1)**2)
-        else
+!  FAG replaced old_cdtv flag with more general coordinate independent lmaximal   
+!        if (old_cdtv) then
+!          dxyz_2 = max(dx_1(l1:l2)**2,dy_1(m1)**2,dz_1(n1)**2)
+!        else
           dline_1(:,1)=dx_1(l1:l2)
           dline_1(:,2)=dy_1(m1)
           dline_1(:,3)=dz_1(n1)
-          dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
-          dxyz_4 = dline_1(:,1)**4+dline_1(:,2)**4+dline_1(:,3)**4
-          dxyz_6 = dline_1(:,1)**6+dline_1(:,2)**6+dline_1(:,3)**6
+          if (lmaximal_cdtv) then
+            dxyz_2 = max(dline_1(:,1)**2, dline_1(:,2)**2, dline_1(:,3)**2)
+            dxyz_4 = max(dline_1(:,1)**4, dline_1(:,2)**4, dline_1(:,3)**4)
+            dxyz_6 = max(dline_1(:,1)**6, dline_1(:,2)**6, dline_1(:,3)**6)
+          else
+            dxyz_2 = dline_1(:,1)**2 + dline_1(:,2)**2 + dline_1(:,3)**2
+            dxyz_4 = dline_1(:,1)**4 + dline_1(:,2)**4 + dline_1(:,3)**4
+            dxyz_6 = dline_1(:,1)**6 + dline_1(:,2)**6 + dline_1(:,3)**6
+          endif
+        !  dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
+        !  dxyz_4 = dline_1(:,1)**4+dline_1(:,2)**4+dline_1(:,3)**4
+        !  dxyz_6 = dline_1(:,1)**6+dline_1(:,2)**6+dline_1(:,3)**6
           dxmax_pencil(:) = dxmax
           dxmin_pencil(:) = dxmin
-        endif
+!        endif
       endif
 !
 !  Shift entire data cube by one grid point at the beginning of each
@@ -269,14 +277,9 @@ module Equ
       if (lhyperviscosity_strict)   call hyperviscosity_strict(f)
       if (lhyperresistivity_strict) call hyperresistivity_strict(f)
 !
-!  Dynamical (hyper-)diffusion coefficients
+!  Dynamically set the (hyper-)diffusion coefficients
 !
-      dyndiff: if (ldyndiff_urmsmxy) then
-        ucz = find_xyrms_fvec(f, iuu)
-      else if (ldynamical_diffusion) then dyndiff
-        uc = find_rms_fvec(f, iuu)
-        call set_dyndiff_coeff(uc)
-      endif dyndiff
+      if (ldynamical_diffusion) call set_dyndiff_coeff(f)
 !
 !  Calculate the characteristic velocity
 !  for slope limited diffusion
@@ -373,10 +376,6 @@ module Equ
         m=mm(imn)
         lfirstpoint=(imn==1)      ! true for very first m-n loop
         llastpoint=(imn==(ny*nz)) ! true for very last m-n loop
-!
-!  Dynamical (hyper-)diffusion coefficients in each horizontal plane.
-!
-        if (ldyndiff_urmsmxy .and. (imn == 1 .or. nn(max(imn-1,1)) /= n)) call set_dyndiff_coeff(ucz(n-nghost))
 !
 !  Store the velocity part of df array in a temporary array
 !  while solving the anelastic case.
@@ -1232,23 +1231,37 @@ module Equ
 !
     endsubroutine output_crash_files
 !***********************************************************************
-    subroutine set_dyndiff_coeff(us)
+    subroutine set_dyndiff_coeff(f)
 !
 !  Set dynamical diffusion coefficients.
 !
 !  18-jul-14/ccyang: coded.
+!  03-apr-16/ccyang: add switch ldyndiff_useumax
 !
       use Density,   only: dynamical_diffusion
-      use Magnetic,  only: dynamical_resistivity
       use Energy,    only: dynamical_thermal_diffusion
+      use Magnetic,  only: dynamical_resistivity
+      use Sub,       only: find_max_fvec, find_rms_fvec
       use Viscosity, only: dynamical_viscosity
 !
-      real, intent(in) :: us
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
 !
-      if (ldensity)                      call dynamical_diffusion(us)
-      if (lmagnetic .and. .not. lbfield) call dynamical_resistivity(us)
-      if (lenergy)                       call dynamical_thermal_diffusion(us)
-      if (lviscosity)                    call dynamical_viscosity(us)
+      real :: uc
+!
+!  Find the characteristic speed, either the absolute maximum or the rms.
+!
+      if (ldyndiff_useumax) then
+        uc = find_max_fvec(f, iuu)
+      else
+        uc = find_rms_fvec(f, iuu)
+      endif
+!
+!  Ask each module to set the diffusion coefficients.
+!
+      if (ldensity)                      call dynamical_diffusion(uc)
+      if (lmagnetic .and. .not. lbfield) call dynamical_resistivity(uc)
+      if (lenergy)                       call dynamical_thermal_diffusion(uc)
+      if (lviscosity)                    call dynamical_viscosity(uc)
 !
     endsubroutine set_dyndiff_coeff
 !***********************************************************************

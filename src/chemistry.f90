@@ -81,6 +81,7 @@ module Chemistry
   logical :: ldiff_corr=.false.
   logical, save :: tran_exist=.false.
   logical, save :: lew_exist=.false.
+  logical :: lSmag_heat_transport=.false.
 !
   logical :: lfilter=.false.
   logical :: lkreactions_profile=.false., lkreactions_alpha=.false.
@@ -141,7 +142,7 @@ module Chemistry
   real, allocatable, dimension(:,:) :: low_coeff, high_coeff, troe_coeff, a_k4
   logical, allocatable, dimension(:) :: Mplus_case
   logical, allocatable, dimension(:) :: photochem_case
-  real :: lamb_low, lamb_up
+  real :: lamb_low, lamb_up, Pr_turb=0.7
 !
 !   Atmospheric physics
 !
@@ -168,7 +169,7 @@ module Chemistry
       lchemistry_diag,lfilter_strict,linit_temperature, &
       linit_density, init_rho2, &
       file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
-      reac_rate_method,global_phi
+      reac_rate_method,global_phi, lSmag_heat_transport, Pr_turb
 !
 !
 ! run parameters
@@ -658,6 +659,7 @@ module Chemistry
           lpenc_requested(i_lambda) = .true.
           lpenc_requested(i_glambda) = .true.
           lpenc_requested(i_lambda1) = .true.
+          if (lSmag_heat_transport) lpenc_requested(i_sij2) = .true.
         endif
 !
         if (latmchem .or. lcloud) then
@@ -948,6 +950,13 @@ module Chemistry
             p%lambda = lambda_const
             if (lpencil(i_glambda)) p%glambda = 0.
           endif
+        elseif (lSmag_heat_transport) then
+!
+! Natalia 
+! turbulent heat transport in Smagorinsky case
+! probably it should be moved to viscosity module
+!
+          p%lambda=(0.15*dxmax)**2.*sqrt(2*p%sij2)/Pr_turb*p%cv*p%rho
         else
           p%lambda = lambda_full(l1:l2,m,n)
           if (lpencil(i_glambda)) call grad(lambda_full,p%glambda)
@@ -2147,6 +2156,7 @@ module Chemistry
       logical, save :: lwrite=.true.
 !
       character(len=fnlen) :: output_file="./data/mix_quant.out"
+      character(len=15) :: writeformat
       integer :: file_id=123
       integer :: ii1=1, ii2=2, ii3=3, ii4=4, ii5=5
 !
@@ -2253,6 +2263,7 @@ module Chemistry
 ! Check if the temperature are within bounds
 !
                     if (maxval(T_loc) > T_up .or. minval(T_loc) < T_low) then
+                      print*,'iproc=',iproc
                       print*,'TT_full(:,j2,j3)=',T_loc
                       print*,'j2,j3=',j2,j3
                       call inevitably_fatal_error('calc_for_chem_mixture', &
@@ -2419,6 +2430,15 @@ module Chemistry
                   Diff_full_add(l1,m1,n1,k)*unit_length**2/unit_time, &
                   Diff_full_add(l2,m2,n2,k)*unit_length**2/unit_time
             enddo
+          endif
+          if (lparticles_chemistry) then
+            write (file_id,*) ''
+            writeformat = '(  E12.4)'
+            write (writeformat(2:3),'(I2)') nchemspec
+            write (file_id,*) 'Mass fraction, -'
+            write (file_id,writeformat) f(l1,m1,n1,ichemspec(1):ichemspec(nchemspec))
+            write (file_id,*) ''
+            write (file_id,writeformat) species_constants(:,imass)
           endif
         endif
         write (file_id,*) ''
@@ -3495,7 +3515,9 @@ module Chemistry
         do spec = 1,nchemspec
           if (Sijp(spec,reac) > 0) then
             Sijp_string = ''
-            if (Sijp(spec,reac) /= 1) write (Sijp_string,'(F3.1)') Sijp(spec,reac)
+            if (Sijp(spec,reac) /= 1) then
+              write (Sijp_string,'(F3.1)') Sijp(spec,reac)
+            endif
 !            if (Sijp(spec,reac)>1) Sijp_string=itoa(Sijp(spec,reac))
             reac_string = trim(reac_string)//trim(separatorp)// &
                 trim(Sijp_string)//trim(varname(ichemspec(spec)))
@@ -3709,6 +3731,9 @@ module Chemistry
         open (file_id,file=input_file2,POSITION='rewind',FORM='FORMATTED')
         write (file_id,*) 'STOICHIOMETRIC MATRIX'
 !
+        write (file_id,*) 'Species names'
+        write (file_id,101) varname(ichemspec(:))
+!
         write (file_id,*) 'Sijm'
         do i = 1,nreactions
           write (file_id,100) i,Sijm(:,i)
@@ -3724,7 +3749,8 @@ module Chemistry
         close (file_id)
       endif
 !
-100   format(I1,16f4.1)
+100   format(I1,16f6.1)
+101   format('    ',16A6)
 !
       call keep_compiler_quiet(f)
 !
@@ -5062,7 +5088,8 @@ module Chemistry
 !
 !  Add heat conduction to RHS of temperature equation
 !
-      if (l1step_test) then
+!      if (l1step_test .or. lSmag_heat_transport) then
+       if (l1step_test) then
         tmp1 = p%lambda(:)*(p%del2lnTT+g2TT)*p%cv1/p%rho(:)
       else
         if (ltemperature_nolog) then
@@ -6092,11 +6119,11 @@ module Chemistry
       type (pencil_case) :: p
 !
       ydot = p%DYDt_reac
-      f(l1:l2,m,n,ireaci(1):ireaci(nchemspec)) =   &
-          f(l1:l2,m,n,ireaci(1):ireaci(nchemspec))+ydot
+      f(l1:l2,m,n,ireaci(1):ireaci(nchemspec)) = ydot
+!         f(l1:l2,m,n,ireaci(1):ireaci(nchemspec))+ydot
 !
-      if (maux == nchemspec+1) f(l1:l2,m,n,ireaci(nchemspec)+1) =   &
-          f(l1:l2,m,n,ireaci(nchemspec)+1)+wt
+      if (maux == nchemspec+1) f(l1:l2,m,n,ireaci(nchemspec)+1) = wt
+!         f(l1:l2,m,n,ireaci(nchemspec)+1)+wt
 !
     endsubroutine get_reac_rate
 !***********************************************************************

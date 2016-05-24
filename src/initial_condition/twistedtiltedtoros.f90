@@ -393,7 +393,7 @@ module InitialCondition
 !  initial_condition cannot use 
 !  the hydro module because of Makefile.depend
 !
-      use Mpicomm, only: mpiallreduce_max
+      use Mpicomm, only: mpiallreduce_max, MPI_COMM_WORLD
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, intent(out) :: max
@@ -405,7 +405,7 @@ module InitialCondition
       max1 = sqrt(maxval(f(l1:l2,m1:m2,n1:n2,j)**2 &
                         + f(l1:l2,m1:m2,n1:n2,j+1)**2 &
                         + f(l1:l2,m1:m2,n1:n2,j+2)**2))
-      call mpiallreduce_max(max1, max)
+      call mpiallreduce_max(max1, max,comm=MPI_COMM_WORLD)
 !
     endsubroutine find_max
 !***********************************************************************

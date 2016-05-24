@@ -125,13 +125,14 @@ module Particles_sub
       use Mpicomm
       use General, only: random_number_wrapper
       use Particles_mpicomm
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc) :: ipar
       real, dimension (mpar_loc,mpvar), optional :: dfp
       logical, optional :: linsert
 !
-      real :: xold, yold, rad, r1old, OO
+      real :: xold, yold, rad, r1old, OO, tmp
       integer :: k, ik, k1, k2
       character (len=2*bclen+1) :: boundx, boundy, boundz
       logical :: lnbody
@@ -319,6 +320,35 @@ module Particles_sub
               fp(k,ixp)=2*xyz1(1)-fp(k,ixp)
               fp(k,ivpx)=-fp(k,ivpx)
             endif
+          elseif (boundx=='meq') then
+            if ((fp(k,ixp).lt.rp_int) .or. (fp(k,ixp).gt.rp_ext)) then
+            if (lcylindrical_coords) then
+              tmp=2-dustdensity_powerlaw
+            elseif (lspherical_coords) then
+              tmp=3-dustdensity_powerlaw
+            endif
+              call random_number_wrapper(fp(k,ixp))
+              fp(k,ixp) = (rp_int**tmp + fp(k,ixp)*(rp_ext**tmp-rp_int**tmp))**(1.0/tmp)
+              if (lcylindrical_coords) then
+                if (nygrid/=1) then
+                  call random_number_wrapper(fp(k,iyp))
+                  fp(k,iyp) = xyz0(2)+fp(k,iyp)*Lxyz(2)
+                endif
+                if (nzgrid/=1) then
+                  call random_number_wrapper(fp(k,izp))
+                  fp(k,izp)=xyz0(3)+fp(k,izp)*Lxyz(3)
+                endif
+              elseif (lspherical_coords) then
+                if (nygrid/=1) then
+                  call random_number_wrapper(fp(k,iyp))
+                  fp(k,iyp) = xyz0(2)+fp(k,iyp)*Lxyz(2)
+                endif
+                if (nzgrid/=1) then
+                  call random_number_wrapper(fp(k,izp))
+                  fp(k,izp) = xyz0(3)+fp(k,izp)*Lxyz(3)
+                endif
+              endif
+            endif
           else
             print*, 'boundconds_particles: No such boundary condition =', boundx
             call stop_it('boundconds_particles')
@@ -464,13 +494,13 @@ module Particles_sub
 !
       if (lmpicomm) then
         if (present(dfp)) then
-          if (present(linsert)) then
+          if (present(linsert).or.(boundx=='meq')) then
             call migrate_particles(fp,ipar,dfp,linsert=.true.)
           else
             call migrate_particles(fp,ipar,dfp)
           endif
         else
-          if (present(linsert)) then
+          if (present(linsert).or.(boundx=='meq')) then
             call migrate_particles(fp,ipar,linsert=.true.)
           else
             call migrate_particles(fp,ipar)
@@ -1287,17 +1317,46 @@ module Particles_sub
     subroutine precalc_weights(weight_array)
 !
       real, dimension(:,:,:) :: weight_array
+      real, dimension(3) :: tsc_values = (/0.125, 0.75, 0.125/)
       integer :: i,j,k
 !
-      weight_array=1.0
-      do i=1,7
-        do j=1,7
-          do k=1,7
-            weight_array(i,j,k) = gab_weights(abs(i-4)+1)* &
-                gab_weights(abs(j-4)+1) * gab_weights(abs(k-4)+1)
+!  This makes sure that the weight array is 1 if the npg approach is chosen
+!
+      weight_array(:,:,:) = 1.0
+!
+      if (lparticlemesh_gab) then
+        do i=1,7
+          do j=1,7
+            do k=1,7
+              weight_array(i,j,k) = gab_weights(abs(i-4)+1)* &
+                  gab_weights(abs(j-4)+1) * gab_weights(abs(k-4)+1)
+            enddo
           enddo
         enddo
-      enddo
+      endif
+
+      if (lparticlemesh_tsc) then
+          do i = 1,3
+            do j = 1,3
+              do k =1,3
+                if (nxgrid/=1) weight_array(i,j,k)=weight_array(i,j,k)*tsc_values(i)
+                if (nygrid/=1) weight_array(i,j,k)=weight_array(i,j,k)*tsc_values(j)
+                if (nzgrid/=1) weight_array(i,j,k)=weight_array(i,j,k)*tsc_values(k)
+            enddo
+          enddo
+        enddo
+      endif
+
+      if (lparticlemesh_cic) then
+        weight_array=1.0
+        if (nxgrid/=1) &
+            weight_array=weight_array*0.5
+        if (nygrid/=1) &
+            weight_array=weight_array*0.5
+        if (nzgrid/=1) &
+            weight_array=weight_array*0.5
+      endif
+      
 !
     endsubroutine precalc_weights
 !***********************************************************************

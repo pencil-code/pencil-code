@@ -175,19 +175,22 @@ module Viscosity
       real, dimension(nx), optional, intent(out) :: nu_pencil
       character (len=labellen), optional :: ivis
 !
-      if (present(nu_input))  nu_input=0.0
-      if (present(nu_pencil)) nu_pencil=0.0
-      if (present(ivis))     ivis='zero'
+!  use ivis='nu-const' and put nu=1 to make
+!  the particle module work (for now).
+!
+      if (present(nu_input))  nu_input=1.0
+      if (present(nu_pencil)) nu_pencil=1.0
+      if (present(ivis))      ivis='nu-const'
 !
     endsubroutine getnu
 !***********************************************************************
-    subroutine dynamical_viscosity(urms)
+    subroutine dynamical_viscosity(uc)
 !
 !  Dummy routine
 !
-      real, intent(in) :: urms
+      real, intent(in) :: uc
 !
-      call keep_compiler_quiet(urms)
+      call keep_compiler_quiet(uc)
 !
     endsubroutine dynamical_viscosity
 !***********************************************************************

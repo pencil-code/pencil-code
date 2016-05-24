@@ -5,13 +5,15 @@ import numpy as N
 def dot(a,b):
     """take dot product of two pencil-code vectors a & b with shabe
 
-    a.shape = (3,mz,my,mx)
+    a.shape = (3,mz,my,mx) or avers = (3,:,:), (3,:)
+
+    22-apr-16/fred: generalised to accept 1D and 2D vector arrays
 
     """
 
-    if (a.ndim != 4 or a.shape[0] != 3 or
-        b.ndim != 4 or b.shape[0] != 3):
-        print("dot: both vectors must be 4-D array f[3,mz,my,mx] for dot")
+    if (a.shape[0] != 3 or a.ndim<2 or 
+        b.ndim != a.ndim or b.shape != a.shape):
+        print("dot: both must be vector arrays of same dimension f[3,mz,my,mx], 2D or 3D")
         raise ValueError
 
     return a[0,...]*b[0,...]+ a[1,...]*b[1,...] + a[2,...]*b[2,...]
@@ -29,12 +31,13 @@ def dot2(a):
 def cross(a,b):
     """take cross of two pencil-code vectors a & b with shape
 
-    a.shape = (2,mz,my,mx)
+    a.shape = (2,mz,my,mx) or avers = (3,:,:), (3,:)
+
+    22-apr-16/fred: generalised to accept 1D and 2D vector arrays
 
     """
-    if (a.ndim != 4 or a.shape[0] != 3 or
-        a.shape != b.shape):
-        print("cross: both vectors must be 4-D array f[3,mz,my,mx] for dot")
+    if ( a.shape[0] != 3 or a.shape != b.shape or a.ndim<2):
+        print("cross: both must be vector arrays of same dimension f[3,mz,my,mx], 2D or 1D for dot")
         raise ValueError
     
     cross = N.empty(a.shape)

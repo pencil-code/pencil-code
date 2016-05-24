@@ -268,13 +268,13 @@ module Density
 !
     endsubroutine anelastic_after_mn
 !***********************************************************************
-    subroutine dynamical_diffusion(urms)
+    subroutine dynamical_diffusion(uc)
 !
 !  dummy routine
 !
-      real, intent(in) :: urms
+      real, intent(in) :: uc
 !
-      call keep_compiler_quiet(urms)
+      call keep_compiler_quiet(uc)
 !
     endsubroutine dynamical_diffusion
 !***********************************************************************

@@ -98,8 +98,8 @@ module InitialCondition
   character (len=labellen) :: heating_select  = 'wolfire'
 !
 !
-  real, parameter :: Tinit_cgs=2e3
-  real :: Tinit=impossible
+  real, parameter :: T_init_cgs=2e3
+  real :: T_init=impossible
   real :: rhox=1. ! column density comparative to Milky Way default
 !
 !  TT & z-dependent uv-heating profile
@@ -109,7 +109,7 @@ module InitialCondition
 !  start parameters
 !
   namelist /initial_condition_pars/ &
-      Tinit, cooling_select, rhox, &
+      T_init, cooling_select, rhox, &
       heating_select
 !
   contains
@@ -193,12 +193,12 @@ module InitialCondition
       if (unit_system=='cgs') then
         rho_fraction = nfraction_cgs * m_u_cgs/unit_density
         hscale = hscale_cgs/unit_length
-        if (Tinit == impossible) Tinit = Tinit_cgs/unit_temperature
+        if (T_init == impossible) T_init = T_init_cgs/unit_temperature
       else if (unit_system=='SI') then
         call fatal_error('initial_condition_lnrho','SI unit conversions not inplemented')
       endif
 !
-      lnTT = log(Tinit)
+      lnTT = log(T_init)
       rho = rho_fraction(1) * exp(-z**2/hscale(1)**2) &
               + rho_fraction(2) * exp(-z**2/hscale(2)**2) &
               + rho_fraction(3) * exp(-abs(z)/hscale(3)) &

@@ -83,6 +83,7 @@ module Param_IO
       G_Newton, hbar, random_gen, seed0, nfilter, lserial_io, der2_type, &
       lread_oldsnap, lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, &
+      lreset_tstart, tstart, lghostfold_usebspline, &
       lread_aux, lwrite_aux, pretend_lnTT, lprocz_slowest, &
       lcopysnapshots_exp, bcx, bcy, bcz, r_int, r_ext, r_ref, rsmooth, &
       r_int_border, r_ext_border, mu0, force_lower_bound, force_upper_bound, &
@@ -119,7 +120,6 @@ module Param_IO
       kx_kinflow, ky_kinflow, kz_kinflow, dtphase_kinflow, &
       random_gen, der2_type, lrmwig_rho, lrmwig_full, lrmwig_xyaverage, &
       lnowrite, noghost_for_isave, nghost_read_fewer, &
-      lwrite_yaverages, lwrite_zaverages, lwrite_phiaverages, &
       test_nonblocking, lwrite_tracers, lwrite_fixed_points, &
       lread_oldsnap_lnrho2rho, lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
       lread_oldsnap_notestfield, lread_oldsnap_notestscalar, &
@@ -151,12 +151,12 @@ module Param_IO
       lini_t_eq_zero, lav_smallx, xav_max, ldt_paronly, lweno_transport, &
       it_timing, har_spec, hav_spec, j_spec, jb_spec, lread_less, lformat, ltec, &
       llsode, lsplit_second, nu_sts, permute_sts, lfargo_advection, &
-      ldynamical_diffusion, ldyndiff_urmsmxy, re_mesh, lreset_seed, &
-      loutput_varn_at_exact_tsnap, lstop_on_ioerror, mailaddress, &
+      ldynamical_diffusion, ldyndiff_useumax, re_mesh, lghostfold_usebspline, &
+      lreset_seed, loutput_varn_at_exact_tsnap, lstop_on_ioerror, mailaddress, &
       theta_lower_border, wborder_theta_lower, theta_upper_border, &
       wborder_theta_upper, fraction_tborder, lmeridional_border_drive, &
       lread_from_other_prec, downsampl, lfullvar_in_slices, lsubstract_reference_state, &
-      ldirect_access, lproper_averages, &
+      ldirect_access, lproper_averages, lmaximal_cdt, lmaximal_cdtv, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w
 !
   contains
@@ -333,7 +333,8 @@ module Param_IO
 ! Set proper BC code for Yin-Yang grid
 !
       if (lyinyang) then
-        if (lroot) call information('read_all_init_pars', 'all BCs for y and z ignored because of Yin-Yang grid')
+        if (lroot.and..not.lrun) &
+          call information('read_all_init_pars', 'all BCs for y and z ignored because of Yin-Yang grid')
         lperi(2:3) = .false.; lpole = .false.
         bcy='yy'; bcz='yy'
       endif
@@ -364,6 +365,14 @@ module Param_IO
       endif
 !
       call check_consistency_of_lperi('read_all_init_pars')
+!
+!  Option to use maximal rather than total distance for courant time
+!
+      if (old_cdtv) then
+        lmaximal_cdtv = old_cdtv
+        if (lroot) call warning('read_all_init_pars', &
+              'obsolete old_cdtv now replaced by more general lmaximal_cdtv')
+      endif
 !
 !  Print SVN id from first line.
 !

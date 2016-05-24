@@ -814,6 +814,11 @@ module Density
 !
       intent(inout) :: f
 !
+!  Sanity check.
+!
+      if (lread_oldsnap .and. ldensity_nolog .and. .not. all(initlnrho == 'nothing')) &
+          call fatal_error('init_lnrho', 'cannot add initial conditions to the old snapshot. ')
+!
 !  Define bottom and top height.
 !
       zbot=xyz0(3)
@@ -1418,7 +1423,7 @@ module Density
 !  If unlogarithmic density considered, take exp of lnrho resulting from
 !  initlnrho
 !
-      if (ldensity_nolog) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))   !???
+      if (ldensity_nolog .and. .not. lread_oldsnap) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))   !???
 !
 !  sanity check
 !
@@ -1534,8 +1539,6 @@ module Density
 !
       real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
 !
-      type(pencil_case) :: p
-      logical, dimension(npencils) :: lpenc_loc=.false.
       real, parameter :: weight=.0
 !
       if (lslope_limit_diff) &
@@ -3303,18 +3306,22 @@ module Density
 !
     endsubroutine anelastic_after_mn
 !***********************************************************************
-    subroutine dynamical_diffusion(urms)
+    subroutine dynamical_diffusion(uc)
 !
 !  Dynamically set mass diffusion coefficient given fixed mesh Reynolds number.
 !
 !  27-jul-11/ccyang: coded
 !
-      real, intent(in) :: urms
+!  Input Argument
+!      uc
+!          Characteristic velocity of the system.
+!
+      real, intent(in) :: uc
 !
 !  Hyper-diffusion coefficient
 !
-      if (diffrho_hyper3 /= 0.) diffrho_hyper3 = pi5_1 * urms * dxmax**5 / re_mesh
-      if (diffrho_hyper3_mesh /= 0.) diffrho_hyper3_mesh = pi5_1 * urms / re_mesh / sqrt(real(dimensionality))
+      if (diffrho_hyper3 /= 0.0) diffrho_hyper3 = pi5_1 * uc * dxmax**5 / re_mesh
+      if (diffrho_hyper3_mesh /= 0.0) diffrho_hyper3_mesh = pi5_1 * uc / re_mesh / sqrt(real(dimensionality))
 !
     endsubroutine dynamical_diffusion
 !***********************************************************************

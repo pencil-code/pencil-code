@@ -34,6 +34,7 @@ module Energy
   real :: chi=0.0,heat_uniform=0.0,chi_hyper3=0.0
   real :: zbot=0.0,ztop=0.0
   real :: tau_heat_cor=-1.0,tau_damp_cor=-1.0,zcor=0.0,TT_cor=0.0
+  real :: zheat_uniform_range=0.
   real, pointer :: reduce_cs2
   logical, pointer :: lreduced_sound_speed, lscale_to_cs2top
   logical, pointer :: lpressuregradient_gas
@@ -57,7 +58,7 @@ module Energy
       lupw_lnTT,ladvection_temperature, &
       heat_uniform,chi,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
       lheatc_chiconst_accurate,lheatc_hyper3,chi_hyper3, &
-      iheatcond
+      iheatcond, zheat_uniform_range
 !
   integer :: idiag_TTmax=0    ! DIAG_DOC: $\max (T)$
   integer :: idiag_TTmin=0    ! DIAG_DOC: $\min (T)$
@@ -808,9 +809,15 @@ module Energy
 !
       heat=0
 !
-!  Add spatially uniform heating (usually as a test)
+!  Add spatially uniform heating.
 !
-      if (heat_uniform/=0.0) heat = heat+heat_uniform
+      if (heat_uniform/=0.0) then
+        if (zheat_uniform_range/=0.) then
+          if (abs(z(n)) <= zheat_uniform_range) heat=heat+heat_uniform
+        else
+          heat=heat+heat_uniform
+        endif
+      endif
 !
 !  add "coronal" heating (to simulate a hot corona)
 !  assume a linearly increasing reference profile
@@ -964,13 +971,13 @@ module Energy
 !
     endsubroutine impose_energy_floor
 !***********************************************************************
-    subroutine dynamical_thermal_diffusion(umax)
+    subroutine dynamical_thermal_diffusion(uc)
 !
 !  Dummy subroutine
 !
-      real, intent(in) :: umax
+      real, intent(in) :: uc
 !
-      call keep_compiler_quiet(umax)
+      call keep_compiler_quiet(uc)
       call fatal_error('dynamical_thermal_diffusion', 'not implemented yet')
 !
     endsubroutine dynamical_thermal_diffusion

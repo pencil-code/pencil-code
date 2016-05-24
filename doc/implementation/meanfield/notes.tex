@@ -1,0 +1,64 @@
+% $Id: notes.tex,v 1.57 2015/11/26 18:29:07 brandenb Exp $
+%\documentclass{article}
+\documentclass{article}
+\setlength{\textwidth}{160mm}
+\setlength{\oddsidemargin}{-0mm}
+\setlength{\textheight}{220mm}
+\setlength{\topmargin}{-8mm}
+\usepackage{graphicx,natbib}
+\usepackage{bm}
+\graphicspath{{./fig/}{./png/}}
+\input macros
+\title{}
+\author{}
+\date{\today,~ $ $Revision: 1.57 $ $}
+\begin{document}
+\maketitle
+
+\section{Implementation of the $\qp$-term}
+
+On the rhs of the momentum equation we have $\half\nab\qp\BB^2$, and so,
+with $\qp=\qp(\beta,z)$, we have
+\begin{eqnarray}
+\half\nab[\qp(\beta,z)\BB^2]
+\!&=&\!\half\qp\nab\BB^2+\half\BB^2\nab\qp\\
+\!&=&\!\half\qp\nab\BB^2+\half\BB^2\left[{\dd\qp\over\dd\beta^2}\nab\beta^2+\nab\qp\right]
+\\
+\!&=&\!\half\qp\nab\BB^2+\half\BB^2\left[{\dd\qp\over\dd\beta^2}\Beq^{-2}(
+\nab\BB^2-\BB^2\ln\rho)+\nab\qp\right]
+\\
+\!&=&\!\half\left[\qp+{\dd\qp\over\dd\beta^2}{\BB^2\over\Beq^2}\right]\nab\BB^2
++\half\BB^2\left[-{\dd\qp\over\dd\beta^2}{\BB^2\over\Beq^2}\nab\ln\rho+\nab\qp\right]
+\end{eqnarray}
+
+%\begin{figure}[h!]\begin{center}
+%\includegraphics[width=\columnwidth]{X}
+%\end{center}\caption[]{
+%Equilibria
+%}\label{X}\end{figure}
+
+%\begin{table}[htb]\caption{
+%}\vspace{12pt}\centerline{\begin{tabular}{lccccccc}
+%\hline
+%\label{Ttimescale}\end{tabular}}\end{table}
+
+\begin{verbatim}
+\end{verbatim}
+
+%\begin{itemize}
+%\item
+%\end{itemize}
+
+%r e f
+%\begin{thebibliography}{}
+
+%\bibitem[Biskamp \& M\"uller(1999)]{BM99}
+%Biskamp, D., \& M\"uller, W.-C.\yprl{1999}{83}{2195}
+
+%\end{thebibliography}
+
+\vfill\bigskip\noindent\tiny\begin{verbatim}
+$Header: /var/cvs/brandenb/tex/etc/notes.tex,v 1.57 2015/11/26 18:29:07 brandenb Exp $
+\end{verbatim}
+
+\end{document}

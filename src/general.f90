@@ -12,6 +12,7 @@ module General
 !
   private
 !
+  public :: gaunoise_number
   public :: safe_character_assign, safe_character_append, safe_character_prepend
   public :: lower_case
   public :: random_seed_wrapper
@@ -21,7 +22,7 @@ module General
   public :: keep_compiler_quiet
 !
   public :: setup_mm_nn
-  public :: find_index_range, find_index
+  public :: find_index_range, find_index, find_index_range_hill, pos_in_array
   public :: find_proc
 !
   public :: spline, tridag, pendag, complex_phase, erfcc
@@ -50,7 +51,9 @@ module General
   public :: directory_names_std
   public :: touch_file
   public :: var_is_vec
-  public :: transform_cart_spher, transform_spher_cart_yy, yy_transform_strip
+  public :: transform_cart_spher, transform_spher_cart_yy
+  public :: yy_transform_strip, yy_transform_strip_other, yin2yang_coors
+  public :: transform_thph_yy, transform_thph_yy_other, merge_yin_yang
   public :: transpose_mn
   public :: notanumber, notanumber_0d
   public :: reduce_grad_dim
@@ -276,6 +279,19 @@ module General
       endif
 !
     endsubroutine setup_mm_nn
+!***********************************************************************
+    subroutine gaunoise_number(gn)
+!
+! Gaussian random number generator with unit variance and zero mean. 
+! Returns a pair of random numbers. 
+!
+      real,dimension(2),intent(out) :: gn
+      real :: r,p
+      call random_number_wrapper(r)
+      call random_number_wrapper(p)
+      gn(1)=sqrt(-2*log(r))*sin(2*pi*p)
+      gn(2)=sqrt(-2*log(r))*cos(2*pi*p)
+    endsubroutine gaunoise_number
 !***********************************************************************
     subroutine random_number_wrapper_0(a)
 !
@@ -1063,6 +1079,43 @@ module General
       enddo
 !
     endsubroutine find_index_range
+!***********************************************************************
+    function find_index_range_hill(aa,planes) result(range)
+!
+!  Find index range (ii1,ii2) if a "hill" between to "planes" with levels planes(1)
+!  and planes(2) (possibly different). Inner "valleys" of the hill to the
+!  planes' levels are not considered.
+!
+!   9-mar-16/MR: derived from find_index_range
+!
+      integer, dimension(:), intent(in) :: aa
+      integer, dimension(2), intent(in) :: planes
+      integer, dimension(2) :: range
+!
+      integer :: naa,ii
+!
+!  Find lower index.
+!
+      naa=size(aa)
+      range(1)=naa
+      do ii=1,naa
+        if (aa(ii)/=planes(1)) then
+          range(1)=ii
+          exit
+        endif
+      enddo
+!
+!  Find upper index.
+!
+      range(2)=1
+      do ii=naa,1,-1
+        if (aa(ii)/=planes(2)) then
+          range(2)=ii
+          return
+        endif
+      enddo
+!
+    endfunction find_index_range_hill
 !***********************************************************************
     pure integer function find_index(xa, x)
 !
@@ -3213,12 +3266,10 @@ module General
     integer, dimension(:), intent(in) :: haystack
     integer :: pos
 
-    pos_in_array_int = -1
-
     do pos = 1, size(haystack)
       if (needle == haystack(pos)) then
-         pos_in_array_int = pos
-         return
+        pos_in_array_int = pos
+        return
       endif
     enddo
 
@@ -3280,7 +3331,7 @@ module General
 
   endfunction in_array_char
 !***********************************************************************
-    logical function loptest(lopt,ldef)
+    pure logical function loptest(lopt,ldef)
 !
 !  returns value of optional logical parameter opt if present,
 !  otherwise the default value ldef, if present, .false. if not
@@ -3300,7 +3351,7 @@ module General
 
     endfunction loptest
 !***********************************************************************
-    integer function ioptest(iopt,idef)
+    pure integer function ioptest(iopt,idef)
 !
 !  returns value of optional integer parameter iopt if present,
 !  otherwise the default value idef, if present, zero, if not.
@@ -3319,7 +3370,7 @@ module General
 
     endfunction ioptest
 !***********************************************************************
-    real function roptest(ropt,rdef)
+    pure real function roptest(ropt,rdef)
 !
 !  returns value of optional real parameter ropt if present,
 !  otherwise the default value rdef, if present, zero, if not.
@@ -3338,7 +3389,7 @@ module General
 
     endfunction roptest
 !***********************************************************************
-    real(KIND=rkind8) function doptest(dopt,ddef)
+    pure real(KIND=rkind8) function doptest(dopt,ddef)
 !
 !  returns value of optional real*8 parameter dopt if present,
 !  otherwise the default value ddef, if present, zero, if not.
@@ -3357,7 +3408,7 @@ module General
 
     endfunction doptest
 !***********************************************************************
-      function coptest(copt,cdef)
+    pure function coptest(copt,cdef)
 !
 !  returns value of optional character parameter copt if present,
 !  otherwise the default value cdef, if present, '', if not.
@@ -4103,35 +4154,60 @@ module General
 
     endsubroutine transform_spher_cart_yy
 !***********************************************************************
-    subroutine yy_transform_strip(ith1,ith2,iph1,iph2,thphprime)
+    subroutine yy_transform_strip(ith1_,ith2_,iph1_,iph2_,thphprime)
 !
 !  Transform coordinates of ghost zones of Yin or Yang grid to other grid.
+!  Strip is defined by index ranges (ith1_,ith2_), (iph1_,iph2_) with respect
+!  to local grid, in particular sinth, costh etc.
 !
-! 4-dec-2015/MR: coded
+!  4-dec-15/MR: coded
+! 12-mar-16/MR: entry yy_transform_strip_other added
 !
-      use Cdata, only: y,z,costh,sinth,cosph,sinph, iproc_world, lroot
+      use Cdata, only: y,z,costh,sinth,cosph,sinph,iproc_world
 
-      integer :: ith1,ith2,iph1,iph2
-      real, dimension(:,:,:) :: thphprime
+      integer,               intent(IN) :: ith1_,ith2_,iph1_,iph2_
+      real, dimension(:,:,:),intent(OUT):: thphprime
+      real, dimension(:),    intent(IN) :: th,ph
 
-      integer :: i,j,itp,jtp
+      integer :: i,j,itp,jtp,ith1,ith2,iph1,iph2
       real :: sth, cth, xprime, yprime, zprime, sprime
-      logical :: ltransp
+      logical :: ltransp, lother
 
-      ltransp = ith2-ith1+1 /= size(thphprime,2)
+      lother=.false.
+      ith1=ith1_; ith2=ith2_; iph1=iph1_; iph2=iph2_
+      goto 1
+
+    entry yy_transform_strip_other(th,ph,thphprime)
+!
+!  Here strip is given by vectors th and ph not related to local grid.
+!
+      lother=.true.
+      ith1=1; ith2=size(th)
+      iph1=1; iph2=size(ph)
+
+ 1    ltransp = ith2-ith1+1 /= size(thphprime,2)
 !
       do i=ith1,ith2
 
-        sth=sinth(i); cth=costh(i)
+        if (lother) then
+          sth=sin(th(i)); cth=cos(th(i))
+        else
+          sth=sinth(i); cth=costh(i)
+        endif
 
         do j=iph1,iph2
 !
 !  Rotate by Pi about z axis, then by Pi/2 about x axis.
 !  No distinction between Yin and Yang as transformation matrix is self-inverse.
 !
-          xprime = -cosph(j)*sth
+          if (lother) then
+            xprime = -cos(ph(j))*sth
+            zprime = -sin(ph(j))*sth
+          else
+            xprime = -cosph(j)*sth
+            zprime = -sinph(j)*sth
+          endif
           yprime = -cth
-          zprime = -sinph(j)*sth
 
           sprime = sqrt(xprime**2 + yprime**2)
  
@@ -4151,6 +4227,71 @@ module General
       enddo
 
     endsubroutine yy_transform_strip
+!***********************************************************************
+    subroutine transform_thph_yy( vec, powers, transformed )
+!
+!  Transforms theta and phi components of vector vec defined with the Yang
+!  grid basis
+!  to the Yin grid basis using theta and phi coordinates of the Yang grid.
+!  For use on pencils within mn-loop.
+!  Note that components of transformed are undefined if corresponding power 
+!  in mask powers is 0.
+!
+! 30-mar-2016/MR: coded
+!
+      use Cdata, only: costh, sinth, cosph, sinph, m, n
+
+      real,    dimension(:,:),intent(IN) :: vec
+      integer, dimension(3),  intent(IN) :: powers
+      real,    dimension(:,:),intent(OUT):: transformed
+
+      real :: sinth1, a, b
+
+      if (any(powers(2:3)/=0)) then
+        sinth1=1./sqrt(costh(m)**2+(sinth(m)*cosph(n))**2)
+        a=-cosph(n)*sinth1; b=sinph(n)*costh(m)*sinth1
+      endif
+
+      if (powers(1)/=0) &
+        transformed(:,1) = vec(:,1)
+      if (powers(2)/=0) &
+        transformed(:,2) = b*vec(:,2) - a*vec(:,3)
+      if (powers(3)/=0) &
+        transformed(:,3) = a*vec(:,2) + b*vec(:,3)
+
+    endsubroutine transform_thph_yy
+!***********************************************************************
+    subroutine transform_thph_yy_other( vec, vec_transformed )
+!
+!  Transforms theta and phi components of a vector field vec defined with the Yang grid basis
+!  to the Yin grid basis using theta and phi coordinates of the Yang grid.
+!  Both vec and vec_transformed must have shape (dimx,ny,nz,2).
+!  For use outside mn-loop.
+!
+! 30-mar-2016/MR: coded
+!
+      use Cdata, only: costh, sinth, cosph, sinph
+
+      real, dimension(:,:,:,:), intent(IN) :: vec
+      real, dimension(:,:,:,:), intent(OUT):: vec_transformed
+
+      integer :: i,j,ig,jg
+      real :: sinth1,a,b
+
+      do i=1,nz 
+        do j=1,ny
+
+          ig=i+nghost; jg=j+nghost
+          sinth1=1./sqrt(costh(jg)**2+(sinth(jg)*cosph(ig))**2)
+          a=-cosph(ig)*sinth1; b=sinph(ig)*costh(jg)*sinth1
+
+          vec_transformed(:,j,i,1) = b*vec(:,j,i,1) - a*vec(:,j,i,2)
+          vec_transformed(:,j,i,2) = a*vec(:,j,i,1) + b*vec(:,j,i,2)
+
+        enddo
+      enddo
+
+    endsubroutine transform_thph_yy_other
 !***********************************************************************
     subroutine transpose_mn(a,b,ladd)
 !
@@ -4298,5 +4439,93 @@ module General
       g(:,1:dimensionality)=g(:,dim_mask(1:dimensionality))
 
     endsubroutine reduce_grad_dim
+!****************************************************************************  
+    function merge_yin_yang(y,z,dy,dz,yzyang,yz,inds) result (nok)
+!
+!  Merges Yin and Yang grids: Yin, given by y,z,dy,dz, remains unchanged while Yang,
+!  given by yzyang of dimension 2 x size(y)*size(z) which is assumed to be
+!  transformed into Yin basis, is clipped by removing points which lie within Yin.
+!  Output is merged coordinate array yz[2,*] and index vector inds into 
+!  yzyang selecting the unclipped points. inds can be used to merge data arrays accordingly.
+!  Returns number of unclipped points in Yang.
+!
+!  30-mar-16/MR: cloned from corresp. IDL routine
+!
+    real, dimension(:),    intent(IN) :: y,z
+    real,                  intent(IN) :: dy,dz
+    real, dimension(:,:) , intent(IN) :: yzyang
+    real, dimension(:,:) , intent(OUT):: yz
+    integer, dimension(:), intent(OUT):: inds
+    integer :: nok
+
+    integer :: ind,i,ny,nz,nyz
+
+    ny=size(y); nz=size(z); nyz=ny*nz
+!
+!  Determine indices of unclipped points of Yang in yzyang.
+!
+    nok=0
+    do i=1,nyz
+      if (yzyang(1,i) < minval(y)-dy .or. yzyang(1,i) > maxval(y)+dy .or. &
+          yzyang(2,i) < minval(z)-dz .or. yzyang(2,i) > maxval(z)+dz) then
+        nok=nok+1
+        inds(nok)=i
+      endif
+    enddo
+!
+!  Put Yin coordinates in 2D array.
+!
+    ind=1
+    do i=1,ny
+      yz(1,ind:ind+nz-1) = y(i)
+      yz(2,ind:ind+nz-1) = z
+      ind=ind+nz
+    enddo
+!
+!  Add Yang coordinates.
+!
+    yz(:,nyz+1:nyz+nok)=yzyang(:,inds(:nok))
+
+  endfunction merge_yin_yang
+!****************************************************************************  
+  subroutine yin2yang_coors(costh,sinth,cosph,sinph,yz)
+!
+!  Transforms (theta,phi) coordinates of Yin or Yang grid, given by cos(theta)
+!  etc., into (theta',phi') coordinates of the other grid, stored in array yz
+!  of dimension 2 x size(theta)*size(phi).
+!
+!  30-mar-16/MR: cloned from corresp. IDL routine
+!
+      real, dimension(:)  , intent(IN) :: sinth, costh, sinph, cosph
+      real, dimension(:,:), intent(OUT):: yz
+
+      integer :: ind, i, j
+      real :: sth, cth, xprime, yprime, zprime, sprime
+
+      ind=1
+      do i=1,size(sinth)
+
+        sth=sinth(i); cth=costh(i)
+
+        do j=1,size(sinph)
+!
+!  Rotate by Pi about z axis, then by Pi/2 about x axis.
+!  No distinction between Yin and Yang as transformation matrix is self-inverse.
+!
+          xprime = -cosph(j)*sth
+          yprime = -cth
+          zprime = -sinph(j)*sth
+
+          sprime = sqrt(xprime**2 + yprime**2)
+
+          yz(1,ind) = atan2(sprime,zprime)
+          yz(2,ind) = atan2(yprime,xprime)
+          if (yz(2,ind) < 0.) yz(2,ind) = yz(2,ind)+2.*pi
+          ind = ind+1
+
+        enddo
+      enddo
+
+  endsubroutine yin2yang_coors
 !****************************************************************************  
 endmodule General

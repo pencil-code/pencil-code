@@ -391,13 +391,13 @@ module Energy
 !
     endsubroutine impose_energy_floor
 !***********************************************************************
-    subroutine dynamical_thermal_diffusion(urms)
+    subroutine dynamical_thermal_diffusion(uc)
 !
 !  Dummy subroutine
 !
-      real, intent(in) :: urms
+      real, intent(in) :: uc
 !
-      call keep_compiler_quiet(urms)
+      call keep_compiler_quiet(uc)
 !
     endsubroutine dynamical_thermal_diffusion
 !***********************************************************************

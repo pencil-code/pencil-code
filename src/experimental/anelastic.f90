@@ -1278,15 +1278,19 @@ module Density
 !
     endsubroutine inverse_laplacian_z
 !***********************************************************************
-    subroutine dynamical_diffusion(umax)
+    subroutine dynamical_diffusion(uc)
 !
 !  Dynamically set mass diffusion coefficient given fixed mesh Reynolds number.
 !
-!  27-jul-11/nils: coded
+!  27-jul-11/nils: dummy
 !
-      real, intent(in) :: umax
+!  Input Argument
+!      uc
+!          Characteristic velocity of the system.
 !
-      call keep_compiler_quiet(umax)
+      real, intent(in) :: uc
+!
+      call keep_compiler_quiet(uc)
       call fatal_error('dynamical_diffusion',&
           'This subroutine is not yet implemented for the anelastic module.')
 !

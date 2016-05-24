@@ -505,7 +505,7 @@ module EquationOfState
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      if (lpencil_in(i_cp)) lpencil_in(i_cp1)=.true.
+!      if (lpencil_in(i_cp)) lpencil_in(i_cp1)=.true.
 !
       select case (ieosvars)
 !

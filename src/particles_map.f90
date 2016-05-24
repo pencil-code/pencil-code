@@ -34,6 +34,76 @@ module Particles_map
 !
   contains
 !***********************************************************************
+    subroutine initialize_particles_map()
+!
+!  Perform any post-parameter-read initialization.
+!
+!  29-mar-16/ccyang: coded.
+!
+!  Note: Currently, this subroutine is called after modules
+!    Particles_mpicomm and Particles.
+!
+      integer :: i
+      real :: total_gab_weights
+!
+!  Check the particle-mesh interpolation method.
+!
+      pm: select case (particle_mesh)
+      case ('ngp', 'NGP') pm
+!       Nearest-Grid-Point
+        lparticlemesh_cic = .false.
+        lparticlemesh_tsc = .false.
+        lparticlemesh_gab = .false.
+        if (lroot) print *, 'initialize_particles_map: selected nearest-grid-point for particle-mesh method. '
+      case ('cic', 'CIC') pm
+!       Cloud-In-Cell
+        lparticlemesh_cic = .true.
+        lparticlemesh_tsc = .false.
+        lparticlemesh_gab = .false.
+        if (lroot) print *, 'initialize_particles_map: selected cloud-in-cell for particle-mesh method. '
+      case ('tsc', 'TSC') pm
+!       Triangular-Shaped-Cloud
+        lparticlemesh_cic = .false.
+        lparticlemesh_tsc = .true.
+        lparticlemesh_gab = .false.
+        if (lroot) print *, 'initialize_particles_map: selected triangular-shaped-cloud for particle-mesh method. '
+      case ('gab', 'GAB') pm
+!       Gaussian box
+        lparticlemesh_cic = .false.
+        lparticlemesh_tsc = .false.
+        lparticlemesh_gab = .true.
+        if (lroot) print *, 'initialize_particles_map: selected gaussian-box for particle-mesh method. '
+        do i = 1,4
+          gab_weights(i) = exp(-(real(i)-1.)**2/(gab_width**2))
+        enddo
+        total_gab_weights = sum(gab_weights)+sum(gab_weights(2:4))
+        gab_weights = gab_weights/total_gab_weights
+        if (lroot) print *,'The number of cells representing one standard deviation is: ', gab_width
+        if (lroot) print *,'The weights for the gaussian box are: ', gab_weights
+      case ('') pm
+!       Let the logical switches decide.
+!       TSC assignment/interpolation overwrites CIC in case they are both set.
+        switch: if (lparticlemesh_tsc) then
+          lparticlemesh_cic = .false.
+          particle_mesh = 'tsc'
+        elseif (lparticlemesh_cic) then switch
+          particle_mesh = 'cic'
+        else switch
+          particle_mesh = 'ngp'
+        endif switch
+        if (lroot) print *, 'initialize_particles_map: particle_mesh = ' // trim(particle_mesh)
+      case default pm
+        call fatal_error('initialize_particles_map', 'unknown particle-mesh type ' // trim(particle_mesh))
+      endselect pm
+
+      if (lparticlemesh_gab) then
+        lfold_df_3points=.true.
+        if (lpscalar) call fatal_error('initialize_particles',&
+            'The gab scheme is currently not working with passive scalars!')
+      endif
+!
+    endsubroutine initialize_particles_map
+!***********************************************************************
     subroutine interpolate_linear_range(f,ivar1,ivar2,xxp,gp,inear,iblock,ipar)
 !
 !  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate
@@ -1319,8 +1389,9 @@ module Particles_map
 !       a density that falls linearly outwards.
 !       This is equivalent to a second order spline interpolation scheme.
 !
-      if ( (irhop/=0 .and. (.not. lnocalc_rhop)) .or. lmapsink) then
+      if ( (irhop/=0 .and. (.not. lnocalc_rhop)) .or. lmapsink .or. ipeh/=0) then
         f(:,:,:,irhop)=0.0
+        if (ipeh/=0) f(:,:,:,ipeh)=0.0
         if (lparticlemesh_cic) then
 !
 !  Cloud In Cell (CIC) scheme.
@@ -1359,13 +1430,28 @@ module Particles_map
 !
                 weight=weight0
                 if (nxgrid/=1) &
-                    weight=weight*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
+                  weight_x = 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx)
+                  weight=weight*weight_x
                 if (nygrid/=1) &
-                    weight=weight*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
+                  weight_y = 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy)
+                  weight=weight*weight_y
                 if (nzgrid/=1) &
-                    weight=weight*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
+                  weight_z = 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz)
+                  weight=weight*weight_z
 !
                 f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + weight
+!
+                if (ipeh/=0 .and. (lcylindrical_coords .or. lspherical_coords)) then
+                  if (lparticles_number) then
+                    weight = fp(k,inpswarm)*(fp(k,iap)**2.0)
+                  else
+                    weight = np_swarm*(fp(k,iap)**2.0)
+                  endif
+                  if (nxgrid/=1) weight=weight*weight_x
+                  if (nygrid/=1) weight=weight*weight_y
+                  if (nzgrid/=1) weight=weight*weight_z
+                  f(ixx,iyy,izz,ipeh) = f(ixx,iyy,izz,ipeh)+weight
+                endif
 !
               enddo; enddo; enddo
             endif
@@ -1450,6 +1536,18 @@ module Particles_map
 !
                 f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + weight
 !
+                if (ipeh/=0 .and. (lcylindrical_coords .or. lspherical_coords)) then
+                  if (lparticles_number) then
+                    weight = fp(k,inpswarm)*(fp(k,iap)**2.0)
+                  else
+                    weight = np_swarm*(fp(k,iap)**2.0)
+                  endif
+                  if (nxgrid/=1) weight=weight*weight_x
+                  if (nygrid/=1) weight=weight*weight_y
+                  if (nzgrid/=1) weight=weight*weight_z
+                  f(ixx,iyy,izz,ipeh) = f(ixx,iyy,izz,ipeh)+weight
+                endif
+!
               enddo; enddo; enddo
             endif
           enddo
@@ -1479,6 +1577,15 @@ module Particles_map
                 endif
 !
                 f(ix0,iy0,iz0,irhop)=f(ix0,iy0,iz0,irhop) + weight0
+!
+                if (ipeh/=0 .and. (lcylindrical_coords .or. lspherical_coords)) then
+                  if (lparticles_number) then
+                    weight0 = fp(k,inpswarm)*(fp(k,iap)**2.0)
+                  else
+                    weight0 = np_swarm*(fp(k,iap)**2.0)
+                  endif
+                  f(ixx,iyy,izz,ipeh) = f(ixx,iyy,izz,ipeh)+weight0
+                endif
 !
               endif
             enddo

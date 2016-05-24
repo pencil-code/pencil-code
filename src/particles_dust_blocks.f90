@@ -18,9 +18,8 @@
 ! MPVAR CONTRIBUTION 6
 ! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
-! CPARAM logical, parameter :: lparticles_potential=.false.
 !
-! PENCILS PROVIDED np; rhop; epsp; grhop(3)
+! PENCILS PROVIDED np; rhop; epsp; grhop(3);peh
 !
 !***************************************************************
 module Particles
@@ -67,6 +66,7 @@ module Particles
   real :: a_ellipsoid=0.0, b_ellipsoid=0.0, c_ellipsoid=0.0
   real :: a_ell2=0.0, b_ell2=0.0, c_ell2=0.0
   real :: xsinkpoint=0.0, ysinkpoint=0.0, zsinkpoint=0.0, rsinkpoint=0.0
+  real :: compensate_sedimentation=1. 
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
   logical :: lpar_spec=.false., learly_particle_map=.true.
   logical :: ldragforce_equi_global_eps=.false.
@@ -77,6 +77,7 @@ module Particles
   logical :: lcoriolis_force_par=.true., lcentrifugal_force_par=.false.
   logical :: lcylindrical_gravity_par=.false.
   logical :: lreassign_strat_rhom=.true.
+  logical :: lcompensate_sedimentation=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -128,7 +129,8 @@ module Particles
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, it1_loadbalance, &
       np_const, rhop_const, lrandom_particle_blocks, lreblock_particles_run, &
       lbrick_partition, ldraglaw_variable, ladopt_own_light_bricks, &
-      lcylindrical_gravity_par, lcommunicate_rhop, lcommunicate_np
+      lcylindrical_gravity_par, lcommunicate_rhop, lcommunicate_np, &
+      lcompensate_sedimentation,compensate_sedimentation
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -2110,9 +2112,14 @@ k_loop:   do while (.not. (k>npar_loc))
                       rho1_point = 1.0 / get_gas_density_strat(fb,ixx,iyy,izz,ib)
 !  Add friction force to grid point.
                       call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,ib, &
-                          rhop_swarm_par)
-                      dfb(ixx,iyy,izz,iux:iuz,ib)=dfb(ixx,iyy,izz,iux:iuz,ib)- &
-                          rhop_swarm_par*rho1_point*dragforce*weight
+                           rhop_swarm_par)
+                      if (.not.lcompensate_sedimentation) then 
+                        dfb(ixx,iyy,izz,iux:iuz,ib)=dfb(ixx,iyy,izz,iux:iuz,ib)- &
+                           rhop_swarm_par*rho1_point*dragforce*weight
+                      else
+                        dfb(ixx,iyy,izz,iux:iuz,ib)=dfb(ixx,iyy,izz,iux:iuz,ib)- &
+                           rhop_swarm_par*rho1_point*dragforce*weight*compensate_sedimentation
+                      endif
                     enddo; enddo; enddo
 !
 !  Triangular Shaped Cloud (TSC) scheme.
@@ -2174,9 +2181,14 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Add friction force to grid point.
                       call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,ib, &
                           rhop_swarm_par)
-                      dfb(ixx,iyy,izz,iux:iuz,ib)=dfb(ixx,iyy,izz,iux:iuz,ib) -&
+                      if (.not.lcompensate_sedimentation) then 
+                        dfb(ixx,iyy,izz,iux:iuz,ib)=dfb(ixx,iyy,izz,iux:iuz,ib) -&
                           rhop_swarm_par*rho1_point*dragforce*weight
-                    enddo; enddo; enddo
+                      else
+                        dfb(ixx,iyy,izz,iux:iuz,ib)=dfb(ixx,iyy,izz,iux:iuz,ib) -&
+                          rhop_swarm_par*rho1_point*dragforce*weight*compensate_sedimentation
+                      endif
+                   enddo; enddo; enddo
                   else
 !
 !  Nearest Grid Point (NGP) scheme.
@@ -2186,8 +2198,13 @@ k_loop:   do while (.not. (k>npar_loc))
                     l=ineargrid(k,1)
                     call get_rhopswarm(mp_swarm,fp,k,ix0,iy0,iz0,ib, &
                         rhop_swarm_par)
-                    dfb(ix0,iy0,iz0,iux:iuz,ib) = dfb(ix0,iy0,iz0,iux:iuz,ib) -&
+                    if (.not.lcompensate_sedimentation) then 
+                      dfb(ix0,iy0,iz0,iux:iuz,ib) = dfb(ix0,iy0,iz0,iux:iuz,ib) -&
                         rhop_swarm_par*rho1_point*dragforce
+                    else
+                      dfb(ix0,iy0,iz0,iux:iuz,ib) = dfb(ix0,iy0,iz0,iux:iuz,ib) -&
+                        rhop_swarm_par*rho1_point*dragforce*compensate_sedimentation
+                    endif
                   endif
                 endif
 !

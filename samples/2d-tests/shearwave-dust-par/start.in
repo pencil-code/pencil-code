@@ -1,30 +1,29 @@
 !                              -*-f90-*-     (for emacs)
 !
-!  Initialisation parameters for dust particles moving in a random
-!  velocity field.
+!  Initialisation parameters for particle-gas shear wave test.
 !
 &init_pars
-  cvsid='$Id$',
-  lperi =    T,    T,    T
-  ip=20, lwrite_ic=T, lwrite_aux=T
+    lwrite_ic = .true., lwrite_aux = .true.
 /
 &eos_init_pars
-  gamma=1.0, rho0=1.0, cs0=1.0
+    gamma = 1.0, rho0 = 1.0, cs0 = 1.0
 /
 &hydro_init_pars
-  inituu='zero'
+    inituu = 'coswave-phase'
+    ampl_uy = 0.001, kx_uy = -1.0, ky_uy = 1.0
 /
 &density_init_pars
-  initlnrho='zero'
-  ldensity_nolog=T
+    ldensity_nolog = .true.
 /
 &shear_init_pars
-  Omega=1.0, qshear=1.5
+    Omega = 1.0, qshear = 1.5
+    lshearadvection_as_shift = .true., shear_method = 'bspline'
 /
 &particles_init_pars
-  initxxp='equidistant'
-  initvvp='coswave-phase'
-  vpx0=1.0e-3, kx_vpx=0.0, ky_vpx=1.0, kz_vpx=0.0
-  eps_dtog=1.0, tausp=1.0
-  lparticlemesh_tsc=T
+    particle_mesh = 'tsc'
+    initxxp = 'equidistant', initvvp = 'zero'
+    eps_dtog = 1.0
+/
+&particles_drag_init_pars
+    tdrag = 1.0
 /

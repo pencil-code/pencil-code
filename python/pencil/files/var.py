@@ -253,19 +253,19 @@ class DataCube(object):
             if ('bb' in magic):
                 # Compute the magnetic field before doing trimall.
                 aa = f[index['ax']-1:index['az'],...]
-                self.bb = curl(aa,dx,dy,dz,run2D=param.lwrite_2d)
+                self.bb = curl(aa,dx,dy,dz,x,y,z,run2D=param.lwrite_2d)
                 if (trimall): self.bb=self.bb[:, dim.n1:dim.n2+1,
                 dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             if ('jj' in magic):
                 # Compute the electric current field before doing trimall.
                 aa = f[index['ax']-1:index['az'],...]
-                self.jj = curl2(aa,dx,dy,dz)
+                self.jj = curl2(aa,dx,dy,dz,x,y,z)
                 if (trimall): self.jj=self.jj[:, dim.n1:dim.n2+1,
                 dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             if ('vort' in magic):
                 # Compute the vorticity field before doing trimall.
                 uu = f[index['ux']-1:index['uz'],...]
-                self.vort = curl(uu,dx,dy,dz,run2D=param.lwrite_2d)
+                self.vort = curl(uu,dx,dy,dz,x,y,z,run2D=param.lwrite_2d)
                 if (trimall):
                     if (param.lwrite_2d):
                         if (dim.nz == 1):

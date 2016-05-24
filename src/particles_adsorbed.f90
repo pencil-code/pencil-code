@@ -43,7 +43,10 @@ module Particles_adsorbed
   real :: adsplaceholder=0.0
   real :: sum_ads
   real :: dpads=0.0
+  real, pointer :: total_carbon_sites
+  integer :: ierr
   logical :: lexperimental_adsorbed=.false.
+  logical :: lwrite=.true.
   integer, dimension(:), allocatable :: idiag_ads
 !
 !*********************************************************************!
@@ -128,6 +131,8 @@ module Particles_adsorbed
           endif
         enddo
 !
+        call get_shared_variable('total_carbon_sites',total_carbon_sites,ierr)
+!
 !  Increase of npvar according to N_adsorbed_species
 !  The -2 is there to account for Cf being in adsorbed_species_names
 !  but not in the calculation
@@ -185,6 +190,12 @@ module Particles_adsorbed
         call create_occupancy(adsorbed_species_names,site_occupancy)
 !
       endif
+!
+      if (lwrite) then
+        call write_outputfile()
+      endif
+      lwrite=.false.
+!
     endsubroutine register_indep_ads
 !***********************************************************************
     subroutine register_dep_ads()
@@ -231,6 +242,11 @@ module Particles_adsorbed
           select case (init_adsorbed(j))
           case ('nothing')
             if (lroot .and. j == 1) print*, 'init_particles_ads,adsorbed: nothing'
+          case ('zero')
+            if (lroot .and. j == 1) print*, 'init_particles_ads,adsorbed: zero'            
+            do i = 1,mpar_loc
+              fp(i,iads:iads_end) = 0.0
+            enddo
           case ('constant')
             if (lroot) print*, 'init_particles_ads: Initial Adsorbed Fractions'
             sum_ads = sum(init_surf_ads_frac(1:N_adsorbed_species))
@@ -244,7 +260,7 @@ module Particles_adsorbed
             endif
 !
             do i = 1,mpar_loc
-              fp(i,iads:iads_end) = init_surf_ads_frac(1:(iads_end-iads+1))
+              fp(i,iads:iads_end) = init_surf_ads_frac(1:N_adsorbed_species-1)
             enddo
           case default
             if (lroot) &
@@ -310,8 +326,7 @@ module Particles_adsorbed
       real, dimension(:,:), allocatable :: R_j_hat
       type (pencil_case) :: p
       integer, dimension(mpar_loc,3) :: ineargrid
-      integer :: n_ads, stat, k1, k2, k, ierr
-      real, pointer :: total_carbon_sites
+      integer :: n_ads, stat, k1, k2, i
 !
       intent(inout) :: dfp
       intent(in) :: fp
@@ -326,17 +341,40 @@ module Particles_adsorbed
 !
           if (N_adsorbed_species > 1) then
             allocate(mod_surf_area(k1:k2))
+            mod_surf_area=0.0
             allocate(R_c_hat(k1:k2))
+            R_c_hat=0.0
             allocate(R_j_hat(k1:k2,1:n_ads))
+            R_j_hat=0.0
             call calc_get_mod_surf_area(mod_surf_area,fp)
-            call get_shared_variable('total_carbon_sites',total_carbon_sites,ierr)
             call get_adsorbed_chemistry(R_j_hat,R_c_hat)
-            if (ierr /= 0) call fatal_error('dpads_dt_pencil', 'unable to get total_carbon')
-            do k = k1,k2
-              dfp(k,iads:iads_end) = R_j_hat(k,1:n_ads)/ &
-                  total_carbon_sites + mod_surf_area(k)* &
-                  R_c_hat(k)*fp(k,iads:iads_end)
+!            print*, '-----------------------------------------'
+!            write(*,'(A12,10E12.3)' )'R_j_hatbef', R_j_hat(k1:k2,1)
+!            write(*,'(A12,10E12.3)' )'R_j_hatbef', R_j_hat(k1:k2,2)
+!            write(*,'(A12,10E12.3)' )'R_j_hatbef', R_j_hat(k1:k2,3)
+!
+            do i = iads, iads_end
+              dfp(k1:k2,i) = dfp(k1:k2,i) + R_j_hat(k1:k2,i-iads+1)/ &
+                  total_carbon_sites + mod_surf_area(k1:k2) * &
+                  R_c_hat(k1:k2) * fp(k1:k2,i)
+!            print*, 'dfp(k1:k2,iads:iads_end)', i,  dfp(k1:k2,i)
+!             print*, 'fp(k1:k2,iads:iads_end)', i,  fp(k1:k2,i)
+!            print*,  'R_j_hat(k1,i-iads+n_ads+1)', R_j_hat(k1,i-iads+n_ads+1)
+!            print*,   'mod_surf_area(k1)',  mod_surf_area(k1) 
+!            print*,  'R_c_hat(k1)',  R_c_hat(k1) 
+!              write(*,'(A9,10E12.3)' )'R_j_hat', R_j_hat(k1:k2,i-iads+1)
+!            write(*,'(A9,10E12.5)' )'mod', mod_surf_area(k1:k2)
+!              write(*,'(A9,10E12.3)' ) 'R_c_hat', R_c_hat(k1:k2)
+!              write(*,'(A9,10E12.3)' ) 'dfp(k1,i)', dfp(k1:k2,i)
+!            write(*,'(A8,10E12.5)')   'fp(k1,i)',  fp(k1:k2,i)
             enddo
+! 
+!            print*, 'dfp(k1:k2,iads:iads_end)', dfp(k1:k2,iads:iads_end)
+!            print*, '-----------------------------'
+!            print*,  'R_c_hat(k1)',  R_c_hat(k1) 
+!            write(*,'(A9,10E12.3)' )'R_j_hat', R_j_hat(k1,:)
+!            print*, ' fp(k1:k2,iads:iads_end)', fp(k1,iads:iads_end)
+!            print*, 'dfp(k1:k2,iads:iads_end)', dfp(k1,iads:iads_end)
             deallocate(mod_surf_area)
             deallocate(R_c_hat)
             deallocate(R_j_hat)
@@ -403,7 +441,7 @@ module Particles_adsorbed
 !
       lwr = .false.
       if (present(lwrite)) lwr = lwrite
-      if (lwr) write (3,*) 'iads=', iads
+!     if (lwr) write (3,*) 'iads=', iads
 !
       if (lreset) then
         idiag_ads = 0
@@ -441,5 +479,46 @@ module Particles_adsorbed
       if (allocated(idiag_ads)) deallocate(idiag_ads)
 !
     endsubroutine particles_adsorbed_clean_up
+!***********************************************************************
+    subroutine write_outputfile()
+!
+!  Write particle chemistry info to ./data/particle_chemistry.out
+!
+      integer :: file_id=123
+      integer :: k
+      character(len=20) :: writeformat
+      character(len=30) :: output='./data/particle_chemistry.out' 
+!
+      open (file_id,file=output,position='append')
+!     
+      writeformat = '(  A8)'
+      write (writeformat(2:3),'(I2)') N_adsorbed_species
+      write (file_id,*) 'Adsorbed species'
+      write (file_id,writeformat) adsorbed_species_names(1:N_adsorbed_species)
+      write (file_id,*) ''
+!
+      writeformat = '(I2,  F5.2)'
+      write(writeformat(5:6),'(I2)') N_adsorbed_species
+!
+      write (file_id,*) 'Mu'
+      do k = 1,N_surface_reactions
+        write(file_id,writeformat) k,mu(:,k)
+      enddo
+      write (file_id,*) ''
+!
+      write (file_id,*) 'Mu*'
+      do k = 1,N_surface_reactions
+        write(file_id,writeformat) k,mu_prime(:,k)
+      enddo
+      write (file_id,*) ''
+!
+      writeformat = '(  F5.2)'
+      write(writeformat(2:3),'(I2)') N_adsorbed_species
+!
+      write (file_id,*) 'Carbon content adsorbed species'
+      write(file_id,writeformat) aac
+      close(file_id)
+!
+    endsubroutine write_outputfile
 !***********************************************************************
 endmodule Particles_adsorbed

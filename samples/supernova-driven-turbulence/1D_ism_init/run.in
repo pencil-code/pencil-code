@@ -24,15 +24,17 @@
 &grav_run_pars
 /
 &entropy_run_pars
-  iheatcond='chi-therm','shock'
-  chi_th=0.004,chi_shock=10.0
+  iheatcond='chi-cspeed','shock'
+  chi_cs=0.004,chi_shock=10.0
 /
 &interstellar_run_pars
   laverage_SN_heating=True
   cdt_tauc=0.1
+  lSNII=T
+  lSNI=T
 /
 &viscosity_run_pars
-  ivisc='nu-therm','nu-shock'
+  ivisc='nu-cspeed','nu-shock'
   nu=0.004,nu_shock=10.0
 /
 &shock_run_pars

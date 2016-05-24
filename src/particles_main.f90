@@ -24,6 +24,7 @@ module Particles_main
   use Particles_nbody
   use Particles_number
   use Particles_radius
+  use Particles_potential
   use Particles_grad
   use Particles_selfgravity
   use Particles_sink
@@ -33,6 +34,7 @@ module Particles_main
   use Particles_sub
   use Particles_surfspec
   use Particles_temperature
+  use Particles_lyapunov
 !
   implicit none
 !
@@ -55,7 +57,7 @@ module Particles_main
       integer :: ipvar
 !
       call register_particles              ()
-!     call register_particles_potential    ()
+     call register_particles_potential    ()
       call register_particles_radius       ()
       call register_particles_grad         ()
       call register_particles_spin         ()
@@ -108,6 +110,7 @@ module Particles_main
       call rprint_particles_mass         (lreset,LWRITE=lroot)
       call rprint_particles_ads          (lreset,LWRITE=lroot)
       call rprint_particles_surf         (lreset,LWRITE=lroot)
+      call rprint_particles_chem         (lreset,LWRITE=lroot)
       call rprint_particles_coagulation  (lreset,LWRITE=lroot)
 !      call rprint_particles_potential    (lreset,LWRITE=lroot)
       call rprint_particles_collisions   (lreset,LWRITE=lroot)
@@ -124,62 +127,9 @@ module Particles_main
 !  07-jan-05/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-
-      integer :: i
-      real :: total_gab_weights
-
+!
       if (lyinyang) &
         call fatal_error('particles_initialize_modules','Particles not implemented on Yin-Yang grid')
-!
-!  Check the particle-mesh interpolation method.
-!
-      pm: select case (particle_mesh)
-      case ('ngp', 'NGP') pm
-!       Nearest-Grid-Point
-        lparticlemesh_cic = .false.
-        lparticlemesh_tsc = .false.
-        lparticlemesh_gab = .false.
-        if (lroot) print *, 'particles_initialize_modules: selected nearest-grid-point for particle-mesh method. '
-      case ('cic', 'CIC') pm
-!       Cloud-In-Cell
-        lparticlemesh_cic = .true.
-        lparticlemesh_tsc = .false.
-        lparticlemesh_gab = .false.
-        if (lroot) print *, 'particles_initialize_modules: selected cloud-in-cell for particle-mesh method. '
-      case ('tsc', 'TSC') pm
-!       Triangular-Shaped-Cloud
-        lparticlemesh_cic = .false.
-        lparticlemesh_tsc = .true.
-        lparticlemesh_gab = .false.
-        if (lroot) print *, 'particles_initialize_modules: selected triangular-shaped-cloud for particle-mesh method. '
-      case ('gab', 'GAB') pm
-!       Gaussian box
-        lparticlemesh_cic = .false.
-        lparticlemesh_tsc = .false.
-        lparticlemesh_gab = .true.
-        if (lroot) print *, 'particles_initialize_modules: selected gaussian-box for particle-mesh method. '
-        do i = 1,4
-          gab_weights(i) = exp(-(real(i)-1.)**2/(gab_width**2))
-        enddo
-        total_gab_weights = sum(gab_weights)+sum(gab_weights(2:4))
-        gab_weights = gab_weights/total_gab_weights
-        if (lroot) print *,'The number of cells representing one standard deviation is: ', gab_width
-        if (lroot) print *,'The weights for the gaussian box are: ', gab_weights
-      case ('') pm
-!       Let the logical switches decide.
-!       TSC assignment/interpolation overwrites CIC in case they are both set.
-        switch: if (lparticlemesh_tsc) then
-          lparticlemesh_cic = .false.
-          particle_mesh = 'tsc'
-        elseif (lparticlemesh_cic) then switch
-          particle_mesh = 'cic'
-        else switch
-          particle_mesh = 'ngp'
-        endif switch
-        if (lroot) print *, 'particles_initialize_modules: particle_mesh = ' // trim(particle_mesh)
-      case default pm
-        call fatal_error('particles_initialize_modules', 'unknown particle-mesh type ' // trim(particle_mesh))
-      endselect pm
 !
 !  Check if there is enough total space allocated for particles.
 !
@@ -243,6 +193,7 @@ module Particles_main
 !
       call initialize_particles_mpicomm      (f)
       call initialize_particles              (f)
+      call initialize_particles_map
       call initialize_particles_adaptation   (f)
       call initialize_particles_density      (f)
       call initialize_particles_nbody        (f)
@@ -262,6 +213,7 @@ module Particles_main
       call initialize_particles_collisions   (f)
       call initialize_pars_diagnos_state     (f)
       call initialize_particles_diagnos_dv   (f)
+      call initialize_particles_potential    (f)
 !
       if (lparticles_blocks) then
         if (lrun) then
@@ -322,6 +274,7 @@ module Particles_main
       if (lparticles_adsorbed)      call init_particles_ads(f,fp)
       if (lparticles_surfspec)      call init_particles_surf(f,fp,ineargrid)
       if (lparticles_diagnos_state) call init_particles_diagnos_state(fp)
+      if (lparticles_lyapunov)      call init_particles_lyapunov(f,fp)
 !
     endsubroutine particles_init
 !***********************************************************************
@@ -367,6 +320,7 @@ module Particles_main
       call read_namelist(read_particles_surf_init_pars ,'particles_surf'    ,lparticles_surfspec)
       call read_namelist(read_particles_chem_init_pars ,'particles_chem'    ,lparticles_chemistry)
       call read_namelist(read_pstalker_init_pars       ,'particles_stalker' ,lparticles_stalker)
+ call read_namelist(read_plyapunov_init_pars       ,'particles_lyapunov' ,lparticles_lyapunov)
 !
     endsubroutine read_all_particles_init_pars
 !***********************************************************************
@@ -377,7 +331,7 @@ module Particles_main
       call read_namelist(read_particles_run_pars          ,'particles'              ,lparticles)
       call read_namelist(read_particles_adapt_run_pars    ,'particles_adapt'        ,lparticles_adaptation)
       call read_namelist(read_particles_rad_run_pars      ,'particles_radius'       ,lparticles_radius)
-!     call read_namelist(read_particles_potential_run_pars,'particles_potential',lparticles_potential)
+!      call read_namelist(read_particles_potential_run_pars,'particles_potential',lparticles_potential)
       call read_namelist(read_particles_spin_run_pars     ,'particles_spin'         ,lparticles_spin)
       call read_namelist(read_particles_sink_run_pars     ,'particles_sink'         ,lparticles_sink)
       call read_namelist(read_particles_num_run_pars      ,'particles_number'       ,lparticles_number)
@@ -395,6 +349,7 @@ module Particles_main
       call read_namelist(read_particles_ads_run_pars      ,'particles_ads'          ,lparticles_adsorbed)
       call read_namelist(read_particles_surf_run_pars     ,'particles_surf'         ,lparticles_surfspec)
       call read_namelist(read_particles_chem_run_pars     ,'particles_chem'         ,lparticles_chemistry)
+      call read_namelist(read_plyapunov_run_pars     ,'particles_lyapunov'         ,lparticles_lyapunov)
 !
     endsubroutine read_all_particles_run_pars
 !***********************************************************************
@@ -572,13 +527,13 @@ module Particles_main
 !
 !  Wrapper for operator split terms for particle dynamics.
 !
-!  24-may-15/ccyang: coded.
+!  08-may-16/ccyang: coded.
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, intent(in) :: dt
 !
       drag: if (lparticles_drag) then
-        call boundconds_particles(fp, ipar)
+        call particles_boundconds(f)
         call integrate_drag(f, fp, dt)
       endif drag
 !
@@ -718,7 +673,6 @@ module Particles_main
 !  for the grid and interpolate to the position of the particles.
 !
       if (lparticles_nbody)     call calc_nbodygravity_particles(f)
-      if (lparticles_potential)  call boundcond_neighbour_list()
 !
     endsubroutine particles_before_boundary
 !***********************************************************************
@@ -810,6 +764,7 @@ module Particles_main
 !
       if (lparticles)             call dxxp_dt(f,df,fp,dfp,ineargrid)
       if (lparticles)             call dvvp_dt(f,df,fp,dfp,ineargrid)
+      if (lparticles_potential)   call dvvp_dt_potential(f,df,fp,dfp,ineargrid)
       if (lparticles_radius)      call dap_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_spin)        call dps_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_mass)        call dpmass_dt(f,df,fp,dfp,ineargrid)
@@ -1036,6 +991,7 @@ module Particles_main
       if (lparticles_adsorbed)    call write_particles_ads_init_pars(unit)
       if (lparticles_surfspec)    call write_particles_surf_init_pars(unit)
       if (lparticles_chemistry)   call write_particles_chem_init_pars(unit)
+      if (lparticles_lyapunov)   call write_plyapunov_init_pars(unit)
 !
     endsubroutine write_all_particles_init_pars
 !***********************************************************************
@@ -1065,6 +1021,7 @@ module Particles_main
       if (lparticles_adsorbed)       call write_particles_ads_run_pars(unit)
       if (lparticles_surfspec)       call write_particles_surf_run_pars(unit)
       if (lparticles_chemistry)      call write_particles_chem_run_pars(unit)
+      if (lparticles_lyapunov)       call write_plyapunov_run_pars(unit)
 !
     endsubroutine write_all_particles_run_pars
 !***********************************************************************
@@ -1264,6 +1221,10 @@ module Particles_main
       if (linsert_particle) call insert_lost_particles(f,fp,ineargrid)
 !
     endsubroutine insert_particles_now
+!***********************************************************************
+    subroutine particles_stochastic()
+      if (lparticles_lyapunov) call particles_stochastic_lyapunov(fp)
+    endsubroutine particles_stochastic
 !***********************************************************************
     subroutine particles_insert_continuously(f)
 !

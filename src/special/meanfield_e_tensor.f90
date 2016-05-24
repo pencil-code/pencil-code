@@ -40,6 +40,9 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
+! PENCILS PROVIDED alpha_emf(3,3); beta_emf(3,3); gamma_emf(3)
+! PENCILS PROVIDED delta_emf(3); kappa_emf(3,3,3)
+!
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -78,76 +81,71 @@ module Special
   use General, only: keep_compiler_quiet
   use Messages, only: svn_id, fatal_error
   use Mpicomm, only: mpibarrier
+  use Sub, only: numeric_precision, dot_mn_vm, curl_mn
   use HDF5
+  use File_io, only: parallel_unit
+!
 !
   implicit none
 !
   include 'mpif.h'
   include '../special.h'
-
-  integer :: hdferr, loaderr
-  integer(HID_T) :: hdfmemtype, &
+  ! HDF debug parameters:
+  integer :: hdferr
+  logical :: hdf_exists
+  ! Main HDF object ids and variables
+  character (len=fnlen) :: hdf_emftensors_filename
+  integer(HID_T) :: hdf_memtype, &
                     hdf_emftensors_file,  &
                     hdf_emftensors_plist, &
                     hdf_emftensors_group
-  !integer(HID_T), dimension(:), allocatable :: hdf_fieldgroups
-  !integer(HID_T), dimension(:,:), allocatable :: hdf_spaces, phdf_chunkspaces, phdf_datasets, phdf_plist_ids
-  integer(HSIZE_T) , dimension(4) :: hdf_stride, hdf_count, hdf_block, hdf_offsets
-
-  integer(HSIZE_T) , dimension(:,:), allocatable :: phdf_dims, phdf_chunkdims
-  
-  integer(HID_T) :: alpha_id_G, alpha_id_D, alpha_id_S, &
-                    beta_id_G, beta_id_D, beta_id_S,    &
-                    gamma_id_G, gamma_id_D, gamma_id_S, &
-                    delta_id_G, delta_id_D, delta_id_S, &
-                    kappa_id_G, kappa_id_D, kappa_id_S
-  integer(HSIZE_T) :: alpha_tlen
-
-  character (len=10) :: interpname
-  character (len=10),dimension(1),parameter :: interpnames = (/ 'none' /)
-
-  character (len=10) :: dataname
-                    
-  logical :: hdf_exists
-
-  integer(HSIZE_T) :: alpha_dims(6), &
-                      beta_dims(6),  &
-                      gamma_dims(6), &
-                      delta_dims(5), &
-                      kappa_dims(7)
-  
-  integer :: dataload_len
-  !real, dimension(3,3,  nx,ny,nz,dataload_len) :: alpha_data, beta_data
- ! real, dimension(3,    nx,ny,nz,dataload_len) :: gamma_data, delta_data
-  !real, dimension(3,3,3,nx,ny,nz,dataload_len) :: kappa_data
-
+  ! Dataset HDF object ids
+  integer, parameter :: ntensors = 5
+  integer(HID_T),   dimension(ntensors) :: tensor_id_G, tensor_id_D, &
+                                    tensor_id_S, tensor_id_memS
+  integer(HSIZE_T), dimension(ntensors,10) :: tensor_dims, &
+                                      tensor_offsets, tensor_counts, &
+                                      tensor_memdims, &
+                                      tensor_memoffsets, tensor_memcounts
+                                      
+  ! Actual datasets
   real, dimension(:,:,:,:,:,:)  , allocatable :: alpha_data, beta_data
   real, dimension(:,:,:,:,:)    , allocatable :: gamma_data, delta_data
   real, dimension(:,:,:,:,:,:,:), allocatable :: kappa_data
-  integer :: t_index
-
-  character (len=fnlen) :: hdf_emftensors_filename
-
-  logical :: lalpha, lalpha_exists, lalpha_open, &
-             lbeta,  lbeta_exists,  lbeta_open, &
-             lgamma, lgamma_exists, lgamma_open, &
-             ldelta, ldelta_exists, ldelta_open, &
-             lkappa, lkappa_exists, lkappa_open
-  
+  ! Dataset mappings
+  integer,parameter :: alpha_id=1, beta_id=2, &
+                       gamma_id=3, delta_id=4, &
+                       kappa_id=5
+  integer, dimension(ntensors),parameter :: tensor_ndims = (/ 6, 6, 5, 5, 7 /) 
+  ! Dataset logical variables
+  logical, dimension(3,3)   :: lalpha_arr, lbeta_arr
+  logical, dimension(3)     :: lgamma_arr, ldelta_arr
+  logical, dimension(3,3,3) :: lkappa_arr
+  logical, dimension(6)     :: lalpha_c, lbeta_c
+  logical, dimension(3)     :: lgamma_c, ldelta_c
+  logical :: lalpha, lbeta, lgamma, ldelta, lkappa
+  real :: alpha_scale, beta_scale, gamma_scale, delta_scale
+  real, dimension(ntensors) :: tensor_scales
+  ! Interpolation parameters
+  character (len=fnlen) :: interpname
+  integer :: dataload_len
+  ! Input dataset name
+  character (len=fnlen) :: dataname
+  ! Input namelist
   namelist /special_init_pars/ &
-       lalpha, lbeta, lgamma, lkappa, dataname, interpname
-!
-! Declare index of new variables in f array (if any).
-!
-!!   integer :: ispecial=0
-!!   integer :: ispecaux=0
-!
-!! Diagnostic variables (needs to be consistent with reset list below).
-!
-!!   integer :: idiag_POSSIBLEDIAGNOSTIC=0
-!
+      alpha_scale, beta_scale, gamma_scale, delta_scale, &
+      lalpha,      lbeta,      lgamma,      ldelta,      &
+      lalpha_c,    lbeta_c,    lgamma_c,    ldelta_c,    &
+      dataname,    interpname
+  namelist /special_run_pars/ &
+      alpha_scale, beta_scale, gamma_scale, delta_scale, &
+      lalpha,      lbeta,      lgamma,      ldelta,      &
+      lalpha_c,    lbeta_c,    lgamma_c,    ldelta_c,    &
+      dataname,    interpname
+  ! loadDataset interface
   interface loadDataset
     module procedure loadDataset_rank1
+    module procedure loadDataset_rank2
   end interface
 
   contains
@@ -157,29 +155,45 @@ module Special
 !  Set up indices for variables in special modules.
 !
 !  6-oct-03/tony: coded
+      integer :: i
 !
+      write(*,*) ' register_special running...'
       if (lroot) call svn_id( &
            "$Id$")
-      interpname = 'none'
-      lalpha=.false.
-      lbeta =.false.
-      lgamma=.false.
-      lkappa=.false.
-      dataname = 'data'
-      print *,'Register special <----------------'
-
       if (trim(interpname) == 'none') then
-        dataload_len = 1 
-      else
-        call fatal_error('initialize_special','File '//trim(hdf_emftensors_filename)//' does not exist!')
+        dataload_len = 1
+      !else
+      !  call fatal_error('register_special','Unknown interpolation chosen!')
       end if
+      ! Set dataset offsets
+      tensor_offsets = 0
+      do i=1,ntensors
+        tensor_offsets(i,1:3) = [ ipx*nx, ipy*ny , ipz*nz ]
+      end do
+      ! Set dataset counts
+      tensor_counts = 1
+      do i=1,ntensors
+        tensor_counts(i,1:4) = [ nx, ny, nz, dataload_len ]
+      end do
+      ! Set dataset memory offsets
+      tensor_memoffsets = 0
+      ! Set dataset memory counts
+      tensor_memcounts = 1
+      do i=1,ntensors
+        tensor_memcounts(i,1:4) = [ nx, ny, nz, dataload_len ]
+      end do
+      ! Set memory dimensions
+      tensor_memdims = 3
+      do i=1,ntensors
+        tensor_memdims(i,1:4) = [ nx, ny, nz, dataload_len ]
+      end do
 !
 !!      call farray_register_pde('special',ispecial)
 !!      call farray_register_auxiliary('specaux',ispecaux)
 !!      call farray_register_auxiliary('specaux',ispecaux,communicated=.true.)
 !
     endsubroutine register_special
-!***********************************************************************
+!!***********************************************************************
     subroutine register_particles_special(npvar)
 !
 !  Set up indices for particle variables in special modules.
@@ -205,140 +219,124 @@ module Special
 !  06-oct-03/tony: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      integer :: i_ix,j_ix
 !
       call keep_compiler_quiet(f)
 
-      print *,'Initialize special <----------------'
-  
-      ! Allocate data arrays
-      allocate(alpha_data(3,3,  nx,ny,nz,dataload_len))
-      allocate( beta_data(3,3,  nx,ny,nz,dataload_len))
-      allocate(gamma_data(3,    nx,ny,nz,dataload_len))
-      allocate(delta_data(3,    nx,ny,nz,dataload_len))
-      allocate(kappa_data(3,3,3,nx,ny,nz,dataload_len))
+      write(*,*) 'initialize_special running...'
 
-      hdf_emftensors_plist = -1
-      hdf_emftensors_file  = -1
+      if (lrun) then 
 
-      call H5open_F(hdferr)
-      
-      print *,'Setting parallel HDF5 IO for data file reading'
-      call H5Pcreate_F(H5P_FILE_ACCESS_F, hdf_emftensors_plist, hdferr)
-      call H5Pset_fapl_mpio_F(hdf_emftensors_plist, MPI_COMM_WORLD, MPI_INFO_NULL, hdferr)
+        hdf_emftensors_plist = -1
+        hdf_emftensors_file  = -1
 
-      print *, 'Opening emftensors.h5 and loading relevant fields of  it into memory...'
+        call H5open_F(hdferr)
 
-      hdf_emftensors_filename = trim(datadir_snap)//'/emftensors.h5'
+        hdf_memtype=-1
+        if (numeric_precision() == 'S') then
+          write(*,*) 'initialize special: loading data as single precision'
+          hdf_memtype = H5T_NATIVE_REAL
+        else
+          write(*,*) 'initialize special: loading data as double precision'
+          hdf_memtype = H5T_NATIVE_DOUBLE
+        end if
+        
+        write (*,*) 'initialize special: setting parallel HDF5 IO for data file reading'
+        call H5Pcreate_F(H5P_FILE_ACCESS_F, hdf_emftensors_plist, hdferr)
+        call H5Pset_fapl_mpio_F(hdf_emftensors_plist, MPI_COMM_WORLD, MPI_INFO_NULL, hdferr)
 
-      inquire(file=hdf_emftensors_filename, exist=hdf_exists)
+        print *, 'initialize special: opening emftensors.h5 and loading relevant fields of it into memory...'
 
-      if (.not. hdf_exists) then
-        call H5Pclose_F(hdf_emftensors_plist, hdferr)
-        call H5close_F(hdferr)
-        call fatal_error('initialize_special','File '//trim(hdf_emftensors_filename)//' does not exist!')
+        hdf_emftensors_filename = trim(datadir_snap)//'/emftensors.h5'
+
+        inquire(file=hdf_emftensors_filename, exist=hdf_exists)
+
+        if (.not. hdf_exists) then
+          call H5Pclose_F(hdf_emftensors_plist, hdferr)
+          call H5close_F(hdferr)
+          call fatal_error('initialize_special','File '//trim(hdf_emftensors_filename)//' does not exist!')
+        end if
+
+        call H5Fopen_F(hdf_emftensors_filename, H5F_ACC_RDONLY_F, hdf_emftensors_file, hdferr, access_prp = hdf_emftensors_plist)
+
+        call H5Lexists_F(hdf_emftensors_file,'/zaver/', hdf_exists, hdferr)
+
+        if (.not. hdf_exists) then
+          call H5Fclose_F(hdf_emftensors_file, hdferr)
+          call H5Pclose_F(hdf_emftensors_plist, hdferr)
+          call H5close_F(hdferr)
+          call fatal_error('initialize_special','group /zaver/ does not exist!')
+        end if
+
+        call H5Gopen_F(hdf_emftensors_file, 'zaver', hdf_emftensors_group, hdferr)
+
+        ! Open datasets
+
+        ! alpha
+        if (lalpha) then
+          call openDataset('alpha', alpha_id)
+          write(*,*) 'initialize_special: Using dataset /zaver/alpha/'//trim(dataname)//' for alpha'
+        end if
+        ! beta
+        if (lbeta) then
+          call openDataset('beta', beta_id)
+          write(*,*) 'initialize_special: Using dataset /zaver/beta/'//trim(dataname)//' for beta'
+        end if
+
+        ! gamma
+        if (lgamma) then
+          call openDataset('gamma', gamma_id)
+          write(*,*) 'initialize_special: Using dataset /zaver/gamma/'//trim(dataname)//' for gamma'
+        end if
+
+        ! delta
+        if (ldelta) then
+          call openDataset('delta', delta_id)
+          write(*,*) 'initialize_special: Using dataset /zaver/delta/'//trim(dataname)//' for delta'
+        end if
+        
+        ! kappa
+        if (lkappa) then
+          call openDataset('kappa', kappa_id)
+          write(*,*) 'initialize_special: Using dataset /zaver/kappa/'//trim(dataname)//' for kappa'
+        end if
+        
+        ! Load initial dataset values
+
+        ! Allocate data arrays
+        if (lalpha) then
+          allocate(alpha_data(nx,ny,nz,dataload_len,3,3))
+          alpha_data = 0
+          write (*,*) 'Loading alpha to memory...'
+          call loadDataset(alpha_data, lalpha_arr, alpha_id, 0)
+          write (*,*) 'Loaded alpha. sum/maxval/minval: ', sum(alpha_data), maxval(alpha_data), minval(alpha_data)
+        end if
+        if (lbeta) then
+          allocate(beta_data(nx,ny,nz,dataload_len,3,3))
+          beta_data  = 0
+          call loadDataset(beta_data, lbeta_arr, beta_id, 0)
+          write (*,*) 'Loaded beta. sum/maxval/minval: ', sum(beta_data), maxval(beta_data), minval(beta_data)
+        end if
+        if (lgamma) then
+          allocate(gamma_data(nx,ny,nz,dataload_len,3))
+          gamma_data = 0
+          call loadDataset(gamma_data, lgamma_arr, gamma_id, 0)
+          write (*,*) 'Loaded gamma. sum/maxval/minval: ', sum(gamma_data), maxval(gamma_data), minval(gamma_data)
+        end if
+        if (ldelta) then
+          allocate(delta_data(nx,ny,nz,dataload_len,3))
+          delta_data = 0
+          call loadDataset(delta_data, ldelta_arr, delta_id, 0)
+          write (*,*) 'Loaded delta. sum/maxval/minval: ', sum(delta_data), maxval(delta_data), minval(delta_data)
+        end if
+        if (lkappa) then
+          allocate(kappa_data(nx,ny,nz,dataload_len,3,3,3))
+          kappa_data = 0
+          !call loadDataset(kappa_data, lkappa_arr, kappa_id, 0)
+          write (*,*) 'Loaded kappa. sum/maxval/minval: ', sum(kappa_data), maxval(kappa_data), minval(kappa_data)
+        end if
       end if
-
-      call H5Fopen_F(hdf_emftensors_filename, H5F_ACC_RDONLY_F, hdf_emftensors_file, hdferr, access_prp = hdf_emftensors_plist)
-
-      call H5Lexists_F(hdf_emftensors_file,'/zaver/', hdf_exists, hdferr)
-
-      if (.not. hdf_exists) then
-        call H5Fclose_F(hdf_emftensors_file, hdferr)
-        call H5Pclose_F(hdf_emftensors_plist, hdferr)
-        call H5close_F(hdferr)
-        call fatal_error('initialize_special','group /zaver/ does not exist!')
-      end if
-
-      call H5Gopen_F(hdf_emftensors_file, 'zaver', hdf_emftensors_group, hdferr)
-
-      ! Open datasets
-
-      ! alpha
-      alpha_id_G = -1
-      alpha_id_D = -1
-      alpha_id_S = -1
-      lalpha_open = .false.
-      call openDataset('alpha', alpha_id_G, &
-                       alpha_id_D, alpha_id_S, &
-                       alpha_dims, lalpha_exists, & 
-                       6, loaderr)
-      if (loaderr == 0) then
-        lalpha_open = .true.
-        write(*,*) 'initialize_special: alpha found. Using dataset /zaver/alpha/'//trim(dataname)
-      else if (lalpha) then
-        call fatal_error('initialize_special','alpha not found, but required. Tried to use dataset /zaver/alpha/'//trim(dataname))
-      end if
-
-      ! beta
-      beta_id_G = -1
-      beta_id_D = -1
-      beta_id_S = -1
-      lbeta_open = .false.
-      call openDataset('beta', beta_id_G, &
-                       beta_id_D, beta_id_S, &
-                       beta_dims, lbeta_exists, & 
-                       6, loaderr)
-      if (loaderr == 0) then
-        lbeta_open = .true.
-        write(*,*) 'initialize_special: beta found. Using dataset /zaver/beta/'//trim(dataname)
-      else if (lbeta) then
-        call fatal_error('initialize_special','beta not found, but required. Tried to use dataset /zaver/beta/'//trim(dataname))
-      end if
-
-      ! gamma
-      gamma_id_G = -1
-      gamma_id_D = -1
-      gamma_id_S = -1
-      lgamma_open = .false.
-      call openDataset('gamma', gamma_id_G, &
-                       gamma_id_D, gamma_id_S, &
-                       gamma_dims, lgamma_exists, & 
-                       5, loaderr)
-      if (loaderr == 0) then
-        lgamma_open = .true.
-        write(*,*) 'initialize_special: gamma found. Using dataset /zaver/gamma/'//trim(dataname)
-        write(*,*) 'emftensor: gamma found'
-        write(*,*) '  using dataset /zaver/gamma/'//trim(dataname)
-      else if (lgamma) then
-        call fatal_error('initialize_special','gamma not found, but required. Tried to use dataset /zaver/gamma/'//trim(dataname))
-      end if
-
-      ! delta
-      delta_id_G = -1
-      delta_id_D = -1
-      delta_id_S = -1
-      ldelta_open = .false.
-      call openDataset('delta', delta_id_G, &
-                       delta_id_D, delta_id_S, &
-                       delta_dims, ldelta_exists, & 
-                       5, loaderr)
-      if (loaderr == 0) then
-        ldelta_open = .true.
-        write(*,*) 'initialize_special: delta found. Using dataset /zaver/delta/'//trim(dataname)
-      else if (ldelta) then
-        call fatal_error('initialize_special','delta not found, but required. Tried to use dataset /zaver/delta/'//trim(dataname))
-      end if
-      
-      ! kappa
-      kappa_id_G = -1
-      kappa_id_D = -1
-      kappa_id_S = -1
-      lkappa_open = .false.
-      call openDataset('kappa', kappa_id_G, &
-                       kappa_id_D, kappa_id_S, &
-                       kappa_dims, lkappa_exists, & 
-                       7, loaderr)
-      if (loaderr == 0) then
-        lkappa_open = .true.
-        write(*,*) 'initialize_special: kappa found. Using dataset /zaver/kappa/'//trim(dataname)
-      else if (lkappa) then
-        call fatal_error('initialize_special','kappa not found, but required. Tried to use dataset /zaver/kappa/'//trim(dataname))
-      end if
-      
-      ! Load initial dataset values
-
-      call loadDataset(gamma_id_D, gamma_id_S, gamma_data, 1)
-!
+  !
     endsubroutine initialize_special
 !***********************************************************************
     subroutine finalize_special(f)
@@ -350,38 +348,49 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       call keep_compiler_quiet(f)
+      if (lrun) then
+        ! Deallocate data
+        if (allocated(alpha_data)) then
+          deallocate(alpha_data)
+        end if
+        if (allocated(beta_data)) then
+          deallocate(beta_data)
+        end if
+        if (allocated(gamma_data)) then
+          deallocate(gamma_data)
+        end if
+        if (allocated(delta_data)) then
+          deallocate(delta_data)
+        end if
+        if (allocated(kappa_data)) then
+          deallocate(kappa_data)
+        end if
 
-      ! Deallocate data
-      deallocate(alpha_data)
-      deallocate( beta_data)
-      deallocate(gamma_data)
-      deallocate(delta_data)
-      deallocate(kappa_data)
+        print *,'Closing emftensors.h5'
+        
+        if (lalpha) then
+          call closeDataset(alpha_id)
+        end if
+        if (lbeta) then
+          call closeDataset(beta_id)
+        end if
+        if (lgamma) then
+          call closeDataset(gamma_id)
+        end if
+        if (ldelta) then
+          call closeDataset(delta_id)
+        end if
+        if (lkappa) then
+          call closeDataset(kappa_id)
+        end if
 
-      print *,'Closing emftensors.h5'
-      
-      if (lalpha_open) then
-        call closeDataset(alpha_id_G, alpha_id_D, alpha_id_S)
+        call H5Gclose_F(hdf_emftensors_group, hdferr)
+        call H5Fclose_F(hdf_emftensors_file, hdferr)
+        call H5Pclose_F(hdf_emftensors_plist, hdferr)
+        call H5close_F(hdferr)
+        call mpibarrier()
       end if
-      if (lbeta_open) then
-        call closeDataset(beta_id_G, beta_id_D, beta_id_S)
-      end if
-      if (lgamma_open) then
-        call closeDataset(gamma_id_G, gamma_id_D, gamma_id_S)
-      end if
-      if (ldelta_open) then
-        call closeDataset(delta_id_G, delta_id_D, delta_id_S)
-      end if
-      if (lkappa_open) then
-        call closeDataset(kappa_id_G, kappa_id_D, kappa_id_S)
-      end if
-
-      call H5Gclose_F(hdf_emftensors_group, hdferr)
-      call H5Fclose_F(hdf_emftensors_file, hdferr)
-      call H5Pclose_F(hdf_emftensors_plist, hdferr)
-      call H5close_F(hdferr)
-      call mpibarrier()
-!
+  !
     endsubroutine finalize_special
 !***********************************************************************
     subroutine init_special(f)
@@ -410,6 +419,16 @@ module Special
     subroutine pencil_criteria_special()
 !
 !  All pencils that this special module depends on are specified here.
+      lpenc_requested(i_bb)=.true.
+      lpenc_requested(i_bij)=.true.
+      lpenc_requested(i_jj)=.true.
+      lpenc_requested(i_alpha_emf)=.true.
+      lpenc_requested(i_beta_emf)=.true.
+      lpenc_requested(i_gamma_emf)=.true.
+      lpenc_requested(i_delta_emf)=.true.
+      lpenc_requested(i_kappa_emf)=.true.
+
+      write(*,*) 'pencil_criteria_special: Pencils requested'
 !
 !  18-07-06/tony: coded
 !
@@ -440,8 +459,52 @@ module Special
       intent(in) :: f
       intent(inout) :: p
 !
+      integer i,j
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
+!
+      if (lalpha) then
+        do j=1,3; do i=1,3
+          if (lalpha_arr(i,j)) then
+            p%alpha_emf(1:nx,i,j)=emf_interpolate(alpha_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j))
+          else
+            p%alpha_emf(1:nx,i,j)=0
+          end if
+        end do; end do
+        !if ((lroot) .and. (it == 5) .and. (mod(m-nghost,16) == 1)) then
+        !  write(*,*) ' calc_pencils_special running...'
+        !  write(*,*) ' calc_pencils_special iproc=',iproc,' m=',m-nghost,' n=',n-nghost,' sum=', sum(p%gamma_emf)
+        !end if
+      end if
+      if (lbeta) then
+        do j=1,3; do i=1,3
+          if (lbeta_arr(i,j)) then
+            p%beta_emf(1:nx,i,j)=emf_interpolate(beta_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j))
+          else
+            p%beta_emf(1:nx,i,j)=0
+          end if
+        end do; end do
+      end if
+      if (lgamma) then
+        do i=1,3
+          if (lgamma_arr(i)) then
+            p%gamma_emf(1:nx,i)=emf_interpolate(gamma_data(1:nx,m-nghost,n-nghost,1:dataload_len,i))
+          else
+            p%gamma_emf(1:nx,i)=0
+          end if
+        end do
+      end if
+      if (ldelta) then
+        do i=1,3
+          if (ldelta_arr(i)) then
+            p%delta_emf(1:nx,i)=emf_interpolate(delta_data(1:nx,m-nghost,n-nghost,1:dataload_len,i))
+          else
+            p%delta_emf(1:nx,i)=0
+          end if
+        end do
+      end if
+
+
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -488,13 +551,15 @@ module Special
 !***********************************************************************
     subroutine read_special_init_pars(iostat)
 !
-      use File_io, only: parallel_unit
-!
       integer, intent(out) :: iostat
-      print *,'Read special init pars <--------'
+      write (*,*) 'read_special_init_pars running...'
 !
-      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
       iostat = 0
+      call setParameterDefaults()
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+      write (*,*) 'read_special_init_pars parameters read...'
+      call parseParameters()
+      write (*,*) 'read_special_init_pars parameters parsed...'
 !
     endsubroutine read_special_init_pars
 !***********************************************************************
@@ -512,7 +577,12 @@ module Special
 !
       iostat = 0
       
-      print *,'Read special run params <-----------'
+      write (*,*) 'read_special_run_pars running...'
+      call setParameterDefaults()
+      write (*,*) 'read_special_run_pars parameters read...'
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
+      call parseParameters()
+      write (*,*) 'read_special_run_pars parameters parsed...'
 !
 !
     endsubroutine read_special_run_pars
@@ -527,7 +597,7 @@ module Special
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
 !
-!  Reads and registers print parameters relevant to special.
+!Reads and registers print parameters relevant to special.
 !
 !  06-oct-03/tony: coded
 !
@@ -691,8 +761,8 @@ module Special
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
-      
-      !print *,'Calc special magnetic <-----------'
+      real, dimension(nx,3) :: tmpvector, tmpvector2, emfvector
+      integer :: i
 !!
 !!  SAMPLE IMPLEMENTATION (remember one must ALWAYS add to df).
 !!
@@ -703,6 +773,22 @@ module Special
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
 !
+      emfvector=0
+      tmpvector=0
+      tmpvector2=0
+      if (lalpha) then
+        call dot_mn_vm(p%bb,p%alpha_emf,tmpvector)
+        emfvector = emfvector + tmpvector
+      end if
+      tmpvector=0
+      tmpvector2=0
+      if (lbeta) then
+        call dot_mn_vm(p%jj,p%beta_emf,tmpvector)
+        emfvector = emfvector - tmpvector
+      end if
+
+      df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+emfvector
+
     endsubroutine special_calc_magnetic
 !***********************************************************************
     subroutine special_calc_pscalar(f,df,p)
@@ -861,107 +947,240 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
 !***********************************************************************
 
     subroutine openDataset(datagroup,      &
-                           dataset_id_G,   &
-                           dataset_id_D,   &
-                           dataset_id_S,   &
-                           dataset_dims,   &
-                           dataset_exists, &
-                           dataset_ndims,  &
-                           loaderr)
-
-      ! Load a certain timestep from input array
+                           tensor_id)
+      ! Open a dataset e.g. /zaver/alpha/data and auxillary dataspaces
       character(len=*), intent(in)    :: datagroup
-      integer(HID_T), intent(inout)   :: dataset_id_G, & 
-                                         dataset_id_D, &
-                                         dataset_id_S
-      integer, intent(in) :: dataset_ndims
-      integer, intent(out) :: loaderr
-      integer(HSIZE_T), dimension(dataset_ndims),  intent(inout) :: dataset_dims
+      integer, intent(in)             :: tensor_id
+!
       integer(HSIZE_T), dimension(10) :: maxdimsizes
-      logical, intent(inout)          :: dataset_exists
-      
-      dataset_exists = .true.
-
+      integer :: ndims
+      logical :: hdf_exists
       ! Check that datagroup e.g. /zaver/alpha exists
-      call H5Lexists_F(hdf_emftensors_group, datagroup, dataset_exists, hdferr)
-      if (hdferr /= 0) then
-        loaderr = 1
-        dataset_exists = .false.
-        return
+      call H5Lexists_F(hdf_emftensors_group, datagroup, hdf_exists, hdferr)
+      if (.not. hdf_exists) then
+        call fatal_error('openDataset','/zaver/'//trim(datagroup)// &
+                          ' does not exist')
       end if
       ! Open datagroup
-      call H5Gopen_F(hdf_emftensors_group, datagroup, dataset_id_G, hdferr)
+      call H5Gopen_F(hdf_emftensors_group, datagroup, tensor_id_G(tensor_id), hdferr)
       if (hdferr /= 0) then
-        loaderr = 2
-        return
+        call fatal_error('openDataset','Error opening /zaver/'//trim(datagroup))
       end if
-
       ! Check that dataset e.g. /zaver/alpha/data exists
-      call H5Lexists_F(dataset_id_G, dataname, dataset_exists, hdferr)
-      if (hdferr /= 0) then
-        loaderr = 3
-        call H5Gclose_F(dataset_id_G, hdferr)
-        dataset_exists = .false.
-        return
+      call H5Lexists_F(tensor_id_G(tensor_id), dataname, hdf_exists, hdferr)
+      if (.not. hdf_exists) then
+        call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
+        call fatal_error('openDataset','/zaver/'//trim(datagroup)// &
+                          '/'//trim(dataname)//' does not exist')
       end if
       ! Open dataset
-      call H5Dopen_F(dataset_id_G, dataname, dataset_id_D, loaderr)
+      call H5Dopen_F(tensor_id_G(tensor_id), dataname, tensor_id_D(tensor_id), hdferr)
       if (hdferr /= 0) then
-        loaderr = 4
-        call H5Gclose_F(dataset_id_G, hdferr)
-        return
+        call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
+        call fatal_error('openDataset','Error opening /zaver/'// &
+                          trim(datagroup)//'/'//trim(dataname))
       end if
       ! Get dataspace
-      call H5Dget_space_F(dataset_id_D, dataset_id_S, hdferr)
+      call H5Dget_space_F(tensor_id_D(tensor_id), tensor_id_S(tensor_id), hdferr)
       if (hdferr /= 0) then
-        loaderr = 5
-        call H5Dclose_F(dataset_id_D, hdferr)
-        call H5Gclose_F(dataset_id_G, hdferr)
-        return
+        call H5Dclose_F(tensor_id_D(tensor_id), hdferr)
+        call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
+        call fatal_error('openDataset','Error opening dataspace for /zaver/'// &
+                          trim(datagroup)//'/'//trim(dataname))
       end if
-      !call H5Sget_simple_extent_ndims_F(dataset_id_S, ndims, hdferr)
-      call H5Sget_simple_extent_dims_F(dataset_id_S, dataset_dims, maxdimsizes, hdferr)
-      print *,dataset_dims(1:dataset_ndims)
-      print *,maxdimsizes(1:dataset_ndims)
-      loaderr = 0
+      ! Get dataspace dimensions
+      ndims = tensor_ndims(tensor_id)
+      call H5Sget_simple_extent_dims_F(tensor_id_S(tensor_id), &
+                                       tensor_dims(tensor_id,1:ndims), &
+                                       maxdimsizes(1:ndims), &
+                                       hdferr)
+      ! Create a memory space mapping for input data
+      call H5Screate_simple_F(ndims, tensor_memdims(tensor_id,1:ndims), &
+                              tensor_id_memS(tensor_id), hdferr)
+      if (hdferr /= 0) then
+        call H5Sclose_F(tensor_id_S(tensor_id), hdferr)
+        call H5Dclose_F(tensor_id_D(tensor_id), hdferr)
+        call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
+        call fatal_error('openDataset','Error creating memory mapping & 
+                          for /zaver/'//trim(datagroup)//'/'//trim(dataname))
+      end if
 
     end subroutine openDataset
 
-    subroutine closeDataset(dataset_id_G, dataset_id_D, dataset_id_S)
-      ! Load a certain timestep from input array
-      integer(HID_T), intent(inout)   :: dataset_id_G, &
-                                         dataset_id_D, &
-                                         dataset_id_S
-      call H5Sclose_F(dataset_id_S, hdferr)
-      call H5Dclose_F(dataset_id_D, hdferr)
-      call H5Gclose_F(dataset_id_G, hdferr)
+    subroutine closeDataset(tensor_id)
+      ! Close opened dataspaces, dataset and group
+      implicit none
+      integer :: tensor_id
+      call H5Sclose_F(tensor_id_memS(tensor_id), hdferr)
+      call H5Sclose_F(tensor_id_S(tensor_id), hdferr)
+      call H5Dclose_F(tensor_id_D(tensor_id), hdferr)
+      call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
 
     end subroutine closeDataset
 
-    subroutine loadDataset_rank1(dataset_id_D, dataset_id_S, dataarray, loadstart)
+    subroutine loadDataset_rank1(dataarray, datamask, tensor_id, loadstart)
+      ! Load a chunk of data for a vector, beginning at loadstart
       implicit none
-      integer(HID_T), intent(inout)   :: dataset_id_D, &
-                                         dataset_id_S
       real, dimension(:,:,:,:,:), intent(inout) :: dataarray
+      logical, dimension(3), intent(in) :: datamask
+      integer, intent(in) :: tensor_id
       integer, intent(in) :: loadstart
-      integer(HSIZE_T), dimension(5) :: hdf_offsets, hdf_stride, &
-                                        hdf_block,   hdf_count
-      integer(HID_T)  :: dataspace
-      integer         :: tlen
-
-      !call H5Dget_space_F(hdf_datasets(ianalyzer,ifield), hdf_filespace, hdferr)
-      !if (ndims == 5) then
-      !  hdf_offsets  = [ 1, ipx*nx, ipy*ny, ipz*nz, datastart ]
-      !  hdf_stride   = [ 1, 1, 1, 1, 1 ]
-      !  hdf_block    = [ 3, 3, nx, ny, nz, 1 ]
-      !  hdf_count    = [ 1, 1, 1, dataload_len ]
-
-      write(*,*) shape(dataarray)
-
-      !call H5Sselect_hyperslab_F(hdf_filespace, H5S_SELECT_SET_F, hdf_offsets, hdf_count, &
-      !                           hdferr, hdf_stride, hdf_block)
-      !call H5Sselect_hyperslab_F(hdf_filespace, H5S_SELECT_SET_F, hdf_offsets, hdf_count, &
-      !                          hdferr)
+      integer :: ndims
+      integer(HSIZE_T) :: mask_i
+      ndims = tensor_ndims(tensor_id)
+      tensor_offsets(tensor_id,4) = loadstart
+      call H5Sselect_none_F(tensor_id_S(tensor_id), hdferr)
+      call H5Sselect_none_F(tensor_id_memS(tensor_id), hdferr)
+      do mask_i=1,3
+        ! Load only wanted datasets
+        if (datamask(mask_i)) then
+          ! Set the new offset for data reading
+          tensor_offsets(tensor_id,ndims)    = mask_i-1
+          tensor_memoffsets(tensor_id,ndims) = mask_i-1
+          ! Hyperslab for data
+          call H5Sselect_hyperslab_F(tensor_id_S(tensor_id), H5S_SELECT_OR_F, &
+                                     tensor_offsets(tensor_id,1:ndims),       &
+                                     tensor_counts(tensor_id,1:ndims),        &
+                                     hdferr)
+          ! Hyperslab for memory
+          call H5Sselect_hyperslab_F(tensor_id_memS(tensor_id), H5S_SELECT_OR_F, &
+                                     tensor_memoffsets(tensor_id,1:ndims),       &
+                                     tensor_memcounts(tensor_id,1:ndims),        &
+                                     hdferr)
+        end if
+      end do
+      ! Read data into memory
+      call H5Dread_F(tensor_id_D(tensor_id), hdf_memtype, dataarray, &
+                     tensor_dims(tensor_id,1:ndims), hdferr, &
+                     tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
+      dataarray = tensor_scales(tensor_id) * dataarray
     end subroutine loadDataset_rank1
+    
+    subroutine loadDataset_rank2(dataarray, datamask, tensor_id, loadstart)
+      ! Load a chunk of data for a 2-rank tensor, beginning at loadstart
+      implicit none
+      real, dimension(:,:,:,:,:,:), intent(inout) :: dataarray
+      logical, dimension(3,3), intent(in) :: datamask
+      integer, intent(in) :: tensor_id
+      integer, intent(in) :: loadstart
+      integer :: ndims
+      integer(HSIZE_T) :: mask_i, mask_j
+      ndims = tensor_ndims(tensor_id)
+      tensor_offsets(tensor_id,4) = loadstart
+      call H5Sselect_none_F(tensor_id_S(tensor_id), hdferr)
+      call H5Sselect_none_F(tensor_id_memS(tensor_id), hdferr)
+      do mask_j=1,3; do mask_i=1,3
+        ! Load only wanted datasets
+        if (datamask(mask_i,mask_j)) then
+          ! Set the new offset for data reading
+          tensor_offsets(tensor_id,ndims-1)    = mask_i-1
+          tensor_offsets(tensor_id,ndims)      = mask_j-1
+          tensor_memoffsets(tensor_id,ndims-1) = mask_i-1
+          tensor_memoffsets(tensor_id,ndims)   = mask_j-1
+          ! Hyperslab for data
+          call H5Sselect_hyperslab_F(tensor_id_S(tensor_id), H5S_SELECT_OR_F, &
+                                     tensor_offsets(tensor_id,1:ndims),       &
+                                     tensor_counts(tensor_id,1:ndims),        &
+                                     hdferr)
+          ! Hyperslab for memory
+          call H5Sselect_hyperslab_F(tensor_id_memS(tensor_id), H5S_SELECT_OR_F, &
+                                     tensor_memoffsets(tensor_id,1:ndims),        &
+                                     tensor_memcounts(tensor_id,1:ndims),         &
+                                     hdferr)
+        end if
+      end do; end do
+      ! Read data into memory
+      call H5Dread_F(tensor_id_D(tensor_id), hdf_memtype, dataarray, &
+                     tensor_dims(tensor_id,1:ndims), hdferr, &
+                     tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
+      dataarray = tensor_scales(tensor_id) * dataarray
+    end subroutine loadDataset_rank2
+
+    function emf_interpolate(dataarray) result(interp_data)
+      real, intent(in), dimension(nx,dataload_len) :: dataarray
+      real, dimension(nx) :: interp_data
+
+      interp_data=dataarray(:,1)
+
+    end function emf_interpolate
+
+    subroutine setParameterDefaults
+      implicit none
+      interpname = 'none'
+      lalpha=.false.
+      lbeta =.false.
+      lgamma=.false.
+      ldelta=.false.
+      lkappa=.false.
+      lalpha_c=.false.
+      lbeta_c=.false.
+      lgamma_c=.false.
+      ldelta_c=.false.
+      lalpha_arr=.false.
+      lbeta_arr=.false.
+      lgamma_arr=.false.
+      ldelta_arr=.false.
+      alpha_scale=1.0
+      beta_scale=1.0
+      gamma_scale=1.0
+      delta_scale=1.0
+      dataname='data'
+    end subroutine setParameterDefaults
+
+    subroutine parseParameters
+      implicit none
+      ! Load boolean array for alpha
+      if (any(lalpha_c)) then
+        lalpha = .true.
+        lalpha_arr(1,1) = lalpha_c(1)
+        lalpha_arr(2,1) = lalpha_c(2)
+        lalpha_arr(1,2) = lalpha_c(2)
+        lalpha_arr(3,1) = lalpha_c(3)
+        lalpha_arr(1,3) = lalpha_c(3)
+        lalpha_arr(2,2) = lalpha_c(4)
+        lalpha_arr(2,3) = lalpha_c(5)
+        lalpha_arr(3,2) = lalpha_c(5)
+        lalpha_arr(3,3) = lalpha_c(6)
+      else if (lalpha) then
+        lalpha     = .true.
+        lalpha_arr = .true.
+      end if
+      ! Load boolean array for beta
+      if (any(lbeta_c)) then
+        lbeta = .true.
+        lbeta_arr(1,1) = lbeta_c(1)
+        lbeta_arr(2,1) = lbeta_c(2)
+        lbeta_arr(1,2) = lbeta_c(2)
+        lbeta_arr(3,1) = lbeta_c(3)
+        lbeta_arr(1,3) = lbeta_c(3)
+        lbeta_arr(2,2) = lbeta_c(4)
+        lbeta_arr(2,3) = lbeta_c(5)
+        lbeta_arr(3,2) = lbeta_c(5)
+        lbeta_arr(3,3) = lbeta_c(6)
+      else if (lbeta) then
+        lbeta     = .true.
+        lbeta_arr = .true.
+      end if
+      ! Load boolean array for gamma
+      if (any(lgamma_c)) then
+        lgamma_arr  = lgamma_c
+      else if (lgamma) then
+        lgamma      = .true.
+        lgamma_arr  = .true.
+      end if
+      ! Load boolean array for delta
+      if (any(ldelta_c)) then
+        ldelta_arr  = ldelta_c
+      else if (ldelta) then
+        ldelta      = .true.
+        ldelta_arr  = .true.
+      end if
+
+      tensor_scales(alpha_id) = alpha_scale
+      tensor_scales(beta_id)  = beta_scale
+      tensor_scales(gamma_id) = gamma_scale
+      tensor_scales(delta_id) = delta_scale
+            
+    end subroutine parseParameters
 
 endmodule Special

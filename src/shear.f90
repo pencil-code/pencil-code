@@ -100,6 +100,9 @@ module Shear
 !
       use Sub, only: bspline_precondition, ludcmp
 !
+      if (lyinyang) &
+        call fatal_error('initialize_shear', 'Shear not implemented for Yin-Yang grid')
+!
 !  Calculate the shear velocity.
 !
       if (qshear/=0.0) then
@@ -794,8 +797,6 @@ module Shear
 !
 !  25-feb-13/ccyang: coded.
 !  16-sep-14/ccyang: relax the nprocx=1 restriction.
-!
-      use Mpicomm, only: mpisend_real, mpirecv_real, mpibarrier
 !
       real, dimension(:,:,:,:), intent(inout) :: f
       integer, intent(in) :: ivar1, ivar2

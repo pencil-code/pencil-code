@@ -832,6 +832,7 @@ module Deriv
         if (.not. lequidist(j)) then
           call fatal_error('der6','for non-equidistant grid only '//&
               'if dx is ignored.')
+          igndx = .true.
         endif
         igndx = .false.
       endif

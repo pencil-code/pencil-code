@@ -151,6 +151,7 @@ module Cdata
   real, dimension (3) :: alpha_ts=0.0,beta_ts=0.0,dt_beta_ts=1.0
   logical :: lfirstpoint=.false.,llastpoint=.false.
   logical :: lmaxadvec_sum=.false.,old_cdtv=.false.
+  logical :: lmaximal_cdtv=.false., lmaximal_cdt=.false.
   character (len=20), dimension(mvar) :: timestep_scaling='cons_err'
 !
 !  Use of LSODE to solve the chemistry in a separate step
@@ -267,6 +268,7 @@ module Cdata
   logical :: lstart=.false., lrun=.false., lreloading=.false.
   logical :: lenergy=.false.
   logical :: ladv_der_as_aux=.false.
+  logical :: lghostfold_usebspline = .false.
 !
 !  Variable indices (default zero, set later by relevant physics modules).
 !
@@ -317,6 +319,10 @@ module Cdata
   integer :: iaphi=0,ibphi=0,ieth=0
   integer :: idet = 0
   integer :: iinvgrid=0
+  integer :: iguij=0
+  integer :: igu11=0,igu12=0,igu13=0
+  integer :: igu21=0,igu22=0,igu23=0
+  integer :: igu31=0,igu32=0,igu33=0
   integer, dimension(ndustspec) :: iuud=0,iudx=0,iudy=0,iudz=0
   integer, dimension(ndustspec) :: ilnnd=0, ind=0,imd=0,imi=0,idc=0,ilndc=0
   integer, dimension(ndustspec,ndustspec0) :: idcj=0,ilndcj=0
@@ -656,7 +662,7 @@ module Cdata
 !
   real :: re_mesh=0.5
   logical :: ldynamical_diffusion=.false.
-  logical :: ldyndiff_urmsmxy = .false.
+  logical :: ldyndiff_useumax = .true.
 !
 !  Background stratification.
 !

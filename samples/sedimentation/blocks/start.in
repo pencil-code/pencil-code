@@ -36,5 +36,6 @@
   gravz_profile='linear', nu_epicycle=1.0
   lparticlemesh_tsc=T
   tausp_species=0.10,0.20,0.30,0.40
+  ldragforce_dust_par=T, ldragforce_gas_par=T
   lmigration_redo=T
 /

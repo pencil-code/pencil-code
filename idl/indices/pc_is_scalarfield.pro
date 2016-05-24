@@ -21,7 +21,7 @@ COMPILE_OPT IDL2,HIDDEN
     ndim=3
   endelse
 ;
-;  Find out if array is a scalar field.
+;  Find out whether array is a scalar field.
 ;
   result=1
   if ( (varsize[0] eq 1) and (varsize[1] eq 1) ) then begin

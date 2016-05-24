@@ -28,6 +28,7 @@
   lradius_advance=F
   lpos_advance=F
   lNusselt_output=F
+  isolid_reac_mech=1
 /
 &viscosity_run_pars
   ivisc='nu-mixture'

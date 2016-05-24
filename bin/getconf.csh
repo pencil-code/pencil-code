@@ -11,7 +11,6 @@
 set debug = 1
 # set verbose
 # set echo
-
 # Just as a keepsake
 set dollar = '$'
 # Set up PATH for people who don't include $PENCIL_HOME/bin by default
@@ -714,6 +713,21 @@ else if ($hn =~ psi*) then
   set masternode=psi24
   echo "Setting master node to psi24, the only node that is accesible by rsh"
 #--------------------------------------------------
+else if (($hn =~ c*[1-9]) && ($USER =~ pkapyla || $USER =~ lizmcole || $USER =~ cdstars* || $USER =~ warneche || $USER =~ mreinhar || $USER =~ fagent || $USER =~ pekkila)) then
+  echo "taito - CSC, Kajaani, Finland"
+  if ($?SLURM_JOBID) then
+    echo "Running job: $SLURM_JOBID"
+    setenv SLURM_WORKDIR `pwd`
+    touch $SLURM_WORKDIR/data/jobid.dat
+    echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
+  endif
+  set mpirun = 'srun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 1
+  set local_binary = 0
+#--------------------------------------------------
 else if ($hn =~ clogin*) then
   echo "sisu - CSC, Kajaani, Finland"
   if ($?SLURM_JOBID) then
@@ -902,6 +916,24 @@ else if ($hn =~ beskow-login*.pdc.kth.se*) then
   set mpi = 1
   set mpirunops = ''
   set mpirun = 'aprun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 1
+  set local_binary = 0
+#----------------------------------------------
+#----------------------------------------------
+#xiangyu, HEBBE
+else if ($hn =~ hebbe*) then
+  echo "*********************************"
+  echo " PDC machine HEBBE "
+  set start_x=$cwd/src/start.x
+  set run_x=$cwd/src/run.x
+  echo "*********************************"
+  echo "***---------------------------------**" >>$PENCIL_HOME/.pencil_runs.txt
+  set mpi = 1
+  set mpirunops = ''
+  set mpirun = 'mpirun'
   set npops = "-n $ncpus"
   set local_disc = 0
   set one_local_disc = 0
@@ -1449,6 +1481,7 @@ else if ($hn =~ vip*) then
 else if ($hn =~ hy[0-9]*) then
   echo "Hydra system at Rechenzentrum Garching"
   set mpirun = poe
+  set mpirunops2="-procs $ncpus"
 #---------------------------------------------------
 else if ($hn =~ aims* ) then
   echo "AIMS cluster at RZG"
@@ -1870,7 +1903,7 @@ if ($mpi) then
     set npops = "-nodes=${nnode}x${nprocpernode}"
   else if ("$mpirun" =~ *poe*) then
     set nprocpernode = 1
-    set x_ops = "$mpirunops -procs $ncpus"
+    set x_ops = "$mpirunops"
     set mpirunops = ""
     set npops = ""
   else if ("$mpirun" =~ *yod*) then
@@ -1974,6 +2007,7 @@ endif
 setenv NODELIST `echo $nodelist | perl -ne 'print join(":",split(/\s/,$_)),"\n"'`
 
 if ($debug) then
+  echo '-- DEBUG CONFIG --
   echo '$mpi            = ' "<$mpi>"
   echo '$ncpus          = ' "<$ncpus>"
   echo '$npops          = ' "<$npops>"
@@ -1996,7 +2030,12 @@ if ($debug) then
   echo '$copysnapshots  = ' "<$copysnapshots>"
   echo '$particles      = ' "<$lparticles>"
   echo '$particles_nbody= ' "<$lparticles_nbody>"
+  echo '--
 endif
+#Xiangyu on Hebbe
+#set mpirun = /c3se/apps/Common/intel/ips_xe_ce_2016/impi/5.1.1.109/bin64/mpiexec
+#set /c3se/apps/Common/intel/ips_xe_ce_2016/impi/5.1.1.109/bin64/mpiexec = mpirun
+#set mpiexec = mpirun
 
 exit
 

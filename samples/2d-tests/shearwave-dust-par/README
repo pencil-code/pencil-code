@@ -4,21 +4,23 @@ SVN Id:
     $Id$
 Maintainer:
     Anders Johansen <anders/astro.lu.se>
+    Chao-Chin Yang <ccyang/astro.lu.se>
 Added:
     11-aug-2006
 Status:
     succeeds # One of [succeeds|failing since <date>|obsolete| ...]
 Recommended resolution:
-    None. Varying the resolution is a good test of how many grid points the
-    code needs to resolve a self-gravitating shear wave.
+    None, but varying the resolution is a good test of how many grid
+    points the code needs to resolve a shear wave.
 Comments:
-    Another shear wave test, this time without gravity but with drag force,
-    used to test drag force assignment over the shear-periodic boundary.
+    Particle-gas shear wave test without gravity but with mutual drag
+    force; used to test drag force assignment over the shear-periodic
+    boundary.
 References:
-    Youdin A., & Johansen A.: 2007, ``Protoplanetary disc turbulence driven by
-    the streaming instability: Linear evolution and numerical methods'', The
-    Astrophysical Journal, vol. 662, p. 613-626
+    Youdin, A., & Johansen, A.: 2007, ``Protoplanetary Disk Turbulence
+    Driven by the Streaming Instability: Linear Evolution and Numerical
+    Methods'', The Astrophysical Journal, Vol. 662, Issue 1, pp. 613-626
 
-    Johansen A., & Youdin A.: 2007, ``Protoplanetary disc turbulence driven by
-    the streaming instability: Non-linear saturation and particle
-    concentration'', The Astrophysical Journal, vol. 662, p. 627-641
+    Yang, C.-C., & Johansen, A.: 2016, ``Integration of Particle-Gas
+    Systems with Stiff Mutual Drag Interaction'', The Astrophysical
+    Journal Supplement Series, in press (arXiv:1603.08523)

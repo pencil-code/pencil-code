@@ -16,7 +16,7 @@ import sys
 import re
 from pencilnew.io.npfile import npfile as npfile
 from pencilnew.math.derivatives import curl, curl2
-from param import param as read_param
+from pencilnew.read.param import param as read_param
 from index import index as read_index
 from dim import dim as read_dim
 

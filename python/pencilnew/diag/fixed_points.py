@@ -4,12 +4,15 @@
 Creates the fixed point values.
 """
 
-import numpy as np
+#import numpy as np
 import pencil as pc
 import math as m
 import multiprocessing as mp
 import os
-import h5py
+try:
+    import h5py
+except:
+    print '!! ERR in diag/fixed_points.py: Dependency of h5py not fullfilled.'
 from pencilnew.diag.tracers import TracersParameterClass
 from pencilnew.diag.tracers import Tracers
 from pencilnew.calc.streamlines import Stream
@@ -38,7 +41,8 @@ class FixedPoint(object):
     def find_fixed(self, data_dir='data/', destination='fixed_points.hf5',
                    varfile='VAR0', ti=-1, tf=-1, trace_field='bb', h_min=2e-3,
                    h_max=2e4, len_max=500, tol=1e-2, interpolation='trilinear',
-                   trace_sub=1, integration='simple', int_q=[''], n_proc=1):
+                   trace_sub=1, integration='simple', int_q=[''], n_proc=1,
+                   tracer_file_name=''):
         """
         Find the fixed points.
 
@@ -104,8 +108,14 @@ class FixedPoint(object):
 
          *n_proc*:
            Number of cores for multi core computation.
+
+         *tracer_file_name*
+           Name of the tracer file to be read.
+           If equal to '' it will compute the tracers.
         """
 
+
+        import numpy as np
 
         # Return the fixed points for a subset of the domain.
         def __sub_fixed(queue, ix0, iy0, field, tracers, tidx, var, i_proc):
@@ -146,7 +156,7 @@ class FixedPoint(object):
                         i1 = 0
                         for j1 in range(nt):
                             for k1 in range(nt):
-                                xx[i1, tidx] = xmin + j1/(nt-1.)*(xmax-xmin)
+                                xx[i1, 0] = xmin + j1/(nt-1.)*(xmax-xmin)
                                 xx[i1, 1] = ymin + k1/(nt-1.)*(ymax-ymin)
                                 xx[i1, 2] = self.params.Oz
                                 i1 += 1
@@ -233,9 +243,11 @@ class FixedPoint(object):
                 stream_z1 = stream.tracers[stream.stream_len-1, 2]
 
                 # Discard any streamline which does not converge or hits the boundary.
-                if ((stream.len >= len_max) or
-                (stream_z1 < self.params.Oz+self.params.Lz-self.params.dz)):
-                    dtot = 0.
+#                if ((stream.len >= len_max) or
+#                (stream_z1 < self.params.Oz+self.params.Lz-10*self.params.dz)):
+#                    dtot = 0.
+                if False:
+                    pass
                 else:
                     diffm = np.array([stream_x1 - stream_x0, stream_y1 - stream_y0])
                     if sum(diffm**2) != 0:
@@ -336,18 +348,19 @@ class FixedPoint(object):
         # Discard fixed points which are too close to each other.
         def __discard_close_fixed_points(fixed, fixed_sign, var):
             fixed_new = []
-            fixed_new.append(fixed[0])
             fixed_sign_new = []
-            fixed_sign_new.append(fixed_sign[0])
+            if len(fixed) > 0:
+                fixed_new.append(fixed[0])
+                fixed_sign_new.append(fixed_sign[0])
 
-            dx = fixed[:, 0] - np.reshape(fixed[:, 0], (fixed.shape[0], 1))
-            dy = fixed[:, 1] - np.reshape(fixed[:, 1], (fixed.shape[0], 1))
-            mask = (abs(dx) > var.dx/2) + (abs(dy) > var.dy/2)
+                dx = fixed[:, 0] - np.reshape(fixed[:, 0], (fixed.shape[0], 1))
+                dy = fixed[:, 1] - np.reshape(fixed[:, 1], (fixed.shape[0], 1))
+                mask = (abs(dx) > var.dx/2) + (abs(dy) > var.dy/2)
 
-            for idx in range(1, fixed.shape[0]):
-                if all(mask[idx, :idx]):
-                    fixed_new.append(fixed[idx])
-                    fixed_sign_new.append(fixed_sign[idx])
+                for idx in range(1, fixed.shape[0]):
+                    if all(mask[idx, :idx]):
+                        fixed_new.append(fixed[idx])
+                        fixed_sign_new.append(fixed_sign[idx])
 
             return np.array(fixed_new), np.array(fixed_sign_new)
 
@@ -432,14 +445,17 @@ class FixedPoint(object):
         self.params.ny = dim.ny
         self.params.nz = dim.nz
 
-        # Create the mapping for all times.
         tracers = Tracers()
-        tracers.find_tracers(trace_field=trace_field, h_min=h_min, h_max=h_max,
-                             len_max=len_max, tol=tol,
-                             interpolation=interpolation,
-                             trace_sub=trace_sub, varfile=varfile, ti=ti, tf=tf,
-                             integration=integration, data_dir=data_dir,
-                             int_q=int_q, n_proc=n_proc)
+        # Create the mapping for all times.
+        if not tracer_file_name:
+            tracers.find_tracers(trace_field=trace_field, h_min=h_min, h_max=h_max,
+                                 len_max=len_max, tol=tol,
+                                 interpolation=interpolation,
+                                 trace_sub=trace_sub, varfile=varfile, ti=ti, tf=tf,
+                                 integration=integration, data_dir=data_dir,
+                                 int_q=int_q, n_proc=n_proc)
+        else:
+            tracers.read(data_dir=data_dir, file_name=tracer_file_name)
         self.tracers = tracers
 
         # Set some default values.
@@ -457,7 +473,7 @@ class FixedPoint(object):
                                   magic=magic, quiet=True, trimall=True)
                 field = getattr(var, trace_field)
                 self.t[tidx] = var.t
-            
+
             proc = []
             sub_data = []
             fixed = []
@@ -527,7 +543,7 @@ class FixedPoint(object):
                     self.curly_A[-1] = np.array(self.curly_A[-1])
                 if any(np.array(self.params.int_q) == 'ee'):
                     self.ee[-1] = np.array(self.ee[-1])
-                        
+
 
     def write(self, data_dir='./data', destination='fixed_points.hdf5'):
         """
@@ -546,8 +562,10 @@ class FixedPoint(object):
           Destination file.
         """
 
+        import numpy as np
+
         self.params.destination = destination
-        
+
         # Write the results into hdf5 file.
         if destination != '':
             f = h5py.File(os.path.join(data_dir, destination), 'w')
@@ -559,15 +577,15 @@ class FixedPoint(object):
             set_fidx[...] = self.fidx[...]
             set_poincare = f.create_dataset("poincare", self.poincare.shape,
                                             dtype=self.poincare.dtype)
-            set_poincare[...] = self.poincare[...]   
-            
+            set_poincare[...] = self.poincare[...]
+
             # Write the parameters into their own group.
             group_params = f.create_group('params')
             for key in dir(self.params):
                 if not key.startswith('_'):
                     value = getattr(self.params, key)
                     group_params.attrs[key] = value
-                    
+
             # Create a new group for each time step.
             fixed_groups = []
             for t_idx in range(len(self.t)):
@@ -580,7 +598,7 @@ class FixedPoint(object):
                     set_curly_A = fixed_groups[-1].create_dataset("curly_A", self.curly_A[t_idx].shape, dtype=self.curly_A[t_idx].dtype)
                     set_curly_A[...] = self.curly_A[t_idx]
                 if any(np.array(self.params.int_q) == 'ee'):
-                    set_ee = fixed_groups[-1].create_dataset("ee", self.ee[t_idx].shape, dtype=self.ee[t_idx].dtype)                
+                    set_ee = fixed_groups[-1].create_dataset("ee", self.ee[t_idx].shape, dtype=self.ee[t_idx].dtype)
                     set_ee[...] = self.ee[t_idx]
             f.close()
 
@@ -609,7 +627,9 @@ class FixedPoint(object):
         *file_name*:
           File with the tracer data.
         """
-    
+
+        import numpy as np
+
         # Open the file.
         f = h5py.File(os.path.join(data_dir, file_name), 'r')
 
@@ -645,6 +665,4 @@ class FixedPoint(object):
         tracer_file_name = self.params.destination[:-5] + '_tracers' + \
                            self.params.destination[-5:]
         self.tracers = Tracers()
-        self.tracers.read(data_dir=self.params.data_dir,
-                          file_name=tracer_file_name)
-
+        self.tracers.read(data_dir=data_dir, file_name=tracer_file_name)

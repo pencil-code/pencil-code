@@ -82,13 +82,17 @@ else if ($hn =~ nl3) then
 else if ($hn =~ ds0*) then
   echo "for Axel on DataStar"
   set str='s/rmount\/users02\/ucsd/gpfs-wan\/scratch/g'
-else if (($hn =~ nl6)) then
-  set str='s/home/D/g'
+#else if (($hn =~ nl6)) then
+  #set str='s/home/D/g'
   #set str='s/home/wkspace\/data/g'
   #set str='s/wkspace/wkspace\/data/g'
   #set str='s/brandenb/brandenb\/storage/g'
 else if (($hn =~ ekhi.colorado.edu)) then
   set str='s/home1/export\/ekhi/g'
+else if (($hn =~ charybdis.colorado.edu)) then
+  set str='s/home6/charybdis/g'
+else if (($hn =~ scylla.colorado.edu)) then
+  set str='s/home6/scylla/g'
 else if (($hn =~ nl11) || ($hn =~ wormhole)) then
   set str='s/home/home\/data/g'
 else if ($hn =~ tac*) then

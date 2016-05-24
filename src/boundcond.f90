@@ -1217,8 +1217,6 @@ module Boundcond
       real, dimension (:,:,:,:) :: f
       integer :: j
       character (len=bclen) :: topbot
-
-      real, dimension(mx,nghost,mz,3) :: buffer
 !
       if (.not.lyinyang) &
         call fatal_error_local('bc_yy_y','BC not legal as no Yin-Yang grid run.')
@@ -1590,52 +1588,90 @@ module Boundcond
 !
     endsubroutine bc_cpp_x
 
-!***********************************************************************
+!!***********************************************************************
+!    subroutine bc_spr_x(f,topbot,j)
+!!
+!!  This condition sets values for A_phi and A_theta at the radial boundary.
+!!  It solves  A"+2A'/R=0 and A=0 at the boundary.
+!!  We compute the A1 point using a 2nd-order formula,
+!!  Next, we compute A2 using a 4th-order formula,
+!!  and finally A3 using a 6th-order formula.
+!!  Has to be used togehter with 's' for A_r.
+!!
+!!  15-may-13/joern: coded
+!!
+!      character (len=bclen) :: topbot
+!      real, dimension (:,:,:,:) :: f
+!      integer :: j
+!      real :: tmp
+!!
+!      select case (topbot)
+!!
+!      case ('bot')               ! bottom boundary
+!        tmp=x(l1)*dx_1(l1)
+!!
+!        f(l1,:,:,j)  =0
+!        f(l1-1,:,:,j)=(f(l1+1,:,:,j)*(-tmp+1))/(tmp+1)
+!        f(l1-2,:,:,j)=(f(l1-1,:,:,j)*16*(tmp-1) &
+!                      +f(l1+1,:,:,j)*16*(tmp+1) &
+!                      +f(l1+2,:,:,j)*(-tmp-2))/(tmp-2)
+!        f(l1-3,:,:,j)=(f(l1-2,:,:,j)*27*(0.5*tmp-1) &
+!                      +f(l1-1,:,:,j)*135*(-tmp+1) &
+!                      +f(l1+1,:,:,j)*135*(-tmp-1) &
+!                      +f(l1+2,:,:,j)*27*(0.5*tmp+1) &
+!                      +f(l1+3,:,:,j)*(-tmp-3))/(tmp-3)
+!!
+!      case ('top')               ! top boundary
+!        tmp=x(l2)*dx_1(l2)
+!!
+!        f(l2,:,:,j)  =0
+!        f(l2+1,:,:,j)=(f(l2-1,:,:,j)*(tmp+1))/(-tmp+1)
+!        f(l2+2,:,:,j)=(f(l2+1,:,:,j)*16*(tmp+1) &
+!                      +f(l2-1,:,:,j)*16*(tmp-1) &
+!                      +f(l2-2,:,:,j)*(tmp-2))/(-tmp-2)
+!        f(l2+3,:,:,j)=(f(l2+2,:,:,j)*27*(0.5*tmp+1) &
+!                      +f(l2+1,:,:,j)*135*(-tmp-1) &
+!                      +f(l2-1,:,:,j)*135*(-tmp+1) &
+!                      +f(l2-2,:,:,j)*27*(0.5*tmp-1) &
+!                      +f(l2-3,:,:,j)*(-tmp+3))/(tmp+3)
+!!
+!      case default
+!        print*, "bc_spr_x: ", topbot, " should be 'top' or 'bot'"
+!!
+!      endselect
+!!
+!    endsubroutine bc_spr_x
+!!***********************************************************************
     subroutine bc_spr_x(f,topbot,j)
 !
 !  This condition sets values for A_phi and A_theta at the radial boundary.
 !  It solves  A"+2A'/R=0 and A=0 at the boundary.
-!  We compute the A1 point using a 2nd-order formula,
-!  Next, we compute A2 using a 4th-order formula,
-!  and finally A3 using a 6th-order formula.
 !  Has to be used togehter with 's' for A_r.
 !
-!  15-may-13/joern: coded
+!  09-may-16/fred: coded
 !
       character (len=bclen) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: j
-      real :: tmp
+!
+      if (.not.lspherical_coords) &
+        call fatal_error('bc_spr_x','only implemented for spherical coordinates')
 !
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
-        tmp=x(l1)*dx_1(l1)
 !
-        f(l1,:,:,j)  =0
-        f(l1-1,:,:,j)=(f(l1+1,:,:,j)*(-tmp+1))/(tmp+1)
-        f(l1-2,:,:,j)=(f(l1-1,:,:,j)*16*(tmp-1) &
-                      +f(l1+1,:,:,j)*16*(tmp+1) &
-                      +f(l1+2,:,:,j)*(-tmp-2))/(tmp-2)
-        f(l1-3,:,:,j)=(f(l1-2,:,:,j)*27*(0.5*tmp-1) &
-                      +f(l1-1,:,:,j)*135*(-tmp+1) &
-                      +f(l1+1,:,:,j)*135*(-tmp-1) &
-                      +f(l1+2,:,:,j)*27*(0.5*tmp+1) &
-                      +f(l1+3,:,:,j)*(-tmp-3))/(tmp-3)
+        f(l1,:,:,j) = 0.
+        do ix=1,nghost
+          f(l1-ix,:,:,j) = -f(l1+ix,:,:,j)*x(l1+ix)/x(l1-ix)
+        enddo
 !
       case ('top')               ! top boundary
-        tmp=x(l2)*dx_1(l2)
 !
-        f(l2,:,:,j)  =0
-        f(l2+1,:,:,j)=(f(l2-1,:,:,j)*(tmp+1))/(-tmp+1)
-        f(l2+2,:,:,j)=(f(l2+1,:,:,j)*16*(tmp+1) &
-                      +f(l2-1,:,:,j)*16*(tmp-1) &
-                      +f(l2-2,:,:,j)*(tmp-2))/(-tmp-2)
-        f(l2+3,:,:,j)=(f(l2+2,:,:,j)*27*(0.5*tmp+1) &
-                      +f(l2+1,:,:,j)*135*(-tmp-1) &
-                      +f(l2-1,:,:,j)*135*(-tmp+1) &
-                      +f(l2-2,:,:,j)*27*(0.5*tmp-1) &
-                      +f(l2-3,:,:,j)*(-tmp+3))/(tmp+3)
+        f(l2,:,:,j) = 0.
+        do ix=1,nghost
+          f(l2+ix,:,:,j) = -f(l2-ix,:,:,j)*x(l1-ix)/x(l1+ix)
+        enddo
 !
       case default
         print*, "bc_spr_x: ", topbot, " should be 'top' or 'bot'"

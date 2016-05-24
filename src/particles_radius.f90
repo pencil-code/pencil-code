@@ -26,8 +26,8 @@ module Particles_radius
   include 'particles_radius.h'
 !
   real :: vthresh_sweepup=-1.0, deltavp12_floor=0.0
-  real, dimension (ninit) :: ap0=0.0
-  real, dimension (ninit) :: radii_distribution=0.0
+  real, dimension (ndustrad) :: ap0=0.0
+  real, dimension (ndustrad) :: radii_distribution=0.0
   real :: tstart_sweepup_par=0.0, cdtps=0.2, cdtpc=0.2
   real :: tstart_condensation_par=0.0
   real :: apmin=0.0, latent_heat_SI=2.257e6, alpha_cond=1.0, alpha_cond1=1.0
@@ -42,7 +42,8 @@ module Particles_radius
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
   logical :: lcondensation_simplified=.false.
-  character (len=labellen), dimension(ninit) :: initap='nothing'
+  logical :: lfixed_particles_radius=.false.
+ character (len=labellen), dimension(ninit) :: initap='nothing'
   character (len=labellen) :: condensation_coefficient_type='constant'
 !
   namelist /particles_radius_init_pars/ &
@@ -52,7 +53,8 @@ module Particles_radius
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
       lborder_driving_ocean, ztop_ocean, radii_distribution, TTocean, &
       aplow, aphigh, mbar, ap1, qplaw, eps_dtog, nbin_initdist, &
-      sigma_initdist, a0_initdist, lparticles_radius_rpbeta, rpbeta0
+      sigma_initdist, a0_initdist, lparticles_radius_rpbeta, rpbeta0,&
+      lfixed_particles_radius
 !
   namelist /particles_radius_run_pars/ &
       rhopmat, vthresh_sweepup, deltavp12_floor, &
@@ -60,7 +62,8 @@ module Particles_radius
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
       lborder_driving_ocean, ztop_ocean, TTocean, &
-      lcondensation_simplified, GS_condensation, rpbeta0
+      lcondensation_simplified, GS_condensation, rpbeta0,&
+      lfixed_particles_radius
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
@@ -156,6 +159,21 @@ module Particles_radius
 !
       call put_shared_variable('ap0',ap0,caller='initialize_particles_radius')
 !
+! If we have decided to hold the radius of the particles to be fixed then
+! we should not have any process that changes the radius. 
+!
+      if(lfixed_particles_radius) then
+        if(lsweepup_par) &
+          call fatal_error('initialize_particles_radius', & 
+          'incosistency: lfixed_particles_radius and lsweepup_par cannot both be true')
+        if (lcondensation_par) &
+          call fatal_error('initialize_particles_radius', & 
+          'incosistency: lfixed_particles_radius and lcondensation_par cannot both be true')
+        if (lparticles_chemistry) &
+          call fatal_error('initialize_particles_radius', & 
+          'incosistency: lfixed_particles_radius and lparticles_chemistry cannot both be true')
+      endif
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_particles_radius
@@ -174,7 +192,7 @@ module Particles_radius
       logical, optional :: init
 !
       real, dimension (mpar_loc) :: r_mpar_loc, p_mpar_loc, tmp_mpar_loc
-      real, dimension (ninit) :: radii_cumulative
+      real, dimension (ndustrad) :: radii_cumulative
       real, dimension (nbin_initdist) :: n_initdist, a_initdist
       integer, dimension (nbin_initdist) :: nn_initdist
       real :: radius_fraction, mcen, mmin, mmax, fcen, p, rhopm
@@ -251,6 +269,7 @@ module Particles_radius
           call random_number_wrapper(p_mpar_loc)
           tmp_mpar_loc=sqrt(-2*log(r_mpar_loc))*sin(2*pi*p_mpar_loc)
           fp(:,iap)=a0_initdist*exp(sigma_initdist*tmp_mpar_loc)
+
 !
 !  Lognormal distribution. Here, ap1 is the largest value in the distribution
 !  and ap0 is the smallest radius initially.
@@ -537,14 +556,14 @@ module Particles_radius
             if (deltavp<=vthresh_sweepup .or. vthresh_sweepup<0.0) then
 !  Radius increase due to sweep-up.
               dfp(k,iap) = dfp(k,iap) + &
-                  0.25*deltavp*p%cc(ix)*p%rho(ix)*rhopmat1
+                  0.25*deltavp*p%cc(ix,1)*p%rho(ix)*rhopmat1
 !
 !  Deplete gas of small grains.
 !
               if (lparticles_number) np_swarm=fp(k,inpswarm)
               if (lpscalar_nolog) then
                 df(ix0,m,n,icc) = df(ix0,m,n,icc) - &
-                    np_swarm*pi*fp(k,iap)**2*deltavp*p%cc(ix)
+                    np_swarm*pi*fp(k,iap)**2*deltavp*p%cc(ix,1)
               else
                 df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - &
                     np_swarm*pi*fp(k,iap)**2*deltavp
@@ -611,7 +630,7 @@ module Particles_radius
       if (t>=tstart_condensation_par) then
 !
         if (npar_imn(imn)/=0) then
-          rhovap=p%cc*p%rho
+          rhovap=p%cc(:,1)*p%rho
           ppsat=6.035e11*exp(-5938*p%TT1)  ! Valid for water
           vth=sqrt(p%csvap2)
           rhosat=gamma*ppsat/p%csvap2
@@ -716,10 +735,10 @@ module Particles_radius
 !
             if (lpscalar_nolog) then
               df(ix0,m,n,icc)   = df(ix0,m,n,icc)   + &
-                  (1.0-p%cc(ix))*p%rho1(ix)*drhocdt
+                  (1.0-p%cc(ix,1))*p%rho1(ix)*drhocdt
             elseif (lpscalar) then
               df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) + &
-                  (p%cc1(ix)-1.0)*p%rho1(ix)*drhocdt
+                  (p%cc1(ix,1)-1.0)*p%rho1(ix)*drhocdt
             else
             endif
 !
@@ -820,7 +839,7 @@ module Particles_radius
 !  because not all parts of the code are adapted to work with more than one
 !  particle radius.
 !
-      do pos=1,ninit
+      do pos=1,ndustrad
         if (ap0(pos)/=0) then
           npart_radii=npart_radii+1
         endif
@@ -900,5 +919,30 @@ module Particles_radius
       enddo
 !
     endsubroutine rprint_particles_radius
+!***********************************************************************
+    subroutine get_stbin(iStbin,fp,ip)
+      real, dimension (mpar_loc,mparray) :: fp
+      integer,intent(out) :: iStbin
+      integer,intent(in) :: ip
+      integer :: k=0
+      real :: api
+      k=1
+      api=fp(ip,iap)
+      if (lfixed_particles_radius) then 
+        do while((api .ge. ap0(k)).and.(k .le. ndustrad))
+          iStbin=k
+          k=k+1
+        enddo
+      endif
+    endsubroutine get_stbin
+!***********************************************************************
+    subroutine get_mass_from_radius(mpi,fp,ip)
+      real, dimension (mpar_loc,mparray) :: fp
+      integer,intent(in) :: ip
+      real,intent(out) :: mpi
+      real :: api
+      api = fp(ip,iap)
+      mpi=(4./3.)*pi*rhopmat*(api**3)      
+    endsubroutine get_mass_from_radius
 !***********************************************************************
 endmodule Particles_radius

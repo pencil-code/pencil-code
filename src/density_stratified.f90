@@ -759,17 +759,21 @@ module Density
 !
     endsubroutine get_slices_density
 !***********************************************************************
-    subroutine dynamical_diffusion(urms)
+    subroutine dynamical_diffusion(uc)
 !
 !  Dynamically set mass diffusion coefficient given fixed mesh Reynolds number.
 !
 !  28-feb-13/ccyang: coded
 !
-      real, intent(in) :: urms
+!  Input Argument
+!      uc
+!          Characteristic velocity of the system.
+!
+      real, intent(in) :: uc
 !
 !  Hyper-diffusion coefficient
 !
-      if (ldiff_hyper3_mesh) diffrho_hyper3_mesh = pi5_1 * urms / re_mesh / sqrt(3.0)
+      if (ldiff_hyper3_mesh) diffrho_hyper3_mesh = pi5_1 * uc / re_mesh / sqrt(3.0)
 !
     endsubroutine dynamical_diffusion
 !***********************************************************************
