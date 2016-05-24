@@ -479,7 +479,7 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	num_files = n_elements (files)
 	stepping = stepping < (num_files - skipping)
 	for pos = 0, num_files - 1 do begin
-		files[pos] = strmid (files[pos], strpos (procdir, "/", /REVERSE_SEARCH) - 1)
+		files[pos] = strmid (files[pos], strpos (procdir, "/", /REVERSE_SEARCH) + 1)
 	end
 	sorted = [ "" ]
 	for len = min (strlen (files)), max (strlen (files)) do begin
