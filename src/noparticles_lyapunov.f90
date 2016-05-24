@@ -16,6 +16,7 @@ module Particles_lyapunov
 !
   use Cdata
   use Messages
+  use General
   use Particles_cdata
   use Particles_map
   use Particles_mpicomm
@@ -77,6 +78,25 @@ module Particles_lyapunov
       call keep_compiler_quiet(fp)
 !
     endsubroutine init_particles_lyapunov
+!***********************************************************************
+    subroutine dlyapunov_dt(f,df,fp,dfp,ineargrid)
+!
+!
+      use Diagnostics
+!
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, dimension (mx,my,mz,mvar), intent (inout) :: df
+      real, dimension (mpar_loc,mparray), intent (in) :: fp
+      real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
+      integer, dimension (mpar_loc,3), intent (in) :: ineargrid
+      logical :: lheader, lfirstcall=.true.
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)     
+!
+    endsubroutine dlyapunov_dt
 !***********************************************************************
     subroutine dlyapunov_dt_pencil(f,df,fp,dfp,p,ineargrid)
 !
@@ -142,5 +162,20 @@ module Particles_lyapunov
       call keep_compiler_quiet(fp)
 !    
     endsubroutine particles_stochastic_lyapunov
+!***********************************************************************
+    subroutine rprint_particles_lyapunov(lreset,lwrite)
+!
+!  Read and register print parameters relevant for particles.
+!
+!  may-2016/dhruba+akshay: coded
+!
+      use Diagnostics
+      use General,   only: itoa
+!
+      logical :: lreset
+      logical, optional :: lwrite
+
+!
+    endsubroutine rprint_particles_lyapunov
 !***********************************************************************
 endmodule Particles_lyapunov

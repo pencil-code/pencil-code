@@ -556,14 +556,14 @@ module Particles_radius
             if (deltavp<=vthresh_sweepup .or. vthresh_sweepup<0.0) then
 !  Radius increase due to sweep-up.
               dfp(k,iap) = dfp(k,iap) + &
-                  0.25*deltavp*p%cc(ix,1)*p%rho(ix)*rhopmat1
+                  0.25*deltavp*p%cc(ix)*p%rho(ix)*rhopmat1
 !
 !  Deplete gas of small grains.
 !
               if (lparticles_number) np_swarm=fp(k,inpswarm)
               if (lpscalar_nolog) then
                 df(ix0,m,n,icc) = df(ix0,m,n,icc) - &
-                    np_swarm*pi*fp(k,iap)**2*deltavp*p%cc(ix,1)
+                    np_swarm*pi*fp(k,iap)**2*deltavp*p%cc(ix)
               else
                 df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - &
                     np_swarm*pi*fp(k,iap)**2*deltavp
@@ -630,7 +630,9 @@ module Particles_radius
       if (t>=tstart_condensation_par) then
 !
         if (npar_imn(imn)/=0) then
-          rhovap=p%cc(:,1)*p%rho
+!          rhovap=p%cc(:,1)*p%rho
+!DMDM
+          rhovap=p%cc*p%rho
           ppsat=6.035e11*exp(-5938*p%TT1)  ! Valid for water
           vth=sqrt(p%csvap2)
           rhosat=gamma*ppsat/p%csvap2
@@ -735,10 +737,10 @@ module Particles_radius
 !
             if (lpscalar_nolog) then
               df(ix0,m,n,icc)   = df(ix0,m,n,icc)   + &
-                  (1.0-p%cc(ix,1))*p%rho1(ix)*drhocdt
+                  (1.0-p%cc(ix))*p%rho1(ix)*drhocdt
             elseif (lpscalar) then
               df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) + &
-                  (p%cc1(ix,1)-1.0)*p%rho1(ix)*drhocdt
+                  (p%cc1(ix)-1.0)*p%rho1(ix)*drhocdt
             else
             endif
 !
