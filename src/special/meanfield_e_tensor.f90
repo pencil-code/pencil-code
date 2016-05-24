@@ -811,8 +811,16 @@ module Special
 ! Calculate gamma x (curl B)
       tmpvector=0
       if (lgamma) then
-        call cross_mn(p%gamma_emf,p%jj,tmpvector)
+        call cross_mn(p%gamma_emf,p%bb,tmpvector)
+        emfvector = emfvector + tmpvector
+      end if
+      if (ldelta) then
+        call cross_mn(p%delta_emf,p%jj,tmpvector)
         emfvector = emfvector - tmpvector
+      end if
+      if (lutensor) then
+        call cross_mn(p%utensor_emf,p%bb,tmpvector)
+        emfvector = emfvector + tmpvector
       end if
 
       df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+emfvector
