@@ -12,6 +12,7 @@ module General
 !
   private
 !
+  public :: gaunoise_number
   public :: safe_character_assign, safe_character_append, safe_character_prepend
   public :: lower_case
   public :: random_seed_wrapper
@@ -278,6 +279,19 @@ module General
       endif
 !
     endsubroutine setup_mm_nn
+!***********************************************************************
+    subroutine gaunoise_number(gn)
+!
+! Gaussian random number generator with unit variance and zero mean. 
+! Returns a pair of random numbers. 
+!
+      real,dimension(2),intent(out) :: gn
+      real :: r,p
+      call random_number_wrapper(r)
+      call random_number_wrapper(p)
+      gn(1)=sqrt(-2*log(r))*sin(2*pi*p)
+      gn(2)=sqrt(-2*log(r))*cos(2*pi*p)
+    endsubroutine gaunoise_number
 !***********************************************************************
     subroutine random_number_wrapper_0(a)
 !

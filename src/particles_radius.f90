@@ -42,7 +42,8 @@ module Particles_radius
   logical :: lsweepup_par=.false., lcondensation_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
   logical :: lcondensation_simplified=.false.
-  character (len=labellen), dimension(ninit) :: initap='nothing'
+  logical :: lfixed_particles_radius=.false.
+ character (len=labellen), dimension(ninit) :: initap='nothing'
   character (len=labellen) :: condensation_coefficient_type='constant'
 !
   namelist /particles_radius_init_pars/ &
@@ -52,7 +53,8 @@ module Particles_radius
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
       lborder_driving_ocean, ztop_ocean, radii_distribution, TTocean, &
       aplow, aphigh, mbar, ap1, qplaw, eps_dtog, nbin_initdist, &
-      sigma_initdist, a0_initdist, lparticles_radius_rpbeta, rpbeta0
+      sigma_initdist, a0_initdist, lparticles_radius_rpbeta, rpbeta0,&
+      lfixed_particles_radius
 !
   namelist /particles_radius_run_pars/ &
       rhopmat, vthresh_sweepup, deltavp12_floor, &
@@ -60,7 +62,8 @@ module Particles_radius
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
       lborder_driving_ocean, ztop_ocean, TTocean, &
-      lcondensation_simplified, GS_condensation, rpbeta0
+      lcondensation_simplified, GS_condensation, rpbeta0,&
+      lfixed_particles_radius
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
@@ -155,6 +158,21 @@ module Particles_radius
       if (tau_ocean_driving/=0.0) tau_ocean_driving1=1/tau_ocean_driving
 !
       call put_shared_variable('ap0',ap0,caller='initialize_particles_radius')
+!
+! If we have decided to hold the radius of the particles to be fixed then
+! we should not have any process that changes the radius. 
+!
+      if(lfixed_particles_radius) then
+        if(lsweepup_par) &
+          call fatal_error('initialize_particles_radius', & 
+          'incosistency: lfixed_particles_radius and lsweepup_par cannot both be true')
+        if (lcondensation_par) &
+          call fatal_error('initialize_particles_radius', & 
+          'incosistency: lfixed_particles_radius and lcondensation_par cannot both be true')
+        if (lparticles_chemistry) &
+          call fatal_error('initialize_particles_radius', & 
+          'incosistency: lfixed_particles_radius and lparticles_chemistry cannot both be true')
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -901,5 +919,30 @@ module Particles_radius
       enddo
 !
     endsubroutine rprint_particles_radius
+!***********************************************************************
+    subroutine get_stbin(iStbin,fp,ip)
+      real, dimension (mpar_loc,mparray) :: fp
+      integer,intent(out) :: iStbin
+      integer,intent(in) :: ip
+      integer :: k=0
+      real :: api
+      k=1
+      api=fp(ip,iap)
+      if (lfixed_particles_radius) then 
+        do while((api .ge. ap0(k)).and.(k .le. ndustrad))
+          iStbin=k
+          k=k+1
+        enddo
+      endif
+    endsubroutine get_stbin
+!***********************************************************************
+    subroutine get_mass_from_radius(mpi,fp,ip)
+      real, dimension (mpar_loc,mparray) :: fp
+      integer,intent(in) :: ip
+      real,intent(out) :: mpi
+      real :: api
+      api = fp(ip,iap)
+      mpi=(4./3.)*pi*rhopmat*(api**3)      
+    endsubroutine get_mass_from_radius
 !***********************************************************************
 endmodule Particles_radius

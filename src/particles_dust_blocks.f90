@@ -18,7 +18,6 @@
 ! MPVAR CONTRIBUTION 6
 ! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
-! CPARAM logical, parameter :: lparticles_potential=.false.
 !
 ! PENCILS PROVIDED np; rhop; epsp; grhop(3);peh
 !

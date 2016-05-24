@@ -27,6 +27,7 @@ module Particles_potential
   real :: psigma_by_dx=0.1,ppowerby2=19,skin_factor=2.,pampl=1.
   real :: Rcutoff=0.,dRbin=1.,cell_length=0.
   integer :: Rcutoff_in_grid=1,Nbin_in_Rcutoff=100
+! 
 !
 ! ----------- About Potential ----------------------
 ! This module calculates all quantities related to particle-particle
@@ -99,7 +100,25 @@ module Particles_potential
         head=0
         link_list=0
       endif
-
+      mom_max=int((pmom_max-pmom_min)/mom_step)+1
+      allocate(mom_array(mom_max))
+      mom_array=0.
+      imom=2
+      mom_tmp=pmom_min
+      do while (mom_tmp .le. pmom_max)
+        if (mom_tmp .ne. 0) then
+          mom_array(imom) = mom_tmp
+          imom=imom+1
+        endif
+        mom_tmp = mom_tmp+mom_step
+      enddo
+    write(*,*) mom_array
+!
+! write out this array such that it can be read
+!
+      allocate(MomJntPDF(mom_max,Nbin_in_Rcutoff,ndustrad*(ndustrad+1)/2))
+      allocate(MomColJntPDF(mom_max,Nbin_in_Rcutoff,ndustrad*(ndustrad+1)/2))
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_particles_potential
@@ -463,11 +482,12 @@ module Particles_potential
 !
       call keep_compiler_quiet(ineargrid)
 !
-    endsubroutine dvvp_dt
+    endsubroutine dvvp_dt_potential
 !***********************************************************************
     subroutine two_particle_int(fp,dfp,ip,jp,xxij,vvij)
 !
       use Diagnostics
+      use Sub, only: lower_triangular_index
 !
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mpar_loc,mpvar) :: dfp
@@ -476,11 +496,12 @@ module Particles_potential
       real,dimnesion(3),intent(in) :: xxij,vvij
       real,dimension(3) :: accni,accnj
       real :: Rsqr,Vsqr,Vparallel
+      integer :: iStbin,jStbin
 !!---------------------------------
       Rsqr=xxij(1)*xxij(1)+xxij(2)*xxij(2)+xxij(3)*xxij(3)
       RR = sqrt(Rsqr)
       if (lpotential) then
-        call get_accn(RR,accni,accnj)
+        call get_interparticle_accn(accni,accnj,ip,jp,fp,RR)
         dfp(ip,ivx:ivz) = dfp(ip,ivx:ivz)+accni
         dfp(jp,ivx:ivz) = dfp(jp,ivx:ivz)+accnj
       endif
@@ -489,18 +510,21 @@ module Particles_potential
           Vsqr=vvij(1)*vvij(1)+vvij(2)*vvij(2)+vvij(3)*vvij(3)
           Vparallel=dot(xxij,vvij)/RR
           iRbin=floor(RR/dRbin)
+          call get_stbin(iStbin,fp,ip)
+          call get_stbin(jStbin,fp,jp)
+          call lower_triangular_index(ijSt,iStbin,jStbin)
           if (idiag_gr) &
-            MomJntPDF(1,iRbin) = MomJntPDF(1,iRbin)+1.
+            MomJntPDF(1,iRbin,ijSt) = MomJntPDF(1,iRbin,ijSt)+1.
           if (idiag_colvel_mom) then
             if (Vparallel .lt. 0) &
-              MomColJntPDF(1,iRbin) = MomColJntPDF(1,iRbin)+1.
+              MomColJntPDF(1,iRbin,ijSt) = MomColJntPDF(1,iRbin,ijSt)+1.
           endif
           do jmom=2,mom_max
             pmom=mom_array(jmom)
             if (idiag_abs_mom) &
-              MomJntPDF(jmom,iRbin) = MomJntPDF(jmom,iRbin)+(abs(Vparallel))**pmom
+              MomJntPDF(jmom,iRbin,ijSt) = MomJntPDF(jmom,iRbin,ijSt)+(abs(Vparallel))**pmom
             if (Vparallel .lt. 0) then
-              MomColJntPDF(jmom,iRbin) = MomColJntPDF(jmom,iRbin)+(-Vparallel)**pmom
+              MomColJntPDF(jmom,iRbin,ijSt) = MomColJntPDF(jmom,iRbin,ijSt)+(-Vparallel)**pmom
             endif
           enddo
         endif
@@ -564,273 +588,41 @@ module Particles_potential
 	neighbours(13,1) = ix + 1
 	neighbours(13,2) = iy + 1
 	neighbours(13,3) = iz
-endsubroutine get_neighbours
+    endsubroutine get_neighbours
 !***********************************************************************
-    subroutine dxxp_dt_pencil(f,df,fp,dfp,p,ineargrid)
-!
-!  Evolution of particle position (called from main pencil loop).
-!
-!  25-apr-06/anders: dummy
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+    subroutine get_interparticle_accn(accni,accnj,ip,jp,fp,RR)
+      
+      integer,intent(in) :: ip,jp
+      real, dimension(3),intent(in) :: RR
+      real,dimension(3), intent(out) :: accni,accnj
       real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      type (pencil_case) :: p
-      integer, dimension (mpar_loc,3) :: ineargrid
-!
-      integer :: k, ix0, iy0, iz0
-      real :: dt1_advpx, dt1_advpy, dt1_advpz
-      logical :: lnbody
-!
-!  Contribution of dust particles to time step.
-!
-      if (lfirst.and.ldt) then
-        if (npar_imn(imn)/=0) then
-          do k=k1_imn(imn),k2_imn(imn)
-            lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-            if (.not.lnbody) then
-              ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-              dt1_advpx=abs(fp(k,ivpx))*dx_1(ix0)
-              if (lshear) then
-                dt1_advpy=(-qshear*Omega*fp(k,ixp)+abs(fp(k,ivpy)))*dy_1(iy0)
-              else
-                dt1_advpy=abs(fp(k,ivpy))*dy_1(iy0)
-              endif
-              dt1_advpz=abs(fp(k,ivpz))*dz_1(iz0)
-              dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost), &
-                   sqrt(dt1_advpx**2+dt1_advpy**2+dt1_advpz**2)/cdtp)
-            endif
-          enddo
-        endif
-      endif
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(dfp)
-      call keep_compiler_quiet(p)
-!
-    endsubroutine dxxp_dt_pencil
-!***********************************************************************
-    subroutine dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
-!
-!  Evolution of dust particle velocity (called from main pencil loop).
-!
-!  25-apr-06/anders: coded
-!
-      use Diagnostics
-      use EquationOfState, only: cs20
-      use Sub, only: cross
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      type (pencil_case) :: p
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
-      real :: vsqr
-      real, dimension (3) :: uup,accn,interparticle_accn,velocity,fmagnetic
-      real,save :: vsqr_max=0.
-      integer :: ix0,iy0,iz0,k
       real :: Vij
+      real,dimension(3) :: force_ij
+      real :: mp_i
 !
-      intent (inout) :: f, df, dfp, fp, ineargrid
-!
-!  Identify module.
-!
-      if (headtt) then
-        if (lroot) print*,'dvvp_dt_pencil: calculate dvvp_dt'
-      endif
-!
-      if (npar_imn(imn)/=0) then
-!
-!  Loop over all particles in current pencil.
-!
-        do k=k1_imn(imn),k2_imn(imn)
-!
-          ix0=ineargrid(k,1)
-          iy0=ineargrid(k,2)
-          iz0=ineargrid(k,3)
-!
-!  The interpolated gas velocity is either precalculated, and stored in
-!  interp_uu, or it must be calculated here.
-!
-          if (lflowdrag) then
-            call interpolate_linear(f,iux,iuz,fp(k,ixp:izp), uup,ineargrid(k,:),0,ipar(k))
-            accn = tausp1*(uup-fp(k,ivpx:ivpz))
-          endif
-!
-          call get_interparticle_accn(fp,f,k,ineargrid,interparticle_accn,Vij)
-          dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + accn + interparticle_accn
-          write(*,*) 'DM,ipaccn',interparticle_accn
-        enddo
-!
-!  No particles in this pencil.
-!
-      endif
-!
-!  Diagnostic output.
-!
-      if (ldiagnos) then
-        if (idiag_npm/=0)      call sum_mn_name(p%np,idiag_npm)
-        if (idiag_np2m/=0)     call sum_mn_name(p%np**2,idiag_np2m)
-        if (idiag_npmax/=0)    call max_mn_name(p%np,idiag_npmax)
-        if (idiag_npmin/=0)    call max_mn_name(-p%np,idiag_npmin,lneg=.true.)
-        if (idiag_rhopm/=0)    call sum_mn_name(p%rhop,idiag_rhopm)
-        if (idiag_rhop2m/=0 )  call sum_mn_name(p%rhop**2,idiag_rhop2m)
-        if (idiag_rhoprms/=0)  call sum_mn_name(p%rhop**2,idiag_rhoprms,lsqrt=.true.)
-        if (idiag_rhopmax/=0)  call max_mn_name(p%rhop,idiag_rhopmax)
-        if (idiag_rhopmin/=0)  call max_mn_name(-p%rhop,idiag_rhopmin,lneg=.true.)
-        if (idiag_epspmax/=0)  call max_mn_name(p%epsp,idiag_epspmax)
-        if (idiag_epspmin/=0)  call max_mn_name(-p%epsp,idiag_epspmin,lneg=.true.)
-        if (idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. &
-            idiag_dvpm  /=0 .or. idiag_dvpmax/=0) &
-            call calculate_rms_speed(fp,ineargrid,p)
-!        if (idiag_dtdragp/=0.and.(lfirst.and.ldt))  &
-!            call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
-      endif
-!
-!  1d-averages. Happens at every it1d timesteps, NOT at every it1
-!
-      if (l1davgfirst) then
-        if (idiag_npmx/=0)    call yzsum_mn_name_x(p%np,idiag_npmx)
-        if (idiag_npmy/=0)    call xzsum_mn_name_y(p%np,idiag_npmy)
-        if (idiag_npmz/=0)    call xysum_mn_name_z(p%np,idiag_npmz)
-        if (idiag_rhopmx/=0)  call yzsum_mn_name_x(p%rhop,idiag_rhopmx)
-        if (idiag_rhopmy/=0)  call xzsum_mn_name_y(p%rhop,idiag_rhopmy)
-        if (idiag_rhopmz/=0)  call xysum_mn_name_z(p%rhop,idiag_rhopmz)
-        if (idiag_epspmx/=0)  call yzsum_mn_name_x(p%epsp,idiag_epspmx)
-        if (idiag_epspmy/=0)  call xzsum_mn_name_y(p%epsp,idiag_epspmy)
-        if (idiag_epspmz/=0)  call xysum_mn_name_z(p%epsp,idiag_epspmz)
-        if (idiag_rhopmr/=0)  call phizsum_mn_name_r(p%rhop,idiag_rhopmr)
-      endif
-!
-      if (l2davgfirst) then
-        if (idiag_npmxy/=0)    call zsum_mn_name_xy(p%np,idiag_npmxy)
-        if (idiag_rhopmphi/=0) call phisum_mn_name_rz(p%rhop,idiag_rhopmphi)
-        if (idiag_rhopmxy/=0)  call zsum_mn_name_xy(p%rhop,idiag_rhopmxy)
-        if (idiag_rhopmxz/=0)  call ysum_mn_name_xz(p%rhop,idiag_rhopmxz)
-      endif
-!
-!  particle-particle separation and relative velocity diagnostics
-!
-      if (lparticles_diagnos_dv .and. lfirstpoint .and. lfirst) then
-        if (t > t_nextcol) call collisions(fp)
-      endif
-!
-    endsubroutine dvvp_dt_pencil
-!***********************************************************************
-    subroutine dxxp_dt_blocks(f,df,fp,dfp,ineargrid)
-!
-!  Evolution of particle position in blocks.
-!
-!  29-nov-09/anders: dummy
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(dfp)
-      call keep_compiler_quiet(ineargrid)
-!
-    endsubroutine dxxp_dt_blocks
-!***********************************************************************
-    subroutine dvvp_dt_blocks(f,df,fp,dfp,ineargrid)
-!
-!  Evolution of particle velocity in blocks.
-!
-!  29-nov-09/anders: dummy
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(dfp)
-      call keep_compiler_quiet(ineargrid)
-!
-    endsubroutine dvvp_dt_blocks
-!***********************************************************************
-    subroutine get_interparticle_accn(fp,f,k,ineargrid,interparticle_accn,Vij)
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
-      integer, dimension (mpar_loc,3) :: ineargrid
-      integer :: k
-      integer :: ineighbour,kneighbour,nindex
-      real :: Vij
-      real,dimension(3) :: unit_vector,interparticle_accn,force_ij
-      real :: xi,yi,zi,xj,yj,zj,rij_sqr,force
-      integer :: ll,mm,nn,startp,endp,ip,ix0,iy0,iz0
-!
-      xi=fp(k,ixp);yi=fp(k,iyp);zi=fp(k,izp);
-      ix0=ineargrid(k,1);iy0=ineargrid(k,2);iz0=ineargrid(k,3);
-      interparticle_accn=0.
-      do nn=-sigma_in_grid,sigma_in_grid
-        do mm=-sigma_in_grid,sigma_in_grid
-          do ll=-sigma_in_grid,sigma_in_grid
-            startp=int(f(ix0+ll,iy0+mm,iz0+nn,iinvgrid))
-            endp=int(f(ix0+ll,iy0+mm,iz0+nn,iinvgrid+1))
-!            write(*,*) 'out:startp,endp,k,ip',startp,endp,k,ip
-            do ip=startp,endp
-              if ((ip.ne.k).and.(ip.ne.0)) then 
-                xj=fp(ip,ixp);yj=fp(ip,iyp);zj=fp(ip,izp);
-                unit_vector(1)=xj-xi
-                unit_vector(2)=yj-yi
-                unit_vector(3)=zj-zi
-                write(*,*)'DM unitvector',unit_vector
-                write(*,*) 'startp,endp,k,ip',startp,endp,k,ip
-                write(*,*) 'DM fp1',fp(k,:)
-                write(*,*) 'DM ip',xi,yi,zi
-                write(*,*) 'DM fp2',fp(ip,:)
-                write(*,*) 'DM jp',xj,yj,zj
-                rij_sqr=(xi-xj)**2+(yi-yj)**2+(zi-zj)**2
-                call get_interaction_force(rij_sqr,force,Vij)
-                force_ij=force*unit_vector
-! Note : This assumes that the mass of the particles are unity. If we use
-! particles_density with this module then we need to change here
-!
-                interparticle_accn=interparticle_accn+force_ij
-              endif
-            enddo
-          enddo
-        enddo
-      enddo
+      call get_interaction_force(force_ij,RR,fp,ip,jp)
+      call get_mass_from_radius(mp_i,fp,ip)
+      accni=force_ij/mp_i
+      call get_mass_from_radius(mp_j,fp,jp)
+      accnj=force_ij/mp_j
 !
     endsubroutine get_interparticle_accn
 !***********************************************************************
-    subroutine get_interaction_force(rij_sqr,force,Vij)
+    subroutine get_interaction_force(force_ij,RR,fp,ip,jp)
+      real,dimension(3),intent(in) :: RR
+      real,dimension(3),intent(out) :: force_ij
+      real :: RR_mod
+      real,dimension(3) :: Rcap
 !
-!  calculates the force due to interparticle interaction
-!
-      real :: rij_sqr
-      real :: sigma,xi_sqr,force,Vij
-!
-!Note : there are two powers of 1/r in the force compared to the potential
-! one is due to radial derivative the other because we have not multiplied by
-! 1/r while calculating the unit vector.
-!Note :  While calculating the force we have assumed that the interparticle potential
-! is given as a function of (r/sigma) where sigma is the particle
-! radius. If we use the particle_radius module we need to change the calculation of
-! sigma below
-!
-      sigma=psigma_by_dx*dx
-      xi_sqr=rij_sqr/(sigma**2)
       select case (ppotential)
       case ('rep-power-law')
 !
 ! repulsive power law
 !
-        force=pampl*(2*ppowerby2/sigma**2)*(1./xi_sqr**(ppowerby2+1))
-        Vij = pampl*(1./xi_sqr**(ppowerby2))
+        RR_mod=sqrt(RR(1)*RR(1)+RR(2)*RR(2)+RR(3)*RR(3))
+        Rcap=RR/RR_mod
+        force_amps=pampl*(ppower*sigma**ppower)/(RR_mod)**(ppower+1)
+        force_ij=force_amps*Rcap
       case default
         call fatal_error('particles_potential: no potential coded ','get_interaction_force')
       endselect

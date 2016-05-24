@@ -101,6 +101,8 @@ module Sub
   public :: fseek_pos, parallel_file_exists, parallel_count_lines, read_namelist
   public :: meanyz
   public :: calc_all_diff_fluxes
+  public :: periodic_fold_back
+  public :: lower_triangular_index
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -3834,6 +3836,18 @@ module Sub
 !
     endfunction poly_3
 !***********************************************************************
+    subroutine lower_triangular_index(ij,i1,j1)
+      integer,intent(out)::ij
+      integer,intent(in) :: i1,j1
+      integer :: ii,jj
+      ii=i1;jj=j1
+      if (i1.lt.j1) then
+        ii=j1
+        jj=i1
+      endif
+      ij=ii*(ii-1)/2 + jj
+    endsubroutine lower_triangular_index
+!***********************************************************************
     subroutine ylm(theta,phi,ell,emm,sph_har)
 !
 !  Spherical harmonic
@@ -7017,6 +7031,19 @@ endif
       endwhere
 
     endsubroutine diff_flux
+!***********************************************************************
+    subroutine periodic_fold_back(dd,Boxsize)
+      real,dimension(3),intent(in) :: Boxsize
+      real,dimension(3),intent(inout) :: dd
+      integer :: p,q,idim
+      do idim=1,3
+        q = floor(dd(idim)/(Boxsize(idim)/2))
+        p = 0
+        if (q.eq.1)  p = -1  		
+        if (q.eq.-2) p = 1  		
+        dd(idim) = dd(idim) + Boxsize(idim)*p
+      enddo
+    endsubroutine periodic_fold_back
 !***********************************************************************
     subroutine calc_all_diff_fluxes(f,k,islope_limiter,h_slope_limited)
 !

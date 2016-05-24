@@ -1887,6 +1887,7 @@ module Hydro
           idiag_fkinzm/=0 .or. idiag_u2m/=0 .or. idiag_um2/=0 .or. idiag_u2mz/=0 .or. &
           idiag_urmsh/=0 .or. idiag_urmsx/=0 .or. idiag_urmsz/=0) lpenc_diagnos(i_u2)=.true.
       if (idiag_duxdzma/=0 .or. idiag_duydzma/=0 .or. lgradu_as_aux) lpenc_diagnos(i_uij)=.true.
+      if (lparticles_lyapunov) lpenc_diagnos(i_uij) = .true.
       if (idiag_fmasszmz/=0 .or. idiag_ruxuym/=0 .or. &
           idiag_ruxm/=0 .or. idiag_ruym/=0 .or. idiag_ruzm/=0 .or. &
           idiag_ruxuzm/=0 .or. idiag_ruyuzm/=0 .or. idiag_pvzm/=0 .or. &
@@ -2076,7 +2077,7 @@ module Hydro
       logical, dimension(npencils) :: lpenc_loc
 !
       real, dimension (nx) :: tmp, tmp2
-      integer :: i, j, ju, ij
+      integer :: i, j, ju, ij,jj,kk,jk
 !
       intent(in) :: lpenc_loc
       intent(out):: p
@@ -2085,7 +2086,16 @@ module Hydro
 ! u2
       if (lpenc_loc(i_u2)) call dot2_mn(p%uu,p%u2)
 ! uij
-      if (lpenc_loc(i_uij)) call gij(f,iuu,p%uij,1)
+      if (lpenc_loc(i_uij)) then 
+        call gij(f,iuu,p%uij,1)
+        if (lparticles_lyapunov) then
+          jk=0
+          do jj=1,3; do kk=1,3
+            jk=jk+1
+            f(l1:l2,m,n,iguij+jk-1) = p%uij(:,jj,kk)
+          enddo;enddo
+        endif
+      endif
 !      if (.not.lpenc_loc_check_at_work) then
 !        write(*,*) 'uurad,rad',p%uij(1:6,1,1)
 !      endif
