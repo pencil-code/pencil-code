@@ -387,4 +387,10 @@ module Particles_main
 !
     endsubroutine particles_cleanup
 !***********************************************************************
+    subroutine particles_stochastic
+!
+! dummy subroutine
+!
+    endsubroutine particles_stochastic
+!***********************************************************************
 endmodule Particles_main
