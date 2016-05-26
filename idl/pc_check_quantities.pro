@@ -144,7 +144,13 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		B_y:'magnetic field y', $
 		B_z:'magnetic field z', $
 		EMF_abs:'electro motive force strength', $
+		EMF_x:'electro motive force x', $
+		EMF_y:'electro motive force y', $
+		EMF_z:'electro motive force z', $
 		E_j_abs:'current electric field strength', $
+		E_j_x:'current electric field x', $
+		E_j_y:'current electric field y', $
+		E_j_z:'current electric field z', $
 		E_x:'electric field x', $
 		E_y:'electric field y', $
 		E_z:'electric field z', $
@@ -306,8 +312,14 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		E_abs:'E', $
 		EMF:['u','A'], $
 		EMF_abs:'EMF', $
+		EMF_x:'EMF', $
+		EMF_y:'EMF', $
+		EMF_z:'EMF', $
 		E_j:'j', $
 		E_j_abs:'E_j', $
+		E_j_x:'E_j', $
+		E_j_y:'E_j', $
+		E_j_z:'E_j', $
 		E_x:'E', $
 		E_y:'E', $
 		E_z:'E', $

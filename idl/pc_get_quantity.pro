@@ -114,7 +114,7 @@
 ; =============================================================================
 function pc_compute_quantity, vars, index, quantity
 
-	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, P_therm, grad_P_therm, bb, B_2, jj, Poynting, Poynting_j, Poynting_u, F_Lorentz
+	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, P_therm, grad_P_therm, bb, B_2, jj, EMF, Poynting, Poynting_j, Poynting_u, F_Lorentz
 	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
@@ -566,8 +566,9 @@ function pc_compute_quantity, vars, index, quantity
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
+		if (n_elements (EMF) eq 0) then EMF = -cross (uu, bb)
 		sigma_SI_inv = 1.0 / pc_get_parameter ('sigma_SI', label=quantity)
-		E = -cross (uu, bb)
+		E = EMF
 		for pa = 0, 2 do E[*,*,*,pa] += sigma_SI_inv * jj[*,*,*,pa]
 		return, E
 	end
@@ -579,12 +580,24 @@ function pc_compute_quantity, vars, index, quantity
 		; Electro motive force [V/m]
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
-		E = -cross (uu, bb)
-		return, E
+		if (n_elements (EMF) eq 0) then EMF = -cross (uu, bb)
+		return, EMF
 	end
 	if (strcmp (quantity, 'EMF_abs', /fold_case)) then begin
 		; Electro motive force strength [V/m]
 		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'EMF')))
+	end
+	if (strcmp (quantity, 'EMF_x', /fold_case)) then begin
+		; Electro motive force x [V/m]
+		return, (pc_compute_quantity (vars, index, 'EMF'))[*,*,*,0]
+	end
+	if (strcmp (quantity, 'EMF_y', /fold_case)) then begin
+		; Electro motive force y [V/m]
+		return, (pc_compute_quantity (vars, index, 'EMF'))[*,*,*,1]
+	end
+	if (strcmp (quantity, 'EMF_z', /fold_case)) then begin
+		; Electro motive force z [V/m]
+		return, (pc_compute_quantity (vars, index, 'EMF'))[*,*,*,2]
 	end
 	if (strcmp (quantity, 'E_j', /fold_case)) then begin
 		; Current electric field [V/m]
@@ -597,6 +610,18 @@ function pc_compute_quantity, vars, index, quantity
 	if (strcmp (quantity, 'E_j_abs', /fold_case)) then begin
 		; Current electric field strength [V/m]
 		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'E_j')))
+	end
+	if (strcmp (quantity, 'E_j_x', /fold_case)) then begin
+		; Current electric field x [V/m]
+		return, (pc_compute_quantity (vars, index, 'E_j'))[*,*,*,0]
+	end
+	if (strcmp (quantity, 'E_j_y', /fold_case)) then begin
+		; Current electric field y [V/m]
+		return, (pc_compute_quantity (vars, index, 'E_j'))[*,*,*,1]
+	end
+	if (strcmp (quantity, 'E_j_z', /fold_case)) then begin
+		; Current electric field z [V/m]
+		return, (pc_compute_quantity (vars, index, 'E_j'))[*,*,*,2]
 	end
 	if (strcmp (quantity, 'E_x', /fold_case)) then begin
 		; Electric field x-component [V/m]
@@ -936,7 +961,7 @@ end
 ; Clean up cache for computation of physical quantities.
 pro pc_quantity_cache_cleanup
 
-	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, P_therm, grad_P_therm, bb, B_2, jj, Poynting, Poynting_j, Poynting_u, F_Lorentz
+	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, P_therm, grad_P_therm, bb, B_2, jj, EMF, Poynting, Poynting_j, Poynting_u, F_Lorentz
 	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
 
 	undefine, uu
@@ -950,6 +975,7 @@ pro pc_quantity_cache_cleanup
 	undefine, bb
 	undefine, B_2
 	undefine, jj
+	undefine, EMF
 	undefine, Poynting
 	undefine, Poynting_j
 	undefine, Poynting_u
