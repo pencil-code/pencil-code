@@ -225,7 +225,7 @@ push @make_args, @extra_make_args;
 # pencil-test's -Wa or gcc's -Wl options
 map { s/^\s*MAKE_VAR\d*\s*=\s*// } @make_args;
 
-print STDERR "Running make '", join("' '", @make_args), "'\n"
+print STDERR "Running make '", join("' '", @make_args, 'default_to_be'), "'\n"
   unless ($quiet);
 
 system('make', @make_args) == 0
