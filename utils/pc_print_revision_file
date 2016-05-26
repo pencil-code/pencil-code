@@ -1,7 +1,9 @@
 #!/bin/sh
 
 # Description:
-#   Print the revision file if if is up-to-date.
+#   Print the revision file if it is up-to-date, where up-to-date-ness is
+#   determined by comparing the time stamp to one of the binaries.
+# This script expects to be run from the run directory.
 # Usage:
 #   pc_print_revision_file src/start.x
 #   pc_print_revision_file src/run.x
@@ -13,7 +15,7 @@ get_revision_filename () {
         exit 1
     fi
 
-    rf=$(${PENCIL_HOME}/utils/pc_identify_revision --print-file-name)
+    rf="src/$(${PENCIL_HOME}/utils/pc_identify_revision --print-file-name)"
     if [ -z "${rf}" ]; then
         echo 'Error: Cannot get revision file name'
         exit 1
