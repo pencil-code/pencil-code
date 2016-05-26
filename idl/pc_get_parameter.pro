@@ -177,6 +177,9 @@ function pc_get_parameter, param, label=label, missing=missing, dim=dim, datadir
 	if (strcmp (param, 'R_Sun', /fold_case)) then return, 696342.d3 ; Sun radius [m]
 	if (strcmp (param, 'u', /fold_case)) then return, 1.660538921d-27 ; Atomic mass unit [kg]
 
+	; Some additional units
+	if (strcmp (param, 'unit_time', /fold_case)) then return, pc_get_parameter ('unit_length', label=label) / pc_get_parameter ('unit_velocity', label=label)
+
 	; Some additional mathematical constants
 	if (strcmp (param, 'e', /fold_case)) then return, 2.718281828459045235d0 ; Euler constnat
 
