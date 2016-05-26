@@ -146,6 +146,7 @@ timestr>> $datadir/runtime.dat
 
 # Run run.x
 rm -f ERROR COMPLETED
+${PENCIL_HOME}/utils/pc_print_revision_file $run_x
 date
 echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops"
 echo $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops >! run_command.log

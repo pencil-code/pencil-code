@@ -5,6 +5,9 @@
 doc/www
 .*.swp
 host-ID
+# Generated files
+.run_directories.log
+revision.txt
 # left-over files from auto-test and samples
 .pc_build_history 
 .run_directories.log
