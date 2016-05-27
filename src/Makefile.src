@@ -67,6 +67,7 @@ NEUTRALVELOCITY   = noneutralvelocity
 POISSON           = nopoisson
 POLYMER           = nopolymer
 PSCALAR           = nopscalar
+SUPERSAT          = nosupersat
 RADIATION         = noradiation
 SELFGRAVITY       = noselfgravity
 SHEAR             = noshear
