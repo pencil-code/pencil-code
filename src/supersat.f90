@@ -14,12 +14,12 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED cc(npscalar); cc1(npscalar)
-! PENCILS PROVIDED gcc(3,npscalar); ugcc(npscalar)
-! PENCILS PROVIDED gcc2(npscalar); gcc1(npscalar)
-! PENCILS PROVIDED del2cc(npscalar); del6cc(npscalar)
-! PENCILS PROVIDED g5cc(3,npscalar); g5ccglnrho(npscalar)
-! PENCILS PROVIDED hcc(3,3,npscalar)
+! PENCILS PROVIDED cc; cc1
+! PENCILS PROVIDED gcc; ugcc
+! PENCILS PROVIDED gcc2; gcc1
+! PENCILS PROVIDED del2cc; del6cc
+! PENCILS PROVIDED g5cc; g5ccglnrho
+! PENCILS PROVIDED hcc
 !***************************************************************
 module Superstat
 !
@@ -76,7 +76,7 @@ include 'supersat.h'
       !lpscalar_nolog = .true.
       lpscalar = .true.
 !
-      call farray_register_pde('cc', icc, vector=npscalar)
+      call farray_register_pde('cc', icc)
       ilncc = 0                 ! needed for idl
 !
 !  Identify version number.
@@ -95,9 +95,6 @@ include 'supersat.h'
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-!  Print the number of passive scalars.
-!
-      if (lroot) print*, 'Number of passive scalars = ', npscalar
 !
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
@@ -130,20 +127,16 @@ include 'supersat.h'
       real, dimension(nx) :: dot2_tmp
       integer :: i
 ! cc
-      if (lpencil(i_cc)) p%cc=f(l1:l2,m,n,icc:icc+npscalar-1)
+      if (lpencil(i_cc)) p%cc=f(l1:l2,m,n,icc)
 ! cc1
       if (lpencil(i_cc1)) p%cc1=1./p%cc
 ! gcc
       if (lpencil(i_gcc)) then
-        do i = 1, npscalar
-          call grad(f,icc+i-1,p%gcc(:,:,i))
-        enddo
+          call grad(f,icc+i-1,p%gcc)
       endif
 ! ugcc
       if (lpencil(i_ugcc)) then
-        do i = 1, npscalar
-          call u_dot_grad(f,icc+i-1,p%gcc(:,:,i),p%uu,p%ugcc(:,i),UPWIND=lupw_cc)
-        enddo
+          call u_dot_grad(f,icc,p%gcc,p%uu,p%ugcc,UPWIND=lupw_cc)
       endif
 !
     endsubroutine calc_pencils_pscalar
@@ -166,10 +159,9 @@ include 'supersat.h'
       intent(out) :: df
 !
       character(len=2) :: id
-      integer :: icc2
 !  Passive scalar equation.
 !
-        df(l1:l2,m,n,icc:icc2)=df(l1:l2,m,n,icc:icc2)-p%ugcc
+        df(l1:l2,m,n)=df(l1:l2,m,n)-p%ugcc
 !
 !  Passive scalar sink.
 !
@@ -179,7 +171,7 @@ include 'supersat.h'
           else
             bump=pscalar_sink*exp(-0.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/Rpscalar_sink**2)
           endif
-          df(l1:l2,m,n,icc:icc2)=df(l1:l2,m,n,icc:icc2)-spread(bump,2,npscalar)*p%cc
+          df(l1:l2,m,n)=df(l1:l2,m,n)-spread(bump,2)*p%cc
         endif
     endsubroutine dlncc_dt
 !
