@@ -15,8 +15,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED cc; cc1
-! PENCILS PROVIDED gcc; ugcc
-
+! PENCILS PROVIDED gcc(3); ugcc
 !***************************************************************
 module Superstat
 !
@@ -71,9 +70,10 @@ include 'supersat.h'
 !  Since the passive scalar is often used for diagnostic purposes
 !  one may want to reinitialize it to its initial distribution.
 !
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
+!
+      if (lroot) print*, 'Supersaturation routine'
 !
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
@@ -106,11 +106,11 @@ include 'supersat.h'
       if (lpencil(i_cc1)) p%cc1=1./p%cc
 ! gcc
       if (lpencil(i_gcc)) then
-          call grad(f,icc+i-1,p%gcc)
+        call grad(f,icc,p%gcc)
       endif
 ! ugcc
       if (lpencil(i_ugcc)) then
-          call u_dot_grad(f,icc,p%gcc,p%uu,p%ugcc,UPWIND=lupw_cc)
+        call u_dot_grad(f,icc,p%gcc,p%uu,p%ugcc,UPWIND=lupw_cc)
       endif
 !
     endsubroutine calc_pencils_supersat
@@ -135,7 +135,7 @@ include 'supersat.h'
       character(len=2) :: id
 !  Passive scalar equation.
 !
-        df(l1:l2,m,n)=df(l1:l2,m,n)-p%ugcc
+        df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-p%ugcc
 !
 !  Passive scalar sink.
 !
@@ -145,7 +145,7 @@ include 'supersat.h'
           else
             bump=supersat_sink*exp(-0.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/Rsupersat_sink**2)
           endif
-          df(l1:l2,m,n)=df(l1:l2,m,n)-spread(bump,2)*p%cc
+          df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-spread(bump,2)*p%cc
         endif
     endsubroutine dlncc_dt
 !
