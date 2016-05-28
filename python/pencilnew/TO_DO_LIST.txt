@@ -1,4 +1,4 @@
-############### to-do-list for PC python package #############
+############### to do list for PC python package #############
 
 * implement the following IDL routines:
   - pc_read_var_time: reads out only the time stamp of an VARX or var.dat
