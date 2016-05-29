@@ -104,7 +104,7 @@ module Syscalls
       if (exists == -1) then
         write (*,*) 'WARNING: failure while checking if "'//trim(path)//'" exists!'
         ! This line is temporary code to allow Nils debugging further.
-        exists = 1
+        !exists = 1
       endif
 !
       directory_exists = (exists == 1)
