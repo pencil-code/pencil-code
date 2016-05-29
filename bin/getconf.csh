@@ -2007,7 +2007,7 @@ endif
 setenv NODELIST `echo $nodelist | perl -ne 'print join(":",split(/\s/,$_)),"\n"'`
 
 if ($debug) then
-  echo '-- DEBUG CONFIG --
+  echo '-- DEBUG CONFIG --'
   echo '$mpi            = ' "<$mpi>"
   echo '$ncpus          = ' "<$ncpus>"
   echo '$npops          = ' "<$npops>"
@@ -2030,7 +2030,7 @@ if ($debug) then
   echo '$copysnapshots  = ' "<$copysnapshots>"
   echo '$particles      = ' "<$lparticles>"
   echo '$particles_nbody= ' "<$lparticles_nbody>"
-  echo '--
+  echo '--'
 endif
 #Xiangyu on Hebbe
 #set mpirun = /c3se/apps/Common/intel/ips_xe_ce_2016/impi/5.1.1.109/bin64/mpiexec
