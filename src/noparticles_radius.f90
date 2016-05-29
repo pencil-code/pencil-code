@@ -171,6 +171,7 @@ module Particles_radius
       integer, intent(out) :: iStbin
       integer, intent(in) :: ip
 !
+      iStbin = -1
       call keep_compiler_quiet(ip)
       call keep_compiler_quiet(fp)
 !
@@ -183,6 +184,7 @@ module Particles_radius
       real, intent(out) :: mpi
       real :: api
 !
+      mpi = -1.0
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(ip)
 !
