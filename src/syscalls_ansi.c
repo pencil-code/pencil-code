@@ -116,9 +116,12 @@ void FTNIZE(directory_exists_c)
    * 0, otherwise
 */
 {
+  int status;
   struct stat result;
 
-  *exists = stat (path, &result);
+  *exists = 0;
+  status = stat (path, &result);
+  if (status == -1) *exists = -1;
   if (S_ISDIR (result.st_mode)) *exists = 1;
 }
 
