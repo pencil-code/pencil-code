@@ -923,11 +923,15 @@ module Particles_radius
     endsubroutine rprint_particles_radius
 !***********************************************************************
     subroutine get_stbin(iStbin,fp,ip)
+!
+!  Dokument me, please.
+!
       real, dimension (mpar_loc,mparray) :: fp
       integer,intent(out) :: iStbin
       integer,intent(in) :: ip
       integer :: k=0
       real :: api
+!
       k=1
       api=fp(ip,iap)
       if (lfixed_particles_radius) then 
@@ -936,15 +940,21 @@ module Particles_radius
           k=k+1
         enddo
       endif
+!
     endsubroutine get_stbin
 !***********************************************************************
     subroutine get_mass_from_radius(mpi,fp,ip)
+!
+!  Dokument me, please.
+!
       real, dimension (mpar_loc,mparray) :: fp
       integer,intent(in) :: ip
       real,intent(out) :: mpi
       real :: api
+!
       api = fp(ip,iap)
       mpi=(4./3.)*pi*rhopmat*(api**3)      
+!
     endsubroutine get_mass_from_radius
 !***********************************************************************
 endmodule Particles_radius
