@@ -166,20 +166,26 @@ module Particles_radius
     endsubroutine rprint_particles_radius
 !***********************************************************************
     subroutine get_stbin(iStbin,fp,ip)
+!
       real, dimension (mpar_loc,mparray) :: fp
-      integer,intent(out) :: iStbin
-      integer,intent(in) :: ip
+      integer, intent(out) :: iStbin
+      integer, intent(in) :: ip
+!
       call keep_compiler_quiet(ip)
       call keep_compiler_quiet(fp)
+!
     endsubroutine get_stbin
 !***********************************************************************
     subroutine get_mass_from_radius(mpi,fp,ip)
+!
       real, dimension (mpar_loc,mparray) :: fp
-      integer,intent(in) :: ip
-      real,intent(out) :: mpi
+      integer, intent(in) :: ip
+      real, intent(out) :: mpi
       real :: api
+!
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(ip)
+!
     endsubroutine get_mass_from_radius
 !***********************************************************************
 endmodule Particles_radius
