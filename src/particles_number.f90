@@ -251,14 +251,14 @@ module Particles_number
                           (fp(j,iap)**3+fp(k,iap)**3)*cdot
                     else
                       df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
-                          p%cc1(l-nghost,1)*p%rho1(l-nghost)*4/3.*pi*rhopmat* &
+                          p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhopmat* &
                           (fp(j,iap)**3+fp(k,iap)**3)*cdot
                     endif
                   endif  ! fragmentation or coagulation
 !  Time-step contribution
 !                  if (lfirst.and.ldt) then
 !                    dt1_fragmentation(l-nghost) = dt1_fragmentation(l-nghost) +&
-!                        p%cc1(l-nghost,1)*p%rho1(l-nghost)*4/3.*pi*rhopmat* &
+!                        p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhopmat* &
 !                        (fp(j,iap)**3+fp(k,iap)**3)*cdot
 !                  endif
 !  Need to count collisions for diagnostics.
@@ -283,7 +283,7 @@ module Particles_number
                         p%rho1(l-nghost)*4/3.*pi*rhopmat*fp(k,iap)**3*cdot
                   else
                     df(l,m,n,ilncc) = df(l,m,n,ilncc) + &
-                        p%cc1(l-nghost,1)*p%rho1(l-nghost)*4/3.*pi* &
+                        p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi* &
                         rhopmat*fp(k,iap)**3*cdot
                   endif
 !  Need to count collisions for diagnostics.
@@ -296,7 +296,7 @@ module Particles_number
 !  Time-step contribution
 !                  if (lfirst.and.ldt) then
 !                    dt1_fragmentation(l-nghost) = dt1_fragmentation(l-nghost) +&
-!                        p%cc1(l-nghost,1)*p%rho1(l-nghost)*4/3.*pi*rhopmat*fp(k,iap)**3*cdot
+!                        p%cc1(l-nghost)*p%rho1(l-nghost)*4/3.*pi*rhopmat*fp(k,iap)**3*cdot
 !                  endif
                 endif  ! subgrid model
 !
