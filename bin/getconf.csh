@@ -373,7 +373,7 @@ else if ($hn =~ p*.hpc2n.umu.se ) then
   echo "OMP_NUM_THREADS" $OMP_NUM_THREADS
   #
   setenv PENCIL_HOME $HOME/nobackup/pencil-code/
-  set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet  
+  set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet
   set $mpirun=mpirun
 #------------------------------------------
 else if ($hn =~ t*.hpc2n.umu.se ) then
@@ -385,7 +385,7 @@ else if ($hn =~ t*.hpc2n.umu.se ) then
   set mpirun = 'srun'
   set npops = ''
   setenv PENCIL_HOME $HOME/nobackup/pencil-code/
-  set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet  
+  set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet
 #------------------------------------------
 else if ($hn =~ gardar* ) then
   echo "******************************"
@@ -435,7 +435,7 @@ else if ($hn =~ compute-*.local ) then
 # echo "OMP_NUM_THREADS" $OMP_NUM_THREADS
   #
   #setenv PENCIL_HOME /physics/tinatin/Axel/pencil-code/
- #set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet  
+ #set _sourceme_quiet; source $PENCIL_HOME/sourceme.csh; unset _sourceme_quiet
   set $mpirun=mpirun
 #  set mpirunops="-hostfile $PBS_NODEFILE"
 #  cp $PBS_NODEFILE machines
@@ -819,8 +819,8 @@ else if (($hn =~ cn[0-9]*) && ($USER =~ manterm1 || $USER =~ kapylap1)) then
     touch $SLURM_WORKDIR/data/jobid.dat
     echo $SLURM_JOBID >> $SLURM_WORKDIR/data/jobid.dat
   endif
-module load openmpi/1.6.5-gcc
-module list
+  module load openmpi/1.6.5-gcc
+  module list
   set mpirunops = "--mpi=openmpi"
   set mpirunops2 = ''
   set mpirun = 'srun'
@@ -892,19 +892,19 @@ else if (($hn =~ nid*) || ($hn =~ network*) && ($USER =~ iprpkapy || $USER =~ ip
   set local_binary = 0
 #----------------------------------------------
 else if (($hn =~ mom*) && ($USER =~ iprpkapy || $USER =~ iprjwarn)) then
- echo "Hornet - HLRS, Stuttgart, Germany"
- if ( $?PBS_JOBID ) then
-   echo "Running job: $PBS_JOBID"
-   touch $PBS_O_WORKDIR/data/jobid.dat
-   echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
- endif
- set mpirunops = ''
- set mpirun = 'aprun'
- set npops = "-n $ncpus"
- set local_disc = 0
- set one_local_disc = 0
- set remote_top     = 1
- set local_binary = 0
+  echo "Hornet - HLRS, Stuttgart, Germany"
+  if ( $?PBS_JOBID ) then
+    echo "Running job: $PBS_JOBID"
+    touch $PBS_O_WORKDIR/data/jobid.dat
+    echo $PBS_JOBID >> $PBS_O_WORKDIR/data/jobid.dat
+  endif
+  set mpirunops = ''
+  set mpirun = 'aprun'
+  set npops = "-n $ncpus"
+  set local_disc = 0
+  set one_local_disc = 0
+  set remote_top     = 1
+  set local_binary = 0
 #----------------------------------------------
 else if ($hn =~ beskow-login*.pdc.kth.se*) then
   echo "*********************************"
@@ -1532,32 +1532,32 @@ else if ($hostname =~ jugene*) then
   setenv SCRATCH_DIR /work/$USER
 #-------------------------------------------------
 else if ($hostname =~ juqueen*) then
-   echo "Blue Gene/Q at Juelich"
-   set local_disc = 0
-   set one_local_disc = 1
-   set mpirun = runjob
-   set mpirunops = "--ranks-per-node 16"
-   set mpirunops2="-n $ncpus --exe"
-   set npops = ''
-   setenv SSH "ssh -q -x"
-   setenv SCP "scp -q"
-   setenv SCRATCH_DIR /work/$USER
+  echo "Blue Gene/Q at Juelich"
+  set local_disc = 0
+  set one_local_disc = 1
+  set mpirun = runjob
+  set mpirunops = "--ranks-per-node 16"
+  set mpirunops2="-n $ncpus --exe"
+  set npops = ''
+  setenv SSH "ssh -q -x"
+  setenv SCP "scp -q"
+  setenv SCRATCH_DIR /work/$USER
 #-------------------------------------------------
 else if ($hn =~ fen*) then
-   echo "Blue Gene/Q at Fermi"
-   echo $hostname 
-   setenv nodelist $hostname
-   echo $nodelist 
-   set local_disc = 1
-   set one_local_disc = 0
-   set mpirun = runjob
-   set mpirunops = "--ranks-per-node 16 --np 64"
-   set mpirunops2="--exe"
-   set npops = ''
-   set nprocpernode = '64'
-   setenv SSH "ssh -q -x"
-   setenv SCP "scp -q"
-   setenv SCRATCH_DIR /work/$USER
+  echo "Blue Gene/Q at Fermi"
+  echo $hostname
+  setenv nodelist $hostname
+  echo $nodelist
+  set local_disc = 1
+  set one_local_disc = 0
+  set mpirun = runjob
+  set mpirunops = "--ranks-per-node 16 --np 64"
+  set mpirunops2="--exe"
+  set npops = ''
+  set nprocpernode = '64'
+  setenv SSH "ssh -q -x"
+  setenv SCP "scp -q"
+  setenv SCRATCH_DIR /work/$USER
 #-------------------------------------------------
 else if ($hn =~ an[0-9]*) then
   echo "Alarik cluster at Lunarc in Lund"
@@ -1816,20 +1816,20 @@ else if ($masterhost =~ pfe) then
 # NB replace #!/bin/csh with #!/usr/local/bin/csh line 1
 #
 else if ($hostname =~ mhdc) then
-       set hn = $hostname
-       echo "Running on mhdc cluster st-andrews"
-       set masterhost = 'master'
-       cat $PBS_NODEFILE > mpd.hosts
-       set mpirun = /usr/bin/mpirun
-       set mpirunops = "-machinefile mpd.hosts"# $PBS_NODEFILE
-       set myprocpernode = 4
-       set mynodes = `expr $ncpus / $myprocpernode `
-       set resub = "/usr/compusys-installed/bin/qsub -d $PENCIL_WORKDIR"
-       set resubop1 = "-lnodes=$mynodes"
-       set resubop2 = ":ppn=4 run.csh -q prod"
-       set resubop = "$resubop1$resubop2"
-       set run_resub = "ssh -t $masterhost $PENCIL_WORKDIR/rs >> $PBS_O_WORKDIR/resubmit.log"
-       echo "Finished  mhdc machine specific settings"
+  set hn = $hostname
+  echo "Running on mhdc cluster st-andrews"
+  set masterhost = 'master'
+  cat $PBS_NODEFILE > mpd.hosts
+  set mpirun = /usr/bin/mpirun
+  set mpirunops = "-machinefile mpd.hosts"# $PBS_NODEFILE
+  set myprocpernode = 4
+  set mynodes = `expr $ncpus / $myprocpernode `
+  set resub = "/usr/compusys-installed/bin/qsub -d $PENCIL_WORKDIR"
+  set resubop1 = "-lnodes=$mynodes"
+  set resubop2 = ":ppn=4 run.csh -q prod"
+  set resubop = "$resubop1$resubop2"
+  set run_resub = "ssh -t $masterhost $PENCIL_WORKDIR/rs >> $PBS_O_WORKDIR/resubmit.log"
+  echo "Finished  mhdc machine specific settings"
 #--------------------------------------------
 # For the HECToR in the EPCC cluster in Edinburgh, UK
 # NB You might change mpirunops and/or mpops
@@ -1855,14 +1855,14 @@ else if ($hn =~ mnode) then
   set mpirunops = "-hostfile mpd.hosts"
 #-------------------------------------------------
 else if ($hn =~ fred-asus) then
-echo "Fred's asus laptop"
-set mpi = 1
-set nprocpernode = $ncpus
+  echo "Fred's asus laptop"
+  set mpi = 1
+  set nprocpernode = $ncpus
 #-------------------------------------------------
 else if ($hn =~ vm-think-aschreiber) then
-echo "Andys-Think-Tank"
-set mpi = 1
-set nprocpernode = $ncpus
+  echo "Andys-Think-Tank"
+  set mpi = 1
+  set nprocpernode = $ncpus
 #-------------------------------------------------
 else
   echo "Generic setup; hostname is <$hn>."
