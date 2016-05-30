@@ -1959,6 +1959,19 @@ YINYANG_SRC=$(YINYANG).f90
 #CFLAGS_DOUBLE= -DDOUBLE_PRECISION #(fred-asus)
 #LIBMPISUFFIX= #(fred-asus)
 ##
+##
+## vm-think-aschreiber (Andreases Laptop)
+##
+#FC=mpif90 #(vm-think-aschreiber)
+#CC=mpicc #(vm-think-aschreiber)
+#F77=f90 #(vm-think-aschreiber)
+#FFLAGS=-O3 -I/usr/lib64/mpi/gcc/openmpi/include/ #(vm-think-aschreiber)
+#LD_MPI= -L/usr/lib64/mpi/gcc/openmpi/include/ #(vm-think-aschreiber)
+#CFLAGS=-DFUNDERSC=1 -I/usr/lib64/mpi/gcc/openmpi/include/ #(vm-think-aschreiber)
+#FFLAGS_DOUBLE= -fdefault-real-8 #(vm-think-aschreiber)
+#CFLAGS_DOUBLE= -DDOUBLE_PRECISION #(vm-think-aschreiber)
+#LIBMPISUFFIX= #(vm-think-aschreiber)
+##
 
 ##AB: keep the empty line above!!
 ##

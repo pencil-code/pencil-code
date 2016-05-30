@@ -1855,9 +1855,14 @@ else if ($hn =~ mnode) then
   set mpirunops = "-hostfile mpd.hosts"
 #-------------------------------------------------
 else if ($hn =~ fred-asus) then
-  echo "Fred's asus laptop"
-  set mpi = 1
-  set nprocpernode = $ncpus
+echo "Fred's asus laptop"
+set mpi = 1
+set nprocpernode = $ncpus
+#-------------------------------------------------
+else if ($hn =~ vm-think-aschreiber) then
+echo "Andys-Think-Tank"
+set mpi = 1
+set nprocpernode = $ncpus
 #-------------------------------------------------
 else
   echo "Generic setup; hostname is <$hn>."
