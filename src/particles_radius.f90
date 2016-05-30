@@ -40,6 +40,7 @@ module Particles_radius
   real :: sigma_initdist=0.2, a0_initdist=5e-6, rpbeta0=0.0
   integer :: nbin_initdist=20
   logical :: lsweepup_par=.false., lcondensation_par=.false.
+  logical :: lsupersat_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
   logical :: lcondensation_simplified=.false.
   logical :: lfixed_particles_radius=.false.
@@ -63,7 +64,8 @@ module Particles_radius
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
       lborder_driving_ocean, ztop_ocean, TTocean, &
       lcondensation_simplified, GS_condensation, rpbeta0,&
-      lfixed_particles_radius
+      lfixed_particles_radius, &
+      lsupersat_par
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
@@ -141,6 +143,7 @@ module Particles_radius
       endif
 !
       if ((lsweepup_par.or.lcondensation_par).and..not.lpscalar &
+              .and..not.lsupersat &
           .and..not.lcondensation_simplified) then
         call fatal_error('initialize_particles_radius', &
             'must have passive scalar module for sweep-up and condensation')
@@ -432,6 +435,10 @@ module Particles_radius
           lpenc_requested(i_TT1)=.true.
         endif
       endif
+      if(lsupersat_par) then 
+        lpenc_requested(i_cc)=.true.
+        lpenc_requested(i_cc1)=.true. 
+      endif
 !
     endsubroutine pencil_criteria_par_radius
 !***********************************************************************
@@ -470,6 +477,9 @@ module Particles_radius
           call dap_dt_sweepup_pencil(f,df,fp,dfp,p,ineargrid)
       if (lcondensation_par) &
           call dap_dt_condensation_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lsupersat_par) &
+          call dap_dt_supersat_pencil(f,df,fp,dfp,p,ineargrid) !XY
+          
 !
       lfirstcall=.false.
 !
@@ -568,6 +578,8 @@ module Particles_radius
                 df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - &
                     np_swarm*pi*fp(k,iap)**2*deltavp
               endif
+              !if (lsupersat) df(ix0,m,n,icc) = df(ix0,m,n,icc) - &
+               !     np_swarm*pi*fp(k,iap)**2*deltavp*p%cc(ix)
 !
 !  Time-step contribution of sweep-up.
 !
@@ -743,6 +755,9 @@ module Particles_radius
                   (p%cc1(ix)-1.0)*p%rho1(ix)*drhocdt
             else
             endif
+
+            !if (lsupersat) df(ix0,m,n,icc)   = df(ix0,m,n,icc)   + &
+            !      (1.0-p%cc(ix))*p%rho1(ix)*drhocdt
 !
 !  Release latent heat to gas / remove heat from gas.
 !
@@ -791,6 +806,29 @@ module Particles_radius
       call keep_compiler_quiet(f)
 !
     endsubroutine dap_dt_condensation_pencil
+!***********************************************************************
+!growth by condesation in a passive scalar field
+!28-may-16/Xiang-Yu: coded
+    subroutine dap_dt_supersat_pencil(f,df,fp,dfp,p,ineargrid)
+
+      use EquationOfState, only: gamma
+      use Particles_number
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
+      type (pencil_case) :: p
+      integer, dimension (mpar_loc,3) :: ineargrid
+      
+      real :: dapdt
+      integer :: k, ix
+!
+      intent (in) :: f, fp
+      intent (inout) :: dfp
+                
+      dapdt=p%cc(ix)/fp(k,iap)
+    endsubroutine dap_dt_supersat_pencil
 !***********************************************************************
     subroutine dap_dt(f,df,fp,dfp,ineargrid)
 !
@@ -923,15 +961,11 @@ module Particles_radius
     endsubroutine rprint_particles_radius
 !***********************************************************************
     subroutine get_stbin(iStbin,fp,ip)
-!
-!  Dokument me, please.
-!
       real, dimension (mpar_loc,mparray) :: fp
       integer,intent(out) :: iStbin
       integer,intent(in) :: ip
       integer :: k=0
       real :: api
-!
       k=1
       api=fp(ip,iap)
       if (lfixed_particles_radius) then 
@@ -940,21 +974,15 @@ module Particles_radius
           k=k+1
         enddo
       endif
-!
     endsubroutine get_stbin
 !***********************************************************************
     subroutine get_mass_from_radius(mpi,fp,ip)
-!
-!  Dokument me, please.
-!
       real, dimension (mpar_loc,mparray) :: fp
       integer,intent(in) :: ip
       real,intent(out) :: mpi
       real :: api
-!
       api = fp(ip,iap)
       mpi=(4./3.)*pi*rhopmat*(api**3)      
-!
     endsubroutine get_mass_from_radius
 !***********************************************************************
 endmodule Particles_radius
