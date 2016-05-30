@@ -225,7 +225,7 @@ module Special
 !  06-oct-03/tony: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i_ix,j_ix
+      integer :: i,j
 !
       call keep_compiler_quiet(f)
 
@@ -315,39 +315,78 @@ module Special
         if (lalpha) then
           allocate(alpha_data(nx,ny,nz,dataload_len,3,3))
           alpha_data = 0
-          write (*,*) 'Loading alpha to memory...'
           call loadDataset(alpha_data, lalpha_arr, alpha_id, 0)
-          write (*,*) 'Loaded alpha. sum/maxval/minval: ', sum(alpha_data), maxval(alpha_data), minval(alpha_data)
+          if (lroot) then
+              write (*,*) 'Alpha scale:  ', alpha_scale
+              write (*,*) 'Alpha maxval: ', maxval(alpha_data)
+              write (*,*) 'Alpha components used: '
+              do i=1,3
+                  write (*,'(A3,3L3,A3)') '|', lalpha_arr(:,i), '|'
+              end do
+          end if
         end if
         if (lbeta) then
           allocate(beta_data(nx,ny,nz,dataload_len,3,3))
           beta_data  = 0
           call loadDataset(beta_data, lbeta_arr, beta_id, 0)
-          write (*,*) 'Loaded beta. sum/maxval/minval: ', sum(beta_data), maxval(beta_data), minval(beta_data)
+          if (lroot) then
+              write (*,*) 'Beta scale:  ', beta_scale
+              write (*,*) 'Beta maxval: ', maxval(beta_data)
+              write (*,*) 'Beta components used: '
+              do i=1,3
+                  write (*,'(A3,3L3,A3)') '|', lbeta_arr(:,i), '|'
+              end do
+          end if
         end if
         if (lgamma) then
           allocate(gamma_data(nx,ny,nz,dataload_len,3))
           gamma_data = 0
           call loadDataset(gamma_data, lgamma_arr, gamma_id, 0)
-          write (*,*) 'Loaded gamma. sum/maxval/minval: ', sum(gamma_data), maxval(gamma_data), minval(gamma_data)
+          if (lroot) then
+              write (*,*) 'Gamma scale:  ', gamma_scale
+              write (*,*) 'Gamma maxval: ', maxval(gamma_data)
+              write (*,*) 'Gamma components used: '
+              write (*,'(A3,3L3,A3)') '|', lgamma_arr, '|'
+          end if
         end if
         if (ldelta) then
           allocate(delta_data(nx,ny,nz,dataload_len,3))
           delta_data = 0
           call loadDataset(delta_data, ldelta_arr, delta_id, 0)
-          write (*,*) 'Loaded delta. sum/maxval/minval: ', sum(delta_data), maxval(delta_data), minval(delta_data)
+          if (lroot) then
+              write (*,*) 'Delta scale:  ', delta_scale
+              write (*,*) 'Delta maxval: ', maxval(delta_data)
+              write (*,*) 'Delta components used: '
+              write (*,'(A3,3L3,A3)') '|', ldelta_arr, '|'
+          end if
         end if
         if (lkappa) then
           allocate(kappa_data(nx,ny,nz,dataload_len,3,3,3))
           kappa_data = 0
           !call loadDataset(kappa_data, lkappa_arr, kappa_id, 0)
-          write (*,*) 'Loaded kappa. sum/maxval/minval: ', sum(kappa_data), maxval(kappa_data), minval(kappa_data)
+          if (lroot) then
+              !write (*,*) 'Kappa scale:  ', kappa_scale
+              write (*,*) 'Kappa maxval: ', maxval(kappa_data)
+              write (*,*) 'Kappa components used: '
+              do j=1,3
+                write(*,*) '|'
+                do i=1,3
+                  write (*,'(A3,3L3,A3)') '||', lkappa_arr(:,j,i), '||'
+                end do
+              end do
+              write(*,*) '|'
+          end if
         end if
         if (lutensor) then
           allocate(utensor_data(nx,ny,nz,dataload_len,3))
           utensor_data = 0
           call loadDataset(utensor_data, lutensor_arr, utensor_id, 0)
-          write (*,*) 'Loaded utensor. sum/maxval/minval: ', sum(utensor_data), maxval(utensor_data), minval(utensor_data)
+          if (lroot) then
+              write (*,*) 'U-tensor scale:  ', utensor_scale
+              write (*,*) 'U-tensor maxval: ', maxval(utensor_data)
+              write (*,*) 'U-tensor components used: '
+              write (*,'(A3,3L3,A3)') '|', lutensor_arr, '|'
+          end if
         end if
       end if
   !
