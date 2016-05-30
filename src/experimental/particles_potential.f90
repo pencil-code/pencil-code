@@ -20,14 +20,22 @@ module Particles_potential
 !
   implicit none
 !
-  include 'particles_potential.h'
+  include '../particles_potential.h'
 !
   character (len=labellen) :: ppotential='nothing'
   integer :: sigma_in_grid = 1, cell_in_grid=1
-  real :: psigma_by_dx=0.1,ppower=19,skin_factor=2.,pampl=1.
+  real :: psigma_by_dx=0.1,ppower=19,skin_factor=2.,fampl=1.
   real :: Rcutoff=0.,dRbin=1.,cell_length=0.
+  real :: pmom_max=6, pmom_min=-2, mom_step=0.25
   integer :: Rcutoff_in_grid=1,Nbin_in_Rcutoff=100
   real :: rescale_diameter=1.
+  logical :: lpotential
+  integer :: mom_max,mpface,mpedge,mpcorner
+  real, allocatable, dimension(:,:) :: fpx0,fpy0,fpz0,fpxL,fpyL,fpzL,&
+    fpx0y0,fpx0z0,fpy0z0,fpx0yL,fpx0zL,fpy0zL,&
+    fpxLyL,fpxLzL,fpyLzL,fpxLy0,fpxLz0,fpyLz0,&
+    fpx0y0z0, fpx0y0zL,fpx0yLz0,fpxLy0z0, &
+    fpx0yLzL,fpxLy0zL,fpxLyLz0,fpxLyLzL
 ! 
 !
 ! ----------- About Potential ----------------------
@@ -47,43 +55,48 @@ module Particles_potential
 ! typically of the form
 !   V(r) = function of (r/psigma) , \xi = r/psigma
 ! The default potential is repulsive
-!  V(r) = pampl*(1/xi)^(beta)
+!  V(r) = fampl*(1/xi)^(beta)
 ! with beta = 2*ppowerby2
 ! This potential is quite steep (almost hard-sphere) hence the effective force on a particle
 ! due to other particles which are within a distance of skin_factor*psigma. Particles
 ! within this distance are included in the neighbourlist.
 !
   integer :: mcellx=0,mcelly=0,mcellz=0
-  logical :: lhead_allcated=.false.
+  logical :: lhead_allocated=.false.
   integer, allocatable, dimension(:,:,:) :: head
   integer, allocatable,dimension(:) :: link_list
+  real, allocatable,dimension(:) :: mom_array
+  real, allocatable,dimension(:,:,:) :: MomJntPDF,MomColJntPDF
   integer :: ysteps_int,zsteps_int
   namelist /particles_potential_init_pars/ &
-    ppotential, cell_in_grid, psigma_by_dx, ppowerby2, skin_factor, &
-      sigma_in_grid,pampl,Rcutoff_in_grid,Nbin_in_Rcutoff,rescale_diameter
+    ppotential, cell_in_grid, psigma_by_dx,  skin_factor, &
+      sigma_in_grid,fampl,Rcutoff_in_grid,Nbin_in_Rcutoff,rescale_diameter,lpotential
 !
   namelist /particles_potential_run_pars/ &
-    ppotential, cell_in_grid, psigma_by_dx, ppowerby2, skin_factor, &
-      sigma_in_grid,pampl,Rcutoff_in_grid,Nbin_in_Rcutoff,rescale_diameter
+    ppotential, cell_in_grid, psigma_by_dx,  skin_factor, &
+      sigma_in_grid,fampl,Rcutoff_in_grid,Nbin_in_Rcutoff,rescale_diameter,lpotential
 !
-  integer :: idiag_particles_vijm=0,idiag_particles_vijrms=0
+  integer :: idiag_particles_vijm=0,idiag_particles_vijrms=0,idiag_abs_mom=0
+  integer :: idiag_colvel_mom=0,idiag_gr=0
 !
   contains
 !***********************************************************************
-    subroutine register_particles()
+    subroutine register_particles_potential()
 !
 !  Set up indices for access to the fp and dfp arrays
 !
       if (lroot) call svn_id( &
            "$Id: particles_potential.f90 dhruba.mitra@gmail.com $")
 
-    endsubroutine register_particles
+    endsubroutine register_particles_potential
 !***********************************************************************
     subroutine initialize_particles_potential(f)
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
+      real, dimension (mx,my,mz,mfarray),intent(in) :: f
+      integer :: mom_tmp,imom
 !
 ! assume isotropy 
 !
@@ -96,7 +109,7 @@ module Particles_potential
 !
       if(.not.lhead_allocated) then
         allocate(head(0:mcellx+1,0:mcelly+1,0:mcellz+1))
-        allocate(link_list(mp_loc))
+        allocate(link_list(mpar_loc))
         lhead_allocated=.true.
         head=0
         link_list=0
@@ -114,6 +127,22 @@ module Particles_potential
         mom_tmp = mom_tmp+mom_step
       enddo
     write(*,*) mom_array
+!
+!
+!
+    mpface=mpar_loc/6
+    allocate(fpx0(mpface,mparray),fpxL(mpface,mparray))
+    allocate(fpy0(mpface,mparray),fpyL(mpface,mparray))
+    allocate(fpz0(mpface,mparray),fpzL(mpface,mparray))
+    mpedge=mpar_loc/12
+    allocate(fpx0y0(mpedge,mparray),fpx0yL(mpedge,mparray),fpxLy0(mpedge,mparray),fpxLyL(mpedge,mparray))
+    allocate(fpx0z0(mpedge,mparray),fpx0zL(mpedge,mparray),fpxLz0(mpedge,mparray),fpxLzL(mpedge,mparray))
+    allocate(fpy0z0(mpedge,mparray),fpy0zL(mpedge,mparray),fpyLz0(mpedge,mparray),fpyLzL(mpedge,mparray))
+    mpcorner=mpar_loc/27
+    allocate(fpx0y0z0(mpcorner,mparray),fpx0y0zL(mpcorner,mparray))
+    allocate(fpx0yLz0(mpcorner,mparray),fpx0yLzL(mpcorner,mparray))
+    allocate(fpxLyLz0(mpcorner,mparray),fpxLyLzL(mpcorner,mparray))
+    allocate(fpxLy0z0(mpcorner,mparray),fpxLy0zL(mpcorner,mparray))
 !
 ! write out this array such that it can be read
 !
@@ -141,25 +170,32 @@ module Particles_potential
     endsubroutine particles_potential_clean_up
 !***********************************************************************
     subroutine init_particles_potential(f,fp,ineargrid)
+      real, dimension (mx,my,mz,mfarray),intent(in) :: f
+      real, dimension (mpar_loc,mparray),intent(in) :: fp
+      integer, dimension(mpar_loc,3),intent(in) :: ineargrid
 !
 !  initial setting for potential
 !
-
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
 !
     endsubroutine init_particles_potential
 !***********************************************************************
     subroutine construct_link_list(fp)
       real, dimension (mpar_loc,mparray) :: fp
-      integer :: ip
+      integer :: ipx0,ipy0,ipz0,ipxL,ipyL,ipzL,& 
+        ipx0y0,ipx0z0,ipy0z0,ipx0yL,ipx0zL,ipy0zL,&
+        ipxLyL,ipxLzL,ipyLzL,ipxLy0,ipxLz0,ipyLz0,&
+        ipx0y0z0, ipx0y0zL,ipx0yLz0,ipxLy0z0, &
+        ipx0yLzL,ipxLy0zL,ipxLyLz0,ipxLyLzL
+      integer :: ip,imom
       integer,dimension(3) :: cell_vec
-      integer :: ipx0=1,ipxL=1,ipy0=1,ipyL=1,ipz0=1,ipzL=1
+      real,dimension(3) :: xxi
 !
-      if (.not.lhead_allocated) &
-        call fatal_error('dvvp_dt_potential', 'The linked list is not allocated; ABORTING') 
-!
-      do ip=1,np_loc
+      do ip=1,npar_loc
         xxi=fp(ip,ixp:izp)
-        cell_vec=floor(xxi-xyz0)/cell_length)+1
+        cell_vec=floor((xxi-xyz0)/cell_length)+1
         link_list(ip)=head(cell_vec(1),cell_vec(2),cell_vec(3))
         head(cell_vec(1),cell_vec(2),cell_vec(3))=ip
       enddo
@@ -218,7 +254,7 @@ module Particles_potential
 ! cell x=0,z=Lz,y=0 is already done
 ! cell x=0,z=Lz,y=Lz is already done 
           endif
-          ip=list(ip)
+          ip=link_list(ip)
         enddo
 ! Plane x=Lx
         ix=mcellx
@@ -270,7 +306,7 @@ module Particles_potential
 ! cell x=0,z=Lz,y=0 is already done
 ! cell x=0,z=Lz,y=Lz is already done 
           endif
-          ip=list(ip)
+          ip=link_list(ip)
         enddo !while loop over ip ends
       enddo;enddo
 !        
@@ -296,7 +332,7 @@ module Particles_potential
             fpy0zL(ipy0zL,:) = fp(ip,:)
             ipy0zL=ipy0zL+1
           endif
-          ip=list(ip)
+          ip=link_list(ip)
         enddo
 !Plane y=Ly
         iy=mcelly
@@ -317,7 +353,7 @@ module Particles_potential
             fpyLzL(ipyLzL,:) = fp(ip,:)
             ipyLzL=ipyLzL+1
           endif
-          ip=list(ip)
+          ip=link_list(ip)
         enddo
       enddo;enddo
 !        
@@ -333,7 +369,7 @@ module Particles_potential
 ! Line x=0,z=0 is already done
 ! cell x=0,y=0,z=0 is already done
 ! Line y=0,z=0 is already done
-          ip=list(ip)
+          ip=link_list(ip)
         enddo
 !Plane z=Lz
         iz=mcellz
@@ -344,7 +380,7 @@ module Particles_potential
 ! Line x=0,z=L is already done
 ! cell x=0,y=0,z=L is already done
 ! Line y=0,z=L is already done
-          ip=list(ip)
+          ip=link_list(ip)
         enddo
       enddo;enddo
 !
@@ -361,7 +397,6 @@ module Particles_potential
 !
 !  02-jan-05/anders: coded
 !
-      use General, only: random_number_wrapper, random_seed_wrapper
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -380,6 +415,26 @@ module Particles_potential
 !
     endsubroutine dxxp_dt_potential
 !***********************************************************************
+    subroutine dvvp_dt_potential_pencil(f,df,fp,dfp,ineargrid)
+!
+!  Dummy module
+!
+!  21-nov-06/anders: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension (mpar_loc,mpvar) :: dfp
+      integer, dimension (mpar_loc,3) :: ineargrid
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine dvvp_dt_potential_pencil
+!***********************************************************************
     subroutine dvvp_dt_potential(fp,dfp,ineargrid)
 !
 !  Evolution of dust particle velocity.
@@ -395,8 +450,8 @@ module Particles_potential
 !
       logical :: lheader, lfirstcall=.true.
 !
-      intent (in) :: f, fp, ineargrid
-      intent (inout) :: df, dfp
+      intent (in) :: fp, ineargrid
+      intent (inout) :: dfp
 !
 ! We need to calculate pairwise quantities only if we are calculating
 ! pairwise diagnostic or if we actually have a potential of interaction
@@ -421,12 +476,14 @@ module Particles_potential
 !
       logical :: lheader, lfirstcall=.true.
 !
-      intent (in) :: f, fp, ineargrid
-      intent (inout) :: df, dfp
+      intent (in) :: fp, ineargrid
+      intent (inout) :: dfp
 !----------------------------------
       integer :: ix,iy,iz,ip,jp,kp
       integer,parameter :: Nnab=13
       integer,dimension(Nnab,3) :: neighbours
+      integer :: inab,ix2
+      real,dimension(3) :: xxij,vvij
 !
 !  Print out header information in first time step.
 !
@@ -452,7 +509,7 @@ module Particles_potential
           jp = link_list(ip)
           do while (jp.ne.0)
             xxij= fp(jp,ixp:izp)-fp(ip,ixp:izp)
-            vvij=fp(jp,ivxp:ivzp)-fp(ip,ivxp:ivzp)
+            vvij=fp(jp,ivpx:ivpz)-fp(ip,ivpx:ivpz)
             call two_particle_int(fp,dfp,ip,jp,xxij,vvij)
             jp = link_list(jp)
           enddo
@@ -462,7 +519,7 @@ module Particles_potential
 ! Now for neighbouring cells
 !
         ip = head(ix,iy,iz)
-        neighbours = get_neighbours(ix,iy,iz)
+        call get_cell_neighbours(ix,iy,iz,neighbours)
         do while (ip.ne.0) 
           do inab = 1,Nnab						
             ix2 = neighbours(inab,1)      
@@ -471,12 +528,13 @@ module Particles_potential
             jp = head(ix2,iy2,iz2)
             do while (jp.ne.0) 
               xxij= fp(jp,ixp:izp)-fp(ip,ixp:izp)
-              call periodic_fold_back(xxij)
-              vvij=fp(jp,ivxp:ivzp)-fp(ip,ivxp:ivzp)
+              call periodic_fold_back(xxij, Lxyz)
+              vvij=fp(jp,ivpx:ivpz)-fp(ip,ivpx:ivpz)
               call two_particle_int(fp,dfp,ip,jp,xxij,vvij)
               jp = link_list(jp)       
             enddo
           enddo
+        enddo
 !
       enddo; enddo; enddo
 !
@@ -487,7 +545,7 @@ module Particles_potential
 !
       call keep_compiler_quiet(ineargrid)
 !
-    endsubroutine dvvp_dt_potential
+    endsubroutine calculate_potential
 !***********************************************************************
     subroutine two_particle_int(fp,dfp,ip,jp,xxij,vvij)
 !
@@ -498,22 +556,27 @@ module Particles_potential
       real, dimension (mpar_loc,mpvar) :: dfp
 !
       integer,intent(in) :: ip,jp
-      real,dimnesion(3),intent(in) :: xxij,vvij
+      real, dimension(3),intent(in) :: xxij,vvij
       real,dimension(3) :: accni,accnj
-      real :: Rsqr,Vsqr,Vparallel
-      integer :: iStbin,jStbin
+      real :: Rsqr,Vsqr,Vparallel,pmom,RR
+      integer :: iStbin,jStbin,ijSt,iRbin,jmom
 !!---------------------------------
       Rsqr=xxij(1)*xxij(1)+xxij(2)*xxij(2)+xxij(3)*xxij(3)
       RR = sqrt(Rsqr)
       if (lpotential) then
-        call get_interparticle_accn(accni,accnj,ip,jp,fp,RR)
-        dfp(ip,ivx:ivz) = dfp(ip,ivx:ivz)+accni
-        dfp(jp,ivx:ivz) = dfp(jp,ivx:ivz)+accnj
+        call get_interparticle_accn(accni,accnj,ip,jp,fp,xxij)
+        dfp(ip,ivpx:ivpz) = dfp(ip,ivpx:ivpz)+accni
+!
+! The other(jp) particle may be in a different processor. If that is the
+! case then we do not add to the dfp 
+! 
+       if (jp .le. npar_loc) &
+          dfp(jp,ivpx:ivpz) = dfp(jp,ivpx:ivpz)+accnj
       endif
       if (ldiagnos) then
         if (RR .lt. Rcutoff) then 
           Vsqr=vvij(1)*vvij(1)+vvij(2)*vvij(2)+vvij(3)*vvij(3)
-          Vparallel=dot(xxij,vvij)/RR
+          Vparallel=dot_product(xxij,vvij)/RR
           iRbin=floor(RR/dRbin)
           call get_stbin(iStbin,fp,ip)
           call get_stbin(jStbin,fp,jp)
@@ -537,7 +600,7 @@ module Particles_potential
 !
     endsubroutine two_particle_int
 !***********************************************************************
-    subroutine get_neighbours(ix,iy,iz,neighbours)
+    subroutine get_cell_neighbours(ix,iy,iz,neighbours)
       integer,intent(in) :: ix,iy,iz
       integer,parameter :: Nnab=13
       integer,dimension(Nnab,3) :: neighbours
@@ -593,7 +656,7 @@ module Particles_potential
 	neighbours(13,1) = ix + 1
 	neighbours(13,2) = iy + 1
 	neighbours(13,3) = iz
-    endsubroutine get_neighbours
+endsubroutine get_cell_neighbours
 !***********************************************************************
     subroutine get_interparticle_accn(accni,accnj,ip,jp,fp,RR)
       
@@ -603,7 +666,7 @@ module Particles_potential
       real, dimension (mpar_loc,mparray) :: fp
       real :: Vij
       real,dimension(3) :: force_ij
-      real :: mp_i
+      real :: mp_i,mp_j
 !
       call get_interaction_force(force_ij,RR,fp,ip,jp)
       call get_mass_from_radius(mp_i,fp,ip)
@@ -614,11 +677,13 @@ module Particles_potential
     endsubroutine get_interparticle_accn
 !***********************************************************************
     subroutine get_interaction_force(force_ij,RR,fp,ip,jp)
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
+      integer, intent(in) :: ip,jp
       real,dimension(3),intent(in) :: RR
       real,dimension(3),intent(out) :: force_ij
       real :: RR_mod
       real,dimension(3) :: Rcap
-      real :: reali,realj,diameterij
+      real :: radiusi,radiusj,diameter_ij,force_amps
 !
       select case (ppotential)
       case ('rep-power-law-cutoff')
@@ -642,7 +707,7 @@ module Particles_potential
 !
     endsubroutine get_interaction_force
 !***********************************************************************
-    subroutine read_particles_potential_init_pars(iostat)
+    subroutine read_particles_pot_init_pars(iostat)
 !
       use File_io, only: parallel_unit
 !
@@ -650,17 +715,17 @@ module Particles_potential
 !
       read(parallel_unit, NML=particles_potential_init_pars, IOSTAT=iostat)
 !
-    endsubroutine read_particles_potential_init_pars
+    endsubroutine read_particles_pot_init_pars
 !***********************************************************************
-    subroutine write_particles_potential_init_pars(unit)
+    subroutine write_particles_pot_init_pars(unit)
 !
       integer, intent(in) :: unit
 !
       write(unit, NML=particles_potential_init_pars)
 !
-    endsubroutine write_particles_potential_init_pars
+    endsubroutine write_particles_pot_init_pars
 !***********************************************************************
-    subroutine read_particles_run_pars(iostat)
+    subroutine read_particles_pot_run_pars(iostat)
 !
       use File_io, only: parallel_unit
 !
@@ -668,15 +733,15 @@ module Particles_potential
 !
       read(parallel_unit, NML=particles_potential_run_pars, IOSTAT=iostat)
 !
-    endsubroutine read_particles_run_pars
+    endsubroutine read_particles_pot_run_pars
 !***********************************************************************
-    subroutine write_particles_potential_run_pars(unit)
+    subroutine write_particles_pot_run_pars(unit)
 !
       integer, intent(in) :: unit
 !
       write(unit, NML=particles_potential_run_pars)
 !
-    endsubroutine write_particles_potential_run_pars
+    endsubroutine write_particles_pot_run_pars
 !***********************************************************************
     subroutine rprint_particles_potential(lreset,lwrite)
 !
@@ -702,16 +767,16 @@ module Particles_potential
 !  Reset everything in case of reset.
 !
       if (lreset) then
-        idiag_xpm=0; idiag_ypm=0; idiag_zpm=0
+!        idiag_xpm=0; idiag_ypm=0; idiag_zpm=0
 
       endif
 !
 !  Run through all possible names that may be listed in print.in.
 !
       if (lroot .and. ip<14) print*,'rprint_particles: run through parse list'
-      do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'nparmin',idiag_nparmin)
-     enddo
+!      do iname=1,nname
+!        call parse_name(iname,cname(iname),cform(iname),'nparmin',idiag_nparmin)
+!     enddo
 !
    endsubroutine rprint_particles_potential
 !***********************************************************************
@@ -742,4 +807,4 @@ module Particles_potential
       endif
     endsubroutine list_particles_near_boundary
 !***********************************************************************
-endmodule Particles
+  endmodule Particles_potential
