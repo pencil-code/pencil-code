@@ -24,9 +24,10 @@ module Particles_potential
 !
   character (len=labellen) :: ppotential='nothing'
   integer :: sigma_in_grid = 1, cell_in_grid=1
-  real :: psigma_by_dx=0.1,ppowerby2=19,skin_factor=2.,pampl=1.
+  real :: psigma_by_dx=0.1,ppower=19,skin_factor=2.,pampl=1.
   real :: Rcutoff=0.,dRbin=1.,cell_length=0.
   integer :: Rcutoff_in_grid=1,Nbin_in_Rcutoff=100
+  real :: rescale_diameter=1.
 ! 
 !
 ! ----------- About Potential ----------------------
@@ -59,11 +60,11 @@ module Particles_potential
   integer :: ysteps_int,zsteps_int
   namelist /particles_potential_init_pars/ &
     ppotential, cell_in_grid, psigma_by_dx, ppowerby2, skin_factor, &
-      sigma_in_grid,pampl,Rcutoff_in_grid,Nbin_in_Rcutoff
+      sigma_in_grid,pampl,Rcutoff_in_grid,Nbin_in_Rcutoff,rescale_diameter
 !
   namelist /particles_potential_run_pars/ &
     ppotential, cell_in_grid, psigma_by_dx, ppowerby2, skin_factor, &
-      sigma_in_grid,pampl,Rcutoff_in_grid,Nbin_in_Rcutoff
+      sigma_in_grid,pampl,Rcutoff_in_grid,Nbin_in_Rcutoff,rescale_diameter
 !
   integer :: idiag_particles_vijm=0,idiag_particles_vijrms=0
 !
@@ -88,7 +89,7 @@ module Particles_potential
 !
       Rcutoff=Rcutoff_in_grid*dx
       cell_length=cell_in_grid*dx
-      dRbin=Rcutoff/(real)Nbin_in_Rcutoff
+      dRbin=Rcutoff/real(Nbin_in_Rcutoff)
       mcellx=int(abs(x(l2)-x(l1))/cell_length)+1
       mcelly=int(abs(y(m2)-y(m1))/cell_length)+1
       mcellz=int(abs(z(n2)-z(n1))/cell_length)+1
@@ -117,7 +118,9 @@ module Particles_potential
 ! write out this array such that it can be read
 !
       allocate(MomJntPDF(mom_max,Nbin_in_Rcutoff,ndustrad*(ndustrad+1)/2))
-      allocate(MomColJntPDF(mom_max,Nbin_in_Rcutoff,ndustrad*(ndustrad+1)/2))
+      MomJntPDF=0.
+     allocate(MomColJntPDF(mom_max,Nbin_in_Rcutoff,ndustrad*(ndustrad+1)/2))
+     MomColJntPDF=0.
 !
       call keep_compiler_quiet(f)
 !
@@ -132,12 +135,14 @@ module Particles_potential
         deallocate(link_list)
         lhead_allocated=.false.
       endif
+      deallocate(MomJntPDF)
+      deallocate(MomColJntPDF)
 !
     endsubroutine particles_potential_clean_up
 !***********************************************************************
     subroutine init_particles_potential(f,fp,ineargrid)
 !
-!  Initial positions and velocities of dust particles.
+!  initial setting for potential
 !
 
 !
@@ -373,7 +378,7 @@ module Particles_potential
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(ineargrid)
 !
-    endsubroutine dxxp_dt
+    endsubroutine dxxp_dt_potential
 !***********************************************************************
     subroutine dvvp_dt_potential(fp,dfp,ineargrid)
 !
@@ -604,7 +609,7 @@ module Particles_potential
       call get_mass_from_radius(mp_i,fp,ip)
       accni=force_ij/mp_i
       call get_mass_from_radius(mp_j,fp,jp)
-      accnj=force_ij/mp_j
+      accnj=-force_ij/mp_j
 !
     endsubroutine get_interparticle_accn
 !***********************************************************************
@@ -613,202 +618,47 @@ module Particles_potential
       real,dimension(3),intent(out) :: force_ij
       real :: RR_mod
       real,dimension(3) :: Rcap
+      real :: reali,realj,diameterij
 !
       select case (ppotential)
-      case ('rep-power-law')
+      case ('rep-power-law-cutoff')
 !
 ! repulsive power law
 !
         RR_mod=sqrt(RR(1)*RR(1)+RR(2)*RR(2)+RR(3)*RR(3))
         Rcap=RR/RR_mod
-        force_amps=pampl*(ppower*sigma**ppower)/(RR_mod)**(ppower+1)
-        force_ij=force_amps*Rcap
+        radiusi=fp(ip,iap)
+        radiusj=fp(jp,iap)
+        diameter_ij=rescale_diameter*(radiusi+radiusj)
+        if (RR_mod .gt. diameter_ij) then
+          force_ij=0.
+        else
+          force_amps=fampl*RR_mod**(-ppower)
+          force_ij=-force_amps*Rcap
+        endif
       case default
         call fatal_error('particles_potential: no potential coded ','get_interaction_force')
       endselect
 !
     endsubroutine get_interaction_force
 !***********************************************************************
-!    subroutine update_neighbour_list(fp)
-!
-!  Update the neighbour list for all the particles
-!
-!      real, dimension (mpar_loc,mparray) :: fp
-!      integer :: k,kneighbour,kn
-!      real :: xi,yi,zi,xj,yj,zj,rij_sqr
-!      integer :: jp
-!
-! Go through the whole array fp to find the neighbours
-!
-!      do ip=1,npar_loc
-!
-! The coordinate of the particle in question
-!
-!        xi=fp(ip,ixp)
-!        yi=fp(ip,iyp)
-!        zi=fp(ip,izp)
-!        kn=1
-!        neighbour_list(ip,:) = 0.
-!!
-! Now loop over mpar_loc number of particles. This is of course very time consuming.
-! This can be improved upon.
-!
-!        do jp=1,mpar_loc
-!
-! The neighbourlist cannot include the particle itself
-!
-!          if (jp .ne. ip) then
-!            xj=fp(jp,ixp)
-!            yj=fp(jp,iyp)
-!            zj=fp(jp,izp)
-!            rij_sqr=(xj-xi)**2+(yj-yi)**2+(zj-zi)**2
-!            if (rij_sqr <= (skin_factor*psigma)**2) then
-! If the distance of between the particles are less than a skin_factor multiplied by the
-! effective radius (psigma) of the particles then they are included in the neighbour list
-!              kn=kn+1
-!              neighbour_list(ip,kn)=jp
-!            endif
-!          endif
-!        enddo
-!        neighbour_list(ip,1)=kn-1
-!      enddo
-!
-!    endsubroutine update_neighbour_list
-!***********************************************************************
-    subroutine remove_particles_sink_simple(f,fp,dfp,ineargrid)
-!
-!  Subroutine for taking particles out of the simulation due to their proximity
-!  to a sink particle or sink point.
-!
-!  25-sep-08/anders: coded
-!
-      use Mpicomm
-      use Solid_Cells
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension(mpar_loc,3) :: ineargrid
-!
-      real, dimension(3) :: momp_swarm_removed, momp_swarm_removed_send
-      real :: rp, rp_box, rhop_swarm_removed, rhop_swarm_removed_send
-      real :: xsinkpar, ysinkpar, zsinkpar
-      integer :: k, ksink, iproc_sink, iproc_sink_send
-      integer :: ix, ix1, ix2, iy, iy1, iy2, iz, iz1, iz2
-      integer, parameter :: itag1=100, itag2=101
-      real :: particle_radius
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine remove_particles_sink_simple
-!***********************************************************************
-    subroutine create_particles_sink_simple(f,fp,dfp,ineargrid)
-!
-!  Subroutine for creating new sink particles or sink points.
-!
-!  Just a dummy routine for now.
-!
-!  25-sep-08/anders: coded
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension(mpar_loc,3) :: ineargrid
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(dfp)
-      call keep_compiler_quiet(ineargrid)
-!
-    endsubroutine create_particles_sink_simple
-!***********************************************************************
-
-
-!***********************************************************************
-
-!***********************************************************************
-    subroutine calculate_rms_speed(fp,ineargrid,p)
-!
-      use Diagnostics
-!
-!  Calculate the rms speed dvpm=sqrt(<(vvp-<vvp>)^2>) of the
-!  particle for diagnostic purposes
-!
-!  08-04-08/wlad: coded
-!
-      real, dimension (mpar_loc,mparray) :: fp
-      integer, dimension (mpar_loc,3) :: ineargrid
-      real,dimension(nx,3) :: vvpm,dvp2m
-      integer :: inx0,k,l
-      type (pencil_case) :: p
-      logical :: lnbody
-!
-!  Initialize the variables
-!
-      vvpm=0.0; dvp2m=0.0
-!
-!  Calculate the average velocity at each cell
-!  if there are particles in the pencil only
-!
-      if (npar_imn(imn)/=0) then
-!
-        do k=k1_imn(imn),k2_imn(imn)
-          lnbody=any(ipar(k)==ipar_nbody)
-          if (.not.lnbody) then
-            inx0=ineargrid(k,1)-nghost
-            vvpm(inx0,:) = vvpm(inx0,:) + fp(k,ivpx:ivpz)
-          endif
-        enddo
-        do l=1,nx
-          if (p%np(l)>1.0) vvpm(l,:)=vvpm(l,:)/p%np(l)
-        enddo
-!
-!  Get the residual in quadrature, dvp2m. Need vvpm calculated above.
-!
-        do k=k1_imn(imn),k2_imn(imn)
-          lnbody=any(ipar(k)==ipar_nbody)
-          if (.not.lnbody) then
-            inx0=ineargrid(k,1)-nghost
-            dvp2m(inx0,1)=dvp2m(inx0,1)+(fp(k,ivpx)-vvpm(inx0,1))**2
-            dvp2m(inx0,2)=dvp2m(inx0,2)+(fp(k,ivpy)-vvpm(inx0,2))**2
-            dvp2m(inx0,3)=dvp2m(inx0,3)+(fp(k,ivpz)-vvpm(inx0,3))**2
-          endif
-        enddo
-        do l=1,nx
-          if (p%np(l)>1.0) dvp2m(l,:)=dvp2m(l,:)/p%np(l)
-        enddo
-!
-      endif
-!
-!  Output the diagnostics
-!
-      if (idiag_dvpx2m/=0) call sum_mn_name(dvp2m(:,1),idiag_dvpx2m)
-      if (idiag_dvpy2m/=0) call sum_mn_name(dvp2m(:,2),idiag_dvpy2m)
-      if (idiag_dvpz2m/=0) call sum_mn_name(dvp2m(:,3),idiag_dvpz2m)
-      if (idiag_dvpm/=0)   call sum_mn_name(dvp2m(:,1)+dvp2m(:,2)+dvp2m(:,3),&
-                                            idiag_dvpm,lsqrt=.true.)
-      if (idiag_dvpmax/=0) call max_mn_name(dvp2m(:,1)+dvp2m(:,2)+dvp2m(:,3),&
-                                            idiag_dvpmax,lsqrt=.true.)
-!
-    endsubroutine calculate_rms_speed
-!***********************************************************************
-    subroutine read_particles_init_pars(iostat)
+    subroutine read_particles_potential_init_pars(iostat)
 !
       use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=particles_init_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=particles_potential_init_pars, IOSTAT=iostat)
 !
-    endsubroutine read_particles_init_pars
+    endsubroutine read_particles_potential_init_pars
 !***********************************************************************
-    subroutine write_particles_init_pars(unit)
+    subroutine write_particles_potential_init_pars(unit)
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=particles_init_pars)
+      write(unit, NML=particles_potential_init_pars)
 !
-    endsubroutine write_particles_init_pars
+    endsubroutine write_particles_potential_init_pars
 !***********************************************************************
     subroutine read_particles_run_pars(iostat)
 !
@@ -816,33 +666,19 @@ module Particles_potential
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=particles_run_pars, IOSTAT=iostat)
+      read(parallel_unit, NML=particles_potential_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_particles_run_pars
 !***********************************************************************
-    subroutine write_particles_run_pars(unit)
+    subroutine write_particles_potential_run_pars(unit)
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=particles_run_pars)
+      write(unit, NML=particles_potential_run_pars)
 !
-    endsubroutine write_particles_run_pars
+    endsubroutine write_particles_potential_run_pars
 !***********************************************************************
-    subroutine powersnap_particles(f)
-!
-!  Calculate power spectra of dust particle variables.
-!
-!  01-jan-06/anders: coded
-!
-      use Power_spectrum, only: power_1d
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      if (lpar_spec) call power_1d(f,'p',0,irhop)
-!
-    endsubroutine powersnap_particles
-!***********************************************************************
-    subroutine rprint_particles(lreset,lwrite)
+    subroutine rprint_particles_potential(lreset,lwrite)
 !
 !  Read and register print parameters relevant for particles.
 !
@@ -861,49 +697,13 @@ module Particles_potential
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-      if (lwr) then
-        write(3,*) 'ixp=', ixp
-        write(3,*) 'iyp=', iyp
-        write(3,*) 'izp=', izp
-        write(3,*) 'ivpx=', ivpx
-        write(3,*) 'ivpy=', ivpy
-        write(3,*) 'ivpz=', ivpz
-        write(3,*) 'inp=', inp
-        write(3,*) 'irhop=', irhop
-        write(3,*) 'iupx=', iupx
-        write(3,*) 'iupy=', iupy
-        write(3,*) 'iupz=', iupz
-      endif
+
 !
 !  Reset everything in case of reset.
 !
       if (lreset) then
         idiag_xpm=0; idiag_ypm=0; idiag_zpm=0
-        idiag_xp2m=0; idiag_yp2m=0; idiag_zp2m=0; idiag_rpm=0; idiag_rp2m=0
-        idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0
-        idiag_vpxvpym=0; idiag_vpxvpzm=0; idiag_vpyvpzm=0
-        idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0; idiag_ekinp=0
-        idiag_vpxmax=0; idiag_vpymax=0; idiag_vpzmax=0; idiag_vpmax=0
-        idiag_rhopvpxm=0; idiag_rhopvpym=0; idiag_rhopvpzm=0; idiag_rhopvpysm=0
-        idiag_rhopvpxt=0; idiag_rhopvpyt=0; idiag_rhopvpzt=0
-        idiag_lpxm=0; idiag_lpym=0; idiag_lpzm=0
-        idiag_lpx2m=0; idiag_lpy2m=0; idiag_lpz2m=0
-        idiag_npm=0; idiag_np2m=0; idiag_npmax=0; idiag_npmin=0
-        idiag_dtdragp=0; idiag_dedragp=0
-        idiag_rhopm=0; idiag_rhoprms=0; idiag_rhop2m=0; idiag_rhopmax=0
-        idiag_rhopmin=0; idiag_decollp=0; idiag_rhopmphi=0
-        idiag_epspmin=0; idiag_epspmax=0
-        idiag_nparmin=0; idiag_nparmax=0; idiag_nmigmax=0; idiag_mpt=0
-        idiag_npmx=0; idiag_npmy=0; idiag_npmz=0; idiag_epotpm=0
-        idiag_rhopmx=0; idiag_rhopmy=0; idiag_rhopmz=0
-        idiag_epspmx=0; idiag_epspmy=0; idiag_epspmz=0
-        idiag_rhopmxy=0; idiag_rhopmxz=0; idiag_rhopmr=0
-        idiag_dvpx2m=0; idiag_dvpy2m=0; idiag_dvpz2m=0
-        idiag_dvpmax=0; idiag_dvpm=0; idiag_nparpmax=0
-        idiag_eccpxm=0; idiag_eccpym=0; idiag_eccpzm=0
-        idiag_eccpx2m=0; idiag_eccpy2m=0; idiag_eccpz2m=0
-        idiag_npargone=0; idiag_vpyfull2m=0; idiag_deshearbcsm=0
-        idiag_npmxy=0; idiag_vprms=0
+
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -911,148 +711,13 @@ module Particles_potential
       if (lroot .and. ip<14) print*,'rprint_particles: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'nparmin',idiag_nparmin)
-        call parse_name(iname,cname(iname),cform(iname),'nparmax',idiag_nparmax)
-        call parse_name(iname,cname(iname),cform(iname),'nparpmax',idiag_nparpmax)
-        call parse_name(iname,cname(iname),cform(iname),'xpm',idiag_xpm)
-        call parse_name(iname,cname(iname),cform(iname),'ypm',idiag_ypm)
-        call parse_name(iname,cname(iname),cform(iname),'zpm',idiag_zpm)
-        call parse_name(iname,cname(iname),cform(iname),'xp2m',idiag_xp2m)
-        call parse_name(iname,cname(iname),cform(iname),'yp2m',idiag_yp2m)
-        call parse_name(iname,cname(iname),cform(iname),'zp2m',idiag_zp2m)
-        call parse_name(iname,cname(iname),cform(iname),'rpm',idiag_rpm)
-        call parse_name(iname,cname(iname),cform(iname),'rp2m',idiag_rp2m)
-        call parse_name(iname,cname(iname),cform(iname),'vpxm',idiag_vpxm)
-        call parse_name(iname,cname(iname),cform(iname),'vpym',idiag_vpym)
-        call parse_name(iname,cname(iname),cform(iname),'vpzm',idiag_vpzm)
-        call parse_name(iname,cname(iname),cform(iname),'vpxvpym',idiag_vpxvpym)
-        call parse_name(iname,cname(iname),cform(iname),'vpxvpzm',idiag_vpxvpzm)
-        call parse_name(iname,cname(iname),cform(iname),'vpyvpzm',idiag_vpyvpzm)
-        call parse_name(iname,cname(iname),cform(iname),'vpx2m',idiag_vpx2m)
-        call parse_name(iname,cname(iname),cform(iname),'vpy2m',idiag_vpy2m)
-        call parse_name(iname,cname(iname),cform(iname),'vpz2m',idiag_vpz2m)
-        call parse_name(iname,cname(iname),cform(iname),'ekinp',idiag_ekinp)
-        call parse_name(iname,cname(iname),cform(iname),'vpxmax',idiag_vpxmax)
-        call parse_name(iname,cname(iname),cform(iname),'vpymax',idiag_vpymax)
-        call parse_name(iname,cname(iname),cform(iname),'vpzmax',idiag_vpzmax)
-        call parse_name(iname,cname(iname),cform(iname),'vpmax',idiag_vpmax)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpxm', &
-            idiag_rhopvpxm)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpym', &
-            idiag_rhopvpym)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpzm', &
-            idiag_rhopvpzm)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpysm', &
-            idiag_rhopvpysm)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpxt', &
-            idiag_rhopvpxt)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpyt', &
-            idiag_rhopvpyt)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpzt', &
-            idiag_rhopvpzt)
-        call parse_name(iname,cname(iname),cform(iname),'rhopvpysm', &
-            idiag_rhopvpysm)
-        call parse_name(iname,cname(iname),cform(iname),'lpxm',idiag_lpxm)
-        call parse_name(iname,cname(iname),cform(iname),'lpym',idiag_lpym)
-        call parse_name(iname,cname(iname),cform(iname),'lpzm',idiag_lpzm)
-        call parse_name(iname,cname(iname),cform(iname),'lpx2m',idiag_lpx2m)
-        call parse_name(iname,cname(iname),cform(iname),'lpy2m',idiag_lpy2m)
-        call parse_name(iname,cname(iname),cform(iname),'lpz2m',idiag_lpz2m)
-        call parse_name(iname,cname(iname),cform(iname),'eccpxm',idiag_eccpxm)
-        call parse_name(iname,cname(iname),cform(iname),'eccpym',idiag_eccpym)
-        call parse_name(iname,cname(iname),cform(iname),'eccpzm',idiag_eccpzm)
-        call parse_name(iname,cname(iname),cform(iname),'eccpx2m',idiag_eccpx2m)
-        call parse_name(iname,cname(iname),cform(iname),'eccpy2m',idiag_eccpy2m)
-        call parse_name(iname,cname(iname),cform(iname),'eccpz2m',idiag_eccpz2m)
-        call parse_name(iname,cname(iname),cform(iname),'dtdragp',idiag_dtdragp)
-        call parse_name(iname,cname(iname),cform(iname),'npm',idiag_npm)
-        call parse_name(iname,cname(iname),cform(iname),'np2m',idiag_np2m)
-        call parse_name(iname,cname(iname),cform(iname),'npmax',idiag_npmax)
-        call parse_name(iname,cname(iname),cform(iname),'npmin',idiag_npmin)
-        call parse_name(iname,cname(iname),cform(iname),'rhopm',idiag_rhopm)
-        call parse_name(iname,cname(iname),cform(iname),'rhoprms',idiag_rhoprms)
-        call parse_name(iname,cname(iname),cform(iname),'rhop2m',idiag_rhop2m)
-        call parse_name(iname,cname(iname),cform(iname),'rhopmin',idiag_rhopmin)
-        call parse_name(iname,cname(iname),cform(iname),'rhopmax',idiag_rhopmax)
-        call parse_name(iname,cname(iname),cform(iname),'epspmin',idiag_epspmin)
-        call parse_name(iname,cname(iname),cform(iname),'epspmax',idiag_epspmax)
-        call parse_name(iname,cname(iname),cform(iname),'rhopmphi',idiag_rhopmphi)
-        call parse_name(iname,cname(iname),cform(iname),'nmigmax',idiag_nmigmax)
-        call parse_name(iname,cname(iname),cform(iname),'mpt',idiag_mpt)
-        call parse_name(iname,cname(iname),cform(iname),'dvpx2m',idiag_dvpx2m)
-        call parse_name(iname,cname(iname),cform(iname),'dvpy2m',idiag_dvpy2m)
-        call parse_name(iname,cname(iname),cform(iname),'dvpz2m',idiag_dvpz2m)
-        call parse_name(iname,cname(iname),cform(iname),'dvpm',idiag_dvpm)
-        call parse_name(iname,cname(iname),cform(iname),'dvpmax',idiag_dvpmax)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'dedragp',idiag_dedragp)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'decollp',idiag_decollp)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'epotpm',idiag_epotpm)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'npargone',idiag_npargone)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'vpyfull2m',idiag_vpyfull2m)
-        call parse_name(iname,cname(iname),cform(iname),'vprms',idiag_vprms)
-        call parse_name(iname,cname(iname),cform(iname), &
-            'deshearbcsm',idiag_deshearbcsm)
-      enddo
+     enddo
 !
-!  Check for those quantities for which we want x-averages.
-!
-      do inamex=1,nnamex
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'npmx',idiag_npmx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'rhopmx',idiag_rhopmx)
-        call parse_name(inamex,cnamex(inamex),cformx(inamex),'epspmx',idiag_epspmx)
-      enddo
-!
-!  Check for those quantities for which we want y-averages.
-!
-      do inamey=1,nnamey
-        call parse_name(inamey,cnamey(inamey),cformy(inamey),'npmy',idiag_npmy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey),'rhopmy',idiag_npmy)
-        call parse_name(inamey,cnamey(inamey),cformy(inamey),'epspmy',idiag_epspmy)
-      enddo
-!
-!  Check for those quantities for which we want z-averages.
-!
-      do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'npmz',idiag_npmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhopmz',idiag_rhopmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'epspmz',idiag_epspmz)
-      enddo
-!
-!  Check for those quantities for which we want xy-averages.
-!
-      do inamexy=1,nnamexy
-        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'npmxy',idiag_npmxy)
-        call parse_name(inamexy,cnamexy(inamexy),cformxy(inamexy),'rhopmxy',idiag_rhopmxy)
-      enddo
-!
-!  Check for those quantities for which we want xz-averages.
-!
-      do inamexz=1,nnamexz
-        call parse_name(inamexz,cnamexz(inamexz),cformxz(inamexz),'rhopmxz',idiag_rhopmxz)
-      enddo
-!
-!  Check for those quantities for which we want phiz-averages.
-!
-      do inamer=1,nnamer
-        call parse_name(inamer,cnamer(inamer),cformr(inamer),'rhopmr',idiag_rhopmr)
-      enddo
-!
-!  Check for those quantities for which we want phi-averages.
-!
-      do inamerz=1,nnamerz
-        call parse_name(inamerz,cnamerz(inamerz),cformrz(inamerz),'rhopmphi',idiag_rhopmphi)
-      enddo
-!
-    endsubroutine rprint_particles
+   endsubroutine rprint_particles_potential
 !***********************************************************************
     subroutine periodic_boundcond_on_aux(f)
 !
-! Impose periodic boundary condition on bb and EE
-!
+! Impose periodic boundary condition on bb 
       use Boundcond, only: set_periodic_boundcond_on_aux
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
 
@@ -1076,19 +741,5 @@ module Particles_potential
         call keep_compiler_quiet(fp)
       endif
     endsubroutine list_particles_near_boundary
-!***********************************************************************
-    subroutine particles_dragforce_stiff(f,fp,ineargrid)
-!
-!  10-june-11/anders: dummy
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
-      integer, dimension (mpar_loc,3) :: ineargrid
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(ineargrid)
-!
-    endsubroutine particles_dragforce_stiff
 !***********************************************************************
 endmodule Particles
