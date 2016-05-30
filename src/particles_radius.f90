@@ -143,7 +143,7 @@ module Particles_radius
       endif
 !
       if ((lsweepup_par.or.lcondensation_par).and..not.lpscalar &
-              .and..not.lsupersat &
+              .and..not.lsupersat_par &
           .and..not.lcondensation_simplified) then
         call fatal_error('initialize_particles_radius', &
             'must have passive scalar module for sweep-up and condensation')
