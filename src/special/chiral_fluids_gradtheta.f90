@@ -110,7 +110,7 @@ module Special
 !
   namelist /special_run_pars/ &
       diffgtheta5, diffmu5, lambda5, theta_prof, lupw_gtheta5, &
-      cdtchiral
+      cdtchiral, switch
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -119,9 +119,19 @@ module Special
   integer :: idiag_bgmu5rms=0  ! DIAG_DOC: $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$
   integer :: idiag_bgtheta5rms=0  ! DIAG_DOC: $\left<(\Bv\cdot\gtheta_5)^2\right>^{1/2}$
   integer :: idiag_gtheta5rms=0! DIAG_DOC: $\left<(\nabla\theta_5)^2\right>^{1/2}$
-  integer :: idiag_gtheta5mx=0 ! DIAG_DOC: $\left<\nabla\theta_{5x}\right>$
-  integer :: idiag_gtheta5my=0 ! DIAG_DOC: $\left<\nabla\theta_{5y}\right>$
-  integer :: idiag_gtheta5mz=0 ! DIAG_DOC: $\left<\nabla\theta_{5z}\right>$
+  integer :: idiag_gtheta5mx=0 ! DIAG_DOC: $\left<\nabla\theta_5_x\right>$
+  integer :: idiag_gtheta5my=0 ! DIAG_DOC: $\left<\nabla\theta_5_y\right>$
+  integer :: idiag_gtheta5mz=0 ! DIAG_DOC: $\left<\nabla\theta_5_z\right>$
+  integer :: idiag_diffus_mu5_1=0
+  integer :: idiag_diffus_mu5_2=0
+  integer :: idiag_diffus_mu5_3=0
+  integer :: idiag_diffus_mu5_4=0
+  integer :: idiag_diffus_gtheta5_1=0
+  integer :: idiag_diffus_gtheta5_2=0
+  integer :: idiag_diffus_bb_1=0
+  integer :: idiag_diffus_bb_2=0
+  integer :: idiag_diffus_uu_1=0
+  integer :: idiag_etaucbbgt5rms=0
   integer :: idiag_diffus_mu5_1=0
   integer :: idiag_diffus_mu5_2=0
   integer :: idiag_diffus_mu5_3=0
@@ -217,6 +227,8 @@ module Special
 !
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
+!
+      use Initcond
 !
       real, dimension (mx,my,mz,mfarray) :: f,df
 !
@@ -333,6 +345,9 @@ module Special
           enddo; enddo
           f(:,:,:,imu5) = mu5_const
 !
+        case ('gaussian-noise_gtheta5')
+          call gaunoise(gtheta5_const,f,igtheta5,igtheta5+2)
+!
         case default
           call fatal_error("init_special: No such value for initspecial:" &
               ,trim(initspecial))
@@ -446,7 +461,8 @@ module Special
 !
       real, dimension (nx) :: dtheta5, gtheta52, bgmu5, EB, uujj, bbjj
       real, dimension (nx,3) :: mu5bb, dtheta5_bb, uxbbgtheta5r, ubgtheta5
-      real, dimension (nx,3) :: uijtransgtheta5
+      real, dimension (nx,3) :: uijtransgtheta5, jbgtheta5r, jbgtheta5r2
+      real, dimension (nx,3) :: ubgtheta5bgtheta5r,ubbgtheta5gtheta5r
       real, parameter :: alpha_fine_structure=1./137.
 !
 !  Identify module and boundary conditions.
@@ -504,7 +520,13 @@ module Special
 !
       if (lhydro) then
         call multsv(p%rho1*p%bgtheta5,p%uxb,uxbbgtheta5r)
-        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)+uxbbgtheta5r
+        call multsv(p%rho1*p%bgtheta5,p%jj,jbgtheta5r)
+        call multsv(p%rho1*p%bgtheta5,ubgtheta5,ubgtheta5bgtheta5r)
+        call multsv(p%rho1*p%jb,p%gtheta5,jbgtheta5r2)
+        call multsv(p%rho1*p%ub*p%bgtheta5,p%gtheta5,ubbgtheta5gtheta5r)
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)+uxbbgtheta5r &
+                   +switch*(-eta*jbgtheta5r-eta*ubgtheta5bgtheta5r &
+                   +eta*jbgtheta5r2+eta*ubbgtheta5gtheta5r)
       endif   
       diffus_uu_1 = p%b2*sqrt(p%gtheta52)*p%rho1
 !     
