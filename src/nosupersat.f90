@@ -172,44 +172,6 @@ module Supersat
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-!  Write column where which passive scalar variable is stored.
-!
-      if (lwr) then
-        write(3,*) 'ilncc=0'
-        write(3,*) 'icc=0'
-      endif
-!
-      call keep_compiler_quiet(lreset)
-!
     endsubroutine rprint_supersat
-!***********************************************************************
-    subroutine get_slices_supersat(f,slices)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      type (slice_data) :: slices
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(slices%ready)
-!
-    endsubroutine get_slices_supersat
-!***********************************************************************
-    subroutine supersat_after_boundary(f)
-!
-!  Removes overall means of passive scalars.
-!
-!  5-dec-11/MR: coded
-!
-      real, dimension (mx,my,mz,mfarray), intent(IN) :: f
 
-      call keep_compiler_quiet(f)
-
-    endsubroutine supersat_after_boundary
-!***********************************************************************
-    subroutine calc_msupersat
-!
-    endsubroutine calc_msupersat
-!***********************************************************************
 endmodule Supersat
