@@ -186,4 +186,31 @@ include 'supersat.h'
 !
     endsubroutine write_supersat_run_pars
 !
+!***********************************************************************
+    subroutine rprint_supersat(lreset,lwrite)
+      use Diagnostics
+!
+      logical :: lreset
+      logical, optional :: lwrite
+!
+      integer :: iname
+      logical :: lwr
+!
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=lwrite
+!      
+      if (lreset) then
+        idiag_ccrms=0,idiag_uzcmz=0
+      endif
+!
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'ccrms',idiag_ccrms)
+      enddo
+!
+      if (lwr) then 
+        write(3,*) 'ilncc=0'
+        write(3,*) 'icc = ', icc
+      endif
+    endsubroutine rprint_supersat 
 endmodule Supersat
