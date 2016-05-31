@@ -548,7 +548,6 @@ module Particles_radius
 !
       if (t>=tstart_sweepup_par) then
 !
-        if (lfirst.and.ldt) dt1_sweepup=0.0
 !
         if (npar_imn(imn)/=0) then
           do k=k1_imn(imn),k2_imn(imn)
@@ -822,12 +821,23 @@ module Particles_radius
       integer, dimension (mpar_loc,3) :: ineargrid
       
       real :: dapdt
-      integer :: k, ix
+      integer :: k,k1,k2,ix,ix0
 !
       intent (in) :: f, fp
       intent (inout) :: dfp
-                
-      dapdt=p%cc(ix)/fp(k,iap)
+!      
+      !if (t>=tstart_condensation_par) then
+               
+      !dapdt=p%cc(ix)/fp(k,iap)
+      do k=k1_imn(imn),k2_imn(imn)
+            ix0=ineargrid(k,1)
+            ix=ix0-nghost
+            dapdt=f(ix,m,n,icc)/fp(k,iap)
+            dfp(k,iap)=dfp(k,iap)+dapdt
+      enddo
+      !endif
+
+      call keep_compiler_quiet(f)
     endsubroutine dap_dt_supersat_pencil
 !***********************************************************************
     subroutine dap_dt(f,df,fp,dfp,ineargrid)
