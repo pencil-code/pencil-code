@@ -76,8 +76,8 @@ module Particles_potential
     ppotential, cell_in_grid, psigma_by_dx,  skin_factor, &
       sigma_in_grid,fampl,Rcutoff_in_grid,Nbin_in_Rcutoff,rescale_diameter,lpotential
 !
-  integer :: idiag_particles_vijm=0,idiag_particles_vijrms=0,idiag_abs_mom=0
-  integer :: idiag_colvel_mom=0,idiag_gr=0
+  logical :: idiag_particles_vijm=.false.,idiag_particles_vijrms=.false.,idiag_abs_mom=.false.
+  logical :: idiag_colvel_mom=.false.,idiag_gr=.false.
 !
   contains
 !***********************************************************************
