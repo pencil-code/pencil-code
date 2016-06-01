@@ -79,7 +79,8 @@ module Interstellar
 !  Est'd value for similarity variable at shock
 !
 !  real :: xsi_sedov=1.215440704
-  real :: xsi_sedov=1.15166956, mu
+!  real :: xsi_sedov=1.15166956, mu
+  real :: xsi_sedov=2.026, mu
 !
 !  'Current' SN Explosion site parameters
 !
@@ -2592,7 +2593,7 @@ module Interstellar
         SNR%feat%radius=width_SN
         if (lSN_scale_rad) &
             SNR%feat%radius=(0.75*solar_mass/SNR%site%rho*pi_1*N_mass)**(1.0/3.0)
-        SNR%feat%radius=max(SNR%feat%radius,1.75*dxmax) ! minimum grid resolution
+        SNR%feat%radius=max(SNR%feat%radius,2.96*dxmax) ! minimum grid resolution
 !
         m=SNR%indx%m
         n=SNR%indx%n
@@ -2689,12 +2690,12 @@ module Interstellar
       if (lSN_scale_rad) then
         do i=1,20
           SNR%feat%radius=(0.75*solar_mass/SNR%feat%rhom*pi_1*N_mass)**(1.0/3.0)
-          SNR%feat%radius=max(SNR%feat%radius,1.75*dxmax)
+          SNR%feat%radius=max(SNR%feat%radius,2.96*dxmax)
           call get_properties(f,SNR,rhom,ekintot)
           SNR%feat%rhom=rhom
         enddo
         SNR%feat%radius=(0.75*solar_mass/SNR%feat%rhom*pi_1*N_mass)**(1.0/3.0)
-        SNR%feat%radius=max(SNR%feat%radius,1.75*dxmax)
+        SNR%feat%radius=max(SNR%feat%radius,2.96*dxmax)
         if (lSN_scale_kin) then
            frac_kin=SNR%feat%radius
            ampl_SN =(1-frac_kin-frac_ecr)*ampl_SN_cgs/unit_energy
@@ -2706,8 +2707,8 @@ module Interstellar
 !
 !  Calculate effective Sedov evolution time diagnostic.
 !
-      SNR%feat%t_sedov=sqrt((SNR%feat%radius/xsi_sedov)**5*SNR%feat%rhom/(kampl_SN+ampl_SN))
-      uu_sedov = 0.4*SNR%feat%radius/SNR%feat%t_sedov
+      SNR%feat%t_sedov=sqrt((SNR%feat%radius)**(2+dimensionality)*SNR%feat%rhom/(kampl_SN+ampl_SN)/xsi_sedov)
+      uu_sedov = 2./(2.+dimensionality)*SNR%feat%radius/SNR%feat%t_sedov
 !
       width_energy   = SNR%feat%radius*energy_width_ratio
       width_mass     = SNR%feat%radius*mass_width_ratio
