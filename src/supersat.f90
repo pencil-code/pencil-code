@@ -16,6 +16,7 @@
 !
 ! PENCILS PROVIDED cc; cc1
 ! PENCILS PROVIDED gcc(3); ugcc
+! PENCILS PROVIDED del2cc
 !***************************************************************
 module Superstat
 !
@@ -47,6 +48,9 @@ include 'supersat.h'
   namelist /supersat_run_pars/ &
       lsupersat_sink, Rsupersat_sink, supersat_sink &
       supersat_diff, gradC0
+!
+!Diagnostics variables
+integer :: idiag_ccrms=0
 !**********************************
     subroutine register_supersat()
       use FArrayManager
@@ -85,6 +89,14 @@ include 'supersat.h'
 !
     endsubroutine initialize_supersat
 !
+!***********************************************************************
+    subroutine pencil_criteria_supersat()
+      lpenc_requested(i_cc)=.true.
+            
+      if (lsupersat_sink) lpenc_requested(i_cc)=.true.
+      if (supersat_diff/=0.) lpenc_requested(i_del2cc)=.true.
+ 
+    endsubroutine pencil_criteria_supersat
 !**********************************************************************
     subroutine calc_pencils_supersat(f,p)
 !
@@ -112,6 +124,10 @@ include 'supersat.h'
       if (lpencil(i_ugcc)) then
         call u_dot_grad(f,icc,p%gcc,p%uu,p%ugcc,UPWIND=lupw_cc)
       endif
+! del2cc
+      if (lpencil(i_del2cc)) then
+          call del2(f,icc+i-1,p%del2cc(:,i))
+      endif
 !
     endsubroutine calc_pencils_supersat
 !***********************************************************************
@@ -125,6 +141,7 @@ include 'supersat.h'
 !
       real, dimension (nx) :: diff_op,diff_op2,bump,gcgu
       real :: cc_xyaver
+      real :: tau=10., A1=5.*e-4
       real :: lam_gradC_fact=1., om_gradC_fact=1., gradC_fact=1.
       integer :: j, k
       integer, parameter :: nxy=nxgrid*nygrid
@@ -135,11 +152,13 @@ include 'supersat.h'
       character(len=2) :: id
 !  Passive scalar equation.
 !
-        df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-p%ugcc
+        df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-p%ugcc &
+                +supersat_diff*p%del2cc
 !
-!  Passive scalar sink.
+!  Passive scalar sink/source.
 !
         if (supersat_sink) then
+                print*,"XY"
           if (Rsupersat_sink==0) then
             bump=supersat_sink
           else
@@ -147,6 +166,20 @@ include 'supersat.h'
           endif
           df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-spread(bump,2)*p%cc
         endif
+! 1-June-16/XY coded: to be completed 
+!         if (supersat_sink) then 
+!                 if (Rsupersat_sink==0) then
+!                    bump=-f(l1:l2,m,n,icc)/tau
+!                  else
+!                    bump=-f(l1:l2,m,n,icc)/tau+ &
+!                    A1*fp(k,ivpz)
+!                 endif
+!                 df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-p%ugcc+bump 
+!         endif
+!       
+        if (idiag_ccrms/=0) & 
+            call sum_mn_name(p%cc(:,1)**2,idiag_ccrms,lsqrt=.true.)
+ 
     endsubroutine dlncc_dt
 !
 !***********************************************************************
