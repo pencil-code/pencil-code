@@ -813,6 +813,7 @@ module Particles_radius
       use EquationOfState, only: gamma
       use Particles_number
 !
+      !lsupersat=.true.
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mparray) :: fp
@@ -832,8 +833,10 @@ module Particles_radius
       do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1)
             ix=ix0-nghost
-            dapdt=f(ix,m,n,icc)/fp(k,iap)
-            dfp(k,iap)=dfp(k,iap)+dapdt
+            !if (lsupersat) then
+                dapdt=f(ix,m,n,icc)/fp(k,iap)
+                dfp(k,iap)=dfp(k,iap)+dapdt
+            !endif
       enddo
       !endif
 
