@@ -4334,9 +4334,14 @@ to check if you have problems compiling for double precision.
 Using double precision might be important in turbulence runs where
 the resolution is $256^3$ meshpoints and above (although such runs
 often seem to work fine at single precision).
-The procedure \file[realtodouble.x]{postproc/src/realtodouble.x} can be
-used to convert existing
-\file{var.dat} and \file{grid.dat} files to double precision.
+% The procedure \file[realtodouble.x]{postproc/src/realtodouble.x} can be
+% used to convert existing
+% \file{var.dat} and \file{grid.dat} files to double precision.
+%AB: This is now outdate; realtodouble only existed in:
+%AB: /wkspace/brandenb/pencil-google/postproc/src/realtodouble.f90
+To continue working in double precision, you just say
+\code{lread_from_other_prec=T} in \code{run_pars}; see
+Section~\ref{After_changing_REAL_PRECISION}.
 
 % ---------------------------------------------------------------------- %
 
@@ -7836,6 +7841,7 @@ where \code{nw=nx*ny*nz}.
   32 &Ferlin & 0.556& $128^3$ &testscalar&  &7-jan-09 & AB \\
   36 &Kraken&0.177&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&3x6x2&12-jan-12&WL\\
   36 &scylla &0.097&  $72^3$ & magn/noentro & 1x6x6  &  8-may-16 & AB \\
+  48 & janus & 0.028 & $72^2*216$ & magn/noentro &  4x12   &  28-mar-16 & AB \\
   64 & fe1   & 0.24 & $256^3$ & magn/noentro &  8x8   &  2-sep-02 & AB \\
   64 & giga  & 0.11 & $256^3$ &nomag/noentro&  4x16  & 29-apr-03 & AB \\
   64 & giga  & 0.23 & $256^3$ &nomag/noentro/hyp&4x16& 8-dec-03& AB \\
@@ -7890,6 +7896,7 @@ where \code{nw=nx*ny*nz}.
  288 &Kraken&0.0432&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&6x12x4&12-jan-12&WL\\
  288 & Kraken& 0.0447  &$96{\!\times\!}192{\!\times\!}64$ & magn/noentro & 6x12x4 &13-jan-12 & WL\\
  288 & Kraken& 0.0201  &$384{\!\times\!}768{\!\times\!}256$ & magn/noentro & 6x12x4 &18-jan-12 & WL\\
+ 288 & Janus & 0.0360  &$288^3$ & magn/entro/rad & 1x16x18 &22-feb-16 & AB\\
  512 &Hermit&0.01717&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&1x32x16&22-aug-13&PJK\\
  512 &Hermit&0.0166&$256{\!\times\!}512{\!\times\!}256$&spherical conv/magn&1x32x16&22-aug-13&PJK\\
  512 &Hermit&0.0142&$256{\!\times\!}512{\!\times\!}256$&spherical conv/magn&2x16x16&22-aug-13&PJK\\
@@ -7906,6 +7913,7 @@ where \code{nw=nx*ny*nz}.
  576 &Kraken&0.0257&$192{\!\times\!}384{\!\times\!}64$&magn/noentro&6x24x4&12-jan-12&WL\\
  576 &Kraken& 0.0317  &$192^2{\!\times\!}64$ & magn/noentro & 12$^2$x4 &13-jan-12 & WL\\
  576 &Kraken& 0.0116  &$768^2{\!\times\!}256$ & magn/noentro & 12$^2$x4 &18-jan-12 & WL\\
+ 576&Beskow&0.00174&$576^3$&magn/noentro&1x24x48&23-may-16& AB \\
  768 &Lindgren&0.0049&$256{\!\times\!}1152^2$&magn/noentro/sph&1x24x32& 17-oct-14 & SJ \\
 1024&Hermit&0.00943&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&1x32x32&22-aug-13&PJK\\
 1024&Hermit&0.00707&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&2x32x16&22-aug-13&PJK\\
@@ -9618,6 +9626,17 @@ Running with just hyperviscosity give strong wiggles.
 \label{S-techinques}
 
 % --------------------------------------------------------------------- %
+
+\subsection{After changing \var{REAL_PRECISION}}
+\label{After_changing_REAL_PRECISION}
+\index{double precision}
+
+To continue working in double precision
+(\code{REAL_PRECISION=double}), you just say
+\code{lread_from_other_prec=T} in \code{run_pars}.
+Afterwards, remember to put \code{lread_from_other_prec=F}.
+
+\subsection{Remeshing (regridding)}
 
 \subsection{Remeshing (regridding)}
 \index{Remeshing}
