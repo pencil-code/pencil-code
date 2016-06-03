@@ -63,6 +63,7 @@ module Equ
       use Particles_main
       use Poisson
       use Pscalar
+      !use Supersat
       use Polymer
       use Radiation
       use Selfgravity
@@ -504,6 +505,7 @@ module Equ
                               call calc_pencils_hydro(f,p)
                               call calc_pencils_density(f,p)
         if (lpscalar)         call calc_pencils_pscalar(f,p)
+        !if (lsupersat)        call calc_pencils_supersat(f,p)
                               call calc_pencils_eos(f,p)
         if (lshock)           call calc_pencils_shock(f,p)
         if (lchemistry)       call calc_pencils_chemistry(f,p)
@@ -568,6 +570,10 @@ module Equ
 !  Passive scalar evolution
 !
         if (lpscalar) call dlncc_dt(f,df,p)
+!
+!  Supersaturation evolution
+        
+        !if (lsupersat) call dlncc_dt(f,df,p)
 !
 !  Dust evolution
 !

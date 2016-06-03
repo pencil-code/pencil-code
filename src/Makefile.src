@@ -68,6 +68,7 @@ POISSON           = nopoisson
 POLYMER           = nopolymer
 PSCALAR           = nopscalar
 SUPERSAT          = nosupersat
+#SUPERSAT          =$(SUPERSAT_OBJ)
 RADIATION         = noradiation
 SELFGRAVITY       = noselfgravity
 SHEAR             = noshear
@@ -683,6 +684,9 @@ SPECIAL_SRC=$(SPECIAL).f90
 #
 STRUCT_FUNC_OBJ=$(STRUCT_FUNC).o
 STRUCT_FUNC_SRC=$(STRUCT_FUNC).f90
+#
+SUPERSAT_OBJ=$(SUPERSAT).o
+SUPERSAT_SRC=$(SUPERSAT).f90
 #
 SYSCALLS_OBJ=$(SYSCALLS).o
 SYSCALLS_SRC=$(SYSCALLS).f90

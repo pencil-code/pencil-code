@@ -144,6 +144,7 @@ module Particles_radius
 !
       if ((lsweepup_par.or.lcondensation_par).and..not.lpscalar &
               .and..not.lsupersat_par &
+              .and..not.lsupersat &
           .and..not.lcondensation_simplified) then
         call fatal_error('initialize_particles_radius', &
             'must have passive scalar module for sweep-up and condensation')
@@ -577,9 +578,7 @@ module Particles_radius
                 df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - &
                     np_swarm*pi*fp(k,iap)**2*deltavp
               endif
-              !if (lsupersat) df(ix0,m,n,icc) = df(ix0,m,n,icc) - &
-               !     np_swarm*pi*fp(k,iap)**2*deltavp*p%cc(ix)
-!
+!              
 !  Time-step contribution of sweep-up.
 !
               if (lfirst.and.ldt) then
@@ -755,8 +754,6 @@ module Particles_radius
             else
             endif
 
-            !if (lsupersat) df(ix0,m,n,icc)   = df(ix0,m,n,icc)   + &
-            !      (1.0-p%cc(ix))*p%rho1(ix)*drhocdt
 !
 !  Release latent heat to gas / remove heat from gas.
 !
@@ -813,7 +810,6 @@ module Particles_radius
       use EquationOfState, only: gamma
       use Particles_number
 !
-      !lsupersat=.true.
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (mpar_loc,mparray) :: fp
@@ -827,18 +823,15 @@ module Particles_radius
       intent (in) :: f, fp
       intent (inout) :: dfp
 !      
-      !if (t>=tstart_condensation_par) then
-               
-      !dapdt=p%cc(ix)/fp(k,iap)
+      
       do k=k1_imn(imn),k2_imn(imn)
             ix0=ineargrid(k,1)
             ix=ix0-nghost
-            !if (lsupersat) then
+            if (lsupersat) then
                 dapdt=f(ix,m,n,icc)/fp(k,iap)
                 dfp(k,iap)=dfp(k,iap)+dapdt
-            !endif
+            endif
       enddo
-      !endif
 
       call keep_compiler_quiet(f)
     endsubroutine dap_dt_supersat_pencil

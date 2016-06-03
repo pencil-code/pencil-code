@@ -55,7 +55,6 @@ integer :: idiag_ccrms=0
     subroutine register_supersat()
       use FArrayManager
 !
-      !lpscalar_nolog = .true.
       lsupersat = .true.
 !
       call farray_register_pde('cc', icc)
@@ -90,17 +89,45 @@ integer :: idiag_ccrms=0
     endsubroutine initialize_supersat
 !
 !***********************************************************************
+    subroutine init_lncc(f)
+!  initialise passive scalar field; called from start.f90
+      use Sub
+      use Initcond
+      use InitialCondition, only: initial_condition_lncc
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+       select case (initcc)
+        case ('nothing')
+        case ('zero'); f(:,:,:,icc)=0.0
+        case ('constant'); f(:,:,:,icc)=cc_const
+       endselect
+    endsubroutine init_lncc
+   
+!***********************************************************************
     subroutine pencil_criteria_supersat()
       lpenc_requested(i_cc)=.true.
             
       if (lsupersat_sink) lpenc_requested(i_cc)=.true.
       if (supersat_diff/=0.) lpenc_requested(i_del2cc)=.true.
  
+      lpenc_diagnos(i_cc)=.true.
     endsubroutine pencil_criteria_supersat
+!***********************************************************************
+    subroutine pencil_interdep_supersat(lpencil_in)
+!  Interdependency among pencils provided by the Pscalar module
+!  is specified here.
+      logical, dimension(npencils) :: lpencil_in
+!
+      if (lpencil_in(i_cc1)) lpencil_in(i_cc)=.true.
+      if (lpencil_in(i_ugcc)) then
+        lpencil_in(i_uu)=.true.
+        lpencil_in(i_gcc)=.true.
+      endif
+    endsubroutine pencil_interdep_supersat
 !**********************************************************************
     subroutine calc_pencils_supersat(f,p)
 !
-!  Calculate pscalar Pencils.
+!  Calculate supersat Pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
       use Sub
@@ -150,6 +177,17 @@ integer :: idiag_ccrms=0
       intent(out) :: df
 !
       character(len=2) :: id
+!  Identify module and boundary conditions.
+!
+      if (nosupersat) then
+        if (headtt.or.ldebug) print*,'not SOLVED: dlncc_dt'
+      else
+        if (headtt.or.ldebug) print*,'SOLVE dlncc_dt'
+      endif
+      if (headtt) then
+          write(id,'(i0)')
+          call identify_bcs('cc'//trim(id),icc)
+      endif
 !  Passive scalar equation.
 !
         df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-p%ugcc &
@@ -157,25 +195,25 @@ integer :: idiag_ccrms=0
 !
 !  Passive scalar sink/source.
 !
-        if (supersat_sink) then
-                print*,"XY"
-          if (Rsupersat_sink==0) then
-            bump=supersat_sink
-          else
-            bump=supersat_sink*exp(-0.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/Rsupersat_sink**2)
-          endif
-          df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-spread(bump,2)*p%cc
-        endif
+!        if (supersat_sink) then
+!          if (Rsupersat_sink==0) then
+!            bump=supersat_sink
+!          else
+!            bump=supersat_sink*exp(-0.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/Rsupersat_sink**2)
+!          endif
+!          df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-spread(bump,2)*p%cc
+!        endif
 ! 1-June-16/XY coded: to be completed 
-!         if (supersat_sink) then 
-!                 if (Rsupersat_sink==0) then
-!                    bump=-f(l1:l2,m,n,icc)/tau
-!                  else
-!                    bump=-f(l1:l2,m,n,icc)/tau+ &
-!                    A1*fp(k,ivpz)
-!                 endif
-!                 df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-p%ugcc+bump 
-!         endif
+         if (supersat_sink) then
+                print*,"XY" 
+                 if (Rsupersat_sink==0) then
+                    bump=-f(l1:l2,m,n,icc)/tau
+                  else
+                    bump=-f(l1:l2,m,n,icc)/tau+ &
+                    A1*fp(k,ivpz)
+                 endif
+                 df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-p%ugcc+bump 
+         endif
 !       
         if (idiag_ccrms/=0) & 
             call sum_mn_name(p%cc(:,1)**2,idiag_ccrms,lsqrt=.true.)

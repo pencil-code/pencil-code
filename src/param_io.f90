@@ -298,6 +298,7 @@ module Param_IO
       call read_namelist(read_testflow_init_pars       ,'testflow'       ,ltestflow)
       call read_namelist(read_radiation_init_pars      ,'radiation'      ,lradiation)
       call read_namelist(read_pscalar_init_pars        ,'pscalar'        ,lpscalar)
+      !call read_namelist(read_supersat_init_pars       ,'supersat'       ,lsupersat)
       call read_namelist(read_chiral_init_pars         ,'chiral'         ,lchiral)
       call read_namelist(read_chemistry_init_pars      ,'chemistry'      ,lchemistry)
       call read_namelist(read_signal_init_pars         ,'signal'         ,lsignal)
@@ -437,6 +438,7 @@ module Param_IO
       call read_namelist(read_testflow_run_pars       ,'testflow'          ,ltestflow)
       call read_namelist(read_radiation_run_pars      ,'radiation'         ,lradiation)
       call read_namelist(read_pscalar_run_pars        ,'pscalar'           ,lpscalar)
+      !call read_namelist(read_supersat_run_pars       ,'supersat'          ,lsupersat)
       call read_namelist(read_chiral_run_pars         ,'chiral'            ,lchiral)
       call read_namelist(read_chemistry_run_pars      ,'chemistry'         ,lchemistry)
       call read_namelist(read_dustvelocity_run_pars   ,'dustvelocity'      ,ldustvelocity)
@@ -615,6 +617,7 @@ module Param_IO
         call write_stub ('testflow', ltestflow)
         call write_stub ('radiation', lradiation)
         call write_stub ('pscalar', lpscalar)
+        call write_stub ('supersat', lsupersat)
         call write_stub ('chiral', lchiral)
         call write_stub ('chemistry', lchemistry)
         call write_stub ('dustvelocity', ldustvelocity)
@@ -977,6 +980,7 @@ module Param_IO
       write(unit,'(A,L1,A)') " lcosmicrayflux=", lcosmicrayflux, ","
       write(unit,'(A,L1,A)') " lshear=", lshear, ","
       write(unit,'(A,L1,A)') " lpscalar=", lpscalar, ","
+      write(unit,'(A,L1,A)') " lsupersat=", lsupersat, ","
       write(unit,'(A,L1,A)') " lradiation=", lradiation, ","
       write(unit,'(A,L1,A)') " leos=", leos, ","
       write(unit,'(A,L1,A)') " lchiral=", lchiral, ","
