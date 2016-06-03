@@ -110,7 +110,7 @@ module Special
 !
   namelist /special_run_pars/ &
       diffgtheta5, diffmu5, lambda5, theta_prof, lupw_gtheta5, &
-      cdtchiral, switch
+      cdtchiral
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -132,15 +132,6 @@ module Special
   integer :: idiag_diffus_bb_2=0
   integer :: idiag_diffus_uu_1=0
   integer :: idiag_etaucbbgt5rms=0
-  integer :: idiag_diffus_mu5_1=0
-  integer :: idiag_diffus_mu5_2=0
-  integer :: idiag_diffus_mu5_3=0
-  integer :: idiag_diffus_mu5_4=0
-  integer :: idiag_diffus_gtheta5_1=0
-  integer :: idiag_diffus_gtheta5_2=0
-  integer :: idiag_diffus_bb_1=0
-  integer :: idiag_diffus_bb_2=0
-  integer :: idiag_diffus_uu_1=0
   integer :: idiag_uxbj=0
   integer :: idiag_etaujbgtheta5=0
   integer :: idiag_etamu5bj=0
@@ -150,7 +141,6 @@ module Special
   integer :: idiag_etaujbgtheta5rms=0
   integer :: idiag_etamu5bjrms=0
   integer :: idiag_etabdel2brms=0
-  integer :: idiag_etaucbbgt5rms=0
 !
   contains
 !***********************************************************************
@@ -493,7 +483,7 @@ module Special
         +diffgtheta5*p%del2gtheta5
       endif
       diffus_gtheta5_1 = diffgtheta5*dxyz_2
-      diffus_gtheta5_2 = p%mu5*sqrt(dxyz_2)/sqrt(p%gtheta52)
+      !diffus_gtheta5_2 = p%mu5*sqrt(dxyz_2)/sqrt(p%gtheta52)
 !
 !  Additions to evolution of bb
 !
@@ -514,8 +504,6 @@ module Special
         call dot_mn(eta*p%bb,p%del2bb,etabdel2b)   ! term4
 !        call dot(eta*p%bb,p%del2bb,etabdel2b)
         test = eta*p%j2 
-   print*, test
-!
 !  Additions to evolution of uu
 !
       if (lhydro) then
@@ -524,9 +512,7 @@ module Special
         call multsv(p%rho1*p%bgtheta5,ubgtheta5,ubgtheta5bgtheta5r)
         call multsv(p%rho1*p%jb,p%gtheta5,jbgtheta5r2)
         call multsv(p%rho1*p%ub*p%bgtheta5,p%gtheta5,ubbgtheta5gtheta5r)
-        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)+uxbbgtheta5r &
-                   +switch*(-eta*jbgtheta5r-eta*ubgtheta5bgtheta5r &
-                   +eta*jbgtheta5r2+eta*ubbgtheta5gtheta5r)
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)+uxbbgtheta5r
       endif   
       diffus_uu_1 = p%b2*sqrt(p%gtheta52)*p%rho1
 !     
@@ -540,7 +526,7 @@ module Special
 !
       if (lfirst.and.ldt) then
         diffus_special = cdtchiral*max(diffus_mu5_1, diffus_mu5_2, diffus_mu5_3, &
-      diffus_mu5_4, diffus_gtheta5_1, diffus_gtheta5_2, diffus_bb_1, diffus_bb_2, &
+      diffus_mu5_4, diffus_gtheta5_1, diffus_bb_1, diffus_bb_2, &
       diffus_uu_1)
       endif
 !
