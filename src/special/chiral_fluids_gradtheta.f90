@@ -117,11 +117,11 @@ module Special
   integer :: idiag_mu5m=0      ! DIAG_DOC: $\left<\mu_5\right>$
   integer :: idiag_mu5rms=0    ! DIAG_DOC: $\left<\mu_5^2\right>^{1/2}$
   integer :: idiag_bgmu5rms=0  ! DIAG_DOC: $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$
-  integer :: idiag_bgtheta5rms=0  ! DIAG_DOC: $\left<(\Bv\cdot\gtheta_5)^2\right>^{1/2}$
+  integer :: idiag_bgtheta5rms=0  ! DIAG_DOC: $\left<(\Bv\cdot\nabla\theta_5)^2\right>^{1/2}$
   integer :: idiag_gtheta5rms=0! DIAG_DOC: $\left<(\nabla\theta_5)^2\right>^{1/2}$
-  integer :: idiag_gtheta5mx=0 ! DIAG_DOC: $\left<\nabla\theta_5_x\right>$
-  integer :: idiag_gtheta5my=0 ! DIAG_DOC: $\left<\nabla\theta_5_y\right>$
-  integer :: idiag_gtheta5mz=0 ! DIAG_DOC: $\left<\nabla\theta_5_z\right>$
+  integer :: idiag_gtheta5mx=0 ! DIAG_DOC: $\left<\nabla\theta_{5x}\right>$
+  integer :: idiag_gtheta5my=0 ! DIAG_DOC: $\left<\nabla\theta_{5y}\right>$
+  integer :: idiag_gtheta5mz=0 ! DIAG_DOC: $\left<\nabla\theta_{5z}\right>$
   integer :: idiag_diffus_mu5_1=0
   integer :: idiag_diffus_mu5_2=0
   integer :: idiag_diffus_mu5_3=0
