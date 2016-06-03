@@ -257,7 +257,7 @@ module Particles
   integer :: idiag_nparsum=0
   integer :: idiag_rhopm=0, idiag_rhoprms=0, idiag_rhop2m=0, idiag_rhopmax=0
   integer :: idiag_rhopmin=0, idiag_decollp=0, idiag_rhopmphi=0
-  integer :: idiag_epspmin=0, idiag_epspmax=0
+  integer :: idiag_epspmin=0, idiag_epspmax=0, idiag_epspm=0
   integer :: idiag_npmx=0, idiag_npmy=0, idiag_npmz=0
   integer :: idiag_rhopmx=0, idiag_rhopmy=0, idiag_rhopmz=0
   integer :: idiag_rhop2mx=0, idiag_rhop2my=0, idiag_rhop2mz=0
@@ -2647,7 +2647,7 @@ module Particles
         lpenc_diagnos(i_rho1)=.true.
       endif
       if (idiag_epspmx/=0 .or. idiag_epspmy/=0 .or. idiag_epspmz/=0 .or. &
-          idiag_epspmin/=0 .or. idiag_epspmax/=0) &
+          idiag_epspmin/=0 .or. idiag_epspmax/=0 .or. idiag_epspm/=0) &
           lpenc_diagnos(i_epsp)=.true.
       if (idiag_rhopmxy/=0 .or. idiag_rhopmxz/=0 .or. idiag_rhopmphi/=0) &
           lpenc_diagnos2d(i_rhop)=.true.
@@ -4174,6 +4174,7 @@ module Particles
         if (idiag_rhopmin/=0)  call max_mn_name(-p%rhop,idiag_rhopmin,lneg=.true.)
         if (idiag_epspmax/=0)  call max_mn_name(p%epsp,idiag_epspmax)
         if (idiag_epspmin/=0)  call max_mn_name(-p%epsp,idiag_epspmin,lneg=.true.)
+        if (idiag_epspm/=0)    call sum_mn_name(p%epsp,idiag_epspm)
         if (idiag_dedragp/=0)  call sum_mn_name(drag_heat,idiag_dedragp)
         if (idiag_Shm/=0)      call sum_mn_name(p%sherwood/npar*nwgrid,idiag_Shm)
         if (idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. &
@@ -5811,7 +5812,7 @@ module Particles
         idiag_dtdragp=0; idiag_dedragp=0
         idiag_rhopm=0; idiag_rhoprms=0; idiag_rhop2m=0; idiag_rhopmax=0
         idiag_rhopmin=0; idiag_decollp=0; idiag_rhopmphi=0
-        idiag_epspmin=0; idiag_epspmax=0
+        idiag_epspmin=0; idiag_epspmax=0; idiag_epspm=0;
         idiag_nparmin=0; idiag_nparmax=0; idiag_nparsum=0
         idiag_nmigmax=0; idiag_nmigmmax=0; idiag_mpt=0
         idiag_npmx=0; idiag_npmy=0; idiag_npmz=0; idiag_epotpm=0
@@ -5892,6 +5893,7 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'rhop2m',idiag_rhop2m)
         call parse_name(iname,cname(iname),cform(iname),'rhopmin',idiag_rhopmin)
         call parse_name(iname,cname(iname),cform(iname),'rhopmax',idiag_rhopmax)
+        call parse_name(iname,cname(iname),cform(iname),'epspm',idiag_epspm)
         call parse_name(iname,cname(iname),cform(iname),'epspmin',idiag_epspmin)
         call parse_name(iname,cname(iname),cform(iname),'epspmax',idiag_epspmax)
         call parse_name(iname,cname(iname),cform(iname),'rhopmphi',idiag_rhopmphi)
