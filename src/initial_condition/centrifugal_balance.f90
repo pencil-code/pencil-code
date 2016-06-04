@@ -117,6 +117,9 @@ module InitialCondition
   real :: widthbb1=0.0,widthbb2=0.0
   real :: OOcorot
 !
+  real :: bump_radius = 1.,bump_ampl = 0.4, bump_width = 0.1
+  character (len=labellen) :: ipressurebump='nobump'
+!
   namelist /initial_condition_pars/ g0,density_power_law,&
        temperature_power_law,lexponential_smooth,&
        radial_percent_smooth,rshift,lcorrect_selfgravity,&
@@ -126,7 +129,8 @@ module InitialCondition
        zmode_mag,rmode_mag,rm_int,rm_ext,Bz_const, &
        r0_pot,qgshear,n_pot,magnetic_power_law,lcorrect_lorentzforce,&
        lcorrect_pressuregradient,lpolynomial_fit_cs2,&
-       ladd_noise_propto_cs,ampluu_cs_factor,widthbb1,widthbb2
+       ladd_noise_propto_cs,ampluu_cs_factor,widthbb1,widthbb2,&
+       bump_radius,bump_ampl,bump_width,ipressurebump
 !
   contains
 !***********************************************************************
@@ -367,7 +371,7 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx)   :: strat,tmp1,tmp2,cs2
-      real, dimension (mx)   :: rr_sph,rr,rr_cyl,lnrhomid
+      real, dimension (mx)   :: rr_sph,rr,rr_cyl,lnrhomid,rho_bump
       real                   :: rmid,lat
       integer, pointer       :: iglobal_cs2,iglobal_glnTT
       integer                :: ics2
@@ -458,6 +462,18 @@ module InitialCondition
           rr=rr_sph
         endif
 !
+        select case (ipressurebump)
+        case ('gaussian')
+           rho_bump = 1 + bump_ampl*exp(-(rr_cyl - bump_radius)**2/(2*bump_width**2))
+        case ('step')
+           rho_bump = 1 + .5*bump_ampl*(tanh((rr_cyl-bump_radius)/bump_width) + 1)
+        case ('nobump')    
+           rho_bump = 1.
+        case default
+           if (lroot) print*, 'No such value for ipressurebump: ', trim(ipressurebump)
+           call fatal_error("initial_condition_lnrho","")
+        endselect
+!
         if (lexponential_smooth) then
           !radial_percent_smooth = percentage of the grid
           !that the smoothing is applied
@@ -528,7 +544,7 @@ module InitialCondition
 !  No stratification
           strat=0.
         endif
-        f(:,m,n,ilnrho) = f(:,m,n,ilnrho) + lnrhomid + strat
+        f(:,m,n,ilnrho) = f(:,m,n,ilnrho) + lnrhomid + strat + log(rho_bump)
       enddo
       enddo
 !
