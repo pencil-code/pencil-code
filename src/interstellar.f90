@@ -519,7 +519,7 @@ module Interstellar
         if (mass_SN_progenitor==impossible) &
             mass_SN_progenitor=mass_SN_progenitor_cgs / unit_mass
         if (width_SN==impossible) width_SN= &
-            max(width_SN_cgs / real(unit_length),dxmax*2.5)
+            max(width_SN_cgs / real(unit_length),4.33013*dxmax)!sqrt(3*2.5**2)
         if (SN_clustering_radius==impossible) &
             SN_clustering_radius=SN_clustering_radius_cgs / unit_length
         if (SN_clustering_time==impossible) &
@@ -2593,7 +2593,7 @@ module Interstellar
         SNR%feat%radius=width_SN
         if (lSN_scale_rad) &
             SNR%feat%radius=(0.75*solar_mass/SNR%site%rho*pi_1*N_mass)**(1.0/3.0)
-        SNR%feat%radius=max(SNR%feat%radius,2.96*dxmax) ! minimum grid resolution
+        SNR%feat%radius=max(SNR%feat%radius,4.33013*dxmax) ! minimum grid resolution
 !
         m=SNR%indx%m
         n=SNR%indx%n
@@ -2690,12 +2690,12 @@ module Interstellar
       if (lSN_scale_rad) then
         do i=1,20
           SNR%feat%radius=(0.75*solar_mass/SNR%feat%rhom*pi_1*N_mass)**(1.0/3.0)
-          SNR%feat%radius=max(SNR%feat%radius,2.96*dxmax)
+          SNR%feat%radius=max(SNR%feat%radius,4.33013*dxmax)
           call get_properties(f,SNR,rhom,ekintot)
           SNR%feat%rhom=rhom
         enddo
         SNR%feat%radius=(0.75*solar_mass/SNR%feat%rhom*pi_1*N_mass)**(1.0/3.0)
-        SNR%feat%radius=max(SNR%feat%radius,2.96*dxmax)
+        SNR%feat%radius=max(SNR%feat%radius,4.33013*dxmax)
         if (lSN_scale_kin) then
            frac_kin=SNR%feat%radius
            ampl_SN =(1-frac_kin-frac_ecr)*ampl_SN_cgs/unit_energy
