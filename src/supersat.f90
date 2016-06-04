@@ -1,9 +1,7 @@
 ! $Id$
 !
-! This module is used to solve the passive scalar 
-! equation of supersaturation for swarm model. 
-!
-! **************************************************
+! This module is used to solve the equation of supersaturation
+! for either the Smoluchowski approach or the swarm model.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -14,11 +12,11 @@
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED cc; cc1
-! PENCILS PROVIDED gcc(3); ugcc
-! PENCILS PROVIDED del2cc
+! PENCILS PROVIDED ssat
+! PENCILS PROVIDED gssat(3); ugssat
+! PENCILS PROVIDED del2ssat
 !***************************************************************
-module Superstat
+module Supersat
 !
   use Cdata
   use Cparam
@@ -26,17 +24,16 @@ module Superstat
 !
   implicit none
 !
-
-include 'supersat.h'
+  include 'supersat.h'
 !
 !  Init parameters.
 !
-  logical :: nosupersat=.false., reinitialize_cc=.false.
-  logical :: reinitialize_lncc=.false.
-  character (len=labellen) :: initlncc='impossible'
- !
+  real :: ssat_const=0.0
+  logical :: nosupersat=.false., reinitialize_ssat=.false.
+  character (len=labellen) :: initssat='impossible'
+!
   namelist /supersat_init_pars/ &
-           initlncc
+           initssat, ssat_const
 !
 !  Run parameters.
 !
@@ -44,21 +41,32 @@ include 'supersat.h'
   real :: supersat_sink=0.0, Rsupersat_sink=0.5
   real, dimension(3) :: gradC0=(/0.0,0.0,0.0/)
   logical :: lsupersat_sink=.false.
+  logical :: lupw_ssat=.false.
 
   namelist /supersat_run_pars/ &
-      lsupersat_sink, Rsupersat_sink, supersat_sink &
+      lupw_ssat, lsupersat_sink, Rsupersat_sink, supersat_sink, &
       supersat_diff, gradC0
 !
-!Diagnostics variables
-integer :: idiag_ccrms=0
-!**********************************
+! Declare index of new variables in f array
+!
+  integer :: issat=0
+!
+!  Diagnostics variables
+!
+  integer :: idiag_ssatrms=0
+!
+  contains
+!***********************************************************************
     subroutine register_supersat()
+!
+!  Initialise the ssat variable and increase nvar accordingly
+!
+!   3-jun-16/xiangyu: adapted from pscalar_nolog
+!
       use FArrayManager
 !
-      lsupersat = .true.
-!
-      call farray_register_pde('cc', icc)
-      ilncc = 0                 ! needed for idl
+      call farray_register_pde('ssat', issat)
+      issat = 0                 ! needed for idl
 !
 !  Identify version number.
 !
@@ -81,36 +89,36 @@ integer :: idiag_ccrms=0
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
 !
-      if (reinitialize_cc) then
-        f(:,:,:,icc)=0.
-        call init_lncc(f)
+      if (reinitialize_ssat) then
+        f(:,:,:,issat)=0.
+        call init_ssat(f)
       endif
 !
     endsubroutine initialize_supersat
 !
 !***********************************************************************
-    subroutine init_lncc(f)
+    subroutine init_ssat(f)
 !  initialise passive scalar field; called from start.f90
       use Sub
       use Initcond
-      use InitialCondition, only: initial_condition_lncc
+!??AXEL use InitialCondition, only: initial_condition_ssat
 !
       real, dimension (mx,my,mz,mfarray) :: f
-       select case (initcc)
+       select case (initssat)
         case ('nothing')
-        case ('zero'); f(:,:,:,icc)=0.0
-        case ('constant'); f(:,:,:,icc)=cc_const
+        case ('zero'); f(:,:,:,issat)=0.0
+        case ('constant'); f(:,:,:,issat)=ssat_const
        endselect
-    endsubroutine init_lncc
+    endsubroutine init_ssat
    
 !***********************************************************************
     subroutine pencil_criteria_supersat()
-      lpenc_requested(i_cc)=.true.
+      lpenc_requested(i_ssat)=.true.
             
-      if (lsupersat_sink) lpenc_requested(i_cc)=.true.
-      if (supersat_diff/=0.) lpenc_requested(i_del2cc)=.true.
+      if (lsupersat_sink) lpenc_requested(i_ssat)=.true.
+      if (supersat_diff/=0.) lpenc_requested(i_del2ssat)=.true.
  
-      lpenc_diagnos(i_cc)=.true.
+      lpenc_diagnos(i_ssat)=.true.
     endsubroutine pencil_criteria_supersat
 !***********************************************************************
     subroutine pencil_interdep_supersat(lpencil_in)
@@ -118,10 +126,10 @@ integer :: idiag_ccrms=0
 !  is specified here.
       logical, dimension(npencils) :: lpencil_in
 !
-      if (lpencil_in(i_cc1)) lpencil_in(i_cc)=.true.
-      if (lpencil_in(i_ugcc)) then
+      lpencil_in(i_ssat)=.true.
+      if (lpencil_in(i_ugssat)) then
         lpencil_in(i_uu)=.true.
-        lpencil_in(i_gcc)=.true.
+        lpencil_in(i_gssat)=.true.
       endif
     endsubroutine pencil_interdep_supersat
 !**********************************************************************
@@ -139,26 +147,24 @@ integer :: idiag_ccrms=0
       intent(inout) :: p
 !
       
-! cc
-      if (lpencil(i_cc)) p%cc=f(l1:l2,m,n,icc)
-! cc1
-      if (lpencil(i_cc1)) p%cc1=1./p%cc
-! gcc
-      if (lpencil(i_gcc)) then
-        call grad(f,icc,p%gcc)
+! ssat
+      if (lpencil(i_ssat)) p%ssat=f(l1:l2,m,n,issat)
+! gssat
+      if (lpencil(i_gssat)) then
+        call grad(f,issat,p%gssat)
       endif
-! ugcc
-      if (lpencil(i_ugcc)) then
-        call u_dot_grad(f,icc,p%gcc,p%uu,p%ugcc,UPWIND=lupw_cc)
+! ugssat
+      if (lpencil(i_ugssat)) then
+        call u_dot_grad(f,issat,p%gssat,p%uu,p%ugssat,UPWIND=lupw_ssat)
       endif
-! del2cc
-      if (lpencil(i_del2cc)) then
-          call del2(f,icc+i-1,p%del2cc(:,i))
+! del2ssat
+      if (lpencil(i_del2ssat)) then
+        call del2(f,issat,p%del2ssat)
       endif
 !
     endsubroutine calc_pencils_supersat
 !***********************************************************************
-    subroutine dlncc_dt(f,df,p)
+    subroutine dssat_dt(f,df,p)
       use Diagnostics
       use Sub
 !
@@ -167,8 +173,8 @@ integer :: idiag_ccrms=0
       type (pencil_case) :: p
 !
       real, dimension (nx) :: diff_op,diff_op2,bump,gcgu
-      real :: cc_xyaver
-      real :: tau=10., A1=5.*e-4
+      real :: ssat_xyaver
+      real :: tau=10., A1=5e-4
       real :: lam_gradC_fact=1., om_gradC_fact=1., gradC_fact=1.
       integer :: j, k
       integer, parameter :: nxy=nxgrid*nygrid
@@ -180,45 +186,47 @@ integer :: idiag_ccrms=0
 !  Identify module and boundary conditions.
 !
       if (nosupersat) then
-        if (headtt.or.ldebug) print*,'not SOLVED: dlncc_dt'
+        if (headtt.or.ldebug) print*,'not SOLVED: dssat_dt'
       else
-        if (headtt.or.ldebug) print*,'SOLVE dlncc_dt'
+        if (headtt.or.ldebug) print*,'SOLVE dssat_dt'
       endif
       if (headtt) then
           write(id,'(i0)')
-          call identify_bcs('cc'//trim(id),icc)
+          call identify_bcs('ssat'//trim(id),issat)
       endif
 !  Passive scalar equation.
 !
-        df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-p%ugcc &
-                +supersat_diff*p%del2cc
+        df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat &
+                +supersat_diff*p%del2ssat
 !
 !  Passive scalar sink/source.
 !
-!        if (supersat_sink) then
+!        if (lsupersat_sink) then
 !          if (Rsupersat_sink==0) then
 !            bump=supersat_sink
 !          else
 !            bump=supersat_sink*exp(-0.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/Rsupersat_sink**2)
 !          endif
-!          df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-spread(bump,2)*p%cc
+!          df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-spread(bump,2)*p%ssat
 !        endif
 ! 1-June-16/XY coded: to be completed 
-         if (supersat_sink) then
+         if (lsupersat_sink) then
                 print*,"XY" 
                  if (Rsupersat_sink==0) then
-                    bump=-f(l1:l2,m,n,icc)/tau
+                    bump=-f(l1:l2,m,n,issat)/tau
                   else
-                    bump=-f(l1:l2,m,n,icc)/tau+ &
-                    A1*fp(k,ivpz)
+                    bump=-f(l1:l2,m,n,issat)/tau+ &
+                    !A1*fp(k,ivpz)
+!AB: this fp doesn't exist, so I remove it for now, so it compiles
+                    A1
                  endif
-                 df(l1:l2,m,n,icc)=df(l1:l2,m,n,icc)-p%ugcc+bump 
+                 df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat+bump 
          endif
 !       
-        if (idiag_ccrms/=0) & 
-            call sum_mn_name(p%cc(:,1)**2,idiag_ccrms,lsqrt=.true.)
+        if (idiag_ssatrms/=0) & 
+            call sum_mn_name(p%ssat**2,idiag_ssatrms,lsqrt=.true.)
  
-    endsubroutine dlncc_dt
+    endsubroutine dssat_dt
 !
 !***********************************************************************
     subroutine read_supersat_init_pars(iostat)
@@ -272,16 +280,15 @@ integer :: idiag_ccrms=0
       if (present(lwrite)) lwr=lwrite
 !      
       if (lreset) then
-        idiag_ccrms=0,idiag_uzcmz=0
+        idiag_ssatrms=0
       endif
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'ccrms',idiag_ccrms)
+        call parse_name(iname,cname(iname),cform(iname),'ssatrms',idiag_ssatrms)
       enddo
 !
       if (lwr) then 
-        write(3,*) 'ilncc=0'
-        write(3,*) 'icc = ', icc
+        write(3,*) 'issat = ', issat
       endif
     endsubroutine rprint_supersat 
 endmodule Supersat

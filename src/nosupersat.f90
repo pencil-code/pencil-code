@@ -10,7 +10,6 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
-! PENCILS PROVIDED cc; cc1; gcc(3)
 !
 !***************************************************************
 module Supersat
@@ -24,17 +23,12 @@ module Supersat
 !
   include 'supersat.h'
 !
-!  Should not be public:
-!
-  real :: rhoccm=0.0, cc2m=0.0, gcc2m=0.0
-  integer :: idiag_gcc2m=0, idiag_cc2m=0, idiag_rhoccm=0
-!
   contains
 !***********************************************************************
     subroutine register_supersat()
 !
 !  Initialise variables which should know that we solve for passive
-!  scalar: ilncc; increase nvar accordingly.
+!  scalar: issat; increase nvar accordingly.
 !
 !  6-jul-02/axel: coded
 !
@@ -56,18 +50,6 @@ module Supersat
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_supersat
-!***********************************************************************
-    subroutine init_lncc(f)
-!
-!  Initialise passive scalar field.
-!
-!   6-jul-02/axel: dummy
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine init_lncc
 !***********************************************************************
     subroutine pencil_criteria_supersat()
 !
@@ -95,25 +77,19 @@ module Supersat
 !  Calculate Pscalar pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
-!  20-11-04/anders: coded
+!  20-nov-04/anders: coded
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
 !
       intent(in) :: f
       intent(inout) :: p
-! cc
-      if (lpencil(i_cc)) p%cc=1.0
-! cc1
-      if (lpencil(i_cc1)) p%cc1=1.0
-! gcc
-      if (lpencil(i_gcc)) p%gcc=0.0
 !
       call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_supersat
 !***********************************************************************
-    subroutine dlncc_dt(f,df,p)
+    subroutine dssat_dt(f,df,p)
 !
 !  Passive scalar evolution.
 !
@@ -129,7 +105,7 @@ module Supersat
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
 !
-    endsubroutine dlncc_dt
+    endsubroutine dssat_dt
 !***********************************************************************
     subroutine read_supersat_init_pars(iostat)
 !
