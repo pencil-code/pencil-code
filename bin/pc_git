@@ -338,9 +338,7 @@ class TagWipCommand(Command):
         if len(args) > 0:
             self.usage(1)
         tag = create_tag_name('WIP')
-        unrecorded = UnrecordedChanges(
-            'Temporary commit for ' + tag, reset=False
-            )
+        unrecorded = UnrecordedChanges(reset=False)
         if unrecorded.empty:
             print 'Tagging HEAD with %s' % (tag, )
             git(['tag', tag, 'HEAD'])
@@ -567,10 +565,7 @@ class ReverseMergeCommand(Command):
 
         unrecorded = None  # make syntax-check happy
         if options.autostash:
-            unrecorded = UnrecordedChanges(
-                'Unrecorded changes stashed away by \'git pc reverse-merge\'',
-                reset=True
-            )
+            unrecorded = UnrecordedChanges(reset=True)
 
         temp_tag = create_tag_name('before-reverse-merge')
         git(['tag', temp_tag])
@@ -682,10 +677,7 @@ class UpdateAndPushCommand(Command):
             self.usage(1)
             repository = None  # make syntax-check happy
 
-        unrecorded = UnrecordedChanges(
-            'Unrecorded changes stashed away by \'git pc update-and-push\'',
-            reset=True
-            )
+        unrecorded = UnrecordedChanges(reset=True)
         if repository:
             git(['pull', '--rebase', repository])
         else:
@@ -741,8 +733,7 @@ class UnrecordedChanges(object):
 
     """
 
-    def __init__(self, log_message='Unrecorded changes', reset=False):
-        self.log_message = log_message
+    def __init__(self, reset=False):
         self.reset = reset
 
         if git_outputs(['status', '--porcelain']):
