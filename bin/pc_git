@@ -13,6 +13,9 @@ git:
  - git pc reverse-pull
  - git-pc-update-and-push
 
+Use
+  git pc -h
+to get an overview.
 """
 
 # To do:
