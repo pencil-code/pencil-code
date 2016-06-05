@@ -31,11 +31,14 @@ import sys
 import tempfile
 
 
-from proboscis import test, TestProgram
-#from proboscis.asserts import assert_equal, \
-#                              assert_not_equal, \
-#                              assert_true, \
-#                              assert_false
+try:
+    from proboscis import test, TestProgram
+    #from proboscis.asserts import assert_equal, \
+    #                              assert_not_equal, \
+    #                              assert_true, \
+    #                              assert_false
+except ImportError:
+    from proboscis_dummy import test, TestProgram
 
 if not (sys.hexversion >= 0x02060000):
     sys.exit('Python 2.6 or later is required')
