@@ -756,26 +756,17 @@ class UnrecordedChanges(object):
         head = git_head()
 
         # Commit changes in the index
-        git([
-            'commit', '--allow-empty',
-            '--message', 'Changes already in the index'
-            ])
+        self._commit('Changes already in the index')
         self.index = git_head()
 
         # Add changes to tracked files
         git(['add', '--update'])
-        git([
-            'commit', '--allow-empty',
-            '--message', 'Changes to tracked files'
-            ])
+        self._commit('Changes to tracked files')
         self.tracked = git_head()
 
         # Add untracked files
         git(['add', '--all'])
-        git([
-            'commit', '--allow-empty',
-            '--message', 'Untracked files'
-            ])
+        self._commit('Untracked files')
         self.untracked = git_head()
         self.tip = self.untracked
 
@@ -788,6 +779,12 @@ class UnrecordedChanges(object):
         else:
             git(['reset', '--mixed', self.index])
             git(['reset', '--soft', head])
+
+    def _commit(self, message):
+        git([
+            'commit', '--allow-empty',
+            '--message', message
+            ])
 
     def restore(self):
         """Restore any changes that were stored away with the
