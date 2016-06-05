@@ -1,11 +1,7 @@
 #!/usr/bin/python2
 # -*- coding: utf-8 -*-   vim: set fileencoding=utf-8 :
 
-'''
-
-THIS SCRIPT IS STILL IN ITS EARLY TESTING PHASE.
-DON'T USE UNLESS YOU ARE EXPLICITLY ASKED TO.
-
+"""
 A collection of utility commands for Pencil Code coders working with
 git:
 
@@ -17,17 +13,19 @@ git:
  - git pc reverse-pull
  - git-pc-update-and-push
 
-Note that the original author (wd) will probably never use any of them
-because he considers it better to use the proper git (porcelain) commands:
- - The git commands are far more atomic, so if something goes wrong you
-   know which step failed and you can solve the exact problem you have.
- - You can ask or search on the web for information regarding the git
-   commands. Nobody will know what 'git pc' is.
- - You can use the git commands on any computer with git installed.
-   Sooner or later you will want to use git on a computer without git-pc
-   in your path.
+Use
+  git pc -h
+to get an overview.
+"""
 
-'''
+# To do:
+# - Add 'git tag-wip --cleanup' flag
+# - Support the compact syntax '--log-level=N'
+# - Test whether things still work with Lucid
+# - Better integrate the Lucid tests (e.g. commit my proboscis-dummy module and
+#   always load it when 'import proboscis' fails)
+# - Could this work on Hardy?
+# - Can this easily be made to work with Python3?
 
 
 import subprocess
@@ -40,24 +38,64 @@ from distutils import spawn
 
 from optparse import OptionParser
 
+if not (sys.hexversion >= 0x02060000):
+    sys.exit('Python 2.6 or later is required')
+
+
+# Backport Python 2.7 subprocess commands if necessary:
+try:
+    from subprocess import CalledProcessError
+except ImportError:
+    # Use definition from Python 2.7 subprocess module:
+    class CalledProcessError(Exception):
+        def __init__(self, returncode, cmd, output=None):
+            self.returncode = returncode
+            self.cmd = cmd
+            self.output = output
+
+        def __str__(self):
+            return "Command '%s' returned non-zero exit status %d" \
+                % (self.cmd, self.returncode)
+
 
 usage_text = '\n'.join([
     'Usage:',
-    '  git pc <command> [options] [arguments]',
+    '  git pc [options] <command> [command_options] [arguments]',
     'where <command> is one of',
     '%s',
+    'Options:',
+    '  --log-level N  -- set the log level to N, an integer out of',
+    '                      0: don\'t print anything unnecessary,',
+    '                      1: print output from git commands,',
+    '                      2: also print the git commands before executing.',
+    '',
     'Run',
     '  git pc <command> --help',
     'to get help for a specific git-pc command',
 ])
 
+# Log level:
+# 0: be quiet if operations succeed, but print all output from failed git
+#    commands
+# 1: print output from all git commands
+# 2: print the git commands
+BE_QUIET = 0
+PRINT_OUTPUT = 1
+PRINT_GIT_COMMANDS = 2
+log_level = BE_QUIET
+
 
 def main():
     args = sys.argv[1:]
     if len(args) < 1 or args[0] == '-h' or args[0] == '--help':
-        usage(0)
-    (cmd, cmd_args) = (args[0], args[1:])
+        abort_with_usage(0)
 
+    global log_level
+    if args[0] == '--log-level':
+        args.pop(0)
+        log_level = int(args.pop(0))
+
+    (cmd, cmd_args) = (args[0], args[1:])
     for command in create_command_list():
         if cmd == command.name:
             command.execute(cmd_args)
@@ -67,11 +105,11 @@ def main():
     sys.exit(1)
 
 
-def usage(exit_status):
+def abort_with_usage(exit_status):
     global usage_text
     cmd_overview = ''
     for cmd in create_command_list():
-        cmd_overview += '  {: <15} -- {: <10}\n'.format(cmd.name, cmd.overview)
+        cmd_overview += '  %-15s -- %-10s\n' % (cmd.name, cmd.overview)
     print usage_text % (cmd_overview, )
     sys.exit(exit_status)
 
@@ -89,7 +127,7 @@ def create_command_list():
 
 
 def create_tag_name(prefix):
-    '''Create a tag name including a time stamp.'''
+    """Create a tag name including a time stamp."""
     tag = '%s-%s' % (
         prefix,
         time.strftime("%Y-%m-%d_%H-%M-%S", time.localtime())
@@ -98,33 +136,41 @@ def create_tag_name(prefix):
 
 
 def git_head():
-    '''Return the SHA1 of the current HEAD'''
+    """Return the SHA1 of the current HEAD"""
     return git_hash('HEAD')
 
 
 def git_branch_name():
-    '''Return the name of the current branch, or None (if detached)'''
+    """Return the name of the current branch, or None (if detached)"""
     try:
-        return git_output(['symbolic-ref', '-q', '--short', 'HEAD'])
-    except subprocess.CalledProcessError, e:
+        long_name = git_output(['symbolic-ref', '-q', 'HEAD'])
+        return long_name.replace('refs/heads/', '')
+    except CalledProcessError, e:
         if e.returncode == 1:  # detached HEAD
             return None
         else:
             raise Exception(e)
 
 
+def git_branch_exists(branch_name):
+    return git(
+        ['rev-parse', '--verify', branch_name],
+        catch_errors=True
+    )
+
+
 def git_commits_equal(c1, c2):
-    '''Do the two commit-ishs represent the same commit?'''
+    """Do the two commit-ishs represent the same commit?"""
     return git_hash(c1) == git_hash(c2)
 
 
 def git_hash(commit):
-    '''Return the SHA1 of the current HEAD'''
+    """Return the SHA1 of the current HEAD"""
     return git_output(['rev-parse', '--verify', '%s^{commit}' % (commit, )])
 
 
-def git(cmd_list):
-    '''Run git with the given commands.
+def git(cmd_list, catch_errors=False):
+    """Run git with the given commands.
 
     E.g.
       git(['checkout', 'master'])
@@ -132,66 +178,106 @@ def git(cmd_list):
     Prints all output from the command to the terminal and aborts if the
     git command returned a non-zero exit status.
 
-    '''
+    Arguments:
+    cmd_line     -- the git subcommand to run
+    catch_errors -- if True, catch process errors
+
+    Return:
+    True  -- if command execution was successful
+    False -- if catch_errors is set and an error occurred
+
+    """
     cmd_line = ['git']
     cmd_line.extend(cmd_list)
-    run_system_cmd(cmd_line)
+    return run_system_cmd(cmd_line, catch_errors)
 
 
 def git_output(cmd_list):
-    '''Run git with the given commands; return the first line of output.
+    """Run git with the given commands; return the first line of output.
 
     E.g.
       head = git_output(['rev-parse', 'HEAD'])
 
-    '''
+    """
     outputs = git_outputs(cmd_list)
-    if (outputs):
+    if outputs:
         return outputs[0]
     else:
         return None
 
 
 def git_outputs(cmd_list):
-    '''Run git with the given commands; return the output as array of lines.
+    """Run git with the given commands; return the output as array of lines.
 
     E.g.
       status_lines = git_output(['status', '--short'])
 
-    '''
+    """
     cmd_line = ['git']
     cmd_line.extend(cmd_list)
     return run_system_cmd_get_output(cmd_line)
 
 
-def run_system_cmd(cmd_line):
-    '''Run a system command, writing output to the terminal'''
-    print ' '.join(cmd_line)
-    try:
-        subprocess.check_call(cmd_line)
-    except subprocess.CalledProcessError, e:
-        print e
-        sys.exit(1)
+def run_system_cmd(cmd_line, catch_errors=False):
+    """Run a system command, writing output to the terminal.
+
+    Arguments:
+    cmd_line     -- the command to run
+    catch_errors -- catch any process errors
+
+    Return:
+    True  -- if command execution was successful
+    False -- if catch_errors is set and an error occurred
+
+    """
+    retcode, std_output = _run(cmd_line)
+    if retcode:
+        if catch_errors:
+            return False
+        raise CalledProcessError(retcode, cmd_line)
+    else:
+        return True
 
 
 def run_system_cmd_get_output(cmd_line):
-    '''Run a system command and return output as array of lines'''
-    print ' '.join(cmd_line)
-    try:
-        output = subprocess.check_output(cmd_line)
-        return output.splitlines()
-    except subprocess.CalledProcessError, e:
-        print e
-        sys.exit(1)
+    """Run a system command and return output as array of lines"""
+    retcode, std_output = _run(cmd_line)
+    if retcode:
+        raise CalledProcessError(retcode, cmd_line)
+    else:
+        return std_output
+
+
+def _run(cmd_line):
+    if log_level >= PRINT_GIT_COMMANDS:
+        print ' '.join(cmd_line)
+    process = subprocess.Popen(
+        cmd_line,
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+    # FIXME: for huge outpout, this will hang
+    std_output, err_output = process.communicate()
+    std_output = std_output.splitlines()
+    err_output = err_output.splitlines()
+    retcode = process.poll()
+    if retcode or log_level >= PRINT_OUTPUT:
+        log_output('OUT:', std_output)
+        log_output('ERR:', err_output)
+    return retcode, std_output
+
+
+def log_output(prefix, lines):
+    for line in lines:
+        print prefix, line
 
 
 class Command(object):
-    '''A subcommand of \'git pc\''''
+    """A subcommand of 'git pc'"""
 
     __metaclass__ = ABCMeta
 
     def __init__(self, name, overview, usage, flags=()):
-        '''Describe the subcommand and define its interface.
+        """Describe the subcommand and define its interface.
 
         Options:
           name         -- name for calling the subcommand
@@ -200,7 +286,8 @@ class Command(object):
           flags        -- a list of OptionFlag objects defining the
                           options of the subcommand
           args         -- the raw arguments given on the command line
-        '''
+
+        """
         self.name = name
         self.overview = overview
         self.parser = OptionParser(usage=usage)
@@ -263,9 +350,7 @@ class TagWipCommand(Command):
         if len(args) > 0:
             self.usage(1)
         tag = create_tag_name('WIP')
-        unrecorded = UnrecordedChanges(
-            'Temporary commit for ' + tag, reset=False
-            )
+        unrecorded = UnrecordedChanges(reset=False)
         if unrecorded.empty:
             print 'Tagging HEAD with %s' % (tag, )
             git(['tag', tag, 'HEAD'])
@@ -339,12 +424,12 @@ class PanicCommand(Command):
         run_system_cmd(cmd)
 
     def _get_common_args(self, include_dangling):
-        '''Return a list of arguments.
+        """Return a list of arguments.
 
         These arguments make the 'git log' family of commands show
         practically every kown commit.
 
-        '''
+        """
         args = ['--reflog', '--all']
         stashes = [
             line.split(':')[0]
@@ -357,26 +442,31 @@ class PanicCommand(Command):
         return args
 
     def _dangling_commits(self):
-        '''Return a list of dangling commits.
+        """Return a list of dangling commits.
 
         This includes in particular dropped stashes.
 
-        '''
+        Note that 'git fsck --dangling' would do, but git 1.7 doesn't know
+        that option yet.
+
+        """
         return [
             line.split()[2]
-            for line in git_outputs(['fsck', '--dangling', '--no-reflog'])
+            for line in git_outputs([
+                'fsck', '--unreachable', '--no-reflog'
+                ])
             if 'dangling commit' in line
             ]
 
 
 class FfUpdateCommand(Command):
-    '''Fast-forward update a branch without checking it out.
+    """Fast-forward update a branch without checking it out.
 
     Adopted and simplified from
     http://stackoverflow.com/questions/4156957/
           /merging-branches-without-checkout/4157435#4157435
 
-    '''
+    """
 
     def __init__(self):
         Command.__init__(
@@ -403,6 +493,7 @@ class FfUpdateCommand(Command):
             branch, upstream = args
         else:
             self.usage(1)
+            branch, upstream = None  # make syntax-check happy
 
         FfUpdateCommand._merge_ff(branch, upstream)
 
@@ -419,7 +510,7 @@ class FfUpdateCommand(Command):
 
         merge_base = git_output(['merge-base', branch, upstream])
         if git_commits_equal(merge_base, upstream):
-            print 'Branch %s is ahead of upstream'
+            print 'Branch %s is ahead of upstream' % (branch, )
             return
 
         is_ff = git_commits_equal(merge_base, branch)
@@ -482,17 +573,19 @@ class ReverseMergeCommand(Command):
             other_branch = args[0]
         else:
             self.usage(1)
+            other_branch = None  # make syntax-check happy
+
+        unrecorded = None  # make syntax-check happy
         if options.autostash:
-            unrecorded = UnrecordedChanges(
-                'Unrecorded changes stashed away by \'git pc reverse-merge\'',
-                reset=True
-            )
+            unrecorded = UnrecordedChanges(reset=True)
 
         temp_tag = create_tag_name('before-reverse-merge')
         git(['tag', temp_tag])
 
         temp_branch = 'reverse-merge-work-%s' % (work_branch, )
-        git(['checkout', '-B', temp_branch, other_branch])
+        if git_branch_exists(temp_branch):
+            git(['branch', '-D', 'temp_branch'])
+        git(['checkout', '-b', temp_branch, other_branch])
         message = 'Merge branch \'%s\' into %s using \'%s\'' \
             % (work_branch, other_branch, 'git pc reverse-merge')
         git(['merge', work_branch, '-m', message])
@@ -594,11 +687,9 @@ class UpdateAndPushCommand(Command):
             repository = args[0]
         else:
             self.usage(1)
+            repository = None  # make syntax-check happy
 
-        unrecorded = UnrecordedChanges(
-            'Unrecorded changes stashed away by \'git pc update-and-push\'',
-            reset=True
-            )
+        unrecorded = UnrecordedChanges(reset=True)
         if repository:
             git(['pull', '--rebase', repository])
         else:
@@ -608,7 +699,7 @@ class UpdateAndPushCommand(Command):
 
 
 class OptionFlag(object):
-    '''Specification for a command-line option'''
+    """Specification for a command-line option"""
 
     def __init__(
             self, short, long, help, action=None, dest=None, default=None,
@@ -628,12 +719,8 @@ class OptionFlag(object):
             else:
                 raise Exception('Unknown status %s' % (str(status), ))
 
-    def get_overview(self):
-        '''Return the overview line for \'git pc -h\''''
-        return self.overview
-
     def add_to(self, parser):
-        '''Add this option to an optparse.OptionParser'''
+        """Add this option to an optparse.OptionParser"""
         parser.add_option(
             self.short, self.long,
             action=self.action,
@@ -644,22 +731,33 @@ class OptionFlag(object):
 
 
 class UnrecordedChanges(object):
-    '''Record and remove unrecorded changes that we want to restore later.
+    """Record and remove unrecorded changes that we want to restore later.
 
     Conceptually, this is similar to a stash, but our implementation does
     not use 'git stash --include-untracked', because the untracked files
     would end up in separate commit that is not returned by the stash
     command.
 
-    Creating an UnrecordedChanges object removes the unrecorded changes
-    from the file tree, and the index.
-    It creates a detached commit (which is not stored anywhere in the
-    ref namespace).
+    Normally, creating an UnrecordedChanges object removes the unrecorded
+    changes from the file tree, and the index.
+    It creates a detached commit (which is not stored
+    anywhere in the ref namespace).
 
-    '''
+    """
 
-    def __init__(self, log_message='Unrecorded changes', reset=False):
-        self.log_message = log_message
+    def __init__(self, reset=False):
+        """Store away any unrecorded changes.
+
+        Parameters
+        ----------
+
+        reset : bool
+               If True, reset head, index and file system to the last head
+               commit, i.e. all changes are discarded, but stored as
+               detached commits.
+               If False, head, index and file system remain untouched.
+
+        """
         self.reset = reset
 
         if git_outputs(['status', '--porcelain']):
@@ -670,26 +768,22 @@ class UnrecordedChanges(object):
         head = git_head()
 
         # Commit changes in the index
-        git([
-            'commit', '--allow-empty',
-            '--message', 'Changes already in the index'
-            ])
+        if self._index_dirty():
+            self._commit('Changes already in the index')
         self.index = git_head()
 
         # Add changes to tracked files
-        git(['add', '--update'])
-        git([
-            'commit', '--allow-empty',
-            '--message', 'Changes to tracked files'
-            ])
+        if self._untracked_changes():
+            git(['add', '--update'])
+            self._commit('Changes to tracked files')
         self.tracked = git_head()
 
         # Add untracked files
-        git(['add', '--all'])
-        git([
-            'commit', '--allow-empty',
-            '--message', 'Untracked files'
-            ])
+        if self._untracked_files():
+            git(['add', '--all'])
+            # Untracked files may be huge, so add a warning to the commit
+            # message:
+            self._commit('Untracked files [DON\'T PUSH!]')
         self.untracked = git_head()
         self.tip = self.untracked
 
@@ -703,7 +797,33 @@ class UnrecordedChanges(object):
             git(['reset', '--mixed', self.index])
             git(['reset', '--soft', head])
 
+    def _commit(self, message):
+        git([
+            'commit', '--allow-empty', '--no-verify',
+            '--message', message
+            ])
+
+    def _index_dirty(self):
+        return not git(['diff', '--cached', '--quiet'], catch_errors=True)
+
+    def _untracked_changes(self):
+        return not git(['diff', '--quiet'], catch_errors=True)
+
+    def _untracked_files(self):
+        git_cmd = [
+            'ls-files', '--other', '--exclude-standard', '--directory'
+            ]
+        if git_output(git_cmd):
+            return True
+        else:
+            return False
+
+
     def restore(self):
+        """Restore any changes that were stored away with the
+        UnrecordedChanges() constructor, and remove the tag we set there.
+
+        """
         if self.reset:
             new_head = git_head()
 
@@ -715,6 +835,9 @@ class UnrecordedChanges(object):
 
             git(['reset', '--mixed', new_index])
             git(['reset', '--soft', new_head])
+        else:
+            # Nothing to restore
+            pass
 
         git(['tag', '-d', self.tag])
 

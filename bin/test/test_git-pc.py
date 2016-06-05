@@ -31,11 +31,60 @@ import sys
 import tempfile
 
 
-from proboscis import test, TestProgram
-#from proboscis.asserts import assert_equal, \
-#                              assert_not_equal, \
-#                              assert_true, \
-#                              assert_false
+try:
+    from proboscis import test, TestProgram
+    #from proboscis.asserts import assert_equal, \
+    #                              assert_not_equal, \
+    #                              assert_true, \
+    #                              assert_false
+except ImportError:
+    from proboscis_dummy import test, TestProgram
+
+if not (sys.hexversion >= 0x02060000):
+    sys.exit('Python 2.6 or later is required')
+
+
+# Backport Python 2.7 subprocess commands if necessary:
+try:
+    from subprocess import CalledProcessError, check_call, check_output
+except ImportError:
+    # Use definition from Python 2.7 subprocess module:
+    class CalledProcessError(Exception):
+        def __init__(self, returncode, cmd, output=None):
+            self.returncode = returncode
+            self.cmd = cmd
+            self.output = output
+
+        def __str__(self):
+            return "Command '%s' returned non-zero exit status %d" \
+                % (self.cmd, self.returncode)
+
+    # Use definitions from Python 2.7 subprocess module:
+    def check_call(*popenargs, **kwargs):
+        retcode = subprocess.call(*popenargs, **kwargs)
+        if retcode:
+            cmd = kwargs.get("args")
+            if cmd is None:
+                cmd = popenargs[0]
+                raise CalledProcessError(retcode, cmd)
+                return 0
+
+    def check_output(*popenargs, **kwargs):
+        if 'stdout' in kwargs:
+            raise ValueError(
+                'stdout argument not allowed, it will be overridden.'
+            )
+        process = subprocess.Popen(
+            stdout=subprocess.PIPE, *popenargs, **kwargs
+        )
+        output, unused_err = process.communicate()
+        retcode = process.poll()
+        if retcode:
+            cmd = kwargs.get("args")
+            if cmd is None:
+                cmd = popenargs[0]
+            raise CalledProcessError(retcode, cmd, output=output)
+        return output
 
 
 current_git_time = 0            # Our test commits all occurred in 1970...
@@ -264,10 +313,10 @@ def run_system_cmd_get_output(cmd_line, dir=None):
         pwd = os.getcwd()
         if dir:
             os.chdir(dir)
-        output = subprocess.check_output(cmd_line)
+        output = check_output(cmd_line)
         os.chdir(pwd)
         return output.splitlines()
-    except subprocess.CalledProcessError, e:
+    except CalledProcessError, e:
         print e
         sys.exit(1)
 
@@ -303,10 +352,11 @@ def setup_git_with_server(name, root_dir=None):
         )
     git1 = GitSandbox(
         'git1', root_dir=root_dir, create_tmp_dir=False,
-        initial_commit=True
+        user='Git1', initial_commit=True
         )
     git2 = GitSandbox(
-        'git2', root_dir=root_dir, create_tmp_dir=False
+        'git2', root_dir=root_dir, create_tmp_dir=False,
+        user='Git2'
         )
     git1('remote', 'add', 'origin', server.directory)
     git1('remote')
@@ -332,7 +382,7 @@ class GitSandbox(object):
     def __init__(
             self, name,
             bare=None, initial_commit=False, root_dir=None,
-            create_tmp_dir=True
+            create_tmp_dir=True, user='User'
             ):
         '''Arguments:
         name           -- the name of the repository
@@ -342,7 +392,9 @@ class GitSandbox(object):
                           repository
         create_tmp_dir -- if true (default), create a temporary directory
                           based on a prefix + NAME.
-                          Otherwise, create a directory called NAME.
+                          Otherwise, create a directory called NAME
+        user           -- user name to use for commits
+
         '''
         if create_tmp_dir:
             dir_basename = 'git-pc-test_' + name
@@ -375,6 +427,9 @@ class GitSandbox(object):
             self.__call__('init', '--bare')
         else:
             self.__call__('init')
+            email = user.lower().replace(' ', '_') + '@inter.net'
+            self.__call__('config', 'user.name', user)
+            self.__call__('config', 'user.email', email)
         if initial_commit:
             self.__call__(
                 'commit', '--allow-empty',
