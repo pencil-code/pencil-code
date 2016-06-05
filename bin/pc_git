@@ -15,6 +15,15 @@ git:
 
 """
 
+# To do:
+# - Add 'git tag-wip --cleanup' flag
+# - Support the compact syntax '--log-level=N'
+# - Test whether things still work with Lucid
+# - Better integrate the Lucid tests (e.g. commit my proboscis-dummy module and
+#   always load it when 'import proboscis' fails)
+# - Could this work on Hardy?
+# - Can this easily be made to work with Python3?
+
 
 import subprocess
 import sys
