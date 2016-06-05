@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>Git Best Practises</title>
-<!-- 2015-10-22 Thu 23:15 -->
+<!-- 2016-06-05 Sun 14:01 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="Wolfgang Dobler" />
@@ -134,14 +134,14 @@ for the JavaScript code in this tag.
  }
 /*]]>*///-->
 </script>
-<script type="text/javascript" src="/usr/share/javascript/mathjax/unpacked/MathJax.js?config=default"></script>
+<script type="text/javascript" src="http://orgmode.org/mathjax/MathJax.js"></script>
 <script type="text/javascript">
 <!--/*--><![CDATA[/*><!--*/
     MathJax.Hub.Config({
         // Only one of the two following lines, depending on user settings
         // First allows browser-native MathML display, second forces HTML/CSS
-            config: ["MMLorHTML.js"], jax: ["input/TeX"],
-        //  jax: ["input/TeX", "output/HTML-CSS"],
+        //  config: ["MMLorHTML.js"], jax: ["input/TeX"],
+            jax: ["input/TeX", "output/HTML-CSS"],
         extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js",
                      "TeX/noUndefined.js"],
         tex2jax: {
@@ -191,26 +191,24 @@ for the JavaScript code in this tag.
 <li><a href="#sec-2-2">2.2. What is a Git repository?</a></li>
 <li><a href="#sec-2-3">2.3. What is a commit?</a></li>
 <li><a href="#sec-2-4">2.4. The narrative metaphor</a></li>
-<li><a href="#sec-2-5">2.5. The different levels of a Git repository's state</a></li>
-<li><a href="#sec-2-6">2.6. Atomicity</a></li>
+<li><a href="#sec-2-5">2.5. Atomicity</a></li>
 </ul>
 </li>
-<li><a href="#sec-3">3. Joining different lines of development</a>
+<li><a href="#sec-3">3. Don't panic</a>
 <ul>
-<li><a href="#sec-3-1">3.1. What is merging?</a></li>
-<li><a href="#sec-3-2">3.2. What is rebasing?</a></li>
-<li><a href="#sec-3-3">3.3. Pros and cons</a>
-<ul>
-<li><a href="#sec-3-3-1">3.3.1. Graph structure</a></li>
-<li><a href="#sec-3-3-2">3.3.2. Rewriting history</a></li>
-<li><a href="#sec-3-3-3">3.3.3. The worst thing that can happen</a></li>
+<li><a href="#sec-3-1">3.1. I'm almost panicking …</a></li>
 </ul>
 </li>
+<li><a href="#sec-4">4. Joining different lines of development</a>
+<ul>
+<li><a href="#sec-4-1">4.1. What is merging?</a></li>
+<li><a href="#sec-4-2">4.2. What is rebasing?</a></li>
+<li><a href="#sec-4-3">4.3. Pros and cons</a>
+<ul>
+<li><a href="#sec-4-3-1">4.3.1. Graph structure</a></li>
+<li><a href="#sec-4-3-2">4.3.2. The worst thing that can happen</a></li>
 </ul>
 </li>
-<li><a href="#sec-4">4. Don't panic</a>
-<ul>
-<li><a href="#sec-4-1">4.1. I'm almost panicking …</a></li>
 </ul>
 </li>
 <li><a href="#sec-5">5. Best practices</a>
@@ -234,7 +232,7 @@ Tips and recommendations for using Git with the Pencil code:
 </p>
 <ul class="org-ul">
 <li>Don't panic.</li>
-<li>Don't pull from the remote branch into the tracking branch.</li>
+<li>Never pull from the remote branch into the tracking branch.</li>
 <li>Make the git history a good narrative.</li>
 </ul>
 
@@ -261,7 +259,9 @@ Merge: Do <i>not</i> merge upstream into your tracking branch like this:
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh">git merge origin/master  <span style="color: #b22222;"># </span><span style="color: #b22222;">DON'T!</span>
+<pre class="src src-sh">git pull origin/master   <span style="color: #b22222;"># </span><span style="color: #b22222;">DON'T!</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">or</span>
+git merge origin/master  <span style="color: #b22222;"># </span><span style="color: #b22222;">DON'T!</span>
 </pre>
 </div>
 <p>
@@ -275,13 +275,17 @@ using
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh">git pc reverse-merge  <span style="color: #b22222;"># </span><span style="color: #b22222;">DO THIS INSTEAD</span>
+<pre class="src src-sh">git pc reverse-pull  <span style="color: #b22222;"># </span><span style="color: #b22222;">DO THIS INSTEAD</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">or</span>
+git pc reverse-merge  <span style="color: #b22222;"># </span><span style="color: #b22222;">DO THIS INSTEAD</span>
 </pre>
 </div></li>
 </ol></li>
 
 <li>Think about using feature branches for logic units that cover more
 than a few commits.</li>
+
+<li>Don't rebase (or otherwise modify) published history.</li>
 </ol>
 </div>
 </div>
@@ -297,10 +301,9 @@ operations.
 </p>
 
 <p>
-Let us recall a few important concepts for the discussion to follow.
+But for the discussion below we will need a few important concepts.
 </p>
 </div>
-
 
 <div id="outline-container-sec-2-1" class="outline-3">
 <h3 id="sec-2-1"><span class="section-number-3">2.1</span> What is Git?</h3>
@@ -322,9 +325,9 @@ A Git repository is a set of unique commits that form a
 <a href="https://en.wikipedia.org/wiki/Directed_acyclic_graph">directed acyclic graph</a> (DAG) like this:
 </p>
 <pre class="example">
-A---B---C---D---E---F--- master
+A---B---C---D---E---F---  master
      \     /     \
-      G---H       I---J--- feature
+      G---H       I---J---  feature
 </pre>
 
 <p>
@@ -392,36 +395,10 @@ sense and formulate and format your log messages appropriately.<sup><a id="fnr.2
 
 
 <div id="outline-container-sec-2-5" class="outline-3">
-<h3 id="sec-2-5"><span class="section-number-3">2.5</span> The different levels of a Git repository's state</h3>
+<h3 id="sec-2-5"><span class="section-number-3">2.5</span> Atomicity</h3>
 <div class="outline-text-3" id="text-2-5">
 <p>
-There are (at least) four different variants of the <i>Pencil Code</i> that
-you are interacting with:
-</p>
-<ol class="org-ol">
-<li>The upstream branch that you occasionally update by querying the
-server (there could be several upstream branches, but not for us).
-You cannot directly commit to this branch, because its purpose is to
-represent the last state of the server branch you <i>fetched</i>.</li>
-<li>Your tracking branch.
-This is where [&#x2026;]</li>
-<li>The <i>index</i> where changes are recorded before they get committed to
-your local branches.</li>
-<li>The file system.</li>
-</ol>
-
-<p>
-[Many possibilities for discord, but not that bad&#x2026;]
-</p>
-</div>
-</div>
-
-
-<div id="outline-container-sec-2-6" class="outline-3">
-<h3 id="sec-2-6"><span class="section-number-3">2.6</span> Atomicity</h3>
-<div class="outline-text-3" id="text-2-6">
-<p>
-Git commands tend to be focused on one task.
+Git commands tend to be focused on one task.<sup><a id="fnr.3" class="footref" href="#fn.3">3</a></sup>
 As a consequence, what the user perceives as one logical step may
 require two or three consecutive command calls.
 This helps in understanding what you are doing, and when something
@@ -431,8 +408,8 @@ goes wrong you know where exactly the problem occurred.
 <p>
 However, if you prefer to combine several elementary git operations
 into one command call (say, committing and pushing), or don't want to
-type the same command-line options over and over again, you can (of
-course) create a shell script, or you can define a <i>Git alias</i>.
+type the same command-line options over and over again, you can of
+course create a shell script, or you can define a <i>Git alias</i>.
 For example, after running
 </p>
 <div class="org-src-container">
@@ -465,8 +442,144 @@ Run <code>‘git pc -h’</code> to get a list of available sub-commands.
 
 
 <div id="outline-container-sec-3" class="outline-2">
-<h2 id="sec-3"><span class="section-number-2">3</span> Joining different lines of development</h2>
+<h2 id="sec-3"><span class="section-number-2">3</span> Don't panic</h2>
 <div class="outline-text-2" id="text-3">
+<p>
+\label{Section-dont-panic}
+</p>
+
+<p>
+Or: <i>What to do when you think you're lost</i>
+</p>
+
+<p>
+Git will try hard to preserve your changes:
+</p>
+
+<ul class="org-ul">
+<li>Any changes you committed will be part of the <i><i>reflog</i></i> for at least
+two weeks<sup><a id="fnr.4" class="footref" href="#fn.4">4</a></sup>, even if you change or abandon them.</li>
+
+<li>Uncommitted changes to git-controlled-files will only get overwritten
+if you run one of the commands
+<ul class="org-ul">
+<li><code>git checkout &lt;file-or-directory&gt;</code></li>
+<li><code>git reset --hard</code></li>
+<li>And of course any non-git commands that change files</li>
+</ul></li>
+
+<li>Files unknown to Git will only get lost with<sup><a id="fnr.5" class="footref" href="#fn.5">5</a></sup>
+<ul class="org-ul">
+<li><code>git clean</code></li>
+<li>Again, any non-git commands that change files</li>
+</ul></li>
+</ul>
+
+
+<p>
+Table \ref{Table:How-to-lose-changes} summarizes this discussion.
+</p>
+
+<table id="Table:How-to-lose-changes" border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+<caption class="t-above"><span class="table-number">Table 1:</span> How to lose changes with git</caption>
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left"><i>Changes</i></th>
+<th scope="col" class="left"><i>How they can get lost</i></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left">Changes committed to git</td>
+<td class="left">Not at all, unless you insist <sup><a id="fnr.6" class="footref" href="#fn.6">6</a></sup></td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="left">Uncommitted changes to git-controlled files</td>
+<td class="left"><code>git checkout &lt;file-or-directory&gt;</code></td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left"><code>git reset --hard</code></td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">Non-git commands</td>
+</tr>
+</tbody>
+<tbody>
+<tr>
+<td class="left">Files unknown to Git</td>
+<td class="left"><code>git clean</code></td>
+</tr>
+
+<tr>
+<td class="left">&#xa0;</td>
+<td class="left">Non-git commands</td>
+</tr>
+</tbody>
+</table>
+</div>
+
+
+<div id="outline-container-sec-3-1" class="outline-3">
+<h3 id="sec-3-1"><span class="section-number-3">3.1</span> I'm almost panicking …</h3>
+<div class="outline-text-3" id="text-3-1">
+<p>
+\label{Section-almost-panicking}
+</p>
+
+<p>
+… for I'm afraid something got lost, although I know this is not the
+case because I stayed away from the commands in Table
+\ref{Table:How-to-lose-changes}.
+</p>
+<p>
+\bigskip
+</p>
+
+<p>
+Here is how to see almost every change<sup><a id="fnr.7" class="footref" href="#fn.7">7</a></sup> that was ever<sup><a id="fnr.8" class="footref" href="#fn.8">8</a></sup>
+known to git:
+</p>
+<div class="org-src-container">
+
+<pre class="src src-sh">gitk --reflog --all
+<span style="color: #b22222;"># </span><span style="color: #b22222;">or</span>
+tig --reflog --all
+<span style="color: #b22222;"># </span><span style="color: #b22222;">or, without graphics,</span>
+git reflog --all --glob=<span style="color: #8b6969;">'stash*'</span>
+
+<span style="color: #b22222;"># </span><span style="color: #b22222;">If you prefer melodramatic command names, try</span>
+git pc panic
+</pre>
+</div>
+
+<p>
+If you want to also see dropped stashes, you can use
+</p>
+<div class="org-src-container">
+
+<pre class="src src-sh">git pc panic --full
+</pre>
+</div>
+</div>
+</div>
+</div>
+
+
+<div id="outline-container-sec-4" class="outline-2">
+<h2 id="sec-4"><span class="section-number-2">4</span> Joining different lines of development</h2>
+<div class="outline-text-2" id="text-4">
 <p>
 <a id="Section:Joining-lines-of-development"></a>
 </p>
@@ -476,9 +589,9 @@ In a community coding project like the <i>Pencil Code</i>, we will
 frequently have a situation like this:
 </p>
 <pre class="example">
-A---B---C--- branch1
+A---B---C-----  branch1
      \
-      F---G--- branch2
+      F---G---  branch2
 </pre>
 <p>
 where different (diverging) commits have been made on different
@@ -490,13 +603,15 @@ integrate both lines of development into one.
 <p>
 Git offers two different techniques to achieve that goal: <i>merging</i> and
 <i>rebasing</i>.
+Tobias Heinemann has created a screencast where he
+<a href="https://asciinema.org/a/dauj562l4uwr7bpyohqyewkj5">demonstrates different variants of these approaches</a>.
 </p>
 </div>
 
 
-<div id="outline-container-sec-3-1" class="outline-3">
-<h3 id="sec-3-1"><span class="section-number-3">3.1</span> What is merging?</h3>
-<div class="outline-text-3" id="text-3-1">
+<div id="outline-container-sec-4-1" class="outline-3">
+<h3 id="sec-4-1"><span class="section-number-3">4.1</span> What is merging?</h3>
+<div class="outline-text-3" id="text-4-1">
 <p>
 <a id="Merge"></a>
 </p>
@@ -506,18 +621,18 @@ A <i>merge</i> commit adds a new connection to parts of the Git graph.
 For example, if we have the following situation
 </p>
 <pre class="example">
-A---B---C--- master
+A---B---C-----  master
      \
-      F---G--- feature
+      F---G---  feature
 </pre>
 <p>
 and want to bring the changes from branch <i>feature</i> to <i>master</i>, we
 can merge <i>feature</i> into <i>master</i> and get
 </p>
 <pre class="example">
-A---B---C---D--- master
+A---B---C---D---  master
      \     /
-      F---G--- feature
+      F---G-----  feature
 </pre>
 
 <p>
@@ -530,16 +645,16 @@ and G is the <i>second parent</i>), not the other way around.
 <p>
 You remember our narrative metaphor?
 If you always <i>merge</i> your commits or groups of commits because you
-don't want to change history, you are narrating in a diary or
+don't want to modify history, you are narrating in a diary or
 chronicler's style.
 </p>
 </div>
 </div>
 
 
-<div id="outline-container-sec-3-2" class="outline-3">
-<h3 id="sec-3-2"><span class="section-number-3">3.2</span> What is rebasing?</h3>
-<div class="outline-text-3" id="text-3-2">
+<div id="outline-container-sec-4-2" class="outline-3">
+<h3 id="sec-4-2"><span class="section-number-3">4.2</span> What is rebasing?</h3>
+<div class="outline-text-3" id="text-4-2">
 <p>
 <a id="Rebase"></a>
 </p>
@@ -547,20 +662,52 @@ chronicler's style.
 <p>
 In the example above, we have a second option to bring the feature
 branch's changes into master, by creating new commits that contain
-those changes:
+those changes, but start from the state C, not B:
 </p>
 <pre class="example">
-A---B---C---D---F'---G'--- master, feature
+A---B---C-----------  master
+         \
+          F'---G'---  feature
 </pre>
 <p>
-Immediately after this, both <i>master</i> and <i>feature</i> point to the same
-commit G', but will may change as you continue to commit, e.g.
+We say that we have <i>rebased</i> the commits F and G from B onto C.
 </p>
-<pre class="example">
-A---B---C---D---F'---G'---H--- master
-                      \
-                       I--- feature
+
+<p>
+Rebasing modifies history, which is only permissible as long as this
+history is <i>local</i>.
+So <i>don't rebase published commits</i>.
+The commits that are eligible to rebasing are the ones displayed by
+</p>
+<div class="org-src-container">
+
+<pre class="src src-sh">gitk origin/master..master
+<span style="color: #b22222;"># </span><span style="color: #b22222;">or</span>
+tig origin/master..master
+<span style="color: #b22222;"># </span><span style="color: #b22222;">or, without graphics,</span>
+git log origin/master..master
 </pre>
+</div>
+
+<p>
+Even if the new commit F' may introduce the same textual
+difference as the original commit F, the file-tree state it represents
+is completely new and there is no guarantee that it will e.g.&nbsp;compile,
+even if both, C and F do.
+</p>
+
+<p>
+Once you finish the rebase, you appear to have lost the original change
+F by pretending that you were applying a change F' in the first
+place.<sup><a id="fnr.9" class="footref" href="#fn.9">9</a></sup>
+That's perfectly OK, as you will no longer be interested in the
+original change when the new version gets part of the Git narrative.
+</p>
+
+
+<p>
+\bigskip
+</p>
 
 <p>
 Rebasing is not an exclusive option.
@@ -569,17 +716,17 @@ merge longer-lived feature branches.
 </p>
 
 <p>
-In terms of narrating, <i>rebasing</i> suggests letter style, where you
-bring facts into logical frames and order them accordingly (because it
-is too hard to find readers for stream-of-consciousness letters).
+In terms of narrating, <i>rebasing</i> allows you to use letter style, where
+you bring facts into logical frames and order them accordingly (because
+nobody would want to read your stream-of-consciousness letters).
 </p>
 </div>
 </div>
 
 
-<div id="outline-container-sec-3-3" class="outline-3">
-<h3 id="sec-3-3"><span class="section-number-3">3.3</span> Pros and cons</h3>
-<div class="outline-text-3" id="text-3-3">
+<div id="outline-container-sec-4-3" class="outline-3">
+<h3 id="sec-4-3"><span class="section-number-3">4.3</span> Pros and cons</h3>
+<div class="outline-text-3" id="text-4-3">
 <p>
 Here is the decision matrix for merging vs. rebasing
 </p>
@@ -617,7 +764,7 @@ Here is the decision matrix for merging vs. rebasing
 <tr>
 <td class="left">Safety</td>
 <td class="left">Safer</td>
-<td class="left">Less safe <sup><a id="fnr.3" class="footref" href="#fn.3">3</a></sup></td>
+<td class="left">Less safe <sup><a id="fnr.10" class="footref" href="#fn.10">10</a></sup></td>
 </tr>
 </tbody>
 </table>
@@ -629,12 +776,12 @@ Sec.&nbsp;\ref{Section-dont-panic} that you needn't be afraid.
 </div>
 
 
-<div id="outline-container-sec-3-3-1" class="outline-4">
-<h4 id="sec-3-3-1"><span class="section-number-4">3.3.1</span> Graph structure</h4>
-<div class="outline-text-4" id="text-3-3-1">
+<div id="outline-container-sec-4-3-1" class="outline-4">
+<h4 id="sec-4-3-1"><span class="section-number-4">4.3.1</span> Graph structure</h4>
+<div class="outline-text-4" id="text-4-3-1">
 <p>
 Every merge commit increases the connectivity of the commit graph by
-one<sup><a id="fnr.4" class="footref" href="#fn.4">4</a></sup>.
+one<sup><a id="fnr.11" class="footref" href="#fn.11">11</a></sup>.
 A rebase, by contrast, does not change the connectivity and leads to a
 more linear history.
 </p>
@@ -642,180 +789,19 @@ more linear history.
 </div>
 
 
-<div id="outline-container-sec-3-3-2" class="outline-4">
-<h4 id="sec-3-3-2"><span class="section-number-4">3.3.2</span> Rewriting history</h4>
-<div class="outline-text-4" id="text-3-3-2">
+<div id="outline-container-sec-4-3-2" class="outline-4">
+<h4 id="sec-4-3-2"><span class="section-number-4">4.3.2</span> The worst thing that can happen</h4>
+<div class="outline-text-4" id="text-4-3-2">
 <p>
-In our rebase example above, the commits F and G were transformed
-into F' and G'.
-In the simplest case, both sets of commits represent exactly the same
-difference of the file tree.
-But if you had to fix conflicts, this is no longer the case, and you
-appear to have lost the original change G by pretending that you were
-applying a change G' in the first place.<sup><a id="fnr.5" class="footref" href="#fn.5">5</a></sup>
-Even if there are no conflicts during the rebase, the state G' is
-completely new, and there is no guarantee that it will
-e.g.&nbsp;compile.
-</p>
-
-<p>
-Once you accept the idea that you can change history, you can use it
-to write meaningful commit messages while you are in the right set
-of mind (i.e. <i>before</i> you test your changes, because after testing
-it is harder to remember what you were doing in the first place).
-Or you can rewrite history to fix a recent commit (code and message),
-or to combine commits in order to get a more readable history.
-</p>
-</div>
-</div>
-
-<div id="outline-container-sec-3-3-3" class="outline-4">
-<h4 id="sec-3-3-3"><span class="section-number-4">3.3.3</span> The worst thing that can happen</h4>
-<div class="outline-text-4" id="text-3-3-3">
-<p>
-If you have conflicts, rebasing can bring your sandbox [explain that
-name, or use another word] into a state where you are not on any
-branch (<i>detached head</i>).
+If you have conflicts, rebasing can bring your working-directory into
+a state where you are not on any branch (<i>detached head</i>).
 This is not really something to worry about:
-Just fix the conflicts and do '<code>git rebase --continue</code>' to finish the
-rebase; and in case you get lost, do '<code>git rebase --abort</code>' and start
-afresh.
+Just fix the conflicts, <code>‘git add’</code> the changes, and do <code>‘git rebase
+    --continue’</code> to finish the rebase; and in case you get lost, do <code>‘git
+    rebase --abort’</code> and start afresh.
 Even if you get completely lost and resort to measures like
-'<code>git reset</code>', <i>you needn't be afraid</i> to lose history.
+<code>‘git reset’</code>, <a href="#sec-3">you needn't be afraid</a> to lose history.
 </p>
-</div>
-</div>
-</div>
-</div>
-
-
-<div id="outline-container-sec-4" class="outline-2">
-<h2 id="sec-4"><span class="section-number-2">4</span> Don't panic</h2>
-<div class="outline-text-2" id="text-4">
-<p>
-\label{Section-dont-panic}
-</p>
-
-<p>
-or <i>What to do when you think you're lost</i>
-</p>
-
-<p>
-Git will try hard to preserve your changes:<sup><a id="fnr.6" class="footref" href="#fn.6">6</a></sup>
-</p>
-
-<ul class="org-ul">
-<li>Any changes you committed will be part of the <i><i>reflog</i></i> for at least
-two weeks<sup><a id="fnr.7" class="footref" href="#fn.7">7</a></sup>, even if you change or abandon them.</li>
-
-<li>Uncommitted changes to git-controlled-files will only get overwritten
-if you run one of the commands
-<ul class="org-ul">
-<li><code>git checkout &lt;file-or-directory&gt;</code></li>
-<li><code>git reset --hard</code></li>
-<li>And of course any non-git commands that change files</li>
-</ul></li>
-
-<li>Files unknown to Git will only get lost with
-<ul class="org-ul">
-<li><code>git clean</code></li>
-<li>Again, any non-git commands that change files</li>
-</ul></li>
-</ul>
-
-
-<p>
-Table \ref{Table:How-to-lose-changes} summarizes this discussion.
-</p>
-
-<table id="Table:How-to-lose-changes" border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
-<caption class="t-above"><span class="table-number">Table 1:</span> How to lose changes with git</caption>
-
-<colgroup>
-<col  class="left" />
-
-<col  class="left" />
-</colgroup>
-<thead>
-<tr>
-<th scope="col" class="left"><i>Changes</i></th>
-<th scope="col" class="left"><i>How they can get lost</i></th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td class="left">Changes committed to git</td>
-<td class="left">Not at all, unless you insist <sup><a id="fnr.8" class="footref" href="#fn.8">8</a></sup></td>
-</tr>
-</tbody>
-<tbody>
-<tr>
-<td class="left">Uncommitted changes to git-controlled files</td>
-<td class="left"><code>git checkout &lt;file-or-directory&gt;</code></td>
-</tr>
-
-<tr>
-<td class="left">&#xa0;</td>
-<td class="left"><code>git reset --hard</code></td>
-</tr>
-
-<tr>
-<td class="left">&#xa0;</td>
-<td class="left">Non-git commands</td>
-</tr>
-</tbody>
-<tbody>
-<tr>
-<td class="left">Files unknown to Git</td>
-<td class="left"><code>git clean</code></td>
-</tr>
-
-<tr>
-<td class="left">&#xa0;</td>
-<td class="left">Non-git commands</td>
-</tr>
-</tbody>
-</table>
-</div>
-
-
-<div id="outline-container-sec-4-1" class="outline-3">
-<h3 id="sec-4-1"><span class="section-number-3">4.1</span> I'm almost panicking …</h3>
-<div class="outline-text-3" id="text-4-1">
-<p>
-\label{Section-almost-panicking}
-</p>
-
-<p>
-… for I'm afraid something got lost, although I know this is not the
-case because I stayed away from the commands in Table
-\ref{Table:How-to-lose-changes}.
-</p>
-<p>
-\bigskip
-</p>
-
-<p>
-Here is how to see almost every change<sup><a id="fnr.9" class="footref" href="#fn.9">9</a></sup> that was ever<sup><a id="fnr.10" class="footref" href="#fn.10">10</a></sup>
-known to git:
-</p>
-<div class="org-src-container">
-
-<pre class="src src-sh">gitk --reflog --all
-<span style="color: #b22222;"># </span><span style="color: #b22222;">or</span>
-tig --reflog --all
-<span style="color: #b22222;"># </span><span style="color: #b22222;">or, without graphics,</span>
-git reflog --all --glob=<span style="color: #8b6969;">'stash*'</span>
-</pre>
-</div>
-
-<p>
-If you want to also see dropped stashes, you can use
-</p>
-<div class="org-src-container">
-
-<pre class="src src-sh">git pc panic -v
-</pre>
 </div>
 </div>
 </div>
@@ -857,7 +843,7 @@ You cannot directly commit to this branch.
 
 <p>
 The tracking branch reflects how you would like the server branch to
-look like.<sup><a id="fnr.11" class="footref" href="#fn.11">11</a></sup>
+look like.<sup><a id="fnr.12" class="footref" href="#fn.12">12</a></sup>
 </p>
 
 
@@ -883,11 +869,15 @@ If the server is still at commit B, this will result in
                \
                 o---  master
 </pre>
+<p>
+and you are done.
+</p>
 
 <p>
 However, if somebody has committed changes to the server before you
-push, you will get an error message<sup><a id="fnr.12" class="footref" href="#fn.12">12</a></sup>:
+push, you will get an error message<sup><a id="fnr.13" class="footref" href="#fn.13">13</a></sup>:
 </p>
+
 <pre class="example">
 To [...]
  ! [rejected]        master -&gt; master (fetch first)
@@ -898,20 +888,19 @@ hint: to the same ref. You may want to first integrate the remote changes
 hint: (e.g., 'git pull ...') before pushing again.
 hint: See the 'Note about fast-forwards' in 'git push --help' for details.
 </pre>
-
 <p>
-Before you can fix the problem, you need to <code>git fetch</code> to update the
+Before you can fix the problem, you need to <code>‘git fetch’</code> to update the
 remote branch:
 </p>
 <pre class="example">
---A---B---C---D---E--  origin/master
+--A---B---C---D---E---  origin/master
        \
-        X---Y--------  master
+        X---Y---------  master
 </pre>
 
 <p>
-Your task is to bring the two lines of development together, and you can
-either do this <a href="#Rebase">using rebase</a>, or <a href="#Merge">using merge</a>.
+Now your task is to bring the two lines of development together, and
+you can either do this <a href="#Rebase">using rebase</a>, or <a href="#Merge">using merge</a>.
 </p>
 </div>
 
@@ -965,10 +954,8 @@ have both in one command:
 </pre>
 </div>
 <p>
-This is equivalent to <code>git fetch; git rebase origin/master</code>, so this is
-exactly what we need<sup><a id="fnr.13" class="footref" href="#fn.13">13</a></sup>
-See also <a href="https://asciinema.org/a/dauj562l4uwr7bpyohqyewkj5">Tobi's screencast</a> where he demonstrates a variant of that
-approach.
+This is equivalent to <code>git fetch; git rebase origin/master</code>, so it is
+exactly what we need<sup><a id="fnr.14" class="footref" href="#fn.14">14</a></sup>
 </p>
 
 <p>
@@ -982,21 +969,12 @@ To push your committed changes, run
 <div class="org-src-container">
 
 <pre class="src src-sh">git pull --rebase
+<span style="color: #b22222;"># </span><span style="color: #b22222;">[test]</span>
 git push
 </pre>
 </div>
 <p>
-(possibly in connection with <code>rebase.autostash=true</code>),
-or maybe
-</p>
-<div class="org-src-container">
-
-<pre class="src src-sh">git pc pull-and-rebase
-git push
-</pre>
-</div>
-<p>
-and life will be beautiful.
+and life will be beautiful.<sup><a id="fnr.15" class="footref" href="#fn.15">15</a></sup>
 </p>
 </div>
 </div>
@@ -1017,7 +995,9 @@ tracking branch:
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh">git merge origin/master  <span style="color: #b22222;"># </span><span style="color: #b22222;">DON'T DO THIS</span>
+<pre class="src src-sh">git pull origin/master   <span style="color: #b22222;"># </span><span style="color: #b22222;">DON'T DO THIS</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">or</span>
+git merge origin/master  <span style="color: #b22222;"># </span><span style="color: #b22222;">DON'T DO THIS</span>
 </pre>
 </div>
 <p>
@@ -1028,12 +1008,14 @@ the commit you push must not be a merge of <i>origin/master</i> into
 <i>master</i>.
 </p>
 <p>
-Getting this typically right involves some temporary branch or tag and
+Getting this right typically involves some temporary branch or tag and
 a <code>git reset</code>, but as an alternative, you can use our
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh">git pc reverse-merge origin/master  <span style="color: #b22222;"># </span><span style="color: #b22222;">DO THIS INSTEAD</span>
+<pre class="src src-sh">git pc reverse-pull origin/master   <span style="color: #b22222;"># </span><span style="color: #b22222;">DO THIS INSTEAD</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">or</span>
+git pc reverse-merge origin/master  <span style="color: #b22222;"># </span><span style="color: #b22222;">DO THIS INSTEAD</span>
 </pre>
 </div>
 
@@ -1052,9 +1034,18 @@ order in which the commits appeared on the server and may thus only be
 appended to.
 </p>
 </blockquote>
+
 <p>
-If this rule is violated, tools like the GitHub SVN bridge or the
-commit emails will fail, and history will generally become misleading.
+If you violate this rule, you pretend that changes that were already on
+the server have only just appeared there due to your merge, and that
+your changes have been on the server before.
+As a consequence, tools like the GitHub SVN bridge or the commit emails
+will fail, and history will generally become misleading.
+</p>
+
+<p>
+See Appendix \ref{Section-which-way-to-merge} for a discussion of
+<i>first-parent</i> history.
 </p>
 </div>
 </div>
@@ -1066,7 +1057,7 @@ commit emails will fail, and history will generally become misleading.
 <div class="outline-text-3" id="text-5-2">
 <ul class="org-ul">
 <li>When you are working on one topic and expect more than a
-handful<sup><a id="fnr.14" class="footref" href="#fn.14">14</a></sup> of changes, consider using a <i>feature branch</i>.</li>
+handful<sup><a id="fnr.16" class="footref" href="#fn.16">16</a></sup> of changes, consider using a <i>feature branch</i>.</li>
 
 <li>When you are collaborating on a topic with somebody else and your
 changes are not yet ready for the others, use a feature branch.</li>
@@ -1099,18 +1090,23 @@ and create the branch
 
 <p>
 If that branch is long-lived, you will want to occasionally merge
-<i>master</i> into it:<sup><a id="fnr.15" class="footref" href="#fn.15">15</a></sup>
+<i>master</i> into it.<sup><a id="fnr.17" class="footref" href="#fn.17">17</a></sup>
+Say, you have this situation
+</p>
+<pre class="example">
+--A---B---C---D---E---  master
+   \
+    N---O---P---Q-----  feature
+</pre>
+<p>
 Run
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh">git fetch origin
-git stash  <span style="color: #b22222;"># </span><span style="color: #b22222;">if you have uncommitted local changes</span>
+<pre class="src src-sh">git fetch origin  <span style="color: #b22222;">#  </span><span style="color: #b22222;">update origin/master from the server</span>
+git stash         <span style="color: #b22222;"># </span><span style="color: #b22222;">if you have uncommitted local changes</span>
 </pre>
 </div>
-<p>
-to update your knowledge of the server's master branch.
-</p>
 
 <p>
 Then do
@@ -1125,12 +1121,23 @@ git merge master               <span style="color: #b22222;"># </span><span styl
 </pre>
 </div>
 <p>
+to obtain
+</p>
+<pre class="example">
+--A---B---C---D---E-----  master
+   \               \
+    N---O---P---Q---R---  feature
+</pre>
+
+
+<p>
 There are some shorter variants to this procedure. You can use our
 <code>‘git pc’</code> script like this:
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh">git pc ff-update master  <span style="color: #b22222;"># </span><span style="color: #b22222;">bring master up-to-date</span>
+<pre class="src src-sh">git fetch origin  <span style="color: #b22222;">#  </span><span style="color: #b22222;">update origin/master from the server</span>
+git pc ff-update master  <span style="color: #b22222;"># </span><span style="color: #b22222;">update master without checking it out</span>
 git merge master         <span style="color: #b22222;"># </span><span style="color: #b22222;">do the actual merge</span>
 </pre>
 </div>
@@ -1217,7 +1224,7 @@ The narrative now says:
 We have tried to merge <i>cool-new-feature</i> into master, but failed to
 push that, so we then merged that first merge into master and pushed.
 That may be more detail than we wanted (and more steps than we
-anticipated), but describes exactly what happened.
+anticipated), but describes exactly what happened:
 </p>
 
 <pre class="example">
@@ -1257,7 +1264,7 @@ branches).
 
 <p>
 Consider the situation from Sec. \ref{S-developing-on-master}, where
-you want to join your line of development with what happened n the
+you want to join your line of development with what happened on the
 server:
 </p>
 <pre class="example">
@@ -1267,11 +1274,14 @@ server:
 </pre>
 
 <p>
-It is tempting to just call (after the <code>git fetch</code>)
+It is tempting to just call
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh">git merge origin/master  <span style="color: #b22222;"># </span><span style="color: #b22222;">DON'T DO THIS</span>
+<pre class="src src-sh">git pull                 <span style="color: #b22222;"># </span><span style="color: #b22222;">DON'T DO THIS</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">or, equivalently,</span>
+git fetch
+git merge origin/master  <span style="color: #b22222;"># </span><span style="color: #b22222;">DON'T DO THIS</span>
 </pre>
 </div>
 <p>
@@ -1286,9 +1296,9 @@ which would give you the following repository structure
 This doesn't look bad, so you now push <i>master</i> to the server and get
 </p>
 <pre class="example">
---A---B---C---D---E---M----  origin/master
+--A---B---C---D---E---M-----  origin/master
        \             / \
-        X-----------Y   o--  master
+        X-----------Y   o---  master
 </pre>
 
 <p>
@@ -1296,7 +1306,7 @@ Topologically, that is exactly what we want.
 But there is more to a git repository than pure topology of the
 directed acyclic graph: there is an order in parentage.
 Y is the <i>first parent</i> of the merge commit M, while E is the <i>second
-parent</i>:<sup><a id="fnr.12.100" class="footref" href="#fn.12">12</a></sup>
+parent</i>:<sup><a id="fnr.18" class="footref" href="#fn.18">18</a></sup>
 </p>
 <pre class="example">
                     2
@@ -1315,7 +1325,7 @@ Straightening out the first-parent connection, this can be rearranged as
         C---D---E   o---  master
 </pre>
 <p>
-and indeed this is what many tools will show you.<sup><a id="fnr.16" class="footref" href="#fn.16">16</a></sup>
+and indeed this is what many tools will show you.<sup><a id="fnr.19" class="footref" href="#fn.19">19</a></sup>
 </p>
 
 <p>
@@ -1363,8 +1373,8 @@ svn: E160024: resource out of date; try updating
 So is it really wrong to merge?
 Not if you merge the right way around.
 You need to create a merge commit where the latest upstream commit (E
-in our example) is the first parent, and the tracking-branch commit (Y)
-is the second parent.
+in our example) is the <i>first parent</i>, and the tracking-branch commit
+(Y) is the <i>second parent</i>.
 </p>
 
 <p>
@@ -1373,7 +1383,10 @@ It is not very tricky, but for convenience we have a <code>git-pc</code> command
 </p>
 <div class="org-src-container">
 
-<pre class="src src-sh">git pc reverse-merge origin/master  <span style="color: #b22222;"># </span><span style="color: #b22222;">DO THIS INSTEAD</span>
+<pre class="src src-sh">git pc reverse-pull origin/master   <span style="color: #b22222;"># </span><span style="color: #b22222;">DO THIS INSTEAD</span>
+<span style="color: #b22222;"># </span><span style="color: #b22222;">or</span>
+git fetch
+git pc reverse-merge origin/master  <span style="color: #b22222;"># </span><span style="color: #b22222;">DO THIS INSTEAD</span>
 </pre>
 </div>
 <p>
@@ -1390,9 +1403,13 @@ which you can push without violating our Rule 1.
 </p>
 
 <p>
+\bigskip
+</p>
+
+<p>
 Apart from avoiding problems with the SVN bridge, merging the right way
 around will also lead to a much more meaningful history.
-Consider the following real-life example:<sup><a id="fnr.17" class="footref" href="#fn.17">17</a></sup>
+Consider the following real-life example:<sup><a id="fnr.20" class="footref" href="#fn.20">20</a></sup>
 </p>
 
 <pre>
@@ -1465,22 +1482,8 @@ other commits got pushed first.
 
 <p>
 And indeed something like this is how <code>tig</code> would have drawn the graph,
-had all of the merges been from tracking-branch into the remote branch
+had all of the merges been from tracking branch into the remote branch
 and not the other way around.
-</p>
-
-
-<p>
-\bigskip
-</p>
-
-<p>
-To summarize this section:
-</p>
-<p>
-When developing on <i>master</i>, if you cannot directly push your changes
-due to upstream commits, either use <i>rebase</i>, or use <i>git pc
-reverse-merge</i>.
 </p>
 </div>
 </div>
@@ -1494,70 +1497,72 @@ G belong to branch <i>feature</i>.
 </p></div>
 
 <div class="footdef"><sup><a id="fn.2" class="footnum" href="#fnr.2">2</a></sup> <p class="footpara">
-The first line of your commit message is a heading summarizing what
-has happened.
+The first line of your commit message is a <i>heading</i> summarizing
+what was intended, or what has happened.
 The second line is traditionally kept empty, and more details can follow
 on lines 3, 4, 5, etc. of the log message.
 </p></div>
 
 <div class="footdef"><sup><a id="fn.3" class="footnum" href="#fnr.3">3</a></sup> <p class="footpara">
-Less safe in the sense that conflicts can put you in a
-detached-head state.
+One popular counter example is <code>‘git pull [--rebase]’</code>, which is
+pretty much just a combination of <code>‘git fetch’</code> with either <code>‘git merge’</code>
+or <code>‘git rebase’</code>.
 </p></div>
 
 <div class="footdef"><sup><a id="fn.4" class="footnum" href="#fnr.4">4</a></sup> <p class="footpara">
-Or even more than one, in the case of an <i>octopus merge</i>.
-But those are somewhat exotic.
+Unless you explicitly decide otherwise.
 </p></div>
 
 <div class="footdef"><sup><a id="fn.5" class="footnum" href="#fnr.5">5</a></sup> <p class="footpara">
-But of course this is not true: you can use <code>‘git reflog’</code> and
-friends to view your original changes, see
-Sec.&nbsp;\ref{Section-almost-panicking}.
-And you will no longer be interested in the original change once
-the new version gets part of the Git narrative.
-</p></div>
-
-<div class="footdef"><sup><a id="fn.6" class="footnum" href="#fnr.6">6</a></sup> <p class="footpara">
 There are corner cases where other git commands (like
 <code>git stash --include-untracked</code>) call <code>git clean</code>, which can in
 principle <a href="http://blog.icefusion.co.uk/git-stash-can-delete-ignored-files-git-stash-u/">lead to data loss</a>.
 However, this should only concern files that match your <code>.gitignore</code>
 patterns, and if that is the case for any file you care about, you have
-been asking for trouble beforehand.
+been asking for trouble.
 </p></div>
 
-<div class="footdef"><sup><a id="fn.7" class="footnum" href="#fnr.7">7</a></sup> <p class="footpara">
-Unless you explicitly decide otherwise.
-</p></div>
-
-<div class="footdef"><sup><a id="fn.8" class="footnum" href="#fnr.8">8</a></sup> <p class="footpara">
+<div class="footdef"><sup><a id="fn.6" class="footnum" href="#fnr.6">6</a></sup> <p class="footpara">
 Leaving important Git commits dangling (≈ unused) for more than two
 weeks counts as insisting on data loss.
 </p></div>
 
-<div class="footdef"><sup><a id="fn.9" class="footnum" href="#fnr.9">9</a></sup> <p class="footpara">
+<div class="footdef"><sup><a id="fn.7" class="footnum" href="#fnr.7">7</a></sup> <p class="footpara">
 This will not show dropped stashes or stashes older than the last
 one (but those are still accessible).
 </p></div>
 
-<div class="footdef"><sup><a id="fn.10" class="footnum" href="#fnr.10">10</a></sup> <p class="footpara">
+<div class="footdef"><sup><a id="fn.8" class="footnum" href="#fnr.8">8</a></sup> <p class="footpara">
 Redefining “ever” = “in the last two weeks” for dangling commits.
 </p></div>
 
+<div class="footdef"><sup><a id="fn.9" class="footnum" href="#fnr.9">9</a></sup> <p class="footpara">
+This is of course not true: you can use <code>‘git reflog’</code> and friends
+to view your original changes, see
+Sec.&nbsp;\ref{Section-almost-panicking}.
+</p></div>
+
+<div class="footdef"><sup><a id="fn.10" class="footnum" href="#fnr.10">10</a></sup> <p class="footpara">
+Less safe in the sense that conflicts can put you in a
+detached-head state.
+</p></div>
+
 <div class="footdef"><sup><a id="fn.11" class="footnum" href="#fnr.11">11</a></sup> <p class="footpara">
+Or even more than one, in the case of an <i>octopus merge</i>.
+But those are somewhat exotic.
+</p></div>
+
+<div class="footdef"><sup><a id="fn.12" class="footnum" href="#fnr.12">12</a></sup> <p class="footpara">
 And if that is not compatible with the server's latest history, you
 modify the tracking branch until it is.
 </p></div>
 
-<div class="footdef"><sup><a id="fn.12" class="footnum" href="#fnr.12">12</a></sup> <p class="footpara">
-My notation in the graph is adopted from
-<a href="http://git-blame.blogspot.de/2015/03/fun-with-non-fast-forward.html">Junio Hamano's Blog</a>.
-Another good discussion on the importance of first-parent history can
-be found on the <a href="http://devblog.nestoria.com/post/98892582763/maintaining-a-consistent-linear-history-for-git">Nestoria Dev Blog</a>.
+<div class="footdef"><sup><a id="fn.13" class="footnum" href="#fnr.13">13</a></sup> <p class="footpara">
+Do you see the ellipses in the suggested '<code>git pull ...</code>' command?
+Git did <i>not</i> say you should run just <code>‘git pull’</code> without any arguments.
 </p></div>
 
-<div class="footdef"><sup><a id="fn.13" class="footnum" href="#fnr.13">13</a></sup> <p class="footpara">
+<div class="footdef"><sup><a id="fn.14" class="footnum" href="#fnr.14">14</a></sup> <p class="footpara">
 You can even set the <code>--rebase</code> option via your git configuration,
 using<br  />
 \noindent\qquad\qquad  <code>git config --global branch.master.rebase true</code><br  />
@@ -1567,31 +1572,57 @@ and henceforth when you type <code>‘git pull’</code>, you will in fact do
 </p>
 
 <p class="footpara">
-However, I recommend against using these options, because tacitly changing
-the behaviour of commands is a great source of confusion.
+However, tacitly changing the behaviour of commands is a great source of
+confusion.
 Sooner or later you will work on a system where you have not set these
 flags (e.g. because you forgot, or you are helping somebody else).
 Without thinking twice, you will type <code>‘git pull’</code>, then <code>‘git push’</code>,
 and, voilà: after half year of disciplined commits by everybody, you
 managed to break the SVN bridge again.
+</p>
+
+<p class="footpara">
+Thus, it is better to just get into the habit of always using <code>git pull</code>
+with the <code>--rebase</code> flag.
 </p></div>
 
-<div class="footdef"><sup><a id="fn.14" class="footnum" href="#fnr.14">14</a></sup> <p class="footpara">
+<div class="footdef"><sup><a id="fn.15" class="footnum" href="#fnr.15">15</a></sup> <p class="footpara">
+If you happen to have uncommitted changes when you want to
+<code>‘git pull --rebase’</code>, Git will refuse to do anything before you have
+stashed them away.
+With Git \(\ge\) 2.6, you can configure <code>rebase.autostash=true</code> to have git
+automatically stash away your uncommitted changes and restore them after
+the pull.
+For older versions of Git, you get the same functionality with
+<code>‘git pc pull-and-rebase’</code>, i.e.<br  />
+\noindent\qquad\qquad  <code>git pc pull-and-rebase</code><br  />
+\noindent\qquad\qquad  <code># [test]</code><br  />
+\noindent\qquad\qquad  <code>git push</code>
+</p></div>
+
+<div class="footdef"><sup><a id="fn.16" class="footnum" href="#fnr.16">16</a></sup> <p class="footpara">
 Even just two or three commits may be enough to go for a feature
 branch if that improves the narrative.
 </p></div>
 
-<div class="footdef"><sup><a id="fn.15" class="footnum" href="#fnr.15">15</a></sup> <p class="footpara">
+<div class="footdef"><sup><a id="fn.17" class="footnum" href="#fnr.17">17</a></sup> <p class="footpara">
 This does <i>not</i> violate our rule
 `<a href="#sec-5-1">don't merge upstream into your local tracking branch</a>'.
 </p></div>
 
-<div class="footdef"><sup><a id="fn.16" class="footnum" href="#fnr.16">16</a></sup> <p class="footpara">
+<div class="footdef"><sup><a id="fn.18" class="footnum" href="#fnr.18">18</a></sup> <p class="footpara">
+My notation in the graph is adopted from
+<a href="http://git-blame.blogspot.de/2015/03/fun-with-non-fast-forward.html">Junio Hamano's Blog</a>.
+Another good discussion on the importance of first-parent history can
+be found on the <a href="http://devblog.nestoria.com/post/98892582763/maintaining-a-consistent-linear-history-for-git">Nestoria Dev Blog</a>.
+</p></div>
+
+<div class="footdef"><sup><a id="fn.19" class="footnum" href="#fnr.19">19</a></sup> <p class="footpara">
 Including the <a href="https://github.com/pencil-code/pencil-code/network">GitHub network graph</a>, gitk (to some extent) and the
 GitHub SVN bridge.
 </p></div>
 
-<div class="footdef"><sup><a id="fn.17" class="footnum" href="#fnr.17">17</a></sup> <p class="footpara">
+<div class="footdef"><sup><a id="fn.20" class="footnum" href="#fnr.20">20</a></sup> <p class="footpara">
 The output was obtained using <code>tig</code> on the Pencil Code repository,
 removing many commits, shortening and mildly anonymizing the commits.
 </p></div>
@@ -1601,8 +1632,8 @@ removing many commits, shortening and mildly anonymizing the commits.
 </div></div>
 <div id="postamble" class="status">
 <p class="author">Author: Wolfgang Dobler</p>
-<p class="date">Created: 2015-10-22 Thu 23:15</p>
-<p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.3.1 (<a href="http://orgmode.org">Org</a> mode 8.3beta)</p>
+<p class="date">Created: 2016-06-05 Sun 14:01</p>
+<p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode 8.3beta)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>
