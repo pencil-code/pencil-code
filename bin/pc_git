@@ -782,7 +782,7 @@ class UnrecordedChanges(object):
 
     def _commit(self, message):
         git([
-            'commit', '--allow-empty',
+            'commit', '--allow-empty', '--no-verify',
             '--message', message
             ])
 
