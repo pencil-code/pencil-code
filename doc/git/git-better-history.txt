@@ -1,0 +1,22 @@
+  A   o          add new time step calculation for slope limited diffusion
+  B   o          Added comments about which line will not work
+  C   M─┐        Merge one commit into master
+  D   o │        Revised data to account for correction to chi-therm
+  B   o │        Lets see if the new IO modules work everywhere as expected...
+  D   M─│─┐      Third try at merging equilibrium in to master
+  B   o │ │      We explicitly want to allow missing namelists
+  D   │ │ M─┐    Second try at merging hydrostatic equilibrium into master
+  A   o─│─┘ │    fixed some errors
+  D   │ │   M─┐  First try at merging hydrostatic equilibrium into master
+  A   o─│───┘ │  removed some doubling of some subroutine
+  A   o │     │  more on slope limited diffusion
+  E   M─│─┐   │  Merge current helicity tensor into master
+  F   o │ │   │  added Hill vortex rain as forcing
+  B   M─│─│─┐ │  Merge fix for last broken autotest
+  B   │ │ │ o │  Finally fixed the last still broken autotest
+  A   o │ │ │ │  More correction and additions for the slope limited diffusion,
+  B   o─│─│─┘ │  Removed "array temporaries", see also 2a73f3cea323
+  G   o │ │   │  added a phase to enforced vertical shear profile;
+  E   │ │ o   │  Adding components of the current helicity tensor.
+  D   │ │ │   o  thermo hydrostatic equilibrium ISM still under construction
+  C   │ o │   │  pc_meanfield_collect: Fixed some bugs and removed line writes
