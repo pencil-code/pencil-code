@@ -92,6 +92,9 @@ module Io
       if (lroot) call svn_id("$Id$")
       ldistribute_persist = .true.
 !
+      if (lread_from_other_prec) &
+        call warning('register_io','Reading from other precision not implemented')
+
     endsubroutine register_io
 !***********************************************************************
     subroutine directory_names

@@ -1154,6 +1154,8 @@ module Io
 
       open(lun_input,FILE=trim(directory)//'/'//file,FORM='unformatted',status='old')
 
+      lotherprec=.false.
+
       if (lread_from_other_prec) then
 
         datasize = 3*(mx+my+mz) + 10
@@ -1180,12 +1182,13 @@ module Io
             dx_tilde=dx_tildesg; dy_tilde=dy_tildesg; dz_tilde=dz_tildesg
           endif
         endif
-      else
-        call input_grid(x,y,z,dx,dy,dz,Lx,Ly,Lz,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde)
       endif
+      if (.not.lotherprec) &
+        call input_grid(x,y,z,dx,dy,dz,Lx,Ly,Lz,dx_1,dy_1,dz_1,dx_tilde,dy_tilde,dz_tilde)
+      
       close(lun_input)
 !
-      if (lread_from_other_prec.and.lotherprec) call wgrid(file)         ! perhaps not necessary
+      if (lotherprec) call wgrid(file)         ! perhaps not necessary
 !
 !  Find minimum/maximum grid spacing. Note that
 !    minval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) > 1) )
@@ -1197,7 +1200,7 @@ module Io
       dxmax = maxval( (/dx,dy,dz,epsilon(dx)/), &
                 MASK=((/nxgrid,nygrid,nzgrid,2/) > 1) )
 !
-!  Fill pencil with maximum gridspacing. Will be overwritten
+!  Fill pencil with minimum/maximum gridspacing. Will be overwritten
 !  during the mn loop in the non equidistant case
 !
       dxmax_pencil = dxmax
@@ -1213,7 +1216,7 @@ module Io
 !
 !  should stop if dxmin=0
 !
-      if (dxmin==0) call fatal_error("rgrid", "check Lx,Ly,Lz: is one of them 0?")
+      if (dxmin==0) call fatal_error("rgrid", "check dx,dy,dz: is one of them 0?")
 !
     endsubroutine rgrid
 !***********************************************************************

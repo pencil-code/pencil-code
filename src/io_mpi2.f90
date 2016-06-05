@@ -24,7 +24,7 @@ module Io
 !
   use Cdata
   use Cparam, only: intlen, fnlen, max_int
-  use Messages, only: fatal_error, svn_id
+  use Messages, only: fatal_error, svn_id, warning
   use General, only: delete_file
 !
   implicit none
@@ -73,7 +73,7 @@ module Io
 !
   contains
 !***********************************************************************
-    subroutine register_io()
+    subroutine register_io
 !
 !  dummy routine, generates separate directory for each processor.
 !  VAR#-files are written to the directory directory_snap which will
@@ -135,9 +135,12 @@ module Io
       global_start(3) = ipz*nz + local_start(3)
       global_start(4) = 0
 !
+      if (lread_from_other_prec) &
+        call warning('register_io','Reading from other precision not implemented')
+
     endsubroutine register_io
 !***********************************************************************
-    subroutine directory_names()
+    subroutine directory_names
 !
 !  Set up the directory names:
 !  set directory name for the output (one subdirectory for each processor)
@@ -331,7 +334,7 @@ module Io
 !
     endsubroutine output_snap
 !***********************************************************************
-    subroutine output_snap_finalize()
+    subroutine output_snap_finalize
 !
 !  Close snapshot file.
 !
@@ -424,7 +427,7 @@ module Io
 !
     endsubroutine input_snap
 !***********************************************************************
-    subroutine input_snap_finalize()
+    subroutine input_snap_finalize
 !
 !  Close snapshot file.
 !
@@ -1127,7 +1130,7 @@ module Io
       real, dimension (mx,my,mz,nv) :: a
 !
       call output_snap (a, nv, file, 0)
-      call output_snap_finalize ()
+      call output_snap_finalize
 !
     endsubroutine output_globals
 !***********************************************************************
@@ -1142,7 +1145,7 @@ module Io
       real, dimension (mx,my,mz,nv) :: a
 !
       call input_snap (file, a, nv, 0)
-      call input_snap_finalize ()
+      call input_snap_finalize
 !
     endsubroutine input_globals
 !***********************************************************************
@@ -1168,7 +1171,7 @@ module Io
       endif
 !
       if (lcopysnapshots_exp) then
-        call mpibarrier ()
+        call mpibarrier
         if (lroot) then
           open (lun_output,FILE=trim (datadir)//'/move-me.list', POSITION='append')
           write (lun_output,'(A)') trim (fpart)

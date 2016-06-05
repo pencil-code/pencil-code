@@ -36,7 +36,7 @@ module Io
 !
   use Cdata
   use Cparam, only: intlen, fnlen, max_int
-  use Messages, only: fatal_error, svn_id
+  use Messages, only: fatal_error, svn_id, warning
 !
   implicit none
 !
@@ -89,6 +89,8 @@ module Io
       if (lroot) call svn_id ("$Id$")
       if (ldistribute_persist) &
           call fatal_error ('io_collect_xy_stream', "Distibuted persistent variables are fatal with this IO method!")
+      if (lread_from_other_prec) &
+        call warning('register_io','Reading from other precision not implemented')
 !
     endsubroutine register_io
 !***********************************************************************
