@@ -726,14 +726,26 @@ class UnrecordedChanges(object):
     would end up in separate commit that is not returned by the stash
     command.
 
-    Creating an UnrecordedChanges object removes the unrecorded changes
-    from the file tree, and the index.
-    It creates a detached commit (which is not stored anywhere in the
-    ref namespace).
+    Normally, creating an UnrecordedChanges object removes the unrecorded
+    changes from the file tree, and the index.
+    It creates a detached commit (which is not stored
+    anywhere in the ref namespace).
 
     """
 
     def __init__(self, reset=False):
+        """Store away any unrecorded changes.
+
+        Parameters
+        ----------
+
+        reset : bool
+               If True, reset head, index and file system to the last head
+               commit, i.e. all changes are discarded, but stored as
+               detached commits.
+               If False, head, index and file system remain untouched.
+
+        """
         self.reset = reset
 
         if git_outputs(['status', '--porcelain']):
@@ -778,6 +790,10 @@ class UnrecordedChanges(object):
             git(['reset', '--soft', head])
 
     def restore(self):
+        """Restore any changes that were stored away with the
+        UnrecordedChanges() constructor, and remove the tag we set there.
+
+        """
         if self.reset:
             new_head = git_head()
 
@@ -789,6 +805,9 @@ class UnrecordedChanges(object):
 
             git(['reset', '--mixed', new_index])
             git(['reset', '--soft', new_head])
+        else:
+            # Nothing to restore
+            pass
 
         git(['tag', '-d', self.tag])
 
