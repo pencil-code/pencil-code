@@ -756,17 +756,22 @@ class UnrecordedChanges(object):
         head = git_head()
 
         # Commit changes in the index
-        self._commit('Changes already in the index')
+        if self._index_dirty():
+            self._commit('Changes already in the index')
         self.index = git_head()
 
         # Add changes to tracked files
-        git(['add', '--update'])
-        self._commit('Changes to tracked files')
+        if self._untracked_changes():
+            git(['add', '--update'])
+            self._commit('Changes to tracked files')
         self.tracked = git_head()
 
         # Add untracked files
-        git(['add', '--all'])
-        self._commit('Untracked files')
+        if self._untracked_files():
+            git(['add', '--all'])
+            # Untracked files may be huge, so add a warning to the commit
+            # message:
+            self._commit('Untracked files [DON\'T PUSH!]')
         self.untracked = git_head()
         self.tip = self.untracked
 
@@ -785,6 +790,22 @@ class UnrecordedChanges(object):
             'commit', '--allow-empty', '--no-verify',
             '--message', message
             ])
+
+    def _index_dirty(self):
+        return not git(['diff', '--cached', '--quiet'], catch_errors=True)
+
+    def _untracked_changes(self):
+        return not git(['diff', '--quiet'], catch_errors=True)
+
+    def _untracked_files(self):
+        git_cmd = [
+            'ls-files', '--other', '--exclude-standard', '--directory'
+            ]
+        if git_output(git_cmd):
+            return True
+        else:
+            return False
+
 
     def restore(self):
         """Restore any changes that were stored away with the
