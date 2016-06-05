@@ -77,8 +77,7 @@ git pull origin/master   # DON'T!
 # or
 git merge origin/master  # DON'T!
 \end{lstlisting}
-because that breaks the SVN bridge and makes it quite difficult to
-understand the history of commits.
+because that makes it quite difficult to understand the history of commits.
 
 Instead, merge your changes into upstream, either manually or
 using
@@ -572,8 +571,7 @@ confusion.
 Sooner or later you will work on a system where you have not set these
 flags (e.g. because you forgot, or you are helping somebody else).
 Without thinking twice, you will type \texttt{‘git pull’}, then \texttt{‘git push’},
-and, voilà: after half year of disciplined commits by everybody, you
-managed to break the SVN bridge again.
+and, voilà: you did something that you might not have intended.
 
 Thus, it is better to just get into the habit of always using \texttt{git pull}
 with the \texttt{-{}-rebase} flag.}
@@ -650,8 +648,8 @@ appended to.
 If you violate this rule, you pretend that changes that were already on
 the server have only just appeared there due to your merge, and that
 your changes have been on the server before.
-As a consequence, tools like the GitHub SVN bridge or the commit emails
-will fail, and history will generally become misleading.
+As a consequence, tools like the GitHub the commit emails will fail,
+and history will generally become misleading.
 
 See Appendix \ref{Section-which-way-to-merge} for a discussion of
 \emph{first-parent} history.
@@ -887,17 +885,6 @@ to
 --A---B---X---Y---M-----
 \end{verbatim}
 
-If the SVN bridge has to rely on first-parent lineage between commits to
-create its linear history, such a reinterpretation leads to a new SVN
-repository structure that is not compatible with what we had before.
-Hence, it is not surprising that such merges cause troubles with the SVN
-bridge:
-\begin{verbatim}
-$ svn commit <file>
-svn: E160024: Transmission failed (Details follow):
-svn: E160024: resource out of date; try updating
-\end{verbatim}
-
 
 \bigskip
 
@@ -927,8 +914,7 @@ which you can push without violating our Rule 1.
 
 \bigskip
 
-Apart from avoiding problems with the SVN bridge, merging the right way
-around will also lead to a much more meaningful history.
+Merging the right way around will also lead to a much more meaningful history.
 Consider the following real-life example:\footnote{The output was obtained using \texttt{tig} on the Pencil Code repository,
 removing many commits, shortening and mildly anonymizing the commits.}
 
