@@ -3,7 +3,7 @@ $Id$
 1. You are not supposed to compile in this src directory.
 
 2. You should always compile from the run directory
-   (e.g. creacted via pc_newrun by cloning an earlier run).
+   (e.g. created via pc_newrun by cloning an earlier run).
    This src directory appears then as a link in you run directory.
    The pc_setupsrc produces a file Makefile in your run directory.
 
@@ -25,7 +25,7 @@ $Id$
 
 5. Some confusion may occur because not all modules are equally
    frequently used, and some are more outdated and/or not recommended.
-   The following gives a brief status decription.
+   The following gives a brief status description.
    Experimental files are supposed to be in the experimental directory.
    Obsolete files that may still be useful for inspection are in obsolete.
    Modules that still work, but are not used, are in inactive.
@@ -52,6 +52,8 @@ The EOS module
 but chemistry.f90 can also be used with eos_idealgas.f90.
 "eos_ionization" calculates the degree of ionization from the Saha equation,
 "eos_fixed_ionization" is similar, but uses a fixed degree of ionization.
+With ionization, it is advantageous to use eos_temperature_ionization.f90
+together with temperature_ionization.f90.
 
 The testfield module
 --------------------
@@ -67,7 +69,7 @@ if one wants the velocity field to be affected by the magnetic field.
 
        6-sep-09: is not currently used, but functional and would need to be
        checked and updated. It is used for testfields that depend on
-       x and z, so avering over y is assumed.
+       x and z, so averaging over y is assumed.
 
      testfield_x.f90
 
@@ -126,8 +128,9 @@ merged into the main trunk.
 The coagulation module
 ----------------------
 
-This module is not currently used for production runs. 2 of 3 samples in 0D
-work, but one requires the small pencil check to be turned off.
+This module is not usually used for production runs. 2 of 3 samples in 0D
+work, but one requires the small pencil check to be turned off. The latest
+study was by Li et al. (arXiv:1604.08169).
 
 Upwinding
 ---------
