@@ -828,7 +828,7 @@ module Particles_radius
             ix0=ineargrid(k,1)
             ix=ix0-nghost
             if (lsupersat) then
-                dapdt=f(ix,m,n,icc)/fp(k,iap)
+                dapdt=f(ix,m,n,issat)/fp(k,iap)
                 dfp(k,iap)=dfp(k,iap)+dapdt
             endif
       enddo

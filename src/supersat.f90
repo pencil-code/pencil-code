@@ -49,7 +49,8 @@ module Supersat
 !
 ! Declare index of new variables in f array
 !
-  integer :: issat=0
+!  integer :: issat=0
+! XY: type of "issat" is defined in "cdata.f90"
 !
 !  Diagnostics variables
 !
@@ -211,7 +212,6 @@ module Supersat
 !        endif
 ! 1-June-16/XY coded: to be completed 
          if (lsupersat_sink) then
-                print*,"XY" 
                  if (Rsupersat_sink==0) then
                     bump=-f(l1:l2,m,n,issat)/tau
                   else
