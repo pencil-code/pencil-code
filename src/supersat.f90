@@ -67,7 +67,9 @@ module Supersat
       use FArrayManager
 !
       call farray_register_pde('ssat', issat)
-      issat = 0                 ! needed for idl
+!NILS: issat is given a value in farray_register_pde, then it can not be
+!NILS: set to zero right below. I have therefore commented out this line.
+!      issat = 0                 ! needed for idl
 !
 !  Identify version number.
 !
