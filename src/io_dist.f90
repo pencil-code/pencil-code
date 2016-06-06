@@ -1109,7 +1109,7 @@ module Io
       real(KIND=rkind8), dimension (mz),intent(OUT) :: z,dz_1,dz_tilde
 !
       integer :: io_err
-      real(KIND=rkind8) :: t_sp   ! t in single precision for backwards compatibility
+      real(KIND=rkind8) :: t_sp   ! t in double precision for backwards compatibility
 !
       read(lun_input) t_sp,x,y,z,dx,dy,dz
       read(lun_input) dx,dy,dz
@@ -1136,7 +1136,8 @@ module Io
 !  28-oct-13/MR  : added overwriting of grid.dat if restart from different precision
 !   3-mar-15/MR  : calculation of d[xyz]2_bound added: contain twice the distances of
 !                  three neighbouring points from the boundary point
-!  15-apr-15/MR  : automatic detection of precision added
+!  15-apr-15/MR  : automatic detection of precision added; doesn't work for old files 
+!                  which don't contain Lx, Ly, Lz etc.
 !
       use General, only: file_size
 !
@@ -1159,7 +1160,7 @@ module Io
       if (lread_from_other_prec) then
 
         datasize = 3*(mx+my+mz) + 10
-        filesize = file_size(trim(directory)//'/'//file) - 8*nrec
+        filesize = file_size(trim(directory)//'/'//file) - 8*nrec    ! length without record marker
 !
         if (kind(x)==rkind4) then
           lotherprec = filesize/=4*datasize
