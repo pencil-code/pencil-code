@@ -89,6 +89,17 @@ module Supersat
 !
     endsubroutine calc_pencils_supersat
 !***********************************************************************
+    subroutine init_ssat(f)
+!
+!  Initialise energy; called from start.f90.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine init_ssat
+!***********************************************************************
+
     subroutine dssat_dt(f,df,p)
 !
 !  Passive scalar evolution.
