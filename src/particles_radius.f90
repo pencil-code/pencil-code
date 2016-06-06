@@ -437,8 +437,7 @@ module Particles_radius
         endif
       endif
       if(lsupersat_par) then 
-        lpenc_requested(i_cc)=.true.
-        lpenc_requested(i_cc1)=.true. 
+        lpenc_requested(i_ssat)=.true. 
       endif
 !
     endsubroutine pencil_criteria_par_radius
@@ -828,6 +827,7 @@ module Particles_radius
             ix0=ineargrid(k,1)
             ix=ix0-nghost
             if (lsupersat) then
+                    !print*,"issat=",issat
                 dapdt=f(ix,m,n,issat)/fp(k,iap)
                 dfp(k,iap)=dfp(k,iap)+dapdt
             endif
