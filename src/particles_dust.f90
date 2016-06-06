@@ -174,9 +174,11 @@ module Particles
       tausg_min, l_hole, m_hole, n_hole, &
       epsp_friction_increase,lcollisional_dragforce_cooling, ldragforce_heat, &
       lcollisional_heat, lcompensate_friction_increase, &
-      lmigration_real_check, ldraglaw_epstein,ldraglaw_simple,ldraglaw_epstein_stokes_linear, &
+      lmigration_real_check, ldraglaw_epstein,ldraglaw_simple, &
+      ldraglaw_epstein_stokes_linear, &
       mean_free_path_gas, ldraglaw_epstein_transonic, lcheck_exact_frontier, &
-      ldraglaw_eps_stk_transonic, dustdensity_powerlaw, rad_sphere, pos_sphere, ldragforce_stiff, &
+      ldraglaw_eps_stk_transonic, dustdensity_powerlaw, rad_sphere, pos_sphere, &
+      ldragforce_stiff, &
       a_ellipsoid, b_ellipsoid, c_ellipsoid, pos_ellipsoid, &
       ldraglaw_steadystate, tstart_liftforce_par, &
       ldraglaw_purestokes,rpbeta_species, rpbeta, gab_width, & 
@@ -194,8 +196,9 @@ module Particles
       yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
       xp3, yp3, zp3, vpx3, vpy3, vpz3, lsinkparticle_1, rsinkparticle_1, &
       lcalc_uup, temp_grad0, thermophoretic_eq, cond_ratio, interp_pol_gradTT, &
-      lreassign_strat_rhom, lparticlemesh_pqs_assignment, lwithhold_init_particles, &
-      frac_init_particles, lvector_gravity, birthring_r, birthring_width, lgaussian_birthring
+      lreassign_strat_rhom, lparticlemesh_pqs_assignment, &
+      lwithhold_init_particles, frac_init_particles, lvector_gravity, &
+      birthring_r, birthring_width, lgaussian_birthring
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -211,7 +214,8 @@ module Particles
       tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
       tstart_collisional_cooling, tausg_min, epsp_friction_increase, &
       ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
-      lmigration_real_check,ldraglaw_variable, luse_tau_ap, ldraglaw_epstein, ldraglaw_simple,&
+      lmigration_real_check,ldraglaw_variable, luse_tau_ap, &
+      ldraglaw_epstein, ldraglaw_simple,&
       ldraglaw_epstein_stokes_linear, mean_free_path_gas, &
       ldraglaw_epstein_transonic, lcheck_exact_frontier, &
       ldraglaw_eps_stk_transonic, ldragforce_stiff, &
@@ -223,20 +227,25 @@ module Particles
       interp_pol_pp,interp_pol_species, &
       brownian_T0,thermophoretic_T0, lnostore_uu, ldt_grav_par, &
       ldragforce_radialonly, lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, &
-      rsinkpoint, lshear_accel_par, lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, &
+      rsinkpoint, lshear_accel_par, lcoriolis_force_par, &
+      lcentrifugal_force_par, ldt_adv_par, &
       linsert_particles_continuously, particles_insert_rate, &
-      max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, &
+      max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, &
+      lnocalc_rhop, &
       np_const, rhop_const, particle_radius, lprecalc_cell_volumes, &
-      Deltauy_gas_friction, loutput_psize_dist, log_ap_min_dist, log_ap_max_dist, &
-      nbin_ap_dist, lsinkparticle_1, rsinkparticle_1, lthermophoretic_forces, temp_grad0, &
+      Deltauy_gas_friction, loutput_psize_dist, log_ap_min_dist, &
+      log_ap_max_dist, nbin_ap_dist, lsinkparticle_1, rsinkparticle_1, &
+      lthermophoretic_forces, temp_grad0, &
       thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, &
       lcommunicate_np, lcylindrical_gravity_par, lignore_rhop_swarm, &
       l_shell, k_shell, lparticlemesh_pqs_assignment, pscalar_sink_rate, &
       lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw,lbubble, &
-      rpbeta_species, rpbeta, gab_width, initxxp, initvvp, particles_insert_ramp_time, &
-      particles_insert_ramp_time, tstart_insert_particles, birthring_r, birthring_width, &
-      lgaussian_birthring, tstart_rpbeta, linsert_as_many_as_possible, lvector_gravity, &
-      lcompensate_sedimentation,compensate_sedimentation, lpeh_radius
+      rpbeta_species, rpbeta, gab_width, initxxp, initvvp, &
+      particles_insert_ramp_time, tstart_insert_particles, birthring_r, &
+      birthring_width, &
+      lgaussian_birthring, tstart_rpbeta, linsert_as_many_as_possible, &
+      lvector_gravity, lcompensate_sedimentation,compensate_sedimentation, &
+      lpeh_radius
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
