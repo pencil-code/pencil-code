@@ -497,8 +497,11 @@ If the server is still at commit B, this will result in
 and you are done.
 
 However, if somebody has committed changes to the server before you
-push, you will get an error message\footnote{Do you see the ellipses in the suggested '\texttt{git pull ...}' command?
-Git did \emph{not} say you should run just \texttt{‘git pull’} without any arguments.}:
+push, you will get an error message\footnote{Do you see the ellipses in the
+suggested \texttt{'git pull ...'} command? Git did \emph{not} say you should
+run just \texttt{‘git pull’} without any arguments. If you accidentally
+\emph{do} happen to run \texttt{'git pull'} without arguments, then you can
+undo this by running \texttt{'git reset -{}-merge HEAD$\sim$1'}}:
 
 {\small
 \begin{verbatim}
