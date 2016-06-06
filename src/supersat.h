@@ -6,10 +6,8 @@
 
   public :: read_supersat_init_pars, write_supersat_init_pars
   public :: read_supersat_run_pars,  write_supersat_run_pars
-  public :: rprint_supersat !, get_slices_supersat
+  public :: rprint_supersat 
   public :: dssat_dt
-  !public :: init_ssat
+  public :: init_ssat
   public :: pencil_criteria_supersat, pencil_interdep_supersat
-  !public :: calc_pencils_supersat
-  !public :: supersat_after_boundary
-  !public :: calc_msupersat
+  public :: calc_pencils_supersat
