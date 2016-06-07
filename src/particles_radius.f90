@@ -438,6 +438,7 @@ module Particles_radius
       endif
       if(lsupersat_par) then 
         lpenc_requested(i_ssat)=.true. 
+        lpenc_requested(i_ugssat)=.true. 
       endif
 !
     endsubroutine pencil_criteria_par_radius
