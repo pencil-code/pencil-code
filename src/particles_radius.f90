@@ -837,7 +837,6 @@ module Particles_radius
           dfp(k,iap)=dfp(k,iap)+dapdt
         endif
       enddo
-    endif
 !
     endsubroutine dap_dt_supersat_pencil
 !***********************************************************************
