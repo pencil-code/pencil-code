@@ -436,7 +436,7 @@ module Particles_radius
           lpenc_requested(i_TT1)=.true.
         endif
       endif
-      if(lsupersat_par) then 
+      if (lsupersat.and.lsupersat_par) then 
         lpenc_requested(i_ssat)=.true. 
         lpenc_requested(i_ugssat)=.true. 
       endif
@@ -803,10 +803,12 @@ module Particles_radius
 !
     endsubroutine dap_dt_condensation_pencil
 !***********************************************************************
-!growth by condesation in a passive scalar field
-!28-may-16/Xiang-Yu: coded
     subroutine dap_dt_supersat_pencil(f,df,fp,dfp,p,ineargrid)
-
+!
+!  Growth by condesation in a passive scalar field
+!
+!  28-may-16/Xiang-Yu: coded
+!
       use EquationOfState, only: gamma
       use Particles_number
 !
@@ -816,25 +818,27 @@ module Particles_radius
       real, dimension (mpar_loc,mpvar) :: dfp
       type (pencil_case) :: p
       integer, dimension (mpar_loc,3) :: ineargrid
-      
+!
       real :: dapdt
       integer :: k,k1,k2,ix,ix0
 !
       intent (in) :: f, fp
       intent (inout) :: dfp
-!      
-      
+!
+!AB:  At the moment, dapdt grows only if lsupersat=T.
+!AB:  But we want the previous option should still to work.
+!
       do k=k1_imn(imn),k2_imn(imn)
-            ix0=ineargrid(k,1)
-            ix=ix0-nghost
-            if (lsupersat) then
-                    !print*,"issat=",issat
-                dapdt=f(ix,m,n,issat)/fp(k,iap)
-                dfp(k,iap)=dfp(k,iap)+dapdt
-            endif
+        ix0=ineargrid(k,1)
+        ix=ix0-nghost
+        if (lsupersat) then
+          !print*,"issat=",issat
+          dapdt=f(ix,m,n,issat)/fp(k,iap)
+          dfp(k,iap)=dfp(k,iap)+dapdt
+        endif
       enddo
-
-      call keep_compiler_quiet(f)
+    endif
+!
     endsubroutine dap_dt_supersat_pencil
 !***********************************************************************
     subroutine dap_dt(f,df,fp,dfp,ineargrid)
