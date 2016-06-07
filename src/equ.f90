@@ -573,7 +573,7 @@ module Equ
 !
 !  Supersaturation evolution
         
-        if (lsupersat) call dlncc_dt(f,df,p)
+        if (lsupersat) call dssat_dt(f,df,p)
 !
 !  Dust evolution
 !
