@@ -49,7 +49,7 @@ module Hydro
   real, dimension (mz,3) :: uumz
   real, dimension (nz,3) :: guumz=0.0
   real, dimension (mx,3) :: uumx=0.0
-  real, dimension (mx,my,3) :: uumxy=0.0
+  real, dimension (:,:,:), allocatable :: uumxy
   real, dimension (mx,mz,3) :: uumxz=0.0
   real, target, dimension (nx,ny) :: divu_xy3,divu_xy4,u2_xy3,u2_xy4,mach_xy4
   real, target, dimension (nx,ny) :: o2_xy3,o2_xy4,mach_xy3
@@ -675,15 +675,17 @@ module Hydro
 !  26-mar-10/axel: lreinitialize_uu added
 !  23-dec-15/MR: Cartesian vector Omegav intro'd; ltime_integrals set; rotation 
 !                of \vec{Omega} on Yang grid added.
+!   7-jun.16/MR: modifications for calculation of z average on Yin-Yang grid, not yet operational
 ! 
       use BorderProfiles, only: request_border_driving
       use Initcond
       use SharedVariables, only: put_shared_variable,get_shared_variable
       use Sub, only: step, erfunc, register_report_aux
+      use Yinyang_mpi, only: initialize_zaver_yy
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mz) :: c, s
-      integer :: j
+      integer :: j,myl,nycap
 !
 ! set the right point in profile to unity.
 !
@@ -960,6 +962,16 @@ module Hydro
         else
           call fatal_error('initialize_hydro', 'phi /= 0. not allowed for Yin-Yang grid')
         endif
+      endif
+!
+      if (lcalc_uumeanxy) then
+        myl=my
+        if (lyinyang) then
+          call fatal_error('initialize_hydro','Calculation of z average not implmented for Yin-Yang')
+          call initialize_zaver_yy(myl,nycap)
+        endif
+        allocate(uumxy(mx,myl,3))
+        uumxy=0.0
       endif
 !
       call keep_compiler_quiet(f)
@@ -2481,6 +2493,8 @@ module Hydro
 !  17-jun-03/ulf: ux2, uy2 and uz2 added as diagnostic quantities
 !  27-jun-07/dhruba: differential rotation as subroutine call
 !  12-apr-16/MR: changes for Yin-Yang: only yz slices at the moment!
+!  22-apr-16/MR: Changed calls to zsum_mn_name_xy for compatibility with Yin-Yang grid.
+!
 !
       use Diagnostics
       use Special, only: special_calc_hydro
@@ -2618,7 +2632,7 @@ module Hydro
 !
 !  Ekman Friction, used only in two dimensional runs.
 !
-     if (ekman_friction/=0) &
+      if (ekman_friction/=0) &
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-ekman_friction*p%uu
 !
 !  Boussinesq approximation: -g_z*alpha*(T-T_0) added.
@@ -2626,17 +2640,17 @@ module Hydro
 !  Note: the buoyancy term is currently scaled with Ra*Pr, but Pr is also
 !  regulated though mu and K, so Pr should eventually be eliminated.
 !
-     if (lboussinesq.and.ltemperature) then
-       if (lsphere_in_a_box) then
-         do j=1,3
-           ju=j+iuu-1
-           df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+ &
-           p%r_mn*Ra*Pr*f(l1:l2,m,n,iTT)*p%evr(:,j)
-         enddo
-       else
-         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+Ra*Pr*f(l1:l2,m,n,iTT) !  gravity in the opposite z direction
-       endif
-     endif
+      if (lboussinesq.and.ltemperature) then
+        if (lsphere_in_a_box) then
+          do j=1,3
+            ju=j+iuu-1
+            df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+ &
+            p%r_mn*Ra*Pr*f(l1:l2,m,n,iTT)*p%evr(:,j)
+          enddo
+        else
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+Ra*Pr*f(l1:l2,m,n,iTT) !  gravity in the opposite z direction
+        endif
+      endif
 !
 !  Add possibility of forcing that is not delta-correlated in time.
 !
@@ -2651,9 +2665,8 @@ module Hydro
 !
 !  adding differential rotation via a frictional term
 !
-      if (tau_diffrot1/=0) then
+      if (tau_diffrot1/=0.) &
         call impose_profile_diffrot(f,df,uuprof,ldiffrot_test)
-      endif
 !
 !  Save the advective derivative as an auxiliary
 !
@@ -3211,8 +3224,9 @@ module Hydro
 !
         if (idiag_uxmxy/=0) call zsum_mn_name_xy(p%uu(:,1),idiag_uxmxy)
 !
-!  Changed call for compatibility with Yin-Yang grid:
-!  all non-scalars must be treated correpondingly (not yet done).
+!  Changed calls for compatibility with Yin-Yang grid:
+!  all non-scalars in which y or z components of a vector are used must
+!  be treated as below,
 !
         if (idiag_uymxy/=0) call zsum_mn_name_xy(p%uu,idiag_uymxy,(/0,1,0/))
         if (idiag_uzmxy/=0) call zsum_mn_name_xy(p%uu,idiag_uzmxy,(/0,0,1/))
@@ -3243,9 +3257,6 @@ module Hydro
             call zsum_mn_name_xy(p%uu,idiag_ruy2mxy,(/0,2,0/),p%rho)
         if (idiag_ruz2mxy/=0) &
             call zsum_mn_name_xy(p%uu,idiag_ruz2mxy,(/0,0,2/),p%rho)
-!
-!  Changed call for compatibility with Yin-Yang grid:
-!
         if (idiag_ruxuymxy/=0) &
             call zsum_mn_name_xy(p%uu,idiag_ruxuymxy,(/1,1,0/),p%rho)
         if (idiag_ruxuzmxy/=0) &

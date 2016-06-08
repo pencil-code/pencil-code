@@ -60,6 +60,7 @@ module Cdata
   logical :: lcylindrical_gravity=.false.
   logical :: luniform_z_mesh_aspect_ratio=.false.
   logical :: lyinyang=.false., lyang=.false.
+  integer :: nzgrid_eff=nzgrid
   real :: drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
   real, dimension (nx) :: r_mn,r1_mn,r2_mn,r2_weight
   real, dimension (my) :: sinth,sin1th,sin2th,costh,cotth,sinth_weight
@@ -242,7 +243,7 @@ module Cdata
   logical :: lgravr_neutrals=.false.,lgravr_dust=.false.
   logical :: lwrite_ic=.true.,lnowrite=.false.,lserial_io=.false.
   logical :: lmodify=.false.
-  logical :: lroot=.true.,ldebug=.false.,lfft=.true.
+  logical :: lroot=.true.,lcaproot=.false.,ldebug=.false.,lfft=.true.
   logical :: lfirst_proc_x=.true.,lfirst_proc_y=.true.,lfirst_proc_z=.true.
   logical :: lfirst_proc_xy=.true.,lfirst_proc_yz=.true.,lfirst_proc_xz=.true.
   logical :: lfirst_proc_xyz=.true.

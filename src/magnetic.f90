@@ -876,6 +876,7 @@ module Magnetic
 !  13-jan-11/MR: use subroutine 'register_report_aux' instead of repeated code
 !  26-feb-13/axel: reinitialize_aa added
 !  21-jan-15/MR: avoided double put_shared_variable for B_ext
+!   7-jun-16/MR: modifications in z average removal for Yin-Yang, yet inoperational
 !
       use Sub, only: register_report_aux, write_zprof, step
       use Magnetic_meanfield, only: initialize_magn_mf
@@ -885,10 +886,10 @@ module Magnetic
       use EquationOfState, only: cs0
       use Initcond
       use Forcing, only: n_forcing_cont
-      use Diagnostics, only: initialize_zaver_yy
+      use Yinyang_mpi, only: initialize_zaver_yy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j,nyl
+      integer :: i,j,nyl,myl,nycap
       real :: J_ext2
 !
 !  Share the external magnetic field with module Shear.
@@ -1446,11 +1447,12 @@ module Magnetic
       lslope_limit_diff=lslope_limit_diff .or. lmagnetic_slope_limited
 !
       if (lremove_meanaxy) then
+        myl=my
         if (lyinyang) then
-          call fatal_error('initialize_magnetic','Removing xy average of A not implemented on Yin-Yang grid.')
-          call initialize_zaver_yy(nyl)
+          call fatal_error('initialize_magnetic','Removal of z average not implmented for Yin-Yang')
+          call initialize_zaver_yy(myl,nycap)
         endif
-        allocate(aamxy(mx,my))
+        allocate(aamxy(mx,myl))
       endif
 
     endsubroutine initialize_magnetic
@@ -4831,15 +4833,18 @@ module Magnetic
 !   2-jan-10/axel: adapted from calc_lhydro_pars
 !  10-jan-13/MR: added possibility to remove evolving mean field
 !  15-oct-15/MR: changes for slope-limited diffusion
+!   7-jun-16/MR: modifications in z average removal for Yin-Yang, yet incomplete
 !
       use Deriv, only: der_z,der2_z
       use Sub, only: finalize_aver, div, calc_all_diff_fluxes
+      use Yinyang_mpi, only: zsum_yy
 
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 
       real :: fact
-      integer :: n,j
+      integer :: n,j,ml,nl
       real, dimension(nz,3) :: gaamz,d2aamz
+      real, dimension(:,:,:), allocatable :: buffer
 !
 !  Compute mean field (xy verage) for each component. Include the ghost zones,
 !  because they have just been set.
@@ -4882,13 +4887,32 @@ module Magnetic
         endif
       endif
 !
-!  Remove mean field (z verage).
+!  Remove mean field (z average).
 !
       if (lremove_meanaxy) then
 !
-        fact=1./nzgrid
+        fact=1./nzgrid_eff
+        if (lyang) allocate(buffer(1,mx,my))
+
         do j=1,3
-          aamxy=fact*sum(f(:,:,n1:n2,iaa+j-1),3)  ! requires equidistant grid
+
+          if (lyang) then
+!
+!  On Yang grid:
+!
+            do nl=n1,n2
+              do ml=1,my
+                call zsum_yy(buffer,1,ml,nl,f(:,ml,nl,iaa+j-1))
+              enddo
+            enddo
+            aamxy=fact*buffer(1,:,:)
+          else
+!
+! Normal summing-up in Yin procs.
+! 
+            aamxy=fact*sum(f(:,:,n1:n2,iaa+j-1),3)  ! requires equidistant grid
+          endif
+
           call finalize_aver(nprocz,3,aamxy)
 !
           do n=1,mz
@@ -4898,7 +4922,7 @@ module Magnetic
 
       endif
 !
-!  put u.a into auxiliarry arry
+!  put u.a into auxiliary array
 !
       if (lua_as_aux) then
         do n=1,mz
@@ -4928,8 +4952,6 @@ module Magnetic
         enddo
 
       endif
-!
-!  XX
 !
 !     if (lmagn_mf) call calc_lmagnetic_pars
 !
