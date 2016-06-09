@@ -1,4 +1,4 @@
-% Created 2016-05-29 Sun 12:00
+% Created 2016-06-09 Thu 08:31
 \documentclass[12pt,pdftex]{article}
 \usepackage[postscript]{ucs}
 \usepackage[utf8x]{inputenc}
@@ -266,12 +266,12 @@ Files unknown to Git & \texttt{git clean}\\
 weeks counts as insisting on data loss.}
 
 
-\subsection{I'm almost panicking ...}
+\subsection{I'm almost panicking \ldots{}}
 \label{sec-3-1}
 \label{Section-almost-panicking}
 
 \emph{
-... for I'm afraid something got lost, although I know this is not the
+\ldots{} for I'm afraid something got lost, although I know this is not the
 case because I stayed away from the commands in Table
 \ref{Table:How-to-lose-changes}.
 }
@@ -497,11 +497,10 @@ If the server is still at commit B, this will result in
 and you are done.
 
 However, if somebody has committed changes to the server before you
-push, you will get an error message\footnote{Do you see the ellipses in the
-suggested \texttt{'git pull ...'} command? Git did \emph{not} say you should
-run just \texttt{‘git pull’} without any arguments. If you accidentally
-\emph{do} happen to run \texttt{'git pull'} without arguments, then you can
-undo this by running \texttt{'git reset -{}-merge HEAD$\sim$1'}}:
+push, you will get an error message\footnote{Do you see the ellipses in the suggested \texttt{‘git pull ...’} command?
+Git did \emph{not} say you should run just \texttt{‘git pull’} without any arguments.
+If you accidentally \emph{do} happen to run \texttt{‘git pull’} without arguments,
+then you can undo this by running  \texttt{‘git reset -{}-merge HEAD\textasciitilde{}1’}}:
 
 {\small
 \begin{verbatim}
@@ -531,12 +530,12 @@ you can either do this \hyperref[Rebase]{using rebase}, or \hyperref[Merge]{usin
 \subsubsection{Alternative 1: Rebase}
 \label{sec-5-1-1}
 
-Rebasing is straight-forward, you run\footnote{If you have uncommitted changes
-at this point, Git will refuse to do anything before you have stashed them
-away. Git can do this for you automatically if you run
-\texttt{'git rebase --autostash origin/master'} instead. See footnote
-\ref{fn:autostash} for more information on Git's \texttt{'autostash'}
-functionality.}
+Rebasing is straight-forward, you run\footnote{If you have uncommitted changes at this point, Git will refuse to
+do anything before you have stashed them away.
+Git can do this for you automatically if you use
+\texttt{‘git rebase -{}-autostash origin/master’} instead.
+See footnote \ref{fn:autostash} for more information on Git's
+\emph{autostash} functionality.}
 \lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
 \begin{lstlisting}
 git rebase origin/master
@@ -596,9 +595,9 @@ git pull --rebase
 # [test]
 git push
 \end{lstlisting}
-and life will be beautiful.\footnote{If you happen to have uncommitted changes when you want to
-\texttt{‘git pull -{}-rebase’}, Git will refuse to do anything before you have
-stashed them away.
+and life will be beautiful.\footnote{\label{fn:autostash}If you happen to have uncommitted
+changes when you want to \texttt{‘git pull -{}-rebase’}, Git will refuse to do
+anything before you have stashed them away.
 With Git \(\ge\) 2.6, you can configure \verb~rebase.autostash=true~ to have git
 automatically stash away your uncommitted changes and restore them after
 the pull.
@@ -606,7 +605,7 @@ For older versions of Git, you get the same functionality with
 \texttt{‘git pc pull-and-rebase’}, i.e.\\
 \noindent\qquad\qquad  \texttt{git pc pull-and-rebase}\\
 \noindent\qquad\qquad  \texttt{\# [test]}\\
-\noindent\qquad\qquad  \texttt{git push}\label{fn:autostash}}
+\noindent\qquad\qquad  \texttt{git push}}
 
 
 \subsubsection{Alternative 2: Merge the other way around}

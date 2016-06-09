@@ -1,6 +1,7 @@
 #+TITLE: Git Best Practises
 
 #+LaTeX: \thispagestyle{empty}
+#+HTML_MATHJAX: scale:"100" align:"center" indent "2em" mathml:t path:"http://orgmode.org/mathjax/MathJax.js"
 
 #+begin_abstract
 #+LaTeX: \noindent%
@@ -209,11 +210,11 @@ or =‘git rebase’=.
 weeks counts as insisting on data loss.
 
 
-** I'm almost panicking …
+** I'm almost panicking ...
    \label{Section-almost-panicking}
 
 #+LaTeX: \emph{
-   … for I'm afraid something got lost, although I know this is not the
+   ... for I'm afraid something got lost, although I know this is not the
    case because I stayed away from the commands in Table
    \ref{Table:How-to-lose-changes}.
 #+LaTeX: }
@@ -353,10 +354,10 @@ Sec.\nbsp{}\ref{Section-almost-panicking}.
 
    Here is the decision matrix for merging vs. rebasing
 
-   | Criterion                 | Merge        | Rebase           |
-   |---------------------------+--------------+------------------|
-   | Resulting graph structure | More complex | Simpler          |
-   | History                   | Preserved    | Modified         |
+   | Criterion                 | Merge        | Rebase            |
+   |---------------------------+--------------+-------------------|
+   | Resulting graph structure | More complex | Simpler           |
+   | History                   | Preserved    | Modified          |
    | Safety                    | Safer        | Less safe [fn:10] |
 
    In short, use merging when you are afraid – but you know from
@@ -467,13 +468,15 @@ detached-head state.
 modify the tracking branch until it is.
 
 
-[fn:13]Do you see the ellipses in the suggested '=git pull ...=' command?
+[fn:13]Do you see the ellipses in the suggested =‘git pull ...’= command?
 Git did /not/ say you should run just =‘git pull’= without any arguments.
+If you accidentally /do/ happen to run =‘git pull’= without arguments,
+then you can undo this by running  =‘git reset --merge HEAD~1’=
 
 
 *** Alternative 1: Rebase
 
-   Rebasing is straight-forward, you run
+   Rebasing is straight-forward, you run[fn:14]
    #+begin_src sh
      git rebase origin/master
    #+end_src
@@ -503,7 +506,7 @@ Git did /not/ say you should run just =‘git pull’= without any arguments.
      git pull --rebase
    #+end_src
    This is equivalent to ~git fetch; git rebase origin/master~, so it is
-   exactly what we need[fn:14]
+   exactly what we need[fn:15]
 
    \bigskip
 
@@ -514,10 +517,18 @@ Git did /not/ say you should run just =‘git pull’= without any arguments.
      # [test]
      git push
    #+end_src
-   and life will be beautiful.[fn:15]
+   and life will be beautiful.[fn:autostash]
 
 
-[fn:14]You can even set the =--rebase= option via your git configuration,
+[fn:14]If you have uncommitted changes at this point, Git will refuse to
+  do anything before you have stashed them away.
+  Git can do this for you automatically if you use
+  =‘git rebase --autostash origin/master’= instead.
+  See footnote \ref{fn:autostash} for more information on Git's
+  /autostash/ functionality.
+
+
+[fn:15]You can even set the =--rebase= option via your git configuration,
 using\\
 \noindent\qquad\qquad  =git config --global branch.master.rebase true=\\
 \noindent\qquad\qquad  =git config --global branch.autoSetupRebase always=\\
@@ -536,9 +547,9 @@ Thus, it is better to just get into the habit of always using =git pull=
 with the =--rebase= flag.
 
 
-[fn:15]If you happen to have uncommitted changes when you want to
-=‘git pull --rebase’=, Git will refuse to do anything before you have
-stashed them away.
+[fn:autostash]\label{fn:autostash}If you happen to have uncommitted
+changes when you want to =‘git pull --rebase’=, Git will refuse to do
+anything before you have stashed them away.
 With Git $\ge$ 2.6, you can configure ~rebase.autostash=true~ to have git
 automatically stash away your uncommitted changes and restore them after
 the pull.
@@ -987,6 +998,9 @@ removing many commits, shortening and mildly anonymizing the commits.
 #+LaTeX_CLASS_OPTIONS: [12pt,pdftex]
 ##+LATEX_HEADER: \newcommand{\sectionbreak}{\clearpage}
 #+LaTeX_HEADER: \usepackage{listings}
+
+#+MATHJAX: scale:"100" align:"center" indent "2em" mathml:t path:"http://orgmode.org/mathjax/MathJax.js"
+
 
 ;; File variables
 

@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>Git Best Practises</title>
-<!-- 2016-06-05 Sun 14:01 -->
+<!-- 2016-06-09 Thu 08:44 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <meta  name="author" content="Wolfgang Dobler" />
@@ -140,8 +140,8 @@ for the JavaScript code in this tag.
     MathJax.Hub.Config({
         // Only one of the two following lines, depending on user settings
         // First allows browser-native MathML display, second forces HTML/CSS
-        //  config: ["MMLorHTML.js"], jax: ["input/TeX"],
-            jax: ["input/TeX", "output/HTML-CSS"],
+            config: ["MMLorHTML.js"], jax: ["input/TeX"],
+        //  jax: ["input/TeX", "output/HTML-CSS"],
         extensions: ["tex2jax.js","TeX/AMSmath.js","TeX/AMSsymbols.js",
                      "TeX/noUndefined.js"],
         tex2jax: {
@@ -196,7 +196,7 @@ for the JavaScript code in this tag.
 </li>
 <li><a href="#sec-3">3. Don't panic</a>
 <ul>
-<li><a href="#sec-3-1">3.1. I'm almost panicking …</a></li>
+<li><a href="#sec-3-1">3.1. I'm almost panicking &#x2026;</a></li>
 </ul>
 </li>
 <li><a href="#sec-4">4. Joining different lines of development</a>
@@ -532,14 +532,14 @@ Table \ref{Table:How-to-lose-changes} summarizes this discussion.
 
 
 <div id="outline-container-sec-3-1" class="outline-3">
-<h3 id="sec-3-1"><span class="section-number-3">3.1</span> I'm almost panicking …</h3>
+<h3 id="sec-3-1"><span class="section-number-3">3.1</span> I'm almost panicking &#x2026;</h3>
 <div class="outline-text-3" id="text-3-1">
 <p>
 \label{Section-almost-panicking}
 </p>
 
 <p>
-… for I'm afraid something got lost, although I know this is not the
+&#x2026; for I'm afraid something got lost, although I know this is not the
 case because I stayed away from the commands in Table
 \ref{Table:How-to-lose-changes}.
 </p>
@@ -909,7 +909,7 @@ you can either do this <a href="#Rebase">using rebase</a>, or <a href="#Merge">u
 <h4 id="sec-5-1-1"><span class="section-number-4">5.1.1</span> Alternative 1: Rebase</h4>
 <div class="outline-text-4" id="text-5-1-1">
 <p>
-Rebasing is straight-forward, you run
+Rebasing is straight-forward, you run<sup><a id="fnr.14" class="footref" href="#fn.14">14</a></sup>
 </p>
 <div class="org-src-container">
 
@@ -955,7 +955,7 @@ have both in one command:
 </div>
 <p>
 This is equivalent to <code>git fetch; git rebase origin/master</code>, so it is
-exactly what we need<sup><a id="fnr.14" class="footref" href="#fn.14">14</a></sup>
+exactly what we need<sup><a id="fnr.15" class="footref" href="#fn.15">15</a></sup>
 </p>
 
 <p>
@@ -974,7 +974,7 @@ git push
 </pre>
 </div>
 <p>
-and life will be beautiful.<sup><a id="fnr.15" class="footref" href="#fn.15">15</a></sup>
+and life will be beautiful.<sup><a id="fnr.16" class="footref" href="#fn.16">16</a></sup>
 </p>
 </div>
 </div>
@@ -1057,7 +1057,7 @@ See Appendix \ref{Section-which-way-to-merge} for a discussion of
 <div class="outline-text-3" id="text-5-2">
 <ul class="org-ul">
 <li>When you are working on one topic and expect more than a
-handful<sup><a id="fnr.16" class="footref" href="#fn.16">16</a></sup> of changes, consider using a <i>feature branch</i>.</li>
+handful<sup><a id="fnr.17" class="footref" href="#fn.17">17</a></sup> of changes, consider using a <i>feature branch</i>.</li>
 
 <li>When you are collaborating on a topic with somebody else and your
 changes are not yet ready for the others, use a feature branch.</li>
@@ -1090,7 +1090,7 @@ and create the branch
 
 <p>
 If that branch is long-lived, you will want to occasionally merge
-<i>master</i> into it.<sup><a id="fnr.17" class="footref" href="#fn.17">17</a></sup>
+<i>master</i> into it.<sup><a id="fnr.18" class="footref" href="#fn.18">18</a></sup>
 Say, you have this situation
 </p>
 <pre class="example">
@@ -1306,7 +1306,7 @@ Topologically, that is exactly what we want.
 But there is more to a git repository than pure topology of the
 directed acyclic graph: there is an order in parentage.
 Y is the <i>first parent</i> of the merge commit M, while E is the <i>second
-parent</i>:<sup><a id="fnr.18" class="footref" href="#fn.18">18</a></sup>
+parent</i>:<sup><a id="fnr.19" class="footref" href="#fn.19">19</a></sup>
 </p>
 <pre class="example">
                     2
@@ -1325,7 +1325,7 @@ Straightening out the first-parent connection, this can be rearranged as
         C---D---E   o---  master
 </pre>
 <p>
-and indeed this is what many tools will show you.<sup><a id="fnr.19" class="footref" href="#fn.19">19</a></sup>
+and indeed this is what many tools will show you.<sup><a id="fnr.20" class="footref" href="#fn.20">20</a></sup>
 </p>
 
 <p>
@@ -1409,7 +1409,7 @@ which you can push without violating our Rule 1.
 <p>
 Apart from avoiding problems with the SVN bridge, merging the right way
 around will also lead to a much more meaningful history.
-Consider the following real-life example:<sup><a id="fnr.20" class="footref" href="#fn.20">20</a></sup>
+Consider the following real-life example:<sup><a id="fnr.21" class="footref" href="#fn.21">21</a></sup>
 </p>
 
 <pre>
@@ -1558,11 +1558,22 @@ modify the tracking branch until it is.
 </p></div>
 
 <div class="footdef"><sup><a id="fn.13" class="footnum" href="#fnr.13">13</a></sup> <p class="footpara">
-Do you see the ellipses in the suggested '<code>git pull ...</code>' command?
+Do you see the ellipses in the suggested <code>‘git pull ...’</code> command?
 Git did <i>not</i> say you should run just <code>‘git pull’</code> without any arguments.
+If you accidentally <i>do</i> happen to run <code>‘git pull’</code> without arguments,
+then you can undo this by running  <code>‘git reset --merge HEAD~1’</code>
 </p></div>
 
 <div class="footdef"><sup><a id="fn.14" class="footnum" href="#fnr.14">14</a></sup> <p class="footpara">
+If you have uncommitted changes at this point, Git will refuse to
+do anything before you have stashed them away.
+Git can do this for you automatically if you use
+<code>‘git rebase --autostash origin/master’</code> instead.
+See footnote \ref{fn:autostash} for more information on Git's
+<i>autostash</i> functionality.
+</p></div>
+
+<div class="footdef"><sup><a id="fn.15" class="footnum" href="#fnr.15">15</a></sup> <p class="footpara">
 You can even set the <code>--rebase</code> option via your git configuration,
 using<br  />
 \noindent\qquad\qquad  <code>git config --global branch.master.rebase true</code><br  />
@@ -1586,10 +1597,10 @@ Thus, it is better to just get into the habit of always using <code>git pull</co
 with the <code>--rebase</code> flag.
 </p></div>
 
-<div class="footdef"><sup><a id="fn.15" class="footnum" href="#fnr.15">15</a></sup> <p class="footpara">
-If you happen to have uncommitted changes when you want to
-<code>‘git pull --rebase’</code>, Git will refuse to do anything before you have
-stashed them away.
+<div class="footdef"><sup><a id="fn.16" class="footnum" href="#fnr.16">16</a></sup> <p class="footpara">
+\label{fn:autostash}If you happen to have uncommitted
+changes when you want to <code>‘git pull --rebase’</code>, Git will refuse to do
+anything before you have stashed them away.
 With Git \(\ge\) 2.6, you can configure <code>rebase.autostash=true</code> to have git
 automatically stash away your uncommitted changes and restore them after
 the pull.
@@ -1600,29 +1611,29 @@ For older versions of Git, you get the same functionality with
 \noindent\qquad\qquad  <code>git push</code>
 </p></div>
 
-<div class="footdef"><sup><a id="fn.16" class="footnum" href="#fnr.16">16</a></sup> <p class="footpara">
+<div class="footdef"><sup><a id="fn.17" class="footnum" href="#fnr.17">17</a></sup> <p class="footpara">
 Even just two or three commits may be enough to go for a feature
 branch if that improves the narrative.
 </p></div>
 
-<div class="footdef"><sup><a id="fn.17" class="footnum" href="#fnr.17">17</a></sup> <p class="footpara">
+<div class="footdef"><sup><a id="fn.18" class="footnum" href="#fnr.18">18</a></sup> <p class="footpara">
 This does <i>not</i> violate our rule
 `<a href="#sec-5-1">don't merge upstream into your local tracking branch</a>'.
 </p></div>
 
-<div class="footdef"><sup><a id="fn.18" class="footnum" href="#fnr.18">18</a></sup> <p class="footpara">
+<div class="footdef"><sup><a id="fn.19" class="footnum" href="#fnr.19">19</a></sup> <p class="footpara">
 My notation in the graph is adopted from
 <a href="http://git-blame.blogspot.de/2015/03/fun-with-non-fast-forward.html">Junio Hamano's Blog</a>.
 Another good discussion on the importance of first-parent history can
 be found on the <a href="http://devblog.nestoria.com/post/98892582763/maintaining-a-consistent-linear-history-for-git">Nestoria Dev Blog</a>.
 </p></div>
 
-<div class="footdef"><sup><a id="fn.19" class="footnum" href="#fnr.19">19</a></sup> <p class="footpara">
+<div class="footdef"><sup><a id="fn.20" class="footnum" href="#fnr.20">20</a></sup> <p class="footpara">
 Including the <a href="https://github.com/pencil-code/pencil-code/network">GitHub network graph</a>, gitk (to some extent) and the
 GitHub SVN bridge.
 </p></div>
 
-<div class="footdef"><sup><a id="fn.20" class="footnum" href="#fnr.20">20</a></sup> <p class="footpara">
+<div class="footdef"><sup><a id="fn.21" class="footnum" href="#fnr.21">21</a></sup> <p class="footpara">
 The output was obtained using <code>tig</code> on the Pencil Code repository,
 removing many commits, shortening and mildly anonymizing the commits.
 </p></div>
@@ -1632,7 +1643,7 @@ removing many commits, shortening and mildly anonymizing the commits.
 </div></div>
 <div id="postamble" class="status">
 <p class="author">Author: Wolfgang Dobler</p>
-<p class="date">Created: 2016-06-05 Sun 14:01</p>
+<p class="date">Created: 2016-06-09 Thu 08:44</p>
 <p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode 8.3beta)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
