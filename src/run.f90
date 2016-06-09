@@ -386,7 +386,7 @@ program run
 !  was also used above, so we really need to do it twice then.)
 !
   f=0.
-  call rsnap('var.dat',f,mvar_in)
+  call rsnap('var.dat',f,mvar_in,lread_nogrid)
 !
   if (.not.luse_oldgrid) call construct_grid(x,y,z,dx,dy,dz)
 !

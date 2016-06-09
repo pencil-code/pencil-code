@@ -292,7 +292,7 @@ module Snapshot
 !
     endsubroutine wsnap
 !***********************************************************************
-    subroutine rsnap(chsnap,f,msnap)
+    subroutine rsnap(chsnap,f,msnap,lread_nogrid)
 !
 !  Read snapshot file.
 !
@@ -308,7 +308,8 @@ module Snapshot
 !  The dimension msnap can either be mfarray (for f-array in run.f90)
 !  or just mvar (for f-array in start.f90 or df-array in run.f90.
 !
-      integer :: msnap
+      logical :: lread_nogrid
+      integer :: msnap, mode
       real, dimension (mx,my,mz,msnap) :: f
       character (len=*) :: chsnap
 !
@@ -316,6 +317,16 @@ module Snapshot
       real, dimension(:,:), pointer :: reference_state
 !
       if (ip<=6.and.lroot) print*,'reading var files'
+!
+!  possibility of not reading the mesh data nor the time
+!  of the snapshot. The mesh information is then taken from
+!  proc*/mesh.dat
+!
+      if (lread_nogrid) then
+        mode=0
+      else
+        mode=1
+      endif
 !
 !  No need to read maux variables as they will be calculated
 !  at the first time step -- even if lwrite_aux is set.
@@ -333,7 +344,7 @@ module Snapshot
       if (lread_oldsnap_nomag) then
         f(:,:,:,iax:iaz)=0.
         print*,'read old snapshot file (but without magnetic field)'
-        call input_snap('var.dat',f,msnap-3,1)
+        call input_snap('var.dat',f,msnap-3,mode)
         call input_persistent()
         call input_snap_finalize()
         ! shift the rest of the data
@@ -348,7 +359,7 @@ module Snapshot
 !
       elseif (lread_oldsnap_nopscalar) then
         print*,'read old snapshot file (but without passive scalar)'
-        call input_snap(chsnap,f,msnap-1,1)
+        call input_snap(chsnap,f,msnap-1,mode)
         call input_persistent()
         call input_snap_finalize()
         ! shift the rest of the data
@@ -363,7 +374,7 @@ module Snapshot
 !
       elseif (lread_oldsnap_notestfield) then
         print*,'read old snapshot file (but without testfield),iaatest,iaztestpq,mvar,msnap=',iaatest,iaztestpq,mvar,msnap
-        call input_snap(chsnap,f,msnap-ntestfield,1)
+        call input_snap(chsnap,f,msnap-ntestfield,mode)
         call input_persistent()
         call input_snap_finalize()
         ! shift the rest of the data
@@ -378,7 +389,7 @@ module Snapshot
 !
       elseif (lread_oldsnap_notestscalar) then
         print*,'read old snapshot file (but without testscalar),icctest,mvar,msnap=',icctest,mvar,msnap
-        call input_snap(chsnap,f,msnap-ntestscalar,1)
+        call input_snap(chsnap,f,msnap-ntestscalar,mode)
         call input_persistent()
         call input_snap_finalize()
         ! shift the rest of the data
@@ -392,7 +403,7 @@ module Snapshot
 !  Use default input configuration.
 !
       else
-        call input_snap(chsnap,f,msnap,1)
+        call input_snap(chsnap,f,msnap,mode)
         call input_persistent(chsnap)
         call input_snap_finalize()
       endif

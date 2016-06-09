@@ -1151,9 +1151,9 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ## Axel on LCD
 ##
 #FC=mpif90 #(scylla*)
-#FFLAGS= -O1  #(scylla*)
+#FFLAGS= -O3  #(scylla*)
 #CC=mpicc #(scylla*)
-#CFLAGS=-O1 -DFUNDERSC=1 #(scylla*)
+#CFLAGS=-O3 -DFUNDERSC=1 #(scylla*)
 #LD_MPI= #(scylla*)
 #FFLAGS_DOUBLE=-fdefault-real-8 #(scylla)
 #FFLAGS_DOUBLE=-r8 #(scylla*)

@@ -343,7 +343,7 @@ subroutine read_and_combine(filename,f,mvar_in,lonly_farray)
             call input_snap(filename,f,mvar_in,0)
             call input_snap_finalize
           else
-            call rsnap(filename, f, mvar_in)
+            call rsnap(filename, f, mvar_in, lread_nogrid)
           endif
         endif
         t_sp = t

@@ -419,7 +419,7 @@ program pc_reduce
 !  Snapshot data are saved in the tmp subdirectory.
 !  This directory must exist, but may be linked to another disk.
 !
-          if (mvar_in>0) call rsnap (filename, f, mvar_in)
+          if (mvar_in>0) call rsnap (filename, f, mvar_in, lread_nogrid)
 !
           ! reduce f:
           do pa = 1, mvar_io

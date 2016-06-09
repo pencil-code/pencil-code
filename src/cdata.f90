@@ -188,7 +188,7 @@ module Cdata
   logical :: noghost_for_isave=.false.
   logical :: ltec=.false.
   logical :: lformat=.false.
-  logical :: lread_less=.false.
+  logical :: lread_less=.false., lread_nogrid=.false.
   logical :: loutput_varn_at_exact_tsnap=.false.
   logical :: ldirect_access=.false.
   logical :: lread_from_other_prec=.false.       ! works so far only with io_dist!

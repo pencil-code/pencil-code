@@ -55,7 +55,7 @@ module Magnetic_meanfield
   real :: meanfield_etat=0.0, meanfield_etat_height=1., meanfield_pumping=1.
   real :: meanfield_Beq=1.0,meanfield_Beq_height=0., meanfield_Beq2_height=0.
   real :: meanfield_etat_exp=1.0, uturb=.1
-  real :: alpha_eps=0.0, x_surface=0., x_surface2=0., z_surface=0., qp_width
+  real :: alpha_eps=0.0, x_surface=0., x_surface2=0., z_surface=0., qp_width, qpx_width
   real :: alpha_equator=impossible, alpha_equator_gap=0.0, alpha_gap_step=0.0
   real :: alpha_rmin
   real :: alpha_cutoff_up=0.0, alpha_cutoff_down=0.0
@@ -68,7 +68,7 @@ module Magnetic_meanfield
   logical :: lmeanfield_jxb=.false., lmeanfield_jxb_with_vA2=.false.
   logical :: lmeanfield_chitB=.false., lignore_gradB2_inchiB=.false.
   logical :: lchit_with_glnTT=.false., lrho_chit=.true., lchit_Bext2_equil=.false.
-  logical :: lturb_temp_diff=.false., lqp_profile=.false.
+  logical :: lturb_temp_diff=.false., lqp_profile=.false., lqpx_profile=.false.
 !
   namelist /magn_mf_init_pars/ &
       dummy
@@ -89,6 +89,7 @@ module Magnetic_meanfield
   real, dimension(nx) :: etat_x, detat_x, rhs_term
   real, dimension(my) :: etat_y, detat_y
   real, dimension(mz) :: etat_z, detat_z, qp_profile, qp_profder
+  real, dimension(nx) :: qpx_profile, qpx_profder
   logical :: llarge_scale_velocity=.false.
   logical :: lEMF_profile=.false.
   logical :: lalpha_profile_total=.false., lalpha_aniso=.false.
@@ -101,7 +102,7 @@ module Magnetic_meanfield
       gamma_effect, gamma_quenching, &
       alpha_eps, alpha_width, alpha_width2, alpha_aniso, alpha_tensor, &
       lalpha_profile_total, lmeanfield_noalpm, alpha_profile, &
-      chit_quenching, chi_t0, lqp_profile, qp_width, &
+      chit_quenching, chi_t0, lqp_profile, lqpx_profile, qp_width, qpx_width, &
       x_surface, x_surface2, z_surface, &
       alpha_rmin,&
       qp_model,&
@@ -442,6 +443,16 @@ module Magnetic_meanfield
         qp_profder=0.
       endif
 !
+!  define meanfield_qpx_profile (x direction)
+!
+      if (lqpx_profile) then
+        qpx_profile=exp(-(x(l1:l2)/qpx_width)**2)
+        qpx_profder=-2.*x(l1:l2)/qpx_width**2*exp(-(x(l1:l2)/qpx_width)**2)
+      else
+        qpx_profile=1.
+        qpx_profder=0.
+      endif
+!
 !  Initialize module variables which are parameter dependent
 !  wave speed of gauge potential
 !
@@ -748,7 +759,7 @@ module Magnetic_meanfield
 !  qp'=-qp0/(1+B^2*meanfield_Bp21)^2*meanfield_Bp21=-qp^2*meanfield_Bp21/qp0
 !
           if(qp_model=='rational') then
-            meanfield_qp_func=meanfield_qp/(1.+p%b2*meanfield_Bp21)*qp_profile(n)
+            meanfield_qp_func=meanfield_qp/(1.+p%b2*meanfield_Bp21)*qp_profile(n)*qpx_profile
             meanfield_qs_func=meanfield_qs/(1.+p%b2*meanfield_Bs21)
             meanfield_qe_func=meanfield_qe/(1.+p%b2*meanfield_Be21)
             meanfield_qa_func=meanfield_qa/(1.+p%b2*meanfield_Ba21)
