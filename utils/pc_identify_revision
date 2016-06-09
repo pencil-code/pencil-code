@@ -116,7 +116,7 @@ svn_cmd () {
 time_limited_svn_cmd () {
     # Run a SVN command from the top directory with a time limit of 1
     # minute
-    (cd $PENCIL_HOME; timeout 60s svn "$@" || echo "Timed out: 'svn $@'")
+    (cd $PENCIL_HOME; timeout 30s svn "$@" || echo "Timed out: 'svn $@'")
 }
 
 
