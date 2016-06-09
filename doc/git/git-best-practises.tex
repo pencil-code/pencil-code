@@ -497,8 +497,11 @@ If the server is still at commit B, this will result in
 and you are done.
 
 However, if somebody has committed changes to the server before you
-push, you will get an error message\footnote{Do you see the ellipses in the suggested '\texttt{git pull ...}' command?
-Git did \emph{not} say you should run just \texttt{‘git pull’} without any arguments.}:
+push, you will get an error message\footnote{Do you see the ellipses in the
+suggested \texttt{'git pull ...'} command? Git did \emph{not} say you should
+run just \texttt{‘git pull’} without any arguments. If you accidentally
+\emph{do} happen to run \texttt{'git pull'} without arguments, then you can
+undo this by running \texttt{'git reset -{}-merge HEAD$\sim$1'}}:
 
 {\small
 \begin{verbatim}
@@ -528,7 +531,12 @@ you can either do this \hyperref[Rebase]{using rebase}, or \hyperref[Merge]{usin
 \subsubsection{Alternative 1: Rebase}
 \label{sec-5-1-1}
 
-Rebasing is straight-forward, you run
+Rebasing is straight-forward, you run\footnote{If you have uncommitted changes
+at this point, Git will refuse to do anything before you have stashed them
+away. Git can do this for you automatically if you run
+\texttt{'git rebase --autostash origin/master'} instead. See footnote
+\ref{fn:autostash} for more information on Git's \texttt{'autostash'}
+functionality.}
 \lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
 \begin{lstlisting}
 git rebase origin/master
@@ -598,7 +606,7 @@ For older versions of Git, you get the same functionality with
 \texttt{‘git pc pull-and-rebase’}, i.e.\\
 \noindent\qquad\qquad  \texttt{git pc pull-and-rebase}\\
 \noindent\qquad\qquad  \texttt{\# [test]}\\
-\noindent\qquad\qquad  \texttt{git push}}
+\noindent\qquad\qquad  \texttt{git push}\label{fn:autostash}}
 
 
 \subsubsection{Alternative 2: Merge the other way around}
