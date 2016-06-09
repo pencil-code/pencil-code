@@ -534,16 +534,20 @@ module Density
       endif
 !
 !  Do not allow inconsistency between rho0 (from eos) and rho_const
-!  or lnrho0 and lnrho_const.
+!  or lnrho0 and lnrho_const. But this can only be of concern if
+!  const_lnrho or const_rho are set in initlnrho.
 !
       if (rho0/=rho_const .and. rho0/=impossible) then
-        if (lroot) then
-          print*,"WARNING!"
-          print*,"inconsistency between the density constants from eos  "
-          print*,"(rho0 or lnrho0) and the ones from the density module "
-          print*,"(rho_const or lnrho_const). It may damage your        "
-          print*,"simulation if you are using them in different places. "
-          call warning("initialize_density","")
+        if (any(initlnrho=='const_lnrho') .or. any(initlnrho=='const_rho')) then
+          if (lroot) then
+            call warning("initialize_density","are rho_const or lnrho_const ok?")
+            print*,"inconsistency between the density constants from eos  "
+            print*,"(rho0 or lnrho0) and the ones from the density module "
+            print*,"(rho_const or lnrho_const). It may damage your        "
+            print*,"simulation if you are using them in different places. "
+          endif
+        else
+          if (lroot) print*,'Note: rho_const or lnrho_const are not used'
         endif
       endif
 !

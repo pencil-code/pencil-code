@@ -90,7 +90,7 @@ module Energy
   integer :: ippaux=0
   integer :: cool_type=1
   logical :: lturbulent_heat=.false.
-  logical :: lheatc_Kprof=.false., lheatc_Kconst=.false.
+  logical :: lheatc_Kprof=.false., lheatc_Kconst=.false., lheatc_sfluct=.false.
   logical, target :: lheatc_chiconst=.false.
   logical :: lheatc_tensordiffusion=.false., lheatc_spitzer=.false.
   logical :: lheatc_hubeny=.false.,lheatc_sqrtrhochiconst=.false.
@@ -758,6 +758,7 @@ module Energy
 !
       lheatc_Kprof=.false.
       lheatc_Kconst=.false.
+      lheatc_sfluct=.false.
       lheatc_chiconst=.false.
       lheatc_tensordiffusion=.false.
       lheatc_spitzer=.false.
@@ -784,6 +785,9 @@ module Energy
         case ('K-const')
           lheatc_Kconst=.true.
           if (lroot) print*, 'heat conduction: K=cte'
+        case ('sfluct')
+          lheatc_sfluct=.true.
+          if (lroot) print*, 'heat conduction: work purely on s fluctuations'
         case ('chi-const')
           lheatc_chiconst=.true.
           if (lroot) print*, 'heat conduction: constant chi'
@@ -850,6 +854,9 @@ module Energy
       if (lroot) then
       if (lheatc_Kprof .and. hcond0==0.0) then
         call warning('initialize_energy', 'hcond0 is zero!')
+      endif
+      if (lheatc_sfluct .and. (chi_t==0.0)) then
+        call warning('initialize_energy','chi_t is zero!')
       endif
       if (lheatc_chiconst .and. (chi==0.0 .and. chi_t==0.0)) then
         call warning('initialize_energy','chi and chi_t are zero!')
@@ -2402,6 +2409,12 @@ module Energy
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_del2lnTT)=.true.
       endif
+      if (lheatc_sfluct) then
+        lpenc_requested(i_del2ss)=.true.
+        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_gss)=.true.
+      endif
       if (lheatc_sqrtrhochiconst) then
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_lnTT)=.true.
@@ -2940,6 +2953,7 @@ module Energy
 !
       if (lheatc_Kprof)    call calc_heatcond(f,df,p)
       if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
+      if (lheatc_sfluct)   call calc_heatcond_sfluct(f,df,p)
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
       if (lheatc_chi_cspeed) call calc_heatcond_cspeed_chi(df,p)
       if (lheatc_sqrtrhochiconst) call calc_heatcond_sqrtrhochi(df,p)
@@ -3580,6 +3594,8 @@ module Energy
           thdiff=thdiff+chi_t*g2
         endif
       endif
+!
+!  Diagnostics
 !
       if (l1davgfirst) then
         if (chi_t/=0.) &
@@ -4645,11 +4661,12 @@ module Energy
           print*,'calc_headcond: "turbulent" entropy diffusion: chi_t=',chi_t
           if (hcond0 /= 0) then
             call warning('calc_heatcond', &
-                'hcond0 and chi_t combined do not seem to make sense')
+                'hcond0 and chi_t combined does not seem to make sense')
           endif
         endif
 !
 !  ... + div(rho*T*chi*grads) = ... + chi*[del2s + (glnrho+glnTT+glnchi).grads]
+!  If lcalc_ssmean=T or lcalc_ssmeanxy=T, mean stratification is subtracted.
 !
         if (lcalc_ssmean .or. lcalc_ssmeanxy) then
           if (lcalc_ssmean) then
@@ -4775,6 +4792,77 @@ module Energy
       endif
 !
     endsubroutine calc_heatcond
+!***********************************************************************
+    subroutine calc_heatcond_sfluct(f,df,p)
+!
+!  In this routine general heat conduction profiles are being provided.
+!
+!   9-jun-16/axel: adapted from calc_heatcond
+!
+      use Sub, only: dot
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (nx,3) :: gss1
+      real, dimension (nx) :: thdiff,g2,del2ss1
+      integer :: j
+!
+      intent(in) :: p
+      intent(inout) :: df
+!
+!  Entropy diffusion on fluctuations only
+!
+      if (headtt) then
+        print*,'calc_heatcond_sfluct: chi_t=',chi_t
+      endif
+!
+!  "Turbulent" entropy diffusion (operates on entropy fluctuations only).
+!
+      if (chi_t/=0.) then
+        if (headtt) then
+          print*,'calc_headcond: "turbulent" entropy diffusion: chi_t=',chi_t
+          if (hcond0 /= 0) then
+            call warning('calc_heatcond', &
+                'hcond0 and chi_t combined does not seem to make sense')
+          endif
+        endif
+!
+!  ... + div(rho*T*chi*grads) = ... + chi*[del2s + (glnrho+glnTT+glnchi).grads]
+!  If lcalc_ssmean=T or lcalc_ssmeanxy=T, mean stratification is subtracted.
+!
+        if (lcalc_ssmean .or. lcalc_ssmeanxy) then
+          if (lcalc_ssmean) then
+            do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n-n1+1,j); enddo
+            del2ss1=p%del2ss-del2ssmz(n-n1+1)
+          else if (lcalc_ssmeanxy) then
+            do j=1,3; gss1(:,j)=p%gss(:,j)-gssmx(:,j); enddo
+            del2ss1=p%del2ss-del2ssmx
+          endif
+          call dot(p%glnrho+p%glnTT,gss1,g2)
+          thdiff=thdiff+chi_t*(del2ss1+g2)
+        else
+          call fatal_error("calc_heatcond_sfluct","lcalc_ssmean(xy) needed")
+        endif
+      else
+        call fatal_error("calc_heatcond_sfluct","chi_t must not be 0")
+      endif
+!
+!  At the end of this routine, add all contribution to
+!  thermal diffusion on the rhs of the entropy equation,
+!  so Ds/Dt = ... + thdiff = ... + (...)/(rho*T)
+!
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
+!
+      if (headtt) print*,'calc_heatcond: added thdiff'
+!
+!  Check maximum diffusion from thermal diffusion.
+!
+      if (lfirst.and.ldt) then
+        diffus_chi=diffus_chi+chi_t*dxyz_2
+      endif
+!
+    endsubroutine calc_heatcond_sfluct
 !***********************************************************************
     subroutine calc_heat_cool(df,p,Hmax)
 !
