@@ -66,9 +66,9 @@ module Dustdensity
   real :: delta=1.2, delta0=1.2, deltavd_const=1.
   real :: Rgas=8.31e7
   real :: Rgas_unit_sys, m_w=18., m_s=60.
-  real :: AA=0.66e-4,  Ntot
+  real :: AA=0.66e-4,  Ntot=1., dt_substep=2e-7
   real :: nd_reuni,init_x1, init_x2, a0=0., a1=0.
-  real :: dndfac_sum, dt_substep=2e-7
+  real :: dndfac_sum
   integer :: iglobal_nd=0
   integer :: spot_number=1
   character (len=labellen), dimension (ninit) :: initnd='nothing'
@@ -100,7 +100,7 @@ module Dustdensity
   real    :: dustdensity_floor=-1, Kern_min=0., Kern_max=0.
   real    :: G_condensparam=0., supsatratio_given=0., supsatratio_given0=0.
   real    :: supsatratio_omega=0., self_collision_factor=1.
-  real    :: dlnmd, dlnad, GS_condensparam, GS_condensparam0
+  real    :: dlnmd, dlnad, GS_condensparam, GS_condensparam0, rotat_position=0.
 !
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0,  mdave0, Hnd, &
@@ -113,7 +113,9 @@ module Dustdensity
       lmdvar, lmice, ldcore, ndmin_for_mdvar, &
       lnocondens_term, Kern_min, &
       advec_ddensity, dustdensity_floor, init_x1, init_x2, lsubstep, a0, a1, &
-      ldustcondensation_simplified, ldustcoagulation_simplified,lradius_binning, lzero_upper_kern, dt_substep
+      ldustcondensation_simplified, ldustcoagulation_simplified,lradius_binning, &
+      lzero_upper_kern, rotat_position, dt_substep
+ 
 !
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, lno_deltavd, initnd, &
@@ -574,7 +576,7 @@ module Dustdensity
       real, dimension (nx) :: eps
       real :: lnrho_z, Hrho, rho00, rhod00, mdpeak, rhodmt, del, fac
       real, pointer :: rhs_poisson_const
-      integer :: j, k, l, i
+      integer :: j, k, l, i, i2
       logical :: lnothing
 !
 !  Different initializations of nd.
@@ -852,6 +854,18 @@ module Dustdensity
 !
           if (lroot) print*, &
               'init_nd: Distribution of the water droplets in the atmosphere'
+        case('lLES')
+          do k=1,ndustspec
+          do i2=1,mz
+          do i=1,mx
+            if (z(i2)>rotat_position) then
+              f(i,:,i2,ind(k))=0.2*init_distr(i,k)
+            else
+              f(i,:,i2,ind(k))=init_distr(i,k)
+            endif
+          enddo
+          enddo
+          enddo
         case default
 !
 !  Catch unknown values.
@@ -1268,7 +1282,7 @@ module Dustdensity
       real, dimension (nx,ndustspec) :: Nd_rho, CoagS
       real :: aa0= 6.107799961, aa1= 4.436518521e-1
       real :: aa2= 1.428945805e-2, aa3= 2.650648471e-4
-      real :: aa4= 3.031240396e-6, aa5= 2.034080948e-8, aa6= 6.136820929e-11, dt_substep=1e-7
+      real :: aa4= 3.031240396e-6, aa5= 2.034080948e-8, aa6= 6.136820929e-11
       integer :: i,k,mm,nn,ll1,l1p4
 !
       intent(inout) :: f,p
@@ -1597,8 +1611,8 @@ module Dustdensity
 !
 !  fixed timestep [in seconds]
 !
-!                  ddt=2e-7
-!                  do i=1,int(dt/ddt)
+!                  dt_substep=2e-7
+!                  do i=1,int(dt/dt_substep)
 !
 !                    do k=1,ndustspec
 !                      nd_substep_0(:,k)=nd_substep(:,k)
@@ -1613,7 +1627,7 @@ module Dustdensity
 !  key procedure
 !
 !                    do k=1,ndustspec
-!                      nd_substep(:,k)=nd_substep_0(:,k)+K1(:,k)*ddt/2.
+!                      nd_substep(:,k)=nd_substep_0(:,k)+K1(:,k)*dt_substep/2.
 !                    enddo
 !                    call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
 !                    do k=1,ndustspec
@@ -1621,7 +1635,7 @@ module Dustdensity
 !                    enddo
 !
 !                    do k=1,ndustspec
-!                      nd_substep(:,k)=nd_substep_0(:,k)+K2(:,k)*ddt/2.
+!                      nd_substep(:,k)=nd_substep_0(:,k)+K2(:,k)*dt_substep/2.
 !                    enddo
 !                    call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
 !                    do k=1,ndustspec
@@ -1629,7 +1643,7 @@ module Dustdensity
 !                    enddo
 !
 !                    do k=1,ndustspec
-!                      nd_substep(:,k)=nd_substep_0(:,k)+K3(:,k)*ddt
+!                      nd_substep(:,k)=nd_substep_0(:,k)+K3(:,k)*dt_substep
 !                    enddo
 !                    call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
 !                    do k=1,ndustspec
@@ -1637,7 +1651,7 @@ module Dustdensity
 !                    enddo
 !
 !                    do k=1,ndustspec
-!                      nd_substep(:,k)=nd_substep_0(:,k)+ddt/6.*(K1(:,k)+2.*K2(:,k)+2.*K3(:,k)+K4(:,k))
+!                      nd_substep(:,k)=nd_substep_0(:,k)+dt_substep/6.*(K1(:,k)+2.*K2(:,k)+2.*K3(:,k)+K4(:,k))
 !                    enddo
 !
 !                  enddo
@@ -1845,7 +1859,7 @@ module Dustdensity
 !
 !  fixed timestep [in seconds]
 !
-!           ddt=2e-7
+!            dt_substep=2e-7
             do i=1,int(dt/dt_substep)
               do k=1,ndustspec
                 nd_substep_0(:,k)=nd_substep(:,k)
