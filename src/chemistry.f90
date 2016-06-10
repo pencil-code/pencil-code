@@ -82,6 +82,7 @@ module Chemistry
   logical, save :: tran_exist=.false.
   logical, save :: lew_exist=.false.
   logical :: lSmag_heat_transport=.false.
+  logical :: lSmag_diffusion=.false.
 !
   logical :: lfilter=.false.
   logical :: lkreactions_profile=.false., lkreactions_alpha=.false.
@@ -112,6 +113,7 @@ module Chemistry
   logical :: lFlameMaster=.false.
   integer :: ipr=2
   real :: Tc=440., Tinf=2000., beta=1.09
+  real :: z_cloud=0.
 !
 !  hydro-related parameters
 !
@@ -169,7 +171,7 @@ module Chemistry
       lchemistry_diag,lfilter_strict,linit_temperature, &
       linit_density, init_rho2, &
       file_name, lreac_as_aux, init_zz1, init_zz2, flame_pos, &
-      reac_rate_method,global_phi, lSmag_heat_transport, Pr_turb
+      reac_rate_method,global_phi, lSmag_heat_transport, Pr_turb, lSmag_diffusion, z_cloud
 !
 !
 ! run parameters
@@ -996,9 +998,27 @@ module Chemistry
 !  Constant diffusion coefficients
 !
           elseif ((.not. lDiff_simple) .and. (Diff_coef_const < impossible)) then
-            do k = 1,nchemspec
-              p%Diff_penc_add(:,k) = Diff_coef_const*p%rho1
-            enddo
+            if (lSmag_diffusion) then
+              if (lcloud) then
+                if (z(n)>=z_cloud) then
+                  do k = 1,nchemspec
+                     p%Diff_penc_add(:,k) = (0.15*dxmax)**2.*sqrt(2*p%sij2)/Sc_number
+                  enddo
+                else
+                  do k = 1,nchemspec
+                     p%Diff_penc_add(:,k) = Diff_coef_const*p%rho1
+                  enddo
+                endif
+              else
+                do k = 1,nchemspec
+                  p%Diff_penc_add(:,k) = (0.15*dxmax)**2.*sqrt(2*p%sij2)/Sc_number
+                enddo
+              endif
+            else
+              do k = 1,nchemspec
+                p%Diff_penc_add(:,k) = Diff_coef_const*p%rho1
+              enddo
+            endif 
 !
 !  Diffusion coefficient of a mixture with constant Lewis numbers and 
 !  given heat conductivity
@@ -1013,6 +1033,8 @@ module Chemistry
 !  Full diffusion coefficient case
 !
           else
+
+print*,'nmnmnmnm'
             do k = 1,nchemspec
               p%Diff_penc_add(:,k) = Diff_full_add(l1:l2,m,n,k)
             enddo
