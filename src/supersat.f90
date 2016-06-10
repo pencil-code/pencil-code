@@ -168,11 +168,13 @@ module Supersat
     endsubroutine calc_pencils_supersat
 !***********************************************************************
     subroutine dssat_dt(f,df,p)
+    !subroutine dssat_dt(f,df,fp,p)
       use Diagnostics
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mpar_loc,mparray) :: fp
       type (pencil_case) :: p
 !
       real, dimension (nx) :: diff_op,diff_op2,bump,gcgu
@@ -182,6 +184,7 @@ module Supersat
       integer :: j, k
       integer, parameter :: nxy=nxgrid*nygrid
 !
+      !intent(in)  :: f, fp
       intent(in)  :: f
       intent(out) :: df
 !
@@ -201,6 +204,7 @@ module Supersat
 !
         df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat &
                 +supersat_diff*p%del2ssat
+        !df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat+0.0001  !XY
 !
 !  Passive scalar sink/source.
 !
@@ -214,20 +218,21 @@ module Supersat
 !        endif
 ! 1-June-16/XY coded: to be completed 
          if (lsupersat_sink) then
-                 if (Rsupersat_sink==0) then
-                    bump=-f(l1:l2,m,n,issat)/tau
-                  else
-                    bump=-f(l1:l2,m,n,issat)/tau+ &
+                 !if (Rsupersat_sink==0) then
+                   ! bump=-f(l1:l2,m,n,issat)/tau
+                  !else
+                    !bump=-f(l1:l2,m,n,issat)/tau+ &
                     !A1*fp(k,ivpz)
 !AB: this fp doesn't exist, so I remove it for now, so it compiles
-                    A1
-                 endif
+                    !A1
+                    bump=A1
+                    !bump=A1*fp(k,ivpz)
+                ! endif
                  df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat+bump 
          endif
 !       
         if (idiag_ssatrms/=0) & 
             call sum_mn_name(p%ssat**2,idiag_ssatrms,lsqrt=.true.)
- 
     endsubroutine dssat_dt
 !
 !***********************************************************************
