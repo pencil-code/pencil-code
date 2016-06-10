@@ -50,7 +50,7 @@ module InitialCondition
      real :: init_x1=0.,init_x2=0.,init_TT1=0., init_TT2=0.
      real, dimension(nchemspec) :: init_Yk_1, init_Yk_2
      real :: X_wind=impossible, spot_size=10.
-     real :: AA=0.66e-4, d0=2.4e-6 , BB0=1.5*1e-16
+     real :: AA=0.66e-4, d0=2.4e-6 , BB0=1.5*1e-16, rhow_coeff=1.
      real :: dsize_min=0., dsize_max=0., r0=0., r02=0.,  Period=2., delta 
      real, dimension(ndustspec) :: dsize, dsize0
      real, dimension(20000) :: Ntot_data
@@ -69,7 +69,7 @@ module InitialCondition
      lreinit_water, dYw,dYw1, dYw2, X_wind, spot_number, spot_size, lwet_spots, &
      linit_temperature, init_TT1, init_TT2, dsize_min, dsize_max, r0, r02, d0, lcurved_xz, lcurved_xy, &
      ltanh_prof_xz,ltanh_prof_xy, Period, BB0, index_N2, index_H2O, lACTOS, lACTOS_read, lACTOS_write, &
-     i_point,Ndata, lsinhron, delta, Nadd_points, ladd_points, lrho_const, lregriding, lLES, lP_aver
+     i_point,Ndata, lsinhron, delta, Nadd_points, ladd_points, lrho_const, lregriding, lLES, lP_aver, rhow_coeff
 !
   contains
 !***********************************************************************
@@ -267,54 +267,6 @@ module InitialCondition
       real, dimension (ndustspec) :: nd_tmp 
       real :: tmp2, ddsize
       real, dimension(ndustspec)    :: lnds, dsize
-      
-!      integer :: i,k,ll1,i1
-!      real :: r0, delta, tmp
-!
-!       ddsize=(alog(dsize_max)-alog(dsize_min))/(max(ndustspec,2)-1)
-!
-!      do i=0,(ndustspec-1)
-!          lnds(i+1)=alog(dsize_min)+i*ddsize
-!          dsize(i+1)=exp(lnds(i+1))
-!      enddo
-
-     ! calculated in ACTOS_part_one.pro  
-!       2769.96
-!      341.699      155.111      60.8664
-!      40.1308      270.085      371.868     0.864957
-!
-
-!       do k=1,ndustspec
-!         tmp2=dsize(k)*1e7*2.
-!         if (tmp2<226.15)   then
-!          nd_tmp(k) = 341.699*exp(-0.5*( (tmp2-155.111) /60.8664 )**2)
-!         else
-!          nd_tmp(k)= 40.1308*exp(-0.5*( (tmp2-270.085 ) /371.868 )**2) +0.864957
-!         endif
-!         
-!       enddo
- 
-!       i_spline=16
-
-!         arx(1)=dsize(i_spline-3); arx(2)=dsize(i_spline-2); arx(3)=dsize(i_spline+2); arx(4)=dsize(i_spline+3)
-!         ary(1)=nd_tmp(i_spline-3); ary(2)=nd_tmp(i_spline-2); ary(3)=nd_tmp(i_spline+2); ary(4)=nd_tmp(i_spline+3)
-
-!         arx(1)=dsize(i_spline-2); arx(2)=dsize(i_spline); arx(3)=dsize(i_spline+2)
-!         ary(1)=nd_tmp(i_spline-2); ary(2)=nd_tmp(i_spline); ary(3)=nd_tmp(i_spline+2)
-!          x2(1)=dsize(i_spline-1);    x2(2)=dsize(i_spline+1)
-
-!         x2(1)=dsize(i_spline-1);    x2(2)=dsize(i_spline);    x2(3)=dsize(i_spline+1)
-         
-
-
-!          call polynomial_interpolation(arx,ary,x2,S,ddy,3)
-!         nd_tmp(i_spline-1)=S(1);  nd_tmp(i_spline)=S(2);  nd_tmp(i_spline+1)=S(3);
-         
-
-!       do k=1,ndustspec
-!         f(:,:,:,ind(k)) = nd_tmp(k)/exp(f(:,:,:,ilnrho))/dsize(k)
-!       enddo
-!
       
 !
       call keep_compiler_quiet(f)
@@ -990,7 +942,7 @@ module InitialCondition
         
         do i=n1,n2
           f(:,:,i,ilnTT)=alog(TT_data(nn1+i-3))
-          f(:,:,i,ichemspec(index_H2O))=rhow_data(nn1+i-3)  
+          f(:,:,i,ichemspec(index_H2O))=rhow_data(nn1+i-3)*rhow_coeff  
         enddo
 !
        f(:,:,:,ichemspec(index_N2))=0.7
