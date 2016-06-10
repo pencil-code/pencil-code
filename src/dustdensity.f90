@@ -68,7 +68,7 @@ module Dustdensity
   real :: Rgas_unit_sys, m_w=18., m_s=60.
   real :: AA=0.66e-4,  Ntot
   real :: nd_reuni,init_x1, init_x2, a0=0., a1=0.
-  real :: dndfac_sum
+  real :: dndfac_sum, dt_substep=2e-7
   integer :: iglobal_nd=0
   integer :: spot_number=1
   character (len=labellen), dimension (ninit) :: initnd='nothing'
@@ -113,7 +113,7 @@ module Dustdensity
       lmdvar, lmice, ldcore, ndmin_for_mdvar, &
       lnocondens_term, Kern_min, &
       advec_ddensity, dustdensity_floor, init_x1, init_x2, lsubstep, a0, a1, &
-      ldustcondensation_simplified, ldustcoagulation_simplified,lradius_binning, lzero_upper_kern
+      ldustcondensation_simplified, ldustcoagulation_simplified,lradius_binning, lzero_upper_kern, dt_substep
 !
   namelist /dustdensity_run_pars/ &
       rhod0, diffnd, diffnd_hyper3, diffmd, diffmi, lno_deltavd, initnd, &
@@ -1268,7 +1268,7 @@ module Dustdensity
       real, dimension (nx,ndustspec) :: Nd_rho, CoagS
       real :: aa0= 6.107799961, aa1= 4.436518521e-1
       real :: aa2= 1.428945805e-2, aa3= 2.650648471e-4
-      real :: aa4= 3.031240396e-6, aa5= 2.034080948e-8, aa6= 6.136820929e-11, ddt=1e-7
+      real :: aa4= 3.031240396e-6, aa5= 2.034080948e-8, aa6= 6.136820929e-11, dt_substep=1e-7
       integer :: i,k,mm,nn,ll1,l1p4
 !
       intent(inout) :: f,p
@@ -1845,8 +1845,8 @@ module Dustdensity
 !
 !  fixed timestep [in seconds]
 !
-            ddt=2e-7
-            do i=1,int(dt/ddt)
+!           ddt=2e-7
+            do i=1,int(dt/dt_substep)
               do k=1,ndustspec
                 nd_substep_0(:,k)=nd_substep(:,k)
               enddo
@@ -1859,7 +1859,7 @@ module Dustdensity
 !  key procedure
 !
               do k=1,ndustspec
-                nd_substep(:,k)=nd_substep_0(:,k)+K1(:,k)*ddt/2.
+                nd_substep(:,k)=nd_substep_0(:,k)+K1(:,k)*dt_substep/2.
               enddo
               call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
               K2(:,:)=0.
@@ -1867,7 +1867,7 @@ module Dustdensity
                 K2(:,k)=-Imr*dndr_tmp(:,k)
               enddo
               do k=1,ndustspec
-                nd_substep(:,k)=nd_substep_0(:,k)+K2(:,k)*ddt/2.
+                nd_substep(:,k)=nd_substep_0(:,k)+K2(:,k)*dt_substep/2.
               enddo
               call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
               K3(:,:)=0.
@@ -1875,7 +1875,7 @@ module Dustdensity
                 K3(:,k)=-Imr*dndr_tmp(:,k)
               enddo
               do k=1,ndustspec
-                nd_substep(:,k)=nd_substep_0(:,k)+K3(:,k)*ddt
+                nd_substep(:,k)=nd_substep_0(:,k)+K3(:,k)*dt_substep
               enddo
               K4(:,:)=0.
               call droplet_redistr(p,f,ppsf_full(:,:,1),dndr_tmp,nd_substep,0)
@@ -1883,7 +1883,7 @@ module Dustdensity
                 K4(:,k)=-Imr*dndr_tmp(:,k)
               enddo
               do k=1,ndustspec
-                nd_substep(:,k)=nd_substep_0(:,k)+ddt/6.*(K1(:,k)+2.*K2(:,k)+2.*K3(:,k)+K4(:,k))
+                nd_substep(:,k)=nd_substep_0(:,k)+dt_substep/6.*(K1(:,k)+2.*K2(:,k)+2.*K3(:,k)+K4(:,k))
               enddo
             enddo
 !            
