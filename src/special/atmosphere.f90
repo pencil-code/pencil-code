@@ -1,3 +1,4 @@
+
 ! $Id$
 !
 !  This module incorporates all the modules used for Natalia's
@@ -77,7 +78,7 @@ module Special
   logical :: llognormal=.false., lACTOS=.false.
   logical :: lsmall_part=.false.,  llarge_part=.false., lsmall_large_part=.false. 
   logical :: laverage=.false., lgrav_LES=.false.
-  logical :: lboundary_layer=.false.
+  logical :: lboundary_layer=.false., lLES=.false.
 !
   real :: rho_w=1.0, rho_s=3.,  Dwater=22.0784e-2,  m_w=18., m_s=60.,AA=0.66e-4
   real :: nd0, r0, r02, delta, uy_bz, ux_bz,  dYw1, dYw2, PP, Ntot=1e3
@@ -86,7 +87,7 @@ module Special
   real :: uz_ref_top=0., uz_ref_bot=0., uz_bc=0.
   real :: ux_ref_top=0., uy_ref_top=0., T_ampl
   real :: bc_lnrho_aver_final, bc_qv_aver_final
-  real :: rotat_const=0., rotat_position=0., rotat_position2=0., rotat_power=0. 
+  real :: rotat_position=0. 
   real :: rotat_ux=0., rotat_uy=0., ux_bot=0., uy_bot=0.
 !
 ! Keep some over used pencils
@@ -100,8 +101,7 @@ module Special
       laverage, lbuffer_zone_uz, logrho_ref_top, logrho_ref2_top, TT_ref_top, TT_ref_bot, & 
       t_final, logrho_ref_bot, logrho_ref2_bot, lgrav_LES, uz_ref_bot,uz_ref_top, uz_bc, &
       ux_ref_top, uy_ref_top, bc_lnrho_aver_final, bc_qv_aver_final, T_ampl, &
-      lboundary_layer, rotat_const, rotat_position, rotat_power, rotat_position2, &
-      rotat_ux, rotat_uy, ux_bot, uy_bot 
+      lboundary_layer, rotat_position, rotat_ux, rotat_uy, ux_bot, uy_bot, lLES 
 
 ! run parameters
   namelist /special_run_pars/  &
@@ -435,7 +435,7 @@ module Special
       real, dimension (my) :: u_profile
       real    :: del,width
       integer :: l_sz
-      integer :: i, j  !, sz_l_y,sz_r_y,
+      integer :: i, j, k  !, sz_l_y,sz_r_y,
       integer ::  mm1,mm2, sz_y, nn1, nn2, sz_z
       real    :: dt1, bs,Ts,dels, logrho_tmp, tmp, tmp2
       logical :: lzone_left, lzone_right
@@ -543,11 +543,27 @@ module Special
 
 !              df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(f(l1:l2,m,n,iuz)-0.)*dt1
 !!!!!!!!!!!!!!!!!!!!!!!!!!   
-              df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-ux_bot)*dt1
-              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-uy_bot)*dt1
+!              df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-ux_bot)*dt1
+!              df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-uy_bot)*dt1
+!
+!              df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)  &
+!                 -(f(l1:l2,m,n,ilnTT)-f(l1:l2,m,n1,ilnTT))*dt1
+!
+!
+            do k=1, nchemspec   
+            do i=l1,l2 
 
-                df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)  &
-                   -(f(l1:l2,m,n,ilnTT)-f(l1:l2,m,n1,ilnTT))*dt1
+               df(i,m,n,ichemspec(k))=df(i,m,n,ichemspec(k))  &
+                     -(f(i,m,n,ichemspec(k)) &
+                -(0.5*f(i,m,nn1,ichemspec(k))+0.5*f(i,m,nn2,ichemspec(k))))*dt1
+
+            enddo
+            enddo
+
+!           if ((z(n) >= zgrid(nn2-3)) .and. (z(n) <= zgrid(nn2-1))) then
+!             df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-(f(l1:l2,m,n,iuz)-0.)*dt1
+!           endif
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!
  
       !             call dot(p%glnTT,p%glnTT,g2TT)
@@ -564,28 +580,8 @@ module Special
 
        if (lboundary_layer) then
          if (z(n)>rotat_position) then
-        
-          if (z(n)<rotat_position2) then
-         
-           df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) &
-            +rotat_const &
-            *((z(n)-rotat_position) &
-              /(rotat_position2-rotat_position))**(rotat_power)
-           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
-            +rotat_const &
-            *((z(n)-rotat_position) &
-              /(rotat_position2-rotat_position))**(rotat_power)
-
-          else
-            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) & 
-!                      -(f(l1:l2,m,n,iux)-rotat_ux*(1.+0.6*t/25000.))*dt1
-                      -(f(l1:l2,m,n,iux)-rotat_ux)*dt1
-            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
-!                      -(f(l1:l2,m,n,iuy)-rotat_uy*(1.+0.6*t/25000.))*dt1
-                       -(f(l1:l2,m,n,iuy)-rotat_uy)*dt1
-
-          endif
-
+            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-(f(l1:l2,m,n,iux)-rotat_ux)*dt1
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(f(l1:l2,m,n,iuy)-rotat_uy)*dt1
          endif
        endif
 !
@@ -609,47 +605,6 @@ module Special
 !
           df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) &
                + 2.5e6/1005.*p%ccondens*p%TT1
-!
-!       dt1=1./(8.*dt)
-!       del=0.1
-!
-!         lzone_left=.false.
-!         lzone_right=.false.
-!         sz_y=int(del*nygrid)
-!
-!        if (lbuffer_zone_T) then
-!        do j=1,2
-!
-!         if (j==1) then
-!           mm1=nygrid-sz_y
-!           mm2=nygrid
-!
-!           if ((y(m) >= ygrid(mm1)) .and. (y(m) <= ygrid(mm2))) lzone_right=.true.
-!           if (lzone_right) then
-!           endif
-!         else if (j==2) then
-!           mm1=1
-!           mm2=sz_y
-!           if ((y(m) >= ygrid(mm1)) .and. (y(m) <= ygrid(mm2))) lzone_left=.true.
-!           if (lzone_left) then
-!           endif
-!         endif
-!
-!          if (lACTOS) then
-!          if ((ygrid(sz_y)<y(m)) .and. (y(m)<ygrid(nygrid-sz_y))) then
-!            do i=1,ndustspec
-!               df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) + p%dndr(:,i)
-!            enddo
-!          endif
-!          endif
-!       
-!        enddo
-!        else
-!          do i=1,ndustspec
-!               df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) + p%dndr(:,i)
-!          enddo
-!        endif
-
 !
 !
 ! Keep compiler quiet by ensuring every parameter is used
@@ -938,6 +893,20 @@ module Special
            f(i1,i2,i3,ind(k))=f(i1,i2,i3,ind(k))*Ntot/ttt2(ndustspec)
          enddo
  !
+        elseif (lLES) then 
+          if (.not. ldustdensity_log) then
+            do k=1,ndustspec
+              ff_tmp(k)=f(i1,i2,i3,ind(k))
+            enddo
+              ttt= spline_integral(dsize,ff_tmp)*exp(f(i1,i2,i3,ilnrho))
+            do k=1,ndustspec
+              if (z(i3)>rotat_position) then
+                f(i1,i2,i3,ind(k))=f(i1,i2,i3,ind(k))*0.2*Ntot/ttt(ndustspec)
+              else
+                f(i1,i2,i3,ind(k))=f(i1,i2,i3,ind(k))*Ntot/ttt(ndustspec)
+              endif
+            enddo
+          endif
         else
           if (.not. ldustdensity_log) then
             do k=1,ndustspec
@@ -1483,7 +1452,7 @@ subroutine bc_satur_x(f,bc)
 !
 !  no ACTOS
 !
-       else
+       else  
          if (r0 /= 0.) then
            do k=1,ndustspec
              init_distr(:,k)=Ntot/(2.*pi)**0.5/dsize(k)/alog(delta) &
@@ -1493,21 +1462,10 @@ subroutine bc_satur_x(f,bc)
        endif
 !            
         if (lACTOS) then
-!          if (llognormal) then
-!
-! this value of  (ttt(ndustspec)) is real Ntot 
-!
-!            ttt=spline_integral(dsize,init_distr2)
-!            print*,' real Ntot=',ttt(ndustspec)
-!
-!            Ntot_=ttt(ndustspec)
-!
-!          else
             ttt=spline_integral(dsize,init_distr2)
             Ntot_=ttt(ndustspec)
             Ntot =Ntot_
             print*,'Ntot=',Ntot
-!          endif
         else
           Ntot_=Ntot
         endif
@@ -1520,19 +1478,19 @@ subroutine bc_satur_x(f,bc)
 !
       type (boundary_condition) :: bc
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension(64), save :: bc_T_array_bot, bc_u_array_bot, bc_T_array_top, bc_u_array_top
-!      real, dimension(66,64), save :: bc_T_x_array, bc_u_x_array, bc_T_x_array2, bc_u_x_array2
-      real, dimension (66) :: tmp, tmp2
+      real, dimension(64), save :: bc_T_array_bot, bc_u_array_bot
+      real, dimension(64), save :: bc_T_array_top, bc_u_array_top
+      real, dimension(64), save :: bc_qv_array_bot
+      real, dimension (66) :: tmp, tmp2, tmp3
       real, dimension (60)  :: time_top, time_bot
       integer :: i,j,ii,statio_code,vr, i1,i2, io_code, stat
       integer ::  ll1,ll2,mm1,mm2
       integer :: time_position_top, time_position_bot
-!      real, save ::  t_bot, t_top
       real ::  bc_T_aver_top, bc_u_aver_top, bc_T_aver2_top, bc_u_aver2_top
       real ::  bc_T_aver_bot, bc_u_aver_bot, bc_T_aver2_bot, bc_u_aver2_bot
-      real :: bc_T_aver_final, bc_u_aver_final
+      real ::  bc_qv_aver_bot,  bc_qv_aver2_bot
+      real ::  bc_T_aver_final, bc_u_aver_final, bc_qv_aver_final
       real :: lbc,frac, ttt, bc_T_final_top, bc_u_final_top
-!      logical :: lbc_top, lbc_bot
       logical, save :: lbc_file_top=.true., lbc_file_bot=.true.
       real :: t1,t2, pp_tmp
 !
@@ -1569,16 +1527,20 @@ subroutine bc_satur_x(f,bc)
             print*,'opening *1.dat'
             open(9,file='T1.dat')
             open(99,file='w1.dat')
+            open(999,file='qv.dat') 
 !          
             do i = 1,37
              read(9,*,iostat=io_code) (tmp(ii),ii=1,2)
              read(99,*,iostat=io_code) (tmp2(ii),ii=1,2)
+             read(999,*,iostat=io_code) (tmp3(ii),ii=1,2)
              bc_T_array_bot(i)=tmp(2)
              bc_u_array_bot(i)=tmp2(2)
+             bc_qv_array_bot(i)=tmp3(2)
             enddo
 !          
             close(9)
             close(99)
+            close(999)
             print*,'closing file'
 !          endif
           lbc_file_bot=.false.
@@ -1588,8 +1550,10 @@ subroutine bc_satur_x(f,bc)
             if (i==time_position_bot) then
               bc_T_aver_bot=bc_T_array_bot(i)
               bc_u_aver_bot=bc_u_array_bot(i)
+              bc_qv_aver_bot=bc_qv_array_bot(i)
               bc_T_aver2_bot=bc_T_array_bot(i+1)
               bc_u_aver2_bot=bc_u_array_bot(i+1)
+              bc_qv_aver2_bot=bc_qv_array_bot(i+1)
             endif
            enddo
 !
@@ -1607,6 +1571,13 @@ subroutine bc_satur_x(f,bc)
                +(t-time_bot(time_position_bot)) &
                /(time_bot(time_position_bot+1)-time_bot(time_position_bot))    &
                *(bc_u_aver2_bot-bc_u_aver_bot)
+
+
+         bc_qv_aver_final=bc_qv_aver_bot  &
+               +(t-time_bot(time_position_bot)) &
+               /(time_bot(time_position_bot+1)-time_bot(time_position_bot))    &
+               *(bc_qv_aver2_bot-bc_qv_aver_bot)
+
 !
 
 !    print*,time_bot(time_position_bot-1),t,time_bot(time_position_bot)
@@ -1624,7 +1595,8 @@ subroutine bc_satur_x(f,bc)
           do i=m1,m2
             i1=mm1+i-4
 !             pp_tmp=bc_T_aver_final*exp(f(j,i,n1,ilnrho))*8.31e7/29.
-            f(j,i,n1,vr)=alog(bc_T_aver_final+T_ampl*sin(Period*PI*x(j)/Lxyz(1)))
+            f(j,i,n1,vr)=alog(bc_T_aver_final  &
+                 +T_ampl*sin(Period*PI*x(j)/Lxyz(1))*cos(Period*PI*y(j)/Lxyz(2)))
 !             f(j,i,n1,vr)=alog(bc_T_aver_final*(1e6/pp_tmp)**0.286)
           enddo
           enddo
@@ -1636,8 +1608,7 @@ subroutine bc_satur_x(f,bc)
 !
           do j=l1,l2
           do i=m1,m2
-            f(j,i,n1,vr)=bc_lnrho_aver_final*bc_qv_aver_final/ &
-               exp(f(j,i,n1,ilnrho))
+            f(j,i,n1,vr)=bc_qv_aver_final
           enddo
           enddo
 
