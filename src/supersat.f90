@@ -171,6 +171,7 @@ module Supersat
     !subroutine dssat_dt(f,df,fp,p)
       use Diagnostics
       use Sub
+      use Particles_cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -225,8 +226,9 @@ module Supersat
                     !A1*fp(k,ivpz)
 !AB: this fp doesn't exist, so I remove it for now, so it compiles
                     !A1
-                    bump=A1
+                    !bump=A1
                     !bump=A1*fp(k,ivpz)
+                    bump=A1*fp(1,ivpz)
                 ! endif
                  df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat+bump 
          endif
