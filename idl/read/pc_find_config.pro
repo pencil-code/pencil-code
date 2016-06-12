@@ -50,7 +50,7 @@ COMPILE_OPT IDL2,HIDDEN
 
 	; defaults
 	default, reduced, 0
-	if (not keyword_set (datadir)) then datadir = pc_get_datadir()
+	datadir = pc_get_datadir(datadir)
 	if (keyword_set (reduced)) then allprocs = 1
 	default, check_file, 0
 	dead_beef = 'DEADBEEF'

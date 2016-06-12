@@ -33,7 +33,7 @@ function pc_read_varlist, datadir=datadir, nvar=nvar, particles=particles, allpr
   default, list_file, 'varN.list'
 
 ; Find the list of snapshots.
-  if (n_elements (datadir) eq 0) then datadir = pc_get_datadir()
+  datadir = pc_get_datadir(datadir)
   if (size (allprocs, /type) ne 0) then begin
     if (keyword_set (allprocs)) then procdir = '/allprocs/'
   end else if (file_test (datadir+'/allprocs/'+list_file)) then begin

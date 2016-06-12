@@ -208,10 +208,11 @@ pro pc_magic_var, variables, tags, $
         endelse
         variables[iv]=variables[iv]+'+reform([[['+vari1+']],[['+vari2+']],[['+vari3+']]],dim.mx,dim.my,dim.mz,3)'
       endif
-; Current density [jj=curl(bb)=curl(curl(aa))=grad(div(a))-del2(aa)]
+; Current density [jj=curl(bb)=curl(curl(aa))=grad(div(aa))-del2(aa)]
     endif else if (variables[iv] eq 'jj') then begin
       tags[iv]=variables[iv]
-      variables[iv]='graddiv(aa)-del2(aa)'
+      ;variables[iv]='graddiv(aa)-del2(aa)'
+      variables[iv]='curlcurl(aa)'
       if (global) then begin
         if (max(where(global_names eq 'jx_ext')) ne -1) then begin
           vari1='gg.jx_ext'

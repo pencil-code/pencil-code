@@ -13,7 +13,7 @@ common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
 ;  Defaults.
 ;
-if (not keyword_set(datadir)) then datadir=pc_get_datadir()
+datadir = pc_get_datadir(datadir)
 default, stats, 1
 default, quiet, 0
 default, rmv, 0
@@ -103,7 +103,7 @@ xloc=fltarr(procdim.mx)*one & yloc=fltarr(procdim.my)*one & zloc=fltarr(procdim.
 ;
 ;  Read variable indices from index.pro
 ;
-if (not keyword_set(datadir)) then datadir=pc_get_datadir()
+datadir = pc_get_datadir(datadir)
 openr, lun, datadir+'/index.pro', /get_lun
 line=''
 while (not eof(lun)) do begin

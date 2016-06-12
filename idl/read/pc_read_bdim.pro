@@ -8,7 +8,7 @@ compile_opt IDL2,HIDDEN
 ;
 ; Default data directory.
 ;
-if (not keyword_set(datadir)) then datadir=pc_get_datadir()
+datadir = pc_get_datadir(datadir)
 ;
 ; Initialize all variables.
 ;

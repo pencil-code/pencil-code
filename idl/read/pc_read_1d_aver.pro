@@ -14,7 +14,7 @@ pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
 ;
 ;  Default data directory.
 ;
-if (not keyword_set(datadir)) then datadir=pc_get_datadir()
+datadir = pc_get_datadir(datadir)
 
 if (dir eq 'z') then begin
   ndir = dim.nz

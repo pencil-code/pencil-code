@@ -50,7 +50,7 @@ pro pc_read_grid, object=object, dim=dim, param=param, trimxyz=trimxyz, $
 ;
 ; Default data directory
 ;
-if (not keyword_set(datadir)) then datadir=pc_get_datadir()
+datadir = pc_get_datadir(datadir)
 ;
 ; Default filename
 ;

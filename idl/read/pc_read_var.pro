@@ -75,7 +75,7 @@
 pro pc_read_var,                                                  $
     object=object, varfile=varfile_, associate=associate,         $
     variables=variables, tags=tags, magic=magic,                  $
-    bbtoo=bbtoo, ootoo=ootoo, TTtoo=TTtoo,                        $
+    bbtoo=bbtoo, jjtoo=jjtoo, ootoo=ootoo, TTtoo=TTtoo,           $
     allprocs=allprocs, reduced=reduced,                           $
     trimxyz=trimxyz, trimall=trimall, unshear=unshear,            $
     nameobject=nameobject, validate_variables=validate_variables, $
@@ -150,7 +150,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
 ; Default data directory.
 ;
-  if (not keyword_set(datadir)) then datadir=pc_get_datadir()
+  datadir = pc_get_datadir(datadir)
 ;
 ; Can only unshear coordinate frame if variables have been trimmed.
 ;
@@ -332,6 +332,14 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
   default, bbtoo, 0
   if (bbtoo and ~any(strmatch(varcontent.idlvar, 'bb'))) then begin
     variables=[variables,'bb']
+    magic=1
+  endif
+;
+; Shortcut for getting current density jj.
+;
+  default, jjtoo, 0
+  if (jjtoo and ~any(strmatch(varcontent.idlvar, 'jj'))) then begin
+    variables=[variables,'jj']
     magic=1
   endif
 ;

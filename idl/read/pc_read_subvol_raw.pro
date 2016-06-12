@@ -82,7 +82,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 	if (keyword_set (reduced)) then allprocs = 1
 
 	; Default data directory.
-	if (not keyword_set (datadir)) then datadir = pc_get_datadir()
+	datadir = pc_get_datadir(datadir)
 
 	; Name and path of varfile to read.
 	if (not keyword_set (varfile)) then varfile = 'var.dat'

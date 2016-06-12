@@ -17,7 +17,7 @@ default, quiet, 0
 ;
 ;  Default datadir, dim, and filename.
 ;
-if (not keyword_set(datadir)) then datadir=pc_get_datadir()
+datadir = pc_get_datadir(datadir)
 if (size (dim, /type) ne 8) then pc_read_dim, obj=dim, datadir=datadir, /quiet
 default, filename, 'particle_size_dist.dat'
 ;

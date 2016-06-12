@@ -5,7 +5,7 @@
 ;
 function pc_read_zprof, varname , datadir=datadir, debug=debug
 ;
-IF (not keyword_set(datadir)) THEN datadir=pc_get_datadir()
+datadir = pc_get_datadir(datadir)
 ;
 ;  read expected dimension and processor number
 ;

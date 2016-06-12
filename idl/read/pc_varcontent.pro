@@ -29,7 +29,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Read grid dimensions, input parameters and location of datadir.
 ;
-if (not keyword_set(datadir)) then datadir = pc_get_datadir()
+datadir = pc_get_datadir(datadir)
 if (n_elements(dim) eq 0) then pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
 if (n_elements(ivar) eq 0) then ivar=-1
 if (n_elements(param) eq 0) then pc_read_param, obj=param, datadir=datadir, dim=dim, quiet=quiet

@@ -14,7 +14,7 @@ common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
 ;  Default data directory.
 ;
-if (not keyword_set(datadir)) then datadir=pc_get_datadir()
+datadir = pc_get_datadir(datadir)
 default, varfile, 'pc_constants.pro'
 default, quiet, 0
 fullvarfile=datadir+'/'+varfile

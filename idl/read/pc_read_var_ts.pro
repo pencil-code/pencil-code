@@ -46,7 +46,7 @@ COMPILE_OPT IDL2,HIDDEN
   ENDIF
 ; Default data directory
 
-if (not keyword_set(datadir)) then datadir=pc_get_datadir()
+datadir = pc_get_datadir(datadir)
 default,proc,0
 default,allprocs,0
 default,snap_start,0

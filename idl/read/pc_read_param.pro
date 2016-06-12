@@ -48,7 +48,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Default data directory.
 ;
-  if (not keyword_set(datadir)) then datadir=pc_get_datadir()
+  datadir = pc_get_datadir(datadir)
   if (n_elements(dim) eq 0) then pc_read_dim, datadir=datadir, object=dim, quiet=quiet
 ;
 ; Build the full path and filename and check for existence.

@@ -20,7 +20,7 @@ common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ; Default values.
 ;
 default, field, 'lnrho'
-if (not keyword_set(datadir)) then datadir=pc_get_datadir()
+datadir = pc_get_datadir(datadir)
 default, proc, -1
 default, nt, 100
 default, njump, 0

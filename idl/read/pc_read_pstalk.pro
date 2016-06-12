@@ -22,7 +22,7 @@ default, swap_endian, 0
 default, quiet, 0
 default, it1, -1
 default, it0, 0
-if (not keyword_set(datadir)) then datadir=pc_get_datadir()
+datadir = pc_get_datadir(datadir)
 ;
 ; Read dimensions and set precision.
 ;

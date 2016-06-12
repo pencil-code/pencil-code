@@ -98,7 +98,7 @@ COMPILE_OPT IDL2,HIDDEN
 
 ; Default data directory
 
-if (not keyword_set(datadir)) then datadir=pc_get_datadir()
+datadir = pc_get_datadir(datadir)
 default, filename, 'sn_series.dat'
 ;
 ; Initialize / set default returns for ALL variables

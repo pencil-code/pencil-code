@@ -26,7 +26,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Default values.
 ;
-  if (not keyword_set(datadir)) then datadir=pc_get_datadir()
+  datadir = pc_get_datadir(datadir)
   default, varfile, dir+'averages.dat'
   default, nit, 0
   default, ipxread, -1
@@ -317,7 +317,6 @@ COMPILE_OPT IDL2,HIDDEN
       endif else begin
         nyl=ny
         iya=ipyarray[ip]*ny+nycap
-
       endelse
 
       ipx=ipxarray[ip]
