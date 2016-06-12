@@ -31,7 +31,7 @@ COMPILE_OPT IDL2,HIDDEN
 ; Default data directory
 ;
   pc_check_math,location='before entry to pc_units'
-  if (not keyword_set(datadir)) then datadir = pc_get_datadir()
+  datadir = pc_get_datadir(datadir)
   if (n_elements(param) eq 0) then $
       pc_read_param, object=param, datadir=datadir, dim=dim, quiet=quiet
 ;

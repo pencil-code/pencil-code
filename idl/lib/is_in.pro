@@ -1,5 +1,5 @@
 function is_in, feld, val, replace=replace, abbrev=abbrev
-
+;
 ; 10/03/27: MR coded
 ;
 ; detects whether value val is contained in array feld;
@@ -9,7 +9,7 @@ function is_in, feld, val, replace=replace, abbrev=abbrev
 ; if feld is of type string, switch /abbrev causes
 ; abbreviations of val to be detected
 ; if replace is set, val is everywhere in feld replaced by
-; replace ersetzt;
+; replace;
 ; in case of ambiguities due to abbrev only those hits are replaced, which
 ; are completely identical with the first hit
 

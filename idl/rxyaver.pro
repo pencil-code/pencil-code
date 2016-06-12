@@ -5,7 +5,7 @@
 ;
 t=0.
 @data/index
-if (n_elements(datatopdir) eq 0) then datatopdir=pc_get_datadir()
+datatopdir = pc_get_datadir(datatopdir)
 default, dimfile, 'dim.dat'
 ;
 mx=0L & my=0L & mz=0L & nvar=0L & naux=0L

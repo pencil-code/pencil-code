@@ -29,7 +29,7 @@ pro pc2vtk, datadir=datadir, varfile=varfile, variables=variables, bbtoo=bbtoo, 
   compile_opt idl2
 
 ; Read the data.
-  if n_elements(datadir) eq 0 then datadir = pc_get_datadir()
+  datadir = pc_get_datadir(datadir)
   if n_elements(varfile) eq 0 then varfile = 'var.dat'
   print, 'Reading ', datadir, '/', varfile, '...'
   pc_read_param, obj=par, datadir=datadir, /quiet

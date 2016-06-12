@@ -11,9 +11,11 @@
 ;;;   as TOTAL().
 ;;;   Set keyword VECTOR to indicate that F is a vector field and you
 ;;;   want sqrt(mean(dot2(f))).
-function rms, f, i, $
-              VECTOR=vect, DOUBLE=double
+
+function rms, f, i, VECTOR=vect, DOUBLE=double
+
 COMPILE_OPT IDL2,HIDDEN
+
   tmp = f
   if (keyword_set(vect)) then tmp = sqrt(dot2(abs(tmp)))
   if (n_elements(i) eq 0) then $

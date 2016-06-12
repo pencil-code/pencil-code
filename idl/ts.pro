@@ -60,7 +60,7 @@ end
 ;
 ;  Set path and file names if necessary
 ;
-if (n_elements(datatopdir) eq 0) then datatopdir=pc_get_datadir()
+datatopdir = pc_get_datadir(datatopdir)
 default, tsfile, datatopdir+'/time_series.dat'
 ;
 ;  read header

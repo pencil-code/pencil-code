@@ -554,7 +554,7 @@ pro pc_show_ts, object=time_series, unit=unit, start_param=start_param, run_para
 	plot_height = plot_width
 	sl_width = col_width - 52
 
-	if (not keyword_set (datadir)) then datadir = pc_get_datadir()
+	datadir = pc_get_datadir(datadir)
 	pc_read_dim, obj=orig_dim, datadir=datadir, /quiet
 	if (not keyword_set (unit)) then pc_units, obj=unit, datadir=datadir, param=start_param, dim=orig_dim, /quiet
 	if (not has_tag (unit, "default_length")) then unit = create_struct (unit, display_units)

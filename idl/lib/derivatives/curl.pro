@@ -17,7 +17,7 @@ function curlx,f
     cotth = cos(y[m1:m2])/sin_y
     i_sin = where(abs(sin_y) lt 1e-5) ; sinth_min=1e-5
     if (i_sin[0] ne -1) then cotth[i_sin]=0.
-    corr = spread (cotth,0,nx) * spread(1.0/x[l1:l2],1,ny)
+    corr = spread(cotth,0,nx) * spread(1.0/x[l1:l2],1,ny)
     for n = n1, n2 do curlx[l1:l2,m1:m2,n] += f[l1:l2,m1:m2,n,2]*corr
   endif
 ;

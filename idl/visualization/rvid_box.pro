@@ -105,6 +105,7 @@ default,colorbarpos,[.80,.15,.82,.85]
 default,norm,1.0
 default,swap_endian,0
 default,quiet_skip,1
+default,yinyang,0
 ;
 if (keyword_set(png_truecolor)) then png=1
 ;
@@ -120,7 +121,7 @@ first_print = 1
 ;
 ; Construct location of slice_var.plane files
 ;
-if (not keyword_set(datatopdir)) then datatopdir=pc_get_datadir()
+datatopdir = pc_get_datadir(datatopdir)
 datadir=datatopdir
 ;
 ;  by default, look in data/, assuming we have run read_videofiles.x before:
@@ -169,6 +170,7 @@ if not all(par.lequidist) then begin
   iiy=spline(grid.y,findgen(ny),par.xyz0[1]+(findgen(ny)+.5)*(par.lxyz[1] / ny))
   iiz=spline(grid.z,findgen(nz),par.xyz0[2]+(findgen(nz)+.5)*(par.lxyz[2] / nz))
 endif else massage = 0
+yinyang=par.lyinyang
 ;
 if (keyword_set(shell)) then begin
 ;
@@ -207,7 +209,7 @@ t=zero
 xy2=fltarr(nx,ny)*one
 xy=fltarr(nx,ny)*one
 xz=fltarr(nx,nz)*one
-yz=fltarr(ny,nz)*one
+if not yinyang then yz=fltarr(ny,nz)*one
 slice_xpos=zero
 slice_ypos=zero
 slice_zpos=zero
@@ -243,6 +245,14 @@ if (keyword_set(global_scaling)) then begin
   openr, lun_2, file_slice2, /f77, /get_lun, swap_endian=swap_endian
   openr, lun_3, file_slice3, /f77, /get_lun, swap_endian=swap_endian
   openr, lun_4, file_slice4, /f77, /get_lun, swap_endian=swap_endian
+;
+  if yinyang then begin
+    ninds=0L
+    readu, lun_4, ninds
+    yz_coor=fltarr(2,ninds)
+    readu, lun_4, yz_coor
+    yz=fltarr(ninds)*one
+  endif
 ;
   while (not eof(lun_1)) do begin
 ;
@@ -301,6 +311,10 @@ openr, lun_4, file_slice4, /f77, /get_lun, swap_endian=swap_endian
 ;
 islice=0L
 ;
+if yinyang then begin
+  read, lun_4, dummy
+  read, lun_4, dummy
+endif
 while ((not eof(lun_1)) and (t le tmax)) do begin
 ;
   readu, lun_1, xy2, t, slice_z2pos

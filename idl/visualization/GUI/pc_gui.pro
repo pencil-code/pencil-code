@@ -48,7 +48,7 @@ resolve_routine, "cmp_cslice_cache", /COMPILE_FULL_FILE, /NO_RECOMPILE
 @pc_gui_settings
 
 ;;; Default data directory
-default, datadir, pc_get_datadir()
+datadir=pc_get_datadir(datadir)
 
 ;;; Default minimum size of the data display
 default, min_display_size, 256

@@ -18,7 +18,7 @@ common cdat_limits, l1, l2, m1, m2, n1, n2, nx, ny, nz
 @zder2_6th_ghost
 ;
 default, proc, 0
-if (n_elements(datatopdir) eq 0) then datatopdir=pc_get_datadir()
+datatopdir = pc_get_datadir(datatopdir)
 default, datafile, 'var.dat'
 datadir=datatopdir+'/proc'+str(proc)
 ;

@@ -11,7 +11,7 @@ print,'nname=',nname
 ;
 ;  set datatopdir to default value
 ;
-if (n_elements(datatopdir) eq 0) then datatopdir=pc_get_datadir()
+datatopdir = pc_get_datadir(datatopdir)
 filen=datatopdir+'/time_series.dat'
 ;
 ;  fileposition

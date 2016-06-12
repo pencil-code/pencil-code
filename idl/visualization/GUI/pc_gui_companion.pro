@@ -51,7 +51,7 @@ pro pc_gui_precalc, i, number=number, varfile=varfile, datadir=dir, dim=dim, sta
 	default, ye, coord.orig_ny
 	default, ze, coord.orig_nz
 	default, number, i
-	default, dir, pc_get_datadir()
+	dir=pc_get_datadir(dir)
 	default, datadir, dir
 	default, time, 0.0d0
 	if (keyword_set (par)) then start_param = start_par

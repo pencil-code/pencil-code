@@ -58,7 +58,7 @@ default,amax,.05
 default,amin,-amax
 default,swap_endian,0
 default,field,'lnrho'
-if (not keyword_set(datadir)) then datadir=pc_get_datadir()
+datadir = pc_get_datadir(datadir)
 default,nrepeat,0
 default,stride,0
 default,tmin,0.

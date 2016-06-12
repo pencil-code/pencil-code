@@ -105,7 +105,7 @@ first_print = 1
 ;
 ; Construct location of slice_var.plane files
 ;
-if (not keyword_set(datadir)) then datadir=pc_get_datadir()
+datadir = pc_get_datadir(datadir)
 ;  by default, look in data/, assuming we have run read_videofiles.x before:
 slicedir=datadir
 if (size(proc, /type) eq 0) then begin

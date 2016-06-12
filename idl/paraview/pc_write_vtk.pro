@@ -57,7 +57,7 @@ pro pc_write_vtk, data, index, filename=filename, datadir=datadir, grid=grid, di
 	if ((size (data, /type) ne 8) and (size (index, /type) ne 8)) then message, "ERROR: if 'data' is a data array, 'index' must be a structure."
 
 	; Default data directory.
-	if (not keyword_set (datadir)) then datadir = pc_get_datadir()
+	datadir = pc_get_datadir(datadir)
 
 	; Get necessary dimensions quietly.
 	if (size (dim, /type) ne 8) then pc_read_dim, object=dim, datadir=datadir, /quiet
