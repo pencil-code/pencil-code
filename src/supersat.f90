@@ -205,10 +205,10 @@ module Supersat
 !
         df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat &
                 +supersat_diff*p%del2ssat
-! 1-June-16/XY coded: to be completed 
+        ! 1-June-16/XY coded: to be completed, here is only for 1D case 
          if (lsupersat_sink) then
                  if (Rsupersat_sink) then
-                      bump=A1
+                      bump=A1*p%uu(:,1)
                   else
                       bump=A1-f(l1:l2,m,n,issat)/tau
                  endif
