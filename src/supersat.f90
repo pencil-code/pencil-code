@@ -38,9 +38,9 @@ module Supersat
 !  Run parameters.
 !
   real :: supersat_diff=0.0
-  real :: supersat_sink=0.0, Rsupersat_sink=0.5
+  real :: supersat_sink=0.0
   real, dimension(3) :: gradC0=(/0.0,0.0,0.0/)
-  logical :: lsupersat_sink=.false.
+  logical :: lsupersat_sink=.false., Rsupersat_sink=.false.
   logical :: lupw_ssat=.false.
 
   namelist /supersat_run_pars/ &
@@ -205,31 +205,13 @@ module Supersat
 !
         df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat &
                 +supersat_diff*p%del2ssat
-        !df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat+0.0001  !XY
-!
-!  Passive scalar sink/source.
-!
-!        if (lsupersat_sink) then
-!          if (Rsupersat_sink==0) then
-!            bump=supersat_sink
-!          else
-!            bump=supersat_sink*exp(-0.5*(x(l1:l2)**2+y(m)**2+z(n)**2)/Rsupersat_sink**2)
-!          endif
-!          df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-spread(bump,2)*p%ssat
-!        endif
 ! 1-June-16/XY coded: to be completed 
          if (lsupersat_sink) then
-                 !if (Rsupersat_sink==0) then
-                   ! bump=-f(l1:l2,m,n,issat)/tau
-                  !else
-                    !bump=-f(l1:l2,m,n,issat)/tau+ &
-                    !A1*fp(k,ivpz)
-!AB: this fp doesn't exist, so I remove it for now, so it compiles
-                    !A1
-                    !bump=A1
-                    !bump=A1*fp(k,ivpz)
-                    bump=A1*fp(1,ivpz)
-                ! endif
+                 if (Rsupersat_sink) then
+                      bump=A1
+                  else
+                      bump=A1-f(l1:l2,m,n,issat)/tau
+                 endif
                  df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat+bump 
          endif
 !       
