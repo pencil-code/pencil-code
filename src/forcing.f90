@@ -33,7 +33,7 @@ module Forcing
   real :: fountain=1.,width_ff=.5,nexp_ff=1.,n_hel_sin_pow=0.
   real :: crosshel=0.
   real :: radius_ff=0., k1_ff=1., kx_ff=1., ky_ff=1., kz_ff=1., z_center=0.
-  real :: slope_ff=0.,work_ff=0.,omega_ff=1.
+  real :: slope_ff=0., work_ff=0., omega_ff=1., n_equator_ff=1.
   real :: tforce_stop=impossible,tforce_stop2=impossible
   real :: tforce_start=0.,tforce_start2=0.
   real :: wff_ampl=0.,xff_ampl=0.,zff_ampl=0.,zff_hel=0.,max_force=impossible
@@ -120,7 +120,7 @@ module Forcing
        iforce2, force2, force1_scl, force2_scl, iforcing_zsym, &
        kfountain,fountain,tforce_stop,tforce_stop2, &
        radius_ff,k1_ff,kx_ff,ky_ff,kz_ff,slope_ff,work_ff,lmomentum_ff, &
-       omega_ff,location_fixed,lrandom_location, &
+       omega_ff, n_equator_ff, location_fixed, lrandom_location, &
        lwrite_gausspot_to_file,lwrite_gausspot_to_file_always, &
        wff_ampl,xff_ampl,zff_ampl,zff_hel, &
        wff2_ampl,zff2_ampl, &
@@ -246,8 +246,9 @@ module Forcing
         profy_ampl=1.; profy_hel=1.
         profz_ampl=1.
         do n=1,mz
-          profz_hel(n)=sin(2*pi*z(n)/Lz)
+          profz_hel(n)=sin(2*pi*z(n)*n_equator_ff/Lz)
         enddo
+!
       elseif (iforce_profile=='equator_step') then
         profx_ampl=1.; profx_hel=1.
         profy_ampl=1.; profy_hel=1.
