@@ -210,7 +210,7 @@ module Supersat
                  if (Rsupersat_sink) then
                       bump=A1*p%uu(:,1)
                   else
-                      bump=A1-f(l1:l2,m,n,issat)/tau
+                      bump=A1*p%uu(:,1)-f(l1:l2,m,n,issat)/tau
                  endif
                  df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat+bump 
          endif
