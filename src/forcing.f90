@@ -43,7 +43,7 @@ module Forcing
   real, dimension(3) :: location_fixed=(/0.,0.,0./)
   real, dimension(nx) :: profx_ampl=1.,profx_hel=1., profx_ampl1=0.
   real, dimension(my) :: profy_ampl=1.,profy_hel=1.
-  real, dimension(mz) :: profz_ampl=1.,profz_hel=1., d1profz_ampl=0., d2profz_ampl=0.
+  real, dimension(mz) :: profz_ampl=1.,profz_hel=1.
   integer :: kfountain=5,ifff,iffx,iffy,iffz,i2fff,i2ffx,i2ffy,i2ffz
   integer :: kzlarge=1
   integer :: itestflow_forcing_offset=0,itestfield_forcing_offset=0
@@ -182,6 +182,7 @@ module Forcing
 !  15-feb-2015/MR: returning before entering continuous forcing section when
 !                  no such forcing is requested
 !  18-dec-2015/MR: minimal wavevectors k1xyz moved here from grid
+!  14-Jun-2016/MR+NS: added forcing sinx*exp(-z^2)
 !
       use General, only: bessj
       use Mpicomm, only: stop_it
@@ -719,14 +720,9 @@ module Forcing
           sinx(:,i)=sin(kf_fcont_x(i)*x)
           sinz(:,i)=sin(kf_fcont_z(i)*z)
           profy_ampl=exp(-(kf_fcont_y(i)*y)**2)
-        elseif (iforcing_cont(i)=='(0,cosx*expmz2,0)' &
-           .or. iforcing_cont(i)=='(0,cosx*expmz2,0)_Lor') then
-          cosx(:,i)=cos(kf_fcont_x(i)*x)
+        elseif (iforcing_cont(i)=='(0,sinx*exp(-z^2),0)') then
           sinx(:,i)=sin(kf_fcont_x(i)*x)
-          profz_ampl  = exp(-(kf_fcont_z(i) *(z-z_center_fcont(i)))**2)
-print*,'NS: z_center=',z_center_fcont
-          d1profz_ampl= -2.*kf_fcont_z(i)**2*(z-z_center_fcont(i))*profz_ampl
-          d2profz_ampl=(-2.*kf_fcont_z(i)**2+4.*kf_fcont_z(i)**4*(z-z_center_fcont(i))**2)*profz_ampl
+          cosx(:,i)=cos(kf_fcont_x(i)*x)
         elseif (iforcing_cont(i)=='J0_k1x') then
           do l=l1,l2
             profx_ampl (l-l1+1)=ampl_ff(i) *bessj(0,k1bessel0*x(l))
@@ -4779,8 +4775,8 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !  24-mar-08/axel: adapted from density.f90
 !
       if (lforcing_cont) lpenc_requested(i_fcont)=.true.
-      if (iforcing_cont(1)=='(0,cosx*cosz,0)_Lor') lpenc_requested(i_rho1)=.true.
-      if (iforcing_cont(1)=='(0,cosx*expmz2,0)_Lor') lpenc_requested(i_rho1)=.true.
+      if (iforcing_cont(1)=='(0,cosx*cosz,0)_Lor') &
+         lpenc_requested(i_rho1)=.true.
       if (lmomentum_ff) lpenc_requested(i_rho1)=.true.
       if (idiag_qfm/=0) lpenc_requested(i_curlo)=.true.
 !
@@ -4843,7 +4839,7 @@ call fatal_error('hel_vec','radial profile should be quenched')
 !
       use Gravity, only: gravz
       use Mpicomm, only: stop_it
-      use Sub, only: quintic_step, quintic_der_step
+      use Sub, only: quintic_step, quintic_der_step, step
       use Viscosity, only: getnu
 !
       integer,                intent(in) :: i
@@ -5017,21 +5013,13 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,2)=ampl_ff(i)*cosx(l1:l2,i)*cosz(n,i)*profy_ampl(m)
           force(:,3)=0.
 !
-!  f=(0,cosx*expmz2,0), modulated by profy_ampl and profz_ampl
+!  f=(0,sinx*exp(-z^2),0)
 !
-        case ('(0,cosx*expmz2,0)')
+        case ('(0,sinx*exp(-z^2),0)')
           force(:,1)=0.
-          !force(:,2)=ampl_ff(i)*cosx(l1:l2,i)*(kx_ff**2*profz_ampl(n)-d2profz_ampl(n))
-          force(:,2)=ampl_ff(i)*cosx(l1:l2,i)*profz_ampl(n)
+          force(:,2)=ampl_ff(i)*sinx(l1:l2,i)*exp(-((z(n)-r_ff)/width_ff)**2) &
+                     *(step(x(l1:l2),xminf,2.)-step(x(l1:l2),xmaxf,2.))
           force(:,3)=0.
-!
-!  f=(0,cosx*expmz2,0)_Lor, Lorentz force belonging to f=(0,cosx*expmz2,0)
-!
-        case ('(0,cosx*expmz2,0)_Lor')
-          tmp=ampl_ff(i)**2*cosx(l1:l2,i)*(kf_fcont_x(i)**2*profz_ampl(n)-d2profz_ampl(n))*rho1
-          force(:,1)=-tmp*sinx(l1:l2,i)*profz_ampl(n)*kf_fcont_x(i)
-          force(:,2)= 0.
-          force(:,3)=+tmp*cosx(l1:l2,i)*d1profz_ampl(n)
 !
 !  f=(sinz,cosz,0)
 !
