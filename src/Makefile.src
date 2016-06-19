@@ -2224,8 +2224,8 @@ LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(LDONLYFLAGS)
 #
 #  Default target (start.x and run.x are compiled in "code").
 #
-legacy_default: start_buildtime Makefile cparam.inc legacy_code stop_buildtime buildinfo
-default_to_be: start_buildtime Makefile cparam.inc code stop_buildtime buildinfo
+legacy_default: Makefile cparam.inc legacy_code buildinfo
+default_to_be: Makefile cparam.inc code buildinfo
 #
 #  Short hand for modules that must be preprocessed with mkcparam.
 #  Please use alphabetical order.
@@ -2373,12 +2373,6 @@ semiauto-conf:
 #
 #  Generate files for automated debugging and testing etc.
 #
-start_buildtime:
-	@echo "<buildtime>\n  <timestamp type='start'>`date`</timestamp>" > .buildtime
-	$${PENCIL_HOME}/utils/pc_identify_revision --reset
-stop_buildtime:
-	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
-	$${PENCIL_HOME}/utils/pc_identify_revision
 
 buildinfo:
 	@$(PC_XMLEXPORT) buildinfo -e "CC='$(CC)';CFLAGS='$(CFLAGS)';F90='$(F90)';F77='$(F77)';" \
@@ -2454,6 +2448,8 @@ EXECUTABLES=start.x run.x \
 #
 LAST_OBJ=$(EXECUTABLES:.x=.o)
 legacy_code: Makefile.inc Makefile-standard.inc cparam.inc
+	$${PENCIL_HOME}/utils/pc_identify_revision --reset
+	@echo "<buildtime>\n  <timestamp type='start'>`date`</timestamp>" > .buildtime
 	@# Realize error even when last command in pipe is FCCLEANER:
 	@echo "$(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES)"
 	@if [ ! -z "$(FCCLEANER)" ]; then \
@@ -2462,7 +2458,11 @@ legacy_code: Makefile.inc Makefile-standard.inc cparam.inc
 	else \
 	    $(MAKE) $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) ; \
 	fi
+	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
+	$${PENCIL_HOME}/utils/pc_identify_revision
 code: Makefile.inc Makefile-standard.inc cparam.inc
+	$${PENCIL_HOME}/utils/pc_identify_revision --reset
+	@echo "<buildtime>\n  <timestamp type='start'>`date`</timestamp>" > .buildtime
 	@# Realize error even when last command in pipe is FCCLEANER:
 	@echo "$(MAKE) -f Makefile.src $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES)"
 	@if [ ! -z "$(FCCLEANER)" ]; then \
@@ -2471,6 +2471,8 @@ code: Makefile.inc Makefile-standard.inc cparam.inc
 	else \
 	    $(MAKE) -f Makefile.src $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) ; \
 	fi
+	$${PENCIL_HOME}/utils/pc_identify_revision
+	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
 #
 FASTEXECS=startfast.x runfast.x combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x
 fast:
