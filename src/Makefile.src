@@ -2374,10 +2374,10 @@ semiauto-conf:
 #  Generate files for automated debugging and testing etc.
 #
 start_buildtime:
-	@echo "<buildtime><timestamp type='start'>`date`</timestamp>" > .buildtime
+	@echo "<buildtime>\n  <timestamp type='start'>`date`</timestamp>" > .buildtime
 	$${PENCIL_HOME}/utils/pc_identify_revision --reset
 stop_buildtime:
-	@echo "<timestamp type='end'>`date`</timestamp></buildtime>" >> .buildtime
+	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
 	$${PENCIL_HOME}/utils/pc_identify_revision
 
 buildinfo:
