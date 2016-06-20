@@ -1572,16 +1572,20 @@ module Sub
 !
     endsubroutine div_mn_2tensor
 !***********************************************************************
-    subroutine curl_mn(aij,b,a)
+    subroutine curl_mn(aij,b,a,lcovariant_derivative)
 !
 !  Calculate curl from derivative matrix.
 !
 !  21-jul-03/axel: coded
 !  21-feb-07/axel: corrected spherical coordinates
 !  14-mar-07/wlad: added cylindrical coordinates
+!  16-jun-16/fred: added option to use covariant derivative bij
+!
+      use General, only: loptest
 !
       real, dimension (nx,3,3), intent (in) :: aij
       real, dimension (nx,3), intent (in), optional :: a
+      logical, intent (in), optional :: lcovariant_derivative
       real, dimension (nx,3), intent (out) :: b
       integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7
 !
@@ -1592,12 +1596,14 @@ module Sub
 !  Adjustments for spherical coordinate system.
 !
       if (lspherical_coords) then
-        if (.not. present(a)) then
-          call fatal_error('curl_mn','Need a for spherical curl')
+        if (.not.loptest(lcovariant_derivative)) then
+          if (.not. present(a)) then
+            call fatal_error('curl_mn','Need a for spherical curl')
+          endif
+          b(:,1)=b(:,1)+a(:,3)*r1_mn*cotth(m)
+          b(:,2)=b(:,2)-a(:,3)*r1_mn
+          b(:,3)=b(:,3)+a(:,2)*r1_mn
         endif
-        b(:,1)=b(:,1)+a(:,3)*r1_mn*cotth(m)
-        b(:,2)=b(:,2)-a(:,3)*r1_mn
-        b(:,3)=b(:,3)+a(:,2)*r1_mn
       endif
 !
 !  Adjustments for cylindrical coordinate system.
@@ -1605,7 +1611,7 @@ module Sub
 !  We do this here currently up to second order, and only for curl_mn.
 !
       if (lcylindrical_coords.and.present(a)) then
-        b(:,3)=b(:,3)+a(:,2)*rcyl_mn1
+        if (.not.loptest(lcovariant_derivative)) b(:,3)=b(:,3)+a(:,2)*rcyl_mn1
         if (rcyl_mn(1)==0.) b(i1,3)=(360.*b(i2,3)-450.*b(i3,3)+400.*b(i4,3) &
                                     -225.*b(i5,3)+72.*b(i6,3)-10.*b(i7,3))/147.
       endif
@@ -2378,7 +2384,7 @@ module Sub
 !
     endsubroutine del6v
 !***********************************************************************
-    subroutine gij_etc(f,iref,aa,aij,bij,del2,graddiv)
+    subroutine gij_etc(f,iref,aa,aij,bij,del2,graddiv,lcovariant_derivative)
 !
 !  Calculate B_i,j = eps_ikl A_l,jk and A_l,kk.
 !
@@ -2386,12 +2392,16 @@ module Sub
 !  26-jul-05/tobi: do not calculate both d^2 A/(dx dy) and d^2 A/(dy dx)
 !  23-feb-07/axel: added spherical coordinates
 !   7-mar-07/wlad: added cylindrical coordinates
-!  29-aug-13/MR: made bij optional; added error messages for misssing optional parameters
+!  29-aug-13/MR: made bij optional; added error messages for missing optional parameters
+!  15-jun-16/fred: bij optional covariant derivative terms; spherical/cylindrical
+!                : reduced calls to only use when required 
 !
       use Deriv, only: der2,derij
+      use General, only: loptest
 !
       real, dimension (mx,my,mz,mfarray), intent (in) :: f
       integer, intent (in) :: iref
+      logical, intent (in), optional :: lcovariant_derivative
       real, dimension (nx,3), intent (in), optional :: aa
       real, dimension (nx,3,3), intent (in), optional :: aij
       real, dimension (nx,3,3), intent (out), optional :: bij
@@ -2418,6 +2428,32 @@ module Sub
       do i=1,3
         do j=1,3
           call der2(f,iref1+i,tmp,j); d2A(:,j,j,i)=tmp
+          !if (i==j) then
+          !  if(present(del2).or.present(graddiv)) &
+          !            call der2(f,iref1+i,tmp,j); d2A(:,j,j,i)=tmp
+          !  if (j.ne.1) then
+          !    call derij(f,iref1+i,tmp,1,j); d2A(:,1,j,i)=tmp
+          !    if(present(graddiv)) d2A(:,j,1,i)=tmp
+          !  endif 
+          !  if (j.ne.2) then
+          !    call derij(f,iref1+i,tmp,2,j); d2A(:,2,j,i)=tmp
+          !    if(present(graddiv)) d2A(:,j,2,i)=tmp
+          !  endif 
+          !  if (j.ne.3) then
+          !    call derij(f,iref1+i,tmp,3,j); d2A(:,3,j,i)=tmp
+          !    if(present(graddiv)) d2A(:,j,3,i)=tmp
+          !  endif 
+          !else
+          !  call der2(f,iref1+i,tmp,j); d2A(:,j,j,i)=tmp
+          !  if (present(bij)) then
+          !    if (j.ne.1.and.i==2) &
+          !         call derij(f,iref1+i,tmp,1,j); d2A(:,1,j,i)=tmp; d2A(:,j,1,i)=tmp
+          !    if (j.ne.2.and.i==3) &
+          !         call derij(f,iref1+i,tmp,2,j); d2A(:,2,j,i)=tmp; d2A(:,j,2,i)=tmp
+          !    if (j.ne.3.and.i==1) &
+          !         call derij(f,iref1+i,tmp,3,j); d2A(:,3,j,i)=tmp; d2A(:,j,3,i)=tmp
+          !  endif
+          !endif
         enddo
         call derij(f,iref1+i,tmp,2,3); d2A(:,2,3,i)=tmp; d2A(:,3,2,i)=tmp
         call derij(f,iref1+i,tmp,3,1); d2A(:,3,1,i)=tmp; d2A(:,1,3,i)=tmp
@@ -2470,6 +2506,18 @@ module Sub
           bij(:,3,1)=bij(:,3,1)+aij(:,2,1)*r1_mn         -aa(:,2)*r2_mn
           bij(:,2,1)=bij(:,2,1)-aij(:,3,1)*r1_mn         +aa(:,3)*r2_mn
           bij(:,1,2)=bij(:,1,2)+aij(:,3,2)*r1_mn*cotth(m)-aa(:,3)*r2_mn*sin2th(m)
+          if (loptest(lcovariant_derivative)) then
+            bij(:,1,1)=bij(:,1,1)+(aij(:,3,2)*r1_mn-aa(:,3)*r2_mn)*cotth(m)
+            bij(:,1,2)=bij(:,1,2)+(aij(:,3,1)-aij(:,1,3))*r1_mn+aa(:,3)*r2_mn
+            bij(:,1,3)=bij(:,1,3)+(aij(:,1,2)-aij(:,2,1))*r1_mn-aa(:,2)*r2_mn
+            !bij(:,2,1)=bij(:,2,1)
+            bij(:,2,2)=bij(:,2,2)-aij(:,2,3)*r1_mn         +aa(:,3)*r2_mn*cotth(m)
+            bij(:,2,3)=bij(:,2,3)+(aij(:,1,2)*r1_mn-aij(:,2,1)*r1_mn-aa(:,2)*r2_mn)&
+                                                                         *cotth(m)
+            !bij(:,3,1)=bij(:,3,1)
+            !bij(:,3,2)=bij(:,3,2)
+            bij(:,3,3)=bij(:,3,3)+(aij(:,3,2)+(aij(:,1,3)-aij(:,3,1))*cotth(m))*r1_mn
+          endif
         endif
 !
 !  Corrections for cylindrical coordinates.
@@ -2477,8 +2525,22 @@ module Sub
         if (lcylindrical_coords) then
           if (.not.present(aa)) &
             call fatal_error('gij_etc', 'aa needed for cylindrical coordinates')
-          bij(:,3,2)=bij(:,3,2)+ aij(:,2,2)*r1_mn
-          bij(:,3,1)=bij(:,3,1)+(aij(:,2,1)+aij(:,1,2))*rcyl_mn1-aa(:,2)*rcyl_mn2
+          bij(:,3,2)=bij(:,3,2)+ aij(:,2,2)*rcyl_mn1
+!          !bij(:,3,1)=bij(:,3,1)+(aij(:,2,1)+aij(:,1,2))*rcyl_mn1-aa(:,2)*rcyl_mn2
+!  FAG:Partial correction to -d2A(:,2,1,1) already applied above +aij(:,i,2)*rcyl_mn1
+!
+          bij(:,3,1)=bij(:,3,1)+aij(:,2,1)*rcyl_mn1-aa(:,2)*rcyl_mn2
+          if (loptest(lcovariant_derivative)) then
+            !bij(:,1,1)=bij(:,1,1)
+            bij(:,1,2)=bij(:,1,2)+(aij(:,3,1)-aij(:,1,3))*rcyl_mn1
+            !bij(:,1,3)=bij(:,1,3)
+            !bij(:,2,1)=bij(:,2,1)
+            bij(:,2,2)=bij(:,2,2)+(aij(:,3,2)-aij(:,2,3))*rcyl_mn1
+            !bij(:,2,3)=bij(:,2,3)
+            !bij(:,3,1)=bij(:,3,1)
+            !bij(:,3,2)=bij(:,3,2)
+            bij(:,3,3)=bij(:,3,3)+aij(:,2,3)*rcyl_mn1
+          endif
         endif
       endif
 !
@@ -2516,8 +2578,14 @@ module Sub
             +cotth(m)*aij(:,2,3) ) &
             +cotth(m)*aij(:,3,2)-r1_mn*sin2th(m)*aa(:,3) )
         endif
-        if (lcylindrical_coords) call fatal_error('gij_etc', &
-            'use del2=graddiv-curlcurl for cylindrical coords')
+        if (lcylindrical_coords) then
+          if (.not.present(aa)) &
+            call fatal_error('gij_etc', 'aa needed for cylindrical coordinates')
+          del2(:,1)= del2(:,1)+&
+            rcyl_mn1*(aij(:,1,1)-2*aij(:,2,2))-rcyl_mn2*aa(:,1)
+          del2(:,2)=del2(:,2)+&               
+            rcyl_mn1*(aij(:,2,1)-2*aij(:,1,2))-rcyl_mn2*aa(:,2)
+        endif
       endif
 !
     endsubroutine gij_etc
