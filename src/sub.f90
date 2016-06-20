@@ -2394,7 +2394,6 @@ module Sub
 !   7-mar-07/wlad: added cylindrical coordinates
 !  29-aug-13/MR: made bij optional; added error messages for missing optional parameters
 !  15-jun-16/fred: bij optional covariant derivative terms; spherical/cylindrical
-!                : reduced calls to only use when required 
 !
       use Deriv, only: der2,derij
       use General, only: loptest
@@ -2428,32 +2427,6 @@ module Sub
       do i=1,3
         do j=1,3
           call der2(f,iref1+i,tmp,j); d2A(:,j,j,i)=tmp
-          !if (i==j) then
-          !  if(present(del2).or.present(graddiv)) &
-          !            call der2(f,iref1+i,tmp,j); d2A(:,j,j,i)=tmp
-          !  if (j.ne.1) then
-          !    call derij(f,iref1+i,tmp,1,j); d2A(:,1,j,i)=tmp
-          !    if(present(graddiv)) d2A(:,j,1,i)=tmp
-          !  endif 
-          !  if (j.ne.2) then
-          !    call derij(f,iref1+i,tmp,2,j); d2A(:,2,j,i)=tmp
-          !    if(present(graddiv)) d2A(:,j,2,i)=tmp
-          !  endif 
-          !  if (j.ne.3) then
-          !    call derij(f,iref1+i,tmp,3,j); d2A(:,3,j,i)=tmp
-          !    if(present(graddiv)) d2A(:,j,3,i)=tmp
-          !  endif 
-          !else
-          !  call der2(f,iref1+i,tmp,j); d2A(:,j,j,i)=tmp
-          !  if (present(bij)) then
-          !    if (j.ne.1.and.i==2) &
-          !         call derij(f,iref1+i,tmp,1,j); d2A(:,1,j,i)=tmp; d2A(:,j,1,i)=tmp
-          !    if (j.ne.2.and.i==3) &
-          !         call derij(f,iref1+i,tmp,2,j); d2A(:,2,j,i)=tmp; d2A(:,j,2,i)=tmp
-          !    if (j.ne.3.and.i==1) &
-          !         call derij(f,iref1+i,tmp,3,j); d2A(:,3,j,i)=tmp; d2A(:,j,3,i)=tmp
-          !  endif
-          !endif
         enddo
         call derij(f,iref1+i,tmp,2,3); d2A(:,2,3,i)=tmp; d2A(:,3,2,i)=tmp
         call derij(f,iref1+i,tmp,3,1); d2A(:,3,1,i)=tmp; d2A(:,1,3,i)=tmp
