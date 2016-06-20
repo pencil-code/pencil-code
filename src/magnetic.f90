@@ -290,7 +290,7 @@ module Magnetic
       alphaSSm,eta_int, eta_ext, eta_shock, eta_va,eta_j, eta_j2, eta_jrho, &
       eta_min, wresistivity, eta_xy_max, rhomin_jxb, va2max_jxb, &
       va2power_jxb, llorentzforce, linduction, ldiamagnetism, B2_diamag, &
-      reinitialize_aa, rescale_aa, initaa, amplaa, &
+      reinitialize_aa, rescale_aa, initaa, amplaa, lcovariant_magnetic, &
       lB_ext_pot, D_smag, brms_target, rescaling_fraction, lfreeze_aint, &
       lfreeze_aext, sigma_ratio, zdep_profile, ydep_profile, xdep_profile, eta_width, &
       eta_xwidth, eta_ywidth, eta_zwidth, eta_xwidth0, eta_xwidth1, &
@@ -2021,7 +2021,7 @@ module Magnetic
 !  graddiva is not needed. We still need it for the lspherical_coords
 !  case, although we should check this.
 !  del2a now computed directly in all spherical so not reuired
-      if (lspherical_coords) lpenc_requested(i_graddiva)=.true.
+!      if (lspherical_coords) lpenc_requested(i_graddiva)=.true.
       if (lentropy .or. lresi_smagorinsky .or. ltemperature) then
         lpenc_requested(i_j2)=.true.
       endif
@@ -2511,7 +2511,7 @@ module Magnetic
           m = mm(imn)
           n = nn(imn)
           call gij(f, iaa, aij, 1)
-          call curl_mn(aij, bb, f(l1:l2,m,n,iax:iaz))
+          call curl_mn(aij, bb, A=f(l1:l2,m,n,iax:iaz))
 !
 !  Add imposed field, if any
 !
@@ -2574,6 +2574,7 @@ module Magnetic
 !
 !  19-nov-04/anders: coded
 !  18-jun-13/axel: b2 now includes B_ext by default (luse_Bext_in_b2=T is kept)
+!  20-jun-16/fred: added derivative tensor option and streamlined gij_etc
 !
       use Sub
       use Diagnostics, only: sum_mn_name
@@ -2601,7 +2602,7 @@ module Magnetic
         if (lbb_as_comaux) then
           p%bb = f(l1:l2,m,n,ibx:ibz)
         else
-          call curl_mn(p%aij, p%bb, p%aa)
+          call curl_mn(p%aij, p%bb, A=p%aa)
         endif
 !
 !  Save field before adding imposed field (for diagnostics).
@@ -2702,35 +2703,56 @@ module Magnetic
 !  For non-cartesian coordinates jj is always required for del2a=graddiva-jj
 !  fred: del2a now calculated directly if required and gradient tensor available
 !  reduced calls to exclude unnecessary calculation of unwanted variables
-      if (lpenc_loc(i_bij) .or. lpenc_loc(i_del2a) .or. lpenc_loc(i_graddiva) .or. &
-          lpenc_loc(i_jj) ) then
+!      if (lpenc_loc(i_bij) .or. lpenc_loc(i_del2a) .or. lpenc_loc(i_graddiva) .or. &
+!          lpenc_loc(i_jj) ) then
+!        if (lcartesian_coords) then
+!          call gij_etc(f,iaa,p%aa,p%aij,p%bij,p%del2a,p%graddiva)
+!          if (.not. lpenc_loc(i_bij)) p%bij=0.0      ! Avoid warnings from pencil
+!          if (.not. lpenc_loc(i_del2a)) p%del2a=0.0  ! consistency check...
+!          if (.not. lpenc_loc(i_graddiva)) p%graddiva=0.0
+!!          if (lpenc_loc(i_jj)) call curl_mn(p%bij,p%jj,p%bb)
+!!DM curl in cartesian does not need p%bb, then it is better not
+!! to give it.
+!          if (lpenc_loc(i_jj)) call curl_mn(p%bij,p%jj)
+!        else
+!          call gij_etc(f,iaa,AA=p%aa,AIJ=p%aij,BIJ=p%bij,&
+!                               GRADDIV=p%graddiva,&
+!                               LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
+!          if (.not. lpenc_loc(i_bij)) p%bij=0.0      ! Avoid warnings from pencil
+!          call curl_mn(p%bij,p%jj,A=p%bb,LCOVARIANT_DERIVATIVE=lcovariant_magnetic)            ! consistency check...
+!          if (lpenc_loc(i_del2a)) p%del2a=p%graddiva-p%jj
+!!           if (lpenc_loc(i_del2a)) call del2v(f,iaa,p%del2a,p%aij,p%aa)
+!        endif
+!      endif
+      if (lpenc_loc(i_bij).and.lpenc_loc(i_del2a)) then
         if (lcartesian_coords) then
-          call gij_etc(f,iaa,p%aa,p%aij,p%bij,p%del2a,p%graddiva)
-          if (.not. lpenc_loc(i_bij)) p%bij=0.0      ! Avoid warnings from pencil
-          if (.not. lpenc_loc(i_del2a)) p%del2a=0.0  ! consistency check...
-          if (.not. lpenc_loc(i_graddiva)) p%graddiva=0.0
-!          if (lpenc_loc(i_jj)) call curl_mn(p%bij,p%jj,p%bb)
-!DM curl in cartesian does not need p%bb, then it is better not
-! to give it.
+          call gij_etc(f,iaa,BIJ=p%bij,DEL2=p%del2a)
           if (lpenc_loc(i_jj)) call curl_mn(p%bij,p%jj)
         else
-          call gij_etc(f,iaa,p%aa,p%aij,p%bij,GRADDIV=p%graddiva)
-          if (.not. lpenc_loc(i_bij)) p%bij=0.0      ! Avoid warnings from pencil
-          call curl_mn(p%bij,p%jj,p%bb)            ! consistency check...
-          if (lpenc_loc(i_del2a)) p%del2a=p%graddiva-p%jj
-!           if (lpenc_loc(i_del2a)) call del2v(f,iaa,p%del2a,p%aij,p%aa)
+          call gij_etc(f,iaa,AA=p%aa,AIJ=p%aij,BIJ=p%bij,DEL2=p%del2a,&
+!                               GRADDIV=p%graddiva,&
+                               LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
+          if (lpenc_loc(i_jj)) &
+              call curl_mn(p%bij,p%jj,A=p%bb,LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
+        endif
+      elseif (lpenc_loc(i_bij).and..not.lpenc_loc(i_del2a)) then
+        if (lcartesian_coords) then
+          call gij_etc(f,iaa,BIJ=p%bij)
+          if (lpenc_loc(i_jj)) call curl_mn(p%bij,p%jj)
+        else
+          call gij_etc(f,iaa,AA=p%aa,AIJ=p%aij,BIJ=p%bij,&
+                               LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
+          if (lpenc_loc(i_jj)) &
+              call curl_mn(p%bij,p%jj,A=p%bb,LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
+        endif
+      elseif (lpenc_loc(i_del2a).and..not.lpenc_loc(i_bij)) then
+        if (lcartesian_coords) then
+          call gij_etc(f,iaa,DEL2=p%del2a)
+        else
+          call gij_etc(f,iaa,AA=p%aa,AIJ=p%aij,DEL2=p%del2a,&
+                               LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
         endif
       endif
-!      if (lpenc_loc(i_bij).and.lpenc_loc(i_del2a)) then
-!        call gij_etc(f,iaa,p%aa,p%aij,p%bij,p%del2a, &
-!                       lcovariant_derivative=lcovariant_magnetic)
-!      elseif (lpenc_loc(i_bij).and..not.lpenc_loc(i_del2a)) then
-!        call gij_etc(f,iaa,p%aa,p%aij,p%bij, &
-!                       lcovariant_derivative=lcovariant_magnetic)
-!      elseif (lpenc_loc(i_del2a).and..not.lpenc_loc(i_bij)) then
-!        call gij_etc(f,iaa,p%aa,p%aij,DEL2=p%del2a, &
-!                       lcovariant_derivative=lcovariant_magnetic)
-!      endif
 !
 !  possibility of diamagnetism
 !
@@ -2739,11 +2761,6 @@ module Magnetic
 ! jj
       if (lpenc_loc(i_jj)) then
 ! consistency check...
-!        if (lcartesian_coords) then
-!          call curl_mn(p%bij,p%jj)
-!        else
-!          call curl_mn(p%bij,p%jj,p%bb,lcovariant_magnetic)            
-!        endif
         p%jj=mu01*p%jj
 !
 !  Add external j-field.
