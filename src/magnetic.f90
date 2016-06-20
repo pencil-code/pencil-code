@@ -149,7 +149,7 @@ module Magnetic
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: lpress_equil_alt=.false.
   logical :: llorentzforce=.true., linduction=.true.
-  logical :: ldiamagnetism=.false.
+  logical :: ldiamagnetism=.false., lcovariant_magnetic=.false.
   logical :: lresi_eta_const=.false.
   logical :: lresi_sqrtrhoeta_const=.false.
   logical :: lresi_etaSS=.false.
@@ -506,6 +506,8 @@ module Magnetic
   integer :: idiag_jmbmz=0      ! DIAG_DOC: $\left<\left<\Jv\right>_{xy}\cdot\left<\Bv\right>_{xy}
                                 ! DIAG_DOC:   \right>$ \quad(current helicity
                                 ! DIAG_DOC:   of $xy$-averaged mean field)
+  integer :: idiag_Rmmz=0       ! DIAG_DOC: $\left<\frac{|\uv\times\Bv|}{|\eta\Jv|}
+                                ! DIAG_DOC: \right>_{xy}
   integer :: idiag_kx_aa=0      ! DIAG_DOC: $k_x$
   integer :: idiag_kmz=0        ! DIAG_DOC: $\left<\left<\Jv\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>/
                                 ! DIAG_DOC:  \left<\left<\Bv\right>_{xy}^2\right>$
@@ -2018,7 +2020,7 @@ module Magnetic
 !  Note that for the cylindrical case, according to lpencil_check,
 !  graddiva is not needed. We still need it for the lspherical_coords
 !  case, although we should check this.
-!
+!  del2a now computed directly in all spherical so not reuired
       if (lspherical_coords) lpenc_requested(i_graddiva)=.true.
       if (lentropy .or. lresi_smagorinsky .or. ltemperature) then
         lpenc_requested(i_j2)=.true.
@@ -2169,7 +2171,8 @@ module Magnetic
 !
       if (idiag_djuidjbim/=0 .or. idiag_uxDxuxbm/=0) lpenc_diagnos(i_uij)=.true.
       if (idiag_uxjm/=0) lpenc_diagnos(i_uxj)=.true.
-      if (idiag_uxBrms/=0 .or. idiag_Rmrms/=0) lpenc_diagnos(i_uxb2)=.true.
+      if (idiag_uxBrms/=0 .or. idiag_Rmrms/=0 .or. idiag_Rmmz/=0) &
+          lpenc_diagnos(i_uxb2)=.true.
       if (idiag_beta1m/=0 .or. idiag_beta1max/=0 .or. idiag_beta1mz/=0) &
           lpenc_diagnos(i_beta1)=.true.
       if (idiag_betam /= 0 .or. idiag_betamax /= 0 .or. idiag_betamin /= 0 .or. &
@@ -2689,7 +2692,7 @@ module Magnetic
         if (.not.lfargo_advection) then
           call u_dot_grad(f,iaa,p%aij,p%uu,p%uga,UPWIND=lupw_aa)
         else
-          ! Fargo (Galilean invariant advection) only works with the
+          ! fargo (galilean invariant advection) only works with the
           ! advective gauge, but the term will be added in special/fargo.f90
           p%uga=0.
         endif
@@ -2697,13 +2700,14 @@ module Magnetic
 !
 !  bij, del2a, graddiva
 !  For non-cartesian coordinates jj is always required for del2a=graddiva-jj
-!
+!  fred: del2a now calculated directly if required and gradient tensor available
+!  reduced calls to exclude unnecessary calculation of unwanted variables
       if (lpenc_loc(i_bij) .or. lpenc_loc(i_del2a) .or. lpenc_loc(i_graddiva) .or. &
           lpenc_loc(i_jj) ) then
         if (lcartesian_coords) then
           call gij_etc(f,iaa,p%aa,p%aij,p%bij,p%del2a,p%graddiva)
           if (.not. lpenc_loc(i_bij)) p%bij=0.0      ! Avoid warnings from pencil
-          if (.not. lpenc_loc(i_del2A)) p%del2A=0.0  ! consistency check...
+          if (.not. lpenc_loc(i_del2a)) p%del2a=0.0  ! consistency check...
           if (.not. lpenc_loc(i_graddiva)) p%graddiva=0.0
 !          if (lpenc_loc(i_jj)) call curl_mn(p%bij,p%jj,p%bb)
 !DM curl in cartesian does not need p%bb, then it is better not
@@ -2717,6 +2721,16 @@ module Magnetic
 !           if (lpenc_loc(i_del2a)) call del2v(f,iaa,p%del2a,p%aij,p%aa)
         endif
       endif
+!      if (lpenc_loc(i_bij).and.lpenc_loc(i_del2a)) then
+!        call gij_etc(f,iaa,p%aa,p%aij,p%bij,p%del2a, &
+!                       lcovariant_derivative=lcovariant_magnetic)
+!      elseif (lpenc_loc(i_bij).and..not.lpenc_loc(i_del2a)) then
+!        call gij_etc(f,iaa,p%aa,p%aij,p%bij, &
+!                       lcovariant_derivative=lcovariant_magnetic)
+!      elseif (lpenc_loc(i_del2a).and..not.lpenc_loc(i_bij)) then
+!        call gij_etc(f,iaa,p%aa,p%aij,DEL2=p%del2a, &
+!                       lcovariant_derivative=lcovariant_magnetic)
+!      endif
 !
 !  possibility of diamagnetism
 !
@@ -2724,6 +2738,12 @@ module Magnetic
 !
 ! jj
       if (lpenc_loc(i_jj)) then
+! consistency check...
+!        if (lcartesian_coords) then
+!          call curl_mn(p%bij,p%jj)
+!        else
+!          call curl_mn(p%bij,p%jj,p%bb,lcovariant_magnetic)            
+!        endif
         p%jj=mu01*p%jj
 !
 !  Add external j-field.
@@ -4534,6 +4554,10 @@ module Magnetic
           call xzintegrate_mn_name_y(p%bb(:,2),idiag_mflux_y)
         if (idiag_mflux_z/=0) &
           call xyintegrate_mn_name_z(p%bb(:,3),idiag_mflux_z)
+        if (idiag_Rmmz/=0) then
+          call dot2_mn(fres,fres2)
+          call xysum_mn_name_z(sqrt(p%uxb2/fres2),idiag_Rmmz)
+        endif
       endif
 !
 !  2-D averages.
@@ -7514,7 +7538,7 @@ module Magnetic
         idiag_bymy=0; idiag_bzmy=0; idiag_bx2my=0; idiag_by2my=0; idiag_bz2my=0
         idiag_mflux_x=0; idiag_mflux_y=0; idiag_mflux_z=0; idiag_bmxy_rms=0
         idiag_brsphmphi=0; idiag_bthmphi=0; idiag_brmsh=0; idiag_brmsn=0
-        idiag_brmss=0; idiag_etatotalmx=0; idiag_etatotalmz=0
+        idiag_brmss=0; idiag_etatotalmx=0; idiag_etatotalmz=0; idiag_Rmmz=0
         idiag_brmsx=0; idiag_brmsz=0
         idiag_etavamax=0; idiag_etajmax=0; idiag_etaj2max=0; idiag_etajrhomax=0
         idiag_hjrms=0;idiag_hjbm=0;idiag_coshjbm=0
@@ -7924,6 +7948,7 @@ module Magnetic
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
             'etatotalmz',idiag_etatotalmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'epsMmz',idiag_epsMmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Rmmz',idiag_Rmmz)
       enddo
 !
 !  Check for those quantities for which we want y-averages.
