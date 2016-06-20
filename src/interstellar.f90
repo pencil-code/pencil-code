@@ -414,7 +414,7 @@ module Interstellar
 !
       use FArrayManager
 !
-      call farray_register_auxiliary('netcool',iheatcool,communicated=.true.)
+      call farray_register_auxiliary('netheat',inetheat,communicated=.true.)
       call farray_register_auxiliary('cooling',icooling)
 !
 !  identify version number
@@ -429,10 +429,10 @@ module Interstellar
 !
 !  Writing files for use with IDL
 !
-      if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=',netcool $'
-      if (naux+naux_com == maux+maux_com) aux_var(aux_count)=',netcool'
+      if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=',netheat $'
+      if (naux+naux_com == maux+maux_com) aux_var(aux_count)=',netheat'
       aux_count=aux_count+1
-      if (lroot) write(15,*) 'netcool = fltarr(mx,my,mz)*one'
+      if (lroot) write(15,*) 'netheat = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_interstellar
 !***********************************************************************
@@ -452,7 +452,7 @@ module Interstellar
       real, dimension (mx,my,mz,mfarray) :: f
 !
       f(:,:,:,icooling)=0.0
-      f(:,:,:,iheatcool)=0.0
+      f(:,:,:,inetheat)=0.0
 !
       if (lroot) print*,'initialize_interstellar: t_next_SNI',t_next_SNI
 !
@@ -1123,7 +1123,7 @@ module Interstellar
 !
       if (lwr) then
         write(3,*) 'icooling=',icooling
-        write(3,*) 'iheatcool=',iheatcool
+        write(3,*) 'inetheat=',inetheat
       endif
 !
     endsubroutine rprint_interstellar
@@ -1149,11 +1149,11 @@ module Interstellar
           slices%xy=f(l1:l2 ,m1:m2 ,iz_loc ,icooling)
           slices%xy2=f(l1:l2,m1:m2 ,iz2_loc,icooling)
           slices%ready = .true.
-        case ('ism_netcool')
-          slices%yz=f(ix_loc,m1:m2 ,n1:n2  ,iheatcool)
-          slices%xz=f(l1:l2 ,iy_loc,n1:n2  ,iheatcool)
-          slices%xy=f(l1:l2 ,m1:m2 ,iz_loc ,iheatcool)
-          slices%xy2=f(l1:l2,m1:m2 ,iz2_loc,iheatcool)
+        case ('ism_netheat')
+          slices%yz=f(ix_loc,m1:m2 ,n1:n2  ,inetheat)
+          slices%xz=f(l1:l2 ,iy_loc,n1:n2  ,inetheat)
+          slices%xy=f(l1:l2 ,m1:m2 ,iz_loc ,inetheat)
+          slices%xy2=f(l1:l2,m1:m2 ,iz2_loc,inetheat)
           slices%ready = .true.
 !
       endselect
@@ -1337,6 +1337,7 @@ module Interstellar
       lpenc_requested(i_rho1)=.true.
 !
       if (lheatcool_shock_cutoff) lpenc_requested(i_gshock)=.true.
+      if (lheatcool_shock_cutoff) lpenc_requested(i_rho)=.true.
 !
 !  Diagnostic pencils
 !
@@ -1517,7 +1518,7 @@ module Interstellar
       if (lheatcool_shock_cutoff) then
         call dot2(p%gshock,gsh2)
 !
-        damp_profile=exp(-(gsh2*heatcool_shock_cutoff_rate1))
+        damp_profile=exp(-(gsh2*heatcool_shock_cutoff_rate1*p%rho**0.5))
 !
         cool=cool*damp_profile
         heat=heat*damp_profile
@@ -1528,7 +1529,7 @@ module Interstellar
 !  cool=rho*Lambda, heatcool=(Gamma-rho*Lambda)/TT
 !
       f(l1:l2,m,n,icooling) = p%TT1*cool
-      f(l1:l2,m,n,iheatcool)= heatcool
+      f(l1:l2,m,n,inetheat)= heatcool
 !
 !  Prepare diagnostic output
 !  Since these variables are divided by Temp when applied it is useful to
