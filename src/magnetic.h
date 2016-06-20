@@ -31,4 +31,4 @@
   public :: expand_shands_magnetic
   public :: update_char_vel_magnetic
 
-  public :: lresi_dep
+  public :: lresi_dep, lcovariant_magnetic
