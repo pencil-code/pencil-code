@@ -251,20 +251,22 @@ module Particles
       lpeh_radius, &
       A1, A2
 !
-  integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
-  integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
+  integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
+  integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0   ! DIAG_DOC: $x^2_{part}$
+  integer :: idiag_vrelpabsm=0                          ! DIAG_DOC: $\rm{Absolute value of mean relative velocity}$
   integer :: idiag_rpm=0, idiag_rp2m=0
-  integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0
-  integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0, idiag_ekinp=0
-  integer :: idiag_vpxmax=0, idiag_vpymax=0, idiag_vpzmax=0, idiag_vpmax=0
-  integer :: idiag_vpxmin=0, idiag_vpymin=0, idiag_vpzmin=0
+  integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0   ! DIAG_DOC: $u_{part}$
+  integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0 ! DIAG_DOC: $u^2_{part}$
+  integer :: idiag_ekinp=0     ! DIAG_DOC: $E_{kin,part}$
+  integer :: idiag_vpxmax=0, idiag_vpymax=0, idiag_vpzmax=0, idiag_vpmax=0 ! DIAG_DOC: $MAX(u_{part})$
+  integer :: idiag_vpxmin=0, idiag_vpymin=0, idiag_vpzmin=0    ! DIAG_DOC: $MIN(u_{part})$
   integer :: idiag_vpxvpym=0, idiag_vpxvpzm=0, idiag_vpyvpzm=0
   integer :: idiag_rhopvpxm=0, idiag_rhopvpym=0, idiag_rhopvpzm=0
   integer :: idiag_rhopvpxt=0, idiag_rhopvpyt=0, idiag_rhopvpzt=0
   integer :: idiag_rhopvpysm=0
   integer :: idiag_lpxm=0, idiag_lpym=0, idiag_lpzm=0
   integer :: idiag_lpx2m=0, idiag_lpy2m=0, idiag_lpz2m=0
-  integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0
+  integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0 ! DIAG_DOC: $\rm{mean particle number density}$
   integer :: idiag_dtdragp=0
   integer :: idiag_nparmin=0, idiag_nparmax=0, idiag_npargone=0
   integer :: idiag_nparsum=0
@@ -2751,7 +2753,6 @@ module Particles
 !
       if (ipeh>0) p%peh=f(l1:l2,m,n,ipeh)
 !
-! 
       if (lpencil(i_tausupersat)) p%tausupersat=f(l1:l2,m,n,itausupersat)
 !
     endsubroutine calc_pencils_particles
@@ -3003,6 +3004,7 @@ module Particles
             -gravr/sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_epotpm)
         if (idiag_vpmax/=0) call max_par_name( &
             sqrt(sum(fp(1:npar_loc,ivpx:ivpz)**2,2)),idiag_vpmax)
+        if (idiag_vrelpabsm/=0) call calc_relative_velocity(f,fp,ineargrid)
         if (idiag_vpxmax/=0) call max_par_name(fp(1:npar_loc,ivpx),idiag_vpxmax)
         if (idiag_vpymax/=0) call max_par_name(fp(1:npar_loc,ivpy),idiag_vpymax)
         if (idiag_vpzmax/=0) call max_par_name(fp(1:npar_loc,ivpz),idiag_vpzmax)
@@ -5846,6 +5848,7 @@ module Particles
 !
       if (lreset) then
         idiag_xpm=0; idiag_ypm=0; idiag_zpm=0
+        idiag_vrelpabsm=0
         idiag_xp2m=0; idiag_yp2m=0; idiag_zp2m=0; idiag_rpm=0; idiag_rp2m=0
         idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0
         idiag_vpxvpym=0; idiag_vpxvpzm=0; idiag_vpyvpzm=0
@@ -5887,6 +5890,7 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'nparmax',idiag_nparmax)
         call parse_name(iname,cname(iname),cform(iname),'nparpmax',idiag_nparpmax)
         call parse_name(iname,cname(iname),cform(iname),'xpm',idiag_xpm)
+        call parse_name(iname,cname(iname),cform(iname),'vrelpabsm',idiag_vrelpabsm)
         call parse_name(iname,cname(iname),cform(iname),'ypm',idiag_ypm)
         call parse_name(iname,cname(iname),cform(iname),'zpm',idiag_zpm)
         call parse_name(iname,cname(iname),cform(iname),'xp2m',idiag_xp2m)
@@ -6059,5 +6063,32 @@ module Particles
       endif
 !
     endsubroutine periodic_boundcond_on_aux
+!***********************************************************************
+    subroutine calc_relative_velocity(f,fp,ineargrid)
+!
+      use Diagnostics
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
+      real, dimension(3) :: uup
+      real, dimension(:), allocatable :: rel_vel
+      integer :: k,ix0,iy0,iz0
+      integer, dimension(mpar_loc,3), intent(in) :: ineargrid
+!
+!  Calculate particle relative velocity
+!
+      allocate(rel_vel(npar_loc))
+!
+      do k = 1,npar_loc
+        call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),0,0)
+        rel_vel(k) = sum((fp(k,ivpx:ivpz)-uup)**2)
+      enddo
+!
+!  sum((interp_uu(k,:) - fp(k,ivpx:ivpz))**2)
+!
+      call sum_par_name(rel_vel(:),idiag_vrelpabsm,lsqrt=.true.)
+      if (allocated(rel_vel)) deallocate(rel_vel)
+!
+    endsubroutine calc_relative_velocity
 !***********************************************************************
 endmodule Particles

@@ -41,6 +41,7 @@ module Particles_mass
       lpart_mass_momentum_backreac
 !
   integer :: idiag_mpm=0
+  integer :: idiag_dmpm=0
   integer :: idiag_convm=0
   integer :: idiag_chrhopm=0
   integer :: idiag_rhosurf=0
@@ -194,6 +195,7 @@ module Particles_mass
       ! Diagnostic output
       if (ldiagnos) then
         if (idiag_mpm /= 0)   call sum_par_name(fp(1:npar_loc,imp),idiag_mpm)
+        if (idiag_dmpm /= 0)   call sum_par_name(dfp(1:npar_loc,imp),idiag_dmpm)
         if (idiag_convm /= 0) call sum_par_name(1.-fp(1:npar_loc,imp) &
             /fp(1:npar_loc,impinit),idiag_convm)
         if (idiag_rhosurf /= 0)   call sum_par_name(fp(1:npar_loc,irhosurf),idiag_rhosurf)
@@ -261,6 +263,7 @@ module Particles_mass
         if (lparticles_chemistry) then
  !         print*, 'mass_loss', mass_loss
           dfp(k1:k2,imp) = dfp(k1:k2,imp)-mass_loss(k1:k2)
+ !         print*, 'masl:', mass_loss(k1)
         else
           dfp(k1:k2,imp) = dfp(k1:k2,imp)-dmpdt
         endif
@@ -270,13 +273,17 @@ module Particles_mass
 !  decrease before the outer shell is entirly consumed).
 !
         if (lparticles_chemistry) then
-          Vp(k1:k2) = 4.*pi*fp(k1:k2,iap)*fp(k1:k2,iap)*fp(k1:k2,iap)/3.
+          if (.not. lsurface_nopores) then
+            Vp(k1:k2) = 4.*pi*fp(k1:k2,iap)*fp(k1:k2,iap)*fp(k1:k2,iap)/3.
 !
-          do k = k1,k2
-            if (fp(k,irhosurf)>=0.0) then
-              dfp(k,irhosurf) = dfp(k,irhosurf)-sum(Rck_max(k,:))*St(k)/Vp(k)
-            endif
-          enddo
+            do k = k1,k2
+              if (fp(k,irhosurf)>=0.0) then
+                dfp(k,irhosurf) = dfp(k,irhosurf)-sum(Rck_max(k,:))*St(k)/Vp(k)
+              endif
+            enddo
+          else
+!
+          endif
 !
 ! Calculate feed back from the particles to the gas phase
           if (lpart_mass_backreac) then
@@ -406,6 +413,7 @@ module Particles_mass
       ! Reset everything in case of reset.
       if (lreset) then
         idiag_mpm = 0
+        idiag_dmpm = 0
         idiag_convm = 0
         idiag_chrhopm = 0
         idiag_rhosurf = 0
@@ -414,6 +422,7 @@ module Particles_mass
       if (lroot .and. ip < 14) print*,'rprint_particles_mass: run through parse list'
       do iname = 1,nname
         call parse_name(iname,cname(iname),cform(iname),'mpm',idiag_mpm)
+        call parse_name(iname,cname(iname),cform(iname),'dmpm',idiag_dmpm)
         call parse_name(iname,cname(iname),cform(iname),'convm',idiag_convm)
         call parse_name(iname,cname(iname),cform(iname),'chrhopm',idiag_chrhopm)
         call parse_name(iname,cname(iname),cform(iname),'rhosurf',idiag_rhosurf)
