@@ -9,9 +9,15 @@ Added:
 Status:
     has been working in this form since 22-Jan-2010
 Recommended resolution:
-    at least 40x40x40
+    at least 24x24x24 (A larger box will be required with resolution 4pc)
+    for 1 atom per cc a box radius > 150pc is required end time 2 Myr
+    for 0.001 atom per cc a box radius > 600pc is required end time 5 Myr
 Comments:
     designed to verify the code reproduces the Sedov-Taylor solution for a single
     supernova remnant in a monotomic uniform ISM at rest.                
     if using density < 0.5 atom per cc increase box to keep away from boundary
     injection of 10^51 ergs => 50% kinetic and 50% thermal energy.
+
+    To calculate analytic profiles and plot 1D slices of SN radius and profile speed
+    run 
+    > python sedov.py

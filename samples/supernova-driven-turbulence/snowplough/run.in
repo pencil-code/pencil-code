@@ -3,14 +3,15 @@
 !  run parameters for interstellar
 !
 &run_pars
-  cvsid='$Id: run.in 9840 2008-09-05 07:29:37Z ajohan $',
-  nt=100, it1=10, isave=50, itorder=3
-  cdt=0.4, cdtv=0.3, dtmin=1e-9, slice_position='m'
-!  dsnap=7.5e-6,  tmax=7.5e-5
-  dvid=1.0e-3
-  dsnap=2.50e-5, tmax=7.75e-3
-  ip=20
+  cvsid='$Id$',
+!  nt=20000, it1=10, isave=1000, it1d=2500, itorder=3, tmax=0.004
+  nt=10, it1=1, isave=1000, it1d=2500, itorder=3, tmax=0.004
+  cdt=0.7, cdtv=0.7, dtmin=1e-20, cdts=0.002
+  dsnap=.000025!, dvid=.00000025, slice_position='m' 
+  !dsnap=.0000025
+  ip=30
   lpencil_check=T
+  lmaximal_cdt=T, lmaximal_cdtv=T
   lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
 /
 &eos_run_pars
@@ -18,26 +19,24 @@
 &hydro_run_pars
 /
 &density_run_pars
-  !diffrho=1e-1, idiff='normal'
-!  lupw_lnrho=T
+  diffrho=4e-3
+  diffrho_shock=1.2
+  lmassdiff_fixmom=T
+  idiff='normal','shock'
 /
-!&grav_run_pars
-!/
 &entropy_run_pars
-  iheatcond='chi-const'
-  chi=1E-1
-  lupw_ss=T
+  iheatcond='chi-cspeed','shock'
+  chi_cs=4e-4,chi_shock=10.0
 /
 &interstellar_run_pars
-  TT_SN_min=0
-  cooling_select='WSW'
-  heating_select='wolfire'
-/
-&shear_run_pars
+  cdt_tauc=0.002
+  lSNII=F, l_persist_overwrite_lSNII=T
+  lSNI=F, l_persist_overwrite_lSNI=T 
+  heatcool_shock_cutoff_rate=0.05
 /
 &viscosity_run_pars
-  ivisc='nu-const','nu-shock'
-  nu=0.015,nu_shock=1.0
+  ivisc='nu-cspeed','nu-shock'
+  nu=4e-4,nu_shock=10.0
 /
 &shock_run_pars
   lshock_first=T
