@@ -1,0 +1,61 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for interstellar
+!
+&init_pars
+  cvsid='$Id$'
+  unit_length=3.08567758e21, unit_velocity=9.778122994895071e4
+  unit_density=1e-24, unit_temperature=36.637181156923013, unit_magnetic=1e-6
+  xyz0=-0.032,-0.032,-1.998
+  xyz1=+0.032,+0.032,+1.998
+  lperi=T,T,F
+  bcz = 's','s','ubs','ism','ism','s','s'
+  lwrite_aux=T
+/
+&initial_condition_pars
+  !amplaa=0.0
+/
+&eos_init_pars
+  mu=0.531
+/
+&hydro_init_pars
+  inituu='nothing'
+  Omega=25.0
+/
+&density_init_pars
+  initlnrho='nothing'
+  ldensity_nolog=T
+/
+&grav_init_pars
+  gravz_profile='Ferriere' 
+/
+&entropy_init_pars
+  initss='nothing'
+/
+&interstellar_init_pars
+  cooling_select='WSW'
+  heating_select='wolfire'
+  initinterstellar='multiple'
+  initial_SNI = 5
+  lSNII=T
+  lSNI=T
+  lSN_scale_rad=T
+  N_mass=50.0
+  width_SN = 0.035
+  frac_kin=0.3
+  frac_eth=0.7
+  lSN_ecr=F
+  lSN_mass=T
+  lSN_velocity=T
+  energy_width_ratio=1.0
+  mass_width_ratio=1.0
+  velocity_width_ratio=1.0
+  thermal_profile='gaussian3'
+  mass_profile='gaussian3'
+  velocity_profile='gaussian3'
+  rho_SN_max=7.25
+  TT_SN_max=1e9
+/
+&shear_init_pars
+  Sshear=-25.0
+/
