@@ -4192,7 +4192,7 @@ module Particles
 !  Particle growth by condensation in a passive scalar field,
 !  calculate relaxation time. 1D case for now. 
 !  14-June-16/Xiang-Yu: coded
-       
+   
       if (lsupersat) then
         do i=1,nxgrid+3
            taulocal=0 
@@ -4205,6 +4205,7 @@ module Particles
            l=i
            df(l,m,n,itausupersat)=df(l,m,n,itausupersat)+4.*pi*rhopmat*A1*A2*taulocal
         enddo
+        df(l1:l2,m,n,itausupersat)=df(l1:l2,m,n,itausupersat)+df(l1:l2,m,n,itausupersat)
       endif
 !
 !  Diagnostic output.
