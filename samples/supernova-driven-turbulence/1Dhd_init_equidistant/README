@@ -9,7 +9,7 @@ Added:
 Status:
     has been working in this form since 21-Jun-2016
 Recommended resolution:
-    at least 1x1x576
+    at least 1x1x1000
 Comments:
     Use this 1D model to calculate the density and temperatue profile for the 
     initial condition in the 3D supernova driven turbulence models of the ISM,
