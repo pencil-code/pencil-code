@@ -319,6 +319,7 @@ module Cdata
   integer :: igpotselfx=0, igpotselfy=0, igpotselfz=0
   integer :: icc=0,ilncc=0,ialpm=0,ietat=0
   integer :: issat=0
+  integer :: itausupersat=0
   integer :: iaphi=0,ibphi=0,ieth=0
   integer :: idet = 0
   integer :: iinvgrid=0

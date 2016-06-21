@@ -14,6 +14,7 @@
 ! PENCILS PROVIDED np; rhop; vol; peh
 ! PENCILS PROVIDED np_rad(5); npvz(5); sherwood
 ! PENCILS PROVIDED epsp; grhop(3)
+! PENCILS PROVIDED tausupersat
 !
 !***************************************************************
 module Particles
@@ -155,6 +156,8 @@ module Particles
   logical :: lcompensate_sedimentation=.false.
   real :: compensate_sedimentation=1.
 !
+  real :: A1=0., A2=0.
+!
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
       ldragforce_gas_par, ldragforce_dust_par, bcpx, bcpy, bcpz, tausp, &
@@ -245,7 +248,8 @@ module Particles
       birthring_width, &
       lgaussian_birthring, tstart_rpbeta, linsert_as_many_as_possible, &
       lvector_gravity, lcompensate_sedimentation,compensate_sedimentation, &
-      lpeh_radius
+      lpeh_radius, &
+      A1, A2
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -340,6 +344,11 @@ module Particles
       if (ldragforce_stiff) then
         call farray_register_auxiliary('ffg',iffg,communicated=.true.,vector=3)
         ifgx=iffg; ifgy=iffg+1; ifgz=iffg+2
+      endif
+!
+!  Relaxation time of supersaturation
+      if (lsupersat) then   
+        call farray_register_auxiliary('tausupersat', itausupersat) 
       endif
 !
 !  Check that the fp and dfp arrays are big enough.
@@ -2643,6 +2652,10 @@ module Particles
         lpenc_requested(i_gTT)=.true.
       endif
 !
+      if (lsupersat) then
+         lpenc_requested(i_tausupersat)=.true.
+      endif
+!
       if (idiag_npm/=0 .or. idiag_np2m/=0 .or. idiag_npmax/=0 .or. &
           idiag_npmin/=0 .or. idiag_npmx/=0 .or. idiag_npmy/=0 .or. &
           idiag_npmz/=0 .or. idiag_nparpmax/=0) lpenc_diagnos(i_np)=.true.
@@ -2686,6 +2699,8 @@ module Particles
         lpencil_in(i_rhop)=.true.
         lpencil_in(i_rho1)=.true.
       endif
+!
+      lpencil_in(i_tausupersat)=.true.
 !
     endsubroutine pencil_interdep_particles
 !***********************************************************************
@@ -2735,6 +2750,9 @@ module Particles
       if (lpencil(i_epsp)) p%epsp=p%rhop*p%rho1
 !
       if (ipeh>0) p%peh=f(l1:l2,m,n,ipeh)
+!
+! 
+      if (lpencil(i_tausupersat)) p%tausupersat=f(l1:l2,m,n,itausupersat)
 !
     endsubroutine calc_pencils_particles
 !***********************************************************************
@@ -3468,7 +3486,7 @@ module Particles
       real :: rho1_point, tausp1_par, up2
       real :: weight, weight_x, weight_y, weight_z
       real :: dxp, dyp, dzp, volume_cell
-      integer :: k, l, ix0, iy0, iz0, ierr, irad
+      integer :: k, l, ix0, iy0, iz0, ierr, irad, i
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       integer, dimension (3) :: inear
       logical :: lnbody, lsink
@@ -3479,6 +3497,7 @@ module Particles
       real, dimension(k1_imn(imn):k2_imn(imn)) :: nu
       character (len=labellen) :: ivis=''
       real :: nu_
+      real :: taulocal
 !
 !  Identify module.
 !
@@ -3491,6 +3510,7 @@ module Particles
       if (lpenc_requested(i_npvz))     p%npvz=0.
       if (lpenc_requested(i_np_rad))   p%np_rad=0.
       if (lpenc_requested(i_sherwood)) p%sherwood=0.
+      if (lpenc_requested(i_tausupersat)) p%tausupersat=0.
 !
 !  Precalculate certain quantities, if necessary.
 !
@@ -4167,6 +4187,24 @@ module Particles
 !
       if (ldragforce_stiff .and. .not. lpencil_check_at_work) then
         f(l1:l2,m,n,ifgx:ifgz)=p%fpres+p%jxbr+p%fvisc
+      endif
+!
+!  Particle growth by condensation in a passive scalar field,
+!  calculate relaxation time. 1D case for now. 
+!  14-June-16/Xiang-Yu: coded
+       
+      if (lsupersat) then
+        do i=1,nxgrid+3
+           taulocal=0 
+           do k=k1_imn(imn),k2_imn(imn)
+             l=ineargrid(k,1)
+             if (l==i) then
+                taulocal=taulocal+fp(k,iap)*fp(k,inpswarm)
+             endif
+           enddo
+           l=i
+           df(l,m,n,itausupersat)=df(l,m,n,itausupersat)+4.*pi*rhopmat*A1*A2*taulocal
+        enddo
       endif
 !
 !  Diagnostic output.
