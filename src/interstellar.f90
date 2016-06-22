@@ -1106,7 +1106,9 @@ module Interstellar
       lpenc_requested(i_TT1)=.true.
       lpenc_requested(i_lnrho)=.true.
       lpenc_requested(i_rho1)=.true.
-!      lpenc_requested(i_rho)=.true.
+      if (lheatcool_shock_cutoff) then
+        lpenc_requested(i_shock)=.true.
+      endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
@@ -1336,7 +1338,7 @@ module Interstellar
       lpenc_requested(i_TT1)=.true.
       lpenc_requested(i_rho1)=.true.
 !
-      if (lheatcool_shock_cutoff) lpenc_requested(i_gshock)=.true.
+      if (lheatcool_shock_cutoff) lpenc_requested(i_shock)=.true.
       if (lheatcool_shock_cutoff) lpenc_requested(i_rho)=.true.
 !
 !  Diagnostic pencils
@@ -1516,9 +1518,8 @@ module Interstellar
 !  shock wave and also drives down the timestep. Fred
 !
       if (lheatcool_shock_cutoff) then
-        call dot2(p%gshock,gsh2)
 !
-        damp_profile=exp(-(gsh2*heatcool_shock_cutoff_rate1*p%rho**0.5))
+        damp_profile=exp(-(p%shock*p%rho*heatcool_shock_cutoff_rate1))
 !
         cool=cool*damp_profile
         heat=heat*damp_profile
