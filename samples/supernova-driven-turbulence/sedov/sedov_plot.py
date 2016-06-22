@@ -125,7 +125,7 @@ rho     =np.empty([nvar,nx])
 ux      =np.empty([nvar,nx])
 pp      =np.empty([nvar,nx])
 shock   =np.empty([nvar,nx])
-netcool =np.empty([nvar,nx])
+netheat =np.empty([nvar,nx])
 cooling =np.empty([nvar,nx])
 
 dsnap   =0.000025
@@ -171,7 +171,7 @@ for ivar in range(0,nvar):
         ux     [ivar,:]=var.ux[0,0,:]
         pp     [ivar,:]=var.pp[0,0,:]
         shock  [ivar,:]=var.shock[0,0,:]
-        netcool[ivar,:]=var.netcool[0,0,:]
+        netheat[ivar,:]=var.netheat[0,0,:]
         cooling[ivar,:]=var.cooling[0,0,:]
         var=pc.read_var(varfile,
                         trimall=True,quiet=True,
@@ -231,7 +231,7 @@ mgrp.create_dataset('density',       (nvar,nx),  data=rho     )
 mgrp.create_dataset('velocity',      (nvar,nx),  data=ux      )
 mgrp.create_dataset('pressure',      (nvar,nx),  data=pp      )
 mgrp.create_dataset('shock',         (nvar,nx),  data=shock   )
-mgrp.create_dataset('net-cooling',   (nvar,nx),  data=netcool )
+mgrp.create_dataset('net-cooling',   (nvar,nx),  data=netheat )
 mgrp.create_dataset('cooling',       (nvar,nx),  data=cooling )
 mgrp.create_dataset('x',             (nx,),      data=var.x   )
     
