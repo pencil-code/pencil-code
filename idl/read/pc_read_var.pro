@@ -646,7 +646,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
 ; Regular 3-D run.
 ;
-          cmd =   varcontent[iv].idlvar $
+          cmd =  varcontent[iv].idlvar $
               + (varcontent[iv].skip eq 0 ? "[i0x:i1x,i0y:i1y,i0z:i1z,iyy]=" : "[i0x:i1x,i0y:i1y,i0z:i1z,*,iyy]=" ) $
               + varcontent[iv].idlvarloc $
               +"[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*]"
@@ -726,14 +726,6 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
   else $
     xyzstring="x,y,z"
 ;
-; Remove ghost zones if requested.
-;
-  if (keyword_set(trimall)) then variables = 'pc_noghost('+variables+',dim=dim)'
-;
-; Transform to unsheared frame if requested.
-;
-  if (keyword_set(unshear)) then variables = 'pc_unshear('+variables+',param=param,xax=x[dim.l1:dim.l2],t=t)'
-;
   if yinyang then begin
 ;
 ;  Merge Yang and Yin grids; yz[2,*] is merged coordinate array; inds is index vector for Yang points outside Yin into its *1D* coordinate vectors
@@ -749,10 +741,19 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;  Merge data. Variables have names "*_merge"
 ;
     for i=0,n_elements(tags)-1 do begin
+;
+; Calculate derived variables before merging.
+;
+      if (total(variables[i] eq varcontent.idlvar) eq 0) then begin
+        idum=execute( tags[i]+'='+variables[i] )
+        variables[i] = tags[i]
+      endif
+;
       idum=execute( 'isvec = not pc_is_scalarfield('+tags[i]+',dim=dim,yinyang=yinyang)')
       if isvec then begin
 ;
-;  Transformation of theta and phi components in Yang missing yet.
+;  Transformation of theta and phi components in Yang grid.
+;  Merged variables are fully trimmmed.
 ;
         idum=execute( 'trformed=transform_thph_yy(y[m1:m2],z[n1:n2],'+tags[i]+'[l1:l2,m1:m2,n1:n2,*,1])' )
         idum=execute( tags[i]+'_merge=[[ reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,*,0],[0,2,1,3]),nx,ny*nz,3)],'+ $ 
@@ -760,7 +761,6 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
       endif else $
         idum=execute( tags[i]+'_merge=[[ reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,0],[0,2,1]),nx,ny*nz)],'+ $ 
                                       '[(reform(transpose('+tags[i]+'[l1:l2,m1:m2,n1:n2,1],[0,2,1]),nx,ny*nz))[*,inds]]]' )
-
     endfor
   endif
 ;
@@ -780,7 +780,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;  Merged data into object.
 ;
   if yinyang then $
-    tagnames += arraytostring(tags+'_merge',QUOTE="'") 
+    tagnames += arraytostring(tags+'_merge',QUOTE="'")
 
   makeobject = "object = "+ $
       "CREATE_STRUCT(name=objectname,["+tagnames+"],t,"+xyzstring+",dx,dy,dz"
@@ -788,10 +788,19 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
   if yinyang then begin
     makeobject += ",yz,triangles"
     if keyword_set(sphere) then makeobject += ",sphere_data"
+    mergevars=arraytostring(variables+'_merge')
   endif
+;
+; Remove ghost zones if requested.
+;
+  if (keyword_set(trimall)) then variables = 'pc_noghost('+variables+',dim=dim)'
+;
+; Transform to unsheared frame if requested.
+;
+  if (keyword_set(unshear)) then variables = 'pc_unshear('+variables+',param=param,xax=x[dim.l1:dim.l2],t=t)'
+
   makeobject += arraytostring(variables)
-  if yinyang then $
-    makeobject += arraytostring(variables+'_merge') 
+  if yinyang then makeobject += mergevars
   makeobject += ")"      
 ;
 ; Execute command to make the structure.
