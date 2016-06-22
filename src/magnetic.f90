@@ -1022,7 +1022,7 @@ module Magnetic
           case ('gaussian-noise'); call gaunoise(amplaa(j),f,iax,iaz)
           case ('hor-tube'); call htube(amplaa(j),f,iax,iaz,radius,epsilonaa, &
               center1_x,center1_z)
-          case ('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),0.)
+          case ('cosxcosy'); call cosx_cosy_cosz(amplaa(j),f,iaz,kx_aa(j),ky_aa(j),kz_aa(j))
           case ('coswave-Ay-kx'); call coswave(amplaa(j),f,iay,kx=kx_aa(j))
           case default
           endselect
