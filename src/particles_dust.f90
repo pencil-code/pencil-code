@@ -349,9 +349,8 @@ module Particles
       endif
 !
 !  Relaxation time of supersaturation
-      if (lsupersat) then   
+      if (lsupersat) &
         call farray_register_auxiliary('tausupersat', itausupersat) 
-      endif
 !
 !  Check that the fp and dfp arrays are big enough.
 !
@@ -2752,7 +2751,7 @@ module Particles
 !
       if (ipeh>0) p%peh=f(l1:l2,m,n,ipeh)
 !
-      if (lpencil(i_tausupersat)) p%tausupersat=f(l1:l2,m,n,itausupersat)
+      if (itausupersat>0) p%tausupersat=f(l1:l2,m,n,itausupersat)
 !
     endsubroutine calc_pencils_particles
 !***********************************************************************
