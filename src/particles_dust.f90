@@ -290,7 +290,7 @@ module Particles
 !
   contains
 !***********************************************************************
-    subroutine register_particles()
+    subroutine register_particles
 !
 !  Set up indices for access to the fp and dfp arrays
 !
@@ -2614,7 +2614,7 @@ module Particles
 !
     endsubroutine particles_dragforce_stiff
 !***********************************************************************
-    subroutine pencil_criteria_particles()
+    subroutine pencil_criteria_particles
 !
 !  All pencils that the Particles module depends on are specified here.
 !
@@ -2654,9 +2654,8 @@ module Particles
         lpenc_requested(i_gTT)=.true.
       endif
 !
-      if (lsupersat) then
+      if (lsupersat) &
          lpenc_requested(i_tausupersat)=.true.
-      endif
 !
       if (idiag_npm/=0 .or. idiag_np2m/=0 .or. idiag_npmax/=0 .or. &
           idiag_npmin/=0 .or. idiag_npmx/=0 .or. idiag_npmy/=0 .or. &
@@ -2702,7 +2701,7 @@ module Particles
         lpencil_in(i_rho1)=.true.
       endif
 !
-      lpencil_in(i_tausupersat)=.true.
+      if (lsupersat) lpencil_in(i_tausupersat)=.true.
 !
     endsubroutine pencil_interdep_particles
 !***********************************************************************
