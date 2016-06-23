@@ -287,6 +287,7 @@ module Particles
   integer :: idiag_vprms=0, idiag_vpyfull2m=0, idiag_deshearbcsm=0
   integer :: idiag_Shm=0
   integer, dimension(ninit)  :: idiag_npvzmz=0, idiag_nptz=0
+  integer :: idiag_tausupersatrms=0
 !
   contains
 !***********************************************************************
@@ -351,6 +352,7 @@ module Particles
 !  Relaxation time of supersaturation
       if (lsupersat) &
         call farray_register_auxiliary('tausupersat', itausupersat) 
+      
 !
 !  Check that the fp and dfp arrays are big enough.
 !
@@ -2655,6 +2657,7 @@ module Particles
 !
       if (lsupersat) &
          lpenc_requested(i_tausupersat)=.true.
+      
 !
       if (idiag_npm/=0 .or. idiag_np2m/=0 .or. idiag_npmax/=0 .or. &
           idiag_npmin/=0 .or. idiag_npmx/=0 .or. idiag_npmy/=0 .or. &
@@ -2751,6 +2754,7 @@ module Particles
 !
       if (ipeh>0) p%peh=f(l1:l2,m,n,ipeh)
 !
+! 
       if (itausupersat>0) p%tausupersat=f(l1:l2,m,n,itausupersat)
 !
     endsubroutine calc_pencils_particles
@@ -4194,7 +4198,7 @@ module Particles
 !  14-June-16/Xiang-Yu: coded
    
       if (lsupersat) then
-        do i=1,nxgrid+3
+        do i=l1,l2
            taulocal=0 
            do k=k1_imn(imn),k2_imn(imn)
              l=ineargrid(k,1)
@@ -4202,10 +4206,9 @@ module Particles
                 taulocal=taulocal+fp(k,iap)*fp(k,inpswarm)
              endif
            enddo
-           l=i
-           df(l,m,n,itausupersat)=df(l,m,n,itausupersat)+4.*pi*rhopmat*A1*A2*taulocal
+           !f(i,m,n,itausupersat)=f(i,m,n,itausupersat)+4.*pi*rhopmat*A1*A2*taulocal
+           p%tausupersat(i-3)=f(i-3,m,n,itausupersat)+4.*pi*rhopmat*A1*A2*taulocal
         enddo
-        df(l1:l2,m,n,itausupersat)=df(l1:l2,m,n,itausupersat)+df(l1:l2,m,n,itausupersat)
       endif
 !
 !  Diagnostic output.
@@ -4230,6 +4233,8 @@ module Particles
             call calculate_rms_speed(fp,ineargrid,p)
         if (idiag_dtdragp/=0.and.(lfirst.and.ldt)) &
             call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
+        if (idiag_tausupersatrms/=0) &
+            call sum_mn_name(p%tausupersat**2,idiag_tausupersatrms,lsqrt=.true.)
       endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
@@ -5840,6 +5845,7 @@ module Particles
         write(3,*) 'ifgx=', ifgx
         write(3,*) 'ifgy=', ifgy
         write(3,*) 'ifgz=', ifgz
+        write(3,*) 'itausupersat=', itausupersat
       endif
 !
 !  Reset everything in case of reset.
@@ -5877,6 +5883,7 @@ module Particles
         idiag_npargone=0; idiag_vpyfull2m=0; idiag_deshearbcsm=0
         idiag_npmxy=0; idiag_vprms=0
         idiag_npvzmz=0; idiag_nptz=0; idiag_Shm=0
+        idiag_tausupersatrms=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -5963,6 +5970,7 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'vprms',idiag_vprms)
         call parse_name(iname,cname(iname),cform(iname),'Shm',idiag_Shm)
         call parse_name(iname,cname(iname),cform(iname),'deshearbcsm',idiag_deshearbcsm)
+        call parse_name(iname,cname(iname),cform(iname),'tausupersatrms',idiag_tausupersatrms)
       enddo
 !
 !  Check for those quantities for which we want x-averages.

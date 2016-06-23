@@ -25,6 +25,10 @@ module Supersat
 !
   include 'supersat.h'
 !
+!  Diagnostics variables
+!
+  integer :: idiag_ssatrms=0
+!
   contains
 !***********************************************************************
     subroutine register_supersat()
