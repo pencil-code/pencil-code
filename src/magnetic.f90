@@ -103,7 +103,7 @@ module Magnetic
   real, dimension(2) :: magnetic_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: magnetic_zaver_range=(/-max_real,max_real/)
   real, dimension(nx,3) :: uxbb
-  real, dimension(nx) :: eta_BB
+  real, dimension(nx) :: eta_BB, Rmmz
   real, dimension(nx) :: xmask_mag
   real, dimension(nz) :: zmask_mag
   real :: t_bext = 0.0, t0_bext = 0.0
@@ -4453,29 +4453,29 @@ module Magnetic
         call yzsum_mn_name_x(p%bb(:,1),idiag_bxmx)
         call yzsum_mn_name_x(p%bb(:,2),idiag_bymx)
         call yzsum_mn_name_x(p%bb(:,3),idiag_bzmx)
-        call yzsum_mn_name_x(p%bb(:,1)**2,idiag_bx2mx)
-        call yzsum_mn_name_x(p%bb(:,2)**2,idiag_by2mx)
-        call yzsum_mn_name_x(p%bb(:,3)**2,idiag_bz2mx)
-        call yzsum_mn_name_x(p%bbb(:,1)*p%bbb(:,2),idiag_bxbymx)
-        call yzsum_mn_name_x(p%bbb(:,1)*p%bbb(:,3),idiag_bxbzmx)
-        call yzsum_mn_name_x(p%bbb(:,2)*p%bbb(:,3),idiag_bybzmx)
+        if (idiag_bx2mx/=0) call yzsum_mn_name_x(p%bb(:,1)**2,idiag_bx2mx)
+        if (idiag_by2mx/=0) call yzsum_mn_name_x(p%bb(:,2)**2,idiag_by2mx)
+        if (idiag_bz2mx/=0) call yzsum_mn_name_x(p%bb(:,3)**2,idiag_bz2mx)
+        if (idiag_bxbymx/=0) call yzsum_mn_name_x(p%bbb(:,1)*p%bbb(:,2),idiag_bxbymx)
+        if (idiag_bxbzmx/=0) call yzsum_mn_name_x(p%bbb(:,1)*p%bbb(:,3),idiag_bxbzmx)
+        if (idiag_bybzmx/=0) call yzsum_mn_name_x(p%bbb(:,2)*p%bbb(:,3),idiag_bybzmx)
         call yzsum_mn_name_x(p%beta, idiag_betamx)
-        call yzsum_mn_name_x(p%beta**2, idiag_beta2mx)
         call xzsum_mn_name_y(p%bb(:,1),idiag_bxmy)
         call xzsum_mn_name_y(p%bb(:,2),idiag_bymy)
         call xzsum_mn_name_y(p%bb(:,3),idiag_bzmy)
-        call xzsum_mn_name_y(p%bb(:,1)**2,idiag_bx2my)
-        call xzsum_mn_name_y(p%bb(:,2)**2,idiag_by2my)
-        call xzsum_mn_name_y(p%bb(:,3)**2,idiag_bz2my)
+        if (idiag_beta2mx/=0) call yzsum_mn_name_x(p%beta**2, idiag_beta2mx)
+        if (idiag_bx2my/=0) call xzsum_mn_name_y(p%bb(:,1)**2,idiag_bx2my)
+        if (idiag_by2my/=0) call xzsum_mn_name_y(p%bb(:,2)**2,idiag_by2my)
+        if (idiag_bz2my/=0) call xzsum_mn_name_y(p%bb(:,3)**2,idiag_bz2my)
         call xysum_mn_name_z(p%aa(:,1),idiag_axmz)
         call xysum_mn_name_z(p%aa(:,2),idiag_aymz)
         call xysum_mn_name_z(p%aa(:,3),idiag_azmz)
-        call xysum_mn_name_z(p%ab*p%uu(:,1),idiag_abuxmz)
-        call xysum_mn_name_z(p%ab*p%uu(:,2),idiag_abuymz)
-        call xysum_mn_name_z(p%ab*p%uu(:,3),idiag_abuzmz)
-        call xysum_mn_name_z(p%ua*p%bb(:,1),idiag_uabxmz)
-        call xysum_mn_name_z(p%ua*p%bb(:,2),idiag_uabymz)
-        call xysum_mn_name_z(p%ua*p%bb(:,3),idiag_uabzmz)
+        if (idiag_abuxmz/=0) call xysum_mn_name_z(p%ab*p%uu(:,1),idiag_abuxmz)
+        if (idiag_abuymz/=0) call xysum_mn_name_z(p%ab*p%uu(:,2),idiag_abuymz)
+        if (idiag_abuzmz/=0) call xysum_mn_name_z(p%ab*p%uu(:,3),idiag_abuzmz)
+        if (idiag_uabxmz/=0) call xysum_mn_name_z(p%ua*p%bb(:,1),idiag_uabxmz)
+        if (idiag_uabymz/=0) call xysum_mn_name_z(p%ua*p%bb(:,2),idiag_uabymz)
+        if (idiag_uabzmz/=0) call xysum_mn_name_z(p%ua*p%bb(:,3),idiag_uabzmz)
         call xysum_mn_name_z(p%bbb(:,1),idiag_bbxmz)
         call xysum_mn_name_z(p%bbb(:,2),idiag_bbymz)
         call xysum_mn_name_z(p%bbb(:,3),idiag_bbzmz)
@@ -4488,15 +4488,15 @@ module Magnetic
         call xysum_mn_name_z(p%uxb(:,1),idiag_Exmz)
         call xysum_mn_name_z(p%uxb(:,2),idiag_Eymz)
         call xysum_mn_name_z(p%uxb(:,3),idiag_Ezmz)
-        call xysum_mn_name_z(p%bb(:,1)**2,idiag_bx2mz)
-        call xysum_mn_name_z(p%bb(:,2)**2,idiag_by2mz)
-        call xysum_mn_name_z(p%bb(:,3)**2,idiag_bz2mz)
-        call xysum_mn_name_z(p%bb(:,1)**2*p%rho1,idiag_bx2rmz)
-        call xysum_mn_name_z(p%bb(:,2)**2*p%rho1,idiag_by2rmz)
-        call xysum_mn_name_z(p%bb(:,3)**2*p%rho1,idiag_bz2rmz)
+        if (idiag_bx2mz/=0) call xysum_mn_name_z(p%bb(:,1)**2,idiag_bx2mz)
+        if (idiag_by2mz/=0) call xysum_mn_name_z(p%bb(:,2)**2,idiag_by2mz)
+        if (idiag_bz2mz/=0) call xysum_mn_name_z(p%bb(:,3)**2,idiag_bz2mz)
+        if (idiag_bx2rmz/=0) call xysum_mn_name_z(p%bb(:,1)**2*p%rho1,idiag_bx2rmz)
+        if (idiag_by2rmz/=0) call xysum_mn_name_z(p%bb(:,2)**2*p%rho1,idiag_by2rmz)
+        if (idiag_bz2rmz/=0) call xysum_mn_name_z(p%bb(:,3)**2*p%rho1,idiag_bz2rmz)
+        if (idiag_beta2mz/=0) call xysum_mn_name_z(p%beta**2, idiag_beta2mz)
         call xysum_mn_name_z(p%beta1,idiag_beta1mz)
         call xysum_mn_name_z(p%beta, idiag_betamz)
-        call xysum_mn_name_z(p%beta**2, idiag_beta2mz)
         call xysum_mn_name_z(p%jb,idiag_jbmz)
         call xysum_mn_name_z(p%d6ab,idiag_d6abmz)
         call xysum_mn_name_z(p%del6a(:,1),idiag_d6amz1)
@@ -4505,18 +4505,18 @@ module Magnetic
         call xysum_mn_name_z(p%ab,idiag_abmz)
         call xysum_mn_name_z(p%ub,idiag_ubmz)
         call xysum_mn_name_z(p%ua,idiag_uamz)
-        call xysum_mn_name_z(p%uu(:,1)*p%bb(:,1),idiag_uxbxmz)
-        call xysum_mn_name_z(p%uu(:,2)*p%bb(:,1),idiag_uybxmz)
-        call xysum_mn_name_z(p%uu(:,3)*p%bb(:,1),idiag_uzbxmz)
-        call xysum_mn_name_z(p%uu(:,1)*p%bb(:,2),idiag_uxbymz)
-        call xysum_mn_name_z(p%uu(:,2)*p%bb(:,2),idiag_uybymz)
-        call xysum_mn_name_z(p%uu(:,3)*p%bb(:,2),idiag_uzbymz)
-        call xysum_mn_name_z(p%uu(:,1)*p%bb(:,3),idiag_uxbzmz)
-        call xysum_mn_name_z(p%uu(:,2)*p%bb(:,3),idiag_uybzmz)
-        call xysum_mn_name_z(p%uu(:,3)*p%bb(:,3),idiag_uzbzmz)
+        if (idiag_uxbxmz/=0) call xysum_mn_name_z(p%uu(:,1)*p%bb(:,1),idiag_uxbxmz)
+        if (idiag_uybxmz/=0) call xysum_mn_name_z(p%uu(:,2)*p%bb(:,1),idiag_uybxmz)
+        if (idiag_uzbxmz/=0) call xysum_mn_name_z(p%uu(:,3)*p%bb(:,1),idiag_uzbxmz)
+        if (idiag_uxbymz/=0) call xysum_mn_name_z(p%uu(:,1)*p%bb(:,2),idiag_uxbymz)
+        if (idiag_uybymz/=0) call xysum_mn_name_z(p%uu(:,2)*p%bb(:,2),idiag_uybymz)
+        if (idiag_uzbymz/=0) call xysum_mn_name_z(p%uu(:,3)*p%bb(:,2),idiag_uzbymz)
+        if (idiag_uxbzmz/=0) call xysum_mn_name_z(p%uu(:,1)*p%bb(:,3),idiag_uxbzmz)
+        if (idiag_uybzmz/=0) call xysum_mn_name_z(p%uu(:,2)*p%bb(:,3),idiag_uybzmz)
+        if (idiag_uzbzmz/=0) call xysum_mn_name_z(p%uu(:,3)*p%bb(:,3),idiag_uzbzmz)
+        if (idiag_epsMmz/=0) call xysum_mn_name_z(eta*mu0*p%j2,idiag_epsMmz)
         call yzsum_mn_name_x(etatotal,idiag_etatotalmx)
         call xysum_mn_name_z(etatotal,idiag_etatotalmz)
-        call xysum_mn_name_z(eta*mu0*p%j2,idiag_epsMmz)
 !
 !  Calculate magnetic helicity flux (ExA contribution).
 !
@@ -4532,12 +4532,12 @@ module Magnetic
 !
 !  Maxwell stress components.
 !
-        call xzsum_mn_name_y(p%bbb(:,1)*p%bbb(:,2),idiag_bxbymy)
-        call xzsum_mn_name_y(p%bbb(:,1)*p%bbb(:,3),idiag_bxbzmy)
-        call xzsum_mn_name_y(p%bbb(:,2)*p%bbb(:,3),idiag_bybzmy)
-        call xysum_mn_name_z(p%bbb(:,1)*p%bbb(:,2),idiag_bxbymz)
-        call xysum_mn_name_z(p%bbb(:,1)*p%bbb(:,3),idiag_bxbzmz)
-        call xysum_mn_name_z(p%bbb(:,2)*p%bbb(:,3),idiag_bybzmz)
+        if (idiag_bxbymy/=0) call xzsum_mn_name_y(p%bbb(:,1)*p%bbb(:,2),idiag_bxbymy)
+        if (idiag_bxbzmy/=0) call xzsum_mn_name_y(p%bbb(:,1)*p%bbb(:,3),idiag_bxbzmy)
+        if (idiag_bybzmy/=0) call xzsum_mn_name_y(p%bbb(:,2)*p%bbb(:,3),idiag_bybzmy)
+        if (idiag_bxbymz/=0) call xysum_mn_name_z(p%bbb(:,1)*p%bbb(:,2),idiag_bxbymz)
+        if (idiag_bxbzmz/=0) call xysum_mn_name_z(p%bbb(:,1)*p%bbb(:,3),idiag_bxbzmz)
+        if (idiag_bybzmz/=0) call xysum_mn_name_z(p%bbb(:,2)*p%bbb(:,3),idiag_bybzmz)
         call yzsum_mn_name_x(p%jxbr(:,1),idiag_jxbrxmx)
         call yzsum_mn_name_x(p%jxbr(:,2),idiag_jxbrymx)
         call yzsum_mn_name_x(p%jxbr(:,3),idiag_jxbrzmx)
@@ -4550,7 +4550,7 @@ module Magnetic
         call xysum_mn_name_z(p%b2,idiag_b2mz)
         call xysum_mn_name_z(p%bf2,idiag_bf2mz)
         call xysum_mn_name_z(p%j2,idiag_j2mz)
-        call xysum_mn_name_z(etatotal*p%jxb(:,3)-mu01* &
+        if (idiag_poynzmz/=0) call xysum_mn_name_z(etatotal*p%jxb(:,3)-mu01* &
             (p%uxb(:,1)*p%bb(:,2)-p%uxb(:,2)*p%bb(:,1)),idiag_poynzmz)
         if (idiag_b2mr/=0) call phizsum_mn_name_r(p%b2,idiag_b2mr)
         if (idiag_brmr/=0)   &
@@ -4573,7 +4573,9 @@ module Magnetic
           call xyintegrate_mn_name_z(p%bb(:,3),idiag_mflux_z)
         if (idiag_Rmmz/=0) then
           call dot2_mn(fres,fres2)
-          call xysum_mn_name_z(sqrt(p%uxb2/fres2),idiag_Rmmz)
+          Rmmz=sqrt(p%uxb2/fres2)
+          where (fres2 < tini) Rmmz = 0.
+          call xysum_mn_name_z(Rmmz,idiag_Rmmz)
         endif
       endif
 !
@@ -4581,12 +4583,14 @@ module Magnetic
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
       if (l2davgfirst) then
-        call phisum_mn_name_rz(p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy,idiag_brmphi)
-        call phisum_mn_name_rz(p%bb(:,1)*p%evr(:,1)+p%bb(:,2)*p%evr(:,2)+ &
-                               p%bb(:,3)*p%evr(:,3),idiag_brsphmphi)
-        call phisum_mn_name_rz(p%bb(:,1)*p%evth(:,1)+p%bb(:,2)*p%evth(:,2)+ &
-                               p%bb(:,3)*p%evth(:,3),idiag_bthmphi)
-        call phisum_mn_name_rz(p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy,idiag_bpmphi)
+        if (idiag_brmphi/=0) call phisum_mn_name_rz(p%bb(:,1)*p%pomx+p%bb(:,2)*p%pomy,&
+                                                    idiag_brmphi)
+        if (idiag_brsphmphi/=0) call phisum_mn_name_rz(p%bb(:,1)*p%evr(:,1)+&
+            p%bb(:,2)*p%evr(:,2)+p%bb(:,3)*p%evr(:,3),idiag_brsphmphi)
+        if (idiag_bthmphi/=0) call phisum_mn_name_rz(p%bb(:,1)*p%evth(:,1)+&
+            p%bb(:,2)*p%evth(:,2)+p%bb(:,3)*p%evth(:,3),idiag_bthmphi)
+        if (idiag_bpmphi/=0) call phisum_mn_name_rz(p%bb(:,1)*p%phix+p%bb(:,2)*p%phiy,&
+                                                    idiag_bpmphi)
         call phisum_mn_name_rz(p%bb(:,3),idiag_bzmphi)
         call phisum_mn_name_rz(p%b2,idiag_b2mphi)
         if (idiag_jbmphi/=0) call phisum_mn_name_rz(p%jb,idiag_jbmphi)
