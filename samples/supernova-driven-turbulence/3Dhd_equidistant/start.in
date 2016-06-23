@@ -42,19 +42,17 @@
   lSN_scale_rad=T
   N_mass=50.0
   width_SN = 0.035
-  frac_kin=0.3
-  frac_eth=0.7
+  frac_kin=0.0
+  frac_eth=1.0
   lSN_ecr=F
   lSN_mass=T
-  lSN_velocity=T
+  lSN_velocity=F
   energy_width_ratio=1.0
   mass_width_ratio=1.0
-  velocity_width_ratio=1.0
   thermal_profile='gaussian3'
   mass_profile='gaussian3'
-  velocity_profile='gaussian3'
-  rho_SN_max=7.25
-  TT_SN_max=1e9
+  TT_SN_max=2.72e7 !1e9 K
+  rho_SN_max=8.364 !5ppcc
 /
 &shear_init_pars
   Sshear=-25.0
