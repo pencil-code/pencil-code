@@ -1108,6 +1108,7 @@ module Interstellar
       lpenc_requested(i_rho1)=.true.
       if (lheatcool_shock_cutoff) then
         lpenc_requested(i_shock)=.true.
+        lpenc_requested(i_rho)=.true.
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1464,7 +1465,7 @@ module Interstellar
 !
       real, dimension (nx), intent(inout) :: Hmax
       real, dimension (nx) :: heat,cool,heatcool,netheat,netcool
-      real, dimension (nx) :: damp_profile,gsh2
+      real, dimension (nx) :: damp_profile
 !
 !  Identifier
 !
