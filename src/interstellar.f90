@@ -1487,14 +1487,14 @@ module Interstellar
         if (lSNI.or.lSNII) then
           heat=heat+average_SNI_heating *exp(-(z(n)/h_SNI )**2)*&
               t_interval_SNI /(t_interval_SNI +t*heatingfunction_fadefactor)&
-                                         *p%rho1*heatingfunction_scalefactor
+                                         *heatingfunction_scalefactor
           heat=heat+average_SNII_heating*exp(-(z(n)/h_SNII)**2)*&
               t_interval_SNII/(t_interval_SNII+t*heatingfunction_fadefactor)&
-                                         *p%rho1*heatingfunction_scalefactor
+                                         *heatingfunction_scalefactor
         else
-          heat=heat+average_SNI_heating *exp(-(z(n)/h_SNI )**2)*p%rho1*&
+          heat=heat+average_SNI_heating *exp(-(z(n)/h_SNI )**2)*&
                     heatingfunction_scalefactor
-          heat=heat+average_SNII_heating*exp(-(z(n)/h_SNII)**2)*p%rho1*&
+          heat=heat+average_SNII_heating*exp(-(z(n)/h_SNII)**2)*&
                     heatingfunction_scalefactor
         endif
       endif
