@@ -190,6 +190,7 @@ module Density
   integer :: idiag_rhomz=0      ! XYAVG_DOC: $\left<\varrho\right>_{xy}$
   integer :: idiag_rho2mz=0     ! XYAVG_DOC: $\left<\varrho^2\right>_{xy}$
   integer :: idiag_uglnrhomz=0  ! XYAVG_DOC: $\left<\uv\cdot\nabla\ln\varrho\right>_{xy}$
+  integer :: idiag_ugrhomz=0  ! XYAVG_DOC: $\left<\uv\cdot\nabla\varrho\right>_{xy}$
   integer :: idiag_uygzlnrhomz=0! XYAVG_DOC: $\left<u_y\nabla_z\ln\varrho\right>_{xy}$
   integer :: idiag_uzgylnrhomz=0! XYAVG_DOC: $\left<u_z\nabla_y\ln\varrho\right>_{xy}$
 !
@@ -1861,6 +1862,7 @@ module Density
       if (idiag_ugrhom/=0) lpenc_diagnos(i_ugrho)=.true.
       if (idiag_uglnrhom/=0) lpenc_diagnos(i_uglnrho)=.true.
       if (idiag_uglnrhomz/=0) lpenc_diagnos(i_uglnrho)=.true.
+      if (idiag_ugrhomz/=0) lpenc_diagnos(i_ugrho)=.true.
       if (idiag_uygzlnrhomz/=0 .or. idiag_uzgylnrhomz/=0) lpenc_diagnos(i_glnrho)=.true.
       if (idiag_grhomax/=0) lpenc_diagnos(i_grho)=.true.
 !
@@ -2460,6 +2462,7 @@ module Density
         call xysum_mn_name_z(p%rho,idiag_rhomz)
         call xysum_mn_name_z(p%rho**2,idiag_rho2mz)
         call xysum_mn_name_z(p%uglnrho,idiag_uglnrhomz)
+        call xysum_mn_name_z(p%ugrho,idiag_ugrhomz)
         call xysum_mn_name_z(p%uu(:,2)*p%glnrho(:,3),idiag_uygzlnrhomz)
         call xysum_mn_name_z(p%uu(:,3)*p%glnrho(:,2),idiag_uzgylnrhomz)
         call yzsum_mn_name_x(p%rho,idiag_rhomx)
@@ -3002,7 +3005,7 @@ module Density
       if (lreset) then
         idiag_rhom=0; idiag_rho2m=0; idiag_lnrho2m=0
         idiag_drho2m=0; idiag_drhom=0
-        idiag_ugrhom=0; idiag_uglnrhom=0
+        idiag_ugrhom=0; idiag_ugrhomz=0; idiag_uglnrhom=0
         idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0
         idiag_lnrhomphi=0; idiag_rhomphi=0
         idiag_rhomz=0; idiag_rho2mz=0; idiag_rhomy=0; idiag_rhomx=0; idiag_rho2mx=0
@@ -3042,6 +3045,7 @@ module Density
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhomz',idiag_rhomz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'rho2mz',idiag_rho2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uglnrhomz',idiag_uglnrhomz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ugrhomz',idiag_ugrhomz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uygzlnrhomz',idiag_uygzlnrhomz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzgylnrhomz',idiag_uzgylnrhomz)
       enddo
