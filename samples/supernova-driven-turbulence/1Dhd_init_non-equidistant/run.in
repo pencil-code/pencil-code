@@ -30,7 +30,7 @@
 /
 &interstellar_run_pars
   laverage_SN_heating=T
-  heatingfunction_scalefactor=0.5
+  heatingfunction_scalefactor=0.25
   heatcool_shock_cutoff_rate=0.1
   cdt_tauc=0.1
   lSNII=F
