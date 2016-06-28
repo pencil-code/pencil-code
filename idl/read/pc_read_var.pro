@@ -394,6 +394,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
   res=''
   content=''
   for iv=0L,totalvars-1L do begin
+    if (varcontent[iv].variable eq 'UNKNOWN') then continue
     if (nprocs eq 1 and allprocs ne 2) then begin
       res=res+','+varcontent[iv].idlvar
     endif else begin
@@ -539,6 +540,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
       mxloc=procdim.mx & myloc=procdim.my & mzloc=procdim.mz
 
       for iv=0L,totalvars-1L do begin
+        if (varcontent[iv].variable eq 'UNKNOWN') then continue
         if (execute(varcontent[iv].idlvarloc+'='+varcontent[iv].idlinitloc,0) ne 1) then $
             message, 'Error initialising ' + varcontent[iv].variable $
                       +' - '+ varcontent[iv].idlvarloc, /info
@@ -677,8 +679,10 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
     undefine,xloc
     undefine,yloc
     undefine,zloc
-    for iv=0L,totalvars-1L do $ 
+    for iv=0L,totalvars-1L do begin
+      if (varcontent[iv].variable eq 'UNKNOWN') then continue
       dum=execute('undefine,'+varcontent[iv].idlvarloc)
+    endfor
   endif
 ;
 ; Set ghost zones on derived variables (not default).
