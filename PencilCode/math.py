@@ -43,6 +43,8 @@ def _deriv1(a, axis=-1):
         axis
             Axis of a to be opearted on.
     """
+    # Author: Chao-Chin Yang
+    # Created: 2016-06-29
     b = a.view() if axis == -1 else a.swapaxes(-1, axis)
     db = 0.75 * (b[...,4:-2] - b[...,2:-4]) - 0.15 * (b[...,5:-1] - b[...,1:-5]) + (1/60) * (b[...,6:] - b[...,:-6])
     return db if axis == -1 else db.swapaxes(axis,-1)
