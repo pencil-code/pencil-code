@@ -792,7 +792,7 @@ def time_series(datadir='./data'):
     f.close()
     return ts
 #=======================================================================
-def var(datadir='./data', ivar=None, par=None, varfile='var.dat', verbose=True):
+def var(datadir='./data', ivar=None, par=None, trim=True, varfile='var.dat', verbose=True):
     """Returns one snapshot.
 
     Keyword Arguments:
@@ -804,12 +804,14 @@ def var(datadir='./data', ivar=None, par=None, varfile='var.dat', verbose=True):
         par
             Parameters supplied by parameters().  If None, parameters()
             will be called.
+        trim
+            Whether or not to trim the ghost cells.
         varfile
             Name of the snapshot file.
         verbose
             Verbose output or not.
     """
-    # Chao-Chin Yang, 2015-10-11
+    # Chao-Chin Yang, 2016-06-29
     from collections import namedtuple
     import numpy as np
     # Get the parameters.
@@ -829,11 +831,11 @@ def var(datadir='./data', ivar=None, par=None, varfile='var.dat', verbose=True):
     if ivar is not None:
         varfile = "VAR{}".format(ivar)
     # Allocate arrays.
-    fdim = [dim.nxgrid, dim.nygrid, dim.nzgrid, mvar]
+    fdim = [dim.mxgrid, dim.mygrid, dim.mzgrid, mvar]
     f = np.zeros(fdim, dtype=dtype)
-    x = np.zeros((dim.nxgrid,), dtype=dtype)
-    y = np.zeros((dim.nygrid,), dtype=dtype)
-    z = np.zeros((dim.nzgrid,), dtype=dtype)
+    x = np.zeros((dim.mxgrid,), dtype=dtype)
+    y = np.zeros((dim.mygrid,), dtype=dtype)
+    z = np.zeros((dim.mzgrid,), dtype=dtype)
     t, dx, dy, dz = 0.0, 0.0, 0.0, 0.0
     if par.lshear:
         deltay = 0.0
@@ -859,22 +861,29 @@ def var(datadir='./data', ivar=None, par=None, varfile='var.dat', verbose=True):
         snap1 = proc_var(datadir=datadir, par=par, proc=proc, varfile=varfile) 
         # Assign the data to the corresponding block.
         l1 = dim1.iprocx * dim1.nx
-        l2 = l1 + dim1.nx
+        l2 = l1 + dim1.mx
         m1 = dim1.iprocy * dim1.ny
-        m2 = m1 + dim1.ny
+        m2 = m1 + dim1.my
         n1 = dim1.iprocz * dim1.nz
-        n2 = n1 + dim1.nz
-        f[l1:l2,m1:m2,n1:n2,:] = snap1.f[dim1.nghost:-dim1.nghost,dim1.nghost:-dim1.nghost,dim1.nghost:-dim1.nghost,:]
+        n2 = n1 + dim1.mz
+        f[l1:l2,m1:m2,n1:n2,:] = snap1.f
         # Assign the coordinates and other scalars.
         t = assign1(t, snap1.t, 't', proc)
-        x = assign(l1, l2, x, snap1.x[dim1.nghost:-dim1.nghost], 'x', proc)
-        y = assign(m1, m2, y, snap1.y[dim1.nghost:-dim1.nghost], 'y', proc)
-        z = assign(n1, n2, z, snap1.z[dim1.nghost:-dim1.nghost], 'z', proc)
+        x = assign(l1, l2, x, snap1.x, 'x', proc)
+        y = assign(m1, m2, y, snap1.y, 'y', proc)
+        z = assign(n1, n2, z, snap1.z, 'z', proc)
         dx = assign1(dx, snap1.dx, 'dx', proc)
         dy = assign1(dy, snap1.dy, 'dy', proc)
         dz = assign1(dz, snap1.dz, 'dz', proc)
         if par.lshear:
             deltay = assign1(deltay, snap1.deltay, 'deltay', proc)
+    # Trim the ghost cells if requested.
+    if trim:
+        f = f[dim.nghost:-dim.nghost,dim.nghost:-dim.nghost,dim.nghost:-dim.nghost,:]
+        fdim = [dim.nxgrid, dim.nygrid, dim.nzgrid, mvar]
+        x = x[dim.nghost:-dim.nghost]
+        y = y[dim.nghost:-dim.nghost]
+        z = z[dim.nghost:-dim.nghost]
     # Define and return a named tuple.
     fdim.pop()
     for i in range(fdim.count(1)):
