@@ -7080,8 +7080,8 @@ endif
       do idim=1,3
         q = floor(dd(idim)/(Boxsize(idim)/2))
         p = 0
-        if (q.eq.1)  p = -1  		
-        if (q.eq.-2) p = 1  		
+        if (q.eq.1)  p = -1
+        if (q.eq.-2) p = 1
         dd(idim) = dd(idim) + Boxsize(idim)*p
       enddo
     endsubroutine periodic_fold_back
