@@ -287,12 +287,12 @@ module Special
           call divflux_from_Omega_effect(p,divflux)
           df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)&
               -meanfield_etat*divflux
-          if (ladvect_alpm) then
-            call grad(f,ialpm,galpm)
-            call dot_mn(p%uu,galpm,ugalpm)
-            alpm_divu=alpm*p%divu
-            df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)-ugalpm-alpm_divu
-          endif
+        endif
+        if (ladvect_alpm) then
+          call grad(f,ialpm,galpm)
+          call dot_mn(p%uu,galpm,ugalpm)
+          alpm_divu=alpm*p%divu
+          df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)-ugalpm-alpm_divu
         endif
         if (alpmdiff/=0) then
           call del2(f,ialpm,del2alpm)
