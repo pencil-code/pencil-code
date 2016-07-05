@@ -1,0 +1,25 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+MPICOMM   = nompicomm
+GLOBAL    = noglobal
+VISCOSITY = noviscosity
+
+HYDRO     = nohydro
+DENSITY   = nodensity
+ENTROPY   =   temperature_idealgas
+MAGNETIC  = nomagnetic
+RADIATION = noradiation
+PSCALAR   = nopscalar
+EOS       =   eos_idealgas
+
+GRAVITY   = nogravity
+FORCING   = noforcing
+SHEAR     = noshear
+
+#SPECIAL   =   special/streamfunction_dimensional
+SPECIAL   =   special/streamfunction_fullmultigrid
+INITIAL_CONDITION = initial_condition/ice_shell
+
+REAL_PRECISION = double

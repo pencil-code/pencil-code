@@ -1,0 +1,30 @@
+!                               -*-f90-*-   (for emacs)
+!
+! Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.2 2016/07/02 00:34:31 wlyra Exp $',
+  ip=14
+  nt=50, it1=5, isave=100, itorder=3
+  cdt=0.4
+  cdtv=0.4
+  cdtv3=0.4
+  dtmin=1e-10
+  lpencil_check=F
+  lpencil_check_small=F
+  lwrite_dvar=T
+  tmax=2e18
+  dsnap=1e16
+/
+&eos_run_pars
+/
+&entropy_run_pars
+  ladvection_temperature=F
+/
+&special_run_pars
+  lprint_residual=F
+  lsave_residual=F
+  ltidal_heating=F
+  ltemperature_advection=T
+  ltemperature_diffusion=T
+/
