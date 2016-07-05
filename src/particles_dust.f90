@@ -28,7 +28,7 @@ module Particles
   use Particles_mpicomm
   use Particles_sub
   use Particles_radius
-!
+! 
   implicit none
 !
   include 'particles.h'
@@ -6076,7 +6076,7 @@ module Particles
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mpar_loc,mparray), intent(in) :: fp
-      real, dimension(3) :: uup
+      real, dimension(3) :: uup,rel_vel_sing
       real, dimension(:), allocatable :: rel_vel
       integer :: k,ix0,iy0,iz0
       integer, dimension(mpar_loc,3), intent(in) :: ineargrid
@@ -6085,14 +6085,15 @@ module Particles
 !
       allocate(rel_vel(npar_loc))
 !
+      rel_vel = 0.0
+!
       do k = 1,npar_loc
         call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),0,0)
-        rel_vel(k) = sum((fp(k,ivpx:ivpz)-uup)**2)
+        rel_vel_sing = (fp(k,ivpx:ivpz)-uup)**2
+        rel_vel(k) = sqrt(sum(rel_vel_sing))
       enddo
 !
-!  sum((interp_uu(k,:) - fp(k,ivpx:ivpz))**2)
-!
-      call sum_par_name(rel_vel(:),idiag_vrelpabsm,lsqrt=.true.)
+      call sum_par_name(rel_vel(1:npar_loc),idiag_vrelpabsm)
       if (allocated(rel_vel)) deallocate(rel_vel)
 !
     endsubroutine calc_relative_velocity

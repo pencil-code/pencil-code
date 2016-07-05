@@ -43,6 +43,7 @@ module Particles_radius
   logical :: lsupersat_par=.false.
   logical :: llatent_heat=.true., lborder_driving_ocean=.false.
   logical :: lcondensation_simplified=.false.
+  logical :: lconstant_radius_w_chem=.false.
   logical :: lfixed_particles_radius=.false.
  character (len=labellen), dimension(ninit) :: initap='nothing'
   character (len=labellen) :: condensation_coefficient_type='constant'
@@ -65,7 +66,7 @@ module Particles_radius
       lborder_driving_ocean, ztop_ocean, TTocean, &
       lcondensation_simplified, GS_condensation, rpbeta0,&
       lfixed_particles_radius, &
-      lsupersat_par
+      lsupersat_par,lconstant_radius_w_chem
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
@@ -491,33 +492,43 @@ module Particles_radius
       if (lparticles_chemistry .and. npar_imn(imn) /= 0) then
         k1 = k1_imn(imn)
         k2 = k2_imn(imn)
+!        
+!  Particles can lose radius under consumption
+!
+        if (.not. lconstant_radius_w_chem) then
 !
 !  mass loss has a positive value -> particle is losing mass
 !  (the mass vector is pointing out of the particle)
 !
-        allocate(mass_loss(k1:k2))
-        allocate(effectiveness_factor(k1:k2))
+          allocate(mass_loss(k1:k2))
+          allocate(effectiveness_factor(k1:k2))
 !
-        call get_radius_chemistry(mass_loss,effectiveness_factor)
+          call get_radius_chemistry(mass_loss,effectiveness_factor)
 !
-        if (.not. lsurface_nopores) then
-          do k = k1,k2
-            if (fp(k,irhosurf) < 0) then
+          if (.not. lsurface_nopores) then
+            do k = k1,k2
+              if (fp(k,irhosurf) < 0) then
+                rho = fp(k,imp) / (fp(k,iap)**3 * 4./3. * pi )
+                mass_per_radius = 4. * pi * rho * fp(k,iap)**2
+                dfp(k,iap) = dfp(k,iap) - mass_loss(k) *(1-effectiveness_factor(k))/mass_per_radius
+              endif
+              fp(k,ieffp) = effectiveness_factor(k)
+            enddo
+          else
+            do k = k1,k2
               rho = fp(k,imp) / (fp(k,iap)**3 * 4./3. * pi )
               mass_per_radius = 4. * pi * rho * fp(k,iap)**2
-              dfp(k,iap) = dfp(k,iap) - mass_loss(k) *(1-effectiveness_factor(k))/mass_per_radius
-            endif
-            fp(k,ieffp) = effectiveness_factor(k)
-          enddo
-        else
-          do k = k1,k2
-            rho = fp(k,imp) / (fp(k,iap)**3 * 4./3. * pi )
-            mass_per_radius = 4. * pi * rho * fp(k,iap)**2
-            dfp(k,iap) = dfp(k,iap) - mass_loss(k)/mass_per_radius
-          enddo
+              dfp(k,iap) = dfp(k,iap) - mass_loss(k)/mass_per_radius
+            enddo
+          endif
+          deallocate(mass_loss)
+          deallocate(effectiveness_factor)
         endif
-        deallocate(mass_loss)
-        deallocate(effectiveness_factor)
+!
+!  Constant particle radius with activated chemistry
+!
+      else
+        fp(k1:k2,iap) = 0.0
       endif
 !
     endsubroutine dap_dt_pencil
