@@ -4511,7 +4511,8 @@ module Energy
 !***********************************************************************
     subroutine calc_heatcond(f,df,p)
 !
-!  In this routine general heat conduction profiles are being provided.
+!  In this routine general heat conduction profiles are being provided
+!  and applied to the entropy equation.
 !
 !  17-sep-01/axel: coded
 !  14-jul-05/axel: corrected expression for chi_t diffusion.
