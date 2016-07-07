@@ -79,7 +79,7 @@ program start
   use Param_IO
   use Particles_main
   use Polymer,          only: init_poly
-  use PScalar,          only: init_lncc
+  use Pscalar,          only: init_lncc
   use Radiation,        only: init_rad, radtransfer
   use Register
   use Selfgravity,      only: calc_selfpotential
