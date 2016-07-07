@@ -309,7 +309,7 @@ module Snapshot
 !  or just mvar (for f-array in start.f90 or df-array in run.f90.
 !
       logical :: lread_nogrid
-      integer :: msnap, mode
+      integer :: msnap, mode,ipscalar
       real, dimension (mx,my,mz,msnap) :: f
       character (len=*) :: chsnap
 !
@@ -335,14 +335,7 @@ module Snapshot
 !  NOTE: for this to work one has to modify *manually* data/param.nml
 !  by adding an entry for MAGNETIC_INIT_PARS or PSCALAR_INIT_PARS.
 !
-!DM: I do not understand why we need to shift the data below.
-! I seem to need to set f(:,:,:,iax:iaz) = 0 . Otherwise
-! the vector potential is initialised as junk data. And then
-! init_aa just adds to it, so junk remains junk. Anyhow
-! the initialisation to zero cannot do any harm.
-!
       if (lread_oldsnap_nomag) then
-        f(:,:,:,iax:iaz)=0.
         print*,'read old snapshot file (but without magnetic field)'
         call input_snap('var.dat',f,msnap-3,mode)
         call input_persistent()
@@ -352,8 +345,8 @@ module Snapshot
           do ivar=iaz+1,mvar
             f(:,:,:,ivar)=f(:,:,:,ivar-3)
           enddo
-          f(:,:,:,iax:iaz)=0.
         endif
+        f(:,:,:,iax:iaz)=0.
 !
 !  Read data without passive scalar into new run with passive scalar.
 !
@@ -363,12 +356,18 @@ module Snapshot
         call input_persistent()
         call input_snap_finalize()
         ! shift the rest of the data
-        if (ilncc<mvar) then
-          do ivar=ilncc+1,mvar
+!
+!      If we are using the pscalar_nolog module then ilncc is zero 
+!      so we must use icc. 
+!
+        ipscalar=ilncc
+        if (ilncc.eq.0) ipscalar = icc
+        if (ipscalar<mvar) then
+          do ivar=ipscalar+1,mvar
             f(:,:,:,ivar)=f(:,:,:,ivar-1)
           enddo
-          f(:,:,:,ilncc)=0.
         endif
+        f(:,:,:,ipscalar) = 0.
 !
 !  Read data without testfield into new run with testfield.
 !
