@@ -143,7 +143,8 @@ module Magnetic
   real :: dipole_moment=0.0
   real :: eta_power_x=0., eta_power_z=0.
   real :: z1_aa=0., z2_aa=0.
-  integer :: nbvec,nbvecmax=nx*ny*nz/4, va2power_jxb=5, iua=0
+  integer, target :: va2power_jxb = 5
+  integer :: nbvec, nbvecmax=nx*ny*nz/4, iua=0
   integer :: N_modes_aa=1, naareset
   integer :: nrings=2
   integer :: ierr
@@ -238,7 +239,8 @@ module Magnetic
   real :: forcing_continuous_aa_amplfact=1.0, ampl_fcont_aa=1.0
   real :: LLambda_aa=0.0, vcrit_anom=1.0
   real :: numag=0.0
-  real :: betamin_jxb=0.0, gamma_epspb=2.4, exp_epspb, ncr_quench=0.
+  real :: gamma_epspb=2.4, exp_epspb, ncr_quench=0.
+  real, target :: betamin_jxb = 0.0
   real, dimension(mx,my) :: eta_xy
   real, dimension(mx,my,3) :: geta_xy
   real, dimension(nx,ny,nz,3) :: A_relprof
@@ -905,6 +907,13 @@ module Magnetic
 !
       if (lmagn_mf) &
         call put_shared_variable('B_ext2', B_ext2, caller='initialize_magnetic')
+!
+!  Share several parameters for Alfven limiter with module Shock.
+!
+      alfven: if (lshock) then
+        call put_shared_variable('va2power_jxb', va2power_jxb, caller='initialize_magnetic')
+        call put_shared_variable('betamin_jxb', betamin_jxb, caller='initialize_magnetic')
+      endif alfven
 !
 !  Shear of B_ext,x is not implemented.
 !
