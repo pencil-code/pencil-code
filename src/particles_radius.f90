@@ -523,12 +523,13 @@ module Particles_radius
           endif
           deallocate(mass_loss)
           deallocate(effectiveness_factor)
-        endif
+        else
 !
 !  Constant particle radius with activated chemistry
 !
-      else
-        fp(k1:k2,iap) = 0.0
+          fp(k1:k2,iap) = 0.0
+          
+        endif
       endif
 !
     endsubroutine dap_dt_pencil
