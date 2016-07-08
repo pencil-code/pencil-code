@@ -912,7 +912,9 @@ else if ($hn =~ beskow-login*.pdc.kth.se*) then
   set start_x=$cwd/src/start.x
   set run_x=$cwd/src/run.x
   echo "*********************************"
-  echo "***---------------------------------**" >>$PENCIL_HOME/.pencil_runs.txt
+  echo "***---------------------------------**" >>$PENCIL_RUN/.pencil_runs.txt
+  echo $cwd >>$PENCIL_RUN/.pencil_runs.txt
+  echo "***---------------------------------**" >>$PENCIL_RUN/.pencil_runs.txt
   set mpi = 1
   set mpirunops = ''
   set mpirun = 'aprun'
