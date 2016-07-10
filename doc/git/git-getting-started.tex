@@ -1,0 +1,279 @@
+\documentclass[12pt,pdftex]{article}
+
+\usepackage[postscript]{ucs}
+\usepackage[utf8x]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{fixltx2e}
+\usepackage{graphicx}
+\usepackage{longtable}
+\usepackage{soul}
+\usepackage{textcomp}
+\usepackage{marvosym}
+\usepackage{amsmath}
+\usepackage{wasysym}
+\usepackage{latexsym}
+\usepackage{amssymb}
+\usepackage{amstext}
+\usepackage{hyperref}
+\usepackage{pifont}
+\usepackage{units}
+\usepackage[a4paper,margin=20mm,top=28mm,bottom=20mm]{geometry}
+\usepackage[bf,sf,small,nonindentfirst]{titlesec}
+\usepackage{booktabs}
+\usepackage{parskip}
+\usepackage{newcent}
+\usepackage{helvet}
+\usepackage{pxfonts}
+
+\renewcommand{\ttdefault}{txtt} % narrower + nicer tt font
+\titleformat{\subsubsection}{\normalfont\itshape}{\thesubsubsection}{.5em}{}
+\setlength{\emergencystretch}{1\textwidth} % no overfull hboxes with tt font
+\usepackage{listings}
+\author{The \textsc{Pencil Code} Team}
+\date{19-Jun-2016}
+\title{Getting started with Git for the \textsc{Pencil Code}}
+\hypersetup{
+ pdftitle={Getting started with Git for the Pencil Code},
+ pdfauthor={The Pencil Code Team},
+ pdfsubject={Version control},
+ pdfkeywords={git, pencil code, secure shell}
+}
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\section{Preparation}
+\label{sec-1}
+
+
+\subsection{\href{https://help.github.com/articles/generating-an-ssh-key/}{SSH key}}
+\label{sec-1-1}
+
+[You can work without an SSH key.
+In that case you check out with
+\texttt{‘git clone https://github.com/pencil-code/pencil-code.git’}.
+The downside is that you will be asked for your Github password each
+time you push a commit to the server.]
+
+\begin{enumerate}
+\item Create a dedicated SSH key for Github\footnote{Instead of using a dedicated key for Github, you could reuse another
+SSH key, like the one you are using for logging into servers.
+However, logging in to your servers has nothing to do with using Github, so
+it is better practice to keep those two operations completely separate.}:
+
+\lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
+\begin{lstlisting}
+ssh-keygen -f ~/.ssh/github-key
+\end{lstlisting}
+
+You will be asked for a passphrase.
+Depending on your usual practice, you can enter a passphrase or
+leave it empty.\footnote{You can later add a passphrase to the key, or change an existing
+passphrase using \texttt{‘ssh-keygen -f \textasciitilde{}/.ssh/github-key -p’}.}
+
+\item Upload the public key to Github 
+\begin{itemize}
+\item Log in at Github and navigate to the \href{https://github.com/settings/profile}{settings page}
+\item Select ‘SSH and GPG keys’
+\item Click ‘New SSH key’
+\item Upload the key \texttt{\textasciitilde{}/.ssh/github-key.pub}
+\end{itemize}
+\end{enumerate}
+
+
+\section{Day-to-day usage}
+\label{sec-2}
+
+\subsection{Add SSH key to your SSH agent}
+\label{sec-2-1}
+
+On you local laptop or desktop computer, do
+\lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
+\begin{lstlisting}
+ssh-add ~/.ssh/github-key
+\end{lstlisting}
+
+If you work on a remote server, add the key locally before you connect
+to the remote server, then do\footnote{If you are tired of explicitly typing the \texttt{‘-A’} option, you can add
+an equivalent configuration option to your \texttt{\textasciitilde{}/.ssh/config} file.}
+\lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
+\begin{lstlisting}
+ssh -A beskow
+\end{lstlisting}
+[replace \emph{beskow} by the name of the server] to connect.
+
+You can use the command \texttt{‘ssh-add -l’} to see which keys you currently
+have added to the SSH agent [this also works on the remote server].
+
+
+\subsection{Check out the Pencil Code}
+\label{sec-2-2}
+
+\lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
+\begin{lstlisting}
+git clone git@github.com:pencil-code/pencil-code.git
+\end{lstlisting}
+This will create a directory \texttt{pencil-code}.
+
+
+\subsection{Configure Git}
+\label{sec-2-3}
+
+Tell Git your user name and email:
+\lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
+\begin{lstlisting}
+git config user.name 'MY NAME'
+git config user.email 'MY@EMAIL'
+\end{lstlisting}
+
+Recommended:
+\lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
+\begin{lstlisting}
+git config rebase.autoStash true
+\end{lstlisting}
+This will automatically stash away and later restore uncommitted
+changes when they could interfere with some Git operations.
+
+
+\subsection{Edit–commit cycle}
+\label{sec-2-4}
+
+\begin{enumerate}
+\item Edit file(s)
+
+\item Commit changes:
+\lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
+\begin{lstlisting}
+# Commit all changes to specific files: 
+git commit <files>
+# Alternatively, commit all changes to files known to Git:
+git commit -a
+\end{lstlisting}
+
+An editor will pop up for you to enter the log message.
+You can use \texttt{‘git commit [...] -m "MESSAGE"’} to set the log message
+directly from the command line.
+
+[To split existing changes into logical groups, you can use
+\lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
+\begin{lstlisting}
+git commit -p
+\end{lstlisting}
+to be asked for each block of changes (‘hunk’) whether you want to
+commit it or not.]
+
+\item To add any new files, use
+\lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
+\begin{lstlisting}
+git add <file(s)>
+\end{lstlisting}
+
+\item To see the current status:
+\lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
+\begin{lstlisting}
+git status
+\end{lstlisting}
+
+For more details, like history, etc., use
+\lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
+\begin{lstlisting}
+gitk --all     # graphical front-end; highly recommended
+tig --all      # curses-based [may require 'apt install tig']
+git log --all  # plain ASCII
+\end{lstlisting}
+
+The small colored circles in \emph{gitk} have the following meaning:
+\begin{description}
+\item[{Red}] Unregistered changes to files known to Git.
+\item[{Green}] Changes added to the \emph{index} \footnote{The \emph{index} doesn't exist in Subversion.
+If it gets in your way, use \texttt{‘git reset’} to turn changes from the
+index into unregistered changes.}, but not yet committed.
+\item[{Yellow}] The current HEAD commit.
+\item[{Blue}] All other commits.
+\end{description}
+
+\item Go back to step 1.
+\end{enumerate}
+
+
+\subsection{Push commits to the server}
+\label{sec-2-5}
+
+To bring your commits to the server, use\footnote{The full form of these commands is\\
+\noindent\mbox{}\qquad\qquad  \texttt{git pull -{}-rebase origin master}\\
+\noindent\mbox{}\qquad\qquad \texttt{\# [Make sure whatever you just pulled didn't break anything ...]}\\
+\noindent\mbox{}\qquad\qquad \texttt{git push origin master}\\
+But you can (and should) configure Git such that you don't need to specify
+the \emph{remote} (= origin), or the \emph{branch} (= master).}
+\lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
+\begin{lstlisting}
+git pull --rebase
+# [Make sure whatever you just pulled didn't break anything ...]
+git push
+\end{lstlisting}
+Running \texttt{‘git pull -{}-rebase’} prior to any \emph{push} operation saves you
+some headache in case there are incoming changes from the server.
+
+
+\subsection{Translation table Subversion \(\leftrightarrow\) Git}
+\label{sec-2-6}
+
+\begin{center}
+\begin{tabular}{lll}
+\toprule
+\emph{Operation} & \emph{Subversion} & \emph{Git}\\
+\midrule
+Check out & \texttt{svn copy} & \texttt{git clone}\\
+\midrule
+Status & \texttt{svn status} & \texttt{git status}\\
+\midrule
+Diff & \texttt{svn diff} & \texttt{git diff}\\
+\midrule
+Add file & \texttt{svn add} & \texttt{git add}\\
+\midrule
+Commit and push & \texttt{svn commit} & \texttt{git commit}\\
+ &  & \texttt{git push}\\
+\midrule
+Commit and push safely & \texttt{svn update} & \texttt{git commit}\\
+ & \texttt{svn commit} & \texttt{git pull -{}-rebase}\\
+ &  & \texttt{git push}\\
+\bottomrule
+\end{tabular}
+\end{center}
+
+
+\section{Troubleshooting}
+\label{sec-3}
+
+\subsection{Conflicts}
+\label{sec-3-1}
+
+Conflicts in files are marked up as in CVS or Subversion.
+
+After you have resolved them in the file(s), run
+\lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
+\begin{lstlisting}
+git add <file(s)>
+\end{lstlisting}
+to tell Git that they are fixed.
+
+
+\subsection{Have I lost data?}
+\label{sec-3-2}
+
+Most likely not. See Section 3 (“Don't panic”) of \emph{Git Best Practices} under
+\texttt{\$PENCIL\_HOME/doc/git/}.
+
+
+\subsection{I want to discard all of my local changes}
+\label{sec-3-3}
+
+[The following is one of the few commands that do lose data, but you
+ware asking for exactly this]:
+\lstset{frame=single,basicstyle=\ttfamily\footnotesize,language=sh,label= ,caption= ,captionpos=b,numbers=none}
+\begin{lstlisting}
+git reset --hard '@{upstream}'
+git checkout .
+\end{lstlisting}
+\end{document}
