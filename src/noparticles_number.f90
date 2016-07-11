@@ -61,7 +61,7 @@ module Particles_number
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
-      real :: npar_low, npar_high
+      integer :: npar_low, npar_high
       logical, optional :: init
 !
       call keep_compiler_quiet(f)
