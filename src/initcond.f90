@@ -21,7 +21,7 @@ module Initcond
   public :: soundwave,sinwave,sinwave_phase,coswave,coswave_phase,cos_cos_sin
   public :: hatwave
   public :: acosy
-  public :: sph_constb
+  public :: sph_constb,tanh_hyperbola
   public :: gaunoise, posnoise, posnoise_rel
   public :: gaunoise_rprof
   public :: gaussian, gaussian3d, gaussianpos, beltrami, bessel_x, bessel_az_x
@@ -5887,6 +5887,29 @@ module Initcond
       endif
 !
     endsubroutine dipole_tor
+!***********************************************************************
+    subroutine tanh_hyperbola(amp,f,ix,yzero,delta,kk)
+!
+!  initial vector potential as used by Moffatt and Hunt, "A model for magnetic 
+!  reconnection", 2002. 
+
+!
+!  23 June 2016/dhruba.mitra
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real :: amp,yzero,delta,kk
+      integer, intent(in) :: ix
+      integer :: m,l
+      do m = m1,m2
+          do l = l1,l2
+             f(l,m,:,ix)   = 0.
+            f(l,m,:,ix+1) = 0.
+            f(l,m,:,ix+2) = 0.5*amp*tanh((y(m)*y(m) - yzero*yzero-kk*kk*x(l)*x(l))/(delta*delta))
+          enddo
+        enddo      
+
+!
+    endsubroutine 
 !***********************************************************************
     subroutine pre_stellar_cloud(f, datafile, mass_cloud,  &
         cloud_mode, T_cloud_out_rel, dens_coeff, &

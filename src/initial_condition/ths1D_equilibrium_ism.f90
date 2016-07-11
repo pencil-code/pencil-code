@@ -191,7 +191,7 @@ module InitialCondition
 !  Set up physical units.
 !
       if (unit_system=='cgs') then
-        rho_fraction = nfraction_cgs * m_u_cgs/unit_density
+        rho_fraction = rhox * nfraction_cgs * m_u_cgs/unit_density
         hscale = hscale_cgs/unit_length
         if (T_init == impossible) T_init = T_init_cgs/unit_temperature
       else if (unit_system=='SI') then

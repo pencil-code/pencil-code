@@ -15,6 +15,7 @@
 ! PENCILS PROVIDED ssat
 ! PENCILS PROVIDED gssat(3); ugssat
 ! PENCILS PROVIDED del2ssat
+! PENCILS PROVIDED tausupersat
 !***************************************************************
 module Supersat
 !
@@ -71,6 +72,7 @@ module Supersat
 !NILS: set to zero right below. I have therefore commented out this line.
 !      issat = 0                 ! needed for idl
 !
+!
 !  Identify version number.
 !
       if (lroot) call svn_id( &
@@ -118,7 +120,10 @@ module Supersat
     subroutine pencil_criteria_supersat()
       lpenc_requested(i_ssat)=.true.
             
-      if (lsupersat_sink) lpenc_requested(i_ssat)=.true.
+      if (lsupersat_sink) then 
+        lpenc_requested(i_ssat)=.true.
+        lpenc_requested(i_tausupersat)=.true.
+      endif
       if (supersat_diff/=0.) lpenc_requested(i_del2ssat)=.true.
  
       lpenc_diagnos(i_ssat)=.true.
@@ -134,6 +139,7 @@ module Supersat
         lpencil_in(i_uu)=.true.
         lpencil_in(i_gssat)=.true.
       endif
+      lpencil_in(i_tausupersat)=.true.
     endsubroutine pencil_interdep_supersat
 !**********************************************************************
     subroutine calc_pencils_supersat(f,p)
@@ -209,10 +215,14 @@ module Supersat
          if (lsupersat_sink) then
                  if (Rsupersat_sink) then
                       bump=A1*p%uu(:,1)
+                      !print*,'tau=',p%tausupersat
                   else
                       bump=A1*p%uu(:,1)-f(l1:l2,m,n,issat)/tau
+                      !bump=A1*p%uu(:,1)-f(l1:l2,m,n,issat)/p%tausupersat
+                      !print*,'tau=',f(l1:l2,m,n,itausupersat)
+                      !print*,'tau=',p%tausupersat
                  endif
-                 df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat+bump 
+                 df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat+bump
          endif
 !       
         if (idiag_ssatrms/=0) & 

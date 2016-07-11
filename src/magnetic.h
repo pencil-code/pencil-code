@@ -32,3 +32,4 @@
   public :: update_char_vel_magnetic
 
   public :: lresi_dep
+  public :: lcovariant_magnetic
