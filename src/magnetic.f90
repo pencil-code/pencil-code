@@ -153,6 +153,7 @@ module Magnetic
   logical :: llorentzforce=.true., linduction=.true.
   logical :: ldiamagnetism=.false., lcovariant_magnetic=.false.
   logical :: lresi_eta_const=.false.
+  logical :: lresi_eta_tdep=.false.
   logical :: lresi_sqrtrhoeta_const=.false.
   logical :: lresi_etaSS=.false.
   logical :: lresi_hyper2=.false.
@@ -222,6 +223,7 @@ module Magnetic
 ! Run parameters
 !
   real :: eta=0.0, eta1=0.0, eta_hyper2=0.0, eta_hyper3=0.0
+  real :: eta_tdep=0.0, eta_tdep_exponent=0.0, eta_tdep_t0=0.0
   real :: eta_hyper3_mesh=5.0, eta_spitzer=0., eta_anom=0.0
   real :: eta_int=0.0, eta_ext=0.0, wresistivity=0.01, eta_xy_max=1.0
   real :: height_eta=0.0, eta_out=0.0, eta_cspeed=0.
@@ -283,7 +285,7 @@ module Magnetic
   namelist /magnetic_run_pars/ &
       eta, eta1, eta_hyper2, eta_hyper3, eta_anom, B_ext, B0_ext, t_bext, t0_bext, J_ext, &
       J_ext_quench, omega_Bz_ext, nu_ni, hall_term, battery_term, &
-      eta_hyper3_mesh, &
+      eta_hyper3_mesh, eta_tdep_exponent, eta_tdep_t0, &
       tau_aa_exterior, kx_aa, ky_aa, kz_aa, lcalc_aamean,lohmic_heat, &
       lforcing_cont_aa, lforcing_cont_aa_local, iforcing_continuous_aa, &
       forcing_continuous_aa_phasefact, forcing_continuous_aa_amplfact, k1_ff, &
@@ -317,6 +319,7 @@ module Magnetic
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
+  integer :: idiag_eta_tdep=0   ! DIAG_DOC: $t$-dependent $\eta$
   integer :: idiag_ab_int=0     ! DIAG_DOC: $\int\Av\cdot\Bv\;dV$
   integer :: idiag_jb_int=0     ! DIAG_DOC: $\int\jv\cdot\Bv\;dV$
   integer :: idiag_b2tm=0       ! DIAG_DOC: $\left<\bv(t)\cdot\int_0^t\bv(t')
@@ -1062,6 +1065,7 @@ module Magnetic
 !
       if (iresistivity(1)=='') iresistivity(1)='eta-const'  ! default
       lresi_eta_const=.false.
+      lresi_eta_tdep=.false.
       lresi_sqrtrhoeta_const=.false.
       lresi_hyper2=.false.
       lresi_hyper3=.false.
@@ -1088,6 +1092,9 @@ module Magnetic
         case ('eta-const')
           if (lroot) print*, 'resistivity: constant eta'
           lresi_eta_const=.true.
+        case ('eta-tdep')
+          if (lroot) print*, 'resistivity: time-dependent eta'
+          lresi_eta_tdep=.true.
         case ('sqrtrhoeta-const')
           if (lroot) print*, 'resistivity: constant sqrt(rho)*eta'
           lresi_sqrtrhoeta_const=.true.
@@ -1222,7 +1229,7 @@ module Magnetic
 !  corresponds to the chosen resistivity type is not set.
 !
       if (lrun) then
-        if (lresi_eta_const.and.(eta==0.0)) &
+        if ((lresi_eta_const.or.lresi_eta_tdep).and.(eta==0.0)) &
             call warning('initialize_magnetic', &
             'Resistivity coefficient eta is zero!')
         if (lresi_sqrtrhoeta_const.and.(eta==0.0)) &
@@ -1926,7 +1933,8 @@ module Magnetic
         lpenc_video(i_ab)=.true.
       endif
 !
-      if (lresi_eta_const .and. .not. lweyl_gauge .and. .not. limplicit_resistivity) lpenc_requested(i_del2a) = .true.
+      if ((lresi_eta_const.or.lresi_eta_tdep) .and. .not. lweyl_gauge &
+          .and. .not. limplicit_resistivity) lpenc_requested(i_del2a) = .true.
 !
       zdep: if (lresi_zdep) then
         if (.not. limplicit_resistivity) lpenc_requested(i_del2a) = .true.
@@ -3212,6 +3220,19 @@ module Magnetic
         etatotal = etatotal + eta
       endif eta_const
 !
+!  Time-dependent resistivity
+!
+      if (lresi_eta_tdep) then
+        eta_tdep=eta*max(real(t),eta_tdep_t0)**eta_tdep_exponent
+        if (lweyl_gauge) then
+          fres = fres - eta_tdep * mu0 * p%jj
+        else
+          fres = fres + eta_tdep * p%del2a
+        endif
+        if (lfirst .and. ldt) diffus_eta = diffus_eta + eta_tdep
+        etatotal = etatotal + eta_tdep
+      endif
+!
 !  z-dependent resistivity
 !
       eta_zdep: if (lresi_zdep) then
@@ -3925,6 +3946,7 @@ module Magnetic
 !  Calculate diagnostic quantities.
 !
       if (ldiagnos) then
+        if (idiag_eta_tdep/=0) call sum_mn_name(spread(eta_tdep,1,nx),idiag_eta_tdep)
         if (idiag_beta1m/=0) call sum_mn_name(p%beta1,idiag_beta1m)
         if (idiag_beta1max/=0) call max_mn_name(p%beta1,idiag_beta1max)
         if (idiag_betam /= 0) call sum_mn_name(p%beta, idiag_betam)
@@ -7471,6 +7493,7 @@ module Magnetic
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
+        idiag_eta_tdep=0
         idiag_ab_int=0; idiag_jb_int=0; idiag_b2tm=0; idiag_bjtm=0; idiag_jbtm=0
         idiag_b2uzm=0; idiag_b2ruzm=0; idiag_ubbzm=0; idiag_b1m=0; idiag_b2m=0
         idiag_bm2=0; idiag_j2m=0; idiag_jm2=0
@@ -7582,6 +7605,7 @@ module Magnetic
 !  Check for those quantities that we want to evaluate online.
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'eta_tdep',idiag_eta_tdep)
         call parse_name(iname,cname(iname),cform(iname),'ab_int',idiag_ab_int)
         call parse_name(iname,cname(iname),cform(iname),'jb_int',idiag_jb_int)
         call parse_name(iname,cname(iname),cform(iname),'dteta',idiag_dteta)
