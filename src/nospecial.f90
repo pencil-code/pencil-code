@@ -494,7 +494,7 @@ module Special
 !
     endsubroutine special_calc_pscalar
 !***********************************************************************
-    subroutine special_calc_particles(f,fp,ineargrid)
+    subroutine special_particles_before_boundary(f,fp,ineargrid)
 !
 !  Called before the loop, in case some particle value is needed
 !  for the special density/hydro/magnetic/entropy.
@@ -507,6 +507,24 @@ module Special
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine special_particles_before_boundary
+!***********************************************************************
+        subroutine special_calc_particles(f,df,fp,dfp,ineargrid)
+!
+!  Called before the loop, in case some particle value is needed
+!  for the special density/hydro/magnetic/entropy.
+!
+!  20-nov-08/wlad: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(in) :: df
+      real, dimension (:,:), intent(in) :: fp,dfp
+      integer, dimension(:,:) :: ineargrid
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(fp,dfp)
       call keep_compiler_quiet(ineargrid)
 !
     endsubroutine special_calc_particles
