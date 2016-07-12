@@ -683,11 +683,11 @@ module Particles_main
 !
 !  01-mar-08/wlad: coded
 !
-      use Special, only: special_particles_before_boundary
+      use Special, only: special_particles_bfre_bdary
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call special_particles_before_boundary(f,fp,ineargrid)
+      call special_particles_bfre_bdary(f,fp,ineargrid)
       if (lparticles_nbody) call particles_nbody_special
 !
     endsubroutine particles_special_bfre_bdary

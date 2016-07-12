@@ -494,7 +494,7 @@ module Special
 !
     endsubroutine special_calc_pscalar
 !***********************************************************************
-    subroutine special_particles_before_boundary(f,fp,ineargrid)
+    subroutine special_particles_bfre_bdary(f,fp,ineargrid)
 !
 !  Called before the loop, in case some particle value is needed
 !  for the special density/hydro/magnetic/entropy.
@@ -509,7 +509,7 @@ module Special
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(ineargrid)
 !
-    endsubroutine special_particles_before_boundary
+    endsubroutine special_particles_bfre_bdary
 !***********************************************************************
         subroutine special_calc_particles(f,df,fp,dfp,ineargrid)
 !
