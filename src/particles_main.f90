@@ -677,7 +677,7 @@ module Particles_main
 !
     endsubroutine particles_before_boundary
 !***********************************************************************
-    subroutine particles_special_before_boundary(f)
+    subroutine particles_special_bfre_bdary(f)
 !
 !  Fetch fp (and fsp) array to special module.
 !
@@ -690,7 +690,7 @@ module Particles_main
       call special_particles_before_boundary(f,fp,ineargrid)
       if (lparticles_nbody) call particles_nbody_special
 !
-    endsubroutine particles_special_before_boundary
+    endsubroutine particles_special_bfre_bdary
 !***********************************************************************
     subroutine particles_pencil_criteria()
 !
