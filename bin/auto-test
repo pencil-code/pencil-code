@@ -120,6 +120,12 @@ my %tests = (
                           2d-tests/bubble
                           2d-tests/conv-slab-MLT
                           interstellar
+                          supernova-driven-turbulence/1Dhd_init_equidistant/
+                          supernova-driven-turbulence/1Dhd_init_non-equidistant/
+                          supernova-driven-turbulence/3Dhd_equidistant/
+                          supernova-driven-turbulence/3Dhd_non-equidistant/
+                          supernova-driven-turbulence/sedov/
+                          supernova-driven-turbulence/snowplough/
                           interlocked-fluxrings
                           conv-slab-flat
                           corona
