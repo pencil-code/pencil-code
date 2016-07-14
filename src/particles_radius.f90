@@ -405,7 +405,8 @@ module Particles_radius
 !
       if (lparticles_mass) fp(:,iapinit)=fp(:,iap)
 !
-      if (lparticles_radius_rpbeta) fp(npar_low:npar_high,irpbeta) = rpbeta0/fp(npar_low:npar_high,iap)
+      if (lparticles_radius_rpbeta) &
+        fp(npar_low:npar_high,irpbeta) = rpbeta0/(fp(npar_low:npar_high,iap)*rhopmat)
 !
       call keep_compiler_quiet(f)
 !
