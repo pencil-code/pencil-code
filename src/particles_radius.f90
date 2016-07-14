@@ -7,7 +7,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MPVAR CONTRIBUTION 1
+! MPVAR CONTRIBUTION 2
 ! MPAUX CONTRIBUTION 1
 ! CPARAM logical, parameter :: lparticles_radius=.true.
 !
