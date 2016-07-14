@@ -1939,7 +1939,6 @@ module Particles
       else
         particles_insert_rate_tmp = int(real(particles_insert_rate)*(t-tstart_insert_particles)/particles_insert_ramp_time)
       endif
-      call mpireduce_sum_int(npar_loc,npar_total)
 !
       if (lroot) then
         avg_n_insert=particles_insert_rate_tmp*dt
@@ -2136,9 +2135,7 @@ module Particles
 !
           if (lparticles_radius) call set_particle_radius(f,fp,npar_loc_old+1,npar_loc)
           if (lparticles_number) call set_particle_number(f,fp,npar_loc_old+1,npar_loc)
-          if (lbirthring_depletion) then
-            fp(npar_loc_old+1:npar_loc,ibrtime) = 0.0
-          endif
+          if (lbirthring_depletion) fp(npar_loc_old+1:npar_loc,ibrtime) = 0.0
 !
 !  Particles are not allowed to be present in non-existing dimensions.
 !  This would give huge problems with interpolation later.
@@ -2152,14 +2149,6 @@ module Particles
 !
         endif
       endif ! if (lroot) then
-!
-      if (lbirthring_depletion) then
-        where ((fp(1:npar_loc,ixp) .ge. birthring_r-birthring_width) .and. &
-        (fp(1:npar_loc,ixp) .le. birthring_r+birthring_width)) &
-          fp(1:npar_loc,ibrtime) = fp(1:npar_loc,ibrtime)+dt
-        where (fp(1:npar_loc,ibrtime) .ge. birthring_lifetime) &
-          fp(1:npar_loc,ixp) = huge1
-      endif
 !
 !  Redistribute particles only when t < max_particle_insert_time
 !  and t>tstart_insert_particles.
@@ -2185,6 +2174,14 @@ module Particles
 !  sorting).
 !
         call sort_particles_imn(fp,ineargrid,ipar)
+      endif
+!
+      if (lbirthring_depletion) then
+        where ((fp(1:npar_loc,ixp) .ge. birthring_r-birthring_width) .and. &
+        (fp(1:npar_loc,ixp) .le. birthring_r+birthring_width)) &
+          fp(1:npar_loc,ibrtime) = fp(1:npar_loc,ibrtime)+dt
+        where (fp(1:npar_loc,ibrtime) .ge. birthring_lifetime) &
+          fp(1:npar_loc,ixp) = huge1
       endif
 !
     endsubroutine insert_particles
