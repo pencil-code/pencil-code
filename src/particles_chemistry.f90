@@ -1171,6 +1171,10 @@ module Particles_chemistry
         call find_sh_counter(sh_counter)
       endif
 !
+!  Initialize pencils that are calculated in this routine      
+!
+      if (lpenc_requested(i_sherwood)) p%sherwood= 0.0
+!
       if (npar_imn(imn) /= 0) then
 !
 !  The heterogeneous kinetics in the mechanism file is always given in SI units.
@@ -1367,6 +1371,7 @@ module Particles_chemistry
             RR_hat(:,j) = RR_hat(:,j) * effectiveness_factor_reaction(:,j)
           enddo
         endif
+!
         do k = k1,k2
           do l = 1, N_surface_reactions
             if (RR_hat(k,l) /= RR_hat(k,l)) then

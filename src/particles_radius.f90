@@ -528,7 +528,7 @@ module Particles_radius
 !
 !  Constant particle radius with activated chemistry
 !
-          fp(k1:k2,iap) = 0.0
+          dfp(k1:k2,iap) = 0.0
           
         endif
       endif
