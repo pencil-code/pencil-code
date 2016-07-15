@@ -75,6 +75,7 @@ module InitialCondition
   use General, only: keep_compiler_quiet
   use Messages
   use EquationOfState
+  use Particles_cdata
 !
   implicit none
 !
@@ -176,7 +177,7 @@ module InitialCondition
       real, dimension (nx) :: rr_cyl,OO,Omega2
 !
       if (lroot) &
-           print*,'centrifugal_balance: initializing velocity field'
+           print*,'circumplanetary: initializing velocity field'
 !
         rr_cyl=x(l1:l2)
         Omega2 = g0/rr_cyl**3 - .5*Omegap**2
@@ -192,6 +193,40 @@ module InitialCondition
       enddo
 !
     endsubroutine initial_condition_uu
+!***********************************************************************
+    subroutine initial_condition_vvp(f,fp)
+!
+!  Initialize particles' velocities.
+!
+!  01-jul-16/wlad: coded
+!
+      !real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      !real, dimension (:,:), intent(inout) :: fp
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mpar_loc,mparray), intent(inout) :: fp
+      real :: rr_cyl,OO,Omega2
+      integer :: k 
+!
+      if (lroot) &
+           print*,'circumplanetary: initializing particle velocities'
+!
+      do k=1,npar_loc
+! 
+        rr_cyl=fp(k,ixp)
+        Omega2 = g0/rr_cyl**3 - .5*Omegap**2
+
+        OO = sqrt(Omega2) - Omegap
+!
+        fp(k,ivpx) = fp(k,ivpx) + 0.
+        fp(k,ivpy) = fp(k,ivpy) + OO*rr_cyl
+        fp(k,ivpz) = fp(k,ivpz) + 0.
+
+      enddo
+
+      call keep_compiler_quiet(f)
+!
+    endsubroutine initial_condition_vvp
 !***********************************************************************
     subroutine initial_condition_lnrho(f)
 !

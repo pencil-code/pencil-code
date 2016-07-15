@@ -677,20 +677,20 @@ module Particles_main
 !
     endsubroutine particles_before_boundary
 !***********************************************************************
-    subroutine particles_special(f)
+    subroutine particles_special_bfre_bdary(f)
 !
 !  Fetch fp (and fsp) array to special module.
 !
 !  01-mar-08/wlad: coded
 !
-      use Special, only: special_calc_particles
+      use Special, only: special_particles_bfre_bdary
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call special_calc_particles(f,fp,ineargrid)
+      call special_particles_bfre_bdary(f,fp,ineargrid)
       if (lparticles_nbody) call particles_nbody_special
 !
-    endsubroutine particles_special
+    endsubroutine particles_special_bfre_bdary
 !***********************************************************************
     subroutine particles_pencil_criteria()
 !
@@ -749,6 +749,7 @@ module Particles_main
 !  07-jan-05/anders: coded
 !
       use Mpicomm
+      use Special, only: special_calc_particles
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -778,6 +779,10 @@ module Particles_main
       if (lparticles_selfgravity) call dvvp_dt_selfgrav(f,df,fp,dfp,ineargrid)
       if (lparticles_nbody)       call dxxp_dt_nbody(dfp)
       if (lparticles_nbody)       call dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
+!
+!  Interface for your personal subroutines calls
+!
+      if (lspecial) call special_calc_particles(f,df,fp,dfp,ineargrid)
 !
 !  Create new sink particles or sink points.
 !

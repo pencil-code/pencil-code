@@ -43,15 +43,19 @@ module Special
        initalpm,amplalpm,kx_alpm,ky_alpm,kz_alpm
 !
   ! run parameters
-  real :: kf_alpm=1., alpmdiff=0., deltat_alpm=1.
+  real :: kf_alpm=1., alpmdiff=0., deltat_alpm=1., alpmejec_dt=0.
+  real :: alpmejec_ampluu=1.0, alpmejec_b2=0.2, alpmejec_bwidth=0.1
+  real :: alpmejec_r0=1.0, alpmejec_rwidth=0.02
   real, dimension (3) :: alpmdiff_aniso=0.
-  logical :: ladvect_alpm=.false., lupw_alpm=.false.
+  logical :: ladvect_alpm=.false., lupw_alpm=.false., lalpmejec=.false.
   logical :: lflux_from_Omega=.false., lvariable_params=.false.
 !
   namelist /special_run_pars/ &
        kf_alpm, ladvect_alpm, alpmdiff, alpmdiff_aniso, &
        VC_Omega_profile, VC_Omega_ampl, lupw_alpm, deltat_alpm, &
-       lflux_from_Omega, lvariable_params
+       lflux_from_Omega, lvariable_params, lalpmejec, &
+       alpmejec_ampluu, alpmejec_b2, alpmejec_bwidth, &
+       alpmejec_r0, alpmejec_rwidth, alpmejec_dt
 !
   ! other variables (needs to be consistent with reset list below)
   integer :: idiag_alpm_int=0, idiag_gatop=0, idiag_gabot=0
@@ -204,6 +208,9 @@ module Special
         lpenc_requested(i_uu)=.true.
         lpenc_requested(i_divu)=.true.
       endif
+      if (lalpmejec) then
+        lpenc_requested(i_b2)=.true.
+      endif
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -243,6 +250,7 @@ module Special
 !  dalpm/dt=-2*etat*kf2*(EMF*BB/Beq2+alpm/Rm)
 !
 !  18-nov-04/axel: coded
+!  08-jul-16/joern: add anisotropic diffusion and helicity ejections
 !
       use Sub
       use Diagnostics
@@ -254,6 +262,7 @@ module Special
       real, dimension (nx,3) :: galpm
       real, dimension (nx) :: alpm,ugalpm,divflux,del2alpm,alpm_divu
       real, dimension (nx) :: kf_tmp,meanfield_etat_tmp
+      real, dimension (nx) :: alpmejec_uu, der_alpmejec_uu
       real, dimension (nx) :: del2alpmx,del2alpmy,del2alpmz,tmp
       double precision :: dtalpm_double
       type (pencil_case) :: p
@@ -291,6 +300,9 @@ module Special
           df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)&
               -meanfield_etat*divflux
         endif
+!
+! Add avection=> div Flux = div (alpm*uu)
+!
         if (ladvect_alpm) then
           if (headtt) then
             print*,'meanfield_alpm: use ladvect_alpm'
@@ -300,10 +312,16 @@ module Special
           alpm_divu=alpm*p%divu
           df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)-ugalpm-alpm_divu
         endif
+!
+! Add isotropic diffusion => div Flux = K* del2(alpm)
+!
         if (alpmdiff/=0) then
           call del2(f,ialpm,del2alpm)
           df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)+alpmdiff*del2alpm
         endif
+!
+! Add nonisotropic diffusion => div Flux = (Kx*del2x+Ky*del2y+Kz*del2z) alpm
+!
         if (alpmdiff_aniso(1)/=0) then
           if (headtt) then
             print*,'meanfield_alpm: use alpm_diff_aniso in x direction'
@@ -322,7 +340,7 @@ module Special
           alpmdiff_aniso(1)*del2alpmx
         endif
         if (alpmdiff_aniso(2)/=0) then
-           if (headtt) then
+          if (headtt) then
             print*,'meanfield_alpm: use alpm_diff_aniso in y direction'
             print*,'with alpm_diff=',alpmdiff_aniso(2)
           endif
@@ -344,6 +362,31 @@ module Special
           alpmdiff_aniso(3)*del2alpmz
         endif
       endif
+!
+! Add flux due to radial ejections: It depends on B2, and alpmejec_dt.
+! It advect the alpm with a speed of alpmejec_ampluu
+!
+     if(lalpmejec) then
+       if (headtt) print*,'meanfield_alpm: use ejection of alpm'
+       if((alpmejec_dt .gt. 0.) .and. (t .gt. 0.)) then
+         dtalpm_double=dble(alpmejec_dt)
+         modulot=nint(modulo(t,dtalpm_double))
+         if(modulot.eq.0) then
+           alpmejec_uu=alpmejec_ampluu * &
+                      step(p%b2,alpmejec_b2,alpmejec_bwidth) * &
+                      step(r_mn,alpmejec_r0,alpmejec_rwidth)
+           der_alpmejec_uu=alpmejec_ampluu * &
+                          step(p%b2,alpmejec_b2,alpmejec_bwidth) * &
+                          der_step(r_mn,alpmejec_r0,alpmejec_rwidth)+ &
+                          alpmejec_ampluu * &
+                          step(p%b2,alpmejec_b2,alpmejec_bwidth) * &
+                          step(r_mn,alpmejec_r0,alpmejec_rwidth)
+           call der(f,ialpm,tmp,1)
+           df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)- &
+                              alpmejec_uu*tmp - alpm*der_alpmejec_uu
+         endif
+       endif
+    endif
 !
 ! reset everything to zero if time is divisible by deltat_alpm
 !
