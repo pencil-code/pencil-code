@@ -99,6 +99,7 @@ module Particles
   logical :: ldraglaw_simple=.false.
   logical :: ldraglaw_steadystate=.false., ldraglaw_variable=.false.
   logical :: ldraglaw_purestokes=.false. 
+  logical :: ldraglaw_stokesschiller=.false. 
   logical :: ldraglaw_epstein_transonic=.false.
   logical :: ldraglaw_eps_stk_transonic=.false.
   logical :: ldraglaw_variable_density=.false.
@@ -201,7 +202,7 @@ module Particles
       lcalc_uup, temp_grad0, thermophoretic_eq, cond_ratio, interp_pol_gradTT, &
       lreassign_strat_rhom, lparticlemesh_pqs_assignment, &
       lwithhold_init_particles, frac_init_particles, lvector_gravity, &
-      birthring_r, birthring_width, lgaussian_birthring
+      birthring_r, birthring_width, lgaussian_birthring, ldraglaw_stokesschiller
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -249,7 +250,7 @@ module Particles
       lgaussian_birthring, tstart_rpbeta, linsert_as_many_as_possible, &
       lvector_gravity, lcompensate_sedimentation,compensate_sedimentation, &
       lpeh_radius, &
-      A1, A2
+      A1, A2, ldraglaw_stokesschiller
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0   ! DIAG_DOC: $x^2_{part}$
@@ -598,6 +599,7 @@ module Particles
           ldraglaw_eps_stk_transonic    .or.&
           ldraglaw_steadystate          .or.&
           ldraglaw_purestokes          .or.&
+          ldraglaw_stokesschiller      .or.&
           ldraglaw_simple) then
         ldraglaw_epstein=.false.
       endif
@@ -681,7 +683,8 @@ module Particles
       interp%lgradTT=lthermophoretic_forces .and. (temp_grad0(1)==0.0) &
           .and. (temp_grad0(2)==0.0) .and. (temp_grad0(3)==0.0)
       interp%lrho=lbrownian_forces.or.ldraglaw_steadystate &
-          .or. lthermophoretic_forces .or. ldraglaw_purestokes
+          .or. lthermophoretic_forces .or. ldraglaw_purestokes & 
+          .or. ldraglaw_stokesschiller
       interp%lnu=lchemistry
       interp%lpp=lparticles_chemistry
       interp%lspecies=lparticles_surfspec
@@ -3524,7 +3527,8 @@ module Particles
 !
 !  Precalculate particle Reynolds numbers.
 !
-        getrep: if (ldraglaw_steadystate .or. lparticles_spin) then
+        getrep: if (ldraglaw_steadystate .or. lparticles_spin & 
+            .or. ldraglaw_stokesschiller) then
           allocate(rep(k1_imn(imn):k2_imn(imn)))
           if (.not. allocated(rep)) call fatal_error('dvvp_dt_pencil', 'unable to allocate sufficient memory for rep', .true.)
           call calc_pencil_rep(fp, rep)
@@ -3532,7 +3536,8 @@ module Particles
 !
 !  Precalculate Stokes-Cunningham factor (only if not ldraglaw_simple)
 !
-        if (.not. (ldraglaw_simple .or. ldraglaw_purestokes)) then
+        if (.not. (ldraglaw_simple .or. ldraglaw_purestokes &
+            .or. ldraglaw_stokesschiller)) then
           if (ldraglaw_steadystate.or.lbrownian_forces) then
             allocate(stocunn(k1_imn(imn):k2_imn(imn)))
             if (.not.allocated(stocunn)) then
@@ -3654,6 +3659,8 @@ module Particles
                 call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,uup)
               elseif (ldraglaw_steadystate) then
                 call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,rep=rep(k),stocunn=stocunn(k))
+              elseif (ldraglaw_stokesschiller) then
+                call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par,rep=rep(k))
               else
                 call get_frictiontime(f,fp,p,ineargrid,k,tausp1_par)
               endif
@@ -4663,6 +4670,18 @@ module Particles
 !
       elseif (ldraglaw_purestokes) then
         call calc_draglaw_purestokes(fp,k,tausp1_par)
+!
+!  stokes drag with schiller_nauman, but without epstein
+!
+      elseif (ldraglaw_stokesschiller) then
+        if (.not.present(rep)) then
+          call fatal_error('get_frictiontime','need particle reynolds '// &
+                  'number, rep, to calculate the stokes_schiller drag '// &
+                  'relaxation time!')
+        else
+          
+          call calc_draglaw_stokesschiller(fp,k,rep,tausp1_par)
+        endif
       elseif (ldraglaw_steadystate) then
         if (.not.present(rep)) then
           call fatal_error('get_frictiontime','need particle reynolds '// &
@@ -5605,6 +5624,76 @@ module Particles
       tausp1_par=18.0*cdrag*nu/((rhopmat/interp_rho(k))*stocunn*dia**2)
 !
     endsubroutine calc_draglaw_steadystate
+!***********************************************************************
+    subroutine calc_draglaw_stokesschiller(fp,k,rep,tausp1_par)
+!
+!   Calculate relaxation time for particles under steady state drag.
+!
+!   15-jul-08/kapelrud: coded
+!
+      use Viscosity, only: getnu
+      use Particles_radius
+!
+      real, dimension (mpar_loc,mparray), intent(in) :: fp
+      integer, intent(in) :: k
+      real, intent(in) :: rep
+      real, intent(out) :: tausp1_par
+!
+      character (len=labellen) :: ivis=''
+      real :: cdrag,dia,nu,nu_
+!
+!  Find the kinematic viscosity.
+!  Check whether we want to override the usual viscosity for the drag law.
+!
+      if (lnu_draglaw) then
+        nu=nu_draglaw
+      else
+!
+!  Use usual viscosity for the drag law.
+!
+      call getnu(nu_input=nu_,ivis=ivis)
+      if (ivis=='nu-const') then
+        nu=nu_
+      elseif (ivis=='nu-mixture') then
+        nu=interp_nu(k)
+      elseif (ivis=='rho-nu-const') then
+        nu=nu_/interp_rho(k)
+      elseif (ivis=='sqrtrho-nu-const') then
+        nu=nu_/sqrt(interp_rho(k))
+      elseif (ivis=='nu-therm') then
+        nu=nu_*sqrt(interp_TT(k))
+      elseif (ivis=='mu-therm') then
+        nu=nu_*sqrt(interp_TT(k))&
+            /interp_rho(k)
+      else
+        call fatal_error('calc_draglaw_stokesschiller','No such ivis!')
+      endif
+      endif
+!
+!  Particle diameter
+!
+      if (.not.lparticles_radius) then
+        call fatal_error('calc_draglaw_stokesschiller', &
+            'need particles_radius module to calculate the relaxation time!')
+      endif
+!
+      dia=2.0*fp(k,iap)
+!
+!  Calculate drag coefficent pre-factor:
+!
+      if (rep<1) then
+        cdrag=1.0
+      elseif (rep>1000) then
+        cdrag=0.44*rep/24.0
+      else
+        cdrag=(1.+0.15*rep**0.687)
+      endif
+!
+!  Relaxation time:
+!
+      tausp1_par=18.0*cdrag*nu/((rhopmat/interp_rho(k))*dia**2)
+!
+    endsubroutine calc_draglaw_stokesschiller
 !***********************************************************************
     subroutine calc_brownian_force(fp,k,ineark,stocunn,force)
 !
