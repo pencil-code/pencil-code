@@ -770,26 +770,39 @@ def slices(field, datadir='./data'):
         s[p] = w
     return t, s
 #=======================================================================
-def time_series(datadir='./data'):
+def time_series(datadir='./data', unique=False):
     """Returns a NumPy recarray from the time series.
 
     Keyword Arguments:
         datadir
             Name of the data directory
+        unique
+            If True, discard duplicate entries.
     """
-    # Chao-Chin Yang, 2013-05-13
-    from numpy import recfromtxt
+    # Author: Chao-Chin Yang
+    # Created: 2013-05-13
+    # Last Modified: 2016-07-16
+    import numpy as np
     from io import BytesIO
+
     # Save the data path.
     path = datadir.strip()
+
     # Read legend.dat.
     f = open(path + '/legend.dat')
     names = f.read().replace('-', ' ').split()
     f.close()
+
     # Read time_series.dat.
     f = open(path + '/time_series.dat')
-    ts = recfromtxt(BytesIO(f.read().encode()), names=names)
+    ts = np.recfromtxt(BytesIO(f.read().encode()), names=names)
     f.close()
+
+    # Discard duplicate entries if requested.
+    if unique:
+        t, indices = np.unique(ts.t, return_index=True)
+        ts = ts[indices]
+
     return ts
 #=======================================================================
 def var(datadir='./data', ivar=None, par=None, trim=True, varfile='var.dat', verbose=True):
