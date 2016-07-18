@@ -310,8 +310,11 @@ module Special
          enddo
          print*,'init_special: done single-mode initialization'
 !
+      case ('zero')
+         f(l1:l2,m1:m2,n1:n2,ipsi)=0.
+!         
       case ('nothing')
-          
+                   
       case default
 !
 !  Catch unknown values.
