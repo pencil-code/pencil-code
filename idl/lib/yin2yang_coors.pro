@@ -2,7 +2,7 @@
 
       yz=fltarr(2,n_elements(y)*n_elements(z))
 
-      ind=0
+      ind=0L
       for i=0,n_elements(y)-1 do begin
 
         sth=sin(y(i)) & cth=cos(y(i))

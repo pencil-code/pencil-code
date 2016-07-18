@@ -9,10 +9,10 @@
                  yzyang(1,*) lt min(z)-dz or yzyang(1,*) gt max(z)+dz)
     yzyang=yzyang(*,inds)
 
-    ny=n_elements(y) & nz=n_elements(z)
+    ny=long(n_elements(y)) & nz=n_elements(z)
     yz=fltarr(2,ny*nz)
 
-    ind=0
+    ind=0L
     for i=0,ny-1 do begin
       yz(0,ind:ind+nz-1) = y(i)
       yz(1,ind:ind+nz-1) = z
