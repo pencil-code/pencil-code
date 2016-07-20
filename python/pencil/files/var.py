@@ -59,7 +59,7 @@ class DataCube(object):
 # !!!  Here nvar denotes the number of slots, i.e. 1 for one scalar field, 3
 # !!!  for one vector field, 8 for var.dat in the case of MHD with entropy.
 # but, deltay(1) is only there if lshear is on! need to know parameters...
-
+#
     def __init__(self, varfile='', datadir='data/', proc=-1, ivar=-1,
                  quiet=False, trimall=False, format='native',
                  param=None, dim=None, index=None, run2D=False,
@@ -86,6 +86,11 @@ class DataCube(object):
             dim=None
             index=None
             run2D=False
+
+        Example of usage
+        ------
+        ff=pc.read_var(trimall=True,ivar=100,magic=['tt','vort'])
+
         """
         if (setup is not None):
             datadir = os.path.expanduser(setup.datadir)
