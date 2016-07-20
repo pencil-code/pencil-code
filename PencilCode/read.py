@@ -824,9 +824,12 @@ def var(datadir='./data', ivar=None, par=None, trim=True, varfile='var.dat', ver
         verbose
             Verbose output or not.
     """
-    # Chao-Chin Yang, 2016-06-29
+    # Author: Chao-Chin Yang
+    # Created: 2014-12-03
+    # Last Modified: 2016-07-20
     from collections import namedtuple
     import numpy as np
+
     # Get the parameters.
     if par is None:
         par = parameters(datadir=datadir, warning=verbose)
@@ -838,11 +841,14 @@ def var(datadir='./data', ivar=None, par=None, trim=True, varfile='var.dat', ver
             var.append("aux" + str(i+1))
     else:
         mvar = dim.mvar
+
     # Check the precision.
     fmt, dtype, nb = _get_precision(dim)
+
     # Get the file name of the snapshot.
     if ivar is not None:
         varfile = "VAR{}".format(ivar)
+
     # Allocate arrays.
     fdim = [dim.mxgrid, dim.mygrid, dim.mzgrid, mvar]
     f = np.zeros(fdim, dtype=dtype)
@@ -854,6 +860,7 @@ def var(datadir='./data', ivar=None, par=None, trim=True, varfile='var.dat', ver
         deltay = 0.0
     else:
         deltay = None
+
     # Define functions for assigning local coordinates to global.
     def assign(l1, l2, xg, xl, label, proc):
         indices = xg[l1:l2] != 0.0
@@ -865,6 +872,7 @@ def var(datadir='./data', ivar=None, par=None, trim=True, varfile='var.dat', ver
         if old != 0.0 and old != new:
             print("Warning: inconsistent ", label, " for process", proc)
         return new
+
     # Loop over each process.
     for proc in range(dim.nprocx * dim.nprocy * dim.nprocz):
         # Read data.
@@ -872,6 +880,7 @@ def var(datadir='./data', ivar=None, par=None, trim=True, varfile='var.dat', ver
             print("Reading", datadir + "/proc" + str(proc) + "/" + varfile, "...")
         dim1 = proc_dim(datadir=datadir, proc=proc)
         snap1 = proc_var(datadir=datadir, par=par, proc=proc, varfile=varfile) 
+
         # Assign the data to the corresponding block.
         l1 = dim1.iprocx * dim1.nx
         l2 = l1 + dim1.mx
@@ -879,7 +888,14 @@ def var(datadir='./data', ivar=None, par=None, trim=True, varfile='var.dat', ver
         m2 = m1 + dim1.my
         n1 = dim1.iprocz * dim1.nz
         n2 = n1 + dim1.mz
-        f[l1:l2,m1:m2,n1:n2,:] = snap1.f
+        dl1 = 0 if dim1.iprocx == 0 else dim.nghost
+        dl2 = 0 if dim1.iprocx == dim.nprocx - 1 else -dim.nghost
+        dm1 = 0 if dim1.iprocy == 0 else dim.nghost
+        dm2 = 0 if dim1.iprocy == dim.nprocy - 1 else -dim.nghost
+        dn1 = 0 if dim1.iprocz == 0 else dim.nghost
+        dn2 = 0 if dim1.iprocz == dim.nprocz - 1 else -dim.nghost
+        f[l1+dl1:l2+dl2,m1+dm1:m2+dm2,n1+dn1:n2+dn2,:] = snap1.f[dl1:dim1.mx+dl2,dm1:dim1.my+dm2,dn1:dim1.mz+dn2,:]
+
         # Assign the coordinates and other scalars.
         t = assign1(t, snap1.t, 't', proc)
         x = assign(l1, l2, x, snap1.x, 'x', proc)
@@ -890,6 +906,7 @@ def var(datadir='./data', ivar=None, par=None, trim=True, varfile='var.dat', ver
         dz = assign1(dz, snap1.dz, 'dz', proc)
         if par.lshear:
             deltay = assign1(deltay, snap1.deltay, 'deltay', proc)
+
     # Trim the ghost cells if requested.
     if trim:
         f = f[dim.nghost:-dim.nghost,dim.nghost:-dim.nghost,dim.nghost:-dim.nghost,:]
@@ -897,6 +914,7 @@ def var(datadir='./data', ivar=None, par=None, trim=True, varfile='var.dat', ver
         x = x[dim.nghost:-dim.nghost]
         y = y[dim.nghost:-dim.nghost]
         z = z[dim.nghost:-dim.nghost]
+
     # Define and return a named tuple.
     fdim.pop()
     for i in range(fdim.count(1)):
