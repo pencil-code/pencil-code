@@ -2177,11 +2177,13 @@ module Particles
       endif
 !
       if (lbirthring_depletion) then
-        where ((fp(1:npar_loc,ixp) .ge. birthring_r-birthring_width) .and. &
-        (fp(1:npar_loc,ixp) .le. birthring_r+birthring_width)) &
-          fp(1:npar_loc,ibrtime) = fp(1:npar_loc,ibrtime)+dt
-        where (fp(1:npar_loc,ibrtime) .ge. birthring_lifetime) &
-          fp(1:npar_loc,ixp) = huge1
+        do k=1,npar_loc
+          if ((fp(k,ixp) .ge. birthring_r-birthring_width) .and. &
+          (fp(k,ixp) .le. birthring_r+birthring_width)) &
+            fp(k,ibrtime) = fp(k,ibrtime)+dt
+          if (fp(k,ibrtime) .ge. birthring_lifetime) &
+            call remove_particle(fp,ipar,k)
+        enddo
       endif
 !
     endsubroutine insert_particles
