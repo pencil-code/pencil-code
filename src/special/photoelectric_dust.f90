@@ -65,12 +65,13 @@ module Special
   real, dimension(ndustspec) :: const_pr=0.0
   logical :: ldust_pressureforce=.true.
   logical :: lradiation_PRdrag=.false.
+  logical :: ldivrhop_by_vol=.false.
 !
   namelist /special_init_pars/ mu, kappa, factor_localiso, factor_photoelectric, &
-       ldust_pressureforce, lradiation_PRdrag, const_pr
+       ldust_pressureforce, lradiation_PRdrag, const_pr, ldivrhop_by_vol
 !
   namelist /special_run_pars/ mu, kappa, factor_localiso, factor_photoelectric, &
-       ldust_pressureforce, lradiation_PRdrag, const_pr
+       ldust_pressureforce, lradiation_PRdrag, const_pr, ldivrhop_by_vol
 !
 !  integer, parameter :: nmode_max = 50
 !  real, dimension(nmode_max) :: gauss_ampl, rcenter, phicenter
@@ -186,10 +187,26 @@ module Special
 !  
 !  For the photoelectric pressure, P=cs20/(gamma*/rho0) * rho*rhod
 !
+      !use Particles_sub, only: find_grid_volume
       real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(nx) :: areas, rhop_tmp
+      real, dimension(nx,3) :: grhop_tmp
       type (pencil_case) :: p
-      integer :: j
+      integer :: j, l
+      !real :: cell_volume
 !
+      if (ldivrhop_by_vol) then
+        !do l=l1,l2
+          !call find_grid_volume(l,m,n,cell_volume)
+          !p%grhop(l,:) = p%grhop(l,:)/cell_volume
+          !p%rhop(l) = p%rhop(l)/cell_volume
+        !enddo
+          areas = x(l1:l2)*y(m)/dy_1(m)
+          grhop_tmp(:,1) = p%grhop(:,1)/areas
+          grhop_tmp(:,2) = p%grhop(:,2)/areas
+          grhop_tmp(:,3) = p%grhop(:,3)/areas
+          rhop_tmp = p%rhop(:)/areas
+      endif
       do j=1,3
         if (const1/=0.0) then 
           q%fpres_polytropic(:,j) = -const1 * p%rho**(mu-1) * p%glnrho(:,j)
@@ -199,7 +216,7 @@ module Special
 !
         if (const2/=0.0) then
           if (lparticles) then
-            q%fpres_photoelectric(:,j) = -const2 * (p%grhop(:,j) + p%rhop*p%glnrho(:,j))
+            q%fpres_photoelectric(:,j) = -const2 * (grhop_tmp(:,j) + rhop_tmp*p%glnrho(:,j))
           else
             q%fpres_photoelectric(:,j) = -const2 * p%rhodsum * (p%glnrhodsum(:,j) + p%glnrho(:,j))
           endif   
@@ -212,7 +229,7 @@ module Special
         endif
       enddo
 !
-      q%fpres = q%fpres_localisotropic + q%fpres_photoelectric + q%fpres_polytropic
+      q%fpres = q%fpres_localisotropic + q%fpres_photoelectric !+ q%fpres_polytropic
 !
       call keep_compiler_quiet(f)
 !
