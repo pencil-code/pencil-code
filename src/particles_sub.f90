@@ -1083,7 +1083,15 @@ module Particles_sub
       else
         dz1=dz_1(izz)
       endif
+!
       volume_cell=1./(dx1*dy1*dz1)
+!
+      if (lcylindrical_coords .and. nygrid/=1) then
+        volume_cell = volume_cell*x(ixx)
+      elseif (lspherical_coords) then
+        if (nygrid/=1) volume_cell = volume_cell*x(ixx)
+        if (nzgrid/=1) volume_cell = volume_cell*sin(y(iyy))*x(ixx)
+      endif
 !
     end subroutine find_grid_volume
 !***********************************************************************
