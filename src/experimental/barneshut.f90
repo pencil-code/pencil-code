@@ -110,10 +110,13 @@ module Poisson
 !
     use Mpicomm
 !
-    real :: ldx, xw, yw, zw
+    real :: xw, yw, zw, dx1, dy1, dz1
     integer, dimension (nx) :: xind
     integer, dimension (ny) :: yind
     integer, dimension (nz) :: zind
+    real, dimension (nx) :: dxc_1
+    real, dimension (ny) :: dyc_1
+    real, dimension (nz) :: dzc_1
     integer :: pp, i, j, k, xs, ys, zs, ii, jj, kk
     integer :: iprecalc
     logical :: lprecalc = .false.
@@ -122,6 +125,9 @@ module Poisson
     xc = x(l1:l2)
     yc = y(m1:m2)
     zc = z(n1:n2)
+    dxc_1 = dx_1(l1:l2)
+    dyc_1 = dy_1(m1:m2)
+    dzc_1 = dz_1(n1:n2)
 !
     do i=1,nx
       do j=1,ny
@@ -152,22 +158,34 @@ module Poisson
     zrecv(:,iproc) = zc
 !
     ! Calculate volumes for converting density to mass
-    if (lspherical_coords) then
+    do i=1,nx
       do j=1,ny
-        do i=1,nx
-          if (grid_func(1) .eq. 'power-law') then
-            ! Not 100% sure formula is correct, right idea though:
-            ldx = (((xc(i)-xyz0(1))/xyz1(1))**(1.0-coeff_grid(1))) &
-              *xyz1(1)+xyz0(1)
+        do k=1,ny
+          if (nxgrid ==1) then
+            dx1=1.0/Lxyz(1)
           else
-            ldx = dx
+            dx1=dxc_1(i)
           endif
-          vols(i,j,:) = ldx*dy*dz*sin(yc(j))*xc(i)**2.0
+          if (nygrid ==1) then
+            dy1=1.0/Lxyz(2)
+          else
+            dy1=dyc_1(j)
+          endif
+          if (nzgrid ==1) then
+            dz1=1.0/Lxyz(3)
+          else
+            dz1=dzc_1(k)
+          endif
+          vols(i,j,k) = 1.0/(dx1*dy1*dz1)
+          if (lcylindrical_coords .and. nygrid/=1) then
+            vols(i,j,k) = vols(i,j,k)*xc(i)
+          elseif (lspherical_coords) then
+            if (nygrid/=1) vols(i,j,k) = vols(i,j,k)*xc(i)
+            if (nzgrid/=1) vols(i,j,k) = vols(i,j,k)*sin(yc(j))*xc(i)
+          endif
         enddo
       enddo
-    else
-      vols = dx*dy*dz
-    endif
+    enddo
 !
     if (lsquareregions) then
       do pp=0,ncpus-1
