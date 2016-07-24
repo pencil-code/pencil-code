@@ -1115,6 +1115,7 @@ Be sure to have sufficient comments in the code and please follow our
 standard coding conventions explained in Section~\ref{ProgrammingStyle}.
 There is also a script to check and fix the most common stylebreaks, 
 pc\_codingstyle.
+\index{Style}
 
 % ---------------------------------------------------------------------- %
 
@@ -1475,13 +1476,13 @@ If you have \name{IDL}, you can visualize the stratification with (see
 Sect.~\ref{S-IDL-routines} for details)
 \begin{alltt}
   \prompt{unix > } idl
-  \prompt{IDL >  } .r start
-  \prompt{IDL >  } .r r
-  \prompt{IDL >  } .r thermo
-  \prompt{IDL >  } .r pvert \
+  \prompt{IDL >  } pc_read_var,obj=var,/trimall
+  \prompt{IDL >  } tvscl,var,uu(*,*,0,0)
 \end{alltt}
-The result should look like Fig.~\ref{Fig-pvert1}.
-
+which shows $u_x$ in the $xy$ plane through the first
+meshpoint in the $z$ direction.
+There have been some now outdates specific routines that
+produce results like that shown in Fig.~\ref{Fig-pvert1}.
 
 \paragraph{Note:}
 If you want to run the code with \name{MPI}, you will probably need to
@@ -7882,6 +7883,7 @@ where \code{nw=nx*ny*nz}.
  144 & Kraken& 0.058  &$192{\!\times\!}384{\!\times\!}64$ & magn/noentro & 6x12x2 &17-jan-12 & WL\\
  144 & Kraken& 0.044  &$384{\!\times\!}768{\!\times\!}128$ & magn/noentro & 6x12x2 &18-jan-12 & WL\\
  144 & Gardar& 2.19&  $288{\!\times\!}1{\!\times\!}288$ & coag43&8x1x18 & 13-sep-15& AB \\
+ 192 &Janus&0.0123&$144{\!\times\!}288{\!\times\!}72$&magn/noentro/sph&1x24x32& 24-jul-16 & AB \\
  256 &Hermit&0.0328&$512{\!\times\!}1024{\!\times\!}512$&spherical conv/magn&1x16x16&22-aug-13&PJK\\
  256 &Hermit&0.0285&$256{\!\times\!}512{\!\times\!}256$&spherical conv/magn&1x16x16&22-aug-13&PJK\\
  256 & giga2 & 0.028& $1024^3$& magn/noentro &4x64/ifc6&20-aug-04 & AB \\
@@ -8151,6 +8153,7 @@ in Fig~\ref{cvsstat}.
 \section{Coding standard}
 \index{Coding standards}
 \label{coding-standard}
+\index{Style}
 
 The numerous elements that make up the {\sc Pencil Code} are written
 in a consistent style that has evolved since it was first created.
@@ -9523,15 +9526,16 @@ In all cases the half-mesh Reynolds number is about 5--7.
 For comparison, estimates of the numerical 4th order hyperdiffusion
 resulting from a third order time step are give for two values of the
 CFL parameter.
-}\vspace{12pt}\centerline{\begin{tabular}{cccccccc}
+}\vspace{12pt}\centerline{\begin{tabular}{rccccccc}
 $N$ & $\nu_1$ & $\nu_2$ & $\nu_3$ & $D_3$ & $\kappa_2^{\rm CFL=0.4}$  & $\kappa_2^{\rm CFL=0.9}$ \\
 \hline
- 16&$1\times10^{-2}$&$3\times10^{-4}$&$2\times10^{-5}$ &$6\times10^{-7}$ &$7\times10^{-4}$&$1\times10^{-4}$\\
- 32&$5\times10^{-3}$&$4\times10^{-5}$&$6\times10^{-7}$ &$2\times10^{-8}$ &$1\times10^{-6}$&$2\times10^{-5}$\\
- 64&$2\times10^{-3}$&$5\times10^{-6}$&$2\times10^{-8}$ &$6\times10^{-10}$&$2\times10^{-7}$&$3\times10^{-6}$\\
-128&$1\times10^{-3}$&$6\times10^{-7}$&$6\times10^{-10}$&$2\times10^{-11}$&$3\times10^{-8}$&$4\times10^{-7}$\\
-256&$5\times10^{-4}$&$8\times10^{-8}$&$2\times10^{-11}$&$6\times10^{-13}$&$4\times10^{-9}$&$5\times10^{-8}$\\
-512&$2\times10^{-4}$&$1\times10^{-8}$&$6\times10^{-13}$&$2\times10^{-14}$&$5\times10^{-10}$&$6\times10^{-9}$\\
+  16&$1\times10^{-2}$&$3\times10^{-4}$&$2\times10^{-5}$ &$6\times10^{-7}$ &$7\times10^{-4}$&$1\times10^{-4}$\\
+  32&$5\times10^{-3}$&$4\times10^{-5}$&$6\times10^{-7}$ &$2\times10^{-8}$ &$1\times10^{-6}$&$2\times10^{-5}$\\
+  64&$2\times10^{-3}$&$5\times10^{-6}$&$2\times10^{-8}$ &$6\times10^{-10}$&$2\times10^{-7}$&$3\times10^{-6}$\\
+ 128&$1\times10^{-3}$&$6\times10^{-7}$&$6\times10^{-10}$&$2\times10^{-11}$&$3\times10^{-8}$&$4\times10^{-7}$\\
+ 256&$5\times10^{-4}$&$8\times10^{-8}$&$2\times10^{-11}$&$6\times10^{-13}$&$4\times10^{-9}$&$5\times10^{-8}$\\
+ 512&$2\times10^{-4}$&$1\times10^{-8}$&$6\times10^{-13}$&$2\times10^{-14}$&$5\times10^{-10}$&$6\times10^{-9}$\\
+1024&$1\times10^{-4}$&$1\times10^{-9}$&$2\times10^{-14}$&$6\times10^{-16}$&$6\times10^{-11}$&$8\times10^{-10}$\\
 \label{ThyperSummary}\end{tabular}}\end{table}
 
 For comparison, we give in Table~\ref{ThyperSummary}
