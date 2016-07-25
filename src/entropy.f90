@@ -2423,6 +2423,9 @@ module Energy
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_glnTT)=.true.
         lpenc_requested(i_gss)=.true.
+!needed?lpenc_requested(i_cp1)=.true.
+!needed?lpenc_requested(i_rho1)=.true.
+!needed?lpenc_requested(i_del2lnTT)=.true.
       endif
       if (lheatc_sqrtrhochiconst) then
         lpenc_requested(i_rho1)=.true.
@@ -5175,7 +5178,7 @@ module Energy
       type (pencil_case) :: p
 !
       real, dimension (nx) :: prof,prof2
-      real :: ztop
+      real :: ztop, zbot
 !
       intent(in) :: p
 !
@@ -5211,6 +5214,15 @@ module Energy
       case ('cubic_step')
         ztop=xyz0(3)+Lxyz(3)
         prof = cubic_step(z(n),(ztop+z_cor)/2,(ztop-z_cor)/2)
+!
+!  Similar to cubic_step, but with the same type of step at negative z.
+!  This is useful for accretion discs.
+!
+      case ('cubic_step_topbot')
+        zbot=xyz0(3)
+        ztop=xyz0(3)+Lxyz(3)
+        prof = cubic_step(z(n),(ztop+z_cor)/2,(ztop-z_cor)/2) &
+              +cubic_step(z(n),(zbot-z_cor)/2,(zbot+z_cor)/2)
 !
 !  Error function cooling profile with respect to pressure.
 !
