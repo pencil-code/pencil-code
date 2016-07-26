@@ -71,6 +71,9 @@
 ;       $Id$
 ;       Written by: Antony J Mee (A.J.Mee@ncl.ac.uk), 27th November 2002
 ;
+; BUGS:
+;       Note that the variable "variables" is being modified upon exiting.
+;
 ;-
 pro pc_read_var,                                                  $
     object=object, varfile=varfile_, associate=associate,         $
