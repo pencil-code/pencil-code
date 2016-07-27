@@ -4679,8 +4679,7 @@ module Particles
                   'number, rep, to calculate the stokes_schiller drag '// &
                   'relaxation time!')
         else
-          
-          call calc_draglaw_stokesschiller(fp,k,rep,tausp1_par)
+          call calc_draglaw_steadystate(fp,k,rep,1.0,tausp1_par)
         endif
       elseif (ldraglaw_steadystate) then
         if (.not.present(rep)) then
@@ -5624,76 +5623,6 @@ module Particles
       tausp1_par=18.0*cdrag*nu/((rhopmat/interp_rho(k))*stocunn*dia**2)
 !
     endsubroutine calc_draglaw_steadystate
-!***********************************************************************
-    subroutine calc_draglaw_stokesschiller(fp,k,rep,tausp1_par)
-!
-!   Calculate relaxation time for particles under steady state drag.
-!
-!   15-jul-08/kapelrud: coded
-!
-      use Viscosity, only: getnu
-      use Particles_radius
-!
-      real, dimension (mpar_loc,mparray), intent(in) :: fp
-      integer, intent(in) :: k
-      real, intent(in) :: rep
-      real, intent(out) :: tausp1_par
-!
-      character (len=labellen) :: ivis=''
-      real :: cdrag,dia,nu,nu_
-!
-!  Find the kinematic viscosity.
-!  Check whether we want to override the usual viscosity for the drag law.
-!
-      if (lnu_draglaw) then
-        nu=nu_draglaw
-      else
-!
-!  Use usual viscosity for the drag law.
-!
-      call getnu(nu_input=nu_,ivis=ivis)
-      if (ivis=='nu-const') then
-        nu=nu_
-      elseif (ivis=='nu-mixture') then
-        nu=interp_nu(k)
-      elseif (ivis=='rho-nu-const') then
-        nu=nu_/interp_rho(k)
-      elseif (ivis=='sqrtrho-nu-const') then
-        nu=nu_/sqrt(interp_rho(k))
-      elseif (ivis=='nu-therm') then
-        nu=nu_*sqrt(interp_TT(k))
-      elseif (ivis=='mu-therm') then
-        nu=nu_*sqrt(interp_TT(k))&
-            /interp_rho(k)
-      else
-        call fatal_error('calc_draglaw_stokesschiller','No such ivis!')
-      endif
-      endif
-!
-!  Particle diameter
-!
-      if (.not.lparticles_radius) then
-        call fatal_error('calc_draglaw_stokesschiller', &
-            'need particles_radius module to calculate the relaxation time!')
-      endif
-!
-      dia=2.0*fp(k,iap)
-!
-!  Calculate drag coefficent pre-factor:
-!
-      if (rep<1) then
-        cdrag=1.0
-      elseif (rep>1000) then
-        cdrag=0.44*rep/24.0
-      else
-        cdrag=(1.+0.15*rep**0.687)
-      endif
-!
-!  Relaxation time:
-!
-      tausp1_par=18.0*cdrag*nu/((rhopmat/interp_rho(k))*dia**2)
-!
-    endsubroutine calc_draglaw_stokesschiller
 !***********************************************************************
     subroutine calc_brownian_force(fp,k,ineark,stocunn,force)
 !
