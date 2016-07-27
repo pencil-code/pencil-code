@@ -104,6 +104,7 @@ module Particles_mass
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
+      if (allocated(weight_array)) deallocate(weight_array)
       if (lparticlemesh_gab) allocate (weight_array(7,7,7))
       if (lparticlemesh_tsc) allocate (weight_array(3,3,3))
       if (lparticlemesh_cic) allocate (weight_array(2,2,2))

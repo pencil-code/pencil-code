@@ -212,6 +212,7 @@ module Particles_surfspec
         dimz=1
       endif
 ! 
+     if (allocated(weight_array)) deallocate(weight_array)
      if (lparticlemesh_gab .or. lparticlemesh_tsc .or. lparticlemesh_cic) then
         allocate(weight_array(dimx,dimy,dimz))
       endif

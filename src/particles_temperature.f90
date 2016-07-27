@@ -88,6 +88,7 @@ module Particles_temperature
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
+      if (allocated(weight_array)) deallocate(weight_array)
       if (lparticlemesh_gab) allocate (weight_array(7,7,7))
       if (lparticlemesh_tsc) allocate (weight_array(3,3,3))
       if (lparticlemesh_cic) allocate (weight_array(2,2,2))
@@ -197,7 +198,7 @@ module Particles_temperature
       real, dimension(:), allocatable :: q_reac, mass_loss,rep,nu
       real, dimension(:), allocatable :: Nuss_p
       real :: volume_cell, stefan_b,Prandtl
-      real :: Qc, Qreac, Qrad, Ap, heat_trans_coef, cond
+      real :: Qc, Qrad, Ap, heat_trans_coef, cond
       integer :: k, inx0, ix0, iy0, iz0, ierr
       real :: rho1_point, weight
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
@@ -510,5 +511,6 @@ module Particles_temperature
       endif
 !
     endsubroutine calc_pencil_rep_nu
+!*********************************************************
 !*********************************************************
 endmodule Particles_temperature

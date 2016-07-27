@@ -1,6 +1,11 @@
 ! $Id$
 !
 !  This modules addes chemical species and reactions.
+!  The units used in the chem.in files are cm3,mole,sec,kcal and K
+!  This was found out by comparing the mechanism found in 
+!  samples/0D/chemistry_H2_ignition_delay
+!  with Flow Reactor Studies and Kinetic Modeling of the ReactionH/O22
+!  of  A. MUELLER, T. J. KIM, R. A. YETTER, F. L. DRYER
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -460,6 +465,10 @@ module Chemistry
 !
 !  allocate memory for net_reaction diagnostics
 !
+      if (allocated(net_react_p)) then
+        print*, 'this should not be here'
+      endif
+
       if (lchemistry_diag) then
         allocate(net_react_p(nchemspec,nreactions),STAT=stat)
         if (stat > 0) call stop_it("Couldn't allocate memory for net_react_p")
@@ -2548,7 +2557,7 @@ module Chemistry
 !
 !  Allocate reaction arrays (but not during reloading!)
 !
-      if (.not. lreloading) then
+!      if (.not. lreloading) then
         allocate(stoichio(nchemspec,mreactions),STAT=stat)
         if (stat > 0) call stop_it("Couldn't allocate memory for stoichio")
         allocate(Sijm(nchemspec,mreactions),STAT=stat)
@@ -2571,7 +2580,7 @@ module Chemistry
         if (stat > 0) call stop_it("Couldn't allocate memory for kreactions_alpha")
         allocate(back(mreactions),STAT=stat)
         if (stat > 0) call stop_it("Couldn't allocate memory for back")
-      endif
+!      endif
 !
 !  Initialize data
 !
@@ -3621,7 +3630,7 @@ module Chemistry
 !
 !  Allocate binary diffusion coefficient array
 !
-      if (.not. lreloading) then
+!      if (.not. lreloading) then
 !Natalia:
 !this does not work for ldiffusion=F
 !        if (ldiffusion .and. .not. lfix_Sc) then
@@ -3638,7 +3647,7 @@ module Chemistry
               "for binary diffusion coefficients")
 !
         endif
-      endif
+!      endif
 !
       if (tran_exist) then
         if (lroot) then
@@ -3689,7 +3698,7 @@ module Chemistry
 !
 !  Allocate reaction arrays
 !
-      if (.not. lreloading) then
+!      if (.not. lreloading) then
         allocate(stoichio(nchemspec,mreactions),STAT=stat)
         if (stat > 0) call stop_it("Couldn't allocate memory for stoichio")
         allocate(Sijm(nchemspec,mreactions),STAT=stat)
@@ -3727,7 +3736,7 @@ module Chemistry
         allocate(photochem_case (nreactions),STAT=stat)
         photochem_case = .false.
         if (stat > 0) call stop_it("Couldn't allocate memory for photochem_case")
-      endif
+!      endif
 !
 !  Initialize data
 !

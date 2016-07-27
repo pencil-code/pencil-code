@@ -1068,6 +1068,7 @@ module Particles_chemistry
         pre_pressure = 1.
       endif
 !
+!
       denominator = heating_k(k,l-1) - (entropy_k(k,l-1)*fp(k,iTp))
       expo = denominator/(Rgas*fp(k,iTp))
       k_p = exp(-expo)
@@ -1108,6 +1109,8 @@ module Particles_chemistry
       heating_k = 0
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
+!
+!  nu_prime are the products, nu the reactants
 !
       do i = 1,N_surface_species
         do l = 1,N_surface_reactions
@@ -1427,6 +1430,8 @@ module Particles_chemistry
 !
 !  ndot is the molar flux of species per particle sphere surface area.
 !  if lsurface_nopores, St and the sphere surface cancel each other
+!
+!  nu_prime is for the products
 !
           ndot(k1:k2,i) = ndot(k1:k2,i)+RR_hat(k1:k2,l)*(nu_prime(i,l)-nu(i,l))*St(k1:k2)/ &
               (fp(k1:k2,iap)*fp(k1:k2,iap)*4.*pi)
