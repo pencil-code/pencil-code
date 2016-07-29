@@ -182,6 +182,10 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		u_abs:'velocity', $
 		P_therm:'thermal pressure', $
 		grad_P_therm_abs:'grad thermal pressure', $
+		F_grav_abs:'Gravity absolute value', $
+		F_grav_x:'Gravity x', $
+		F_grav_y:'Gravity y', $
+		F_grav_z:'Gravity z', $
 		rho_u_x:'impulse density x', $
 		rho_u_y:'impulse density y', $
 		rho_u_z:'impulse density z', $
@@ -240,7 +244,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		E_j:'current electric field', $
 ;		grad_E_abs:'grad electric field strength', $
 		grad_Temp:'grad temperature', $
-		grad_P_therm:'grad thermal pressure' $
+		grad_P_therm:'grad thermal pressure', $
+		F_grav:'Gravity force' $
 	}
 
 	; Additional quantities without dependencies.
@@ -357,6 +362,11 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		P_therm:['Temp', 'rho'], $
 		grad_P_therm:['P_therm', 'grad_Temp'], $
 		grad_P_therm_abs:'grad_P_therm', $
+		F_grav:'rho', $
+		F_grav_abs:'F_grav', $
+		F_grav_x:'F_grav', $
+		F_grav_y:'F_grav', $
+		F_grav_z:'F_grav', $
 		rho_u_x:['u', 'rho'], $
 		rho_u_y:['u', 'rho'], $
 		rho_u_z:['u', 'rho'], $

@@ -73,6 +73,51 @@ function pc_generate_parameter_abbreviation, param, label=label
 		eta_SI = pc_get_parameter ('eta_SI', label=label)
 		return, 1 / (mu0_SI * eta_SI) ; Electric conductivity [SI: 1/(Ohm*m)]
 	end
+	if (strcmp (param, 'g_SI', /fold_case)) then begin
+		unit_length = pc_get_parameter ('unit_length', label=label)
+		unit_time = pc_get_parameter ('unit_time', label=label)
+		g = pc_get_parameter ('g_ref', label=label)
+		return, g * unit_length/(unit_time^2) ; Gravitational acceleration [SI: m/(s^2)]
+	end
+	if (strcmp (param, 'g_total', /fold_case)) then begin
+		unit_length = pc_get_parameter ('unit_length', label=label)
+		unit_time = pc_get_parameter ('unit_time', label=label)
+		g_SI = pc_get_parameter ('g_SI', label=label)
+		gravx_profile = pc_get_parameter ('gravx_profile', label=label)
+		gravy_profile = pc_get_parameter ('gravy_profile', label=label)
+		gravz_profile = pc_get_parameter ('gravz_profile', label=label)
+		g_total = dblarr (nx,ny,nz,3)
+		if (strcmp (gravx_profile, 'const', /fold_case)) then begin
+			g_ref = pc_get_parameter ('gravx', label=label)
+			g_total[*,*,*,0] += g_ref * unit_length/(unit_time^2)
+		end else if ((gravx_profile ne '') and not strcmp (gravx_profile, 'zero', /fold_case)) then begin
+			print, "WARNING: The gravity x-profile '"+gravx_profile+"' is not yet implemented."
+			stop
+		end
+		if (strcmp (gravy_profile, 'const', /fold_case)) then begin
+			g_ref = pc_get_parameter ('gravy', label=label)
+			g_total[*,*,*,1] += g_ref * unit_length/(unit_time^2)
+		end else if ((gravy_profile ne '') and not strcmp (gravy_profile, 'zero', /fold_case)) then begin
+			print, "WARNING: The gravity y-profile '"+gravy_profile+"' is not yet implemented."
+			stop
+		end
+		if (strcmp (gravz_profile, 'solid_sphere', /fold_case)) then begin
+			zref = pc_get_parameter ('zref', label=label) * unit_length
+			sphere_rad = pc_get_parameter ('sphere_rad', label=label) * unit_length
+			z_prof = z[n1:n2] * unit_length
+			g_prof = sign (z_prof - zref + 2*sphere_rad) * sphere_rad^2 / (z_prof - zref + sphere_rad)^2
+			inside = where (z_prof - zref + sphere_rad lt sphere_rad, num)
+			if (num ge 1) then g_prof[inside] = (z_prof[inside] - zref + sphere_rad) / sphere_rad
+			g_total[*,*,*,2] += g_SI * spread (g_prof, [0, 1], [nx, ny])
+		end else if (strcmp (gravz_profile, 'const', /fold_case)) then begin
+			g_ref = pc_get_parameter ('gravz', label=label)
+			g_total[*,*,*,2] += g_ref * unit_length/(unit_time^2)
+		end else if ((gravz_profile ne '') and not strcmp (gravz_profile, 'zero', /fold_case)) then begin
+			print, "WARNING: The gravity z-profile '"+gravz_profile+"' is not yet implemented."
+			stop
+		end
+		return, g_total
+	end
 	if (strcmp (param, 'eta_total', /fold_case)) then begin
 		resistivities = pc_get_parameter ('iresistivity', label=label)
 		eta = pc_get_parameter ('eta', label=label)

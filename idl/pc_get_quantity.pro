@@ -414,6 +414,28 @@ function pc_compute_quantity, vars, index, quantity
 		return, sqrt (dot2 (grad_P_therm))
 	end
 
+	if (strcmp (quantity, 'F_grav', /fold_case)) then begin
+		; Gravity vector
+		g_total = pc_get_parameter ('g_total', label=quantity)
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
+		return, -g_total * spread (rho, 3, 3)
+	end
+	if (strcmp (quantity, 'F_grav_abs', /fold_case)) then begin
+		; Gravity abvolute value
+		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'F_grav')))
+	end
+	if (strcmp (quantity, 'F_grav_x', /fold_case)) then begin
+		; Gravity x-component
+		return, (pc_compute_quantity (vars, index, 'F_grav'))[*,*,*,0]
+	end
+	if (strcmp (quantity, 'F_grav_y', /fold_case)) then begin
+		; Gravity y-component
+		return, (pc_compute_quantity (vars, index, 'F_grav'))[*,*,*,1]
+	end
+	if (strcmp (quantity, 'F_grav_z', /fold_case)) then begin
+		; Gravity z-component
+		return, (pc_compute_quantity (vars, index, 'F_grav'))[*,*,*,2]
+	end
 	if (strcmp (quantity, 'rho_u_x', /fold_case)) then begin
 		; Impulse density x-component
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
