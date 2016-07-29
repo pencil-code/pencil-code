@@ -1920,11 +1920,12 @@ module Viscosity
                 enddo
               else
                 do k=1,dimensionality
-                  gj(:,k)=rho*(gj(:,k)+guj(:,k))        ! rho*(grad(ln(rho))*u_j+grad(u_j))=grad(rho*u_j)                  
+                  gj(:,k)=rho*(gj(:,k)+guj(:,k))        ! rho*(grad(ln(rho))*u_j+grad(u_j))=grad(rho*u_j)   
                 enddo
               endif
 
-              call dot_mn(gj(:,1:dimensionality),f(l1:l2,m,n,iFF_diff1:iFF_diff2), &  ! \partial_k(rho*u_j) f_jk (summation over j by loop)
+              call dot_mn(gj(:,1:dimensionality),f(l1:l2,m,n,iFF_diff1:iFF_diff2), &  
+! \partial_k(rho*u_j) f_jk (summation over j by loop)
                           f(l1:l2,m,n,iFF_heat),ladd=.true.)
               !!!f(l1:l2,m,n,iFF_heat)=min(f(l1:l2,m,n,iFF_heat),0.)                     ! no cooling admitted (Why?)
             endif
