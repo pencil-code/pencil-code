@@ -8,10 +8,13 @@
 %%   nohydro.f90
 %%   nopower_spectrum.f90
 %%   noyinyang.f90
+%%   noyinyang_mpi.f90
 %%   power_spectrum.f90
 %%   timestep.f90
+%%   timestep_strang.f90
 %%   timestep_subcycle.f90
 %%   yinyang.f90
+%%   yinyang_mpi.f90
 
 % ---------------------------------------------------------------- %
 \begin{longtable}{lp{0.9\textwidth}}
@@ -30,15 +33,23 @@
 \midrule
   \var{noyinyang.f90} & This module contains Yin-Yang related dummy types and functions. \\
 \midrule
+  \var{noyinyang_mpi.f90} & This module contains Yin-Yang related dummy types and functions. \\
+\midrule
   \var{power_spectrum.f90} & reads in full snapshot and calculates power spetrum of u \\
 \midrule
   \var{timestep.f90} & Runge-Kutta time advance, accurate to order itorder. \\
+  \var{}          & At the moment, itorder can be 1, 2, or 3. \\
+\midrule
+  \var{timestep_strang.f90} & Runge-Kutta time advance, accurate to order itorder. \\
   \var{}          & At the moment, itorder can be 1, 2, or 3. \\
 \midrule
   \var{timestep_subcycle.f90} & This is a highly specified timestep module currently only working \\
   \var{}          & together with the special module coronae.f90. \\
 \midrule
   \var{yinyang.f90} & This module contains Yin-Yang related types and functions \\
+  \var{}          & which are incompatible with FORTRAN 95. \\
+\midrule
+  \var{yinyang_mpi.f90} & This module contains Yin-Yang related types and functions \\
   \var{}          & which are incompatible with FORTRAN 95. \\
 %
 \bottomrule

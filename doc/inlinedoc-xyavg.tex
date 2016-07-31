@@ -45,6 +45,9 @@
   \var{ux2mz}     & $\left<u_x^2\right>_{xy}$ \\
   \var{uy2mz}     & $\left<u_y^2\right>_{xy}$ \\
   \var{uz2mz}     & $\left<u_z^2\right>_{xy}$ \\
+  \var{ox2mz}     & $\left< \omega_x^2 \right>_{xy}$ \\
+  \var{oy2mz}     & $\left< \omega_y^2 \right>_{xy}$ \\
+  \var{oz2mz}     & $\left< \omega_z^2 \right>_{xy}$ \\
   \var{ruxmz}     & $\left<\varrho u_x \right>_{xy}$ \\
   \var{ruymz}     & $\left<\varrho u_y \right>_{xy}$ \\
   \var{ruzmz}     & $\left<\varrho u_z \right>_{xy}$ \\
@@ -57,6 +60,9 @@
   \var{ruxuymz}   & $\langle\rho u_x u_y\rangle_{xy}$ \\
   \var{ruxuzmz}   & $\langle\rho u_x u_z\rangle_{xy}$ \\
   \var{ruyuzmz}   & $\langle\rho u_y u_z\rangle_{xy}$ \\
+  \var{ruxuy2mz}  & $\langle\rho u_x u_y\rangle_{xy}$ \\
+  \var{ruxuz2mz}  & $\langle\rho u_x u_z\rangle_{xy}$ \\
+  \var{ruyuz2mz}  & $\langle\rho u_y u_z\rangle_{xy}$ \\
   \var{oxuxxmz}   & $\left<\omega_x u_{x,x}\right>_{xy}$ \\
   \var{oyuxymz}   & $\left<\omega_y u_{x,y}\right>_{xy}$ \\
   \var{oxuyxmz}   & $\left<\omega_x u_{y,x}\right>_{xy}$ \\
@@ -69,6 +75,27 @@
   \var{ekinmz}    & $\left<{1\over2}\varrho\uv^2\right>_{xy}$ \\
   \var{oumz}      & $\left<\boldsymbol{\omega}
                     \cdot\uv\right>_{xy}$ \\
+  \var{Remz}      & $\langle\frac{|\uv\cdot\uv|}{\left|
+                    \frac{\partial}{\partial x_j}
+                    (\nu{\sf S}_{ij})\right|}\rangle_{xy}$ \\
+  \var{oguxmz}    & $\left<(\boldsymbol{\omega}
+                    \cdot\nabla \uv)_x\right>_{xy}$ \\
+  \var{oguymz}    & $\left<(\boldsymbol{\omega}
+                    \cdot\nabla \uv)_y\right>_{xy}$ \\
+  \var{oguzmz}    & $\left<(\boldsymbol{\omega}
+                    \cdot\nabla \uv)_z\right>_{xy}$ \\
+  \var{ogux2mz}   & $\left<(\boldsymbol{\omega}
+                    \cdot\nabla \uv)_x^2\right>_{xy}$ \\
+  \var{oguy2mz}   & $\left<(\boldsymbol{\omega}
+                    \cdot\nabla \uv)_y^2\right>_{xy}$ \\
+  \var{oguz2mz}   & $\left<(\boldsymbol{\omega}
+                    \cdot\nabla \uv)_z^2\right>_{xy}$ \\
+  \var{oxdivumz}  & $\left<\omega_x\nabla\cdot\uv\right>_{xy}$ \\
+  \var{oydivumz}  & $\left<\omega_y\nabla\cdot\uv\right>_{xy}$ \\
+  \var{ozdivumz}  & $\left<\omega_z\nabla\cdot\uv\right>_{xy}$ \\
+  \var{oxdivu2mz} & $\left<(\omega_x nabla\cdot\uv)^2\right>_{xy}$ \\
+  \var{oydivu2mz} & $\left<(\omega_y\nabla\cdot\uv)^2\right>_{xy}$ \\
+  \var{ozdivu2mz} & $\left<(\omega_z\nabla\cdot\uv)^2\right>_{xy}$ \\
   \var{fkinxmx}   & $\left<{1\over2}\varrho\uv^2 u_x\right>_{yz}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{density.f90}} \\
@@ -92,6 +119,12 @@
   \var{uxTTmz}    & $\left< u_x T \right>_{xy}$ \\
   \var{uyTTmz}    & $\left< u_y T \right>_{xy}$ \\
   \var{uzTTmz}    & $\left< u_z T \right>_{xy}$ \\
+  \var{gTxgsxmz}  & $\left<(\nabla T\times\nabla s)_x\right>_{xy}$ \\
+  \var{gTxgsymz}  & $\left<(\nabla T\times\nabla s)_y\right>_{xy}$ \\
+  \var{gTxgszmz}  & $\left<(\nabla T\times\nabla s)_z\right>_{xy}$ \\
+  \var{gTxgsx2mz} & $\left<(\nabla T\times\nabla s)^2_x\right>_{xy}$ \\
+  \var{gTxgsy2mz} & $\left<(\nabla T\times\nabla s)^2_y\right>_{xy}$ \\
+  \var{gTxgsz2mz} & $\left<(\nabla T\times\nabla s)^2_z\right>_{xy}$ \\
   \var{fradz_kramers} & $F_{\rm rad}$ (from Kramers'
                     opacity) \\
   \var{fradz_Kprof} & $F_{\rm rad}$ (from Kprof) \\
