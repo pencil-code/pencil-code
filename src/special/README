@@ -16,3 +16,72 @@ Example:
 However, looking for example also at special/lorenz_gauge.f90 might indeed
 be a good idea.
 
+-----------------------------------------------------------------------------
+List of routines (31-Jul-2016)
+`
+MHD:
+  advective_gauge.f90 (dynamical gauge transformation; see Candelaesi+11)
+  lorenz_gauge.f90 (solve dphi/dt = -cA^2 * divA for scalar potential)
+
+Solar:
+  1D_loop.f90
+  coronae.f90
+  footpoints.f90
+  solar_corona.f90
+  twist_inject_delta.f90
+  twist_inject.f90
+
+Accretion Disks:
+  alphadisk.f90
+  baroclinic_run.f90
+  fargo.f90
+
+Meanfield MHD:
+  meanfield_alpm_alternate.f90
+  meanfield_alpm_etat.f90
+  meanfield_alpm.f90
+  meanfield_dynamo_z.f90
+  meanfield_e_tensor.f90
+
+Other applications:
+  atmosphere.f90
+  flowaroundsphere.f90
+  gravitational_waves.f90 (temporary versio, under development)
+  gross_pitaevskii.f90
+  neutron_star.f90
+
+Chiral MHD:
+  chiral_fluids.f90
+  chiral_fluids_gradtheta.f90
+
+Radiation:
+  spiegel.f90
+
+Other
+  bc_strat.f90
+  boussinesq.f90
+  chem_stream.f90
+  dynamical_resistivity.f90
+  flux_limdiff.f90
+  internal_flow.f90
+  jet.f90
+  localshock.f90
+  newton_cooling.f90
+  oscillation_0D.f90
+  oscillation_0D_Lorenz.f90
+  param_instab.f90
+  photoelectric_dust.f90
+  rtime_phiavg.f90
+  set_gravity.f90
+  shell.f90
+  stellartide.f90
+  streamfunction_dimensional.f90
+  streamfunction_direct.f90
+  streamfunction.f90
+  streamfunction_fullmultigrid.f90
+  streamfunction_multigrid.f90
+  symbreak.f90
+  turbpotential.f90
+
+Examples
+  van_der_pol.f90
