@@ -64,3 +64,82 @@ Here mhs_equilibrium is replaced by the filename of your new file,
 not including the .f90 extension.
 
 This module is based on Tony's special module.
+
+-----------------------------------------------------------------------------
+List of initial conditions (31 July 2016)
+
+Initial flux tube configurations:
+  1D_loop_init.f90
+  alfven_wave.f90
+  borromean_rings.f90
+  braids.f90
+  fieldloop.f90
+  fluxring_cylindrical.f90
+  fluxrings.f90
+  iucaa_logo.f90
+  multi_rings.f90
+  nfoil.f90
+  trefoil.f90
+  twistedtiltedtoros.f90
+  twisted_tubes.f90
+  whitehead_link.f90
+
+Magnetic buoyancy and magnetostatic equilibria:
+  hor-fluxlayer-By.f90
+  mhs_equilibrium.f90
+
+Initial flows:
+  hill_vortex.f90
+  aerosol_init.f90
+  baroclinic_init.f90
+  blobs_domes.f90
+  bubbles_init.f90
+  centrifugal_balance.f90
+  centrifugal_balance_neutrals.f90
+
+Benchmarks:
+  cig_dynamo_benchmark.f90
+  kelvin_helmholtz.f90
+  kelvin_helmholtz_Lecoanet_etal16.f90
+  Orszag_Tang_Vortex.f90
+  Rayleigh-Taylor.f90
+  rti.f90
+  shocktube.f90
+
+Accretion disks & MRI:
+  circumplanetary.f90
+  dust-equilibrium.f90
+  ice_shell.f90
+  cylindrical_energy.f90
+  MRI_2D_Test.f90
+  mri_cycle.f90
+  mri_nonlinear.f90
+  viscous_ring.f90
+
+Solar:
+  coronae_init.f90
+  magnetic_carpet.f90
+  parker_wind.f90
+
+ISM:
+  hs_equilibrium_ism.f90
+  ths1D_equilibrium_ism.f90
+  ths_equilibrium_ism.f90
+
+Convection:
+  spherical_convection.f90
+  star_box_layers.f90
+
+Other:
+  assimilate.f90
+  hydrostat-pload.f90
+  import_glemur.f90
+  random_helical.f90
+  reflect.f90
+  shock_cloud.f90
+  tabulated.f90
+  wave_Bx.f90
+
+Comments:
+  AB: a reference to an example would be useful (e.g. in the samples)
+  AB: clarify role of rti vs Rayleigh-Taylor
