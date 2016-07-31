@@ -514,7 +514,7 @@ module Magnetic
                                 ! DIAG_DOC:   \right>$ \quad(current helicity
                                 ! DIAG_DOC:   of $xy$-averaged mean field)
   integer :: idiag_Rmmz=0       ! DIAG_DOC: $\left<\frac{|\uv\times\Bv|}{|\eta\Jv|}
-                                ! DIAG_DOC: \right>_{xy}
+                                ! DIAG_DOC: \right>_{xy}$
   integer :: idiag_kx_aa=0      ! DIAG_DOC: $k_x$
   integer :: idiag_kmz=0        ! DIAG_DOC: $\left<\left<\Jv\right>_{xy}\cdot\left<\Bv\right>_{xy}\right>/
                                 ! DIAG_DOC:  \left<\left<\Bv\right>_{xy}^2\right>$
