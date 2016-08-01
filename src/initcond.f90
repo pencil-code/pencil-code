@@ -134,7 +134,7 @@ module Initcond
       if (present(ky)) ky1=ky
       if (present(kz)) kz1=kz
 !
-!  Gaussian scake heights
+!  Gaussian scale heights
 !
       if (present(KKx)) KKx1=KKx
       if (present(KKy)) KKy1=KKy
