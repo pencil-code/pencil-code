@@ -140,6 +140,7 @@ module InitialCondition
 !          
         case ('gaussian-noise')  
           call gaunoise(ampltt,f,iTT)
+!
         case ('nothing')
 !
         case default
