@@ -601,7 +601,7 @@ module Special
            u(ic,nc) = u(ic,nc)*(1-alpha_sor_) +  alpha_sor_*u_new
 !     
         enddo
-      enddo
+     enddo
 !
     endsubroutine successive_over_relaxation
 !***********************************************************************
@@ -778,24 +778,37 @@ module Special
          dx1=dx_1(i)
          dz1=dz_1(k)
       endif
+!
+! a is updated on the fly. So, do it swiping, so that a(i-1), that is updated, gets used for a(i)
+!
+      u = 20.*(dx1**2 * dz1**2)
+!
+      v_1 = alpha*(a(i,k+1) + a(i,k-1) - a(i+1,k) - a(i-1,k))*(dx1*dz1)
+!
+      v_2 = ((a(i,k+2) + a(i,k-2)) + (a(i+2,k) + a(i-2,k)) - 2.*(a(i+1,k+1) + a(i+1,k-1) + a(i-1,k+1) + a(i-1,k-1)))&
+              *(dx1**2 * dz1**2)
+!
+      v_3 = beta*(a(i+1,k+1) - a(i+1,k-1) - a(i-1,k+1) + a(i-1,k-1))*(dx1*dz1)
 !      
-      u = 2*alpha*(dx1**2 - dz1**2) + 6.*(dx1**4 + dz1**4) + &
-           4.*beta*dx1*dz1 + 8.*dx1**2*dz1**2
+      v_4 = 4*(a(i+1,k+1) - 2.*a(i+1,k) + a(i+1,k-1) - 2.*a(i,k+1) - 2.*a(i,k-1) + a(i-1,k+1) - 2.*a(i-1,k) + a(i-1,k-1))&
+              *(dx1**2 * dz1**2)
+
+      v = v_1 + v_2 + v_3 + v_4
+
+!      u = 2*alpha*(dx1**2 - dz1**2) + 6.*(dx1**4 + dz1**4) + &
+!              4.*beta*dx1*dz1 + 8.*dx1**2*dz1**2
+!      v_1 = (a(i,k+1) + a(i,k-1))*dz1**2 - (a(i+1,k) + a(i-1,k)) * dx1**2
+!      v_2 = ( a(i,k+2) - 4.*a(i,k+1) - 4.*a(i,k-1) + a(i,k-2))   * dz1**4
+!      v_3 = ( a(i+2,k) - 4.*a(i+1,k) - 4.*a(i-1,k) + a(i-2,k))   * dx1**4
+!      v_4 = (-a(i-1,k) -    a(i,k-1) +    a(i-1,k-1)) * dx1*dz1
+!!
+!      v51 = a(i+1,k+1) - 2.*a(i,k+1) + a(i-1,k+1)
+!      v52 = a(i+1,k  )               + a(i-1,k  )
+!      v53 = a(i+1,k-1) - 2.*a(i,k-1) + a(i-1,k-1)
+!      v_5 = (v51 - 2.*v52 + v53) * dx1**2*dz1**2
+!!
+!      v = alpha*v_1 + v_2 + v_3 + 4.*beta*v_4 + 2.*v_5
 !
-!  These do, and a is updated on the fly. So, do it swiping, so that a(i-1), that is updated, gets used for a(i)
-!
-      v_1 = (a(i,k+1) + a(i,k-1))*dz1**2 - (a(i+1,k) + a(i-1,k)) * dx1**2
-      v_2 = ( a(i,k+2) - 4.*a(i,k+1) - 4.*a(i,k-1) + a(i,k-2))   * dz1**4
-      v_3 = ( a(i+2,k) - 4.*a(i+1,k) - 4.*a(i-1,k) + a(i-2,k))   * dx1**4
-      v_4 = (-a(i-1,k) -    a(i,k-1) +    a(i-1,k-1)) * dx1*dz1
-!
-      v51 = a(i+1,k+1) - 2.*a(i,k+1) + a(i-1,k+1)
-      v52 = a(i+1,k  )                 + a(i-1,k  )
-      v53 = a(i+1,k-1) - 2.*a(i,k-1) + a(i-1,k-1)
-      v_5 = (v51 - 2.*v52 + v53) * dx1**2*dz1**2
-!
-      v = alpha*v_1 + v_2 + v_3 + 4.*beta*v_4 + 2.*v_5
-!      
     endsubroutine solve_loworder
 !***********************************************************************      
     subroutine calc_viscosity(f,eta)
@@ -816,7 +829,7 @@ module Special
       case ('Blankenbach-variable')
          do n=1,mz
             eta(:,n) = eta_0*exp(-Bvisc * f(:,mpoint,n,iTT)*deltaT1 + &
-                                  Cvisc * (1-z(n))*Lz1 )
+                                  Cvisc * (1-z(n)*Lz1)*Lz1 )
          enddo
 !
       case default  
@@ -1296,8 +1309,20 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       type (slice_data) :: slices
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(slices%ready)
+!
+!  Loop over slices
+!
+      select case (trim(slices%name))
+!
+!  Streamfunction
+!
+        case('psi')
+          slices%yz=f(ix_loc,m1:m2,n1:n2,ipsi)
+          slices%xz=f(l1:l2,iy_loc,n1:n2,ipsi)
+          slices%xy=f(l1:l2,m1:m2,iz_loc,ipsi)
+          slices%xy2=f(l1:l2,m1:m2,iz2_loc,ipsi)
+          slices%ready = .true.
+        endselect
 !
     endsubroutine get_slices_special
 !***********************************************************************
