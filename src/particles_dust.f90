@@ -3511,7 +3511,21 @@ module Particles
 !  Identify module.
 !
       if (headtt) then
-        if (lroot) print*,'dvvp_dt_pencil: calculate dvvp_dt'
+        if (lroot) then
+          print*,'dvvp_dt_pencil: calculate dvvp_dt'
+          print*, 'dvvp_dt_pencil: ldraglaw_purestokes=', ldraglaw_purestokes
+          if (lhydro .and. ldragforce_gas_par) then 
+            print*,'dvvp_dt_pencil: adding feedback from dust to gas'
+            if (eps_dtog == 0.) then
+              print*,'dvvp_dt_pencil: eps_dtog=',eps_dtog
+              if (.not.lparticles_number) then 
+                print*,'dvvp_dt_pencil: lparticles_number=',lparticles_number
+                print*, 'dvvp_dt_pencil: mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)'
+                print*, 'dvvp_dt_pencil: df(ixx,iyy,izz,iux:iuz)= mp_vcell*rho1_point*dragforce*weight'
+              endif
+            endif
+          endif
+        endif
       endif
 !
 !  Initialize the pencils that are calculated within this subroutine
@@ -3785,9 +3799,11 @@ module Particles
                     endif
 !  Add friction force to grid point.
 !NILS: The grid volume should be put into a pencil when required
-                    if ((lpscalar_sink .and. lpscalar) .or. &
-                        (ldragforce_gas_par .and. ldraglaw_steadystate)) & 
-                        call find_grid_volume(ixx,iyy,izz,volume_cell)
+!                    if ((lpscalar_sink .and. lpscalar) .or. &
+!                        (ldragforce_gas_par .and. ldraglaw_steadystate)) & 
+!DM : the above if condition is always true.
+!DM : the following call is being made twice. 
+!                        call find_grid_volume(ixx,iyy,izz,volume_cell)
 ! alexrichert: above call to find_grid_volume is superfluous, not sure why
 ! conditions are different from call below. Perhaps lparticles_radius or
 ! iap>0 would be a better condition than eps_dtog/ldraglaw_steadystate?
