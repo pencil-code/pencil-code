@@ -517,8 +517,9 @@ module Particles
         endif
         if (rhop_swarm==0.0) &
             rhop_swarm = eps_dtog*rhom/(real(npar)/nwgrid)
-        if (mp_swarm==0.0) &
+        if (mp_swarm==0.0) then 
             mp_swarm   = eps_dtog*rhom*box_volume/(real(npar))
+        endif
         if (lroot) print*, 'initialize_particles: '// &
             'dust-to-gas ratio eps_dtog=', eps_dtog
       endif
@@ -2998,12 +2999,21 @@ module Particles
             call sum_par_name(0.5*fp(1:npar_loc,irhopswarm)* &
                 sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
           else
-            if (lcartesian_coords.and.(all(lequidist))) then
-              call sum_par_name(0.5*rhop_swarm*npar_per_cell* &
-                   sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
+            if (mp_swarm == 0.) then
+              if (lparticles_radius) then
+                 call sum_par_name(0.5*(4./3.)*pi*(fp(1:npar_loc,iap)**3)*rhopmat*&
+                             ( fp(1:npar_loc,ivpx)**2 &
+                              +fp(1:npar_loc,ivpy)**2 &
+                              +fp(1:npar_loc,ivpz)**2),idiag_ekinp)
+              endif 
             else
-              call sum_par_name(0.5*mp_swarm* &
+              if (lcartesian_coords.and.(all(lequidist))) then
+                call sum_par_name(0.5*rhop_swarm*npar_per_cell* &
                    sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
+              else
+                call sum_par_name(0.5*mp_swarm* &
+                   sum(fp(1:npar_loc,ivpx:ivpz)**2,dim=2),idiag_ekinp)
+              endif
             endif
           endif
         endif
@@ -3518,6 +3528,7 @@ module Particles
             print*,'dvvp_dt_pencil: adding feedback from dust to gas'
             if (eps_dtog == 0.) then
               print*,'dvvp_dt_pencil: eps_dtog=',eps_dtog
+              print*, 'dvvp_dt_pencil: mp_swarm=', mp_swarm
               if (.not.lparticles_number) then 
                 print*,'dvvp_dt_pencil: lparticles_number=',lparticles_number
                 print*, 'dvvp_dt_pencil: mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)'
