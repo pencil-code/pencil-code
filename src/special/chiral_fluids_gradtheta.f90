@@ -42,7 +42,9 @@
 !
 ! PENCILS PROVIDED mu5; gmu5(3); del2mu5; del2gtheta5(3); del2bb(3)
 ! PENCILS PROVIDED ugmu5; gtheta5(3); gtheta5ij(3,3); uggtheta5(3)
-! PENCILS PROVIDED bgtheta5; gtheta52; curlb(3); ucurlb
+!! PENCILS PROVIDED bgtheta5; gtheta52; curlb(3); ucurlb
+!!AB: Isn't curlb available as p%jj?
+! PENCILS PROVIDED bgtheta5; gtheta52; ucurlb
 ! PENCILS PROVIDED etaucbbgt5
 !***************************************************************
 !
@@ -356,7 +358,12 @@ module Special
       lpenc_requested(i_b2)=.true.
       lpenc_requested(i_mu5)=.true.
       lpenc_requested(i_gmu5)=.true.
-      lpenc_requested(i_curlb)=.true.
+!AB: Isn't curlb available as p%jj?
+!     lpenc_requested(i_curlb)=.true.
+!AB: Isn't ucurlb only used for diagnostics?
+!AB: If so, it should only be requested when that diagnostics is on.
+!AB: The relevant pencil is then called: lpenc_diagnos
+!AB: See, e.g., magnetic for how it is being used.
       lpenc_requested(i_ucurlb)=.true.
       lpenc_requested(i_etaucbbgt5)=.true.
       if (ldt) lpenc_requested(i_rho1)=.true.
@@ -410,12 +417,19 @@ module Special
       if (lpencil(i_gtheta5)) p%gtheta5=f(l1:l2,m,n,igtheta5:igtheta5+2)
       if (lpencil(i_gtheta5ij)) call gij(f,igtheta5,p%gtheta5ij,1)
       if (lpencil(i_gmu5)) call grad(f,imu5,p%gmu5)
-      if (lpencil(i_curlb)) call curl(f,ibb,p%curlb)
-      if (lpencil(i_ucurlb)) call dot(p%uu,p%curlb,p%ucurlb)
+!AB: I don't think the following is ok.
+!     if (lpencil(i_curlb)) call curl(f,ibb,p%curlb)
+!     if (lpencil(i_ucurlb)) call dot(p%uu,p%curlb,p%ucurlb)
+!AB: Isn't curlb available as p%jj?
+      if (lpencil(i_ucurlb)) call dot(p%uu,p%jj,p%ucurlb)
       if (lpencil(i_ugmu5)) call dot(p%uu,p%gmu5,p%ugmu5)
       if (lpencil(i_del2mu5)) call del2(f,imu5,p%del2mu5)
       if (lpencil(i_del2gtheta5)) call del2v_etc(f,igtheta5,DEL2=p%del2gtheta5)
-      if (lpencil(i_del2bb)) call del2v_etc(f,ibb,DEL2=p%del2bb)
+!AB: I don't think the following is ok. I therefore put p%del2bb=0
+!AB: because it is apparently used only for diagnostics.
+!     if (lpencil(i_del2bb)) call del2v_etc(f,ibb,DEL2=p%del2bb)
+p%del2bb=0
+!AB.
       if (lpencil(i_uggtheta5)) call u_dot_grad(f,igtheta5,p%gtheta5ij, &
         p%uu,p%uggtheta5,UPWIND=lupw_gtheta5)
       if (lpencil(i_bgtheta5)) call dot(p%bb,p%gtheta5,p%bgtheta5)
@@ -495,7 +509,10 @@ module Special
       diffus_bb_1 = eta*p%mu5*sqrt(dxyz_2)
       diffus_bb_2 = eta*sqrt(p%u2)*sqrt(p%gtheta52)*sqrt(dxyz_2)
 !
-! calculate additional terms in energy equation
+!  calculate additional terms in energy equation
+!  AB: shouldn't those be computed only when an
+!  AB: energy equation is invoked?
+!
         call dot_mn(p%uxb,p%jj,uxbj)          ! term1
         call dot_mn(p%uu,p%jj,uujj) 
         etaujbgtheta5 = eta*uujj*p%bgtheta5   ! term2
@@ -508,10 +525,12 @@ module Special
 !
       if (lhydro) then
         call multsv(p%rho1*p%bgtheta5,p%uxb,uxbbgtheta5r)
-        call multsv(p%rho1*p%bgtheta5,p%jj,jbgtheta5r)
-        call multsv(p%rho1*p%bgtheta5,ubgtheta5,ubgtheta5bgtheta5r)
-        call multsv(p%rho1*p%jb,p%gtheta5,jbgtheta5r2)
-        call multsv(p%rho1*p%ub*p%bgtheta5,p%gtheta5,ubbgtheta5gtheta5r)
+!AB: I don't see the following results being used! So I comment them out.
+!       call multsv(p%rho1*p%bgtheta5,p%jj,jbgtheta5r)
+!       call multsv(p%rho1*p%bgtheta5,ubgtheta5,ubgtheta5bgtheta5r)
+!       call multsv(p%rho1*p%jb,p%gtheta5,jbgtheta5r2)
+!       call multsv(p%rho1*p%ub*p%bgtheta5,p%gtheta5,ubbgtheta5gtheta5r)
+!AB.
         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)+uxbbgtheta5r
       endif   
       diffus_uu_1 = p%b2*sqrt(p%gtheta52)*p%rho1
