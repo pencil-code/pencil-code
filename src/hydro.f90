@@ -182,6 +182,7 @@ module Hydro
   logical :: lremove_mean_angmom=.false.
   logical :: lremove_mean_momenta=.false.
   logical :: lremove_mean_flow=.false.
+  logical :: lremove_uumeanxy=.false.
   logical :: lreinitialize_uu=.false.
   logical :: lalways_use_gij_etc=.false.
   logical :: lcalc_uumeanz=.false.,lcalc_uumeanxy=.false.,lcalc_uumean
@@ -208,6 +209,7 @@ module Hydro
       inituu, ampluu, kz_uu, ampl1_diffrot, ampl2_diffrot, uuprof, &
       xexp_diffrot, kx_diffrot, kz_diffrot, kz_analysis, phase_diffrot, ampl_wind, &
       lreinitialize_uu, lremove_mean_momenta, lremove_mean_flow, &
+      lremove_uumeanxy, &
       ldamp_fade, tfade_start, lOmega_int, Omega_int, lupw_uu, othresh, &
       othresh_per_orms, borderuu, lfreeze_uint, lpressuregradient_gas, &
       lfreeze_uext, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
@@ -992,6 +994,8 @@ module Hydro
         endif
       endif
 !
+      lcalc_uumeanxy=lremove_uumeanxy .or. lcalc_uumeanxy
+!
       if (lcalc_uumeanxy) then
         myl=my
         if (lyinyang) then
@@ -1017,12 +1021,14 @@ module Hydro
       use Sub, only: finalize_aver
       use Deriv, only: der_z
       use DensityMethods, only: getrho
+      use Yinyang_mpi, only: zsum_yy
 !
       real, dimension (mx,my,mz,mfarray), intent(IN) :: f
 !
       real, dimension (nx) :: rho,rux,ruy,ruz
       integer, parameter :: nreduce=3
       real, dimension (nreduce) :: fsum_tmp,fsum
+      real, dimension (:,:,:), allocatable :: buffer
       real :: fact
       integer :: j,nnz,l,m,n
 !
@@ -1092,7 +1098,26 @@ module Hydro
 !
       if (lcalc_uumeanxy) then
 !
-        uumxy = sum(f(:,:,n1:n2,iux:iuz),3)/nzgrid
+        fact=1./nzgrid_eff
+        if (lyang) allocate(buffer(1,mx,my))
+        do j=1,3
+          if (lyang) then
+!
+!  On Yang grid:
+!
+            do n=n1,n2
+              do m=1,my
+                call zsum_yy(buffer,1,m,n,f(:,m,n,iuu+j-1))
+              enddo
+            enddo
+            uumxy(:,:,j)=fact*buffer(1,:,:)
+          else
+!
+! Normal summing-up in Yin procs.
+! 
+            uumxy(:,:,j)=fact*sum(f(:,:,n1:n2,iuu+j-1),3)  ! requires equidistant grid
+          endif
+        enddo
         call finalize_aver(nprocz,3,uumxy)
 !
       endif
@@ -3561,6 +3586,20 @@ module Hydro
 !         +2.*omega_precession*Omega*mat_cent3
 !     endif
 !
+
+!
+!  Remove mean flow (z average).
+!
+      if (lremove_uumeanxy) then
+!
+        do j=1,3
+          do n=1,mz
+            f(:,:,n,iuu+j-1) = f(:,:,n,iuu+j-1)-uumxy(:,:,j)
+          enddo
+        enddo
+      endif
+!
+!
     endsubroutine calc_lhydro_pars
 !***********************************************************************
     subroutine set_border_hydro(f,df,p)
@@ -5932,18 +5971,6 @@ module Hydro
         df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,1)-0.)
         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,2)-0.)
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,3)-0.)
-      endif
-!
-!  remove mean velocities
-!
-      case ('no_meanflows')
-      zbot=rdampext
-      if (.not.lcalc_uumeanxy) then
-        call fatal_error("no_meanflow","you need to set lcalc_uumeanxy=T in hydro_run_pars")
-      else
-        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-uumxy(l1:l2,m,1)
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-uumxy(l1:l2,m,2)
-        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-uumxy(l1:l2,m,3)
       endif
 !
 !  Latitudinal shear profile
