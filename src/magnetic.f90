@@ -197,6 +197,7 @@ module Magnetic
              lbz_ext_global=.false.
   logical :: lambipolar_diffusion=.false.
   logical :: lskip_projection_aa=.false., lno_second_ampl_aa=.true.
+  logical :: lscale_tobox=.true.
 !
   namelist /magnetic_init_pars/ &
       B_ext, B0_ext, t_bext, t0_bext, J_ext, lohmic_heat, radius, epsilonaa, x0aa, z0aa, widthaa, &
@@ -206,7 +207,7 @@ module Magnetic
       lpress_equil, lpress_equil_via_ss, mu_r, mu_ext_pot, lB_ext_pot, &
       lforce_free_test, ampl_B0, N_modes_aa, &
       initpower_aa, initpower2_aa, cutoff_aa, ncutoff_aa, kpeak_aa, &
-      kgaussian_aa, z1_aa, z2_aa, &
+      lscale_tobox, kgaussian_aa, z1_aa, z2_aa, &
       lcheck_positive_va2, lskip_projection_aa, lno_second_ampl_aa, &
       lbb_as_aux, lbb_as_comaux, lB_ext_in_comaux, lEE_as_aux,&
       ljxb_as_aux, ljj_as_aux, lbext_curvilinear, lbbt_as_aux, ljjt_as_aux, &
@@ -1518,7 +1519,7 @@ module Magnetic
         case ('sph_constb'); call sph_constb(amplaa(j),f,iaa)
         case ('const_lou'); call const_lou(amplaa(j),f,iaa)
         case ('power_randomphase')
-          call power_randomphase(amplaa(j),initpower_aa,cutoff_aa,f,iax,iaz)
+          call power_randomphase(amplaa(j),initpower_aa,cutoff_aa,f,iax,iaz,lscale_tobox)
         case ('power_randomphase_hel')
           call power_randomphase_hel(amplaa(j),initpower_aa,initpower2_aa, &
             cutoff_aa,ncutoff_aa,kpeak_aa,f,iax,iaz,relhel_aa,kgaussian_aa, &
