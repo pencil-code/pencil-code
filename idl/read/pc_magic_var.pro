@@ -147,8 +147,8 @@ pro pc_magic_var, variables, tags, $
   pc_magic_var_dep, variables, tags, 'strb', 'bb'
   pc_magic_var_dep, variables, tags, 'strb', 'uij'
   pc_magic_var_dep, variables, tags, 'strbs', 'bb'
-  pc_magic_var_dep, variables, tags, 'compb', 'uu'
   pc_magic_var_dep, variables, tags, 'compb', 'bb'
+  pc_magic_var_dep, variables, tags, 'compb', 'divu'
   pc_magic_var_dep, variables, tags, 'divadvu', 'uu'
   pc_magic_var_dep, variables, tags, 'divadvu', 'uij'
   pc_magic_var_dep, variables, tags, 'fvisc', 'uij'
@@ -170,26 +170,22 @@ pro pc_magic_var, variables, tags, $
    endif
 ;
   for iv=0,n_elements(variables)-1 do begin
+    tags[iv]=variables[iv]
 ; x Coordinate
     if (variables[iv] eq 'xx') then begin
-      tags[iv]=variables[iv]
       variables[iv]='spread(spread(x,1,n_elements(y)),2,n_elements(z))'
 ; y Coordinate
     endif else if (variables[iv] eq 'yy') then begin
-      tags[iv]=variables[iv]
       variables[iv]='spread(spread(y,0,n_elements(x)),2,n_elements(z))'
 ; z Coordinate
     endif else if (variables[iv] eq 'zz') then begin
-      tags[iv]=variables[iv]
       variables[iv]='spread(spread(z,0,n_elements(x)),1,n_elements(y))'
 ; r Coordinate
     endif else if (variables[iv] eq 'rr') then begin
-      tags[iv]=variables[iv]
       variables[iv]='sqrt(spread(spread(x^2,1,n_elements(y)),2,n_elements(z))+spread(spread(y^2,0,n_elements(x)),2,n_elements(z))+spread(spread(z^2,0,n_elements(x)),1,n_elements(y)))'
 ; Magnetic field vector
     endif else if (variables[iv] eq 'bb') then begin
-      tags[iv]=variables[iv]
-      variables[iv]='curl(aa)'
+      variables[iv]='curl(aa[*,*,*,*,iyy])'
       if (global) then begin
         if (max(where(global_names eq 'bx_ext')) ne -1) then begin
           vari1='gg.bx_ext'
@@ -210,9 +206,8 @@ pro pc_magic_var, variables, tags, $
       endif
 ; Current density [jj=curl(bb)=curl(curl(aa))=grad(div(aa))-del2(aa)]
     endif else if (variables[iv] eq 'jj') then begin
-      tags[iv]=variables[iv]
       ;variables[iv]='graddiv(aa)-del2(aa)'
-      variables[iv]='curlcurl(aa)'
+      variables[iv]='curlcurl(aa[*,*,*,*,iyy])'
       if (global) then begin
         if (max(where(global_names eq 'jx_ext')) ne -1) then begin
           vari1='gg.jx_ext'
@@ -233,304 +228,256 @@ pro pc_magic_var, variables, tags, $
       endif
 ; Derivative vector of magnetic vector potential
     endif else if (variables[iv] eq 'd2A') then begin
-      tags[iv]=variables[iv]
-      variables[iv]='derij(aa)'
+      variables[iv]='derij(aa[*,*,*,*,iyy])'
 ; Derivative vector of magnetic field
     endif else if (variables[iv] eq 'bij') then begin
-      tags[iv]=variables[iv]
-      variables[iv]='gijcurl(aa)'
+      variables[iv]='gijcurl(aa[*,*,*,*,iyy])'
 ; Lorentz force
     endif else if (variables[iv] eq 'flor') then begin
-      tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='spread(1/rho,3,3)*cross(jj,bb)'
+        variables[iv]='spread(1./rho[*,*,*,iyy],3,3)*cross(jj[*,*,*,*,iyy],bb[*,*,*,*,iyy])'
       endif else begin
-        variables[iv]='spread(1/exp(lnrho),3,3)*cross(jj,bb)'
+        variables[iv]='spread(exp(-lnrho[*,*,*,iyy]),3,3)*cross(jj[*,*,*,*,iyy],bb[*,*,*,*,iyy])'
       endelse
 ; Alfven speed squared
     endif else if (variables[iv] eq 'va2') then begin
-      tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='total(bb^2,4)/rho'
+        variables[iv]='total(bb[*,*,*,*,iyy]^2,4)/rho[*,*,*,iyy]'
       endif else begin
-        variables[iv]='total(bb^2,4)/exp(lnrho)'
+        variables[iv]='total(bb[*,*,*,*,iyy]^2,4)*exp(-lnrho[*,*,*,iyy])'
       endelse
 ; Magnetic pressure
     endif else if (variables[iv] eq 'mpres') then begin
-      tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='-spread(1/rho,3,3)*reform([[[total(bb*reform(bij[*,*,*,*,0]),4)]],[[total(bb*reform(bij[*,*,*,*,1]),4)]],[[total(bb*reform(bij[*,*,*,*,2]),4)]]],dim.mx,dim.my,dim.mz,3)'
+        variables[iv]='-spread(1./rho[*,*,*,iyy],3,3)*reform([[[total(bb[*,*,*,*,iyy]*reform(bij[*,*,*,*,0,iyy]),4)]],[[total(bb[*,*,*,*,iyy]*reform(bij[*,*,*,*,1,iyy]),4)]],[[total(bb[*,*,*,*,iyy]*reform(bij[*,*,*,*,2,iyy]),4)]]],dim.mx,dim.my,dim.mz,3)'
       endif else begin
-        variables[iv]='-spread(1/exp(lnrho),3,3)*reform([[[total(bb*reform(bij[*,*,*,*,0]),4)]],[[total(bb*reform(bij[*,*,*,*,1]),4)]],[[total(bb*reform(bij[*,*,*,*,2]),4)]]],dim.mx,dim.my,dim.mz,3)'
+        variables[iv]='-spread(exp(-lnrho[*,*,*,iyy]),3,3)*reform([[[total(bb[*,*,*,*,iyy]*reform(bij[*,*,*,*,0,iyy]),4)]],[[total(bb[*,*,*,*,iyy]*reform(bij[*,*,*,*,1,iyy]),4)]],[[total(bb[*,*,*,*,iyy]*reform(bij[*,*,*,*,2,iyy]),4)]]],dim.mx,dim.my,dim.mz,3)'
       endelse
 ; Magnetic tension
     endif else if (variables[iv] eq 'mten') then begin
-      tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='spread(1/rho,3,3)*reform([[[total(bb*reform(bij[*,*,*,0,*]),4)]],[[total(bb*reform(bij[*,*,*,1,*]),4)]],[[total(bb*reform(bij[*,*,*,2,*]),4)]]],dim.mx,dim.my,dim.mz,3)'
+        variables[iv]='spread(1./rho[*,*,*,iyy],3,3)*reform([[[total(bb[*,*,*,*,iyy]*reform(bij[*,*,*,0,*,iyy]),4)]],[[total(bb[*,*,*,*,iyy]*reform(bij[*,*,*,1,*,iyy]),4)]],[[total(bb[*,*,*,*,iyy]*reform(bij[*,*,*,2,*,iyy]),4)]]],dim.mx,dim.my,dim.mz,3)'
       endif else begin
-        variables[iv]='spread(1/exp(lnrho),3,3)*reform([[[total(bb*reform(bij[*,*,*,0,*]),4)]],[[total(bb*reform(bij[*,*,*,1,*]),4)]],[[total(bb*reform(bij[*,*,*,2,*]),4)]]],dim.mx,dim.my,dim.mz,3)'
+        variables[iv]='spread(exp(-lnrho[*,*,*,iyy]),3,3)*reform([[[total(bb[*,*,*,*,iyy]*reform(bij[*,*,*,0,*,iyy]),4)]],[[total(bb[*,*,*,*,iyy]*reform(bij[*,*,*,1,*,iyy]),4)]],[[total(bb[*,*,*,*,iyy]*reform(bij[*,*,*,2,*,iyy]),4)]]],dim.mx,dim.my,dim.mz,3)'
       endelse
 ; Alfven speed limiter [ (numerical flor) = alflim * (actual flor) ].
     endif else if (variables[iv] eq 'alflim') then begin
-      tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='(1+((total(bb^2,4)/(param.mu0*rho))/par2.va2max_jxb)^par2.va2power_jxb)^(-1./par2.va2power_jxb)'
+        variables[iv]='(1+((total(bb[*,*,*,*,iyy]^2,4)/(param.mu0*rho[*,*,*,iyy]))/par2.va2max_jxb)^par2.va2power_jxb)^(-1./par2.va2power_jxb)'
       endif else begin
-        variables[iv]='(1+((total(bb^2,4)/(param.mu0*exp(lnrho)))/par2.va2max_jxb)^par2.va2power_jxb)^(-1./par2.va2power_jxb)'
+        variables[iv]='(1+((total(bb[*,*,*,*,iyy]^2,4)/(param.mu0*exp(lnrho[*,*,*,iyy])))/par2.va2max_jxb)^par2.va2power_jxb)^(-1./par2.va2power_jxb)'
       endelse
 ; EMF
     endif else if (variables[iv] eq 'emf') then begin
-      tags[iv]=variables[iv]
-      variables[iv]='cross(uu,bb)'
+      variables[iv]='cross(uu([*,*,*,*,iyy],bb[*,*,*,*,iyy])'
 ; Magnetic field advection
     endif else if (variables[iv] eq 'advb') then begin
-      tags[iv]=variables[iv]
-      variables[iv]='-reform([[[total(uu*reform(bij[*,*,*,0,*]),4)]],[[total(uu*reform(bij[*,*,*,1,*]),4)]],[[total(uu*reform(bij[*,*,*,2,*]),4)]]],dim.mx,dim.my,dim.mz,3)'
+      variables[iv]='-reform([[[total(uu[*,*,*,*,iyy]*reform(bij[*,*,*,0,*,iyy]),4)]],[[total(uu[*,*,*,*,iyy]*reform(bij[*,*,*,1,*,iyy]),4)]],[[total(uu[*,*,*,*,iyy]*reform(bij[*,*,*,2,*,iyy]),4)]]],dim.mx,dim.my,dim.mz,3)'
 ; Magnetic field advection by background shear
     endif else if (variables[iv] eq 'sadvb') then begin
-      tags[iv]=variables[iv]
       if (lshear) then begin
-        variables[iv]='param.qshear*param.omega*spread(x,[1,2,3],[my,mz,3])*yder(bb)'
+        variables[iv]='param.qshear*param.omega*spread(x,[1,2,3],[my,mz,3])*yder(bb[*,*,*,*,iyy])'
       endif else begin
         variables[iv]='fltarr(mx,my,mz,3)*one'
       endelse
 ; Magnetic stretching
     endif else if (variables[iv] eq 'strb') then begin
-      tags[iv]=variables[iv]
-      variables[iv]='reform([[[total(bb*reform(uij[*,*,*,0,*]),4)]],[[total(bb*reform(uij[*,*,*,1,*]),4)]],[[total(bb*reform(uij[*,*,*,2,*]),4)]]],dim.mx,dim.my,dim.mz,3)'
+      variables[iv]='reform([[[total(bb[*,*,*,*,iyy]*reform(uij[*,*,*,0,*,iyy]),4)]],[[total(bb[*,*,*,*,iyy]*reform(uij[*,*,*,1,*,iyy]),4)]],[[total(bb[*,*,*,*,iyy]*reform(uij[*,*,*,2,*,iyy]),4)]]],dim.mx,dim.my,dim.mz,3)'
 ; Magnetic stretching by background shear
     endif else if (variables[iv] eq 'strbs') then begin
-      tags[iv]=variables[iv]
       if (lshear) then begin
-        variables[iv]='-param.qshear*param.omega*bb[*,*,*,0]'
+        variables[iv]='-param.qshear*param.omega*bb[*,*,*,0,iyy]'
       endif else begin
         variables[iv]='fltarr(mx,my,mz)*one'
       endelse
 ; Magnetic compression
     endif else if (variables[iv] eq 'compb') then begin
-      tags[iv]=variables[iv]
-      variables[iv]='-bb*spread(div(uu),3,3)'
+      variables[iv]='-bb[*,*,*,*,iyy]*spread(divu[*,*,*,iyy],3,3)'
 ; Vorticity
     endif else if (variables[iv] eq 'oo') then begin
-      tags[iv]=variables[iv]
-      variables[iv]='curl(uu)'
+      variables[iv]='curl(uu[*,*,*,*,iyy])'
 ; Divergence of velocity
     endif else if (variables[iv] eq 'divu') then begin
-      tags[iv]=variables[iv]
-      variables[iv]='div(uu)'
+      variables[iv]='div(uu[*,*,*,*,iyy])'
 ; Derivative vector of velocity field
     endif else if (variables[iv] eq 'uij') then begin
-      tags[iv]=variables[iv]
-      variables[iv]='gij(uu)'
+      variables[iv]='gij(uu[*,*,*,*,iyy])'
 ; Gas Density 
     endif else if (density_var eq 'lnrho' and variables[iv] eq 'rho') then begin
-      tags[iv]=variables[iv]
-      variables[iv]='exp(lnrho)'
+      variables[iv]='exp(lnrho[*,*,*,iyy])'
 ; Logarithmic gas Density 
     endif else if (density_var eq 'rho' and variables[iv] eq 'lnrho') then begin
-      tags[iv]=variables[iv]
-      variables[iv]='alog(rho)'
+      variables[iv]='alog(rho[*,*,*,iyy])'
 ; Velocity advection
     endif else if (variables[iv] eq 'advu') then begin
-      tags[iv]=variables[iv]
-      variables[iv]='-0.5*grad(dot2(uu))+cross(uu,curl(uu))'
+      variables[iv]='-0.5*grad(dot2(uu[*,*,*,*,iyy]))+cross(uu[*,*,*,*,iyy],curl(uu[*,*,*,*,iyy]))'
     endif else if (variables[iv] eq 'advu2') then begin
-      tags[iv]=variables[iv]
-      variables[iv]='-reform([[[total(uu*reform(uij[*,*,*,0,*]),4)]],[[total(uu*reform(uij[*,*,*,1,*]),4)]],[[total(uu*reform(uij[*,*,*,2,*]),4)]]],dim.mx,dim.my,dim.mz,3)'
+      variables[iv]='-reform([[[total(uu[*,*,*,*,iyy]*reform(uij[*,*,*,0,*,iyy]),4)]],[[total(uu[*,*,*,*,iyy]*reform(uij[*,*,*,1,*,iyy]),4)]],[[total(uu[*,*,*,*,iyy]*reform(uij[*,*,*,2,*,iyy]),4)]]],dim.mx,dim.my,dim.mz,3)'
 ; Velocity advection by background shear
     endif else if (variables[iv] eq 'sadvu') then begin
-      tags[iv]=variables[iv]
       if (lshear) then begin
-        variables[iv]='param.qshear*param.omega*spread(x,[1,2,3],[my,mz,3])*yder(uu)'
+        variables[iv]='param.qshear*param.omega*spread(x,[1,2,3],[my,mz,3])*yder(uu[*,*,*,*,iyy])'
       endif else begin
         variables[iv]='fltarr(mx,my,mz,3)*one'
       endelse
 ; Density advection
     endif else if (variables[iv] eq 'advlnrho') then begin
-      tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='-dot(uu,grad(alog(rho)))'
+        variables[iv]='-dot(uu[*,*,*,*,iyy],grad(alog(rho[*,*,*,iyy])))'
       endif else begin  
-        variables[iv]='-dot(uu,grad(lnrho))'
+        variables[iv]='-dot(uu[*,*,*,*,iyy],grad(lnrho[*,*,*,iyy]))'
       endelse
 ; Density advection (non-logarithmic density)
     endif else if (variables[iv] eq 'advrho') then begin
-      tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='-dot(uu,grad(rho))'
+        variables[iv]='-dot(uu[*,*,*,*,iyy],grad(rho[*,*,*,iyy]))'
       endif else begin  
-        variables[iv]='-dot(uu,grad(exp(lnrho)))'
+        variables[iv]='-dot(uu[*,*,*,*,iyy],grad(exp(lnrho[*,*,*,iyy])))'
       endelse
 ; Density advection by background shear
     endif else if (variables[iv] eq 'sadvrho') then begin
-      tags[iv]=variables[iv]
       if (lshear) then begin
         if (param.ldensity_nolog) then begin
-          variables[iv]='param.qshear*param.omega*spread(x,[1,2],[my,mz])*yder(rho)'
+          variables[iv]='param.qshear*param.omega*spread(x,[1,2],[my,mz])*yder(rho[*,*,*,iyy])'
         endif else begin
-          variables[iv]='param.qshear*param.omega*spread(x,[1,2],[my,mz])*yder(exp(lnrho))'
+          variables[iv]='param.qshear*param.omega*spread(x,[1,2],[my,mz])*yder(exp(lnrho[*,*,*,iyy]))'
         endelse
       endif else begin
         variables[iv]='fltarr(mx,my,mz)*one'
       endelse
 ; Density advection by background shear (logarithmic density)
     endif else if (variables[iv] eq 'sadvlnrho') then begin
-      tags[iv]=variables[iv]
       if (lshear) then begin
         if (param.ldensity_nolog) then begin
-          variables[iv]='param.qshear*param.omega*spread(x,[1,2],[my,mz])*yder(alog(rho))'
+          variables[iv]='param.qshear*param.omega*spread(x,[1,2],[my,mz])*yder(alog(rho[*,*,*,iyy]))'
         endif else begin
-          variables[iv]='param.qshear*param.omega*spread(x,[1,2],[my,mz])*yder(lnrho)'
+          variables[iv]='param.qshear*param.omega*spread(x,[1,2],[my,mz])*yder(lnrho[*,*,*,iyy])'
         endelse
       endif else begin
         variables[iv]='fltarr(mx,my,mz)*one'
       endelse
 ; Density compression
     endif else if (variables[iv] eq 'comprho') then begin
-      tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='-rho*divu'
+        variables[iv]='-rho[*,*,*,iyy]*divu[*,*,*,iyy]'
       endif else begin  
-        variables[iv]='-exp(lnrho)*divu'
+        variables[iv]='-exp(lnrho[*,*,*,iyy])*divu[*,*,*,iyy]'
       endelse
 ; Modulus of velocity
     endif else if (variables[iv] eq 'u2') then begin
-      tags[iv]=variables[iv]
-      variables[iv]='dot2(uu)'
+      variables[iv]='dot2(uu[*,*,*,*,iyy])'
 ; Divergence of advection ter,
     endif else if (variables[iv] eq 'divadvu') then begin
-      tags[iv]=variables[iv]
-      variables[iv]='-dot(uu,graddiv(uu))-total(total(uij*transpose(uij,[2,1,0,3,4]),5),4)'
+      variables[iv]='-dot(uu[*,*,*,*,iyy],graddiv(uu[*,*,*,*,iyy]))-total(total(uij[*,*,*,*,*,iyy]*transpose(uij[*,*,*,*,*,iyy],[2,1,0,3,4]),5),4)'
 ; Sound speed squared
     endif else if (variables[iv] eq 'cs2') then begin
-      tags[iv]=variables[iv]
       if (lionization and not lionization_fixed) then begin
-        variables[iv]='pc_eoscalc('+density_var+',lnTT,/cs2,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],lnTT[*,*,*,iyy],/cs2,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
       endif else begin
-        variables[iv]='pc_eoscalc('+density_var+',ss,/cs2,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/cs2,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Pressure gradient
     endif else if (variables[iv] eq 'fpres') then begin
-      tags[iv]=variables[iv]
       if (param.ldensity_nolog) then begin
-        variables[iv]='spread(-1/rho,3,3)*grad(rho)'
+        variables[iv]='spread(-1./rho[*,*,*,iyy],3,3)*grad(rho[*,*,*,iyy])'
       endif else begin
-        variables[iv]='-grad(lnrho)'
+        variables[iv]='-grad(lnrho[*,*,*,iyy])'
       endelse
 ; Specific energy
     endif else if (variables[iv] eq 'ee') then begin
-      tags[iv]=variables[iv]
       if (lionization and not lionization_fixed) then begin
-        variables[iv]='pc_eoscalc('+density_var+',lnTT,/ee,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],lnTT[*,*,*,iyy],/ee,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
       endif else begin
-        variables[iv]='pc_eoscalc('+density_var+',ss,/ee,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/ee,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Temperature
     endif else if (variables[iv] eq 'tt') then begin
-      tags[iv]=variables[iv]
       if (lionization and not lionization_fixed) then begin
-        variables[iv]='exp(lnTT)'
+        variables[iv]='exp(lnTT[*,*,*,iyy])'
       endif else begin
-        variables[iv]='pc_eoscalc('+density_var+',ss,/tt,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/tt,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Logarithm of temperature
     endif else if (variables[iv] eq 'lntt') then begin
-      tags[iv]=variables[iv]
       if (lionization and not lionization_fixed) then begin
-        variables[iv]='lnTT'
+        variables[iv]='lnTT[*,*,*,iyy]'
       endif else begin
-        variables[iv]='pc_eoscalc('+density_var+',ss,/lntt,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/lntt,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Entropy ss
     endif else if (variables[iv] eq 'ss') then begin
-      tags[iv]=variables[iv]
       if (lionization and not lionization_fixed) then begin
         message,"Thermodynamic combination not implemented yet: /ss from lnrho and lnTT with lionization"
       endif else begin
-        if (lentropy ne -1) then variables[iv]='pc_eoscalc('+density_var+',lnTT,/ss,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)' else variables[iv]='ss'
+        if (lentropy ne -1) then variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],lnTT[*,*,*,iyy],/ss,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)' else variables[iv]='ss[*,*,*,iyy]'
       endelse
 ; Pressure
     endif else if (variables[iv] eq 'pp') then begin
-      tags[iv]=variables[iv]
       if (lionization and not lionization_fixed) then begin
-        variables[iv]='pc_eoscalc('+density_var+',lnTT,/pp,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],lnTT[*,*,*,iyy],/pp,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
       endif else begin
-        variables[iv]='pc_eoscalc('+density_var+',ss,/pp,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/pp,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Divergence of dust velocity
     endif else if (variables[iv] eq 'divud') then begin
-      tags[iv]=variables[iv]
-      variables[iv]='div(uud)'
+      variables[iv]='div(uud[*,*,*,*,iyy])'             ; not correct if uud has additional dimension for dust species
 ; Dust density
     endif else if (variables[iv] eq 'rhod') then begin
-      tags[iv]=variables[iv]
       variables[iv]="pc_dust_aux(nd=nd,md=md,param=param,var='rhod')"
 ; Dust distribution function dn = f dm
     endif else if (variables[iv] eq 'fd') then begin
-      tags[iv]=variables[iv]
       variables[iv]="pc_dust_aux(nd=nd,param=param,var='fd')"
 ; Dust grain radius
     endif else if (variables[iv] eq 'ad') then begin
-      tags[iv]=variables[iv]
       variables[iv]="pc_dust_aux(md=md,param=param,var='ad')"
 ; Dust-to-gas ratio (sum over all bins)
     endif else if (variables[iv] eq 'epsd') then begin
-      tags[iv]=variables[iv]
-      variables[iv]="pc_dust_aux(lnrho=lnrho,nd=nd,md=md,par=param,var='epsd')"
+      variables[iv]="pc_dust_aux(lnrho=lnrho[*,*,*,iyy],nd=nd,md=md,par=param,var='epsd')"
 ; Supersaturation level Pmon/Psat
     endif else if (variables[iv] eq 'smon') then begin
-      tags[iv]=variables[iv]
-      variables[iv]="pc_dust_aux(lnrho=lnrho,ss=ss,nd=nd,md=md," + $
+      variables[iv]="pc_dust_aux(lnrho=lnrho[*,*,*,iyy],ss=ss[*,*,*,iyy],nd=nd,md=md," + $
           "param=param,datadir=datadir,var='smon')"
 ; Dust mass unit
     endif else if (variables[iv] eq 'unit_md') then begin
-      tags[iv]=variables[iv]
       variables[iv]="pc_dust_aux(param=param,var='unit_md')"
 ; Average grain mass (mean over all bins)
     endif else if (variables[iv] eq 'mdave') then begin
-      tags[iv]=variables[iv]
       variables[iv]="pc_dust_aux(nd=nd,md=md,param=param,var='mdave')"
 ; Interstellar cooling term (as switched by the cooling_select param.)
     endif else if (variables[iv] eq 'ismcool') then begin
-      tags[iv]=variables[iv]
-      variables[iv]="pc_interstellar_cool(lnrho=lnrho,ss=ss,param=param)"
+      variables[iv]="pc_interstellar_cool(lnrho=lnrho[*,*,*,iyy],ss=ss[*,*,*,iyy],param=param)"
 ; Particle velocity
     endif else if (variables[iv] eq 'vvp') then begin
-      tags[iv]=variables[iv]
       variables[iv]="pc_particles_aux(np=np,vvpsum=vvpsum,dim=dim,var='vvp')"
 ; Absolute value of the wavefunction squared
     endif else if (variables[iv] eq 'psi2') then begin
-      tags[iv]=variables[iv]
-      variables[iv]="psi_real^2+psi_imag^2"
+      variables[iv]="psi_real[*,*,*,iyy]^2+psi_imag[*,*,*,iyy]^2"
 ; Argument of the complex wavefunction
     endif else if (variables[iv] eq 'argpsi') then begin
-      tags[iv]=variables[iv]
-      variables[iv]="atan(psi_imag,psi_real)"
+      variables[iv]="atan(psi_imag[*,*,*,iyy],psi_real[*,*,*,iyy])"
 ; Viscosity.
     endif else if (variables[iv] eq 'fvisc') then begin
-      tags[iv]=variables[iv]
       if (par2.ivisc[0] eq 'simplified') then begin
-        variables[iv]='par2.nu*del2(uu)'
+        variables[iv]='par2.nu*del2(uu[*,*,*,*,iyy])'
       endif else if (par2.ivisc[0] eq 'rho_nu-const') then begin
         if (param.ldensity_nolog) then begin
-          variables[iv]='par2.nu/spread(rho,3,3)*(del2(uu)+1/3.*graddiv(uu))'
+          variables[iv]='par2.nu/spread(rho[*,*,*,iyy],3,3)*(del2(uu[*,*,*,*,iyy])+1/3.*graddiv(uu[*,*,*,*,iyy]))'
         endif else begin
-          variables[iv]='par2.nu/spread(exp(lnrho),3,3)*(del2(uu)+1/3.*graddiv(uu))'
+          variables[iv]='par2.nu/spread(exp(lnrho[*,*,*,iyy]),3,3)*(del2(uu[*,*,*,*,iyy])+1/3.*graddiv(uu[*,*,*,*,iyy]))'
         endelse
       endif else if (par2.ivisc[0] eq 'nu-const') then begin
         if (param.ldensity_nolog) then begin
-          variables[iv]='2*par2.nu*total((uij+transpose(uij,[0,1,2,4,3]))*spread(grad(alog(rho)),4,3),5)+par2.nu*(del2(uu)+1/3.*graddiv(uu))'
+          variables[iv]='2*par2.nu*total((uij[*,*,*,*,*,iyy]+transpose(uij[*,*,*,*,*,iyy],[0,1,2,4,3]))*spread(grad(alog(rho[*,*,*,iyy])),4,3),5)+par2.nu*(del2(uu[*,*,*,*,iyy])+1/3.*graddiv(uu[*,*,*,*,iyy]))'
         endif else  begin
-          variables[iv]='2*par2.nu*total((uij+transpose(uij,[0,1,2,4,3]))*spread(grad(lnrho),4,3),5)+par2.nu*(del2(uu)+1/3.*graddiv(uu))'
+          variables[iv]='2*par2.nu*total((uij[*,*,*,*,*,iyy]+transpose(uij[*,*,*,*,*,iyy],[0,1,2,4,3]))*spread(grad(lnrho[*,*,*,iyy]),4,3),5)+par2.nu*(del2(uu[*,*,*,*,iyy])+1/3.*graddiv(uu[*,*,*,*,iyy]))'
         endelse
       endif else if (par2.ivisc[0] eq 'hyper3_simplified') then begin
-        variables[iv]='del6(uu)'
+        variables[iv]='del6(uu[*,*,*,*,iyy])'
       endif else if (par2.ivisc[0] eq 'hyper3_rho_nu-const') then begin
         if (param.ldensity_nolog) then begin
-          variables[iv]='1/spread(rho,3,3)*del6(uu)'
+          variables[iv]='1/spread(rho[*,*,*,iyy],3,3)*del6(uu[*,*,*,*,iyy])'
         endif else begin
-          variables[iv]='1/spread(exp(lnrho),3,3)*del6(uu)'
+          variables[iv]='spread(exp(-lnrho[*,*,*,iyy]),3,3)*del6(uu[*,*,*,*,iyy])'
         endelse
       endif else begin
         print, 'pc_magic_var: unknown viscosity type ivisc=', par2.ivisc[0]
@@ -538,29 +485,27 @@ pro pc_magic_var, variables, tags, $
       endelse
 ; Resistivity.
     endif else if (variables[iv] eq 'fresi') then begin
-      tags[iv]=variables[iv]
       if (par2.iresistivity[0] eq 'eta-const') then begin
-        variables[iv]='par2.eta*del2(bb)'
+        variables[iv]='par2.eta*del2(bb[*,*,*,*,iyy])'
       endif else if (par2.iresistivity[0] eq 'hyper3') then begin
-        variables[iv]='par2.eta_hyper3*del6(bb)'
+        variables[iv]='par2.eta_hyper3*del6(bb[*,*,*,*,iyy])'
       endif else begin
         print, 'pc_magic_var: unknown resistivity type ivisc=', par2.iresistivity[0]
         variables[iv]='fltarr(mx,my,mz,3)'
       endelse
 ; Mass diffusion.
     endif else if (variables[iv] eq 'fdiff') then begin
-      tags[iv]=variables[iv]
       if (par2.idiff[0] eq 'shock') then begin
         if (param.ldensity_nolog) then begin
-          variables[iv]='par2.nu_shock*shock*del2(rho)'
+          variables[iv]='par2.nu_shock*shock*del2(rho[*,*,*,iyy])'
         endif else begin
-          variables[iv]='par2.nu_shock*shock*1/exp(lnrho)*del2(exp(lnrho))'
+          variables[iv]='par2.nu_shock*shock*exp(-lnrho[*,*,*,iyy])*del2(exp(lnrho[*,*,*,iyy]))'
         endelse
       endif else begin
         print, 'pc_magic_var: unknown diffusion type ivisc=', par2.iresistivity[0]
         variables[iv]='fltarr(mx,my,mz)'
       endelse
-    endif 
+    endif
   endfor
 ;
 end

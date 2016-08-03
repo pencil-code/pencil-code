@@ -368,9 +368,8 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
 ; Sanity check for variables and tags.
 ;
-  if (n_elements(variables) ne n_elements(tags)) then begin
+  if (n_elements(variables) ne n_elements(tags)) then $
     message, 'ERROR: variables and tags arrays differ in size'
-  endif
 ;
 ; Add global parameters (like external magnetic field) to snapshot.
 ;
@@ -407,10 +406,6 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
 ; Initialise read buffers.
 ;
-    if (varcontent[iv].variable eq 'UNKNOWN') then $
-        message, 'Unknown variable at position ' + str(iv)  $
-        + ' needs declaring in varcontent.pro', /info
-
     strg=varcontent[iv].idlinit
     if yinyang then begin
       pos=strpos(strg,',type')
@@ -705,10 +700,14 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ; execution time.
 ;
   if (validate_variables) then begin
+    iyy=0
     skipvariable=make_array(n_elements(variables),/INT,value=0)
     for iv=0,n_elements(variables)-1 do begin
-      if (tags[iv] eq variables[iv]) then continue
-      res=execute(tags[iv]+'='+variables[iv])
+      if ( tags[iv] eq variables[iv] ) then begin
+        if total(variables[iv] eq varcontent.idlvar) gt 0  then continue
+        res=0
+      endif else $
+        res=execute(tags[iv]+'='+variables[iv])
       if (not res) then begin
         if (not keyword_set(quiet)) then $
             print,"% Skipping: "+tags[iv]+" -> "+variables[iv]
@@ -747,15 +746,29 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
 ;  Merge data. Variables have names "*_merge"
 ;
-    for i=0,n_elements(tags)-1 do begin
+    for iyy=0,1 do $
+      for i=0,n_elements(tags)-1 do begin
 ;
 ; Calculate derived variables before merging.
 ;
-      if (total(variables[i] eq varcontent.idlvar) eq 0) then begin
-        idum=execute( tags[i]+'='+variables[i] )
-        variables[i] = tags[i]
-      endif
+        if (total(variables[i] eq varcontent.idlvar) eq 0) then begin
+          if iyy eq 0 then $
+            idum=execute( tags[i]+'='+variables[i] ) $
+          else begin
+            idum=execute( 'sz=size('+tags[i]+')')
+            idum=execute( tags[i]+'_tmp = make_array([sz[1:sz[0]],2], /float, /nozero)')
+            idum=execute( tags[i]+'_tmp['+strjoin(replicate('*,',sz[0]),/single)+'0] ='+tags[i] )
+            idum=execute( tags[i]+'_tmp['+strjoin(replicate('*,',sz[0]),/single)+'1] ='+variables[i] )
+            idum=execute( tags[i]+'='+tags[i]+'_tmp' )
+            idum=execute('undefine,'+tags[i]+'_tmp' )
+          endelse
+        endif
+      endfor
 ;
+    for i=0,n_elements(tags)-1 do begin
+
+      if (total(variables[i] eq varcontent.idlvar) eq 0) then variables[i] = tags[i]
+
       idum=execute( 'isvec = not pc_is_scalarfield('+tags[i]+',dim=dim,yinyang=yinyang)')
       if isvec then begin
 ;
