@@ -58,7 +58,6 @@ module Special
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
-  use Particles_cdata
 !
   implicit none
 !
@@ -191,7 +190,10 @@ module Special
 !***********************************************************************
     subroutine calc_pencils_special(f,p)
 !
-!  Add tides and Coriolis force to gas.
+!  Calculate the pressure gradient. For the polytropic, P=S*rho**mu, 
+!  so fpres = - 1./rho * grad(P) = - S*mu * rho**(mu-2) * grad(rho) 
+!  
+!  For the photoelectric pressure, P=cs20/(gamma*/rho0) * rho*rhod
 !
       use Sub, only: grad
 !
@@ -236,63 +238,6 @@ module Special
 !
     endsubroutine special_calc_hydro
 !***********************************************************************
-    subroutine special_calc_particles(f,df,fp,dfp,ineargrid)
-!
-!  Called before the loop, in case some particle value is needed
-!  for the special density/hydro/magnetic/entropy.
-!
-!  20-nov-08/wlad: coded
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (npar_loc,mparray) :: fp
-      real, dimension (npar_loc,mpvar) :: dfp
-      integer, dimension(:,:) :: ineargrid
-      integer :: k
-      real, dimension(2) :: pgravity,pcoriolis
-      real :: rr_cyl,rr2_cyl,rr3_cyl,mu,mu13,mu23,ym
-!
-      do k=1,mpar_loc
-!
-         rr_cyl=fp(k,ixp)
-         rr2_cyl=rr_cyl**2
-         rr3_cyl=rr_cyl**3
-!
-         mu=1./mstar
-         mu13=mu**(1./3)
-         mu23=mu**(2./3)
-!
-         ym=fp(k,iyp)
-
-         pgravity(1) = -1/rr2_cyl
-         pgravity(2) = 0.
-
-         if (lgravity_second_order) then
-            pgravity(1) = pgravity(1) + 1.5*rr_cyl*(1+cos(2*ym))
-            pgravity(2) = pgravity(2) - 1.5*rr_cyl*   sin(2*ym)
-         endif
-!
-         if (lgravity_third_order) then
-            pgravity(1) = pgravity(1) - 3./8 * mu13 * rr2_cyl * (3*cos(ym) -5*cos(3*ym))
-            pgravity(2) = pgravity(2) + 3./8 * mu13 * rr2_cyl * (3*sin(ym) -5*sin(3*ym))
-         endif
-!
-         if (lgravity_fourth_order) then
-            pgravity(1) = pgravity(1) + 1./16 * mu23 * rr3_cyl * (9 + 20*cos(2*ym) + 35*cos(4*ym))
-            pgravity(2) = pgravity(2) - 1./16 * mu23 * rr3_cyl * (    10*sin(2*ym) + 35*sin(4*ym))
-         endif
-         
-         pcoriolis(1) = -2*Omegap*fp(k,ivpy)
-         pcoriolis(2) =  2*Omegap*fp(k,ivpx)
-         
-         dfp(k,ivpx:ivpz) = dfp(k,ivpx:ivpz) + pgravity - pcoriolis
-      enddo
-      call keep_compiler_quiet(f,df)
-      !call keep_compiler_quiet(fp,dfp)
-      call keep_compiler_quiet(ineargrid)
-!
-    endsubroutine special_calc_particles
-!***********************************************************************    
 !***********************************************************************
 !********************************************************************
 !

@@ -263,7 +263,7 @@ module Snapshot
           if (msnap==mfarray) call update_auxiliaries(a)
           call safe_character_assign(file,trim(chsnap)//ch)
           call output_snap(a,msnap,file=file)
-          if (lpersist) call output_persistent(file)
+          call output_persistent(file)
           call output_snap_finalize()
           if (ip<=10.and.lroot) print*,'wsnap: written snapshot ',file
           if (present(flist)) call log_filename_to_file(file,flist)
@@ -282,7 +282,7 @@ module Snapshot
         if (.not. loptest(noghost)) call update_ghosts(a)
         call safe_character_assign(file,trim(chsnap))
         call output_snap(a,msnap,file=file)
-        if (lpersist) call output_persistent(file)
+        call output_persistent(file)
         call output_snap_finalize()
         if (present(flist)) call log_filename_to_file(file,flist)
       endif
@@ -338,7 +338,7 @@ module Snapshot
       if (lread_oldsnap_nomag) then
         print*,'read old snapshot file (but without magnetic field)'
         call input_snap('var.dat',f,msnap-3,mode)
-        if (lpersist) call input_persistent()
+        call input_persistent()
         call input_snap_finalize()
         ! shift the rest of the data
         if (iaz<mvar) then
@@ -353,7 +353,7 @@ module Snapshot
       elseif (lread_oldsnap_nopscalar) then
         print*,'read old snapshot file (but without passive scalar)'
         call input_snap(chsnap,f,msnap-1,mode)
-        if (lpersist) call input_persistent()
+        call input_persistent()
         call input_snap_finalize()
         ! shift the rest of the data
 !
@@ -374,7 +374,7 @@ module Snapshot
       elseif (lread_oldsnap_notestfield) then
         print*,'read old snapshot file (but without testfield),iaatest,iaztestpq,mvar,msnap=',iaatest,iaztestpq,mvar,msnap
         call input_snap(chsnap,f,msnap-ntestfield,mode)
-        if (lpersist) call input_persistent()
+        call input_persistent()
         call input_snap_finalize()
         ! shift the rest of the data
         if (iaztestpq<msnap) then
@@ -389,7 +389,7 @@ module Snapshot
       elseif (lread_oldsnap_notestscalar) then
         print*,'read old snapshot file (but without testscalar),icctest,mvar,msnap=',icctest,mvar,msnap
         call input_snap(chsnap,f,msnap-ntestscalar,mode)
-        if (lpersist) call input_persistent()
+        call input_persistent()
         call input_snap_finalize()
         ! shift the rest of the data
         if (iaztestpq<msnap) then
@@ -403,7 +403,7 @@ module Snapshot
 !
       else
         call input_snap(chsnap,f,msnap,mode)
-        if (lpersist) call input_persistent(chsnap)
+        call input_persistent(chsnap)
         call input_snap_finalize()
       endif
 !

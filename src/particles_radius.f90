@@ -7,7 +7,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MPVAR CONTRIBUTION 2
+! MPVAR CONTRIBUTION 1
 ! MPAUX CONTRIBUTION 1
 ! CPARAM logical, parameter :: lparticles_radius=.true.
 !
@@ -405,8 +405,7 @@ module Particles_radius
 !
       if (lparticles_mass) fp(:,iapinit)=fp(:,iap)
 !
-      if (lparticles_radius_rpbeta) &
-        fp(npar_low:npar_high,irpbeta) = rpbeta0/(fp(npar_low:npar_high,iap)*rhopmat)
+      if (lparticles_radius_rpbeta) fp(npar_low:npar_high,irpbeta) = rpbeta0/fp(npar_low:npar_high,iap)
 !
       call keep_compiler_quiet(f)
 !

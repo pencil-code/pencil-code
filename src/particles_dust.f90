@@ -1909,7 +1909,6 @@ module Particles
       use Particles_diagnos_state, only: insert_particles_diagnos_state
       use SharedVariables, only: get_shared_variable
       use Mpicomm, only: mpireduce_sum_int
-      use Particles_number, only: set_particle_number
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray), intent (inout) :: fp
@@ -2129,8 +2128,7 @@ module Particles
 !
 !  Initialize particle radius
 !
-          if (lparticles_radius) call set_particle_radius(f,fp,npar_loc_old+1,npar_loc)
-          if (lparticles_number) call set_particle_number(f,fp,npar_loc_old+1,npar_loc)
+          call set_particle_radius(f,fp,npar_loc_old+1,npar_loc)
 !
 !  Particles are not allowed to be present in non-existing dimensions.
 !  This would give huge problems with interpolation later.

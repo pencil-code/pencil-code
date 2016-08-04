@@ -231,7 +231,7 @@ module Equ
 !
 !  Fetch fp to the special module.
 !
-      if (lparticles.and.lspecial) call particles_special_bfre_bdary(f)
+      if (lparticles.and.lspecial) call particles_special(f)
 !
 !  Initiate shock profile calculation and use asynchronous to handle
 !  communication along processor/periodic boundaries.

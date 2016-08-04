@@ -28,9 +28,7 @@ module Particles_number
   real :: np_swarm0=1.0, rhop_swarm0=1.0
   real :: vthresh_coagulation=0.0, deltavp22_floor=0.0
   real :: tstart_fragmentation_par=0.0, cdtpf=0.2
-  real :: birthring_inner=0.0, birthring_outer=huge1
-  real :: depletion_rate=0.0
-  logical :: lfragmentation_par=.false.,lbirthring_depletion=.false.
+  logical :: lfragmentation_par=.false.
   character (len=labellen), dimension(ninit) :: initnpswarm='nothing'
   character (len=intlen) :: sdust
 !
@@ -45,9 +43,7 @@ module Particles_number
 !
   namelist /particles_number_run_pars/ &
       initnpswarm, vthresh_coagulation, deltavp22_floor, &
-      lfragmentation_par, tstart_fragmentation_par, cdtpf, &
-      lbirthring_depletion, birthring_inner, birthring_outer, &
-      depletion_rate
+      lfragmentation_par, tstart_fragmentation_par, cdtpf
 !
   contains
 !***********************************************************************
@@ -92,12 +88,9 @@ module Particles_number
         lshepherd_neighbour=.true.
       endif
 !
-      if (lfragmentation_par .and..not.(lcartesian_coords.and.(all(lequidist)))) &
-           call fatal_error( 'initialize_particles_number', &
-           'fragmentation only '//'implemented for Cartesian equidistant grids.')
-      if (lbirthring_depletion .and..not.(lcylindrical_coords.or.lspherical_coords)) &
-           call fatal_error( 'initialize_particles_number', &
-           'birthring depletion only '//'implemented for cyl, sph polar grids.')
+      if (.not.(lcartesian_coords.and.(all(lequidist)))) call fatal_error( &
+           'initialize_particles_number', 'particles_number only '// &
+           'implemented for Cartesian equidistant grids.')
 !
       call keep_compiler_quiet(f)
 !
@@ -112,54 +105,45 @@ module Particles_number
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
 !
-      call set_particle_number(f,fp,1,npar_loc,init=.true.)
-!
-      call keep_compiler_quiet(f)
-!
-    endsubroutine init_particles_number
-!***********************************************************************
-    subroutine set_particle_number(f,fp,npar_low,npar_high,init)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
-      integer :: j, npar_low, npar_high
-      logical, optional :: init
-      logical :: initial=.false.
-!
-      if (present(init)) then
-        if (init) initial=.true.
-      endif
+      integer :: j
 !
       do j=1,ninit
+!
         select case (initnpswarm(j))
+!
         case ('nothing')
-          if (lroot.and.j==1.and.initial) print*, 'init_particles_number: nothing'
+          if (lroot.and.j==1) print*, 'init_particles_number: nothing'
+!
         case ('constant')
-          if (lroot.and.initial) then
+          if (lroot) then
             print*, 'init_particles_number: constant internal number'
             print*, 'init_particles_number: np_swarm0=', np_swarm0
           endif
-          fp(npar_low:npar_high,inpswarm)=np_swarm0
+          fp(1:npar_loc,inpswarm)=np_swarm0
+!
         case ('constant_rhop_swarm')
-          if (lroot.and.initial) then
+          if (lroot) then
             print*, 'init_particles_number: constant mass density per particle'
             print*, 'init_particles_number: rhop_swarm0=', rhop_swarm0
           endif
-          fp(npar_low:npar_high,inpswarm)=rhop_swarm0/ &
-              (four_pi_rhopmat_over_three*fp(npar_low:npar_high,iap)**3)
+          fp(1:npar_loc,inpswarm)=rhop_swarm0/ &
+              (four_pi_rhopmat_over_three*fp(1:npar_loc,iap)**3)
+!
         case ('constant_rhop')
-          if (lroot.and.initial) then
+          if (lroot) then
             print*, 'init_particles_number: constant mass density'
             print*, 'init_particles_number: rhop_swarm0=', rhop_swarm0
           endif
-          fp(npar_low:npar_high,inpswarm)=rhop_swarm0/(float(npar)/nwgrid)/ &
-              (four_pi_rhopmat_over_three*fp(npar_low:npar_high,iap)**3)
+          fp(1:npar_loc,inpswarm)=rhop_swarm0/(float(npar)/nwgrid)/ &
+              (four_pi_rhopmat_over_three*fp(1:npar_loc,iap)**3)
+!
         endselect
+!
       enddo
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine set_particle_number
+    endsubroutine init_particles_number
 !***********************************************************************
     subroutine pencil_criteria_par_number()
 !
@@ -342,14 +326,6 @@ module Particles_number
 !
         endif ! npar_imn/=0
       endif ! lfragmentation_par
-!
-      if (lbirthring_depletion) then
-      ! deplete particles within a certain radial range
-      ! (as in collisional grain destruction in debris disks)
-        where ((fp(1:npar_loc,ixp)>birthring_inner) .and. &
-          (fp(1:npar_loc,ixp)<birthring_outer)) &
-          dfp(1:npar_loc,inpswarm) = -depletion_rate
-      endif
 !
       lfirstcall=.false.
 !

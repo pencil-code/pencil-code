@@ -183,7 +183,7 @@ module Cdata
   logical :: lread_oldsnap_notestscalar=.false.
   logical :: lnamelist_error=.false., ltolerate_namelist_errors=.false., lparam_nml=.false.
   logical :: lwrite_dim_again=.false.
-  logical :: lseparate_persist=.false., ldistribute_persist=.false., lpersist=.true.
+  logical :: lseparate_persist=.false., ldistribute_persist=.false.
   logical :: save_lastsnap=.true.
   logical :: noghost_for_isave=.false.
   logical :: ltec=.false.

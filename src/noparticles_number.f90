@@ -57,21 +57,6 @@ module Particles_number
 !
     endsubroutine init_particles_number
 !***********************************************************************
-    subroutine set_particle_number(f,fp,npar_low,npar_high,init)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
-      integer :: npar_low, npar_high
-      logical, optional :: init
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(fp)
-      call keep_compiler_quiet(npar_low)
-      call keep_compiler_quiet(npar_high)
-      call keep_compiler_quiet(present(init))
-!
-    endsubroutine set_particle_number
-!init_particles_number***********************************************************************
     subroutine pencil_criteria_par_number()
 !
 !  All pencils that the Particles_number module depends on are specified here.
