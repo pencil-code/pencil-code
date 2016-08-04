@@ -13,8 +13,6 @@ Recommended resolution:
     at least 64x64x128
 Comments:
     This model tests supernova energy injection and the cooling function
-    This setup mirrors the model used in 3. and 4. below.
-    Recommended up to date use templates at samples/supernova-driven-turbulence/...
 References:
     1. Brandenburg, A., Korpi, M. J., & Mee, A. J.: 2007, ``Thermal
        instability in shearing and periodic turbulence,''

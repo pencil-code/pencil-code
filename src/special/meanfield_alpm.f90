@@ -44,12 +44,11 @@ module Special
 !
   ! run parameters
   real :: kf_alpm=1., alpmdiff=0., deltat_alpm=1.
-  real, dimension (3) :: alpmdiff_aniso=0.
-  logical :: ladvect_alpm=.false., lupw_alpm=.false.
-  logical :: lflux_from_Omega=.false., lvariable_params=.false.
+  logical :: ladvect_alpm=.false., lupw_alpm=.false., &
+      lflux_from_Omega=.false., lvariable_params=.false.
 !
   namelist /special_run_pars/ &
-       kf_alpm, ladvect_alpm, alpmdiff, alpmdiff_aniso, &
+       kf_alpm, ladvect_alpm, alpmdiff, &
        VC_Omega_profile, VC_Omega_ampl, lupw_alpm, deltat_alpm, &
        lflux_from_Omega, lvariable_params
 !
@@ -247,14 +246,12 @@ module Special
       use Sub
       use Diagnostics
       use SharedVariables, only : get_shared_variable
-      use Deriv, only: der,der2
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: galpm
       real, dimension (nx) :: alpm,ugalpm,divflux,del2alpm,alpm_divu
       real, dimension (nx) :: kf_tmp,meanfield_etat_tmp
-      real, dimension (nx) :: del2alpmx,del2alpmy,del2alpmz,tmp
       double precision :: dtalpm_double
       type (pencil_case) :: p
       integer :: modulot
@@ -290,58 +287,16 @@ module Special
           call divflux_from_Omega_effect(p,divflux)
           df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)&
               -meanfield_etat*divflux
-        endif
-        if (ladvect_alpm) then
-          if (headtt) then
-            print*,'meanfield_alpm: use ladvect_alpm'
+          if (ladvect_alpm) then
+            call grad(f,ialpm,galpm)
+            call dot_mn(p%uu,galpm,ugalpm)
+            alpm_divu=alpm*p%divu
+            df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)-ugalpm-alpm_divu
           endif
-          call grad(f,ialpm,galpm)
-          call dot_mn(p%uu,galpm,ugalpm)
-          alpm_divu=alpm*p%divu
-          df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)-ugalpm-alpm_divu
         endif
         if (alpmdiff/=0) then
           call del2(f,ialpm,del2alpm)
           df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)+alpmdiff*del2alpm
-        endif
-        if (alpmdiff_aniso(1)/=0) then
-          if (headtt) then
-            print*,'meanfield_alpm: use alpm_diff_aniso in x direction'
-            print*,'with alpm_diff=',alpmdiff_aniso(1)
-          endif
-          call der2(f,ialpm,del2alpmx,1)
-          if (lcylindrical_coords) then
-            call der(f,ialpm,tmp,1)
-            del2alpmx=del2alpmx+tmp*rcyl_mn1
-          endif
-          if (lspherical_coords) then
-            call der(f,ialpm,tmp,1)
-            del2alpmx=del2alpmx+2.*r1_mn*tmp
-          endif
-          df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)+ &
-          alpmdiff_aniso(1)*del2alpmx
-        endif
-        if (alpmdiff_aniso(2)/=0) then
-           if (headtt) then
-            print*,'meanfield_alpm: use alpm_diff_aniso in y direction'
-            print*,'with alpm_diff=',alpmdiff_aniso(2)
-          endif
-          call der2(f,ialpm,del2alpmy,2)
-          if (lspherical_coords) then
-            call der(f,ialpm,tmp,2)
-            del2alpmy=del2alpmy+cotth(m)*r1_mn*tmp
-          endif
-          df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)+ &
-          alpmdiff_aniso(2)*del2alpmy
-        endif
-        if (alpmdiff_aniso(3)/=0) then
-          if (headtt) then
-            print*,'meanfield_alpm: use alpm_diff_aniso in z direction'
-            print*,'with alpm_diff=',alpmdiff_aniso(2)
-          endif
-          call der2(f,ialpm,del2alpmz,3)
-          df(l1:l2,m,n,ialpm)=df(l1:l2,m,n,ialpm)+ &
-          alpmdiff_aniso(3)*del2alpmz
         endif
       endif
 !

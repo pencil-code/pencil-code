@@ -50,7 +50,6 @@ module Magnetic
   character(len=8) :: eta_zdep_prof = ''
   logical :: lbext = .false.
   logical :: limplicit_resistivity = .false.
-  logical :: lcovariant_magnetic= .false.
   logical :: lresis_const = .false.
   logical :: lresis_zdep = .false.
   logical :: lresis_shock = .false.

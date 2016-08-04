@@ -31,19 +31,16 @@ module Particles_mass
 !
   logical :: lpart_mass_backreac=.true.
   logical :: lpart_mass_momentum_backreac=.true.
-  logical :: lconstant_mass_w_chem=.false.
   real :: mass_const=0.0, dmpdt=1e-3
-  real :: dmpdt_save = 0.0
   real, dimension(:,:,:), allocatable :: weight_array
   character(len=labellen), dimension(ninit) :: init_particle_mass='nothing'
 !
   namelist /particles_mass_init_pars/ init_particle_mass, mass_const
 !
   namelist /particles_mass_run_pars/ lpart_mass_backreac, dmpdt,&
-      lpart_mass_momentum_backreac, lconstant_mass_w_chem
+      lpart_mass_momentum_backreac
 !
   integer :: idiag_mpm=0
-  integer :: idiag_dmpm=0
   integer :: idiag_convm=0
   integer :: idiag_chrhopm=0
   integer :: idiag_rhosurf=0
@@ -193,29 +190,10 @@ module Particles_mass
       real, dimension(mpar_loc,mparray) :: fp
       real, dimension(mpar_loc,mpvar) :: dfp
       integer, dimension(mpar_loc,3) :: ineargrid
-      real, dimension(:), allocatable :: dmp_array
 !
       ! Diagnostic output
       if (ldiagnos) then
         if (idiag_mpm /= 0)   call sum_par_name(fp(1:npar_loc,imp),idiag_mpm)
-!
-!  If the particle has constant mass but we want to print out the mass loss,
-!  we need to gite sum_par_name an array filled with values that we collect in a different
-!  place than the dfp array.
-!
-        if (idiag_dmpm /= 0)   then 
-          if (.not. lconstant_mass_w_chem) then
-            call sum_par_name(dfp(1:npar_loc,imp),idiag_dmpm)
-          else
-            allocate(dmp_array(1:npar_loc))
-            dmp_array = 0.0
-            dmp_array(1) = dmpdt_save
-            call sum_par_name(dmp_array(1:npar_loc),idiag_dmpm)
-            deallocate(dmp_array)
-            dmpdt_save=0.0
-          endif
-        endif
-!
         if (idiag_convm /= 0) call sum_par_name(1.-fp(1:npar_loc,imp) &
             /fp(1:npar_loc,impinit),idiag_convm)
         if (idiag_rhosurf /= 0)   call sum_par_name(fp(1:npar_loc,irhosurf),idiag_rhosurf)
@@ -280,24 +258,11 @@ module Particles_mass
 ! Loop over all particles in current pencil.
 !
 ! Check if particles chemistry is turned on
-! If the reacting particle has constant mass but the mass loss has to be calculated,
-! The mean mass loss of all particles is collected in dmpdt_save and given to
-! Sum_par_name
-!
         if (lparticles_chemistry) then
-          if (.not. lconstant_mass_w_chem) then
-            dfp(k1:k2,imp) = dfp(k1:k2,imp)-mass_loss(k1:k2)
-          else
-            dfp(k1:k2,imp) = 0.0
-            if (ldiagnos) dmpdt_save = dmpdt_save + sum(-mass_loss(k1:k2))
-          endif
+ !         print*, 'mass_loss', mass_loss
+          dfp(k1:k2,imp) = dfp(k1:k2,imp)-mass_loss(k1:k2)
         else
-          if (.not. lconstant_mass_w_chem) then
-            dfp(k1:k2,imp) = dfp(k1:k2,imp)-dmpdt
-          else
-            dfp(k1:k2,imp) = 0.0
-            if (ldiagnos) dmpdt_save = dmpdt_save - dmpdt
-          endif
+          dfp(k1:k2,imp) = dfp(k1:k2,imp)-dmpdt
         endif
 !
 !  Evolve the density at the outer particle shell. This is used to
@@ -305,17 +270,13 @@ module Particles_mass
 !  decrease before the outer shell is entirly consumed).
 !
         if (lparticles_chemistry) then
-          if (.not. lsurface_nopores) then
-            Vp(k1:k2) = 4.*pi*fp(k1:k2,iap)*fp(k1:k2,iap)*fp(k1:k2,iap)/3.
+          Vp(k1:k2) = 4.*pi*fp(k1:k2,iap)*fp(k1:k2,iap)*fp(k1:k2,iap)/3.
 !
-            do k = k1,k2
-              if (fp(k,irhosurf)>=0.0) then
-                dfp(k,irhosurf) = dfp(k,irhosurf)-sum(Rck_max(k,:))*St(k)/Vp(k)
-              endif
-            enddo
-          else
-!
-          endif
+          do k = k1,k2
+            if (fp(k,irhosurf)>=0.0) then
+              dfp(k,irhosurf) = dfp(k,irhosurf)-sum(Rck_max(k,:))*St(k)/Vp(k)
+            endif
+          enddo
 !
 ! Calculate feed back from the particles to the gas phase
           if (lpart_mass_backreac) then
@@ -445,7 +406,6 @@ module Particles_mass
       ! Reset everything in case of reset.
       if (lreset) then
         idiag_mpm = 0
-        idiag_dmpm = 0
         idiag_convm = 0
         idiag_chrhopm = 0
         idiag_rhosurf = 0
@@ -454,7 +414,6 @@ module Particles_mass
       if (lroot .and. ip < 14) print*,'rprint_particles_mass: run through parse list'
       do iname = 1,nname
         call parse_name(iname,cname(iname),cform(iname),'mpm',idiag_mpm)
-        call parse_name(iname,cname(iname),cform(iname),'dmpm',idiag_dmpm)
         call parse_name(iname,cname(iname),cform(iname),'convm',idiag_convm)
         call parse_name(iname,cname(iname),cform(iname),'chrhopm',idiag_chrhopm)
         call parse_name(iname,cname(iname),cform(iname),'rhosurf',idiag_rhosurf)

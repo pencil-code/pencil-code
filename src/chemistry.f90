@@ -1033,6 +1033,8 @@ module Chemistry
 !  Full diffusion coefficient case
 !
           else
+
+print*,'nmnmnmnm'
             do k = 1,nchemspec
               p%Diff_penc_add(:,k) = Diff_full_add(l1:l2,m,n,k)
             enddo
@@ -3038,7 +3040,7 @@ module Chemistry
             call max_mn_name(f(l1:l2,m,n,ichemspec(ii)),idiag_Ymax(ii))
           endif
           if (idiag_diffm(ii)/= 0) then
-            call sum_mn_name(Diff_full_add(l1:l2,m,n,ii),idiag_diffm(ii))
+            call sum_mn_name(diff_full(l1:l2,m,n,ii),idiag_diffm(ii))
           endif
         enddo
 !

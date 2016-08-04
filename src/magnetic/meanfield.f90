@@ -876,9 +876,6 @@ module Magnetic_meanfield
         case ('ystep-xcutoff')
            alpha_tmp=-tanh((y(m)-pi/2)/alpha_gap_step)&
              *(1+stepdown(x(l1:l2),alpha_rmax,alpha_width))
-        case ('cosy*sin**n-xcutoff')
-           alpha_tmp=(cos(y(m))*sin(y(m))**alpha_exp)&
-             *(1+stepdown(x(l1:l2),alpha_rmax,alpha_width))
         case ('step-drop'); alpha_tmp=(1. &
                 -step(y(m),pi/2.-alpha_equator_gap,alpha_gap_step) &
                 -step(y(m),pi/2.+alpha_equator_gap,alpha_gap_step) &

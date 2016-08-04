@@ -3,48 +3,56 @@
 ! Initialisation parameters for interstellar
 !
 &init_pars
-  cvsid='$Id$'
-  unit_length=3.08567758e21, unit_velocity=9.778122994895071e4
-  unit_density=1e-24, unit_temperature=36.63718115692301
-  xyz0=-0.048,-0.048,-0.048
-  xyz1=+0.048,+0.048,+0.048
+  cvsid='$Id: start.in 9840 2008-09-05 07:29:37Z ajohan $'
+  unit_length=3.1557e21, unit_velocity=1e5, unit_density=1e-24
+  unit_temperature=1.0e4
+  xyz0=-0.230,-0.230,-0.230
+  xyz1=+0.230,+0.230,+0.230
   lperi=T,T,T
   lwrite_aux=T
 /
 &eos_init_pars
-  mu=0.531
+!  mu=0.62
 /
 &hydro_init_pars
+!  Omega=25.
 /
 &density_init_pars
-  initlnrho='const_rho', rho_const=1.6726
-  ldensity_nolog=T
+!  initlnrho='Ferriere'
+   initlnrho='const_lnrho', lnrho_const=0.514379302
+!  proton mass = 1.6726e-24 g 
 /
+!&grav_init_pars
+!  gravz_profile='Ferriere' 
+!/
 &entropy_init_pars
-  initss='isothermal'
-  T0=272.946762939 !10^4K
+  initss='isothermal', T0=0.8
+!  initss='Ferriere'
 /
 &interstellar_init_pars
   initinterstellar='single'
   center_SN_x=0.0
   center_SN_y=0.0
   center_SN_z=0.0
-  lSN_scale_rad=T
-  width_SN = 0.035
-  N_mass=50.0
-  energy_width_ratio=1.0
-  thermal_profile='gaussian3'
-  lSN_mass=T
-  mass_width_ratio=1.0
-  mass_profile='gaussian3'
-  lSN_velocity=T
-  velocity_width_ratio=1.0
+  width_SN=0.0375 
   velocity_profile='gaussian3'
-  TT_SN_max=1e9
-  frac_kin=0.3
-  frac_eth=0.7
-  frac_ecr=0.0
-  lSN_ecr=F
+!  uu_sedov_max=1e5
+!  frac_eth=1.0
+!  frac_ecr=0.0
+!  lSN_ecr=F
+  lSN_velocity=T
+  lSN_mass=T
+!  ampl_SN=3.182119037 !wihout kinetic energy
+  ampl_SN=1.591046508 !with 50% kinetic energy
+  mass_SN=6.303127e-8
+! 1.98892e33x4 /unit_mass =dens*L cubed
+  mass_movement='off'
+!  cooling_select='off'
+!  heating_select='off'
+  SNR_damping=.5
   cooling_select='WSW'
   heating_select='wolfire'
+!/
+!&shear_init_pars
+!  qshear=1.0
 / 

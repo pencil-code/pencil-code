@@ -4,14 +4,13 @@
 !
 &run_pars
   cvsid='$Id$',
-!  nt=20000, it1=10, isave=1000, it1d=2500, itorder=3, tmax=0.004
-  nt=10, it1=1, isave=1000, it1d=2500, itorder=3, tmax=0.004
-  cdt=0.7, cdtv=0.7, dtmin=1e-20, cdts=0.002
-  dsnap=.000025!, dvid=.00000025, slice_position='m' 
-  !dsnap=.0000025
-  ip=30
+  nt=50, it1=5, isave=50, itorder=3
+  cdt=0.4, cdtv=0.3, dtmin=1e-9, slice_position='m'
+!  dsnap=7.5e-6,  tmax=7.5e-5
+  dvid=1.0e-3
+  dsnap=2.50e-5, tmax=7.75e-3
+  ip=20
   lpencil_check=T
-  lmaximal_cdt=T, lmaximal_cdtv=T
   lbidiagonal_derij=F  !(use the slightly more accurate formulation for derij)
 /
 &eos_run_pars
@@ -19,22 +18,26 @@
 &hydro_run_pars
 /
 &density_run_pars
-  diffrho=4e-3
-  diffrho_shock=1.2
-  lmassdiff_fixmom=T
-  idiff='normal','shock'
+  !diffrho=1e-1, idiff='normal'
+!  lupw_lnrho=T
 /
+!&grav_run_pars
+!/
 &entropy_run_pars
-  iheatcond='chi-cspeed','shock'
-  chi_cs=4e-4,chi_shock=10.0
+  iheatcond='chi-const'
+  chi=1E-1
+  lupw_ss=T
 /
 &interstellar_run_pars
-  lSNII=F, l_persist_overwrite_lSNII=T
-  lSNI=F, l_persist_overwrite_lSNI=T 
+  TT_SN_min=0
+  frac_eth=1.
+  frac_ecr=0.
+/
+&shear_run_pars
 /
 &viscosity_run_pars
-  ivisc='nu-cspeed','nu-shock'
-  nu=4e-4,nu_shock=10.0
+  ivisc='nu-const','nu-shock'
+  nu=0.015,nu_shock=1.0
 /
 &shock_run_pars
   lshock_first=T
