@@ -3901,7 +3901,7 @@ module Magnetic
           endif
         endif
 !
-!mcnallcp: If hall_term is on, the the fastest alfven-type mode is the Whistler wave at the grid scale.
+!mcnallcp: If hall_term is on, the fastest alfven-type mode is the Whistler wave at the grid scale.
 ! Since the Alfven waves split into the fast whistler mode, the old advec_va2 is not right anymore.
 !  This is the generalization for Hall-MHD.
 !

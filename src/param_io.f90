@@ -88,7 +88,7 @@ module Param_IO
       lread_aux, lwrite_aux, pretend_lnTT, lprocz_slowest, &
       lcopysnapshots_exp, bcx, bcy, bcz, r_int, r_ext, r_ref, rsmooth, &
       r_int_border, r_ext_border, mu0, force_lower_bound, force_upper_bound, &
-      tstart, lseparate_persist, ldistribute_persist, &
+      tstart, lseparate_persist, ldistribute_persist, lpersist, &
       fbcx1, fbcx2, fbcx1_2, fbcx2_2, &
       fbcy1, fbcy2, fbcy1_1, fbcy1_2, fbcy2_1, fbcy2_2, &
       fbcz1, fbcz2, fbcz1_1, fbcz1_2, fbcz2_1, fbcz2_2, &
@@ -132,7 +132,7 @@ module Param_IO
       r_ext_border, lfreeze_varsquare, lfreeze_varint, lfreeze_varext, &
       xfreeze_square, yfreeze_square, rfreeze_int, rfreeze_ext, wfreeze, &
       wfreeze_int, wfreeze_ext, wborder, wborder_int, wborder_ext, tborder, &
-      luse_oldgrid, luse_xyz1, fshift_int, fshift_ext, &
+      luse_oldgrid, luse_xyz1, fshift_int, fshift_ext, lpersist, &
       lreset_tstart, tstart, lseparate_persist, ldistribute_persist, &
       fbcx1, fbcx2, fbcx1_2, fbcx2_2, &
       fbcy1, fbcy2, fbcy1_1, fbcy1_2, fbcy2_1, fbcy2_2, &

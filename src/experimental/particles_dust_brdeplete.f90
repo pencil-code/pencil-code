@@ -7,7 +7,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MPVAR CONTRIBUTION 6
+! MPVAR CONTRIBUTION 7
 ! MAUX CONTRIBUTION 3
 ! CPARAM logical, parameter :: lparticles=.true.
 !
@@ -17,6 +17,9 @@
 ! PENCILS PROVIDED tausupersat
 !
 !***************************************************************
+! alexrichert: brdeplete version kills particles after they spend a certain
+!  amount of time within a certain radial zone (birth ring). debris disk stuff.
+!
 module Particles
 !
   use Cdata
@@ -82,9 +85,9 @@ module Particles
   real :: frac_init_particles=1.0, particles_insert_ramp_time=0.0
   real :: tstart_insert_particles=0.0
   real :: birthring_r=1.0, birthring_width=0.1
-  real :: tstart_rpbeta=0.0
+  real :: tstart_rpbeta=0.0, birthring_lifetime=huge1
   integer :: l_hole=0, m_hole=0, n_hole=0
-  integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0
+  integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0, ibrtime=0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
   logical :: ldragforce_stiff=.false., ldragforce_radialonly=.false.
   logical :: ldragforce_heat=.false., lcollisional_heat=.false.
@@ -123,6 +126,7 @@ module Particles
   logical :: lvector_gravity=.false.
   logical :: lprecalc_cell_volumes=.false.
   logical :: lpeh_radius=.false.
+  logical :: lbirthring_depletion=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -205,51 +209,43 @@ module Particles
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
-      ldragforce_gas_par, ldragforce_dust_par, np_swarm, mp_swarm, &
-      rhop_swarm, eps_dtog, cdtp, cdtpgrav, lpar_spec, linterp_reality_check, &
-      nu_epicycle, gravx_profile, gravz_profile, gravr_profile, gravx, gravz, &
-      gravr, gravsmooth, kx_gg, kz_gg, lmigration_redo, tstart_dragforce_par, &
-      tstart_grav_par, tstart_grav_x_par, cdtp_drag, &
-      tstart_grav_z_par, tstart_grav_r_par, lparticle_gravity, &
-      particle_mesh, lparticlemesh_cic, lparticlemesh_tsc, taucool, &
-      lcollisional_cooling_taucool, lcollisional_cooling_rms, &
-      lcollisional_cooling_twobody, lcollisional_dragforce_cooling, &
-      tau_coll_min, ltau_coll_min_courant, coeff_restitution, &
-      tstart_collisional_cooling, tausg_min, epsp_friction_increase, &
-      ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
-      lmigration_real_check,ldraglaw_variable, luse_tau_ap, &
-      ldraglaw_epstein, ldraglaw_simple,&
+      ldragforce_gas_par, ldragforce_dust_par, np_swarm, mp_swarm, rhop_swarm, &
+      eps_dtog, cdtp, cdtpgrav, lpar_spec, linterp_reality_check, nu_epicycle, &
+      gravx_profile, gravz_profile, gravr_profile, gravx, gravz, gravr, &
+      gravsmooth, kx_gg, kz_gg, lmigration_redo, tstart_dragforce_par, &
+      tstart_grav_par, tstart_grav_x_par, cdtp_drag, tstart_grav_z_par, &
+      tstart_grav_r_par, lparticle_gravity, particle_mesh, lparticlemesh_cic, &
+      lparticlemesh_tsc, taucool, lcollisional_cooling_taucool, &
+      lcollisional_cooling_rms, lcollisional_cooling_twobody, &
+      lcollisional_dragforce_cooling, tau_coll_min, ltau_coll_min_courant, &
+      coeff_restitution, tstart_collisional_cooling, tausg_min, &
+      epsp_friction_increase, ldragforce_heat, lcollisional_heat, &
+      lcompensate_friction_increase, lmigration_real_check,ldraglaw_variable, &
+      luse_tau_ap, ldraglaw_epstein, ldraglaw_simple, &
       ldraglaw_epstein_stokes_linear, mean_free_path_gas, &
       ldraglaw_epstein_transonic, lcheck_exact_frontier, &
-      ldraglaw_eps_stk_transonic, ldragforce_stiff, &
-      ldraglaw_variable_density, ldraglaw_steadystate, tstart_liftforce_par, &
-      ldraglaw_purestokes,& 
-      tstart_brownian_par, tstart_sink_par, &
-      lbrownian_forces, lenforce_policy, &
+      ldraglaw_eps_stk_transonic, ldragforce_stiff, ldraglaw_variable_density, &
+      ldraglaw_steadystate, tstart_liftforce_par, ldraglaw_purestokes, &
+      tstart_brownian_par, tstart_sink_par, lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo, interp_pol_TT, interp_pol_rho, &
-      interp_pol_pp,interp_pol_species, &
-      brownian_T0,thermophoretic_T0, lnostore_uu, ldt_grav_par, &
-      ldragforce_radialonly, lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, &
-      rsinkpoint, lshear_accel_par, lcoriolis_force_par, &
-      lcentrifugal_force_par, ldt_adv_par, &
-      linsert_particles_continuously, particles_insert_rate, &
-      max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, &
-      lnocalc_rhop, &
-      np_const, rhop_const, particle_radius, lprecalc_cell_volumes, &
-      Deltauy_gas_friction, loutput_psize_dist, log_ap_min_dist, &
-      log_ap_max_dist, nbin_ap_dist, lsinkparticle_1, rsinkparticle_1, &
-      lthermophoretic_forces, temp_grad0, &
-      thermophoretic_eq, cond_ratio, interp_pol_gradTT, lcommunicate_rhop, &
-      lcommunicate_np, lcylindrical_gravity_par, lignore_rhop_swarm, &
-      l_shell, k_shell, lparticlemesh_pqs_assignment, pscalar_sink_rate, &
-      lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw,lbubble, &
-      rpbeta_species, rpbeta, gab_width, initxxp, initvvp, &
-      particles_insert_ramp_time, tstart_insert_particles, birthring_r, &
-      birthring_width, &
+      interp_pol_pp,interp_pol_species, brownian_T0,thermophoretic_T0, &
+      lnostore_uu, ldt_grav_par, ldragforce_radialonly, lsinkpoint, xsinkpoint, &
+      ysinkpoint, zsinkpoint, rsinkpoint, lshear_accel_par, lcoriolis_force_par, &
+      lcentrifugal_force_par, ldt_adv_par, linsert_particles_continuously, &
+      particles_insert_rate, max_particle_insert_time, lrandom_particle_pencils, &
+      lnocalc_np, lnocalc_rhop, np_const, rhop_const, particle_radius, &
+      lprecalc_cell_volumes, Deltauy_gas_friction, loutput_psize_dist, &
+      log_ap_min_dist, log_ap_max_dist, nbin_ap_dist, lsinkparticle_1, &
+      rsinkparticle_1, lthermophoretic_forces, temp_grad0, thermophoretic_eq, &
+      cond_ratio, interp_pol_gradTT, lcommunicate_rhop, lcommunicate_np, &
+      lcylindrical_gravity_par, lignore_rhop_swarm, l_shell, k_shell, &
+      lparticlemesh_pqs_assignment, pscalar_sink_rate, lpscalar_sink, &
+      lsherwood_const, lnu_draglaw, nu_draglaw,lbubble, rpbeta_species, rpbeta, &
+      gab_width, initxxp, initvvp, particles_insert_ramp_time, &
+      tstart_insert_particles, birthring_r, birthring_width, &
       lgaussian_birthring, tstart_rpbeta, linsert_as_many_as_possible, &
       lvector_gravity, lcompensate_sedimentation,compensate_sedimentation, &
-      lpeh_radius, &
-      A1, A2
+      lpeh_radius, lbirthring_depletion, birthring_lifetime, A1, A2
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0   ! DIAG_DOC: $x^2_{part}$
@@ -352,7 +348,14 @@ module Particles
 !  Relaxation time of supersaturation
       if (lsupersat) &
         call farray_register_auxiliary('tausupersat', itausupersat) 
-      
+!
+!  Kill particles that spend enough time in birth ring
+      if (lbirthring_depletion) then
+        npvar=npvar+1
+        ibrtime=npvar
+        pvarname(ibrtime)='ibrtime'
+      endif
+
 !
 !  Check that the fp and dfp arrays are big enough.
 !
@@ -1522,6 +1525,7 @@ module Particles
               enddo
             else
               call random_number_wrapper(rr_tmp(1:npar_loc))
+              rr_tmp(1:npar_loc) = rr_tmp(1:npar_loc)*2.0-1.0
             endif
             rr_tmp(1:npar_loc) = birthring_r+rr_tmp(1:npar_loc)*birthring_width
           else
@@ -1935,7 +1939,6 @@ module Particles
       else
         particles_insert_rate_tmp = int(real(particles_insert_rate)*(t-tstart_insert_particles)/particles_insert_ramp_time)
       endif
-      call mpireduce_sum_int(npar_loc,npar_total)
 !
       if (lroot) then
         avg_n_insert=particles_insert_rate_tmp*dt
@@ -2059,6 +2062,7 @@ module Particles
                   enddo
                 else
                   call random_number_wrapper(rr_tmp(npar_loc_old+1:npar_loc))
+                  rr_tmp(npar_loc_old+1:npar_loc) = rr_tmp(npar_loc_old+1:npar_loc)*2.0-1.0
                 endif
                 rr_tmp(npar_loc_old+1:npar_loc) = birthring_r+rr_tmp(npar_loc_old+1:npar_loc)*birthring_width
               else
@@ -2131,6 +2135,7 @@ module Particles
 !
           if (lparticles_radius) call set_particle_radius(f,fp,npar_loc_old+1,npar_loc)
           if (lparticles_number) call set_particle_number(f,fp,npar_loc_old+1,npar_loc)
+          if (lbirthring_depletion) fp(npar_loc_old+1:npar_loc,ibrtime) = 0.0
 !
 !  Particles are not allowed to be present in non-existing dimensions.
 !  This would give huge problems with interpolation later.
@@ -2169,6 +2174,14 @@ module Particles
 !  sorting).
 !
         call sort_particles_imn(fp,ineargrid,ipar)
+      endif
+!
+      if (lbirthring_depletion) then
+        where ((fp(1:npar_loc,ixp) .ge. birthring_r-birthring_width) .and. &
+        (fp(1:npar_loc,ixp) .le. birthring_r+birthring_width)) &
+          fp(1:npar_loc,ibrtime) = fp(1:npar_loc,ibrtime)+dt
+        where (fp(1:npar_loc,ibrtime) .ge. birthring_lifetime) &
+          fp(1:npar_loc,ixp) = huge1
       endif
 !
     endsubroutine insert_particles

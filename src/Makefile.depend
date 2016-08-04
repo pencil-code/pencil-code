@@ -79,7 +79,25 @@ $(BOUNDCOND_OBJ): $(BOUNDCOND_SRC) $(CDATA_OBJ) $(CPARAM_OBJ) $(EOS_OBJ) $(FARRA
 #
 $(INITCOND_OBJ): $(INITCOND_SRC) $(CDATA_OBJ) $(EOS_OBJ) $(FARRAY_OBJ) $(FOURIER_OBJ) $(GENERAL_OBJ) $(GRAVITY_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(SUB_OBJ) 
 #
-$(INITIAL_CONDITION_OBJ): initial_condition.h $(INITIAL_CONDITION_SRC) initial_condition_dummies.inc $(COMMON_DEPS) $(FARRAY_OBJ) $(GENERAL_OBJ) $(POISSON_OBJ) $(GRAVITY_OBJ) $(EOS_OBJ) $(BOUNDCOND_OBJ) $(STREAMLINES_OBJ) $(FIXED_POINT_OBJ)
+ifeq ($(INITIAL_CONDITION_OBJ),noinitial_condition.o)
+  $(INITIAL_CONDITION_OBJ): initial_condition.h $(INITIAL_CONDITION_SRC) initial_condition_dummies.inc $(COMMON_DEPS) $(FARRAY_OBJ) $(GENERAL_OBJ) 
+else ifeq ($(shell grep 'Use Particles_cdata' $(INITIAL_CONDITION_OBJ)),)
+  $(INITIAL_CONDITION_OBJ): initial_condition.h $(INITIAL_CONDITION_SRC) initial_condition_dummies.inc $(COMMON_DEPS) $(FARRAY_OBJ) $(GENERAL_OBJ) $(POISSON_OBJ) $(GRAVITY_OBJ) $(EOS_OBJ) $(BOUNDCOND_OBJ) $(STREAMLINES_OBJ) $(FIXED_POINT_OBJ) $(PARTICLES_CDATA_OBJ)
+else
+  $(INITIAL_CONDITION_OBJ): initial_condition.h $(INITIAL_CONDITION_SRC) initial_condition_dummies.inc $(COMMON_DEPS) $(FARRAY_OBJ) $(GENERAL_OBJ) $(POISSON_OBJ) $(GRAVITY_OBJ) $(EOS_OBJ) $(BOUNDCOND_OBJ) $(STREAMLINES_OBJ) $(FIXED_POINT_OBJ)
+endif
+
+ifeq ($(SPECIAL_OBJ),nospecial.o)
+  $(SPECIAL_OBJ): special.h $(NOSPECIAL_SRC) $(COMMON_DEPS)
+else ifeq ($(filter-out atmosphere chem_stream internal_flow jet,$(SPECIAL_OBJ)),)
+  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(VISCOSITY_OBJ) $(DEBUG_IO_OBJ)
+else ifeq ($(shell grep 'Use Particles_cdata' $(SPECIAL_SRC)),)
+  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(PARTICLES_CDATA_OBJ)
+else
+  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ)
+endif
+
+
 #
 $(TIMESTEP_OBJ): $(TIMESTEP_SRC) $(BORDER_PROFILES_OBJ) $(BOUNDCOND_OBJ) $(CDATA_OBJ) $(EQU_OBJ) $(FORCING_OBJ) $(MESSAGES_OBJ) $(MPICOMM_OBJ) $(SOLID_CELLS_OBJ)
 #

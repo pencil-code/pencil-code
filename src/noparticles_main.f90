@@ -246,6 +246,19 @@ module Particles_main
 !
     endsubroutine particles_before_boundary
 !***********************************************************************
+    subroutine particles_special_bfre_bdary(f)
+!
+!  Particle special before boundary.
+!  Fetch fp (and fsp) array to special module.
+!
+!  11-jul-16/wlad: dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)      
+!
+    endsubroutine particles_special_bfre_bdary
+!***********************************************************************
     subroutine particles_special(f)
 !
       real :: dummy_=0.
