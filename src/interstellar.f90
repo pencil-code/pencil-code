@@ -2934,13 +2934,12 @@ module Interstellar
                                c_SN*frac_ecr/frac_eth,SNR%feat%CR)
           f(l1:l2,m,n,iecr) = f(l1:l2,m,n,iecr) + deltaCR
           ! Optionally add cosmicray flux, consistent with addition to ecr, via
-          !    delta fcr = -K grad (delta ecr) 
-          ! Currently only set up for the 'gaussian3' profile in ecr.
-          ! Still experimental/in testing
+          !    delta fcr = -K grad (delta ecr) .
+          ! Still experimental/in testing.
           if (lcosmicrayflux .and. lSN_fcr) then
             fcr=f(l1:l2,m,n,ifcr:ifcr+2)
-            call injectfcr_SN(deltafcr,width_velocity, &
-                              cvelocity_SN*frac_ecr/frac_eth)
+            call injectfcr_SN(deltafcr,width_energy, &
+                              c_SN*frac_ecr/frac_eth)
             f(l1:l2,m,n,ifcr:ifcr+2)=fcr + deltafcr
           endif
         endif
@@ -3369,16 +3368,19 @@ module Interstellar
 !
       integer :: j
 !
-!  Calculate deltauu.
+!  Calculate cosmicray flux, delta fcr, consistent with addition to ecr, 
+!  via  delta fcr = -K grad (delta ecr).  (Currently using K=kperp.)
 !
-      if (velocity_profile=="gaussian") then
-        profile_SN=exp(-(dr2_SN(1:nx)/width**2))
+      if (thermal_profile=="gaussian") then
+        profile_SN=2.*sqrt(dr2_SN)/width**2*exp(-(dr2_SN(1:nx)/width**2))
 !
-      elseif (velocity_profile=="gaussian2") then
-        profile_SN=exp(-(dr2_SN(1:nx)/width**2)**2)
+      elseif (thermal_profile=="gaussian2") then
+        profile_SN=4.*(sqrt(dr2_SN)**3)/width**4* &
+                       exp(-(dr2_SN(1:nx)/width**2)**2)
 !
-      elseif (velocity_profile=="gaussian3") then
-        profile_SN=exp(-(dr2_SN(1:nx)/width**2)**3)
+      elseif (thermal_profile=="gaussian3") then
+        profile_SN=6.*(sqrt(dr2_SN)**5)/width**6* &
+                       exp(-(dr2_SN(1:nx)/width**2)**3)
 !
       endif
 !
