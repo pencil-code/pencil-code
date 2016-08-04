@@ -670,13 +670,25 @@ module Cosmicray
 !  19-may-15/grsarson: adapted from impose_density_floor
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (nx) :: divfcr
 !
       integer :: i, j, k
 !
 !  Impose the ecr floor.
+!  Use pencil formulation to use div routine (to edit fcr too).
 !
       if (ecr_floor>0.) then
-        where (f(:,:,:,iecr)<ecr_floor) f(:,:,:,iecr)=ecr_floor
+        do n=n1,n2; do m=m1,m2
+          where (f(l1:l2,m,n,iecr)<ecr_floor) f(l1:l2,m,n,iecr)=ecr_floor
+          if (lcosmicrayflux)then
+            call div(f,ifcr,divfcr)
+            where (f(l1:l2,m,n,iecr)<ecr_floor .and. divfcr>0.) 
+              f(l1:l2,m,n,ifcr)  =min( f(l1:l2,m,n,ifcr), 0.) 
+              f(l1:l2,m,n,ifcr+1)=min( f(l1:l2,m,n,ifcr+1), 0.) 
+              f(l1:l2,m,n,ifcr+2)=min( f(l1:l2,m,n,ifcr+2), 0.) 
+            endwhere
+          endif
+        enddo; enddo
       endif
 !
 !  Trap any negative ecr if no ecr floor is set.
