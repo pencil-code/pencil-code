@@ -276,6 +276,12 @@ module Energy
   integer :: idiag_uxTTmz=0     ! XYAVG_DOC: $\left< u_x T \right>_{xy}$
   integer :: idiag_uyTTmz=0     ! XYAVG_DOC: $\left< u_y T \right>_{xy}$
   integer :: idiag_uzTTmz=0     ! XYAVG_DOC: $\left< u_z T \right>_{xy}$
+  integer :: idiag_gTxgsxmz=0   ! XYAVG_DOC: $\left<(\nabla T\times\nabla s)_x\right>_{xy}$
+  integer :: idiag_gTxgsymz=0   ! XYAVG_DOC: $\left<(\nabla T\times\nabla s)_y\right>_{xy}$
+  integer :: idiag_gTxgszmz=0   ! XYAVG_DOC: $\left<(\nabla T\times\nabla s)_z\right>_{xy}$
+  integer :: idiag_gTxgsx2mz=0  ! XYAVG_DOC: $\left<(\nabla T\times\nabla s)^2_x\right>_{xy}$
+  integer :: idiag_gTxgsy2mz=0  ! XYAVG_DOC: $\left<(\nabla T\times\nabla s)^2_y\right>_{xy}$
+  integer :: idiag_gTxgsz2mz=0  ! XYAVG_DOC: $\left<(\nabla T\times\nabla s)^2_z\right>_{xy}$
   integer :: idiag_fradz_kramers=0 ! XYAVG_DOC: $F_{\rm rad}$ (from Kramers'
                                    ! XYAVG_DOC: opacity)
   integer :: idiag_fradz_Kprof=0 ! XYAVG_DOC: $F_{\rm rad}$ (from Kprof)
@@ -333,6 +339,9 @@ module Energy
   integer :: idiag_gTxgsxmxy=0 ! ZAVG_DOC: $\left<\left(\nabla T\times\nabla s\right)_x\right>_{z}$
   integer :: idiag_gTxgsymxy=0 ! ZAVG_DOC: $\left<\left(\nabla T\times\nabla s\right)_y\right>_{z}$
   integer :: idiag_gTxgszmxy=0 ! ZAVG_DOC: $\left<\left(\nabla T\times\nabla s\right)_z\right>_{z}$
+  integer :: idiag_gTxgsx2mxy=0 ! ZAVG_DOC: $\left<\left(\nabla T\times\nabla s\right)_x^2\right>_{z}$
+  integer :: idiag_gTxgsy2mxy=0 ! ZAVG_DOC: $\left<\left(\nabla T\times\nabla s\right)_y^2\right>_{z}$
+  integer :: idiag_gTxgsz2mxy=0 ! ZAVG_DOC: $\left<\left(\nabla T\times\nabla s\right)_z^2\right>_{z}$
   integer :: idiag_fconvxy=0   ! ZAVG_DOC: $\left<c_p \varrho u_x T \right>_{z}$
   integer :: idiag_fconvyxy=0  ! ZAVG_DOC: $\left<c_p \varrho u_y T \right>_{z}$
   integer :: idiag_fconvzxy=0  ! ZAVG_DOC: $\left<c_p \varrho u_z T \right>_{z}$
@@ -2684,11 +2693,17 @@ module Energy
       if (idiag_gTrms/=0.or.idiag_gTxgsrms/=0) &
         lpenc_diagnos(i_gTT)=.true.
       if (idiag_gTxmxy/=0 .or. idiag_gTymxy/=0 .or. idiag_gTzmxy/=0 .or. &
-          idiag_gTxgsxmxy/=0 .or. idiag_gTxgsymxy/=0 .or. idiag_gTxgszmxy/=0) &
+          idiag_gTxgsxmz/=0 .or. idiag_gTxgsymz/=0 .or. idiag_gTxgszmz/=0 .or. &
+          idiag_gTxgsx2mz/=0 .or. idiag_gTxgsy2mz/=0 .or. idiag_gTxgsz2mz/=0 .or. &
+          idiag_gTxgsxmxy/=0 .or. idiag_gTxgsymxy/=0 .or. idiag_gTxgszmxy/=0 .or. &
+          idiag_gTxgsx2mxy/=0 .or. idiag_gTxgsy2mxy/=0 .or. idiag_gTxgsz2mxy/=0) &
         lpenc_diagnos2d(i_gTT)=.true.
       if (idiag_gsrms/=0.or.idiag_gTxgsrms/=0) lpenc_diagnos(i_gss)=.true.
       if (idiag_gsxmxy/=0 .or. idiag_gsymxy/=0 .or. idiag_gszmxy/=0 .or. &
-          idiag_gTxgsxmxy/=0 .or. idiag_gTxgsymxy/=0 .or. idiag_gTxgszmxy/=0) &
+          idiag_gTxgsxmz/=0 .or. idiag_gTxgsymz/=0 .or. idiag_gTxgszmz/=0 .or. &
+          idiag_gTxgsx2mz/=0 .or. idiag_gTxgsy2mz/=0 .or. idiag_gTxgsz2mz/=0 .or. &
+          idiag_gTxgsxmxy/=0 .or. idiag_gTxgsymxy/=0 .or. idiag_gTxgszmxy/=0 .or. &
+          idiag_gTxgsx2mxy/=0 .or. idiag_gTxgsy2mxy/=0 .or. idiag_gTxgsz2mxy/=0) &
         lpenc_diagnos2d(i_gss)=.true.
 !
 !  Cooling for cold core collapse
@@ -3162,6 +3177,28 @@ module Energy
         if (idiag_TTmr/=0)  call phizsum_mn_name_r(p%TT,idiag_TTmr)
       endif
 !
+!  For the 1D averages of the baroclinic term
+!
+       if (l1davgfirst) then
+         if (idiag_gTxgsxmz/=0 .or. idiag_gTxgsx2mz/=0 .or. &
+             idiag_gTxgsymz/=0 .or. idiag_gTxgsy2mz/=0 .or. &
+             idiag_gTxgszmz/=0 .or. idiag_gTxgsz2mz/=0) then
+           call cross(p%gTT,p%gss,gTxgs)
+           if (idiag_gTxgsxmz/=0) &
+               call xysum_mn_name_z(gTxgs(:,1),idiag_gTxgsxmz)
+           if (idiag_gTxgsymz/=0) &
+               call xysum_mn_name_z(gTxgs(:,2),idiag_gTxgsymz)
+           if (idiag_gTxgszmz/=0) &
+               call xysum_mn_name_z(gTxgs(:,3),idiag_gTxgszmz)
+           if (idiag_gTxgsx2mz/=0) &
+               call xysum_mn_name_z(gTxgs(:,1)**2,idiag_gTxgsx2mz)
+           if (idiag_gTxgsy2mz/=0) &
+               call xysum_mn_name_z(gTxgs(:,2)**2,idiag_gTxgsy2mz)
+           if (idiag_gTxgsz2mz/=0) &
+               call xysum_mn_name_z(gTxgs(:,3)**2,idiag_gTxgsz2mz)
+         endif
+       endif
+!
 !  2-D averages.
 !
       if (l2davgfirst) then
@@ -3199,9 +3236,9 @@ module Energy
 !  For the 2D averages of the baroclinic term
 !
        if (l2davgfirst) then
-         if (idiag_gTxgsxmxy/=0 .or. &
-             idiag_gTxgsymxy/=0 .or. &
-             idiag_gTxgszmxy/=0) then
+         if (idiag_gTxgsxmxy/=0 .or. idiag_gTxgsx2mxy/=0 .or. &
+             idiag_gTxgsymxy/=0 .or. idiag_gTxgsy2mxy/=0 .or. &
+             idiag_gTxgszmxy/=0 .or. idiag_gTxgsz2mxy/=0) then
            call cross(p%gTT,p%gss,gTxgs)
            if (idiag_gTxgsxmxy/=0) &
                call zsum_mn_name_xy(gTxgs(:,1),idiag_gTxgsxmxy)
@@ -3209,6 +3246,12 @@ module Energy
                call zsum_mn_name_xy(gTxgs,idiag_gTxgsymxy,(/0,1,0/))
            if (idiag_gTxgszmxy/=0) &
                call zsum_mn_name_xy(gTxgs,idiag_gTxgszmxy,(/0,0,1/))
+           if (idiag_gTxgsx2mxy/=0) &
+               call zsum_mn_name_xy(gTxgs(:,1)**2,idiag_gTxgsxmxy)
+           if (idiag_gTxgsy2mxy/=0) &
+               call zsum_mn_name_xy(gTxgs**2,idiag_gTxgsymxy,(/0,1,0/))
+           if (idiag_gTxgsz2mxy/=0) &
+               call zsum_mn_name_xy(gTxgs**2,idiag_gTxgszmxy,(/0,0,1/))
          endif
        endif
 !
@@ -4468,7 +4511,8 @@ module Energy
 !***********************************************************************
     subroutine calc_heatcond(f,df,p)
 !
-!  In this routine general heat conduction profiles are being provided.
+!  In this routine general heat conduction profiles are being provided
+!  and applied to the entropy equation.
 !
 !  17-sep-01/axel: coded
 !  14-jul-05/axel: corrected expression for chi_t diffusion.
@@ -5910,6 +5954,12 @@ module Energy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxTTmz',idiag_uxTTmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyTTmz',idiag_uyTTmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzTTmz',idiag_uzTTmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gTxgsxmz',idiag_gTxgsxmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gTxgsymz',idiag_gTxgsymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gTxgszmz',idiag_gTxgszmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gTxgsx2mz',idiag_gTxgsx2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gTxgsy2mz',idiag_gTxgsy2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gTxgsz2mz',idiag_gTxgsz2mz)
       enddo
 !
       do inamer=1,nnamer

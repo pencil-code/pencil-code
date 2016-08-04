@@ -1255,7 +1255,8 @@ module Viscosity
 !  -- the correct expression for nu=const
 !
       if (lvisc_nu_tdep) then
-        nu_tdep=nu*(t-nu_tdep_t0)**nu_tdep_exponent         ! out of nm loop
+        !nu_tdep=nu*(t-nu_tdep_t0)**nu_tdep_exponent         ! out of nm loop
+        nu_tdep=nu*max(real(t),nu_tdep_t0)**nu_tdep_exponent
         p%fvisc=p%fvisc+2*nu_tdep*p%sglnrho+nu_tdep*(p%del2u+1./3.*p%graddivu)
         if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*nu_tdep*p%sij2
         if (lfirst .and. ldt) p%diffus_total=p%diffus_total+nu_tdep

@@ -79,7 +79,8 @@ module Interstellar
 !  Est'd value for similarity variable at shock
 !
 !  real :: xsi_sedov=1.215440704
-  real :: xsi_sedov=1.15166956, mu
+!  real :: xsi_sedov=1.15166956, mu
+  real :: xsi_sedov=2.026, mu
 !
 !  'Current' SN Explosion site parameters
 !
@@ -413,7 +414,7 @@ module Interstellar
 !
       use FArrayManager
 !
-      call farray_register_auxiliary('netcool',iheatcool,communicated=.true.)
+      call farray_register_auxiliary('netheat',inetheat,communicated=.true.)
       call farray_register_auxiliary('cooling',icooling)
 !
 !  identify version number
@@ -428,10 +429,10 @@ module Interstellar
 !
 !  Writing files for use with IDL
 !
-      if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=',netcool $'
-      if (naux+naux_com == maux+maux_com) aux_var(aux_count)=',netcool'
+      if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=',netheat $'
+      if (naux+naux_com == maux+maux_com) aux_var(aux_count)=',netheat'
       aux_count=aux_count+1
-      if (lroot) write(15,*) 'netcool = fltarr(mx,my,mz)*one'
+      if (lroot) write(15,*) 'netheat = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_interstellar
 !***********************************************************************
@@ -451,7 +452,7 @@ module Interstellar
       real, dimension (mx,my,mz,mfarray) :: f
 !
       f(:,:,:,icooling)=0.0
-      f(:,:,:,iheatcool)=0.0
+      f(:,:,:,inetheat)=0.0
 !
       if (lroot) print*,'initialize_interstellar: t_next_SNI',t_next_SNI
 !
@@ -518,7 +519,7 @@ module Interstellar
         if (mass_SN_progenitor==impossible) &
             mass_SN_progenitor=mass_SN_progenitor_cgs / unit_mass
         if (width_SN==impossible) width_SN= &
-            max(width_SN_cgs / real(unit_length),dxmax*2.5)
+            max(width_SN_cgs / real(unit_length),4.33013*dxmin)!sqrt(3*2.5**2)
         if (SN_clustering_radius==impossible) &
             SN_clustering_radius=SN_clustering_radius_cgs / unit_length
         if (SN_clustering_time==impossible) &
@@ -1105,7 +1106,10 @@ module Interstellar
       lpenc_requested(i_TT1)=.true.
       lpenc_requested(i_lnrho)=.true.
       lpenc_requested(i_rho1)=.true.
-!      lpenc_requested(i_rho)=.true.
+      if (lheatcool_shock_cutoff) then
+        lpenc_requested(i_shock)=.true.
+        lpenc_requested(i_rho)=.true.
+      endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
@@ -1122,7 +1126,7 @@ module Interstellar
 !
       if (lwr) then
         write(3,*) 'icooling=',icooling
-        write(3,*) 'iheatcool=',iheatcool
+        write(3,*) 'inetheat=',inetheat
       endif
 !
     endsubroutine rprint_interstellar
@@ -1148,11 +1152,11 @@ module Interstellar
           slices%xy=f(l1:l2 ,m1:m2 ,iz_loc ,icooling)
           slices%xy2=f(l1:l2,m1:m2 ,iz2_loc,icooling)
           slices%ready = .true.
-        case ('ism_netcool')
-          slices%yz=f(ix_loc,m1:m2 ,n1:n2  ,iheatcool)
-          slices%xz=f(l1:l2 ,iy_loc,n1:n2  ,iheatcool)
-          slices%xy=f(l1:l2 ,m1:m2 ,iz_loc ,iheatcool)
-          slices%xy2=f(l1:l2,m1:m2 ,iz2_loc,iheatcool)
+        case ('ism_netheat')
+          slices%yz=f(ix_loc,m1:m2 ,n1:n2  ,inetheat)
+          slices%xz=f(l1:l2 ,iy_loc,n1:n2  ,inetheat)
+          slices%xy=f(l1:l2 ,m1:m2 ,iz_loc ,inetheat)
+          slices%xy2=f(l1:l2,m1:m2 ,iz2_loc,inetheat)
           slices%ready = .true.
 !
       endselect
@@ -1335,7 +1339,8 @@ module Interstellar
       lpenc_requested(i_TT1)=.true.
       lpenc_requested(i_rho1)=.true.
 !
-      if (lheatcool_shock_cutoff) lpenc_requested(i_gshock)=.true.
+      if (lheatcool_shock_cutoff) lpenc_requested(i_shock)=.true.
+      if (lheatcool_shock_cutoff) lpenc_requested(i_rho)=.true.
 !
 !  Diagnostic pencils
 !
@@ -1460,7 +1465,7 @@ module Interstellar
 !
       real, dimension (nx), intent(inout) :: Hmax
       real, dimension (nx) :: heat,cool,heatcool,netheat,netcool
-      real, dimension (nx) :: damp_profile,gsh2
+      real, dimension (nx) :: damp_profile
 !
 !  Identifier
 !
@@ -1514,9 +1519,8 @@ module Interstellar
 !  shock wave and also drives down the timestep. Fred
 !
       if (lheatcool_shock_cutoff) then
-        call dot2(p%gshock,gsh2)
 !
-        damp_profile=exp(-(gsh2*heatcool_shock_cutoff_rate1))
+        damp_profile=exp(-(p%shock*p%rho*heatcool_shock_cutoff_rate1))
 !
         cool=cool*damp_profile
         heat=heat*damp_profile
@@ -1527,7 +1531,7 @@ module Interstellar
 !  cool=rho*Lambda, heatcool=(Gamma-rho*Lambda)/TT
 !
       f(l1:l2,m,n,icooling) = p%TT1*cool
-      f(l1:l2,m,n,iheatcool)= heatcool
+      f(l1:l2,m,n,inetheat)= heatcool
 !
 !  Prepare diagnostic output
 !  Since these variables are divided by Temp when applied it is useful to
@@ -2120,7 +2124,8 @@ module Interstellar
       else
         i=int((center_SN_x-x00)/dx)+1
       endif
-      SNR%indx%l=i+nghost
+      SNR%indx%ipx=(i-1)/nx ! uses integer division
+      SNR%indx%l=i-(SNR%indx%ipx*nx)+nghost
 !
       if (center_SN_y==impossible) then
         i=max(int(nygrid/2)+1,1)
@@ -2137,7 +2142,8 @@ module Interstellar
       endif
       SNR%indx%ipz=(i-1)/nz   ! uses integer division
       SNR%indx%n=i-(SNR%indx%ipz*nz)+nghost
-      SNR%indx%iproc=SNR%indx%ipz*nprocy + SNR%indx%ipy
+      SNR%indx%iproc=&
+                  SNR%indx%ipz*nprocx*nprocy+SNR%indx%ipy*nprocx+SNR%indx%ipx
     endif
     call share_SN_parameters(f,SNR)
 !
@@ -2159,11 +2165,11 @@ module Interstellar
 !
 !  parameters required to determine the vertical centre of mass of the disk
 !
-    real, dimension(nprocz) :: tmp3
+    real, dimension(nprocz) :: tmpz
     real, dimension(nz) :: rhotmp
     real :: rhomax, maxrho, rhosum
     real :: mpirho, mpiz
-    real, dimension(ncpus):: tmp2
+    real, dimension(ncpus):: tmpxyz
     integer :: yzproc, itmp, icpu, lm_range
     integer :: previous_SNl, previous_SNm, previous_SNn
 !
@@ -2198,20 +2204,20 @@ module Interstellar
       do icpu=1,ncpus
         mpirho=rhosum
         call mpibcast_real(mpirho,icpu-1)
-        tmp2(icpu)=mpirho
+        tmpxyz(icpu)=mpirho
       enddo
 !
       do i=1,nprocz
-        tmp3(i)=sum(tmp2((i-1)*nprocy+1:i*nprocy))
+        tmpz(i)=sum(tmpxyz((i-1)*nprocx*nprocy+1:i*nprocx*nprocy))
       enddo
 !
-      rhomax=maxval(tmp3)
+      rhomax=maxval(tmpz)
       do i=1,nprocz
-        if (tmp3(i)==rhomax) itmp=(i-1)*nprocy
+        if (tmpz(i)==rhomax) itmp=(i-1)*nprocx*nprocy
       enddo
-      rhomax=maxval(tmp2(itmp+1:itmp+nprocy))
-      do icpu=1,nprocy
-        if (tmp2(icpu+itmp) == rhomax) yzproc=icpu+itmp-1
+      rhomax=maxval(tmpxyz(itmp+1:itmp+nprocy*nprocx))
+      do icpu=1,nprocx*nprocy
+        if (tmpxyz(icpu+itmp) == rhomax) yzproc=icpu+itmp-1
       enddo
 !
       if (iproc==yzproc) then
@@ -2273,7 +2279,7 @@ module Interstellar
 !
             cum_prob_SN=0.0
             do i=nzskip+1,nzgrid-nzskip
-              zn=z00+(i-1)*dz
+              zn=z00+(i-1)*Lxyz(3)/(nzgrid-1)
               cum_prob_SN(i)=cum_prob_SN(i-1)+exp(-0.5*((zn-zdisk)/h_SN)**2)
             enddo
             cum_prob_SN = cum_prob_SN / max(cum_prob_SN(nzgrid-nzskip), tini)
@@ -2286,7 +2292,8 @@ module Interstellar
                 exit
               endif
             enddo
-            SNR%indx%iproc=SNR%indx%ipz*nprocy + SNR%indx%ipy
+            SNR%indx%iproc=&
+                  SNR%indx%ipz*nprocx*nprocy+SNR%indx%ipy*nprocx+SNR%indx%ipx
           endif
         else 
           t_cluster = t + SN_clustering_time
@@ -2314,7 +2321,8 @@ module Interstellar
               exit
             endif
           enddo
-          SNR%indx%iproc=SNR%indx%ipz*nprocy + SNR%indx%ipy
+          SNR%indx%iproc=&
+                  SNR%indx%ipz*nprocx*nprocy+SNR%indx%ipy*nprocx+SNR%indx%ipx
           x_cluster = (SNR%indx%l-1) * Lxyz(1)/nxgrid + xyz0(1)
           y_cluster = (SNR%indx%m-1) * Lxyz(2)/nxgrid + xyz0(2)
           z_cluster = zdisk
@@ -2333,7 +2341,7 @@ module Interstellar
         print*,'position_SN_gaussianz: zdisk =',zdisk
         cum_prob_SN=0.0
         do i=nzskip+1,nzgrid-nzskip
-          zn=z00+(i-1)*dz
+          zn=z00+(i-1)*Lxyz(3)/(nzgrid-1)
           cum_prob_SN(i)=cum_prob_SN(i-1)+exp(-0.5*((zn-zdisk)/h_SN)**2)
         enddo
         cum_prob_SN = cum_prob_SN / max(cum_prob_SN(nzgrid-nzskip), tini)
@@ -2350,7 +2358,8 @@ module Interstellar
             exit
           endif
         enddo
-        SNR%indx%iproc=SNR%indx%ipz*nprocy + SNR%indx%ipy
+        SNR%indx%iproc=&
+                  SNR%indx%ipz*nprocx*nprocy+SNR%indx%ipy*nprocx+SNR%indx%ipx
       endif
     endif
 !
@@ -2399,7 +2408,8 @@ module Interstellar
       if (nzgrid==1) i=1
       SNR%indx%ipz=(i-1)/nz   ! uses integer division
       SNR%indx%n=i-(SNR%indx%ipz*nz)+nghost
-      SNR%indx%iproc=SNR%indx%ipz*nprocy + SNR%indx%ipy
+      SNR%indx%iproc=&
+                  SNR%indx%ipz*nprocx*nprocy+SNR%indx%ipy*nprocx+SNR%indx%ipx
     endif
 !
     call share_SN_parameters(f,SNR)
@@ -2592,7 +2602,7 @@ module Interstellar
         SNR%feat%radius=width_SN
         if (lSN_scale_rad) &
             SNR%feat%radius=(0.75*solar_mass/SNR%site%rho*pi_1*N_mass)**(1.0/3.0)
-        SNR%feat%radius=max(SNR%feat%radius,1.75*dxmax) ! minimum grid resolution
+        SNR%feat%radius=max(SNR%feat%radius,4.33013*dxmin) ! minimum grid resolution
 !
         m=SNR%indx%m
         n=SNR%indx%n
@@ -2689,12 +2699,12 @@ module Interstellar
       if (lSN_scale_rad) then
         do i=1,20
           SNR%feat%radius=(0.75*solar_mass/SNR%feat%rhom*pi_1*N_mass)**(1.0/3.0)
-          SNR%feat%radius=max(SNR%feat%radius,1.75*dxmax)
+          SNR%feat%radius=max(SNR%feat%radius,4.33013*dxmin)
           call get_properties(f,SNR,rhom,ekintot)
           SNR%feat%rhom=rhom
         enddo
         SNR%feat%radius=(0.75*solar_mass/SNR%feat%rhom*pi_1*N_mass)**(1.0/3.0)
-        SNR%feat%radius=max(SNR%feat%radius,1.75*dxmax)
+        SNR%feat%radius=max(SNR%feat%radius,4.33013*dxmin)
         if (lSN_scale_kin) then
            frac_kin=SNR%feat%radius
            ampl_SN =(1-frac_kin-frac_ecr)*ampl_SN_cgs/unit_energy
@@ -2706,8 +2716,8 @@ module Interstellar
 !
 !  Calculate effective Sedov evolution time diagnostic.
 !
-      SNR%feat%t_sedov=sqrt((SNR%feat%radius/xsi_sedov)**5*SNR%feat%rhom/(kampl_SN+ampl_SN))
-      uu_sedov = 0.4*SNR%feat%radius/SNR%feat%t_sedov
+      SNR%feat%t_sedov=sqrt((SNR%feat%radius)**(2+dimensionality)*SNR%feat%rhom/(kampl_SN+ampl_SN)/xsi_sedov)
+      uu_sedov = 2./(2.+dimensionality)*SNR%feat%radius/SNR%feat%t_sedov
 !
       width_energy   = SNR%feat%radius*energy_width_ratio
       width_mass     = SNR%feat%radius*mass_width_ratio

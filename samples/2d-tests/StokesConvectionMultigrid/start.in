@@ -1,0 +1,60 @@
+!                -*-f90-*-     (for Emacs)
+!
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.2 2016/07/02 00:34:31 wlyra Exp $',
+! 
+  ip    = 14,               ! debugging parameter
+  xyz0  =    0.,-5e5,   0.,   ! first corner of box
+  xyz1  =   1e6, 5e5,  1e6,   ! second corner of box
+  lperi = F , T , F,        ! periodic direction?
+  bcx  = 's','a2'
+  bcz  = 'set' ,'a2'
+  fbcz1=0.0,0.0
+  fbcz2=0.0,0.0
+  lwrite_ic=T,
+  lwrite_aux=T
+/
+&initial_condition_pars
+  Tupp=0.0
+  Tbot=1000.0
+  ampltt=10.
+  kx_TT=3.141592
+  initTT='single-mode'
+  lsplit_temperature=T
+/
+&eos_init_pars
+  gamma=1.
+/
+&entropy_init_pars
+  ltemperature_nolog=T
+/
+&special_init_pars
+!
+! Setting up Rayleigh number
+!
+!  Ra=1e4
+  amplpsi=1e-7
+  initpsi='noise'
+  ampltt=10.
+  kx_TT=3.141592
+  Tupp=0.
+  Tbot=1000.
+  ladimensional=F
+!
+  rho0_bq=4e3
+  kappa=1e-6
+  gravity_z=10.
+  alpha_thermal=2.5e-5
+  eta_0=1e23
+!
+  iconv_viscosity='constant'
+!
+  lprint_residual=T
+  tolerance=1e-15
+  lmultigrid=T
+  maxit=50000
+!
+  lsplit_temperature=T 
+/

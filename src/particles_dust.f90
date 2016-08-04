@@ -14,6 +14,7 @@
 ! PENCILS PROVIDED np; rhop; vol; peh
 ! PENCILS PROVIDED np_rad(5); npvz(5); sherwood
 ! PENCILS PROVIDED epsp; grhop(3)
+! PENCILS PROVIDED tausupersat
 !
 !***************************************************************
 module Particles
@@ -27,7 +28,7 @@ module Particles
   use Particles_mpicomm
   use Particles_sub
   use Particles_radius
-!
+! 
   implicit none
 !
   include 'particles.h'
@@ -155,6 +156,8 @@ module Particles
   logical :: lcompensate_sedimentation=.false.
   real :: compensate_sedimentation=1.
 !
+  real :: A1=0., A2=0.
+!
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
       ldragforce_gas_par, ldragforce_dust_par, bcpx, bcpy, bcpz, tausp, &
@@ -245,22 +248,25 @@ module Particles
       birthring_width, &
       lgaussian_birthring, tstart_rpbeta, linsert_as_many_as_possible, &
       lvector_gravity, lcompensate_sedimentation,compensate_sedimentation, &
-      lpeh_radius
+      lpeh_radius, &
+      A1, A2
 !
-  integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
-  integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
+  integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
+  integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0   ! DIAG_DOC: $x^2_{part}$
+  integer :: idiag_vrelpabsm=0                          ! DIAG_DOC: $\rm{Absolute value of mean relative velocity}$
   integer :: idiag_rpm=0, idiag_rp2m=0
-  integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0
-  integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0, idiag_ekinp=0
-  integer :: idiag_vpxmax=0, idiag_vpymax=0, idiag_vpzmax=0, idiag_vpmax=0
-  integer :: idiag_vpxmin=0, idiag_vpymin=0, idiag_vpzmin=0
+  integer :: idiag_vpxm=0, idiag_vpym=0, idiag_vpzm=0   ! DIAG_DOC: $u_{part}$
+  integer :: idiag_vpx2m=0, idiag_vpy2m=0, idiag_vpz2m=0 ! DIAG_DOC: $u^2_{part}$
+  integer :: idiag_ekinp=0     ! DIAG_DOC: $E_{kin,part}$
+  integer :: idiag_vpxmax=0, idiag_vpymax=0, idiag_vpzmax=0, idiag_vpmax=0 ! DIAG_DOC: $MAX(u_{part})$
+  integer :: idiag_vpxmin=0, idiag_vpymin=0, idiag_vpzmin=0    ! DIAG_DOC: $MIN(u_{part})$
   integer :: idiag_vpxvpym=0, idiag_vpxvpzm=0, idiag_vpyvpzm=0
   integer :: idiag_rhopvpxm=0, idiag_rhopvpym=0, idiag_rhopvpzm=0
   integer :: idiag_rhopvpxt=0, idiag_rhopvpyt=0, idiag_rhopvpzt=0
   integer :: idiag_rhopvpysm=0
   integer :: idiag_lpxm=0, idiag_lpym=0, idiag_lpzm=0
   integer :: idiag_lpx2m=0, idiag_lpy2m=0, idiag_lpz2m=0
-  integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0
+  integer :: idiag_npm=0, idiag_np2m=0, idiag_npmax=0, idiag_npmin=0 ! DIAG_DOC: $\rm{mean particle number density}$
   integer :: idiag_dtdragp=0
   integer :: idiag_nparmin=0, idiag_nparmax=0, idiag_npargone=0
   integer :: idiag_nparsum=0
@@ -281,10 +287,11 @@ module Particles
   integer :: idiag_vprms=0, idiag_vpyfull2m=0, idiag_deshearbcsm=0
   integer :: idiag_Shm=0
   integer, dimension(ninit)  :: idiag_npvzmz=0, idiag_nptz=0
+  integer :: idiag_tausupersatrms=0
 !
   contains
 !***********************************************************************
-    subroutine register_particles()
+    subroutine register_particles
 !
 !  Set up indices for access to the fp and dfp arrays
 !
@@ -341,6 +348,11 @@ module Particles
         call farray_register_auxiliary('ffg',iffg,communicated=.true.,vector=3)
         ifgx=iffg; ifgy=iffg+1; ifgz=iffg+2
       endif
+!
+!  Relaxation time of supersaturation
+      if (lsupersat) &
+        call farray_register_auxiliary('tausupersat', itausupersat) 
+      
 !
 !  Check that the fp and dfp arrays are big enough.
 !
@@ -2603,7 +2615,7 @@ module Particles
 !
     endsubroutine particles_dragforce_stiff
 !***********************************************************************
-    subroutine pencil_criteria_particles()
+    subroutine pencil_criteria_particles
 !
 !  All pencils that the Particles module depends on are specified here.
 !
@@ -2642,6 +2654,10 @@ module Particles
       if (lthermophoretic_forces) then
         lpenc_requested(i_gTT)=.true.
       endif
+!
+      if (lsupersat) &
+         lpenc_requested(i_tausupersat)=.true.
+      
 !
       if (idiag_npm/=0 .or. idiag_np2m/=0 .or. idiag_npmax/=0 .or. &
           idiag_npmin/=0 .or. idiag_npmx/=0 .or. idiag_npmy/=0 .or. &
@@ -2686,6 +2702,8 @@ module Particles
         lpencil_in(i_rhop)=.true.
         lpencil_in(i_rho1)=.true.
       endif
+!
+      if (lsupersat) lpencil_in(i_tausupersat)=.true.
 !
     endsubroutine pencil_interdep_particles
 !***********************************************************************
@@ -2735,6 +2753,9 @@ module Particles
       if (lpencil(i_epsp)) p%epsp=p%rhop*p%rho1
 !
       if (ipeh>0) p%peh=f(l1:l2,m,n,ipeh)
+!
+! 
+      if (itausupersat>0) p%tausupersat=f(l1:l2,m,n,itausupersat)
 !
     endsubroutine calc_pencils_particles
 !***********************************************************************
@@ -2985,6 +3006,7 @@ module Particles
             -gravr/sqrt(sum(fp(1:npar_loc,ixp:izp)**2,dim=2)),idiag_epotpm)
         if (idiag_vpmax/=0) call max_par_name( &
             sqrt(sum(fp(1:npar_loc,ivpx:ivpz)**2,2)),idiag_vpmax)
+        if (idiag_vrelpabsm/=0) call calc_relative_velocity(f,fp,ineargrid)
         if (idiag_vpxmax/=0) call max_par_name(fp(1:npar_loc,ivpx),idiag_vpxmax)
         if (idiag_vpymax/=0) call max_par_name(fp(1:npar_loc,ivpy),idiag_vpymax)
         if (idiag_vpzmax/=0) call max_par_name(fp(1:npar_loc,ivpz),idiag_vpzmax)
@@ -3468,7 +3490,7 @@ module Particles
       real :: rho1_point, tausp1_par, up2
       real :: weight, weight_x, weight_y, weight_z
       real :: dxp, dyp, dzp, volume_cell
-      integer :: k, l, ix0, iy0, iz0, ierr, irad
+      integer :: k, l, ix0, iy0, iz0, ierr, irad, i
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       integer, dimension (3) :: inear
       logical :: lnbody, lsink
@@ -3479,6 +3501,7 @@ module Particles
       real, dimension(k1_imn(imn):k2_imn(imn)) :: nu
       character (len=labellen) :: ivis=''
       real :: nu_
+      real :: taulocal
 !
 !  Identify module.
 !
@@ -3491,6 +3514,7 @@ module Particles
       if (lpenc_requested(i_npvz))     p%npvz=0.
       if (lpenc_requested(i_np_rad))   p%np_rad=0.
       if (lpenc_requested(i_sherwood)) p%sherwood=0.
+      if (lpenc_requested(i_tausupersat)) p%tausupersat=0.
 !
 !  Precalculate certain quantities, if necessary.
 !
@@ -4169,6 +4193,24 @@ module Particles
         f(l1:l2,m,n,ifgx:ifgz)=p%fpres+p%jxbr+p%fvisc
       endif
 !
+!  Particle growth by condensation in a passive scalar field,
+!  calculate relaxation time. 1D case for now. 
+!  14-June-16/Xiang-Yu: coded
+   
+      if (lsupersat) then
+        do i=l1,l2
+           taulocal=0 
+           do k=k1_imn(imn),k2_imn(imn)
+             l=ineargrid(k,1)
+             if (l==i) then
+                taulocal=taulocal+fp(k,iap)*fp(k,inpswarm)
+             endif
+           enddo
+           !f(i,m,n,itausupersat)=f(i,m,n,itausupersat)+4.*pi*rhopmat*A1*A2*taulocal
+           p%tausupersat(i-3)=f(i-3,m,n,itausupersat)+4.*pi*rhopmat*A1*A2*taulocal
+        enddo
+      endif
+!
 !  Diagnostic output.
 !
       if (ldiagnos) then
@@ -4191,6 +4233,8 @@ module Particles
             call calculate_rms_speed(fp,ineargrid,p)
         if (idiag_dtdragp/=0.and.(lfirst.and.ldt)) &
             call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
+        if (idiag_tausupersatrms/=0) &
+            call sum_mn_name(p%tausupersat**2,idiag_tausupersatrms,lsqrt=.true.)
       endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
@@ -5801,12 +5845,14 @@ module Particles
         write(3,*) 'ifgx=', ifgx
         write(3,*) 'ifgy=', ifgy
         write(3,*) 'ifgz=', ifgz
+        write(3,*) 'itausupersat=', itausupersat
       endif
 !
 !  Reset everything in case of reset.
 !
       if (lreset) then
         idiag_xpm=0; idiag_ypm=0; idiag_zpm=0
+        idiag_vrelpabsm=0
         idiag_xp2m=0; idiag_yp2m=0; idiag_zp2m=0; idiag_rpm=0; idiag_rp2m=0
         idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0
         idiag_vpxvpym=0; idiag_vpxvpzm=0; idiag_vpyvpzm=0
@@ -5837,6 +5883,7 @@ module Particles
         idiag_npargone=0; idiag_vpyfull2m=0; idiag_deshearbcsm=0
         idiag_npmxy=0; idiag_vprms=0
         idiag_npvzmz=0; idiag_nptz=0; idiag_Shm=0
+        idiag_tausupersatrms=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -5848,6 +5895,7 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'nparmax',idiag_nparmax)
         call parse_name(iname,cname(iname),cform(iname),'nparpmax',idiag_nparpmax)
         call parse_name(iname,cname(iname),cform(iname),'xpm',idiag_xpm)
+        call parse_name(iname,cname(iname),cform(iname),'vrelpabsm',idiag_vrelpabsm)
         call parse_name(iname,cname(iname),cform(iname),'ypm',idiag_ypm)
         call parse_name(iname,cname(iname),cform(iname),'zpm',idiag_zpm)
         call parse_name(iname,cname(iname),cform(iname),'xp2m',idiag_xp2m)
@@ -5922,6 +5970,7 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'vprms',idiag_vprms)
         call parse_name(iname,cname(iname),cform(iname),'Shm',idiag_Shm)
         call parse_name(iname,cname(iname),cform(iname),'deshearbcsm',idiag_deshearbcsm)
+        call parse_name(iname,cname(iname),cform(iname),'tausupersatrms',idiag_tausupersatrms)
       enddo
 !
 !  Check for those quantities for which we want x-averages.
@@ -6020,5 +6069,33 @@ module Particles
       endif
 !
     endsubroutine periodic_boundcond_on_aux
+!***********************************************************************
+    subroutine calc_relative_velocity(f,fp,ineargrid)
+!
+      use Diagnostics
+!
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
+      real, dimension(3) :: uup,rel_vel_sing
+      real, dimension(:), allocatable :: rel_vel
+      integer :: k,ix0,iy0,iz0
+      integer, dimension(mpar_loc,3), intent(in) :: ineargrid
+!
+!  Calculate particle relative velocity
+!
+      allocate(rel_vel(npar_loc))
+!
+      rel_vel = 0.0
+!
+      do k = 1,npar_loc
+        call interpolate_linear(f,iux,iuz,fp(k,ixp:izp),uup,ineargrid(k,:),0,0)
+        rel_vel_sing = (fp(k,ivpx:ivpz)-uup)**2
+        rel_vel(k) = sqrt(sum(rel_vel_sing))
+      enddo
+!
+      call sum_par_name(rel_vel(1:npar_loc),idiag_vrelpabsm)
+      if (allocated(rel_vel)) deallocate(rel_vel)
+!
+    endsubroutine calc_relative_velocity
 !***********************************************************************
 endmodule Particles
