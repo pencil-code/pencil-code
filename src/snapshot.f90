@@ -491,6 +491,8 @@ module Snapshot
       if (lspec.or.llwrite_only) then
         if (ldo_all)  call update_ghosts(f)
         if (vel_spec) call power(f,'u')
+        if (upa_spec) call power_udec(f,'upa')
+        if (upe_spec) call power_udec(f,'upe')
         if (r2u_spec) call power(f,'r2u')
         if (r3u_spec) call power(f,'r3u')
         if (oo_spec)  call power(f,'o')

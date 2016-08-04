@@ -164,4 +164,14 @@ module power_spectrum
 !
   endsubroutine power_vec
 !***********************************************************************
+  subroutine power_udec(f,sp)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=*) :: sp
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(sp)
+!
+  endsubroutine power_udec
+!***********************************************************************
 endmodule power_spectrum

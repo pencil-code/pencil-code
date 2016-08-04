@@ -869,7 +869,7 @@ module power_spectrum
 !
   integer, parameter :: nk=nxgrid/2
   integer :: i,k,ikx,iky,ikz,im,in,ivec,ivec_jj
-  real :: k2
+  real :: k2,kmag
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nx) :: bbi,jji
@@ -2166,7 +2166,6 @@ endsubroutine pdf
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
-  !  Added power spectra of rho^(1/2)*u and rho^(1/3)*u.
   !
   if (trim(sp)=='j') then
      ! compute j = curl(curl(x))
@@ -2218,5 +2217,174 @@ endsubroutine pdf
   endif
   !
   endsubroutine power_vec
+!***********************************************************************
+    subroutine power_udec(f,sp)
+!
+!  Calculate power spectra (on shperical shells) of the variable
+!  specified by `sp'.
+!  Only for decomposition of u^| (upara_spec) and u^$ (uperp_spec) in wave
+!  space.
+!  Modified from subroutine power_vec(f,sp).
+!  Since this routine is only used at the end of a time step,
+!  one could in principle reuse the df array for memory purposes.
+!
+      use Mpicomm, only: mpireduce_sum
+      use Fourier, only: fourier_transform
+!
+  integer, parameter :: nk=nx/2
+  integer :: i,k,ikx,iky,ikz,ivec
+  real, dimension (mx,my,mz,mfarray) :: f
+  real, dimension(nx,ny,nz,3) :: a1,b1,c1,d1
+  real, dimension(nk) :: spectrum,spectrum_sum
+  real, dimension(nxgrid) :: kx
+  real, dimension(nygrid) :: ky
+  real, dimension(nzgrid) :: kz
+  real :: kmag
+  character (len=*) :: sp
+  !
+  !  identify version
+  !
+  if (lroot .AND. ip<10) call svn_id( &
+       "$Id$")
+  !
+  !  Define wave vector, defined here for the *full* mesh.
+  !  Each processor will see only part of it.
+  !  Ignore *2*pi/Lx factor, because later we want k to be integers
+  !
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2) !*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2) !*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2) !*2*pi/Lz
+  !
+  spectrum=0.
+  spectrum_sum=0.
+  !
+  !  In fft, real and imaginary parts are handled separately.
+  !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
+  !
+  do ivec=1,3
+     !
+     if (trim(sp)=='upa') then
+        a1(:,:,:,ivec)=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+     elseif (trim(sp)=='upe') then
+        a1(:,:,:,ivec)=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+     else
+        print*,'There are no such sp=',trim(sp)
+     endif
+  enddo
+  b1=0
+!
+!  Doing the Fourier transform
+!
+  do ivec=1,3
+     call fourier_transform(a1(:,:,:,ivec),b1(:,:,:,ivec))
+  enddo
+  if (lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+
+  do ivec=1,3
+!
+!  integration over shells
+!
+     do ikz=1,nz
+        do iky=1,ny
+           do ikx=1,nx
+              kmag=sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2)
+              if (trim(sp)=='upa') then
+!
+! Decomposing u in wave space: u^| (velocity parallel to wave vector k)
+! Real part a1->c1, imaginary part b1->d1
+!
+                  c1(ikx,iky,ikz,1)=   (a1(ikx,iky,ikz,1)*kx(ikx)       *kx(ikx) &
+                                       +a1(ikx,iky,ikz,2)*ky(iky+ipy*ny)*kx(ikx) &
+                                       +a1(ikx,iky,ikz,3)*kz(ikz+ipz*nz)*kx(ikx) &
+                                       )/kmag/kmag
+                  c1(ikx,iky,ikz,2)=   (a1(ikx,iky,ikz,1)*kx(ikx)       *ky(iky+ipy*ny) &
+                                       +a1(ikx,iky,ikz,2)*ky(iky+ipy*ny)*ky(iky+ipy*ny) &
+                                       +a1(ikx,iky,ikz,3)*kz(ikz+ipz*nz)*ky(iky+ipy*ny) &
+                                       )/kmag/kmag
+                  c1(ikx,iky,ikz,3)=   (a1(ikx,iky,ikz,1)*kx(ikx)       *kz(ikz+ipz*nz) &
+                                       +a1(ikx,iky,ikz,2)*ky(iky+ipy*ny)*kz(ikz+ipz*nz) &
+                                       +a1(ikx,iky,ikz,3)*kz(ikz+ipz*nz)*kz(ikz+ipz*nz) &
+                                       )/kmag/kmag
+                  d1(ikx,iky,ikz,1)=   (b1(ikx,iky,ikz,1)*kx(ikx)       *kx(ikx) &
+                                       +b1(ikx,iky,ikz,2)*ky(iky+ipy*ny)*kx(ikx) &
+                                       +b1(ikx,iky,ikz,3)*kz(ikz+ipz*nz)*kx(ikx) &
+                                       )/kmag/kmag
+                  d1(ikx,iky,ikz,2)=   (b1(ikx,iky,ikz,1)*kx(ikx)       *ky(iky+ipy*ny) &
+                                       +b1(ikx,iky,ikz,2)*ky(iky+ipy*ny)*ky(iky+ipy*ny) &
+                                       +b1(ikx,iky,ikz,3)*kz(ikz+ipz*nz)*ky(iky+ipy*ny) &
+                                       )/kmag/kmag
+                  d1(ikx,iky,ikz,3)=   (b1(ikx,iky,ikz,1)*kx(ikx)       *kz(ikz+ipz*nz) &
+                                       +b1(ikx,iky,ikz,2)*ky(iky+ipy*ny)*kz(ikz+ipz*nz) &
+                                       +b1(ikx,iky,ikz,3)*kz(ikz+ipz*nz)*kz(ikz+ipz*nz) &
+                                       )/kmag/kmag
+              elseif (trim(sp)=='upe') then
+!
+! Decomposing u in wave space: u^$ = u-u^| (velocity perpentical to wave vector k)
+! Real part a1->c1, imaginary part b1->d1
+!
+                  c1(ikx,iky,ikz,1)= a1(ikx,iky,ikz,1)- &
+                                       (a1(ikx,iky,ikz,1)*kx(ikx)       *kx(ikx) &
+                                       +a1(ikx,iky,ikz,2)*ky(iky+ipy*ny)*kx(ikx) &
+                                       +a1(ikx,iky,ikz,3)*kz(ikz+ipz*nz)*kx(ikx) &
+                                       )/kmag/kmag
+                  c1(ikx,iky,ikz,2)= a1(ikx,iky,ikz,2)- &
+                                       (a1(ikx,iky,ikz,1)*kx(ikx)       *ky(iky+ipy*ny) &
+                                       +a1(ikx,iky,ikz,2)*ky(iky+ipy*ny)*ky(iky+ipy*ny) &
+                                       +a1(ikx,iky,ikz,3)*kz(ikz+ipz*nz)*ky(iky+ipy*ny) &
+                                       )/kmag/kmag
+                  c1(ikx,iky,ikz,3)= a1(ikx,iky,ikz,3)- &
+                                       (a1(ikx,iky,ikz,1)*kx(ikx)       *kz(ikz+ipz*nz) &
+                                       +a1(ikx,iky,ikz,2)*ky(iky+ipy*ny)*kz(ikz+ipz*nz) &
+                                       +a1(ikx,iky,ikz,3)*kz(ikz+ipz*nz)*kz(ikz+ipz*nz) &
+                                       )/kmag/kmag
+                  d1(ikx,iky,ikz,1)= b1(ikx,iky,ikz,1)- &
+                                       (b1(ikx,iky,ikz,1)*kx(ikx)       *kx(ikx) &
+                                       +b1(ikx,iky,ikz,2)*ky(iky+ipy*ny)*kx(ikx) &
+                                       +b1(ikx,iky,ikz,3)*kz(ikz+ipz*nz)*kx(ikx) &
+                                       )/kmag/kmag
+                  d1(ikx,iky,ikz,2)= b1(ikx,iky,ikz,2)- &
+                                       (b1(ikx,iky,ikz,1)*kx(ikx)       *ky(iky+ipy*ny) &
+                                       +b1(ikx,iky,ikz,2)*ky(iky+ipy*ny)*ky(iky+ipy*ny) &
+                                       +b1(ikx,iky,ikz,3)*kz(ikz+ipz*nz)*ky(iky+ipy*ny) &
+                                       )/kmag/kmag
+                  d1(ikx,iky,ikz,3)= b1(ikx,iky,ikz,3)- &
+                                       (b1(ikx,iky,ikz,1)*kx(ikx)       *kz(ikz+ipz*nz) &
+                                       +b1(ikx,iky,ikz,2)*ky(iky+ipy*ny)*kz(ikz+ipz*nz) &
+                                       +b1(ikx,iky,ikz,3)*kz(ikz+ipz*nz)*kz(ikz+ipz*nz) &
+                                       )/kmag/kmag
+              else
+                  print*,'There are no such sp=',trim(sp)
+              endif
+              k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
+              if (k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
+                   +c1(ikx,iky,ikz,ivec)**2+d1(ikx,iky,ikz,ivec)**2
+           enddo
+        enddo
+     enddo
+     !
+  enddo !(from loop over ivec)
+  !
+  !  Summing up the results from the different processors
+  !  The result is available only on root
+  !
+  call mpireduce_sum(spectrum,spectrum_sum,nk)
+  !
+  !  on root processor, write global result to file
+  !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
+  !
+!
+!  append to diagnostics file
+!
+  if (lroot) then
+     if (ip<10) print*,'Writing power spectra of variable',trim(sp) &
+          ,'to ',trim(datadir)//'/power'//trim(sp)//'.dat'
+     spectrum_sum=.5*spectrum_sum
+     open(1,file=trim(datadir)//'/power'//trim(sp)//'.dat',position='append')
+     write(1,*) t
+     write(1,'(1p,8e10.2)') spectrum_sum
+     close(1)
+  endif
+  !
+  endsubroutine power_udec
 !***********************************************************************
 endmodule power_spectrum
