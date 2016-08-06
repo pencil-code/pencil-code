@@ -2370,10 +2370,10 @@ semiauto-conf:
 	    LD_FLAGS="$(LD_FLAGS)" \
 	    LD_FOURIER="$(LD_FOURIER)" \
 	    LIBMPISUFFIX="$(LIBMPISUFFIX)"
+
 #
 #  Generate files for automated debugging and testing etc.
 #
-
 buildinfo:
 	@$(PC_XMLEXPORT) buildinfo -e "CC='$(CC)';CFLAGS='$(CFLAGS)';F90='$(F90)';F77='$(F77)';" \
 	    -e "FFLAGS='$(FFLAGS)';F90FLAGS='$(F90FLAGS)';F77FLAGS='$(F77FLAGS)';" \
@@ -2460,6 +2460,7 @@ legacy_code: Makefile.inc Makefile-standard.inc cparam.inc
 	fi
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
 	$${PENCIL_HOME}/utils/pc_identify_revision
+
 code: Makefile.inc Makefile-standard.inc cparam.inc
 	$${PENCIL_HOME}/utils/pc_identify_revision --reset
 	@echo "<buildtime>\n  <timestamp type='start'>`date`</timestamp>" > .buildtime
@@ -2471,8 +2472,8 @@ code: Makefile.inc Makefile-standard.inc cparam.inc
 	else \
 	    $(MAKE) -f Makefile.src $(MAKEOPTS) $(LAST_OBJ) $(EXECUTABLES) ; \
 	fi
-	$${PENCIL_HOME}/utils/pc_identify_revision
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
+	$${PENCIL_HOME}/utils/pc_identify_revision
 #
 FASTEXECS=startfast.x runfast.x combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x
 fast:
