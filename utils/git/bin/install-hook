@@ -1,0 +1,58 @@
+#!/bin/sh
+
+# Copy a Git hook into the user's .git/hooks/ directory.
+# If a different hook of that name is already present, back it up first.
+#
+# Usage:
+#   install-hook <hook-file>
+# Example:
+#   install-hook ${PENCIL_HOME}/utils/git/hooks/prepare-commit-msg
+
+
+# Require exactly one argument that does not start with a '-'
+if [ "$#" != '1' -o "$(echo "$1" | cut -c1)" = '-' ]; then
+    echo "install-hook: Copy a Git hook into the user's .git/hooks/ directory."
+    echo 'Usage:'
+    echo '  install-hook <hook-file>'
+    exit 1
+fi
+
+
+hash_content() {
+    # Print a hash of a file's content
+    filename="$1"
+    md5sum "${filename}" | cut -d ' ' -f 1
+}
+
+
+back_up() {
+    # Make a backup copy of a given file
+    file="$1"
+    backup="${file}.bak"
+    echo "Backing up ${file} -> ${backup}"
+    cp "${file}" "${backup}"
+}
+
+
+hook="$1"
+if [ ! -e "${hook}" ]; then echo "Hook ${hook} does not exist"; exit 1; fi
+if [ ! -r "${hook}" ]; then echo "Hook ${hook} is not readable"; exit 1; fi
+
+git_root="$(git rev-parse --show-toplevel)"
+hook_name="$(basename "${hook}")"
+destination="${git_root}/.git/hooks/${hook_name}"
+
+# Check if a hook is already present
+if [ -e "${destination}" ]; then
+    if [ "$(hash_content ${hook})" = "$(hash_content $destination)" ]; then
+        echo "Git hook .git/hooks/${hook_name} already in place"
+        exit 0
+    else
+        # A different hook exists: back it up
+        back_up "${destination}" "${hook}"
+    fi
+fi
+
+# Install the new hook
+echo "Installing Git hook ${destination}"
+cp "${hook}" "${destination}"
