@@ -1,0 +1,66 @@
+#!/bin/sh
+#
+# A pre-commit hook that prohibits commiting a merge of the upstream
+# (remote-tracking) branch into the local branch.
+#
+# Called by "git commit" with the name of the file that has the commit
+# message, followed by the description of the commit message's source.
+# If the hook fails with a non-zero status, the commit is aborted.
+#   
+# Notes:
+
+# - Though it may seem strange, this has to happen in a prepare-commit-msg
+#   hook, rather than a pre-commit hook, because this is the only hook
+#   that can detect a merge commit before it is done.
+# - This is a quick hack, and it would be preferable to reimplement this
+#   in Perl or Python.
+# - We do not use the '@{u}' syntax, because old Git clients do not
+#   support it. [It appeared somewhere between Git 1.5.4 {Ubuntu
+#   Hardy} and 1.7.0 {Ubuntu Lucid}]
+
+# If this is a merge commit, the second argument is 'merge':
+if [ "$2" != 'merge' ]; then
+   exit 0
+fi
+
+
+tracking_branch() {
+    # Return the current remote-tracking branch (in the form
+    # refs/remotes/github/master)
+    # http://stackoverflow.com/questions/2969214/git-programmatically-know-by-how-much-the-branch-is-ahead-behind-a-remote-branc
+
+    # work out the current branch name
+    currentbranch=$(expr $(git symbolic-ref HEAD) : 'refs/heads/\(.*\)')
+    [ -n "$currentbranch" ] || (echo "You don't seem to be on a branch"; exit 1)
+
+    # look up this branch in the configuration
+    remote=$(git config branch.$currentbranch.remote)
+    remote_ref=$(git config branch.$currentbranch.merge)
+    
+    # convert the remote ref into the tracking ref... this is a hack
+    remote_branch=$(expr $remote_ref : 'refs/heads/\(.*\)')
+    tracking_branch=refs/remotes/$remote/$remote_branch
+
+    echo $tracking_branch
+}
+
+
+if [ "$(git rev-parse FETCH_HEAD)" = "$(git rev-parse $(tracking_branch))" ]; then
+    echo
+    echo "You are trying to merge the remote-tracking branch into your working branch"
+    echo "(e.g. origin/master into master)."
+    echo "Please don't do that."
+    echo
+    echo "Try running the following commands:"
+    echo ""
+    echo "\$ git reset --merge"
+    echo "\$ git rebase --autostash"
+    echo ""
+    echo "To avoid this problem in the future, don't use 'git pull' without the"
+    echo "'--rebase' flag."
+    echo ""
+    echo "[Ignore the following line:]"
+    exit 1
+else
+    exit 0
+fi
