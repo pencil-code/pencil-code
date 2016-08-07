@@ -923,9 +923,11 @@ module Diagnostics
 !
 !  25-apr-16/ccyang: coded
 !
-      call trim_avg1d('xy')
-      call trim_avg1d('xz')
-      call trim_avg1d('yz')
+      if (lroot) then
+        call trim_avg1d('xy')
+        call trim_avg1d('xz')
+        call trim_avg1d('yz')
+      endif
 !
     endsubroutine trim_1daverages
 !***********************************************************************
@@ -937,11 +939,11 @@ module Diagnostics
 !
       character(len=2) :: plane
 !
-      integer, parameter :: UNIT = 1
+      integer, parameter :: UNIT = 18
       character(len=fnlen) :: file
       real, dimension(:), allocatable :: avg
       logical :: flag
-      integer :: navg, nrec, i
+      integer :: navg, nrec, i, ios
       real :: tavg
 !
 !  Check the size of each record.
@@ -957,7 +959,7 @@ module Diagnostics
 !
 !  Return if no work needs to be done.
 !
-      if (.not. lroot .or. navg <= 0) return
+      if (navg <= 0) return
 !
 !  Check file existence.
 !
@@ -999,6 +1001,7 @@ module Diagnostics
           read(UNIT) avg
         else
           read(UNIT,*) avg
+!if (i/=0) print*, 'i, nrec=', i, nrec
         endif
 !
         nrec = nrec + 1
@@ -1013,8 +1016,9 @@ module Diagnostics
             read(UNIT) tavg
             read(UNIT) avg
           else bin
-            read(UNIT,'(1pe12.5)') tavg
-            read(UNIT,'(1p,8e14.5e3)') avg
+            read(UNIT,*) tavg
+            read(UNIT,*,iostat=ios) avg
+if (ios/=0) print*, 'ios, i=', ios, i
           endif bin
         enddo forward
         endfile (UNIT)
@@ -3245,7 +3249,7 @@ module Diagnostics
 
       fnamexy=0.
 
-      if (lcaproot) then
+      if (lcaproot.and..not.allocated(fnamexy_cap)) then
         allocate(fnamexy_cap(nnamel,nx,nycap),stat=stat)
         if (stat>0) call fatal_error('allocate_zaverages_data', &
                                      'Could not allocate memory for fnamexy_cap')

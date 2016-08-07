@@ -141,6 +141,7 @@ module Hydro
   real :: rnoise_int=impossible,rnoise_ext=impossible
   real :: PrRa  !preliminary
   real :: amp_factor=0.,kx_uu_perturb=0.
+  integer, dimension(ninit) :: ll_sh=0, mm_sh=0
 !
   namelist /hydro_init_pars/ &
       ampluu, ampl_ux, ampl_uy, ampl_uz, phase_ux, phase_uy, phase_uz, &
@@ -157,7 +158,8 @@ module Hydro
       lscale_tobox, ampl_Omega, omega_ini, r_cyl, skin_depth, incl_alpha, &
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
       rnoise_int, rnoise_ext, lreflecteddy, louinit, hydro_xaver_range, max_uu,&
-      amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH
+      amp_factor,kx_uu_perturb,llinearized_hydro, hydro_zaver_range, index_rSH, &
+      ll_sh, mm_sh
 !
 !  Run parameters.
 !
@@ -1172,10 +1174,11 @@ module Hydro
       real, dimension (nx,3) :: tmp_nx3
       real, dimension (mx) :: tmpmx
       real, dimension (nx) :: r,p1,tmp,prof,xc0,yc0
+      real, dimension (:,:), allocatable :: yz
       real :: kabs,crit,eta_sigma,tmp0
       real :: a2, rr2, wall_smoothing
-      real :: dis, xold,yold,uprof, factx, factz
-      integer :: j,i,l,ixy,ix,iy,iz,iz0
+      real :: dis, xold,yold,uprof, factx, factz, sph_har_der
+      integer :: j,i,l,ixy,ix,iy,iz,iz0,iyz
 !
 !  inituu corresponds to different initializations of uu (called from start).
 !
@@ -1681,7 +1684,7 @@ module Hydro
               if (dis<5*sqrt(1./kx_uu**2+1./ky_uu**2)) then
                 tmp(ixy)=-tmp(ixy-1)
                 if (lroot) &
-                  write(*,*) 'PC:init_uu ', 'Eddies have come very close'
+                  write(*,*) 'init_uu: random-2D-eddies have come very close!'
               endif
               f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)+tmp(ixy)*ampluu(j) &
               *exp(-kx_uu*(x(l1:l2)-xc0(ixy))**2-ky_uu*(y(m)-yc0(ixy))**2) &
@@ -1794,6 +1797,39 @@ module Hydro
         case('Gressel-hs')
           call information('init_uu', &
               'Gressel hydrostatic equilibrium setup done in interstellar')
+        case('spher-harm-poloidal')
+          if (.not.lspherical_coords) call fatal_error("init_uu", &
+              "spher-harm-poloidal only meaningful for spherical coordinates"//trim(inituu(j)))
+          tmp=(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1))
+          prof=tmp/x(l1:l2) + 2.*x(l1:l2)-(xyz0(1)+xyz1(1))
+          if (lyang) then
+            allocate(yz(2,ny*nz))
+            call yin2yang_coors(costh(m1:m2),sinth(m1:m2),cosph(n1:n2),sinph(n1:n2),yz)
+            iyz=1
+            do m=m1,m2
+              do n=n1,n2
+!if (iproc_world==55) print*, 'm,n,yz=', m,n,yz(:,iyz)
+                tmp_nx3(:,1)=ampluu(j)*2.*tmp*ylm_other(yz(1,iyz),yz(2,iyz),ll_sh(j),mm_sh(j),sph_har_der)
+                tmp_nx3(:,2)=ampluu(j)*prof*sph_har_der
+                if (mm_sh(j)/=0) then
+                  tmp_nx3(:,3) = -ampluu(j)*prof*mm_sh(j)/sin(yz(1,iyz))*sin(yz(2,iyz))/cos(yz(2,iyz))
+                else
+                  tmp_nx3(:,3) = 0.
+                endif
+                call transform_thph_yy( tmp_nx3, (/1,1,1/), f(l1:l2,m,n,iux:iuz), yz(1,iyz), yz(2,iyz) )
+                iyz=iyz+1
+              enddo
+            enddo
+          else
+            do n=n1,n2
+              do m=m1,m2
+                f(l1:l2,m,n,iux) = ampluu(j)*2.*tmp*ylm(ll_sh(j),mm_sh(j),sph_har_der)
+                f(l1:l2,m,n,iuy) = ampluu(j)*prof*sph_har_der
+                if (mm_sh(j)/=0) &      ! tb improved!
+                  f(l1:l2,m,n,iuz) = -ampluu(j)*prof*mm_sh(j)/sinth(m)*sinph(n)/cosph(n)
+              enddo
+            enddo
+          endif
         case default
           !
           !  Catch unknown values
@@ -1815,7 +1851,7 @@ module Hydro
 !  top of the initialization so far.
 !
       if (urand /= 0) then
-        if (lroot) print*, 'init_uu: Adding random uu fluctuations'
+        if (lroot) print*, 'init_uu: Adding random uu fluctuations.'
         if (urand > 0) then
           do i=iux,iuz
             do n=1,mz; do m=1,my
@@ -1824,7 +1860,7 @@ module Hydro
             enddo; enddo
           enddo
         else
-          if (lroot) print*, 'init_uu:  ... multiplicative fluctuations'
+          if (lroot) print*, 'init_uu: Multiplicative fluctuations.'
           do i=iux,iuz
             do n=1,mz; do m=1,my
               call random_number_wrapper(tmpmx)
@@ -1837,8 +1873,8 @@ module Hydro
 ! mgellert, add random fluctuation only inside domain, not on boundary
 !           (to be able to use the 'freeze' option for BCs)
       if (urandi /= 0) then
-        if (lroot) print*, 'init_uu: Adding random uu fluctuations (not on boundary), urandi=',urandi
         if (urandi > 0) then
+          if (lroot) print*, 'init_uu: Adding random uu fluctuations (not on boundary), urandi=',urandi
           do i=iux,iuz
             do n=n1+1,n2-1; do m=m1,m2; do l=l1+1,l2-1
               call random_number_wrapper(tmp0)
@@ -1846,7 +1882,7 @@ module Hydro
             enddo; enddo; enddo
           enddo
         else
-          if (lroot) print*, 'init_uu:  ... multiplicative fluctuations (not on boundary)'
+          if (lroot) print*, 'init_uu: Multiplicative fluctuations (not on boundary), urandi=',urandi
           do i=iux,iuz
             do n=n1+1,n2-1; do m=m1,m2; do l=l1+1,l2-1
               call random_number_wrapper(tmp0)
@@ -2782,6 +2818,7 @@ module Hydro
         if (n==iz2_loc) divu_xy2(:,m-m1+1)=p%divu
         if (n==iz3_loc) divu_xy3(:,m-m1+1)=p%divu
         if (n==iz4_loc) divu_xy4(:,m-m1+1)=p%divu
+!
         do j=1,3
           if (.not.lyang) &
             oo_yz(m-m1+1,n-n1+1,j)=p%oo(ix_loc-l1+1,j)
@@ -6123,7 +6160,7 @@ module Hydro
       do ell=0,lSH_max
         do emm=-ell,ell
           imode=(ell+1)*(ell+1)-ell+emm
-          call ylm(y(m),z(n),ell,emm,sph_har)
+          sph_har= ylm(ell,emm)
           psilm(:,imode) = psi*rselect*sph_har*one_by_rsqr
         enddo
       enddo
