@@ -38,11 +38,11 @@ module power_spectrum
   integer, dimension(3,nk_max) :: kxrange=0, kyrange=0
   integer, dimension(3,nz_max) :: zrange=0
   integer :: n_spectra=0
-  integer :: inz=0
+  integer :: inz=0, n_segment_x=1, n_segment_y=1, ndelx
 !
   namelist /power_spectrum_run_pars/ &
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &
-      inz
+      inz, n_segment_x
 !
   contains
 !***********************************************************************
@@ -122,6 +122,11 @@ module power_spectrum
       if (bxy_spec  ) n_spectra = n_spectra+1
       if (jxbxy_spec) n_spectra = n_spectra+1
 !
+      if (n_segment_x < 1) &
+        call fatal_error('read_power_spectrum_run_pars', &
+                         'n_segment_x < 1')
+      ndelx=nxgrid/n_segment_x
+
     endsubroutine read_power_spectrum_run_pars
 !***********************************************************************
     subroutine get_kranges( ckrange, kranges, ngrid )
@@ -437,7 +442,7 @@ module power_spectrum
     intent(out) :: ai
 !
     real, dimension(nx) :: bb
-    integer :: m,n,ind,ivec
+    integer :: m,n,ind,ivec,i,la,le,res
 !
     ivec = ioptest(ivecp,1)
 !
@@ -481,7 +486,16 @@ module power_spectrum
 !
 !  Doing the Fourier transform
 !
-    call fourier_transform_xy(ar,ai)
+    res=mod(nxgrid,n_segment_x)
+    la=0
+    do i=1,n_segment_x
+      le=la+1; la=la+ndelx 
+      if (res>0) then
+        la=la+1
+        res=res-1
+      endif
+      call fourier_transform_xy(ar(la:le,:,:),ai(la:le,:,:))
+    enddo
 !
    return
 !
