@@ -4228,28 +4228,38 @@ module General
 
     endsubroutine yy_transform_strip
 !***********************************************************************
-    subroutine transform_thph_yy( vec, powers, transformed )
+    subroutine transform_thph_yy( vec, powers, transformed, theta, phi )
 !
 !  Transforms theta and phi components of vector vec defined with the Yang
 !  grid basis
 !  to the Yin grid basis using theta and phi coordinates of the Yang grid.
-!  For use on pencils within mn-loop.
+!  Without optional parameters theta, phi For use on pencils within mn-loop.
 !  Note that components of transformed are undefined if corresponding power 
 !  in mask powers is 0.
+!  If theta, phi are present, it is for use outside mn-loop or for other 
+!  coordinate than y(m), z(n)
 !
 ! 30-mar-2016/MR: coded
+! 28-jun-2016/MR: added optional parameters
 !
       use Cdata, only: costh, sinth, cosph, sinph, m, n
 
       real,    dimension(:,:),intent(IN) :: vec
       integer, dimension(3),  intent(IN) :: powers
       real,    dimension(:,:),intent(OUT):: transformed
+      real, optional,         intent(IN) :: theta, phi
 
-      real :: sinth1, a, b
+      real :: sinth1, a, b, cost, cosp
 
       if (any(powers(2:3)/=0)) then
-        sinth1=1./sqrt(costh(m)**2+(sinth(m)*cosph(n))**2)
-        a=-cosph(n)*sinth1; b=sinph(n)*costh(m)*sinth1
+        if (present(theta)) then
+          cosp=cos(phi); cost=cos(theta)
+          sinth1=1./sqrt(cost**2+(sin(theta)*cosp)**2)
+          a=-cosp*sinth1; b=sin(phi)*cost*sinth1
+        else
+          sinth1=1./sqrt(costh(m)**2+(sinth(m)*cosph(n))**2)
+          a=-cosph(n)*sinth1; b=sinph(n)*costh(m)*sinth1
+        endif
       endif
 
       if (powers(1)/=0) &
