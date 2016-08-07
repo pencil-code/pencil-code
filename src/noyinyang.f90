@@ -36,8 +36,27 @@ contains
       buffer=0.
 
     endsubroutine bilin_interp
+!**************************************************************************
+    subroutine biquad_interp(indcoeffs, ith, iph, f, buffer, i2buf, i3buf)
+!
+!  Dummy routine.
+!
+!  20-dec-15/MR: coded
+! 
+      type(ind_coeffs),         intent(IN) :: indcoeffs
+      integer,                  intent(IN) :: ith, iph, i2buf, i3buf
+      real, dimension(:,:,:,:), intent(IN) :: f
+      real, dimension(:,:,:,:), intent(OUT):: buffer
+
+      if (lroot) &
+        print*, 'bilin_interp: not implemented in Fortran 95'
+      stop
+
+      buffer=0.
+
+    endsubroutine biquad_interp
 !***********************************************************************
-    function prep_bilin_interp(thphprime,indcoeffs,th_range) result (nok)
+    function prep_interp(thphprime,indcoeffs,th_range) result (nok)
 !
 !  Dummy routine.
 !
@@ -49,16 +68,16 @@ contains
 
       integer :: nok
 
+      nok=0
       if (lroot) &
-        print*, 'prep_bilin_interp: not implemented in Fortran 95'
+        print*, 'prep_interp: not implemented in Fortran 95'
       stop
 
-      nok=0
       indcoeffs%inds=0
       indcoeffs%coeffs=0.
       if (present(th_range)) th_range=0.
 !
-    endfunction prep_bilin_interp
+    endfunction prep_interp
 !**************************************************************************
     subroutine coeffs_to_weights(intcoeffs,indweights)
 !
@@ -77,5 +96,5 @@ contains
       indweights%coeffs=0.
 
     endsubroutine coeffs_to_weights
-!**************************************************************************
+!*******************************************************************
 endmodule Yinyang

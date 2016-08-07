@@ -14,10 +14,69 @@ module Yinyang
   type ind_coeffs
     integer, dimension(:,:,:), allocatable :: inds
     real, dimension(:,:,:), allocatable :: coeffs
+    real, dimension(:,:,:,:), allocatable :: coeffs2
   end type
+!
+  !logical :: lbiquad=.true.
+  logical :: lbiquad=.false.
 
   contains
 
+!**************************************************************************
+   subroutine biquad_interp(indcoeffs, ith, iph, f, buffer, i2buf, i3buf)
+!
+!  Performs biquadratic interpolation for a pencil at position (ith, iph) of the
+!  original strip from values in f-array using the precalculated weights
+!  in indcoeffs%coeffs. Result is returned in buffer(i2buf,i3buf)=(ith,iph)
+!  or buffer(i2buf,i3buf)=(iph,ith), the latter if transposition is required.
+!
+!  20-dec-15/MR: coded
+! 
+      use Cdata, only: y,z
+      use General, only: transform_spher_cart_yy, notanumber
+
+      type(ind_coeffs),         intent(IN) :: indcoeffs
+      integer,                  intent(IN) :: ith, iph, i2buf, i3buf
+      real, dimension(:,:,:,:), intent(IN) :: f
+      real, dimension(:,:,:,:), intent(OUT):: buffer
+
+      integer :: indthl, indthu, indphl, indphu, igp, igt, nphrng, nthrng
+      real, dimension(:,:,:,:), allocatable :: tmp
+
+      indthl=indcoeffs%inds(ith,iph,1); indthu=indcoeffs%inds(ith,iph,2)
+      if (indthl==0) return
+
+      indphl=indcoeffs%inds(ith,iph,3); indphu=indcoeffs%inds(ith,iph,4)
+      nthrng=indthu-indthl+1; nphrng=indphu-indphl+1
+
+      if (size(buffer,4)==3) then
+!
+!  Vector field, is transformed to Cartesian basis of *other* grid before being interpolated 
+!
+        allocate (tmp(size(buffer,1),nthrng,nphrng,3))
+        call transform_spher_cart_yy(f,indthl,indthu,indphl,indphu,tmp,lyy=.true.)
+
+        do igp=1,nphrng; do igt=1,nthrng
+          buffer(:,i2buf,i3buf,:) = buffer(:,i2buf,i3buf,:)+indcoeffs%coeffs2(ith,iph,igt,igp)*tmp(:,igt,igp,:)
+        enddo; enddo
+
+if (notanumber(buffer(:,i2buf,i3buf,:))) print*, 'indthl,indph, i2buf,i3buf=', indthl,indph, i2buf,i3buf
+      else
+!
+!  Scalar field - no transformation.
+!
+        do igp=1,nphrng; do igt=1,nthrng
+          buffer(:,i2buf,i3buf,1) = buffer(:,i2buf,i3buf,1) &
+                                   +indcoeffs%coeffs2(ith,iph,igt,igp)*f(:,indthl+igt-1,indphl+igp-1,1)
+        enddo; enddo
+if (iproc_world==5) then
+!write(23,'(4(i2,1x),30(e13.6,1x))') ith,iph,nthrng,nphrng,y(indthl:indthu),z(indphl:indphu), f(l1+8,indthl:indthu,indphl:indphu,1), buffer(l1+8,i2buf,i3buf,1)
+endif
+if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
+  ',indthl,indph, i2buf,i3buf=', indthl,indph,ith,iph,i2buf,i3buf
+      endif
+
+    endsubroutine biquad_interp
 !**************************************************************************
    subroutine bilin_interp(indcoeffs, ith, iph, f, buffer, i2buf, i3buf)
 !
@@ -69,7 +128,94 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
 
     endsubroutine bilin_interp
 !***********************************************************************
-    function prep_bilin_interp(thphprime,indcoeffs,th_range) result (nok)
+    subroutine prep_biquad_interp(pprime,indth,indph,indcoeffs,ip,jp,ma,me,na,ne)
+
+      use Cdata, only: y, z, dy, dz
+
+      real, dimension(2),intent(IN)   :: pprime
+      integer,           intent(IN)   :: indth,indph,ip,jp,ma,me,na,ne
+      type(ind_coeffs),  intent(INOUT):: indcoeffs
+
+      real, dimension(4) :: qth, qph
+      integer :: i, igt, igp, nthrng, nphrng
+      real, dimension(3) :: gth, gph3, gph4
+      real :: dthp, dphp, w1, w2, w1ph, w2ph, w2th
+
+      nthrng=3
+      if (indth==ma+1) then
+        indcoeffs%inds(ip,jp,1:2)=(/ma,ma+2/)
+      elseif (indth==me) then
+        indcoeffs%inds(ip,jp,1:2)=(/me-2,me/)
+      else
+        nthrng=4; indcoeffs%inds(ip,jp,1:2)=(/indth-2,indth+1/)
+      endif
+
+      nphrng=3
+      if (indph==na+1) then
+        indcoeffs%inds(ip,jp,3:4)=(/na,na+2/)
+      elseif (indph==ne) then
+        indcoeffs%inds(ip,jp,3:4)=(/ne-2,ne/)
+      else
+        nphrng=4; indcoeffs%inds(ip,jp,3:4)=(/indph-2,indph+1/)
+      endif
+
+      do i=1,nthrng
+        qth(i) = (pprime(1)-y(i+indcoeffs%inds(ip,jp,1)-1))/dy   ! requires equidistant grid in y
+      enddo
+
+      do i=1,nphrng
+        qph(i) = (pprime(2)-z(i+indcoeffs%inds(ip,jp,3)-1))/dz   ! requires equidistant grid in z
+      enddo
+
+      gth =(/.5*qth(2)*qth(3),-qth(1)*qth(3),.5*qth(1)*qth(2)/)
+      gph3=(/.5*qph(2)*qph(3),-qph(1)*qph(3),.5*qph(1)*qph(2)/)
+!print*, 'gth,gph3=', sum(gth), sum(gph3)
+      do igp=1,3; do igt=1,3
+        indcoeffs%coeffs2(ip,jp,igt,igp)=gth(igt)*gph3(igp)
+      enddo; enddo
+!print*, 'indcoeffs33=', sum(indcoeffs%coeffs2(ip,jp,:,:))
+
+      if (nphrng==4) then
+
+        gph4=(/.5*qph(3)*qph(4),-qph(2)*qph(4),.5*qph(2)*qph(3)/)
+!print*, 'gph4=', sum(gph4)
+        w1ph=-qph(3); w2ph=qph(2)
+        indcoeffs%coeffs2(ip,jp,1:3,1:3)=w1ph*indcoeffs%coeffs2(ip,jp,1:3,1:3)
+
+        do igp=1,3; do igt=1,3
+          indcoeffs%coeffs2(ip,jp,igt,igp+1)=indcoeffs%coeffs2(ip,jp,igt,igp+1)+w2ph*gth(igt)*gph4(igp)
+        enddo; enddo
+!print*, 'indcoeffs34=', sum(indcoeffs%coeffs2(ip,jp,:,:))
+
+      endif
+
+      if (nthrng==4) then
+
+        gth=(/.5*qth(3)*qth(4),-qth(2)*qth(4),.5*qth(2)*qth(3)/)
+!print*, 'gth4=', sum(gth)
+        w1=-qth(3); w2th=qth(2)
+        indcoeffs%coeffs2(ip,jp,1:3,:)=w1*indcoeffs%coeffs2(ip,jp,1:3,:)
+       
+        if (nphrng==4) then; w2=w2th*w1ph; else; w2=w2th; endif
+
+        do igp=1,3; do igt=1,3
+          indcoeffs%coeffs2(ip,jp,igt+1,igp)=indcoeffs%coeffs2(ip,jp,igt+1,igp)+w2*gth(igt)*gph3(igp)
+        enddo; enddo
+!if (nphrng==3) print*, 'indcoeffs43=', sum(indcoeffs%coeffs2(ip,jp,:,:))
+
+        if (nphrng==4) then
+          w2=w2th*w2ph
+          do igp=1,3; do igt=1,3
+            indcoeffs%coeffs2(ip,jp,igt+1,igp+1)=indcoeffs%coeffs2(ip,jp,igt+1,igp+1)+w2*gth(igt)*gph4(igp)
+          enddo; enddo
+!print*, 'indcoeffs44=', sum(indcoeffs%coeffs2(ip,jp,:,:))
+        endif
+
+      endif
+
+    endsubroutine prep_biquad_interp
+!***********************************************************************
+    function prep_interp(thphprime,indcoeffs,th_range) result (nok)
 !
 !  For each of the points in the strip thphprime (with shape 2 x thprime-extent x
 !  phprime-extent), arbitrarily positioned in the yz-plane, determine in
@@ -101,7 +247,11 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
       sz1=size(thphprime,2); sz2=size(thphprime,3)
 
       if (allocated(indcoeffs%inds)) deallocate(indcoeffs%inds,indcoeffs%coeffs)
-      allocate(indcoeffs%inds(sz1,sz2,2))
+      if (lbiquad) then
+        allocate(indcoeffs%inds(sz1,sz2,4))
+      else
+        allocate(indcoeffs%inds(sz1,sz2,2))
+      endif
       indcoeffs%inds=0
 
       nok=0
@@ -163,26 +313,40 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
           endif
 
           if (okt.and.okp) then
-
-            if (.not.allocated(indcoeffs%coeffs)) then
-              allocate(indcoeffs%coeffs(sz1,sz2,4))
-              indcoeffs%coeffs=0.
-            endif
 !
 !  If both detections positive, calculate interpolation weights.
 !
             nok=nok+1
 
-            dth=y(indth)-y(indth-1); dph=z(indph)-z(indph-1)
-            dthp=thphprime(1,ip,jp)-y(indth-1)
-            dphp=thphprime(2,ip,jp)-z(indph-1)
+            if (lbiquad) then
 
-            qth2 = dthp/dth; qth1 = 1.-qth2
-            qph2 = dphp/dph; qph1 = 1.-qph2
+              if (.not.allocated(indcoeffs%coeffs2)) then
+                allocate(indcoeffs%coeffs2(sz1,sz2,4,4))
+                indcoeffs%coeffs2=0.
+              endif
+if (iproc_world==5) then
+write(24,'(2(i2,1x),2(e13.6,1x))') ip, jp, thphprime(:,ip,jp)
+endif
+              call prep_biquad_interp(thphprime(:,ip,jp),indth,indph,indcoeffs,ip,jp,ma,me,na,ne)
 
-            indcoeffs%coeffs(ip,jp,:) = (/qth1*qph1,qth1*qph2,qth2*qph1,qth2*qph2/)
+            else
+
+              if (.not.allocated(indcoeffs%coeffs)) then
+                allocate(indcoeffs%coeffs(sz1,sz2,4))
+                indcoeffs%coeffs=0.
+              endif
+
+              dth=y(indth)-y(indth-1); dph=z(indph)-z(indph-1)    ! dy, dz !
+              dthp=thphprime(1,ip,jp)-y(indth-1)
+              dphp=thphprime(2,ip,jp)-z(indph-1)
+
+              qth2 = dthp/dth; qth1 = 1.-qth2
+              qph2 = dphp/dph; qph1 = 1.-qph2
+
+              indcoeffs%coeffs(ip,jp,:) = (/qth1*qph1,qth1*qph2,qth2*qph1,qth2*qph2/)
 !if (iproc_world==0) &
   !print*, 'iproc_world, coeffs=', iproc_world, indcoeffs%inds(ip,jp,:)
+            endif
           endif
 
         enddo
@@ -207,7 +371,7 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
         endif
       endif
 
-    endfunction prep_bilin_interp
+    endfunction prep_interp
 !**************************************************************************
     subroutine coeffs_to_weights(intcoeffs,indweights)
 !
