@@ -27,8 +27,6 @@ module Yinyang_mpi
   integer, dimension(:,:,:), allocatable :: thranges_gap, thranges_cap
   integer :: offset_cap=0, caproot=-1, nycap=0
 !
-  logical :: lcalled=.false.
-
   contains
 
 !*******************************************************************
@@ -236,6 +234,7 @@ module Yinyang_mpi
                  iproc_yin, iproc_yang, newlines, offset, nlines_tot
       integer, dimension(2) :: rng
       logical :: lwith_ghosts
+      logical, save :: lcalled=.false.
 
       if (lcalled) then
         nycap_=nycap
@@ -277,7 +276,7 @@ module Yinyang_mpi
 !  yloc x zloc: strip of Yin-phi coordinate lines from Yin-proc iproc_yin.
 !
             call yy_transform_strip_other(yloc,zloc,thphprime)
-            nok=prep_bilin_interp(thphprime,intcoeffs,thrange_gap(:,ifound+1))
+            nok=prep_interp(thphprime,intcoeffs,thrange_gap(:,ifound+1))
 !
 !  nok: number of points of the strip claimed by executing proc; 
 !  intcoeffs: interpolation data for these points; thrange_gap: y-range of
@@ -376,7 +375,7 @@ if (iproc==caproot) print*, 'North: yloc=', yloc
 !  yloc x zloc: strip of all Yin-phi coordinate lines in cap.
 !
           call yy_transform_strip_other(yloc,zloc,thphprime)
-          nok=prep_bilin_interp(thphprime,intcoeffs,thrange_cap)
+          nok=prep_interp(thphprime,intcoeffs,thrange_cap)
 !
 !  nok: number of points of the strip claimed by executing proc; 
 !  intcoeffs: interpolation data for these points; thrange_cap: y-range of
