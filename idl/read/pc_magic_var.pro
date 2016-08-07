@@ -171,6 +171,7 @@ pro pc_magic_var, variables, tags, $
 ;
   for iv=0,n_elements(variables)-1 do begin
     tags[iv]=variables[iv]
+print,     tags[iv],variables[iv]
 ; x Coordinate
     if (variables[iv] eq 'xx') then begin
       variables[iv]='spread(spread(x,1,n_elements(y)),2,n_elements(z))'
@@ -420,16 +421,16 @@ pro pc_magic_var, variables, tags, $
       endelse
 ; Divergence of dust velocity
     endif else if (variables[iv] eq 'divud') then begin
-      variables[iv]='div(uud[*,*,*,*,iyy])'             ; not correct if uud has additional dimension for dust species
+      variables[iv]='(size(uud))[0] eq 5 ? div(uud[*,*,*,*,iyy]) : div(uud[*,*,*,*,*,iyy])'
 ; Dust density
     endif else if (variables[iv] eq 'rhod') then begin
-      variables[iv]="pc_dust_aux(nd=nd,md=md,param=param,var='rhod')"
+      variables[iv]="pc_dust_aux(nd=(size(nd))[0] eq 4 ? nd[*,*,*,iyy] : nd[*,*,*,*,iyy], md=(size(md))[0] eq 4 ? md[*,*,*,iyy] : md[*,*,*,*,iyy],param=param,var='rhod')"
 ; Dust distribution function dn = f dm
     endif else if (variables[iv] eq 'fd') then begin
-      variables[iv]="pc_dust_aux(nd=nd,param=param,var='fd')"
+      variables[iv]="pc_dust_aux(nd=(size(nd))[0] eq 4 ? nd[*,*,*,iyy] : nd[*,*,*,*,iyy],param=param,var='fd')"
 ; Dust grain radius
     endif else if (variables[iv] eq 'ad') then begin
-      variables[iv]="pc_dust_aux(md=md,param=param,var='ad')"
+      variables[iv]="pc_dust_aux(md=(size(md))[0] eq 4 ? md[*,*,*,iyy] : md[*,*,*,*,iyy],param=param,var='ad')"
 ; Dust-to-gas ratio (sum over all bins)
     endif else if (variables[iv] eq 'epsd') then begin
       variables[iv]="pc_dust_aux(lnrho=lnrho[*,*,*,iyy],nd=nd,md=md,par=param,var='epsd')"
@@ -442,7 +443,7 @@ pro pc_magic_var, variables, tags, $
       variables[iv]="pc_dust_aux(param=param,var='unit_md')"
 ; Average grain mass (mean over all bins)
     endif else if (variables[iv] eq 'mdave') then begin
-      variables[iv]="pc_dust_aux(nd=nd,md=md,param=param,var='mdave')"
+      variables[iv]="pc_dust_aux(nd=(size(nd))[0] eq 4 ? nd[*,*,*,iyy] : nd[*,*,*,*,iyy],md=(size(md))[0] eq 4 ? md[*,*,*,iyy] : md[*,*,*,*,iyy],param=param,var='mdave')"
 ; Interstellar cooling term (as switched by the cooling_select param.)
     endif else if (variables[iv] eq 'ismcool') then begin
       variables[iv]="pc_interstellar_cool(lnrho=lnrho[*,*,*,iyy],ss=ss[*,*,*,iyy],param=param)"
