@@ -20,7 +20,7 @@ function curlcurl,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
   default, ghost, 0
 ;
   s = size(f)
-  if (s[0] ne 4) then message, "curlcurl is only implemented for 4D arrays."
+  if (s[0] lt 4) then message, "curlcurl is only implemented for 4D arrays."
   w = make_array(size=s)
 ;
   ; The following block is optimized, please leave it as it is,
@@ -39,7 +39,6 @@ function curlcurl,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   if (coord_system eq 'cylindrical') then $
     print, 'curlcurl: Warning -- not fully implemented for cylindrical coordinates!'
-
   if (coord_system eq 'spherical') then begin
 ;
     sin_y = sin(y[m1:m2])
