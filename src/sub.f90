@@ -21,7 +21,7 @@ module Sub
   private
 !
   public :: step,stepdown,der_stepdown
-  public :: ylm
+  public :: ylm, ylm_other
   public :: kronecker_delta
 !
   public :: identify_bcs, parse_bc, parse_bc_rad, parse_bc_radg
@@ -720,7 +720,7 @@ module Sub
 !
 !  10-oct-06/axel: coded
 !
-      real, dimension (nx,3)      :: a
+      real, dimension (nx,3)   :: a
       real, dimension (nx,3,3) :: b
       real, dimension (nx,3)   :: c
       integer :: i
@@ -3889,54 +3889,74 @@ module Sub
       ij=ii*(ii-1)/2 + jj
     endsubroutine lower_triangular_index
 !***********************************************************************
-    subroutine ylm(theta,phi,ell,emm,sph_har)
+    recursive function ylm(ell,emm,der) result (sph_har)
 !
 !  Spherical harmonic
 !
 !   24-nov-14/dhruba: copied from step
 !
-      real :: theta,phi
-      real :: cos2p
-      integer :: ell,emm
       real :: sph_har
+      real :: theta,phi
+      integer :: ell,emm
+      real, optional :: der
+!
+      real :: cos2p,cost,sint,cosp,sinp
+      integer :: aemm
+      logical :: lother
 !
 ! the one over pi, cosines and sines below may be pre-calculated
 !
-      cos2p=2*cosph(n)*cosph(n)-1
+      lother=.false.
+      cost=costh(m); sint=sinth(m); cosp=cosph(n); sinp=sinph(n)
+      goto 1
+
+      entry ylm_other(theta,phi,ell,emm,der) result (sph_har)
+
+      lother=.true.
+      cost=cos(theta); sint=sin(theta); cosp=cos(phi); sinp=sin(phi)
+      
+ 1    aemm=iabs(emm)
       select case (ell)
           case (0)
             sph_har=(0.5)*sqrt(1./pi)
           case (1)
-            select case(emm)
-              case (-1)
-                sph_har=(0.5)*sqrt(3./(2*pi))*sinth(m)*cosph(n)
+            select case(aemm)
               case (0)
-                sph_har=(0.5)*sqrt(3./pi)*costh(m)
+                sph_har=(0.5)*sqrt(3./pi)*cost
               case (1) 
-                sph_har=-(0.5)*sqrt(3./(2*pi))*sinth(m)*cosph(n)
+                sph_har=(0.5)*sqrt(3./(2*pi))*sint*cosp
+                if (emm<0) sph_har = -sph_har       ! Condon-Shortley phase
               case default
                 call fatal_error('sub:ylm','l=1 wrong m ')
               endselect
          case (2)
-            select case(emm)
-              case (-2)
-                sph_har=(0.25)*sqrt(15./(2*pi))*sinth(m)*sinth(m)*cos2p
-              case (-1)
-                sph_har=(0.5)*sqrt(15./(2*pi))*sinth(m)*costh(m)*cosph(n)
+            if (aemm==2) cos2p=2*cosp*cosp-1
+            select case(aemm)
               case (0)
-                sph_har=(0.25)*sqrt(5./pi)*(3.*costh(m)*costh(m)-1.)
+                sph_har=(0.25)*sqrt(5./pi)*(3.*cost*cost-1.)
               case (1) 
-                sph_har=-(0.5)*sqrt(15./(2*pi))*sinth(m)*costh(m)*cosph(n)
+                sph_har=-(0.5)*sqrt(15./(2*pi))*sint*cost*cosp
+                if (emm<0) sph_har = -sph_har       ! Condon-Shortley phase
               case (2)
-                sph_har=(0.25)*sqrt(15./(2*pi))*sinth(m)*sinth(m)*cos2p
+                sph_har=(0.25)*sqrt(15./(2*pi))*sint*sint*cos2p
               case default
                 call fatal_error('sub:ylm','l=2 wrong m ')
               endselect
           case default
             call fatal_error('sub:ylm','your ylm is not implemented')
-          endselect
+      endselect
+
+      if (present(der)) then
+        if (lother) then
+          der = ( ell*cost*sph_har - sqrt((2.*ell+1.)*(ell-aemm)*(ell+aemm)/(2.*ell-1.))* &
+                  ylm_other(theta,phi,ell-1,emm) )/sint
+        else
+          der = ( ell*cost*sph_har - sqrt((2.*ell+1.)*(ell-aemm)*(ell+aemm)/(2.*ell-1.))* &
+                  ylm(ell-1,emm) )/sint
+        endif
+      endif
 !
-    endsubroutine ylm
+    endfunction ylm
 !***********************************************************************
     function step_scalar(x,x0,width)
 !
@@ -6693,6 +6713,8 @@ nameloop: do
 !  12-sep-2013/MR: coded
 !
       use Mpicomm, only: mpiallreduce_sum
+      use Messages, only: fatal_error
+      use Yinyang_mpi, only: reduce_zsum
 !
       integer,                intent(IN)   :: nproc,idir
       real, dimension(:,:,:), intent(INOUT):: arrm
@@ -6700,14 +6722,22 @@ nameloop: do
       real, dimension(:,:,:), allocatable :: temp
       integer, dimension(3) :: sz
 !
-!  communicate direction idir
+!  communicate in direction idir
 !
         if (nproc>1) then
 !
           sz=(/size(arrm,1),size(arrm,2),size(arrm,3)/)
           allocate(temp(sz(1),sz(2),sz(3)))
-          call mpiallreduce_sum(arrm,temp,sz,idir=idir)
-          arrm=temp
+          if (lyinyang) then
+            if (idir/=3) & 
+              call fatal_error('finalize_aver_3D', &
+                               'Not implemented for other than phi direction on Yin-Yang grid')
+            !call reduce_zsum(arrm,temp)
+            !call mpibcast_z_yy(temp)
+          else
+            call mpiallreduce_sum(arrm,temp,sz,idir=idir)
+            arrm=temp
+          endif
 !
         endif
 !
@@ -6735,7 +6765,11 @@ nameloop: do
 !
           sz = size(arrm)
           allocate(temp(sz))
-          call mpiallreduce_sum(arrm,temp,sz,idir=idir)
+          if (lyinyang.and.idir==3) then
+            !call zaverages_xy
+          else
+            call mpiallreduce_sum(arrm,temp,sz,idir=idir)
+          endif
           arrm=temp
 !
         endif
