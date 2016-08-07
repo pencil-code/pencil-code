@@ -31,7 +31,7 @@ module Slices
 !
 !  Prepare lvideo for writing slices into video file
 !  This is useful for visualization of scalar field (or one component
-!  of a vector field) on the perifery of a box.
+!  of a vector field) on the periphery of a box.
 !  Can be visualized in idl using rvid_box.pro
 !
 !  20-oct-97/axel: coded
@@ -502,5 +502,36 @@ module Slices
       endif
 !
     endsubroutine setup_slices
+!***********************************************************************
+    subroutine prep_xy_slice(izloc)
+
+      use General, only: indgen
+
+      integer, intent(IN) :: izloc
+
+      real, dimension(nygrid/2) :: yloc
+      real, dimension(nygrid/2,1) :: thphprime
+
+      if (ipz<=nprocz/3) then
+!
+! Line trough Southern cap
+!
+        yloc=xyz1(2)+indgen(nygrid/2)*dy
+
+        !call yy_transform_strip_other(yloc,(/z(izloc)/),thphprime)
+        !nok=prep_interp(thphprime,intcoeffs)
+
+      elseif (ipz>=2*nprocz/3) then
+!
+! Line trough Nouthern cap
+!
+        yloc=xyz0(2)-(nygrid/2+1-indgen(nygrid/2))*dy 
+
+        !call yy_transform_strip_other(yloc,(/z(izloc)/),thphprime)
+        !nok=prep_interp(thphprime,intcoeffs,thrange_cap)
+
+      endif 
+
+    endsubroutine
 !***********************************************************************
 endmodule Slices
