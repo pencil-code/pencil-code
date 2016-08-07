@@ -427,7 +427,7 @@ module Mpicomm
 !
   type (ind_coeffs), dimension(:), allocatable :: intcoeffs
 
-  integer, parameter :: LEFT=1, MID=2, RIGHT=3, MIDY=MID, BILIN=1, NIL=0
+  integer, parameter :: LEFT=1, MID=2, RIGHT=3, MIDY=MID, BILIN=1, BIQUAD=2, NIL=0
   integer :: MIDZ=MID, MIDC=MID
   integer :: len_cornbuf
   integer, dimension(3) :: yy_buflens
@@ -812,6 +812,14 @@ module Mpicomm
       real, dimension(:,:,:), allocatable :: gridbuf_midy, gridbuf_midz, &! contains grid request of direct neighbour(s)
                                              gridbuf_left, &              !             ~         of left corner neighbour
                                              gridbuf_right                !             ~         of right corner neighbour
+      logical, save :: lcalled=.false.
+
+      if (lcalled) then 
+        return
+      else
+        lcalled=.true.
+      endif
+!
       if (lcorner_yz) then
 !
 !  Procs at yz corners have four outer neighbors: two direct ones for both corner edges
@@ -1202,7 +1210,7 @@ module Mpicomm
       if (lfirst_proc_y) then
 
         call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,mpierr)
-        nok=prep_bilin_interp(gridbuf_midz,intcoeffs(MIDZ)); noks=noks+nok
+        nok=prep_interp(gridbuf_midz,intcoeffs(MIDZ)); noks=noks+nok
 !  print*, 'proc ,',iproc_world,',  from ', ylneigh, size(gridbuf_midz,1), size(gridbuf_midz,2), size(gridbuf_midz,3)   
 !, size(intcoeffs(MIDZ)%inds,1), size(intcoeffs(MIDZ)%inds,2)
 !  print'(3(i3,1x))', intcoeffs(MIDZ)%inds(:,:,1)
@@ -1211,7 +1219,7 @@ module Mpicomm
         call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,mpierr)
         if (llcorn>=0) then
           call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,mpierr)
-          nok=prep_bilin_interp(gridbuf_left,intcoeffs(LEFT)); noks=noks+nok
+          nok=prep_interp(gridbuf_left,intcoeffs(LEFT)); noks=noks+nok
 !print*,'ll:', iproc_world,nok
 !,maxval(abs(intcoeffs(LEFT)%coeffs)),maxval(intcoeffs(LEFT)%inds),minval(intcoeffs(LEFT)%inds)
           call MPI_WAIT(isend_rq_TOll,isend_stat_Tll,mpierr)
@@ -1219,7 +1227,7 @@ module Mpicomm
 
         if (lucorn>=0) then
           call MPI_WAIT(irecv_rq_FRlu,irecv_stat_Flu,mpierr)
-          nok=prep_bilin_interp(gridbuf_right,intcoeffs(RIGHT)); noks=noks+nok
+          nok=prep_interp(gridbuf_right,intcoeffs(RIGHT)); noks=noks+nok
 !print*,'lu:',iproc_world,nok
 !maxval(abs(intcoeffs(RIGHT)%coeffs)),maxval(intcoeffs(RIGHT)%inds),minval(intcoeffs(RIGHT)%inds)
           call MPI_WAIT(isend_rq_TOlu,isend_stat_Tlu,mpierr)
@@ -1230,14 +1238,14 @@ module Mpicomm
       if (llast_proc_y) then
 !
         call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,mpierr)
-        nok=prep_bilin_interp(gridbuf_midz,intcoeffs(MIDZ)); noks=noks+nok
+        nok=prep_interp(gridbuf_midz,intcoeffs(MIDZ)); noks=noks+nok
 ! print*,'uppy:',iproc,iproc_world,nok,maxval(abs(intcoeffs(MIDZ)%coeffs)),maxval(intcoeffs(MIDZ)%inds), & 
 ! minval(intcoeffs(MIDZ)%inds)
         call MPI_WAIT(isend_rq_touppy,isend_stat_tu,mpierr)
 
         if (ulcorn>=0) then
           call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,mpierr)
-          nok=prep_bilin_interp(gridbuf_right,intcoeffs(RIGHT)); noks=noks+nok
+          nok=prep_interp(gridbuf_right,intcoeffs(RIGHT)); noks=noks+nok
 ! print*,'ul:',iproc,iproc_world,nok,maxval(abs(intcoeffs(RIGHT)%coeffs)),maxval(intcoeffs(RIGHT)%inds), & 
 ! minval(intcoeffs(RIGHT)%inds)
           call MPI_WAIT(isend_rq_TOul,isend_stat_Tul,mpierr)
@@ -1245,7 +1253,7 @@ module Mpicomm
 
         if (uucorn>=0) then
           call MPI_WAIT(irecv_rq_FRuu,irecv_stat_Fuu,mpierr)
-          nok=prep_bilin_interp(gridbuf_left,intcoeffs(LEFT)); noks=noks+nok
+          nok=prep_interp(gridbuf_left,intcoeffs(LEFT)); noks=noks+nok
 ! print*,'uu:',iproc,iproc_world,nok,maxval(abs(intcoeffs(LEFT)%coeffs)),maxval(intcoeffs(LEFT)%inds), & 
 ! minval(intcoeffs(LEFT)%inds)
           call MPI_WAIT(isend_rq_TOuu,isend_stat_Tuu,mpierr)
@@ -1256,14 +1264,14 @@ module Mpicomm
       if (lfirst_proc_z) then
 !
         call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,mpierr)
-        nok=prep_bilin_interp(gridbuf_midy,intcoeffs(MIDY)); noks=noks+nok
+        nok=prep_interp(gridbuf_midy,intcoeffs(MIDY)); noks=noks+nok
 ! print*,'lowz:',iproc,iproc_world,nok,maxval(abs(intcoeffs(MIDY)%coeffs)),maxval(intcoeffs(MIDY)%inds),&
 !  minval(intcoeffs(MIDY)%inds)
         call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,mpierr)
 !
         if (llcorn>=0) then
           call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,mpierr)
-          nok=prep_bilin_interp(gridbuf_right,intcoeffs(RIGHT)); noks=noks+nok
+          nok=prep_interp(gridbuf_right,intcoeffs(RIGHT)); noks=noks+nok
 ! print*,'ll:',iproc,iproc_world,nok,maxval(abs(intcoeffs(RIGHT)%coeffs)),maxval(intcoeffs(RIGHT)%inds), & 
 ! minval(intcoeffs(RIGHT)%inds)
           call MPI_WAIT(isend_rq_TOll,isend_stat_Tll,mpierr)
@@ -1271,7 +1279,7 @@ module Mpicomm
     
         if (ulcorn>=0) then
           call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,mpierr)
-          nok=prep_bilin_interp(gridbuf_left,intcoeffs(LEFT)); noks=noks+nok
+          nok=prep_interp(gridbuf_left,intcoeffs(LEFT)); noks=noks+nok
 ! print*,'ul:',iproc,iproc_world,nok,maxval(abs(intcoeffs(LEFT)%coeffs)),maxval(intcoeffs(LEFT)%inds), & 
 ! minval(intcoeffs(LEFT)%inds)
           call MPI_WAIT(isend_rq_TOul,isend_stat_Tul,mpierr)
@@ -1282,7 +1290,7 @@ module Mpicomm
       if (llast_proc_z) then
 !
         call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,mpierr)
-        nok=prep_bilin_interp(gridbuf_midy,intcoeffs(MIDY)); noks=noks+nok
+        nok=prep_interp(gridbuf_midy,intcoeffs(MIDY)); noks=noks+nok
 !  print*, 'proc ,',iproc_world,',  from ', zuneigh, size(gridbuf_midy,1), &
 !  size(gridbuf_midy,2), size(gridbuf_midy,3), size(intcoeffs(MIDY)%inds,1), size(intcoeffs(MIDY)%inds,2)
 !  print'(22(f8.5,1x))', gridbuf_midy(1,:,:)
@@ -1293,7 +1301,7 @@ module Mpicomm
 !
         if (lucorn>=0) then
           call MPI_WAIT(irecv_rq_FRlu,irecv_stat_Flu,mpierr)
-          nok=prep_bilin_interp(gridbuf_left,intcoeffs(LEFT)); noks=noks+nok
+          nok=prep_interp(gridbuf_left,intcoeffs(LEFT)); noks=noks+nok
 !  print*,'lu:',iproc,iproc_world,nok,maxval(abs(intcoeffs(LEFT)%coeffs)),maxval(intcoeffs(LEFT)%inds), & 
 !  minval(intcoeffs(LEFT)%inds)
           call MPI_WAIT(isend_rq_TOlu,isend_stat_Tlu,mpierr)
@@ -1301,7 +1309,7 @@ module Mpicomm
 
         if (uucorn>=0) then
           call MPI_WAIT(irecv_rq_FRuu,irecv_stat_Fuu,mpierr)
-          nok=prep_bilin_interp(gridbuf_right,intcoeffs(RIGHT)); noks=noks+nok
+          nok=prep_interp(gridbuf_right,intcoeffs(RIGHT)); noks=noks+nok
 !  print*,'uu:',iproc,iproc_world,nok,maxval(abs(intcoeffs(RIGHT)%coeffs)),maxval(intcoeffs(RIGHT)%inds), &
 !  minval(intcoeffs(RIGHT)%inds)
           call MPI_WAIT(isend_rq_TOuu,isend_stat_Tuu,mpierr)
@@ -9053,6 +9061,7 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !  20-dec-15/MR: coded
 !
      use General, only: var_is_vec
+     use Yinyang, only: bilin_interp, biquad_interp
 
       real, dimension(:,:,:,:), intent(IN) :: f
       integer,                  intent(IN) :: ivar1, ivar2, pos, type
@@ -9063,42 +9072,45 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 
       if (pos==NIL) return
 
-      if (type==BILIN) then
-  
-        nth=size(intcoeffs(pos)%inds,1); nph=size(intcoeffs(pos)%inds,2)
-        ltransp = size(buffer,3)==nth .and. size(buffer,2)==nph
+      nth=size(intcoeffs(pos)%inds,1); nph=size(intcoeffs(pos)%inds,2)
+      ltransp = size(buffer,3)==nth .and. size(buffer,2)==nph
 
-        buffer=0.
+      buffer=0.
 !
 !  Loop over all variables.
 !
-        iv=ivar1
-        do while (iv<=ivar2) 
+      iv=ivar1
+      do while (iv<=ivar2) 
 
-          if (var_is_vec(iv)) then
+        if (var_is_vec(iv)) then
 !
-!  All components of Vectorial variables are interpolated at the same time as transformation is
+!  All components of vectorial variables are interpolated at the same time as transformation is
 !  needed.
 !
-            ive=iv+2
+          ive=iv+2
+        else
+          ive=iv
+        endif
+
+        do i=1,nth; do j=1,nph
+
+          if (ltransp) then
+            ibuf=j; jbuf=i
           else
-            ive=iv
+            ibuf=i; jbuf=j
           endif
-
-          do i=1,nth; do j=1,nph
-            if (ltransp) then
-              ibuf=j; jbuf=i
-            else
-              ibuf=i; jbuf=j
-            endif
+!          if (type==BILIN) then
             call bilin_interp(intcoeffs(pos),i,j,f(:,:,:,iv:ive), buffer(:,:,:,iv:ive),ibuf,jbuf)
-          enddo; enddo
-          iv=ive+1
+!          elseif (type==BIQUAD) then
+!            call biquad_interp(intcoeffs(pos),i,j,f(:,:,:,iv:ive), buffer(:,:,:,iv:ive),ibuf,jbuf)
+!          else
+!            call stop_it('interpolate_yy: Only bilinear and biquadratic interpolations implemented')
+!          endif
 
-        enddo
-      else
-        call stop_it('interpolate_yy: Only bilinear interpolation implemented')
-      endif
+        enddo; enddo
+        iv=ive+1
+
+      enddo
 
     endsubroutine interpolate_yy
 !**************************************************************************
