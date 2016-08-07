@@ -34,12 +34,37 @@ back_up() {
 }
 
 
+find_git_root() {
+    # Find the directory containing our .git directory.
+    # Resolves 'git worktree' indirection.
+    # Prints nothing if the cwd is not under Git
+    git_root="$(git rev-parse --show-toplevel 2>/dev/null)"
+    if [ ! "${git_root}" ]; then
+        return
+    fi
+    dot_git="${git_root}/.git"
+    if [ -d $dot_git ]; then
+        echo $git_root
+    else
+        # 'git worktree': .git points to the true root dir
+        cat $dot_git \
+            | grep -E '^gitdir:' \
+            | sed -r -e 's/^gitdir:\s*//;' -e 's|/\.git/worktrees/.*||;'
+    fi
+}
+
+
 hook="$1"
 if [ ! -e "${hook}" ]; then echo "Hook ${hook} does not exist"; exit 1; fi
 if [ ! -r "${hook}" ]; then echo "Hook ${hook} is not readable"; exit 1; fi
-
-git_root="$(git rev-parse --show-toplevel)"
 hook_name="$(basename "${hook}")"
+
+git_root="$(find_git_root)"
+if [ ! "${git_root}" ]; then
+    echo "Not a Git repository -- not attempting to install hook"
+    exit 0
+fi
+
 destination="${git_root}/.git/hooks/${hook_name}"
 
 # Check if a hook is already present
