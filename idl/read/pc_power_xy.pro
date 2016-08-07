@@ -731,7 +731,6 @@ endif
       endif
     endif
     
-    it=it+1L
     ;
     ;  check whether we want to write png file (for movies)
     ;
@@ -748,9 +747,11 @@ endif
       itpng=itpng+1 ;(counter)
     endif
     ;
+    it=it+1L
+    if it eq nt then break
     continue
 newheader:
-    if eof(1) then exit
+    if eof(1) then break
     iseg += 1
     point_lun, 1, startpos1(iseg)
 
@@ -763,6 +764,7 @@ newheader:
     else $
       obj = {FILE: file1, TT: tt, SPEC1: reform(spec1)}
 ; MR: would prefer the name 'T' for the time as it is also use elsewhere
+close, 1
 return
 
   if not lint_shell then begin

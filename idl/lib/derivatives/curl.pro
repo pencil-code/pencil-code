@@ -66,6 +66,7 @@ function curl,f,ghost=ghost,bcx=bcx,bcy=bcy,bcz=bcz,param=param,t=t
 ;
   default, ghost, 0
 ;
+  if ((size(f))[0] lt 4) then message, "curl is only implemented for 4D arrays."
   w = make_array(size=size(f))
 ;
   w[*,*,*,0]=curlx(f)
