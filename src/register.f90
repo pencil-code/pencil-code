@@ -810,8 +810,10 @@ module Register
       use TestPerturb,     only: rprint_testperturb
       use Sub,             only: parallel_file_exists, parallel_count_lines
 !
+      logical, intent(IN) :: lreset
+!
       integer :: i,iadd,ios
-      logical :: lreset, ldummy
+      logical :: ldummy
       character (len=30) :: cname_tmp
       character (len=30), allocatable :: ctmp(:)
 !
