@@ -10,7 +10,8 @@
 ! * ifort: 15.0.2 (and newer)
 !
 ! Compilers proven to fail:
-! * g95: 0.93 (and lower)
+! * g95: 0.93 (and lower) - fails on compiling
+! * PGI: 15.10 - fails to determine the file size
 
 program test_f2003
 
