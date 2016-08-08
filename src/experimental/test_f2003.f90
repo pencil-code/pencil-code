@@ -2,16 +2,18 @@
 !
 ! This program contains all F2003 features that Pencil Code currently relies on.
 ! You may compile this program with gfortran:
-! gfortran -std=f2003 -o test_f2003 test_f2003.f90
-! and then try the same test with your favourite compiler.
+! > gfortran -std=f2003 -o test_f2003 test_f2003.f90
+! and then try the same test with your favourite compiler, like Intel:
+! > ifort -std03 -o test_f2003 test_f2003.f90
 !
 ! Compilers tested successfully:
 ! * gfortran: 4.8.4 (and newer)
 ! * ifort: 15.0.2 (and newer)
 !
 ! Compilers proven to fail:
+! * gfortran: 4.4.7 (and lower) - fails on compiling
 ! * g95: 0.93 (and lower) - fails on compiling
-! * PGI: 15.10 - fails to determine the file size
+! * PGI: 15.10 - compiles, but fails to determine the correct file size
 
 program test_f2003
 
