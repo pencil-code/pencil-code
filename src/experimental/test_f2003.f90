@@ -3,7 +3,14 @@
 ! This program contains all F2003 features that Pencil Code currently relies on.
 ! You may compile this program with gfortran:
 ! gfortran -std=f2003 -o test_f2003 test_f2003.f90
-! An then do the same test with your favourite compiler.
+! and then try the same test with your favourite compiler.
+!
+! Compilers tested successfully:
+! * gfortran: 4.8.4 and newer
+! * ifort: ?
+!
+! Compilers proven to fail:
+! * g95: 0.93 and lower
 
 program test_f2003
 
