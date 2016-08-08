@@ -8,10 +8,10 @@
 !
 ! Compilers tested successfully:
 ! * gfortran: 4.8.4 (and newer)
-! * ifort: 15.0.2 (and newer)
+! * ifort: 12.1 (and newer)
 !
 ! Compilers proven to fail:
-! * gfortran: 4.4.7 (and lower) - fails on compiling
+! * gfortran: 4.6.1 (and lower) - fails on compiling
 ! * g95: 0.93 (and lower) - fails on compiling
 ! * PGI: 15.10 - compiles, but fails to determine the correct file size
 
