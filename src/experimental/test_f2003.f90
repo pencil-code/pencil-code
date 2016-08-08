@@ -31,7 +31,7 @@ program test_f2003
     ! find namelist file size
     inquire (file=in_file, size=num_bytes)
     if (num_bytes /= namelist_size) then
-      write (*,'(A)') 'FILESIZE ERROR! (actual size: ', num_bytes, ', expected: ', namelist_size, ')'
+      write (*,'(A,I6,A,I6,A)') 'FILESIZE ERROR! (actual size: ', num_bytes, ', expected: ', namelist_size, ')'
       stop 1
     endif
 
