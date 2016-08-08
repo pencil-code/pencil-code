@@ -1346,14 +1346,13 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##
 ##  Piyali's laptop
 ##
-##FC=/usr/bin/gfortran -I/usr/local/lib #(saveri)
-#FC=/usr/local/bin/mpif90 -I/usr/local/include/ #(saveri)
+#FC=mpif90 #(saveri)
 #F77=$(FC) #(saveri*)
-#CC=gcc #(saveri*)
-#FFLAGS=-O3 #(saveri*)
-#FFLAGS_DOUBLE=-fdefault-real-8  #(saveri*)
+#CC=mpicc #(saveri*)
+#CFLAGS=-O2 -DFUNDERSC=1 #(saveri*)
+#FFLAGS=-O2 #(saveri*)
+#FFLAGS_DOUBLE=-r8  #(saveri*)
 ##LD_MPI= #(saveri*)
-#LD_MPI=-L/usr/local/openmpi/lib -lmpi_f90 -lmpi_f77 -lmpi -lopen-rte -lopen-pal -ldl -Wl,--export-dynamic -lnsl -lutil -lm -ldl #(saveri*)
 ##
 ##  Pencil-Code Servers
 ##
