@@ -6,11 +6,11 @@
 ! and then try the same test with your favourite compiler.
 !
 ! Compilers tested successfully:
-! * gfortran: 4.8.4 and newer
-! * ifort: ?
+! * gfortran: 4.8.4 (and newer)
+! * ifort: 15.0.2 (and newer)
 !
 ! Compilers proven to fail:
-! * g95: 0.93 and lower
+! * g95: 0.93 (and lower)
 
 program test_f2003
 
