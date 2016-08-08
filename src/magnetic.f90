@@ -28,6 +28,7 @@
 ! PENCILS PROVIDED cosub; bunit(3)
 ! PENCILS PROVIDED hjj(3); hj2; hjb; coshjb
 ! PENCILS PROVIDED hjparallel; hjperp; nu_ni1
+! PENCILS PROVIDED gamma_A2;clight2
 !***************************************************************
 module Magnetic
 !
@@ -251,6 +252,7 @@ module Magnetic
   real, dimension(mx) :: eta_x,geta_x
   real, dimension(my) :: eta_y,geta_y
   real, dimension(nx) :: va2max_beta
+  real, dimension(mz) :: clight2_zdep=1.0
   logical :: lfreeze_aint=.false., lfreeze_aext=.false.
   logical :: lweyl_gauge=.false., ladvective_gauge=.false.
   logical :: lupw_aa=.false., ladvective_gauge2=.false.
@@ -271,6 +273,7 @@ module Magnetic
   logical :: ladd_global_field=.true. 
   logical :: ladd_efield=.false.
   logical :: lmagnetic_slope_limited=.false.
+  logical :: lboris_correction=.false.
   real :: h_slope_limited=0.
   character (LEN=labellen) :: islope_limiter=''
   real :: ampl_efield=0.
@@ -316,7 +319,8 @@ module Magnetic
       lpropagate_borderaa, lremove_meanaz, lremove_meanaxy, eta_jump_shock, eta_zshock, &
       eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z, & 
       ladd_efield,ampl_efield,lmagnetic_slope_limited,islope_limiter, &
-      h_slope_limited,w_sldchar_mag, eta_cspeed
+      h_slope_limited,w_sldchar_mag, eta_cspeed, &
+      lboris_correction
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -2088,6 +2092,12 @@ module Magnetic
 !
       if (dipole_moment/=0.0) lpenc_requested(i_r_mn1)=.true.
 !
+! pencils for semirelativistic Boris correction to velocity eq.
+!
+      if (lboris_correction) then
+        lpenc_requested(i_gamma_A2)=.true.
+      endif
+!
 !  ua pencil if lua_as_aux
 !
       if (lua_as_aux) lpenc_diagnos(i_ua)=.true.
@@ -2503,6 +2513,13 @@ module Magnetic
       if (lpencil_in(i_d6ab) .or. lpencil_in(i_e3xa)) lpencil_in(i_del6a)=.true.
 !
       if (lpencil_in(i_ss12)) lpencil_in(i_sj)=.true.
+!
+! Interdependencies for Boris Correction
+!
+      if (lpencil_in(i_gamma_A2)) then
+        lpencil_in(i_va2)=.true.
+        lpencil_in(i_clight2)=.true.
+      endif
 !
 !  check for pencil_interdep_magn_mf
 !
@@ -3026,6 +3043,14 @@ module Magnetic
 !  Ambipolar diffusion pencil
 !
       if (lpenc_loc(i_nu_ni1)) call set_ambipolar_diffusion(p)
+!
+! reduced speed of light pencil
+!
+     if (lpenc_loc(i_clight2)) then
+       call eta_zdep(zdep_profile, mz, z, clight2_zdep)
+       p%clight2=clight2_zdep(n)*(c_light_cgs/unit_velocity)**2
+       p%gamma_A2=1./(1+p%va2/p%clight2)
+     endif
 !
     endsubroutine calc_pencils_magnetic_pencpar
 !***********************************************************************
