@@ -272,6 +272,7 @@ Options:
   -d,  --datadir           \tUse mkdir if data/ is needed, don't ln -s /tmp
   -s,  --short             \tPrint short directory names only
   -p,  --postproc=PP       \tApply postprocessor PP to output from make
+  -F,  --file=<xx.f90>     \tOnly run tests for samples having xx.f90 in Makefile.local
   -a,  --all-dirs          \tRecurse through all subdirectories of samples/
        --level=LEV         \tRun only tests from level LEV
        --max-level=LEV     \tRun all tests below with level <= LEV (default: 2)
@@ -345,6 +346,7 @@ GetOptions(\%opts,
                -d   --datadir
                -s   --short
                -p=s --postproc=s
+               -F=s --file=s
                -a   --all-dirs
                     --level=s
                     --max-level=s
@@ -385,6 +387,7 @@ my $niceval     = ($opts{'N'} || $opts{'nice'}            || 0    );
 my $makejobs    = ($opts{'j'} || $opts{'jobs'}            || 0    );
 my $mkdatadir   = ($opts{'d'} || $opts{'datadir'}         || 0    );
 my $short       = ($opts{'s'} || $opts{'short'}           || 0    );
+my $file        = ($opts{'F'} || $opts{'file'}            || ''   );
 my $postproc    = ($opts{'p'} || $opts{'postproc'}        || ''   );
 my $deep        = ($opts{'a'} || $opts{'all-dirs'}        || 0    );
 my $level       = (              $opts{'level'}                   );
@@ -557,6 +560,14 @@ if (@ARGV) {
         @testdirs =
           ( map { "$topdir/samples/$_" } @sampdirs,
           );
+    }
+    if ($file ne "") {
+        my @testdirs_tmp = ();
+        for my $d (@testdirs) {
+            my $filecheck = `grep "$file" $d/src/Makefile.local | wc -l`;
+            if ($filecheck > 0) { push(@testdirs_tmp,($d)); }
+        }
+        @testdirs = @testdirs_tmp;
     }
     $ntests = @testdirs;
     if ($nodelist) {
