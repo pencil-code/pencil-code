@@ -124,34 +124,36 @@ module Special
   logical, dimension(3,3,3) :: lkappa_arr
   logical, dimension(6)     :: lalpha_c, lbeta_c
   logical, dimension(3)     :: lgamma_c, ldelta_c, lutensor_c
+  logical, dimension(3,3,3) :: lkappa_c
   logical :: lalpha, lbeta, lgamma, ldelta, lkappa, lutensor
-  real :: alpha_scale, beta_scale, gamma_scale, delta_scale, utensor_scale
+  real :: alpha_scale, beta_scale, gamma_scale, delta_scale, kappa_scale, utensor_scale
   character (len=fnlen) :: alpha_name, beta_name,  &
                            gamma_name, delta_name, &
                            kappa_name, utensor_name
   character (len=fnlen), dimension(ntensors) :: tensor_names
-  real, dimension(ntensors) :: tensor_scales
+  real, dimension(ntensors) :: tensor_scales, tensor_maxvals, tensor_minvals
   ! Interpolation parameters
   character (len=fnlen) :: interpname
   integer :: dataload_len
   ! Input dataset name
   ! Input namelist
   namelist /special_init_pars/ &
-      alpha_scale, beta_scale, gamma_scale, delta_scale, utensor_scale, &
-      alpha_name,  beta_name,  gamma_name,  delta_name,  utensor_name,  &
-      lalpha,      lbeta,      lgamma,      ldelta,      lutensor,      &
-      lalpha_c,    lbeta_c,    lgamma_c,    ldelta_c,    lutensor_c,    &
+      alpha_scale,beta_scale,gamma_scale,delta_scale,kappa_scale,utensor_scale, &
+      alpha_name, beta_name, gamma_name, delta_name, kappa_name, utensor_name,  &
+      lalpha,     lbeta,     lgamma,     ldelta,     lkappa,     lutensor,      &
+      lalpha_c,   lbeta_c,   lgamma_c,   ldelta_c,   lkappa_c,   lutensor_c,    &
       interpname
   namelist /special_run_pars/ &
-      alpha_scale, beta_scale, gamma_scale, delta_scale, utensor_scale, &
-      alpha_name,  beta_name,  gamma_name,  delta_name,  utensor_name,  &
-      lalpha,      lbeta,      lgamma,      ldelta,      lutensor,      &
-      lalpha_c,    lbeta_c,    lgamma_c,    ldelta_c,    lutensor_c,    &
+      alpha_scale,beta_scale,gamma_scale,delta_scale,kappa_scale,utensor_scale, &
+      alpha_name, beta_name, gamma_name, delta_name, kappa_name, utensor_name,  &
+      lalpha,     lbeta,     lgamma,     ldelta,     lkappa,     lutensor,      &
+      lalpha_c,   lbeta_c,   lgamma_c,   ldelta_c,   lkappa_c,   lutensor_c,    &
       interpname
   ! loadDataset interface
   interface loadDataset
     module procedure loadDataset_rank1
     module procedure loadDataset_rank2
+    module procedure loadDataset_rank3
   end interface
 
   contains
@@ -363,9 +365,9 @@ module Special
         if (lkappa) then
           allocate(kappa_data(nx,ny,nz,dataload_len,3,3,3))
           kappa_data = 0
-          !call loadDataset(kappa_data, lkappa_arr, kappa_id, 0)
+          call loadDataset(kappa_data, lkappa_arr, kappa_id, 0)
           if (lroot) then
-              !write (*,*) 'Kappa scale:  ', kappa_scale
+              write (*,*) 'Kappa scale:  ', kappa_scale
               write (*,*) 'Kappa maxval: ', maxval(kappa_data)
               write (*,*) 'Kappa components used: '
               do j=1,3
@@ -827,10 +829,12 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real :: diffus_tmp
       type (pencil_case), intent(in) :: p
       real, dimension(nx,3) :: tmpvector, emfvector
       integer :: i
-!
+! 
+
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
 !
@@ -841,29 +845,77 @@ module Special
         call dot_mn_vm(p%bb,p%alpha_emf,tmpvector)
         emfvector = emfvector + tmpvector
       end if
+!
 ! Calculate beta (curl B)
+!
       tmpvector=0
       if (lbeta) then
         call dot_mn_vm(p%jj,p%beta_emf,tmpvector)
         emfvector = emfvector - tmpvector
       end if
-! Calculate gamma x (curl B)
+!
+! Calculate gamma x B
+!
       tmpvector=0
       if (lgamma) then
         call cross_mn(p%gamma_emf,p%bb,tmpvector)
         emfvector = emfvector + tmpvector
       end if
+!
+! Calculate delta x (curl B)
+!
       if (ldelta) then
         call cross_mn(p%delta_emf,p%jj,tmpvector)
         emfvector = emfvector - tmpvector
       end if
+!
+! Calculate kappa (grad B)_symm
+!
+      if (ldelta) then
+        call cross_mn(p%delta_emf,p%jj,tmpvector)
+        emfvector = emfvector - tmpvector
+      end if
+!
+! Calculate utensor x B
+!
       if (lutensor) then
         call cross_mn(p%utensor_emf,p%bb,tmpvector)
         emfvector = emfvector + tmpvector
       end if
-
+      if (lfirst.and.ldt) then
+!
+! Calculate advec_special
+!
+        if (lalpha) then
+          call dot_mn_vm(dline_1, p%alpha_emf, tmpvector)
+          advec_special=advec_special+&
+                            tmpvector(:,1)*dline_1(:,1)+ & 
+                            tmpvector(:,2)*dline_1(:,2)+ & 
+                            tmpvector(:,3)*dline_1(:,3)
+        end if
+        if (lgamma) then
+          advec_special=advec_special +                  &
+                            p%gamma_emf(:,1)*dline_1(:,1)+ & 
+                            p%gamma_emf(:,2)*dline_1(:,2)+ & 
+                            p%gamma_emf(:,3)*dline_1(:,3)
+        end if
+        if (lutensor) then
+          advec_special=advec_special+                   &
+                            p%utensor_emf(:,1)*dline_1(:,1)+ & 
+                            p%utensor_emf(:,2)*dline_1(:,2)+ & 
+                            p%utensor_emf(:,3)*dline_1(:,3)
+        end if
+!
+! Calculate diffus_special
+!
+        if (lbeta) then
+          diffus_tmp=max(abs(tensor_maxvals(beta_id)),abs(tensor_minvals(beta_id)))
+          diffus_special=diffus_special+diffus_tmp*dxyz_2
+        end if
+      end if 
+!
       df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+emfvector
-
+!
     endsubroutine special_calc_magnetic
 !***********************************************************************
     subroutine special_calc_pscalar(f,df,p)
@@ -905,6 +957,23 @@ module Special
       call keep_compiler_quiet(ineargrid)
 !
     endsubroutine special_calc_particles
+!***********************************************************************
+    subroutine special_particles_bfre_bdary(f,fp,ineargrid)
+!
+!  Called before the loop, in case some particle value is needed
+!  for the special density/hydro/magnetic/entropy.
+!
+!  20-nov-08/wlad: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (:,:), intent(in) :: fp
+      integer, dimension(:,:) :: ineargrid
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(ineargrid)
+!
+    endsubroutine special_particles_bfre_bdary
 !***********************************************************************
     subroutine special_calc_particles_nbody(fsp)
 !
@@ -1132,6 +1201,8 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
                      tensor_dims(tensor_id,1:ndims), hdferr, &
                      tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
       dataarray = tensor_scales(tensor_id) * dataarray
+      tensor_maxvals(tensor_id) = maxval(dataarray)
+      tensor_minvals(tensor_id) = minval(dataarray)
     end subroutine loadDataset_rank1
     
     subroutine loadDataset_rank2(dataarray, datamask, tensor_id, loadstart)
@@ -1172,7 +1243,53 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
                      tensor_dims(tensor_id,1:ndims), hdferr, &
                      tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
       dataarray = tensor_scales(tensor_id) * dataarray
+      tensor_maxvals(tensor_id) = maxval(dataarray)
+      tensor_minvals(tensor_id) = minval(dataarray)
     end subroutine loadDataset_rank2
+
+    subroutine loadDataset_rank3(dataarray, datamask, tensor_id, loadstart)
+      ! Load a chunk of data for a 3-rank tensor, beginning at loadstart
+      implicit none
+      real, dimension(:,:,:,:,:,:,:), intent(inout) :: dataarray
+      logical, dimension(3,3,3), intent(in) :: datamask
+      integer, intent(in) :: tensor_id
+      integer, intent(in) :: loadstart
+      integer :: ndims
+      integer(HSIZE_T) :: mask_i, mask_j, mask_k
+      ndims = tensor_ndims(tensor_id)
+      tensor_offsets(tensor_id,4) = loadstart
+      call H5Sselect_none_F(tensor_id_S(tensor_id), hdferr)
+      call H5Sselect_none_F(tensor_id_memS(tensor_id), hdferr)
+      do mask_k=1,3; do mask_j=1,3; do mask_i=1,3
+        ! Load only wanted datasets
+        if (datamask(mask_i,mask_j,mask_k)) then
+          ! Set the new offset for data reading
+          tensor_offsets(tensor_id,ndims-2)    = mask_i-1
+          tensor_offsets(tensor_id,ndims-1)    = mask_j-1
+          tensor_offsets(tensor_id,ndims)      = mask_k-1
+          tensor_memoffsets(tensor_id,ndims-2) = mask_i-1
+          tensor_memoffsets(tensor_id,ndims-1) = mask_j-1
+          tensor_memoffsets(tensor_id,ndims)   = mask_k-1
+          ! Hyperslab for data
+          call H5Sselect_hyperslab_F(tensor_id_S(tensor_id), H5S_SELECT_OR_F, &
+                                     tensor_offsets(tensor_id,1:ndims),       &
+                                     tensor_counts(tensor_id,1:ndims),        &
+                                     hdferr)
+          ! Hyperslab for memory
+          call H5Sselect_hyperslab_F(tensor_id_memS(tensor_id), H5S_SELECT_OR_F, &
+                                     tensor_memoffsets(tensor_id,1:ndims),        &
+                                     tensor_memcounts(tensor_id,1:ndims),         &
+                                     hdferr)
+        end if
+      end do; end do; end do
+      ! Read data into memory
+      call H5Dread_F(tensor_id_D(tensor_id), hdf_memtype, dataarray, &
+                     tensor_dims(tensor_id,1:ndims), hdferr, &
+                     tensor_id_memS(tensor_id), tensor_id_S(tensor_id))
+      dataarray = tensor_scales(tensor_id) * dataarray
+      tensor_maxvals(tensor_id) = maxval(dataarray)
+      tensor_minvals(tensor_id) = minval(dataarray)
+    end subroutine loadDataset_rank3
 
     function emf_interpolate(dataarray) result(interp_data)
       real, intent(in), dimension(nx,dataload_len) :: dataarray
@@ -1195,17 +1312,22 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
       lbeta_c=.false.
       lgamma_c=.false.
       ldelta_c=.false.
+      lkappa_c=.false.
       lutensor_c=.false.
       lalpha_arr=.false.
       lbeta_arr=.false.
       lgamma_arr=.false.
       ldelta_arr=.false.
+      lkappa_arr=.false.
       lutensor_arr=.false.
       alpha_scale=1.0
       beta_scale=1.0
       gamma_scale=1.0
       delta_scale=1.0
+      kappa_scale=1.0
       utensor_scale=1.0
+      tensor_maxvals=0.0
+      tensor_minvals=0.0
       alpha_name='data'
       beta_name='data'
       gamma_name='data'
@@ -1274,12 +1396,14 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
       tensor_scales(beta_id)    = beta_scale
       tensor_scales(gamma_id)   = gamma_scale
       tensor_scales(delta_id)   = delta_scale
+      tensor_scales(kappa_id)   = kappa_scale
       tensor_scales(utensor_id) = utensor_scale
       ! Store names
       tensor_names(alpha_id)    = alpha_name
       tensor_names(beta_id)     = beta_name
       tensor_names(gamma_id)    = gamma_name
       tensor_names(delta_id)    = delta_name
+      tensor_names(kappa_id)    = kappa_name
       tensor_names(utensor_id)  = utensor_name
             
     end subroutine parseParameters
