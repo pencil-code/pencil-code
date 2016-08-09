@@ -42,6 +42,7 @@
 !
 ! PENCILS PROVIDED alpha_emf(3,3); beta_emf(3,3); gamma_emf(3)
 ! PENCILS PROVIDED delta_emf(3); kappa_emf(3,3,3); utensor_emf(3)
+! PENCILS PROVIDED bij_symm(3,3)
 !
 !***************************************************************
 !
@@ -483,6 +484,7 @@ module Special
       lpenc_requested(i_bb)=.true.
       lpenc_requested(i_bij)=.true.
       lpenc_requested(i_jj)=.true.
+      lpenc_requested(i_bij_symm)=.true.
       lpenc_requested(i_alpha_emf)=.true.
       lpenc_requested(i_beta_emf)=.true.
       lpenc_requested(i_gamma_emf)=.true.
@@ -521,7 +523,7 @@ module Special
       intent(in) :: f
       intent(inout) :: p
 !
-      integer i,j
+      integer i,j,k
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
 !
@@ -564,6 +566,14 @@ module Special
             p%delta_emf(1:nx,i)=0
           end if
         end do
+      end if
+      if (lkappa) then
+        do j=1,3; do i=1,3
+          p%bij_symm(1:nx,i,j)=0.5*(p%bij(1:nx,i,j) + p%bij(1:nx,j,i))
+        end do; end do
+        do k=1,3; do j=1,3; do i=1,3
+          p%kappa_emf(1:nx,i,j,k)=emf_interpolate(kappa_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j,k))
+        end do; end do; end do
       end if
       if (lutensor) then
         do i=1,3
@@ -832,32 +842,31 @@ module Special
       real :: diffus_tmp
       type (pencil_case), intent(in) :: p
       real, dimension(nx,3) :: tmpvector, emfvector
-      integer :: i
+      integer :: i,j,k
 ! 
-
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
 !
       emfvector=0
 ! Calculate alpha B
-      tmpvector=0
       if (lalpha) then
+        tmpvector=0
         call dot_mn_vm(p%bb,p%alpha_emf,tmpvector)
         emfvector = emfvector + tmpvector
       end if
 !
 ! Calculate beta (curl B)
 !
-      tmpvector=0
       if (lbeta) then
+        tmpvector=0
         call dot_mn_vm(p%jj,p%beta_emf,tmpvector)
         emfvector = emfvector - tmpvector
       end if
 !
 ! Calculate gamma x B
 !
-      tmpvector=0
       if (lgamma) then
+        tmpvector=0
         call cross_mn(p%gamma_emf,p%bb,tmpvector)
         emfvector = emfvector + tmpvector
       end if
@@ -865,20 +874,25 @@ module Special
 ! Calculate delta x (curl B)
 !
       if (ldelta) then
+        tmpvector=0
         call cross_mn(p%delta_emf,p%jj,tmpvector)
         emfvector = emfvector - tmpvector
       end if
 !
 ! Calculate kappa (grad B)_symm
 !
-      if (ldelta) then
-        call cross_mn(p%delta_emf,p%jj,tmpvector)
+      if (lkappa) then
+        tmpvector=0
+        do k=1,3; do j=1,3; do i=1,3
+          tmpvector(1:nx,i)=tmpvector(1:nx,i)+p%kappa_emf(1:nx,i,j,k)*p%bij_symm(1:nx,i,j)
+        end do; end do; end do
         emfvector = emfvector - tmpvector
       end if
 !
 ! Calculate utensor x B
 !
       if (lutensor) then
+        tmpvector=0
         call cross_mn(p%utensor_emf,p%bb,tmpvector)
         emfvector = emfvector + tmpvector
       end if
@@ -1338,7 +1352,9 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
 
     subroutine parseParameters
       implicit none
-      ! Load boolean array for alpha
+!
+! Load boolean array for alpha
+!
       if (any(lalpha_c)) then
         lalpha = .true.
         lalpha_arr(1,1) = lalpha_c(1)
@@ -1354,7 +1370,9 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
         lalpha     = .true.
         lalpha_arr = .true.
       end if
-      ! Load boolean array for beta
+!
+! Load boolean array for beta
+!
       if (any(lbeta_c)) then
         lbeta = .true.
         lbeta_arr(1,1) = lbeta_c(1)
@@ -1370,35 +1388,56 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
         lbeta     = .true.
         lbeta_arr = .true.
       end if
-      ! Load boolean array for gamma
+!
+! Load boolean array for gamma
+!
       if (any(lgamma_c)) then
         lgamma_arr  = lgamma_c
       else if (lgamma) then
         lgamma      = .true.
         lgamma_arr  = .true.
       end if
-      ! Load boolean array for delta
+!
+! Load boolean array for delta
+!
       if (any(ldelta_c)) then
         ldelta_arr  = ldelta_c
       else if (ldelta) then
         ldelta      = .true.
         ldelta_arr  = .true.
       end if
-      ! Load boolean array for utensor
+!
+! Load boolean array for kappa
+!
+      if (lkappa) then
+        lkappa_arr = .true.
+      else
+!
+! TODO: implement kappa components
+!
+        lkappa_arr = .false.
+      end if
+!
+! Load boolean array for utensor
+!
       if (any(lutensor_c)) then
         lutensor_arr  = lutensor_c
       else if (lutensor) then
         lutensor      = .true.
         lutensor_arr  = .true.
       end if
-      ! Store scales
+!
+! Store scales
+!
       tensor_scales(alpha_id)   = alpha_scale
       tensor_scales(beta_id)    = beta_scale
       tensor_scales(gamma_id)   = gamma_scale
       tensor_scales(delta_id)   = delta_scale
       tensor_scales(kappa_id)   = kappa_scale
       tensor_scales(utensor_id) = utensor_scale
-      ! Store names
+!
+! Store names
+!
       tensor_names(alpha_id)    = alpha_name
       tensor_names(beta_id)     = beta_name
       tensor_names(gamma_id)    = gamma_name
