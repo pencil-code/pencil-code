@@ -537,16 +537,24 @@ class NullPoint(object):
         fan_vectors = []
         for dim in range(3):
             eigen_values_vtk.append(point_data.GetVectors('eigen_value_{0}'.format(dim)))
-            eigen_values.append(VN.vtk_to_numpy(eigen_values_vtk[-1]))
+            if not eigen_values_vtk[0] is None:
+                eigen_values.append(VN.vtk_to_numpy(eigen_values_vtk[-1]))
             eigen_vectors_vtk.append(point_data.GetVectors('eigen_vector_{0}'.format(dim)))
-            eigen_vectors.append(VN.vtk_to_numpy(eigen_vectors_vtk[-1]))
-            if dim < 2:
+            if not eigen_vectors_vtk[0] is None:
+                eigen_vectors.append(VN.vtk_to_numpy(eigen_vectors_vtk[-1]))
+            if dim < 2 and eigen_values:
                 fan_vectors_vtk.append(point_data.GetVectors('fan_vector_{0}'.format(dim)))
                 fan_vectors.append(VN.vtk_to_numpy(fan_vectors_vtk[-1]))
         sign_trace_vtk = point_data.GetVectors('sign_trace')
-        sign_trace = VN.vtk_to_numpy(sign_trace_vtk)
+        if not sign_trace_vtk is None:
+            sign_trace = VN.vtk_to_numpy(sign_trace_vtk)
+        else:
+            sign_trace = 0
         normals_vtk = point_data.GetVectors('normal')
-        normals = VN.vtk_to_numpy(normals_vtk)
+        if not normals_vtk is None:
+            normals = VN.vtk_to_numpy(normals_vtk)
+        else:
+            normals = np.zeros(3)
 
         self.eigen_values = np.swapaxes(np.array(eigen_values), 0, 1)
         self.eigen_vectors = np.swapaxes(np.array(eigen_vectors), 0, 1)
