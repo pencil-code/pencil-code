@@ -2096,6 +2096,8 @@ module Magnetic
 !
       if (lboris_correction) then
         lpenc_requested(i_gamma_A2)=.true.
+        lpenc_requested(i_fpres)=.true.
+        lpenc_requested(i_ugu)=.true.
       endif
 !
 !  ua pencil if lua_as_aux
@@ -3209,9 +3211,24 @@ module Magnetic
 !
 !  Following Eq. 34 of Gombosi et al. 2002 for Boris correction
 !
-              do j=1,3
-                df(l1:l2,m,n,iux+j-1)=df(l1:l2,m,n,iux+j-1)+p%gamma_A2*p%jxbr(:,j)
-              enddo
+                df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%gamma_A2*p%jxbr(:,1)+&
+                                  (p%ugu(:,1)+p%fpres(:,1))*(1-p%gamma_A2)-&
+                                  0.5*(p%gamma_A2*p%rho1/p%clight2/mu0)* &
+                                  (p%bb(:,1)**2*(p%ugu(:,1)+p%fpres(:,1))+&
+                                  p%bb(:,1)*p%bb(:,2)*(p%ugu(:,2)+p%fpres(:,2))+&
+                                  p%bb(:,1)*p%bb(:,3)*(p%ugu(:,3)+p%fpres(:,3)))
+                df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+p%gamma_A2*p%jxbr(:,2)+&
+                                  (p%ugu(:,2)+p%fpres(:,2))*(1-p%gamma_A2)-&
+                                  0.5*(p%gamma_A2*p%rho1/p%clight2/mu0)* &
+                                  (p%bb(:,2)**2*(p%ugu(:,2)+p%fpres(:,2))+&
+                                  p%bb(:,2)*p%bb(:,1)*(p%ugu(:,1)+p%fpres(:,1))+&
+                                  p%bb(:,2)*p%bb(:,3)*(p%ugu(:,3)+p%fpres(:,3)))
+                df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%gamma_A2*p%jxbr(:,3)+&
+                                  (p%ugu(:,3)+p%fpres(:,3))*(1-p%gamma_A2)-&
+                                  0.5*(p%gamma_A2*p%rho1/p%clight2/mu0)* &
+                                  (p%bb(:,3)**2*(p%ugu(:,3)+p%fpres(:,3))+&
+                                  p%bb(:,3)*p%bb(:,1)*(p%ugu(:,1)+p%fpres(:,1))+&
+                                  p%bb(:,3)*p%bb(:,2)*(p%ugu(:,2)+p%fpres(:,2)))
             else
               df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
             endif
