@@ -3204,7 +3204,18 @@ module Magnetic
 !
       if (lhydro) then
         if (.not.lkinematic) then
-          if (llorentzforce) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
+          if (llorentzforce) then
+            if (lboris_correction) then
+!
+!  Following Eq. 34 of Gombosi et al. 2002 for Boris correction
+!
+              do j=1,3
+                df(l1:l2,m,n,iux+j-1)=df(l1:l2,m,n,iux+j-1)+p%gamma_A2*p%jxbr(:,j)
+              enddo
+            else
+              df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
+            endif
+          endif
         endif
       endif
 !
