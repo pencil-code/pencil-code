@@ -13,7 +13,6 @@
 module Solid_Cells
 !
   use Cparam
-!  use Param_IO
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
@@ -22,7 +21,6 @@ module Solid_Cells
 !
   include 'solid_cells.h'
 !
-!  integer, parameter            :: max_items=5
   integer, parameter            :: max_items=5
   integer                       :: ncylinders=0, nrectangles, nspheres=0, dummy
   integer                       :: nobjects, nlong, nlat
