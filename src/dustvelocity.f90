@@ -539,6 +539,16 @@ module Dustvelocity
             f(l,:,:,iudz(1)) = uudz0
           enddo
 !
+        case ('firsttwo')
+          do l=1,mx
+            f(l,:,:,iudx(1)) = uudx0
+            f(l,:,:,iudy(1)) = uudy0
+            f(l,:,:,iudz(1)) = uudz0
+            f(l,:,:,iudx(2)) = uudx0*2.
+            f(l,:,:,iudy(2)) = uudy0*2.
+            f(l,:,:,iudz(2)) = uudz0*2.
+          enddo
+!
         case ('gaussian-noise')
           do k=1,ndustspec; call gaunoise(ampluud,f,iudx(k),iudz(k)); enddo
         case ('sinwave-phase')

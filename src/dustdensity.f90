@@ -2803,17 +2803,23 @@ module Dustdensity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real :: dndfac
+      real :: dndfac, dndfac_momconsi, dndfac_momconsj
       integer :: i,j,k,l
       logical :: lmdvar_noevolve=.false.
 !
 !  Carry out integration over all bins.
+!  dndfac_sum is used for diagnostics
 !
       dndfac_sum=0.
       do l=1,nx
         do i=1,ndustspec; do j=i,ndustspec
           dndfac = -dkern(l,i,j)*p%nd(l,i)*p%nd(l,j)
           dndfac_sum = dndfac_sum + dndfac
+!
+!  do second term (with minus sign, which is in dndfac factor):
+!    - fk \sum Kik fi term
+!    - fk mk uk \sum Kik fi term
+!
           if (dndfac/=0.0) then
             if (lradius_binning) then
               df(3+l,m,n,ind(i)) = df(3+l,m,n,ind(i)) + dndfac*p%ad(l,i)*dlnad
@@ -2821,6 +2827,15 @@ module Dustdensity
             else
               df(3+l,m,n,ind(i)) = df(3+l,m,n,ind(i)) + dndfac
               df(3+l,m,n,ind(j)) = df(3+l,m,n,ind(j)) + dndfac
+!
+!  momentum conservation treatment
+!  Kik fi vk term (second term, omitted now to not affect
+!  speed during mass loss); currently only z component
+!
+              dndfac_momconsi = -dkern(l,i,j)*p%nd(l,j)*f(3+l,m,n,iudz(i))
+              dndfac_momconsj = -dkern(l,i,j)*p%nd(l,i)*f(3+l,m,n,iudz(j))
+              !df(3+l,m,n,iudz(i)) = df(3+l,m,n,iudz(i)) + dndfac_momconsi
+              !df(3+l,m,n,iudz(j)) = df(3+l,m,n,iudz(j)) + dndfac_momconsj
             endif
             !do k=j,ndustspec+1
 !AB: the above line is from revision r3271 (2004-04-12).
@@ -2858,6 +2873,15 @@ module Dustdensity
                   else
                     df(3+l,m,n,ind(k)) = df(3+l,m,n,ind(k)) - &
                         dndfac*(p%md(l,i)+p%md(l,j))/p%md(l,k)
+!
+!  momentum conservation treatment (first term)
+!  dvk/dt = 1/2 \sum Kij (mi*ui+mj*uj)/mk fi fj
+!
+                    df(3+l,m,n,iudz(k)) = df(3+l,m,n,iudz(k)) - &
+                        dndfac*(p%md(l,i)*f(3+l,m,n,iudz(i)) &
+                               +p%md(l,j)*f(3+l,m,n,iudz(j)) &
+                               -p%md(l,k)*f(3+l,m,n,iudz(k)))/ &
+                               (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
                   endif
                   exit
                 endif
