@@ -31,6 +31,16 @@ program test_f2003
     character (len=*), parameter :: in_file = 'test_namelist.in'
     character (len=:), allocatable :: buffer
 
+    ! TODO: protected member within module
+
+    ! allocatable array within type
+    type alloc_array_struct
+      real :: test_scalar
+      real, dimension(:), allocatable :: test_array
+    endtype alloc_array_struct
+    type (alloc_array_struct) :: test_struct
+    allocate (test_struct%test_array(23))
+
     ! find namelist file size
     inquire (file=in_file, size=num_bytes)
     if (num_bytes /= namelist_size) then
