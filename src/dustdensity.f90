@@ -93,7 +93,7 @@ module Dustdensity
   logical :: lsemi_chemistry=.false., lradius_binning=.false.
   logical :: lzero_upper_kern=.false., ldustcoagulation_simplified=.false.
   logical :: lself_collisions=.false.
-  logical :: llog10_for_admom_above10=.true.
+  logical :: llog10_for_admom_above10=.true., lmomcons=.true.
   integer :: iadvec_ddensity=0
   logical, pointer :: llin_radiusbins
   real, pointer :: deltamd
@@ -129,7 +129,7 @@ module Dustdensity
       supsatratio_omega, ndmin_for_mdvar, &
       self_collisions, self_collision_factor, &
       lsemi_chemistry, lradius_binning, dkern_cst, lzero_upper_kern, &
-      llog10_for_admom_above10
+      llog10_for_admom_above10,lmomcons
 !
   integer :: idiag_KKm=0     ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
@@ -2827,15 +2827,6 @@ module Dustdensity
             else
               df(3+l,m,n,ind(i)) = df(3+l,m,n,ind(i)) + dndfac
               df(3+l,m,n,ind(j)) = df(3+l,m,n,ind(j)) + dndfac
-!
-!  momentum conservation treatment
-!  Kik fi vk term (second term, omitted now to not affect
-!  speed during mass loss); currently only z component
-!
-              dndfac_momconsi = -dkern(l,i,j)*p%nd(l,j)*f(3+l,m,n,iudz(i))
-              dndfac_momconsj = -dkern(l,i,j)*p%nd(l,i)*f(3+l,m,n,iudz(j))
-              !df(3+l,m,n,iudz(i)) = df(3+l,m,n,iudz(i)) + dndfac_momconsi
-              !df(3+l,m,n,iudz(j)) = df(3+l,m,n,iudz(j)) + dndfac_momconsj
             endif
             !do k=j,ndustspec+1
 !AB: the above line is from revision r3271 (2004-04-12).
@@ -2876,12 +2867,15 @@ module Dustdensity
 !
 !  momentum conservation treatment (first term)
 !  dvk/dt = 1/2 \sum Kij (mi*ui+mj*uj)/mk fi fj
+!  Only the gain term is needed (i.e.; the loss term should NOT be included)
 !
-                    df(3+l,m,n,iudz(k)) = df(3+l,m,n,iudz(k)) - &
-                        dndfac*(p%md(l,i)*f(3+l,m,n,iudz(i)) &
-                               +p%md(l,j)*f(3+l,m,n,iudz(j)) &
-                               -p%md(l,k)*f(3+l,m,n,iudz(k)))/ &
-                               (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
+                    if (lmomcons) then
+                      df(3+l,m,n,iudz(k)) = df(3+l,m,n,iudz(k)) - &
+                          dndfac*(p%md(l,i)*f(3+l,m,n,iudz(i)) &
+                          +p%md(l,j)*f(3+l,m,n,iudz(j)) &
+                          -p%md(l,k)*f(3+l,m,n,iudz(k)))/ &
+                          (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
+                    endif
                   endif
                   exit
                 endif
