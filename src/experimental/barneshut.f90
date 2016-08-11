@@ -88,11 +88,6 @@ module Poisson
     integer :: pp, i, j, k, xs, ys, zs, ii, jj, kk
     intent(inout) :: phi
 !
-    if (lcylindrical_coords) then 
-      if (lroot) print*,'You are using cylindrical coordinates. '//&
-           'Use poisson_cyl.f90 instead'
-      call fatal_error("barneshut","")
-    endif
     if (modulo(log(real(nx))/log(2.0),1.0) .gt. tini .or. &
       modulo(log(real(ny))/log(2.0),1.0) .gt. tini .or. &
       modulo(log(real(nz))/log(2.0),1.0) .gt. tini) then
