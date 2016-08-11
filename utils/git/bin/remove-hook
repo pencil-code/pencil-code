@@ -1,0 +1,73 @@
+#!/bin/sh
+
+# Remove a Git hook with a given MD5 hash from the user's .git/hooks/
+# directory.
+#
+# Usage:
+#   remove-hook <hook-file> <MD5 hash>
+# Example:
+#   remove-hook prepare-commit-msg c3532e525137bd49ac4d9bcde8391e54
+
+
+# Require exactly one argument that does not start with a '-'
+if [ "$#" != '2' -o "$(echo "$1" | cut -c1)" = '-' \
+                 -o "$(echo "$2" | cut -c1)" = '-' ]; then
+    echo "remove-hook: Remove a Git hook with a given MD5 hash from the user's .git/hooks/ directory."
+    echo 'Usage:'
+    echo '  remove-hook <hook-file> <MD5 hash>'
+    exit 1
+fi
+
+
+hash_content() {
+    # Print a hash of a file's content
+    filename="$1"
+    md5sum "${filename}" | cut -d ' ' -f 1
+}
+
+
+find_git_root() {
+    # Find the directory containing our .git directory.
+    # Resolves 'git worktree' indirection.
+    # Prints nothing if the cwd is not under Git
+    git_root="$(git rev-parse --show-toplevel 2>/dev/null)"
+    if [ ! "${git_root}" ]; then
+        return
+    fi
+    dot_git="${git_root}/.git"
+    if [ -d $dot_git ]; then
+        echo $git_root
+    else
+        # 'git worktree': .git points to the true root dir
+        cat $dot_git \
+            | grep -E '^gitdir:' \
+            | sed -r -e 's/^gitdir:\s*//;' -e 's|/\.git/worktrees/.*||;'
+    fi
+}
+
+
+hook_name="$1"
+md5hash="$2"
+
+git_root="$(find_git_root)"
+if [ ! "${git_root}" ]; then
+    echo "Not a Git repository -- not attempting to remove hook"
+    exit 0
+fi
+
+hook="${git_root}/.git/hooks/${hook_name}"
+
+if [ ! -e "${hook}" ]; then exit 0; fi
+
+if [ ! -r "${hook}" ]; then
+    echo "Hook ${hook} is not readable -- not attempting to remove hook"
+    exit 1
+fi
+
+if [ "$(hash_content ${hook})" != "${md5hash}" ]; then
+    echo "MD5 sums do not match -- not removing hook"
+    exit 0
+fi
+
+echo "Removing hook ${hook}"
+rm "${hook}"
