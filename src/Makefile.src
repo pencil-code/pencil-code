@@ -1658,6 +1658,16 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CFLAGS=-O3 -xAVX -ip -mp1 -w  -fp-model precise -DFUNDERSC=1 #(pfe|mfe)
 #FFLAGS_DOUBLE=-autodouble #(pfe|mfe)
 #LD_MPI=-lmpi #(pfe|mfe)
+##
+## CDAC-Pune PARAM-YUVA-II (ycn*)
+##
+#FC=mpiifort #(ycn*)
+#CC=mpiicc #(ycn*)
+#FFLAGS=-O3 -xAVX -ip -mp1 -w -fp-model precise #(ycn*)
+#CFLAGS=-O3 -xAVX -ip -mp1 -w  -fp-model precise -DFUNDERSC=1 #(ycn*)
+#FFLAGS_DOUBLE=-autodouble #(ycn*)
+#LD_MPI=-lmpi #(ycn*)
+##
 ## NTNU Vilje (service)
 ##
 #FC=mpif90 #(service)
