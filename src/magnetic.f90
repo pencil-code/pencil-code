@@ -3052,7 +3052,8 @@ module Magnetic
      if (lpenc_loc(i_clight2)) then
        call eta_zdep(zdep_profile, mz, z, clight2_zdep)
        p%clight2=clight2_zdep(n)*(c_light_cgs/unit_velocity)**2
-       p%gamma_A2=1./(1+p%va2/p%clight2)
+       if (lpenc_loc(i_gamma_A2)) &
+         p%gamma_A2=1./(1+p%va2/p%clight2)
      endif
 !
     endsubroutine calc_pencils_magnetic_pencpar
