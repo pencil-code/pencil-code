@@ -737,7 +737,7 @@ program run
     endif
 !
 !  Setting ialive=1 can be useful on flaky machines!
-!  The iteration number is written into thi file "data/proc*/alive.info".
+!  The iteration number is written into the file "data/proc*/alive.info".
 !  Set ialive=0 to fully switch this off.
 !
     if (ialive /= 0) then
