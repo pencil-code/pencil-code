@@ -1394,6 +1394,7 @@ module Particles_sub
     integer, dimension(2*npar_species) :: indx
     real, dimension(2*npar_species, 2*npar_species) :: M
     real, dimension(2*npar_species) :: B
+    integer :: i
 !
 !  Puts the tausp values into a diagonal matrix: Matrix Lambda
 !
