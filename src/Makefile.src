@@ -1170,7 +1170,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FFLAGS_DOUBLE=-r8 #(charybdis*)
 #LIBMPISUFFIX=#(charybdis*)
 ##
-## Axel on LCD
+## Piyali on Hydra
 ##
 #FC=mpif90 #(hydra*)
 #FFLAGS= -O3  #(hydra*)
@@ -1180,17 +1180,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FFLAGS_DOUBLE=-fdefault-real-8 #(hydra)
 #FFLAGS_DOUBLE=-r8 #(hydra*)
 #LIBMPISUFFIX=#(hydra*)
-##
-## Axel on LCD
-##
-#FC=mpif90 #(hydra2*)
-#FFLAGS= -O3  #(hydra2*)
-#CC=mpicc #(hydra2*)
-#CFLAGS=-O3 -DFUNDERSC=1 #(hydra2*)
-#LD_MPI= #(hydra2*)
-#FFLAGS_DOUBLE=-fdefault-real-8 #(hydra2)
-#FFLAGS_DOUBLE=-r8 #(hydra2*)
-#LIBMPISUFFIX=#(hydra2*)
 ##
 ## Axel on Sanssouci (ifc 9.1)
 ##
