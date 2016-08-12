@@ -3053,6 +3053,9 @@ module Magnetic
        clight2_zdep(n)=(0.5*(1.+tanh(z(n)/(-5*dz))) & 
            * (c_light_cgs/unit_velocity-sqrt(va2max_jxb))+sqrt(va2max_jxb))**2
        p%clight2=clight2_zdep(n)
+! [PABourdin] This can provoke a division by zero and break the auto-test:
+! Possibie solution 1: add a tiny element to p%clight2 before division.
+! Possible solution 2: compute only for non-zero p%clight2 (use "where").
        if (lpenc_loc(i_gamma_A2)) p%gamma_A2=1./(1+p%va2/p%clight2)
      endif
 !
