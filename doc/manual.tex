@@ -7387,8 +7387,8 @@ linitialcondition=.false. header to say linitialcondition=.true.
 
 This file has hooks to implement a custom initial condition to
 most variables. After implementing your initial condition,
-add the line \code{INITIAL\_CONDITION=initial\_condition/myinitialcondition.f90}
-to your \file{src/Makefile.local} file. Here, \file{myinitialcondition.f90} is the
+add the line \code{INITIAL\_CONDITION=initial\_condition/myinitialcondition}
+to your \file{src/Makefile.local} file. Here, \code{myinitialcondition} is the
 name you gave to your initial condition file.
 Add also \code{initial\_condition\_pars} to the \file{start.in} file, just
 below \code{init\_pars}. This is
