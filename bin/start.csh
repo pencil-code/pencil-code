@@ -32,10 +32,15 @@ endif
 # Determine whether this is MPI, how many CPUS etc.
 pwd
 source getconf.csh
-#
-#  If we don't have a data subdirectory: stop here (it is too easy to
+
+# If we don't have a data subdirectory: create it, if set to default.
+if ((! -d "$datadir") && ("$datadir" == "data")) then
+  echo "Creating default datadir: '$datadir'"
+  mkdir "$datadir"
+endif
+
+#  If we still don't have a data subdirectory: stop here (it is too easy to
 #  continue with an NFS directory until you fill everything up).
-#
 if (! -d "$datadir") then
   echo ""
   echo ">>  STOPPING: need $datadir directory"
