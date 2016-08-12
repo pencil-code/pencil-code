@@ -15,5 +15,5 @@ fi
 # while the config option rebase.autostash exists, it is apparently not
 # honored by "git pull"
 if [ ! "$(git config --local alias.up)" ]; then
-  git config --local alias.up '!git fetch && git rebase'
+  git config --local alias.up '!'"$PENCIL_HOME/utils/git/bin/git-up.sh"
 fi
