@@ -23,6 +23,7 @@ module Particles_sub
   public :: get_rhopswarm, find_grid_volume, find_interpolation_weight
   public :: find_interpolation_indeces, get_gas_density, precalc_cell_volumes
   public :: precalc_weights
+  public :: dragforce_equi_multispecies
 !
   interface get_rhopswarm
     module procedure get_rhopswarm_ineargrid
@@ -1367,5 +1368,73 @@ module Particles_sub
       
 !
     endsubroutine precalc_weights
+!***********************************************************************
+    subroutine dragforce_equi_multispecies(npar_species, tausp, eps, vpx, vpy, ux, uy)
+!
+!  Finds the multi-species drag force equilibrium solution.
+!
+!  12-aug-16/nschaffer+ccyang: coded.
+!
+!  Reference:
+!    Appendix A, Bai, X.-N., & Stone, J.~M. 2010, ApJ, 722, 1437
+!
+    use Sub, only: ludcmp, lubksb
+!
+    integer, intent(in) :: npar_species 
+    real, dimension(npar_species), intent(in) :: tausp
+    real, dimension(npar_species), intent(in) :: eps
+    real, dimension(npar_species), intent(out) :: vpx, vpy
+    real, intent(out) :: ux
+    real, intent(out) :: uy
+!
+    real, dimension(npar_species,npar_species) :: tausp_matrix
+    real, dimension(npar_species,npar_species) :: one_plus_eps
+    integer, dimension(2*npar_species) :: indx
+    real, dimension(2*npar_species, 2*npar_species) :: M
+    real, dimension(2*npar_species) :: B
+!
+!  Puts the tausp values into a diagonal matrix: Matrix Lambda
+!
+    tausp_matrix = 0.0
+    do i=1, npar_species
+      tausp_matrix(i,i) = tausp(i)
+    enddo
+!
+!  Find I + Gamma.
+!
+    one_plus_eps = 0.0
+    do i=1, npar_species
+      one_plus_eps(i,:) = eps
+      one_plus_eps(i,i) = one_plus_eps(i,i) + 1.0
+    enddo
+!
+!  Set up the linear system for drag equilibrium (Equation (A3)).
+!
+    M(1:npar_species,1:npar_species) = one_plus_eps
+    M(1:npar_species,npar_species+1:2*npar_species) = -2.0 * tausp_matrix
+    M(npar_species+1:2*npar_species,1:npar_species) = 0.5 * tausp_matrix
+    M(npar_species+1:2*npar_species,npar_species+1:2*npar_species) = one_plus_eps
+!
+!  Set up the right-hand side.
+!
+    B(1:npar_species) = 0
+    B(npar_species+1:2*npar_species) = 0.5 * beta_glnrho_global
+!
+!  Solve the system for equilibrium particle velocites.
+!
+    call ludcmp(M, indx)
+    call lubksb(M, indx, B)
+!
+    vpx = B(1:npar_species)
+    vpy = B(npar_species+1:2*npar_species)
+!
+!  Use conservation of center-of-mass velocity to find the equilibrium
+!  gas velocity.
+! 
+    ux = -dot_product(eps, vpx)
+    uy = -dot_product(eps, vpy) + 0.5 * beta_glnrho_global
+!
+    endsubroutine dragforce_equi_multispecies
+!***********************************************************************
 !***********************************************************************
 endmodule Particles_sub
