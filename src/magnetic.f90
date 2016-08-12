@@ -3050,9 +3050,8 @@ module Magnetic
 ! reduced speed of light pencil
 !
      if (lpenc_loc(i_clight2)) then
-       clight2_zdep(n)=(0.5*(1.+tanh(z(n)/(-5*dz)))*   & 
-                       (c_light_cgs/unit_velocity-sqrt(va2max_jxb))+&
-                       sqrt(va2max_jxb))**2
+       clight2_zdep(n)=(0.5*(1.+tanh(z(n)/(-5*dz))) & 
+           * (c_light_cgs/unit_velocity-sqrt(va2max_jxb))+sqrt(va2max_jxb))**2
        p%clight2=clight2_zdep(n)
        p%gamma_A2=1./(1+p%va2/p%clight2)
      endif
