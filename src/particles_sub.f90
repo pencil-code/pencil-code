@@ -1369,7 +1369,7 @@ module Particles_sub
 !
     endsubroutine precalc_weights
 !***********************************************************************
-    subroutine dragforce_equi_multispecies(npar_species, tausp, eps, vpx, vpy, ux, uy)
+    subroutine dragforce_equi_multispecies(npar_species, tausp, eps, eta_vK, vpx, vpy, ux, uy)
 !
 !  Finds the multi-species drag force equilibrium solution.
 !
@@ -1383,6 +1383,8 @@ module Particles_sub
     integer, intent(in) :: npar_species 
     real, dimension(npar_species), intent(in) :: tausp
     real, dimension(npar_species), intent(in) :: eps
+    real, intent(in) :: eta_vK
+!
     real, dimension(npar_species), intent(out) :: vpx, vpy
     real, intent(out) :: ux
     real, intent(out) :: uy
@@ -1418,7 +1420,7 @@ module Particles_sub
 !  Set up the right-hand side.
 !
     B(1:npar_species) = 0
-    B(npar_species+1:2*npar_species) = 0.5 * beta_glnrho_global
+    B(npar_species+1:2*npar_species) = -eta_vK
 !
 !  Solve the system for equilibrium particle velocites.
 !
@@ -1432,7 +1434,7 @@ module Particles_sub
 !  gas velocity.
 ! 
     ux = -dot_product(eps, vpx)
-    uy = -dot_product(eps, vpy) + 0.5 * beta_glnrho_global
+    uy = -dot_product(eps, vpy) - eta_vK
 !
     endsubroutine dragforce_equi_multispecies
 !***********************************************************************
