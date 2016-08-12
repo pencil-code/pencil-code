@@ -4,6 +4,7 @@
 *~
 ./python/pencilnew
 doc/www
+src/experimental/test_f2003
 .*.swp
 host-ID
 # Generated files
