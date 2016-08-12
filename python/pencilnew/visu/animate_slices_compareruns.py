@@ -1,4 +1,4 @@
-def animate_slices_multi(field='uu1', datadir1='data/', datadir2='data/', proc=-1, extension='xz',
+def animate_slices_compareruns(field='uu1', datadir1='data/', datadir2='data/', proc=-1, extension='xz',
                    format='native', tmin=0., tmax=1.e38, wait=0.,
                    amin=0., amax=1., transform='', oldfile=False,
                    makemovie=False):
