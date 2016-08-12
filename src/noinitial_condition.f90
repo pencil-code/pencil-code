@@ -373,9 +373,15 @@ module InitialCondition
 !***********************************************************************
     subroutine read_initial_condition_pars(iostat)
 !
+      use File_io, only: parallel_unit
+!
       integer, intent(out) :: iostat
 !
       iostat = 0
+!
+      ! *** IMPORTANT: ***
+      ! If you use this as template, please uncomment the following line:
+      !read(parallel_unit, NML=initial_condition_pars, IOSTAT=iostat)
 !
     endsubroutine read_initial_condition_pars
 !***********************************************************************
@@ -385,6 +391,10 @@ module InitialCondition
 !
       call keep_compiler_quiet(unit)
 !
+      ! *** IMPORTANT: ***
+      ! If you use this as template, please uncomment the following line:
+      !write(unit, NML=initial_condition_pars)
+!
     endsubroutine write_initial_condition_pars
 !***********************************************************************
     subroutine initial_condition_clean_up
@@ -393,7 +403,6 @@ module InitialCondition
 ! dummy
 !
     endsubroutine initial_condition_clean_up
-!***********************************************************************
 !***********************************************************************
 !
 !********************************************************************
