@@ -7377,26 +7377,26 @@ most of them. The recommended course of action is to make use of
 the InitialCondition module.
 
 InitialCondition works pretty much like the Special module. To implement your
-own custom initial conditions, create a \file{initial\_condition} directory in
-your run directory, and copy the file \file{noinitialcondition.f90} from the
-src/ to it, with a new, descriptive, name.
+own custom initial conditions, create a \file{src/initial\_condition} directory
+either in the main \path{PENCIL_HOME} or in one specific of your run directories,
+and copy the file \file{noinitial_condition.f90} from the
+\path{src/} to it, with a new, descriptive, name.
 
 The first thing to do in your new module is to change the
 linitialcondition=.false. header to say linitialcondition=.true.
 
 This file has hooks to implement a custom initial condition to
 most variables. After implementing your initial condition,
-add the line INITIAL\_CONDITION=initial\_condition/myinitialcondition.f90
-to your \file{src/Makefile.local} file. Here, ``myinitialcondition'' is the
+add the line \code{INITIAL\_CONDITION=initial\_condition/myinitialcondition.f90}
+to your \file{src/Makefile.local} file. Here, \file{myinitialcondition.f90} is the
 name you gave to your initial condition file.
-Add also ``initial\_condition\_pars'' to the start.in file, just
-below ``init\_pars''. This is
+Add also \code{initial\_condition\_pars} to the \file{start.in} file, just
+below \code{init\_pars}. This is
 a namelist, which you can use to add whichever quantity your
 initial condition needs defined, or passed. You must also un-comment the
-relevant lines in the subroutines of namelist that read and write the
-namelist since, for compiling reasons, these subroutines in
-\file{noinitialcondition.f90} are dummies. The lines are easily identifiable
-in the code.
+relevant lines in the subroutines for reading and writing the namelists.
+For compiling reasons, these subroutines in \file{noinitial_condition.f90}
+are dummies. The lines are easily identifiable in the code.
 
 Check e.g. the samples \file{2d-tests/baroclinic},
 \file{2d-tests/spherical\_viscous\_ring}, or \file{interlocked-fluxrings},
