@@ -105,10 +105,19 @@ endif
 goto rerun
 endif
 
-#
-#  If we don't have a data subdirectory: stop here (it is too easy to
+# First, check if NEWDIR is set and if yes, go there.
+if (-e "NEWDIR") then
+  goto checknewdir
+endif
+
+# If we don't have a data subdirectory: create it, if set to default.
+if ((! -d "$datadir") && ("$datadir" == "data")) then
+  echo "Creating default datadir: '$datadir'"
+  mkdir "$datadir"
+endif
+
+#  If we still don't have a data subdirectory: stop here (it is too easy to
 #  continue with an NFS directory until you fill everything up).
-#
 if (! -d "$datadir") then
   echo ""
   echo ">>  STOPPING: need $datadir directory"
@@ -117,7 +126,8 @@ if (! -d "$datadir") then
   echo ">>  but that will most likely end up on your NFS file system and be"
   echo ">>  slow"
   echo
-  goto checknewdir
+  rm -f LOCK data/LOCK
+  exit 0
 endif
 
 #
