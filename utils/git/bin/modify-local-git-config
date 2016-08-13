@@ -2,19 +2,42 @@
 
 # Modify the *local* git config (i.e. .git/config) to set both push.rebase and
 # rebase.autostash to true provided they are not set to true already
-
 if [ ! "$(git config pull.rebase)" ]; then
-  git config pull.rebase true
+    git config pull.rebase true
 fi
-
 if [ ! "$(git config rebase.autostash)" ]; then
-  git config rebase.autostash true
+    git config rebase.autostash true
 fi
 
 # Handy alias that emulates "git pull --rebase --autostash" for Git versions
-# older than 2.9. I have tested this Git 1.7.1 (RHEL 6's version). This
-# one-liner is inspired by
-#   https://github.com/git/git/blob/master/git-rebase.sh
+# older than 2.9. I have tested this in particular with Git 1.7.1 (RHEL 6's
+# version). The code is copied more or less verbatim from
+#  https://github.com/git/git/blob/master/git-rebase.sh
+# Right now the only difference is that this does not do garbage collection in
+# the form of "git gc --auto" in the end.
 if [ ! "$(git config alias.up)" ]; then
-  git config alias.up '!sha1=$(git stash create "autostash"); [ -n "$sha1" ] && git reset --hard; git pull --rebase; [ -n "$sha1" ] && git stash apply "$sha1" && git gc --auto;'
+    git config alias.up '!f() {
+    if ! stash_sha1=$(git stash create "autostash"); then
+        echo Cannot autostash
+        exit 1
+    fi
+    if [ -n "$stash_sha1" ]; then
+        echo Created autostash: $(git rev-parse --short $stash_sha1)
+        git reset --hard
+    fi
+    git pull --rebase
+    if [ -n "$stash_sha1" ]; then
+        if git stash apply $stash_sha1 2>&1 >/dev/null; then
+            echo Applied autostash.
+        else
+            if ! git stash store -m "autostash" -q $stash_sha1; then
+                echo Cannot store \$stash_sha1
+                exit 1
+            fi
+            echo Applying autostash resulted in conflicts.
+            echo Your changes are safe in the stash.
+            echo You can run "git stash pop" or "git stash drop" at any time.
+        fi
+    fi
+    }; f'
 fi
