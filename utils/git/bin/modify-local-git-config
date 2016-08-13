@@ -16,5 +16,5 @@ fi
 # one-liner is inspired by
 #   https://github.com/git/git/blob/master/git-rebase.sh
 if [ ! "$(git config alias.up)" ]; then
-  git config alias.up '!sha1=$(git stash create "autostash"); git reset --hard; git pull --rebase; [ -n "$sha1" ] && git stash apply "$sha1" && git gc --auto;'
+  git config alias.up '!sha1=$(git stash create "autostash"); [ -n "$sha1" ] && git reset --hard; git pull --rebase; [ -n "$sha1" ] && git stash apply "$sha1" && git gc --auto;'
 fi
