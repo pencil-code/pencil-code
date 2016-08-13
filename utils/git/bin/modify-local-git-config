@@ -3,18 +3,18 @@
 # Modify the *local* git config (i.e. .git/config) to set both push.rebase and
 # rebase.autostash to true provided they are not set to true already
 
-if [ ! "$(git config --local pull.rebase)" ]; then
-  git config --local pull.rebase true
+if [ ! "$(git config pull.rebase)" ]; then
+  git config pull.rebase true
 fi
 
-if [ ! "$(git config --local rebase.autostash)" ]; then
-  git config --local rebase.autostash true
+if [ ! "$(git config rebase.autostash)" ]; then
+  git config rebase.autostash true
 fi
 
 # Handy alias that emulates "git pull --rebase --autostash" for Git versions
 # older than 2.9. I have tested this Git 1.7.1 (RHEL 6's version). This
 # one-liner is inspired by
 #   https://github.com/git/git/blob/master/git-rebase.sh
-if [ ! "$(git config --local alias.up)" ]; then
-  git config --local alias.up '!sha1=$(git stash create "autostash"); git reset --hard; git pull --rebase; [ -n "$sha1" ] && git stash apply "$sha1" && git gc --auto;'
+if [ ! "$(git config alias.up)" ]; then
+  git config alias.up '!sha1=$(git stash create "autostash"); git reset --hard; git pull --rebase; [ -n "$sha1" ] && git stash apply "$sha1" && git gc --auto;'
 fi
