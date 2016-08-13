@@ -11,9 +11,10 @@ if [ ! "$(git config --local rebase.autostash)" ]; then
   git config --local rebase.autostash true
 fi
 
-# This is necessary for Git version 1.9.1 (and possibly older) because
-# while the config option rebase.autostash exists, it is apparently not
-# honored by "git pull"
+# Handy alias that emulates "git pull --rebase --autostash" for Git versions
+# older than 2.9. I have tested this Git 1.7.1 (RHEL 6's version). This
+# one-liner is inspired by
+#   https://github.com/git/git/blob/master/git-rebase.sh
 if [ ! "$(git config --local alias.up)" ]; then
-  git config --local alias.up '!'"$PENCIL_HOME/utils/git/bin/git-up.sh"
+  git config --local alias.up '!sha1=$(git stash create "autostash"); git reset --hard; git pull --rebase; [ -n "$sha1" ] && git stash apply "$sha1" && git gc --auto;'
 fi
