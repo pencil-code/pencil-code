@@ -11,12 +11,20 @@ module Io
 !
   use Cdata
   use Cparam, only: intlen, fnlen, max_int
+  use HDF5
+  use H5LIB
+  use H5S
+  use H5P
+  use H5D
+  use H5F
+  use H5FDMPIO
   use Messages, only: fatal_error, svn_id, warning
   use General, only: delete_file
 !
   implicit none
 !
   include 'io.h'
+  include 'mpif.h'
   include 'record_types.h'
 !
   interface write_persist
@@ -52,8 +60,8 @@ module Io
   integer :: local_type, global_type, h5_err
   integer(HID_T) :: h5_file, h5_dset, h5_plist, h5_fspace, h5_mspace
   integer, parameter :: n_dims = 3
-  integer, dimension(n_dims+1) :: local_size, local_subsize, local_start
-  integer, dimension(n_dims+1) :: global_size, global_subsize, global_start
+  integer(kind=8), dimension(n_dims+1) :: local_size, local_subsize, local_start
+  integer(kind=8), dimension(n_dims+1) :: global_size, global_subsize, global_start
 !
   contains
 !***********************************************************************
@@ -255,7 +263,7 @@ module Io
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
 !
-      use Mpicomm, only: globalize_xy, collect_grid
+      use Mpicomm, only: globalize_xy, collect_grid, mpi_precision, stop_it_if_any
 !
       integer, intent(in) :: nv
       real, dimension (mx,my,mz,nv), intent(in) :: a
@@ -263,8 +271,8 @@ module Io
       integer, optional, intent(in) :: mode
 !
       real, dimension (:), allocatable :: gx, gy, gz
-      integer :: alloc_err
-      integer, dimension (n_dims+1) :: stride, count
+      integer :: alloc_err, h5t_native_type
+      integer(kind=8), dimension (n_dims+1) :: h5_stride, h5_count
       integer, dimension(MPI_STATUS_SIZE) :: status
       logical :: lwrite_add
       real :: t_sp   ! t in single precision for backwards compatibility
@@ -320,11 +328,11 @@ module Io
 ! Define local 'hyper-slab' in the global file.
 !
       local_subsize(4) = nv
-      stride(*) = 1
-      count(*) = 1
+      h5_stride(:) = 1
+      h5_count(:) = 1
       call h5dget_space_f (h5_dset, h5_fspace, h5_err)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not get dataset for file space')
-      call h5sselect_hyperslab_f (h5_fspace, H5S_SELECT_SET_F, global_start, count, h5_err, h5_stride, local_size)
+      call h5sselect_hyperslab_f (h5_fspace, H5S_SELECT_SET_F, global_start, h5_count, h5_err, h5_stride, local_size)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not select hyperslab within file')
 !
 ! Prepare data transfer.
@@ -334,9 +342,17 @@ module Io
       call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not select collective IO')
 !
+! Determine native data type
+!
+      if (mpi_precision == MPI_REAL) then
+        h5t_native_type = H5T_NATIVE_REAL
+      else
+        h5t_native_type = H5T_NATIVE_DOUBLE
+      endif
+!
 ! Collectively write the data.
 !
-      call h5dwrite_f (h5_dset, H5T_NATIVE_INTEGER, a, global_size, h5_err, &
+      call h5dwrite_f (h5_dset, h5t_native_type, a, global_size, h5_err, &
           file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not write the data')
 !
@@ -364,6 +380,8 @@ module Io
 !  Close snapshot file.
 !
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
+!
+      use Mpicomm, only: globalize_xy, collect_grid, mpi_precision, stop_it_if_any
 !
       if (persist_initialized) then
         if (lroot .and. (ip <= 9)) write (*,*) 'finish persistent block'
@@ -418,48 +436,12 @@ module Io
 !
       local_size(4) = nv
       local_subsize(4) = nv
-      call MPI_TYPE_CREATE_SUBARRAY(n_dims+1, local_size, local_subsize, &
-          local_start, order, mpi_precision, local_type, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
-          'Could not create local subarray: "'//file//'"')
-      call MPI_TYPE_COMMIT(local_type, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
-          'Could not commit local subarray: "'//file//'"')
 !
 ! Define 'global_type' to indicate the local data portion in the global file.
 !
       global_size(4) = nv
-      call MPI_TYPE_CREATE_SUBARRAY(n_dims+1, global_size, local_subsize, &
-          global_start, order, mpi_precision, global_type, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
-          'Could not create global subarray: "'//file//'"')
-      call MPI_TYPE_COMMIT(global_type, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
-          'Could not commit global subarray: "'//file//'"')
-!
-      call MPI_FILE_OPEN(comm, trim (directory_snap)//'/'//file, &
-          MPI_MODE_CREATE+MPI_MODE_WRONLY, io_info, handle, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
-          'Could not open: "'//trim (directory_snap)//'/'//file//'"')
 !
 ! Setting file view and write raw binary data, ie. 'native'.
-!
-      call MPI_FILE_SET_VIEW(handle, 0, mpi_precision, global_type, &
-          'native', io_info, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
-          'Could not create view for "'//file//'"')
-!
-      call MPI_FILE_READ_ALL(handle, a, 1, local_type, status, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
-          'Could not write "'//file//'"')
-!
-      call MPI_FILE_CLOSE(handle, mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
-          'Could not close "'//file//'"')
-!
-      call MPI_FINALIZE(mpi_err)
-      if (mpi_err /= MPI_SUCCESS) call fatal_error ('input_snap', &
-          'Could not finalize "'//file//'"')
 !
       ! read additional data
       if (lread_add) then
