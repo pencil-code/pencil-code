@@ -22,8 +22,7 @@ set_local_option rebase.autostash true
 #  https://github.com/git/git/blob/master/git-rebase.sh
 # Right now the only difference is that this does not do garbage collection in
 # the form of "git gc --auto" in the end.
-if [ ! "$(git config alias.up)" ]; then
-    git config alias.up '!f() {
+git config alias.pc-update '!f() {
     if ! stash_sha1=$(git stash create "autostash"); then
         echo Cannot autostash
         exit 1
@@ -46,5 +45,7 @@ if [ ! "$(git config alias.up)" ]; then
             echo You can run "git stash pop" or "git stash drop" at any time.
         fi
     fi
-    }; f'
-fi
+}; f'
+
+# Shorten "pc-update" to "up" if the latter is not defined already
+set_local_option alias.up '!git pc-update'
