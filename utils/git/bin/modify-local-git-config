@@ -1,13 +1,20 @@
 #!/bin/sh
 
-# Modify the *local* git config (i.e. .git/config) to set both push.rebase and
-# rebase.autostash to true provided they are not set to true already
-if [ ! "$(git config pull.rebase)" ]; then
-    git config pull.rebase true
-fi
-if [ ! "$(git config rebase.autostash)" ]; then
-    git config rebase.autostash true
-fi
+# Helper function to set local config option if it is not set locally already.
+# In newer Git versions `git config --local <option>` can be used to determine
+# if an option is set locally, but in Git 1.7.1 this does not work. Hence we
+# specify the local Git config file explictly.
+set_local_option() {
+    local_git_config="$(git rev-parse --git-dir)/config"
+    if [ -z "$(git config --file "$local_git_config" "$1")" ]; then
+        git config --file "$local_git_config" "$1" "$2"
+    fi
+}
+
+# Avoid merge commits by rebasing (supported since 1.7.9)
+set_local_option pull.rebase true
+# Automatically stash local changes (supported since 1.8.4)
+set_local_option rebase.autostash true
 
 # Handy alias that emulates "git pull --rebase --autostash" for Git versions
 # older than 2.9. I have tested this in particular with Git 1.7.1 (RHEL 6's
