@@ -142,9 +142,9 @@ module Poisson
 !
     do pp=0,ncpus-1
       if (pp/=iproc) then
-        call mpisendrecv_real(xc,nx,pp,118,xrecv(:,pp),pp,118)
-        call mpisendrecv_real(yc,ny,pp,119,yrecv(:,pp),pp,119)
-        call mpisendrecv_real(zc,nz,pp,120,zrecv(:,pp),pp,120)
+        call mpisendrecv_real(xc,nx,pp,281,xrecv(:,pp),pp,281)
+        call mpisendrecv_real(yc,ny,pp,282,yrecv(:,pp),pp,282)
+        call mpisendrecv_real(zc,nz,pp,283,zrecv(:,pp),pp,283)
       endif
     enddo
 !
@@ -308,7 +308,7 @@ module Poisson
     if (lroot .and. lshowtime) call cpu_time(tstart_mpi)
     do pp=0,ncpus-1
       if (pp/=iproc) then
-        call mpisendrecv_real(phi,(/nx,ny,nz/),pp,117, phirecv(:,:,:,pp),pp,117)
+        call mpisendrecv_real(phi,(/nx,ny,nz/),pp,284, phirecv(:,:,:,pp),pp,284)
       endif
     enddo
     if (lroot .and. lshowtime) call cpu_time(tstop_mpi)
@@ -347,8 +347,8 @@ module Poisson
                        ! of 4pi that we don't want (I think).
 !
     if (lroot .and. lshowtime) then
-      print '("barneshut: MPI time = ",f6.3," seconds.")',tstop_mpi-tstart_mpi
-      print '("barneshut: Loop time = ",f6.3," seconds.")',tstop_loop-tstart_loop
+      print '("barneshut: MPI time = ",f10.3," seconds.")',tstop_mpi-tstart_mpi
+      print '("barneshut: Loop time = ",f10.3," seconds.")',tstop_loop-tstart_loop
     endif
 !
     endsubroutine do_barneshut
