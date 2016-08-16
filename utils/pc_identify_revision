@@ -28,8 +28,7 @@ check_prerequisites () {
 
 
 write_revision_file () {
-    echo 'Revision:' >> ${revision_file}
-    echo '---------' >> ${revision_file}
+    printf 'Revision: ' >> ${revision_file}
 
     if [ -d "${PENCIL_HOME}/.git" ]; then
         write_revision_file_from_git_sandbox
@@ -39,66 +38,19 @@ write_revision_file () {
         echo 'Warning: Cannot determine a revision number' \
             >> ${revision_file}
     fi
-    echo >> ${revision_file}
 }
 
 
 write_revision_file_from_git_sandbox () {
     git_cmd rev-parse HEAD >> ${revision_file}
-    git_cmd log --format='%B' -n 1 HEAD >> ${revision_file}
-    echo >> ${revision_file}
-
-    # Not relevant for now, but nice with annotated release tags:
-    #   git_cmd describe HEAD >> ${revision_file}
-
-    # Append the output from 'git status', so we know whether
-    # there were uncommitted changes:
-    echo 'Git status:' >> ${revision_file}
-    echo '-----------' >> ${revision_file}
-    git_cmd status >> ${revision_file}
-    echo >> ${revision_file}
-
-    if [ -z $quiet ]; then
-        # For a complete record: document any local changes
-        echo 'Git diff:' >> ${revision_file}
-        echo '---------' >> ${revision_file}
-        git_cmd diff HEAD >> ${revision_file}
-        echo >> ${revision_file}
-    fi
+    git_cmd status --short --untracked-files=no >> ${revision_file}
 }
 
 
 write_revision_file_from_svn_sandbox () {
     # SVN revision:
-    svn_cmd log --limit 1 >> ${revision_file}
-    echo >> ${revision_file}
-
-    # Which branch we are on
-    svn_cmd info >> ${revision_file}
-
-    # Git revision.
-    # Somewhat tricky, because this command requires
-    # authentication with the server, which may not be
-    # possible in automated test runs.
-    # Thus, we run this with a timeout of 1 minute:
-    echo "Git revision:" >> ${revision_file}
-    time_limited_svn_cmd propget git-commit --revprop -r HEAD \
-        https://github.com/pencil-code/pencil-code.git \
-        >> ${revision_file}
-    echo >> ${revision_file}
-
-    # Append the output from 'svn status', so we know whether
-    # there were uncommitted changes:
-    echo "SVN status:" >> ${revision_file}
-    svn_cmd status >> ${revision_file}
-    echo >> ${revision_file}
-
-    if [ -z $quiet ]; then
-        # For a complete record: document any local changes
-        echo "SVN diff:" >> ${revision_file}
-        svn_cmd diff >> ${revision_file}
-        echo >> ${revision_file}
-    fi
+    svn_cmd info | grep 'Last Changed Rev' >> ${revision_file}
+    svn_cmd status | grep -Ev '^\?' >> ${revision_file}
 }
 
 
@@ -111,12 +63,6 @@ git_cmd () {
 svn_cmd () {
     # Run a SVN command from the top directory
     (cd $PENCIL_HOME; svn "$@")
-}
-
-time_limited_svn_cmd () {
-    # Run a SVN command from the top directory with a time limit of 1
-    # minute
-    (cd $PENCIL_HOME; timeout 30s svn "$@" || echo "Timed out: 'svn $@'")
 }
 
 

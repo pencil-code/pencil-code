@@ -41,19 +41,11 @@ print_info () {
         exit 1
     fi
 
-    echo
-    echo '=============== Start revision info ==============='
-    echo
-
     if [ ${revision_file} -ot ${binary} ]; then
         echo "${revision_file} is not up to date."
     else
         cat < ${revision_file}
     fi
-
-    echo
-    echo '===============  End revision info  ==============='
-    echo
 }
 
 
