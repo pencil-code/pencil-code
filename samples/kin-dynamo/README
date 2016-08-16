@@ -107,8 +107,23 @@ and the 8^3 run is accurate within 5.6%.
       eta1=5.522, lam=1.56453e-05
       eta1=5.5216, lam=0 (interpolated)
 
+10th order, 32^3 (repeated: 14-aug-2016)
+  eta1=6.60000  lam=+0.0364076
+  eta1=5.60000  lam=+0.0030368
+  eta1=5.52200  lam=+0.0000239
+  eta1=5.52138  lam=-0.0000083
+->     5.52154  (interpolated)
+
 Timing results:
  2nd order derivative: 0.60 us/pt/step
  6th order derivative: 0.77 us/pt/step
  8th order derivative: 0.88 us/pt/step
 10th order derivative: 0.97 us/pt/step
+
+Summary:
+for 32^3:
+10th order: eta1=5.52154
+ 8th order: eta1=5.5214
+ 6th order: eta1=5.5216
+ 2nd order: eta1=5.522
+
