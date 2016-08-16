@@ -155,7 +155,7 @@ module Poisson
     ! Calculate volumes for converting density to mass
     do i=1,nx
       do j=1,ny
-        do k=1,ny
+        do k=1,nz
           if (nxgrid ==1) then
             dx1=1.0/Lxyz(1)
           else
@@ -308,8 +308,7 @@ module Poisson
     if (lroot .and. lshowtime) call cpu_time(tstart_mpi)
     do pp=0,ncpus-1
       if (pp/=iproc) then
-        call mpisendrecv_real(phi,(/nx,ny,nz/),pp,117, &
-                              phirecv(:,:,:,pp),pp,117)
+        call mpisendrecv_real(phi,(/nx,ny,nz/),pp,117, phirecv(:,:,:,pp),pp,117)
       endif
     enddo
     if (lroot .and. lshowtime) call cpu_time(tstop_mpi)
@@ -355,64 +354,65 @@ module Poisson
     endsubroutine do_barneshut
 !***********************************************************************
     recursive subroutine mkmap(ipos,dimi,xi,yi,zi,xsind,ysind,zsind,ppi,laddreg)
-      integer, dimension(3) :: ipos, dimi ! Local position; dimensions of region
-      real, dimension(dimi(1)) :: xi ! Region coordinates
-      real, dimension(dimi(2)) :: yi !
-      real, dimension(dimi(3)) :: zi !
-      integer, dimension(dimi(1)) :: xsind ! Region indices (for building map)
-      integer, dimension(dimi(2)) :: ysind !
-      integer, dimension(dimi(3)) :: zsind !
-      integer :: sx, sy, sz, ii, ji, ki, il, iu, jl, ju, kl, ku, ppi
-      real :: lxi, lyi, lzi, dist, xwi, ywi, zwi, width
-      logical :: laddreg, lsplit
+    integer, dimension(3) :: ipos, dimi ! Local position; dimensions of region
+    real, dimension(dimi(1)) :: xi ! Region coordinates
+    real, dimension(dimi(2)) :: yi !
+    real, dimension(dimi(3)) :: zi !
+    integer, dimension(dimi(1)) :: xsind ! Region indices (for building map)
+    integer, dimension(dimi(2)) :: ysind !
+    integer, dimension(dimi(3)) :: zsind !
+    integer :: sx, sy, sz, ii, ji, ki, il, iu, jl, ju, kl, ku, ppi
+    real :: lxi, lyi, lzi, dist, xwi, ywi, zwi, width
+    logical :: laddreg, lsplit
 !
-      ! If the point where the potential is being calculated is inside the
-      ! region in question, then we MUST subdivide further (unless the region is
-      ! a single cell-- this is taken care of in the 'if' statement below).
-      lsplit = ((ipos(1) .ge. xsind(1) .and. ipos(1) .le. xsind(dimi(1))) &
-          .and. (ipos(2) .ge. ysind(1) .and. ipos(2) .le. ysind(dimi(2))) &
-          .and. (ipos(3) .ge. zsind(1) .and. ipos(3) .le. zsind(dimi(3))) &
-          .and. (iproc .eq. ppi))
+    ! If the point where the potential is being calculated is inside the
+    ! region in question, then we MUST subdivide further (unless the region is
+    ! a single cell-- this is taken care of in the 'if' statement below).
+    lsplit = ((ipos(1) .ge. xsind(1) .and. ipos(1) .le. xsind(dimi(1))) &
+        .and. (ipos(2) .ge. ysind(1) .and. ipos(2) .le. ysind(dimi(2))) &
+        .and. (ipos(3) .ge. zsind(1) .and. ipos(3) .le. zsind(dimi(3))) &
+        .and. (iproc .eq. ppi))
 !
-      lxi = sum(xi)/real(dimi(1))
-      lyi = sum(yi)/real(dimi(2))
-      lzi = sum(zi)/real(dimi(3))
-      dist = get_dist(ipos,(/lxi,lyi,lzi/))
-      xwi = abs(xi(dimi(1))-xi(1))
-      ywi = abs(yi(dimi(2))-yi(1))
-      zwi = abs(zi(dimi(3))-zi(1))
-      if (lspherical_coords) then
-        width = max(xwi,lxi*ywi,lxi*zwi*sin(lyi))
-      else
-        width = max(xwi,ywi,zwi)
-      endif
-      if ((width/dist > octree_theta .or. lsplit) .and. product(dimi)/=1) then
-        sx = max(dimi(1)/2,1)
-        sy = max(dimi(2)/2,1)
-        sz = max(dimi(3)/2,1)
-        do ki=1,dimi(3)/sz
-          do ji=1,dimi(2)/sy
-            do ii=1,dimi(1)/sx
-              il = sx*(ii-1)+1; iu = sx*ii
-              jl = sy*(ji-1)+1; ju = sy*ji
-              kl = sz*(ki-1)+1; ku = sz*ki
-              call mkmap(ipos,(/sx,sy,sz/),xi(il:iu),yi(jl:ju),zi(kl:ku), &
-                xsind(il:iu),ysind(jl:ju),zsind(kl:ku),ppi,laddreg)
-            enddo
+    lxi = sum(xi)/real(dimi(1))
+    lyi = sum(yi)/real(dimi(2))
+    lzi = sum(zi)/real(dimi(3))
+    dist = get_dist(ipos,(/lxi,lyi,lzi/))
+    xwi = abs(xi(dimi(1))-xi(1))
+    ywi = abs(yi(dimi(2))-yi(1))
+    zwi = abs(zi(dimi(3))-zi(1))
+    if (lspherical_coords) then
+      width = max(xwi,lxi*ywi,lxi*zwi*sin(lyi))
+    else
+      width = max(xwi,ywi,zwi)
+    endif
+    if ((width/dist > octree_theta .or. lsplit) .and. product(dimi)/=1) then
+      sx = max(dimi(1)/2,1)
+      sy = max(dimi(2)/2,1)
+      sz = max(dimi(3)/2,1)
+      do ki=1,dimi(3)/sz
+        do ji=1,dimi(2)/sy
+          do ii=1,dimi(1)/sx
+            il = sx*(ii-1)+1; iu = sx*ii
+            jl = sy*(ji-1)+1; ju = sy*ji
+            kl = sz*(ki-1)+1; ku = sz*ki
+            call mkmap(ipos,(/sx,sy,sz/),xi(il:iu),yi(jl:ju),zi(kl:ku), &
+              xsind(il:iu),ysind(jl:ju),zsind(kl:ku),ppi,laddreg)
           enddo
         enddo
-      elseif (.not. lsplit .and. dist .lt. octree_maxdist) then
-        nregions = nregions+1
-        if (laddreg) then
-          themap(:,nregions) = (/ipos(1),ipos(2),ipos(3), xsind(1),xsind(dimi(1)), &
-            ysind(1),ysind(dimi(2)),zsind(1),zsind(dimi(3)),ppi/)
-          if (lprecalcdists) regdist1(nregions) = 1.0/dist
-          if (dist .gt. (octree_maxdist-octree_smoothdist)) then
-           regsmooth(nregions) = 0.5* &
-            (cos(pi*((octree_maxdist-dist)/octree_smoothdist+1.0))+1.0)
-          endif
+      enddo
+    elseif (.not. lsplit .and. dist .lt. octree_maxdist) then
+      nregions = nregions+1
+      if (laddreg) then
+        themap(:,nregions) = (/ipos(1),ipos(2),ipos(3), xsind(1),xsind(dimi(1)), &
+          ysind(1),ysind(dimi(2)),zsind(1),zsind(dimi(3)),ppi/)
+        if (lprecalcdists) regdist1(nregions) = 1.0/dist
+        if (dist .gt. (octree_maxdist-octree_smoothdist)) then
+         regsmooth(nregions) = 0.5* &
+          (cos(pi*((octree_maxdist-dist)/octree_smoothdist+1.0))+1.0)
         endif
       endif
+    endif
+!
     endsubroutine mkmap
 !***********************************************************************
     function get_dist(p1,p2) result(rdist)
