@@ -1429,6 +1429,10 @@ module Density
 !
       if (ldensity_nolog .and. .not. lread_oldsnap) f(:,:,:,irho)=exp(f(:,:,:,ilnrho))   !???
 !
+!  Impose density floor if requested.
+!
+      call impose_density_floor(f)
+!
 !  sanity check
 !
       if (notanumber(f(l1:l2,m1:m2,n1:n2,ilnrho))) &
