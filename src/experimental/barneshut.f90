@@ -43,13 +43,14 @@ module Poisson
   real :: octree_theta = 0.5
   logical :: lshowtime = .false. ! Print BH integration at each time step for
                                  ! root processor. Debugging/testing only.
-  logical :: lsquareregions = .true. ! .true. = make regions as square-shaped as
-                                     ! possible. Results in fewer regions.
+  logical :: lsquareregions = .false. ! .true. = make regions as square-shaped as
+                                      ! possible. Results in fewer regions.
   logical :: lprecalcdists = .false. ! Pre-calculate point-region distances.
                             ! Not technically correct, but may work as an
                             ! approximation for sufficiently small octree_theta,
                             ! and provides a significant speedup.
-  real :: octree_maxdist = huge(1.0)
+  logical :: lmakecartoon ! print some map data to stdout for tree illustration purposes
+  real :: octree_maxdist = 1e308
   real :: octree_smoothdist = 0.15
   real, dimension (nx,ny,nz) :: vols
   integer, dimension (0:ncpus-1) :: sx, sy, sz
@@ -70,7 +71,7 @@ module Poisson
 !
   namelist /poisson_init_pars/ &
       octree_theta, lshowtime, lsquareregions, lprecalcdists, octree_maxdist, &
-      octree_smoothdist
+      octree_smoothdist, lmakecartoon
 !
   namelist /poisson_run_pars/ &
       octree_theta, lshowtime, lsquareregions, lprecalcdists, octree_maxdist, &
@@ -114,7 +115,7 @@ module Poisson
     real, dimension (nz) :: dzc_1
     integer :: pp, i, j, k, xs, ys, zs, ii, jj, kk
     integer :: iprecalc
-    logical :: lprecalc = .false.
+    logical :: lprecalc = .false., cartooncond
 !
     ! Trimming ghost zones
     xc = x(l1:l2)
@@ -286,7 +287,21 @@ module Poisson
         endif
       enddo
       themap = themap_sort
-      deallocate(themap_sort)
+    endif
+!
+    deallocate(themap_sort)
+!
+    if (lmakecartoon) then
+      do iregion=1,nregions
+        if (lcylindrical_coords.or.lcartesian_coords) then
+          cartooncond = (themap(2,iregion).eq.(ny/2))
+        else
+          cartooncond = (themap(3,iregion).eq.(nz/2))
+        endif
+        if ((themap(1,iregion).eq.(nx/2)).and.cartooncond) then
+          print*,themap(:,iregion)
+        endif
+      enddo
     endif
 !
     endsubroutine initialize_poisson
@@ -311,6 +326,7 @@ module Poisson
         call mpisendrecv_real(phi,(/nx,ny,nz/),pp,284, phirecv(:,:,:,pp),pp,284)
       endif
     enddo
+!
     if (lroot .and. lshowtime) call cpu_time(tstop_mpi)
 !
     phirecv(:,:,:,iproc) = phi
@@ -339,6 +355,7 @@ module Poisson
         *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),3),1))*summreg1
       zreg = sum(zrecv(krl:kru,pp) &
         *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),2),1))*summreg1
+      !xreg = 1.0 ; yreg = 1.0 ; zreg = 1.0 ; summreg = 1.0
       phi(i,j,k) = phi(i,j,k) - summreg/get_dist((/i,j,k/),(/xreg,yreg,zreg/))
     enddo
     if (lroot .and. lshowtime) call cpu_time(tstop_loop)
