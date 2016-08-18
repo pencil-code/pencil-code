@@ -12,12 +12,6 @@ module Io
   use Cdata
   use Cparam, only: intlen, fnlen, max_int
   use HDF5
-  use H5LIB
-  use H5S
-  use H5P
-  use H5D
-  use H5F
-  use H5FDMPIO
   use Messages, only: fatal_error, svn_id, warning
   use General, only: delete_file
 !
@@ -108,7 +102,7 @@ module Io
       local_start(1) = l1 - 1
       local_start(2) = m1 - 1
       local_start(3) = n1 - 1
-      local_start(4) = 0
+      local_start(n_dims+1) = 0
 
 ! We need to include lower ghost cells if we are on a lower edge
 ! inclusion of upper ghost cells is taken care of by increased subsize.
@@ -135,7 +129,7 @@ module Io
       global_start(1) = nghost + ipx*nx
       global_start(2) = nghost + ipy*ny
       global_start(3) = nghost + ipz*nz
-      global_start(4) = 0
+      global_start(n_dims+1) = 0
 !
 ! Take account of inclusion of lower halos on lower edges.
 !
@@ -304,13 +298,13 @@ module Io
 !
 ! Define 'file-space' to indicate the data portion in the global file.
 !
-      global_size(4) = nv
+      global_size(n_dims+1) = nv
       call h5screate_simple_f (n_dims+1, global_size, h5_fspace, h5_err)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not create global file space')
 !
 ! Define 'memory-space' to indicate the local data portion in memory.
 !
-      local_size(4) = nv
+      local_size(n_dims+1) = nv
       call h5screate_simple_f (n_dims+1, local_size, h5_mspace, h5_err)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not create local memory space')
 !
@@ -327,7 +321,7 @@ module Io
 !
 ! Define local 'hyper-slab' in the global file.
 !
-      local_subsize(4) = nv
+      local_subsize(n_dims+1) = nv
       h5_stride(:) = 1
       h5_count(:) = 1
       call h5dget_space_f (h5_dset, h5_fspace, h5_err)
@@ -434,12 +428,12 @@ module Io
 !
 ! Define 'local_type' to be the local data portion that is being saved.
 !
-      local_size(4) = nv
-      local_subsize(4) = nv
+      local_size(n_dims+1) = nv
+      local_subsize(n_dims+1) = nv
 !
 ! Define 'global_type' to indicate the local data portion in the global file.
 !
-      global_size(4) = nv
+      global_size(n_dims+1) = nv
 !
 ! Setting file view and write raw binary data, ie. 'native'.
 !
