@@ -59,6 +59,6 @@
 /
 &particles_selfgrav_init_pars
 /
-&particles_nbody_init_pars     
+&pointmasses_init_pars     
   pmass=1.0,1.0
 /
