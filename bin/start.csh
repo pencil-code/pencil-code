@@ -144,7 +144,7 @@ if ($local_disc) then
   $copysnapshots -v var.dat     >&! copy-snapshots.log
   if (-e $SCRATCH_DIR/proc0/VAR0) $copysnapshots -v VAR0 >&! copy-snapshots.log
   if ($lparticles) $copysnapshots -v pvar.dat >>& copy-snapshots.log
-  if ($lparticles_nbody) $copysnapshots -v spvar.dat >>& copy-snapshots.log
+  if ($lpointmasses) $copysnapshots -v qvar.dat >>& copy-snapshots.log
   $copysnapshots -v global.dat  >>& copy-snapshots.log
   $copysnapshots -v timeavg.dat >>& copy-snapshots.log
   $copysnapshots -v dxyz.dat    >>& copy-snapshots.log

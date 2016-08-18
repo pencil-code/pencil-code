@@ -62,7 +62,7 @@ if ($local_disc) then
         if (-e $datadir/$d/var.dat) $SCP $datadir/$d/var.dat ${node}:$SCRATCH_DIR/$d/
         if (-e $datadir/$d/global.dat) $SCP $datadir/$d/global.dat ${node}:$SCRATCH_DIR/$d/
         if ($lparticles) $SCP $datadir/$d/pvar.dat ${node}:$SCRATCH_DIR/$d/
-        if ($lparticles_nbody) $SCP $datadir/$d/spvar.dat ${node}:$SCRATCH_DIR/$d/
+        if ($lpointmasses) $SCP $datadir/$d/qvar.dat ${node}:$SCRATCH_DIR/$d/
         $SCP $datadir/$d/timeavg.dat ${node}:$SCRATCH_DIR/$d/
       end
       if (-e $datadir/allprocs/dxyz.dat) $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs
@@ -84,8 +84,8 @@ if ($local_disc) then
         if ($lparticles) then
           $SCP $datadir/proc$k/pvar.dat ${node}:$SCRATCH_DIR/proc$k/
         endif
-        if ($lparticles_nbody) then
-          $SCP $datadir/proc$k/spvar.dat ${node}:$SCRATCH_DIR/proc$k/
+        if ($lpointmasses) then
+          $SCP $datadir/proc$k/qvar.dat ${node}:$SCRATCH_DIR/proc$k/
         endif
         echo "$SCP $datadir/proc$k/var.dat ${node}:$SCRATCH_DIR/proc$k/"
         if (-e $datadir/proc$k/timeavg.dat) then
@@ -334,7 +334,7 @@ if ($local_disc) then
   echo "Copying all var.dat, VAR*, TIMEAVG*, dxyz.dat, timeavg.dat and crash.dat back from local scratch disks"
   $copysnapshots -v var.dat     >&! copy-snapshots2.log
   if ($lparticles) $copysnapshots -v pvar.dat >>& copy-snapshots2.log
-  if ($lparticles_nbody) $copysnapshots -v spvar.dat >>& copy-snapshots2.log
+  if ($lpointmasses) $copysnapshots -v qvar.dat >>& copy-snapshots2.log
   $copysnapshots -v -1          >>& copy-snapshots2.log
   $copysnapshots -v dxyz.dat    >>& copy-snapshots2.log
   $copysnapshots -v timeavg.dat >>& copy-snapshots2.log

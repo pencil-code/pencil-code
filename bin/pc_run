@@ -192,7 +192,7 @@ my %settings = local_settings();
 my $Ncpus            = get_setting(\%settings, 'ncpus'           );
 my $mpi              = get_setting(\%settings, 'mpi'             );
 my $lparticles       = get_setting(\%settings, 'lparticles'      );
-my $lparticles_nbody = get_setting(\%settings, 'lparticles_nbody');
+my $lpointmasses     = get_setting(\%settings, 'lpointmasses'    );
 my $hostname         = get_setting(\%settings, 'hostname'        );
 my $yinyang          = get_setting(\%settings, 'lyinyang'        );
 if ($yinyang) {
@@ -381,7 +381,7 @@ sub dump_parameters {
     printf $fmt, '$hostname',           $hostname;
     printf $fmt, '$extra_opts',         $extra_opts;
     printf $fmt, '$lparticles',         $lparticles;
-    printf $fmt, '$lparticles_nbody',   $lparticles_nbody;
+    printf $fmt, '$lpointmasses',       $lpointmasses;
 
     if ($mpi) {
         printf $fmt, '$Ncpus',             $Ncpus;
@@ -585,7 +585,7 @@ sub get_files_to_copy_to_local_disc {
           'timeavg.dat'          => 1,
           '../allprocs/dxyz.dat' => 1,
           'pvar.dat'             => $settings{'lparticles'},
-          'spvar.dat'            => $settings{'lparticles_nbody'},
+          'qvar.dat'             => $settings{'lpointmasses'},
           'crash.dat'            => 1,
         );
     return %to_copy;
@@ -720,10 +720,9 @@ sub local_settings {
     $settings{'lparticles'} = 0 + defined(match_line_ix(
         'particles_init_pars', 'start.in'));
     identify_setting('lparticles', %settings);
-    $settings{'lparticles_nbody'} = 0 + defined(match_line_ix(
-        'particles_nbody_init_pars', 'start.in'));
-    identify_setting('lparticles_nbody', %settings);
-
+    $settings{'lpointmasses'} = 0 + defined(match_line_ix(
+        'pointmasses_init_pars', 'start.in'));
+    identify_setting('lpointmasses', %settings);
     return %settings;
 }
 # ---------------------------------------------------------------------- #

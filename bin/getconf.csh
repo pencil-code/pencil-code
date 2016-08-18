@@ -108,8 +108,8 @@ set lparticles=0
 if { ( grep particles_init_pars start.in >& /dev/null ) } set lparticles=1
 
 # Check for massive particles
-set lparticles_nbody=0
-if { ( grep particles_nbody_init_pars start.in >& /dev/null ) } set lparticles_nbody=1
+set lpointmasses=0
+if { ( grep pointmasses_init_pars start.in >& /dev/null ) } set lpointmasses=1
 
 # Settings for machines with local data disks
 # local_disc     = 1 means processes uses their own local scratch disc(s) for
@@ -2036,7 +2036,7 @@ if ($debug) then
   echo '$PARENT_PID     = ' "<$PARENT_PID>"
   echo '$copysnapshots  = ' "<$copysnapshots>"
   echo '$particles      = ' "<$lparticles>"
-  echo '$particles_nbody= ' "<$lparticles_nbody>"
+  echo '$pointmasses    = ' "<$lpointmasses>"
   echo '--'
 endif
 #Xiangyu on Hebbe
