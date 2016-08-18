@@ -11,10 +11,7 @@
   dtmin=1e-6,
   dt=1e-2
 /
-&particles_run_pars
-  lmigration_real_check=F
-/
-&particles_nbody_run_pars
+&pointmasses_run_pars
   lfollow_particle=T,T,T,T,T,T,T,T,T
 !  lreset_cm=T
 /

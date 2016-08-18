@@ -18,7 +18,6 @@ SHEAR     = noshear
 VISCOSITY = noviscosity
 EOS       = noeos
 
-PARTICLES       = particles_dust
-PARTICLES_NBODY = particles_nbody
+POINTMASSES = pointmasses
 
 REAL_PRECISION=double

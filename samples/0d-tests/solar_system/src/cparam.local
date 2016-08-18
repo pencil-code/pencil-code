@@ -9,5 +9,6 @@
 !
 integer, parameter :: ncpus=2,nprocy=2,nprocz=ncpus/nprocy,nprocx=1
 integer, parameter :: nxgrid=4,nygrid=6,nzgrid=4
-integer, parameter :: npar=9,nspar=9,mpar_loc=9,npar_mig=9
+!integer, parameter :: npar=9,nspar=9,mpar_loc=9,npar_mig=9
+integer, parameter :: nqpar=9
 
