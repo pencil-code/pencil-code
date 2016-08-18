@@ -3030,10 +3030,10 @@ module Chemistry
         endif
 !
 !  WL: instead of hardcoding Y1-Y9, wouldn't it be possible
-!      to have them all in the same array? The particles_nbody
-!      module, for instance, has idiag_xxspar and idiag_vvspar, which
+!      to have them all in the same array? The nbody
+!      module, for instance, has idiag_xxq and idiag_vvq, which
 !      allows the user to add output the positions and velocities
-!      of as many particle he/she wants.
+!      of as many particle they wants.
 !  RP: Totally agree... I still have to expand manually these hard-coded
 !      Y1-Y9 and chemspec-chemspec9 when needed, but this is just work-around...
 !  AB: I also agree!
