@@ -97,12 +97,19 @@ module PointMasses
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(p)
+!
     endsubroutine pointmasses_pde_pencil
 !***********************************************************************         
     subroutine pointmasses_pde(f,df)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(df)
 !
     endsubroutine  pointmasses_pde
 !***********************************************************************
@@ -112,11 +119,15 @@ module PointMasses
 !
       integer, intent(out) :: iostat
 !
+      call keep_compiler_quiet(iostat)
+!
     endsubroutine read_pointmasses_init_pars
 !***********************************************************************
     subroutine write_pointmasses_init_pars(unit)
 !
       integer, intent(in) :: unit
+!
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_pointmasses_init_pars
 !***********************************************************************
@@ -125,12 +136,16 @@ module PointMasses
       use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
+!      
+      call keep_compiler_quiet(iostat)
 !
     endsubroutine read_pointmasses_run_pars
 !***********************************************************************
     subroutine write_pointmasses_run_pars(unit)
 !
       integer, intent(in) :: unit
+!      
+      call keep_compiler_quiet(iostat)
 !
     endsubroutine write_pointmasses_run_pars
 !***********************************************************************
