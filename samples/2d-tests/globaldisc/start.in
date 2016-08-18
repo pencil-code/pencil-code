@@ -45,14 +45,14 @@
   initxxp='random', initvvp='random'
   eps_dtog=0.01
 /
-&particles_nbody_init_pars
-  initxxsp='fixed-cm'
-  initvvsp='fixed-cm'
+&pointmasses_init_pars
+  initxxq='fixed-cm'
+  initvvq='fixed-cm'
   GNewton=1.0
   pmass=1e-4, 1.
-  xsp0=-1,0
+  xq0=-1,0
   r_smooth=0.03,0.0
-  lcylindrical_gravity_nbody=T,T
+  lcylindrical_gravity_pointmasses=T,T
   istar=2
 /
 
