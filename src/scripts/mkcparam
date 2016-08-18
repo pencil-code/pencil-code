@@ -86,8 +86,10 @@ my $mglobal_decl  = '^\s*!\s*MGLOBAL\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $mscratch_decl = '^\s*!\s*MSCRATCH\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $maux_com_decl = '^\s*!\s*COMMUNICATED\s*AUXILIARIES\s*(-?[0-9]+)\s*$';
 my $mpvar_decl    = '^\s*!\s*MPVAR\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
-my $ndustrad_decl    = '^\s*!\s*NDUSTRAD\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $mpaux_decl    = '^\s*!\s*MPAUX\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
+my $mqvar_decl    = '^\s*!\s*MQVAR\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
+my $mqaux_decl    = '^\s*!\s*MQAUX\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
+my $ndustrad_decl    = '^\s*!\s*NDUSTRAD\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
 my $dust_decl     = '^\s*!\s*NDUSTSPEC\s*CONTRIBUTION\s*(-?[0-9]+\*[0-9])\s*$';
 my $chem_decl     = '^\s*!\s*NCHEMSPEC\s*CONTRIBUTION\s*(-?[0-9]+\*[0-9])\s*$';
 my $pscalar_decl  = '^\s*!\s*NPSCALAR\s*CONTRIBUTION\s*(-?[0-9]+)\s*$';
@@ -104,7 +106,7 @@ my $line;
 my $dust_string = '1*4';
 my $chem_string = '1';
 my $ndustrad = 5;
-my ($maux, $maux_com, $mvar, $mglobal, $mscratch, $mpvar, $mpaux) = (0) x 20;
+my ($maux, $maux_com, $mvar, $mglobal, $mscratch, $mpvar, $mpaux, $mqvar, $mqaux) = (0) x 20;
 my ($ndustspec, $nchemspec, $mvar_per_dust, $mvar_per_chem) = (0) x 20;
 my $npscalar = 0;
 my $nadsspec = 0;
@@ -157,6 +159,8 @@ file: foreach my $infile (@ARGV) {
     extract_decl ($line, $maux_com_decl, \$maux_com );
     extract_decl ($line, $mpvar_decl   , \$mpvar    );
     extract_decl ($line, $mpaux_decl   , \$mpaux    );
+    extract_decl ($line, $mqvar_decl   , \$mqvar    );
+    extract_decl ($line, $mqaux_decl   , \$mqaux    );
     extract_decl ($line, $pscalar_decl , \$npscalar );
     extract_decl ($line, $nadsspec_decl, \$nadsspec );
     extract_decl ($line, $nsurfreacspec_decl, \$nsurfreacspec);
@@ -296,6 +300,8 @@ integer, parameter :: mglobal=${\($mglobal+0)}
 integer, parameter :: mscratch=${\($mscratch+0)}
 integer, parameter :: mpvar=${\($mpvar+0)}
 integer, parameter :: mpaux=${\($mpaux+0)}
+integer, parameter :: mqvar=${\($mqvar+0)}
+integer, parameter :: mqaux=${\($mqaux+0)}
 integer, parameter :: ndustspec=${\($ndustspec+0)}
 integer, parameter :: nchemspec=${\($nchemspec+0)}
 integer, parameter :: npscalar=${\($npscalar+0)}
@@ -312,6 +318,13 @@ if ($mpvar == 0) {
   print $out "! npar should be declared and set in cparam.local\n\n";
 }
 
+# Set nqpar (number of massive particles, i.e, point masses) to one if point masses are not used:
+if ($mqvar == 0) {
+  print $out "integer, parameter :: nqpar=1\n\n";
+} else {
+  print $out "! nqpar should be declared and set in cparam.local\n\n";
+}
+
 #
 # Read contents of cparam.local
 #
@@ -325,7 +338,7 @@ close CPARAM;
 my $mpar_loc=0;
 my $npar_mig=0;
 my $npar_species=0;
-my $nspar=0;
+my $nqpar=0;
 my $npar_stalk=0;
 my $nbrickx=0;
 my $nbricky=0;
@@ -336,7 +349,7 @@ foreach $line (@cparam) {
   $mpar_loc=1     if ($line =~ 'mpar_loc');
   $npar_mig=1     if ($line =~ 'npar_mig');
   $npar_species=1 if ($line =~ 'npar_species');
-  $nspar=1        if ($line =~ 'nspar');
+#  $nqpar=1        if ($line =~ 'nqpar');
   $npar_stalk=1   if ($line =~ 'npar_stalk');
   $nbrickx=1      if ($line =~ 'nbrickx');
   $nbricky=1      if ($line =~ 'nbricky');
@@ -348,7 +361,7 @@ foreach $line (@cparam) {
 print $out "integer, parameter :: mpar_loc=npar\n"  unless $mpar_loc;
 print $out "integer, parameter :: npar_mig=1\n"     unless $npar_mig;
 print $out "integer, parameter :: npar_species=1\n" unless $npar_species;
-print $out "integer, parameter :: nspar=1\n"        unless $nspar;
+#print $out "integer, parameter :: nqpar=1\n"        unless $nqpar;
 print $out "integer, parameter :: npar_stalk=0\n"   unless $npar_stalk;
 print $out "integer, parameter :: nbrickx=1\n"      unless $nbrickx;
 print $out "integer, parameter :: nbricky=1\n"      unless $nbricky;
