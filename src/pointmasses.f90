@@ -43,7 +43,7 @@ module PointMasses
   integer :: imass=0, ixq=0, iyq=0, izq=0, ivxq=0, ivyq=0, ivzq=0
   integer :: nqvar=0, nqaux=0
 !
-  logical, dimension(nqpar) :: lcylindrical_gravity_pointmasses=.false.
+  logical, dimension(nqpar) :: lcylindrical_gravity_nbody=.false.
   logical, dimension(nqpar) :: lfollow_particle=.false., laccretion=.false.
   logical, dimension(nqpar) :: ladd_mass=.false.
   logical :: lcalc_orbit=.true., lbackreaction=.false., lnorm=.true.
@@ -69,7 +69,7 @@ module PointMasses
 !
   namelist /pointmasses_init_pars/ &
       initxxq, initvvq, xq0, yq0, zq0, vxq0, vyq0, vzq0,  &
-      pmass, r_smooth, lcylindrical_gravity_pointmasses, lexclude_frozen, GNewton, &
+      pmass, r_smooth, lcylindrical_gravity_nbody, lexclude_frozen, GNewton, &
       bcqx, bcqy, bcqz, ramp_orbits, lramp, final_ramped_mass, density_scale, &
       linterpolate_gravity, linterpolate_quadratic_spline, laccretion, &
       accrete_hills_frac, istar, &
@@ -249,9 +249,9 @@ module PointMasses
 !  from cdata and the one from point mass.
 !
       if (((lcylindrical_gravity).and.&
-        (.not.lcylindrical_gravity_pointmasses(istar))).or.&
+        (.not.lcylindrical_gravity_nbody(istar))).or.&
              (.not.lcylindrical_gravity).and.&
-             (lcylindrical_gravity_pointmasses(istar))) then
+             (lcylindrical_gravity_nbody(istar))) then
         call fatal_error('initialize_pointmasses','inconsitency '//&
             'between lcylindrical_gravity from cdata and the '//&
             'one from point mass')
@@ -1517,7 +1517,7 @@ module PointMasses
 !
 !  Check which particle has cylindrical gravity switched on
 !
-        if (lcylindrical_gravity_pointmasses(ks)) then
+        if (lcylindrical_gravity_nbody(ks)) then
           rrp = rpcyl_mn(:,ks)
         else
           rrp = rp_mn(:,ks)
