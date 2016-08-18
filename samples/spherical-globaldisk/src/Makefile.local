@@ -17,7 +17,7 @@ FORCING   = noforcing
 SHEAR     = noshear
 SHOCK     =   shock_highorder
 
-POINTMASSES = pointmasses 
+POINTMASSES = pointmasses
 
 INITIAL_CONDITION = initial_condition/centrifugal_balance
 
