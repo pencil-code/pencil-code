@@ -36,13 +36,13 @@
   initxxp='random', initvvp='random'
   eps_dtog=0.01
 /
-&particles_nbody_init_pars
-  initxxsp='fixed-cm'
-  initvvsp='fixed-cm'
-  bcspx='out',bcspy='out',bcspz='p'
+&pointmasses_init_pars
+  initxxq='fixed-cm'
+  initvvq='fixed-cm'
+  bcqx='out',bcqy='out',bcqz='p'
   GNewton=1.0
   pmass=1e-3, 1.
-  xsp0=1,0
+  xq0=1,0
   r_smooth=0.07,0.0
   istar=2
 /

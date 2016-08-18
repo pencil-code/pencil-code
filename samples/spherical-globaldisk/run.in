@@ -35,7 +35,7 @@
 &particles_run_pars
   ldragforce_dust_par=F
 /
-&particles_nbody_run_pars
+&pointmasses_run_pars
   lfollow_particle=T,T
 /
 &shock_run_pars
