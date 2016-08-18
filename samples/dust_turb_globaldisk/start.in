@@ -46,6 +46,6 @@
   initxxp='random-cylindrical', initvvp='Keplerian'
   tausp=1.0
   lparticlemesh_tsc=T
-  bcpx='flk',bcpy='out'
+  bcpx='flk',bcpy='rmv'
   eps_dtog=0.01
 /

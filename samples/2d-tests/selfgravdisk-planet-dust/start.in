@@ -47,7 +47,6 @@
 &particles_init_pars
   initxxp='random-cylindrical', initvvp='Keplerian'
   dustdensity_powerlaw=0.5
-!  bcpx='flk',bcpy='out',bcpz='p'
   bcpx='rmv',bcpy='rmv',bcpz='p'
   lparticlemesh_tsc=T
   tausp_species=0.01,0.1,0.3,1.
