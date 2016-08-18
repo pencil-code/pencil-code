@@ -944,7 +944,7 @@ function pc_compute_quantity, vars, index, quantity
 
 	; Check for Pencil Code alias names
 	if (n_elements (alias) eq 0) then alias = pc_check_quantities (/alias)
-	pos = find_tags (alias, quantity)
+	pos = find_tag (alias, quantity)
 	if (pos ge 0) then return, pc_compute_quantity (vars, index, alias.(pos))
 
 	; Timestamp
