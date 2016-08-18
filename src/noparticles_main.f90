@@ -406,4 +406,34 @@ module Particles_main
 !
     endsubroutine particles_stochastic
 !***********************************************************************
-endmodule Particles_main
+    subroutine fetch_fp_array(fp_aux,dfp_aux,np_aux,ixw,izw,ivxw,ivzw)
+!
+! dummy subroutine
+!
+      real, dimension (mpar_loc,mparray), intent(out) :: fp_aux
+      real, dimension (mpar_loc,mpvar), intent(out) :: dfp_aux
+      integer, intent(out) :: np_aux
+      integer :: ixw,izw,ivxw,ivzw
+!
+      call keep_compiler_quiet(fp_aux)
+      call keep_compiler_quiet(dfp_aux)
+      call keep_compiler_quiet(np_aux)
+      call keep_compiler_quiet(ixw,izw,ivxw,ivzw)
+!
+    endsubroutine fetch_fp_array
+!***********************************************************************
+    subroutine return_fp_array(fp_aux,dfp_aux,flag)
+!
+! dummy subroutine
+!
+      real, dimension (mpar_loc,mparray), intent(in) :: fp_aux
+      real, dimension (mpar_loc,mpvar), intent(in) :: dfp_aux
+      logical, dimension (mpar_loc) :: flag
+!
+      call keep_compiler_quiet(fp_aux)
+      call keep_compiler_quiet(dfp_aux)
+      call keep_compiler_quiet(flag)
+!
+    endsubroutine return_fp_array
+!***********************************************************************
+  endmodule Particles_main

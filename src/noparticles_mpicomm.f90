@@ -73,13 +73,7 @@ module Particles_mpicomm
 !
 !  Set index interval of particles.
 !
-      if (lparticles_nbody.and.(npar==nspar)) then
-        npar_loc=npar
-        do k=1,nspar
-          ipar(k)=k
-          ipar_nbody(k)=k
-        enddo
-      else if (linsert_particles_continuously) then
+      if (linsert_particles_continuously) then
         npar_loc=0
         ipar=0
       else
