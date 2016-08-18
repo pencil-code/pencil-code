@@ -1,0 +1,62 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in 20750 2013-07-03 08:45:44Z wladimir.lyra $',
+  ip=10,                          ! debugging parameter
+  xyz0  = 0.5 , 1.420796 , -3.1415927
+  xyz1  = 2.5 , 1.720796 ,  3.1415927
+  lperi = F  , T  , T,            ! periodic direction?
+  !   ux    uy      uz     rho    shck  gpot   gpx    gpy    gpz
+  bcx='a' , 's'   , 'e3' , 'e3' , 'a' , 'a2' , 'a2' , 'a2' , 'a2'
+  bcy='s' , 'out' , 's'  , 'str', 's' , 'a2' , 'a2' , 'a2' , 'a2'
+  llocal_iso=T
+  lwrite_ic=T
+  lwrite_aux=T
+  coord_system='spherical'
+  luse_latitude=T
+/
+&eos_init_pars
+  cs0  = 0.05
+  rho0 = 1.0
+  gamma= 1.0
+/
+&hydro_init_pars
+/
+&magnetic_init_pars
+/
+&density_init_pars
+  ldensity_nolog=T
+  density_floor=-100
+/
+&selfgrav_init_pars
+  lselfgravity_gas=T
+  gravitational_const=1.0
+/
+&poisson_init_pars
+  octree_theta = 0.5
+  lsquareregions = F
+  lprecalcdists = F
+  lnorepeatsumming = T
+  lshowtime = T
+/
+&grav_init_pars
+  ipotential='no-smooth'
+  g0=1.0
+/
+&particles_init_pars
+  initxxp='random-cyl', initvvp='Keplerian'
+  eps_dtog=0.01
+  lcheck_exact_frontier=T
+  lparticlemesh_tsc=T
+  tausp=1.0
+  lmigration_real_check=T
+/
+&particles_selfgrav_init_pars
+  lselfgravity_particles=F
+/
+&initial_condition_pars
+  density_power_law=1.5
+  temperature_power_law=0.5
+/

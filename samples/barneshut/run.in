@@ -1,0 +1,53 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Run parameters!
+!
+&run_pars
+  cvsid='$Id: run.in 19970 2013-01-14 22:50:13Z wladimir.lyra $',
+  ip=14,
+  nt=1000000000, it1=1, it1d=500 , isave=250, itorder=3
+  cdt=0.5 
+  cdtv=0.5
+  dtmin=1e-5
+  dsnap=6.2832 , dvid=0.31416 , d2davg=6.2832
+  tmax=10000
+  slice_position='w'
+  wborder_int=0.05
+  wborder_ext=0.1
+  max_walltime=86000
+  lpencil_check=F
+  lpencil_check_small=F
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  borderuu='initial-condition'
+/
+&selfgrav_run_pars
+/
+&density_run_pars
+  idiff='hyper3-sph'
+  diffrho_hyper3=5e-2
+  borderlnrho='initial-condition'
+/
+&grav_run_pars
+/
+&viscosity_run_pars
+  ivisc='hyper3-sph'
+  nu_hyper3=5e-2
+/
+&particles_run_pars
+  ldragforce_dust_par=T, ldragforce_gas_par=T
+  lcheck_exact_frontier=T
+  lmigration_redo=T
+  ldraglaw_variable=T
+  ldraglaw_eps_stk_transonic=T
+  mean_free_path_gas=0.5
+/
+&particles_selfgrav_run_pars
+/
+&shock_run_pars
+/
+&poisson_run_pars
+  lshowtime = F
+/
