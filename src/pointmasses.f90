@@ -941,7 +941,7 @@ module PointMasses
 !  To the N^2 problem of adding gravity of each massive particle to another. 
 !
       do k=1,nqpar
-        call loop_through_pointmasses(k,hill_radius_square,.true.)
+        call gravity_pointmasses(k,hill_radius_square,.true.)
       enddo
 !
 !  Position and velocity diagnostics (per massive particle).
@@ -980,7 +980,7 @@ module PointMasses
            index%ixw,index%izw,index%ivxw,index%ivzw)
       if (np_aux/=0) then
         do k=1,np_aux
-          call loop_through_pointmasses(k,hill_radius_square,.false.,&
+          call gravity_pointmasses(k,hill_radius_square,.false.,&
                fp_aux(k,:),dfp_aux(k,:),flag(k))
         enddo
       endif
@@ -988,7 +988,7 @@ module PointMasses
 
     endsubroutine dvvp_dt_dustparticles
 !************************************************************
-    subroutine loop_through_pointmasses(k,hill_radius_square,&
+    subroutine gravity_pointmasses(k,hill_radius_square,&
          lcallpointmass,fp_pt,dfp_pt,flag_pt)
 !      
       real, dimension(nqpar) :: hill_radius_square
@@ -1002,18 +1002,18 @@ module PointMasses
       !
       !if (linertial_frame) then
       if (lcallpointmass) then 
-        call loop_through_pointmasses_inertial(k,hill_radius_square,lcallpointmass)
+        call gravity_pointmasses_inertial(k,hill_radius_square,lcallpointmass)
       else
-        call loop_through_pointmasses_inertial(k,hill_radius_square,lcallpointmass,&
+        call gravity_pointmasses_inertial(k,hill_radius_square,lcallpointmass,&
              fp_pt,dfp_pt,flag_pt)
       endif
       !else
-      !  call loop_through_nbodies_fixstar(fp,dfp,k,sq_hills,ineargrid)
+      !  call gravity_nbodies_fixstar(fp,dfp,k,sq_hills,ineargrid)
       !endif
 !
-      endsubroutine loop_through_pointmasses
+      endsubroutine gravity_pointmasses
 !************************************************************
-      subroutine loop_through_pointmasses_inertial(k,hill_radius_square,&
+      subroutine gravity_pointmasses_inertial(k,hill_radius_square,&
            lcallpointmass,fp_pt,dfp_pt,flag_pt)
 !
 !  Subroutine that adds the gravity from all massive particles.
@@ -1125,7 +1125,7 @@ module PointMasses
         dfp_pt(index%ivxw:index%ivzw) = acceleration
       endif
 !
-    endsubroutine loop_through_pointmasses_inertial
+    endsubroutine gravity_pointmasses_inertial
 !**********************************************************
     subroutine get_evr(xxp,xxq,evr_cart)
 !
