@@ -49,6 +49,7 @@ module Poisson
                             ! Not technically correct, but may work as an
                             ! approximation for sufficiently small octree_theta,
                             ! and provides a significant speedup.
+  logical :: lnorepeatsumming = .true. ! (very) slow to start, quick to run
   logical :: lmakecartoon ! print some map data to stdout for tree illustration purposes
   real :: octree_maxdist = 1e308
   real :: octree_smoothdist = 0.15
@@ -64,6 +65,7 @@ module Poisson
   integer, allocatable :: themap_group(:,:), themap_single(:,:)
   real, allocatable :: regdist1_single(:), regsmooth_single(:)
   real, allocatable :: regdist1_group(:), regsmooth_group(:)
+  logical, allocatable :: luseprevioussum(:)
   integer :: nsingle, ngroup, iregion, irl, iru, jrl, jru, krl, kru, nprecalc=0
   integer, parameter :: nlt = 1e7 ! 3*80MB for 1e7
   real :: lkmin, lkmax, dxlt
@@ -71,11 +73,11 @@ module Poisson
 !
   namelist /poisson_init_pars/ &
       octree_theta, lshowtime, lsquareregions, lprecalcdists, octree_maxdist, &
-      octree_smoothdist, lmakecartoon
+      octree_smoothdist, lmakecartoon, lnorepeatsumming
 !
   namelist /poisson_run_pars/ &
       octree_theta, lshowtime, lsquareregions, lprecalcdists, octree_maxdist, &
-      octree_smoothdist
+      octree_smoothdist, lnorepeatsumming
 !
   contains
 !***********************************************************************
@@ -160,17 +162,17 @@ module Poisson
       do j=1,ny
         do k=1,nz
           if (nxgrid ==1) then
-            dx1=1.0/Lxyz(1)
+            dx1=1.0!/Lxyz(1)
           else
             dx1=dxc_1(i)
           endif
           if (nygrid ==1) then
-            dy1=1.0/Lxyz(2)
+            dy1=1.0!/Lxyz(2)
           else
             dy1=dyc_1(j)
           endif
           if (nzgrid ==1) then
-            dz1=1.0/Lxyz(3)
+            dz1=1.0!/Lxyz(3)
           else
             dz1=dzc_1(k)
           endif
@@ -190,7 +192,7 @@ module Poisson
         if (lspherical_coords) then
           xw = abs(xrecv(nx,pp)-xrecv(1,pp))
           yw = abs(yrecv(ny,pp)-yrecv(1,pp))*xrecv(nx/2,pp)
-          zw = abs(zrecv(nz,pp)-zrecv(1,pp))*xrecv(nx/2,pp)*sin(yrecv(ny/2,pp))
+          zw = abs(zrecv(nz,pp)-zrecv(1,pp))*xrecv(nx/2,pp)*sin(yrecv(ny/2,pp)) ! this needs to get fixed for 2D case (where ny/2=0)
         else
           xw = abs(xrecv(nx,pp)-xrecv(1,pp))
           yw = abs(yrecv(ny,pp)-yrecv(1,pp))
@@ -274,6 +276,15 @@ module Poisson
       lprecalc = .true.
     enddo
 !
+    allocate(luseprevioussum(ngroup))
+    luseprevioussum = .false.
+    if (lnorepeatsumming) then
+      do iregion=2,ngroup
+        if (all(themap_group(4:,iregion).eq.themap_group(4:,iregion-1))) &
+          luseprevioussum(iregion) = .true.
+      enddo
+    endif
+!
 !    if (lmakecartoon) then
 !      do iregion=1,nregions
 !        if (lcylindrical_coords.or.lcartesian_coords) then
@@ -330,15 +341,17 @@ module Poisson
       j   = themap_group(2, iregion) ; jrl = themap_group(7,iregion) ; jru = themap_group(8,iregion)
       k   = themap_group(3, iregion) ; krl = themap_group(9,iregion) ; kru = themap_group(10,iregion)
       pp  = themap_group(4,iregion)
-      summreg = sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))*regsmooth_group(iregion)
-      summreg1 = 1.0/summreg
-      xreg = sum(xrecv(irl:iru,pp) &
-        *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),3),2))*summreg1
-      yreg = sum(yrecv(jrl:jru,pp) &
-        *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),3),1))*summreg1
-      zreg = sum(zrecv(krl:kru,pp) &
-        *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),2),1))*summreg1
-      phi(i,j,k) = phi(i,j,k) - summreg/get_dist((/i,j,k/),(/xreg,yreg,zreg/))
+      if (.not.luseprevioussum(iregion)) then
+        summreg = sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))
+        summreg1 = 1.0/summreg
+        xreg = sum(xrecv(irl:iru,pp) &
+          *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),3),2))*summreg1
+        yreg = sum(yrecv(jrl:jru,pp) &
+          *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),3),1))*summreg1
+        zreg = sum(zrecv(krl:kru,pp) &
+          *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),2),1))*summreg1
+      endif
+      phi(i,j,k) = phi(i,j,k) - summreg*regsmooth_group(iregion)/get_dist((/i,j,k/),(/xreg,yreg,zreg/))
     enddo
     if (lroot .and. lshowtime) call cpu_time(tstop_loop)
 !
@@ -407,14 +420,16 @@ module Poisson
        (newregion(9).ne.newregion(10))) then
         if (laddreg) then
           lregionmatched = .false.
-          do iregion=1,ngroup
-            if (all(newregion(4:10).eq.themap_group(4:10,iregion))) then
-              themap_group(:,iregion+2:ngroup+1) = themap_group(:,iregion+1:ngroup)
-              themap_group(:,iregion+1) = newregion
-              lregionmatched = .true.
-              exit
-            endif
-          enddo
+          if (lnorepeatsumming) then
+            do iregion=1,ngroup
+              if (all(newregion(4:10).eq.themap_group(4:10,iregion))) then
+                themap_group(:,iregion+2:ngroup+1) = themap_group(:,iregion+1:ngroup)
+                themap_group(:,iregion+1) = newregion
+                lregionmatched = .true.
+                exit
+              endif
+            enddo
+          endif
           if (.not.lregionmatched) themap_group(:,ngroup+1) = newregion
         endif
         ngroup = ngroup+1
