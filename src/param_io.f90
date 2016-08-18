@@ -36,6 +36,7 @@ module Param_IO
   use NSCBC
   use Opacity, only: read_opacity_run_pars, write_opacity_run_pars
   use Poisson
+  use PointMasses
   use Polymer
   use Power_spectrum
   use Pscalar
@@ -316,6 +317,7 @@ module Param_IO
       call read_namelist(read_solid_cells_init_pars    ,'solid_cells'    ,lsolid_cells)
       call read_namelist(read_NSCBC_init_pars          ,'NSCBC'          ,lnscbc)
       call read_namelist(read_polymer_init_pars        ,'polymer'        ,lpolymer)
+      call read_namelist(read_pointmasses_init_pars    ,'pointmasses'    ,lpointmasses)
 !
       call read_all_particles_init_pars
 !
@@ -460,6 +462,7 @@ module Param_IO
       call read_namelist(read_NSCBC_run_pars          ,'NSCBC'             ,lnscbc)
       call read_namelist(read_opacity_run_pars        ,'opacity'           ,lopacity)
       call read_namelist(read_polymer_run_pars        ,'polymer'           ,lpolymer)
+      call read_namelist(read_pointmasses_run_pars    ,'pointmasses'       ,lpointmasses)
       call read_namelist(read_power_spectrum_run_pars ,'power_spectrum'    ,lpower_spectrum)
       call read_namelist(read_implicit_diff_run_pars  ,'implicit_diffusion',limplicit_diffusion)
 !
@@ -635,6 +638,7 @@ module Param_IO
         call write_stub ('solid_cells', lsolid_cells)
         call write_stub ('NSCBC', lnscbc)
         call write_stub ('polymer', lpolymer)
+        call write_stub ('pointmasses', lpointmasses)
 !
         if (.not. lstart) then
           call write_stub ('forcing', lforcing)
@@ -657,7 +661,6 @@ module Param_IO
         call write_stub ('particles_sink', lparticles_sink)
         call write_stub ('particles_number', lparticles_number)
         call write_stub ('particles_selfgrav', lparticles_selfgravity)
-        call write_stub ('particles_nbody', lparticles_nbody)
         call write_stub ('particles_stalker', lparticles_stalker)
         call write_stub ('particles_mass', lparticles_mass)
         call write_stub ('particles_drag', lparticles_drag)
@@ -757,6 +760,7 @@ module Param_IO
         call write_solid_cells_init_pars(unit)
         call write_NSCBC_init_pars(unit)
         call write_polymer_init_pars(unit)
+        call write_pointmasses_init_pars(unit)
 !
         call write_all_particles_init_pars(unit)
 !
@@ -856,6 +860,7 @@ module Param_IO
         call write_NSCBC_run_pars(unit)
         call write_power_spectrum_run_pars(unit)
         call write_polymer_run_pars(unit)
+        call write_pointmasses_run_pars(unit)
         call write_implicit_diff_run_pars(unit)
 !
         call write_all_particles_run_pars(unit)
@@ -989,6 +994,7 @@ module Param_IO
       write(unit,'(A,L1,A)') " lneutralvelocity=", lneutralvelocity, ","
       write(unit,'(A,L1,A)') " lneutraldensity=", lneutraldensity, ","
       write(unit,'(A,L1,A)') " lpolymer=", lpolymer, ","
+      write(unit,'(A,L1,A)') " lpointmasses=", lpointmasses, ","
       write(unit,'(A,L1,A)') " lsolid_cells=", lsolid_cells, ","
       write(unit,'(A,L1,A)') " lpower_spectrum=", lpower_spectrum, ","
       write(unit,'(A,L1,A)') " lparticles=", lparticles, ","
