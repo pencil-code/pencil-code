@@ -63,7 +63,7 @@ module Equ
       use Particles_main
       use Poisson
       use Pscalar
-      use Supersat
+      use PointMasses
       use Polymer
       use Radiation
       use Selfgravity
@@ -75,6 +75,7 @@ module Equ
       use Special, only: special_before_boundary, calc_lspecial_pars, &
           calc_pencils_special, dspecial_dt, special_after_boundary
       use Sub
+      use Supersat
       use Testfield
       use Testflow
       use Testscalar
@@ -200,6 +201,7 @@ module Equ
 !  migrating particles between the processors.
 !
       if (lparticles) call particles_boundconds(f)
+      if (lpointmasses) call boundconds_pointmasses
 !
 !  Calculate the potential of the self gravity. Must be done before
 !  communication in order to be able to take the gradient of the potential
@@ -527,6 +529,7 @@ module Equ
         if (lradiation)       call calc_pencils_radiation(f,p)
         if (lshear)           call calc_pencils_shear(f,p)
         if (lborder_profiles) call calc_pencils_borderprofiles(f,p)
+        if (lpointmasses)     call calc_pencils_pointmasses(f,p)
         if (lparticles)       call particles_calc_pencils(f,p)
         if (lspecial)         call calc_pencils_special(f,p)
         if (lheatflux)        call calc_pencils_heatflux(f,p)
@@ -645,6 +648,8 @@ module Equ
         if (lshear) call shearing(f,df,p)
 !
         if (lparticles) call particles_pde_pencil(f,df,p)
+!
+        if (lpointmasses) call pointmasses_pde_pencil(f,df,p)
 !
 !  Call diagnostics that involves the full right hand side
 !  This must be done at the end of all calls that might modify df.
@@ -900,6 +905,8 @@ module Equ
 !
       if (lparticles) call particles_pde_blocks(f,df)
       if (lparticles) call particles_pde(f,df)
+!
+      if (lpointmasses) call pointmasses_pde(f,df)
 !
 !  Electron inertia: our df(:,:,:,iax:iaz) so far is
 !  (1 - l_e^2\Laplace) daa, thus to get the true daa, we need to invert
