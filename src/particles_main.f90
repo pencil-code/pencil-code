@@ -1240,7 +1240,7 @@ module Particles_main
       fp        = fp_aux
       dfp       = dfp_aux
 !
-      do k=1,npar_loc
+      do k=npar_loc,1,-1
         if (flag(k)) call remove_particle(fp,ipar,k,dfp,ineargrid)
       enddo
       
