@@ -142,7 +142,7 @@ module InitialCondition
             else
               OOK2=max(-g_r/rr_cyl,0.)
             endif
-          elseif (lparticles_nbody) then 
+          elseif (lpointmasses) then 
             call power_law(g0,rr_cyl,2*qgshear,OOK2)
           endif
 
@@ -230,7 +230,7 @@ module InitialCondition
           if (lgrav) then
             call potential(POT=tmp1,RMN=rr_sph)
             call potential(POT=tmp2,RMN=rr_cyl)
-          elseif (lparticles_nbody) then
+          elseif (lpointmasses) then
             tmp1=-g0/rr_sph 
             tmp2=-g0/rr_cyl
           endif

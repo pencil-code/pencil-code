@@ -358,11 +358,11 @@ module InitialCondition
             ! uphi2/r = -gr + dp/dr
             if (lgrav) then
               call acceleration(tmp1)
-            elseif (lparticles_nbody) then
+            elseif (lpointmasses) then
               !call get_totalmass(g0) 
               tmp1=-g0/rr_sph**2
             else
-              print*,"both gravity and particles_nbody are switched off"
+              print*,"both gravity and pointmasses are switched off"
               print*,"there is no gravity to determine the stratification"
               call fatal_error("local_isothermal_density","")
             endif
@@ -382,12 +382,12 @@ module InitialCondition
             if (lgrav) then
               call potential(POT=tmp1,RMN=rr_sph)
               call potential(POT=tmp2,RMN=rr_cyl)
-            elseif (lparticles_nbody) then
+            elseif (lpointmasses) then
               !call get_totalmass(g0)
               tmp1=-g0/rr_sph 
               tmp2=-g0/rr_cyl
             else
-              print*,"both gravity and particles_nbody are switched off"
+              print*,"both gravity and pointmasses are switched off"
               print*,"there is no gravity to determine the stratification"
               call fatal_error("local_isothermal_density","")
             endif
