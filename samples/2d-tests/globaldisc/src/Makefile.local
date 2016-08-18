@@ -17,8 +17,8 @@ FORCING   = noforcing
 SHEAR     = noshear
 SHOCK     =   shock
 
-PARTICLES       = particles_dust
-PARTICLES_NBODY = particles_nbody
+POINTMASSES = pointmasses
+
 BORDER_PROFILES = border_profiles
 
 SPECIAL         = special/rtime_phiavg
