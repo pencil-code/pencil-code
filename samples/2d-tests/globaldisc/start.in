@@ -52,7 +52,7 @@
   pmass=1e-4, 1.
   xq0=-1,0
   r_smooth=0.03,0.0
-  lcylindrical_gravity_pointmasses=T,T
+  lcylindrical_gravity_nbody=T,T
   istar=2
 /
 
