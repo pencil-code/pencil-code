@@ -61,10 +61,10 @@ module Poisson
   real, dimension (nx,0:ncpus-1) :: xrecv
   real, dimension (ny,0:ncpus-1) :: yrecv
   real, dimension (nz,0:ncpus-1) :: zrecv
-  integer, allocatable :: themap(:,:), themap_sort(:,:)
-  real, allocatable :: regdist1(:)
-  real, allocatable :: regsmooth(:)
-  integer :: nregions, iregion, irl, iru, jrl, jru, krl, kru, nprecalc=0
+  integer, allocatable :: themap_group(:,:), themap_single(:,:)
+  real, allocatable :: regdist1_single(:), regsmooth_single(:)
+  real, allocatable :: regdist1_group(:), regsmooth_group(:)
+  integer :: nsingle, ngroup, iregion, irl, iru, jrl, jru, krl, kru, nprecalc=0
   integer, parameter :: nlt = 1e7 ! 3*80MB for 1e7
   real :: lkmin, lkmax, dxlt
   real, dimension(nlt) :: xlt, sinlt, coslt
@@ -110,12 +110,14 @@ module Poisson
     integer, dimension (nx) :: xind
     integer, dimension (ny) :: yind
     integer, dimension (nz) :: zind
+!    integer, dimension (10) :: newregion
     real, dimension (nx) :: dxc_1
     real, dimension (ny) :: dyc_1
     real, dimension (nz) :: dzc_1
     integer :: pp, i, j, k, xs, ys, zs, ii, jj, kk
-    integer :: iprecalc
-    logical :: lprecalc = .false., cartooncond
+    integer :: iprecalc, iregtmp, info, itmp
+    logical :: lprecalc = .false., cartooncond, doingsort
+    logical, allocatable :: tmpmask(:)
 !
     ! Trimming ghost zones
     xc = x(l1:l2)
@@ -227,14 +229,17 @@ module Poisson
     ! First pass only counts regions, second pass actually populates 'themap'
     do iprecalc=1,2
       if (lprecalc) then
-        if (lroot) print*,"# regions on proc 0:",nregions
-        allocate(themap(10,nregions))
-        allocate(themap_sort(10,nregions))
-        allocate(regsmooth(nregions))
-        regsmooth = 1.0
-        allocate(regdist1(nregions))
+        if (lroot) print*,"# regions on proc 0:",nsingle+ngroup
+        allocate(themap_group(10,ngroup))
+        allocate(themap_single(10,nsingle))
+        allocate(regsmooth_single(nsingle))
+        allocate(regsmooth_group(ngroup))
+        regsmooth_single = 1.0 ; regsmooth_group = 1.0
+        allocate(regdist1_single(nsingle))
+        allocate(regdist1_group(ngroup))
       endif
-      nregions = 0 ! Advanced inside 'mkmap'
+      nsingle = 0 ! Advanced inside 'mkmap'
+      ngroup = 0 ! Advanced inside 'mkmap'
       do pp=0,ncpus-1
         if (lsquareregions) then
           do kk=1,nz/sz(pp)
@@ -269,40 +274,18 @@ module Poisson
       lprecalc = .true.
     enddo
 !
-    if (lprecalcdists) then
-      nprecalc = nregions
-    else
-      ! sorting 'themap' so that all precalculated regions are at the 
-      ! beginning of the array, i.e.,
-      ! precalc: themap(1:nprecalc,:)
-      ! non-precalc: themap(nprecalc+1:nregions)
-      do iregion=1,nregions
-        if (themap(4,iregion) .eq. themap(5,iregion) .and. &
-        themap(6,iregion) .eq. themap(7,iregion) .and. &
-        themap(8,iregion) .eq. themap(9,iregion)) then
-          nprecalc = nprecalc+1
-          themap_sort(:,nprecalc) = themap(:,iregion)
-        else
-          themap_sort(:,nregions-(iregion-nprecalc)+1) = themap(:,iregion)
-        endif
-      enddo
-      themap = themap_sort
-    endif
-!
-    deallocate(themap_sort)
-!
-    if (lmakecartoon) then
-      do iregion=1,nregions
-        if (lcylindrical_coords.or.lcartesian_coords) then
-          cartooncond = (themap(2,iregion).eq.(ny/2))
-        else
-          cartooncond = (themap(3,iregion).eq.(nz/2))
-        endif
-        if ((themap(1,iregion).eq.(nx/2)).and.cartooncond) then
-          print*,themap(:,iregion)
-        endif
-      enddo
-    endif
+!    if (lmakecartoon) then
+!      do iregion=1,nregions
+!        if (lcylindrical_coords.or.lcartesian_coords) then
+!          cartooncond = (themap(2,iregion).eq.(ny/2))
+!        else
+!          cartooncond = (themap(3,iregion).eq.(nz/2))
+!        endif
+!        if ((themap(1,iregion).eq.(nx/2)).and.cartooncond) then
+!          print*,themap(:,iregion)
+!        endif
+!      enddo
+!    endif
 !
     endsubroutine initialize_poisson
 !***********************************************************************
@@ -334,20 +317,20 @@ module Poisson
     phi = 0.0
 !
     if (lroot .and. lshowtime) call cpu_time(tstart_loop)
-    do iregion=1,nprecalc
-      i   = themap(1, iregion) ; irl = themap(4,iregion) ; iru = themap(5,iregion)
-      j   = themap(2, iregion) ; jrl = themap(6,iregion) ; jru = themap(7,iregion)
-      k   = themap(3, iregion) ; krl = themap(8,iregion) ; kru = themap(9,iregion)
-      pp  = themap(10,iregion)
-      phi(i,j,k) = phi(i,j,k) - regsmooth(iregion)* &
-        sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))*regdist1(iregion)
+    do iregion=1,nsingle
+      i   = themap_single(1, iregion) ; irl = themap_single(5,iregion) ; iru = themap_single(6,iregion)
+      j   = themap_single(2, iregion) ; jrl = themap_single(7,iregion) ; jru = themap_single(8,iregion)
+      k   = themap_single(3, iregion) ; krl = themap_single(9,iregion) ; kru = themap_single(10,iregion)
+      pp  = themap_single(4,iregion)
+      phi(i,j,k) = phi(i,j,k) - regsmooth_single(iregion)* &
+        sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))*regdist1_single(iregion)
     enddo
-    do iregion=nprecalc+1,nregions
-      i   = themap(1, iregion) ; irl = themap(4,iregion) ; iru = themap(5,iregion)
-      j   = themap(2, iregion) ; jrl = themap(6,iregion) ; jru = themap(7,iregion)
-      k   = themap(3, iregion) ; krl = themap(8,iregion) ; kru = themap(9,iregion)
-      pp  = themap(10,iregion)
-      summreg = sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))*regsmooth(iregion)
+    do iregion=1,ngroup
+      i   = themap_group(1, iregion) ; irl = themap_group(5,iregion) ; iru = themap_group(6,iregion)
+      j   = themap_group(2, iregion) ; jrl = themap_group(7,iregion) ; jru = themap_group(8,iregion)
+      k   = themap_group(3, iregion) ; krl = themap_group(9,iregion) ; kru = themap_group(10,iregion)
+      pp  = themap_group(4,iregion)
+      summreg = sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))*regsmooth_group(iregion)
       summreg1 = 1.0/summreg
       xreg = sum(xrecv(irl:iru,pp) &
         *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),3),2))*summreg1
@@ -355,7 +338,6 @@ module Poisson
         *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),3),1))*summreg1
       zreg = sum(zrecv(krl:kru,pp) &
         *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),2),1))*summreg1
-      !xreg = 1.0 ; yreg = 1.0 ; zreg = 1.0 ; summreg = 1.0
       phi(i,j,k) = phi(i,j,k) - summreg/get_dist((/i,j,k/),(/xreg,yreg,zreg/))
     enddo
     if (lroot .and. lshowtime) call cpu_time(tstop_loop)
@@ -378,9 +360,10 @@ module Poisson
     integer, dimension(dimi(1)) :: xsind ! Region indices (for building map)
     integer, dimension(dimi(2)) :: ysind !
     integer, dimension(dimi(3)) :: zsind !
-    integer :: sx, sy, sz, ii, ji, ki, il, iu, jl, ju, kl, ku, ppi
+    integer, dimension(10) :: newregion
+    integer :: sx, sy, sz, ii, ji, ki, il, iu, jl, ju, kl, ku, ppi, newindex
     real :: lxi, lyi, lzi, dist, xwi, ywi, zwi, width
-    logical :: laddreg, lsplit
+    logical :: laddreg, lsplit, lregionmatched
 !
     ! If the point where the potential is being calculated is inside the
     ! region in question, then we MUST subdivide further (unless the region is
@@ -418,14 +401,33 @@ module Poisson
         enddo
       enddo
     elseif (.not. lsplit .and. dist .lt. octree_maxdist) then
-      nregions = nregions+1
-      if (laddreg) then
-        themap(:,nregions) = (/ipos(1),ipos(2),ipos(3), xsind(1),xsind(dimi(1)), &
-          ysind(1),ysind(dimi(2)),zsind(1),zsind(dimi(3)),ppi/)
-        if (lprecalcdists) regdist1(nregions) = 1.0/dist
+      newregion = (/ipos(1),ipos(2),ipos(3), ppi, xsind(1), &
+       xsind(dimi(1)), ysind(1),ysind(dimi(2)),zsind(1),zsind(dimi(3))/)
+      if ((newregion(5).ne.newregion(6)).or.(newregion(7).ne.newregion(8)).or. &
+       (newregion(9).ne.newregion(10))) then
+        if (laddreg) then
+          lregionmatched = .false.
+          do iregion=1,ngroup
+            if (all(newregion(4:10).eq.themap_group(4:10,iregion))) then
+              themap_group(:,iregion+2:ngroup+1) = themap_group(:,iregion+1:ngroup)
+              themap_group(:,iregion+1) = newregion
+              lregionmatched = .true.
+              exit
+            endif
+          enddo
+          if (.not.lregionmatched) themap_group(:,ngroup+1) = newregion
+        endif
+        ngroup = ngroup+1
+        if (lprecalcdists) regdist1_group(ngroup) = 1.0/dist
         if (dist .gt. (octree_maxdist-octree_smoothdist)) then
-         regsmooth(nregions) = 0.5* &
-          (cos(pi*((octree_maxdist-dist)/octree_smoothdist+1.0))+1.0)
+         regsmooth_group(ngroup) = 0.5*(cos(pi*((octree_maxdist-dist)/octree_smoothdist+1.0))+1.0)
+        endif
+      else
+        nsingle = nsingle+1
+        if (laddreg) themap_single(1:10,nsingle) = newregion(1:10)
+        if (lprecalcdists) regdist1_single(nsingle) = 1.0/dist
+        if (dist .gt. (octree_maxdist-octree_smoothdist)) then
+         regsmooth_single(nsingle) = 0.5*(cos(pi*((octree_maxdist-dist)/octree_smoothdist+1.0))+1.0)
         endif
       endif
     endif
