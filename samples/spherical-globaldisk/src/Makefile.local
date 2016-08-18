@@ -13,13 +13,11 @@ MAGNETIC  = nomagnetic
 RADIATION = noradiation
 PSCALAR   = nopscalar
 
-#GRAVITY   =   gravity_r
 FORCING   = noforcing
 SHEAR     = noshear
 SHOCK     =   shock_highorder
 
-PARTICLES_NBODY = particles_nbody
-PARTICLES = particles_dust
+POINTMASSES = pointmasses 
 
 INITIAL_CONDITION = initial_condition/centrifugal_balance
 
