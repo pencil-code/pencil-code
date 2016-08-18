@@ -79,6 +79,7 @@ program start
   use Param_IO
   use Particles_main
   use Polymer,          only: init_poly
+  use PointMasses!,      only: init_pointmasses
   use Pscalar,          only: init_lncc
   use Radiation,        only: init_rad, radtransfer
   use Register
@@ -488,6 +489,7 @@ program start
     call init_fcr(f)
     call init_interstellar(f)
     call init_solid_cells(f)
+    call init_pointmasses(f)
     call init_special(f)
   enddo
 !
@@ -563,6 +565,7 @@ program start
         call write_snapshot_particles(directory_dist,f,ENUM=.false.,snapnum=0)
 !
     call wsnap('VAR0',f,mvar_io,ENUM=.false.,FLIST='varN.list')
+    call pointmasses_write_snapshot(trim(directory_snap)//'/QVAR0',ENUM=.false.,FLIST='qvarN.list')
   endif
 !
 !  The option lnowrite writes everything except the actual var.dat file.
@@ -574,6 +577,7 @@ program start
     if (ip<12) print*,'START: writing to '//trim(directory_snap)//'/var.dat'
     if (lparticles) &
         call write_snapshot_particles(directory_dist,f,ENUM=.false.)
+    call pointmasses_write_snapshot(trim(directory_snap)//'/qvar.dat',ENUM=.false.)
     call wsnap('var.dat',f,mvar_io,ENUM=.false.)
   elseif (lmodify) then
     call wsnap(modify_filename,f,mvar_io,ENUM=.false.)
@@ -586,6 +590,7 @@ program start
     call wdim(trim(datadir)//'/dim.dat', &
         nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost,lglobal=.true.)
     if (lparticles) call write_dim_particles(trim(datadir))
+    call pointmasses_write_qdim(trim(datadir)//'/qdim.dat')
   endif
 !
 !  Write global variables.

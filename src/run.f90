@@ -65,10 +65,11 @@ program run
   use Fixed_point,     only: fixed_points_prepare, wfixed_points
   use Forcing,         only: forcing_clean_up,addforce
   use General,         only: random_seed_wrapper, touch_file
+  use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coords_switches
   use Hydro,           only: hydro_clean_up,kinematic_random_phase
   use ImplicitPhysics, only: calc_heatcond_ADI
   use Interstellar,    only: check_SN,addmassflux
-  use IO,              only: rgrid, directory_names, rproc_bounds, output_globals, input_globals
+  use IO,              only: rgrid, directory_names, rproc_bounds, output_globals, input_globals, wgrid
   use Magnetic,        only: rescaling_magnetic
   use Messages
   use Mpicomm
@@ -76,6 +77,7 @@ program run
   use Param_IO
   use Particles_main
   use Pencil_check,    only: pencil_consistency_check
+  use PointMasses
   use Register
   use SharedVariables, only: sharedvars_clean_up
   use Signal_handling, only: signal_prepare, emergency_stop
@@ -84,8 +86,6 @@ program run
   use Solid_Cells,     only: solid_cells_clean_up
   use Streamlines,     only: tracers_prepare, wtracers
   use Sub
-  use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coords_switches
-  use IO,              only: wgrid
   use Syscalls,        only: is_nan
   use Testscalar,      only: rescaling_testscalar
   use Testfield,       only: rescaling_testfield
@@ -391,6 +391,7 @@ program run
   if (.not.luse_oldgrid) call construct_grid(x,y,z,dx,dy,dz)
 !
   if (lparticles) call read_snapshot_particles(directory_dist)
+  call pointmasses_read_snapshot(trim(directory_snap)//'/qvar.dat')
 !
   call get_nseed(nseed)
 !
@@ -772,6 +773,7 @@ program run
         call wsnap_timeavgs('timeavg.dat',ENUM=.false.)
         if (lparticles) &
             call write_snapshot_particles(directory_dist,f,ENUM=.false.)
+        call pointmasses_write_snapshot(trim(directory_snap)//'/qvar.dat',ENUM=.false.)
         if (lsave) isave_shift = mod(it+isave-isave_shift, isave) + isave_shift
       endif
     endif
@@ -842,6 +844,7 @@ program run
     if (save_lastsnap) then
       if (lparticles) &
           call write_snapshot_particles(directory_dist,f,ENUM=.false.)
+      call pointmasses_write_snapshot(trim(directory_snap)//'/qvar.dat',ENUM=.false.)
 !
       call wsnap('var.dat',f,mvar_io,ENUM=.false.)
       call wsnap_timeavgs('timeavg.dat',ENUM=.false.)
