@@ -19,12 +19,13 @@ SHOCK     = shock_highorder
 
 
 PARTICLES            =   particles_dust
-PARTICLES_NBODY      =   particles_nbody
 PARTICLES_SELFGRAVITY=   particles_selfgravity
 SELFGRAVITY          =   selfgravity
 POISSON              =   experimental/poisson_expand
 FOURIER              =   fourier_fftpack
 BORDER_PROFILES      =   border_profiles
+
+POINTMASSES = pointmasses
 
 REAL_PRECISION = double
 

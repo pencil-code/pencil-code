@@ -51,7 +51,7 @@
 &particles_selfgrav_run_pars
   lselfgravity_particles=T
 /
-&particles_nbody_run_pars
+&pointmasses_run_pars
   lfollow_particle=T,T
   lnogravz_star=T
   laccretion=T,T

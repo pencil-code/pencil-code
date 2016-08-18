@@ -48,7 +48,7 @@
   initxxp='random-cylindrical', initvvp='Keplerian'
   dustdensity_powerlaw=0.5
 !  bcpx='flk',bcpy='out',bcpz='p'
-  bcpx='rmv',bcpy='out',bcpz='p'
+  bcpx='rmv',bcpy='rmv',bcpz='p'
   lparticlemesh_tsc=T
   tausp_species=0.01,0.1,0.3,1.
   lmigration_real_check=T
@@ -59,14 +59,14 @@
 &particles_selfgrav_init_pars
   lselfgravity_particles=F !for start time
 /
-&particles_nbody_init_pars
-  initxxsp='fixed-cm'
-  initvvsp='fixed-cm'
+&pointmasses_init_pars
+  initxxq='fixed-cm'
+  initvvq='fixed-cm'
   GNewton=1.0
   pmass=1e-3, 1.
-  xsp0=1,0
+  xq0=1,0
   r_smooth=0.07,0.
-  lcylindrical_gravity_nbody=T,T
+  lcylindrical_gravity_pointmasses=T,T
   istar=2
-  bcspx='out',bcspy='out'
+  bcqx='out',bcqy='out'
 /
