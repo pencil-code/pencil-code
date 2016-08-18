@@ -54,6 +54,7 @@ module Register
       use Magnetic,         only: register_magnetic
       use NeutralDensity,   only: register_neutraldensity
       use NeutralVelocity,  only: register_neutralvelocity
+      use PointMasses,      only: register_pointmasses
       use Polymer,          only: register_polymer
       use Pscalar,          only: register_pscalar
       use Supersat,         only: register_supersat
@@ -158,6 +159,7 @@ module Register
       call register_special
       call register_heatflux
       call register_solid_cells
+      call register_pointmasses
 !
 !  Writing files for use with IDL.
 !
@@ -224,6 +226,7 @@ module Register
       use Polymer,          only: initialize_polymer
       use NeutralDensity,   only: initialize_neutraldensity
       use NeutralVelocity,  only: initialize_neutralvelocity
+      use PointMasses,      only: initialize_pointmasses
       use Poisson,          only: initialize_poisson
       use Pscalar,          only: initialize_pscalar
       use Supersat,         only: initialize_supersat
@@ -402,6 +405,7 @@ module Register
       call initialize_solid_cells(f)
       call initialize_implicit_physics(f)
       call initialize_heatflux(f)
+      call initialize_pointmasses(f)
 !
 !  print summary of variable names
 !
@@ -577,6 +581,7 @@ module Register
       use Special,         only: pencil_criteria_special
       use Particles_main,  only: particles_pencil_criteria
       use Solid_cells,     only: pencil_criteria_solid_cells
+      use PointMasses,     only: pencil_criteria_pointmasses
 !
       call pencil_criteria_grid
       call pencil_criteria_borderprofiles
@@ -612,6 +617,7 @@ module Register
       call pencil_criteria_shear
       call pencil_criteria_special
       call pencil_criteria_solid_cells
+      call pencil_criteria_pointmasses
       if (lparticles) call particles_pencil_criteria
 !
     endsubroutine pencil_criteria
@@ -660,6 +666,7 @@ module Register
       use Shear, only: pencil_interdep_shear
       use Special, only: pencil_interdep_special
       use Grid, only: pencil_interdep_grid
+      use PointMasses, only: pencil_interdep_pointmasses
       use Particles_main, only: particles_pencil_interdep
 !
       logical, dimension (npencils) :: lpencil_in
@@ -695,6 +702,7 @@ module Register
       call pencil_interdep_radiation(lpencil_in)
       call pencil_interdep_shear(lpencil_in)
       call pencil_interdep_special(lpencil_in)
+      call pencil_interdep_pointmasses(lpencil_in)
       if (lparticles) call particles_pencil_interdep(lpencil_in)
 !
     endsubroutine pencil_interdep
@@ -808,6 +816,7 @@ module Register
       use Viscosity,       only: rprint_viscosity
       use Shear,           only: rprint_shear
       use TestPerturb,     only: rprint_testperturb
+      use PointMasses,     only: rprint_pointmasses
       use Sub,             only: parallel_file_exists, parallel_count_lines
 !
       logical, intent(IN) :: lreset
@@ -1060,6 +1069,7 @@ module Register
       call rprint_viscosity       (lreset,LWRITE=lroot)
       call rprint_shear           (lreset,LWRITE=lroot)
       call rprint_testperturb     (lreset,LWRITE=lroot)
+      call rprint_pointmasses     (lreset,LWRITE=lroot)
       if (lroot) close(3)
 !
     endsubroutine rprint_list
