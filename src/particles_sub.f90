@@ -135,8 +135,6 @@ module Particles_sub
 !
       real :: xold, yold, rad, r1old, OO, tmp
       integer :: k, ik, k1, k2
-      character (len=2*bclen+1) :: boundx, boundy, boundz
-      logical :: lnbody
 !
       intent (inout) :: fp, ipar, dfp
 !
@@ -149,15 +147,6 @@ module Particles_sub
       endif
 !
       do k=k1,k2,ik
-!
-!  Check if we are dealing with a dust or a massive particle
-!
-        lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-        if (.not.lnbody) then
-          boundx=bcpx ; boundy=bcpy ; boundz=bcpz
-        else
-          boundx=bcspx; boundy=bcspy; boundz=bcspz
-        endif
 !
 !  Calculate rad for cylinder-in-a-box calculations
 !
@@ -173,7 +162,7 @@ module Particles_sub
 !    z \in [z0,z1[
 !
         if (nxgrid/=1) then
-          if (boundx=='p') then
+          if (bcpx=='p') then
 !  xp < x0
             if (fp(k,ixp)< xyz0(1)) then
               fp(k,ixp)=fp(k,ixp)+Lxyz(1)
@@ -223,12 +212,8 @@ module Particles_sub
               endif
               if (ipxx/=0) fp(k,ipxx)=fp(k,ipxx)-Lxyz(1)
             endif
-          elseif (boundx=='out') then
 !
-!  Do nothing. A massive particle, can be out of the box. A star, for example,
-!  in a cylindrical simulation
-!
-          elseif (boundx=='flk') then
+          elseif (bcpx=='flk') then
 !
 !  Flush-Keplerian - flush the particle to the outer boundary with keplerian
 !  speed
@@ -254,12 +239,6 @@ module Particles_sub
 !
               if (lcylinder_in_a_box) then
 !
-                if (boundy/='out') then
-                  call fatal_error_local("boundconds_particles",&
-                       "The radial boundary already does it all"//&
-                       "so the y-boundary has to be set to 'out'")
-                endif
-!
                 if ((rad<=rp_int).or.(rad>rp_ext)) then
 !  Flush to outer boundary
                   xold=fp(k,ixp); yold=fp(k,iyp); r1old = 1./max(rad,tini)
@@ -279,7 +258,7 @@ module Particles_sub
                    'flush-keplerian not ready for spherical coords')
             endif
 !
-          elseif (boundx=='rmv') then
+          elseif (bcpx=='rmv') then
 !
 !  Remove the particle from the simulation
 !
@@ -310,7 +289,7 @@ module Particles_sub
                 endif
               endif
             endif
-          elseif (boundx=='hw') then
+          elseif (bcpx=='hw') then
 !
 !  Hard wall boundary condition
 !
@@ -321,7 +300,7 @@ module Particles_sub
               fp(k,ixp)=2*xyz1(1)-fp(k,ixp)
               fp(k,ivpx)=-fp(k,ivpx)
             endif
-          elseif (boundx=='meq') then
+          elseif (bcpx=='meq') then
             if ((fp(k,ixp).lt.rp_int) .or. (fp(k,ixp).gt.rp_ext)) then
             if (lcylindrical_coords) then
               tmp=2-dustdensity_powerlaw
@@ -351,7 +330,7 @@ module Particles_sub
               endif
             endif
           else
-            print*, 'boundconds_particles: No such boundary condition =', boundx
+            print*, 'boundconds_particles: No such boundary condition =', bcpx
             call stop_it('boundconds_particles')
           endif
         endif
@@ -359,7 +338,7 @@ module Particles_sub
 !  Boundary condition in the y-direction.
 !
         if (nygrid/=1) then
-          if (boundy=='p') then
+          if (bcpy=='p') then
 !  yp < y0
             if (fp(k,iyp)< xyz0(2)) then
               fp(k,iyp)=fp(k,iyp)+Lxyz(2)
@@ -384,10 +363,8 @@ module Particles_sub
               endif
               if (ipyy/=0) fp(k,ipyy)=fp(k,ipyy)-Lxyz(2)
             endif
-          elseif (boundy=='out') then
-            ! massive particles can be out of the box
-            ! the star, for example, in a cylindrical simulation
-          elseif (boundy=='rmv') then
+!
+          elseif (bcpy=='rmv') then
             if (lcartesian_coords) then
               if (fp(k,iyp)<=xyz0(2) .or. fp(k,iyp)>=xyz1(2)) then
                 if (present(dfp)) then
@@ -397,7 +374,8 @@ module Particles_sub
                 endif
               endif
             endif
-          elseif (boundy=='hw') then
+!
+          elseif (bcpy=='hw') then
 !
 !  Hard wall boundary condition
 !
@@ -409,7 +387,7 @@ module Particles_sub
               fp(k,ivpy)=-fp(k,ivpy)
             endif
           else
-            print*, 'boundconds_particles: No such boundary condition =', boundy
+            print*, 'boundconds_particles: No such boundary condition =', bcpy
             call stop_it('boundconds_particles')
           endif
         endif
@@ -417,7 +395,7 @@ module Particles_sub
 !  Boundary condition in the z-direction.
 !
         if (nzgrid/=1) then
-          if (boundz=='p') then
+          if (bcpz=='p') then
 !  zp < z0
             if (fp(k,izp)< xyz0(3)) then
               fp(k,izp)=fp(k,izp)+Lxyz(3)
@@ -442,10 +420,8 @@ module Particles_sub
               endif
               if (ipzz/=0) fp(k,ipzz)=fp(k,ipzz)-Lxyz(3)
             endif
-          elseif (boundz=='out') then
-            ! massive particles can be out of the box
-            ! the star, for example, in a cylindrical simulation
-          elseif (boundz=='rmv') then
+!
+          elseif (bcpz=='rmv') then
             if (lcartesian_coords) then
               if (fp(k,izp)<=xyz0(3) .or. fp(k,izp)>=xyz1(3)) then
                 if (present(dfp)) then
@@ -455,7 +431,7 @@ module Particles_sub
                 endif
               endif
             endif
-          elseif (boundz=='ref') then
+          elseif (bcpz=='ref') then
             if ((fp(k,izp)< xyz0(3)) .or. (fp(k,izp)>=xyz1(3))) then
               fp(k,ivpz)=-fp(k,ivpz)
               if (fp(k,izp)< xyz0(3)) then
@@ -465,7 +441,7 @@ module Particles_sub
                 fp(k,izp)=2*xyz1(3)-fp(k,izp)
               endif
             endif
-          elseif (boundz=='hw') then
+          elseif (bcpz=='hw') then
 !
 !  Hard wall boundary condition
 !
@@ -476,7 +452,7 @@ module Particles_sub
               fp(k,izp)=2*xyz1(3)-fp(k,izp)
               fp(k,ivpz)=-fp(k,ivpz)
             endif
-          elseif (boundz=='inc') then
+          elseif (bcpz=='inc') then
 !
 !  Move particle from the boundary to the center of the box
 !
@@ -485,7 +461,7 @@ module Particles_sub
               fp(k,ivpx:ivpz)=0.
             endif
           else
-            print*, 'boundconds_particles: No such boundary condition=', boundz
+            print*, 'boundconds_particles: No such boundary condition=', bcpz
             call stop_it('boundconds_particles')
           endif
         endif
@@ -495,13 +471,13 @@ module Particles_sub
 !
       if (lmpicomm) then
         if (present(dfp)) then
-          if (present(linsert).or.(boundx=='meq')) then
+          if (present(linsert).or.(bcpx=='meq')) then
             call migrate_particles(fp,ipar,dfp,linsert=.true.)
           else
             call migrate_particles(fp,ipar,dfp)
           endif
         else
-          if (present(linsert).or.(boundx=='meq')) then
+          if (present(linsert).or.(bcpx=='meq')) then
             call migrate_particles(fp,ipar,linsert=.true.)
           else
             call migrate_particles(fp,ipar)
@@ -723,7 +699,7 @@ module Particles_sub
 !
 !  The name of the subroutine is pretty self-explanatory.
 !
-!  14-mar-08/wlad: moved here from particles_nbody
+!  14-mar-08/wlad: moved here from the N-body code.
 !
       real,dimension(3) :: xx1,xx2,evr
       real :: e1,e2,e3,e10,e20,e30
@@ -771,39 +747,20 @@ module Particles_sub
 !
     endsubroutine get_particles_interdistance
 !***********************************************************************
-    subroutine remove_particle(fp,ipar,k,dfp,ineargrid,ks)
+    subroutine remove_particle(fp,ipar,k,dfp,ineargrid)
 !
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc) :: ipar
       integer :: k
       real, dimension (mpar_loc,mpvar), optional :: dfp
       integer, dimension (mpar_loc,3), optional :: ineargrid
-      integer, optional :: ks
 !
-      logical :: lnbody
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       intent (inout) :: fp, dfp, ineargrid
-      intent (in)    :: k, ks
+      intent (in)    :: k
 !
       t_sp = t
-!
-!  Check that we are not removing massive particles.
-!
-      lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-!
-      if (lnbody) then
-        if (present(ks)) then
-          print*, 'nbody particle ', ks
-          print*, 'is removing the following nbody particle:'
-        else
-          print*, 'the following nbody particle is being removed'
-        endif
-        print*, 'ipar(k)=', ipar(k)
-        print*, 'xp,yp,zp=' ,fp(k,ixp), fp(k,iyp), fp(k,izp)
-        print*, 'vxp,vyp,vzp=', fp(k,ivpx), fp(k,ivpy), fp(k,ivpz)
-        call fatal_error("remove_particle","are you sure this should happen?")
-      endif
 !
 !  Write to the respective processor that the particle is removed.
 !  We also write the time.
@@ -812,20 +769,12 @@ module Particles_sub
 !  conversion problems when reading t_rmv with pc_read_pvar.
 !
       open(20,file=trim(directory)//'/rmv_ipar.dat',position='append')
-      if (present(ks)) then
-        write(20,*) ipar(k), t_sp, ipar(ks)
-      else
-        write(20,*) ipar(k), t_sp
-      endif
+      write(20,*) ipar(k), t_sp
       close(20)
 !
       open(20,file=trim(directory)//'/rmv_par.dat', &
           position='append',form='unformatted')
-      if (present(ks)) then
-        write(20) fp(k,:), fp(ks,:)
-      else
-        write(20) fp(k,:)
-      endif
+      write(20) fp(k,:)
       close(20)
 !
       if (ip<=8) print*, 'removed particle ', ipar(k)

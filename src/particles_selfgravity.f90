@@ -32,13 +32,12 @@ module Particles_selfgravity
   real :: cdtpg=0.2
   real, pointer :: tstart_selfgrav
   logical :: lselfgravity_particles=.true.
-  logical :: lselfgravity_nbodyparticles=.false.
 !
   namelist /particles_selfgrav_init_pars/ &
-      lselfgravity_particles, lselfgravity_nbodyparticles
+      lselfgravity_particles
 !
   namelist /particles_selfgrav_run_pars/ &
-      lselfgravity_particles, lselfgravity_nbodyparticles
+      lselfgravity_particles
 !
   integer :: idiag_gpotenp=0, idiag_potselfpm=0
 !
@@ -241,7 +240,7 @@ module Particles_selfgravity
       real, dimension (1) :: potself
       real :: rhop_swarm_par
       integer :: k
-      logical :: lheader, lnbody, lfirstcall=.true.
+      logical :: lheader, lfirstcall=.true.
 !
       intent (in) :: f, fp
       intent (inout) :: dfp
@@ -260,8 +259,7 @@ module Particles_selfgravity
 !
         if (lselfgravity_particles) then
           do k=1,npar_loc
-            lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-            if ((.not.lnbody).or.(lnbody.and.lselfgravity_nbodyparticles)) then
+            
               if (lparticlemesh_cic) then
                 if (lparticles_blocks) then
                   call interpolate_linear(f,igpotselfx,igpotselfz, &
@@ -294,7 +292,7 @@ module Particles_selfgravity
               else
                 gpotself=f(ineargrid(k,1),ineargrid(k,2),ineargrid(k,3),igpotselfx:igpotselfz)
               endif
-            endif
+            
 !
 !  Add gravitational acceleration to particles
 !

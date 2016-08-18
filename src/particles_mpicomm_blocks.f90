@@ -226,17 +226,7 @@ module Particles_mpicomm
 !
 !  Set index interval of particles that belong to the local processor.
 !
-      if (lparticles_nbody.and.(npar==nspar)) then
-        if (lroot) then
-          npar_loc=npar
-          !also needs to initialize ipar(k)
-          do k=1,nspar
-            ipar(k)=k
-            ipar_nbody(k)=k
-          enddo
-        endif
-        call mpibcast_int(ipar_nbody,nspar)
-      else if (linsert_particles_continuously) then
+      if (linsert_particles_continuously) then
         npar_loc=0
         ipar=0
       else

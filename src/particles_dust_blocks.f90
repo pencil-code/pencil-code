@@ -1666,7 +1666,7 @@ k_loop:   do while (.not. (k>npar_loc))
           if (lheader) print*, 'dvvp_dt: No radial gravity'
 !
         case ('newtonian-central','newtonian')
-          if (lparticles_nbody) &
+          if (lpointmasses) &
               call fatal_error('dvvp_dt','You are using massive particles. '//&
               'The N-body code should take care of the stellar-like '// &
               'gravity on the dust. Switch off the '// &
@@ -2001,7 +2001,7 @@ k_loop:   do while (.not. (k>npar_loc))
       real :: weight, weight_x, weight_y, weight_z
       integer :: k, l, ix0, iy0, iz0, ib, iblock, lb, mb, nb
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
-      logical :: lnbody, lsink
+      logical :: lsink
 !
       intent (inout) :: f, df, dfp, fp, ineargrid
 !
@@ -2026,14 +2026,13 @@ k_loop:   do while (.not. (k>npar_loc))
 !
             do k=k1_iblock(iblock),k2_iblock(iblock)
 !
-!  Exclude the massive nbody particles from the drag calculations
+!  Exclude sink particles from the drag calculations
 !
-              lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
               lsink=.false.
               if (lparticles_sink) then
                 if (fp(k,iaps)>0.0) lsink=.true.
               endif
-              if ((.not.lnbody).and.(.not.lsink)) then
+              if (.not.lsink) then
                 ix0=ineargrid(k,1)
                 iy0=ineargrid(k,2)
                 iz0=ineargrid(k,3)

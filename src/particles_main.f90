@@ -21,7 +21,6 @@ module Particles_main
   use Particles_map
   use Particles_mass
   use Particles_mpicomm
-  use Particles_nbody
   use Particles_number
   use Particles_radius
   use Particles_potential
@@ -57,14 +56,13 @@ module Particles_main
       integer :: ipvar
 !
       call register_particles              ()
-     call register_particles_potential    ()
+      call register_particles_potential    ()
       call register_particles_radius       ()
       call register_particles_grad         ()
       call register_particles_spin         ()
       call register_particles_number       ()
       call register_particles_density      ()
       call register_particles_selfgrav     ()
-      call register_particles_nbody        ()
       call register_particles_sink         ()
       call register_particles_TT           ()
       call register_particles_mass         ()
@@ -106,7 +104,6 @@ module Particles_main
       call rprint_particles_number       (lreset,LWRITE=lroot)
       call rprint_particles_density      (lreset,LWRITE=lroot)
       call rprint_particles_selfgrav     (lreset,LWRITE=lroot)
-      call rprint_particles_nbody        (lreset,LWRITE=lroot)
       call rprint_particles_TT           (lreset,LWRITE=lroot)
       call rprint_particles_mass         (lreset,LWRITE=lroot)
       call rprint_particles_ads          (lreset,LWRITE=lroot)
@@ -197,7 +194,6 @@ module Particles_main
       call initialize_particles_map
       call initialize_particles_adaptation   (f)
       call initialize_particles_density      (f)
-      call initialize_particles_nbody        (f)
       call initialize_particles_number       (f)
       call initialize_particles_radius       (f)
       call initialize_particles_grad         (f)
@@ -265,7 +261,6 @@ module Particles_main
       if (lparticles_number)        call init_particles_number(f,fp)
       if (lparticles_density)       call init_particles_density(f,fp)
       call init_particles(f,fp,ineargrid)
-      if (lparticles_nbody)         call init_particles_nbody(f,fp)
       if (lparticles_sink)          call init_particles_sink(f,fp)
       if (lparticles_spin)          call init_particles_spin(f,fp)
       if (lparticles_temperature)   call init_particles_TT(f,fp)
@@ -283,9 +278,6 @@ module Particles_main
       character (len=*) :: snap_directory
 !
       call particles_read_snapshot(trim(snap_directory)//'/pvar.dat')
-      if (lparticles_nbody) &
-           call particles_nbody_read_snapshot(&
-           trim(snap_directory)//'/spvar.dat')
 !
     endsubroutine read_snapshot_particles
 !***********************************************************************
@@ -295,8 +287,6 @@ module Particles_main
 !
       call particles_write_pdim(trim(datadir)//'/pdim.dat')
       call particles_write_block(trim(datadir)//'/bdim.dat')
-      if (lparticles_nbody) &
-          call particles_nbody_write_spdim(trim(datadir)//'/spdim.dat')
 !
     endsubroutine write_dim_particles
 !***********************************************************************
@@ -312,7 +302,6 @@ module Particles_main
       call read_namelist(read_particles_num_init_pars  ,'particles_number'  ,lparticles_number)
       call read_namelist(read_particles_dens_init_pars ,'particles_dens'    ,lparticles_density)
       call read_namelist(read_particles_selfg_init_pars,'particles_selfgrav',lparticles_selfgravity)
-      call read_namelist(read_particles_nbody_init_pars,'particles_nbody'   ,lparticles_nbody)
       call read_namelist(read_particles_mass_init_pars ,'particles_mass'    ,lparticles_mass)
       call read_namelist(read_particles_drag_init_pars ,'particles_drag'    ,lparticles_drag)
       call read_namelist(read_particles_TT_init_pars   ,'particles_TT'      ,lparticles_temperature)
@@ -336,7 +325,6 @@ module Particles_main
       call read_namelist(read_particles_sink_run_pars     ,'particles_sink'         ,lparticles_sink)
       call read_namelist(read_particles_num_run_pars      ,'particles_number'       ,lparticles_number)
       call read_namelist(read_particles_selfg_run_pars    ,'particles_selfgrav'     ,lparticles_selfgravity)
-      call read_namelist(read_particles_nbody_run_pars    ,'particles_nbody'        ,lparticles_nbody)
       call read_namelist(read_particles_coag_run_pars     ,'particles_coag'         ,lparticles_coagulation)
       call read_namelist(read_particles_coll_run_pars     ,'particles_coll'         ,lparticles_collisions)
       call read_namelist(read_particles_stir_run_pars     ,'particles_stirring'     ,lparticles_stirring)
@@ -378,23 +366,14 @@ module Particles_main
         call particles_write_snapshot(trim(snap_directory)//'/PVAR'//itoa(snapnum),f, &
             enum=.false.,FLIST='pvarN.list')
 !
-        if (lparticles_nbody) call particles_nbody_write_snapshot(&
-            trim(snap_directory)//'/SPVAR'//itoa(snapnum),enum=.false.)
-!
       elseif (enum) then
         call particles_write_snapshot(trim(snap_directory)//'/PVAR',f, &
             ENUM=.true.,FLIST='pvarN.list')
 !
-        if (lparticles_nbody) call particles_nbody_write_snapshot(&
-            trim(snap_directory)//'/SPVAR',enum=.true.,flist='spvarN.list')
       else
         call particles_write_snapshot( &
             trim(snap_directory)//'/pvar.dat',f,enum=.false.)
 !
-        if (lparticles_nbody.and.lroot) then
-          call particles_nbody_write_snapshot( &
-              trim(snap_directory)//'/spvar.dat',enum=.false.)
-        endif
       endif
 !
     endsubroutine write_snapshot_particles
@@ -497,11 +476,11 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (.not.(lparticles_nbody.and.(lcylindrical_coords.or.lspherical_coords))) then
+      !if (.not.(lparticles_nbody.and.(lcylindrical_coords.or.lspherical_coords))) then
         fp(1:npar_loc,1:mpvar) = fp(1:npar_loc,1:mpvar) + dt_beta_ts(itsub)*dfp(1:npar_loc,1:mpvar)
-      else
-        call advance_particles_in_cartesian(fp,dfp)
-      endif
+      !else
+      !  call advance_particles_in_cartesian(fp,dfp)
+      !endif
 !
 !  Discrete particle collisions. Must be done at the end of the time-step.
 !   This call also sorts the particles into mn 
@@ -610,8 +589,6 @@ module Particles_main
       if  (.not.lpencil_check_at_work) then
         if (lparticles) &
             call remove_particles_sink_simple(f,fp,dfp,ineargrid)
-        if (lparticles_nbody) &
-            call remove_particles_sink_nbody(f,fp,dfp,ineargrid)
         if (lparticles_sink)  call remove_particles_sink(f,fp,dfp,ineargrid)
       endif
 !
@@ -631,10 +608,6 @@ module Particles_main
 !
       call map_xxp_grid(f,fp,ineargrid)
       call map_vvp_grid(f,fp,ineargrid)
-!
-!  Distribute the n-body particles across processors
-!
-      if (lparticles_nbody) call bcast_nbodyarray(fp)
 !
     endsubroutine particles_boundconds
 !***********************************************************************
@@ -667,18 +640,11 @@ module Particles_main
         call periodic_boundcond_on_aux(f)
       endif
 !
-!  Calculate the summed gravity due to the massive particles.
-!  Needed because it is too slow to calculate the gravity at the
-!  position of all dust particles. So we calculate the gravity
-!  for the grid and interpolate to the position of the particles.
-!
-      if (lparticles_nbody)     call calc_nbodygravity_particles(f)
-!
     endsubroutine particles_before_boundary
 !***********************************************************************
     subroutine particles_special_bfre_bdary(f)
 !
-!  Fetch fp (and fsp) array to special module.
+!  Fetch fp array to special module.
 !
 !  01-mar-08/wlad: coded
 !
@@ -687,7 +653,6 @@ module Particles_main
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call special_particles_bfre_bdary(f,fp,ineargrid)
-      if (lparticles_nbody) call particles_nbody_special
 !
     endsubroutine particles_special_bfre_bdary
 !***********************************************************************
@@ -703,7 +668,6 @@ module Particles_main
       if (lparticles_number)      call pencil_criteria_par_number()
       if (lparticles_density)     call pencil_criteria_par_density()
       if (lparticles_selfgravity) call pencil_criteria_par_selfgrav()
-      if (lparticles_nbody)       call pencil_criteria_par_nbody()
       if (lparticles_temperature) call pencil_criteria_par_TT()
       if (lparticles_mass)        call pencil_criteria_par_mass()
       if (lparticles_adsorbed)    call pencil_criteria_par_ads()
@@ -721,7 +685,6 @@ module Particles_main
 !
       if (lparticles)             call pencil_interdep_particles(lpencil_in)
       if (lparticles_selfgravity) call pencil_interdep_par_selfgrav(lpencil_in)
-      if (lparticles_nbody)       call pencil_interdep_par_nbody(lpencil_in)
 !
     endsubroutine particles_pencil_interdep
 !***********************************************************************
@@ -736,7 +699,6 @@ module Particles_main
 !
       if (lparticles)             call calc_pencils_particles(f,p)
       if (lparticles_selfgravity) call calc_pencils_par_selfgrav(f,p)
-      if (lparticles_nbody)       call calc_pencils_par_nbody(f,p)
       if (lparticles_chemistry)   call calc_pencils_par_chem(f,p)
 !
     endsubroutine particles_calc_pencils
@@ -776,8 +738,6 @@ module Particles_main
       if (lparticles_number)      call dnpswarm_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_density)     call drhopswarm_dt(f,df,fp,dfp,ineargrid)
       if (lparticles_selfgravity) call dvvp_dt_selfgrav(f,df,fp,dfp,ineargrid)
-      if (lparticles_nbody)       call dxxp_dt_nbody(dfp)
-      if (lparticles_nbody)       call dvvp_dt_nbody(f,df,fp,dfp,ineargrid)
 !
 !  Interface for your personal subroutines calls
 !
@@ -788,13 +748,13 @@ module Particles_main
       if  (.not.lpencil_check_at_work) then
         if (lparticles) &
             call create_particles_sink_simple(f,fp,dfp,ineargrid)
-        if (lparticles_nbody) call create_particles_sink_nbody(f,fp,dfp,ineargrid)
         if (lparticles_sink)  call create_particles_sink(f,fp,dfp,ineargrid)
       endif
 !
 !  Correct for curvilinear geometry.
 !
-      if (.not.lparticles_nbody) call correct_curvilinear
+      !if (.not.lparticles_nbody) &
+      call correct_curvilinear
 !
 !  Output particle size distribution to file.
 !
@@ -856,8 +816,6 @@ module Particles_main
       if (lparticles_density)   call drhopswarm_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_selfgravity) &
           call dvvp_dt_selfgrav_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles_nbody) &
-          call dvvp_dt_nbody_pencil(f,df,fp,dfp,p,ineargrid)
 !      if (lparticles_potential) &
 !          call dvvp_dt_potential_pencil(f,df,fp,dfp,ineargrid)
 !      if (lparticles_polymer) &
@@ -990,7 +948,6 @@ module Particles_main
       if (lparticles_number)      call write_particles_num_init_pars(unit)
       if (lparticles_density)     call write_particles_dens_init_pars(unit)
       if (lparticles_selfgravity) call write_particles_selfg_init_pars(unit)
-      if (lparticles_nbody)       call write_particles_nbody_init_pars(unit)
       if (lparticles_stalker)     call write_pstalker_init_pars(unit)
       if (lparticles_mass)        call write_particles_mass_init_pars(unit)
       if (lparticles_drag)        call write_particles_drag_init_pars(unit)
@@ -1015,7 +972,6 @@ module Particles_main
       if (lparticles_sink)           call write_particles_sink_run_pars(unit)
       if (lparticles_number)         call write_particles_num_run_pars(unit)
       if (lparticles_selfgravity)    call write_particles_selfg_run_pars(unit)
-      if (lparticles_nbody)          call write_particles_nbody_run_pars(unit)
       if (lparticles_coagulation)    call write_particles_coag_run_pars(unit)
       if (lparticles_collisions)     call write_particles_coll_run_pars(unit)
       if (lparticles_stirring)       call write_particles_stir_run_pars(unit)
@@ -1259,4 +1215,36 @@ module Particles_main
 !
     endsubroutine particles_cleanup
 !***********************************************************************
-endmodule Particles_main
+    subroutine fetch_fp_array(fp_aux,dfp_aux,np_aux,ixw,izw,ivxw,ivzw)
+!
+      real,    dimension(mpar_loc,mparray), intent(out) :: fp_aux
+      real,    dimension(mpar_loc,mpvar),   intent(out) :: dfp_aux
+      integer,                              intent(out) :: np_aux
+      integer, intent(out) :: ixw,izw,ivxw,ivzw
+!
+      fp_aux        = fp
+      dfp_aux       = dfp
+      np_aux        = npar_loc
+      ixw=ixp ; izw=izp ; ivxw=ivpx ; ivzw=ivpz
+!      
+    endsubroutine fetch_fp_array
+!***********************************************************************
+    subroutine return_fp_array(fp_aux,dfp_aux,flag)
+!
+      real, dimension(mpar_loc,mparray), intent(in) :: fp_aux
+      real, dimension(mpar_loc,mpvar),   intent(in) :: dfp_aux
+      logical, dimension(mpar_loc),      intent(in) :: flag
+!      
+      integer :: k
+!
+      fp        = fp_aux
+      dfp       = dfp_aux
+!
+      do k=1,npar_loc
+        if (flag(k)) call remove_particle(fp,ipar,k,dfp,ineargrid)
+      enddo
+      
+!      
+    endsubroutine return_fp_array
+!***********************************************************************
+  endmodule Particles_main

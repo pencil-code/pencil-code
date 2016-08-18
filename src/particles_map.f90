@@ -887,7 +887,6 @@ module Particles_map
       double precision, save :: dx1, dy1, dz1
       integer :: k, k1, k2, ix0, iy0, iz0
       logical, save :: lfirstcall=.true.
-      logical :: lnbody
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       intent(in)  :: fp
@@ -951,22 +950,6 @@ module Particles_map
 !
         ineargrid(k,1)=ix0; ineargrid(k,2)=iy0; ineargrid(k,3)=iz0
 !
-!  Small fix for nbody particles. Some are allowed to be out of box; plus,
-!  because they are kept by the root processor, they are not bound by the grid.
-!  If they are not within the bounds of the processor, the closest grid point
-!  if the first physical point. Perhaps the n-body module should be moved to a
-!  dedicated code (e.g. independent of fp).
-!
-        lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-        if (lnbody) then
-          if (ineargrid(k,1)<=l1-1) ineargrid(k,1)=l1
-          if (ineargrid(k,1)>=l2-1) ineargrid(k,1)=l2
-          if (ineargrid(k,2)<=m1-1) ineargrid(k,2)=m1
-          if (ineargrid(k,2)>=m2-1) ineargrid(k,2)=m2
-          if (ineargrid(k,3)<=n1-1) ineargrid(k,3)=n1
-          if (ineargrid(k,3)>=n2-1) ineargrid(k,3)=n2
-        else
-!
 !  Round off errors may put a particle closer to a ghost point than to a
 !  physical point. Either stop the code with a fatal error or fix problem
 !  by forcing the nearest grid point to be a physical point.
@@ -1012,7 +995,6 @@ module Particles_map
               print*, 'x2, y2, z2  =', x(l2), y(m2), z(n2)
               call fatal_error_local('map_nearest_grid','')
             endif
-          endif
         endif
       enddo
 !
@@ -1349,7 +1331,7 @@ module Particles_map
       real :: weight0, weight, weight_x, weight_y, weight_z
       integer :: k, ix0, iy0, iz0, ixx, iyy, izz
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1, irhopm
-      logical :: lnbody, lsink, lmapsink
+      logical :: lsink, lmapsink
 !
 !  Possible to map sink particles by temporarily switching irhop to irhops.
 !
@@ -1368,11 +1350,8 @@ module Particles_map
       if (inp/=0 .and. (.not. lnocalc_np) .and. (.not. lmapsink)) then
         f(:,:,:,inp)=0.0
         do k=1,npar_loc
-          lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-          if (.not.lnbody) then
-            ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-            f(ix0,iy0,iz0,inp) = f(ix0,iy0,iz0,inp) + 1.0
-          endif
+          ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+          f(ix0,iy0,iz0,inp) = f(ix0,iy0,iz0,inp) + 1.0
         enddo
       endif
 !
@@ -1397,13 +1376,12 @@ module Particles_map
 !  Cloud In Cell (CIC) scheme.
 !
           do k=1,npar_loc
-            lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
             lsink=.false.
             if (lparticles_sink) then
               if (fp(k,iaps)>0.0) lsink=.true.
             endif
             if (lmapsink) lsink=.not.lsink
-            if ((.not.lnbody).and.(.not.lsink)) then
+            if (.not.lsink) then
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               ixx0=ix0; iyy0=iy0; izz0=iz0
               ixx1=ix0; iyy1=iy0; izz1=iz0
@@ -1465,13 +1443,12 @@ module Particles_map
 !  decreases with the distance from the particle centre.
 !
           do k=1,npar_loc
-            lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
             lsink=.false.
             if (lparticles_sink) then
               if (fp(k,iaps)>0.0) lsink=.true.
             endif
             if (lmapsink) lsink=.not.lsink
-            if ((.not.lnbody).and.(.not.lsink)) then
+            if (.not.lsink) then
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               if (nxgrid/=1) then
                 ixx0=ix0-1; ixx1=ix0+1
@@ -1557,13 +1534,12 @@ module Particles_map
         else
           if (lparticles_radius.or.lparticles_number.or.lparticles_density) then
             do k=1,npar_loc
-              lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
               lsink=.false.
               if (lparticles_sink) then
                 if (fp(k,iaps)>0.0) lsink=.true.
               endif
               if (lmapsink) lsink=.not.lsink
-              if ((.not.lnbody).and.(.not.lsink)) then
+              if (.not.lsink) then
                 ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
 !
                 if (lparticles_density) then
@@ -1630,7 +1606,6 @@ module Particles_map
       real :: weight, weight_x, weight_y, weight_z
       integer :: ivp, k, ix0, iy0, iz0, ixx, iyy, izz
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
-      logical :: lnbody
 !
 !  Calculate the smooth velocity field of particles in each grid cell. Three
 !  methods are implemented for assigning a particle to the mesh (see Hockney &
@@ -1654,8 +1629,6 @@ module Particles_map
 !  Cloud In Cell (CIC) scheme.
 !
             do k=1,npar_loc
-              lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-              if (.not.lnbody) then
                 ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
                 ixx0=ix0; iyy0=iy0; izz0=iz0
                 ixx1=ix0; iyy1=iy0; izz1=iz0
@@ -1676,7 +1649,6 @@ module Particles_map
                   f(ixx,iyy,izz,iupx+ivp)=f(ixx,iyy,izz,iupx+ivp) + &
                       weight*fp(k,ivpx+ivp)
                 enddo; enddo; enddo
-              endif
             enddo
 !
 !  Triangular Shaped Cloud (TSC) scheme.
@@ -1687,8 +1659,6 @@ module Particles_map
 !  decreases with the distance from the particle centre.
 !
             do k=1,npar_loc
-              lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-              if (.not.lnbody) then
                 ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
                 if (nxgrid/=1) then
                   ixx0=ix0-1; ixx1=ix0+1
@@ -1741,18 +1711,14 @@ module Particles_map
                   f(ixx,iyy,izz,iupx+ivp)=f(ixx,iyy,izz,iupx+ivp) + &
                       weight*fp(k,ivpx+ivp)
                 enddo; enddo; enddo
-              endif
             enddo
           else
 !
 !  Nearest Grid Point (NGP) method.
 !
             do k=1,npar_loc
-              lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-              if (.not.lnbody) then
-                ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-                f(ix0,iy0,iz0,iupx+ivp)=f(ix0,iy0,iz0,iupx+ivp)+fp(k,ivpx+ivp)
-              endif
+              ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+              f(ix0,iy0,iz0,iupx+ivp)=f(ix0,iy0,iz0,iupx+ivp)+fp(k,ivpx+ivp)
             enddo
           endif
 !

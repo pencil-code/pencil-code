@@ -581,15 +581,12 @@ endsubroutine get_neighbours
 !
       integer :: k, ix0, iy0, iz0
       real :: dt1_advpx, dt1_advpy, dt1_advpz
-      logical :: lnbody
 !
 !  Contribution of dust particles to time step.
 !
       if (lfirst.and.ldt) then
         if (npar_imn(imn)/=0) then
           do k=k1_imn(imn),k2_imn(imn)
-            lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
-            if (.not.lnbody) then
               ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
               dt1_advpx=abs(fp(k,ivpx))*dx_1(ix0)
               if (lshear) then
@@ -600,7 +597,6 @@ endsubroutine get_neighbours
               dt1_advpz=abs(fp(k,ivpz))*dz_1(iz0)
               dt1_max(ix0-nghost)=max(dt1_max(ix0-nghost), &
                    sqrt(dt1_advpx**2+dt1_advpy**2+dt1_advpz**2)/cdtp)
-            endif
           enddo
         endif
       endif
@@ -949,7 +945,6 @@ endsubroutine get_neighbours
       real,dimension(nx,3) :: vvpm,dvp2m
       integer :: inx0,k,l
       type (pencil_case) :: p
-      logical :: lnbody
 !
 !  Initialize the variables
 !
@@ -961,11 +956,8 @@ endsubroutine get_neighbours
       if (npar_imn(imn)/=0) then
 !
         do k=k1_imn(imn),k2_imn(imn)
-          lnbody=any(ipar(k)==ipar_nbody)
-          if (.not.lnbody) then
             inx0=ineargrid(k,1)-nghost
             vvpm(inx0,:) = vvpm(inx0,:) + fp(k,ivpx:ivpz)
-          endif
         enddo
         do l=1,nx
           if (p%np(l)>1.0) vvpm(l,:)=vvpm(l,:)/p%np(l)
@@ -974,13 +966,10 @@ endsubroutine get_neighbours
 !  Get the residual in quadrature, dvp2m. Need vvpm calculated above.
 !
         do k=k1_imn(imn),k2_imn(imn)
-          lnbody=any(ipar(k)==ipar_nbody)
-          if (.not.lnbody) then
             inx0=ineargrid(k,1)-nghost
             dvp2m(inx0,1)=dvp2m(inx0,1)+(fp(k,ivpx)-vvpm(inx0,1))**2
             dvp2m(inx0,2)=dvp2m(inx0,2)+(fp(k,ivpy)-vvpm(inx0,2))**2
             dvp2m(inx0,3)=dvp2m(inx0,3)+(fp(k,ivpz)-vvpm(inx0,3))**2
-          endif
         enddo
         do l=1,nx
           if (p%np(l)>1.0) dvp2m(l,:)=dvp2m(l,:)/p%np(l)

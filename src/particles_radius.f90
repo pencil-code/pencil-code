@@ -134,8 +134,7 @@ module Particles_radius
 !  Calculate the number density of bodies within a superparticle.
 !
       if (npart_radii>1 .and. &
-          (.not. lcartesian_coords .or. lparticles_nbody .or. &
-          lparticles_number .or. lparticles_spin)) then
+          (.not. lcartesian_coords .or. lparticles_number .or. lparticles_spin)) then
         call fatal_error('initialize_particles_radius: npart_radii > 1','')
       else
         mpmat=4/3.0*pi*rhopmat*ap0(1)**3

@@ -10,7 +10,6 @@ module Particles_cdata
 !
   public
 !
-  integer, parameter :: mspvar=mpvar+1
   integer, parameter :: lun_output=93
 !
   real, parameter :: npar_per_cell=npar/(1.0*nwgrid)
@@ -41,10 +40,9 @@ module Particles_cdata
   integer, dimension (nx) :: kshepherd
   integer, allocatable, dimension (:) :: kneighbour
   integer, dimension (mpar_loc) :: ipar
-  integer, dimension (nspar) :: ipar_nbody
   integer, dimension (npar_species) :: ipar_fence_species=0
   integer, dimension(ny*nz) :: npar_imn, k1_imn, k2_imn
-  integer :: npvar=0, npar_loc=0, mspar=0, npar_total=0, npaux=0
+  integer :: npvar=0, npar_loc=0, npar_total=0, npaux=0
   integer :: ixp=0, iyp=0, izp=0, ivpx=0, ivpy=0, ivpz=0, iap=0, iaps=0, irpbeta=0
   integer :: isigmap11=0,isigmap12=0,isigmap13=0
   integer :: isigmap21=0,isigmap22=0,isigmap23=0
@@ -94,7 +92,6 @@ module Particles_cdata
   logical :: lignore_rhop_swarm=.false.
 !
   character (len=2*bclen+1) :: bcpx='p', bcpy='p', bcpz='p'
-  character (len=2*bclen+1) :: bcspx='p', bcspy='p', bcspz='p'
   character (len=10), dimension(mparray) :: pvarname
   character(len=labellen) :: particle_mesh = ''
 !

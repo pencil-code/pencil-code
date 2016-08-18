@@ -223,7 +223,7 @@ module Particles_map
       integer :: k, ix0, iy0, iz0, ixx, iyy, izz, ib
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1, irhopm
       integer :: lb, mb, nb
-      logical :: lnbody, lsink, lmapsink
+      logical :: lsink, lmapsink
 !
 !  Possible to map sink particles by temporarily switching irhop to irhops.
 !
@@ -276,13 +276,12 @@ module Particles_map
           do ib=0,nblock_loc-1
             if (npar_iblock(ib)/=0) then
               do k=k1_iblock(ib),k2_iblock(ib)
-                lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
                 lsink=.false.
                 if (lparticles_sink) then
                   if (fp(k,iaps)>0.0) lsink=.true.
                 endif
                 if (lmapsink) lsink=.not.lsink
-                if ((.not.lnbody).and.(.not.lsink)) then
+                if (.not.lsink) then
                   ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
                   ixx0=ix0; iyy0=iy0; izz0=iz0
                   ixx1=ix0; iyy1=iy0; izz1=iz0
@@ -347,13 +346,12 @@ module Particles_map
           do ib=0,nblock_loc-1
             if (npar_iblock(ib)/=0) then
               do k=k1_iblock(ib),k2_iblock(ib)
-                lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
                 lsink=.false.
                 if (lparticles_sink) then
                   if (fp(k,iaps)>0.0) lsink=.true.
                 endif
                 if (lmapsink) lsink=.not.lsink
-                if ((.not.lnbody).and.(.not.lsink)) then
+                if (.not.lsink) then
 !
 !  Particle influences the 27 surrounding grid points, but has a density that
 !  decreases with the distance from the particle centre.
@@ -451,13 +449,12 @@ module Particles_map
           if (lparticles_radius.or.lparticles_number.or.lparticles_density) then
             if (npar_iblock(ib)/=0) then
               do k=k1_iblock(ib),k2_iblock(ib)
-                lnbody=(lparticles_nbody.and.any(ipar(k)==ipar_nbody))
                 lsink=.false.
                 if (lparticles_sink) then
                   if (fp(k,iaps)>0.0) lsink=.true.
                 endif
                 if (lmapsink) lsink=.not.lsink
-                if ((.not.lnbody).and.(.not.lsink)) then
+                if (.not.lsink) then
                   ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
 !
 !  Calculate mass density per superparticle.
