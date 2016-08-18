@@ -554,19 +554,6 @@ module Special
 !
     endsubroutine special_calc_particles
 !***********************************************************************
-    subroutine special_calc_particles_nbody(fsp)
-!
-!  Called before the loop, in case some massive particles value
-!  is needed for the special density/hydro/magnetic/entropy.
-!
-!  20-nov-08/wlad: coded
-!
-      real, dimension (:,:), intent(in) :: fsp
-!
-      call keep_compiler_quiet(fsp)
-!
-    endsubroutine special_calc_particles_nbody
-!***********************************************************************
     subroutine special_before_boundary(f)
 !
 !  Possibility to modify the f array before the boundaries are

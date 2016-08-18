@@ -908,19 +908,6 @@ p%del2bb=0
 !
     endsubroutine special_calc_particles
 !***********************************************************************
-    subroutine special_calc_particles_nbody(fsp)
-!
-!  Called before the loop, in case some massive particles value
-!  is needed for the special density/hydro/magnetic/entropy.
-!
-!  20-nov-08/wlad: coded
-!
-      real, dimension (:,:), intent(in) :: fsp
-!
-      call keep_compiler_quiet(fsp)
-!
-    endsubroutine special_calc_particles_nbody
-!***********************************************************************
     subroutine special_calc_chemistry(f,df,p)
 !
 !  Calculate an additional 'special' term on the right hand side of the
