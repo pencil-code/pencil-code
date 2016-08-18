@@ -115,11 +115,8 @@ module PointMasses
 !***********************************************************************
     subroutine read_pointmasses_init_pars(iostat)
 !
-      use File_io, only: parallel_unit
-!
       integer, intent(out) :: iostat
-!
-      call keep_compiler_quiet(iostat)
+      iostat=0
 !
     endsubroutine read_pointmasses_init_pars
 !***********************************************************************
@@ -133,11 +130,8 @@ module PointMasses
 !***********************************************************************
     subroutine read_pointmasses_run_pars(iostat)
 !
-      use File_io, only: parallel_unit
-!
       integer, intent(out) :: iostat
-!      
-      call keep_compiler_quiet(iostat)
+      iostat=0
 !
     endsubroutine read_pointmasses_run_pars
 !***********************************************************************
@@ -145,7 +139,7 @@ module PointMasses
 !
       integer, intent(in) :: unit
 !      
-      call keep_compiler_quiet(iostat)
+      call keep_compiler_quiet(unit)
 !
     endsubroutine write_pointmasses_run_pars
 !***********************************************************************
