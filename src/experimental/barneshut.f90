@@ -50,7 +50,10 @@ module Poisson
                             ! approximation for sufficiently small octree_theta,
                             ! and provides a significant speedup.
   logical :: lnorepeatsumming = .true. ! (very) slow to start, quick to run
-  logical :: lmakecartoon ! print some map data to stdout for tree illustration purposes
+  logical :: lmakecartoon = .false. ! print some map data to stdout for tree illustration purposes
+  logical :: ltreestatus = .false.
+  logical :: lreadoctree = .false.
+  logical :: lwriteoctree = .false.
   real :: octree_maxdist = 1e308
   real :: octree_smoothdist = 0.15
   real, dimension (nx,ny,nz) :: vols
@@ -73,11 +76,12 @@ module Poisson
 !
   namelist /poisson_init_pars/ &
       octree_theta, lshowtime, lsquareregions, lprecalcdists, octree_maxdist, &
-      octree_smoothdist, lmakecartoon, lnorepeatsumming
+      octree_smoothdist, lnorepeatsumming, ltreestatus, lwriteoctree, lreadoctree, &
+      lmakecartoon
 !
   namelist /poisson_run_pars/ &
       octree_theta, lshowtime, lsquareregions, lprecalcdists, octree_maxdist, &
-      octree_smoothdist, lnorepeatsumming
+      octree_smoothdist, lnorepeatsumming, ltreestatus, lwriteoctree, lreadoctree
 !
   contains
 !***********************************************************************
@@ -120,6 +124,7 @@ module Poisson
     integer :: iprecalc, iregtmp, info, itmp
     logical :: lprecalc = .false., cartooncond, doingsort
     logical, allocatable :: tmpmask(:)
+    character :: treestatus
 !
     ! Trimming ghost zones
     xc = x(l1:l2)
@@ -228,6 +233,7 @@ module Poisson
       zind(k) = k
     enddo
 !
+
     ! First pass only counts regions, second pass actually populates 'themap'
     do iprecalc=1,2
       if (lprecalc) then
@@ -239,6 +245,10 @@ module Poisson
         regsmooth_single = 1.0 ; regsmooth_group = 1.0
         allocate(regdist1_single(nsingle))
         allocate(regdist1_group(ngroup))
+        if (lreadoctree) then
+          call read_octree
+          exit
+        endif
       endif
       nsingle = 0 ! Advanced inside 'mkmap'
       ngroup = 0 ! Advanced inside 'mkmap'
@@ -268,13 +278,16 @@ module Poisson
               do i=1,nx
                 call mkmap((/i,j,k/),(/nx,ny,nz/), xrecv(:,pp),yrecv(:,pp), &
                   zrecv(:,pp),xind,yind,zind,pp,lprecalc)
+                if (ltreestatus.and.lprecalc) then
+                  write(*,char(nsingle+ngroup))
+                endif
               enddo !i
             enddo !j
           enddo !k
         endif !lsquareregions
       enddo !pp
       lprecalc = .true.
-    enddo
+    enddo !iprecalc
 !
     allocate(luseprevioussum(ngroup))
     luseprevioussum = .false.
@@ -284,6 +297,8 @@ module Poisson
           luseprevioussum(iregion) = .true.
       enddo
     endif
+!
+    if (lwriteoctree) call write_octree
 !
 !    if (lmakecartoon) then
 !      do iregion=1,nregions
@@ -479,15 +494,6 @@ module Poisson
     ilk = nint((ang-lkmin)/dxlt)+1
     sinx = sinlt(ilk)
     cosx = coslt(ilk)
-    ! Quadratic interpolation (probably not needed; slower but uses less memory)
-    !a0 = (ang-xlt(ilk))*(ang-xlt(ilk+1))/ &
-    !  ((xlt(ilk-1)-xlt(ilk))*(xlt(ilk-1)-xlt(ilk+1)))
-    !a1 = (ang-xlt(ilk-1))*(ang-xlt(ilk+1))/ &
-    !  ((xlt(ilk)-xlt(ilk-1))*(xlt(ilk)-xlt(ilk+1)))
-    !a2 = (ang-xlt(ilk-1))*(ang-xlt(ilk))/ &
-    !  ((xlt(ilk+1)-xlt(ilk-1))*(xlt(ilk+1)-xlt(ilk)))
-    !sinx = sinlt(ilk-1)*a0+sinlt(ilk)*a1+sinlt(ilk+1)*a2
-    !cosx = coslt(ilk-1)*a0+coslt(ilk)*a1+coslt(ilk+1)*a2
     sincoslf = (/sinx,cosx/)
 !
     endfunction sincoslf
@@ -498,6 +504,29 @@ module Poisson
 !
     iout = 2**nint(log(rin)/log(2.0))
     endfunction roundtwo
+!***********************************************************************
+    subroutine write_octree
+      call system('mkdir -p '//trim(directory_snap)//'/bhmap')
+      open(unit = 10, status='replace', &
+        file=trim(directory_snap)//trim('/bhmap/single.dat'),form='unformatted')
+      write(10) themap_single
+      close(10)
+      open(unit = 10, status='replace', &
+        file=trim(directory_snap)//trim('/bhmap/group.dat'),form='unformatted')
+      write(10) themap_group
+      close(10)
+    endsubroutine write_octree
+!***********************************************************************
+    subroutine read_octree
+      open(unit = 10, status='old', &
+        file=trim(directory_snap)//trim('/bhmap/single.dat'),form='unformatted')
+      read(10) themap_single
+      close(10)
+      open(unit = 10, status='old', &
+        file=trim(directory_snap)//trim('/bhmap/group.dat'),form='unformatted')
+      read(10) themap_group
+      close(10)
+    endsubroutine read_octree
 !***********************************************************************
     subroutine read_poisson_init_pars(iostat)
 !
