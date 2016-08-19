@@ -49,5 +49,6 @@
 &shock_run_pars
 /
 &poisson_run_pars
+  lreadoctree = T
   lshowtime = F
 /

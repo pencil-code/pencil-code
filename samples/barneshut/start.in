@@ -7,7 +7,7 @@
   ip=10,                          ! debugging parameter
   xyz0  = 0.5 , 1.420796 , -3.1415927
   xyz1  = 2.5 , 1.720796 ,  3.1415927
-  lperi = F  , T  , T,            ! periodic direction?
+  lperi = F  , F  , T,            ! periodic direction?
   !   ux    uy      uz     rho    shck  gpot   gpx    gpy    gpz
   bcx='a' , 's'   , 'e3' , 'e3' , 'a' , 'a2' , 'a2' , 'a2' , 'a2'
   bcy='s' , 'out' , 's'  , 'str', 's' , 'a2' , 'a2' , 'a2' , 'a2'
@@ -32,7 +32,7 @@
 /
 &selfgrav_init_pars
   lselfgravity_gas=T
-  gravitational_const=1.0
+  gravitational_const=0.0
 /
 &poisson_init_pars
   octree_theta = 0.5
@@ -40,6 +40,9 @@
   lprecalcdists = F
   lnorepeatsumming = T
   lshowtime = T
+  ltreestatus = F
+  lwriteoctree = T
+  lreadoctree = F
 /
 &grav_init_pars
   ipotential='no-smooth'
@@ -54,9 +57,11 @@
   lmigration_real_check=T
 /
 &particles_selfgrav_init_pars
-  lselfgravity_particles=F
+  lselfgravity_particles=T
 /
 &initial_condition_pars
   density_power_law=1.5
   temperature_power_law=0.5
+  gravitational_const=0.0
+  lcorrect_selfgravity=F
 /
