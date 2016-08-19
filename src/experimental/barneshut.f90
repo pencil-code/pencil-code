@@ -332,7 +332,7 @@ module Poisson
     if (lroot .and. lshowtime) call cpu_time(tstart_mpi)
     do pp=0,ncpus-1
       if (pp/=iproc) then
-        call mpisendrecv_real(phi,(/nx,ny,nz/),pp,284, phirecv(:,:,:,pp),pp,284)
+        call mpisendrecv_real(phi,(/nx,ny,nz/),pp,284,phirecv(:,:,:,pp),pp,284)
       endif
     enddo
 !
@@ -506,24 +506,32 @@ module Poisson
     endfunction roundtwo
 !***********************************************************************
     subroutine write_octree
-      call system('mkdir -p '//trim(directory_snap)//'/bhmap')
+      call system('mkdir -p '//trim(datadir)//'/../bhmap')
       open(unit = 10, status='replace', &
-        file=trim(directory_snap)//trim('/bhmap/single.dat'),form='unformatted')
+        file=trim(datadir)//trim('/../bhmap/single.dat'),form='unformatted')
       write(10) themap_single
       close(10)
       open(unit = 10, status='replace', &
-        file=trim(directory_snap)//trim('/bhmap/group.dat'),form='unformatted')
+        file=trim(datadir)//trim('/../bhmap/group.dat'),form='unformatted')
+      write(10) themap_group
+      close(10)
+      open(unit = 10, status='replace', &
+        file=trim(datadir)//trim('/../bhmap/regsmooth_single.dat'),form='unformatted')
+      write(10) themap_group
+      close(10)
+      open(unit = 10, status='replace', &
+        file=trim(datadir)//trim('/../bhmap/regsmooth_group.dat'),form='unformatted')
       write(10) themap_group
       close(10)
     endsubroutine write_octree
 !***********************************************************************
     subroutine read_octree
       open(unit = 10, status='old', &
-        file=trim(directory_snap)//trim('/bhmap/single.dat'),form='unformatted')
+        file=trim(datadir)//trim('/../bhmap/single.dat'),form='unformatted')
       read(10) themap_single
       close(10)
       open(unit = 10, status='old', &
-        file=trim(directory_snap)//trim('/bhmap/group.dat'),form='unformatted')
+        file=trim(datadir)//trim('/../bhmap/group.dat'),form='unformatted')
       read(10) themap_group
       close(10)
     endsubroutine read_octree
