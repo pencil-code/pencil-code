@@ -352,11 +352,14 @@ module Poisson
         sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))*regdist1_single(iregion)
     enddo
     do iregion=1,ngroup
-      i   = themap_group(1, iregion) ; irl = themap_group(5,iregion) ; iru = themap_group(6,iregion)
-      j   = themap_group(2, iregion) ; jrl = themap_group(7,iregion) ; jru = themap_group(8,iregion)
-      k   = themap_group(3, iregion) ; krl = themap_group(9,iregion) ; kru = themap_group(10,iregion)
-      pp  = themap_group(4,iregion)
+      i   = themap_group(1, iregion) 
+      j   = themap_group(2, iregion) 
+      k   = themap_group(3, iregion) 
       if (.not.luseprevioussum(iregion)) then
+        pp  = themap_group(4,iregion)
+        irl = themap_group(5,iregion) ; iru = themap_group(6,iregion)
+        jrl = themap_group(7,iregion) ; jru = themap_group(8,iregion)
+        krl = themap_group(9,iregion) ; kru = themap_group(10,iregion)
         summreg = sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))
         summreg1 = 1.0/summreg
         xreg = sum(xrecv(irl:iru,pp) &
@@ -506,33 +509,57 @@ module Poisson
     endfunction roundtwo
 !***********************************************************************
     subroutine write_octree
-      call system('mkdir -p '//trim(datadir)//'/../bhmap')
+      call system('mkdir -p '//trim(directory_snap)//'/bhmap')
       open(unit = 10, status='replace', &
-        file=trim(datadir)//trim('/../bhmap/single.dat'),form='unformatted')
+        file=trim(directory_snap)//trim('/bhmap/themap_single.dat'),form='unformatted')
       write(10) themap_single
       close(10)
       open(unit = 10, status='replace', &
-        file=trim(datadir)//trim('/../bhmap/group.dat'),form='unformatted')
+        file=trim(directory_snap)//trim('/bhmap/themap_group.dat'),form='unformatted')
       write(10) themap_group
       close(10)
       open(unit = 10, status='replace', &
-        file=trim(datadir)//trim('/../bhmap/regsmooth_single.dat'),form='unformatted')
-      write(10) themap_group
+        file=trim(directory_snap)//trim('/bhmap/regsmooth_single.dat'),form='unformatted')
+      write(10) regsmooth_single
       close(10)
       open(unit = 10, status='replace', &
-        file=trim(datadir)//trim('/../bhmap/regsmooth_group.dat'),form='unformatted')
-      write(10) themap_group
+        file=trim(directory_snap)//trim('/bhmap/regsmooth_group.dat'),form='unformatted')
+      write(10) regsmooth_group
+      close(10)
+      open(unit = 10, status='replace', &
+        file=trim(directory_snap)//trim('/bhmap/regdist1_single.dat'),form='unformatted')
+      write(10) regdist1_single
+      close(10)
+      open(unit = 10, status='replace', &
+        file=trim(directory_snap)//trim('/bhmap/regdist1_group.dat'),form='unformatted')
+      write(10) regdist1_group
       close(10)
     endsubroutine write_octree
 !***********************************************************************
     subroutine read_octree
       open(unit = 10, status='old', &
-        file=trim(datadir)//trim('/../bhmap/single.dat'),form='unformatted')
+        file=trim(directory_snap)//trim('/bhmap/themap_single.dat'),form='unformatted')
       read(10) themap_single
       close(10)
       open(unit = 10, status='old', &
-        file=trim(datadir)//trim('/../bhmap/group.dat'),form='unformatted')
+        file=trim(directory_snap)//trim('/bhmap/themap_group.dat'),form='unformatted')
       read(10) themap_group
+      close(10)
+      open(unit = 10, status='old', &
+        file=trim(directory_snap)//trim('/bhmap/regsmooth_single.dat'),form='unformatted')
+      read(10) regsmooth_single
+      close(10)
+      open(unit = 10, status='old', &
+        file=trim(directory_snap)//trim('/bhmap/regsmooth_group.dat'),form='unformatted')
+      read(10) regsmooth_single
+      close(10)
+      open(unit = 10, status='old', &
+        file=trim(directory_snap)//trim('/bhmap/regdist1_single.dat'),form='unformatted')
+      read(10) regdist1_single
+      close(10)
+      open(unit = 10, status='old', &
+        file=trim(directory_snap)//trim('/bhmap/regdist1_group.dat'),form='unformatted')
+      read(10) regdist1_group
       close(10)
     endsubroutine read_octree
 !***********************************************************************
