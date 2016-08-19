@@ -87,6 +87,8 @@ module Grid
       real, dimension(0:2*nprocy+1) :: xi2proc,g2proc
       real, dimension(0:2*nprocz+1) :: xi3proc,g3proc
 !
+      real :: dxmin_x,dxmax_x,dxmin_y,dxmax_y,dxmin_z,dxmax_z
+!
       real :: a,b,c
       integer :: i
 !
@@ -807,6 +809,44 @@ module Grid
         enddo
       endif
 !
+!  determine global minimum and maximum of grid spacing in any direction
+!
+      if (lequidist(1) .or. nxgrid <= 1) then
+        dxmin_x = dx
+        dxmax_x = dx
+      else
+        dxmin_x = minval(xprim(l1:l2))
+        dxmax_x = maxval(xprim(l1:l2))
+      endif
+      !
+      if (lequidist(2) .or. nygrid <= 1) then
+        dxmin_y = dy
+        if (lspherical_coords) dxmin_y = dy*minval(x(l1:l2))
+        if (lcylindrical_coords) dxmin_y = dy*minval(x(l1:l2))
+        dxmax_y = dy
+        if (lspherical_coords) dxmax_y = dy*maxval(x(l1:l2))
+        if (lcylindrical_coords) dxmax_y = dy*maxval(x(l1:l2))
+      else
+        dxmin_y = minval(yprim(m1:m2))
+        dxmax_y = maxval(yprim(m1:m2))
+      endif
+      !
+      if (lequidist(3) .or. nzgrid <= 1) then
+        dxmin_z = dz
+        dxmax_z = dz
+        if (lspherical_coords) dxmin_z = dz*minval(x(l1:l2))*minval(sinth(m1:m2))                                                   
+        if (lspherical_coords) dxmax_z = dz*maxval(x(l1:l2))*maxval(sinth(m1:m2))                                            
+      else
+        dxmin_z = minval(zprim(n1:n2))
+        dxmax_z = maxval(zprim(n1:n2))
+      endif
+!
+      dxmin = minval( (/dxmin_x, dxmin_y, dxmin_z, huge(dx)/), &
+                MASK=((/nxgrid, nygrid, nzgrid, 2/) > 1) )
+!
+      dxmax = maxval( (/dxmax_x, dxmax_y, dxmax_z, epsilon(dx)/), &
+                MASK=((/nxgrid, nygrid, nzgrid, 2/) > 1) )
+!
     endsubroutine construct_grid
 !***********************************************************************
     subroutine set_coords_switches
@@ -861,7 +901,7 @@ module Grid
       use Sub, only: remove_zprof
       use Mpicomm
 !
-      real :: fact,dxmin_x,dxmax_x,dxmin_y,dxmax_y,dxmin_z,dxmax_z
+      real :: fact
       integer :: xj,yj,zj,itheta
 !
 !  Initialize dimensionality mask.
@@ -879,44 +919,6 @@ module Grid
 !  For curvilinear coordinate systems, calculate auxiliary quantities as, e.g., for spherical coordinates 1/r, cot(theta)/r, etc.
 !
       call coords_aux(x,y,z)
-!
-!  determine global minimum and maximum of grid spacing in any direction
-!
-      if (lequidist(1) .or. nxgrid <= 1) then
-        dxmin_x = dx
-        dxmax_x = dx
-      else
-        dxmin_x = minval(xprim(l1:l2))
-        dxmax_x = maxval(xprim(l1:l2))
-      endif
-      !
-      if (lequidist(2) .or. nygrid <= 1) then
-        dxmin_y = dy
-        if (lspherical_coords) dxmin_y = dy*minval(x(l1:l2))
-        if (lcylindrical_coords) dxmin_y = dy*minval(x(l1:l2))
-        dxmax_y = dy
-        if (lspherical_coords) dxmax_y = dy*maxval(x(l1:l2))
-        if (lcylindrical_coords) dxmax_y = dy*maxval(x(l1:l2))
-      else
-        dxmin_y = minval(yprim(m1:m2))
-        dxmax_y = maxval(yprim(m1:m2))
-      endif
-      !
-      if (lequidist(3) .or. nzgrid <= 1) then
-        dxmin_z = dz
-        dxmax_z = dz
-        if (lspherical_coords) dxmin_z = dz*minval(x(l1:l2))*minval(sinth(m1:m2))                                                   
-        if (lspherical_coords) dxmax_z = dz*maxval(x(l1:l2))*maxval(sinth(m1:m2))                                            
-      else
-        dxmin_z = minval(zprim(n1:n2))
-        dxmax_z = maxval(zprim(n1:n2))
-      endif
-!
-      dxmin = minval( (/dxmin_x, dxmin_y, dxmin_z, huge(dx)/), &
-                MASK=((/nxgrid, nygrid, nzgrid, 2/) > 1) )
-!
-      dxmax = maxval( (/dxmax_x, dxmax_y, dxmax_z, epsilon(dx)/), &
-                MASK=((/nxgrid, nygrid, nzgrid, 2/) > 1) )
 !
 ! Box volume
 !
