@@ -10,6 +10,6 @@
 ! Remember *each* proc needs to have 2^n cells per dimension
 !
 integer, parameter :: ncpus=2,nprocx=1,nprocy=1,nprocz=2
-integer, parameter :: nxgrid=8,nygrid=8,nzgrid=16
+integer, parameter :: nxgrid=16,nygrid=8,nzgrid=16
 integer, parameter :: npar=10000,mpar_loc=10000,npar_mig=1000
 integer, parameter :: npar_species=1
