@@ -544,9 +544,11 @@ module Dustvelocity
             f(l,:,:,iudx(1)) = uudx0
             f(l,:,:,iudy(1)) = uudy0
             f(l,:,:,iudz(1)) = uudz0
-            f(l,:,:,iudx(2)) = uudx0*2.
-            f(l,:,:,iudy(2)) = uudy0*2.
-            f(l,:,:,iudz(2)) = uudz0*2.
+            if (ndustspec>1) then
+              f(l,:,:,iudx(2)) = uudx0*2.
+              f(l,:,:,iudy(2)) = uudy0*2.
+              f(l,:,:,iudz(2)) = uudz0*2.
+            endif
           enddo
 !
         case ('gaussian-noise')
