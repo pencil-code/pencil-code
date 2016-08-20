@@ -7,7 +7,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MQVAR CONTRIBUTION 7
+! MQVAR CONTRIBUTION 10
 ! MQAUX CONTRIBUTION 0
 ! CPARAM logical, parameter :: lpointmasses=.true.
 !
@@ -41,6 +41,7 @@ module PointMasses
   integer :: iglobal_ggp=0, istar=1, iplanet=2
 !
   integer :: imass=0, ixq=0, iyq=0, izq=0, ivxq=0, ivyq=0, ivzq=0
+  integer :: ivxq_cart=0, ivyq_cart=0, ivzq_cart=0      
   integer :: nqvar=0, nqaux=0
 !
   logical, dimension(nqpar) :: lcylindrical_gravity_nbody=.false.
@@ -62,6 +63,8 @@ module PointMasses
   character (len=labellen) :: initxxq='random', initvvq='nothing'
   character (len=2*bclen+1) :: bcqx='p', bcqy='p', bcqz='p'
 !
+  logical :: lcartesian_evolution=.true.
+!
   type IndexDustParticles
     integer :: ixw=0,izw=0,ivxw=0,ivzw=0
   endtype IndexDustParticles
@@ -74,7 +77,7 @@ module PointMasses
       linterpolate_gravity, linterpolate_quadratic_spline, laccretion, &
       accrete_hills_frac, istar, &
       ladd_mass, ldt_pointmasses, cdtq, lretrograde, &
-      linertial_frame, eccentricity, semimajor_axis
+      linertial_frame, eccentricity, semimajor_axis, lcartesian_evolution
 !
   namelist /pointmasses_run_pars/ &
       lcalc_orbit, lreset_cm, &
@@ -82,7 +85,7 @@ module PointMasses
       GNewton, bcqx, bcqy, bcqz, density_scale, lnoselfgrav_star, &
       linterpolate_quadratic_spline, laccretion, accrete_hills_frac, istar, &
       ladd_mass, ldt_pointmasses, cdtq, hills_tempering_fraction, &
-      ltempering, lgas_gravity, ldust_gravity, linertial_frame
+      ltempering, lgas_gravity, ldust_gravity, linertial_frame, lcartesian_evolution
 !
   integer, dimension(nqpar,3) :: idiag_xxq=0,idiag_vvq=0
   integer, dimension(nqpar)   :: idiag_torqint=0,idiag_torqext=0
@@ -143,14 +146,20 @@ module PointMasses
       imass=nqvar+1
       qvarname(nqvar+1)='imass'
       nqvar=nqvar+1
-
-      !ivxq_cart = mqvar+1
-      !qvarname(mqvar+1)='ivxq_cart'
-      !ivyq_cart = mqvar+2
-      !qvarname(mqvar+1)='ivyq_cart'
-      !ivzq_cart = mqvar+3
-      !qvarname(mqvar+1)='ivzq_cart'
-      !mqvar=mqvar+3
+!
+      !if (lcartesian_coords.and.lcartesian_evolution) &
+      !    call fatal_error("register_pointmasses",&
+      !     "lcartesian_coords and lcartesian_evolution: overkill")
+!
+      if (lcartesian_evolution.and.(.not.lcartesian_coords)) then
+        ivxq_cart = nqvar+1
+        qvarname(nqvar+1)='ivxq_cart'
+        ivyq_cart = nqvar+2
+        qvarname(nqvar+1)='ivyq_cart'
+        ivzq_cart = nqvar+3
+        qvarname(nqvar+1)='ivzq_cart'
+        nqvar=nqvar+3
+      endif
 !
 !  Check that the fq and dfq arrays are big enough.
 !
@@ -825,7 +834,7 @@ module PointMasses
         call dxxq_dt_pointmasses
         call dvvq_dt_pointmasses(hill_radius_square)
 !
-        call correct_curvilinear
+        if (.not.lcartesian_evolution) call correct_curvilinear
       endif
 !
       if (lparticles) then
@@ -891,21 +900,26 @@ module PointMasses
         if (nygrid/=1) dfq(:,iyq) = dfq(:,iyq) + fq(:,ivyq)
         if (nzgrid/=1) dfq(:,izq) = dfq(:,izq) + fq(:,ivzq)
 !
-      else if (lcylindrical_coords) then
+      else if (.not.lcartesian_evolution) then
 !
-        if (nxgrid/=1) dfq(:,ixq) = dfq(:,ixq) + fq(:,ivxq)
-        if (nygrid/=1) dfq(:,iyq) = dfq(:,iyq) + fq(:,ivyq)/max(fq(:,ixq),tini)
-        if (nzgrid/=1) dfq(:,izq) = dfq(:,izq) + fq(:,ivzq)
+!  If lcartesian_evolution is set, the evolution is done in update_position and update_velocity         
+!
+         if (lcylindrical_coords) then
+!
+          if (nxgrid/=1) dfq(:,ixq) = dfq(:,ixq) + fq(:,ivxq)
+          if (nygrid/=1) dfq(:,iyq) = dfq(:,iyq) + fq(:,ivyq)/max(fq(:,ixq),tini)
+          if (nzgrid/=1) dfq(:,izq) = dfq(:,izq) + fq(:,ivzq)
 
-      else if (lspherical_coords) then
+        else if (lspherical_coords) then
 !
-        if (nxgrid/=1) dfq(:,ixq) = dfq(:,ixq) + fq(:,ivxq)
-        if (nygrid/=1) dfq(:,iyq) = dfq(:,iyq) + fq(:,ivyq)/ max(fq(:,ixq),tini)
-        if (nzgrid/=1) dfq(:,izq) = dfq(:,izq) + fq(:,ivzq)/(max(fq(:,ixq),tini)*sin(fq(:,iyq)))
+          if (nxgrid/=1) dfq(:,ixq) = dfq(:,ixq) + fq(:,ivxq)
+          if (nygrid/=1) dfq(:,iyq) = dfq(:,iyq) + fq(:,ivyq)/ max(fq(:,ixq),tini)
+          if (nzgrid/=1) dfq(:,izq) = dfq(:,izq) + fq(:,ivzq)/(max(fq(:,ixq),tini)*sin(fq(:,iyq)))
 !
+        endif
       endif
 !
-      if (lreset_cm) call reset_center_of_mass
+        if (lreset_cm) call reset_center_of_mass
 !
     endsubroutine dxxq_dt_pointmasses
 !***********************************************************************
@@ -1029,6 +1043,7 @@ module PointMasses
       integer :: ks,ip1,ip3,iv1,iv3
 !
       real, dimension (3) :: evr_cart,acc_cart
+      real, dimension (3) :: evr,acc
 !
       logical, intent(in) :: lcallpointmass
       real, dimension(3) :: positions,acceleration
@@ -1041,13 +1056,6 @@ module PointMasses
         positions    =  fq(k,ixq:izq)
         acceleration = dfq(k,ivxq:ivzq)  
       else
-        !if (lparticles) then
-        !  ip1=1;ip3=3
-        !  iv1=4;iv3=6
-        !else
-        !  ip1=0;ip3=0
-        !  iv1=0;iv3=0
-        !endif
         positions    =  fp_pt(index%ixw:index%izw)
         acceleration = dfp_pt(index%ivxw:index%ivzw)
       endif
@@ -1055,20 +1063,26 @@ module PointMasses
       do ks=1,nqpar
         if (.not.(lcallpointmass.and.k==ks)) then !prevent self-acceleration
 !
-          call get_evr(positions,fq(ks,ixq:izq),evr_cart)
+          if (lcartesian_evolution.and.(.not.lcartesian_coords)) then 
+            call get_evr(positions,fq(ks,ixq:izq),evr_cart)
+            tmp1=sum(evr_cart**2)
+          else
+            call get_evr(positions,fq(ks,ixq:izq),evr)
+            tmp1=sum(evr**2)
+          endif
 !
 !  Particles relative distance from each other:
 !
 !  r_ij = sqrt(ev1**2 + ev2**2 + ev3**2)
 !
-          tmp1=sum(evr_cart**2)
+          !tmp1=sum(evr_cart**2)
           tmp2=r_smooth(ks)**2
           r2_ij=max(tmp1,tmp2)
 !
 !  If there is accretion, remove the accreted particles from the simulation, if any.
 !
           if (.not.(lcallpointmass).and.laccretion(ks)) then
-            rs2=0.01 !(accrete_hills_frac(ks)**2)*hill_radius_square(ks)
+            rs2=(accrete_hills_frac(ks)**2)*hill_radius_square(ks)
             if (r2_ij<=rs2) then
               !flag particle for removal 
                flag_pt=.true.
@@ -1092,13 +1106,13 @@ module PointMasses
 !  The main dxx_dt of particle_dust takes care of transforming the linear
 !  velocities to angular changes in position.
 !
-          acc_cart = - GNewton*pmass(ks)*invr3_ij*evr_cart(1:3)
-          !if (lcartesian_coords) then
-            acceleration =  acceleration + acc_cart
-          !else
-            ! separate this N-body acceleration from other, added elsewhere in the code
-          !  dfq(k,ivxq_cart:ivzq_cart) =  dfq(k,ivxq_cart:ivzq_cart) + acc_cart
-          !endif
+          if (lcartesian_evolution.and.(.not.lcartesian_coords)) then 
+            acc_cart = - GNewton*pmass(ks)*invr3_ij*evr_cart(1:3)
+              dfq(k,ivxq_cart:ivzq_cart) =  dfq(k,ivxq_cart:ivzq_cart) + acc_cart
+          else
+            acc = - GNewton*pmass(ks)*invr3_ij*evr(1:3)
+            acceleration =  acceleration + acc
+          endif
 !
 !  Time-step constraint from N-body particles. We use both the criterion
 !  that the distance to the N-body particle must not change too much in
@@ -1119,15 +1133,17 @@ module PointMasses
 !
       enddo !nbody loop
 !
-      if (lcallpointmass) then
-        dfq(k,ivxq:ivzq) = acceleration
-      else
-        dfp_pt(index%ivxw:index%ivzw) = acceleration
+      if (lcartesian_coords.or.(.not.lcartesian_evolution)) then 
+        if (lcallpointmass) then
+          dfq(k,ivxq:ivzq) = acceleration
+        else
+          dfp_pt(index%ivxw:index%ivzw) = acceleration
+        endif
       endif
 !
     endsubroutine gravity_pointmasses_inertial
 !**********************************************************
-    subroutine get_evr(xxp,xxq,evr_cart)
+    subroutine get_evr(xxp,xxq,evr_output)
 !
 !  Point-to-point vector distance, in different coordinate systems.
 !  Return always in Cartesian.
@@ -1135,42 +1151,48 @@ module PointMasses
 !  14-feb-14/wlad: coded
 !
       real, dimension(3), intent(in) :: xxp,xxq
-      real, dimension(3), intent(out) :: evr_cart
+      real, dimension(3), intent(out) :: evr_output
       real :: x1,y1,x2,y2,z1,z2
 !
       if (lcartesian_coords) then
         x1=xxp(1) ; x2=xxq(1)
         y1=xxp(2) ; y2=xxq(2)
         z1=xxp(3) ; z2=xxq(3)
-        evr_cart(1)=x1-x2
-        evr_cart(2)=y1-y2
-        evr_cart(3)=z1-z2
       elseif (lcylindrical_coords) then
-        !x1=xxp(1)*cos(xxp(2))
-        !y1=xxp(1)*sin(xxp(2))
-        z1=xxp(3)
 !
-        !x2=xxq(1)*cos(xxq(2))
-        !y2=xxq(1)*sin(xxq(2))
-        z2=xxq(3)
-
-         evr_cart(1)=xxp(1) - xxq(1)*cos(xxp(2)-xxq(2))
-         evr_cart(2)=xxq(1)*sin(xxp(2)-xxq(2))
-         evr_cart(3)=z1-z2
-
+        if (lcartesian_evolution) then 
+          x1=xxp(1)*cos(xxp(2))
+          y1=xxp(1)*sin(xxp(2))
+          z1=xxp(3)
+!
+          x2=xxq(1)*cos(xxq(2))
+          y2=xxq(1)*sin(xxq(2))
+          z2=xxq(3)
+        else
+          evr_output(1)=xxp(1) - xxq(1)*cos(xxp(2)-xxq(2))
+          evr_output(2)=xxq(1)*sin(xxp(2)-xxq(2))
+          evr_output(3)=z1-z2
+        endif
+!
       elseif (lspherical_coords) then
-        x1=xxp(1)*sin(xxp(2))*cos(xxp(3))
-        y1=xxp(1)*sin(xxp(2))*sin(xxp(3))
-        z1=xxp(1)*cos(xxp(2))
+        if (lcartesian_evolution) then   
+          x1=xxp(1)*sin(xxp(2))*cos(xxp(3))
+          y1=xxp(1)*sin(xxp(2))*sin(xxp(3))
+          z1=xxp(1)*cos(xxp(2))
 !
-        x2=xxq(1)*sin(xxq(2))*cos(xxq(3))
-        y2=xxq(1)*sin(xxq(2))*sin(xxq(3))
-        z2=xxq(1)*cos(xxq(2))
+          x2=xxq(1)*sin(xxq(2))*cos(xxq(3))
+          y2=xxq(1)*sin(xxq(2))*sin(xxq(3))
+          z2=xxq(1)*cos(xxq(2))
+        else
+          call fatal_error("get_evr","swicth lcartesian_evolution=F for the moment") 
+        endif
       endif
 !
-      !evr_cart(1)=x1-x2
-      !evr_cart(2)=y1-y2
-      !evr_cart(3)=z1-z2
+      if (lcartesian_coords.or.lcartesian_evolution) then 
+        evr_output(1)=x1-x2
+        evr_output(2)=y1-y2
+        evr_output(3)=z1-z2
+      endif
 !
     endsubroutine get_evr
 !**********************************************************
@@ -1251,45 +1273,50 @@ module PointMasses
         vcm(1) = sum(ftmp(:,imass)*ftmp(:,ivxq))
         vcm(2) = sum(ftmp(:,imass)*ftmp(:,ivyq))
         vcm(3) = sum(ftmp(:,imass)*ftmp(:,ivzq))
-      else if (lcylindrical_coords) then
-        xcm=sum(ftmp(:,imass)*(ftmp(:,ixq)*cos(ftmp(:,iyq))))
-        ycm=sum(ftmp(:,imass)*(ftmp(:,ixq)*sin(ftmp(:,iyq))))
-        phicm=atan2(ycm,xcm)
+      else if (lcartesian_evolution) then
+        if (lcylindrical_coords) then 
+          xcm=sum(ftmp(:,imass)*(ftmp(:,ixq)*cos(ftmp(:,iyq))))
+          ycm=sum(ftmp(:,imass)*(ftmp(:,ixq)*sin(ftmp(:,iyq))))
+          phicm=atan2(ycm,xcm)
 !
-        vxcm=sum(ftmp(:,imass)*(&
-            ftmp(:,ivxq)*cos(ftmp(:,iyq))-ftmp(:,ivyq)*sin(ftmp(:,iyq))))
-        vycm=sum(ftmp(:,imass)*(&
-            ftmp(:,ivxq)*sin(ftmp(:,iyq))+ftmp(:,ivyq)*cos(ftmp(:,iyq))))
+          vxcm=sum(ftmp(:,imass)*(&
+               ftmp(:,ivxq)*cos(ftmp(:,iyq))-ftmp(:,ivyq)*sin(ftmp(:,iyq))))
+          vycm=sum(ftmp(:,imass)*(&
+               ftmp(:,ivxq)*sin(ftmp(:,iyq))+ftmp(:,ivyq)*cos(ftmp(:,iyq))))
 !
-        vcm(1)= vxcm*cos(phicm) + vycm*sin(phicm)
-        vcm(2)=-vxcm*sin(phicm) + vycm*cos(phicm)
-        vcm(3) = sum(ftmp(:,imass)*ftmp(:,ivzq))
+          vcm(1)= vxcm*cos(phicm) + vycm*sin(phicm)
+          vcm(2)=-vxcm*sin(phicm) + vycm*cos(phicm)
+          vcm(3) = sum(ftmp(:,imass)*ftmp(:,ivzq))
 !
-      else if (lspherical_coords) then
-        vxcm=sum(ftmp(:,imass)*( &
-              ftmp(:,ivxq)*sin(ftmp(:,iyq))*cos(ftmp(:,izq))&
-             +ftmp(:,ivyq)*cos(ftmp(:,iyq))*cos(ftmp(:,izq))&
-             -ftmp(:,ivzq)*sin(ftmp(:,izq))                ))
-        vycm=sum(ftmp(:,imass)*( &
-              ftmp(:,ivxq)*sin(ftmp(:,iyq))*sin(ftmp(:,izq))&
-             +ftmp(:,ivyq)*cos(ftmp(:,iyq))*sin(ftmp(:,izq))&
-             +ftmp(:,ivzq)*cos(ftmp(:,izq))                ))
-        vzcm=sum(ftmp(:,imass)*(&
-             ftmp(:,ivxq)*cos(ftmp(:,iyq))-ftmp(:,ivyq)*sin(ftmp(:,iyq))))
+        else if (lspherical_coords) then
+          vxcm=sum(ftmp(:,imass)*( &
+               ftmp(:,ivxq)*sin(ftmp(:,iyq))*cos(ftmp(:,izq))&
+               +ftmp(:,ivyq)*cos(ftmp(:,iyq))*cos(ftmp(:,izq))&
+               -ftmp(:,ivzq)*sin(ftmp(:,izq))                ))
+          vycm=sum(ftmp(:,imass)*( &
+               ftmp(:,ivxq)*sin(ftmp(:,iyq))*sin(ftmp(:,izq))&
+               +ftmp(:,ivyq)*cos(ftmp(:,iyq))*sin(ftmp(:,izq))&
+               +ftmp(:,ivzq)*cos(ftmp(:,izq))                ))
+          vzcm=sum(ftmp(:,imass)*(&
+               ftmp(:,ivxq)*cos(ftmp(:,iyq))-ftmp(:,ivyq)*sin(ftmp(:,iyq))))
 !
-        xcm=sum(ftmp(:,imass)*(ftmp(:,ixq)*sin(ftmp(:,iyq))*cos(ftmp(:,izq))))
-        ycm=sum(ftmp(:,imass)*(ftmp(:,ixq)*sin(ftmp(:,iyq))*sin(ftmp(:,izq))))
-        zcm=sum(ftmp(:,imass)*(ftmp(:,ixq)*cos(ftmp(:,iyq))))
+          xcm=sum(ftmp(:,imass)*(ftmp(:,ixq)*sin(ftmp(:,iyq))*cos(ftmp(:,izq))))
+          ycm=sum(ftmp(:,imass)*(ftmp(:,ixq)*sin(ftmp(:,iyq))*sin(ftmp(:,izq))))
+          zcm=sum(ftmp(:,imass)*(ftmp(:,ixq)*cos(ftmp(:,iyq))))
 !
-        thtcm=atan2(sqrt(xcm**2+ycm**2),zcm)
-        phicm=atan2(ycm,xcm)
+          thtcm=atan2(sqrt(xcm**2+ycm**2),zcm)
+          phicm=atan2(ycm,xcm)
 !
-        vcm(1)= vxcm*sin(thtcm)*cos(phicm) + &
-            vycm*sin(thtcm)*sin(phicm) + vzcm*cos(thtcm)
-        vcm(2)= vxcm*cos(thtcm)*cos(phicm) + &
-            vycm*cos(thtcm)*sin(phicm) - vzcm*sin(thtcm)
-        vcm(3)=-vxcm*sin(phicm)            + &
-            vycm*cos(phicm)
+          vcm(1)= vxcm*sin(thtcm)*cos(phicm) + &
+               vycm*sin(thtcm)*sin(phicm) + vzcm*cos(thtcm)
+          vcm(2)= vxcm*cos(thtcm)*cos(phicm) + &
+               vycm*cos(thtcm)*sin(phicm) - vzcm*sin(thtcm)
+          vcm(3)=-vxcm*sin(phicm)            + &
+               vycm*cos(phicm)
+        endif
+      else
+        call fatal_error("reset_center_of_mass",&
+             "valid only in cartesian or cartesian_evolution")
       endif
 !
       do ks=1,nqpar
@@ -1940,12 +1967,13 @@ module PointMasses
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (lroot) & 
-           fq(1:nqpar,1:mqvar) = fq(1:nqpar,1:mqvar) + dt_beta_ts(itsub)*dfq(1:nqpar,1:mqvar)
-      call mpibcast_real(fq,(/nqpar,mqarray/))
-      !else
-      !  call advance_particles_in_cartesian(fp,dfp)
-      !endif
+      if ((.not.lcartesian_coords).and.lcartesian_evolution) then
+        call advance_particles_in_cartesian
+      else
+        if (lroot) & 
+             fq(1:nqpar,1:mqvar) = fq(1:nqpar,1:mqvar) + dt_beta_ts(itsub)*dfq(1:nqpar,1:mqvar)
+        call mpibcast_real(fq,(/nqpar,mqarray/))
+      endif
 !
     endsubroutine pointmasses_timestep_second
 !***********************************************************************
@@ -1988,5 +2016,155 @@ module PointMasses
       enddo
 !
     endsubroutine correct_curvilinear
+!***********************************************************************
+    subroutine advance_particles_in_cartesian
+!
+! With N-body gravity, the particles should have their position advanced in
+! Cartesian coordinates, for better conservation of the Jacobi constant, even
+! if the grid is polar.
+!
+! 14-feb-14/wlad: coded
+!
+      real, dimension (nqpar) :: rad,phi,tht,xp,yp,zp
+      real, dimension (nqpar) :: vrad,vtht,vphi,vx,vy,vz
+      real, dimension (nqpar) :: arad,atht,aphi,ax,ay,az
+      real, dimension (nqpar) :: cosp,sinp,cost,sint
+!
+      if (lcylindrical_coords) then
+!
+!  The input position, velocities, and accelerations in cylindrical coordinates.
+!
+        rad  = fq(:,ixq)   ; phi  = fq(:,iyq)
+        vrad = fq(:,ivxq)  ; vphi = fq(:,ivyq)
+        arad = dfq(:,ivxq) ; aphi = dfq(:,ivyq)
+!
+!  Shortcuts.
+!
+        cosp=cos(phi) ; sinp=sin(phi)
+!
+!  Transform the position, velocities, and accelerations to Cartesian coordinates.
+!
+        xp=rad*cosp ; yp=rad*sinp ; zp=fq(:,izq)
+!
+        vx=vrad*cosp - vphi*sinp
+        vy=vrad*sinp + vphi*cosp
+        vz=fq(:,izq)
+!
+!  Add the Cartesian acceleration.
+!
+        ax=arad*cosp - aphi*sinp + dfq(:,ivxq_cart)
+        ay=arad*sinp + aphi*cosp + dfq(:,ivyq_cart)
+        az=dfq(:,ivzq_cart)
+!
+      else if (lspherical_coords) then
+!
+!  The input position, velocities, and accelerations in spherical coordinates.
+!
+        rad  = fq(:,ixq)   ; tht  = fq(:,iyq)   ; phi  = fq(:,izq)
+        vrad = fq(:,ivxq)  ; vtht = fq(:,ivyq)  ; vphi = fq(:,ivzq)
+        arad = dfq(:,ivxq) ; atht = dfq(:,ivyq) ; aphi = dfq(:,ivzq)
+!
+!  Shortcuts.
+!
+        cosp=cos(phi) ; sinp=sin(phi)
+        cost=cos(tht) ; sint=sin(tht)
+!
+!  Transform the position, velocities, and accelerations to Cartesian coordinates.
+!
+        xp=rad*sint*cosp ; yp=rad*sint*sinp ; zp=rad*cost
+!
+        vx=vrad*sint*cosp + vtht*cost*cosp - vphi*sinp
+        vy=vrad*sint*sinp + vtht*cost*sinp + vphi*cosp
+        vz=vrad*cost      - vtht*sint
+!
+!  Add the Cartesian acceleration.
+!
+        ax=arad*sint*cosp + atht*cost*cosp - aphi*sinp + dfq(:,ivxq_cart)
+        ay=arad*sint*sinp + atht*cost*sinp + aphi*cosp + dfq(:,ivyq_cart)
+        az=arad*cost      - atht*sint                  + dfq(:,ivzq_cart)
+!
+      endif
+!
+!  Now the time-stepping in Cartesian coordinates.
+!
+      call update_position(xp,yp,zp,vx,vy,vz)
+      call update_velocity(vx,vy,vz,ax,ay,az)
+!
+    endsubroutine advance_particles_in_cartesian
+!***********************************************************************
+    subroutine update_position(xp,yp,zp,vx,vy,vz)
+!
+!  Update position if N-body is used in polar coordinates.
+!
+!  14-feb-14:wlad/coded
+!
+      real, dimension (nqpar), intent(in) :: vx,vy,vz
+      real, dimension (nqpar), intent(inout) :: xp,yp,zp
+!
+!  Input vx and vy into the dfq array, for the Runge-Kutta integration.
+!  It is needed because of the high order of the RK integration (dfq is
+!  updated every subtimestep.
+!
+      dfq(:,ixq) = dfq(:,ixq) + vx
+      dfq(:,iyq) = dfq(:,iyq) + vy
+      dfq(:,izq) = dfq(:,izq) + vz
+!
+!  Update.
+!
+      xp = xp + dt_beta_ts(itsub)*dfq(:,ixq)
+      yp = yp + dt_beta_ts(itsub)*dfq(:,iyq)
+      zp = zp + dt_beta_ts(itsub)*dfq(:,izq)
+!
+!  Convert back to polar coordinates.
+!
+      if (lcylindrical_coords) then
+        fq(:,ixq) = sqrt(xp**2+yp**2+zp**2)
+        fq(:,iyq) = atan2(yp,xp)
+        fq(:,izq) = zp
+      else if (lspherical_coords) then
+        fq(:,ixq) = sqrt(xp**2+yp**2+zp**2)
+        fq(:,iyq) = acos(zp/fq(:,ixq))
+        fq(:,izq) = atan2(yp,xp)
+      endif
+!
+    endsubroutine update_position
+!***********************************************************************
+    subroutine update_velocity(vx,vy,vz,ax,ay,az)
+!
+!  Update velocity if N-body is used in polar coordinates.
+!
+!  14-feb-14:wlad/coded
+!
+      real, dimension (nqpar), intent(in) :: ax,ay,az
+      real, dimension (nqpar), intent(inout) :: vx,vy,vz
+!
+      real, dimension (nqpar) :: phi,tht
+      real, dimension (nqpar) :: cosp,sinp,sint,cost
+!
+!  All accelerations in dfq are in Cartesian.
+!
+      vx = vx + dt_beta_ts(itsub)*ax !vxdot
+      vy = vy + dt_beta_ts(itsub)*ay !vydot
+      vz = vz + dt_beta_ts(itsub)*az !vzdot
+!
+!  Convert back to polar coordinates.
+!
+      if (lcylindrical_coords) then
+        phi=fq(:,iyq)
+        cosp=cos(phi) ; sinp=sin(phi)
+        fq(:,ivxq) =  vx*cosp + vy*sinp !=vrad
+        fq(:,ivyq) = -vx*sinp + vy*cosp !=vphi
+        fq(:,ivzq) =  vz
+      else if (lspherical_coords) then
+        tht=fq(:,iyq)
+        phi=fq(:,izq)
+        cost=cos(tht) ; sint=sin(tht)
+        cosp=cos(phi) ; sinp=sin(phi)
+        fq(:,ivxq) =  vx*sint*cosp + vy*sint*sinp + vz*cost !=vrad
+        fq(:,ivyq) =  vx*cost*cosp + vy*cost*sinp - vz*sint !=vphi
+        fq(:,ivzq) = -vx*sinp      + vy*cosp                !=vz
+      endif
+!
+    endsubroutine update_velocity
 !***********************************************************************
   endmodule PointMasses
