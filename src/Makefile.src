@@ -2210,6 +2210,9 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 
 #
 #  Linker and compiler are the same.
+#  [PABourdin]: Compiler and linker are of course NOT the same!
+#  *** WORK HERE: do not overwrite LD, if it is already set.
+#  (Typically LDFLAGS have "-L...", while FFLAGS have "-I...")
 #
 LD=$(FC)
 LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(LDONLYFLAGS)
