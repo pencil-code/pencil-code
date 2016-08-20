@@ -396,7 +396,7 @@ module Io
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the parameter list')
       call h5fclose_f (h5_file, h5_err)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the file')
-      call hh5close_f (h5_err)
+      call h5close_f (h5_err)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the parallel HDF5 library')
 !
     endsubroutine output_snap_finalize
