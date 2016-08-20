@@ -820,7 +820,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #FC=pgf90 #(lfc101)
 #FFLAGS=-I /usr/local/Packages/mpich-1.2.6/ch-p4/include #(lfc101)
 #LD_MPI=-L /usr/local/Packages/mpich-1.2.6/ch-p4/lib/ -lmpich #(lfc101)
-#LDONLYFLAGS=farg.o #(lfc101)
+#LDFLAGS+=farg.o #(lfc101)
 #FC=ifort #(nw[0-9]+|hamlet|lynx|brahe|nq[0-9]*)
 #FC=g95-andy #(nw[0-9]+|hamlet|lynx|brahe|nq[0-9]*)
 ##
@@ -2209,13 +2209,10 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ### End machine dependent
 
 #
-#  Linker and compiler are the same.
-#  [PABourdin]: Compiler and linker are of course NOT the same!
-#  *** WORK HERE: do not overwrite LD, if it is already set.
-#  (Typically LDFLAGS have "-L...", while FFLAGS have "-I...")
+#  Default linker to compiler settings, if unset.
 #
-LD=$(FC)
-LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(LDONLYFLAGS)
+LD ?= $(FC)
+export HDF5_FLINKER:=$(FC)
 #
 #  Generic rules.
 #
@@ -2385,7 +2382,7 @@ buildinfo:
 	@$(PC_XMLEXPORT) buildinfo -e "CC='$(CC)';CFLAGS='$(CFLAGS)';F90='$(F90)';F77='$(F77)';" \
 	    -e "FFLAGS='$(FFLAGS)';F90FLAGS='$(F90FLAGS)';F77FLAGS='$(F77FLAGS)';" \
 	    -e "LD_FOURIER='$(LD_FOURIER)';FFLAGS_FOURIER='$(FFLAGS_FOURIER)';CFLAGS_FOURIER='$(CFLAGS_FOURIER)';" \
-	    -e "FCCLEANER='$(FCCLEANER)';LD_MPI='$(LD_MPI)';LDONLYFLAGS='$(LDONLYFLAGS)';" \
+	    -e "FCCLEANER='$(FCCLEANER)';LD_MPI='$(LD_MPI)';" \
 	    -e "FFLAGS_GENERAL='$(FFLAGS_GENERAL)';CFLAGS_GENERAL='$(CFLAGS_GENERAL)';" \
 	    -e "FC='$(FC)';" \
 	    -e "POWER='$(POWER)';DEBUG='$(DEBUG)';HYDRO='$(HYDRO)';TESTPERTURB='$(TESTPERTURB)';" \

@@ -102,7 +102,6 @@ cat <<EOF
     `variable FFLAGS_GENERAL`
     `variable CFLAGS_GENERAL`
     `variable LDMPI`
-    `variable LDONLYFLAGS`
   </makeinfo>
   `rundirinfo`
   <moduleinfo>

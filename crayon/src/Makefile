@@ -342,7 +342,7 @@ CC=gcc
 #FC=pgf90 #(lfc101)
 #FFLAGS=-I /usr/local/Packages/mpich-1.2.6/ch-p4/include #(lfc101)
 #LD_MPI=-L /usr/local/Packages/mpich-1.2.6/ch-p4/lib/ -lmpich #(lfc101)
-#LDONLYFLAGS=farg.o #(lfc101)
+#LDFLAGS+=farg.o #(lfc101)
 #FC=ifort #(nw[0-9]+|hamlet|lynx|brahe|nq[0-9]*)
 #FC=g95-andy #(nw[0-9]+|hamlet|lynx|brahe|nq[0-9]*)
 ##
@@ -1308,7 +1308,6 @@ CFLAGS_DOUBLE = -DDOUBLE_PRECISION #(triton)
 ### End machine dependent
 
 LD=$(FC)
-LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(LDONLYFLAGS)
 MPICOMM_FIX=$(MPICOMM)$(LIBMPISUFFIX)
 # 
 #  Generic rules.
@@ -1419,7 +1418,7 @@ buildinfo:
 	@$(PC_XMLEXPORT) buildinfo -e "CC='$(CC)';CFLAGS='$(CFLAGS)';F90='$(F90)';F77='$(F77)';" \
 	                       -e "FFLAGS='$(FFLAGS)';F90FLAGS='$(F90FLAGS)';F77FLAGS='$(F77FLAGS)';" \
 	                       -e "LD_FOURIER='$(LD_FOURIER)';FFLAGS_FOURIER='$(FFLAGS_FOURIER)';CFLAGS_FOURIER='$(CFLAGS_FOURIER)';" \
-	                       -e "FCCLEANER='$(FCCLEANER)';LD_MPI='$(LD_MPI)';LDONLYFLAGS='$(LDONLYFLAGS)';" \
+	                       -e "FCCLEANER='$(FCCLEANER)';LD_MPI='$(LD_MPI)';" \
 	                       -e "FFLAGS_GENERAL='$(FFLAGS_GENERAL)';CFLAGS_GENERAL='$(CFLAGS_GENERAL)';" \
 	                       -e "FC='$(FC)';" \
 	                       -e "POWER='$(POWER)';DEBUG='$(DEBUG)';HYDRO='$(HYDRO)';TESTPERTURB='$(TESTPERTURB)';" \
