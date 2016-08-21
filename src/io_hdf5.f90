@@ -82,10 +82,12 @@ module Io
       local_size(1) = mx
       local_size(2) = my
       local_size(3) = mz
+      local_size(4:n_dims+1) = 1
 !
       local_subsize(1) = nx
       local_subsize(2) = ny
       local_subsize(3) = nz
+      local_subsize(4:n_dims+1) = 1
 !
 ! We need to save the outermost halos if we are on either edge.
 !
@@ -102,7 +104,7 @@ module Io
       local_start(1) = l1 - 1
       local_start(2) = m1 - 1
       local_start(3) = n1 - 1
-      local_start(n_dims+1) = 0
+      local_start(4:n_dims+1) = 0
 
 ! We need to include lower ghost cells if we are on a lower edge
 ! inclusion of upper ghost cells is taken care of by increased subsize.
@@ -123,13 +125,14 @@ module Io
       global_size(1) = mxgrid
       global_size(2) = mygrid
       global_size(3) = mzgrid
+      global_size(4:n_dims+1) = 1
 !
 ! Starting position of this processors data portion.
 !
       global_start(1) = nghost + ipx*nx
       global_start(2) = nghost + ipy*ny
       global_start(3) = nghost + ipz*nz
-      global_start(n_dims+1) = 0
+      global_start(4:n_dims+1) = 0
 !
 ! Take account of inclusion of lower halos on lower edges.
 !
@@ -265,22 +268,35 @@ module Io
       integer, optional, intent(in) :: mode
 !
       real, dimension (:), allocatable :: gx, gy, gz
-      integer :: alloc_err, h5t_native_type
+      integer :: alloc_err
+      integer(HID_T) :: h5t_native_type
       integer(kind=8), dimension (n_dims+1) :: h5_stride, h5_count
       integer, dimension(MPI_STATUS_SIZE) :: status
       logical :: lwrite_add
       real :: t_sp   ! t in single precision for backwards compatibility
 !
-      if (.not.present(file)) call fatal_error('output_snap', &
+      if (.not. present(file)) call fatal_error('output_snap', &
           'downsampled output not implemented for IO_hdf5')
 !
       lwrite_add = .true.
       if (present (mode)) lwrite_add = (mode == 1)
 !
+      global_size(n_dims+1) = nv
+      local_size(n_dims+1) = nv
+      local_subsize(n_dims+1) = nv
+!
 ! Initialize parallel HDF5 Fortran libaray.
 !
       call h5open_f (h5_err)
       call stop_it_if_any (h5_err /= 0, "io_HDF5: can't initialize parallel HDF5 library")
+!
+! Determine native data type
+!
+      if (mpi_precision == MPI_REAL) then
+        h5t_native_type = H5T_NATIVE_REAL
+      else
+        h5t_native_type = H5T_NATIVE_DOUBLE
+      endif
 !
 ! Setup file access property list.
 !
@@ -298,13 +314,11 @@ module Io
 !
 ! Define 'file-space' to indicate the data portion in the global file.
 !
-      global_size(n_dims+1) = nv
       call h5screate_simple_f (n_dims+1, global_size, h5_fspace, h5_err)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not create global file space')
 !
 ! Define 'memory-space' to indicate the local data portion in memory.
 !
-      local_size(n_dims+1) = nv
       call h5screate_simple_f (n_dims+1, local_size, h5_mspace, h5_err)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not create local memory space')
 !
@@ -312,21 +326,25 @@ module Io
 !
       call h5pcreate_f (H5P_DATASET_CREATE_F, h5_plist, h5_err)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not prepare property list')
-      call h5pset_chunk_f (h5_plist, n_dims+1, local_size, h5_err)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not set chunk properties')
-      call h5dcreate_f (h5_file, file, H5T_NATIVE_INTEGER, h5_fspace, h5_dset, h5_err, h5_plist)
+      !call h5pset_chunk_f (h5_plist, n_dims+1, local_size, h5_err)
+      !call stop_it_if_any (h5_err /= 0, 'output_snap: Could not set chunk properties')
+      call h5dcreate_f (h5_file, file, h5t_native_type, h5_fspace, h5_dset, h5_err, h5_plist)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not create dataset')
       call h5sclose_f (h5_fspace, h5_err)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close global file space')
 !
 ! Define local 'hyper-slab' in the global file.
 !
-      local_subsize(n_dims+1) = nv
       h5_stride(:) = 1
       h5_count(:) = 1
       call h5dget_space_f (h5_dset, h5_fspace, h5_err)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not get dataset for file space')
-      call h5sselect_hyperslab_f (h5_fspace, H5S_SELECT_SET_F, global_start, h5_count, h5_err, h5_stride, local_size)
+      call h5sselect_hyperslab_f (h5_fspace, H5S_SELECT_SET_F, global_start, h5_count, h5_err, h5_stride, local_subsize)
+      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not select hyperslab within file')
+!
+! Define local 'hyper-slab' portion in memory.
+!
+      call h5sselect_hyperslab_f (h5_mspace, H5S_SELECT_SET_F, local_start, h5_count, h5_err, h5_stride, local_subsize)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not select hyperslab within file')
 !
 ! Prepare data transfer.
@@ -336,18 +354,10 @@ module Io
       call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not select collective IO')
 !
-! Determine native data type
-!
-      if (mpi_precision == MPI_REAL) then
-        h5t_native_type = H5T_NATIVE_REAL
-      else
-        h5t_native_type = H5T_NATIVE_DOUBLE
-      endif
-!
 ! Collectively write the data.
 !
-      call h5dwrite_f (h5_dset, h5t_native_type, a, global_size, h5_err, &
-          file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
+      call h5dwrite_f (h5_dset, h5t_native_type, a, &
+          global_size, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not write the data')
 !
       ! write additional data:
