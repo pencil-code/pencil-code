@@ -919,7 +919,7 @@ module PointMasses
         endif
       endif
 !
-        if (lreset_cm) call reset_center_of_mass
+      if (lreset_cm) call reset_center_of_mass
 !
     endsubroutine dxxq_dt_pointmasses
 !***********************************************************************
@@ -1153,38 +1153,45 @@ module PointMasses
       real, dimension(3), intent(in) :: xxp,xxq
       real, dimension(3), intent(out) :: evr_output
       real :: x1,y1,x2,y2,z1,z2
+      real :: e1,e2,e3,e10,e20,e30
+!
+      e1=xxp(1);e10=xxq(1)
+      e2=xxp(2);e20=xxq(2)
+      e3=xxp(3);e30=xxq(3)
 !
       if (lcartesian_coords) then
-        x1=xxp(1) ; x2=xxq(1)
-        y1=xxp(2) ; y2=xxq(2)
-        z1=xxp(3) ; z2=xxq(3)
+        x1=e1 ; x2=e10
+        y1=e2 ; y2=e20
+        z1=e3 ; z2=e30
       elseif (lcylindrical_coords) then
 !
         if (lcartesian_evolution) then 
-          x1=xxp(1)*cos(xxp(2))
-          y1=xxp(1)*sin(xxp(2))
-          z1=xxp(3)
+          x1=e1*cos(e2)
+          y1=e1*sin(e2)
+          z1=e3
 !
-          x2=xxq(1)*cos(xxq(2))
-          y2=xxq(1)*sin(xxq(2))
-          z2=xxq(3)
+          x2=e10*cos(e20)
+          y2=e10*sin(e20)
+          z2=e30
         else
-          evr_output(1)=xxp(1) - xxq(1)*cos(xxp(2)-xxq(2))
-          evr_output(2)=xxq(1)*sin(xxp(2)-xxq(2))
-          evr_output(3)=z1-z2
+          evr_output(1)=e1 - e10*cos(e2-e20)
+          evr_output(2)=e10*sin(e2-e20)
+          evr_output(3)=e3 - e30
         endif
 !
       elseif (lspherical_coords) then
         if (lcartesian_evolution) then   
-          x1=xxp(1)*sin(xxp(2))*cos(xxp(3))
-          y1=xxp(1)*sin(xxp(2))*sin(xxp(3))
-          z1=xxp(1)*cos(xxp(2))
+          x1=e1*sin(e2)*cos(e3)
+          y1=e1*sin(e2)*sin(e3)
+          z1=e1*cos(e2)
 !
-          x2=xxq(1)*sin(xxq(2))*cos(xxq(3))
-          y2=xxq(1)*sin(xxq(2))*sin(xxq(3))
-          z2=xxq(1)*cos(xxq(2))
+          x2=e10*sin(e20)*cos(e30)
+          y2=e10*sin(e20)*sin(e30)
+          z2=e10*cos(e20)
         else
-          call fatal_error("get_evr","swicth lcartesian_evolution=F for the moment") 
+          evr_output(1) = e1 - e10*sin(e2)*sin(e20)*cos(e3-e30)
+          evr_output(2) = e10*(sin(e2)*cos(e20) - cos(e2)*sin(e20)*cos(e3-e30))
+          evr_output(3) = e10*sin(e20)*sin(e3-e30)
         endif
       endif
 !
@@ -1513,8 +1520,8 @@ module PointMasses
         enddo
         pmass(istar)= 1-tmp
       else
-         !pmass(1:nqpar_orig)=final_ramped_mass(1:nqpar_orig)
-         pmass(1:nqpar)=final_ramped_mass(1:nqpar)
+        !pmass(1:nqpar_orig)=final_ramped_mass(1:nqpar_orig)
+        pmass(1:nqpar)=final_ramped_mass(1:nqpar)
       endif
 !
     endsubroutine get_ramped_mass
@@ -1967,13 +1974,15 @@ module PointMasses
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if ((.not.lcartesian_coords).and.lcartesian_evolution) then
-        call advance_particles_in_cartesian
-      else
-        if (lroot) & 
-             fq(1:nqpar,1:mqvar) = fq(1:nqpar,1:mqvar) + dt_beta_ts(itsub)*dfq(1:nqpar,1:mqvar)
-        call mpibcast_real(fq,(/nqpar,mqarray/))
+      if (lroot) then 
+        if ((.not.lcartesian_coords).and.lcartesian_evolution) then
+          call advance_particles_in_cartesian
+        else
+          fq(1:nqpar,1:mqvar) = fq(1:nqpar,1:mqvar) + dt_beta_ts(itsub)*dfq(1:nqpar,1:mqvar)
+        endif
       endif
+!
+      call mpibcast_real(fq,(/nqpar,mqarray/))
 !
     endsubroutine pointmasses_timestep_second
 !***********************************************************************
