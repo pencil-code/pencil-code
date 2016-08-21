@@ -3,10 +3,11 @@
 %section Makefile
 FC=/usr/local/mpi/openmpi/bin/mpif90 
 FC_SLOPPY=/usr/local/mpi/openmpi/bin/mpif90 
-FFLAGS= -fno-underscoring -L/usr/local/lib -O3
+FFLAGS= -fno-underscoring -O3
 FFLAGS_DOUBLE = -fdefault-real-8 -fdefault-double-8
 CC=gcc 
 CFLAGS= 
+LDFLAGS+=-L/usr/local/lib
 %endsection Makefile
 %section runtime
 	mpiexec = /usr/local/mpi/openmpi/bin/mpirun 
