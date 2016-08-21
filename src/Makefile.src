@@ -2211,7 +2211,9 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #
 #  Default linker to compiler settings, if unset.
 #
-LD ?= $(FC)
+# TODO: Check if Norlx51b has an outdated version of "gmake", commented:
+# LD ?= $(FC)
+LD = $(FC)
 export HDF5_FLINKER:=$(FC)
 #
 #  Generic rules.
