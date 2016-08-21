@@ -2211,7 +2211,9 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #
 #  Default linker to compiler settings, if unset.
 #
-LD?=$(FC)
+# TODO: $LD is alreay set to "ld" on Norlx51b, need to think about that... Commented for now:
+# LD?=$(FC)
+LD=$(FC)
 export HDF5_FLINKER:=$(FC)
 #
 #  Generic rules.
