@@ -5,8 +5,7 @@
 
 These tests mostly check whether a 'git pc' subcommand runs without
 throwing an error.
-It would be nice (but much more work) to check for correctness of
-operation.
+It would be nice to always check for correctness of operation.
 
 For best results, install the packages
  - python-proboscis,
@@ -14,6 +13,7 @@ For best results, install the packages
 and run these tests with
 
   ${PENCIL_HOME}/bin/test/test_git-pc.py
+  ${PENCIL_HOME}/bin/test/test_git-pc.py --group=reverse-merge
 
 To do:
  - Remove temporary directories for successful tests
@@ -25,6 +25,7 @@ To do:
 
 import datetime
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -33,10 +34,11 @@ import tempfile
 
 try:
     from proboscis import test, TestProgram
-    #from proboscis.asserts import assert_equal, \
-    #                              assert_not_equal, \
-    #                              assert_true, \
-    #                              assert_false
+    from proboscis.asserts import assert_equal#, \
+                                  # assert_not_equal, \
+                                  # assert_true, \
+                                  # assert_false
+
 except ImportError:
     from proboscis_dummy import test, TestProgram
 
@@ -91,7 +93,6 @@ current_git_time = 0            # Our test commits all occurred in 1970...
 
 
 def main():
-
     TestProgram().run_and_exit()
 
 
@@ -110,26 +111,48 @@ def call_checkout():
 
 
 @test(groups=['tag-wip'])
-def test_tag_wip():
+def test_tag_wip1():
     '''Tag unrecorded changes with 'git pc tag-wip\''''
     git = GitSandbox('tag_wip', initial_commit=True)
     file1 = 'committed-file'
 
+    commit_line(file1, git)
+    stage_line(file1, git)
+    add_unstaged_line(file1, git)
+    add_unstaged_file(git)
+
+    git('pc', 'tag-wip')
+
+    compare_git_log(
+        git,
+        ['(tag: WIP-2016-08-21_20-55-25) Untracked files [DON\'T PUSH!]',
+         'Changes to tracked files',
+         'Changes already in the index',
+         '(HEAD -> master) Committing one line.',
+         'Initial commit.',
+        ])
+
+
+def commit_line(file1, git):
     git.write_line_to(file1, 'Committed line.')
     git('add', file1)
     git.commit_all('Committing one line.')
 
+
+def stage_line(file1, git):
     git.write_line_to(file1, 'Staged line.')
     git('add', file1)
 
+
+def add_unstaged_line(file1, git):
     git.write_line_to(file1, 'Uncommitted line.')
 
+
+def add_unstaged_file(git):
     git.write_line_to(
         'uncommitted-file',
         'Uncommitted line in uncommitted file.'
         )
-
-    git('pc', 'tag-wip')
 
 
 @test(groups=['panic'])
@@ -255,7 +278,7 @@ def test_reverse_pull_autostash():
     git2.commit_all('git2: Commit file and push to server')
     git2('push')
 
-    # git1: fetch and reverse-merge
+    # git1: fetch and reverse-pull
     git1('pc', 'reverse-pull', '--autostash')
 
 
@@ -367,6 +390,51 @@ def setup_git_with_server(name, root_dir=None):
     return (server, git1, git2)
 
 
+def compare_git_log(git, reference):
+    """Compare the output from 'git log ...' with the given reference text"""
+    lines = git.get_output_from(
+        'log', '--all', '--pretty=format:%d %s'
+        )
+    assert_equivalent_lines(lines, reference)
+
+
+def assert_equivalent_lines(lines, reference):
+    """Compare two lists of strings element by element.
+
+    Return True if the lines match after some kind of canonicalization has
+    been applied, False if they differ.
+
+    """
+    l1 = len(lines)
+    l2 = len(reference)
+    common_length = min(l1, l2)
+    for i in xrange(common_length):
+        _assert_equivalent(lines[i], reference[i])
+    for i in xrange(common_length, max(l1, l2)):
+        if l1 > l2:
+            _assert_equivalent(lines[i], None)
+        else:
+            _assert_equivalent(None, reference[i])
+
+
+def _assert_equivalent(line1, line2):
+    assert_equal(_canonicalize(line1), _canonicalize(line2))
+
+
+def _canonicalize(line):
+    if line is None:
+        return '[None]'
+    # Strip leading and trailing whitespace:
+    line = line.strip()
+    # Map tag name to a fixed pattern:
+    line = re.sub(
+        r'WIP-[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2}',
+        'WIP-xxxx-xx-xx_xx-xx-xx',
+        line
+        )
+    return line
+
+
 class GitSandbox(object):
     '''A directory associated with a git checkout
 
@@ -444,6 +512,11 @@ class GitSandbox(object):
         cmd_list = ['git']
         cmd_list.extend(args)
         run_system_cmd(cmd_list, dir=self.directory)
+
+    def get_output_from(self, *args):
+        cmd_list = ['git']
+        cmd_list.extend(args)
+        return run_system_cmd_get_output(cmd_list, dir=self.directory)
 
     def commit_all(self, message):
         self.__call__('commit', '-a', '-m', message)
