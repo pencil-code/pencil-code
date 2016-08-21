@@ -122,6 +122,7 @@ def create_command_list():
         FfUpdateCommand(),
         ReverseMergeCommand(),
         ReversePullCommand(),
+        UpdateCommand(),
         UpdateAndPushCommand(),
     ]
 
@@ -648,6 +649,51 @@ class ReversePullCommand(Command):
         else:
             self.usage(1)
         ReverseMergeCommand().run(options, [])
+
+
+class UpdateCommand(Command):
+
+    def __init__(self):
+        Command.__init__(
+            self,
+            name='update',
+            overview='push commits to upstream on top of'
+            + ' yet unpulled changes',
+            usage='\n'
+            + '  git pc update [<repository>]\n'
+            + 'Pull the latest changes from <repository> even in the presence'
+            + ' of uncommited\n'
+            + 'local changes. This is achieved by\n'
+            + '1. stashing away unrecorded changes,\n'
+            + '2. running \'pull --rebase\',\n'
+            + '3. restoring the stashed changes.\n'
+            + '\n'
+            + 'Note that starting with git 2.6, you can achieve the'
+            + ' same result by setting\n'
+            + 'the configuration variable rebase.autoStash=true and running'
+            + ' \'git pull --rebase;\n'
+            + '\n'
+            + 'Arguments:\n'
+            + '  <repository> -- where to push to. Default: the upstream'
+            + ' branch associated\n'
+            + '                  with the current branch'
+        )
+
+    def run(self, options, args):
+        if len(args) == 0:
+            repository = None
+        elif len(args) == 1:
+            repository = args[0]
+        else:
+            self.usage(1)
+            repository = None  # make syntax-check happy
+
+        unrecorded = UnrecordedChanges(reset=True)
+        if repository:
+            git(['pull', '--rebase', repository])
+        else:
+            git(['pull', '--rebase'])
+        unrecorded.restore()
 
 
 class UpdateAndPushCommand(Command):
