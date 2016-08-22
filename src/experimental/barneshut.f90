@@ -236,7 +236,8 @@ module Poisson
     ! First pass only counts regions, second pass actually populates 'themap'
     do iprecalc=1,2
       if (lprecalc) then
-        if (lroot) print*,"barneshut: 1x1x1 ~regions/proc:",nsingle,"; >1x1x1 ~regions/proc:",ngroup
+!        if (lroot) print*,"barneshut: 1x1x1 ~regions/proc:",nsingle,"; >1x1x1 ~regions/proc:",ngroup
+        if (lroot) print '("barneshut: ",I0," 1x1x1 and ",I0," >1x1x1 region pairings on proc 0")', nsingle, ngroup
         allocate(themap_group(10,ngroup))
         allocate(themap_single(10,nsingle))
         allocate(regsmooth_single(nsingle))
