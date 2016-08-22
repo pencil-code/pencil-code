@@ -715,10 +715,16 @@ class UpdateCommand(Command):
 
         unrecorded = UnrecordedChanges(reset=True)
         if repository:
-            git(['pull', '--rebase', repository])
+            git_pull =['git', 'pull', '--rebase', repository]
         else:
-            git(['pull', '--rebase'])
-        unrecorded.restore()
+            git_pull = ['git', 'pull', '--rebase']
+        success = run_system_cmd(git_pull, catch_errors=True, print_on_error=True)
+        if success:
+            unrecorded.restore()
+        else:
+            print 'Note: ' \
+                'Your unrecorded changes are available under the tag %s' \
+            % (unrecorded.tag, )
 
 
 class UpdateAndPushCommand(Command):
@@ -898,11 +904,14 @@ class UnrecordedChanges(object):
         if self.reset:
             new_head = git_head()
 
-            git(['cherry-pick', '-x', self.index])
+            print '@@@ head = ', git_head()
+            print '@@@ index to pick = ', self.index
+
+            self._cherry_pick(self.index)
             new_index = git_head()
 
-            git(['cherry-pick', '-x', self.tracked])
-            git(['cherry-pick', '-x', self.untracked])
+            self._cherry_pick(self.tracked)
+            self._cherry_pick(self.untracked)
 
             git(['reset', '--mixed', new_index])
             git(['reset', '--soft', new_head])
