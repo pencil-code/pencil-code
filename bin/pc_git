@@ -902,5 +902,10 @@ class UnrecordedChanges(object):
         git(['tag', '-d', self.tag])
 
 
+    def _cherry_pick(self, commit):
+        if not git_contains_commit(git_head(), commit):
+            git(['cherry-pick', '-r', commit])
+
+
 if __name__ == '__main__':
     main()
