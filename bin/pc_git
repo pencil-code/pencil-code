@@ -233,7 +233,7 @@ def git_outputs(cmd_list):
     return run_system_cmd_get_output(cmd_line)
 
 
-def run_system_cmd(cmd_line, catch_errors=False):
+def run_system_cmd(cmd_line, catch_errors=False, print_on_error=False):
     """Run a system command, writing output to the terminal.
 
     Arguments:
@@ -245,7 +245,7 @@ def run_system_cmd(cmd_line, catch_errors=False):
     False -- if catch_errors is set and an error occurred
 
     """
-    retcode, std_output = _run(cmd_line)
+    retcode, std_output = _run(cmd_line, print_on_error=print_on_error)
     if retcode:
         if catch_errors:
             return False
@@ -263,7 +263,15 @@ def run_system_cmd_get_output(cmd_line):
         return std_output
 
 
-def _run(cmd_line):
+def _run(cmd_line, print_on_error=False):
+    """Run a shell command.
+
+    If print_on_error is True, print all output from the command if an
+    error was encountered.
+    Otherwise, apply some sort of logging, e.g. prepending prefixes to the
+    output lines, which may confuse the user (but will help in debugging).
+
+    """
     if log_level >= PRINT_GIT_COMMANDS:
         print ' '.join(cmd_line)
     process = subprocess.Popen(
@@ -275,7 +283,10 @@ def _run(cmd_line):
     std_output = std_output.splitlines()
     err_output = err_output.splitlines()
     retcode = process.poll()
-    if retcode or log_level >= PRINT_OUTPUT:
+    if retcode and print_on_error:
+        print('\n'.join(std_output))
+        sys.stderr.write('\n'.join(err_output) + '\n')
+    elif retcode or log_level >= PRINT_OUTPUT:
         log_output('OUT:', std_output)
         log_output('ERR:', err_output)
     return retcode, std_output
