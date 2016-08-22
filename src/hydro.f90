@@ -753,7 +753,7 @@ module Hydro
 !
       ! Default value of 'tfade_start' is tdamp/2 for faded damping
       if (ldamp_fade .and. (tfade_start == -1.0)) tfade_start = 0.5 * tdamp
-      if (ldamp_fade .and. (tfade_start >= tdamp)) &
+      if (ldamp_fade .and. (tfade_start >= tdamp) .and. (tdamp > 0.0)) &
           call fatal_error ('initialize_hydro', 'Please set tfade_start < tdamp')
       call put_shared_variable ('dampu', dampu, caller='initialize_hydro')
       call put_shared_variable ('tdamp', tdamp)
