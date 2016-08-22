@@ -753,7 +753,6 @@ module Particles_main
 !
 !  Correct for curvilinear geometry.
 !
-      !if (.not.lparticles_nbody) &
       call correct_curvilinear
 !
 !  Output particle size distribution to file.
