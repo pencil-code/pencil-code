@@ -1956,13 +1956,13 @@ module PointMasses
       real, dimension (mx,my,mz,mfarray) :: f
 !
       if (lroot) then 
-        if (lfirst) then
-          dfq(1:nqpar,:)=0.0
-          dfq_cart(1:nqpar,:)=0.0
-        else
+        !if (lfirst) then
+        !  dfq(1:nqpar,:)=0.0
+        !  dfq_cart(1:nqpar,:)=0.0
+        !else
           dfq(1:nqpar,:)=alpha_ts(itsub)*dfq(1:nqpar,:)
           dfq_cart(1:nqpar,:)=alpha_ts(itsub)*dfq_cart(1:nqpar,:)
-        endif
+        !endif
       endif
 !
    endsubroutine pointmasses_timestep_first
@@ -1976,10 +1976,23 @@ module PointMasses
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(3) :: xx_polar,vv_polar,xxdot_polar,vvdot_polar,aa_nbody_cart
+      integer :: ks
 !
       if (lroot) then 
         if ((.not.lcartesian_coords).and.lcartesian_evolution) then
-          call advance_particles_in_cartesian
+          do ks=1,nqpar
+            xx_polar    = fq(ks,ixq:izq)
+            vv_polar    = fq(ks,ivxq:ivzq)
+            xxdot_polar = dfq(ks,ixq:izq)
+            vvdot_polar = dfq(ks,ivxq:ivzq)
+!            
+            aa_nbody_cart=dfq_cart(ks,:)
+            call advance_particles_in_cartesian(ks,xx_polar,vv_polar,xxdot_polar,vvdot_polar,aa_nbody_cart)
+            fq(ks,ixq:izq)=xx_polar
+            fq(ks,ivxq:ivzq)=vv_polar
+            dfq(ks,ixq:izq)=xxdot_polar
+          enddo
         else
           fq(1:nqpar,1:mqvar) = fq(1:nqpar,1:mqvar) + dt_beta_ts(itsub)*dfq(1:nqpar,1:mqvar)
         endif
@@ -2029,7 +2042,7 @@ module PointMasses
 !
     endsubroutine correct_curvilinear
 !***********************************************************************
-    subroutine advance_particles_in_cartesian
+    subroutine advance_particles_in_cartesian(k,xx_polar,vv_polar,xxdot_polar,vvdot_polar,aa_nbody_cart)
 !
 ! With N-body gravity, the particles should have their position advanced in
 ! Cartesian coordinates, for better conservation of the Jacobi constant, even
@@ -2037,144 +2050,182 @@ module PointMasses
 !
 ! 14-feb-14/wlad: coded
 !
-      real, dimension (nqpar) :: rad,phi,tht,xp,yp,zp
-      real, dimension (nqpar) :: vrad,vtht,vphi,vx,vy,vz
-      real, dimension (nqpar) :: arad,atht,aphi,ax,ay,az
-      real, dimension (nqpar) :: cosp,sinp,cost,sint
+      real :: rad,phi,tht,zed,xp,yp,zp
+      real :: vrad,vtht,vphi,vzed,vx,vy,vz
+      real :: raddot,thtdot,phidot,zeddot,xdot,ydot,zdot
+      real :: vraddot,vthtdot,vphidot,vzeddot,vxdot,vydot,vzdot
+      real :: cosp,sinp,cost,sint
+!
+      real, dimension(3), intent(inout) :: xx_polar,vv_polar
+      real, dimension(3) :: aa_nbody_cart,vv_cart,dvv_cart,xx_cart,dxx_cart,xxdot_polar,vvdot_polar
+      integer :: k
 !
       if (lcylindrical_coords) then
 !
 !  The input position, velocities, and accelerations in cylindrical coordinates.
 !
-        rad  = fq(:,ixq)   ; phi  = fq(:,iyq)
-        vrad = fq(:,ivxq)  ; vphi = fq(:,ivyq)
-        arad = dfq(:,ivxq) ; aphi = dfq(:,ivyq)
+        rad  = xx_polar(1) ; phi   = xx_polar(2) ; zed  = xx_polar(3)
+        vrad = vv_polar(1) ; vphi  = vv_polar(2) ; vzed = vv_polar(3)
+
+        raddot = xxdot_polar(1)  ; phidot = xxdot_polar(2)  ; zeddot = xxdot_polar(3)
+        vraddot = vvdot_polar(1) ; vphidot = vvdot_polar(2) ; vzeddot = vvdot_polar(3)
 !
 !  Shortcuts.
 !
-        cosp=cos(phi) ; sinp=sin(phi)
+        cosp = cos(phi) ; sinp = sin(phi)
 !
-!  Transform the position, velocities, and accelerations to Cartesian coordinates.
+!  Transform the positions and velocities to Cartesian coordinates.
 !
-        xp=rad*cosp ; yp=rad*sinp ; zp=fq(:,izq)
+        xp = rad*cosp ; yp = rad*sinp ; zp = zed
 !
-        vx=vrad*cosp - vphi*sinp
-        vy=vrad*sinp + vphi*cosp
-        vz=fq(:,izq)
+        vx = vrad*cosp - vphi*sinp
+        vy = vrad*sinp + vphi*cosp
+        vz = vzed
 !
-!  Add the Cartesian acceleration.
+!  Transform the position and velocity derivatives to Cartesian coordinates.        
+!  Add the cartesian velocity to position and cartesian acceleration to velocity.
 !
-        ax=arad*cosp - aphi*sinp + dfq_cart(:,1) ! ivqx_cart
-        ay=arad*sinp + aphi*cosp + dfq_cart(:,2) ! ivqy_cart
-        az=dfq_cart(:,3)                         ! ivqz_cart
+        xdot = raddot*cosp - phidot*sinp + vx
+        ydot = raddot*sinp + phidot*cosp + vy
+        zdot = zeddot                    + vz
+!
+        vxdot = vraddot*cosp - vphidot*sinp + aa_nbody_cart(1) ! ivqx_cart
+        vydot = vraddot*sinp + vphidot*cosp + aa_nbody_cart(2) ! ivqy_cart
+        vzdot =                               aa_nbody_cart(3) ! ivqz_cart
 !
       else if (lspherical_coords) then
 !
 !  The input position, velocities, and accelerations in spherical coordinates.
 !
-        rad  = fq(:,ixq)   ; tht  = fq(:,iyq)   ; phi  = fq(:,izq)
-        vrad = fq(:,ivxq)  ; vtht = fq(:,ivyq)  ; vphi = fq(:,ivzq)
-        arad = dfq(:,ivxq) ; atht = dfq(:,ivyq) ; aphi = dfq(:,ivzq)
+        rad  = xx_polar(1) ; tht  = xx_polar(2) ; phi  = xx_polar(3)
+        raddot = xxdot_polar(1) ; thtdot = xxdot_polar(2) ; phidot = xxdot_polar(3)
+!
+        vrad = vv_polar(1) ; vtht = vv_polar(2) ; vphi = vv_polar(3)
+        vraddot = vvdot_polar(1) ; vthtdot = vvdot_polar(2) ; vphidot = vvdot_polar(3)
 !
 !  Shortcuts.
 !
-        cosp=cos(phi) ; sinp=sin(phi)
-        cost=cos(tht) ; sint=sin(tht)
+        cosp = cos(phi) ; sinp = sin(phi)
+        cost = cos(tht) ; sint = sin(tht)
 !
-!  Transform the position, velocities, and accelerations to Cartesian coordinates.
+!  Transform the positions and velocities to Cartesian coordinates.
 !
-        xp=rad*sint*cosp ; yp=rad*sint*sinp ; zp=rad*cost
+        xp = rad*sint*cosp ; yp = rad*sint*sinp ; zp = rad*cost
 !
-        vx=vrad*sint*cosp + vtht*cost*cosp - vphi*sinp
-        vy=vrad*sint*sinp + vtht*cost*sinp + vphi*cosp
-        vz=vrad*cost      - vtht*sint
+        vx = vrad*sint*cosp + vtht*cost*cosp - vphi*sinp
+        vy = vrad*sint*sinp + vtht*cost*sinp + vphi*cosp
+        vz = vrad*cost      - vtht*sint
 !
-!  Add the Cartesian acceleration.
+!  Transform the position and velocity derivatives to Cartesian coordinates.        
+!  Add the cartesian velocity to position and cartesian acceleration to velocity.
+!        
+        xdot  =  raddot*sint*cosp +  thtdot*cost*cosp -  phidot*sinp + vx
+        ydot  =  raddot*sint*sinp +  thtdot*cost*sinp +  phidot*cosp + vy
+        zdot  =  raddot*cost      -  thtdot*sint                     + vz
 !
-        ax=arad*sint*cosp + atht*cost*cosp - aphi*sinp + dfq_cart(:,1) !ivxq_cart)
-        ay=arad*sint*sinp + atht*cost*sinp + aphi*cosp + dfq_cart(:,2) !ivyq_cart)
-        az=arad*cost      - atht*sint                  + dfq_cart(:,3) !ivzq_cart)
+        vxdot = vraddot*sint*cosp + vthtdot*cost*cosp - vphidot*sinp + aa_nbody_cart(1) !ivxq_cart)
+        vydot = vraddot*sint*sinp + vthtdot*cost*sinp + vphidot*cosp + aa_nbody_cart(2) !ivyq_cart)
+        vzdot = vraddot*cost      - vthtdot*sint                     + aa_nbody_cart(3) !ivzq_cart)
 !
       endif
 !
 !  Now the time-stepping in Cartesian coordinates.
 !
-      call update_position(xp,yp,zp,vx,vy,vz)
-      call update_velocity(vx,vy,vz,ax,ay,az)
+       xx_cart(1) = xp    ;   xx_cart(2) = yp   ;   xx_cart(3) = zp
+      dxx_cart(1) = xdot  ;  dxx_cart(2) = ydot ;  dxx_cart(3) = zdot
+
+       vv_cart(1) = vx    ;  vv_cart(2) = vy    ;  vv_cart(3) = vz
+      dvv_cart(1) = vxdot ; dvv_cart(2) = vydot ; dvv_cart(3) = vzdot
+
+      call update_position(k,xx_cart,vv_cart,dxx_cart,xx_polar,xxdot_polar)
+      call update_velocity(vv_cart,dvv_cart,vv_polar,xx_polar)
 !
     endsubroutine advance_particles_in_cartesian
 !***********************************************************************
-    subroutine update_position(xp,yp,zp,vx,vy,vz)
+    subroutine update_position(k,xx_cart,vv_cart,dxx_cart,xx_polar,xxdot_polar)
 !
 !  Update position if N-body is used in polar coordinates.
 !
 !  14-feb-14:wlad/coded
 !
-      real, dimension (nqpar), intent(in) :: vx,vy,vz
-      real, dimension (nqpar), intent(inout) :: xp,yp,zp
-!
-!  Input vx and vy into the dfq array, for the Runge-Kutta integration.
-!  It is needed because of the high order of the RK integration (dfq is
-!  updated every subtimestep.
-!
-      dfq(:,ixq) = dfq(:,ixq) + vx
-      dfq(:,iyq) = dfq(:,iyq) + vy
-      dfq(:,izq) = dfq(:,izq) + vz
+      real, dimension(3), intent(in) :: vv_cart
+      real :: xp,yp,zp,xdot,ydot,zdot,cosp,sinp,sint,cost,phi,tht
+      integer :: k
+      real, dimension(3), intent(inout) :: xx_polar,xx_cart,dxx_cart
+      real, dimension(3), intent(out) :: xxdot_polar
 !
 !  Update.
 !
-      xp = xp + dt_beta_ts(itsub)*dfq(:,ixq)
-      yp = yp + dt_beta_ts(itsub)*dfq(:,iyq)
-      zp = zp + dt_beta_ts(itsub)*dfq(:,izq)
+      xx_cart = xx_cart + dt_beta_ts(itsub)*dxx_cart
 !
 !  Convert back to polar coordinates.
 !
+      xp=xx_cart(1); yp=xx_cart(2); zp=xx_cart(3)
       if (lcylindrical_coords) then
-        fq(:,ixq) = sqrt(xp**2+yp**2+zp**2)
-        fq(:,iyq) = atan2(yp,xp)
-        fq(:,izq) = zp
+        xx_polar(1) = sqrt(xp**2+yp**2+zp**2)
+        xx_polar(2) = atan2(yp,xp)
+        xx_polar(3) = zp
       else if (lspherical_coords) then
-        fq(:,ixq) = sqrt(xp**2+yp**2+zp**2)
-        fq(:,iyq) = acos(zp/fq(:,ixq))
-        fq(:,izq) = atan2(yp,xp)
+        xx_polar(1) = sqrt(xp**2+yp**2+zp**2)
+        xx_polar(2) = acos(zp/xx_polar(1))
+        xx_polar(3) = atan2(yp,xp)
       endif
 !
+      xdot=dxx_cart(1); ydot=dxx_cart(2); zdot=dxx_cart(3)
+      if (lcylindrical_coords) then
+        phi=xx_polar(2)
+        cosp=cos(phi) ; sinp=sin(phi)
+        xxdot_polar(1) =  xdot*cosp + ydot*sinp !=vrad
+        xxdot_polar(2) = -xdot*sinp + ydot*cosp !=vphi
+        xxdot_polar(3) =  zdot
+      else if (lspherical_coords) then
+        tht=xx_polar(2)
+        phi=xx_polar(3)
+        cost=cos(tht) ; sint=sin(tht)
+        cosp=cos(phi) ; sinp=sin(phi)
+        xxdot_polar(1) =  xdot*sint*cosp + ydot*sint*sinp + zdot*cost !=vrad
+        xxdot_polar(2) =  xdot*cost*cosp + ydot*cost*sinp - zdot*sint !=vphi
+        xxdot_polar(3) = -xdot*sinp      + ydot*cosp                  !=vz
+      endif
+
     endsubroutine update_position
 !***********************************************************************
-    subroutine update_velocity(vx,vy,vz,ax,ay,az)
+    subroutine update_velocity(vv_cart,dvv_cart,vv_polar,xx_polar)
 !
 !  Update velocity if N-body is used in polar coordinates.
 !
 !  14-feb-14:wlad/coded
 !
-      real, dimension (nqpar), intent(in) :: ax,ay,az
-      real, dimension (nqpar), intent(inout) :: vx,vy,vz
+      !real, intent(in) :: ax,ay,az
+      real :: vx,vy,vz
+      real, dimension(3), intent(inout) :: vv_polar,vv_cart
+      real, dimension(3), intent(in) :: dvv_cart,xx_polar
 !
-      real, dimension (nqpar) :: phi,tht
-      real, dimension (nqpar) :: cosp,sinp,sint,cost
+      real :: phi,tht
+      real :: cosp,sinp,sint,cost
 !
-!  All accelerations in dfq are in Cartesian.
+!  dvv_cart contain the accelerations transformed to Cartesian, plus
+!  the n-body acceleration, also in Cartesian. Do the RK timestepping.    
 !
-      vx = vx + dt_beta_ts(itsub)*ax !vxdot
-      vy = vy + dt_beta_ts(itsub)*ay !vydot
-      vz = vz + dt_beta_ts(itsub)*az !vzdot
+      vv_cart = vv_cart + dt_beta_ts(itsub)* dvv_cart
 !
 !  Convert back to polar coordinates.
 !
+      vx=vv_cart(1); vy=vv_cart(2); vz=vv_cart(3)
       if (lcylindrical_coords) then
-        phi=fq(:,iyq)
+        phi=xx_polar(2)
         cosp=cos(phi) ; sinp=sin(phi)
-        fq(:,ivxq) =  vx*cosp + vy*sinp !=vrad
-        fq(:,ivyq) = -vx*sinp + vy*cosp !=vphi
-        fq(:,ivzq) =  vz
+        vv_polar(1) =  vx*cosp + vy*sinp !=vrad
+        vv_polar(2) = -vx*sinp + vy*cosp !=vphi
+        vv_polar(3) =  vz
       else if (lspherical_coords) then
-        tht=fq(:,iyq)
-        phi=fq(:,izq)
+        tht=xx_polar(2)
+        phi=xx_polar(3)
         cost=cos(tht) ; sint=sin(tht)
         cosp=cos(phi) ; sinp=sin(phi)
-        fq(:,ivxq) =  vx*sint*cosp + vy*sint*sinp + vz*cost !=vrad
-        fq(:,ivyq) =  vx*cost*cosp + vy*cost*sinp - vz*sint !=vphi
-        fq(:,ivzq) = -vx*sinp      + vy*cosp                !=vz
+        vv_polar(1) =  vx*sint*cosp + vy*sint*sinp + vz*cost !=vrad
+        vv_polar(2) =  vx*cost*cosp + vy*cost*sinp - vz*sint !=vphi
+        vv_polar(3) = -vx*sinp      + vy*cosp                !=vz
       endif
 !
     endsubroutine update_velocity
