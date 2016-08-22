@@ -116,7 +116,6 @@ module Poisson
     integer, dimension (nx) :: xind
     integer, dimension (ny) :: yind
     integer, dimension (nz) :: zind
-!    integer, dimension (10) :: newregion
     real, dimension (nx) :: dxc_1
     real, dimension (ny) :: dyc_1
     real, dimension (nz) :: dzc_1
@@ -377,8 +376,8 @@ module Poisson
                        ! of 4pi that we don't want (I think).
 !
     if (lroot .and. lshowtime) then
-      print '("barneshut: MPI time = ",f10.3," seconds.")',tstop_mpi-tstart_mpi
-      print '("barneshut: Loop time = ",f10.3," seconds.")',tstop_loop-tstart_loop
+      print '("barneshut: MPI time = ",f10.5," seconds.")',tstop_mpi-tstart_mpi
+      print '("barneshut: Loop time = ",f10.5," seconds.")',tstop_loop-tstart_loop
     endif
 !
     endsubroutine do_barneshut
