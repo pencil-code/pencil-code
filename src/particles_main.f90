@@ -476,11 +476,7 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      !if (.not.(lparticles_nbody.and.(lcylindrical_coords.or.lspherical_coords))) then
-        fp(1:npar_loc,1:mpvar) = fp(1:npar_loc,1:mpvar) + dt_beta_ts(itsub)*dfp(1:npar_loc,1:mpvar)
-      !else
-      !  call advance_particles_in_cartesian(fp,dfp)
-      !endif
+      fp(1:npar_loc,1:mpvar) = fp(1:npar_loc,1:mpvar) + dt_beta_ts(itsub)*dfp(1:npar_loc,1:mpvar)
 !
 !  Discrete particle collisions. Must be done at the end of the time-step.
 !   This call also sorts the particles into mn 

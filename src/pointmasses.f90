@@ -27,6 +27,7 @@ module PointMasses
   real, dimension(nqpar,mqarray) :: fq
   real, dimension(nqpar,mqvar) :: dfq
   real, dimension(nqpar,3) :: dfq_cart
+  !real, dimension(mpar_loc,3) :: dfp_cart
   real, dimension(nqpar) :: xq0=0.0, yq0=0.0, zq0=0.0
   real, dimension(nqpar) :: vxq0=0.0, vyq0=0.0, vzq0=0.0
   real, dimension(nqpar) :: pmass=0.0, r_smooth=impossible, pmass1
@@ -42,7 +43,6 @@ module PointMasses
   integer :: iglobal_ggp=0, istar=1, iplanet=2
 !
   integer :: imass=0, ixq=0, iyq=0, izq=0, ivxq=0, ivyq=0, ivzq=0
-  !integer :: ivxq_cart=0, ivyq_cart=0, ivzq_cart=0      
   integer :: nqvar=0, nqaux=0
 !
   logical, dimension(nqpar) :: lcylindrical_gravity_nbody=.false.
@@ -115,14 +115,6 @@ module PointMasses
              ' using gravity_r.f90 instead.')
       endif
 !
-      !if (npar < nqpar) then
-      !  if (lroot) write(0,*) 'npar, nqpar = ', npar, nqpar
-      !  call fatal_error('register_pointmasses','the number of massive'//&
-      !       ' particles (nqpar) is less than the allocated number of particles'//&
-      !       ' (npar). Increase npar to the minimum number (npar=npsar) needed'//&
-      !       ' in cparam.local and recompile')
-      !endif
-!
 !  Auxiliary variables for polar coordinates
 !
       ixq = nqvar+1
@@ -148,19 +140,9 @@ module PointMasses
       qvarname(nqvar+1)='imass'
       nqvar=nqvar+1
 !
-      !if (lcartesian_coords.and.lcartesian_evolution) &
-      !    call fatal_error("register_pointmasses",&
-      !     "lcartesian_coords and lcartesian_evolution: overkill")
-!
-      !if (lcartesian_evolution.and.(.not.lcartesian_coords)) then
-      !  ivxq_cart = nqvar+1
-      !  qvarname(nqvar+1)='ivxq_cart'
-      ! ivyq_cart = nqvar+2
-      !  qvarname(nqvar+1)='ivyq_cart'
-      !  ivzq_cart = nqvar+3
-      !  qvarname(nqvar+1)='ivzq_cart'
-      !  nqvar=nqvar+3
-      !endif
+      if (lcartesian_coords.and.lcartesian_evolution) &
+          call fatal_error("register_pointmasses",&
+           "lcartesian_coords and lcartesian_evolution: overkill")
 !
 !  Check that the fq and dfq arrays are big enough.
 !
@@ -1052,6 +1034,10 @@ module PointMasses
       real, dimension (mparray), optional :: fp_pt
       real, dimension (mpvar), optional :: dfp_pt
       logical, optional :: flag_pt
+      logical :: levolve_pmass_cartesian
+!
+      levolve_pmass_cartesian=lcallpointmass.and.lcartesian_evolution
+      
 !
       if (lcallpointmass) then
         positions    =  fq(k,ixq:izq)
@@ -1064,11 +1050,11 @@ module PointMasses
       do ks=1,nqpar
         if (.not.(lcallpointmass.and.k==ks)) then !prevent self-acceleration
 !
-          if (lcartesian_evolution.and.(.not.lcartesian_coords)) then 
-            call get_evr(positions,fq(ks,ixq:izq),evr_cart)
+          if (levolve_pmass_cartesian) then 
+            call get_evr(positions,fq(ks,ixq:izq),evr_cart,.true.)
             tmp1=sum(evr_cart**2)
           else
-            call get_evr(positions,fq(ks,ixq:izq),evr)
+            call get_evr(positions,fq(ks,ixq:izq),evr,.false.)
             tmp1=sum(evr**2)
           endif
 !
@@ -1076,7 +1062,6 @@ module PointMasses
 !
 !  r_ij = sqrt(ev1**2 + ev2**2 + ev3**2)
 !
-          !tmp1=sum(evr_cart**2)
           tmp2=r_smooth(ks)**2
           r2_ij=max(tmp1,tmp2)
 !
@@ -1107,7 +1092,7 @@ module PointMasses
 !  The main dxx_dt of particle_dust takes care of transforming the linear
 !  velocities to angular changes in position.
 !
-          if (lcartesian_evolution.and.(.not.lcartesian_coords)) then 
+          if (levolve_pmass_cartesian) then 
             acc_cart = - GNewton*pmass(ks)*invr3_ij*evr_cart(1:3)
             dfq_cart(k,:) =  dfq_cart(k,:) + acc_cart
           else
@@ -1134,7 +1119,7 @@ module PointMasses
 !
       enddo !nbody loop
 !
-      if (lcartesian_coords.or.(.not.lcartesian_evolution)) then 
+      if (.not.levolve_pmass_cartesian) then
         if (lcallpointmass) then
           dfq(k,ivxq:ivzq) = acceleration
         else
@@ -1144,7 +1129,7 @@ module PointMasses
 !
     endsubroutine gravity_pointmasses_inertial
 !**********************************************************
-    subroutine get_evr(xxp,xxq,evr_output)
+    subroutine get_evr(xxp,xxq,evr_output,levolve_pmass_cartesian)
 !
 !  Point-to-point vector distance, in different coordinate systems.
 !  Return always in Cartesian.
@@ -1155,6 +1140,7 @@ module PointMasses
       real, dimension(3), intent(out) :: evr_output
       real :: x1,y1,x2,y2,z1,z2
       real :: e1,e2,e3,e10,e20,e30
+      logical :: levolve_pmass_cartesian
 !
       e1=xxp(1);e10=xxq(1)
       e2=xxp(2);e20=xxq(2)
@@ -1166,7 +1152,7 @@ module PointMasses
         z1=e3 ; z2=e30
       elseif (lcylindrical_coords) then
 !
-        if (lcartesian_evolution) then 
+        if (levolve_pmass_cartesian) then 
           x1=e1*cos(e2)
           y1=e1*sin(e2)
           z1=e3
@@ -1181,7 +1167,7 @@ module PointMasses
         endif
 !
       elseif (lspherical_coords) then
-        if (lcartesian_evolution) then   
+        if (levolve_pmass_cartesian) then   
           x1=e1*sin(e2)*cos(e3)
           y1=e1*sin(e2)*sin(e3)
           z1=e1*cos(e2)
@@ -1196,7 +1182,7 @@ module PointMasses
         endif
       endif
 !
-      if (lcartesian_coords.or.lcartesian_evolution) then 
+      if (lcartesian_coords.or.levolve_pmass_cartesian) then 
         evr_output(1)=x1-x2
         evr_output(2)=y1-y2
         evr_output(3)=z1-z2
@@ -1269,7 +1255,6 @@ module PointMasses
 !  27-aug-06/wlad: coded
 !  18-mar-08/wlad: cylindrical and spherical corrections
 !
-      !real, dimension(nqpar,mqvar),intent(inout) :: dfq
       real, dimension(nqpar,mqarray) :: ftmp
       real, dimension(3) :: vcm
       real :: xcm,ycm,zcm,thtcm,phicm,vxcm,vycm,vzcm
@@ -1521,7 +1506,6 @@ module PointMasses
         enddo
         pmass(istar)= 1-tmp
       else
-        !pmass(1:nqpar_orig)=final_ramped_mass(1:nqpar_orig)
         pmass(1:nqpar)=final_ramped_mass(1:nqpar)
       endif
 !
@@ -1805,7 +1789,7 @@ module PointMasses
 !
     endsubroutine rprint_pointmasses
 !***********************************************************************
-    subroutine boundconds_pointmasses!(f)
+    subroutine boundconds_pointmasses
 !
 !  Global boundary conditions for particles.
 !
@@ -1813,19 +1797,11 @@ module PointMasses
 !
       use Mpicomm
       use General, only: random_number_wrapper
-      !use Particles_mpicomm
       use SharedVariables, only: get_shared_variable
-!
-      !real, dimension (mpar_loc,mparray) :: fp
-      !integer, dimension (mpar_loc) :: ipar
-      !real, dimension (mpar_loc,mpvar), optional :: dfp
-      !logical, optional :: linsert
 !
       real :: xold, yold, rad, r1old, OO, tmp
       integer :: k, ik, k1, k2
       character (len=2*bclen+1) :: boundx, boundy, boundz
-!
-      !intent (inout) :: fp, ipar, dfp
 !
       do k=1,nqpar
 !
@@ -1956,13 +1932,10 @@ module PointMasses
       real, dimension (mx,my,mz,mfarray) :: f
 !
       if (lroot) then 
-        !if (lfirst) then
-        !  dfq(1:nqpar,:)=0.0
-        !  dfq_cart(1:nqpar,:)=0.0
-        !else
-          dfq(1:nqpar,:)=alpha_ts(itsub)*dfq(1:nqpar,:)
-          dfq_cart(1:nqpar,:)=alpha_ts(itsub)*dfq_cart(1:nqpar,:)
-        !endif
+        dfq(1:nqpar,:)=alpha_ts(itsub)*dfq(1:nqpar,:)
+!
+        if (lcartesian_evolution) & 
+             dfq_cart(1:nqpar,:)=alpha_ts(itsub)*dfq_cart(1:nqpar,:)
       endif
 !
    endsubroutine pointmasses_timestep_first
@@ -1974,13 +1947,19 @@ module PointMasses
 !  07-jan-05/anders: coded
 !
       use Mpicomm, only: mpibcast_real
+      !use Particles_main,only: fetch_fp_array,return_fp_array
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(3) :: xx_polar,vv_polar,xxdot_polar,vvdot_polar,aa_nbody_cart
       integer :: ks
 !
+      integer :: k, np_aux
+      real, dimension (mpar_loc,mparray) :: fp_aux
+      real, dimension (mpar_loc,mpvar) :: dfp_aux
+      logical, dimension (mpar_loc) :: flag
+!
       if (lroot) then 
-        if ((.not.lcartesian_coords).and.lcartesian_evolution) then
+        if (lcartesian_evolution) then
           do ks=1,nqpar
             xx_polar    = fq(ks,ixq:izq)
             vv_polar    = fq(ks,ivxq:ivzq)
@@ -1997,7 +1976,6 @@ module PointMasses
           fq(1:nqpar,1:mqvar) = fq(1:nqpar,1:mqvar) + dt_beta_ts(itsub)*dfq(1:nqpar,1:mqvar)
         endif
       endif
-!
       call mpibcast_real(fq,(/nqpar,mqarray/))
 !
     endsubroutine pointmasses_timestep_second
@@ -2137,12 +2115,12 @@ module PointMasses
        vv_cart(1) = vx    ;  vv_cart(2) = vy    ;  vv_cart(3) = vz
       dvv_cart(1) = vxdot ; dvv_cart(2) = vydot ; dvv_cart(3) = vzdot
 
-      call update_position(k,xx_cart,vv_cart,dxx_cart,xx_polar,xxdot_polar)
+      call update_position(xx_cart,vv_cart,dxx_cart,xx_polar,xxdot_polar)
       call update_velocity(vv_cart,dvv_cart,vv_polar,xx_polar)
 !
     endsubroutine advance_particles_in_cartesian
 !***********************************************************************
-    subroutine update_position(k,xx_cart,vv_cart,dxx_cart,xx_polar,xxdot_polar)
+    subroutine update_position(xx_cart,vv_cart,dxx_cart,xx_polar,xxdot_polar)
 !
 !  Update position if N-body is used in polar coordinates.
 !
@@ -2150,7 +2128,6 @@ module PointMasses
 !
       real, dimension(3), intent(in) :: vv_cart
       real :: xp,yp,zp,xdot,ydot,zdot,cosp,sinp,sint,cost,phi,tht
-      integer :: k
       real, dimension(3), intent(inout) :: xx_polar,xx_cart,dxx_cart
       real, dimension(3), intent(out) :: xxdot_polar
 !

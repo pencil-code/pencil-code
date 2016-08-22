@@ -2799,45 +2799,32 @@ module Particles
 !
       if (lcartesian_coords) then
 !
-        if (nxgrid/=1) then
+        if (nxgrid/=1) &
             dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
-        endif
         if (nygrid/=1) &
             dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + fp(1:npar_loc,ivpy)
         if (nzgrid/=1) &
             dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + fp(1:npar_loc,ivpz)
 !
-      else!if (.not.lpointmasses) then
+      elseif (lcylindrical_coords) then
+        if (nxgrid/=1) &
+            dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
+        if (nygrid/=1) &
+            dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + &
+              fp(1:npar_loc,ivpy)/max(fp(1:npar_loc,ixp),tini)
+        if (nzgrid/=1) &
+            dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + fp(1:npar_loc,ivpz)
 !
-!  In the case that the N-body code is used, the update in polar grids
-!  in done by transforming the variables first to Cartesian, to achieve a
-!  better conservation of the Jacobi constant. We (Wlad and Joe) tested that
-!  the Tisserand tails in the 3-body problem are not well-reproduced in cylindrical
-!  unless the update is done in Cartesian. The conservation of the Jacobi constant
-!  then passes from 1e-4 to 1e-7, a significant improvement.
+      elseif (lspherical_coords) then 
 !
-        if (lcylindrical_coords) then
-          if (nxgrid/=1) &
-               dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
-          if (nygrid/=1) &
-               dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + &
-               fp(1:npar_loc,ivpy)/max(fp(1:npar_loc,ixp),tini)
-          if (nzgrid/=1) &
-               dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + fp(1:npar_loc,ivpz)
-!
-        elseif (lspherical_coords) then 
-!
-          if (nxgrid/=1) &
-               dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
-          if (nygrid/=1) &
-               dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + &
-               fp(1:npar_loc,ivpy)/max(fp(1:npar_loc,ixp),tini)
-          if (nzgrid/=1) &
-               dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + &
-               fp(1:npar_loc,ivpz)/(max(fp(1:npar_loc,ixp),tini)*&
-               sin(fp(1:npar_loc,iyp)))
-        endif
-!
+        if (nxgrid/=1) &
+            dfp(1:npar_loc,ixp) = dfp(1:npar_loc,ixp) + fp(1:npar_loc,ivpx)
+        if (nygrid/=1) &
+            dfp(1:npar_loc,iyp) = dfp(1:npar_loc,iyp) + &
+              fp(1:npar_loc,ivpy)/max(fp(1:npar_loc,ixp),tini)
+        if (nzgrid/=1) &
+            dfp(1:npar_loc,izp) = dfp(1:npar_loc,izp) + &
+              fp(1:npar_loc,ivpz)/(max(fp(1:npar_loc,ixp),tini)*sin(fp(1:npar_loc,iyp)))
       endif
 !
 !  With shear there is an extra term due to the background shear flow.
