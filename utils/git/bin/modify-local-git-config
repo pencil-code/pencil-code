@@ -1,0 +1,51 @@
+#!/bin/sh
+
+# Helper function to set local config option if it is not set locally already.
+# In newer Git versions `git config --local <option>` can be used to determine
+# if an option is set locally, but in Git 1.7.1 this does not work. Hence we
+# specify the local Git config file explictly.
+set_local_option() {
+    local_git_config="$(git rev-parse --git-dir)/config"
+    if [ -z "$(git config --file "$local_git_config" "$1")" ]; then
+        git config --file "$local_git_config" "$1" "$2"
+    fi
+}
+
+# Avoid merge commits by rebasing (supported since 1.7.9)
+set_local_option pull.rebase true
+# Automatically stash local changes (supported since 1.8.4)
+set_local_option rebase.autostash true
+
+# Handy alias that emulates "git pull --rebase --autostash" for Git versions
+# older than 2.9. I have tested this in particular with Git 1.7.1 (RHEL 6's
+# version). The code is copied more or less verbatim from
+#  https://github.com/git/git/blob/master/git-rebase.sh
+# Right now the only difference is that this does not do garbage collection in
+# the form of "git gc --auto" in the end.
+git config alias.pc-update '!f() {
+    if ! stash_sha1=$(git stash create "autostash"); then
+        echo Cannot autostash
+        exit 1
+    fi
+    if [ -n "$stash_sha1" ]; then
+        echo Created autostash: $(git rev-parse --short $stash_sha1)
+        git reset --hard
+    fi
+    git pull --rebase
+    if [ -n "$stash_sha1" ]; then
+        if git stash apply $stash_sha1 2>&1 >/dev/null; then
+            echo Applied autostash.
+        else
+            if ! git stash store -m "autostash" -q $stash_sha1; then
+                echo Cannot store \$stash_sha1
+                exit 1
+            fi
+            echo Applying autostash resulted in conflicts.
+            echo Your changes are safe in the stash.
+            echo You can run "git stash pop" or "git stash drop" at any time.
+        fi
+    fi
+}; f'
+
+# Shorten "pc-update" to "up" if the latter is not defined already
+set_local_option alias.up '!git pc-update'
