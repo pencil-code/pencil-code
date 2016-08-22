@@ -237,7 +237,7 @@ module Poisson
     ! First pass only counts regions, second pass actually populates 'themap'
     do iprecalc=1,2
       if (lprecalc) then
-        if (lroot) print*,"# regions on proc 0:",nsingle+ngroup
+        if (lroot) print*,"barneshut.f90: # regions on proc 0:",nsingle,";",ngroup
         allocate(themap_group(10,ngroup))
         allocate(themap_single(10,nsingle))
         allocate(regsmooth_single(nsingle))
@@ -347,7 +347,7 @@ module Poisson
       i   = themap_single(1, iregion) ; irl = themap_single(5,iregion) ; iru = themap_single(6,iregion)
       j   = themap_single(2, iregion) ; jrl = themap_single(7,iregion) ; jru = themap_single(8,iregion)
       k   = themap_single(3, iregion) ; krl = themap_single(9,iregion) ; kru = themap_single(10,iregion)
-      pp  = themap_single(4,iregion)
+      pp  = themap_single(4, iregion)
       phi(i,j,k) = phi(i,j,k) - regsmooth_single(iregion)* &
         sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))*regdist1_single(iregion)
     enddo
@@ -394,7 +394,7 @@ module Poisson
     integer, dimension(10) :: newregion
     integer :: sx, sy, sz, ii, ji, ki, il, iu, jl, ju, kl, ku, ppi, newindex
     real :: lxi, lyi, lzi, dist, xwi, ywi, zwi, width
-    logical :: laddreg, lsplit, lregionmatched
+    logical :: laddreg, lsplit, lregionmatched, lnotself
 !
     ! If the point where the potential is being calculated is inside the
     ! region in question, then we MUST subdivide further (unless the region is
@@ -403,6 +403,10 @@ module Poisson
         .and. (ipos(2) .ge. ysind(1) .and. ipos(2) .le. ysind(dimi(2))) &
         .and. (ipos(3) .ge. zsind(1) .and. ipos(3) .le. zsind(dimi(3))) &
         .and. (iproc .eq. ppi))
+    lnotself = (((ipos(1) .ne. xsind(1) .or. ipos(1) .ne. xsind(dimi(1))) &
+            .or. (ipos(2) .ne. ysind(1) .or. ipos(2) .ne. ysind(dimi(2))) &
+            .or. (ipos(3) .ne. zsind(1) .or. ipos(3) .ne. zsind(dimi(3))) &
+            .or. (iproc .ne. ppi)))
 !
     lxi = sum(xi)/real(dimi(1))
     lyi = sum(yi)/real(dimi(2))
@@ -431,7 +435,7 @@ module Poisson
           enddo
         enddo
       enddo
-    elseif (.not. lsplit .and. dist .lt. octree_maxdist) then
+    elseif (((.not. lsplit).or.(product(dimi).eq.1)) .and. (dist .lt. octree_maxdist) .and. lnotself) then
       newregion = (/ipos(1),ipos(2),ipos(3), ppi, xsind(1), &
        xsind(dimi(1)), ysind(1),ysind(dimi(2)),zsind(1),zsind(dimi(3))/)
       if ((newregion(5).ne.newregion(6)).or.(newregion(7).ne.newregion(8)).or. &
@@ -457,8 +461,10 @@ module Poisson
         endif
       else
         nsingle = nsingle+1
-        if (laddreg) themap_single(1:10,nsingle) = newregion(1:10)
-        if (lprecalcdists) regdist1_single(nsingle) = 1.0/dist
+        if (laddreg) then
+          themap_single(1:10,nsingle) = newregion(1:10)
+          regdist1_single(nsingle) = 1.0/dist
+        endif
         if (dist .gt. (octree_maxdist-octree_smoothdist)) then
          regsmooth_single(nsingle) = 0.5*(cos(pi*((octree_maxdist-dist)/octree_smoothdist+1.0))+1.0)
         endif
