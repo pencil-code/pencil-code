@@ -7,7 +7,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MQVAR CONTRIBUTION 10
+! MQVAR CONTRIBUTION 7
 ! MQAUX CONTRIBUTION 0
 ! CPARAM logical, parameter :: lpointmasses=.true.
 !
@@ -26,6 +26,7 @@ module PointMasses
   character (len=10), dimension(mqarray) :: qvarname
   real, dimension(nqpar,mqarray) :: fq
   real, dimension(nqpar,mqvar) :: dfq
+  real, dimension(nqpar,3) :: dfq_cart
   real, dimension(nqpar) :: xq0=0.0, yq0=0.0, zq0=0.0
   real, dimension(nqpar) :: vxq0=0.0, vyq0=0.0, vzq0=0.0
   real, dimension(nqpar) :: pmass=0.0, r_smooth=impossible, pmass1
@@ -41,7 +42,7 @@ module PointMasses
   integer :: iglobal_ggp=0, istar=1, iplanet=2
 !
   integer :: imass=0, ixq=0, iyq=0, izq=0, ivxq=0, ivyq=0, ivzq=0
-  integer :: ivxq_cart=0, ivyq_cart=0, ivzq_cart=0      
+  !integer :: ivxq_cart=0, ivyq_cart=0, ivzq_cart=0      
   integer :: nqvar=0, nqaux=0
 !
   logical, dimension(nqpar) :: lcylindrical_gravity_nbody=.false.
@@ -151,15 +152,15 @@ module PointMasses
       !    call fatal_error("register_pointmasses",&
       !     "lcartesian_coords and lcartesian_evolution: overkill")
 !
-      if (lcartesian_evolution.and.(.not.lcartesian_coords)) then
-        ivxq_cart = nqvar+1
-        qvarname(nqvar+1)='ivxq_cart'
-        ivyq_cart = nqvar+2
-        qvarname(nqvar+1)='ivyq_cart'
-        ivzq_cart = nqvar+3
-        qvarname(nqvar+1)='ivzq_cart'
-        nqvar=nqvar+3
-      endif
+      !if (lcartesian_evolution.and.(.not.lcartesian_coords)) then
+      !  ivxq_cart = nqvar+1
+      !  qvarname(nqvar+1)='ivxq_cart'
+      ! ivyq_cart = nqvar+2
+      !  qvarname(nqvar+1)='ivyq_cart'
+      !  ivzq_cart = nqvar+3
+      !  qvarname(nqvar+1)='ivzq_cart'
+      !  nqvar=nqvar+3
+      !endif
 !
 !  Check that the fq and dfq arrays are big enough.
 !
@@ -1108,7 +1109,7 @@ module PointMasses
 !
           if (lcartesian_evolution.and.(.not.lcartesian_coords)) then 
             acc_cart = - GNewton*pmass(ks)*invr3_ij*evr_cart(1:3)
-              dfq(k,ivxq_cart:ivzq_cart) =  dfq(k,ivxq_cart:ivzq_cart) + acc_cart
+            dfq_cart(k,:) =  dfq_cart(k,:) + acc_cart
           else
             acc = - GNewton*pmass(ks)*invr3_ij*evr(1:3)
             acceleration =  acceleration + acc
@@ -1957,8 +1958,10 @@ module PointMasses
       if (lroot) then 
         if (lfirst) then
           dfq(1:nqpar,:)=0.0
+          dfq_cart(1:nqpar,:)=0.0
         else
-          dfq(1:nqpar,:)=alpha_ts(itsub)*dfq(1:nqpar,:)            
+          dfq(1:nqpar,:)=alpha_ts(itsub)*dfq(1:nqpar,:)
+          dfq_cart(1:nqpar,:)=alpha_ts(itsub)*dfq_cart(1:nqpar,:)
         endif
       endif
 !
@@ -2061,9 +2064,9 @@ module PointMasses
 !
 !  Add the Cartesian acceleration.
 !
-        ax=arad*cosp - aphi*sinp + dfq(:,ivxq_cart)
-        ay=arad*sinp + aphi*cosp + dfq(:,ivyq_cart)
-        az=dfq(:,ivzq_cart)
+        ax=arad*cosp - aphi*sinp + dfq_cart(:,1) ! ivqx_cart
+        ay=arad*sinp + aphi*cosp + dfq_cart(:,2) ! ivqy_cart
+        az=dfq_cart(:,3)                         ! ivqz_cart
 !
       else if (lspherical_coords) then
 !
@@ -2088,9 +2091,9 @@ module PointMasses
 !
 !  Add the Cartesian acceleration.
 !
-        ax=arad*sint*cosp + atht*cost*cosp - aphi*sinp + dfq(:,ivxq_cart)
-        ay=arad*sint*sinp + atht*cost*sinp + aphi*cosp + dfq(:,ivyq_cart)
-        az=arad*cost      - atht*sint                  + dfq(:,ivzq_cart)
+        ax=arad*sint*cosp + atht*cost*cosp - aphi*sinp + dfq_cart(:,1) !ivxq_cart)
+        ay=arad*sint*sinp + atht*cost*sinp + aphi*cosp + dfq_cart(:,2) !ivyq_cart)
+        az=arad*cost      - atht*sint                  + dfq_cart(:,3) !ivzq_cart)
 !
       endif
 !
