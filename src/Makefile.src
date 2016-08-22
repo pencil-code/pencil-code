@@ -2467,7 +2467,6 @@ legacy_code: Makefile.inc Makefile-standard.inc cparam.inc
 	fi
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
 	$${PENCIL_HOME}/utils/pc_identify_revision
-	$${PENCIL_HOME}//utils/git/bin/install-hook $${PENCIL_HOME}/utils/git/hooks/prepare-commit-msg
 
 code: Makefile.inc Makefile-standard.inc cparam.inc
 	$${PENCIL_HOME}/utils/pc_identify_revision --reset
@@ -2482,7 +2481,6 @@ code: Makefile.inc Makefile-standard.inc cparam.inc
 	fi
 	@echo "  <timestamp   type='end'>`date`</timestamp>\n</buildtime>" >> .buildtime
 	$${PENCIL_HOME}/utils/pc_identify_revision
-	$${PENCIL_HOME}//utils/git/bin/install-hook $${PENCIL_HOME}/utils/git/hooks/prepare-commit-msg
 #
 FASTEXECS=startfast.x runfast.x combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x
 fast:
