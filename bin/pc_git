@@ -165,6 +165,20 @@ def git_commits_equal(c1, c2):
     return git_hash(c1) == git_hash(c2)
 
 
+def git_contains_commit(parent, potential_child):
+    """Return True if potential_child is a child of parent...
+
+    ... or parent itself.
+    Otherwise return False.
+
+    """
+    if git_commits_equal(parent, potential_child):
+        return True
+    else:
+        output = git_output(['rev-list', '%s..%s' % (potential_child, parent)])
+        return bool(output)
+
+
 def git_hash(commit):
     """Return the SHA1 of the current HEAD"""
     return git_output(['rev-parse', '--verify', '%s^{commit}' % (commit, )])
