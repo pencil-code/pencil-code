@@ -244,7 +244,7 @@ module Poisson
         allocate(regsmooth_group(ngroup))
         regsmooth_single = 1.0 ; regsmooth_group = 1.0
         allocate(regdist1_single(nsingle))
-        allocate(regdist1_group(ngroup))
+        if (lprecalcdists) allocate(regdist1_group(ngroup))
         if (lreadoctree) then
           call read_octree
           exit
@@ -351,26 +351,43 @@ module Poisson
       phi(i,j,k) = phi(i,j,k) - regsmooth_single(iregion)* &
         sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))*regdist1_single(iregion)
     enddo
-    do iregion=1,ngroup
-      i   = themap_group(1, iregion) 
-      j   = themap_group(2, iregion) 
-      k   = themap_group(3, iregion) 
-      if (.not.luseprevioussum(iregion)) then
+    if (.not.lprecalcdists) then
+      do iregion=1,ngroup
+        i   = themap_group(1,iregion) 
+        j   = themap_group(2,iregion) 
+        k   = themap_group(3,iregion) 
+        if (.not.luseprevioussum(iregion)) then
+          pp  = themap_group(4,iregion)
+          irl = themap_group(5,iregion) ; iru = themap_group(6,iregion)
+          jrl = themap_group(7,iregion) ; jru = themap_group(8,iregion)
+          krl = themap_group(9,iregion) ; kru = themap_group(10,iregion)
+          summreg = sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))
+          summreg1 = 1.0/summreg
+          xreg = sum(xrecv(irl:iru,pp) &
+            *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),3),2))*summreg1
+          yreg = sum(yrecv(jrl:jru,pp) &
+            *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),3),1))*summreg1
+          zreg = sum(zrecv(krl:kru,pp) &
+            *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),2),1))*summreg1
+        endif
+        phi(i,j,k) = phi(i,j,k) - summreg*regsmooth_group(iregion)/get_dist((/i,j,k/),(/xreg,yreg,zreg/))
+      enddo
+    else
+      do iregion=1,ngroup
+        i   = themap_group(1,iregion) 
+        j   = themap_group(2,iregion) 
+        k   = themap_group(3,iregion) 
         pp  = themap_group(4,iregion)
         irl = themap_group(5,iregion) ; iru = themap_group(6,iregion)
         jrl = themap_group(7,iregion) ; jru = themap_group(8,iregion)
         krl = themap_group(9,iregion) ; kru = themap_group(10,iregion)
-        summreg = sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))
-        summreg1 = 1.0/summreg
-        xreg = sum(xrecv(irl:iru,pp) &
-          *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),3),2))*summreg1
-        yreg = sum(yrecv(jrl:jru,pp) &
-          *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),3),1))*summreg1
-        zreg = sum(zrecv(krl:kru,pp) &
-          *sum(sum(phirecv(irl:iru,jrl:jru,krl:kru,pp),2),1))*summreg1
-      endif
-      phi(i,j,k) = phi(i,j,k) - summreg*regsmooth_group(iregion)/get_dist((/i,j,k/),(/xreg,yreg,zreg/))
-    enddo
+        if (.not.luseprevioussum(iregion)) then
+          summreg = sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))
+        endif
+        phi(i,j,k) = phi(i,j,k) - summreg*regsmooth_group(iregion)*regdist1_group(iregion)
+      enddo
+    endif
+!
     if (lroot .and. lshowtime) call cpu_time(tstop_loop)
 !
     phi = phi/(4.0*pi) ! The selfgravity module is going to multiply by a factor
@@ -536,10 +553,12 @@ module Poisson
         file=trim(directory_snap)//trim('/bhmap/regdist1_single.dat'),form='unformatted')
       write(10) regdist1_single
       close(10)
-      open(unit = 10, status='replace', &
-        file=trim(directory_snap)//trim('/bhmap/regdist1_group.dat'),form='unformatted')
-      write(10) regdist1_group
-      close(10)
+      if (lprecalcdists) then
+        open(unit = 10, status='replace', &
+          file=trim(directory_snap)//trim('/bhmap/regdist1_group.dat'),form='unformatted')
+        write(10) regdist1_group
+        close(10)
+      endif
     endsubroutine write_octree
 !***********************************************************************
     subroutine read_octree
@@ -563,10 +582,12 @@ module Poisson
         file=trim(directory_snap)//trim('/bhmap/regdist1_single.dat'),form='unformatted')
       read(10) regdist1_single
       close(10)
-      open(unit = 10, status='old', &
-        file=trim(directory_snap)//trim('/bhmap/regdist1_group.dat'),form='unformatted')
-      read(10) regdist1_group
-      close(10)
+      if (lprecalcdists) then
+        open(unit = 10, status='old', &
+          file=trim(directory_snap)//trim('/bhmap/regdist1_group.dat'),form='unformatted')
+        read(10) regdist1_group
+        close(10)
+      endif
     endsubroutine read_octree
 !***********************************************************************
     subroutine read_poisson_init_pars(iostat)
