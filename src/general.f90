@@ -57,6 +57,8 @@ module General
   public :: transpose_mn
   public :: notanumber, notanumber_0d
   public :: reduce_grad_dim
+  public :: meshgrid
+  public :: linspace
 !
   include 'record_types.h'
 !
@@ -142,6 +144,11 @@ module General
     module procedure notanumber_3
     module procedure notanumber_4
   endinterface
+!
+  interface meshgrid
+    module procedure meshgrid_2d
+    module procedure meshgrid_3d
+  endinterface meshgrid 
 !
 !  State and default generator of random numbers.
 !
@@ -4538,4 +4545,94 @@ module General
 
   endsubroutine yin2yang_coors
 !****************************************************************************  
-endmodule General
+    subroutine meshgrid_2d(array1,array2,output_array1,output_array2)
+!
+! extends 1d arrays array1 and array2 into 2d arrays of size
+! length(array1)xlength(array2). Analagous to numpy.meshgrid
+!
+! 19-aug-16/vince: adapted
+!
+      double precision, intent(in), dimension(:) :: array1
+      double precision, intent(in), dimension(:) :: array2
+      double precision, intent(out), dimension(:,:) :: output_array1
+      double precision, intent(out), dimension(:,:) :: output_array2
+!        
+      output_array1=spread(array1,2,size(array2))
+      output_array2=spread(array2,1,size(array1))
+!
+    endsubroutine meshgrid_2d
+!***********************************************************************
+    subroutine meshgrid_3d(array1,array2,array3,output_array1,output_array2,output_array3)
+!
+! extends 1d arrays array1, array2, and array3 into 3d arrays
+! of shape [size(array1),size(array2),size(array3)].
+!
+      real, intent(in), dimension(:) :: array1
+      real, intent(in), dimension(:) :: array2
+      real, intent(in), dimension(:) :: array3
+      real, intent(out), dimension(:,:,:) :: output_array1
+      real, intent(out), dimension(:,:,:) :: output_array2
+      real, intent(out), dimension(:,:,:) :: output_array3
+      integer :: i,j,l
+!
+      output_array1(:,:,1)=spread(array1,2,size(array2))
+      output_array1=spread(output_array1(:,:,1),3,size(array3))
+!
+      output_array2(:,:,1)=spread(array2,1,size(array1))
+      output_array2=spread(output_array2(:,:,1),3,size(array3))
+!
+      output_array3(:,1,:)=spread(array3,1,size(array1))
+      output_array3=spread(output_array3(:,1,:),2,size(array2))
+!
+    endsubroutine meshgrid_3d
+!***********************************************************************
+    function linspace(start,end,n,step_size,endpoint)
+!
+! Returns a vector of n linearly spaced values on the interval [start,end]
+! if endpoint=.true. (default) or [start,end) if endpoint=.false.
+! If a step_size argument is provided, returns the distance between adjacent
+! values.
+! Analagous to numpy.linspace
+!
+! 19-aug-16/vince: adapted
+!
+      real, intent(in) :: start,end
+      logical, intent(in), optional :: endpoint !whether or not to include the endpoint
+      integer, intent(in) :: n
+      real, intent(out), optional :: step_size !can choose to get the step size in the array
+      real, dimension(n) :: linspace
+      integer :: i
+      real :: step
+      logical :: include_endpoint
+!
+        !by default, include the endpoint
+      if(present(endpoint)) then
+         include_endpoint=endpoint
+      else
+         include_endpoint=.true.
+      end if
+!
+! the number of elements in the array is fixed, so the step size determines whether or not
+! the endpoint is included as the last element of the array
+!
+      if(include_endpoint) then
+         step=(end-start)/(n-1)
+      else
+         step=(end-start)/n
+      end if
+!
+! if a step size variable is provided, return the step size used
+!
+      if(present(step_size)) then
+         step_size=step
+      end if
+!
+! fill the array
+!
+      do i=1,n
+         linspace(i)=(start+step*(i-1))
+      end do
+!
+    endfunction linspace
+!***********************************************************************
+  endmodule General
