@@ -135,8 +135,8 @@ module Special
   logical :: lviscosity_var_newtonian
   logical :: lviscosity_var_blankenbach
 !
-  real, dimension(mz) :: Tbar = 0.0
-  real :: gTT_conductive = 0.0
+  real, dimension(mz) :: Tbar = 0.0, etabar=0.0
+  real :: gTT_conductive = 0.0, eta_alpha2=0.0
 !
   contains
 !***********************************************************************
@@ -196,13 +196,15 @@ module Special
       Lz1 = 1./Lxyz(3)
 !
 !  Conductive (linear) Temperature Gradient, used if the T=Tbar(z) + theta(x,y,z,t)
-!  split is used. 
+!  split is used. It similarly defines the conductive viscosity eta = etabar(z) * nu(x,y,z,t).
 !
       if (lsplit_temperature) then
          do n=n1,n2
             Tbar(n) = Tbot + (n-n1)*(Tupp-Tbot)/(n2-n1)
          enddo
+         etabar = exp(-Bvisc*Tbar*deltaT1)
          gTT_conductive = -delta_T*Lz1
+         eta_alpha2 = (Bvisc*deltaT1*gTT_conductive)**2
       endif
 !      
       if (Ra==impossible) & !else it is given in the initial condition
@@ -476,9 +478,13 @@ module Special
                                  -  9.0*(f(i+2,m,n,iTT)-f(i-2,m,n,iTT)) &
                                  +      (f(i+3,m,n,iTT)-f(i-3,m,n,iTT)))            
 !
-               rhs(i-l1+1,n-n1+1) = factor*dTTdx/eta(i,n)
-!
-               alpha_factor(i-l1+1,n-n1+1)=alpha
+               if (lsplit_temperature) then 
+                 rhs(i-l1+1,n-n1+1) = factor*dTTdx/(eta(i,n)*etabar(n))
+                 alpha_factor(i-l1+1,n-n1+1)=alpha + eta_alpha2
+               else
+                 rhs(i-l1+1,n-n1+1) = factor*dTTdx/eta(i,n)
+                 alpha_factor(i-l1+1,n-n1+1)=alpha
+               endif
                beta_factor(i-l1+1,n-n1+1)=beta
 !
             enddo;enddo
