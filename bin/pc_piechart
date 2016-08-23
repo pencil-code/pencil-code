@@ -1,0 +1,59 @@
+#!/usr/bin/env python
+#
+# usage: 'pc_piechart [rotationangle]'
+# where rotation angle is a number between 0 and 360 that sets the rotation of
+# the pie chart, which can be set in order to optimize the positioning of the
+# text. For the current version of doc/citations/notes.tex (as of August 2016),
+# 290 works nicely for this parameter.
+# Current copy of plot also available at http://alexrichert.com/graphics
+#
+# Added August 2016 by Alex Richert
+#
+
+from os import getenv, listdir, remove, system
+from sys import argv
+import textwrap
+from numpy import argsort, array, concatenate, loadtxt, max, where
+from matplotlib import use
+use("Qt4Agg")
+import matplotlib.pyplot as plt
+plt.rcParams['font.family'] = 'FreeSans'
+
+pencil_home = getenv("PENCIL_HOME")
+system(r"csplit %s/notes.tex '/^{\\em /' '{*}'"%(pencil_home+"/doc/citations"))
+system(r'grep -c "^[0-9][0-9][0-9][0-9]" xx* | sort -n > /tmp/tmp_piechartcounts.txt')
+
+countsraw = loadtxt("/tmp/tmp_piechartcounts.txt",dtype='str')
+system("rm -f /tmp/tmp_piechartcounts.txt")
+
+heads = [] ; counts = [] ; headlenz = []
+
+for s in countsraw[1:]:
+ fname = s[:4]
+ with open(fname, 'r') as f:
+  headraw = f.readline()
+ f.close()
+ head = headraw.replace('{\em ','').replace('} \citep{','').replace('\\','').replace('\n','')
+ head = textwrap.fill(head, 45).replace('\n','\n   ')
+ try:
+  count = int(s[6:])
+  if (count>0):
+   counts += [count]
+   heads += [head]
+   headlenz += [len(head)]
+ except: pass
+system("rm -f xx[0-9][0-9]")
+
+counts = array(counts) ; heads = array(heads) ; headlenz = array(headlenz)
+
+f = plt.figure(figsize=(12,6),dpi=80)
+ax = f.add_subplot(111)
+plt.axis('equal')
+
+sa = 0
+if len(argv)>1: sa = int(argv[1])
+ax.pie(counts,labels=heads,startangle=sa)
+
+f.subplots_adjust(left=0.15,right=0.85,bottom=0.05,top=0.95)
+
+plt.show()
