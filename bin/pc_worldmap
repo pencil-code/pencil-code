@@ -1,0 +1,46 @@
+#!/usr/bin/env python
+#
+# Creates a map of Pencil contributor locations based on $PENCIL_HOME/license/developers.txt
+# Be sure to check out the Python modules used before trying to run it
+#  (the most obscure being 'geopy': https://pypi.python.org/pypi/geopy).
+# This script requires that license/developers.txt stay perfectly formatted!
+# Also, locations in column 7 of license/developers.txt need to be resolvable
+# *either* with Bing or Google Maps.
+# Current copy of plot also available at http://alexrichert.com/graphics
+#
+# Added August 2016 by Alex Richert
+#
+
+from os import getenv, system
+pencil_home = getenv("PENCIL_HOME")
+import numpy as np
+import matplotlib as mpl
+mpl.use('gtkagg')
+import matplotlib.pyplot as plt
+from mpl_toolkits.basemap import Basemap, addcyclic
+from geopy.geocoders import Bing, GoogleV3
+
+system("grep -A 1000 '\-\-\-' %s/developers_withlocations.txt | grep -B 1000 '\-\-\-' | awk -F, '{print $7}' | sed 's/^[[:space:]]*//g;/^$/d;s/[[:space:]]/_/g' > /tmp/pencilWorldMap_loclist.tmp"%(pencil_home+"/license/"))
+
+s = 25
+m = Basemap(llcrnrlon=-180,llcrnrlat=-60,urcrnrlon=180,urcrnrlat=80,projection='mill')
+fig=plt.figure(figsize=(10,6))
+ax = fig.add_subplot(111)
+m.drawmapboundary(fill_color='aqua')
+m.fillcontinents(color='darkgrey',lake_color='aqua')
+loclist = np.loadtxt("/tmp/pencilWorldMap_loclist.tmp",dtype='str')
+system("rm /tmp/pencilWorldMap_loclist.tmp")
+for loc in np.unique(loclist):
+ loc = loc.replace("_"," ")
+ match = Bing("ArVxInmmqe8awpDfDz2i3Lx_VtAe2SxAQ9JLBDB45f5N5o1s4amhdCv0BNZ6s3Xq").geocode(loc,timeout=10)
+ if match is None:
+  match = GoogleV3().geocode(loc,timeout=10)
+ lat, lon = match.latitude, match.longitude
+ print loc, lat, lon
+ x, y = m([lon],[lat])
+ m.scatter(x,y,c='red',zorder=2,s=s)
+ if match is None: print loc
+
+fig.subplots_adjust(0,0,1,1)
+fig.tight_layout()
+plt.show()
