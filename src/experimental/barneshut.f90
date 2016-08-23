@@ -140,7 +140,11 @@ module Poisson
             xmesh(i,j,k) = xc(i)*sin(yc(j))*cos(zc(k))
             ymesh(i,j,k) = xc(i)*sin(yc(j))*sin(zc(k))
             zmesh(i,j,k) = xc(i)*cos(yc(j))
-          else
+          elseif (lcylindrical_coords) then
+            xmesh(i,j,k) = xc(i)*cos(yc(j))
+            ymesh(i,j,k) = xc(i)*sin(yc(j))
+            zmesh(i,j,k) = zc(k)
+          elseif (lcartesian_coords) then
             xmesh(i,j,k) = xc(i)
             ymesh(i,j,k) = yc(j)
             zmesh(i,j,k) = zc(k)
@@ -197,7 +201,11 @@ module Poisson
           xw = abs(xrecv(nx,pp)-xrecv(1,pp))
           yw = abs(yrecv(ny,pp)-yrecv(1,pp))*xrecv(nx/2,pp)
           zw = abs(zrecv(nz,pp)-zrecv(1,pp))*xrecv(nx/2,pp)*sin(yrecv(ny/2,pp)) ! this needs to get fixed for 2D case (where ny/2=0)
-        else
+        elseif (lcylindrical_coords) then
+          xw = abs(xrecv(nx,pp)-xrecv(1,pp))
+          yw = abs(yrecv(ny,pp)-yrecv(1,pp))*xrecv(nx/2,pp)
+          zw = abs(zrecv(nz,pp)-zrecv(1,pp))
+        elseif (lcartesian_coords) then
           xw = abs(xrecv(nx,pp)-xrecv(1,pp))
           yw = abs(yrecv(ny,pp)-yrecv(1,pp))
           zw = abs(zrecv(nz,pp)-zrecv(1,pp))
@@ -211,7 +219,7 @@ module Poisson
     endif
 !
     ! Lookup table setup:
-    if (lspherical_coords) then
+    if (lspherical_coords .or. lcylindrical_coords) then
       lkmin = -pi-dy-dz
       lkmax = pi+dy+dz
       dxlt = (lkmax-lkmin)/real(nlt)
@@ -434,7 +442,9 @@ module Poisson
     zwi = abs(zi(dimi(3))-zi(1))
     if (lspherical_coords) then
       width = max(xwi,lxi*ywi,lxi*zwi*sin(lyi))
-    else
+    elseif (lcylindrical_coords) then
+      width = max(xwi,lxi*ywi,zwi)
+    elseif (lcartesian_coords) then
       width = max(xwi,ywi,zwi)
     endif
     if ((width/dist > octree_theta .or. lsplit) .and. product(dimi)/=1) then
@@ -497,12 +507,17 @@ module Poisson
     real, dimension(2) :: sincosy, sincosz
 !
     if (lspherical_coords) then
-      sincosy = sincoslf(p2(2))
+      sincosy = sincoslf(p2(2)) ! returns (/sin, cos/)
       sincosz = sincoslf(p2(3))
       x2 = p2(1)*sincosy(1)*sincosz(2)
       y2 = p2(1)*sincosy(1)*sincosz(1)
       z2 = p2(1)*sincosy(2)
-    else
+    elseif (lcylindrical_coords) then
+      sincosy = sincoslf(p2(2))
+      x2 = p2(1)*sincosy(2)
+      y2 = p2(1)*sincosy(1)
+      z2 = p2(3)
+    elseif (lcartesian_coords) then
       x2 = p2(1)
       y2 = p2(2)
       z2 = p2(3)
@@ -512,7 +527,7 @@ module Poisson
 !
     endfunction get_dist
 !***********************************************************************
-    function sincoslf(ang)
+    function sincoslf(ang) ! returns (/sin,cos/)
     real,dimension(2) :: sincoslf
     real :: ang, sinx, cosx !, a0, a1, a2
     integer :: ilk
