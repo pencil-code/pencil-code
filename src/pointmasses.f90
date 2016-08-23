@@ -140,9 +140,12 @@ module PointMasses
       qvarname(nqvar+1)='imass'
       nqvar=nqvar+1
 !
-      if (lcartesian_coords.and.lcartesian_evolution) &
-          call fatal_error("register_pointmasses",&
-           "lcartesian_coords and lcartesian_evolution: overkill")
+      if (lcartesian_coords.and.lcartesian_evolution) then 
+        call warning("register_pointmasses",&
+             "lcartesian_coords and lcartesian_evolution:"//&
+             "overkill. Switching the latter to false.")
+        lcartesian_evolution=.false.
+      endif
 !
 !  Check that the fq and dfq arrays are big enough.
 !
