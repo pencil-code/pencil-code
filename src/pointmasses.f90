@@ -1934,11 +1934,15 @@ module PointMasses
 !    
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      if (lroot) then 
-        dfq(1:nqpar,:)=alpha_ts(itsub)*dfq(1:nqpar,:)
-!
-        if (lcartesian_evolution) & 
-             dfq_cart(1:nqpar,:)=alpha_ts(itsub)*dfq_cart(1:nqpar,:)
+      if (lroot) then
+        if (itsub==1) then
+          dfq(1:nqpar,:) = 0.0
+          if (lcartesian_evolution) dfq_cart(1:nqpar,:)=0.0
+        else
+          dfq(1:nqpar,:)=alpha_ts(itsub)*dfq(1:nqpar,:)
+          if (lcartesian_evolution) & 
+               dfq_cart(1:nqpar,:)=alpha_ts(itsub)*dfq_cart(1:nqpar,:)
+        endif
       endif
 !
    endsubroutine pointmasses_timestep_first
