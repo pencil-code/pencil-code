@@ -36,7 +36,7 @@
 /
 &poisson_init_pars
   octree_theta = 0.5
-  lsquareregions = F
+  lsquareregions = T
   lprecalcdists = F
   lnorepeatsumming = T
   lshowtime = T
@@ -57,7 +57,7 @@
   lmigration_real_check=T
 /
 &particles_selfgrav_init_pars
-  lselfgravity_particles=T
+  lselfgravity_particles=F
 /
 &initial_condition_pars
   density_power_law=1.5

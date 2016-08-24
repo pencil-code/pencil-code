@@ -7,9 +7,34 @@
 ! MGLOBAL CONTRIBUTION 4
 !    cs2 and glnTT
 !
-! Remember *each* proc needs to have 2^n cells per dimension
+! Remember *each* proc needs to have 2^n cells per dimension for barneshut
 !
-integer, parameter :: ncpus=2,nprocx=1,nprocy=1,nprocz=2
-integer, parameter :: nxgrid=16,nygrid=8,nzgrid=16
+!integer, parameter :: ncpus=4,nprocx=2,nprocy=1,nprocz=2
+!integer, parameter :: nxgrid=16,nygrid=16,nzgrid=32
+!integer, parameter :: ncpus=8,nprocx=2,nprocy=1,nprocz=4
+!integer, parameter :: nxgrid=16,nygrid=16,nzgrid=64
+!integer, parameter :: ncpus=16,nprocx=4,nprocy=1,nprocz=4
+!integer, parameter :: nxgrid=32,nygrid=16,nzgrid=64
+!integer, parameter :: ncpus=32,nprocx=4,nprocy=1,nprocz=8
+!integer, parameter :: nxgrid=32,nygrid=16,nzgrid=128
+!integer, parameter :: ncpus=64,nprocx=8,nprocy=1,nprocz=8
+!integer, parameter :: nxgrid=64,nygrid=16,nzgrid=128
+!integer, parameter :: ncpus=128,nprocx=8,nprocy=2,nprocz=8
+!integer, parameter :: nxgrid=64,nygrid=32,nzgrid=128
+!integer, parameter :: ncpus=256,nprocx=8,nprocy=2,nprocz=16
+!integer, parameter :: nxgrid=64,nygrid=32,nzgrid=256
+!integer, parameter :: ncpus=512,nprocx=16,nprocy=2,nprocz=16
+!integer, parameter :: nxgrid=128,nygrid=32,nzgrid=256
+!integer, parameter :: ncpus=1024,nprocx=16,nprocy=2,nprocz=32
+!integer, parameter :: nxgrid=128,nygrid=32,nzgrid=512
+!integer, parameter :: ncpus=2048,nprocx=32,nprocy=2,nprocz=32
+!integer, parameter :: nxgrid=256,nygrid=32,nzgrid=512
+!integer, parameter :: ncpus=4096,nprocx=32,nprocy=2,nprocz=64
+!integer, parameter :: nxgrid=256,nygrid=32,nzgrid=1024
+!integer, parameter :: ncpus=8192,nprocx=64,nprocy=2,nprocz=64
+!integer, parameter :: nxgrid=512,nygrid=32,nzgrid=1024
+!integer, parameter :: ncpus=16384,nprocx=64,nprocy=4,nprocz=64
+!integer, parameter :: nxgrid=512,nygrid=64,nzgrid=1024
+
 integer, parameter :: npar=10000,mpar_loc=10000,npar_mig=1000
 integer, parameter :: npar_species=1
