@@ -162,7 +162,8 @@ module InitialCondition
 !
 !  Temperature using a constant polytropic index npoly1
 !
-      TT=gravx/(cv*(gamma-1.))*(xi0/Rstar + 1./(npoly1+1.)*(1./x - 1./Rsurf))
+      TT=1.
+      TT(l1:l2)=gravx/(cv*(gamma-1.))*(xi0/Rstar + 1./(npoly1+1.)*(1./x(l1:l2) - 1./Rsurf))
       TT_global=gravx/(cv*(gamma-1.))*(xi0/Rstar + 1./(npoly1+1.)*(1./xglobal(nghost+1:nxgrid+nghost) - 1./Rsurf))
       dTdr_global=-gravx/xglobal(nghost+1:nxgrid+nghost)**2./(cv*(gamma-1)*(npoly1+1.))
 
@@ -175,7 +176,7 @@ module InitialCondition
 !  and another step function to make a smooth transition.
 !
         Tcor=Tcor_jump*T00
-        TTc=0
+        TTc=1.
         TTc(l1+nsurf:mx)=Tsurf+(Tcor-Tsurf)*step(x(l1+nsurf:mx),Rtran,wtran)
         TT(l1+nsurf:mx)=TT(l1+nsurf:mx)+(TTc(l1+nsurf:mx)-TT(l1+nsurf:mx))*step(x(l1+nsurf:mx), Rmin, wmin)
 !
@@ -204,6 +205,7 @@ module InitialCondition
       rho00=rho0*(T00/T00)**(1./(gamma-1.))
       rho_surf=rho0*(Tsurf/T00)**(1./(gamma-1.))
       rho_global=rho0*(TT_global/T00)**(1./(gamma-1.))
+!
       drhodr_global=(1./(gamma-1.))*rho_global*dTdr_global/TT_global
       del2rho_global=(1./(gamma-1.))*(drhodr_global*dTdr_global/TT_global - &
            rho_global*(dTdr_global/TT_global)**2. + &
