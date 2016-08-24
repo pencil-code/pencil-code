@@ -35,7 +35,7 @@ module PointMasses
   real, dimension(nqpar) :: accrete_hills_frac=0.2, final_ramped_mass=0.0
   real :: eccentricity=0.0, semimajor_axis=1.0
   real :: totmass, totmass1
-  real :: GNewton1, GNewton=impossible, density_scale=0.001
+  real :: GNewton1, GNewton=impossible
   real :: cdtq=0.1
   real :: hills_tempering_fraction=0.8
   real, pointer :: rhs_poisson_const, tstart_selfgrav
@@ -43,14 +43,12 @@ module PointMasses
   integer :: iglobal_ggp=0, istar=1, iplanet=2
 !
   integer :: imass=0, ixq=0, iyq=0, izq=0, ivxq=0, ivyq=0, ivzq=0
-  integer :: nqvar=0, nqaux=0
+  integer :: nqvar=0
 !
   logical, dimension(nqpar) :: lcylindrical_gravity_nbody=.false.
   logical, dimension(nqpar) :: lfollow_particle=.false., laccretion=.false.
-  logical, dimension(nqpar) :: ladd_mass=.false.
-  logical :: lcalc_orbit=.true., lbackreaction=.false., lnorm=.true.
+  logical :: lbackreaction=.false., lnorm=.true.
   logical :: lreset_cm=.false., lnogravz_star=.false., lexclude_frozen=.false.
-  logical :: lnoselfgrav_star=.true.
   logical :: lramp=.false.
   logical :: ldt_pointmasses=.true.
   logical :: linterpolate_gravity=.false., linterpolate_linear=.true.
@@ -58,7 +56,6 @@ module PointMasses
   logical :: ldust=.false.
   logical :: ltempering=.false.
   logical :: lretrograde=.false.
-  logical :: lgas_gravity=.false.,ldust_gravity=.false.
   logical :: linertial_frame=.true.
 !
   character (len=labellen) :: initxxq='random', initvvq='nothing'
@@ -74,19 +71,19 @@ module PointMasses
   namelist /pointmasses_init_pars/ &
       initxxq, initvvq, xq0, yq0, zq0, vxq0, vyq0, vzq0,  &
       pmass, r_smooth, lcylindrical_gravity_nbody, lexclude_frozen, GNewton, &
-      bcqx, bcqy, bcqz, ramp_orbits, lramp, final_ramped_mass, density_scale, &
+      bcqx, bcqy, bcqz, ramp_orbits, lramp, final_ramped_mass, &
       linterpolate_gravity, linterpolate_quadratic_spline, laccretion, &
       accrete_hills_frac, istar, &
-      ladd_mass, ldt_pointmasses, cdtq, lretrograde, &
+      ldt_pointmasses, cdtq, lretrograde, &
       linertial_frame, eccentricity, semimajor_axis, lcartesian_evolution
 !
   namelist /pointmasses_run_pars/ &
-      lcalc_orbit, lreset_cm, &
+      lreset_cm, &
       lnogravz_star, lfollow_particle, lbackreaction, lexclude_frozen, &
-      GNewton, bcqx, bcqy, bcqz, density_scale, lnoselfgrav_star, &
+      GNewton, bcqx, bcqy, bcqz, &
       linterpolate_quadratic_spline, laccretion, accrete_hills_frac, istar, &
-      ladd_mass, ldt_pointmasses, cdtq, hills_tempering_fraction, &
-      ltempering, lgas_gravity, ldust_gravity, linertial_frame, lcartesian_evolution
+      ldt_pointmasses, cdtq, hills_tempering_fraction, &
+      ltempering, linertial_frame, lcartesian_evolution
 !
   integer, dimension(nqpar,3) :: idiag_xxq=0,idiag_vvq=0
   integer, dimension(nqpar)   :: idiag_torqint=0,idiag_torqext=0
@@ -742,7 +739,7 @@ module PointMasses
 !
     endsubroutine pointmasses_pde_pencil
 !***********************************************************************         
-    subroutine dvvq_dt_pointmasses_pencil(f,df,p)!,fp,dfp,p,ineargrid)
+    subroutine dvvq_dt_pointmasses_pencil(f,df,p)
 !
 !  Add gravity from the particles to the gas and the backreaction from the
 !  gas onto the particles.
@@ -763,9 +760,7 @@ module PointMasses
       real, dimension (nx,nqpar) :: rp_mn, rpcyl_mn
       real, dimension (mx,3) :: ggt
       real, dimension (nx) :: pot_energy
-      real, dimension (3) :: xxpar,accg
-      integer :: ks, k
-      logical :: lintegrate, lparticle_out
+      integer :: ks
 !
       intent (in) :: f, p
       intent (inout) :: df
@@ -803,6 +798,8 @@ module PointMasses
         endif
       endif
 !
+      call keep_compiler_quiet(f)
+!      
     endsubroutine dvvq_dt_pointmasses_pencil
 !***********************************************************************
     subroutine pointmasses_pde(f,df)
@@ -1026,7 +1023,7 @@ module PointMasses
       real, dimension (nqpar) :: hill_radius_square
 !
       real :: r2_ij, rs2, invr3_ij, v_ij,tmp1,tmp2
-      integer :: ks,ip1,ip3,iv1,iv3
+      integer :: ks
 !
       real, dimension (3) :: evr_cart,acc_cart
       real, dimension (3) :: evr,acc
@@ -1075,8 +1072,6 @@ module PointMasses
             if (r2_ij<=rs2) then
               !flag particle for removal 
                flag_pt=.true.
-              !add mass of the removed particle to the accreting particle
-              !if (ladd_mass(ks)) pmass(ks)=pmass(ks)+mp_swarm
               return
             endif
           endif
@@ -1802,8 +1797,7 @@ module PointMasses
       use General, only: random_number_wrapper
       use SharedVariables, only: get_shared_variable
 !
-      real :: xold, yold, rad, r1old, OO, tmp
-      integer :: k, ik, k1, k2
+      integer :: k
       character (len=2*bclen+1) :: boundx, boundy, boundz
 !
       do k=1,nqpar
@@ -1945,7 +1939,9 @@ module PointMasses
         endif
       endif
 !
-   endsubroutine pointmasses_timestep_first
+      call keep_compiler_quiet(f)
+!      
+    endsubroutine pointmasses_timestep_first
 !***********************************************************************
     subroutine pointmasses_timestep_second(f)
 !
@@ -1954,16 +1950,10 @@ module PointMasses
 !  07-jan-05/anders: coded
 !
       use Mpicomm, only: mpibcast_real
-      !use Particles_main,only: fetch_fp_array,return_fp_array
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension(3) :: xx_polar,vv_polar,xxdot_polar,vvdot_polar,aa_nbody_cart
       integer :: ks
-!
-      integer :: k, np_aux
-      real, dimension (mpar_loc,mparray) :: fp_aux
-      real, dimension (mpar_loc,mpvar) :: dfp_aux
-      logical, dimension (mpar_loc) :: flag
 !
       if (lroot) then 
         if (lcartesian_evolution) then
@@ -1974,7 +1964,7 @@ module PointMasses
             vvdot_polar = dfq(ks,ivxq:ivzq)
 !            
             aa_nbody_cart=dfq_cart(ks,:)
-            call advance_particles_in_cartesian(ks,xx_polar,vv_polar,xxdot_polar,vvdot_polar,aa_nbody_cart)
+            call advance_particles_in_cartesian(xx_polar,vv_polar,xxdot_polar,vvdot_polar,aa_nbody_cart)
             fq(ks,ixq:izq)=xx_polar
             fq(ks,ivxq:ivzq)=vv_polar
             dfq(ks,ixq:izq)=xxdot_polar
@@ -1985,6 +1975,8 @@ module PointMasses
       endif
       call mpibcast_real(fq,(/nqpar,mqarray/))
 !
+      call keep_compiler_quiet(f)
+!      
     endsubroutine pointmasses_timestep_second
 !***********************************************************************
     subroutine correct_curvilinear
@@ -2027,7 +2019,7 @@ module PointMasses
 !
     endsubroutine correct_curvilinear
 !***********************************************************************
-    subroutine advance_particles_in_cartesian(k,xx_polar,vv_polar,xxdot_polar,vvdot_polar,aa_nbody_cart)
+    subroutine advance_particles_in_cartesian(xx_polar,vv_polar,xxdot_polar,vvdot_polar,aa_nbody_cart)
 !
 ! With N-body gravity, the particles should have their position advanced in
 ! Cartesian coordinates, for better conservation of the Jacobi constant, even
@@ -2043,7 +2035,6 @@ module PointMasses
 !
       real, dimension(3), intent(inout) :: xx_polar,vv_polar
       real, dimension(3) :: aa_nbody_cart,vv_cart,dvv_cart,xx_cart,dxx_cart,xxdot_polar,vvdot_polar
-      integer :: k
 !
       if (lcylindrical_coords) then
 !
@@ -2122,21 +2113,20 @@ module PointMasses
        vv_cart(1) = vx    ;  vv_cart(2) = vy    ;  vv_cart(3) = vz
       dvv_cart(1) = vxdot ; dvv_cart(2) = vydot ; dvv_cart(3) = vzdot
 
-      call update_position(xx_cart,vv_cart,dxx_cart,xx_polar,xxdot_polar)
+      call update_position(xx_cart,dxx_cart,xx_polar,xxdot_polar)
       call update_velocity(vv_cart,dvv_cart,vv_polar,xx_polar)
 !
     endsubroutine advance_particles_in_cartesian
 !***********************************************************************
-    subroutine update_position(xx_cart,vv_cart,dxx_cart,xx_polar,xxdot_polar)
+    subroutine update_position(xx_cart,dxx_cart,xx_polar,xxdot_polar)
 !
 !  Update position if N-body is used in polar coordinates.
 !
 !  14-feb-14:wlad/coded
 !
-      real, dimension(3), intent(in) :: vv_cart
-      real :: xp,yp,zp,xdot,ydot,zdot,cosp,sinp,sint,cost,phi,tht
       real, dimension(3), intent(inout) :: xx_polar,xx_cart,dxx_cart
       real, dimension(3), intent(out) :: xxdot_polar
+      real :: xp,yp,zp,xdot,ydot,zdot,cosp,sinp,sint,cost,phi,tht
 !
 !  Update.
 !
