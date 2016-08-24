@@ -331,7 +331,7 @@ module Poisson
     real, dimension (nx,ny,nz,0:ncpus-1) :: phirecv=0.0
     real, dimension (nx,ny,nz) :: phi
     real :: xreg, yreg, zreg, summreg, summreg1
-    real :: tstart_loop, tstop_loop, tstart_mpi, tstop_mpi
+    real :: tstart_loop1, tstop_loop1, tstart_loop2, tstop_loop2, tstart_mpi, tstop_mpi
     integer :: pp, i, j, k, xs, ys, zs, ii, jj, kk
 !
     phi = phi*vols ! 'phi' now in mass units
@@ -350,7 +350,7 @@ module Poisson
 !
     phi = 0.0
 !
-    if (lroot .and. lshowtime) call cpu_time(tstart_loop)
+    if (lroot .and. lshowtime) call cpu_time(tstart_loop1)
     do iregion=1,nsingle
       i   = themap_single(1, iregion) ; irl = themap_single(5,iregion) ; iru = themap_single(6,iregion)
       j   = themap_single(2, iregion) ; jrl = themap_single(7,iregion) ; jru = themap_single(8,iregion)
@@ -359,6 +359,8 @@ module Poisson
       phi(i,j,k) = phi(i,j,k) - regsmooth_single(iregion)* &
         sum(phirecv(irl:iru,jrl:jru,krl:kru,pp))*regdist1_single(iregion)
     enddo
+    if (lroot .and. lshowtime) call cpu_time(tstop_loop1)
+    if (lroot .and. lshowtime) call cpu_time(tstart_loop2)
     if (.not.lprecalcdists) then
       do iregion=1,ngroup
         i   = themap_group(1,iregion) 
@@ -396,14 +398,15 @@ module Poisson
       enddo
     endif
 !
-    if (lroot .and. lshowtime) call cpu_time(tstop_loop)
+    if (lroot .and. lshowtime) call cpu_time(tstop_loop2)
 !
     phi = phi/(4.0*pi) ! The selfgravity module is going to multiply by a factor
                        ! of 4pi that we don't want (I think).
 !
     if (lroot .and. lshowtime) then
-      print '("barneshut: MPI time = ",f10.5," seconds.")',tstop_mpi-tstart_mpi
-      print '("barneshut: Loop time = ",f10.5," seconds.")',tstop_loop-tstart_loop
+      print '("barneshut: MPI time = ",f10.6," seconds.")',tstop_mpi-tstart_mpi
+      print '("barneshut: Loop1 time = ",f10.6," seconds.")',tstop_loop1-tstart_loop1
+      print '("barneshut: Loop2 time = ",f10.6," seconds.")',tstop_loop2-tstop_loop1
     endif
 !
     endsubroutine do_barneshut
