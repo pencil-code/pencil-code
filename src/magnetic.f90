@@ -6704,8 +6704,8 @@ module Magnetic
         f(l1:l2,m,n,iuu+0)=f(l1:l2,m,n,iuu+0)+ampl*fac/(4*kz)*sin(kz*z(n))
         f(l1:l2,m,n,iuu+1)=f(l1:l2,m,n,iuu+1)+ampl*real(exp(cmplx(0,z(n)*kz))* &
             fac*sqrt(2*kz**2+OO*fac)/(sqrt(2.)*kz*(-6*OO-fac)))
-        f(l1:l2,m,n,iaa+0)=ampl*sin(kz*z(n))/kz
-        f(l1:l2,m,n,iaa+1)=-ampl*2*sqrt(2.)*aimag(exp(cmplx(0,z(n)*kz))* &
+        f(l1:l2,m,n,iaa+0)=f(l1:l2,m,n,iaa+0)+ampl*sin(kz*z(n))/kz
+        f(l1:l2,m,n,iaa+1)=f(l1:l2,m,n,iaa+1)-ampl*2*sqrt(2.)*aimag(exp(cmplx(0,z(n)*kz))* &
             sqrt(2*kz**2+OO*fac)/(-6*OO-fac)/(cmplx(0,kz)))
       enddo; enddo
 !
