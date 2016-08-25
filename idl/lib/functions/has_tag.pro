@@ -1,4 +1,4 @@
-; This function checks for existence of a given tag with a structure.
+; This function checks for existence of a given tag within a structure.
 ;
 ; Parameters:
 ; structure     data structure
