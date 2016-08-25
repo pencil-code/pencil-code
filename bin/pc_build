@@ -1,7 +1,7 @@
-#! /usr/bin/env perl
-
+#!/usr/bin/env perl
 #!/bin/sh
 
+#  -*-Perl-*-  (for Emacs)    vim:set filetype=perl:  (for vim)
 #======================================================================#
 #! /Good_Path/perl -w
 # line 17
