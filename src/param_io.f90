@@ -28,6 +28,7 @@ module Param_IO
   use ImplicitDiffusion
   use InitialCondition
   use Interstellar
+  use IO, only: lcollective_IO, IO_strategy
   use Lorenz_gauge
   use Magnetic
   use Messages
@@ -161,6 +162,9 @@ module Param_IO
       lread_from_other_prec, downsampl, lfullvar_in_slices, lsubstract_reference_state, &
       ldirect_access, lproper_averages, lmaximal_cdt, lmaximal_cdtv, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w
+!
+  namelist /IO_pars/ &
+      lcollective_IO, IO_strategy
 !
   contains
 !***********************************************************************
@@ -1000,6 +1004,8 @@ module Param_IO
       write(unit,'(A,L1,A)') " lparticles=", lparticles, ","
       write(unit,'(A,L1,A)') " lparticles_drag=", lparticles_drag, ","
       write(unit,'(A)') " /"
+!
+      write(unit,NML=IO_pars)
 !
     endsubroutine write_IDL_logicals
 !***********************************************************************
