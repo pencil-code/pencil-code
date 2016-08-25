@@ -1039,11 +1039,16 @@ module Io
 !  30-sep-13/MR  : optional parameters mxout,myout,mzout added
 !                  to be able to output coordinate vectors with coordinates differing from
 !                  mx,my,mz
-
+!  25-Aug-2016/PABourdin: now a global "grid.dat" is always written from all IO modules
+!
+      use Mpicomm, only: collect_grid
+!
       character (len=*) :: file
       integer, optional :: mxout,myout,mzout
 !
-      integer           :: mxout1,myout1,mzout1
+      integer :: mxout1,myout1,mzout1
+      real, dimension (:), allocatable :: gx, gy, gz
+      integer :: alloc_err
       real :: t_sp   ! t in single precision for backwards compatibility
 !
      if (present(mzout)) then
@@ -1065,6 +1070,30 @@ module Io
       write(lun_output) dx_1(1:mxout1),dy_1(1:myout1),dz_1(1:mzout1)
       write(lun_output) dx_tilde(1:mxout1),dy_tilde(1:myout1),dz_tilde(1:mzout1)
       close(lun_output)
+!
+      ! write also a global "data/allprocs/grid.dat"
+      if (lroot) then
+        allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
+        if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
+!
+        open (lun_output, FILE=trim(directory_collect)//'/'//file, FORM='unformatted', status='replace')
+        t_sp = t
+        call collect_grid (x, y, z, gx, gy, gz)
+        write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
+        write (lun_output) dx, dy, dz
+        write (lun_output) Lx, Ly, Lz
+        call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
+        write (lun_output) gx, gy, gz
+        call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
+        write (lun_output) gx, gy, gz
+        close (lun_output)
+!
+        deallocate (gx, gy, gz)
+      else
+        call collect_grid (x, y, z)
+        call collect_grid (dx_1, dy_1, dz_1)
+        call collect_grid (dx_tilde, dy_tilde, dz_tilde)
+      endif
 !
     endsubroutine wgrid
 !***********************************************************************
