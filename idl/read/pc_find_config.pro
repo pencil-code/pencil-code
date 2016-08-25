@@ -90,7 +90,7 @@ COMPILE_OPT IDL2,HIDDEN
 					check_file = 1
 				end else if ((fstat.size eq file_size) or (fstat.size eq file_size+8)) then begin
 					; direct access or data record with F77 markers
-					allprocs = 2
+					if (nprocxy gt 1) then allprocs = 2 else allprocs = 0
 				end 
 			end
 		end
