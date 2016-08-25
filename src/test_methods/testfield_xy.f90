@@ -108,7 +108,7 @@ module Testfield
       call calc_inverse_matrix(x(l1:l2),y(m1:m2),ktestfield_x,ktestfield_y,xx0,yy0,Minv,cx,sx,cy,sy)
 !
       lcalc_uumeanxy = .true.
-      call calc_means_hydro(f)
+      if (lhydro_kinematic) call calc_means_hydro(f)
 !
 !  write testfield information to a file (for convenient post-processing)
 !
