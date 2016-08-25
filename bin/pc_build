@@ -76,6 +76,7 @@
 # License, version 3 or later.
 
 use strict;
+use warnings;
 BEGIN {
     # Make sure ${PENCIL_HOME}/lib/perl is in the Perl path
     if (-d "$ENV{PENCIL_HOME}/lib/perl") {
