@@ -59,15 +59,16 @@ if (not keyword_set(down)) then $
 else $
   gridfile='grid_down.dat'
 ;
-  default, swap_endian, 0
+allprocs_exists = file_test(datadir+'/allprocs/'+gridfile)
+default, swap_endian, 0
 ;
 ; Default allprocs.
 ;
 default, allprocs, -1
 if (allprocs eq -1) then begin
   allprocs=0
-  if (file_test(datadir+'/allprocs/'+gridfile) and (n_elements(proc) eq 0)) then allprocs=1
-end
+  if (allprocs_exists and (n_elements(proc) eq 0)) then allprocs=1
+endif
 ;
 ; Check if allprocs is consistent with proc.
 ;
@@ -86,7 +87,7 @@ if (n_elements(dim) eq 0) then $
 if (n_elements(param) eq 0) then $
     pc_read_param,object=param,datadir=datadir,QUIET=QUIET
 
-if ((allprocs gt 0) or keyword_set (reduced)) then begin
+if ((allprocs gt 0) or allprocs_exists or keyword_set (reduced)) then begin
   ncpus=1
 endif else begin
   ncpus=dim.nprocx*dim.nprocy*dim.nprocz
@@ -141,10 +142,10 @@ for i=0,ncpus-1 do begin
   ; Build the full path and filename
   if (keyword_set (reduced)) then begin
     filename=datadir+'/reduced/'+gridfile
-  end else if (allprocs gt 0) then begin
-    filename=datadir+'/allprocs/'+gridfile
   endif else if (n_elements(proc) ne 0) then begin
     filename=datadir+'/proc'+str(proc)+'/'+gridfile
+  endif else if ((allprocs gt 0) or allprocs_exists) then begin
+    filename=datadir+'/allprocs/'+gridfile
   endif else begin
     filename=datadir+'/proc'+str(i)+'/'+gridfile
     ; Read processor box dimensions
