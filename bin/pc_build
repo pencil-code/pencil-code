@@ -1,16 +1,7 @@
-#!/bin/sh
-#  -*-Perl-*-  (for Emacs)    vim:set filetype=perl:  (for vim)
-#======================================================================#
-# Run the right perl version:
-if [ -x /usr/local/bin/perl ]; then
-  perl=/usr/local/bin/perl
-elif [ -x /usr/bin/perl ]; then
-  perl=/usr/bin/perl
-else
-  perl=`which perl| sed 's/.*aliased to *//'`
-fi
+#!/usr/bin/env perl
 
-exec $perl -x -S $0 "$@"     # -x: start from the following line
+#!/bin/sh
+
 #======================================================================#
 #! /Good_Path/perl -w
 # line 17
