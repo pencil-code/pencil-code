@@ -979,7 +979,7 @@ module Hydro
       if (lreference_state) &
         call get_shared_variable('reference_state',reference_state)
 !
-      lcalc_uumeanz=lcalc_uumean                 ! for compatibility
+      lcalc_uumeanz = lcalc_uumeanz .or. lcalc_uumean .or. ltestfield_xz      ! lcalc_uumean for compatibility
 !
       if (Omega/=0. .and. lyinyang) then
         if (phi==0.) then
@@ -996,7 +996,7 @@ module Hydro
         endif
       endif
 !
-      lcalc_uumeanxy=lremove_uumeanxy .or. lcalc_uumeanxy
+      lcalc_uumeanxy=lremove_uumeanxy .or. lcalc_uumeanxy .or. ltestfield_xy
 !
       if (lcalc_uumeanxy) then
         myl=my

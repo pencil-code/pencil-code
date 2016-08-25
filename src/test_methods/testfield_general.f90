@@ -1,3 +1,8 @@
+!
+! CPARAM logical, parameter :: ltestfield = .true.
+!
+!***************************************************************
+!
 module Testfield_general
 !
 !  27-jun-13/MR:  Created to centralize functionalities of testfield modules.
