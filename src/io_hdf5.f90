@@ -46,7 +46,7 @@ module Io
   ! Indicates if IO is done distributed (each proc writes into a procdir)
   ! or collectively (eg. by specialized IO-nodes or by MPI-IO).
   logical :: lcollective_IO = .true.
-  character (len=labellen) :: IO_strategy = "MPI-IO"
+  character (len=labellen) :: IO_strategy = "HDF5"
 !
   logical :: persist_initialized = .false.
   integer :: persist_last_id = -max_int
