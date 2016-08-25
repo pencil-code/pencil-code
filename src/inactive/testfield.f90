@@ -14,6 +14,9 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: ltestfield = .true.
+! CPARAM logical, parameter :: ltestfield_z = .true.
+! CPARAM logical, parameter :: ltestfield_xy = .true.
+! CPARAM logical, parameter :: ltestfield_xz = .true.
 !
 ! MVAR CONTRIBUTION 36
 ! MAUX CONTRIBUTION 0
