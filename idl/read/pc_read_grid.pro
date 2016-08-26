@@ -217,7 +217,7 @@ for i=0,ncpus-1 do begin
 
   openr,file,filename,/F77,SWAP_ENDIAN=swap_endian
 
-  if ((allprocs gt 0) or (n_elements(proc) ne 0) or keyword_set(reduced)) then begin
+  if ((allprocs gt 0) or allprocs_exists or (n_elements(proc) ne 0) or keyword_set(reduced)) then begin
     readu,file, t,x,y,z
     readu,file, dx,dy,dz
     found_Lxyz=0
