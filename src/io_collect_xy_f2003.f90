@@ -1126,26 +1126,9 @@ module Io
       call mpibcast_real (Ly,comm=MPI_COMM_WORLD)
       call mpibcast_real (Lz,comm=MPI_COMM_WORLD)
 !
-!  Find minimum/maximum grid spacing. Note that
-!    minval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) > 1) )
-!  will be undefined if all n[xyz]grid==1, so we have to add the fourth
-!  component with a test that is always true
-!
-      dxmin = minval ((/ dx, dy, dz,    huge (dx) /), MASK=((/ nxgrid, nygrid, nzgrid, 2 /) > 1))
-      dxmax = maxval ((/ dx, dy, dz, epsilon (dx) /), MASK=((/ nxgrid, nygrid, nzgrid, 2 /) > 1))
-!
-!  Fill pencil with maximum gridspacing. Will be overwritten
-!  during the mn loop in the non equiditant case
-!
-      dxmax_pencil(:) = dxmax
-!
-      if (lroot) then
-        if (ip <= 4) then
-          print *, 'rgrid: Lx,Ly,Lz=', Lx, Ly, Lz
-          print *, 'rgrid: dx,dy,dz=', dx, dy, dz
-          print *, 'rgrid: dxmin,dxmax=', dxmin, dxmax
-        endif
-        if (dxmin == 0) call fatal_error ("rgrid", "check Lx,Ly,Lz: is one of them 0?", .true.)
+      if (lroot.and.io <= 4) then
+        print *, 'rgrid: Lx,Ly,Lz=', Lx, Ly, Lz
+        print *, 'rgrid: dx,dy,dz=', dx, dy, dz
       endif
 !
     endsubroutine rgrid

@@ -1220,33 +1220,12 @@ module Io
 !
       if (lotherprec) call wgrid(file)         ! perhaps not necessary
 !
-!  Find minimum/maximum grid spacing. Note that
-!    minval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) > 1) )
-!  will be undefined if all n[x-z]grid=1, so we have to add the fourth
-!  component with a test that is always true
-!
-      dxmin = minval( (/dx,dy,dz,huge(dx)/), &
-                MASK=((/nxgrid,nygrid,nzgrid,2/) > 1) )
-      dxmax = maxval( (/dx,dy,dz,epsilon(dx)/), &
-                MASK=((/nxgrid,nygrid,nzgrid,2/) > 1) )
-!
-!  Fill pencil with minimum/maximum gridspacing. Will be overwritten
-!  during the mn loop in the non equidistant case
-!
-      dxmax_pencil = dxmax
-      dxmin_pencil = dxmin
-!
 !  debug output
 !
       if (ip<=4.and.lroot) then
         print*,'rgrid: Lx,Ly,Lz=',Lx,Ly,Lz
         print*,'rgrid: dx,dy,dz=',dx,dy,dz
-        print*,'rgrid: dxmin,dxmax=',dxmin,dxmax
       endif
-!
-!  should stop if dxmin=0
-!
-      if (dxmin==0) call fatal_error("rgrid", "check dx,dy,dz: is one of them 0?")
 !
     endsubroutine rgrid
 !***********************************************************************

@@ -134,9 +134,7 @@ module Hydro
           "$Id$")
 !
       call put_shared_variable('lpressuregradient_gas',&
-          lpressuregradient_gas,ierr)
-      if (ierr/=0) call fatal_error('register_hydro',&
-          'there was a problem sharing lpressuregradient_gas')
+          lpressuregradient_gas,caller='register_hydro')
 !
     endsubroutine register_hydro
 !***********************************************************************

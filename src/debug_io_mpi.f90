@@ -501,22 +501,6 @@ contains
         z(n2+i) = z(n2) + i*dz
       enddo
 !
-!  Find minimum/maximum grid spacing. Note that
-!    minval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) > 1) )
-!  will be undefined if all n[x-z]grid=1, so we have to add the fourth
-!  component with a test that is always true
-!
-      dxmin = minval( (/dx,dy,dz,huge(dx)/), &
-                MASK=((/nxgrid,nygrid,nzgrid,2/) > 1) )
-      dxmax = maxval( (/dx,dy,dz,epsilon(dx)/), &
-                MASK=((/nxgrid,nygrid,nzgrid,2/) > 1) )
-!
-!  Fill pencil with maximum gridspacing. Will be overwritten
-!  during the mn loop in the non equiditant case
-!
-      dxmax_pencil(:) = dxmax
-      dxmin_pencil(:) = dxmin
-!
 !  inherit Lx, Ly, Lz from start, and assume uniform mesh
 !
       Lx=dx*nx*nprocx

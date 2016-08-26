@@ -506,9 +506,8 @@ program run
 !
   suppress_pencil_check = control_file_exists("NO-PENCIL-CHECK")
   if ( (lpencil_check .and. .not. suppress_pencil_check) .or. &
-       ((.not.lpencil_check).and.lpencil_check_small) ) then
+       ((.not.lpencil_check).and.lpencil_check_small) ) &
     call pencil_consistency_check(f,df,p)
-  endif
 !
 !  Start timing for final timing statistics.
 !  Initialize timestep diagnostics during the run (whether used or not,
@@ -531,7 +530,7 @@ program run
 !
 !  Trim 1D-averages for times past the current time.
 !
-  call trim_1daverages()
+  call trim_1daverages
 !
 !  Do loop in time.
 !
@@ -704,7 +703,7 @@ program run
 !  Add forcing and/or do rescaling (if applicable).
 !
     if (lforcing) call addforce(f)
-    if (lparticles_lyapunov) call particles_stochastic()
+    if (lparticles_lyapunov) call particles_stochastic
 !    if (lspecial) call special_stochastic
     if (lrescaling_magnetic)  call rescaling_magnetic(f)
     if (lrescaling_testfield) call rescaling_testfield(f)
