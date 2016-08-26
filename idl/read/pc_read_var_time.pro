@@ -35,7 +35,7 @@
 ;-
 pro pc_read_var_time,                                                              $
     time=time, varfile=varfile_, allprocs=allprocs, datadir=datadir, param=param,  $
-    procdim=dim, ivar=ivar, swap_endian=swap_endian, f77=f77, reduced=reduced,     $
+    procdim=procdim, ivar=ivar, swap_endian=swap_endian, f77=f77, reduced=reduced, $
     exit_status=exit_status, quiet=quiet
 
 COMPILE_OPT IDL2,HIDDEN
@@ -65,19 +65,19 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; find varfile and set configuration parameters accordingly
 ;
-  pc_find_config, varfile, datadir=datadir, procdir=procdir, dim=dim, allprocs=allprocs, reduced=reduced, swap_endian=swap_endian, f77=f77, additional=additional, start_param=param
+  pc_find_config, varfile, datadir=datadir, procdir=procdir, procdim=procdim, allprocs=allprocs, reduced=reduced, swap_endian=swap_endian, f77=f77, additional=additional, start_param=param
 ;
 ; Local shorthand for some parameters.
 ;
-  precision = dim.precision
+  precision = procdim.precision
   if (precision eq 'D') then bytes = 8 else bytes = 4
 ;
 ; Initialize / set default returns for ALL variables.
 ;
   t=zero
-  x=fltarr(dim.mx)*one
-  y=fltarr(dim.my)*one
-  z=fltarr(dim.mz)*one
+  x=fltarr(procdim.mx)*one
+  y=fltarr(procdim.my)*one
+  z=fltarr(procdim.mz)*one
   dx=zero
   dy=zero
   dz=zero

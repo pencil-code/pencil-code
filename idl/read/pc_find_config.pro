@@ -41,7 +41,7 @@
 ;       Written by: PABourdin, 06-Sep-2015
 ;
 ;-
-pro pc_find_config, varfile, datadir=datadir, procdir=procdir, dim=dim, allprocs=allprocs, reduced=reduced, lcollect_xy=lcollect_xy, swap_endian=swap_endian, f77=f77, additional=additional, marker=marker, mvar_io=mvar_io, start_param=start_param, check_file=check_file
+pro pc_find_config, varfile, datadir=datadir, procdir=procdir, dim=dim, procdim=procdim, allprocs=allprocs, reduced=reduced, lcollect_xy=lcollect_xy, swap_endian=swap_endian, f77=f77, additional=additional, marker=marker, mvar_io=mvar_io, start_param=start_param, check_file=check_file
 
 COMPILE_OPT IDL2,HIDDEN
 
@@ -121,12 +121,14 @@ COMPILE_OPT IDL2,HIDDEN
 	mvar_io = dim.mvar
 	if (start_param.lwrite_aux) then mvar_io += dim.maux
 
+	; set also procdim
+	if (size (procdim, /type) eq 0) then begin
+		if (allprocs eq 1) then procdim = dim else pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
+	end
+
 	; set other parameters according to allprocs
 	marker = ''
 	marker_bytes = 4
-	if (allprocs ne 1) then begin
-		if (size (procdim, /type) eq 0) then pc_read_dim, object=procdim, datadir=datadir, proc=0, /quiet
-	end
 	if (allprocs eq 0) then begin
 		f77 = 1
 		additional = long64(procdim.mx)*long64(procdim.my)*long64(procdim.mz)*long64(mvar_io*data_bytes)+long64(2*marker_bytes)
