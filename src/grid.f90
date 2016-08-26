@@ -926,7 +926,8 @@ module Grid
       dxmin = minval( (/dxmin_x, dxmin_y, dxmin_z, huge(dx)/), &
                 MASK=((/nxgrid, nygrid, nzgrid, 2/) > 1) )
 !
-      if (dxmin == 0) call fatal_error ("initialize_grid", "check Lx,Ly,Lz: is one of them 0?", .true.)                                 
+      if (dxmin == 0) &
+        call fatal_error ("initialize_grid", "check Lx,Ly,Lz: is one of them 0?", .true.)
 !
       dxmax = maxval( (/dxmax_x, dxmax_y, dxmax_z, epsilon(dx)/), &
                 MASK=((/nxgrid, nygrid, nzgrid, 2/) > 1) )
