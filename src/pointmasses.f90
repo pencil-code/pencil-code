@@ -76,7 +76,8 @@ module PointMasses
       linterpolate_gravity, linterpolate_quadratic_spline, laccretion, &
       accrete_hills_frac, istar, &
       ldt_pointmasses, cdtq, lretrograde, &
-      linertial_frame, eccentricity, semimajor_axis, lcartesian_evolution
+      linertial_frame, eccentricity, semimajor_axis, lcartesian_evolution, &
+      ipotential_pointmass
 !
   namelist /pointmasses_run_pars/ &
       lreset_cm, &
@@ -84,7 +85,7 @@ module PointMasses
       GNewton, bcqx, bcqy, bcqz, &
       linterpolate_quadratic_spline, laccretion, accrete_hills_frac, istar, &
       ldt_pointmasses, cdtq, hills_tempering_fraction, &
-      ltempering, linertial_frame, lcartesian_evolution
+      ltempering, linertial_frame, lcartesian_evolution,ipotential_pointmass 
 !
   integer, dimension(nqpar,3) :: idiag_xxq=0,idiag_vvq=0
   integer, dimension(nqpar)   :: idiag_torqint=0,idiag_torqext=0
