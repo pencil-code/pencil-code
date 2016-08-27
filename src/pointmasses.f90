@@ -59,6 +59,7 @@ module PointMasses
   logical :: linertial_frame=.true.
 !
   character (len=labellen) :: initxxq='random', initvvq='nothing'
+  character (len=labellen), dimension (nqpar) :: ipotential_pointmass='drop-hill'
   character (len=2*bclen+1) :: bcqx='p', bcqy='p', bcqz='p'
 !
   logical :: lcartesian_evolution=.true.
@@ -1022,7 +1023,7 @@ module PointMasses
       integer, intent(in) :: k
       real, dimension (nqpar) :: hill_radius_square
 !
-      real :: r2_ij, rs2, invr3_ij, v_ij,tmp1,tmp2
+      real :: rr2, r2_ij, rs2, v_ij, rsmooth2, Omega2_pm, rhill1, invr3_ij
       integer :: ks
 !
       real, dimension (3) :: evr_cart,acc_cart
@@ -1050,20 +1051,45 @@ module PointMasses
       do ks=1,nqpar
         if (.not.(lcallpointmass.and.k==ks)) then !prevent self-acceleration
 !
-          if (levolve_pmass_cartesian) then 
+!  r_ij = sqrt(ev1**2 + ev2**2 + ev3**2)
+!
+           if (levolve_pmass_cartesian) then 
             call get_evr(positions,fq(ks,ixq:izq),evr_cart,.true.)
-            tmp1=sum(evr_cart**2)
+            rr2=sum(evr_cart**2)
           else
             call get_evr(positions,fq(ks,ixq:izq),evr,.false.)
-            tmp1=sum(evr**2)
+            rr2=sum(evr**2)
           endif
+          rsmooth2=r_smooth(ks)**2
 !
 !  Particles relative distance from each other:
 !
-!  r_ij = sqrt(ev1**2 + ev2**2 + ev3**2)
+          select case (ipotential_pointmass(ks))
 !
-          tmp2=r_smooth(ks)**2
-          r2_ij=max(tmp1,tmp2)
+          case ('plummer')
+            r2_ij=rr2+rsmooth2
+            Omega2_pm = GNewton*pmass(ks)*r2_ij**(-1.5)
+          case ('boley')
+            r2_ij=rr2
+            if (r2_ij .gt. hill_radius_square(ks)) then
+              Omega2_pm = GNewton*pmass(ks)*r2_ij**(-1.5)
+            else
+              rhill1=1./sqrt(hill_radius_square(ks))
+              Omega2_pm = GNewton*pmass(ks)*(3*sqrt(r2_ij)*rhill1 - 4)*rhill1**3
+            endif
+          case ('drop-hill')
+            r2_ij=max(rr2,rsmooth2)
+            if (r2_ij > 0) then
+              invr3_ij = r2_ij**(-1.5)
+            else                ! can happen during pencil_check
+              invr3_ij = 0.0
+            endif
+            Omega2_pm = GNewton*pmass(ks)*invr3_ij
+          case default
+            if (lroot) print*, 'gravity_pointmasses_inertial: '//&
+                 'No such value for ipotential_pointmass: ', trim(ipotential_pointmass(ks))
+            call fatal_error("","")
+          endselect  
 !
 !  If there is accretion, remove the accreted particles from the simulation, if any.
 !
@@ -1071,17 +1097,9 @@ module PointMasses
             rs2=(accrete_hills_frac(ks)**2)*hill_radius_square(ks)
             if (r2_ij<=rs2) then
               !flag particle for removal 
-               flag_pt=.true.
+              flag_pt=.true.
               return
             endif
-          endif
-!
-!  Shortcut: invr3_ij = r_ij**(-3)
-!
-          if (r2_ij > 0) then
-            invr3_ij = r2_ij**(-1.5)
-          else                ! can happen during pencil_check
-            invr3_ij = 0.0
           endif
 !
 !  Gravitational acceleration: g=-g0/|r-r0|^3 (r-r0)
@@ -1091,10 +1109,10 @@ module PointMasses
 !  velocities to angular changes in position.
 !
           if (levolve_pmass_cartesian) then 
-            acc_cart = - GNewton*pmass(ks)*invr3_ij*evr_cart(1:3)
+            acc_cart = - Omega2_pm*evr_cart(1:3)
             dfq_cart(k,:) =  dfq_cart(k,:) + acc_cart
           else
-            acc = - GNewton*pmass(ks)*invr3_ij*evr(1:3)
+            acc = - Omega2_pm*evr(1:3)
             acceleration =  acceleration + acc
           endif
 !
@@ -1110,7 +1128,7 @@ module PointMasses
             endif
             dt1_max(l1-nghost)= &
                  max(dt1_max(l1-nghost), &
-                 sqrt(GNewton*pmass(ks)*invr3_ij)/cdtq)
+                 sqrt(Omega2_pm/cdtq))
           endif
 !
         endif !if (ipar(k)/=ks)
