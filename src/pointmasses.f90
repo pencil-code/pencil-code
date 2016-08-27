@@ -59,7 +59,7 @@ module PointMasses
   logical :: linertial_frame=.true.
 !
   character (len=labellen) :: initxxq='random', initvvq='nothing'
-  character (len=labellen), dimension (nqpar) :: ipotential_pointmass='drop-hill'
+  character (len=labellen), dimension (nqpar) :: ipotential_pointmass='newtonian'
   character (len=2*bclen+1) :: bcqx='p', bcqy='p', bcqz='p'
 !
   logical :: lcartesian_evolution=.true.
@@ -1077,7 +1077,7 @@ module PointMasses
               rhill1=1./sqrt(hill_radius_square(ks))
               Omega2_pm = GNewton*pmass(ks)*(3*sqrt(r2_ij)*rhill1 - 4)*rhill1**3
             endif
-          case ('drop-hill')
+          case ('newton-hill','newton','newtonian')
             r2_ij=max(rr2,rsmooth2)
             if (r2_ij > 0) then
               invr3_ij = r2_ij**(-1.5)
