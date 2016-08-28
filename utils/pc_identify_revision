@@ -14,7 +14,15 @@
 
 revision_file='revision.txt'
 quiet=''                        # set to '1' to suppress diff output
-LANG=C
+
+
+reset_locale () {
+    # Reset the locale to make the output from e.g. 'svn info' predictable.
+    # Sometimes LANG is crucial, sometimes only LANGUAGE or LC_ALL are.
+    export LANG=POSIX
+    export LANGUAGE="${LANG}" LC_ALL="${LANG}"
+}
+
 
 check_prerequisites () {
     # Sanity checks.
@@ -79,6 +87,8 @@ main () {
     else
         write_file=1
     fi
+
+    reset_locale
 
     check_prerequisites
     rm -f ${revision_file}
