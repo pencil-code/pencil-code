@@ -76,6 +76,7 @@ module Special
   logical :: lprint_residual=.false.,ltidal_heating=.true.
   logical :: ltemperature_advection=.true.,ltemperature_diffusion=.true.
   logical :: lmultigrid=.true.
+  logical :: lsplit_temperature=.false.
 !  
   integer :: maxit=1000
 !
@@ -95,14 +96,14 @@ module Special
        iconv_viscosity,Avisc,Bvisc,Cvisc,&
        Tbot,Tupp,Ra,iorder_sor_solver,lsave_residual,&
        kx_TT,kz_TT,ampltt,initpsi,lmultigrid,lpoisson_test,npost,npre,gamma,n_vcycles,&
-       ldirect_solver,nx_coarsest,lprint_residual_svl
+       ldirect_solver,nx_coarsest,lprint_residual_svl,lsplit_temperature
 !
   namelist /special_run_pars/ amplpsi,alpha_sor,Avisc,lprint_residual,&
        tolerance,maxit,gravity_z,rho0_bq,alpha_thermal,kappa,eta_0,&
        iconv_viscosity,Avisc,Bvisc,Cvisc,&
        Tbot,Tupp,Ra,iorder_sor_solver,lsave_residual,&
        ltidal_heating,ltemperature_advection,ltemperature_diffusion,lmultigrid,&
-       npost,npre,gamma,n_vcycles,ldirect_solver,lprint_residual_svl
+       npost,npre,gamma,n_vcycles,ldirect_solver,lprint_residual_svl,lsplit_temperature
 !
 !  Declare index of new variables in f array. Surface density, midplane
 !  temperature, and mass accretion rate.
@@ -130,8 +131,11 @@ module Special
   logical :: lviscosity_var_newtonian
   logical :: lviscosity_var_blankenbach
 !
+  real, dimension(mz) :: Tbar = 0.0, etabar=0.0
+  real :: gTT_conductive = 0.0, eta_alpha2=0.0
+!
   type GridPointers
-     real, pointer :: u(:,:),r(:,:)
+     real, pointer :: u(:,:),r(:,:),a(:,:),b(:,:)
   endtype GridPointers
   type(GridPointers), allocatable :: grid(:)
   integer :: ngrid
@@ -189,7 +193,19 @@ contains
       deltaT1=1./delta_T
       dslab = Lxyz(3)
       Lz1 = 1./Lxyz(3)  
-!      
+!
+!  Conductive (linear) Temperature Gradient, used if the T=Tbar(z) + theta(x,y,z,t)
+!  split is used. It similarly defines the conductive viscosity eta = etabar(z) * nu(x,y,z,t).
+!
+      if (lsplit_temperature) then
+         do n=n1,n2
+            Tbar(n) = Tbot + (n-n1)*(Tupp-Tbot)/(n2-n1)
+         enddo
+         etabar = exp(-Bvisc*Tbar*deltaT1)
+         gTT_conductive = -delta_T*Lz1
+         eta_alpha2 = (Bvisc*deltaT1*gTT_conductive)**2
+      endif
+!
       if (Ra==impossible) then
         Ra = (gravity_z*alpha_thermal*rho0_bq*delta_T*dslab**3)/(kappa*eta_0)
       endif !else it is given in the initial condition
@@ -429,7 +445,8 @@ contains
 !
       real, dimension (mx,my,mz,mfarray) :: f   
       real, dimension (mx,mz) :: psi,psi_old,eta
-      real, dimension (nx,nx) :: rhs
+      real, dimension (nx,nz) :: rhs
+      real, dimension (nx,nz) :: alpha_factor,beta_factor
       integer :: icount,i
       real :: resid,aout,alpha,beta,dTTdx      
 !
@@ -450,7 +467,17 @@ contains
                dTTdx=dx_1(i)/60*(+ 45.0*(f(i+1,m,n,iTT)-f(i-1,m,n,iTT)) &
                                  -  9.0*(f(i+2,m,n,iTT)-f(i-2,m,n,iTT)) &
                                  +      (f(i+3,m,n,iTT)-f(i-3,m,n,iTT)))            
-               rhs(i-l1+1,n-n1+1) = Ra*dTTdx/eta(i,n)
+               rhs(i-l1+1,n-n1+1) = Ra*dTTdx/(eta(i,n)*etabar(n))
+!
+               if (lsplit_temperature) then 
+                 rhs(i-l1+1,n-n1+1) = Ra*dTTdx/(eta(i,n)*etabar(n))
+                 alpha_factor(i-l1+1,n-n1+1)=alpha + eta_alpha2
+               else
+                 rhs(i-l1+1,n-n1+1) = Ra*dTTdx/eta(i,n)
+                 alpha_factor(i-l1+1,n-n1+1)=alpha
+               endif
+               beta_factor(i-l1+1,n-n1+1)=beta
+!
             enddo;enddo
          enddo
 
@@ -477,9 +504,9 @@ contains
          psi_old=psi
 
          if (lmultigrid) then
-            call multigrid(psi,rhs)
+            call multigrid(psi,rhs,alpha_factor,beta_factor)
          else
-            call successive_over_relaxation(psi,rhs)
+            call successive_over_relaxation(psi,rhs,alpha_factor,beta_factor)
          endif
 !
          call update_bounds_psi(psi)
@@ -512,10 +539,11 @@ contains
 !
     endsubroutine solve_for_psi
 !***********************************************************************
-    subroutine successive_over_relaxation(u,r,h)
+    subroutine successive_over_relaxation(u,r,alp,bet,h)
 !
       real, dimension (:,:) :: u
       real, dimension (:,:) :: r
+      real, dimension (:,:) :: alp,bet
       real :: cc,ufactor,vterm,u_new,alpha_sor_
       real, optional :: h
       integer :: ii,nn,k,l
@@ -534,18 +562,13 @@ contains
          alpha_sor_=alpha_sor
       endif
 !
-      !allocate(eta(nu,nu))
-      !eta = 1. 
-!
       do nn=nn1+1,nn2-1
          k=nn-nn1+1
          do ii=ll1+1,ll2-1
             l=ii-l1+1
 !     
-            !call f_function(eta,aout,ii,nn) ; alpha = aout/eta(ii,nn)
-            !call g_function(eta,aout,ii,nn) ;  beta = aout/eta(ii,nn)
-            alpha=0.0
-            beta=0.0
+            alpha=alp(l,k)
+            beta=bet(l,k)
 !
             cc = r(l,k)
 !     
@@ -563,8 +586,6 @@ contains
             u(ii,nn) = u(ii,nn)*(1-alpha_sor_) +  alpha_sor_*u_new
         enddo
      enddo
-!
-     !deallocate(eta)
 !
     endsubroutine successive_over_relaxation
 !***********************************************************************
@@ -909,8 +930,12 @@ contains
 !      
 !  Advection
 !
-      if (ltemperature_advection) & 
-           df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - q%ugTT
+      if (ltemperature_advection) then
+         df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - q%ugTT
+         if (lsplit_temperature) then
+            df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - q%uu(:,3)*gTT_conductive
+         endif
+      endif
 !
 !  Conduction (diffusion)
 !
@@ -974,7 +999,7 @@ contains
 !
          if (idiag_dTdz1/=0) then
            if (n == n2) then
-             dTdz1 = -p%gTT(1,3)
+             dTdz1 = -p%gTT(1,3) - gTT_conductive
            else
              dTdz1 = -impossible
            endif
@@ -983,7 +1008,7 @@ contains
 !
          if (idiag_dTdz2/=0) then
            if (n == n2) then
-             dTdz2 = -p%gTT(nx,3)
+             dTdz2 = -p%gTT(nx,3) - gTT_conductive
            else
              dTdz2 = -impossible
            endif
@@ -992,7 +1017,7 @@ contains
 !
          if (idiag_dTdz3/=0) then
            if (n == n1) then
-             dTdz3 = -p%gTT(nx,3)
+             dTdz3 = -p%gTT(nx,3) - gTT_conductive
            else
              dTdz3 = -impossible
            endif
@@ -1001,7 +1026,7 @@ contains
 !
          if (idiag_dTdz4/=0) then
            if (n == n1) then
-             dTdz4 = -p%gTT(1,3)
+             dTdz4 = -p%gTT(1,3) - gTT_conductive
            else
              dTdz4 = -impossible
            endif
@@ -1010,7 +1035,7 @@ contains
 !
          if (idiag_nusselt_num/=0) then
            if (n == n2) then
-             nusselt_num=-p%gTT(:,3)
+             nusselt_num=-p%gTT(:,3) - gTT_conductive
            else
              nusselt_num=0.
            endif
@@ -1019,7 +1044,7 @@ contains
 !         
          if (idiag_nusselt_den/=0) then
            if (n == n1) then
-             nusselt_den=p%TT
+             nusselt_den=p%TT + Tbar(n)
            else
              nusselt_den=0.
            endif
@@ -1035,7 +1060,7 @@ contains
 
          if (idiag_TTmax_cline/=0) then
             if (z(n) .ge. 0.5) then
-               TTmax_cline=p%TT(nx/2)
+               TTmax_cline=p%TT(nx/2) + Tbar(n)
             else
                TTmax_cline=-impossible
             endif
@@ -1044,7 +1069,7 @@ contains
 
          if (idiag_TTmin_cline/=0) then
             if (z(n) .lt. 0.5) then
-               TTmin_cline=p%TT(nx/2)
+               TTmin_cline=p%TT(nx/2) + Tbar(n)
             else
                TTmin_cline=impossible
             endif
@@ -1287,12 +1312,13 @@ contains
 !***********************************************************************
 !***********************************************************************
 !***********************************************************************    
-    subroutine multigrid(psi,rhs)
+    subroutine multigrid(psi,rhs,alp,bet)
 !
       implicit none
 !      
       real, dimension(mx,mz) :: psi
       real, dimension(nx,nz) :: rhs
+      real, dimension(nx,nz), intent(in) :: alp,bet
 !
       integer :: m,n,ng,j,nn,i
 !
@@ -1302,8 +1328,12 @@ contains
       allocate(grid(ngrid))
       allocate(grid(ngrid)%u(m,m))
       allocate(grid(ngrid)%r(n,n))
+      allocate(grid(ngrid)%a(n,n))
+      allocate(grid(ngrid)%b(n,n))
       grid(ngrid)%u=psi
       grid(ngrid)%r=rhs
+      grid(ngrid)%a=alp
+      grid(ngrid)%b=bet
 !
       nn=n
       ng=ngrid
@@ -1313,12 +1343,14 @@ contains
          ng=ng-1
          allocate(grid(ng)%u(nn+2*nghost,nn+2*nghost))
          allocate(grid(ng)%r(nn,nn))
+         allocate(grid(ng)%a(nn,nn))
+         allocate(grid(ng)%b(nn,nn))
       enddo
 !
-      call downward(ngrid,grid(ngrid)%u,grid(ngrid)%r)
+      call downward(ngrid,grid(ngrid)%u,grid(ngrid)%r,grid(ngrid)%a,grid(ngrid)%b)
 !
       grid(1)%u=0.
-      call solve_coarsest(grid(1)%u,grid(1)%r,.false.)
+      call solve_coarsest(grid(1)%u,grid(1)%r,grid(ngrid)%a,grid(ngrid)%b,.false.)
 !
       call upward(2,grid(1)%u)
 !
@@ -1327,38 +1359,47 @@ contains
       do j=1,ng
          deallocate(grid(j)%u)
          deallocate(grid(j)%r)
+         deallocate(grid(j)%a)
+         deallocate(grid(j)%b)
       enddo
       deallocate(grid)
 !
     endsubroutine multigrid
 !***********************************************************************    
-    recursive subroutine downward(j,u,rhs)
+    recursive subroutine downward(j,u,rhs,alp,bet)
 
       implicit none
       real, dimension(:,:) :: u
       real, dimension(:,:) :: rhs
+      real, dimension(:,:) :: alp,bet
       integer :: j,jpre
 !
-      real, dimension((size(rhs,1)+1)/2,(size(rhs,2)+1)/2) :: res
+      real, dimension((size(rhs,1)+1)/2,(size(rhs,2)+1)/2) :: res,a,b
       real, dimension((size(rhs,1)+1)/2+2*nghost,(size(rhs,2)+1)/2+2*nghost) :: v
 !        
       if (j/=1) then
 !           
          do jpre=1,npre
-            call relaxation(u,rhs)
+            call relaxation(u,rhs,alp,bet)
          enddo
 !
          grid(j)%u = u
          grid(j)%r = rhs
+         grid(j)%a = alp
+         grid(j)%b = bet
 
-         res=restrict(residual(u,rhs))           
+         res=restrict(residual(u,rhs,alp,bet))
+         a=restrict(alp)
+         b=restrict(bet)           
 !        
          v=0.0
 
          grid(j-1)%u = v
          grid(j-1)%r = res
-
-         call downward(j-1,v,res)
+         grid(j-1)%a = a
+         grid(j-1)%b = b
+         
+         call downward(j-1,v,res,a,b)
       endif
 !    
     endsubroutine downward
@@ -1377,7 +1418,7 @@ contains
 !  Post-smoothing.
 !
       do jpost=1,npost
-         call relaxation(u,grid(j)%r)
+         call relaxation(u,grid(j)%r,grid(j)%a,grid(j)%b)
       enddo
       grid(j)%u=u
 !
@@ -1447,7 +1488,7 @@ contains
 !
     endfunction prolongate
 !********************************************************************
-    subroutine solve_coarsest(u,rhs,lboundary)
+    subroutine solve_coarsest(u,rhs,alp,bet,lboundary)
 !
 !  Solution of the model problem on the coarsest grid, where h = 1 . 
 !  input in rhs(1:3,1:3) and the solution is returned in u(1:3,1:3). 
@@ -1457,8 +1498,9 @@ contains
       implicit none
       real, dimension(:,:), intent(inout) :: u
       real, dimension(:,:), intent(in) :: rhs
+      real, dimension(:,:), intent(in) :: alp,bet
       real, dimension(size(rhs,1),size(rhs,2)) :: u_old
-      real :: h,fac
+      real :: h,fac,alpha,beta
       logical :: lboundary
 !
       real :: res,tol,ufactor,vterm
@@ -1481,10 +1523,12 @@ contains
          if (lpoisson_test) then 
             u(iu,iu) = -h**2 * rhs(2,2)/4.0
          else
+            alpha=alp(2,2)
+            beta=bet(2,2)
             if (lsolver_highorder) then 
-               call solve_highorder(u,0.0,0.0,ufactor,vterm,iu,iu,h)
+               call solve_highorder(u,alpha,beta,ufactor,vterm,iu,iu,h)
             else
-               call solve_loworder(u,0.0,0.0,ufactor,vterm,iu,iu,h)
+               call solve_loworder(u,alpha,beta,ufactor,vterm,iu,iu,h)
             endif
             !u(iu,iu) = h**4 * rhs(2,2)/20.0
             u(iu,iu) =  rhs(2,2)/ufactor 
@@ -1497,7 +1541,7 @@ contains
             icount=icount+1
             u_old=u(nn1:nn2,nn1:nn2)
             !call successive_over_relaxation(u,rhs,h)
-            call relaxation(u,rhs)
+            call relaxation(u,rhs,alp,bet)
             res = sqrt(sum((u(nn1:nn2,nn1:nn2)-u_old)**2)/nr**2)
             if (lprint_residual_svl) print*,'solve_coarsest',icount,res
          enddo
@@ -1506,7 +1550,7 @@ contains
 !
     endsubroutine solve_coarsest
 !********************************************************************
-    subroutine relaxation(u,rhs)
+    subroutine relaxation(u,rhs,alp,bet)
 !
 !  Red-black Gauss-Seidel relaxation for model problem. The current
 !  value of the solution u is updated, using the right-hand-side
@@ -1517,6 +1561,7 @@ contains
       implicit none
       real, dimension(:,:), intent(inout) :: u
       real, dimension(:,:), intent(in) :: rhs
+      real, dimension(:,:), intent(in) :: alp,bet
       integer :: n,m,l,k
       real :: h,h2
 !
@@ -1539,6 +1584,8 @@ contains
             do nn=2,n-1
                k=nn+nghost
                cc = rhs(ii,nn)
+               alpha=alp(ii,nn)
+               beta=bet(ii,nn)
                if (lsolver_highorder) then
                   call solve_highorder(u,alpha,beta,ufactor,vterm,l,k,h)
                else
@@ -1566,7 +1613,7 @@ contains
 !
     endsubroutine relaxation
 !********************************************************************
-    function residual(u,rhs)
+    function residual(u,rhs,alp,bet)
 !
 !  Returns minus the residual for the model problem. Input quantities are u and rhs,
 !  while the residual is returned in resid. All three quantities are square arrays
@@ -1577,6 +1624,7 @@ contains
       implicit none
       real, dimension(:,:), intent(in) :: u
       real, dimension(:,:), intent(in) :: rhs
+      real, dimension(:,:), intent(in) :: alp,bet
       real, dimension(size(rhs,1),size(rhs,2)) :: residual
       integer :: n,l,k
       real :: h,h2i,alpha,beta
@@ -1603,12 +1651,12 @@ contains
             enddo
          enddo
       else
-         alpha=0.0
-         beta=0.0
          do ii=2,n-1
             l=ii+nghost
             do nn=2,n-1
                k=nn+nghost
+               alpha=alp(ii,nn)
+               beta=bet(ii,nn)
                if (lsolver_highorder) then 
                   call solve_highorder(u,alpha,beta,ufactor,vterm,l,k,h)
                else
