@@ -50,7 +50,7 @@ write_revision_file_from_git_sandbox () {
 write_revision_file_from_svn_sandbox () {
     # SVN revision:
     svn_cmd info | grep 'Last Changed Rev' >> ${revision_file}
-    svn_cmd status | grep -Ev '^\?' >> ${revision_file}
+    svn_cmd status | (grep -Ev '^\?' || true) >> ${revision_file}
 }
 
 
