@@ -284,7 +284,7 @@ module EquationOfState
         call put_shared_variable('lanelastic_lin',lanelastic_lin)
 !
       if (llocal_iso) &
-        call put_shared_variable('iglobal_cs2',iglobal_cs2,caller='calc_draglaw_variables')
+        call put_shared_variable('iglobal_cs2',iglobal_cs2,caller='initialize_particles')
 !
 !  Set background stratification, if any.
 !

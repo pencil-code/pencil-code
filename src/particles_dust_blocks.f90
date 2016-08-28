@@ -68,6 +68,7 @@ module Particles
   real :: xsinkpoint=0.0, ysinkpoint=0.0, zsinkpoint=0.0, rsinkpoint=0.0
   real :: compensate_sedimentation=1. ! Is this still being used? 
   real :: mean_free_path_gas=0.0
+  integer :: iaux1
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
   logical :: lpar_spec=.false., learly_particle_map=.true.
   logical :: ldragforce_equi_global_eps=.false.
@@ -227,6 +228,8 @@ module Particles
       integer :: ierr, jspec
       real, pointer :: reference_state_mass
 !
+      integer, pointer :: iglobal_cs2
+!
 !  This module is incompatible with normal domain decomposition.
 !
       if (.not.lparticles_blocks) then
@@ -299,6 +302,14 @@ module Particles
       if (ldraglaw_epstein) then
         call put_shared_variable( 'tausp_species', tausp_species)
         call put_shared_variable('tausp1_species',tausp1_species)
+      endif
+!
+      if (ldraglaw_eps_stk_transonic) then
+        if (llocal_iso) then
+          call get_shared_variable('iglobal_cs2',iglobal_cs2,caller='initialize_particles')
+          iaux1=iglobal_cs2
+          call fill_blocks_with_bricks(f,fb,mfarray,iaux1)
+        endif
       endif
 !
 !  Global gas pressure gradient seen from the perspective of the dust.
@@ -2455,7 +2466,6 @@ k_loop:   do while (.not. (k>npar_loc))
     subroutine calc_draglaw_parameters(fp,k,ix0,iy0,iz0,iblock,tausp1_par,lstokes)
 !
       use EquationOfState, only: rho0,cs0
-      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension(3) :: uup,duu
@@ -2467,7 +2477,6 @@ k_loop:   do while (.not. (k>npar_loc))
       real :: inv_particle_radius,kn_crit
       logical, optional :: lstokes
       logical, save :: lfirstcall
-      integer, pointer :: iglobal_cs2
 !
 !  Epstein drag away from the limit of subsonic particle motion. The drag
 !  force is given by (Schaaf 1963)
@@ -2586,8 +2595,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  The mach number and the correction fd to flows of arbitrary mach number
 !
         if (llocal_iso) then
-          call get_shared_variable('iglobal_cs2',iglobal_cs2,caller='calc_draglaw_variables') 
-          cs2 = fb(ix0,iy0,iz0,iglobal_cs2,iblock)
+          cs2 = fb(ix0,iy0,iz0,iaux1,iblock)
         else
           call fatal_error("calc_draglaw_parameters",&
                 "not implemented for else than local isothermal")
