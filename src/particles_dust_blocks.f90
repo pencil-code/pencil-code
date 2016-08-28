@@ -66,12 +66,14 @@ module Particles
   real :: a_ellipsoid=0.0, b_ellipsoid=0.0, c_ellipsoid=0.0
   real :: a_ell2=0.0, b_ell2=0.0, c_ell2=0.0
   real :: xsinkpoint=0.0, ysinkpoint=0.0, zsinkpoint=0.0, rsinkpoint=0.0
-  real :: compensate_sedimentation=1. 
+  real :: compensate_sedimentation=1. ! Is this still being used? 
+  real :: mean_free_path_gas=0.0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
   logical :: lpar_spec=.false., learly_particle_map=.true.
   logical :: ldragforce_equi_global_eps=.false.
   logical :: ldraglaw_epstein=.true., ldraglaw_variable=.false.
   logical :: ldraglaw_variable_density=.false.
+  logical :: ldraglaw_eps_stk_transonic=.false.,luse_tau_ap=.true.
   logical :: ldt_grav_par=.false., ldt_adv_par=.true.
   logical :: lsinkpoint=.false., lglobalrandom=.false.
   logical :: lcoriolis_force_par=.true., lcentrifugal_force_par=.false.
@@ -111,7 +113,8 @@ module Particles
       np_const, rhop_const, lrandom_particle_blocks, lreblock_particles_run, &
       lbrick_partition, ldraglaw_variable, ladopt_own_light_bricks, &
       xp1, yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
-      xp3, yp3, zp3, vpx3, vpy3, vpz3, lreassign_strat_rhom
+      xp3, yp3, zp3, vpx3, vpy3, vpz3, lreassign_strat_rhom, &
+      ldraglaw_eps_stk_transonic, luse_tau_ap, mean_free_path_gas
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -130,7 +133,8 @@ module Particles
       np_const, rhop_const, lrandom_particle_blocks, lreblock_particles_run, &
       lbrick_partition, ldraglaw_variable, ladopt_own_light_bricks, &
       lcylindrical_gravity_par, lcommunicate_rhop, lcommunicate_np, &
-      lcompensate_sedimentation,compensate_sedimentation
+      lcompensate_sedimentation,compensate_sedimentation, &
+      ldraglaw_eps_stk_transonic, luse_tau_ap, mean_free_path_gas
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0
@@ -281,6 +285,13 @@ module Particles
         tausp_species(1)=tausp
         if (tausp_species(1)/=0.0) &
             tausp1_species(1)=1/tausp_species(1)
+      endif
+!
+      if (ldraglaw_eps_stk_transonic.and.ldraglaw_epstein) then
+        print*,'both epstein and epstein-stokes transonic '//&
+             'drag laws are switched on. You cannot have '//&
+             'both. Stop and choose only one.'
+        call fatal_error('initialize_particles','')
       endif
 !
 !  Share friction time (but only if Epstein drag regime!).
@@ -2413,6 +2424,10 @@ k_loop:   do while (.not. (k>npar_loc))
             tausp1_par=tmp
           endif
         endif
+      else if (ldraglaw_eps_stk_transonic) then
+!         
+         call calc_draglaw_parameters(fp,k,ix0,iy0,iz0,iblock,tausp1_par,lstokes=.true.)
+!         
       endif
 !
 !  Change friction time artificially.
@@ -2436,6 +2451,271 @@ k_loop:   do while (.not. (k>npar_loc))
       call keep_compiler_quiet(ineargrid)
 !
     endsubroutine get_frictiontime
+!***********************************************************************
+    subroutine calc_draglaw_parameters(fp,k,ix0,iy0,iz0,iblock,tausp1_par,lstokes)
+!
+      use EquationOfState, only: rho0,cs0
+      use SharedVariables, only: get_shared_variable
+!
+      real, dimension (mpar_loc,mparray) :: fp
+      real, dimension(3) :: uup,duu
+      type (pencil_case) :: p
+      real :: tausp1_par,tmp,tmp1
+      integer :: k, ix0, iy0, iz0, jspec, iblock
+      real :: kd,fd,mach,mach2,fac,OO,rho,cs2
+      real :: knudsen,reynolds,lambda
+      real :: inv_particle_radius,kn_crit
+      logical, optional :: lstokes
+      logical, save :: lfirstcall
+      integer, pointer :: iglobal_cs2
+!
+!  Epstein drag away from the limit of subsonic particle motion. The drag
+!  force is given by (Schaaf 1963)
+!
+!       Feps=-pi*a**2 * rhog * |Delta(u)| * Delta(u) &                    (1)
+!        *[(1+1/m**2+1/(4*m**4))*erf(m) + (1/m+1/(2*m**3)*exp(-m**2)/sqrt(pi)]
+!
+!  where Delta(u) is the relative dust-to-gas velocity (vector)
+!  and m=|Delta(u)|/cs (scalar) is the relative mach number of the flow
+!
+!  As erf is too cumbersome a function to implement numerically, an interpolation
+!  between the limits of
+!
+!     subsonic:    Feps=-sqrt(128*pi)/3*a**2*rhog*cs*Delta(u)             (2)
+!     supersonic:  Feps=-pi*a**2*rhog*|Delta(u)|*Delta(u)                 (3)
+!
+!  is used, leading to an expression that can be used for arbitrary velocities
+!  as derived by Kwok (1975).
+!
+!     transonic:  Feps=-sqrt(128*pi)/3*a**2*rhog*cs*fd*Delta(u)           (4)
+!
+!  where fd=sqrt(1 + 9*pi/128*m**2)                                       (5)
+!
+!  The force Feps is divided by the mass of the particle mp=4/3*pi*a**3*rhopmat
+!  to yield the acceleration feps=Feps/mp
+!
+!         feps = -sqrt(8/pi)*rhog*cs*fd*Delta(u)/[a*rhopmat]              (6)
+!
+!  Epstein drag ceases to work when the particle diameter becomes comparable
+!  to the mean free path (lambda) of the gas molecules. In this case, the force
+!  is given by Stokes friction in the viscous case (low dust Reynolds number)
+!
+!      Fsto=-6*pi*a*mu_kin*Delta(u)                                       (7)
+!
+!  where mu_kin is the kinematic viscosity of the gas
+!
+!      mu_kin=1/3*rhog*vth*lambda                                         (8)
+!
+!  and vth=sqrt(8/pi)*cs is the mean thermal velocity of the gas. For high dust
+!  Reynolds numbers the viscosity if uninmportant and the drag force of the tur-
+!  bulent flow past the particle is given by Newtonian friction
+!
+!     Fnew=-1.3*pi*a**2*rhog*|Delta(u)|*Delta(u)
+!
+!  The two cases are once again connected by an interpolating factor
+!
+!     F'sto=-6*pi*a*kd*mu_kin*Delta(u)
+!
+!  where kd is a factor that contains the Reynolds number of the flow over the
+!  particle (defined in the code, some lines below).
+!
+!  The following interpolation then works for flows of arbitrary Knudsen, Mach and Reynolds
+!  numbers
+!
+!     Fdrag = [Kn'/(Kn'+1)]**2 * Feps +  [1/(Kn'+1)]**2 * F'sto
+!
+!  Where Kn'=3*Kn is the critical Knudsen number where the viscous (Stokes) drag and the subsonic
+!  Epstein drag are equal.
+!
+!  (The discussion above was taken from Paardekooper 2006, Woite & Helling 2003 and Kwok 1975)
+!
+!  In the 2D case, the density rhog is to be replaced by
+!
+!     rhog=Sigmag/[sqrt(2*pi)H]
+!         =Sigmag*Omega/[sqrt(2*pi)*cs]
+!
+!  which removes the dependence of (6) on cs. We are left with
+!
+!         feps = -2/pi*sigmag*Omega*fd*Delta(u)/[a*rhopmat]
+!
+!  the constant terms are tausp1. The same follows for Stokes drag
+!
+!  Friction time for different species
+!
+      if (npar_species==1) then
+        tmp=tausp
+        tmp1=tausp1
+      else
+        jspec=npar_species*(ipar(k)-1)/npar+1
+        tmp=tausp_species(jspec)
+        tmp1=tausp1_species(jspec)
+      endif
+!
+!  Relative velocity
+!
+      uup=fb(ix0,iy0,iz0,iux:iuz,iblock)
+      duu=fp(k,ivpx:ivpz)-uup
+!
+      if (nzgrid==1) then
+!  then omega is needed
+        if (ldraglaw_variable) then
+          !these omegas assume GM=1
+          if (lcartesian_coords) then
+            OO=(fp(k,ixp)**2 + fp(k,iyp)**2)**(-0.75)
+          elseif (lcylindrical_coords) then
+            OO=fp(k,ixp)**(-1.5)
+          elseif (lspherical_coords) then
+            OO=(fp(k,ixp)*sin(fp(k,iyp)))**(-1.5)
+          else
+            call fatal_error("calc_draglaw_parameters", &
+                 "no valid coord system")
+            OO=0.
+          endif
+        else
+          OO=nu_epicycle
+        endif
+      endif
+!
+!  Possibility to include the transition from Epstein to Stokes drag
+!
+      if (present(lstokes)) then
+!
+        if (lfirstcall) &
+            print*, 'get_frictiontime: Epstein-Stokes transonic drag law'
+!
+!  The mach number and the correction fd to flows of arbitrary mach number
+!
+        if (llocal_iso) then
+          call get_shared_variable('iglobal_cs2',iglobal_cs2,caller='calc_draglaw_variables') 
+          cs2 = fb(ix0,iy0,iz0,iglobal_cs2,iblock)
+        else
+          call fatal_error("calc_draglaw_parameters",&
+                "not implemented for else than local isothermal")
+        endif
+        mach=sqrt((duu(1)**2+duu(2)**2+duu(3)**2)/cs2)
+        fd=sqrt(1+(9.0*pi/128)*mach**2)
+!
+!  For Stokes drag, the mean free path is needed
+!
+!   lambda = 1/rhog*(mu/sigma_coll)_H2
+!
+!  were mu_H2 is the mean molecular weight of the hydrogen molecule (3.9e-24 g),
+!  and sigma_coll its cross section (2e-15 cm^2).
+!  Assume that (mu/sigma_coll) is the input parameter mean_free_path_gas
+!
+        if (mean_free_path_gas==0) then
+          call fatal_error("calc_draglaw_parameters","You want to use Stokes drag"// &
+              "but you forgot to set 'mean_free_path_gas' in the *.in files.")
+        endif
+!
+        if (ldensity_nolog) then 
+          rho=fb(ix0,iy0,iz0,irho,iblock)
+        else
+          rho=exp(fb(ix0,iy0,iz0,irho,iblock))
+        endif
+!
+        if (nzgrid==1) then
+          !the sqrt(2pi) factor is inside the mean_free_path_gas constant
+          lambda=mean_free_path_gas * sqrt(cs2)*rho0/(rho*OO*cs0)
+        else
+          lambda=mean_free_path_gas * rho0/rho
+        endif
+!
+!  The Knudsen number is the ratio of the mean free path to the particle
+!  radius, 2s. To keep consistency with the formulation evolving for radius,
+!  tausp1 is C/(s*rhopmat) where C is 2/pi for 2d runs and sqrt(8/pi) for 3D
+!  runs (because of the sqrt(2*pi) factor coming from the substitution
+!  Sigma=rho/(sqrt(2*pi)*H). 's' is the particle radius
+        if (iap/=0) then
+          inv_particle_radius=1/fp(k,iap)
+        else
+          if (luse_tau_ap) then
+            ! use tausp as the radius (in meter) to make life easier
+            inv_particle_radius=tmp1
+          else
+            if (nzgrid==1) then
+              inv_particle_radius=0.5*pi*tmp1     !rhopmat=1, particle_radius in meters
+            else
+              inv_particle_radius=sqrt(pi/8)*tmp1 !rhopmat=1, particle_radius in meters
+            endif
+          endif
+        endif
+!
+        knudsen=0.5*lambda*inv_particle_radius
+!
+!  The Stokes drag depends non-linearly on
+!
+!    Re = 2*s*rho_g*|delta(v)|/mu_kin
+!
+        reynolds=3*sqrt(pi/8)*mach/knudsen
+!
+!  the Reynolds number of the flow over the particle. It can parameterized by
+!
+        if (reynolds<=500) then
+          kd=1.0+0.15*reynolds**0.687
+        elseif ((reynolds>500).and.(reynolds<=1500)) then
+          kd=3.96e-6*reynolds**2.4
+        elseif (reynolds>1500) then
+          kd=0.11*reynolds
+        else
+          call fatal_error_local("calc_draglaw_parameters", "'reynolds' seems to be NaN!")
+          kd=0.
+        endif
+!
+!  And we finally have the Stokes correction to intermediate Knudsen numbers
+!  kn_crit is the critical knudsen number where viscous (low reynolds)
+!  Stokes and subsonic Epstein friction are equal (Woitke & Helling, 2003)
+!
+        kn_crit=3*knudsen
+        fac=kn_crit/(kn_crit+1)**2 * (kn_crit*fd + kd)
+!
+      else
+!
+!  Only use Epstein drag
+!
+        if (lfirstcall) &
+            print*,'get_frictiontime: Epstein transonic drag law'
+!
+        mach2=(duu(1)**2+duu(2)**2+duu(3)**2)/cs2
+        fd=sqrt(1+(9.0*pi/128)*mach2)
+        fac=fd
+!
+      endif
+!
+! Calculate tausp1_par for 2d and 3d cases with and without particle_radius
+! as a dynamical variable
+!
+      if (iap/=0) then
+        if (fp(k,iap)/=0.0) then
+          if (nzgrid==1) then
+            tausp1_par=     2*pi_1*OO* &
+                rho*fac/(fp(k,iap)*rhopmat)
+          else
+            tausp1_par=sqrt(8*pi_1*cs2)*rho* &
+                fac/(fp(k,iap)*rhopmat)
+          endif
+        endif
+      else
+          !normalize to make tausp1 not dependent on cs0 or rho0
+          !bad because it comes at the expense of evil divisions
+        if (nzgrid==1) then
+          if (luse_tau_ap) then
+            tausp1_par=tmp1*2*pi_1*OO*rho*fac/(rho0*rhopmat)
+          else
+            tausp1_par=tmp1*OO*rho*fac/ rho0
+          endif
+        else
+          if (luse_tau_ap) then
+            tausp1_par=tmp1*sqrt(8*pi_1*cs2)*rho*fac/(rho0*cs0)
+          else
+            tausp1_par=tmp1*sqrt(cs2)*rho*fac/(rho0*cs0)
+          endif
+        endif
+      endif
+!
+      if (lfirstcall) lfirstcall=.false.
+!
+    endsubroutine calc_draglaw_parameters
 !***********************************************************************
     subroutine read_particles_init_pars(iostat)
 !
