@@ -356,6 +356,11 @@ module Grid
           xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
 !
+          if (lparticles .or. lsolid_cells) then
+            call grid_profile(a*(xi1proc-b),grid_func(1),g1proc,param=c)
+            g1proc=x00+Lx*(g1proc  -  g1lo)/(g1up-g1lo)
+          endif
+!
         case ('power-law')
           ! Grid distance increases as a power-law set by c=coeff_grid(1)
           ! i.e., grid distance increases as an inverse power-law
@@ -383,6 +388,11 @@ module Grid
           x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
           xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
+!
+          if (lparticles .or. lsolid_cells) then
+            call grid_profile(a*(xi1proc-b),grid_func(1),g1proc,param=c)
+            g1proc=x00+Lx*(g1proc  -  g1lo)/(g1up-g1lo)
+          endif
 !
         case ('squared')
           ! Grid distance increases linearily
@@ -412,6 +422,11 @@ module Grid
             enddo
           endif
 !
+          if (lparticles .or. lsolid_cells) then
+            call fatal_error('construct_grid: non-equidistant grid', &
+                 'squared not implemented for particles.')
+          endif
+!
         case ('frozensphere')
           ! Just like sinh, except set dx constant below a certain radius, and
           ! constant for top ghost points.
@@ -432,6 +447,12 @@ module Grid
               xprim(l2-2:mx)=bound_prim2
             enddo
           endif
+!
+          if (lparticles .or. lsolid_cells) then
+            call fatal_error('construct_grid: non-equidistant grid', &
+                 'frozensphere not implemented for particles.')
+          endif
+!
         case default
           call fatal_error('construct_grid', &
                            'No such x grid function - '//grid_func(1))
@@ -776,6 +797,11 @@ module Grid
           z     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
           zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
           zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
+!
+          if (lparticles .or. lsolid_cells) then
+            call fatal_error('construct_grid: non-equidistant grid', &
+                 'linear+log not implemented for particles.')
+          endif
 !
         case default
           call fatal_error('construct_grid', &
@@ -1390,9 +1416,9 @@ module Grid
           rcyl_mn1=1./x(l1:l2)
         endif
         rcyl_mn2=rcyl_mn1**2
-
+!
       endif
-
+!
     endsubroutine coords_aux
 !***********************************************************************
     subroutine box_vol
