@@ -62,6 +62,12 @@ git_cmd () {
 
 svn_cmd () {
     # Run a SVN command from the top directory
+
+    # Reset the locale to make the output from e.g. 'svn info' predictable.
+    # Sometimes LANG is crucial, sometimes only LANGUAGE or LC_ALL are.
+    export LANG=POSIX
+    export LANGUAGE="${LANGUAGE}" LC_ALL="${LANGUAGE}"
+
     (cd $PENCIL_HOME; svn "$@")
 }
 
