@@ -20,4 +20,4 @@
   public :: write_dim_particles
   public :: particles_cleanup
   public :: particles_stochastic
-  public :: fetch_fp_array,return_fp_array
+  public :: fetch_nparloc,fetch_fp_array,return_fp_array

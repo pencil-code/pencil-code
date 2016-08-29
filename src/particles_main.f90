@@ -1210,17 +1210,21 @@ module Particles_main
 !
     endsubroutine particles_cleanup
 !***********************************************************************
-    subroutine fetch_fp_array(fp_aux,dfp_aux,np_aux,ixw,izw,ivxw,ivzw)
+    subroutine fetch_nparloc(np_aux)
+      integer, intent(out) :: np_aux
+      np_aux=npar_loc
+    endsubroutine fetch_nparloc
+!***********************************************************************    
+    subroutine fetch_fp_array(fp_aux,dfp_aux,ixw,iyw,izw,ivxw,ivyw,ivzw)
 !
       real,    dimension(mpar_loc,mparray), intent(out) :: fp_aux
       real,    dimension(mpar_loc,mpvar),   intent(out) :: dfp_aux
-      integer,                              intent(out) :: np_aux
-      integer, intent(out) :: ixw,izw,ivxw,ivzw
+      integer, intent(out) :: ixw,iyw,izw,ivxw,ivyw,ivzw
 !
       fp_aux        = fp
       dfp_aux       = dfp
-      np_aux        = npar_loc
-      ixw=ixp ; izw=izp ; ivxw=ivpx ; ivzw=ivpz
+      ixw=ixp ; iyw=iyp; izw=izp
+      ivxw=ivpx ; ivyw=ivpy; ivzw=ivpz
 !      
     endsubroutine fetch_fp_array
 !***********************************************************************
@@ -1238,7 +1242,6 @@ module Particles_main
       do k=npar_loc,1,-1
         if (flag(k)) call remove_particle(fp,ipar,k,dfp,ineargrid)
       enddo
-      
 !      
     endsubroutine return_fp_array
 !***********************************************************************

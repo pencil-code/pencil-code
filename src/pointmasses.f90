@@ -65,7 +65,8 @@ module PointMasses
   logical :: lcartesian_evolution=.true.
 !
   type IndexDustParticles
-    integer :: ixw=0,izw=0,ivxw=0,ivzw=0
+    integer :: ixw=0,iyw=0,izw=0
+    integer :: ivxw=0,ivyw=0,ivzw=0
   endtype IndexDustParticles
   type (IndexDustParticles) :: index
 !
@@ -967,24 +968,27 @@ module PointMasses
 !************************************************************
     subroutine dvvp_dt_dustparticles(hill_radius_square)
 
-      use Particles_main, only: fetch_fp_array,return_fp_array
+      use Particles_main, only: fetch_nparloc,fetch_fp_array,return_fp_array
 
       real, dimension (mpar_loc,mparray) :: fp_aux
       real, dimension (mpar_loc,mpvar) :: dfp_aux
       integer :: np_aux,k
-      logical, dimension(mpar_loc) :: flag=.false.
+      logical, dimension(mpar_loc) :: flag
       real, dimension(nqpar) :: hill_radius_square
 !
-      call fetch_fp_array(fp_aux,dfp_aux,np_aux,&
-           index%ixw,index%izw,index%ivxw,index%ivzw)
-      if (np_aux/=0) then
+      call fetch_nparloc(np_aux)
+      if (np_aux/=0) then        
+        call fetch_fp_array(fp_aux,dfp_aux,&
+             index%ixw,index%iyw,index%izw,&
+             index%ivxw,index%ivyw,index%ivzw)
         do k=1,np_aux
+          flag(k)=.false.  
           call gravity_pointmasses(k,hill_radius_square,.false.,&
                fp_aux(k,:),dfp_aux(k,:),flag(k))
         enddo
+        call return_fp_array(fp_aux,dfp_aux,flag)
       endif
-      call return_fp_array(fp_aux,dfp_aux,flag)
-
+!
     endsubroutine dvvp_dt_dustparticles
 !************************************************************
     subroutine gravity_pointmasses(k,hill_radius_square,&
