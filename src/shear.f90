@@ -4,6 +4,13 @@
 !  shear is invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
 !  shear relevant subroutines listed in here.
+!
+!  When this module is used, Pencil Code works in terms of the
+!  *fluctuating* fluid velocity, i.e. in terms of the difference
+!  between the total fluid velocity and the uniform shear flow.
+!  Therefore, an explicit magnetic stretching term appears in the
+!  induction equation (switched on by 'lmagnetic_stretching').
+!
 !  Shear can either be given relative to Omega (using qshear),
 !  or in absolute fashion via the parameters Sshear.
 !
