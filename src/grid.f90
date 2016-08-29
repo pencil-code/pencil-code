@@ -951,12 +951,18 @@ module Grid
 !
       dxmin = minval( (/dxmin_x, dxmin_y, dxmin_z, huge(dx)/), &
                 MASK=((/nxgrid, nygrid, nzgrid, 2/) > 1) )
+
+      call mpiallreduce_min(dxmin,dxmin_x)
+      dxmin=dxmin_x
 !
       if (dxmin == 0) &
         call fatal_error ("initialize_grid", "check Lx,Ly,Lz: is one of them 0?", .true.)
 !
       dxmax = maxval( (/dxmax_x, dxmax_y, dxmax_z, epsilon(dx)/), &
                 MASK=((/nxgrid, nygrid, nzgrid, 2/) > 1) )
+
+      call mpiallreduce_max(dxmax,dxmax_x)
+      dxmax=dxmax_x
 !
 !  Fill pencil with maximum gridspacing. Will be overwritten
 !  during the mn loop in the non equidistant case
@@ -1215,7 +1221,7 @@ module Grid
           if (r_int == 0)         r_int=x(l1)
           if (r_ext ==impossible) r_ext=x(l2)
         endif
-        if (lroot) print*,'initialize_modules, r_int,r_ext=',r_int,r_ext
+        if (lroot) print*,'initialize_grid, r_int,r_ext=',r_int,r_ext
       endif
 !
 !  For a non-periodic mesh, multiply boundary points by 1/2.

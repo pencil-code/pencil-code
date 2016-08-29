@@ -157,11 +157,8 @@ module Mpicomm
     module procedure mpiallreduce_max_arr
   endinterface
 !
-  interface mpiallreduce_min_sgl
+  interface mpiallreduce_min
     module procedure mpiallreduce_min_scl_sgl
-  endinterface
-!
-  interface mpiallreduce_min_dbl
     module procedure mpiallreduce_min_scl_dbl
   endinterface
 !

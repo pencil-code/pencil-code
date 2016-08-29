@@ -18,7 +18,7 @@
   public :: mpisendrecv_real
   public :: mpireduce_sum_int, mpireduce_sum
   public :: mpireduce_max, mpireduce_max_int, mpireduce_min
-  public :: mpiallreduce_max, mpiallreduce_min_sgl, mpiallreduce_min_dbl
+  public :: mpiallreduce_max, mpiallreduce_min
   public :: mpiallreduce_sum, mpiallreduce_sum_int
   public :: mpiallreduce_sum_arr, mpiallreduce_sum_arr2
   public :: mpiallreduce_or
