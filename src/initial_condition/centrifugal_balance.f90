@@ -151,6 +151,8 @@ module InitialCondition
 !
 !  07-may-09/wlad: coded
 !
+      use SharedVariables, only: put_shared_variable
+!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       Lxn=Lx-2*(rborder_int+rborder_ext)
@@ -160,6 +162,11 @@ module InitialCondition
       else
         OOcorot=0.
       endif
+!
+      if (llocal_iso.and.lparticles_blocks) &
+           call put_shared_variable('itemperature_power_law',&
+             temperature_power_law,&
+             caller='initialize_particles')
 !
       call keep_compiler_quiet(f)
 !

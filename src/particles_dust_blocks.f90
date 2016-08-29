@@ -68,7 +68,7 @@ module Particles
   real :: xsinkpoint=0.0, ysinkpoint=0.0, zsinkpoint=0.0, rsinkpoint=0.0
   real :: compensate_sedimentation=1. ! Is this still being used? 
   real :: mean_free_path_gas=0.0
-  integer :: iaux1
+  real :: cs2_powerlaw
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
   logical :: lpar_spec=.false., learly_particle_map=.true.
   logical :: ldragforce_equi_global_eps=.false.
@@ -227,8 +227,7 @@ module Particles
       real :: rhom
       integer :: ierr, jspec
       real, pointer :: reference_state_mass
-!
-      integer, pointer :: iglobal_cs2
+      real, pointer :: temperature_power_law
 !
 !  This module is incompatible with normal domain decomposition.
 !
@@ -306,9 +305,8 @@ module Particles
 !
       if (ldraglaw_eps_stk_transonic) then
         if (llocal_iso) then
-          call get_shared_variable('iglobal_cs2',iglobal_cs2,caller='initialize_particles')
-          iaux1=iglobal_cs2
-          call fill_blocks_with_bricks(f,fb,mfarray,iaux1)
+          call get_shared_variable('itemperature_power_law',temperature_power_law,caller='initialize_particles')
+          cs2_powerlaw=temperature_power_law
         endif
       endif
 !
@@ -2084,7 +2082,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  is dependent on the relative mach number, hence the need to feed uup as
 !  an optional argument to get_frictiontime.
 !
-                call get_frictiontime(f,fp,ineargrid,k,tausp1_par,iblock)
+                call get_frictiontime(f,fp,ineargrid,k,tausp1_par,iblock,uup)
 !
 !  Calculate and add drag force.
 !
@@ -2358,13 +2356,14 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine create_particles_sink_simple
 !***********************************************************************
-    subroutine get_frictiontime(f,fp,ineargrid,k,tausp1_par,iblock,nochange_opt)
+    subroutine get_frictiontime(f,fp,ineargrid,k,tausp1_par,iblock,uup,nochange_opt)
 !
 !  Calculate the friction time.
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension (3), intent(in) :: uup
       integer :: k
       real :: tausp1_par
       integer :: iblock
@@ -2399,11 +2398,11 @@ k_loop:   do while (.not. (k>npar_loc))
             tmp=tausp1
           endif
 !
-!  Scale friction time with local density.
+!  Scale friction time with local density. inearblock(k)=iblock
 !
           if (ldraglaw_variable_density) then
             if (ldensity_nolog) then
-              tausp1_par=tmp*fb(ix0,iy0,iz0,irho,inearblock(k))
+               tausp1_par=tmp*fb(ix0,iy0,iz0,irho,inearblock(k))
             else
               tausp1_par=tmp*exp(fb(ix0,iy0,iz0,ilnrho,inearblock(k)))
             endif
@@ -2437,7 +2436,7 @@ k_loop:   do while (.not. (k>npar_loc))
         endif
       else if (ldraglaw_eps_stk_transonic) then
 !         
-         call calc_draglaw_parameters(fp,k,ix0,iy0,iz0,iblock,tausp1_par,lstokes=.true.)
+         call calc_draglaw_parameters(fp,k,uup,ix0,iy0,iz0,iblock,tausp1_par,lstokes=.true.)
 !         
       endif
 !
@@ -2463,20 +2462,23 @@ k_loop:   do while (.not. (k>npar_loc))
 !
     endsubroutine get_frictiontime
 !***********************************************************************
-    subroutine calc_draglaw_parameters(fp,k,ix0,iy0,iz0,iblock,tausp1_par,lstokes)
+    subroutine calc_draglaw_parameters(fp,k,uup,ix0,iy0,iz0,ib,tausp1_par,lstokes)
 !
-      use EquationOfState, only: rho0,cs0
+      use EquationOfState, only: rho0,cs0,cs20
 !
       real, dimension (mpar_loc,mparray) :: fp
-      real, dimension(3) :: uup,duu
+      real, dimension(3) :: uup, duu
       type (pencil_case) :: p
       real :: tausp1_par,tmp,tmp1
-      integer :: k, ix0, iy0, iz0, jspec, iblock
+      integer :: k, ix0, iy0, iz0, jspec, ib
       real :: kd,fd,mach,mach2,fac,OO,rho,cs2
       real :: knudsen,reynolds,lambda
       real :: inv_particle_radius,kn_crit
       logical, optional :: lstokes
       logical, save :: lfirstcall
+!
+      intent(in) :: k,uup,ix0,iy0,iz0,ib
+      intent(out) :: tausp1_par
 !
 !  Epstein drag away from the limit of subsonic particle motion. The drag
 !  force is given by (Schaaf 1963)
@@ -2562,8 +2564,21 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  Relative velocity
 !
-      uup=fb(ix0,iy0,iz0,iux:iuz,iblock)
       duu=fp(k,ivpx:ivpz)-uup
+!
+!  Sound speed, Mach number and the correction fd to flows of arbitrary mach number
+!
+      if (llocal_iso) then
+        cs2 = cs20/fp(k,ixp)**cs2_powerlaw
+      else
+        call fatal_error("calc_draglaw_parameters",&
+             "not implemented for else than local isothermal")
+      endif
+!
+      mach=sqrt((duu(1)**2+duu(2)**2+duu(3)**2)/cs2)
+      fd=sqrt(1+(9.0*pi/128)*mach**2)
+!
+!  Angular frequency
 !
       if (nzgrid==1) then
 !  then omega is needed
@@ -2592,17 +2607,6 @@ k_loop:   do while (.not. (k>npar_loc))
         if (lfirstcall) &
             print*, 'get_frictiontime: Epstein-Stokes transonic drag law'
 !
-!  The mach number and the correction fd to flows of arbitrary mach number
-!
-        if (llocal_iso) then
-          cs2 = fb(ix0,iy0,iz0,iaux1,iblock)
-        else
-          call fatal_error("calc_draglaw_parameters",&
-                "not implemented for else than local isothermal")
-        endif
-        mach=sqrt((duu(1)**2+duu(2)**2+duu(3)**2)/cs2)
-        fd=sqrt(1+(9.0*pi/128)*mach**2)
-!
 !  For Stokes drag, the mean free path is needed
 !
 !   lambda = 1/rhog*(mu/sigma_coll)_H2
@@ -2617,9 +2621,9 @@ k_loop:   do while (.not. (k>npar_loc))
         endif
 !
         if (ldensity_nolog) then 
-          rho=fb(ix0,iy0,iz0,irho,iblock)
+          rho=fb(ix0,iy0,iz0,irho,ib)
         else
-          rho=exp(fb(ix0,iy0,iz0,irho,iblock))
+          rho=exp(fb(ix0,iy0,iz0,irho,ib))
         endif
 !
         if (nzgrid==1) then
@@ -2634,18 +2638,15 @@ k_loop:   do while (.not. (k>npar_loc))
 !  tausp1 is C/(s*rhopmat) where C is 2/pi for 2d runs and sqrt(8/pi) for 3D
 !  runs (because of the sqrt(2*pi) factor coming from the substitution
 !  Sigma=rho/(sqrt(2*pi)*H). 's' is the particle radius
-        if (iap/=0) then
-          inv_particle_radius=1/fp(k,iap)
+!
+        if (luse_tau_ap) then
+          ! use tausp as the radius (in meter) to make life easier
+          inv_particle_radius=tmp1
         else
-          if (luse_tau_ap) then
-            ! use tausp as the radius (in meter) to make life easier
-            inv_particle_radius=tmp1
+          if (nzgrid==1) then
+            inv_particle_radius=0.5*pi*tmp1     !rhopmat=1, particle_radius in meters
           else
-            if (nzgrid==1) then
-              inv_particle_radius=0.5*pi*tmp1     !rhopmat=1, particle_radius in meters
-            else
-              inv_particle_radius=sqrt(pi/8)*tmp1 !rhopmat=1, particle_radius in meters
-            endif
+            inv_particle_radius=sqrt(pi/8)*tmp1 !rhopmat=1, particle_radius in meters
           endif
         endif
 !
@@ -2684,8 +2685,6 @@ k_loop:   do while (.not. (k>npar_loc))
         if (lfirstcall) &
             print*,'get_frictiontime: Epstein transonic drag law'
 !
-        mach2=(duu(1)**2+duu(2)**2+duu(3)**2)/cs2
-        fd=sqrt(1+(9.0*pi/128)*mach2)
         fac=fd
 !
       endif
@@ -2693,31 +2692,20 @@ k_loop:   do while (.not. (k>npar_loc))
 ! Calculate tausp1_par for 2d and 3d cases with and without particle_radius
 ! as a dynamical variable
 !
-      if (iap/=0) then
-        if (fp(k,iap)/=0.0) then
-          if (nzgrid==1) then
-            tausp1_par=     2*pi_1*OO* &
-                rho*fac/(fp(k,iap)*rhopmat)
-          else
-            tausp1_par=sqrt(8*pi_1*cs2)*rho* &
-                fac/(fp(k,iap)*rhopmat)
-          endif
+!  Normalize to make tausp1 not dependent on cs0 or rho0
+!  Bad because it comes at the expense of evil divisions
+!
+      if (nzgrid==1) then
+        if (luse_tau_ap) then
+          tausp1_par=tmp1*2*pi_1*OO*rho*fac/(rho0*rhopmat)
+        else
+          tausp1_par=tmp1*OO*rho*fac/ rho0
         endif
       else
-          !normalize to make tausp1 not dependent on cs0 or rho0
-          !bad because it comes at the expense of evil divisions
-        if (nzgrid==1) then
-          if (luse_tau_ap) then
-            tausp1_par=tmp1*2*pi_1*OO*rho*fac/(rho0*rhopmat)
-          else
-            tausp1_par=tmp1*OO*rho*fac/ rho0
-          endif
+        if (luse_tau_ap) then
+          tausp1_par=tmp1*sqrt(8*pi_1*cs2)*rho*fac/(rho0*cs0)
         else
-          if (luse_tau_ap) then
-            tausp1_par=tmp1*sqrt(8*pi_1*cs2)*rho*fac/(rho0*cs0)
-          else
-            tausp1_par=tmp1*sqrt(cs2)*rho*fac/(rho0*cs0)
-          endif
+          tausp1_par=tmp1*sqrt(cs2)*rho*fac/(rho0*cs0)
         endif
       endif
 !
