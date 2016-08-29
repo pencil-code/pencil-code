@@ -333,8 +333,7 @@ module Shear
       endif
 !
 !  Lagrangian shear of background velocity profile. Appears like a correction
-!  to the Coriolis force, but is actually not related to the Coriolis
-!  force.
+!  to the Coriolis force, but is actually not related to the Coriolis force.
 !
       if (lhydro .and. lshear_acceleration) df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - Sshear1 * p%uu(:,1)
 !
