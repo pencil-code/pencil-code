@@ -189,6 +189,17 @@ function pc_compute_quantity, vars, index, quantity
 			return, vars[l1:l2,m1:m2,n1:n2,index.lnTT] / alog (10.0) + alog10 (unit.temperature)
 		end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
 			return, alog10 (vars[l1:l2,m1:m2,n1:n2,index.TT]) + alog10 (unit.temperature)
+		end else if (any (strcmp (sources, 'ss', /fold_case))) then begin
+			cp = pc_get_parameter ('cp', label=quantity)
+			cp_SI = cp * (unit.velocity^2 / unit.temperature)
+			cs0 = pc_get_parameter ('cs0', label=quantity)
+			gamma = pc_get_parameter ('gamma', label=quantity)
+			if (gamma eq 1.0) then tmp = 1.0 else tmp = gamma - 1.0
+			ln_Temp_0 = alog (cs0^2 / cp / tmp) + alog (unit.temperature)
+			ln_rho_0 = alog (pc_get_parameter ('rho0', label=quantity)) + alog (unit.density)
+			S = pc_compute_quantity (vars, index, 'S')
+			ln_rho = pc_compute_quantity (vars, index, 'ln_rho') - ln_rho_0
+			return, ln_Temp_0 + gamma/cp_SI * S + (gamma-1) * ln_rho + alog10 (unit.temperature)
 		end
 	end
 	if (strcmp (quantity, 'ln_Temp', /fold_case)) then begin
@@ -197,6 +208,17 @@ function pc_compute_quantity, vars, index, quantity
 			return, vars[l1:l2,m1:m2,n1:n2,index.lnTT] + alog (unit.temperature)
 		end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
 			return, alog (vars[l1:l2,m1:m2,n1:n2,index.TT]) + alog (unit.temperature)
+		end else if (any (strcmp (sources, 'ss', /fold_case))) then begin
+			cp = pc_get_parameter ('cp', label=quantity)
+			cp_SI = cp * (unit.velocity^2 / unit.temperature)
+			cs0 = pc_get_parameter ('cs0', label=quantity)
+			gamma = pc_get_parameter ('gamma', label=quantity)
+			if (gamma eq 1.0) then tmp = 1.0 else tmp = gamma - 1.0
+			ln_Temp_0 = alog (cs0^2 / cp / tmp) + alog (unit.temperature)
+			ln_rho_0 = alog (pc_get_parameter ('rho0', label=quantity)) + alog (unit.density)
+			S = pc_compute_quantity (vars, index, 'S')
+			ln_rho = pc_compute_quantity (vars, index, 'ln_rho') - ln_rho_0
+			return, ln_Temp_0 + gamma/cp_SI * S + (gamma-1) * ln_rho + alog (unit.temperature)
 		end
 	end
 
