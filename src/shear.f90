@@ -288,7 +288,7 @@ module Shear
       type (pencil_case) :: p
 !
       real, dimension(nx) :: dfdy, penc
-      integer :: j,k,jseg,nseg,na,ne
+      integer :: j,k
       real :: d
 !
       intent(in)  :: f
@@ -303,32 +303,12 @@ module Shear
 !  Advection of all variables by shear flow.
 !
       if (.not. lshearadvection_as_shift) then
-!
-        if ( ltestflow ) then
-!
-!  Treatment of variables in two segments necessary as
-!  shear is potentially handled differently in testflow
-!
-          nseg = 2
-          ne = iuutest-1
-        else
-          nseg = 1
-          ne = nvar
-        endif
-!
-        na=1
-        do jseg=1,nseg
-!
-          comp: do j=na,ne
-!           bfield module handles its own shearing.
-            if (lbfield .and. ibx <= j .and. j <= ibz) cycle comp
-            call der(f,j,dfdy,2)
-            df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-uy0*dfdy
-          enddo comp
-!
-          na=iuutest+ntestflow
-          ne=nvar
-!
+        do j = 1, nvar
+          ! bfield and testfield modules may handle their own shearing.
+          if (lbfield .and. (j >= ibx) .and. (j <= ibz)) cycle
+          if (ltestflow .and. (j >= iuutest) .and. (j <= iuutest+ntestflow-1)) cycle
+          call der(f,j,dfdy,2)
+          df(l1:l2,m,n,j) = df(l1:l2,m,n,j) - uy0*dfdy
         enddo
       endif
 !
