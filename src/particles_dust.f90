@@ -7,7 +7,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MPVAR CONTRIBUTION 6
+! MPVAR CONTRIBUTION 7
 ! MAUX CONTRIBUTION 3
 ! CPARAM logical, parameter :: lparticles=.true.
 !
@@ -82,9 +82,9 @@ module Particles
   real :: frac_init_particles=1.0, particles_insert_ramp_time=0.0
   real :: tstart_insert_particles=0.0
   real :: birthring_r=1.0, birthring_width=0.1
-  real :: tstart_rpbeta=0.0
+  real :: tstart_rpbeta=0.0, birthring_lifetime=huge1
   integer :: l_hole=0, m_hole=0, n_hole=0
-  integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0
+  integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0, ibrtime=0
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
   logical :: ldragforce_stiff=.false., ldragforce_radialonly=.false.
   logical :: ldragforce_heat=.false., lcollisional_heat=.false.
@@ -124,6 +124,7 @@ module Particles
   logical :: lvector_gravity=.false.
   logical :: lprecalc_cell_volumes=.false.
   logical :: lpeh_radius=.false.
+  logical :: lbirthring_depletion=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -202,7 +203,8 @@ module Particles
       lcalc_uup, temp_grad0, thermophoretic_eq, cond_ratio, interp_pol_gradTT, &
       lreassign_strat_rhom, lparticlemesh_pqs_assignment, &
       lwithhold_init_particles, frac_init_particles, lvector_gravity, &
-      birthring_r, birthring_width, lgaussian_birthring, ldraglaw_stokesschiller
+      birthring_r, birthring_width, lgaussian_birthring, ldraglaw_stokesschiller, &
+      lbirthring_depletion
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -249,8 +251,7 @@ module Particles
       birthring_width, &
       lgaussian_birthring, tstart_rpbeta, linsert_as_many_as_possible, &
       lvector_gravity, lcompensate_sedimentation,compensate_sedimentation, &
-      lpeh_radius, &
-      A1, A2, ldraglaw_stokesschiller
+      lpeh_radius, A1, A2, ldraglaw_stokesschiller, lbirthring_depletion, birthring_lifetime
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0   ! DIAG_DOC: $x^2_{part}$
@@ -353,6 +354,13 @@ module Particles
 !  Relaxation time of supersaturation
       if (lsupersat) &
         call farray_register_auxiliary('tausupersat', itausupersat) 
+!
+!  Kill particles that spend enough time in birth ring
+      if (lbirthring_depletion) then
+        npvar=npvar+1
+        ibrtime=npvar
+        pvarname(ibrtime)='ibrtime'
+      endif
       
 !
 !  Check that the fp and dfp arrays are big enough.
@@ -2135,6 +2143,7 @@ module Particles
 !
           if (lparticles_radius) call set_particle_radius(f,fp,npar_loc_old+1,npar_loc)
           if (lparticles_number) call set_particle_number(f,fp,npar_loc_old+1,npar_loc)
+          if (lbirthring_depletion) fp(npar_loc_old+1:npar_loc,ibrtime) = 0.0
 !
 !  Particles are not allowed to be present in non-existing dimensions.
 !  This would give huge problems with interpolation later.
@@ -2173,6 +2182,16 @@ module Particles
 !  sorting).
 !
         call sort_particles_imn(fp,ineargrid,ipar)
+      endif
+!
+      if (lbirthring_depletion) then
+        do k=1,npar_loc
+          if ((fp(k,ixp) .ge. birthring_r-birthring_width) .and. &
+          (fp(k,ixp) .le. birthring_r+birthring_width)) &
+            fp(k,ibrtime) = fp(k,ibrtime)+dt
+          if (fp(k,ibrtime) .ge. birthring_lifetime) &
+            call remove_particle(fp,ipar,k)
+        enddo
       endif
 !
     endsubroutine insert_particles
