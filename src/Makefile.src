@@ -155,6 +155,10 @@ CFLAGS_GENERAL =
 FFLAGS_DOUBLE = -r8
 CFLAGS_DOUBLE = -DDOUBLE_PRECISION
 #
+# Default linker flags.
+#
+LDFLAGS=-ldl
+#
 # Overwrite settings that are local to each run directory.
 #
 include Makefile.local
@@ -2262,11 +2266,11 @@ run=$(physics) $(technical) $(TIMESTEP).o equ.o pencil_check.o
 #
 start.o: $(start) Makefile.local
 start.x: start.o
-	$(LD) $(LDFLAGS) $(start) start.o $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x
+	$(LD) $(start) start.o $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x $(LDFLAGS)
 #
 run.o: $(run) Makefile.local
 run.x: run.o
-	$(LD) $(LDFLAGS) $(run) run.o $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x
+	$(LD) $(run) run.o $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x $(LDFLAGS)
 #
 #  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.
 #
@@ -2274,53 +2278,53 @@ basics=cparam.o cdata.o general.o $(SYSCALLS_OBJ) syscalls_ansi.o $(NOMPICOMM_OB
 #
 combine_videofiles.o: $(basics)
 combine_videofiles.x: combine_videofiles.o
-	$(LD) $(LDFLAGS) combine_videofiles.o $(basics) $(LD_MPI) -o combine_videofiles.x
+	$(LD) combine_videofiles.o $(basics) $(LD_MPI) -o combine_videofiles.x $(LDFLAGS)
 #
 read_videofiles.o: $(basics)
 read_videofiles.x: read_videofiles.o
-	$(LD) $(LDFLAGS) read_videofiles.o $(basics) $(LD_MPI) -o read_videofiles.x
+	$(LD) read_videofiles.o $(basics) $(LD_MPI) -o read_videofiles.x $(LDFLAGS)
 #
 read_all_videofiles.o: $(basics)
 read_all_videofiles.x: read_all_videofiles.o
-	$(LD) $(LDFLAGS) read_all_videofiles.o $(basics) $(LD_MPI) -o read_all_videofiles.x
+	$(LD) read_all_videofiles.o $(basics) $(LD_MPI) -o read_all_videofiles.x $(LDFLAGS)
 #
 read_vectorfiles.o: $(basics)
 read_vectorfiles.x: read_vectorfiles.o
-	$(LD) $(LDFLAGS) read_vectorfiles.o $(basics) $(LD_MPI) -o read_vectorfiles.x
+	$(LD) read_vectorfiles.o $(basics) $(LD_MPI) -o read_vectorfiles.x $(LDFLAGS)
 #
 technical_nompi=$(BOUNDCOND_OBJ) $(BORDER_PROFILES_OBJ) $(DEBUG_OBJ) $(DERIV_OBJ) $(FOURIER_OBJ) $(GHOSTFOLD_OBJ) $(GRID_OBJ) $(GSL_OBJ) $(INITIAL_CONDITION_OBJ) $(DEBUG_IO_OBJ) $(IO_OBJ) $(FILE_IO_OBJ) $(LSODE_FC_OBJ) $(NOMPICOMM_OBJ) $(NSCBC_OBJ) $(POWER_OBJ) $(SIGNAL_HANDLING_OBJ) $(SLICES_OBJ) $(SOLID_CELLS_OBJ) $(STRUCT_FUNC_OBJ) $(SYSCALLS_OBJ) syscalls_ansi.o $(TESTPERTURB_OBJ) $(TIMEAVG_OBJ) $(WENO_TRANSPORT_OBJ) $(CDATA_OBJ) $(CPARAM_OBJ) $(DIAGNOSTICS_OBJ) $(FARRAY_OBJ) $(FILTER_OBJ) $(INITCOND_OBJ) $(MESSAGES_OBJ) $(GENERAL_OBJ) $(PARAM_IO_OBJ) $(PERSIST_OBJ) $(REGISTER_OBJ) $(SHARED_VARIABLES_OBJ) $(SNAPSHOT_OBJ) $(STREAMLINES_OBJ) $(SUB_OBJ) noyinyang.o noyinyang_mpi.o magnetic.a $(PARTICLES_MAIN).a $(GHOST_CHECK_OBJ) $(IMPLICIT_DIFFUSION_OBJ)
 #
 pre_and_post_processing/pc_collect.o: pre_and_post_processing/pc_collect.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_collect.x: pre_and_post_processing/pc_collect.o
-	$(LD) $(LDFLAGS) pre_and_post_processing/pc_collect.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_collect.x
+	$(LD) pre_and_post_processing/pc_collect.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_collect.x $(LDFLAGS)
 #
 pre_and_post_processing/pc_reduce.o: pre_and_post_processing/pc_reduce.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_reduce.x: pre_and_post_processing/pc_reduce.o
-	$(LD) $(LDFLAGS) pre_and_post_processing/pc_reduce.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_reduce.x
+	$(LD) pre_and_post_processing/pc_reduce.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_reduce.x $(LDFLAGS)
 #
 pre_and_post_processing/pc_distribute.o: pre_and_post_processing/pc_distribute.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_distribute.x: pre_and_post_processing/pc_distribute.o
-	$(LD) $(LDFLAGS) pre_and_post_processing/pc_distribute.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_distribute.x
+	$(LD) pre_and_post_processing/pc_distribute.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_distribute.x $(LDFLAGS)
 #
 pre_and_post_processing/pc_distribute_z.o: pre_and_post_processing/pc_distribute_z.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_distribute_z.x: pre_and_post_processing/pc_distribute_z.o
-	$(LD) $(LDFLAGS) pre_and_post_processing/pc_distribute_z.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_distribute_z.x
+	$(LD) pre_and_post_processing/pc_distribute_z.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_distribute_z.x $(LDFLAGS)
 #
 pre_and_post_processing/pc_configtest.o: pre_and_post_processing/pc_configtest.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_configtest.x: pre_and_post_processing/pc_configtest.o
-	$(LD) $(LDFLAGS) pre_and_post_processing/pc_configtest.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_configtest.x
+	$(LD) pre_and_post_processing/pc_configtest.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_configtest.x $(LDFLAGS)
 #
 pre_and_post_processing/pc_extract.o: pre_and_post_processing/pc_extract.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_extract.x: pre_and_post_processing/pc_extract.o
-	$(LD) $(LDFLAGS) pre_and_post_processing/pc_extract.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_extract.x
+	$(LD) pre_and_post_processing/pc_extract.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_extract.x $(LDFLAGS)
 #
 pre_and_post_processing/pc_tecplot.o: pre_and_post_processing/pc_tecplot.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_tecplot.x: pre_and_post_processing/pc_tecplot.o
-	$(LD) $(LDFLAGS) pre_and_post_processing/pc_tecplot.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_tecplot.x
+	$(LD) pre_and_post_processing/pc_tecplot.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_tecplot.x $(LDFLAGS)
 #
 pre_and_post_processing/pc_tecplot_solid.o: pre_and_post_processing/pc_tecplot_solid.f90 $(physics) $(technical_nompi) $(EQU_OBJ) Makefile.local
 pre_and_post_processing/pc_tecplot_solid.x: pre_and_post_processing/pc_tecplot_solid.o
-	$(LD) $(LDFLAGS) pre_and_post_processing/pc_tecplot_solid.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_tecplot_solid.x
+	$(LD) pre_and_post_processing/pc_tecplot_solid.o $(physics) $(technical_nompi) $(EQU_OBJ) $(LD_MPI) $(LD_FOURIER) -o pre_and_post_processing/pc_tecplot_solid.x $(LDFLAGS)
 #
 experimental/analyzers.o experimental/analyzers.mod:
 experimental/emd.o experimental/emd.mod:
@@ -2506,8 +2510,8 @@ debug:
 #  When you use this you must be certain that everying is consistent.
 #
 linkonly:
-	$(LD) $(LDFLAGS) $(start) start.o $(LD_MPI) $(LD_FOURIER) -o start.x
-	$(LD) $(LDFLAGS) $(run) run.o $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o run.x
+	$(LD) $(start) start.o $(LD_MPI) $(LD_FOURIER) -o start.x $(LDFLAGS)
+	$(LD) $(run) run.o $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o run.x $(LDFLAGS)
 #
 #  Needed for the underscore trick.
 #

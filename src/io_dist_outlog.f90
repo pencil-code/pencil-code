@@ -461,7 +461,7 @@ module Io
 !                                 T, tstart specified: use this value
 !
       use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, mpiallreduce_or, &
-                         stop_it, mpiallreduce_min_sgl, MPI_COMM_WORLD
+                         stop_it, mpiallreduce_min, MPI_COMM_WORLD
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
@@ -561,7 +561,7 @@ module Io
 !
 !  If reset of tstart enabled and tstart unspecified, use minimum of all t_sp
 !
-              call mpiallreduce_min_sgl(t_sp,t_sgl,MPI_COMM_WORLD)
+              call mpiallreduce_min(t_sp,t_sgl,MPI_COMM_WORLD)
               tstart=t_sgl
               if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT. Using t=', tstart,'.'
             else
@@ -607,7 +607,7 @@ module Io
 !                                =T, tstart specified: use this value
 !                             
       use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, mpiallreduce_or, &
-                         stop_it, mpiallreduce_min_dbl, MPI_COMM_WORLD
+                         stop_it, mpiallreduce_min, MPI_COMM_WORLD
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
@@ -706,7 +706,7 @@ module Io
 !
 !  If reset of tstart enabled and tstart unspecified, use minimum of all t_sp
 !
-              call mpiallreduce_min_dbl(t_sp,t_dbl,MPI_COMM_WORLD)
+              call mpiallreduce_min(t_sp,t_dbl,MPI_COMM_WORLD)
               tstart=t_dbl
               if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT. Using t=', tstart, '.'
             else
