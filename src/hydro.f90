@@ -752,6 +752,7 @@ module Hydro
       endif
 !
       ! Default value of 'tfade_start' is tdamp/2 for faded damping
+      if (.not. ldamp_fade .and. (tfade_start >= 0.0) .and. (tdamp > 0.0)) ldamp_fade = .true.
       if (ldamp_fade .and. (tfade_start == -1.0)) tfade_start = 0.5 * tdamp
       if (ldamp_fade .and. (tfade_start >= tdamp) .and. (tdamp > 0.0)) &
           call fatal_error ('initialize_hydro', 'Please set tfade_start < tdamp')
