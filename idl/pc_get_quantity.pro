@@ -440,6 +440,8 @@ function pc_compute_quantity, vars, index, quantity
 		; Gravity vector
 		g_total = pc_get_parameter ('g_total', label=quantity)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
+		if (size (rho, /n_dimensions) eq 1) then rho = spread (rho, 1, 1)
+		if (size (rho, /n_dimensions) eq 2) then rho = spread (rho, 2, 1)
 		return, -g_total * spread (rho, 3, 3)
 	end
 	if (strcmp (quantity, 'F_grav_abs', /fold_case)) then begin
