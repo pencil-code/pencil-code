@@ -87,8 +87,6 @@ module Grid
       real, dimension(0:2*nprocy+1) :: xi2proc,g2proc
       real, dimension(0:2*nprocz+1) :: xi3proc,g3proc
 !
-      real :: dxmin_x,dxmax_x,dxmin_y,dxmax_y,dxmin_z,dxmax_z
-!
       real :: a,b,c
       integer :: i
 !
