@@ -656,10 +656,12 @@ endif
 ;
 ;  Put data and parameters in object.
 ;
+npar_found=0L
+npar_found=n_elements(where(ipar eq 1))
 makeobject="object = create_struct(name=objectname," + $
-    "['t','x','y','z','dx','dy','dz'," + $
+    "['t','x','y','z','dx','dy','dz','npar_found'," + $
     arraytostring(variables,quote="'",/noleader) + "]," + $
-    "t,x,y,z,dx,dy,dz," + $
+    "t,x,y,z,dx,dy,dz,npar_found," + $
     arraytostring(variables,/noleader) + ")"
 if (execute(makeobject) ne 1) then begin
   message, 'ERROR Evaluating variables: ' + makeobject, /info
