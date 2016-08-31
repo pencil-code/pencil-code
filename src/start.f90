@@ -87,7 +87,7 @@ program start
   use SharedVariables,  only: sharedvars_clean_up
   use Snapshot
   use Solid_Cells,      only: init_solid_cells
-  use Special,          only: init_special
+  use Special,          only: init_special, initialize_mult_special
   use Sub
   use Testfield,        only: init_aatest
   use Testflow,         only: init_uutest

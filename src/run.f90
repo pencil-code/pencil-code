@@ -84,6 +84,7 @@ program run
   use Slices
   use Snapshot
   use Solid_Cells,     only: solid_cells_clean_up
+  use Special,         only: initialize_mult_special
   use Streamlines,     only: tracers_prepare, wtracers
   use Sub
   use Syscalls,        only: is_nan
