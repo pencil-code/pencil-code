@@ -92,8 +92,20 @@ module Special
 !!   integer :: idiag_POSSIBLEDIAGNOSTIC=0
 !
   contains
+!****************************************************************************
+  subroutine initialize_mult_special
+!
+! Dummy routine.
+!
+  endsubroutine initialize_mult_special
 !***********************************************************************
-    subroutine register_special()
+  subroutine finalize_mult_special
+!
+! Dummy routine.
+!
+  endsubroutine finalize_mult_special
+!***********************************************************************
+    subroutine register_special
 !
 !  Set up indices for variables in special modules.
 !
@@ -142,7 +154,7 @@ module Special
         print*,' SPECIAL = special/fargo'
         print*,'in src/Makefile.local if you want to use the fargo algorithm'
         print*,''
-        call fatal_error('nospecial','initialize_special()')
+        call fatal_error('nospecial','initialize_special')
       endif
 !
     endsubroutine initialize_special
@@ -182,7 +194,7 @@ module Special
 !
     endsubroutine init_special
 !***********************************************************************
-    subroutine pencil_criteria_special()
+    subroutine pencil_criteria_special
 !
 !  All pencils that this special module depends on are specified here.
 !

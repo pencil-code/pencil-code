@@ -424,12 +424,15 @@ module Register
       use Cdata
       use Special,        only: finalize_special
       use Deriv,          only: finalize_deriv
+      use Special,        only: finalize_mult_special
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
       call finalize_special(f)
       call finalize_boundcond(f)
       call finalize_deriv
+!
+      call finalize_mult_special
 !
     endsubroutine finalize_modules
 !***********************************************************************

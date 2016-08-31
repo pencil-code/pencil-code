@@ -121,6 +121,10 @@ program run
 !
   call initialize_messages
 !
+!  Initialize use of multiple special modules.
+!
+  call initialize_mult_special
+!
 !  Define the lenergy logical
 !
   lenergy=lentropy.or.ltemperature.or.lthermal_energy
