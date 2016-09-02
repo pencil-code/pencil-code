@@ -338,7 +338,7 @@ else
   OPACITY_SRC = $(OPACITY).f
 endif
 ifeq ($(MPICOMM),nompicomm)
-  YINYANG     = noyinyang
+  YINYANG = noyinyang
 endif
 ifeq ($(YINYANG),yinyang)
   YINYANG_MPI = yinyang_mpi
@@ -1292,7 +1292,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##
 #FC=mpif90 #(norlx51)
 #FFLAGS=-O1 -finit-real=nan -fno-underscoring #(norlx51)
-#DLLFLAGS=-shared -Xlinker --unresolved-symbols=ignore-all
+#DLLFLAGS=-shared -Xlinker --unresolved-symbols=ignore-all #(norlx51)
 #CC=mpicc #(norlx51)
 #CFLAGS=-O1 #(norlx51)
 #LD_MPI= #(norlx51)
