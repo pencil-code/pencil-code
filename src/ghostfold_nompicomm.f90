@@ -187,6 +187,8 @@ module GhostFold
         df(l1-3:l2+3,m2-2:m2,n1:n2,ivar1:ivar2)= &
             df(l1-3:l2+3,m2-2:m2,n1:n2,ivar1:ivar2) + &
             df(l1-3:l2+3,m1-3:m1-1,n1:n2,ivar1:ivar2)
+        df(l1-3:l2+3,m2+1:m2+3,n1:n2,ivar1:ivar2)=0.0
+        df(l1-3:l2+3,m1-3:m1-1,n1:n2,ivar1:ivar2)=0.0
       endif
 !
 !  Finally fold the x-direction.
