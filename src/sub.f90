@@ -3253,7 +3253,7 @@ module Sub
 !
       if (lroot .or. .not. lmonolithic_io) then
         open(1,file=file)
-        write(1,'(3i7,3i5)') mxout1,myout1,mzout1,mvar,maux,mglobal
+        write(1,'(3i7,3i7)') mxout1,myout1,mzout1,mvar,maux,mglobal
 !
 !  Check for double precision.
 !
