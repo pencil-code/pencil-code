@@ -2293,7 +2293,7 @@ special_preps:
 ifeq ($(shell echo $(SPECIAL_MODULES) | wc -w),1)
 	@#echo $(SPECIAL_MODULES).f90
 	@sed -e 's/^\(module  *\)[a-zA-Z0-9_]* */\1Special/' -e 's/^\( *endmodule  *\)[a-zA-Z0-9_]* *$$/\1Special/' -e"s/[a-zA-Z0-9_]*\.inc/special_dummies.inc/" < $(SPECIAL_MODULES).f90 > tmp
-	@mv -f tmp $(PENCIL_HOME)/src/$(SPECIAL_MODULES).f90
+	@if ! cmp tmp $(SPECIAL_MODULES).f90; then mv -f tmp $(PENCIL_HOME)/src/$(SPECIAL_MODULES).f90; fi
 else
 	@#echo $(SPECIAL_MODULES)
 	@list="$(subst special/,,$(SPECIAL_MODULES))";sed -e"s/special_modules_list *=.*\'/special_modules_list = \'$${list}\'/" < special.f90 > tmp; mv -f tmp $(PENCIL_HOME)/src/special.f90
@@ -2465,12 +2465,9 @@ cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o cparam.o -c cparam.f90
 #
 special_dummies.inc:  nospecial.f90 $(SPECIAL_MODULES:=.f90) Makefile.local
-	@#scripts/mkdummyinc -d nospecial.f90 -s $(SPECIAL).f90 > special_dummies.inc
 ifeq ($(shell echo $(SPECIAL_MODULES) | wc -w),1)
-	@#echo special_modules=$(SPECIAL_MODULES)
 	scripts/mkdummyinc -d nospecial.f90 -s $(SPECIAL).f90 > special_dummies.inc
 else
-	@#echo special_modules=$(SPECIAL_MODULES)
 	@for file in $(SPECIAL_MODULES); do echo "$$file"_dummies.inc; scripts/mkdummyinc -d nospecial.f90 -s "$$file".f90 > $${file#*/}_dummies.inc; done
 endif
 #
