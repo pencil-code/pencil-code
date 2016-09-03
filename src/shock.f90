@@ -368,7 +368,7 @@ module Shock
 !
      call shock_smooth(tmp,f(:,:,:,ishock))
 !
-!  scale with dxmin**2
+!  scale with min(dx,dy,dz)**2
 !
      f(:,:,:,ishock) = f(:,:,:,ishock) * dxmin**2
 !
