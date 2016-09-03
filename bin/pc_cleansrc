@@ -11,7 +11,7 @@
 delete_links()
 {
   links=$1
-  # delete symlinks to scripts
+  # delete symlinks to scripts in $PENCIL_HOME
   for file in $links
   do
     # echo "$file"
@@ -24,7 +24,7 @@ delete_links()
 delete_files()
 {
   files=$1
-  # delete regular files
+  # delete regular files from compilation and running
   for file in $files
   do
     if [ -f $file ]; then
@@ -37,7 +37,7 @@ clean_dir()
 {
   dir=$1
   objects=$2
-  # delete object files
+  # delete object files from compilation
   for object in $objects
   do
     for file in $dir/$object
@@ -47,7 +47,7 @@ clean_dir()
       fi
     done
   done
-  # delete symlinks in source directory
+  # delete symlinks in the source directory
   for file in $dir/*
   do
     if [ -L $file ]; then
