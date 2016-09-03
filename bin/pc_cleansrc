@@ -4,7 +4,9 @@
 # -----------
 # Description:
 #   Removes all symbolic links created by 'pc_setupsrc'.
-#   Localized files (see pc_localize) are maintained.
+#   Removes all compiled executables and other build objects.
+#   Localized source files (see pc_localize) are maintained.
+#   Data and other files in the run directory are maintained.
 
 delete_links()
 {
@@ -29,40 +31,44 @@ delete_files()
   done
 }
 
-delete_dirs()
+clean_dir()
 {
-  # iterate over directories
-  for dir in $dirs
+  dir=$1
+  # delete object files
+  for object in $objects
   do
-    # delete object files
-    for object in $objects
+    for file in $dir/$object
     do
-      for file in $dir/$object
-      do
-        if [ -f $file ]; then
-          rm -f $file
-        fi
-      done
-    done
-    # delete links in source directories
-    for file in $dir/*
-    do
-      if [ -L $file ]; then
+      if [ -f $file ]; then
         rm -f $file
       fi
     done
-    rmdir $dir >/dev/null 2>&1
   done
+  # delete symlinks in source directory
+  for file in $dir/*
+  do
+    if [ -L $file ]; then
+      rm -f $file
+    fi
+  done
+  # enter sub-directories
+  for test in $dir/*
+  do
+    if [ -d $test ]; then
+      clean_dir $test
+    fi
+  done
+  rmdir $dir >/dev/null 2>&1
 }
 
 objects="*.o *.a *.mod *.x *.inc .build-history .buildinfo .buildtime"
 links="start.csh start_run.csh run.csh getconf.csh Makefile src/.cvsignore"
 files=".pc_build_history run_command.log COMPLETED ERROR LOCK STOP FULLSTOP src/Makefile src/revision.txt src/.current-precision"
-dirs="src/experimental src/inactive src/initial_condition src/magnetic src/pre_and_post_processing src/special src/test_methods src"
+src_dir="src"
 
 echo "Cleaning up run directory..."
 delete_links
 delete_files
-delete_dirs
+clean_dir $src_dir
 echo "...done."
 
