@@ -1,0 +1,68 @@
+#!/bin/sh
+
+# pc_cleansrc
+# -----------
+# Description:
+#   Removes all symbolic links created by 'pc_setupsrc'.
+#   Localized files (see pc_localize) are maintained.
+
+delete_links()
+{
+  # delete symlinks to scripts
+  for file in $links
+  do
+    # echo "$file"
+    if [ -L $file ]; then
+      rm -f $file
+    fi
+  done
+}
+
+delete_files()
+{
+  # delete regular files
+  for file in $files
+  do
+    if [ -f $file ]; then
+      rm -f $file
+    fi
+  done
+}
+
+delete_dirs()
+{
+  # iterate over directories
+  for dir in $dirs
+  do
+    # delete object files
+    for object in $objects
+    do
+      for file in $dir/$object
+      do
+        if [ -f $file ]; then
+          rm -f $file
+        fi
+      done
+    done
+    # delete links in source directories
+    for file in $dir/*
+    do
+      if [ -L $file ]; then
+        rm -f $file
+      fi
+    done
+    rmdir $dir >/dev/null 2>&1
+  done
+}
+
+objects="*.o *.a *.mod *.x *.inc .build-history .buildinfo .buildtime"
+links="start.csh start_run.csh run.csh getconf.csh Makefile src/.cvsignore"
+files=".pc_build_history run_command.log COMPLETED ERROR LOCK STOP FULLSTOP src/Makefile src/revision.txt src/.current-precision"
+dirs="src/experimental src/inactive src/initial_condition src/magnetic src/pre_and_post_processing src/special src/test_methods src"
+
+echo "Cleaning up run directory..."
+delete_links
+delete_files
+delete_dirs
+echo "...done."
+
