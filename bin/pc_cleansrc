@@ -10,6 +10,7 @@
 
 delete_links()
 {
+  links=$1
   # delete symlinks to scripts
   for file in $links
   do
@@ -22,6 +23,7 @@ delete_links()
 
 delete_files()
 {
+  files=$1
   # delete regular files
   for file in $files
   do
@@ -34,6 +36,7 @@ delete_files()
 clean_dir()
 {
   dir=$1
+  objects=$2
   # delete object files
   for object in $objects
   do
@@ -55,20 +58,20 @@ clean_dir()
   for test in $dir/*
   do
     if [ -d $test ]; then
-      clean_dir $test
+      clean_dir "$test" "$objects"
     fi
   done
   rmdir $dir >/dev/null 2>&1
 }
 
-objects="*.o *.a *.mod *.x *.inc .build-history .buildinfo .buildtime"
-links="start.csh start_run.csh run.csh getconf.csh Makefile src/.cvsignore"
-files=".pc_build_history run_command.log COMPLETED ERROR LOCK STOP FULLSTOP src/Makefile src/revision.txt src/.current-precision"
+clean_objects="*.o *.a *.mod *.x *.inc .build-history .buildinfo .buildtime"
+clean_links="start.csh start_run.csh run.csh getconf.csh Makefile src/.cvsignore"
+clean_files=".pc_build_history run_command.log COMPLETED ERROR LOCK STOP FULLSTOP src/Makefile src/revision.txt src/.current-precision"
 src_dir="src"
 
 echo "Cleaning up run directory..."
-delete_links
-delete_files
-clean_dir $src_dir
+delete_links "$clean_links"
+delete_files "$clean_files"
+clean_dir "$src_dir" "$clean_objects"
 echo "...done."
 
