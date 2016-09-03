@@ -338,6 +338,9 @@ module Boundcond
                 case ('slo')
                   ! BCX_DOC: set slope at the boundary = \var{fbcx}
                   call bc_slope_x(f,fbcx(:,k),topbot,j)
+                case ('slp')
+                  ! BCX_DOC: set slope at the boundary and in ghost cells = \var{fbcx}
+                  call bc_ghost_slope_x(f,fbcx(:,k),topbot,j)
                 case ('dr0')
                   ! BCX_DOC: set boundary value [really??]
                   call bc_dr0_x(f,fbcx(:,k),topbot,j)
@@ -1850,6 +1853,38 @@ module Boundcond
       endselect
 !
     endsubroutine bc_slope_x
+!***********************************************************************
+    subroutine bc_ghost_slope_x(f,slope,topbot,j)
+!
+!  This maintains a constant slope within the ghost cells.
+!
+!  02-Sep-2017/PABourdin: coded as a replacement for 'bc_slope_x'
+!
+      real, dimension(:,:,:,:), intent(inout) :: f
+      real, dimension(:), intent(in) :: slope
+      character(len=bclen), intent(in) :: topbot
+      integer, intent(in) :: j
+!
+      integer :: i
+!
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        do i = 1, nghost
+          f(l1-i,:,:,j) = f(l1,:,:,j) + slope(j) * (x(l1-i) - x(l1))
+        enddo
+!
+      case ('top')               ! top boundary
+        do i = 1, nghost
+          f(l2+i,:,:,j) = f(l2,:,:,j) + slope(j) * (x(l2+i) - x(l2))
+        enddo
+!
+      case default
+        print *, "bc_ghost_slope_x: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_ghost_slope_x
 !***********************************************************************
     subroutine bc_dr0_x(f,slope,topbot,j,rel,val)
 !
