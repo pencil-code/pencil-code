@@ -707,7 +707,7 @@ module Shock
 !          call boundconds_x(f,ishock,ishock)
 !
 !
-!  Scale with dxmin**2.
+!  Scale with min(dx,dy,dz)**2
 !
           f(:,:,:,ishock) = f(:,:,:,ishock) * dxmin**2
         endif
