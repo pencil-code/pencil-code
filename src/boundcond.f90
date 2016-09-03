@@ -1799,13 +1799,8 @@ module Boundcond
 !***********************************************************************
     subroutine bc_slope_x(f,slope,topbot,j,rel,val)
 !
-! FIXME: This documentation is almost certainly wrong
-!
-!  Symmetry boundary conditions.
-!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
-!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
-!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
-!  Don't combine rel=T and sgn=1, that wouldn't make much sense.
+! FIXME: Documentation is missing => Axel?
+! WARNING: the code for "rel=.true." is currently nowhere used.
 !
 !  25-feb-07/axel: adapted from bc_sym_x
 !
