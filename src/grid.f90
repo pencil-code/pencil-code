@@ -485,8 +485,9 @@ module Grid
 !          endif
 !        endif
 !
+        dx2=xprim**2
         dx_1=1./xprim
-        dx_tilde=-xprim2/xprim**2
+        dx_tilde=-xprim2/dx2
 !
         if (lfirst_proc_x) &
           dx2_bound(-1:-nghost:-1)= 2.*(x(l1+1:l1+nghost)-x(l1))
@@ -667,9 +668,10 @@ module Grid
             yprim2(m2+1:m2+nghost) =      -yprim2(m2:m2i:-1)
           endif
         endif
-
+!
+        dy2=yprim**2
         dy_1=1./yprim
-        dy_tilde=-yprim2/yprim**2
+        dy_tilde=-yprim2/dy2
 !
         if (lfirst_proc_y) &
           dy2_bound(-1:-nghost:-1)= 2.*(y(m1+1:m1+nghost)-y(m1))
@@ -806,8 +808,9 @@ module Grid
                            'No such z grid function - '//grid_func(3))
         endselect
 !
+        dz2=zprim**2
         dz_1=1./zprim
-        dz_tilde=-zprim2/zprim**2
+        dz_tilde=-zprim2/dz2
 !
         if (lfirst_proc_z) &
           dz2_bound(-1:-nghost:-1)= 2.*(z(n1+1:n1+nghost)-z(n1))
