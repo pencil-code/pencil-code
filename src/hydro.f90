@@ -1494,6 +1494,12 @@ module Hydro
             f(l,m,n1:n2,iuy) = ampluu(j)*z(n1:n2)
           enddo; enddo
 !
+        case ('linear-x_shear-uy')
+          if (lroot) print*,'init_uu: linear-x_shear-uy, ampluu=', ampluu(j)
+          do n=n1,n2; do m=m1,m2
+            f(l1:l2,m,n,iuy) = ampluu(j)*x(l1:l2)
+          enddo; enddo
+!
         case ('tanh-x-z')
           if (lroot) print*, &
               'init_uu: tanh-x-z, widthuu, ampluu=', widthuu, ampluu(j)
