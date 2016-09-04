@@ -342,8 +342,14 @@ module Boundcond
                   ! BCX_DOC: set slope at the boundary and in ghost cells = \var{fbcx}
                   call bc_ghost_slope_x(f,fbcx(:,k),topbot,j)
                 case ('shx')
-                  ! BCX_DOC: set shearing boundary with a velocity slope = \var{fbcx}
+                  ! BCX_DOC: set shearing boundary proportional to x with a slope = \var{fbcx}
                   call bc_shear_x(f,fbcx(:,k),topbot,j)
+                case ('shy')
+                  ! BCX_DOC: set shearing boundary proportional to y with a slope = \var{fbcx}
+                  call bc_shear_y(f,fbcx(:,k),topbot,j)
+                case ('shz')
+                  ! BCX_DOC: set shearing boundary proportional to z with a slope = \var{fbcx}
+                  call bc_shear_z(f,fbcx(:,k),topbot,j)
                 case ('dr0')
                   ! BCX_DOC: set boundary value [really??]
                   call bc_dr0_x(f,fbcx(:,k),topbot,j)
@@ -1891,7 +1897,7 @@ module Boundcond
 !***********************************************************************
     subroutine bc_shear_x(f,slope,topbot,j)
 !
-!  This maintains a constant shear velocity at the boundaries.
+!  This maintains a constant shear proportional to x at the boundary.
 !
 !  02-Sep-2017/PABourdin: coded
 !
@@ -1920,6 +1926,70 @@ module Boundcond
       endselect
 !
     endsubroutine bc_shear_x
+!***********************************************************************
+    subroutine bc_shear_y(f,slope,topbot,j)
+!
+!  This maintains a constant shear proportional to y at the boundary.
+!
+!  04-Sep-2017/PABourdin: coded
+!
+      real, dimension(:,:,:,:), intent(inout) :: f
+      real, dimension(:), intent(in) :: slope
+      character(len=bclen), intent(in) :: topbot
+      integer, intent(in) :: j
+!
+      integer :: i
+!
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        do i = 1, nghost
+          f(:,m1-i,:,j) = slope(j) * (y(m1-i) - y(m1))
+        enddo
+!
+      case ('top')               ! top boundary
+        do i = 1, nghost
+          f(:,m2+i,:,j) = slope(j) * (y(m2+i) - y(m2))
+        enddo
+!
+      case default
+        print *, "bc_shear_y: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_shear_y
+!***********************************************************************
+    subroutine bc_shear_z(f,slope,topbot,j)
+!
+!  This maintains a constant shear proportional to z at the boundary.
+!
+!  04-Sep-2017/PABourdin: coded
+!
+      real, dimension(:,:,:,:), intent(inout) :: f
+      real, dimension(:), intent(in) :: slope
+      character(len=bclen), intent(in) :: topbot
+      integer, intent(in) :: j
+!
+      integer :: i
+!
+      select case (topbot)
+!
+      case ('bot')               ! bottom boundary
+        do i = 1, nghost
+          f(:,:,n1-i,j) = slope(j) * (z(n1-i) - z(n1))
+        enddo
+!
+      case ('top')               ! top boundary
+        do i = 1, nghost
+          f(:,:,n2+i,j) = slope(j) * (z(n2+i) - z(n2))
+        enddo
+!
+      case default
+        print *, "bc_shear_z: ", topbot, " should be 'top' or 'bot'"
+!
+      endselect
+!
+    endsubroutine bc_shear_z
 !***********************************************************************
     subroutine bc_dr0_x(f,slope,topbot,j,rel,val)
 !
