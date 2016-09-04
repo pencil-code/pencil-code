@@ -167,6 +167,24 @@ pro select_files_event, event
 		WIDGET_CONTROL, scal_z, GET_VALUE = scaling_z
 		break
 	end
+	'SCAL_PLUS': begin
+		scaling_x *= 2
+		scaling_y *= 2
+		scaling_z *= 2
+		WIDGET_CONTROL, scal_x, SET_VALUE = scaling_x
+		WIDGET_CONTROL, scal_y, SET_VALUE = scaling_y
+		WIDGET_CONTROL, scal_z, SET_VALUE = scaling_z
+		break
+	end
+	'SCAL_MINUS': begin
+		scaling_x /= 2
+		scaling_y /= 2
+		scaling_z /= 2
+		WIDGET_CONTROL, scal_x, SET_VALUE = scaling_x
+		WIDGET_CONTROL, scal_y, SET_VALUE = scaling_y
+		WIDGET_CONTROL, scal_z, SET_VALUE = scaling_z
+		break
+	end
 	'CUT_CO': begin
 		WIDGET_CONTROL, event.id, GET_VALUE = cut_pos
 		if (cut_pos le 0) then cut_pos = 0
@@ -709,6 +727,8 @@ pro pc_select_files, files=files, num_selected=num, pattern=pattern, varfile=var
 	scal_x	= CW_FIELD (SCA, title='', uvalue='SCAL_X', value=scaling_x, /float, /return_events, xsize=5)
 	scal_y	= CW_FIELD (SCA, title='', uvalue='SCAL_Y', value=scaling_y, /float, /return_events, xsize=5)
 	scal_z	= CW_FIELD (SCA, title='', uvalue='SCAL_Z', value=scaling_z, /float, /return_events, xsize=5)
+	tmp	= WIDGET_BUTTON (SCA, xsize=16, value='+', uvalue='SCAL_PLUS')
+	tmp	= WIDGET_BUTTON (SCA, xsize=16, value='-', uvalue='SCAL_MINUS')
 
 	if (not hide_quant) then begin
 		QU	= WIDGET_BASE (BASE, /col)
