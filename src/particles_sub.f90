@@ -21,7 +21,7 @@ module Particles_sub
   public :: remove_particle, get_particles_interdistance
   public :: count_particles, output_particle_size_dist
   public :: get_rhopswarm, find_grid_volume, find_interpolation_weight
-  public :: find_interpolation_indeces, get_gas_density, precalc_cell_volumes
+  public :: find_interpolation_indeces, get_gas_density
   public :: precalc_weights
   public :: dragforce_equi_multispecies
 !
@@ -1240,38 +1240,6 @@ module Particles_sub
 !
     endfunction get_gas_density
 !***********************************************************************
-    subroutine precalc_cell_volumes(f)
-!
-      real, dimension (mx,my,mz,mfarray), intent(out) :: f
-      integer :: ixx, iyy, izz
-      real :: dx1, dy1, dz1, cell_volume1
-!
-      do ixx=l1,l2
-        do iyy=m1,m2
-          do izz=n1,n2
-            dx1=dx_1(ixx)
-            dy1=dy_1(iyy)
-            dz1=dz_1(izz)
-            cell_volume1 = 1.0
-            if (lcartesian_coords) then
-              if (nxgrid/=1) cell_volume1 = cell_volume1*dx1
-              if (nygrid/=1) cell_volume1 = cell_volume1*dy1
-              if (nzgrid/=1) cell_volume1 = cell_volume1*dz1
-            elseif (lcylindrical_coords) then
-              if (nxgrid/=1) cell_volume1 = cell_volume1*dx1
-              if (nygrid/=1) cell_volume1 = cell_volume1*dy1/x(ixx)
-              if (nzgrid/=1) cell_volume1 = cell_volume1*dz1
-            elseif (lspherical_coords) then
-              if (nxgrid/=1) cell_volume1 = cell_volume1*dx1
-              if (nygrid/=1) cell_volume1 = cell_volume1*dy1/x(ixx)
-              if (nzgrid/=1) cell_volume1 = cell_volume1*dz1/(sin(y(iyy))*x(ixx))
-            endif
-            f(ixx,iyy,izz,ivol) = 1.0/cell_volume1
-          enddo
-        enddo
-      enddo
-    endsubroutine precalc_cell_volumes
-!***********************************************************************
     subroutine precalc_weights(weight_array)
 !
       real, dimension(:,:,:) :: weight_array
@@ -1387,6 +1355,5 @@ module Particles_sub
     uy = -dot_product(eps, vpy) - eta_vK
 !
     endsubroutine dragforce_equi_multispecies
-!***********************************************************************
 !***********************************************************************
 endmodule Particles_sub

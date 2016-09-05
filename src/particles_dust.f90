@@ -8,10 +8,10 @@
 ! variables and auxiliary variables added by this module
 !
 ! MPVAR CONTRIBUTION 6
-! MAUX CONTRIBUTION 3
+! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
 !
-! PENCILS PROVIDED np; rhop; vol; peh
+! PENCILS PROVIDED np; rhop; peh
 ! PENCILS PROVIDED np_rad(5); npvz(5); sherwood
 ! PENCILS PROVIDED epsp; grhop(3)
 ! PENCILS PROVIDED tausupersat
@@ -122,7 +122,6 @@ module Particles
   logical :: lwithhold_init_particles=.false.
   logical :: lgaussian_birthring=.false.
   logical :: lvector_gravity=.false.
-  logical :: lprecalc_cell_volumes=.false.
   logical :: lpeh_radius=.false.
   logical :: lbirthring_depletion=.false.
 !
@@ -195,7 +194,7 @@ module Particles
       lsinkpoint, xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
       lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, &
       Lz0, lglobalrandom, linsert_particles_continuously, &
-      lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, lprecalc_cell_volumes, &
+      lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, &
       np_const, rhop_const, particle_radius, lignore_rhop_swarm, &
       ldragforce_equi_noback, rhopmat, Deltauy_gas_friction, xp1, &
       yp1, zp1, vpx1, vpy1, vpz1, xp2, yp2, zp2, vpx2, vpy2, vpz2, &
@@ -238,7 +237,7 @@ module Particles
       linsert_particles_continuously, particles_insert_rate, &
       max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, &
       lnocalc_rhop, &
-      np_const, rhop_const, particle_radius, lprecalc_cell_volumes, &
+      np_const, rhop_const, particle_radius, &
       Deltauy_gas_friction, loutput_psize_dist, log_ap_min_dist, &
       log_ap_max_dist, nbin_ap_dist, lsinkparticle_1, rsinkparticle_1, &
       lthermophoretic_forces, temp_grad0, &
@@ -339,9 +338,6 @@ module Particles
       if (lcalc_uup .or. ldragforce_stiff) then
         call farray_register_auxiliary('uup',iuup,communicated=.true.,vector=3)
         iupx=iuup; iupy=iuup+1; iupz=iuup+2
-      endif
-      if (lprecalc_cell_volumes) then
-        call farray_register_auxiliary('vol',ivol,communicated=.false.)
       endif
 !
 !  Special variable for stiff drag force equations.
@@ -819,8 +815,6 @@ module Particles
           write (1,*) 'rhop_swarm=', rhop_swarm
         close (1)
       endif
-!
-      if (lprecalc_cell_volumes) call precalc_cell_volumes(f)
 !
       call keep_compiler_quiet(f)
 !
@@ -3820,11 +3814,7 @@ module Particles
 ! iap>0 would be a better condition than eps_dtog/ldraglaw_steadystate?
                     if (lhydro .and. ldragforce_gas_par) then
                       if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
-                        if (lprecalc_cell_volumes) then
-                          volume_cell = f(ixx,iyy,izz,ivol)
-                        else
-                          call find_grid_volume(ixx,iyy,izz,volume_cell)
-                        endif
+                        call find_grid_volume(ixx,iyy,izz,volume_cell)
                         mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
                         if (lparticles_number) then
                           mp_vcell = mp_vcell*fp(k,inpswarm)
@@ -3917,11 +3907,7 @@ module Particles
                       if (lhydro .and. ldragforce_gas_par) then
 !  Calculate the particle mass divided by the cell volume
                         if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
-                          if (lprecalc_cell_volumes) then
-                            volume_cell = f(ixx,iyy,izz,ivol)
-                          else
-                            call find_grid_volume(ixx,iyy,izz,volume_cell)
-                          endif
+                          call find_grid_volume(ixx,iyy,izz,volume_cell)
                           mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
                           if (lparticles_number) then
                             mp_vcell = mp_vcell*fp(k,inpswarm)
@@ -4015,11 +4001,7 @@ module Particles
                       if (lhydro .and. ldragforce_gas_par) then
 !  Calculate the particle mass divided by the cell volume
                         if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
-                          if (lprecalc_cell_volumes) then
-                            volume_cell = f(ixx,iyy,izz,ivol)
-                          else
-                            call find_grid_volume(ixx,iyy,izz,volume_cell)
-                          endif
+                          call find_grid_volume(ixx,iyy,izz,volume_cell)
                           mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
                           if (lparticles_number) then
                             mp_vcell = mp_vcell*fp(k,inpswarm)
@@ -4060,11 +4042,7 @@ module Particles
                   if (lhydro .and. ldragforce_gas_par) then
 !  Calculate the particle mass divided by the cell volume
                     if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
-                      if (lprecalc_cell_volumes) then
-                        volume_cell = f(ix0,iy0,iz0,ivol)
-                      else
-                        call find_grid_volume(ix0,iy0,iz0,volume_cell)
-                      endif
+                      call find_grid_volume(ix0,iy0,iz0,volume_cell)
                       mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
                       if (lparticles_number) then
                         mp_vcell = mp_vcell*fp(k,inpswarm)

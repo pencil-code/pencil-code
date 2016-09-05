@@ -55,7 +55,7 @@ module Particles_cdata
   integer :: ipss=0, ipst=0, ipxx=0, ipyy=0, ipzz=0
   integer :: iuup=0, iupx=0, iupy=0, iupz=0
   integer :: ipviscx=0, ipviscy=0, ipviscz=0
-  integer :: inp=0, irhop=0, irhops=0, ivol=0, ipeh=0
+  integer :: inp=0, irhop=0, irhops=0, ipeh=0
   integer :: iup11=0,iup12=0,iup13=0
   integer :: iup21=0,iup22=0,iup23=0
   integer :: iup31=0,iup32=0,iup33=0
