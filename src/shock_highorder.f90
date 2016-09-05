@@ -553,12 +553,12 @@ module Shock
           call mpiallreduce_max(a1, a, comm=MPI_COMM_WORLD)
           a = a / (re_mesh * pi * shock_max)
         else shock
-          a = dxmax**2
+          a = dxmin**2
         endif shock
         f(:,:,:,ishock) = a * tmp
       else fix_Re
 !
-!  Scale by dxmax**2.
+!  Scale by dxmin**2.
 !
 !  The shearing boundary conditions have a bug that can cause nonsensical
 !  numbers in the corners (bug #61). We can overwrite this bug by defining the
@@ -566,9 +566,9 @@ module Shock
 !  IF THE BUG IN THE SHEARING BOUNDARY CONDITIONS WOULD BE FIXED.
 !
         if (.not.lrewrite_shock_boundary) then
-          f(l1:l2,m1:m2,n1:n2,ishock) = tmp(l1:l2,m1:m2,n1:n2)*dxmax**2
+          f(l1:l2,m1:m2,n1:n2,ishock) = tmp(l1:l2,m1:m2,n1:n2)*dxmin**2
         else
-          f(:,:,:,ishock) = tmp*dxmax**2
+          f(:,:,:,ishock) = tmp*dxmin**2
         endif
       endif fix_Re
 !
