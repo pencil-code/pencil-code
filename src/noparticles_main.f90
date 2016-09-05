@@ -411,20 +411,19 @@ module Particles_main
       integer :: np_aux
       call keep_compiler_quiet(np_aux)
     endsubroutine fetch_nparloc
-!***********************************************************************   
-    subroutine fetch_fp_array(fp_aux,dfp_aux,np_aux,ixw,izw,ivxw,ivzw)
+!***********************************************************************
+    subroutine fetch_fp_array(fp_aux,dfp_aux,ixw,iyw,izw,ivxw,ivyw,ivzw)
 !
 ! dummy subroutine
 !
       real, dimension (mpar_loc,mparray), intent(out) :: fp_aux
       real, dimension (mpar_loc,mpvar), intent(out) :: dfp_aux
-      integer, intent(out) :: np_aux
-      integer :: ixw,izw,ivxw,ivzw
+      integer, intent(out) :: ixw,iyw,izw,ivxw,ivyw,ivzw
 !
       call keep_compiler_quiet(fp_aux)
       call keep_compiler_quiet(dfp_aux)
-      call keep_compiler_quiet(np_aux)
-      call keep_compiler_quiet(ixw,izw,ivxw,ivzw)
+      call keep_compiler_quiet(ixw,iyw,izw)
+      call keep_compiler_quiet(ivxw,ivyw,ivzw)
 !
     endsubroutine fetch_fp_array
 !***********************************************************************
