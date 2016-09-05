@@ -2299,14 +2299,14 @@ module Grid
         endif dline
 !
         dxmax_pencil = 0.
-        if (nxgrid /= 1) dxmax_pencil = 1.0 / dx_1(l1:l2)
-        if (nygrid /= 1) dxmax_pencil = max(1.0 / dy_1(m), dxmax_pencil)
-        if (nzgrid /= 1) dxmax_pencil = max(1.0 / dz_1(n), dxmax_pencil)
+        if (nxgrid /= 1) dxmax_pencil =     1.0 / dline_1(:,1)
+        if (nygrid /= 1) dxmax_pencil = max(1.0 / dline_1(:,2), dxmax_pencil)
+        if (nzgrid /= 1) dxmax_pencil = max(1.0 / dline_1(:,3), dxmax_pencil)
 !
         dxmin_pencil = 0.
-        if (nxgrid /= 1) dxmin_pencil = 1.0 / dx_1(l1:l2)
-        if (nygrid /= 1) dxmin_pencil = min(1.0 / dy_1(m), dxmin_pencil)
-        if (nzgrid /= 1) dxmin_pencil = min(1.0 / dz_1(n), dxmin_pencil)
+        if (nxgrid /= 1) dxmin_pencil =     1.0 / dline_1(:,1)
+        if (nygrid /= 1) dxmin_pencil = min(1.0 / dline_1(:,2), dxmin_pencil)
+        if (nzgrid /= 1) dxmin_pencil = min(1.0 / dline_1(:,3), dxmin_pencil)
 !
         if (lmaximal_cdtv) then
           dxyz_2 = max(dline_1(:,1)**2, dline_1(:,2)**2, dline_1(:,3)**2)
