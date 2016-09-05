@@ -7,7 +7,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MPVAR CONTRIBUTION 7
+! MPVAR CONTRIBUTION 6
 ! MAUX CONTRIBUTION 3
 ! CPARAM logical, parameter :: lparticles=.true.
 !
@@ -357,11 +357,10 @@ module Particles
 !
 !  Kill particles that spend enough time in birth ring
       if (lbirthring_depletion) then
-        npvar=npvar+1
-        ibrtime=npvar
-        pvarname(ibrtime)='ibrtime'
+        ibrtime = mpvar+npaux+1
+        pvarname(ibrtime) = 'ibrtime'
+        npaux = npaux+1
       endif
-      
 !
 !  Check that the fp and dfp arrays are big enough.
 !
