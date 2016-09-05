@@ -38,7 +38,9 @@ MAY_HAVE_CHANGED='may have changed. Rerun to get'
 
 # ------------------
 
-default: inlinedoc manual.pdf manual.ps.gz
+#default: inlinedoc manual.pdf manual.ps.gz
+#AB: I don't think we need manual.ps.gz anymore
+default: inlinedoc manual.pdf
 
 all:  manual.pdf manual.dvi manual.ps.gz
 
