@@ -75,7 +75,7 @@ contains
 
       indcoeffs%inds=0
       indcoeffs%coeffs=0.
-      if (present(th_range)) th_range=0.
+      if (present(th_range)) th_range=0
 !
     endfunction prep_interp
 !**************************************************************************

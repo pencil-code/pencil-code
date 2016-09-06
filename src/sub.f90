@@ -646,7 +646,7 @@ module Sub
       real,dimension(3,3),intent(in) :: mm
       real,dimension(9),intent(out) :: aa
 !
-      integer :: i,j,ij,k
+      integer :: i,j,ij
       ij=0
       do i=1,3
         do j=1,3
@@ -666,7 +666,7 @@ module Sub
       real,dimension(9),intent(in) :: aa
       real,dimension(3,3),intent(out) :: mm
 !
-      integer :: i,j,ij,k
+      integer :: i,j,ij
       ij=0
       do i=1,3
         do j=1,3

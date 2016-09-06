@@ -804,7 +804,6 @@ module Diagnostics
 
       real, dimension(:,:,:), allocatable :: fsumxy
       real :: fac
-      integer :: nyl
 !
       if (nnamexy>0) then
 
@@ -2667,7 +2666,7 @@ if (ios/=0) print*, 'ios, i=', ios, i
       real, dimension(nx), intent(in) :: a
       integer,             intent(in) :: iname, m
 
-      integer :: ml,i,j,ith
+      integer :: ml
 !
       if (iname==0) return
 !
