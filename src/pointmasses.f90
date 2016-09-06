@@ -70,7 +70,7 @@ module PointMasses
     integer :: ixw=0,iyw=0,izw=0
     integer :: ivxw=0,ivyw=0,ivzw=0
   endtype IndexDustParticles
-  type (IndexDustParticles) :: index
+  type (IndexDustParticles), save :: index
 !
   namelist /pointmasses_init_pars/ &
       initxxq, initvvq, xq0, yq0, zq0, vxq0, vyq0, vzq0,  &
