@@ -166,7 +166,7 @@ module Radiation
 !
   contains
 !***********************************************************************
-    subroutine register_radiation()
+    subroutine register_radiation
 !
 !  Initialize radiation flags.
 !
@@ -221,7 +221,7 @@ module Radiation
 !
     endsubroutine register_radiation
 !***********************************************************************
-    subroutine initialize_radiation()
+    subroutine initialize_radiation
 !
 !  Calculate number of directions of rays.
 !  Do this in the beginning of each run.
@@ -2012,7 +2012,7 @@ module Radiation
 !
     endsubroutine init_rad
 !***********************************************************************
-    subroutine pencil_criteria_radiation()
+    subroutine pencil_criteria_radiation
 !
 !  All pencils that the Radiation module depends on are specified here.
 !
@@ -2300,6 +2300,7 @@ module Radiation
 !
 !  12-apr-06/natalia: adapted from Wolfgang's more complex version
 !   3-nov-06/axel: included gradient of conductivity, gradK.gradT
+!   6-sep-16/MR: replaced dxmax by dxmax_pencil as suggested
 !
       use Diagnostics
       use EquationOfState
@@ -2364,9 +2365,8 @@ module Radiation
         else
 !
 !  Calculate switches for optically thin/thick regions
-!  (should really make dxmax a pencil).
 !
-          local_optical_depth=dxmax*f(l1:l2,m,n,ikapparho)
+          local_optical_depth=dxmax_pencil*f(l1:l2,m,n,ikapparho)
           opt_thick=sign(.5,local_optical_depth-1.)+.5
           opt_thin=1.-opt_thick
 !

@@ -439,9 +439,7 @@ module General
       case default ! 'nr_f90'
         nseed=2
         if (present(size)) size=nseed
-        if (present(get)) then
-          get(1:nseed)=rstate(1:nseed)
-        endif
+        if (present(get)) get(1:nseed)=rstate(1:nseed)
         if (present(put)) then
           if (put(2)==0) then   ! state cannot be result from previous
                                 ! call, so initialize
@@ -2118,7 +2116,6 @@ module General
 !
       allocate(angle(nnt))
       allocate(a_K(nnt))
-      if (present(E_mu)) allocate(a_E(nnt))
 !
       d_angle=.5*pi/(nnt-1)
       do i=1,nnt
@@ -2137,6 +2134,7 @@ module General
 ! Elliptic integral of second kind.
 !
       if (present(E_mu)) then
+        allocate(a_E(nnt))
         a_E=d_angle*sqrt(1-(mu*sin(angle))**2)
         E_mu=sum(a_E(2:nnt-1)) + .5*(a_E(1)+a_E(nnt))
       endif
@@ -3592,7 +3590,6 @@ module General
       logical :: exists
 
       inquire(FILE=file, EXIST=exists)
-
       if (exists) then
         open (lun, FILE=file)
         close(lun, status='delete')
@@ -4544,7 +4541,7 @@ module General
       enddo
 
   endsubroutine yin2yang_coors
-!****************************************************************************  
+!****************************************************************************
     subroutine meshgrid_2d(array1,array2,output_array1,output_array2)
 !
 ! extends 1d arrays array1 and array2 into 2d arrays of size
@@ -4573,7 +4570,6 @@ module General
       real, intent(out), dimension(:,:,:) :: output_array1
       real, intent(out), dimension(:,:,:) :: output_array2
       real, intent(out), dimension(:,:,:) :: output_array3
-      integer :: i,j,l
 !
       output_array1(:,:,1)=spread(array1,2,size(array2))
       output_array1=spread(output_array1(:,:,1),3,size(array3))
