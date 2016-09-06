@@ -101,8 +101,8 @@ module Forcing
   real, dimension(n_forcing_cont_max) :: eps_fcont=0., tgentle=0., z_center_fcont=0.
   real, dimension(n_forcing_cont_max) :: ampl_bb=5.0e-2,width_bb=0.1,z_bb=0.1,eta_bb=1.0e-4
   real, dimension(n_forcing_cont_max) :: fcont_ampl=1., ABC_A=1., ABC_B=1., ABC_C=1.
-  real :: ampl_diffrot,omega_exponent
-  real :: omega_tidal, R0_tidal, phi_tidal
+  real :: ampl_diffrot=1.0,omega_exponent=1.0
+  real :: omega_tidal=1.0, R0_tidal=1.0, phi_tidal=1.0
   real :: cs0eff=impossible
 !
 !  auxiliary functions for continuous forcing function
