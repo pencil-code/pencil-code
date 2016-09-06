@@ -105,6 +105,7 @@ indices = [ $
   { name:'ie', label:'Radiation scalar', dims:1 }, $
   { name:'icc', label:'Passive scalar', dims:1 }, $
   { name:'ilncc', label:'Log passive scalar', dims:1 }, $
+  { name:'issat', label:'Supersaturation', dims:1 }, $
   { name:'iXX_chiral', label:'XX chiral', dims:1 }, $
   { name:'iYY_chiral', label:'YY chiral', dims:1 }, $
   { name:'ispecial', label:'Special', dims:1 }, $
