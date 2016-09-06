@@ -1040,16 +1040,15 @@ module Viscosity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+      intent(inout) :: f,p
+!
       real, dimension (nx,3) :: tmp,tmp2,gradnu,sgradnu, gradnu_shock
       real, dimension (nx) :: murho1,zetarho1,muTT,nu_smag,tmp3,tmp4,pnu, pnu_shock
       real, dimension (nx) :: lambda_phi,prof,prof2,derprof,derprof2,qfvisc
       real, dimension (nx) :: gradnu_effective,fac
       real, dimension (nx,3) :: deljskl2,fvisc_nnewton2
-      real :: nu_tmp
 !
-      integer :: i,j,ju,ii,jj,kk,ll,count
-!
-      intent(inout) :: f,p
+      integer :: i,j,ju,ii,jj,kk,ll
 !
 !  Viscous force and viscous heating are calculated here (for later use).
 !
@@ -1699,9 +1698,9 @@ module Viscosity
         endif
 !
         if (lfirst .and. ldt) p%diffus_total3=p%diffus_total3+&
-             (nu_aniso_hyper3(1)*dx_1(l1:l2)**6 + &     !!! out
-              nu_aniso_hyper3(2)*dy_1(  m  )**6 + &
-              nu_aniso_hyper3(3)*dz_1(  n  )**6)/ dxyz_6
+             (nu_aniso_hyper3(1)*dline_1(:,1)**6 + & 
+              nu_aniso_hyper3(2)*dline_1(:,2)**6 + &
+              nu_aniso_hyper3(3)*dline_1(:,3)**6)/ dxyz_6
 !
       endif
 !
@@ -1730,9 +1729,9 @@ module Viscosity
 ! diffusion time: it will be multiplied by dxyz_2 again further down
 !
          if (lfirst .and. ldt) p%diffus_total3=p%diffus_total3+&
-                 (nu_aniso_hyper3(1)*dx_1(l1:l2)**6 + &        !!! out
-                  nu_aniso_hyper3(2)*dy_1(  m  )**6 + &
-                  nu_aniso_hyper3(3)*dz_1(  n  )**6)/ dxyz_6
+                 (nu_aniso_hyper3(1)*dline_1(:,1)**6 + &
+                  nu_aniso_hyper3(2)*dline_1(:,2)**6 + &
+                  nu_aniso_hyper3(3)*dline_1(:,3)**6)/ dxyz_6
 !
       endif
 !
@@ -1877,7 +1876,6 @@ module Viscosity
       integer :: j,k
       real, dimension(nx,3) :: gj, guj
       real, dimension(nx) :: rho
-      real maxh
 !
 !  Slope limited diffusion following Rempel (2014).
 !  First calculating the flux in a subroutine below

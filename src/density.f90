@@ -2325,9 +2325,9 @@ module Density
             endif
 !  Must divide by dxyz_6 here, because it is multiplied on later.
             if (lfirst.and.ldt) diffus_diffrho3=diffus_diffrho3+ &
-                 (diffrho_hyper3_aniso(1)*dx_1(l1:l2)**6 + &
-                  diffrho_hyper3_aniso(2)*dy_1(  m  )**6 + &
-                  diffrho_hyper3_aniso(3)*dz_1(  n  )**6)/dxyz_6
+                 (diffrho_hyper3_aniso(1)*dline_1(:,1)**6 + &
+                  diffrho_hyper3_aniso(2)*dline_1(:,2)**6 + &
+                  diffrho_hyper3_aniso(3)*dline_1(:,3)**6)/dxyz_6
             if (headtt) &
                  print*,'dlnrho_dt: diffrho_hyper3=(Dx,Dy,Dz)=',diffrho_hyper3_aniso
       endif
