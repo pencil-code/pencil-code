@@ -100,7 +100,7 @@ module Magnetic
   real, dimension(3) :: B_ext = 0.0, B0_ext = 0.0
   real, dimension(3) :: B1_ext, B_ext_inv, B_ext_tmp
   real, dimension(3) :: J_ext=(/0.0,0.0,0.0/)
-  real, dimension(3) :: eta_aniso_hyper3
+  real, dimension(3) :: eta_aniso_hyper3=0.0
   real, dimension(2) :: magnetic_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: magnetic_zaver_range=(/-max_real,max_real/)
   real, dimension(nx,3) :: uxbb
