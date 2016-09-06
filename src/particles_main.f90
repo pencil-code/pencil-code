@@ -476,7 +476,8 @@ module Particles_main
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      fp(1:npar_loc,1:mpvar) = fp(1:npar_loc,1:mpvar) + dt_beta_ts(itsub)*dfp(1:npar_loc,1:mpvar)
+      if (.not.lpointmasses) &
+           fp(1:npar_loc,1:mpvar) = fp(1:npar_loc,1:mpvar) + dt_beta_ts(itsub)*dfp(1:npar_loc,1:mpvar)
 !
 !  Discrete particle collisions. Must be done at the end of the time-step.
 !   This call also sorts the particles into mn 
@@ -904,28 +905,30 @@ module Particles_main
       real :: rad,raddot,phidot,thtdot,sintht,costht
       integer :: k
 !
-      do k=1,npar_loc
+      if (.not.lpointmasses) then
+        do k=1,npar_loc
 !
 !  Correct acceleration.
 !
-        if (lcylindrical_coords) then
-          rad=fp(k,ixp);raddot=fp(k,ivpx);phidot=fp(k,ivpy)/max(rad,tini)
-          dfp(k,ivpx) = dfp(k,ivpx) + rad*phidot**2
-          dfp(k,ivpy) = dfp(k,ivpy) - 2*raddot*phidot
-        elseif (lspherical_coords) then
-          rad=fp(k,ixp)
-          sintht=sin(fp(k,iyp));costht=cos(fp(k,iyp))
-          raddot=fp(k,ivpx);thtdot=fp(k,ivpy)/max(rad,tini)
-          phidot=fp(k,ivpz)/(max(rad,tini)*sintht)
+          if (lcylindrical_coords) then
+            rad=fp(k,ixp);raddot=fp(k,ivpx);phidot=fp(k,ivpy)/max(rad,tini)
+            dfp(k,ivpx) = dfp(k,ivpx) + rad*phidot**2
+            dfp(k,ivpy) = dfp(k,ivpy) - 2*raddot*phidot
+          elseif (lspherical_coords) then
+            rad=fp(k,ixp)
+            sintht=sin(fp(k,iyp));costht=cos(fp(k,iyp))
+            raddot=fp(k,ivpx);thtdot=fp(k,ivpy)/max(rad,tini)
+            phidot=fp(k,ivpz)/(max(rad,tini)*sintht)
 !
-          dfp(k,ivpx) = dfp(k,ivpx) &
-               + rad*(thtdot**2 + (sintht*phidot)**2)
-          dfp(k,ivpy) = dfp(k,ivpy) &
-               - 2*raddot*thtdot + rad*sintht*costht*phidot**2
-          dfp(k,ivpz) = dfp(k,ivpz) &
-               - 2*phidot*(sintht*raddot + rad*costht*thtdot)
-        endif
-      enddo
+            dfp(k,ivpx) = dfp(k,ivpx) &
+                 + rad*(thtdot**2 + (sintht*phidot)**2)
+            dfp(k,ivpy) = dfp(k,ivpy) &
+                 - 2*raddot*thtdot + rad*sintht*costht*phidot**2
+            dfp(k,ivpz) = dfp(k,ivpz) &
+                 - 2*phidot*(sintht*raddot + rad*costht*thtdot)
+          endif
+        enddo
+      endif
 !
     endsubroutine correct_curvilinear
 !***********************************************************************
@@ -1210,10 +1213,20 @@ module Particles_main
 !
     endsubroutine particles_cleanup
 !***********************************************************************
-    subroutine fetch_nparloc(np_aux)
-      integer, intent(out) :: np_aux
-      np_aux=npar_loc
+    subroutine fetch_nparloc(nparloc_aux)
+      integer, intent(out) :: nparloc_aux
+      nparloc_aux=npar_loc
     endsubroutine fetch_nparloc
+!***********************************************************************
+    subroutine fetch_npvar(npvar_aux)
+      integer, intent(out) :: npvar_aux
+      npvar_aux=npvar
+    endsubroutine fetch_npvar
+!***********************************************************************
+    subroutine return_npvar(npvar_aux)
+      integer, intent(in) :: npvar_aux
+      npvar=npvar_aux
+    endsubroutine return_npvar
 !***********************************************************************    
     subroutine fetch_fp_array(fp_aux,dfp_aux,ixw,iyw,izw,ivxw,ivyw,ivzw)
 !
@@ -1232,16 +1245,18 @@ module Particles_main
 !
       real, dimension(mpar_loc,mparray), intent(in) :: fp_aux
       real, dimension(mpar_loc,mpvar),   intent(in) :: dfp_aux
-      logical, dimension(mpar_loc),      intent(in) :: flag
+      logical, dimension(mpar_loc),      intent(in), optional :: flag
 !      
       integer :: k
 !
       fp        = fp_aux
       dfp       = dfp_aux
 !
-      do k=npar_loc,1,-1
-        if (flag(k)) call remove_particle(fp,ipar,k,dfp,ineargrid)
-      enddo
+      if (present(flag)) then
+        do k=npar_loc,1,-1
+          if (flag(k)) call remove_particle(fp,ipar,k,dfp,ineargrid)
+        enddo
+      endif
 !      
     endsubroutine return_fp_array
 !***********************************************************************

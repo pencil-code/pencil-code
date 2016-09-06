@@ -406,12 +406,24 @@ module Particles_main
 !
     endsubroutine particles_stochastic
 !***********************************************************************
-    subroutine fetch_nparloc(np_aux)
+    subroutine fetch_nparloc(dummy)
 ! dummy subroutine
-      integer :: np_aux
-      call keep_compiler_quiet(np_aux)
+      integer :: dummy
+      call keep_compiler_quiet(dummy)
     endsubroutine fetch_nparloc
 !***********************************************************************
+    subroutine fetch_npvar(dummy)
+! dummy subroutine
+      integer :: dummy
+      call keep_compiler_quiet(dummy)
+    endsubroutine fetch_npvar
+!***********************************************************************
+    subroutine return_npvar(dummy)
+! dummy subroutine
+      integer :: dummy
+      call keep_compiler_quiet(dummy)
+    endsubroutine return_npvar
+!*********************************************************************** 
     subroutine fetch_fp_array(fp_aux,dfp_aux,ixw,iyw,izw,ivxw,ivyw,ivzw)
 !
 ! dummy subroutine
@@ -433,7 +445,7 @@ module Particles_main
 !
       real, dimension (mpar_loc,mparray), intent(in) :: fp_aux
       real, dimension (mpar_loc,mpvar), intent(in) :: dfp_aux
-      logical, dimension (mpar_loc) :: flag
+      logical, dimension (mpar_loc), optional :: flag
 !
       call keep_compiler_quiet(fp_aux)
       call keep_compiler_quiet(dfp_aux)

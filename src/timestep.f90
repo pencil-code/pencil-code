@@ -126,13 +126,13 @@ module Timestep
           f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+dt_beta_ts(itsub)*df(l1:l2,m,n,j)
         enddo; enddo; enddo
 !
-!  Time evolution of particle variables.
-!
-        if (lparticles) call particles_timestep_second(f)
-!
 !  Time evolution of point masses.
 !
         if (lpointmasses) call pointmasses_timestep_second(f)
+!
+!  Time evolution of particle variables.
+!
+        if (lparticles) call particles_timestep_second(f)
 !
 !  Time evolution of solid_cells.
 !
