@@ -1306,7 +1306,7 @@ module Hydro
         case ('x1cosycosz'); call x1_cosy_cosz(ampluu(j),f,iuy,ky=ky_uu,kz=kz_uu)
         case ('couette'); call couette(ampluu(j),mu_omega,f,iuy)
         case ('couette_rings'); call couette_rings(ampluu(j),mu_omega,nb_rings,om_rings,gap,f,iuy)
-        case ('soundwave-x'); call soundwave(ampluu(j),f,iux,kx=kx_uu)
+        case ('soundwave-x'); call soundwave(ampluu(j),f,iux,kx=kx_uu,width=widthuu)
         case ('soundwave-y'); call soundwave(ampluu(j),f,iuy,ky=ky_uu)
         case ('soundwave-z'); call soundwave(ampluu(j),f,iuz,kz=kz_uu)
         case ('robertsflow'); call robertsflow(ampluu(j),f,iuu,relhel_uu)

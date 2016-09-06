@@ -2106,7 +2106,7 @@ module Initcond
 !
     endsubroutine bipolar_restzero
 !***********************************************************************
-    subroutine soundwave(ampl,f,i,kx,ky,kz)
+    subroutine soundwave(ampl,f,i,kx,ky,kz,width)
 !
 !  sound wave (as initial condition)
 !
@@ -2114,20 +2114,22 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real,optional :: kx,ky,kz
-      real :: ampl,k=1.,fac
+      real, dimension (mx) :: envelope_x=1.
+      real,optional :: kx,ky,kz,width
+      real :: ampl, k=1., fac
 !
 !  wavenumber k
 !
 !  set x-dependent sin wave
 !
       if (present(kx)) then
+        if (present(width)) envelope_x=exp(-.5*(x/width)**2)
         k=kx; if (k==0) print*,'soundwave: k must not be zero!'; fac=sqrt(abs(ampl/k))
         if (ampl==0) then
           if (lroot) print*,'soundwave: ampl=0; kx=',k
         else
           if (lroot) print*,'soundwave: kx,i=',k,i
-          f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(sin(k*x),2,my),3,mz)
+          f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(envelope_x*sin(k*x),2,my),3,mz)
         endif
       endif
 !

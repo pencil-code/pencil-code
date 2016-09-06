@@ -915,7 +915,7 @@ module Density
         case ('x-y-jump')
           call jump(f,ilnrho,lnrho_left(j),lnrho_right(j),widthlnrho(j),'x-y')
         case ('soundwave-x')
-          call soundwave(ampllnrho(j),f,ilnrho,kx=kx_lnrho(j))
+          call soundwave(ampllnrho(j),f,ilnrho,kx=kx_lnrho(j),width=widthlnrho(j))
         case ('soundwave-y')
           call soundwave(ampllnrho(j),f,ilnrho,ky=ky_lnrho(j))
         case ('soundwave-z')
