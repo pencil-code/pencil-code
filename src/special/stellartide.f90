@@ -1,7 +1,7 @@
 ! $Id: stellartide.f90,v 1.1 2014/03/13 16:31:16 wlyra Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of cparam.inc) the number of f array
+! Declare (for generation of special_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.

@@ -1,7 +1,7 @@
 ! $Id$
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
-! Declare (for generation of cparam.inc) the number of f array
+! Declare (for generation of special_dummies.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lspecial = .true.
@@ -4198,6 +4198,10 @@ module Special
 !***********************************************************************
     subroutine calc_hcond_timestep(f,p,dt1_hcond_max)
 !
+!  --/---: coded
+!  06/09/16/MR: replaced explicit calculation by call to get_grid_mn
+!               attention: dxyz_2 now depends on the setting of lmaximal_cdtv (should be improved)
+!
       use EquationOfState, only : gamma, get_cp1
       use Diagnostics
       use Sub,             only : dot2,dot,grad,gij,curl_mn, &
@@ -4225,14 +4229,13 @@ module Special
           n=nn(imn)
           m=mm(imn)
 !
-! grid spacing for time step
+!  Grid spacing. In case of equidistant grid and cartesian coordinates
+!  this is calculated before the (m,n) loop.
 !
-          dline_1(:,1)=dx_1(l1:l2)
-          dline_1(:,2)=dy_1(m)
-          dline_1(:,3)=dz_1(n)
-          dxyz_2 = dline_1(:,1)**2+dline_1(:,2)**2+dline_1(:,3)**2
+        if (.not. lcartesian_coords .or. .not.all(lequidist)) call get_grid_mn
 !
 ! initial thermal diffusion
+!
           diffus_hcond=0d0
 !
 ! 1.1) calculate pencils
