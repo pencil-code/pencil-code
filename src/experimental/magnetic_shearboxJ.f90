@@ -3228,9 +3228,9 @@ module Magnetic
          fres=fres+tmp2
 !  Must divide by dxyz_6 here, because it is multiplied on later.
          if (lfirst.and.ldt) diffus_eta3=diffus_eta3 + &
-             (eta_aniso_hyper3(1)*dx_1(l1:l2)**6 + &
-             eta_aniso_hyper3(2)*dy_1(m)**6 + &
-             eta_aniso_hyper3(3)*dz_1(n)**6)/dxyz_6
+             (eta_aniso_hyper3(1)*dline_1(:,1)**6 + &
+              eta_aniso_hyper3(2)*dline_1(:,2)**6 + &
+              eta_aniso_hyper3(3)*dline_1(:,3)**6)/dxyz_6
       endif
 !
       if (lresi_shell) then
