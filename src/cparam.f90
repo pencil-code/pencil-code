@@ -161,8 +161,8 @@ module Cparam
   double precision, parameter :: mu0_cgs=4*pi              ! [cgs]
   ! Better express R_cgs as a derive quantity (i.e. don't define here...)
   ! (Not done yet since it breaks the interstellar test)
-  !double precision, parameter :: R_cgs=k_B_cgs/m_u_cgs     ! [erg/K]
-  double precision, parameter :: R_cgs=8.3144D7     ! [erg/K]
+  !double precision, parameter :: R_cgs=k_B_cgs/m_u_cgs    ! [erg/g/K]
+  double precision, parameter :: R_cgs=8.3144D7            ! [erg/g/K]
   ! It would be better to specify the following masses in units of m_u:
   double precision, parameter :: m_p_cgs=1.67262158d-24    ! [g]
   double precision, parameter :: m_e_cgs=9.10938188d-28    ! [g]
