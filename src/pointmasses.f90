@@ -28,7 +28,6 @@ module PointMasses
   real, dimension(nqpar,mqarray) :: fq
   real, dimension(nqpar,mqvar) :: dfq
   real, dimension(nqpar,3) :: dfq_cart
-  real, dimension(mpar_loc,3) :: dfp_cart
   real, dimension(nqpar) :: xq0=0.0, yq0=0.0, zq0=0.0
   real, dimension(nqpar) :: vxq0=0.0, vyq0=0.0, vzq0=0.0
   real, dimension(nqpar) :: pmass=0.0, r_smooth=impossible, pmass1
@@ -63,8 +62,6 @@ module PointMasses
   character (len=labellen) :: initxxq='random', initvvq='nothing'
   character (len=labellen), dimension (nqpar) :: ipotential_pointmass='newtonian'
   character (len=2*bclen+1) :: bcqx='p', bcqy='p', bcqz='p'
-!
-  !logical :: lcartesian_evolution=.true.
 !
   type IndexDustParticles
     integer :: ixw=0,iyw=0,izw=0
@@ -155,12 +152,14 @@ module PointMasses
         call fatal_error('register_pointmasses','nqvar > mqvar')
       endif
 !
-      call fetch_npvar(npvar_aux)
-      ivpx_cart = npvar_aux+1
-      ivpy_cart = npvar_aux+2
-      ivpz_cart = npvar_aux+3
-      npvar_aux=npvar_aux+3
-      call return_npvar(npvar_aux)
+      if (lparticles) then
+        call fetch_npvar(npvar_aux)
+        ivpx_cart = npvar_aux+1
+        ivpy_cart = npvar_aux+2
+        ivpz_cart = npvar_aux+3
+        npvar_aux=npvar_aux+3
+        call return_npvar(npvar_aux)
+      endif
 !
     endsubroutine register_pointmasses
 !***********************************************************************
