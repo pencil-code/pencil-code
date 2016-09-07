@@ -48,5 +48,15 @@ module GhostFold
       call keep_compiler_quiet(ivar1,ivar2)
 !
     endsubroutine fold_df_3points
+!*******************************************************************************
+subroutine reverse_fold_f_3points(f,ivar1,ivar2)
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      integer :: ivar1, ivar2
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(ivar1,ivar2)
+!
+    endsubroutine reverse_fold_f_3points
 !***********************************************************************
 endmodule GhostFold

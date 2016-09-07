@@ -1238,11 +1238,6 @@ module Particles_chemistry
               endif
               do j = 1,N_surface_reactions
                 RR_hat(k,j) = K_k(k,j)*reaction_enhancement(j)
-!              if (k==k1) then
-!                print*, j,'-------------------------------------------'
-!                write(*,'(A12,12E12.3)' )'KK_kk       ', K_k(k1,:)
-!                write(*,'(A12,12E12.3)' )'RR_hat_kk   ', RR_hat(k1,:)
-!              endif
 !
 !  Take into account temperature dependance
 !
@@ -1313,7 +1308,6 @@ module Particles_chemistry
                 endif
 !
               enddo
-!            print*, 'RR_hat2',RR_hat
             endif
 !
 !  Add diagnostic output for the Sherwood number
@@ -1364,6 +1358,17 @@ module Particles_chemistry
           enddo
         endif
 !
+!  RR_hat control
+!
+        do k = k1,k2
+          do l = 1, N_surface_reactions
+            if (RR_hat(k,l) /= RR_hat(k,l)) then
+              print*, 'infos from after effectiveness',RR_hat(k,l), effectiveness_factor_reaction(k,l)
+              call fatal_error('RR_hat', 'RR is nan')
+            endif
+          enddo
+        enddo
+!
 !  Adapt the reaction rate according to the internal gradients,
 !  after thiele. (8th US combustion Meeting, Paper #070CO-0312)
 !  equation 56 ff.
@@ -1374,6 +1379,8 @@ module Particles_chemistry
             RR_hat(:,j) = RR_hat(:,j) * effectiveness_factor_reaction(:,j)
           enddo
         endif
+!
+!  RR_hat control (original)
 !
         do k = k1,k2
           do l = 1, N_surface_reactions
@@ -1464,7 +1471,7 @@ module Particles_chemistry
 ! Find mdot_ck
 ! mdot_ck is the mass loss per surface reaction,
 ! a positive mdot_ck means the particle is losing mass
-!
+! iap is the particles radius
       mass_loss = 0.0
       do k = k1,k2
         do l = 1,N_surface_reactions

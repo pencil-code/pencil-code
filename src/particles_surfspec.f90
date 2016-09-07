@@ -36,6 +36,9 @@ module Particles_surfspec
   character(len=10), dimension(:), allocatable :: solid_species
   real, dimension(10) :: init_surf_mol_frac
   real, dimension(:,:), allocatable :: nu_power
+  integer, dimension(nchemspec) :: ispecaux=0
+  integer :: ispecenth
+  integer :: ndiffsteps=3
   integer :: Ysurf
   logical :: lspecies_transfer=.true.
   logical :: linfinite_diffusion=.true.
@@ -43,6 +46,9 @@ module Particles_surfspec
   logical :: lpchem_cdtc=.false.
   logical :: lpchem_mass_enth=.true.
   logical :: lwrite=.true.
+  real :: rdiffconsts=0.1178
+  logical :: ldiffuse_backspec=.false., ldiffs=.false.
+  logical :: ldiffuse_backenth=.false., ldiffenth=.false.
 !
   integer :: jH2, jO2, jCO2, jCO, jCH4, jN2, jH2O
   integer :: jOH, jAR, jO, jH, jCH, jCH2, jHCO, jCH3
@@ -55,15 +61,14 @@ module Particles_surfspec
   real, dimension(:,:), allocatable :: X_infty_reactants
   real, dimension(:,:), allocatable :: mass_trans_coeff_reactants
   real, dimension(:,:), allocatable :: mass_trans_coeff_species
-  real, dimension(:,:,:), allocatable :: weight_array,dmass_frac_dt
+  real, dimension(:,:,:), allocatable :: weight_array, dmass_frac_dt
 !
   namelist /particles_surf_init_pars/ init_surf, init_surf_mol_frac
 !
   namelist /particles_surf_run_pars/ &
-      lboundary_explicit, &
-      linfinite_diffusion, &
-      lspecies_transfer, &
-      lpchem_mass_enth
+      lboundary_explicit, linfinite_diffusion, lspecies_transfer, &
+      lpchem_mass_enth, ldiffuse_backspec, ldiffs,rdiffconsts, &
+      ndiffsteps,ldiffuse_backenth,ldiffenth
 !
   integer :: idiag_dtpchem=0   ! DIAG_DOC: $dt_{particle,chemistry}$
 !
@@ -74,11 +79,41 @@ module Particles_surfspec
 !  JONAS: Back to standalone via mpar_loc=1?
 !
     subroutine register_particles_surfspec()
+!
+      use FArrayManager, only: farray_register_auxiliary
+!
+!
+      character(len=11) :: chemspecaux
+      integer :: i
+!
 !      if (lroot) call svn_id( &
 !          "$Id: particles_surfspec.f90 20849 2014-10-06 18:45:43Z jonas.kruger $")
 !
       call register_indep_psurfspec()
       call register_dep_psurfspec()
+!
+!  We need to register an auxiliary array to diffuse the species transfer
+!
+      if (ldiffuse_backspec .and. lspecies_transfer) then
+        chemspecaux = 'ichemspec  '
+        do i = 1,nchemspec
+          write (chemspecaux(10:11),'(I2)') i
+          call farray_register_auxiliary(chemspecaux,ispecaux(i),communicated=.true.)
+        enddo
+      elseif (ldiffuse_backspec .and. .not. lspecies_transfer) then
+        call fatal_error('particles_surfspec:', &
+            'diffusion of the species transfer needs lspecies_transfer')
+      endif
+!
+!  Diffusion of mass bound enthalpy
+!
+      if (ldiffuse_backenth .and. lspecies_transfer) then
+        call farray_register_auxiliary('ispecenth',ispecenth,communicated=.true.)
+      elseif (ldiffuse_backenth .and. .not. lspecies_transfer) then
+        call fatal_error('particles_surfspec:', &
+            'diffusion of the mass bound enthalpy needs lspecies_transfer')
+      endif
+!
     endsubroutine register_particles_surfspec
 ! ******************************************************************************
 !
@@ -188,32 +223,32 @@ module Particles_surfspec
 !
     subroutine initialize_particles_surf(f)
       real, dimension(mx,my,mz,mfarray) :: f
-      integer :: dimx,dimy,dimz,ncells=1
+      integer :: dimx, dimy, dimz, ncells=1
 !
 !      print*, weight_array
 !
-      if (lparticlemesh_gab) ncells=7
-      if (lparticlemesh_tsc) ncells=3
-      if (lparticlemesh_cic) ncells=2
+      if (lparticlemesh_gab) ncells = 7
+      if (lparticlemesh_tsc) ncells = 3
+      if (lparticlemesh_cic) ncells = 2
 !
-      if (nxgrid /=1) then
-        dimx=ncells
+      if (nxgrid /= 1) then
+        dimx = ncells
       else
-        dimx=1
+        dimx = 1
       endif
-      if (nygrid /=1) then
-        dimy=ncells
+      if (nygrid /= 1) then
+        dimy = ncells
       else
-        dimy=1
+        dimy = 1
       endif
-      if (nzgrid /=1) then
-        dimz=ncells
+      if (nzgrid /= 1) then
+        dimz = ncells
       else
-        dimz=1
+        dimz = 1
       endif
-! 
-     if (allocated(weight_array)) deallocate(weight_array)
-     if (lparticlemesh_gab .or. lparticlemesh_tsc .or. lparticlemesh_cic) then
+!
+      if (allocated(weight_array)) deallocate(weight_array)
+      if (lparticlemesh_gab .or. lparticlemesh_tsc .or. lparticlemesh_cic) then
         allocate(weight_array(dimx,dimy,dimz))
       endif
       if (.not. allocated(weight_array)) then
@@ -337,22 +372,55 @@ module Particles_surfspec
 !  1-oct-14/Jonas: coded
 !
     subroutine dpsurf_dt(f,df,fp,dfp,ineargrid)
+!
+      use GhostFold, only: reverse_fold_f_3points
+!
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(mpar_loc,mparray) :: fp
       real, dimension(mpar_loc,mpvar) :: dfp
       integer, dimension(mpar_loc,3) :: ineargrid
-      integer :: i
+      integer :: i,j
 !
 !  equations.tex eq 37
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
 !      call keep_compiler_quiet(fp)
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
 !
 !      df(:,:,:,ichemspec(nchemspec)) = df(:,:,:,ichemspec(nchemspec))- &
 !          sum(df(:,:,:,ichemspec(:)),DIM=4)
+!
+!  Diffuse the transfer of species from particle to fluid, and adapt
+!  the bulk species (ichemspec(nchemspec)) to ensure species conservation
+!
+      if (lspecies_transfer .and. ldiffuse_backspec) then
+        if (ldensity_nolog) call fatal_error('particles_surf', &
+            'not implemented for ldensity_nolog')
+        do j = 1,nchemspec-1
+          do i = 1,ndiffsteps
+            call reverse_fold_f_3points(f,ispecaux(j),ispecaux(j))
+            call diffuse_interaction(f,ispecaux(j),ldiffs,.False.,rdiffconsts)
+          enddo
+          df(l1:l2,m1:m2,n1:n2,ichemspec(j)) =  df(l1:l2,m1:m2,n1:n2,ichemspec(j)) + &
+              f(l1:l2,m1:m2,n1:n2,ispecaux(j))
+        enddo
+        df(l1:l2,m1:m2,n1:n2,ichemspec(nchemspec)) = &
+            df(l1:l2,m1:m2,n1:n2,ichemspec(nchemspec))- &
+            sum(df(l1:l2,m1:m2,n1:n2,ichemspec(:)),DIM=4)
+      endif
+!
+!  Diffusion of the mass bound enthalpy
+!
+      if (lspecies_transfer .and. ldiffuse_backenth) then
+        if (ldensity_nolog) call fatal_error('particles_surf', 'diffusion of mass bound enthalpy &
+            & not implemented for ldensity_nolog')
+        do i = 1,ndiffsteps
+          call reverse_fold_f_3points(f,ispecenth,ispecenth)
+          call diffuse_interaction(f,ispecenth,ldiffenth,.False.,rdiffconsts)
+        enddo
+        df(l1:l2,m1:m2,n1:n2,ilnTT) =  df(l1:l2,m1:m2,n1:n2,ilnTT) + &
+            f(l1:l2,m1:m2,n1:n2,ispecenth)
+      endif
 !
       if (ldiagnos) then
         do i = 1,N_surface_species
@@ -361,6 +429,7 @@ module Particles_surfspec
           endif
         enddo
       endif
+!
     endsubroutine dpsurf_dt
 ! ******************************************************************************
     subroutine dpsurf_dt_pencil(f,df,fp,dfp,p,ineargrid)
@@ -397,8 +466,8 @@ module Particles_surfspec
       integer :: density_index
       real :: dmass_frac_dt=0.0
 !
-      intent(in) :: f, ineargrid
-      intent(inout) :: dfp, df, fp
+      intent(in) :: ineargrid
+      intent(inout) :: dfp, df, fp,f
 !
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
@@ -418,6 +487,17 @@ module Particles_surfspec
 !
           k1 = k1_imn(imn)
           k2 = k2_imn(imn)
+!
+!  initializing the auxiliary pencils for the mass and mass bound enthalpy diffusion
+!
+          if (ldiffuse_backspec) then
+            do i = 1,nchemspec
+              f(l1:l2,m,n,ispecaux(i)) = 0.0
+            enddo
+          endif
+!
+          if (ldiffuse_backenth) f(l1:l2,m,n,ispecenth) = 0.0
+!
 !
           allocate(term(k1:k2,1:N_surface_reactants))
           allocate(ndot(k1:k2,1:N_surface_species))
@@ -503,8 +583,6 @@ module Particles_surfspec
 !
                     if (lpencil(i_H0_RT)) then
                       denth = denth+ndot(k,i)*A_p*p%cv(ix0-nghost)*(fp(k,iTp)-298.15)
-!  Old version, most probably not correct
-!                    denth=denth+ndot(k,i)*A_p*p%H0_RT(ix0-nghost,jmap(i))*Rgas*fp(k,iTp)
                     else
                       call fatal_error('particles_surfspec','mass bound enthalpy transfer needs p%H0_RT')
                     endif
@@ -514,9 +592,6 @@ module Particles_surfspec
 !
                     if (lpencil(i_H0_RT)) then
                       denth = denth+ndot(k,i)*A_p*p%cv(ix0-nghost)*(p%TT(ix0-nghost)-298.15)
-!  Old version, most probably not correct
-!                    denth=denth+ndot(k,i)*A_p*p%H0_RT(ix0-nghost,jmap(i))&
-!                        *Rgas*p%TT(ix0-nghost)
                     else
                       call fatal_error('particles_surfspec', &
                           'mass bound enthalpy transfer needs p%H0_RT')
@@ -528,7 +603,6 @@ module Particles_surfspec
 !  Prepare the max_reac_pchem
 !
               if (lfirst .and. ldt) max_reac_pchem = 0.0
-!
 !
 !  Sum for testing
 !
@@ -543,102 +617,95 @@ module Particles_surfspec
 !  only contains surface species
 !
               if (ldensity_nolog) then
-                do i = 1,nchemspec-1
-                  reac_pchem_weight = 0.0
-                  if (find_index(i,jmap,N_surface_species) > 0 ) then
+                if (.not. ldiffuse_backspec) then
+                  do i = 1,nchemspec-1
+                    reac_pchem_weight = 0.0
+                    if (find_index(i,jmap,N_surface_species) > 0 ) then
 !NILS: Isn't index1=i?
 !                      index1 = jmap(find_index(i,jmap,N_surface_species))
-                    index2 = ichemspec(i)
-                    df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2) = &
-                        df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2)+(A_p* &
-                        ndot(k,find_index(i,jmap,N_surface_species))* &
-                        species_constants(i,imass)+ &
-                        dmass*interp_species(k,i))*weight_array/ &
-                        (f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*volume_cell)
-!                    print*, 'infors: ', (A_p* &
-!                        ndot(k,find_index(i,jmap,N_surface_species))* &
-!                        species_constants(i,imass)+ &
-!                        dmass*interp_species(k,i))*weight_array/ &
-!                        (f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*volume_cell)
-                    if (lfirst .and. ldt) then
-!                      print*, 'infos:' , reac_pchem_weight
-!                      print*, 'f_arr:' , f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2)
-                      reac_pchem_weight = max(reac_pchem_weight, &
-                          abs(maxval(df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2))/ &
-                          max(maxval(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2)),1e-10)))
+                      index2 = ichemspec(i)
+                      df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2) = &
+                          df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2)+(A_p* &
+                          ndot(k,find_index(i,jmap,N_surface_species))* &
+                          species_constants(i,imass)+ &
+                          dmass*interp_species(k,i))*weight_array/ &
+                          (f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*volume_cell)
+                      if (lfirst .and. ldt) then
+                        reac_pchem_weight = max(reac_pchem_weight, &
+                            abs(maxval(df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2))/ &
+                            max(maxval(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2)),1e-10)))
+                      endif
+                    else
+                      df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ichemspec(i)) = &
+                          df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ichemspec(i)) + dmass * &
+                          interp_species(k,i)*weight_array/ &
+                          (f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*volume_cell)
                     endif
-                  else
-                    df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ichemspec(i)) = &
-                        df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ichemspec(i)) + dmass * & 
-                        interp_species(k,i)*weight_array/ &
-                        (f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*volume_cell)
-!                      if (i==nchemspec-1) then
-!                        print*, 'summan',summan
-!                      endif
-                  endif
-!                  summan = summan+dmass_frac_dt
-                enddo
+                  enddo
+                else
+                  call fatal_error('particles_surf','backdiffusion not yet implemented &
+                      & for ldensity_nolog')
+                endif
               else
-                do i = 1,nchemspec-1
-                  reac_pchem_weight = 0.0
-                  if (find_index(i,jmap,N_surface_species) > 0 ) then
+!
+!  For density_log, there is the possibility to diffuse the species influence
+!  this happens in the else block of the next if clause
+!
+                if (.not. ldiffuse_backspec) then
+                  do i = 1,nchemspec-1
+                    reac_pchem_weight = 0.0
+                    if (find_index(i,jmap,N_surface_species) > 0 ) then
 !NILS: Isn't index1=i?
 !                      index1 = jmap(find_index(i,jmap,N_surface_species))
-                    index2 = ichemspec(i)
-                    df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2) = &
-                        df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2)+(A_p* &
-                        ndot(k,find_index(i,jmap,N_surface_species))* &
-                        species_constants(i,imass)+ &
-                        dmass*interp_species(k,i))*weight_array/ &
-                        (exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*volume_cell)
-!                    print*, 'ndot: ',     ndot(k,:)
-!                    print*, 'interp: ',    interp_species(k,i)
-!                    print*, 'infors: ',    f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho),volume_cell
-                    if (lfirst .and. ldt) then
-!                      print*, 'infos:' , reac_pchem_weight
-!                      print*, 'f_arr:' , f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2)
-                      reac_pchem_weight = max(reac_pchem_weight, &
-                          abs(max(maxval(df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2)/&
-                        f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2)),1e-10)))
+                      index2 = ichemspec(i)
+                      df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2) = &
+                          df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2)+(A_p* &
+                          ndot(k,find_index(i,jmap,N_surface_species))* &
+                          species_constants(i,imass)+ &
+                          dmass*interp_species(k,i))*weight_array/ &
+                          (exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*volume_cell)
+                      if (lfirst .and. ldt) then
+                        reac_pchem_weight = max(reac_pchem_weight, &
+                            abs(max(maxval(df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2)/ &
+                            f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,index2)),1e-10)))
+                      endif
+                    else
+                      df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ichemspec(i)) = &
+                          df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ichemspec(i)) + &
+                          dmass*interp_species(k,i)*weight_array/ &
+                          (exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*volume_cell)
                     endif
-                  else
-!                    print*, 'rhothings',exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))
-!                    print*, 'volume_cell',volume_cell
-!                    print*, 'dmass, k,i',dmass, k,i
-!                    print*, 'interp_species(k,i)',interp_species(k,i)
-!                    print*, 'weight_array',weight_array
-!                    print*, 'volume_cell',volume_cell
-!                    print*, 'shape', shape(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))
-!                    print*, 'shape', shape(weight_array)
-!                    print*, 'shape', volume_cell
-!                    print*, 'shape', dmass
-!                    print*, 'shape', interp_species(k,i)
-!                    print*, 'rhothings',exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))
-!                    print*, 'volume_cell',volume_cell
-!                    print*, 'dmass',dmass
-!                    print*, 'interp_species(k,i)',interp_species(k,i)
-!                    print*, 'weight_array',weight_array
-!                    print*, 'volume_cell',volume_cell
-                    df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ichemspec(i)) = &
-                        df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ichemspec(i)) + &
-                        dmass*interp_species(k,i)*weight_array/ &
-                        (exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*volume_cell)
-!                      if (i==nchemspec-1) then
-!                        print*, 'summan',summan
-!                      endif
-                  endif
 !                  summan = summan+dmass_frac_dt
-                enddo
+                  enddo
+                else
+                  do i = 1,nchemspec-1
+                    if (find_index(i,jmap,N_surface_species) > 0 ) then
+!  NILS: Isn't index1=i?
+!                      index1 = jmap(find_index(i,jmap,N_surface_species))
+                      f(ix0,iy0,iz0,ispecaux(i)) = &
+                          f(ix0,iy0,iz0,ispecaux(i))+(A_p* &
+                          ndot(k,find_index(i,jmap,N_surface_species))* &
+                          species_constants(i,imass)+ &
+                          dmass*interp_species(k,i))/ &
+                          (exp(f(ix0,iy0,iz0,ilnrho))*volume_cell)
+                    else
+                      f(ix0,iy0,iz0,ispecaux(i)) = &
+                          f(ix0,iy0,iz0,ispecaux(i)) + &
+                          dmass*interp_species(k,i)/ &
+                          (exp(f(ix0,iy0,iz0,ilnrho))*volume_cell)
+                    endif
+                  enddo
+                endif
               endif
 !
 !  Solving for all but the other values, setting the last one to the
 !  negative values of all others.
 !
-!                  df(ixx,iyy,izz,ichemspec(nchemspec)) = &
-!                      df(ixx,iyy,izz,ichemspec(nchemspec))-summan
-                  df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ichemspec(nchemspec)) = &
-                      df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ichemspec(nchemspec))-&
-                      sum(df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ichemspec(:)),DIM=4)
+              if (.not. ldiffuse_backspec) then
+                df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ichemspec(nchemspec)) = &
+                    df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ichemspec(nchemspec))- &
+                    sum(df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ichemspec(:)),DIM=4)
+              endif
 !
 !  Compare the current maximum reaction rate to the previous one
 !
@@ -647,7 +714,7 @@ module Particles_surfspec
 !
 !  Enthalpy transfer via mass transfer!
 !
-              if (lpchem_mass_enth) then
+              if (lpchem_mass_enth .and. .not. ldiffuse_backenth) then
                 if (ldensity_nolog) then
                   if (ltemperature_nolog) then
                     df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) &
@@ -669,6 +736,24 @@ module Particles_surfspec
                         (exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*volume_cell)
                   endif
                 endif
+!
+!  Diffusion of mass bound enthalpy transfer
+!
+              elseif (lpchem_mass_enth .and. ldiffuse_backenth) then
+                if (ldensity_nolog .and. ltemperature_nolog) then
+                  call fatal_error('particles_surf','diffusion not implemented for &
+                      & ldensity_nolog')
+                elseif (ldensity_nolog .and. .not. ltemperature_nolog) then
+                  call fatal_error('particles_surf','diffusion not implemented for &
+                      & ldensity_nolog')
+                elseif (.not. ldensity_nolog .and. ltemperature_nolog) then
+                  call fatal_error('particles_surf','diffusion not implemented for &
+                      & ltemperature_nolog')
+                else
+                  f(ix0,iy0,iz0,ispecenth) =  f(ix0,iy0,iz0,ispecenth) &
+                      +denth*p%cv1(ix0-nghost)*p%TT1(ix0-nghost) / &
+                      (exp(f(ix0,iy0,iz0,ilnrho))*volume_cell)
+                endif
               endif
 !
 !  Compare the current maximum reaction rate to the current maximum
@@ -679,11 +764,6 @@ module Particles_surfspec
             endif
           enddo
 !
-!  JONAS NASTY: This makes the N2 take the most heat from whatever is causing the
-!  Non-conserved mass fractions
-!
-!          df(:,m,n,ichemspec(nchemspec)) = df(:,m,n,ichemspec(nchemspec))-&
-!              sum(df(:,m,n,ichemspec(:)),DIM=2)
 !
           if (ldiagnos) then
             if (idiag_dtpchem /= 0 ) call max_name(reac_pchem/cdtc,idiag_dtpchem,l_dt=.true.)

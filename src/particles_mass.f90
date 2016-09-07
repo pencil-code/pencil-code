@@ -1,4 +1,4 @@
-! $Id: particles_temperature.f90 21950 2014-07-08 08:53:00Z michiel.lambrechts $
+! $Id: particles_mass.f90 21950 2014-07-08 08:53:00Z michiel.lambrechts $
 !
 !  This module takes care of everything related to the mass of the particles.
 !
@@ -11,7 +11,6 @@
 ! MPAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles_mass=.true.
 !
-! PENCILS PROVIDED TTp
 !
 !***************************************************************
 module Particles_mass
@@ -32,15 +31,25 @@ module Particles_mass
   logical :: lpart_mass_backreac=.true.
   logical :: lpart_mass_momentum_backreac=.true.
   logical :: lconstant_mass_w_chem=.false.
+  logical :: ldiffuse_backreac=.false., ldiffm=.false.
+  logical :: lbdry_test = .false.
+  integer :: idmp=0
   real :: mass_const=0.0, dmpdt=1e-3
   real :: dmpdt_save = 0.0
   real, dimension(:,:,:), allocatable :: weight_array
+  real :: dx__1=0.0, dy__1=0.0, dz__1=0.0
+  integer :: ndiffstepm=3
+  real :: rdiffconstm=0.1178, diffmult=0.125
+!
   character(len=labellen), dimension(ninit) :: init_particle_mass='nothing'
 !
-  namelist /particles_mass_init_pars/ init_particle_mass, mass_const
+  namelist /particles_mass_init_pars/ init_particle_mass, mass_const, &
+      ldiffuse_backreac,ldiffm
 !
-  namelist /particles_mass_run_pars/ lpart_mass_backreac, dmpdt,&
-      lpart_mass_momentum_backreac, lconstant_mass_w_chem
+  namelist /particles_mass_run_pars/ lpart_mass_backreac, dmpdt, &
+      lpart_mass_momentum_backreac, lconstant_mass_w_chem, &
+      ldiffuse_backreac,ldiffm,diffmult,lbdry_test,rdiffconstm, &
+      ndiffstepm
 !
   integer :: idiag_mpm=0
   integer :: idiag_dmpm=0
@@ -55,6 +64,8 @@ module Particles_mass
 !  Set up indices for access to the fp and dfp arrays.
 !
 !  23-sep-14/Nils: adapted
+!
+      use FArrayManager, only: farray_register_auxiliary
 !
       if (lroot) call svn_id( &
           "$Id: particles_mass.f90 20849 2013-08-06 18:45:43Z anders@astro.lu.se $")
@@ -91,6 +102,14 @@ module Particles_mass
         call fatal_error('register_particles_mass: npaux > mpaux','')
       endif
 !
+!  We need to register an auxiliary array to dmp
+!
+      if (ldiffuse_backreac .and. lpart_mass_backreac) then
+        call farray_register_auxiliary('dmp',idmp,communicated=.true.)
+      elseif (ldiffuse_backreac .and. .not. lpart_mass_backreac) then
+        call fatal_error('particles_mass:','diffusion of the mass transfer needs lpart_mass_backreac')
+      endif
+!
     endsubroutine register_particles_mass
 !***********************************************************************
     subroutine initialize_particles_mass(f)
@@ -103,12 +122,17 @@ module Particles_mass
       use SharedVariables, only: get_shared_variable
 !
       real, dimension(mx,my,mz,mfarray) :: f
+      integer :: ndimx, ndimy, ndimz
+!
+      call find_weight_array_dims(ndimx,ndimy,ndimz)
+!
+      dx__1 = nx/lxyz(1)
+      dy__1 = ny/lxyz(2)
+      dz__1 = nx/lxyz(3)
+!      rdiffconst = diffmult/(dx__1**2)
 !
       if (allocated(weight_array)) deallocate(weight_array)
-      if (lparticlemesh_gab) allocate (weight_array(7,7,7))
-      if (lparticlemesh_tsc) allocate (weight_array(3,3,3))
-      if (lparticlemesh_cic) allocate (weight_array(2,2,2))
-      if (.not. allocated(weight_array)) allocate(weight_array(1,1,1))
+      if (.not. allocated(weight_array)) allocate(weight_array(ndimx,ndimy,ndimz))
       call precalc_weights(weight_array)
 !
       call keep_compiler_quiet(f)
@@ -189,13 +213,38 @@ module Particles_mass
 !
 !  23-sep-14/Nils: coded
 !
+      use GhostFold, only: reverse_fold_f_3points
+      use Mpicomm
+      use Boundcond
+!
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(mpar_loc,mparray) :: fp
       real, dimension(mpar_loc,mpvar) :: dfp
+      integer :: i
       integer, dimension(mpar_loc,3) :: ineargrid
       real, dimension(:), allocatable :: dmp_array
 !
+      if (lpart_mass_backreac .and. ldiffuse_backreac) then
+        if (ldensity_nolog) call fatal_error('particles_mass', &
+            'not implemented for ldensity_nolog')
+        do i = 1,ndiffstepm
+          if (lbdry_test) then
+            call boundconds_x(f,idmp,idmp)
+            call initiate_isendrcv_bdry(f,idmp,idmp)
+            call finalize_isendrcv_bdry(f,idmp,idmp)
+            call boundconds_y(f,idmp,idmp)
+            call boundconds_z(f,idmp,idmp)
+          else
+            call reverse_fold_f_3points(f,idmp,idmp)
+          endif
+!
+          call diffuse_interaction(f,idmp,ldiffm,.False.,rdiffconstm)
+!
+        enddo
+        df(l1:l2,m1:m2,n1:n2,ilnrho) =  df(l1:l2,m1:m2,n1:n2,ilnrho) + &
+            f(l1:l2,m1:m2,n1:n2,idmp)
+      endif
       ! Diagnostic output
       if (ldiagnos) then
         if (idiag_mpm /= 0)   call sum_par_name(fp(1:npar_loc,imp),idiag_mpm)
@@ -204,7 +253,7 @@ module Particles_mass
 !  we need to gite sum_par_name an array filled with values that we collect in a different
 !  place than the dfp array.
 !
-        if (idiag_dmpm /= 0)   then 
+        if (idiag_dmpm /= 0)   then
           if (.not. lconstant_mass_w_chem) then
             call sum_par_name(dfp(1:npar_loc,imp),idiag_dmpm)
           else
@@ -213,7 +262,7 @@ module Particles_mass
             dmp_array(1) = dmpdt_save
             call sum_par_name(dmp_array(1:npar_loc),idiag_dmpm)
             deallocate(dmp_array)
-            dmpdt_save=0.0
+            dmpdt_save = 0.0
           endif
         endif
 !
@@ -225,8 +274,6 @@ module Particles_mass
         endif
       endif
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
@@ -239,6 +286,8 @@ module Particles_mass
 !
 !  23-sep-14/Nils: coded
 !
+!      use Deriv, only: der2_pencil_scalar
+!
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(mpar_loc,mparray) :: fp
@@ -248,13 +297,15 @@ module Particles_mass
       real, dimension(nx) :: volume_pencil
       real :: volume_cell, rho1_point, weight
       real :: mass_per_radius, rho_init
-      integer :: k, ix0, iy0, iz0, k1, k2,i,index1
+      integer :: k, ix0, iy0, iz0, k1, k2, i, index1
       integer :: izz, izz0, izz1, iyy, iyy0, iyy1, ixx, ixx0, ixx1
-      real, dimension(:), allocatable :: mass_loss, St,Vp
+      real, dimension(:), allocatable :: mass_loss, St, Vp
       real, dimension(:,:), allocatable :: Rck_max
+      real, dimension(nx) :: dmp_diff=0.0
+      integer :: h,j
 !
-      intent(in) :: f, fp, ineargrid
-      intent(inout) :: dfp, df
+      intent(in) :: fp, ineargrid
+      intent(inout) :: f, dfp, df
 !
 !      call keep_compiler_quiet(f)
 !      call keep_compiler_quiet(df)
@@ -264,6 +315,8 @@ module Particles_mass
       if (npar_imn(imn) /= 0) then
 !
         volume_cell = (lxyz(1)*lxyz(2)*lxyz(3))/(nx*ny*nz)
+!
+        if (ldiffuse_backreac) f(l1:l2,m,n,idmp) = 0.0
 !
         k1 = k1_imn(imn)
         k2 = k2_imn(imn)
@@ -310,12 +363,10 @@ module Particles_mass
             Vp(k1:k2) = 4.*pi*fp(k1:k2,iap)*fp(k1:k2,iap)*fp(k1:k2,iap)/3.
 !
             do k = k1,k2
-              if (fp(k,irhosurf)>=0.0) then
+              if (fp(k,irhosurf) >= 0.0) then
                 dfp(k,irhosurf) = dfp(k,irhosurf)-sum(Rck_max(k,:))*St(k)/Vp(k)
               endif
             enddo
-          else
-!
           endif
 !
 ! Calculate feed back from the particles to the gas phase
@@ -334,20 +385,32 @@ module Particles_mass
               call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1, &
                   fp,k,ix0,iy0,iz0)
 !
+              if (.not. ldiffuse_backreac) then
+!
 ! Add the source to the df-array
 !
-              if (ldensity_nolog) then
-                df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho) &
-                    +mass_loss(k)*weight_array/volume_cell
+                if (ldensity_nolog) then
+                  df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho) &
+                      +mass_loss(k)*weight_array/volume_cell
+                else
+                  df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho) &
+                      +mass_loss(k)*weight_array/volume_cell/exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))
+                endif
+!
+!  ngp dumping of the mass transfer to the auxiliary
+!
               else
-!                print*, 'df infos:', df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho)
-!                print*, 'weight_array: ' ,weight_array
-!                print*, 'rho',exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))
-!                print*, 'volume_cell:',volume_cell
-!                print*, 'mass loss(k)', mass_loss(k)
- !                    print*, 'dTgdt: ', Qc*p%cv1(inx0)*rho1_point*p%TT1(inx0)*weight/volume_cell
-                df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho) &
-                    +mass_loss(k)*weight_array/volume_cell/exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))
+                if (ldensity_nolog) then
+                  f(ix0,iy0,iz0,idmp) = f(ix0,iy0,iz0,idmp) &
+                      +mass_loss(k)/volume_cell
+                else
+                  f(ix0,iy0,iz0,idmp) = f(ix0,iy0,iz0,idmp) &
+                      +mass_loss(k)/exp(f(ix0,iy0,iz0,ilnrho))/volume_cell
+                  if (ldiagnos) then
+!                    print*, 'mass loss infos'
+!                    print*, 'dmass/dmasscell', mass_loss(k)/(exp(f(ix0,iy0,iz0,ilnrho))*volume_cell)
+                  endif
+                endif
               endif
 !
 !  Momentum transfer via mass transfer between particle and gas phase
@@ -360,13 +423,13 @@ module Particles_mass
                 if (ldensity_nolog) then
                   do i = iux,iuz
                     df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,i) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,i) &
-                        +mass_loss(k)*weight_array/volume_cell/f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*&
+                        +mass_loss(k)*weight_array/volume_cell/f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)* &
                         (fp(k,i-iux+ivpx)-interp_uu(k,i-iux+1))
                   enddo
                 else
                   do i = iux,iuz
                     df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,i) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,i) &
-                        +mass_loss(k)*weight_array/volume_cell/exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*&
+                        +mass_loss(k)*weight_array/volume_cell/exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))* &
                         (fp(k,i-iux+ivpx)-interp_uu(k,i-iux+1))
                   enddo
                 endif
@@ -375,7 +438,6 @@ module Particles_mass
                     call fatal_error('particles_mass','Momentum back reaction needs interp%luu')
               endif
             enddo
-            
 !
             deallocate(mass_loss)
             deallocate(St)
@@ -394,7 +456,7 @@ module Particles_mass
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=particles_mass_init_pars, IOSTAT=iostat)
+      read (parallel_unit, NML=particles_mass_init_pars, IOSTAT=iostat)
 !
     endsubroutine read_particles_mass_init_pars
 !***********************************************************************
@@ -402,7 +464,7 @@ module Particles_mass
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=particles_mass_init_pars)
+      write (unit, NML=particles_mass_init_pars)
 !
     endsubroutine write_particles_mass_init_pars
 !***********************************************************************
@@ -412,7 +474,7 @@ module Particles_mass
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=particles_mass_run_pars, IOSTAT=iostat)
+      read (parallel_unit, NML=particles_mass_run_pars, IOSTAT=iostat)
 !
     endsubroutine read_particles_mass_run_pars
 !***********************************************************************
@@ -420,7 +482,7 @@ module Particles_mass
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=particles_mass_run_pars)
+      write (unit, NML=particles_mass_run_pars)
 !
     endsubroutine write_particles_mass_run_pars
 !***********************************************************************
@@ -462,5 +524,5 @@ module Particles_mass
       enddo
 !
     endsubroutine rprint_particles_mass
-!***********************************************************************
+! **********************************************************************
 endmodule Particles_mass

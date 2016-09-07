@@ -22,8 +22,8 @@ module Particles_sub
   public :: count_particles, output_particle_size_dist
   public :: get_rhopswarm, find_grid_volume, find_interpolation_weight
   public :: find_interpolation_indeces, get_gas_density
-  public :: precalc_weights
-  public :: dragforce_equi_multispecies
+  public :: precalc_weights, find_weight_array_dims
+  public :: dragforce_equi_multispecies, diffuse_interaction
 !
   interface get_rhopswarm
     module procedure get_rhopswarm_ineargrid
@@ -1244,27 +1244,64 @@ module Particles_sub
 !
       real, dimension(:,:,:) :: weight_array
       real, dimension(3) :: tsc_values = (/0.125, 0.75, 0.125/)
-      integer :: i,j,k
+      integer :: i,j,k,i_end,j_end,k_end
 !
 !  This makes sure that the weight array is 1 if the npg approach is chosen
 !
       weight_array(:,:,:) = 1.0
 !
       if (lparticlemesh_gab) then
-        do i=1,7
-          do j=1,7
-            do k=1,7
-              weight_array(i,j,k) = gab_weights(abs(i-4)+1)* &
-                  gab_weights(abs(j-4)+1) * gab_weights(abs(k-4)+1)
+        if (nxgrid/=1) then
+          i_end = 7
+        else
+          i_end = 1
+        endif
+        if (nygrid/=1) then
+          j_end = 7
+        else
+          j_end = 1
+        endif
+        if (nzgrid/=1) then
+          k_end = 7
+        else
+          k_end = 1
+        endif
+!
+        do i=1,i_end
+          do j=1,j_end
+            do k=1,k_end
+              weight_array(i,j,k) = gab_weights(abs(i-4)+1)
+              if (nygrid/=1) then
+                weight_array(i,j,k) = weight_array(i,j,k) * gab_weights(abs(i-4)+1)
+                if (nzgrid/=1) then 
+                  weight_array(i,j,k) = weight_array(i,j,k) * gab_weights(abs(i-4)+1)
+                endif
+              endif
             enddo
           enddo
         enddo
       endif
-
+!
       if (lparticlemesh_tsc) then
-          do i = 1,3
-            do j = 1,3
-              do k =1,3
+        if (nxgrid/=1) then
+          i_end = 3
+        else
+          i_end = 1
+        endif
+        if (nygrid/=1) then
+          j_end = 3
+        else
+          j_end = 1
+        endif
+        if (nzgrid/=1) then
+          k_end = 3
+        else
+          k_end = 1
+        endif
+!
+          do i = 1,i_end
+            do j = 1,j_end
+              do k =1,k_end
                 if (nxgrid/=1) weight_array(i,j,k)=weight_array(i,j,k)*tsc_values(i)
                 if (nygrid/=1) weight_array(i,j,k)=weight_array(i,j,k)*tsc_values(j)
                 if (nzgrid/=1) weight_array(i,j,k)=weight_array(i,j,k)*tsc_values(k)
@@ -1356,4 +1393,259 @@ module Particles_sub
 !
     endsubroutine dragforce_equi_multispecies
 !***********************************************************************
+    subroutine find_weight_array_dims(ndimx,ndimy,ndimz)
+!
+      integer :: ndimx,ndimy,ndimz
+      integer :: npgl=1,cicl=2,tscl=3,gabl=7
+!
+!  ngp case and the cases where we have lower dimensions
+!
+      if (nygrid==1 .and. nzgrid/=1) then
+        call fatal_error('particles_sub','for this implementation, &
+            &y has to have dimensions before z')
+      endif
+      ndimx=1
+      ndimy=1
+      ndimz=1
+!      
+      if (lparticlemesh_gab) then
+        if (nxgrid/=1) ndimx = gabl
+        if (nygrid/=1) ndimy = gabl
+        if (nzgrid/=1) ndimz = gabl
+      endif
+      if (lparticlemesh_tsc) then
+        if (nxgrid/=1) ndimx = tscl
+        if (nygrid/=1) ndimy = tscl
+        if (nzgrid/=1) ndimz = tscl
+      endif
+      if (lparticlemesh_cic) then
+        if (nxgrid/=1) ndimx = cicl
+        if (nygrid/=1) ndimy = cicl
+        if (nzgrid/=1) ndimz = cicl
+      endif
+!
+    endsubroutine find_weight_array_dims
+!***********************************************************************
+    subroutine diffuse_interaction(f,aux_index,ldiff,lexp,rdiffconst)
+!
+      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
+      integer, intent(in) :: aux_index
+      character(len=30) :: formatstring
+      logical, intent(in) :: ldiff,lexp
+      real :: rdiffconst
+!
+!
+!
+      formatstring = '(A10,  (E10.3,","))'
+      write(formatstring(6:7),'(I2)') nxgrid
+!
+      if (ldensity_nolog) then
+!
+!  JONAS this needs diffusing and transporting
+!
+        call fatal_error('particles_sub','not yet implemented for ldensity_nolog')
+!        df(l1:l2,m1:m2,n1:n2,target_index) =  df(l1:l2,m1:m2,n1:n2,target_index) +  &
+!            f(l1:l2,m1:m2,n1:n2,aux_index)
+      else
+        if (ldiff) then
+          call diffuse_domain_scalar(f(:,:,:,aux_index),lexp,rdiffconst)
+        else
+          call smooth_kernel_domain(f(:,:,:,aux_index),lexp)
+        endif
+! should be ilnrho
+!        df(l1:l2,m1:m2,n1:n2,target_index) =  df(l1:l2,m1:m2,n1:n2,target_index) +  &
+!            (f(l1:l2,m1:m2,n1:n2,aux_index)) 
+      endif
+!
+    endsubroutine diffuse_interaction
+!***********************************************************************
+    subroutine smooth_kernel_domain(domain,lexp)
+!
+!  Smooth scalar pencil using predefined constant gaussian like kernel.
+!
+!  20-jul-06/tony: coded
+!  18-aug-16/jonas: adapted
+!
+      real, intent(inout), dimension(mx,my,mz,1) :: domain
+      real, dimension(nx,ny,nz) :: smoothed=0.0
+      logical :: lexp
+      real, dimension(7) :: kernel_1d= (/ &
+          0.07651724, 0.13336258, 0.18612247, &
+          0.20799541, 0.18612247, 0.13336258, 0.07651724/)
+!
+      real, dimension(7,7) :: kernel_2d=reshape((/ &
+          0.00585488755018, 0.0102045361972, 0.014241577509, 0.0159152344353, 0.014241577509, 0.0102045361972, &
+          0.00585488755018, 0.0102045361972, 0.017785577965, 0.0248217735952, 0.0277388053127, 0.0248217735952, &
+          0.017785577965, 0.0102045361972, 0.014241577509, 0.0248217735952, 0.0346415756422, 0.0387126213514, &
+          0.0346415756422, 0.0248217735952, 0.014241577509, 0.0159152344353, 0.0277388053127, 0.0387126213514, &
+          0.0432620925612, 0.0387126213514, 0.0277388053127, 0.0159152344353, 0.014241577509, 0.0248217735952, &
+          0.0346415756422, 0.0387126213514, 0.0346415756422, 0.0248217735952, 0.014241577509, 0.0102045361972, &
+          0.017785577965, 0.0248217735952, 0.0277388053127, 0.0248217735952, 0.017785577965, 0.0102045361972, &
+          0.00585488755018, 0.0102045361972, 0.014241577509, 0.0159152344353, 0.014241577509, 0.0102045361972, &
+          0.00585488755018/), (/7,7/))
+!
+      real, dimension(7,7,7) :: kernel_3d= reshape((/ &
+          0.000447, 0.000780, 0.001089, 0.001217, 0.001089, 0.000780, 0.000447, 0.000780, 0.001360, 0.001899, &
+          0.002122, 0.001899, 0.001360, 0.000780, 0.001089, 0.001899, 0.002650, 0.002962, 0.002650, 0.001899, &
+          0.001089, 0.001217, 0.002122, 0.002962, 0.003310, 0.002962, 0.002122, 0.001217, 0.001089, 0.001899, &
+          0.002650, 0.002962, 0.002650, 0.001899, 0.001089, 0.000780, 0.001360, 0.001899, 0.002122, 0.001899, &
+          0.001360, 0.000780, 0.000447, 0.000780, 0.001089, 0.001217, 0.001089, 0.000780, 0.000447, 0.000780, &
+          0.001360, 0.001899, 0.002122, 0.001899, 0.001360, 0.000780, 0.001360, 0.002371, 0.003310, 0.003699, &
+          0.003310, 0.002371, 0.001360, 0.001899, 0.003310, 0.004619, 0.005162, 0.004619, 0.003310, 0.001899, &
+          0.002122, 0.003699, 0.005162, 0.005769, 0.005162, 0.003699, 0.002122, 0.001899, 0.003310, 0.004619, &
+          0.005162, 0.004619, 0.003310, 0.001899, 0.001360, 0.002371, 0.003310, 0.003699, 0.003310, 0.002371, &
+          0.001360, 0.000780, 0.001360, 0.001899, 0.002122, 0.001899, 0.001360, 0.000780, 0.001089, 0.001899, &
+          0.002650, 0.002962, 0.002650, 0.001899, 0.001089, 0.001899, 0.003310, 0.004619, 0.005162, 0.004619, &
+          0.003310, 0.001899, 0.002650, 0.004619, 0.006447, 0.007205, 0.006447, 0.004619, 0.002650, 0.002962, &
+          0.005162, 0.007205, 0.008052, 0.007205, 0.005162, 0.002962, 0.002650, 0.004619, 0.006447, 0.007205, &
+          0.006447, 0.004619, 0.002650, 0.001899, 0.003310, 0.004619, 0.005162, 0.004619, 0.003310, 0.001899, &
+          0.001089, 0.001899, 0.002650, 0.002962, 0.002650, 0.001899, 0.001089, 0.001217, 0.002122, 0.002962, &
+          0.003310, 0.002962, 0.002122, 0.001217, 0.002122, 0.003699, 0.005162, 0.005769, 0.005162, 0.003699, &
+          0.002122, 0.002962, 0.005162, 0.007205, 0.008052, 0.007205, 0.005162, 0.002962, 0.003310, 0.005769, &
+          0.008052, 0.008998, 0.008052, 0.005769, 0.003310, 0.002962, 0.005162, 0.007205, 0.008052, 0.007205, &
+          0.005162, 0.002962, 0.002122, 0.003699, 0.005162, 0.005769, 0.005162, 0.003699, 0.002122, 0.001217, &
+          0.002122, 0.002962, 0.003310, 0.002962, 0.002122, 0.001217, 0.001089, 0.001899, 0.002650, 0.002962, &
+          0.002650, 0.001899, 0.001089, 0.001899, 0.003310, 0.004619, 0.005162, 0.004619, 0.003310, 0.001899, &
+          0.002650, 0.004619, 0.006447, 0.007205, 0.006447, 0.004619, 0.002650, 0.002962, 0.005162, 0.007205, &
+          0.008052, 0.007205, 0.005162, 0.002962, 0.002650, 0.004619, 0.006447, 0.007205, 0.006447, 0.004619, &
+          0.002650, 0.001899, 0.003310, 0.004619, 0.005162, 0.004619, 0.003310, 0.001899, 0.001089, 0.001899, &
+          0.002650, 0.002962, 0.002650, 0.001899, 0.001089, 0.000780, 0.001360, 0.001899, 0.002122, 0.001899, &
+          0.001360, 0.000780, 0.001360, 0.002371, 0.003310, 0.003699, 0.003310, 0.002371, 0.001360, 0.001899, &
+          0.003310, 0.004619, 0.005162, 0.004619, 0.003310, 0.001899, 0.002122, 0.003699, 0.005162, 0.005769, &
+          0.005162, 0.003699, 0.002122, 0.001899, 0.003310, 0.004619, 0.005162, 0.004619, 0.003310, 0.001899, &
+          0.001360, 0.002371, 0.003310, 0.003699, 0.003310, 0.002371, 0.001360, 0.000780, 0.001360, 0.001899, &
+          0.002122, 0.001899, 0.001360, 0.000780, 0.000447, 0.000780, 0.001089, 0.001217, 0.001089, 0.000780, &
+          0.000447, 0.000780, 0.001360, 0.001899, 0.002122, 0.001899, 0.001360, 0.000780, 0.001089, 0.001899, &
+          0.002650, 0.002962, 0.002650, 0.001899, 0.001089, 0.001217, 0.002122, 0.002962, 0.003310, 0.002962, &
+          0.002122, 0.001217, 0.001089, 0.001899, 0.002650, 0.002962, 0.002650, 0.001899, 0.001089, 0.000780, &
+          0.001360, 0.001899, 0.002122, 0.001899, 0.001360, 0.000780, 0.000447, 0.000780, 0.001089, 0.001217, &
+          0.001089, 0.000780, 0.000447/), (/7,7,7/))
+
+!
+      integer :: l,m,n
+!
+!  1D case (x has dimensions)
+!
+      if (nxgrid /= 1 .and. nygrid == 1 .and. nzgrid == 1) then
+        do l = l1,l2
+          smoothed(l-l1+1,1,1) =  sum(kernel_1d*domain(l-3:l+3,4,4,1))
+        enddo
+      endif
+!
+!  2D case (x and y have dimensions)
+!
+      if (nxgrid /= 1 .and. nygrid /= 1 .and. nzgrid == 1) then
+        do l = l1,l2
+          do m = m1,m2
+            smoothed(l-l1+1,m-m1+1,1) = sum(kernel_2d*domain(l-3:l+3,m-3:m+3,4,1))
+          enddo
+        enddo
+      endif
+!
+!  3D case
+!
+      if (nxgrid /= 1 .and. nygrid /= 1 .and. nzgrid /= 1) then
+        do l = l1,l2
+          do m = m1,m2
+            do n = n1,n2             
+              smoothed(l-l1+1,m-m1+1,n-n1+1) = sum(kernel_3d*domain(l-3:l+3,m-3:m+3,n-3:n+3,1))
+            enddo
+          enddo
+        enddo
+      endif
+
+      domain(l1:l2,m1:m2,n1:n2,1) = smoothed
+!
+    endsubroutine smooth_kernel_domain
+!***************************************************************************
+    subroutine diffuse_domain_scalar(domain,lexp,rdiffconst)
+!
+!  Calculate laplacian of any scalar in the domain
+!
+!  01-nov-07/anders: adapted from der2
+!  22-aug-16/jonas: adapted
+!
+      real, dimension (mx,my,mz) :: domain
+      real, dimension (mx,my,mz) :: df2dx=0.0,df2dy=0.0,df2dz=0.0,df2=0.0
+      integer :: l,m,n
+      logical :: lexp
+      real :: rdiffconst
+      character(len=20) :: formatstring
+!
+      
+      intent(inout)  :: domain
+      if (lexp) domain = exp(domain)
+!
+!      call fatal_error('pmass','not yet fully implemented')
+!
+!  x-derivative
+!
+      if (nxgrid /= 1) then
+        do n = n1,n2
+          do m = m1,m2
+            do l = l1,l2
+              df2dx(l,m,n)=(1./180)*(-490.0*domain(l,m,n) &
+                  +270.0*(domain(l+1,m,n)+domain(l-1,m,n)) &
+                  - 27.0*(domain(l+2,m,n)+domain(l-2,m,n)) &
+                  +  2.0*(domain(l+3,m,n)+domain(l-3,m,n)))
+!            df2dx(1:l2-l1,m-m1+1,n-n1+1)=(1./180)*(-490.0*domain(l1:l2,m,n,1) &
+!                +270.0*(domain(l1+1:l2+1,m,n,1)+domain(l1-1:l2-1,m,n,1)) &
+!                - 27.0*(domain(l1+2:l2+2,m,n,1)+domain(l1-2:l2-2,m,n,1)) &
+!                +  2.0*(domain(l1+3:l2+3,m,n,1)+domain(l1-3:l2-3,m,n,1)))
+!              df2dx()
+            enddo
+          enddo
+        enddo
+      else
+        call fatal_error('deriv_2nd','der2_domain_scalar needs at least xdim/=1')
+      endif
+!
+!  y-derivative
+!
+      if(nygrid /= 1) then
+        do n = n1,n2
+          do m = m1,m2
+            do l = l1,l2
+              df2dy(l,m,n)= (1./180)*(-490.0*domain(l,m,n) &
+                  +270.0*(domain(l,m-1,n)+domain(l,m+1,n)) &
+                  - 27.0*(domain(l,m-2,n)+domain(l,m+2,n)) &
+                 +  2.0*(domain(l,m-3,n)+domain(l,m+3,n)))
+            enddo
+!            df2dy(1:l2-l1,m-m1+1,n-n1+1)=(1./180)*(-490.0*domain(l1:l2,m,n,1) &
+!                +270.0*(domain(l1:l2,m-1,n,1)+domain(l1:l2,m+1,n,1)) &
+!                - 27.0*(domain(l1:l2,m-2,n,1)+domain(l1:l2,m+2,n,1)) &
+!                +  2.0*(domain(l1:l2,m-3,n,1)+domain(l1:l2,m+3,n,1)))
+          enddo
+        enddo
+      endif
+!
+!  z-derivative
+!
+      if (nzgrid /= 1 .and. nygrid ==1) call fatal_error('pmass','for this routine, &
+          & nygrid needs dimensions before nzgrid can have one')
+!
+      if (nzgrid /=1) then
+        do n = n1,n2
+          do m = m1,m2
+            do l = l1,l2
+              df2dz(l,m,n)= (1./180)*(-490.0*domain(l,m,n) &
+                  +270.0*(domain(l,m,n-1)+domain(l,m,n+1)) &
+                  - 27.0*(domain(l,m,n-2)+domain(l,m,n+2)) &
+                  +  2.0*(domain(l,m,n-3)+domain(l,m,n+3)))
+            enddo
+!            df2dz(1:l2-l1,m-m1+1,n-n1+1)=(1./180)*(-490.0*domain(l1:l2,m,n,1) &
+!                +270.0*(domain(l1:l2,m,n-1,1)+domain(l1:l2,m,n+1,1)) &
+!                - 27.0*(domain(l1:l2,m,n-2,1)+domain(l1:l2,m,n+2,1)) &
+!                +  2.0*(domain(l1:l2,m,n-3,1)+domain(l1:l2,m,n+3,1)))
+          enddo
+        enddo
+      endif
+
+      df2 = df2dx+df2dy+df2dz
+      domain(l1:l2,m1:m2,n1:n2) = domain(l1:l2,m1:m2,n1:n2) + rdiffconst*df2(l1:l2,m1:m2,n1:n2)
+
+      if (lexp) domain=log(domain)
+!
+    endsubroutine diffuse_domain_scalar
+! ***********************************************************************
 endmodule Particles_sub

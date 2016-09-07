@@ -8,7 +8,6 @@
 ! variables and auxiliary variables added by this module
 !
 ! MPVAR CONTRIBUTION 1
-! MAUX CONTRIBUTION 0
 ! CPARAM logical, parameter :: lparticles_temperature=.true.
 !
 ! PENCILS PROVIDED TTp
@@ -34,17 +33,23 @@ module Particles_temperature
   logical :: lrad_part=.false.,lconv_heating=.true.
   logical :: lpart_nuss_const=.false.
   logical :: lstefan_flow = .true.
+  logical :: ldiffuse_backtemp = .false.,ldiffTT=.false.
+  integer :: idmpt=0,ndiffstepTT=3
   real :: init_part_temp, emissivity=0.0
+  real :: rdiffconstTT = 0.1178
   real, dimension(:,:,:), allocatable :: weight_array
   real :: Twall=0.0
   real :: cp_part=0.711e7 ! wolframalpha, erg/(g*K)
   character(len=labellen), dimension(ninit) :: init_particle_temperature='nothing'
 !
   namelist /particles_TT_init_pars/ &
-      init_particle_temperature, init_part_temp, emissivity, cp_part
+      init_particle_temperature, init_part_temp, emissivity, cp_part, &
+       ldiffuse_backtemp,ldiffTT
 !
   namelist /particles_TT_run_pars/ emissivity, cp_part, lpart_temp_backreac,&
-      lrad_part,Twall, lpart_nuss_const,lstefan_flow,lconv_heating
+      lrad_part,Twall, lpart_nuss_const,lstefan_flow,lconv_heating, &
+       ldiffuse_backtemp,ldiffTT,rdiffconstTT, &
+       ndiffstepTT
 !
   integer :: idiag_Tpm=0, idiag_etpm=0
 !
@@ -77,6 +82,14 @@ module Particles_temperature
         call fatal_error('register_particles_temp','npvar > mpvar')
       endif
 !
+!  We need to register an auxiliary array to dmp
+!
+      if (lpart_temp_backreac .and. ldiffuse_backtemp) then
+        call farray_register_auxiliary('dmpt',idmpt,communicated=.true.)
+      elseif (ldiffuse_backtemp .and. .not. lpart_temp_backreac) then
+        call fatal_error('particles_temp:','diffusion of the temperate transfer needs lpart_temp_backreac')
+      endif
+!
     endsubroutine register_particles_TT
 !***********************************************************************
     subroutine initialize_particles_TT(f)
@@ -87,13 +100,15 @@ module Particles_temperature
 !  28-aug-14/jonas+nils: coded
 !
       real, dimension(mx,my,mz,mfarray) :: f
+      integer :: ndimx,ndimy,ndimz
+! 
+      call find_weight_array_dims(ndimx,ndimy,ndimz)
 !
       if (allocated(weight_array)) deallocate(weight_array)
-      if (lparticlemesh_gab) allocate (weight_array(7,7,7))
-      if (lparticlemesh_tsc) allocate (weight_array(3,3,3))
-      if (lparticlemesh_cic) allocate (weight_array(2,2,2))
-      if (.not. allocated(weight_array)) allocate(weight_array(1,1,1))
+      if (.not. allocated(weight_array)) allocate(weight_array(ndimx,ndimy,ndimz))
       call precalc_weights(weight_array)
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_particles_TT
 !***********************************************************************
@@ -150,11 +165,28 @@ module Particles_temperature
 !
 !  28-aug-14/jonas+nils: coded
 !
+      use GhostFold, only: reverse_fold_f_3points
+!
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(mpar_loc,mparray) :: fp
       real, dimension(mpar_loc,mpvar) :: dfp
+      integer :: i
       integer, dimension(mpar_loc,3) :: ineargrid
+!
+      if (lpart_temp_backreac .and. ldiffuse_backtemp) then
+          if (ldensity_nolog) call fatal_error('particles_mass', & 
+              'not implemented for ldensity_nolog')
+        do i = 1, ndiffstepTT
+!          print*, 'before temperature folding', i
+          call reverse_fold_f_3points(f,idmpt,idmpt)
+!          print*, 'after temperature folding ', i
+          call diffuse_interaction(f,idmpt,ldiffTT,.False.,rdiffconstTT)
+        enddo
+        df(l1:l2,m1:m2,n1:n2,ilnTT) =  df(l1:l2,m1:m2,n1:n2,ilnTT) + &
+            f(l1:l2,m1:m2,n1:n2,idmpt)
+      endif
+!
 !
 !  Diagnostic output
 !
@@ -171,8 +203,6 @@ module Particles_temperature
         endif
       endif
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
@@ -204,8 +234,8 @@ module Particles_temperature
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
       integer :: ixx, iyy, izz, k1, k2
 !
-      intent(in) :: f, fp, ineargrid
-      intent(inout) :: dfp, df
+      intent(in) ::  fp, ineargrid
+      intent(inout) :: f,dfp, df
 !
 !      call keep_compiler_quiet(f)
 !      call keep_compiler_quiet(df)
@@ -220,6 +250,8 @@ module Particles_temperature
       if (npar_imn(imn) /= 0) then
 !
         volume_cell = (lxyz(1)*lxyz(2)*lxyz(3))/(nx*ny*nz)
+!
+        if (ldiffuse_backtemp) f(l1:l2,m,n,idmpt) = 0.0
 !
 !  The Ranz-Marshall correlation for the Sherwood number needs the particle Reynolds number
 !  Precalculate partrticle Reynolds numbers.
@@ -329,41 +361,62 @@ module Particles_temperature
 !
 !NILS: All this interpolation should be streamlined and made more efficient.
 !NILS: Is it possible to calculate it only once, and then re-use it later?
-            call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1, &
-                fp,k,ix0,iy0,iz0)
+            if (.not. ldiffuse_backtemp) then
+              call find_interpolation_indeces(ixx0,ixx1,iyy0,iyy1,izz0,izz1, &
+                  fp,k,ix0,iy0,iz0)
 !
 !  Add the source to the df-array
 !  NILS: The values of cv and Tg are currently found from the nearest grid
 !  NILS: point also for CIC and TSC. This should be fixed!
 !
-            if (ldensity_nolog) then
-              if (ltemperature_nolog) then
-                df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) &
-                    +Qc*p%cv1(inx0)*weight_array/&
-                    (f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*volume_cell)
+!  JONAS: change usage of f(......,ilnTT) to use the local values for each cell that
+!  is affected. same for p%cv1
+!
+!
+              if (ldensity_nolog) then
+                if (ltemperature_nolog) then
+! TT, rho
+                  df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) &
+                      +Qc*p%cv1(inx0)*weight_array/&
+                      (f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*volume_cell)
+                else
+                  df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) &
+                      +Qc*p%cv1(inx0)/exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT)) &
+                      *weight_array/&
+                      (f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*volume_cell)
+                endif
               else
-                df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) &
-                    +Qc*p%cv1(inx0)*p%TT1(inx0)*weight_array/&
-                    (f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,irho)*volume_cell)
- !                    print*, 'dTgdt: ', Qc*p%cv1(inx0)*rho1_point*p%TT1(inx0)*weight/volume_cell
+                if (ltemperature_nolog) then
+                  df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) &
+                      +Qc*p%cv1(inx0)*weight_array/&
+                      (exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*volume_cell)
+                else
+!     lnTT, lnrho
+                  df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) &
+                      +Qc*p%cv1(inx0)/exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT)) &
+                      *weight_array/&
+                      (exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*volume_cell)
+                endif
               endif
             else
-              if (ltemperature_nolog) then
-                df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,iTT) &
-                    +Qc*p%cv1(inx0)*weight_array/&
-                    (exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*volume_cell)
+              if (ldensity_nolog) then
+                if (ltemperature_nolog) then
+! TT, rho
+                  f(ix0,iy0,iz0,idmpt) =  f(ix0,iy0,iz0,idmpt)   &
+                      +Qc*p%cv1(inx0)/(f(ix0,iy0,iz0,irho)*volume_cell)
+                else
+                  f(ix0,iy0,iz0,idmpt) =  f(ix0,iy0,iz0,idmpt) &
+                      +Qc*p%cv1(inx0)*p%TT1(inx0)/(f(ix0,iy0,iz0,irho)*volume_cell)
+                endif
               else
-                df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) = df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT) &
-                    +Qc*p%cv1(inx0)*p%TT1(inx0)*weight_array/&
-                    (exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))*volume_cell)
-!                print*, 'df infos:', df(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnTT)
-!                print*, 'Qc: ', Qc
-!                print*, 'cv: ', 1/p%cv1(inx0)
-!                print*, 'tt: ', 1/p%TT1(inx0) 
-!                print*, 'weight_array: ' ,weight_array
-!                print*, 'rho',exp(f(ixx0:ixx1,iyy0:iyy1,izz0:izz1,ilnrho))
-!                print*, 'volume_cell:',volume_cell
- !                    print*, 'dTgdt: ', Qc*p%cv1(inx0)*rho1_point*p%TT1(inx0)*weight/volume_cell
+                if (ltemperature_nolog) then
+                  f(ix0,iy0,iz0,idmpt) =  f(ix0,iy0,iz0,idmpt) &
+                      +Qc*p%cv1(inx0)/(exp(f(ix0,iy0,iz0,ilnrho))*volume_cell)
+                else
+!     lnTT, lnrho
+                  f(ix0,iy0,iz0,idmpt) =  f(ix0,iy0,iz0,idmpt) &
+                      +Qc*p%cv1(inx0)*p%TT1(inx0)/(exp(f(ix0,iy0,iz0,ilnrho))*volume_cell)
+                endif
               endif
             endif
           endif
@@ -511,6 +564,5 @@ module Particles_temperature
       endif
 !
     endsubroutine calc_pencil_rep_nu
-!*********************************************************
-!*********************************************************
+!*********************************************************    
 endmodule Particles_temperature

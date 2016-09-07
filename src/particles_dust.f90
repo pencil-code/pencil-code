@@ -124,6 +124,8 @@ module Particles
   logical :: lvector_gravity=.false.
   logical :: lpeh_radius=.false.
   logical :: lbirthring_depletion=.false.
+  logical :: lstocunn1 = .false.
+  logical :: lprecalc_cell_volumes=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -236,8 +238,8 @@ module Particles
       lcentrifugal_force_par, ldt_adv_par, &
       linsert_particles_continuously, particles_insert_rate, &
       max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, &
-      lnocalc_rhop, &
-      np_const, rhop_const, particle_radius, &
+      lnocalc_rhop, lstocunn1, &
+      np_const, rhop_const, particle_radius, lprecalc_cell_volumes, &
       Deltauy_gas_friction, loutput_psize_dist, log_ap_min_dist, &
       log_ap_max_dist, nbin_ap_dist, lsinkparticle_1, rsinkparticle_1, &
       lthermophoretic_forces, temp_grad0, &
@@ -5486,8 +5488,12 @@ module Particles
 !
         dia=2.0*fp(k,iap)
 !
-        stocunn(k)=1.+2.*mean_free_path_gas/dia* &
-          (1.257+0.4*exp(-0.55*dia/mean_free_path_gas))
+        if (lstocunn1) then 
+          stocunn(k) = 1.
+        else
+          stocunn(k)=1.+2.*mean_free_path_gas/dia* &
+              (1.257+0.4*exp(-0.55*dia/mean_free_path_gas))
+        endif
 !
       enddo
 !

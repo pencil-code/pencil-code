@@ -18,7 +18,7 @@ module GhostFold
 !
   private
 !
-  public :: fold_df, fold_f,fold_df_3points
+  public :: fold_df, fold_f,fold_df_3points,reverse_fold_f_3points
 !
   contains
 !***********************************************************************
@@ -204,4 +204,75 @@ module GhostFold
 !
     endsubroutine fold_df_3points
 !***********************************************************************
+subroutine reverse_fold_f_3points(f,ivar1,ivar2)
+!
+!  Copies the boundary points (l2i:l2) into the ghost zones of the neighbouring
+!  node
+!  Used for reactive particle runs particle-fluid transfer is diffused before
+!  added to the df-array,
+!
+!
+!  20-may-2006/anders: coded
+!  11-jan-2015/jonas : adapted for 3 node thick folded zones
+!  22-aug-2016/jonas : adapted to reverse
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      integer :: ivar1, ivar2
+!
+      real, dimension (nx,ny,3,ivar2-ivar1+1) :: f_tmp_xy
+      real, dimension (nx,3,nz,ivar2-ivar1+1) :: f_tmp_xz
+      real, dimension (3,ny,nz,ivar2-ivar1+1) :: f_tmp_yz
+      real, dimension (ny,nz) :: f_tmp_yz_one
+      integer :: nvar_fold, iproc_rcv, ivar
+      integer :: itag1=10, itag2=11, itag3=12, itag4=13, itag5=14, itag6=15
+!
+      nvar_fold=ivar2-ivar1+1
+!
+!  The three ghost zones of the auxiliary array are filled (read: overwritten).
+!  by values from the neighbouring domains
+!  The ghost zones are communicated in following order (and coordinates:
+!  x: (l2i:l2,m1:m2,n1:n2) is sent to (l1-3:l1-1,m1:m2,n1:n2) of the following processor
+!     (l1:l1i,m1:m2,n1:n2) is sent to (l2+1:l2+3,m1:m2,n1:n2) of the preceeding processor
+!  y: (l1:l2,m2i:m2,n1:n2) is sent to (l1:l2,m1-3:m1-1,n1:n2) of the following processor
+!     (l1:l2,m1:m1i,n1:n2) is sent to (l1:l2,m2+1:m2+3,n1:n2) of the preceeding processor
+!  z: (l1:l2,m1:m2,n2i:n2) is sent to (l1:l2,m1:m2,n1-3:n1-1) of the following processor
+!     (l1:l2,m1:m2,n1:n1i) is sent to (l1:l2,m1:m2,n2+1:n2+3) of the preceeding processor
+!
+      if (nzgrid/=1) then
+! Folding the top ghost zones on the bottom
+        f(l1:l2,m1:m2,n1-3:n1-1,ivar1:ivar2)= &
+            f(l1:l2,m1:m2,n1-3:n1-1,ivar1:ivar2)+ &
+            f(l1:l2,m1:m2,n2i:n2,ivar1:ivar2)
+! Folding the bottom ghost zones on the top
+        f(l1:l2,m1:m2,n2+1:n2+3,ivar1:ivar2)= &
+            f(l1:l2,m1:m2,n2+1:n2+3,ivar1:ivar2)+ &
+            f(l1:l2,m1:m2,n1:n1i,ivar1:ivar2)
+!        f(l1-3:l2+3,m1-3:m2+3,n1-3:n1-1,ivar1:ivar2)=0.0
+!        f(l1-3:l2+3,m1-3:m2+3,n2+1:n2+3,ivar1:ivar2)=0.0
+      endif
+!
+!  Then y.
+!
+      if (nygrid/=1) then
+        f(l1:l2,m1-3:m1-1,n1:n2,ivar1:ivar2)= &
+            f(l1:l2,m1-3:m1-1,n1:n2,ivar1:ivar2) + &
+            f(l1:l2,m2i:m2,n1:n2,ivar1:ivar2)
+        f(l1:l2,m2+1:m2+3,n1:n2,ivar1:ivar2)= &
+            f(l1:l2,m2+1:m2+3,n1:n2,ivar1:ivar2) + &
+            f(l1:l2,m1:m1i,n1:n2,ivar1:ivar2)
+      endif
+!
+!  Finally x.
+!
+      if (nxgrid/=1) then
+        f(l1-3:l1-1,m1:m2,n1:n2,ivar1:ivar2)= &
+            f(l1-3:l1-1,m1:m2,n1:n2,ivar1:ivar2) + &
+            f(l2i:l2,m1:m2,n1:n2,ivar1:ivar2)
+        f(l2+1:l2+3,m1:m2,n1:n2,ivar1:ivar2)= &
+            f(l2+1:l2+3,m1:m2,n1:n2,ivar1:ivar2) + &
+            f(l1:l1i,m1:m2,n1:n2,ivar1:ivar2)
+      endif
+!
+    endsubroutine reverse_fold_f_3points
+!*******************************************************************************
 endmodule GhostFold
