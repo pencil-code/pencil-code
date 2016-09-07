@@ -148,13 +148,6 @@ module PointMasses
       qvarname(nqvar+1)='imass'
       nqvar=nqvar+1
 !
-      !if (lcartesian_coords.and.lcartesian_evolution) then 
-      !  call warning("register_pointmasses",&
-      !       "lcartesian_coords and lcartesian_evolution:"//&
-      !       "overkill. Switching the latter to false.")
-      !  lcartesian_evolution=.false.
-      !endif
-!
 !  Check that the fq and dfq arrays are big enough.
 !
       if (nqvar > mqvar) then
@@ -164,11 +157,8 @@ module PointMasses
 !
       call fetch_npvar(npvar_aux)
       ivpx_cart = npvar_aux+1
-      !pvarname(npvar_aux+1)='ivpx_cart'
       ivpy_cart = npvar_aux+2
-      !pvarname(npvar_aux+1)='ivpy_cart'
       ivpz_cart = npvar_aux+3
-      !pvarname(npvar_aux+1)='ivpz_cart'
       npvar_aux=npvar_aux+3
       call return_npvar(npvar_aux)
 !
@@ -190,7 +180,6 @@ module PointMasses
 !
 !  Look for initialized masses.
 !
-      !nqpar_orig=0
       do ks=1,nqpar
         if (pmass(ks)/=0.0) then
           fq(ks,imass)=pmass(ks)
@@ -331,9 +320,6 @@ module PointMasses
         call fatal_error('initialize_pointmasses','')
       endif
 !
-      !if ((.not.linertial_frame).and.((.not.lcartesian_coords).or.nqpar>2))  &
-      !     call fatal_error('initialize_pointmasses','Fixed star only for Cartesian and nqpar=2')
-!
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_pointmasses
@@ -360,10 +346,6 @@ module PointMasses
         lpenc_diagnos(i_u2)=.true.
         lpenc_diagnos(i_rho)=.true.
       endif
-!
-      !if (any(idiag_torqext/=0) .or. any(idiag_torqint/=0)) then
-      !  lpenc_diagnos(i_rcyl_mn)=.true.
-      !endif
 !
       lpenc_diagnos(i_rcyl_mn)=.true.
       lpenc_diagnos(i_rhop)=.true.
@@ -838,7 +820,6 @@ module PointMasses
         call dxxq_dt_pointmasses
         call dvvq_dt_pointmasses(hill_radius_square)
 !
-        !if (.not.lcartesian_evolution) call correct_curvilinear
       endif
 !
       if (lparticles) then
@@ -897,31 +878,6 @@ module PointMasses
 !  center of the grid, reset it.
 !
 !  22-sep-06/wlad: coded
-!
-      if (lcartesian_coords) then
-!
-        !if (nxgrid/=1) dfq(:,ixq) = dfq(:,ixq) + fq(:,ivxq)
-        !if (nygrid/=1) dfq(:,iyq) = dfq(:,iyq) + fq(:,ivyq)
-        !if (nzgrid/=1) dfq(:,izq) = dfq(:,izq) + fq(:,ivzq)
-!
-      !else if (.not.lcartesian_evolution) then
-!
-!  If lcartesian_evolution is set, the evolution is done in update_position and update_velocity         
-!
-      !   if (lcylindrical_coords) then
-!
-      !    if (nxgrid/=1) dfq(:,ixq) = dfq(:,ixq) + fq(:,ivxq)
-      !    if (nygrid/=1) dfq(:,iyq) = dfq(:,iyq) + fq(:,ivyq)/max(fq(:,ixq),tini)
-      !    if (nzgrid/=1) dfq(:,izq) = dfq(:,izq) + fq(:,ivzq)
-
-      !  else if (lspherical_coords) then
-!
-      !    if (nxgrid/=1) dfq(:,ixq) = dfq(:,ixq) + fq(:,ivxq)
-      !    if (nygrid/=1) dfq(:,iyq) = dfq(:,iyq) + fq(:,ivyq)/ max(fq(:,ixq),tini)
-      !    if (nzgrid/=1) dfq(:,izq) = dfq(:,izq) + fq(:,ivzq)/(max(fq(:,ixq),tini)*sin(fq(:,iyq)))
-!
-      !  endif
-      endif
 !
       if (lreset_cm) call reset_center_of_mass
 !
@@ -1009,28 +965,8 @@ module PointMasses
 !
     endsubroutine dvvp_dt_dustparticles
 !************************************************************
-!    subroutine gravity_pointmasses(k,hill_radius_square,&
-!         lcallpointmass,fp_pt,dfp_pt,flag_pt)
-!!      
-!      real, dimension(nqpar) :: hill_radius_square
-!      logical, intent(in) :: lcallpointmass
-!      integer, intent(in) :: k
-!!
-!      real, dimension (mparray), optional :: fp_pt
-!      real, dimension (mpvar), optional :: dfp_pt
-!      logical, optional :: flag_pt
-!!
-!      if (lcallpointmass) then 
-!        call gravity_pointmasses(k,hill_radius_square,lcallpointmass)
-!      else
-!        call gravity_pointmasses(k,hill_radius_square,lcallpointmass,&
-!             fp_pt,dfp_pt,flag_pt)
-!      endif
-!!
-!      endsubroutine gravity_pointmasses
-!************************************************************
-      subroutine gravity_pointmasses(k,hill_radius_square,&
-           lcallpointmass,fp_pt,dfp_pt,flag_pt)
+    subroutine gravity_pointmasses(k,hill_radius_square,&
+         lcallpointmass,fp_pt,dfp_pt,flag_pt)
 !
 !  Subroutine that adds the gravity from all massive particles.
 !  Particle gravity has always to be added in Cartesian, for better
@@ -1131,21 +1067,12 @@ module PointMasses
 !  The main dxx_dt of particle_dust takes care of transforming the linear
 !  velocities to angular changes in position.
 !
-          !if (lcartesian_evolution) then 
           if (lcallpointmass) then 
-             !dfq_cart(k,:) =  dfq_cart(k,:) - Omega2_pm*evr_cart(1:3)
-             dfq_cart(k,:) = dfq_cart(k,:) - Omega2_pm*evr_cart(1:3)
+            dfq_cart(k,:) = dfq_cart(k,:) - Omega2_pm*evr_cart(1:3)
           else
-          !  dfp_cart(k,:) =  dfp_cart(k,:) - Omega2_pm*evr_cart(1:3)
-          !endif
-          !else
-            !if (lcallpointmass) then
-            !  dfq(k,ivxq:ivzq) = dfq(k,ivxq:ivzq) - Omega2_pm*evr_cart(1:3)
-            !else
-              dfp_pt(ivpx_cart:ivpz_cart) = &
-                   dfp_pt(ivpx_cart:ivpz_cart) - Omega2_pm*evr_cart(1:3)
-            endif
-          !endif
+            dfp_pt(ivpx_cart:ivpz_cart) = &
+                 dfp_pt(ivpx_cart:ivpz_cart) - Omega2_pm*evr_cart(1:3)
+          endif
 !
 !  Time-step constraint from N-body particles. We use both the criterion
 !  that the distance to the N-body particle must not change too much in
@@ -1190,41 +1117,27 @@ module PointMasses
         z1=e3 ; z2=e30
       elseif (lcylindrical_coords) then
 !
-        !if (levolve_pmass_cartesian) then 
-          x1=e1*cos(e2)
-          y1=e1*sin(e2)
-          z1=e3
+        x1=e1*cos(e2)
+        y1=e1*sin(e2)
+        z1=e3
 !
-          x2=e10*cos(e20)
-          y2=e10*sin(e20)
-          z2=e30
-        !else
-        !  evr_output(1)=e1 - e10*cos(e2-e20)
-        !  evr_output(2)=e10*sin(e2-e20)
-        !  evr_output(3)=e3 - e30
-        !endif
+        x2=e10*cos(e20)
+        y2=e10*sin(e20)
+        z2=e30
 !
       elseif (lspherical_coords) then
-        !if (levolve_pmass_cartesian) then   
-          x1=e1*sin(e2)*cos(e3)
-          y1=e1*sin(e2)*sin(e3)
-          z1=e1*cos(e2)
+        x1=e1*sin(e2)*cos(e3)
+        y1=e1*sin(e2)*sin(e3)
+        z1=e1*cos(e2)
 !
-          x2=e10*sin(e20)*cos(e30)
-          y2=e10*sin(e20)*sin(e30)
-          z2=e10*cos(e20)
-        !else
-        !  evr_output(1) = e1 - e10*sin(e2)*sin(e20)*cos(e3-e30)
-        !  evr_output(2) = e10*(sin(e2)*cos(e20) - cos(e2)*sin(e20)*cos(e3-e30))
-        !  evr_output(3) = e10*sin(e20)*sin(e3-e30)
-        !endif
+        x2=e10*sin(e20)*cos(e30)
+        y2=e10*sin(e20)*sin(e30)
+        z2=e10*cos(e20)
       endif
 !
-      !if (lcartesian_coords.or.levolve_pmass_cartesian) then 
-        evr_output(1)=x1-x2
-        evr_output(2)=y1-y2
-        evr_output(3)=z1-z2
-      !endif
+      evr_output(1)=x1-x2
+      evr_output(2)=y1-y2
+      evr_output(3)=z1-z2
 !
     endsubroutine get_evr
 !**********************************************************
@@ -1978,17 +1891,6 @@ module PointMasses
         endif
       endif
 !
-      if (lparticles) then
-        !call fetch_nparloc(np_aux)
-        !if (np_aux/=0) then
-        !   if (itsub==1) then
-        !     dfp_cart(1:np_aux,:)=0.0
-        !   else
-        !     dfp_cart(1:np_aux,:)=alpha_ts(itsub)*dfp_cart(1:np_aux,:)
-        !   endif
-        !endif
-      endif
-      
       call keep_compiler_quiet(f)
 !      
     endsubroutine pointmasses_timestep_first
@@ -2008,34 +1910,25 @@ module PointMasses
 !
       real, dimension (mpar_loc,mparray) :: fp_aux
       real, dimension (mpar_loc,mpvar) :: dfp_aux
-      !real, dimension (:), allocatable :: cu
       integer :: np_aux,k
-      !logical, dimension(mpar_loc) :: flag
 !
       if (lroot) then 
-         !if (lcartesian_evolution) then
-         !if (.false.) then
-          do ks=1,nqpar
-            xx_polar    = fq(ks,ixq:izq)
-            vv_polar    = fq(ks,ivxq:ivzq)
-            xxdot_polar = dfq(ks,ixq:izq)
-            vvdot_polar = dfq(ks,ivxq:ivzq)
+        do ks=1,nqpar
+          xx_polar    = fq(ks,ixq:izq)
+          vv_polar    = fq(ks,ivxq:ivzq)
+          xxdot_polar = dfq(ks,ixq:izq)
+          vvdot_polar = dfq(ks,ivxq:ivzq)
 !            
-            aa_nbody_cart=dfq_cart(ks,:)
-            call advance_particles_in_cartesian(xx_polar,vv_polar,xxdot_polar,vvdot_polar,aa_nbody_cart)
-            fq(ks,ixq:izq)=xx_polar
-            fq(ks,ivxq:ivzq)=vv_polar
-            dfq(ks,ixq:izq)=xxdot_polar
-          enddo
-        !else
-          !fq(1:nqpar,1:mqvar) = fq(1:nqpar,1:mqvar) + dt_beta_ts(itsub)*dfq(1:nqpar,1:mqvar)
-        !endif
+          aa_nbody_cart=dfq_cart(ks,:)
+          call advance_particles_in_cartesian(xx_polar,vv_polar,xxdot_polar,vvdot_polar,aa_nbody_cart)
+          fq(ks,ixq:izq)=xx_polar
+          fq(ks,ivxq:ivzq)=vv_polar
+          dfq(ks,ixq:izq)=xxdot_polar
+        enddo
       endif
       call mpibcast_real(fq,(/nqpar,mqarray/))
 !
       if (lparticles) then
-      !if (.false.) then
-!
         call fetch_nparloc(np_aux)
         if (np_aux/=0) then
           call fetch_fp_array(fp_aux,dfp_aux,&
@@ -2048,22 +1941,11 @@ module PointMasses
             vvdot_polar = dfp_aux(k,index%ivxw:index%ivzw)
             aa_nbody_cart=dfp_aux(k,ivpx_cart:ivpz_cart)
 !            
-            !print*,'b xx',fp_aux(k,index%ixw:index%izw)
-            !print*,'b vv',fp_aux(k,index%ivxw:index%ivzw)
-            !print*,'b dxx',dfp_aux(k,index%ixw:index%izw)
-            !print*,'b dvv',dfp_aux(k,index%ivxw:index%ivzw)
             call advance_particles_in_cartesian(xx_polar,vv_polar,xxdot_polar,vvdot_polar,aa_nbody_cart)
 !
-            !print*,''
             fp_aux(k,index%ixw:index%izw)=xx_polar
             fp_aux(k,index%ivxw:index%ivzw)=vv_polar
             dfp_aux(k,index%ixw:index%izw)=xxdot_polar
-
-            !print*,'a xx',fp_aux(k,index%ixw:index%izw)
-            !print*,'a vv',fp_aux(k,index%ivxw:index%ivzw)
-            !print*,'a dxx',dfp_aux(k,index%ixw:index%izw)
-            !print*,'a dvv',dfp_aux(k,index%ivxw:index%ivzw)
-!
           enddo
           call return_fp_array(fp_aux,dfp_aux)
         endif
@@ -2073,46 +1955,6 @@ module PointMasses
       call keep_compiler_quiet(f)
 !      
     endsubroutine pointmasses_timestep_second
-!***********************************************************************
-!    subroutine correct_curvilinear
-!!
-!!  Curvilinear corrections to acceleration only.
-!!  Corrections to velocity were already taken into account
-!!  in the dxx_dt of particles_dust.f90
-!!
-!!  In the case that the N-body code is used, the update in polar grids
-!!  in done by transforming the variables first to Cartesian, to achieve a
-!!  better conservation of the Jacobi constant, and this code is not called.
-!!
-!!  15-sep-07/wlad: coded
-!!
-!      real :: rad,raddot,phidot,thtdot,sintht,costht
-!      integer :: k
-!!
-!      do k=1,nqpar
-!!
-!!  Correct acceleration for curvilinear coordinates.
-!!
-!        if (lcylindrical_coords) then
-!          rad=fq(k,ixq);raddot=fq(k,ivxq);phidot=fq(k,ivyq)/max(rad,tini)
-!          dfq(k,ivxq) = dfq(k,ivxq) + rad*phidot**2
-!          dfq(k,ivyq) = dfq(k,ivyq) - 2*raddot*phidot
-!        elseif (lspherical_coords) then
-!          rad=fq(k,ixq)
-!          sintht=sin(fq(k,iyq));costht=cos(fq(k,iyq))
-!          raddot=fq(k,ivxq);thtdot=fq(k,ivyq)/max(rad,tini)
-!          phidot=fq(k,ivzq)/(max(rad,tini)*sintht)
-!!
-!          dfq(k,ivxq) = dfq(k,ivxq) &
-!               + rad*(thtdot**2 + (sintht*phidot)**2)
-!          dfq(k,ivyq) = dfq(k,ivyq) &
-!               - 2*raddot*thtdot + rad*sintht*costht*phidot**2
-!          dfq(k,ivzq) = dfq(k,ivzq) &
-!               - 2*phidot*(sintht*raddot + rad*costht*thtdot)
-!        endif
-!      enddo
-!!
-!    endsubroutine correct_curvilinear
 !***********************************************************************
     subroutine advance_particles_in_cartesian(xx_polar,vv_polar,xxdot_polar,vvdot_polar,aa_nbody_cart)
 !
