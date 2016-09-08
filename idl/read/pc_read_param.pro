@@ -97,6 +97,17 @@ COMPILE_OPT IDL2,HIDDEN
     line = result[pos]
     EOL = stregex (line, ',? *\$ *$')
     if (EOL gt 0) then begin
+      if strpos(line,'replicate') ge 0 then begin
+        startind = strpos(line,"'")
+        stopind  = strpos(line,"'",/REVERSE_SEARCH)
+;print, 'startind, stopind=', startind, stopind
+        line = strmid(line, 0, startind-1) + ' ' + strmid(line, startind+1,stopind-startind-1)
+        prpos = strpos(line,"''")
+        if prpos ge 0 then line = strmid(line,0,prpos+1)+strmid(line,prpos+2)
+        prpos = strpos(line,"''")
+        if prpos ge 0 then line = strmid(line,0,prpos+1)+strmid(line,prpos+2)
+;print, 'line=',line
+      endif
       code = 'struct = {'+strmid (line, 0, EOL)+'}'
       if (not execute (code)) then message, 'ERROR: while converting ('+code+').'
       object = create_struct (object, struct)
