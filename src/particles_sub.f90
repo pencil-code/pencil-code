@@ -24,6 +24,7 @@ module Particles_sub
   public :: find_interpolation_indeces, get_gas_density
   public :: precalc_weights, find_weight_array_dims
   public :: dragforce_equi_multispecies, diffuse_interaction
+  public :: diffuse_df_interaction
 !
   interface get_rhopswarm
     module procedure get_rhopswarm_ineargrid
@@ -1430,31 +1431,20 @@ module Particles_sub
 !
       real, intent(inout), dimension(mx,my,mz,mfarray) :: f
       integer, intent(in) :: aux_index
-      character(len=30) :: formatstring
       logical, intent(in) :: ldiff,lexp
       real :: rdiffconst
-!
-!
-!
-      formatstring = '(A10,  (E10.3,","))'
-      write(formatstring(6:7),'(I2)') nxgrid
 !
       if (ldensity_nolog) then
 !
 !  JONAS this needs diffusing and transporting
 !
         call fatal_error('particles_sub','not yet implemented for ldensity_nolog')
-!        df(l1:l2,m1:m2,n1:n2,target_index) =  df(l1:l2,m1:m2,n1:n2,target_index) +  &
-!            f(l1:l2,m1:m2,n1:n2,aux_index)
       else
         if (ldiff) then
           call diffuse_domain_scalar(f(:,:,:,aux_index),lexp,rdiffconst)
         else
           call smooth_kernel_domain(f(:,:,:,aux_index),lexp)
         endif
-! should be ilnrho
-!        df(l1:l2,m1:m2,n1:n2,target_index) =  df(l1:l2,m1:m2,n1:n2,target_index) +  &
-!            (f(l1:l2,m1:m2,n1:n2,aux_index)) 
       endif
 !
     endsubroutine diffuse_interaction
@@ -1648,4 +1638,37 @@ module Particles_sub
 !
     endsubroutine diffuse_domain_scalar
 ! ***********************************************************************
+    subroutine diffuse_df_interaction(df,aux_index,ldiff,lexp,rdiffconst)
+!
+      real, intent(inout), dimension(mx,my,mz,mvar) :: df
+      integer, intent(in) :: aux_index
+      character(len=30) :: formatstring
+      logical, intent(in) :: ldiff,lexp
+      real :: rdiffconst
+!
+!
+!
+      formatstring = '(A10,  (E10.3,","))'
+      write(formatstring(6:7),'(I2)') nxgrid
+!
+      if (ldensity_nolog) then
+!
+!  JONAS this needs diffusing and transporting
+!
+        call fatal_error('particles_sub','not yet implemented for ldensity_nolog')
+!        df(l1:l2,m1:m2,n1:n2,target_index) =  df(l1:l2,m1:m2,n1:n2,target_index) +  &
+!            f(l1:l2,m1:m2,n1:n2,aux_index)
+      else
+        if (ldiff) then
+          call diffuse_domain_scalar(df(:,:,:,aux_index),lexp,rdiffconst)
+        else
+          call smooth_kernel_domain(df(:,:,:,aux_index),lexp)
+        endif
+! should be ilnrho
+!        df(l1:l2,m1:m2,n1:n2,target_index) =  df(l1:l2,m1:m2,n1:n2,target_index) +  &
+!            (f(l1:l2,m1:m2,n1:n2,aux_index)) 
+      endif
+!
+    endsubroutine diffuse_df_interaction
+! *********************************************************************
 endmodule Particles_sub

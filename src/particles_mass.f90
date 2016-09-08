@@ -33,6 +33,7 @@ module Particles_mass
   logical :: lconstant_mass_w_chem=.false.
   logical :: ldiffuse_backreac=.false., ldiffm=.false.
   logical :: lbdry_test = .false.
+  logical :: ldiff_domain_dflnrho = .false.
   integer :: idmp=0
   real :: mass_const=0.0, dmpdt=1e-3
   real :: dmpdt_save = 0.0
@@ -49,7 +50,7 @@ module Particles_mass
   namelist /particles_mass_run_pars/ lpart_mass_backreac, dmpdt, &
       lpart_mass_momentum_backreac, lconstant_mass_w_chem, &
       ldiffuse_backreac,ldiffm,diffmult,lbdry_test,rdiffconstm, &
-      ndiffstepm
+      ndiffstepm, ldiff_domain_dflnrho
 !
   integer :: idiag_mpm=0
   integer :: idiag_dmpm=0
@@ -228,6 +229,7 @@ module Particles_mass
       if (lpart_mass_backreac .and. ldiffuse_backreac) then
         if (ldensity_nolog) call fatal_error('particles_mass', &
             'not implemented for ldensity_nolog')
+!
         do i = 1,ndiffstepm
           if (lbdry_test) then
             call boundconds_x(f,idmp,idmp)
@@ -242,8 +244,22 @@ module Particles_mass
           call diffuse_interaction(f,idmp,ldiffm,.False.,rdiffconstm)
 !
         enddo
+!
         df(l1:l2,m1:m2,n1:n2,ilnrho) =  df(l1:l2,m1:m2,n1:n2,ilnrho) + &
             f(l1:l2,m1:m2,n1:n2,idmp)
+!
+        if (ldiff_domain_dflnrho) then
+          call diffuse_df_interaction(df,ilnrho,ldiffm,.False.,rdiffconstm*.2)
+        endif
+!
+!        if (ldiagnos) then
+!          print*, 'dens particle influence hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh'
+!          write(*,'(16(E10.3,","))') f(l1:l2,m1:m2,n1:n2,idmp)
+!          print*, 'dens df array-----------------------------------------'
+!          write(*,'(16(E10.3,","))') df(l1:l2,m1:m2,n1:n2,ilnrho)
+!          print*, 'dens f array!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
+!          write(*,'(16(E10.3,","))') exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+!        endif
       endif
       ! Diagnostic output
       if (ldiagnos) then

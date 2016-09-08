@@ -10,6 +10,7 @@ module GhostFold
   private
 !
   public :: fold_df, fold_f, fold_df_3points
+  public :: reverse_fold_f_3points, reverse_fold_df_3points
 !
   contains
 !***********************************************************************
@@ -51,12 +52,22 @@ module GhostFold
 !*******************************************************************************
 subroutine reverse_fold_f_3points(f,ivar1,ivar2)
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mfarray) :: f
       integer :: ivar1, ivar2
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(ivar1,ivar2)
 !
     endsubroutine reverse_fold_f_3points
+!***********************************************************************
+subroutine reverse_fold_df_3points(f,ivar1,ivar2)
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      integer :: ivar1, ivar2
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(ivar1,ivar2)
+!
+    endsubroutine reverse_fold_df_3points
 !***********************************************************************
 endmodule GhostFold
