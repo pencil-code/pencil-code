@@ -97,7 +97,8 @@ TypeX = SIZE(X)
 IF NOT keyword_set( Maxmoment ) THEN Maxmoment = 4
 
 IF Maxmoment gt 1 and N_ELEMENTS(x) lt 2 THEN $ ;Check length.
-  MESSAGE, "X array must contain 2 OR more elements."
+  ;the warning is a bit awkward here, so better skip it.
+  ;MESSAGE, "X array must contain 2 OR more elements."
 
   ;If the DOUBLE keyword is not set then the internal precision and
   ;result are identical to the type of input.
