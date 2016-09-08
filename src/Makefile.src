@@ -158,7 +158,8 @@ CFLAGS_DOUBLE = -DDOUBLE_PRECISION
 # Default linker flags.
 #
 LDFLAGS=-ldl
-DLLFLAGS=
+DLL_FFLAGS=-fPIC
+DLL_LDFLAGS=-shared
 #
 # Overwrite settings that are local to each run directory.
 #
@@ -346,6 +347,7 @@ else
   YINYANG_MPI = noyinyang_mpi
 endif
 SPECIAL_DEPS =
+SPECIAL_MULT =
 ifeq ($(SPECIAL),nospecial)
   SPECIAL_MODULES =
 else
@@ -356,11 +358,13 @@ special_message:
 	exit 1
   else
     SPECIAL_MODULES := $(SPECIAL)
-    SPECIAL_DEPS = special_preps
-    ifneq ($(shell echo $(SPECIAL) | wc -w),1)
-      SPECIAL_DEPS += special.dll
-      SPECIAL = special
-    endif
+#    SPECIAL_DEPS = special_preps
+#    ifneq ($(shell echo $(SPECIAL) | wc -w),1)
+#      LDFLAGS += -dynamic
+#      SPECIAL_DEPS += special.dll
+#      SPECIAL = special
+#      SPECIAL_MULT = 1
+#    endif
   endif
 endif
 #ifdef ENTROPY
@@ -410,14 +414,8 @@ EQU_SRC=equ.f90
 FARRAY_OBJ=farray.o
 FARRAY_SRC=farray.f90
 #
-FILE_IO_OBJ=$(FILE_IO).o
-FILE_IO_SRC=$(FILE_IO).f90
-#
 FILTER_OBJ=filter.o
 FILTER_SRC=filter.f90
-#
-FIXED_POINT_OBJ=$(FIXED_POINT).o
-FIXED_POINT_SRC=$(FIXED_POINT).f90
 #
 GENERAL_OBJ=general.o
 GENERAL_SRC=general.f90
@@ -451,9 +449,6 @@ SHARED_VARIABLES_SRC=shared_variables.f90
 #
 SNAPSHOT_OBJ=snapshot.o
 SNAPSHOT_SRC=snapshot.f90
-#
-STREAMLINES_OBJ=$(STREAMLINES).o
-STREAMLINES_SRC=$(STREAMLINES).f90
 #
 SUB_OBJ=sub.o
 SUB_SRC=sub.f90
@@ -508,6 +503,12 @@ ENERGY_SRC=$(ENERGY).f90
 #
 EOS_OBJ=$(EOS).o
 EOS_SRC=$(EOS).f90
+#
+FILE_IO_OBJ=$(FILE_IO).o
+FILE_IO_SRC=$(FILE_IO).f90
+#
+FIXED_POINT_OBJ=$(FIXED_POINT).o
+FIXED_POINT_SRC=$(FIXED_POINT).f90
 #
 FORCING_OBJ=$(FORCING).o
 FORCING_SRC=$(FORCING).f90
@@ -714,6 +715,9 @@ SOLID_CELLS_SRC=$(SOLID_CELLS).f90
 #
 SPECIAL_OBJ=$(SPECIAL).o
 SPECIAL_SRC=$(SPECIAL).f90
+#
+STREAMLINES_OBJ=$(STREAMLINES).o
+STREAMLINES_SRC=$(STREAMLINES).f90
 #
 STRUCT_FUNC_OBJ=$(STRUCT_FUNC).o
 STRUCT_FUNC_SRC=$(STRUCT_FUNC).f90
@@ -1292,7 +1296,6 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##
 #FC=mpif90 #(norlx51)
 #FFLAGS=-O1 -finit-real=nan -fno-underscoring #(norlx51)
-#DLLFLAGS=-shared -Xlinker --unresolved-symbols=ignore-all #(norlx51)
 #CC=mpicc #(norlx51)
 #CFLAGS=-O1 #(norlx51)
 #LD_MPI= #(norlx51)
@@ -2236,7 +2239,10 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 LD=$(FC)
 export HDF5_FLINKER:=$(FC)
 #
-#  Generic rules.
+#  RULES SECTION
+#
+#
+#  Generic and pattern rules.
 #
 .SUFFIXES:			# get rid of that annoying Modula rule
 .SUFFIXES: .f .f90 .c .o .inc .h .dot .ps .svg
@@ -2245,8 +2251,17 @@ export HDF5_FLINKER:=$(FC)
 	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F77FLAGS) -o $*.o -c $*.f
 .f90.o:
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o $*.o -c $*.f90
+special/%.o : special/%.f90
+ifeq ($(SPECIAL_MULT),1)
+	@$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) $(DLL_FFLAGS) -o special/$*.o -c special/$*.f90
+else
+	@$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o special/$*.o -c special/$*.f90
+endif
 .c.o:
 	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) $(CFLAGS_FOURIER) $(CSTD) -o $*.o -c $*.c
+#
+#  Explicitly targeted rules.
+#
 #
 #  Default target (start.x and run.x are compiled in "code").
 #
@@ -2257,7 +2272,7 @@ default_to_be: Makefile cparam.inc code buildinfo
 #  Please use alphabetical order.
 #
 preprocess=$(BORDER_PROFILES_SRC) $(CHEMISTRY_SRC) $(CHIRAL_SRC) $(COSMICRAY_SRC) $(COSMICRAYFLUX_SRC) $(DENSITY_SRC) $(DERIV_SRC) $(DETONATE_SRC) $(DUSTDENSITY_SRC) $(DUSTVELOCITY_SRC) $(ENERGY_SRC) $(EOS_SRC) $(FIXED_POINT_SRC) $(FORCING_SRC) $(GRAVITY_SRC) $(GRID_SRC) $(HEATFLUX_SRC) $(HYDRO_SRC) $(HYPERRESI_STRICT_SRC) $(HYPERVISC_STRICT_SRC) $(IMPLICIT_DIFFUSION_SRC) $(IMPLICIT_PHYSICS_SRC) $(INITIAL_CONDITION_SRC) $(INTERSTELLAR_SRC) $(LORENZ_GAUGE_SRC) $(MAGNETIC_SRC) $(MAGNETIC_MEANFIELD_SRC) $(MAGNETIC_MEANFIELD_DEMFDT_SRC) $(NEUTRALDENSITY_SRC) $(NEUTRALVELOCITY_SRC) $(NSCBC_SRC) $(OPACITY_SRC) $(PARTICLES_SRC) $(PARTICLES_ADAPTATION_SRC) $(PARTICLES_COAGULATION_SRC) $(PARTICLES_COLLISIONS_SRC) $(PARTICLES_MAP_SRC) $(PARTICLES_DENSITY_SRC)  $(PARTICLES_MASS_SRC) $(PARTICLES_NUMBER_SRC) $(PARTICLES_RADIUS_SRC) $(PARTICLES_POTENTIAL_SRC) $(PARTICLES_GRAD_SRC) $(PARTICLES_SELFGRAVITY_SRC) $(PARTICLES_SINK_SRC) $(PARTICLES_DRAG_SRC) $(PARTICLES_SPIN_SRC) $(PARTICLES_STALKER_SRC) $(PARTICLES_LYAPUNOV_SRC) $(PARTICLES_STIRRING_SRC) $(PARTICLES_DIAGNOS_DV_SRC) $(PARTICLES_DIAGNOS_STATE_SRC) $(PARTICLES_TEMPERATURE_SRC) $(PARTICLES_ADSORBED_SRC) $(PARTICLES_SURFSPEC_SRC) $(PARTICLES_CHEMISTRY_SRC) $(POINTMASSES_SRC) $(POISSON_SRC) $(POLYMER_SRC) $(POWER_SRC) $(PSCALAR_SRC) $(RADIATION_SRC) $(SELFGRAVITY_SRC) $(SHEAR_SRC) $(SHOCK_SRC) $(SIGNAL_HANDLING_SRC) $(SOLID_CELLS_SRC) $(SPECIAL_SRC) $(SUPERSAT_SRC) $(STREAMLINES_SRC) $(TESTFIELD_GENERAL_SRC) $(TESTFIELD_SRC) $(TESTFLOW_SRC) $(TESTSCALAR_SRC) $(VISCOSITY_SRC) cparam.local
-ifneq ($(shell echo $(SPECIAL_MODULES) | wc -w),1)
+ifeq ($(SPECIAL_MULT),1)
   preprocess += $(SPECIAL_MODULES:=.f90)
 endif
 #
@@ -2282,28 +2297,26 @@ run=$(physics) $(technical) $(TIMESTEP).o equ.o pencil_check.o
 #
 #  Rules for compiling start.o, start.x, run.o, run.x.
 #
-start.o: $(SPECIAL_DEPS) $(start) Makefile.local
-start.x: start.o
+start.o: $(start) Makefile.local
+start.x: start.o | $(SPECIAL_DEPS)
 	$(LD) $(start) start.o $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x $(LDFLAGS)
 #
-run.o: $(SPECIAL_DEPS) $(run) Makefile.local
-run.x: run.o
+run.o: $(run) Makefile.local
+run.x: run.o | $(SPECIAL_DEPS)
 	$(LD) $(run) run.o $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x $(LDFLAGS)
 special_preps:
-ifeq ($(shell echo $(SPECIAL_MODULES) | wc -w),1)
-	@#echo $(SPECIAL_MODULES).f90
+ifneq ($(SPECIAL_MULT),1)
 	@sed -e 's/^\(module  *\)[a-zA-Z0-9_]* */\1Special/' -e 's/^\( *endmodule  *\)[a-zA-Z0-9_]* *$$/\1Special/' -e"s/[a-zA-Z0-9_]*\.inc/special_dummies.inc/" < $(SPECIAL_MODULES).f90 > tmp
-	@if ! cmp tmp $(SPECIAL_MODULES).f90; then mv -f tmp $(PENCIL_HOME)/src/$(SPECIAL_MODULES).f90; fi
+	@if ! cmp -s tmp $(SPECIAL_MODULES).f90; then mv -f tmp $(PENCIL_HOME)/src/$(SPECIAL_MODULES).f90; fi
 else
-	@#echo $(SPECIAL_MODULES)
 	@list="$(subst special/,,$(SPECIAL_MODULES))";sed -e"s/special_modules_list *=.*\'/special_modules_list = \'$${list}\'/" < special.f90 > tmp; mv -f tmp $(PENCIL_HOME)/src/special.f90
 	@for file in $(SPECIAL_MODULES); do sed -e"s/^\(module  *\)[Ss]pecial/\1$${file#*/}/" \
 	                                        -e"s/^\( *endmodule  *\)[Ss]pecial/\1$${file#*/}/" \
 						-e"s/special_dummies\.inc/$${file#*/}_dummies.inc/" \
-					 < $$file.f90 > tmp; mv -f tmp $(PENCIL_HOME)/src/$$file.f90; done
+					 < $$file.f90 > tmp; if ! cmp -s tmp $(PENCIL_HOME)/src/$$file.f90; then mv -f tmp $(PENCIL_HOME)/src/$$file.f90; fi ; done
 endif
 special.dll: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)
-	$(LD) $(SPECIAL_MODULES:=.o) $(DLLFLAGS) -o special.dll $(LDFLAGS)
+	$(LD) $(SPECIAL_MODULES:=.o) $(DLL_LDFLAGS) -o special.dll
 #
 #  Rules for combine_videofiles.x, read_videofiles.x, read_vectorfiles.x.
 #
@@ -2465,7 +2478,7 @@ cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o cparam.o -c cparam.f90
 #
 special_dummies.inc:  nospecial.f90 $(SPECIAL_MODULES:=.f90) Makefile.local
-ifeq ($(shell echo $(SPECIAL_MODULES) | wc -w),1)
+ifneq ($(SPECIAL_MULT),1)
 	scripts/mkdummyinc -d nospecial.f90 -s $(SPECIAL).f90 > special_dummies.inc
 else
 	@for file in $(SPECIAL_MODULES); do echo "$$file"_dummies.inc; scripts/mkdummyinc -d nospecial.f90 -s "$$file".f90 > $${file#*/}_dummies.inc; done
