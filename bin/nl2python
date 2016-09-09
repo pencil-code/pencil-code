@@ -25,7 +25,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   -h
 #   --help                Show usage overview
 #   -c <class>
-#   --classname=<class>   Name the Python class <class> (default is `Params')
+#   --classname=<class>   Name the Python class <class> (default is 'Params')
 #   -d
 #   --double              Mark floating-point values as double precision
 #   -m
@@ -46,11 +46,11 @@ use Pencil::Util;
 Pencil::Util::use_pencil_perl_modules('Fortran::F90Namelist') or die;
 
 use Getopt::Long;
-# Allow for `-Plp' as equivalent to `-P lp' etc:
+# Allow for '-Plp' as equivalent to '-P lp' etc:
 Getopt::Long::config("bundling");
 
 my (%opts);                     # Variables written by GetOptions
-my $debug=0;                    # Activate with (undocumented) `--debug' option
+my $debug=0;                    # Activate with (undocumented) '--debug' option
 my $doll='\$';                  # Need this to trick CVS
 
 ## Process command line
@@ -67,7 +67,7 @@ GetOptions(\%opts,
 if ($opts{'debug'}) { $debug = 1 } else { $debug = 0 }
 if ($debug) {
     printopts(\%opts);
-    print "\@ARGV = `@ARGV'\n";
+    print "\@ARGV = '@ARGV'\n";
 }
 
 if ($opts{'h'} || $opts{'help'})    { die usage();   }
@@ -120,7 +120,7 @@ sub printopts {
     my $optsref = shift;
     my %opts = %$optsref;
     foreach my $opt (keys(%opts)) {
-        print STDERR "\$opts{$opt} = `$opts{$opt}'\n";
+        print STDERR "\$opts{$opt} = '$opts{$opt}'\n";
     }
 }
 # ---------------------------------------------------------------------- #
@@ -131,9 +131,9 @@ sub usage {
     local $/ = '';              # Read paragraphs
     open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
     while (<FILE>) {
-        # Paragraph _must_ contain `Description:' or `Usage:'
+        # Paragraph _must_ contain 'Description:' or 'Usage:'
         next unless /^\s*\#\s*(Description|Usage):/m;
-        # Drop `Author:', etc. (anything before `Description:' or `Usage:')
+        # Drop 'Author:', etc. (anything before 'Description:' or 'Usage:')
         s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;
         # Don't print comment sign:
         s/^\s*# ?//mg;
