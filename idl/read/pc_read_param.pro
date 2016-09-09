@@ -79,8 +79,8 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; If double precision, force input to be doubles.
 ;
-  nl2idl_d_opt = ''
-  if (data_type eq 'double') then nl2idl_d_opt = '-d'
+  nl2idl_d_opt = '--minimize'
+  if (data_type eq 'double') then nl2idl_d_opt += ' -d'
 ;
 ; Read the parameter namelist file.
 ;
@@ -108,7 +108,18 @@ COMPILE_OPT IDL2,HIDDEN
         if prpos ge 0 then line = strmid(line,0,prpos+1)+strmid(line,prpos+2)
 ;print, 'line=',line
       endif
-      code = 'struct = {'+strmid (line, 0, EOL)+'}'
+      if strlen(line) gt 500 then begin
+        startind=strpos(line,'[')+1
+        if startind gt 0 then begin
+          stopind=strpos(line,']')-1
+          if strpos(line,'L') ge 0 then $
+            tmparr=fix(strsplit(strmid(line,startind,stopind-startind+1),',',/EXTRACT)) $
+          else $
+            tmparr=float(strsplit(strmid(line,startind,stopind-startind+1),',',/EXTRACT))
+          code = 'struct = {'+strmid (line, 0, startind-1)+' tmparr}'
+        endif
+      endif else $
+        code = 'struct = {'+strmid (line, 0, EOL)+'}'
       if (not execute (code)) then message, 'ERROR: while converting ('+code+').'
       object = create_struct (object, struct)
     end
