@@ -98,6 +98,9 @@ COMPILE_OPT IDL2,HIDDEN
     EOL = stregex (line, ',? *\$ *$')
     if (EOL gt 0) then begin
       if strpos(line,'replicate') ge 0 then begin
+;
+; This block dispensable if replicate is already inserted by nl2idl.
+;
         startind = strpos(line,"'")
         stopind  = strpos(line,"'",/REVERSE_SEARCH)
 ;print, 'startind, stopind=', startind, stopind
@@ -108,18 +111,39 @@ COMPILE_OPT IDL2,HIDDEN
         if prpos ge 0 then line = strmid(line,0,prpos+1)+strmid(line,prpos+2)
 ;print, 'line=',line
       endif
+;
+;  For long lines which would turn into (too) long command strings:
+;  store the data contents in a temporary array tmparr and use its name in the 
+;  command string.
+;
+      ok=0
       if strlen(line) gt 500 then begin
         startind=strpos(line,'[')+1
-        if startind gt 0 then begin
+        if startind gt 0 then begin 
+          ok=1
           stopind=strpos(line,']')-1
-          if strpos(line,'L') ge 0 then $
-            tmparr=fix(strsplit(strmid(line,startind,stopind-startind+1),',',/EXTRACT)) $
-          else $
-            tmparr=float(strsplit(strmid(line,startind,stopind-startind+1),',',/EXTRACT))
+          if strpos(line,"'") ge 0 then $
+            tmparr=strsplit(strmid(line,startind,stopind-startind+1),',',/EXTRACT) $
+          else if strpos(line,"(") ge 0 then $
+;
+;  Creating of tmparr missing for complex data!
+;
+            ok=0 $
+          else if strpos(line,'L') ge 0 then $
+            tmparr=long(strsplit(strmid(line,startind,stopind-startind+1),',',/EXTRACT)) $
+          else if strpos(line,'.') ge 0 then begin
+            if strpos(line,'D') ge 0 then $
+              tmparr=double(strsplit(strmid(line,startind,stopind-startind+1),',',/EXTRACT)) $
+            else $
+              tmparr=float(strsplit(strmid(line,startind,stopind-startind+1),',',/EXTRACT))
+          endif else $
+            tmparr=fix(strsplit(strmid(line,startind,stopind-startind+1),',',/EXTRACT))
+            
           code = 'struct = {'+strmid (line, 0, startind-1)+' tmparr}'
         endif
-      endif else $
-        code = 'struct = {'+strmid (line, 0, EOL)+'}'
+      endif 
+      if not ok then code = 'struct = {'+strmid (line, 0, EOL)+'}'
+
       if (not execute (code)) then message, 'ERROR: while converting ('+code+').'
       object = create_struct (object, struct)
     end
