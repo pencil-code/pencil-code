@@ -126,6 +126,7 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: deltaT
+      integer :: nn1
 !
 !  Amplitude of fluctuation
 !
@@ -155,10 +156,11 @@ module InitialCondition
 !  Add to that the temperature gradient
 !
       if (.not.lsplit_temperature) then 
-         deltaT=(Tupp-Tbot)/(n2-n1)
+         deltaT=(Tupp-Tbot)/(nzgrid-1)
          do n=n1,n2
+            nn1=(n-n1) + ipz*nz
             do m=m1,m2
-               f(l1:l2,m,n,iTT) = f(l1:l2,m,n,iTT) + Tbot + (n-n1)*deltaT
+               f(l1:l2,m,n,iTT) = f(l1:l2,m,n,iTT) + Tbot + nn1*deltaT
             enddo
          enddo
       endif
