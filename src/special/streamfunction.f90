@@ -20,6 +20,7 @@ module Special
   use General, only: keep_compiler_quiet
   use Messages, only: svn_id, fatal_error
   use Deriv
+  use Mpicomm
 !
   implicit none
 !
@@ -71,7 +72,7 @@ module Special
   type (InternalPencils) :: q
 !
   character (len=labellen) :: initpsi='nothing'
-  character (len=labellen) :: iviscosity='Newtonian'
+  character (len=labellen) :: iconv_viscosity='Newtonian'
   character (len=labellen) :: iorder_sor_solver='high_order'
 !
   logical :: lprint_residual=.false.,ltidal_heating=.true.
@@ -85,13 +86,13 @@ module Special
 !
   namelist /special_init_pars/ amplpsi,alpha_sor,lprint_residual,&
        tolerance,maxit,gravity_z,rho0_bq,alpha,kappa,eta_0,&
-       iviscosity,Avisc,Bvisc,Cvisc,&
+       iconv_viscosity,Avisc,Bvisc,Cvisc,&
        Tbot,Tupp,Ra,iorder_sor_solver,lsave_residual,&
        kx_TT,kz_TT,ampltt,initpsi
 !
   namelist /special_run_pars/ amplpsi,alpha_sor,Avisc,lprint_residual,&
        tolerance,maxit,gravity_z,rho0_bq,alpha,kappa,eta_0,&
-       iviscosity,Avisc,Bvisc,Cvisc,&
+       iconv_viscosity,Avisc,Bvisc,Cvisc,&
        Tbot,Tupp,Ra,iorder_sor_solver,lsave_residual,&
        ltidal_heating,ltemperature_advection,ltemperature_diffusion
 !
@@ -209,7 +210,7 @@ module Special
         call fatal_error('initialize_special',errormsg)
       endselect
 !
-      select case (iviscosity)
+      select case (iconv_viscosity)
 !
       case ('constant')
          lviscosity_const=.true.
@@ -225,8 +226,8 @@ module Special
          lviscosity_var_blankenbach=.true.
       case default
         write(unit=errormsg,fmt=*) &
-             'initialize_special: No such value for iviscosity: ', &
-             trim(iviscosity)
+             'initialize_special: No such value for iconv_viscosity: ', &
+             trim(iconv_viscosity)
         call fatal_error('initialize_special',errormsg)
       endselect
 !
@@ -259,8 +260,6 @@ module Special
          amplpsi_ = -ampltt * Ra*kx_TT/(kz_TT**2 + kx_TT**2)**2
          do n=n1,n2
             do m=m1,m2
-      !         f(l1:l2,m,n,iTT) = f(l1:l2,m,n,iTT) + &
-      !                ampltt*cos(kx_TT*x(l1:l2))*sin(kz_TT*z(n))
                f(l1:l2,m,n,ipsi) = f(l1:l2,m,n,ipsi) + &
                     amplpsi_*sin(kx_TT*x(l1:l2))*sin(kz_TT*z(n))
            enddo
@@ -383,8 +382,6 @@ module Special
 !***********************************************************************
     subroutine special_after_boundary(f)
 !
-      !use Boundcond, only: update_ghosts
-!
       real, dimension (mx,my,mz,mfarray) :: f   
 !     
       call solve_for_psi(f)
@@ -398,39 +395,35 @@ module Special
       integer :: icount
       real :: residual !,rms_psi
 !
-!  Initial residual
-!
-      residual=1e33
-!
-!  Start counter
-!      
-      icount=0
-!
-      psi(l1:l2,n1:n2)=f(l1:l2,mpoint,n1:n2,ipsi)
-      
-      call update_bounds_psi(psi)
-!
       call calc_viscosity(f,eta)
 !
+!  Initial residual and start counter
+!
+      residual=1e33
+      icount=0
+!
+!  Boundary conditions for the streamfunction
+!
+      call update_bounds_psi(f)
+      psi=f(:,mpoint,:,ipsi)
+!
       do while (residual > tolerance)
-      !do while (icount < maxit)
 !
 !  Calculate psi via SOR
 !
         call successive_over_relaxation(f,psi,eta,residual)
-        call update_bounds_psi(psi)
+        f(l1:l2,mpoint,n1:n2,ipsi)=psi(l1:l2,n1:n2)
+        call update_bounds_psi(f)
+        psi=f(:,mpoint,:,ipsi)
 !
 ! Increase counter. 
 !
         icount=icount+1
         if (lprint_residual) &
-             print*, icount,residual,tolerance
+              print*, icount,residual,tolerance
         if (lsave_residual) then
-           !open(9,file=trim(datadir)//'/index_special.pro',status='replace')
            write(9,*) icount,residual
-           !close(9)
         endif
-!
         if (icount >= maxit) then
            call fatal_error("solve_for_psi","reached limit of iterations: did not converge.")
            if (lsave_residual) close(9)
@@ -452,20 +445,21 @@ module Special
     subroutine successive_over_relaxation(f,psi,eta,residual)
 !
       use Deriv, only: der
+      use Mpicomm, only: mpireduce_sum, mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f   
       real, dimension (mx,mz), intent(in) :: eta
       real, dimension (mx,mz) :: psi,psi_old
       real, dimension (nx,nz) :: tmp
       real :: alpha, beta, cc, u, v, aout, dTTdx
-      real :: psi_ast,dpsi
+      real :: psi_ast,dpsi,residual_local
       real, intent(out) :: residual
       integer :: i
 !
       psi_old=psi
 !
-      do n=n1,n2; do m=m1,m2
-        do i=l1,l2
+      do n=n1+1,n2-1; do m=m1,m2
+        do i=l1+1,l2-1
 !
 !  These quantities do not depend on psi
 !
@@ -497,7 +491,10 @@ module Special
 !
 !  Residual: L2 norm of dphi over L2 norm of phi itself
 !      
-      residual = sqrt(sum(tmp)/sum(psi(l1:l2,n1:n2)**2))
+      residual_local = sqrt(sum(tmp)/sum(psi(l1:l2,n1:n2)**2))
+!
+      call mpireduce_sum(residual_local,residual)
+      call mpibcast_real(residual)
 !
     endsubroutine successive_over_relaxation
 !***********************************************************************
@@ -686,7 +683,7 @@ module Special
 !
 !  Viscosities normalized by eta_0
 !
-      select case (iviscosity)
+      select case (iconv_viscosity)
 !
       case ('constant')
         eta = 1.
@@ -702,8 +699,8 @@ module Special
 !
       case default  
         write(unit=errormsg,fmt=*) &
-             'calc_viscosity: No such value for iviscosity: ', &
-             trim(iviscosity)
+             'calc_viscosity: No such value for iconv_viscosity: ', &
+             trim(iconv_viscosity)
         call fatal_error('calc_viscosity',errormsg)
       endselect
 !     
@@ -730,10 +727,6 @@ module Special
                 +  2.0*(a(i,n+3)+a(i,n-3)))
 
       aout = df2z-df2x
-
-      !ax = (a(i+1,n) - 2.*a(i,n) + a(i-1,n)) * dx_1(i)**2
-      !az = (a(i,n+1) - 2.*a(i,n) + a(i,n-1)) * dz_1(n)**2
-      !aout=az-ax
 !
     endsubroutine f_function
 !***********************************************************************
@@ -767,9 +760,6 @@ module Special
                        +(a(i+3,n-3)-a(i-3,n-3))))&
                    )
 !
-      !aout = ( (a(i,n) - a(i,n-1)) - &
-      !         (a(i-1,n) - a(i-1,n-1)) ) * dx_1(i)*dz_1(n)
-!
     endsubroutine g_function
 !***********************************************************************
     subroutine get_rms_psi(psi,rms_psi)
@@ -783,42 +773,50 @@ module Special
 !
     endsubroutine get_rms_psi
 !***********************************************************************
-    subroutine update_bounds_psi(psi)
+    subroutine update_bounds_psi(f)
 !
-      real, dimension(mx,mz) :: psi
+      use Mpicomm, only: initiate_isendrcv_bdry,finalize_isendrcv_bdry
+!
+      real, dimension(mx,my,mz,mfarray) :: f
       integer :: i
-!
-!  Set boundary of psi - vertical, zero
-!
-      psi(:,n1)=0.
-      psi(:,n2)=0.
-!
-!  Zero also the second derivative
-!
-      do i=1,nghost
-        psi(:,n1-i) = 2*psi(:,n1) - psi(:,n1+i)
-      enddo
-      do i=1,nghost
-        psi(:,n2+i) = 2*psi(:,n2) - psi(:,n2-i)
-      enddo
 !
       if (lperi(1)) then 
 !
 !  Periodic in the lateral 
 !
-         psi(1   :l1-1,:) = psi(l2i:l2,:)
-         psi(l2+1:mx  ,:) = psi(l1:l1i,:)
+         if (nprocx==1) then
+            f(1   :l1-1,:,:,ipsi) = f(l2i:l2,:,:,ipsi)
+            f(l2+1:mx  ,:,:,ipsi) = f(l1:l1i,:,:,ipsi)
+         endif
       else
-         psi(l1,:)=0.
-         psi(l2,:)=0.
+         if (ipx==0)        f(l1,:,:,ipsi)=0.
+         if (ipx==nprocx-1) f(l2,:,:,ipsi)=0.
 !
-         do i=1,nghost
-            psi(l1-i,:) = 2*psi(l1,:) - psi(l1+i,:)
-         enddo
-         do i=1,nghost
-            psi(l2+i,:) = 2*psi(l2,:) - psi(l2-i,:)
-         enddo
+        do i=1,nghost
+          f(l1-i,:,:,ipsi) = 2*f(l1,:,:,ipsi) - f(l1+i,:,:,ipsi)
+        enddo
+        do i=1,nghost
+          f(l2+i,:,:,ipsi) = 2*f(l2,:,:,ipsi) - f(l2-i,:,:,ipsi)
+        enddo
       endif
+!
+      call initiate_isendrcv_bdry(f,ipsi)
+      call finalize_isendrcv_bdry(f,ipsi)
+!
+!  Set boundary of psi - vertical, zero
+!      
+      if (ipz==0)        f(:,:,n1,ipsi)=0.
+      if (ipz==nprocz-1) f(:,:,n2,ipsi)=0.
+!
+!  Zero also the second derivative
+!
+      do i=1,nghost
+        f(:,:,n1-i,ipsi) = 2*f(:,:,n1,ipsi) - f(:,:,n1+i,ipsi)
+      enddo
+!
+      do i=1,nghost
+        f(:,:,n2+i,ipsi) = 2*f(:,:,n2,ipsi) - f(:,:,n2-i,ipsi)
+      enddo
 !
     endsubroutine update_bounds_psi
 !***********************************************************************
