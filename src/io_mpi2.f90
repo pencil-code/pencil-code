@@ -1288,8 +1288,8 @@ module Io
       call delete_file (file)
       open (lun_output, FILE=file, FORM='unformatted', IOSTAT=ierr, status='new')
       if (ierr /= 0) call stop_it ( &
-          "Cannot open " // trim(file) // " (or similar) for writing" // &
-          " -- is data/ visible from all nodes?")
+          'Cannot open "' // trim(file) // '" (or similar) for reading' // &
+          ' -- is "data/" visible from all nodes?')
       write (lun_output) procy_bounds
       write (lun_output) procz_bounds
       close (lun_output)
@@ -1310,8 +1310,8 @@ module Io
 !
       open (lun_input, FILE=file, FORM='unformatted', IOSTAT=ierr, status='old')
       if (ierr /= 0) call stop_it ( &
-          "Cannot open " // trim(file) // " (or similar) for reading" // &
-          " -- is data/ visible from all nodes?")
+          'Cannot open "' // trim(file) // '" (or similar) for reading' // &
+          ' -- is "data/" visible from all nodes?')
       read (lun_input) procy_bounds
       read (lun_input) procz_bounds
       close (lun_input)
