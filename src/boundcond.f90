@@ -249,6 +249,11 @@ module Boundcond
                   ! BCX_DOC: $f_{N+i}=2 f_{N}-f_{N-i}$;
                   ! BCX_DOC: implies $f''(x_0)=0$
                   call bc_sym_x(f,-1,topbot,j,REL=.true.)
+               case ('a2v')
+                  ! BCX_DOC: set boundary value and antisymmetry relative to it
+                  ! BCX_DOC: $f_{N+i}=2 f_{N}-f_{N-i}$;
+                  ! BCX_DOC: implies $f''(x_0)=0$
+                  call bc_sym_x(f,-1,topbot,j,REL=.true.,val=fbcx(:,k))
                 case ('a2r')
                   ! BCX_DOC: sets $d^2f/dr^2 +2df/dr- 2f/r^2 = 0$
                   ! BCX_DOC: This is the replacement of zero second derivative
@@ -774,6 +779,9 @@ module Boundcond
               case ('a2')
                 ! BCZ_DOC: antisymmetry relative to boundary value
                 call bc_sym_z(f,-1,topbot,j,REL=.true.)
+               case ('a2v')
+                  ! BCZ_DOC: set boundary value and antisymmetry relative to it
+                  call bc_sym_z(f,-1,topbot,j,REL=.true.,val=fbcz(:,k))
               case ('af')
                 ! BCZ_DOC: antisymmetry with respect to interface
                 call bc_sf_z(f,-1,topbot,j)
