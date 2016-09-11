@@ -2103,6 +2103,7 @@ module Radiation
 !
 !  12-apr-06/natalia: adapted from Wolfgang's more complex version
 !   3-nov-06/axel: included gradient of conductivity, gradK.gradT
+!  12-sep-16/MR: made dxmax a pencil as suggested
 !
       use Sub, only: max_mn_name,dot
       use Cdata
@@ -2171,9 +2172,8 @@ module Radiation
         else
 !
 !  calculate switches for optically thin/thick regions
-!  (should really make dxmax a pencil)
 !
-          local_optical_depth=dxmax*f(l1:l2,m,n,ikapparho)
+          local_optical_depth=dxmax_pencil*f(l1:l2,m,n,ikapparho)
           opt_thick=sign(.5,local_optical_depth-1.)+.5
           opt_thin=1.-opt_thick
 !
