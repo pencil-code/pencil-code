@@ -103,13 +103,11 @@ COMPILE_OPT IDL2,HIDDEN
 ;
         startind = strpos(line,"'")
         stopind  = strpos(line,"'",/REVERSE_SEARCH)
-;print, 'startind, stopind=', startind, stopind
         line = strmid(line, 0, startind-1) + ' ' + strmid(line, startind+1,stopind-startind-1)
         prpos = strpos(line,"''")
         if prpos ge 0 then line = strmid(line,0,prpos+1)+strmid(line,prpos+2)
         prpos = strpos(line,"''")
         if prpos ge 0 then line = strmid(line,0,prpos+1)+strmid(line,prpos+2)
-;print, 'line=',line
       endif
 ;
 ;  For long lines which would turn into (too) long command strings:
@@ -120,16 +118,28 @@ COMPILE_OPT IDL2,HIDDEN
       if strlen(line) gt 500 then begin
         startind=strpos(line,'[')+1
         if startind gt 0 then begin 
+;if startind gt 0 then print, 'line=', line
           ok=1
           stopind=strpos(line,']')-1
           if strpos(line,"'") ge 0 then $
             tmparr=strsplit(strmid(line,startind,stopind-startind+1),',',/EXTRACT) $
-          else if strpos(line,"(") ge 0 then $
+          else if strpos(line,"(") ge 0 then begin
 ;
-;  Creating of tmparr missing for complex data!
-;
-            ok=0 $
-          else if strpos(line,'L') ge 0 then $
+            tmparr=strsplit(strmid(line,startind,stopind-startind+1),') *, *complex\(',/REGEX,/EXTRACT)
+            tmparr=strjoin(tmparr,' ')
+            startpos=strpos(tmparr,'(')+1 & stoppos=strpos(tmparr,')')-1
+            isdble=strpos(tmparr,'D') ge 0
+            if isdble ge 0 then $
+              tmparr=double(strsplit(strmid(tmparr,startpos,stoppos-startpos+1),', ', /EXTRACT)) $
+            else $
+              tmparr=float(strsplit(strmid(tmparr,startpos,stoppos-startpos+1),', ', /EXTRACT))
+            ncompl=n_elements(tmparr)/2
+            tmparr=reform(tmparr,2,ncompl)
+            if isdble then $
+              tmparr=reform(dcomplex(tmparr[0,*],tmparr[1,*])) $
+            else $
+              tmparr=reform(complex(tmparr[0,*],tmparr[1,*]))
+          endif else if strpos(line,'L') ge 0 then $
             tmparr=long(strsplit(strmid(line,startind,stopind-startind+1),',',/EXTRACT)) $
           else if strpos(line,'.') ge 0 then begin
             if strpos(line,'D') ge 0 then $
