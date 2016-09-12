@@ -28,14 +28,14 @@
 /
 &density_run_pars
   borderlnrho='initial-condition'
-  idiff='hyper3-cyl' !,'shock'
-  diffrho_hyper3=5e-3 !,diffrho_shock=1.0
+  idiff='hyper3-cyl' 
+  diffrho_hyper3=5e-3
 /
 &grav_run_pars
 /
 &viscosity_run_pars
-  ivisc='hyper3-cyl' !,'nu-shock'
-  nu_hyper3=5e-3 !,nu_shock=1.
+  ivisc='hyper3-cyl'
+  nu_hyper3=5e-3 
 /
 &special_run_pars
   lcap_modes_at_m6=F
@@ -48,6 +48,6 @@
   tau_cool=1
   ltau_cool_variable=T
   borderss='initial-condition'
-  iheatcond='hyper3-cyl' !,'shock'
-  chi_hyper3=5e-3 !,chi_shock=1.0
+  iheatcond='hyper3-cyl'
+  chi_hyper3=5e-3
 /

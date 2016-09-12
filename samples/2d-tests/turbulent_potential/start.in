@@ -8,7 +8,7 @@
   xyz0  =  0.4,-3.141592,-0.26,       ! first corner of box
   xyz1  = 10.0, 3.141592, 0.26
   lperi = F  , T  , T,         ! periodic direction?
-  bcx = 'a','s','s','a2','a2','s'
+  bcx = 'a','s','s','a2','a2'
   llocal_iso=F
   lwrite_ic=T
   lwrite_aux=T

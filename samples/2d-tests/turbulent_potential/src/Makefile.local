@@ -8,7 +8,7 @@ HYDRO       =   hydro
 DENSITY     =   density
 ENTROPY     =   entropy
 MAGNETIC    = nomagnetic
-SHOCK       =   shock
+SHOCK       = noshock
 VISCOSITY   =   viscosity
 GRAVITY     =   gravity_r
 
