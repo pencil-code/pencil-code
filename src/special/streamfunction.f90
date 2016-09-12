@@ -184,13 +184,21 @@ module Special
         Ra = (gravity_z*alpha*rho0_bq*delta_T*dslab**3)/(kappa*eta_0)
       endif !else it is given in the initial condition
 !
-     if (lroot) print*,'Rayleigh number=',Ra
+      if (lroot) print*,'Rayleigh number=',Ra
 !
 !  Stuff for the coefficient of SOR. Should be between 0 and 2 for stability.
 !     
-     if (alpha_sor == impossible) then
+      if (alpha_sor == impossible) then
         delta=min(dx,dy,dz)
         alpha_sor= 2./(1+sin(pi*delta))
+      endif
+!
+      if (lmpicomm.and.alpha_sor/=1) then
+        if (lroot) then 
+          print*,'The parallelized solver converges only for alpha_sor=1'
+          print*,'Please switch alpha_sor=1 in your start.in file.'
+        endif
+        call fatal_error("initialize_special","")
       endif
 !
 !  Europa-specific stuff
