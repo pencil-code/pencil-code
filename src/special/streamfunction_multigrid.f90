@@ -198,23 +198,23 @@ contains
 !  split is used. It similarly defines the conductive viscosity eta = etabar(z) * nu(x,y,z,t).
 !
       if (lsplit_temperature) then
-         do n=n1,n2
-            Tbar(n) = Tbot + (n-n1)*(Tupp-Tbot)/(n2-n1)
-         enddo
-         etabar = exp(-Bvisc*Tbar*deltaT1)
-         gTT_conductive = -delta_T*Lz1
-         eta_alpha2 = (Bvisc*deltaT1*gTT_conductive)**2
+        do n=n1,n2
+          Tbar(n) = Tbot + (n-n1)*(Tupp-Tbot)/(n2-n1)
+        enddo
+        etabar = exp(-Bvisc*Tbar*deltaT1)
+        gTT_conductive = -delta_T*Lz1
+        eta_alpha2 = (Bvisc*deltaT1*gTT_conductive)**2
       endif
 !
       if (Ra==impossible) then
         Ra = (gravity_z*alpha_thermal*rho0_bq*delta_T*dslab**3)/(kappa*eta_0)
       endif !else it is given in the initial condition
 !
-     if (lroot) print*,'Rayleigh number=',Ra
+      if (lroot) print*,'Rayleigh number=',Ra
 !
 !  Stuff for the coefficient of SOR. Should be between 0 and 2 for stability.
 !     
-     if (alpha_sor == impossible) then
+      if (alpha_sor == impossible) then
         delta=min(dx,dy,dz)
         alpha_sor= 2./(1+sin(pi*delta))
       endif
@@ -453,47 +453,46 @@ contains
 !  Define r.h.s.
 !
       if (lpoisson_test) then
-         psi=0. 
-         rhs=1.
+        psi=0. 
+        rhs=1.
       else
 !
-         call calc_viscosity(f,eta)
+        call calc_viscosity(f,eta)
 !      
-         do n=n1,n2; do m=m1,m2
-            do i=l1,l2
-               call f_function(eta,aout,i,n) ; alpha = aout/eta(i,n)
-               call g_function(eta,aout,i,n) ; beta = aout/eta(i,n)
+        do n=n1,n2; do m=m1,m2
+          do i=l1,l2
+            call f_function(eta,aout,i,n) ; alpha = aout/eta(i,n)
+            call g_function(eta,aout,i,n) ; beta = aout/eta(i,n)
 !
-               dTTdx=dx_1(i)/60*(+ 45.0*(f(i+1,m,n,iTT)-f(i-1,m,n,iTT)) &
-                                 -  9.0*(f(i+2,m,n,iTT)-f(i-2,m,n,iTT)) &
-                                 +      (f(i+3,m,n,iTT)-f(i-3,m,n,iTT)))            
-               rhs(i-l1+1,n-n1+1) = Ra*dTTdx/(eta(i,n)*etabar(n))
+            dTTdx=dx_1(i)/60*(+ 45.0*(f(i+1,m,n,iTT)-f(i-1,m,n,iTT)) &
+                              -  9.0*(f(i+2,m,n,iTT)-f(i-2,m,n,iTT)) &
+                              +      (f(i+3,m,n,iTT)-f(i-3,m,n,iTT)))            
+            rhs(i-l1+1,n-n1+1) = Ra*dTTdx/(eta(i,n)*etabar(n))
 !
-               if (lsplit_temperature) then 
-                 rhs(i-l1+1,n-n1+1) = Ra*dTTdx/(eta(i,n)*etabar(n))
-                 alpha_factor(i-l1+1,n-n1+1)=alpha + eta_alpha2
-               else
-                 rhs(i-l1+1,n-n1+1) = Ra*dTTdx/eta(i,n)
-                 alpha_factor(i-l1+1,n-n1+1)=alpha
-               endif
-               beta_factor(i-l1+1,n-n1+1)=beta
+            if (lsplit_temperature) then 
+              rhs(i-l1+1,n-n1+1) = Ra*dTTdx/(eta(i,n)*etabar(n))
+              alpha_factor(i-l1+1,n-n1+1)=alpha + eta_alpha2
+            else
+              rhs(i-l1+1,n-n1+1) = Ra*dTTdx/eta(i,n)
+              alpha_factor(i-l1+1,n-n1+1)=alpha
+            endif
+            beta_factor(i-l1+1,n-n1+1)=beta
 !
-            enddo;enddo
-         enddo
+          enddo;enddo
+        enddo
 
-         psi(l1:l2,n1:n2)=f(l1:l2,mpoint,n1:n2,ipsi)
+        psi(l1:l2,n1:n2)=f(l1:l2,mpoint,n1:n2,ipsi)
 !      
-         call update_bounds_psi(psi)
+        call update_bounds_psi(psi)
       endif
-!
 !
 !  Initial residual
 !
-         resid=1e33
+      resid=1e33
 !
 !  Start counter
 !      
-         icount=0
+      icount=0
 !
 !  LHS and RHS set. Now iterate.
 !      
@@ -501,16 +500,16 @@ contains
 !
 !  Calculate psi via multigrid
 !
-         psi_old=psi
+        psi_old=psi
 
-         if (lmultigrid) then
-            call multigrid(psi,rhs,alpha_factor,beta_factor)
-         else
-            call successive_over_relaxation(psi,rhs,alpha_factor,beta_factor)
-         endif
+        if (lmultigrid) then
+          call multigrid(psi,rhs,alpha_factor,beta_factor)
+        else
+          call successive_over_relaxation(psi,rhs,alpha_factor,beta_factor)
+        endif
 !
-         call update_bounds_psi(psi)
-         resid=sqrt(sum((psi(l1:l2,n1:n2)-psi_old(l1:l2,n1:n2))**2)/(nx*nz))
+        call update_bounds_psi(psi)
+        resid=sqrt(sum((psi(l1:l2,n1:n2)-psi_old(l1:l2,n1:n2))**2)/(nx*nz))
 !
 ! Increase counter. 
 !
@@ -518,12 +517,12 @@ contains
         if (lprint_residual) &
              print*, icount,resid,tolerance
         if (lsave_residual) then
-           write(9,*) icount,resid
+          write(9,*) icount,resid
         endif
 !
         if (icount >= maxit) then
-           call fatal_error("solve_for_psi","reached limit of iterations: did not converge.")
-           if (lsave_residual) close(9)
+          call fatal_error("solve_for_psi","reached limit of iterations: did not converge.")
+          if (lsave_residual) close(9)
         endif
 !
       enddo
@@ -557,35 +556,35 @@ contains
       nn1=nghost+1; nn2=nu-nghost; ll1=nn1; ll2=nn2
 !
       if (present(h)) then 
-         alpha_sor_=1./(2+pi*h)
+        alpha_sor_=1./(2+pi*h)
       else
-         alpha_sor_=alpha_sor
+        alpha_sor_=alpha_sor
       endif
 !
       do nn=nn1+1,nn2-1
-         k=nn-nn1+1
-         do ii=ll1+1,ll2-1
-            l=ii-l1+1
+        k=nn-nn1+1
+        do ii=ll1+1,ll2-1
+          l=ii-l1+1
 !     
-            alpha=alp(l,k)
-            beta=bet(l,k)
+          alpha=alp(l,k)
+          beta=bet(l,k)
 !
-            cc = r(l,k)
+          cc = r(l,k)
 !     
-            if (lsolver_highorder) then
-               call solve_highorder(u,alpha,beta,ufactor,vterm,ii,nn)
+          if (lsolver_highorder) then
+            call solve_highorder(u,alpha,beta,ufactor,vterm,ii,nn)
+          else
+            if (present(h)) then
+              call solve_loworder(u,alpha,beta,ufactor,vterm,ii,nn)
             else
-               if (present(h)) then
-                  call solve_loworder(u,alpha,beta,ufactor,vterm,ii,nn)
-               else
-                  call solve_loworder(u,alpha,beta,ufactor,vterm,ii,nn,h)
-               endif
+              call solve_loworder(u,alpha,beta,ufactor,vterm,ii,nn,h)
             endif
+          endif
 !     
-            u_new=(cc-vterm)/ufactor
-            u(ii,nn) = u(ii,nn)*(1-alpha_sor_) +  alpha_sor_*u_new
+          u_new=(cc-vterm)/ufactor
+          u(ii,nn) = u(ii,nn)*(1-alpha_sor_) +  alpha_sor_*u_new
         enddo
-     enddo
+      enddo
 !
     endsubroutine successive_over_relaxation
 !***********************************************************************
@@ -608,11 +607,11 @@ contains
       real, optional :: h
 !
       if (present(h)) then
-         dx1 = 1./h
-         dz1 = 1./h
+        dx1 = 1./h
+        dz1 = 1./h
       else
-         dx1=dx_1(i)
-         dz1=dz_1(k)
+        dx1=dx_1(i)
+        dz1=dz_1(k)
       endif
 !      
 !  The quantity u collects all terms that multiply psi[i,k]
@@ -756,11 +755,11 @@ contains
       real, optional :: h
 !
       if (present(h)) then
-         dx1 = 1./h
-         dz1 = 1./h
+        dx1 = 1./h
+        dz1 = 1./h
       else
-         dx1=dx_1(i)
-         dz1=dz_1(k)
+        dx1=dx_1(i)
+        dz1=dz_1(k)
       endif
 !      
       u = 2*alpha*(dx1**2 - dz1**2) + 6.*(dx1**4 + dz1**4) + 4.*beta*dx1*dz1 + 8.*dx1**2*dz1**2
@@ -798,8 +797,8 @@ contains
 !
       case ('Blankenbach-variable')
          do n=1,mz
-            eta(:,n) = exp(-Bvisc * f(:,mpoint,n,iTT)*deltaT1 + &
-                            Cvisc * (1-z(n))*Lz1 )
+           eta(:,n) = exp(-Bvisc * f(:,mpoint,n,iTT)*deltaT1 + &
+                           Cvisc * (1-z(n))*Lz1 )
          enddo
 !
       case default  
@@ -832,10 +831,6 @@ contains
                 +  2.0*(a(i,n+3)+a(i,n-3)))
 
       aout = df2z-df2x
-
-      !ax = (a(i+1,n) - 2.*a(i,n) + a(i-1,n)) * dx_1(i)**2
-      !az = (a(i,n+1) - 2.*a(i,n) + a(i,n-1)) * dz_1(n)**2
-      !aout=az-ax
 !
     endsubroutine f_function
 !***********************************************************************
@@ -869,9 +864,6 @@ contains
                        +(a(i+3,n-3)-a(i-3,n-3))))&
                    )
 !
-      !aout = ( (a(i,n) - a(i,n-1)) - &
-      !         (a(i-1,n) - a(i-1,n-1)) ) * dx_1(i)*dz_1(n)
-!
     endsubroutine g_function
 !***********************************************************************
     subroutine update_bounds_psi(a)
@@ -902,8 +894,6 @@ contains
 !  Periodic in the lateral 
 !
          call fatal_error("update_bounds_psi","not set for periodic")
-         !psi(1   :l1-1,:) = psi(l2i:l2,:)
-         !psi(l2+1:mx  ,:) = psi(l1:l1i,:)
       else
          a(ll1,:)=0.
          a(ll2,:)=0.
@@ -931,10 +921,10 @@ contains
 !  Advection
 !
       if (ltemperature_advection) then
-         df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - q%ugTT
-         if (lsplit_temperature) then
-            df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - q%uu(:,3)*gTT_conductive
-         endif
+        df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - q%ugTT
+        if (lsplit_temperature) then
+          df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) - q%uu(:,3)*gTT_conductive
+        endif
       endif
 !
 !  Conduction (diffusion)
@@ -956,32 +946,32 @@ contains
       endif
 !
       if (headtt.or.ldebug) then
-         print*,'special_calc_energy: max(advec_special)  =',maxval(advec_special)
-         print*,'special_calc_energy: max(diffus_special) =',maxval(diffus_special)
+        print*,'special_calc_energy: max(advec_special)  =',maxval(advec_special)
+        print*,'special_calc_energy: max(diffus_special) =',maxval(diffus_special)
       endif
 !
       if (ldiagnos) then 
-         if (idiag_uqxmin/=0) call max_mn_name(-q%uu(:,1)   ,idiag_uqxmin,lneg=.true.)
-         if (idiag_uqxmax/=0) call max_mn_name( q%uu(:,1)   ,idiag_uqxmax)
-         if (idiag_uqxm/=0)   call sum_mn_name( q%uu(:,1)   ,idiag_uqxm)
-         if (idiag_uqx2m/=0)  call sum_mn_name( q%uu(:,1)**2,idiag_uqx2m)              
-         if (idiag_uqxrms/=0) call sum_mn_name( q%uu(:,1)**2,idiag_uqxrms,lsqrt=.true.)
+        if (idiag_uqxmin/=0) call max_mn_name(-q%uu(:,1)   ,idiag_uqxmin,lneg=.true.)
+        if (idiag_uqxmax/=0) call max_mn_name( q%uu(:,1)   ,idiag_uqxmax)
+        if (idiag_uqxm/=0)   call sum_mn_name( q%uu(:,1)   ,idiag_uqxm)
+        if (idiag_uqx2m/=0)  call sum_mn_name( q%uu(:,1)**2,idiag_uqx2m)              
+        if (idiag_uqxrms/=0) call sum_mn_name( q%uu(:,1)**2,idiag_uqxrms,lsqrt=.true.)
 !
-         if (idiag_uqzmin/=0) call max_mn_name(-q%uu(:,3)   ,idiag_uqzmin,lneg=.true.)
-         if (idiag_uqzmax/=0) call max_mn_name( q%uu(:,3)   ,idiag_uqzmax)
-         if (idiag_uqzm/=0)   call sum_mn_name( q%uu(:,3)   ,idiag_uqzm)
-         if (idiag_uqz2m/=0)  call sum_mn_name( q%uu(:,3)**2,idiag_uqz2m)
-         if (idiag_uqzrms/=0) call sum_mn_name( q%uu(:,3)**2,idiag_uqzrms,lsqrt=.true.)
+        if (idiag_uqzmin/=0) call max_mn_name(-q%uu(:,3)   ,idiag_uqzmin,lneg=.true.)
+        if (idiag_uqzmax/=0) call max_mn_name( q%uu(:,3)   ,idiag_uqzmax)
+        if (idiag_uqzm/=0)   call sum_mn_name( q%uu(:,3)   ,idiag_uqzm)
+        if (idiag_uqz2m/=0)  call sum_mn_name( q%uu(:,3)**2,idiag_uqz2m)
+        if (idiag_uqzrms/=0) call sum_mn_name( q%uu(:,3)**2,idiag_uqzrms,lsqrt=.true.)
 !
-         if (idiag_uq2m/=0)   call sum_mn_name(q%u2,idiag_uq2m)
-         if (idiag_uqrms/=0)  call sum_mn_name(q%u2,idiag_uqrms,lsqrt=.true.)
-         if (idiag_uqmax/=0)  call max_mn_name(q%u2,idiag_uqmax,lsqrt=.true.)
+        if (idiag_uq2m/=0)   call sum_mn_name(q%u2,idiag_uq2m)
+        if (idiag_uqrms/=0)  call sum_mn_name(q%u2,idiag_uqrms,lsqrt=.true.)
+        if (idiag_uqmax/=0)  call max_mn_name(q%u2,idiag_uqmax,lsqrt=.true.)
 !
-         if (idiag_qtidalmin/=0) call max_mn_name(-q%qtidal,idiag_qtidalmin,lneg=.true.)
-         if (idiag_qtidalmax/=0) call max_mn_name( q%qtidal,idiag_qtidalmax)
-         if (idiag_qtidalm/=0)   call sum_mn_name( q%qtidal,idiag_qtidalm)
-         if (idiag_icount/=0)    call max_mn_name(0*x(l1:l2)+icount_save,idiag_icount)
-         if (idiag_residual/=0)  call max_mn_name(0*x(l1:l2)+residual_save,idiag_residual)
+        if (idiag_qtidalmin/=0) call max_mn_name(-q%qtidal,idiag_qtidalmin,lneg=.true.)
+        if (idiag_qtidalmax/=0) call max_mn_name( q%qtidal,idiag_qtidalmax)
+        if (idiag_qtidalm/=0)   call sum_mn_name( q%qtidal,idiag_qtidalm)
+        if (idiag_icount/=0)    call max_mn_name(0*x(l1:l2)+icount_save,idiag_icount)
+        if (idiag_residual/=0)  call max_mn_name(0*x(l1:l2)+residual_save,idiag_residual)
 !
 !  Calculate for benchmark diagnostic the (negative of the) temperature gradient at the
 !  four corners of the grid, labeled as below: 
@@ -997,59 +987,59 @@ contains
 !        3 is (x,z)=(Lx, 0), bottom right corner, below downwelling 
 !        4 is (x,z)=( 0, 0), bottom  left corner, below upwelling
 !
-         if (idiag_dTdz1/=0) then
-           if (n == n2) then
-             dTdz1 = -p%gTT(1,3) - gTT_conductive
-           else
-             dTdz1 = -impossible
-           endif
-           call max_mn_name(dTdz1,idiag_dTdz1)
-         endif
+        if (idiag_dTdz1/=0) then
+          if (n == n2) then
+            dTdz1 = -p%gTT(1,3) - gTT_conductive
+          else
+            dTdz1 = -impossible
+          endif
+          call max_mn_name(dTdz1,idiag_dTdz1)
+        endif
 !
-         if (idiag_dTdz2/=0) then
-           if (n == n2) then
-             dTdz2 = -p%gTT(nx,3) - gTT_conductive
-           else
-             dTdz2 = -impossible
-           endif
-           call max_mn_name(dTdz2,idiag_dTdz2)
-         endif
+        if (idiag_dTdz2/=0) then
+          if (n == n2) then
+            dTdz2 = -p%gTT(nx,3) - gTT_conductive
+          else
+            dTdz2 = -impossible
+          endif
+          call max_mn_name(dTdz2,idiag_dTdz2)
+        endif
 !
-         if (idiag_dTdz3/=0) then
-           if (n == n1) then
-             dTdz3 = -p%gTT(nx,3) - gTT_conductive
-           else
-             dTdz3 = -impossible
-           endif
-           call max_mn_name(dTdz3,idiag_dTdz3)
-         endif
+        if (idiag_dTdz3/=0) then
+          if (n == n1) then
+            dTdz3 = -p%gTT(nx,3) - gTT_conductive
+          else
+            dTdz3 = -impossible
+          endif
+          call max_mn_name(dTdz3,idiag_dTdz3)
+        endif
 !
-         if (idiag_dTdz4/=0) then
-           if (n == n1) then
-             dTdz4 = -p%gTT(1,3) - gTT_conductive
-           else
-             dTdz4 = -impossible
-           endif
-           call max_mn_name(dTdz4,idiag_dTdz4)
-         endif
+        if (idiag_dTdz4/=0) then
+          if (n == n1) then
+            dTdz4 = -p%gTT(1,3) - gTT_conductive
+          else
+            dTdz4 = -impossible
+          endif
+          call max_mn_name(dTdz4,idiag_dTdz4)
+        endif
 !
-         if (idiag_nusselt_num/=0) then
-           if (n == n2) then
-             nusselt_num=-p%gTT(:,3) - gTT_conductive
-           else
-             nusselt_num=0.
-           endif
-           call integrate_mn_name(nusselt_num,idiag_nusselt_num)
-         endif
+        if (idiag_nusselt_num/=0) then
+          if (n == n2) then
+            nusselt_num=-p%gTT(:,3) - gTT_conductive
+          else
+            nusselt_num=0.
+          endif
+          call integrate_mn_name(nusselt_num,idiag_nusselt_num)
+        endif
 !         
-         if (idiag_nusselt_den/=0) then
-           if (n == n1) then
-             nusselt_den=p%TT + Tbar(n)
-           else
-             nusselt_den=0.
-           endif
-           call integrate_mn_name(nusselt_den,idiag_nusselt_den)
-         endif
+        if (idiag_nusselt_den/=0) then
+          if (n == n1) then
+            nusselt_den=p%TT + Tbar(n)
+          else
+            nusselt_den=0.
+          endif
+          call integrate_mn_name(nusselt_den,idiag_nusselt_den)
+        endif
 !         
 !  temperature extreme at center line
 !  min(abs(dTdz)) and z le 0.5
@@ -1058,59 +1048,59 @@ contains
 !
 !  record position as well
 
-         if (idiag_TTmax_cline/=0) then
-            if (z(n) .ge. 0.5) then
-               TTmax_cline=p%TT(nx/2) + Tbar(n)
-            else
-               TTmax_cline=-impossible
-            endif
-            call max_mn_name(TTmax_cline,idiag_TTmax_cline)
-         endif
-
-         if (idiag_TTmin_cline/=0) then
-            if (z(n) .lt. 0.5) then
-               TTmin_cline=p%TT(nx/2) + Tbar(n)
-            else
-               TTmin_cline=impossible
-            endif
-            call max_mn_name(-TTmin_cline,idiag_TTmin_cline,lneg=.true.)
-         endif
-!         
-         if (idiag_devsigzz1/=0) then
-            if (n == n2) then
-               devsigzz1 = q%devsigzz(1)
-            else
-               devsigzz1 = -impossible
-            endif
-            call max_mn_name(devsigzz1,idiag_devsigzz1)
-         endif
-!         
-         if (idiag_devsigzz2/=0) then
-            if (n == n2) then
-               devsigzz2 = q%devsigzz(nx)
-            else
-               devsigzz2 = -impossible
-            endif
-            call max_mn_name(devsigzz2,idiag_devsigzz2)
-         endif
+        if (idiag_TTmax_cline/=0) then
+          if (z(n) .ge. 0.5) then
+            TTmax_cline=p%TT(nx/2) + Tbar(n)
+          else
+            TTmax_cline=-impossible
+          endif
+          call max_mn_name(TTmax_cline,idiag_TTmax_cline)
+        endif
 !
-         if (idiag_devsigzz3/=0) then
-            if (n == n1) then
-               devsigzz3 = q%devsigzz(nx)
-            else
-               devsigzz3 = -impossible
-            endif
-            call max_mn_name(devsigzz3,idiag_devsigzz3)
-         endif
+        if (idiag_TTmin_cline/=0) then
+          if (z(n) .lt. 0.5) then
+            TTmin_cline=p%TT(nx/2) + Tbar(n)
+          else
+            TTmin_cline=impossible
+          endif
+          call max_mn_name(-TTmin_cline,idiag_TTmin_cline,lneg=.true.)
+        endif
+!         
+        if (idiag_devsigzz1/=0) then
+          if (n == n2) then
+            devsigzz1 = q%devsigzz(1)
+          else
+            devsigzz1 = -impossible
+          endif
+          call max_mn_name(devsigzz1,idiag_devsigzz1)
+        endif
+!         
+        if (idiag_devsigzz2/=0) then
+          if (n == n2) then
+            devsigzz2 = q%devsigzz(nx)
+          else
+            devsigzz2 = -impossible
+          endif
+          call max_mn_name(devsigzz2,idiag_devsigzz2)
+        endif
 !
-         if (idiag_devsigzz4/=0) then
-            if (n == n1) then
-               devsigzz4 = q%devsigzz(1)
-            else
-               devsigzz4 = -impossible
-            endif
-            call max_mn_name(devsigzz4,idiag_devsigzz4)
-         endif         
+        if (idiag_devsigzz3/=0) then
+          if (n == n1) then
+            devsigzz3 = q%devsigzz(nx)
+          else
+            devsigzz3 = -impossible
+          endif
+          call max_mn_name(devsigzz3,idiag_devsigzz3)
+        endif
+!
+        if (idiag_devsigzz4/=0) then
+          if (n == n1) then
+            devsigzz4 = q%devsigzz(1)
+          else
+            devsigzz4 = -impossible
+          endif
+          call max_mn_name(devsigzz4,idiag_devsigzz4)
+        endif
       endif
 !
       call keep_compiler_quiet(f)
