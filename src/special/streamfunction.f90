@@ -74,21 +74,24 @@ module Special
   character (len=labellen) :: initpsi='nothing'
   character (len=labellen) :: iconv_viscosity='Newtonian'
   character (len=labellen) :: iorder_sor_solver='high_order'
+  character (len=labellen) :: isolver_poisson='gauss-seidel'
 !
   logical :: lprint_residual=.false.,ltidal_heating=.true.
   logical :: ltemperature_advection=.true.,ltemperature_diffusion=.true.
-  
+  logical :: lpoisson_test=.false.
+!  
   integer :: maxit=1000
 !
   real :: Ra=impossible
   logical :: lsave_residual=.true.
-  real :: kx_TT=2*pi, kz_TT=pi, ampltt=0.01
+  real :: kx_TT=2*pi, kz_TT=pi, ampltt=0.01  
 !
   namelist /special_init_pars/ amplpsi,alpha_sor,lprint_residual,&
        tolerance,maxit,gravity_z,rho0_bq,alpha,kappa,eta_0,&
        iconv_viscosity,Avisc,Bvisc,Cvisc,&
        Tbot,Tupp,Ra,iorder_sor_solver,lsave_residual,&
-       kx_TT,kz_TT,ampltt,initpsi
+       kx_TT,kz_TT,ampltt,initpsi,&
+       lpoisson_test,lomega_jacobi,lgauss_seidel
 !
   namelist /special_run_pars/ amplpsi,alpha_sor,Avisc,lprint_residual,&
        tolerance,maxit,gravity_z,rho0_bq,alpha,kappa,eta_0,&
@@ -121,6 +124,8 @@ module Special
   logical :: lviscosity_const
   logical :: lviscosity_var_newtonian
   logical :: lviscosity_var_blankenbach
+!
+  logical :: lgauss_seidel,lomega_jacobi
 !
     contains
 !***********************************************************************
@@ -195,14 +200,16 @@ module Special
 !
       kappa1=1./kappa
 !
+!  Order of the solver. Choose between second (low order) or sixth (high order).
+!      
       select case (iorder_sor_solver)
 !
       case ('low_order')
-         lsolver_loworder=.true.
-         lsolver_highorder=.false.
+        lsolver_loworder=.true.
+        lsolver_highorder=.false.
       case ('high_order') 
-         lsolver_loworder=.false.
-         lsolver_highorder=.true.
+        lsolver_loworder=.false.
+        lsolver_highorder=.true.
       case default  
         write(unit=errormsg,fmt=*) &
              'initialize_special: No such value for iorder_sor_solver: ', &
@@ -210,20 +217,22 @@ module Special
         call fatal_error('initialize_special',errormsg)
       endselect
 !
+!  Case for viscosity. 
+!      
       select case (iconv_viscosity)
 !
       case ('constant')
-         lviscosity_const=.true.
-         lviscosity_var_newtonian=.false.
-         lviscosity_var_blankenbach=.false.
+        lviscosity_const=.true.
+        lviscosity_var_newtonian=.false.
+        lviscosity_var_blankenbach=.false.
       case ('Newtonian') 
-         lviscosity_const=.false.
-         lviscosity_var_newtonian=.true.
-         lviscosity_var_blankenbach=.false.
+        lviscosity_const=.false.
+        lviscosity_var_newtonian=.true.
+        lviscosity_var_blankenbach=.false.
       case ('Blankenbach-variable') 
-         lviscosity_const=.false.
-         lviscosity_var_newtonian=.false.
-         lviscosity_var_blankenbach=.true.
+        lviscosity_const=.false.
+        lviscosity_var_newtonian=.false.
+        lviscosity_var_blankenbach=.true.
       case default
         write(unit=errormsg,fmt=*) &
              'initialize_special: No such value for iconv_viscosity: ', &
@@ -231,6 +240,23 @@ module Special
         call fatal_error('initialize_special',errormsg)
       endselect
 !
+!  Case for Poisson 5-point star solver. 
+!
+      select case (isolver_poisson)
+!
+      case ('omega-jacobi')
+        lomega_jacobi=.true.
+        lgauss_seidel=.false.
+      case ('gauss-seidel') 
+        lomega_jacobi=.false.
+        lgauss_seidel=.true.
+      case default  
+        write(unit=errormsg,fmt=*) &
+             'initialize_special: No such value for isolver_poisson: ', &
+             trim(isolver_poisson)
+        call fatal_error('initialize_special',errormsg)
+      endselect
+
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
@@ -450,50 +476,87 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f   
       real, dimension (mx,mz), intent(in) :: eta
       real, dimension (mx,mz) :: psi,psi_old
-      real, dimension (nx,nz) :: tmp
       real :: alpha, beta, cc, u, v, aout, dTTdx
-      real :: psi_ast,dpsi,residual_local
+      real :: psi_ast,dpsi,variance_local,variance
       real, intent(out) :: residual
       integer :: i
+      integer :: ll1,ll2,nn1,nn2
 !
       psi_old=psi
 !
-      do n=n1+1,n2-1; do m=m1,m2
-        do i=l1+1,l2-1
+!  Define the starting points of the iteration.
+!  Since the boundary points are set, they do
+!  not need to be recalculated. 
 !
-!  These quantities do not depend on psi
+      if (ipx==0) then
+        ll1 = l1 + 1
+      else
+        ll1 = l1
+      endif
 !
-         call f_function(eta,aout,i,n) ; alpha = aout/eta(i,n)
-         call g_function(eta,aout,i,n) ; beta = aout/eta(i,n)
+      if (ipx==nprocx-1) then
+        ll2 = l2 - 1
+      else
+        ll2 = l2
+      endif
 !
-         dTTdx=dx_1(i)/60*(+ 45.0*(f(i+1,m,n,iTT)-f(i-1,m,n,iTT)) &
-                           -  9.0*(f(i+2,m,n,iTT)-f(i-2,m,n,iTT)) &
-                           +      (f(i+3,m,n,iTT)-f(i-3,m,n,iTT)))            
-         cc = Ra*dTTdx/eta(i,n)
+      if (ipz==0) then
+        nn1 = n1 + 1
+      else
+        nn1 = n1
+      endif
 !
-         if (lsolver_highorder) then
-            call solve_highorder(psi,alpha,beta,u,v,i,n)
-         else
-            call solve_loworder(psi,alpha,beta,u,v,i,n)
-         endif
+      if (ipz==nprocz-1) then
+        nn2 = n2 - 1
+      else
+        nn2 = n2
+      endif
+!      
+      do n=nn1,nn2; do m=m1,m2
+        do i=ll1,ll2
 !
-         psi_ast=(cc-v)/u
+!  For debugging purposes, include the standard test with the Poisson equation Laplace(phi)=1.
 !
-         dpsi = psi_ast - psi_old(i,n)
-         psi(i,n) = alpha_sor*dpsi + psi_old(i,n)
+          if (lpoisson_test) then
+            !assumes rhs=1 and dx=dz; second order
+            if (lomega_jacobi) then 
+              psi(i,n) = 0.25*(psi_old(i+1,n) + psi_old(i-1,n) + psi_old(i,n+1) + psi_old(i,n-1) - dx**2)
+            elseif (lgauss_seidel) then
+              psi(i,n) = 0.25*(psi(i+1,n) + psi(i-1,n) + psi(i,n+1) + psi(i,n-1) - dx**2)
+            else
+              call fatal_error("solve_for_psi","The world is flat, and we never got here.")
+            endif
+          else
 !
-         enddo
+!  Convection
+!
+            call f_function(eta,aout,i,n) ; alpha = aout/eta(i,n)
+            call g_function(eta,aout,i,n) ; beta = aout/eta(i,n)
+!
+            dTTdx=dx_1(i)/60*(+ 45.0*(f(i+1,m,n,iTT)-f(i-1,m,n,iTT)) &
+                              -  9.0*(f(i+2,m,n,iTT)-f(i-2,m,n,iTT)) &
+                              +      (f(i+3,m,n,iTT)-f(i-3,m,n,iTT)))            
+            cc = Ra*dTTdx/eta(i,n)
+!
+            if (lsolver_highorder) then
+              call solve_highorder(psi,alpha,beta,u,v,i,n)
+            else
+              call solve_loworder(psi,alpha,beta,u,v,i,n)
+            endif
+!
+            psi_ast=(cc-v)/u
+            dpsi = psi_ast - psi_old(i,n)
+            psi(i,n) = alpha_sor*dpsi + psi_old(i,n)
+          endif
+        enddo
       enddo; enddo
 !
 !  Psi updated. Now prepare for next iteration. Calculate residual.
-!
-      tmp=(psi(l1:l2,n1:n2) - psi_old(l1:l2,n1:n2))**2
-!
-!  Residual: L2 norm of dphi over L2 norm of phi itself
+!  Residual: L2 norm of dphi.
 !      
-      residual_local = sqrt(sum(tmp)/sum(psi(l1:l2,n1:n2)**2))
-!
-      call mpireduce_sum(residual_local,residual)
+      variance_local = sum((psi(ll1:ll2,nn1:nn2) - psi_old(ll1:ll2,nn1:nn2))**2)
+      call mpireduce_sum(variance_local,variance)
+      if (lroot) residual = sqrt(variance/(nx*nz))
       call mpibcast_real(residual)
 !
     endsubroutine successive_over_relaxation
@@ -762,17 +825,6 @@ module Special
 !
     endsubroutine g_function
 !***********************************************************************
-    subroutine get_rms_psi(psi,rms_psi)
-!
-      real, dimension(mx,mz) :: psi
-      real, dimension(nx,nz) :: tmp
-      real :: rms_psi
-!
-      tmp=psi(l1:l2,n1:n2)**2
-      rms_psi = sqrt(sum(tmp))/(nx*nz)
-!
-    endsubroutine get_rms_psi
-!***********************************************************************
     subroutine update_bounds_psi(f)
 !
       use Mpicomm, only: initiate_isendrcv_bdry,finalize_isendrcv_bdry
@@ -780,45 +832,93 @@ module Special
       real, dimension(mx,my,mz,mfarray) :: f
       integer :: i
 !
-      if (lperi(1)) then 
+      poisson_or_convection_boundary: if (lpoisson_test) then
+!
+        if (ipx==0) then
+          f(l1,:,:,ipsi)=0.0
+          do i=1,nghost
+            f(l1-i,:,:,ipsi) = - f(l1+i,:,:,ipsi) + dx**2
+          enddo
+        endif
+!           
+        if (ipx==nprocx-1) then
+          f(l2,:,:,ipsi)=0.0
+          do i=1,nghost
+            f(l2+i,:,:,ipsi) = - f(l2-i,:,:,ipsi) + dx**2
+          enddo
+        endif
+!
+        call initiate_isendrcv_bdry(f,ipsi)
+        call finalize_isendrcv_bdry(f,ipsi)
+!
+        if (ipz==0) then
+          f(:,:,n1,ipsi)=0.0
+          do i=1,nghost
+            f(:,:,n1-i,ipsi) = - f(:,:,n1+1,ipsi) + dx**2
+          enddo
+        endif
+!
+        if (ipz==nprocz-1) then
+          f(:,:,n2,ipsi)=0.0
+          do i=1,nghost
+            f(:,:,n2+i,ipsi) = - f(:,:,n2-i,ipsi) + dx**2
+          enddo
+        endif
+!
+      else  ! convection
+!
+!  For convection runs, the x-boundary is either periodic or free slip.
+!  For the streamfunction, free slip means psi=psi''=0.        
+!
+        xperiodic: if (lperi(1)) then 
 !
 !  Periodic in the lateral 
 !
-         if (nprocx==1) then
+          if (nprocx==1) then
             f(1   :l1-1,:,:,ipsi) = f(l2i:l2,:,:,ipsi)
             f(l2+1:mx  ,:,:,ipsi) = f(l1:l1i,:,:,ipsi)
-         endif
-      else
-         if (ipx==0)        f(l1,:,:,ipsi)=0.
-         if (ipx==nprocx-1) f(l2,:,:,ipsi)=0.
+          endif
 !
-        do i=1,nghost
-          f(l1-i,:,:,ipsi) = 2*f(l1,:,:,ipsi) - f(l1+i,:,:,ipsi)
-        enddo
-        do i=1,nghost
-          f(l2+i,:,:,ipsi) = 2*f(l2,:,:,ipsi) - f(l2-i,:,:,ipsi)
-        enddo
-      endif
+        else !non-xperiodic
+!          
+          xleft: if (ipx==0) then
+            f(l1,:,:,ipsi)=0.
+            do i=1,nghost
+              f(l1-i,:,:,ipsi) = 2*f(l1,:,:,ipsi) - f(l1+i,:,:,ipsi)
+            enddo
+          endif xleft
 !
-      call initiate_isendrcv_bdry(f,ipsi)
-      call finalize_isendrcv_bdry(f,ipsi)
+          xright: if (ipx==nprocx-1) then
+            f(l2,:,:,ipsi)=0.
+            do i=1,nghost
+              f(l2+i,:,:,ipsi) = 2*f(l2,:,:,ipsi) - f(l2-i,:,:,ipsi)
+            enddo
+          endif xright 
 !
-!  Set boundary of psi - vertical, zero
+        endif xperiodic
+!
+        call initiate_isendrcv_bdry(f,ipsi)
+        call finalize_isendrcv_bdry(f,ipsi)
+!
+!  Set vertical boundary of psi: free slip (psi=psi''=0).
 !      
-      if (ipz==0)        f(:,:,n1,ipsi)=0.
-      if (ipz==nprocz-1) f(:,:,n2,ipsi)=0.
+        zbot: if (ipz==0) then
+          f(:,:,n1,ipsi)=0.
+          do i=1,nghost
+            f(:,:,n1-i,ipsi) = 2*f(:,:,n1,ipsi) - f(:,:,n1+i,ipsi)
+          enddo
+        endif zbot
+          
+        ztop: if (ipz==nprocz-1) then
+          f(:,:,n2,ipsi)=0.
+          do i=1,nghost
+            f(:,:,n2+i,ipsi) = 2*f(:,:,n2,ipsi) - f(:,:,n2-i,ipsi)
+          enddo
+        endif ztop
 !
-!  Zero also the second derivative
+      endif poisson_or_convection_boundary
 !
-      do i=1,nghost
-        f(:,:,n1-i,ipsi) = 2*f(:,:,n1,ipsi) - f(:,:,n1+i,ipsi)
-      enddo
-!
-      do i=1,nghost
-        f(:,:,n2+i,ipsi) = 2*f(:,:,n2,ipsi) - f(:,:,n2-i,ipsi)
-      enddo
-!
-    endsubroutine update_bounds_psi
+     endsubroutine update_bounds_psi
 !***********************************************************************
     subroutine special_calc_energy(f,df,p)
 !
@@ -896,7 +996,7 @@ module Special
 !        4 is (x,z)=( 0, 0), bottom  left corner, below upwelling
 !
          if (idiag_dTdz1/=0) then
-           if (n == n2) then
+           if ((ipz==nprocz-1).and.(n == n2)) then
              dTdz1 = -p%gTT(1,3)
            else
              dTdz1 = -impossible
@@ -905,7 +1005,7 @@ module Special
          endif
 !
          if (idiag_dTdz2/=0) then
-           if (n == n2) then
+           if ((ipz==nprocz-1).and.(n == n2)) then
              dTdz2 = -p%gTT(nx,3)
            else
              dTdz2 = -impossible
@@ -914,7 +1014,7 @@ module Special
          endif
 !
          if (idiag_dTdz3/=0) then
-           if (n == n1) then
+           if ((ipz==0).and.(n == n1)) then
              dTdz3 = -p%gTT(nx,3)
            else
              dTdz3 = -impossible
@@ -923,7 +1023,7 @@ module Special
          endif
 !
          if (idiag_dTdz4/=0) then
-           if (n == n1) then
+           if ((ipz==0).and.(n == n1)) then
              dTdz4 = -p%gTT(1,3)
            else
              dTdz4 = -impossible
@@ -932,7 +1032,7 @@ module Special
          endif
 !
          if (idiag_nusselt_num/=0) then
-           if (n == n2) then
+           if ((ipz==nprocz-1).and.(n == n2)) then
              nusselt_num=-p%gTT(:,3)
            else
              nusselt_num=0.
@@ -941,7 +1041,7 @@ module Special
          endif
 !         
          if (idiag_nusselt_den/=0) then
-           if (n == n1) then
+           if ((ipz==0).and.(n == n1)) then
              nusselt_den=p%TT
            else
              nusselt_den=0.
@@ -975,7 +1075,7 @@ module Special
          endif
 !         
          if (idiag_devsigzz1/=0) then
-            if (n == n2) then
+            if ((ipz==nprocz-1).and.(n == n2)) then
                devsigzz1 = q%devsigzz(1)
             else
                devsigzz1 = -impossible
@@ -984,7 +1084,7 @@ module Special
          endif
 !         
          if (idiag_devsigzz2/=0) then
-            if (n == n2) then
+            if ((ipz==nprocz-1).and.(n == n2)) then
                devsigzz2 = q%devsigzz(nx)
             else
                devsigzz2 = -impossible
@@ -993,7 +1093,7 @@ module Special
          endif
 !
          if (idiag_devsigzz3/=0) then
-            if (n == n1) then
+            if ((ipz==0).and.(n == n1)) then
                devsigzz3 = q%devsigzz(nx)
             else
                devsigzz3 = -impossible
@@ -1002,7 +1102,7 @@ module Special
          endif
 !
          if (idiag_devsigzz4/=0) then
-            if (n == n1) then
+            if ((ipz==0).and.(n == n1)) then
                devsigzz4 = q%devsigzz(1)
             else
                devsigzz4 = -impossible
