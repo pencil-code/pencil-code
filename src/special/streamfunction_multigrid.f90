@@ -219,6 +219,14 @@ contains
         alpha_sor= 2./(1+sin(pi*delta))
       endif
 !
+      if (lmpicomm.and.alpha_sor/=1) then
+        if (lroot) then 
+          print*,'The parallelized solver converges only for alpha_sor=1'
+          print*,'Please switch alpha_sor=1 in your start.in file.'
+        endif
+        call fatal_error("initialize_special","")
+      endif
+!
 !  Europa-specific stuff
 !
       mu1_ice=1./mu_ice
@@ -243,20 +251,22 @@ contains
 !
 !  Multigrid
 !      
-      nx_grid=nint(log(nx-1.0)/log(2.0))
+      if (lmultigrid) then 
+        nx_grid=nint(log(nx-1.0)/log(2.0))
 !      
-      if (mod(log(nx_coarsest-1.0),log(2.0)) /= 0) then
-         print*,'nx_coarsest=',nx_coarsest
-         print*,'log_2(nx_coarsest-1)=',log(nx_coarsest-1.0)/log(2.0)
-         print*,'This number is not integer'
-         call fatal_error("initialize_special",&
-              "nx_coarsest-1 must be a power of 2 for multigrid")
-      endif
+        if (mod(log(nx_coarsest-1.0),log(2.0)) /= 0) then
+          print*,'nx_coarsest=',nx_coarsest
+          print*,'log_2(nx_coarsest-1)=',log(nx_coarsest-1.0)/log(2.0)
+          print*,'This number is not integer'
+          call fatal_error("initialize_special",&
+               "nx_coarsest-1 must be a power of 2 for multigrid")
+        endif
 !     
-      nc_grid=nint(log(nx_coarsest-1.0)/log(2.0))
-      ngrid = nx_grid - nc_grid + 1
-      if (nx /= 2**nx_grid+1) call fatal_error("initialize_special",&
-           "nx-1 must be a power of 2 for multigrid")
+        nc_grid=nint(log(nx_coarsest-1.0)/log(2.0))
+        ngrid = nx_grid - nc_grid + 1
+        if (nx /= 2**nx_grid+1) call fatal_error("initialize_special",&
+             "nx-1 must be a power of 2 for multigrid")
+      endif
 !
 !  Viscosity
 !      
@@ -443,12 +453,15 @@ contains
 !***********************************************************************
     subroutine solve_for_psi(f)
 !
+      use Mpicomm, only: mpireduce_sum,mpibcast_real
+!
       real, dimension (mx,my,mz,mfarray) :: f   
       real, dimension (mx,mz) :: psi,psi_old,eta
       real, dimension (nx,nz) :: rhs
       real, dimension (nx,nz) :: alpha_factor,beta_factor
       integer :: icount,i
       real :: resid,aout,alpha,beta,dTTdx      
+      real :: variance_local,variance
 !
 !  Define r.h.s.
 !
@@ -481,9 +494,10 @@ contains
           enddo;enddo
         enddo
 
-        psi(l1:l2,n1:n2)=f(l1:l2,mpoint,n1:n2,ipsi)
-!      
-        call update_bounds_psi(psi)
+        call update_bounds_f(f)
+        psi=f(:,mpoint,:,ipsi)
+        !psi(l1:l2,n1:n2)=f(l1:l2,mpoint,n1:n2,ipsi)
+        !call update_bounds_psi(psi)
       endif
 !
 !  Initial residual
@@ -508,8 +522,14 @@ contains
           call successive_over_relaxation(psi,rhs,alpha_factor,beta_factor)
         endif
 !
-        call update_bounds_psi(psi)
-        resid=sqrt(sum((psi(l1:l2,n1:n2)-psi_old(l1:l2,n1:n2))**2)/(nx*nz))
+        f(l1:l2,mpoint,n1:n2,ipsi)=psi(l1:l2,n1:n2)
+        call update_bounds_f(f)
+        psi=f(:,mpoint,:,ipsi)
+        !call update_bounds_psi(psi)
+        variance_local = sum((psi(l1:l2,n1:n2) - psi_old(l1:l2,n1:n2))**2)
+        call mpireduce_sum(variance_local,variance)
+        if (lroot) resid = sqrt(variance/(nx*nz))
+        call mpibcast_real(resid)
 !
 ! Increase counter. 
 !
@@ -547,6 +567,8 @@ contains
       real, optional :: h
       integer :: ii,nn,k,l
       integer :: nu,nr,nn1,nn2,ll1,ll2
+      integer :: np1,np2,lp1,lp2
+      
       !real, allocatable, dimension(:,:) :: eta 
 !
       real :: alpha,beta,aout
@@ -561,10 +583,35 @@ contains
         alpha_sor_=alpha_sor
       endif
 !
-      do nn=nn1+1,nn2-1
+      if (ipx==0) then
+        lp1 = ll1 + 1
+      else
+        lp1 = ll1
+      endif
+!
+      if (ipx==nprocx-1) then
+        lp2 = ll2 - 1
+      else
+        lp2 = ll2
+      endif
+!
+      if (ipz==0) then
+        np1 = nn1 + 1
+      else
+        np1 = nn1
+      endif
+!
+      if (ipz==nprocz-1) then
+        np2 = nn2 - 1
+      else
+        np2 = nn2
+      endif
+
+!
+      do nn=np1,np2
         k=nn-nn1+1
-        do ii=ll1+1,ll2-1
-          l=ii-l1+1
+        do ii=lp1,lp2
+          l=ii-ll1+1
 !     
           alpha=alp(l,k)
           beta=bet(l,k)
@@ -866,6 +913,101 @@ contains
 !
     endsubroutine g_function
 !***********************************************************************
+    subroutine update_bounds_f(f)
+!
+      use Mpicomm, only: initiate_isendrcv_bdry,finalize_isendrcv_bdry
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      integer :: i
+!
+      poisson_or_convection_boundary: if (lpoisson_test) then
+!
+        if (ipx==0) then
+          f(l1,:,:,ipsi)=0.0
+          do i=1,nghost
+            f(l1-i,:,:,ipsi) = - f(l1+i,:,:,ipsi) + dx**2
+          enddo
+        endif
+!           
+        if (ipx==nprocx-1) then
+          f(l2,:,:,ipsi)=0.0
+          do i=1,nghost
+            f(l2+i,:,:,ipsi) = - f(l2-i,:,:,ipsi) + dx**2
+          enddo
+        endif
+!
+        call initiate_isendrcv_bdry(f,ipsi)
+        call finalize_isendrcv_bdry(f,ipsi)
+!
+        if (ipz==0) then
+          f(:,:,n1,ipsi)=0.0
+          do i=1,nghost
+            f(:,:,n1-i,ipsi) = - f(:,:,n1+1,ipsi) + dx**2
+          enddo
+        endif
+!
+        if (ipz==nprocz-1) then
+          f(:,:,n2,ipsi)=0.0
+          do i=1,nghost
+            f(:,:,n2+i,ipsi) = - f(:,:,n2-i,ipsi) + dx**2
+          enddo
+        endif
+!
+      else  ! convection
+!
+!  For convection runs, the x-boundary is either periodic or free slip.
+!  For the streamfunction, free slip means psi=psi''=0.        
+!
+        xperiodic: if (lperi(1)) then 
+!
+!  Periodic in the lateral 
+!
+          if (nprocx==1) then
+            f(1   :l1-1,:,:,ipsi) = f(l2i:l2,:,:,ipsi)
+            f(l2+1:mx  ,:,:,ipsi) = f(l1:l1i,:,:,ipsi)
+          endif
+!
+        else !non-xperiodic
+!          
+          xleft: if (ipx==0) then
+            f(l1,:,:,ipsi)=0.
+            do i=1,nghost
+              f(l1-i,:,:,ipsi) = 2*f(l1,:,:,ipsi) - f(l1+i,:,:,ipsi)
+            enddo
+          endif xleft
+!
+          xright: if (ipx==nprocx-1) then
+            f(l2,:,:,ipsi)=0.
+            do i=1,nghost
+              f(l2+i,:,:,ipsi) = 2*f(l2,:,:,ipsi) - f(l2-i,:,:,ipsi)
+            enddo
+          endif xright 
+!
+        endif xperiodic
+!
+        call initiate_isendrcv_bdry(f,ipsi)
+        call finalize_isendrcv_bdry(f,ipsi)
+!
+!  Set vertical boundary of psi: free slip (psi=psi''=0).
+!      
+        zbot: if (ipz==0) then
+          f(:,:,n1,ipsi)=0.
+          do i=1,nghost
+            f(:,:,n1-i,ipsi) = 2*f(:,:,n1,ipsi) - f(:,:,n1+i,ipsi)
+          enddo
+        endif zbot
+          
+        ztop: if (ipz==nprocz-1) then
+          f(:,:,n2,ipsi)=0.
+          do i=1,nghost
+            f(:,:,n2+i,ipsi) = 2*f(:,:,n2,ipsi) - f(:,:,n2-i,ipsi)
+          enddo
+        endif ztop
+!
+      endif poisson_or_convection_boundary
+!
+     endsubroutine update_bounds_f
+!***********************************************************************
     subroutine update_bounds_psi(a)
 !
       real, dimension(:,:) :: a
@@ -988,7 +1130,7 @@ contains
 !        4 is (x,z)=( 0, 0), bottom  left corner, below upwelling
 !
         if (idiag_dTdz1/=0) then
-          if (n == n2) then
+          if ((ipz==nprocz-1).and.(n == n2)) then
             dTdz1 = -p%gTT(1,3) - gTT_conductive
           else
             dTdz1 = -impossible
@@ -997,7 +1139,7 @@ contains
         endif
 !
         if (idiag_dTdz2/=0) then
-          if (n == n2) then
+          if ((ipz==nprocz-1).and.(n == n2)) then
             dTdz2 = -p%gTT(nx,3) - gTT_conductive
           else
             dTdz2 = -impossible
@@ -1006,7 +1148,7 @@ contains
         endif
 !
         if (idiag_dTdz3/=0) then
-          if (n == n1) then
+          if ((ipz==0).and.(n == n1)) then
             dTdz3 = -p%gTT(nx,3) - gTT_conductive
           else
             dTdz3 = -impossible
@@ -1015,7 +1157,7 @@ contains
         endif
 !
         if (idiag_dTdz4/=0) then
-          if (n == n1) then
+          if ((ipz==0).and.(n == n1)) then
             dTdz4 = -p%gTT(1,3) - gTT_conductive
           else
             dTdz4 = -impossible
@@ -1024,7 +1166,7 @@ contains
         endif
 !
         if (idiag_nusselt_num/=0) then
-          if (n == n2) then
+          if ((ipz==nprocz-1).and.(n == n2)) then
             nusselt_num=-p%gTT(:,3) - gTT_conductive
           else
             nusselt_num=0.
@@ -1033,7 +1175,7 @@ contains
         endif
 !         
         if (idiag_nusselt_den/=0) then
-          if (n == n1) then
+          if ((ipz==0).and.(n == n1)) then
             nusselt_den=p%TT + Tbar(n)
           else
             nusselt_den=0.
@@ -1067,7 +1209,7 @@ contains
         endif
 !         
         if (idiag_devsigzz1/=0) then
-          if (n == n2) then
+          if ((ipz==nprocz-1).and.(n == n2)) then
             devsigzz1 = q%devsigzz(1)
           else
             devsigzz1 = -impossible
@@ -1076,7 +1218,7 @@ contains
         endif
 !         
         if (idiag_devsigzz2/=0) then
-          if (n == n2) then
+          if ((ipz==nprocz-1).and.(n == n2)) then
             devsigzz2 = q%devsigzz(nx)
           else
             devsigzz2 = -impossible
@@ -1085,7 +1227,7 @@ contains
         endif
 !
         if (idiag_devsigzz3/=0) then
-          if (n == n1) then
+          if ((ipz==0).and.(n == n1)) then
             devsigzz3 = q%devsigzz(nx)
           else
             devsigzz3 = -impossible
@@ -1094,7 +1236,7 @@ contains
         endif
 !
         if (idiag_devsigzz4/=0) then
-          if (n == n1) then
+          if ((ipz==0).and.(n == n1)) then
             devsigzz4 = q%devsigzz(1)
           else
             devsigzz4 = -impossible
