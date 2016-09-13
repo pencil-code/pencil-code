@@ -24,7 +24,6 @@ module Particles_sub
   public :: find_interpolation_indeces, get_gas_density
   public :: precalc_weights, find_weight_array_dims
   public :: dragforce_equi_multispecies, diffuse_interaction
-  public :: diffuse_df_interaction
 !
   interface get_rhopswarm
     module procedure get_rhopswarm_ineargrid
@@ -1427,10 +1426,9 @@ module Particles_sub
 !
     endsubroutine find_weight_array_dims
 !***********************************************************************
-    subroutine diffuse_interaction(f,aux_index,ldiff,lexp,rdiffconst)
+    subroutine diffuse_interaction(domain,ldiff,lexp,rdiffconst)
 !
-      real, intent(inout), dimension(mx,my,mz,mfarray) :: f
-      integer, intent(in) :: aux_index
+      real, intent(inout), dimension(mx,my,mz) :: domain
       logical, intent(in) :: ldiff,lexp
       real :: rdiffconst
 !
@@ -1441,9 +1439,9 @@ module Particles_sub
         call fatal_error('particles_sub','not yet implemented for ldensity_nolog')
       else
         if (ldiff) then
-          call diffuse_domain_scalar(f(:,:,:,aux_index),lexp,rdiffconst)
+          call diffuse_domain_scalar(domain,lexp,rdiffconst)
         else
-          call smooth_kernel_domain(f(:,:,:,aux_index),lexp)
+          call smooth_kernel_domain(domain,lexp)
         endif
       endif
 !
@@ -1456,7 +1454,7 @@ module Particles_sub
 !  20-jul-06/tony: coded
 !  18-aug-16/jonas: adapted
 !
-      real, intent(inout), dimension(mx,my,mz,1) :: domain
+      real, intent(inout), dimension(mx,my,mz) :: domain
       real, dimension(nx,ny,nz) :: smoothed=0.0
       logical :: lexp
       real, dimension(7) :: kernel_1d= (/ &
@@ -1518,7 +1516,7 @@ module Particles_sub
 !
       if (nxgrid /= 1 .and. nygrid == 1 .and. nzgrid == 1) then
         do l = l1,l2
-          smoothed(l-l1+1,1,1) =  sum(kernel_1d*domain(l-3:l+3,4,4,1))
+          smoothed(l-l1+1,1,1) =  sum(kernel_1d*domain(l-3:l+3,4,4))
         enddo
       endif
 !
@@ -1527,7 +1525,7 @@ module Particles_sub
       if (nxgrid /= 1 .and. nygrid /= 1 .and. nzgrid == 1) then
         do l = l1,l2
           do m = m1,m2
-            smoothed(l-l1+1,m-m1+1,1) = sum(kernel_2d*domain(l-3:l+3,m-3:m+3,4,1))
+            smoothed(l-l1+1,m-m1+1,1) = sum(kernel_2d*domain(l-3:l+3,m-3:m+3,4))
           enddo
         enddo
       endif
@@ -1538,13 +1536,13 @@ module Particles_sub
         do l = l1,l2
           do m = m1,m2
             do n = n1,n2             
-              smoothed(l-l1+1,m-m1+1,n-n1+1) = sum(kernel_3d*domain(l-3:l+3,m-3:m+3,n-3:n+3,1))
+              smoothed(l-l1+1,m-m1+1,n-n1) = sum(kernel_3d*domain(l-3:l+3,m-3:m+3,n-3:n+3))
             enddo
           enddo
         enddo
       endif
 
-      domain(l1:l2,m1:m2,n1:n2,1) = smoothed
+      domain(l1:l2,m1:m2,n1:n2) = smoothed
 !
     endsubroutine smooth_kernel_domain
 !***************************************************************************
@@ -1571,20 +1569,16 @@ module Particles_sub
 !  x-derivative
 !
       if (nxgrid /= 1) then
-        do n = n1,n2
-          do m = m1,m2
-            do l = l1,l2
-              df2dx(l,m,n)=(1./180)*(-490.0*domain(l,m,n) &
-                  +270.0*(domain(l+1,m,n)+domain(l-1,m,n)) &
-                  - 27.0*(domain(l+2,m,n)+domain(l-2,m,n)) &
-                  +  2.0*(domain(l+3,m,n)+domain(l-3,m,n)))
+        do l = l1,l2
+          df2dx(l,m1:m2,n1:n2)=(1./180)*(-490.0*domain(l,m1:m2,n1:n2) &
+              +270.0*(domain(l+1,m1:m2,n1:n2)+domain(l-1,m1:m2,n1:n2)) &
+              - 27.0*(domain(l+2,m1:m2,n1:n2)+domain(l-2,m1:m2,n1:n2)) &
+              +  2.0*(domain(l+3,m1:m2,n1:n2)+domain(l-3,m1:m2,n1:n2)))
 !            df2dx(1:l2-l1,m-m1+1,n-n1+1)=(1./180)*(-490.0*domain(l1:l2,m,n,1) &
 !                +270.0*(domain(l1+1:l2+1,m,n,1)+domain(l1-1:l2-1,m,n,1)) &
 !                - 27.0*(domain(l1+2:l2+2,m,n,1)+domain(l1-2:l2-2,m,n,1)) &
 !                +  2.0*(domain(l1+3:l2+3,m,n,1)+domain(l1-3:l2-3,m,n,1)))
 !              df2dx()
-            enddo
-          enddo
         enddo
       else
         call fatal_error('deriv_2nd','der2_domain_scalar needs at least xdim/=1')
@@ -1593,20 +1587,16 @@ module Particles_sub
 !  y-derivative
 !
       if(nygrid /= 1) then
-        do n = n1,n2
-          do m = m1,m2
-            do l = l1,l2
-              df2dy(l,m,n)= (1./180)*(-490.0*domain(l,m,n) &
-                  +270.0*(domain(l,m-1,n)+domain(l,m+1,n)) &
-                  - 27.0*(domain(l,m-2,n)+domain(l,m+2,n)) &
-                 +  2.0*(domain(l,m-3,n)+domain(l,m+3,n)))
-            enddo
+        do m = m1,m2
+          df2dy(l1:l2,m,n1:n2)= (1./180)*(-490.0*domain(l1:l2,m,n1:n2) &
+              +270.0*(domain(l1:l2,m-1,n1:n2)+domain(l1:l2,m+1,n1:n2)) &
+              - 27.0*(domain(l1:l2,m-2,n1:n2)+domain(l1:l2,m+2,n1:n2)) &
+              +  2.0*(domain(l1:l2,m-3,n1:n2)+domain(l1:l2,m+3,n1:n2)))
+        enddo
 !            df2dy(1:l2-l1,m-m1+1,n-n1+1)=(1./180)*(-490.0*domain(l1:l2,m,n,1) &
 !                +270.0*(domain(l1:l2,m-1,n,1)+domain(l1:l2,m+1,n,1)) &
 !                - 27.0*(domain(l1:l2,m-2,n,1)+domain(l1:l2,m+2,n,1)) &
 !                +  2.0*(domain(l1:l2,m-3,n,1)+domain(l1:l2,m+3,n,1)))
-          enddo
-        enddo
       endif
 !
 !  z-derivative
@@ -1616,19 +1606,15 @@ module Particles_sub
 !
       if (nzgrid /=1) then
         do n = n1,n2
-          do m = m1,m2
-            do l = l1,l2
-              df2dz(l,m,n)= (1./180)*(-490.0*domain(l,m,n) &
-                  +270.0*(domain(l,m,n-1)+domain(l,m,n+1)) &
-                  - 27.0*(domain(l,m,n-2)+domain(l,m,n+2)) &
-                  +  2.0*(domain(l,m,n-3)+domain(l,m,n+3)))
-            enddo
+          df2dz(l1:l2,m1:m2,n)= (1./180)*(-490.0*domain(l1:l2,m1:m2,n) &
+              +270.0*(domain(l1:l2,m1:m2,n-1)+domain(l1:l2,m1:m2,n+1)) &
+              - 27.0*(domain(l1:l2,m1:m2,n-2)+domain(l1:l2,m1:m2,n+2)) &
+              +  2.0*(domain(l1:l2,m1:m2,n-3)+domain(l1:l2,m1:m2,n+3)))
+        enddo
 !            df2dz(1:l2-l1,m-m1+1,n-n1+1)=(1./180)*(-490.0*domain(l1:l2,m,n,1) &
 !                +270.0*(domain(l1:l2,m,n-1,1)+domain(l1:l2,m,n+1,1)) &
 !                - 27.0*(domain(l1:l2,m,n-2,1)+domain(l1:l2,m,n+2,1)) &
 !                +  2.0*(domain(l1:l2,m,n-3,1)+domain(l1:l2,m,n+3,1)))
-          enddo
-        enddo
       endif
 
       df2 = df2dx+df2dy+df2dz
@@ -1638,37 +1624,4 @@ module Particles_sub
 !
     endsubroutine diffuse_domain_scalar
 ! ***********************************************************************
-    subroutine diffuse_df_interaction(df,aux_index,ldiff,lexp,rdiffconst)
-!
-      real, intent(inout), dimension(mx,my,mz,mvar) :: df
-      integer, intent(in) :: aux_index
-      character(len=30) :: formatstring
-      logical, intent(in) :: ldiff,lexp
-      real :: rdiffconst
-!
-!
-!
-      formatstring = '(A10,  (E10.3,","))'
-      write(formatstring(6:7),'(I2)') nxgrid
-!
-      if (ldensity_nolog) then
-!
-!  JONAS this needs diffusing and transporting
-!
-        call fatal_error('particles_sub','not yet implemented for ldensity_nolog')
-!        df(l1:l2,m1:m2,n1:n2,target_index) =  df(l1:l2,m1:m2,n1:n2,target_index) +  &
-!            f(l1:l2,m1:m2,n1:n2,aux_index)
-      else
-        if (ldiff) then
-          call diffuse_domain_scalar(df(:,:,:,aux_index),lexp,rdiffconst)
-        else
-          call smooth_kernel_domain(df(:,:,:,aux_index),lexp)
-        endif
-! should be ilnrho
-!        df(l1:l2,m1:m2,n1:n2,target_index) =  df(l1:l2,m1:m2,n1:n2,target_index) +  &
-!            (f(l1:l2,m1:m2,n1:n2,aux_index)) 
-      endif
-!
-    endsubroutine diffuse_df_interaction
-! *********************************************************************
 endmodule Particles_sub

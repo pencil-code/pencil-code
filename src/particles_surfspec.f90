@@ -373,14 +373,15 @@ module Particles_surfspec
 !
     subroutine dpsurf_dt(f,df,fp,dfp,ineargrid)
 !
-      use GhostFold, only: reverse_fold_f_3points
+      use Boundcond
+      use Mpicomm
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(mpar_loc,mparray) :: fp
       real, dimension(mpar_loc,mpvar) :: dfp
       integer, dimension(mpar_loc,3) :: ineargrid
-      integer :: i,j
+      integer :: i,j,g
 !
 !  equations.tex eq 37
 !      call keep_compiler_quiet(fp)
@@ -398,8 +399,13 @@ module Particles_surfspec
             'not implemented for ldensity_nolog')
         do j = 1,nchemspec-1
           do i = 1,ndiffsteps
-            call reverse_fold_f_3points(f,ispecaux(j),ispecaux(j))
-            call diffuse_interaction(f,ispecaux(j),ldiffs,.False.,rdiffconsts)
+            call boundconds_x(f,ispecaux(j),ispecaux(j))
+            call initiate_isendrcv_bdry(f,ispecaux(j),ispecaux(j))
+            call finalize_isendrcv_bdry(f,ispecaux(j),ispecaux(j))
+            call boundconds_y(f,ispecaux(j),ispecaux(j))
+            call boundconds_z(f,ispecaux(j),ispecaux(j))
+!
+            call diffuse_interaction(f(:,:,:,ispecaux(j)),ldiffs,.False.,rdiffconsts)
           enddo
           df(l1:l2,m1:m2,n1:n2,ichemspec(j)) =  df(l1:l2,m1:m2,n1:n2,ichemspec(j)) + &
               f(l1:l2,m1:m2,n1:n2,ispecaux(j))
@@ -412,11 +418,17 @@ module Particles_surfspec
 !  Diffusion of the mass bound enthalpy
 !
       if (lspecies_transfer .and. ldiffuse_backenth) then
-        if (ldensity_nolog) call fatal_error('particles_surf', 'diffusion of mass bound enthalpy &
-            & not implemented for ldensity_nolog')
+        if (ldensity_nolog .and. ltemperature_nolog) & 
+        call fatal_error('particles_surf', 'diffusion of mass bound enthalpy &
+        & not implemented for ldensity_nolog')
         do i = 1,ndiffsteps
-          call reverse_fold_f_3points(f,ispecenth,ispecenth)
-          call diffuse_interaction(f,ispecenth,ldiffenth,.False.,rdiffconsts)
+          call boundconds_x(f,ispecenth,ispecenth)
+          call initiate_isendrcv_bdry(f,ispecenth,ispecenth)
+          call finalize_isendrcv_bdry(f,ispecenth,ispecenth)
+          call boundconds_y(f,ispecenth,ispecenth)
+          call boundconds_z(f,ispecenth,ispecenth)
+          call diffuse_interaction(f(:,:,:,ispecenth),ldiffenth,.False.,rdiffconsts)
+          
         enddo
         df(l1:l2,m1:m2,n1:n2,ilnTT) =  df(l1:l2,m1:m2,n1:n2,ilnTT) + &
             f(l1:l2,m1:m2,n1:n2,ispecenth)

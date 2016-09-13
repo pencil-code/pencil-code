@@ -33,7 +33,6 @@ module Particles_mass
   logical :: lconstant_mass_w_chem=.false.
   logical :: ldiffuse_backreac=.false., ldiffm=.false.
   logical :: lbdry_test = .false.
-  logical :: ldiff_domain_dflnrho = .false.
   integer :: idmp=0
   real :: mass_const=0.0, dmpdt=1e-3
   real :: dmpdt_save = 0.0
@@ -50,7 +49,7 @@ module Particles_mass
   namelist /particles_mass_run_pars/ lpart_mass_backreac, dmpdt, &
       lpart_mass_momentum_backreac, lconstant_mass_w_chem, &
       ldiffuse_backreac,ldiffm,diffmult,lbdry_test,rdiffconstm, &
-      ndiffstepm, ldiff_domain_dflnrho
+      ndiffstepm
 !
   integer :: idiag_mpm=0
   integer :: idiag_dmpm=0
@@ -231,26 +230,19 @@ module Particles_mass
             'not implemented for ldensity_nolog')
 !
         do i = 1,ndiffstepm
-          if (lbdry_test) then
             call boundconds_x(f,idmp,idmp)
             call initiate_isendrcv_bdry(f,idmp,idmp)
             call finalize_isendrcv_bdry(f,idmp,idmp)
             call boundconds_y(f,idmp,idmp)
             call boundconds_z(f,idmp,idmp)
-          else
-            call reverse_fold_f_3points(f,idmp,idmp)
-          endif
 !
-          call diffuse_interaction(f,idmp,ldiffm,.False.,rdiffconstm)
+            call diffuse_interaction(f(:,:,:,idmp),ldiffm,.False.,rdiffconstm)
 !
         enddo
 !
         df(l1:l2,m1:m2,n1:n2,ilnrho) =  df(l1:l2,m1:m2,n1:n2,ilnrho) + &
             f(l1:l2,m1:m2,n1:n2,idmp)
 !
-        if (ldiff_domain_dflnrho) then
-          call diffuse_df_interaction(df,ilnrho,ldiffm,.False.,rdiffconstm*.2)
-        endif
 !
 !        if (ldiagnos) then
 !          print*, 'dens particle influence hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh'
@@ -342,10 +334,13 @@ module Particles_mass
           allocate(Rck_max(k1:k2,1:N_surface_reactions))
           allocate(mass_loss(k1:k2))
           allocate(Vp(k1:k2))
+          St=0.0
+          Rck_max=0.0
+          mass_loss=0.0
+          Vp=0.0
 !
           call get_mass_chemistry(mass_loss,St,Rck_max)
         endif
-!        print*, 'mass loss: ', mass_loss
 !
 ! Loop over all particles in current pencil.
 !
@@ -356,10 +351,10 @@ module Particles_mass
 !
         if (lparticles_chemistry) then
           if (.not. lconstant_mass_w_chem) then
-            dfp(k1:k2,imp) = dfp(k1:k2,imp)-mass_loss(k1:k2)
+            dfp(k1:k2,imp) = - mass_loss
           else
             dfp(k1:k2,imp) = 0.0
-            if (ldiagnos) dmpdt_save = dmpdt_save + sum(-mass_loss(k1:k2))
+            if (ldiagnos) dmpdt_save = dmpdt_save + sum(-mass_loss)
           endif
         else
           if (.not. lconstant_mass_w_chem) then
@@ -372,7 +367,7 @@ module Particles_mass
 !
 !  Evolve the density at the outer particle shell. This is used to
 !  determine how evolve the particle radius (it should not start to
-!  decrease before the outer shell is entirly consumed).
+!  decrease before the outer shell is entirely consumed).
 !
         if (lparticles_chemistry) then
           if (.not. lsurface_nopores) then

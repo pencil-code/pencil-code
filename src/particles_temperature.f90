@@ -34,7 +34,6 @@ module Particles_temperature
   logical :: lpart_nuss_const=.false.
   logical :: lstefan_flow = .true.
   logical :: ldiffuse_backtemp = .false.,ldiffTT=.false.
-  logical :: ldiff_domain_dflnTT = .false.
   integer :: idmpt=0,ndiffstepTT=3
   real :: init_part_temp, emissivity=0.0
   real :: rdiffconstTT = 0.1178
@@ -50,7 +49,7 @@ module Particles_temperature
   namelist /particles_TT_run_pars/ emissivity, cp_part, lpart_temp_backreac,&
       lrad_part,Twall, lpart_nuss_const,lstefan_flow,lconv_heating, &
        ldiffuse_backtemp,ldiffTT,rdiffconstTT, &
-       ndiffstepTT, ldiff_domain_dflnTT
+       ndiffstepTT
 !
   integer :: idiag_Tpm=0, idiag_etpm=0
 !
@@ -166,7 +165,8 @@ module Particles_temperature
 !
 !  28-aug-14/jonas+nils: coded
 !
-      use GhostFold, only: reverse_fold_f_3points,reverse_fold_df_3points
+      use Boundcond
+      use Mpicomm
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
@@ -176,15 +176,16 @@ module Particles_temperature
       integer, dimension(mpar_loc,3) :: ineargrid
 !
       if (lpart_temp_backreac .and. ldiffuse_backtemp) then
-          if (ldensity_nolog) call fatal_error('particles_mass', & 
-              'not implemented for ldensity_nolog')
+        if (ldensity_nolog .and. ltemperature_nolog) &
+            call fatal_error('particles_mass', 'not implemented for ldensity_nolog')
         do i = 1, ndiffstepTT
-          if (ldiff_domain_dflnTT) then
-            call reverse_fold_df_3points(df,ilnTT,ilnTT)
-            call diffuse_df_interaction(df,ilnTT,ldiffTT,.False.,rdiffconstTT)
-          endif
-          call reverse_fold_f_3points(f,idmpt,idmpt)
-          call diffuse_interaction(f,idmpt,ldiffTT,.False.,rdiffconstTT)
+          call boundconds_x(f,idmpt,idmpt)
+          call initiate_isendrcv_bdry(f,idmpt,idmpt)
+          call finalize_isendrcv_bdry(f,idmpt,idmpt)
+          call boundconds_y(f,idmpt,idmpt)
+          call boundconds_z(f,idmpt,idmpt)
+!
+          call diffuse_interaction(f(:,:,:,idmpt),ldiffTT,.False.,rdiffconstTT)
 !
         enddo
         df(l1:l2,m1:m2,n1:n2,ilnTT) =  df(l1:l2,m1:m2,n1:n2,ilnTT) + &
@@ -241,10 +242,6 @@ module Particles_temperature
       intent(in) ::  fp, ineargrid
       intent(inout) :: f,dfp, df
 !
-!      call keep_compiler_quiet(f)
-!      call keep_compiler_quiet(df)
-!      call keep_compiler_quiet(p)
-!      call keep_compiler_quiet(ineargrid)
 !
       feed_back = 0.
 !

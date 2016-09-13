@@ -465,11 +465,11 @@ module Chemistry
 !
 !  allocate memory for net_reaction diagnostics
 !
-      if (allocated(net_react_p)) then
+      if (allocated(net_react_p) .and. .not. lreloading) then
         print*, 'this should not be here'
       endif
 
-      if (lchemistry_diag) then
+      if (lchemistry_diag .and. .not. lreloading) then
         allocate(net_react_p(nchemspec,nreactions),STAT=stat)
         if (stat > 0) call stop_it("Couldn't allocate memory for net_react_p")
         net_react_p = 0.
@@ -2557,7 +2557,7 @@ module Chemistry
 !
 !  Allocate reaction arrays (but not during reloading!)
 !
-!      if (.not. lreloading) then
+      if (.not. lreloading) then
         allocate(stoichio(nchemspec,mreactions),STAT=stat)
         if (stat > 0) call stop_it("Couldn't allocate memory for stoichio")
         allocate(Sijm(nchemspec,mreactions),STAT=stat)
@@ -2580,7 +2580,7 @@ module Chemistry
         if (stat > 0) call stop_it("Couldn't allocate memory for kreactions_alpha")
         allocate(back(mreactions),STAT=stat)
         if (stat > 0) call stop_it("Couldn't allocate memory for back")
-!      endif
+      endif
 !
 !  Initialize data
 !
@@ -3637,14 +3637,16 @@ module Chemistry
         if (.not. lfix_Sc) then
 !NILS: Since Bin_diff_coeff is such a huge array we must check if it
 !NILS: required to define it for the full domain!!!!!!
-          allocate(Bin_Diff_coef(mx,my,mz,nchemspec,nchemspec),STAT=stat)
-          if (stat > 0) call stop_it("Couldn't allocate memory "// &
-              "for binary diffusion coefficients")
+          if (.not. lreloading) then
+            allocate(Bin_Diff_coef(mx,my,mz,nchemspec,nchemspec),STAT=stat)
+            if (stat > 0) call stop_it("Couldn't allocate memory "// &
+                "for binary diffusion coefficients")
 !
-          allocate(Diff_full(mx,my,mz,nchemspec),STAT=stat)
-          allocate(Diff_full_add(mx,my,mz,nchemspec),STAT=stat)
-          if (stat > 0) call stop_it("Couldn't allocate memory "// &
-              "for binary diffusion coefficients")
+            allocate(Diff_full(mx,my,mz,nchemspec),STAT=stat)
+            allocate(Diff_full_add(mx,my,mz,nchemspec),STAT=stat)
+            if (stat > 0) call stop_it("Couldn't allocate memory "// &
+                "for binary diffusion coefficients")
+          endif
 !
         endif
 !      endif
@@ -3698,7 +3700,7 @@ module Chemistry
 !
 !  Allocate reaction arrays
 !
-!      if (.not. lreloading) then
+      if (.not. lreloading) then
         allocate(stoichio(nchemspec,mreactions),STAT=stat)
         if (stat > 0) call stop_it("Couldn't allocate memory for stoichio")
         allocate(Sijm(nchemspec,mreactions),STAT=stat)
@@ -3736,7 +3738,7 @@ module Chemistry
         allocate(photochem_case (nreactions),STAT=stat)
         photochem_case = .false.
         if (stat > 0) call stop_it("Couldn't allocate memory for photochem_case")
-!      endif
+      endif
 !
 !  Initialize data
 !
@@ -5871,7 +5873,7 @@ module Chemistry
 !        f(:,:,:,iuy:iuz)=0
 !      endif
 !
-      deallocate(a,grid)
+      deallocate(a,grid,cc)
 !
     endsubroutine prerun_1D
 !***********************************************************************
@@ -6136,7 +6138,7 @@ module Chemistry
 !        f(:,:,:,iuy:iuz)=0
 !      endif
 !
-      deallocate(a,grid)
+      deallocate(a,grid,name_sp)
 !
     endsubroutine FlameMaster_ini
 !***********************************************************************
