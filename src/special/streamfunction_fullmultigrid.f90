@@ -1776,7 +1776,7 @@ module Special
       real :: alpha=impossible,beta=impossible
 !
       integer :: mvx,mvz,nvx,nvz
-      integer :: ic,nc
+      integer :: ic,nc,icc1,icc2
       real :: hx,hz
 !
       mvx=size(u  ,1); mvz=size(u  ,2)
@@ -1788,11 +1788,19 @@ module Special
 !
 ! Convection
 !
+      if (lperi(1)) then
+         icc1=1
+         icc2=nvx
+      else
+         icc=2
+         icc2=nvx-1
+      endif
+!         
       if (.not.lpoisson_test) then 
          call update_bounds_psi(u)
          alpha=0.0
          beta=0.0
-         do ic=2,nvx-1
+         do ic=icc1,icc2
             l=ic+nghost
             do nc=2,nvz-1
                k=nc+nghost
