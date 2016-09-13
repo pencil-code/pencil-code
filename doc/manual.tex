@@ -9642,8 +9642,9 @@ To continue working in double precision
 (\code{REAL_PRECISION=double}), you just say
 \code{lread_from_other_prec=T} in \code{run_pars}.
 Afterwards, remember to put \code{lread_from_other_prec=F}.
-
-\subsection{Remeshing (regridding)}
+If continuation is done in a new run directory, first execute start.csh there 
+and then copy the files var.dat (and if present global.dat) from the old to the new directory,
+using pc_copyvar.
 
 \subsection{Remeshing (regridding)}
 \index{Remeshing}
