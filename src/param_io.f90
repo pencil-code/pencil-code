@@ -526,6 +526,10 @@ module Param_IO
 !
       call check_consistency_of_lperi('read_all_run_pars')
 !
+!  Ensure that right precision information is written in dim.dat.
+!
+      lwrite_dim_again = lwrite_dim_again .or. lread_from_other_prec
+!
     endsubroutine read_all_run_pars
 !***********************************************************************
     subroutine get_downpars(ind,n,ip)
