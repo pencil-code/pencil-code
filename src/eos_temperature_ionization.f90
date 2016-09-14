@@ -35,7 +35,7 @@ module EquationOfState
   integer, parameter :: ilnrho_TT=5, irho_ss=7, irho_TT=10, ipp_ss=11
   integer, parameter :: ipp_cs2=12
   integer, parameter :: irho_eth=13, ilnrho_eth=14
-  integer :: icp, icv, ics, igamma, inabad
+  integer :: icp, icv, ics, idelta, igamma, inabad
   integer :: imass = 1
   !  secondary parameters calculated in initialize
   real :: mu1_0,Rgas
@@ -51,6 +51,7 @@ module EquationOfState
 !
   real :: lnpp_bot=0.
   real :: ss_bot=0.
+  real :: TTbot, TTtop
 !
   real :: va2max_eos=huge1
   integer :: va2power_eos=5
@@ -62,14 +63,16 @@ module EquationOfState
                            tau_relax,va2max_eos,va2power_eos,B_ext_eos, &
                            lss_as_aux,lpp_as_aux,lcp_as_aux,lcv_as_aux, &
                            lcs_as_aux,lgamma_as_aux,lnabad_as_aux, &
-                           lHminus_opacity_correction
+                           ldelta_as_aux, &
+                           lHminus_opacity_correction, TTbot, TTtop
 ! run parameters
   namelist /eos_run_pars/ xHe,lconst_yH,yH_const,yMetals,lnpp_bot,ss_bot, &
-                           lrevise_chiH_eV, chiH_eV, &
+                          lrevise_chiH_eV, chiH_eV, &
                           lrevise_chiHminus_eV, chiHminus_eV, &
                           tau_relax,va2max_eos,va2power_eos,B_ext_eos, &
                           lss_as_aux,lpp_as_aux,lcp_as_aux,lcv_as_aux, &
                           lcs_as_aux,lgamma_as_aux,lnabad_as_aux, &
+                          ldelta_as_aux, &
                           lHminus_opacity_correction
 !
   real :: cs0=impossible, rho0=impossible, cp=impossible,cv=impossible
@@ -77,7 +80,7 @@ module EquationOfState
   logical :: lcalc_cp=.false.,lcalc_cp_full=.false.
   logical :: lss_as_aux=.false., lpp_as_aux=.false., lcs_as_aux=.false.
   logical :: lcp_as_aux=.false., lcv_as_aux=.false., lgamma_as_aux=.false.
-  logical :: lnabad_as_aux=.false.
+  logical :: lnabad_as_aux=.false., ldelta_as_aux=.false.
   real :: gamma=5./3., gamma_m1=impossible, gamma1=impossible
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=impossible, cs2top=impossible
@@ -170,6 +173,7 @@ module EquationOfState
       if (lcp_as_aux) call register_report_aux('cp',icp)
       if (lcv_as_aux) call register_report_aux('cv',icv)
       if (lcs_as_aux) call register_report_aux('cs',ics)
+      if (ldelta_as_aux) call register_report_aux('delta',idelta)
       if (lgamma_as_aux) call register_report_aux('gamma',igamma)
       if (lnabad_as_aux) call register_report_aux('nabad',inabad)
 
@@ -226,6 +230,7 @@ module EquationOfState
       if (lcp_as_aux) lpenc_requested(i_cp)=.true.
       if (lcv_as_aux) lpenc_requested(i_cv)=.true.
       if (lcs_as_aux) lpenc_requested(i_cs2)=.true.
+      if (ldelta_as_aux) lpenc_requested(i_delta)=.true.
       if (lgamma_as_aux) lpenc_requested(i_gamma)=.true.
       if (lnabad_as_aux) lpenc_requested(i_nabla_ad)=.true.
 !
@@ -479,6 +484,7 @@ module EquationOfState
       if (lcp_as_aux) f(l1:l2,m,n,icp)=p%cp
       if (lcv_as_aux) f(l1:l2,m,n,icv)=p%cv
       if (lcs_as_aux) f(l1:l2,m,n,ics)=sqrt(p%cs2)
+      if (ldelta_as_aux) f(l1:l2,m,n,idelta)=p%delta
       if (lgamma_as_aux) f(l1:l2,m,n,igamma)=p%gamma
       if (lnabad_as_aux) f(l1:l2,m,n,inabad)=p%nabla_ad
 !
@@ -1421,6 +1427,7 @@ module EquationOfState
 !
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
+!  13-sep-2016/axel: added TTbot, TTtop, to make this work
 !
       use Gravity
 !
@@ -1444,28 +1451,19 @@ module EquationOfState
 !
       case ('bot')
         if (ldebug) print*, &
-                   'bc_ss_temp_z: set z bottom temperature: cs2bot=',cs2bot
-        if (cs2bot<=0.) print*, &
-                   'bc_ss_temp_z: cannot have cs2bot<=0'
-        tmp = 2/gamma*alog(cs2bot/cs20)
-        f(:,:,n1,iss) = 0.5*tmp - gamma_m1/gamma*(f(:,:,n1,ilnrho)-lnrho0)
-        do i=1,nghost
-          f(:,:,n1-i,iss) = -f(:,:,n1+i,iss) + tmp &
-               - gamma_m1/gamma*(f(:,:,n1+i,ilnrho)+f(:,:,n1-i,ilnrho)-2*lnrho0)
-        enddo
+                   'bc_ss_temp_z: set z bottom temperature: TTbot=',TTbot
+        if (TTbot<=0.) print*, &
+                   'bc_ss_temp_z: cannot have TTbot<=0'
+        f(:,:,n1,ilnTT) = log(TTbot)
 !
 !  top boundary
 !
       case ('top')
         if (ldebug) print*, &
-                     'bc_ss_temp_z: set z top temperature: cs2top=',cs2top
-        if (cs2top<=0.) print*,'bc_ss_temp_z: cannot have cs2top<=0'
-        tmp = 2/gamma*alog(cs2top/cs20)
-        f(:,:,n2,iss) = 0.5*tmp - gamma_m1/gamma*(f(:,:,n2,ilnrho)-lnrho0)
-        do i=1,nghost
-          f(:,:,n2+i,iss) = -f(:,:,n2-i,iss) + tmp &
-               - gamma_m1/gamma*(f(:,:,n2-i,ilnrho)+f(:,:,n2+i,ilnrho)-2*lnrho0)
-        enddo
+                     'bc_ss_temp_z: set z top temperature: TTtop=',TTtop
+        if (TTtop<=0.) print*,'bc_ss_temp_z: cannot have TTtop<=0'
+        f(:,:,n2,ilnTT) = log(TTtop)
+!
       case default
         call fatal_error('bc_ss_temp_z','invalid argument')
       endselect
