@@ -184,7 +184,8 @@ contains
       integer :: nx_grid,nc_grid,nz_grid,nw_grid
 !
       if (Lxyz(1)/(nxgrid-1) .ne. Lxyz(3)/(nzgrid-1)) then 
-        call fatal_error("initialize_special","dx ne dz")
+        print*,Lxyz(1)/(nxgrid-1),Lxyz(3)/(nzgrid-1)
+        call fatal_error("initialize_special","hx ne hz")
       endif
 !
 !  Pre-calculate Rayleigh number in case it is not given
@@ -214,9 +215,14 @@ contains
 !
 !  Stuff for the coefficient of SOR. Should be between 0 and 2 for stability.
 !     
-      if (alpha_sor == impossible) then
-        delta=min(dx,dy,dz)
-        alpha_sor= 2./(1+sin(pi*delta))
+      if ((.not.lmultigrid).and.(alpha_sor == impossible)) then
+        if (nx==nz) then
+          alpha_sor= 2./(1+sin(pi*delta))
+        else
+          !delta=min(dx,dy,dz)
+          call fatal_error("initialize_special",&
+               "This spectral radius approximation is only for square grids")
+        endif  
       endif
 !
       if (lmpicomm.and.alpha_sor/=1) then
@@ -591,18 +597,23 @@ contains
       nn1=nghost+1; nn2=nuz-nghost
 !
       if (present(h)) then 
-        alpha_sor_=1./(2+pi*h)
+        if (nux==nuz) then
+          alpha_sor_=1./(2+pi*h)
+        else
+          call fatal_error("successive_over_relaxation",&
+               "this spectral radius approximation is only for square grids")
+        endif
       else
         alpha_sor_=alpha_sor
       endif
 !
-      if (ipx==0) then
+      if (ipx==0.and.(.not.lperi(1))) then
         lp1 = ll1 + 1
       else
         lp1 = ll1
       endif
 !
-      if (ipx==nprocx-1) then
+      if (ipx==nprocx-1.and.(.not.lperi(1))) then
         lp2 = ll2 - 1
       else
         lp2 = ll2
@@ -1052,7 +1063,10 @@ contains
 !
 !  Periodic in the lateral 
 !
-         call fatal_error("update_bounds_psi","not set for periodic")
+        ll1i=ll1+nghost-1;ll2i=ll2-nghost+1
+        a(1   :ll1-1,:) = a(ll2i:ll2,:)
+        a(ll2+1:mxa ,:) = a(ll1:ll1i,:)
+        !call fatal_error("update_bounds_psi","not set for periodic")
       else
          a(ll1,:)=0.
          a(ll2,:)=0.
@@ -1747,7 +1761,7 @@ contains
       real :: h,h2,hx,hz
 !
       real :: cc,ufactor,vterm,alpha,beta
-      integer :: ii,nn
+      integer :: ii,nn,icc1,icc2
 !
       mvx=size(u  ,1); mvz=size(u  ,2)
       nvx=size(rhs,1); nvz=size(rhs,2)
@@ -1768,11 +1782,19 @@ contains
 !
 ! Convection
 !
+      if (lperi(1)) then
+        icc1=1
+        icc2=nvx
+      else
+        icc1=2
+        icc2=nvx-1
+      endif
+!
       if (.not.lpoisson_test) then
          call update_bounds_psi(u)
          alpha=0.0
          beta=0.0
-         do ii=2,nvx-1
+         do ii=icc1,icc2
             l=ii+nghost
             do nn=2,nvz-1
                k=nn+nghost

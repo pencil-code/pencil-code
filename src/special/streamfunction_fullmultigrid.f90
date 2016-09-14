@@ -183,10 +183,14 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real :: dslab,delta_T,delta
 !
-      if (Lxyz(1)/nxgrid .ne. Lxyz(3)/nzgrid) then
-         print*,Lxyz(1)/nxgrid,Lxyz(3)/nzgrid
-        call fatal_error("initialize_special","dx ne dz")
+      if (Lxyz(1)/(nxgrid-1) .ne. Lxyz(3)/(nzgrid-1)) then
+        print*,Lxyz(1)/(nxgrid-1),Lxyz(3)/(nzgrid-1)
+        call fatal_error("initialize_special","hx ne hz")
       endif
+      !if (Lxyz(1)/nxgrid .ne. Lxyz(3)/nzgrid) then
+      !   print*,Lxyz(1)/nxgrid,Lxyz(3)/nzgrid
+      !  call fatal_error("initialize_special","dx ne dz")
+      !endif
 !
 !  Pre-calculate Rayleigh number in case it is not given
 !
@@ -1718,7 +1722,12 @@ module Special
       u = 0.0
       hx = Lxyz(1)/(nrx-1)
       hz = Lxyz(3)/(nrz-1)
-      h=.5*(hx+hz)
+      if (hx==hz) then
+        h = hx
+      else
+        print*,"hx=",hx,"hz=",hz
+        call fatal_error("solve_coarsest","grid cells are not square")
+      endif
 !
       if (ldirect_solver) then
          if (nx_coarsest /= 3) call fatal_error("solve_coarsest",&
@@ -1792,7 +1801,13 @@ module Special
 !
       hx=Lxyz(1)/(nvx-1)
       hz=Lxyz(3)/(nvz-1)
-      h=.5*(hx+hz)
+      if (hx==hz) then
+        h = hx
+      else
+        print*,"hx=",hx,"hz=",hz
+        call fatal_error("relaxation","grid cells are not square")
+      endif
+
 !
 ! Convection
 !
@@ -1872,7 +1887,12 @@ module Special
 !
       hx=Lxyz(1)/(nvx-1)
       hz=Lxyz(3)/(nvz-1)
-      h=.5*(hx+hz)
+      if (hx==hz) then
+        h = hx
+      else
+        print*,"hx=",hx,"hz=",hz
+        call fatal_error("resid","grid cells are not square")
+      endif
 !
 !  Interior points.
 !
