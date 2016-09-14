@@ -567,7 +567,7 @@ module Special
       real :: alpha=impossible,beta=impossible
       real, optional :: h
       integer :: ic,nc,k,l
-      integer :: nux,nuz,nrx,nrz,nn1,nn2,ll1,ll2
+      integer :: nux,nuz,nrx,nrz,nn1,nn2,ll1,ll2,lcc1,lcc2
 !
       nux=size(u,1); nuz=size(u,2)
       nrx=size(r,1); nrz=size(r,2)
@@ -580,10 +580,18 @@ module Special
          alpha_sor_=alpha_sor
       endif
 !
+      if (lperi(1)) then
+         lcc1=ll1
+         lcc2=ll2
+      else
+         lcc1=ll1+1
+         lcc2=ll2-1
+      endif
+!
       do nc=nn1+1,nn2-1
          k=nc-nn1+1
-         do ic=ll1+1,ll2-1
-           l=ic-l1+1
+         do ic=lcc1,lcc2
+           l=ic-ll1+1
 !     
            cc    =   r(l,k)
            alpha = alp(l,k)
