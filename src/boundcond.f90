@@ -284,6 +284,9 @@ module Boundcond
                 case ('1s')
                   ! BCX_DOC: onesided
                   call bc_onesided_x(f,topbot,j)
+                case ('dir+1sd1')
+                  ! BCX_DOC: onesided for 1st derivative in two first inner points, Dirichlet in boundary point
+                  call bc_onesided_x(f,topbot,j,(/fbcx_bot(j),fbcx_top(j)/))
                 case ('1so')
                   ! BCX_DOC: onesided
                   call bc_onesided_x_old(f,topbot,j)
@@ -1665,8 +1668,8 @@ module Boundcond
     subroutine bc_spr_x(f,topbot,j)
 !
 !  This condition sets values for A_phi and A_theta at the radial boundary.
-!  It solves  A"+2A'/R=0 and A=0 at the boundary.
-!  Has to be used togehter with 's' for A_r.
+!  It solves  A"+2A'/R=0 and A=0 at the boundary (A stands for A_phi or A_theta).
+!  Has to be used together with 's' for A_r.
 !
 !  09-may-16/fred: coded
 !
@@ -3696,7 +3699,7 @@ module Boundcond
 !
     endsubroutine bc_van3rd_z
 !***********************************************************************
-    subroutine bc_onesided_x(f,topbot,j)
+    subroutine bc_onesided_x(f,topbot,j,bval)
 !
 !  One-sided conditions.
 !  These expressions result from combining Eqs(207)-(210), astro-ph/0109497,
@@ -3708,10 +3711,14 @@ module Boundcond
       character (len=bclen) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: j,k
+      real, dimension(2), optional :: bval
 !
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
+
+          if (present(bval)) f(l1,:,:,j)=bval(1)
+
           k=l1-1
           f(k,:,:,j)=7*f(k+1,:,:,j) &
                    -21*f(k+2,:,:,j) &
@@ -3741,6 +3748,9 @@ module Boundcond
                    +10*f(k+9,:,:,j)
 !
       case ('top')               ! top boundary
+
+          if (present(bval)) f(l2,:,:,j)=bval(2)
+
           k=l2+1
           f(k,:,:,j)=7*f(k-1,:,:,j) &
                    -21*f(k-2,:,:,j) &
