@@ -1820,7 +1820,7 @@ module Special
          icc1=1
          icc2=nvx
       else
-         icc=2
+         icc1=2
          icc2=nvx-1
       endif
 !         
@@ -1831,7 +1831,7 @@ module Special
          do ic=icc1,icc2
             l=ic+nghost
             do nc=2,nvz-1
-               k=nc+nghost
+              k=nc+nghost
                cc = rhs(ic,nc)
                alpha=alp(ic,nc)
                beta=bet(ic,nc)
