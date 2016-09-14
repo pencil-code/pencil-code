@@ -181,9 +181,9 @@ contains
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: dslab,delta_T,delta
-      integer :: nx_grid,nc_grid
+      integer :: nx_grid,nc_grid,nz_grid,nw_grid
 !
-      if (Lxyz(1)/nxgrid .ne. Lxyz(3)/nzgrid) then 
+      if (Lxyz(1)/(nxgrid-1) .ne. Lxyz(3)/(nzgrid-1)) then 
         call fatal_error("initialize_special","dx ne dz")
       endif
 !
@@ -251,8 +251,16 @@ contains
 !
 !  Multigrid
 !      
-      if (lmultigrid) then 
+      if (lmultigrid) then
         nx_grid=nint(log(nx-1.0)/log(2.0))
+        if (nx /= 2**nx_grid+1) call fatal_error("initialize_special",&
+             "nx-1 must be a power of 2 for multigrid")
+!
+        nz_grid=nint(log(nz-1.0)/log(2.0))
+        if (nz /= 2**nz_grid+1) call fatal_error("initialize_special",&
+             "nx-1 must be a power of 2 for multigrid")
+!
+        nw_grid=min(nx_grid,nz_grid)
 !      
         if (mod(log(nx_coarsest-1.0),log(2.0)) /= 0) then
           print*,'nx_coarsest=',nx_coarsest
@@ -263,9 +271,9 @@ contains
         endif
 !     
         nc_grid=nint(log(nx_coarsest-1.0)/log(2.0))
-        ngrid = nx_grid - nc_grid + 1
-        if (nx /= 2**nx_grid+1) call fatal_error("initialize_special",&
-             "nx-1 must be a power of 2 for multigrid")
+        !ngrid = nx_grid - nc_grid + 1
+        ngrid = nw_grid - nc_grid + 1
+!
       endif
 !
 !  Viscosity
@@ -567,15 +575,20 @@ contains
       real, optional :: h
       integer :: ii,nn,k,l
       integer :: nu,nr,nn1,nn2,ll1,ll2
+      integer :: nux,nuz,nrx,nrz
       integer :: np1,np2,lp1,lp2
       
       !real, allocatable, dimension(:,:) :: eta 
 !
       real :: alpha,beta,aout
 !
-      nu=assert_equal((/size(u,1),size(u,2)/),'successive_over_relaxation')
-      nr=assert_equal((/size(r,1),size(r,2)/),'successive_over_relaxation')
-      nn1=nghost+1; nn2=nu-nghost; ll1=nn1; ll2=nn2
+      !nu=assert_equal((/size(u,1),size(u,2)/),'successive_over_relaxation')
+      !nr=assert_equal((/size(r,1),size(r,2)/),'successive_over_relaxation')
+      !nn1=nghost+1; nn2=nu-nghost; ll1=nn1; ll2=nn2
+      nux=size(u,1); nuz=size(u,2)
+      nrx=size(r,1); nrz=size(r,2)
+      ll1=nghost+1; ll2=nux-nghost
+      nn1=nghost+1; nn2=nuz-nghost
 !
       if (present(h)) then 
         alpha_sor_=1./(2+pi*h)
@@ -1011,11 +1024,15 @@ contains
     subroutine update_bounds_psi(a)
 !
       real, dimension(:,:) :: a
-      integer :: i,nn1,nn2,ll1,ll2,na
+      !integer :: i,nn1,nn2,ll1,ll2,na
+      integer :: i,nn1,nn2,ll1,ll2,mxa,mza,ll1i,ll2i
 !
-      na=assert_equal((/size(a,1),size(a,2)/),'update_bounds_psi')
-      nn1=nghost+1; nn2=na-nghost
-      ll1=nn1; ll2=nn2
+      !na=assert_equal((/size(a,1),size(a,2)/),'update_bounds_psi')
+      !nn1=nghost+1; nn2=na-nghost
+      !ll1=nn1; ll2=nn2
+      mxa=size(a,1); mza=size(a,2)
+      ll1=nghost+1; ll2=mxa-nghost
+      nn1=nghost+1; nn2=mza-nghost
 !
 !  Set boundary of psi - vertical, zero
 !
@@ -1453,30 +1470,37 @@ contains
       real, dimension(nx,nz), intent(in) :: alp,bet
 !
       integer :: m,n,ng,j,nn,i
+      integer :: nux,nuz,mvx,mvz,nvx,nvz,nxc,nzc,mxc,mzc
+      integer:: ll1,ll2,ll1_,ll2_,nn1,nn2,nn1_,nn2_
 !
-      m=assert_equal((/size(psi,1),size(psi,2)/),'mglin')
-      n=assert_equal((/size(rhs,1),size(rhs,2)/),'mglin')
+      !m=assert_equal((/size(psi,1),size(psi,2)/),'mglin')
+      mvx=size(psi,1); mvz=size(psi,2)
+      !n=assert_equal((/size(rhs,1),size(rhs,2)/),'mglin')
+      nvx=size(rhs,1); nvz=size(rhs,2)
 !
       allocate(grid(ngrid))
-      allocate(grid(ngrid)%u(m,m))
-      allocate(grid(ngrid)%r(n,n))
-      allocate(grid(ngrid)%a(n,n))
-      allocate(grid(ngrid)%b(n,n))
+      allocate(grid(ngrid)%u(mvx,mvz))
+      allocate(grid(ngrid)%r(nvx,nvz))
+      allocate(grid(ngrid)%a(nvx,nvz))
+      allocate(grid(ngrid)%b(nvx,nvz))
       grid(ngrid)%u=psi
       grid(ngrid)%r=rhs
       grid(ngrid)%a=alp
       grid(ngrid)%b=bet
 !
-      nn=n
+      !nn=n
+      nxc=nvx; nzc=nvz
       ng=ngrid
       do
-         if (nn <= nx_coarsest) exit
-         nn=nn/2+1
+         if ((nxc <= nx_coarsest).or.(nzc <= nx_coarsest)) exit
+         !nn=nn/2+1
+         nxc=nxc/2+1
+         nzc=nzc/2+1
          ng=ng-1
-         allocate(grid(ng)%u(nn+2*nghost,nn+2*nghost))
-         allocate(grid(ng)%r(nn,nn))
-         allocate(grid(ng)%a(nn,nn))
-         allocate(grid(ng)%b(nn,nn))
+         allocate(grid(ng)%u(nxc+2*nghost,nzc+2*nghost))
+         allocate(grid(ng)%r(nxc,nzc))
+         allocate(grid(ng)%a(nxc,nzc))
+         allocate(grid(ng)%b(nxc,nzc))
       enddo
 !
       call downward(ngrid,grid(ngrid)%u,grid(ngrid)%r,grid(ngrid)%a,grid(ngrid)%b)
@@ -1540,12 +1564,20 @@ contains
 !
       real, dimension(:,:) :: v
       real, dimension(2*size(v,1)-2*nghost-1,2*size(v,2)-2*nghost-1) :: u
-      integer :: mv,mu,lu1,lu2,lv1,lv2,jpost,j
+      integer :: mvx,mvz,mux,muz,lu1,lu2,lv1,lv2,nu1,nu2,nv1,nv2,jpost,j
 !
       u=grid(j)%u
-      mv=assert_equal((/size(v,1),size(v,2)/),'upward'); lv1=nghost+1; lv2=mv-nghost
-      mu=assert_equal((/size(u,1),size(u,2)/),'upward'); lu1=nghost+1; lu2=mu-nghost
-      u(lu1:lu2,lu1:lu2)=u(lu1:lu2,lu1:lu2)+prolongate(v(lv1:lv2,lv1:lv2))
+      !mv=assert_equal((/size(v,1),size(v,2)/),'upward'); lv1=nghost+1; lv2=mv-nghost
+      !mu=assert_equal((/size(u,1),size(u,2)/),'upward'); lu1=nghost+1; lu2=mu-nghost
+      mvx=size(v,1); mvz=size(v,2)
+      lv1=nghost+1; lv2=mvx-nghost
+      nv1=nghost+1; nv2=mvz-nghost
+!           
+      mux=size(u,1); muz=size(u,2)
+      lu1=nghost+1; lu2=mux-nghost
+      nu1=nghost+1; nu2=muz-nghost
+
+      u(lu1:lu2,nu1:nu2)=u(lu1:lu2,nu1:nu2)+prolongate(v(lv1:lv2,nv1:nv2))
 !
 !  Post-smoothing.
 !
@@ -1569,23 +1601,25 @@ contains
       implicit none
       real, dimension(:,:), intent(in) :: uf
       real, dimension((size(uf,1)+1)/2,(size(uf,2)+1)/2) :: restrict
-      integer :: nc,nf
+      integer :: ncx,ncz,nfx,nfz
 !
-      nf=assert_equal((/size(uf,1),size(uf,2)/),'restrict')
-      nc=(nf+1)/2
+      !nf=assert_equal((/size(uf,1),size(uf,2)/),'restrict')
+      !nc=(nf+1)/2
+      nfx=size(uf,1); nfz=size(uf,2)
+      ncx=(nfx+1)/2; ncz=(nfz+1)/2
 !
 !  Interior points
 !      
-      restrict(2:nc-1,2:nc-1) =   0.5 *uf(3:nf-2:2,3:nf-2:2) + &
-                              0.125*(uf(4:nf-1:2,3:nf-2:2) + uf(2:nf-3:2,3:nf-2:2)+&
-                                     uf(3:nf-2:2,4:nf-1:2) + uf(3:nf-2:2,2:nf-3:2))
+      restrict(2:ncx-1,2:ncz-1) =   0.5 *uf(3:nfx-2:2,3:nfz-2:2) + &
+                              0.125*(uf(4:nfx-1:2,3:nfz-2:2) + uf(2:nfx-3:2,3:nfz-2:2)+&
+                                     uf(3:nfx-2:2,4:nfz-1:2) + uf(3:nfx-2:2,2:nfz-3:2))
 !
 !  Boundary points      
 !
-      restrict(1:nc,1)  = uf(1:nf:2,1)
-      restrict(1:nc,nc) = uf(1:nf:2,nf)
-      restrict(1,1:nc)  = uf(1,1:nf:2)
-      restrict(nc,1:nc) = uf(nf,1:nf:2)
+      restrict(1:ncx,1    ) = uf(1:nfx:2,1      )
+      restrict(1:ncx,ncz  ) = uf(1:nfx:2,nfz    )
+      restrict(1    ,1:ncz) = uf(1      ,1:nfz:2)
+      restrict(ncx  ,1:ncz) = uf(nfx    ,1:nfz:2)
 !      
     endfunction restrict
 !********************************************************************
@@ -1601,22 +1635,24 @@ contains
       implicit none
       real, dimension(:,:), intent(in) :: uc
       real, dimension(2*size(uc,1)-1,2*size(uc,2)-1) :: prolongate
-      integer :: nc,nf
+      integer :: ncx,ncz,nfx,nfz
 !
-      nc=assert_equal((/size(uc,1),size(uc,2)/),'prolongate')
-      nf=2*nc-1
+      !nc=assert_equal((/size(uc,1),size(uc,2)/),'prolongate')
+      !nf=2*nc-1
+      ncx=size(uc,1); ncz=size(uc,2)
+      nfx=2*ncx-1; nfz=2*ncz-1
 !
 ! Do elements that are copies.
 !
-      prolongate(1:nf:2,1:nf:2)=uc(1:nc,1:nc)
+      prolongate(1:nfx:2,1:nfz:2)=uc(1:ncx,1:ncz)
 !
 ! Do odd-numbered columns, interpolating vertically.
 !
-      prolongate(2:nf-1:2,1:nf:2) = 0.5*(prolongate(3:nf:2,1:nf:2) + prolongate(1:nf-2:2,1:nf:2))
+      prolongate(2:nfx-1:2,1:nfz:2) = 0.5*(prolongate(3:nfx:2,1:nfz:2) + prolongate(1:nfx-2:2,1:nfz:2))
 !
 ! Do even-numbered columns, interpolating horizontally.
 !
-      prolongate(1:nf,2:nf-1:2) = 0.5*(prolongate(1:nf,3:nf:2) + prolongate(1:nf,1:nf-2:2))
+      prolongate(1:nfx,2:nfz-1:2) = 0.5*(prolongate(1:nfx,3:nfz:2) + prolongate(1:nfx,1:nfz-2:2))
 !
     endfunction prolongate
 !********************************************************************
@@ -1632,21 +1668,34 @@ contains
       real, dimension(:,:), intent(in) :: rhs
       real, dimension(:,:), intent(in) :: alp,bet
       real, dimension(size(rhs,1),size(rhs,2)) :: u_old
-      real :: h,fac,alpha,beta
+      real :: h,fac,alpha,beta,hx,hz
       logical :: lboundary
 !
       real :: res,tol,ufactor,vterm
-      integer :: icount,iu,nu,nr,nn1,nn2,i
+      integer :: icount,iu,nu,nr,nn1,nn2,ll1,ll2,i,nux,nuz,nvx,nvz
 !
-      nu=assert_equal((/size(u,1),size(u,2)/),'solve_coarsest')
-      nr=assert_equal((/size(rhs,1),size(rhs,2)/),'solve_coarsest')
-      nn1=nghost+1; nn2=nu-nghost
+      nux=size(u,1); nuz=size(u,2)
+      nvx=size(rhs,1); nvz=size(rhs,2)
+
+      !nu=assert_equal((/size(u,1),size(u,2)/),'solve_coarsest')
+      !nr=assert_equal((/size(rhs,1),size(rhs,2)/),'solve_coarsest')
+      nn1=nghost+1; nn2=nuz-nghost
+      ll1=nghost+1; ll2=nux-nghost
 !      
       tol=1e-15
       res=1e33
 !
       u = 0.0
-      h = 1./(nr-1)
+      hx = Lxyz(1)/(nvx-1)
+      hz = Lxyz(3)/(nvz-1)
+      if (hx==hz) then 
+        h = hx
+      else
+        print*,"hx=",hx,"hz=",hz
+        call fatal_error("solve_coarsest","grid cells are not square")
+      endif
+      !h = 1./(nr-1)
+      
 !
       if (ldirect_solver) then
          if (nx_coarsest /= 3) call fatal_error("solve_coarsest",&
@@ -1671,10 +1720,10 @@ contains
          do while (res > tol)
 !
             icount=icount+1
-            u_old=u(nn1:nn2,nn1:nn2)
+            u_old=u(ll1:ll2,nn1:nn2)
             !call successive_over_relaxation(u,rhs,h)
             call relaxation(u,rhs,alp,bet)
-            res = sqrt(sum((u(nn1:nn2,nn1:nn2)-u_old)**2)/nr**2)
+            res = sqrt(sum((u(ll1:ll2,nn1:nn2)-u_old)**2)/(nvx*nvz))
             if (lprint_residual_svl) print*,'solve_coarsest',icount,res
          enddo
 !
@@ -1694,16 +1743,28 @@ contains
       real, dimension(:,:), intent(inout) :: u
       real, dimension(:,:), intent(in) :: rhs
       real, dimension(:,:), intent(in) :: alp,bet
-      integer :: n,m,l,k
-      real :: h,h2
+      integer :: n,m,l,k,mvx,mvz,nvx,nvz
+      real :: h,h2,hx,hz
 !
       real :: cc,ufactor,vterm,alpha,beta
       integer :: ii,nn
 !
-      m=assert_equal((/size(u,1),size(u,2)/),'relax')
-      n=assert_equal((/size(rhs,1),size(rhs,2)/),'relax')
+      mvx=size(u  ,1); mvz=size(u  ,2)
+      nvx=size(rhs,1); nvz=size(rhs,2)
 !
-      h=1.0/(n-1)
+      hx=Lxyz(1)/(nvx-1)
+      hz=Lxyz(3)/(nvz-1)
+      if (hx==hz) then 
+        h = hx
+      else
+        print*,"hx=",hx,"hz=",hz
+        call fatal_error("relaxation","grid cells are not square")
+      endif
+      !h = assert_equal_real(hx,hz,'relaxation')
+
+      !m=assert_equal((/size(u,1),size(u,2)/),'relaxation')
+      !n=assert_equal((/size(rhs,1),size(rhs,2)/),'relaxation')
+      !h=1.0/(n-1)
 !
 ! Convection
 !
@@ -1711,9 +1772,9 @@ contains
          call update_bounds_psi(u)
          alpha=0.0
          beta=0.0
-         do ii=2,n-1
+         do ii=2,nvx-1
             l=ii+nghost
-            do nn=2,n-1
+            do nn=2,nvz-1
                k=nn+nghost
                cc = rhs(ii,nn)
                alpha=alp(ii,nn)
@@ -1733,9 +1794,9 @@ contains
 !     
          h2=h**2
 !
-         do ii=2,n-1
+         do ii=2,nvx-1
             l=ii+nghost
-            do nn=2,n-1
+            do nn=2,nvz-1
                k=nn+nghost
                u(l,k) = 0.25*(u(l+1,k) + u(l-1,k) + &
                               u(l,k+1) + u(l,k-1) - h2*rhs(ii,nn))
@@ -1759,23 +1820,35 @@ contains
       real, dimension(:,:), intent(in) :: alp,bet
       real, dimension(size(rhs,1),size(rhs,2)) :: residual
       integer :: n,l,k
-      real :: h,h2i,alpha,beta
+      real :: h,h2i,alpha,beta,hx,hz
 !
       real :: ufactor,vterm,lhs
-      integer :: ii,nn
+      integer :: ii,nn,mvx,nvx,mvz,nvz
 !
-      m=assert_equal((/size(u,1),size(u,2)/),'resid')
-      n=assert_equal((/size(rhs,1),size(rhs,2)/),'resid')
+      mvx=size(u  ,1); mvz=size(u  ,2)
+      nvx=size(rhs,1); nvz=size(rhs,2)
 !
-      h=1.0/(n-1)
+      hx=Lxyz(1)/(nvx-1)
+      hz=Lxyz(3)/(nvz-1)
+      if (hx==hz) then 
+        h = hx
+      else
+        print*,"hx=",hx,"hz=",hz
+        call fatal_error("residual","grid cells are not square")
+      endif
+      !h = assert_equal_real(hx,hz,'resid')
+!
+      !m=assert_equal((/size(u,1),size(u,2)/),'resid')
+      !n=assert_equal((/size(rhs,1),size(rhs,2)/),'resid')
+      !h=1.0/(n-1)
 !
 !  Interior points.
 !
       if (lpoisson_test) then 
          h2i=1.0/(h**2)
-         do ii=2,n-1
+         do ii=2,nvx-1
             l=ii+nghost
-            do nn=2,n-1
+            do nn=2,nvz-1
                k=nn+nghost
                residual(ii,nn) = -h2i*(u(l+1,k) + u(l-1,k) + &
                                        u(l,k+1) + u(l,k-1) - &
@@ -1783,9 +1856,9 @@ contains
             enddo
          enddo
       else
-         do ii=2,n-1
+         do ii=2,nvx-1
             l=ii+nghost
-            do nn=2,n-1
+            do nn=2,nvz-1
                k=nn+nghost
                alpha=alp(ii,nn)
                beta=bet(ii,nn)
@@ -1802,10 +1875,10 @@ contains
 !
 !  Boundary points.
 !      
-      residual(1:n,1)=0.0
-      residual(1:n,n)=0.0
-      residual(1,1:n)=0.0
-      residual(n,1:n)=0.0
+      residual(1:nvx,1    )=0.0
+      residual(1:nvx,nvz  )=0.0
+      residual(1    ,1:nvz)=0.0
+      residual(nvx  ,1:nvz)=0.0
 !
     endfunction residual
 !********************************************************************
@@ -1831,6 +1904,21 @@ contains
       endif
 !
     endfunction assert_equal
+!********************************************************************
+!    function assert_equal_real(a1,a2,schar)
+!
+!      real, intent(in) :: a1,a2
+!      real :: assert_equal
+!      character (len=*) :: schar
+!!
+!      if (a1==a2) then 
+!        assert_equal = a1
+!      else
+!        assert_equal = impossible
+!        call fatal_error(schar,"grid cells are not square")
+!      endif
+!!
+!    endfunction assert_equal_real
 !********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
