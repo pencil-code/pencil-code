@@ -284,7 +284,7 @@ module Boundcond
                 case ('1s')
                   ! BCX_DOC: onesided
                   call bc_onesided_x(f,topbot,j)
-                case ('dir+1sd1')
+                case ('d1s')
                   ! BCX_DOC: onesided for 1st derivative in two first inner points, Dirichlet in boundary point
                   call bc_onesided_x(f,topbot,j,(/fbcx_bot(j),fbcx_top(j)/))
                 case ('1so')
