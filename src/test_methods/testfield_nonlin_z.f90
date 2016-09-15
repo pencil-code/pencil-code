@@ -524,6 +524,7 @@ module Testfield
 !
       lpenc_requested(i_uu)=.true.
       lpenc_diagnos(i_bbb)=.true.
+      if (lforcing_cont_aatest) lpenc_requested(i_fcont)=.true.
 !
     endsubroutine pencil_criteria_testfield
 !***********************************************************************
