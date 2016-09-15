@@ -89,6 +89,7 @@ program start
   use Solid_Cells,      only: init_solid_cells
   use Special,          only: init_special, initialize_mult_special
   use Sub
+  use Supersat,         only: init_ssat
   use Testfield,        only: init_aatest
   use Testflow,         only: init_uutest
 !
@@ -483,6 +484,7 @@ program start
     call init_uutest(f)
     call init_rad(f)
     call init_lncc(f)
+    call init_ssat(f)
     call init_chiral(f)
     call init_chemistry(f)
     call init_uud(f)
