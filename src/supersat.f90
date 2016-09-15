@@ -16,6 +16,7 @@
 ! PENCILS PROVIDED gssat(3); ugssat
 ! PENCILS PROVIDED del2ssat
 ! PENCILS PROVIDED tausupersat
+!
 !***************************************************************
 module Supersat
 !
@@ -40,13 +41,13 @@ module Supersat
 !
   real :: supersat_diff=0.0
   real :: supersat_sink=0.0
-  real, dimension(3) :: gradC0=(/0.0,0.0,0.0/)
+  real, dimension(3) :: gradssat0=(/0.0,0.0,0.0/)
   logical :: lsupersat_sink=.false., Rsupersat_sink=.false.
   logical :: lupw_ssat=.false.
 
   namelist /supersat_run_pars/ &
       lupw_ssat, lsupersat_sink, Rsupersat_sink, supersat_sink, &
-      supersat_diff, gradC0
+      supersat_diff, gradssat0
 !
 ! Declare index of new variables in f array
 !
@@ -55,7 +56,8 @@ module Supersat
 !
 !  Diagnostics variables
 !
-  integer :: idiag_ssatrms=0
+  integer :: idiag_ssatrms=0, idiag_ssatmax=0, idiag_ssatmin=0
+  integer :: idiag_uxssatm=0, idiag_uyssatm=0, idiag_uzssatm=0
 !
   contains
 !***********************************************************************
@@ -113,13 +115,27 @@ module Supersat
         case ('nothing')
         case ('zero'); f(:,:,:,issat)=0.0
         case ('constant'); f(:,:,:,issat)=ssat_const
+print*,'AXEL issat,ssat_const=',issat,ssat_const
        endselect
     endsubroutine init_ssat
    
 !***********************************************************************
     subroutine pencil_criteria_supersat()
+!
+!  All pencils that the Supersat module depends on are specified here.
+!
+      integer :: i
+!
+!  ssat itself always
+!
       lpenc_requested(i_ssat)=.true.
-            
+!
+!  background gradient 
+!
+      do i=1,3
+        if (gradssat0(i)/=0.) lpenc_requested(i_uu)=.true.
+      enddo
+!
       if (lsupersat_sink) then 
         lpenc_requested(i_ssat)=.true.
         lpenc_requested(i_tausupersat)=.true.
@@ -135,6 +151,7 @@ module Supersat
       logical, dimension(npencils) :: lpencil_in
 !
       lpencil_in(i_ssat)=.true.
+      lpencil_in(i_ugssat)=.true.
       if (lpencil_in(i_ugssat)) then
         lpencil_in(i_uu)=.true.
         lpencil_in(i_gssat)=.true.
@@ -151,16 +168,22 @@ module Supersat
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+      integer :: j
 !
       intent(in) :: f
       intent(inout) :: p
 !
-      
 ! ssat
       if (lpencil(i_ssat)) p%ssat=f(l1:l2,m,n,issat)
-! gssat
+!
+!  Compute gssat. Add imposed spatially constant gradient of ssat.
+!  (This only makes sense for periodic boundary conditions.)
+!
       if (lpencil(i_gssat)) then
         call grad(f,issat,p%gssat)
+        do j=1,3
+          if (gradssat0(j)/=0.) p%gssat(:,j)=p%gssat(:,j)+gradssat0(j)
+        enddo
       endif
 ! ugssat
       if (lpencil(i_ugssat)) then
@@ -174,28 +197,31 @@ module Supersat
     endsubroutine calc_pencils_supersat
 !***********************************************************************
     subroutine dssat_dt(f,df,p)
-    !subroutine dssat_dt(f,df,fp,p)
+!
+!  Active scalar evolution for supersation
+!  Calculate dssat/dt=-uu.gssat + supersat_diff*[del2ssat + glnrho.gssat].
+!
+!  27-may-16/xiangyu: adapted from pscalar_nolog
+!   4-sep-16/axel: added more diagnostics
+!
       use Diagnostics
       use Sub
-      use Particles_cdata
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
       type (pencil_case) :: p
 !
       real, dimension (nx) :: diff_op,diff_op2,bump,gcgu
       real :: ssat_xyaver
       real :: tau=10., A1=5e-4
       real :: lam_gradC_fact=1., om_gradC_fact=1., gradC_fact=1.
-      integer :: j, k
       integer, parameter :: nxy=nxgrid*nygrid
 !
-      !intent(in)  :: f, fp
       intent(in)  :: f
       intent(out) :: df
 !
       character(len=2) :: id
+!
 !  Identify module and boundary conditions.
 !
       if (nosupersat) then
@@ -204,13 +230,14 @@ module Supersat
         if (headtt.or.ldebug) print*,'SOLVE dssat_dt'
       endif
       if (headtt) then
-          write(id,'(i0)')
-          call identify_bcs('ssat'//trim(id),issat)
+        write(id,'(i0)')
+        call identify_bcs('ssat'//trim(id),issat)
       endif
+!
 !  Passive scalar equation.
 !
-        df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat &
-                +supersat_diff*p%del2ssat
+      df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat+supersat_diff*p%del2ssat
+!
         ! 1-June-16/XY coded: to be completed, here is only for 1D case 
          if (lsupersat_sink) then
                  if (Rsupersat_sink) then
@@ -222,13 +249,22 @@ module Supersat
                       !print*,'tau=',f(l1:l2,m,n,itausupersat)
                       !print*,'tau=',p%tausupersat
                  endif
-                 df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat+bump
+                 !df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat+bump
+                 df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+bump
          endif
-!       
-        if (idiag_ssatrms/=0) & 
-            call sum_mn_name(p%ssat**2,idiag_ssatrms,lsqrt=.true.)
-    endsubroutine dssat_dt
 !
+!  Diagnostics
+!
+      if (ldiagnos) then
+        if (idiag_ssatrms/=0) call sum_mn_name(p%ssat**2,idiag_ssatrms,lsqrt=.true.)
+        if (idiag_ssatmax/=0) call max_mn_name(p%ssat,idiag_ssatmax)
+        if (idiag_ssatmin/=0) call max_mn_name(-p%ssat,idiag_ssatmin,lneg=.true.)
+        if (idiag_uxssatm/=0) call sum_mn_name(p%uu(:,1)*p%ssat,idiag_uxssatm)
+        if (idiag_uyssatm/=0) call sum_mn_name(p%uu(:,2)*p%ssat,idiag_uyssatm)
+        if (idiag_uzssatm/=0) call sum_mn_name(p%uu(:,3)*p%ssat,idiag_uzssatm)
+      endif
+!
+    endsubroutine dssat_dt
 !***********************************************************************
     subroutine read_supersat_init_pars(iostat)
 !
@@ -281,15 +317,23 @@ module Supersat
       if (present(lwrite)) lwr=lwrite
 !      
       if (lreset) then
-        idiag_ssatrms=0
+        idiag_ssatrms=0; idiag_ssatmax=0; idiag_ssatmin=0
+        idiag_uxssatm=0; idiag_uyssatm=0; idiag_uzssatm=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'ssatrms',idiag_ssatrms)
+        call parse_name(iname,cname(iname),cform(iname),'ssatmax',idiag_ssatmax)
+        call parse_name(iname,cname(iname),cform(iname),'ssatmin',idiag_ssatmin)
+        call parse_name(iname,cname(iname),cform(iname),'uxssatm',idiag_uxssatm)
+        call parse_name(iname,cname(iname),cform(iname),'uyssatm',idiag_uyssatm)
+        call parse_name(iname,cname(iname),cform(iname),'uzssatm',idiag_uzssatm)
       enddo
 !
       if (lwr) then 
         write(3,*) 'issat = ', issat
       endif
+!
     endsubroutine rprint_supersat 
+!***********************************************************************
 endmodule Supersat
