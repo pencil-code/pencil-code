@@ -56,7 +56,6 @@ for line = 1, num_lines do begin
   if (not execute (str)) then $
       message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+str (line)+'.', /info
 end
-
 ;
 ;  For EVERY POSSIBLE variable in a snapshot file, store a
 ;  description of the variable in an indexed array of structures
@@ -94,9 +93,9 @@ indices = [ $
   { name:'ip33', label:'Polymer Tensor 33', dims:1 }, $
   { name:'igij', label:'Gravitational Metric', dims:3 }, $
   { name:'iuut', label:'Integrated velocity', dims:3 }, $
-  { name:'iaatest', label:'Testfield vector potential', dims:ntestfield }, $
-  { name:'iuutest', label:'Testflow', dims:ntestflow }, $
-  { name:'icctest', label:'Testflow', dims:ntestscalar }, $
+  { name:'iaatest', label:'Testmethod vector potential', dims:ntestfield }, $
+  { name:'iuutest', label:'Testmethod velocity', dims:ntestflow }, $
+  { name:'icctest', label:'Testscalar', dims:ntestscalar }, $
 ;  { name:'iuxb', label:'Testfield vector potential', dims:ntestfield }, $  ; is this art or can it be removed?
   { name:'iuun', label:'Velocity of neutrals', dims:3 }, $
   { name:'ispitzer', label:'Heat flux vector according to Spitzer', dims:3 }, $
@@ -334,6 +333,7 @@ varcontent = replicate ({ varcontent_all, variable:'UNKNOWN', idlvar:'dummy', id
 ;
 selected = selected[sort (position)]
 executes = executes[sort (position)]
+;
 for var = 0, num_vars-1 do begin
   tag = selected[var]
   dims = indices[tag].dims
