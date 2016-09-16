@@ -454,14 +454,14 @@ module Special
 !
       real :: residual,aout,dTTdx
       real :: alpha=impossible,beta=impossible
-      real :: factor
+      real :: Rayleigh_factor
 !
       integer :: icount,i
 !
       if (ladimensional) then
-         factor=Ra
+         Rayleigh_factor=Ra
       else
-         factor=alpha_thermal*rho0_bq*gravity_z
+         Rayleigh_factor=alpha_thermal*rho0_bq*gravity_z
       endif
 !
 !  Define r.h.s.
@@ -483,10 +483,10 @@ module Special
                                  +      (f(i+3,m,n,iTT)-f(i-3,m,n,iTT)))            
 !
                if (lsplit_temperature) then 
-                 rhs(i-l1+1,n-n1+1) = factor*dTTdx/(eta(i,n)*etabar(n))
+                 rhs(i-l1+1,n-n1+1) = Rayleigh_factor*dTTdx/(eta(i,n)*etabar(n))
                  alpha_factor(i-l1+1,n-n1+1)=alpha + eta_alpha2
                else
-                 rhs(i-l1+1,n-n1+1) = factor*dTTdx/eta(i,n)
+                 rhs(i-l1+1,n-n1+1) = Rayleigh_factor*dTTdx/eta(i,n)
                  alpha_factor(i-l1+1,n-n1+1)=alpha
                endif
                beta_factor(i-l1+1,n-n1+1)=beta
