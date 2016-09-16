@@ -86,6 +86,7 @@ module Special
   logical :: lpoisson_test=.false.
   logical :: ldirect_solver=.true.
   logical :: lprint_residual_svl=.false.
+  logical :: ladimensional=.true.
 !
   integer :: npost=5,npre=5
   integer :: gamma=1,n_vcycles=1
@@ -96,7 +97,7 @@ module Special
        iconv_viscosity,Avisc,Bvisc,Cvisc,&
        Tbot,Tupp,Ra,iorder_sor_solver,lsave_residual,&
        kx_TT,kz_TT,ampltt,initpsi,lmultigrid,lpoisson_test,npost,npre,gamma,n_vcycles,&
-       ldirect_solver,nx_coarsest,lprint_residual_svl,lsplit_temperature
+       ldirect_solver,nx_coarsest,lprint_residual_svl,lsplit_temperature,ladimensional
 !
   namelist /special_run_pars/ amplpsi,alpha_sor,Avisc,lprint_residual,&
        tolerance,maxit,gravity_z,rho0_bq,alpha_thermal,kappa,eta_0,&
@@ -240,6 +241,17 @@ contains
 !
       kappa1=1./kappa
 !
+      if (ladimensional) then
+         if (eta_0 /= 1.0)   call fatal_error("initialize_special",&
+              "You are using dimensionless variables, set eta_0=1 and vary Ra")
+         if (kappa /= 1.0)   call fatal_error("initialize_special",&
+              "You are using dimensionless variables, set kappa=1 and vary Ra")
+         if (delta_T /= 1.0) call fatal_error("initialize_special",&
+              "You are using dimensionless variables, set Tupp=0 and Tbot=1 and vary Ra")
+         if (dslab /= 1.0)   call fatal_error("initialize_special",&
+              "You are using dimensionless variables, set Lxyz(3)=1 and vary Ra")
+      endif
+!
       select case (iorder_sor_solver)
 !
       case ('low_order')
@@ -329,7 +341,9 @@ contains
          print*,'gaussian noise initialization'
          call gaunoise(amplpsi,f,ipsi)
       case ('single-mode')
-         print*,'single-mode initialization for constant viscosity'
+         if (.not.ladimensional) call fatal_error("init_special",&
+              "not yet coded for dimensioned variables. Use initpsi='noise' instead")
+         print*,'init_special: single-mode initialization for constant viscosity'
          print*,'derived from the solution of the dispersion relation'
          amplpsi_ = -ampltt * Ra*kx_TT/(kz_TT**2 + kx_TT**2)**2
          do n=n1,n2
@@ -476,6 +490,13 @@ contains
       integer :: icount,i
       real :: resid,aout,alpha,beta,dTTdx      
       real :: variance_local,variance
+      real :: Rayleigh_factor
+!
+      if (ladimensional) then
+         Rayleigh_factor=Ra
+      else
+         Rayleigh_factor=alpha_thermal*rho0_bq*gravity_z
+      endif
 !
 !  Define r.h.s.
 !
@@ -494,13 +515,12 @@ contains
             dTTdx=dx_1(i)/60*(+ 45.0*(f(i+1,m,n,iTT)-f(i-1,m,n,iTT)) &
                               -  9.0*(f(i+2,m,n,iTT)-f(i-2,m,n,iTT)) &
                               +      (f(i+3,m,n,iTT)-f(i-3,m,n,iTT)))            
-            rhs(i-l1+1,n-n1+1) = Ra*dTTdx/(eta(i,n)*etabar(n))
 !
             if (lsplit_temperature) then 
-              rhs(i-l1+1,n-n1+1) = Ra*dTTdx/(eta(i,n)*etabar(n))
+              rhs(i-l1+1,n-n1+1) = Rayleigh_factor*dTTdx/(eta(i,n)*etabar(n))
               alpha_factor(i-l1+1,n-n1+1)=alpha + eta_alpha2
             else
-              rhs(i-l1+1,n-n1+1) = Ra*dTTdx/eta(i,n)
+              rhs(i-l1+1,n-n1+1) = Rayleigh_factor*dTTdx/eta(i,n)
               alpha_factor(i-l1+1,n-n1+1)=alpha
             endif
             beta_factor(i-l1+1,n-n1+1)=beta
