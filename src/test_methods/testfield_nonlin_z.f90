@@ -278,12 +278,13 @@ module Testfield
 !
       if (lroot) then
         if (maux == 0) then
-          if (nvar < mvar) write(4,*) ',aatest $'
-          if (nvar == mvar) write(4,*) ',aatest'
+          if (nvar < mvar) write(4,*) ',aatest, uutest $'
+          if (nvar == mvar) write(4,*) ',aatest,uutest'
         else
-          write(4,*) ',aatest $'
+          write(4,*) ',aatest,uutest $'
         endif
         write(15,*) 'aatest = fltarr(mx,my,mz,ntestfield)*one'
+        write(15,*) 'uutest = fltarr(mx,my,mz,ntestflow)*one'
       endif
 !
     endsubroutine register_testfield
@@ -1796,7 +1797,8 @@ module Testfield
       if (loptest(lwrite)) then
         write(3,*) 'iaatest=',iaatest
         write(3,*) 'iuutest=',iuutest
-        write(3,*) 'ntestfield=',ntestfield
+        write(3,*) 'ntestfield=',ntestfield/2
+        write(3,*) 'ntestflow=',ntestfield/2
         write(3,*) 'nnamez=',nnamez
         write(3,*) 'nnamexy=',nnamexy
         write(3,*) 'nnamexz=',nnamexz
