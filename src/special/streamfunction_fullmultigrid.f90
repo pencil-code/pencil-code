@@ -210,11 +210,6 @@ module Special
          gTT_conductive = -delta_T*Lz1
          eta_alpha2 = (Bvisc*deltaT1*gTT_conductive)**2
       endif
-!      
-      if (Ra==impossible) & !else it is given in the initial condition
-           Ra = (gravity_z*alpha_thermal*rho0_bq*delta_T*dslab**3)/(kappa*eta_0)
-!
-      if (lroot) print*,'Rayleigh number=',Ra
 !
        if (tolerance_coarsest==impossible) tolerance_coarsest=tolerance
 !
@@ -241,7 +236,16 @@ module Special
               "You are using dimensionless variables, set Tupp=0 and Tbot=1 and vary Ra")
          if (dslab /= 1.0)   call fatal_error("initialize_special",&
               "You are using dimensionless variables, set Lxyz(3)=1 and vary Ra")
+      else
+         if (Ra/=impossible) call fatal_error("initialize_special",&
+             "You are using dimensioned variables but you set the Rayleigh number. Uncomment it from your start.in")
       endif
+!
+      if (Ra==impossible) then
+        Ra = (gravity_z*alpha_thermal*rho0_bq*delta_T*dslab**3)/(kappa*eta_0)
+      endif
+!
+      if (lroot) print*,'Rayleigh number=',Ra
 !
       select case (iorder_sor_solver)
 !
