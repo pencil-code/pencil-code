@@ -139,6 +139,14 @@ module InitialCondition
           enddo
         enddo
 !          
+        case ('single-mode-periodic')
+        do n=n1,n2
+          do m=m1,m2
+            f(l1:l2,m,n,iTT) = f(l1:l2,m,n,iTT) + &
+                 ampltt*sin(kx_TT*x(l1:l2)/Lxyz(1))*sin(kz_TT*z(n)/Lxyz(3))
+          enddo
+        enddo
+!
         case ('gaussian-noise')  
           call gaunoise(ampltt,f,iTT)
 !
