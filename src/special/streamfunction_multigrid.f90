@@ -884,14 +884,14 @@ contains
       select case (iconv_viscosity)
 !
       case ('constant')
-        eta = 1.
+        eta = eta_0
 !
       case ('Netwonian') 
-        eta = exp(Avisc * (TT_melt/f(:,mpoint,:,iTT) - 1.))
+        eta = eta_0*exp(Avisc * (TT_melt/f(:,mpoint,:,iTT) - 1.))
 !
       case ('Blankenbach-variable')
          do n=1,mz
-           eta(:,n) = exp(-Bvisc * f(:,mpoint,n,iTT)*deltaT1 + &
+           eta(:,n) = eta_0*exp(-Bvisc * f(:,mpoint,n,iTT)*deltaT1 + &
                            Cvisc * (1-z(n))*Lz1 )
          enddo
 !
