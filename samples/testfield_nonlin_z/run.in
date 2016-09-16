@@ -32,7 +32,7 @@
   lforcing_cont_uutest=F
   lforcing_cont_aatest=T
   itestfield_method='ju'
-  lphase_adjust=T, phase_testfield=0.
+  lphase_adjust=F, phase_testfield=0.
 /
 &viscosity_run_pars
   nu=1., ivisc='simplified'
