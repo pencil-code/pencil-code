@@ -565,7 +565,7 @@ contains
         !call update_bounds_psi(psi)
         variance_local = sum((psi(l1:l2,n1:n2) - psi_old(l1:l2,n1:n2))**2)
         call mpireduce_sum(variance_local,variance)
-        if (lroot) resid = sqrt(variance/(nx*nz))
+        if (lroot) resid = sqrt(variance/(nxgrid*nzgrid))
         call mpibcast_real(resid)
 !
 ! Increase counter. 

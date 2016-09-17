@@ -523,11 +523,12 @@ module Special
             psi_old=psi
 !
             call successive_over_relaxation(psi,rhs,alpha_factor,beta_factor)
-             
+!
             call update_bounds_psi(psi)
 !
             tmp=(psi(l1:l2,n1:n2) - psi_old(l1:l2,n1:n2))**2
-            residual = sqrt(sum(tmp)/sum(psi(l1:l2,n1:n2)**2))
+            !residual = sqrt(sum(tmp)/sum(psi(l1:l2,n1:n2)**2))
+            residual = sqrt(sum(tmp)/(nxgrid*nzgrid))            
 !
             if (lsave_residual_grid) then
                do m=1,my
