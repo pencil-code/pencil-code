@@ -23,7 +23,7 @@ def calc_tensors(
                  l_mpi=True,
                  yindex=[] 
                 ):
-    dim=pc.read_dim(quiet=True)
+    dim=pc.read_dim()
     if len(yindex)==0:
         iy=np.arange(dim.ny)
     else:
@@ -144,7 +144,8 @@ def calc_tensors(
         kappa[:,:,:,iph,ith,i]= -0.5* eta[:,:,:,ith,iph,i]
         kappa[:,:,:,irr,iph,i]=     kappa[:,:,:,iph,irr,i]
         kappa[:,:,:,ith,iph,i]=     kappa[:,:,:,iph,ith,i]
-        kappa[:,:,:,iph,iph,i]= 1e-9
+        #for it in range(0,imask.size):
+        #    kappa[it,:,:,iph,iph,i]= 1e-9*etat0[:,:,0,0,i]
     return alpha, beta, gamma, delta, kappa,\
                           time[imask], urmst, etat0
 
