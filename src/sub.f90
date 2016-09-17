@@ -104,6 +104,8 @@ module Sub
   public :: periodic_fold_back
   public :: lower_triangular_index
 !
+  public :: vec_dot_3tensor
+!
   interface poly                ! Overload the `poly' function
     module procedure poly_0
     module procedure poly_1

@@ -82,7 +82,7 @@ module Special
   use General, only: keep_compiler_quiet
   use Messages, only: svn_id, fatal_error
   use Mpicomm, only: mpibarrier
-  use Sub, only: numeric_precision, dot_mn_vm, curl_mn, cross_mn
+  use Sub, only: numeric_precision, dot_mn, dot_mn_vm, curl_mn, cross_mn, vec_dot_3tensor
   use HDF5
   use File_io, only: parallel_unit
 !
@@ -136,6 +136,9 @@ module Special
   ! Interpolation parameters
   character (len=fnlen) :: interpname
   integer :: dataload_len
+  real, dimension(nx)     :: tmpline
+  real, dimension(nx,3)   :: tmppencil,emftmp
+  real, dimension(nx,3,3) :: tmptensor
   ! Input dataset name
   ! Input namelist
   namelist /special_init_pars/ &
@@ -841,95 +844,118 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real :: diffus_tmp
       type (pencil_case), intent(in) :: p
-      real, dimension(nx,3) :: tmpvector, emfvector
       integer :: i,j,k
 ! 
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
 !
-      emfvector=0
+      emftmp=0
 ! Calculate alpha B
       if (lalpha) then
-        tmpvector=0
-        call dot_mn_vm(p%bb,p%alpha_emf,tmpvector)
-        emfvector = emfvector + tmpvector
+        tmppencil=0
+        call dot_mn_vm(p%bb,p%alpha_emf,tmppencil)
+        emftmp = emftmp + tmppencil
       end if
 !
 ! Calculate beta (curl B)
 !
       if (lbeta) then
-        tmpvector=0
-        call dot_mn_vm(p%jj,p%beta_emf,tmpvector)
-        emfvector = emfvector - tmpvector
+        tmppencil=0
+        call dot_mn_vm(p%jj,p%beta_emf,tmppencil)
+        emftmp = emftmp - tmppencil
       end if
 !
 ! Calculate gamma x B
 !
       if (lgamma) then
-        tmpvector=0
-        call cross_mn(p%gamma_emf,p%bb,tmpvector)
-        emfvector = emfvector + tmpvector
+        tmppencil=0
+        call cross_mn(p%gamma_emf,p%bb,tmppencil)
+        emftmp = emftmp + tmppencil
       end if
 !
 ! Calculate delta x (curl B)
 !
       if (ldelta) then
-        tmpvector=0
-        call cross_mn(p%delta_emf,p%jj,tmpvector)
-        emfvector = emfvector - tmpvector
+        tmppencil=0
+        call cross_mn(p%delta_emf,p%jj,tmppencil)
+        emftmp = emftmp - tmppencil
       end if
 !
 ! Calculate kappa (grad B)_symm
 !
       if (lkappa) then
-        tmpvector=0
+        tmppencil=0
         do k=1,3; do j=1,3; do i=1,3
-          tmpvector(1:nx,i)=tmpvector(1:nx,i)+p%kappa_emf(1:nx,i,j,k)*p%bij_symm(1:nx,i,j)
+          tmppencil(1:nx,i)=tmppencil(1:nx,i)+p%kappa_emf(1:nx,i,j,k)*p%bij_symm(1:nx,j,k)
         end do; end do; end do
-        emfvector = emfvector - tmpvector
+        emftmp = emftmp - tmppencil
       end if
 !
 ! Calculate utensor x B
 !
       if (lutensor) then
-        tmpvector=0
-        call cross_mn(p%utensor_emf,p%bb,tmpvector)
-        emfvector = emfvector + tmpvector
+        tmppencil=0
+        call cross_mn(p%utensor_emf,p%bb,tmppencil)
+        emftmp = emftmp + tmppencil
       end if
+!
+! Add emf terms to A
+!
+      df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+emftmp
+!
       if (lfirst.and.ldt) then
 !
 ! Calculate advec_special
 !
         if (lalpha) then
-          call dot_mn_vm(dline_1, p%alpha_emf, tmpvector)
+          tmppencil=0
+          call dot_mn_vm(dline_1, p%alpha_emf, tmppencil)
           advec_special=advec_special+&
-                            tmpvector(:,1)*dline_1(:,1)+ & 
-                            tmpvector(:,2)*dline_1(:,2)+ & 
-                            tmpvector(:,3)*dline_1(:,3)
+                            tmppencil(:,1)+& 
+                            tmppencil(:,2)+& 
+                            tmppencil(:,3)
         end if
         if (lgamma) then
-          advec_special=advec_special +                  &
-                            p%gamma_emf(:,1)*dline_1(:,1)+ & 
-                            p%gamma_emf(:,2)*dline_1(:,2)+ & 
-                            p%gamma_emf(:,3)*dline_1(:,3)
+          tmppencil=0
+          call dot_mn(dline_1, p%gamma_emf, tmpline)
+          advec_special=advec_special+tmpline
         end if
         if (lutensor) then
-          advec_special=advec_special+                   &
-                            p%utensor_emf(:,1)*dline_1(:,1)+ & 
-                            p%utensor_emf(:,2)*dline_1(:,2)+ & 
-                            p%utensor_emf(:,3)*dline_1(:,3)
+          tmppencil=0
+          call dot_mn(dline_1, p%utensor_emf, tmpline)
+          advec_special=advec_special+tmpline
         end if
 !
 ! Calculate diffus_special
 !
         if (lbeta) then
-          diffus_tmp=max(abs(tensor_maxvals(beta_id)),abs(tensor_minvals(beta_id)))
-          diffus_special=diffus_special+diffus_tmp*dxyz_2
+          tmppencil=0
+          tmpline=0
+          call dot_mn_vm(dline_1,p%beta_emf, tmppencil)
+          call dot_mn(dline_1, tmppencil, tmpline)
+          diffus_special=diffus_special+tmpline
+        end if
+        
+        if (ldelta) then
+          tmppencil=0
+          tmpline=0
+          call cross_mn(dline_1,p%delta_emf, tmppencil)
+          call dot_mn(dline_1,tmppencil,tmpline)
+          diffus_special=diffus_special+tmpline
+        end if
+        
+        if (lkappa) then
+          tmppencil=0
+          tmpline=0
+          tmptensor=0
+          call vec_dot_3tensor(dline_1, p%kappa_emf, tmptensor)
+          call dot_mn_vm(dline_1,tmptensor, tmppencil)
+          diffus_special=diffus_special+&
+                            tmppencil(:,1)+& 
+                            tmppencil(:,2)+& 
+                            tmppencil(:,3)
         end if
       end if 
-!
-      df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+emfvector
-!
     endsubroutine special_calc_magnetic
 !***********************************************************************
     subroutine special_calc_pscalar(f,df,p)
