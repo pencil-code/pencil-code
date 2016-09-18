@@ -133,7 +133,7 @@ module Particles_surfspec
 !
       if (N_surface_species > 1) then
         isurf = npvar+1
-        npvar = npvar+N_surface_species
+        npvar = npvar+N_surface_species-1
         isurf_end = isurf+N_surface_species-1
       else
         call fatal_error('register_particles_', 'N_surface_species must be > 1')
@@ -327,8 +327,7 @@ module Particles_surfspec
           endif
 !
           do k = 1,mpar_loc
-            fp(k,isurf:isurf_end) = fp(k,isurf:isurf_end) + &
-                init_surf_mol_frac(1:N_surface_species)
+            fp(k,isurf:isurf_end) = init_surf_mol_frac(1:N_surface_species)
           enddo
         case ('gas')
 !
@@ -347,11 +346,9 @@ module Particles_surfspec
                   species_constants(i,imass) * f(ix0,iy0,iz0,ichemspec(i))
             enddo
 !
+!
             do i = 1, N_surface_species
               igas = ichemspec(jmap(i))
-!              print*, 'igas',igas
-!              print*, 'f',f(ix0,iy0,iz0,igas)
-!              print*, 'mass',species_constants(jmap(i),imass)
               fp(k,isurf+i-1) = f(ix0,iy0,iz0,igas) / &
                   species_constants(jmap(i),imass)*mean_molar_mass
             enddo
@@ -378,10 +375,10 @@ module Particles_surfspec
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
-      real, dimension(mpar_loc,mparray) :: fp
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
       real, dimension(mpar_loc,mpvar) :: dfp
       integer, dimension(mpar_loc,3) :: ineargrid
-      integer :: i,j,g
+      integer :: i, j,g
 !
 !  equations.tex eq 37
 !      call keep_compiler_quiet(fp)
@@ -418,9 +415,9 @@ module Particles_surfspec
 !  Diffusion of the mass bound enthalpy
 !
       if (lspecies_transfer .and. ldiffuse_backenth) then
-        if (ldensity_nolog .and. ltemperature_nolog) & 
-        call fatal_error('particles_surf', 'diffusion of mass bound enthalpy &
-        & not implemented for ldensity_nolog')
+        if (ldensity_nolog .and. ltemperature_nolog) &
+            call fatal_error('particles_surf', 'diffusion of mass bound enthalpy &
+            & not implemented for ldensity_nolog')
         do i = 1,ndiffsteps
           call boundconds_x(f,ispecenth,ispecenth)
           call initiate_isendrcv_bdry(f,ispecenth,ispecenth)
@@ -428,7 +425,7 @@ module Particles_surfspec
           call boundconds_y(f,ispecenth,ispecenth)
           call boundconds_z(f,ispecenth,ispecenth)
           call diffuse_interaction(f(:,:,:,ispecenth),ldiffenth,.False.,rdiffconsts)
-          
+!
         enddo
         df(l1:l2,m1:m2,n1:n2,ilnTT) =  df(l1:l2,m1:m2,n1:n2,ilnTT) + &
             f(l1:l2,m1:m2,n1:n2,ispecenth)
@@ -477,6 +474,7 @@ module Particles_surfspec
       real, pointer :: true_density_carbon
       integer :: density_index
       real :: dmass_frac_dt=0.0
+      real :: diffusion_transfer=0.0
 !
       intent(in) :: ineargrid
       intent(inout) :: dfp, df, fp,f
@@ -531,23 +529,39 @@ module Particles_surfspec
 !  mass fractions to mole fractions)
 !
           do k = k1,k2
+!
+!  particle on pencil loop
+!
             porosity = 1.0 - (fp(k,imp)/(fp(k,iap)**3*4./3.*pi))/true_density_carbon
             A_p = 4.*pi*(fp(k,iap)**2)
             mean_molar_mass = (interp_rho(k)*Rgas*interp_TT(k)/ interp_pp(k))
 !
             if (lboundary_explicit) then
+              if (lparticles_adsorbed) print*, 'values in surfspec begin',fp(k,isurf:isurf_end)
               do i = 1,N_surface_reactants
-                term(k,i) = ndot(k,i)-fp(k,isurf+i-1)*sum(ndot(k,:))+ &
-                    mass_trans_coeff_reactants(k,i)* &
-                    (interp_species(k,jmap(i)) / &
-                    species_constants(jmap(i),imass) * &
-                    mean_molar_mass-fp(k,isurf+i-1))
+                diffusion_transfer = mass_trans_coeff_reactants(k,i) * (interp_species(k,jmap(i)) / &
+                    species_constants(jmap(i),imass) * mean_molar_mass-fp(k,isurf+i-1))
+                term(k,i) = ndot(k,i) - fp(k,isurf+i-1) * sum(ndot(k,:)) + diffusion_transfer
+                if (lparticles_adsorbed) then
+                  print*, '---------------------------'
+                  print*, ' mass_trans_', mass_trans_coeff_reactants(k,i)
+                  print*, ' ndot(k,i)  ', ndot(k,i)
+                  print*, 'fp(k,isurf+)',fp(k,isurf+i-1)
+                  print*, 'sum(ndot(k,:',sum(ndot(k,:))
+                  print*, 'x_spec      ',interp_species(k,jmap(i)) / species_constants(jmap(i),imass) * &
+                      mean_molar_mass
+                  print*, '---------------------------'
+                endif
 !
 ! the term 3/fp(k,iap) is ratio of the surface of a sphere to its volume
 !
                 dfp(k,isurf+i-1) = dfp(k,isurf+i-1) + 3*term(k,i)/(porosity*Cg(k)*fp(k,iap))
-!                print*, 'dfp(k,isurf+i-1): ',k,i,dfp(k,isurf+i-1)
+                if (lparticles_adsorbed) then
+                  print*, 'term(k,i)',term(k,i)
+                  print*, 'dfp(k,isurf+i-1): ',k,i,dfp(k,isurf+i-1)
+                endif
               enddo
+!              if (lparticles_adsorbed) stop
             else
               if (linfinite_diffusion .or. lbaum_and_street) then
                 do i = 1,N_surface_reactants
@@ -774,6 +788,10 @@ module Particles_surfspec
               if (lfirst .and. ldt) reac_pchem = max(reac_pchem,max_reac_pchem)
 !
             endif
+!
+!  end of particle on pencil loop
+!
+            if (lparticles_adsorbed) print*, 'values in surfspec end',fp(k,isurf:isurf_end)
           enddo
 !
 !
@@ -982,7 +1000,7 @@ module Particles_surfspec
 !  nov-14/jonas: coded
 !
     subroutine calc_psurf_pencils(f,fp,p,ineargrid)
-      real, dimension(mpar_loc,mparray) :: fp
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
       real, dimension(mx,my,mz,mfarray) :: f
       integer, dimension(mpar_loc,3) :: ineargrid
       type (pencil_case) :: p
@@ -997,7 +1015,7 @@ module Particles_surfspec
 !
     subroutine calc_mass_trans_coeff(f,fp,p,ineargrid)
       real, dimension(:,:,:,:) :: f
-      real, dimension(:,:) :: fp
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
       type (pencil_case) :: p
       integer, dimension(:,:) :: ineargrid
       integer :: k, k1, k2,i

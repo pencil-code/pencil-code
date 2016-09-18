@@ -392,7 +392,7 @@ module Particles_chemistry
     subroutine calc_get_mod_surf_area(mod_surf_area,fp)
       real, dimension(:), allocatable :: mod_all, Sgc
       real, dimension(k1_imn(imn):k2_imn(imn)) :: mod_surf_area
-      real, dimension(:,:) :: fp
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
       integer :: k, k1, k2
 !
       k1 = k1_imn(imn)
@@ -428,7 +428,7 @@ module Particles_chemistry
 !  oct-14/Jonas: coded
 !
     subroutine calc_St(fp)
-      real, dimension(:,:) :: fp
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
       real :: rho_p_init
       integer :: k, k1, k2
 !
@@ -825,22 +825,14 @@ module Particles_chemistry
       enddo
 !
 ! creating the lists
+!
       species(:place-1) = temp(:place-1)
       reactants(:place_reac-1) = temp_reac(:place_reac-1)
       products(:place_prod-1) = temp_prod(:place_prod-1)
       ns = place-1
       nr = place_reac-1
       np = place_prod-1
-!      print*, 'species'
-!      print*, species
-!       print*, 'reactants',reactants
-!      print*, reactants
-!      print*, 'products'
-!      print*, products
-!      print*, 'temp_reac'
-!      print*, temp_reac(:place_reac-1)
-!      print*, 'place_reac'
-!      print*, place_reac
+!
     endsubroutine count_species
 ! ******************************************************************************
 !  If the reaction contains '<>', the string is passed to this subroutine
@@ -859,8 +851,10 @@ module Particles_chemistry
       character(len=10), dimension(:,:) :: target_list
 !
       marker = index(string,'<>')
+      real_number = 0.0
       numerical = 1
       i = marker
+!      print*, 'string_infos  ', string
 !
       do while (numerical  /= 0 )
         i = i + 1
@@ -869,7 +863,8 @@ module Particles_chemistry
 !  NILS: may cause problems for some compilers (e.g.
 !  NILS: hosts/nordita/norlx51-daily-test.conf)
 !
-        read (string(i:i+7),*,iostat=numerical) real_number
+        read (string(i:i+8),'(E8.2E2)',iostat=numerical) real_number
+!        print*, string(i:i+8), real_number,numerical
         if (numerical == 0) then
           if (real_number < 0.) then
             numerical = 1
@@ -887,6 +882,7 @@ module Particles_chemistry
       ende = trim(string(i:))
 !
       flipped_string = trim(rhs)//'  '//trim(sign)//'  '//trim(lhs)// trim(ende)
+!      print*, 'flipped      ', flipped_string
       flags(ireaction) = 'rev'
       call parse(flipped_string,ireaction,target_list,'rev',direction)
     endsubroutine flip_and_parse
@@ -1057,7 +1053,7 @@ module Particles_chemistry
       real :: pre_pressure
       real :: k_p, k_c
       real :: denominator, expo
-      real, dimension(:,:) :: fp
+      real, dimension(mpar_loc,mparray) :: fp
 !
 !  This should be kept in SI units, therefore a prefactor to the pressure is
 !  introduced to keep interp_pp in SI units
@@ -1088,7 +1084,7 @@ module Particles_chemistry
 !  oct-14/Jonas: coded
 !
     subroutine calc_conversion(fp)
-      real, dimension(:,:) :: fp
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
       integer :: k1, k2
 !
       k1 = k1_imn(imn)
@@ -1157,7 +1153,7 @@ module Particles_chemistry
       use Diagnostics
 !
       type (pencil_case) :: p
-      real, dimension(mpar_loc,mparray) :: fp
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
       real, dimension(mx,my,mz,mfarray) :: f
       real :: pre_Cg, pre_Cs, pre_RR_hat, pre_k
       real :: pre_kk, Sh, Sh_mean
@@ -1174,9 +1170,9 @@ module Particles_chemistry
         call find_sh_counter(sh_counter)
       endif
 !
-!  Initialize pencils that are calculated in this routine      
+!  Initialize pencils that are calculated in this routine
 !
-      if (lpenc_requested(i_sherwood)) p%sherwood= 0.0
+      if (lpenc_requested(i_sherwood)) p%sherwood = 0.0
 !
       if (npar_imn(imn) /= 0) then
 !
@@ -1223,6 +1219,7 @@ module Particles_chemistry
         else
 !
           do k = k1,k2
+            if (lparticles_adsorbed) print*, 'values before',fp(k,isurf:isurf_end)
 !
 !  The particle mass should not be allowed to decrease to less than
 !  one percent of ints initial mass. When particle reactions are
@@ -1263,7 +1260,6 @@ module Particles_chemistry
                       if (.not. lsherwood_const) then
                         Sh = 2.0 + 0.69 * rep(k)**0.5 * &
                             (nuvisc(k)/p%Diff_penc_add(ix0-nghost,jmap(i)))**0.33
-                        if (Sh < 2.0) call fatal_error('Sh under 2', 'pchemistry')
                         if (idiag_Shchm /= 0) then
                           Sh_mean = Sh_mean + Sh
                         endif
@@ -1288,7 +1284,15 @@ module Particles_chemistry
                     endif
 !
                     if (RR_hat(k,j) < 0.0 .or. RR_hat(k,j) /= RR_hat(k,j)) then
-                      print *, 'RR_hat(k,j), infos: ', RR_hat(k,j),j,i,fp(k,isurf-1+i)
+                      print *, 'RR_hat  infos:'
+                      print*, 'RR_hat(k,j)    ', RR_hat(k,j)
+                      print*, 'j,i            ',j,i
+                      print*, 'fp(k,isurf-1+i)',fp(k,isurf-1+i)
+                      print*, 'isurf, isurf_end, N_surface_reactants', &
+                          isurf,isurf_end,N_surface_reactants
+                      print*, 'fp(k,all species)',fp(k,isurf:isurf_end)
+                      print*, 'fp(k,all)',fp(k,:)
+                      print*, 'nu(i,j)        ',nu(i,j)
                       print *, 'pre_Cg, Cg(k),fp(k,isurf-1+i)),nu(i,j): ', &
                           pre_Cg, Cg(k),fp(k,isurf-1+i),nu(i,j)
                       call fatal_error('RR', 'RR_hat negative or not a number')
@@ -1422,7 +1426,7 @@ module Particles_chemistry
 !  oct-14/jonas (coded)
 !
     subroutine calc_ndot_mdot_R_j_hat(fp)
-      real, dimension(:,:) :: fp
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
       integer :: n, i, j, k, l, k1, k2, index1
 !
       ndot = 0.
@@ -1444,6 +1448,10 @@ module Particles_chemistry
               (fp(k1:k2,iap)*fp(k1:k2,iap)*4.*pi)
         enddo
       enddo
+      if (lparticles_adsorbed) then
+        print*, 'ndot(k1:k2,:)',ndot(k1:k2,:)
+        print*, 'RR_hat(k1:k2,l)',RR_hat(k1:k2,:)
+      endif
 !
 ! Find molar reaction rate of adsorbed surface species
 ! if the species is consumed (mu> 1) its contribution to R_j_hat
@@ -1532,7 +1540,8 @@ module Particles_chemistry
 !  taken from solid_reac L. 149 and equations.pdf eq 35ff
 !
     subroutine calc_effectiveness_factor(fp,ineargrid,p)
-      real, dimension(:,:) :: fp
+!
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
       type (pencil_case) :: p
 !
       real, dimension(:,:), allocatable :: R_i_hat, D_eff
@@ -1597,6 +1606,18 @@ module Particles_chemistry
           if (R_i_hat(k,i) < 0.0 .and. fp(k,isurf-1+1) > 0.0) then
             thiele(k,i) = fp(k,iap)*sqrt(-R_i_hat(k,i)*St(k)/ &
                 (volume(k)*Cg(k)*fp(k,isurf-1+i)*D_eff(k,i)))
+            if (lparticles_adsorbed) then
+              print*, 'thiele infos'
+              print*, 'fp(k,iap)   ',fp(k,iap)
+              print*, 'R_i_hat(k,i)',R_i_hat(k,i)
+              print*, 'St(k)       ',St(k)
+              print*, 'volume(k)   ',volume(k)
+              print*, 'Cg(k)       ',Cg(k)
+              print*, 'fp(k,isurf-1+i)',fp(k,isurf-1+i)
+              print*, 'D_eff(k,i)     ',D_eff(k,i)
+              print*, ' thiele(k,i)   ', thiele(k,i)
+              print*, '-----------------------------------'
+            endif
           else
             thiele(k,i) = 1.e-2
           endif
@@ -1621,13 +1642,13 @@ module Particles_chemistry
 !          print*,'effectiveness', effectiveness_factor_species
         enddo
       enddo
-      print*, 'R_i_hat',R_i_hat(1,:)
-      print*, 'rp', fp(k,iap)
-      print*, 'St(k)',St(1)
-      print*, 'Cg(k)', Cg(1)
+      print*, 'R_i_hat',R_i_hat(k1,:)
+      print*, 'rp', fp(k1,iap)
+      print*, 'St(k)',St(k1)
+      print*, 'Cg(k)', Cg(k1)
       print*, 'volume', volume(:)
-      print*, 'fp(k,isurf)', fp(1,isurf:isurf+N_surface_reactants)
-      print*, 'D_eff',D_eff(1,:)
+      print*, 'fp(k,isurf)', fp(k1,isurf:isurf+N_surface_reactants)
+      print*, 'D_eff',D_eff(k1,:)
       print*, 'thiele: ',thiele
 !      call fatal_error('thiele','thiele is nan')
 !
@@ -1653,7 +1674,9 @@ module Particles_chemistry
           endif
         enddo
         if (sum_eta_i_R_i_hat_max(k) /= sum_eta_i_R_i_hat_max(k)) then
-          print*, 'rihat infos',sum_eta_i_R_i_hat_max(k),effectiveness_factor_species(k,:)
+          print*, 'rihat infos'
+          print*, 'sum_eta_i_R_i_hat_max(k)',sum_eta_i_R_i_hat_max(k)
+          print*, 'effectiveness_factor_species(k,:)',effectiveness_factor_species(k,:)
           call fatal_error('rihat','is nan from eff')
         endif
       enddo
@@ -1709,7 +1732,7 @@ module Particles_chemistry
 !  oct-14/Jonas: coded
 !
     subroutine calc_surf_enthalpy(fp)
-      real, dimension(mpar_loc,mparray) :: fp
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
       integer :: k, k1, k2
 !
       k1 = k1_imn(imn)
@@ -1741,7 +1764,7 @@ module Particles_chemistry
 !  oct-14/Jonas: coded
 !
     subroutine calc_surf_entropy(fp)
-      real, dimension(:,:) :: fp
+      real, dimension(mpar_loc,mparray) :: fp
       integer :: k, k1, k2
 !
       k1 = k1_imn(imn)
@@ -1778,7 +1801,7 @@ module Particles_chemistry
 !  oct-14/Jonas: coded
 !
     subroutine calc_ads_entropy(fp)
-      real, dimension(mpar_loc,mparray) :: fp
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
       integer :: k, k1, k2
 !
       k1 = k1_imn(imn)
@@ -1820,7 +1843,7 @@ module Particles_chemistry
 !  oct-14/Jonas: coded
 !
     subroutine calc_ads_enthalpy(fp)
-      real, dimension(:,:) :: fp
+      real, dimension(mpar_loc,mparray) :: fp
       integer :: k, k1, k2
 !
 !  JONAS: values are from nist and solid_phase.f90 of the stanford
@@ -1849,7 +1872,7 @@ module Particles_chemistry
 !  oct-14/Jonas: coded
 !
     subroutine calc_pchemistry_pencils(f,fp,p,ineargrid)
-      real, dimension(mpar_loc,mparray) :: fp
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
       real, dimension(mx,my,mz,mfarray) :: f
       integer, dimension(mpar_loc,3) :: ineargrid
       type (pencil_case) :: p
@@ -2073,8 +2096,8 @@ module Particles_chemistry
 !  07-oct-14/Jonas: coded
 !
     subroutine calc_rho_p(fp)
-      real, dimension(:,:) :: fp
-      integer :: k, k1, k2
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
+      integer :: k1, k2
 !
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
@@ -2178,9 +2201,9 @@ module Particles_chemistry
 !
     subroutine calc_K_k(f,fp,p,ineargrid)
       real, dimension(:,:,:,:) :: f
-      real, dimension(:,:) :: fp
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
       type (pencil_case) :: p
-      integer, dimension(:,:) :: ineargrid
+      integer, dimension(mpar_loc,3) :: ineargrid
       integer :: k, k1, k2, i, j,l
       integer :: N_iter = 20
       real :: int_k, gg_old, gg, ff, energy, dE, delta_E
@@ -2238,13 +2261,13 @@ module Particles_chemistry
 !  oct-14/Jonas: coded
 !
     subroutine calc_Cg(f,fp,p,ineargrid)
-      real, dimension(:,:) :: fp
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
       real, dimension(:,:,:,:) :: f
-      integer :: k, k1, k2
+      integer :: k1, k2
       integer, dimension(:), allocatable :: ix0
       real, dimension(:), allocatable :: Tfilm
       type (pencil_case) :: p
-      integer, dimension(:,:) :: ineargrid
+      integer, dimension(mpar_loc,3) :: ineargrid
 !
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
@@ -2277,7 +2300,7 @@ module Particles_chemistry
 !  oct-14/Jonas: coded
 !
     subroutine calc_A_p(fp)
-      real, dimension(:,:) :: fp
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
       integer :: k1, k2
 !
       k1 = k1_imn(imn)
@@ -2292,7 +2315,7 @@ module Particles_chemistry
 !  oct-14/Jonas: coded
 !
     subroutine calc_Cs(fp)
-      real, dimension(:,:) :: fp
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
       integer :: k, k1, k2,i
 !
       k1 = k1_imn(imn)
