@@ -196,6 +196,7 @@ module Chemistry
   integer, dimension(nchemspec) :: idiag_dYm=0 ! DIAG_DOC: $\delta\left<Y_x\right>/\delta t$
   integer, dimension(nchemspec) :: idiag_dYmax=0 ! DIAG_DOC: $max\delta\left<Y_x\right>/\delta t$
   integer, dimension(nchemspec) :: idiag_Ymax=0 ! DIAG_DOC: $\left<Y_{x,max}\right>$
+  integer, dimension(nchemspec) :: idiag_Ymin=0 ! DIAG_DOC: $\left<Y_{x,min}\right>$
   integer, dimension(nchemspec) :: idiag_hm=0 ! DIAG_DOC: $\left<H_{x,max}\right>$
   integer, dimension(nchemspec) :: idiag_cpm=0 ! DIAG_DOC: $\left<c_{p,x}\right>$
   integer, dimension(nchemspec) :: idiag_diffm=0 ! DIAG_DOC: $\left<D_{x}\right>$
@@ -3046,6 +3047,9 @@ module Chemistry
           if (idiag_Ymax(ii)/= 0) then
             call max_mn_name(f(l1:l2,m,n,ichemspec(ii)),idiag_Ymax(ii))
           endif
+          if (idiag_Ymin(ii)/= 0) then
+            call max_mn_name(-f(l1:l2,m,n,ichemspec(ii)),idiag_Ymin(ii),lneg=.true.)
+          endif
           if (idiag_diffm(ii)/= 0) then
             call sum_mn_name(Diff_full_add(l1:l2,m,n,ii),idiag_diffm(ii))
           endif
@@ -3165,6 +3169,7 @@ module Chemistry
       logical, optional :: lwrite
       character(len=6) :: diagn_Ym, number
       character(len=6) :: diagn_Ymax
+      character(len=6) :: diagn_Ymin
       character(len=7) :: diagn_dYmax
       character(len=6) :: diagn_dYm
       character(len=6) :: diagn_hm
@@ -3182,6 +3187,7 @@ module Chemistry
         idiag_Ym = 0
         idiag_dYm = 0
         idiag_Ymax = 0
+        idiag_Ymin = 0
         idiag_dYmax = 0
         idiag_hm = 0
         idiag_cpm = 0
@@ -3224,6 +3230,8 @@ module Chemistry
           call parse_name(iname,cname(iname),cform(iname),trim(diagn_Ym),idiag_Ym(ii))
           diagn_Ymax = 'Y'//trim(adjustl(number))//'max'
           call parse_name(iname,cname(iname),cform(iname),trim(diagn_Ymax),idiag_Ymax(ii))
+          diagn_Ymin = 'Y'//trim(adjustl(number))//'min'
+          call parse_name(iname,cname(iname),cform(iname),trim(diagn_Ymin),idiag_Ymin(ii))
           diagn_dYm = 'dY'//trim(adjustl(number))//'m'
           call parse_name(iname,cname(iname),cform(iname),trim(diagn_dYm),idiag_dYm(ii))
           diagn_dYmax = 'dY'//trim(adjustl(number))//'max'

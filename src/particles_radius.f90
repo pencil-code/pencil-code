@@ -107,9 +107,11 @@ module Particles_radius
 !
 ! Index for the effectiveness factor of surface reactions
 !
-      ieffp = mpvar+npaux+1
-      pvarname(ieffp) = 'ieffp'
-      npaux = npaux+1
+      if (lparticles_chemistry) then
+        ieffp = mpvar+npaux+1
+        pvarname(ieffp) = 'ieffp'
+        npaux = npaux+1
+      endif
 !
 ! Check that the fp and dfp arrays are big enough.
 !
