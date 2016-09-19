@@ -1129,7 +1129,7 @@ contains
 !  Conduction (diffusion)
 !
       if (ltemperature_diffusion) & 
-           df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + p%del2TT
+           df(l1:l2,m,n,iTT) = df(l1:l2,m,n,iTT) + kappa*p%del2TT
 !
 !  Tidal heating 
 !
