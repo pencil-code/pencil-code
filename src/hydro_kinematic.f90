@@ -513,30 +513,30 @@ module Hydro
           p%uij(:,3,2)=sqrt2*ky_uukin*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))
           p%uij(:,3,3)=+0.
         endif
-     case ('roberts_xz')
+     case ('Roberts-II-xz')
         if (headtt) print*,'Glen Roberts flow w.r.t. x and z; kx_uukin,kz_uukin=',kx_uukin,kz_uukin
 ! uu
-        sqrt2=sqrt(2.)
+        fac=ampl_kinflow
+        fac2=ampl_kinflow*eps_kinflow
         if (lpenc_loc(i_uu)) then
-          eps1=1.-eps_kinflow
-          p%uu(:,1)= +eps1*sin(kx_uukin*x(l1:l2))*cos(kz_uukin*z(n))
-          p%uu(:,2)=-sqrt2*sin(kx_uukin*x(l1:l2))*sin(kz_uukin*z(n))
-          p%uu(:,3)= -eps1*cos(kx_uukin*x(l1:l2))*sin(kz_uukin*z(n))
+          p%uu(:,1)= +fac *sin(kx_uukin*x(l1:l2))*cos(kz_uukin*z(n))
+          p%uu(:,2)= -fac2*cos(kx_uukin*x(l1:l2))*cos(kz_uukin*z(n))
+          p%uu(:,3)= -fac *cos(kx_uukin*x(l1:l2))*sin(kz_uukin*z(n))
         endif
 ! divu
         if (lpenc_loc(i_divu)) &
-            p%divu= eps1*(kx_uukin-kz_uukin)*cos(kx_uukin*x(l1:l2))*cos(kz_uukin*z(n))
+            p%divu= fac*(kx_uukin-kz_uukin)*cos(kx_uukin*x(l1:l2))*cos(kz_uukin*z(n))
 ! uij
         if (lpenc_loc(i_uij)) then
-          p%uij(:,1,1)=+eps1 *kx_uukin*cos(kx_uukin*x(l1:l2))*cos(kz_uukin*z(n))
+          p%uij(:,1,1)=+fac *kx_uukin*cos(kx_uukin*x(l1:l2))*cos(kz_uukin*z(n))
           p%uij(:,1,2)=+0.
-          p%uij(:,1,3)=-eps1 *kz_uukin*sin(kx_uukin*x(l1:l2))*sin(kz_uukin*z(n))
-          p%uij(:,2,1)=-sqrt2*kx_uukin*cos(kx_uukin*x(l1:l2))*sin(kz_uukin*z(n))
+          p%uij(:,1,3)=-fac *kz_uukin*sin(kx_uukin*x(l1:l2))*sin(kz_uukin*z(n))
+          p%uij(:,2,1)=+fac2*kx_uukin*sin(kx_uukin*x(l1:l2))*cos(kz_uukin*z(n))
           p%uij(:,2,2)=+0.
-          p%uij(:,2,3)=-sqrt2*kz_uukin*sin(kx_uukin*x(l1:l2))*cos(kz_uukin*z(n))
-          p%uij(:,3,1)=+eps1 *kx_uukin*sin(kx_uukin*x(l1:l2))*sin(kz_uukin*z(n))
+          p%uij(:,2,3)=+fac2*kz_uukin*cos(kx_uukin*x(l1:l2))*sin(kz_uukin*z(n))
+          p%uij(:,3,1)=+fac *kx_uukin*sin(kx_uukin*x(l1:l2))*sin(kz_uukin*z(n))
           p%uij(:,3,2)=+0.
-          p%uij(:,3,3)=-eps1 *kz_uukin*cos(kx_uukin*x(l1:l2))*cos(kz_uukin*z(n))
+          p%uij(:,3,3)=-fac *kz_uukin*cos(kx_uukin*x(l1:l2))*cos(kz_uukin*z(n))
         endif
 !
 ! Chandrasekhar-Kendall Flow
@@ -586,6 +586,9 @@ module Hydro
           p%uu(:,2)=-fac*cos(kx_uukin*x(l1:l2))*sin(ky_uukin*y(m))
           p%uu(:,3)=fac2*cos(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))
         endif
+!
+! The following not true for kx_uukin \ne ky_uukin.
+!
         if (lpenc_loc(i_divu)) p%divu=0.
 !
 !  original Roberts III flow
