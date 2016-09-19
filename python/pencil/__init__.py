@@ -34,5 +34,5 @@ from pencil.math.derivatives import *
 from pencil.math.vector_multiplication import *
 #from pencil.files.multi_slices import *
 from pencil.files.particles_removed import read_rmv_par
-
+from pencil.files.particles_to_density import * 
 
