@@ -572,7 +572,7 @@ module Cosmicray
 !
         if (limiter_cr>0.) then
           call dot2_mn(hhh,hhh2)
-          quenchfactor=1./sqrt(1.+(limiter_cr*dxmin)**2*hhh2)
+          quenchfactor=1./sqrt(1.+(limiter_cr*dxmin_pencil)**2*hhh2)
           call multsv_mn(quenchfactor,hhh,hhh)
         endif
 !
