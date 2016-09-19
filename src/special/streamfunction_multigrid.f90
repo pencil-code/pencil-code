@@ -245,7 +245,7 @@ contains
          if (dslab /= 1.0)   call fatal_error("initialize_special",&
               "You are using dimensionless variables, set Lxyz(3)=1 and vary Ra")
       else
-         if (Ra/=impossible) call fatal_error("initialize_special",&
+         if (lstart.and.Ra/=impossible) call fatal_error("initialize_special",&
              "You are using dimensioned variables but you set the Rayleigh number. Uncomment it from your start.in")
       endif
 !
