@@ -492,7 +492,7 @@ contains
       real, dimension (nx,nz) :: alpha_factor,beta_factor
       integer :: icount,i
       real :: resid,aout,alpha,beta,dTTdx      
-      real :: variance_local,variance
+      real :: variance_local,variance,sumpsi_local,sumpsi
       real :: Rayleigh_factor
 !
       if (ladimensional) then
@@ -564,8 +564,11 @@ contains
         psi=f(:,mpoint,:,ipsi)
         !call update_bounds_psi(psi)
         variance_local = sum((psi(l1:l2,n1:n2) - psi_old(l1:l2,n1:n2))**2)
+        sumpsi_local = sum(psi(l1:l2,n1:n2)**2)
         call mpireduce_sum(variance_local,variance)
-        if (lroot) resid = sqrt(variance/(nxgrid*nzgrid))
+        call mpireduce_sum(sumpsi_local,sumpsi)
+!
+        if (lroot) resid = sqrt(variance/sumpsi)
         call mpibcast_real(resid)
 !
 ! Increase counter. 
@@ -1138,7 +1141,7 @@ contains
                       abs(q%uu(:,2))*dy_1(  m  )+ &
                       abs(q%uu(:,3))*dz_1(  n  )       
 !
-        diffus_special=diffus_special + dxyz_2
+        diffus_special=diffus_special + kappa*dxyz_2
       endif
 !
       if (headtt.or.ldebug) then
