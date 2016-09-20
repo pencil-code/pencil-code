@@ -97,18 +97,6 @@ COMPILE_OPT IDL2,HIDDEN
     line = result[pos]
     EOL = stregex (line, ',? *\$ *$')
     if (EOL gt 0) then begin
-      if strpos(line,'replicate') ge 0 then begin
-;
-; This block dispensable if replicate is already inserted by nl2idl.
-;
-        startind = strpos(line,"'")
-        stopind  = strpos(line,"'",/REVERSE_SEARCH)
-        line = strmid(line, 0, startind-1) + ' ' + strmid(line, startind+1,stopind-startind-1)
-        prpos = strpos(line,"''")
-        if prpos ge 0 then line = strmid(line,0,prpos+1)+strmid(line,prpos+2)
-        prpos = strpos(line,"''")
-        if prpos ge 0 then line = strmid(line,0,prpos+1)+strmid(line,prpos+2)
-      endif
 ;
 ;  For long lines which would turn into (too) long command strings:
 ;  store the data contents in a temporary array tmparr and use its name in the 
