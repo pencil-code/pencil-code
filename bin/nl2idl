@@ -130,7 +130,7 @@ my $nl  = Fortran::F90Namelist->new();
 my $nl2 = Fortran::F90Namelist->new();
 $nl2->debug(1) if ($debug);
 foreach my $file (@ARGV) {
-    $nl2->parse(file => $file, all => 1, merge => 1)
+    $nl2->parse(file => $file, all => 1, merge => 1, format => 'idl')
         or die "Couldn't parse file <$file>\n";
     $nl->merge($nl2);
 }
