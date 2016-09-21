@@ -90,7 +90,8 @@ $nl2->debug(1) if ($debug);
 foreach my $f (@ARGV) {
     $nl2->parse(file  => $f,
                 all   => 1,
-                merge => 1)
+                merge => 1,
+                format=> 'python')
       or die "Couldn't parse file <$f>\n";
     $nl->merge($nl2);
 }
