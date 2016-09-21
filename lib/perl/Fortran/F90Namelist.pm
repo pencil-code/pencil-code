@@ -1296,8 +1296,11 @@ sub get_value {
         if ($mul le '1') {
            push @values, $val
         } else {
-          push @values, "replicate($val,$mul)";
-          #push @values, ($val) x $mul;
+          if ($format eq 'idl') {
+            push @values, "replicate($val,$mul)"
+          } else {
+            push @values, ($val) x $mul
+          }
         }
         $text =~ s/.*\n// if ($rest eq '!'); # comment
         print STDERR "<<", ($mul||'1'), "x>><<$val>> <<",
@@ -1605,7 +1608,7 @@ sub add_array_bracket {
 sub encaps_logical {
 # Represent logical
     my ($val, $format) = @_;
-
+    
     my ($false, $true);
     if ($format eq 'f90') {
         ($false, $true) = ('F', 'T');
