@@ -446,7 +446,7 @@ use strict;
 use Carp;
 use vars qw($VERSION);
 
-# Cannot use use Perl5.8's constant { x => 1, y=>2 , ..} because 5.6
+# Cannot use Perl5.8's constant { x => 1, y=>2 , ..} because 5.6
 # is very popular still
 #
 # Possible states of parser [used at all?]
@@ -686,7 +686,11 @@ sub parse {
     my $name    = ($args{name}    || '' );
     my $dups_ok = ($args{dups_ok} || '' );
     my $broken  = ($args{broken}  || 0  );
+    my $format  = ($args{format}  || 'f90' );
 
+    if (lc($format) eq 'idl' || lc($format) eq 'python' ) {
+        ${cmplx_pref} = "complex"; # complex number prefix
+    }
     # Get text from file if necessary
     $text      = ($args{text}  || $text );
     if (!defined($text)) {
@@ -718,7 +722,7 @@ sub parse {
     do {
         my ($name1, $nslots1, @slots1);
         my $href = parse_namelist(\$text, \$name1, \$nslots1, \@slots1,
-                                  $broken, $debug);
+                                  $broken, $debug, $format);
         if (defined($href)
             && defined($name1)
             && $name1 ne ''
@@ -1043,7 +1047,7 @@ sub parse_namelist {
 #
 # Parse first F90 namelist from text string; return reference to hash
 #
-#   parse_namelist(\$text,\$name,\$nslots,\@slots,$broken,$debug);
+#   parse_namelist(\$text,\$name,\$nslots,\@slots,$broken,$debug,$format);
 #
 
     my $textref   = shift;
@@ -1052,6 +1056,7 @@ sub parse_namelist {
     my $slotsref  = shift;
     my $broken    = shift;
     my $debug     = shift;
+    my $format    = shift;
 
     my %hash;
     my $nslots = 0;
@@ -1098,7 +1103,7 @@ sub parse_namelist {
             }
 
             # Get values and check
-            @values = get_value(\$text,\$type,$var,$debug); # drop $debug here..
+            @values = get_value(\$text,\$type,$var,$debug,$format); # drop $debug here..
             if (@values or $type == EMPTY) {
                 $nslots++;
                 push @$slotsref, $var;
@@ -1202,6 +1207,7 @@ sub get_value {
     my $typeptr = shift;
     my $varname = shift;
     my $debug   = shift;    # Need to somewhow get rid of this argument...
+    my $format  = shift;
 
     my $text = $$txtptr;
 
@@ -1271,11 +1277,11 @@ sub get_value {
 
         # Remove quotes around (and doubled in) strings
         if ($type == SQ_STRING) {
-            $val =~ s/^'(.*)'$/$1/s;
-            $val =~ s/''/'/gs;
+            $val =~ s/''/"/gs;
+            $val =~ s/^'(.*)'$/\"$1\"/s;
         }
         if ($type == DQ_STRING) {
-            $val =~ s/^"(.*)"$/$1/s;
+            #$val =~ s/^"(.*)"$/$1/s;
             $val =~ s/""/"/gs;
         }
 
@@ -1285,7 +1291,14 @@ sub get_value {
             $val =~ s/\n//g;
         }
 
-        push @values, ($val) x $mul;
+        $val = encapsulate_value($val,$format,$type); # preprocess values
+        
+        if ($mul le '1') {
+           push @values, $val
+        } else {
+          push @values, "replicate($val,$mul)";
+          #push @values, ($val) x $mul;
+        }
         $text =~ s/.*\n// if ($rest eq '!'); # comment
         print STDERR "<<", ($mul||'1'), "x>><<$val>> <<",
           printable_substring($text), ">>\n" if ($debug);
@@ -1414,7 +1427,7 @@ sub assign_slot_val {
         croak "assign_slot_val: Unknown format <$format>\n";
     }
 
-    encapsulate_values(\@vals,$format,$type); # preprocess values
+    #encapsulate_values(\@vals,$format,$type); # preprocess values
     if ($format eq 'idl' and @vals == 0) {
         # IDL not only lacks empty arrays, but even a usable 'undef'
         # concept (we cannot assign '[]' or '!NULL' to a structure slot).
@@ -1463,6 +1476,36 @@ sub encapsulate_values {
 
 # ---------------------------------------------------------------------- #
 
+sub encapsulate_value {
+#
+# Format-specific preprocessing of data values, e.g. quoting strings,
+# mapping logicals to integers for IDL, etc.
+#
+    my $val    = shift;
+    my $format = shift;
+    my $type   = shift;
+
+    #my $val = $$valref;
+
+    ## Actions for all formats
+    if ($type==COMPLEX or $type==DCOMPLEX) {
+        $val = ${cmplx_pref}.$val.${cmplx_suff};
+          #print STDERR $val, "\n";
+    }
+
+    ## Actions specific for some formats
+    if ($type==SQ_STRING or $type==DQ_STRING) {
+        #$valref = quote_string($valref, $format);
+    }
+    if ($type==LOGICAL) {
+        $val = encaps_logical($val, $format);
+    }
+
+    return $val;
+}
+
+# ---------------------------------------------------------------------- #
+
 sub format_slots {
 #
 # Format all slots for printing and collect in a list
@@ -1494,7 +1537,7 @@ sub format_slots {
                 ($type == COMPLEX) ||
                 ($type == DCOMPLEX))  {
                 for (@vals) {
-                    s/[eEdD]/D/;
+                    s/\([0-9\.]\)[eEdD]/$1D/;
                     s/(^|\s|,)($float)($|\s|,)/$1$2D0$3/g;
                     s/(\(\s*)($float)(\s*,\s*)($float)(\s*\))/$1$2D0$3$4D0$5/g;
                 }
