@@ -1299,7 +1299,8 @@ sub get_value {
           if ($format eq 'idl') {
             push @values, "replicate($val,$mul)"
           } else {
-            push @values, ($val) x $mul
+            #push @values, ($val) x $mul
+            push @values, "numpy.repeat($val,$mul)"
           }
         }
         $text =~ s/.*\n// if ($rest eq '!'); # comment
@@ -1533,14 +1534,14 @@ sub format_slots {
         }
 
         # Replace E[0-9]+ by, or append `D0' where necessary
-        if ($double) {
+        if ($double && $format ne 'python') {
             if (($type == FLOAT)   ||
                 ($type == SINGLE)  ||
                 ($type == DOUBLE)  ||
                 ($type == COMPLEX) ||
                 ($type == DCOMPLEX))  {
                 for (@vals) {
-                    s/\([0-9\.]\)[eEdD]/$1D/;
+                    s/\([0-9\.]\)[eE]/$1D/;
                     s/(^|\s|,)($float)($|\s|,)/$1$2D0$3/g;
                     s/(\(\s*)($float)(\s*,\s*)($float)(\s*\))/$1$2D0$3$4D0$5/g;
                 }
