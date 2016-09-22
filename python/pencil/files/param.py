@@ -7,7 +7,7 @@ REQUIRES: nl2python perl script (based on Wolfgang Dobler's nl2idl script)
 
 todo: think about single/double precision; make things into numpy arrays?
 """
-#import numpy as N
+import numpy
 import os
 
 def read_param(datadir='data/',param2=False,quiet=False,asdict=False,nestdict=False):
