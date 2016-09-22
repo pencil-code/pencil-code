@@ -341,7 +341,7 @@ module Testfield
         endif
       endif
       
-      if (l2davgfirst .and. needed2d(2) .and. lfirst_proc_z) then
+      if (l2davgfirst .and. needed2d(2)) then
         do i=1,ny; do j=1,nx
           where(idiags_xy(1:idiag_base_end)/=0) &
             fnamexy(idiags_xy(1:idiag_base_end),j,i) = sign(1.,float(idiags_map))*fnamexy(idiags_xy(1:idiag_base_end),j,i)
