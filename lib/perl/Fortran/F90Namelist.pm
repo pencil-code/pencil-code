@@ -1277,12 +1277,12 @@ sub get_value {
 
         # Remove quotes around (and doubled in) strings
         if ($type == SQ_STRING) {
-            $val =~ s/''/"/gs;
-            $val =~ s/^'(.*)'$/\"$1\"/s;
+            #$val =~ s/''/'/gs;
+            $val =~ s/^''(.*)''$/\'$1\'/s;
         }
         if ($type == DQ_STRING) {
-            #$val =~ s/^"(.*)"$/$1/s;
-            $val =~ s/""/"/gs;
+            $val =~ s/^"(.*)"$/\'$1\'/s;
+            #$val =~ s/""/"/gs;
         }
 
         # Remove embedded newlines from strings (Anders' strange namelist
@@ -1299,8 +1299,10 @@ sub get_value {
           if ($format eq 'idl') {
             push @values, "replicate($val,$mul)"
           } else {
-            #push @values, ($val) x $mul
-            push @values, "numpy.repeat($val,$mul)"
+            if ($format eq 'python') {
+              push @values, ($val) x $mul
+              #push @values, "numpy.repeat($val,$mul)"
+            }
           }
         }
         $text =~ s/.*\n// if ($rest eq '!'); # comment
