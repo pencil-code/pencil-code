@@ -50,7 +50,6 @@ module Solid_Cells
   real    :: skin_depth=0,init_uu=0,ampl_noise=0,object_skin=0
   real    :: limit_close_linear=0.7, ineargridshift=1.0
   real    :: osci_A=0.5,osci_f=4.0,osci_t, solid_reactions_intro_time=0.0
-  integer :: isolid_reac_mech=1
 !
 ! For chemestry
 !
@@ -60,6 +59,9 @@ module Solid_Cells
   real    :: srho=1.08   ![g/cm^3]
   real    :: scp=1.465e7    ![erg/g/K]
   real, dimension(nchemspec) :: Mspecies
+  logical :: new_Stefan=.false.
+  logical :: lfull_diff_ib=.false.
+  logical :: lsimple_diff_ib=.true.
 !
   type solid_object
     character(len=10) :: form
@@ -77,14 +79,13 @@ module Solid_Cells
        sphere_yvel,sphere_zvel,sphere_theta,sphere_phi,sphere_temp, &
        ineargridshift,lset_flow_dir,flow_dir_set,nforcepoints,object_skin, &
        initsolid_cells,skin_depth,init_uu,ampl_noise,limit_close_linear, &
-       pressure0, solid_reactions_intro_time
+       pressure0, solid_reactions_intro_time,new_Stefan
 !
   namelist /solid_cells_run_pars/  &
        lnointerception,lcheck_ba,lerror_norm,lpos_advance,lradius_advance, &
        lNusselt_output,osci_A,osci_f,osci_dir,osci_t, lsecondorder_rho, &
-       lsecondorder_chem, solid_reactions_intro_time, lstefan_flow, &
-       locdensity_error, locchemspec_error,loutput_local_reaction_rate, &
-       isolid_reac_mech
+       lsecondorder_chem, solid_reactions_intro_time, lstefan_flow, locdensity_error, &
+       locchemspec_error,loutput_local_reaction_rate,new_Stefan
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -289,10 +290,7 @@ module Solid_Cells
 !
       if (lradius_advance)  allocate(vs_normal(nobjects))
       allocate(heat_cond(nobjects))
-      heat_cond=0.0
-
       allocate(char_consumption(nobjects))
-      char_consumption=0.0
 !
 !  Prepare the solid geometry
 !
@@ -353,7 +351,11 @@ module Solid_Cells
         enddo
         if (lset_flow_dir) flow_dir = flow_dir_set
         if (flow_dir == 0) then
-          call fatal_error('initialize_solid_cells','no flow direction!')
+          if (lperi(1).and.lperi(2).and.lperi(3)) then
+            print*,'the medium is quiescent'
+          else
+            call fatal_error('initialize_solid_cells','no flow direction!')
+          endif
         endif
       endif
 !
@@ -423,6 +425,55 @@ module Solid_Cells
               f(i,j,k,isO2)  = 0.5
               f(i,j,k,isCO2) = 0.5
             endif
+          enddo
+        enddo
+        enddo
+        enddo
+      case ('cylinder_combustion')
+!  Initial condition for cyilinder burning in quiescent medium
+        call gaunoise(ampl_noise,f,iux,iuz)
+        shiftx=0
+        if (lroot) print*,'init_solid_cells: cylinder_combustion'
+        do i=l1,l2
+        do j=m1,m2
+        do k=n1,n2
+!
+!  Loop over all cylinders
+!
+          do icyl=1,nobjects
+            a2 = objects(icyl)%r**2
+            xr=x(i)-objects(icyl)%x(1)
+            yr=y(j)-objects(icyl)%x(2)
+            rr2 = xr**2+yr**2
+            if (rr2 > a2) then
+              wall_smoothing_temp=1-exp(-(rr2-a2)/(sqrt(a2))**2)
+              f(i,j,k,ilnTT) = log(wall_smoothing_temp*exp(f(i,j,k,ilnTT))&
+                         +objects(icyl)%T*(1-wall_smoothing_temp))
+              if (solid_reactions_intro_time==0) then
+                f(i,j,k,isCO) = wall_smoothing_temp*f(i,j,k,isCO)
+                f(i,j,k,isO2) = wall_smoothing_temp*f(i,j,k,isO2)
+                f(i,j,k,isCO2) = wall_smoothing_temp*f(i,j,k,isCO2)+0.2678*(1.0-wall_smoothing_temp)
+                f(i,j,k,isN2) = wall_smoothing_temp*f(i,j,k,isN2)+0.7322*(1.0-wall_smoothing_temp)
+              endif
+            else
+              f(i,j,k,ilnTT) = log(objects(icyl)%T)
+              f(i,j,k,isCO)=0.0
+              f(i,j,k,isO2)=0.0
+              f(i,j,k,isCO2)=0.2678
+              f(i,j,k,isN2)=0.7322
+            endif
+            sumspecies=0.0; mu1_=0.0
+            do kchem=1,nchemspec
+              sumspecies=sumspecies+f(i,j,k,ichemspec(kchem))
+            enddo
+            do kchem=1,nchemspec
+              f(i,j,k,ichemspec(kchem))=f(i,j,k,ichemspec(kchem))/sumspecies
+              mu1_=mu1_+f(i,j,k,ichemspec(kchem))/Mspecies(kchem)
+            enddo
+            if (unit_system == 'cgs') then
+              Rgas_unit_sys=k_B_cgs/m_u_cgs
+            endif
+            f(i,j,k,ilnrho)=log(pressure0)-log(Rgas_unit_sys)-f(i,j,k,ilnTT)-log(mu1_)
           enddo
         enddo
         enddo
@@ -928,8 +979,6 @@ module Solid_Cells
     character(len=100) :: numberstring, time_string
     character(len=200) :: solid_cell_drag, solid_cell_time
 !
-    heat_all=0.
-    char_consumption_all=0.
     call mpireduce_sum(heat_cond,heat_all,nobjects)
     call mpireduce_sum(char_consumption,char_consumption_all,nobjects)
     heat_cond(1:nobjects)=heat_all(1:nobjects)
@@ -985,8 +1034,8 @@ module Solid_Cells
             c_dragy_p = c_dragy_p_all * norm
             c_dragz_p = c_dragz_p_all * norm
 !
-!  Write drag coefficients for all objects (may need to expand 
-!  solid_cell_drag to more characters if large number of objects).
+!  Write drag coefficients for all objects (may need to expand solid_cell_drag to more
+!  characters if large number of objects).
 !
             call safe_character_assign(file1,trim(datadir)//'/dragcoeffs.dat')
             open(unit=81, file=file1, position='APPEND')
@@ -1197,7 +1246,7 @@ module Solid_Cells
       real, dimension(3) :: o_global, ffp, xxp, ibvel, ibp
       real, dimension(mvar) :: f_mir0, f_mir1, f_ib
       real, dimension(nchemspec) :: ibchem, chem_fp0, chem_fp1, reac_rate
-      real :: rs, rp1, r_sp1, rp0, r_sp0, Diff_ib, char_reac, T_fp0, T_fp1
+      real :: rs, rp1, r_sp1, rp0, r_sp0, Diff_ib, char_reac, T_fp0, T_fp1,Stefan_flow
       real :: x_obj, y_obj, z_obj, Tobj, xmir1, ymir1, zmir1
       real :: rho_gp, T_gp, rg, r_sg, xmir0, ymir0, zmir0, rho_fp0, rho_fp1
       real :: sumspecies,x_ib,y_ib,z_ib,rho_ib, mu1_fp0, mu1_fp1, mu1_gp
@@ -1208,6 +1257,12 @@ module Solid_Cells
       integer :: kchem
       integer, dimension(3) :: inear0, inear1, inear_ib
       character(len=10) :: form
+      real    :: mu1_ib,mu_ib
+      integer, dimension(3)      :: nearest_grid_index
+      integer                    :: ix0,iy0,iz0
+      real                       :: T_ib
+      real, dimension(nchemspec) :: chem_ib
+      real, dimension(nchemspec) :: Diff_ib_ks
 !
       x_obj=objects(iobj)%x(1)
       y_obj=objects(iobj)%x(2)
@@ -1346,8 +1401,16 @@ module Solid_Cells
           call fatal_error('linear_interpolate','')
       if (.not. linear_interpolate(f,iux,mvar,ffp,f_mir1,inear1,.false.))&
           call fatal_error('linear_interpolate','')
-      if (.not. linear_interpolate(f,iux,mvar,ibp,f_ib,inear_ib,.false.))&
+      if (lfull_diff_ib) then
+!
+!  Find out the nearest grid point for every IB point
+        call ib_nearest_grid(x_ib,y_ib,z_ib,x_obj,y_obj,z_obj,rs,nearest_grid_index)
+        ix0=nearest_grid_index(1);iy0=nearest_grid_index(2);iz0=nearest_grid_index(3)
+        f_ib(:)=f(ix0,iy0,iz0,iux:mvar)
+      else
+        if (.not. linear_interpolate(f,iux,mvar,ibp,f_ib,inear_ib,.false.))&
           call fatal_error('linear_interpolate','')
+      endif
 !
 !  For the temperature boundaries being antisymmetric relative to the
 !  object temperature are used
@@ -1374,16 +1437,41 @@ module Solid_Cells
         rho_fp0=f_mir0(ilnrho); rho_fp1=f_mir1(ilnrho); rho_ib=f_ib(ilnrho)
       endif
 !
+      chem_ib(:)=f_ib(ichemspec(1:nchemspec))
+      if (.not. ltemperature_nolog) then
+        T_ib=exp(f_ib(ilnTT))
+      else
+        T_ib=f_ib(ilnTT)
+      endif
+!
       chem_fp0(1:nchemspec)=f_mir0(ichemspec(1:nchemspec))
       chem_fp1(1:nchemspec)=f_mir1(ichemspec(1:nchemspec))
       ibchem(1:nchemspec)=f_ib(ichemspec(1:nchemspec))*rho_ib
 !
       call calc_reaction_rate(f,iobj,ibchem,reac_rate,char_reac)
 !
+      if (new_Stefan) then
+! The species boundary conditions is based on rho*D*d_Yk/d_n+M*sum(dot{m}_i/M_i)+dot{m}_k=0
+        mu1_ib=0.0
+        do kchem=1, nchemspec
+          mu1_ib=mu1_ib+f_ib(ichemspec(kchem))/Mspecies(kchem)
+        enddo
+        mu_ib=1.0/mu1_ib
+!
+        Stefan_flow=0.0
+        do kchem=1, nchemspec
+          Stefan_flow=Stefan_flow+reac_rate(kchem)/Mspecies(kchem)
+        enddo
+        Stefan_flow=-Stefan_flow*mu_ib
+        char_reac=Stefan_flow
+      endif
+!
 !  Calcualte diffusion coefficient at the boundary intersection point.
 !
-      Diff_ib=2.58e-4/rho_ib*exp(0.7*log(Tobj/298.0))
+      if (lsimple_diff_ib) Diff_ib=2.58e-4/rho_ib*exp(0.7*log(Tobj/298.0))
+      if (lfull_diff_ib) call calc_Diff_ib(rho_ib,T_ib,chem_ib, Diff_ib_ks)
       do kchem=1, nchemspec
+        if (lfull_diff_ib) Diff_ib=Diff_ib_ks(kchem)
         if (lsecondorder_chem) then
           coe_b=(-chem_fp0(kchem)-reac_rate(kchem)/char_reac &
                +(chem_fp1(kchem)-chem_fp0(kchem))/(r_sp1**2-r_sp0**2)*r_sp0**2) &
@@ -2863,15 +2951,10 @@ module Solid_Cells
      integer :: kchem, i
 !
      alpha=0.0
-     if (isolid_reac_mech .eq. 1) then
-       B_n=(/1.97e9,1.291e7/)  ! cm/s
-       E_an=(/47301.701,45635.267/)  ! cal/mol
-     elseif (isolid_reac_mech .eq. 2) then
-       B_n=(/3.007e7,4.016e10/)  ! cm/s
-       E_an=(/35684.493,59168.363/)  ! cal/mol
-     else
-       call fatal_error('calc_reaction_rate','No such isolid_reac_mech!')
-     endif
+     B_n=(/1.97e9,1.291e7/)  ! cm/s
+     E_an=(/47301.701,45635.267/)  ! cal/mol
+!    B_n=(/3.007e7,4.016e10/)  ! cm/s
+!    E_an=(/35684.493,59168.363/)  ! cal/mol
 !
      if (unit_system == 'cgs') then
        Rgas_unit_sys=k_B_cgs/m_u_cgs
@@ -3012,8 +3095,9 @@ module Solid_Cells
      real    :: twopi, nvec(3), surfaceelement, surfacecoeff
      real    :: deltaT, Tobj, drag_norm, nusselt_norm, char_reac, prodout(2)
      real    :: fpx, fpy, fpz, xobj, yobj, zobj, theta, phi, c_press
-     real, dimension(3) :: fp_location, fp_vel, vel_error, t_error,chemspec_error
-     real, dimension(1) :: rho_error
+     real, dimension(3) :: fp_location, fp_vel, vel_error
+     real, dimension(4) :: chemspec_error
+     real, dimension(1) :: rho_error,t_error
      real, dimension(nchemspec) :: fpchem, reac_rate
      integer, dimension(3) :: inear_error
      character (len=fnlen) :: file1, file2, file3
@@ -3187,19 +3271,27 @@ module Solid_Cells
                close(87)
              endif
 !
+             if (lerror_norm .or. locdensity_error .or. locchemspec_error) then
+               call find_near_indeces(lower_i,upper_i,lower_j,upper_j,&
+                                      lower_k,upper_k,x,y,z,fp_location)
+               inear_error=(/lower_i,lower_j,lower_k/)
+             endif
+!
              if (it==nt) then
                if (lerror_norm) then
                  call safe_character_assign(file2,trim(datadir)//'/error_norm.dat'//chproc)
                  open(unit=89,file=file2,position='APPEND')
-                 call find_near_indeces(lower_i,upper_i,lower_j,upper_j,&
-                     lower_k,upper_k,x,y,z,fp_location)
-                 inear_error=(/lower_i,lower_j,lower_k/)
+
                  if(.not. linear_interpolate(f,iux,iuz,fp_location,vel_error,inear_error,.false.))&
                    call fatal_error('linear_interpolate','')
-                 if(.not. linear_interpolate(f,ilnTT,ilnTT,fp_location,t_error(1),inear_error,.false.))&
+                 if(.not. linear_interpolate(f,ilnTT,ilnTT,fp_location,t_error,inear_error,.false.))&
                    call fatal_error('linear_interpolate','')
                  write(solid_cell_error,"(1I8)") it-1
-                 write(error_string,94) theta,vel_error(1),vel_error(2),t_error(1)
+                 if (ltemperature_nolog) then
+                   write(error_string,94) theta,vel_error(1),vel_error(2),t_error
+                 else
+                   write(error_string,94) theta,vel_error(1),vel_error(2),exp(t_error)
+                 endif
                  call safe_character_append(solid_cell_error,error_string)
                  write(89,*) trim(solid_cell_error)
                  close(89)
@@ -3212,7 +3304,11 @@ module Solid_Cells
                  open(unit=86,file='data/locdensity_error.dat'//chproc,position='APPEND')
                  if(.not. linear_interpolate(f,ilnrho,ilnrho,fp_location,rho_error,inear_error,.false.))&
                    call fatal_error('linear_interpolate','')
-                 write(86,*) theta, rho_error
+                 if (ldensity_nolog) then
+                   write(86,*) theta, rho_error
+                 else
+                   write(86,*) theta, exp(rho_error)
+                 endif
                  close(86)
                endif
              endif ! Finalize if "(it==nt)"
@@ -3224,7 +3320,7 @@ module Solid_Cells
                  if(.not. linear_interpolate(f,ichemspec(1),ichemspec(nchemspec),&
                     fp_location,chemspec_error,inear_error,.false.))&
                    call fatal_error('linear_interpolate','')
-                 write(88,*) theta, chemspec_error(:)
+                 write(88,'(1X,5e16.8)') theta, chemspec_error(:)
                  close(88)
                endif
              endif ! Finalize if "(it==nt)"
@@ -3280,5 +3376,326 @@ module Solid_Cells
      call keep_compiler_quiet(f)
 !
    endsubroutine update_solid_cells_pencil
+!***********************************************************************
+  subroutine ib_nearest_grid(ibx,iby,ibz,xobj,yobj,zobj,robj,ibnearestgrid)
+!
+!  Find coordinates for nearest grid point of a given IB point.
+!
+!  April-2016/Chaoli: Adapted from fp_nearest_grid.
+!
+    real, intent(in)  :: robj, xobj, yobj, zobj
+    real, intent(in)  :: ibx, iby, ibz
+    integer           :: ipoint, inearest, icoord(8,3)
+    integer           :: ixl, iyl, izl, ixu, iyu, izu, ju, jl, jm
+    real              :: dx1, dy1, dz1
+    real              :: dist_to_ib2(8), dist_to_cent2(8)
+    logical           :: interiorpoint
+    integer, dimension(3), intent(out)  :: ibnearestgrid
+!
+    dx1=1.0/dx
+    dy1=1.0/dy
+    dz1=1.0/dz
+!
+    interiorpoint = .true.
+!
+!  Find nearest grid point in x-direction
+!
+      if (nxgrid/=1) then
+        if (ibx >= x(l1-1) .and. ibx <= x(l2+1)) then
+          if (lequidist(1)) then
+            ixl = int((ibx-x(1))*dx1) + 1
+            ixu = ixl+1
+          else
+!
+!  Find nearest grid point by bisection if grid is not equidistant
+!
+            ju=l2+1; jl=l1-1
+            do while((ju-jl)>1)
+              jm=(ju+jl)/2
+              if (ibx > x(jm)) then
+                jl=jm
+              else
+                ju=jm
+              endif
+            enddo
+            ixl=jl
+            ixu=ju
+          endif
+        else
+          interiorpoint=.false.
+        endif
+      else
+        print*,"WARNING: Solid cells need nxgrid > 1."
+      endif
+!
+!  Find nearest grid point in y-direction
+!
+      if (nygrid/=1) then
+        if (iby >= y(m1-1) .and. iby <= y(m2+1)) then
+          if (lequidist(2)) then
+            iyl = int((iby-y(1))*dy1) + 1
+            iyu = iyl+1
+          else
+!
+!  Find nearest grid point by bisection if grid is not equidistant
+!
+            ju=m2; jl=m1
+            do while((ju-jl)>1)
+              jm=(ju+jl)/2
+              if (iby > y(jm)) then
+                jl=jm
+              else
+                ju=jm
+              endif
+            enddo
+            iyl=jl
+            iyu=ju
+          endif
+        else
+          interiorpoint=.false.
+        endif
+      else
+        print*,"WARNING: Solid cells need nygrid > 1."
+      endif
+!
+!  Find nearest grid point in z-direction
+!
+      if (nzgrid/=1) then
+        if (ibz >= z(n1-1) .and. ibz <= z(n2+1)) then
+          if (lequidist(3)) then
+            izl = int((ibz-z(1))*dz1) + 1
+            izu = izl+1
+          else
+!
+!  Find nearest grid point by bisection if grid is not equidistant
+!
+            ju=n2; jl=n1
+            do while((ju-jl)>1)
+              jm=(ju+jl)/2
+              if (ibz > z(jm)) then
+                jl=jm
+              else
+                ju=jm
+              endif
+            enddo
+            izl=jl
+            izu=ju
+          endif
+        else
+          interiorpoint=.false.
+        endif
+      else
+!  z direction is irrelevant when in 2D
+        izl=n1
+        izu=n1
+      endif
+!
+!  Now, we have the upper and lower (x,y,z)-coordinates:
+!  ixl, ixu, iyl, iyu, izl, izu,
+!  i.e. the eight corners of the grid cell containing the IB point (ib).
+!  Decide which ones are outside the object, and which one of these
+!  is the closest one to ib:
+!
+!  Check if ib is within this processor's local domain
+        if (interiorpoint) then
+          dist_to_ib2(1) = (x(ixl)-ibx)**2+(y(iyl)-iby)**2+(z(izl)-ibz)**2
+          dist_to_ib2(2) = (x(ixu)-ibx)**2+(y(iyl)-iby)**2+(z(izl)-ibz)**2
+          dist_to_ib2(3) = (x(ixu)-ibx)**2+(y(iyu)-iby)**2+(z(izl)-ibz)**2
+          dist_to_ib2(4) = (x(ixl)-ibx)**2+(y(iyu)-iby)**2+(z(izl)-ibz)**2
+          dist_to_ib2(5) = (x(ixl)-ibx)**2+(y(iyl)-iby)**2+(z(izu)-ibz)**2
+          dist_to_ib2(6) = (x(ixu)-ibx)**2+(y(iyl)-iby)**2+(z(izu)-ibz)**2
+          dist_to_ib2(7) = (x(ixu)-ibx)**2+(y(iyu)-iby)**2+(z(izu)-ibz)**2
+          dist_to_ib2(8) = (x(ixl)-ibx)**2+(y(iyu)-iby)**2+(z(izu)-ibz)**2
+          dist_to_cent2(1) = (x(ixl)-xobj)**2+(y(iyl)-yobj)**2+(z(izl)-zobj)**2
+          dist_to_cent2(2) = (x(ixu)-xobj)**2+(y(iyl)-yobj)**2+(z(izl)-zobj)**2
+          dist_to_cent2(3) = (x(ixu)-xobj)**2+(y(iyu)-yobj)**2+(z(izl)-zobj)**2
+          dist_to_cent2(4) = (x(ixl)-xobj)**2+(y(iyu)-yobj)**2+(z(izl)-zobj)**2
+          dist_to_cent2(5) = (x(ixl)-xobj)**2+(y(iyl)-yobj)**2+(z(izu)-zobj)**2
+          dist_to_cent2(6) = (x(ixu)-xobj)**2+(y(iyl)-yobj)**2+(z(izu)-zobj)**2
+          dist_to_cent2(7) = (x(ixu)-xobj)**2+(y(iyu)-yobj)**2+(z(izu)-zobj)**2
+          dist_to_cent2(8) = (x(ixl)-xobj)**2+(y(iyu)-yobj)**2+(z(izu)-zobj)**2
+          icoord(1,:) = (/ixl,iyl,izl/)
+          icoord(2,:) = (/ixu,iyl,izl/)
+          icoord(3,:) = (/ixu,iyu,izl/)
+          icoord(4,:) = (/ixl,iyu,izl/)
+          icoord(5,:) = (/ixl,iyl,izu/)
+          icoord(6,:) = (/ixu,iyl,izu/)
+          icoord(7,:) = (/ixu,iyu,izu/)
+          icoord(8,:) = (/ixl,iyu,izu/)
+          inearest=0
+          do ipoint=1,8
+!  Test if we are in a fluid cell, i.e.
+!  that forcepoints are outside robj.
+            if (dist_to_cent2(ipoint) > robj**2 .and. inearest == 0) then
+              inearest=ipoint
+            else if (dist_to_cent2(ipoint) > robj**2) then
+              if (dist_to_ib2(ipoint) <= dist_to_ib2(inearest)) then
+                inearest=ipoint
+              endif
+            endif
+          enddo
+!
+!  Coordinates of nearest grid point. Zero if outside local domain.
+          if (inearest > 0) then
+            ibnearestgrid(:) = icoord(inearest,:)
+          else
+            print*, "WARNING: Could not find ibnearestgrid!"
+          endif
+!
+        else ! ib is outside local domain and ibnearestgrid shouldn't exist
+          ibnearestgrid(:) = 0
+        endif
+!
+  endsubroutine ib_nearest_grid
+!***********************************************************************
+  subroutine calc_Diff_ib(rho_ib,T_ib,chem_ib, Diff_ib_ks)
+!
+!   August-2016/Chaoli: Adapted from calc_pencils_chemistry in module chemistry.
+!
+
+    real, intent(in)  :: rho_ib,T_ib
+    real, dimension(nchemspec), intent(in)  :: chem_ib
+    real, dimension(nchemspec), intent(out) :: Diff_ib_ks
+    real  :: lambda_ib
+    real, dimension(nchemspec,nchemspec)  :: Bin_Diff_coef_ib
+    real  :: mu1_full_ib
+    real,dimension(nchemspec)  :: XX_ib
+    real :: tmp_sum, tmp_sum2
+    integer  :: k, j
+
+    call get_mu1_full_ib(chem_ib,mu1_full_ib)
+    call get_XX_ib(chem_ib,mu1_full_ib,XX_ib)
+    call calc_diff_visc_coef_ib(T_ib,rho_ib,mu1_full_ib,Bin_Diff_coef_ib)
+
+    do k = 1,nchemspec
+      tmp_sum = 0.
+      tmp_sum2 = 0.
+      do j = 1,nchemspec
+        if (Mspecies(k) > 0.) then
+          if (j /= k) then
+            tmp_sum = tmp_sum &
+                      +XX_ib(j)/Bin_Diff_coef_ib(j,k)
+            tmp_sum2 = tmp_sum2 &
+                      +XX_ib(j)*Mspecies(j)
+!
+          endif
+        endif
+      enddo
+      Diff_ib_ks(k) = mu1_full_ib*tmp_sum2/tmp_sum
+    enddo
+
+  endsubroutine calc_Diff_ib
+!***********************************************************************
+    subroutine calc_diff_visc_coef_ib(T_ib,rho_ib,mu1_full_ib,Bin_Diff_coef_ib)
+!
+!  August-2016/Chaoli: Adapted from calc_pencils_chemistry in module chemistry.
+!
+!  Calculation of the binary diffusion coefficients and the species viscosities.
+!
+      use EquationOfState, only: tran_data
+
+      real, intent(in)  :: T_ib,rho_ib,mu1_full_ib
+      real :: Omega_kl, prefactor
+      real :: lnTjk
+      integer :: k, j
+      real :: eps_jk, sigma_jk, m_jk, delta_jk, delta_st
+      real :: Na=6.022E23, tmp_local, delta_jk_star
+      real, dimension(nchemspec,nchemspec), intent(out) :: Bin_Diff_coef_ib
+!
+!  Find binary diffusion coefficients
+!
+      tmp_local = 3./16.*sqrt(2.*k_B_cgs**3/pi)
+
+      prefactor = tmp_local*sqrt(T_ib) &
+              *unit_length**3/(Rgas_unit_sys*rho_ib)
+!
+!  Do non-simplified binary diffusion coefficient
+!
+      do k = 1,nchemspec
+        do j = k,nchemspec
+!  Account for the difference between eq. 5-4 and 5-31 in the Chemkin theory
+!  manual
+!
+           if (j /= k) then
+             eps_jk = sqrt(tran_data(j,2)*tran_data(k,2))
+             sigma_jk = 0.5*(tran_data(j,3)+tran_data(k,3))*1e-8
+             m_jk = (Mspecies(j)*Mspecies(k)) &
+                    /(Mspecies(j)+Mspecies(k))/Na
+             delta_jk = 0.5*tran_data(j,4)*tran_data(k,4)*1e-18*1e-18
+           else
+             eps_jk = tran_data(j,2)
+             sigma_jk = tran_data(j,3)*1e-8
+             m_jk = Mspecies(j)/(2*Na)
+             delta_jk = 0.5*(tran_data(j,4)*1e-18)*(tran_data(j,4)*1e-18)
+           endif
+!
+           lnTjk = log(T_ib/eps_jk)
+!
+           Omega_kl = &
+                 1./(6.96945701E-1+3.39628861E-1*lnTjk &
+                 +1.32575555E-2*lnTjk**2 &
+                 -3.41509659E-2*lnTjk**3 &
+                 +7.71359429E-3*lnTjk**4 &
+                 +6.16106168E-4*lnTjk**5 &
+                 -3.27101257E-4*lnTjk**6 &
+                 +2.51567029E-5*lnTjk**7)
+           delta_jk_star = delta_jk/(eps_jk*k_B_cgs*sigma_jk**3)
+!
+           Omega_kl = Omega_kl &
+                      +0.19*delta_jk_star*delta_jk_star/(T_ib/eps_jk)
+            if (j /= k) then
+               Bin_Diff_coef_ib(k,j) = prefactor/mu1_full_ib &
+                        /(sqrt(m_jk)*sigma_jk*sigma_jk*Omega_kl)
+            else
+               Bin_Diff_coef_ib(k,j) = prefactor &
+                        /(sqrt(m_jk)*sigma_jk*sigma_jk*Omega_kl)*Mspecies(k)
+!
+            endif
+
+          enddo
+        enddo
+!
+
+        do k = 1,nchemspec
+          do j = 1,k-1
+            Bin_Diff_coef_ib(k,j) = Bin_Diff_coef_ib(j,k)
+          enddo
+        enddo
+!
+    endsubroutine calc_diff_visc_coef_ib
+!***********************************************************************
+   subroutine get_mu1_full_ib(chem_ib,mu1_full_tmp)
+!
+!  Calculate mean molecular weight
+!
+      real, intent(in), dimension (nchemspec) :: chem_ib
+      real, intent(out) :: mu1_full_tmp
+      integer :: k
+!
+!  Mean molecular weight
+!
+      mu1_full_tmp=0.
+      do k=1,nchemspec
+        if (Mspecies(k)>0.) then
+          mu1_full_tmp= &
+          mu1_full_tmp+unit_mass*chem_ib(k) &
+                  /Mspecies(k)
+        endif
+      enddo
+!
+    endsubroutine get_mu1_full_ib
+!***********************************************************************
+   subroutine get_XX_ib(chem_ib,mu1_full_ib,XX_ib)
+!
+!  Calculate mean molecular weight
+!
+      real, intent(in), dimension (nchemspec) :: chem_ib
+      real, intent(in) :: mu1_full_ib
+      real, intent(out), dimension (nchemspec) :: XX_ib
+!
+      XX_ib(:) = chem_ib(:)*unit_mass &
+                      /(Mspecies(:)*mu1_full_ib)
+!
+    endsubroutine get_XX_ib
 !***********************************************************************
 endmodule Solid_Cells
