@@ -1617,9 +1617,14 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 	dimg_xz	= WIDGET_DRAW (DISP, UVALUE='DRAW_XZ', xsize=num_x*bin_x, ysize=num_z*bin_z, retain=2, /button_events, /motion_events)
 	dimg_xy	= WIDGET_DRAW (DISP, UVALUE='DRAW_XY', xsize=num_x*bin_x, ysize=num_y*bin_y, retain=2, /button_events, /motion_events)
 
+	min_size_z = 1
+	if (num_z gt 1) then begin
+		min_size_z = 256
+		if (num_x + num_y le 2) then min_size_z = 1024
+	end
 	dcut_y	= WIDGET_DRAW (CUTS, xsize=num_y*bin_y, ysize=cut_height, retain=2)
 	dcut_x	= WIDGET_DRAW (CUTS, xsize=num_x*bin_x, ysize=cut_height, retain=2)
-	dcut_z	= WIDGET_DRAW (CUTS, xsize=num_z*bin_z>128, ysize=cut_height, retain=2)
+	dcut_z	= WIDGET_DRAW (CUTS, xsize=num_z*bin_z>min_size_z, ysize=cut_height, retain=2)
 
 	WIDGET_CONTROL, BASE
 
