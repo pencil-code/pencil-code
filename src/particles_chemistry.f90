@@ -89,6 +89,7 @@ module Particles_chemistry
   real :: startup_time=0.
   real :: startup_quench
   real :: pre_energy=1.0
+  real, dimension(:), allocatable :: Tp_pencil
 !
   logical :: lpreactions=.true.
   logical :: first_pchem=.true.
@@ -100,6 +101,7 @@ module Particles_chemistry
   logical :: lsherwood_const=.false.
   logical :: lwrite=.true.
   logical :: reverse_reactions_present=.false.
+  logical :: lheat_per_pencil=.false.
 !
 !*********************************************************************!
 !             Particle dependent variables below here                 !
@@ -152,13 +154,13 @@ module Particles_chemistry
       startup_time, &
       lsurface_nopores, &
       lbaum_and_street, &
-      lpreactions, &
+      lpreactions, lheat_per_pencil,&
       lsherwood_const
 !
   namelist /particles_chem_run_pars/ chemplaceholder, &
       lthiele, &
       lreactive_heating, &
-      lpreactions
+      lpreactions, lheat_per_pencil
 !
   contains
 ! ******************************************************************************
@@ -268,17 +270,17 @@ module Particles_chemistry
     subroutine register_dep_pchem()
       integer :: stat
 !
-      allocate(R_c_hat(mpar_loc),STAT=stat)
-      if (stat > 0) call fatal_error('register_dep_pchem', &
-          'Could not allocate memory for R_c_hat')
-      allocate(heating_k(mpar_loc,N_surface_reactions),STAT=stat)
-      if (stat > 0) call fatal_error('register_dep_pchem', &
-          'Could not allocate memory for heating_k')
-      if (reverse_reactions_present) then
-        allocate(entropy_k(mpar_loc,N_surface_reactions),STAT=stat)
-        if (stat > 0) call fatal_error('register_dep_pchem', &
-            'Could not allocate memory for entropy_k')
-      endif
+!      allocate(R_c_hat(mpar_loc),STAT=stat)
+!      if (stat > 0) call fatal_error('register_dep_pchem', &
+!          'Could not allocate memory for R_c_hat')
+!      allocate(heating_k(mpar_loc,N_surface_reactions),STAT=stat)
+!      if (stat > 0) call fatal_error('register_dep_pchem', &
+!          'Could not allocate memory for heating_k')
+!      if (reverse_reactions_present) then
+!        allocate(entropy_k(mpar_loc,N_surface_reactions),STAT=stat)
+!        if (stat > 0) call fatal_error('register_dep_pchem', &
+!            'Could not allocate memory for entropy_k')
+!      endif
 !
     endsubroutine register_dep_pchem
 !***********************************************************************
@@ -1022,23 +1024,42 @@ module Particles_chemistry
       integer :: i, j, l, k, k1, k2
 !
       entropy_k = 0
+!
+      if (lheat_per_pencil) then
+        do l = 1,N_surface_reactions
+          do i = 1,N_surface_species
+            entropy_k(:,l) =  entropy_k(:,l) &
+                +(nu_prime(i,l)-nu(i,l))*surface_species_entropy(:,i)
+          enddo
+          if (N_adsorbed_species > 1) then
+            do j = 1,N_adsorbed_species
+              entropy_k(:,l) = entropy_k(:,l) &
+                  +(mu_prime(j,l)-mu(j,l))*adsorbed_species_entropy(:,j)
+            enddo
+          endif
+        enddo
+!  This is the cgs-SI switch
+        entropy_k(:,:) = entropy_k(:,:) * pre_energy
+
+      else
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
 !
-      do l = 1,N_surface_reactions
-        do i = 1,N_surface_species
-          entropy_k(k1:k2,l) =  entropy_k(k1:k2,l) &
-              +(nu_prime(i,l)-nu(i,l))*surface_species_entropy(k1:k2,i)
-        enddo
-        if (N_adsorbed_species > 1) then
-          do j = 1,N_adsorbed_species
-            entropy_k(k1:k2,l) = entropy_k(k1:k2,l) &
-                +(mu_prime(j,l)-mu(j,l))*adsorbed_species_entropy(k1:k2,j)
+        do l = 1,N_surface_reactions
+          do i = 1,N_surface_species
+            entropy_k(k1:k2,l) =  entropy_k(k1:k2,l) &
+                +(nu_prime(i,l)-nu(i,l))*surface_species_entropy(k1:k2,i)
           enddo
-        endif
-      enddo
+          if (N_adsorbed_species > 1) then
+            do j = 1,N_adsorbed_species
+              entropy_k(k1:k2,l) = entropy_k(k1:k2,l) &
+                  +(mu_prime(j,l)-mu(j,l))*adsorbed_species_entropy(k1:k2,j)
+            enddo
+          endif
+        enddo
 !  This is the cgs-SI switch
-      entropy_k(k1:k2,:) = entropy_k(k1:k2,:) * pre_energy
+        entropy_k(k1:k2,:) = entropy_k(k1:k2,:) * pre_energy
+      endif
 !
     endsubroutine calc_entropy_of_reaction
 ! ******************************************************************************
@@ -1065,7 +1086,11 @@ module Particles_chemistry
       endif
 !
 !
-      denominator = heating_k(k,l-1) - (entropy_k(k,l-1)*fp(k,iTp))
+      if (lheat_per_pencil) then
+        denominator = heating_k(int(fp(k,iTp)),l-1) - (entropy_k(int(fp(k,iTp)),l-1)*fp(k,iTp))
+      else
+        denominator = heating_k(k,l-1) - (entropy_k(k,l-1)*fp(k,iTp))
+      endif
       expo = denominator/(Rgas*fp(k,iTp))
       k_p = exp(-expo)
 !
@@ -1100,47 +1125,50 @@ module Particles_chemistry
 !  oct-14/Jonas: coded
 !
     subroutine calc_enthalpy_of_reaction()
+!
       integer :: i, k, k1, k2, j,l
 !
       heating_k = 0
-      k1 = k1_imn(imn)
-      k2 = k2_imn(imn)
+      if (lheat_per_pencil) then
+        do i = 1,N_surface_species
+          do l = 1,N_surface_reactions
+            heating_k(:,l) = heating_k(:,l) &
+                +(nu_prime(i,l)-nu(i,l))*surface_species_enthalpy(:,i)
+          enddo
+        enddo
+        if (N_adsorbed_species > 1) then
+          do j = 1,N_adsorbed_species
+            do l = 1,N_surface_reactions
+              heating_k(:,l) = heating_k(:,l) &
+                  +(mu_prime(j,l)-mu(j,l))*adsorbed_species_enthalpy(:,j)
+            enddo
+          enddo
+        endif
+        heating_k(:,:) = heating_k(:,:) * pre_energy
+!
+      else
+!
+        k1 = k1_imn(imn)
+        k2 = k2_imn(imn)
 !
 !  nu_prime are the products, nu the reactants
 !
-      do i = 1,N_surface_species
-        do l = 1,N_surface_reactions
-          heating_k(k1:k2,l) = heating_k(k1:k2,l) &
-              +(nu_prime(i,l)-nu(i,l))*surface_species_enthalpy(k1:k2,i)
-        enddo
-      enddo
-      if (N_adsorbed_species > 1) then
-        do j = 1,N_adsorbed_species
+        do i = 1,N_surface_species
           do l = 1,N_surface_reactions
             heating_k(k1:k2,l) = heating_k(k1:k2,l) &
-                +(mu_prime(j,l)-mu(j,l))*adsorbed_species_enthalpy(k1:k2,j)
+                +(nu_prime(i,l)-nu(i,l))*surface_species_enthalpy(k1:k2,i)
           enddo
         enddo
+        if (N_adsorbed_species > 1) then
+          do j = 1,N_adsorbed_species
+            do l = 1,N_surface_reactions
+              heating_k(k1:k2,l) = heating_k(k1:k2,l) &
+                  +(mu_prime(j,l)-mu(j,l))*adsorbed_species_enthalpy(k1:k2,j)
+            enddo
+          enddo
+        endif
+        heating_k(k1:k2,:) = heating_k(k1:k2,:) * pre_energy
       endif
-!      do i = 1,N_surface_species
-!        do l = 1,N_surface_reactions
-!          heating_k(k1:k2,l) = heating_k(k1:k2,l) &
-!              +(nu_prime(i,l)-nu_prime(i,l))*surface_species_enthalpy(k1:k2,i)
-!        enddo
-!      enddo
-!      if (N_adsorbed_species > 1) then
-!        do j = 1,N_adsorbed_species
-!          do l = 1,N_surface_reactions
-!            heating_k(k1:k2,l) = heating_k(k1:k2,l) &
-!                +(mu_prime(j,l)-mu(j,l))*adsorbed_species_enthalpy(k1:k2,j)
-!          enddo
-!        enddo
-!      endif
-!  This is the cgs-SI switch
-      heating_k(k1:k2,:) = heating_k(k1:k2,:) * pre_energy
-!      print*, 'heating_k, calc_enth:', heating_k(k1:k2,:)
-!      print*, 'surfa_enth, calc_enth:',surface_species_enthalpy
-!      print*, 'nuss, calc_enth:',nu
 !
     endsubroutine calc_enthalpy_of_reaction
 ! ******************************************************************************
@@ -1267,8 +1295,8 @@ module Particles_chemistry
 !
                       k_im = Cg(k)*p%Diff_penc_add(ix0-nghost,jmap(i))*Sh/(2.0*fp(k,iap))
                       kkcg = RR_hat(k,j)*Cg(k)*pre_kk
-                      root_term = sqrt(k_im**2 + kkcg**2 + 2*k_im*kkcg + 4*k_im*fp(k,isurf-1+i)*kkcg)
-                      x_mod = (-k_im-kkcg+root_term)/2/kkcg
+                      root_term = sqrt((k_im-kkcg)**2 + 4*k_im*fp(k,isurf-1+i)*kkcg)
+                      x_mod = (-k_im+kkcg+root_term)/2/kkcg
                       RR_hat(k,j) = RR_hat(k,j) * (pre_Cg * Cg(k)*x_mod)**nu(i,j)
                     endif
                   enddo
@@ -1735,26 +1763,48 @@ module Particles_chemistry
       real, dimension(mpar_loc,mparray), intent(in) :: fp
       integer :: k, k1, k2
 !
-      k1 = k1_imn(imn)
-      k2 = k2_imn(imn)
+      if (lheat_per_pencil) then
+
+        if (inuH2O > 0) surface_species_enthalpy(:,inuH2O) = &
+            -242.18e3-(5.47*Tp_pencil)
+        if (inuO2 > 0)  surface_species_enthalpy(:,inuO2) = 0.
+        if (inuCO2 > 0) surface_species_enthalpy(:,inuCO2) = &
+            -392.52e3-(2.109*Tp_pencil)
+        if (inuH2 > 0)  surface_species_enthalpy(:,inuH2 ) = 0.
+        if (inuCO > 0)  surface_species_enthalpy(:,inuCO ) = &
+            -105.95e3-(6.143*Tp_pencil)
+        if (inuCH > 0)  surface_species_enthalpy(:,inuCH ) = 594.13e3
+        if (inuHCO > 0) surface_species_enthalpy(:,inuHCO) = &
+            45.31e3-(5.94*Tp_pencil)
+        if (inuCH2 > 0) surface_species_enthalpy(:,inuCH2) = &
+            387.93e3-(5.8*Tp_pencil)
+        if (inuCH4 > 0) surface_species_enthalpy(:,inuCH4) = -75e3
+        if (inuCH3 > 0) surface_species_enthalpy(:,inuCH3) = &
+            144.65e3-(6.79*Tp_pencil)
+        
+      else
+        k1 = k1_imn(imn)
+        k2 = k2_imn(imn)
 !
 ! Unit: J/(mol)
-      if (inuH2O > 0) surface_species_enthalpy(k1:k2,inuH2O) = &
-          -242.18e3-(5.47*fp(k1:k2,iTp))
-      if (inuO2 > 0)  surface_species_enthalpy(k1:k2,inuO2) = 0.
-      if (inuCO2 > 0) surface_species_enthalpy(k1:k2,inuCO2) = &
-          -392.52e3-(2.109*fp(k1:k2,iTp))
-      if (inuH2 > 0)  surface_species_enthalpy(k1:k2,inuH2 ) = 0.
-      if (inuCO > 0)  surface_species_enthalpy(k1:k2,inuCO ) = &
-          -105.95e3-6.143*fp(k1:k2,iTp)
-      if (inuCH > 0)  surface_species_enthalpy(k1:k2,inuCH ) = 594.13e3
-      if (inuHCO > 0) surface_species_enthalpy(k1:k2,inuHCO) = &
-          45.31e3-(5.94*fp(k1:k2,iTp))
-      if (inuCH2 > 0) surface_species_enthalpy(k1:k2,inuCH2) = &
-          387.93e3-(5.8*fp(k1:k2,iTp))
-      if (inuCH4 > 0) surface_species_enthalpy(k1:k2,inuCH4) = -75e3
-      if (inuCH3 > 0) surface_species_enthalpy(k1:k2,inuCH3) = &
-          144.65e3-(6.79*fp(k1:k2,iTp))
+!
+        if (inuH2O > 0) surface_species_enthalpy(k1:k2,inuH2O) = &
+            -242.18e3-(5.47*fp(k1:k2,iTp))
+        if (inuO2 > 0)  surface_species_enthalpy(k1:k2,inuO2) = 0.
+        if (inuCO2 > 0) surface_species_enthalpy(k1:k2,inuCO2) = &
+            -392.52e3-(2.109*fp(k1:k2,iTp))
+        if (inuH2 > 0)  surface_species_enthalpy(k1:k2,inuH2 ) = 0.
+        if (inuCO > 0)  surface_species_enthalpy(k1:k2,inuCO ) = &
+            -105.95e3-6.143*fp(k1:k2,iTp)
+        if (inuCH > 0)  surface_species_enthalpy(k1:k2,inuCH ) = 594.13e3
+        if (inuHCO > 0) surface_species_enthalpy(k1:k2,inuHCO) = &
+            45.31e3-(5.94*fp(k1:k2,iTp))
+        if (inuCH2 > 0) surface_species_enthalpy(k1:k2,inuCH2) = &
+            387.93e3-(5.8*fp(k1:k2,iTp))
+        if (inuCH4 > 0) surface_species_enthalpy(k1:k2,inuCH4) = -75e3
+        if (inuCH3 > 0) surface_species_enthalpy(k1:k2,inuCH3) = &
+            144.65e3-(6.79*fp(k1:k2,iTp))
+      endif
 !
     endsubroutine calc_surf_enthalpy
 ! ******************************************************************************
@@ -1767,32 +1817,53 @@ module Particles_chemistry
       real, dimension(mpar_loc,mparray) :: fp
       integer :: k, k1, k2
 !
-      k1 = k1_imn(imn)
-      k2 = k2_imn(imn)
+      if (lheat_per_pencil) then
+        if (inuH2O > 0) surface_species_entropy(:,inuH2O) = &
+            189.00+(0.0425*Tp_pencil)
+        if (inuO2 > 0)  surface_species_entropy(:,inuO2) = &
+            222.55+(0.0219*Tp_pencil)
+        if (inuCO2 > 0) surface_species_entropy(:,inuCO2) = &
+            212.19+(0.0556*Tp_pencil)
+        if (inuH2 > 0)  surface_species_entropy(:,inuH2 ) = &
+            133.80+(0.0319*Tp_pencil)
+        if (inuCO > 0)  surface_species_entropy(:,inuCO ) = &
+            199.35+(0.0342*Tp_pencil)
+        if (inuCH > 0)  surface_species_entropy(:,inuCH ) = 183.00
+        if (inuHCO > 0) surface_species_entropy(:,inuHCO) = &
+            223.114+(0.0491*Tp_pencil)
+        if (inuCH2 > 0) surface_species_entropy(:,inuCH2) = &
+            193.297+(0.0467*Tp_pencil)
+        if (inuCH4 > 0) surface_species_entropy(:,inuCH4) = 189.00
+        if (inuCH3 > 0) surface_species_entropy(:,inuCH3) = &
+            190.18+(0.0601*Tp_pencil)
+      else
+        k1 = k1_imn(imn)
+        k2 = k2_imn(imn)
 !
 ! JONAS: units are in j/(mol*K)
-      if (inuH2O > 0) surface_species_entropy(k1:k2,inuH2O) = &
-          189.00+(0.0425*fp(k1:k2,iTp))
-      if (inuO2 > 0)  surface_species_entropy(k1:k2,inuO2) = &
-          222.55+(0.0219*fp(k1:k2,iTp))
-      if (inuCO2 > 0) surface_species_entropy(k1:k2,inuCO2) = &
-          212.19+(0.0556*fp(k1:k2,iTp))
-      if (inuH2 > 0)  surface_species_entropy(k1:k2,inuH2 ) = &
-          133.80+(0.0319*fp(k1:k2,iTp))
-      if (inuCO > 0)  surface_species_entropy(k1:k2,inuCO ) = &
-          199.35+(0.0342*fp(k1:k2,iTp))
+        if (inuH2O > 0) surface_species_entropy(k1:k2,inuH2O) = &
+            189.00+(0.0425*fp(k1:k2,iTp))
+        if (inuO2 > 0)  surface_species_entropy(k1:k2,inuO2) = &
+            222.55+(0.0219*fp(k1:k2,iTp))
+        if (inuCO2 > 0) surface_species_entropy(k1:k2,inuCO2) = &
+            212.19+(0.0556*fp(k1:k2,iTp))
+        if (inuH2 > 0)  surface_species_entropy(k1:k2,inuH2 ) = &
+            133.80+(0.0319*fp(k1:k2,iTp))
+        if (inuCO > 0)  surface_species_entropy(k1:k2,inuCO ) = &
+            199.35+(0.0342*fp(k1:k2,iTp))
 !
 ! taken from chemistry  webbook (1bar)
-      if (inuCH > 0)  surface_species_entropy(k1:k2,inuCH ) = 183.00
-      if (inuHCO > 0) surface_species_entropy(k1:k2,inuHCO) = &
-          223.114+(0.0491*fp(k1:k2,iTp))
-      if (inuCH2 > 0) surface_species_entropy(k1:k2,inuCH2) = &
-          193.297+(0.0467*fp(k1:k2,iTp))
+        if (inuCH > 0)  surface_species_entropy(k1:k2,inuCH ) = 183.00
+        if (inuHCO > 0) surface_species_entropy(k1:k2,inuHCO) = &
+            223.114+(0.0491*fp(k1:k2,iTp))
+        if (inuCH2 > 0) surface_species_entropy(k1:k2,inuCH2) = &
+            193.297+(0.0467*fp(k1:k2,iTp))
 !
 ! taken from chemistry webbook (1bar)
-      if (inuCH4 > 0) surface_species_entropy(k1:k2,inuCH4) = 189.00
-      if (inuCH3 > 0) surface_species_entropy(k1:k2,inuCH3) = &
-          190.18+(0.0601*fp(k1:k2,iTp))
+        if (inuCH4 > 0) surface_species_entropy(k1:k2,inuCH4) = 189.00
+        if (inuCH3 > 0) surface_species_entropy(k1:k2,inuCH3) = &
+            190.18+(0.0601*fp(k1:k2,iTp))
+      endif
 !
     endsubroutine calc_surf_entropy
 ! ******************************************************************************
@@ -1804,37 +1875,65 @@ module Particles_chemistry
       real, dimension(mpar_loc,mparray), intent(in) :: fp
       integer :: k, k1, k2
 !
-      k1 = k1_imn(imn)
-      k2 = k2_imn(imn)
+      if (lheat_per_pencil) then
+        if (imuadsO > 0)    then
+          adsorbed_species_entropy(:,imuadsO) = &
+              (164.19+(0.0218*Tp_pencil))*0.72 - (3.3*gas_constant)
+        endif
+        if (imuadsO2 > 0)   then
+          adsorbed_species_entropy(:,imuadsO2) =  &
+              2*adsorbed_species_entropy(:,imuadsO)
+        endif
+        if (imuadsOH > 0)   then
+          adsorbed_species_entropy(:,imuadsOH) = &
+              ((0.0319*Tp_pencil) + 186.88) * 0.7 - (3.3*gas_constant)
+        endif
+        if (imuadsH > 0)    then
+          adsorbed_species_entropy(:,imuadsH) = &
+              (117.49+(0.0217*Tp_pencil))*0.54 - (3.3*gas_constant)
+        endif
+        if (imuadsCO > 0)   then
+          adsorbed_species_entropy(:,imuadsCO) = &
+              (199.35+(0.0342*Tp_pencil)) * &
+              0.6*(1+(1.44e-4*Tp_pencil)) - (3.3*gas_constant)
+        endif
+!
+! taken from nist
+        if (imufree > 0)    adsorbed_species_entropy(:,imufree) = 0
+
+      else
+        k1 = k1_imn(imn)
+        k2 = k2_imn(imn)
 !
 ! Unit: J/(mol*K)
 !
-      if (imuadsO > 0)    then
-        adsorbed_species_entropy(k1:k2,imuadsO) = &
-            (164.19+(0.0218*fp(k1:k2,iTp)))*0.72 - (3.3*gas_constant)
-      endif
+        if (imuadsO > 0)    then
+          adsorbed_species_entropy(k1:k2,imuadsO) = &
+              (164.19+(0.0218*fp(k1:k2,iTp)))*0.72 - (3.3*gas_constant)
+        endif
 !
 ! this is guessed
-      if (imuadsO2 > 0)   then
-        adsorbed_species_entropy(k1:k2,imuadsO2) =  &
-            2*adsorbed_species_entropy(k1:k2,imuadsO)
-      endif
-      if (imuadsOH > 0)   then
-        adsorbed_species_entropy(k1:k2,imuadsOH) = &
-            ((0.0319*fp(k1:k2,iTp)) + 186.88) * 0.7 - (3.3*gas_constant)
-      endif
-      if (imuadsH > 0)    then
-        adsorbed_species_entropy(k1:k2,imuadsH) = &
-            (117.49+(0.0217*fp(k1:k2,iTp)))*0.54 - (3.3*gas_constant)
-      endif
-      if (imuadsCO > 0)   then
-        adsorbed_species_entropy(k1:k2,imuadsCO) = &
-            (199.35+(0.0342*fp(k1:k2,iTp))) * &
-            0.6*(1+(1.44e-4*fp(k1:k2,iTp))) - (3.3*gas_constant)
-      endif
+        if (imuadsO2 > 0)   then
+          adsorbed_species_entropy(k1:k2,imuadsO2) =  &
+              2*adsorbed_species_entropy(k1:k2,imuadsO)
+        endif
+        if (imuadsOH > 0)   then
+          adsorbed_species_entropy(k1:k2,imuadsOH) = &
+              ((0.0319*fp(k1:k2,iTp)) + 186.88) * 0.7 - (3.3*gas_constant)
+        endif
+        if (imuadsH > 0)    then
+          adsorbed_species_entropy(k1:k2,imuadsH) = &
+              (117.49+(0.0217*fp(k1:k2,iTp)))*0.54 - (3.3*gas_constant)
+        endif
+        if (imuadsCO > 0)   then
+          adsorbed_species_entropy(k1:k2,imuadsCO) = &
+              (199.35+(0.0342*fp(k1:k2,iTp))) * &
+              0.6*(1+(1.44e-4*fp(k1:k2,iTp))) - (3.3*gas_constant)
+        endif
 !
 ! taken from nist
-      if (imufree > 0)    adsorbed_species_entropy(k1:k2,imufree) = 0
+        if (imufree > 0)    adsorbed_species_entropy(k1:k2,imufree) = 0
+      endif
 !
     endsubroutine calc_ads_entropy
 ! ******************************************************************************
@@ -1849,18 +1948,30 @@ module Particles_chemistry
 !  JONAS: values are from nist and solid_phase.f90 of the stanford
 !  code Units: J/mol
 !
-      k1 = k1_imn(imn)
-      k2 = k2_imn(imn)
-!
-      if (imuadsO > 0)    adsorbed_species_enthalpy(k1:k2,imuadsO) = &
-          -148.14e3 + (0.0024e3*(fp(k1:k2,iTp)-273.15))
-      if (imuadsO2 > 0)   adsorbed_species_enthalpy(k1:k2,imuadsO2) = &
-          2 *  (-148.14e3 + (0.0024e3*(fp(k1:k2,iTp)-273.15)))
-      if (imuadsOH > 0) adsorbed_species_enthalpy(k1:k2,imuadsOH) = -148e3
-      if (imuadsH > 0) adsorbed_species_enthalpy(k1:k2,imuadsH) = -19.5e3
-      if (imuadsCO > 0)   adsorbed_species_enthalpy(k1:k2,imuadsCO) = &
-          -199.94e3 - (0.0167e3*(fp(k1:k2,iTp)-273.15))
-      if (imufree > 0)    adsorbed_species_enthalpy(k1:k2,imufree) = 0.
+      if (lheat_per_pencil) then
+        if (imuadsO > 0)    adsorbed_species_enthalpy(:,imuadsO) = &
+            -148.14e3 + (0.0024e3*(Tp_pencil-273.15))
+        if (imuadsO2 > 0)   adsorbed_species_enthalpy(:,imuadsO2) = &
+            2 *  (-148.14e3 + (0.0024e3*(Tp_pencil-273.15)))
+        if (imuadsOH > 0) adsorbed_species_enthalpy(:,imuadsOH) = -148e3
+        if (imuadsH > 0) adsorbed_species_enthalpy(:,imuadsH) = -19.5e3
+        if (imuadsCO > 0)   adsorbed_species_enthalpy(:,imuadsCO) = &
+            -199.94e3 - (0.0167e3*(Tp_pencil-273.15))
+        if (imufree > 0)    adsorbed_species_enthalpy(:,imufree) = 0.
+      else
+        k1 = k1_imn(imn)
+        k2 = k2_imn(imn)
+        !
+        if (imuadsO > 0)    adsorbed_species_enthalpy(k1:k2,imuadsO) = &
+            -148.14e3 + (0.0024e3*(fp(k1:k2,iTp)-273.15))
+        if (imuadsO2 > 0)   adsorbed_species_enthalpy(k1:k2,imuadsO2) = &
+            2 *  (-148.14e3 + (0.0024e3*(fp(k1:k2,iTp)-273.15)))
+        if (imuadsOH > 0) adsorbed_species_enthalpy(k1:k2,imuadsOH) = -148e3
+        if (imuadsH > 0) adsorbed_species_enthalpy(k1:k2,imuadsH) = -19.5e3
+        if (imuadsCO > 0)   adsorbed_species_enthalpy(k1:k2,imuadsCO) = &
+            -199.94e3 - (0.0167e3*(fp(k1:k2,iTp)-273.15))
+        if (imufree > 0)    adsorbed_species_enthalpy(k1:k2,imufree) = 0.
+      endif
 !
     endsubroutine calc_ads_enthalpy
 ! ******************************************************************************
@@ -1887,7 +1998,7 @@ module Particles_chemistry
 ! Routine to calcute quantities used for reactive particles
 !
       if (k1 /= 0 .and. k2 /= 0) then
-        call allocate_variable_pencils()
+        call allocate_variable_pencils(fp)
 !
         call calc_rho_p(fp)
         call calc_conversion(fp)
@@ -1908,7 +2019,7 @@ module Particles_chemistry
         call calc_RR_hat(f,fp,ineargrid,p)
 !
         if (lreactive_heating) then
-          call calc_q_reac()
+          call calc_q_reac(fp)
         else
           q_reac = 0.0
         endif
@@ -1926,11 +2037,36 @@ module Particles_chemistry
 !
 !  oct-14/Jonas: coded
 !
-    subroutine allocate_variable_pencils()
+    subroutine allocate_variable_pencils(fp)
+!
+      
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
       integer :: k1, k2, stat, ierr
+      integer :: k1s,k2s,k
+      real, dimension(:), allocatable :: T_array
 !
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
+!
+      if (lheat_per_pencil) then
+        allocate(T_array(k1:k2))
+        T_array=fp(k1:k2,iTp)
+        if (k1 == k2) then
+          k1s = k1
+          k2s = k2
+        else
+          k1s = int(minval(T_array(k1:k2)))
+          k2s = int(maxval(T_array(k1:k2)))
+        endif
+        allocate(Tp_pencil(k1s:k2s))
+        do k = k1s,k2s
+          Tp_pencil(k)=real(k)
+        enddo
+        deallocate(T_array)
+      else
+        k1s = k1
+        k2s = k2
+      endif
 !
       allocate(rho_p(k1:k2),STAT=stat)
       if (stat > 0) call fatal_error('allocate_variable_pencils', &
@@ -1949,18 +2085,20 @@ module Particles_chemistry
       if (stat > 0) call fatal_error('allocate_variable_pencils', &
           'Could not allocate memory for conversion')
 !
-      allocate(surface_species_enthalpy(k1:k2,N_surface_species), STAT=stat)
+      allocate(surface_species_enthalpy(k1s:k2s,N_surface_species), STAT=stat)
       if (stat > 0) call fatal_error('allocate_variable_pencils', &
           'Could not allocate memory for surface_species_enthalpy')
       if (reverse_reactions_present) then
-        allocate(surface_species_entropy(k1:k2,N_surface_species), STAT=stat)
-        allocate(adsorbed_species_entropy(k1:k2,N_adsorbed_species), STAT=stat)
+        allocate(surface_species_entropy(k1s:k2s,N_surface_species), STAT=stat)
+        allocate(adsorbed_species_entropy(k1s:k2s,N_adsorbed_species), STAT=stat)
         if (stat > 0) call fatal_error('allocate_variable_pencils', &
             'Could not allocate memory for adsorbed_species_entropy')
       endif
-      allocate(adsorbed_species_enthalpy(k1:k2,N_adsorbed_species), STAT=stat)
-      if (stat > 0) call fatal_error('allocate_variable_pencils', &
-          'Could not allocate memory for adsorbed_species_enthalpy')
+      if (lparticles_adsorbed) then
+        allocate(adsorbed_species_enthalpy(k1s:k2s,N_adsorbed_species), STAT=stat)
+        if (stat > 0) call fatal_error('allocate_variable_pencils', &
+            'Could not allocate memory for adsorbed_species_enthalpy')
+      endif
 !
       allocate(thiele(k1:k2,N_surface_reactants),STAT=stat)
       if (stat > 0) call fatal_error('allocate_variable_pencils', &
@@ -2011,6 +2149,19 @@ module Particles_chemistry
       allocate(mdot_ck(k1:k2,N_surface_reactions),STAT=stat)
       if (stat > 0) call fatal_error('register_dep_pchem', &
           'Could not allocate memory for mdot_ck')
+      allocate(R_c_hat(k1:k2),STAT=stat)
+      if (stat > 0) call fatal_error('allocate_variable_pencils', &
+          'Could not allocate memory for R_c_hat')
+      allocate(heating_k(k1s:k2s,N_surface_reactions),STAT=stat)
+      if (stat > 0) call fatal_error('allocate_variable_pencils', &
+          'Could not allocate memory for heating_k')
+      if (reverse_reactions_present) then
+        allocate(entropy_k(k1s:k2s,N_surface_reactions),STAT=stat)
+        if (stat > 0) call fatal_error('allocate_variable_pencils', &
+            'Could not allocate memory for entropy_k')
+      endif
+
+
     endsubroutine allocate_variable_pencils
 ! ******************************************************************************
 !  Deallocate variables after use
@@ -2025,7 +2176,7 @@ module Particles_chemistry
         deallocate(surface_species_enthalpy)
         if (reverse_reactions_present) deallocate(surface_species_entropy)
         if (reverse_reactions_present) deallocate(adsorbed_species_entropy)
-        deallocate(adsorbed_species_enthalpy)
+        if (lparticles_adsorbed) deallocate(adsorbed_species_enthalpy)
         deallocate(thiele)
         deallocate(effectiveness_factor)
         deallocate(effectiveness_factor_species)
@@ -2037,6 +2188,7 @@ module Particles_chemistry
         deallocate(RR_hat)
         deallocate(Rck_max)
         deallocate(R_j_hat)
+        if (allocated(R_c_hat)) deallocate(R_c_hat)
         deallocate(Cs)
         deallocate(rho_p)
         deallocate(St)
@@ -2046,6 +2198,9 @@ module Particles_chemistry
         deallocate(q_reac)
         deallocate(mdot_ck)
         deallocate(mass_loss)
+        if (allocated(heating_k)) deallocate(heating_k)
+        if (allocated(entropy_k)) deallocate(entropy_k)
+        if (lheat_per_pencil) deallocate(Tp_pencil)
       endif
     endsubroutine cleanup_chemistry_pencils
 ! ******************************************************************************
@@ -2333,17 +2488,26 @@ module Particles_chemistry
 !
 !  oct-14/Jonas: coded
 !
-    subroutine calc_q_reac()
+    subroutine calc_q_reac(fp)
 !
       integer :: k, k1, k2, i, ierr
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
 !
       k1 = k1_imn(imn)
       k2 = k2_imn(imn)
-!
       q_reac = 0.0
-      q_reac(k1:k2) = sum(RR_hat(k1:k2,1:N_surface_reactions)* &
-          (-heating_k(k1:k2,1:N_surface_reactions)),DIM = 2)
-      q_reac(k1:k2) = q_reac(k1:k2)*St(k1:k2)
+!
+      if (lheat_per_pencil) then
+        do k=k1,k2
+          q_reac(k) = sum(RR_hat(k,1:N_surface_reactions)* &
+              (-heating_k(int(fp(k,iTp)),1:N_surface_reactions)))
+        enddo
+        q_reac(k1:k2) = q_reac(k1:k2)*St(k1:k2)
+      else
+        q_reac(k1:k2) = sum(RR_hat(k1:k2,1:N_surface_reactions)* &
+            (-heating_k(k1:k2,1:N_surface_reactions)),DIM = 2)
+        q_reac(k1:k2) = q_reac(k1:k2)*St(k1:k2)
+      endif
 !
     endsubroutine calc_q_reac
 ! *******************************************************************************
@@ -2567,9 +2731,6 @@ module Particles_chemistry
       if (allocated(reaction_direction)) deallocate(reaction_direction)
       if (allocated(flags)) deallocate(flags)
       if (allocated(T_k)) deallocate(T_k)
-      if (allocated(R_c_hat)) deallocate(R_c_hat)
-      if (allocated(heating_k)) deallocate(heating_k)
-      if (allocated(entropy_k)) deallocate(entropy_k)
       if (allocated(part)) deallocate(part)
       if (allocated(part_power)) deallocate(part_power)
 !
