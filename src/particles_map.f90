@@ -1407,15 +1407,18 @@ module Particles_map
               do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
 !
                 weight=weight0
-                if (nxgrid/=1) &
+                if (nxgrid/=1) then
                   weight_x = 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx)
                   weight=weight*weight_x
-                if (nygrid/=1) &
+                endif
+                if (nygrid/=1) then
                   weight_y = 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy)
                   weight=weight*weight_y
-                if (nzgrid/=1) &
+                endif
+                if (nzgrid/=1) then
                   weight_z = 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz)
                   weight=weight*weight_z
+                endif
 !
                 f(ixx,iyy,izz,irhop)=f(ixx,iyy,izz,irhop) + weight
 !
