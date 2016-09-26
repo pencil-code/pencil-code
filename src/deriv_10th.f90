@@ -25,6 +25,7 @@ module Deriv
   public :: der_onesided_4_slice_other
   public :: der2_minmod
   public :: heatflux_deriv_x
+  public :: set_mn_offsets
 !
   real :: der2_coef0, der2_coef1, der2_coef2, der2_coef3, der2_coef4, der2_coef5
 !
@@ -83,6 +84,15 @@ module Deriv
       endselect
 !
     endsubroutine initialize_deriv
+!***********************************************************************
+    subroutine set_mn_offsets
+!
+!  Offset manipulation for second derivatives in complete one-sided fornulation.
+!  Yet unimplemented.
+!
+      return
+
+    endsubroutine set_mn_offsets
 !***********************************************************************
     subroutine der_main(f,k,df,j,ignoredx)
 !
