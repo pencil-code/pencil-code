@@ -128,6 +128,7 @@ module Energy
              lhcond0_density_dep=.false.
   logical :: lenergy_slope_limited=.false.
   logical :: limpose_heat_ceiling=.false.
+  logical :: lthdiff_Hmax=.false.
   real :: h_slope_limited=0.
   character (len=labellen) :: islope_limiter=''
   character (len=labellen), dimension(ninit) :: initss='nothing'
@@ -199,7 +200,7 @@ module Energy
       Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
       cool_type,ichit,xchit,pclaw,lenergy_slope_limited,h_slope_limited,islope_limiter, &
       zheat_uniform_range, peh_factor, lphotoelectric_heating_radius, &
-      limpose_heat_ceiling, heat_ceiling
+      limpose_heat_ceiling, heat_ceiling, lthdiff_Hmax
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -237,6 +238,8 @@ module Energy
                                 ! DIAG_DOC:   step based on heat conductivity;
                                 ! DIAG_DOC:   see \S~\ref{time-step})
   integer :: idiag_Hmax=0       ! DIAG_DOC: $H_{\rm max}$\quad(net heat sources
+                                ! DIAG_DOC: summed see \S~\ref{time-step})
+  integer :: idiag_tauhmin=0    ! DIAG_DOC: $H_{\rm max}$\quad(net heat sources
                                 ! DIAG_DOC: summed see \S~\ref{time-step})
   integer :: idiag_dtH=0       ! DIAG_DOC: $\delta t / [c_{\delta t,{\rm s}}\, 
                                 ! DIAG_DOC:  c_{\rm v}T /H_{\rm max}]$
@@ -2609,6 +2612,7 @@ module Energy
       if (idiag_dtchi/=0) lpenc_diagnos(i_rho1)=.true.
       if (idiag_dtH/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_Hmax/=0) lpenc_diagnos(i_ee)=.true.
+      if (idiag_tauhmin/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_ethdivum/=0) lpenc_diagnos(i_divu)=.true.
       if (idiag_csm/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
@@ -2856,7 +2860,7 @@ module Energy
 ! 
       use Diagnostics
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, &
-                                 gamma1, cs0
+                                 gamma1, cs0, get_cv1
       use Interstellar, only: calc_heat_cool_interstellar
       use Special, only: special_calc_energy
       use Sub
@@ -2868,7 +2872,7 @@ module Energy
 !
       real, dimension (nx) :: Hmax,gT2,gs2,gTxgs2
       real, dimension (nx,3) :: gTxgs
-      real :: ztop,xi,profile_cor,uT,fradz,TTtop
+      real :: ztop,xi,profile_cor,uT,fradz,TTtop,cv1
       real, dimension(nx) :: ufpres, uduu, glnTT2, Ktmp
       integer :: j,ju
       integer :: i
@@ -2877,6 +2881,7 @@ module Energy
       intent(inout) :: df
 !
       Hmax = 0.0
+      call get_cv1(cv1)
 !
 !  Identify module and boundary conditions.
 !
@@ -3030,7 +3035,10 @@ module Energy
 !
 !  Enforce maximum heating rate timestep constraint
 !
-      if (lfirst.and.ldt) dt1_max=max(dt1_max,Hmax/p%ee/cdts)
+      if (lfirst.and.ldt) then
+        if (lthdiff_Hmax) dt1_max=max(dt1_max,df(l1:l2,m,n,iss)/p%ee/cdts)
+        dt1_max=max(dt1_max,Hmax/p%ee/cdts)
+      endif
 !
 !  Calculate entropy related diagnostics.
 !
@@ -3041,6 +3049,8 @@ module Energy
             call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         if (idiag_dtH/=0) call max_mn_name(Hmax/p%ee/cdts,idiag_dtH,l_dt=.true.)
         if (idiag_Hmax/=0)   call max_mn_name(Hmax/p%ee,idiag_Hmax)
+        if (idiag_tauhmin/=0) &
+            call max_mn_name(df(l1:l2,m,n,iss)*cv1,idiag_tauhmin,lreciprocal=.true.)
         if (idiag_ssmax/=0)  call max_mn_name(p%ss*uT,idiag_ssmax)
         if (idiag_ssmin/=0)  call max_mn_name(-p%ss*uT,idiag_ssmin,lneg=.true.)
         if (idiag_TTmax/=0)  call max_mn_name(p%TT*uT,idiag_TTmax)
@@ -3690,7 +3700,7 @@ module Energy
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: thdiff,g2,thchi
+      real, dimension (nx) :: thdiff,g2,thchi,damp_profile
 !
       intent(inout) :: df
 !
@@ -4267,7 +4277,7 @@ module Energy
 !  Calculate gradient of variable diffusion coefficients.
 !
       tmps = 3.5 * vKpara
-      call multsv_mn(tmps,p%glnTT,gvKpara)
+      call multsv_mn(tmps,p%glnTT,gvKpara)!
 !
       do i=1,3
          tmpv(:,i)=0.
@@ -4887,7 +4897,7 @@ module Energy
             del2ss1=p%del2ss-del2ssmx
           endif
           call dot(p%glnrho+p%glnTT,gss1,g2)
-          thdiff=thdiff+chi_t*(del2ss1+g2)
+          thdiff=chi_t*(del2ss1+g2)
         else
           call fatal_error("calc_heatcond_sfluct","lcalc_ssmean(xy) needed")
         endif
@@ -5876,7 +5886,7 @@ module Energy
         idiag_gTxgsxmxy=0;idiag_gTxgsymxy=0;idiag_gTxgszmxy=0
         idiag_fradymxy_Kprof=0; idiag_fturbymxy=0; idiag_fconvxmx=0
         idiag_Kkramersm=0; idiag_Kkramersmx=0; idiag_Kkramersmz=0
-        idiag_Hmax=0; idiag_dtH=0
+        idiag_Hmax=0; idiag_dtH=0; idiag_tauhmin=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -5886,6 +5896,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'dtchi',idiag_dtchi)
         call parse_name(iname,cname(iname),cform(iname),'dtH',idiag_dtH)
         call parse_name(iname,cname(iname),cform(iname),'Hmax',idiag_Hmax)
+        call parse_name(iname,cname(iname),cform(iname),'tauhmin',idiag_tauhmin)
         call parse_name(iname,cname(iname),cform(iname),'ethtot',idiag_ethtot)
         call parse_name(iname,cname(iname),cform(iname),'ethdivum',idiag_ethdivum)
         call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
