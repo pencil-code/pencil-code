@@ -1300,8 +1300,8 @@ sub get_value {
             push @values, "replicate($val,$mul)"
           } else {
             if ($format eq 'python') {
-              push @values, ($val) x $mul
-              #push @values, "numpy.repeat($val,$mul)"
+              #push @values, ($val) x $mul
+              push @values, "numpy.repeat($val,$mul)";
             }
           }
         }
@@ -1444,7 +1444,29 @@ sub assign_slot_val {
     } elsif (@vals == 1) {  # scalar
         $assmnt .= $vals[0];
     } else {           # array
-        $assmnt .= add_array_bracket(join(",", @vals), $format);
+        if ($format eq 'python') {
+          my $tolist=0;
+          for (@vals) {
+            if ($_ =~ /^ *numpy\.repeat.*$/) {
+              $tolist=1;
+              last;
+            }
+          }
+          if ($tolist==1) {
+            for (@vals) {
+              if ($_ =~ /^ *numpy\.repeat.*$/) {
+                $_ = "list($_)"
+              } else {
+                $_ = "[$_]"
+              }
+            }
+            $assmnt .= add_array_bracket(join("+", @vals), 'pylist');
+          } else {  
+            $assmnt .= add_array_bracket(join(",", @vals), $format);
+          }
+        } else {
+          $assmnt .= add_array_bracket(join(",", @vals), $format);
+        }
     }
 
     return $assmnt;
@@ -1593,11 +1615,11 @@ sub add_array_bracket {
     my $string = shift;
     my $format = shift;
 
-    if     ($format eq 'f90') {
+    if      ($format eq 'f90') {
         # No delimiters
-    } elsif ($format eq 'python') {
-        $string = "[$string]";
-    } elsif ($format eq 'idl') {
+    } elsif ($format eq 'pylist') {
+        $string = "numpy.array($string)";
+    } elsif ($format eq 'idl' || $format eq 'python') {
         $string = "[$string]";
     } else {
         croak "add_array_bracket: Unknown format <$format>\n";
