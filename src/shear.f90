@@ -468,11 +468,13 @@ module Shear
 !
       if (Sshear>0. .and. .not. lshearadvection_as_shift &
         .and. ncpus/=1 .and. headt) then
-        print*
-        print*, 'NOTE: for Sshear > 0, MPI is not completely correct.'
-        print*, 'It is better to use lshearadvection_as_shift=T and use:'
-        print*, 'FOURIER=fourier_fftpack'
-        print*
+        if (lroot) then
+          print*
+          print*, 'NOTE: for Sshear > 0, MPI is not completely correct.'
+          print*, 'It is better to use lshearadvection_as_shift=T and use:'
+          print*, 'FOURIER=fourier_fftpack'
+          print*
+        endif
       endif
 !
 !  Make sure deltay is in the range 0 <= deltay < Ly (assuming Sshear<0).
