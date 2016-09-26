@@ -153,7 +153,8 @@ module Mpicomm
   endinterface
 !
   interface mpiallreduce_max
-    module procedure mpiallreduce_max_scl
+    module procedure mpiallreduce_max_scl_sgl
+    module procedure mpiallreduce_max_scl_dbl
     module procedure mpiallreduce_max_arr
   endinterface
 !
@@ -1124,14 +1125,23 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_sum_int_arr
 !***********************************************************************
-    subroutine mpiallreduce_max_scl(fmax_tmp,fmax,comm)
+    subroutine mpiallreduce_max_scl_sgl(fmax_tmp,fmax,comm)
 !
-      real :: fmax_tmp, fmax
+      real(KIND=rkind4) :: fmax_tmp, fmax
       integer, optional :: comm
 !
       fmax=fmax_tmp
 !
-    endsubroutine mpiallreduce_max_scl
+    endsubroutine mpiallreduce_max_scl_sgl
+!***********************************************************************
+    subroutine mpiallreduce_max_scl_dbl(fmax_tmp,fmax,comm)
+!
+      real(KIND=rkind8) :: fmax_tmp, fmax
+      integer, optional :: comm
+!
+      fmax=fmax_tmp
+!
+    endsubroutine mpiallreduce_max_scl_dbl
 !***********************************************************************
     subroutine mpiallreduce_max_arr(fmax_tmp,fmax,nreduce,comm)
 !

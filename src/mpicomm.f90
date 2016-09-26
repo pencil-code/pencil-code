@@ -164,7 +164,8 @@ module Mpicomm
   endinterface
 !
   interface mpiallreduce_max
-    module procedure mpiallreduce_max_scl
+    module procedure mpiallreduce_max_scl_dbl
+    module procedure mpiallreduce_max_scl_sgl
     module procedure mpiallreduce_max_arr
   endinterface
 !
@@ -3689,19 +3690,33 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !
     endsubroutine mpiallreduce_sum_int_arr
 !***********************************************************************
-    subroutine mpiallreduce_max_scl(fmax_tmp,fmax,comm)
+    subroutine mpiallreduce_max_scl_sgl(fmax_tmp,fmax,comm)
 !
 !  Calculate total maximum element and return to all processors.
 !
       use General, only: ioptest
 
-      real :: fmax_tmp,fmax
+      real(KIND=rkind4) :: fmax_tmp,fmax
       integer, optional :: comm
 !
       call MPI_ALLREDUCE(fmax_tmp, fmax, 1, MPI_REAL, MPI_MAX, &
                          ioptest(comm,MPI_COMM_GRID), mpierr)
 !
-    endsubroutine mpiallreduce_max_scl
+    endsubroutine mpiallreduce_max_scl_sgl
+!***********************************************************************
+    subroutine mpiallreduce_max_scl_dbl(fmax_tmp,fmax,comm)
+!
+!  Calculate total maximum element and return to all processors.
+!
+      use General, only: ioptest
+
+      real(KIND=rkind8) :: fmax_tmp,fmax
+      integer, optional :: comm
+!
+      call MPI_ALLREDUCE(fmax_tmp, fmax, 1, MPI_DOUBLE_PRECISION, MPI_MAX, &
+                         ioptest(comm,MPI_COMM_GRID), mpierr)
+!
+    endsubroutine mpiallreduce_max_scl_dbl
 !***********************************************************************
     subroutine mpiallreduce_min_scl_sgl(fmin_tmp,fmin,comm)
 !
