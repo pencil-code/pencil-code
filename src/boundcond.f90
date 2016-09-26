@@ -8263,10 +8263,10 @@ module Boundcond
       real, dimension (:,:,:,:) :: f
       integer :: j,k
       real, parameter :: density_scale_cgs=2.7774e21 !900pc Reynolds 91, etc
-      real :: density_scale
+      real :: density_scale1
       real :: cv1,cp1,cv,cp
 !
-      density_scale=density_scale_cgs/unit_length
+      density_scale1=unit_length/density_scale_cgs
       call get_cv1(cv1); cv=1./cv1
       call get_cp1(cp1); cp=1./cp1
 !
@@ -8276,14 +8276,14 @@ module Boundcond
           do k=1,3
             if (j==irho .or. j==ilnrho) then
               if (ldensity_nolog) then
-                f(:,:,k,j)=f(:,:,n1,j)*exp(-(z(n1)-z(k))/density_scale)
+                f(:,:,k,j)=f(:,:,n1,j)*exp(-(z(n1)-z(k))*density_scale1)
               else
-                f(:,:,k,j)=f(:,:,n1,j) - (z(n1)-z(k))/density_scale
+                f(:,:,k,j)=f(:,:,n1,j) - (z(n1)-z(k))*density_scale1
               endif
             else if (j==iss) then
               if (ldensity_nolog) then
                 f(:,:,n1-k,j)=f(:,:,n1-k+1,j)+(cp-cv)*&
-                 (log(f(:,:,n1-k+1,j-1))-log(f(:,:,n1-k,j-1)))
+                 (log(f(:,:,n1-k+1,j-1))-log(f(:,:,n1-k,j-1))) 
               else
                 f(:,:,n1-k,j)=f(:,:,n1-k+1,j)+(cp-cv)*&
                  (f(:,:,n1-k+1,j-1)-f(:,:,n1-k,j-1))
@@ -8297,9 +8297,9 @@ module Boundcond
           do k=1,3
             if (j==irho .or. j==ilnrho) then
               if (ldensity_nolog) then
-                f(:,:,n2+k,j)=f(:,:,n2,j)*exp(-(z(n2+k)-z(n2))/density_scale)
+                f(:,:,n2+k,j)=f(:,:,n2,j)*exp(-(z(n2+k)-z(n2))*density_scale1)
               else
-                f(:,:,n2+k,j)=f(:,:,n2,j) - (z(n2+k)-z(n2))/density_scale
+                f(:,:,n2+k,j)=f(:,:,n2,j) - (z(n2+k)-z(n2))*density_scale1
               endif
             else if (j==iss) then
               if (ldensity_nolog) then
