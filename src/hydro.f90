@@ -205,6 +205,11 @@ module Hydro
   real :: Shearx=0., rescale_uu=0.
   real :: Ra=0.0, Pr=0.0 ! Boussinesq approximation
 !
+!  Option to constrain time for large df.
+!
+  real :: cdt_tauf=1.0, ulev_cgs=1.0, ulev=impossible 
+  logical :: lcdt_tauf=.false.
+!
   namelist /hydro_run_pars/ &
       Omega, theta, tdamp, dampu, dampuext, dampuint, rdampext, rdampint, &
       wdamp, tau_damp_ruxm, tau_damp_ruym, tau_damp_ruzm, tau_diffrot1, &
@@ -228,6 +233,7 @@ module Hydro
       hydro_xaver_range, Ra, Pr, llinearized_hydro, lremove_mean_angmom, &
       lpropagate_borderuu, hydro_zaver_range, index_rSH, &
       uzjet, ydampint, ydampext, mean_momentum, lshear_in_coriolis, &
+      lcdt_tauf, cdt_tauf, ulev,&
       w_sldchar_hyd, uphi_rbot, uphi_rtop, uphi_step_width
 !
 !  Diagnostic variables (need to be consistent with reset list below).
@@ -425,6 +431,12 @@ module Hydro
   integer :: idiag_urmsn=0,idiag_urmss=0,idiag_urmsh=0
   integer :: idiag_ormsn=0,idiag_ormss=0,idiag_ormsh=0
   integer :: idiag_oumn=0,idiag_oums=0,idiag_oumh=0
+  integer :: idiag_taufmin=0
+  integer :: idiag_dtF=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta x
+                                ! DIAG_DOC:  /\max|\mathbf{F}|]$
+                                ! DIAG_DOC:  \quad(time step relative to
+                                ! DIAG_DOC:   max force time step;
+                                ! DIAG_DOC:   see \S~\ref{time-step})
 !
   integer, dimension(Nmodes_SH) :: idiag_urlm=0 ! DIAG_DOC: $ \int u_r(\theta,\phi)Y^m_{\ell}(\theta,\phi)\sin(\theta)d\theta d\phi$
   integer :: idiag_udpxxm=0, &  ! DIAG_DOC: components of symmetric tensor
@@ -2628,12 +2640,15 @@ module Hydro
       real, dimension (nx,3) :: curlru,uxo
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
       real, dimension (nx) :: odel2um,curlru2,uref,curlo2,qo,quxo,graddivu2
+      real, dimension (nx) :: uus,ftot,Fmax
       real, dimension (1,3) :: tmp
       real :: kx
       integer :: j, ju, k
 !
       intent(in) :: p
       intent(inout) :: f,df
+!
+      Fmax=0.0
 !
 !  Identify module and boundary conditions.
 !
@@ -2814,6 +2829,23 @@ module Hydro
 !
       if (lborder_profiles) call set_border_hydro(f,df,p)
 !
+!  Fred: Option to constrain timestep for large forces 
+!
+      if (lfirst.and.ldt.and.lcdt_tauf) then
+        if (ulev==impossible) ulev=ulev_cgs/unit_velocity
+        do j=1,3
+          ftot=abs(df(l1:l2,m,n,iux+j-1))
+          uus =abs(p%uu(:,j))
+          where (uus <= ulev) uus = ulev
+          dt1_max=max(dt1_max,ftot/(cdt_tauf*uus))
+          Fmax=max(Fmax,ftot/uus)
+        enddo 
+       ! call dot2(df(l1:l2,m,n,iux:iuz),ftot,FAST_SQRT=.true.)
+       ! call dot2(p%uu,uus,FAST_SQRT=.true.)
+       ! where (uus <= ulev) uus = ulev
+       ! dt1_max=max(dt1_max,ftot/(cdt_tauf*uus))
+      endif
+!
 !  write slices for output in wvid in run.f90
 !  This must be done outside the diagnostics loop (accessed at different times).
 !  Note: ix is the index with respect to array with ghost zones.
@@ -2875,6 +2907,10 @@ module Hydro
         if (idiag_durms/=0) then
           uref=ampluu(1)*cos(kx_uu*x(l1:l2))
           call sum_mn_name(p%u2-2.*p%uu(:,2)*uref+uref**2,idiag_durms)
+        endif
+        if (idiag_dtF/=0) call max_mn_name(Fmax/cdt_tauf,idiag_dtF,l_dt=.true.)
+        if ((idiag_taufmin/=0).and.lcdt_tauf) then
+          call max_mn_name(Fmax,idiag_taufmin,lreciprocal=.true.)
         endif
 ! urlm 
 ! This is being always calculated but written out only when asked. 
@@ -4421,6 +4457,9 @@ module Hydro
         idiag_oxmz=0
         idiag_oymz=0
         idiag_ozmz=0
+        idiag_ox2mz=0
+        idiag_oy2mz=0
+        idiag_oz2mz=0
         idiag_uxuym=0
         idiag_uxuzm=0
         idiag_uyuzm=0
@@ -4629,6 +4668,8 @@ module Hydro
         idiag_oumh=0;idiag_oumn=0;idiag_oums=0
         idiag_udpxxm=0;idiag_udpyym=0;idiag_udpzzm=0
         idiag_udpxym=0;idiag_udpyzm=0;idiag_udpxzm=0
+        idiag_taufmin=0
+        idiag_dtF=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -4781,6 +4822,8 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'udpxym',idiag_udpxym)
         call parse_name(iname,cname(iname),cform(iname),'udpyzm',idiag_udpyzm)
         call parse_name(iname,cname(iname),cform(iname),'udpxzm',idiag_udpxzm)
+        call parse_name(iname,cname(iname),cform(iname),'taufmin',idiag_taufmin)
+        call parse_name(iname,cname(iname),cform(iname),'dtF',idiag_dtF)
       enddo
 !
 !  Loop over dust species (for species-dependent diagnostics).
@@ -4903,6 +4946,9 @@ module Hydro
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ux2mz',idiag_ux2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uy2mz',idiag_uy2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uz2mz',idiag_uz2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ox2mz',idiag_ox2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'oy2mz',idiag_oy2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'oz2mz',idiag_oz2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruxmz',idiag_ruxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruymz',idiag_ruymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruzmz',idiag_ruzmz)
