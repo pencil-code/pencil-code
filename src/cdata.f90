@@ -124,7 +124,7 @@ module Cdata
   real :: dtmin=1.0e-6, dtmax=1.0e37
   real :: nu_sts=0.1
   integer :: permute_sts=0
-  logical :: lreset_tstart=.false.
+  integer:: ireset_tstart=2
 !
   logical :: lini_t_eq_zero=.false.
   real, dimension (nx) :: advec_uu,advec_shear,advec_hall,advec_csn2,advec_cs2cr
