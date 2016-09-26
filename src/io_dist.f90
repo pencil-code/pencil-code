@@ -67,6 +67,9 @@ module Io
   ! define unique logical unit number for input and output calls
   integer :: lun_input=88
   integer :: lun_output=91
+  ! set ireset_tstart to 1 or 2 to coordinate divergent timestamp
+  integer :: MINT=1
+  integer :: MAXT=2
 !
   ! Indicates if IO is done distributed (each proc writes into a procdir)
   ! or collectively (eg. by specialized IO-nodes or by MPI-IO).
@@ -418,14 +421,15 @@ module Io
 !  24-oct-13/MR: derived from input_snap
 !  28-oct-13/MR: consistency check for t_sp relaxed for restart from different precision
 !   6-mar-14/MR: if timestamp of snapshot inconsistent, now three choices:
-!                if lreset_tstart=F: cancel program
-!                                =T, tstart unspecified: use minimum time of all
-!                                var.dat 
+!                if ireset_tstart= 0: cancel program
+!                                = MINT, tstart unspecified: use minimum time of all var.dat 
 !                                                        for start
-!                                 T, tstart specified: use this value
+!                                = MAXT, tstart unspecified: use maximum time of all var.dat 
+!                                                        for start
+!                                > 0, tstart specified: use this value
 !
       use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, mpiallreduce_or, &
-                         stop_it, mpiallreduce_min, MPI_COMM_WORLD
+                         stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_WORLD
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
@@ -501,9 +505,9 @@ module Io
         endif
 !
 !  Verify consistency of the snapshots regarding their timestamp,
-!  unless lreset_tstart=T, in which case we reset all times to tstart.
+!  unless ireset_tstart=T, in which case we reset all times to tstart.
 !
-        if (.not. lreset_tstart .or. (tstart == impossible)) then
+        if ((ireset_tstart == 0) .or. (tstart == impossible)) then
 !
           t_test = t_sp
           call mpibcast_real(t_test,comm=MPI_COMM_WORLD)
@@ -513,13 +517,20 @@ module Io
 !  If timestamps deviate at any processor
 !
           if (ltest) then
-            if (lreset_tstart) then
+            if (ireset_tstart > 0) then
 !
 !  If reset of tstart enabled and tstart unspecified, use minimum of all t_sp
 !
-              call mpiallreduce_min(t_sp,t_sgl,MPI_COMM_WORLD)
+              if (ireset_tstart == MINT) then
+                call mpiallreduce_min(t_sp,t_sgl,MPI_COMM_WORLD)
+                if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT.',&
+                                       ' Using (min) t=', t_sgl,'with ireset_tstart=', MINT,'.'
+              elseif (ireset_tstart >= MAXT) then
+                call mpiallreduce_max(t_sp,t_sgl,MPI_COMM_WORLD)
+                if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT.',&
+                                       ' Using (max) t=', t_sgl,'with ireset_tstart=', MAXT,'.'
+              endif
               tstart=t_sgl
-              if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT. Using t=', tstart,'.'
             else
               write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)// &
                           ' IS INCONSISTENT: t=', t_sp
@@ -533,7 +544,7 @@ module Io
 !
 !  Set time or overwrite it by a given value.
 !
-        if (lreset_tstart) then
+        if (ireset_tstart > 0) then
           t = tstart
         else
           t = t_sp
@@ -557,13 +568,15 @@ module Io
 !  24-oct-13/MR: derived from input_snap
 !  28-oct-13/MR: consistency check for t_sp relaxed for restart from different precision
 !   6-mar-14/MR: if timestamp of snapshot inconsistent, now three choices:
-!                if lreset_tstart=F: cancel program
-!                                =T, tstart unspecified: use minimum time of all var.dat 
+!                if ireset_tstart= 0: cancel program
+!                                = MINT, tstart unspecified: use minimum time of all var.dat 
 !                                                        for start
-!                                =T, tstart specified: use this value
+!                                = MAXT, tstart unspecified: use maximum time of all var.dat 
+!                                                        for start
+!                                > 0, tstart specified: use this value
 !                             
       use Mpicomm, only: start_serialize, end_serialize, mpibcast_real, mpiallreduce_or, &
-                         stop_it, mpiallreduce_min, MPI_COMM_WORLD
+                         stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_WORLD
 !
       character (len=*), intent(in) :: file
       integer, intent(in) :: nv, mode
@@ -638,9 +651,9 @@ module Io
         endif
 !
 !  Verify consistency of the snapshots regarding their timestamp,
-!  unless lreset_tstart=T, in which case we reset all times to tstart.
+!  unless ireset_tstart=T, in which case we reset all times to tstart.
 !
-        if (.not. lreset_tstart .or. (tstart == impossible)) then
+        if ((ireset_tstart == 0) .or. (tstart == impossible)) then
 !
           t_test = t_sp
           call mpibcast_real(t_test,comm=MPI_COMM_WORLD)
@@ -650,11 +663,19 @@ module Io
 !  If timestamp deviates at any processor
 !
           if (ltest) then
-            if (lreset_tstart) then
+            if (ireset_tstart > 0) then
 !
 !  If reset of tstart enabled and tstart unspecified, use minimum of all t_sp
 !
-              call mpiallreduce_min(t_sp,t_dbl,MPI_COMM_WORLD)
+              if (ireset_tstart == MINT) then
+                call mpiallreduce_min(t_sp,t_dbl,MPI_COMM_WORLD)
+                if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT.',&
+                                       ' Using (min) t=', t_dbl,'with ireset_tstart=', MINT,'.'
+              elseif (ireset_tstart >= MAXT) then
+                call mpiallreduce_max(t_sp,t_dbl,MPI_COMM_WORLD)
+                if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT.',&
+                                       ' Using (max) t=', t_dbl,'with ireset_tstart=', MAXT,'.'
+              endif
               tstart=t_dbl
               if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT. Using t=', tstart, '.'
             else
@@ -670,7 +691,7 @@ module Io
 !
 !  Set time or overwrite it by a given value.
 !
-        if (lreset_tstart) then
+        if (ireset_tstart > 0) then
           t = tstart
         else
           t = t_sp
