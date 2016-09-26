@@ -98,6 +98,7 @@ module Cdata
 !  Derivative parameters
 !
   character (len=labellen) :: der2_type='standard'
+  logical :: lall_onesided=.false.
 !
 !  Box dimensions.
 !

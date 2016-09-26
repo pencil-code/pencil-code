@@ -104,7 +104,7 @@ module Param_IO
       lforce_shear_bc,lread_from_other_prec, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w,&
       lcorotational_frame, rcorot, lproper_averages, &
-      ldirect_access, ltolerate_namelist_errors, lyinyang
+      ldirect_access, ltolerate_namelist_errors, lyinyang, lall_onesided
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
@@ -161,7 +161,7 @@ module Param_IO
       wborder_theta_upper, fraction_tborder, lmeridional_border_drive, &
       lread_from_other_prec, downsampl, lfullvar_in_slices, lsubstract_reference_state, &
       ldirect_access, lproper_averages, lmaximal_cdt, lmaximal_cdtv, &
-      pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w
+      pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w, lall_onesided
 !
   namelist /IO_pars/ &
       lcollective_IO, IO_strategy
@@ -374,6 +374,11 @@ module Param_IO
       endif
 !
       call check_consistency_of_lperi('read_all_init_pars')
+!
+      if (lroot.and.lall_onesided) then
+        print*, '!!! lall_onesided=T requires that all boundary conditions are formulated by one-sided derivatives !!!'
+        print*, '    This is at the moment completely in the responsibility of the user.'
+      endif
 !
 !  Option to use maximal rather than total distance for courant time
 !
