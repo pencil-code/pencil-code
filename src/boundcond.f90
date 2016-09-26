@@ -8283,7 +8283,7 @@ module Boundcond
             else if (j==iss) then
               if (ldensity_nolog) then
                 f(:,:,n1-k,j)=f(:,:,n1-k+1,j)+(cp-cv)*&
-                 (log(f(:,:,n1-k+1,j-1))-log(f(:,:,n1-k,j-1))) 
+                 (log(f(:,:,n1-k+1,j-1))-log(f(:,:,n1-k,j-1)))
               else
                 f(:,:,n1-k,j)=f(:,:,n1-k+1,j)+(cp-cv)*&
                  (f(:,:,n1-k+1,j-1)-f(:,:,n1-k,j-1))
