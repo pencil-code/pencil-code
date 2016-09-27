@@ -55,7 +55,7 @@ module Gravity
   real :: xgrav=impossible, ygrav=impossible, zgrav=impossible
   real :: xinfty=0.0, yinfty=0.0, zinfty=impossible, zclip=impossible
   real :: dgravx=0.0, pot_ratio=1.0, qgshear=1.5
-  real :: z1=0.0, z2=1.0, zref=impossible, sphere_rad=0.0, g_ref=0.0
+  real :: z1=0.0, z2=1.0, xref=0.0, zref=impossible, sphere_rad=0.0, g_ref=0.0
   real :: nu_epicycle=1.0, nu_epicycle2=1.0
   real :: nux_epicycle=0.0, nux_epicycle2=0.0
   real :: r0_pot=0.0
@@ -83,7 +83,7 @@ module Gravity
   namelist /grav_init_pars/ &
       gravx_profile, gravy_profile, gravz_profile, gravx, gravy, gravz, &
       xgrav, ygrav, zgrav, kx_gg, ky_gg, kz_gg, dgravx, pot_ratio, z1, z2, &
-      nux_epicycle, nu_epicycle, zref, g_ref, sphere_rad, lnrho_bot, lnrho_top, &
+      nux_epicycle, nu_epicycle, xref, zref, g_ref, sphere_rad, lnrho_bot, lnrho_top, &
       ss_bot, ss_top, lgravx_gas, lgravx_dust, lgravy_gas, lgravy_dust, &
       lgravz_gas, lgravz_dust, xinfty, yinfty, zinfty, lxyzdependence, &
       lcalc_zinfty, kappa_x1, kappa_x2, kappa_z1, kappa_z2, reduced_top, &
@@ -94,7 +94,7 @@ module Gravity
   namelist /grav_run_pars/ &
       gravx_profile, gravy_profile, gravz_profile, gravx, gravy, gravz, &
       xgrav, ygrav, zgrav, kx_gg, ky_gg, kz_gg, dgravx, pot_ratio, &
-      nux_epicycle, nu_epicycle, zref, g_ref, sphere_rad, &
+      nux_epicycle, nu_epicycle, xref, zref, g_ref, sphere_rad, &
       lgravx_gas, lgravx_dust, lgravy_gas, lgravy_dust, &
       lgravz_gas, lgravz_dust, xinfty, yinfty, zinfty, lxyzdependence, &
       lcalc_zinfty, kappa_x1, kappa_x2, kappa_z1, kappa_z2, reduced_top, &
@@ -319,6 +319,22 @@ module Gravity
         g0=gravx
         call put_shared_variable('gravx', gravx, caller='initialize_gravity')
         call put_shared_variable('gravx_xpencil', gravx_xpencil)
+!
+      ! solid sphere (homogenous) gravity profile
+      ! 'xref' determines the location of the sphere border relative to the lower box boundary.
+      ! 'g_ref' is the gravity acceleration at xref (implies the mass of the sphere).
+      ! 'sphere_rad' is the radius of the sphere (independant from box coordinates).
+      ! Together, sphere_rad and xref describe, how much of the sphere lies inside the box.
+      case ('solid_sphere')
+        if (lroot) print *, 'initialize_gravity: solid sphere xref=', xref, ', g_ref=', g_ref, ', sphere_rad=', sphere_rad
+        where (x > xref)
+          gravx_xpencil = g_ref * sphere_rad**2 / (x-xref+sphere_rad)**2
+        else where (x < xref-2*sphere_rad)
+          gravx_xpencil = -g_ref * sphere_rad**2 / (x-xref+sphere_rad)**2
+        else where
+          gravx_xpencil = g_ref * (x-xref+sphere_rad) / sphere_rad
+        end where
+        potx_xpencil=-gravx_xpencil*(x-xinfty)
 !
       case ('loop')
         if (lroot) print*,'initialize_gravity: 1D loop, gravx=',gravx
