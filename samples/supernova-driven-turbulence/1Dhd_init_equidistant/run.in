@@ -6,7 +6,7 @@
   cvsid='$Id$',
 !  nt=5000000, it1=5000, isave=50000, itorder=3, tmax=5.0
   nt=200, it1=20, isave=50000, itorder=3, tmax=5.0
-  cdt=0.1, cdtv=0.1, dtmin=1e-9, cdts=0.1
+  cdt=0.6, cdtv=0.6, dtmin=1e-15, cdts=0.6
   dsnap=0.2, dvid=20., 
   ip=20
   lpencil_check=T
@@ -15,32 +15,37 @@
 &eos_run_pars
 /
 &hydro_run_pars
+  lupw_uu=T
+  cdt_tauf=0.6
+  lcdt_tauf=T
+  ulev = 0.1
 /
 &density_run_pars
-  diffrho=4e-3
-  diffrho_shock=1.2
+  lupw_rho=T
+  diffrho=5e-3
+  diffrho_shock=1.0
   lmassdiff_fixkin=T
   idiff='normal','shock'
 /
 &grav_run_pars
 /
 &entropy_run_pars
+  lupw_ss=T
   iheatcond='chi-cspeed','shock'
-  chi_cs=4e-4,chi_shock=10.0
+  chi_cs=5e-3,chi_shock=5.0
 /
 &interstellar_run_pars
   laverage_SN_heating=T
   heatingfunction_scalefactor=0.25
-  heatcool_shock_cutoff_rate=0.1
-  cdt_tauc=0.1
+  cdt_tauc=0.6
   lSNII=F
   lSNI=F
 /
 &viscosity_run_pars
   ivisc='nu-cspeed','nu-shock'
-  nu=4e-3,nu_shock=10.0
+  nu=5e-3,nu_shock=10.0
 /
 &shock_run_pars
-  lshock_first=T
-  lshock_max5=F
+  ishock_max=3
+  lfix_Re_mesh=T
 /
