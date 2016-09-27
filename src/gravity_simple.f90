@@ -456,7 +456,7 @@ module Gravity
         else where
           gravz_zpencil = g_ref * (z-zref+sphere_rad) / sphere_rad
         end where
-        potz_zpencil=-gravz_zpencil*(z-zinfty)
+        potz_zpencil = -gravz_zpencil * (z - zinfty)
 !
       case ('spherical')
         nu_epicycle2=nu_epicycle**2
