@@ -1576,7 +1576,7 @@ sub format_slots {
                 ($type == COMPLEX) ||
                 ($type == DCOMPLEX))  {
                 for (@vals) {
-                    s/\([0-9\.]\)[eE]/$1D/g;
+                    s/([0-9\.])[eE]/$1D/g;
                     s/(^|\s|,)($float)($|\s|,)/$1$2D0$3/g;
                     s/(\(\s*)($float)(\s*,\s*)($float)(\s*\))/$1$2D0$3$4D0$5/g;
                 }
