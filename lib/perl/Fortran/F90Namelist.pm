@@ -1583,6 +1583,21 @@ sub format_slots {
             }
         }
 
+        # Trim unnecessary zeros in float and double
+        if ($trim) {
+            if (($type == FLOAT)   ||
+                ($type == SINGLE)  ||
+                ($type == DOUBLE)  ||
+                ($type == COMPLEX) ||
+                ($type == DCOMPLEX))  {
+                for (@vals) {
+                    s/(\.[0-9]+?)0+(?=\D)/${1}/g;
+                    s/([0-9\.][eEdD])[\-\+]?0+(?=\D)/${1}0/g;
+                    s/([0-9\.][eEdD][\-\+]?)0+(?=[1-9])/$1/g;
+                }
+            }
+        }
+
         $slot = assign_slot_val($var,\@vals,$format,$type);
         push @slots, $slot;
     }
