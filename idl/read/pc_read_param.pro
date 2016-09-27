@@ -79,7 +79,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; If double precision, force input to be doubles.
 ;
-  nl2idl_d_opt = '--minimize'
+  nl2idl_d_opt = ''
   if (data_type eq 'double') then nl2idl_d_opt += ' -d'
 ;
 ; Read the parameter namelist file.
@@ -88,7 +88,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Parse content of namelist file, if necessary.
 ;
-  spawn, '"$PENCIL_HOME/bin/nl2idl" '+nl2idl_d_opt+' -m "'+filename+'" -o "'+outfile+'"', result
+  spawn, '"$PENCIL_HOME/bin/nl2idl" '+nl2idl_d_opt+' "'+filename+'" -o "'+outfile+'"', result
   result[0] = ''
   result = result[sort (result)]
   num_lines = (size (result, /dimensions))[0]

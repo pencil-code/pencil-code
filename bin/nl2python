@@ -28,8 +28,6 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   --classname=<class>   Name the Python class <class> (default is 'Params')
 #   -d
 #   --double              Mark floating-point values as double precision
-#   -m
-#   --minimize            Minimize strings by trimming trailing whitespace
 #   --version             Write version number of nl2python and exit
 
 use strict;
@@ -59,7 +57,6 @@ GetOptions(\%opts,
                     --debug
                -c=s --classname=s
                -d   --double
-               -m   --minimize
                -q   --quiet
                -v   --version )
           ) or die "Aborting.\n";
@@ -75,7 +72,6 @@ if ($opts{'v'} || $opts{'version'}) { die version(); }
 
 my $classname = ($opts{'c'} || $opts{'classname'} || 'Params');
 my $double    = ($opts{'d'} || $opts{'double'}    || 0);
-my $minimize  = ($opts{'m'} || $opts{'minimize'}  || 0);
 my $quiet     = ($opts{'q'} || $opts{'quiet'}     || '');
 
 ##
@@ -109,7 +105,7 @@ HERE
 
 print $nl->output('format'   => 'python',
                   'name'     => $classname,
-                  'trim'     => $minimize,
+                  'trim'     => 1,
                   'double'   => $double,
                  );
 
@@ -155,4 +151,4 @@ sub version {
 }
 # ---------------------------------------------------------------------- #
 
-# End of file nl2idl
+# End of file nl2python

@@ -32,8 +32,6 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   --output=<file>       Output file, or stdout if not given
 #   -d
 #   --double              Mark floating-point values as double precision
-#   -m
-#   --minimize            Minimize strings by trimming trailing whitespace
 #   -M <N>
 #   --maxtags=<N>         Like '-1', but split result in blocks of up to <N>
 #                         tags: { block1} {block 2} ..
@@ -70,7 +68,6 @@ GetOptions(\%opts,
                -f=s --function=s
                -o=s --output=s
                -d   --double
-               -m   --minimize
                -M=i --maxtags=i
                -q   --quiet
                -v   --version )
@@ -88,7 +85,6 @@ if ($opts{'v'} || $opts{'version'}) { die version(); }
 my $function = ($opts{'f'} || $opts{'function'} || 'param');
 my $out_file = ($opts{'o'} || $opts{'output'}   || '');
 my $double   = ($opts{'d'} || $opts{'double'}   || 0);
-my $minimize = ($opts{'m'} || $opts{'minimize'} || 0);
 my $maxtags  = ($opts{'M'} || $opts{'maxtags'}  || 0);
 my $quiet = ($opts{'q'} || $opts{'quiet'} || '');
 
@@ -137,7 +133,7 @@ foreach my $file (@ARGV) {
 
 my $name = 'par';
 if ($out_file =~ /param2\./s) { $name = 'par2'; }
-my $code = $nl->output(format => 'idl', name => $name, trim => $minimize,
+my $code = $nl->output(format => 'idl', name => $name, trim => 1,
                        oneline => 0, maxslots => $maxtags, double => $double);
 
 print $out_handle $code;

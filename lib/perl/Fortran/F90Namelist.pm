@@ -907,7 +907,7 @@ sub output {
     }
     my $format   = ($args{format}   || 'f90');
     my $name     = ($args{name}     || $self->name() || '');
-    my $trim     = ($args{trim}     || 0);
+    my $trim     = ($args{trim}     || 1);
     my $double   = ($args{double}   || 0);
     my $oneline  = ($args{oneline}  || 0);
     my $maxslots = ($args{maxslots} || 0);
@@ -1541,7 +1541,7 @@ sub format_slots {
     my $obj    = shift;
     my $format = (shift || 0);
     my $double = (shift || 0);
-    my $trim   = (shift || 0);
+    my $trim   = (shift || 1);
 
     return () unless ($obj->{NSLOTS});
 
