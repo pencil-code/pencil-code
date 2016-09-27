@@ -182,10 +182,14 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		u_abs:'velocity', $
 		P_therm:'thermal pressure', $
 		grad_P_therm_abs:'grad thermal pressure', $
-		F_grav_abs:'Gravity absolute value', $
-		F_grav_x:'Gravity x', $
-		F_grav_y:'Gravity y', $
-		F_grav_z:'Gravity z', $
+		a_grav_abs:'Gravity acceleration absolute value', $
+		a_grav_x:'Gravity acceleration x', $
+		a_grav_y:'Gravity acceleration y', $
+		a_grav_z:'Gravity acceleration z', $
+		F_grav_abs:'Gravity force absolute value', $
+		F_grav_x:'Gravity force x', $
+		F_grav_y:'Gravity force y', $
+		F_grav_z:'Gravity force z', $
 		rho_u_x:'impulse density x', $
 		rho_u_y:'impulse density y', $
 		rho_u_z:'impulse density z', $
@@ -245,6 +249,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 ;		grad_E_abs:'grad electric field strength', $
 		grad_Temp:'grad temperature', $
 		grad_P_therm:'grad thermal pressure', $
+		a_grav:'Gravity acceleration', $
 		F_grav:'Gravity force' $
 	}
 
@@ -362,7 +367,12 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		P_therm:['Temp', 'rho'], $
 		grad_P_therm:['P_therm', 'grad_Temp'], $
 		grad_P_therm_abs:'grad_P_therm', $
-		F_grav:'rho', $
+		a_grav:'', $
+		a_grav_abs:'a_grav', $
+		a_grav_x:'a_grav', $
+		a_grav_y:'a_grav', $
+		a_grav_z:'a_grav', $
+		F_grav:['rho', 'a_grav'], $
 		F_grav_abs:'F_grav', $
 		F_grav_x:'F_grav', $
 		F_grav_y:'F_grav', $

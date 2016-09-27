@@ -436,28 +436,48 @@ function pc_compute_quantity, vars, index, quantity
 		return, sqrt (dot2 (grad_P_therm))
 	end
 
+	if (strcmp (quantity, 'a_grav', /fold_case)) then begin
+		; Gravity acceleration vector
+		return, pc_get_parameter ('g_total', label=quantity)
+	end
+	if (strcmp (quantity, 'a_grav_abs', /fold_case)) then begin
+		; Gravity acceleration abvolute value
+		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'a_grav')))
+	end
+	if (strcmp (quantity, 'a_grav_x', /fold_case)) then begin
+		; Gravity acceleration x-component
+		return, (pc_compute_quantity (vars, index, 'a_grav'))[*,*,*,0]
+	end
+	if (strcmp (quantity, 'a_grav_y', /fold_case)) then begin
+		; Gravity acceleration y-component
+		return, (pc_compute_quantity (vars, index, 'a_grav'))[*,*,*,1]
+	end
+	if (strcmp (quantity, 'a_grav_z', /fold_case)) then begin
+		; Gravity acceleration z-component
+		return, (pc_compute_quantity (vars, index, 'a_grav'))[*,*,*,2]
+	end
 	if (strcmp (quantity, 'F_grav', /fold_case)) then begin
-		; Gravity vector
-		g_total = pc_get_parameter ('g_total', label=quantity)
+		; Gravity force vector
+		a_grav = pc_compute_quantity (vars, index, 'a_grav')
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		if (size (rho, /n_dimensions) eq 1) then rho = spread (rho, 1, 1)
 		if (size (rho, /n_dimensions) eq 2) then rho = spread (rho, 2, 1)
-		return, -g_total * spread (rho, 3, 3)
+		return, a_grav * spread (rho, 3, 3)
 	end
 	if (strcmp (quantity, 'F_grav_abs', /fold_case)) then begin
-		; Gravity abvolute value
+		; Gravity force abvolute value
 		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'F_grav')))
 	end
 	if (strcmp (quantity, 'F_grav_x', /fold_case)) then begin
-		; Gravity x-component
+		; Gravity force x-component
 		return, (pc_compute_quantity (vars, index, 'F_grav'))[*,*,*,0]
 	end
 	if (strcmp (quantity, 'F_grav_y', /fold_case)) then begin
-		; Gravity y-component
+		; Gravity force y-component
 		return, (pc_compute_quantity (vars, index, 'F_grav'))[*,*,*,1]
 	end
 	if (strcmp (quantity, 'F_grav_z', /fold_case)) then begin
-		; Gravity z-component
+		; Gravity force z-component
 		return, (pc_compute_quantity (vars, index, 'F_grav'))[*,*,*,2]
 	end
 	if (strcmp (quantity, 'rho_u_x', /fold_case)) then begin
