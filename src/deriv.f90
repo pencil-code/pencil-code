@@ -27,6 +27,7 @@ module Deriv
   public :: der_onesided_4_slice_other
   public :: der2_minmod
   public :: heatflux_deriv_x
+  public :: set_mn_offsets
 !
   real :: der2_coef0, der2_coef1, der2_coef2, der2_coef3
 !
@@ -61,13 +62,21 @@ module Deriv
     module procedure  der_onesided_4_slice_other_pt
   endinterface
 !
+  integer, dimension(nx) :: lrangep, lrangem
+  integer :: m3p=nghost, m3m=nghost, n3p=nghost, n3m=nghost
+
   contains
 !
 !***********************************************************************
-    subroutine initialize_deriv()
+    subroutine initialize_deriv
 !
 !  Initialize stencil coefficients
 !
+!  23-sep-16/MR: added initialization and manipulation of l-offsets for complete
+!                one-sided calculation of 2nd derivatives
+!
+      use General, only: indgen
+
       select case (der2_type)
 !
       case ('standard')
@@ -84,8 +93,37 @@ module Deriv
         call fatal_error('initialize_deriv',errormsg)
 !
       endselect
+
+      lrangep=indgen(nx)+l1-1                          ! range l1 ... l2
+      lrangem=lrangep-nghost; lrangep=lrangep+nghost   ! ranges l1-3 ... l2-3 and l1+3 ... l2+3
+
+      if (lall_onesided.and..not.lperi(1)) then
+        if (lfirst_proc_x) lrangem(2)=l1-nghost
+        if (llast_proc_x ) lrangep(nx-1)=l2+nghost
+      endif
 !
     endsubroutine initialize_deriv
+!***********************************************************************
+    subroutine set_mn_offsets
+!
+!  Offset manipulation for second derivatives in complete one-sided fornulation.
+!  W.r.t. x this is done in initialize_deriv.
+!
+!  23-sep-16/MR: added
+!
+      if (lall_onesided) then
+        m3m=nghost; m3p=nghost; n3m=nghost; n3p=nghost
+        if (.not.lperi(2)) then
+          if (lfirst_proc_y .and. m==m1+1) m3m=nghost+1
+          if (llast_proc_y .and. m==m2-1) m3p=nghost+1
+        endif
+        if (.not.lperi(3)) then
+          if (lfirst_proc_z .and. n==n1+1) n3m=nghost+1
+          if (llast_proc_z .and. n==n2-1) n3p=nghost+1
+        endif
+      endif
+
+    endsubroutine set_mn_offsets
 !***********************************************************************
     subroutine der_main(f, k, df, j, ignoredx)
 !
@@ -375,6 +413,8 @@ module Deriv
 !   1-oct-97/axel: coded
 !   1-apr-01/axel+wolf: pencil formulation
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
+!  23-sep-16/MR: introduced offset variables which can be manipulated for complete
+!                one-sided calculation of 2nd derivatives
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df2,fac,df
@@ -389,10 +429,10 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           fac=dx_1(l1:l2)**2
-          df2=fac*(der2_coef0* f(l1  :l2  ,m,n,k) &
-                  +der2_coef1*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
-                  +der2_coef2*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
-                  +der2_coef3*(f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
+          df2=fac*(der2_coef0* f(l1    :l2   ,m,n,k) &
+                  +der2_coef1*(f(l1+ 1 :l2+ 1,m,n,k)+f(l1- 1 :l2- 1,m,n,k)) &
+                  +der2_coef2*(f(l1+ 2 :l2+ 2,m,n,k)+f(l1- 2 :l2- 2,m,n,k)) &
+                  +der2_coef3*(f(lrangep     ,m,n,k)+f(lrangem     ,m,n,k)))
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
             df2=df2+dx_tilde(l1:l2)*df
@@ -403,12 +443,12 @@ module Deriv
       elseif (j==2) then
         if (nygrid/=1) then
           fac=dy_1(m)**2
-          df2=fac*(der2_coef0* f(l1:l2,m  ,n,k) &
-                  +der2_coef1*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
-                  +der2_coef2*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
-                  +der2_coef3*(f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
-          if (lspherical_coords)     df2=df2*r2_mn
-          if (lcylindrical_coords)   df2=df2*rcyl_mn2
+          df2=fac*(der2_coef0* f(l1:l2,m    ,n,k) &
+                  +der2_coef1*(f(l1:l2,m+ 1 ,n,k)+f(l1:l2,m- 1 ,n,k)) &
+                  +der2_coef2*(f(l1:l2,m+ 2 ,n,k)+f(l1:l2,m- 2 ,n,k)) &
+                  +der2_coef3*(f(l1:l2,m+m3p,n,k)+f(l1:l2,m-m3m,n,k)))
+          if (lspherical_coords)   df2=df2*r2_mn
+          if (lcylindrical_coords) df2=df2*rcyl_mn2
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
             df2=df2+dy_tilde(m)*df
@@ -419,10 +459,10 @@ module Deriv
       elseif (j==3) then
         if (nzgrid/=1) then
           fac=dz_1(n)**2
-          df2=fac*( der2_coef0* f(l1:l2,m,n  ,k) &
-                   +der2_coef1*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
-                   +der2_coef2*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
-                   +der2_coef3*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+          df2=fac*( der2_coef0* f(l1:l2,m,n    ,k) &
+                   +der2_coef1*(f(l1:l2,m,n+ 1 ,k)+f(l1:l2,m,n- 1 ,k)) &
+                   +der2_coef2*(f(l1:l2,m,n+ 2 ,k)+f(l1:l2,m,n- 2 ,k)) &
+                   +der2_coef3*(f(l1:l2,m,n+n3p,k)+f(l1:l2,m,n-n3m,k)))
           if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
@@ -1991,7 +2031,7 @@ module Deriv
       endif
     endsubroutine der_onesided_4_slice_other_pt
 !***********************************************************************
-    subroutine finalize_deriv()
+    subroutine finalize_deriv
 !
 !  Dummy
 !

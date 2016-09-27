@@ -286,7 +286,7 @@ module Boundcond
                   call bc_onesided_x(f,topbot,j)
                 case ('d1s')
                   ! BCX_DOC: onesided for 1st derivative in two first inner points, Dirichlet in boundary point
-                  call bc_onesided_x(f,topbot,j,(/fbcx_bot(j),fbcx_top(j)/))
+                  call bc_onesided_x(f,topbot,j,fbcx(j,k))
                 case ('1so')
                   ! BCX_DOC: onesided
                   call bc_onesided_x_old(f,topbot,j)
@@ -3707,17 +3707,24 @@ module Boundcond
 !
 !  05-apr-03/axel: coded
 !  07-jan-09/axel: corrected
+!  20-sep-16/MR: added optional parameter bval for boundary value.
+!                added ghost value setting for having the second derivative
+!                correct in one-sided formulation for first inner point.
 !
       character (len=bclen) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: j,k
-      real, dimension(2), optional :: bval
+      real, optional :: bval
 !
+      logical :: lbval
+!
+      lbval = present(bval)
+! 
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
 
-          if (present(bval)) f(l1,:,:,j)=bval(1)
+          if (lbval) f(l1,:,:,j)=bval
 
           k=l1-1
           f(k,:,:,j)=7*f(k+1,:,:,j) &
@@ -3737,19 +3744,35 @@ module Boundcond
                    +15*f(k+7,:,:,j) &
                     -2*f(k+8,:,:,j)
           k=l1-3
-          f(k,:,:,j)=9*f(k+1,:,:,j) &
-                   -45*f(k+2,:,:,j) &
-                  +147*f(k+3,:,:,j) &
-                  -315*f(k+4,:,:,j) &
-                  +441*f(k+5,:,:,j) &
-                  -399*f(k+6,:,:,j) &
-                  +225*f(k+7,:,:,j) &
-                   -72*f(k+8,:,:,j) &
-                   +10*f(k+9,:,:,j)
+          if (lbval) then
+!
+! This value belongs semantically to the *second* ghost point, but is stored
+! here in the third, as in that point we need two different values for getting the first and second
+! derivatives in the first inner point right.
+!
+            f(k,:,:,j)=( 27*f(k+1,:,:,j) &
+                       -133*f(k+2,:,:,j) &
+                       +343*f(k+3,:,:,j) &
+                       -525*f(k+4,:,:,j) &
+                       +497*f(k+5,:,:,j) &
+                       -287*f(k+6,:,:,j) &
+                       +93*f(k+7,:,:,j)  &
+                       -13*f(k+8,:,:,j))/2.
+          else
+            f(k,:,:,j)=9*f(k+1,:,:,j) &
+                     -45*f(k+2,:,:,j) &
+                    +147*f(k+3,:,:,j) &
+                    -315*f(k+4,:,:,j) &
+                    +441*f(k+5,:,:,j) &
+                    -399*f(k+6,:,:,j) &
+                    +225*f(k+7,:,:,j) &
+                     -72*f(k+8,:,:,j) &
+                     +10*f(k+9,:,:,j)
+          endif
 !
       case ('top')               ! top boundary
 
-          if (present(bval)) f(l2,:,:,j)=bval(2)
+          if (lbval) f(l2,:,:,j)=bval
 
           k=l2+1
           f(k,:,:,j)=7*f(k-1,:,:,j) &
@@ -3769,15 +3792,31 @@ module Boundcond
                    +15*f(k-7,:,:,j) &
                     -2*f(k-8,:,:,j)
           k=l2+3
-          f(k,:,:,j)=9*f(k-1,:,:,j) &
-                   -45*f(k-2,:,:,j) &
-                  +147*f(k-3,:,:,j) &
-                  -315*f(k-4,:,:,j) &
-                  +441*f(k-5,:,:,j) &
-                  -399*f(k-6,:,:,j) &
-                  +225*f(k-7,:,:,j) &
-                   -72*f(k-8,:,:,j) &
-                   +10*f(k-9,:,:,j)
+          if (lbval) then
+!
+! This value belongs semantically to the *second* ghost point, but is stored
+! here in the third, as in that point we need two different values for getting the first and second
+! derivatives in the first inner point right.
+!
+            f(k,:,:,j)=( 27*f(k-1,:,:,j) &
+                       -133*f(k-2,:,:,j) &
+                       +343*f(k-3,:,:,j) &
+                       -525*f(k-4,:,:,j) &
+                       +497*f(k-5,:,:,j) &
+                       -287*f(k-6,:,:,j) &
+                       + 93*f(k-7,:,:,j) &
+                       - 13*f(k-8,:,:,j))/2.
+          else
+            f(k,:,:,j)=9*f(k-1,:,:,j) &
+                     -45*f(k-2,:,:,j) &
+                    +147*f(k-3,:,:,j) &
+                    -315*f(k-4,:,:,j) &
+                    +441*f(k-5,:,:,j) &
+                    -399*f(k-6,:,:,j) &
+                    +225*f(k-7,:,:,j) &
+                     -72*f(k-8,:,:,j) &
+                     +10*f(k-9,:,:,j)
+          endif
 !
       case default
         print*, "bc_onesided_x ", topbot, " should be 'top' or 'bot'"
@@ -3831,7 +3870,7 @@ module Boundcond
 !
     endsubroutine bc_onesided_x_old
 !***********************************************************************
-    subroutine bc_onesided_y(f,topbot,j)
+    subroutine bc_onesided_y(f,topbot,j,bval)
 !
 !  One-sided conditions.
 !  These expressions result from combining Eqs(207)-(210), astro-ph/0109497,
@@ -3840,14 +3879,24 @@ module Boundcond
 !  05-apr-03/axel: coded
 !  07-jan-09/axel: corrected
 !  26-jan-09/nils: adapted from bc_onesided_x
+!  20-sep-16/MR: added optional parameter bval for boundary value.
+!                added ghost value setting for having the second derivative
+!                correct in one-sided formulation for first inner point.
 !
       character (len=bclen) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: j,k
+      real, optional :: bval
 !
+      logical :: lbval
+!
+      lbval = present(bval)
+! 
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
+
+          if (lbval) f(:,m1,:,j)=bval
           k=m1-1
           f(:,k,:,j)=7*f(:,k+1,:,j) &
                    -21*f(:,k+2,:,j) &
@@ -3866,17 +3915,35 @@ module Boundcond
                    +15*f(:,k+7,:,j) &
                     -2*f(:,k+8,:,j)
           k=m1-3
-          f(:,k,:,j)=9*f(:,k+1,:,j) &
-                   -45*f(:,k+2,:,j) &
-                  +147*f(:,k+3,:,j) &
-                  -315*f(:,k+4,:,j) &
-                  +441*f(:,k+5,:,j) &
-                  -399*f(:,k+6,:,j) &
-                  +225*f(:,k+7,:,j) &
-                   -72*f(:,k+8,:,j) &
-                   +10*f(:,k+9,:,j)
+          if (lbval) then
+!
+! This value belongs semantically to the *second* ghost point, but is stored
+! here in the third, as in that point we need two different values for getting the first and second
+! derivatives in the first inner point right.
+!
+            f(:,k,:,j)=( 27*f(:,k+1,:,j) &
+                       -133*f(:,k+2,:,j) &
+                       +343*f(:,k+3,:,j) &
+                       -525*f(:,k+4,:,j) &
+                       +497*f(:,k+5,:,j) &
+                       -287*f(:,k+6,:,j) &
+                       + 93*f(:,k+7,:,j) &
+                       - 13*f(:,k+8,:,j))/2.
+          else
+            f(:,k,:,j)=9*f(:,k+1,:,j) &
+                     -45*f(:,k+2,:,j) &
+                    +147*f(:,k+3,:,j) &
+                    -315*f(:,k+4,:,j) &
+                    +441*f(:,k+5,:,j) &
+                    -399*f(:,k+6,:,j) &
+                    +225*f(:,k+7,:,j) &
+                     -72*f(:,k+8,:,j) &
+                     +10*f(:,k+9,:,j)
+          endif
 !
       case ('top')               ! top boundary
+
+          if (lbval) f(:,m2,:,j)=bval
           k=m2+1
           f(:,k,:,j)=7*f(:,k-1,:,j) &
                    -21*f(:,k-2,:,j) &
@@ -3895,15 +3962,31 @@ module Boundcond
                    +15*f(:,k-7,:,j) &
                     -2*f(:,k-8,:,j)
           k=m2+3
-          f(:,k,:,j)=9*f(:,k-1,:,j) &
-                   -45*f(:,k-2,:,j) &
-                  +147*f(:,k-3,:,j) &
-                  -315*f(:,k-4,:,j) &
-                  +441*f(:,k-5,:,j) &
-                  -399*f(:,k-6,:,j) &
-                  +225*f(:,k-7,:,j) &
-                   -72*f(:,k-8,:,j) &
-                   +10*f(:,k-9,:,j)
+          if (lbval) then
+!
+! This value belongs semantically to the *second* ghost point, but is stored
+! here in the third, as in that point we need two different values for getting the first and second
+! derivatives in the first inner point right.
+!
+            f(:,k,:,j)=( 27*f(:,k-1,:,j) &
+                       -133*f(:,k-2,:,j) &
+                       +343*f(:,k-3,:,j) &
+                       -525*f(:,k-4,:,j) &
+                       +497*f(:,k-5,:,j) &
+                       -287*f(:,k-6,:,j) &
+                       + 93*f(:,k-7,:,j) &
+                       - 13*f(:,k-8,:,j))/2.
+          else
+            f(:,k,:,j)=9*f(:,k-1,:,j) &
+                     -45*f(:,k-2,:,j) &
+                    +147*f(:,k-3,:,j) &
+                    -315*f(:,k-4,:,j) &
+                    +441*f(:,k-5,:,j) &
+                    -399*f(:,k-6,:,j) &
+                    +225*f(:,k-7,:,j) &
+                     -72*f(:,k-8,:,j) &
+                     +10*f(:,k-9,:,j)
+          endif
 !
       case default
         print*, "bc_onesided_7 ", topbot, " should be 'top' or 'bot'"
@@ -3957,7 +4040,7 @@ module Boundcond
 !
     endsubroutine bc_onesided_z_orig
 !***********************************************************************
-    subroutine bc_onesided_z(f,topbot,j)
+    subroutine bc_onesided_z(f,topbot,j,bval)
 !
 !  One-sided conditions.
 !  These expressions result from combining Eqs(207)-(210), astro-ph/0109497,
@@ -3965,14 +4048,24 @@ module Boundcond
 !
 !  05-apr-03/axel: coded
 !  10-mar-09/axel: corrected
+!  20-sep-16/MR: added optional parameter bval for boundary value.
+!                added ghost value setting for having the second derivative
+!                correct in one-sided formulation for first inner point.
 !
       character (len=bclen) :: topbot
       real, dimension (:,:,:,:) :: f
       integer :: j,k
+      real, optional :: bval
+!
+      logical :: lbval
+!
+      lbval = present(bval)
 !
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
+! 
+          if (lbval) f(:,:,n1,j)=bval
           k=n1-1
           f(:,:,k,j)=7*f(:,:,k+1,j) &
                    -21*f(:,:,k+2,j) &
@@ -3991,17 +4084,35 @@ module Boundcond
                    +15*f(:,:,k+7,j) &
                     -2*f(:,:,k+8,j)
           k=n1-3
-          f(:,:,k,j)=9*f(:,:,k+1,j) &
-                   -45*f(:,:,k+2,j) &
-                  +147*f(:,:,k+3,j) &
-                  -315*f(:,:,k+4,j) &
-                  +441*f(:,:,k+5,j) &
-                  -399*f(:,:,k+6,j) &
-                  +225*f(:,:,k+7,j) &
-                   -72*f(:,:,k+8,j) &
-                   +10*f(:,:,k+9,j)
+          if (lbval) then
+!
+! This value belongs semantically to the *second* ghost point, but is stored
+! here in the third, as in that point we need two different values for getting the first and second
+! derivatives in the first inner point right.
+!
+            f(:,:,k,j)=( 27*f(:,:,k+1,j) &
+                       -133*f(:,:,k+2,j) &
+                       +343*f(:,:,k+3,j) &
+                       -525*f(:,:,k+4,j) &
+                       +497*f(:,:,k+5,j) &
+                       -287*f(:,:,k+6,j) &
+                       + 93*f(:,:,k+7,j)  &
+                       - 13*f(:,:,k+8,j))/2.
+          else
+            f(:,:,k,j)=9*f(:,:,k+1,j) &
+                     -45*f(:,:,k+2,j) &
+                    +147*f(:,:,k+3,j) &
+                    -315*f(:,:,k+4,j) &
+                    +441*f(:,:,k+5,j) &
+                    -399*f(:,:,k+6,j) &
+                    +225*f(:,:,k+7,j) &
+                     -72*f(:,:,k+8,j) &
+                     +10*f(:,:,k+9,j)
+          endif
 !
       case ('top')               ! top boundary
+! 
+          if (lbval) f(:,:,n2,j)=bval
           k=n2+1
           f(:,:,k,j)=7*f(:,:,k-1,j) &
                    -21*f(:,:,k-2,j) &
@@ -4020,15 +4131,31 @@ module Boundcond
                    +15*f(:,:,k-7,j) &
                     -2*f(:,:,k-8,j)
           k=n2+3
-          f(:,:,k,j)=9*f(:,:,k-1,j) &
-                   -45*f(:,:,k-2,j) &
-                  +147*f(:,:,k-3,j) &
-                  -315*f(:,:,k-4,j) &
-                  +441*f(:,:,k-5,j) &
-                  -399*f(:,:,k-6,j) &
-                  +225*f(:,:,k-7,j) &
-                   -72*f(:,:,k-8,j) &
-                   +10*f(:,:,k-9,j)
+          if (lbval) then
+!
+! This value belongs semantically to the *second* ghost point, but is stored
+! here in the third, as in that point we need two different values for getting the first and second
+! derivatives in the first inner point right.
+!
+            f(:,:,k,j)=( 27*f(:,:,k-1,j) &
+                       -133*f(:,:,k-2,j) &
+                       +343*f(:,:,k-3,j) &
+                       -525*f(:,:,k-4,j) &
+                       +497*f(:,:,k-5,j) &
+                       -287*f(:,:,k-6,j) &
+                       + 93*f(:,:,k-7,j) &
+                       - 13*f(:,:,k-8,j))/2.
+          else
+            f(:,:,k,j)=9*f(:,:,k-1,j) &
+                     -45*f(:,:,k-2,j) &
+                    +147*f(:,:,k-3,j) &
+                    -315*f(:,:,k-4,j) &
+                    +441*f(:,:,k-5,j) &
+                    -399*f(:,:,k-6,j) &
+                    +225*f(:,:,k-7,j) &
+                     -72*f(:,:,k-8,j) &
+                     +10*f(:,:,k-9,j)
+          endif
 !
       case default
         print*, "bc_onesided_z ", topbot, " should be 'top' or 'bot'"

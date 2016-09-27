@@ -27,6 +27,7 @@ module Equ
 !                moved call of timing after call of anelastic_after_mn
 !  26-aug-13/MR: added call of diagnostic for imaginary parts
 !   9-jun-15/MR: call of gravity_after_boundary added
+!  24-sep-16/MR: added offset manipulation for second derivatives in complete one-sided fornulation.
 !
       use Boundcond
       use BorderProfiles, only: calc_pencils_borderprofiles
@@ -36,6 +37,7 @@ module Equ
       use CosmicrayFlux
       use Density
       use Detonate, only: detonate_before_boundary
+      use Deriv, only: set_mn_offsets
       use Diagnostics
       use Dustvelocity
       use Dustdensity
@@ -91,7 +93,7 @@ module Equ
       real, dimension (nx) :: pfreeze,pfreeze_int,pfreeze_ext
       real, dimension(1)   :: mass_per_proc
       integer :: iv
-      integer :: ivar1,ivar2
+      integer :: ivar1,ivar2,nyz
 !
       intent(inout)  :: f       ! inout due to  lshift_datacube_x,
                                 ! density floor, or velocity ceiling
@@ -346,11 +348,16 @@ module Equ
 !------------------------------------------------------------------------------
 !  Do loop over m and n.
 !
-      mn_loop: do imn=1,ny*nz
+      nyz=ny*nz
+      mn_loop: do imn=1,nyz
         n=nn(imn)
         m=mm(imn)
         lfirstpoint=(imn==1)      ! true for very first m-n loop
-        llastpoint=(imn==(ny*nz)) ! true for very last m-n loop
+        llastpoint=(imn==(nyz)) ! true for very last m-n loop
+!
+!  Offset manipulation for second derivatives in complete one-sided fornulation.
+!
+        call set_mn_offsets
 !
 !  Store the velocity part of df array in a temporary array
 !  while solving the anelastic case.
