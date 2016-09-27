@@ -2374,6 +2374,7 @@ module Energy
         lpenc_requested(i_visc_heat)=.true.
         if (pretend_lnTT) lpenc_requested(i_cv1)=.true.
       endif
+      if (lcalc_cs2mean) lpenc_requested(i_cv1)=.true.
       if (tau_cor>0.0) then
         lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_TT1)=.true.
@@ -3361,7 +3362,6 @@ module Energy
 !  Compute average sound speed cs2(x) and cs2(x,y)
 !
       if (lcalc_cs2mean) then
-        call get_cv1(cv1)
         if (lcartesian_coords) then
           fact=1./nyzgrid
           do l=1,nx
@@ -3369,14 +3369,14 @@ module Energy
             if (ldensity_nolog) then
               if (lreference_state) then
                 cs2mx(l)= fact*sum(cs20*exp(gamma_m1*(alog(f(lf,m1:m2,n1:n2,irho)+reference_state(l,iref_rho)) &
-                         -lnrho0)+cv1*(f(lf,m1:m2,n1:n2,iss)+reference_state(l,iref_s)))) 
+                         -lnrho0)+p%cv1*(f(lf,m1:m2,n1:n2,iss)+reference_state(l,iref_s)))) 
               else
                 cs2mx(l)= fact*sum(cs20*exp(gamma_m1*(alog(f(lf,m1:m2,n1:n2,irho)) &
-                         -lnrho0)+cv1*f(lf,m1:m2,n1:n2,iss)))
+                         -lnrho0)+p%cv1*f(lf,m1:m2,n1:n2,iss)))
               endif
             else
               cs2mx(l)= fact*sum(cs20*exp(gamma_m1*(f(lf,m1:m2,n1:n2,ilnrho) &
-                       -lnrho0)+cv1*f(lf,m1:m2,n1:n2,iss)))
+                       -lnrho0)+p%cv1*f(lf,m1:m2,n1:n2,iss)))
             endif
           enddo
         elseif (lspherical_coords) then
@@ -3388,14 +3388,14 @@ module Energy
               if (ldensity_nolog) then
                 if (lreference_state) then
                   tmp1= tmp1+sum(cs20*exp(gamma_m1*(alog(f(lf,m1:m2,n,irho)+reference_state(l,iref_rho)) &
-                       -lnrho0)+cv1*(f(lf,m1:m2,n,iss)+reference_state(l,iref_s)))*dVol_y(m1:m2))*dVol_z(n)
+                       -lnrho0)+p%cv1*(f(lf,m1:m2,n,iss)+reference_state(l,iref_s)))*dVol_y(m1:m2))*dVol_z(n)
                 else
                   tmp1= tmp1+sum(cs20*exp(gamma_m1*(alog(f(lf,m1:m2,n,irho)) &
-                       -lnrho0)+cv1*f(lf,m1:m2,n,iss))*dVol_y(m1:m2))*dVol_z(n)
+                       -lnrho0)+p%cv1*f(lf,m1:m2,n,iss))*dVol_y(m1:m2))*dVol_z(n)
                 endif
               else
                 tmp1= tmp1+sum(cs20*exp(gamma_m1*(f(lf,m1:m2,n,ilnrho) &
-                     -lnrho0)+cv1*f(lf,m1:m2,n,iss))*dVol_y(m1:m2))*dVol_z(n)
+                     -lnrho0)+p%cv1*f(lf,m1:m2,n,iss))*dVol_y(m1:m2))*dVol_z(n)
               endif
             enddo
             cs2mx(l)=tmp1
@@ -3417,14 +3417,14 @@ module Energy
             if (ldensity_nolog) then
               if (lreference_state) then
                 cs2mxy(l,m)= fact*sum(cs20*exp(gamma_m1*(alog(f(lf,m,n1:n2,irho)+reference_state(l,iref_rho)) &
-                            -lnrho0)+cv1*(f(lf,m,n1:n2,iss)+reference_state(l,iref_s))))
+                            -lnrho0)+p%cv1*(f(lf,m,n1:n2,iss)+reference_state(l,iref_s))))
               else
                 cs2mxy(l,m)= fact*sum(cs20*exp(gamma_m1*(alog(f(lf,m,n1:n2,irho)) &
-                            -lnrho0)+cv1*f(lf,m,n1:n2,iss)))
+                            -lnrho0)+p%cv1*f(lf,m,n1:n2,iss)))
               endif
             else
               cs2mxy(l,m)= fact*sum(cs20*exp(gamma_m1*(f(lf,m,n1:n2,ilnrho) &
-                          -lnrho0)+cv1*f(lf,m,n1:n2,iss)))
+                          -lnrho0)+p%cv1*f(lf,m,n1:n2,iss)))
             endif
           enddo
         enddo
@@ -3436,25 +3436,24 @@ module Energy
 !
       if (lcalc_cs2mz_mean) then
 !
-        call get_cv1(cv1)
         fact=1./nxygrid
         cs2mz=0.
         if (ldensity_nolog) then
           if (lreference_state) then
             do n=1,mz
               cs2mz(n)= fact*sum(cs20*exp(gamma_m1*(alog(f(l1:l2,m1:m2,n,irho)+spread(reference_state(:,iref_rho),2,ny)) &
-                       -lnrho0)+cv1*(f(l1:l2,m1:m2,n,iss)+reference_state(l-l1+1,iref_s))))
+                       -lnrho0)+p%cv1*(f(l1:l2,m1:m2,n,iss)+reference_state(l-l1+1,iref_s))))
             enddo
           else
             do n=1,mz
               cs2mz(n)= fact*sum(cs20*exp(gamma_m1*(alog(f(l1:l2,m1:m2,n,irho)) &
-                       -lnrho0)+cv1*f(l1:l2,m1:m2,n,iss)))
+                       -lnrho0)+p%cv1*f(l1:l2,m1:m2,n,iss)))
             enddo
           endif
         else
           do n=1,mz
             cs2mz(n)= fact*sum(cs20*exp(gamma_m1*(f(l1:l2,m1:m2,n,ilnrho) &
-                     -lnrho0)+cv1*f(l1:l2,m1:m2,n,iss)))
+                     -lnrho0)+p%cv1*f(l1:l2,m1:m2,n,iss)))
           enddo
         endif
         call finalize_aver(nprocxy,12,cs2mz)
