@@ -336,20 +336,17 @@ module Particles_surfspec
 !  This is not functional, and this would need the initialization of
 !  The gas field before
           do k = 1,mpar_loc
-            ix0 = ineargrid(k,1)
-            iy0 = ineargrid(k,2)
-            iz0 = ineargrid(k,3)
             mean_molar_mass = 0.0
 !
             do i = 1,nchemspec
               mean_molar_mass = mean_molar_mass + &
-                  species_constants(i,imass) * f(ix0,iy0,iz0,ichemspec(i))
+                  species_constants(i,imass) * f(4,4,4,ichemspec(i))
             enddo
 !
 !
             do i = 1, N_surface_species
               igas = ichemspec(jmap(i))
-              fp(k,isurf+i-1) = f(ix0,iy0,iz0,igas) / &
+              fp(k,isurf+i-1) = f(4,4,4,igas) / &
                   species_constants(jmap(i),imass)*mean_molar_mass
             enddo
           enddo
