@@ -84,7 +84,7 @@ module Interstellar
 !
 !  'Current' SN Explosion site parameters
 !
-  integer, parameter :: mSNR = 10
+  integer, parameter :: mSNR = 100
   integer :: nSNR = 0
   type (SNRemnant), dimension(mSNR) :: SNRs
   real, dimension(12) :: SNRsFEAT
