@@ -14,6 +14,7 @@ from pencil.files.rrmv_par import *
 from pencil.files.slices import *
 from pencil.files.xyaver import *
 from pencil.files.yzaver import *
+from pencil.files.xzaver import *
 from pencil.files.yaver import *
 from pencil.files.zaver import *
 from pencil.files.zprof import *
