@@ -2612,7 +2612,7 @@ module Energy
       if (idiag_dtchi/=0) lpenc_diagnos(i_rho1)=.true.
       if (idiag_dtH/=0) lpenc_diagnos(i_ee)=.true.
       if (idiag_Hmax/=0) lpenc_diagnos(i_ee)=.true.
-      if (idiag_tauhmin/=0) lpenc_diagnos(i_ee)=.true.
+      if (idiag_tauhmin/=0) lpenc_diagnos(i_cv1)=.true.
       if (idiag_ethdivum/=0) lpenc_diagnos(i_divu)=.true.
       if (idiag_csm/=0) lpenc_diagnos(i_cs2)=.true.
       if (idiag_eem/=0) lpenc_diagnos(i_ee)=.true.
@@ -2860,7 +2860,7 @@ module Energy
 ! 
       use Diagnostics
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, &
-                                 gamma1, cs0, get_cv1
+                                 gamma1
       use Interstellar, only: calc_heat_cool_interstellar
       use Special, only: special_calc_energy
       use Sub
@@ -2881,7 +2881,6 @@ module Energy
       intent(inout) :: df
 !
       Hmax = 0.0
-      call get_cv1(cv1)
 !
 !  Identify module and boundary conditions.
 !
@@ -3050,7 +3049,7 @@ module Energy
         if (idiag_dtH/=0) call max_mn_name(Hmax/p%ee/cdts,idiag_dtH,l_dt=.true.)
         if (idiag_Hmax/=0)   call max_mn_name(Hmax/p%ee,idiag_Hmax)
         if (idiag_tauhmin/=0) &
-            call max_mn_name(df(l1:l2,m,n,iss)*cv1,idiag_tauhmin,lreciprocal=.true.)
+            call max_mn_name(df(l1:l2,m,n,iss)*p%cv1,idiag_tauhmin,lreciprocal=.true.)
         if (idiag_ssmax/=0)  call max_mn_name(p%ss*uT,idiag_ssmax)
         if (idiag_ssmin/=0)  call max_mn_name(-p%ss*uT,idiag_ssmin,lneg=.true.)
         if (idiag_TTmax/=0)  call max_mn_name(p%TT*uT,idiag_TTmax)
