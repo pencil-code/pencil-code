@@ -1554,7 +1554,18 @@ sub format_slots {
 
         # Trim trailing whitespace
         if ($trim) {
-            for (@vals) { s/\s*$//; }
+            for (@vals) { s/\s+$//; }
+            if (($type == SQ_STRING) || ($type == DQ_STRING)) {
+              for (@vals) { s/\s+(["'])\s*$/$1/; }
+              if ($format eq 'idl') {
+                if ($type == SQ_STRING) {
+                  for (@vals) { s/\s*(replicate\s*\('[^']*?)\s+',\s*([^\(\)]+\))/$1',$2/gi; }
+                }
+                elsif ($type == DQ_STRING) {
+                  for (@vals) { s/\s*(replicate\s*\("[^"]*?)\s+",\s*([^\(\)]+\))/$1",$2/gi; }
+                }
+              }
+            }
         }
 
         # Replace E[0-9]+ by, or append `D0' where necessary
