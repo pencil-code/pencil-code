@@ -1578,12 +1578,11 @@ sub format_slots {
                 for (@vals) {
                     s/([0-9\.])[eE]/$1D/g;
                     s/(^|\s|replicate\s*\(|,)($float)($|\s|,)/$1$2D0$3/g;
-                    s/(\(\s*)($float)(\s*,\s*)($float)(\s*\))/$1$2D0$3$4D0$5/g;
                 }
             }
         }
 
-        # Trim unnecessary zeros in float and double
+        # Trim unnecessary zeros and spaces in float and double
         if ($trim) {
             if (($type == FLOAT)   ||
                 ($type == SINGLE)  ||
@@ -1594,6 +1593,15 @@ sub format_slots {
                     s/(\.[0-9]+?)0+(?=\D|$)/$1/g;
                     s/([0-9\.][eEdD])[\-\+]?0+(?=\D|$)/${1}0/g;
                     s/([0-9\.][eEdD][\-\+]?)0+(?=[1-9])/$1/g;
+                    s/\s+,/,/g;
+                    s/,\s+/,/g;
+                }
+            }
+            if (($type == COMPLEX) ||
+                ($type == DCOMPLEX))  {
+                for (@vals) {
+                    s/\(\s+/\(/g;
+                    s/\s+\)/\)/g;
                 }
             }
         }
