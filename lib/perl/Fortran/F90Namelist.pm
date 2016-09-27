@@ -488,7 +488,7 @@ my $numeric   = qr/(?:[+-]?)(?=\d|\.\d)\d*(?:\.\d*)?(?:[EeDd](?:[+-]?\d+))?/;
 my $numeric_e = qr/(?:[+-]?)(?=\d|\.\d)\d*(?:\.\d*)?(?:[Ee](?:[+-]?\d+))?/;
 # double:
 my $numeric_d = qr/(?:[+-]?)(?=\d|\.\d)\d*(?:\.\d*)?(?:[Dd](?:[+-]?\d+))?/;
-# float with decimal point, but w/o  exponential part:
+# float with decimal point, but w/o exponential part:
 my $float     = qr/(?:[-+]?(?:\d+\.\d*|\d*\.\d+))/;
 
 ## Extend floating-point numeric tpes by one- or two-point
@@ -1576,7 +1576,7 @@ sub format_slots {
                 ($type == COMPLEX) ||
                 ($type == DCOMPLEX))  {
                 for (@vals) {
-                    s/\([0-9\.]\)[eE]/$1D/;
+                    s/\([0-9\.]\)[eE]/$1D/g;
                     s/(^|\s|,)($float)($|\s|,)/$1$2D0$3/g;
                     s/(\(\s*)($float)(\s*,\s*)($float)(\s*\))/$1$2D0$3$4D0$5/g;
                 }
