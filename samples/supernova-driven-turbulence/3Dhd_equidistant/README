@@ -8,6 +8,7 @@ Added:
     21-Jun-2016
 Status:
     has been working in this form since 21-Jun-2016
+    revised 27-Sep-2016
 Recommended resolution:
     at least 16x16x1000 (maintain grid resolution <= 0.004 for larger Lx,Ly)
 Comments:
