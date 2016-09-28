@@ -27,9 +27,10 @@ if (qquiet) then quiet=1
 ;  Derived dimensions.
 ;
 ;
-;  Get necessary dimensions.
+;  Time Get necessary dimensions.
 ;
-
+t=0d0
+;
 pc_read_dim, obj=dim, datadir=datadir, /quiet
 pc_read_qdim, obj=qdim, datadir=datadir, /quiet
 mqvar =qdim.mqvar
@@ -139,6 +140,8 @@ if (nqpar ne 0) then begin
 ;
   array=fltarr(nqpar,mqvar)*one
   readu, lun, array
+  readu, lun, t
+  print, 't =', t
 ;
 endif
 ;
@@ -156,8 +159,8 @@ endfor
 ;
 ;  Put data and parameters in object.
 ;
-makeobject="object = CREATE_STRUCT(name=objectname,[" + $
-    arraytostring(variables,QUOTE="'",/noleader) + "]," + $
+makeobject="object = CREATE_STRUCT(name=objectname,['t'," + $
+    arraytostring(variables,QUOTE="'",/noleader) + "]," + "t,"+$
     arraytostring(variables,/noleader) + ")"
 if (execute(makeobject) ne 1) then begin
   message, 'ERROR Evaluating variables: ' + makeobject, /INFO

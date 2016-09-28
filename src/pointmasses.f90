@@ -1563,7 +1563,7 @@ module PointMasses
 !
       use General, only:safe_character_assign
       use Sub, only: update_snaptime, read_snaptime
-      use IO, only: lun_output
+      use IO, only: lun_output,log_filename_to_file
 !
 !  Input and output of information about the massive particles
 !
@@ -1579,23 +1579,28 @@ module PointMasses
       optional :: flist
 !
       if (enum) then
-        call safe_character_assign(filename_diag,trim(datadir)//'/tsnap.dat')
-        if (lfirst_call) then
+!
+         if (lfirst_call) then
+          call safe_character_assign(filename_diag,trim(datadir)//'/tsnap.dat')
+        !if (lfirst_call) then
           call read_snaptime(filename_diag,tsnap,nsnap,dsnap,t)
           lfirst_call=.false.
         endif
-        call update_snaptime(filename_diag,tsnap,nsnap,dsnap,t,lsnap,nsnap_ch)
+
+        call update_snaptime(filename_diag,tsnap,nsnap,dsnap,t,lsnap,nsnap_ch,nowrite=.true.)
         if (lsnap) then
-          snapname=snapbase//nsnap_ch
+          snapname=trim(snapbase)//nsnap_ch
 !
 !  Write number of massive particles and their data
 !
           open(lun_output,FILE=snapname,FORM='unformatted')
           write(lun_output) nqpar
           if (nqpar/=0) write(lun_output) fq
+          write(lun_output) t
           close(lun_output)
           if (ip<=10 .and. lroot) &
                print*,'written snapshot ', snapname
+          if (present(flist)) call log_filename_to_file(snapname,flist)
         endif
       else
 !
@@ -1604,10 +1609,12 @@ module PointMasses
         snapname=snapbase
         open(lun_output,FILE=snapname,FORM='unformatted')
         write(lun_output) nqpar
-        if (nqpar/=0) write(lun_output) fq 
+        if (nqpar/=0) write(lun_output) fq
+        write(lun_output) t
         close(lun_output)
         if (ip<=10 .and. lroot) &
              print*,'written snapshot ', snapname
+        if (present(flist)) call log_filename_to_file(snapname,flist)
       endif
 !
       call keep_compiler_quiet(flist)
