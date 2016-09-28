@@ -107,6 +107,14 @@
 ;  none
 
 
+function pc_get_quantity_scalar_to_vector, data
+	if (size (data_3D, /n_dimensions) eq 3) then return, spread (data, 3, 3)
+	data_3D = data
+	if (size (data_3D, /n_dimensions) eq 1) then data_3D = spread (data_3D, 1, 1)
+	if (size (data_3D, /n_dimensions) eq 2) then data_3D = spread (data_3D, 2, 1)
+	return, spread (data_3D, 3, 3)
+end
+
 ; Computation of physical quantities.
 ; =============================================================================
 ; PLEASE ADD MORE PHYSICAL QUANTITIES IN THIS FUNCTION.
@@ -460,9 +468,7 @@ function pc_compute_quantity, vars, index, quantity
 		; Gravity force vector
 		a_grav = pc_compute_quantity (vars, index, 'a_grav')
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
-		if (size (rho, /n_dimensions) eq 1) then rho = spread (rho, 1, 1)
-		if (size (rho, /n_dimensions) eq 2) then rho = spread (rho, 2, 1)
-		return, a_grav * spread (rho, 3, 3)
+		return, a_grav * pc_get_quantity_scalar_to_vector (rho)
 	end
 	if (strcmp (quantity, 'F_grav_abs', /fold_case)) then begin
 		; Gravity force abvolute value
