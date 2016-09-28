@@ -1582,7 +1582,6 @@ module PointMasses
 !
          if (lfirst_call) then
           call safe_character_assign(filename_diag,trim(datadir)//'/tsnap.dat')
-        !if (lfirst_call) then
           call read_snaptime(filename_diag,tsnap,nsnap,dsnap,t)
           lfirst_call=.false.
         endif
