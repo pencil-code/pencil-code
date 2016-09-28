@@ -11,8 +11,8 @@
 ! MAUX CONTRIBUTION 2
 ! CPARAM logical, parameter :: lparticles=.true.
 !
-! PENCILS PROVIDED np; rhop; peh
-! PENCILS PROVIDED np_rad(5); npvz(5); sherwood
+! PENCILS PROVIDED np; rhop; vol; peh
+! PENCILS PROVIDED np_rad(5); npvz(5); npuz(5); sherwood
 ! PENCILS PROVIDED epsp; grhop(3)
 ! PENCILS PROVIDED tausupersat
 !
@@ -290,6 +290,7 @@ module Particles
   integer :: idiag_vprms=0, idiag_vpyfull2m=0, idiag_deshearbcsm=0
   integer :: idiag_Shm=0
   integer, dimension(ninit)  :: idiag_npvzmz=0, idiag_nptz=0
+  integer, dimension(ninit)  :: idiag_npuzmz=0  
   integer :: idiag_tausupersatrms=0
 !
   contains
@@ -2700,6 +2701,7 @@ module Particles
       if (idiag_sigmap /= 0) lpenc_diagnos2d(i_rhop) = .true.
 !
       if (maxval(idiag_npvzmz) > 0) lpenc_requested(i_npvz)=.true.
+      if (maxval(idiag_npuzmz) > 0) lpenc_requested(i_npuz)=.true.
       if (maxval(idiag_nptz) > 0)   lpenc_requested(i_np_rad)=.true.
       if (idiag_Shm /= 0) lpenc_requested(i_sherwood)=.true.
 !
@@ -3543,6 +3545,7 @@ module Particles
 !  Initialize the pencils that are calculated within this subroutine
 !
       if (lpenc_requested(i_npvz))     p%npvz=0.
+      if (lpenc_requested(i_npuz))     p%npuz=0.
       if (lpenc_requested(i_np_rad))   p%np_rad=0.
       if (lpenc_requested(i_sherwood)) p%sherwood=0.
       if (lpenc_requested(i_tausupersat)) p%tausupersat=0.
@@ -3634,12 +3637,30 @@ module Particles
 !
 !  Calculate required pencils
 !  NILS: Could this be moved to calc_pencils_particles
-              if (lpenc_requested(i_npvz) .or. lpenc_requested(i_np_rad)) then
+              if (lpenc_requested(i_npvz) .or. lpenc_requested(i_np_rad) .or. lpenc_requested(i_npuz)) then
                 call get_shared_variable('ap0',ap0,ierr)
                 do irad=1,npart_radii
                   if ((fp(k,iap) > ap0(irad)*0.99) .and. (fp(k,iap) < ap0(irad)*1.01)) then
                     p%npvz(ix0-nghost,irad)=p%npvz(ix0-nghost,irad)+fp(k,ivpz)
                     p%np_rad(ix0-nghost,irad)=p%np_rad(ix0-nghost,irad)+1.
+                    if (lpenc_requested(i_npuz)) then
+!
+! DM : I understand that the following is not efficient, it interplolates twice, but seems
+! DM: to be the quickest solution now. 
+!
+                      inear = ineargrid(k,:)
+                      xxp = fp(k,ixp:izp)
+                      if (lparticlemesh_cic) then
+                        call interpolate_linear(f,iux,iuz,xxp,uup,inear,0,ipar(k))
+                      else  
+                        if (linterpolate_spline) then
+                          call interpolate_quadratic_spline(f,iux,iuz,xxp,uup,inear,0,ipar(k))
+                        else
+                          call interpolate_quadratic(f,iux,iuz,xxp,uup,inear,0,ipar(k))
+                        endif
+                      endif
+                      p%npuz(ix0-nghost,irad)=p%npuz(ix0-nghost,irad)+uup(3)
+                    endif
                   endif
                 enddo
               endif
@@ -4276,6 +4297,7 @@ module Particles
 !
         do k=1,ninit
           if (idiag_npvzmz(k)/=0) call xysum_mn_name_z(p%npvz(:,k),idiag_npvzmz(k))
+          if (idiag_npuzmz(k)/=0) call xysum_mn_name_z(p%npuz(:,k),idiag_npuzmz(k))
           if (idiag_nptz(k)/=0)   call xysum_mn_name_z(p%np_rad(:,k),idiag_nptz(k))
         enddo
       endif
@@ -5911,6 +5933,7 @@ module Particles
         idiag_npargone=0; idiag_vpyfull2m=0; idiag_deshearbcsm=0
         idiag_npmxy=0; idiag_vprms=0
         idiag_npvzmz=0; idiag_nptz=0; idiag_Shm=0
+        idiag_npuzmz=0
         idiag_tausupersatrms=0
       endif
 !
@@ -6029,6 +6052,7 @@ module Particles
         do k=1,ninit
           srad=itoa(k)
           call parse_name(inamez,cnamez(inamez),cformz(inamez),'npvzmz'//trim(srad),idiag_npvzmz(k))
+          call parse_name(inamez,cnamez(inamez),cformz(inamez),'npuzmz'//trim(srad),idiag_npuzmz(k))
           call parse_name(inamez,cnamez(inamez),cformz(inamez),'nptz'//trim(srad),idiag_nptz(k))
         enddo
 

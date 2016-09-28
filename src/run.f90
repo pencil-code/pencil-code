@@ -124,7 +124,7 @@ program run
 !
 !  Initialize use of multiple special modules.
 !
-  call initialize_mult_special
+!  call initialize_mult_special
 !
 !  Define the lenergy logical
 !
