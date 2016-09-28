@@ -449,7 +449,7 @@ function pc_compute_quantity, vars, index, quantity
 		return, pc_get_parameter ('g_total', label=quantity)
 	end
 	if (strcmp (quantity, 'a_grav_abs', /fold_case)) then begin
-		; Gravity acceleration abvolute value
+		; Gravity acceleration absolute value
 		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'a_grav')))
 	end
 	if (strcmp (quantity, 'a_grav_x', /fold_case)) then begin
@@ -471,7 +471,7 @@ function pc_compute_quantity, vars, index, quantity
 		return, a_grav * pc_get_quantity_scalar_to_vector (rho)
 	end
 	if (strcmp (quantity, 'F_grav_abs', /fold_case)) then begin
-		; Gravity force abvolute value
+		; Gravity force absolute value
 		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'F_grav')))
 	end
 	if (strcmp (quantity, 'F_grav_x', /fold_case)) then begin
