@@ -460,6 +460,10 @@ module Hydro
                                 ! XYAVG_DOC:   velocity)
   integer :: idiag_uymz=0       ! XYAVG_DOC: $\left< u_y \right>_{xy}$
   integer :: idiag_uzmz=0       ! XYAVG_DOC: $\left< u_z \right>_{xy}$
+  integer :: idiag_uzupmz=0     ! XYAVG_DOC: $\left< u_{z\uparrow} \right>_{xy}$
+  integer :: idiag_uzdownmz=0   ! XYAVG_DOC: $\left< u_{z\downarrow} \right>_{xy}$
+  integer :: idiag_ruzupmz=0    ! XYAVG_DOC: $\left< \varrho u_{z\uparrow} \right>_{xy}$
+  integer :: idiag_ruzdownmz=0  ! XYAVG_DOC: $\left< \varrho u_{z\downarrow} \right>_{xy}$
   integer :: idiag_divumz=0     ! XYAVG_DOC: $\left< {\rm div}\uv \right>_{xy}$
   integer :: idiag_uzdivumz=0   ! XYAVG_DOC: $\left< u_z{\rm div}\uv \right>_{xy}$
   integer :: idiag_oxmz=0       ! XYAVG_DOC: $\left< \omega_x \right>_{xy}$
@@ -468,9 +472,9 @@ module Hydro
   integer :: idiag_ux2mz=0      ! XYAVG_DOC: $\left<u_x^2\right>_{xy}$
   integer :: idiag_uy2mz=0      ! XYAVG_DOC: $\left<u_y^2\right>_{xy}$
   integer :: idiag_uz2mz=0      ! XYAVG_DOC: $\left<u_z^2\right>_{xy}$
-  integer :: idiag_ox2mz=0       ! XYAVG_DOC: $\left< \omega_x^2 \right>_{xy}$
-  integer :: idiag_oy2mz=0       ! XYAVG_DOC: $\left< \omega_y^2 \right>_{xy}$
-  integer :: idiag_oz2mz=0       ! XYAVG_DOC: $\left< \omega_z^2 \right>_{xy}$
+  integer :: idiag_ox2mz=0      ! XYAVG_DOC: $\left< \omega_x^2 \right>_{xy}$
+  integer :: idiag_oy2mz=0      ! XYAVG_DOC: $\left< \omega_y^2 \right>_{xy}$
+  integer :: idiag_oz2mz=0      ! XYAVG_DOC: $\left< \omega_z^2 \right>_{xy}$
   integer :: idiag_ruxmz=0      ! XYAVG_DOC: $\left<\varrho u_x \right>_{xy}$
   integer :: idiag_ruymz=0      ! XYAVG_DOC: $\left<\varrho u_y \right>_{xy}$
   integer :: idiag_ruzmz=0      ! XYAVG_DOC: $\left<\varrho u_z \right>_{xy}$
@@ -483,9 +487,9 @@ module Hydro
   integer :: idiag_ruxuymz=0    ! XYAVG_DOC: $\langle\rho u_x u_y\rangle_{xy}$
   integer :: idiag_ruxuzmz=0    ! XYAVG_DOC: $\langle\rho u_x u_z\rangle_{xy}$
   integer :: idiag_ruyuzmz=0    ! XYAVG_DOC: $\langle\rho u_y u_z\rangle_{xy}$
-  integer :: idiag_ruxuy2mz=0    ! XYAVG_DOC: $\langle\rho u_x u_y\rangle_{xy}$
-  integer :: idiag_ruxuz2mz=0    ! XYAVG_DOC: $\langle\rho u_x u_z\rangle_{xy}$
-  integer :: idiag_ruyuz2mz=0    ! XYAVG_DOC: $\langle\rho u_y u_z\rangle_{xy}$
+  integer :: idiag_ruxuy2mz=0   ! XYAVG_DOC: $\langle\rho u_x u_y\rangle_{xy}$
+  integer :: idiag_ruxuz2mz=0   ! XYAVG_DOC: $\langle\rho u_x u_z\rangle_{xy}$
+  integer :: idiag_ruyuz2mz=0   ! XYAVG_DOC: $\langle\rho u_y u_z\rangle_{xy}$
   integer :: idiag_oxuxxmz=0    ! XYAVG_DOC: $\left<\omega_x u_{x,x}\right>_{xy}$
   integer :: idiag_oyuxymz=0    ! XYAVG_DOC: $\left<\omega_y u_{x,y}\right>_{xy}$
   integer :: idiag_oxuyxmz=0    ! XYAVG_DOC: $\left<\omega_x u_{y,x}\right>_{xy}$
@@ -1986,7 +1990,8 @@ module Hydro
           lpenc_diagnos(i_curlo)=.true.
       if (idiag_divu2m/=0 .or. idiag_divu2mz/=0 .or. idiag_divru2mz/=0 .or. &
           idiag_divum/=0 .or. idiag_rdivum/=0) lpenc_diagnos(i_divu)=.true.
-      if (idiag_rdivum/=0 .or. idiag_fkinzm/=0) lpenc_diagnos(i_rho)=.true.
+      if (idiag_rdivum/=0 .or. idiag_fkinzm/=0 .or. idiag_ruzupmz/=0 .or. idiag_ruzdownmz/=0) &
+          lpenc_diagnos(i_rho)=.true.
       if (idiag_gdivu2m/=0) lpenc_diagnos(i_graddivu)=.true.
       if (idiag_oum/=0 .or. idiag_oumx/=0.or.idiag_oumy/=0.or.idiag_oumz/=0 .or. &
            idiag_oumh/=0 .or. idiag_ou_int/=0 ) lpenc_diagnos(i_ou)=.true.
@@ -2637,6 +2642,9 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
+      intent(in) :: p
+      intent(inout) :: f,df
+!
       real, dimension (nx,3) :: curlru,uxo
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
       real, dimension (nx) :: odel2um,curlru2,uref,curlo2,qo,quxo,graddivu2
@@ -2644,9 +2652,7 @@ module Hydro
       real, dimension (1,3) :: tmp
       real :: kx
       integer :: j, ju, k
-!
-      intent(in) :: p
-      intent(inout) :: f,df
+      integer, dimension(nz), save :: nuzup=0, nuzdown=0, nruzup=0, nruzdown=0
 !
       Fmax=0.0
 !
@@ -3243,6 +3249,10 @@ module Hydro
         call xysum_mn_name_z(p%uu(:,3),idiag_uzmz)
         call xysum_mn_name_z(p%divu,idiag_divumz)
         if (idiag_uzdivumz/=0) call xysum_mn_name_z(p%uu(:,3)*p%divu,idiag_uzdivumz)
+        call sign_masked_xyaver(p%uu(:,3),idiag_uzupmz,nuzup)
+        call sign_masked_xyaver(-p%uu(:,3),idiag_uzdownmz,nuzdown)
+        if (idiag_ruzupmz>0) call sign_masked_xyaver(p%rho*p%uu(:,3),idiag_ruzupmz,nruzup)
+        if (idiag_ruzdownmz>0) call sign_masked_xyaver(-p%rho*p%uu(:,3),idiag_ruzdownmz,nruzdown)
         call xysum_mn_name_z(p%oo(:,1),idiag_oxmz)
         call xysum_mn_name_z(p%oo(:,2),idiag_oymz)
         call xysum_mn_name_z(p%oo(:,3),idiag_ozmz)
@@ -4450,6 +4460,10 @@ module Hydro
         idiag_uxmz=0
         idiag_uymz=0
         idiag_uzmz=0
+        idiag_uzupmz=0
+        idiag_uzdownmz=0
+        idiag_ruzupmz=0
+        idiag_ruzdownmz=0
         idiag_divumz=0
         idiag_uzdivumz=0
         idiag_divrhourms=0
@@ -4938,6 +4952,10 @@ module Hydro
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxmz',idiag_uxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uymz',idiag_uymz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzmz',idiag_uzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzupmz',idiag_uzupmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzdownmz',idiag_uzdownmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruzupmz',idiag_ruzupmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ruzdownmz',idiag_ruzdownmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'divumz',idiag_divumz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzdivumz',idiag_uzdivumz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'oxmz',idiag_oxmz)
@@ -5745,7 +5763,7 @@ module Hydro
 !  no profile matches
 !
       case default
-        if (lroot) print*,'duu_dt: No such profile ',interior_bc_hydro_profile
+        if (lroot) print*,'interior_bc_hydro: No such profile ',interior_bc_hydro_profile
       endselect
 !
     endsubroutine interior_bc_hydro

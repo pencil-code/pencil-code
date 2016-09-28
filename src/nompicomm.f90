@@ -1115,11 +1115,11 @@ module Mpicomm
 !
     endsubroutine mpiallreduce_sum_int_scl
 !***********************************************************************
-    subroutine mpiallreduce_sum_int_arr(fsum_tmp,fsum,nreduce,comm)
+    subroutine mpiallreduce_sum_int_arr(fsum_tmp,fsum,nreduce,idir,comm)
 !
       integer :: nreduce
       integer, dimension(nreduce) :: fsum_tmp, fsum
-      integer, optional :: comm
+      integer, optional :: idir,comm
 !
       fsum=fsum_tmp
 !

@@ -3676,17 +3676,28 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !
     endsubroutine mpiallreduce_sum_int_scl
 !***********************************************************************
-    subroutine mpiallreduce_sum_int_arr(fsum_tmp,fsum,nreduce)
+    subroutine mpiallreduce_sum_int_arr(fsum_tmp,fsum,nreduce,idir)
 !
 !  Calculate total sum for each array element and return to all processors.
 !
+!  28-Sep-16/MR: introduce optional argument idir.
+!
       integer :: nreduce
       integer, dimension(nreduce) :: fsum_tmp,fsum
+      integer, optional :: idir
+!
+      integer :: mpiprocs
 !
       if (nreduce==0) return
-
+!
+      if (present(idir)) then
+        mpiprocs=mpigetcomm(idir)
+      else
+        mpiprocs=MPI_COMM_GRID
+      endif
+!
       call MPI_ALLREDUCE(fsum_tmp, fsum, nreduce, MPI_INTEGER, MPI_SUM, &
-                         MPI_COMM_GRID, mpierr)
+                         mpiprocs, mpierr)
 !
     endsubroutine mpiallreduce_sum_int_arr
 !***********************************************************************

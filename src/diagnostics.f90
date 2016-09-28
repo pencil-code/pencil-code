@@ -50,6 +50,7 @@ module Diagnostics
   public :: gen_form_legend
   public :: ysum_mn_name_xz_npar, xysum_mn_name_z_npar, yzsum_mn_name_x_mpar
   public :: zsum_mn_name_xy_mpar_scal, zsum_mn_name_xy_mpar
+  public :: sign_masked_xyaver
 !
   interface max_name
     module procedure max_name_int
@@ -697,7 +698,7 @@ module Diagnostics
 !
 !   6-jun-02/axel: coded
 !
-      real, dimension (nz,nprocz,nnamez) :: fsumz
+      real, dimension(nz,nprocz,nnamez) :: fsumz
 !
 !  Communicate over all processors.
 !  The result is only present on the root processor
@@ -997,9 +998,9 @@ module Diagnostics
         endif
 !
         if (lwrite_avg1d_binary) then
-          read(UNIT) avg
+          read(UNIT,iostat=i) avg
         else
-          read(UNIT,*) avg
+          read(UNIT,*,iostat=i) avg
 !if (i/=0) print*, 'i, nrec=', i, nrec
         endif
 !
@@ -3297,6 +3298,51 @@ if (ios/=0) print*, 'ios, i=', ios, i
       cformrz=''
 !
     endsubroutine allocate_phiaverages
+!***********************************************************************
+    subroutine sign_masked_xyaver(quan,idiag,ncount)
+!
+!  Forms sign-masked averaging over xy-planes (only positive values count).
+!  ncount holds the number of points which contribute.
+!
+!  28-sep-16/MR: coded
+!
+      use Mpicomm, only: mpiallreduce_sum_int, IXYPLANE
+
+      real   ,dimension(nx),intent(IN)   :: quan
+      integer,              intent(IN)   :: idiag
+      integer,dimension(nz),intent(INOUT):: ncount
+
+      real, dimension(nx) :: buf
+      integer, dimension(:), allocatable :: nsum
+
+      if (idiag>0) then
+
+        where (quan>0.)
+          buf=quan
+        elsewhere
+          buf=0.
+        endwhere
+
+        ncount(n-n1+1)=ncount(n-n1+1)+count(buf>0.)
+        call xysum_mn_name_z(buf,idiag)
+
+        if (llastpoint) then
+!
+!  Find total number of contributing points in xy-plane.
+!
+          allocate(nsum(nz))
+          call mpiallreduce_sum_int(ncount,nsum,nz,IXYPLANE)
+!
+!  Form average by dividing by this number. Multiplication with nxygrid
+!  necessary as later the average is divided by that.
+!
+          where (nsum>0) &
+            fnamez(:,ipz,idiag)=fnamez(:,ipz,idiag)/nsum*nxygrid
+          ncount=0
+        endif
+      endif
+
+    endsubroutine sign_masked_xyaver
 !***********************************************************************
     subroutine fnames_clean_up
 !
