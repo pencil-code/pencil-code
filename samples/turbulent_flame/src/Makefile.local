@@ -3,7 +3,7 @@
 ### Included by `Makefile'
 ###
 
-MPICOMM   =   mpicomm
+MPICOMM   =   nompicomm
 HYDRO     =   hydro
 DENSITY   =   density
 ENTROPY   =   temperature_ionization

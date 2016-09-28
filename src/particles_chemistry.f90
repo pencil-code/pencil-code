@@ -1185,7 +1185,7 @@ module Particles_chemistry
       real, dimension(mx,my,mz,mfarray) :: f
       real :: pre_Cg, pre_Cs, pre_RR_hat, pre_k
       real :: pre_kk, Sh, Sh_mean
-      real ::  k_im, kkcg, x_mod, root_term
+      real ::  k_im, kkcg, x_mod,x_mod1, root_term
       integer :: i, j, k, k1, k2, l, ix0, sh_counter
       integer, dimension(mpar_loc,3) :: ineargrid
       real, dimension(:), allocatable :: rep, nuvisc
@@ -1261,8 +1261,11 @@ module Particles_chemistry
               if (idiag_Shchm /= 0) then
                 Sh_mean = 0.0
               endif
+!
+              RR_hat(k,1:N_surface_reactions) = K_k(k,1:N_surface_reactions) &
+                  *reaction_enhancement(1:N_surface_reactions)
+!
               do j = 1,N_surface_reactions
-                RR_hat(k,j) = K_k(k,j)*reaction_enhancement(j)
 !
 !  Take into account temperature dependance
 !
@@ -1295,8 +1298,13 @@ module Particles_chemistry
 !
                       k_im = Cg(k)*p%Diff_penc_add(ix0-nghost,jmap(i))*Sh/(2.0*fp(k,iap))
                       kkcg = RR_hat(k,j)*Cg(k)*pre_kk
-                      root_term = sqrt((k_im-kkcg)**2 + 4*k_im*fp(k,isurf-1+i)*kkcg)
-                      x_mod = (-k_im+kkcg+root_term)/2/kkcg
+                      root_term = sqrt((k_im+kkcg)**2 + 4*k_im*fp(k,isurf-1+i)*(-dngas(j))*kkcg)
+                      x_mod1 = (-kkcg-k_im+root_term)/2/(-dngas(j)*kkcg)
+                      if (x_mod1 >= 0.0 .and. x_mod1 <= fp(k,isurf-1+i)) then
+                        x_mod=x_mod1
+                      else
+                        call fatal_error('particles_chemistry','no baum and street solution!')
+                      endif
                       RR_hat(k,j) = RR_hat(k,j) * (pre_Cg * Cg(k)*x_mod)**nu(i,j)
                     endif
                   enddo

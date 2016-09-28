@@ -67,12 +67,13 @@ class TimeSeries(object):
                     self.keys = keys_new
             else:
                 try:
-                    row = np.array(list(map(float, re.split(" +", line.strip(" \n")))))
-                    data[nlines, :] = row
-                    nlines += 1
+					line = line.replace('2.08756-300','0.00000E+00')
+					row = np.array(list(map(float, re.split(" +", line.strip(" \n")))))
+					data[nlines, :] = row
+					nlines += 1
                 except ValueError:
                     #print "Invalid data on line %i. Skipping." % nlines # Python 2
-                    print("Invalid data on line {0}. Skipping.".format(nlines))
+                    print 'Invalid dat on line ' +str(nlines) + ' skipping'
         # Clean up data.
         data = np.resize(data, (nlines, len(self.keys)))
 
