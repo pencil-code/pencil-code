@@ -486,6 +486,15 @@ function pc_compute_quantity, vars, index, quantity
 		; Gravity force z-component
 		return, (pc_compute_quantity (vars, index, 'F_grav'))[*,*,*,2]
 	end
+	if (strcmp (quantity, 'rho_u', /fold_case)) then begin
+		; Impulse density
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
+		return, pc_get_quantity_scalar_to_vector (rho) * pc_compute_quantity (vars, index, 'u')
+	end
+	if (strcmp (quantity, 'rho_u_abs', /fold_case)) then begin
+		; Impulse density absolute value
+		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'rho_u')))
+	end
 	if (strcmp (quantity, 'rho_u_x', /fold_case)) then begin
 		; Impulse density x-component
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')

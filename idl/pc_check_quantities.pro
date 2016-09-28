@@ -190,6 +190,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		F_grav_x:'Gravity force x', $
 		F_grav_y:'Gravity force y', $
 		F_grav_z:'Gravity force z', $
+		rho_u_abs:'impulse density absolute value', $
 		rho_u_x:'impulse density x', $
 		rho_u_y:'impulse density y', $
 		rho_u_z:'impulse density z', $
@@ -250,7 +251,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		grad_Temp:'grad temperature', $
 		grad_P_therm:'grad thermal pressure', $
 		a_grav:'Gravity acceleration', $
-		F_grav:'Gravity force' $
+		F_grav:'Gravity force', $
+		rho_u:'impulse density' $
 	}
 
 	; Additional quantities without dependencies.
@@ -377,9 +379,11 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		F_grav_x:'F_grav', $
 		F_grav_y:'F_grav', $
 		F_grav_z:'F_grav', $
-		rho_u_x:['u', 'rho'], $
-		rho_u_y:['u', 'rho'], $
-		rho_u_z:['u', 'rho'], $
+		rho_u:['u', 'rho'], $
+		rho_u_abs:'rho_u', $
+		rho_u_x:['u_x', 'rho'], $
+		rho_u_y:['u_y', 'rho'], $
+		rho_u_z:['u_z', 'rho'], $
 		Rn_viscous:'u', $
 		Rn_mag:['u','B'], $
 		q_sat:['Temp', 'rho'], $
