@@ -1298,12 +1298,21 @@ module Particles_chemistry
 !
                       k_im = Cg(k)*p%Diff_penc_add(ix0-nghost,jmap(i))*Sh/(2.0*fp(k,iap))
                       kkcg = RR_hat(k,j)*Cg(k)*pre_kk
-                      root_term = sqrt((k_im+kkcg)**2 + 4*k_im*fp(k,isurf-1+i)*(-dngas(j))*kkcg)
-                      x_mod1 = (-kkcg-k_im+root_term)/2/(-dngas(j)*kkcg)
-                      if (x_mod1 >= 0.0 .and. x_mod1 <= fp(k,isurf-1+i)) then
-                        x_mod=x_mod1
+!
+                      if (dngas(j) /= 0.0) then
+                        root_term = sqrt((k_im+kkcg)**2 + 4*k_im*fp(k,isurf-1+i)*(-dngas(j))*kkcg)
+                        x_mod1 = (-kkcg-k_im+root_term)/2/(-dngas(j)*kkcg)
+                        if (x_mod1 >= 0.0 .and. x_mod1 <= fp(k,isurf-1+i)) then
+                          x_mod=x_mod1
+                          if (ldiagnos) then
+                            print*, 'infos',x_mod, fp(k,isurf-1+i)
+                          endif
+                        else
+                          call fatal_error('particles_chemistry','no baum and street solution!')
+                        endif
                       else
-                        call fatal_error('particles_chemistry','no baum and street solution!')
+                          x_mod = k_im * fp(k,isurf-1+i) / (k_im + kkcg)
+                          if(ldiagnos) print*, 'infos',x_mod, fp(k,isurf-1+i)
                       endif
                       RR_hat(k,j) = RR_hat(k,j) * (pre_Cg * Cg(k)*x_mod)**nu(i,j)
                     endif
