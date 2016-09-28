@@ -1580,25 +1580,26 @@ module PointMasses
 !
       if (enum) then
 !
-         if (lfirst_call) then
+        if (lfirst_call) then
           call safe_character_assign(filename_diag,trim(datadir)//'/tsnap.dat')
           call read_snaptime(filename_diag,tsnap,nsnap,dsnap,t)
           lfirst_call=.false.
         endif
-
+!
         call update_snaptime(filename_diag,tsnap,nsnap,dsnap,t,lsnap,nsnap_ch,nowrite=.true.)
         if (lsnap) then
           snapname=trim(snapbase)//nsnap_ch
 !
-!  Write number of massive particles and their data
+!  Write number of massive particles and their data -- only root needs. 
 !
-          open(lun_output,FILE=snapname,FORM='unformatted')
-          write(lun_output) nqpar
-          if (nqpar/=0) write(lun_output) fq
-          write(lun_output) t
-          close(lun_output)
-          if (ip<=10 .and. lroot) &
-               print*,'written snapshot ', snapname
+          if (lroot) then
+            open(lun_output,FILE=snapname,FORM='unformatted')
+            write(lun_output) nqpar
+            if (nqpar/=0) write(lun_output) fq
+            write(lun_output) t
+            close(lun_output)
+            if (ip<=10) print*,'written snapshot ', snapname
+          endif
           if (present(flist)) call log_filename_to_file(snapname,flist)
         endif
       else
@@ -1606,17 +1607,16 @@ module PointMasses
 !  Write snapshot without label
 !
         snapname=snapbase
-        open(lun_output,FILE=snapname,FORM='unformatted')
-        write(lun_output) nqpar
-        if (nqpar/=0) write(lun_output) fq
-        write(lun_output) t
-        close(lun_output)
-        if (ip<=10 .and. lroot) &
-             print*,'written snapshot ', snapname
+        if (lroot) then 
+          open(lun_output,FILE=snapname,FORM='unformatted')
+          write(lun_output) nqpar
+          if (nqpar/=0) write(lun_output) fq
+          write(lun_output) t
+          close(lun_output)
+          if (ip<=10) print*,'written snapshot ', snapname
+        endif
         if (present(flist)) call log_filename_to_file(snapname,flist)
       endif
-!
-      call keep_compiler_quiet(flist)
 !
     endsubroutine pointmasses_write_snapshot
 !***********************************************************************
