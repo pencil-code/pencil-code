@@ -115,11 +115,13 @@ module Selfgravity
 !  If gravitational constant was set, re-define rhs_poisson_const.
 !  else define the gravitational constant via rhs_poisson_const
 !
-      if (gravitational_const/=0.0) then
-        rhs_poisson_const=4*pi*gravitational_const
-      else
-        gravitational_const=rhs_poisson_const/(4*pi)
-      endif
+!  29-aug-2016/vince: the poisson_logspirals module that should be
+!                     used with this selfgravity_logspirals module
+!                     uses the constant on the rhs of the poisson
+!                     equation in its construction of the solution.
+!                     it must therefore be left as unity here.
+!
+      if (gravitational_const==0) gravitational_const=rhs_poisson_const/(4*pi)
 !
       if (.not.lpoisson) then
         if (lroot) print*, 'initialize_selfgravity: must choose a Poisson '// &

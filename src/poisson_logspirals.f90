@@ -1,8 +1,21 @@
 ! $Id$
 !
-! This method will contain (more or less) a replica of poisson.f90, which is a module linked to the 
-! pencil code for computing  potential from density. It will implement the version of poisson
+! This module contains (more or less) a replica of poisson.f90, implementing the version of poisson
 ! equation solving that I have been building (the method outlined in Clement Baruteau's thesis).
+!
+! The poisson equation on a cylindrical grid is inverted, giving the potential (or the radial and
+! azimuthal components of gravitational acceleration) as integrals over cylindrical coordinates. The
+! integrals may be replaced by convolution products, by switching to radial coordinate u=ln(r/rmin),
+! spacing radial points logarithmically (such that u is evenly spaced), and making the smoothing
+! factor proportional to the radius. Given that these conditions are met, the resulting convolution
+! product is computed in Fourier space and transformed to physical space at expense O(nlogn) over a
+! grid with n points, compared to O(n^2) for the integral.
+!
+! In order to avoid forcing the periodicity of the Fourier space representation on the final result,
+! a grid with twice as many gridpoints in every non-periodic dimension must be used for the Fourier
+! analysis. In cylindrical coordinates, this means there must be twice as many points in the radial
+! direction (and in the z direction for 3d computations) as there are holding the region of physical
+! interest.
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -12,6 +25,7 @@
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
+! COMMUNITCATED AUXILIARIES 0
 !
 !***************************************************************
 module Poisson
@@ -35,7 +49,7 @@ module Poisson
   logical :: luse_fourier_transform = .false.
 !
 ! Variables to be used
-!      
+!
   real :: innerRadius
   real :: outerRadius
   real :: uMax
@@ -43,8 +57,9 @@ module Poisson
   real :: phiMax
   real :: du,dphi
   real, dimension(2*nx,ny) :: u2d,phi2d,sigma,sr,sphi,sv,kr,kphi,kv,gr,gphi
-  real, dimension(nx,ny) :: r
+  real, dimension(nx) :: r1d
   real :: B,B2
+  integer :: counter=1
 !
 contains
 !***********************************************************************
@@ -56,8 +71,8 @@ contains
 !  18-oct-07/anders: adapted
 !
       if (nzgrid/=1) then
-        if (lroot) print*, 'inverse_laplacian_fft: logspirals only works with nzgrid==1'
-        call fatal_error('inverse_laplacian_fft','')
+        if (lroot) print*, 'initialize_poisson: logspirals only works with nzgrid==1'
+        call fatal_error('initialize_poisson','')
       endif
 !
 !  Dimensionality
@@ -66,11 +81,16 @@ contains
 !
 ! Mask values from elsewhere
 !
-      innerRadius=xyz0(1)
-      outerRadius=xyz1(1)
+      !if (y(m1)/=0.0) then
+      !   
+      !   y=y-y(m1)
+      !endif
+!
+      innerRadius=x(l1)
+      outerRadius=x(l2)
       uMax=log(outerRadius/innerRadius)
-      phiMin=xyz0(2)
-      phiMax=xyz1(2)
+      phiMin=y(m1)
+      phiMax=y(m2)
 !
 !  Coordinates u,phi (Fourier grid) and r,x,y (physical grid) are generated
 !
@@ -82,6 +102,41 @@ contains
 !
     endsubroutine initialize_poisson
 !***********************************************************************
+    subroutine check_setup
+!
+!  This routine is only called from initialize_poisson in
+!  poisson_logspirals.f90.
+!
+!  It's sole purpose is to check various initial configuration
+!  parameters, to ensure that the poisson equation solver will
+!  function properly.
+!
+!  28-sep-2016/vince: coded
+!
+      if(lshift_origin(2).or..not.lshift_origin_lower(2)) then
+         if (lroot) then
+            print*, 'initialize_poisson: logspirals only works when phi=[0,2pi)'
+            print*, 'You currently have an origin-shifting configuration for the phi'
+            print*, 'coordinate that, because of the way the coordinates are generated' 
+            print*, 'by grid.f90, will result in an incompatible range.Please set'
+            print*, 'lshift_origin(2) to "F" and lshift_origin_lower(2) to "T" in start.in'
+         endif
+         call fatal_error('initialize_poisson','')
+      endif
+      if(xyz0(2)/=0.0) then
+         if (lroot) then
+            print*, 'initialize_poisson: logspirals only works when phi=[0,2pi)'
+            print*, 'You currently have a different range specified for the phi'
+            print*, 'coordinate. Please set xyz0(2) to 0.0 in you start.in file.'
+            print*, 'Additionally, it should be noted that this method is very'
+            print*, 'sensitive to the periodicity of phi, and as such the maximum'
+            print*, 'phi value should be specified to machine precision; setting'
+            print*, 'xyz1(2) to 6.28318530717958647688 does the trick.'
+         endif
+         call fatal_error('initialize_poisson','')
+      endif
+    endsubroutine check_setup
+!***********************************************************************
     subroutine inverse_laplacian(phi,gpotself)
 !
 !  Dispatch solving the Poisson equation to inverse_laplacian_fft
@@ -90,11 +145,12 @@ contains
 !  17-jul-2007/wolf: coded wrapper
 !
       real, dimension(nx,ny,nz), intent(inout) :: phi
-      real, dimension(nx,ny,nz), intent(inout), optional :: gpotself
+      real, dimension(nx,ny,nz,3), intent(inout), optional :: gpotself
+
 !
       if (lcylindrical_coords) then
 !
-        if (present(gpotself)) then 
+        if (present(gpotself)) then
           call inverse_laplacian_logradial_fft(phi,gpotself)
         else
           call fatal_error("inverse_laplacian","poisson_logspirals works with the acceleration only")
@@ -218,19 +274,16 @@ contains
 !
     endsubroutine write_poisson_run_pars
 !***********************************************************************
-!----------------------------------------------------------------------
-!                       Routines for logspirals!                              
-!----------------------------------------------------------------------
-!
-!***********************************************************************
     subroutine inverse_laplacian_logradial_fft(potential,gpotself)
+!
+      !use IO, only: output_globals
 !
 ! Solve the Poisson equation by Fourier transforming on a periodic grid,
 ! in cylindrical coordinates with a log spaced radial coordinate.
 !
 ! 18-aug-2016/vince: coded
-!     
-      real, dimension(nx,ny,nz), intent(inout) :: potential      
+!
+      real, dimension(nx,ny,nz), intent(inout) :: potential
       real, dimension(nz,ny,nz,3), intent(inout) :: gpotself
 !
 ! The density will be passed in via potential, but needs to be put on the fourier grid
@@ -238,7 +291,7 @@ contains
 !
       call generate_fourier_density(potential)
 !
-! Finally, mass fields and kernals for each integral (gr,gphi,V)
+! Mass fields for each integral (gr,gphi,V)
 !
       call generate_massfields()
 !
@@ -252,19 +305,31 @@ contains
     subroutine generate_coordinates()
 !
 ! Generates all coordinates that will be used, sets the smoothing factor (function of the 
-! radial spacing)
+! radial spacing). Coordinates needed for the method are constructed by reading in existing
+! coordinates.
 !
       real, dimension(ny) :: phi1d
       real, dimension(2*nx) :: u1d
 !
-      u1d=linspace(start=0.0,end=2*uMax,n=size(u1d,1),step_size=du,endpoint=.true.)
-      phi1d=linspace(start=phiMin,end=phiMax,n=size(phi1d,1),step_size=dphi,endpoint=.false.)
-!        
+      r1d=x(l1:l2)
+      u1d(:nx)=log(r1d/innerRadius)
+      du=u1d(2)-u1d(1)
+!
+! The u coordinate will need to be extended into the Fourier cells by one unit, for the
+! purposes of enforcing particular boundary conditions on the Kernal over the Fourier cells
+! later. All u values beyond the first cell of the Fourier grid are inconsequential, and
+! may be set to 0.0
+!
+      u1d(nx+1)=u1d(nx)+du
+      u1d(nx+2:)=0.0
+!
+      phi1d=y(m1:m2)
+      dphi=dy
+!
       B=.01*du
-      B2=B**2    
+      B2=B**2
 !
       call meshgrid(u1d,phi1d,u2d,phi2d)
-      r=innerRadius*exp(u2d(:nx,:))
 !
     endsubroutine generate_coordinates
 !***********************************************************************
@@ -273,7 +338,7 @@ contains
 ! Put the density (passed in on the physical grid) onto the extended
 ! Fourier grid, with 0's in the extra Fourier cells.
 ! 
-      real, dimension(:,:,:), intent(inout) :: potential
+      real, dimension(nx,ny,nz), intent(in) :: potential
 !
       sigma(nx+1:,:)=0.0
       sigma(:nx,:)=potential(:,:,1)
@@ -288,15 +353,15 @@ contains
 !
       real, dimension(2*nx,ny) :: u_k,krNumerator,kphiNumerator,kernalDenominator
 !
-      u_k(:nx,:)=u2d(:nx,:)          
+      u_k(:nx,:)=u2d(:nx,:)
       u_k(nx+1:,:)=-u2d(nx+1:2:-1,:)
-
+!
       krNumerator=1+B2-exp(-u_k)*cos(phi2d)
       kphiNumerator=sin(phi2d)
       kernalDenominator=(2.*(cosh(u_k)-cos(phi2d))+B2*exp(u_k))**(1.5)
       kr=krNumerator/kernalDenominator
       kphi=kphiNumerator/kernalDenominator
-        
+!
       kv=1/sqrt((1+B2)*exp(u_k)+exp(-u_k)-2*cos(phi2d)) !changed from **-.5 to 1/sqrt
 !
     endsubroutine generate_kernals
@@ -325,6 +390,7 @@ contains
 !
       call fftconvolve(kr,sr,gr_convolution)
       call fftconvolve(kphi,sphi,gphi_convolution)
+!
       gr_factor=-Gnewton*exp(-u2d/2)*du*dphi
       gphi_factor=-Gnewton*exp(-3*u2d/2)*du*dphi
 !
@@ -347,8 +413,7 @@ contains
 ! Uses kernals and mass fields for the potential integral to calculate
 ! potential on the grid NOTE: Should actually calculate potential from
 ! the accelerations, since the log radial convolution product produces
-! potentials which are known to violate Newton's first law (due to the
-! smoothing factor being a function of radius), but produces accelerations
+! potentials which are known to violate Newton's first law, but produces accelerations
 ! that are free of this behavior (See Towards Predictive Scenarios of
 ! Planetary Migration, by Clement Baruteau)
 !
@@ -366,7 +431,7 @@ contains
 !***********************************************************************
     subroutine fftconvolve(array1,array2,convolution)
 !
-! convolution product using the pendil code fft methods to do the ffts
+!  convolution product using the pendil code fft methods to do the ffts
 !
       real, intent(in), dimension(:,:) :: array1
       real, intent(in), dimension(:,:) :: array2
@@ -376,13 +441,14 @@ contains
       real, dimension(size(convolution,1),size(convolution,2)) :: array2_fourier_real,array2_fourier_imaginary
       real, dimension(size(convolution,1),size(convolution,2)) :: convolution_fourier_real
       real, dimension(size(convolution,1),size(convolution,2)) :: convolution_fourier_imaginary
-      integer :: nrow,ncol,i,j
+      integer :: nrow,ncol
       logical :: array1_convolution_diffshape,array2_convolution_diffshape
 !
       array1_convolution_diffshape=(size(array1,1)/=size(convolution,1)).or.(size(array1,2)/=size(convolution,2))
       array2_convolution_diffshape=(size(array2,1)/=size(convolution,1)).or.(size(array2,2)/=size(convolution,2))
       if (array1_convolution_diffshape.or.array2_convolution_diffshape) then
-         write(*,*) 'Input and output arrays must be the same shape as each other.'
+         print*,'fftconvolve: input and output arrays must be the same shape as each other.'
+         call fatal_error('fftconvolve','')
          stop
       else
 !
@@ -397,27 +463,36 @@ contains
          array2_fourier_real=array2
          array2_fourier_imaginary=0.0
       end if
-        !There may be some significant optimization that can be done above
-
-        !Transforming the arrays
-        !call fourier_transform_other_2(array1_fourier_real,array1_fourier_imaginary,.false.)
-        !call fourier_transform_other_2(array2_fourier_real,array2_fourier_imaginary,.false.)
-
-        !Now, the convolution product must be calculated by multiplying the transformed arrays.
-        !To ensure that the multiplication is carried out correctly, the real and imaginary parts
-        !of the transformed arrays are first recombined into complex numbers, then multiplied.
-        !Afterwards, the convolution is separated back into its real and imaginary components in
-        !preparation for its own inverse transform.
-      convolution_fourier=cmplx(array1_fourier_real,array1_fourier_imaginary)*cmplx(array2_fourier_real,array2_fourier_imaginary)
-      convolution_fourier_real=real(convolution_fourier)
-      convolution_fourier_imaginary=aimag(convolution_fourier)
-
-        !Inverse transform
-        !call fourier_transform_other_2(convolution_fourier_real,convolution_fourier_imaginary,.true.)
-
-        !If all went according to plan, the end result should be purely real.
+!
+!  Transforming the arrays
+!  NOTE: the pencil code normalized Fourier transforms on the way forward, so each
+!        array will pick up a factor of 1/(nrow*ncol) here. This will be important later
+!
+      call fourier_transform_other(array1_fourier_real,array1_fourier_imaginary,.false.)
+      call fourier_transform_other(array2_fourier_real,array2_fourier_imaginary,.false.)
+!
+!  Now, the convolution product must be calculated by multiplying the transformed arrays.
+!  They must be multiplied as complex numbers; to save space and function calls, the real
+!  and imaginary parts of the product are calculated separately from the real and imaginary
+!  parts of the two arrays.
+!  NOTE: the convolution product will have a factor of 1/(nrow*ncol)^2, since each array will
+!        have picked up a separate normalization factor from the forward transform. This is
+!        not desirable: as the convolution product is the result of forward transforming and
+!        subserquently inverse transforming, the final product should have a single normalization
+!        factor. To this end, a factor of (nrow*ncol) is added to the components of the product
+!        in Fourier space, such that the Fourier product has a single normalization factor.
+!
+      convolution_fourier_real=(nrow*ncol)* &
+          (array1_fourier_real*array2_fourier_real-array1_fourier_imaginary*array2_fourier_imaginary)
+      convolution_fourier_imaginary=(nrow*ncol)* &
+          (array1_fourier_real*array2_fourier_imaginary+array1_fourier_imaginary*array2_fourier_real)
+!
+!  Finally, the inverse transform moves the convolution product to ordinary space.
+!
+      call fourier_transform_other(convolution_fourier_real,convolution_fourier_imaginary,.true.)
+!
       convolution=convolution_fourier_real
-
+!
     endsubroutine fftconvolve
 !***********************************************************************
 endmodule Poisson
