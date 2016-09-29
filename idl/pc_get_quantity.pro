@@ -1091,7 +1091,7 @@ function pc_get_quantity, quantity, vars, index, varfile=varfile, units=units, d
 	if (keyword_set (cleanup) and not keyword_set (cache)) then pc_quantity_cache_cleanup
 
 	if (n_elements (quantity) eq 0) then quantity = ""
-	if (not any (quantity ne "") or (n_elements (vars) eq 0) or ((n_elements (index) eq 0) and (size (vars, /type) ne 8) and (size (vars, /type) ne 7))) then begin
+	if (not any (quantity ne "") or ((n_elements (vars) eq 0) and (n_elements (varfile) eq 0)) or ((n_elements (index) eq 0) and (size (vars, /type) ne 8) and (size (vars, /type) ne 7) and (size (varfile, /type) ne 7))) then begin
 		; Print usage
 		print, "USAGE:"
 		print, "======"
