@@ -1081,7 +1081,7 @@ end
 
 
 ; Calculation of physical quantities.
-function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, datadir=datadir, cache=cache, cleanup=cleanup, verbose=verbose
+function pc_get_quantity, quantity, vars, index, varfile=varfile, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, datadir=datadir, cache=cache, cleanup=cleanup, verbose=verbose
 
 	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
@@ -1124,8 +1124,8 @@ function pc_get_quantity, quantity, vars, index, units=units, dim=dim, grid=grid
 		return, -1
 	end
 
-	if (size (vars, /type) eq 7) then begin
-		varfile = vars
+	if (size (vars, /type) eq 7) then varfile = vars
+	if (size (varfile, /type) eq 7) then begin
 		pc_read_var_raw, obj=vars, varfile=varfile, tags=index, datadir=datadir, dim=dim, grid=grid, start_param=start_param, run_param=run_param, quiet=quiet
 	end
 
