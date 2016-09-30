@@ -436,6 +436,7 @@ module Special
 !
       elseif (lread_prof_deltaT) then
         call read_profile (deltaT_dat, deltaT_init_z, real(unit_temperature), .false.)
+        deltaT_init_z /= unit_time
       elseif (index (prof_type, 'internal_') == 1) then
         call warning ('read_profiles', "using internal profile '"//trim(prof_type)//"'.")
       elseif (index (prof_type, 'initial_') == 1) then
