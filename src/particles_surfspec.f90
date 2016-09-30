@@ -452,8 +452,8 @@ module Particles_surfspec
       real, dimension(mpar_loc,mparray) :: fp
       real, dimension(mpar_loc,mpvar) :: dfp
       real, dimension(nx,nchemspec) :: chem_reac
-      real, dimension(:,:), allocatable :: term, ndot, enth
-      real, dimension(:), allocatable :: Cg, mass_loss
+      real, dimension(:,:), allocatable :: term, ndot
+      real, dimension(:), allocatable :: Cg_surf, mass_loss
       real :: porosity
       type (pencil_case) :: p
       integer, dimension(mpar_loc,3) :: ineargrid
@@ -505,21 +505,15 @@ module Particles_surfspec
 !
           if (ldiffuse_backenth) f(l1:l2,m,n,ispecenth) = 0.0
 !
-!
-          allocate(term(k1:k2,1:N_surface_reactants))
-          allocate(ndot(k1:k2,1:N_surface_species))
-          if (lpchem_mass_enth) allocate(enth(k1:k2,1:N_surface_species))
-          allocate(Cg(k1:k2))
+          allocate(Cg_surf(k1:k2))
           allocate(mass_loss(k1:k2))
+          allocate(ndot(k1:k2,N_surface_species))
+          allocate(term(k1:k2,N_surface_reactants))
 !
           call get_shared_variable('true_density_carbon',true_density_carbon,ierr)
 !
           call calc_mass_trans_reactants()
-          if (lpchem_mass_enth) then
-            call get_surface_chemistry(Cg,ndot,mass_loss,enth)
-          else
-            call get_surface_chemistry(Cg,ndot,mass_loss)
-          endif
+          call get_surface_chemistry(Cg_surf,ndot,mass_loss)
 !
 !  set surface gas species composition
 !  (infinite diffusion, set as far field and convert from
@@ -552,7 +546,7 @@ module Particles_surfspec
 !
 ! the term 3/fp(k,iap) is ratio of the surface of a sphere to its volume
 !
-                dfp(k,isurf+i-1) = dfp(k,isurf+i-1) + 3*term(k,i)/(porosity*Cg(k)*fp(k,iap))
+                dfp(k,isurf+i-1) = dfp(k,isurf+i-1) + 3*term(k,i)/(porosity*Cg_surf(k)*fp(k,iap))
                 if (lparticles_adsorbed) then
                   print*, 'term(k,i)',term(k,i)
                   print*, 'dfp(k,isurf+i-1): ',k,i,dfp(k,isurf+i-1)
@@ -597,10 +591,6 @@ module Particles_surfspec
 !  Qenth = ndot(mol/s/m2)*A(m2)*enth(J/mol)=J/s
 !  to convert to erg, the value has to be multiplied with 1e7 for values
 !  fetched from particles_chemistry
-!
-!  Enthalpy from the Stanford code calculation
-!
-!                  denth=denth+ndot(k,i)*A_p*enth(k,i)*1e7
 !
 !  Enthalpy from Pencil code at particles temperature
 !
@@ -798,9 +788,8 @@ module Particles_surfspec
 !
           if (allocated(term)) deallocate(term)
           if (allocated(ndot)) deallocate(ndot)
-          if (allocated(Cg))   deallocate(Cg)
+          if (allocated(Cg_surf))   deallocate(Cg_surf)
           if (allocated(mass_loss))   deallocate(mass_loss)
-          if (allocated(enth)) deallocate(enth)
         endif
 !
       endif
@@ -929,8 +918,7 @@ module Particles_surfspec
       else
         if (inuCH2 > 0) call fatal_error('create_jmap','no CH2 found')
       endif
-!
-      call find_species_index('HCO',index_glob,index_chem,found_species)
+!      call find_species_index('HCO',index_glob,index_chem,found_species)
       if (found_species) then
         jHCO = index_chem
       else
@@ -979,6 +967,7 @@ module Particles_surfspec
       allocate(mass_trans_coeff_reactants(k1:k2,N_surface_reactants),STAT=stat)
       if (stat > 0) call fatal_error('register_indep_psurfchem', &
           'Could not allocate memory for mass_trans_coeff_reactants')
+!
     endsubroutine allocate_surface_pencils
 ! ******************************************************************************
 !
@@ -987,8 +976,10 @@ module Particles_surfspec
 !  nov-14/jonas: coded
 !
     subroutine cleanup_surf_pencils()
+!
       deallocate(mass_trans_coeff_species)
       deallocate(mass_trans_coeff_reactants)
+!
     endsubroutine cleanup_surf_pencils
 ! ******************************************************************************
 !
@@ -998,12 +989,13 @@ module Particles_surfspec
 !
     subroutine calc_psurf_pencils(f,fp,p,ineargrid)
       real, dimension(mpar_loc,mparray), intent(in) :: fp
-      real, dimension(mx,my,mz,mfarray) :: f
-      integer, dimension(mpar_loc,3) :: ineargrid
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      integer, dimension(mpar_loc,3), intent(in) :: ineargrid
       type (pencil_case) :: p
 !
       call allocate_surface_pencils()
       call calc_mass_trans_coeff(f,fp,p,ineargrid)
+!
     endsubroutine calc_psurf_pencils
 ! ******************************************************************************
 !  diffusion coefficients of gas species at nearest grid point
@@ -1011,22 +1003,22 @@ module Particles_surfspec
 !  oct-14/Jonas: coded
 !
     subroutine calc_mass_trans_coeff(f,fp,p,ineargrid)
-      real, dimension(:,:,:,:) :: f
+      real, dimension(mx,my,mz,mparray), intent(in) :: f
       real, dimension(mpar_loc,mparray), intent(in) :: fp
       type (pencil_case) :: p
-      integer, dimension(:,:) :: ineargrid
+      integer, dimension(mpar_loc,3), intent(in) :: ineargrid
       integer :: k, k1, k2,i
       integer :: ix0
       integer :: spec_glob, spec_chem
       real :: diff_coeff_species
-      real, dimension(:), allocatable :: Cg
+      real, dimension(:), allocatable :: Cg_diff
 !
       if (npar_imn(imn) /= 0) then
         k1 = k1_imn(imn)
         k2 = k2_imn(imn)
 !
 !        allocate(diff_coeff_species(k1:k2,N_species))
-        allocate(Cg(k1:k2))
+        allocate(Cg_diff(k1:k2))
 !
 !        do k = k1,k2
 !          ix0 = ineargrid(k,1)
@@ -1035,17 +1027,20 @@ module Particles_surfspec
 !          enddo
 !        enddo
 !
-        call get_surface_chemistry(Cg)
+        do k = k1,k2
+          Cg_diff(k) = k
+        enddo
+
+        call get_surface_chemistry(Cg_diff(:))
         do k = k1,k2
           ix0 = ineargrid(k,1)
           do i = 1,N_surface_species
             diff_coeff_species = p%Diff_penc_add(ix0-nghost,jmap(i))
-            mass_trans_coeff_species(k,i) = Cg(k)*diff_coeff_species/ fp(k,iap)
+            mass_trans_coeff_species(k,i) = Cg_diff(k)*diff_coeff_species/ fp(k,iap)
           enddo
         enddo
 !
-!        deallocate(diff_coeff_species)
-        deallocate(Cg)
+        if (allocated(Cg_diff)) deallocate(Cg_diff)
       endif
 !
     endsubroutine calc_mass_trans_coeff

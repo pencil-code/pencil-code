@@ -430,6 +430,7 @@ module Particles_chemistry
 !  oct-14/Jonas: coded
 !
     subroutine calc_St(fp)
+!
       real, dimension(mpar_loc,mparray), intent(in) :: fp
       real :: rho_p_init
       integer :: k, k1, k2
@@ -1074,7 +1075,7 @@ module Particles_chemistry
       real :: pre_pressure
       real :: k_p, k_c
       real :: denominator, expo
-      real, dimension(mpar_loc,mparray) :: fp
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
 !
 !  This should be kept in SI units, therefore a prefactor to the pressure is
 !  introduced to keep interp_pp in SI units
@@ -1827,7 +1828,7 @@ module Particles_chemistry
 !  oct-14/Jonas: coded
 !
     subroutine calc_surf_entropy(fp)
-      real, dimension(mpar_loc,mparray) :: fp
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
       integer :: k, k1, k2
 !
       if (lheat_per_pencil) then
@@ -1955,7 +1956,7 @@ module Particles_chemistry
 !  oct-14/Jonas: coded
 !
     subroutine calc_ads_enthalpy(fp)
-      real, dimension(mpar_loc,mparray) :: fp
+      real, dimension(mpar_loc,mparray), intent(in) :: fp
       integer :: k, k1, k2
 !
 !  JONAS: values are from nist and solid_phase.f90 of the stanford
@@ -2504,6 +2505,7 @@ module Particles_chemistry
     subroutine calc_q_reac(fp)
 !
       integer :: k, k1, k2, i, ierr
+      real :: test
       real, dimension(mpar_loc,mparray), intent(in) :: fp
 !
       k1 = k1_imn(imn)
@@ -2511,10 +2513,26 @@ module Particles_chemistry
       q_reac = 0.0
 !
       if (lheat_per_pencil) then
-        do k=k1,k2
-          q_reac(k) = sum(RR_hat(k,1:N_surface_reactions)* &
-              (-heating_k(int(fp(k,iTp)),1:N_surface_reactions)))
-        enddo
+        if (k1 /= k2 .and. N_surface_reactions /= 1 ) then
+!
+          do k=k1,k2
+            q_reac(k) = sum(RR_hat(k,1:N_surface_reactions)* &
+                (-heating_k(int(fp(k,iTp)),1:N_surface_reactions)))
+          enddo
+        elseif (N_surface_reactions /=1 .and. k1 == k2) then
+!
+          q_reac(k1) = sum(RR_hat*(-heating_k))
+!
+        elseif (N_surface_reactions == 1 .and. k1 /= k2) then
+!
+          do k=k1,k2
+            q_reac(k) = RR_hat(k,1)*(-heating_k(int(fp(k,iTp)),1))
+          enddo
+        else
+!
+          q_reac(:) = RR_hat(:,1) * (-heating_k(:,1))
+!
+        endif
         q_reac(k1:k2) = q_reac(k1:k2)*St(k1:k2)
       else
         q_reac(k1:k2) = sum(RR_hat(k1:k2,1:N_surface_reactions)* &
@@ -2704,17 +2722,20 @@ module Particles_chemistry
 !  Get surface-chemistry dependent variables!
 !  oct-14/Jonas: coded
 !
-    subroutine get_surface_chemistry(Cg_targ,ndot_targ,mass_loss_targ,enth_targ)
-      real, dimension(:,:), optional :: ndot_targ, enth_targ
+    subroutine get_surface_chemistry(Cg_targ,ndot_targ,mass_loss_targ)
+      real, dimension(:,:), optional :: ndot_targ
       real, dimension(:) :: Cg_targ
       real, dimension(:), optional :: mass_loss_targ
+      integer ::  k1,k2,k,i
 !
-      if (present(ndot_targ)) ndot_targ = ndot
-      if (present(enth_targ)) enth_targ = surface_species_enthalpy
-      if (present(mass_loss_targ)) mass_loss_targ = mass_loss
-!      print*, 'Cg_targ',Cg_targ(k1:k2)
-!      print*, 'Cg',Cg(k1:k2)
-      Cg_targ = Cg
+      k1=k1_imn(imn)
+      k2=k2_imn(imn)
+!
+      if (present(ndot_targ)) ndot_targ(1:k2-k1+1,:) = ndot(k1:k2,:)
+!
+      if (present(mass_loss_targ)) mass_loss_targ(1:k2-k1+1) = mass_loss(k1:k2)
+!
+      Cg_targ(1:k2-k1+1) = Cg(k1:k2)
 !
 !
     endsubroutine get_surface_chemistry
@@ -2725,10 +2746,14 @@ module Particles_chemistry
     subroutine get_temperature_chemistry(q_reac_targ,mass_loss_targ)
       real, dimension(:) :: q_reac_targ
       real, dimension(:), optional :: mass_loss_targ
+      integer ::  k1,k2
 !
-      q_reac_targ = q_reac
-      if (present(mass_loss_targ)) mass_loss_targ = mass_loss
-!      q_reac_targ = q_reac
+      k1=k1_imn(imn)
+      k2=k2_imn(imn)
+!
+      q_reac_targ(1:k2-k1+1) = q_reac(k1:k2)
+      
+      if (present(mass_loss_targ)) mass_loss_targ(1:k2-k1+1) = mass_loss(k1:k2)
 !
     endsubroutine get_temperature_chemistry
 ! ******************************************************************************

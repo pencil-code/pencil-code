@@ -127,7 +127,7 @@ module Particles_temperature
 !
       intent(inout) :: f, fp
 !
-!  Initial particle position.
+!  Initial particle temperature.
 !
       fp(1:npar_loc,iTp) = 0.
       do j = 1,ninit
@@ -272,14 +272,18 @@ module Particles_temperature
 !  for reactive heating of the particle if lreactive_heating is false,
 !  q_reac is set to zero in particles_chemistry
 !
-        allocate(Nuss_p(k1:k2))
-        allocate(q_reac(k1:k2))
-        allocate(mass_loss(k1:k2))
+        if (lparticles_chemistry) then
+!
+          allocate(Nuss_p(k1:k2))
+          allocate(q_reac(k1:k2))
+          allocate(mass_loss(k1:k2))
 !
 !  The mass vector is pointing outward of the particle ->
 !  mass loss > 0 means the particle is losing mass
 !
-        call get_temperature_chemistry(q_reac,mass_loss)
+          call get_temperature_chemistry(q_reac,mass_loss)
+        else
+        endif
 !
 !  Loop over all particles in current pencil.
 !
@@ -351,7 +355,11 @@ module Particles_temperature
 !  Calculate the change in particle temperature based on the cooling/heating
 !  rates on the particle
 !
-          dfp(k,iTp) = dfp(k,iTp)+(q_reac(k)-Qc+Qrad)/(fp(k,imp)*cp_part)
+          if (lparticles_chemistry) then
+            dfp(k,iTp) = dfp(k,iTp)+(q_reac(k)-Qc+Qrad)/(fp(k,imp)*cp_part)
+          else
+            dfp(k,iTp) = dfp(k,iTp)+(Qrad-Qc)/(fp(k,imp)*cp_part)
+          endif
 !
 !  Calculate feed back from the particles to the gas phase
 !
