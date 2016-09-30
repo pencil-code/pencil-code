@@ -31,7 +31,7 @@ module Special
   ! maximum number of granulation levels, technical maximum is 9
   integer, parameter :: max_gran_levels=3
 !
-  real :: tdown=0., allp=0., Kgpara=0., cool_RTV=0., Kgpara2=0., tdownr=0., allpr=0.
+  real :: tdown=0., allp=0., Kgpara=0., heat_cool=0., cool_RTV=0., Kgpara2=0., tdownr=0., allpr=0.
   real :: lntt0=0., wlntt=0., bmdi=0., hcond1=0., heatexp=0., heatamp=0., Ksat=0., Kc=0.
   real :: diffrho_hyper3=0., chi_hyper3=0., chi_hyper2=0., K_iso=0., b_tau=0., flux_tau=0.
   real :: Bavoid=0., nvor=5., tau_inv=1., Bz_flux=0., q0=1., qw=1., dq=0.1, dt_gran=0.
@@ -60,7 +60,7 @@ module Special
   real, dimension(3) :: heat_par_gauss=(/0.,1.,0./)
 !
   character(len=labellen) :: prof_type='nothing'
-  real, dimension(mz) :: uu_init_z, lnrho_init_z, lnTT_init_z
+  real, dimension(mz) :: uu_init_z, lnrho_init_z, lnTT_init_z, deltaT_init_z
   logical :: linit_uu=.false., linit_lnrho=.false., linit_lnTT=.false.
 !
   ! file location settings
@@ -75,7 +75,7 @@ module Special
 !
   ! run parameters
   namelist /special_run_pars/ &
-      tdown,allp,Kgpara,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
+      tdown,allp,Kgpara,heat_cool,cool_RTV,lntt0,wlntt,bmdi,hcond1,Kgpara2, &
       K_spitzer,tdownr,allpr,heatexp,heatamp,Ksat,Kc,diffrho_hyper3, &
       chi_hyper3,chi_hyper2,K_iso,lgranulation,lgran_parallel,irefz,tau_inv, &
       b_tau,flux_tau,Bavoid,nglevel,nvor,Bz_flux,init_time,init_time_hcond, &
@@ -375,19 +375,21 @@ module Special
       integer, parameter :: unit=12
       real :: var_lnrho, var_lnTT, var_z
       real, dimension(:), allocatable :: prof_lnrho, prof_lnTT, prof_z
-      logical :: lread_prof_uu, lread_prof_lnrho, lread_prof_lnTT
+      logical :: lread_prof_uu, lread_prof_lnrho, lread_prof_lnTT, lread_prof_deltaT
 !
       ! file location settings
       character(len=*), parameter :: stratification_dat = 'stratification.dat'
       character(len=*), parameter :: lnrho_dat = 'driver/prof_lnrho.dat'
       character(len=*), parameter :: lnT_dat = 'driver/prof_lnT.dat'
       character(len=*), parameter :: uz_dat = 'driver/prof_uz.dat'
+      character(len=*), parameter :: deltaT_dat = 'driver/prof_deltaT.dat'
 !
 ! Check which stratification file should be used:
 !
       lread_prof_uu    = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_uu') > 0)
       lread_prof_lnrho = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_lnrho') > 0)
       lread_prof_lnTT  = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_lnTT') > 0)
+      lread_prof_deltaT= (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_deltaT') > 0)
 !
       if (prof_type == 'lnrho_lnTT') then
         allocate (prof_lnTT(nzgrid), prof_lnrho(nzgrid), prof_z(nzgrid), stat=alloc_err)
@@ -432,6 +434,8 @@ module Special
         if (lread_prof_lnTT) &
             call read_profile (lnT_dat, lnTT_init_z, real(unit_temperature), .true.)
 !
+      elseif (lread_prof_deltaT) then
+        call read_profile (deltaT_dat, deltaT_init_z, real(unit_temperature), .false.)
       elseif (index (prof_type, 'internal_') == 1) then
         call warning ('read_profiles', "using internal profile '"//trim(prof_type)//"'.")
       elseif (index (prof_type, 'initial_') == 1) then
@@ -977,6 +981,7 @@ module Special
       if (hcond1 /= 0.0) call calc_heatcond_constchi(df,p)
       if (hcond2 /= 0.0) call calc_heatcond_glnTT(df,p)
       if (hcond3 /= 0.0) call calc_heatcond_glnTT_iso(df,p)
+      if (heat_cool /= 0.0) call calc_heat_cool(df,p)
       if (cool_RTV /= 0.0) call calc_heat_cool_RTV(df,p)
       if (max (tdown, tdownr) > 0.0) call calc_heat_cool_newton(df,p)
       if (K_iso /= 0.0) call calc_heatcond_grad(df,p)
@@ -2307,6 +2312,43 @@ module Special
       endif
 !
     endsubroutine calc_heatcond_glnTT_iso
+!***********************************************************************
+    subroutine calc_heat_cool(df,p)
+!
+!  Apply external heating and cooling profile.
+!
+!  30-Sep-2016/PABourdin: coded
+!
+      use Diagnostics,     only: max_mn_name
+      use Mpicomm,         only: stop_it
+!
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension(nx) :: delta_lnTT, tmp
+!
+!     add to temperature equation
+!
+      if (ltemperature .and. ltemperature_nolog) then
+        delta_lnTT = deltaT_init_z(l1:l2)
+      elseif (ltemperature) then
+        delta_lnTT = alog (exp (df(l1:l2,m,n,ilnTT)) + deltaT_init_z(l1:l2)) - df(l1:l2,m,n,ilnTT)
+      else
+        if (lentropy) &
+            call stop_it('solar_corona: calc_heat_cool:lentropy=not implented')
+      endif
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + delta_lnTT
+!
+      if (lfirst .and. ldt) then
+        tmp = delta_lnTT / cdts
+        if (ldiagnos .and. idiag_dtradloss /= 0) then
+          itype_name(idiag_dtradloss) = ilabel_max_dt
+          call max_mn_name(tmp, idiag_dtradloss, l_dt=.true.)
+        endif
+        dt1_max = max(dt1_max, tmp)
+      endif
+!
+    endsubroutine calc_heat_cool
 !***********************************************************************
     subroutine calc_heat_cool_RTV(df,p)
 !
