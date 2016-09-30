@@ -2330,9 +2330,9 @@ module Special
 !     add to temperature equation
 !
       if (ltemperature .and. ltemperature_nolog) then
-        delta_lnTT = deltaT_init_z(l1:l2)
+        delta_lnTT = deltaT_init_z(l1:l2) * dt
       elseif (ltemperature) then
-        delta_lnTT = alog (exp (df(l1:l2,m,n,ilnTT)) + deltaT_init_z(l1:l2)) - df(l1:l2,m,n,ilnTT)
+        delta_lnTT = alog (exp (df(l1:l2,m,n,ilnTT)) + deltaT_init_z(l1:l2) * dt) - df(l1:l2,m,n,ilnTT)
       else
         if (lentropy) &
             call stop_it('solar_corona: calc_heat_cool:lentropy=not implented')
