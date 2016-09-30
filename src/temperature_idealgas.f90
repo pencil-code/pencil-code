@@ -916,7 +916,7 @@ module Energy
           p%tcond=hcond0
         else
           call fatal_error('calc_pencils_energy',  &
-              'This heatcond is not implemented to work with lpencil(i_cond)!')
+              'This heatcond is not implemented to work with lpencil(i_tcond)!')
         endif
       endif
 ! sglnTT 
