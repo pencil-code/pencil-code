@@ -68,7 +68,7 @@ class Index(object):
 
         import os
         import pencilnew.read as read
-        
+
         if param is None:
             param = read.param(data_dir=data_dir, quiet=True)
         if dim is None:
@@ -79,8 +79,8 @@ class Index(object):
         else:
             totalvars = dim.mvar
 
-        f = open(os.path.join(data_dir, 'index.pro'))
-        for line in f.readlines():
+        index_file = open(os.path.join(data_dir, 'index.pro'))
+        for line in index_file.readlines():
             clean = line.strip()
             name = clean.split('=')[0].strip().replace('[', '').replace(']', '')
             if (clean.split('=')[1].strip().startswith('intarr(370)')):

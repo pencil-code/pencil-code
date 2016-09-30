@@ -42,6 +42,29 @@ class Dim(object):
         Fille members with default values.
         """
 
+        self.mx = self.my = self.mz = 0
+        self.mvar = 0
+        self.maux = 0
+        self.mglobal = 0
+
+        self.precision = 'S'
+        self.nghostx = self.nghosty = self.nghostz = 0
+
+        self.nprocx = self.nprocy = self.nprocz = 0
+        self.iprocz_slowest = 0
+        self.ipx = self.ipy = self.ipz = 0
+
+        # Add derived quantities to the dim object.
+        self.nx = self.ny = self.nz = 0
+        self.mw = 0
+        self.l1 = self.l2 = 0
+        self.m1 = self.m2 = 0
+        self.n1 = self.n2 = 0
+
+        self.nxgrid = self.nygrid = self.nzgrid = 0
+        self.mxgrid = self.mygrid = self.mzgrid = 0
+
+
     def read(self, data_dir='data', proc=-1):
         """
         Read the dim.dat file.

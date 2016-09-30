@@ -54,7 +54,7 @@ class Param(object):
         self.keys = []
 
 
-    def read(self, data_dir='data/', param2=False, quiet=False,
+    def read(self, data_dir='data/', param2=False, quiet=True,
              asdict=False, nest_dict=False):
         """
         Read Pencil Code simulation parameters.
@@ -96,6 +96,7 @@ class Param(object):
             print("Param.read: no such file {0}.".format(filen))
             raise ValueError
 
+        # Read the parameters into a dictionary.
         if asdict:
             if nest_dict:
                 param_list = self.__read_nml(filen, nest=True)
@@ -103,23 +104,25 @@ class Param(object):
                 param_list = self.__read_nml(filen)
             if not quiet:
                 print(param_list)
+            key_list = dir(param_list)
+            for key in key_list:
+                setattr(self, key, getattr(Param, key))
+        # Read the parameters as attributes to class Params.
         else:
             cmd = 'nl2python '+filen
             script = os.popen(cmd).read()
             if not quiet:
                 print(script)
             if script:
-                class Params:
-                    pass
-                exec(script.replace("\n    ", "\nParams.")[198:])
+                import numpy
+#                class Params(object):
+#                    pass
+                exec(script.replace("\n    ", "\nself.")[198:])
+                del(numpy)
             else:
                 print("Param.read: nl2python returned nothing! Is $PENCIL_HOME/bin in the path?")
                 return -1
-            param_list = Params()
-
-        key_list = dir(param_list)
-        for key in key_list:
-            setattr(self, key, getattr(Params, key))
+#            param_list = Params()
 
 
     def __param_formatter(self, string_part):
@@ -152,13 +155,13 @@ class Param(object):
             return re.sub("'", "", string_part)
 
 
-    def __tuplecatch(self, string):
+    def __tuple_catch(self, string):
         """
         Catches name - value tuples in a string.
 
         call signature:
 
-        __tuplecatch(self, string)
+        __tuple_catch(self, string)
 
         Keyword arguments:
 
@@ -214,9 +217,9 @@ class Param(object):
                         if "*" in parts[i]:
                             s = parts[i].split("*")
                             for i in range(int(s[0])):
-                                value += [self.__tuplecatch(s[1])]
+                                value += [self.__tuple_catch(s[1])]
                         else:
-                            value += [self.__tuplecatch(parts[i])]
+                            value += [self.__tuple_catch(parts[i])]
                     if len(value) == 1:
                         value = value[0]
                     if nest:
