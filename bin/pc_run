@@ -1043,8 +1043,8 @@ sub handle_local_binary {
 sub identify_revision {
 # Print revision info
     my ($binary) = @_;
-    #JONAS i made this
-    #system("$ENV{PENCIL_HOME}/utils/pc_print_revision_file", $binary);
+
+    system("$ENV{PENCIL_HOME}/utils/pc_print_revision_file", $binary);
 }
 # ---------------------------------------------------------------------- #
 sub handle_copy_snapshots {
