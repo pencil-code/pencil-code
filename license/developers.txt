@@ -55,7 +55,7 @@ Jörn Warnecke,        joern.warnecke/gmail.com,      joern.warnecke,       +49 
 Tijmen van Wettum,    vanwettum/mps.mpg.de,          TvanWettum,           ,                  ,                         ,            Transfer Solutions Leerdam Netherlands
 Chao-Chin Yang,       ccyang/astro.lu.se,            ccyang/astro.lu.se,   +46 46 22 21606,   ,                         ,            Lund Observatory
 Tarek A. Yousef,      tarek/pvv.org,                 ,                     +44 798 122 8515,  ,                         ,            Norges teknisk-naturvitenskapelige universitet
-Xiang-Yu Li,          lixycuhk/gmail.com,            ,                     ,                  +46 73 627 2556,          ,            NORDITA
+Xiang-Yu Li,          xiang.yu.li.phy/gmail.com,            ,                     ,                  +46 73 627 2556,          ,            NORDITA
 ------------------------------------------------------------------------------------------------------------------------------------------------
 Please add further names (in alphabetical order) that have been forgotten so far!
 This file is located in the directory
