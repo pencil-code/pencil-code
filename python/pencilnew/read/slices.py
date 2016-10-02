@@ -1,84 +1,140 @@
-# $Id$
+# slices.py
 #
-# read slice files
+# Read the slice files.
 #
-# Author: J. Oishi (joishi@amnh.org). 
-# 
-#
-import os
-import numpy as N
-import pylab as P
-from pencilnew.io.npfile import npfile
-from param import param as read_param 
-from dim import dim as read_dim 
-from time import sleep 
-
-import sys
-
-# slice file format is either
-#   plane,t (old style)
-#   plane,t,slice_z2pos (new style)
+# Author: S. Candelaresi (iomsn1@gmail.com).
+"""
+Contains the classes and methods to read slice files.
+"""
 
 
-####### MISSING: if data/slice* are not available, ask to run pc_collectallmovie for the user
-####### MISSING: default for extension and field should be to ask the user if not specified
-####### MISSING: slice should be given back as object!
-
-def slices(field='uu1',datadir='./data',proc=-1,extension='xz',format='native',oldfile=False):
+def slices(*args, **kwargs):
     """
-    read 2D slice files and return an array of (nslices,vsize,hsize).
+    Read Pencil Code slices data.
+
+    call signature:
+
+    ts(file_name='time_series.dat', data_dir='data',
+       quiet=False, comment_char='#')
+
+    Keyword arguments:
+
+    *file_name*:
+      Name of the time series file.
+
+    *data_dir*:
+      Directory where the data is stored.
+
+    *quiet*
+      Flag for switching off output.
+
+    *comment_char*
+      Comment character in the time series file.
     """
-    datadir = os.path.expanduser(datadir)
-    if proc < 0:
-        filename = datadir+'/slice_'+field+'.'+extension
-    else:
-        filename = datadir+'/proc'+str(proc)+'/slice_'+field+'.'+extension
 
-    # global dim
-    param = read_param(datadir, quiet=True)
-
-    dim = read_dim(datadir,proc) 
-    if dim.precision == 'D':
-        precision = 'd'
-    else:
-        precision = 'f'
-
-    # set up slice plane
-    if (extension == 'xy' or extension == 'Xy'):
-        hsize = dim.nx
-        vsize = dim.ny
-    if (extension == 'xz'):
-        hsize = dim.nx
-        vsize = dim.nz
-    if (extension == 'yz'):
-        hsize = dim.ny
-        vsize = dim.nz
+    slices_tmp = SliceSeries()
+    slices_tmp.read(*args, **kwargs)
+    return slices_tmp
 
 
-    infile = npfile(filename,endian=format)
+class SliceSeries(object):
+    """
+    SliceSeries -- holds Pencil Code slices data.
+    """
 
-    ifirst = True
-    islice = 0
-    t = N.zeros(1,dtype=precision)
-    slices = N.zeros(1,dtype=precision)
+    def __init__(self):
+        """
+        Fill members with default values.
+        """
 
-    while 1:
-        try:
-            raw_data = infile.fort_read(precision)
-        except ValueError:
-            break
-        except TypeError:
-            break
-        
-        if oldfile:
-            t = N.concatenate((t,raw_data[-1:]))
-            slices = N.concatenate((slices,raw_data[:-1]))
+        import numpy as np
+
+        self.t = np.array([])
+        self.slices = np.array([])
+
+
+    def read(self, field='uu1', data_dir='./data', proc=-1, extension='xz',
+             endian='native', old_file=False):
+        """
+        Read Pencil Code time series data.
+
+        call signature:
+
+        read(self. field='uu1', data_dir='./data', proc=-1, extension='xz',
+             endian='native', old_file=False)
+
+        Keyword arguments:
+
+        *field*:
+          Name of the time series file.
+
+        *data_dir*:
+          Directory where the data is stored.
+
+        *proc*
+          Flag for switching of output.
+
+        *extension*
+          Comment character in the time series file.
+
+        *endian*
+          Comment character in the time series file.
+
+        *old_file*
+          Comment character in the time series file.
+        """
+
+        import os.path
+        import numpy as np
+        from pencilnew import read
+        from pencilnew import io
+
+        data_dir = os.path.expanduser(data_dir)
+        if proc < 0:
+            file_name = os.path.join(data_dir, 'slice_'+field+'.'+extension)
         else:
-            t = N.concatenate((t,raw_data[-2:-1]))
-            slices = N.concatenate((slices,raw_data[:-2]))
-        islice += 1
+            file_name = os.path.join(data_dir, 'proc{0}'.format(proc),
+                                     'slice_'+field+'.'+extension)
 
-    output = slices[1:].reshape(islice,vsize,hsize)
+        dim = read.dim(data_dir, proc)
+        if dim.precision == 'D':
+            precision = 'd'
+        else:
+            precision = 'f'
 
-    return output,t[1:]
-  
+        # Set up slice plane.
+        if (extension == 'xy' or extension == 'Xy'):
+            hsize = dim.nx
+            vsize = dim.ny
+        if (extension == 'xz'):
+            hsize = dim.nx
+            vsize = dim.nz
+        if (extension == 'yz'):
+            hsize = dim.ny
+            vsize = dim.nz
+
+        infile = io.npfile(file_name, endian=endian)
+
+        islice = 0
+        self.t = np.zeros(1, dtype=precision)
+        self.slices = np.zeros(1, dtype=precision)
+
+        while True:
+            try:
+                raw_data = infile.fort_read(precision)
+            except ValueError:
+                break
+            except TypeError:
+                break
+
+            if old_file:
+                self.t = np.concatenate((self.t, raw_data[-1:]))
+                self.slices = np.concatenate((self.slices, raw_data[:-1]))
+            else:
+                self.t = np.concatenate((self.t, raw_data[-2:-1]))
+                self.slices = np.concatenate((self.slices, raw_data[:-2]))
+            islice += 1
+
+        # Reshape and remove first entry.
+        self.t = self.t[1:]
+        self.slices = self.slices[1:].reshape(islice, vsize, hsize)
