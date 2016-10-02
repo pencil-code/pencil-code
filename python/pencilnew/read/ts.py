@@ -40,7 +40,7 @@ def ts(*args, **kwargs):
 
 class TimeSeries(object):
     """
-    TimeSeries -- holds pencil code time series data.
+    TimeSeries -- holds Pencil Code time series data.
     """
 
     def __init__(self):
