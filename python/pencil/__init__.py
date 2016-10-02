@@ -2,6 +2,7 @@
 #import scipy as S
 
 from pencil.files.ts import *
+from pencil.files.sn import *
 from pencil.files.dim import *
 from pencil.files.pdim import *
 from pencil.files.param import *

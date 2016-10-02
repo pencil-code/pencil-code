@@ -130,9 +130,7 @@ def animate_slices(field='uu1', datadir='data/', proc=-1, extension='xz',
     ax.set_ylabel('y')
     ax.set_ylim
 
-    image, = plt.plot(plane[0,:])
-    plt.gca().set_ybound(-1,1)
-  #  image = plt.imshow(plane, vmin=amin, vmax=amax)
+    image = plt.imshow(plane, vmin=amin, vmax=amax)
 
     # Get the figure manager for real-time image display.
     manager = plt.get_current_fig_manager()
@@ -161,7 +159,7 @@ def animate_slices(field='uu1', datadir='data/', proc=-1, extension='xz',
         if t > tmin and t < tmax:
             title = 't = %11.3e' % t
             ax.set_title(title)
-            image.set_data(np.arange(64),plane[0,:])
+            image.set_data(plane)
             manager.canvas.draw()
 
             if ifirst:
