@@ -1031,16 +1031,18 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
     endsubroutine get_average_pressure
 !***********************************************************************
-    subroutine bc_ss_flux(f,topbot)
+    subroutine bc_ss_flux(f,topbot,lone_sided)
 !
 !  constant flux boundary condition for entropy (called when bcz='c1')
 !
 !  23-jan-2002/wolf: coded
 !  11-jun-2002/axel: moved into the entropy module
 !   8-jul-2002/axel: split old bc_ss into two
+!   3-oct-16/MR: added new optional switch lone_sided
 !
       character (len=3) :: topbot
       real, dimension (:,:,:,:) :: f
+      logical, optional :: lone_sided
 !
       call stop_it("bc_ss_flux: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !

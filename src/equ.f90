@@ -304,7 +304,7 @@ module Equ
 !  Call "after" hooks (for f array precalculation). This may imply
 !  calculating averages (some of which may only be required for certain
 !  settings in hydro of the testfield procedure (only when lsoca=.false.),
-!  for example. The used to be or are still called calc_lhydro_pars etc,
+!  for example. They used to be or are still called calc_lhydro_pars etc,
 !  and will soon be renamed to hydro_after_boundary.
 !
 !  Important to note that the processor boundaries are not full updated 

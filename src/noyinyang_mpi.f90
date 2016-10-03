@@ -31,10 +31,10 @@ contains
 !
         sz=(/size(arrm,1),size(arrm,2),size(arrm,3)/)
 !
-!  Summation of local fnamexy arrays into temp of z root processors.
+!  Summation of local arrays arrm into temp of z root processors.
 !
         call mpireduce_sum(arrm,temp,sz,idir=3)
-
+!
     endsubroutine reduce_zsum
 !***********************************************************************
     subroutine zsum_yy(fnamexy,iname,m,n,a)

@@ -13,6 +13,7 @@ module DensityMethods
     module procedure getrho_1d
     module procedure getrho_2dyz
     module procedure getrho_2d
+    module procedure getrho_3d
   endinterface
 !
   interface getlnrho
@@ -170,6 +171,24 @@ module DensityMethods
 
     endsubroutine getrho_2d
 !***********************************************************************
+    subroutine getrho_3d(f,rho)
+
+      real, dimension(:,:,:), intent(in) :: f
+      real, dimension(size(f,1),size(f,2),size(f,3)), intent(out):: rho
+
+      if (ldensity_nolog) then
+        if (lreference_state) then
+          rho(l1:l2,:,:) = f(l1:l2,:,:) &
+                          +spread(spread(reference_state(:,iref_rho),2,size(f,2)),3,size(f,3))  !!!
+        else
+          rho=f
+        endif
+      else
+        rho=exp(f)
+      endif
+
+    endsubroutine getrho_3d
+!***********************************************************************
     subroutine getrho_2dyz(f,ix,rho)
 
       real, dimension(my,mz), intent(in) :: f
@@ -258,19 +277,49 @@ module DensityMethods
       real, dimension(mx,my,-in:in), intent(in) :: f
       real, dimension(mx,my),        intent(out):: dlnrho
 
+      dlnrho = f(:,:,in)-f(:,:,-in)          ! = Delta \rho or Delta log(\rho)
       if (ldensity_nolog) then
-        dlnrho = f(:,:,in)-f(:,:,-in)          ! = Delta \rho
         if (lreference_state) then
           dlnrho(l1:l2,:) = dlnrho(l1:l2,:)/(f(l1:l2,:,0) &
                            +spread(reference_state(:,iref_rho),2,my))   !!!
         else
           dlnrho = dlnrho/f(:,:,0)
         endif
-      else
-        dlnrho = f(:,:,in)-f(:,:,-in)
       endif
 !
     endsubroutine getdlnrho_z
+!***********************************************************************
+    subroutine getderlnrho_z(f,iz,derlnrho)
+!
+!  Evaluates derlnrho as d_z ln(rho) for all x,y at z-position iz.
+!
+!  30-sep-16/MR: coded
+!
+      use Deriv, only: der
+
+      integer,                             intent(in) :: iz
+      real, dimension(:,:,:,:),            intent(in) :: f
+      real, dimension(size(f,1),size(f,2)),intent(out):: derlnrho
+
+      integer :: n_save, m_save
+
+      n_save=n; m_save=m         ! save global n,m as we might be inside an mn-loop
+      n=iz
+      do m=1,size(f,2)
+        call der(f(:,:,:,ilnrho),derlnrho(:,m),3)        ! = d \[ln]rho / dz
+      enddo
+      n=n_save; m=m_save
+
+      if (ldensity_nolog) then
+        if (lreference_state) then
+          derlnrho(l1:l2,:) = derlnrho(l1:l2,:)/(f(l1:l2,:,iz,ilnrho) &
+                             +spread(reference_state(:,iref_rho),2,my))   !!!
+        else
+          derlnrho = derlnrho/f(:,:,iz,ilnrho)
+        endif
+      endif
+!
+    endsubroutine getderlnrho_z
 !***********************************************************************
     subroutine getdlnrho_y(f,im,dlnrho)
 

@@ -1077,7 +1077,7 @@ module EquationOfState
 !
     endsubroutine get_average_pressure
 !***********************************************************************
-    subroutine bc_ss_flux(f,topbot)
+    subroutine bc_ss_flux(f,topbot,lone_sided)
 !
 !  constant flux boundary condition for entropy (called when bcz='c1')
 !
@@ -1085,6 +1085,7 @@ module EquationOfState
 !  11-jun-2002/axel: moved into the entropy module
 !   8-jul-2002/axel: split old bc_ss into two
 !  26-aug-2003/tony: distributed across ionization modules
+!   3-oct-16/MR: added new optional switch lone_sided
 !
       use Gravity
       use Mpicomm,only:stop_it
@@ -1094,6 +1095,7 @@ module EquationOfState
 !
       character (len=3) :: topbot
       real, dimension (:,:,:,:) :: f
+      logical, optional :: lone_sided
       real, dimension (size(f,1),size(f,2)) :: tmp_xy,cs2_xy,rho_xy
       integer :: i
 !

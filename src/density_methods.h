@@ -8,3 +8,5 @@
 !    module procedure getdlnrho_y
     module procedure getdlnrho_z
   endinterface
+
+  public :: getderlnrho_z

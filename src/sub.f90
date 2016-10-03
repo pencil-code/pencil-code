@@ -4662,7 +4662,7 @@ nameloop: do
 !***********************************************************************
     subroutine get_where(mask, indices, status)
 !
-!  Get the indices where mask are .true.
+!  Get the indices where mask is .true.
 !
 !  Note: The pointer argument indices will be reassociated with a newly
 !      allocated array.  It is the user's responsibility to pass in a

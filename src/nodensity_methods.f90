@@ -185,4 +185,23 @@ module DensityMethods
 !
     endsubroutine putlnrho_s
 !***********************************************************************
+    subroutine getderlnrho_z(f,iz,derlnrho)
+!
+!  Evaluates derlnrho as d_z ln(rho) for all x,y at z-position iz.
+!
+!  30-sep-16/MR: coded
+!
+      use Deriv, only: der
+
+      integer,                             intent(in) :: iz
+      real, dimension(:,:,:,:),            intent(in) :: f
+      real, dimension(size(f,1),size(f,2)),intent(out):: derlnrho
+
+      call fatal_error('getderlnrho_z', 'not implemented in nodensity.')
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(iz)
+      call keep_compiler_quiet(derlnrho)
+!
+    endsubroutine getderlnrho_z(f,iz,derlnrho)
+!***********************************************************************
 endmodule DensityMethods

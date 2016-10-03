@@ -703,7 +703,7 @@ module Testfield_general
 !   7-nov-13/MR: nygrid -> ny (a more speaking name)
 ! 
     Use Diagnostics, only: sum_mn_name, save_name
-    Use Cdata, only: nghost, l1davgfirst, l2davgfirst, lfirstpoint, ldiagnos, lroot, z, x, fnamexz
+    Use Cdata, only: nghost, l1davgfirst, l2davgfirst, lfirstpoint, ldiagnos, lroot, z, x
     Use Sub, only: fourier_single_mode
 !
     integer, dimension(:),      intent(in):: idiags, idiags_z, idiags_xz, idiags_Eij, idiags_Eij_z, idiags_Eij_xz, &

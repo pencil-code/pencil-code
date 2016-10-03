@@ -2181,7 +2181,7 @@ module EquationOfState
 !
     endsubroutine meanfield_chitB
 !***********************************************************************
-    subroutine bc_ss_flux(f,topbot)
+    subroutine bc_ss_flux(f,topbot,lone_sided)
 !
 !  constant flux boundary condition for entropy (called when bcz='c1')
 !
@@ -2191,8 +2191,11 @@ module EquationOfState
 !  26-aug-2003/tony: distributed across ionization modules
 !  13-mar-2011/pete: c1 condition for z-boundaries with Kramers' opacity
 !   4-jun-2015/MR: factor cp added in front of tmp_xy
+!  30-sep-2016/MR: changes for use of one-sided BC formulation (chosen by setting new optional switch lone_sided)
 !
-      use DensityMethods, only: getdlnrho
+      use DensityMethods, only: getdlnrho, getderlnrho_z
+      use Deriv, only: bval_from_neumann, set_ghosts_for_onesided_ders
+      use General, only: loptest
 !
       real, pointer :: Fbot,Ftop,FtopKtop,FbotKbot,hcond0,hcond1,chi
       real, pointer :: hcond0_kramers, nkramers
@@ -2201,6 +2204,8 @@ module EquationOfState
 !
       character (len=3) :: topbot
       real, dimension (:,:,:,:) :: f
+      logical, optional :: lone_sided
+!
       real, dimension (size(f,1),size(f,2)) :: tmp_xy,cs2_xy,rho_xy
       integer :: i
 !
@@ -2277,10 +2282,17 @@ module EquationOfState
 !
 !  enforce ds/dz + (cp-cv)*dlnrho/dz = - cp*(cp-cv)*Fbot/(Kbot*cs2)
 !
-          do i=1,nghost
-            call getdlnrho(f(:,:,n1-i:n1+i,ilnrho),i,rho_xy)                     ! rho_xy=d_z ln(rho)
-            f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+cp*(cp-cv)*(rho_xy+dz2_bound(-i)*tmp_xy)
-          enddo
+          if (loptest(lone_sided)) then
+            call getderlnrho_z(f,n1,rho_xy)                           ! rho_xy=d_z ln(rho)
+            rho_xy=-cp*(cp-cv)*(rho_xy+tmp_xy)
+            call bval_from_neumann(f,topbot,iss,3,rho_xy)
+            call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
+          else
+             do i=1,nghost
+               call getdlnrho(f(:,:,n1-i:n1+i,ilnrho),i,rho_xy)        ! rho_xy=del_z ln(rho)
+               f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+cp*(cp-cv)*(rho_xy+dz2_bound(-i)*tmp_xy)
+             enddo
+          endif
         endif
 !
 !  top boundary
@@ -2323,10 +2335,17 @@ module EquationOfState
 !
 !  enforce ds/dz + (cp-cv)*dlnrho/dz = - cp*(cp-cv)*Ftop/(K*cs2)
 !
-          do i=1,nghost
-            call getdlnrho(f(:,:,n2-i:n2+i,ilnrho),i,rho_xy)              ! here rho_xy=d_z ln(rho)
-            f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+cp*(cp-cv)*(-rho_xy-dz2_bound(i)*tmp_xy)
-          enddo
+          if (loptest(lone_sided)) then
+            call getderlnrho_z(f,n2,rho_xy)                           ! rho_xy=d_z ln(rho)
+            rho_xy=-cp*(cp-cv)*(rho_xy+tmp_xy)
+            call bval_from_neumann(f,topbot,iss,3,rho_xy)
+            call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
+          else
+            do i=1,nghost
+              call getdlnrho(f(:,:,n2-i:n2+i,ilnrho),i,rho_xy)        ! rho_xy=del_z ln(rho)
+              f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+cp*(cp-cv)*(-rho_xy-dz2_bound(i)*tmp_xy)
+            enddo
+          endif
         endif
 !
       case default

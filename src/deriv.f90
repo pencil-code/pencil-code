@@ -27,7 +27,9 @@ module Deriv
   public :: der_onesided_4_slice_other
   public :: der2_minmod
   public :: heatflux_deriv_x
-  public :: set_mn_offsets
+  public :: set_mn_offsets, reset_mn_offsets
+  public :: set_ghosts_for_onesided_ders
+  public :: bval_from_neumann
 !
   real :: der2_coef0, der2_coef1, der2_coef2, der2_coef3
 !
@@ -60,6 +62,11 @@ module Deriv
     module procedure  der_onesided_4_slice_main_pt
     module procedure  der_onesided_4_slice_other ! derivative of another field
     module procedure  der_onesided_4_slice_other_pt
+  endinterface
+!
+  interface bval_from_neumann
+    module procedure bval_from_neumann_scl
+    module procedure bval_from_neumann_arr
   endinterface
 !
   integer, dimension(nx) :: lrangep, lrangem
@@ -98,11 +105,17 @@ module Deriv
       lrangem=lrangep-nghost; lrangep=lrangep+nghost   ! ranges l1-3 ... l2-3 and l1+3 ... l2+3
 
       if (lall_onesided .and. nxgrid>1 .and. .not.lperi(1)) then
-        if (lfirst_proc_x) lrangem(2)=l1-nghost
-        if (llast_proc_x ) lrangep(nx-1)=l2+nghost
+        if (lfirst_proc_x) lrangem(min(nxgrid,2))=l1-nghost
+        if (llast_proc_x ) lrangep(max(1,nx-1))=l2+nghost
       endif
 !
     endsubroutine initialize_deriv
+!***********************************************************************
+    subroutine reset_mn_offsets
+
+      m3m=nghost; m3p=nghost; n3m=nghost; n3p=nghost
+
+    endsubroutine reset_mn_offsets
 !***********************************************************************
     subroutine set_mn_offsets
 !
@@ -299,13 +312,17 @@ module Deriv
 !                          then overload the der interface.
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  21-feb-07/axel: added 1/r and 1/pomega factors for non-coord basis
+!  30-sep-16/MR: allow results dimensions > nx
 !
       real, dimension (mx,my,mz) :: f
-      real, dimension (nx) :: df,fac
+      real, dimension (:) :: df
       integer :: j
 !
       intent(in)  :: f,j
       intent(out) :: df
+
+      real, dimension (size(df)) :: fac
+      integer :: l1_, l2_, sdf
 !
 !debug      if (loptimise_ders) der_call_count(1,icount_der_other,j,1) = &
 !debug                          der_call_count(1,icount_der_other,j,1) + 1
@@ -320,28 +337,36 @@ module Deriv
           df=0.
           if (ip<=5) print*, 'der_other: Degenerate case in x-direction'
         endif
-      elseif (j==2) then
-        if (nygrid/=1) then
-          fac=(1./60)*dy_1(m)
-          df=fac*(+ 45.0*(f(l1:l2,m+1,n)-f(l1:l2,m-1,n)) &
-                  -  9.0*(f(l1:l2,m+2,n)-f(l1:l2,m-2,n)) &
-                  +      (f(l1:l2,m+3,n)-f(l1:l2,m-3,n)))
-          if (lspherical_coords)     df=df*r1_mn
-          if (lcylindrical_coords)   df=df*rcyl_mn1
+      else
+        sdf=size(df)
+        if (sdf>nx) then
+          l1_=1; l2_=sdf
         else
-          df=0.
-          if (ip<=5) print*, 'der_other: Degenerate case in y-direction'
+          l1_=l1; l2_=l2 
         endif
-      elseif (j==3) then
-        if (nzgrid/=1) then
-          fac=(1./60)*dz_1(n)
-          df=fac*(+ 45.0*(f(l1:l2,m,n+1)-f(l1:l2,m,n-1)) &
-                  -  9.0*(f(l1:l2,m,n+2)-f(l1:l2,m,n-2)) &
-                  +      (f(l1:l2,m,n+3)-f(l1:l2,m,n-3)))
-          if (lspherical_coords) df=df*r1_mn*sin1th(m)
-        else
-          df=0.
-          if (ip<=5) print*, 'der_other: Degenerate case in z-direction'
+         if (j==2) then
+          if (nygrid/=1) then
+            fac=(1./60)*dy_1(m)
+            df=fac*(+ 45.0*(f(l1_:l2_,m+1,n)-f(l1_:l2_,m-1,n)) &
+                    -  9.0*(f(l1_:l2_,m+2,n)-f(l1_:l2_,m-2,n)) &
+                    +      (f(l1_:l2_,m+3,n)-f(l1_:l2_,m-3,n)))
+            if (lspherical_coords)     df=df*r1_mn
+            if (lcylindrical_coords)   df=df*rcyl_mn1
+          else
+            df=0.
+            if (ip<=5) print*, 'der_other: Degenerate case in y-direction'
+          endif
+        elseif (j==3) then
+          if (nzgrid/=1) then
+            fac=(1./60)*dz_1(n)
+            df=fac*(+ 45.0*(f(l1_:l2_,m,n+1)-f(l1_:l2_,m,n-1)) &
+                    -  9.0*(f(l1_:l2_,m,n+2)-f(l1_:l2_,m,n-2)) &
+                    +      (f(l1_:l2_,m,n+3)-f(l1_:l2_,m,n-3)))
+            if (lspherical_coords) df=df*r1_mn*sin1th(m)
+          else
+            df=0.
+            if (ip<=5) print*, 'der_other: Degenerate case in z-direction'
+          endif
         endif
       endif
 !
@@ -2080,5 +2105,420 @@ module Deriv
       call keep_compiler_quiet(topbot)
 !
     endfunction heatflux_deriv_x
+!***********************************************************************
+    subroutine bval_from_neumann_scl(f,topbot,j,idir,val)
+!
+!  Calculates the boundary value from the Neumann BC d f/d x_i = val employing
+!  one-sided difference formulae. val is a constant.
+!
+!  30-sep-16/MR: coded
+!
+      real, dimension(mx,my,mz,*) :: f
+      character(LEN=3) :: topbot
+      integer :: j,idir
+      real :: val
+
+      if (topbot=='bot') then
+        if (idir==1) then
+          f(l1,:,:,j) = (-val*60.*dx + 360.*f(l1+1,:,:,j) &
+                                     - 450.*f(l1+2,:,:,j) &
+                                     + 400.*f(l1+3,:,:,j) &
+                                     - 225.*f(l1+4,:,:,j) &
+                                     +  72.*f(l1+5,:,:,j) &
+                                     -  10.*f(l1+6,:,:,j) )/147.
+        elseif (idir==2) then
+          f(:,m1,:,j) = (-val*60.*dy + 360.*f(:,m1+1,:,j) &
+                                     - 450.*f(:,m1+2,:,j) &
+                                     + 400.*f(:,m1+3,:,j) &
+                                     - 225.*f(:,m1+4,:,j) &
+                                     +  72.*f(:,m1+5,:,j) &
+                                     -  10.*f(:,m1+6,:,j) )/147.
+        elseif (idir==3) then
+          f(:,:,n1,j) = (-val*60.*dz + 360.*f(:,:,n1+1,j) &
+                                     - 450.*f(:,:,n1+2,j) &
+                                     + 400.*f(:,:,n1+3,j) &
+                                     - 225.*f(:,:,n1+4,j) &
+                                     +  72.*f(:,:,n1+5,j) &
+                                     -  10.*f(:,:,n1+6,j) )/147.
+        endif
+      else
+        if (idir==1) then
+          f(l2,:,:,j) = (val*60.*dx + 360.*f(l2-1,:,:,j) &
+                                    - 450.*f(l2-2,:,:,j) &
+                                    + 400.*f(l2-3,:,:,j) &
+                                    - 225.*f(l2-4,:,:,j) &
+                                    +  72.*f(l2-5,:,:,j) &
+                                    -  10.*f(l2-6,:,:,j) )/147.
+        elseif (idir==2) then
+          f(:,m2,:,j) = (val*60.*dy + 360.*f(:,m2-1,:,j) &
+                                    - 450.*f(:,m2-2,:,j) &
+                                    + 400.*f(:,m2-3,:,j) &
+                                    - 225.*f(:,m2-4,:,j) &
+                                    +  72.*f(:,m2-5,:,j) &
+                                    -  10.*f(:,m2-6,:,j) )/147.
+        elseif (idir==3) then
+          f(:,:,n2,j) = (val*60.*dz + 360.*f(:,:,n2-1,j) &
+                                    - 450.*f(:,:,n2-2,j) &
+                                    + 400.*f(:,:,n2-3,j) &
+                                    - 225.*f(:,:,n2-4,j) &
+                                    +  72.*f(:,:,n2-5,j) &
+                                    -  10.*f(:,:,n2-6,j) )/147.
+        endif
+      endif
+
+    endsubroutine bval_from_neumann_scl
+!***********************************************************************
+    subroutine set_ghosts_for_onesided_ders(f,topbot,j,idir,l2nd_)
+
+!  20-sep-16/MR: added optional parameter bval for boundary value.
+!                added ghost value setting for having the second derivative
+!                correct in one-sided formulation for first inner point.
+!
+      use General, only: loptest
+
+      real, dimension(mx,my,mz,*) :: f
+      character(LEN=3) :: topbot
+      integer :: j,idir
+      logical, optional :: l2nd_
+
+      logical :: l2nd
+      integer :: k
+
+      l2nd = loptest(l2nd_)
+
+      if (topbot=='bot') then
+        if (idir==1) then
+
+          k=l1-1
+          f(k,:,:,j)=7*f(k+1,:,:,j) &
+                   -21*f(k+2,:,:,j) &
+                   +35*f(k+3,:,:,j) &
+                   -35*f(k+4,:,:,j) &
+                   +21*f(k+5,:,:,j) &
+                    -7*f(k+6,:,:,j) &
+                      +f(k+7,:,:,j)
+          k=l1-2
+          f(k,:,:,j)=9*f(k+1,:,:,j) &
+                   -35*f(k+2,:,:,j) &
+                   +77*f(k+3,:,:,j) &
+                  -105*f(k+4,:,:,j) &
+                   +91*f(k+5,:,:,j) &
+                   -49*f(k+6,:,:,j) &
+                   +15*f(k+7,:,:,j) &
+                    -2*f(k+8,:,:,j)
+          k=l1-3
+          if (l2nd) then
+!
+! This value belongs semantically to the *second* ghost point, but is stored
+! here in the third, as in that point we need two different values for getting the first and second
+! derivatives in the first inner point right.
+!
+            f(k,:,:,j)=( 27*f(k+1,:,:,j) &
+                       -133*f(k+2,:,:,j) &
+                       +343*f(k+3,:,:,j) &
+                       -525*f(k+4,:,:,j) &
+                       +497*f(k+5,:,:,j) &
+                       -287*f(k+6,:,:,j) &
+                       +93*f(k+7,:,:,j)  &
+                       -13*f(k+8,:,:,j))/2.
+          else
+            f(k,:,:,j)=9*f(k+1,:,:,j) &
+                     -45*f(k+2,:,:,j) &
+                    +147*f(k+3,:,:,j) &
+                    -315*f(k+4,:,:,j) &
+                    +441*f(k+5,:,:,j) &
+                    -399*f(k+6,:,:,j) &
+                    +225*f(k+7,:,:,j) &
+                     -72*f(k+8,:,:,j) &
+                     +10*f(k+9,:,:,j)
+          endif
+        elseif (idir==2) then
+          k=m1-1
+          f(:,k,:,j)=7*f(:,k+1,:,j) &
+                   -21*f(:,k+2,:,j) &
+                   +35*f(:,k+3,:,j) &
+                   -35*f(:,k+4,:,j) &
+                   +21*f(:,k+5,:,j) &
+                    -7*f(:,k+6,:,j) &
+                      +f(:,k+7,:,j)
+          k=m1-2
+          f(:,k,:,j)=9*f(:,k+1,:,j) &
+                   -35*f(:,k+2,:,j) &
+                   +77*f(:,k+3,:,j) &
+                  -105*f(:,k+4,:,j) &
+                   +91*f(:,k+5,:,j) &
+                   -49*f(:,k+6,:,j) &
+                   +15*f(:,k+7,:,j) &
+                    -2*f(:,k+8,:,j)
+          k=m1-3
+          if (l2nd) then
+!
+! This value belongs semantically to the *second* ghost point, but is stored
+! here in the third, as in that point we need two different values for getting the first and second
+! derivatives in the first inner point right.
+!
+            f(:,k,:,j)=( 27*f(:,k+1,:,j) &
+                       -133*f(:,k+2,:,j) &
+                       +343*f(:,k+3,:,j) &
+                       -525*f(:,k+4,:,j) &
+                       +497*f(:,k+5,:,j) &
+                       -287*f(:,k+6,:,j) &
+                       + 93*f(:,k+7,:,j) &
+                       - 13*f(:,k+8,:,j))/2.
+          else
+            f(:,k,:,j)=9*f(:,k+1,:,j) &
+                     -45*f(:,k+2,:,j) &
+                    +147*f(:,k+3,:,j) &
+                    -315*f(:,k+4,:,j) &
+                    +441*f(:,k+5,:,j) &
+                    -399*f(:,k+6,:,j) &
+                    +225*f(:,k+7,:,j) &
+                     -72*f(:,k+8,:,j) &
+                     +10*f(:,k+9,:,j)
+          endif
+        elseif (idir==3) then
+          k=n1-1
+          f(:,:,k,j)=7*f(:,:,k+1,j) &
+                   -21*f(:,:,k+2,j) &
+                   +35*f(:,:,k+3,j) &
+                   -35*f(:,:,k+4,j) &
+                   +21*f(:,:,k+5,j) &
+                    -7*f(:,:,k+6,j) &
+                      +f(:,:,k+7,j)
+          k=n1-2
+          f(:,:,k,j)=9*f(:,:,k+1,j) &
+                   -35*f(:,:,k+2,j) &
+                   +77*f(:,:,k+3,j) &
+                  -105*f(:,:,k+4,j) &
+                   +91*f(:,:,k+5,j) &
+                   -49*f(:,:,k+6,j) &
+                   +15*f(:,:,k+7,j) &
+                    -2*f(:,:,k+8,j)
+          k=n1-3
+          if (l2nd) then
+!
+! This value belongs semantically to the *second* ghost point, but is stored
+! here in the third, as in that point we need two different values for getting the first and second
+! derivatives in the first inner point right.
+!
+            f(:,:,k,j)=( 27*f(:,:,k+1,j) &
+                       -133*f(:,:,k+2,j) &
+                       +343*f(:,:,k+3,j) &
+                       -525*f(:,:,k+4,j) &
+                       +497*f(:,:,k+5,j) &
+                       -287*f(:,:,k+6,j) &
+                       + 93*f(:,:,k+7,j)  &
+                       - 13*f(:,:,k+8,j))/2.
+          else
+            f(:,:,k,j)=9*f(:,:,k+1,j) &
+                     -45*f(:,:,k+2,j) &
+                    +147*f(:,:,k+3,j) &
+                    -315*f(:,:,k+4,j) &
+                    +441*f(:,:,k+5,j) &
+                    -399*f(:,:,k+6,j) &
+                    +225*f(:,:,k+7,j) &
+                     -72*f(:,:,k+8,j) &
+                     +10*f(:,:,k+9,j)
+          endif
+        endif
+      else
+        if (idir==1) then
+          k=l2+1
+          f(k,:,:,j)=7*f(k-1,:,:,j) &
+                   -21*f(k-2,:,:,j) &
+                   +35*f(k-3,:,:,j) &
+                   -35*f(k-4,:,:,j) &
+                   +21*f(k-5,:,:,j) &
+                    -7*f(k-6,:,:,j) &
+                      +f(k-7,:,:,j)
+          k=l2+2
+          f(k,:,:,j)=9*f(k-1,:,:,j) &
+                   -35*f(k-2,:,:,j) &
+                   +77*f(k-3,:,:,j) &
+                  -105*f(k-4,:,:,j) &
+                   +91*f(k-5,:,:,j) &
+                   -49*f(k-6,:,:,j) &
+                   +15*f(k-7,:,:,j) &
+                    -2*f(k-8,:,:,j)
+          k=l2+3
+          if (l2nd) then
+!
+! This value belongs semantically to the *second* ghost point, but is stored
+! here in the third, as in that point we need two different values for getting the first and second
+! derivatives in the first inner point right.
+!
+            f(k,:,:,j)=( 27*f(k-1,:,:,j) &
+                       -133*f(k-2,:,:,j) &
+                       +343*f(k-3,:,:,j) &
+                       -525*f(k-4,:,:,j) &
+                       +497*f(k-5,:,:,j) &
+                       -287*f(k-6,:,:,j) &
+                       + 93*f(k-7,:,:,j) &
+                       - 13*f(k-8,:,:,j))/2.
+          else
+            f(k,:,:,j)=9*f(k-1,:,:,j) &
+                     -45*f(k-2,:,:,j) &
+                    +147*f(k-3,:,:,j) &
+                    -315*f(k-4,:,:,j) &
+                    +441*f(k-5,:,:,j) &
+                    -399*f(k-6,:,:,j) &
+                    +225*f(k-7,:,:,j) &
+                     -72*f(k-8,:,:,j) &
+                     +10*f(k-9,:,:,j)
+          endif
+        elseif (idir==2) then
+          k=m2+1
+          f(:,k,:,j)=7*f(:,k-1,:,j) &
+                   -21*f(:,k-2,:,j) &
+                   +35*f(:,k-3,:,j) &
+                   -35*f(:,k-4,:,j) &
+                   +21*f(:,k-5,:,j) &
+                    -7*f(:,k-6,:,j) &
+                      +f(:,k-7,:,j)
+          k=m2+2
+          f(:,k,:,j)=9*f(:,k-1,:,j) &
+                   -35*f(:,k-2,:,j) &
+                   +77*f(:,k-3,:,j) &
+                  -105*f(:,k-4,:,j) &
+                   +91*f(:,k-5,:,j) &
+                   -49*f(:,k-6,:,j) &
+                   +15*f(:,k-7,:,j) &
+                    -2*f(:,k-8,:,j)
+          k=m2+3
+          if (l2nd) then
+!
+! This value belongs semantically to the *second* ghost point, but is stored
+! here in the third, as in that point we need two different values for getting the first and second
+! derivatives in the first inner point right.
+!
+            f(:,k,:,j)=( 27*f(:,k-1,:,j) &
+                       -133*f(:,k-2,:,j) &
+                       +343*f(:,k-3,:,j) &
+                       -525*f(:,k-4,:,j) &
+                       +497*f(:,k-5,:,j) &
+                       -287*f(:,k-6,:,j) &
+                       + 93*f(:,k-7,:,j) &
+                       - 13*f(:,k-8,:,j))/2.
+          else
+            f(:,k,:,j)=9*f(:,k-1,:,j) &
+                     -45*f(:,k-2,:,j) &
+                    +147*f(:,k-3,:,j) &
+                    -315*f(:,k-4,:,j) &
+                    +441*f(:,k-5,:,j) &
+                    -399*f(:,k-6,:,j) &
+                    +225*f(:,k-7,:,j) &
+                     -72*f(:,k-8,:,j) &
+                     +10*f(:,k-9,:,j)
+          endif
+        elseif (idir==3) then
+          k=n2+1
+          f(:,:,k,j)=7*f(:,:,k-1,j) &
+                   -21*f(:,:,k-2,j) &
+                   +35*f(:,:,k-3,j) &
+                   -35*f(:,:,k-4,j) &
+                   +21*f(:,:,k-5,j) &
+                    -7*f(:,:,k-6,j) &
+                      +f(:,:,k-7,j)
+          k=n2+2
+          f(:,:,k,j)=9*f(:,:,k-1,j) &
+                   -35*f(:,:,k-2,j) &
+                   +77*f(:,:,k-3,j) &
+                  -105*f(:,:,k-4,j) &
+                   +91*f(:,:,k-5,j) &
+                   -49*f(:,:,k-6,j) &
+                   +15*f(:,:,k-7,j) &
+                    -2*f(:,:,k-8,j)
+          k=n2+3
+          if (l2nd) then
+!
+! This value belongs semantically to the *second* ghost point, but is stored
+! here in the third, as in that point we need two different values for getting the first and second
+! derivatives in the first inner point right.
+!
+            f(:,:,k,j)=( 27*f(:,:,k-1,j) &
+                       -133*f(:,:,k-2,j) &
+                       +343*f(:,:,k-3,j) &
+                       -525*f(:,:,k-4,j) &
+                       +497*f(:,:,k-5,j) &
+                       -287*f(:,:,k-6,j) &
+                       + 93*f(:,:,k-7,j) &
+                       - 13*f(:,:,k-8,j))/2.
+          else
+            f(:,:,k,j)=9*f(:,:,k-1,j) &
+                     -45*f(:,:,k-2,j) &
+                    +147*f(:,:,k-3,j) &
+                    -315*f(:,:,k-4,j) &
+                    +441*f(:,:,k-5,j) &
+                    -399*f(:,:,k-6,j) &
+                    +225*f(:,:,k-7,j) &
+                     -72*f(:,:,k-8,j) &
+                     +10*f(:,:,k-9,j)
+          endif
+        endif
+      endif
+
+    endsubroutine set_ghosts_for_onesided_ders
+!***********************************************************************
+    subroutine bval_from_neumann_arr(f,topbot,j,idir,val)
+!
+!  Calculates the boundary value from the Neumann BC d f/d x_i = val employing
+!  one-sided difference formulae. val depends on x,y.
+!
+!  30-sep-16/MR: coded
+!
+      real, dimension(mx,my,mz,*) :: f
+      character(LEN=3) :: topbot
+      integer :: j,idir
+      real, dimension(:,:) :: val
+
+      if (topbot=='bot') then
+        if (idir==1) then
+          f(l1,:,:,j) = (-val*60.*dx + 360.*f(l1+1,:,:,j) &
+                                     - 450.*f(l1+2,:,:,j) &
+                                     + 400.*f(l1+3,:,:,j) &
+                                     - 225.*f(l1+4,:,:,j) &
+                                     +  72.*f(l1+5,:,:,j) &
+                                     -  10.*f(l1+6,:,:,j) )/147.
+        elseif (idir==2) then
+          f(:,m1,:,j) = (-val*60.*dy + 360.*f(:,m1+1,:,j) &
+                                     - 450.*f(:,m1+2,:,j) &
+                                     + 400.*f(:,m1+3,:,j) &
+                                     - 225.*f(:,m1+4,:,j) &
+                                     +  72.*f(:,m1+5,:,j) &
+                                     -  10.*f(:,m1+6,:,j) )/147.
+        elseif (idir==3) then
+          f(:,:,n1,j) = (-val*60.*dz + 360.*f(:,:,n1+1,j) &
+                                     - 450.*f(:,:,n1+2,j) &
+                                     + 400.*f(:,:,n1+3,j) &
+                                     - 225.*f(:,:,n1+4,j) &
+                                     +  72.*f(:,:,n1+5,j) &
+                                     -  10.*f(:,:,n1+6,j) )/147.
+        endif
+      else
+        if (idir==1) then
+          f(l2,:,:,j) = (val*60.*dx + 360.*f(l2-1,:,:,j) &
+                                    - 450.*f(l2-2,:,:,j) &
+                                    + 400.*f(l2-3,:,:,j) &
+                                    - 225.*f(l2-4,:,:,j) &
+                                    +  72.*f(l2-5,:,:,j) &
+                                    -  10.*f(l2-6,:,:,j) )/147.
+        elseif (idir==2) then
+          f(:,m2,:,j) = (val*60.*dy + 360.*f(:,m2-1,:,j) &
+                                    - 450.*f(:,m2-2,:,j) &
+                                    + 400.*f(:,m2-3,:,j) &
+                                    - 225.*f(:,m2-4,:,j) &
+                                    +  72.*f(:,m2-5,:,j) &
+                                    -  10.*f(:,m2-6,:,j) )/147.
+        elseif (idir==3) then
+          f(:,:,n2,j) = (val*60.*dz + 360.*f(:,:,n2-1,j) &
+                                    - 450.*f(:,:,n2-2,j) &
+                                    + 400.*f(:,:,n2-3,j) &
+                                    - 225.*f(:,:,n2-4,j) &
+                                    +  72.*f(:,:,n2-5,j) &
+                                    -  10.*f(:,:,n2-6,j) )/147.
+        endif
+      endif
+
+    endsubroutine bval_from_neumann_arr
 !***********************************************************************
  endmodule Deriv
