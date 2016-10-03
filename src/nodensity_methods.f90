@@ -202,6 +202,6 @@ module DensityMethods
       call keep_compiler_quiet(iz)
       call keep_compiler_quiet(derlnrho)
 !
-    endsubroutine getderlnrho_z(f,iz,derlnrho)
+    endsubroutine getderlnrho_z
 !***********************************************************************
 endmodule DensityMethods
