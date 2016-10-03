@@ -97,7 +97,7 @@ module Deriv
       lrangep=indgen(nx)+l1-1                          ! range l1 ... l2
       lrangem=lrangep-nghost; lrangep=lrangep+nghost   ! ranges l1-3 ... l2-3 and l1+3 ... l2+3
 
-      if (lall_onesided.and..not.lperi(1)) then
+      if (lall_onesided .and. nxgrid>1 .and. .not.lperi(1)) then
         if (lfirst_proc_x) lrangem(2)=l1-nghost
         if (llast_proc_x ) lrangep(nx-1)=l2+nghost
       endif
@@ -113,11 +113,11 @@ module Deriv
 !
       if (lall_onesided) then
         m3m=nghost; m3p=nghost; n3m=nghost; n3p=nghost
-        if (.not.lperi(2)) then
+        if (nygrid>1 .and. .not.lperi(2)) then
           if (lfirst_proc_y .and. m==m1+1) m3m=nghost+1
           if (llast_proc_y .and. m==m2-1) m3p=nghost+1
         endif
-        if (.not.lperi(3)) then
+        if (nzgrid>1 .and. .not.lperi(3)) then
           if (lfirst_proc_z .and. n==n1+1) n3m=nghost+1
           if (llast_proc_z .and. n==n2-1) n3p=nghost+1
         endif
