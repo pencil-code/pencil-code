@@ -159,12 +159,14 @@ module Param_IO
       lreset_seed, loutput_varn_at_exact_tsnap, lstop_on_ioerror, mailaddress, &
       theta_lower_border, wborder_theta_lower, theta_upper_border, &
       wborder_theta_upper, fraction_tborder, lmeridional_border_drive, &
-      lread_from_other_prec, downsampl, lfullvar_in_slices, lsubstract_reference_state, &
+      lread_from_other_prec, downsampl, lfullvar_in_slices, &
+      lsubstract_reference_state, &
       ldirect_access, lproper_averages, lmaximal_cdt, lmaximal_cdtv, &
-      pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w, lall_onesided
+      pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w, &
+      lall_onesided
 !
   namelist /IO_pars/ &
-      lcollective_IO, IO_strategy
+      lcollective_IO, IO_strategy, mvar_down
 !
   contains
 !***********************************************************************

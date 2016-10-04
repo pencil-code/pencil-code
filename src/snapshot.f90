@@ -102,6 +102,10 @@ module Snapshot
 !  Generate ghost zone data
 !  TBDone: periodic BC
 !
+!  fred: Temporarily switched off until boundary conditions correctly
+!  implemented on course mesh. ghost zones not required for time correlations
+!
+        if (.false.) then        
         ldownsampling=.true.
 !
 !  Save those grid-related variables which are temporarily overwritten
@@ -184,6 +188,21 @@ module Snapshot
 !
         call save_grid(lrestore=.true.)
         ldownsampling=.false.
+        else
+        if (lfirst_call) then
+!
+!  At first call, write downsampled grid and its global and local dimensions
+!
+          call wgrid('grid_down.dat',iex+nghost,iey+nghost,iez+nghost)
+          call wdim(trim(directory)//'/dim_down.dat',iex+nghost,iey+nghost,iez+nghost)
+          if (lroot) call wdim(trim(datadir)//'/dim_down.dat', &
+                               ceiling(float(nxgrid)/isx)+2*nghost, &
+                               ceiling(float(nygrid)/isy)+2*nghost, &
+                               ceiling(float(nzgrid)/isz)+2*nghost, &
+                               lglobal=.true.)
+          lfirst_call=.false.
+        endif
+        endif
 !
 !  Downsampled ouput in VARd<n> (n>0) snapshot
 !
