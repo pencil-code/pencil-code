@@ -26,6 +26,8 @@ module Deriv
   public :: der2_minmod
   public :: heatflux_deriv_x
   public :: set_mn_offsets
+  public :: set_ghosts_for_onesided_ders
+  public :: bval_from_neumann
 !
   real :: der2_coef0, der2_coef1, der2_coef2, der2_coef3, der2_coef4, der2_coef5
 !
@@ -56,6 +58,11 @@ module Deriv
   interface  der_onesided_4_slice                ! Overload the der function
     module procedure  der_onesided_4_slice_main  ! derivative of an 'mvar' variable
     module procedure  der_onesided_4_slice_other ! derivative of another field
+  endinterface
+!
+  interface bval_from_neumann
+    module procedure bval_from_neumann_scl
+    module procedure bval_from_neumann_arr
   endinterface
 !
   contains
@@ -1903,5 +1910,44 @@ module Deriv
      heatflux_deriv_x = .false.
 
     endfunction heatflux_deriv_x
+!***********************************************************************
+    subroutine set_ghosts_for_onesided_ders(f,topbot,j,idir,l2nd_)
+!
+!  Dummy.
+!
+      real, dimension(mx,my,mz,*) :: f
+      character(LEN=3) :: topbot
+      integer :: j,idir
+      logical, optional :: l2nd_
+
+      call fatal_error('set_ghosts_for_onesided_ders','Not implemented for 10th order.')
+
+    endsubroutine set_ghosts_for_onesided_ders
+!***********************************************************************
+    subroutine bval_from_neumann_scl(f,topbot,j,idir,val)
+!
+!  Dummy.
+!
+      real, dimension(mx,my,mz,*) :: f
+      character(LEN=3) :: topbot
+      integer :: j,idir
+      real :: val
+
+      call fatal_error('bval_from_neumann_scl','Not implemented for 10th order.')
+
+    endsubroutine bval_from_neumann_scl
+!***********************************************************************
+    subroutine bval_from_neumann_arr(f,topbot,j,idir,val)
+!
+!  Dummy.
+!
+      real, dimension(mx,my,mz,*) :: f
+      character(LEN=3) :: topbot
+      integer :: j,idir
+      real, dimension(:,:) :: val
+
+      call fatal_error('bval_from_neumann_arr','Not implemented for 10th order.')
+
+    endsubroutine bval_from_neumann_arr
 !***********************************************************************
 endmodule Deriv
