@@ -45,6 +45,7 @@ module Particles_coagulation
   logical :: lconstant_deltav=.false.   ! use constant relative velocity
   logical :: lmaxwell_deltav=.false.    ! use maxwellian relative velocity
   logical :: ldroplet_coagulation=.false.
+  logical :: lcollision_output=.false.
   character (len=labellen) :: droplet_coagulation_model='standard'
 !
   real, dimension(:,:), allocatable :: r_ik_mat, cum_func_sec_ik
@@ -64,7 +65,7 @@ module Particles_coagulation
       GNewton, deltav_grav_floor, critical_mass_ratio_sticking, &
       minimum_particle_mass, minimum_particle_radius, lzsomdullemond, &
       lconstant_deltav, lmaxwell_deltav, deltav, maxwell_param, &
-      ldroplet_coagulation, droplet_coagulation_model
+      ldroplet_coagulation, droplet_coagulation_model, lcollision_output
 !
   contains
 !***********************************************************************
@@ -590,6 +591,7 @@ module Particles_coagulation
       real :: rhopsma, rhopbig, apsma, apbig
       real :: coeff_restitution, deltav_recoil, escape_speed
       real :: apj,mpj,npj,apk,mpk,npk
+      logical :: mpk_is_smaller_than_mpj
 !
       if (lparticles_number) then
 !
@@ -636,11 +638,20 @@ module Particles_coagulation
               fp(k,inpswarm)=npnew
               fp(j,ivpx:ivpz)=vpnew
               fp(k,ivpx:ivpz)=vpnew
+              if (lcollision_output) then
+                open(99,file=trim(datadir)//'/collisions.dat', POSITION='append')
+                write(99,"(f10.6,2i8,2f10.6)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap)
+                close(99)
+              endif
             else if (droplet_coagulation_model=='shima') then
               mpj = four_pi_rhopmat_over_three*fp(j,iap)**3
               npj = fp(j,inpswarm)
               mpk = four_pi_rhopmat_over_three*fp(k,iap)**3
               npk = fp(k,inpswarm)
+!
+!  store which swarm has the smaller particle
+!
+              mpk_is_smaller_than_mpj=mpk<mpj
 !
 !  Identify the swarm with the highest particle number density
 !
@@ -650,6 +661,11 @@ module Particles_coagulation
               else
                 swarm_index1=j
                 swarm_index2=k
+              endif
+              if (lcollision_output) then
+                open(99,file=trim(datadir)//'/collisions.dat', POSITION='append')
+                write(99,"(f10.6,2i8,2f10.6)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap)
+                close(99)
               endif
 !
 !  Check if we have the special case where the particle number 
@@ -687,6 +703,27 @@ module Particles_coagulation
                 vpnew=(fp(j,ivpx:ivpz)*mpj+fp(k,ivpx:ivpz)*mpk)/mpnew
                 fp(swarm_index1,ivpx:ivpz)=vpnew
               endif
+!
+!  relabelling
+!
+              if (mpk_is_smaller_than_mpj) then
+                if (fp(swarm_index1,iap)<fp(swarm_index2,iap)) then
+                  k=swarm_index1
+                  j=swarm_index2
+                else
+                  j=swarm_index1
+                  k=swarm_index2
+                endif
+              else
+                if (fp(swarm_index1,iap)<fp(swarm_index2,iap)) then
+                  k=swarm_index2
+                  j=swarm_index1
+                else
+                  j=swarm_index2
+                  k=swarm_index1
+                endif
+              endif
+!
             else
               call fatal_error('','No such droplet_coagulation_model')
             endif
@@ -791,6 +828,11 @@ module Particles_coagulation
               else
                 swarm_index1=j
                 swarm_index2=k
+              endif
+              if (lcollision_output) then
+                open(99,file=trim(datadir)//'/collisions.dat', POSITION='append')
+                write(99,"(f10.6,2i8,2f10.6)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap)
+                close(99)
               endif
 !
 !  Check if we have the special case where the particle number 
