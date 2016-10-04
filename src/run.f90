@@ -353,7 +353,11 @@ program run
 !
 !  set slots to be written in downsampled f if 0 use mvar_io
 !
-  if (ldownsampl.and.mvar_down<=0) mvar_down=mvar_io
+  if (ldownsampl) then
+    if (mvar_down<0) mvar_down=mvar
+    if (maux_down<0) maux_down=maux
+    if (mvar_down+maux_down==0) ldownsampl=.false.
+  endif
 !
 ! Shall we read also auxiliary variables or fewer variables (ex: turbulence
 ! field with 0 species as an input file for a chemistry problem)?
@@ -758,7 +762,7 @@ program run
         call pointmasses_write_snapshot(trim(directory_snap)//'/QVAR',ENUM=.true.,FLIST='qvarN.list')
 !
     call wsnap('VAR',f,mvar_io,ENUM=.true.,FLIST='varN.list')
-    if (ldownsampl) call wsnap_down(f,mvar_down,FLIST='varN_down.list')
+    if (ldownsampl) call wsnap_down(f,FLIST='varN_down.list')
     call wsnap_timeavgs('TAVG',ENUM=.true.,FLIST='tavgN.list')
 !
 !  Write slices (for animation purposes).

@@ -564,7 +564,7 @@ module Cdata
 !
   character (len=labellen), dimension(maux) :: aux_var
   integer :: aux_count=1
-  integer :: mvar_io=0, mvar_down=0
+  integer :: mvar_io=0, mvar_down=-1, maux_down=-1
   integer :: ireac=0
   integer, dimension(nchemspec) :: ireaci=0
 !

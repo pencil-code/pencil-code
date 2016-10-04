@@ -3217,19 +3217,20 @@ module Sub
 !
     endfunction numeric_precision
 !***********************************************************************
-    subroutine wdim(file,mxout,myout,mzout,lglobal)
+    subroutine wdim(file,mxout,myout,mzout,mvar_out,maux_out,lglobal)
 !
 !  Write dimension to file.
 !
 !   8-sep-01/axel: adapted to take myout,mzout
 !  30-sep-14/MR  : added parameter lglobal to be able to output
 !                  dimensions different from mx,my,mz both locally and globally
+!   4-oct-16/MR: added optional parameters mvar_out,maux_out.
 !
-      use General, only: loptest
+      use General, only: loptest, ioptest
 !
       character (len=*) :: file
       character         :: prec
-      integer, optional :: mxout,myout,mzout
+      integer, optional :: mxout,myout,mzout,mvar_out,maux_out
       logical, optional :: lglobal
       integer           :: mxout1,myout1,mzout1,iprocz_slowest=0
 !
@@ -3255,7 +3256,8 @@ module Sub
 !
       if (lroot .or. .not. lmonolithic_io) then
         open(1,file=file)
-        write(1,'(3i7,3i7)') mxout1,myout1,mzout1,mvar,maux,mglobal
+        write(1,'(3i7,3i7)') mxout1,myout1,mzout1, &
+                             ioptest(mvar_out,mvar),ioptest(maux_out,maux),mglobal
 !
 !  Check for double precision.
 !

@@ -109,7 +109,8 @@ module Param_IO
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
       nt, it1, it1d, dt, cdt, ddt, cdtv, cdtv2, cdtv3, cdts, cdtr, &
-      cdtc, isave, itorder, dsnap, dsnap_down, d2davg, dvid, dsound, dtmin, dspec, tmax, iwig, &
+      cdtc, isave, itorder, dsnap, dsnap_down, mvar_down, maux_down, &
+      d2davg, dvid, dsound, dtmin, dspec, tmax, iwig, &
       dtracers, dfixed_points, unit_system, unit_length, &
       unit_velocity, unit_density, unit_temperature, unit_magnetic, &
       awig, ialive, max_walltime, dtmax, ldt_paronly, vel_spec, mag_spec, &
@@ -166,7 +167,7 @@ module Param_IO
       lall_onesided
 !
   namelist /IO_pars/ &
-      lcollective_IO, IO_strategy, mvar_down
+      lcollective_IO, IO_strategy
 !
   contains
 !***********************************************************************

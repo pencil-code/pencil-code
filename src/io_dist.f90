@@ -158,8 +158,6 @@ module Io
         else
           call fatal_error ('output_snap', 'lwrite_2d used for 3D simulation!')
         endif
-      elseif (ldownsampl) then
-        write (lun_output) a(firstind(1):l2:downsampl(1),firstind(2):m2:downsampl(2),firstind(3):n2:downsampl(3),:)
       else
         write (lun_output) a
       endif

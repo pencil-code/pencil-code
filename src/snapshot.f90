@@ -25,12 +25,14 @@ module Snapshot
 !
   contains
 !***********************************************************************
-    subroutine wsnap_down(a,msnap,flist)
+    subroutine wsnap_down(a,flist)
 !
 !  Write downsampled snapshot file VARd*, labelled consecutively
 !  timestep can be different from timestep for full snapshots
 !
 !  13-feb-14/MR: coded
+!   4-oct-16/MR: removed par msnap; its role is taken over by the global vars
+!                mvar_down, maux_down for selecting subsets of variables.
 !
       use General, only: get_range_no, indgen
       use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
@@ -40,8 +42,7 @@ module Snapshot
       use Grid, only: save_grid, coords_aux
       use Messages, only: warning
 !
-      integer :: msnap
-      real, dimension (mx,my,mz,msnap) :: a
+      real, dimension (:,:,:,:) :: a
       character (len=*), optional :: flist
 !
       real, save :: tsnap
@@ -53,7 +54,7 @@ module Snapshot
 
       integer :: ndx, ndy, ndz, isx, isy, isz, ifx, ify, ifz, iax, iay, iaz, &
                  iex, iey, iez, l2s, l2is, m2s, m2is, n2s, n2is
-      real, dimension(ndown(1)+2*nghost,ndown(2)+2*nghost,ndown(3)+2*nghost,msnap) :: buffer
+      real, dimension(ndown(1)+2*nghost,ndown(2)+2*nghost,ndown(3)+2*nghost,mvar_down+maux_down) :: buffer
       integer, dimension(nghost) :: inds
       real, dimension(nghost) :: dxs_ghost, dys_ghost, dzs_ghost
 
@@ -69,15 +70,13 @@ module Snapshot
 !  update ghost zones for var.dat (cheap, since done infrequently).
 !
       call update_snaptime(file,tsnap,nsnap,dsnap_down,t,lsnap,ch)
-
       if (lsnap) then
 !
-        if (msnap==mfarray) &
-          call update_auxiliaries(a)
+        if (maux_down>0) call update_auxiliaries(a)
 !
 !  Number of downsampled data points on local processor in each direction
 !
-        ndx = ndown(1);    ndy = ndown(2);    ndz = ndown(3)
+        ndx = ndown(1); ndy = ndown(2); ndz = ndown(3)
 !
 !  Stepsize for downsampling in each direction
 !
@@ -97,7 +96,10 @@ module Snapshot
 !
 !  Copy downsampled data from *inner* grid points
 !
-        buffer(iax:iex,iay:iey,iaz:iez,:) = a(ifx:l2:isx,ify:m2:isy,ifz:n2:isz,:) 
+        buffer(iax:iex,iay:iey,iaz:iez,1:mvar_down) = a(ifx:l2:isx,ify:m2:isy,ifz:n2:isz,1:mvar_down) 
+        if (maux_down>0) &
+          buffer(iax:iex,iay:iey,iaz:iez,mvar_down+1:mvar_down+maux_down) = a(ifx:l2:isx,ify:m2:isy,ifz:n2:isz,mvar+1:mvar+maux_down) 
+print*, 'buffer=', size(buffer,4)
 !
 !  Generate ghost zone data
 !  TBDone: periodic BC
@@ -147,11 +149,12 @@ module Snapshot
 !  At first call, write downsampled grid and its global and local dimensions
 !
           call wgrid('grid_down.dat',iex+nghost,iey+nghost,iez+nghost)
-          call wdim(trim(directory)//'/dim_down.dat',iex+nghost,iey+nghost,iez+nghost)
+          call wdim(trim(directory)//'/dim_down.dat',iex+nghost,iey+nghost,iez+nghost,mvar_down,maux_down)
           if (lroot) call wdim(trim(datadir)//'/dim_down.dat', &
                                ceiling(float(nxgrid)/isx)+2*nghost, &
                                ceiling(float(nygrid)/isy)+2*nghost, &
                                ceiling(float(nzgrid)/isz)+2*nghost, &
+                               mvar_down,maux_down, &
                                lglobal=.true.)
           lfirst_call=.false.
         endif
@@ -194,7 +197,7 @@ module Snapshot
         call safe_character_assign(file,'VARd'//ch)
         open (lun_output, FILE=trim(directory_snap)//'/'//file, &
               FORM='unformatted', status='replace')
-        call output_snap(buffer,msnap)
+        call output_snap(buffer,mvar_down+maux_down)
 
         close(lun_output)
 !
