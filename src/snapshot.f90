@@ -98,8 +98,8 @@ module Snapshot
 !
         buffer(iax:iex,iay:iey,iaz:iez,1:mvar_down) = a(ifx:l2:isx,ify:m2:isy,ifz:n2:isz,1:mvar_down) 
         if (maux_down>0) &
-          buffer(iax:iex,iay:iey,iaz:iez,mvar_down+1:mvar_down+maux_down) = a(ifx:l2:isx,ify:m2:isy,ifz:n2:isz,mvar+1:mvar+maux_down) 
-print*, 'buffer=', size(buffer,4)
+          buffer(iax:iex,iay:iey,iaz:iez,mvar_down+1:mvar_down+maux_down) &
+          = a(ifx:l2:isx,ify:m2:isy,ifz:n2:isz,mvar+1:mvar+maux_down) 
 !
 !  Generate ghost zone data
 !  TBDone: periodic BC
