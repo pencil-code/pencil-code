@@ -58,16 +58,20 @@ class PcDim:
             self.mxgrid = self.mygrid = self.mzgrid = 0
 
         
-def read_dim(datadir='data',proc=-1):
+def read_dim(datadir='data',proc=-1,down=False):
     """
     read the dim.dat file. if proc is -1, then read the 'global'
     dimensions. if proc is >=0, then read the dim.dat in the
     corresponding processor directory.
     """
-    if (proc < 0 ):
-        filename = datadir+'/dim.dat' # global box dimensions
+    if down:
+        dimdat='dim_down.dat'
     else:
-        filename = datadir+'/proc'+str(proc)+'/dim.dat' # local proc. dimensions
+        dimdat='dim.dat'
+    if (proc < 0 ):
+        filename = datadir+'/'+dimdat # global box dimensions
+    else:
+        filename = datadir+'/proc'+str(proc)+'/'+dimdat # local proc. dimensions
 
     try:
         filename = os.path.expanduser(filename)

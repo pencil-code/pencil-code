@@ -101,7 +101,8 @@ class DataCube(object):
         else:
             datadir = os.path.expanduser(datadir)
             if dim is None:
-                dim = read_dim(datadir,proc)
+                ldownsampled= 'VARd' in varfile
+                dim = read_dim(datadir,proc,down=ldownsampled)
             if param is None:
                 param = read_param(datadir=datadir, quiet=quiet)
             if index is None:
@@ -116,6 +117,8 @@ class DataCube(object):
             totalvars = dim.mvar+dim.maux
         else:
             totalvars = dim.mvar
+        if param.mvar_down>0 and 'VARd' in varfile:
+            totalvars = param.mvar_down
 
         # Read index.pro to get positions and "names"
         # of variables in f(mx,my,mz,nvar).

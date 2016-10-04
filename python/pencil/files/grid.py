@@ -24,7 +24,7 @@ def read_grid(*args, **kwargs):
 class Grid(object):
 
     def __init__(self, datadir='data/', proc=-1, ivar=-1, quiet=False,
-                 trim=False, format='native', param=None):
+                 trim=False, format='native', param=None, down=False):
         """
         Read grid from pencil code. if proc < 0, then load all data
         and assemble. otherwise, load grid from specified processor.
@@ -68,7 +68,11 @@ class Grid(object):
             mzloc = procdim.mz
 
             #read data
-            filename = os.path.join(datadir, directory, 'grid.dat')
+            if down:
+                griddat='grid_down.dat'
+            else:
+                griddat='grid.dat'
+            filename = os.path.join(datadir, directory, griddat)
             infile = npfile(filename, endian=format)
             grid_raw = infile.fort_read(precision)
             dx, dy, dz = tuple(infile.fort_read(precision))
