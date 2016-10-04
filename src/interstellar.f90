@@ -171,7 +171,9 @@ module Interstellar
   real, parameter :: SNII_mass_rate_cgs=1.584434515E-19
   real, parameter :: SNI_mass_rate_cgs=1.489368444E-21
   real :: SNII_mass_rate, SNI_mass_rate
-  logical :: lSN_mass_rate=.false.
+  real :: SN_interval_rhom=impossible, SN_interval_rhom_cgs=2.8e-25
+  logical :: lSN_mass_rate=.false., lscale_SN_interval=.false.
+  integer :: iSNdx=3
 !
 !  Some useful constants
 !
@@ -408,7 +410,8 @@ module Interstellar
       l_persist_overwrite_tSNI, l_persist_overwrite_tSNII, &
       l_persist_overwrite_tcluster, l_persist_overwrite_xcluster, &
       l_persist_overwrite_ycluster, l_persist_overwrite_zcluster, &
-      lreset_ism_seed, SN_rho_ratio, eps_mass, eps_radius, lim_zdisk
+      lreset_ism_seed, SN_rho_ratio, eps_mass, eps_radius, lim_zdisk,&
+      lscale_SN_interval, SN_interval_rhom, iSNdx
 !
   contains
 !
@@ -587,6 +590,8 @@ module Interstellar
           average_SNII_heating * t_interval_SNII/ &
           (t_interval_SNII + t * heatingfunction_fadefactor) * &
           heatingfunction_scalefactor
+      if (SN_interval_rhom==impossible) &
+          SN_interval_rhom=SN_interval_rhom_cgs/unit_density
 !
       if (lroot .and. (ip<14)) then
         print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
@@ -1746,7 +1751,7 @@ module Interstellar
             if (lSN_mass_rate) then
               call set_interval(f,t_interval_SNI,l_SNI)
             endif
-            call set_next_SNI
+            !call set_next_SNI
             exit
           elseif (ierr==iEXPLOSION_TOO_HOT) then
             if (lroot) print*,'check_SNI: TOO HOT, (x,y,z) =',&
@@ -1836,7 +1841,7 @@ module Interstellar
             if (lSN_mass_rate) then
               call set_interval(f,t_interval_SNI,l_SNI)
             endif
-            call set_next_SNII
+            !call set_next_SNII
             exit
             elseif (ierr==iEXPLOSION_TOO_HOT) then
               if (lroot) print*,'check_SNIIb: TOO HOT, (x,y,z) =',&
@@ -1871,11 +1876,17 @@ module Interstellar
 !
     endsubroutine check_SNIIb
 !***********************************************************************
-    subroutine set_next_SNI()
+    subroutine set_next_SNI(f,scaled_interval)
 !
       use General, only: random_number_wrapper
+      use Mpicomm, only: mpiallreduce_sum
 !
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(1) :: franSN
+      real :: rhom, scaled_interval, mpirho
+!
+      intent(in) :: f
+      intent(out) :: scaled_interval
 !
 !  Pre-determine time for next SNI.
 !
@@ -1883,20 +1894,39 @@ module Interstellar
           "check_SNI: Old t_next_SNI=", t_next_SNI
       call random_number_wrapper(franSN)
 !
+      if (lscale_SN_interval) then
+        if (ldensity_nolog) then
+          rhom=sum(f(l1:l2,m1:m2,n1:n2,irho))/(nx*ny*nz)
+        else
+          rhom=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))/(nx*ny*nz)
+        endif
+        mpirho=rhom/ncpus
+        call mpiallreduce_sum(mpirho,rhom)
+        scaled_interval=t_interval_SNI*(SN_interval_rhom/rhom)**iSNdx
+      else
+        scaled_interval=t_interval_SNI
+      endif
+!
 !  Vary the time interval with a uniform random distribution between
 !  0.8 and 1.2 times the average rate required.
 !
-      t_next_SNI=t + (1.0 + 0.4*(franSN(1)-0.5)) * t_interval_SNI
+      t_next_SNI=t + (1.0 + 1.75*(franSN(1)-0.5)) * scaled_interval
       if (lroot.and.ip<20) print*, &
           'check_SNI: Next SNI at time = ' ,t_next_SNI
 !
     endsubroutine set_next_SNI
 !*****************************************************************************
-    subroutine set_next_SNII()
+    subroutine set_next_SNII(f,scaled_interval)
 !
       use General, only: random_number_wrapper
+      use Mpicomm, only: mpiallreduce_sum
 !
+      real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(1) :: franSN
+      real :: rhom, scaled_interval, mpirho
+!
+      intent(in) :: f
+      intent(out) :: scaled_interval
 !
 !  Pre-determine time for next SNII
 !  Check_SNII has a selfregulating random rate governed by the parameters of
@@ -1907,10 +1937,23 @@ module Interstellar
           "check_SNII: Old t_next_SNII=", t_next_SNII
       call random_number_wrapper(franSN)
 !
+      if (lscale_SN_interval) then
+        if (ldensity_nolog) then
+          rhom=sum(f(l1:l2,m1:m2,n1:n2,irho))/(nx*ny*nz)
+        else
+          rhom=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))/(nx*ny*nz)
+        endif
+        mpirho=rhom/ncpus
+        call mpiallreduce_sum(mpirho,rhom)
+        scaled_interval=t_interval_SNII*(SN_interval_rhom/rhom)**iSNdx
+      else
+        scaled_interval=t_interval_SNII
+      endif
+!
 !  Vary the time interval with a uniform random distribution between
 !  0.4 and 1.6 times the average rate required.
 !
-      t_next_SNII=t + (1.0 + 1.2*(franSN(1)-0.5)) * t_interval_SNII
+      t_next_SNII=t + (1.0 + 1.75*(franSN(1)-0.5)) * scaled_interval
       if (lroot.and.ip<20) print*, &
           'check_SNII: Next SNII at time = ' ,t_next_SNII
 !
@@ -2121,7 +2164,7 @@ module Interstellar
             if (lSN_mass_rate) then
               call set_interval(f,t_interval_SNII,l_SNI)
             endif
-            call set_next_SNII
+            !call set_next_SNII
             last_SN_t=t
           endif
 !
@@ -3057,9 +3100,9 @@ module Interstellar
       if (lroot.and.ip<20) print*, &
           'explode_SN: SNR%feat%MM=',SNR%feat%MM
       if (SNR%indx%SN_type==1) then
-        t_interval_SN=t_interval_SNI
+        call set_next_SNI(f,t_interval_SN)
       else
-        t_interval_SN=t_interval_SNII
+        call set_next_SNII(f,t_interval_SN)
       endif
 !
       if (lroot) then
