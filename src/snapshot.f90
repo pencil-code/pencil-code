@@ -102,15 +102,11 @@ module Snapshot
 !  Generate ghost zone data
 !  TBDone: periodic BC
 !
-!  fred: Temporarily switched off until boundary conditions correctly
-!  implemented on course mesh. ghost zones not required for time correlations
-!
-        if (.false.) then        
         ldownsampling=.true.
 !
 !  Save those grid-related variables which are temporarily overwritten
 !
-        call save_grid()
+        call save_grid
 !
 !  Downsample grid
 !
@@ -121,7 +117,6 @@ module Snapshot
         y(iax:iex) = y(ify:m2:isy)
         z(iax:iex) = z(ifz:n2:isz)
         dx=isx*dx;  dy=isy*dy; dz=isz*dz   !!!  Valid only for equidistant grids
-
 !
 !  Generate downsampled ghost zone coordinates (only necessary at boundaries)
 !
@@ -168,6 +163,10 @@ module Snapshot
 !  For each direction at boundary: save upper index limit and inner start index for
 !  periodic BCs; then calculate values at downsampled ghost points from BCs
 !
+!  fred: Temporarily switched off until boundary conditions correctly
+!  implemented on coarse mesh. ghost zones not required for time correlations.
+!
+        if (.false.) then
         if (lfirst_proc_x.or.llast_proc_x) then
           l2s=l2; l2is=l2i; l2=iex; l2i=l2-nghost+1
           call boundconds_x(buffer)
@@ -183,26 +182,12 @@ module Snapshot
           call boundconds_z(buffer)
           n2=n2s; n2i=n2is
         endif
+        endif
 !
 !  Restore grid (including auxiliaries)
 !
         call save_grid(lrestore=.true.)
         ldownsampling=.false.
-        else
-        if (lfirst_call) then
-!
-!  At first call, write downsampled grid and its global and local dimensions
-!
-          call wgrid('grid_down.dat',iex+nghost,iey+nghost,iez+nghost)
-          call wdim(trim(directory)//'/dim_down.dat',iex+nghost,iey+nghost,iez+nghost)
-          if (lroot) call wdim(trim(datadir)//'/dim_down.dat', &
-                               ceiling(float(nxgrid)/isx)+2*nghost, &
-                               ceiling(float(nygrid)/isy)+2*nghost, &
-                               ceiling(float(nzgrid)/isz)+2*nghost, &
-                               lglobal=.true.)
-          lfirst_call=.false.
-        endif
-        endif
 !
 !  Downsampled ouput in VARd<n> (n>0) snapshot
 !

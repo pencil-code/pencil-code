@@ -353,7 +353,7 @@ program run
 !
 !  set slots to be written in downsampled f if 0 use mvar_io
 !
-  if (mvar_down<=0) mvar_down=mvar_io
+  if (ldownsampl.and.mvar_down<=0) mvar_down=mvar_io
 !
 ! Shall we read also auxiliary variables or fewer variables (ex: turbulence
 ! field with 0 species as an input file for a chemistry problem)?
