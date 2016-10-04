@@ -54,7 +54,8 @@ module Particles_coagulation
   real :: deltav = 1.0          ! relative velocity
   real :: maxwell_param = 1.0   ! alpha parameter for maxwell distribution
 !
-  integer :: idiag_ncoagpm=0, idiag_ncoagpartpm=0
+  integer :: idiag_ncoagpm=0, idiag_ncoagpartpm=0, idiag_dt1_coag_par=0
+             
 !
   namelist /particles_coag_run_pars/ &
       cdtpcoag, lcoag_simultaneous, lshear_in_vp, lconstant_kernel_test, &
@@ -495,6 +496,8 @@ module Particles_coagulation
                     call sum_par_name((/real(ncoll_par)/),idiag_ncoagpm)
                 if (idiag_ncoagpartpm/=0) &
                     call sum_par_name((/real(npart_par)/),idiag_ncoagpartpm)
+                if (idiag_dt1_coag_par/=0) &
+                    call sum_par_name((/real(ncoll_par)/),idiag_dt1_coag_par)
               endif
 !
 !  Move to next particle in the grid cell.
@@ -518,6 +521,8 @@ module Particles_coagulation
               call sum_par_name(fp(1:npar_loc,ixp),idiag_ncoagpm)
           if (idiag_ncoagpartpm/=0) &
               call sum_par_name(fp(1:npar_loc,ixp),idiag_ncoagpartpm)
+          if (idiag_dt1_coag_par/=0) &
+              call sum_par_name(fp(1:npar_loc,ixp),idiag_dt1_coag_par)
         endif
       endif
 !
@@ -1206,13 +1211,14 @@ module Particles_coagulation
       integer :: iname
 !
       if (lreset) then
-        idiag_ncoagpm=0; idiag_ncoagpartpm=0
+        idiag_ncoagpm=0; idiag_ncoagpartpm=0; idiag_dt1_coag_par=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'ncoagpm',idiag_ncoagpm)
         call parse_name(iname,cname(iname),cform(iname), &
             'ncoagpartpm',idiag_ncoagpartpm)
+        call parse_name(iname,cname(iname),cform(iname),'dt1_coag_par',idiag_dt1_coag_par)
       enddo
 !
       if (present(lwrite)) call keep_compiler_quiet(lwrite)
