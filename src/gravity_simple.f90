@@ -42,7 +42,7 @@ module Gravity
   endinterface
 !
   double precision, parameter :: g_B_cgs=6.172d20, g_D_cgs=3.086d21
-  double precision :: g_B, g_D
+  double precision :: g_B, g_D, g_B_factor=1.0, g_D_factor=1.0
   real :: gravitational_const=0., mass_cent_body=0.
   real, dimension(mx) :: gravx_xpencil=0.0, potx_xpencil=0.0
   real, dimension(my) :: gravy_ypencil=0.0, poty_ypencil=0.0
@@ -59,7 +59,7 @@ module Gravity
   real :: nu_epicycle=1.0, nu_epicycle2=1.0
   real :: nux_epicycle=0.0, nux_epicycle2=0.0
   real :: r0_pot=0.0
-  real :: g_A, g_C
+  real :: g_A, g_C, g_A_factor=1.0, g_C_factor=1.0
   real :: cs0hs=0.0, H0hs=0.0
   real :: potx_const=0.0, poty_const=0.0, potz_const=0.0
   integer :: n_pot=10
@@ -89,7 +89,7 @@ module Gravity
       lcalc_zinfty, kappa_x1, kappa_x2, kappa_z1, kappa_z2, reduced_top, &
       lboussinesq_grav, n_pot, cs0hs, H0hs, grav_tilt, grav_amp, &
       potx_const,poty_const,potz_const, zclip, n_adjust_sphersym, gravitational_const, &
-      mass_cent_body
+      mass_cent_body, g_A_factor, g_C_factor, g_B_factor, g_D_factor
 !
   namelist /grav_run_pars/ &
       gravx_profile, gravy_profile, gravz_profile, gravx, gravy, gravz, &
@@ -100,7 +100,7 @@ module Gravity
       lcalc_zinfty, kappa_x1, kappa_x2, kappa_z1, kappa_z2, reduced_top, &
       lboussinesq_grav, n_pot, grav_tilt, grav_amp, &
       potx_const,poty_const,potz_const, zclip, n_adjust_sphersym, gravitational_const, &
-      mass_cent_body
+      mass_cent_body, g_A_factor, g_C_factor, g_B_factor, g_D_factor
 !
 !  Diagnostic variables for print.in
 ! (needs to be consistent with reset list below)
@@ -499,10 +499,10 @@ module Gravity
 !  Set up physical units.
 !
       if (unit_system=='cgs') then
-        g_A = g_A_cgs/unit_velocity*unit_time
-        g_B = g_B_cgs/unit_length
-        g_C = g_C_cgs/unit_velocity*unit_time
-        g_D = g_D_cgs/unit_length
+        g_A = g_A_factor*g_A_cgs/unit_velocity*unit_time
+        g_B = g_B_factor*g_B_cgs/unit_length
+        g_C = g_C_factor*g_C_cgs/unit_velocity*unit_time
+        g_D = g_D_factor*g_D_cgs/unit_length
       else if (unit_system=='SI') then
         call fatal_error('initialize_gravity','SI unit conversions not inplemented')
       endif
