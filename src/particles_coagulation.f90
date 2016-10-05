@@ -45,7 +45,7 @@ module Particles_coagulation
   logical :: lconstant_deltav=.false.   ! use constant relative velocity
   logical :: lmaxwell_deltav=.false.    ! use maxwellian relative velocity
   logical :: ldroplet_coagulation=.false.
-  logical :: lcollision_output=.false.
+  logical :: lcollision_output=.false., luser_random_number_wrapper=.true.
   character (len=labellen) :: droplet_coagulation_model='standard'
 !
   real, dimension(:,:), allocatable :: r_ik_mat, cum_func_sec_ik
@@ -65,7 +65,8 @@ module Particles_coagulation
       GNewton, deltav_grav_floor, critical_mass_ratio_sticking, &
       minimum_particle_mass, minimum_particle_radius, lzsomdullemond, &
       lconstant_deltav, lmaxwell_deltav, deltav, maxwell_param, &
-      ldroplet_coagulation, droplet_coagulation_model, lcollision_output
+      ldroplet_coagulation, droplet_coagulation_model, lcollision_output, &
+      luser_random_number_wrapper
 !
   contains
 !***********************************************************************
@@ -457,8 +458,11 @@ module Particles_coagulation
 !NILS: I am not able to understand why the call to the random_number_wrapper
 !NILS: routine should cause any problems, but I have reproduce the problem
 !NILS: both on our linux cluster (with pfg90) and on my laptop (with gfortran).
-                    call random_number(rran)
-!                    call random_number_wrapper(rran)
+                    if (luser_random_number_wrapper) then
+                      call random_number_wrapper(rran)
+                    else
+                      call random_number(rran)
+                    endif
                     if (rran<=prob) then
 !
                       call coagulation_fragmentation(fp,j,k,deltavjk, &
@@ -724,6 +728,12 @@ module Particles_coagulation
                   j=swarm_index2
                   k=swarm_index1
                 endif
+              endif
+              if (lcollision_output) then
+                open(99,POSITION='append', &
+                  FILE=trim(directory_dist)//'/collisions_swapped.dat')
+                write(99,"(f14.6,2i8,2f10.6)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap)
+                close(99)
               endif
 !
             else
