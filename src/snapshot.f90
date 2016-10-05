@@ -187,11 +187,6 @@ module Snapshot
         endif
         endif
 !
-!  Restore grid (including auxiliaries)
-!
-        call save_grid(lrestore=.true.)
-        ldownsampling=.false.
-!
 !  Downsampled ouput in VARd<n> (n>0) snapshot
 !
         call safe_character_assign(file,'VARd'//ch)
@@ -200,6 +195,11 @@ module Snapshot
         call output_snap(buffer,mvar_down+maux_down)
 
         close(lun_output)
+!
+!  Restore grid (including auxiliaries)
+!
+        call save_grid(lrestore=.true.)
+        ldownsampling=.false.
 !
         if (present(flist)) call log_filename_to_file(file,flist)
 !
