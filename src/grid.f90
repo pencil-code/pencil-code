@@ -1316,6 +1316,7 @@ module Grid
       real, dimension(nx), save :: r_mns,r1_mns,r2_mns
       real, dimension(my), save :: sinths,sin1ths,sin2ths,cosths, &
                                    cotths,cos1ths,tanths
+      real, dimension(mz), save :: sinphs, cosphs
       real, dimension(nx), save :: rcyl_mns,rcyl_mn1s,rcyl_mn2s
 
       real, save :: dxs, dys, dzs
@@ -1335,6 +1336,7 @@ module Grid
             r_mn=r_mns; r1_mn=r1_mns; r2_mn=r2_mns
             sinth=sinths; sin1th=sin1ths; sin2th=sin2ths; costh=cosths
             cotth=cotths; cos1th=cos1ths; tanth=tanths
+            sinphs=sinph; cosphs=cosph
           elseif (lcylindrical_coords) then
             rcyl_mn=rcyl_mns; rcyl_mn1=rcyl_mn1s; rcyl_mn2=rcyl_mn2s
           endif
@@ -1350,6 +1352,7 @@ module Grid
           r_mns=r_mn; r1_mns=r1_mn; r2_mns=r2_mn
           sinths=sinth; sin1ths=sin1th; sin2ths=sin2th; cosths=costh
           cotths=cotth; cos1ths=cos1th; tanths=tanth
+          sinph=sinphs; cosph=cosphs
         elseif (lcylindrical_coords) then
           rcyl_mns=rcyl_mn; rcyl_mn1s=rcyl_mn1; rcyl_mn2s=rcyl_mn2
         endif
