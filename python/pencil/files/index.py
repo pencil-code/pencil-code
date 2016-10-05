@@ -20,7 +20,7 @@ class Index(dict):
 
      Author: T. Gastine (tgastine@ast.obs-mip.fr)
     """
-    def __init__(self, datadir='data/', param=None, dim=None):
+    def __init__(self, datadir='data/', param=None, dim=None, down=False):
         """Constructor:
          -----------
 
@@ -35,7 +35,7 @@ class Index(dict):
         if param is None:
             param = read_param(datadir=datadir, quiet=True)
         if dim is None:
-            dim = read_dim(datadir=datadir)
+            dim = read_dim(datadir=datadir,down=down)
 
         if param.lwrite_aux:
             totalvars = dim.mvar+dim.maux

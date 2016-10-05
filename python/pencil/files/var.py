@@ -106,7 +106,7 @@ class DataCube(object):
             if param is None:
                 param = read_param(datadir=datadir, quiet=quiet)
             if index is None:
-                index = read_index(datadir=datadir)
+                index = read_index(datadir=datadir,down=ldownsampled)
 
         if dim.precision == 'D':
             precision = 'd'
@@ -152,7 +152,7 @@ class DataCube(object):
         for directory in procdirs:
 
             proc = int(directory[4:])
-            procdim = read_dim(datadir, proc)
+            procdim = read_dim(datadir,proc,down=ldownsampled)
             if (not quiet):
                 #print "reading data from processor %i of %i ..." \ # Python 2
                       #% (proc, len(procdirs)) # Python 2
