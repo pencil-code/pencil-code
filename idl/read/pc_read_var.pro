@@ -311,11 +311,12 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
   if (is_defined(par2)) then begin
     default, varcontent, pc_varcontent(datadir=datadir,dim=dim, ivar=ivar, $
-      param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D)
+      param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled)
   endif else begin
     default, varcontent, pc_varcontent(datadir=datadir,dim=dim, ivar=ivar, $
-      param=param,par2=param,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D)
+      param=param,par2=param,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled)
   endelse
+
   totalvars=(size(varcontent))[1]
 ;
   if (n_elements(variables) ne 0) then begin
@@ -483,6 +484,10 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;  accordingly in y and z direction makes a difference on the
 ;  diagonals).
 ;
+      xloc=fltarr(procdim.mx)*one
+      yloc=fltarr(procdim.my)*one
+      zloc=fltarr(procdim.mz)*one
+
       if (procdim.ipx eq 0L) then begin
         i0x=0L
         i1x=i0x+procdim.mx-1L
@@ -818,7 +823,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ; Transform to unsheared frame if requested.
 ;
   if (keyword_set(unshear)) then variables = 'pc_unshear('+variables+',param=param,xax=x[dim.l1:dim.l2],t=t)'
-
+;
   makeobject += arraytostring(variables)
   if yinyang then makeobject += mergevars
   makeobject += ")"      

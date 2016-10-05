@@ -24,13 +24,13 @@
 ;   see idlvarloc
 ;
 function pc_varcontent, datadir=datadir, dim=dim, ivar=ivar, param=param, par2=param2, $
-    run2D=run2D, scalar=scalar, noaux=noaux, quiet=quiet
+    run2D=run2D, scalar=scalar, noaux=noaux, quiet=quiet, down=down
 COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Read grid dimensions, input parameters and location of datadir.
 ;
 datadir = pc_get_datadir(datadir)
-if (n_elements(dim) eq 0) then pc_read_dim, obj=dim, datadir=datadir, quiet=quiet
+if (n_elements(dim) eq 0) then pc_read_dim, obj=dim, datadir=datadir, quiet=quiet, down=down
 if (n_elements(ivar) eq 0) then ivar=-1
 if (n_elements(param) eq 0) then pc_read_param, obj=param, datadir=datadir, dim=dim, quiet=quiet
 if (n_elements(par2) eq 0) then pc_read_param, param2=param2, datadir=datadir, dim=dim, quiet=quiet
@@ -133,6 +133,7 @@ indices = [ $
   { name:'ieth', label:'Thermal energy', dims:1 } $
   ; don't forget to add a comma above when extending
 ]
+nvar=n_elements(indices)
 
 ; Auxiliary variables:
 indices_aux = [ $
@@ -264,8 +265,8 @@ endif
 ;  Parse variables and count total number of variables.
 ;
 totalvars = 0L
-num_tags = n_elements (indices)
-num_vars = 0
+num_tags = n_elements(indices)
+num_vars = 0 & offset=0
 for tag = 1, num_tags do begin
   search = indices[tag-1].name
   dims = indices[tag-1].dims
@@ -310,24 +311,25 @@ for tag = 1, num_tags do begin
   if (pos[0] le 0) then continue
   ; Append f-array variable to valid varcontent.
   num_vars += 1
+  if tag ge nvar then offset=pos[0]-totalvars-1
   if (size (selected, /type) eq 0) then begin
     selected = [ tag-1 ]
-    executes = [ exec_str ]
+    executes = [ exec_str+'-'+string(offset)]
     position = [ pos[0] ]
   end else begin
     selected = [ selected, tag-1 ]
-    executes = [ executes, exec_str ]
+    executes = [ executes, exec_str+'-'+string(offset) ]
     position = [ position, pos[0] ]
   end
   totalvars += add_vars
+  if totalvars eq dim.mvar then tag=nvar-1
+  if totalvars eq dim.mvar+dim.maux then break
 endfor
-
 ;
 ;  Make an array of structures in which to store their descriptions.
 ;
 varcontent = replicate ({ varcontent_all, variable:'UNKNOWN', idlvar:'dummy', idlinit:'0', $
     idlvarloc:'dummy_loc', idlinitloc:'0', skip:0 }, totalvars)
-
 ;
 ;  Fill varcontent array.
 ;
@@ -335,6 +337,7 @@ selected = selected[sort (position)]
 executes = executes[sort (position)]
 ;
 for var = 0, num_vars-1 do begin
+
   tag = selected[var]
   dims = indices[tag].dims
   if (dims eq 1) then joint = '' else joint = str (dims)+','
@@ -342,6 +345,7 @@ for var = 0, num_vars-1 do begin
   name = strmid (indices[tag].name, 1)
   dummy = execute (executes[var])
   num_components = n_elements (pos)
+
   if (strpos (executes[var], 'indgen') ge 0) then begin
     joint += str (num_components)+','
     skip = num_components * dims
@@ -349,6 +353,7 @@ for var = 0, num_vars-1 do begin
   endif else begin
     skip = dims
   endelse
+
   for component = 1, num_components do begin
     if (pos[component-1] gt 0) then begin
       idl_var = name
@@ -362,6 +367,7 @@ for var = 0, num_vars-1 do begin
       varcontent[pos[component-1]-1].skip = skip - 1
     endif
   endfor
+
 endfor
 
 ;
