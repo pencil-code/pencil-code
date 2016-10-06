@@ -203,14 +203,14 @@ module Io
 !
           t_sp = t
           write (lun_output) dead_beef, t_sp
-
-          call collect_grid (x, y, z, gx, gy, gz)
-          if (lroot) write (lun_output) dead_beef, gx, gy, gz, dx, dy, dz
-          call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
-          if (lroot) write (lun_output) gx, gy, gz
-          call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
-          if (lroot) write (lun_output) gx, gy, gz
         endif
+
+        call collect_grid (x, y, z, gx, gy, gz)
+        if (lroot) write (lun_output) dead_beef, gx, gy, gz, dx, dy, dz
+        call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
+        if (lroot) write (lun_output) gx, gy, gz
+        call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
+        if (lroot) write (lun_output) gx, gy, gz
       endif
 !
     endsubroutine output_snap

@@ -254,19 +254,14 @@ module Io
           if (lroot) then
             allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
             if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for gx,gy,gz', .true.)
-            call collect_grid (x, y, z, gx, gy, gz)
-          else
-            call collect_grid (x, y, z)
           endif
+        endif
+        call collect_grid (x, y, z, gx, gy, gz)
 !
+        if (lfirst_proc_xy) then
           t_sp = t
           write (lun_output) t_sp
-          if (lroot) then
-            write (lun_output) gx, gy, gz, dx, dy, dz
-            deallocate (gx, gy, gz)
-          endif
-        else
-          call collect_grid (x, y, z)
+          if (lroot) write (lun_output) gx, gy, gz, dx, dy, dz
         endif
       endif
 !
