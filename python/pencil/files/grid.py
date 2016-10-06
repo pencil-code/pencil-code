@@ -32,7 +32,7 @@ class Grid(object):
         datadir = os.path.expanduser(datadir)
         if param is None:
             param = read_param(datadir, quiet=quiet)
-        dim = read_dim(datadir, proc)
+        dim = read_dim(datadir, proc, down=down)
         if dim.precision == 'D':
             precision = 'd'
         else:
@@ -57,7 +57,7 @@ class Grid(object):
 
         for directory in procdirs:
             proc = int(directory[4:])
-            procdim = read_dim(datadir, proc)
+            procdim = read_dim(datadir, proc, down=down)
             if not quiet:
                 #print "reading data from processor %i of %i ..." \ # Python 2
                       #% (proc, len(procdirs)) # Python 2
