@@ -193,8 +193,7 @@ module Snapshot
         call safe_character_assign(file,'VARd'//ch)
         open (lun_output, FILE=trim(directory_snap)//'/'//file, &
               FORM='unformatted', status='replace')
-        call output_snap(buffer,mvar_down+maux_down,mxl=iex+nghost,myl=iey+nghost,mzl=iez+nghost)
-
+        call output_snap(buffer,mvar_down+maux_down)
         close(lun_output)
 !
 !  Restore grid (including auxiliaries)

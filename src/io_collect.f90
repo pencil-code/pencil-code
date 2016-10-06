@@ -1211,21 +1211,22 @@ module Io
 !
         open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', status='replace')
         t_sp = t
-        call collect_grid (x, y, z, gx, gy, gz)
+      endif
+
+      call collect_grid (x, y, z, gx, gy, gz)
+      if (lroot) then
         write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
         write (lun_output) dx, dy, dz
         write (lun_output) Lx, Ly, Lz
-        call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
-        write (lun_output) gx, gy, gz
-        call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
+      endif
+
+      call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
+      if (lroot) write (lun_output) gx, gy, gz
+
+      call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
+      if (lroot) then
         write (lun_output) gx, gy, gz
         close (lun_output)
-!
-        deallocate (gx, gy, gz)
-      else
-        call collect_grid (x, y, z)
-        call collect_grid (dx_1, dy_1, dz_1)
-        call collect_grid (dx_tilde, dy_tilde, dz_tilde)
       endif
 !
     endsubroutine wgrid

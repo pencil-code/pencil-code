@@ -121,7 +121,7 @@ module Io
 !
     endsubroutine directory_names
 !***********************************************************************
-    subroutine output_snap(a,nv,file,mxl,myl,mzl)
+    subroutine output_snap(a,nv,file)
 !
 !  Write snapshot file, always write time and mesh, could add other things.
 !
@@ -129,7 +129,6 @@ module Io
 !  13-Dec-2011/Bourdin.KIS: reworked
 !  13-feb-2014/MR: made 'file' optional, 'a' assumed-shape (for downsampled output);
 !                  moved donwsampling stuff to snapshot
-!   5-oct-2016/MR: additional optional parameters mxl,myl,mzl for output of downsampled grid
 !
       use Mpicomm, only: start_serialize, end_serialize
       use General, only: get_range_no, ioptest
@@ -137,7 +136,6 @@ module Io
       real, dimension (:,:,:,:),  intent(IN) :: a
       integer,                    intent(IN) :: nv
       character (len=*), optional,intent(IN) :: file
-      integer,           optional,intent(IN) :: mxl,myl,mzl
 !
       real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -169,9 +167,9 @@ module Io
 !  other modules and call a corresponding i/o parameter module.
 !
       if (lshear) then
-        write (lun_output) t_sp, x(1:ioptest(mxl,mx)), y(1:ioptest(myl,my)), z(1:ioptest(mzl,mz)), dx, dy, dz, deltay
+        write (lun_output) t_sp, x(1:size(a,1)), y(1:size(a,2)), z(1:size(a,3)), dx, dy, dz, deltay
       else
-        write (lun_output) t_sp, x(1:ioptest(mxl,mx)), y(1:ioptest(myl,my)), z(1:ioptest(mzl,mz)), dx, dy, dz
+        write (lun_output) t_sp, x(1:size(a,1)), y(1:size(a,2)), z(1:size(a,3)), dx, dy, dz
       endif
 !
       if (lserial_io) call end_serialize

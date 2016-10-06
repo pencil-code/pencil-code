@@ -8214,10 +8214,6 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !
       real, dimension(:), intent(out) :: gx,gy,gz
 !
-      real, dimension(size(x)-nghost+1) :: buf_x
-      real, dimension(size(y)-nghost+1) :: buf_y
-      real, dimension(size(z)-nghost+1) :: buf_z
-
       integer :: px, py, pz, mx, my, mz, l2, m2, n2, ie
       integer, parameter :: tag_gx=677, tag_gy=678, tag_gz=679
 !
@@ -8230,9 +8226,8 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
         if (nprocx > 1) then
           do px = 1, nprocx-1
             if (ldownsampling) call mpirecv_int_scl(l2,px,tag_gx)
-            call mpirecv_real (buf_x, l2, px, tag_gx)
-            gx(ie+1:ie+l2) = buf_x(:l2)
-            ie=ie+l2
+            call mpirecv_real (gx(ie+1:ie+l2), l2, px, tag_gx)
+            ie=ie+l2-nghost
           enddo
         endif
         ! collect the global y-data from all leading processors in the xz-plane
@@ -8240,9 +8235,8 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
         if (nprocy > 1) then
           do py = 1, nprocy-1
             if (ldownsampling) call mpirecv_int_scl(m2,py*nprocx,tag_gy)
-            call mpirecv_real (buf_y, m2, py*nprocx, tag_gy)
-            gy(ie+1:ie+m2) = buf_y(:m2)
-            ie=ie+m2
+            call mpirecv_real (gy(ie+1:ie+m2), m2, py*nprocx, tag_gy)
+            ie=ie+m2-nghost
           enddo
         endif
         ! collect the global z-data from all leading processors in the xy-plane
@@ -8250,9 +8244,8 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
         if (nprocz > 1) then
           do pz = 1, nprocz-1
             if (ldownsampling) call mpirecv_int_scl(n2,pz*nprocxy,tag_gz)
-            call mpirecv_real (buf_z, n2, pz*nprocxy, tag_gz)
-            gz(ie+1:ie+n2) = buf_z(:n2)
-            ie=ie+n2
+            call mpirecv_real (gz(ie+1:ie+n2), n2, pz*nprocxy, tag_gz)
+            ie=ie+n2-nghost
           enddo
         endif
       else
