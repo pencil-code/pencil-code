@@ -645,7 +645,7 @@ module Particles_coagulation
               if (lcollision_output) then
                 open(99,POSITION='append', &
                   FILE=trim(directory_dist)//'/collisions.dat')
-                write(99,"(f10.6,2i8,2f10.6)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap)
+                write(99,"(f14.6,2i8,2f10.6,1p2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
                 close(99)
               endif
             else if (droplet_coagulation_model=='shima') then
@@ -670,7 +670,7 @@ module Particles_coagulation
               if (lcollision_output) then
                 open(99,POSITION='append', &
                   FILE=trim(directory_dist)//'/collisions.dat')
-                write(99,"(f14.6,2i8,2f10.6)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap)
+                write(99,"(f14.6,2i8,2f10.6,1p2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
                 close(99)
               endif
 !
@@ -732,7 +732,7 @@ module Particles_coagulation
               if (lcollision_output) then
                 open(99,POSITION='append', &
                   FILE=trim(directory_dist)//'/collisions_swapped.dat')
-                write(99,"(f14.6,2i8,2f10.6,2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
+                write(99,"(f14.6,2i8,2f10.6,1p2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
                 close(99)
               endif
 !
@@ -844,7 +844,7 @@ module Particles_coagulation
               if (lcollision_output) then
                 open(99,POSITION='append', &
                   FILE=trim(directory_dist)//'/collisions.dat')
-                write(99,"(f10.6,2i8,2f10.6)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap)
+                write(99,"(f14.6,2i8,2f10.6,1p2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
                 close(99)
               endif
 !
