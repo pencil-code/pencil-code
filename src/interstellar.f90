@@ -353,7 +353,7 @@ module Interstellar
 !  boundary condition used in addmassflux
 !
   real :: addrate=1.0, add_scale=0.5
-  real :: boldmass=0.0
+  real :: boldmass=0.0, old_rhom=1.0
   logical :: ladd_massflux = .false.
 !  switches required to override the persistent values when continuing a run
   logical :: l_persist_overwrite_lSNI=.false., l_persist_overwrite_lSNII=.false.
@@ -1894,6 +1894,11 @@ module Interstellar
           "check_SNI: Old t_next_SNI=", t_next_SNI
       call random_number_wrapper(franSN)
 !
+!  fred: the SN rate can be varied to reduce with mass outflows and increase
+!        with inflows to regulate the mass in the disk
+!        a high index iSNdx can be used to increase the sensitivity, but once
+!        net mass loss occurs the index is set to 1, to avoid over heating  
+!
       if (lscale_SN_interval) then
         if (ldensity_nolog) then
           rhom=sum(f(l1:l2,m1:m2,n1:n2,irho))/(nx*ny*nz)
@@ -1902,13 +1907,18 @@ module Interstellar
         endif
         mpirho=rhom/ncpus
         call mpiallreduce_sum(mpirho,rhom)
-        scaled_interval=t_interval_SNI*(SN_interval_rhom/rhom)**iSNdx
+        if (rhom<old_rhom .and. rhom>SN_interval_rhom) then
+          scaled_interval=t_interval_SNI*(SN_interval_rhom/rhom)
+        else
+          scaled_interval=t_interval_SNI*(SN_interval_rhom/rhom)**iSNdx
+        endif
+        old_rhom=rhom
       else
         scaled_interval=t_interval_SNI
       endif
 !
 !  Vary the time interval with a uniform random distribution between
-!  0.8 and 1.2 times the average rate required.
+!  \pm0.875 times the average interval required.
 !
       t_next_SNI=t + (1.0 + 1.75*(franSN(1)-0.5)) * scaled_interval
       if (lroot.and.ip<20) print*, &
@@ -1937,6 +1947,11 @@ module Interstellar
           "check_SNII: Old t_next_SNII=", t_next_SNII
       call random_number_wrapper(franSN)
 !
+!  fred: the SN rate can be varied to reduce with mass outflows and increase
+!        with inflows to regulate the mass in the disk
+!        a high index iSNdx can be used to increase the sensitivity, but once
+!        net mass loss occurs the index is set to 1, to avoid over heating  
+!
       if (lscale_SN_interval) then
         if (ldensity_nolog) then
           rhom=sum(f(l1:l2,m1:m2,n1:n2,irho))/(nx*ny*nz)
@@ -1945,13 +1960,18 @@ module Interstellar
         endif
         mpirho=rhom/ncpus
         call mpiallreduce_sum(mpirho,rhom)
-        scaled_interval=t_interval_SNII*(SN_interval_rhom/rhom)**iSNdx
+        if (rhom<old_rhom .and. rhom>SN_interval_rhom) then
+          scaled_interval=t_interval_SNII*(SN_interval_rhom/rhom)
+        else
+          scaled_interval=t_interval_SNII*(SN_interval_rhom/rhom)**iSNdx
+        endif
+        old_rhom=rhom
       else
         scaled_interval=t_interval_SNII
       endif
 !
 !  Vary the time interval with a uniform random distribution between
-!  0.4 and 1.6 times the average rate required.
+!  \pm0.875 times the average interval required.
 !
       t_next_SNII=t + (1.0 + 1.75*(franSN(1)-0.5)) * scaled_interval
       if (lroot.and.ip<20) print*, &
