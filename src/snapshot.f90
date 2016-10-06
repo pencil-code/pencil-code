@@ -33,6 +33,7 @@ module Snapshot
 !  13-feb-14/MR: coded
 !   4-oct-16/MR: removed par msnap; its role is taken over by the global vars
 !                mvar_down, maux_down for selecting subsets of variables.
+!   5-oct-16/MR: modified call to wgrid
 !
       use General, only: get_range_no, indgen
       use Boundcond, only: boundconds_x, boundconds_y, boundconds_z
@@ -116,8 +117,8 @@ module Snapshot
           call warning('wsnap_down','BCs not correctly set for non-equidistant grids')
 
         x(iax:iex) = x(ifx:l2:isx)
-        y(iax:iex) = y(ify:m2:isy)
-        z(iax:iex) = z(ifz:n2:isz)
+        y(iay:iey) = y(ify:m2:isy)
+        z(iaz:iez) = z(ifz:n2:isz)
         dx=isx*dx;  dy=isy*dy; dz=isz*dz   !!!  Valid only for equidistant grids
 !
 !  Generate downsampled ghost zone coordinates (only necessary at boundaries)
@@ -192,7 +193,7 @@ module Snapshot
         call safe_character_assign(file,'VARd'//ch)
         open (lun_output, FILE=trim(directory_snap)//'/'//file, &
               FORM='unformatted', status='replace')
-        call output_snap(buffer,mvar_down+maux_down)
+        call output_snap(buffer,mvar_down+maux_down,mxl=iex+nghost,myl=iey+nghost,mzl=iez+nghost)
 
         close(lun_output)
 !

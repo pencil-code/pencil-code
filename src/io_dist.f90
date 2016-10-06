@@ -121,7 +121,7 @@ module Io
 !
     endsubroutine directory_names
 !***********************************************************************
-    subroutine output_snap(a,nv,file)
+    subroutine output_snap(a,nv,file,mxl,myl,mzl)
 !
 !  Write snapshot file, always write time and mesh, could add other things.
 !
@@ -129,13 +129,15 @@ module Io
 !  13-Dec-2011/Bourdin.KIS: reworked
 !  13-feb-2014/MR: made 'file' optional, 'a' assumed-shape (for downsampled output);
 !                  moved donwsampling stuff to snapshot
+!   5-oct-2016/MR: additional optional parameters mxl,myl,mzl for output of downsampled grid
 !
       use Mpicomm, only: start_serialize, end_serialize
-      use General, only: get_range_no
+      use General, only: get_range_no, ioptest
 !
-      character (len=*), intent(in), optional :: file
-      integer, intent(in) :: nv
-      real, dimension (:,:,:,:), intent(in) :: a
+      real, dimension (:,:,:,:),  intent(IN) :: a
+      integer,                    intent(IN) :: nv
+      character (len=*), optional,intent(IN) :: file
+      integer,           optional,intent(IN) :: mxl,myl,mzl
 !
       real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -167,9 +169,9 @@ module Io
 !  other modules and call a corresponding i/o parameter module.
 !
       if (lshear) then
-        write (lun_output) t_sp, x, y, z, dx, dy, dz, deltay
+        write (lun_output) t_sp, x(1:ioptest(mxl,mx)), y(1:ioptest(myl,my)), z(1:ioptest(mzl,mz)), dx, dy, dz, deltay
       else
-        write (lun_output) t_sp, x, y, z, dx, dy, dz
+        write (lun_output) t_sp, x(1:ioptest(mxl,mx)), y(1:ioptest(myl,my)), z(1:ioptest(mzl,mz)), dx, dy, dz
       endif
 !
       if (lserial_io) call end_serialize
@@ -1056,11 +1058,13 @@ module Io
 !  21-jan-02/wolf: coded
 !  15-jun-03/axel: Lx,Ly,Lz are now written to file (Tony noticed the mistake)
 !  30-sep-13/MR  : optional parameters mxout,myout,mzout added
-!                  to be able to output coordinate vectors with coordinates differing from
+!                  to be able to output coordinate vectors with lengths differing from
 !                  mx,my,mz
 !  25-Aug-2016/PABourdin: now a global "grid.dat" is always written from all IO modules
+!   5-oct-2016/MR: modifications for output of downsampled grid
 !
       use Mpicomm, only: collect_grid
+      use General, only: ioptest
 !
       character (len=*) :: file
       integer, optional :: mxout,myout,mzout
@@ -1070,49 +1074,51 @@ module Io
       integer :: alloc_err
       real :: t_sp   ! t in single precision for backwards compatibility
 !
-     if (present(mzout)) then
-        mxout1=mxout
-        myout1=myout
-        mzout1=mzout
-      else
-        mxout1=mx
-        myout1=my
-        mzout1=mz
-      endif
+      mxout1=ioptest(mxout,mx)
+      myout1=ioptest(myout,my)
+      mzout1=ioptest(mzout,mz)
 !
       t_sp = t
 
-      open(lun_output,FILE=trim(directory)//'/'//file,FORM='unformatted',status='replace')
-      write(lun_output) t_sp,x(1:mxout1),y(1:myout1),z(1:mzout1),dx,dy,dz
+      open (lun_output,FILE=trim(directory)//'/'//file,FORM='unformatted',status='replace')
+      write(lun_output) t_sp,x(:mxout1),y(:myout1),z(:mzout1),dx,dy,dz
       write(lun_output) dx,dy,dz
       write(lun_output) Lx,Ly,Lz
-      write(lun_output) dx_1(1:mxout1),dy_1(1:myout1),dz_1(1:mzout1)
-      write(lun_output) dx_tilde(1:mxout1),dy_tilde(1:myout1),dz_tilde(1:mzout1)
+      write(lun_output) dx_1(:mxout1),dy_1(:myout1),dz_1(:mzout1)
+      write(lun_output) dx_tilde(:mxout1),dy_tilde(:myout1),dz_tilde(:mzout1)
       close(lun_output)
 !
       ! write also a global "data/allprocs/grid.dat"
       if (lroot) then
-        allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
+        if (ldownsampling) then
+          allocate (gx(ceiling(real(nxgrid)/downsampl(1))+2*nghost), &
+                    gy(ceiling(real(nygrid)/downsampl(2))+2*nghost), &
+                    gz(ceiling(real(nzgrid)/downsampl(3))+2*nghost), stat=alloc_err)
+        else
+          allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
+        endif
         if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)
 !
         open (lun_output, FILE=trim(directory_collect)//'/'//file, FORM='unformatted', status='replace')
         t_sp = t
-        call collect_grid (x, y, z, gx, gy, gz)
+      endif
+      
+      call collect_grid(x(:mxout1), y(:myout1), z(:mzout1), gx, gy, gz)
+      if (lroot) then
         write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
         write (lun_output) dx, dy, dz
         write (lun_output) Lx, Ly, Lz
-        call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
-        write (lun_output) gx, gy, gz
-        call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
+      endif
+      
+      call collect_grid(dx_1(:mxout1), dy_1(:myout1), dz_1(:mzout1), gx, gy, gz)
+      if (lroot) write (lun_output) gx, gy, gz
+      
+      call collect_grid(dx_tilde(:mxout1), dy_tilde(:myout1), dz_tilde(:mzout1), gx, gy, gz)
+      if (lroot) then
         write (lun_output) gx, gy, gz
         close (lun_output)
-!
-        deallocate (gx, gy, gz)
-      else
-        call collect_grid (x, y, z)
-        call collect_grid (dx_1, dy_1, dz_1)
-        call collect_grid (dx_tilde, dy_tilde, dz_tilde)
-      endif
+        deallocate(gx,gy,gz) 
+     endif
 !
     endsubroutine wgrid
 !***********************************************************************

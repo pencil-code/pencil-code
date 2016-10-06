@@ -8205,50 +8205,70 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !  This routine collects the global grid on the root processor.
 !
 !  05-Jul-2011/PABourdin: coded
+!   6-oct-2016/MR: modifications for collection of downsampled grid:
+!                  contributions from different processors may have different lengths
 !
-      real, dimension(mx), intent(in) :: x
-      real, dimension(my), intent(in) :: y
-      real, dimension(mz), intent(in) :: z
-      real, dimension(nxgrid+2*nghost), intent(out), optional :: gx
-      real, dimension(nygrid+2*nghost), intent(out), optional :: gy
-      real, dimension(nzgrid+2*nghost), intent(out), optional :: gz
+      use Cparam, only: l1, m1, n1, nghost
 !
-      real, dimension(l2) :: buf_x
-      real, dimension(m2) :: buf_y
-      real, dimension(n2) :: buf_z
-      integer :: px, py, pz
+      real, dimension(:), intent(in) :: x,y,z
+!
+      real, dimension(:), intent(out) :: gx,gy,gz
+!
+      real, dimension(size(x)-nghost+1) :: buf_x
+      real, dimension(size(y)-nghost+1) :: buf_y
+      real, dimension(size(z)-nghost+1) :: buf_z
+
+      integer :: px, py, pz, mx, my, mz, l2, m2, n2, ie
       integer, parameter :: tag_gx=677, tag_gy=678, tag_gz=679
 !
+      mx=size(x); my=size(y); mz=size(z)
+      l2=mx-nghost; m2=my-nghost; n2=mz-nghost
+ 
       if (lroot) then
         ! collect the global x-data from all leading processors in the yz-plane
-        gx(1:mx) = x
+        gx(1:mx) = x; ie=l2
         if (nprocx > 1) then
           do px = 1, nprocx-1
+            if (ldownsampling) call mpirecv_int_scl(l2,px,tag_gx)
             call mpirecv_real (buf_x, l2, px, tag_gx)
-            gx(px*nx+l1:px*nx+mx) = buf_x
+            gx(ie+1:ie+l2) = buf_x(:l2)
+            ie=ie+l2
           enddo
         endif
         ! collect the global y-data from all leading processors in the xz-plane
-        gy(1:my) = y
+        gy(1:my) = y; ie=m2
         if (nprocy > 1) then
           do py = 1, nprocy-1
+            if (ldownsampling) call mpirecv_int_scl(m2,py*nprocx,tag_gy)
             call mpirecv_real (buf_y, m2, py*nprocx, tag_gy)
-            gy(py*ny+m1:py*ny+my) = buf_y
+            gy(ie+1:ie+m2) = buf_y(:m2)
+            ie=ie+m2
           enddo
         endif
         ! collect the global z-data from all leading processors in the xy-plane
-        gz(1:mz) = z
+        gz(1:mz) = z; ie=n2
         if (nprocz > 1) then
           do pz = 1, nprocz-1
+            if (ldownsampling) call mpirecv_int_scl(n2,pz*nprocxy,tag_gz)
             call mpirecv_real (buf_z, n2, pz*nprocxy, tag_gz)
-            gz(pz*nz+n1:pz*nz+mz) = buf_z
+            gz(ie+1:ie+n2) = buf_z(:n2)
+            ie=ie+n2
           enddo
         endif
       else
         ! leading processors send their local coordinates
-        if (lfirst_proc_yz) call mpisend_real (x(l1:mx), l2, 0, tag_gx)
-        if (lfirst_proc_xz) call mpisend_real (y(m1:my), m2, 0, tag_gy)
-        if (lfirst_proc_xy) call mpisend_real (z(n1:mz), n2, 0, tag_gz)
+        if (lfirst_proc_yz) then
+          if (ldownsampling) call mpisend_int(l2,root,tag_gx)
+          call mpisend_real (x(l1:), l2, root, tag_gx)
+        endif
+        if (lfirst_proc_xz) then
+          if (ldownsampling) call mpisend_int(m2,root,tag_gy)
+          call mpisend_real (y(m1:), m2, root, tag_gy)
+        endif
+        if (lfirst_proc_xy) then
+          if (ldownsampling) call mpisend_int(n2,root,tag_gz)
+          call mpisend_real (z(n1:), n2, root, tag_gz)
+        endif
       endif
 !
     endsubroutine collect_grid
