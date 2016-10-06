@@ -5,7 +5,7 @@ varfile = 'var.dat' # or specific snaphot as required 'VAR?'
 var=pc.read_var(varfile,magic=['tt'],trimall=True,quiet=True)
 param=pc.read_param(quiet=True)
 
-filename='init_ism.dat'
+filename='init_ism.in'
 f = open(filename, 'w')
 #smooth and ensure symmetric about midplane - assumes centred
 #convert to cgs - so units can be applied independently

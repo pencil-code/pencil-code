@@ -212,9 +212,9 @@ module InitialCondition
 !  Read rho and TT and write into an array.
 !  If file is not found in run directory, search under trim(directory).
 !
-      inquire(file='init_ism.dat',exist=exist)
+      inquire(file='init_ism.in',exist=exist)
       if (exist) then
-        open(31,file='init_ism.dat')
+        open(31,file='init_ism.in')
       else
         inquire(file=trim(directory)//'/init_ism.ascii',exist=exist)
         if (exist) then
@@ -235,7 +235,7 @@ module InitialCondition
       enddo
       close(31)
 !
-!  Assuming no ghost zones in init_ism.dat.
+!  Assuming no ghost zones in init_ism.in.
 !
       do n=n1,n2
         f(l1:l2,m1:m2,n,ilnrho)=log(tmp1(n-nghost+ipz*nz))
