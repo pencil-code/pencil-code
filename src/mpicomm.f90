@@ -8211,7 +8211,6 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
       use Cparam, only: l1, m1, n1, nghost
 !
       real, dimension(:), intent(in) :: x,y,z
-!
       real, dimension(:), intent(out) :: gx,gy,gz
 !
       integer :: px, py, pz, mx, my, mz, l2, m2, n2, ie
@@ -8225,7 +8224,7 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
         gx(1:mx) = x; ie=l2
         if (nprocx > 1) then
           do px = 1, nprocx-1
-            if (ldownsampling) call mpirecv_int_scl(l2,px,tag_gx)
+            if (ldownsampling) call mpirecv_int(l2,px,tag_gx)
             call mpirecv_real (gx(ie+1:ie+l2), l2, px, tag_gx)
             ie=ie+l2-nghost
           enddo
@@ -8234,7 +8233,7 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
         gy(1:my) = y; ie=m2
         if (nprocy > 1) then
           do py = 1, nprocy-1
-            if (ldownsampling) call mpirecv_int_scl(m2,py*nprocx,tag_gy)
+            if (ldownsampling) call mpirecv_int(m2,py*nprocx,tag_gy)
             call mpirecv_real (gy(ie+1:ie+m2), m2, py*nprocx, tag_gy)
             ie=ie+m2-nghost
           enddo
@@ -8243,7 +8242,7 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
         gz(1:mz) = z; ie=n2
         if (nprocz > 1) then
           do pz = 1, nprocz-1
-            if (ldownsampling) call mpirecv_int_scl(n2,pz*nprocxy,tag_gz)
+            if (ldownsampling) call mpirecv_int(n2,pz*nprocxy,tag_gz)
             call mpirecv_real (gz(ie+1:ie+n2), n2, pz*nprocxy, tag_gz)
             ie=ie+n2-nghost
           enddo

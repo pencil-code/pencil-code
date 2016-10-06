@@ -64,7 +64,7 @@ program run
   use Filter
   use Fixed_point,     only: fixed_points_prepare, wfixed_points
   use Forcing,         only: forcing_clean_up,addforce
-  use General,         only: random_seed_wrapper, touch_file
+  use General,         only: random_seed_wrapper, touch_file, itoa
   use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coords_switches
   use Hydro,           only: hydro_clean_up,kinematic_random_phase
   use ImplicitPhysics, only: calc_heatcond_ADI
@@ -156,6 +156,9 @@ program run
       call get_downpars(2,ny,ipy)
       call get_downpars(3,nz,ipz)
 !
+      if (any(ndown==0)) &
+        call fatal_error('run','zero points in processor ' &
+                         //trim(itoa(iproc))//' in downsampling')
     endif
 !
 !  Derived parameters (that may still be overwritten).

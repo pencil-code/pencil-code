@@ -126,19 +126,19 @@ module Snapshot
         inds = indgen(nghost)
         if (lfirst_proc_x.or.llast_proc_x) then
           dxs_ghost = dx*inds              !!!  Valid only for equidistant grids
-          if (lfirst_proc_x) x(1    :iax-1     ) = x(iax)-dxs_ghost
+          if (lfirst_proc_x) x(iax-1:1:-1      ) = x(iax)-dxs_ghost
           if (llast_proc_x ) x(iex+1:iex+nghost) = x(iex)+dxs_ghost
         endif
 !
         if (lfirst_proc_y.or.llast_proc_y) then
           dys_ghost = dy*inds
-          if (lfirst_proc_y) y(1    :iay-1     ) = y(iay)-dys_ghost
-          if (llast_proc_y ) y(iey+1:iey+nghost) = x(iey)+dys_ghost
+          if (lfirst_proc_y) y(iay-1:1:-1      ) = y(iay)-dys_ghost
+          if (llast_proc_y ) y(iey+1:iey+nghost) = y(iey)+dys_ghost
         endif
 !
         if (lfirst_proc_z.or.llast_proc_z) then
           dzs_ghost = dz*inds
-          if (lfirst_proc_z) z(1    :iaz-1     ) = z(iaz)-dzs_ghost
+          if (lfirst_proc_z) z(iaz-1:1:-1      ) = z(iaz)-dzs_ghost
           if (llast_proc_z ) z(iez+1:iez+nghost) = z(iez)+dzs_ghost
         endif
 
