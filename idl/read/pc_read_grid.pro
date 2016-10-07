@@ -145,6 +145,7 @@ for i=0,ncpus-1 do begin
   endif else if (n_elements(proc) ne 0) then begin
     filename=datadir+'/proc'+str(proc)+'/'+gridfile
   endif else if ((allprocs gt 0) or allprocs_exists) then begin
+  ;;;endif else if ((allprocs gt 0)) then begin
     filename=datadir+'/allprocs/'+gridfile
   endif else begin
     filename=datadir+'/proc'+str(i)+'/'+gridfile
@@ -159,47 +160,8 @@ for i=0,ncpus-1 do begin
     dx_tildeloc=fltarr(procdim.mx)*one
     dy_tildeloc=fltarr(procdim.my)*one
     dz_tildeloc=fltarr(procdim.mz)*one
-    ;
-    ;  Don't overwrite ghost zones of processor to the left (and
-    ;  accordingly in y and z direction makes a difference on the
-    ;  diagonals)
-    ;
-    if (procdim.ipx eq 0L) then begin
-      i0x=0L
-      i1x=i0x+procdim.mx-1L
-      i0xloc=0L
-      i1xloc=procdim.mx-1L
-    endif else begin
-      i0x=procdim.ipx*procdim.nx+procdim.nghostx
-      i1x=i0x+procdim.mx-1L-procdim.nghostx
-      i0xloc=procdim.nghostx & i1xloc=procdim.mx-1L
-    endelse
-    ;
-    if (procdim.ipy eq 0L) then begin
-      i0y=0L
-      i1y=i0y+procdim.my-1L
-      i0yloc=0L
-      i1yloc=procdim.my-1L
-    endif else begin
-      i0y=procdim.ipy*procdim.ny+procdim.nghosty
-      i1y=i0y+procdim.my-1L-procdim.nghosty
-      i0yloc=procdim.nghosty
-      i1yloc=procdim.my-1L
-    endelse
-    ;
-    if (procdim.ipz eq 0L) then begin
-      i0z=0L
-      i1z=i0z+procdim.mz-1L
-      i0zloc=0L
-      i1zloc=procdim.mz-1L
-    endif else begin
-      i0z=procdim.ipz*procdim.nz+procdim.nghostz
-      i1z=i0z+procdim.mz-1L-procdim.nghostz
-      i0zloc=procdim.nghostz
-      i1zloc=procdim.mz-1L
-    endelse
   endelse
-  ; Check for existance and read the data
+  ; Check for existence and read the data
   if (not file_test(filename)) then begin
     FREE_LUN,file
     message, 'ERROR: cannot find file '+ filename
@@ -229,9 +191,53 @@ for i=0,ncpus-1 do begin
     readu,file, dx_tilde,dy_tilde,dz_tilde
   endif else begin
     readu,file, t,xloc,yloc,zloc
-    x[i0x:i1x] = xloc[i0xloc:i1xloc]
-    y[i0y:i1y] = yloc[i0yloc:i1yloc]
-    z[i0z:i1z] = zloc[i0zloc:i1zloc]
+    if procdim.ipy eq 0 and procdim.ipz eq 0 then begin
+    ;
+    ;  Don't overwrite ghost zones of processor to the left (and
+    ;  accordingly in y and z direction makes a difference on the
+    ;  diagonals)
+    ;
+      if (procdim.ipx eq 0L) then begin
+        i0x=0L
+        i1x=procdim.mx-1L
+        i0xloc=0L
+      endif else begin
+        i0x=i1x-procdim.nghostx+1L
+        i1x=i0x+procdim.mx-1L-procdim.nghostx
+        i0xloc=procdim.nghostx
+      endelse
+      i1xloc=procdim.mx-1L
+    ;
+      x[i0x:i1x] = xloc[i0xloc:i1xloc]
+    endif
+    if procdim.ipx eq 0 and procdim.ipz eq 0 then begin
+      if (procdim.ipy eq 0L) then begin
+        i0y=0L
+        i1y=procdim.my-1L
+        i0yloc=0L
+      endif else begin
+        i0y=i1y-procdim.nghosty+1L
+        i1y=i0y+procdim.my-1L-procdim.nghosty
+        i0yloc=procdim.nghosty
+      endelse
+      i1yloc=procdim.my-1L
+
+      y[i0y:i1y] = yloc[i0yloc:i1yloc]
+    endif
+    if procdim.ipx eq 0 and procdim.ipy eq 0 then begin
+      if (procdim.ipz eq 0L) then begin
+        i0z=0L
+        i1z=procdim.mz-1L
+        i0zloc=0L
+      endif else begin
+        i0z=i1z-procdim.nghostz+1L
+        i1z=i0z+procdim.mz-1L-procdim.nghostz
+        i0zloc=procdim.nghostz
+      endelse
+      i1zloc=procdim.mz-1L
+
+      z[i0z:i1z] = zloc[i0zloc:i1zloc]
+    endif
 
     readu,file, dx,dy,dz
     found_Lxyz=0
@@ -241,14 +247,14 @@ for i=0,ncpus-1 do begin
     readu,file, Lx,Ly,Lz
 
     readu,file,xloc,yloc,zloc
-    dx_1[i0x:i1x] = xloc[i0xloc:i1xloc]
-    dy_1[i0y:i1y] = yloc[i0yloc:i1yloc]
-    dz_1[i0z:i1z] = zloc[i0zloc:i1zloc]
+    if procdim.ipy eq 0 and procdim.ipz eq 0 then dx_1[i0x:i1x] = xloc[i0xloc:i1xloc]
+    if procdim.ipx eq 0 and procdim.ipz eq 0 then dy_1[i0y:i1y] = yloc[i0yloc:i1yloc]
+    if procdim.ipx eq 0 and procdim.ipy eq 0 then dz_1[i0z:i1z] = zloc[i0zloc:i1zloc]
 
     readu,file,xloc,yloc,zloc
-    dx_tilde[i0x:i1x] = xloc[i0xloc:i1xloc]
-    dy_tilde[i0y:i1y] = yloc[i0yloc:i1yloc]
-    dz_tilde[i0z:i1z] = zloc[i0zloc:i1zloc]
+    if procdim.ipy eq 0 and procdim.ipz eq 0 then dx_tilde[i0x:i1x] = xloc[i0xloc:i1xloc]
+    if procdim.ipx eq 0 and procdim.ipz eq 0 then dy_tilde[i0y:i1y] = yloc[i0yloc:i1yloc]
+    if procdim.ipx eq 0 and procdim.ipy eq 0 then dz_tilde[i0z:i1z] = zloc[i0zloc:i1zloc]
   endelse
   found_grid_der=1
 
@@ -256,7 +262,6 @@ missing:
   on_ioerror, Null
 
   close,file
-
 endfor
 ;
 ;
