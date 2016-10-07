@@ -725,10 +725,16 @@ module Shear
 !  02-oct-07/anders: coded
 !
       use Mpicomm, only: initiate_shearing, finalize_shearing
+      use Messages, only: warning
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: ivar1, ivar2
 !
+      if (ldownsampling) then
+        call warning('boundcond_shear','Not available for downsampling - ignored')
+        return
+      endif
+
       if (ip<12.and.headtt) print*, &
           'boundconds_x: use shearing sheet boundary condition'
 !

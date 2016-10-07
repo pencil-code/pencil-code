@@ -170,7 +170,6 @@ module Snapshot
 !  fred: Temporarily switched off until boundary conditions correctly
 !  implemented on coarse mesh. ghost zones not required for time correlations.
 !
-        if (.false.) then
         if (lfirst_proc_x.or.llast_proc_x) then
           l2s=l2; l2is=l2i; l2=iex; l2i=l2-nghost+1
           call boundconds_x(buffer)
@@ -185,7 +184,6 @@ module Snapshot
           n2s=n2; n2is=n2i; n2=iez; n2i=n2-nghost+1
           call boundconds_z(buffer)
           n2=n2s; n2i=n2is
-        endif
         endif
 !
 !  Downsampled ouput in VARd<n> (n>0) snapshot
