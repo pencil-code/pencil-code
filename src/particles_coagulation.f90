@@ -46,6 +46,7 @@ module Particles_coagulation
   logical :: lmaxwell_deltav=.false.    ! use maxwellian relative velocity
   logical :: ldroplet_coagulation=.false.
   logical :: lcollision_output=.false., luser_random_number_wrapper=.true.
+  logical :: lrelabelling=.false.
   character (len=labellen) :: droplet_coagulation_model='standard'
 !
   real, dimension(:,:), allocatable :: r_ik_mat, cum_func_sec_ik
@@ -66,7 +67,7 @@ module Particles_coagulation
       minimum_particle_mass, minimum_particle_radius, lzsomdullemond, &
       lconstant_deltav, lmaxwell_deltav, deltav, maxwell_param, &
       ldroplet_coagulation, droplet_coagulation_model, lcollision_output, &
-      luser_random_number_wrapper
+      luser_random_number_wrapper, lrelabelling
 !
   contains
 !***********************************************************************
@@ -645,7 +646,8 @@ module Particles_coagulation
               if (lcollision_output) then
                 open(99,POSITION='append', &
                   FILE=trim(directory_dist)//'/collisions.dat')
-                write(99,"(f14.6,2i8,2f10.6,1p2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
+                !write(99,"(f14.6,2i8,2f10.6,1p2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
+                write(99,"(f14.6,2i8,2f10.6,2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
                 close(99)
               endif
             else if (droplet_coagulation_model=='shima') then
@@ -670,7 +672,8 @@ module Particles_coagulation
               if (lcollision_output) then
                 open(99,POSITION='append', &
                   FILE=trim(directory_dist)//'/collisions.dat')
-                write(99,"(f14.6,2i8,2f10.6,1p2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
+                !write(99,"(f14.6,2i8,2f10.6,1p2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
+                write(99,"(f14.6,2i8,2f10.6,2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
                 close(99)
               endif
 !
@@ -712,6 +715,7 @@ module Particles_coagulation
 !
 !  relabelling
 !
+           if (lrelabelling) then 
               if (mpk_is_smaller_than_mpj) then
                 if (fp(swarm_index1,iap)<fp(swarm_index2,iap)) then
                   k=swarm_index1
@@ -720,19 +724,21 @@ module Particles_coagulation
                   j=swarm_index1
                   k=swarm_index2
                 endif
-              else
-                if (fp(swarm_index1,iap)<fp(swarm_index2,iap)) then
-                  k=swarm_index2
-                  j=swarm_index1
-                else
-                  j=swarm_index2
-                  k=swarm_index1
-                endif
+              !else
+!                if (fp(swarm_index1,iap)<fp(swarm_index2,iap)) then
+!                  k=swarm_indexmpk_is_smaller_than_mpjmpk_is_smaller_than_mpj2
+!                  j=swarm_index1
+!                else
+!                  j=swarm_index2
+!                  k=swarm_index1
+!                endif
               endif
+          endif
               if (lcollision_output) then
                 open(99,POSITION='append', &
                   FILE=trim(directory_dist)//'/collisions_swapped.dat')
-                write(99,"(f14.6,2i8,2f10.6,1p2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
+                !write(99,"(f14.6,2i8,2f10.6,1p2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
+                write(99,"(f14.6,2i8,2f10.6,2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
                 close(99)
               endif
 !
@@ -844,7 +850,8 @@ module Particles_coagulation
               if (lcollision_output) then
                 open(99,POSITION='append', &
                   FILE=trim(directory_dist)//'/collisions.dat')
-                write(99,"(f14.6,2i8,2f10.6,1p2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
+                !write(99,"(f14.6,2i8,2f10.6,1p2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
+                write(99,"(f14.6,2i8,2f10.6,2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
                 close(99)
               endif
 !
