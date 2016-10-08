@@ -399,7 +399,7 @@ module Particles_coagulation
 !      small particle has collid with a large, then they all have collided).
 !
 !    - The interaction time-scale for a particle k to collide with a swarm
-!      of smaller particles is the collision time-scale times the mass ratio
+!      of lighter particles is the collision time-scale times the mass ratio
 !      m_k/m_j, so that tau_coll = 1/(n_k*sigma_jk*deltav_jk).
 !
 !  We use lcoag_simultaneous to specify that two colliding superparticles
@@ -578,7 +578,7 @@ module Particles_coagulation
 !  A representative particle k colliding with a swarm of larger particles j
 !  simply obtains the new mass m_k -> m_k + m_j.
 !
-!  A representative particle k colliding with a swarm of smaller particles j
+!  A representative particle k colliding with a swarm of lighter particles j
 !  obtains the new mass m_k -> 2*m_k (this is true only when 
 !  ldroplet_coagulation=F.)
 !
@@ -586,7 +586,7 @@ module Particles_coagulation
 !  25-jan-16/Xiang-yu and nils: added the model of Shima et al. (2009)
 !
       real, dimension (mpar_loc,mparray) :: fp
-      integer :: j, k, swarm_index1, swarm_index2
+      integer :: j, k, swarm_index1, swarm_index2, iswap, ipar_j_
       real :: deltavjk
       real, dimension (3) :: xpj, xpk, vpj, vpk, vpnew
 !
@@ -596,7 +596,7 @@ module Particles_coagulation
       real :: rhopsma, rhopbig, apsma, apbig
       real :: coeff_restitution, deltav_recoil, escape_speed
       real :: apj,mpj,npj,apk,mpk,npk
-      logical :: mpk_is_smaller_than_mpj
+      logical :: lswap
 !
       if (lparticles_number) then
 !
@@ -604,7 +604,7 @@ module Particles_coagulation
 !
         if (lcoag_simultaneous) then
 !
-!  Define mpsma, npsma, rhopsma for the superparticle with smaller particles.
+!  Define mpsma, npsma, rhopsma for the superparticle with lighter particles.
 !  Define mpbig, npbig, rhopbig for the superparticle with bigger particles.
 !
           if (fp(j,iap)<fp(k,iap)) then
@@ -643,37 +643,33 @@ module Particles_coagulation
               fp(k,inpswarm)=npnew
               fp(j,ivpx:ivpz)=vpnew
               fp(k,ivpx:ivpz)=vpnew
-              if (lcollision_output) then
-                open(99,POSITION='append', &
-                  FILE=trim(directory_dist)//'/collisions.dat')
-                !write(99,"(f14.6,2i8,2f10.6,1p2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
-                write(99,"(f14.6,2i8,2f10.6,2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
-                close(99)
-              endif
+!             if (lcollision_output) then
+!               open(99,POSITION='append', &
+!                 FILE=trim(directory_dist)//'/collisions.dat')
+!               write(99,"(f14.6,2i8,2f10.6,2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
+!               close(99)
+!             endif
             else if (droplet_coagulation_model=='shima') then
               mpj = four_pi_rhopmat_over_three*fp(j,iap)**3
               npj = fp(j,inpswarm)
               mpk = four_pi_rhopmat_over_three*fp(k,iap)**3
               npk = fp(k,inpswarm)
 !
-!  store which swarm has the smaller particle
-!
-              mpk_is_smaller_than_mpj=mpk<mpj
-!
 !  Identify the swarm with the highest particle number density
 !
               if (npk<npj) then
                 swarm_index1=k
                 swarm_index2=j
+                lswap=mpk<mpj
               else
                 swarm_index1=j
                 swarm_index2=k
+                lswap=mpk>mpj
               endif
               if (lcollision_output) then
                 open(99,POSITION='append', &
                   FILE=trim(directory_dist)//'/collisions.dat')
-                !write(99,"(f14.6,2i8,2f10.6,1p2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
-                write(99,"(f14.6,2i8,2f10.6,2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
+                write(99,"(f14.6,2i8,2f12.8,1p2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
                 close(99)
               endif
 !
@@ -713,32 +709,23 @@ module Particles_coagulation
                 fp(swarm_index1,ivpx:ivpz)=vpnew
               endif
 !
-!  relabelling
+!  swap names ipar to follow lucky droplets
 !
-           if (lrelabelling) then 
-              if (mpk_is_smaller_than_mpj) then
-                if (fp(swarm_index1,iap)<fp(swarm_index2,iap)) then
-                  k=swarm_index1
-                  j=swarm_index2
+              if (lrelabelling) then
+                if (lswap) then
+                  ipar_j_=ipar(k)
+                  ipar(k)=ipar(j)
+                  ipar(j)=ipar_j_
+                  iswap=1
                 else
-                  j=swarm_index1
-                  k=swarm_index2
+                  iswap=0
                 endif
-              !else
-!                if (fp(swarm_index1,iap)<fp(swarm_index2,iap)) then
-!                  k=swarm_indexmpk_is_smaller_than_mpjmpk_is_smaller_than_mpj2
-!                  j=swarm_index1
-!                else
-!                  j=swarm_index2
-!                  k=swarm_index1
-!                endif
               endif
-          endif
+!
               if (lcollision_output) then
                 open(99,POSITION='append', &
                   FILE=trim(directory_dist)//'/collisions_swapped.dat')
-                !write(99,"(f14.6,2i8,2f10.6,1p2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
-                write(99,"(f14.6,2i8,2f10.6,2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
+                  write(99,"(f14.6,2i8,2f12.8,1p2e11.3,i3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm),iswap
                 close(99)
               endif
 !
@@ -847,13 +834,12 @@ module Particles_coagulation
                 swarm_index1=j
                 swarm_index2=k
               endif
-              if (lcollision_output) then
-                open(99,POSITION='append', &
-                  FILE=trim(directory_dist)//'/collisions.dat')
-                !write(99,"(f14.6,2i8,2f10.6,1p2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
-                write(99,"(f14.6,2i8,2f10.6,2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
-                close(99)
-              endif
+!             if (lcollision_output) then
+!               open(99,POSITION='append', &
+!                 FILE=trim(directory_dist)//'/collisions.dat')
+!               write(99,"(f14.6,2i8,2f10.6,2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
+!               close(99)
+!             endif
 !
 !  Check if we have the special case where the particle number 
 !  densities are equal. This will typically be the case in the beginning of 
