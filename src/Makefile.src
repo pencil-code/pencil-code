@@ -1268,12 +1268,14 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##
 ## lap-xiangyu
 ##
-#FC=mpif90 #(lap-xiangyu*)
-#FFLAGS= -O3 -fno-underscoring #(lap-xiangy*)
-#CC=mpicc #(lap-xiangyu*)
-#CFLAGS=-O3 #(lap-xiangyu*)
-#LD_MPI= #(lap-xiangyu*)
-#LIBMPISUFFIX= #(lap-xiangyu*)
+#FC=mpif90 #(xyli*)
+#FFLAGS= -O3 -fno-underscoring #(xyli*)
+##FC=ifort #(xyli*)
+##FFLAGS= -O2 #(xyli*)
+#CC=mpicc #(xyli*)
+#CFLAGS=-O3 #(xyli*)
+#LD_MPI= #(xyli*)
+#LIBMPISUFFIX= #(xyli*)
 ##
 ## Axel on warp.hpc1.cs.cmu.edu (gfortran)
 ##
