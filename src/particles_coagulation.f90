@@ -712,7 +712,7 @@ module Particles_coagulation
 !  swap names ipar to follow lucky droplets
 !
               if (lrelabelling) then
-                if (lswap.and.(fp(j,iap)/=fp(k,iap)) then
+                if (lswap.and.(fp(j,iap)/=fp(k,iap))) then
                   ipar_j_=ipar(k)
                   ipar(k)=ipar(j)
                   ipar(j)=ipar_j_
