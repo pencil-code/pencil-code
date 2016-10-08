@@ -55,6 +55,7 @@ module Particles_coagulation
   real :: delta_r = 0.0
   real :: deltav = 1.0          ! relative velocity
   real :: maxwell_param = 1.0   ! alpha parameter for maxwell distribution
+  real :: rdifference = 1.0
 !
   integer :: idiag_ncoagpm=0, idiag_ncoagpartpm=0, idiag_dt1_coag_par=0
              
@@ -67,7 +68,7 @@ module Particles_coagulation
       minimum_particle_mass, minimum_particle_radius, lzsomdullemond, &
       lconstant_deltav, lmaxwell_deltav, deltav, maxwell_param, &
       ldroplet_coagulation, droplet_coagulation_model, lcollision_output, &
-      luser_random_number_wrapper, lrelabelling
+      luser_random_number_wrapper, lrelabelling, rdifference
 !
   contains
 !***********************************************************************
@@ -712,7 +713,8 @@ module Particles_coagulation
 !  swap names ipar to follow lucky droplets
 !
               if (lrelabelling) then
-                if (lswap.and.(fp(j,iap)/=fp(k,iap))) then
+                !if (lswap.and.(fp(j,iap)/=fp(k,iap))) then
+                if (lswap.and.(abs(fp(j,iap)-fp(k,iap)))>rdifference) then
                   ipar_j_=ipar(k)
                   ipar(k)=ipar(j)
                   ipar(j)=ipar_j_
