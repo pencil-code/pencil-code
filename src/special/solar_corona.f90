@@ -2343,9 +2343,9 @@ module Special
 !     add to temperature equation
 !
       if (ltemperature .and. ltemperature_nolog) then
-        delta_lnTT = deltaT_init_z(l1:l2) * dt
+        delta_lnTT = deltaT_init_z(n) * dt
       elseif (ltemperature) then
-        delta_lnTT = alog (exp (df(l1:l2,m,n,ilnTT)) + deltaT_init_z(l1:l2) * dt) - df(l1:l2,m,n,ilnTT)
+        delta_lnTT = alog (exp (df(l1:l2,m,n,ilnTT)) + deltaT_init_z(n) * dt) - df(l1:l2,m,n,ilnTT)
       else
         if (lentropy) &
             call stop_it('solar_corona: calc_heat_cool:lentropy=not implented')
@@ -2380,9 +2380,9 @@ module Special
 !     add to density
 !
       if (ldensity .and. ldensity_nolog) then
-        delta_lnrho = deltarho_init_z(l1:l2) * dt
+        delta_lnrho = deltarho_init_z(n) * dt
       elseif (ldensity) then
-        delta_lnrho = alog (exp (df(l1:l2,m,n,ilnrho)) + deltarho_init_z(l1:l2) * dt) - df(l1:l2,m,n,ilnrho)
+        delta_lnrho = alog (exp (df(l1:l2,m,n,ilnrho)) + deltarho_init_z(n) * dt) - df(l1:l2,m,n,ilnrho)
       else
         call stop_it('solar_corona: calc_rho_diff_fix:need density to work on it')
       endif
