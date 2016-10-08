@@ -40,9 +40,5 @@ echo "Wrapping up"
 tar cf mod_files.tar *.mod
 gzip mod_files.tar
 
-echo "Please send mod_files.tar.gz to WDobler <at>ucalgary <dot>ca"
-echo "and add the compiler name and version."
-
-
 
 # End of file get-mod-info

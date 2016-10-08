@@ -3183,8 +3183,7 @@ module General
       if (index(date,'*')>0) then
         open(11,FILE='date_time_string.debug')
         write(11,*) 'This file was generated because sub$date_time_string()'
-        write(11,*) 'produced a strange result. Please forwad this file to'
-        write(11,*) '  Wolfgang.Dobler@kis.uni-freiburg.de'
+        write(11,*) 'produced a strange result.'
         write(11,*)
         write(11,*) 'date = <', date, '>'
         write(11,*) 'values = ', values
