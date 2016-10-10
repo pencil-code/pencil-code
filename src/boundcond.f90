@@ -881,6 +881,9 @@ module Boundcond
                 ! BCZ_DOC: constant temp.
                 if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
                 call bc_ss_temp_z(f,topbot)
+              case ('cT1')
+                ! BCZ_DOC: constant temp.
+                call bc_ss_temp_z(f,topbot,.true.)
               case ('cT2')
                 ! BCZ_DOC: constant temp. (keep lnrho)
                 if (j==iss)   call bc_ss_temp2_z(f,topbot)
