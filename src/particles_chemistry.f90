@@ -1186,7 +1186,8 @@ module Particles_chemistry
       real, dimension(mx,my,mz,mfarray) :: f
       real :: pre_Cg, pre_Cs, pre_RR_hat, pre_k
       real :: pre_kk, Sh, Sh_mean
-      real ::  k_im, kkcg, x_mod,x_mod1, root_term
+      real ::  k_im, kkcg, x_mod,x_mod1, x_mod2, root_term
+      real ::  x_mod3, x_mod4,root_term2
       integer :: i, j, k, k1, k2, l, ix0, sh_counter
       integer, dimension(mpar_loc,3) :: ineargrid
       real, dimension(:), allocatable :: rep, nuvisc
@@ -1301,11 +1302,31 @@ module Particles_chemistry
                       kkcg = RR_hat(k,j)*Cg(k)*pre_kk
 !
                       if (dngas(j) /= 0.0) then
-                        root_term = sqrt((k_im+kkcg)**2 + 4*k_im*fp(k,isurf-1+i)*(-dngas(j))*kkcg)
-                        x_mod1 = (-kkcg-k_im+root_term)/2/(-dngas(j)*kkcg)
+                        root_term = (k_im+kkcg)**2 + 4*k_im*fp(k,isurf-1+i)*(dngas(j))*kkcg
+                        root_term2 = (k_im+kkcg)**2 + 4*k_im*fp(k,isurf-1+i)*(-dngas(j))*kkcg
+                        x_mod1 = (-kkcg-k_im+sqrt(root_term))/2/(dngas(j)*kkcg)
+                        x_mod2 = (-kkcg-k_im-sqrt(root_term))/2/(dngas(j)*kkcg)
+                        x_mod3 = (-kkcg-k_im+sqrt(root_term2))/2/(-dngas(j)*kkcg)
+                        x_mod4 = (-kkcg-k_im-sqrt(root_term2))/2/(-dngas(j)*kkcg)
                         if (x_mod1 >= 0.0 .and. x_mod1 <= fp(k,isurf-1+i)) then
                           x_mod=x_mod1
+                        elseif (x_mod2 >= 0.0 .and. x_mod2 <= fp(k,isurf-1+i)) then
+                          x_mod=x_mod2
                         else
+                          print*, 'k,i,      ', k,i
+                          print*, 'diff      ',p%Diff_penc_add(ix0-nghost,jmap(i))
+                          print*, 'RR_hat    ', RR_hat(k,j)
+                          print*, 'Cg        ',Cg(k)
+                          print*, 'kkcg      ',kkcg
+                          print*, 'k_im      ', k_im
+                          print*, 'kkcg/kim  ',kkcg/k_im
+                          print*, 'root term ', root_term
+                          print*, 'root t2   ', sqrt(root_term)
+                          print*, 'x_mod1    ',x_mod1
+                          print*, 'x_mod2    ',x_mod2
+                          print*, 'x_mod3    ',x_mod3
+                          print*, 'x_mod4    ',x_mod4
+                          print*, 'surface fraction', fp(k,isurf-1+i)
                           call fatal_error('particles_chemistry','no baum and street solution!')
                         endif
                       else
@@ -2743,15 +2764,16 @@ module Particles_chemistry
 !  Get temperature-chemistry dependent variables!
 !  dec-11/Jonas: coded
 !
-    subroutine get_temperature_chemistry(q_reac_targ,mass_loss_targ)
-      real, dimension(:) :: q_reac_targ
-      real, dimension(:), optional :: mass_loss_targ
+    subroutine get_temperature_chemistry(q_reac_targ,mass_loss_targ,k1,k2)
       integer ::  k1,k2
+      real, dimension(k1:k2) :: q_reac_targ
+      real, dimension(:), optional :: mass_loss_targ
 !
-      k1=k1_imn(imn)
-      k2=k2_imn(imn)
+!      k1=k1_imn(imn)
+!      k2=k2_imn(imn)
 !
-      q_reac_targ(1:k2-k1+1) = q_reac(k1:k2)
+      q_reac_targ(k1:k2) = q_reac(k1:k2)
+!      q_reac_targ(1:k2-k1+1) = q_reac(k1:k2)
       
       if (present(mass_loss_targ)) mass_loss_targ(1:k2-k1+1) = mass_loss(k1:k2)
 !

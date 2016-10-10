@@ -712,7 +712,7 @@ module Particles_main
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
 !
-      intent (in)  :: f
+      intent (inout)  :: f
       intent (out) :: df
 !
 !  Write information about local particle environment to file.

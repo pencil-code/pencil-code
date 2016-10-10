@@ -1432,18 +1432,11 @@ module Particles_sub
       logical, intent(in) :: ldiff,lexp
       real :: rdiffconst
 !
-      if (ldensity_nolog) then
-!
-!  JONAS this needs diffusing and transporting
-!
-        call fatal_error('particles_sub','not yet implemented for ldensity_nolog')
-      else
         if (ldiff) then
           call diffuse_domain_scalar(domain,lexp,rdiffconst)
         else
           call smooth_kernel_domain(domain,lexp)
         endif
-      endif
 !
     endsubroutine diffuse_interaction
 !***********************************************************************
@@ -1455,7 +1448,7 @@ module Particles_sub
 !  18-aug-16/jonas: adapted
 !
       real, intent(inout), dimension(mx,my,mz) :: domain
-      real, dimension(nx,ny,nz) :: smoothed=0.0
+      real, dimension(mx,my,mz) :: smoothed=0.0
       logical :: lexp
       real, dimension(7) :: kernel_1d= (/ &
           0.07651724, 0.13336258, 0.18612247, &
@@ -1516,7 +1509,7 @@ module Particles_sub
 !
       if (nxgrid /= 1 .and. nygrid == 1 .and. nzgrid == 1) then
         do l = l1,l2
-          smoothed(l-l1+1,1,1) =  sum(kernel_1d*domain(l-3:l+3,4,4))
+          smoothed(l-l1+4,4,4) =  sum(kernel_1d*domain(l-3:l+3,4,4))
         enddo
       endif
 !
@@ -1525,7 +1518,7 @@ module Particles_sub
       if (nxgrid /= 1 .and. nygrid /= 1 .and. nzgrid == 1) then
         do l = l1,l2
           do m = m1,m2
-            smoothed(l-l1+1,m-m1+1,1) = sum(kernel_2d*domain(l-3:l+3,m-3:m+3,4))
+            smoothed(l-l1+4,m-m1+4,4) = sum(kernel_2d*domain(l-3:l+3,m-3:m+3,4))
           enddo
         enddo
       endif
@@ -1536,13 +1529,13 @@ module Particles_sub
         do l = l1,l2
           do m = m1,m2
             do n = n1,n2             
-              smoothed(l-l1+1,m-m1+1,n-n1) = sum(kernel_3d*domain(l-3:l+3,m-3:m+3,n-3:n+3))
+              smoothed(l-l1+4,m-m1+4,n-n1+4) = sum(kernel_3d*domain(l-3:l+3,m-3:m+3,n-3:n+3))
             enddo
           enddo
         enddo
       endif
 
-      domain(l1:l2,m1:m2,n1:n2) = smoothed
+      domain(l1:l2,m1:m2,n1:n2) = smoothed(l1:l2,m1:m2,n1:n2)
 !
     endsubroutine smooth_kernel_domain
 !***************************************************************************

@@ -83,8 +83,10 @@ module Particles
   real :: tstart_insert_particles=0.0
   real :: birthring_r=1.0, birthring_width=0.1
   real :: tstart_rpbeta=0.0, birthring_lifetime=huge1
+  real :: rdiffconst_dragf=0.07,rdiffconst_pass=0.07
   integer :: l_hole=0, m_hole=0, n_hole=0
   integer :: iffg=0, ifgx=0, ifgy=0, ifgz=0, ibrtime=0
+  integer :: istep_dragf=3,istep_pass=3
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
   logical :: ldragforce_stiff=.false., ldragforce_radialonly=.false.
   logical :: ldragforce_heat=.false., lcollisional_heat=.false.
@@ -126,6 +128,9 @@ module Particles
   logical :: lbirthring_depletion=.false.
   logical :: lstocunn1 = .false.
   logical :: lprecalc_cell_volumes=.false.
+  logical :: ldiffuse_passive = .false.,ldiff_pass=.false.
+  logical :: ldiffuse_dragf= .false.,ldiff_dragf=.false.
+  logical :: lsimple_volume=.false.
 !
   character (len=labellen) :: interp_pol_uu ='ngp'
   character (len=labellen) :: interp_pol_oo ='ngp'
@@ -222,13 +227,13 @@ module Particles
       tstart_collisional_cooling, tausg_min, epsp_friction_increase, &
       ldragforce_heat, lcollisional_heat, lcompensate_friction_increase, &
       lmigration_real_check,ldraglaw_variable, luse_tau_ap, &
-      ldraglaw_epstein, ldraglaw_simple,&
+      ldraglaw_epstein, ldraglaw_simple, rdiffconst_pass,&
       ldraglaw_epstein_stokes_linear, mean_free_path_gas, &
       ldraglaw_epstein_transonic, lcheck_exact_frontier, &
       ldraglaw_eps_stk_transonic, ldragforce_stiff, &
       ldraglaw_variable_density, ldraglaw_steadystate, tstart_liftforce_par, &
-      ldraglaw_purestokes,& 
-      tstart_brownian_par, tstart_sink_par, &
+      ldraglaw_purestokes, ldiffuse_dragf, ldiffuse_passive, rdiffconst_dragf,& 
+      tstart_brownian_par, tstart_sink_par, ldiff_dragf, ldiff_pass,&
       lbrownian_forces, lenforce_policy, &
       interp_pol_uu,interp_pol_oo, interp_pol_TT, interp_pol_rho, &
       interp_pol_pp,interp_pol_species, &
@@ -238,7 +243,7 @@ module Particles
       lcentrifugal_force_par, ldt_adv_par, &
       linsert_particles_continuously, particles_insert_rate, &
       max_particle_insert_time, lrandom_particle_pencils, lnocalc_np, &
-      lnocalc_rhop, lstocunn1, &
+      lnocalc_rhop, lstocunn1, istep_dragf, istep_pass,&
       np_const, rhop_const, particle_radius, lprecalc_cell_volumes, &
       Deltauy_gas_friction, loutput_psize_dist, log_ap_min_dist, &
       log_ap_max_dist, nbin_ap_dist, lsinkparticle_1, rsinkparticle_1, &
@@ -249,7 +254,7 @@ module Particles
       lpscalar_sink, lsherwood_const, lnu_draglaw, nu_draglaw,lbubble, &
       rpbeta_species, rpbeta, gab_width, initxxp, initvvp, &
       particles_insert_ramp_time, tstart_insert_particles, birthring_r, &
-      birthring_width, &
+      birthring_width, lsimple_volume,&
       lgaussian_birthring, tstart_rpbeta, linsert_as_many_as_possible, &
       lvector_gravity, lcompensate_sedimentation,compensate_sedimentation, &
       lpeh_radius, A1, A2, ldraglaw_stokesschiller, lbirthring_depletion, birthring_lifetime
@@ -349,6 +354,23 @@ module Particles
         call farray_register_auxiliary('ffg',iffg,communicated=.true.,vector=3)
         ifgx=iffg; ifgy=iffg+1; ifgz=iffg+2
       endif
+!
+!  Special variable for diffusion of the passive scalar consumption
+!
+      if (ldiffuse_passive .and. lpscalar_sink) then
+        call farray_register_auxiliary('dlncc',idlncc,communicated=.true.)
+      elseif (ldiffuse_passive .and. .not. lpscalar_sink) then
+          call fatal_error('particles_dust','ldiffuse_passive needs lpscalar_sink')
+      endif
+!
+!  Special variable for diffusion of particle-gas dragforce
+!
+!      if (ldiffuse_dragf .and. ldragforce_gas_par) then
+!        call farray_register_auxiliary('dfg',idfg,communicated=.true.,vector=3)
+!        idfx=idfg; idfy=idfg+1; idfz=idfg+2
+!      elseif (ldiffuse_dragf .and. .not. ldragforce_gas_par) then
+!        call fatal_error('particles_dust','ldiffuse_dragf needs ldragforce_gas_par')
+!      endif
 !
 !  Relaxation time of supersaturation
       if (lsupersat) &
@@ -2869,14 +2891,14 @@ module Particles
       use Diagnostics
       use EquationOfState, only: cs20
 !
-      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,my,mz,mvar), intent (inout) :: df
       real, dimension (mpar_loc,mparray), intent (in) :: fp
       real, dimension (mpar_loc,mpvar), intent (inout) :: dfp
       integer, dimension (mpar_loc,3), intent (in) :: ineargrid
 !
       real :: Omega2
-      integer :: npar_found
+      integer :: npar_found,i
       logical :: lheader, lfirstcall=.true.
 !
 !  Print out header information in first time step.
@@ -2933,7 +2955,7 @@ module Particles
 !  Add constant background pressure gradient beta=alpha*H0/r0, where alpha
 !  comes from a global pressure gradient P = P0*(r/r0)^alpha.
 !  (the term must be added to the dust equation of motion when measuring
-!  velocities relative to the shear flow modified by the global pressure grad.)
+!  velocities relative to the shear flow modified by the globalfpressure grad.)
 !
       if (beta_dPdr_dust/=0.0 .and. t>=tstart_dragforce_par) then
         dfp(1:npar_loc,ivpx) = dfp(1:npar_loc,ivpx) + cs20*beta_dPdr_dust_scaled
@@ -2943,6 +2965,12 @@ module Particles
 !  Gravity on particles is implemented only if lparticle_gravity is true which is the default.
 !
       if (lparticle_gravity)  call particle_gravity(f,df,fp,dfp,ineargrid)
+!
+!      print*, 'sum1', sum(df(l1:l2,m1:m2,n1:n2,ilncc))
+      if (lpscalar_sink .and. ldiffuse_passive) then
+        call diffuse_scalar_consumption(f,df)
+      endif
+!      print*, 'sum2', sum(df(l1:l2,m1:m2,n1:n2,ilncc))
 !
 !  Diagnostic output
 !
@@ -3559,7 +3587,8 @@ module Particles
         getrep: if (ldraglaw_steadystate .or. lparticles_spin & 
             .or. ldraglaw_stokesschiller) then
           allocate(rep(k1_imn(imn):k2_imn(imn)))
-          if (.not. allocated(rep)) call fatal_error('dvvp_dt_pencil', 'unable to allocate sufficient memory for rep', .true.)
+          if (.not. allocated(rep)) call fatal_error('dvvp_dt_pencil', &
+              'unable to allocate sufficient memory for rep', .true.)
           call calc_pencil_rep(fp, rep)
         endif getrep
 !
@@ -3617,8 +3646,15 @@ module Particles
 !  Get the passive scalar diffusion rate
 !
             call get_shared_variable('pscalar_diff',pscalar_diff,ierr)
-
+!
           endif
+!
+!  When the field based handling of passive scalar consumption is enabled, set
+!  the current pencil of the lncc auxiliary to zero
+!
+          if (ldiffuse_passive) f(l1:l2,m,n,idlncc) = 0.0
+          if (ldiffuse_passive .and. ilncc == 0) call fatal_error('particles_dust', &
+              'ldiffuse_passive needs pscalar_nolog=F')
 !
 !  Loop over all particles in current pencil.
 !
@@ -3818,6 +3854,7 @@ module Particles
                   if (nxgrid/=1) ixx1=ixx0+1
                   if (nygrid/=1) iyy1=iyy0+1
                   if (nzgrid/=1) izz1=izz0+1
+!
                   do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
                     weight=1.0
                     if (nxgrid/=1) weight=weight*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
@@ -3829,6 +3866,7 @@ module Particles
                     else
                       rho1_point = p%rho1(ixx-nghost)
                     endif
+!
 !  Add friction force to grid point.
 !NILS: The grid volume should be put into a pencil when required
 !                    if ((lpscalar_sink .and. lpscalar) .or. &
@@ -3839,6 +3877,7 @@ module Particles
 ! alexrichert: above call to find_grid_volume is superfluous, not sure why
 ! conditions are different from call below. Perhaps lparticles_radius or
 ! iap>0 would be a better condition than eps_dtog/ldraglaw_steadystate?
+!
                     if (lhydro .and. ldragforce_gas_par) then
                       if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
                         call find_grid_volume(ixx,iyy,izz,volume_cell)
@@ -3854,12 +3893,15 @@ module Particles
                       df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
                           mp_vcell*rho1_point*dragforce*weight
                     endif
+!
                     if (lpscalar_sink .and. lpscalar) then
                       if (ilncc == 0) then
                         call fatal_error('dvvp_dt_pencil','lpscalar_sink not allowed for pscalar_nolog!')
                       else
-                        df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
-                            weight*dthetadt/volume_cell
+                        if (.not. ldiffuse_passive) then
+                          call find_grid_volume(ixx,iyy,izz,volume_cell)
+                          df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - weight*dthetadt/volume_cell
+                        endif
                       endif
                     endif
                   enddo; enddo; enddo
@@ -3957,8 +3999,11 @@ module Particles
                           call fatal_error('dvvp_dt_pencil',&
                               'lpscalar_sink not allowed for pscalar_nolog!')
                         else
-                          df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
-                              weight*dthetadt/volume_cell
+                          if (.not. ldiffuse_passive) then
+                            call find_grid_volume(ixx,iyy,izz,volume_cell)
+                            df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
+                                weight*dthetadt/volume_cell
+                          endif
                         endif
                       endif
                     enddo; enddo; enddo
@@ -4022,9 +4067,9 @@ module Particles
                       endif
 !
 !NILS: The grid volume should be put into a pencil when required
-                      if ((lpscalar_sink .and. lpscalar) .or. &
-                          (ldragforce_gas_par .and. ldraglaw_steadystate)) & 
-                          call find_grid_volume(ixx,iyy,izz,volume_cell) 
+                      if (ldragforce_gas_par .and. ldraglaw_steadystate) then
+                        call find_grid_volume(ixx,iyy,izz,volume_cell) 
+                      endif
                       if (lhydro .and. ldragforce_gas_par) then
 !  Calculate the particle mass divided by the cell volume
                         if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
@@ -4040,19 +4085,22 @@ module Particles
                         endif
                         if (.not.lcompensate_sedimentation) then 
                           df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                               mp_vcell*rho1_point*dragforce*weight
+                              mp_vcell*rho1_point*dragforce*weight
                         else
                           df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                               mp_vcell*rho1_point*dragforce*weight*compensate_sedimentation
+                              mp_vcell*rho1_point*dragforce*weight*compensate_sedimentation
                         endif
-                    endif
+                      endif
                       if (lpscalar_sink .and. lpscalar) then
                         if (ilncc == 0) then
                           call fatal_error('dvvp_dt_pencil',&
                               'lpscalar_sink not allowed for pscalar_nolog!')
                         else
-                          df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
-                              weight*dthetadt/volume_cell
+                          if (.not. ldiffuse_passive) then
+                            call find_grid_volume(ixx,iyy,izz,volume_cell)
+                            df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
+                                weight*dthetadt/volume_cell
+                          endif
                         endif
                       endif
                     enddo; enddo; enddo
@@ -4092,11 +4140,23 @@ module Particles
                       call fatal_error('dvvp_dt_pencil',&
                           'lpscalar_sink not allowed for pscalar_nolog!')
                     else
-                      df(l,m,n,ilncc) = df(l,m,n,ilncc) - &
-                          dthetadt/volume_cell
+                      if (.not. ldiffuse_passive) then
+                        print*, 'infos', l,m,n,ilncc
+                        call find_grid_volume(l,m,n,volume_cell) 
+                        df(l,m,n,ilncc) = df(l,m,n,ilncc) - dthetadt/volume_cell
+                      endif
                     endif
                   endif
                 endif
+!
+!  Adding the passive scalar contribution to the auxiliary grid
+!
+                if (ldiffuse_passive .and. lpscalar_sink .and. &
+                    .not. lpencil_check_at_work) then
+                  call find_grid_volume(ix0,iy0,iz0,volume_cell)
+                  f(ix0,iy0,iz0,idlncc) =  f(ix0,iy0,iz0,idlncc) - dthetadt/volume_cell
+                endif
+!
               endif
 !
 !  Calculate particle mass density in grid cell
@@ -6149,5 +6209,30 @@ module Particles
       if (allocated(rel_vel)) deallocate(rel_vel)
 !
     endsubroutine calc_relative_velocity
+!***********************************************************************
+    subroutine diffuse_scalar_consumption(f,df)
+!
+      use Boundcond
+      use Mpicomm
+!
+      integer :: i
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+!
+!
+      if (.not. lpencil_check_at_work) then
+        do i = 1,istep_pass
+          call boundconds_x(f,idlncc,idlncc)
+          call initiate_isendrcv_bdry(f,idlncc,idlncc)
+          call finalize_isendrcv_bdry(f,idlncc,idlncc)
+          call boundconds_y(f,idlncc,idlncc)
+          call boundconds_z(f,idlncc,idlncc)
+          call diffuse_interaction(f(:,:,:,idlncc),ldiff_pass,.False.,rdiffconst_pass)
+        enddo
+        df(l1:l2,m1:m2,n1:n2,ilncc) =  df(l1:l2,m1:m2,n1:n2,ilncc) + &
+            f(l1:l2,m1:m2,n1:n2,idlncc)
+      endif
+!
+    endsubroutine diffuse_scalar_consumption
 !***********************************************************************
 endmodule Particles

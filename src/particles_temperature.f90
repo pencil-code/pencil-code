@@ -281,7 +281,7 @@ module Particles_temperature
 !  The mass vector is pointing outward of the particle ->
 !  mass loss > 0 means the particle is losing mass
 !
-          call get_temperature_chemistry(q_reac,mass_loss)
+          call get_temperature_chemistry(q_reac,mass_loss,k1,k2)
         else
         endif
 !

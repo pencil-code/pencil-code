@@ -135,7 +135,7 @@ module Particles_map
       intent(in)  :: f, xxp, ivar1, inear
       intent(out) :: gp
 !
-!  Determine index value of lowest lying corner point of grid box surrounding
+!  Determine index value of lowest lying corner point of grid box surrunding
 !  the interpolation point.
 !
       ix0=inear(1); iy0=inear(2); iz0=inear(3)
