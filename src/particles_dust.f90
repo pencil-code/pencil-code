@@ -3908,7 +3908,7 @@ module Particles
 !
 !  Triangular Shaped Cloud (TSC) scheme.
 !
-                elseif (lparticlemesh_tsc .or. lparticlemesh_gab) then
+                elseif (lparticlemesh_tsc) then
                   if (.not. lparticlemesh_pqs_assignment) then
 !
 !  Particle influences the 27 surrounding grid points, but has a density that
@@ -4105,6 +4105,60 @@ module Particles
                       endif
                     enddo; enddo; enddo
                   endif
+!
+!  GAussian Box (GAB) scheme.
+!
+                elseif (lparticlemesh_gab) then
+                  ixx0=ix0-3 
+                  ixx1=ix0+3
+                  iyy0=iy0-3 
+                  iyy1=iy0+3
+                  izz0=iz0-3 
+                  izz1=iz0+3
+                  do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+                    weight = 1.
+                    if (nxgrid/=1) weight=weight*gab_weights(abs(ixx-ix0)+1)
+                    if (nygrid/=1) weight=weight*gab_weights(abs(iyy-iy0)+1)
+                    if (nzgrid/=1) weight=weight*gab_weights(abs(izz-iz0)+1)
+!
+                    if ( (iyy/=m).or.(izz/=n).or.(ixx<l1).or.(ixx>l2) ) then
+                      rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
+                    else
+                      rho1_point = p%rho1(ixx-nghost)
+                    endif
+!  Add friction force to grid point.
+                    if ((lpscalar_sink .and. lpscalar) .or. &
+                        (ldragforce_gas_par .and. ldraglaw_steadystate)) & 
+                        call find_grid_volume(ixx,iyy,izz,volume_cell)
+! alexrichert: above call to find_grid_volume is superfluous, not sure why
+! conditions are different from call below. Perhaps lparticles_radius or
+! iap>0 would be a better condition than eps_dtog/ldraglaw_steadystate?
+                    if (lhydro .and. ldragforce_gas_par) then
+                      if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
+                        call find_grid_volume(ixx,iyy,izz,volume_cell)
+                        mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
+                        if (lparticles_number) then
+                          mp_vcell = mp_vcell*fp(k,inpswarm)
+                        elseif (np_swarm .gt. 0) then
+                          mp_vcell = mp_vcell*np_swarm
+                        endif
+                      else
+                        call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,mp_vcell)
+                      endif
+                      df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                          mp_vcell*rho1_point*dragforce*weight
+                    endif
+                    if (lpscalar_sink .and. lpscalar) then
+                      if (ilncc == 0) then
+                        call fatal_error('dvvp_dt_pencil','lpscalar_sink not allowed for pscalar_nolog!')
+                      else
+                        df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
+                            weight*dthetadt/volume_cell
+                      endif
+                    endif
+                  enddo
+                  enddo
+                  enddo
                 else
 !
 !  Nearest Grid Point (NGP) scheme.
