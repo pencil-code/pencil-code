@@ -1166,7 +1166,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
     endsubroutine bc_ss_temp_y
 !***********************************************************************
-    subroutine bc_ss_temp_z(f,topbot)
+    subroutine bc_ss_temp_z(f,topbot,lone_sided)
 !
 !  boundary condition for entropy: constant temperature
 !
@@ -1174,6 +1174,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
       character (len=3) :: topbot
       real, dimension (:,:,:,:) :: f
+      logical, optional :: lone_sided
 !
       call stop_it("bc_ss_temp_z: NOT IMPLEMENTED IN EOS_FIXED_IONIZATION")
 !
