@@ -384,7 +384,7 @@ module Io
 !
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
 !
-      use Mpicomm, only: globalize_xy, collect_grid, mpi_precision, stop_it_if_any
+      use Mpicomm, only: stop_it_if_any
 !
       if (persist_initialized) then
         if (lroot .and. (ip <= 9)) write (*,*) 'finish persistent block'
@@ -418,7 +418,7 @@ module Io
 !  10-Mar-2015/MR: avoided use of fseek;
 !                  this subroutine seems not yet to be adapted to HDF5
 !
-      use Mpicomm, only: localize_xy, mpibcast_real, mpi_precision, MPI_COMM_WORLD
+      use Mpicomm, only: localize_xy, mpibcast_real, MPI_COMM_WORLD
       use General, only: backskip_to_time
 !
       character (len=*) :: file
