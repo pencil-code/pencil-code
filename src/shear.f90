@@ -730,7 +730,7 @@ module Shear
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: ivar1, ivar2
 !
-      if (ldownsampling) then
+      if (lroot.and.ldownsampling) then
         call warning('boundcond_shear','Not available for downsampling - ignored')
         return
       endif

@@ -2256,14 +2256,14 @@ module EquationOfState
         else
 !
           call getrho(f(:,:,n1,ilnrho),rho_xy)
+          cs2_xy = f(:,:,n1,iss)         ! here cs2_xy = entropy
+          if (lreference_state) &
+            cs2_xy(l1:l2,:) = cs2_xy(l1:l2,:) + spread(reference_state(:,iref_s),2,my)
 !
           if (ldensity_nolog) then
-            cs2_xy = f(:,:,n1,iss)         ! here cs2_xy = entropy
-            if (lreference_state) &
-              cs2_xy(l1:l2,:) = cs2_xy(l1:l2,:) + spread(reference_state(:,iref_s),2,my)
             cs2_xy=cs20*exp(gamma_m1*(log(rho_xy)-lnrho0)+cv1*cs2_xy)
           else
-            cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*f(:,:,n1,iss))
+            cs2_xy=cs20*exp(gamma_m1*(f(:,:,n1,ilnrho)-lnrho0)+cv1*cs2_xy)
           endif
 !
 !  Check whether we have chi=constant at bottom, in which case
@@ -2283,8 +2283,8 @@ module EquationOfState
 !  enforce ds/dz + (cp-cv)*dlnrho/dz = - cp*(cp-cv)*Fbot/(Kbot*cs2)
 !
           if (loptest(lone_sided)) then
+            call not_implemented('bc_ss_flux', 'one-sided BC')
             call getderlnrho_z(f,n1,rho_xy)                           ! rho_xy=d_z ln(rho)
-            rho_xy=-cp*(cp-cv)*(rho_xy+tmp_xy)
             call bval_from_neumann(f,topbot,iss,3,rho_xy)
             call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
           else
@@ -2310,13 +2310,14 @@ module EquationOfState
         else
 !
           call getrho(f(:,:,n2,ilnrho),rho_xy)
+          cs2_xy = f(:,:,n2,iss)             ! here cs2_xy = entropy
+          if (lreference_state) &
+            cs2_xy(l1:l2,:) = cs2_xy(l1:l2,:) + spread(reference_state(:,iref_s),2,my)
+
           if (ldensity_nolog) then
-            cs2_xy = f(:,:,n2,iss)             ! here cs2_xy = entropy
-            if (lreference_state) &
-              cs2_xy(l1:l2,:) = cs2_xy(l1:l2,:) + spread(reference_state(:,iref_s),2,my)
             cs2_xy=cs20*exp(gamma_m1*(log(rho_xy)-lnrho0)+cv1*cs2_xy)
           else
-            cs2_xy=cs20*exp(gamma_m1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*f(:,:,n2,iss))
+            cs2_xy=cs20*exp(gamma_m1*(f(:,:,n2,ilnrho)-lnrho0)+cv1*cs2_xy)
           endif
 !
 !  Check whether we have chi=constant at top, in which case
@@ -2336,8 +2337,8 @@ module EquationOfState
 !  enforce ds/dz + (cp-cv)*dlnrho/dz = - cp*(cp-cv)*Ftop/(K*cs2)
 !
           if (loptest(lone_sided)) then
+            call not_implemented('bc_ss_flux', 'one-sided BC')
             call getderlnrho_z(f,n2,rho_xy)                           ! rho_xy=d_z ln(rho)
-            rho_xy=-cp*(cp-cv)*(rho_xy+tmp_xy)
             call bval_from_neumann(f,topbot,iss,3,rho_xy)
             call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
           else
@@ -3371,15 +3372,21 @@ module EquationOfState
 !
     endsubroutine bc_ss_temp_y
 !***********************************************************************
-    subroutine bc_ss_temp_z(f,topbot)
+    subroutine bc_ss_temp_z(f,topbot,lone_sided)
 !
 !  boundary condition for entropy: constant temperature
 !
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
+!  11-oct-2016/MR: changes for use of one-sided BC formulation (chosen by setting new optional switch lone_sided)
 !
-      character (len=3) :: topbot
+      use General, only: loptest
+      use Deriv, only: set_ghosts_for_onesided_ders
+
       real, dimension (:,:,:,:) :: f
+      character (len=3) :: topbot
+      logical, optional :: lone_sided
+
       real :: tmp
       integer :: i
       real, dimension(mx,my) :: lnrho_xy
@@ -3408,40 +3415,54 @@ module EquationOfState
                    'bc_ss_temp_z: cannot have cs2bot = ', cs2bot, ' <= 0'
         if (lentropy .and. .not. pretend_lnTT) then
 
-           tmp = 2*cv*log(cs2bot/cs20)
-           call getlnrho(f(:,:,n1,ilnrho),lnrho_xy)
-           f(:,:,n1,iss) = 0.5*tmp - (cp-cv)*(lnrho_xy-lnrho0)
+          tmp = 2*cv*log(cs2bot/cs20)
+          call getlnrho(f(:,:,n1,ilnrho),lnrho_xy)
+          f(:,:,n1,iss) = 0.5*tmp - (cp-cv)*(lnrho_xy-lnrho0)
+
+          if (lreference_state) &
+            f(l1:l2,:,n1,iss) = f(l1:l2,:,n1,iss) - spread(reference_state(:,iref_s),2,my)
 !
 !  Distinguish cases for linear and logarithmic density
 !
-           if (ldensity_nolog) then
+          if (loptest(lone_sided)) then
+            call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
+          else
+            if (ldensity_nolog) then
 
-             if (lreference_state) &
-               f(l1:l2,:,n1,iss) = f(l1:l2,:,n1,iss) - spread(reference_state(:,iref_s),2,my)
-
-             do i=1,nghost
-               f(:,:,n1-i,iss) = -f(:,:,n1+i,iss) + tmp &
-!                  - (cp-cv)*(log(f(:,:,n1+i,irho)*f(:,:,n1-i,irho))-2*lnrho0)
+              do i=1,nghost
+                f(:,:,n1-i,iss) = -f(:,:,n1+i,iss) + tmp &
+!                   - (cp-cv)*(log(f(:,:,n1+i,irho)*f(:,:,n1-i,irho))-2*lnrho0)
 !AB: this could be better
-                  - 2*(cp-cv)*(lnrho_xy-lnrho0)
-             enddo
-           else
-             do i=1,nghost
-               f(:,:,n1-i,iss) = -f(:,:,n1+i,iss) + tmp &
-                   - (cp-cv)*(f(:,:,n1+i,ilnrho)+f(:,:,n1-i,ilnrho)-2*lnrho0)
-             enddo
-           endif
+!MR: but is not equivalent
+!    Why anyway different from cases below, which set *s* antisymmtric w.r.t. boundary value?
+                   - 2*(cp-cv)*(lnrho_xy-lnrho0)
+              enddo
+            else
+              do i=1,nghost
+                f(:,:,n1-i,iss) = -f(:,:,n1+i,iss) + tmp &
+                    - (cp-cv)*(f(:,:,n1+i,ilnrho)+f(:,:,n1-i,ilnrho)-2*lnrho0)
+              enddo
+            endif
+          endif
 
         elseif (lentropy .and. pretend_lnTT) then
-            f(:,:,n1,iss) = log(cs2bot/gamma_m1)
+          f(:,:,n1,iss) = log(cs2bot/gamma_m1)
+          if (loptest(lone_sided)) then
+            call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
+          else
             do i=1,nghost; f(:,:,n1-i,iss)=2*f(:,:,n1,iss)-f(:,:,n1+i,iss); enddo
+          endif
         elseif (ltemperature) then
-            if (ltemperature_nolog) then
-              f(:,:,n1,iTT)   = cs2bot/gamma_m1
-            else
-              f(:,:,n1,ilnTT) = log(cs2bot/gamma_m1)
-            endif
+          if (ltemperature_nolog) then
+            f(:,:,n1,iTT)   = cs2bot/gamma_m1
+          else
+            f(:,:,n1,ilnTT) = log(cs2bot/gamma_m1)
+          endif
+          if (loptest(lone_sided)) then
+            call set_ghosts_for_onesided_ders(f,topbot,ilnTT,3,.true.)
+          else
             do i=1,nghost; f(:,:,n1-i,ilnTT)=2*f(:,:,n1,ilnTT)-f(:,:,n1+i,ilnTT); enddo
+          endif
         endif
 !
 !  top boundary
@@ -3455,40 +3476,52 @@ module EquationOfState
 !AB: This was implemented in revision: 17029 dhruba.mitra, but it works!
         if (lread_oldsnap) &
           cs2top=cs20*exp(gamma*f(l2,m2,n2,iss)/cp+gamma_m1*(f(l2,m2,n2,ilnrho)-lnrho0))
+
         if (lentropy .and. .not. pretend_lnTT) then
-!
-!  Distinguish cases for linear and logarithmic density
-!
           tmp = 2*cv*log(cs2top/cs20)
           call getlnrho(f(:,:,n2,ilnrho),lnrho_xy)
           f(:,:,n2,iss) = 0.5*tmp - (cp-cv)*(lnrho_xy-lnrho0)
+          if (lreference_state) &
+            f(l1:l2,:,n2,iss) = f(l1:l2,:,n2,iss) - spread(reference_state(:,iref_s),2,my)
 
-          if (ldensity_nolog) then
-            if (lreference_state) &
-              f(l1:l2,:,n2,iss) = f(l1:l2,:,n2,iss) - spread(reference_state(:,iref_s),2,my)
-
-            do i=1,nghost
-              f(:,:,n2+i,iss) = -f(:,:,n2-i,iss) + tmp &
-                   !- (cp-cv)*(log(f(:,:,n2-i,irho)*f(:,:,n2+i,irho))-2*lnrho0)
-!AB: this could be better
-                   - 2*(cp-cv)*(lnrho_xy-lnrho0)
-            enddo
+          if (loptest(lone_sided)) then
+            call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
           else
-            do i=1,nghost
-              f(:,:,n2+i,iss) = -f(:,:,n2-i,iss) + tmp &
-                   - (cp-cv)*(f(:,:,n2-i,ilnrho)+f(:,:,n2+i,ilnrho)-2*lnrho0)
-            enddo
+!
+!  Distinguish cases for linear and logarithmic density
+!
+            if (ldensity_nolog) then
+              do i=1,nghost
+                f(:,:,n2+i,iss) = -f(:,:,n2-i,iss) + tmp &
+                     !- (cp-cv)*(log(f(:,:,n2-i,irho)*f(:,:,n2+i,irho))-2*lnrho0)
+!AB: this could be better
+                     - 2*(cp-cv)*(lnrho_xy-lnrho0)
+              enddo
+            else
+              do i=1,nghost
+                f(:,:,n2+i,iss) = -f(:,:,n2-i,iss) + tmp &
+                     - (cp-cv)*(f(:,:,n2-i,ilnrho)+f(:,:,n2+i,ilnrho)-2*lnrho0)
+              enddo
+            endif
           endif
         elseif (lentropy .and. pretend_lnTT) then
             f(:,:,n2,iss) = log(cs2top/gamma_m1)
-            do i=1,nghost; f(:,:,n2+i,iss)=2*f(:,:,n2,iss)-f(:,:,n2-i,iss); enddo
+            if (loptest(lone_sided)) then
+              call set_ghosts_for_onesided_ders(f,topbot,iss,3,.true.)
+            else
+              do i=1,nghost; f(:,:,n2+i,iss)=2*f(:,:,n2,iss)-f(:,:,n2-i,iss); enddo
+            endif
         elseif (ltemperature) then
             if (ltemperature_nolog) then
               f(:,:,n2,iTT)   = cs2top/gamma_m1
             else
               f(:,:,n2,ilnTT) = log(cs2top/gamma_m1)
             endif
-            do i=1,nghost; f(:,:,n2+i,ilnTT)=2*f(:,:,n2,ilnTT)-f(:,:,n2-i,ilnTT); enddo
+            if (loptest(lone_sided)) then
+              call set_ghosts_for_onesided_ders(f,topbot,ilnTT,3,.true.)
+            else
+              do i=1,nghost; f(:,:,n2+i,ilnTT)=2*f(:,:,n2,ilnTT)-f(:,:,n2-i,ilnTT); enddo
+            endif
         endif
 !
       case default
