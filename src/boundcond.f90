@@ -8076,10 +8076,10 @@ module Boundcond
             else if (j==iss) then
               if (ldensity_nolog) then
                 f(:,:,n1-k,j)=f(:,:,n1-k+1,j)+(cp-cv)*&
-                 (log(f(:,:,n1-k+1,j-1))-log(f(:,:,n1-k,j-1)))
+                 (log(f(:,:,n1-k+1,j-1))-log(f(:,:,n1-k,j-1))-z(k)+z(n1))
               else
                 f(:,:,n1-k,j)=f(:,:,n1-k+1,j)+(cp-cv)*&
-                 (f(:,:,n1-k+1,j-1)-f(:,:,n1-k,j-1))
+                 (f(:,:,n1-k+1,j-1)-f(:,:,n1-k,j-1)-z(k)+z(n1))
               endif
             else
               call fatal_error('bc_ism','only for irho, ilnrho or iss')
@@ -8097,10 +8097,10 @@ module Boundcond
             else if (j==iss) then
               if (ldensity_nolog) then
                 f(:,:,n2+k,j)=f(:,:,n2+k-1,j)+(cp-cv)*&
-                 (log(f(:,:,n2+k-1,j-1))-log(f(:,:,n2+k,j-1)))
+                 (log(f(:,:,n2+k-1,j-1))-log(f(:,:,n2+k,j-1))+z(n2+k)-z(n2))
               else
                 f(:,:,n2+k,j)=f(:,:,n2+k-1,j)+(cp-cv)*&
-                 (f(:,:,n2+k-1,j-1)-f(:,:,n2+k,j-1))
+                 (f(:,:,n2+k-1,j-1)-f(:,:,n2+k,j-1)+z(n2+k)-z(n2))
               endif
             else
               call fatal_error('bc_ism','only for irho, ilnrho or iss')
