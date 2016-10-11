@@ -1040,15 +1040,17 @@ module EquationOfState
 !
     endsubroutine bc_ss_temp_y
 !***********************************************************************
-    subroutine bc_ss_temp_z(f,topbot)
+    subroutine bc_ss_temp_z(f,topboti,lone_sided)
 !
 !  boundary condition for entropy: constant temperature
 !
 !   3-aug-2002/wolf: coded
 !  26-aug-2003/tony: distributed across ionization modules
+!   3-oct-16/MR: added new optional switch lone_sided
 !
       character (len=3) :: topbot
       real, dimension (:,:,:,:) :: f
+      logical, optional :: lone_sided
       real :: tmp
       integer :: i
 !
