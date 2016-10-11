@@ -2,7 +2,9 @@
 #
 # Read the dimensions of the simulationp.
 #
-# Authors: S. Candelaresi (iomsn1@gmail.com), J. Oishi (joishi@amnh.org).
+# Authors:
+# J. Oishi (joishi@amnh.org)
+# S. Candelaresi (iomsn1@gmail.com)
 """
 Contains the classes and methods to read the simulation dimensions.
 """
