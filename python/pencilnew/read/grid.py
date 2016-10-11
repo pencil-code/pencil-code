@@ -34,9 +34,6 @@ def grid(*args, **kwargs):
 
     *trim*
       Cuts off the ghost points.
-
-    *data_format*
-      Specifies the data format.
     """
 
     grid_tmp = Grid()
@@ -54,19 +51,17 @@ class Grid(object):
         Fill members with default values.
         """
 
-        self.keys = []
-
         self.x = self.y = self.z = 0
         self.dx_1 = self.dy_1 = self.dz_1 = 0
         self.dx_tilde = self.dy_tilde = self.dz_tilde = 0
-        
+
         self.t = 0
         self.dx = self.dy = self.dz = 0
         self.Lx = self.Ly = self.Lz = 0
 
 
     def read(self, data_dir='data', proc=-1, quiet=False,
-             trim=False, data_format='native'):
+             trim=False):
         """
         Read the grid data from the pencil code simulation.
         If proc < 0, then load all data and assemble.
@@ -92,14 +87,11 @@ class Grid(object):
 
         *trim*
           Cuts off the ghost points.
-
-        *data_format*
-          Specifies the data format.
         """
 
         import numpy as np
         import os
-        from pencilnew.io.npfile import npfile as npfile
+        from scipy.io import FortranFile
         from pencilnew.read.dim import dim as read_dim
 
         data_dir = os.path.expanduser(data_dir)
@@ -137,12 +129,12 @@ class Grid(object):
 
             # Read the grid data.
             file_name = os.path.join(data_dir, directory, 'grid.dat')
-            infile = npfile(file_name, endian=data_format)
-            grid_raw = infile.fort_read(precision)
-            dx, dy, dz = tuple(infile.fort_read(precision))
-            Lx, Ly, Lz = tuple(infile.fort_read(precision))
-            dx_1_raw = infile.fort_read(precision)
-            dx_tilde_raw = infile.fort_read(precision)
+            infile = FortranFile(file_name, 'r')
+            grid_raw = infile.read_record(dtype=precision)
+            dx, dy, dz = tuple(infile.read_record(dtype=precision))
+            Lx, Ly, Lz = tuple(infile.read_record(dtype=precision))
+            dx_1_raw = infile.read_record(dtype=precision)
+            dx_tilde_raw = infile.read_record(dtype=precision)
             infile.close()
 
             # Reshape the arrays.
