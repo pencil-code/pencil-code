@@ -173,7 +173,7 @@ module Interstellar
   real :: SNII_mass_rate, SNI_mass_rate
   real :: SN_interval_rhom=impossible, SN_interval_rhom_cgs=2.8e-25
   logical :: lSN_mass_rate=.false., lscale_SN_interval=.false.
-  integer :: iSNdx=3
+  real :: iSNdx=2.
 !
 !  Some useful constants
 !
@@ -1894,28 +1894,7 @@ module Interstellar
           "check_SNI: Old t_next_SNI=", t_next_SNI
       call random_number_wrapper(franSN)
 !
-!  fred: the SN rate can be varied to reduce with mass outflows and increase
-!        with inflows to regulate the mass in the disk
-!        a high index iSNdx can be used to increase the sensitivity, but once
-!        net mass loss occurs the index is set to 1, to avoid over heating  
-!
-      if (lscale_SN_interval) then
-        if (ldensity_nolog) then
-          rhom=sum(f(l1:l2,m1:m2,n1:n2,irho))/(nx*ny*nz)
-        else
-          rhom=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))/(nx*ny*nz)
-        endif
-        mpirho=rhom/ncpus
-        call mpiallreduce_sum(mpirho,rhom)
-        if (rhom<old_rhom .and. rhom>SN_interval_rhom) then
-          scaled_interval=t_interval_SNI*(SN_interval_rhom/rhom)
-        else
-          scaled_interval=t_interval_SNI*(SN_interval_rhom/rhom)**iSNdx
-        endif
-        old_rhom=rhom
-      else
-        scaled_interval=t_interval_SNI
-      endif
+      scaled_interval=t_interval_SNI
 !
 !  Vary the time interval with a uniform random distribution between
 !  \pm0.875 times the average interval required.
@@ -1961,7 +1940,7 @@ module Interstellar
         mpirho=rhom/ncpus
         call mpiallreduce_sum(mpirho,rhom)
         if (rhom<old_rhom .and. rhom>SN_interval_rhom) then
-          scaled_interval=t_interval_SNII*(SN_interval_rhom/rhom)
+          scaled_interval=t_interval_SNII!*(SN_interval_rhom/rhom)
         else
           scaled_interval=t_interval_SNII*(SN_interval_rhom/rhom)**iSNdx
         endif
