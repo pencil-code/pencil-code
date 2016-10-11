@@ -171,7 +171,6 @@ pro pc_magic_var, variables, tags, $
 ;
   for iv=0,n_elements(variables)-1 do begin
     tags[iv]=variables[iv]
-print,     tags[iv],variables[iv]
 ; x Coordinate
     if (variables[iv] eq 'xx') then begin
       variables[iv]='spread(spread(x,1,n_elements(y)),2,n_elements(z))'
