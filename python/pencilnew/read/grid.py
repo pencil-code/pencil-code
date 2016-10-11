@@ -2,7 +2,9 @@
 #
 # Read the grid information from grid.dat.
 #
-# Authors:  S. Candelaresi (iomsn1@gmail.com), J. Oishi (joishi@amnh.org).
+# Authors:
+# J. Oishi (joishi@amnh.org)
+# S. Candelaresi (iomsn1@gmail.com)
 """
 Contains classes and methods to read the grid data.
 """
