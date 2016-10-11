@@ -71,7 +71,7 @@ module Shear
 !
   contains
 !***********************************************************************
-    subroutine register_shear()
+    subroutine register_shear
 !
 !  Initialise variables.
 !
@@ -87,7 +87,7 @@ module Shear
 !
     endsubroutine register_shear
 !***********************************************************************
-    subroutine initialize_shear()
+    subroutine initialize_shear
 !
 !  21-nov-02/tony: coded
 !  08-jul-04/anders: Sshear calculated whenever qshear /= 0
@@ -229,7 +229,7 @@ module Shear
 !
     endsubroutine shear_before_boundary
 !***********************************************************************
-    subroutine pencil_criteria_shear()
+    subroutine pencil_criteria_shear
 !
 !  All pencils that the Shear module depends on are specified here.
 !
@@ -484,7 +484,7 @@ module Shear
 !
 !  Update process neighbors.
 !
-      call update_neighbors()
+      call update_neighbors
 !
 !  Solve for advection by shear motion by shifting all variables and their
 !  time derivative (following Gammie 2001). Removes time-step constraint
@@ -729,14 +729,18 @@ module Shear
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       integer, intent(in) :: ivar1, ivar2
+      logical, save :: lfirstcall=.true.
 !
-      if (lroot.and.ldownsampling) then
-        call warning('boundcond_shear','Not available for downsampling - ignored')
+      if (ldownsampling) then
+        if (lroot.and.lfirstcall) then
+          call warning('boundcond_shear','Not available for downsampling - ignored!')
+          lfirstcall=.false.
+        endif
         return
       endif
 
       if (ip<12.and.headtt) print*, &
-          'boundconds_x: use shearing sheet boundary condition'
+          'boundcond_shear: use shearing sheet boundary condition'
 !
       shear_advec: if (lshearadvection_as_shift) then
         method: select case (shear_method)
@@ -1023,7 +1027,7 @@ module Shear
         a(l2+1:mx,:,:,ivar1:ivar2) = a(l1:l1i,:,:,ivar1:ivar2)
       else perx
         allocate(send_buf(nghost,my,mz,nvar), recv_buf(nghost,my,mz,nvar), stat=istat)
-        if (istat /= 0) call fatal_error('shift_ghostzones_nonfft', 'allocation failed. ')
+        if (istat /= 0) call fatal_error('bcx_periodic', 'allocation failed. ')
         commun: if (lfirst_proc_x) then
           send_buf = a(l1:l1i,:,:,ivar1:ivar2)
           call mpirecv_real(recv_buf, nbcast, xlneigh, rtag)
@@ -1036,7 +1040,7 @@ module Shear
           a(l2+1:mx,:,:,ivar1:ivar2) = recv_buf
         endif commun
         deallocate(send_buf, recv_buf)
-        call mpibarrier()
+        call mpibarrier
       endif perx
 !
      endsubroutine bcx_periodic
