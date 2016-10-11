@@ -1909,6 +1909,10 @@ module Particles
 !
       call sort_particles_imn(fp,ineargrid,ipar)
 !
+!  Set the initial auxiliary array for the passive scalar to zero
+!
+      if (ldiffuse_passive) f(:,:,:,idlncc) = 0.0
+!
     endsubroutine init_particles
 !***********************************************************************
     subroutine insert_lost_particles(f,fp,ineargrid)
@@ -2963,14 +2967,12 @@ module Particles
 !
 !  Gravity on the particles.
 !  Gravity on particles is implemented only if lparticle_gravity is true which is the default.
+!  The auxiliary has to be set to zero afterwards
 !
-      if (lparticle_gravity)  call particle_gravity(f,df,fp,dfp,ineargrid)
-!
-!      print*, 'sum1', sum(df(l1:l2,m1:m2,n1:n2,ilncc))
       if (lpscalar_sink .and. ldiffuse_passive) then
         call diffuse_scalar_consumption(f,df)
+        f(:,:,:,idlncc) = 0.0
       endif
-!      print*, 'sum2', sum(df(l1:l2,m1:m2,n1:n2,ilncc))
 !
 !  Diagnostic output
 !
@@ -3652,7 +3654,7 @@ module Particles
 !  When the field based handling of passive scalar consumption is enabled, set
 !  the current pencil of the lncc auxiliary to zero
 !
-          if (ldiffuse_passive) f(l1:l2,m,n,idlncc) = 0.0
+          if (ldiffuse_passive) f(:,m,n,idlncc) = 0.0
           if (ldiffuse_passive .and. ilncc == 0) call fatal_error('particles_dust', &
               'ldiffuse_passive needs pscalar_nolog=F')
 !
@@ -4152,8 +4154,10 @@ module Particles
                       if (ilncc == 0) then
                         call fatal_error('dvvp_dt_pencil','lpscalar_sink not allowed for pscalar_nolog!')
                       else
-                        df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
-                            weight*dthetadt/volume_cell
+                        if (.not. ldiffuse_passive) then
+                          df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
+                              weight*dthetadt/volume_cell
+                        endif
                       endif
                     endif
                   enddo
@@ -4195,7 +4199,6 @@ module Particles
                           'lpscalar_sink not allowed for pscalar_nolog!')
                     else
                       if (.not. ldiffuse_passive) then
-                        print*, 'infos', l,m,n,ilncc
                         call find_grid_volume(l,m,n,volume_cell) 
                         df(l,m,n,ilncc) = df(l,m,n,ilncc) - dthetadt/volume_cell
                       endif

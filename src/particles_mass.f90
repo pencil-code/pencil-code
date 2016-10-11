@@ -417,10 +417,6 @@ module Particles_mass
                 else
                   f(ix0,iy0,iz0,idmp) = f(ix0,iy0,iz0,idmp) &
                       +mass_loss(k)/exp(f(ix0,iy0,iz0,ilnrho))/volume_cell
-                  if (ldiagnos) then
-!                    print*, 'mass loss infos'
-!                    print*, 'dmass/dmasscell', mass_loss(k)/(exp(f(ix0,iy0,iz0,ilnrho))*volume_cell)
-                  endif
                 endif
               endif
 !
