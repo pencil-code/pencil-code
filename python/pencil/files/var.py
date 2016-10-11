@@ -117,8 +117,9 @@ class DataCube(object):
             totalvars = dim.mvar+dim.maux
         else:
             totalvars = dim.mvar
-        if param.mvar_down>0 and 'VARd' in varfile:
-            totalvars = param.mvar_down
+        if 'VARd' in varfile:
+            if param.mvar_down>0:
+                totalvars = param.mvar_down
 
         # Read index.pro to get positions and "names"
         # of variables in f(mx,my,mz,nvar).

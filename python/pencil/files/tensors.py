@@ -21,6 +21,10 @@ def calc_tensors(
                  size=1,
                  proc=[0],
                  l_mpi=True,
+                 uxmz=0,
+                 first_alpha=9,
+                 l_correction=False,
+                 t_correction=0.,
                  yindex=[] 
                 ):
     dim=pc.read_dim()
@@ -50,6 +54,10 @@ def calc_tensors(
                     av=np.concatenate((av,aav), axis=2)
     else:
         av, time = pc.read_zaver(datadir)
+    #where testfield calculated under old incorrect spec apply correction
+    if l_correction:
+        itcorr = np.where(time<t_correction)[0]
+        av[itcorr,first_alpha+2] += -dim.nprocz/(dim.nprocz-2.)
     #factor by which to rescale code time to years
     trescale = 0.62/2.7e-6/(365.*86400.) #0.007281508
     time *= trescale
@@ -59,8 +67,8 @@ def calc_tensors(
 
     #exclude zeros and next point if resetting of test fields is used
     if lskip_zeros:
-        izer0=np.where(av[:,9,av.shape[2]/2,av.shape[3]/2]==0)[0]
-        izer1=np.where(av[:,9,av.shape[2]/2,av.shape[3]/2]==0)[0]+1
+        izer0=np.where(av[:,first_alpha,av.shape[2]/2,av.shape[3]/2]==0)[0]
+        izer1=np.where(av[:,first_alpha,av.shape[2]/2,av.shape[3]/2]==0)[0]+1
         if izer0.size>0:
             imask=np.delete(np.where(time),[izer0,izer1])
         else:
@@ -75,9 +83,9 @@ def calc_tensors(
     Hp = np.zeros([av.shape[2],av.shape[3]])
     #compute rms velocity normalisation
     urms = np.sqrt(np.mean( 
-                    av[imask,3,:,:]-av[imask,0,:,:]**2+
-                    av[imask,4,:,:]-av[imask,1,:,:]**2+
-                    av[imask,5,:,:]-av[imask,2,:,:]**2
+                    av[imask,uxmz+3,:,:]-av[imask,uxmz+0,:,:]**2+
+                    av[imask,uxmz+4,:,:]-av[imask,uxmz+1,:,:]**2+
+                    av[imask,uxmz+5,:,:]-av[imask,uxmz+2,:,:]**2
                     ,axis=0))
     #compute turbulent diffusion normalisation
     cv, gm, alp_MLT = 0.6, 5./3, 5./3                
@@ -86,7 +94,7 @@ def calc_tensors(
         Hp[i,:] = -1./np.gradient(np.log(pp[i,:]),grid.dx)
     for i in range(0,3):
         for j in range(0,3):
-            alp[:,:,:,i,j] = av[imask,9+3*i+j,:,:]
+            alp[:,:,:,i,j] = av[imask,first_alpha+3*i+j,:,:]
             urmst[:,:,i,j] = urms/3.
             for k in range(0,3):
                 etat0[:,:,i,j,k] = urms * alp_MLT * Hp/3.
@@ -96,8 +104,8 @@ def calc_tensors(
     for j in range(0,3):
         for k in range(0,3):
             # Sign difference with Schrinner + r correction
-            eta[:,:,:,1,j,k] = -av[imask,18+9+3*j+k,:,:]*r
-            eta[:,:,:,0,j,k] = -av[imask,18  +3*j+k,:,:]
+            eta[:,:,:,1,j,k] = -av[imask,first_alpha+18+3*j+k,:,:]*r
+            eta[:,:,:,0,j,k] = -av[imask,first_alpha+9 +3*j+k,:,:]
     irr, ith, iph = 0,1,2
     # Create output tensors
     alpha   = np.zeros([imask.size,av.shape[2],av.shape[3],3,3])
