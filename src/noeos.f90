@@ -1040,7 +1040,7 @@ module EquationOfState
 !
     endsubroutine bc_ss_temp_y
 !***********************************************************************
-    subroutine bc_ss_temp_z(f,topboti,lone_sided)
+    subroutine bc_ss_temp_z(f,topbot,lone_sided)
 !
 !  boundary condition for entropy: constant temperature
 !
