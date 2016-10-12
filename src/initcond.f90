@@ -2114,7 +2114,7 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx) :: envelope_x=1.
+      real, dimension (mx) :: envelope_x
       real,optional :: kx,ky,kz,width
       real :: ampl, k=1., fac
 !
@@ -2123,7 +2123,10 @@ module Initcond
 !  set x-dependent sin wave
 !
       if (present(kx)) then
-        if (present(width)) envelope_x=exp(-.5*(x/width)**2)
+        envelope_x=1.
+        if (present(width)) then
+          if (width/=0.) envelope_x=exp(-.5*(x/width)**2)
+        endif
         k=kx; if (k==0) print*,'soundwave: k must not be zero!'; fac=sqrt(abs(ampl/k))
         if (ampl==0) then
           if (lroot) print*,'soundwave: ampl=0; kx=',k
