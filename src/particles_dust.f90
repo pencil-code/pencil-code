@@ -365,12 +365,12 @@ module Particles
 !
 !  Special variable for diffusion of particle-gas dragforce
 !
-!      if (ldiffuse_dragf .and. ldragforce_gas_par) then
-!        call farray_register_auxiliary('dfg',idfg,communicated=.true.,vector=3)
-!        idfx=idfg; idfy=idfg+1; idfz=idfg+2
-!      elseif (ldiffuse_dragf .and. .not. ldragforce_gas_par) then
-!        call fatal_error('particles_dust','ldiffuse_dragf needs ldragforce_gas_par')
-!      endif
+      if (ldiffuse_dragf .and. ldragforce_gas_par) then
+        call farray_register_auxiliary('dfg',idfg,communicated=.true.,vector=3)
+        idfx=idfg; idfy=idfg+1; idfz=idfg+2
+      elseif (ldiffuse_dragf .and. .not. ldragforce_gas_par) then
+        call fatal_error('particles_dust','ldiffuse_dragf needs ldragforce_gas_par')
+      endif
 !
 !  Relaxation time of supersaturation
       if (lsupersat) &
@@ -1912,6 +1912,7 @@ module Particles
 !  Set the initial auxiliary array for the passive scalar to zero
 !
       if (ldiffuse_passive) f(:,:,:,idlncc) = 0.0
+      if (ldiffuse_dragf) f(:,:,:,idfx:idfz) = 0.0
 !
     endsubroutine init_particles
 !***********************************************************************
@@ -2967,12 +2968,12 @@ module Particles
 !
 !  Gravity on the particles.
 !  Gravity on particles is implemented only if lparticle_gravity is true which is the default.
+!
+      if (lparticle_gravity)  call particle_gravity(f,df,fp,dfp,ineargrid)
+!
 !  The auxiliary has to be set to zero afterwards
 !
-      if (lpscalar_sink .and. ldiffuse_passive) then
-        call diffuse_scalar_consumption(f,df)
-        f(:,:,:,idlncc) = 0.0
-      endif
+        call diffuse_backreaction(f,df)
 !
 !  Diagnostic output
 !
@@ -4111,58 +4112,82 @@ module Particles
 !  GAussian Box (GAB) scheme.
 !
                 elseif (lparticlemesh_gab) then
-                  ixx0=ix0-3 
-                  ixx1=ix0+3
-                  iyy0=iy0-3 
-                  iyy1=iy0+3
-                  izz0=iz0-3 
-                  izz1=iz0+3
-                  do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
-                    weight = 1.
-                    if (nxgrid/=1) weight=weight*gab_weights(abs(ixx-ix0)+1)
-                    if (nygrid/=1) weight=weight*gab_weights(abs(iyy-iy0)+1)
-                    if (nzgrid/=1) weight=weight*gab_weights(abs(izz-iz0)+1)
 !
-                    if ( (iyy/=m).or.(izz/=n).or.(ixx<l1).or.(ixx>l2) ) then
-                      rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
-                    else
-                      rho1_point = p%rho1(ixx-nghost)
-                    endif
+! 
+!
+                  call find_grid_volume(ix0,iy0,iz0,volume_cell)
+!
+!  In case the diffusion of particle-fluid interaction is activated, the values are only taken from
+!  the nearest grid point
+!
+                  if (ldiffuse_dragf .and. ldiffuse_passive) then
+                      if ( (iy0/=m).or.(iz0/=n).or.(ix0<l1).or.(ix0>l2) ) then
+                        rho1_point = 1.0 / get_gas_density(f,ix0,iy0,iz0)
+                      else
+                        rho1_point = p%rho1(ix0-nghost)
+                      endif
+                      if (lhydro .and. ldragforce_gas_par) then
+                        if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
+                          mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
+                        endif
+                      else
+                        call fatal_error('particles_dust','diffusion of dragforce needs &
+                            & ldragforce_gas_par and ldraglaw_steadystate')
+                      endif
+                  else
+!                        
+                    ixx0=ix0-3 
+                    ixx1=ix0+3
+                    iyy0=iy0-3 
+                    iyy1=iy0+3
+                    izz0=iz0-3 
+                    izz1=iz0+3
+!
+                    do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+                      weight = 1.
+                      if (nxgrid/=1) weight=weight*gab_weights(abs(ixx-ix0)+1)
+                      if (nygrid/=1) weight=weight*gab_weights(abs(iyy-iy0)+1)
+                      if (nzgrid/=1) weight=weight*gab_weights(abs(izz-iz0)+1)
+!
+                      if ( (iyy/=m).or.(izz/=n).or.(ixx<l1).or.(ixx>l2) ) then
+                        rho1_point = 1.0 / get_gas_density(f,ixx,iyy,izz)
+                      else
+                        rho1_point = p%rho1(ixx-nghost)
+                      endif
 !  Add friction force to grid point.
-                    if ((lpscalar_sink .and. lpscalar) .or. &
-                        (ldragforce_gas_par .and. ldraglaw_steadystate)) & 
-                        call find_grid_volume(ixx,iyy,izz,volume_cell)
 ! alexrichert: above call to find_grid_volume is superfluous, not sure why
 ! conditions are different from call below. Perhaps lparticles_radius or
 ! iap>0 would be a better condition than eps_dtog/ldraglaw_steadystate?
-                    if (lhydro .and. ldragforce_gas_par) then
-                      if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
-                        call find_grid_volume(ixx,iyy,izz,volume_cell)
-                        mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
-                        if (lparticles_number) then
-                          mp_vcell = mp_vcell*fp(k,inpswarm)
-                        elseif (np_swarm .gt. 0) then
-                          mp_vcell = mp_vcell*np_swarm
+                      if (lhydro .and. ldragforce_gas_par) then
+                        if ((eps_dtog == 0.) .or. ldraglaw_steadystate) then
+                          mp_vcell=4.*pi*fp(k,iap)**3*rhopmat/(3.*volume_cell)
+                          if (lparticles_number) then
+                            mp_vcell = mp_vcell*fp(k,inpswarm)
+                          elseif (np_swarm .gt. 0) then
+                            mp_vcell = mp_vcell*np_swarm
+                          endif
+                        else
+                          call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,mp_vcell)
                         endif
-                      else
-                        call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,mp_vcell)
-                      endif
-                      df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                          mp_vcell*rho1_point*dragforce*weight
-                    endif
-                    if (lpscalar_sink .and. lpscalar) then
-                      if (ilncc == 0) then
-                        call fatal_error('dvvp_dt_pencil','lpscalar_sink not allowed for pscalar_nolog!')
-                      else
-                        if (.not. ldiffuse_passive) then
-                          df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
-                              weight*dthetadt/volume_cell
+                        if (.not. ldiffuse_dragf) then
+                          df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                              mp_vcell*rho1_point*dragforce*weight
                         endif
                       endif
-                    endif
+                      if (lpscalar_sink .and. lpscalar) then
+                        if (ilncc == 0) then
+                          call fatal_error('dvvp_dt_pencil','lpscalar_sink not allowed for pscalar_nolog!')
+                        else
+                          if (.not. ldiffuse_passive) then
+                            df(ixx,iyy,izz,ilncc) = df(ixx,iyy,izz,ilncc) - &
+                                weight*dthetadt/volume_cell
+                          endif
+                        endif
+                      endif
+                    enddo
                   enddo
-                  enddo
-                  enddo
+                enddo
+              endif
                 else
 !
 !  Nearest Grid Point (NGP) scheme.
@@ -4212,6 +4237,15 @@ module Particles
                     .not. lpencil_check_at_work) then
                   call find_grid_volume(ix0,iy0,iz0,volume_cell)
                   f(ix0,iy0,iz0,idlncc) =  f(ix0,iy0,iz0,idlncc) - dthetadt/volume_cell
+                endif
+!
+!  Adding the particle dragforce contribution to the auxiliary grid
+!
+                if (ldiffuse_dragf .and. ldragforce_gas_par .and. &
+                    .not. lpencil_check_at_work) then
+                  call find_grid_volume(ix0,iy0,iz0,volume_cell)
+                  f(ix0,iy0,iz0,idfx:idfz) =  f(ix0,iy0,iz0,idfx:idfz) &
+                      -mp_vcell*rho1_point*dragforce
                 endif
 !
               endif
@@ -6267,7 +6301,7 @@ module Particles
 !
     endsubroutine calc_relative_velocity
 !***********************************************************************
-    subroutine diffuse_scalar_consumption(f,df)
+    subroutine diffuse_backreaction(f,df)
 !
       use Boundcond
       use Mpicomm
@@ -6276,20 +6310,42 @@ module Particles
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
 !
+!  passive scalar consumption
 !
       if (.not. lpencil_check_at_work) then
-        do i = 1,istep_pass
-          call boundconds_x(f,idlncc,idlncc)
-          call initiate_isendrcv_bdry(f,idlncc,idlncc)
-          call finalize_isendrcv_bdry(f,idlncc,idlncc)
-          call boundconds_y(f,idlncc,idlncc)
-          call boundconds_z(f,idlncc,idlncc)
-          call diffuse_interaction(f(:,:,:,idlncc),ldiff_pass,.False.,rdiffconst_pass)
-        enddo
-        df(l1:l2,m1:m2,n1:n2,ilncc) =  df(l1:l2,m1:m2,n1:n2,ilncc) + &
-            f(l1:l2,m1:m2,n1:n2,idlncc)
+        if (ldiffuse_passive .and. lpscalar_sink) then
+          do i = 1,istep_pass
+            call boundconds_x(f,idlncc,idlncc)
+            call initiate_isendrcv_bdry(f,idlncc,idlncc)
+            call finalize_isendrcv_bdry(f,idlncc,idlncc)
+            call boundconds_y(f,idlncc,idlncc)
+            call boundconds_z(f,idlncc,idlncc)
+            call diffuse_interaction(f(:,:,:,idlncc),ldiff_pass,.False.,rdiffconst_pass)
+          enddo
+          df(l1:l2,m1:m2,n1:n2,ilncc) =  df(l1:l2,m1:m2,n1:n2,ilncc) + &
+              f(l1:l2,m1:m2,n1:n2,idlncc)
+          f(:,:,:,idlncc) = 0.0
+        endif
+!
+!  particle fluid dragforce
+!
+        if (ldiffuse_dragf .and. ldragforce_gas_par) then
+          do i = 1,istep_dragf
+            call boundconds_x(f,idfx,idfz)
+            call initiate_isendrcv_bdry(f,idfx,idfz)
+            call finalize_isendrcv_bdry(f,idfx,idfz)
+            call boundconds_y(f,idfx,idfz)
+            call boundconds_z(f,idfx,idfz)
+            call diffuse_interaction(f(:,:,:,idfx),ldiff_dragf,.False.,rdiffconst_dragf)
+            call diffuse_interaction(f(:,:,:,idfy),ldiff_dragf,.False.,rdiffconst_dragf)
+            call diffuse_interaction(f(:,:,:,idfz),ldiff_dragf,.False.,rdiffconst_dragf)
+          enddo
+          df(l1:l2,m1:m2,n1:n2,iux:iuz) =  df(l1:l2,m1:m2,n1:n2,iux:iuz) + &
+              f(l1:l2,m1:m2,n1:n2,idfx:idfz)
+          f(:,:,:,idfx:idfz) = 0.0
+        endif
       endif
 !
-    endsubroutine diffuse_scalar_consumption
+    endsubroutine diffuse_backreaction
 !***********************************************************************
 endmodule Particles
