@@ -9,7 +9,7 @@ ip=14
 &eos_init_pars
 /
 &hydro_init_pars
-  inituu='soundwave-x', ampluu=1., kx_uu=1.
+  inituu='soundwave-x', ampluu=1., kx_uu=1., widthuu=0.
 /
 &density_init_pars
 /
