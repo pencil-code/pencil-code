@@ -153,7 +153,7 @@ class DataCube(object):
         import os
         from scipy.io import FortranFile
         from pencilnew.math.derivatives import curl, curl2
-        import pencilnew.read as read
+        from pencilnew import read
 
         if setup is not None:
             data_dir = os.path.expanduser(setup.data_dir)
@@ -201,9 +201,11 @@ class DataCube(object):
                 f = np.zeros((total_vars, dim.mz, dim.mx), dtype=precision)
             else:
                 f = np.zeros((total_vars, dim.my, dim.mx), dtype=precision)
+
         x = np.zeros(dim.mx, dtype=precision)
         y = np.zeros(dim.my, dtype=precision)
         z = np.zeros(dim.mz, dtype=precision)
+
         for directory in proc_dirs:
             proc = int(directory[4:])
             procdim = read.dim(data_dir, proc)
@@ -249,9 +251,9 @@ class DataCube(object):
                 # Calculate where the local processor will go in
                 # the global array.
                 #
-                #  Don't overwrite ghost zones of processor to the left (and
-                #  accordingly in y and z direction -- makes a difference on the
-                #  diagonals)
+                # Don't overwrite ghost zones of processor to the left (and
+                # accordingly in y and z direction -- makes a difference on the
+                # diagonals)
                 #
                 # Recall that in NumPy, slicing is NON-INCLUSIVE on the right end
                 # ie, x[0:4] will slice all of a 4-digit array, not produce
