@@ -3893,8 +3893,10 @@ module Particles
                       else
                         call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,mp_vcell)
                       endif
-                      df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                          mp_vcell*rho1_point*dragforce*weight
+                      if (.not. ldiffuse_dragf) then
+                        df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                            mp_vcell*rho1_point*dragforce*weight
+                      endif
                     endif
 !
                     if (lpscalar_sink .and. lpscalar) then
@@ -3990,8 +3992,10 @@ module Particles
                           call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,mp_vcell)
                         endif
                         if (.not.lcompensate_sedimentation) then 
-                          df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
-                               mp_vcell*rho1_point*dragforce*weight
+                          if (.not. ldiffuse_dragf) then
+                            df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
+                                mp_vcell*rho1_point*dragforce*weight
+                          endif
                         else
                           df(ixx,iyy,izz,iux:iuz)=df(ixx,iyy,izz,iux:iuz) - &
                                mp_vcell*rho1_point*dragforce*weight*compensate_sedimentation
