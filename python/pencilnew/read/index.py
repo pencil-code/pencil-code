@@ -2,7 +2,9 @@
 #
 # Read the index.pro file.
 #
-# Authors: S. Candelaresi (iomsn1@gmail.com), T. Gastine (tgastine@ast.obs-mip.fr).
+# Authors:
+# T. Gastine (tgastine@ast.obs-mip.fr)
+# S. Candelaresi (iomsn1@gmail.com)
 """
 Contains the index information.
 """
@@ -14,7 +16,7 @@ def index(*args, **kwargs):
 
     call signature:
 
-    read(self, data_dir='data/', param=None, dim=None)
+    read(data_dir='data', param=None, dim=None)
 
     Keyword arguments:
 
@@ -46,7 +48,7 @@ class Index(object):
         self.keys = []
 
 
-    def read(self, data_dir='data/', param=None, dim=None):
+    def read(self, data_dir='data', param=None, dim=None):
         """
         Read Pencil Code index data from index.pro.
 

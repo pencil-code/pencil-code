@@ -94,10 +94,10 @@ class Grid(object):
         import numpy as np
         import os
         from scipy.io import FortranFile
-        from pencilnew.read.dim import dim as read_dim
+        import pencilnew.read as read
 
         data_dir = os.path.expanduser(data_dir)
-        dim = read_dim(data_dir, proc)
+        dim = read.dim(data_dir, proc)
         if dim.precision == 'D':
             precision = 'd'
         else:
@@ -121,7 +121,7 @@ class Grid(object):
 
         for directory in proc_dirs:
             proc = int(directory[4:])
-            procdim = read_dim(data_dir, proc)
+            procdim = read.dim(data_dir, proc)
             if not quiet:
                 print("reading grid data from processor {0} of {1} ...".format(proc, len(proc_dirs)))
 
