@@ -34,7 +34,7 @@ André Kapelrud,       kapelrud/stud.ntnu.no,         ,                     ,   
 Koen Kemel,           koentjekemel/hotmail.com,      ,                     +46 8 5537 8277,   ,                         ,            Huntsman Corporation Salt Lake City
 Maarit Korpi,         maarit.korpi/helsinki.fi,      ,                     +358 50 4155 396,  ,                         ,            University of Helsinki
 Jonas Kruger,         jonas.kruger/ntnu.no,          jnskrueger,           +47 7359 3734,     +47 908 78 865,           ,            Norges teknisk-naturvitenskapelige universitet
-Petri Käpylä,         petri.kapyla/helsinki.fi,      ,                     +358 9 191 22952,  +358 40 533 4117,         ,            University of Helsinki
+Petri Käpylä,         petri.kapyla/aalto.fi,         ,                     +49 331 7499 522,  +49 151 523 15712,        pkapyla,     Leibniz-Institut für Astrophysik Potsdam, Aalto University
 Michiel Lambrechts,   michiel.lambrechts/gmail.com,  ,                                     ,  +46 73 613 71 11,         ,            Lund Observatory
 Illa R. Losada,       illa.rivero.losada/gmail.com,  illarl,               ,                  +46 70 772 6604 (mob),    ,            NORDITA
 Wladimir Lyra,        wlyra/jpl.nasa.gov,            wladimir.lyra,        +1 818 393 2487,   +1 347 419 6711,          wladimir81,  Cal State University Northridge
