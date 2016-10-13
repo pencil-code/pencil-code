@@ -562,17 +562,19 @@ program run
       endif
     endif
 !
+    if (t >= tmax) lout = .true.
+!
     if (lout .or. emergency_stop) then
 !
 !  Exit do loop if file `STOP' exists.
 !
       lstop=control_file_exists('STOP',DELETE=.true.)
-      if (lstop .or. t>tmax .or. emergency_stop) then
+      if (lstop .or. t>=tmax .or. emergency_stop) then
         if (lroot) then
           print*
           if (emergency_stop) print*, 'Emergency stop requested'
           if (lstop) print*, 'Found STOP file'
-          if (t>tmax) print*, 'Maximum simulation time exceeded'
+          if (t>=tmax) print*, 'Maximum simulation time exceeded'
         endif
         resubmit=control_file_exists('RESUBMIT',DELETE=.true.)
         if (resubmit) print*, 'Cannot be resubmitted'
