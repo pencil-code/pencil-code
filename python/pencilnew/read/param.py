@@ -3,7 +3,9 @@
 # Read the parameters for the simulation.
 # Requires: nl2python perl script (based on Wolfgang Dobler's nl2idl script).
 #
-# Author: S. Candelaresi (iomsn1@gmail.com), J. Oishi (joishi@amnh.org).
+# Authors:
+# J. Oishi (joishi@amnh.org).
+# S. Candelaresi (iomsn1@gmail.com)
 """
 Contains the parameters of the simulation.
 """
@@ -16,7 +18,7 @@ def param(*args, **kwargs):
 
     call signature:
 
-    read(data_dir='data/', param2=False, quiet=False)
+    read(data_dir='data/', param2=False, quiet=True)
 
     Keyword arguments:
 
@@ -104,9 +106,9 @@ class Param(object):
                 param_list = self.__read_nml(filen)
             if not quiet:
                 print(param_list)
-            key_list = dir(param_list)
+            key_list = param_list.keys()
             for key in key_list:
-                setattr(self, key, getattr(Param, key))
+                setattr(self, key, param_list[key])
         # Read the parameters as attributes to class Params.
         else:
             cmd = 'nl2python '+filen
@@ -115,14 +117,11 @@ class Param(object):
                 print(script)
             if script:
                 import numpy
-#                class Params(object):
-#                    pass
                 exec(script.replace("\n    ", "\nself.")[198:])
                 del(numpy)
             else:
                 print("Param.read: nl2python returned nothing! Is $PENCIL_HOME/bin in the path?")
                 return -1
-#            param_list = Params()
 
 
     def __param_formatter(self, string_part):
@@ -201,6 +200,9 @@ class Param(object):
         params = dict()
         for rawline in open(file_name):
             line = rawline.rstrip('\n')
+            if line == ' ':
+                continue
+            print(line)
             if line[0] == "&":
                 super_name = line[1:].lower()
                 if nest:
