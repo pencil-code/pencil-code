@@ -64,7 +64,8 @@ class Param(object):
 
         call signature:
 
-        read(self, data_dir='data/', param2=False, quiet=False)
+        read(self, data_dir='data/', param2=False, quiet=True,
+             asdict=False, nest_dict=False)
 
         Keyword arguments:
 
