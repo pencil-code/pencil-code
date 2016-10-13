@@ -39,7 +39,7 @@ def slices(*args, **kwargs):
 
 class SliceSeries(object):
     """
-    SliceSeries -- holds Pencil Code slices data.
+    SliceSeries -- holds Pencil Code slices data and methods.
     """
 
     def __init__(self):
@@ -50,44 +50,44 @@ class SliceSeries(object):
         import numpy as np
 
         self.t = np.array([])
-        self.slices = np.array([])
+        self.slices = []
 
 
-    def read(self, field='uu1', data_dir='./data', proc=-1, extension='xz',
-             endian='native', old_file=False):
+    def read(self, field='uu1', data_dir='data', proc=-1, extension='xz',
+             old_file=False, precision='f'):
         """
         Read Pencil Code time series data.
 
         call signature:
 
-        read(self. field='uu1', data_dir='./data', proc=-1, extension='xz',
-             endian='native', old_file=False)
+        read(self. field='uu1', data_dir='data', proc=-1, extension='xz',
+             old_file=False)
 
         Keyword arguments:
 
         *field*:
-          Name of the time series file.
+          Name of the field to be read.
 
         *data_dir*:
           Directory where the data is stored.
 
-        *proc*
-          Flag for switching of output.
+        *proc*:
+          Processor to be read. If -1 read all and assemble to one array.
 
         *extension*
-          Comment character in the time series file.
-
-        *endian*
-          Comment character in the time series file.
+          Specifies the slice.
 
         *old_file*
-          Comment character in the time series file.
+          Flag for reading old file format.
+
+        *precision*:
+          Precision of the data. Either float 'f' or double 'd'.
         """
 
         import os.path
         import numpy as np
+        from scipy.io import FortranFile
         from pencilnew import read
-        from pencilnew import io
 
         data_dir = os.path.expanduser(data_dir)
         if proc < 0:
@@ -113,7 +113,7 @@ class SliceSeries(object):
             hsize = dim.ny
             vsize = dim.nz
 
-        infile = io.npfile(file_name, endian=endian)
+        infile = FortranFile(file_name)
 
         islice = 0
         self.t = np.zeros(1, dtype=precision)
@@ -121,7 +121,7 @@ class SliceSeries(object):
 
         while True:
             try:
-                raw_data = infile.fort_read(precision)
+                raw_data = infile.read_record(dtype=precision)
             except ValueError:
                 break
             except TypeError:
