@@ -155,6 +155,18 @@ function pc_generate_parameter_abbreviation, param, label=label
 		eta_total = pc_get_parameter ('eta_total', label=label)
 		return, eta_total * (unit_length*unit_velocity) ; Magnetic resistivity [SI: m^2/s]
 	end
+	if (strcmp (param, 'kappa_ideal_3', /fold_case)) then begin
+		return, 5/3.0 ; Isentropic exponent for an ideal atomic gas (f=3) [-]
+	end
+	if (strcmp (param, 'kappa_ideal_5', /fold_case)) then begin
+		return, 7/5.0 ; Isentropic exponent for an ideal bi-atomic fixed-molecular gas (f=5) [-]
+	end
+	if (strcmp (param, 'kappa_ideal_6', /fold_case)) then begin
+		return, 8/6.0 ; Isentropic exponent for an ideal tri-atomic fixed-molecular gas (f=6) [-]
+	end
+	if (strcmp (param, 'kappa_ideal_7', /fold_case)) then begin
+		return, 9/7.0 ; Isentropic exponent for an ideal tri-atomic flexible-molecular gas (f=7) [-]
+	end
 
 	return, !Values.D_NaN
 end
