@@ -182,6 +182,9 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		u_abs:'velocity', $
 		P_therm:'thermal pressure', $
 		grad_P_therm_abs:'grad thermal pressure', $
+		H_P_therm_x:'thermal pressure scaling height x', $
+		H_P_therm_y:'thermal pressure scaling height y', $
+		H_P_therm_z:'thermal pressure scaling height z', $
 		a_grav_abs:'Gravity acceleration absolute value', $
 		a_grav_x:'Gravity acceleration x', $
 		a_grav_y:'Gravity acceleration y', $
@@ -369,6 +372,9 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		P_therm:['Temp', 'rho'], $
 		grad_P_therm:['P_therm', 'grad_Temp'], $
 		grad_P_therm_abs:'grad_P_therm', $
+		H_P_therm_x:['P_therm','grad_P_therm'], $
+		H_P_therm_y:['P_therm','grad_P_therm'], $
+		H_P_therm_z:['P_therm','grad_P_therm'], $
 		a_grav:'', $
 		a_grav_abs:'a_grav', $
 		a_grav_x:'a_grav', $
