@@ -260,13 +260,13 @@ if (keyword_set(run2D)) then begin
     INIT_DATA_LOC = [ 'make_array (mxloc,myloc,', 'type=type_idl)' ]
   endelse
 endif
-
 ;
 ;  Parse variables and count total number of variables.
 ;
 totalvars = 0L
 num_tags = n_elements(indices)
-num_vars = 0 & offset=0
+num_vars = 0
+offsetv=0
 for tag = 1, num_tags do begin
   search = indices[tag-1].name
   dims = indices[tag-1].dims
@@ -305,24 +305,28 @@ for tag = 1, num_tags do begin
   endelse
   line = max (where (matches[0,*] ne ''))
   if (line lt 0) then continue
+
   exec_str = 'pos = '+matches[1,line]
   if (not execute (exec_str)) then $
       message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+str (line)+'.', /info
   if (pos[0] le 0) then continue
   ; Append f-array variable to valid varcontent.
   num_vars += 1
-  if tag ge nvar then offset=pos[0]-totalvars-1
+
   if (size (selected, /type) eq 0) then begin
     selected = [ tag-1 ]
-    executes = [ exec_str+'-'+string(offset)]
+    executes = [ exec_str+'-('+string(offsetv)+')']
     position = [ pos[0] ]
   end else begin
     selected = [ selected, tag-1 ]
-    executes = [ executes, exec_str+'-'+string(offset) ]
+    executes = [ executes, exec_str+'-('+string(offsetv)+')' ]
     position = [ position, pos[0] ]
   end
   totalvars += add_vars
-  if totalvars eq dim.mvar then tag=nvar-1
+  if totalvars eq dim.mvar then begin      ; if sufficent MVAR variables are read, jump to beginning of MAUX section
+    ;offsetv=nvar-tag+1
+    tag=nvar-1
+  endif
   if totalvars eq dim.mvar+dim.maux then break
 endfor
 ;
