@@ -281,7 +281,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	end
 	if (strcmp (quantity, 'Spitzer_K_parallel', /fold_case)) then begin
 		; Field-aligned Spitzer heat flux coefficient, not including T^2.5 [W / (m * K^3.5)] = [kg * m / (s^3 * K^3.5)]
-		K_Spitzer = pc_get_parameter ('K_spitzer', label=quantity)
+		K_Spitzer = pc_get_parameter ('K_Spitzer', label=quantity)
 		return, K_Spitzer * (unit.density * unit.velocity^3 * unit.length / unit.temperature)
 	end
 	if (strcmp (quantity, 'Spitzer_q', /fold_case)) then begin
