@@ -12,7 +12,9 @@
 ;                    (If an array is given, a structure is returned.)
 ;   * vars           Data array or data structure as load by pc_read_*.
 ;   * index          Indices or tags of the given variables inside data.
-;   * /cache         If activated, a chache is used to optimize computation.
+;   * /ghost         If set, ghost cells are included in the returned data.
+;   * /cache         If set, a chache is used to optimize computation.
+;   * /cleanup       If set, the chache is being freed after computation.
 ;
 ;   Label            Description
 ;  ===============================================================
@@ -120,36 +122,52 @@ end
 ; PLEASE ADD MORE PHYSICAL QUANTITIES IN THIS FUNCTION.
 ; And update the availability and dependency list in "pc_check_quantities.pro".
 ; =============================================================================
-function pc_compute_quantity, vars, index, quantity
+function pc_compute_quantity, vars, index, quantity, ghost=ghost
 
 	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, P_therm, grad_P_therm, bb, B_2, jj, EMF, Poynting, Poynting_j, Poynting_u, F_Lorentz
 	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
 
+	default, ghost, 0
+	gl1 = l1
+	gl2 = l2
+	gm1 = m1
+	gm2 = m2
+	gn1 = n1
+	gn2 = n2
+	if (keyword_set (ghost)) then begin
+		gl1 = 0
+		gl2 += nghostx
+		gm1 = 0
+		gm2 += nghosty
+		gn1 = 0
+		gn2 += nghostz
+	end
+
 	if (strcmp (quantity, 'u', /fold_case)) then begin
 		; Velocity [m / s]
-		if (n_elements (uu) eq 0) then uu = vars[l1:l2,m1:m2,n1:n2,index.uu] * unit.velocity
+		if (n_elements (uu) eq 0) then uu = vars[gl1:gl2,gm1:gm2,gn1:gn2,index.uu] * unit.velocity
 		return, uu
 	end
 	if (strcmp (quantity, 'u_x', /fold_case)) then begin
 		; Velocity x-component
-		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
+		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u', ghost=ghost)
 		return, uu[*,*,*,0]
 	end
 	if (strcmp (quantity, 'u_y', /fold_case)) then begin
 		; Velocity y-component
-		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
+		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u', ghost=ghost)
 		return, uu[*,*,*,1]
 	end
 	if (strcmp (quantity, 'u_z', /fold_case)) then begin
 		; Velocity z-component
-		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
+		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u', ghost=ghost)
 		return, uu[*,*,*,2]
 	end
 	if (strcmp (quantity, 'u_abs', /fold_case)) then begin
 		; Absolute value of the velocity
-		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
+		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u', ghost=ghost)
 		return, sqrt (dot2 (uu))
 	end
 
@@ -157,9 +175,9 @@ function pc_compute_quantity, vars, index, quantity
 		; Temperature [K]
 		if (n_elements (Temp) eq 0) then begin
 			if (any (strcmp (sources, 'lnTT', /fold_case))) then begin
-				Temp = exp (vars[l1:l2,m1:m2,n1:n2,index.lnTT]) * unit.temperature
+				Temp = exp (vars[gl1:gl2,gm1:gm2,gn1:gn2,index.lnTT]) * unit.temperature
 			end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
-				Temp = vars[l1:l2,m1:m2,n1:n2,index.TT] * unit.temperature
+				Temp = vars[gl1:gl2,gm1:gm2,gn1:gn2,index.TT] * unit.temperature
 			end else if (any (strcmp (sources, 'ss', /fold_case))) then begin
 				cp = pc_get_parameter ('cp', label=quantity)
 				cp_SI = cp * (unit.velocity^2 / unit.temperature)
@@ -168,8 +186,8 @@ function pc_compute_quantity, vars, index, quantity
 				if (gamma eq 1.0) then tmp = 1.0 else tmp = gamma - 1.0
 				ln_Temp_0 = alog (cs0^2 / cp / tmp) + alog (unit.temperature)
 				ln_rho_0 = alog (pc_get_parameter ('rho0', label=quantity)) + alog (unit.density)
-				S = pc_compute_quantity (vars, index, 'S')
-				ln_rho = pc_compute_quantity (vars, index, 'ln_rho') - ln_rho_0
+				S = pc_compute_quantity (vars, index, 'S', ghost=ghost)
+				ln_rho = pc_compute_quantity (vars, index, 'ln_rho', ghost=ghost) - ln_rho_0
 				Temp = exp (ln_Temp_0 + gamma/cp_SI * S + (gamma-1) * ln_rho)
 			end
 		end
@@ -194,9 +212,9 @@ function pc_compute_quantity, vars, index, quantity
 	if (strcmp (quantity, 'log_Temp', /fold_case)) then begin
 		; Logarithmic temperature
 		if (any (strcmp (sources, 'lnTT', /fold_case))) then begin
-			return, vars[l1:l2,m1:m2,n1:n2,index.lnTT] / alog (10.0) + alog10 (unit.temperature)
+			return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.lnTT] / alog (10.0) + alog10 (unit.temperature)
 		end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
-			return, alog10 (vars[l1:l2,m1:m2,n1:n2,index.TT]) + alog10 (unit.temperature)
+			return, alog10 (vars[gl1:gl2,gm1:gm2,gn1:gn2,index.TT]) + alog10 (unit.temperature)
 		end else if (any (strcmp (sources, 'ss', /fold_case))) then begin
 			cp = pc_get_parameter ('cp', label=quantity)
 			cp_SI = cp * (unit.velocity^2 / unit.temperature)
@@ -205,17 +223,17 @@ function pc_compute_quantity, vars, index, quantity
 			if (gamma eq 1.0) then tmp = 1.0 else tmp = gamma - 1.0
 			ln_Temp_0 = alog (cs0^2 / cp / tmp) + alog (unit.temperature)
 			ln_rho_0 = alog (pc_get_parameter ('rho0', label=quantity)) + alog (unit.density)
-			S = pc_compute_quantity (vars, index, 'S')
-			ln_rho = pc_compute_quantity (vars, index, 'ln_rho') - ln_rho_0
+			S = pc_compute_quantity (vars, index, 'S', ghost=ghost)
+			ln_rho = pc_compute_quantity (vars, index, 'ln_rho', ghost=ghost) - ln_rho_0
 			return, ln_Temp_0 + gamma/cp_SI * S + (gamma-1) * ln_rho + alog10 (unit.temperature)
 		end
 	end
 	if (strcmp (quantity, 'ln_Temp', /fold_case)) then begin
 		; Natural logarithmic temperature
 		if (any (strcmp (sources, 'lnTT', /fold_case))) then begin
-			return, vars[l1:l2,m1:m2,n1:n2,index.lnTT] + alog (unit.temperature)
+			return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.lnTT] + alog (unit.temperature)
 		end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
-			return, alog (vars[l1:l2,m1:m2,n1:n2,index.TT]) + alog (unit.temperature)
+			return, alog (vars[gl1:gl2,gm1:gm2,gn1:gn2,index.TT]) + alog (unit.temperature)
 		end else if (any (strcmp (sources, 'ss', /fold_case))) then begin
 			cp = pc_get_parameter ('cp', label=quantity)
 			cp_SI = cp * (unit.velocity^2 / unit.temperature)
@@ -224,8 +242,8 @@ function pc_compute_quantity, vars, index, quantity
 			if (gamma eq 1.0) then tmp = 1.0 else tmp = gamma - 1.0
 			ln_Temp_0 = alog (cs0^2 / cp / tmp) + alog (unit.temperature)
 			ln_rho_0 = alog (pc_get_parameter ('rho0', label=quantity)) + alog (unit.density)
-			S = pc_compute_quantity (vars, index, 'S')
-			ln_rho = pc_compute_quantity (vars, index, 'ln_rho') - ln_rho_0
+			S = pc_compute_quantity (vars, index, 'S', ghost=ghost)
+			ln_rho = pc_compute_quantity (vars, index, 'ln_rho', ghost=ghost) - ln_rho_0
 			return, ln_Temp_0 + gamma/cp_SI * S + (gamma-1) * ln_rho + alog (unit.temperature)
 		end
 	end
@@ -233,7 +251,7 @@ function pc_compute_quantity, vars, index, quantity
 	if (strcmp (quantity, 'S', /fold_case)) then begin
 		; Entropy
 		if (any (strcmp (sources, 'ss', /fold_case))) then begin
-			return, vars[l1:l2,m1:m2,n1:n2,index.ss] * (unit.velocity^2 * unit.mass / unit.temperature)
+			return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.ss] * (unit.velocity^2 * unit.mass / unit.temperature)
 		end else begin
 			cp = pc_get_parameter ('cp', label=quantity)
 			cs0 = pc_get_parameter ('cs0', label=quantity)
@@ -241,8 +259,8 @@ function pc_compute_quantity, vars, index, quantity
 			if (gamma eq 1.0) then tmp = 1.0 else tmp = gamma - 1.0
 			ln_Temp_0 = alog (cs0^2 / cp / tmp) + alog (unit.temperature)
 			ln_rho_0 = alog (pc_get_parameter ('rho0', label=quantity)) + alog (unit.density)
-			ln_Temp = pc_compute_quantity (vars, index, 'ln_Temp') - ln_Temp_0
-			ln_rho = pc_compute_quantity (vars, index, 'ln_rho') - ln_rho_0
+			ln_Temp = pc_compute_quantity (vars, index, 'ln_Temp', ghost=ghost) - ln_Temp_0
+			ln_rho = pc_compute_quantity (vars, index, 'ln_rho', ghost=ghost) - ln_rho_0
 			return, cp/gamma * (ln_Temp - (gamma-1) * ln_rho)
 		end
 	end
@@ -255,8 +273,8 @@ function pc_compute_quantity, vars, index, quantity
 		m_e = pc_get_parameter ('m_electron', label=quantity)
 		m_p = pc_get_parameter ('m_proton', label=quantity)
 		k_B = pc_get_parameter ('k_Boltzmann', label=quantity)
-		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
-		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho', ghost=ghost)
+		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp', ghost=ghost)
 		return, K_sat * 1.5 * sqrt (3 / m_e) / (m_e + m_p) * k_B^1.5 * mu * rho * Temp^1.5
 		; This should correspond to the calculation in the solar_corona module, but is untested:
 		; return, K_sat * sqrt (Temp / dot2 (pc_compute_quantity (vars, index, 'grad_Temp'))) * (7.28e7 * unit.density * unit.velocity^3 / unit.length * sqrt (unit.temperature))
@@ -334,17 +352,17 @@ function pc_compute_quantity, vars, index, quantity
 		; Spitzer conductivity in a two-component WKB plasma [A / (V*m)]
 		m_electron = pc_get_parameter ('m_electron', label=quantity)
 		q_electron = pc_get_parameter ('q_electron', label=quantity)
-		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
-		return, (266d3 * q_electron^2 / m_electron) * Temp^1.5 / pc_compute_quantity (vars, index, 'Coulomb_logarithm')
+		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp', ghost=ghost)
+		return, (266d3 * q_electron^2 / m_electron) * Temp^1.5 / pc_compute_quantity (vars, index, 'Coulomb_logarithm', ghost=ghost)
 	end
 	if (strcmp (quantity, 'Spitzer_mag_diffusivity', /fold_case)) then begin
 		; Spitzer magnetic diffusivity [m^2 / s]
 		mu0_SI_inv = 1 / pc_get_parameter ('mu0_SI', label=quantity)
-		return, mu0_SI_inv / pc_compute_quantity (vars, index, 'Spitzer_conductivity')
+		return, mu0_SI_inv / pc_compute_quantity (vars, index, 'Spitzer_conductivity', ghost=ghost)
 	end
 	if (strcmp (quantity, 'Coulomb_logarithm', /fold_case)) then begin
-		Spitzer_K_parallel = pc_compute_quantity (vars, index, 'Spitzer_K_parallel')
-		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
+		Spitzer_K_parallel = pc_compute_quantity (vars, index, 'Spitzer_K_parallel', ghost=ghost)
+		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp', ghost=ghost)
 		return, (1.8d-10 / Spitzer_K_parallel) * Temp^2.5 ; Coulomb logarithm [Solar MHD, E. Priest (1982/1984), p. 79, 86, eq. 2.34]
 	end
 
@@ -372,9 +390,9 @@ function pc_compute_quantity, vars, index, quantity
 		; Density [kg / m^3]
 		if (n_elements (rho) eq 0) then begin
 			if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
-				rho = exp (vars[l1:l2,m1:m2,n1:n2,index.lnrho]) * unit.density
+				rho = exp (vars[gl1:gl2,gm1:gm2,gn1:gn2,index.lnrho]) * unit.density
 			end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
-				rho = vars[l1:l2,m1:m2,n1:n2,index.rho] * unit.density
+				rho = vars[gl1:gl2,gm1:gm2,gn1:gn2,index.rho] * unit.density
 			end
 		end
 		return, rho
@@ -393,23 +411,23 @@ function pc_compute_quantity, vars, index, quantity
 	if (strcmp (quantity, 'log_rho', /fold_case)) then begin
 		; Logarithmic density
 		if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
-			return, vars[l1:l2,m1:m2,n1:n2,index.lnrho] / alog (10.0) + alog10 (unit.density)
+			return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.lnrho] / alog (10.0) + alog10 (unit.density)
 		end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
-			return, alog10 (vars[l1:l2,m1:m2,n1:n2,index.rho]) + alog10 (unit.density)
+			return, alog10 (vars[gl1:gl2,gm1:gm2,gn1:gn2,index.rho]) + alog10 (unit.density)
 		end
 	end
 	if (strcmp (quantity, 'ln_rho', /fold_case)) then begin
 		; Natural logarithmic density
 		if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
-			return, vars[l1:l2,m1:m2,n1:n2,index.lnrho] + alog (unit.density)
+			return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.lnrho] + alog (unit.density)
 		end else if (any (strcmp (sources, 'rho', /fold_case))) then begin
-			return, alog (vars[l1:l2,m1:m2,n1:n2,index.rho]) + alog (unit.density)
+			return, alog (vars[gl1:gl2,gm1:gm2,gn1:gn2,index.rho]) + alog (unit.density)
 		end
 	end
 	if (strcmp (quantity, 'n_rho', /fold_case)) then begin
 		; Particle density [1 / m^3]
 		mu = pc_get_parameter ('mu', label=quantity)
-		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho', ghost=ghost)
 		if (n_elements (n_rho) eq 0) then n_rho = rho / (pc_get_parameter ('m_proton', label=quantity) * mu)
 		return, n_rho
 	end
@@ -418,8 +436,8 @@ function pc_compute_quantity, vars, index, quantity
 		; Thermal pressure [N / m^2]
 		cp = pc_get_parameter ('cp', label=quantity) * (unit.velocity^2 / unit.temperature)
 		gamma = pc_get_parameter ('gamma', label=quantity)
-		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
-		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho', ghost=ghost)
+		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp', ghost=ghost)
 		if (n_elements (P_therm) eq 0) then P_therm = cp * (gamma - 1.0) / gamma * rho * Temp
 		return, P_therm
 	end
@@ -442,6 +460,27 @@ function pc_compute_quantity, vars, index, quantity
 		; Absolute value of thermal pressure gradient
 		if (n_elements (grad_P_therm) eq 0) then grad_P_therm = pc_compute_quantity (vars, index, 'grad_P_therm')
 		return, sqrt (dot2 (grad_P_therm))
+	end
+	if (strcmp (quantity, 'H_P_therm_x', /fold_case)) then begin
+		; Scaling height of thermal pressure x-component
+		if (n_elements (P_therm) eq 0) then P_therm = pc_compute_quantity (vars, index, 'P_therm')
+		if (n_elements (grad_P_therm) eq 0) then grad_P_therm = pc_compute_quantity (vars, index, 'grad_P_therm')
+		dP_therm_dx = grad_P_therm[*,*,*,0]
+		return, -(p_therm / dP_therm_dx)
+	end
+	if (strcmp (quantity, 'H_P_therm_y', /fold_case)) then begin
+		; Scaling height of thermal pressure y-component
+		if (n_elements (P_therm) eq 0) then P_therm = pc_compute_quantity (vars, index, 'P_therm')
+		if (n_elements (grad_P_therm) eq 0) then grad_P_therm = pc_compute_quantity (vars, index, 'grad_P_therm')
+		dP_therm_dy = grad_P_therm[*,*,*,1]
+		return, -(p_therm / dP_therm_dy)
+	end
+	if (strcmp (quantity, 'H_P_therm_z', /fold_case)) then begin
+		; Scaling height of thermal pressure z-component
+		if (n_elements (P_therm) eq 0) then P_therm = pc_compute_quantity (vars, index, 'P_therm')
+		if (n_elements (grad_P_therm) eq 0) then grad_P_therm = pc_compute_quantity (vars, index, 'grad_P_therm')
+		dP_therm_dz = grad_P_therm[*,*,*,2]
+		return, -(p_therm / dP_therm_dz)
 	end
 
 	if (strcmp (quantity, 'a_grav', /fold_case)) then begin
@@ -488,27 +527,27 @@ function pc_compute_quantity, vars, index, quantity
 	end
 	if (strcmp (quantity, 'rho_u', /fold_case)) then begin
 		; Impulse density
-		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
-		return, pc_get_quantity_scalar_to_vector (rho) * pc_compute_quantity (vars, index, 'u')
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho', ghost=ghost)
+		return, pc_get_quantity_scalar_to_vector (rho) * pc_compute_quantity (vars, index, 'u', ghost=ghost)
 	end
 	if (strcmp (quantity, 'rho_u_abs', /fold_case)) then begin
 		; Impulse density absolute value
-		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'rho_u')))
+		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'rho_u', ghost=ghost)))
 	end
 	if (strcmp (quantity, 'rho_u_x', /fold_case)) then begin
 		; Impulse density x-component
-		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
-		return, rho * pc_compute_quantity (vars, index, 'u_x')
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho', ghost=ghost)
+		return, rho * pc_compute_quantity (vars, index, 'u_x', ghost=ghost)
 	end
 	if (strcmp (quantity, 'rho_u_y', /fold_case)) then begin
 		; Impulse density y-component
-		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
-		return, rho * pc_compute_quantity (vars, index, 'u_y')
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho', ghost=ghost)
+		return, rho * pc_compute_quantity (vars, index, 'u_y', ghost=ghost)
 	end
 	if (strcmp (quantity, 'rho_u_z', /fold_case)) then begin
 		; Impulse density z-component
-		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
-		return, rho * pc_compute_quantity (vars, index, 'u_z')
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho', ghost=ghost)
+		return, rho * pc_compute_quantity (vars, index, 'u_z', ghost=ghost)
 	end
 
 	if (strcmp (quantity, 'c_Alfven', /fold_case)) then begin
@@ -569,19 +608,19 @@ function pc_compute_quantity, vars, index, quantity
 
 	if (any (strcmp (quantity, ['A', 'A_contour'], /fold_case))) then begin
 		; Magnetic vector potential
-		return, vars[l1:l2,m1:m2,n1:n2,index.aa] * (unit.magnetic_field*unit.length)
+		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.aa] * (unit.magnetic_field*unit.length)
 	end
 	if (strcmp (quantity, 'A_x', /fold_case)) then begin
 		; Magnetic vector potential x-component
-		return, vars[l1:l2,m1:m2,n1:n2,index.ax] * (unit.magnetic_field*unit.length)
+		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.ax] * (unit.magnetic_field*unit.length)
 	end
 	if (strcmp (quantity, 'A_y', /fold_case)) then begin
 		; Magnetic vector potential y-component
-		return, vars[l1:l2,m1:m2,n1:n2,index.ay] * (unit.magnetic_field*unit.length)
+		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.ay] * (unit.magnetic_field*unit.length)
 	end
 	if (strcmp (quantity, 'A_z', /fold_case)) then begin
 		; Magnetic vector potential z-component
-		return, vars[l1:l2,m1:m2,n1:n2,index.az] * (unit.magnetic_field*unit.length)
+		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.az] * (unit.magnetic_field*unit.length)
 	end
 
 	if (strcmp (quantity, 'B', /fold_case)) then begin
@@ -998,7 +1037,7 @@ function pc_compute_quantity, vars, index, quantity
 			print, "ERROR: Unknown species 'yy"+species+"'"
 			return, !Values.D_NaN
 		end
-		return, vars[l1:l2,m1:m2,n1:n2,species_index] * 100
+		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,species_index] * 100
 	end
 
 	; Check for Pencil Code alias names
@@ -1081,12 +1120,13 @@ end
 
 
 ; Calculation of physical quantities.
-function pc_get_quantity, quantity, vars, index, varfile=varfile, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, datadir=datadir, cache=cache, cleanup=cleanup, verbose=verbose
+function pc_get_quantity, quantity, vars, index, varfile=varfile, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, datadir=datadir, ghost=ghost, cache=cache, cleanup=cleanup, verbose=verbose
 
 	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
 
+	if (keyword_set (ghost) and keyword_set (cache)) then message, "pc_get_quantity: keywords 'ghost' and 'cache' can not be used together."
 	if (keyword_set (verbose)) then quiet = 0 else quiet = 1
 	if (keyword_set (cleanup) and not keyword_set (cache)) then pc_quantity_cache_cleanup
 
