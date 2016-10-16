@@ -155,6 +155,12 @@ function pc_generate_parameter_abbreviation, param, label=label
 		eta_total = pc_get_parameter ('eta_total', label=label)
 		return, eta_total * (unit_length*unit_velocity) ; Magnetic resistivity [SI: m^2/s]
 	end
+	if (strcmp (param, 'cp_SI', /fold_case)) then begin
+		unit_velocity = pc_get_parameter ('unit_velocity', label=label)
+		unit_temperature = pc_get_parameter ('unit_temperature', label=label)
+		cp = pc_get_parameter ('cp', label=label)
+		return, cp * unit_velocity^2/unit_temperature ; Specific heat capacity [SI: m^2/(s^2*K)]
+	end
 	if (strcmp (param, 'kappa_ideal_3', /fold_case)) then begin
 		return, 5/3.0 ; Isentropic exponent for an ideal atomic gas (f=3) [-]
 	end
