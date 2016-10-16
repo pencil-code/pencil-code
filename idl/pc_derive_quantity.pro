@@ -41,6 +41,7 @@ function pc_derive_quantity, derivative, quantity, vars, index, varfile=varfile,
 
 	if (size (quantity, /type) eq 7) then begin
 		label = "'"+quantity+"'"
+		default, vars, "var.dat"
 		quantity = pc_get_quantity (quantity, vars, index, varfile=varfile, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, datadir=datadir, /ghost, cache=cache, cleanup=cleanup, verbose=verbose)
 	end else begin
 		label = 'the given data'
