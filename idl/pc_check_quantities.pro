@@ -182,6 +182,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		u_abs:'velocity', $
 		P_therm:'thermal pressure', $
 		grad_P_therm_abs:'grad thermal pressure', $
+		c_sound:'sound speed', $
 		H_P_therm_x:'thermal pressure scaling height x', $
 		H_P_therm_y:'thermal pressure scaling height y', $
 		H_P_therm_z:'thermal pressure scaling height z', $
@@ -372,6 +373,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		P_therm:['Temp', 'rho'], $
 		grad_P_therm:['P_therm', 'grad_Temp'], $
 		grad_P_therm_abs:'grad_P_therm', $
+		c_sound:['P_therm', 'rho'], $
 		H_P_therm_x:['P_therm','grad_P_therm'], $
 		H_P_therm_y:['P_therm','grad_P_therm'], $
 		H_P_therm_z:['P_therm','grad_P_therm'], $
