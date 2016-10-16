@@ -453,6 +453,13 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		if (n_elements (grad_P_therm) eq 0) then grad_P_therm = pc_compute_quantity (vars, index, 'grad_P_therm')
 		return, sqrt (dot2 (grad_P_therm))
 	end
+	if (strcmp (quantity, 'c_sound', /fold_case)) then begin
+		; Sound speed [m / s]
+		kappa = pc_get_parameter ('isentropic_exponent', label=quantity)
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho', ghost=ghost)
+		if (n_elements (P_therm) eq 0) then P_therm = pc_compute_quantity (vars, index, 'P_therm', ghost=ghost)
+		return, sqrt (kappa * P_therm / rho)
+	end
 	if (strcmp (quantity, 'H_P_therm_x', /fold_case)) then begin
 		; Scaling height of thermal pressure x-component
 		if (n_elements (P_therm) eq 0) then P_therm = pc_compute_quantity (vars, index, 'P_therm')
