@@ -1120,7 +1120,10 @@ function pc_get_quantity, quantity, vars, index, varfile=varfile, units=units, d
 
 	if (keyword_set (ghost) and keyword_set (cache)) then message, "pc_get_quantity: keywords 'ghost' and 'cache' can not be used together."
 	if (keyword_set (verbose)) then quiet = 0 else quiet = 1
-	if (keyword_set (cleanup) and not keyword_set (cache)) then pc_quantity_cache_cleanup
+	if (keyword_set (cleanup) and not keyword_set (cache)) then begin
+		pc_quantity_cache_cleanup
+		if (size (quantity, /type) eq 0) then return, !Values.D_NaN
+	end
 
 	if (n_elements (quantity) eq 0) then quantity = ""
 	if (not any (quantity ne "") or ((n_elements (vars) eq 0) and (n_elements (varfile) eq 0)) or ((n_elements (index) eq 0) and (size (vars, /type) ne 8) and (size (vars, /type) ne 7) and (size (varfile, /type) ne 7))) then begin
@@ -1255,15 +1258,15 @@ function pc_get_quantity, quantity, vars, index, varfile=varfile, units=units, d
 	if (n_elements (quantity) gt 1) then begin
 		; Iterate through availabe quantities
 		num = n_elements (avail)
-		result = create_struct (quantity[avail[0]], pc_compute_quantity (vars, index, quantity[avail[0]]))
+		result = create_struct (quantity[avail[0]], pc_compute_quantity (vars, index, quantity[avail[0]], ghost=ghost))
 		if (num gt 1) then begin
 			for pos = 1, num-1 do begin
-				result = create_struct (result, quantity[avail[pos]], pc_compute_quantity (vars, index, quantity[avail[pos]]))
+				result = create_struct (result, quantity[avail[pos]], pc_compute_quantity (vars, index, quantity[avail[pos]], ghost=ghost))
 			end
 		end
 	end else if (n_elements (quantity) eq 1) then begin
 		; Compute requested quantity:
-		result = pc_compute_quantity (vars, index, quantity)
+		result = pc_compute_quantity (vars, index, quantity, ghost=ghost)
 	end else begin
 		result = !Values.D_NaN
 	end
