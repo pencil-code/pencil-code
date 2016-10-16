@@ -161,6 +161,9 @@ function pc_generate_parameter_abbreviation, param, label=label
 		cp = pc_get_parameter ('cp', label=label)
 		return, cp * unit_velocity^2/unit_temperature ; Specific heat capacity [SI: m^2/(s^2*K)]
 	end
+	if (strcmp (param, 'isentropic_exponent', /fold_case)) then begin
+		return, pc_get_parameter ('kappa_ideal_3', label=label) ; Isentropic exponent (default: f=3) [-]
+	end
 	if (strcmp (param, 'kappa_ideal_3', /fold_case)) then begin
 		return, 5/3.0 ; Isentropic exponent for an ideal atomic gas (f=3) [-]
 	end
