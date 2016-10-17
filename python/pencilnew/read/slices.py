@@ -10,26 +10,32 @@ Contains the classes and methods to read slice files.
 
 def slices(*args, **kwargs):
     """
-    Read Pencil Code slices data.
+    Read Pencil Code time series data.
 
     call signature:
 
-    ts(file_name='time_series.dat', data_dir='data',
-       quiet=False, comment_char='#')
+    read(self. field='uu1', extension='xz', data_dir='data', proc=-1,
+         old_file=False, precision='f')
 
     Keyword arguments:
 
-    *file_name*:
-      Name of the time series file.
+    *field*:
+      Name of the field(s) to be read.
+
+    *extension*
+      Specifies the slice(s).
 
     *data_dir*:
       Directory where the data is stored.
 
-    *quiet*
-      Flag for switching off output.
+    *proc*:
+      Processor to be read. If -1 read all and assemble to one array.
 
-    *comment_char*
-      Comment character in the time series file.
+    *old_file*
+      Flag for reading old file format.
+
+    *precision*:
+      Precision of the data. Either float 'f' or double 'd'.
     """
 
     slices_tmp = SliceSeries()
@@ -53,29 +59,29 @@ class SliceSeries(object):
         self.slices = []
 
 
-    def read(self, field='uu1', data_dir='data', proc=-1, extension='xz',
+    def read(self, field='', extension='', data_dir='data', proc=-1,
              old_file=False, precision='f'):
         """
         Read Pencil Code time series data.
 
         call signature:
 
-        read(self. field='uu1', data_dir='data', proc=-1, extension='xz',
-             old_file=False)
+        read(self. field='', extension='', data_dir='data', proc=-1,
+             old_file=False, precision='f')
 
         Keyword arguments:
 
         *field*:
-          Name of the field to be read.
+          Name of the field(s) to be read.
+
+        *extension*
+          Specifies the slice(s).
 
         *data_dir*:
           Directory where the data is stored.
 
         *proc*:
           Processor to be read. If -1 read all and assemble to one array.
-
-        *extension*
-          Specifies the slice.
 
         *old_file*
           Flag for reading old file format.
@@ -84,11 +90,23 @@ class SliceSeries(object):
           Precision of the data. Either float 'f' or double 'd'.
         """
 
-        import os.path
+        import os
         import numpy as np
         from scipy.io import FortranFile
         from pencilnew import read
 
+        if extension:
+            if isinstance(extension, list):
+                extension_list = extension
+            else:
+                extension_list = [extension]
+        else:
+            # Find the existing extensions.
+            for file_name in os.listdir(data_dir):
+                if (file_name[:6] == 'slice_') and 
+            
+        
+        # Compose the file name according to field and extension.
         data_dir = os.path.expanduser(data_dir)
         if proc < 0:
             file_name = os.path.join(data_dir, 'slice_'+field+'.'+extension)
