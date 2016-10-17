@@ -3544,7 +3544,7 @@ module Particles
       integer, dimension (3) :: inear
       logical :: lsink
       real, pointer :: pscalar_diff, ap0(:)
-      real :: gas_consentration, Sherwood, mass_trans_coeff, lambda_tilde
+      real :: Sherwood, mass_trans_coeff, lambda_tilde
       real :: dthetadt, mp_vcell
 !
       real, dimension(k1_imn(imn):k2_imn(imn)) :: nu
@@ -3815,7 +3815,6 @@ module Particles
 !  consumption rate
 !                
                 if (lpscalar_sink .and. lpscalar) then
-                  gas_consentration=0.1
 !
 !  JONAS: michaelides 2006,p122
 !  Nu/Sh = 0.922+Pe**0.33+0.1*Pe**0.33*Re**0.33
@@ -3835,10 +3834,10 @@ module Particles
                     p%sherwood(ix0-nghost)=p%sherwood(ix0-nghost)+Sherwood
                   endif
 !
-                  mass_trans_coeff=gas_consentration*Sherwood*pscalar_diff/ &
+                  mass_trans_coeff=Sherwood*pscalar_diff/ &
                       (2*fp(k,iap))
                   lambda_tilde=pscalar_sink_rate*mass_trans_coeff/ &
-                      (pscalar_sink_rate*gas_consentration+mass_trans_coeff)
+                      (pscalar_sink_rate+mass_trans_coeff)
                   dthetadt=lambda_tilde*4.*pi*fp(k,iap)**2
                 endif
 !
