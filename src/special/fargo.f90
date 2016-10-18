@@ -421,7 +421,7 @@ module Special
 !
       if (lfargo_advection) then
         if (ldensity_nolog) then
-          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - &
+          df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - &
                uuadvec_grho   - p%rho*p%divu
         else
           df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - &
@@ -572,13 +572,13 @@ module Special
         if (lfargoadvection_as_shift) then
           call fourier_shift_fargo(f,df,dt_sub)
         else
-          if (lroot) then
-            print*,'Fargo advection without Fourier shift'
-            print*,'is not functional yet. Advecting only'
-            print*,'at the last subtimestep was leading to'
-            print*,'errors. Rewrite.'
-            call fatal_error("special_after_timestep","")
-          endif
+          !if (lroot) then
+          !  print*,'Fargo advection without Fourier shift'
+          !  print*,'is not functional yet. Advecting only'
+          !  print*,'at the last subtimestep was leading to'
+          !  print*,'errors. Rewrite.'
+          !  call fatal_error("special_after_timestep","")
+          !endif
           call advect_fargo(f)
         endif
       endif
@@ -793,6 +793,8 @@ module Special
 !
       use Mpicomm , only: mpiallreduce_sum
       use Deriv, only: der
+!
+!  This commentary here is most definitely wrong. Applies to mean momenta only. 
 !
 !  Substract mean emf from the radial component of the induction
 !  equation. Activated only when large Bz fields and are present
