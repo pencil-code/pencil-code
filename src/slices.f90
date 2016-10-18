@@ -528,7 +528,7 @@ module Slices
         yloc=xyz0(2)-(nygrid/2+1-indgen(nygrid/2))*dy 
 
         !call yy_transform_strip_other(yloc,(/z(izloc)/),thphprime)
-        !nok=prep_interp(thphprime,intcoeffs,thrange_cap)
+        !nok=prep_interp(thphprime,intcoeffs,iyinyang_intpol_type,thrange_cap)
 
       endif 
 

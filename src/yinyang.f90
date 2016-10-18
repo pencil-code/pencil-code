@@ -9,6 +9,8 @@ module Yinyang
 !
   use Cdata, only: iproc_world
 
+  implicit none
+
   include 'yinyang.h'
 
   type ind_coeffs
@@ -17,9 +19,6 @@ module Yinyang
     real, dimension(:,:,:,:), allocatable :: coeffs2
   end type
 !
-  !logical :: lbiquad=.true.
-  logical :: lbiquad=.false.
-
   contains
 
 !**************************************************************************
@@ -60,7 +59,7 @@ module Yinyang
           buffer(:,i2buf,i3buf,:) = buffer(:,i2buf,i3buf,:)+indcoeffs%coeffs2(ith,iph,igt,igp)*tmp(:,igt,igp,:)
         enddo; enddo
 
-if (notanumber(buffer(:,i2buf,i3buf,:))) print*, 'indthl,indph, i2buf,i3buf=', indthl,indph, i2buf,i3buf
+if (notanumber(buffer(:,i2buf,i3buf,:))) print*, 'indthl,indph, i2buf,i3buf=', indthl,indphl, i2buf,i3buf
       else
 !
 !  Scalar field - no transformation.
@@ -73,7 +72,7 @@ if (iproc_world==5) then
 !write(23,'(4(i2,1x),30(e13.6,1x))') ith,iph,nthrng,nphrng,y(indthl:indthu),z(indphl:indphu), f(l1+8,indthl:indthu,indphl:indphu,1), buffer(l1+8,i2buf,i3buf,1)
 endif
 if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
-  ',indthl,indph, i2buf,i3buf=', indthl,indph,ith,iph,i2buf,i3buf
+  ',indthl,indph, i2buf,i3buf=', indthl,indphl,ith,iph,i2buf,i3buf
       endif
 
     endsubroutine biquad_interp
@@ -215,7 +214,7 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
 
     endsubroutine prep_biquad_interp
 !***********************************************************************
-    function prep_interp(thphprime,indcoeffs,th_range) result (nok)
+    function prep_interp(thphprime,indcoeffs,itype,th_range) result (nok)
 !
 !  For each of the points in the strip thphprime (with shape 2 x thprime-extent x
 !  phprime-extent), arbitrarily positioned in the yz-plane, determine in
@@ -231,11 +230,12 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
 !  20-dec-15/MR: coded
 !
       use General, only: find_index_range_hill
-      use Cdata,   only: y, z, lfirst_proc_y, ipy, lfirst_proc_z, ipz
-      use Cparam,  only: m1,m2,n1,n2
+      use Cdata,   only: y, z, lfirst_proc_y, ipy, lfirst_proc_z, ipz, lroot
+      use Cparam,  only: m1,m2,n1,n2, BILIN, BIQUAD
 
       real, dimension(:,:,:),          intent(IN) :: thphprime
       type(ind_coeffs),                intent(OUT):: indcoeffs
+      integer,                         intent(IN) :: itype
       integer, dimension(2), optional, intent(OUT):: th_range
 
       integer :: nok
@@ -247,10 +247,13 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
       sz1=size(thphprime,2); sz2=size(thphprime,3)
 
       if (allocated(indcoeffs%inds)) deallocate(indcoeffs%inds,indcoeffs%coeffs)
-      if (lbiquad) then
+      if (itype==BIQUAD) then
         allocate(indcoeffs%inds(sz1,sz2,4))
-      else
+      elseif (itype==BILIN) then
         allocate(indcoeffs%inds(sz1,sz2,2))
+      else
+        if (lroot) print*, 'prep_interp: Only bilinear and biquadratic interpolations implemented'
+        stop
       endif
       indcoeffs%inds=0
 
@@ -318,15 +321,15 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
 !
             nok=nok+1
 
-            if (lbiquad) then
+            if (itype==BIQUAD) then
 
               if (.not.allocated(indcoeffs%coeffs2)) then
                 allocate(indcoeffs%coeffs2(sz1,sz2,4,4))
                 indcoeffs%coeffs2=0.
               endif
-if (iproc_world==5) then
-write(24,'(2(i2,1x),2(e13.6,1x))') ip, jp, thphprime(:,ip,jp)
-endif
+!if (iproc_world==5) then
+!write(24,'(2(i2,1x),2(e13.6,1x))') ip, jp, thphprime(:,ip,jp)
+!endif
               call prep_biquad_interp(thphprime(:,ip,jp),indth,indph,indcoeffs,ip,jp,ma,me,na,ne)
 
             else

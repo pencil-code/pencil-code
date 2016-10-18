@@ -1086,6 +1086,8 @@ module Io
       write(lun_output) dx_tilde(:mxout1),dy_tilde(:myout1),dz_tilde(:mzout1)
       close(lun_output)
 !
+      if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
+
       ! write also a global "data/allprocs/grid.dat"
       if (lroot) then
         if (ldownsampling) then
@@ -1100,7 +1102,7 @@ module Io
         open (lun_output, FILE=trim(directory_collect)//'/'//file, FORM='unformatted', status='replace')
         t_sp = t
       endif
-      
+
       call collect_grid(x(:mxout1), y(:myout1), z(:mzout1), gx, gy, gz)
       if (lroot) then
         write (lun_output) t_sp, gx, gy, gz, dx, dy, dz

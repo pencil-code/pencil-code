@@ -1174,6 +1174,8 @@ module Io
       close(lun_output,IOSTAT=io_err)
       lerror = outlog(io_err,'close')
 !
+      if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
+
       ! write also a global "data/allprocs/grid.dat"
       if (lroot) then
         allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)

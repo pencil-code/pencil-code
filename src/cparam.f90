@@ -217,4 +217,7 @@ module Cparam
                         iref_gp=5, iref_s=6, iref_gs=7, iref_d2s=8, iref_d6s=9
   integer, parameter :: nref_vars=9
 !
+!  Symbolic constants for Yin-Yang grid.
+!
+  integer, parameter :: BILIN=1, BIQUAD=2
 endmodule Cparam

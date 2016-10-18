@@ -60,6 +60,7 @@ module Cdata
   logical :: lcylindrical_gravity=.false.
   logical :: luniform_z_mesh_aspect_ratio=.false.
   logical :: lyinyang=.false., lyang=.false.
+  integer :: iyinyang_intpol_type=BILIN
   integer :: nzgrid_eff=nzgrid
   real :: drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
   real, dimension (nx) :: r_mn,r1_mn,r2_mn,r2_weight

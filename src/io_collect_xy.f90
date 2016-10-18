@@ -1169,6 +1169,8 @@ module Io
       integer :: alloc_err
       real :: t_sp   ! t in single precision for backwards compatibility
 !
+      if (lyang) return      ! grid collection only needed on Yin grid, as grids are identical
+
       if (lroot) then
         allocate (gx(nxgrid+2*nghost), gy(nygrid+2*nghost), gz(nzgrid+2*nghost), stat=alloc_err)
         if (alloc_err > 0) call fatal_error ('wgrid', 'Could not allocate memory for gx,gy,gz', .true.)

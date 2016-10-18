@@ -8,6 +8,8 @@ module Yinyang
 !
   use Cdata, only: lroot
 
+  implicit none
+
   include 'yinyang.h'
 
   type ind_coeffs
@@ -56,7 +58,7 @@ contains
 
     endsubroutine biquad_interp
 !***********************************************************************
-    function prep_interp(thphprime,indcoeffs,th_range) result (nok)
+    function prep_interp(thphprime,indcoeffs,itype,th_range) result (nok)
 !
 !  Dummy routine.
 !
@@ -64,6 +66,7 @@ contains
 !
       real, dimension(:,:,:),          intent(IN) :: thphprime
       type(ind_coeffs),                intent(OUT):: indcoeffs
+      integer,                         intent(IN) :: itype
       integer, dimension(2), optional, intent(OUT):: th_range
 
       integer :: nok

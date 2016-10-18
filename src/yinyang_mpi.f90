@@ -11,6 +11,8 @@ module Yinyang_mpi
   use Mpicomm
   use Cparam
 !
+  implicit none
+
   include 'yinyang_mpi.h'
 
   private
@@ -231,7 +233,7 @@ module Yinyang_mpi
       real, dimension(:), allocatable :: yloc, zloc
       integer, dimension(:), allocatable :: requests
       integer :: nok, noks, noks_all, nyl, nzl, iprocy, iprocz, ifound, request, &
-                 iproc_yin, iproc_yang, newlines, offset, nlines_tot
+                 iproc_yin, iproc_yang, newlines, offset, nlines_tot, irequest
       integer, dimension(2) :: rng
       logical :: lwith_ghosts
       logical, save :: lcalled=.false.
@@ -276,7 +278,7 @@ module Yinyang_mpi
 !  yloc x zloc: strip of Yin-phi coordinate lines from Yin-proc iproc_yin.
 !
             call yy_transform_strip_other(yloc,zloc,thphprime)
-            nok=prep_interp(thphprime,intcoeffs,thrange_gap(:,ifound+1))
+            nok=prep_interp(thphprime,intcoeffs,iyinyang_intpol_type,thrange_gap(:,ifound+1))
 !
 !  nok: number of points of the strip claimed by executing proc; 
 !  intcoeffs: interpolation data for these points; thrange_gap: y-range of
@@ -375,7 +377,7 @@ if (iproc==caproot) print*, 'North: yloc=', yloc
 !  yloc x zloc: strip of all Yin-phi coordinate lines in cap.
 !
           call yy_transform_strip_other(yloc,zloc,thphprime)
-          nok=prep_interp(thphprime,intcoeffs,thrange_cap)
+          nok=prep_interp(thphprime,intcoeffs,iyinyang_intpol_type,thrange_cap)
 !
 !  nok: number of points of the strip claimed by executing proc; 
 !  intcoeffs: interpolation data for these points; thrange_cap: y-range of
