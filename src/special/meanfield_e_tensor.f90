@@ -1444,5 +1444,28 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
       tensor_names(utensor_id)  = utensor_name
             
     end subroutine parseParameters
+!****************************************************************************
+  subroutine initialize_mult_special
 
+  endsubroutine initialize_mult_special
+
+!***********************************************************************
+  subroutine finalize_mult_special
+
+
+  endsubroutine finalize_mult_special
+!***********************************************************************
+    subroutine special_boundconds(f,bc)
+!
+!  Some precalculated pencils of data are passed in for efficiency,
+!  others may be calculated directly from the f array.
+!
+!  06-oct-03/tony: coded
+!
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      type (boundary_condition), intent(in) :: bc
+!
+    endsubroutine special_boundconds
+!*********************************************************************** 
+  
 endmodule Special
