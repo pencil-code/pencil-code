@@ -116,10 +116,15 @@ module Selfgravity
 !  else define the gravitational constant via rhs_poisson_const
 !
 !  29-aug-2016/vince: the poisson_logspirals module that should be
-!                     used with this selfgravity_logspirals module
-!                     uses the constant on the rhs of the poisson
-!                     equation in its construction of the solution.
-!                     it must therefore be left as unity here.
+!                     used with this module will compute the self
+!                     potential and accelerations fully on its own;
+!                     its output is already complete, it does not
+!                     need to be scaled by rhs_poisson_const in this
+!                     module. Therefore, if rhs_poisson_const is
+!                     present, it will be used only to compute
+!                     the value of graviational_const, and not to
+!                     scale the output of the poisson_logspirals
+!                     module.
 !
       if (gravitational_const==0) gravitational_const=rhs_poisson_const/(4*pi)
 !
@@ -401,20 +406,21 @@ module Selfgravity
             lselfgravity_gas.or.lselfgravity_dust)
 !
 !  Send the right-hand-side of the Poisson equation to the Poisson solver and
-!  receive the self-gravity potential back.
+!  receive the correct valued (again, no need to scale these results by
+!  rhs_poisson_const) gravitational self potential and self accelerations.
 !
         call inverse_laplacian(rhs_poisson,gpotself)
 !
 !  Put potential into f array.
 !
         if (tselfgrav_gentle > 0.0 .and. t < tstart_selfgrav + tselfgrav_gentle) then
-          f(l1:l2,m1:m2,n1:n2,ipotself) = 0.5 * rhs_poisson_const * &
+          f(l1:l2,m1:m2,n1:n2,ipotself) = 0.5 * &
               (1.0 - cos(pi * (t - tstart_selfgrav) / tselfgrav_gentle)) * rhs_poisson
-          f(l1:l2,m1:m2,n1:n2,igpotselfx:igpotselfz) = 0.5 * rhs_poisson_const * &
+          f(l1:l2,m1:m2,n1:n2,igpotselfx:igpotselfz) = 0.5 * &
               (1.0 - cos(pi * (t - tstart_selfgrav) / tselfgrav_gentle)) * gpotself
         else
-          f(l1:l2,m1:m2,n1:n2,ipotself)              = rhs_poisson_const*rhs_poisson
-          f(l1:l2,m1:m2,n1:n2,igpotselfx:igpotselfz) = rhs_poisson_const*gpotself
+          f(l1:l2,m1:m2,n1:n2,ipotself)              = rhs_poisson
+          f(l1:l2,m1:m2,n1:n2,igpotselfx:igpotselfz) = gpotself
         endif
 !
       endif ! if (t>=tstart_selfgrav) then

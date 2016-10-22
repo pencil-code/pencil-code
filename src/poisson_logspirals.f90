@@ -40,7 +40,8 @@ module Poisson
 !
   include 'poisson.h'
 !
-  real :: Gnewton=1.0 !Newton's constant of gravity=1 in these units
+  real, pointer :: Gnewton_ptr
+  real :: Gnewton
 !
   namelist /poisson_init_pars/ Gnewton
 !
@@ -70,6 +71,8 @@ contains
 !
 !  18-oct-07/anders: adapted
 !
+      use SharedVariables, only: get_shared_variable
+!
       if (nzgrid/=1) then
         if (lroot) print*, 'initialize_poisson: logspirals only works with nzgrid==1'
         call fatal_error('initialize_poisson','')
@@ -79,7 +82,7 @@ contains
 !
       call decide_fourier_routine()
 !
-! Mask values from elsewhere
+!  Mask values from elsewhere
 !
       !if (y(m1)/=0.0) then
       !   
@@ -91,6 +94,12 @@ contains
       uMax=log(outerRadius/innerRadius)
       phiMin=y(m1)
       phiMax=y(m2)
+!
+!  Assign the pointer storing the shared variable for the gravitional constant
+!  to another variable to dereference it.
+!
+      call get_shared_variable('gravitational_const',Gnewton_ptr)
+      Gnewton=Gnewton_ptr
 !
 !  Coordinates u,phi (Fourier grid) and r,x,y (physical grid) are generated
 !
