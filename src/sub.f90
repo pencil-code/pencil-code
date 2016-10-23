@@ -7027,16 +7027,16 @@ nameloop: do
       real, dimension(:),intent(out):: flux
 
       real, dimension(size(diffs)-1) :: slope
-      real, dimension(size(diffs)-2) :: phi
+      real, dimension(size(diffs)-2) :: phi, right_left
       integer :: len
 
       len=size(diffs)
 
       call slope_limiter(diffs(2:),diffs(:len-1),slope,islope_limiter)
-      flux = diffs(2:len-1) - 0.5*(slope(2:) + slope(1:len-2))        ! = u_r - u_l
+      right_left = diffs(2:len-1) - 0.5*(slope(2:) + slope(1:len-2))        ! = u_r - u_l
 
-      call diff_flux(h_slope_limited, diffs(2:len-1), flux, phi)
-      flux = -0.5*c_char*phi*flux
+      call diff_flux(h_slope_limited, diffs(2:len-1), right_left, phi)
+      flux = -0.5*c_char*phi*right_left
 if (notanumber(c_char)) then
    print*, 'CALC_DIFFUSIVE_FLUX: c_char=', len
    stop
