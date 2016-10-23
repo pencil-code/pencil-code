@@ -1545,7 +1545,7 @@ module Interstellar
 !  cool=rho*Lambda, heatcool=(Gamma-rho*Lambda)/TT
 !
       f(l1:l2,m,n,icooling) = p%TT1*cool
-      f(l1:l2,m,n,inetheat)= heatcool
+      f(l1:l2,m,n,inetheat) = heatcool
 !
 !  Prepare diagnostic output
 !  Since these variables are divided by Temp when applied it is useful to
@@ -1578,18 +1578,9 @@ module Interstellar
 !  dt1_max=max(dt1_max,cdt_tauc*(cool)/ee,cdt_tauc*(heat)/ee)
 !
       if (lfirst.and.ldt) then
-        dt1_max=max(dt1_max,(-heatcool*p%cv1)/(cdt_tauc))
-        if (ltemperature) then
-          if (ltemperature_nolog) then
-            Hmax=Hmax+heatcool/p%cv1
-          else
-            Hmax=Hmax+heatcool*p%ee
-          endif
-        elseif (pretend_lnTT) then
-          Hmax=Hmax+heatcool/(p%TT1*gamma)
-        else
-          Hmax=Hmax+heat-cool
-        endif
+!MR@Fred: is the following statement meaningful, given that Hmax is used in timestep control in entropy?
+        dt1_max=max(dt1_max,abs(heatcool)*p%cv1/cdt_tauc)
+        Hmax=Hmax+heat-cool
       endif
 !
 !  Apply heating/cooling to temperature/entropy variable
