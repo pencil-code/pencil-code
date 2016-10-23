@@ -88,13 +88,13 @@ else
 endif
 
 ifeq ($(SPECIAL_OBJ),nospecial.o)
-  $(SPECIAL_OBJ): special.h $(NOSPECIAL_SRC) $(COMMON_DEPS)
+  $(SPECIAL_OBJ): special.h $(NOSPECIAL_SRC) $(COMMON_DEPS) 
 else ifeq ($(filter-out atmosphere chem_stream internal_flow jet,$(SPECIAL_OBJ)),)
-  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(VISCOSITY_OBJ) $(DEBUG_IO_OBJ)
+  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(VISCOSITY_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ)
 else ifeq ($(shell grep 'Use Particles_cdata' $(SPECIAL_SRC)),)
-  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(PARTICLES_CDATA_OBJ)
+  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(PARTICLES_CDATA_OBJ) $(GRID_OBJ)
 else
-  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(VISCOSITY_OBJ)
+  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(VISCOSITY_OBJ) $(GRID_OBJ)
 endif
 
 
@@ -212,11 +212,11 @@ $(STRUCT_FUNC_OBJ): struct_func.h $(STRUCT_FUNC_SRC) $(COMMON_DEPS) $(GENERAL_OB
 ifeq ($(SPECIAL_OBJ),nospecial.o)
   $(SPECIAL_OBJ): special.h $(NOSPECIAL_SRC) $(COMMON_DEPS)
 else ifeq ($(filter-out atmosphere chem_stream internal_flow jet,$(SPECIAL_OBJ)),)
-  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(VISCOSITY_OBJ) $(DEBUG_IO_OBJ)
+  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(VISCOSITY_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ)
 else ifeq ($(shell grep 'Use Particles_cdata' $(SPECIAL_SRC)),)
-  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(PARTICLES_CDATA_OBJ)
+  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(PARTICLES_CDATA_OBJ) $(GRID_OBJ)
 else
-  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ)
+  $(SPECIAL_OBJ): special.h $(SPECIAL_SRC) special_dummies.inc $(COMMON_DEPS) $(EOS_OBJ) $(INITCOND_OBJ) $(DEBUG_IO_OBJ) $(GRID_OBJ)
 endif
 #
 $(PARTICLES_CDATA_OBJ): $(PARTICLES_CDATA_SRC) $(CDATA_OBJ)
