@@ -19,6 +19,8 @@ Use simulation objects to
 * compile simulations
 * start simulation/submit
 * add "resume simulation as new simulation from a certain VARXYZ or var.dat"
+* allow execution of bash commands (pc_build, submit, llsubmit, ....) in simulation folder
+* mkdatadir via bash command?
 
 
 Put simulations in dictionary to
