@@ -13,7 +13,7 @@ Do better reading routines:
 * read meta data/header of files at init, e.g. time in VAR or ts header before read()
 
 
-Use simulation objects to
+Use simulation objects to:
 * copy simulations (copy-constructor for simulation objects producing new simulations in a new dir)
 * manipulate Simulation files: *.in and *.local from python
 * compile simulations
@@ -23,7 +23,7 @@ Use simulation objects to
 * mkdatadir via bash command?
 
 
-Put simulations in dictionary to
+Put simulations in dictionary to:
 * sort them 
 * group them
 
@@ -35,7 +35,5 @@ Make more efficient:
 
 Do better visualizations:
 * interactive visualization
-* plot routines via typical style files
-
-
+* plot routines via typical style files (paper style, ApJ style, Simon style, ...)
 
