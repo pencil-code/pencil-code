@@ -4204,6 +4204,7 @@ module Special
 !
       use EquationOfState, only : gamma, get_cp1
       use Diagnostics
+      use Grid,            only : get_grid_mn
       use Sub,             only : dot2,dot,grad,gij,curl_mn, &
                                   dot2_mn,unit_vector
 !
