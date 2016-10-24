@@ -106,7 +106,7 @@ module Interstellar
   real :: x_cluster=0.0, y_cluster=0.0, z_cluster=0.0, t_cluster=0.0
   real :: t_interval_SNI=impossible, t_interval_SNII=impossible
   real :: zdisk !varying location of centre of mass of the disk
-  real :: lim_zdisk_cgs=1.543E+20, lim_zdisk=impossible !limit location of centre of mass of the disk
+  real :: lim_zdisk_cgs=1.543E+22, lim_zdisk=impossible !limit location of centre of mass of the disk
   logical :: lfirst_zdisk
 !
 !  normalisation factors for 1-d, 2-d, and 3-d profiles like exp(-r^6)
@@ -319,7 +319,7 @@ module Interstellar
 !  Adjust SNR%feat%radius inversely with density
 !
   logical :: lSN_scale_rad=.false.
-  real :: N_mass=60.0, eps_mass=0.05, eps_radius=0.00001
+  real :: N_mass=60.0, eps_mass=0.025, eps_radius=0.000005
 !
 !  Requested SNe location (used for test SN)
 !
