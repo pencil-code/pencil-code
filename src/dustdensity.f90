@@ -94,6 +94,7 @@ module Dustdensity
   logical :: lzero_upper_kern=.false., ldustcoagulation_simplified=.false.
   logical :: lself_collisions=.false.
   logical :: llog10_for_admom_above10=.true., lmomcons=.true., lmomcons2=.false.
+  logical :: lkernel_mean=.false.
   integer :: iadvec_ddensity=0
   logical, pointer :: llin_radiusbins
   real, pointer :: deltamd
@@ -129,7 +130,8 @@ module Dustdensity
       supsatratio_omega, ndmin_for_mdvar, &
       self_collisions, self_collision_factor, &
       lsemi_chemistry, lradius_binning, dkern_cst, lzero_upper_kern, &
-      llog10_for_admom_above10,lmomcons,lmomcons2
+      llog10_for_admom_above10,lmomcons,lmomcons2, &
+      lkernel_mean
 !
   integer :: idiag_KKm=0     ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
@@ -2599,8 +2601,11 @@ module Dustdensity
       real :: deltavd_turbu=0, fact
       real :: deltavd_drift2=0, deltavd_drift2a=0, deltavd_drift2b=0
       real :: ust,tl01,teta1,mu_air,rho_air, kB=1.38e-16, Rik 
+      real, dimension(ndustspec,ndustspec) :: kernel_mean
+      real, dimension(ndustspec) :: radius 
       integer :: i,j,l,k
-!      
+      integer :: row,col
+!
       if (ldustcoagulation) then
 !
 !  As a test, can set kernel to a constant 
@@ -2784,6 +2789,31 @@ module Dustdensity
          dkern(:,i,k)=dkern(:,k,i)
        enddo
        enddo
+!
+       elseif(lkernel_mean) then
+!  read file (can make more general)
+          open(unit=12, file="./kernel/radius.txt")
+          open(unit=13, file="./kernel/kernel_mean.txt")
+!
+!  read corresponding radius
+!
+          do row = 1,ndustspec
+            read(12,*) radius(row)
+          enddo
+          close(unit=12)
+!  read kernel 
+!
+          do row = 1,ndustspec
+            read(13,*) (kernel_mean(row,col),col=1,ndustspec)
+          enddo
+          close(unit=13)
+!
+          do l=1,nx
+           do i=1,ndustspec; do j=1,ndustspec
+             dkern(l,i,j) = kernel_mean(i,j)
+           enddo; enddo
+          enddo
+!
       endif
 !
     endsubroutine coag_kernel
