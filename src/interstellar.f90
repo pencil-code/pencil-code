@@ -1474,9 +1474,9 @@ module Interstellar
       if (headtt) print*,'calc_heat_cool_interstellar: ENTER'
 !
       if (leos_ionization) then
-        call warning('calc_heat_cool_interstellar','temporary value for cv1 '//&
-              'assumes ideal gas. Not yet implemented for ionization')
-        p%cvl=0.9 !typical value for ideal gas with default cgs values 
+        if (headtt) call warning('calc_heat_cool_interstellar','temporary value for cv1 '//&
+                                 'assumes ideal gas. Not yet implemented for ionization')
+        p%cv1=0.9     !typical value for ideal gas with default cgs values 
       endif
 !
 !  13-jul-15/fred
