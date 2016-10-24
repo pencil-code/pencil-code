@@ -8056,56 +8056,61 @@ module Boundcond
       real, dimension (:,:,:,:) :: f
       integer :: j,k
       real, parameter :: density_scale_cgs=2.7774e21 !900pc Reynolds 91, etc
-      real :: density_scale1
+      real :: density_scale1, density_scale
       real :: cv1,cp1,cv,cp
 !
       density_scale1=unit_length/density_scale_cgs
+      density_scale=1./density_scale1
       call get_cv1(cv1); cv=1./cv1
       call get_cp1(cp1); cp=1./cp1
 !
       select case (topbot)
 !
       case ('bot')               ! bottom boundary
-          do k=1,3
-            if (j==irho .or. j==ilnrho) then
-              if (ldensity_nolog) then
-                f(:,:,k,j)=f(:,:,n1,j)*exp(-(z(n1)-z(k))*density_scale1)
-              else
-                f(:,:,k,j)=f(:,:,n1,j) - (z(n1)-z(k))*density_scale1
-              endif
-            else if (j==iss) then
-              if (ldensity_nolog) then
-                f(:,:,n1-k,j)=f(:,:,n1-k+1,j)+(cp-cv)*&
-                 (log(f(:,:,n1-k+1,j-1))-log(f(:,:,n1-k,j-1))-z(k)+z(n1))
-              else
-                f(:,:,n1-k,j)=f(:,:,n1-k+1,j)+(cp-cv)*&
-                 (f(:,:,n1-k+1,j-1)-f(:,:,n1-k,j-1)-z(k)+z(n1))
-              endif
+        do k=1,nghost
+          if (j==irho .or. j==ilnrho) then
+            if (ldensity_nolog) then
+              f(:,:,k,j)=f(:,:,n1,j)*exp(-(z(n1)-z(k))*density_scale1)
             else
-              call fatal_error('bc_ism','only for irho, ilnrho or iss')
+              f(:,:,k,j)=f(:,:,n1,j) - (z(n1)-z(k))*density_scale
             endif
-          enddo
+          else if (j==iss) then
+            if (ldensity_nolog) then
+              f(:,:,n1-k,j)=f(:,:,n1,j)+(cp-cv)*&
+                  (log(f(:,:,n1,j-1))-log(f(:,:,n1-k,j-1)))+&
+                  cv*log((z(n1)-z(n1-k))*density_scale+1.)
+            else
+              f(:,:,n1-k,j)=f(:,:,n1,j)+(cp-cv)*&
+                  (f(:,:,n1,j-1)-f(:,:,n1-k,j-1))+&
+                  cv*log((z(n1)-z(n1-k))*density_scale+1.)
+            endif
+          else
+            call fatal_error('bc_ism','only for irho, ilnrho, iuz or iss')
+          endif
+        enddo
 !
       case ('top')               ! top boundary
-          do k=1,3
-            if (j==irho .or. j==ilnrho) then
-              if (ldensity_nolog) then
-                f(:,:,n2+k,j)=f(:,:,n2,j)*exp(-(z(n2+k)-z(n2))*density_scale1)
-              else
-                f(:,:,n2+k,j)=f(:,:,n2,j) - (z(n2+k)-z(n2))*density_scale1
-              endif
-            else if (j==iss) then
-              if (ldensity_nolog) then
-                f(:,:,n2+k,j)=f(:,:,n2+k-1,j)+(cp-cv)*&
-                 (log(f(:,:,n2+k-1,j-1))-log(f(:,:,n2+k,j-1))+z(n2+k)-z(n2))
-              else
-                f(:,:,n2+k,j)=f(:,:,n2+k-1,j)+(cp-cv)*&
-                 (f(:,:,n2+k-1,j-1)-f(:,:,n2+k,j-1)+z(n2+k)-z(n2))
-              endif
+        do k=1,nghost
+          if (j==irho .or. j==ilnrho) then
+            if (ldensity_nolog) then
+              f(:,:,n2+k,j)=f(:,:,n2,j)*exp(-(z(n2+k)-z(n2))*density_scale1)
             else
-              call fatal_error('bc_ism','only for irho, ilnrho or iss')
+              f(:,:,n2+k,j)=f(:,:,n2,j) - (z(n2+k)-z(n2))*density_scale1
             endif
-          enddo
+          else if (j==iss) then
+            if (ldensity_nolog) then
+              f(:,:,n2+k,j)=f(:,:,n2,j)+(cp-cv)*&
+                  (log(f(:,:,n2,j-1))-log(f(:,:,n2+k,j-1)))+&
+                  cv*log((z(n2+k)-z(n2))*density_scale+1.)
+            else
+              f(:,:,n2+k,j)=f(:,:,n2,j)+(cp-cv)*&
+                  (f(:,:,n2,j-1)-f(:,:,n2+k,j-1))+&
+                  cv*log((z(n2+k)-z(n2))*density_scale+1.)
+            endif
+          else
+            call fatal_error('bc_ism','only for irho, ilnrho, iuz or iss')
+          endif
+        enddo
 !
       case default
         print*, "bc_ism ", topbot, " should be 'top' or 'bot'"
