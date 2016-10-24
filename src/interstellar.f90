@@ -1110,17 +1110,6 @@ module Interstellar
         idiag_Gamm=0
       endif
 !
-      lpenc_requested(i_ee)=.true.
-      lpenc_requested(i_cv1)=.true.
-      lpenc_requested(i_cv)=.true.
-      lpenc_requested(i_lnTT)=.true.
-      lpenc_requested(i_TT1)=.true.
-      lpenc_requested(i_lnrho)=.true.
-      lpenc_requested(i_rho1)=.true.
-      if (lheatcool_shock_cutoff) then
-        lpenc_requested(i_gshock)=.true.
-      endif
-!
 !  iname runs through all possible names that may be listed in print.in
 !
       do iname=1,nname
@@ -1483,6 +1472,12 @@ module Interstellar
 !  Identifier
 !
       if (headtt) print*,'calc_heat_cool_interstellar: ENTER'
+!
+      if (leos_ionization) then
+        call warning('calc_heat_cool_interstellar','temporary value for cv1 '//&
+              'assumes ideal gas. Not yet implemented for ionization')
+        p%cvl=0.9 !typical value for ideal gas with default cgs values 
+      endif
 !
 !  13-jul-15/fred
 !  Removed obsolete calls to spatial and temporal smoothing
