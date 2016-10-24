@@ -3036,8 +3036,8 @@ module Energy
 !  Enforce maximum heating rate timestep constraint
 !
       if (lfirst.and.ldt) then
-        if (lthdiff_Hmax) dt1_max=max(dt1_max,df(l1:l2,m,n,iss)/p%ee/cdts)
-        dt1_max=max(dt1_max,Hmax/p%ee/cdts)
+        if (lthdiff_Hmax) dt1_max=max(dt1_max,abs(df(l1:l2,m,n,iss)/p%ee/cdts))
+        dt1_max=max(dt1_max,abs(Hmax/p%ee/cdts))
       endif
 !
 !  Calculate entropy related diagnostics.
