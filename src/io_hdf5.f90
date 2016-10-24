@@ -326,9 +326,7 @@ module Io
 !
       call h5pcreate_f (H5P_DATASET_CREATE_F, h5_plist, h5_err)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not prepare property list')
-      !call h5pset_chunk_f (h5_plist, n_dims+1, local_size, h5_err)
-      !call stop_it_if_any (h5_err /= 0, 'output_snap: Could not set chunk properties')
-      call h5dcreate_f (h5_file, file, h5t_native_type, h5_fspace, h5_dset, h5_err, h5_plist)
+      call h5dcreate_f (h5_file, 'f', h5t_native_type, h5_fspace, h5_dset, h5_err, h5_plist)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not create dataset')
       call h5sclose_f (h5_fspace, h5_err)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close global file space')
