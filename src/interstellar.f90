@@ -1574,7 +1574,7 @@ module Interstellar
 !
       if (lfirst.and.ldt) then
 !MR@Fred: is the following statement meaningful, given that Hmax is used in timestep control in entropy?
-        if (leos_idealgas) dt1_max=max(dt1_max,abs(heatcool)*p%cv1/cdt_tauc)
+!        if (leos_idealgas) dt1_max=max(dt1_max,abs(heatcool)*p%cv1/cdt_tauc)
         Hmax=Hmax+heat-cool
       endif
 !
