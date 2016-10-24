@@ -2792,8 +2792,8 @@ module Dustdensity
 !
        elseif(lkernel_mean) then
 !  read file (can make more general)
-          open(unit=12, file="./kernel/radius.txt")
-          open(unit=13, file="./kernel/kernel_mean.txt")
+          open(unit=12, file="radius.txt")
+          open(unit=13, file="kernel_mean.txt")
 !
 !  read corresponding radius
 !
