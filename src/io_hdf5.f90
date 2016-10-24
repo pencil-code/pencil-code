@@ -21,6 +21,11 @@ module Io
   include 'mpif.h'
   include 'record_types.h'
 !
+  interface output_hdf5
+    module procedure output_hdf5_0D
+    module procedure output_hdf5_1D
+  endinterface
+!
   interface write_persist
     module procedure write_persist_logical_0D
     module procedure write_persist_logical_1D
@@ -52,7 +57,7 @@ module Io
   integer :: persist_last_id = -max_int
 !
   integer :: local_type, global_type, h5_err
-  integer(HID_T) :: h5_file, h5_dset, h5_plist, h5_fspace, h5_mspace
+  integer(HID_T) :: h5_file, h5_dset, h5_plist, h5_fspace, h5_mspace, h5_dspace
   integer, parameter :: n_dims = 3
   integer(kind=8), dimension(n_dims+1) :: local_size, local_subsize, local_start
   integer(kind=8), dimension(n_dims+1) :: global_size, global_subsize, global_start
@@ -74,7 +79,7 @@ module Io
       if (lroot) call svn_id ("$Id$")
       if (.not. lseparate_persist) call fatal_error ('io_HDF5', &
           "This module only works with the setting lseparate_persist=.true.")
-      call fatal_error ('io_HDF5', "This module is purely experimental, please help to get it working! Thanks.")
+      if (.false.) call fatal_error ('io_HDF5', "This module is purely experimental, please help to get it working! Thanks.")
 !
 ! Create datatype to describe internal elements of data, ie. the core data
 ! excluding the halos, unless we are on an edge and have to include them.
@@ -253,6 +258,60 @@ module Io
 !
     endsubroutine distribute_grid
 !***********************************************************************
+    subroutine output_hdf5_0D(name, data)
+!
+      character (len=*), intent(in) :: name
+      real, intent(in) :: data
+!
+      call output_hdf5 (name, (/ data /), 1)
+!
+    endsubroutine output_hdf5_0D
+!***********************************************************************
+    subroutine output_hdf5_1D(name, data, nv)
+!
+!  Write HDF5 dataset as scalar or array.
+!
+!  24-Oct-2016/PABourdin: coded
+!
+      use Mpicomm, only: mpi_precision, stop_it_if_any
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: nv
+      real, dimension (nv), intent(in) :: data
+!
+      integer(HID_T) :: h5t_native_type
+      integer(kind=8), dimension(1) :: size
+!
+      if (mpi_precision == MPI_REAL) then
+        h5t_native_type = H5T_NATIVE_REAL
+      else
+        h5t_native_type = H5T_NATIVE_DOUBLE
+      endif
+      size = (/ nv /)
+!
+      if (nv <= 1) then
+        call h5screate_f (H5S_SCALAR_F, h5_dspace, h5_err)
+      else
+        call h5screate_f (H5S_SIMPLE_F, h5_dspace, h5_err)
+      endif
+      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not create data space "'//name//'"')
+!
+      call h5dcreate_f (h5_file, name, h5t_native_type, h5_dspace, h5_dset, h5_err, h5_plist)
+      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not create dataset "'//name//'"')
+      if (nv <= 1) then
+        call h5dwrite_f (h5_dset, h5t_native_type, data(1), size, h5_err)
+      else
+        call h5dwrite_f (h5_dset, h5t_native_type, data, size, h5_err)
+      endif
+      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not write the data "'//name//'"')
+      call h5dclose_f (h5_dset, h5_err)
+      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the dataset "'//name//'"')
+!
+      call h5sclose_f (h5_dspace, h5_err)
+      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the data space "'//name//'"')
+!
+    endsubroutine output_hdf5_1D
+!***********************************************************************
     subroutine output_snap(a, nv, file, mode)
 !
 !  Write snapshot file, always write mesh and time, could add other things.
@@ -358,19 +417,39 @@ module Io
           global_size, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not write the data')
 !
+! Close data spaces, dataset, and the property list.
+!
+      call h5sclose_f (h5_fspace, h5_err)
+      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the file space')
+      call h5sclose_f (h5_mspace, h5_err)
+      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the memory space')
+      call h5dclose_f (h5_dset, h5_err)
+      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the dataset')
+      call h5pclose_f (h5_plist, h5_err)
+      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the parameter list')
+!
       ! write additional data:
       if (lwrite_add) then
         if (lroot) then
           allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
           if (alloc_err > 0) call fatal_error ('output_snap', 'Could not allocate memory for gx,gy,gz', .true.)
         endif
-
         call collect_grid (x, y, z, gx, gy, gz)
         if (lroot) then
-          open (lun_output, FILE=trim (directory_snap)//'/'//file, FORM='unformatted', position='append', status='old')
           t_sp = t
-          write (lun_output) t_sp, gx, gy, gz, dx, dy, dz
-          close (lun_output)
+          call output_hdf5 ('t', t)
+          call output_hdf5 ('x', gx, mxgrid)
+          call output_hdf5 ('y', gy, mygrid)
+          call output_hdf5 ('z', gz, mzgrid)
+        endif
+        call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
+        if (lroot) then
+          call output_hdf5 ('dx_1', gx, mxgrid)
+          call output_hdf5 ('dy_1', gy, mygrid)
+          call output_hdf5 ('dz_1', gz, mzgrid)
+          call output_hdf5 ('dx', dx)
+          call output_hdf5 ('dy', dy)
+          call output_hdf5 ('dz', dz)
         endif
       endif
 !
@@ -391,16 +470,8 @@ module Io
         close (lun_input)
       endif
 !
-! Close data spaces, dataset, property list, and the file itself.
+! Close the file itself.
 !
-      call h5sclose_f (h5_fspace, h5_err)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the file space')
-      call h5sclose_f (h5_mspace, h5_err)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the memory space')
-      call h5dclose_f (h5_dset, h5_err)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the dataset')
-      call h5pclose_f (h5_plist, h5_err)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the parameter list')
       call h5fclose_f (h5_file, h5_err)
       call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the file')
       call h5close_f (h5_err)
