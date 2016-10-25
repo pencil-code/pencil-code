@@ -2736,6 +2736,30 @@ module Dustdensity
             else
               dkern(l,i,j) = scolld(i,j)*deltavd
             endif
+!
+            if (lkernel_mean) then
+!  read file (can make more general)
+              open(unit=12, file="radius.txt")
+              open(unit=13, file="kernel_mean.txt")
+!
+!  read corresponding radius
+!
+              do row = 1,ndustspec
+                read(12,*) radius(row)
+              enddo
+              close(unit=12)
+!  read kernel 
+!
+              do row = 1,ndustspec
+                read(13,*) (kernel_mean(row,col),col=1,ndustspec)
+              enddo
+              close(unit=13)
+!
+              dkern(l,i,j) = kernel_mean(i,j)
+            else
+              dkern(l,i,j) = scolld(i,j)*deltavd
+            endif
+!
             dkern(l,j,i) = dkern(l,i,j)
           enddo
         enddo
@@ -2790,30 +2814,8 @@ module Dustdensity
        enddo
        enddo
 !
-       elseif(lkernel_mean) then
-!  read file (can make more general)
-          open(unit=12, file="radius.txt")
-          open(unit=13, file="kernel_mean.txt")
 !
-!  read corresponding radius
-!
-          do row = 1,ndustspec
-            read(12,*) radius(row)
-          enddo
-          close(unit=12)
-!  read kernel 
-!
-          do row = 1,ndustspec
-            read(13,*) (kernel_mean(row,col),col=1,ndustspec)
-          enddo
-          close(unit=13)
-!
-          do l=1,nx
-           do i=1,ndustspec; do j=1,ndustspec
-             dkern(l,i,j) = kernel_mean(i,j)
-           enddo; enddo
-          enddo
-!
+
       endif
 !
     endsubroutine coag_kernel
