@@ -2617,6 +2617,25 @@ module Dustdensity
       tl01=1/tl0
       teta1=1/teta
 !
+!24-Oct-16: Xiangyu added mean kernel for Smoluchoski equation
+      if (lkernel_mean) then
+!  read file (can make more general)
+        open(unit=12, file="radius.txt")
+        open(unit=13, file="kernel_mean.txt")
+!
+!  read corresponding radius
+!
+        do row = 1,ndustspec
+          read(12,*) radius(row)
+        enddo
+        close(unit=12)
+!  read kernel 
+!
+        do row = 1,ndustspec
+          read(13,*) (kernel_mean(row,col),col=1,ndustspec)
+        enddo
+        close(unit=13)
+      endif
 !  In the following, the "3" should be replaced by nghost,
 !  or one should use l1,l2 etc.
 !
@@ -2737,24 +2756,8 @@ module Dustdensity
               dkern(l,i,j) = scolld(i,j)*deltavd
             endif
 !
+!24-Oct-16: Xiangyu added mean kernel for Smoluchoski equation
             if (lkernel_mean) then
-!  read file (can make more general)
-              open(unit=12, file="radius.txt")
-              open(unit=13, file="kernel_mean.txt")
-!
-!  read corresponding radius
-!
-              do row = 1,ndustspec
-                read(12,*) radius(row)
-              enddo
-              close(unit=12)
-!  read kernel 
-!
-              do row = 1,ndustspec
-                read(13,*) (kernel_mean(row,col),col=1,ndustspec)
-              enddo
-              close(unit=13)
-!
               dkern(l,i,j) = kernel_mean(i,j)
             else
               dkern(l,i,j) = scolld(i,j)*deltavd
