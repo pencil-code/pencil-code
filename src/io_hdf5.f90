@@ -296,7 +296,7 @@ module Io
       endif
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'Could not create data space "'//name//'"', .true.)
 !
-      call h5dcreate_f (h5_file, name, h5t_native_type, h5_dspace, h5_dset, h5_err, h5_plist)
+      call h5dcreate_f (h5_file, name, h5t_native_type, h5_dspace, h5_dset, h5_err, H5P_DEFAULT)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'Could not create dataset "'//name//'"', .true.)
       if (nv <= 1) then
         call h5dwrite_f (h5_dset, h5t_native_type, data(1), size, h5_err)
@@ -382,9 +382,7 @@ module Io
 !
 ! Create the dataset.
 !
-      call h5pcreate_f (H5P_DATASET_CREATE_F, h5_plist, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_snap', 'Could not prepare property list', .true.)
-      call h5dcreate_f (h5_file, 'f', h5t_native_type, h5_fspace, h5_dset, h5_err, h5_plist)
+      call h5dcreate_f (h5_file, 'f', h5t_native_type, h5_fspace, h5_dset, h5_err, H5P_DEFAULT)
       if (h5_err /= 0) call fatal_error ('output_snap', 'Could not create dataset', .true.)
       call h5sclose_f (h5_fspace, h5_err)
       if (h5_err /= 0) call fatal_error ('output_snap', 'Could not close global file space', .true.)
