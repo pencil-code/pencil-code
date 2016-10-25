@@ -3759,6 +3759,7 @@ module General
 !   Calculates mean squared modulus of a vector quantity in the centre of a grid cell.
 !
 !   9-oct-15/MR: coded
+!  25-oct-16/JW: rewritten
 !
       use Cdata, only: dimensionality
 
@@ -3766,54 +3767,72 @@ module General
       integer,                            intent(in)   :: k,jmean
       real,                               intent(in)   :: weight
 
-      real, parameter :: i64_1=1/64., i16_1=1/16., i4_1=1/4.
+      real, parameter :: i8_1=1/8., i4_1=1/4., i2_1=1/2.
+      integer         :: ll,mm,nn
 !
       if (dimensionality==3) then 
-        
-        f(2:mx-2,2:my-2,2:mz-2,jmean) = f(2:mx-2,2:my-2,2:mz-2,jmean) &
-                                       +(weight*i64_1)*sum(( f(2:mx-2,2:my-2,2:mz-2,k:k+2) &
-                                                            +f(2:mx-2,2:my-2,3:mz-1,k:k+2) &
-                                                            +f(2:mx-2,3:my-1,2:mz-2,k:k+2) &
-                                                            +f(2:mx-2,3:my-1,3:mz-1,k:k+2) &
-                                                            +f(3:mx-1,2:my-2,2:mz-2,k:k+2) &
-                                                            +f(3:mx-1,2:my-2,3:mz-1,k:k+2) &
-                                                            +f(3:mx-1,3:my-1,2:mz-2,k:k+2) &
-                                                            +f(3:mx-1,3:my-1,3:mz-1,k:k+2))**2,4)
-      elseif (dimensionality==1) then 
-        if (nxgrid/=1) then 
-          f(2:mx-2,m1:m2,n1:n2,jmean) = f(2:mx-2,m1:m2,n1:n2,jmean) &
-                                       +(weight*i4_1)*sum(( f(2:mx-2,m1:m2,n1:n2,k:k+2) &
-                                                           +f(3:mx-1,m1:m2,n1:n2,k:k+2))**2,4)
-!     if(ldiagnos) print*,'CHAR',maxval(f(2:mx-2,m1:m2,n1:n2,jmean))
-        elseif (nygrid/=1) then 
-          f(l1:l2,2:my-2,n1:n2,jmean) = f(l1:l2,2:my-2,n1:n2,jmean) &
-                                       +(weight*i4_1)*sum(( f(l1:l2,2:my-2,n1:n2,k:k+2) &
-                                                           +f(l1:l2,3:my-1,n1:n2,k:k+2))**2,4)
-        else 
-          f(l1:l2,m1:m2,2:mz-2,jmean) = f(l1:l2,m1:m2,2:mz-2,jmean) &
-                                       +(weight*i4_1)*sum(( f(l1:l2,m1:m2,2:mz-2,k:k+2) &
-                                                           +f(l1:l2,m1:m2,3:mz-1,k:k+2))**2,4)
+!         
+        do ll=2,mx-2; do mm=2,my-2; do nn=2,mz-2 
+          f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
+          +weight*i8_1*(maxval(abs(f(ll,mm,nn,      k:k+2))) &
+                      + maxval(abs(f(ll,mm,nn+1,    k:k+2))) &
+                      + maxval(abs(f(ll,mm+1,nn,    k:k+2))) &
+                      + maxval(abs(f(ll,mm+1,nn+1,  k:k+2))) &
+                      + maxval(abs(f(ll+1,mm,nn,    k:k+2))) &
+                      + maxval(abs(f(ll+1,mm,nn+1,  k:k+2))) &
+                      + maxval(abs(f(ll+1,mm+1,nn,  k:k+2))) &
+                      + maxval(abs(f(ll+1,mm+1,nn+1,k:k+2))))
+        enddo; enddo; enddo
+!
+      elseif (dimensionality==1) then
+! 
+        if (nxgrid/=1) then
+          do ll=2,mx-2; do mm=m1,m2; do nn=n1,n2 
+            f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
+            +weight*i2_1*(maxval(abs(f(ll  ,mm,nn,k:k+2))) &
+                        + maxval(abs(f(ll+1,mm,nn,k:k+2))))
+          enddo; enddo; enddo
+        elseif (nygrid/=1) then
+          do ll=l1,l2; do mm=2,my-2; do nn=n1,n2 
+            f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
+            +weight*i2_1*(maxval(abs(f(ll,mm  ,nn,k:k+2))) &
+                        + maxval(abs(f(ll,mm+1,nn,k:k+2))))
+          enddo; enddo; enddo
+        else
+          do ll=l1,l2; do mm=m1,m2; do nn=2,mz-2 
+            f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
+            +weight*i2_1*(maxval(abs(f(ll,mm,nn,  k:k+2))) &
+                        + maxval(abs(f(ll,mm,nn+1,k:k+2))))
+          enddo; enddo; enddo          
         endif
+!
+!       dimensionality==2
+!
       elseif (nzgrid==1) then   !  x-y
-          f(2:mx-2,2:my-2,n1:n2,jmean) = f(2:mx-2,2:my-2,n1:n2,jmean) &
-                                        +(weight*i16_1)*sum(( f(2:mx-2,2:my-2,n1:n2,k:k+2) &
-                                                             +f(2:mx-2,3:my-1,n1:n2,k:k+2) &
-                                                             +f(3:mx-1,2:my-2,n1:n2,k:k+2) &
-                                                             +f(3:mx-1,3:my-1,n1:n2,k:k+2))**2,4)
+        do ll=2,mx-2; do mm=2,my-2; do nn=n1,n2 
+          f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
+          +weight*i4_1*(maxval(abs(f(ll  ,mm  ,nn,k:k+2))) &
+                      + maxval(abs(f(ll  ,mm+1,nn,k:k+2))) &
+                      + maxval(abs(f(ll+1,mm  ,nn,k:k+2))) &                     
+                      + maxval(abs(f(ll+1,mm+1,nn,k:k+2))))
+        enddo; enddo; enddo
       elseif (nygrid==1) then   !  x-z
-          f(2:mx-2,m1:m2,2:mz-2,jmean) = f(2:mx-2,m1:m2,2:mz-2,jmean) &
-                                        +(weight*i16_1)*sum(( f(2:mx-2,m1:m2,2:mz-2,k:k+2) &
-                                                             +f(2:mx-2,m1:m2,3:mz-1,k:k+2) &
-                                                             +f(3:mx-1,m1:m2,2:mz-2,k:k+2) &
-                                                             +f(3:mx-1,m1:m2,3:mz-1,k:k+2))**2,4)
+         do ll=2,mx-2; do mm=m1,m2; do nn=2,mz-2 
+          f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
+          +weight*i4_1*(maxval(abs(f(ll  ,mm,nn,  k:k+2))) &
+                      + maxval(abs(f(ll  ,mm,nn+1,k:k+2))) &
+                      + maxval(abs(f(ll+1,mm,nn,  k:k+2))) &                     
+                      + maxval(abs(f(ll+1,mm,nn+1,k:k+2))))
+        enddo; enddo; enddo
       else                      !  y-z
-          f(l1:l2,2:my-2,2:mz-2,jmean) = f(l1:l2,2:my-2,2:mz-2,jmean) &
-                                        +(weight*i16_1)*sum(( f(l1:l2,2:my-2,2:mz-2,k:k+2) &
-                                                             +f(l1:l2,2:my-2,3:mz-1,k:k+2) &
-                                                             +f(l1:l2,3:my-1,2:mz-2,k:k+2) &
-                                                             +f(l1:l2,3:my-1,3:mz-1,k:k+2))**2,4)
+        do ll=l1,l2; do mm=2,my-2; do nn=2,mz-2 
+          f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
+          +weight*i4_1*(maxval(abs(f(ll,mm  ,nn,  k:k+2))) &
+                      + maxval(abs(f(ll,mm  ,nn+1,k:k+2))) &
+                      + maxval(abs(f(ll,mm+1,nn,  k:k+2))) &                     
+                      + maxval(abs(f(ll,mm+1,nn+1,k:k+2))))
+        enddo; enddo; enddo
       endif
-
     endsubroutine staggered_mean_vec
 !***********************************************************************
     subroutine staggered_mean_scal(f,k,jmean,weight)
@@ -3821,58 +3840,79 @@ module General
 !   Calculates squared mean of a scalar quantity in the centre of a grid cell.
 !
 !   9-oct-15/MR: coded
+!  25-oct-16/JW: rewritten
 !
       use Cdata, only: dimensionality
 
       real, dimension (mx,my,mz,mfarray), intent(inout):: f 
       integer,                            intent(in)   :: k,jmean
       real,                               intent(in)   :: weight
-
-      real, parameter :: i64_1=1/64., i16_1=1/16., i4_1=1/4.
+!
+      real, parameter :: i8_1=1/8., i4_1=1/4., i2_1=1/2.
+      integer         :: ll,mm,nn
 !
       if (dimensionality==3) then 
-        f(2:mx-2,2:my-2,2:mz-2,jmean) = f(2:mx-2,2:my-2,2:mz-2,jmean) &
-                                       +(weight*i64_1)*( f(2:mx-2,2:my-2,2:mz-2,k) &
-                                                        +f(2:mx-2,2:my-2,3:mz-1,k) &
-                                                        +f(2:mx-2,3:my-1,2:mz-2,k) &
-                                                        +f(2:mx-2,3:my-1,3:mz-1,k) &
-                                                        +f(3:mx-1,2:my-2,2:mz-2,k) &
-                                                        +f(3:mx-1,2:my-2,3:mz-1,k) &
-                                                        +f(3:mx-1,3:my-1,2:mz-2,k) &
-                                                        +f(3:mx-1,3:my-1,3:mz-1,k))**2
-      elseif (dimensionality==1) then 
-        if (nxgrid/=1) then 
-          f(2:mx-2,m1:m2,n1:n2,jmean) = f(2:mx-2,m1:m2,n1:n2,jmean) &
-                                       +(weight*i4_1)*( f(2:mx-2,m1:m2,n1:n2,k) &
-                                                       +f(3:mx-1,m1:m2,n1:n2,k))**2
-!     if(ldiagnos) print*,'CHAR',maxval(f(2:mx-2,m1:m2,n1:n2,jmean))
-        elseif (nygrid/=1) then 
-          f(l1:l2,2:my-2,n1:n2,jmean) = f(l1:l2,2:my-2,n1:n2,jmean) &
-                                       +(weight*i4_1)*( f(l1:l2,2:my-2,n1:n2,k) &
-                                                       +f(l1:l2,3:my-1,n1:n2,k))**2
-        else 
-          f(l1:l2,m1:m2,2:mz-2,jmean) = f(l1:l2,m1:m2,2:mz-2,jmean) &
-                                       +(weight*i4_1)*( f(l1:l2,m1:m2,2:mz-2,k) &
-                                                       +f(l1:l2,m1:m2,3:mz-1,k))**2
+!         
+        do ll=2,mx-2; do mm=2,my-2; do nn=2,mz-2 
+          f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
+          +weight*i8_1*(abs(f(ll,mm,nn,      k)) &
+                      + abs(f(ll,mm,nn+1,    k)) &
+                      + abs(f(ll,mm+1,nn,    k)) &
+                      + abs(f(ll,mm+1,nn+1,  k)) &
+                      + abs(f(ll+1,mm,nn,    k)) &
+                      + abs(f(ll+1,mm,nn+1,  k)) &
+                      + abs(f(ll+1,mm+1,nn,  k)) &
+                      + abs(f(ll+1,mm+1,nn+1,k)))
+        enddo; enddo; enddo
+!
+      elseif (dimensionality==1) then
+! 
+        if (nxgrid/=1) then
+          do ll=2,mx-2; do mm=m1,m2; do nn=n1,n2 
+            f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
+            +weight*i2_1*(abs(f(ll  ,mm,nn,k)) &
+                        + abs(f(ll+1,mm,nn,k)))
+          enddo; enddo; enddo
+        elseif (nygrid/=1) then
+          do ll=l1,l2; do mm=2,my-2; do nn=n1,n2 
+            f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
+            +weight*i2_1*(abs(f(ll,mm  ,nn,k)) &
+                        + abs(f(ll,mm+1,nn,k)))
+          enddo; enddo; enddo
+        else
+          do ll=l1,l2; do mm=m1,m2; do nn=2,mz-2 
+            f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
+            +weight*i2_1*(abs(f(ll,mm,nn,  k)) &
+                        + abs(f(ll,mm,nn+1,k)))
+          enddo; enddo; enddo          
         endif
+!
+!       dimensionality==2
+!
       elseif (nzgrid==1) then   !  x-y
-          f(2:mx-2,2:my-2,n1:n2,jmean) = f(2:mx-2,2:my-2,n1:n2,jmean) &
-                                        +(weight*i16_1)*( f(2:mx-2,2:my-2,n1:n2,k) &
-                                                         +f(2:mx-2,3:my-1,n1:n2,k) &
-                                                         +f(3:mx-1,2:my-2,n1:n2,k) &
-                                                         +f(3:mx-1,3:my-1,n1:n2,k))**2
+        do ll=2,mx-2; do mm=2,my-2; do nn=n1,n2 
+          f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
+          +weight*i4_1*(abs(f(ll  ,mm  ,nn,k)) &
+                      + abs(f(ll  ,mm+1,nn,k)) &
+                      + abs(f(ll+1,mm  ,nn,k)) &                     
+                      + abs(f(ll+1,mm+1,nn,k)))
+        enddo; enddo; enddo
       elseif (nygrid==1) then   !  x-z
-          f(2:mx-2,m1:m2,2:mz-2,jmean) = f(2:mx-2,m1:m2,2:mz-2,jmean) &
-                                        +(weight*i16_1)*( f(2:mx-2,m1:m2,2:mz-2,k) &
-                                                         +f(2:mx-2,m1:m2,3:mz-1,k) &
-                                                         +f(3:mx-1,m1:m2,2:mz-2,k) &
-                                                         +f(3:mx-1,m1:m2,3:mz-1,k))**2
+         do ll=2,mx-2; do mm=m1,m2; do nn=2,mz-2 
+          f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
+          +weight*i4_1*(abs(f(ll  ,mm,nn,  k)) &
+                      + abs(f(ll  ,mm,nn+1,k)) &
+                      + abs(f(ll+1,mm,nn,  k)) &                     
+                      + abs(f(ll+1,mm,nn+1,k)))
+        enddo; enddo; enddo
       else                      !  y-z
-          f(l1:l2,2:my-2,2:mz-2,jmean) = f(l1:l2,2:my-2,2:mz-2,jmean) &
-                                        +(weight*i16_1)*( f(l1:l2,2:my-2,2:mz-2,k) &
-                                                         +f(l1:l2,2:my-2,3:mz-1,k) &
-                                                         +f(l1:l2,3:my-1,2:mz-2,k) &
-                                                         +f(l1:l2,3:my-1,3:mz-1,k))**2
+        do ll=l1,l2; do mm=2,my-2; do nn=2,mz-2 
+          f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
+          +weight*i4_1*(abs(f(ll,mm  ,nn,  k)) &
+                      + abs(f(ll,mm  ,nn+1,k)) &
+                      + abs(f(ll,mm+1,nn,  k)) &                     
+                      + abs(f(ll,mm+1,nn+1,k)))
+        enddo; enddo; enddo
       endif
 
     endsubroutine staggered_mean_scal
@@ -3921,7 +3961,7 @@ module General
           do ll=l1,l2; do mm=m1,m2; do nn=2,mz-2 
             f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
             +weight*max(maxval(abs(f(ll,mm,nn,  k:k+2))) &
-                       ,maxval(abs(f(ll+1,mm,nn,k:k+2))))
+                       ,maxval(abs(f(ll,mm,nn+1,k:k+2))))
           enddo; enddo; enddo          
         endif
       elseif (nzgrid==1) then   !  x-y
@@ -3996,7 +4036,7 @@ module General
           do ll=l1,l2; do mm=m1,m2; do nn=2,mz-2 
             f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
             +weight*max(abs(f(ll,mm,nn,  k)) &
-                       ,abs(f(ll+1,mm,nn,k)))
+                       ,abs(f(ll,mm,nn+1,k)))
           enddo; enddo; enddo
         endif
       elseif (nzgrid==1) then   !  x-y
