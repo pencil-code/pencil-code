@@ -294,21 +294,21 @@ module Io
       else
         call h5screate_f (H5S_SIMPLE_F, h5_dspace, h5_err)
       endif
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not create data space "'//name//'"')
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'Could not create data space "'//name//'"', .true.)
 !
       call h5dcreate_f (h5_file, name, h5t_native_type, h5_dspace, h5_dset, h5_err, h5_plist)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not create dataset "'//name//'"')
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'Could not create dataset "'//name//'"', .true.)
       if (nv <= 1) then
         call h5dwrite_f (h5_dset, h5t_native_type, data(1), size, h5_err)
       else
         call h5dwrite_f (h5_dset, h5t_native_type, data, size, h5_err)
       endif
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not write the data "'//name//'"')
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'Could not write the data "'//name//'"', .true.)
       call h5dclose_f (h5_dset, h5_err)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the dataset "'//name//'"')
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'Could not close the dataset "'//name//'"', .true.)
 !
       call h5sclose_f (h5_dspace, h5_err)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the data space "'//name//'"')
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'Could not close the data space "'//name//'"', .true.)
 !
     endsubroutine output_hdf5_1D
 !***********************************************************************
@@ -334,8 +334,7 @@ module Io
       logical :: lwrite_add
       real :: t_sp   ! t in single precision for backwards compatibility
 !
-      if (.not. present(file)) call fatal_error('output_snap', &
-          'downsampled output not implemented for IO_hdf5')
+      if (.not. present(file)) call fatal_error ('output_snap', 'downsampled output not implemented for IO_hdf5')
 !
       lwrite_add = .true.
       if (present (mode)) lwrite_add = (mode == 1)
@@ -347,7 +346,7 @@ module Io
 ! Initialize parallel HDF5 Fortran libaray.
 !
       call h5open_f (h5_err)
-      call stop_it_if_any (h5_err /= 0, "io_HDF5: can't initialize parallel HDF5 library")
+      if (h5_err /= 0) call fatal_error ('output_snap', "can't initialize parallel HDF5 library", .true.)
 !
 ! Determine native data type
 !
@@ -360,73 +359,73 @@ module Io
 ! Setup file access property list.
 !
       call h5pcreate_f (H5P_FILE_ACCESS_F, h5_plist, h5_err)
-      call stop_it_if_any (h5_err /= 0, "io_HDF5: can't create file access property list")
+      if (h5_err /= 0) call fatal_error ('output_snap', "can't create file access property list", .true.)
       call h5pset_fapl_mpio_f (h5_plist, MPI_COMM_WORLD, MPI_INFO_NULL, h5_err)
-      call stop_it_if_any (h5_err /= 0, "io_HDF5: can't initialize file access property list")
+      if (h5_err /= 0) call fatal_error ('output_snap', "can't initialize file access property list", .true.)
 !
 ! Create (and truncate) HDF5 file.
 !
-      call h5fcreate_f (trim (directory_snap)//'/'//file, H5F_ACC_TRUNC_F, h5_file, h5_err, access_prp=h5_plist)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not open: "'//trim (directory_snap)//'/'//file//'"')
+      call h5fcreate_f (trim (directory_snap)//'/'//file//'.h5', H5F_ACC_TRUNC_F, h5_file, h5_err, access_prp=h5_plist)
+      if (h5_err /= 0) call fatal_error ('output_snap', 'Could not open: "'//trim (directory_snap)//'/'//file//'.h5"', .true.)
       call h5pclose_f (h5_plist, h5_err)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close parameter list')
+      if (h5_err /= 0) call fatal_error ('output_snap', 'Could not close parameter list', .true.)
 !
 ! Define 'file-space' to indicate the data portion in the global file.
 !
       call h5screate_simple_f (n_dims+1, global_size, h5_fspace, h5_err)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not create global file space')
+      if (h5_err /= 0) call fatal_error ('output_snap', 'Could not create global file space', .true.)
 !
 ! Define 'memory-space' to indicate the local data portion in memory.
 !
       call h5screate_simple_f (n_dims+1, local_size, h5_mspace, h5_err)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not create local memory space')
+      if (h5_err /= 0) call fatal_error ('output_snap', 'Could not create local memory space', .true.)
 !
 ! Create the dataset.
 !
       call h5pcreate_f (H5P_DATASET_CREATE_F, h5_plist, h5_err)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not prepare property list')
+      if (h5_err /= 0) call fatal_error ('output_snap', 'Could not prepare property list', .true.)
       call h5dcreate_f (h5_file, 'f', h5t_native_type, h5_fspace, h5_dset, h5_err, h5_plist)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not create dataset')
+      if (h5_err /= 0) call fatal_error ('output_snap', 'Could not create dataset', .true.)
       call h5sclose_f (h5_fspace, h5_err)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close global file space')
+      if (h5_err /= 0) call fatal_error ('output_snap', 'Could not close global file space', .true.)
 !
 ! Define local 'hyper-slab' in the global file.
 !
       h5_stride(:) = 1
       h5_count(:) = 1
       call h5dget_space_f (h5_dset, h5_fspace, h5_err)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not get dataset for file space')
+      if (h5_err /= 0) call fatal_error ('output_snap', 'Could not get dataset for file space', .true.)
       call h5sselect_hyperslab_f (h5_fspace, H5S_SELECT_SET_F, global_start, h5_count, h5_err, h5_stride, local_subsize)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not select hyperslab within file')
+      if (h5_err /= 0) call fatal_error ('output_snap', 'Could not select hyperslab within file', .true.)
 !
 ! Define local 'hyper-slab' portion in memory.
 !
       call h5sselect_hyperslab_f (h5_mspace, H5S_SELECT_SET_F, local_start, h5_count, h5_err, h5_stride, local_subsize)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not select hyperslab within file')
+      if (h5_err /= 0) call fatal_error ('output_snap', 'Could not select hyperslab within file', .true.)
 !
 ! Prepare data transfer.
 !
       call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not set data transfer properties')
+      if (h5_err /= 0) call fatal_error ('output_snap', 'Could not set data transfer properties', .true.)
       call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not select collective IO')
+      if (h5_err /= 0) call fatal_error ('output_snap', 'Could not select collective IO', .true.)
 !
 ! Collectively write the data.
 !
       call h5dwrite_f (h5_dset, h5t_native_type, a, &
           global_size, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not write the data')
+      if (h5_err /= 0) call fatal_error ('output_snap', 'Could not write the data')
 !
 ! Close data spaces, dataset, and the property list.
 !
       call h5sclose_f (h5_fspace, h5_err)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the file space')
+      if (h5_err /= 0) call fatal_error ('output_snap', 'Could not close the file space', .true.)
       call h5sclose_f (h5_mspace, h5_err)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the memory space')
+      if (h5_err /= 0) call fatal_error ('output_snap', 'Could not close the memory space', .true.)
       call h5dclose_f (h5_dset, h5_err)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the dataset')
+      if (h5_err /= 0) call fatal_error ('output_snap', 'Could not close the dataset', .true.)
       call h5pclose_f (h5_plist, h5_err)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the parameter list')
+      if (h5_err /= 0) call fatal_error ('output_snap', 'Could not close the parameter list', .true.)
 !
       ! write additional data:
       if (lwrite_add) then
@@ -473,9 +472,9 @@ module Io
 ! Close the file itself.
 !
       call h5fclose_f (h5_file, h5_err)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the file')
+      if (h5_err /= 0) call fatal_error ('output_snap', 'Could not close the file', .true.)
       call h5close_f (h5_err)
-      call stop_it_if_any (h5_err /= 0, 'output_snap: Could not close the parallel HDF5 library')
+      if (h5_err /= 0) call fatal_error ('output_snap', 'Could not close the parallel HDF5 library', .true.)
 !
     endsubroutine output_snap_finalize
 !***********************************************************************
