@@ -79,7 +79,7 @@ module Io
       if (lroot) call svn_id ("$Id$")
       if (.not. lseparate_persist) call fatal_error ('io_HDF5', &
           "This module only works with the setting lseparate_persist=.true.")
-      if (lroot) call fatal_error ('io_HDF5', "This module is purely experimental, please help to get it working! Thanks.")
+      if (lroot) call fatal_error ('io_HDF5', "This module is purely experimental, please help to get it working! Thanks.", .true.)
 !
 ! Create datatype to describe internal elements of data, ie. the core data
 ! excluding the halos, unless we are on an edge and have to include them.
@@ -296,7 +296,7 @@ module Io
       endif
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'Could not create data space "'//name//'"', .true.)
 !
-      call h5dcreate_f (h5_file, name, h5t_native_type, h5_dspace, h5_dset, h5_err, H5P_DEFAULT)
+      call h5dcreate_f (h5_file, name, h5t_native_type, h5_dspace, h5_dset, h5_err, H5P_DEFAULT_F)
       if (h5_err /= 0) call fatal_error ('output_hdf5', 'Could not create dataset "'//name//'"', .true.)
       if (nv <= 1) then
         call h5dwrite_f (h5_dset, h5t_native_type, data(1), size, h5_err)
@@ -382,7 +382,7 @@ module Io
 !
 ! Create the dataset.
 !
-      call h5dcreate_f (h5_file, 'f', h5t_native_type, h5_fspace, h5_dset, h5_err, H5P_DEFAULT)
+      call h5dcreate_f (h5_file, 'f', h5t_native_type, h5_fspace, h5_dset, h5_err, H5P_DEFAULT_F)
       if (h5_err /= 0) call fatal_error ('output_snap', 'Could not create dataset', .true.)
       call h5sclose_f (h5_fspace, h5_err)
       if (h5_err /= 0) call fatal_error ('output_snap', 'Could not close global file space', .true.)
