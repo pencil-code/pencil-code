@@ -7037,6 +7037,8 @@ nameloop: do
 
       call diff_flux(h_slope_limited, diffs(2:len-1), right_left, phi)
       flux = -0.5*c_char*phi*right_left
+!!      flux = -0.5*0.3*phi*right_left
+!!      print*, 'flux', flux(490:510)
 if (notanumber(c_char)) then
    print*, 'CALC_DIFFUSIVE_FLUX: c_char=', len
    stop

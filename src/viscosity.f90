@@ -1829,6 +1829,9 @@ module Viscosity
 !
         if (lfirst) then
           p%fvisc=p%fvisc-f(l1:l2,m,n,iFF_div_uu:iFF_div_uu+2)
+!!print*,'div flux', f(501:506,m,n,iFF_div_uu)
+!!print*, 'velo', f(501:506,m,n,iuu)
+
 !
 !  Heating term
 !
@@ -2078,6 +2081,11 @@ module Viscosity
         else
           diffus_nu3=p%diffus_total3*dxyz_6
         endif
+      endif
+      if (.not. ldt) then
+        diffus_nu = 0.0
+        diffus_nu2= 0.0
+        diffus_nu3= 0.0
       endif
 !
 !  Diagnostic output

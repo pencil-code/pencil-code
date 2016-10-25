@@ -817,6 +817,7 @@ module Equ
                 call max_mn_name(maxadvec,idiag_maxadvec)
           endif
         endif
+        if (.not.ldt) dt1_advec=0.0 
 !
 !  Display derivative info
 !

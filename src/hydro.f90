@@ -2755,6 +2755,7 @@ module Hydro
 !                   abs(p%uu(:,3))*dz_1(  n  )
 !        endif
       endif
+      if (.not. ldt) advec_uu=0.0
 !
 !  Empirically, it turns out that we need to take the full 3-D velocity
 !  into account for computing the time step. It is not clear why.

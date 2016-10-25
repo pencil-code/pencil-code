@@ -305,6 +305,7 @@ module Energy
 !
 !  ``cs2/dx^2'' for timestep - but only if we are evolving hydrodynamics.
 !
+      if (.not.ldt) advec_cs2=0.0
       if (leos.and.ldensity.and.lhydro) then
         if (lfirst.and.ldt) advec_cs2=p%cs2*dxyz_2
         if (headtt.or.ldebug) &
