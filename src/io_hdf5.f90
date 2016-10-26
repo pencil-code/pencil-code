@@ -24,6 +24,8 @@ module Io
   interface output_hdf5
     module procedure output_hdf5_0D
     module procedure output_hdf5_1D
+    module procedure output_hdf5_3D
+    module procedure output_hdf5_4D
   endinterface
 !
   interface write_persist
@@ -58,6 +60,7 @@ module Io
 !
   integer :: local_type, global_type, h5_err
   integer(HID_T) :: h5_file, h5_dset, h5_plist, h5_fspace, h5_mspace, h5_dspace
+  integer(HID_T) :: h5t_native_type
   integer, parameter :: n_dims = 3
   integer(kind=8), dimension(n_dims+1) :: local_size, local_subsize, local_start
   integer(kind=8), dimension(n_dims+1) :: global_size, global_subsize, global_start
@@ -72,7 +75,7 @@ module Io
 !
 !  04-Jul-2011/Boudin.KIS: coded
 !
-      use Mpicomm, only: stop_it_if_any
+      use Mpicomm, only: mpi_precision, stop_it_if_any
 !
 !  identify version number
 !
@@ -147,7 +150,13 @@ module Io
 !
       if (lread_from_other_prec) &
         call warning('register_io','Reading from other precision not implemented')
-
+!
+      if (mpi_precision == MPI_REAL) then
+        h5t_native_type = H5T_NATIVE_REAL
+      else
+        h5t_native_type = H5T_NATIVE_DOUBLE
+      endif
+!
     endsubroutine register_io
 !***********************************************************************
     subroutine directory_names
@@ -263,7 +272,7 @@ module Io
       character (len=*), intent(in) :: name
       real, intent(in) :: data
 !
-      call output_hdf5 (name, (/ data /), 1)
+      call output_hdf5_1D (name, (/ data /), 1)
 !
     endsubroutine output_hdf5_0D
 !***********************************************************************
@@ -273,20 +282,14 @@ module Io
 !
 !  24-Oct-2016/PABourdin: coded
 !
-      use Mpicomm, only: mpi_precision, stop_it_if_any
+      use Mpicomm, only: stop_it_if_any
 !
       character (len=*), intent(in) :: name
       integer, intent(in) :: nv
       real, dimension (nv), intent(in) :: data
 !
-      integer(HID_T) :: h5t_native_type
       integer(kind=8), dimension(1) :: size
 !
-      if (mpi_precision == MPI_REAL) then
-        h5t_native_type = H5T_NATIVE_REAL
-      else
-        h5t_native_type = H5T_NATIVE_DOUBLE
-      endif
       size = (/ nv /)
 !
       if (nv <= 1) then
@@ -314,6 +317,29 @@ module Io
 !
     endsubroutine output_hdf5_1D
 !***********************************************************************
+    subroutine output_hdf5_3D(name, data)
+!
+      character (len=*), intent(in) :: name
+      real, dimension (mx,my,mz), intent(in) :: data
+!
+      call output_hdf5_4D (name, data, 1)
+!
+    endsubroutine output_hdf5_3D
+!***********************************************************************
+    subroutine output_hdf5_4D(name, data, nv)
+!
+!  Write HDF5 dataset from a distributed 3D or 4D array.
+!
+!  26-Oct-2016/PABourdin: coded
+!
+      use Mpicomm, only: stop_it_if_any
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: nv
+      real, dimension (mx,my,mz,nv), intent(in) :: data
+!
+    endsubroutine output_hdf5_4D
+!***********************************************************************
     subroutine output_snap(a, nv, file, mode)
 !
 !  Write snapshot file, always write mesh and time, could add other things.
@@ -321,7 +347,7 @@ module Io
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
 !
-      use Mpicomm, only: globalize_xy, collect_grid, mpi_precision, stop_it_if_any
+      use Mpicomm, only: globalize_xy, collect_grid, stop_it_if_any
 !
       integer, intent(in) :: nv
       real, dimension (mx,my,mz,nv), intent(in) :: a
@@ -330,7 +356,6 @@ module Io
 !
       real, dimension (:), allocatable :: gx, gy, gz
       integer :: alloc_err
-      integer(HID_T) :: h5t_native_type
       integer(kind=8), dimension (n_dims+1) :: h5_stride, h5_count
       integer, dimension(MPI_STATUS_SIZE) :: status
       logical :: lwrite_add
@@ -349,14 +374,6 @@ module Io
 !
       call h5open_f (h5_err)
       if (h5_err /= 0) call fatal_error ('output_snap', 'initialize parallel HDF5 library', .true.)
-!
-! Determine native data type
-!
-      if (mpi_precision == MPI_REAL) then
-        h5t_native_type = H5T_NATIVE_REAL
-      else
-        h5t_native_type = H5T_NATIVE_DOUBLE
-      endif
 !
 ! Setup file access property list.
 !
