@@ -422,6 +422,7 @@ module Register
 !
       use Boundcond,      only: finalize_boundcond
       use Cdata
+      use IO,             only: finalize_io
       use Special,        only: finalize_special
       use Deriv,          only: finalize_deriv
       use Special,        only: finalize_mult_special
@@ -431,8 +432,8 @@ module Register
       call finalize_special(f)
       call finalize_boundcond(f)
       call finalize_deriv
-!
       call finalize_mult_special
+      call finalize_io
 !
     endsubroutine finalize_modules
 !***********************************************************************

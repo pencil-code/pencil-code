@@ -97,6 +97,10 @@ module Io
 
     endsubroutine register_io
 !***********************************************************************
+    subroutine finalize_io
+!
+    endsubroutine finalize_io
+!***********************************************************************
     subroutine directory_names
 !
 !  Set up the directory names:
