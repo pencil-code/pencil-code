@@ -292,7 +292,7 @@ module Io
       if (nv <= 1) then
         call h5screate_f (H5S_SCALAR_F, h5_dspace, h5_err)
         if (h5_err /= 0) call fatal_error ('output_hdf5', 'create scalar data space "'//name//'"', .true.)
-        call h5sset_extent_simple_f (h5_dspace, 1, size(1), size(1), h5_err) 
+        call h5sset_extent_simple_f (h5_dspace, 0, size(1), size(1), h5_err) 
       else
         call h5screate_f (H5S_SIMPLE_F, h5_dspace, h5_err)
         if (h5_err /= 0) call fatal_error ('output_hdf5', 'create simple data space "'//name//'"', .true.)
