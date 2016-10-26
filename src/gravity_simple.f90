@@ -513,7 +513,7 @@ module Gravity
 !  nb: 331.5 is conversion factor: 10^-9 cm/s^2 -> kpc/Gyr^2)  (/= 321.1 ?!?)
 !AB: These numbers should be inserted in the appropriate units.
 !AB: As it is now, it can never make much sense.
-        gravz_zpencil = -(g_A*z/sqrt(z**2+g_B**2) + g_C*z/g_D)
+        gravz_zpencil = -(g_A*z/sqrt(z**2+g_B**2) - g_C*z/g_D)
 !
       case ('Galactic-hs')
         if (lroot) print*,'Galactic hydrostatic equilibrium gravity profile'
