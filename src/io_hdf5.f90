@@ -1,7 +1,7 @@
 ! $Id$
 !
 !  I/O via the HDF5 hyperslab-by-chunk IO routines.
-!  (storing data into one file, e.g. data/allprocs/var.h5)
+!  (storing data into one file, e.g. data/allprocs/VAR#.h5)
 !
 !  The data format is self-contained. Only outer ghost-layers are stored.
 !
