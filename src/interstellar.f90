@@ -3273,7 +3273,7 @@ module Interstellar
           rho(1:nx)=0.
           mask(1:nx)=0
         endwhere
-        tmp(1)=tmp(1)+sum(rho)
+        tmp(1)=tmp(1)+sum(rho*dVol)
         tmp(2)=tmp(2)+sum(mask)
       enddo
       enddo
@@ -3288,7 +3288,7 @@ module Interstellar
         write(0,*) 'iproc:',iproc,':tmp2 = ', tmp2
         call fatal_error("interstellar.get_properties","Dividing by zero?")
       else
-        rhom=tmp2(1)/tmp2(2)
+        rhom=tmp2(1)/tmp2(2)*0.75*pi_1/remnant%feat%radius**3
       endif
 !
 !  Determine the density rarification ratio in order to avoid exxessive spikes
@@ -3367,7 +3367,7 @@ module Interstellar
           rho(1:nx)=0.
           mask(1:nx)=0
         endwhere
-        tmp(1)=tmp(1)+sum(rho)
+        tmp(1)=tmp(1)+sum(rho*dVol)
         tmp(2)=tmp(2)+sum(mask)
       enddo
       enddo
@@ -3383,7 +3383,7 @@ module Interstellar
         write(0,*) 'tmp2 = ', tmp2
         call fatal_error("interstellar.get_props_check","Dividing by zero?")
       else
-        rhom=tmp2(1)/tmp2(2)
+        rhom=tmp2(1)/tmp2(2)*0.75*pi_1/remnant%feat%radius**3
       endif
 !
     endsubroutine get_props_check
