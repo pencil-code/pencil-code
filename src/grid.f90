@@ -1045,6 +1045,10 @@ module Grid
           dVol_z=1.
         endif
 !
+!  single value volume element dVol applicable only to Cartesian equidistant grid
+!
+        if (lequidistant) dVol=dVol_x*dVol_y*dVol_z
+!
 !  Spherical coordinate system
 !
       elseif (lspherical_coords) then
@@ -2320,6 +2324,8 @@ module Grid
           dxyz_4 = dline_1(:,1)**4 + dline_1(:,2)**4 + dline_1(:,3)**4
           dxyz_6 = dline_1(:,1)**6 + dline_1(:,2)**6 + dline_1(:,3)**6
         endif
+!
+        dVol = dVol_x(l1:l2)*dVol_y(m)*dVol_z(n)
 !
 !      endif obsolete
 !
