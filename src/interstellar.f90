@@ -3445,20 +3445,20 @@ module Interstellar
 !
       dx_SN=x(l1:l2)-SNR%feat%x
       if (lperi(1)) then
-        where (dx_SN > Lx/2.) dx_SN=dx_SN-Lx
-        where (dx_SN < -Lx/2.) dx_SN=dx_SN+Lx
+        where (dx_SN > xyz1(1)) dx_SN=dx_SN-Lx
+        where (dx_SN < xyz0(1)) dx_SN=dx_SN+Lx
       endif
 !
       dy_SN=y(m)-SNR%feat%y
       if (lperi(2)) then
-        if (dy_SN > Ly/2.) dy_SN=dy_SN-Ly
-        if (dy_SN < -Ly/2.) dy_SN=dy_SN+Ly
+        if (dy_SN > xyz1(2)) dy_SN=dy_SN-Ly
+        if (dy_SN < xyz0(2)) dy_SN=dy_SN+Ly
       endif
 !
       dz_SN=z(n)-SNR%feat%z
       if (lperi(3)) then
-        if (dz_SN > Lz/2.) dz_SN=dz_SN-Lz
-        if (dz_SN < -Lz/2.) dz_SN=dz_SN+Lz
+        if (dz_SN > xyz1(3)) dz_SN=dz_SN-Lz
+        if (dz_SN < xyz0(3)) dz_SN=dz_SN+Lz
       endif
 !
       dr2_SN=dx_SN**2 + dy_SN**2 + dz_SN**2
