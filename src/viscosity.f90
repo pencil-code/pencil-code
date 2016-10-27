@@ -953,6 +953,7 @@ module Viscosity
 !
       if (idiag_meshRemax/=0.or.idiag_Reshock/=0) lpenc_diagnos(i_u2)=.true.
       if (idiag_visc_heatm/=0) lpenc_diagnos(i_visc_heat)=.true.
+      if (idiag_visc_heatm/=0) lpenc_diagnos(i_sij2)=.true.
       if (idiag_epsK/=0.or.idiag_epsK_LES/=0.or.idiag_epsKmz/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_sij2)=.true.
