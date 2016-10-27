@@ -1047,7 +1047,7 @@ module Grid
 !
 !  single value volume element dVol applicable only to Cartesian equidistant grid
 !
-        if (lequidistant) dVol=dVol_x*dVol_y*dVol_z
+        if (all(lequidist)) dVol=dVol_x(l1:l2)*dVol_y(m1)*dVol_z(n1)
 !
 !  Spherical coordinate system
 !

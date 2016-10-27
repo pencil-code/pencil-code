@@ -155,7 +155,12 @@ module Particles_main
 !
       if (rhop_const /= 0.0) then
         rhop_swarm = rhop_const / (real(npar) / nwgrid)
-        if (all(lequidist)) mp_swarm = rhop_swarm * dvol
+        if (all(lequidist).and.lcartesian_coords) then
+          mp_swarm = rhop_swarm * dVol(l1)
+        else
+          call fatal_error('particles_initialize_modules',&
+              'dVol only defined for equidistant Cartesian coordinates')
+        endif
         if (mpmat /= 0.0 .or. np_swarm /= 0.0) then
           if (lparticles_radius) &
               call fatal_error('particles_initialize_modules', 'may not set mpmat or np_swarm when setting rhop_const')

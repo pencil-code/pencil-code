@@ -62,7 +62,7 @@ module Cdata
   logical :: lyinyang=.false., lyang=.false.
   integer :: iyinyang_intpol_type=BILIN
   integer :: nzgrid_eff=nzgrid
-  real :: drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
+  real :: drcyl,dsurfxy,dsurfyz,dsurfzx
   real, dimension (nx) :: r_mn,r1_mn,r2_mn,r2_weight
   real, dimension (my) :: sinth,sin1th,sin2th,costh,cotth,sinth_weight
   real, dimension (mz) :: sinph,cosph 

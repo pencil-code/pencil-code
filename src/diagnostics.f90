@@ -135,10 +135,6 @@ module Diagnostics
       dsurfyz=dyeff*dzeff
       dsurfzx=dzeff*dxeff
 !
-!  Calculate the volume element.
-!
-      dvol=dxeff*dyeff*dzeff
-!
 !  Calculate relative volume integral.
 !
       if (lproper_averages) then
