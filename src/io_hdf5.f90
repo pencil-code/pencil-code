@@ -486,18 +486,18 @@ module Io
           call output_hdf5 ('x', gx, mxgrid)
           call output_hdf5 ('y', gy, mygrid)
           call output_hdf5 ('z', gz, mzgrid)
-        endif
-        call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
-        if (lroot) then
-          call output_hdf5 ('dx_1', gx, mxgrid)
-          call output_hdf5 ('dy_1', gy, mygrid)
-          call output_hdf5 ('dz_1', gz, mzgrid)
           call output_hdf5 ('dx', dx)
           call output_hdf5 ('dy', dy)
           call output_hdf5 ('dz', dz)
           call output_hdf5 ('Lx', Lx)
           call output_hdf5 ('Ly', Ly)
           call output_hdf5 ('Lz', Lz)
+        endif
+        call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
+        if (lroot) then
+          call output_hdf5 ('dx_1', gx, mxgrid)
+          call output_hdf5 ('dy_1', gy, mygrid)
+          call output_hdf5 ('dz_1', gz, mzgrid)
         endif
         call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
         if (lroot) then
