@@ -327,10 +327,6 @@ module Interstellar
   real :: center_SN_y = impossible
   real :: center_SN_z = impossible
 !
-!  Volume element
-!
-  real :: dv
-!
 !  Cooling time diagnostic
 !
   integer :: idiag_taucmin=0
@@ -466,11 +462,6 @@ module Interstellar
       if (lroot.and.luniform_zdist_SNI) then
         print*,'initialize_interstellar: using UNIFORM z-distribution of SNI'
       endif
-!
-      dv=1.
-      if (nxgrid/=1) dv=dv*dx
-      if (nygrid/=1) dv=dv*dy
-      if (nzgrid/=1) dv=dv*dz
 !
       if (unit_system=='cgs') then
 !
@@ -1895,6 +1886,7 @@ module Interstellar
 !
       use General, only: random_number_wrapper
       use Mpicomm, only: mpiallreduce_sum
+      use Grid, only: get_grid_mn
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(1) :: franSN
@@ -1919,11 +1911,25 @@ module Interstellar
 !
       if (lscale_SN_interval) then
         if (ldensity_nolog) then
-          rhom=sum(f(l1:l2,m1:m2,n1:n2,irho))/(nx*ny*nz)
+          if (lcartesian_coords.and.all(lequidist)) then
+            rhom=sum(f(l1:l2,m1:m2,n1:n2,irho)*dVol(1))
+          else
+            do n=n1,n2; do m=m1,m2
+              call get_grid_mn
+              rhom=sum(f(l1:l2,m,n,irho)*dVol)
+            enddo; enddo
+          endif
         else
-          rhom=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho)))/(nx*ny*nz)
+          if (lcartesian_coords.and.all(lequidist)) then
+            rhom=sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho))*dVol(1))
+          else
+            do n=n1,n2; do m=m1,m2
+              call get_grid_mn
+              rhom=sum(exp(f(l1:l2,m,n,ilnrho))*dVol)
+            enddo; enddo
+          endif
         endif
-        mpirho=rhom/ncpus
+        mpirho=rhom/box_volume
         call mpiallreduce_sum(mpirho,rhom)
         if (rhom<old_rhom .and. rhom>SN_interval_rhom) then
           scaled_interval=t_interval_SNII!*(SN_interval_rhom/rhom)
@@ -1947,6 +1953,7 @@ module Interstellar
     subroutine set_interval(f,t_interval,l_SNI)
 !
       use Mpicomm, only: mpireduce_sum, mpibcast_real
+      use Grid, only: get_grid_mn
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real :: t_interval, surface_massII
@@ -1971,9 +1978,23 @@ module Interstellar
 !  Mannucci et al A&A 433, 807-814 (2005)
 !
       if (ldensity_nolog) then
-        disk_massII=f(l1:l2,m1:m2,n1:n2,irho)
+        if (lcartesian_coords.and.all(lequidist)) then
+          disk_massII=f(l1:l2,m1:m2,n1:n2,irho)*dVol(1)
+        else
+          do n=n1,n2; do m=m1,m2
+            call get_grid_mn
+            disk_massII(:,m-nghost,n-nghost)=f(l1:l2,m,n,irho)*dVol
+          enddo; enddo
+        endif
       else
-        disk_massII=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+        if (lcartesian_coords.and.all(lequidist)) then
+          disk_massII=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))*dVol(1)
+        else
+          do n=n1,n2; do m=m1,m2
+            call get_grid_mn
+            disk_massII(:,m-nghost,n-nghost)=exp(f(l1:l2,m,n,ilnrho))*dVol
+          enddo; enddo
+        endif
       endif
 !
       do iz=1,nz
@@ -1984,7 +2005,7 @@ module Interstellar
       msumtmpII=surface_massII
       call mpireduce_sum(msumtmpII,MmpiII)
       call mpibcast_real(MmpiII)
-      surface_massII=MmpiII*dv
+      surface_massII=MmpiII
 !
       if (l_SNI) then
 !        t_interval=solar_mass/(SNI_mass_rate+0.35*SNII_mass_rate)/ &
@@ -2009,6 +2030,7 @@ module Interstellar
       use General, only: random_number_wrapper
       use Mpicomm, only: mpireduce_sum, mpibcast_real
       use EquationOfState, only: eoscalc, ilnrho_ss, irho_ss
+      use Grid, only: get_grid_mn
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(nx) :: rho, rho_cloud, lnTT, TT, yH
@@ -2053,6 +2075,7 @@ module Interstellar
 !
         do n=n1,n2
         do m=m1,m2
+          if (.not. lcartesian_coords .or. .not.all(lequidist)) call get_grid_mn
           if (ldensity_nolog) then
             rho(1:nx)=f(l1:l2,m,n,irho)
             call eoscalc(irho_ss,f(l1:l2,m,n,irho),f(l1:l2,m,n,iss)&
@@ -2066,23 +2089,26 @@ module Interstellar
           rho_cloud(1:nx)=0.0
           where (rho(1:nx) >= cloud_rho .and. TT(1:nx) <= cloud_TT) &
               rho_cloud(1:nx) = rho(1:nx)
-          cloud_mass=cloud_mass+sum(rho_cloud(1:nx))
+!
+!  Multiply by volume element dVol to find total mass.
+!
+          cloud_mass=cloud_mass+sum(rho_cloud(1:nx)*dVol)
         enddo
         enddo
 !
-!  Sum the total over all processors and multiply by dv to find total mass.
+!  Sum the total over all processors to find total mass.
 !
         fsum1_tmp=cloud_mass
         call mpireduce_sum(fsum1_tmp,fsum1)
         call mpibcast_real(fsum1)
-        cloud_mass_dim=fsum1*dv
+        cloud_mass_dim=fsum1
 !
         if (ip<14) print*, &
             'check_SNII: cloud_mass,it,iproc=',cloud_mass,it,iproc
 !
         if (lroot .and. ip < 14) &
-            print*, 'check_SNII: cloud_mass_dim,fsum(1),dv:', &
-            cloud_mass_dim,fsum1,dv
+            print*, 'check_SNII: cloud_mass_dim,fsum(1):', &
+            cloud_mass_dim,fsum1
 !
 !  Additional contraint on the interval between SNII events. The total time
 !  elapsed since last SNII is dtsn. Probability of next event increases with
@@ -2793,6 +2819,7 @@ module Interstellar
       use Mpicomm, only: mpireduce_max, mpibcast_real, &
                          mpireduce_sum, mpibcast_int
       use General, only: keep_compiler_quiet
+      use Grid, only: get_grid_mn
 !
       real, intent(inout), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant), intent(inout) :: SNR
@@ -2954,6 +2981,7 @@ module Interstellar
       maxlnTT=-10.0
       do n=n1,n2
       do m=m1,m2
+        if (.not. lcartesian_coords .or. .not.all(lequidist)) call get_grid_mn
         SNR%indx%state=SNstate_waiting
 !
 !  Calculate the distances to the SN origin for all points in the current
@@ -2970,7 +2998,10 @@ module Interstellar
           lnrho=f(l1:l2,m,n,ilnrho)
           rho_old=exp(lnrho)
         endif
-        site_rho=rho_old
+!
+!  multiply by volume element to derive site mass
+!
+        site_rho=rho_old*dVol
 !
 !  Calculate the ambient mass for the remnant.
 !
@@ -3035,13 +3066,14 @@ module Interstellar
       mpi_tmp=site_mass
       call mpireduce_sum(mpi_tmp,mmpi)
       call mpibcast_real(mmpi)
-      site_mass=mmpi*dv
+      site_mass=mmpi
 !
       SNR%feat%EE=0.
       SNR%feat%MM=0.
       !EE_SN2=0.
       do n=n1,n2
       do m=m1,m2
+        if (.not. lcartesian_coords .or. .not.all(lequidist)) call get_grid_mn
 !
 !  Calculate the distances to the SN origin for all points in the current
 !  pencil and store in the dr2_SN global array.
@@ -3125,9 +3157,9 @@ module Interstellar
       dmpi2_tmp=(/ SNR%feat%MM, SNR%feat%EE, SNR%feat%CR /)
       call mpireduce_sum(dmpi2_tmp,dmpi2,3)
       call mpibcast_real(dmpi2,3)
-      SNR%feat%MM=dmpi2(1)*dv
-      SNR%feat%EE=dmpi2(2)*dv+ekintot_new-ekintot !include added kinetic energy
-      SNR%feat%CR=dmpi2(3)*dv
+      SNR%feat%MM=dmpi2(1)
+      SNR%feat%EE=dmpi2(2)+ekintot_new-ekintot !include added kinetic energy
+      SNR%feat%CR=dmpi2(3)
 !
 ! FAG need to consider effect of CR and fcr on total energy for data collection
 ! and the energy budget applied to the SNR similar to kinetic energy?
@@ -3143,7 +3175,7 @@ module Interstellar
       if (lroot) then
         open(1,file=trim(datadir)//'/sn_series.dat',position='append')
         print*, 'explode_SN:    step, time = ', it,t
-        print*, 'explode_SN:            dv = ', dv
+        print*, 'explode_SN:          dVol = ', dVol(1)
         print*, 'explode_SN:       SN type = ', SNR%indx%SN_type
         print*, 'explode_SN: proc, l, m, n = ', SNR%indx%iproc, SNR%indx%l,SNR%indx%m,SNR%indx%n
         print*, 'explode_SN:       x, y, z = ', SNR%feat%x,SNR%feat%y,SNR%feat%z
@@ -3190,6 +3222,7 @@ module Interstellar
 !
       use Sub
       use Mpicomm
+      use Grid, only: get_grid_mn
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant) :: remnant
@@ -3210,6 +3243,7 @@ module Interstellar
       rhomax=0.0
       do n=n1,n2
       do m=m1,m2
+        if (.not. lcartesian_coords .or. .not.all(lequidist)) call get_grid_mn
         call proximity_SN(remnant)
         if (ldensity_nolog) then
           rho=f(l1:l2,m,n,irho)
@@ -3233,7 +3267,7 @@ module Interstellar
         uu=f(l1:l2,m,n,iuu:iuu+2)
         where (abs(f(l1:l2,m,n,iuu:iuu+2))<sqrt(tini)) uu=0.0
         call dot2(uu,u2)
-        tmp(3)=tmp(3)+sum(rho*u2)
+        tmp(3)=tmp(3)+sum(rho*u2*dVol)
         mask(1:nx)=1
         where (dr2_SN(1:nx) > radius2)
           rho(1:nx)=0.
@@ -3249,7 +3283,7 @@ module Interstellar
 !
       call mpireduce_sum(tmp,tmp2,3)
       call mpibcast_real(tmp2,3)
-      ekintot=0.5*tmp2(3)*dv
+      ekintot=0.5*tmp2(3)
       if (abs(tmp2(2)) < tini) then
         write(0,*) 'iproc:',iproc,':tmp2 = ', tmp2
         call fatal_error("interstellar.get_properties","Dividing by zero?")
@@ -3282,6 +3316,7 @@ module Interstellar
 !
       use Sub
       use Mpicomm
+      use Grid, only: get_grid_mn
 !
       real, intent(in), dimension(mx,my,mz,mfarray) :: f
       type (SNRemnant) :: remnant
@@ -3304,6 +3339,7 @@ module Interstellar
       tmp=0.0
       do n=n1,n2
       do m=m1,m2
+        if (.not. lcartesian_coords .or. .not.all(lequidist)) call get_grid_mn
         call proximity_SN(remnant)
         if (ldensity_nolog) then
           rho=f(l1:l2,m,n,irho)
@@ -3325,7 +3361,7 @@ module Interstellar
         endif
         where (abs(f(l1:l2,m,n,iuu:iuu+2))<sqrt(tini)) uu=0.0
         call dot2(uu,u2)
-        tmp(3)=tmp(3)+sum(rho*u2)
+        tmp(3)=tmp(3)+sum(rho*u2*dVol)
         mask=1
         where (dr2_SN(1:nx) > radius2)
           rho(1:nx)=0.
@@ -3342,7 +3378,7 @@ module Interstellar
       tmp2=tmp
       call mpireduce_sum(tmp,tmp2,3)
       call mpibcast_real(tmp2,3)
-      ekintot=0.5*tmp2(3)*dv
+      ekintot=0.5*tmp2(3)
       if (abs(tmp2(2)) < tini) then
         write(0,*) 'tmp2 = ', tmp2
         call fatal_error("interstellar.get_props_check","Dividing by zero?")
@@ -3471,7 +3507,7 @@ module Interstellar
       endif
 !
       deltaEE(1:nx)=c_SN*profile_SN(1:nx) ! spatial energy density
-      EEtot_SN=EEtot_SN+sum(deltaEE(1:nx))
+      EEtot_SN=EEtot_SN+sum(deltaEE(1:nx)*dVol)
 !
     endsubroutine injectenergy_SN
 !*****************************************************************************
@@ -3501,7 +3537,7 @@ module Interstellar
       endif
 !
       deltarho(1:nx)=cmass_SN*profile_SN(1:nx) ! spatial mass density
-      MMtot_SN=MMtot_SN+sum(deltarho(1:nx))
+      MMtot_SN=MMtot_SN+sum(deltarho(1:nx)*dVol)
 !
     endsubroutine injectmass_SN
 !***********************************************************************
