@@ -1909,6 +1909,7 @@ module Interstellar
 !        a high index iSNdx can be used to increase the sensitivity, but once
 !        net mass loss occurs the index is set to 1, to avoid over heating  
 !
+      rhom=0.
       if (lscale_SN_interval) then
         if (ldensity_nolog) then
           if (lcartesian_coords.and.all(lequidist)) then
@@ -1916,7 +1917,7 @@ module Interstellar
           else
             do n=n1,n2; do m=m1,m2
               call get_grid_mn
-              rhom=sum(f(l1:l2,m,n,irho)*dVol)
+              rhom=rhom+sum(f(l1:l2,m,n,irho)*dVol)
             enddo; enddo
           endif
         else
@@ -1925,7 +1926,7 @@ module Interstellar
           else
             do n=n1,n2; do m=m1,m2
               call get_grid_mn
-              rhom=sum(exp(f(l1:l2,m,n,ilnrho))*dVol)
+              rhom=rhom+sum(exp(f(l1:l2,m,n,ilnrho))*dVol)
             enddo; enddo
           endif
         endif
@@ -3288,7 +3289,7 @@ module Interstellar
         write(0,*) 'iproc:',iproc,':tmp2 = ', tmp2
         call fatal_error("interstellar.get_properties","Dividing by zero?")
       else
-        rhom=tmp2(1)/tmp2(2)*0.75*pi_1/remnant%feat%radius**3
+        rhom=tmp2(1)*0.75*pi_1/remnant%feat%radius**3
       endif
 !
 !  Determine the density rarification ratio in order to avoid exxessive spikes
@@ -3383,7 +3384,7 @@ module Interstellar
         write(0,*) 'tmp2 = ', tmp2
         call fatal_error("interstellar.get_props_check","Dividing by zero?")
       else
-        rhom=tmp2(1)/tmp2(2)*0.75*pi_1/remnant%feat%radius**3
+        rhom=tmp2(1)*0.75*pi_1/remnant%feat%radius**3
       endif
 !
     endsubroutine get_props_check
