@@ -22,6 +22,8 @@ module Io
   include 'record_types.h'
 !
   interface output_hdf5
+    module procedure output_hdf5_string
+    module procedure output_hdf5_int
     module procedure output_hdf5_0D
     module procedure output_hdf5_1D
     module procedure output_hdf5_3D
@@ -283,6 +285,67 @@ module Io
 !
     endsubroutine distribute_grid
 !***********************************************************************
+    subroutine output_hdf5_string(name, data)
+!
+      character (len=*), intent(in) :: name
+      character (len=*), intent(in) :: data
+!
+      integer(HID_T) :: h5_strtype
+      integer(HSIZE_T), dimension(2) :: size
+      character (len=len(data)), dimension(1) :: str_data
+      integer(SIZE_T), dimension(1) :: str_len
+!
+      str_len(1) = len_trim (data)
+      size(1) = str_len(1)
+      size(2) = 1
+      str_data(1) = data
+!
+      ! create data space
+      call H5Tcopy_f (H5T_STRING, h5_strtype, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'copy string data space type "'//name//'"', .true.)
+      call H5Tset_strpad_f (h5_strtype, H5T_STR_NULLPAD_F, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'modify string data space type "'//name//'"', .true.)
+      call h5screate_simple_f (1, size(1), h5_dspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create string data space "'//name//'"', .true.)
+      ! create dataset
+      call h5dcreate_f (h5_file, name, h5_strtype, h5_dspace, h5_dset, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create string dataset "'//name//'"', .true.)
+      ! write dataset
+      call h5dwrite_vl_f (h5_dset, h5_strtype, str_data, size, str_len, h5_err, h5_dspace)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'write string data "'//name//'"', .true.)
+      ! close dataset and data space
+      call h5dclose_f (h5_dset, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close string dataset "'//name//'"', .true.)
+      call h5sclose_f (h5_dspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close string data space "'//name//'"', .true.)
+!
+    endsubroutine output_hdf5_string
+!***********************************************************************
+    subroutine output_hdf5_int(name, data)
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: data
+!
+      integer(HID_T) :: h5_inttype
+      integer(kind=8), dimension(1) :: size = (/ 1 /)
+!
+      ! create data space
+      call h5screate_simple_f (1, size(1), h5_dspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create integer data space "'//name//'"', .true.)
+      ! create dataset
+      call h5dcreate_f (h5_file, name, H5T_NATIVE_INTEGER, h5_dspace, h5_dset, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create integer dataset "'//name//'"', .true.)
+      ! write dataset
+      call h5dwrite_f (h5_dset, H5T_NATIVE_INTEGER, data, size, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'write integer data "'//name//'"', .true.)
+      ! close dataset and data space
+      call h5dclose_f (h5_dset, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close integer dataset "'//name//'"', .true.)
+      call h5sclose_f (h5_dspace, h5_err)
+      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close integer data space "'//name//'"', .true.)
+!
+    endsubroutine output_hdf5_int
+!***********************************************************************
     subroutine output_hdf5_0D(name, data)
 !
       character (len=*), intent(in) :: name
@@ -420,7 +483,7 @@ module Io
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
 !
-      use Mpicomm, only: globalize_xy, collect_grid, stop_it_if_any
+      use Mpicomm, only: globalize_xy, collect_grid, mpi_precision, stop_it_if_any
       use Sub, only: parallel_file_exists
 !
       integer, intent(in) :: nv
@@ -508,6 +571,34 @@ module Io
           call output_hdf5 ('grid/dx_tilde', gx, mxgrid)
           call output_hdf5 ('grid/dy_tilde', gy, mygrid)
           call output_hdf5 ('grid/dz_tilde', gz, mzgrid)
+          call h5gcreate_f (h5_file, 'dim', h5_group, h5_err)
+          if (h5_err /= 0) call fatal_error ('output_snap', 'create group "dim"', .true.)
+          call h5gclose_f (h5_group, h5_err)
+          if (h5_err /= 0) call fatal_error ('output_snap', 'close group "dim"', .true.)
+          call output_hdf5 ('dim/mx', nxgrid+2*nghost)
+          call output_hdf5 ('dim/my', nxgrid+2*nghost)
+          call output_hdf5 ('dim/mz', nxgrid+2*nghost)
+          call output_hdf5 ('dim/nx', nxgrid)
+          call output_hdf5 ('dim/ny', nygrid)
+          call output_hdf5 ('dim/nz', nzgrid)
+          call output_hdf5 ('dim/l1', nghost)
+          call output_hdf5 ('dim/m1', nghost)
+          call output_hdf5 ('dim/n1', nghost)
+          call output_hdf5 ('dim/l2', nghost+nxgrid-1)
+          call output_hdf5 ('dim/m2', nghost+nygrid-1)
+          call output_hdf5 ('dim/n2', nghost+nzgrid-1)
+          call output_hdf5 ('dim/nghost', nghost)
+          call output_hdf5 ('dim/mvar', mvar)
+          call output_hdf5 ('dim/maux', maux)
+          call output_hdf5 ('dim/mglobal', mglobal)
+          call output_hdf5 ('dim/nprocx', nprocx)
+          call output_hdf5 ('dim/nprocy', nprocy)
+          call output_hdf5 ('dim/nprocz', nprocz)
+          if (mpi_precision == MPI_REAL) then
+            call output_hdf5 ('dim/precision', 'S')
+          else
+            call output_hdf5 ('dim/precision', 'D')
+          endif
           call h5fclose_f (h5_file, h5_err)
           if (h5_err /= 0) call fatal_error ('output_snap', 'reclose: "'//trim (filename)//'"', .true.)
         endif
