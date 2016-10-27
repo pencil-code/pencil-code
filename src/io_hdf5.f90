@@ -66,7 +66,7 @@ module Io
   integer :: persist_last_id = -max_int
 !
   integer :: local_type, global_type, h5_err
-  integer(HID_T) :: h5_file, h5_dset, h5_plist, h5_fspace, h5_mspace, h5_dspace, h5_ntype
+  integer(HID_T) :: h5_file, h5_dset, h5_plist, h5_fspace, h5_mspace, h5_dspace, h5_ntype, h5_group
   integer, parameter :: n_dims = 3
   integer(kind=8), dimension(n_dims+1) :: local_size, local_subsize, local_start
   integer(kind=8), dimension(n_dims+1) :: global_size, global_subsize, global_start
@@ -483,27 +483,31 @@ module Io
           if (h5_err /= 0) call fatal_error ('output_snap', 'reopen: "'//trim (filename)//'"', .true.)
           t_sp = t
           call output_hdf5 ('t', t)
-          call output_hdf5 ('x', gx, mxgrid)
-          call output_hdf5 ('y', gy, mygrid)
-          call output_hdf5 ('z', gz, mzgrid)
-          call output_hdf5 ('dx', dx)
-          call output_hdf5 ('dy', dy)
-          call output_hdf5 ('dz', dz)
-          call output_hdf5 ('Lx', Lx)
-          call output_hdf5 ('Ly', Ly)
-          call output_hdf5 ('Lz', Lz)
+          call h5gcreate_f (h5_file, 'grid', h5_group, h5_err)
+          if (h5_err /= 0) call fatal_error ('output_snap', 'create group "grid"', .true.)
+          call h5gclose_f (h5_group, h5_err)
+          if (h5_err /= 0) call fatal_error ('output_snap', 'close group "grid"', .true.)
+          call output_hdf5 ('grid/x', gx, mxgrid)
+          call output_hdf5 ('grid/y', gy, mygrid)
+          call output_hdf5 ('grid/z', gz, mzgrid)
+          call output_hdf5 ('grid/dx', dx)
+          call output_hdf5 ('grid/dy', dy)
+          call output_hdf5 ('grid/dz', dz)
+          call output_hdf5 ('grid/Lx', Lx)
+          call output_hdf5 ('grid/Ly', Ly)
+          call output_hdf5 ('grid/Lz', Lz)
         endif
         call collect_grid (dx_1, dy_1, dz_1, gx, gy, gz)
         if (lroot) then
-          call output_hdf5 ('dx_1', gx, mxgrid)
-          call output_hdf5 ('dy_1', gy, mygrid)
-          call output_hdf5 ('dz_1', gz, mzgrid)
+          call output_hdf5 ('grid/dx_1', gx, mxgrid)
+          call output_hdf5 ('grid/dy_1', gy, mygrid)
+          call output_hdf5 ('grid/dz_1', gz, mzgrid)
         endif
         call collect_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
         if (lroot) then
-          call output_hdf5 ('dx_tilde', gx, mxgrid)
-          call output_hdf5 ('dy_tilde', gy, mygrid)
-          call output_hdf5 ('dz_tilde', gz, mzgrid)
+          call output_hdf5 ('grid/dx_tilde', gx, mxgrid)
+          call output_hdf5 ('grid/dy_tilde', gy, mygrid)
+          call output_hdf5 ('grid/dz_tilde', gz, mzgrid)
           call h5fclose_f (h5_file, h5_err)
           if (h5_err /= 0) call fatal_error ('output_snap', 'reclose: "'//trim (filename)//'"', .true.)
         endif
@@ -702,27 +706,27 @@ module Io
           call h5fopen_f (trim (filename), H5F_ACC_RDONLY_F, h5_file, h5_err)
           if (h5_err /= 0) call fatal_error ('input_snap', 'reopen: "'//trim (filename)//'"', .true.)
           call input_hdf5 ('t', t_sp)
-          call input_hdf5 ('x', gx, mxgrid)
-          call input_hdf5 ('y', gy, mygrid)
-          call input_hdf5 ('z', gz, mzgrid)
+          call input_hdf5 ('grid/x', gx, mxgrid)
+          call input_hdf5 ('grid/y', gy, mygrid)
+          call input_hdf5 ('grid/z', gz, mzgrid)
         endif
         call distribute_grid (x, y, z, gx, gy, gz)
         if (lroot) then
-          call input_hdf5 ('dx', dx)
-          call input_hdf5 ('dy', dy)
-          call input_hdf5 ('dz', dz)
-          call input_hdf5 ('Lx', Lx)
-          call input_hdf5 ('Ly', Ly)
-          call input_hdf5 ('Lz', Lz)
-          call input_hdf5 ('dx_1', gx, mxgrid)
-          call input_hdf5 ('dy_1', gy, mygrid)
-          call input_hdf5 ('dz_1', gz, mzgrid)
+          call input_hdf5 ('grid/dx', dx)
+          call input_hdf5 ('grid/dy', dy)
+          call input_hdf5 ('grid/dz', dz)
+          call input_hdf5 ('grid/Lx', Lx)
+          call input_hdf5 ('grid/Ly', Ly)
+          call input_hdf5 ('grid/Lz', Lz)
+          call input_hdf5 ('grid/dx_1', gx, mxgrid)
+          call input_hdf5 ('grid/dy_1', gy, mygrid)
+          call input_hdf5 ('grid/dz_1', gz, mzgrid)
         endif
         call distribute_grid (dx_1, dy_1, dz_1, gx, gy, gz)
         if (lroot) then
-          call input_hdf5 ('dx_tilde', gx, mxgrid)
-          call input_hdf5 ('dy_tilde', gy, mygrid)
-          call input_hdf5 ('dz_tilde', gz, mzgrid)
+          call input_hdf5 ('grid/dx_tilde', gx, mxgrid)
+          call input_hdf5 ('grid/dy_tilde', gy, mygrid)
+          call input_hdf5 ('grid/dz_tilde', gz, mzgrid)
         endif
         call distribute_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
         if (lroot) then
