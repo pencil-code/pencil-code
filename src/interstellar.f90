@@ -2220,6 +2220,8 @@ module Interstellar
 !  Determine position for next SN (w/ fixed scale-height).
 !  15-jul-14/luiz+fred: added SN horizontal clustering algorithm for SNII
 !                       70% probability SNII located within 300pc of previous
+!  27-oct-16/fred: z-location revised to use non-equidistant grid needs z from
+!                  each processor - use mpi on all procs not just root
 !
     use General, only: random_number_wrapper, random_seed_wrapper
     use Mpicomm, only: mpiallreduce_max, mpireduce_min, mpireduce_max,&
@@ -2232,7 +2234,7 @@ module Interstellar
 !  parameters required to determine the vertical centre of mass of the disk
 !
     real, dimension(nprocz) :: tmpz
-    real, dimension(nz) :: rhotmp
+    real, dimension(nz) :: rhotmp, probmpi
     integer, dimension(nprocx*nprocy) :: xyproc
     real :: rhomax, maxrho, rhosum
     real :: mpirho, mpiz
@@ -2312,8 +2314,12 @@ module Interstellar
       call mpibcast_real(mpiz,xyproc(1))
       zdisk = mpiz
     endif
+    if (lroot) print*,'position_SN_gaussianz: zdisk =',zdisk
 !
 !  Pick SN position (SNR%indx%l,SNR%indx%m,SNR%indx%n).
+!
+!
+!  Get 3 random numbers on all processors to keep rnd. generators in sync.
 !
     if (lreset_ism_seed) then
       seed=seed_reset
@@ -2321,78 +2327,64 @@ module Interstellar
       lreset_ism_seed=.false.
     endif
     call random_number_wrapper(fran3)
-    
-!
-!  Get 3 random numbers on all processors to keep rnd. generators in sync.
 !
 !  13-jul-15/fred: NB need to revisit OB clustering x,y not updated or time
 !  constrained. May need to include z also
 !
-    if (lroot) then
-      if (lOB_cluster .and. h_SN==h_SNII) then
-        if (t < t_cluster) then ! still using current cluster coords
-          previous_SNl = int(( x_cluster - xyz0(1) )/Lxyz(1))*nxgrid +1
-          previous_SNm = int(( y_cluster - xyz0(2) )/Lxyz(2))*nygrid +1
-          previous_SNn = int(( z_cluster - xyz0(3) )/Lxyz(3))*nzgrid +1
-          lm_range = 2*SN_clustering_radius*nxgrid/Lxyz(1)
-          if (fran3(1) < p_OB) then ! checks whether the SN is in a cluster
-            i=int(fran3(1)*lm_range/p_OB)+previous_SNl+1
-            SNR%indx%ipx=(i-1)/nx  ! uses integer division
-            SNR%indx%l=i-(SNR%indx%ipx*nx)+nghost
-!
-            i=int(fran3(1)*lm_range/p_OB)+previous_SNm+1
-            SNR%indx%ipy=(i-1)/ny  ! uses integer division
-            SNR%indx%m=i-(SNR%indx%ipy*ny)+nghost
-!
-            i=int(fran3(1)*lm_range/p_OB)+previous_SNn+1
-            SNR%indx%ipz=(i-1)/nz  ! uses integer division
-            SNR%indx%n=i-(SNR%indx%ipz*nz)+nghost
-          else ! outside cluster
-            i=int(fran3(1)*(nxgrid-lm_range)/(1.0-p_OB))+previous_SNl+1
-            if (i>nxgrid) i=i-nxgrid
-            SNR%indx%ipx=(i-1)/nx  ! uses integer division
-            SNR%indx%l=i-(SNR%indx%ipx*nx)+nghost
-!
-            i=int(fran3(1)*(nygrid-lm_range)/(1.0-p_OB))+previous_SNl+1
-            if (i>nygrid) i=i-nygrid
-            SNR%indx%ipy=(i-1)/ny  ! uses integer division
-            SNR%indx%m=i-(SNR%indx%ipy*ny)+nghost
-!
-            cum_prob_SN=0.0
-            do i=nzskip+1,nzgrid-nzskip
-              zn=z00+(i-1)*Lxyz(3)/(nzgrid-1)
-              cum_prob_SN(i)=cum_prob_SN(i-1)+exp(-0.5*((zn-zdisk)/h_SN)**2)
-            enddo
-            cum_prob_SN = cum_prob_SN / max(cum_prob_SN(nzgrid-nzskip), tini)
-            cum_prob_SN(nzgrid-nzskip+1:nzgrid)=1.0
-!      
-            do i=nzskip+1,nzgrid-nzskip
-              if (cum_prob_SN(i-1)<=fran3(3) .and. fran3(3)<cum_prob_SN(i)) then
-                SNR%indx%ipz=(i-1)/nz  ! uses integer division
-                SNR%indx%n=i-(SNR%indx%ipz*nz)+nghost
-                exit
-              endif
-            enddo
-            SNR%indx%iproc=&
-                  SNR%indx%ipz*nprocx*nprocy+SNR%indx%ipy*nprocx+SNR%indx%ipx
-          endif
-        else 
-          t_cluster = t + SN_clustering_time
-!
-          i=int(fran3(1)*nxgrid)+1
+    if (lOB_cluster .and. h_SN==h_SNII) then
+!  If OB clustering for SNII, while within time span of current cluster
+      if (t < t_cluster) then ! still using current cluster coords
+        previous_SNl = int(( x_cluster - xyz0(1) )/Lxyz(1))*nxgrid +1
+        previous_SNm = int(( y_cluster - xyz0(2) )/Lxyz(2))*nygrid +1
+        previous_SNn = int(( z_cluster - xyz0(3) )/Lxyz(3))*nzgrid +1
+        lm_range = 2*SN_clustering_radius*nxgrid/Lxyz(1)
+        if (fran3(1) < p_OB) then ! checks whether the SN is in a cluster
+          i=int(fran3(1)*lm_range/p_OB)+previous_SNl+1
           SNR%indx%ipx=(i-1)/nx  ! uses integer division
           SNR%indx%l=i-(SNR%indx%ipx*nx)+nghost
 !
-          i=int(fran3(2)*nygrid)+1
+          i=int(fran3(1)*lm_range/p_OB)+previous_SNm+1
           SNR%indx%ipy=(i-1)/ny  ! uses integer division
           SNR%indx%m=i-(SNR%indx%ipy*ny)+nghost
 !
+          i=int(fran3(1)*lm_range/p_OB)+previous_SNn+1
+          SNR%indx%ipz=(i-1)/nz  ! uses integer division
+          SNR%indx%n=i-(SNR%indx%ipz*nz)+nghost
+        else ! outside cluster
+          i=int(fran3(1)*(nxgrid-lm_range)/(1.0-p_OB))+previous_SNl+1
+          if (i>nxgrid) i=i-nxgrid
+          SNR%indx%ipx=(i-1)/nx  ! uses integer division
+          SNR%indx%l=i-(SNR%indx%ipx*nx)+nghost
+!
+          i=int(fran3(1)*(nygrid-lm_range)/(1.0-p_OB))+previous_SNl+1
+          if (i>nygrid) i=i-nygrid
+          SNR%indx%ipy=(i-1)/ny  ! uses integer division
+          SNR%indx%m=i-(SNR%indx%ipy*ny)+nghost
+!
+!  Cumulative probability function in z calculated each time for moving zdisk.
+!
           cum_prob_SN=0.0
-          do i=nzskip+1,nzgrid-nzskip
-            zn=z00+(i-1)*dz
-            cum_prob_SN(i)=cum_prob_SN(i-1)+exp(-0.5*((zn-zdisk)/h_SN)**2)
+          do icpu=0,nprocz-1
+            do i=n1,n2
+              itmp=i-nghost+icpu*nz
+              if (itmp<nzskip) then
+                cum_prob_SN(itmp)=0.0
+              elseif (itmp>nzgrid-nzskip) then
+                cum_prob_SN(itmp)=cum_prob_SN(itmp-1)
+              else
+                cum_prob_SN(itmp)=cum_prob_SN(itmp-1)+&
+                                   exp(-0.5*((z(i)-zdisk)/h_SN)**2)
+              endif
+              probmpi(i-nghost)=cum_prob_SN(itmp)
+            enddo
+            call mpibcast_real(probmpi,nz,PROC=icpu*nprocx*nprocy)
+            cum_prob_SN(icpu*nz+1:icpu*nz+nz)=probmpi
           enddo
           cum_prob_SN = cum_prob_SN / max(cum_prob_SN(nzgrid-nzskip), tini)
+!
+!  The following should never be needed, but just in case floating point
+!  errors ever lead to cum_prob_SNI(nzgrid-nzskip) < rnd < 1.
+!
           cum_prob_SN(nzgrid-nzskip+1:nzgrid)=1.0
 !    
           do i=nzskip+1,nzgrid-nzskip
@@ -2403,12 +2395,12 @@ module Interstellar
             endif
           enddo
           SNR%indx%iproc=&
-                  SNR%indx%ipz*nprocx*nprocy+SNR%indx%ipy*nprocx+SNR%indx%ipx
-          x_cluster = (SNR%indx%l-1) * Lxyz(1)/nxgrid + xyz0(1)
-          y_cluster = (SNR%indx%m-1) * Lxyz(2)/nxgrid + xyz0(2)
-          z_cluster = zdisk
+                SNR%indx%ipz*nprocx*nprocy+SNR%indx%ipy*nprocx+SNR%indx%ipx
         endif
-      else ! clustering not used
+      else
+!  If OB clustering for SNII, time to set new cluster location and duration
+        t_cluster = t + SN_clustering_time
+!
         i=int(fran3(1)*nxgrid)+1
         SNR%indx%ipx=(i-1)/nx  ! uses integer division
         SNR%indx%l=i-(SNR%indx%ipx*nx)+nghost
@@ -2419,11 +2411,22 @@ module Interstellar
 !
 !  Cumulative probability function in z calculated each time for moving zdisk.
 !
-        print*,'position_SN_gaussianz: zdisk =',zdisk
         cum_prob_SN=0.0
-        do i=nzskip+1,nzgrid-nzskip
-          zn=z00+(i-1)*Lxyz(3)/(nzgrid-1)
-          cum_prob_SN(i)=cum_prob_SN(i-1)+exp(-0.5*((zn-zdisk)/h_SN)**2)
+        do icpu=0,nprocz-1
+          do i=n1,n2
+            itmp=i-nghost+icpu*nz
+            if (itmp<nzskip) then
+              cum_prob_SN(itmp)=0.0
+            elseif (itmp>nzgrid-nzskip) then
+              cum_prob_SN(itmp)=cum_prob_SN(itmp-1)
+            else
+              cum_prob_SN(itmp)=cum_prob_SN(itmp-1)+&
+                                 exp(-0.5*((z(i)-zdisk)/h_SN)**2)
+            endif
+            probmpi(i-nghost)=cum_prob_SN(itmp)
+          enddo
+          call mpibcast_real(probmpi,nz,PROC=icpu*nprocx*nprocy)
+          cum_prob_SN(icpu*nz+1:icpu*nz+nz)=probmpi
         enddo
         cum_prob_SN = cum_prob_SN / max(cum_prob_SN(nzgrid-nzskip), tini)
 !
@@ -2431,7 +2434,7 @@ module Interstellar
 !  errors ever lead to cum_prob_SNI(nzgrid-nzskip) < rnd < 1.
 !
         cum_prob_SN(nzgrid-nzskip+1:nzgrid)=1.0
-!    
+!
         do i=nzskip+1,nzgrid-nzskip
           if (cum_prob_SN(i-1)<=fran3(3) .and. fran3(3)<cum_prob_SN(i)) then
             SNR%indx%ipz=(i-1)/nz  ! uses integer division
@@ -2440,8 +2443,55 @@ module Interstellar
           endif
         enddo
         SNR%indx%iproc=&
-                  SNR%indx%ipz*nprocx*nprocy+SNR%indx%ipy*nprocx+SNR%indx%ipx
+                SNR%indx%ipz*nprocx*nprocy+SNR%indx%ipy*nprocx+SNR%indx%ipx
+        x_cluster = (SNR%indx%l-1) * Lxyz(1)/nxgrid + xyz0(1)
+        y_cluster = (SNR%indx%m-1) * Lxyz(2)/nxgrid + xyz0(2)
+        z_cluster = zdisk
       endif
+    else ! clustering not used
+      i=int(fran3(1)*nxgrid)+1
+      SNR%indx%ipx=(i-1)/nx  ! uses integer division
+      SNR%indx%l=i-(SNR%indx%ipx*nx)+nghost
+!
+      i=int(fran3(2)*nygrid)+1
+      SNR%indx%ipy=(i-1)/ny  ! uses integer division
+      SNR%indx%m=i-(SNR%indx%ipy*ny)+nghost
+!
+!  Cumulative probability function in z calculated each time for moving zdisk.
+!
+      cum_prob_SN=0.0
+      do icpu=0,nprocz-1
+        do i=n1,n2
+          itmp=i-nghost+icpu*nz
+          if (itmp<nzskip) then
+            cum_prob_SN(itmp)=0.0
+          elseif (itmp>nzgrid-nzskip) then
+            cum_prob_SN(itmp)=cum_prob_SN(itmp-1)
+          else
+            cum_prob_SN(itmp)=cum_prob_SN(itmp-1)+&
+                               exp(-0.5*((z(i)-zdisk)/h_SN)**2)
+          endif
+          probmpi(i-nghost)=cum_prob_SN(itmp)
+        enddo
+        call mpibcast_real(probmpi,nz,PROC=icpu*nprocx*nprocy)
+        cum_prob_SN(icpu*nz+1:icpu*nz+nz)=probmpi
+      enddo
+      cum_prob_SN = cum_prob_SN / max(cum_prob_SN(nzgrid-nzskip), tini)
+!
+!  The following should never be needed, but just in case floating point
+!  errors ever lead to cum_prob_SNI(nzgrid-nzskip) < rnd < 1.
+!
+      cum_prob_SN(nzgrid-nzskip+1:nzgrid)=1.0
+!
+      do i=nzskip+1,nzgrid-nzskip
+        if (cum_prob_SN(i-1)<=fran3(3) .and. fran3(3)<cum_prob_SN(i)) then
+          SNR%indx%ipz=(i-1)/nz  ! uses integer division
+          SNR%indx%n=i-(SNR%indx%ipz*nz)+nghost
+          exit
+        endif
+      enddo
+      SNR%indx%iproc=&
+                SNR%indx%ipz*nprocx*nprocy+SNR%indx%ipy*nprocx+SNR%indx%ipx
     endif
 !
     call share_SN_parameters(f,SNR)
