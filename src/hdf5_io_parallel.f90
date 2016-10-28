@@ -80,20 +80,20 @@ module HDF5_IO
       if (lfirst_proc_y) local_start(2) = local_start(2) - nghost
       if (lfirst_proc_z) local_start(3) = local_start(3) - nghost
 !
-      ! size of this processor's data portion in the global file
+      ! size of the data in the global file
       global_size(1) = mxgrid
       global_size(2) = mygrid
       global_size(3) = mzgrid
       global_size(4:n_dims+1) = 1
 !
-      ! starting position of this processor's data portion
+      ! starting position of this processor's data portion in the global file
       global_start(1) = nghost + ipx*nx
       global_start(2) = nghost + ipy*ny
       global_start(3) = nghost + ipz*nz
       global_start(4:n_dims+1) = 0
 !
       ! include lower ghost layers on the lower edge
-      ! (upper ghost cells are taken care of by the 'global_size')
+      ! (upper ghost cells are taken care of by the increased 'local_subsize')
       if (lfirst_proc_x) global_start(1) = global_start(1) - nghost
       if (lfirst_proc_y) global_start(2) = global_start(2) - nghost
       if (lfirst_proc_z) global_start(3) = global_start(3) - nghost
