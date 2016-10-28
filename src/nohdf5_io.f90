@@ -75,6 +75,7 @@ module HDF5_IO
       real, intent(out) :: data
 !
       call fatal_error ('input_hdf5_0D', 'You can not use HDF5 without setting an HDF5_IO module.')
+      data = -1.0
 !
     endsubroutine input_hdf5_0D
 !***********************************************************************
@@ -85,6 +86,7 @@ module HDF5_IO
       real, dimension (nv), intent(out) :: data
 !
       call fatal_error ('input_hdf5_1D', 'You can not use HDF5 without setting an HDF5_IO module.')
+      data(:) = -1.0
 !
     endsubroutine input_hdf5_1D
 !***********************************************************************
@@ -94,6 +96,7 @@ module HDF5_IO
       real, dimension (mx,my,mz), intent(out) :: data
 !
       call fatal_error ('input_hdf5_3D', 'You can not use HDF5 without setting an HDF5_IO module.')
+      data(:,:,:) = -1.0
 !
     endsubroutine input_hdf5_3D
 !***********************************************************************
@@ -104,6 +107,7 @@ module HDF5_IO
       real, dimension (mx,my,mz,nv), intent(out) :: data
 !
       call fatal_error ('input_hdf5_4D', 'You can not use HDF5 without setting an HDF5_IO module.')
+      data(:,:,:,:) = -1.0
 !
     endsubroutine input_hdf5_4D
 !***********************************************************************
