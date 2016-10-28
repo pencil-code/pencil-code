@@ -11,31 +11,16 @@ module Io
 !
   use Cdata
   use Cparam, only: intlen, fnlen, max_int
-  use HDF5
+  use HDF5_IO
   use Messages, only: fatal_error, svn_id, warning
   use General, only: delete_file
 !
   implicit none
 !
+  include 'hdf5_io.h'
   include 'io.h'
   include 'mpif.h'
   include 'record_types.h'
-!
-  interface output_hdf5
-    module procedure output_hdf5_string
-    module procedure output_hdf5_int
-    module procedure output_hdf5_0D
-    module procedure output_hdf5_1D
-    module procedure output_hdf5_3D
-    module procedure output_hdf5_4D
-  endinterface
-!
-  interface input_hdf5
-    module procedure input_hdf5_0D
-    module procedure input_hdf5_1D
-    module procedure input_hdf5_3D
-    module procedure input_hdf5_4D
-  endinterface
 !
   interface write_persist
     module procedure write_persist_logical_0D
@@ -67,12 +52,6 @@ module Io
   logical :: persist_initialized = .false.
   integer :: persist_last_id = -max_int
 !
-  integer :: local_type, global_type, h5_err
-  integer(HID_T) :: h5_file, h5_dset, h5_plist, h5_fspace, h5_mspace, h5_dspace, h5_ntype, h5_group
-  integer, parameter :: n_dims = 3
-  integer(kind=8), dimension(n_dims+1) :: local_size, local_subsize, local_start
-  integer(kind=8), dimension(n_dims+1) :: global_size, global_subsize, global_start
-!
   contains
 !***********************************************************************
     subroutine register_io
@@ -91,89 +70,18 @@ module Io
       if (.not. lseparate_persist) call fatal_error ('io_HDF5', &
           "This module only works with the setting lseparate_persist=.true.")
 !
-! Create datatype to describe internal elements of data, ie. the core data
-! excluding the halos, unless we are on an edge and have to include them.
-!
-      local_size(1) = mx
-      local_size(2) = my
-      local_size(3) = mz
-      local_size(4:n_dims+1) = 1
-!
-      local_subsize(1) = nx
-      local_subsize(2) = ny
-      local_subsize(3) = nz
-      local_subsize(4:n_dims+1) = 1
-!
-! We need to save the outermost halos if we are on either edge.
-!
-      if (lfirst_proc_x) local_subsize(1) = local_subsize(1) + nghost
-      if (lfirst_proc_y) local_subsize(2) = local_subsize(2) + nghost
-      if (lfirst_proc_z) local_subsize(3) = local_subsize(3) + nghost
-!
-      if (llast_proc_x)  local_subsize(1) = local_subsize(1) + nghost
-      if (llast_proc_y)  local_subsize(2) = local_subsize(2) + nghost
-      if (llast_proc_z)  local_subsize(3) = local_subsize(3) + nghost
-!
-! The displacements in 'local_start' uses C-like format, ie. start from zero.
-!
-      local_start(1) = l1 - 1
-      local_start(2) = m1 - 1
-      local_start(3) = n1 - 1
-      local_start(4:n_dims+1) = 0
-
-! We need to include lower ghost cells if we are on a lower edge
-! inclusion of upper ghost cells is taken care of by increased subsize.
-
-      if (lfirst_proc_x) local_start(1) = local_start(1) - nghost
-      if (lfirst_proc_y) local_start(2) = local_start(2) - nghost
-      if (lfirst_proc_z) local_start(3) = local_start(3) - nghost
-!
-! Now define the position of this processors data in the global file:
-!
-! Create datatype to describe the section of the global file that
-! is owned by this process (the ftype). 'global_size' has now the global
-! sizes, but 'global_subsize' stays the same. 'global_start' must again count
-! in C-manner, ie. from 0.
-!
-! Global size of array·
-!
-      global_size(1) = mxgrid
-      global_size(2) = mygrid
-      global_size(3) = mzgrid
-      global_size(4:n_dims+1) = 1
-!
-! Starting position of this processors data portion.
-!
-      global_start(1) = nghost + ipx*nx
-      global_start(2) = nghost + ipy*ny
-      global_start(3) = nghost + ipz*nz
-      global_start(4:n_dims+1) = 0
-!
-! Take account of inclusion of lower halos on lower edges.
-!
-      if (lfirst_proc_x) global_start(1) = global_start(1) - nghost
-      if (lfirst_proc_y) global_start(2) = global_start(2) - nghost
-      if (lfirst_proc_z) global_start(3) = global_start(3) - nghost
-!
       if (lread_from_other_prec) &
         call warning('register_io','Reading from other precision not implemented')
 !
-      ! initialize parallel HDF5 Fortran libaray
-      call h5open_f (h5_err)
-      if (h5_err /= 0) call fatal_error ('register_io', 'initialize parallel HDF5 library', .true.)
-      if (mpi_precision == MPI_REAL) then
-        h5_ntype = H5T_NATIVE_REAL
-      else
-        h5_ntype = H5T_NATIVE_DOUBLE
-      endif
+      ! open the HDF5 library
+      call initialize_hdf5
 !
     endsubroutine register_io
 !***********************************************************************
     subroutine finalize_io
 !
       ! close the HDF5 library
-      call h5close_f (h5_err)
-      if (h5_err /= 0) call fatal_error ('finalize_io', 'close parallel HDF5 library', .true.)
+      call finalize_hdf5
 !
     endsubroutine finalize_io
 !***********************************************************************
@@ -285,197 +193,6 @@ module Io
 !
     endsubroutine distribute_grid
 !***********************************************************************
-    subroutine output_hdf5_string(name, data)
-!
-      character (len=*), intent(in) :: name
-      character (len=*), intent(in) :: data
-!
-      integer(HID_T) :: h5_strtype
-      integer(HSIZE_T), dimension(2) :: size
-      character (len=len(data)), dimension(1) :: str_data
-      integer(SIZE_T), dimension(1) :: str_len
-!
-      str_len(1) = len_trim (data)
-      size(1) = str_len(1)
-      size(2) = 1
-      str_data(1) = data
-!
-      ! create data space
-      call H5Tcopy_f (H5T_STRING, h5_strtype, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'copy string data space type "'//name//'"', .true.)
-      call H5Tset_strpad_f (h5_strtype, H5T_STR_NULLPAD_F, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'modify string data space type "'//name//'"', .true.)
-      call h5screate_simple_f (1, size(1), h5_dspace, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create string data space "'//name//'"', .true.)
-      ! create dataset
-      call h5dcreate_f (h5_file, name, h5_strtype, h5_dspace, h5_dset, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create string dataset "'//name//'"', .true.)
-      ! write dataset
-      call h5dwrite_vl_f (h5_dset, h5_strtype, str_data, size, str_len, h5_err, h5_dspace)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'write string data "'//name//'"', .true.)
-      ! close dataset and data space
-      call h5dclose_f (h5_dset, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close string dataset "'//name//'"', .true.)
-      call h5sclose_f (h5_dspace, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close string data space "'//name//'"', .true.)
-!
-    endsubroutine output_hdf5_string
-!***********************************************************************
-    subroutine output_hdf5_int(name, data)
-!
-      character (len=*), intent(in) :: name
-      integer, intent(in) :: data
-!
-      integer(HID_T) :: h5_inttype
-      integer(kind=8), dimension(1) :: size = (/ 1 /)
-!
-      ! create data space
-      call h5screate_simple_f (1, size(1), h5_dspace, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create integer data space "'//name//'"', .true.)
-      ! create dataset
-      call h5dcreate_f (h5_file, name, H5T_NATIVE_INTEGER, h5_dspace, h5_dset, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create integer dataset "'//name//'"', .true.)
-      ! write dataset
-      call h5dwrite_f (h5_dset, H5T_NATIVE_INTEGER, data, size, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'write integer data "'//name//'"', .true.)
-      ! close dataset and data space
-      call h5dclose_f (h5_dset, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close integer dataset "'//name//'"', .true.)
-      call h5sclose_f (h5_dspace, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close integer data space "'//name//'"', .true.)
-!
-    endsubroutine output_hdf5_int
-!***********************************************************************
-    subroutine output_hdf5_0D(name, data)
-!
-      character (len=*), intent(in) :: name
-      real, intent(in) :: data
-!
-      call output_hdf5_1D (name, (/ data /), 1)
-!
-    endsubroutine output_hdf5_0D
-!***********************************************************************
-    subroutine output_hdf5_1D(name, data, nv)
-!
-!  Write HDF5 dataset as scalar or array.
-!
-!  24-Oct-2016/PABourdin: coded
-!
-      use Mpicomm, only: stop_it_if_any
-!
-      character (len=*), intent(in) :: name
-      integer, intent(in) :: nv
-      real, dimension (nv), intent(in) :: data
-!
-      integer(kind=8), dimension(1) :: size
-!
-      size = (/ nv /)
-!
-      ! create data space
-      if (nv <= 1) then
-        call h5screate_f (H5S_SCALAR_F, h5_dspace, h5_err)
-        if (h5_err /= 0) call fatal_error ('output_hdf5', 'create scalar data space "'//name//'"', .true.)
-        call h5sset_extent_simple_f (h5_dspace, 0, size(1), size(1), h5_err) 
-      else
-        call h5screate_f (H5S_SIMPLE_F, h5_dspace, h5_err)
-        if (h5_err /= 0) call fatal_error ('output_hdf5', 'create simple data space "'//name//'"', .true.)
-        call h5sset_extent_simple_f (h5_dspace, 1, size, size, h5_err) 
-      endif
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'set data space extent "'//name//'"', .true.)
-      ! create dataset
-      call h5dcreate_f (h5_file, name, h5_ntype, h5_dspace, h5_dset, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create dataset "'//name//'"', .true.)
-      ! write dataset
-      if (nv <= 1) then
-        call h5dwrite_f (h5_dset, h5_ntype, data(1), size, h5_err)
-      else
-        call h5dwrite_f (h5_dset, h5_ntype, data, size, h5_err)
-      endif
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'write data "'//name//'"', .true.)
-      ! close dataset and data space
-      call h5dclose_f (h5_dset, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close dataset "'//name//'"', .true.)
-      call h5sclose_f (h5_dspace, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close data space "'//name//'"', .true.)
-!
-    endsubroutine output_hdf5_1D
-!***********************************************************************
-    subroutine output_hdf5_3D(name, data)
-!
-      character (len=*), intent(in) :: name
-      real, dimension (mx,my,mz), intent(in) :: data
-!
-      call output_hdf5_4D (name, data, 1)
-!
-    endsubroutine output_hdf5_3D
-!***********************************************************************
-    subroutine output_hdf5_4D(name, data, nv)
-!
-!  Write HDF5 dataset from a distributed 3D or 4D array.
-!
-!  26-Oct-2016/PABourdin: coded
-!
-      use Mpicomm, only: stop_it_if_any
-!
-      character (len=*), intent(in) :: name
-      integer, intent(in) :: nv
-      real, dimension (mx,my,mz,nv), intent(in) :: data
-!
-      integer(kind=8), dimension (n_dims+1) :: h5_stride, h5_count
-!
-      global_size(n_dims+1) = nv
-      local_size(n_dims+1) = nv
-      local_subsize(n_dims+1) = nv
-!
-      ! define 'file-space' to indicate the data portion in the global file
-      call h5screate_simple_f (n_dims+1, global_size, h5_fspace, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create global file space "'//name//'"', .true.)
-!
-      ! define 'memory-space' to indicate the local data portion in memory
-      call h5screate_simple_f (n_dims+1, local_size, h5_mspace, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create local memory space "'//name//'"', .true.)
-!
-      ! create the dataset
-      call h5dcreate_f (h5_file, trim (name), h5_ntype, h5_fspace, h5_dset, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'create dataset "'//name//'"', .true.)
-      call h5sclose_f (h5_fspace, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close global file space "'//name//'"', .true.)
-!
-      ! define local 'hyper-slab' in the global file
-      h5_stride(:) = 1
-      h5_count(:) = 1
-      call h5dget_space_f (h5_dset, h5_fspace, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'get dataset for file space "'//name//'"', .true.)
-      call h5sselect_hyperslab_f (h5_fspace, H5S_SELECT_SET_F, global_start, h5_count, h5_err, h5_stride, local_subsize)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'select hyperslab within file "'//name//'"', .true.)
-!
-      ! define local 'hyper-slab' portion in memory
-      call h5sselect_hyperslab_f (h5_mspace, H5S_SELECT_SET_F, local_start, h5_count, h5_err, h5_stride, local_subsize)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'select hyperslab within file "'//name//'"', .true.)
-!
-      ! prepare data transfer
-      call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'set data transfer properties "'//name//'"', .true.)
-      call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'select collective IO "'//name//'"', .true.)
-!
-      ! collectively write the data
-      call h5dwrite_f (h5_dset, h5_ntype, data, &
-          global_size, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'write dataset "'//name//'"', .true.)
-!
-      ! close data spaces, dataset, and the property list
-      call h5sclose_f (h5_fspace, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close file space "'//name//'"', .true.)
-      call h5sclose_f (h5_mspace, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close memory space "'//name//'"', .true.)
-      call h5dclose_f (h5_dset, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close dataset "'//name//'"', .true.)
-      call h5pclose_f (h5_plist, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_hdf5', 'close parameter list "'//name//'"', .true.)
-!
-    endsubroutine output_hdf5_4D
-!***********************************************************************
     subroutine output_snap(a, nv, file, mode, ltruncate, label)
 !
 !  Write snapshot file, always write mesh and time, could add other things.
@@ -507,32 +224,15 @@ module Io
       lexists = parallel_file_exists (filename)
       ltrunc = .true.
       if (present (ltruncate)) ltrunc = ltruncate
+      if (.not. lexists) ltrunc = .true.
 !
       lwrite_add = .true.
       if (present (mode)) lwrite_add = (mode == 1)
 !
-      ! setup file access property list
-      call h5pcreate_f (H5P_FILE_ACCESS_F, h5_plist, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_snap', 'create file access property list', .true.)
-      call h5pset_fapl_mpio_f (h5_plist, MPI_COMM_WORLD, MPI_INFO_NULL, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_snap', 'modify file access property list', .true.)
-!
-      if (.not. lexists .or. ltrunc) then
-        ! create empty (or truncated) HDF5 file
-        call h5fcreate_f (trim (filename), H5F_ACC_TRUNC_F, h5_file, h5_err, access_prp=h5_plist)
-        if (h5_err /= 0) call fatal_error ('output_snap', 'create: "'//trim (filename)//'"', .true.)
-      else
-        ! open existing HDF5 file
-        call h5fopen_f (trim (filename), H5F_ACC_RDWR_F, h5_file, h5_err, access_prp=h5_plist)
-        if (h5_err /= 0) call fatal_error ('output_snap', 'open: "'//trim (filename)//'"', .true.)
-      endif
-      call h5pclose_f (h5_plist, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_snap', 'close file access property list', .true.)
-!
-      call output_hdf5 (trim (dataset), a, nv)
-!
-      call h5fclose_f (h5_file, h5_err)
-      if (h5_err /= 0) call fatal_error ('output_snap', 'close: "'//trim (filename)//'"', .true.)
+      ! open global HDF5 file and write main data
+      call file_open_hdf5 (filename, truncate=ltrunc)
+      call output_hdf5 (dataset, a, nv)
+      call file_close_hdf5
 !
       ! write additional data:
       if (lwrite_add) then
@@ -542,14 +242,10 @@ module Io
         endif
         call collect_grid (x, y, z, gx, gy, gz)
         if (lroot) then
-          call h5fopen_f (trim (filename), H5F_ACC_RDWR_F, h5_file, h5_err)
-          if (h5_err /= 0) call fatal_error ('output_snap', 'reopen: "'//trim (filename)//'"', .true.)
+          call file_open_hdf5 (filename, truncate=.false., global=.false.)
           t_sp = t
           call output_hdf5 ('t', t)
-          call h5gcreate_f (h5_file, 'grid', h5_group, h5_err)
-          if (h5_err /= 0) call fatal_error ('output_snap', 'create group "grid"', .true.)
-          call h5gclose_f (h5_group, h5_err)
-          if (h5_err /= 0) call fatal_error ('output_snap', 'close group "grid"', .true.)
+          call create_group_hdf5 ('grid')
           call output_hdf5 ('grid/x', gx, mxgrid)
           call output_hdf5 ('grid/y', gy, mygrid)
           call output_hdf5 ('grid/z', gz, mzgrid)
@@ -571,10 +267,7 @@ module Io
           call output_hdf5 ('grid/dx_tilde', gx, mxgrid)
           call output_hdf5 ('grid/dy_tilde', gy, mygrid)
           call output_hdf5 ('grid/dz_tilde', gz, mzgrid)
-          call h5gcreate_f (h5_file, 'dim', h5_group, h5_err)
-          if (h5_err /= 0) call fatal_error ('output_snap', 'create group "dim"', .true.)
-          call h5gclose_f (h5_group, h5_err)
-          if (h5_err /= 0) call fatal_error ('output_snap', 'close group "dim"', .true.)
+          call create_group_hdf5 ('dim')
           call output_hdf5 ('dim/mx', nxgrid+2*nghost)
           call output_hdf5 ('dim/my', nxgrid+2*nghost)
           call output_hdf5 ('dim/mz', nxgrid+2*nghost)
@@ -599,8 +292,7 @@ module Io
           else
             call output_hdf5 ('dim/precision', 'D')
           endif
-          call h5fclose_f (h5_file, h5_err)
-          if (h5_err /= 0) call fatal_error ('output_snap', 'reclose: "'//trim (filename)//'"', .true.)
+          call file_close_hdf5
         endif
       endif
 !
@@ -622,123 +314,6 @@ module Io
       endif
 !
     endsubroutine output_snap_finalize
-!***********************************************************************
-    subroutine input_hdf5_0D(name, data)
-!
-      character (len=*), intent(in) :: name
-      real, intent(out) :: data
-!
-      real, dimension(1) :: read
-!
-      call input_hdf5_1D (name, read, 1)
-      data = read(1)
-!
-    endsubroutine input_hdf5_0D
-!***********************************************************************
-    subroutine input_hdf5_1D(name, data, nv)
-!
-!  Read HDF5 dataset as scalar or array.
-!
-!  26-Oct-2016/PABourdin: coded
-!
-      use Mpicomm, only: stop_it_if_any
-!
-      character (len=*), intent(in) :: name
-      integer, intent(in) :: nv
-      real, dimension (nv), intent(out) :: data
-!
-      integer(HSIZE_T), dimension(1) :: size
-!
-      size = (/ nv /)
-!
-      ! open dataset
-      call h5dopen_f (h5_file, name, h5_dset, h5_err)
-      if (h5_err /= 0) call fatal_error ('input_hdf5', 'open dataset "'//name//'"', .true.)
-      ! read dataset
-      call h5dread_f (h5_dset, h5_ntype, data, size, h5_err)
-
-!  INTEGER(HID_T) :: dset_id       ! Dataset identifier
-!  INTEGER, DIMENSION(4,6) :: dset_data, data_out ! Data buffers
-!  INTEGER(HSIZE_T), DIMENSION(2) :: data_dims
-!  INTEGER     ::   error ! Error flag
-!  CALL h5dread_f(dset_id, H5T_NATIVE_INTEGER, data_out, data_dims, error)
-
-      if (h5_err /= 0) call fatal_error ('input_hdf5', 'read data "'//name//'"', .true.)
-      ! close dataset and data space
-      call h5dclose_f (h5_dset, h5_err)
-      if (h5_err /= 0) call fatal_error ('input_hdf5', 'close dataset "'//name//'"', .true.)
-!
-    endsubroutine input_hdf5_1D
-!***********************************************************************
-    subroutine input_hdf5_3D(name, data)
-!
-      character (len=*), intent(in) :: name
-      real, dimension (mx,my,mz), intent(out) :: data
-!
-      call input_hdf5_4D (name, data, 1)
-!
-    endsubroutine input_hdf5_3D
-!***********************************************************************
-    subroutine input_hdf5_4D(name, data, nv)
-!
-!  Read HDF5 dataset from a distributed 3D or 4D array.
-!
-!  26-Oct-2016/PABourdin: coded
-!
-      use Mpicomm, only: stop_it_if_any
-!
-      character (len=*), intent(in) :: name
-      integer, intent(in) :: nv
-      real, dimension (mx,my,mz,nv), intent(out) :: data
-!
-      integer(kind=8), dimension (n_dims+1) :: h5_stride, h5_count
-!
-      global_size(n_dims+1) = nv
-      local_size(n_dims+1) = nv
-      local_subsize(n_dims+1) = nv
-!
-      ! define 'memory-space' to indicate the local data portion in memory
-      call h5screate_simple_f (n_dims+1, local_size, h5_mspace, h5_err)
-      if (h5_err /= 0) call fatal_error ('input_hdf5', 'create local memory space "'//name//'"', .true.)
-!
-      ! open the dataset
-      call h5dopen_f (h5_file, trim (name), h5_dset, h5_err)
-      if (h5_err /= 0) call fatal_error ('input_hdf5', 'open dataset "'//name//'"', .true.)
-!
-      ! define local 'hyper-slab' in the global file
-      h5_stride(:) = 1
-      h5_count(:) = 1
-      call h5dget_space_f (h5_dset, h5_fspace, h5_err)
-      if (h5_err /= 0) call fatal_error ('input_hdf5', 'get dataset for file space "'//name//'"', .true.)
-      call h5sselect_hyperslab_f (h5_fspace, H5S_SELECT_SET_F, global_start, h5_count, h5_err, h5_stride, local_subsize)
-      if (h5_err /= 0) call fatal_error ('input_hdf5', 'select hyperslab within file "'//name//'"', .true.)
-!
-      ! define local 'hyper-slab' portion in memory
-      call h5sselect_hyperslab_f (h5_mspace, H5S_SELECT_SET_F, local_start, h5_count, h5_err, h5_stride, local_subsize)
-      if (h5_err /= 0) call fatal_error ('input_hdf5', 'select hyperslab within file "'//name//'"', .true.)
-!
-      ! prepare data transfer
-      call h5pcreate_f (H5P_DATASET_XFER_F, h5_plist, h5_err)
-      if (h5_err /= 0) call fatal_error ('input_hdf5', 'set data transfer properties "'//name//'"', .true.)
-      call h5pset_dxpl_mpio_f (h5_plist, H5FD_MPIO_COLLECTIVE_F, h5_err)
-      if (h5_err /= 0) call fatal_error ('input_hdf5', 'select collective IO "'//name//'"', .true.)
-!
-      ! collectively read the data
-      call h5dread_f (h5_dset, h5_ntype, data, &
-          global_size, h5_err, file_space_id=h5_fspace, mem_space_id=h5_mspace, xfer_prp=h5_plist)
-      if (h5_err /= 0) call fatal_error ('input_hdf5', 'read dataset "'//name//'"', .true.)
-!
-      ! close data spaces, dataset, and the property list
-      call h5sclose_f (h5_fspace, h5_err)
-      if (h5_err /= 0) call fatal_error ('input_hdf5', 'close file space "'//name//'"', .true.)
-      call h5sclose_f (h5_mspace, h5_err)
-      if (h5_err /= 0) call fatal_error ('input_hdf5', 'close memory space "'//name//'"', .true.)
-      call h5dclose_f (h5_dset, h5_err)
-      if (h5_err /= 0) call fatal_error ('input_hdf5', 'close dataset "'//name//'"', .true.)
-      call h5pclose_f (h5_plist, h5_err)
-      if (h5_err /= 0) call fatal_error ('input_hdf5', 'close parameter list "'//name//'"', .true.)
-!
-    endsubroutine input_hdf5_4D
 !***********************************************************************
     subroutine input_snap(file, a, nv, mode, label)
 !
@@ -771,22 +346,10 @@ module Io
       lread_add = .true.
       if (present (mode)) lread_add = (mode == 1)
 !
-      ! setup file access property list
-      call h5pcreate_f (H5P_FILE_ACCESS_F, h5_plist, h5_err)
-      if (h5_err /= 0) call fatal_error ('input_snap', 'create file access property list', .true.)
-      call h5pset_fapl_mpio_f (h5_plist, MPI_COMM_WORLD, MPI_INFO_NULL, h5_err)
-      if (h5_err /= 0) call fatal_error ('input_snap', 'modify file access property list', .true.)
-!
-      ! open existing HDF5 file
-      call h5fopen_f (trim (filename), H5F_ACC_RDWR_F, h5_file, h5_err, access_prp=h5_plist)
-      if (h5_err /= 0) call fatal_error ('input_snap', 'open: "'//trim (filename)//'"', .true.)
-      call h5pclose_f (h5_plist, h5_err)
-      if (h5_err /= 0) call fatal_error ('input_snap', 'close file access property list', .true.)
-!
-      call input_hdf5 (trim (dataset), a, nv)
-!
-      call h5fclose_f (h5_file, h5_err)
-      if (h5_err /= 0) call fatal_error ('input_snap', 'close: "'//trim (filename)//'"', .true.)
+      ! open existing HDF5 file and read data
+      call file_open_hdf5 (filename, read_only=.true.)
+      call input_hdf5 (dataset, a, nv)
+      call file_close_hdf5
 !
       ! read additional data
       if (lread_add) then
@@ -794,8 +357,7 @@ module Io
           allocate (gx(mxgrid), gy(mygrid), gz(mzgrid), stat=alloc_err)
           if (alloc_err > 0) call fatal_error ('input_snap', 'Could not allocate memory for gx,gy,gz', .true.)
 !
-          call h5fopen_f (trim (filename), H5F_ACC_RDONLY_F, h5_file, h5_err)
-          if (h5_err /= 0) call fatal_error ('input_snap', 'reopen: "'//trim (filename)//'"', .true.)
+          call file_open_hdf5 (filename, global=.false., read_only=.true.)
           call input_hdf5 ('t', t_sp)
           call input_hdf5 ('grid/x', gx, mxgrid)
           call input_hdf5 ('grid/y', gy, mygrid)
@@ -822,8 +384,7 @@ module Io
         call distribute_grid (dx_tilde, dy_tilde, dz_tilde, gx, gy, gz)
         if (lroot) then
           deallocate (gx, gy, gz)
-          call h5fclose_f (h5_file, h5_err)
-          if (h5_err /= 0) call fatal_error ('input_snap', 'reclose: "'//trim (filename)//'"', .true.)
+          call file_close_hdf5
         endif
         call mpibcast_real (t_sp,comm=MPI_COMM_WORLD)
         t = t_sp

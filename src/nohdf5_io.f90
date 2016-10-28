@@ -1,0 +1,166 @@
+! $Id$
+!
+!  This module is a dummy module for non-HDF5 IO.
+!  28-Oct-2016/PABoudin: coded
+!
+module HDF5_IO
+!
+  use Cdata
+  use Messages, only: fatal_error
+!
+  implicit none
+!
+  interface output_hdf5
+    module procedure output_hdf5_string
+    module procedure output_hdf5_int
+    module procedure output_hdf5_0D
+    module procedure output_hdf5_1D
+    module procedure output_hdf5_3D
+    module procedure output_hdf5_4D
+  endinterface
+!
+  interface input_hdf5
+    module procedure input_hdf5_0D
+    module procedure input_hdf5_1D
+    module procedure input_hdf5_3D
+    module procedure input_hdf5_4D
+  endinterface
+!
+  include 'hdf5_io.h'
+!
+  private
+!
+  contains
+!***********************************************************************
+    subroutine initialize_hdf5
+!
+      call fatal_error ('initialize_hdf5', 'You can not use HDF5 without setting an HDF5_IO module.')
+!
+    endsubroutine initialize_hdf5
+!***********************************************************************
+    subroutine finalize_hdf5
+!
+      call fatal_error ('finalize_hdf5', 'You can not use HDF5 without setting an HDF5_IO module.')
+!
+    endsubroutine finalize_hdf5
+!***********************************************************************
+    subroutine file_open_hdf5(file, truncate, global, read_only)
+!
+      character (len=*), intent(in) :: file
+      logical, optional, intent(in) :: truncate
+      logical, optional, intent(in) :: global
+      logical, optional, intent(in) :: read_only
+!
+      call fatal_error ('file_open_hdf5', 'You can not use HDF5 without setting an HDF5_IO module.')
+!
+    endsubroutine file_open_hdf5
+!***********************************************************************
+    subroutine file_close_hdf5
+!
+      call fatal_error ('file_close_hdf5', 'You can not use HDF5 without setting an HDF5_IO module.')
+!
+    endsubroutine file_close_hdf5
+!***********************************************************************
+    subroutine create_group_hdf5(name)
+!
+      character (len=*), intent(in) :: name
+!
+      call fatal_error ('create_group_hdf5', 'You can not use HDF5 without setting an HDF5_IO module.')
+!
+    endsubroutine create_group_hdf5
+!***********************************************************************
+    subroutine input_hdf5_0D(name, data)
+!
+      character (len=*), intent(in) :: name
+      real, intent(out) :: data
+!
+      call fatal_error ('input_hdf5_0D', 'You can not use HDF5 without setting an HDF5_IO module.')
+!
+    endsubroutine input_hdf5_0D
+!***********************************************************************
+    subroutine input_hdf5_1D(name, data, nv)
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: nv
+      real, dimension (nv), intent(out) :: data
+!
+      call fatal_error ('input_hdf5_1D', 'You can not use HDF5 without setting an HDF5_IO module.')
+!
+    endsubroutine input_hdf5_1D
+!***********************************************************************
+    subroutine input_hdf5_3D(name, data)
+!
+      character (len=*), intent(in) :: name
+      real, dimension (mx,my,mz), intent(out) :: data
+!
+      call fatal_error ('input_hdf5_3D', 'You can not use HDF5 without setting an HDF5_IO module.')
+!
+    endsubroutine input_hdf5_3D
+!***********************************************************************
+    subroutine input_hdf5_4D(name, data, nv)
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: nv
+      real, dimension (mx,my,mz,nv), intent(out) :: data
+!
+      call fatal_error ('input_hdf5_4D', 'You can not use HDF5 without setting an HDF5_IO module.')
+!
+    endsubroutine input_hdf5_4D
+!***********************************************************************
+    subroutine output_hdf5_string(name, data)
+!
+      character (len=*), intent(in) :: name
+      character (len=*), intent(in) :: data
+!
+      call fatal_error ('output_hdf5_string', 'You can not use HDF5 without setting an HDF5_IO module.')
+!
+    endsubroutine output_hdf5_string
+!***********************************************************************
+    subroutine output_hdf5_int(name, data)
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: data
+!
+      call fatal_error ('output_hdf5_int', 'You can not use HDF5 without setting an HDF5_IO module.')
+!
+    endsubroutine output_hdf5_int
+!***********************************************************************
+    subroutine output_hdf5_0D(name, data)
+!
+      character (len=*), intent(in) :: name
+      real, intent(in) :: data
+!
+      call fatal_error ('output_hdf5_0D', 'You can not use HDF5 without setting an HDF5_IO module.')
+!
+    endsubroutine output_hdf5_0D
+!***********************************************************************
+    subroutine output_hdf5_1D(name, data, nv)
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: nv
+      real, dimension (nv), intent(in) :: data
+!
+      call fatal_error ('output_hdf5_1D', 'You can not use HDF5 without setting an HDF5_IO module.')
+!
+    endsubroutine output_hdf5_1D
+!***********************************************************************
+    subroutine output_hdf5_3D(name, data)
+!
+      character (len=*), intent(in) :: name
+      real, dimension (mx,my,mz), intent(in) :: data
+!
+      call fatal_error ('output_hdf5_3D', 'You can not use HDF5 without setting an HDF5_IO module.')
+!
+    endsubroutine output_hdf5_3D
+!***********************************************************************
+    subroutine output_hdf5_4D(name, data, nv)
+!
+      character (len=*), intent(in) :: name
+      integer, intent(in) :: nv
+      real, dimension (mx,my,mz,nv), intent(in) :: data
+!
+      call fatal_error ('output_hdf5_4D', 'You can not use HDF5 without setting an HDF5_IO module.')
+!
+    endsubroutine output_hdf5_4D
+!***********************************************************************
+endmodule HDF5_IO
