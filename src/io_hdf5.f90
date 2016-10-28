@@ -5,7 +5,8 @@
 !
 !  The data format is self-contained. Only outer ghost-layers are stored.
 !
-!  19-Sep-2012/Bourdin.KIS: adapted from io_hdf5.f90
+!  19-Sep-2012/PABourdin: adapted from io_mpi2.f90
+!  28-Oct-2016/PABourdin: first fully working version
 !
 module Io
 !
