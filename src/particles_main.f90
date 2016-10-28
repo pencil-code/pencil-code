@@ -156,7 +156,7 @@ module Particles_main
       if (rhop_const /= 0.0) then
         rhop_swarm = rhop_const / (real(npar) / nwgrid)
         if (all(lequidist).and.lcartesian_coords) then
-          mp_swarm = rhop_swarm * dVol(l1)
+          mp_swarm = rhop_swarm * dVol(1)
         else
           call fatal_error('particles_initialize_modules',&
               'dVol only defined for equidistant Cartesian coordinates')
@@ -1219,8 +1219,10 @@ module Particles_main
     endsubroutine particles_cleanup
 !***********************************************************************
     subroutine fetch_nparloc(nparloc_aux)
+
       integer, intent(out) :: nparloc_aux
       nparloc_aux=npar_loc
+
     endsubroutine fetch_nparloc
 !***********************************************************************
     subroutine fetch_npvar(npvar_aux)
