@@ -834,7 +834,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, jj[*,*,*,0]
 	end
 	if (strcmp (quantity, 'j_y', /fold_case)) then begin
-		; Current density <-component [A / m^2]
+		; Current density y-component [A / m^2]
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
 		return, jj[*,*,*,1]
 	end
