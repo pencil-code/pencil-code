@@ -878,7 +878,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, dot (jj, bb)
 	end
 	if (strcmp (quantity, 'dH_mag_dt', /fold_case)) then begin
-		; Change rate of magnetic field helicity [A * T * m^3 / s]
+		; Change rate of magnetic field helicity [T^2 * m^4 / s =?= A * T * m^3 / s]
 		eta = pc_get_parameter ('eta_total', label=quantity) * unit.length*unit.velocity
 		H_j = pc_compute_quantity (vars, index, 'H_j')
 		return, -2 * eta * H_j
