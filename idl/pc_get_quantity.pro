@@ -606,7 +606,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	end
 
 	if (any (strcmp (quantity, ['A', 'A_contour'], /fold_case))) then begin
-		; Magnetic vector potential
+		; Magnetic vector potential [Tesla*m]
 		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.aa] * (unit.magnetic_field*unit.length)
 	end
 	if (strcmp (quantity, 'A_x', /fold_case)) then begin
