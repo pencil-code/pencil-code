@@ -606,7 +606,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	end
 
 	if (any (strcmp (quantity, ['A', 'A_contour'], /fold_case))) then begin
-		; Magnetic vector potential [Tesla*m]
+		; Magnetic vector potential [T * m]
 		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.aa] * (unit.magnetic_field*unit.length)
 	end
 	if (strcmp (quantity, 'A_x', /fold_case)) then begin
@@ -633,7 +633,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, sqrt (B_2)
 	end
 	if (strcmp (quantity, 'B_2', /fold_case)) then begin
-		; Magnetic field strengh squared
+		; Magnetic field strengh squared [T^2]
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		if (n_elements (B_2) eq 0) then B_2 = dot2 (bb)
 		return, B_2
@@ -654,7 +654,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, bb[*,*,*,2]
 	end
 	if (strcmp (quantity, 'dB_dx', /fold_case)) then begin
-		; Magnetic field x-derivative [T/m]
+		; Magnetic field x-derivative [T / m]
 		dB_dx = dblarr (nx, ny, nz, 3, /nozero)
 		dB_dx[*,*,*,*] = unit.magnetic_field / unit.length
 		dB_dx[*,*,*,0] *= (xderyder (vars[*,*,*,index.az]) - xderzder (vars[*,*,*,index.ay]))[l1:l2,m1:m2,n1:n2]
@@ -663,7 +663,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, dB_dx
 	end
 	if (strcmp (quantity, 'dB_dy', /fold_case)) then begin
-		; Magnetic field y-derivative [T/m]
+		; Magnetic field y-derivative [T / m]
 		dB_dy = dblarr (nx, ny, nz, 3, /nozero)
 		dB_dy[*,*,*,*] = unit.magnetic_field / unit.length
 		dB_dy[*,*,*,0] *= (yder2    (vars[*,*,*,index.az]) - yderzder (vars[*,*,*,index.ay]))[l1:l2,m1:m2,n1:n2]
@@ -672,7 +672,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, dB_dy
 	end
 	if (strcmp (quantity, 'dB_dz', /fold_case)) then begin
-		; Magnetic field z-derivative [T/m]
+		; Magnetic field z-derivative [T / m]
 		dB_dz = dblarr (nx, ny, nz, 3, /nozero)
 		dB_dz[*,*,*,*] = unit.magnetic_field / unit.length
 		dB_dz[*,*,*,0] *= (zderyder (vars[*,*,*,index.az]) - zder2    (vars[*,*,*,index.ay]))[l1:l2,m1:m2,n1:n2]
@@ -681,7 +681,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, dB_dz
 	end
 	if (strcmp (quantity, 'E', /fold_case)) then begin
-		; Electric field [V/m]
+		; Electric field [V / m]
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
@@ -692,34 +692,34 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, E
 	end
 	if (strcmp (quantity, 'E_abs', /fold_case)) then begin
-		; Electric field strengh [V/m]
+		; Electric field strengh [V / m]
 		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'E')))
 	end
 	if (strcmp (quantity, 'EMF', /fold_case)) then begin
-		; Electro motive force [V/m]
+		; Electro motive force [V / m]
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		if (n_elements (EMF) eq 0) then EMF = -cross (uu, bb)
 		return, EMF
 	end
 	if (strcmp (quantity, 'EMF_abs', /fold_case)) then begin
-		; Electro motive force strength [V/m]
+		; Electro motive force strength [V / m]
 		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'EMF')))
 	end
 	if (strcmp (quantity, 'EMF_x', /fold_case)) then begin
-		; Electro motive force x [V/m]
+		; Electro motive force x [V / m]
 		return, (pc_compute_quantity (vars, index, 'EMF'))[*,*,*,0]
 	end
 	if (strcmp (quantity, 'EMF_y', /fold_case)) then begin
-		; Electro motive force y [V/m]
+		; Electro motive force y [V / m]
 		return, (pc_compute_quantity (vars, index, 'EMF'))[*,*,*,1]
 	end
 	if (strcmp (quantity, 'EMF_z', /fold_case)) then begin
-		; Electro motive force z [V/m]
+		; Electro motive force z [V / m]
 		return, (pc_compute_quantity (vars, index, 'EMF'))[*,*,*,2]
 	end
 	if (strcmp (quantity, 'E_j', /fold_case)) then begin
-		; Current electric field [V/m]
+		; Current electric field [V / m]
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
 		sigma_SI_inv = 1.0 / pc_get_parameter ('sigma_SI', label=quantity)
 		E = jj
@@ -727,51 +727,51 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, E
 	end
 	if (strcmp (quantity, 'E_j_abs', /fold_case)) then begin
-		; Current electric field strength [V/m]
+		; Current electric field strength [V / m]
 		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'E_j')))
 	end
 	if (strcmp (quantity, 'E_j_x', /fold_case)) then begin
-		; Current electric field x [V/m]
+		; Current electric field x [V / m]
 		return, (pc_compute_quantity (vars, index, 'E_j'))[*,*,*,0]
 	end
 	if (strcmp (quantity, 'E_j_y', /fold_case)) then begin
-		; Current electric field y [V/m]
+		; Current electric field y [V / m]
 		return, (pc_compute_quantity (vars, index, 'E_j'))[*,*,*,1]
 	end
 	if (strcmp (quantity, 'E_j_z', /fold_case)) then begin
-		; Current electric field z [V/m]
+		; Current electric field z [V / m]
 		return, (pc_compute_quantity (vars, index, 'E_j'))[*,*,*,2]
 	end
 	if (strcmp (quantity, 'E_x', /fold_case)) then begin
-		; Electric field x-component [V/m]
+		; Electric field x-component [V / m]
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
 		sigma_SI_inv = 1.0 / pc_get_parameter ('sigma_SI', label=quantity)
 		return, sigma_SI_inv * jj[*,*,*,0]
 	end
 	if (strcmp (quantity, 'E_y', /fold_case)) then begin
-		; Electric field y-component [V/m]
+		; Electric field y-component [V / m]
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
 		sigma_SI_inv = 1.0 / pc_get_parameter ('sigma_SI', label=quantity)
 		return, sigma_SI_inv * jj[*,*,*,1]
 	end
 	if (strcmp (quantity, 'E_z', /fold_case)) then begin
-		; Electric field z-component [V/m]
+		; Electric field z-component [V / m]
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
 		sigma_SI_inv = 1.0 / pc_get_parameter ('sigma_SI', label=quantity)
 		return, sigma_SI_inv * jj[*,*,*,2]
 	end
 	if (strcmp (quantity, 'E_parallel', /fold_case)) then begin
-		; Electric field strengh parallel to the magnetic field [V/m]
+		; Electric field strengh parallel to the magnetic field [V / m]
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		if (n_elements (B_2) eq 0) then B_2 = pc_compute_quantity (vars, index, 'B_2')
 		return, dot (pc_compute_quantity (vars, index, 'E'), bb) / sqrt (B_2)
 	end
 	if (strcmp (quantity, 'E_perpendicular', /fold_case)) then begin
-		; Electric field strengh perpendicular to the magnetic field [V/m]
+		; Electric field strengh perpendicular to the magnetic field [V / m]
 		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'E')) - pc_compute_quantity (vars, index, 'E_parallel')^2)
 	end
 	if (strcmp (quantity, 'grad_E_abs', /fold_case)) then begin
-		; Gradient of electric field strenght [V/m^2]
+		; Gradient of electric field strenght [V / m^2]
 		return, !Values.D_NaN ; not yet implemented...
 
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
@@ -786,7 +786,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, grad (pc_compute_quantity (vars, index, 'E_abs'))
 	end
 	if (strcmp (quantity, 'grad_E_abs_abs', /fold_case)) then begin
-		; Absolute value of electric field strength gradient [V/m^2]
+		; Absolute value of electric field strength gradient [V / m^2]
 		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'grad_E_abs')))
 	end
 	if (strcmp (quantity, 'beta', /fold_case)) then begin
@@ -856,29 +856,29 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	end
 
 	if (strcmp (quantity, 'H_mag', /fold_case)) then begin
-		; Magnetic field helicity
+		; Magnetic field helicity [T^2 * m^4]
 		aa = pc_compute_quantity (vars, index, 'A')
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		return, dot (aa, bb)
 	end
 	if (strcmp (quantity, 'H_mag_pos', /fold_case)) then begin
-		; Magnetic field helicity (positive part)
+		; Magnetic field helicity (positive part) [T^2 * m^4]
 		H_mag_pos = pc_compute_quantity (vars, index, 'H_mag') > 0.0
 		return, H_mag_pos
 	end
 	if (strcmp (quantity, 'H_mag_neg', /fold_case)) then begin
-		; Magnetic field helicity (negative part)
+		; Magnetic field helicity (negative part) [T^2 * m^4]
 		H_mag_neg = (-pc_compute_quantity (vars, index, 'H_mag')) > 0.0
 		return, H_mag_neg
 	end
 	if (strcmp (quantity, 'H_j', /fold_case)) then begin
-		; Electric current helicity
+		; Electric current helicity [A * T * m]
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
 		if (n_elements (jj) eq 0) then jj = pc_compute_quantity (vars, index, 'j')
 		return, dot (jj, bb)
 	end
 	if (strcmp (quantity, 'dH_mag_dt', /fold_case)) then begin
-		; Change rate of magnetic field helicity
+		; Change rate of magnetic field helicity [A * T * m^3 / s]
 		eta = pc_get_parameter ('eta_total', label=quantity) * unit.length*unit.velocity
 		H_j = pc_compute_quantity (vars, index, 'H_j')
 		return, -2 * eta * H_j
