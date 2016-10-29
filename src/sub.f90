@@ -7144,9 +7144,10 @@ endif
       real, dimension(my-1) :: tmpy
       real, dimension(mz-1) :: tmpz
 
-      if (.not.lcartesian_coords) &
-        call fatal_error('calc_all_diff_fluxes', &
-                         'Slope-limited diffusion not implemented for curvilinear coordinates.')
+!      if (.not.lcartesian_coords) &
+!        call fatal_error('calc_all_diff_fluxes', &
+!                         'Slope-limited diffusion not implemented for curvilinear coordinates.')
+! JW: comment out for testing
 
       f(:,:,:,iFF_diff1:iFF_diff2)=0.
 
