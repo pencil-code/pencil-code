@@ -228,7 +228,12 @@
   \var{uyyrms}    & $u_{y,y}^{\rm rms}$ \\
   \var{uxzrms}    & $u_{x,z}^{\rm rms}$ \\
   \var{uyzrms}    & $u_{y,z}^{\rm rms}$ \\
-  \var{uzyrms}    & $u_{z,y}^{\rm rms}$
+  \var{uzyrms}    & $u_{z,y}^{\rm rms}$ \\
+  \var{dtF}       & $\delta t/[c_{\delta t}\,\delta x
+                    /\max|\mathbf{F}|]$
+                    \quad(time step relative to
+                    max force time step;
+                    see \S~\ref{time-step})
                     $ \int u_r(\theta,\phi)Y^m_{\ell}(\theta,\phi)\sin(\theta)d\theta d\phi$ \\
   \var{udpxxm}    & components of symmetric tensor
                     $\left< u_i \partial_j p + u_j \partial_i p \right>$ \\
@@ -282,6 +287,8 @@
                     step based on heat conductivity;
                     see \S~\ref{time-step}) \\
   \var{Hmax}      & $H_{\rm max}$\quad(net heat sources
+                    summed see \S~\ref{time-step}) \\
+  \var{tauhmin}   & $H_{\rm max}$\quad(net heat sources
                     summed see \S~\ref{time-step}) \\
   \var{dtH}       & $\delta t / [c_{\delta t,{\rm s}}\,
                     c_{\rm v}T /H_{\rm max}]$

@@ -1966,7 +1966,7 @@ or if you prefer a different compiler:
   %include compilers/Intel
 \end{verbatim}
 
-A more complex file (here using MPI) could include additional options:
+A more complex file (using MPI with additional options) would look like this:
 \begin{verbatim}
   # More complex config file.
   %include compilers/GNU-GCC_MPI
@@ -1984,14 +1984,17 @@ A more complex file (here using MPI) could include additional options:
     SCRATCH_DIR=/var/tmp/$USER
   %endsection environment
 \end{verbatim}
-Adding "_MPI" to a compiler suites name is usually sufficient to use MPI.
-Also the user is strongly discouraged to mix Fortran- and C-compilers across
-compiler suites by manually including separate compiler configuration files...
+Adding "_MPI" to a compiler suite's name is usually sufficient to use MPI.
 
 \subparagraph{Note 3:}
-We strongly advice to use at maximum the optimization level '-O2' for the
-Intel compiler and '-O3' for all other compilers. Higher optimization levels
-implicate an inadequate loss of precision.
+We strongly advise \emph{not} to mix Fortran- and C-compilers from different
+manufacturers or versions by manually including multiple separate compiler
+configurations.
+
+\subparagraph{Note 4:}
+We strongly advice to use \emph{at maximum} the optimization levels '-O2' for
+the Intel compiler and '-O3' for all other compilers. Higher optimization
+levels implicate an inadequate loss of precision.
 
 The .conf file consists of the following elements:
 \begin{description}

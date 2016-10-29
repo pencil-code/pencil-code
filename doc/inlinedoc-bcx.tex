@@ -24,6 +24,9 @@
   \var{a2}        & antisymmetry relative to boundary value,
                     $f_{N+i}=2 f_{N}-f_{N-i}$;
                     implies $f''(x_0)=0$ \\
+  \var{a2v}       & set boundary value and antisymmetry relative to it
+                    $f_{N+i}=2 f_{N}-f_{N-i}$;
+                    implies $f''(x_0)=0$ \\
   \var{a2r}       & sets $d^2f/dr^2 +2df/dr- 2f/r^2 = 0$
                     This is the replacement of zero second derivative
                     in spherical coordinates, in radial direction. \\
@@ -38,6 +41,8 @@
   \var{v}         & vanishing third derivative \\
   \var{cop}       & copy value of last physical point to all ghost cells \\
   \var{1s}        & onesided \\
+  \var{d1s}       & onesided for 1st derivative in two first inner points, Dirichlet in boundary point \\
+  \var{n1s}       & onesided for 1st derivative in two first inner points, Neumann in boundary point \\
   \var{1so}       & onesided \\
   \var{cT}        & constant temperature (implemented as
                     condition for entropy $s$ or temperature $T$) \\
