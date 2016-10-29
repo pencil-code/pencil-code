@@ -455,7 +455,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
   (in inverse alphabetical order according to their user name)\\
 \end{center}
 
-An up to date list of Pencil Code contributers can be found at
+An up to date list of Pencil Code contributors can be found at
 \htmladdnormallink{GitHub}
 {https://github.com/pencil-code/pencil-code/graphs/contributors}.
 
@@ -1992,7 +1992,7 @@ manufacturers or versions by manually including multiple separate compiler
 configurations.
 
 \subparagraph{Note 4:}
-We strongly advice to use \emph{at maximum} the optimization levels '-O2' for
+We strongly advise to use \emph{at maximum} the optimization levels '-O2' for
 the Intel compiler and '-O3' for all other compilers. Higher optimization
 levels implicate an inadequate loss of precision.
 
@@ -3108,7 +3108,7 @@ If you want to run a particular problem, it is best to start by
 modifying an existing example that is close to your application.
 
 Before starting a simulation run, you may want to execute the command \code{pc_configtest}
-in order to test the correctnes of your changes to these configuration files.
+in order to test the correctness of your changes to these configuration files.
 
 As an example, we give here the start parameters for
 \file[helical-MHDturb]{samples/helical-MHDturb}
@@ -4035,7 +4035,7 @@ del os, atexit, readline, rlcompleter, save_history, historyPath
 
 plt.ion()
 \end{alltt}
-create the file \texttt{.pythonhistory } and add to your \texttt{.bashrc}:
+create the file \texttt{.pythonhistory} and add to your \texttt{.bashrc}:
 \begin{alltt}
 export PYTHONSTARTUP=~/.pythonrc
 \end{alltt}
@@ -4052,7 +4052,7 @@ String Form:<function dot at 0x7f9d96cb0cf8>
 File:       ~/pencil-code/python/pencil/math/vector_multiplication.py
 Definition: pc.dot(a, b)
 Docstring:
-take dot product of two pencil-code vectors a & b with shabe
+take dot product of two pencil-code vectors a & b with shape
 
 a.shape = (3,mz,my,mx)
 \end{alltt}
@@ -4484,7 +4484,7 @@ We define the p-th order longitudinal structure function of $\vec{u}$ as
 \begin{equation}
 S^p_{\rm long}(l)=\left< | u_x(x{+}l,y,z)-u_x(x,y,z)|^p \right> \; ,
 \end{equation}
-while the transversal is
+while the transverse is
 \begin{equation}
 S^p_{\rm trans}(l)= \left< | u_y(x{+}l,y,z)-u_y(x,y,z)|^p \right>
                + \left< | u_z(x{+}l,y,z)-u_z(x,y,z)|^p \right> \; .
@@ -8103,7 +8103,7 @@ in Fig~\ref{cvsstat}.
     [width=\textwidth,keepaspectratio]%
     {weakscaling}
   \caption{Scaling results on Kraken at fixed load per processor, for a magnetized disk model in cylindrical coordinates.
-    The figure shows, after determing that 16$^3$ is the best load per processor for strong scaling, how far one can push
+    The figure shows, after determining that 16$^3$ is the best load per processor for strong scaling, how far one can push
     with weak scaling. The scaling index is found to be 0.7 for 16$^3$ and 0.93 for 64$^3$, up to 73\,728 processors.}
   \label{weakscaling}
 \end{figure}
@@ -8487,14 +8487,14 @@ The most general procedure for producing an initial condition
 with a turbulent spectrum is \code{inituu='power_randomphase_hel'},
 which allows one to set two different slopes, together with an
 exponential cutoff as well as a Gaussian peak within the spectrum.
-By default, the field is solenoidal inless one puts
+By default, the field is solenoidal unless one puts
 \code{lskip_projection=.true.} and can have fractional helicity
 by setting \code{relhel_uu} to a value between $-1$ and $1$.
 By default it is $0$, which means it is nonhelical.
 
 The spectral indices \var{initpower} and \var{initpower2} refer to
 energy spectral indices.
-By default, \var{initpower2=-5/3}, corresponding to a Kolmogov spectrum.
+By default, \var{initpower2=-5/3}, corresponding to a Kolmogorov spectrum.
 For a delta-correlated spectrum, we have to put \var{initpower=2},
 corresponding to a $k^2$ energy spectrum for kinetic energy.
 This would be suitable for the subinertial range from $k=1$ to
@@ -10518,9 +10518,9 @@ $\nu=-a1 c_{\rm CFL}|\uv|\delta x$ for $n=1$,
 and a hyperdiffusive error $-\nu_{\rm hyp}\nabla^4$ with positive
 $\nu_{\rm hyp}=a_3 c_{\rm CFL}^3 |\uv|\delta x^3$ for $n=3$.
 The fact that the hyperdiffusive error has a positive effective
-hyperdiffuvity is an important factor in the choice of this scheme.
+hyperdiffusivity is an important factor in the choice of this scheme.
 
-To decide whether the effective hyperdiffuvity from the diffusive
+To decide whether the effective hyperdiffusivity from the diffusive
 error is significant, we can compare with the error that {\em would}
 occur had we used a third-order upwinding scheme (Sect.~\ref{S-upwind}).
 In that case we would have an effective hyperdiffusive coefficient
