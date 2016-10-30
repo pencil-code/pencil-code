@@ -27,7 +27,7 @@ module Special
   real :: Kpara=0.,Kperp=0.,Kc=0.,Ksat=0.,Kiso=0.
   real :: cool_RTV=0.,exp_RTV=0.,cubic_RTV=0.,tanh_RTV=0.,width_RTV=0.
   real :: hyper3_chi=0.,hyper3_diffrho=0.,hyper2_spi=0.
-  real :: hyper3_spi=0.,hyper3_eta=0.,hyper3_nu=0.
+  real :: hyper3_spi=0.,hyper3_eta=0.,hyper3_nu=0.,R_hyper3=0.0
   real :: R_hyperchi=0.,R_hypereta=0.,R_hypernu=0.,R_hyperdiffrho=0.
   real :: tau_inv_newton=0.,exp_newton=0.,tanh_newton=0.,cubic_newton=0.
   real :: tau_inv_top=0.,tau_inv_newton_mark=0.,chi_spi=0.,tau_inv_spitzer=0.
@@ -62,7 +62,6 @@ module Special
   real, dimension(1) :: heat_par_rappazzo=0.
   real, dimension(1) :: heat_par_schrijver04=0.
   real, dimension(1) :: heat_par_balleg=0.
-  real :: R_hyper3
 !
   namelist /special_run_pars/ &
       heat_par_exp3,u_amplifier,twist_u0,rmin,rmax,hcond1,Ksat, &
@@ -426,7 +425,8 @@ module Special
       if (R_hypernu/=0. .or. R_hyperchi/=0. .or. &
           R_hypereta/=0. .or. R_hyperdiffrho/=0.) lpenc_requested(i_u2)=.true.
 !
-      if (ldensity_floor_c .or. maxvA/=0.) lpenc_requested(i_b2)=.true.
+!      if (ldensity_floor_c .or. maxvA/=0.) lpenc_requested(i_b2)=.true.
+! JW: This is already above.
 !
       if (R_hyper3 /= 0.) lpenc_requested(i_u2)=.true.
 !
