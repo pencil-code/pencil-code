@@ -139,7 +139,7 @@ module Special
   real, dimension(nx,ny,nz) :: Blength
   real, save :: tsnap_uu=0.
   integer, save :: isnap
-  real :: dt_gran,t_gran
+  real :: dt_gran=0.0,t_gran=0.0
 !
 !  miscellaneous variables
 !
