@@ -425,9 +425,6 @@ module Special
       if (R_hypernu/=0. .or. R_hyperchi/=0. .or. &
           R_hypereta/=0. .or. R_hyperdiffrho/=0.) lpenc_requested(i_u2)=.true.
 !
-!      if (ldensity_floor_c .or. maxvA/=0.) lpenc_requested(i_b2)=.true.
-! JW: This is already above.
-!
       if (R_hyper3 /= 0.) lpenc_requested(i_u2)=.true.
 !
     endsubroutine pencil_criteria_special
@@ -2438,10 +2435,10 @@ module Special
 !      Bz_fluxm=sum((time_SI - (tl+delta_t)) * (abs(Bz0r) - abs(Bz0l)) / (tr - tl) + abs(Bz0l))
 !      Bzfluxm =sum(abs((time_SI - (tl+delta_t)) * (Bz0r - Bz0l) / (tr - tl) + Bz0l))
 !!print*,Bz_fluxm/Bzfluxm
-!      
+!
 !      f(l1:l2,m1:m2,n1,iax:iaz) = f(l1:l2,m1:m2,n1,iax:iaz) * Bz_fluxm/Bzfluxm
 !
-!      f(l1:l2,m1:m2,n1,iax) = 0.9*f(l1:l2,m1:m2,n1,iax) & 
+!      f(l1:l2,m1:m2,n1,iax) = 0.9*f(l1:l2,m1:m2,n1,iax) &
 !                            + 0.1* ((time_SI - (tl+delta_t)) * (Axr - Axl) / (tr - tl) + Axl)
 !      f(l1:l2,m1:m2,n1,iay) = 0.9*f(l1:l2,m1:m2,n1,iay) &
 !                            + 0.1*((time_SI - (tl+delta_t)) * (Ayr - Ayl) / (tr - tl) + Ayl)
