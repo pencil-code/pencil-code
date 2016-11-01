@@ -359,13 +359,18 @@ if err ne 0 then return, 0
         fmt = strmid(fmt,0,strlen(fmt)-1)+'))'
 
       endif else $
-        fmt=0
+        fmt=''
 
       s0form = 0
     endif
 
     for i=0,ncomp-1 do begin
-      readf,2,spectrum1,format=fmt 
+
+      if fmt eq '' then $
+        readf,2,spectrum1 $
+      else $
+        readf,2,spectrum1,format=fmt 
+
       ;readf,2,spectrum1y,format=fmt 
       ;readf,2,spectrum1z,format=fmt 
 
