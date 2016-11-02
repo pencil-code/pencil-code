@@ -150,7 +150,7 @@ my @config_files;
 mention($Pencil::ConfigFinder::debug);
 $Pencil::ConfigFinder::debug = 1 if ($debug or $debug_config);
 if (defined $config_files) {
-    my @files = split(",", $config_files);
+    my @files = split(/[,\+]+/s, $config_files);
     @config_files = Pencil::ConfigFinder::locate_config_files(@files);
 } else {
     my $config_file;
