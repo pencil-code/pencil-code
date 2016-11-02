@@ -34,13 +34,13 @@ for file = jl_files
 	save = false
 	for line = readlines(src)
 		
-		if beginswith(line,"#>doc")
+		if line[1:5] == "#>doc"
 			save = true
-		elseif beginswith(line,"#>end")
+		elseif line[1:5] == "#>end"
 			save = false
 		elseif save
-			if beginswith(line,"#")  start = 2  end
-			if beginswith(line,"# ") start = 3  end
+			if line[1:1] "#"  start = 2  end
+			if line[1:2] "# " start = 3  end
 			text = text * line[start:end]
 		end
 		

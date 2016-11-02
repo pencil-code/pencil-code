@@ -109,7 +109,7 @@ function read_ts(;datadir="data")
     
     nrows = 0
     for line = lines
-        if !beginswith(line,"#")
+        if line[1] != '#'
             nrows += 1
             data[nrows,:] = float(split(line))
         end
@@ -122,14 +122,17 @@ function read_ts(;datadir="data")
     # Add the dust-to-gas ratio and solid-mass-fraction at each step.
     #
     param = read_param(datadir=datadir)
-    dtog0 = parsefloat(param["eps_dtog"])
-    ts["dtog"] = dtog0 * ts["rhom"][1] ./ ts["rhom"]
-    ts["Z"] = 1 ./ (1 + 1./ts["dtog"])
     
-    #
-    # Finish up.
-    #
-    ts["keys"] = [ header , "dtog" ]
+    if haskey(param, "eps_dtog")
+        dtog0 = parsefloat(param["eps_dtog"])
+        ts["dtog"] = dtog0 * ts["rhom"][1] ./ ts["rhom"]
+        ts["Z"] = 1 ./ (1 + 1./ts["dtog"])
+        
+        #
+        # Finish up.
+        #
+        ts["keys"] = [ header , "dtog" ]
+    end
     
     return ts
 end
