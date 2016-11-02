@@ -171,14 +171,14 @@ end
 #################
 
 type Particle
-    x ::FloatingPoint # x position.
-    y ::FloatingPoint # y position.
-    z ::FloatingPoint # z position.
-    vx::FloatingPoint # vx velocity.
-    vy::FloatingPoint # vy velocity.
-    vz::FloatingPoint # vz velocity.
-    a ::FloatingPoint # particle radius.
-    as::FloatingPoint # particle sink radius.
+    x ::Float64 # x position.
+    y ::Float64 # y position.
+    z ::Float64 # z position.
+    vx::Float64 # vx velocity.
+    vy::Float64 # vy velocity.
+    vz::Float64 # vz velocity.
+    a ::Float64 # particle radius.
+    as::Float64 # particle sink radius.
 end
 
 function read_particles(;datadir="data",proc=-1,snapshot=-1)
