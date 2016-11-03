@@ -93,7 +93,7 @@ module Dustdensity
   logical :: lsemi_chemistry=.false., lradius_binning=.false.
   logical :: lzero_upper_kern=.false., ldustcoagulation_simplified=.false.
   logical :: lself_collisions=.false.
-  logical :: llog10_for_admom_above10=.true., lmomcons=.true., lmomcons2=.false.
+  logical :: llog10_for_admom_above10=.true., lmomcons=.true., lmomcons2=.false., lmomcons3=.false.
   logical :: lkernel_mean=.false.
   integer :: iadvec_ddensity=0
   logical, pointer :: llin_radiusbins
@@ -130,7 +130,7 @@ module Dustdensity
       supsatratio_omega, ndmin_for_mdvar, &
       self_collisions, self_collision_factor, &
       lsemi_chemistry, lradius_binning, dkern_cst, lzero_upper_kern, &
-      llog10_for_admom_above10,lmomcons,lmomcons2, &
+      llog10_for_admom_above10,lmomcons,lmomcons2,lmomcons3, &
       lkernel_mean
 !
   integer :: idiag_KKm=0     ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
@@ -2936,6 +2936,22 @@ module Dustdensity
                           dndfac*(p%md(l,i)*f(3+l,m,n,iudz(i)) &
                           +p%md(l,j)*f(3+l,m,n,iudz(j)) &
                           -p%md(l,k)*f(3+l,m,n,iudz(k)))/ &
+                          (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
+                    elseif (lmomcons3) then
+                      df(3+l,m,n,iudx(k)) = df(3+l,m,n,iudx(k)) - &
+                          2*dndfac*(p%md(l,i)*f(3+l,m,n,iudx(i)) &
+                          +p%md(l,j)*f(3+l,m,n,iudx(j)) &
+                          -0.5*((p%md(l,i)+p%md(l,j))*f(3+l,m,n,iudx(k))))/ &
+                          (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
+                      df(3+l,m,n,iudy(k)) = df(3+l,m,n,iudy(k)) - &
+                          2*dndfac*(p%md(l,i)*f(3+l,m,n,iudy(i)) &
+                          +p%md(l,j)*f(3+l,m,n,iudy(j)) &
+                          -0.5*((p%md(l,i)+p%md(l,j))*f(3+l,m,n,iudy(k))))/ &
+                          (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
+                      df(3+l,m,n,iudz(k)) = df(3+l,m,n,iudz(k)) - &
+                          2*dndfac*(p%md(l,i)*f(3+l,m,n,iudz(i)) &
+                          +p%md(l,j)*f(3+l,m,n,iudz(j)) &
+                          -0.5*((p%md(l,i)+p%md(l,j))*f(3+l,m,n,iudz(k))))/ &
                           (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
                     endif
                   endif
