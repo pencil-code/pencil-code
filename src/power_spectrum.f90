@@ -515,6 +515,7 @@ module power_spectrum
 !   10-may-11/MR: modified for use with ranges in kx, ky, z; for output of true
 !                 (complex and componentwise) instead of power spectra
 !    5-may-14/MR: modifications for request of individual components of a vector field
+!    4-nov-16/MR: correction: no k_x, k_y output for shell-integrated spectra
 !
    use Mpicomm, only: mpireduce_sum, mpigather_xy, mpigather_and_out_real, mpigather_and_out_cmplx, &
                       mpimerge_1d, ipz, mpibarrier, mpigather_z
@@ -761,18 +762,20 @@ module power_spectrum
 !
       write(1,'(a)') title
 !
-      nkx = get_range_no( kxrange, nk_max )
-      nky = get_range_no( kyrange, nk_max )
-!
-      write(1,'(a)') 'Wavenumbers k_x ('//trim(itoa(nkx))//') and k_y ('//trim(itoa(nky))//'):'
-!
-      call write_by_ranges( 1, kx*2*pi/Lx, kxrange )
-      call write_by_ranges( 1, ky*2*pi/Ly, kyrange )
-!
       if (lintegrate_shell) then
 !
         write(1,'(a)') 'Shell-wavenumbers k ('//trim(itoa(nkl))//'):'
         write(1,'(1p,8e15.7)') kshell(1:nkl)
+!
+      else
+
+        nkx = get_range_no( kxrange, nk_max )
+        nky = get_range_no( kyrange, nk_max )
+!
+        write(1,'(a)') 'Wavenumbers k_x ('//trim(itoa(nkx))//') and k_y ('//trim(itoa(nky))//'):'
+!
+        call write_by_ranges( 1, kx*2*pi/Lx, kxrange )
+        call write_by_ranges( 1, ky*2*pi/Ly, kyrange )
 !
       endif
 !
