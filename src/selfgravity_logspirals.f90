@@ -34,6 +34,7 @@ module Selfgravity
   real, target :: tstart_selfgrav=0.0
   real, target :: tselfgrav_gentle = 0.0
   real :: kappa=0.0
+  real, dimension (nx) :: kappa_mn
 !
   logical :: lselfgravity_gas=.true., lselfgravity_dust=.false.
   logical :: lselfgravity_neutrals=.false.
@@ -61,7 +62,7 @@ module Selfgravity
   integer :: idiag_gpotselfx2m=0, idiag_gpotselfy2m=0, idiag_gpotselfz2m=0
   integer :: idiag_gxgym=0, idiag_gxgzm=0, idiag_gygzm=0
   integer :: idiag_grgpm=0, idiag_grgzm=0, idiag_gpgzm=0
-  integer :: idiag_qtoomre=0,idiag_qtoomremin=0
+  integer :: idiag_qtoomre=0,idiag_qtoomremin=0,idiag_qtoomremax=0
   integer :: idiag_jeanslength=0, idiag_ljeans2d=0
 !
 !  Module Variables
@@ -232,7 +233,14 @@ module Selfgravity
 !
 !  Initialize the epicycle frequency for calculating Toomre Q.
 !
-      if (kappa==0.0) kappa=Omega
+      if (kappa==0.0) then 
+        if (lshear) then 
+          kappa=Omega
+          kappa_mn = kappa
+        else
+          kappa_mn = 1./x(l1:l2)**1.5
+        endif
+      endif
       if (lroot.and.kappa/=0.0) &
           print*, 'initialize_selfgravity: epicycle frequency kappa = ', kappa
 !
@@ -268,7 +276,7 @@ module Selfgravity
         lpenc_diagnos(i_phiy)=.true.
       endif
 !
-      if (idiag_qtoomre/=0.or.idiag_qtoomremin/=0.or.idiag_jeanslength/=0.or.idiag_ljeans2d/=0) then
+      if (idiag_qtoomre/=0.or.idiag_qtoomremin/=0.or.idiag_qtoomremax/=0.or.idiag_jeanslength/=0.or.idiag_ljeans2d/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_cs2)=.true.
       endif
@@ -345,7 +353,7 @@ module Selfgravity
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
-      real, dimension (nx,ny,nz) :: rhs_poisson
+      real, dimension (nx,ny,nz) :: rhs_poisson=0.0
       real, dimension (nx,ny,nz,3) :: gpotself
 !
       integer :: k
@@ -478,12 +486,19 @@ module Selfgravity
              call sum_mn_name(p%gpotself(:,2)*p%gpotself(:,3),idiag_gygzm)
         if (idiag_grgpm/=0 .or. idiag_grgzm/=0 .or. idiag_gpgzm/=0) &
              call calc_cylgrav_stresses(p)
-        if (idiag_qtoomre/=0) &
-             call sum_mn_name(kappa*sqrt(p%cs2)/ &
+        if (idiag_qtoomre/=0) then
+          !print*,maxval(kappa_mn),maxval(sqrt(p%cs2)),maxval(gravitational_const*pi*p%rho)
+          !print*,minval(kappa_mn),minval(sqrt(p%cs2)),minval(gravitational_const*pi*p%rho)
+             call sum_mn_name(kappa_mn*sqrt(p%cs2)/ &
              (gravitational_const*pi*p%rho),idiag_qtoomre)
+           endif
+           !stop
         if (idiag_qtoomremin/=0) &
-             call max_mn_name(-kappa*sqrt(p%cs2)/ &
+             call max_mn_name(-kappa_mn*sqrt(p%cs2)/ &
              (gravitational_const*pi*p%rho),idiag_qtoomremin,lneg=.true.)
+        if (idiag_qtoomremax/=0) &
+             call max_mn_name(kappa_mn*sqrt(p%cs2)/ &
+             (gravitational_const*pi*p%rho),idiag_qtoomremax)
         if (idiag_jeanslength/=0) call max_mn_name(-sqrt(pi*p%cs2/ &
             (gravitational_const*p%rho)),idiag_jeanslength,lneg=.true.)
         if (idiag_ljeans2d/=0) call max_mn_name(-p%cs2/ &
@@ -593,7 +608,7 @@ module Selfgravity
         idiag_gpotselfx2m=0; idiag_gpotselfy2m=0; idiag_gpotselfz2m=0
         idiag_gxgym=0; idiag_gxgzm=0; idiag_gygzm=0
         idiag_grgpm=0; idiag_grgzm=0; idiag_gpgzm=0
-        idiag_qtoomre=0; idiag_qtoomremin=0
+        idiag_qtoomre=0; idiag_qtoomremin=0; idiag_qtoomremax=0
         idiag_jeanslength=0; idiag_ljeans2d=0
       endif
 !
@@ -624,6 +639,7 @@ module Selfgravity
         call parse_name(iname,cname(iname),cform(iname),'gpgzm',idiag_gpgzm)
         call parse_name(iname,cname(iname),cform(iname),'qtoomre',idiag_qtoomre)
         call parse_name(iname,cname(iname),cform(iname),'qtoomremin',idiag_qtoomremin)
+        call parse_name(iname,cname(iname),cform(iname),'qtoomremax',idiag_qtoomremax)
         call parse_name(iname,cname(iname),cform(iname),'jeanslength',idiag_jeanslength)
         call parse_name(iname,cname(iname),cform(iname),'ljeans2d',idiag_ljeans2d)
       enddo

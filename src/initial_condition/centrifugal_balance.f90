@@ -113,6 +113,7 @@ module InitialCondition
   logical :: lcorrect_lorentzforce=.false.
   logical :: lpolynomial_fit_cs2=.false.
   logical :: ladd_noise_propto_cs=.false.
+  logical :: lselfgravity_logspirals=.false.
   real :: ampluu_cs_factor=1d-3
   real :: widthbb1=0.0,widthbb2=0.0
   real :: OOcorot
@@ -130,7 +131,8 @@ module InitialCondition
        r0_pot,qgshear,n_pot,magnetic_power_law,lcorrect_lorentzforce,&
        lcorrect_pressuregradient,lpolynomial_fit_cs2,&
        ladd_noise_propto_cs,ampluu_cs_factor,widthbb1,widthbb2,&
-       bump_radius,bump_ampl,bump_width,ipressurebump
+       bump_radius,bump_ampl,bump_width,ipressurebump,&
+       lselfgravity_logspirals
 !
   contains
 !***********************************************************************
@@ -568,8 +570,13 @@ module InitialCondition
 !
 !  Correct the velocities for self-gravity
 !
-      if (lcorrect_selfgravity) &
-           call correct_for_selfgravity(f)
+      if (lcorrect_selfgravity) then
+        if (lselfgravity_logspirals) then 
+          call correct_for_selfgravity_logspirals(f)
+        else
+          call correct_for_selfgravity(f)
+        endif
+      endif
 !
 !  Set noise in low wavelengths only
 !
@@ -1240,6 +1247,7 @@ module InitialCondition
 !
       selfpotential(l1:l2,m1:m2,n1:n2)=&
            rhs_poisson_const*exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+!
       call inverse_laplacian(selfpotential(l1:l2,m1:m2,n1:n2))
 !
       f(l1:l2,m1:m2,n1:n2,ipotself)=selfpotential(l1:l2,m1:m2,n1:n2)
@@ -1269,6 +1277,66 @@ module InitialCondition
       enddo;enddo
 !
     endsubroutine correct_for_selfgravity
+!***********************************************************************
+    subroutine correct_for_selfgravity_logspirals(f)
+!
+!  Correct for the fluid's self-gravity in the centrifugal force
+!
+!  03-dec-07/wlad: coded
+!
+      use Sub,         only:get_radial_distance,grad
+      use Poisson,     only:inverse_laplacian
+      use Boundcond,   only:update_ghosts
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      real, dimension (mx,my,mz) :: rho
+      real, dimension (nx,ny,nz,3) :: gpotself
+      real, dimension (nx) :: gspotself,rr_cyl,rr_sph
+      real :: rhs_poisson_const
+!
+      if (lroot) print*,'Correcting for self-gravity on the '//&
+           'centrifugal force'
+      if (.not.lpoisson) then 
+        print*,"You want to correct for selfgravity but you "
+        print*,"are using POISSON=nopoisson in src/Makefile.local. "
+        print*,"Please use a poisson solver."
+        call fatal_error("correct_for_selfgravity","")
+      endif
+!
+!  Poisson constant is 4piG, this has to be consistent with the 
+!  constant in poisson_init_pars
+!
+      !rhs_poisson_const=4*pi*gravitational_const
+!
+      rho(l1:l2,m1:m2,n1:n2)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+!     
+      call inverse_laplacian(rho(l1:l2,m1:m2,n1:n2),gpotself)
+      !print*,minval(gpotself(:,:,:,1)),maxval(gpotself(:,:,:,1))
+      !stop
+!
+      do n=n1,n2 ; do m=m1,m2
+!
+!  Get the potential gradient
+!
+        !call get_radial_distance(rr_sph,rr_cyl)
+        !call grad(f,ipotself,gpotself)
+!
+!  correct the angular frequency phidot^2
+!
+        if (lcartesian_coords) then
+          !gspotself=(gpotself(:,1)*x(l1:l2) + gpotself(:,2)*y(m))/rr_cyl
+        elseif (lcylindrical_coords) then
+          gspotself=gpotself(:,m-m1+1,n-n1+1,1)
+        elseif (lspherical_coords) then
+          !gspotself=gpotself(:,1)*sinth(m) + gpotself(:,2)*costh(m)
+        endif
+!
+        call correct_azimuthal_velocity(f,gspotself)
+!
+      enddo;enddo
+!
+    endsubroutine correct_for_selfgravity_logspirals
 !***********************************************************************
     subroutine correct_lorentz_numerical(f)
 !
