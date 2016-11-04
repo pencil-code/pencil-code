@@ -68,7 +68,8 @@ module Dustdensity
   real :: Rgas_unit_sys, m_w=18., m_s=60.
   real :: AA=0.66e-4,  Ntot=1., dt_substep=2e-7
   real :: nd_reuni,init_x1, init_x2, a0=0., a1=0.
-  real :: dndfac_sum
+  real :: dndfac_sum, dndfac_sum2, momcons_sum_x, momcons_sum_y, momcons_sum_z
+  real :: momcons_term_frac=1.
   integer :: iglobal_nd=0
   integer :: spot_number=1
   character (len=labellen), dimension (ninit) :: initnd='nothing'
@@ -93,8 +94,9 @@ module Dustdensity
   logical :: lsemi_chemistry=.false., lradius_binning=.false.
   logical :: lzero_upper_kern=.false., ldustcoagulation_simplified=.false.
   logical :: lself_collisions=.false.
-  logical :: llog10_for_admom_above10=.true., lmomcons=.true., lmomcons2=.false., lmomcons3=.false.
-  logical :: lkernel_mean=.false.
+  logical :: llog10_for_admom_above10=.true., lmomcons=.true., lmomconsb=.false.
+  logical :: lmomcons2=.false., lmomcons3=.false., lmomcons3b=.false.
+  logical :: lkernel_mean=.false., lpiecewise_constant_kernel=.false.
   integer :: iadvec_ddensity=0
   logical, pointer :: llin_radiusbins
   real, pointer :: deltamd
@@ -130,10 +132,14 @@ module Dustdensity
       supsatratio_omega, ndmin_for_mdvar, &
       self_collisions, self_collision_factor, &
       lsemi_chemistry, lradius_binning, dkern_cst, lzero_upper_kern, &
-      llog10_for_admom_above10,lmomcons,lmomcons2,lmomcons3, &
-      lkernel_mean
+      llog10_for_admom_above10,lmomcons, lmomconsb, lmomcons2, lmomcons3, lmomcons3b, &
+      lkernel_mean, lpiecewise_constant_kernel, momcons_term_frac
 !
   integer :: idiag_KKm=0     ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
+  integer :: idiag_KK2m=0    ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
+  integer :: idiag_MMxm=0    ! DIAG_DOC: $\sum {\cal M}^x_k^{\rm coag}$
+  integer :: idiag_MMym=0    ! DIAG_DOC: $\sum {\cal M}^y_k^{\rm coag}$
+  integer :: idiag_MMzm=0    ! DIAG_DOC: $\sum {\cal M}^z_k^{\rm coag}$
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdmtot=0
   integer :: idiag_rhodmxy=0, idiag_ndmxy=0
@@ -2161,7 +2167,11 @@ module Dustdensity
 !
 !  end of do loop for dust species above.
 !
+        if (idiag_MMxm/=0) call sum_mn_name(spread(momcons_sum_x,1,nx), idiag_MMxm)
+        if (idiag_MMym/=0) call sum_mn_name(spread(momcons_sum_y,1,nx), idiag_MMym)
+        if (idiag_MMzm/=0) call sum_mn_name(spread(momcons_sum_z,1,nx), idiag_MMzm)
         if (idiag_KKm/=0) call sum_mn_name(spread((-dndfac_sum/nx),1,nx), idiag_KKm)
+        if (idiag_KK2m/=0) call sum_mn_name(spread((-dndfac_sum2/nx),1,nx), idiag_KK2m)
         if (idiag_adm/=0) call sum_mn_name(sum(spread((md/(4/3.*pi*rhods))**(1/3.),1,nx)*p%nd,2)/sum(p%nd,2), idiag_adm)
         if (idiag_mdmtot/=0) call sum_mn_name(sum(spread(md,1,nx)*p%nd,2), idiag_mdmtot)
 !
@@ -2611,7 +2621,11 @@ module Dustdensity
 !  As a test, can set kernel to a constant 
 !
       if (.not.lcalcdkern) then
-        dkern = dkern_cst
+        if (lpiecewise_constant_kernel) then
+          dkern = dkern_cst
+        else
+          dkern = dkern_cst
+        endif
       else
 !
       tl01=1/tl0
@@ -2841,6 +2855,7 @@ module Dustdensity
       type (pencil_case) :: p
 !
       real :: dndfac, dndfaci, dndfacj, dndfac_momconsi, dndfac_momconsj
+      real :: momcons_term_x,momcons_term_y,momcons_term_z
       integer :: i,j,k,l
       logical :: lmdvar_noevolve=.false.
 !
@@ -2848,16 +2863,25 @@ module Dustdensity
 !  dndfac_sum is used for diagnostics
 !
       dndfac_sum=0.
+      dndfac_sum2=0.
+      momcons_sum_x=0.
+      momcons_sum_y=0.
+      momcons_sum_z=0.
       do l=1,nx
         do i=1,ndustspec; do j=i,ndustspec
           dndfac = -dkern(l,i,j)*p%nd(l,i)*p%nd(l,j)
-          dndfaci = -dkern(l,i,j)*p%nd(l,j)
-          dndfacj = -dkern(l,i,j)*p%nd(l,j)
+          if (lmomcons2) then
+            dndfaci = -dkern(l,i,j)*p%nd(l,j)
+            dndfacj = -dkern(l,i,j)*p%nd(l,j)
+          endif
           dndfac_sum = dndfac_sum + dndfac
+          !dndfac_sum2= dndfac_sum2+ dndfac
 !
 !  do second term (with minus sign, which is in dndfac factor):
 !    - fk \sum Kik fi term
 !    - fk mk uk \sum Kik fi term
+!  It is done twice for a triangle, but since the array is symmetric
+!  in i and j, we get twice half the part, which is the full part.
 !
           if (dndfac/=0.0) then
             if (lradius_binning) then
@@ -2883,6 +2907,7 @@ module Dustdensity
                   .and. p%md(l,i) + p%md(l,j) < mdplus(k)) then
                 if (lmdvar) then
                   df(3+l,m,n,ind(k)) = df(3+l,m,n,ind(k)) - dndfac
+                  dndfac_sum2= dndfac_sum2 - dndfac
                   if (.not.lmdvar_noevolve) then
                     if (p%nd(l,k) < ndmin_for_mdvar) then
                       f(3+l,m,n,imd(k)) = p%md(l,i) + p%md(l,j)
@@ -2911,6 +2936,7 @@ module Dustdensity
                   else
                     df(3+l,m,n,ind(k)) = df(3+l,m,n,ind(k)) - &
                         dndfac*(p%md(l,i)+p%md(l,j))/p%md(l,k)
+                    dndfac_sum2= dndfac_sum2 - dndfac
 !
 !  momentum conservation treatment (first term)
 !  dvk/dt = 1/2 \sum Kij (mi*ui+mj*uj)/mk fi fj
@@ -2919,25 +2945,62 @@ module Dustdensity
                     if (lmomcons2) then
                       df(3+l,m,n,iudz(k)) = df(3+l,m,n,iudz(k)) + &
                           dndfac*(p%md(l,i)+p%md(l,j))/p%md(l,k) &
-                          *p%md(l,k)*f(3+l,m,n,iudz(k))/ &
+                          !*p%md(l,k)*f(3+l,m,n,iudz(k))/ &
+                          !(p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
+                          *f(3+l,m,n,iudz(k))/ &
+                          ((p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
+                    elseif (lmomcons3) then
+                      momcons_term_x= - &
+                          dndfac_sum2*f(3+l,m,n,iudx(i))/ &
                           (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
+                      df(3+l,m,n,iudx(k)) = df(3+l,m,n,iudx(k)) + momcons_term_x
+!
+                      momcons_term_y= - &
+                          dndfac_sum2*f(3+l,m,n,iudy(i))/ &
+                          (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
+                      df(3+l,m,n,iudy(k)) = df(3+l,m,n,iudy(k)) + momcons_term_y
+!
+                      momcons_term_z= - &
+                          dndfac_sum2*f(3+l,m,n,iudz(i))/ &
+                          (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
+                      df(3+l,m,n,iudz(k)) = df(3+l,m,n,iudz(k)) + momcons_term_z
+!
+                      momcons_sum_x=momcons_sum_x+momcons_term_x
+                      momcons_sum_y=momcons_sum_y+momcons_term_y
+                      momcons_sum_z=momcons_sum_z+momcons_term_z
                     elseif (lmomcons) then
-                      df(3+l,m,n,iudx(k)) = df(3+l,m,n,iudx(k)) - &
+                      momcons_term_x= - &
                           dndfac*(p%md(l,i)*f(3+l,m,n,iudx(i)) &
                           +p%md(l,j)*f(3+l,m,n,iudx(j)) &
                           -p%md(l,k)*f(3+l,m,n,iudx(k)))/ &
                           (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
-                      df(3+l,m,n,iudy(k)) = df(3+l,m,n,iudy(k)) - &
+                      df(3+l,m,n,iudx(k)) = df(3+l,m,n,iudx(k)) + momcons_term_x
+!
+                      momcons_term_y= - &
                           dndfac*(p%md(l,i)*f(3+l,m,n,iudy(i)) &
                           +p%md(l,j)*f(3+l,m,n,iudy(j)) &
                           -p%md(l,k)*f(3+l,m,n,iudy(k)))/ &
                           (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
-                      df(3+l,m,n,iudz(k)) = df(3+l,m,n,iudz(k)) - &
+                      df(3+l,m,n,iudy(k)) = df(3+l,m,n,iudy(k)) + momcons_term_y
+!
+                      if (lmomconsb) then
+                      momcons_term_z= - &
+                          dndfac*(2*p%md(l,i)*f(3+l,m,n,iudz(i)) &
+                          +2*p%md(l,j)*f(3+l,m,n,iudz(j)) &
+                          -(p%md(l,i)+p%md(l,j))*f(3+l,m,n,iudz(k)))/ &
+                          (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
+                      else
+                      momcons_term_z= - &
                           dndfac*(p%md(l,i)*f(3+l,m,n,iudz(i)) &
                           +p%md(l,j)*f(3+l,m,n,iudz(j)) &
                           -p%md(l,k)*f(3+l,m,n,iudz(k)))/ &
                           (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
-                    elseif (lmomcons3) then
+                      endif
+                      df(3+l,m,n,iudz(k)) = df(3+l,m,n,iudz(k)) + momcons_term_z * momcons_term_frac
+                      momcons_sum_x=momcons_sum_x+momcons_term_x
+                      momcons_sum_y=momcons_sum_y+momcons_term_y
+                      momcons_sum_z=momcons_sum_z+momcons_term_z
+                    elseif (lmomcons3b) then
                       df(3+l,m,n,iudx(k)) = df(3+l,m,n,iudx(k)) - &
                           2*dndfac*(p%md(l,i)*f(3+l,m,n,iudx(i)) &
                           +p%md(l,j)*f(3+l,m,n,iudx(j)) &
@@ -3049,7 +3112,7 @@ module Dustdensity
 !  Reset everything in case of reset.
 !
       if (lreset) then
-        idiag_mdm=0; idiag_KKm=0
+        idiag_mdm=0; idiag_KKm=0; idiag_KK2m=0; idiag_MMxm=0; idiag_MMym=0; idiag_MMzm=0
         idiag_ndm=0; idiag_ndmin=0; idiag_ndmax=0; idiag_ndmt=0; idiag_rhodm=0
         idiag_rhodmin=0; idiag_rhodmax=0; idiag_rhodmxy=0; idiag_ndmxy=0
         idiag_nd2m=0; idiag_rhodmt=0; idiag_rhoimt=0; idiag_epsdrms=0
@@ -3129,7 +3192,11 @@ module Dustdensity
 !  Non-species-dependent diagnostics.
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'MMxm',idiag_MMxm)
+        call parse_name(iname,cname(iname),cform(iname),'MMym',idiag_MMym)
+        call parse_name(iname,cname(iname),cform(iname),'MMzm',idiag_MMzm)
         call parse_name(iname,cname(iname),cform(iname),'KKm',idiag_KKm)
+        call parse_name(iname,cname(iname),cform(iname),'KK2m',idiag_KK2m)
         call parse_name(iname,cname(iname),cform(iname),'ndmt',idiag_ndmt)
         call parse_name(iname,cname(iname),cform(iname),'rhodmt',idiag_rhodmt)
         call parse_name(iname,cname(iname),cform(iname),'rhoimt',idiag_rhoimt)
