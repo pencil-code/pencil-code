@@ -133,7 +133,7 @@ my $quiet          = ($opts{'q'} || $opts{'quiet'}           || '');
 
 my @config_files;
 if (defined $config_files) {
-    my @files = split(/[,\+]+/s, $config_files);
+    my @files = split(/[,\s\+]+/s, $config_files);
     @config_files = Pencil::ConfigFinder::locate_config_files(@files) ;
 } else {
     mention($Pencil::ConfigFinder::debug);
