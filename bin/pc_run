@@ -620,7 +620,7 @@ sub run_system_cmd {
     if ($debug) {
         print "Running system cmd <", join("> <", @cmd_line), ">\n";
     } else {
-        print "Running\n  @cmd_line\n";
+        print "Running '@cmd_line'...\n";
     }
     my $status = system(@cmd_line);
     ($status == 0) or warn "@cmd_line failed: $!\n";
@@ -630,7 +630,7 @@ sub run_system_cmd {
         clear_error();
     }
 
-    die "Aborting\n" if ($status);
+    die "Aborting.\n" if ($status);
 }
 # ---------------------------------------------------------------------- #
 sub run_system_cmd_recoverably {
