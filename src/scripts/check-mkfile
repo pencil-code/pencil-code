@@ -10,5 +10,8 @@
 
 for arg in "$@"
 do
-	sed 's/^\(\s*[^#=]\+=.*\S\)\s\+$/\1/g' -i "${arg}"
+	grep -qP '^\s*[^#=]+=.*?\S\s+$' "${arg}"
+	if [ $? -eq 0 ] ; then
+		sed 's/^\(\s*[^#=]\+=.*\S\)\s\+$/\1/g' -i "${arg}"
+	fi
 done
