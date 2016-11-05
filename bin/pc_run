@@ -597,13 +597,13 @@ sub time_system_cmd {
 
     write_to_file('run_command.log', "@cmd_line");
 
-    my @time_cmd;
     if (-X '/usr/bin/time') {
-        @time_cmd = ('/usr/bin/time', '-p');
+        run_system_cmd(('/usr/bin/time', '-p'), @cmd_line);
+    } elsif (exec('time echo 1') != 0) {
+        run_system_cmd('time', @cmd_line);
     } else {
-        @time_cmd = 'time';
+        run_system_cmd(@cmd_line);
     }
-    run_system_cmd(@time_cmd, @cmd_line);
 }
 # ---------------------------------------------------------------------- #
 sub run_system_cmd {
@@ -622,7 +622,7 @@ sub run_system_cmd {
     } else {
         print "Running '@cmd_line'...\n";
     }
-    my $status = system(@cmd_line);
+    my $status = exec(@cmd_line);
     ($status == 0) or warn "@cmd_line failed: $!\n";
     if (-e $errorfile) {
         print "Found ERROR file from start.x\n";
