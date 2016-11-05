@@ -253,6 +253,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		E_j:'current electric field', $
 ;		grad_E_abs:'grad electric field strength', $
 		grad_Temp:'grad temperature', $
+		grad_rho:'grad density', $
 		grad_P_therm:'grad thermal pressure', $
 		a_grav:'Gravity acceleration', $
 		F_grav:'Gravity force', $
@@ -414,6 +415,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		rho_c:['rho', 'B'], $
 		rho_c_ratio:['rho', 'rho_c'], $
 		rho:{ rho:['lnrho', 'rho'] }, $
+		grad_rho:'rho', $
 		ln_rho:'rho', $
 		log_rho:'rho', $
 		n_rho:'rho', $
