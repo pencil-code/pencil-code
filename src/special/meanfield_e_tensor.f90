@@ -1,35 +1,12 @@
 ! $Id$
 !
-!  This module provide a way for users to specify custom
-!  (i.e. not in the standard Pencil Code) physics, diagnostics etc.
+! This special module will contribute a mean electromotive
+! force to the vector potential differential equation.
+! 
+! Calculation is done term by term, where each contribution
+! is calculated using tensors supplied in a HDF5 file emftensors.h5.
 !
-!  The module provides a set of standard hooks into the Pencil-Code and
-!  currently allows the following customizations:
-!
-!  Description                                     | Relevant function call
-!  ---------------------------------------------------------------------------
-!  Special variable registration                   | register_special
-!    (pre parameter read)                          |
-!  Special variable initialization                 | initialize_special
-!    (post parameter read)                         |
-!  Special variable finalization                   | finalize_special
-!    (deallocation, etc.)                          |
-!                                                  |
-!  Special initial condition                       | init_special
-!   this is called last so may be used to modify   |
-!   the mvar variables declared by this module     |
-!   or optionally modify any of the other f array  |
-!   variables.  The latter, however, should be     |
-!   avoided where ever possible.                   |
-!                                                  |
-!  Special term in the mass (density) equation     | special_calc_density
-!  Special term in the momentum (hydro) equation   | special_calc_hydro
-!  Special term in the energy equation             | special_calc_energy
-!  Special term in the induction (magnetic)        | special_calc_magnetic
-!     equation                                     |
-!                                                  |
-!  Special equation                                | dspecial_dt
-!    NOT IMPLEMENTED FULLY YET - HOOKS NOT PLACED INTO THE PENCIL-CODE
+! Simo Tuomisto, simo.tuomisto@aalto.fi
 !
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of special_dummies.inc) the number of f array
@@ -40,49 +17,25 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED alpha_emf(3,3); beta_emf(3,3); gamma_emf(3)
-! PENCILS PROVIDED delta_emf(3); kappa_emf(3,3,3); utensor_emf(3)
+! PENCILS PROVIDED alpha_coefs(3,3); beta_coefs(3,3); gamma_coefs(3)
+! PENCILS PROVIDED delta_coefs(3); kappa_coefs(3,3,3); utensor_coefs(3)
+! PENCILS PROVIDED acoef_coefs(3,3); bcoef_coefs(3,3,3)
+! PENCILS PROVIDED alpha_emf(3); beta_emf(3); gamma_emf(3)
+! PENCILS PROVIDED delta_emf(3); kappa_emf(3); utensor_emf(3)
+! PENCILS PROVIDED acoef_emf(3); bcoef_emf(3)
 ! PENCILS PROVIDED bij_symm(3,3)
 !
 !***************************************************************
-!
-! HOW TO USE THIS FILE
-! --------------------
-!
-! Change the line above to
-!   lspecial = .true.
-! to enable use of special hooks.
-!
-! The rest of this file may be used as a template for your own
-! special module.  Lines which are double commented are intended
-! as examples of code.  Simply fill out the prototypes for the
-! features you want to use.
-!
-! Save the file with a meaningful name, eg. geo_kws.f90 and place
-! it in the $PENCIL_HOME/src/special directory.  This path has
-! been created to allow users ot optionally check their contributions
-! in to the Pencil-Code SVN repository.  This may be useful if you
-! are working on/using the additional physics with somebodyelse or
-! may require some assistance from one of the main Pencil-Code team.
-!
-! To use your additional physics code edit the Makefile.local in
-! the src directory under the run directory in which you wish to
-! use your additional physics.  Add a line with all the module
-! selections to say something like:
-!
-!   SPECIAL=special/geo_kws
-!
-! Where geo_kws it replaced by the filename of your new module
-! upto and not including the .f90
 !
 module Special
 !
   use Cparam
   use Cdata
+  use Diagnostics
   use General, only: keep_compiler_quiet
   use Messages, only: svn_id, fatal_error
   use Mpicomm, only: mpibarrier
-  use Sub, only: numeric_precision, dot_mn, dot_mn_vm, curl_mn, cross_mn, vec_dot_3tensor
+  use Sub, only: numeric_precision, dot_mn, dot_mn_vm, curl_mn, cross_mn, vec_dot_3tensor,dot2_mn
   use HDF5
   use File_io, only: parallel_unit
 !
@@ -101,7 +54,7 @@ module Special
                     hdf_emftensors_plist, &
                     hdf_emftensors_group
   ! Dataset HDF object ids
-  integer, parameter :: ntensors = 6
+  integer, parameter :: ntensors = 8
   integer(HID_T),   dimension(ntensors) :: tensor_id_G, tensor_id_D, &
                                     tensor_id_S, tensor_id_memS
   integer(HSIZE_T), dimension(ntensors,10) :: tensor_dims, &
@@ -110,29 +63,68 @@ module Special
                                       tensor_memoffsets, tensor_memcounts
                                       
   ! Actual datasets
-  real, dimension(:,:,:,:,:,:)  , allocatable :: alpha_data, beta_data
+  real, dimension(:,:,:,:,:,:)  , allocatable :: alpha_data, beta_data, &
+                                                 acoef_data
   real, dimension(:,:,:,:,:)    , allocatable :: gamma_data, delta_data, &
                                                  utensor_data
-  real, dimension(:,:,:,:,:,:,:), allocatable :: kappa_data
+  real, dimension(:,:,:,:,:,:,:), allocatable :: kappa_data, bcoef_data
   ! Dataset mappings
-  integer,parameter :: alpha_id=1, beta_id=2,   &
-                       gamma_id=3, delta_id=4,  &
-                       kappa_id=5, utensor_id=6
-  integer, dimension(ntensors),parameter :: tensor_ndims = (/ 6, 6, 5, 5, 7, 5 /) 
+  integer,parameter :: alpha_id=1, beta_id=2,    &
+                       gamma_id=3, delta_id=4,   &
+                       kappa_id=5, utensor_id=6, & 
+                       acoef_id=7, bcoef_id=8
+  integer, dimension(ntensors),parameter :: tensor_ndims = (/ 6, 6, 5, 5, 7, 5, 6, 7 /) 
   ! Dataset logical variables
-  logical, dimension(3,3)   :: lalpha_arr, lbeta_arr
+  logical, dimension(3,3)   :: lalpha_arr, lbeta_arr, lacoef_arr
   logical, dimension(3)     :: lgamma_arr, ldelta_arr, lutensor_arr
-  logical, dimension(3,3,3) :: lkappa_arr
-  logical, dimension(6)     :: lalpha_c, lbeta_c
+  logical, dimension(3,3,3) :: lkappa_arr, lbcoef_arr
+  logical, dimension(6)     :: lalpha_c, lbeta_c, lacoef_c
   logical, dimension(3)     :: lgamma_c, ldelta_c, lutensor_c
-  logical, dimension(3,3,3) :: lkappa_c
-  logical :: lalpha, lbeta, lgamma, ldelta, lkappa, lutensor
-  real :: alpha_scale, beta_scale, gamma_scale, delta_scale, kappa_scale, utensor_scale
-  character (len=fnlen) :: alpha_name, beta_name,  &
-                           gamma_name, delta_name, &
-                           kappa_name, utensor_name
+  logical, dimension(3,3,3) :: lkappa_c, lbcoef_c
+  logical :: lalpha, lbeta, lgamma, ldelta, lkappa, lutensor, lacoef, lbcoef
+  real :: alpha_scale, beta_scale, gamma_scale, delta_scale, kappa_scale, utensor_scale, acoef_scale, bcoef_scale
+  character (len=fnlen) :: defaultname
+  character (len=fnlen) :: alpha_name, beta_name,    &
+                           gamma_name, delta_name,   &
+                           kappa_name, utensor_name, &
+                           acoef_name, bcoef_name
   character (len=fnlen), dimension(ntensors) :: tensor_names
   real, dimension(ntensors) :: tensor_scales, tensor_maxvals, tensor_minvals
+  ! Diagnostic variables
+  ! Max diagnostics
+  integer :: idiag_emfalphaxmax=0
+  integer :: idiag_emfalphaymax=0
+  integer :: idiag_emfalphazmax=0
+  integer :: idiag_emfbetaxmax=0
+  integer :: idiag_emfbetaymax=0
+  integer :: idiag_emfbetazmax=0
+  integer :: idiag_emfgammaxmax=0
+  integer :: idiag_emfgammaymax=0
+  integer :: idiag_emfgammazmax=0
+  integer :: idiag_emfdeltaxmax=0
+  integer :: idiag_emfdeltaymax=0
+  integer :: idiag_emfdeltazmax=0
+  integer :: idiag_emfkappaxmax=0
+  integer :: idiag_emfkappaymax=0
+  integer :: idiag_emfkappazmax=0
+  integer :: idiag_emfutensorxmax=0
+  integer :: idiag_emfutensorymax=0
+  integer :: idiag_emfutensorzmax=0
+  integer :: idiag_emfacoefxmax=0
+  integer :: idiag_emfacoefymax=0
+  integer :: idiag_emfacoefzmax=0
+  integer :: idiag_emfbcoefxmax=0
+  integer :: idiag_emfbcoefymax=0
+  integer :: idiag_emfbcoefzmax=0
+! RMS diagnostics
+  integer :: idiag_emfalpharms=0
+  integer :: idiag_emfbetarms=0
+  integer :: idiag_emfgammarms=0
+  integer :: idiag_emfdeltarms=0
+  integer :: idiag_emfkapparms=0
+  integer :: idiag_emfutensorrms=0
+  integer :: idiag_emfacoefrms=0
+  integer :: idiag_emfbcoefrms=0
   ! Interpolation parameters
   character (len=fnlen) :: interpname
   integer :: dataload_len
@@ -142,17 +134,25 @@ module Special
   ! Input dataset name
   ! Input namelist
   namelist /special_init_pars/ &
-      alpha_scale,beta_scale,gamma_scale,delta_scale,kappa_scale,utensor_scale, &
-      alpha_name, beta_name, gamma_name, delta_name, kappa_name, utensor_name,  &
-      lalpha,     lbeta,     lgamma,     ldelta,     lkappa,     lutensor,      &
-      lalpha_c,   lbeta_c,   lgamma_c,   ldelta_c,   lkappa_c,   lutensor_c,    &
-      interpname
+      lalpha,   lalpha_c,   alpha_name,   alpha_scale, &
+      lbeta,    lbeta_c,    beta_name,    beta_scale, &
+      lgamma,   lgamma_c,   gamma_name,   gamma_scale, &
+      ldelta,   ldelta_c,   delta_name,   delta_scale, &
+      lkappa,   lkappa_c,   kappa_name,   kappa_scale, &
+      lutensor, lutensor_c, utensor_name, utensor_scale, &
+      lacoef,   lacoef_c,   acoef_name,   acoef_scale, &
+      lbcoef,   lbcoef_c,   bcoef_name,   bcoef_scale, &
+      interpname, defaultname
   namelist /special_run_pars/ &
-      alpha_scale,beta_scale,gamma_scale,delta_scale,kappa_scale,utensor_scale, &
-      alpha_name, beta_name, gamma_name, delta_name, kappa_name, utensor_name,  &
-      lalpha,     lbeta,     lgamma,     ldelta,     lkappa,     lutensor,      &
-      lalpha_c,   lbeta_c,   lgamma_c,   ldelta_c,   lkappa_c,   lutensor_c,    &
-      interpname
+      lalpha,   lalpha_c,   alpha_name,   alpha_scale, &
+      lbeta,    lbeta_c,    beta_name,    beta_scale, &
+      lgamma,   lgamma_c,   gamma_name,   gamma_scale, &
+      ldelta,   ldelta_c,   delta_name,   delta_scale, &
+      lkappa,   lkappa_c,   kappa_name,   kappa_scale, &
+      lutensor, lutensor_c, utensor_name, utensor_scale, &
+      lacoef,   lacoef_c,   acoef_name,   acoef_scale, &
+      lbcoef,   lbcoef_c,   bcoef_name,   bcoef_scale, &
+      interpname, defaultname
   ! loadDataset interface
   interface loadDataset
     module procedure loadDataset_rank1
@@ -318,9 +318,24 @@ module Special
         ! Load initial dataset values
 
         ! Allocate data arrays
+        allocate(alpha_data(nx,ny,nz,dataload_len,3,3))
+        allocate(beta_data(nx,ny,nz,dataload_len,3,3))
+        allocate(gamma_data(nx,ny,nz,dataload_len,3))
+        allocate(delta_data(nx,ny,nz,dataload_len,3))
+        allocate(kappa_data(nx,ny,nz,dataload_len,3,3,3))
+        allocate(utensor_data(nx,ny,nz,dataload_len,3))
+        allocate(acoef_data(nx,ny,nz,dataload_len,3,3))
+        allocate(bcoef_data(nx,ny,nz,dataload_len,3,3,3))
+        alpha_data    = 0
+        beta_data     = 0
+        gamma_data    = 0
+        delta_data    = 0
+        kappa_data    = 0
+        utensor_data  = 0
+        acoef_data    = 0
+        bcoef_data    = 0
+        ! Load datasets
         if (lalpha) then
-          allocate(alpha_data(nx,ny,nz,dataload_len,3,3))
-          alpha_data = 0
           call loadDataset(alpha_data, lalpha_arr, alpha_id, 0)
           if (lroot) then
               write (*,*) 'Alpha scale:  ', alpha_scale
@@ -332,8 +347,6 @@ module Special
           end if
         end if
         if (lbeta) then
-          allocate(beta_data(nx,ny,nz,dataload_len,3,3))
-          beta_data  = 0
           call loadDataset(beta_data, lbeta_arr, beta_id, 0)
           if (lroot) then
               write (*,*) 'Beta scale:  ', beta_scale
@@ -345,8 +358,6 @@ module Special
           end if
         end if
         if (lgamma) then
-          allocate(gamma_data(nx,ny,nz,dataload_len,3))
-          gamma_data = 0
           call loadDataset(gamma_data, lgamma_arr, gamma_id, 0)
           if (lroot) then
               write (*,*) 'Gamma scale:  ', gamma_scale
@@ -356,8 +367,6 @@ module Special
           end if
         end if
         if (ldelta) then
-          allocate(delta_data(nx,ny,nz,dataload_len,3))
-          delta_data = 0
           call loadDataset(delta_data, ldelta_arr, delta_id, 0)
           if (lroot) then
               write (*,*) 'Delta scale:  ', delta_scale
@@ -367,8 +376,6 @@ module Special
           end if
         end if
         if (lkappa) then
-          allocate(kappa_data(nx,ny,nz,dataload_len,3,3,3))
-          kappa_data = 0
           call loadDataset(kappa_data, lkappa_arr, kappa_id, 0)
           if (lroot) then
               write (*,*) 'Kappa scale:  ', kappa_scale
@@ -384,14 +391,37 @@ module Special
           end if
         end if
         if (lutensor) then
-          allocate(utensor_data(nx,ny,nz,dataload_len,3))
-          utensor_data = 0
           call loadDataset(utensor_data, lutensor_arr, utensor_id, 0)
           if (lroot) then
               write (*,*) 'U-tensor scale:  ', utensor_scale
               write (*,*) 'U-tensor maxval: ', maxval(utensor_data)
               write (*,*) 'U-tensor components used: '
               write (*,'(A3,3L3,A3)') '|', lutensor_arr, '|'
+          end if
+        end if
+        if (lacoef) then
+          call loadDataset(acoef_data, lacoef_arr, acoef_id, 0)
+          if (lroot) then
+              write (*,*) 'acoef scale:  ', acoef_scale
+              write (*,*) 'acoef maxval: ', maxval(acoef_data)
+              write (*,*) 'acoef components used: '
+              do i=1,3
+                  write (*,'(A3,3L3,A3)') '|', lacoef_arr(:,i), '|'
+              end do
+          end if
+        end if
+        if (lbcoef) then
+          call loadDataset(bcoef_data, lbcoef_arr, bcoef_id, 0)
+          if (lroot) then
+              write (*,*) 'bcoef scale:  ', bcoef_scale
+              write (*,*) 'bcoef maxval: ', maxval(bcoef_data)
+              write (*,*) 'bcoef components used: '
+              do j=1,3
+                write(*,*) '|'
+                do i=1,3
+                  write (*,'(A3,3L3,A3)') '||', lbcoef_arr(:,j,i), '||'
+                end do
+              end do
           end if
         end if
       end if
@@ -488,12 +518,14 @@ module Special
       lpenc_requested(i_bij)=.true.
       lpenc_requested(i_jj)=.true.
       lpenc_requested(i_bij_symm)=.true.
-      lpenc_requested(i_alpha_emf)=.true.
-      lpenc_requested(i_beta_emf)=.true.
-      lpenc_requested(i_gamma_emf)=.true.
-      lpenc_requested(i_delta_emf)=.true.
-      lpenc_requested(i_kappa_emf)=.true.
-      lpenc_requested(i_utensor_emf)=.true.
+      lpenc_requested(i_alpha_coefs)=.true.
+      lpenc_requested(i_beta_coefs)=.true.
+      lpenc_requested(i_gamma_coefs)=.true.
+      lpenc_requested(i_delta_coefs)=.true.
+      lpenc_requested(i_kappa_coefs)=.true.
+      lpenc_requested(i_utensor_coefs)=.true.
+      lpenc_requested(i_acoef_coefs)=.true.
+      lpenc_requested(i_bcoef_coefs)=.true.
 
       write(*,*) 'pencil_criteria_special: Pencils requested'
 !
@@ -531,61 +563,72 @@ module Special
       call keep_compiler_quiet(p)
 !
       if (lalpha) then
+        ! Calculate alpha B
         do j=1,3; do i=1,3
           if (lalpha_arr(i,j)) then
-            p%alpha_emf(1:nx,i,j)=emf_interpolate(alpha_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j))
+            p%alpha_coefs(1:nx,i,j)=emf_interpolate(alpha_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j))
           else
-            p%alpha_emf(1:nx,i,j)=0
+            p%alpha_coefs(1:nx,i,j)=0
           end if
+          call dot_mn_vm(p%bb,p%alpha_coefs,p%alpha_emf)
         end do; end do
-        !if ((lroot) .and. (it == 5) .and. (mod(m-nghost,16) == 1)) then
-        !  write(*,*) ' calc_pencils_special running...'
-        !  write(*,*) ' calc_pencils_special iproc=',iproc,' m=',m-nghost,' n=',n-nghost,' sum=', sum(p%gamma_emf)
-        !end if
       end if
       if (lbeta) then
+        ! Calculate beta (curl B)
         do j=1,3; do i=1,3
           if (lbeta_arr(i,j)) then
-            p%beta_emf(1:nx,i,j)=emf_interpolate(beta_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j))
+            p%beta_coefs(1:nx,i,j)=emf_interpolate(beta_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j))
           else
-            p%beta_emf(1:nx,i,j)=0
+            p%beta_coefs(1:nx,i,j)=0
           end if
         end do; end do
+        call dot_mn_vm(p%jj,p%beta_coefs,p%beta_emf)
       end if
       if (lgamma) then
+        ! Calculate gamma x B
         do i=1,3
           if (lgamma_arr(i)) then
-            p%gamma_emf(1:nx,i)=emf_interpolate(gamma_data(1:nx,m-nghost,n-nghost,1:dataload_len,i))
+            p%gamma_coefs(1:nx,i)=emf_interpolate(gamma_data(1:nx,m-nghost,n-nghost,1:dataload_len,i))
           else
-            p%gamma_emf(1:nx,i)=0
+            p%gamma_coefs(1:nx,i)=0
           end if
         end do
+        call cross_mn(p%gamma_coefs,p%bb,p%gamma_emf)
       end if
       if (ldelta) then
+        ! Calculate delta x (curl B)
         do i=1,3
           if (ldelta_arr(i)) then
-            p%delta_emf(1:nx,i)=emf_interpolate(delta_data(1:nx,m-nghost,n-nghost,1:dataload_len,i))
+            p%delta_coefs(1:nx,i)=emf_interpolate(delta_data(1:nx,m-nghost,n-nghost,1:dataload_len,i))
           else
-            p%delta_emf(1:nx,i)=0
+            p%delta_coefs(1:nx,i)=0
           end if
         end do
+        call cross_mn(p%delta_coefs,p%jj,p%delta_emf)
       end if
       if (lkappa) then
+        ! Calculate kappa (grad B)_symm
         do j=1,3; do i=1,3
           p%bij_symm(1:nx,i,j)=0.5*(p%bij(1:nx,i,j) + p%bij(1:nx,j,i))
         end do; end do
         do k=1,3; do j=1,3; do i=1,3
-          p%kappa_emf(1:nx,i,j,k)=emf_interpolate(kappa_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j,k))
+          p%kappa_coefs(1:nx,i,j,k)=emf_interpolate(kappa_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j,k))
+        end do; end do; end do
+        p%kappa_emf = 0
+        do k=1,3; do j=1,3; do i=1,3
+          p%kappa_emf(1:nx,i)=p%kappa_emf(1:nx,i)+p%kappa_coefs(1:nx,i,j,k)*p%bij_symm(1:nx,j,k)
         end do; end do; end do
       end if
       if (lutensor) then
+        ! Calculate utensor x B
         do i=1,3
           if (lutensor_arr(i)) then
-            p%utensor_emf(1:nx,i)=emf_interpolate(utensor_data(1:nx,m-nghost,n-nghost,1:dataload_len,i))
+            p%utensor_coefs(1:nx,i)=emf_interpolate(utensor_data(1:nx,m-nghost,n-nghost,1:dataload_len,i))
           else
-            p%utensor_emf(1:nx,i)=0
+            p%utensor_coefs(1:nx,i)=0
           end if
         end do
+        call cross_mn(p%utensor_coefs,p%bb,p%utensor_emf)
       end if
 !
     endsubroutine calc_pencils_special
@@ -625,7 +668,67 @@ module Special
 !!! see also integrate_mn_name
 !!        endif
 !!      endif
-!
+!      emftmp=0
+      if (ldiagnos) then
+        if (idiag_emfalphaxmax/=0) call max_mn_name(p%alpha_emf(:,1),idiag_emfalphaxmax)
+        if (idiag_emfalphaymax/=0) call max_mn_name(p%alpha_emf(:,2),idiag_emfalphaymax)
+        if (idiag_emfalphazmax/=0) call max_mn_name(p%alpha_emf(:,3),idiag_emfalphazmax)
+        if (idiag_emfbetaxmax/=0) call max_mn_name(p%beta_emf(:,1),idiag_emfbetaxmax)
+        if (idiag_emfbetaymax/=0) call max_mn_name(p%beta_emf(:,2),idiag_emfbetaymax)
+        if (idiag_emfbetazmax/=0) call max_mn_name(p%beta_emf(:,3),idiag_emfbetazmax)
+        if (idiag_emfgammaxmax/=0) call max_mn_name(p%gamma_emf(:,1),idiag_emfgammaxmax)
+        if (idiag_emfgammaymax/=0) call max_mn_name(p%gamma_emf(:,2),idiag_emfgammaymax)
+        if (idiag_emfgammazmax/=0) call max_mn_name(p%gamma_emf(:,3),idiag_emfgammazmax)
+        if (idiag_emfdeltaxmax/=0) call max_mn_name(p%delta_emf(:,1),idiag_emfdeltaxmax)
+        if (idiag_emfdeltaymax/=0) call max_mn_name(p%delta_emf(:,2),idiag_emfdeltaymax)
+        if (idiag_emfdeltazmax/=0) call max_mn_name(p%delta_emf(:,3),idiag_emfdeltazmax)
+        if (idiag_emfkappaxmax/=0) call max_mn_name(p%kappa_emf(:,1),idiag_emfkappaxmax)
+        if (idiag_emfkappaymax/=0) call max_mn_name(p%kappa_emf(:,2),idiag_emfkappaymax)
+        if (idiag_emfkappazmax/=0) call max_mn_name(p%kappa_emf(:,3),idiag_emfkappazmax)
+        if (idiag_emfutensorxmax/=0) call max_mn_name(p%utensor_emf(:,1),idiag_emfutensorxmax)
+        if (idiag_emfutensorymax/=0) call max_mn_name(p%utensor_emf(:,2),idiag_emfutensorymax)
+        if (idiag_emfutensorzmax/=0) call max_mn_name(p%utensor_emf(:,3),idiag_emfutensorzmax)
+        if (idiag_emfacoefxmax/=0) call max_mn_name(p%acoef_emf(:,1),idiag_emfacoefxmax)
+        if (idiag_emfacoefymax/=0) call max_mn_name(p%acoef_emf(:,2),idiag_emfacoefymax)
+        if (idiag_emfacoefzmax/=0) call max_mn_name(p%acoef_emf(:,3),idiag_emfacoefzmax)
+        if (idiag_emfbcoefxmax/=0) call max_mn_name(p%bcoef_emf(:,1),idiag_emfbcoefxmax)
+        if (idiag_emfbcoefymax/=0) call max_mn_name(p%bcoef_emf(:,2),idiag_emfbcoefymax)
+        if (idiag_emfbcoefzmax/=0) call max_mn_name(p%bcoef_emf(:,3),idiag_emfbcoefzmax)
+        if (idiag_emfalphaxmax/=0) call max_mn_name(p%alpha_emf(:,1),idiag_emfalphaxmax)
+        if (idiag_emfalpharms/=0) then
+          call dot2_mn(p%alpha_emf,tmpline)
+          call sum_mn_name(tmpline,idiag_emfalpharms,lsqrt=.true.)
+        end if
+        if (idiag_emfbetarms/=0) then
+          call dot2_mn(p%beta_emf,tmpline)
+          call sum_mn_name(tmpline,idiag_emfbetarms,lsqrt=.true.)
+        end if
+        if (idiag_emfgammarms/=0) then
+          call dot2_mn(p%gamma_emf,tmpline)
+          call sum_mn_name(tmpline,idiag_emfgammarms,lsqrt=.true.)
+        end if
+        if (idiag_emfdeltarms/=0) then
+          call dot2_mn(p%delta_emf,tmpline)
+          call sum_mn_name(tmpline,idiag_emfdeltarms,lsqrt=.true.)
+        end if
+        if (idiag_emfkapparms/=0) then
+          call dot2_mn(p%kappa_emf,tmpline)
+          call sum_mn_name(tmpline,idiag_emfkapparms,lsqrt=.true.)
+        end if
+        if (idiag_emfutensorrms/=0) then
+          call dot2_mn(p%utensor_emf,tmpline)
+          call sum_mn_name(tmpline,idiag_emfutensorrms,lsqrt=.true.)
+        end if
+        if (idiag_emfacoefrms/=0) then
+          call dot2_mn(p%acoef_emf,tmpline)
+          call sum_mn_name(tmpline,idiag_emfacoefrms,lsqrt=.true.)
+        end if
+        if (idiag_emfbcoefrms/=0) then
+          call dot2_mn(p%bcoef_emf,tmpline)
+          call sum_mn_name(tmpline,idiag_emfbcoefrms,lsqrt=.true.)
+        end if
+      end if 
+    
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
 !
@@ -683,7 +786,7 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-!!      integer :: iname
+      integer :: iname
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -694,7 +797,40 @@ module Special
 !!!  (this needs to be consistent with what is defined above!)
 !!!
       if (lreset) then
-!!        idiag_SPECIAL_DIAGNOSTIC=0
+        ! Max diagnostics
+        idiag_emfalphaxmax=0
+        idiag_emfalphaymax=0
+        idiag_emfalphazmax=0
+        idiag_emfbetaxmax=0
+        idiag_emfbetaymax=0
+        idiag_emfbetazmax=0
+        idiag_emfgammaxmax=0
+        idiag_emfgammaymax=0
+        idiag_emfgammazmax=0
+        idiag_emfdeltaxmax=0
+        idiag_emfdeltaymax=0
+        idiag_emfdeltazmax=0
+        idiag_emfkappaxmax=0
+        idiag_emfkappaymax=0
+        idiag_emfkappazmax=0
+        idiag_emfutensorxmax=0
+        idiag_emfutensorymax=0
+        idiag_emfutensorzmax=0
+        idiag_emfacoefxmax=0
+        idiag_emfacoefymax=0
+        idiag_emfacoefzmax=0
+        idiag_emfbcoefxmax=0
+        idiag_emfbcoefymax=0
+        idiag_emfbcoefzmax=0
+        ! RMS diagnostics
+        idiag_emfalpharms=0
+        idiag_emfbetarms=0
+        idiag_emfgammarms=0
+        idiag_emfdeltarms=0
+        idiag_emfkapparms=0
+        idiag_emfutensorrms=0
+        idiag_emfacoefrms=0
+        idiag_emfbcoefrms=0
       endif
 !!
 !!      do iname=1,nname
@@ -707,6 +843,43 @@ module Special
 !!        write(3,*) 'idiag_SPECIAL_DIAGNOSTIC=',idiag_SPECIAL_DIAGNOSTIC
 !!      endif
 !!
+      do iname=1,nname
+        ! Maximum values of emf terms
+        call parse_name(iname,cname(iname),cform(iname),'emfalphaxmax',idiag_emfalphaxmax)
+        call parse_name(iname,cname(iname),cform(iname),'emfalphaymax',idiag_emfalphaymax)
+        call parse_name(iname,cname(iname),cform(iname),'emfalphazmax',idiag_emfalphazmax)
+        call parse_name(iname,cname(iname),cform(iname),'emfbetaxmax',idiag_emfbetaxmax)
+        call parse_name(iname,cname(iname),cform(iname),'emfbetaymax',idiag_emfbetaymax)
+        call parse_name(iname,cname(iname),cform(iname),'emfbetazmax',idiag_emfbetazmax)
+        call parse_name(iname,cname(iname),cform(iname),'emfgammaxmax',idiag_emfgammaxmax)
+        call parse_name(iname,cname(iname),cform(iname),'emfgammaymax',idiag_emfgammaymax)
+        call parse_name(iname,cname(iname),cform(iname),'emfgammazmax',idiag_emfgammazmax)
+        call parse_name(iname,cname(iname),cform(iname),'emfdeltaxmax',idiag_emfdeltaxmax)
+        call parse_name(iname,cname(iname),cform(iname),'emfdeltaymax',idiag_emfdeltaymax)
+        call parse_name(iname,cname(iname),cform(iname),'emfdeltazmax',idiag_emfdeltazmax)
+        call parse_name(iname,cname(iname),cform(iname),'emfkappaxmax',idiag_emfkappaxmax)
+        call parse_name(iname,cname(iname),cform(iname),'emfkappaymax',idiag_emfkappaymax)
+        call parse_name(iname,cname(iname),cform(iname),'emfkappazmax',idiag_emfkappazmax)
+        call parse_name(iname,cname(iname),cform(iname),'emfutensorxmax',idiag_emfutensorxmax)
+        call parse_name(iname,cname(iname),cform(iname),'emfutensorymax',idiag_emfutensorymax)
+        call parse_name(iname,cname(iname),cform(iname),'emfutensorzmax',idiag_emfutensorzmax)
+        call parse_name(iname,cname(iname),cform(iname),'emfacoefxmax',idiag_emfacoefxmax)
+        call parse_name(iname,cname(iname),cform(iname),'emfacoefymax',idiag_emfacoefymax)
+        call parse_name(iname,cname(iname),cform(iname),'emfacoefzmax',idiag_emfacoefzmax)
+        call parse_name(iname,cname(iname),cform(iname),'emfbcoefxmax',idiag_emfbcoefxmax)
+        call parse_name(iname,cname(iname),cform(iname),'emfbcoefymax',idiag_emfbcoefymax)
+        call parse_name(iname,cname(iname),cform(iname),'emfbcoefzmax',idiag_emfbcoefzmax)
+        ! RMS values of emf terms
+        call parse_name(iname,cname(iname),cform(iname),'emfalpharms',idiag_emfalpharms)
+        call parse_name(iname,cname(iname),cform(iname),'emfbetarms',idiag_emfbetarms)
+        call parse_name(iname,cname(iname),cform(iname),'emfgammarms',idiag_emfgammarms)
+        call parse_name(iname,cname(iname),cform(iname),'emfdeltarms',idiag_emfdeltarms)
+        call parse_name(iname,cname(iname),cform(iname),'emfkapparms',idiag_emfkapparms)
+        call parse_name(iname,cname(iname),cform(iname),'emfutensorrms',idiag_emfutensorrms)
+        call parse_name(iname,cname(iname),cform(iname),'emfacoefrms',idiag_emfacoefrms)
+        call parse_name(iname,cname(iname),cform(iname),'emfbcoefrms',idiag_emfbcoefrms)
+      enddo
+      
     endsubroutine rprint_special
 !***********************************************************************
     subroutine get_slices_special(f,slices)
@@ -850,57 +1023,27 @@ module Special
       call keep_compiler_quiet(p)
 !
       emftmp=0
-! Calculate alpha B
-      if (lalpha) then
-        tmppencil=0
-        call dot_mn_vm(p%bb,p%alpha_emf,tmppencil)
-        emftmp = emftmp + tmppencil
-      end if
-!
-! Calculate beta (curl B)
-!
-      if (lbeta) then
-        tmppencil=0
-        call dot_mn_vm(p%jj,p%beta_emf,tmppencil)
-        emftmp = emftmp - tmppencil
-      end if
-!
-! Calculate gamma x B
-!
-      if (lgamma) then
-        tmppencil=0
-        call cross_mn(p%gamma_emf,p%bb,tmppencil)
-        emftmp = emftmp + tmppencil
-      end if
-!
-! Calculate delta x (curl B)
-!
-      if (ldelta) then
-        tmppencil=0
-        call cross_mn(p%delta_emf,p%jj,tmppencil)
-        emftmp = emftmp - tmppencil
-      end if
-!
-! Calculate kappa (grad B)_symm
-!
-      if (lkappa) then
-        tmppencil=0
-        do k=1,3; do j=1,3; do i=1,3
-          tmppencil(1:nx,i)=tmppencil(1:nx,i)+p%kappa_emf(1:nx,i,j,k)*p%bij_symm(1:nx,j,k)
-        end do; end do; end do
-        emftmp = emftmp - tmppencil
-      end if
-!
-! Calculate utensor x B
-!
-      if (lutensor) then
-        tmppencil=0
-        call cross_mn(p%utensor_emf,p%bb,tmppencil)
-        emftmp = emftmp + tmppencil
-      end if
 !
 ! Add emf terms to A
 !
+      if (lalpha) then
+        emftmp = emftmp + p%alpha_emf
+      end if
+      if (lbeta) then
+        emftmp = emftmp - p%beta_emf
+      end if
+      if (lgamma) then
+        emftmp = emftmp + p%gamma_emf
+      end if
+      if (ldelta) then
+        emftmp = emftmp - p%delta_emf
+      end if
+      if (lkappa) then
+        emftmp = emftmp - p%kappa_emf
+      end if
+      if (lutensor) then
+        emftmp = emftmp + p%utensor_emf
+      end if
       df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+emftmp
 !
       if (lfirst.and.ldt) then
@@ -909,7 +1052,7 @@ module Special
 !
         if (lalpha) then
           tmppencil=0
-          call dot_mn_vm(dline_1, p%alpha_emf, tmppencil)
+          call dot_mn_vm(dline_1, p%alpha_coefs, tmppencil)
           advec_special=advec_special+&
                             tmppencil(:,1)+& 
                             tmppencil(:,2)+& 
@@ -917,12 +1060,12 @@ module Special
         end if
         if (lgamma) then
           tmppencil=0
-          call dot_mn(dline_1, p%gamma_emf, tmpline)
+          call dot_mn(dline_1, p%gamma_coefs, tmpline)
           advec_special=advec_special+tmpline
         end if
         if (lutensor) then
           tmppencil=0
-          call dot_mn(dline_1, p%utensor_emf, tmpline)
+          call dot_mn(dline_1, p%utensor_coefs, tmpline)
           advec_special=advec_special+tmpline
         end if
 !
@@ -931,7 +1074,7 @@ module Special
         if (lbeta) then
           tmppencil=0
           tmpline=0
-          call dot_mn_vm(dline_1,p%beta_emf, tmppencil)
+          call dot_mn_vm(dline_1,p%beta_coefs, tmppencil)
           call dot_mn(dline_1, tmppencil, tmpline)
           diffus_special=diffus_special+tmpline
         end if
@@ -939,7 +1082,7 @@ module Special
         if (ldelta) then
           tmppencil=0
           tmpline=0
-          call cross_mn(dline_1,p%delta_emf, tmppencil)
+          call cross_mn(dline_1,p%delta_coefs, tmppencil)
           call dot_mn(dline_1,tmppencil,tmpline)
           diffus_special=diffus_special+tmpline
         end if
@@ -948,7 +1091,7 @@ module Special
           tmppencil=0
           tmpline=0
           tmptensor=0
-          call vec_dot_3tensor(dline_1, p%kappa_emf, tmptensor)
+          call vec_dot_3tensor(dline_1, p%kappa_coefs, tmptensor)
           call dot_mn_vm(dline_1,tmptensor, tmppencil)
           diffus_special=diffus_special+&
                             tmppencil(:,1)+& 
@@ -1313,39 +1456,59 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
 
     subroutine setParameterDefaults
       implicit none
-      interpname = 'none'
+      ! alpha
       lalpha=.false.
-      lbeta =.false.
-      lgamma=.false.
-      ldelta=.false.
-      lkappa=.false.
-      lutensor=.false.
       lalpha_c=.false.
-      lbeta_c=.false.
-      lgamma_c=.false.
-      ldelta_c=.false.
-      lkappa_c=.false.
-      lutensor_c=.false.
       lalpha_arr=.false.
-      lbeta_arr=.false.
-      lgamma_arr=.false.
-      ldelta_arr=.false.
-      lkappa_arr=.false.
-      lutensor_arr=.false.
       alpha_scale=1.0
+      alpha_name='data'
+      ! beta
+      lbeta=.false.
+      lbeta_c=.false.
+      lbeta_arr=.false.
       beta_scale=1.0
+      beta_name='data'
+      ! gamma
+      lgamma=.false.
+      lgamma_c=.false.
+      lgamma_arr=.false.
       gamma_scale=1.0
+      gamma_name='data'
+      ! delta
+      ldelta=.false.
+      ldelta_c=.false.
+      ldelta_arr=.false.
       delta_scale=1.0
+      delta_name='data'
+      ! kappa
+      lkappa=.false.
+      lkappa_c=.false.
+      lkappa_arr=.false.
       kappa_scale=1.0
+      kappa_name='data'
+      ! utensor
+      lutensor=.false.
+      lutensor_c=.false.
+      lutensor_arr=.false.
       utensor_scale=1.0
+      utensor_name='data'
+      ! acoef
+      lacoef=.false.
+      lacoef_c=.false.
+      lacoef_arr=.false.
+      acoef_scale=1.0
+      acoef_name='data'
+      ! bcoef
+      lbcoef=.false.
+      lbcoef_c=.false.
+      lbcoef_arr=.false.
+      bcoef_scale=1.0
+      bcoef_name='data'
+      ! other
+      interpname  = 'none'
+      defaultname = '' 
       tensor_maxvals=0.0
       tensor_minvals=0.0
-      alpha_name='data'
-      beta_name='data'
-      gamma_name='data'
-      delta_name='data'
-      kappa_name='data'
-      utensor_name='data'
     end subroutine setParameterDefaults
 
     subroutine parseParameters
@@ -1406,14 +1569,30 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
       end if
 !
 ! Load boolean array for kappa
+! TODO: implement kappa components
 !
       if (lkappa) then
         lkappa_arr = .true.
       else
-!
-! TODO: implement kappa components
-!
         lkappa_arr = .false.
+      end if
+!
+! Load boolean array for acoef
+! TODO: implement acoef components
+!
+      if (lacoef) then
+        lacoef_arr = .true.
+      else
+        lacoef_arr = .false.
+      end if
+!
+! Load boolean array for bcoef
+! TODO: implement bcoef components
+!
+      if (lbcoef) then
+        lbcoef_arr = .true.
+      else
+        lbcoef_arr = .false.
       end if
 !
 ! Load boolean array for utensor
@@ -1433,15 +1612,30 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
       tensor_scales(delta_id)   = delta_scale
       tensor_scales(kappa_id)   = kappa_scale
       tensor_scales(utensor_id) = utensor_scale
+      tensor_scales(acoef_id)   = acoef_scale
+      tensor_scales(bcoef_id)   = bcoef_scale
 !
 ! Store names
 !
-      tensor_names(alpha_id)    = alpha_name
-      tensor_names(beta_id)     = beta_name
-      tensor_names(gamma_id)    = gamma_name
-      tensor_names(delta_id)    = delta_name
-      tensor_names(kappa_id)    = kappa_name
-      tensor_names(utensor_id)  = utensor_name
+      if (trim(defaultname) == '') then
+        tensor_names(alpha_id)    = defaultname
+        tensor_names(beta_id)     = defaultname
+        tensor_names(gamma_id)    = defaultname
+        tensor_names(delta_id)    = defaultname
+        tensor_names(kappa_id)    = defaultname
+        tensor_names(utensor_id)  = defaultname
+        tensor_names(acoef_id)    = defaultname
+        tensor_names(bcoef_id)    = defaultname
+      else
+        tensor_names(alpha_id)    = alpha_name
+        tensor_names(beta_id)     = beta_name
+        tensor_names(gamma_id)    = gamma_name
+        tensor_names(delta_id)    = delta_name
+        tensor_names(kappa_id)    = kappa_name
+        tensor_names(utensor_id)  = utensor_name
+        tensor_names(acoef_id)    = acoef_name
+        tensor_names(bcoef_id)    = bcoef_name
+      end if
             
     end subroutine parseParameters
 !****************************************************************************
