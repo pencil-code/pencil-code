@@ -1020,7 +1020,7 @@ module Special
 !
 !  due to ignoredx hyper3_heat has the unit [1/s]
 !
-          if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
+          if (lfirst.and.ldt) dt1_max=max(dt1_max, hyper3_heat/0.01)
       endif
 !
       if (R_hypereta /= 0.) then
