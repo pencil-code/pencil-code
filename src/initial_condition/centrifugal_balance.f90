@@ -572,9 +572,9 @@ module InitialCondition
 !
       if (lcorrect_selfgravity) then
         if (lselfgravity_logspirals) then 
-          call correct_for_selfgravity_logspirals(f)
+          call correct_selfgravity_logspirals(f)
         else
-          call correct_for_selfgravity(f)
+          call correct_selfgravity(f)
         endif
       endif
 !
@@ -1212,7 +1212,7 @@ module InitialCondition
 !
     endsubroutine correct_pressure_gradient
 !***********************************************************************
-    subroutine correct_for_selfgravity(f)
+    subroutine correct_selfgravity(f)
 !
 !  Correct for the fluid's self-gravity in the centrifugal force
 !
@@ -1235,7 +1235,7 @@ module InitialCondition
         print*,"You want to correct for selfgravity but you "
         print*,"are using POISSON=nopoisson in src/Makefile.local. "
         print*,"Please use a poisson solver."
-        call fatal_error("correct_for_selfgravity","")
+        call fatal_error("correct_selfgravity","")
       endif
 !
 !  Poisson constant is 4piG, this has to be consistent with the 
@@ -1276,9 +1276,9 @@ module InitialCondition
 !
       enddo;enddo
 !
-    endsubroutine correct_for_selfgravity
+    endsubroutine correct_selfgravity
 !***********************************************************************
-    subroutine correct_for_selfgravity_logspirals(f)
+    subroutine correct_selfgravity_logspirals(f)
 !
 !  Correct for the fluid's self-gravity in the centrifugal force
 !
@@ -1301,7 +1301,7 @@ module InitialCondition
         print*,"You want to correct for selfgravity but you "
         print*,"are using POISSON=nopoisson in src/Makefile.local. "
         print*,"Please use a poisson solver."
-        call fatal_error("correct_for_selfgravity","")
+        call fatal_error("correct_selfgravity_logspirals","")
       endif
 !
 !  Poisson constant is 4piG, this has to be consistent with the 
@@ -1336,7 +1336,7 @@ module InitialCondition
 !
       enddo;enddo
 !
-    endsubroutine correct_for_selfgravity_logspirals
+    endsubroutine correct_selfgravity_logspirals
 !***********************************************************************
     subroutine correct_lorentz_numerical(f)
 !
