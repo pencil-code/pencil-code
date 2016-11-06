@@ -32,7 +32,7 @@ module Special
   real :: tau_inv_newton=0.,exp_newton=0.,tanh_newton=0.,cubic_newton=0.
   real :: tau_inv_top=0.,tau_inv_newton_mark=0.,chi_spi=0.,tau_inv_spitzer=0.
   real :: width_newton=0.,gauss_newton=0.
-  logical :: lgranulation=.false.,luse_ext_vel_field,lmag_time_bound=.false.
+  logical :: lgranulation=.false.,luse_ext_vel_field=.false.,lmag_time_bound=.false.
   real :: increase_vorticity=15.,Bavoid=0.0
   real :: Bz_flux=0.,quench=0., b_tau=0.
   real :: init_time=0.,init_width=0.,hcond_grad=0.,hcond_grad_iso=0.
@@ -2652,7 +2652,7 @@ module Special
           call fatal_error('granulation_driver', &
           'not yet implemented for non-equidistant grids')
 !
-      if (t >= t_gran) then
+      if ((t >= t_gran).or.(t_gran<=1.)) then
 ! Save global random number seed, will be restored after granulation
 ! is done
         call random_seed_wrapper(GET=global_rstate)
