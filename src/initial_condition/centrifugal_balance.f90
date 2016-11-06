@@ -1282,7 +1282,7 @@ module InitialCondition
 !
 !  Correct for the fluid's self-gravity in the centrifugal force
 !
-!  03-dec-07/wlad: coded
+!  ??-???-15/wlad: adapted from correct_selfgravity
 !
       use Sub,         only:get_radial_distance,grad
       use Poisson,     only:inverse_laplacian
@@ -1311,7 +1311,8 @@ module InitialCondition
 !
       rho(l1:l2,m1:m2,n1:n2)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
 !     
-      call inverse_laplacian(rho(l1:l2,m1:m2,n1:n2),gpotself)
+      ! PABourdin: this line does not compile:
+      !!!!!!!!!!!! call inverse_laplacian(rho(l1:l2,m1:m2,n1:n2),gpotself)
       !print*,minval(gpotself(:,:,:,1)),maxval(gpotself(:,:,:,1))
       !stop
 !
@@ -1327,12 +1328,14 @@ module InitialCondition
         if (lcartesian_coords) then
           !gspotself=(gpotself(:,1)*x(l1:l2) + gpotself(:,2)*y(m))/rr_cyl
         elseif (lcylindrical_coords) then
-          gspotself=gpotself(:,m-m1+1,n-n1+1,1)
+          ! PABourdin: this variable is unset:
+          !!!!!!!!!!!! gspotself=gpotself(:,m-m1+1,n-n1+1,1)
         elseif (lspherical_coords) then
           !gspotself=gpotself(:,1)*sinth(m) + gpotself(:,2)*costh(m)
         endif
 !
-        call correct_azimuthal_velocity(f,gspotself)
+        ! PABourdin: can't do that with an unset gspotself:
+        !!!!!!!!!!!! call correct_azimuthal_velocity(f,gspotself)
 !
       enddo;enddo
 !
