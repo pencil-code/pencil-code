@@ -2652,7 +2652,7 @@ module Special
           call fatal_error('granulation_driver', &
           'not yet implemented for non-equidistant grids')
 !
-      if ((t >= t_gran).or.(t_gran<=1.)) then
+      if (t >= t_gran) then
 ! Save global random number seed, will be restored after granulation
 ! is done
         call random_seed_wrapper(GET=global_rstate)
