@@ -3610,10 +3610,16 @@ module Fourier
         ! delta_z positive => enhancement of contrast (can be reduced)
         if (present (reduce) .and. (delta_z > 0.0)) delta_z = delta_z * reduce
         ! Include normalization of FFT: 1/(nxgrid*nygrid)
-        factor(:,:,pos_z) = factor(:,:,onz) ** delta_z / (k_2 * nxgrid*nygrid)
+        if (kx_start == 0) then
+          ! Special case for kx=0 and ky=0
+          factor(1,1,pos_z) = 1.0 / (nxgrid*nygrid)
+          factor(2:,1,pos_z) = factor(2:,1,onz) ** delta_z / (k_2(2:,1) * nxgrid*nygrid)
+          factor(:,2:,pos_z) = factor(:,2:,onz) ** delta_z / (k_2(:,2:) * nxgrid*nygrid)
+        else
+          ! General case for k/=0
+          factor(:,:,pos_z) = factor(:,:,onz) ** delta_z / (k_2 * nxgrid*nygrid)
+        endif
       enddo
-      ! Special case for kx=0 and ky=0
-      if (kx_start == 0) factor(1,1,:) = 1.0 / (nxgrid*nygrid)
 !
       deallocate (k_2)
 !
