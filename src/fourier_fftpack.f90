@@ -3610,16 +3610,10 @@ module Fourier
         ! delta_z positive => enhancement of contrast (can be reduced)
         if (present (reduce) .and. (delta_z > 0.0)) delta_z = delta_z * reduce
         ! Include normalization of FFT: 1/(nxgrid*nygrid)
-!
-! Special case for kx=0 and ky=0
-!
-        if (kx_start == 0) then 
-          factor(1,1,pos_z) = 1.0 / (nxgrid*nygrid)
-          factor(2:,:,pos_z) = factor(2:,:,onz) ** delta_z / (k_2(2:,:) * nxgrid*nygrid)
-          factor(1,2:,pos_z) = factor(1,2:,onz) ** delta_z / (k_2(1,2:) * nxgrid*nygrid)
-        endif
-          factor(:,:,pos_z) = factor(:,:,onz) ** delta_z / (k_2 * nxgrid*nygrid)
+        factor(:,:,pos_z) = factor(:,:,onz) ** delta_z / (k_2 * nxgrid*nygrid)
       enddo
+      ! Special case for kx=0 and ky=0
+      if (kx_start == 0) factor(1,1,:) = 1.0 / (nxgrid*nygrid)
 !
       deallocate (k_2)
 !
@@ -3835,7 +3829,6 @@ module Fourier
         p_im(:,m) = aimag (ax)
       enddo
 !
-! JW: NaN's occure in the subroutine below
       call transp_pencil_xy (p_re, t_re)
       call transp_pencil_xy (p_im, t_im)
 !
