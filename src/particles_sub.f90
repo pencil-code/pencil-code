@@ -1567,11 +1567,6 @@ module Particles_sub
               +270.0*(domain(l+1,m1:m2,n1:n2)+domain(l-1,m1:m2,n1:n2)) &
               - 27.0*(domain(l+2,m1:m2,n1:n2)+domain(l-2,m1:m2,n1:n2)) &
               +  2.0*(domain(l+3,m1:m2,n1:n2)+domain(l-3,m1:m2,n1:n2)))
-!            df2dx(1:l2-l1,m-m1+1,n-n1+1)=(1./180)*(-490.0*domain(l1:l2,m,n,1) &
-!                +270.0*(domain(l1+1:l2+1,m,n,1)+domain(l1-1:l2-1,m,n,1)) &
-!                - 27.0*(domain(l1+2:l2+2,m,n,1)+domain(l1-2:l2-2,m,n,1)) &
-!                +  2.0*(domain(l1+3:l2+3,m,n,1)+domain(l1-3:l2-3,m,n,1)))
-!              df2dx()
         enddo
       else
         call fatal_error('deriv_2nd','der2_domain_scalar needs at least xdim/=1')
@@ -1586,10 +1581,6 @@ module Particles_sub
               - 27.0*(domain(l1:l2,m-2,n1:n2)+domain(l1:l2,m+2,n1:n2)) &
               +  2.0*(domain(l1:l2,m-3,n1:n2)+domain(l1:l2,m+3,n1:n2)))
         enddo
-!            df2dy(1:l2-l1,m-m1+1,n-n1+1)=(1./180)*(-490.0*domain(l1:l2,m,n,1) &
-!                +270.0*(domain(l1:l2,m-1,n,1)+domain(l1:l2,m+1,n,1)) &
-!                - 27.0*(domain(l1:l2,m-2,n,1)+domain(l1:l2,m+2,n,1)) &
-!                +  2.0*(domain(l1:l2,m-3,n,1)+domain(l1:l2,m+3,n,1)))
       endif
 !
 !  z-derivative
@@ -1604,10 +1595,6 @@ module Particles_sub
               - 27.0*(domain(l1:l2,m1:m2,n-2)+domain(l1:l2,m1:m2,n+2)) &
               +  2.0*(domain(l1:l2,m1:m2,n-3)+domain(l1:l2,m1:m2,n+3)))
         enddo
-!            df2dz(1:l2-l1,m-m1+1,n-n1+1)=(1./180)*(-490.0*domain(l1:l2,m,n,1) &
-!                +270.0*(domain(l1:l2,m,n-1,1)+domain(l1:l2,m,n+1,1)) &
-!                - 27.0*(domain(l1:l2,m,n-2,1)+domain(l1:l2,m,n+2,1)) &
-!                +  2.0*(domain(l1:l2,m,n-3,1)+domain(l1:l2,m,n+3,1)))
       endif
 
       df2 = df2dx+df2dy+df2dz

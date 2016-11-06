@@ -244,15 +244,15 @@ module Particles_temperature
 !
 !
       feed_back = 0.
+      if (ldiffuse_backtemp) f(l1:l2,m,n,idmpt) = 0.0
 !
 !
 !  Do only if particles are present on the current pencil
 !
       if (npar_imn(imn) /= 0) then
 !
-        volume_cell = (lxyz(1)*lxyz(2)*lxyz(3))/(nx*ny*nz)
+        volume_cell = (lxyz(1)*lxyz(2)*lxyz(3))/(nxgrid*nygrid*nzgrid)
 !
-        if (ldiffuse_backtemp) f(l1:l2,m,n,idmpt) = 0.0
 !
 !  The Ranz-Marshall correlation for the Sherwood number needs the particle Reynolds number
 !  Precalculate partrticle Reynolds numbers.

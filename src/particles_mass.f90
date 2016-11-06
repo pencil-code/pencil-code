@@ -242,16 +242,8 @@ module Particles_mass
 !
         df(l1:l2,m1:m2,n1:n2,ilnrho) =  df(l1:l2,m1:m2,n1:n2,ilnrho) + &
             f(l1:l2,m1:m2,n1:n2,idmp)
+        if (ldiffuse_backreac) f(l1:l2,m1:m2,n1:n2,idmp) = 0.0
 !
-!
-!        if (ldiagnos) then
-!          print*, 'dens particle influence hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh'
-!          write(*,'(16(E10.3,","))') f(l1:l2,m1:m2,n1:n2,idmp)
-!          print*, 'dens df array-----------------------------------------'
-!          write(*,'(16(E10.3,","))') df(l1:l2,m1:m2,n1:n2,ilnrho)
-!          print*, 'dens f array!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
-!          write(*,'(16(E10.3,","))') exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
-!        endif
       endif
       ! Diagnostic output
       if (ldiagnos) then
@@ -294,8 +286,6 @@ module Particles_mass
 !
 !  23-sep-14/Nils: coded
 !
-!      use Deriv, only: der2_pencil_scalar
-!
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(mpar_loc,mparray) :: fp
@@ -315,16 +305,13 @@ module Particles_mass
       intent(in) :: fp, ineargrid
       intent(inout) :: f, dfp, df
 !
-!      call keep_compiler_quiet(f)
-!      call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
       call keep_compiler_quiet(ineargrid)
 !
       if (npar_imn(imn) /= 0) then
 !
-        volume_cell = (lxyz(1)*lxyz(2)*lxyz(3))/(nx*ny*nz)
+        volume_cell = (lxyz(1)*lxyz(2)*lxyz(3))/(nxgrid*nygrid*nzgrid)
 !
-        if (ldiffuse_backreac) f(l1:l2,m,n,idmp) = 0.0
 !
         k1 = k1_imn(imn)
         k2 = k2_imn(imn)

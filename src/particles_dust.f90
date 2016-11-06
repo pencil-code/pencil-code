@@ -3573,6 +3573,13 @@ module Particles
         endif
       endif
 !
+!  When the field based handling of passive scalar consumption is enabled, set
+!  the current pencil of the lncc auxiliary to zero
+!
+      if (ldiffuse_passive) f(:,m,n,idlncc) = 0.0
+      if (ldiffuse_passive .and. ilncc == 0) call fatal_error('particles_dust', &
+          'ldiffuse_passive needs pscalar_nolog=F')
+!
 !  Initialize the pencils that are calculated within this subroutine
 !
       if (lpenc_requested(i_npvz))     p%npvz=0.
@@ -3651,13 +3658,6 @@ module Particles
             call get_shared_variable('pscalar_diff',pscalar_diff,ierr)
 !
           endif
-!
-!  When the field based handling of passive scalar consumption is enabled, set
-!  the current pencil of the lncc auxiliary to zero
-!
-          if (ldiffuse_passive) f(:,m,n,idlncc) = 0.0
-          if (ldiffuse_passive .and. ilncc == 0) call fatal_error('particles_dust', &
-              'ldiffuse_passive needs pscalar_nolog=F')
 !
 !  Loop over all particles in current pencil.
 !

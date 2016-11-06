@@ -382,9 +382,6 @@ module Particles_surfspec
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
 !
-!      df(:,:,:,ichemspec(nchemspec)) = df(:,:,:,ichemspec(nchemspec))- &
-!          sum(df(:,:,:,ichemspec(:)),DIM=4)
-!
 !  Diffuse the transfer of species from particle to fluid, and adapt
 !  the bulk species (ichemspec(nchemspec)) to ensure species conservation
 !
@@ -485,8 +482,15 @@ module Particles_surfspec
       reac_pchem = 0.0
 !
       if (lpreactions) then
+!  initializing the auxiliary pencils for the mass and mass bound enthalpy diffusi
 !
-        volume_cell = (lxyz(1)*lxyz(2)*lxyz(3))/(nx*ny*nz)
+        volume_cell = (lxyz(1)*lxyz(2)*lxyz(3))/(nxgrid*nygrid*nzgrid)
+        if (ldiffuse_backenth) f(l1:l2,m,n,ispecenth) = 0.0
+        if (ldiffuse_backspec) then
+          do i = 1,nchemspec
+            f(l1:l2,m,n,ispecaux(i)) = 0.0
+          enddo
+        endif
 !
 !  Do only if particles are present on the current pencil
 !
@@ -494,16 +498,6 @@ module Particles_surfspec
 !
           k1 = k1_imn(imn)
           k2 = k2_imn(imn)
-!
-!  initializing the auxiliary pencils for the mass and mass bound enthalpy diffusion
-!
-          if (ldiffuse_backspec) then
-            do i = 1,nchemspec
-              f(l1:l2,m,n,ispecaux(i)) = 0.0
-            enddo
-          endif
-!
-          if (ldiffuse_backenth) f(l1:l2,m,n,ispecenth) = 0.0
 !
           allocate(Cg_surf(k1:k2))
           allocate(mass_loss(k1:k2))
