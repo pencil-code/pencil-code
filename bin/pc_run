@@ -1383,7 +1383,7 @@ sub write_to_file {
           "File: $filename\n"
           . "Generator: $cmdname\n"
           . "Time stamp: "
-          . strftime("%a %Y-%m-%e %H:%M:%S", localtime())
+          . strftime("%a %Y-%m-%d %H:%M:%S", localtime())
           . "\n";
     }
 
