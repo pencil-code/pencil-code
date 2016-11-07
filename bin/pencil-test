@@ -261,7 +261,7 @@ sub run_tests_on {
                     $result .= $line;
                     $line =~ s/^\s+//s;
                     $line =~ s/\s+$//s;
-                    $line =~ s/(\s\([^\(\)]+\))$/<\/code><\/a><\/li> <code>$1<\/code>/s;
+                    $line =~ s/(\s\([^\(\)]+\))$/<\/code><\/a> <code>$1<\/code><\/li>/s;
                     print $line."\n";
                     $failures--;
                     if ($failures <= 0) { print "</ul>\n<pre>"; }  
