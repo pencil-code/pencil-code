@@ -22,7 +22,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Author: wd (wdobler [at] gmail [dot] com)
 # Date:   24-Jul-2009
 # Description:
-#   Run the Pencil Code, using settings from the `runtime' section in
+#   Run the Pencil Code, using settings from the 'runtime' section in
 #   the appropriate configuration files.
 # Usage:
 #   pc_run [-v|-h]
@@ -95,7 +95,7 @@ Pencil::Util::use_pencil_perl_modules(
 use POSIX qw(strftime);
 use Cwd;
 use Getopt::Long;
-# Allow for `-Plp' as equivalent to `-P lp' etc:
+# Allow for '-Plp' as equivalent to '-P lp' etc:
 Getopt::Long::config("bundling");
 
 my %opts;                     # Options hash for GetOptions
@@ -116,7 +116,7 @@ GetOptions(\%opts,
 my $debug = ($opts{'debug'} ? 1 : 0 ); # undocumented debug option
 if ($debug) {
     printopts(\%opts);
-    print "\@ARGV = `@ARGV'\n";
+    print "\@ARGV = '@ARGV'\n";
 }
 
 my $cmdname = (split('/', $0))[-1];
@@ -567,7 +567,7 @@ sub scp_local_files {
 }
 # ---------------------------------------------------------------------- #
 sub scp {
-# Transfer a file using `scp'
+# Transfer a file using 'scp'
     my ($source, $remhost, $target) = @_;
 
     my @scp = split(/\s+/, $ENV{SCP}); # split cmd name and options
@@ -592,7 +592,7 @@ sub get_files_to_copy_to_local_disc {
 }
 # ---------------------------------------------------------------------- #
 sub time_system_cmd {
-# Run a system command through `/usr/bin/time -p'
+# Run a system command through '/usr/bin/time -p'
     my @cmd_line = @_;
 
     write_to_file('run_command.log', "@cmd_line");
@@ -622,15 +622,16 @@ sub run_system_cmd {
     } else {
         print "Running '@cmd_line'...\n";
     }
-    my $status = exec(@cmd_line);
-    ($status == 0) or warn "@cmd_line failed: $!\n";
+    print `@cmd_line`;
+    my $status = $?;
+    if ($status != 0) { warn "'@cmd_line' failed: $!\n"; }
     if (-e $errorfile) {
         print "Found ERROR file from start.x\n";
         $status |= 16;
         clear_error();
     }
 
-    die "Aborting.\n" if ($status);
+    die "Aborting.\n" if ($status != 0);
 }
 # ---------------------------------------------------------------------- #
 sub run_system_cmd_recoverably {
@@ -777,7 +778,7 @@ sub expand_cmd_sequence {
     my @cmds = @_;
 
     my @sequence;
-    if (@cmds) {                # `pc_run' with subcommands
+    if (@cmds) {                # 'pc_run' with subcommands
         for my $command (@cmds) {
             if ($command =~ /^ \s* (.*) \^ ([0-9]+) \s* $/x) {
                 my ($cmd, $multiplier) = ($1, $2);
@@ -786,7 +787,7 @@ sub expand_cmd_sequence {
                 push @sequence, $command;
             }
         }
-    } else {                    # `pc_run' without subcommands
+    } else {                    # 'pc_run' without subcommands
         if (requires_start()) {
             push @sequence, 'start', 'run';
         } else {
@@ -847,7 +848,7 @@ sub setup_datadir {
             opendir my $dh, $dir
               or die "Cannot read directory $dir\n";
             my @files = readdir($dh);
-            # Remove everything except `.', `..', `var.dat':
+            # Remove everything except '.', '..', 'var.dat':
             my @files_to_delete
               = grep { !m/^ ( var\.dat | \. \.? ) $/x } @files;
             @files_to_delete = map { $_ = "$dir/" . $_; } @files_to_delete;
@@ -954,9 +955,9 @@ sub default_qs_handler {
     my @entries = split(/\s+/, slurm_expand($content));
 
     @entries =
-        grep { ! /=/ }          # lam's `cpu=2' specifier
+        grep { ! /=/ }          # lam's 'cpu=2' specifier
         grep { ! /:/ }          # where from?
-        grep { ! /^[0-9]+$/ }   # mpich's `node12 1' group label
+        grep { ! /^[0-9]+$/ }   # mpich's 'node12 1' group label
         @entries;
 
     return uniq(@entries);
@@ -1245,7 +1246,7 @@ sub start_background_helpers {
         run_system_cmd("$copy_snapshots -v > copy-snapshots.log 2>&1 &");
     }
 
-    # Copy output from `top' on run host to a file we can read from the
+    # Copy output from 'top' on run host to a file we can read from the
     # front end
     if ($remote_top) {
         run_system_cmd('remote-top > remote-top.log 2>&1 &');
@@ -1456,7 +1457,7 @@ sub uniq {
 # ---------------------------------------------------------------------- #
 sub mention {
 # Reference a variable without doing anything.
-# Use this to suppress ``Name "Pencil::ConfigFinder::debug" used only
+# Use this to suppress ''Name "Pencil::ConfigFinder::debug" used only
 # once'' warning
     my @args = @_;
 }
@@ -1467,7 +1468,7 @@ sub printopts {
 
     my %options = %$optsref;
     foreach my $opt (keys(%options)) {
-        print STDERR "\$options{$opt} = `$options{$opt}'\n";
+        print STDERR "\$options{$opt} = '$options{$opt}'\n";
     }
 }
 # ---------------------------------------------------------------------- #
@@ -1485,9 +1486,9 @@ sub usage {
     local $/ = '';              # Read paragraphs
     open my $fh, '<', $thisfile or die "Cannot open $thisfile\n";
     while (<$fh>) {
-        # Paragraph _must_ contain `Description:' or `Usage:'
+        # Paragraph _must_ contain 'Description:' or 'Usage:'
         next unless /^\s*\#\s*(Description|Usage):/m;
-        # Drop `Author:', etc. (anything before `Description:' or `Usage:')
+        # Drop 'Author:', etc. (anything before 'Description:' or 'Usage:')
         s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;
         # Don't print comment sign:
         s/^\s*# ?//mg;
@@ -1499,7 +1500,7 @@ sub usage {
 # ---------------------------------------------------------------------- #
 sub version {
 # Return SVN/CVS data and version info.
-    my $doll='\$';              # Need this to trick SVN/CVS
+    my $doll = '\$';              # Need this to trick CVS
     my $rev = '$Revision$';
     my $date = '$Date$';
     $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
