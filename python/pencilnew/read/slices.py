@@ -101,9 +101,10 @@ class SliceSeries(object):
             else:
                 extension_list = [extension]
         else:
-            # Find the existing extensions.
-            for file_name in os.listdir(data_dir):
-                if (file_name[:6] == 'slice_') and 
+            print('error')
+            #Find the existing extensions.
+            #for file_name in os.listdir(data_dir):
+                #if (file_name[:6] == 'slice_') and 
             
         
         # Compose the file name according to field and extension.
