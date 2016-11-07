@@ -21,7 +21,7 @@ def walklevel(some_dir, level=1):
   assert os.path.isdir(some_dir)
   num_sep = some_dir.count(os.path.sep)
   for root, dirs, files in os.walk(some_dir):
-	  yield root, dirs, files
+	  yield root, dirs
 	  num_sep_this = root.count(os.path.sep)
 	  if num_sep + level <= num_sep_this:
 		  del dirs[:]

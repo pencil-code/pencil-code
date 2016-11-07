@@ -1,80 +1,106 @@
+# simulation.py
+#
+# Create simulation object to operate on.
+#
+# Authors:
+# A. Schreiber (aschreiber@mpia.de)
+"""
+Contains the simulation class which can be used to directly create, access and manipulate simulations.
+"""
 
-class Simulation:
-    """Simulation objects are containers for simulations. pencil can work with several of them at once if stored in a list.
+
+def simulation(*args, **kwargs):
+    """
+    Generate simulation object from parameters.
+    Simulation objects are containers for simulations. pencil can work with several of them at once if stored in a list or dictionary.
 
     Args for Constructor:
     path:		path to simulation, default = '.'
 
     Properties:
-        self.name:          name of simulation
-        self.hidden:        Default is False, if True this simulation will be ignored by pencil (but still is part of simdict)
-        self.status_hash:   Hash key representing the state of a simulation
+
+        self.name:          name of
         self.path:          path to simulation
-        self.dir:           same as self.path
         self.data_dir:      path to simulation data-dir (./data/)
         self.pc_dir:        path to simulation pc-dir (./.pc/)
         self.pc_data_dir:   path to simulation pendir in data_dir (data/.pc/)
+        self.components:    list of files which are components of the specific simulation
+        self.hidden:        Default is False, if True this simulation will be ignored by pencil (but still is part of simdict)
+        #self.status_hash:   Hash key representing the state of a simulation, generated from all components
         self.param:         list of param file
         self.grid:          grid object
     """
 
+    return __Simulation__(*args, **kwargs)
+
+class __Simulation__(object):
+    """
+    Simulation object
+    """
+
     def __init__(self, path='.', hidden=False, quiet=False):
         import os
-        from os.path import join as __join__
-        from os.path import exists as __exists__
-        from os.path import split as __split__
+        from os.path import join
+        from os.path import exists
+        from os.path import split
         #from pen.intern.hash_sim import hash_sim
-        import pencilnew
 
-        # find out name and store it
-        self.name = __split__(path)[-1]
-        if self.name == '.' or self.name == '': self.name = __split__(os.getcwd())[-1]
+        self.name = split(path)[-1]     # find out name and store it
+        if self.name == '.' or self.name == '': self.name = split(os.getcwd())[-1]
 
-        # store paths
-        self.path = os.path.abspath(path)
-        self.dir = self.path
-        if (not quiet): print '# Creating Simulation object for '+self.path
-        self.data_dir = __join__(self.path,'data')
-        self.pc_dir = __join__(self.path,'.pc')
-        self.pc_data_dir = __join__(self.path,'data','.pc')
+        self.path = os.path.abspath(path)   # store paths
+        if (not quiet): print('# Creating Simulation object for '+self.path)
+        self.data_dir = join(self.path,'data')
+        self.pc_dir = join(self.path,'.pc')
+        self.pc_data_dir = join(self.path,'data','.pc')
 
-        # generate status hash identification
-        #self.status_hash = hash_sim(path)
+        #self.status_hash = hash_sim(path   # generate status hash identification
+        self.hidden = hidden                # hidden is default False
+        self.update(self)                   # auto-update, i.e. read param.nml
 
-        # hidden is default False
-        self.hidden = hidden
 
-        # read params into SIM object
-        self.param = {}
-        if __exists__(__join__(self.data_dir,'param.nml')):
-            param = pencilnew.read.Param().read(quiet=True, data_dir=self.data_dir)
+        # Done
+
+    def update(self, quiet=True):
+        from os.path import exists
+        from os.path import join
+        from pencilnew.read import param
+
+        self.param = {}                     # read params into Simulation object
+        # try:
+        if exists(join(self.data_dir,'param.nml')):
+            param = param(quiet=quiet, data_dir=self.data_dir)
+            # from pencil as import read_param
+            # param = read_param(quiet=True, datadir=self.data_dir)
             for key in dir(param):
                 if key.startswith('__'): continue
                 self.param[key] = getattr(param, key)
         else:
-            print '?? WARNING: Couldnt find param.nml in simulation '+self.name+'! Simulation is now hidden from calculations!'
-            self.param['UNSTARTED'] = True
-            self.hidden=True
+            print('? WARNING: Couldnt find param.nml for '+self.path)
+        # except:
+        #     print('! ERROR: while reading param.nml for '+self.path)
 
-        try:
+        self.grid = None
+        self.ghost_grid = None
+        try:                                # read grid
             self.grid = pencilnew.read.grid(data_dir=self.data_dir, trim=True, quiet=True)
             self.ghost_grid = pencilnew.read.grid(data_dir=self.data_dir, trim=False, quiet=True)
         except:
-            self.grid = None
-            self.ghost_grid = None
+            if (not quiet): print('? WARNING: Couldnt load grid for '+self.path)
+
+        self.export()
 
     def hide(self):
-        self.hidden = True; self.export(); pen.refresh()
+        self.hidden = True; self.export()
 
     def unhide(self):
-        self.hidden = False; self.export(); pen.refresh()
+        self.hidden = False; self.export()
 
     def export(self):
-        """Export simulation object to its root-pendir"""
+        """Export simulation object to its root/.pc-dir"""
         from pencilnew.io import save
-        if self == False: print '!! ERROR: Simulation object is bool object and False!'
-        save(self, 'sim', folder=self.pc_dir)
-
+        if self == False: print('! ERROR: Simulation object is bool object and False!')
+        save(self, name='sim', folder=self.pc_dir)
 
     #   def unchanged(self):
     #     """Check if simulation hash has changed."""
@@ -89,49 +115,50 @@ class Simulation:
     #       return False
 
     def started(self):
-        """Returns whether simulation has already started. This is indicated by existing time_Series.dat in data"""
-        from os.path import exists as __exists__
-        return ___exists___(___join___(self.path, 'data', 'time_series.dat'))
-
-    def get_varfiles(self, pos=False, particle=False):
-        """Get a list of all existing VAR# file names.
-
-        pos = False:            give full list
-        pos = 'last'/'first':       give newest/first var file
-        post = list of numbers: give varfiles at this positions
-        particle = True:        return PVAR isntead of VAR list"""
-        import glob
-        from os.path import join as __join__
-        from os.path import basename
-        from pencilnew.math import natural_sort
-        varlist = natural_sort([basename(i) for i in glob.glob(__join__(self.data_dir, 'proc0')+'/VAR*')])
-        if particle: varlist = ['P'+i for i in varlist]
-        if pos == False:
-            return varlist
-        elif pos == 'first':
-            return [varlist[0]]
-        elif pos == 'last':
-            return [varlist[-1]]
-        elif pos.startswith('last'):
-            return varlist[-int(pos[4:]):]
-        elif pos.startswith('first'):
-            return varlist[:int(pos[4:])]
-        elif type(pos) == type([]):
-            if pos[0].startswith('VAR'): pos = [i[3:] for i in pos]
-            if pos[0].startswith('PVAR'): pos = [i[3:] for i in pos]
-            return [varlist[i] for i in pos]
-        else:
-            return varlist
+        """Returns whether simulation has already started.
+        This is indicated by existing time_series.dat in data directory."""
+        from os.path import exists
+        from os.path import join
+        return exists(join(self.path, 'data', 'time_series.dat'))
 
     def get_varlist(self, pos=False, particle=False):
-        """Same as get_varfiles. """
-        return self.get_varfiles()
+        """Get a list of all existing VAR# file names.
 
-    def get_lastvarfilename(self):
+        pos = False:                 give full list
+        pos = 'last'/'first':        give latest/first var file
+        pos = 'lastXXX' / 'firstXXX' give last/first XXX varfiles
+        pos = list of numbers:       give varfiles at this positions
+        particle = True:             return PVAR- instead of VAR-list"""
+
+        import glob
+        from os.path import join as join
+        from os.path import basename
+        from pencilnew.math import natural_sort
+
+        key = 'VAR'
+        if particle == True: key = 'PVAR'
+
+        varlist = natural_sort([basename(i) for i in glob.glob(join(self.data_dir, 'proc0')+'/'+key+'*')])
+        #if particle: varlist = ['P'+i for i in varlist]
+
+        if pos == False: return varlist
+        if pos == 'first': return [varlist[0]]
+        if pos == 'last': return [varlist[-1]]
+        if pos.startswith('last'): return varlist[-int(pos[4:]):]
+        if pos.startswith('first'): return varlist[:int(pos[4:])]
+        if type(pos) == type([]):
+            if pos[0].startswith('VAR'): pos = [i[3:] for i in pos]
+            if pos[0].startswith('PVAR'): pos = [i[3:] for i in pos]
+            return [varlist[int(i)] for i in pos]
+        return varlist
+
+    def get_pvarlist(self, pos=False):
+        """Same as get_varfiles(pos, particles=True). """
+        return self.get_varfiles(pos=pos, particle=True)
+
+    def get_lastvarfilename(self, particle=False):
         """Returns las varfile name as string."""
-        return self.get_varfiles()[-1].split('VAR')[-1]
-
-
+        return self.get_varfiles(pos='last', particle=particle)
 
     def get_value_from_file(self, filename, quantity):
         """ Use to read in a quantity from *.in or *.local files.
