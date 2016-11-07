@@ -86,6 +86,7 @@ my (%opts);                     # Variables written by GetOptions
 my (%emails, %pos, %neg, %sendmailto); # Info on mailing if tests fail
 
 ## Process command line
+my $commandline = $0.' '.join (' ', @ARGV);
 eval {
     Getopt::Long::config("bundling");
 };
@@ -220,7 +221,9 @@ sub run_tests_on {
         open(TIMINGS, ">> $timingsfile")
           or warn "Couldn't open $timingsfile for writing\n";
     }
-    my ($line,$timings,$result,$update_error);
+    my ($line,$timings,$result,$update_error,$empty,$failures);            
+    $empty = 0;
+    $failures = 0;
     while (defined($line=<POUT>)) {
         # Extract timing lines
         if ($line =~ /^#TIMING\s+(.*)/) {
@@ -237,6 +240,41 @@ sub run_tests_on {
         # Identify errors
         if ($line =~ /^UPDATE ERROR:/) {
             $update_error = 1;
+        }
+
+        if ($html) {
+            # Mark beginning of a test in HTML
+            if ($empty && ($line =~ /^\s*(?:[^:\/]+\/)*\/*(samples(?:\/[^:\/\s]+)+): \(\d+\/\d+\)\s*$/is)) {
+                print "</pre>\n".'<a name="'.$1.'"></a>'."\n<pre>";
+            }
+            $empty = 0;
+            if ($line =~ /^\s*$/s) { $empty = 1; }
+
+            # Links on failures summary in HTML
+            if ($failures != 0) { 
+                if ($failures < 0) {
+                    print "</pre>\n<ul>\n";
+                    $failures = -$failures;
+                }
+                if ($line =~ /^\s*(?:[^:\/]+\/)*\/*(samples(?:\/[^:\/\s]+)+) \([^\(\)]+\)\s*$/is) {
+                    print '<li><a href="#'.$1.'"><code>';
+                    $result .= $line;
+                    $line =~ s/^\s+//s;
+                    $line =~ s/\s+$//s;
+                    $line =~ s/(\s\([^\(\)]+\))$/<\/code><\/a><\/li> <code>$1<\/code>/s;
+                    print $line."\n";
+                    $failures--;
+                    if ($failures <= 0) { print "</ul>\n<pre>"; }  
+                    next;
+                }
+                else {
+                    $failures = 0;
+                    print "</ul>\n<pre>";
+                }
+            }
+            if ($line =~ /^\s*Failed (\d+) test\(s\) out of \d+:\s*$/is) {
+                $failures = -$1;
+            }
         }
 
         # Print all other lines
@@ -312,11 +350,13 @@ END_XMLHEAD
     }
     if ($html) {
         print <<"END_HEAD";
+<!-- $commandline -->
 <html>
 <head></head>
 <body>
 
-$date
+<p>$date</p>
+<pre>$commandline</pre>
 <p>
 END_HEAD
     } else {
