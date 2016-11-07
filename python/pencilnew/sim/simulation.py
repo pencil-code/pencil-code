@@ -160,7 +160,7 @@ class __Simulation__(object):
         """Returns las varfile name as string."""
         return self.get_varfiles(pos='last', particle=particle)
 
-    def get_value_from_file(self, filename, quantity):
+    def get_value_from_file(self, filename, quantity, DEBUG=False):
         """ Use to read in a quantity from *.in or *.local files.
 
         Args:
@@ -173,34 +173,57 @@ class __Simulation__(object):
         from pencilnew.math import is_int
 
         if filename in ['run.in', 'start.in']:
-            filepath = join(self.dir, filename)
+            filepath = join(self.path, filename)
         elif filename in ['cparam.local']:
-            filepath = join(self.dir, 'src', filename)
+            filepath = join(self.path, 'src', filename)
         else:
-            print('!! Quantity '+quantity+' not found in '+filepath); return False
-
+            print('! Filename '+filename+' could not be interprated for '+filepath); return False
 
         with open(filepath, 'r') as f: data = f.readlines()     # open file and read content
 
-        for id,line in enumerate(data):     # check lines for quantity
+        for id, line in enumerate(data):        # check lines for quantity
             if line.find(quantity) >= 0:
-                # special cases:
-                if quantity == 'Lxyz':
+                # cleanup
+                line = line.split('!')[0].strip()       # remove comments and empty spaces
+                if not quantity in line:
+                    print('? WARNING: Quantity "'+quantity+'" was found in a comment in'+filepath+' -> no action perfomed!')
+
+                # special case double string tuple:
+                if quantity in ['idiff', 'ivisc']:
+                    line = line.replace(' ', '')
+                    line = line.split(quantity+'=')[-1]
+                    return [i.replace("'", '').replace('"', '') for i in line.split(',')]
+
+                # special case triple float tuple:
+                if quantity in ['Lxyz', 'xyz0', 'beta_glnrho_global']:
                     line = line.replace(' ', '')
                     line = line.split(quantity+'=')[-1]
                     return [float(i) for i in line.split(',')]
 
-                # default case:
-                for i in line.split(quantity+'=')[-1]:
-                    if is_number(i) == False and not i in ['.','e', '-', '+']: break
-                oldvalue = line.split(quantity+'=')[-1].split(i)[0]     # extract quantity value (not needed here)
+                # prepare default cases
+                value_str = line.split(quantity+'=')[-1].split('=')[0]
 
-                if is_int(oldvalue): return int(float(oldvalue))
-                elif is_float(oldvalue): return float(oldvalue)
+                # case value is string
+                if value_str[0] in ['"', "'"]: return value_str.replace("'", '').replace('"', '')
+
+                # case value is bool
+                if value_str[0] == 'T': return 'T'
+                if value_str[0] == 'F': return 'F'
+
+                # case value is number
+                if is_number(value_str[0]):
+                    print("NUMBER")
+                    for i in value_str:      # iterate through string for extract number
+                        if is_number(i) == False and not i in ['.','e', '-', '+']: break
+                    value_str = value_str.split(i)[0]     # extract quantity value
+
+                if is_int(value_str): return int(float(value_str))
+                elif is_float(value_str): return float(value_str)
                 else:
-                    print('?? WARNING: value from file is neither float nor int! value is: '+oldvalue)
-                    return oldvalue
-
+                    print('? WARNING: value from file is neither float nor int! value is: '+value_str)
+                    print('? Check manually! ')
+                    return
 
         else:
-            print('!! quantity '+quantity+' not found in '+filepath); return False
+            print('! ERROR: Quantity "'+quantity+'" was not found in '+filepath)
+            return False
