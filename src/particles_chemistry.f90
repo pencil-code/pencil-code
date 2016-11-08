@@ -1249,7 +1249,6 @@ module Particles_chemistry
         else
 !
           do k = k1,k2
-            if (lparticles_adsorbed) print*, 'values before',fp(k,isurf:isurf_end)
 !
 !  The particle mass should not be allowed to decrease to less than
 !  one percent of ints initial mass. When particle reactions are
@@ -1279,7 +1278,12 @@ module Particles_chemistry
                 if (lbaum_and_street) then
                   do i = 1,N_surface_reactants
                     if (nu(i,j) > 0) then
-                      ix0 = ineargrid(k,1)
+                        ix0 = ineargrid(k,1)
+!
+!  The next if clause only calculates a reaction rate if the concentration of the reactant
+!  nonnegative. The reaction rate is set to 0 otherwise
+!
+                      if (fp(k,isurf-1+i) >= 0.0) then
 !
 !  k_im and kk are here with Cg although it cancels out!
 !  k_im is only in the units used in the system
@@ -1290,49 +1294,52 @@ module Particles_chemistry
 !  From Multiphase flows with Droplets and particles, p.62:
 !  Sh = 2+0.69*Re_rel**0.5 * Sc**0.33
 !
-                      if (.not. lsherwood_const) then
-                        Sh = 2.0 + 0.69 * rep(k)**0.5 * &
-                            (nuvisc(k)/p%Diff_penc_add(ix0-nghost,jmap(i)))**0.33
-                        if (idiag_Shchm /= 0) then
-                          Sh_mean = Sh_mean + Sh
+                        if (.not. lsherwood_const) then
+                          Sh = 2.0 + 0.69 * rep(k)**0.5 * &
+                              (nuvisc(k)/p%Diff_penc_add(ix0-nghost,jmap(i)))**0.33
+                          if (idiag_Shchm /= 0) then
+                            Sh_mean = Sh_mean + Sh
+                          endif
                         endif
-                      endif
 !
-                      k_im = Cg(k)*p%Diff_penc_add(ix0-nghost,jmap(i))*Sh/(2.0*fp(k,iap))
-                      kkcg = RR_hat(k,j)*Cg(k)*pre_kk
+                        k_im = Cg(k)*p%Diff_penc_add(ix0-nghost,jmap(i))*Sh/(2.0*fp(k,iap))
+                        kkcg = RR_hat(k,j)*Cg(k)*pre_kk
 !
-                      if (dngas(j) /= 0.0) then
-                        root_term = (k_im+kkcg)**2 + 4*k_im*fp(k,isurf-1+i)*(dngas(j))*kkcg
-                        root_term2 = (k_im+kkcg)**2 + 4*k_im*fp(k,isurf-1+i)*(-dngas(j))*kkcg
-                        x_mod1 = (-kkcg-k_im+sqrt(root_term))/2/(dngas(j)*kkcg)
-                        x_mod2 = (-kkcg-k_im-sqrt(root_term))/2/(dngas(j)*kkcg)
-                        x_mod3 = (-kkcg-k_im+sqrt(root_term2))/2/(-dngas(j)*kkcg)
-                        x_mod4 = (-kkcg-k_im-sqrt(root_term2))/2/(-dngas(j)*kkcg)
-                        if (x_mod1 >= 0.0 .and. x_mod1 <= fp(k,isurf-1+i)) then
-                          x_mod=x_mod1
-                        elseif (x_mod2 >= 0.0 .and. x_mod2 <= fp(k,isurf-1+i)) then
-                          x_mod=x_mod2
+                        if (dngas(j) /= 0.0) then
+                          root_term = (k_im+kkcg)**2 + 4*k_im*fp(k,isurf-1+i)*(dngas(j))*kkcg
+                          root_term2 = (k_im+kkcg)**2 + 4*k_im*fp(k,isurf-1+i)*(-dngas(j))*kkcg
+                          x_mod1 = (-kkcg-k_im+sqrt(root_term))/2/(dngas(j)*kkcg)
+                          x_mod2 = (-kkcg-k_im-sqrt(root_term))/2/(dngas(j)*kkcg)
+                          x_mod3 = (-kkcg-k_im+sqrt(root_term2))/2/(-dngas(j)*kkcg)
+                          x_mod4 = (-kkcg-k_im-sqrt(root_term2))/2/(-dngas(j)*kkcg)
+                          if (x_mod1 >= 0.0 .and. x_mod1 <= fp(k,isurf-1+i)) then
+                            x_mod=x_mod1
+                          elseif (x_mod2 >= 0.0 .and. x_mod2 <= fp(k,isurf-1+i)) then
+                            x_mod=x_mod2
+                          else
+                            print*, 'k,i,      ', k,i
+                            print*, 'diff      ',p%Diff_penc_add(ix0-nghost,jmap(i))
+                            print*, 'RR_hat    ', RR_hat(k,j)
+                            print*, 'Cg        ',Cg(k)
+                            print*, 'kkcg      ',kkcg
+                            print*, 'k_im      ', k_im
+                            print*, 'kkcg/kim  ',kkcg/k_im
+                            print*, 'root term ', root_term
+                            print*, 'root t2   ', sqrt(root_term)
+                            print*, 'x_mod1    ',x_mod1
+                            print*, 'x_mod2    ',x_mod2
+                            print*, 'x_mod3    ',x_mod3
+                            print*, 'x_mod4    ',x_mod4
+                            print*, 'surface fraction', fp(k,isurf-1+i)
+                            call fatal_error('particles_chemistry','no baum and street solution!')
+                          endif
                         else
-                          print*, 'k,i,      ', k,i
-                          print*, 'diff      ',p%Diff_penc_add(ix0-nghost,jmap(i))
-                          print*, 'RR_hat    ', RR_hat(k,j)
-                          print*, 'Cg        ',Cg(k)
-                          print*, 'kkcg      ',kkcg
-                          print*, 'k_im      ', k_im
-                          print*, 'kkcg/kim  ',kkcg/k_im
-                          print*, 'root term ', root_term
-                          print*, 'root t2   ', sqrt(root_term)
-                          print*, 'x_mod1    ',x_mod1
-                          print*, 'x_mod2    ',x_mod2
-                          print*, 'x_mod3    ',x_mod3
-                          print*, 'x_mod4    ',x_mod4
-                          print*, 'surface fraction', fp(k,isurf-1+i)
-                          call fatal_error('particles_chemistry','no baum and street solution!')
-                        endif
-                      else
                           x_mod = k_im * fp(k,isurf-1+i) / (k_im + kkcg)
+                        endif
+                        RR_hat(k,j) = RR_hat(k,j) * (pre_Cg * Cg(k)*x_mod)**nu(i,j)
+                      else
+                        RR_hat(k,j) = 0.0
                       endif
-                      RR_hat(k,j) = RR_hat(k,j) * (pre_Cg * Cg(k)*x_mod)**nu(i,j)
                     endif
                   enddo
 !
@@ -1383,16 +1390,6 @@ module Particles_chemistry
               p%sherwood(ix0-nghost) = p%sherwood(ix0-nghost)+Sh_mean
             endif
           enddo
-        endif
-!
-!  Control if RR_hat is always positive
-!
-        if (minval(RR_hat) < 0.0) then
-!        writeformat = '(A12,I2,  E10.2)'
-          do k = k1,k2
-            print*, 'k, RR_hat: ',k, RR_hat(k,:)
-          enddo
-          call fatal_error('particles_chemistry after RR','RR_hat is negative')
         endif
 !
 !  Make sure RR_hat is given in the right unit system (above it is always

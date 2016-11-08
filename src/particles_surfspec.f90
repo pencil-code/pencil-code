@@ -376,6 +376,7 @@ module Particles_surfspec
       real, dimension(mpar_loc,mpvar) :: dfp
       integer, dimension(mpar_loc,3) :: ineargrid
       integer :: i, j,g
+      integer :: li,mi,ni
 !
 !  equations.tex eq 37
 !      call keep_compiler_quiet(fp)
@@ -398,8 +399,27 @@ module Particles_surfspec
 !
             call diffuse_interaction(f(:,:,:,ispecaux(j)),ldiffs,.False.,rdiffconsts)
           enddo
-          df(l1:l2,m1:m2,n1:n2,ichemspec(j)) =  df(l1:l2,m1:m2,n1:n2,ichemspec(j)) + &
-              f(l1:l2,m1:m2,n1:n2,ispecaux(j))
+!
+!  Control that we don't influence points that would bring the mass fraction into the negative 
+!
+          if (minval(f(l1:l2,m1:m2,n1:n2,ichemspec(j))) > 1e-3) then
+            df(l1:l2,m1:m2,n1:n2,ichemspec(j)) =  df(l1:l2,m1:m2,n1:n2,ichemspec(j)) + &
+                f(l1:l2,m1:m2,n1:n2,ispecaux(j))
+          else
+            if (minval(f(l1:l2,m1:m2,n1:n2,ichemspec(j))+f(l1:l2,m1:m2,n1:n2,ispecaux(j))*dt)<0.0) then
+              do ni = n1,n2
+                do mi = m1,m2
+                  do li = l1,l2
+                    if ((f(li,mi,ni,ichemspec(j))+f(li,mi,ni,ispecaux(j))*dt)<0.0) then
+                      f(li,mi,ni,ispecaux(j)) = f(li,mi,ni,ispecaux(j))*dt
+                    endif
+                  enddo
+                enddo
+              enddo
+              df(l1:l2,m1:m2,n1:n2,ichemspec(j)) =  df(l1:l2,m1:m2,n1:n2,ichemspec(j)) + &
+                  f(l1:l2,m1:m2,n1:n2,ispecaux(j))
+            endif
+          endif
         enddo
         df(l1:l2,m1:m2,n1:n2,ichemspec(nchemspec)) = &
             df(l1:l2,m1:m2,n1:n2,ichemspec(nchemspec))- &
