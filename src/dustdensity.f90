@@ -94,7 +94,7 @@ module Dustdensity
   logical :: lsemi_chemistry=.false., lradius_binning=.false.
   logical :: lzero_upper_kern=.false., ldustcoagulation_simplified=.false.
   logical :: lself_collisions=.false.
-  logical :: llog10_for_admom_above10=.true., lmomcons=.true., lmomconsb=.false.
+  logical :: llog10_for_admom_above10=.true., lmomcons=.false., lmomconsb=.false.
   logical :: lmomcons2=.false., lmomcons3=.false., lmomcons3b=.false.
   logical :: lkernel_mean=.false., lpiecewise_constant_kernel=.false.
   integer :: iadvec_ddensity=0
