@@ -1,0 +1,26 @@
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2016/03/19 10:42:20 akshay Exp $',
+  ip=16
+!  tmax=40., it1=50, cdt=0.4, cdtv=0.80, isave=100, itorder=3,
+!  nt=200000, it1=50, cdt=0.4, cdtv=0.80, isave=100, itorder=3,
+  nt=20, it1=1, cdt=0.4, cdtv=0.80, isave=100, itorder=3,
+  dsnap=1., dvid=1.
+!  lpencil_check=F
+!  lpencil_check_small=F
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+/
+&forcing_run_pars
+  iforce='helical', force=0.05, relhel=0.
+/
+&viscosity_run_pars
+  nu=1e-3, ivisc='nu-const'
+/
+&particles_run_pars
+/
+&particles_lyapunov_run_pars
+/

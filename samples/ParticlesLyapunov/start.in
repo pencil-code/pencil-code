@@ -1,0 +1,18 @@
+!                                  -*-f90-*-
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2016/03/19 10:42:20 akshay Exp $',
+  random_gen='nr_f90'
+/
+&eos_init_pars
+/
+&hydro_init_pars
+/
+&density_init_pars
+/
+&particles_init_pars
+initxxp='random'
+/
+&particles_lyapunov_init_pars
+/
