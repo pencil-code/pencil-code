@@ -15,7 +15,9 @@ def simulation(*args, **kwargs):
     Simulation objects are containers for simulations. pencil can work with several of them at once if stored in a list or dictionary.
 
     Args for Constructor:
-    path:		path to simulation, default = '.'
+        path:		path to simulation, default = '.'
+        hidden:     set True to set hidden flag, default is False
+        quiet:      suppress irrelevant output, default False
 
     Properties:
 
@@ -24,9 +26,9 @@ def simulation(*args, **kwargs):
         self.data_dir:      path to simulation data-dir (./data/)
         self.pc_dir:        path to simulation pc-dir (./.pc/)
         self.pc_data_dir:   path to simulation pendir in data_dir (data/.pc/)
-        self.components:    list of files which are components of the specific simulation
+        self.components:    list of files which are nessecarry components of the simulation
+        self.optionals:     list of files which are optional components of the simulation
         self.hidden:        Default is False, if True this simulation will be ignored by pencil (but still is part of simdict)
-        #self.status_hash:   Hash key representing the state of a simulation, generated from all components
         self.param:         list of param file
         self.grid:          grid object
     """
@@ -35,7 +37,7 @@ def simulation(*args, **kwargs):
 
 class __Simulation__(object):
     """
-    Simulation object
+    Simulation object.
     """
 
     def __init__(self, path='.', hidden=False, quiet=False):
@@ -54,31 +56,36 @@ class __Simulation__(object):
         self.pc_dir = join(self.path,'.pc')
         self.pc_data_dir = join(self.path,'data','.pc')
 
-        #self.status_hash = hash_sim(path   # generate status hash identification
+        self.components = ['src/cparam.local', 'src/Makefile.local', 'start.in', 'run.in', 'print.in'] # core files of a simulation run
+        self.optionals = ['*.in', '*.py', 'submit*']    # optinal files that should stick with the simulation when copied
+
         self.hidden = hidden                # hidden is default False
         self.update(self)                   # auto-update, i.e. read param.nml
-
-
         # Done
 
+
     def update(self, quiet=True):
+        """Update simulation object:
+                - read param.nml
+                - read grid and ghost grid
+        """
         from os.path import exists
         from os.path import join
         from pencilnew.read import param
 
         self.param = {}                     # read params into Simulation object
-        # try:
-        if exists(join(self.data_dir,'param.nml')):
-            param = param(quiet=quiet, data_dir=self.data_dir)
-            # from pencil as import read_param
-            # param = read_param(quiet=True, datadir=self.data_dir)
-            for key in dir(param):
-                if key.startswith('__'): continue
-                self.param[key] = getattr(param, key)
-        else:
-            print('? WARNING: Couldnt find param.nml for '+self.path)
-        # except:
-        #     print('! ERROR: while reading param.nml for '+self.path)
+        try:
+            if exists(join(self.data_dir,'param.nml')):
+                param = param(quiet=quiet, data_dir=self.data_dir)
+                # from pencil as import read_param
+                # param = read_param(quiet=True, datadir=self.data_dir)
+                for key in dir(param):
+                    if key.startswith('__'): continue
+                    self.param[key] = getattr(param, key)
+            else:
+                print('? WARNING: Couldnt find param.nml for '+self.path)
+        except:
+            print('! ERROR: while reading param.nml for '+self.path)
 
         self.grid = None
         self.ghost_grid = None
@@ -90,11 +97,16 @@ class __Simulation__(object):
 
         self.export()
 
+
     def hide(self):
+        """Set hide flag True for this simulation. """
         self.hidden = True; self.export()
 
+
     def unhide(self):
+        """Set hide flag False for this simulation. """
         self.hidden = False; self.export()
+
 
     def export(self):
         """Export simulation object to its root/.pc-dir"""
@@ -102,17 +114,6 @@ class __Simulation__(object):
         if self == False: print('! ERROR: Simulation object is bool object and False!')
         save(self, name='sim', folder=self.pc_dir)
 
-    #   def unchanged(self):
-    #     """Check if simulation hash has changed."""
-    #     from pen.intern.hash_sim import hash_sim
-      #
-    #     old_hash = self.status_hash
-    #     new_hash = hash_sim(self.path)
-      #
-    #     if old_hash == new_hash:
-    #       return True
-    #     else:
-    #       return False
 
     def started(self):
         """Returns whether simulation has already started.
@@ -120,6 +121,7 @@ class __Simulation__(object):
         from os.path import exists
         from os.path import join
         return exists(join(self.path, 'data', 'time_series.dat'))
+
 
     def get_varlist(self, pos=False, particle=False):
         """Get a list of all existing VAR# file names.
@@ -152,13 +154,16 @@ class __Simulation__(object):
             return [varlist[int(i)] for i in pos]
         return varlist
 
+
     def get_pvarlist(self, pos=False):
         """Same as get_varfiles(pos, particles=True). """
         return self.get_varfiles(pos=pos, particle=True)
 
+
     def get_lastvarfilename(self, particle=False):
         """Returns las varfile name as string."""
         return self.get_varfiles(pos='last', particle=particle)
+
 
     def get_value_from_file(self, filename, quantity, DEBUG=False):
         """ Use to read in a quantity from *.in or *.local files.
