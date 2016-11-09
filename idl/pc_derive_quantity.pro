@@ -8,11 +8,10 @@
 ;   this unit system is chosen, otherwise the result is in Pencil-units.
 ;
 ;  Parameters:
+;   * derivative     Derivative direction: 'x', 'y', 'z', 'xz', 'yx', etc.
 ;   * quantity       Quantity passed on to 'pc_get_quantity', see there.
 ;   * vars           Data array or data structure as load by pc_read_*.
 ;   * index          Indices or tags of the given variables inside data.
-;   * /cache         If set, a chache is used to optimize computation.
-;   * /cleanup       If set, the chache is being freed after computation.
 ;
 ;   
 ;  Examples: (in ascending order of efficiency)
@@ -26,23 +25,25 @@
 ;   IDL> dT_dz = pc_derive_quantity ('z', 'Temp', var, tags)
 ;   IDL> d2T_dx_dy = pc_derive_quantity ('xy', 'Temp', var, tags)
 ;
-;   Load varfile and separately calculate quantities, using the cache manually: (RECOMMENDED FOR SCRIPTS)
+;   Load varfile and separately calculate quantities, using the cache: (RECOMMENDED FOR SCRIPTS)
 ;   IDL> pc_read_var_raw, obj=var, tags=tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param
 ;   IDL> T = pc_get_quantity ('Temp', var, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache)
-;   IDL> dT_dz = pc_derive_quantity ('z', 'Temp', var, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache)
-;   IDL> d2T_dx_dy = pc_derive_quantity ('xy', 'Temp', var, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache, /cleanup)
+;   IDL> rho = pc_get_quantity ('rho', var, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache)
+;   IDL> P_therm = pc_get_quantity ('P_therm', var, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param, /cache, /cleanup)
+;   IDL> dT_dz = pc_derive_quantity ('z', 'Temp', var, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param)
+;   IDL> d2rho_dx_dy = pc_derive_quantity ('xy', 'rho', var, tags, dim=dim, grid=grid, start_param=start_param, run_param=run_param)
 ;
 
 
 ; Derivation of physical quantities.
-function pc_derive_quantity, derivative, quantity, vars, index, varfile=varfile, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, datadir=datadir, cache=cache, cleanup=cleanup, verbose=verbose
+function pc_derive_quantity, derivative, quantity, vars, index, varfile=varfile, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, datadir=datadir, cleanup=cleanup, verbose=verbose
 
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
 
 	if (size (quantity, /type) eq 7) then begin
 		label = "'"+quantity+"'"
 		default, vars, "var.dat"
-		quantity = pc_get_quantity (quantity, vars, index, varfile=varfile, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, datadir=datadir, /ghost, cache=cache, cleanup=cleanup, verbose=verbose)
+		quantity = pc_get_quantity (quantity, vars, index, varfile=varfile, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, datadir=datadir, /ghost, cleanup=cleanup, verbose=verbose)
 	end else begin
 		label = 'the given data'
 	end
@@ -50,6 +51,7 @@ function pc_derive_quantity, derivative, quantity, vars, index, varfile=varfile,
 	if (size (quantity, /n_dimensions) lt 3) then message, "pc_derive_quantity: "+label+" is not a derivable 3D quantity."
 	if (not all (size (quantity, /dimensions) eq [mx,my,mz])) then message, "pc_derive_quantity: "+label+" can not be derived because it lacks the ghost cells or it is already a derivatvie."
 
+	derivative = strtrim (derivative, 2)
 	num_derivatives = strlen (derivative)
 	if ((num_derivatives lt 1) or (num_derivatives gt 2)) then message, "pc_derive_quantity: can only compute first and second derivatives."
 
@@ -67,10 +69,10 @@ function pc_derive_quantity, derivative, quantity, vars, index, varfile=varfile,
 	nz = mz - 2 * nghostz
 
 	result = dblarr (nx, ny, nz, /nozero)
-	if (num_derivatives eq 1) then begin
-		result[*,*,*,*] = 1.0 / unit_length
-	end else begin
+	if (num_derivatives eq 2) then begin
 		result[*,*,*,*] = 1.0 / (unit_length^2)
+	end else begin
+		result[*,*,*,*] = 1.0 / unit_length
 	end
 
 	case (derivative) of
