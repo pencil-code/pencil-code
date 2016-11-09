@@ -5,6 +5,7 @@
 ################
 
 from npfile import npfile
+from mkdir import mkdir
 
 # dill im-/exporter
 from dill_load import dill_load as load
