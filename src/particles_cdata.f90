@@ -60,7 +60,6 @@ module Particles_cdata
   integer :: iup21=0,iup22=0,iup23=0
   integer :: iup31=0,iup32=0,iup33=0
   integer :: ibpx=0,ibpy=0,ibpz=0
-  integer :: ipindex=0
   integer :: idiag_nmigmax=0, idiag_nmigmmax=0, npart_radii=0
   integer :: nbin_ap_dist=100
   integer :: iads=0, iads_end=0

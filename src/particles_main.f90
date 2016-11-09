@@ -57,6 +57,7 @@ module Particles_main
 !
       call register_particles              ()
       call register_particles_potential    ()
+      call register_particles_lyapunov    ()
       call register_particles_radius       ()
       call register_particles_grad         ()
       call register_particles_spin         ()
@@ -802,10 +803,7 @@ module Particles_main
 !  Dynamical equations.
 !
       if (lparticles)        call dxxp_dt_pencil(f,df,fp,dfp,p,ineargrid)
-      if (lparticles)        then
-!        write(*,*) 'DM: calling dvvp_dt_pencil'
-        call dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
-      endif
+      if (lparticles)        call dvvp_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_lyapunov) call dlyapunov_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_radius)   call dap_dt_pencil(f,df,fp,dfp,p,ineargrid)
       if (lparticles_spin)     call dps_dt_pencil(f,df,fp,dfp,p,ineargrid)

@@ -1923,6 +1923,7 @@ module Hydro
 !
 !  20-nov-04/anders: coded
 !
+      if (lparticles_lyapunov) lpenc_requested(i_uij) = .true.
       if (ladvection_velocity) then
         if (lweno_transport) then
           lpenc_requested(i_uu)=.true.
@@ -2012,7 +2013,6 @@ module Hydro
           idiag_fkinzm/=0 .or. idiag_u2m/=0 .or. idiag_um2/=0 .or. idiag_u2mz/=0 .or. &
           idiag_urmsh/=0 .or. idiag_urmsx/=0 .or. idiag_urmsz/=0) lpenc_diagnos(i_u2)=.true.
       if (idiag_duxdzma/=0 .or. idiag_duydzma/=0 .or. lgradu_as_aux) lpenc_diagnos(i_uij)=.true.
-      if (lparticles_lyapunov) lpenc_diagnos(i_uij) = .true.
       if (idiag_fmasszmz/=0 .or. idiag_ruxuym/=0 .or. &
           idiag_ruxm/=0 .or. idiag_ruym/=0 .or. idiag_ruzm/=0 .or. &
           idiag_ruxuzm/=0 .or. idiag_ruyuzm/=0 .or. idiag_pvzm/=0 .or. &

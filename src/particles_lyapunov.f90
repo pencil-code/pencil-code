@@ -11,7 +11,8 @@
 ! CPARAM logical, parameter :: lparticles_lyapunov=.true.
 !
 ! MAUX CONTRIBUTION 9
-! MPVAR CONTRIBUTION 13
+! COMMUNICATED AUXILIARIES 9
+! MPVAR CONTRIBUTION 12
 !
 !***************************************************************
 module Particles_lyapunov
@@ -79,14 +80,9 @@ module Particles_lyapunov
       ibpz=npvar+12
       pvarname(npvar+12)='ibpz'
 !
-! An unique index to particles 
-!
-      ipindex=npvar+13
-      pvarname(npvar+13) = 'ipindex'
-!
 !  Increase npvar accordingly.
 !
-      npvar=npvar+13
+      npvar=npvar+12
 !
 !  Set indices for velocity gradient matrix at grid points
 !
@@ -137,23 +133,10 @@ module Particles_lyapunov
       real :: random_number
       integer :: ipzero,ik,ii,jj,ij
 !
-!
-      my_particles(iproc+1) = npar_loc
-      call  mpiallreduce_sum_int(my_particles,all_particles,ncpus)
-      if (iproc.eq.0) then
-        ipzero=0
-      else
-        ipzero=sum(all_particles(1:iproc))
-      endif
       do ip=1,npar_loc
 !
-! Go over the particles and assign them an unique index. This index must
-! be unique among processors.
-!
-        fp(ip,ipindex)= real(ipzero+ip)
-!
-! Initialize the gradU matrix at particle position by interpolating from 
-! grid points. The initial condition is kroner delta.
+! Initialize the gradU matrix at particle position
+! The initial condition is kroner delta.
 !
         ij=0
         do ii=1,3; do jj=1,3 
@@ -304,16 +287,12 @@ module Particles_lyapunov
       real, dimension (mpar_loc,mparray), intent(inout) :: fp
       integer :: ip,ik
       real,dimension(2) :: grandom
+!
       do ik=1,3
-        do ip=1,npar_loc/2
+        do ip=1,npar_loc
           call gaunoise_number(grandom)
-          fp(2*ip-1,ibpx+ik-1) = sqrt(fake_eta)*grandom(2)*sqrt(dt)
-          fp(2*ip,ibpx+ik-1) = sqrt(fake_eta)*grandom(1)*sqrt(dt)
+          fp(ip,ibpx+ik-1) = fp(ip,ibpx+ik-1)+sqrt(fake_eta)*grandom(2)*sqrt(dt)
         enddo
-        if (modulo(npar_loc,2).ne.0) then
-          call gaunoise_number(grandom)
-          fp(npar_loc,ibpx+ik-1) = sqrt(fake_eta)*grandom(1)*sqrt(dt)
-        endif
       enddo
 !    
     endsubroutine particles_stochastic_lyapunov
@@ -353,7 +332,6 @@ module Particles_lyapunov
         write(3,*) 'ibpx=', ibpx
         write(3,*) 'ibpy=', ibpy
         write(3,*) 'ibpz=', ibpz
-        write(3,*) 'ipindex=', ipindex
       endif
 !
 !  Reset everything in case of reset.
