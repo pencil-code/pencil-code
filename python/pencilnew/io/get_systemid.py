@@ -1,6 +1,8 @@
 def get_systemid():
     """This function returnes informations over the used system.
 
+    Please add further functionallity by yourself!
+
     Return Values:
         system_name:  name of computer/cluster system as identified. Default return is 'pc'
                             Known systems are: - THEO (Garchingen)

@@ -1,0 +1,111 @@
+def get_value_from_file_old(filename, quantity, sim=False, filepath=False, DEBUG=False):
+    """ Use to read in a quantity from
+        - *.in
+        - *.local
+        - submit*, i.e. submit.sh, submit.csh, files, only works if computer is readily specified in pencilnew.io.get_systemid
+
+    Please add further functionallity by yourself!
+
+    Args:
+        file:       can be "run.in", "start.in", "cparam.local"
+        quantity:   variable to read in from file
+        sim:        put simulation object here, file will be found by filename automatically
+        filepath:   normally not needed, specify here where to find the file with filename, can be a list of paths if unshure
+        DEBUG:      make dry run, tell me what you would do but dont change anything!
+    """
+
+    import os
+    from os.path import join, abspath, exists
+    import pencilnew
+    from pencilnew.math import is_number, is_float, is_int
+
+    # prepare filename and quantity
+    filename = filename.strip()                                             # get rid of whitespaces
+    quantity = quantity.strip()
+
+    # prepare search_path list to searth filename in
+    if filepath == False:
+        if sim == False: sim = pencilnew.get_sim()
+        search_paths = [sim.path, join(sim.path, 'src')]                    # add other search paths here!!
+
+    elif type(filepath) == type('string'):
+        if filepath.endswith(filename): filepath = filepath[:-len(filename)]    # clean filepath if filename occures to be in there at the end
+        search_paths = [abspath(filepath.strip())]                              # correct path format
+
+    elif type(filepath) == type(['list']):
+        search_paths = filepath
+
+    else:
+        print('! ERROR: Filename '+str(filename)+' could not be interprated or found!'); return False
+
+    for search_path in search_paths:
+        if filename in os.listdir(search_path):
+            filepath = join(search_path, filename)
+            break
+
+    if DEBUG: print('~ DEBUG: Found file in '+filepath)
+
+    # now having absolute filepath to file, lets check that file and find quantity inside!
+    with open(filepath, 'r') as f: data = f.readlines()                     # open file and read content
+
+    if filename in ['run.in', 'start.in', 'cparam.local']:                  # case .in or .local file
+        COMMENT_SYM = '!'                                                   # preconfig everything for reading files correctly
+
+        for id, line in enumerate(data):                                    # check lines for quantity
+            if line.find(quantity) >= 0:                                    # line found now do ..
+                if DEBUG: print('~ DEBUG: Found line with "quantity" inside: '+str(line))
+                                                                            # cleanup the line, by ..
+                line = line.split(COMMENT_SYM)[0].strip()                   # removing comments and unneeded whitespaces
+                if not quantity in line:
+                    print('? WARNING: Quantity "'+quantity+'" was found in a comment in'+filepath+' -> no action performed!')
+                    continue
+
+                if DEBUG: print('~ DEBUG: Quantity somewhere in this subset of line '+line)
+
+                if quantity in ['idiff', 'ivisc']:                          # catch special case: double string tuple:
+                    line = line.replace(' ', '')
+                    line = line.split(quantity+'=')[-1]
+                    return [i.replace("'", '').replace('"', '') for i in line.split(',')]
+
+                if quantity in ['Lxyz', 'xyz0', 'beta_glnrho_global']:      # catchspecial case: triple float tuple:
+                    line = line.replace(' ', '')
+                    line = line.split(quantity+'=')[-1]
+                    return [float(i) for i in line.split(',')]
+
+                value_str = line.split(quantity+'=')[-1].split('=')[0]      # prepare default case
+
+                if value_str[0] in ['"', "'"]: return value_str.replace("'", '').replace('"', '')    # case value is string
+
+                if value_str[0] == 'T': return 'T'                          # cases if value is bool
+                if value_str[0] == 'F': return 'F'
+
+                if is_number(value_str[0]):                                 # case value is number
+                    for i in value_str:                                     # iterate through string to extract complete number
+                        if is_number(i) == False and not i in ['.','e', '-', '+']: break
+                    value_str = value_str.split(i)[0]                       # extract quantity value
+
+                if is_int(value_str): return int(float(value_str))          # to conversion into int
+                elif is_float(value_str): return float(value_str)           # to conversion into float
+                else:
+                    print('? WARNING: Value from file could not be interprated! Value is: '+value_str)
+                    print('? Check manually! ')
+                    return
+
+        else:
+            print('! ERROR: Quantity "'+quantity+'" was not found in '+filepath)
+            return False
+
+
+    elif 'submit' in filename:                                              # case submit file
+        LINE_SYMS = ['#@', '# @']                                           # only lines starting with this are important
+
+        for id, line in enumerate(data):                                    # check lines for quantity
+            if any([line.startswith(LINE_SYM) for LINE_SYM in LINE_SYMS]) and line.find(quantity) >= 0:     # valid line found now do ..
+                                                                            # cleanup, by ..
+                line = line.replace(' ', '')                                # removing unneeded stuff
+                value_str = line.split(quantity)[-1].split('=')[-1].strip()
+                return value_str
+
+        else:
+            print('! ERROR: Quantity "'+quantity+'" was not found in '+filepath)
+            return False
