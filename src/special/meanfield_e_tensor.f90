@@ -526,6 +526,15 @@ module Special
       lpenc_requested(i_utensor_coefs)=.true.
       lpenc_requested(i_acoef_coefs)=.true.
       lpenc_requested(i_bcoef_coefs)=.true.
+      lpenc_requested(i_alpha_emf)=.true.
+      lpenc_requested(i_beta_emf)=.true.
+      lpenc_requested(i_gamma_emf)=.true.
+      lpenc_requested(i_delta_emf)=.true.
+      lpenc_requested(i_kappa_emf)=.true.
+      lpenc_requested(i_utensor_emf)=.true.
+      lpenc_requested(i_acoef_emf)=.true.
+      lpenc_requested(i_bcoef_emf)=.true.
+
 
       write(*,*) 'pencil_criteria_special: Pencils requested'
 !
@@ -570,8 +579,8 @@ module Special
           else
             p%alpha_coefs(1:nx,i,j)=0
           end if
-          call dot_mn_vm(p%bb,p%alpha_coefs,p%alpha_emf)
         end do; end do
+        call dot_mn_vm(p%bb,p%alpha_coefs,p%alpha_emf)
       end if
       if (lbeta) then
         ! Calculate beta (curl B)
@@ -694,7 +703,6 @@ module Special
         if (idiag_emfbcoefxmax/=0) call max_mn_name(p%bcoef_emf(:,1),idiag_emfbcoefxmax)
         if (idiag_emfbcoefymax/=0) call max_mn_name(p%bcoef_emf(:,2),idiag_emfbcoefymax)
         if (idiag_emfbcoefzmax/=0) call max_mn_name(p%bcoef_emf(:,3),idiag_emfbcoefzmax)
-        if (idiag_emfalphaxmax/=0) call max_mn_name(p%alpha_emf(:,1),idiag_emfalphaxmax)
         if (idiag_emfalpharms/=0) then
           call dot2_mn(p%alpha_emf,tmpline)
           call sum_mn_name(tmpline,idiag_emfalpharms,lsqrt=.true.)
@@ -1617,7 +1625,7 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
 !
 ! Store names
 !
-      if (trim(defaultname) == '') then
+      if (trim(defaultname) /= '') then
         tensor_names(alpha_id)    = defaultname
         tensor_names(beta_id)     = defaultname
         tensor_names(gamma_id)    = defaultname
