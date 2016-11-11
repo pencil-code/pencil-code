@@ -1,10 +1,11 @@
-def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False, filepath=False, DEBUG=False):
+def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False, filepath=False, DEBUG=False, silent=False):
     """ Use to read in a quantity from
         - *.in
         - *.local
         - submit*, i.e. submit.sh, submit.csh, files, only works if computer is readily specified in pencilnew.io.get_systemid
 
     Please add further functionallity by yourself!
+    Warning: Be carefull with True in python and 'T' used in *.in files. Use change_quantity_to='T' to replace.
 
     Args:
         file:       can be "run.in", "start.in", "cparam.local"
@@ -12,16 +13,20 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
         sim:        put simulation object here, file will be found by filename automatically
         filepath:   normally not needed, specify here where to find the file with filename, can be a list of paths if unshure
         DEBUG:      make dry run, tell me what you would do but dont change anything!
+        silent:     suppress certain output by setting True
     """
 
     import os
-    from os.path import join, abspath, exists
+    from os.path import join, abspath, exists, split
     import pencilnew
     from pencilnew.math import is_number, is_float, is_int
 
     # prepare filename and quantity
     filename = filename.strip()                                             # get rid of whitespaces
     quantity = quantity.strip()
+
+    split_filename = split(filename)
+    if split_filename[0] != '' and filepath == False: filepath = split_filename[0]; filename = split_filename[1]
 
     # prepare search_path list to searth filename in
     if filepath == False:
@@ -71,7 +76,9 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
         print('! ERROR: Filename unknown! No parsing possible! Please enhance this function to work with '+filename)
 
     if len(line_matches) > 1: print('! ERROR: Found more than one line with keyword "'+quantity+'" inside!'); return False
-    if len(line_matches) == 0: print('! ERROR: Found no line with keyword "'+quantity+'" inside!'); return False
+    if len(line_matches) == 0:
+        if silent == False: print('! ERROR: Found no line with keyword "'+quantity+'" inside '+join(filepath, filename)+'!')
+        return False
     line = data_raw[line_matches[0]].replace(' ','').replace('\n', '')       # get line with quantity inside
 
     qs = line.partition(quantity+SYM_ASSIGN)
@@ -84,7 +91,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
     q = qs[2]
 
     # cleanup of q:
-    if q.startswith("'") and q.endswith("'"): q = q[1:-1]       # quantity is string in 'STRING'
+    if q.startswith("'") and q.endswith("'"): q = q[1:-1]         # quantity is string in 'STRING'
     elif q.startswith('"') and q.endswith('"'): q = q[1:-1]       # quantity is string in "STRING"
     elif not is_number(q[0]): q = q.strip()
     elif is_float:
@@ -101,24 +108,3 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
         if not DEBUG: print('! NOT FINISHED: export changed line')
 
     return q
-
-
-
-#location_of_ASSIGNMENT = line.find(quantity)+len(quantity)+1
-#line[location_of_ASSIGNMENT:].split(SYM_ASSIGN)[0].rpartition(SYM_SEPARATOR)
-
-
-
-#qs = line.split(SYM_SEPARATOR)         # split line to separate quantity names, but also separates values if its a tuple or a string containing SYM_SEPARATOR
-
-#for ii, q in enumerate(qs):
-#    if quantity in q: break
-
-
-
-
-#if filename.endswith('.in'):
-#    data = [q for q in data if not q.startswith('!')]
-#    data = [q for q in data if not q.startswith('/')]
-#    data = [q for q in data if not q.startswith('\n')]
-#    data = [q for q in data if not q.startswith('&')]

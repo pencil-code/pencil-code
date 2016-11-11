@@ -56,12 +56,13 @@ class __Simulation__(object):
         self.pc_data_dir = join(self.path,'data','.pc')
 
         self.components = ['src/cparam.local', 'src/Makefile.local', 'start.in', 'run.in', 'print.in'] # core files of a simulation run
+        self.quantity_searchables = ['src/cparam.local','start.in', 'run.in']    # files in which quanitities can be searched
         self.optionals = ['*.in', '*.py', 'submit*']    # optinal files that should stick with the simulation when copied
 
         self.hidden = hidden                # hidden is default False
-        self.param = None
-        self.grid = None
-        self.ghost_grid = None
+        self.param = False
+        self.grid = False
+        self.ghost_grid = False
         self.update(self)                   # auto-update, i.e. read param.nml
         # Done
 
@@ -166,13 +167,11 @@ class __Simulation__(object):
         from pencilnew.read import param
 
 
-        if self.param == None:
-            self.param = {}                     # read params into Simulation object
+        if self.param == False:
             try:
                 if exists(join(self.data_dir,'param.nml')):
                     param = param(quiet=quiet, data_dir=self.data_dir)
-                    # from pencil as import read_param
-                    # param = read_param(quiet=True, datadir=self.data_dir)
+                    self.param = {}                     # read params into Simulation object
                     for key in dir(param):
                         if key.startswith('__'): continue
                         self.param[key] = getattr(param, key)
@@ -180,16 +179,16 @@ class __Simulation__(object):
                     print('? WARNING: Couldnt find param.nml for '+self.path)
             except:
                 print('! ERROR: while reading param.nml for '+self.path)
-                self.param = None
+                self.param = False
 
-        if self.grid == None:
+        if self.grid == False or self.ghost_grid == False:
             try:                                # read grid
                 self.grid = pencilnew.read.grid(data_dir=self.data_dir, trim=True, quiet=True)
                 self.ghost_grid = pencilnew.read.grid(data_dir=self.data_dir, trim=False, quiet=True)
             except:
                 if (not quiet): print('? WARNING: Couldnt load grid or ghostgrid for '+self.path)
-                self.grid = None
-                self.ghost_grid = None
+                self.grid = False
+                self.ghost_grid = False
 
         self.export()
 
@@ -261,9 +260,27 @@ class __Simulation__(object):
         return self.get_varfiles(pos='last', particle=particle)
 
 
-    def get_value_from_file(self, filename, quantity, DEBUG=False):
-        """Same as pencilnew.io.get_value_from_file."""
-        return get_value_from_file(filename, quantity, change_quantity_to=False, sim=self, DEBUG=DEBUG)
+    def get_value(self, quantity, DEBUG=False):
+        """Optimized version of get_value_from_file. Just state quantity for simulation and param-list together with searchable components will be searched."""
+
+        if DEBUG: print('~ DEBUG: Updating simulation.')
+        self.update()
+
+        if DEBUG: print('~ DEBUG: Searching through simulation.params ...')
+        if type(self.param) == type({'dictionary': 'with_values'}):
+            if quantity in self.param.keys():
+                if DEBUG: print('~ DEBUG: '+quantity+' found in simulation.params ...')
+                return self.param[quantity]
+
+        if DEBUG: print('~ DEBUG: Searching through simulation.quantity_searchables ...')
+        from pencilnew.io import get_value_from_file
+        for filename in self.quantity_searchables:
+            q = get_value_from_file(filename, quantity, change_quantity_to=False, sim=self, DEBUG=DEBUG, silent=True)
+            if q != False:
+                if DEBUG: print('~ DEBUG: '+quantity+' found in '+filename+' ...')
+                return q
+
+        print('! ERROR: Couldnt find '+quantity+'!')
 
     def change_value_in_file(self):
         print('! toDo!!')
