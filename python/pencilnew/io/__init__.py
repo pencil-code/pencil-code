@@ -7,6 +7,7 @@
 from npfile import npfile
 from mkdir import mkdir
 from debug_breakpoint import debug_breakpoint
+from timestamp import timestamp
 
 # io operation on cluster/computer
 from get_systemid import get_systemid
