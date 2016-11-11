@@ -1,0 +1,32 @@
+#####################################################################################
+##
+##	Python script stopes here and gives back controll to the user.
+##	All variables and namespaces stay intacted for debugging.
+##
+#####################################################################################
+
+
+def debug_breakpoint():
+    """
+    Python debug breakpoint.
+    """
+    from code import InteractiveConsole
+    from inspect import currentframe
+    try:
+        import readline # noqa
+    except ImportError:
+        pass
+
+    caller = currentframe().f_back
+
+    env = {}
+    env.update(caller.f_globals)
+    env.update(caller.f_locals)
+
+    shell = InteractiveConsole(env)
+    shell.interact(
+        '* Break: {} ::: Line {}\n'
+        '* Continue with Ctrl+D...'.format(
+            caller.f_code.co_filename, caller.f_lineno
+        )
+    )
