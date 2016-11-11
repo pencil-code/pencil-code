@@ -20,7 +20,6 @@ def simulation(*args, **kwargs):
         quiet:      suppress irrelevant output, default False
 
     Properties:
-
         self.name:          name of
         self.path:          path to simulation
         self.data_dir:      path to simulation data-dir (./data/)
@@ -28,7 +27,7 @@ def simulation(*args, **kwargs):
         self.pc_data_dir:   path to simulation pendir in data_dir (data/.pc/)
         self.components:    list of files which are nessecarry components of the simulation
         self.optionals:     list of files which are optional components of the simulation
-        self.hidden:        Default is False, if True this simulation will be ignored by pencil (but still is part of simdict)
+        self.hidden:        Default is False, if True this simulation will be ignored by pencil
         self.param:         list of param file
         self.grid:          grid object
     """
@@ -60,8 +59,101 @@ class __Simulation__(object):
         self.optionals = ['*.in', '*.py', 'submit*']    # optinal files that should stick with the simulation when copied
 
         self.hidden = hidden                # hidden is default False
+        self.param = None
+        self.grid = None
+        self.ghost_grid = None
         self.update(self)                   # auto-update, i.e. read param.nml
         # Done
+
+    def copy(self, path_root, name=False, optionals=True, quiet=False, rename_submit_sripts=True, OVERWRITE=False):
+        """This method does a copy of the simulation object by creating a new directory 'name' in 'path_root' and copy all simulation components and optionals to his directory.
+        This method neither links/compiles the simulation, nor creates data dir nor does overwrite anything.
+
+        Submit Script Rename:
+            Name in submit scripts will be renamed if possible! Submit scripts will be identified by submit* plus appearenace of old simulation name inside, latter will be renamed!
+
+        Args:
+            path_root:      Dir to create new sim.-folder(sim.-name) inside. This folder will be created if not existing!
+            name:           Name of new simulation, will be used as folder name. Rename will also happen in submit script if found. Simulation folders is not allowed to preexist!!
+            optionals:      Add list of further files to be copied. Wildcasts allowed according to glob module! Set True to use self.optionals.
+            quiet:          Set True to suppress output.
+            rename_submit_sripts:   Set False if no renames shall be performed in subnmit* files
+            OVERWRITE:      Set True to overwrite no matter what happens!
+        """
+        from os.path import exists, join, abspath
+        from shutil import copyfile
+        from glob import glob
+        from pencilnew.io import mkdir
+
+        # set up paths
+        if path_root == False or type(path_root) != type('string'):
+            print('! ERROR: No path_root specified to copy the simulation to.');
+            return False
+        path_root = abspath(path_root)          # simulation root dir
+
+        # name and folder of new simulation
+        if name == False:
+            name_new = self.name+'_copy'
+            print('? Warning: No name specified, will alter old simulation name to '+name_new)
+        path_newsim = join(path_root, name)     # simulation abspath
+        path_newsim_src = join(path_newsim, 'src')
+
+        if optionals == True: optionals = self.optionals
+        if type(optionals) == type('string'):
+            optionals = [optionals]
+        if type(optionals) != type(['list']):
+            print('! ERROR: optionals must be of type list!')
+        optionals = self.optionals + optionals          # optional files to be copied
+        tmp = []
+        for opt in optionals:
+            files = glob(opt)
+            for f in files:
+                tmp.append(f)
+        optionals = tmp
+
+        ## expand list of optionals wildcasts
+
+        # check existance of path_root+name, a reason to stop to not overwrite anything
+        if OVERWRITE==False and exists(path_newsim):
+            print('! ERROR: Folder to copy simulation to already exists! -> '+path_newsim)
+            return False
+
+        # check existance of self.components
+        for comp in self.components:
+            if not exists(join(self.path, comp)):
+                print('! ERROR: Couldnt find component '+comp+' from simulation '+self.name+' at location '+join(self.path, comp))
+                return False
+
+        # check existance of optionals
+        for opt in optionals:
+            if not exists(join(self.path, opt)):
+                print('! ERROR: Couldnt find optinal component '+opt+' from simulation '+self.name+' at location '+join(self.path, opt))
+                return False
+
+        # create folders
+        if mkdir(path_newsim) == False and OVERWRITE==False:
+            print('! ERROR: Couldnt create new simulation directory '+path_newsim+' !!')
+            return False
+
+        if mkdir(path_newsim_src) == False and OVERWRITE==False:
+            print('! ERROR: Couldnt create new simulation src directory '+path_newsim_src+' !!')
+            return False
+
+        # copy files
+        files_to_be_copied = []
+        for f in self.components+optionals:
+            f_path = abspath(join(self.path, f))
+            copy_to = abspath(join(path_newsim, f))
+            copyfile(f_path, copy_to)
+
+        # modify name in submit script files
+        if rename_submit_sripts:
+            for f in self.components+optionals:
+                if f.startswith('submit'):
+                    system_name, raw_name, job_name_key, submit_scriptfile, submit_line = pencilnew.io.get_systemid()
+
+        # done
+        return True
 
 
     def update(self, quiet=True):
@@ -73,27 +165,31 @@ class __Simulation__(object):
         from os.path import join
         from pencilnew.read import param
 
-        self.param = {}                     # read params into Simulation object
-        try:
-            if exists(join(self.data_dir,'param.nml')):
-                param = param(quiet=quiet, data_dir=self.data_dir)
-                # from pencil as import read_param
-                # param = read_param(quiet=True, datadir=self.data_dir)
-                for key in dir(param):
-                    if key.startswith('__'): continue
-                    self.param[key] = getattr(param, key)
-            else:
-                print('? WARNING: Couldnt find param.nml for '+self.path)
-        except:
-            print('! ERROR: while reading param.nml for '+self.path)
 
-        self.grid = None
-        self.ghost_grid = None
-        try:                                # read grid
-            self.grid = pencilnew.read.grid(data_dir=self.data_dir, trim=True, quiet=True)
-            self.ghost_grid = pencilnew.read.grid(data_dir=self.data_dir, trim=False, quiet=True)
-        except:
-            if (not quiet): print('? WARNING: Couldnt load grid for '+self.path)
+        if self.param == None:
+            self.param = {}                     # read params into Simulation object
+            try:
+                if exists(join(self.data_dir,'param.nml')):
+                    param = param(quiet=quiet, data_dir=self.data_dir)
+                    # from pencil as import read_param
+                    # param = read_param(quiet=True, datadir=self.data_dir)
+                    for key in dir(param):
+                        if key.startswith('__'): continue
+                        self.param[key] = getattr(param, key)
+                else:
+                    print('? WARNING: Couldnt find param.nml for '+self.path)
+            except:
+                print('! ERROR: while reading param.nml for '+self.path)
+                self.param = None
+
+        if self.grid == None:
+            try:                                # read grid
+                self.grid = pencilnew.read.grid(data_dir=self.data_dir, trim=True, quiet=True)
+                self.ghost_grid = pencilnew.read.grid(data_dir=self.data_dir, trim=False, quiet=True)
+            except:
+                if (not quiet): print('? WARNING: Couldnt load grid or ghostgrid for '+self.path)
+                self.grid = None
+                self.ghost_grid = None
 
         self.export()
 
@@ -166,69 +262,9 @@ class __Simulation__(object):
 
 
     def get_value_from_file(self, filename, quantity, DEBUG=False):
-        """ Use to read in a quantity from *.in or *.local files.
+        """Same as pencilnew.io.get_value_from_file."""
+        return get_value_from_file(filename, quantity, change_quantity_to=False, sim=self, DEBUG=DEBUG)
 
-        Args:
-            file:       can be "run.in", "start.in", "cparam.local"
-            quantity:   variable to read in from file
-        """
-        from os.path import join
-        from pencilnew.math import is_number
-        from pencilnew.math import is_float
-        from pencilnew.math import is_int
-
-        if filename in ['run.in', 'start.in']:
-            filepath = join(self.path, filename)
-        elif filename in ['cparam.local']:
-            filepath = join(self.path, 'src', filename)
-        else:
-            print('! Filename '+filename+' could not be interprated for '+filepath); return False
-
-        with open(filepath, 'r') as f: data = f.readlines()     # open file and read content
-
-        for id, line in enumerate(data):        # check lines for quantity
-            if line.find(quantity) >= 0:
-                # cleanup
-                line = line.split('!')[0].strip()       # remove comments and empty spaces
-                if not quantity in line:
-                    print('? WARNING: Quantity "'+quantity+'" was found in a comment in'+filepath+' -> no action perfomed!')
-
-                # special case double string tuple:
-                if quantity in ['idiff', 'ivisc']:
-                    line = line.replace(' ', '')
-                    line = line.split(quantity+'=')[-1]
-                    return [i.replace("'", '').replace('"', '') for i in line.split(',')]
-
-                # special case triple float tuple:
-                if quantity in ['Lxyz', 'xyz0', 'beta_glnrho_global']:
-                    line = line.replace(' ', '')
-                    line = line.split(quantity+'=')[-1]
-                    return [float(i) for i in line.split(',')]
-
-                # prepare default cases
-                value_str = line.split(quantity+'=')[-1].split('=')[0]
-
-                # case value is string
-                if value_str[0] in ['"', "'"]: return value_str.replace("'", '').replace('"', '')
-
-                # case value is bool
-                if value_str[0] == 'T': return 'T'
-                if value_str[0] == 'F': return 'F'
-
-                # case value is number
-                if is_number(value_str[0]):
-                    print("NUMBER")
-                    for i in value_str:      # iterate through string for extract number
-                        if is_number(i) == False and not i in ['.','e', '-', '+']: break
-                    value_str = value_str.split(i)[0]     # extract quantity value
-
-                if is_int(value_str): return int(float(value_str))
-                elif is_float(value_str): return float(value_str)
-                else:
-                    print('? WARNING: value from file is neither float nor int! value is: '+value_str)
-                    print('? Check manually! ')
-                    return
-
-        else:
-            print('! ERROR: Quantity "'+quantity+'" was not found in '+filepath)
-            return False
+    def change_value_in_file(self):
+        print('! toDo!!')
+        return False
