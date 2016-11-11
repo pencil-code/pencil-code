@@ -1,4 +1,4 @@
 def timestamp():
     import datetime
-    str = '{:%Y-%b-%d %H:%M:%S}'.format(datetime.datetime.now())
-    return
+    str = '%s' % datetime.datetime.now()
+    return str.replace(' ', '_')
