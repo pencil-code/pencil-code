@@ -19,6 +19,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
     import numpy as np
     from os.path import join, abspath, exists, split
     from pencilnew.math import is_number, is_float, is_int
+    from pencilnew.io import timestamp, debug_breakpoint, mkdir
 
     def string_to_tuple(s):
         q = s.split(',')
@@ -40,7 +41,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
 
         print('! ERROR: Could not parse string '+s+' into a tuple!')
         print('! DEBUG_BREAKPOINT AKTIVATED - check out the following variables: string s, tuple q, first entry in tuple q[0]')
-        pencilnew.io.debug_breakpoint(); return None, None
+        debug_breakpoint(); return None, None
 
     def tuple_to_string(t, q_type):
         return ','.join([str(a) for a in t])
@@ -77,7 +78,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
             filepath = join(search_path, filename)
             break
 
-    if DEBUG: print('~ DEBUG: Found file in '+filepath)
+    if DEBUG: print('~ DEBUG: Found suiting file in '+filepath)
 
 
     ######## open file
@@ -89,6 +90,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
     line_matches = []
     # scan through file for differently for different files
     if filename.endswith('.in') or filename == 'cparam.local':
+        FILE_IS = 'IN_LOCAL'
         SYM_COMMENT = '!'
         SYM_ASSIGN = '='
         SYM_SEPARATOR = ','
@@ -98,13 +100,13 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
             if quantity in line.split(SYM_COMMENT)[0]: line_matches.append(ii)
 
     elif filename.startswith('submit') and filename.split('.')[-1] in ['csh', 'sh']:
+        FILE_IS = 'SUBMIT'
         SYM_COMMENT = False
         SYM_ASSIGN = '='
         SYM_SEPARATOR = ','
 
         for ii, line in enumerate(data_raw):
-            if line.startswith('#@') or line.startswith('# @'):
-                if quantity in line: line_matches.append(ii)
+            if line.replace(' ', '').startswith('#@') and quantity in line: line_matches.append(ii)
 
     else:
         print('! ERROR: Filename unknown! No parsing possible! Please enhance this function to work with '+filename)
@@ -137,20 +139,20 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
 
     qs = list(qs)
     q = qs[2]
-    while q.endswith('\t'): q = q[:-1]; comment = '\t'+comment          # take care of trailing tabulator
-    while q.endswith(','): q = q[:-1]                                   # remove trailing ,
+    while q.endswith('\t'): q = q[:-1]; comment = '\t'+comment                  # take care of trailing tabulator
+    while q.endswith(','): q = q[:-1]                                           # remove trailing ,
 
 
     ######## do a cleanup of quantity value q and convert into string, float, int or array, also remember data type of q
-    if q.startswith("'") and q.endswith("'"):                           # quantity q is string in form of 'STRING'
+    if q.startswith("'") and q.endswith("'"):                                   # quantity q is string in form of 'STRING'
         q = q[1:-1]
         q_type = 'STRING'
 
-    elif q.startswith('"') and q.endswith('"'):                         # quantity q is string in form of "STRING"
+    elif q.startswith('"') and q.endswith('"'):                                 # quantity q is string in form of "STRING"
         q = q[1:-1]
         q_type = 'STRING'
 
-    elif not is_number(q[0]):                                           # quantity q is string in form of not beeing a number
+    elif not is_number(q[0]):                                                      # quantity q is string in form of not beeing a number
         q = q.strip().replace('"','').replace("'", '')
         q_type = 'STRING'
 
@@ -162,9 +164,9 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
             q_type = 'INT'
 
     if type(q) == type('string') and ',' in q:
-        q, q_type = string_to_tuple(q)                                  # q is a tuple!
+        q, q_type = string_to_tuple(q)                                          # q is a TULPE_something
 
-    if type(q)== type('string') and q in ['F', 'f']:                           # q is bool
+    if type(q) == type('string') and q in ['F', 'f']:                            # q is BOOL
         q = False
         q_type = 'BOOL'
 
@@ -172,14 +174,24 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
         q = True
         q_type = 'BOOL'
 
+    if is_number(q[0]) and type(q) == type('string'):
+        q_type = 'STRING'
+
+    if q_type == False:                                                         # catch if type of q was not recognized
+        print('! ERROR: Couldnt identify the data type of the quantity value: '+str(q))
+        DEBUG = True
+        debug_breakpoint()
+    elif DEBUG:
+        print('~ DEBUG: q_type = '+q_type)
+
 
     ######## if value of quantity has to be changed do:
     if change_quantity_to != False:
-        if q_type == False: print('! ERROR: Couldnt identify the data type of the quantity value: '+str(q)); DEBUG = True
 
         ####### prepare change_quantity_to for string injection
         if q_type == 'STRING':
-            change_quantity_to = "'"+change_quantity_to+"'"
+            if not FILE_IS=='SUBMIT':
+                change_quantity_to = "'"+change_quantity_to+"'"
 
         elif q_type == 'BOOL':
             change_quantity_to = bool(change_quantity_to in ['T', 't', True])
@@ -189,7 +201,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
                 change_quantity_to = 'F'
             else:
                 print('! ERROR: There is something deeply wrong here! change_quantity_to should be bool...')
-                pencilnew.io.debug_breakpoint(); return None
+                debug_breakpoint(); return None
 
         elif q_type == 'FLOAT':
             change_quantity_to = '%e' % change_quantity_to
@@ -204,28 +216,37 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
                             change_quantity_to[ii] = 'F'
                         else:
                             print('! ERROR: There is something deeply wrong here! change_quantity_to['+str(ii)+'] should be bool or string representation, but it is '+str(change_quantity_to[ii]))
-                            pencilnew.io.debug_breakpoint(); return None
+                            debug_breakpoint(); return None
 
             change_quantity_to = ','.join([str(t) for t in change_quantity_to])
 
         if DEBUG: print('~ DEBUG: Would change quantity '+quantity+' from '+str(q)+' to '+str(change_quantity_to))
         qs[2] = str(change_quantity_to)
-        new_line = '  '+''.join(qs).replace(SYM_SEPARATOR, SYM_SEPARATOR+' ')+'\t\t'+comment    # create new line and add comment stripped away before
+
+        ######## further formatting
+        new_line = ''.join(qs).replace(SYM_SEPARATOR, SYM_SEPARATOR+' ')+'\t\t'+comment    # create new line and add comment stripped away before
+        if not FILE_IS == 'SUBMIT': new_line = '  '+new_line
         if new_line[-1] != '\n': new_line = new_line+'\n'
+        if FILE_IS=='SUBMIT': new_line = new_line.replace('#@', '#@ ').replace('=', ' = ')    # optimizing format of submit script
+
         if DEBUG:
-            print('~ DEBUG: old line:'+'  '+line)
-            print('~ DEBUG: new line:'+new_line)
+            print('~ DEBUG: old line: '+str(data_raw[line_matches[0]])[:-1])
+            print('~ DEBUG: new line: '+str(new_line)[:-1])
 
         if not DEBUG:
+            ####### do backup of file before changing it
             from shutil import copyfile
-            copyfile(filepath, copy_to)
+            target = join(sim.path, '.pc/backups/'+timestamp())
+            mkdir(target); target = join(target, filename)
+            copyfile(filepath, target)
 
+            # replace line in raw data
             data_raw[line_matches[0]] = new_line
 
+            # save on drive
             f.close()
             with open(filename, 'w') as f:
                 for l in data_raw: f.write(l)
 
-    pencilnew.io.debug_breakpoint()
     ######## DONE!
     return q
