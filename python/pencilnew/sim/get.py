@@ -8,7 +8,9 @@ def get(path='.'):
     from . simulation import simulation
 
     if exists(join(path, '.pc/sim.dill')):
-        return load('sim', folder=join(path, '.pc'))
+        sim = load('sim', folder=join(path, '.pc'))
+        sim.update()
+        return sim
     else:
         from pencilnew import __is_sim_dir__
         if __is_sim_dir__(path):
