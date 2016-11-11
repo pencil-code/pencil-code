@@ -3002,17 +3002,17 @@ module Dustdensity
                       momcons_sum_z=momcons_sum_z+momcons_term_z
                     elseif (lmomcons3b) then
                       df(3+l,m,n,iudx(k)) = df(3+l,m,n,iudx(k)) - &
-                          2*dndfac*(p%md(l,i)*f(3+l,m,n,iudx(i)) &
+                          dndfac*(p%md(l,i)*f(3+l,m,n,iudx(i)) &
                           +p%md(l,j)*f(3+l,m,n,iudx(j)) &
                           -((p%md(l,i)+p%md(l,j))*f(3+l,m,n,iudx(k))))/ &
                           (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
                       df(3+l,m,n,iudy(k)) = df(3+l,m,n,iudy(k)) - &
-                          2*dndfac*(p%md(l,i)*f(3+l,m,n,iudy(i)) &
+                          dndfac*(p%md(l,i)*f(3+l,m,n,iudy(i)) &
                           +p%md(l,j)*f(3+l,m,n,iudy(j)) &
                           -((p%md(l,i)+p%md(l,j))*f(3+l,m,n,iudy(k))))/ &
                           (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
                       df(3+l,m,n,iudz(k)) = df(3+l,m,n,iudz(k)) - &
-                          2*dndfac*(p%md(l,i)*f(3+l,m,n,iudz(i)) &
+                          dndfac*(p%md(l,i)*f(3+l,m,n,iudz(i)) &
                           +p%md(l,j)*f(3+l,m,n,iudz(j)) &
                           -((p%md(l,i)+p%md(l,j))*f(3+l,m,n,iudz(k))))/ &
                           (p%md(l,k)*(p%nd(l,k)+dt*df(3+l,m,n,ind(k))))
