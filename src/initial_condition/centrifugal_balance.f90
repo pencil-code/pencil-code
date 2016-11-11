@@ -1311,10 +1311,8 @@ module InitialCondition
 !
       rho(l1:l2,m1:m2,n1:n2)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
 !     
-      ! PABourdin: this line does not compile:
       !!!!!!!!!!!! call inverse_laplacian(rho(l1:l2,m1:m2,n1:n2),gpotself)
-      !print*,minval(gpotself(:,:,:,1)),maxval(gpotself(:,:,:,1))
-      !stop
+      call inverse_laplacian(rho(l1:l2,m1:m2,n1:n2))!,gpotself)
 !
       do n=n1,n2 ; do m=m1,m2
 !
