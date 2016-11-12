@@ -622,7 +622,12 @@ sub run_system_cmd {
     } else {
         print "Running '@cmd_line'...\n";
     }
-    print `@cmd_line`;
+
+    open (CMD, "@cmd_line |");
+    my $line;
+    while ($line = <CMD>) { print $line; }
+    close (CMD);
+
     my $status = $?;
     if ($status != 0) { warn "'@cmd_line' failed: $!\n"; }
     if (-e $errorfile) {
