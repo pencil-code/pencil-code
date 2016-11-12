@@ -233,6 +233,9 @@ module Boundcond
                   ! BCX_DOC: symmetry, $f_{N+i}=f_{N-i}$;
                   ! BCX_DOC: implies $f'(x_N)=f'''(x_0)=0$
                   call bc_sym_x(f,+1,topbot,j)
+                case ('sf')
+                  ! BCX_DOC: symmetry with respect to interface
+                  call bc_sf_x(f,+1,topbot,j)
                 case ('ss')
                   ! BCX_DOC: symmetry, plus function value given
                   call bc_symset_x(f,+1,topbot,j)
@@ -246,6 +249,9 @@ module Boundcond
                   ! BCX_DOC: antisymmetry, $f_{N+i}=-f_{N-i}$;
                   ! BCX_DOC: implies $f(x_N)=f''(x_0)=0$
                   call bc_sym_x(f,-1,topbot,j)
+                case ('af')
+                  ! BCX_DOC: antisymmetry with respect to interface
+                  call bc_sf_x(f,-1,topbot,j)
                 case ('a2')
                   ! BCX_DOC: antisymmetry relative to boundary value,
                   ! BCX_DOC: $f_{N+i}=2 f_{N}-f_{N-i}$;
@@ -2619,6 +2625,32 @@ module Boundcond
       endselect
 !
     endsubroutine bc_sym_z
+!***********************************************************************
+    subroutine bc_sf_x(f,sgn,topbot,j)
+!
+!  Symmetric/antisymmetric boundary conditions with respect to the interface.
+!
+!    sgn = +1  -->  symmetric
+!    sgn = -1  -->  antisymmetric
+!
+!  12-nov-16/ccyang: coded
+!
+      real, dimension(:,:,:,:), intent(inout) :: f
+      integer, intent(in) :: sgn, j
+      character(3), intent(in) :: topbot
+!
+      integer :: i
+!
+      select case(topbot)
+      case('bot')               ! bottom boundary
+        forall (i=1:nghost) f(l1-i,:,:,j) = real(sgn) * f(l1+i-1,:,:,j)
+      case('top')               ! top boundary
+        forall (i=1:nghost) f(l2+i,:,:,j) = real(sgn) * f(l2-i+1,:,:,j)
+      case default
+        print *, 'bc_sf_x: unknown input; topbot = ', topbot
+      endselect
+!
+    endsubroutine bc_sf_x
 !***********************************************************************
     subroutine bc_sf_z(f,sgn,topbot,j)
 !
