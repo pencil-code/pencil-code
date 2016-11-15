@@ -294,7 +294,10 @@ module General
 !
       real,dimension(2),intent(out) :: gn
       real :: r,p
-      call random_number_wrapper(r)
+      r = 0.0
+      do while (r == 0.0)
+        call random_number_wrapper(r)
+      enddo
       call random_number_wrapper(p)
       gn(1)=sqrt(-2*log(r))*sin(2*pi*p)
       gn(2)=sqrt(-2*log(r))*cos(2*pi*p)
