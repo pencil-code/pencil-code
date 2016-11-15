@@ -148,7 +148,7 @@ module General
   interface meshgrid
     module procedure meshgrid_2d
     module procedure meshgrid_3d
-  endinterface meshgrid 
+  endinterface meshgrid
 !
 !  State and default generator of random numbers.
 !
@@ -289,8 +289,8 @@ module General
 !***********************************************************************
     subroutine gaunoise_number(gn)
 !
-! Gaussian random number generator with unit variance and zero mean. 
-! Returns a pair of random numbers. 
+! Gaussian random number generator with unit variance and zero mean.
+! Returns a pair of random numbers.
 !
       real,dimension(2),intent(out) :: gn
       real :: r,p
@@ -1781,7 +1781,7 @@ module General
 !***********************************************************************
     subroutine poly_interp_one(xa, ya, x, y, istatus, message)
 !
-!  Uses polynomial interpolation to interpolate (xa, ya) to (x, y), 
+!  Uses polynomial interpolation to interpolate (xa, ya) to (x, y),
 !  where y(n) is the n-th order interpolation, 0 <= n <= size(xa)-1.
 !
 !  01-oct-14/ccyang: adapted from Numerical Recipes.
@@ -1850,8 +1850,8 @@ module General
     subroutine poly_interp_fixorder(xa, ya, x, y, norder, tvd, posdef, istatus, message)
 !
 !  Uses polynomials of norder to interpolate (xa, ya) to each of (x, y).
-!  If tvd or posdef is present and set true, the order will be reduced 
-!  at places where the total variation diminishing or positive 
+!  If tvd or posdef is present and set true, the order will be reduced
+!  at places where the total variation diminishing or positive
 !  definiteness is violated, respectively.
 !
 !  01-oct-14/ccyang: coded
@@ -3727,12 +3727,12 @@ module General
     endfunction count_lines
 !****************************************************************************
     subroutine ranges_dimensional(jrange)
- 
+
       use Cdata, only: dimensionality,nxgrid,nygrid,nzgrid
-      
+  
       integer, dimension(dimensionality), intent(OUT) :: jrange
 
-      if (dimensionality==3) then 
+      if (dimensionality==3) then
         jrange=(/1,2,3/)
       else if (dimensionality==2) then
         if (nxgrid==1) then
@@ -3751,7 +3751,7 @@ module General
           jrange=(/3/)
         endif
       endif
-    
+
     endsubroutine ranges_dimensional
 !***********************************************************************
     subroutine staggered_mean_vec(f,k,jmean,weight)
@@ -3770,9 +3770,9 @@ module General
       real, parameter :: i8_1=1/8., i4_1=1/4., i2_1=1/2.
       integer         :: ll,mm,nn
 !
-      if (dimensionality==3) then 
-!         
-        do ll=2,mx-2; do mm=2,my-2; do nn=2,mz-2 
+      if (dimensionality==3) then
+!     
+        do ll=2,mx-2; do mm=2,my-2; do nn=2,mz-2
           f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
           +weight*i8_1*(maxval(abs(f(ll,mm,nn,      k:k+2))) &
                       + maxval(abs(f(ll,mm,nn+1,    k:k+2))) &
@@ -3785,51 +3785,51 @@ module General
         enddo; enddo; enddo
 !
       elseif (dimensionality==1) then
-! 
+!
         if (nxgrid/=1) then
-          do ll=2,mx-2; do mm=m1,m2; do nn=n1,n2 
+          do ll=2,mx-2; do mm=m1,m2; do nn=n1,n2
             f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
             +weight*i2_1*(maxval(abs(f(ll  ,mm,nn,k:k+2))) &
                         + maxval(abs(f(ll+1,mm,nn,k:k+2))))
           enddo; enddo; enddo
         elseif (nygrid/=1) then
-          do ll=l1,l2; do mm=2,my-2; do nn=n1,n2 
+          do ll=l1,l2; do mm=2,my-2; do nn=n1,n2
             f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
             +weight*i2_1*(maxval(abs(f(ll,mm  ,nn,k:k+2))) &
                         + maxval(abs(f(ll,mm+1,nn,k:k+2))))
           enddo; enddo; enddo
         else
-          do ll=l1,l2; do mm=m1,m2; do nn=2,mz-2 
+          do ll=l1,l2; do mm=m1,m2; do nn=2,mz-2
             f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
             +weight*i2_1*(maxval(abs(f(ll,mm,nn,  k:k+2))) &
                         + maxval(abs(f(ll,mm,nn+1,k:k+2))))
-          enddo; enddo; enddo          
+          enddo; enddo; enddo      
         endif
 !
 !       dimensionality==2
 !
       elseif (nzgrid==1) then   !  x-y
-        do ll=2,mx-2; do mm=2,my-2; do nn=n1,n2 
+        do ll=2,mx-2; do mm=2,my-2; do nn=n1,n2
           f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
           +weight*i4_1*(maxval(abs(f(ll  ,mm  ,nn,k:k+2))) &
                       + maxval(abs(f(ll  ,mm+1,nn,k:k+2))) &
-                      + maxval(abs(f(ll+1,mm  ,nn,k:k+2))) &                     
+                      + maxval(abs(f(ll+1,mm  ,nn,k:k+2))) &                 
                       + maxval(abs(f(ll+1,mm+1,nn,k:k+2))))
         enddo; enddo; enddo
       elseif (nygrid==1) then   !  x-z
-         do ll=2,mx-2; do mm=m1,m2; do nn=2,mz-2 
+         do ll=2,mx-2; do mm=m1,m2; do nn=2,mz-2
           f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
           +weight*i4_1*(maxval(abs(f(ll  ,mm,nn,  k:k+2))) &
                       + maxval(abs(f(ll  ,mm,nn+1,k:k+2))) &
-                      + maxval(abs(f(ll+1,mm,nn,  k:k+2))) &                     
+                      + maxval(abs(f(ll+1,mm,nn,  k:k+2))) &                 
                       + maxval(abs(f(ll+1,mm,nn+1,k:k+2))))
         enddo; enddo; enddo
       else                      !  y-z
-        do ll=l1,l2; do mm=2,my-2; do nn=2,mz-2 
+        do ll=l1,l2; do mm=2,my-2; do nn=2,mz-2
           f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
           +weight*i4_1*(maxval(abs(f(ll,mm  ,nn,  k:k+2))) &
                       + maxval(abs(f(ll,mm  ,nn+1,k:k+2))) &
-                      + maxval(abs(f(ll,mm+1,nn,  k:k+2))) &                     
+                      + maxval(abs(f(ll,mm+1,nn,  k:k+2))) &                 
                       + maxval(abs(f(ll,mm+1,nn+1,k:k+2))))
         enddo; enddo; enddo
       endif
@@ -3844,16 +3844,16 @@ module General
 !
       use Cdata, only: dimensionality
 
-      real, dimension (mx,my,mz,mfarray), intent(inout):: f 
+      real, dimension (mx,my,mz,mfarray), intent(inout):: f
       integer,                            intent(in)   :: k,jmean
       real,                               intent(in)   :: weight
 !
       real, parameter :: i8_1=1/8., i4_1=1/4., i2_1=1/2.
       integer         :: ll,mm,nn
 !
-      if (dimensionality==3) then 
-!         
-        do ll=2,mx-2; do mm=2,my-2; do nn=2,mz-2 
+      if (dimensionality==3) then
+!     
+        do ll=2,mx-2; do mm=2,my-2; do nn=2,mz-2
           f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
           +weight*i8_1*(abs(f(ll,mm,nn,      k)) &
                       + abs(f(ll,mm,nn+1,    k)) &
@@ -3866,51 +3866,51 @@ module General
         enddo; enddo; enddo
 !
       elseif (dimensionality==1) then
-! 
+!
         if (nxgrid/=1) then
-          do ll=2,mx-2; do mm=m1,m2; do nn=n1,n2 
+          do ll=2,mx-2; do mm=m1,m2; do nn=n1,n2
             f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
             +weight*i2_1*(abs(f(ll  ,mm,nn,k)) &
                         + abs(f(ll+1,mm,nn,k)))
           enddo; enddo; enddo
         elseif (nygrid/=1) then
-          do ll=l1,l2; do mm=2,my-2; do nn=n1,n2 
+          do ll=l1,l2; do mm=2,my-2; do nn=n1,n2
             f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
             +weight*i2_1*(abs(f(ll,mm  ,nn,k)) &
                         + abs(f(ll,mm+1,nn,k)))
           enddo; enddo; enddo
         else
-          do ll=l1,l2; do mm=m1,m2; do nn=2,mz-2 
+          do ll=l1,l2; do mm=m1,m2; do nn=2,mz-2
             f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
             +weight*i2_1*(abs(f(ll,mm,nn,  k)) &
                         + abs(f(ll,mm,nn+1,k)))
-          enddo; enddo; enddo          
+          enddo; enddo; enddo      
         endif
 !
 !       dimensionality==2
 !
       elseif (nzgrid==1) then   !  x-y
-        do ll=2,mx-2; do mm=2,my-2; do nn=n1,n2 
+        do ll=2,mx-2; do mm=2,my-2; do nn=n1,n2
           f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
           +weight*i4_1*(abs(f(ll  ,mm  ,nn,k)) &
                       + abs(f(ll  ,mm+1,nn,k)) &
-                      + abs(f(ll+1,mm  ,nn,k)) &                     
+                      + abs(f(ll+1,mm  ,nn,k)) &                 
                       + abs(f(ll+1,mm+1,nn,k)))
         enddo; enddo; enddo
       elseif (nygrid==1) then   !  x-z
-         do ll=2,mx-2; do mm=m1,m2; do nn=2,mz-2 
+         do ll=2,mx-2; do mm=m1,m2; do nn=2,mz-2
           f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
           +weight*i4_1*(abs(f(ll  ,mm,nn,  k)) &
                       + abs(f(ll  ,mm,nn+1,k)) &
-                      + abs(f(ll+1,mm,nn,  k)) &                     
+                      + abs(f(ll+1,mm,nn,  k)) &                 
                       + abs(f(ll+1,mm,nn+1,k)))
         enddo; enddo; enddo
       else                      !  y-z
-        do ll=l1,l2; do mm=2,my-2; do nn=2,mz-2 
+        do ll=l1,l2; do mm=2,my-2; do nn=2,mz-2
           f(ll,mm,nn,jmean) = f(ll,mm,nn,jmean) &
           +weight*i4_1*(abs(f(ll,mm  ,nn,  k)) &
                       + abs(f(ll,mm  ,nn+1,k)) &
-                      + abs(f(ll,mm+1,nn,  k)) &                     
+                      + abs(f(ll,mm+1,nn,  k)) &                 
                       + abs(f(ll,mm+1,nn+1,k)))
         enddo; enddo; enddo
       endif
@@ -3930,9 +3930,9 @@ module General
       real,                               intent(in)   :: weight
       integer                                          :: ll,mm,nn
 !
-      if (dimensionality==3) then 
-!        
-        do ll=2,mx-2; do mm=2,my-2; do nn=2,mz-2 
+      if (dimensionality==3) then
+!    
+        do ll=2,mx-2; do mm=2,my-2; do nn=2,mz-2
           f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
           +weight*max(maxval(abs(f(ll,mm,nn,      k:k+2))) &
                      ,maxval(abs(f(ll,mm,nn+1,    k:k+2))) &
@@ -3944,48 +3944,48 @@ module General
                      ,maxval(abs(f(ll+1,mm+1,nn+1,k:k+2))))
         enddo; enddo; enddo
 
-      elseif (dimensionality==1) then 
+      elseif (dimensionality==1) then
         if (nxgrid/=1) then
-          do ll=2,mx-2; do mm=m1,m2; do nn=n1,n2 
+          do ll=2,mx-2; do mm=m1,m2; do nn=n1,n2
             f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
             +weight*max(maxval(abs(f(ll,mm,nn,  k:k+2))) &
                        ,maxval(abs(f(ll+1,mm,nn,k:k+2))))
           enddo; enddo; enddo
         elseif (nygrid/=1) then
-          do ll=l1,l2; do mm=2,my-2; do nn=n1,n2 
+          do ll=l1,l2; do mm=2,my-2; do nn=n1,n2
             f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
             +weight*max(maxval(abs(f(ll,mm,nn,  k:k+2))) &
                        ,maxval(abs(f(ll,mm+1,nn,k:k+2))))
           enddo; enddo; enddo
         else
-          do ll=l1,l2; do mm=m1,m2; do nn=2,mz-2 
+          do ll=l1,l2; do mm=m1,m2; do nn=2,mz-2
             f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
             +weight*max(maxval(abs(f(ll,mm,nn,  k:k+2))) &
                        ,maxval(abs(f(ll,mm,nn+1,k:k+2))))
-          enddo; enddo; enddo          
+          enddo; enddo; enddo      
         endif
       elseif (nzgrid==1) then   !  x-y
-        do ll=2,mx-2; do mm=2,my-2; do nn=n1,n2 
+        do ll=2,mx-2; do mm=2,my-2; do nn=n1,n2
           f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
           +weight*max(maxval(abs(f(ll,mm,nn,    k:k+2))) &
                      ,maxval(abs(f(ll,mm+1,nn,  k:k+2))) &
-                     ,maxval(abs(f(ll+1,mm,nn,  k:k+2))) &                     
+                     ,maxval(abs(f(ll+1,mm,nn,  k:k+2))) &                 
                      ,maxval(abs(f(ll+1,mm+1,nn,k:k+2))))
         enddo; enddo; enddo
       elseif (nygrid==1) then   !  x-z
-         do ll=2,mx-2; do mm=m1,m2; do nn=2,mz-2 
+         do ll=2,mx-2; do mm=m1,m2; do nn=2,mz-2
           f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
           +weight*max(maxval(abs(f(ll,mm,nn,    k:k+2))) &
                      ,maxval(abs(f(ll,mm,nn+1,  k:k+2))) &
-                     ,maxval(abs(f(ll+1,mm,nn,  k:k+2))) &                     
+                     ,maxval(abs(f(ll+1,mm,nn,  k:k+2))) &                 
                      ,maxval(abs(f(ll+1,mm,nn+1,k:k+2))))
         enddo; enddo; enddo
       else                      !  y-z
-        do ll=l1,l2; do mm=2,my-2; do nn=2,mz-2 
+        do ll=l1,l2; do mm=2,my-2; do nn=2,mz-2
           f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
           +weight*max(maxval(abs(f(ll,mm,nn,    k:k+2))) &
                      ,maxval(abs(f(ll,mm,nn+1,  k:k+2))) &
-                     ,maxval(abs(f(ll,mm+1,nn,  k:k+2))) &                     
+                     ,maxval(abs(f(ll,mm+1,nn,  k:k+2))) &                 
                      ,maxval(abs(f(ll,mm+1,nn+1,k:k+2))))
         enddo; enddo; enddo
       endif
@@ -4005,9 +4005,9 @@ module General
       real,                               intent(in)   :: weight
       integer                                          :: ll,mm,nn
 !
-      if (dimensionality==3) then 
-!        
-        do ll=2,mx-2; do mm=2,my-2; do nn=2,mz-2 
+      if (dimensionality==3) then
+!    
+        do ll=2,mx-2; do mm=2,my-2; do nn=2,mz-2
           f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
           +weight*max(abs(f(ll,mm,nn,      k)) &
                      ,abs(f(ll,mm,nn+1,    k)) &
@@ -4019,48 +4019,48 @@ module General
                      ,abs(f(ll+1,mm+1,nn+1,k)))
         enddo; enddo; enddo
 
-      elseif (dimensionality==1) then 
+      elseif (dimensionality==1) then
         if (nxgrid/=1) then
-          do ll=2,mx-2; do mm=m1,m2; do nn=n1,n2 
+          do ll=2,mx-2; do mm=m1,m2; do nn=n1,n2
             f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
             +weight*max(abs(f(ll,mm,nn,  k)) &
                        ,abs(f(ll+1,mm,nn,k)))
           enddo; enddo; enddo
         elseif (nygrid/=1) then
-          do ll=l1,l2; do mm=2,my-2; do nn=n1,n2 
+          do ll=l1,l2; do mm=2,my-2; do nn=n1,n2
             f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
             +weight*max(abs(f(ll,mm,nn,  k)) &
                        ,abs(f(ll,mm+1,nn,k)))
           enddo; enddo; enddo
         else
-          do ll=l1,l2; do mm=m1,m2; do nn=2,mz-2 
+          do ll=l1,l2; do mm=m1,m2; do nn=2,mz-2
             f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
             +weight*max(abs(f(ll,mm,nn,  k)) &
                        ,abs(f(ll,mm,nn+1,k)))
           enddo; enddo; enddo
         endif
       elseif (nzgrid==1) then   !  x-y
-        do ll=2,mx-2; do mm=2,my-2; do nn=n1,n2 
+        do ll=2,mx-2; do mm=2,my-2; do nn=n1,n2
           f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
           +weight*max(abs(f(ll,mm,nn,    k)) &
                      ,abs(f(ll,mm+1,nn,  k)) &
-                     ,abs(f(ll+1,mm,nn,  k)) &                     
+                     ,abs(f(ll+1,mm,nn,  k)) &                 
                      ,abs(f(ll+1,mm+1,nn,k)))
         enddo; enddo; enddo
       elseif (nygrid==1) then   !  x-z
-         do ll=2,mx-2; do mm=m1,m2; do nn=2,mz-2 
+         do ll=2,mx-2; do mm=m1,m2; do nn=2,mz-2
           f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
           +weight*max(abs(f(ll,mm,nn,    k)) &
                      ,abs(f(ll,mm,nn+1,  k)) &
-                     ,abs(f(ll+1,mm,nn,  k)) &                     
+                     ,abs(f(ll+1,mm,nn,  k)) &                 
                      ,abs(f(ll+1,mm,nn+1,k)))
         enddo; enddo; enddo
       else                      !  y-z
-        do ll=l1,l2; do mm=2,my-2; do nn=2,mz-2 
+        do ll=l1,l2; do mm=2,my-2; do nn=2,mz-2
           f(ll,mm,nn,jmax) = f(ll,mm,nn,jmax) &
           +weight*max(abs(f(ll,mm,nn,    k)) &
                      ,abs(f(ll,mm,nn+1,  k)) &
-                     ,abs(f(ll,mm+1,nn,  k)) &                     
+                     ,abs(f(ll,mm+1,nn,  k)) &                 
                      ,abs(f(ll,mm+1,nn+1,k)))
         enddo; enddo; enddo
       endif
@@ -4097,7 +4097,7 @@ module General
                                             trim (datadir_snap)//'/allprocs')
 !
     endsubroutine directory_names_std
-!****************************************************************************  
+!****************************************************************************
     subroutine touch_file(file)
 !
 !  Touches a given file (used for code locking).
@@ -4253,7 +4253,7 @@ module General
           yprime = -cth
 
           sprime = sqrt(xprime**2 + yprime**2)
- 
+
           if (ltransp) then
             jtp = i-ith1+1; itp = j-iph1+1
           else
@@ -4277,9 +4277,9 @@ module General
 !  grid basis
 !  to the Yin grid basis using theta and phi coordinates of the Yang grid.
 !  Without optional parameters theta, phi For use on pencils within mn-loop.
-!  Note that components of transformed are undefined if corresponding power 
+!  Note that components of transformed are undefined if corresponding power
 !  in mask powers is 0.
-!  If theta, phi are present, it is for use outside mn-loop or for other 
+!  If theta, phi are present, it is for use outside mn-loop or for other
 !  coordinate than y(m), z(n)
 !
 ! 30-mar-2016/MR: coded
@@ -4331,7 +4331,7 @@ module General
       integer :: i,j,ig,jg
       real :: sinth1,a,b
 
-      do i=1,nz 
+      do i=1,nz
         do j=1,ny
 
           ig=i+nghost; jg=j+nghost
@@ -4492,13 +4492,13 @@ module General
       g(:,1:dimensionality)=g(:,dim_mask(1:dimensionality))
 
     endsubroutine reduce_grad_dim
-!****************************************************************************  
+!****************************************************************************
     function merge_yin_yang(y,z,dy,dz,yzyang,yz,inds) result (nok)
 !
 !  Merges Yin and Yang grids: Yin, given by y,z,dy,dz, remains unchanged while Yang,
 !  given by yzyang of dimension 2 x size(y)*size(z) which is assumed to be
 !  transformed into Yin basis, is clipped by removing points which lie within Yin.
-!  Output is merged coordinate array yz[2,*] and index vector inds into 
+!  Output is merged coordinate array yz[2,*] and index vector inds into
 !  yzyang selecting the unclipped points. inds can be used to merge data arrays accordingly.
 !  Returns number of unclipped points in Yang.
 !
@@ -4540,7 +4540,7 @@ module General
     yz(:,nyz+1:nyz+nok)=yzyang(:,inds(:nok))
 
   endfunction merge_yin_yang
-!****************************************************************************  
+!****************************************************************************
   subroutine yin2yang_coors(costh,sinth,cosph,sinph,yz)
 !
 !  Transforms (theta,phi) coordinates of Yin or Yang grid, given by cos(theta)
@@ -4592,7 +4592,7 @@ module General
       double precision, intent(in), dimension(:) :: array2
       double precision, intent(out), dimension(:,:) :: output_array1
       double precision, intent(out), dimension(:,:) :: output_array2
-!        
+!    
       output_array1=spread(array1,2,size(array2))
       output_array2=spread(array2,1,size(array1))
 !
