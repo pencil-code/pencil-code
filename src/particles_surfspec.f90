@@ -45,6 +45,7 @@ module Particles_surfspec
   logical :: lboundary_explicit=.true.
   logical :: lpchem_cdtc=.false.
   logical :: lpchem_mass_enth=.true.
+  logical :: lpfilter =.true.
   logical :: lwrite=.true.
   real :: rdiffconsts=0.1178
   logical :: ldiffuse_backspec=.false., ldiffs=.false.
@@ -68,7 +69,7 @@ module Particles_surfspec
   namelist /particles_surf_run_pars/ &
       lboundary_explicit, linfinite_diffusion, lspecies_transfer, &
       lpchem_mass_enth, ldiffuse_backspec, ldiffs,rdiffconsts, &
-      ndiffsteps,ldiffuse_backenth,ldiffenth
+      ndiffsteps,ldiffuse_backenth,ldiffenth,lpfilter
 !
   integer :: idiag_dtpchem=0   ! DIAG_DOC: $dt_{particle,chemistry}$
 !
@@ -402,23 +403,16 @@ module Particles_surfspec
 !
 !  Control that we don't influence points that would bring the mass fraction into the negative 
 !
-          if (minval(f(l1:l2,m1:m2,n1:n2,ichemspec(j))) > 1e-3) then
+          if (.not. lpfilter) then
             df(l1:l2,m1:m2,n1:n2,ichemspec(j)) =  df(l1:l2,m1:m2,n1:n2,ichemspec(j)) + &
                 f(l1:l2,m1:m2,n1:n2,ispecaux(j))
           else
-            if (minval(f(l1:l2,m1:m2,n1:n2,ichemspec(j))+f(l1:l2,m1:m2,n1:n2,ispecaux(j))*dt)<0.0) then
-              do ni = n1,n2
-                do mi = m1,m2
-                  do li = l1,l2
-                    if ((f(li,mi,ni,ichemspec(j))+f(li,mi,ni,ispecaux(j))*dt)<0.0) then
-                      f(li,mi,ni,ispecaux(j)) = f(li,mi,ni,ispecaux(j))*dt
-                    endif
-                  enddo
-                enddo
-              enddo
-              df(l1:l2,m1:m2,n1:n2,ichemspec(j)) =  df(l1:l2,m1:m2,n1:n2,ichemspec(j)) + &
-                  f(l1:l2,m1:m2,n1:n2,ispecaux(j))
-            endif
+            where ((f(l1:l2,m1:m2,n1:n2,ichemspec(j))+ &
+                f(l1:l2,m1:m2,n1:n2,ispecaux(j))*dt)< 0.0)
+              f(l1:l2,m1:m2,n1:n2,ispecaux(j)) = 0.0
+            end where
+            df(l1:l2,m1:m2,n1:n2,ichemspec(j)) =  df(l1:l2,m1:m2,n1:n2,ichemspec(j)) + &
+                f(l1:l2,m1:m2,n1:n2,ispecaux(j))
           endif
         enddo
         df(l1:l2,m1:m2,n1:n2,ichemspec(nchemspec)) = &
