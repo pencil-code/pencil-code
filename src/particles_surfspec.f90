@@ -375,6 +375,7 @@ module Particles_surfspec
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(mpar_loc,mparray), intent(in) :: fp
       real, dimension(mpar_loc,mpvar) :: dfp
+      real :: dt1
       integer, dimension(mpar_loc,3) :: ineargrid
       integer :: i, j,g
       integer :: li,mi,ni
@@ -383,6 +384,7 @@ module Particles_surfspec
 !      call keep_compiler_quiet(fp)
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
+      dt1 = 1./dt
 !
 !  Diffuse the transfer of species from particle to fluid, and adapt
 !  the bulk species (ichemspec(nchemspec)) to ensure species conservation
@@ -409,7 +411,10 @@ module Particles_surfspec
           else
             where ((f(l1:l2,m1:m2,n1:n2,ichemspec(j))+ &
                 f(l1:l2,m1:m2,n1:n2,ispecaux(j))*dt)< 0.0)
-              f(l1:l2,m1:m2,n1:n2,ispecaux(j)) = 0.0
+              f(l1:l2,m1:m2,n1:n2,ispecaux(j)) = f(l1:l2,m1:m2,n1:n2,ichemspec(j))*dt1*(-0.9)
+              where ((f(l1:l2,m1:m2,n1:n2,ichemspec(j)) <= 1E-25))
+                f(l1:l2,m1:m2,n1:n2,ispecaux(j)) = 0.0
+              end where
             end where
             df(l1:l2,m1:m2,n1:n2,ichemspec(j)) =  df(l1:l2,m1:m2,n1:n2,ichemspec(j)) + &
                 f(l1:l2,m1:m2,n1:n2,ispecaux(j))
