@@ -623,10 +623,12 @@ sub run_system_cmd {
         print "Running '@cmd_line'...\n";
     }
 
+    $| = 1;
     open (CMD, "@cmd_line |");
     my $line;
     while ($line = <CMD>) { print $line; }
     close (CMD);
+    $| = 0;
 
     my $status = $?;
     if ($status != 0) { warn "'@cmd_line' failed: $!\n"; }
