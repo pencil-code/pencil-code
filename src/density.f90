@@ -260,6 +260,7 @@ module Density
 !  21-jan-15/MR: changes for use of reference state.
 !  10-feb-15/MR: added getting reference state from initial condition.
 !                upwind switch according to log/nolog (with warning).
+!  15-nov-16/fred: option to apply z-profile to reinitialize_*
 !
       use BorderProfiles, only: request_border_driving
       use Deriv, only: der_pencil,der2_pencil
@@ -272,9 +273,10 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: tmp
+      real, dimension (nzgrid) :: tmpz
 !
-      integer :: i,j,m,n
-      logical :: lnothing
+      integer :: i,j,m,n, stat
+      logical :: lnothing, exist
       real :: rho_bot,sref
       real, dimension(:), pointer :: gravx_xpencil
 !
@@ -375,10 +377,49 @@ module Density
           if (ldensity_nolog) then
             select case (initlnrho(j))
             case ('rescale'); f(:,:,:,irho)=f(:,:,:,irho)*rescale_rho
+            case ('zprofile')
+              inquire(file='zprof.txt',exist=exist)
+              if (exist) then
+                open(31,file='zprof.txt')
+              else
+                inquire(file=trim(directory)//'/zprof.ascii',exist=exist)
+                if (exist) then
+                  open(31,file=trim(directory)//'/zprof.ascii')
+                else
+                  call fatal_error('reinitialize_rho','error - no zprof.txt input file')
+                endif
+              endif
+              do n=1,nzgrid
+                read(31,*,iostat=stat) tmpz(n)
+                if (stat<0) exit
+              enddo
+              do n=n1,n2
+                f(:,:,n,irho)=f(:,:,n,irho)*rescale_rho*tmpz(n-nghost+nz*ipz)
+              enddo
             endselect
           else
             select case (initlnrho(j))
             case ('rescale'); f(:,:,:,ilnrho)=f(:,:,:,ilnrho)+log(rescale_rho)
+            case ('zprofile')
+              inquire(file='zprof.txt',exist=exist)
+              if (exist) then
+                open(31,file='zprof.txt')
+              else
+                inquire(file=trim(directory)//'/zprof.ascii',exist=exist)
+                if (exist) then
+                  open(31,file=trim(directory)//'/zprof.ascii')
+                else
+                  call fatal_error('reinitialize_rho','error - no zprof.txt file')
+                endif
+              endif
+              do n=1,nzgrid
+                read(31,*,iostat=stat) tmpz(n)
+                if (stat<0) exit
+              enddo
+              do n=n1,n2
+                f(:,:,n,ilnrho)=f(:,:,n,ilnrho)+&
+                                  log(rescale_rho*tmpz(n-nghost+nz*ipz))
+              enddo
             endselect
           endif
         enddo

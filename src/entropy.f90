@@ -415,6 +415,7 @@ module Energy
 !  21-jul-02/wolf: coded
 !  28-mar-13/axel: reinitialize_ss added
 !  26-feb-13/MR  : added temperature rescaling
+!  15-nov-16/fred: option to use z-profile for reinitialize_ss
 !
       use BorderProfiles, only: request_border_driving
       use EquationOfState, only: cs0, get_soundspeed, get_cp1, &
@@ -433,12 +434,12 @@ module Energy
       real, dimension (nx,3) :: glhc
       real, dimension (nx) :: hcond
       real, dimension (nz,3) :: glhcz
-      real, dimension (nz) :: hcondz
+      real, dimension (nz) :: hcondz, tmpz
       real, dimension(5) :: star_params
       real :: beta1, cp1, beta0, TT_bcz, star_cte
       real :: hcondbot, hcondtop
-      integer :: i, j, q, n, m
-      logical :: lnothing
+      integer :: i, j, q, n, m, stat
+      logical :: lnothing, exist
       type (pencil_case) :: p
 !
 !  Check any module dependencies.
@@ -757,6 +758,25 @@ module Energy
             call blob(ampl_ss,f,iss,radius_ss,center1_x,center1_y,center1_z)
           case ('TTrescl')
             call rescale_TT_in_ss(f)
+          case ('zprofile')
+            inquire(file='zprof.txt',exist=exist)
+            if (exist) then
+              open(31,file='zprof.txt')
+            else
+              inquire(file=trim(directory)//'/zprof.ascii',exist=exist)
+              if (exist) then
+                open(31,file=trim(directory)//'/zprof.ascii')
+              else
+                call fatal_error('reinitialize_rho','error - no zprof.txt input file')
+              endif
+            endif
+            do n=1,nzgrid
+              read(31,*,iostat=stat) tmpz(n)
+              if (stat<0) exit
+            enddo
+            do n=n1,n2
+              f(:,:,n,iss)=f(:,:,n,iss)+tmpz(n-nghost+nz*ipz)
+            enddo
           case default
           endselect
         enddo
