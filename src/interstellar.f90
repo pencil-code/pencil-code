@@ -152,7 +152,10 @@ module Interstellar
 !  As per joung et al apj653 2005 min temp 1E6 to avoid excess radiative
 !  energy losses in early stages.
 !
-  real, parameter :: rho_SN_min_cgs=1E-28,rho_SN_max_cgs=4.182E-24
+  real, parameter :: rho_SN_min_cgs=1E-28,rho_SN_max_cgs=2.364E-23
+!  fred: max rho intended to avoid explosion sites that are difficult to
+!  resolve, but can lead to persistent high density structures that cannot be 
+!  destroyed by SN, so may be better to allow unrestricted 
   real, parameter :: TT_SN_min_cgs=1.E6, TT_SN_max_cgs=1E9
   real :: rho_SN_min=impossible, rho_SN_max=impossible
   real :: TT_SN_min=impossible, TT_SN_max=impossible
