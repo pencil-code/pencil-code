@@ -41,13 +41,14 @@ module Supersat
 !
   real :: supersat_diff=0.0
   real :: supersat_sink=0.0
+  real :: vapor_mixing_ratio_qvs=0.0
   real, dimension(3) :: gradssat0=(/0.0,0.0,0.0/)
   logical :: lsupersat_sink=.false., Rsupersat_sink=.false.
-  logical :: lupw_ssat=.false.
+  logical :: lupw_ssat=.false., lcondensation_rate=.false.
 
   namelist /supersat_run_pars/ &
       lupw_ssat, lsupersat_sink, Rsupersat_sink, supersat_sink, &
-      supersat_diff, gradssat0
+      supersat_diff, gradssat0, lcondensation_rate, vapor_mixing_ratio_qvs
 !
 ! Declare index of new variables in f array
 !
@@ -129,6 +130,8 @@ print*,'AXEL issat,ssat_const=',issat,ssat_const
 !  ssat itself always
 !
       lpenc_requested(i_ssat)=.true.
+      lpenc_requested(i_nd)=.true.
+      lpenc_requested(i_ad)=.true.
 !
 !  background gradient 
 !
@@ -205,6 +208,7 @@ print*,'AXEL issat,ssat_const=',issat,ssat_const
 !   4-sep-16/axel: added more diagnostics
 !
       use Diagnostics
+!      use Dustdensity
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -212,10 +216,12 @@ print*,'AXEL issat,ssat_const=',issat,ssat_const
       type (pencil_case) :: p
 !
       real, dimension (nx) :: diff_op,diff_op2,bump,gcgu
+      real, dimension (nx) :: radius_sum, condensation_rate_Cd, qv, superaturation
       real :: ssat_xyaver
       real :: tau=10., A1=5e-4
       real :: lam_gradC_fact=1., om_gradC_fact=1., gradC_fact=1.
       integer, parameter :: nxy=nxgrid*nygrid
+      integer :: k
 !
       intent(in)  :: f
       intent(out) :: df
@@ -252,6 +258,23 @@ print*,'AXEL issat,ssat_const=',issat,ssat_const
                  !df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat+bump
                  df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+bump
          endif
+!
+       if (lcondensation_rate) then
+!
+!  compute sum of particle radii
+!
+         qv=f(l1:l2,m,n,issat)
+         superaturation=qv/vapor_mixing_ratio_qvs-1.
+         radius_sum=0.
+         do k=1,ndustspec
+           radius_sum=radius_sum+p%ad(:,k)*p%nd(:,k)
+           print*,k,radius_sum(1:5)
+         enddo
+         condensation_rate_Cd=4.*pi*superaturation*radius_sum
+         df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-condensation_rate_Cd
+         if (ltemperature) df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+condensation_rate_Cd/(p%cp*p%TT)
+!
+       endif
 !
 !  Diagnostics
 !
