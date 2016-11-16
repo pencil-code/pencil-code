@@ -15,7 +15,7 @@ pro pc_read_aver_plot_plane, array_plot=array_plot, nxg=nxg, nyg=nyg, $
     tmin=tmin, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
     xsize=xsize, ysize=ysize, lwindow_opened=lwindow_opened, $
     colorbar=colorbar, bartitle=bartitle, quiet=quiet, $
-    x0=x0, x1=x1, y0=y0, y1=y1, Lx=Lx, Ly=Ly, time=time, itimg=itimg
+    x0=x0, x1=x1, y0=y0, y1=y1, Lx=Lx, Ly=Ly, time=time, itimg=itimg, wait=wait
 ;
 ;  Define line and character thickness (will revert to old settings later).
 ;
@@ -59,18 +59,23 @@ pro pc_read_aver_plot_plane, array_plot=array_plot, nxg=nxg, nyg=nyg, $
   endif else begin
 ;  Plot to X.
     if (not noerase) then begin
-      window, retain=2, xsize=zoom*nxg, ysize=zoom*nyg
+      window, retain=2, xsize=xsize > zoom*nxg, ysize=ysize > zoom*nyg
     endif else begin
       if (not lwindow_opened) then $
-          window, retain=2, xsize=zoom*nxg, ysize=zoom*nyg
+          window, retain=2, xsize=xsize > zoom*nxg, ysize=ysize > zoom*nyg
       lwindow_opened=1
     endelse
   endelse
   sym=texsyms()
 ;  Put current time in title if requested.
-  if (t_title) then $
-      title='t='+strtrim(string(time/t_scale-t_zero,format=tformat),2)
+  if (t_title) then begin
+    timestr='t='+strtrim(string(time/t_scale-t_zero,format=tformat),2)
+    title = title eq '' ? timestr : title+'('+timestr+')'
+  endif
 ;  tvscl-type plot with axes.
+  if min gt max then begin
+    min=min(array_plot) & max=max(array_plot)
+  endif
   plotimage, array_plot, $
       range=[min, max], imgxrange=[x0,x1], imgyrange=[y0,y1], $
       xtitle=xtitle, ytitle=ytitle, title=title, $
@@ -115,22 +120,39 @@ pro pc_read_aver_plot_plane, array_plot=array_plot, nxg=nxg, nyg=nyg, $
     if ( (xax[isub[0]]-rsubbox lt x0) or $
          (xax[isub[0]]+rsubbox gt x1) ) then begin
       array_plot=shift(array_plot,[nxg/2,0])
-      if (xax[isub[0]]-rsubbox lt x0) then isub[0]=isub[0]+nxg/2
-      if (xax[isub[0]]+rsubbox gt x1) then isub[0]=isub[0]-nxg/2
+      if (xax[isub[0]]-rsubbox lt x0) then isub[0]=(isub[0]+nxg/2) mod nxg
+      if (xax[isub[0]]+rsubbox gt x1) then isub[0]=(isub[0]-nxg/2) mod nxg
     endif
     if ( (yax[isub[1]]-rsubbox lt y0) or $
          (yax[isub[1]]+rsubbox gt y1) ) then begin
       array_plot=shift(array_plot,[0,nyg/2])
-      if (yax[isub[1]]-rsubbox lt y0) then isub[1]=isub[1]+nyg/2
-      if (yax[isub[1]]+rsubbox gt y1) then isub[1]=isub[1]-nyg/2
+      if (yax[isub[1]]-rsubbox lt y0) then isub[1]=(isub[1]+nyg/2) mod nyg
+      if (yax[isub[1]]+rsubbox gt y1) then isub[1]=(isub[1]-nyg/2) mod nyg
     endif
     if (sublog) then array_plot=alog10(array_plot)
+
+    xrange=xax[isub[0]]+[-rsubbox,rsubbox]
+    yrange=yax[isub[1]]+[-rsubbox,rsubbox]
+
+    reset=0
+    if submin gt submax then begin
+      sumin=min & submax=max
+      indsx=where(xax[isub[0]] ge xrange[0] and xax[isub[0]] le xrange[1], countx)
+      if countx gt 0 then begin
+        indsy=where(yax[isub[1]] ge yrange[0] and yax[isub[1]] le yrange[1], county)
+        if county gt 0 then $
+          submin=min(array_plot[indsx[0]:indsx[countx-1],indsy[0]:indsy[county-1]],max=submax) 
+      endif
+      reset=1
+    endif
     plotimage, array_plot, $
-        xrange=xax[isub[0]]+[-rsubbox,rsubbox], $
-        yrange=yax[isub[1]]+[-rsubbox,rsubbox], $
+        xrange=xrange, yrange=yrange, $
         range=[submin,submax], imgxrange=[x0,x1], imgyrange=[y0,y1], $
         position=subpos, /noerase, /noaxes, $
         interp=interp, charsize=charsize, thick=thick
+    if reset then begin
+      submin=1. & submax=0.
+    endif
     plots, [subpos[0],subpos[2],subpos[2],subpos[0],subpos[0]], $
            [subpos[1],subpos[1],subpos[3],subpos[3],subpos[1]], /normal, $
            thick=thick, color=subcolor
@@ -148,9 +170,12 @@ pro pc_read_aver_plot_plane, array_plot=array_plot, nxg=nxg, nyg=nyg, $
     tvlct, red, green, blue, /get
     imgname='img_'+strtrim(string(itimg,'(i20.4)'),2)+'.png'
     write_png, imgdir+'/'+imgname, image, red, green, blue
-  endif
+  endif else if (ps) then $
 ;  Close postscript device.
-  if (ps) then device, /close
+    device, /close $
+  else $
+    wait, wait
+
   itimg=itimg+1
   if (ps or png and not quiet) then print, 'Written image '+imgdir+'/'+imgname
 ;

@@ -16,13 +16,13 @@ pro pc_read_2d_aver, dir, object=object, varfile=varfile, datadir=datadir, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
     xsize=xsize, ysize=ysize, it1=it1, variables=variables, $
     colorbar=colorbar, bartitle=bartitle, xshift=xshift, timefix=timefix, $
-    readpar=readpar, readgrid=readgrid, debug=debug, quiet=quiet
+    readpar=readpar, readgrid=readgrid, debug=debug, quiet=quiet, wait=wait
 ;
 COMPILE_OPT IDL2,HIDDEN
 ;
   common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
-  if ((dir ne 'y') and (dir ne 'z')) then message, 'ERROR: direction "'+dir+'" unknown.'
+  if ((dir ne 'y') and (dir ne 'z')) then message, 'ERROR: averaging direction "'+strtrim(dir,2)+'" unknown.'
 ;
 ;  Default values.
 ;
@@ -33,8 +33,8 @@ COMPILE_OPT IDL2,HIDDEN
   default, ipyread, -1
   default, iplot, -1
   default, zoom, 1
-  default, min, 0.0
-  default, max, 1.0
+  default, min, 1.0
+  default, max, 0.0
   default, tmin, 0.0
   default, njump, 1
   default, ps, 0
@@ -43,7 +43,7 @@ COMPILE_OPT IDL2,HIDDEN
   default, imgdir, '.'
   default, xsize, 10.0
   default, ysize, 10.0
-  default, title, ''
+  default, title, 'notitle'
   default, t_title, 0
   default, t_scale, 1.0
   default, t_zero, 0.0
@@ -53,8 +53,8 @@ COMPILE_OPT IDL2,HIDDEN
   default, subbox, 0
   default, subcen, -1
   default, subpos, [0.7,0.7,0.9,0.9]
-  default, submin, min
-  default, submax, max
+  default, submin, 1.
+  default, submax, 0.
   default, sublog, 0
   default, rsubbox, 5.0
   default, subcolor, 255
@@ -64,7 +64,7 @@ COMPILE_OPT IDL2,HIDDEN
   default, loge, 0
   default, log10, 0
   default, fillwindow, 0
-  default, tformat, '(f5.1)'
+  default, tformat, '(g8.2)'
   default, swap_endian, 0
   default, it1, 10
   default, variables, ''
@@ -76,8 +76,18 @@ COMPILE_OPT IDL2,HIDDEN
   default, readgrid, 0
   default, debug, 0
   default, quiet, 0
-  default, in_file, dir+'aver.in'
+  default, wait, 0
   default, yinyang, 0
+  default, xtitle, 'x'
+  default, ytitle, dir eq 'y' ? 'z' : 'y'
+;
+  if strpos(varfile,'0.dat') ge 0 then begin
+    default, in_file, dir+'aver0.in'
+    file_t2davg=datadir+'/t2davg0.dat'
+  endif else begin
+    default, in_file, strtrim(dir,2)+'aver.in'
+    file_t2davg=datadir+'/t2davg.dat'
+  endelse
 ;
 ;  Read additional information.
 ;
@@ -102,8 +112,10 @@ COMPILE_OPT IDL2,HIDDEN
   if (readgrid or (xshift ne 0)) then begin
     pc_read_grid, obj=grid, /trim, datadir=datadir, /quiet
     xax=grid.x
-    yax=grid.y
-    if (dir eq 'y') then yax=grid.z
+    if (dir eq 'y') then $
+      yax=grid.z $
+    else $
+      yax=grid.y
   endif
 ;
 ;  Some z-averages are erroneously calculated together with time series
@@ -114,16 +126,17 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Derived dimensions.
 ;
   nx=locdim.nx
-  ny=locdim.ny
   nxgrid=dim.nx
-  nygrid=dim.ny
   nprocx=dim.nprocx
   nprocy=dim.nprocy
   nprocz=dim.nprocz
   if (dir eq 'y') then begin
     ny=locdim.nz
     nygrid=dim.nz
-  endif
+  endif else begin
+    ny=locdim.ny
+    nygrid=dim.ny
+  endelse
 ;
 ;  Read variables from '*aver.in' file
 ;
@@ -154,15 +167,29 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Find the position of the requested variables in the list of all
 ;  variables.
 ;
+    nfound=0
     for ivar=0,nvar-1 do begin
       ivarpos_est=where(variables[ivar] eq variables_all)
-      if (ivarpos_est[0] eq -1) then $
-          message, 'ERROR: can not find the variable '''+variables[ivar]+'''' + $
-                   ' in '+arraytostring(variables_all,/noleader)
-      ivarpos[ivar]=ivarpos_est[0]
+      if (ivarpos_est[0] eq -1) then begin
+        message, 'ERROR: cannot find the variable '''+variables[ivar]+'''' + $
+                 ' in '+arraytostring(variables_all,quote="'",/noleader)+'.', /continue
+        variables[ivar]=''
+      endif else begin
+        ivarpos[nfound]=ivarpos_est[0]
+        nfound++
+      endelse
     endfor
+    if nfound eq 0 then $
+      message, 'ERROR: No valid variable names in request.' $
+    else begin
+      nvar=nfound
+      ivarpos=ivarpos[0:nfound-1]
+      variables = variables[where(variables ne '')]
+    endelse
   endelse
+;
 ;  Die if attempt to plot a variable that does not exist.
+;
   if (iplot gt nvar-1) then message, 'iplot must not be greater than nvar-1!'
 ;
 ;  Define filenames to read data from - either from a single processor or
@@ -171,15 +198,16 @@ COMPILE_OPT IDL2,HIDDEN
   nycap=0
   if ((ipxread eq -1) and (ipyread eq -1)) then begin
     nxg = nxgrid
-    nyg = nygrid
     if (dir eq 'y') then begin
       ipxarray = indgen(nprocx*nprocz) mod nprocx
       ipyarray = (indgen(nprocx*nprocz)/nprocx) mod nprocz
       iproc = ipxarray+ipyarray*nprocx*nprocy
+      nyg = nzgrid
     end else begin
       ipxarray = indgen(nprocx*nprocy) mod nprocx
       ipyarray = (indgen(nprocx*nprocy)/nprocx) mod nprocy
       iproc = ipxarray+ipyarray*nprocx
+      nyg = nygrid
       if yinyang then begin
         ncpus=nprocx*nprocy*nprocz
         iproc=[iproc,ncpus+indgen(nprocx),2*ncpus-nprocx+indgen(nprocx)]
@@ -202,18 +230,19 @@ COMPILE_OPT IDL2,HIDDEN
     endif
     if (dir eq 'y') then begin
       iproc = ipxread+ipyread*nprocx*nprocy
-    end else begin
+      nyg = nz
+    endif else begin
       if yinyang then begin
         print, 'Reading from individual procs not implemented for Yin-Yang grid!'
         stop
       endif
       iproc = ipxread+ipyread*nprocx
-    end
+      nyg = ny
+    endelse
     filename = datadir+'/proc'+strtrim(iproc,2)+'/'+varfile
     ipxarray = intarr(1)
     ipyarray = intarr(1)
     nxg = nx
-    nyg = ny
   endelse
 ;
 ;  Define arrays to put data in. The user may supply the length of
@@ -225,7 +254,6 @@ COMPILE_OPT IDL2,HIDDEN
 ;  Test if the file that stores the time and number of 2d-averages, t2davg,
 ;  exists.
 ;
-    file_t2davg=datadir+'/t2davg.dat'
     if (not file_test(file_t2davg)) then begin
       print, 'ERROR: cannot find file '+ file_t2davg
       stop
@@ -241,40 +269,40 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   if (nit gt 0) then begin
 ;
-    if (not quiet) then begin
-      if (njump eq 1) then begin
-        print, 'Returning averages at '+strtrim(nit,2)+' times'
-      endif else begin
-        print, 'Returning averages at '+strtrim(nit,2)+' times'+ $
-            ' at an interval of '+strtrim(njump,2)+' steps'
-      endelse
-    endif
+    nret=ceil(nit/double(njump))
+    relchar = tmin gt 0 ? '<=' : ''
+    if (not quiet) then $
+      if (njump eq 1) then $
+        print, 'Returning averages at '+relchar+strtrim(nit,2)+' times.' $
+      else $
+        print, 'Returning averages at '+relchar+strtrim(nret,2)+' times out of '+strtrim(nit,2)+ $
+               ' at an interval of '+strtrim(njump,2)+' steps.'
 ;
-    tt=fltarr(ceil(nit/double(njump)))*one
-    for i=0,nvar-1 do begin
-      cmd=variables[i]+'=fltarr(nxg,nyg,ceil(nit/double(njump)))*one'
-      if (execute(cmd,0) ne 1) then message, 'Error defining data arrays'
-    endfor
+    tt=fltarr(nret)*one
 ;
-  endif
+  endif else $
+    message, 'Error: Supposedly no averages existent'
 ;
 ;  Define axes (default to indices if no axes are supplied).
 ;
-  if (n_elements(xax) eq 0) then xax=findgen(nxg)
-  if (n_elements(yax) eq 0) then yax=findgen(nyg)
   if (n_elements(par) ne 0) then begin
     x0=par.xyz0[0]
     x1=par.xyz1[0]
-    y0=par.xyz0[1]
-    y1=par.xyz1[1]
     Lx=par.Lxyz[0]
-    Ly=par.Lxyz[1]
     if (dir eq 'y') then begin
       y0=par.xyz0[2]
       y1=par.xyz1[2]
       Ly=par.Lxyz[2]
-    endif
+    endif else begin
+      y0=par.xyz0[1]
+      y1=par.xyz1[1]
+      Ly=par.Lxyz[1]
+    endelse
+    if (n_elements(xax) eq 0) then xax=findgen(nxg)/(nxg-1.)*Lx+x0
+    if (n_elements(yax) eq 0) then yax=findgen(nyg)/(nyg-1.)*Ly+y0
   endif else begin
+    if (n_elements(xax) eq 0) then xax=findgen(nxg)
+    if (n_elements(yax) eq 0) then yax=findgen(nyg)
     x0=xax[0]
     x1=xax[nxg-1]
     y0=yax[0]
@@ -290,21 +318,21 @@ COMPILE_OPT IDL2,HIDDEN
 ;
   num_files = n_elements(filename)
   for ip=0, num_files-1 do begin
-    if (not file_test(filename[ip])) then begin
-      print, 'ERROR: cannot find file '+ filename[ip]
-      stop
-    endif
+    if (not file_test(filename[ip])) then $
+      message, 'ERROR: cannot find file '+ filename[ip]
   endfor
 ;
 ;  Method 1: Read in full data processor by processor. Does not allow plotting.
 ;
-  if (iplot eq -1) then begin
+  if (iplot lt 0) then begin
 ;
     array_local=fltarr(nx,ny,nvar_all)*one
-    array_global=fltarr(nxg,nyg,ceil(nit/double(njump)),nvar_all)*one
+    array_global=fltarr(nxg,nyg,nret,nvar)*one
     t=zero
+    if njump gt 1 then incr=njump*(double(n_elements(array_local))*data_bytes+8L + data_bytes+8L)
 ;
     for ip=0, num_files-1 do begin
+;
       if (not quiet) then print, 'Loading chunk ', strtrim(ip+1,2), ' of ', $
           strtrim(num_files,2), ' (', filename[ip], ')'
 
@@ -325,32 +353,48 @@ COMPILE_OPT IDL2,HIDDEN
       iye=iya+nyl-1
 
       openr, lun, filename[ip], /f77, swap_endian=swap_endian, /get_lun
-      it=0
+      it=0 & nread=0 & filepos=-1.d0
+
       while (not eof(lun) and ((nit eq 0) or (it lt nit))) do begin
 ;
 ;  Read time.
 ;
+        if filepos lt 0. then point_lun, -lun, filepos
         readu, lun, t
 
         if (it eq 0) then t0=t
 ;
 ;  Read full data, close and free lun after endwhile.
 ;
-        if ( (t ge tmin) and (it mod njump eq 0) ) then begin
+        if t ge tmin then begin
           readu, lun, array_local
-;print, 'array_local=', min(array_local), max(array_local)
-          array_global[ipx*nx:(ipx+1)*nx-1,iya:iye,it/njump,*]=array_local
-          tt[it/njump]=t
+          array_global[ipx*nx:(ipx+1)*nx-1,iya:iye,nread,*]=array_local[*,*,ivarpos]
+          tt[nread]=t
+          nread++
+          if njump gt 1 then begin
+            filepos+=incr
+            point_lun, lun, filepos
+          endif
+          it=it+njump
         endif else begin
           dummy=zero
           readu, lun, dummy
+          it=it+1
+          filepos=-1.d0
         endelse
-        it=it+1
       endwhile
       close, lun
       free_lun, lun
 ;
     endfor
+;
+    if nread gt 0 then begin
+      tt=tt[0:nread-1]
+      array_global=array_global[*,*,0:nread-1,*]
+      if (not quiet) then $
+        print, 'Returned averages at '+strtrim(nread,2)+' times.'
+    endif else $
+      message, 'No averages found for t>='+strtrim(tmin,2)+'.'
 ;
 ;  Diagnostics.
 ;
@@ -358,32 +402,29 @@ COMPILE_OPT IDL2,HIDDEN
       varnamsiz=(max(strlen(strtrim(variables,2)))+7)/2
       filler=arraytostring(replicate('-',varnamsiz),list='')
 
-      for it=0,ceil(nit/double(njump))-1 do begin
+      for it=0,nread-1 do begin
         if (it mod it1 eq 0) then begin
           if (it eq 0 ) then $
             print, '  ------ it -------- t ------'+filler+' var '+filler+'- min(var) ------- max(var) ------'
-          for ivar=0,nvar-1 do begin
+          for ivar=0,nvar-1 do $
             print, it, tt[it], variables[ivar], $
-                min(array_global[*,*,it,ivarpos[ivar]]), $
-                max(array_global[*,*,it,ivarpos[ivar]]), $
+                min(array_global[*,*,it,ivar]), $
+                max(array_global[*,*,it,ivar]), $
                 format='(i11,e17.7,A12,2e17.7)'
-          endfor
         endif
       endfor
     endif
 ;
 ;  Possible to shift data in the x-direction.
 ;
-    if (xshift ne 0) then begin
-      for it=0, nit/njump-1 do begin
-        pc_read_aver_shift_plane, nvar_all, array_global[*,*,it,*], xshift, par, timefix, ts, t, t0
-      endfor
-    endif
+    if (xshift ne 0) then $
+      for it=0, nread-1 do $
+        pc_read_aver_shift_plane, nvar, array_global[*,*,it,*], xshift, par, timefix, ts, t, t0
 ;
 ;  Split read data into named arrays.
 ;
     for ivar=0,nvar-1 do begin
-      cmd=variables[ivar]+'=array_global[*,*,*,ivarpos[ivar]]'
+      cmd=variables[ivar]+'=array_global[*,*,*,ivar]'
       if (execute(cmd,0) ne 1) then message, 'Error putting data in array'
     endfor
 ;
@@ -391,14 +432,19 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Method 2: Read in data slice by slice and plot the results.
 ;
+    for i=0,nvar-1 do begin
+      cmd=variables[i]+'=fltarr(nxg,nyg,ceil(nit/double(njump)))*one'
+      if (execute(cmd,0) ne 1) then message, 'Error defining data arrays'
+    endfor
+
     if (png) then begin
       set_plot, 'z'
-      device, set_resolution=[zoom*nx,zoom*nyg]
+      device, set_resolution=[zoom*nxg,zoom*nyg]
       print, 'Deleting old png files in the directory ', imgdir
-      spawn, '\rm -f '+imgdir+'/img_*.png'
+      spawn, 'rm -f '+imgdir+'/img_*.png'
     endif
 ;
-;  Open all ipz=0 processor directories.
+;  Open all ip[yz]=0 processor directories.
 ;
     luns = intarr(num_files)
     for ip=0, num_files-1 do begin
@@ -408,13 +454,13 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Variables to put single time snapshot in.
 ;
-    array=fltarr(nxg,nyg,nvar_all)*one
+    array=fltarr(nxg,nyg,nvar)*one
     array_local=fltarr(nx,ny,nvar_all)*one
     tt_local=fltarr(num_files)*one
 ;
 ;  Read 2D-averages and put in arrays if requested.
 ;
-    it=0
+    it=0 & nread=0 & dummy=zero
     itimg=0
     lwindow_opened=0
     while (not eof(luns[0]) and ((nit eq 0) or (it lt nit))) do begin
@@ -443,13 +489,13 @@ COMPILE_OPT IDL2,HIDDEN
           readu, luns[ip], array_local
           ipx=ipxarray[ip]
           ipy=ipyarray[ip]
-          array[ipx*nx:(ipx+1)*nx-1,ipy*ny:(ipy+1)*ny-1,*]=array_local
+          array[ipx*nx:(ipx+1)*nx-1,ipy*ny:(ipy+1)*ny-1,*]=array_local[*,*,ivarpos]
         endfor
 ;
-;  Shift plane in the radial direction.
+;  Shift plane in the x direction.
 ;
         if (xshift ne 0) then $
-            pc_read_aver_shift_plane, nvar_all, array, xshift, par, timefix, ts, t
+            pc_read_aver_shift_plane, nvar, array, xshift, par, timefix, ts, t, t0
 ;
 ;  Interpolate position of stalked particles to time of snapshot.
 ;
@@ -463,9 +509,9 @@ COMPILE_OPT IDL2,HIDDEN
               ipar=where(pst.aps[*,ist] ne 0.0)
               if (ipar[0] eq -1) then nstalk=0 else nstalk=n_elements(ipar)
             endelse
-          endif else begin
+          endif else $
             ipar=indgen(nstalk)
-          endelse
+
           if (nstalk eq -1) then begin
             xxstalk=pst.xp[ist]
             if (dir eq 'z') then yystalk=pst.yp[ist]
@@ -479,9 +525,9 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Plot requested variable (plotting is turned off by default).
 ;
-        pc_read_aver_plot_plane, array_plot=array[*,*,ivarpos[iplot]], nxg=nxg, nyg=nyg, $
+        pc_read_aver_plot_plane, array_plot=array[*,*,iplot], nxg=nxg, nyg=nyg, $
             min=min, max=max, zoom=zoom, xax=xax, yax=yax, $
-            xtitle=xtitle, ytitle=ytitle, title=title, $
+            xtitle=xtitle, ytitle=ytitle, title=title eq 'notitle' ? strtrim(variables[iplot],2) : title, $
             subbox=subbox, subcen=subcen, $
             subpos=subpos, rsubbox=rsubbox, subcolor=subcolor, tsubbox=tsubbox,$
             submin=submin, submax=submax, sublog=sublog, $
@@ -493,39 +539,47 @@ COMPILE_OPT IDL2,HIDDEN
             tmin=tmin, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
             xsize=xsize, ysize=ysize, lwindow_opened=lwindow_opened, $
             colorbar=colorbar, bartitle=bartitle, quiet=quiet, $
-            x0=x0, x1=x1, y0=y0, y1=y1, Lx=Lx, Ly=Ly, time=t, itimg=itimg
+            x0=x0, x1=x1, y0=y0, y1=y1, Lx=Lx, Ly=Ly, time=t, itimg=itimg, wait=wait
 ;
 ;  Diagnostics.
 ;
         if ( (not quiet) and (it mod it1 eq 0) ) then begin
           if (it eq 0 ) then $
               print, '  ------ it -------- t ---------- var ----- min(var) ------- max(var) ------'
-          for ivar=0,nvar-1 do begin
+          for ivar=0,nvar-1 do $
               print, it, t, variables[ivar], $
-                  min(array[*,*,ivarpos[ivar]]), max(array[*,*,ivarpos[ivar]]), $
+                  min(array[*,*,ivar]), max(array[*,*,ivar]), $
                   format='(i11,e17.7,A12,2e17.7)'
-          endfor
         endif
 ;
 ;  Split read data into named arrays.
 ;
-        if (it le nit-1) then begin
-          tt[it/njump]=t
-          for ivar=0,nvar-1 do begin
-            cmd=variables[ivar]+'[*,*,it/njump]=array[*,*,ivarpos[ivar]]'
-            if (execute(cmd,0) ne 1) then message, 'Error putting data in array'
-          endfor
-        endif
-      endif else begin
-        for ip=0, num_files-1 do begin
-          dummy=zero
-          readu, luns[ip], dummy
+        tt[nread]=t
+        for ivar=0,nvar-1 do begin
+          cmd=variables[ivar]+'[*,*,nread]=array[*,*,ivar]'
+          if (execute(cmd,0) ne 1) then message, 'Error putting data in array'
         endfor
-      endelse
+        nread++
+      endif else $
+        for ip=0, num_files-1 do readu, luns[ip], dummy
 ;
       it=it+1
 ;
     endwhile
+
+    if (nread gt 0) then begin
+;
+;  Trimming of time and variables arrays.
+;
+      tt=tt[0:nread-1]
+      for ivar=0,nvar-1 do begin
+        cmd=variables[ivar]+'='+variables[ivar]+'[*,*,0:nread-1]'
+        if (execute(cmd,0) ne 1) then message, 'Error putting data in array'
+      endfor
+      if (not quiet) then $
+        print, 'Returned averages at '+strtrim(nread,2)+' times.'
+    endif else $
+      message, 'No averages found for t>='+strtrim(tmin,2)+'.'
 ;
 ;  Close files and free luns.
 ;
