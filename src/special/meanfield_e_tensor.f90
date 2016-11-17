@@ -82,7 +82,7 @@ module Special
   logical, dimension(6)     :: lalpha_c, lbeta_c, lacoef_c
   logical, dimension(3)     :: lgamma_c, ldelta_c, lutensor_c
   logical, dimension(3,3,3) :: lkappa_c, lbcoef_c
-  logical :: lalpha, lbeta, lgamma, ldelta, lkappa, lutensor, lacoef, lbcoef, usecoefs
+  logical :: lalpha, lbeta, lgamma, ldelta, lkappa, lutensor, lacoef, lbcoef, lusecoefs
   real :: alpha_scale, beta_scale, gamma_scale, delta_scale, kappa_scale, utensor_scale, acoef_scale, bcoef_scale
   character (len=fnlen) :: defaultname
   character (len=fnlen) :: alpha_name, beta_name,    &
@@ -93,47 +93,49 @@ module Special
   real, dimension(ntensors) :: tensor_scales, tensor_maxvals, tensor_minvals
   ! Diagnostic variables
   ! Max diagnostics
-  integer :: idiag_emfalphaxmax=0
-  integer :: idiag_emfalphaymax=0
-  integer :: idiag_emfalphazmax=0
-  integer :: idiag_emfbetaxmax=0
-  integer :: idiag_emfbetaymax=0
-  integer :: idiag_emfbetazmax=0
-  integer :: idiag_emfgammaxmax=0
-  integer :: idiag_emfgammaymax=0
-  integer :: idiag_emfgammazmax=0
-  integer :: idiag_emfdeltaxmax=0
-  integer :: idiag_emfdeltaymax=0
-  integer :: idiag_emfdeltazmax=0
-  integer :: idiag_emfkappaxmax=0
-  integer :: idiag_emfkappaymax=0
-  integer :: idiag_emfkappazmax=0
-  integer :: idiag_emfutensorxmax=0
-  integer :: idiag_emfutensorymax=0
-  integer :: idiag_emfutensorzmax=0
-  integer :: idiag_emfacoefxmax=0
-  integer :: idiag_emfacoefymax=0
-  integer :: idiag_emfacoefzmax=0
-  integer :: idiag_emfbcoefxmax=0
-  integer :: idiag_emfbcoefymax=0
-  integer :: idiag_emfbcoefzmax=0
+  integer :: idiag_alphaxmax=0
+  integer :: idiag_alphaymax=0
+  integer :: idiag_alphazmax=0
+  integer :: idiag_betaxmax=0
+  integer :: idiag_betaymax=0
+  integer :: idiag_betazmax=0
+  integer :: idiag_gammaxmax=0
+  integer :: idiag_gammaymax=0
+  integer :: idiag_gammazmax=0
+  integer :: idiag_deltaxmax=0
+  integer :: idiag_deltaymax=0
+  integer :: idiag_deltazmax=0
+  integer :: idiag_kappaxmax=0
+  integer :: idiag_kappaymax=0
+  integer :: idiag_kappazmax=0
+  integer :: idiag_utensorxmax=0
+  integer :: idiag_utensorymax=0
+  integer :: idiag_utensorzmax=0
+  integer :: idiag_acoefxmax=0
+  integer :: idiag_acoefymax=0
+  integer :: idiag_acoefzmax=0
+  integer :: idiag_bcoefxmax=0
+  integer :: idiag_bcoefymax=0
+  integer :: idiag_bcoefzmax=0
   integer :: idiag_emfxmax=0
   integer :: idiag_emfymax=0
   integer :: idiag_emfzmax=0
   integer :: idiag_emfcoefxmax=0
   integer :: idiag_emfcoefymax=0
   integer :: idiag_emfcoefzmax=0
+  integer :: idiag_emfratiomax=0
 ! RMS diagnostics
-  integer :: idiag_emfalpharms=0
-  integer :: idiag_emfbetarms=0
-  integer :: idiag_emfgammarms=0
-  integer :: idiag_emfdeltarms=0
-  integer :: idiag_emfkapparms=0
-  integer :: idiag_emfutensorrms=0
-  integer :: idiag_emfacoefrms=0
-  integer :: idiag_emfbcoefrms=0
+  integer :: idiag_alpharms=0
+  integer :: idiag_betarms=0
+  integer :: idiag_gammarms=0
+  integer :: idiag_deltarms=0
+  integer :: idiag_kapparms=0
+  integer :: idiag_utensorrms=0
+  integer :: idiag_acoefrms=0
+  integer :: idiag_bcoefrms=0
   integer :: idiag_emfrms=0
   integer :: idiag_emfcoefrms=0
+  integer :: idiag_emfratiorms=0
   ! Interpolation parameters
   character (len=fnlen) :: interpname
   integer :: dataload_len
@@ -151,7 +153,7 @@ module Special
       lutensor, lutensor_c, utensor_name, utensor_scale, &
       lacoef,   lacoef_c,   acoef_name,   acoef_scale, &
       lbcoef,   lbcoef_c,   bcoef_name,   bcoef_scale, &
-      interpname, defaultname
+      interpname, defaultname, lusecoefs
   namelist /special_run_pars/ &
       lalpha,   lalpha_c,   alpha_name,   alpha_scale, &
       lbeta,    lbeta_c,    beta_name,    beta_scale, &
@@ -161,7 +163,7 @@ module Special
       lutensor, lutensor_c, utensor_name, utensor_scale, &
       lacoef,   lacoef_c,   acoef_name,   acoef_scale, &
       lbcoef,   lbcoef_c,   bcoef_name,   bcoef_scale, &
-      interpname, defaultname
+      interpname, defaultname, lusecoefs
   ! loadDataset interface
   interface loadDataset
     module procedure loadDataset_rank1
@@ -751,67 +753,73 @@ module Special
 !      emftmp=0
       if (ldiagnos) then
         emftmp = p%acoef_emf + p%bcoef_emf
-        if (idiag_emfalphaxmax/=0) call max_mn_name(p%alpha_emf(:,1),idiag_emfalphaxmax)
-        if (idiag_emfalphaymax/=0) call max_mn_name(p%alpha_emf(:,2),idiag_emfalphaymax)
-        if (idiag_emfalphazmax/=0) call max_mn_name(p%alpha_emf(:,3),idiag_emfalphazmax)
-        if (idiag_emfbetaxmax/=0) call max_mn_name(p%beta_emf(:,1),idiag_emfbetaxmax)
-        if (idiag_emfbetaymax/=0) call max_mn_name(p%beta_emf(:,2),idiag_emfbetaymax)
-        if (idiag_emfbetazmax/=0) call max_mn_name(p%beta_emf(:,3),idiag_emfbetazmax)
-        if (idiag_emfgammaxmax/=0) call max_mn_name(p%gamma_emf(:,1),idiag_emfgammaxmax)
-        if (idiag_emfgammaymax/=0) call max_mn_name(p%gamma_emf(:,2),idiag_emfgammaymax)
-        if (idiag_emfgammazmax/=0) call max_mn_name(p%gamma_emf(:,3),idiag_emfgammazmax)
-        if (idiag_emfdeltaxmax/=0) call max_mn_name(p%delta_emf(:,1),idiag_emfdeltaxmax)
-        if (idiag_emfdeltaymax/=0) call max_mn_name(p%delta_emf(:,2),idiag_emfdeltaymax)
-        if (idiag_emfdeltazmax/=0) call max_mn_name(p%delta_emf(:,3),idiag_emfdeltazmax)
-        if (idiag_emfkappaxmax/=0) call max_mn_name(p%kappa_emf(:,1),idiag_emfkappaxmax)
-        if (idiag_emfkappaymax/=0) call max_mn_name(p%kappa_emf(:,2),idiag_emfkappaymax)
-        if (idiag_emfkappazmax/=0) call max_mn_name(p%kappa_emf(:,3),idiag_emfkappazmax)
-        if (idiag_emfutensorxmax/=0) call max_mn_name(p%utensor_emf(:,1),idiag_emfutensorxmax)
-        if (idiag_emfutensorymax/=0) call max_mn_name(p%utensor_emf(:,2),idiag_emfutensorymax)
-        if (idiag_emfutensorzmax/=0) call max_mn_name(p%utensor_emf(:,3),idiag_emfutensorzmax)
-        if (idiag_emfacoefxmax/=0) call max_mn_name(p%acoef_emf(:,1),idiag_emfacoefxmax)
-        if (idiag_emfacoefymax/=0) call max_mn_name(p%acoef_emf(:,2),idiag_emfacoefymax)
-        if (idiag_emfacoefzmax/=0) call max_mn_name(p%acoef_emf(:,3),idiag_emfacoefzmax)
-        if (idiag_emfbcoefxmax/=0) call max_mn_name(p%bcoef_emf(:,1),idiag_emfbcoefxmax)
-        if (idiag_emfbcoefymax/=0) call max_mn_name(p%bcoef_emf(:,2),idiag_emfbcoefymax)
-        if (idiag_emfbcoefzmax/=0) call max_mn_name(p%bcoef_emf(:,3),idiag_emfbcoefzmax)
+        tmppencil = emftmp - p%emf
+        !
+        if (idiag_alphaxmax/=0) call max_mn_name(p%alpha_emf(:,1),idiag_alphaxmax)
+        if (idiag_alphaymax/=0) call max_mn_name(p%alpha_emf(:,2),idiag_alphaymax)
+        if (idiag_alphazmax/=0) call max_mn_name(p%alpha_emf(:,3),idiag_alphazmax)
+        if (idiag_betaxmax/=0) call max_mn_name(p%beta_emf(:,1),idiag_betaxmax)
+        if (idiag_betaymax/=0) call max_mn_name(p%beta_emf(:,2),idiag_betaymax)
+        if (idiag_betazmax/=0) call max_mn_name(p%beta_emf(:,3),idiag_betazmax)
+        if (idiag_gammaxmax/=0) call max_mn_name(p%gamma_emf(:,1),idiag_gammaxmax)
+        if (idiag_gammaymax/=0) call max_mn_name(p%gamma_emf(:,2),idiag_gammaymax)
+        if (idiag_gammazmax/=0) call max_mn_name(p%gamma_emf(:,3),idiag_gammazmax)
+        if (idiag_deltaxmax/=0) call max_mn_name(p%delta_emf(:,1),idiag_deltaxmax)
+        if (idiag_deltaymax/=0) call max_mn_name(p%delta_emf(:,2),idiag_deltaymax)
+        if (idiag_deltazmax/=0) call max_mn_name(p%delta_emf(:,3),idiag_deltazmax)
+        if (idiag_kappaxmax/=0) call max_mn_name(p%kappa_emf(:,1),idiag_kappaxmax)
+        if (idiag_kappaymax/=0) call max_mn_name(p%kappa_emf(:,2),idiag_kappaymax)
+        if (idiag_kappazmax/=0) call max_mn_name(p%kappa_emf(:,3),idiag_kappazmax)
+        if (idiag_utensorxmax/=0) call max_mn_name(p%utensor_emf(:,1),idiag_utensorxmax)
+        if (idiag_utensorymax/=0) call max_mn_name(p%utensor_emf(:,2),idiag_utensorymax)
+        if (idiag_utensorzmax/=0) call max_mn_name(p%utensor_emf(:,3),idiag_utensorzmax)
+        if (idiag_acoefxmax/=0) call max_mn_name(p%acoef_emf(:,1),idiag_acoefxmax)
+        if (idiag_acoefymax/=0) call max_mn_name(p%acoef_emf(:,2),idiag_acoefymax)
+        if (idiag_acoefzmax/=0) call max_mn_name(p%acoef_emf(:,3),idiag_acoefzmax)
+        if (idiag_bcoefxmax/=0) call max_mn_name(p%bcoef_emf(:,1),idiag_bcoefxmax)
+        if (idiag_bcoefymax/=0) call max_mn_name(p%bcoef_emf(:,2),idiag_bcoefymax)
+        if (idiag_bcoefzmax/=0) call max_mn_name(p%bcoef_emf(:,3),idiag_bcoefzmax)
         if (idiag_emfxmax/=0) call max_mn_name(p%emf(:,1),idiag_emfxmax)
         if (idiag_emfymax/=0) call max_mn_name(p%emf(:,2),idiag_emfymax)
         if (idiag_emfzmax/=0) call max_mn_name(p%emf(:,3),idiag_emfzmax)
         if (idiag_emfcoefxmax/=0) call max_mn_name(emftmp(:,1),idiag_emfcoefxmax)
         if (idiag_emfcoefymax/=0) call max_mn_name(emftmp(:,2),idiag_emfcoefymax)
         if (idiag_emfcoefzmax/=0) call max_mn_name(emftmp(:,3),idiag_emfcoefzmax)
-        if (idiag_emfalpharms/=0) then
+        if (idiag_emfratiomax/=0) then
+          call dot2_mn(tmppencil,tmpline)
+          call max_mn_name(tmpline,idiag_emfratiomax,lsqrt=.true.)
+        end if
+        if (idiag_alpharms/=0) then
           call dot2_mn(p%alpha_emf,tmpline)
-          call sum_mn_name(tmpline,idiag_emfalpharms,lsqrt=.true.)
+          call sum_mn_name(tmpline,idiag_alpharms,lsqrt=.true.)
         end if
-        if (idiag_emfbetarms/=0) then
+        if (idiag_betarms/=0) then
           call dot2_mn(p%beta_emf,tmpline)
-          call sum_mn_name(tmpline,idiag_emfbetarms,lsqrt=.true.)
+          call sum_mn_name(tmpline,idiag_betarms,lsqrt=.true.)
         end if
-        if (idiag_emfgammarms/=0) then
+        if (idiag_gammarms/=0) then
           call dot2_mn(p%gamma_emf,tmpline)
-          call sum_mn_name(tmpline,idiag_emfgammarms,lsqrt=.true.)
+          call sum_mn_name(tmpline,idiag_gammarms,lsqrt=.true.)
         end if
-        if (idiag_emfdeltarms/=0) then
+        if (idiag_deltarms/=0) then
           call dot2_mn(p%delta_emf,tmpline)
-          call sum_mn_name(tmpline,idiag_emfdeltarms,lsqrt=.true.)
+          call sum_mn_name(tmpline,idiag_deltarms,lsqrt=.true.)
         end if
-        if (idiag_emfkapparms/=0) then
+        if (idiag_kapparms/=0) then
           call dot2_mn(p%kappa_emf,tmpline)
-          call sum_mn_name(tmpline,idiag_emfkapparms,lsqrt=.true.)
+          call sum_mn_name(tmpline,idiag_kapparms,lsqrt=.true.)
         end if
-        if (idiag_emfutensorrms/=0) then
+        if (idiag_utensorrms/=0) then
           call dot2_mn(p%utensor_emf,tmpline)
-          call sum_mn_name(tmpline,idiag_emfutensorrms,lsqrt=.true.)
+          call sum_mn_name(tmpline,idiag_utensorrms,lsqrt=.true.)
         end if
-        if (idiag_emfacoefrms/=0) then
+        if (idiag_acoefrms/=0) then
           call dot2_mn(p%acoef_emf,tmpline)
-          call sum_mn_name(tmpline,idiag_emfacoefrms,lsqrt=.true.)
+          call sum_mn_name(tmpline,idiag_acoefrms,lsqrt=.true.)
         end if
-        if (idiag_emfbcoefrms/=0) then
+        if (idiag_bcoefrms/=0) then
           call dot2_mn(p%bcoef_emf,tmpline)
-          call sum_mn_name(tmpline,idiag_emfbcoefrms,lsqrt=.true.)
+          call sum_mn_name(tmpline,idiag_bcoefrms,lsqrt=.true.)
         end if
         if (idiag_emfrms/=0) then
           call dot2_mn(p%emf,tmpline)
@@ -820,6 +828,10 @@ module Special
         if (idiag_emfcoefrms/=0) then
           call dot2_mn(emftmp,tmpline)
           call sum_mn_name(tmpline,idiag_emfcoefrms,lsqrt=.true.)
+        end if
+        if (idiag_emfratiorms/=0) then
+          call dot2_mn(tmppencil,tmpline)
+          call sum_mn_name(tmpline,idiag_emfratiorms,lsqrt=.true.)
         end if
       end if 
     
@@ -892,47 +904,49 @@ module Special
 !!!
       if (lreset) then
         ! Max diagnostics
-        idiag_emfalphaxmax=0
-        idiag_emfalphaymax=0
-        idiag_emfalphazmax=0
-        idiag_emfbetaxmax=0
-        idiag_emfbetaymax=0
-        idiag_emfbetazmax=0
-        idiag_emfgammaxmax=0
-        idiag_emfgammaymax=0
-        idiag_emfgammazmax=0
-        idiag_emfdeltaxmax=0
-        idiag_emfdeltaymax=0
-        idiag_emfdeltazmax=0
-        idiag_emfkappaxmax=0
-        idiag_emfkappaymax=0
-        idiag_emfkappazmax=0
-        idiag_emfutensorxmax=0
-        idiag_emfutensorymax=0
-        idiag_emfutensorzmax=0
-        idiag_emfacoefxmax=0
-        idiag_emfacoefymax=0
-        idiag_emfacoefzmax=0
-        idiag_emfbcoefxmax=0
-        idiag_emfbcoefymax=0
-        idiag_emfbcoefzmax=0
+        idiag_alphaxmax=0
+        idiag_alphaymax=0
+        idiag_alphazmax=0
+        idiag_betaxmax=0
+        idiag_betaymax=0
+        idiag_betazmax=0
+        idiag_gammaxmax=0
+        idiag_gammaymax=0
+        idiag_gammazmax=0
+        idiag_deltaxmax=0
+        idiag_deltaymax=0
+        idiag_deltazmax=0
+        idiag_kappaxmax=0
+        idiag_kappaymax=0
+        idiag_kappazmax=0
+        idiag_utensorxmax=0
+        idiag_utensorymax=0
+        idiag_utensorzmax=0
+        idiag_acoefxmax=0
+        idiag_acoefymax=0
+        idiag_acoefzmax=0
+        idiag_bcoefxmax=0
+        idiag_bcoefymax=0
+        idiag_bcoefzmax=0
         idiag_emfxmax=0
         idiag_emfymax=0
         idiag_emfzmax=0
         idiag_emfcoefxmax=0
         idiag_emfcoefymax=0
         idiag_emfcoefzmax=0
+        idiag_emfratiomax=0
         ! RMS diagnostics
-        idiag_emfalpharms=0
-        idiag_emfbetarms=0
-        idiag_emfgammarms=0
-        idiag_emfdeltarms=0
-        idiag_emfkapparms=0
-        idiag_emfutensorrms=0
-        idiag_emfacoefrms=0
-        idiag_emfbcoefrms=0
+        idiag_alpharms=0
+        idiag_betarms=0
+        idiag_gammarms=0
+        idiag_deltarms=0
+        idiag_kapparms=0
+        idiag_utensorrms=0
+        idiag_acoefrms=0
+        idiag_bcoefrms=0
         idiag_emfrms=0
         idiag_emfcoefrms=0
+        idiag_emfratiorms=0
       endif
 !!
 !!      do iname=1,nname
@@ -947,47 +961,49 @@ module Special
 !!
       do iname=1,nname
         ! Maximum values of emf terms
-        call parse_name(iname,cname(iname),cform(iname),'emfalphaxmax',idiag_emfalphaxmax)
-        call parse_name(iname,cname(iname),cform(iname),'emfalphaymax',idiag_emfalphaymax)
-        call parse_name(iname,cname(iname),cform(iname),'emfalphazmax',idiag_emfalphazmax)
-        call parse_name(iname,cname(iname),cform(iname),'emfbetaxmax',idiag_emfbetaxmax)
-        call parse_name(iname,cname(iname),cform(iname),'emfbetaymax',idiag_emfbetaymax)
-        call parse_name(iname,cname(iname),cform(iname),'emfbetazmax',idiag_emfbetazmax)
-        call parse_name(iname,cname(iname),cform(iname),'emfgammaxmax',idiag_emfgammaxmax)
-        call parse_name(iname,cname(iname),cform(iname),'emfgammaymax',idiag_emfgammaymax)
-        call parse_name(iname,cname(iname),cform(iname),'emfgammazmax',idiag_emfgammazmax)
-        call parse_name(iname,cname(iname),cform(iname),'emfdeltaxmax',idiag_emfdeltaxmax)
-        call parse_name(iname,cname(iname),cform(iname),'emfdeltaymax',idiag_emfdeltaymax)
-        call parse_name(iname,cname(iname),cform(iname),'emfdeltazmax',idiag_emfdeltazmax)
-        call parse_name(iname,cname(iname),cform(iname),'emfkappaxmax',idiag_emfkappaxmax)
-        call parse_name(iname,cname(iname),cform(iname),'emfkappaymax',idiag_emfkappaymax)
-        call parse_name(iname,cname(iname),cform(iname),'emfkappazmax',idiag_emfkappazmax)
-        call parse_name(iname,cname(iname),cform(iname),'emfutensorxmax',idiag_emfutensorxmax)
-        call parse_name(iname,cname(iname),cform(iname),'emfutensorymax',idiag_emfutensorymax)
-        call parse_name(iname,cname(iname),cform(iname),'emfutensorzmax',idiag_emfutensorzmax)
-        call parse_name(iname,cname(iname),cform(iname),'emfacoefxmax',idiag_emfacoefxmax)
-        call parse_name(iname,cname(iname),cform(iname),'emfacoefymax',idiag_emfacoefymax)
-        call parse_name(iname,cname(iname),cform(iname),'emfacoefzmax',idiag_emfacoefzmax)
-        call parse_name(iname,cname(iname),cform(iname),'emfbcoefxmax',idiag_emfbcoefxmax)
-        call parse_name(iname,cname(iname),cform(iname),'emfbcoefymax',idiag_emfbcoefymax)
-        call parse_name(iname,cname(iname),cform(iname),'emfbcoefzmax',idiag_emfbcoefzmax)
+        call parse_name(iname,cname(iname),cform(iname),'alphaxmax',idiag_alphaxmax)
+        call parse_name(iname,cname(iname),cform(iname),'alphaymax',idiag_alphaymax)
+        call parse_name(iname,cname(iname),cform(iname),'alphazmax',idiag_alphazmax)
+        call parse_name(iname,cname(iname),cform(iname),'betaxmax',idiag_betaxmax)
+        call parse_name(iname,cname(iname),cform(iname),'betaymax',idiag_betaymax)
+        call parse_name(iname,cname(iname),cform(iname),'betazmax',idiag_betazmax)
+        call parse_name(iname,cname(iname),cform(iname),'gammaxmax',idiag_gammaxmax)
+        call parse_name(iname,cname(iname),cform(iname),'gammaymax',idiag_gammaymax)
+        call parse_name(iname,cname(iname),cform(iname),'gammazmax',idiag_gammazmax)
+        call parse_name(iname,cname(iname),cform(iname),'deltaxmax',idiag_deltaxmax)
+        call parse_name(iname,cname(iname),cform(iname),'deltaymax',idiag_deltaymax)
+        call parse_name(iname,cname(iname),cform(iname),'deltazmax',idiag_deltazmax)
+        call parse_name(iname,cname(iname),cform(iname),'kappaxmax',idiag_kappaxmax)
+        call parse_name(iname,cname(iname),cform(iname),'kappaymax',idiag_kappaymax)
+        call parse_name(iname,cname(iname),cform(iname),'kappazmax',idiag_kappazmax)
+        call parse_name(iname,cname(iname),cform(iname),'utensorxmax',idiag_utensorxmax)
+        call parse_name(iname,cname(iname),cform(iname),'utensorymax',idiag_utensorymax)
+        call parse_name(iname,cname(iname),cform(iname),'utensorzmax',idiag_utensorzmax)
+        call parse_name(iname,cname(iname),cform(iname),'acoefxmax',idiag_acoefxmax)
+        call parse_name(iname,cname(iname),cform(iname),'acoefymax',idiag_acoefymax)
+        call parse_name(iname,cname(iname),cform(iname),'acoefzmax',idiag_acoefzmax)
+        call parse_name(iname,cname(iname),cform(iname),'bcoefxmax',idiag_bcoefxmax)
+        call parse_name(iname,cname(iname),cform(iname),'bcoefymax',idiag_bcoefymax)
+        call parse_name(iname,cname(iname),cform(iname),'bcoefzmax',idiag_bcoefzmax)
         call parse_name(iname,cname(iname),cform(iname),'emfxmax',idiag_emfxmax)
         call parse_name(iname,cname(iname),cform(iname),'emfymax',idiag_emfymax)
         call parse_name(iname,cname(iname),cform(iname),'emfzmax',idiag_emfzmax)
         call parse_name(iname,cname(iname),cform(iname),'emfcoefxmax',idiag_emfcoefxmax)
         call parse_name(iname,cname(iname),cform(iname),'emfcoefymax',idiag_emfcoefymax)
         call parse_name(iname,cname(iname),cform(iname),'emfcoefzmax',idiag_emfcoefzmax)
+        call parse_name(iname,cname(iname),cform(iname),'emfratiomax',idiag_emfratiomax)
         ! RMS values of emf terms
-        call parse_name(iname,cname(iname),cform(iname),'emfalpharms',idiag_emfalpharms)
-        call parse_name(iname,cname(iname),cform(iname),'emfbetarms',idiag_emfbetarms)
-        call parse_name(iname,cname(iname),cform(iname),'emfgammarms',idiag_emfgammarms)
-        call parse_name(iname,cname(iname),cform(iname),'emfdeltarms',idiag_emfdeltarms)
-        call parse_name(iname,cname(iname),cform(iname),'emfkapparms',idiag_emfkapparms)
-        call parse_name(iname,cname(iname),cform(iname),'emfutensorrms',idiag_emfutensorrms)
-        call parse_name(iname,cname(iname),cform(iname),'emfacoefrms',idiag_emfacoefrms)
-        call parse_name(iname,cname(iname),cform(iname),'emfbcoefrms',idiag_emfbcoefrms)
+        call parse_name(iname,cname(iname),cform(iname),'alpharms',idiag_alpharms)
+        call parse_name(iname,cname(iname),cform(iname),'betarms',idiag_betarms)
+        call parse_name(iname,cname(iname),cform(iname),'gammarms',idiag_gammarms)
+        call parse_name(iname,cname(iname),cform(iname),'deltarms',idiag_deltarms)
+        call parse_name(iname,cname(iname),cform(iname),'kapparms',idiag_kapparms)
+        call parse_name(iname,cname(iname),cform(iname),'utensorrms',idiag_utensorrms)
+        call parse_name(iname,cname(iname),cform(iname),'acoefrms',idiag_acoefrms)
+        call parse_name(iname,cname(iname),cform(iname),'bcoefrms',idiag_bcoefrms)
         call parse_name(iname,cname(iname),cform(iname),'emfrms',idiag_emfrms)
         call parse_name(iname,cname(iname),cform(iname),'emfcoefrms',idiag_emfcoefrms)
+        call parse_name(iname,cname(iname),cform(iname),'emfratiorms',idiag_emfratiorms)
       enddo
       
     endsubroutine rprint_special
@@ -1134,7 +1150,7 @@ module Special
 !
 ! Overwrite with a and b coefs if needed
 !
-      if (usecoefs) then
+      if (lusecoefs) then
         emftmp=0
         if (lacoef) then
           emftmp = emftmp + p%acoef_emf
@@ -1611,7 +1627,7 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
       defaultname = '' 
       tensor_maxvals=0.0
       tensor_minvals=0.0
-      usecoefs    = .false.
+      lusecoefs    = .false.
     end subroutine setParameterDefaults
 
     subroutine parseParameters
