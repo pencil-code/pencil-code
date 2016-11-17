@@ -24,6 +24,7 @@
 ! PENCILS PROVIDED delta_emf(3); kappa_emf(3); utensor_emf(3)
 ! PENCILS PROVIDED acoef_emf(3); bcoef_emf(3)
 ! PENCILS PROVIDED bij_symm(3,3)
+! PENCILS PROVIDED emf(3)
 !
 !***************************************************************
 !
@@ -81,7 +82,7 @@ module Special
   logical, dimension(6)     :: lalpha_c, lbeta_c, lacoef_c
   logical, dimension(3)     :: lgamma_c, ldelta_c, lutensor_c
   logical, dimension(3,3,3) :: lkappa_c, lbcoef_c
-  logical :: lalpha, lbeta, lgamma, ldelta, lkappa, lutensor, lacoef, lbcoef
+  logical :: lalpha, lbeta, lgamma, ldelta, lkappa, lutensor, lacoef, lbcoef, usecoefs
   real :: alpha_scale, beta_scale, gamma_scale, delta_scale, kappa_scale, utensor_scale, acoef_scale, bcoef_scale
   character (len=fnlen) :: defaultname
   character (len=fnlen) :: alpha_name, beta_name,    &
@@ -116,6 +117,12 @@ module Special
   integer :: idiag_emfbcoefxmax=0
   integer :: idiag_emfbcoefymax=0
   integer :: idiag_emfbcoefzmax=0
+  integer :: idiag_emfxmax=0
+  integer :: idiag_emfymax=0
+  integer :: idiag_emfzmax=0
+  integer :: idiag_emfcoefxmax=0
+  integer :: idiag_emfcoefymax=0
+  integer :: idiag_emfcoefzmax=0
 ! RMS diagnostics
   integer :: idiag_emfalpharms=0
   integer :: idiag_emfbetarms=0
@@ -125,6 +132,8 @@ module Special
   integer :: idiag_emfutensorrms=0
   integer :: idiag_emfacoefrms=0
   integer :: idiag_emfbcoefrms=0
+  integer :: idiag_emfrms=0
+  integer :: idiag_emfcoefrms=0
   ! Interpolation parameters
   character (len=fnlen) :: interpname
   integer :: dataload_len
@@ -314,6 +323,18 @@ module Special
           call openDataset('utensor', utensor_id)
           write(*,*) 'initialize_special: Using dataset /zaver/utensor/'//trim(utensor_name)//' for utensor'
         end if
+        ! acoef
+        if (lacoef) then
+          call openDataset('acoef', acoef_id)
+          write(*,*) 'initialize_special: Using dataset /zaver/acoef/'//trim(acoef_name)//' for acoef'
+        end if
+        ! bcoef
+        if (lbcoef) then
+          call openDataset('bcoef', bcoef_id)
+          write(*,*) 'initialize_special: Using dataset /zaver/bcoef/'//trim(bcoef_name)//' for bcoef'
+        end if
+        
+        
         
         ! Load initial dataset values
 
@@ -478,6 +499,12 @@ module Special
         if (lutensor) then
           call closeDataset(utensor_id)
         end if
+        if (lacoef) then
+          call closeDataset(acoef_id)
+        end if
+        if (lbcoef) then
+          call closeDataset(bcoef_id)
+        end if
 
         call H5Gclose_F(hdf_emftensors_group, hdferr)
         call H5Fclose_F(hdf_emftensors_file, hdferr)
@@ -534,6 +561,7 @@ module Special
       lpenc_requested(i_utensor_emf)=.true.
       lpenc_requested(i_acoef_emf)=.true.
       lpenc_requested(i_bcoef_emf)=.true.
+      lpenc_requested(i_emf)=.true.
 
 
       write(*,*) 'pencil_criteria_special: Pencils requested'
@@ -639,6 +667,49 @@ module Special
         end do
         call cross_mn(p%utensor_coefs,p%bb,p%utensor_emf)
       end if
+      if (lacoef) then
+        ! Calculate acoef B
+        do j=1,3; do i=1,3
+          if (lacoef_arr(i,j)) then
+            p%acoef_coefs(1:nx,i,j)=emf_interpolate(acoef_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j))
+          else
+            p%acoef_coefs(1:nx,i,j)=0
+          end if
+        end do; end do
+        call dot_mn_vm(p%bb,p%acoef_coefs,p%acoef_emf)
+      end if
+      if (lbcoef) then
+        ! Calculate bcoef (grad B)
+        do k=1,3; do j=1,3; do i=1,3
+          p%bcoef_coefs(1:nx,i,j,k)=emf_interpolate(bcoef_data(1:nx,m-nghost,n-nghost,1:dataload_len,i,j,k))
+        end do; end do; end do
+        p%bcoef_emf = 0
+        do k=1,3; do j=1,3; do i=1,3
+          p%bcoef_emf(1:nx,i)=p%bcoef_emf(1:nx,i)+p%bcoef_coefs(1:nx,i,j,k)*p%bij(1:nx,j,k)
+        end do; end do; end do
+      end if
+!
+! Calculate emf pencil
+!
+      p%emf = 0
+      if (lalpha) then
+        p%emf = p%emf + p%alpha_emf
+      end if
+      if (lbeta) then
+        p%emf = p%emf - p%beta_emf
+      end if
+      if (lgamma) then
+        p%emf = p%emf + p%gamma_emf
+      end if
+      if (ldelta) then
+        p%emf = p%emf - p%delta_emf
+      end if
+      if (lkappa) then
+        p%emf = p%emf - p%kappa_emf
+      end if
+      if (lutensor) then
+        p%emf = p%emf + p%utensor_emf
+      end if
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -679,6 +750,7 @@ module Special
 !!      endif
 !      emftmp=0
       if (ldiagnos) then
+        emftmp = p%acoef_emf + p%bcoef_emf
         if (idiag_emfalphaxmax/=0) call max_mn_name(p%alpha_emf(:,1),idiag_emfalphaxmax)
         if (idiag_emfalphaymax/=0) call max_mn_name(p%alpha_emf(:,2),idiag_emfalphaymax)
         if (idiag_emfalphazmax/=0) call max_mn_name(p%alpha_emf(:,3),idiag_emfalphazmax)
@@ -703,6 +775,12 @@ module Special
         if (idiag_emfbcoefxmax/=0) call max_mn_name(p%bcoef_emf(:,1),idiag_emfbcoefxmax)
         if (idiag_emfbcoefymax/=0) call max_mn_name(p%bcoef_emf(:,2),idiag_emfbcoefymax)
         if (idiag_emfbcoefzmax/=0) call max_mn_name(p%bcoef_emf(:,3),idiag_emfbcoefzmax)
+        if (idiag_emfxmax/=0) call max_mn_name(p%emf(:,1),idiag_emfxmax)
+        if (idiag_emfymax/=0) call max_mn_name(p%emf(:,2),idiag_emfymax)
+        if (idiag_emfzmax/=0) call max_mn_name(p%emf(:,3),idiag_emfzmax)
+        if (idiag_emfcoefxmax/=0) call max_mn_name(emftmp(:,1),idiag_emfcoefxmax)
+        if (idiag_emfcoefymax/=0) call max_mn_name(emftmp(:,2),idiag_emfcoefymax)
+        if (idiag_emfcoefzmax/=0) call max_mn_name(emftmp(:,3),idiag_emfcoefzmax)
         if (idiag_emfalpharms/=0) then
           call dot2_mn(p%alpha_emf,tmpline)
           call sum_mn_name(tmpline,idiag_emfalpharms,lsqrt=.true.)
@@ -734,6 +812,14 @@ module Special
         if (idiag_emfbcoefrms/=0) then
           call dot2_mn(p%bcoef_emf,tmpline)
           call sum_mn_name(tmpline,idiag_emfbcoefrms,lsqrt=.true.)
+        end if
+        if (idiag_emfrms/=0) then
+          call dot2_mn(p%emf,tmpline)
+          call sum_mn_name(tmpline,idiag_emfrms,lsqrt=.true.)
+        end if
+        if (idiag_emfcoefrms/=0) then
+          call dot2_mn(emftmp,tmpline)
+          call sum_mn_name(tmpline,idiag_emfcoefrms,lsqrt=.true.)
         end if
       end if 
     
@@ -830,6 +916,12 @@ module Special
         idiag_emfbcoefxmax=0
         idiag_emfbcoefymax=0
         idiag_emfbcoefzmax=0
+        idiag_emfxmax=0
+        idiag_emfymax=0
+        idiag_emfzmax=0
+        idiag_emfcoefxmax=0
+        idiag_emfcoefymax=0
+        idiag_emfcoefzmax=0
         ! RMS diagnostics
         idiag_emfalpharms=0
         idiag_emfbetarms=0
@@ -839,6 +931,8 @@ module Special
         idiag_emfutensorrms=0
         idiag_emfacoefrms=0
         idiag_emfbcoefrms=0
+        idiag_emfrms=0
+        idiag_emfcoefrms=0
       endif
 !!
 !!      do iname=1,nname
@@ -877,6 +971,12 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'emfbcoefxmax',idiag_emfbcoefxmax)
         call parse_name(iname,cname(iname),cform(iname),'emfbcoefymax',idiag_emfbcoefymax)
         call parse_name(iname,cname(iname),cform(iname),'emfbcoefzmax',idiag_emfbcoefzmax)
+        call parse_name(iname,cname(iname),cform(iname),'emfxmax',idiag_emfxmax)
+        call parse_name(iname,cname(iname),cform(iname),'emfymax',idiag_emfymax)
+        call parse_name(iname,cname(iname),cform(iname),'emfzmax',idiag_emfzmax)
+        call parse_name(iname,cname(iname),cform(iname),'emfcoefxmax',idiag_emfcoefxmax)
+        call parse_name(iname,cname(iname),cform(iname),'emfcoefymax',idiag_emfcoefymax)
+        call parse_name(iname,cname(iname),cform(iname),'emfcoefzmax',idiag_emfcoefzmax)
         ! RMS values of emf terms
         call parse_name(iname,cname(iname),cform(iname),'emfalpharms',idiag_emfalpharms)
         call parse_name(iname,cname(iname),cform(iname),'emfbetarms',idiag_emfbetarms)
@@ -886,6 +986,8 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'emfutensorrms',idiag_emfutensorrms)
         call parse_name(iname,cname(iname),cform(iname),'emfacoefrms',idiag_emfacoefrms)
         call parse_name(iname,cname(iname),cform(iname),'emfbcoefrms',idiag_emfbcoefrms)
+        call parse_name(iname,cname(iname),cform(iname),'emfrms',idiag_emfrms)
+        call parse_name(iname,cname(iname),cform(iname),'emfcoefrms',idiag_emfcoefrms)
       enddo
       
     endsubroutine rprint_special
@@ -1030,28 +1132,20 @@ module Special
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
 !
-      emftmp=0
+! Overwrite with a and b coefs if needed
 !
-! Add emf terms to A
-!
-      if (lalpha) then
-        emftmp = emftmp + p%alpha_emf
+      if (usecoefs) then
+        emftmp=0
+        if (lacoef) then
+          emftmp = emftmp + p%acoef_emf
+        end if
+        if (lbcoef) then
+          emftmp = emftmp + p%bcoef_emf
+        end if
+      else
+        emftmp = p%emf
       end if
-      if (lbeta) then
-        emftmp = emftmp - p%beta_emf
-      end if
-      if (lgamma) then
-        emftmp = emftmp + p%gamma_emf
-      end if
-      if (ldelta) then
-        emftmp = emftmp - p%delta_emf
-      end if
-      if (lkappa) then
-        emftmp = emftmp - p%kappa_emf
-      end if
-      if (lutensor) then
-        emftmp = emftmp + p%utensor_emf
-      end if
+
       df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+emftmp
 !
       if (lfirst.and.ldt) then
@@ -1517,6 +1611,7 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
       defaultname = '' 
       tensor_maxvals=0.0
       tensor_minvals=0.0
+      usecoefs    = .false.
     end subroutine setParameterDefaults
 
     subroutine parseParameters
@@ -1626,24 +1721,23 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
 ! Store names
 !
       if (trim(defaultname) /= '') then
-        tensor_names(alpha_id)    = defaultname
-        tensor_names(beta_id)     = defaultname
-        tensor_names(gamma_id)    = defaultname
-        tensor_names(delta_id)    = defaultname
-        tensor_names(kappa_id)    = defaultname
-        tensor_names(utensor_id)  = defaultname
-        tensor_names(acoef_id)    = defaultname
-        tensor_names(bcoef_id)    = defaultname
-      else
-        tensor_names(alpha_id)    = alpha_name
-        tensor_names(beta_id)     = beta_name
-        tensor_names(gamma_id)    = gamma_name
-        tensor_names(delta_id)    = delta_name
-        tensor_names(kappa_id)    = kappa_name
-        tensor_names(utensor_id)  = utensor_name
-        tensor_names(acoef_id)    = acoef_name
-        tensor_names(bcoef_id)    = bcoef_name
+        alpha_name    = defaultname
+        beta_name     = defaultname
+        gamma_name    = defaultname
+        delta_name    = defaultname
+        kappa_name    = defaultname
+        utensor_name  = defaultname
+        acoef_name    = defaultname
+        bcoef_name    = defaultname
       end if
+      tensor_names(alpha_id)    = alpha_name
+      tensor_names(beta_id)     = beta_name
+      tensor_names(gamma_id)    = gamma_name
+      tensor_names(delta_id)    = delta_name
+      tensor_names(kappa_id)    = kappa_name
+      tensor_names(utensor_id)  = utensor_name
+      tensor_names(acoef_id)    = acoef_name
+      tensor_names(bcoef_id)    = bcoef_name
             
     end subroutine parseParameters
 !****************************************************************************
