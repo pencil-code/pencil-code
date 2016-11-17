@@ -1373,32 +1373,54 @@ module Sub
 !  16-jul-02/nils: adapted from pencil_mpi
 !  31-aug-07/wlad: adapted for cylindrical and spherical coords
 !  28-sep-15/Joern+MR: adapted to use for slope-limited diffusive 
-!                      flux given on a staggered grid. 
+!                      flux given on a staggered grid.
+!                      Here the vector field v is stored in
+!                      f(*,*,*,k:k+dimensionality-1), that is, 
+!                      the components in the degenerate directions
+!                      *are missing*, and the existing components are
+!                      always stored in ascending order,
+!                      e.g., [v_x,v_z] or [v_y,v_z].
+!  16-nov-16/MR: modifications for non-Cartesian coordinates.
 !
       use Deriv, only: der
-      use General, only: loptest, ranges_dimensional
+      use General, only: loptest
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: g
       integer :: k
+      real, dimension (nx) :: g
       logical, optional :: ldiff_fluxes
 !
       intent(in)  :: f,k,ldiff_fluxes
       intent(out) :: g
 !
       integer :: k1,i
-      integer, dimension(dimensionality) :: jrange
       real, dimension(nx) :: tmp
+      integer, save :: indr=0, indth=0
+      logical, save :: s0=.true.
 !
       k1=k-1
 !
       if (loptest(ldiff_fluxes)) then
-        call ranges_dimensional(jrange)
         g=0.
         do i=1,dimensionality
-          call der_4th_stag(f,k1+i,tmp,jrange(i))
+          call der_4th_stag(f,k1+i,tmp,dim_mask(i))
           g=g+tmp
         enddo
+
+        if (s0) then
+          s0=.false. 
+          if (dim_mask(1)==1) indr=1
+          if (dim_mask(2)==2) indth=2
+          if (dim_mask(1)==2) indth=1
+        endif
+!
+        if (lspherical_coords) then
+          if (indr>0) g=g+r1_mn*2.*f(l1:l2,m,n,k1+indr)
+          if (indth>0) g=g+r1_mn*cotth(m)*f(l1:l2,m,n,k1+indth)
+        endif
+!
+        if (lcylindrical_coords.and.indr>0) g=g+rcyl_mn1*f(l1:l2,m,n,k1+indr)
+!
       else
         call der(f,k1+1,tmp,1)
         g=tmp
@@ -1406,13 +1428,12 @@ module Sub
         g=g+tmp
         call der(f,k1+3,tmp,3)
         g=g+tmp
+
+        if (lspherical_coords) &
+          g=g+r1_mn*(2.*f(l1:l2,m,n,k1+1)+cotth(m)*f(l1:l2,m,n,k1+2))
+        if (lcylindrical_coords) g=g+rcyl_mn1*f(l1:l2,m,n,k1+1)
+!
       endif
-!
-      if (lspherical_coords) &
-        g=g+2.*r1_mn*f(l1:l2,m,n,k1+1)+r1_mn*cotth(m)*f(l1:l2,m,n,k1+2)
-!
-      if (lcylindrical_coords) &
-        g=g+rcyl_mn1*f(l1:l2,m,n,k1+1)
 !
     endsubroutine div
 !***********************************************************************
@@ -1450,11 +1471,12 @@ module Sub
     subroutine der_4th_stag(f,k,df,j)
 !
 !  Calculates 1st order derivative by a 4th order difference scheme from
-!  data given on a grid shifted by half a grid step w.r.t. the looked at point.
+!  data given on a grid shifted by half a grid step w.r.t. the point looked at.
 !  Only valid for equidistant grids!
 !
 !  30-sep-15/MR: coded
 !   4-feb-16/MR: checked again
+!  16-nov-16/MR: modifications for non-Cartesian coordinates.
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(nx), intent(out) :: df
@@ -1472,6 +1494,8 @@ module Sub
         if (nygrid/=1) then
           df=( -    (f(l1:l2,m+1,n,k)-f(l1:l2,m-2,n,k))    &
                +27.*(f(l1:l2,m  ,n,k)-f(l1:l2,m-1,n,k)) )/(24.*dy) 
+          if (lspherical_coords  ) df = df * r1_mn
+          if (lcylindrical_coords) df = df * rcyl_mn1
         else
           df=0.
           if (ip<=5) print*, 'der_4th_stag: Degenerate case in y-direction'
@@ -1480,6 +1504,7 @@ module Sub
         if (nzgrid/=1) then
           df=( -    (f(l1:l2,m,n+1,k)-f(l1:l2,m,n-2,k))    &
                +27.*(f(l1:l2,m,n  ,k)-f(l1:l2,m,n-1,k)) )/(24.*dz)
+          if (lspherical_coords) df = df * r1_mn * sin1th(m)
         else
           df=0.
           if (ip<=5) print*, 'der_4th_stag: Degenerate case in z-direction'
@@ -7101,22 +7126,27 @@ endif
 !  25-sep-15/MR,joern: coded
 !  27-jan-16/MR: converted into non-elemental subroutine, because of malcompilation by gcc version 4.6.3
 !
-      real, intent(IN) :: h
-      real, dimension(:), intent(IN)  :: diff_lr, diff_right
-      real, dimension(:), intent(OUT) :: phi
+      real,               intent(IN) :: h
+      real, dimension(:), intent(IN) :: diff_lr, diff_right
+      real, dimension(:), intent(OUT):: phi
 
       where (diff_right*diff_lr>0.)
         phi=max(0.,1.+h*(diff_lr/diff_right-1.))
       elsewhere
         phi=0.
       endwhere
-
+!
     endsubroutine diff_flux
 !***********************************************************************
     subroutine periodic_fold_back(dd,Boxsize)
+!
+!  Comment on me!
+!
       real,dimension(3),intent(in) :: Boxsize
       real,dimension(3),intent(inout) :: dd
+!
       integer :: p,q,idim
+
       do idim=1,3
         q = floor(dd(idim)/(Boxsize(idim)/2))
         p = 0
@@ -7124,6 +7154,7 @@ endif
         if (q.eq.-2) p = 1
         dd(idim) = dd(idim) + Boxsize(idim)*p
       enddo
+!
     endsubroutine periodic_fold_back
 !***********************************************************************
     subroutine calc_all_diff_fluxes(f,k,islope_limiter,h_slope_limited)
