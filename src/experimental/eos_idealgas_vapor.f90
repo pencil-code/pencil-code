@@ -29,22 +29,12 @@ module EquationOfState
 !
   include '../eos.h'
 !
-  interface eoscalc ! Overload subroutine `eoscalc' function
-    module procedure eoscalc_pencil   ! explicit f implicit m,n
-    module procedure eoscalc_point    ! explicit lnrho, ss
-    module procedure eoscalc_farray   ! explicit lnrho, ss
-  end interface
-!
-  interface pressure_gradient ! Overload subroutine `pressure_gradient'
-    module procedure pressure_gradient_farray  ! explicit f implicit m,n
-    module procedure pressure_gradient_point   ! explicit lnrho, ss
-  end interface
-!
   integer, parameter :: ilnrho_ss=1, ilnrho_ee=2, ilnrho_pp=3
   integer, parameter :: ilnrho_lnTT=4, ilnrho_cs2=5
   integer, parameter :: irho_cs2=6, irho_ss=7, irho_lnTT=8, ilnrho_TT=9
   integer, parameter :: irho_TT=10, ipp_ss=11, ipp_cs2=12
-  integer :: iglobal_cs2, iglobal_glnTT
+  integer, parameter :: irho_eth=13, ilnrho_eth=14
+  integer :: iglobal_cs2, iglobal_glnTT, ics
   real, dimension(mz) :: profz_eos=1.0, dprofz_eos=0.0
   real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
   real, dimension(nchemspec,18) :: species_constants
@@ -66,6 +56,7 @@ module EquationOfState
   real :: cs2bot=1.0, cs2top=1.0, cs2cool=0.0
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   integer :: isothtop=0
+  integer :: imass=1
   integer :: ieosvars=-1, ieosvar1=-1, ieosvar2=-1, ieosvar_count=0
   logical :: leos_isothermal=.false., leos_isentropic=.false.
   logical :: leos_isochoric=.false., leos_isobaric=.false.
@@ -357,15 +348,17 @@ module EquationOfState
 !
     endsubroutine select_eos_variable
 !***********************************************************************
-    subroutine getmu(mu_tmp)
+    subroutine getmu(f,mu_tmp)
 !
 !  Calculate average particle mass in the gas relative to
 !
 !  06-jan-10/anders: adapted from eos_idealgas
 !
+      real, dimension (mx,my,mz,mfarray), optional :: f
       real, intent(out) :: mu_tmp
 !
       call fatal_error('getmu','not implemented')
+      call keep_compiler_quiet(present(f))
 !
     endsubroutine getmu
 !***********************************************************************
@@ -497,7 +490,21 @@ module EquationOfState
 !
     endsubroutine pencil_interdep_eos
 !***********************************************************************
-    subroutine calc_pencils_eos(f,p)
+    subroutine calc_pencils_eos_std(f,p)
+!
+! Envelope adjusting calc_pencils_eos_pencpar to the standard use with
+! lpenc_loc=lpencil
+!
+!  9-oct-15/MR: coded
+!
+      real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
+      type (pencil_case),                intent(OUT)  :: p
+!
+      call calc_pencils_eos_pencpar(f,p,lpencil)
+!
+    endsubroutine calc_pencils_eos_std
+!***********************************************************************
+    subroutine calc_pencils_eos_pencpar(f,p,lpenc_loc)
 !
 !  Calculate EquationOfState pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -508,6 +515,7 @@ module EquationOfState
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+      logical, dimension(:),             intent(IN)   :: lpenc_loc
 !
       intent(in) :: f
       intent(inout) :: p
@@ -521,25 +529,25 @@ module EquationOfState
 !  Pencils that are independent of the chosen thermodynamical variables.
 !
 ! mumol1
-      if (lpencil(i_mumol1)) p%mumol1=(1-p%cc(:,1))*mudry1+p%cc(:,1)*muvap1
+      if (lpenc_loc(i_mumol1)) p%mumol1=(1-p%cc(:,1))*mudry1+p%cc(:,1)*muvap1
 ! mumol
-      if (lpencil(i_mumol)) p%mumol=1/p%mumol1
+      if (lpenc_loc(i_mumol)) p%mumol=1/p%mumol1
 ! glnmumol
-      if (lpencil(i_glnmumol)) then
+      if (lpenc_loc(i_glnmumol)) then
         do i=1,3
           p%glnmumol(:,i)=-p%mumol*(p%gcc(:,i,1)*(muvap1-mudry1))
         enddo
       endif
 ! cp
-      if (lpencil(i_cp)) p%cp=cpdry*mudry*p%mumol1
+      if (lpenc_loc(i_cp)) p%cp=cpdry*mudry*p%mumol1
 ! cp1
-      if (lpencil(i_cp1)) p%cp1=1/p%cp
+      if (lpenc_loc(i_cp1)) p%cp1=1/p%cp
 ! cv
-      if (lpencil(i_cv)) p%cv=gamma1*p%cp
+      if (lpenc_loc(i_cv)) p%cv=gamma1*p%cp
 ! cv1
-      if (lpencil(i_cv1)) p%cv1=gamma*p%cp1
+      if (lpenc_loc(i_cv1)) p%cv1=gamma*p%cp1
 ! cp1tilde
-      if (lpencil(i_cp1tilde)) p%cp1tilde=p%cp1
+      if (lpenc_loc(i_cp1tilde)) p%cp1tilde=p%cp1
 !
 !  Pencils that depend on the chosen thermodynamical variables.
 !
@@ -549,27 +557,27 @@ module EquationOfState
 !
       case (ilnrho_ss,irho_ss)
 ! ss
-        if (lpencil(i_ss)) p%ss=f(l1:l2,m,n,ieosvar2)
+        if (lpenc_loc(i_ss)) p%ss=f(l1:l2,m,n,ieosvar2)
 ! gss
-        if (lpencil(i_gss)) call grad(f,iss,p%gss)
+        if (lpenc_loc(i_gss)) call grad(f,iss,p%gss)
 ! hss
-        if (lpencil(i_hss)) call g2ij(f,iss,p%hss)
+        if (lpenc_loc(i_hss)) call g2ij(f,iss,p%hss)
 ! del2ss
-        if (lpencil(i_del2ss)) call del2(f,iss,p%del2ss)
+        if (lpenc_loc(i_del2ss)) call del2(f,iss,p%del2ss)
 ! del6ss
-        if (lpencil(i_del6ss)) call del6(f,iss,p%del6ss)
+        if (lpenc_loc(i_del6ss)) call del6(f,iss,p%del6ss)
 ! lnTT
-        if (lpencil(i_lnTT)) p%lnTT=lnTT0+p%cv1*p%ss+gamma_m1*(p%lnrho-lnrho0)
+        if (lpenc_loc(i_lnTT)) p%lnTT=lnTT0+p%cv1*p%ss+gamma_m1*(p%lnrho-lnrho0)
 ! glnTT
-        if (lpencil(i_glnTT)) then
+        if (lpenc_loc(i_glnTT)) then
           do i=1,3
             p%glnTT(:,i)=gamma_m1*p%glnrho(:,i)+p%cv1*p%gss(:,i)
           enddo
         endif
 ! del2lnTT
-        if (lpencil(i_del2lnTT)) p%del2lnTT=gamma_m1*p%del2lnrho+p%cv1*p%del2ss
+        if (lpenc_loc(i_del2lnTT)) p%del2lnTT=gamma_m1*p%del2lnrho+p%cv1*p%del2ss
 ! hlnTT
-        if (lpencil(i_hlnTT)) then
+        if (lpenc_loc(i_hlnTT)) then
           do j=1,3; do i=1,3
             p%hlnTT(:,i,j)=gamma_m1*p%hlnrho(:,i,j)+p%cv1*p%hss(:,i,j)
           enddo; enddo
@@ -579,50 +587,50 @@ module EquationOfState
 !
       case (ilnrho_lnTT,irho_lnTT)
 ! ss
-        if (lpencil(i_ss)) call fatal_error('calc_pencils_eos', &
+        if (lpenc_loc(i_ss)) call fatal_error('calc_pencils_eos', &
             'ss pencil not implemented')
 ! gss
-        if (lpencil(i_gss)) call fatal_error('calc_pencils_eos', &
+        if (lpenc_loc(i_gss)) call fatal_error('calc_pencils_eos', &
             'gss pencil not implemented')
 ! hss
-        if (lpencil(i_hss)) call fatal_error('calc_pencils_eos', &
+        if (lpenc_loc(i_hss)) call fatal_error('calc_pencils_eos', &
             'hss pencil not implemented')
 ! del2ss
-        if (lpencil(i_del2ss)) call fatal_error('calc_pencils_eos', &
+        if (lpenc_loc(i_del2ss)) call fatal_error('calc_pencils_eos', &
             'del2ss pencil not implemented')
 ! del6ss
-        if (lpencil(i_del6ss)) call fatal_error('calc_pencils_eos', &
+        if (lpenc_loc(i_del6ss)) call fatal_error('calc_pencils_eos', &
             'del6ss pencil not implemented')
 ! lnTT
-        if (lpencil(i_lnTT)) p%lnTT=f(l1:l2,m,n,ieosvar2)
+        if (lpenc_loc(i_lnTT)) p%lnTT=f(l1:l2,m,n,ieosvar2)
 ! glnTT
-        if (lpencil(i_glnTT)) call grad(f,ieosvar2,p%glnTT)
+        if (lpenc_loc(i_glnTT)) call grad(f,ieosvar2,p%glnTT)
 ! del2lnTT
-        if (lpencil(i_del2lnTT)) call del2(f,ieosvar2,p%del2lnTT)
+        if (lpenc_loc(i_del2lnTT)) call del2(f,ieosvar2,p%del2lnTT)
 ! hlnTT
-        if (lpencil(i_hlnTT)) call del6(f,ieosvar2,p%del6lnTT)
+        if (lpenc_loc(i_hlnTT)) call del6(f,ieosvar2,p%del6lnTT)
 !
       case default
         call fatal_error('calc_pencils_eos','case not implemented yet')
       endselect
 ! TT
-      if (lpencil(i_TT)) p%TT=exp(p%lnTT)
+      if (lpenc_loc(i_TT)) p%TT=exp(p%lnTT)
 ! TT1
-      if (lpencil(i_TT1)) p%TT1=exp(-p%lnTT)
+      if (lpenc_loc(i_TT1)) p%TT1=exp(-p%lnTT)
 ! pp
-      if (lpencil(i_pp)) p%pp=(p%cp-p%cv)*p%rho*p%TT
+      if (lpenc_loc(i_pp)) p%pp=(p%cp-p%cv)*p%rho*p%TT
 ! ppvap
-      if (lpencil(i_ppvap)) p%ppvap=muvap1*Rgas_unit_sys*p%cc(:,1)*p%rho*p%TT
+      if (lpenc_loc(i_ppvap)) p%ppvap=muvap1*Rgas_unit_sys*p%cc(:,1)*p%rho*p%TT
 ! cs2
-      if (lpencil(i_cs2)) p%cs2=p%cp*p%TT*gamma_m1
+      if (lpenc_loc(i_cs2)) p%cs2=p%cp*p%TT*gamma_m1
 ! csvap2
-      if (lpencil(i_csvap2)) p%csvap2=p%cs2*p%mumol*muvap1
+      if (lpenc_loc(i_csvap2)) p%csvap2=p%cs2*p%mumol*muvap1
 ! ee
-      if (lpencil(i_ee)) p%ee=p%cv*exp(p%lnTT)
+      if (lpenc_loc(i_ee)) p%ee=p%cv*exp(p%lnTT)
 ! yH
-      if (lpencil(i_yH)) p%yH=impossible
+      if (lpenc_loc(i_yH)) p%yH=impossible
 !
-    endsubroutine calc_pencils_eos
+    endsubroutine calc_pencils_eos_pencpar
 !***********************************************************************
     subroutine ioninit(f)
 !
@@ -958,18 +966,6 @@ module EquationOfState
 !
     endsubroutine Hminus_opacity
 !***********************************************************************
-    subroutine bc_ss_flux_orig(f,topbot)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      character (len=3) :: topbot
-!
-      call fatal_error('bc_ss_flux_orig','not implemented')
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(topbot)
-!
-    endsubroutine bc_ss_flux_orig
-!***********************************************************************
     subroutine get_average_pressure(average_density,average_pressure)
 !
       real :: average_density, average_pressure
@@ -1005,15 +1001,17 @@ module EquationOfState
 !
     endsubroutine bc_ss_flux_tmp2
 !***********************************************************************
-    subroutine bc_ss_flux(f,topbot)
+    subroutine bc_ss_flux(f,topbot,lone_sided)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=3) :: topbot
+      logical, optional :: lone_sided
 !
       call fatal_error('bc_ss_flux','not implemented')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
+      call keep_compiler_quiet(lone_sided)
 !
     endsubroutine bc_ss_flux
 !***********************************************************************
@@ -1028,6 +1026,18 @@ module EquationOfState
       call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_flux_turb
+!***********************************************************************
+    subroutine bc_ss_flux_condturb_z(f,topbot)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      character (len=3) :: topbot
+!
+      call fatal_error('bc_ss_flux_turb','not implemented')
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
+    endsubroutine bc_ss_flux_condturb_z
 !***********************************************************************
     subroutine bc_ss_temp_old(f,topbot)
 !
@@ -1065,15 +1075,17 @@ module EquationOfState
 !
     endsubroutine bc_ss_temp_y
 !***********************************************************************
-    subroutine bc_ss_temp_z(f,topbot)
+    subroutine bc_ss_temp_z(f,topbot,lone_sided)
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=3) :: topbot
+      logical, optional :: lone_sided
 !
       call fatal_error('bc_ss_temp_z','not implemented')
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(topbot)
+      call keep_compiler_quiet(lone_sided)
 !
     endsubroutine bc_ss_temp_z
 !***********************************************************************
@@ -1112,6 +1124,18 @@ module EquationOfState
       call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_temp2_z
+!***********************************************************************
+    subroutine bc_ss_temp3_z(f,topbot)
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call fatal_error('bc_ss_temp3_z','not implemented')
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
+    endsubroutine bc_ss_temp3_z
 !***********************************************************************
     subroutine bc_ss_stemp_x(f,topbot)
 !
@@ -1280,6 +1304,30 @@ module EquationOfState
       call keep_compiler_quiet(topbot)
 !
     endsubroutine bc_ss_flux_turb_x
+!***********************************************************************
+    subroutine bc_ss_flux_condturb_x(f,topbot)
+!
+!  12-nov-2016/axel: dummmy
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
+    endsubroutine bc_ss_flux_condturb_x
+!***********************************************************************
+    subroutine bc_ss_flux_condturb_mean_x(f,topbot)
+!
+!  12-nov-2016/axel: dummmy
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+!
+    endsubroutine bc_ss_flux_condturb_mean_x
 !***********************************************************************
     subroutine find_mass(element_name,MolMass)
 !
