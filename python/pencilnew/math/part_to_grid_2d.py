@@ -9,6 +9,13 @@ def part_to_grid_2d(xp, yp, quantity=False, Nbins=[1024,1024], sim=False, extent
         - sim:          to extract extent from by loading ghostzone-free grid
         - extent:       [[xmin, xmax],[ymin, ymax]] or set false and instead give a sim
                         set extent manually e.g. if you want to include ghost zones
+
+    Returns: arr, xgrid, ygrid
+        - arr:          2d array with binned values
+        - x-/ygrid:     linspace of used x/y grid
+
+    Example:
+        vpx = part_to_grid_2d(pvar.xp, pvar.yp, pvar.vpx), notice that this will execute pencilnew.get_sim() internally to get the extent
     """
 
     import numpy as np
@@ -38,4 +45,4 @@ def part_to_grid_2d(xp, yp, quantity=False, Nbins=[1024,1024], sim=False, extent
 
     arr[0] = arr[0]/arr[1]
 
-    return arr[0]
+    return arr[0], xgrid, ygrid
