@@ -7,9 +7,6 @@ def array2d_to_vtk(folder, filename, title, array, gridx, gridy):
         - gridx/y:      grid as array
     """
 
-    #################
-    ## load modules and do the setup
-    ##
     import pencil as pc
     import numpy as np
     import struct
@@ -17,26 +14,18 @@ def array2d_to_vtk(folder, filename, title, array, gridx, gridy):
     import os
     import sys
     import pen.intern.natural_sort
-    ##
+
+
     print "## producing vtk-file from array"
-    ##
-    if not os.path.exists(folder):	# check for vtk folder
-    os.makedirs(folder)
-    ##
-    #grid = array.size 	# prepare the grid information for vtk output
+
+    if not os.path.exists(folder): os.makedirs(folder)        	# check for vtk folder
+
     dimx = len(gridx); dimy = len(gridy); dim = dimx * dimy
     dx = (np.max(gridx) - np.min(gridx))/(dimx);   dy = (np.max(gridy) - np.min(gridy))/(dimy)
 
+    dy = dx*dimx/dimy                                          # rescale dimmension to get a square as output 'image'
 
-    #################
-    ## rescale dimmension to get a square as output 'image'
-    ##
-    dy = dx*dimx/dimy
-
-
-    #################
-    ## do the vtk output
-    ##
+    ######## do the vtk output
     fd = open(folder + filename + '.vtk', 'wb')
     fd.write('# vtk DataFile Version 2.0\n')
     fd.write('Pencil Code Data from '+title+'\n')
@@ -54,7 +43,6 @@ def array2d_to_vtk(folder, filename, title, array, gridx, gridy):
     fd.write(struct.pack(">f", array[kk,jj]))
 
     fd.write('')
-    ##
-    fd.close()
 
+    fd.close()
     print "## Done!"
