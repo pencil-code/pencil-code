@@ -63,7 +63,7 @@ class __Simulation__(object):
         self.param = False
         self.grid = False
         self.ghost_grid = False
-        self.update(self)                   # auto-update, i.e. read param.nml
+        self = self.update(self)                   # auto-update, i.e. read param.nml
         # Done
 
     def copy(self, path_root, name=False, optionals=True, quiet=False, rename_submit_sripts=True, OVERWRITE=False):
@@ -165,6 +165,7 @@ class __Simulation__(object):
         from os.path import exists
         from os.path import join
         from pencilnew.read import param
+        from pencilnew.read import grid
 
 
         if self.param == False:
@@ -183,14 +184,15 @@ class __Simulation__(object):
 
         if self.grid == False or self.ghost_grid == False:
             try:                                # read grid
-                self.grid = pencilnew.read.grid(data_dir=self.data_dir, trim=True, quiet=True)
-                self.ghost_grid = pencilnew.read.grid(data_dir=self.data_dir, trim=False, quiet=True)
+                self.grid = grid(data_dir=self.data_dir, trim=True, quiet=True)
+                self.ghost_grid = grid(data_dir=self.data_dir, trim=False, quiet=True)
             except:
-                if (not quiet): print('? WARNING: Couldnt load grid or ghostgrid for '+self.path)
+                if self.started() or (not quiet): print('? WARNING: Couldnt load grid for '+self.path)
                 self.grid = False
                 self.ghost_grid = False
 
         self.export()
+        return self
 
 
     def hide(self):
