@@ -150,6 +150,7 @@ module EquationOfState
             cpdry=Rgas/mudry
           else
             cpdry=Rgas/(mudry*gamma_m1*gamma1)
+            if (headt) print*,'units_eos: cpdry=',cpdry
           endif
         else
 !
@@ -420,11 +421,12 @@ module EquationOfState
       logical, dimension(npencils) :: lpencil_in
 !
       if (leos_isentropic.or.leos_isothermal.or.leos_localisothermal) &
-          call fatal_error('pencil_interdep_eos','case not implemented')
+          call fatal_error('pencil_interdep_eos','leos_... case not implemented')
 !
       if (lpencil_in(i_glnmumol)) then
         lpencil_in(i_mumol)=.true.
-        lpencil_in(i_gcc)=.true.
+        !lpencil_in(i_gcc)=.true.
+        lpencil_in(i_gssat)=.true.
       endif
       if (lpencil_in(i_mumol)) lpencil_in(i_mumol1)=.true.
       if (lpencil_in(i_mumol1)) lpencil_in(i_cc)=.true.
@@ -485,7 +487,7 @@ module EquationOfState
       case (ilnrho_lnTT,irho_lnTT)
 !
       case default
-        call fatal_error('pencil_interdep_eos','case not implemented yet')
+        call fatal_error('pencil_interdep_eos','ieosvars case not implemented yet')
       endselect
 !
     endsubroutine pencil_interdep_eos
@@ -529,13 +531,15 @@ module EquationOfState
 !  Pencils that are independent of the chosen thermodynamical variables.
 !
 ! mumol1
-      if (lpenc_loc(i_mumol1)) p%mumol1=(1-p%cc(:,1))*mudry1+p%cc(:,1)*muvap1
+      !if (lpenc_loc(i_mumol1)) p%mumol1=(1-p%cc(:,1))*mudry1+p%cc(:,1)*muvap1
+      if (lpenc_loc(i_mumol1)) p%mumol1=(1-p%ssat)*mudry1+p%ssat*muvap1
 ! mumol
       if (lpenc_loc(i_mumol)) p%mumol=1/p%mumol1
 ! glnmumol
       if (lpenc_loc(i_glnmumol)) then
         do i=1,3
-          p%glnmumol(:,i)=-p%mumol*(p%gcc(:,i,1)*(muvap1-mudry1))
+          !p%glnmumol(:,i)=-p%mumol*(p%gcc(:,i,1)*(muvap1-mudry1))
+          p%glnmumol(:,i)=-p%mumol*(p%gssat(:,i)*(muvap1-mudry1))
         enddo
       endif
 ! cp
@@ -620,7 +624,8 @@ module EquationOfState
 ! pp
       if (lpenc_loc(i_pp)) p%pp=(p%cp-p%cv)*p%rho*p%TT
 ! ppvap
-      if (lpenc_loc(i_ppvap)) p%ppvap=muvap1*Rgas_unit_sys*p%cc(:,1)*p%rho*p%TT
+      !if (lpenc_loc(i_ppvap)) p%ppvap=muvap1*Rgas_unit_sys*p%cc(:,1)*p%rho*p%TT
+      if (lpenc_loc(i_ppvap)) p%ppvap=muvap1*Rgas_unit_sys*p%ssat*p%rho*p%TT
 ! cs2
       if (lpenc_loc(i_cs2)) p%cs2=p%cp*p%TT*gamma_m1
 ! csvap2
@@ -793,16 +798,19 @@ module EquationOfState
 !
     endsubroutine eosperturb
 !***********************************************************************
-    subroutine eoscalc_farray(f,psize,lnrho,yH,lnTT,ee,pp,kapparho)
+    subroutine eoscalc_farray(f,psize,lnrho,yH,lnTT,ee,pp,cs2,kapparho)
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      integer :: psize
-      real, dimension (psize), optional :: lnrho, yH, lnTT, ee, pp, kapparho
+      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      integer, intent(in) :: psize
+      real, dimension(psize), intent(out), optional :: lnrho
+      real, dimension(psize), intent(out), optional :: yH,ee,pp,kapparho
+      real, dimension(psize), intent(out), optional :: lnTT
+      real, dimension(psize), intent(out), optional :: cs2
 !
-      real, dimension (psize) :: lnrho_, lnTT_
-!
-      intent (in) :: f, psize
-      intent (out) :: lnrho, yH, lnTT, ee, pp, kapparho
+      real, dimension(psize) :: lnTT_, cs2_
+      real, dimension(psize) :: lnrho_,ss_
+      real, dimension(psize) :: rho, eth
+!     real, dimension(:,:), pointer :: reference_state
 !
       select case (ieosvars)
 !
@@ -831,14 +839,20 @@ module EquationOfState
             'ee not implemented for ilnrho_lnTT')
         if (present(pp)) call fatal_error('eoscalc_farray', &
             'pp not implemented for ilnrho_lnTT')
+        if (present(cs2)) call fatal_error('eoscalc_farray', &
+            'cs2 not implemented for ilnrho_lnTT')
 !
       case default
         call fatal_error('eoscalc_farray', &
             'Thermodynamic variable combination  not implemented!')
       endselect
 !
-      call keep_compiler_quiet(present(yH))
-      call keep_compiler_quiet(present(kapparho))
+      if (present(yH)) yH=impossible
+!
+      if (present(kapparho)) then
+        kapparho=0
+        call fatal_error("eoscalc","sorry, no Hminus opacity with noionization")
+      endif
 !
     endsubroutine eoscalc_farray
 !***********************************************************************
