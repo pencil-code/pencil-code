@@ -1,11 +1,11 @@
-def part_to_grid_2d(xp, yp, quantity=False, Nbins=1024, sim=False, extent=False):
+def part_to_grid_2d(xp, yp, quantity=False, Nbins=[1024,1024], sim=False, extent=False):
     """Bins quantity based on position data xp and yp to 1024^2 bins like a histrogram.
     This method is not using TSC.
 
     Args:
         - xp, yp:       array of x and y positions
         - quantity:     array of same shape as xp and yp, but with quanittiy to bin, set ti False to count number of occurrences/histrogram2d
-        - Nbins:        number of histrogram bins
+        - Nbins:        number of histrogram bins for each direction
         - sim:          to extract extent from by loading ghostzone-free grid
         - extent:       [[xmin, xmax],[ymin, ymax]] or set false and instead give a sim
                         set extent manually e.g. if you want to include ghost zones
@@ -26,13 +26,16 @@ def part_to_grid_2d(xp, yp, quantity=False, Nbins=1024, sim=False, extent=False)
                   [grid.y[0]-grid.dy/2, grid.y[-1]+grid.dy/2]]
 
 
-    arr = np.zeros((Nbins, Nbins))
-    xgrid = np.linspace(extent[0][0], extent[0][1])
-    ygrid = np.linspace(extent[1][0], extent[1][1])
+    arr = np.zeros((2, Nbins[0], Nbins[1]))
+    xgrid = np.linspace(extent[0][0], extent[0][1], num=Nbins[0])
+    ygrid = np.linspace(extent[1][0], extent[1][1], num=Nbins[1])
 
     for x, y, q in zip(xp, yp, quantity):
         idx = np.argmin(np.abs(x-xgrid))
         idy = np.argmin(np.abs(y-ygrid))
-        arr[idx, idy] += q
+        arr[0, idx, idy] += q
+        arr[1, idx, idy] += 1
 
-    return arr
+    arr[0] = arr[0]/arr[1]
+
+    return arr[0]
