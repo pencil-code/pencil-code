@@ -39,8 +39,8 @@ def array2d_to_vtk(folder, filename, title, array, gridx, gridy):
     fd.write('SCALARS '+title+' float\n')
     fd.write('LOOKUP_TABLE default\n')
     for kk in range(dimy):
-      for jj in range(dimx):
-    fd.write(struct.pack(">f", array[kk,jj]))
+        for jj in range(dimx):
+            fd.write(struct.pack(">f", array[kk,jj]))
 
     fd.write('')
 
