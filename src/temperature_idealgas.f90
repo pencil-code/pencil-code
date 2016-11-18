@@ -136,8 +136,10 @@ module Energy
   integer :: idiag_eem=0      ! DIAG_DOC: $\left< e \right> =
                               ! DIAG_DOC:  \left< c_v T \right>$
                               ! DIAG_DOC: \quad(mean internal energy)
-  integer :: idiag_ssm=0, idiag_thcool=0
-  integer :: idiag_ppm=0, idiag_csm=0
+  integer :: idiag_ssm=0      ! DIAG_DOC: $\overline{S}$
+  integer :: idiag_thcool=0   ! DIAG_DOC: $\tau_{\rm cool}$
+  integer :: idiag_ppm=0      ! DIAG_DOC: $\overline{P}$
+  integer :: idiag_csm=0        ! DIAG_DOC: $\overline{c}_{\rm s}$
   integer :: idiag_dtc=0        ! DIAG_DOC: $\delta t/[c_{\delta t}\,\delta_x
                                 ! DIAG_DOC:   /\max c_{\rm s}]$
                                 ! DIAG_DOC:   \quad(time step relative to
@@ -502,6 +504,7 @@ module Energy
       use Initcond, only: modes
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (mz) :: TTz
 !
       integer :: j
       logical :: lnothing=.true.
@@ -530,6 +533,16 @@ module Energy
             endif
             cs2bot=gamma_m1*TT_const
             cs2top=gamma_m1*TT_const
+!
+          case ('const_dTTdz')
+            TTz=TT_const+z
+            if (ltemperature_nolog) then
+              f(:,:,:,iTT)=f(:,:,:,iTT)+spread(spread(TTz,1,mx),2,my)
+            else
+              f(:,:,:,ilnTT)=f(:,:,:,ilnTT)+spread(spread(log(TTz),1,mx),2,my)
+            endif
+            cs2bot=gamma_m1*TTz(n1)
+            cs2top=gamma_m1*TTz(n2)
 !
           case ('mode')
 !
