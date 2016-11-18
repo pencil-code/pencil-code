@@ -12,7 +12,8 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED ssat
-! PENCILS PROVIDED ugssat
+! PENCILS PROVIDED gssat(3); ugssat
+!
 !***************************************************************
 module Supersat
 !
