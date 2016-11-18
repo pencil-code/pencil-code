@@ -30,12 +30,12 @@ module Supersat
 !
 !  Init parameters.
 !
-  real :: ssat_const=0.0
+  real :: ssat_const=0., amplssat=0., widthssat=0.
   logical :: nosupersat=.false., reinitialize_ssat=.false.
   character (len=labellen) :: initssat='impossible'
 !
   namelist /supersat_init_pars/ &
-           initssat, ssat_const
+           initssat, ssat_const, amplssat, widthssat
 !
 !  Run parameters.
 !
@@ -91,7 +91,6 @@ module Supersat
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-!
       if (lroot) print*, 'Supersaturation routine'
 !
 !  set to zero and then call the same initial condition
@@ -106,20 +105,33 @@ module Supersat
 !
 !***********************************************************************
     subroutine init_ssat(f)
+!
 !  initialise passive scalar field; called from start.f90
+!
       use Sub
       use Initcond
-!??AXEL use InitialCondition, only: initial_condition_ssat
 !
       real, dimension (mx,my,mz,mfarray) :: f
-       select case (initssat)
+      real :: mudry1, muvap1
+      select case (initssat)
         case ('nothing')
         case ('zero'); f(:,:,:,issat)=0.0
         case ('constant'); f(:,:,:,issat)=ssat_const
-print*,'AXEL issat,ssat_const=',issat,ssat_const
+        case ('tanhx')
+          do m=m1,m2;do n=n1,n2
+             f(:,m,n,issat)=ssat_const+amplssat*tanh(x/widthssat)
+          enddo;enddo
        endselect
+!
+!  modify the density to have lateral pressure equilibrium
+!
+!print*,'AXEL6', mudry1, muvap1
+       mudry1=1./29.
+       muvap1=1./18.
+       f(:,:,:,ilnrho)=f(:,:,:,ilnrho)-alog((1-f(:,:,:,issat))*mudry1+f(:,:,:,issat)*muvap1)
+!XX
+!
     endsubroutine init_ssat
-   
 !***********************************************************************
     subroutine pencil_criteria_supersat()
 !
@@ -242,7 +254,9 @@ print*,'AXEL issat,ssat_const=',issat,ssat_const
 !
 !  Passive scalar equation.
 !
-      df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat+supersat_diff*p%del2ssat
+      df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat
+      if (supersat_diff/=0.) &
+          df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+supersat_diff*p%del2ssat
 !
         ! 1-June-16/XY coded: to be completed, here is only for 1D case 
          if (lsupersat_sink) then
