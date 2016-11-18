@@ -32,7 +32,7 @@ module Supersat
 !
   real :: ssat_const=0., amplssat=0., widthssat=0.
   logical :: nosupersat=.false., reinitialize_ssat=.false.
-  character (len=labellen) :: initssat='impossible'
+  character (len=labellen) :: initssat='nothing'
 !
   namelist /supersat_init_pars/ &
            initssat, ssat_const, amplssat, widthssat
@@ -113,6 +113,8 @@ module Supersat
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: mudry1, muvap1
+      integer :: l
+!
       select case (initssat)
         case ('nothing')
         case ('zero'); f(:,:,:,issat)=0.0
@@ -121,6 +123,15 @@ module Supersat
           do m=m1,m2;do n=n1,n2
              f(:,m,n,issat)=ssat_const+amplssat*tanh(x/widthssat)
           enddo;enddo
+        case ('tanhz')
+          do l=l1,l2; do m=m1,m2
+             f(l,m,:,issat)=ssat_const+amplssat*tanh(z/widthssat)
+          enddo;enddo
+!
+!  Catch unknown values.
+!
+        case default
+          call fatal_error('initssat','initssat value not recognised')
        endselect
 !
 !  modify the density to have lateral pressure equilibrium
@@ -142,8 +153,10 @@ module Supersat
 !  ssat itself always
 !
       lpenc_requested(i_ssat)=.true.
-      lpenc_requested(i_nd)=.true.
-      lpenc_requested(i_ad)=.true.
+      if (ldustdensity) then
+!       lpenc_requested(i_nd)=.true.
+!       lpenc_requested(i_ad)=.true.
+      endif
 !
 !  background gradient 
 !
@@ -259,36 +272,35 @@ module Supersat
           df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+supersat_diff*p%del2ssat
 !
         ! 1-June-16/XY coded: to be completed, here is only for 1D case 
-         if (lsupersat_sink) then
-                 if (Rsupersat_sink) then
-                      bump=A1*p%uu(:,1)
-                      !print*,'tau=',p%tausupersat
-                  else
-                      bump=A1*p%uu(:,1)-f(l1:l2,m,n,issat)/tau
-                      !bump=A1*p%uu(:,1)-f(l1:l2,m,n,issat)/p%tausupersat
-                      !print*,'tau=',f(l1:l2,m,n,itausupersat)
-                      !print*,'tau=',p%tausupersat
-                 endif
-                 !df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat+bump
-                 df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+bump
-         endif
+        if (lsupersat_sink) then
+          if (Rsupersat_sink) then
+            bump=A1*p%uu(:,1)
+            !print*,'tau=',p%tausupersat
+          else
+            bump=A1*p%uu(:,1)-f(l1:l2,m,n,issat)/tau
+            !bump=A1*p%uu(:,1)-f(l1:l2,m,n,issat)/p%tausupersat
+            !print*,'tau=',f(l1:l2,m,n,itausupersat)
+            !print*,'tau=',p%tausupersat
+          endif
+        !df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat+bump
+        df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+bump
+      endif
 !
-       if (lcondensation_rate) then
+      if (ldustdensity.and.lcondensation_rate) then
 !
 !  compute sum of particle radii
 !
-         qv=f(l1:l2,m,n,issat)
-         superaturation=qv/vapor_mixing_ratio_qvs-1.
-         radius_sum=0.
-         do k=1,ndustspec
-           radius_sum=radius_sum+p%ad(:,k)*p%nd(:,k)
-           print*,k,radius_sum(1:5)
-         enddo
-         condensation_rate_Cd=4.*pi*superaturation*radius_sum
-         df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-condensation_rate_Cd
-         if (ltemperature) df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+condensation_rate_Cd/(p%cp*p%TT)
-!
-       endif
+        qv=f(l1:l2,m,n,issat)
+        superaturation=qv/vapor_mixing_ratio_qvs-1.
+        radius_sum=0.
+!       do k=1,ndustspec
+!         radius_sum=radius_sum+p%ad(:,k)*p%nd(:,k)
+!         print*,k,radius_sum(1:5)
+!       enddo
+        condensation_rate_Cd=4.*pi*superaturation*radius_sum
+        df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-condensation_rate_Cd
+        if (ltemperature) df(l1:l2,m,n,ilnTT)=df(l1:l2,m,n,ilnTT)+condensation_rate_Cd/(p%cp*p%TT)
+      endif
 !
 !  Diagnostics
 !
