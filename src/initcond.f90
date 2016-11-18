@@ -2457,9 +2457,9 @@ module Initcond
       use Sub, only: write_zprof
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mzgrid) :: lnrho0,ss0,lnTT0
+      real, dimension (mzgrid) :: lnrho0,ss0,lnTT0,ssat0
       real, dimension (mz) :: lnrho_mz,ss_mz,lnTT_mz
-      real :: tmp,var1,var2
+      real :: tmp,var1,var2,var3
       logical :: exist
       integer :: stat
       character (len=labellen) :: strati_type
@@ -2511,6 +2511,23 @@ module Initcond
           endif
         enddo
 !
+      case ('lnrho_lnTT_ssat')
+        do n=1,mzgrid
+          read(19,*,iostat=stat) tmp,var1,var2,var3
+          if (stat>=0) then
+            if (ip<5) print*, 'stratification: z, var1, var2, var3=', tmp, var1, var2, var3
+            if (ldensity) lnrho0(n)=var1
+            if (ltemperature) lnTT0(n)=var2
+            if (lentropy) then
+              call eoscalc(ilnrho_lnTT,var1,var2,ss=tmp)
+              ss0(n)=tmp
+            endif
+            if (lsupersat) ssat0(n)=var3
+          else
+            exit
+          endif
+        enddo
+!
       case ('lnrho')
         do n=1,mzgrid
           read(19,*,iostat=stat) tmp,var1
@@ -2541,6 +2558,13 @@ module Initcond
           do n=n1,n2
             f(:,:,n,ilnrho)=lnrho0(ipz*nz+(n-nghost))
             f(:,:,n,ilnTT)=lnTT0(ipz*nz+(n-nghost))
+          enddo
+        endif
+        if (ltemperature.and.lsupersat) then
+          do n=n1,n2
+            f(:,:,n,ilnrho)=lnrho0(ipz*nz+(n-nghost))
+            f(:,:,n,ilnTT)=lnTT0(ipz*nz+(n-nghost))
+            f(:,:,n,issat)=ssat0(ipz*nz+(n-nghost))
           enddo
         endif
         if (.not.lentropy.and..not.ltemperature) then
