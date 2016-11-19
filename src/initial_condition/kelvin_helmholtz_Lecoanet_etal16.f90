@@ -82,10 +82,10 @@ module InitialCondition
 !
   include '../initial_condition.h'
 !
-  real :: delrho=0., upert=.01
+  real :: delrho=0., upert=.01, Pressure_offset=10.
 !
 ! 
-  namelist /initial_condition_pars/ delrho, upert
+  namelist /initial_condition_pars/ delrho, upert, Pressure_offset
 !
   contains
 !***********************************************************************
@@ -127,14 +127,17 @@ module InitialCondition
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: sin2pix
-      real :: uflow=1., aflow=.05, sig=.2, y1=.5, y2=1.5, P0=10.
+      real :: uflow=1., aflow=.05, sig=.2, y1=.5, y2=1.5
       real :: tanh1, tanh2, exp1, exp2, sig2, lnP0
 !
 !  perturbation
 !
       sig2=sig**2
-      lnP0=alog(P0)
       sin2pix=upert*sin(2.*pi*x(l1:l2))
+!
+!  Pressure offset (following strictly the Lecoanet et al. setup
+!
+      lnP0=alog(Pressure_offset)
 !
       do n=n1,n2
         do m=m1,m2 
