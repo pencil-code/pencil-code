@@ -90,14 +90,6 @@ pro pc_gui_precalc_data, i, vars, index, dim, gird
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, start_param, run_param, var_list
 
-	; First and last physical value, excluding ghost cells
-	l1 = coord.l1
-	l2 = coord.l2
-	m1 = coord.m1
-	m2 = coord.m2
-	n1 = coord.n1
-	n2 = coord.n2
-
 	; Compute all desired quantities from available source data
 	tags = tag_names (varsets[i])
 	num = n_elements (tags)
