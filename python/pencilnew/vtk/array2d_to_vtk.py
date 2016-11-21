@@ -1,22 +1,22 @@
-def array2d_to_vtk(folder, filename, title, array, gridx, gridy):
+def arrays2d_to_vtk(folder, filename, arrays, names, gridx, gridy):
     """Convert 2-D array in a VTK file.
     Args:
         - folder:       where to put the vtk
         - filename:     name of the vtk, '.vtk' will be added automatically
-        - array:        2d array to export
+        - arrays:       list of 2d array to export
+        - names:        list of names associated with arrays
         - gridx/y:      grid as array
     """
 
-    import pencil as pc
-    import numpy as np
     import struct
-    import glob
-    import os
-    import sys
-    import pen.intern.natural_sort
+    import numpy as np
+    from os.path import exists, join
+    from pencilnew.math import natural_sort
+    from pencilnew.io import mkdir
 
+    print "## producing vtk-file from arrays"
 
-    print "## producing vtk-file from array"
+    if not (type(arrays) == type(['list']) and type(names) == type(['list'])): print('! ERROR: arrays and names must be a list!')
 
     if not os.path.exists(folder): os.makedirs(folder)        	# check for vtk folder
 
@@ -26,23 +26,24 @@ def array2d_to_vtk(folder, filename, title, array, gridx, gridy):
     dy = dx*dimx/dimy                                          # rescale dimmension to get a square as output 'image'
 
     ######## do the vtk output
-    fd = open(folder + filename + '.vtk', 'wb')
+    fd = open(join(folder, filename+'.vtk'), 'wb')
     fd.write('# vtk DataFile Version 2.0\n')
-    fd.write('Pencil Code Data from '+title+'\n')
+    fd.write('Pencil Code Data\n')
     fd.write('BINARY\n')
     fd.write('DATASET STRUCTURED_POINTS\n')
     fd.write('DIMENSIONS {0:9} {1:9} 1\n'.format(dimx, dimy))
     fd.write('ORIGIN {0:8.12} {1:8.12} 1\n'.format(gridx[0], gridy[0]))
     fd.write('SPACING {0:8.12} {1:8.12} 1\n'.format(dx, dy))
     fd.write('POINT_DATA {0:9}\n'.format(dim))
-    ##
-    fd.write('SCALARS '+title+' float\n')
-    fd.write('LOOKUP_TABLE default\n')
-    for kk in range(dimy):
-        for jj in range(dimx):
-            fd.write(struct.pack(">f", array[kk,jj]))
 
-    fd.write('')
+    for name, array in zip(names, arrays):
+        fd.write('SCALARS '+name+' float\n')
+        fd.write('LOOKUP_TABLE default\n')
+        for kk in range(dimy):
+            for jj in range(dimx):
+                fd.write(struct.pack(">f", array[kk,jj]))
+
+        fd.write('')
 
     fd.close()
     print "## Done!"
