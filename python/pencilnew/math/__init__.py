@@ -16,6 +16,3 @@ from is_number import *
 
 # sorting
 from natural_sort import natural_sort
-
-# binning
-from part_to_grid_2d import part_to_grid_2d
