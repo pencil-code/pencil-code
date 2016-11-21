@@ -1485,6 +1485,11 @@ else if ($hn =~ hy[0-9]*) then
   set mpirun = poe
   set mpirunops2="-procs $ncpus"
 #---------------------------------------------------
+else if ($hn =~ dra[0-9]*) then
+  echo "Draco system at Rechenzentrum Garching"
+  set mpirun = srun
+  set mpirunops2="-c $ncpus"
+#---------------------------------------------------
 else if ($hn =~ aims* ) then
   echo "AIMS cluster at RZG"
   module load impi
