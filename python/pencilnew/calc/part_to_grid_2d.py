@@ -1,4 +1,4 @@
-def part_to_grid_2d(xp, yp, quantity=False, Nbins=[1024,1024], sim=False, extent=False):
+def fill_gaps_in_grid(xp, yp, quantity=False, Nbins=[1024,1024], sim=False, extent=False, fill_gaps=False):
     """Bins quantity based on position data xp and yp to 1024^2 bins like a histrogram.
     This method is not using TSC.
 
@@ -9,6 +9,7 @@ def part_to_grid_2d(xp, yp, quantity=False, Nbins=[1024,1024], sim=False, extent
         - sim:          to extract extent from by loading ghostzone-free grid
         - extent:       [[xmin, xmax],[ymin, ymax]] or set false and instead give a sim
                         set extent manually e.g. if you want to include ghost zones
+        - fill_gaps     interpolate empty grid cells
 
     Returns: arr, xgrid, ygrid
         - arr:          2d array with binned values
@@ -44,5 +45,8 @@ def part_to_grid_2d(xp, yp, quantity=False, Nbins=[1024,1024], sim=False, extent
         arr[1, idx, idy] += 1
 
     arr[0] = arr[0]/arr[1]
+
+    if fill_gaps == True:
+
 
     return arr[0], xgrid, ygrid
