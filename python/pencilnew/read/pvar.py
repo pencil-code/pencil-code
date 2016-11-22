@@ -3,6 +3,8 @@ def pvar(*args, **kwargs):
     Read PVAR files from Pencil Code using IDL. Does also work with block decomposition.
     Uses IDL<->Python Bridge, this must be activated manually!
 
+    !! WARNING: SHAPE IS AS IN IDL: (X, Y, Z) !!
+
     Args:
         - varfile       put 'PVARXYZ' or just number here, 'VAR' will be replaced by 'PVAR' autom.
         - npar_max      maximal number of particles to be read in
@@ -29,6 +31,8 @@ class ParticleData(object):
     """
     Read PVAR files from Pencil Code using IDL.
     Uses IDL<->Python Bridge, this must be activated manually!
+
+    !! WARNING: SHAPE IS AS IN IDL: (X, Y, Z) !!
 
     Args:
         - data_dir      specify data_dir, default False
