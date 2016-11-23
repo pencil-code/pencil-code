@@ -223,7 +223,7 @@ module Energy
   integer :: idiag_eem=0        ! DIAG_DOC: $\left<e\right>$
   integer :: idiag_ppm=0        ! DIAG_DOC: $\left<p\right>$
   integer :: idiag_csm=0        ! DIAG_DOC: $\left<c_{\rm s}\right>$
-  integer :: idiag_pdivum=0     ! DIAG_DOC: $\left<p\nabla\uv\right>$
+  integer :: idiag_pdivum=0     ! DIAG_DOC: $\left<p\nabla\cdot\uv\right>$
   integer :: idiag_heatm=0      ! DIAG_DOC:
   integer :: idiag_ugradpm=0    ! DIAG_DOC:
   integer :: idiag_fradbot=0    ! DIAG_DOC: $\int F_{\rm bot}\cdot d\vec{S}$
