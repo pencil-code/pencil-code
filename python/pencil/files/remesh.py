@@ -222,11 +222,18 @@ pers=[
 file to contain:
 
 import pencil as pc
-fnew=pc.interp_var(target='/path/to/mature_run', source='/path/to/new_run')
+fnew=pc.interp_var(
+                   target_path='/path/to/mature_run',
+                   source_path='/path/to/new_run'
+                  )
 pc.distribute_fort(fnew,'/path/to/new_run')
 ##or if the run uses persistent variables comment above line and uncomment 
 ##below. pc.pers will need to be replaced by the appropriate variables
-#pc.distribute_fort(fnew,'/path/to/new_run',persist=pc.pers)
+#pc.distribute_fort(
+                    fnew,
+                    '/path/to/new_run',
+                    persist=pc.pers
+                   )
 
     > python local_remesh.py
     Done!
