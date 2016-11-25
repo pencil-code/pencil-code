@@ -66,7 +66,8 @@ module Particles
   real :: a_ellipsoid=0.0, b_ellipsoid=0.0, c_ellipsoid=0.0
   real :: a_ell2=0.0, b_ell2=0.0, c_ell2=0.0
   real :: xsinkpoint=0.0, ysinkpoint=0.0, zsinkpoint=0.0, rsinkpoint=0.0
-  real :: compensate_sedimentation=1. ! Is this still being used? 
+  real :: remove_particle_at_time=-1.0, remove_particle_criteria_size=0.0
+  real :: compensate_sedimentation=1. ! Is this still being used?
   real :: mean_free_path_gas=0.0
   real :: cs2_powerlaw
   logical :: ldragforce_dust_par=.false., ldragforce_gas_par=.false.
@@ -91,6 +92,7 @@ module Particles
   character (len=labellen), dimension (ninit) :: initvvp='nothing'
   character (len=labellen) :: gravx_profile='', gravz_profile=''
   character (len=labellen) :: gravr_profile=''
+  character (len=labellen) :: remove_particle_criteria='all'
 !
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
@@ -106,6 +108,7 @@ module Particles
       learly_particle_map, epsp_friction_increase, lmigration_real_check, &
       ldraglaw_epstein, lcheck_exact_frontier, dustdensity_powerlaw, ldt_grav_par, &
       lsinkpoint,xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
+      remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size, &
       lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, &
       Lz0, lglobalrandom, linsert_particles_continuously, &
       rad_sphere, pos_sphere, rhopmat, &
@@ -125,6 +128,7 @@ module Particles
       gravr, gravsmooth, kx_gg, kz_gg, lmigration_redo, &
       tstart_dragforce_par, tstart_grav_par, &
       particle_mesh, lparticlemesh_cic, lparticlemesh_tsc, &
+      remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size, &
       epsp_friction_increase, learly_particle_map, lmigration_real_check, &
       ldraglaw_epstein, lcheck_exact_frontier, ldraglaw_variable_density, &
       ldt_grav_par, lsinkpoint, rhopmat, &
@@ -674,11 +678,11 @@ module Particles
 !
           do k=1,npar_loc
 !
-! Start the particles obeying a power law 
+! Start the particles obeying a power law
 !
             if (lcylindrical_coords.or.lcartesian_coords) then
               tmp=2-dustdensity_powerlaw
-            elseif (lspherical_coords) then 
+            elseif (lspherical_coords) then
               tmp=3-dustdensity_powerlaw
             else
               call fatal_error("init_particles",&
@@ -1269,7 +1273,7 @@ k_loop:   do while (.not. (k>npar_loc))
               fp(k,ivpx) =  0.0
               fp(k,ivpy) =  OO*rad
               fp(k,ivpz) =  0.0
-            elseif (lspherical_coords) then               
+            elseif (lspherical_coords) then
               rad=fp(k,ixp)*sin(fp(k,iyp))
               OO=sqrt(gravr)*rad**(-1.5)
             endif
@@ -2142,7 +2146,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Add friction force to grid point.
                       call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,ib, &
                            rhop_swarm_par)
-                      if (.not.lcompensate_sedimentation) then 
+                      if (.not.lcompensate_sedimentation) then
                         dfb(ixx,iyy,izz,iux:iuz,ib)=dfb(ixx,iyy,izz,iux:iuz,ib)- &
                            rhop_swarm_par*rho1_point*dragforce*weight
                       else
@@ -2210,7 +2214,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !  Add friction force to grid point.
                       call get_rhopswarm(mp_swarm,fp,k,ixx,iyy,izz,ib, &
                           rhop_swarm_par)
-                      if (.not.lcompensate_sedimentation) then 
+                      if (.not.lcompensate_sedimentation) then
                         dfb(ixx,iyy,izz,iux:iuz,ib)=dfb(ixx,iyy,izz,iux:iuz,ib) -&
                           rhop_swarm_par*rho1_point*dragforce*weight
                       else
@@ -2227,7 +2231,7 @@ k_loop:   do while (.not. (k>npar_loc))
                     l=ineargrid(k,1)
                     call get_rhopswarm(mp_swarm,fp,k,ix0,iy0,iz0,ib, &
                         rhop_swarm_par)
-                    if (.not.lcompensate_sedimentation) then 
+                    if (.not.lcompensate_sedimentation) then
                       dfb(ix0,iy0,iz0,iux:iuz,ib) = dfb(ix0,iy0,iz0,iux:iuz,ib) -&
                         rhop_swarm_par*rho1_point*dragforce
                     else
@@ -2342,6 +2346,56 @@ k_loop:   do while (.not. (k>npar_loc))
         enddo
       endif
 !
+! Remove particles at a certain time if they are not fullfilling a certain criteria.
+! Activated by setting remove_particle_at_time > 0
+!
+    if (remove_particle_at_time > 0) then
+        if (t > remove_particle_at_time) then
+            select case (remove_particle_criteria)
+
+            case ('all')
+                k=1
+                do while (k<=npar_loc)
+                  call remove_particle(fp,ipar,k,dfp,ineargrid)
+                  k=k+1
+                enddo
+                remove_particle_at_time = -1.
+
+            case ('none')
+                remove_particle_at_time = -1.
+
+            case ('sphere')
+                k=1
+                do while (k<=npar_loc)
+                  print*, 'k=', k
+                  rp = sqrt(fp(k,ixp)**2 + fp(k,iyp)**2 + fp(k,izp)**2)
+                  print*, 'sqrt( x**2 + y**2 + z**2 ) = ', rp
+                  if ( rp > remove_particle_criteria_size) then
+                    call remove_particle(fp,ipar,k,dfp,ineargrid)
+                    k=k-1
+                  endif
+                  k=k+1
+                enddo
+                remove_particle_at_time = -1.
+
+            case ('xycylinder')
+                k=1
+                do while (k<=npar_loc)
+                  print*, 'k=', k
+                  rp = sqrt(fp(k,ixp)**2 + fp(k,iyp)**2)
+                  print*, 'sqrt( x**2 + y**2 ) = ', rp
+                  if ( rp > remove_particle_criteria_size ) then
+                    call remove_particle(fp,ipar,k,dfp,ineargrid)
+                    k=k-1
+                  endif
+                  k=k+1
+                enddo
+                remove_particle_at_time = -1.
+
+            endselect
+        endif
+    endif
+!
       call keep_compiler_quiet(f)
 !
     endsubroutine remove_particles_sink_simple
@@ -2445,9 +2499,9 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
         endif
       else if (ldraglaw_eps_stk_transonic) then
-!         
+!
          call calc_draglaw_parameters(fp,k,uup,ix0,iy0,iz0,iblock,tausp1_par,lstokes=.true.)
-!         
+!
       endif
 !
 !  Change friction time artificially.
@@ -2630,7 +2684,7 @@ k_loop:   do while (.not. (k>npar_loc))
               "but you forgot to set 'mean_free_path_gas' in the *.in files.")
         endif
 !
-        if (ldensity_nolog) then 
+        if (ldensity_nolog) then
           rho=fb(ix0,iy0,iz0,irho,ib)
         else
           rho=exp(fb(ix0,iy0,iz0,irho,ib))
