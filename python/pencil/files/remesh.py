@@ -193,6 +193,8 @@ def distribute_fort(
                         f.write_record(pers[1])
                 f.close()
 
+#set of persistent variables used by interstellar, listed in record_types.h
+#if required replace pc.pers with your list in local_remesh.py below 
 pers=[
       (253, 0.0), 
       (254, 0.0), 
@@ -222,7 +224,8 @@ file to contain:
 import pencil as pc
 fnew=pc.interp_var(target='/path/to/mature_run', source='/path/to/new_run')
 pc.distribute_fort(fnew,'/path/to/new_run')
-##or if the run uses persistent variables comment above line and uncomment below
+##or if the run uses persistent variables comment above line and uncomment 
+##below. pc.pers will need to be replaced by the appropriate variables
 #pc.distribute_fort(fnew,'/path/to/new_run',persist=pc.pers)
 
     > python local_remesh.py
