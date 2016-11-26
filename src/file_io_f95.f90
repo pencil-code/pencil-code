@@ -340,4 +340,12 @@ module File_io
     endsubroutine find_namelist
     !endfunction find_namelist
 !***********************************************************************
+!************        DO NOT DELETE THE FOLLOWING       **************
+!********************************************************************
+!**  This is an automatically generated include file that allows   **
+!**  to store replicated code for any File-IO routines not         **
+!**  implemented in this file                                      **
+!**                                                                **
+!    include 'file_io_default.inc'
+!********************************************************************
 endmodule File_io
