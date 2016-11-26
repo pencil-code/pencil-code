@@ -203,8 +203,6 @@ module Io
 !
       use Mpicomm, only: globalize_xy, collect_grid, mpi_precision, stop_it_if_any
       use Sub, only: parallel_file_exists
-      use Mpicomm, only: mpibcast
-      use General, only: file_exists
 !
       integer, intent(in) :: nv
       real, dimension (mx,my,mz,nv), intent(in) :: a
