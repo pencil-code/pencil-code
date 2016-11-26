@@ -1286,8 +1286,7 @@ if (ios/=0) print*, 'ios, i=', ios, i
         cform=cname(iform1+1:iform2-1)
         length=iform1-1
       else
-        cform='1pE10.2'  !!(the nag-f95 compiler requires a comma after
-                         !! 1p [does it?])
+        cform='1pE10.2'
         length=iform0-1
       endif
 !
