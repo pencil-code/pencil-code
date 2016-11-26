@@ -363,11 +363,6 @@ module EquationOfState
 !***********************************************************************
     subroutine rprint_eos(lreset,lwrite)
 !
-!  Writes iyH and ilnTT to index.pro file
-!
-!  14-jun-03/axel: adapted from rprint_radiation
-!  21-11-04/anders: moved diagnostics to entropy
-!
       logical :: lreset
       logical, optional :: lwrite
 !
