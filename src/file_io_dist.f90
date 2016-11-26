@@ -147,6 +147,6 @@ module File_io
 !**  to store replicated code for any File-IO routines not         **
 !**  implemented in this file                                      **
 !**                                                                **
-!    include 'file_io_default.inc'
+    include 'file_io_common.inc'
 !********************************************************************
 endmodule File_io

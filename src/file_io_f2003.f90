@@ -206,14 +206,6 @@ module File_io
 !
     endsubroutine parallel_open
 !***********************************************************************
-    subroutine parallel_rewind
-!
-!  Dummy.
-!
-!  30-Jul-2015/MR: implemented
-!
-    endsubroutine parallel_rewind
-!***********************************************************************
     subroutine parallel_close
 !
 !  Deallocates the internal file parallel_unit opened by parallel_open.
@@ -278,6 +270,6 @@ module File_io
 !**  to store replicated code for any File-IO routines not         **
 !**  implemented in this file                                      **
 !**                                                                **
-!    include 'file_io_default.inc'
+    include 'file_io_common.inc'
 !********************************************************************
 endmodule File_io
