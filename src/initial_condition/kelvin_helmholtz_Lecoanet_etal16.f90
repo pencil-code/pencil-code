@@ -133,7 +133,7 @@ module InitialCondition
 !  perturbation
 !
       sig2=sig**2
-      sin2pix=upert*sin(2.*pi*x(l1:l2))
+      sin2pix=upert*sin(2.*pi*x(l1:l2)/Lxyz(1))
 !
 !  Pressure offset (following strictly the Lecoanet et al. setup
 !
