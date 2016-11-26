@@ -10,7 +10,6 @@
 !
 ! CPARAM logical, parameter :: lparticles_lyapunov=.false.
 !
-!
 !***************************************************************
 module Particles_lyapunov
 !

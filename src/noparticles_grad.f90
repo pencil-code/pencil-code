@@ -9,6 +9,7 @@
 !
 ! MPVAR CONTRIBUTION 0
 ! MPAUX CONTRIBUTION 0
+!
 ! CPARAM logical, parameter :: lparticles_grad=.false.
 !
 !***************************************************************

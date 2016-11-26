@@ -86,15 +86,15 @@ program pc_reduce
 !
 !  Initialize the message subsystem, eg. color setting etc.
 !
-  call initialize_messages()
+  call initialize_messages
 !
 !  Read parameters from start.x (default values; overwritten by 'read_all_run_pars').
 !
-  call read_all_init_pars()
+  call read_all_init_pars
 !
 !  Read parameters and output parameter list.
 !
-  call read_all_run_pars()
+  call read_all_run_pars
 !
   if (.not. lperi(1) .and. (reduce /= 1)) call fatal_error ('run', 'reduction impossible in X: not periodic')
   if (.not. lperi(2) .and. (reduce /= 1)) call fatal_error ('run', 'reduction impossible in Y: not periodic')
@@ -111,13 +111,9 @@ program pc_reduce
   Ly = Lxyz(2)
   Lz = Lxyz(3)
 !
-! Calculate dimensionality
-!
-  dimensionality = min(nxgrid-1,1) + min(nygrid-1,1) + min(nzgrid-1,1)
-!
 !  Register physics modules.
 !
-  call register_modules()
+  call register_modules
 !
 !  Define the lenergy logical
 !
@@ -211,7 +207,7 @@ program pc_reduce
       gy = huge(1.0)
 !
       ! Set up directory names 'directory' and 'directory_snap'
-      call directory_names()
+      call directory_names
 !
       ! Read the data
       rec_len = int (mxgrid, kind=8) * int (mygrid, kind=8) * io_len
@@ -276,7 +272,7 @@ program pc_reduce
       gy = huge(1.0)
 !
       ! Set up directory names 'directory' and 'directory_snap'
-      call directory_names()
+      call directory_names
 !
       ! Read the data
       if (ldirect_access) then
@@ -379,7 +375,7 @@ program pc_reduce
 !
 !  Set up directory names.
 !
-          call directory_names()
+          call directory_names
 !
 !  Read coordinates.
 !
@@ -413,7 +409,7 @@ program pc_reduce
 !
 !  Need to re-initialize the local grid for each processor.
 !
-          call initialize_grid()
+          call initialize_grid
 !
 !  Read data.
 !  Snapshot data are saved in the tmp subdirectory.
@@ -537,7 +533,7 @@ program pc_reduce
 !
   deallocate (rf)
   if (IO_strategy == 'collect_xy') deallocate (gf)
-  call fnames_clean_up()
-  call vnames_clean_up()
+  call fnames_clean_up
+  call vnames_clean_up
 !
 endprogram pc_reduce

@@ -17,6 +17,7 @@
 !
 ! PENCILS PROVIDED aa(3); a2; aij(3,3); bb(3); bbb(3); ab; ua; exa(3)
 ! PENCILS PROVIDED b2; bf2; bij(3,3); del2a(3); graddiva(3); jj(3); e3xa(3)
+! PENCILS PROVIDED bijtilde(3,2)
 ! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); jxbr2; ub; uxb(3); uxb2
 ! PENCILS PROVIDED uxj(3); chibp; beta; beta1; uga(3); djuidjbi; jo
 ! PENCILS PROVIDED StokesI; StokesQ; StokesU; StokesQ1; StokesU1
@@ -88,8 +89,8 @@ module Magnetic
   real, dimension (ninit) :: kz_ax=0.0, kz_ay=0.0, kz_az=0.0
   real, dimension (ninit) :: phase_ax=0.0, phase_ay=0.0, phase_az=0.0
   real, dimension (ninit) :: amplaaJ=0.0, amplaaB=0.0, RFPrad=1.0
-!
   real, dimension (ninit) :: phasex_aa=0.0, phasey_aa=0.0, phasez_aa=0.0
+  integer, dimension (ninit) :: ll_sh, mm_sh
   character (len=labellen), dimension(ninit) :: initaa='nothing'
   character (len=labellen), dimension(3) :: borderaa='nothing'
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
@@ -220,7 +221,7 @@ module Magnetic
       phase_ax, phase_ay, phase_az, magnetic_xaver_range, amp_relprof, k_relprof, &
       tau_relprof, znoise_int, znoise_ext, magnetic_zaver_range, &
       lbx_ext_global,lby_ext_global,lbz_ext_global, dipole_moment, &
-      sheet_position,sheet_thickness,sheet_hyp
+      sheet_position,sheet_thickness,sheet_hyp,ll_sh, mm_sh
 !
 ! Run parameters
 !
@@ -1498,16 +1499,19 @@ module Magnetic
       use Mpicomm
       use SharedVariables
       use Sub
+      use General, only: yin2yang_coors, transform_thph_yy
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
       real, dimension (mz) :: tmp
       real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2,fact,cs2,lnrho_old,ssold,cs2old,x1,x2
-      real, dimension (nx) :: beq2_pencil
+      real, dimension (nx) :: beq2_pencil, prof, tmpx
+      real, dimension (:,:), allocatable :: yz
+
       real :: beq2,RFPradB12,RFPradJ12
-      real :: s,c
-      integer :: j
+      real :: s,c,sph_har_der
+      integer :: j,iyz
 !
       do j=1,ninit
 !
@@ -1831,6 +1835,39 @@ module Magnetic
             f(l1:l2,m,n,iglobal_bz_ext) = dipole_moment *   (s*sin(z(n)))                      /x(l1:l2)**3
           enddo;enddo
 !
+        case('spher-harm-poloidal')
+          if (.not.lspherical_coords) call fatal_error("init_uu", &
+              "spher-harm-poloidal only meaningful for spherical coordinates"//trim(initaa(j)))
+          tmpx=(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1)) + (xyz1(1) - 0.5*xyz0(1))*x(l1:l2)
+          prof=3.*x(l1:l2)-2.*(xyz0(1)+xyz1(1)) - xyz0(1) + 2.*xyz1(1)
+          if (lyang) then
+            allocate(yz(2,ny*nz))
+            call yin2yang_coors(costh(m1:m2),sinth(m1:m2),cosph(n1:n2),sinph(n1:n2),yz)
+            iyz=1
+            do m=m1,m2
+              do n=n1,n2
+!if (iproc_world==55) print*, 'm,n,yz=', m,n,yz(:,iyz)
+                bb(:,1)=amplaa(j)*2.*tmpx*ylm_other(yz(1,iyz),yz(2,iyz),ll_sh(j),mm_sh(j),sph_har_der)
+                bb(:,2)=amplaa(j)*prof*sph_har_der
+                if (mm_sh(j)/=0) then
+                  bb(:,3) = -amplaa(j)*prof*mm_sh(j)/sin(yz(1,iyz))*sin(yz(2,iyz))/cos(yz(2,iyz))
+                else
+                  bb(:,3) = 0.
+                endif
+                call transform_thph_yy( bb, (/1,1,1/), f(l1:l2,m,n,iax:iaz), yz(1,iyz), yz(2,iyz) )
+                iyz=iyz+1
+              enddo
+            enddo
+          else
+            do n=n1,n2
+              do m=m1,m2
+                f(l1:l2,m,n,iax) = amplaa(j)*2.*tmpx*ylm(ll_sh(j),mm_sh(j),sph_har_der)
+                f(l1:l2,m,n,iay) = amplaa(j)*prof*sph_har_der
+                if (mm_sh(j)/=0) &      ! tb improved!
+                  f(l1:l2,m,n,iaz) = -amplaa(j)*prof*mm_sh(j)/sinth(m)*sinph(n)/cosph(n)
+              enddo
+            enddo
+          endif
         case default
 !
 !  Catch unknown values.
@@ -2585,9 +2622,9 @@ module Magnetic
       type(pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc=.false.
 !
+      lpenc_loc(i_va2) = lslope_limit_diff
+!
       if (lslope_limit_diff) then
-
-        lpenc_loc(i_va2)=.true.
 !
 !  Calculate Alfven speed and store temporarily in first slot of diffusive fluxes.
 !
@@ -2786,7 +2823,7 @@ module Magnetic
           if (lpenc_loc(i_jj)) call curl_mn(p%bij,p%jj)
         else
           call gij_etc(f,iaa,AA=p%aa,AIJ=p%aij,BIJ=p%bij,&
-                               LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
+                       LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
           if (lpenc_loc(i_jj)) &
               call curl_mn(p%bij,p%jj,A=p%bb,LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
         endif
@@ -2795,9 +2832,10 @@ module Magnetic
           call gij_etc(f,iaa,DEL2=p%del2a)
         else
           call gij_etc(f,iaa,AA=p%aa,AIJ=p%aij,DEL2=p%del2a,&
-                               LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
+                       LCOVARIANT_DERIVATIVE=lcovariant_magnetic)
         endif
       endif
+      if (lpenc_loc(i_bijtilde)) call bij_tilde(f,p%bb,p%bijtilde)
 !
 !  possibility of diamagnetism
 !
@@ -3663,7 +3701,7 @@ module Magnetic
 !  Works only on one processor.
 !
       if (lmean_friction) then
-        if (nprocx*nprocy==1) then
+        if (nprocxy==1) then
           do j=1,3
             aa_xyaver(:,j)=sum(f(l1:l2,m1:m2,n,j+iax-1))/nxy
           enddo

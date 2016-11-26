@@ -136,10 +136,6 @@ program start
   f =huge(1.0)
   df=huge(1.0)
 !
-!  Calculate dimensionality of the run.
-!
-  dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
-!
 !  Define the lenergy logical
 !
   lenergy=lentropy.or.ltemperature.or.lthermal_energy

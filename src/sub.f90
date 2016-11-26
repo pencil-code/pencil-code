@@ -43,6 +43,7 @@ module Sub
   public :: div_other
   public :: gij, g2ij, gij_etc
   public :: gijl_symmetric
+  public :: bij_tilde
   public :: symmetrise3x3_ut2lt
   public :: der_step
   public :: der6_step
@@ -2411,6 +2412,46 @@ module Sub
 !
     endsubroutine del6v
 !***********************************************************************
+    subroutine bij_tilde(f,bb,bijtilde)
+!
+! Calculates \partial B_[r,\theta,\phi]/ \partial [r,\theta]
+!
+! 20-nov-16/MR: coded
+!
+      use Deriv, only: der2,derij,der
+!
+      real, dimension (mx,my,mz,mfarray), intent (in) :: f
+      real, dimension (nx,3),intent(in) :: bb
+      real, dimension (nx,3,2), intent (out) :: bijtilde
+ 
+      real, dimension (nx,3) :: aa
+      real, dimension (nx) :: d2adrdt,tmp,tmp1
+      
+      aa=f(l1:l2,m,n,iax:iaz)
+      call derij(f,iaz,d2adrdt,1,2,.true.)     ! d^2 a_phi/dr dtheta
+
+      bijtilde(:,1,1) = (d2adrdt - bb(:,1) - cotth(m)*(bb(:,2)+r1_mn*aa(:,3)))*r1_mn
+      
+      call der2(f,iaz,tmp,2,.true.)            ! d^2 a_phi/dtheta^2
+      bijtilde(:,1,2) = (tmp - aa(:,3)*(cotth(m)*cotth(m) + sin2th(m)))*r1_mn + cotth(m)*bb(:,1)
+
+      call der2(f,iaz,tmp,1,.true.)            ! d^2 a_phi/dr^2
+      bijtilde(:,2,1) = -tmp + (bb(:,2)+2.*r1_mn*aa(:,3))*r1_mn
+
+      bijtilde(:,2,2) = -d2adrdt - (bb(:,1) - cotth(m)*r1_mn*aa(:,3))
+
+      call der2(f,iay,tmp,1,.true.)            ! d^2 a_theta/dr^2
+      call derij(f,iax,d2adrdt,1,2,.true.)     ! d^2 a_r/dr dtheta
+      call der(f,iax,tmp1,2)                   ! d a_r/dtheta/r
+      bijtilde(:,3,1) = tmp + (-d2adrdt + bb(:,3) - 2.*(r1_mn*aa(:,2)-tmp1))*r1_mn
+
+      call der2(f,iax,tmp,2,.true.)            ! d^2 a_r/dtheta^2
+      call derij(f,iay,d2adrdt,1,2,.true.)     ! d^2 a_theta/dr dtheta
+      call der(f,iay,tmp1,2)                   ! d a_theta/dtheta/r
+      bijtilde(:,3,2) = tmp1 - r1_mn*tmp + d2adrdt
+   
+    endsubroutine bij_tilde 
+!***********************************************************************
     subroutine gij_etc(f,iref,aa,aij,bij,del2,graddiv,lcovariant_derivative)
 !
 !  Calculate B_i,j = eps_ikl A_l,jk and A_l,kk.
@@ -2436,7 +2477,6 @@ module Sub
 !  Locally used variables.
 !
       real, dimension (nx,3,3,3) :: d2A
-      real, dimension (nx) :: tmp
       integer :: iref1,i,j
 !
 !  Reference point of argument.
@@ -2446,18 +2486,18 @@ module Sub
 !  Calculate all mixed and non-mixed second derivatives
 !  of the vector potential (A_k,ij).
 !
-!  Do not calculate both d^2 A/(dx dy) and d^2 A/(dy dx).
+!  Do not calculate both d^2 A_k/(dx dy) and d^2 A_k/(dy dx).
 !  (This wasn't spotted by me but by a guy from SGI...)
 !  Note: for non-cartesian coordinates there are different correction terms,
 !  see below.
 !
       do i=1,3
         do j=1,3
-          call der2(f,iref1+i,tmp,j); d2A(:,j,j,i)=tmp
+          call der2(f,iref1+i,d2A(:,j,j,i),j)
         enddo
-        call derij(f,iref1+i,tmp,2,3); d2A(:,2,3,i)=tmp; d2A(:,3,2,i)=tmp
-        call derij(f,iref1+i,tmp,3,1); d2A(:,3,1,i)=tmp; d2A(:,1,3,i)=tmp
-        call derij(f,iref1+i,tmp,1,2); d2A(:,1,2,i)=tmp; d2A(:,2,1,i)=tmp
+        call derij(f,iref1+i,d2A(:,2,3,i),2,3); d2A(:,3,2,i)=d2A(:,2,3,i)
+        call derij(f,iref1+i,d2A(:,3,1,i),3,1); d2A(:,1,3,i)=d2A(:,3,1,i)
+        call derij(f,iref1+i,d2A(:,1,2,i),1,2); d2A(:,2,1,i)=d2A(:,1,2,i)
       enddo
 !
 !  Corrections for spherical polars from swapping mixed derivatives:
@@ -4937,12 +4977,9 @@ nameloop: do
 !  10-jul-05/axel: coded
 !
       use General, only: safe_character_assign
-      use IO, only: lcollective_IO
 !
       character (len=120) :: fname,wfile,listfile
       integer :: ierr, unit=2
-!
-      if (lcollective_IO .and. .not. lroot) return
 !
 !  Do this only for the first step.
 !
@@ -6956,8 +6993,8 @@ nameloop: do
       use General, only: file_exists, loptest
       use Mpicomm, only: mpibcast_logical, MPI_COMM_WORLD
 
-      character (len=*) :: file
       logical :: parallel_file_exists
+      character (len=*) :: file
       logical, optional :: delete
 !
       ! Let the root node do the dirty work

@@ -69,15 +69,15 @@ program pc_tecplot
 !
 !  Initialize the message subsystem, eg. color setting etc.
 !
-  call initialize_messages()
+  call initialize_messages
 !
 !  Read parameters from start.x (default values; overwritten by 'read_all_run_pars').
 !
-  call read_all_init_pars()
+  call read_all_init_pars
 !
 !  Read parameters and output parameter list.
 !
-  call read_all_run_pars()
+  call read_all_run_pars
 !
 !  Derived parameters (that may still be overwritten).
 !  [might better be put into another routine, possibly in 'read_all_run_pars']
@@ -89,13 +89,9 @@ program pc_tecplot
   Ly = Lxyz(2)
   Lz = Lxyz(3)
 !
-! Calculate dimensionality
-!
-  dimensionality = min(nxgrid-1,1) + min(nygrid-1,1) + min(nzgrid-1,1)
-!
 !  Register physics modules.
 !
-  call register_modules()
+  call register_modules
 !
 !  Define the lenergy logical
 !
@@ -143,7 +139,7 @@ program pc_tecplot
   if (lroot) write (*,*) 'mvar = ', mvar_io
 !
   iproc = 0
-  call directory_names()
+  call directory_names
   inquire (file=trim(directory_dist)//'/'//filename, exist=ex)
   if (.not. ex) call fatal_error ('pc_tecplot', 'File not found: '//trim(directory_dist)//'/'//filename, .true.)
 !
@@ -259,7 +255,7 @@ program pc_tecplot
 !
 !  Set up directory names 'directory' and 'directory_snap'.
 !
-        call directory_names()
+        call directory_names
 !
 !  Read coordinates.
 !
@@ -293,7 +289,7 @@ program pc_tecplot
 !
 !  Need to re-initialize the local grid for each processor.
 !
-        call initialize_grid()
+        call initialize_grid
 !
 !  Read data.
 !  Snapshot data are saved in the tmp subdirectory.
@@ -388,7 +384,7 @@ program pc_tecplot
 !  Free any allocated memory.
 !
   deallocate (gf)
-  call fnames_clean_up()
-  call vnames_clean_up()
+  call fnames_clean_up
+  call vnames_clean_up
 !
 endprogram pc_tecplot

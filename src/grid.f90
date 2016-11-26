@@ -889,6 +889,7 @@ module Grid
 !
       use Sub, only: remove_zprof
       use Mpicomm
+      use IO, only: lcollective_IO
 !
       real :: fact, dxmin_x, dxmin_y, dxmin_z, dxmax_x, dxmax_y, dxmax_z
       integer :: xj,yj,zj,itheta
@@ -1294,7 +1295,7 @@ module Grid
 !
 !  Clean up profile files.
 !
-      call remove_zprof
+      if (lroot.or..not.lcollective_IO) call remove_zprof
       lwrite_prof=.true.
 !
 !  Set the the serial grid arrays, that contain the coordinate values

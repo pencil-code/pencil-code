@@ -215,15 +215,15 @@ module EquationOfState
 !
 ! Shared variables
 !
-      call put_shared_variable('cs20',cs20,caller='unit_eos')
+      call put_shared_variable('cs20',cs20,caller='units_eos')
       call put_shared_variable('mpoly',mpoly)
       call put_shared_variable('gamma',gamma)
 !
 !  Check that everything is OK.
 !
       if (lroot) then
-        print*, 'initialize_eos: unit_temperature=', unit_temperature
-        print*, 'initialize_eos: cp, lnTT0, cs0, pp0=', cp, lnTT0, cs0, pp0
+        print*, 'units_eos: unit_temperature=', unit_temperature
+        print*, 'units_eos: cp, lnTT0, cs0, pp0=', cp, lnTT0, cs0, pp0
       endif
 !
 !  Calculate profile functions (used as prefactors to turn off pressure

@@ -5299,7 +5299,7 @@ module Energy
 !
       use Diagnostics, only: sum_mn_name, xysum_mn_name_z
       use Gravity, only: z2
-      use Sub, only: step, cubic_step, write_prof, step
+      use Sub, only: step, cubic_step, write_prof
 !
       type (pencil_case) :: p
       real, dimension (nx) :: heat,prof

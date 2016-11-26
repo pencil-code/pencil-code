@@ -59,15 +59,15 @@ program pc_distribute
 !
 !  Initialize the message subsystem, eg. color setting etc.
 !
-  call initialize_messages()
+  call initialize_messages
 !
 !  Read parameters from start.x (default values; overwritten by 'read_all_run_pars').
 !
-  call read_all_init_pars()
+  call read_all_init_pars
 !
 !  Read parameters and output parameter list.
 !
-  call read_all_run_pars()
+  call read_all_run_pars
 !
 !  Derived parameters (that may still be overwritten).
 !  [might better be put into another routine, possibly in 'read_all_run_pars']
@@ -79,13 +79,9 @@ program pc_distribute
   Ly = Lxyz(2)
   Lz = Lxyz(3)
 !
-! Calculate dimensionality
-!
-  dimensionality = min(nxgrid-1,1) + min(nygrid-1,1) + min(nzgrid-1,1)
-!
 !  Register physics modules.
 !
-  call register_modules()
+  call register_modules
 !
 !  Define the lenergy logical
 !
@@ -200,7 +196,7 @@ program pc_distribute
 !
 !  Set up directory names.
 !
-        call directory_names()
+        call directory_names
 !
 ! Size of box at local processor. The if-statement is for
 ! backward compatibility.
@@ -229,7 +225,7 @@ program pc_distribute
 !
 !  Need to re-initialize the local grid for each processor.
 !
-        call initialize_grid()
+        call initialize_grid
 !
         ! distribute gf to f:
         f(:,:,:,1:mvar_io) = gf(1+ipx*nx:mx+ipx*nx,1+ipy*ny:my+ipy*ny,:,:)
@@ -264,7 +260,7 @@ program pc_distribute
 !  Free any allocated memory.
 !
   deallocate (gf)
-  call fnames_clean_up()
-  call vnames_clean_up()
+  call fnames_clean_up
+  call vnames_clean_up
 !
 endprogram pc_distribute

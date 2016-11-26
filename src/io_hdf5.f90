@@ -202,8 +202,7 @@ module Io
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
 !
       use Mpicomm, only: globalize_xy, collect_grid, mpi_precision, stop_it_if_any
-      ! use General, only: parallel_file_exists
-      ! Temporary replacement code for the above line until circular dependency is resolved (2 lines):
+      use Sub, only: parallel_file_exists
       use Mpicomm, only: mpibcast
       use General, only: file_exists
 !
@@ -225,12 +224,7 @@ module Io
       filename = trim (directory_snap)//'/'//trim(file)//'.h5'
       dataset = 'f'
       if (present (label)) dataset = label
-      ! lexists = parallel_file_exists (filename)
-      ! Temporary replacement code for the above line until circular dependency is resolved (4 lines):
-      if (lroot) then
-        lexists = file_exists (filename)
-      endif
-      call mpibcast (lexists)
+      lexists = parallel_file_exists (filename)
       ltrunc = .true.
       if (present (ltruncate)) ltrunc = ltruncate
       if (.not. lexists) ltrunc = .true.

@@ -159,10 +159,6 @@ program pc_h5collect
 !
   !call read_all_run_pars()
 !
-! Calculate dimensionality
-!
-  dimensionality = min(nxgrid-1,1) + min(nygrid-1,1) + min(nzgrid-1,1)
-!
 !  Register phierrysics modules.
 !
   call register_modules()

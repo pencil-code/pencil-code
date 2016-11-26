@@ -107,7 +107,7 @@ module Snapshot
 !
         ldownsampling=.true.
 !
-!  Save those grid-related variables which are temporarily overwritten
+!  Save those grid-related variables which will be temporarily overwritten
 !
         call save_grid
 !
@@ -115,6 +115,9 @@ module Snapshot
 !
         if (any(.not.lequidist)) &
           call warning('wsnap_down','BCs not correctly set for non-equidistant grids')
+
+        if (any(lperi)) &
+          call warning('wsnap_down','periodic BCs not correctly set')
 
         x(iax:iex) = x(ifx:l2:isx)
         y(iay:iey) = y(ify:m2:isy)

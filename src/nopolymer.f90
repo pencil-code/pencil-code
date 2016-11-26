@@ -11,7 +11,6 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-!
 !***************************************************************
 module Polymer
 !

@@ -429,23 +429,29 @@ module Deriv
 !
     endsubroutine der_pencil
 !***********************************************************************
-    subroutine der2_main(f,k,df2,j)
+    subroutine der2_main(f,k,df2,j,lwo_line_elem)
 !
 !  calculate 2nd derivative d^2f_k/dx_j^2
 !  accurate to 6th order, explicit, periodic
 !  replace cshifts by explicit construction -> x6.5 faster!
+!  if lwo_line_elem=T no metric coefficents ar multiplied in the denominator;
+!  default: lwo_line_elem=F
 !
 !   1-oct-97/axel: coded
 !   1-apr-01/axel+wolf: pencil formulation
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  23-sep-16/MR: introduced offset variables which can be manipulated for complete
 !                one-sided calculation of 2nd derivatives
+!  20-nov-16/MR: optional parameter lwo_line_elem added
 !
+      use General, only: loptest
+
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df2,fac,df
       integer :: j,k
+      logical, optional :: lwo_line_elem
 !
-      intent(in)  :: f,k,j
+      intent(in)  :: f,k,j,lwo_line_elem
       intent(out) :: df2
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_der2,j,1) = & !DERCOUNT
@@ -472,8 +478,10 @@ module Deriv
                   +der2_coef1*(f(l1:l2,m+ 1 ,n,k)+f(l1:l2,m- 1 ,n,k)) &
                   +der2_coef2*(f(l1:l2,m+ 2 ,n,k)+f(l1:l2,m- 2 ,n,k)) &
                   +der2_coef3*(f(l1:l2,m+m3p,n,k)+f(l1:l2,m-m3m,n,k)))
-          if (lspherical_coords)   df2=df2*r2_mn
-          if (lcylindrical_coords) df2=df2*rcyl_mn2
+          if (.not.loptest(lwo_line_elem)) then
+            if (lspherical_coords)   df2=df2*r2_mn
+            if (lcylindrical_coords) df2=df2*rcyl_mn2
+          endif
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
             df2=df2+dy_tilde(m)*df
@@ -488,7 +496,9 @@ module Deriv
                    +der2_coef1*(f(l1:l2,m,n+ 1 ,k)+f(l1:l2,m,n- 1 ,k)) &
                    +der2_coef2*(f(l1:l2,m,n+ 2 ,k)+f(l1:l2,m,n- 2 ,k)) &
                    +der2_coef3*(f(l1:l2,m,n+n3p,k)+f(l1:l2,m,n-n3m,k)))
-          if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
+          if (.not.loptest(lwo_line_elem)) then
+            if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
+          endif
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
             df2=df2+dz_tilde(n)*df
@@ -1167,19 +1177,26 @@ module Deriv
 !
     endfunction der5_single
 !***********************************************************************
-    subroutine derij_main(f,k,df,i,j)
+    subroutine derij_main(f,k,df,i,j,lwo_line_elem)
 !
 !  calculate 2nd derivative with respect to two different directions
 !  input: scalar, output: scalar
 !  accurate to 6th order, explicit, periodic
+!  if lwo_line_elem=T no metric coefficents ar multiplied in the denominator;
+!  default: lwo_line_elem=F
+!  !!! only for equidistant grids !!!
 !
 !   8-sep-01/axel: coded
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  14-nov-06/wolf: implemented bidiagonal scheme
+!  20-nov-16/MR: optional parameter lwo_line_elem added
+!
+      use General, only: loptest
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: i,j,k
+      logical, optional :: lwo_line_elem
 !
       intent(in) :: f,k,i,j
       intent(out) :: df
@@ -1338,9 +1355,11 @@ module Deriv
 !  Spherical polars. The comments about "minus extra terms" refer to the
 !  presence of extra terms that are being evaluated later in gij_etc.
 !
+      if (loptest(lwo_line_elem)) return
+
       if (lspherical_coords) then
         if ((i==1.and.j==2)) df=df*r1_mn
-        if ((i==2.and.j==1)) df=df*r1_mn !(minus extra terms)
+        if ((i==2.and.j==1)) df=df*r1_mn           !(minus extra terms)
         if ((i==1.and.j==3)) df=df*r1_mn*sin1th(m)
         if ((i==3.and.j==1)) df=df*r1_mn*sin1th(m) !(minus extra terms)
         if ((i==2.and.j==3)) df=df*r2_mn*sin1th(m)
@@ -1348,12 +1367,7 @@ module Deriv
       endif
 !
       if (lcylindrical_coords) then
-        if ((i==1.and.j==2)) df=df*rcyl_mn1
-        if ((i==2.and.j==1)) df=df*rcyl_mn1
-        if ((i==1.and.j==3)) df=df
-        if ((i==3.and.j==1)) df=df
-        if ((i==2.and.j==3)) df=df*rcyl_mn1
-        if ((i==3.and.j==2)) df=df*rcyl_mn1
+        if ( i+j==3 .or. i+j==5 ) df=df*rcyl_mn1
       endif
 !
     endsubroutine derij_main
@@ -1533,12 +1547,7 @@ module Deriv
       endif
 !
       if (lcylindrical_coords) then
-        if ((i==1.and.j==2)) df=df*rcyl_mn1
-        if ((i==2.and.j==1)) df=df*rcyl_mn1
-        if ((i==1.and.j==3)) df=df
-        if ((i==3.and.j==1)) df=df
-        if ((i==2.and.j==3)) df=df*rcyl_mn1
-        if ((i==3.and.j==2)) df=df*rcyl_mn1
+        if ( i+j==3 .or. i+j==5 ) df=df*rcyl_mn1
       endif
 !
     endsubroutine derij_other
@@ -2536,5 +2545,22 @@ module Deriv
       endif
 
     endsubroutine bval_from_neumann_arr
+!***********************************************************************
+    subroutine bval_from_3rd_arr(f,topbot,j,idir,val,func)
+!
+!  Calculates the boundary value from the Neumann BC d f/d x_i = val employing
+!  one-sided difference formulae. val depends on x,y.
+!
+!  30-sep-16/MR: coded
+!
+      real, dimension(mx,my,mz,*) :: f
+      character(LEN=3) :: topbot
+      integer :: j,idir
+      real, dimension(:,:) :: val
+      external :: func
+!
+      call fatal_error('bval_from_3rd_arr','not implemented')
+
+    endsubroutine bval_from_3rd_arr
 !***********************************************************************
  endmodule Deriv

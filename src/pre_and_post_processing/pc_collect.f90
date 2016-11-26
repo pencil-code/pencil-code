@@ -61,11 +61,11 @@ program pc_collect
 !
   lstart = .false.
   lrun = .true.
-  call read_all_init_pars()
+  call read_all_init_pars
 !
 !  Read parameters and output parameter list.
 !
-  call read_all_run_pars()
+  call read_all_run_pars
 !
 !  Derived parameters (that may still be overwritten).
 !  [might better be put into another routine, possibly in 'read_all_run_pars']
@@ -76,10 +76,6 @@ program pc_collect
   Lx = Lxyz(1)
   Ly = Lxyz(2)
   Lz = Lxyz(3)
-!
-! Calculate dimensionality
-!
-  dimensionality = min(nxgrid-1,1) + min(nygrid-1,1) + min(nzgrid-1,1)
 !
 !  Register physics modules.
 !

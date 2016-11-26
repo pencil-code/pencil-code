@@ -1229,13 +1229,14 @@ module Magnetic_meanfield
 !
       use Diagnostics
 !
-      real, dimension (nx) :: Beq21
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      intent(in)  :: p
-      intent(inout)  :: df,f
+      intent(in) :: p
+      intent(inout) :: df,f
+!
+      real, dimension (nx) :: Beq21
 !
 !  Identify module and boundary conditions.
 !

@@ -72,10 +72,6 @@ program pc_distribute_z
   Ly = Lxyz(2)
   Lz = Lxyz(3)
 !
-! Calculate dimensionality
-!
-  dimensionality = min(nxgrid-1,1) + min(nygrid-1,1) + min(nzgrid-1,1)
-!
 !  Register physics modules.
 !
   call register_modules

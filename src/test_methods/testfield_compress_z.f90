@@ -683,7 +683,7 @@ module Testfield
 !  25-jan-09/axel: added Maxwell stress tensor calculation
 !  27-nov-09/axel: adapted from testfield_z, and added velocity equation
 !  15-feb-10/axel: adapted from testfield_nonlinear_z, and added enthalpy
-!  27-sep-13/MR  : changes due to uxbtestmz(mz,...  --> uxbtestmz(mz,...
+!  27-sep-13/MR  : changes due to uxbtestmz(mz,...  --> uxbtestmz(nz,...
 !
       use Cdata
       use Diagnostics
@@ -1353,7 +1353,7 @@ module Testfield
 !
 !  30-nov-09/axel: adapted from testfield_z.f90
 !  25-sep-13/MR  : removed parameter p, restricted calculation of pencil case
-!  27-sep-13/MR  : changes due to uxbtestmz(mz,...  --> uxbtestmz(mz,...;
+!  27-sep-13/MR  : changes due to uxbtestmz(mz,...  --> uxbtestmz(nz,...;
 !                  pencil calculation corrected; communication simplified
 !
       use Cdata

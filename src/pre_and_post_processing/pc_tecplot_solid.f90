@@ -67,16 +67,16 @@ program pc_tecplot_solid
 !
 !  Initialize the message subsystem, eg. color setting etc.
 !
-  call initialize_messages()
+  call initialize_messages
 !
 !  Read parameters from start.x (default values; may be overwritten by
 !  read_runpars).
 !
-  call read_all_init_pars()
+  call read_all_init_pars
 !
 !  Read parameters and output parameter list.
 !
-  call read_all_run_pars()
+  call read_all_run_pars
 !
 !  Derived parameters (that may still be overwritten).
 !  [might better be put into another routine, possibly even in rparam or
@@ -85,13 +85,9 @@ program pc_tecplot_solid
   x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
   Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
 !
-! Calculate dimensionality
-!
-  dimensionality = min(nxgrid-1,1) + min(nygrid-1,1) + min(nzgrid-1,1)
-!
 !  Register physics modules.
 !
-  call register_modules()
+  call register_modules
 !
 !  Define the lenergy logical
 !
@@ -140,7 +136,7 @@ program pc_tecplot_solid
   if (lroot) write (*,*) 'mvar = ', mvar_io
 !
   iproc_world = 0
-  call directory_names()
+  call directory_names
   inquire (file=trim(directory_dist)//'/'//filename, exist=ex)
   if (.not. ex) call fatal_error ('pc_tecplot', 'File not found: '//trim(directory_dist)//'/'//filename, .true.)
 !
@@ -170,7 +166,7 @@ program pc_tecplot_solid
 ! Take the shortcut, files are well prepared for direct combination
 ! Set up directory names 'directory' and 'directory_snap'
 !
-      call directory_names()
+      call directory_names
 !
 ! Read the data
 !
@@ -226,7 +222,7 @@ program pc_tecplot_solid
 !
 !  Set up directory names `directory' and `directory_snap'.
 !
-      call directory_names()
+      call directory_names
 !
 !  Read coordinates.
 !
@@ -260,7 +256,7 @@ program pc_tecplot_solid
 !
 !  Need to re-initialize the local grid for each processor.
 !
-      call initialize_grid()
+      call initialize_grid
 !
 !  Read data.
 !  Snapshot data are saved in the tmp subdirectory.
@@ -345,7 +341,7 @@ program pc_tecplot_solid
 !  Free any allocated memory.
 !
   deallocate (gf)
-  call fnames_clean_up()
-  call vnames_clean_up()
+  call fnames_clean_up
+  call vnames_clean_up
 !
 end program pc_tecplot_solid

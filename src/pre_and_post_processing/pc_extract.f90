@@ -99,13 +99,9 @@ program pc_extract
   Ly = Lxyz(2)
   Lz = Lxyz(3)
 !
-! Calculate dimensionality
-!
-  dimensionality = min(nxgrid-1,1) + min(nygrid-1,1) + min(nzgrid-1,1)
-!
 !  Register physics modules.
 !
-  call register_modules()
+  call register_modules
 !
 !  Define the lenergy logical
 !
@@ -154,7 +150,7 @@ program pc_extract
   if (lroot) print *, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
 !
   iproc = 0
-  call directory_names()
+  call directory_names
   inquire (file=trim(directory_dist)//'/'//filename, exist=ex)
   if (.not. ex) call fatal_error ('pc_extract', 'File not found: '//trim(directory_dist)//'/'//filename, .true.)
   call delete_file(trim(directory_out)//'/'//filename)
@@ -268,7 +264,7 @@ program pc_extract
 !
 !  Set up directory names `directory' and `directory_snap'.
 !
-        call directory_names()
+        call directory_names
 !
 !  Read coordinates.
 !
@@ -302,7 +298,7 @@ program pc_extract
 !
 !  Need to re-initialize the local grid for each processor.
 !
-        call initialize_grid()
+        call initialize_grid
 !
 !  Read data.
 !  Snapshot data are saved in the tmp subdirectory.
@@ -424,7 +420,7 @@ program pc_extract
 !  Free any allocated memory.
 !
   deallocate (gf)
-  call fnames_clean_up()
-  call vnames_clean_up()
+  call fnames_clean_up
+  call vnames_clean_up
 !
 endprogram pc_extract

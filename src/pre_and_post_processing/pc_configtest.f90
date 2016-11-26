@@ -40,13 +40,13 @@ program pc_configtest
 !
 !  Initialize the message subsystem, eg. color setting etc.
 !
-  call initialize_messages()
+  call initialize_messages
 !
 !  Read parameters from start.x (default values; overwritten by 'read_all_run_pars').
 !
   ltolerate_namelist_errors = .true.
   write (*,*) '>>> TESTING START.IN <<<'
-  call read_all_init_pars()
+  call read_all_init_pars
 !
 !  Read parameters and output parameter list.
 !
@@ -54,7 +54,7 @@ program pc_configtest
   write (*,*) '>>> TESTING RUN.IN <<<'
   lstart = .false.
   lrun = .true.
-  call read_all_run_pars()
+  call read_all_run_pars
   lrun = .false.
   lstart = .true.
   if (lnamelist_error) stop 1
@@ -69,14 +69,10 @@ program pc_configtest
   Ly = Lxyz(2)
   Lz = Lxyz(3)
 !
-! Calculate dimensionality
-!
-  dimensionality = min(nxgrid-1,1) + min(nygrid-1,1) + min(nzgrid-1,1)
-!
 !  Register physics modules.
 !
-  call register_modules()
-  if (lparticles) call particles_register_modules()
+  call register_modules
+  if (lparticles) call particles_register_modules
 !
 !  Define the lenergy logical
 !
@@ -138,7 +134,7 @@ program pc_configtest
 !
 !  Set up directory names 'directory' and 'directory_snap'.
 !
-  call directory_names()
+  call directory_names
 !
 !  Read coordinates.
 !
@@ -173,7 +169,7 @@ program pc_configtest
 !
 !  Need to re-initialize the local grid for each processor.
 !
-    call initialize_grid()
+    call initialize_grid
   endif
 !
 !  Give all modules the possibility to exit properly.
@@ -182,9 +178,9 @@ program pc_configtest
 !
 !  Free any allocated memory.
 !
-  call fnames_clean_up()
-  call vnames_clean_up()
-  if (lparticles) call particles_cleanup()
+  call fnames_clean_up
+  call vnames_clean_up
+  if (lparticles) call particles_cleanup
 !
   write (*,*) 'CONFIGTEST: > SUCCESSFUL <'
 !

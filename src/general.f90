@@ -143,6 +143,7 @@ module General
     module procedure notanumber_2
     module procedure notanumber_3
     module procedure notanumber_4
+    module procedure notanumber_5
   endinterface
 !
   interface meshgrid
@@ -1965,8 +1966,6 @@ module General
 !
 !  17-may-06/anders+jeff: coded
 !
-      use Cdata, only: pi
-!
       real :: c,re,im,complex_phase
       complex :: z
 !
@@ -2021,8 +2020,6 @@ module General
     endfunction arcsinh
 !***********************************************************************
     subroutine besselj_nu_int(res,nu,arg,loversample)
-!
-      use Cdata, only: pi,pi_1
 !
 !  Calculate the cylindrical bessel function
 !  with integer index. The function in gsl_wrapper.c
@@ -2100,8 +2097,6 @@ module General
 !
 !  is defined everywhere and does not need this fix.
 !
-!
-      use Cdata, only : pi
 !
       real, dimension(:),allocatable :: angle,a_K,a_E
       real :: mu,d_angle,Kappa_mu
@@ -3730,10 +3725,14 @@ module General
     endfunction count_lines
 !****************************************************************************
     subroutine ranges_dimensional(jrange)
-
-      use Cdata, only: dimensionality,nxgrid,nygrid,nzgrid
-  
-      integer, dimension(dimensionality), intent(OUT) :: jrange
+!
+!   Determines indices of the non-degenerate dimensions (out of {1,2,3} for {x,y,z})
+!   and returns them in vector jrange of length dimensionality. Order of indices
+!   is always ascending.
+!
+!   9-oct-15/MR: coded
+! 
+      integer, dimension(:), intent(OUT) :: jrange
 
       if (dimensionality==3) then
         jrange=(/1,2,3/)
@@ -3764,8 +3763,6 @@ module General
 !   9-oct-15/MR: coded
 !  25-oct-16/JW: rewritten
 !
-      use Cdata, only: dimensionality
-
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
       integer,                            intent(in)   :: k,jmean
       real,                               intent(in)   :: weight
@@ -3845,8 +3842,6 @@ module General
 !   9-oct-15/MR: coded
 !  25-oct-16/JW: rewritten
 !
-      use Cdata, only: dimensionality
-
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
       integer,                            intent(in)   :: k,jmean
       real,                               intent(in)   :: weight
@@ -3926,8 +3921,6 @@ module General
 !
 !   22-dec-15/JW: coded, adapted from staggered_mean_vec
 !
-      use Cdata, only: dimensionality
-
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
       integer,                            intent(in)   :: k,jmax
       real,                               intent(in)   :: weight
@@ -4001,8 +3994,6 @@ module General
 !
 !   22-dec-15/JW: coded, adapted from staggered_mean_scal
 !
-      use Cdata, only: dimensionality
-
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
       integer,                            intent(in)   :: k,jmax
       real,                               intent(in)   :: weight
@@ -4143,7 +4134,7 @@ module General
 !
 ! 4-dec-2015/MR: coded
 !
-      use Cdata, only: mx, cosph, sinph, costh, sinth
+      use Cdata, only: cosph, sinph, costh, sinth
 
       real, dimension(:,:,:,:) :: f
       integer :: ith1, ith2, iph1, iph2, j
@@ -4171,7 +4162,7 @@ module General
 !
 ! 4-dec-2015/MR: coded
 !
-      use Cdata, only: mx, cosph, sinph, costh, sinth
+      use Cdata, only: cosph, sinph, costh, sinth
 
       real, dimension(:,:,:,:) :: f
       integer :: ith1, ith2, iph1, iph2
@@ -4479,6 +4470,22 @@ module General
 !
     endfunction notanumber_4
 !***********************************************************************
+    function notanumber_5(f)
+!
+!  Check for NaN or Inf values.
+!  Not well tested with all compilers and options, but avoids false
+!  positives in a case where the previous implementation had problems
+!  Version for 4-d arrays
+!
+!  22-Jul-11/sven+philippe: coded
+!
+      logical :: notanumber_5
+      real, dimension(:,:,:,:,:) :: f
+!
+      notanumber_5 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+!
+    endfunction notanumber_5
+!***********************************************************************
     subroutine reduce_grad_dim(g)
 !
 !  Compresses a gradient vector according to dimensionality using precalculated
@@ -4486,7 +4493,7 @@ module General
 !
 !  28-Jan-16/MR: coded
 !
-      use Cdata, only: dimensionality, dim_mask
+      use Cdata, only: dim_mask
 
       real, dimension(:,:) :: g
 
@@ -4661,16 +4668,64 @@ module General
 !
 ! if a step size variable is provided, return the step size used
 !
-      if(present(step_size)) then
-         step_size=step
+      if (present(step_size)) then
+        step_size=step
       end if
 !
 ! fill the array
 !
       do i=1,n
-         linspace(i)=(start+step*(i-1))
+        linspace(i)=(start+step*(i-1))
       end do
 !
     endfunction linspace
+!***********************************************************************
+    subroutine newton_arr(x,func,add,fmax,dxmax,itmax)
+!
+!  Newton iteration for a 2d-array of decoupled nonlinear equations.
+!  Not yet tested.
+!
+!  12-sep-16/MR: coded
+!
+      real, dimension(:,:),           intent(INOUT) :: x
+      external :: func
+      real, dimension(:,:), optional, intent(IN) :: add
+      real,                 optional, intent(IN) :: fmax, dxmax
+      integer,              optional, intent(IN) :: itmax
+
+      !interface
+      !  pure subroutine func(x,f,df)
+      !    real, intent(in) :: x
+      !    real, intent(out):: f, df
+      !  endsubroutine
+      !endinterface
+
+      real, parameter :: damp=0.1
+      integer :: itmax_, it, i, j
+      real :: fmax_, dxmax_, dXi, fXi, dfdXi
+      logical :: ladd
+
+      fmax_ =roptest(fmax,1e-5)
+      dxmax_=roptest(dxmax,1e-4)
+      itmax_=ioptest(itmax,1000)
+      ladd  =present(add)
+
+      do i=1,size(x,1); do j=1,size(x,2)
+        it=0
+        do while (abs(fXi)>=fmax_)
+!  
+          call func(x(i,j),fXi,dfdXi)
+          if (ladd) fXi=fXi+add(i,j)
+          dXi=damp*fXi/dfdXi
+          if (dXi<dxmax) exit
+          x(i,j)=x(i,j)-dXi
+!
+          it=it+1
+          if (it>=itmax_) exit
+!
+        enddo
+      enddo; enddo
+      
+    endsubroutine newton_arr
 !***********************************************************************
   endmodule General

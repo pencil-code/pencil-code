@@ -52,15 +52,11 @@ program pc_collect
 !
   lstart = .false.
   lrun = .true.
-  call read_all_init_pars()
+  call read_all_init_pars
 !
 !  Read parameters and output parameter list.
 !
-  call read_all_run_pars()
-!
-! Calculate dimensionality
-!
-  dimensionality = min(nxgrid-1,1) + min(nygrid-1,1) + min(nzgrid-1,1)
+  call read_all_run_pars
 !
   if (lwrite_aux .and. .not. lread_aux) then
     print *, ''
@@ -100,7 +96,7 @@ program pc_collect
   print *, 'Lx, Ly, Lz=', Lxyz
   print *, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
 !
-  call directory_names()
+  call directory_names
   inquire (file=trim(directory_dist)//'/'//filename, exist=ex)
   if (.not. ex) call fatal_error ('pc_collect', 'File not found: '//trim(directory_dist)//'/'//filename, .true.)
   open (lun_output, FILE=trim(directory_out)//'/'//filename, status='replace', access='direct', recl=mxgrid*mygrid*io_len)
@@ -133,7 +129,7 @@ program pc_collect
 !
 ! Set up directory names 'directory' and 'directory_snap'
 !
-      call directory_names()
+      call directory_names
 !
 ! Read the data
 !
@@ -203,7 +199,7 @@ program pc_collect
 !
 !  Need to re-initialize the local grid for each processor.
 !
-!!!        call initialize_grid()
+!!!        call initialize_grid
 !
 !  Read data.
 !  Snapshot data are saved in the tmp subdirectory.

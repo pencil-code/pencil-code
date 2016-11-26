@@ -11,8 +11,6 @@
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
 !
-! PENCILS PROVIDED
-!
 !***************************************************************
 !
 module power_spectrum
