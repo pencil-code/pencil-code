@@ -7,7 +7,7 @@ pro rvid_line,field,mpeg=mpeg,tmin=tmin,tmax=tmax,max=amax,min=amin,$
   transp=transp,global_scaling=global_scaling,nsmooth=nsmooth, $
   log=log,xgrid=xgrid,ygrid=ygrid,zgrid=zgrid,_extra=_extra,psym=psym, $
   xstyle=xstyle,ystyle=ystyle,fluct=fluct,newwindow=newwindow, xsize=xsize, $
-  ysize=ysize,png_truecolor=png_truecolor, $
+  ysize=ysize,png_truecolor=png_truecolor, noexp=noexp, $
   xaxisscale=xaxisscale, normalize=normalize
 ;
 ; $Id$
@@ -312,9 +312,17 @@ map=reform(map,nxz,nt)
 ;
 if (not keyword_set(nocontour)) then begin
   if (keyword_set(against_time)) then begin
-    contour, transpose(exp(map)), tt, xaxisscale, /fill, nlev=60,ys=1,xs=1
+    if (keyword_set(noexp)) then begin
+      contour, transpose(map), tt, xaxisscale, /fill, nlev=60,ys=1,xs=1
+    endif else begin
+      contour, transpose(exp(map)), tt, xaxisscale, /fill, nlev=60,ys=1,xs=1
+    endelse
   endif else begin
-    contour, transpose(exp(map)), /fill, nlev=60,ys=1,xs=1
+    if (keyword_set(noexp)) then begin
+      contour, transpose(map), /fill, nlev=60,ys=1,xs=1
+    endif else begin
+      contour, transpose(exp(map)), /fill, nlev=60,ys=1,xs=1
+    endelse
   endelse
 endif
 ;
