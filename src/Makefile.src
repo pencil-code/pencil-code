@@ -2494,13 +2494,13 @@ cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
 #
 special_dummies.inc:  nospecial.f90 $(SPECIAL_MODULES:=.f90) Makefile.local
 ifneq ($(SPECIAL_MULT),1)
-	scripts/mkdummyinc -d nospecial.f90 -s $(SPECIAL).f90 > special_dummies.inc
+	scripts/mkdummyinc -d nospecial.f90 -s $(SPECIAL).f90 -o special_dummies.inc
 else
-	@for file in $(SPECIAL_MODULES); do echo "$$file"_dummies.inc; scripts/mkdummyinc -d nospecial.f90 -s "$$file".f90 > $${file#*/}_dummies.inc; done
+	@for file in $(SPECIAL_MODULES); do echo "$$file"_dummies.inc; scripts/mkdummyinc -d nospecial.f90 -s "$$file".f90 -o $${file#*/}_dummies.inc; done
 endif
 #
 initial_condition_dummies.inc:  noinitial_condition.f90 $(INITIAL_CONDITION).f90
-	scripts/mkdummyinc -d noinitial_condition.f90 -s $(INITIAL_CONDITION).f90 > initial_condition_dummies.inc
+	scripts/mkdummyinc -d noinitial_condition.f90 -s $(INITIAL_CONDITION).f90 -o initial_condition_dummies.inc
 #
 mpicomm_double.f90: mpicomm.f90
 	sed -e 's/REAL/DOUBLE_PRECISION/g' mpicomm.f90 > mpicomm_double.f90
