@@ -3288,7 +3288,7 @@ module Interstellar
       call mpireduce_sum(tmp,tmp2,3)
       call mpibcast_real(tmp2,3)
       ekintot=0.5*tmp2(3)
-      if (abs(tmp2(2)) < tini) then
+      if ((frac_kin/=0).and.(abs(tmp2(2)) < tini)) then
         write(0,*) 'iproc:',iproc,':tmp2 = ', tmp2
         call fatal_error("interstellar.get_properties","Dividing by zero?")
       else
@@ -3383,7 +3383,7 @@ module Interstellar
       call mpireduce_sum(tmp,tmp2,3)
       call mpibcast_real(tmp2,3)
       ekintot=0.5*tmp2(3)
-      if (abs(tmp2(2)) < tini) then
+      if ((frac_kin/=0).and.(abs(tmp2(2)) < tini)) then
         write(0,*) 'tmp2 = ', tmp2
         call fatal_error("interstellar.get_props_check","Dividing by zero?")
       else
