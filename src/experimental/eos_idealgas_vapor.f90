@@ -381,8 +381,6 @@ module EquationOfState
 !***********************************************************************
     subroutine rprint_eos(lreset,lwrite)
 !
-!  Writes iyH and ilnTT to index.pro file.
-!
       logical :: lreset
       logical, optional :: lwrite
 !
