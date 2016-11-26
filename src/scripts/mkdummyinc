@@ -20,13 +20,12 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Started:   18-Jul-2006
 # CVS: $Id$
 # Usage:
-#   mkdummy [-o outfile] -d dummyfile < source_file \n
+#   mkdummy -d default_case.f90 -s special_file.f90 [-o dummies.inc]
 # Description:
-#
 #   Output is written as a Fortran program and supposed to end up in the
 #   local file src/$(XXXXXX_MODULE)_dummies.inc .
 # Example:
-#     mkdummy -d nospecial.f90 -s special/neutron_star.f90 > special_dummies.inc
+#     mkdummy -d nospecial.f90 -s special/neutron_star.f90 -o special_dummies.inc
 #
 # History:
 #   17-jul-06/tony: Created
@@ -65,6 +64,8 @@ open(OUT, "> $outfile") or die "Can't open $outfile for writing";
 #
 find_implemented_routines($srcfile);
 write_dummies($dummyfile);
+close(OUT);
+exit;
 #
 # ---------------------------------------------------------------------- #
 #
