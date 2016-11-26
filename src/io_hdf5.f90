@@ -221,10 +221,10 @@ module Io
       real :: t_sp   ! t in single precision for backwards compatibility
 !
       if (.not. present (file)) call fatal_error ('output_snap', 'downsampled output not implemented for IO_hdf5')
-      filename = trim (directory_snap)//'/'//trim(file)//'.h5'
+      filename = trim(directory_snap)//'/'//trim(file)//'.h5'
       dataset = 'f'
       if (present (label)) dataset = label
-      lexists = parallel_file_exists (filename)
+      lexists = parallel_file_exists(filename)
       ltrunc = .true.
       if (present (ltruncate)) ltrunc = ltruncate
       if (.not. lexists) ltrunc = .true.
