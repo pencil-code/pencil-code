@@ -111,8 +111,7 @@ module FArrayManager
 !***********************************************************************
     subroutine farray_register_global(varname,ivar,vector,ierr)
 !
-!  Register a global variable in the f array. Also write index information
-!  to index.pro for use with pc_read_global.
+!  Register a global variable in the f array.
 !
       character (len=*) :: varname
       integer  :: ivar
@@ -125,14 +124,6 @@ module FArrayManager
       intent(out) :: ivar,ierr
 !
       call farray_register_variable(varname,ivar,vartype,vector=vector,ierr=ierr)
-!
-!  write varname into index.pro file (for idl)
-!
-      if (lroot) then
-        open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-        write(3,*) 'i'//varname, '=', ivar
-        close(3)
-      endif
 !
     endsubroutine farray_register_global
 !***********************************************************************
