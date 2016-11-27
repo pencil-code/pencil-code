@@ -45,12 +45,12 @@ my @implemented;
 #
 ## Process command line
 #
-my (%opts);	# Variables written by GetOptions
+my (%opts);  # Variables written by GetOptions
 GetOptions(\%opts,
-	   qw( -h   --help
-	       -o=s --output=s
-	       -d=s --dummy=s
-	       -s=s --src=s
+           qw( -h   --help
+               -o=s --output=s
+               -d=s --dummy=s
+               -s=s --src=s
                                ));
 #
 die usage() if ($opts{h} || $opts{help});
@@ -75,7 +75,7 @@ sub usage {
     local $/ = '';              # Read paragraphs
     open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
     while (<FILE>) {
-	# Paragraph _must_ contain `Description:' or `Usage:'
+        # Paragraph _must_ contain `Description:' or `Usage:'
         next unless /^\s*\#\s*(Description|Usage):/m;
         # Drop `Author:', etc. (anything before `Description:' or `Usage:')
         s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;
@@ -100,21 +100,20 @@ sub find_implemented_routines {
     open(SRC,"<$file") || die "cannot open $file";
 #
     while( my $line = <SRC> ) {
-	  chop($line);
-	  my $lout = $line;
-	  if(  $line =~ /^\s*subroutine/i || $line =~ /^\s*function/i ||
-          	 $line =~ /^\s*integer\s*function/i ) {
-	      my $subname;
-	      my @words = split " ", $line;
-	      if( $words[1] =~ /^\s*function/i ) {
-	          ( $subname = $words[2] ) =~ tr/A-Z/a-z/;	#lower case
-	      } else {
-	          ( $subname = $words[1] ) =~ tr/A-Z/a-z/;	#lower case
-	      }
-	      $subname =~ s/\s//g;			#remove whitespace
-	      $subname =~ s/\(.*$//;
+          chop($line);
+          my $lout = $line;
+          if(  $line =~ /^\s*subroutine/i || $line =~ /^\s*function/i || $line =~ /^\s*integer\s*function/i ) {
+              my $subname;
+              my @words = split " ", $line;
+              if( $words[1] =~ /^\s*function/i ) {
+                  ( $subname = $words[2] ) =~ tr/A-Z/a-z/;        #lower case
+              } else {
+                  ( $subname = $words[1] ) =~ tr/A-Z/a-z/;        #lower case
+              }
+              $subname =~ s/\s//g;                        #remove whitespace
+              $subname =~ s/\(.*$//;
           push @implemented, $subname
-	  }
+          }
     }
 #
     close(SRC);
@@ -148,11 +147,11 @@ sub write_dummies {
 # The difference between chop() and chomp() is that chomp only deletes the
 # "\n" character, while chop deletes the last character whatever it may be.  
 #
-	  chop($line);
+          chop($line);
 #
 # Define lout
 #
-	  my $lout = $line;
+          my $lout = $line;
 #
 # Test the line. If is starts with subroutine, function, or integer followed 
 # by function (why this last thing?). The "^\s*" stuff means 
@@ -162,29 +161,29 @@ sub write_dummies {
 # with subroutine, ignoring whatever blank spaces between the start of the 
 # line and 'subroutine'" 
 #
-	  if(  $line =~ /^\s*subroutine/i || $line =~ /^\s*function/i ||
-          	 $line =~ /^\s*integer\s*function/i ) {
+          if(  $line =~ /^\s*subroutine/i || $line =~ /^\s*function/i ||
+                   $line =~ /^\s*integer\s*function/i ) {
 #
 # Define subname
 #
-	      my $subname;
+              my $subname;
 #
 # Split line using the null string as separators. Put the pieces into 
 # a "word" array ($ is for scalars, @ for arrays). This means that 
 # for $line="subroutine register_special", we have array[0]="subroutine", 
 # and array[1]="register_special".
 # 
-	      my @words = split " ", $line;
+              my @words = split " ", $line;
 #
 # Get the name of the subroutine
 #
-	      if( $words[1] =~ /^\s*function/i ) {
-	          ( $subname = $words[2] ) =~ tr/A-Z/a-z/;	#lower case
-	      } else {
-	          ( $subname = $words[1] ) =~ tr/A-Z/a-z/;	#lower case
-	      }
-	      $subname =~ s/\s//g;			#remove whitespace
-	      $subname =~ s/\(.*$//;
+              if( $words[1] =~ /^\s*function/i ) {
+                  ( $subname = $words[2] ) =~ tr/A-Z/a-z/;        #lower case
+              } else {
+                  ( $subname = $words[1] ) =~ tr/A-Z/a-z/;        #lower case
+              }
+              $subname =~ s/\s//g;                        #remove whitespace
+              $subname =~ s/\(.*$//;
 #
 # Flag the line for writing if the subroutine is not implemented in
 # the input file. This flag will follow all further lines until another
@@ -192,24 +191,23 @@ sub write_dummies {
 # tested....
 #
           $write_line = ! is_implemented($subname);
-	  }# endif
+          }# endif
 #
 # Go printing...
 #
-      print OUT "$lout\n" if ($write_line);
-#	  
+          print OUT "$lout\n" if ($write_line);
+#          
 # Stop printing if it reaches endsubroutine or endfunction. This fix is needed because 
 # the last subroutine of the dummy file, if flagged (i.e., if not implemented on the 
 # input file), would continue printing until the end of the file. It would then print 
 # the line containing "input XXX_dummies.inc" and "endmodule XXX" onto the XXX_dummies.inc. 
 # This, in turn, causes an infinite loop. 
 #
-	  if ($write_line && ($line =~ /^\s*endsubroutine/i || $line =~ /^s\*function/i)) {
+          if ($write_line && ($line =~ /^\s*endsubroutine/i || $line =~ /^s\*function/i)) {
 #
-	      print OUT 
-"!*********************************************************************** \n";
-	      $write_line = 0;
-	  }      # End of if
+              print OUT "!*********************************************************************** \n";
+              $write_line = 0;
+          }      # End of if
     }            # End of while
 #
     close(SRC);
