@@ -221,7 +221,7 @@ module Magnetic
       phase_ax, phase_ay, phase_az, magnetic_xaver_range, amp_relprof, k_relprof, &
       tau_relprof, znoise_int, znoise_ext, magnetic_zaver_range, &
       lbx_ext_global,lby_ext_global,lbz_ext_global, dipole_moment, &
-      sheet_position,sheet_thickness,sheet_hyp,ll_sh, mm_sh
+      sheet_position,sheet_thickness,sheet_hyp
 !
 ! Run parameters
 !
