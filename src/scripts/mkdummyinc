@@ -90,7 +90,7 @@ sub is_implemented {
     my $subname = shift;
 #
     foreach my $name (@implemented) {
-      return 1 if ($subname =~ /^\s*$name\s*$/i);
+        return 1 if ($subname =~ /^\s*$name\s*$/i);
     }
     return 0;
 }
@@ -112,7 +112,7 @@ sub find_implemented_routines {
               }
               $subname =~ s/\s//g;                        #remove whitespace
               $subname =~ s/\(.*$//;
-          push @implemented, $subname
+              push @implemented, $subname
           }
     }
 #
