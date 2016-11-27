@@ -2785,9 +2785,9 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !   3-Dec-10/dhruba+joern: coded
 !   11-jan-11/MR: parameter nnamel added
 !
-      use File_io, only : parallel_unit_vec, parallel_open, parallel_close
+      use File_io, only : parallel_unit_vec, parallel_open, parallel_close, parallel_count_lines
       use General, only : itoa
-      use Sub, only     : location_in_proc, parallel_count_lines
+      use Sub, only     : location_in_proc
 !
       integer, intent(in) :: nnamel
 !

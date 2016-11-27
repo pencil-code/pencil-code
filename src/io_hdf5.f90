@@ -12,9 +12,9 @@ module Io
 !
   use Cdata
   use Cparam, only: intlen, fnlen, max_int
+  use File_io, only: delete_file
   use HDF5_IO
   use Messages, only: fatal_error, svn_id, warning
-  use General, only: delete_file
 !
   implicit none
 !
@@ -201,8 +201,8 @@ module Io
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
 !  13-feb-2014/MR: made file optional (prep for downsampled output)
 !
+      use File_io, only: parallel_file_exists
       use Mpicomm, only: globalize_xy, collect_grid, mpi_precision, stop_it_if_any
-      use Sub, only: parallel_file_exists
 !
       integer, intent(in) :: nv
       real, dimension (mx,my,mz,nv), intent(in) :: a
@@ -324,8 +324,8 @@ module Io
 !  10-Mar-2015/MR: avoided use of fseek;
 !                  this subroutine seems not yet to be adapted to HDF5
 !
+      use File_io, only: backskip_to_time
       use Mpicomm, only: localize_xy, mpibcast_real, MPI_COMM_WORLD
-      use General, only: backskip_to_time
 !
       character (len=*) :: file
       integer, intent(in) :: nv
@@ -770,8 +770,8 @@ module Io
 !
 !  19-Sep-2012/Bourdin.KIS: adapted from io_mpi2
 !
+      use File_io, only: file_exists
       use Mpicomm, only: mpibcast_logical, MPI_COMM_WORLD
-      use General, only: file_exists
 !
       character (len=*), intent(in), optional :: file
 !

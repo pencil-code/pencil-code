@@ -267,10 +267,9 @@ module Param_IO
 !  18-aug-15/PABourdin: reworked to simplify code and display all errors at once
 !  19-aug-15/PABourdin: renamed from read_startpars to read_all_init_pars
 !
-      use File_io, only: parallel_open, parallel_close
+      use File_io, only: parallel_open, parallel_close, read_namelist
       use Mpicomm, only: stop_it_if_any
       use Particles_main, only: read_all_particles_init_pars
-      use Sub, only: read_namelist
 !
       logical, optional, intent(IN) :: print
 !
@@ -417,11 +416,11 @@ module Param_IO
 !  19-aug-15/PABourdin: renamed from 'read_runpars' to 'read_all_run_pars'
 !
       use Dustvelocity, only: copy_bcs_dust
-      use File_io, only: parallel_open, parallel_close
+      use File_io, only: parallel_open, parallel_close, read_namelist
       use General, only: loptest
       use Mpicomm, only: stop_it_if_any
       use Particles_main, only: read_all_particles_run_pars
-      use Sub, only: parse_bc, read_namelist
+      use Sub, only: parse_bc
 !
       logical, optional, intent(in) :: logging
       character(len=fnlen) :: file = 'run.in'

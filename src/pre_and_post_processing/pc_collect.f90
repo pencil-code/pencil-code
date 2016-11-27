@@ -6,13 +6,14 @@ program pc_collect
 !
   use Cdata
   use Cparam, only: fnlen
+  use File_io, only: backskip_to_time, delete_file
+  use General, only: loptest
   use Grid, only: initialize_grid
   use IO
   use Messages
   use Param_IO
   use Register
   use Snapshot
-  use General, only: backskip_to_time, loptest, delete_file
 !
   implicit none
 !

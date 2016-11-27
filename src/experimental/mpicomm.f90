@@ -7114,8 +7114,9 @@ module Mpicomm
 !  11-jan-15/MR: primary reading of data by root outsourced to read_infile
 !
       use Cparam, only: fnlen
+      use File_io, only: file_size
       use General, only: itoa
-      use Syscalls, only: file_size, write_binary_file, get_tmp_prefix
+      use Syscalls, only: write_binary_file, get_tmp_prefix
 !
       integer :: unit
       character (len=*) :: file
@@ -7249,59 +7250,6 @@ module Mpicomm
       close(unit,STATUS='delete')
 !
     endsubroutine true_parallel_close
-!***********************************************************************
-    function parallel_count_lines(file,comchars)
-!
-!  Determines in parallel the number of lines in a file.
-!
-!  Returns:
-!  * Integer containing the number of lines in a given file
-!  * -1 on error
-!
-!  23-mar-10/Bourdin.KIS: implemented
-!  26-aug-13/MR: optional parameter comchars added for use in count_lines
-!
-      use Syscalls, only: count_lines
-!
-      character(len=*),                  intent(IN) :: file
-      character, dimension(:), optional, intent(IN) :: comchars
-!
-      integer :: parallel_count_lines
-!
-      if (lroot) parallel_count_lines = count_lines(file,comchars)
-      call mpibcast_int(parallel_count_lines)
-!
-    endfunction
-!***********************************************************************
-    function parallel_file_exists(file, delete)
-!
-!  Determines in parallel if a given file exists.
-!  If delete is true, deletes the file.
-!
-!  Returns:
-!  * Integer containing the number of lines in a given file
-!  * -1 on error
-!
-!  23-mar-10/Bourdin.KIS: implemented
-!
-      use Syscalls, only: file_exists
-!
-      character(len=*) :: file
-      logical :: parallel_file_exists,ldelete
-      logical, optional :: delete
-!
-      if (present(delete)) then
-        ldelete=delete
-      else
-        ldelete=.false.
-      endif
-!
-      ! Let the root node do the dirty work
-      if (lroot) parallel_file_exists = file_exists(file,ldelete)
-!
-      call mpibcast_logical(parallel_file_exists)
-!
-    endfunction
 !***********************************************************************
     subroutine mpigather_xy( sendbuf, recvbuf, lpz )
 !
@@ -7807,8 +7755,8 @@ module Mpicomm
 !
 !  11-jan-15/MR: outsourced from true_parallel_open
 !
-      use Syscalls, only: file_size
       use Cdata, only: comment_char
+      use File_io, only: file_size
 
       character(len=*) :: file,message
       character(len=:), allocatable :: buffer

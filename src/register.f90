@@ -821,7 +821,7 @@ module Register
       use Shear,           only: rprint_shear
       use TestPerturb,     only: rprint_testperturb
       use PointMasses,     only: rprint_pointmasses
-      use Sub,             only: parallel_file_exists, parallel_count_lines
+      use File_io,         only: parallel_file_exists, parallel_count_lines
 !
       logical, intent(IN) :: lreset
 !

@@ -24,8 +24,8 @@ module Io
 !
   use Cdata
   use Cparam, only: intlen, fnlen, max_int
+  use File_io, only: delete_file
   use Messages, only: fatal_error, svn_id, warning
-  use General, only: delete_file
 !
   implicit none
 !
@@ -297,9 +297,9 @@ module Io
 !   6-mar-2015/MR: changed direct access reading to sequential
 !   9-mar-2015/MR: backskipping to time record corrected
 !
+      use File_io, only: backskip_to_time
       use Mpicomm, only: localize_xy, mpibcast_real, stop_it_if_any, MPI_COMM_WORLD
       use Syscalls, only: sizeof_real
-      use General, only: backskip_to_time
 !
       character (len=*) :: file
       integer, intent(in) :: nv
@@ -763,8 +763,8 @@ module Io
 !
 !  13-Dec-2011/Bourdin.KIS: coded
 !
+      use File_io, only: file_exists
       use Mpicomm, only: mpibcast_logical, MPI_COMM_WORLD
-      use General, only: file_exists
 !
       character (len=*), intent(in), optional :: file
 !

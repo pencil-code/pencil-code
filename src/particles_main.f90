@@ -298,7 +298,7 @@ module Particles_main
 !***********************************************************************
     subroutine read_all_particles_init_pars()
 !
-      use Sub, only: read_namelist
+      use File_io, only: read_namelist
 !
       call read_namelist(read_particles_init_pars      ,'particles'         ,lparticles)
       call read_namelist(read_particles_rad_init_pars  ,'particles_radius'  ,lparticles_radius)
@@ -321,7 +321,7 @@ module Particles_main
 !***********************************************************************
     subroutine read_all_particles_run_pars()
 !
-      use Sub, only: read_namelist
+      use File_io, only: read_namelist
 !
       call read_namelist(read_particles_run_pars          ,'particles'              ,lparticles)
       call read_namelist(read_particles_adapt_run_pars    ,'particles_adapt'        ,lparticles_adaptation)

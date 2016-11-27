@@ -108,7 +108,7 @@ module Special
 !  06-oct-03/tony: coded
 !
       use General, only: itoa
-      use Sub, only: parallel_file_exists
+      use File_io, only: parallel_file_exists
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: TT,rho,zeta,eta,teqm

@@ -184,7 +184,7 @@ module Special
 !
 !  generate/allocate k/u vectors
 !
-      use Sub, only: parallel_file_exists
+      use File_io, only: parallel_file_exists
 !
       integer :: ns
 !

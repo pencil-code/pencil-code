@@ -3,9 +3,7 @@
 !  This module takes care of massive parallel file Input/Output.
 !  We use here only F95 features for HPC-friendly behaviour.
 !
-!  5-Aug-15/MR: shifted parallel_file_exists and parallel_count_lines to Sub,
-!               file_exists, file_size and count_lines to General
-!               removed unit parameters from parallel_open, parallel_rewind, 
+!  5-Aug-15/MR: removed unit parameters from parallel_open, parallel_rewind, 
 !               parallel_close: it is always parallel_unit.
 !               made parallel_unit public, hence removed get_unit.
 !               moved lnamelist_error to cdata.
@@ -37,7 +35,7 @@ module File_io
 !
 !  28-May-2015/Bourdin.KIS: implemented
 !
-      use General, only: loptest, file_size, file_exists
+      use General, only: loptest
       use Messages, only: fatal_error
 
       integer :: parallel_read

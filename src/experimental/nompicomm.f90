@@ -2652,49 +2652,6 @@ module Mpicomm
 !
     endsubroutine parallel_close_int
 !***********************************************************************
-    function parallel_count_lines(file,comchars)
-!
-!  Determines the number of lines in a file.
-!
-!  Returns:
-!  * Integer containing the number of lines in a given file
-!  * -1 on error
-!
-!  23-mar-10/Bourdin.KIS: implemented
-!  26-aug-13/MR: optional parameter comchars added for use in count_lines
-!
-      use Syscalls, only: count_lines
-!
-      character(len=*),                  intent(IN) :: file
-      character, dimension(:), optional, intent(IN) :: comchars
-!
-      integer :: parallel_count_lines
-!
-      parallel_count_lines = count_lines(file,comchars)
-!
-    endfunction
-!***********************************************************************
-    function parallel_file_exists(file, delete)
-!
-!  Determines in parallel if a given file exists.
-!  If delete is true, deletes the file.
-!
-!  Returns:
-!  * Integer containing the number of lines in a given file
-!  * -1 on error
-!
-!  23-mar-10/Bourdin.KIS: implemented
-!
-      use Syscalls, only: file_exists
-!
-      character(len=*) :: file
-      logical :: parallel_file_exists
-      logical, optional :: delete
-!
-      parallel_file_exists = file_exists(file,delete)
-!
-    endfunction
-!***********************************************************************
     subroutine mpigather_xy( sendbuf, recvbuf, lpz )
 !
 !  21-dec-10/MR: coded
@@ -2832,8 +2789,8 @@ module Mpicomm
 !
 !  11-jan-15/MR: outsourced from true_parallel_open
 !
-      use Syscalls, only: file_size
       use Cdata, only: comment_char
+      use File_io, only: file_size
 
       character(len=*) :: file,message
       character(len=:), allocatable :: buffer

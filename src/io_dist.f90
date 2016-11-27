@@ -18,8 +18,8 @@ module Io
 !
   use Cdata
   use Cparam, only: intlen, fnlen, max_int
+  use File_io, only: delete_file
   use Messages, only: fatal_error, warning, svn_id
-  use General, only: delete_file
 !
   implicit none
 !
@@ -199,24 +199,6 @@ module Io
       if (lserial_io) call end_serialize
 !
     endsubroutine output_snap_finalize
-!***********************************************************************
-    subroutine fseek_pos(unit, rec_len, num_rec, reference)
-!
-!  Non-functional dummy routine.
-!
-!  25-Apr-2012/Bourdin.KIS: coded
-!
-      use General, only: itoa
-!
-      integer, intent(in) :: unit
-      integer(kind=8), intent(in) :: rec_len, num_rec
-      integer, intent(in) :: reference
-!
-      if (lroot) write (*,*) 'fseek_pos:', unit, rec_len, num_rec, reference
-      call fatal_error ('fseek_pos on unit '//trim (itoa (unit)), &
-          "not available for the distributed IO module.", .true.)
-!
-    endsubroutine fseek_pos
 !***********************************************************************
     logical function init_write_persist(file)
 !
@@ -730,8 +712,8 @@ module Io
 !
 !  13-Dec-2011/Bourdin.KIS: coded
 !
+      use File_io, only: file_exists
       use Mpicomm, only: mpibcast_logical, MPI_COMM_WORLD
-      use General, only: file_exists
 !
       character (len=*), intent(in), optional :: file
 !
@@ -1197,7 +1179,7 @@ module Io
 !  15-apr-15/MR  : automatic detection of precision added; doesn't work for old files 
 !                  which don't contain Lx, Ly, Lz etc.
 !
-      use General, only: file_size
+      use File_io, only: file_size
 !
       character (len=*) :: file
 !

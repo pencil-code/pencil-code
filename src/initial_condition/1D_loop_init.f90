@@ -148,9 +148,9 @@ contains
 !  04-sep-10/bing: coded
 !
       use EquationOfState, only: get_cp1,gamma,gamma_m1,cs20
+      use File_io, only: file_exists, file_size
       use Mpicomm, only: mpibcast_int, mpibcast_real, stop_it_if_any
       use Messages, only: warning
-      use General, only: file_exists, file_size
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !

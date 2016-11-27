@@ -99,7 +99,6 @@ module Sub
   public :: insert
   public :: find_max_fvec, find_rms_fvec, find_xyrms_fvec
   public :: finalize_aver
-  public :: fseek_pos, parallel_file_exists, parallel_count_lines, read_namelist
   public :: meanyz
   public :: calc_all_diff_fluxes
   public :: periodic_fold_back
@@ -4640,7 +4639,7 @@ nameloop: do
 !
 !  5-mar-02/wolf: coded
 !
-      use General, only: file_exists
+      use File_io, only: file_exists
 !
       character (len=*), intent(in) :: fname
 !
@@ -4658,6 +4657,8 @@ nameloop: do
 !  If DELETE is true, delete the file after checking for existence.
 !
 !  26-jul-09/wolf: coded
+!
+      use File_io, only: parallel_file_exists
 !
       logical :: control_file_exists
       character (len=*), intent(in) :: fname
@@ -4683,7 +4684,7 @@ nameloop: do
 !
 !  4-oct-02/wolf: coded
 !
-      use General, only : file_exists
+      use File_io, only : file_exists
 !
       character (len=linelen) :: read_line_from_file
       character (len=*) :: fname
@@ -6905,174 +6906,6 @@ nameloop: do
         endif
 !
     endsubroutine finalize_aver_4D
-!***********************************************************************
-    subroutine fseek_pos(unit, rec_len, num_rec, reference)
-!
-!  Seeks to a given position in an opened file relative to a reference point.
-!  If reference=0, this is relative to the beginning of the file,
-!  if reference=1, this is relative to the current position in the file,
-!  and if reference=2, this is relative to the end of the file.
-!  'rec_len' and 'num_rec' are referring to a record length and a given number
-!  of records that one likes to seek, boths must be representable in integer.
-!  If 'num_rec' is negative, seeking is done backwards.
-!
-!  20-Feb-2012/Bourdin.KIS: coded
-!
-      use General, only: itoa
-
-      integer, intent(in) :: unit
-      integer(kind=8) :: rec_len, num_rec
-      integer, intent(in) :: reference
-!
-      integer :: i, num, len
-!
-      if (num_rec < 0) then
-        num_rec = -num_rec
-        rec_len = -rec_len
-      endif
-!
-      ! all numbers must be representable as integer(kind=4)
-      len = rec_len
-      num = num_rec
-      if (len /= rec_len) call fatal_error ('fseek_pos on unit '//trim (itoa (unit)), &
-          "rec_len is not representable as integer(kind=4).", .true.)
-      if (num /= num_rec) call fatal_error ('fseek_pos on unit '//trim (itoa (unit)), &
-          "num_rec is not representable as integer(kind=4).", .true.)
-!
-! WORKAROUND:
-! Even though the ifort manual states that ifort would be able to fseek
-! with an 64-bit integer argument, this is NOT working!
-! Therefore, we have to iterate the fseek with a 32-bit integer to be save.
-! Note: gfortran would be able to seek with a 64-bit integer value, though.
-! (20-Feb-2012, Bourdin.KIS)
-!
-      !!!call fseek (unit, rec_len, reference)
-      if (num >= 2) then
-        do i = 2, num
-          !!!call fseek (unit, rec_len, 1)
-        enddo
-      endif
-!
-    endsubroutine fseek_pos
-!***********************************************************************
-    function parallel_count_lines(file,ignore_comments)
-!
-!  Determines in parallel the number of lines in a file.
-!
-!  Returns:
-!  * Integer containing the number of lines in a given file
-!  * -1 on error
-!
-!  23-mar-10/Bourdin.KIS: implemented
-!  26-aug-13/MR: optional parameter ignore_comments added
-!  28-May-2015/Bourdin.KIS: reworked
-!
-      use General, only: count_lines
-      use Mpicomm, only: mpibcast_int, MPI_COMM_WORLD
-
-      integer :: parallel_count_lines
-      character (len=*), intent(in) :: file
-      logical, optional, intent(in) :: ignore_comments
-!
-      if (lroot) parallel_count_lines = count_lines(file,ignore_comments)
-      call mpibcast_int(parallel_count_lines,comm=MPI_COMM_WORLD)
-!
-    endfunction parallel_count_lines
-!***********************************************************************
-    function parallel_file_exists(file, delete)
-!
-!  Determines in parallel if a given file exists.
-!  If delete is true, deletes the file.
-!
-!  Returns:
-!  * Integer containing the number of lines in a given file
-!  * -1 on error
-!
-!  23-mar-10/Bourdin.KIS: implemented
-!
-      use General, only: file_exists, loptest
-      use Mpicomm, only: mpibcast_logical, MPI_COMM_WORLD
-
-      logical :: parallel_file_exists
-      character (len=*) :: file
-      logical, optional :: delete
-!
-      ! Let the root node do the dirty work
-      if (lroot) parallel_file_exists = file_exists(file,loptest(delete))
-!
-      call mpibcast_logical(parallel_file_exists,comm=MPI_COMM_WORLD)
-!
-    endfunction parallel_file_exists
-!***********************************************************************
-    subroutine read_namelist(reader,name,lactive)
-!
-!  Encapsulates reading of pars + error handling.
-!
-!  31-oct-13/MR: coded
-!  16-dec-13/MR: handling of optional ierr corrected
-!  18-dec-13/MR: changed handling of ierr to avoid compiler trouble
-!  19-dec-13/MR: changed ierr into logical lierr to avoid compiler trouble
-!  11-jul-14/MR: end-of-file caught to avoid program crash when a namelist is missing
-!  18-aug-15/PABourdin: reworked to simplify code and display all errors at once
-!  19-aug-15/PABourdin: renamed from 'read_pars' to 'read_namelist'
-!
-      use File_io, only: parallel_rewind, find_namelist
-      use General, only: loptest, itoa
-      use Messages, only: warning
-!
-      interface
-        subroutine reader(iostat)
-          integer, intent(out) :: iostat
-        endsubroutine reader
-      endinterface
-!
-      character(len=*), intent(in) :: name
-      logical, optional, intent(in) :: lactive
-!
-      integer :: ierr
-      logical :: found
-      character(len=5) :: type, suffix
-!
-      if (.not. loptest (lactive, .true.)) return
-!
-      if (lstart .or. lparam_nml) then
-        type = 'init'
-      else
-        type = 'run'
-      endif
-      if (name /= '') type = '_'//type
-      suffix = '_pars'
-      if (name == 'initial_condition_pars') then
-        type = ''
-        suffix = ''
-      endif
-!
-      !if (.not. find_namelist (trim(name)//trim(type)//trim(suffix))) then
-      call find_namelist (trim(name)//trim(type)//trim(suffix),found)
-
-      if (.not. found) then
-        if (.not. lparam_nml) lnamelist_error = .true.
-        return
-      endif
-!
-      ierr = 0 ! G95 complains 'ierr' is used but not set, even though 'reader' has intent(out).
-      call reader(ierr)
-!
-      if (ierr /= 0) then
-        lnamelist_error = .true.
-        if (lroot) then
-          if (ierr == -1) then
-            call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)//'" is missing!')
-          else
-            call warning ('read_namelist', 'namelist "'//trim(name)//trim(type)//trim(suffix)// &
-                          '" has an error ('//trim(itoa(ierr))//')!')
-          endif
-        endif
-      endif
-!
-      call parallel_rewind
-!
-    endsubroutine read_namelist
 !***********************************************************************
     subroutine calc_diffusive_flux(diffs,c_char,islope_limiter,h_slope_limited,flux)
 !

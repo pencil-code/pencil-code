@@ -2597,9 +2597,9 @@ module Diagnostics
 !   3-Dec-10/dhruba+joern: coded
 !   11-jan-11/MR: parameter nnamel added
 !
-      use File_io, only : parallel_open, parallel_close, parallel_unit
+      use File_io, only : parallel_open, parallel_close, parallel_unit, parallel_count_lines
       use General, only : itoa
-      use Sub, only     : parallel_count_lines, location_in_proc
+      use Sub, only : location_in_proc
 !
       integer, intent(in) :: nnamel
 !

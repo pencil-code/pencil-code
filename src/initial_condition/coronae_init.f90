@@ -157,9 +157,9 @@ contains
 !  04-sep-10/bing: coded
 !
       use EquationOfState, only: get_cp1,gamma,gamma_m1,cs20
+      use File_io, only: file_exists, file_size
       use Mpicomm, only: mpibcast_int, mpibcast_real, stop_it_if_any
       use Messages, only: warning
-      use General, only: file_exists, file_size
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
@@ -397,9 +397,9 @@ contains
 !  [T] = K   &   [z] = Mm   & [rho] = kg/m^3
 !
       use EquationOfState, only: gamma,cs2top,cs2bot
+      use File_io, only: file_exists, file_size
       use Gravity, only: gravz
       use Mpicomm, only: mpibcast_real,mpibcast_int,stop_it_if_any
-      use General, only: file_exists, file_size
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real :: ztop,zbot
@@ -572,9 +572,9 @@ contains
 !  [T] = K   &   [z] = Mm   & [rho] = kg/m^3
 !
     use EquationOfState, only: gamma,get_cp1
+    use File_io, only: file_exists, file_size
     use Gravity, only: get_xgravity
     use Mpicomm, only: mpibcast_real,mpibcast_int,stop_it_if_any
-    use General, only: file_exists, file_size
 !
     real, dimension (mx,my,mz,mfarray) :: f
     integer :: prof_nx

@@ -13,6 +13,7 @@ program pc_tecplot
   use Cdata
   use Cparam, only: fnlen, intlen
   use Diagnostics
+  use File_io, only: backskip_to_time
   use Filter
   use General, only: itoa
   use Grid, only: initialize_grid
@@ -23,7 +24,6 @@ program pc_tecplot
   use Snapshot
   use Sub
   use Syscalls, only: sizeof_real
-  use General, only: backskip_to_time
 !
   implicit none
 !

@@ -6,12 +6,12 @@ program pc_distribute_z
 !
   use Cdata
   use Cparam, only: fnlen
+  use File_io, only: delete_file
   use IO
   use Messages
   use Param_IO
   use Register
   use Sub
-  use General, only: delete_file
 !
   implicit none
 !

@@ -24,8 +24,8 @@ module Io
 !
   use Cdata
   use Cparam, only: intlen, fnlen, max_int
+  use File_io, only: delete_file
   use Messages, only: fatal_error, svn_id, warning
-  use General, only: delete_file
 !
   implicit none
 !
@@ -363,8 +363,8 @@ module Io
 !  10-Feb-2012/PABourdin: coded
 !  10-mar-2015/MR: avoided use of fseek
 !
+      use File_io, only: backskip_to_time
       use Mpicomm, only: localize_xy, mpibcast_real, mpi_precision
-      use General, only: backskip_to_time
 !
       character (len=*) :: file
       integer, intent(in) :: nv
@@ -806,8 +806,8 @@ module Io
 !
 !  13-Dec-2011/PABourdin: coded
 !
+      use File_io, only: file_exists
       use Mpicomm, only: mpibcast_logical
-      use General, only: file_exists
 !
       character (len=*), intent(in), optional :: file
 !

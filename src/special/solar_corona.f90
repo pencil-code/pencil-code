@@ -165,7 +165,7 @@ module Special
 !
 !  06-oct-03/tony: coded
 !
-      use Sub, only: parallel_file_exists
+      use File_io, only: parallel_file_exists
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -368,8 +368,8 @@ module Special
 !
 !  21-oct-2010/Bourdin.KIS: coded
 !
+      use File_io, only: file_exists
       use Mpicomm, only: mpibcast_real
-      use General, only: file_exists
 !
       integer :: i
       integer, parameter :: unit=12
@@ -465,9 +465,8 @@ module Special
 !
 !  15-sept-2010/Bourdin.KIS: coded
 !
+      use File_io, only: parallel_file_exists, file_size
       use Mpicomm, only: mpibcast_int, mpibcast_real
-      use General, only: file_size
-      use Sub, only: parallel_file_exists
 !
       character(len=*), intent(in) :: filename
       real, dimension(mz), intent(out) :: profile
@@ -1551,8 +1550,8 @@ module Special
 !
 !  07-jan-2011/Bourdin.KIS: coded
 !
+      use File_io, only: file_exists
       use Mpicomm, only: mpisend_int, mpirecv_int, mpisend_real, mpirecv_real
-      use General, only: file_exists
 !
       real, intent(in) :: time
       character(len=*), intent(in) :: filename
@@ -3061,7 +3060,7 @@ module Special
 !***********************************************************************
     subroutine compute_gran_level(level)
 !
-      use General, only: file_exists
+      use File_io, only: file_exists
 !
       integer, intent(in) :: level
       logical :: lstop=.false.

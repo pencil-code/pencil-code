@@ -8,6 +8,7 @@ program pc_reduce
   use Cdata
   use Cparam, only: fnlen
   use Diagnostics
+  use File_io, only: backskip_to_time, delete_file
   use Filter
   use Grid, only: initialize_grid
   use IO
@@ -17,7 +18,6 @@ program pc_reduce
   use Snapshot
   use Sub
   use Syscalls, only: sizeof_real
-  use General, only: backskip_to_time,delete_file
 !
   implicit none
 !

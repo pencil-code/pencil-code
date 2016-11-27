@@ -3,9 +3,7 @@
 !  This module goes straight and implements distributed file Input/Output.
 !  We use here only F2003 features (HPC-friendly).
 !
-!  5-Aug-15/MR: shifted parallel_file_exists and parallel_count_lines to Sub,
-!               file_exists, file_size and count_lines to General
-!               removed unit parameters from parallel_open, parallel_rewind, 
+!  5-Aug-15/MR: removed unit parameters from parallel_open, parallel_rewind, 
 !               parallel_close: it is always parallel_unit, now an allocatable
 !               string array.
 !               Made parallel_unit public (but protected) hence removed get_unit.
@@ -45,7 +43,7 @@ module File_io
 !   6-oct-15/MR: parameter lbinary added for reading data as a byte stream
 !
       use Mpicomm, only: lroot, mpibcast_int, mpibcast_char, MPI_COMM_WORLD
-      use General, only: loptest, parser, file_exists, file_size
+      use General, only: loptest, parser
       use Messages, only: fatal_error
       use Cdata, only: comment_char
 

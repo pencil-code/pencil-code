@@ -242,9 +242,9 @@ module Io
 !
 !  04-Sep-2015/PABourdin: adapted from 'io_collect_xy'
 !
+      use File_io, only: backskip_to_time
       use Mpicomm, only: localize_xy, mpibcast_real, stop_it_if_any, MPI_COMM_WORLD
       use Syscalls, only: sizeof_real
-      use General, only: backskip_to_time
 !
       character (len=*) :: file
       integer, intent(in) :: nv
@@ -663,8 +663,8 @@ module Io
 !
 !  04-Sep-2015/PABourdin: adapted from 'io_collect_xy'
 !
+      use File_io, only: file_exists
       use Mpicomm, only: mpibcast_logical, MPI_COMM_WORLD
-      use General, only: file_exists
 !
       character (len=*), intent(in), optional :: file
 !

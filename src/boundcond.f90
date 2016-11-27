@@ -4941,8 +4941,8 @@ module Boundcond
 !  18-jun-08/bing: quenching depends on B^2, not only Bz^2
 !
        use EquationOfState, only : gamma,gamma_m1,gamma1,cs20,lnrho0
+       use File_io, only : file_exists
        use Mpicomm, only : mpisend_real, mpirecv_real
-       use General, only : file_exists
 !
        real, dimension (:,:,:,:) :: f
 !

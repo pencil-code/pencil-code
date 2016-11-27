@@ -86,11 +86,7 @@ module Special
 !
 !  07-may-2015/iomsn (Simon Candelaresi): coded
 !
-!      use Sub, only: parallel_file_exists
-!
       real, dimension(mx,my,mz,mfarray) :: f
-!
-! Consistency checks:
 !
       call keep_compiler_quiet(f)
 !
