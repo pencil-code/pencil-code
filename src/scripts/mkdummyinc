@@ -190,7 +190,7 @@ sub write_dummies {
 # another line starting with "subroutine" or "function" is flagged and 
 # tested....
 #
-          $write_line = ! is_implemented($subname);
+              $write_line = ! is_implemented($subname);
           }# endif
 #
 # Go printing...
