@@ -122,6 +122,7 @@ sub find_implemented_routines {
 sub write_dummies {
     my $file = shift;
     my $write_line=0;
+    my $interface_open = 0;
     open(SRC,"< $file") || die "cannot open $file";
     print OUT 
 "!***********************************************************************
@@ -196,6 +197,13 @@ sub write_dummies {
 # Go printing...
 #
           print OUT "$lout\n" if ($write_line);
+#
+          if ($write_line && ($line =~ /^\s*interface/i)) {
+              $interface_open = 1;
+          }
+          if ($write_line && $interface_open && ($line =~ /^\s*endinterface/i)) {
+              $interface_open = 0;
+          }
 #          
 # Stop printing if it reaches endsubroutine or endfunction. This fix is needed because 
 # the last subroutine of the dummy file, if flagged (i.e., if not implemented on the 
@@ -203,7 +211,7 @@ sub write_dummies {
 # the line containing "input XXX_dummies.inc" and "endmodule XXX" onto the XXX_dummies.inc. 
 # This, in turn, causes an infinite loop. 
 #
-          if ($write_line && ($line =~ /^\s*endsubroutine/i || $line =~ /^s\*function/i)) {
+          if ($write_line && !$interface_open && ($line =~ /^\s*endsubroutine/i || $line =~ /^s\*function/i)) {
 #
               print OUT "!*********************************************************************** \n";
               $write_line = 0;
