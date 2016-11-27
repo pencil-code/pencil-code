@@ -25,7 +25,7 @@ module Deriv
   public :: der_onesided_4_slice_other
   public :: der2_minmod
   public :: heatflux_deriv_x
-  public :: set_mn_offsets
+  public :: set_mn_offsets,reset_mn_offsets
   public :: set_ghosts_for_onesided_ders
   public :: bval_from_neumann
 !
@@ -97,9 +97,13 @@ module Deriv
 !  Offset manipulation for second derivatives in complete one-sided fornulation.
 !  Yet unimplemented.
 !
-      return
-
     endsubroutine set_mn_offsets
+!***********************************************************************
+    subroutine reset_mn_offsets
+!
+!  Resets the preceding manipulation.
+!
+    endsubroutine reset_mn_offsets
 !***********************************************************************
     subroutine der_main(f,k,df,j,ignoredx)
 !
@@ -294,7 +298,7 @@ module Deriv
 !
     endsubroutine der_pencil
 !***********************************************************************
-    subroutine der2_main(f,k,df2,j)
+    subroutine der2_main(f,k,df2,j,lwo_line_elem)
 !
 !  calculate 2nd derivative d^2f_k/dx_j^2
 !  accurate to 10th order, explicit, periodic
@@ -304,10 +308,14 @@ module Deriv
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  25-aug-09/axel: adapted from deriv
 !  12-dec-10/axel: adapted also y and z derivatives
+!  20-nov-16/MR: optional parameter lwo_line_elem added
 !
+      use General, only: loptest
+
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df2,fac,df
       integer :: j,k
+      logical, optional :: lwo_line_elem
 !
       intent(in)  :: f,k,j
       intent(out) :: df2
@@ -341,8 +349,10 @@ module Deriv
                   +der2_coef3*(f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)) &
                   +der2_coef4*(f(l1:l2,m+4,n,k)+f(l1:l2,m-4,n,k)) &
                   +der2_coef5*(f(l1:l2,m+5,n,k)+f(l1:l2,m-5,n,k)))
-          if (lspherical_coords)     df2=df2*r2_mn
-          if (lcylindrical_coords)   df2=df2*rcyl_mn2
+          if (.not.loptest(lwo_line_elem)) then
+            if (lspherical_coords)     df2=df2*r2_mn
+            if (lcylindrical_coords)   df2=df2*rcyl_mn2
+          endif
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
             df2=df2+dy_tilde(m)*df
@@ -359,7 +369,7 @@ module Deriv
                    +der2_coef3*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)) &
                    +der2_coef4*(f(l1:l2,m,n+4,k)+f(l1:l2,m,n-4,k)) &
                    +der2_coef5*(f(l1:l2,m,n+5,k)+f(l1:l2,m,n-5,k)))
-          if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
+          if (lspherical_coords.and..not.loptest(lwo_line_elem)) df2=df2*r2_mn*sin2th(m)
           if (.not.lequidist(j)) then
             call der(f,k,df,j)
             df2=df2+dz_tilde(n)*df
@@ -1039,7 +1049,7 @@ module Deriv
 !
     endsubroutine der10
 !***********************************************************************
-    subroutine derij_main(f,k,df,i,j)
+    subroutine derij_main(f,k,df,i,j,lwo_line_elem)
 !
 !  calculate 2nd derivative with respect to two different directions
 !  input: scalar, output: scalar
@@ -1049,10 +1059,14 @@ module Deriv
 !  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !  14-nov-06/wolf: implemented bidiagonal scheme
 !  25-aug-09/axel: adapted from deriv
+!  20-nov-16/MR: optional parameter lwo_line_elem added
 !
+      use General, only: loptest
+
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx) :: df,fac
       integer :: i,j,k
+      logical, optional :: lwo_line_elem
 !
 !debug      if (loptimise_ders) der_call_count(k,icount_derij,i,j) = & !DERCOUNT
 !debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
@@ -1215,6 +1229,8 @@ module Deriv
 !  Spherical polars. The comments about "minus extra terms" refer to the
 !  presence of extra terms that are being evaluated later in gij_etc.
 !
+      if (loptest(lwo_line_elem)) return
+
       if (lspherical_coords) then
         if ((i==1.and.j==2)) df=df*r1_mn
         if ((i==2.and.j==1)) df=df*r1_mn !(minus extra terms)
@@ -1225,12 +1241,7 @@ module Deriv
       endif
 !
       if (lcylindrical_coords) then
-        if ((i==1.and.j==2)) df=df*rcyl_mn1
-        if ((i==2.and.j==1)) df=df*rcyl_mn1
-        if ((i==1.and.j==3)) df=df
-        if ((i==3.and.j==1)) df=df
-        if ((i==2.and.j==3)) df=df*rcyl_mn1
-        if ((i==3.and.j==2)) df=df*rcyl_mn1
+        if ((i+j==3.or.i+j==5)) df=df*rcyl_mn1
       endif
 !
     endsubroutine derij_main
