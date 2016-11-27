@@ -632,9 +632,9 @@ module Messages
 ! 26-mar-15/MR: mode now saved across calls, reset by calls with mode=open and mode=close
 !               -> read or write needs not to be indicated in mode when set by call with mode=open
 !
-    use Syscalls, only: system_cmd
     use General, only: itoa,date_time_string,safe_character_append,safe_character_prepend,backskip,loptest
     use Mpicomm, only: report_clean_output
+    use Syscalls, only: system_cmd
 !
     integer,                     intent(IN) :: code
     character (LEN=*),           intent(IN) :: mode
