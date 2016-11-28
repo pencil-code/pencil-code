@@ -11,6 +11,7 @@ from index import *
 from var import var
 from slices import slices
 from ts import *
+from averages import *
 
 # idl workarounds
 from pstalk import pstalk
