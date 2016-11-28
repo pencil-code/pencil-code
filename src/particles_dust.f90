@@ -1274,7 +1274,7 @@ module Particles
 !
         case ('equidistant')
           if (lroot) print*, 'init_particles: Particles placed equidistantly'
-          dim1=1.0/dimensionality
+          dim1=1.0/max(dimensionality,1)
 !
 !  Number of particles per direction. Found by solving the equation system
 !
