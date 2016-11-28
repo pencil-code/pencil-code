@@ -10,7 +10,7 @@ Contains the classes and methods to read slice files.
 
 def slices(*args, **kwargs):
     """
-    Read Pencil Code time series data.
+    Read Pencil Code slice data.
 
     call signature:
 
@@ -61,7 +61,7 @@ class SliceSeries(object):
     def read(self, field='', extension='', data_dir='data', proc=-1,
              old_file=False, precision='f'):
         """
-        Read Pencil Code time series data.
+        Read Pencil Code slice data.
 
         call signature:
 
