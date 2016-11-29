@@ -45,7 +45,7 @@ class Averages(object):
         self.t = np.array([])
 
 
-    def read(self, plane_list=['xy', 'xz', 'yz'], data_dir='data'):
+    def read(self, plane_list=None, data_dir='data', proc=-1):
         """
         Read Pencil Code average data.
 
@@ -57,13 +57,16 @@ class Averages(object):
 
         *plane_list*:
           A list of the planes over which the averages were taken.
+          Takes 'xy', 'xz', 'yz', 'y', 'z'
 
         *data_dir*:
           Directory where the data is stored.
+
+        *proc*:
+          Processor to be read. If -1 read all and assemble to one array.
+          Only affects the reading of 'yaverages.dat' and 'zaverages.dat'.
         """
 
-        from pencilnew import read
-        import numpy as np
         import os
 
         # Initialize the planes list.
@@ -87,14 +90,21 @@ class Averages(object):
         if plane_list.count('yz') > 0:
             in_file_name_list.append('yzaver.in')
             aver_file_name_list.append('yzaverages.dat')
-        else:
+        if plane_list.count('y') > 0:
+            in_file_name_list.append('yaver.in')
+            aver_file_name_list.append('yaverages.dat')
+        if plane_list.count('z') > 0:
+            in_file_name_list.append('zaver.in')
+            aver_file_name_list.append('zaverages.dat')
+        if not in_file_name_list:
             print("error: invalid plane name")
             return -1
 
-        class Foo():
+        class Foo(object):
             pass
 
-        for plane, in_file_name, aver_file_name in zip(plane_list, in_file_name_list, aver_file_name_list):
+        for plane, in_file_name, aver_file_name in \
+        zip(plane_list, in_file_name_list, aver_file_name_list):
             # This one will store the data.
             ext_object = Foo()
 
@@ -102,56 +112,158 @@ class Averages(object):
             file_id = open(os.path.join(os.path.dirname(data_dir), in_file_name))
             variables = file_id.readlines()
             file_id.close()
-            for i in range(sum(list(map(self._equal_newline, variables)))):
+            for i in range(sum(list(map(self.__equal_newline, variables)))):
                 variables.remove('\n')
             n_vars = len(variables)
-    
-            # Determine the structure of the xy/xz/yz averages.
-            nw_string = 'n' + 'xyz'[np.where(np.array(map(plane.find, 'xyz')) == -1)[0][0]]
-            nw = getattr(read.dim(), nw_string)
-            file_id = open(os.path.join(data_dir, aver_file_name))
-            aver_lines = file_id.readlines()
-            file_id.close()
-            entry_length = int(nw*n_vars/8)
-            n_times = len(aver_lines)/(1 + entry_length)
-            
-            # Prepare the data arrays.
-            t = np.zeros(n_times, dtype=np.float32)
-            data_raw = np.zeros([n_times, n_vars*nw])
-            
-            # Read the data
-            line_idx = 0
-            t_idx = -1
-            for current_line in aver_lines:
-                if line_idx % (entry_length+1) == 0:
-                    t_idx += 1
-                    t[t_idx] = np.float32(current_line)
-                    raw_idx = 0
-                else:
-                    data_raw[t_idx, raw_idx*8:(raw_idx*8+8)] = list(map(np.float32, current_line.split()))
-                    raw_idx += 1
-                line_idx += 1
-            
-            # Restructure the raw data and add it to the Averages object.
-            data_raw = np.reshape(data_raw, [n_times, n_vars, nw])
+
+            if plane == 'xy' or plane == 'xz' or plane == 'yz':
+                t, raw_data = self.__read_2d_aver(plane, data_dir, aver_file_name, n_vars)
+            if plane == 'y' or plane == 'z':
+                t, raw_data = self.__read_1d_aver(plane, data_dir, aver_file_name, n_vars, proc)
+
+            # Add the raw data to self.
             var_idx = 0
             for var in variables:
-                setattr(ext_object, var.strip(), data_raw[:, var_idx, :])
+                setattr(ext_object, var.strip(), raw_data[:, var_idx, ...])
                 var_idx += 1
-        
+
             self.t = t
             setattr(self, plane, ext_object)
-    
-        del(data_raw)
+
+        del(raw_data)
         del(ext_object)
 
-    
-    def _equal_newline(self, line):
+
+    def __equal_newline(self, line):
         """
         Determine if string is equal new line.
         """
-        
-        if line == '\n':
-            return True
+
+        return line == '\n'
+
+
+    def __read_1d_aver(self, plane, data_dir, aver_file_name, n_vars, proc):
+        """
+        Read the yaverages.dat, zaverages.dat.
+        Return the raw data and the time array.
+        """
+
+        import os
+        import numpy as np
+        from scipy.io import FortranFile
+        from pencilnew import read
+
+        if proc < 0:
+            proc_dirs = self.__natural_sort(filter(lambda s: s.startswith('proc'),
+                                                   os.listdir(data_dir)))
         else:
-            return False
+            proc_dirs = ['proc' + str(proc)]
+
+        dim = read.dim(data_dir, proc)
+
+        # Prepare the raw data.
+        # This will be reformatted at the end.
+
+        raw_data = []
+        for directory in proc_dirs:
+            proc = int(directory[4:])
+            proc_dim = read.dim(data_dir, proc)
+
+            # Read the data.
+            t = []
+            proc_data = []
+            file_id = FortranFile(os.path.join(data_dir, directory, aver_file_name))
+            while True:
+                try:
+                    t.append(file_id.read_record(dtype=np.float32)[0])
+                    proc_data.append(file_id.read_record(dtype=np.float32))
+                except:
+                    # Finished reading.
+                    break
+            file_id.close()
+
+            # Reshape the proc data into [len(t), pnu, pnv].
+            if plane == 'y':
+                pnu = proc_dim.nx
+                pnv = proc_dim.nz
+            if plane == 'z':
+                pnu = proc_dim.nx
+                pnv = proc_dim.ny
+            proc_data = np.array(proc_data)
+            proc_data = proc_data.reshape([len(t), n_vars, pnu, pnv])
+
+            # Add the proc_data (one proc) to the raw_data (all procs)
+            if not isinstance(raw_data, np.ndarray):
+                # Initialize the raw_data array with the right dimensions.
+                if plane == 'y':
+                    nu = dim.nx
+                    nv = dim.nz
+                    idx_u = proc_dim.ipx*proc_dim.nx
+                    idx_v = proc_dim.ipz*proc_dim.nz
+                if plane == 'z':
+                    nu = dim.nx
+                    nv = dim.ny
+                    idx_u = proc_dim.ipx*proc_dim.nx
+                    idx_v = proc_dim.ipy*proc_dim.ny
+                raw_data = np.zeros([len(t), n_vars, nu, nv])
+
+            raw_data[:, :, idx_u:+pnu, idx_v:idx_v+pnv] = proc_data.copy()
+
+        t = np.array(t)
+
+        return t, raw_data
+
+
+    def __read_2d_aver(plane, data_dir, aver_file_name, n_vars):
+        """
+        Read the yaverages.dat, xzaverages.dat, yzaverages.dat
+        Return the raw data and the time array.
+        """
+
+        import os
+        import numpy as np
+        from pencilnew import read
+
+        # Determine the structure of the xy/xz/yz averages.
+        nw_string = 'n' + 'xyz'[np.where(np.array(map(plane.find, 'xyz')) == -1)[0][0]]
+        nw = getattr(read.dim(), nw_string)
+        file_id = open(os.path.join(data_dir, aver_file_name))
+        aver_lines = file_id.readlines()
+        file_id.close()
+        entry_length = int(np.ceil(nw*n_vars/8.))
+        n_times = len(aver_lines)/(1 + entry_length)
+
+        # Prepare the data arrays.
+        t = np.zeros(n_times, dtype=np.float32)
+        raw_data = np.zeros([n_times, n_vars*nw])
+
+        # Read the data
+        line_idx = 0
+        t_idx = -1
+        for current_line in aver_lines:
+            if line_idx % (entry_length+1) == 0:
+                t_idx += 1
+                t[t_idx] = np.float32(current_line)
+                raw_idx = 0
+            else:
+                raw_data[t_idx, raw_idx*8:(raw_idx*8+8)] = \
+                    list(map(np.float32, current_line.split()))
+                raw_idx += 1
+            line_idx += 1
+
+        # Restructure the raw data and add it to the Averages object.
+        raw_data = np.reshape(raw_data, [n_times, n_vars, nw])
+
+        return t, raw_data
+
+
+    def __natural_sort(self, l):
+        """
+        Sort array in a more natural way, e.g. 9VAR < 10VAR
+        """
+
+        import re
+
+        convert = lambda text: int(text) if text.isdigit() else text.lower()
+        alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
+        return sorted(l, key=alphanum_key)
