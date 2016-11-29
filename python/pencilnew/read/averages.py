@@ -190,31 +190,31 @@ class Averages(object):
                 pnu = proc_dim.nx
                 pnv = proc_dim.ny
             proc_data = np.array(proc_data)
-            proc_data = proc_data.reshape([len(t), n_vars, pnu, pnv])
+            proc_data = proc_data.reshape([len(t), n_vars, pnv, pnu])
 
             # Add the proc_data (one proc) to the raw_data (all procs)
+            if plane == 'y':
+                nu = dim.nx
+                nv = dim.nz
+                idx_u = proc_dim.ipx*proc_dim.nx
+                idx_v = proc_dim.ipz*proc_dim.nz
+            if plane == 'z':
+                nu = dim.nx
+                nv = dim.ny
+                idx_u = proc_dim.ipx*proc_dim.nx
+                idx_v = proc_dim.ipy*proc_dim.ny
             if not isinstance(raw_data, np.ndarray):
                 # Initialize the raw_data array with the right dimensions.
-                if plane == 'y':
-                    nu = dim.nx
-                    nv = dim.nz
-                    idx_u = proc_dim.ipx*proc_dim.nx
-                    idx_v = proc_dim.ipz*proc_dim.nz
-                if plane == 'z':
-                    nu = dim.nx
-                    nv = dim.ny
-                    idx_u = proc_dim.ipx*proc_dim.nx
-                    idx_v = proc_dim.ipy*proc_dim.ny
-                raw_data = np.zeros([len(t), n_vars, nu, nv])
-
-            raw_data[:, :, idx_u:+pnu, idx_v:idx_v+pnv] = proc_data.copy()
+                raw_data = np.zeros([len(t), n_vars, nv, nu])
+            raw_data[:, :, idx_v:idx_v+pnv, idx_u:idx_u+pnu] = proc_data.copy()
 
         t = np.array(t)
+        raw_data = np.swapaxes(raw_data, 2, 3)
 
         return t, raw_data
 
 
-    def __read_2d_aver(plane, data_dir, aver_file_name, n_vars):
+    def __read_2d_aver(self, plane, data_dir, aver_file_name, n_vars):
         """
         Read the yaverages.dat, xzaverages.dat, yzaverages.dat
         Return the raw data and the time array.
