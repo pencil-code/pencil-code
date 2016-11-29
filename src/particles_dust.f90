@@ -2695,6 +2695,10 @@ module Particles
         lpenc_requested(i_np)=.true.
         lpenc_requested(i_rho1) = .true.
       endif
+      if (ldraglaw_epstein) then
+        lpenc_requested(i_cs2)=.true.
+        lpenc_requested(i_rho)=.true.
+      endif
       if (ldragforce_heat .or. lcollisional_heat) then
         lpenc_requested(i_TT1)=.true.
         lpenc_requested(i_rho1)=.true.
@@ -3623,7 +3627,7 @@ module Particles
           call calc_pencil_rep(fp, rep)
         endif getrep
 !
-!  Precalculate Stokes-Cunningham factor (only if not ldraglaw_simple)
+!  Precalculate Stokes-Cunningham factor (only if not ldraglaw_simple  or ldraglaw_purestokes)
 !
         if (.not. (ldraglaw_simple .or. ldraglaw_purestokes &
             .or. ldraglaw_stokesschiller)) then
@@ -4791,7 +4795,17 @@ module Particles
 !
       if (ldraglaw_epstein) then
         if (iap/=0) then
-          if (fp(k,iap)/=0.0) tausp1_par = 1/(fp(k,iap)*rhopmat)
+          if (fp(k,iap)/=0.0) then 
+            tausp1_par = (sqrt(p%cs2(inx0))*p%rho(inx0))/(fp(k,iap)*rhopmat)
+!
+! DM : 10 Nov  2016
+! For the usual Epstein drag we need also the thermal velocity and the 
+! density at this point. None of them fluctuate by large amounts, so it is better
+! to get them from the same pencil without any interpolation. This may be even
+! a better prescription for flows with shocks if the particle sits very close to 
+! a shock.  
+!
+          endif
         else
 !  Check if we are using multiple or single particle species.
           if (npar_species>1) then
