@@ -1,4 +1,4 @@
-def fill_gaps_in_grid(array, key='nan', steps=['interpolate', 'extrapolate'], order=1, DEBUG=True):
+def fill_gaps_in_grid(array, key='nan', steps=['interpolate', 'extrapolate'], order=1, DEBUG=False):
     """Interpolates nans by nearest neighbor method to fill gaps in arrays.
     Beware this method does not invoke bondaries correctly!
     This method does not work with array beeing a vector field! Hence, use componentwise
