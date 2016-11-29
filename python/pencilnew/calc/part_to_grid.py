@@ -1,4 +1,4 @@
-def part_to_grid_2d(xp, yp, zp=False, quantity=False, Nbins=[1024,1024,1024], sim=False, extent=False, fill_gaps=False):
+def part_to_grid(xp, yp, zp=False, quantity=False, Nbins=[1024,1024,1024], sim=False, extent=False, fill_gaps=False):
     """Bins quantity based on position data xp and yp to 1024^2 bins like a histrogram.
     This method is not using TSC.
 
