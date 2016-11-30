@@ -15,4 +15,4 @@ from animate_time_slices import *
 from lic import *
 
 ## general plotting and exporting
-from internal import *
+import internal
