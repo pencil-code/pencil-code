@@ -602,7 +602,7 @@ else if ($hn =~ p690*) then
 #  echo "Setting master node to sp.sp4, the only node that is accesible by rsh"
 #-----------------------------------------------------------------------
 else if ($hn =~ sp[0-9]*) then
-  echo "SP4 - CINECA, Bologna (IBM with AIX UNIX)"
+  echo "Janus (Boulder) or SP4 - CINECA, Bologna (IBM with AIX UNIX)"
   set mpirun = poe
   set local_disc = 0
   set one_local_disc = 1
@@ -663,7 +663,7 @@ else if ($hn =~ inaf*) then
 #  set local_binary = 0
 #---------------------------------------------------
 else if ($hn =~ node[0-9]* && $masterhost != 'vsl176') then
-  echo "CLX - CINECA, Bologna (IBM Linux Cluster)"
+  echo "Janus (Boulder2) or CLX - CINECA, Bologna (IBM Linux Cluster)"
   if ( $?PBS_JOBID ) then
     echo "Running job: $PBS_JOBID"
   endif
