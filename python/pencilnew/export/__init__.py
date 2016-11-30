@@ -5,4 +5,4 @@
 ################
 
 ####### vtk
-from array2d_to_vtk import *
+from arrays2d_to_vtk import *
