@@ -89,7 +89,8 @@ else if ($hn =~ ds0*) then
   #set str='s/brandenb/brandenb\/storage/g'
 #else if (($hn =~ *.rc.colorado.edu)) then
   #set str='s/home/rc_scratch/g'
-else if (($hn =~ login0* && $USER =~ axbr9098)) then
+#else if (($hn =~ login0* && $USER =~ axbr9098)) then
+else if (($hn =~ login0*)) then
   set str='s/home/lustre\/janus_scratch/g'
 else if (($hn =~ ekhi.colorado.edu)) then
   set str='s/home1/export\/ekhi/g'
