@@ -449,7 +449,7 @@ module BorderProfiles
 !  orbital period 2pi/Omega. This is of course specific
 !  to Keplerian global disks. 
 !
-        inverse_period = rborder_mn(i)**1.5 * fac_sqrt_gsum1
+        inverse_period = rborder_mn(i)**(-1.5) * fac_sqrt_gsum1
         inverse_drive_time = fraction_tborder1*inverse_period
 !
 !  specify tborder as input
