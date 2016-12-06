@@ -61,7 +61,7 @@ pro pc_select_files_update_list, list, all, indices, default=default, avail=avai
 		if (has_tag (default, tags[avail[pos]])) then indices = [ indices, avail[pos] ]
 	end
 	active = where (indices ge 0, num_active)
-	if (num_active ge 0) then indices = indices[active]
+	if (num_active ge 1) then indices = indices[active]
 end
 
 
