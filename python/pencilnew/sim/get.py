@@ -1,4 +1,4 @@
-def get(path='.'):
+def get(path='.', quiet=False):
     """Returns simulation object from 'path, if already existing, or creates new simulation object from path, if its as simulation."""
 
     from os.path import isdir
@@ -14,12 +14,12 @@ def get(path='.'):
     else:
         from pencilnew import __is_sim_dir__
         if __is_sim_dir__(path):
-            return simulation(path)
+            return simulation(path, quiet=quiet)
         else:
             print('? WARNING: No simulation found in '+path+' -> try get_sims maybe?')
             return False
 
-def get_sims(path_root='.', depth=1, unhide_all=False):
+def get_sims(path_root='.', depth=1, unhide_all=False, quiet=False):
     """
     Returns all found simulations as object list from all subdirs, not
     following symbolic links.
@@ -31,6 +31,7 @@ def get_sims(path_root='.', depth=1, unhide_all=False):
                    i.e. only one level deeper directories will be scanned.
         unhide:    unhides all simulation found if True, if False (default)
                    hidden sim will stay hidden.
+        quiet:     Switches out the output of the function. Default: False.
                    
     """
     from os.path import join
@@ -46,8 +47,9 @@ def get_sims(path_root='.', depth=1, unhide_all=False):
     #from intern import get_simdict
     #import intern.debug_breakpoint as debug_breakpoint
 
-    print('~ A list of pencil code simulations is generated from this dir downwards, this may take some time..')
-    print('~ (Symbolic links will not be followed, since this can lead to infinit recursion.)')
+    if not quiet: 
+        print('~ A list of pencil code simulations is generated from this dir downwards, this may take some time..')
+        print('~ (Symbolic links will not be followed, since this can lead to infinit recursion.)')
 
     # get overview of simulations in all lower dirs
     sim_paths = []
@@ -58,28 +60,30 @@ def get_sims(path_root='.', depth=1, unhide_all=False):
             # print('dirs: '+str(dir))
             sd = join(path, dir)
             if is_sim_dir(sd): 
-                print('# Found Simulation in '+sd)
+                if not quiet: print('# Found Simulation in '+sd)
                 sim_paths.append(sd)
 
     # take care of each simulation found, i.e.
     # generate new simulation object for each and append the sim.-object on sim_list
     sim_list = []
     for path in sim_paths:
-        sim = get(path)
+        sim = get(path, quiet=quiet)
 
         # check if sim.name is already existing as a name for a different simulation (name conflict?)
         for s in sim_list:			# check for double names
             if sim.name == s.name:
                 sim.name = sim.name+'#'		# add # to dublicate
-                print("? Warning: Found two simulatoins with the same name: "
-                      +sim.path+' and '+s.path)
-                print("? Changed name of "+sim.path+' to '+sim.name
-                      +' -> rename simulation and re-export manually')
+                if not quiet: 
+                    print("? Warning: Found two simulatoins with the same name: "
+                          +sim.path+' and '+s.path)
+                    print("? Changed name of "+sim.path+' to '+sim.name
+                          +' -> rename simulation and re-export manually')
 
         if unhide_all: sim.unhide()
         sim.export()
         sim_list.append(sim)
 
     # is sim_list empty?
-    if sim_list == []: print '? WARNING: no simulations found!'
+    if sim_list == [] and not quiet: 
+        print '? WARNING: no simulations found!'
     return sim_list
