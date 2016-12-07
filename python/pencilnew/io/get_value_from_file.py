@@ -83,7 +83,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
 
     ######## open file
     # now having absolute filepath to file, lets check that file and find quantity inside!
-    with open(filename, 'r') as f: data_raw = f.readlines()
+    with open(filepath, 'r') as f: data_raw = f.readlines()
 
 
     ######## find line in file which quantity in
