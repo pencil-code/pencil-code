@@ -189,6 +189,7 @@ module Density
 ! xy averaged diagnostics given in xyaver.in
   integer :: idiag_rhomz=0      ! XYAVG_DOC: $\left<\varrho\right>_{xy}$
   integer :: idiag_rho2mz=0     ! XYAVG_DOC: $\left<\varrho^2\right>_{xy}$
+  integer :: idiag_gzlnrhomz=0  ! XYAVG_DOC: $\left<\nabla_z\ln\varrho\right>_{xy}$
   integer :: idiag_uglnrhomz=0  ! XYAVG_DOC: $\left<\uv\cdot\nabla\ln\varrho\right>_{xy}$
   integer :: idiag_ugrhomz=0  ! XYAVG_DOC: $\left<\uv\cdot\nabla\varrho\right>_{xy}$
   integer :: idiag_uygzlnrhomz=0! XYAVG_DOC: $\left<u_y\nabla_z\ln\varrho\right>_{xy}$
@@ -2502,6 +2503,7 @@ module Density
         if (idiag_rhomr/=0)    call phizsum_mn_name_r(p%rho,idiag_rhomr)
         call xysum_mn_name_z(p%rho,idiag_rhomz)
         call xysum_mn_name_z(p%rho**2,idiag_rho2mz)
+        call xysum_mn_name_z(p%glnrho(:,3),idiag_gzlnrhomz)
         call xysum_mn_name_z(p%uglnrho,idiag_uglnrhomz)
         call xysum_mn_name_z(p%ugrho,idiag_ugrhomz)
         call xysum_mn_name_z(p%uu(:,2)*p%glnrho(:,3),idiag_uygzlnrhomz)
@@ -3050,7 +3052,7 @@ module Density
         idiag_rhomin=0; idiag_rhomax=0; idiag_dtd=0
         idiag_lnrhomphi=0; idiag_rhomphi=0
         idiag_rhomz=0; idiag_rho2mz=0; idiag_rhomy=0; idiag_rhomx=0; idiag_rho2mx=0
-        idiag_uglnrhomz=0; idiag_uygzlnrhomz=0; idiag_uzgylnrhomz=0
+        idiag_gzlnrhomz=0; idiag_uglnrhomz=0; idiag_uygzlnrhomz=0; idiag_uzgylnrhomz=0
         idiag_rhomxy=0; idiag_rhomr=0; idiag_totmass=0; idiag_mass=0; idiag_vol=0
         idiag_rhomxz=0; idiag_grhomax=0
         idiag_rhomxmask=0; idiag_rhomzmask=0
@@ -3085,6 +3087,7 @@ module Density
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhomz',idiag_rhomz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'rho2mz',idiag_rho2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'gzlnrhomz',idiag_gzlnrhomz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uglnrhomz',idiag_uglnrhomz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'ugrhomz',idiag_ugrhomz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uygzlnrhomz',idiag_uygzlnrhomz)
