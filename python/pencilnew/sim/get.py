@@ -19,15 +19,19 @@ def get(path='.'):
             print('? WARNING: No simulation found in '+path+' -> try get_sims maybe?')
             return False
 
-def get_sims(path='.', depth=1, unhide_all=False):
-    """Returns all found simulations as object list from all subdirs, not
-       following symbolic links.
+def get_sims(path_root='.', depth=1, unhide_all=False):
+    """
+    Returns all found simulations as object list from all subdirs, not
+    following symbolic links.
 
     Args:
-        depth   depth of searching for simulations, default is 1,
-                i.e. only one level deeper directories will be scanned.
-        unhide  unhides all simulation found if True, if False (default)
-                hidden sim will stay hidden.
+        path_root: base directory where to look for simulation from. 
+                   Default:'.'
+        depth:     depth of searching for simulations, default is 1,
+                   i.e. only one level deeper directories will be scanned.
+        unhide:    unhides all simulation found if True, if False (default)
+                   hidden sim will stay hidden.
+                   
     """
     from os.path import join
     import numpy as np
@@ -47,13 +51,15 @@ def get_sims(path='.', depth=1, unhide_all=False):
 
     # get overview of simulations in all lower dirs
     sim_paths = []
-    for path, dirs in walklevel('.', depth):
+    for path, dirs in walklevel(path_root, depth):
         #if 'start.in' in files and 'run.in' in files:
         # print('path: '+str(path))
         for dir in dirs:
             # print('dirs: '+str(dir))
             sd = join(path, dir)
-            if is_sim_dir(sd): print '# Found Simulation in '+sd; sim_paths.append(sd)
+            if is_sim_dir(sd): 
+                print('# Found Simulation in '+sd)
+                sim_paths.append(sd)
 
     # take care of each simulation found, i.e.
     # generate new simulation object for each and append the sim.-object on sim_list
@@ -65,8 +71,10 @@ def get_sims(path='.', depth=1, unhide_all=False):
         for s in sim_list:			# check for double names
             if sim.name == s.name:
                 sim.name = sim.name+'#'		# add # to dublicate
-                print "? Warning: Found two simulatoins with the same name: "+sim.path+' and '+s.path
-                print "? Changed name of "+sim.path+' to '+sim.name+' -> rename simulation and re-export manually'
+                print("? Warning: Found two simulatoins with the same name: "
+                      +sim.path+' and '+s.path)
+                print("? Changed name of "+sim.path+' to '+sim.name
+                      +' -> rename simulation and re-export manually')
 
         if unhide_all: sim.unhide()
         sim.export()
