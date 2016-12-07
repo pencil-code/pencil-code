@@ -77,6 +77,3 @@ class ParticleStalkData(object):
 
         for key in ps.keys():
             setattr(self, key, ps[key].T)
-
-
-        #self.IPAR = ps['IPAR']

@@ -5,14 +5,16 @@
 # Authors:
 # A. Schreiber (aschreiber@mpia.de)
 """
-Contains the simulation class which can be used to directly create, access and manipulate simulations.
+Contains the simulation class which can be used to directly create, access and
+manipulate simulations.
 """
 
 
 def simulation(*args, **kwargs):
     """
     Generate simulation object from parameters.
-    Simulation objects are containers for simulations. pencil can work with several of them at once if stored in a list or dictionary.
+    Simulation objects are containers for simulations. pencil can work with
+    several of them at once if stored in a list or dictionary.
 
     Args for Constructor:
         path:		path to simulation, default = '.'
@@ -55,7 +57,11 @@ class __Simulation__(object):
         self.pc_dir = join(self.path,'pc')
         self.pc_data_dir = join(self.path,'data','pc')
 
-        self.components = ['src/cparam.local', 'src/Makefile.local', 'start.in', 'run.in', 'print.in'] # core files of a simulation run
+        self.components = ['src/cparam.local',      # core files of a simulation run
+                           'src/Makefile.local',
+                           'start.in',
+                           'run.in',
+                           'print.in']
         self.quantity_searchables = ['src/cparam.local','start.in', 'run.in']    # files in which quanitities can be searched
         self.optionals = ['*.in', '*.py', 'submit*']    # optinal files that should stick with the simulation when copied
 
@@ -286,4 +292,5 @@ class __Simulation__(object):
 
     def change_value_in_file(self):
         print('! toDo!!')
+        print('! Use pcn.io.change_value_in_file')
         return False
