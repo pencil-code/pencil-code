@@ -23,8 +23,8 @@ def simulation(*args, **kwargs):
         self.name:          name of
         self.path:          path to simulation
         self.data_dir:      path to simulation data-dir (./data/)
-        self.pc_dir:        path to simulation pc-dir (./.pc/)
-        self.pc_data_dir:   path to simulation pendir in data_dir (data/.pc/)
+        self.pc_dir:        path to simulation pc-dir (./pc/)
+        self.pc_data_dir:   path to simulation pendir in data_dir (data/pc/)
         self.components:    list of files which are nessecarry components of the simulation
         self.optionals:     list of files which are optional components of the simulation
         self.hidden:        Default is False, if True this simulation will be ignored by pencil
@@ -52,8 +52,8 @@ class __Simulation__(object):
         self.path = os.path.abspath(path)   # store paths
         if (not quiet): print('# Creating Simulation object for '+self.path)
         self.data_dir = join(self.path,'data')
-        self.pc_dir = join(self.path,'.pc')
-        self.pc_data_dir = join(self.path,'data','.pc')
+        self.pc_dir = join(self.path,'pc')
+        self.pc_data_dir = join(self.path,'data','pc')
 
         self.components = ['src/cparam.local', 'src/Makefile.local', 'start.in', 'run.in', 'print.in'] # core files of a simulation run
         self.quantity_searchables = ['src/cparam.local','start.in', 'run.in']    # files in which quanitities can be searched
