@@ -566,6 +566,7 @@ module Magnetic
   integer :: idiag_phibmz=0     ! DIAG_DOC: $\left<\phi\Bv\right>|_z$
   integer :: idiag_uxjm=0       ! DIAG_DOC:
   integer :: idiag_b2divum=0    ! DIAG_DOC: $\left<\Bv^2\nabla\cdot\uv\right>$
+  integer :: idiag_jdel2am=0    ! DIAG_DOC: $\left<\Jv\cdot\nabla^2\Av)\right>$
   integer :: idiag_ujxbm=0      ! DIAG_DOC: $\left<\uv\cdot(\Jv\times\Bv)\right>$
   integer :: idiag_jxbrxm=0     ! DIAG_DOC:
   integer :: idiag_jxbrym=0     ! DIAG_DOC:
@@ -3207,7 +3208,7 @@ module Magnetic
       real, dimension (nx) :: exabot,exatop, peta_shock
       real, dimension (nx) :: jxb_dotB0,uxb_dotB0
       real, dimension (nx) :: oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
-      real, dimension (nx) :: uj,aj,phi,dub,dob
+      real, dimension (nx) :: uj,aj,phi,dub,dob,jdel2a
       real, dimension (nx) :: uxj_dotB0,b3b21,b3b12,b1b32,b1b23,b2b13,b2b31
       real, dimension (nx) :: sign_jo,rho1_jxb
       real, dimension (nx) :: B1dot_glnrhoxb,tmp1,fb,fxbx
@@ -4429,6 +4430,11 @@ module Magnetic
 !  Note that <u.(jxb)>=1/2*<b^2*divu>+<u.bgradb>.
 !
         if (idiag_b2divum/=0) call sum_mn_name(p%b2*p%divu,idiag_b2divum)
+!
+!  Calculate <J.del2a>.
+!
+        call dot(p%jj,p%del2a,jdel2a)
+        if (idiag_jdel2am/=0) call sum_mn_name(jdel2a,idiag_jdel2am)
 !
 !  Calculate <u.(jxb)>.
 !
@@ -7675,7 +7681,8 @@ module Magnetic
         idiag_e3xamz1=0; idiag_e3xamz2=0; idiag_e3xamz3=0
         idiag_exjmx=0; idiag_exjmy=0; idiag_exjmz=0; idiag_dexbmx=0
         idiag_dexbmy=0; idiag_dexbmz=0; idiag_phibmx=0; idiag_phibmy=0
-        idiag_phibmz=0; idiag_uxjm=0; idiag_ujxbm=0; idiag_b2divum=0
+        idiag_phibmz=0; idiag_uxjm=0; idiag_jdel2am=0
+        idiag_ujxbm=0; idiag_b2divum=0
         idiag_b3b21m=0; idiag_b3b12m=0; idiag_b1b32m=0; idiag_b1b23m=0
         idiag_b2b13m=0 ; idiag_b2b31m=0
         idiag_udotxbm=0; idiag_uxbdotm=0; idiag_brmphi=0; idiag_bpmphi=0
@@ -7847,6 +7854,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'phibmy',idiag_phibmy)
         call parse_name(iname,cname(iname),cform(iname),'phibmz',idiag_phibmz)
         call parse_name(iname,cname(iname),cform(iname),'uxjm',idiag_uxjm)
+        call parse_name(iname,cname(iname),cform(iname),'jdel2am',idiag_jdel2am)
         call parse_name(iname,cname(iname),cform(iname),'ujxbm',idiag_ujxbm)
         call parse_name(iname,cname(iname),cform(iname),'b2divum',idiag_b2divum)
         call parse_name(iname,cname(iname),cform(iname),'jxbxbm',idiag_jxbxbm)
