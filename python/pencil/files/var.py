@@ -100,8 +100,8 @@ class DataCube(object):
             run2D = setup.run2D
         else:
             datadir = os.path.expanduser(datadir)
+            ldownsampled= 'VARd' in varfile
             if dim is None:
-                ldownsampled= 'VARd' in varfile
                 dim = read_dim(datadir,proc,down=ldownsampled)
             if param is None:
                 param = read_param(datadir=datadir, quiet=quiet)

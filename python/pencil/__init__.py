@@ -36,5 +36,8 @@ from pencil.math.vector_multiplication import *
 #from pencil.files.multi_slices import *
 from pencil.files.particles_removed import read_rmv_par
 from pencil.files.particles_to_density import * 
-from pencil.files.remesh import interp_var, distribute_fort, pers
+try:
+    from pencil.files.remesh import interp_var, distribute_fort, pers
+except:
+    pass
 
