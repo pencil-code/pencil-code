@@ -2652,41 +2652,42 @@ module Energy
       lpenc_diagnos(i_rho)=.true.
       lpenc_diagnos(i_ee)=.true.
       if (idiag_ethm/=0 .or. idiag_ethtot/=0 .or. idiag_ethdivum/=0 ) then
-          lpenc_diagnos(i_rho)=.true.
-          lpenc_diagnos(i_ee)=.true.
+        lpenc_diagnos(i_rho)=.true.
+        lpenc_diagnos(i_ee)=.true.
       endif
       if (idiag_ssuzm/=0) lpenc_diagnos(i_uu)=.true.
       if (idiag_ssruzm/=0 .or. idiag_fconvm/=0 .or. idiag_fconvz/=0 .or. &
           idiag_fconvxmx/=0) then
-          lpenc_diagnos(i_cp)=.true.
-          lpenc_diagnos(i_uu)=.true.
-          lpenc_diagnos(i_rho)=.true.
-          lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
+        lpenc_diagnos(i_cp)=.true.
+        lpenc_diagnos(i_uu)=.true.
+        lpenc_diagnos(i_rho)=.true.
+        lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
       endif
       if (idiag_fconvxy/=0 .or. idiag_fconvyxy/=0 .or. idiag_fconvzxy/=0) then
-          lpenc_diagnos2d(i_cp)=.true.
-          lpenc_diagnos2d(i_uu)=.true.
-          lpenc_diagnos2d(i_rho)=.true.
-          lpenc_diagnos2d(i_TT)=.true.
+        lpenc_diagnos2d(i_cp)=.true.
+        lpenc_diagnos2d(i_uu)=.true.
+        lpenc_diagnos2d(i_rho)=.true.
+        lpenc_diagnos2d(i_TT)=.true.
       endif
       if (idiag_fturbz/=0 .or. idiag_fturbmx/=0) then
-          lpenc_diagnos(i_rho)=.true.
-          lpenc_diagnos(i_TT)=.true.
-          lpenc_diagnos(i_gss)=.true.
+        lpenc_diagnos(i_rho)=.true.
+        lpenc_diagnos(i_TT)=.true.
+        lpenc_diagnos(i_gss)=.true.
       endif
       if (idiag_fturbxy/=0 .or. idiag_fturbrxy/=0 .or. &
           idiag_fturbthxy/=0 .or. idiag_fturbymxy/=0) then
-          lpenc_diagnos2d(i_rho)=.true.
-          lpenc_diagnos2d(i_TT)=.true.
-          lpenc_diagnos2d(i_gss)=.true.
+        lpenc_diagnos2d(i_rho)=.true.
+        lpenc_diagnos2d(i_TT)=.true.
+        lpenc_diagnos2d(i_gss)=.true.
       endif
       if (idiag_fradxy_Kprof/=0 .or. idiag_fradymxy_Kprof/=0) then
-          lpenc_diagnos2d(i_TT)=.true.
-          lpenc_diagnos2d(i_glnTT)=.true.
+        lpenc_diagnos2d(i_TT)=.true.
+        lpenc_diagnos2d(i_glnTT)=.true.
       endif
       if (idiag_fradxy_kramers/=0) then
-          lpenc_diagnos2d(i_rho)=.true.
-          lpenc_diagnos2d(i_TT)=.true.
+        lpenc_diagnos2d(i_rho)=.true.
+        lpenc_diagnos2d(i_TT)=.true.
+        lpenc_diagnos2d(i_glnTT)=.true.
       endif
       if (idiag_TTm/=0 .or. idiag_TTmx/=0 .or. idiag_TTmy/=0 .or. &
           idiag_TTmz/=0 .or. idiag_TTmr/=0 .or. idiag_TTmax/=0 .or. &
