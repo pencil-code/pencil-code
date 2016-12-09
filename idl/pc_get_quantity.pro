@@ -116,8 +116,8 @@
 ; =============================================================================
 function pc_compute_quantity, vars, index, quantity, ghost=ghost
 
-	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, P_therm, grad_P_therm, bb, B_2, jj, EMF, Poynting, Poynting_j, Poynting_u, F_Lorentz
-	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
+	common quantity_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, P_therm, grad_P_therm, bb, B_2, jj, EMF, Poynting, Poynting_j, Poynting_u, F_Lorentz
+	common quantity_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
 
@@ -1080,8 +1080,8 @@ end
 ; Clean up cache for computation of physical quantities.
 pro pc_quantity_cache_cleanup
 
-	common quantitiy_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, P_therm, grad_P_therm, bb, B_2, jj, EMF, Poynting, Poynting_j, Poynting_u, F_Lorentz
-	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
+	common quantity_cache, uu, rho, grad_rho, n_rho, Temp, grad_Temp, P_therm, grad_P_therm, bb, B_2, jj, EMF, Poynting, Poynting_j, Poynting_u, F_Lorentz
+	common quantity_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
 
 	undefine, uu
 	undefine, rho
@@ -1121,7 +1121,7 @@ end
 ; Calculation of physical quantities.
 function pc_get_quantity, quantity, vars, index, varfile=varfile, units=units, dim=dim, grid=grid, start_param=start_param, run_param=run_param, datadir=datadir, ghost=ghost, cache=cache, cleanup=cleanup, verbose=verbose
 
-	common quantitiy_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
+	common quantity_params, sources, l1, l2, m1, m2, n1, n2, nx, ny, nz, unit, start_par, run_par, alias
 	common cdat, x, y, z, mx, my, mz, nw, ntmax, date0, time0, nghostx, nghosty, nghostz
 	common cdat_grid, dx_1, dy_1, dz_1, dx_tilde, dy_tilde, dz_tilde, lequidist, lperi, ldegenerated
 
