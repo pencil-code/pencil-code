@@ -92,6 +92,7 @@ class DataCube(object):
         ff=pc.read_var(trimall=True,ivar=100,magic=['tt','vort'])
 
         """
+        ldownsampled= 'VARd' in varfile
         if (setup is not None):
             datadir = os.path.expanduser(setup.datadir)
             dim = setup.dim
@@ -100,7 +101,6 @@ class DataCube(object):
             run2D = setup.run2D
         else:
             datadir = os.path.expanduser(datadir)
-            ldownsampled= 'VARd' in varfile
             if dim is None:
                 dim = read_dim(datadir,proc,down=ldownsampled)
             if param is None:
