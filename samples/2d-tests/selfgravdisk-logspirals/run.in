@@ -1,0 +1,44 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Run parameters!
+!
+&run_pars
+  cvsid='$Id$',
+  ip=10,
+  nt=50, it1=5, it1d=100,  isave=1000, itorder=3, 
+  cdt=0.4, 
+  cdtv=0.4, 
+  dtmin=1e-6,
+  dsnap=6.283 ,d2davg=6.283 
+  wborder_int=0.1
+  wborder_ext=0.2 
+  tborder=1.0
+  dvid=0.1
+  lpencil_check=T
+  lpencil_check_small=T
+  lwrite_dvar=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+  borderuu='initial-condition'
+/
+&density_run_pars
+  !lupw_rho=T
+  idiff='hyper3-cyl'
+  diffrho_hyper3=1e-3
+  borderlnrho='initial-condition'
+/
+&grav_run_pars
+/
+&viscosity_run_pars
+  ivisc='hyper3-cyl'
+  nu_hyper3=1e-3
+  !!radially varying viscosity nu(r)=nu/r^pnlaw
+  !ivisc='power-law'
+  !pnlaw=-0.5
+/
+&selfgrav_run_pars
+/
+&poisson_run_pars
+/

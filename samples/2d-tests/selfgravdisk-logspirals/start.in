@@ -1,0 +1,60 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Initialisation parameters
+!
+&init_pars
+  cvsid='$Id$',
+  ip=10,                        ! debugging parameter
+
+  !xyz0  =  0.4,-0.01227184630,-0.26,
+  !xyz1  =  2.5, 6.27091346088, 0.26,
+
+  xyz0  =  0.4,0.00000000000000000000,-0.26,
+  xyz1  =  2.5,6.28318530717958647688, 0.26,
+
+!-pi,pi
+  !xyz0  =  0.4,-3.14159265359,-0.26,
+  !xyz1  =  2.5, 3.14159265359, 0.26,
+
+  lperi = F  , T  , T,         ! periodic direction?
+
+  lshift_origin = F,F,F,
+  lshift_origin_lower = F,T,T,
+
+  bcx = 's','a2','s','a2','a2','s','s','s'
+
+  llocal_iso=T
+  lwrite_ic=T
+  lwrite_aux=T
+  coord_system='cylindrical'
+  lcylindrical_gravity=T
+  grid_func='log','linear','linear'
+/
+&initial_condition_pars
+  density_power_law=1.5 !density power-law
+  temperature_power_law=0.0 !temperature power-law
+  lcorrect_selfgravity=T
+  lselfgravity_logspirals=T
+/
+&eos_init_pars
+  cs0  = 0.05 
+  rho0 = 1.
+  gamma= 1.
+/
+&hydro_init_pars
+  inituu='gaussian-noise'
+  ampluu=5d-4
+/
+&density_init_pars
+  ldensity_nolog=T
+/
+&grav_init_pars
+  ipotential='no-smooth'
+  g0=1.
+/
+&selfgrav_init_pars
+  gravitational_const=1e-2
+  lselfgravity_gas=T
+/
+&poisson_init_pars
+/
