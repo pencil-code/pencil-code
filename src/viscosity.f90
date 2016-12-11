@@ -1849,7 +1849,7 @@ module Viscosity
       endif
 !
 !  Store viscous heating rate in auxiliary variable if requested.
-!  Just neccessary immediately before writing snapshots, but how would we
+!  Just necessary immediately before writing snapshots, but how would we
 !  know we are?
 !
       if (lvisc_heat_as_aux) f(l1:l2,m,n,ivisc_heat) = p%visc_heat
