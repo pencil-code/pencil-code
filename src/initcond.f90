@@ -1784,7 +1784,7 @@ module Initcond
 !
 !  Beltrami field (as initial condition)
 !
-!  23-sep-10/dhruba: aped from beltrami
+!  23-sep-10/dhruba: adapted from beltrami
 !
       integer :: i,j
       real, dimension (mx,my,mz,mfarray) :: f
@@ -3200,7 +3200,7 @@ module Initcond
     subroutine vtube(ampl,f,i1,i2,radius)
 !
 !  Vertical flux tube (for vector potential)
-!  Note: in Cartesian coords this cannot used for periodic xy mesh
+!  Note: in Cartesian coords this cannot be used for periodic xy mesh
 !
 !   1-apr-13/axel+MR: coded for cylindrical coordinates
 !  14-jul-13/axel: adapted for Cartesian coordinates
