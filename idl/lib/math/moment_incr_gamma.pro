@@ -7,7 +7,7 @@ FUNCTION moment_incr_gamma,mu,nu
 ;
 ;  10-dec-2016/axel: coded
 ;
-g=make_array(size=size(mu))+1.
+g=mu*0.+1.
 for delnu=1,nu/2 do g=g*((mu+nu/2+delnu)/(mu+delnu))^(1./nu)
 ;
 return,g
