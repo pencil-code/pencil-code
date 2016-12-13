@@ -91,7 +91,7 @@ module Special
 ! Declare index of new variables in f array (if any).
 !
    real :: diffmu5, diffgtheta5, lambda5, gtheta5_const=0., mu5_const=0.
-   real :: meanmu5, kx_gtheta5=1., ky_gtheta5=1.
+   real :: meanmu5, kx_gtheta5=1., ky_gtheta5=1., k_mu5=1.
    real, pointer :: eta
    real :: cdtchiral=1.
    real, dimension (nx) :: diffus_mu5_1, diffus_mu5_2, diffus_mu5_3
@@ -108,7 +108,7 @@ module Special
 !
   namelist /special_init_pars/ &
       initspecial, gtheta5_const, mu5_const, &
-      kx_gtheta5, ky_gtheta5
+      kx_gtheta5, ky_gtheta5, k_mu5
 !
   namelist /special_run_pars/ &
       diffgtheta5, diffmu5, lambda5, theta_prof, lupw_gtheta5, &
@@ -121,6 +121,7 @@ module Special
   integer :: idiag_bgmu5rms=0  ! DIAG_DOC: $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$
   integer :: idiag_bgtheta5rms=0  ! DIAG_DOC: $\left<(\Bv\cdot\nabla\theta_5)^2\right>^{1/2}$
   integer :: idiag_gtheta5rms=0! DIAG_DOC: $\left<(\nabla\theta_5)^2\right>^{1/2}$
+  integer :: idiag_gmu5rms=0   ! DIAG_DOC: $\left<(\nabla\mu_5)^2\right>^{1/2}$
   integer :: idiag_gtheta5mx=0 ! DIAG_DOC: $\left<\nabla\theta_{5x}\right>$
   integer :: idiag_gtheta5my=0 ! DIAG_DOC: $\left<\nabla\theta_{5y}\right>$
   integer :: idiag_gtheta5mz=0 ! DIAG_DOC: $\left<\nabla\theta_{5z}\right>$
@@ -244,6 +245,14 @@ module Special
           f(:,:,:,igtheta5+2) = gtheta5_const
           f(:,:,:,imu5) = mu5_const
 !
+        case ('mu51psinx')
+          f(:,:,:,igtheta5) = gtheta5_const
+          f(:,:,:,igtheta5+1) = gtheta5_const
+          f(:,:,:,igtheta5+2) = gtheta5_const
+          do n=n1,n2; do m=m1,m2
+             f(:,m,n,imu5) = mu5_const*(1.+sin(k_mu5*z(n)))
+          enddo; enddo
+!
         case ('gtheta5x_const')
           f(:,:,:,igtheta5) = gtheta5_const
           f(:,:,:,igtheta5+1) = 0.
@@ -291,37 +300,6 @@ module Special
             f(:,m,n,igtheta5)=gtheta5_const*cos(pi*z(n)/Lx)
             f(:,m,n,igtheta5+1) = 1.
             f(:,m,n,igtheta5+2) = gtheta5_const*cos(pi*z(n)/Lx)
-          enddo; enddo
-          f(:,:,:,imu5) = mu5_const
-!
-        case ('fancy_z')
-          do n=n1,n2; do m=m1,m2
-            f(:,m,n,igtheta5)=gtheta5_const &
-                              * 0.5*(1.+tanh((z(n)+2.89)/0.01))  &
-                              * 0.5*(1.-tanh((z(n)-2.89)/0.01))  &          
-                              * (2./pi*(pi+z(n)))
-            f(:,m,n,igtheta5+1)=gtheta5_const &
-                              * 0.5*(1.+tanh((z(n)+2.89)/0.01))  &
-                              * 0.5*(1.-tanh((z(n)-2.89)/0.01))  &
-                              * (2./pi*(pi+z(n)))
-            f(:,m,n,igtheta5+2)=gtheta5_const &
-                              * 0.5*(1.+tanh((z(n)+2.89)/0.01))  &
-                              * 0.5*(1.-tanh((z(n)-2.89)/0.01))  &
-                              * (2./pi*(pi+z(n)))
-          enddo; enddo
-          f(:,:,:,imu5) = mu5_const
-!
-        case ('fancy_z_2')
-          do n=n1,n2; do m=m1,m2
-            f(:,m,n,igtheta5)=gtheta5_const &
-                              * 0.5*(1.+tanh((z(n)+2.89)/0.01))  &
-                              * 0.5*(1.-tanh((z(n)-2.89)/0.01))  &
-                              * (2./pi*(pi+z(n)))
-            f(:,m,n,igtheta5+1)=1.
-            f(:,m,n,igtheta5+2)=gtheta5_const &
-                              * 0.5*(1.+tanh((z(n)+2.89)/0.01))  &
-                              * 0.5*(1.-tanh((z(n)-2.89)/0.01))  &
-                              * (2./pi*(pi+z(n)))
           enddo; enddo
           f(:,:,:,imu5) = mu5_const
 !
@@ -463,7 +441,7 @@ p%del2bb=0
       intent(in) :: f,p
       intent(inout) :: df
 !
-      real, dimension (nx) :: dtheta5, gtheta52, bgmu5, EB, uujj, bbjj
+      real, dimension (nx) :: dtheta5, gtheta52, gmu52, bgmu5, EB, uujj, bbjj
       real, dimension (nx,3) :: mu5bb, dtheta5_bb, uxbbgtheta5r, ubgtheta5
       real, dimension (nx,3) :: uijtransgtheta5, jbgtheta5r, jbgtheta5r2
       real, dimension (nx,3) :: ubgtheta5bgtheta5r,ubbgtheta5gtheta5r
@@ -493,9 +471,10 @@ p%del2bb=0
       if (lhydro) then
         call dot_mn_vm_trans(p%gtheta5,p%uij,uijtransgtheta5)
         df(l1:l2,m,n,igtheta5:igtheta5+2) = df(l1:l2,m,n,igtheta5:igtheta5+2) &
-        -p%uggtheta5-uijtransgtheta5+p%gmu5 &
-        +diffgtheta5*p%del2gtheta5
+        -p%uggtheta5-uijtransgtheta5&
+        +diffgtheta5*p%del2gtheta5+p%gmu5
       endif
+
       diffus_gtheta5_1 = diffgtheta5*dxyz_2
       !diffus_gtheta5_2 = p%mu5*sqrt(dxyz_2)/sqrt(p%gtheta52)
 !
@@ -570,6 +549,10 @@ p%del2bb=0
         if (idiag_gtheta5mx/=0) call sum_mn_name(p%gtheta5(:,1),idiag_gtheta5mx)
         if (idiag_gtheta5my/=0) call sum_mn_name(p%gtheta5(:,2),idiag_gtheta5my)
         if (idiag_gtheta5mz/=0) call sum_mn_name(p%gtheta5(:,3),idiag_gtheta5mz)
+        endif
+        if (idiag_gmu5rms/=0) then
+          call dot2_mn(p%gmu5,gmu52)
+          call sum_mn_name(gmu52,idiag_gmu5rms,lsqrt=.true.)
         endif
         if (idiag_diffus_mu5_1/=0)  call sum_mn_name(diffus_mu5_1,idiag_diffus_mu5_1)
         if (idiag_diffus_mu5_2/=0)  call sum_mn_name(diffus_mu5_2,idiag_diffus_mu5_2)
@@ -648,7 +631,7 @@ p%del2bb=0
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_mu5m=0; idiag_mu5rms=0; idiag_bgmu5rms=0; idiag_gtheta5rms=0;
+        idiag_mu5m=0; idiag_mu5rms=0; idiag_bgmu5rms=0; idiag_gtheta5rms=0;idiag_gmu5rms=0;
         idiag_gtheta5mx=0; idiag_gtheta5my=0; idiag_gtheta5mz=0;
         idiag_diffus_mu5_1=0; idiag_diffus_mu5_2=0; idiag_diffus_mu5_3=0; 
         idiag_diffus_mu5_4=0; idiag_diffus_gtheta5_1=0; idiag_diffus_gtheta5_2=0;
@@ -663,6 +646,7 @@ p%del2bb=0
         call parse_name(iname,cname(iname),cform(iname),'bgmu5rms',idiag_bgmu5rms)
         call parse_name(iname,cname(iname),cform(iname),'bgtheta5rms',idiag_bgtheta5rms)
         call parse_name(iname,cname(iname),cform(iname),'gtheta5rms',idiag_gtheta5rms)
+        call parse_name(iname,cname(iname),cform(iname),'gmu5rms',idiag_gmu5rms)
         call parse_name(iname,cname(iname),cform(iname),'gtheta5mx',idiag_gtheta5mx)
         call parse_name(iname,cname(iname),cform(iname),'gtheta5my',idiag_gtheta5my)
         call parse_name(iname,cname(iname),cform(iname),'gtheta5mz',idiag_gtheta5mz)
