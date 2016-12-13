@@ -2016,6 +2016,7 @@ module EquationOfState
 !
       if (lreference_state) &
         call get_shared_variable('reference_state',reference_state,caller='isothermal_entropy')
+      if (T0 == 0) call fatal_error('isothermal_entropy','T0 cannot be 0') 
 !
       do n=n1,n2
       do m=m1,m2
