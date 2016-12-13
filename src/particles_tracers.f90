@@ -10,6 +10,7 @@
 !
 ! MAUX CONTRIBUTION 2
 ! MPVAR CONTRIBUTION 3
+! MPAUX CONTRIBUTION 3
 !
 ! PENCILS PROVIDED np; rhop; epsp; rhop_swarm; grhop(3)
 !
@@ -85,6 +86,11 @@ module Particles
 !  Increase npvar accordingly.
 !
       npvar=npvar+3
+!
+      ivpx=mpvar+npaux+1
+      ivpy=mpvar+npaux+2
+      ivpz=mpvar+npaux+3
+      npaux = npaux+3
 !
 !  Set indices for auxiliary variables.
 !
@@ -544,8 +550,8 @@ module Particles
       integer :: k
       logical :: lheader, lfirstcall=.true.
 !
-      intent (in) :: f, fp, ineargrid
-      intent (inout) :: df, dfp
+      intent (in) :: f, ineargrid
+      intent (inout) :: df, dfp, fp
 !
 !  Identify module and boundary conditions.
 !
@@ -585,9 +591,10 @@ module Particles
 !  Advance of particle position
 !
           if (lcartesian_coords) then
-            if (nxgrid/=1) dfp(k,ixp) = dfp(k,ixp) + uu(1)
-            if (nygrid/=1) dfp(k,iyp) = dfp(k,iyp) + uu(2)
-            if (nzgrid/=1) dfp(k,izp) = dfp(k,izp) + uu(3)
+            if (nxgrid/=1) dfp(k,ixp) = dfp(k,ixp) + uu(1) ; fp(k,ivpx) = uu(1)
+            if (nygrid/=1) dfp(k,iyp) = dfp(k,iyp) + uu(2) ; fp(k,ivpy) = uu(2)
+            if (nzgrid/=1) dfp(k,izp) = dfp(k,izp) + uu(3) ; fp(k,ivpz) = uu(3)
+                          
           elseif (lcylindrical_coords) then
             if (nxgrid/=1) dfp(k,ixp) = dfp(k,ixp) + uu(1)
             if (nygrid/=1) dfp(k,iyp) = dfp(k,iyp) + uu(2)/max(fp(k,ixp),tini)
@@ -908,9 +915,9 @@ module Particles
         write(3,*) 'ixp=', ixp
         write(3,*) 'iyp=', iyp
         write(3,*) 'izp=', izp
-        write(3,*) 'ivpx=', ivpx
-        write(3,*) 'ivpy=', ivpy
-        write(3,*) 'ivpz=', ivpz
+        write(3,*) 'ivpx=', mpvar+ivpx
+        write(3,*) 'ivpy=', mpvar+ivpy
+        write(3,*) 'ivpz=', mpvar+ivpz
         write(3,*) 'inp=', inp
         write(3,*) 'irhop=', irhop
       endif
