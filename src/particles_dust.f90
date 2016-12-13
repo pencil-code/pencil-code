@@ -210,7 +210,8 @@ module Particles
       lreassign_strat_rhom, lparticlemesh_pqs_assignment, &
       lwithhold_init_particles, frac_init_particles, lvector_gravity, &
       birthring_r, birthring_width, lgaussian_birthring, ldraglaw_stokesschiller, &
-      lbirthring_depletion
+      lbirthring_depletion, &
+      remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size
 !
   namelist /particles_run_pars/ &
       bcpx, bcpy, bcpz, tausp, dsnap_par_minor, beta_dPdr_dust, &
@@ -257,7 +258,8 @@ module Particles
       birthring_width, lsimple_volume,&
       lgaussian_birthring, tstart_rpbeta, linsert_as_many_as_possible, &
       lvector_gravity, lcompensate_sedimentation,compensate_sedimentation, &
-      lpeh_radius, A1, A2, ldraglaw_stokesschiller, lbirthring_depletion, birthring_lifetime
+      lpeh_radius, A1, A2, ldraglaw_stokesschiller, lbirthring_depletion, birthring_lifetime, &
+      remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0   ! DIAG_DOC: $x^2_{part}$
@@ -4795,15 +4797,15 @@ module Particles
 !
       if (ldraglaw_epstein) then
         if (iap/=0) then
-          if (fp(k,iap)/=0.0) then 
+          if (fp(k,iap)/=0.0) then
             tausp1_par = (sqrt(p%cs2(inx0))*p%rho(inx0))/(fp(k,iap)*rhopmat)
 !
 ! DM : 10 Nov  2016
-! For the usual Epstein drag we need also the thermal velocity and the 
+! For the usual Epstein drag we need also the thermal velocity and the
 ! density at this point. None of them fluctuate by large amounts, so it is better
 ! to get them from the same pencil without any interpolation. This may be even
-! a better prescription for flows with shocks if the particle sits very close to 
-! a shock.  
+! a better prescription for flows with shocks if the particle sits very close to
+! a shock.
 !
           endif
         else

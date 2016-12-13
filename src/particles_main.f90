@@ -468,9 +468,12 @@ module Particles_main
         dfp(1:npar_loc,:)=alpha_ts(itsub)*dfp(1:npar_loc,:)
       endif
 !
-!  Insert new particles continuously during the run
+!  Insert new and remove old particles continuously during the run
 !
-      if (lfirst) call particles_insert_continuously(f)
+      if (lfirst) then
+          call particles_insert_continuously(f)
+          call particles_remove_continuously(f)
+      endif
 !
     endsubroutine particles_timestep_first
 !***********************************************************************
@@ -486,7 +489,7 @@ module Particles_main
            fp(1:npar_loc,1:mpvar) = fp(1:npar_loc,1:mpvar) + dt_beta_ts(itsub)*dfp(1:npar_loc,1:mpvar)
 !
 !  Discrete particle collisions. Must be done at the end of the time-step.
-!   This call also sorts the particles into mn 
+!   This call also sorts the particles into mn
 !
       call particles_discrete_collisions()
 !
@@ -798,7 +801,7 @@ module Particles_main
      if (lparticles_surfspec) then
        call calc_psurf_pencils(f,fp,p,ineargrid)
      endif
-       
+
 !
 !  Dynamical equations.
 !
@@ -1205,10 +1208,80 @@ module Particles_main
 !
     endsubroutine particles_insert_continuously
 !***********************************************************************
+    subroutine particles_remove_continuously(f)
+!
+!  Remove particles continuously, i.e. remove particles in
+!  the beginning of a time step under a certain criteria.
+!
+!  dec-16/aschreib: coded
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      real :: rp
+      integer :: k
+!
+      if (remove_particle_at_time > 0) then
+          !
+          ! Should this be moved to particles_dust.f90 and _blocks.f90 respectivly?
+          !
+          if (remove_particle_at_time-dt < t) then
+              if (t < remove_particle_at_time+2*dt) then
+                  select case (remove_particle_criteria)
+
+                  case ('all')
+                      k=1
+                      do while (k <= npar_loc)
+                          call remove_particle(fp,ipar,k,dfp,ineargrid)
+                      k=k+1
+                      enddo
+                      remove_particle_at_time = -1.
+
+                  case ('none')
+                      remove_particle_at_time = -1.
+
+                  case ('sphere')
+                      k=1
+                      do while (k <= npar_loc)
+                          print*, 'k=', k
+                          rp = sqrt(fp(k,ixp)**2 + fp(k,iyp)**2 + fp(k,izp)**2)
+                          print*, 'sqrt( x**2 + y**2 + z**2 ) = ', rp
+                          if ( rp > remove_particle_criteria_size) then
+                              call remove_particle(fp,ipar,k,dfp,ineargrid)
+                          else
+                              k=k+1
+                          endif
+                      enddo
+                      remove_particle_at_time = -1.
+
+                  case ('xycylinder')
+                      k=1
+                      do while (k<=npar_loc)
+                          print*, 'k=', k
+                          rp = sqrt(fp(k,ixp)**2 + fp(k,iyp)**2)
+                          print*, 'sqrt( x**2 + y**2 ) = ', rp
+                          if ( rp > remove_particle_criteria_size ) then
+                              call remove_particle(fp,ipar,k,dfp,ineargrid)
+                          else
+                              k=k+1
+                          endif
+                      enddo
+                      remove_particle_at_time = -1.
+
+                  endselect
+              else
+                  remove_particle_at_time = -1.
+              endif
+          endif
+
+
+      endif
+!
+    endsubroutine particles_remove_continuously
+!***********************************************************************
     subroutine particles_cleanup
 !
 !      call particles_final_clean_up()
-      if (lparticles_chemistry) then 
+      if (lparticles_chemistry) then
         call particles_chemistry_clean_up()
         call particles_surfspec_clean_up()
         call particles_adsorbed_clean_up()
@@ -1232,7 +1305,7 @@ module Particles_main
       integer, intent(in) :: npvar_aux
       npvar=npvar_aux
     endsubroutine return_npvar
-!***********************************************************************    
+!***********************************************************************
     subroutine fetch_fp_array(fp_aux,dfp_aux,ixw,iyw,izw,ivxw,ivyw,ivzw)
 !
       real,    dimension(mpar_loc,mparray), intent(out) :: fp_aux
@@ -1243,7 +1316,7 @@ module Particles_main
       dfp_aux       = dfp
       ixw=ixp ; iyw=iyp; izw=izp
       ivxw=ivpx ; ivyw=ivpy; ivzw=ivpz
-!      
+!
     endsubroutine fetch_fp_array
 !***********************************************************************
     subroutine return_fp_array(fp_aux,dfp_aux,flag)
@@ -1251,7 +1324,7 @@ module Particles_main
       real, dimension(mpar_loc,mparray), intent(in) :: fp_aux
       real, dimension(mpar_loc,mpvar),   intent(in) :: dfp_aux
       logical, dimension(mpar_loc),      intent(in), optional :: flag
-!      
+!
       integer :: k
 !
       fp        = fp_aux
@@ -1262,7 +1335,7 @@ module Particles_main
           if (flag(k)) call remove_particle(fp,ipar,k,dfp,ineargrid)
         enddo
       endif
-!      
+!
     endsubroutine return_fp_array
 !***********************************************************************
   endmodule Particles_main

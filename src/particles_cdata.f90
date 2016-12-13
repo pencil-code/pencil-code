@@ -14,7 +14,7 @@ module Particles_cdata
 !
   real, parameter :: npar_per_cell=npar/(1.0*nwgrid)
 !
-! Introduce the maximum number possible particles that can live in 
+! Introduce the maximum number possible particles that can live in
 ! a cell.
 !
   integer, parameter :: maxp=20
@@ -35,6 +35,8 @@ module Particles_cdata
   real :: dustdensity_powerlaw=0.
   real, dimension(4) :: gab_weights
   real :: gab_width=3.0
+
+  real :: remove_particle_at_time=-1.0, remove_particle_criteria_size=0.0
 !
   integer, dimension(-1:1,-1:1,-1:1) :: neighbors_par = -1
   integer, dimension (nx) :: kshepherd
@@ -65,7 +67,7 @@ module Particles_cdata
   integer :: iads=0, iads_end=0
   integer :: isurf=0,isurf_end=0
   integer :: ieffp=0
-  integer :: idlncc=0 
+  integer :: idlncc=0
   integer :: idfg=0,idfx=0,idfy=0,idfz=0
 
   integer :: npar_inserted_tot=0
@@ -96,6 +98,7 @@ module Particles_cdata
   character (len=2*bclen+1) :: bcpx='p', bcpy='p', bcpz='p'
   character (len=10), dimension(mparray) :: pvarname
   character(len=labellen) :: particle_mesh = ''
+  character (len=labellen) :: remove_particle_criteria='all'
 !
   type quant_interp_penc
 !
@@ -136,7 +139,7 @@ module Particles_cdata
 ! the grid resolution and the number psigma which determines that range of interaction of
 ! the potential. The default is set to 0 but must be reset in post-parameter read initialization.
 ! We use three different numbers for three directions in case we have different resolutions
-! along three directions. So far this is written only for cartesian co-ordinates. 
+! along three directions. So far this is written only for cartesian co-ordinates.
   integer,allocatable,dimension(:,:,:,:) :: invert_ineargrid_map
   logical :: lallocated_neighbour_list=.false.
 !***********************************************************************

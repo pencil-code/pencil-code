@@ -66,7 +66,6 @@ module Particles
   real :: a_ellipsoid=0.0, b_ellipsoid=0.0, c_ellipsoid=0.0
   real :: a_ell2=0.0, b_ell2=0.0, c_ell2=0.0
   real :: xsinkpoint=0.0, ysinkpoint=0.0, zsinkpoint=0.0, rsinkpoint=0.0
-  real :: remove_particle_at_time=-1.0, remove_particle_criteria_size=0.0
   real :: compensate_sedimentation=1. ! Is this still being used?
   real :: mean_free_path_gas=0.0
   real :: cs2_powerlaw
@@ -92,7 +91,6 @@ module Particles
   character (len=labellen), dimension (ninit) :: initvvp='nothing'
   character (len=labellen) :: gravx_profile='', gravz_profile=''
   character (len=labellen) :: gravr_profile=''
-  character (len=labellen) :: remove_particle_criteria='all'
 !
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
@@ -108,9 +106,9 @@ module Particles
       learly_particle_map, epsp_friction_increase, lmigration_real_check, &
       ldraglaw_epstein, lcheck_exact_frontier, dustdensity_powerlaw, ldt_grav_par, &
       lsinkpoint,xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, &
-      remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size, &
       lcoriolis_force_par, lcentrifugal_force_par, ldt_adv_par, Lx0, Ly0, &
       Lz0, lglobalrandom, linsert_particles_continuously, &
+      remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size, &
       rad_sphere, pos_sphere, rhopmat, &
       a_ellipsoid, b_ellipsoid, c_ellipsoid, pos_ellipsoid, &
       lrandom_particle_pencils, lnocalc_np, lnocalc_rhop, it1_loadbalance, &
@@ -128,9 +126,9 @@ module Particles
       gravr, gravsmooth, kx_gg, kz_gg, lmigration_redo, &
       tstart_dragforce_par, tstart_grav_par, &
       particle_mesh, lparticlemesh_cic, lparticlemesh_tsc, &
-      remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size, &
       epsp_friction_increase, learly_particle_map, lmigration_real_check, &
       ldraglaw_epstein, lcheck_exact_frontier, ldraglaw_variable_density, &
+      remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size, &
       ldt_grav_par, lsinkpoint, rhopmat, &
       xsinkpoint, ysinkpoint, zsinkpoint, rsinkpoint, lcoriolis_force_par, &
       lcentrifugal_force_par, ldt_adv_par, linsert_particles_continuously, &
@@ -2345,56 +2343,6 @@ k_loop:   do while (.not. (k>npar_loc))
           endif
         enddo
       endif
-!
-! Remove particles at a certain time if they are not fullfilling a certain criteria.
-! Activated by setting remove_particle_at_time > 0
-!
-    if (remove_particle_at_time > 0) then
-        if (t > remove_particle_at_time) then
-            select case (remove_particle_criteria)
-
-            case ('all')
-                k=1
-                do while (k<=npar_loc)
-                  call remove_particle(fp,ipar,k,dfp,ineargrid)
-                  k=k+1
-                enddo
-                remove_particle_at_time = -1.
-
-            case ('none')
-                remove_particle_at_time = -1.
-
-            case ('sphere')
-                k=1
-                do while (k<=npar_loc)
-                  print*, 'k=', k
-                  rp = sqrt(fp(k,ixp)**2 + fp(k,iyp)**2 + fp(k,izp)**2)
-                  print*, 'sqrt( x**2 + y**2 + z**2 ) = ', rp
-                  if ( rp > remove_particle_criteria_size) then
-                    call remove_particle(fp,ipar,k,dfp,ineargrid)
-                    k=k-1
-                  endif
-                  k=k+1
-                enddo
-                remove_particle_at_time = -1.
-
-            case ('xycylinder')
-                k=1
-                do while (k<=npar_loc)
-                  print*, 'k=', k
-                  rp = sqrt(fp(k,ixp)**2 + fp(k,iyp)**2)
-                  print*, 'sqrt( x**2 + y**2 ) = ', rp
-                  if ( rp > remove_particle_criteria_size ) then
-                    call remove_particle(fp,ipar,k,dfp,ineargrid)
-                    k=k-1
-                  endif
-                  k=k+1
-                enddo
-                remove_particle_at_time = -1.
-
-            endselect
-        endif
-    endif
 !
       call keep_compiler_quiet(f)
 !
