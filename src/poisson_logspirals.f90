@@ -24,8 +24,8 @@
 ! CPARAM logical, parameter :: lpoisson=.true.
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 0
-! COMMUNITCATED AUXILIARIES 0
+! MAUX CONTRIBUTION 3
+! COMMUNITCATED AUXILIARIES 3
 !
 !***************************************************************
 module Poisson
@@ -64,6 +64,27 @@ module Poisson
 !
 contains
 !***********************************************************************
+    subroutine register_poisson()
+!
+!  Register auxilliary farray variables for poisson_logspirals
+!
+!  12-dec-16/vince: adapted
+!
+      use FArrayManager
+!
+!  Set indices for auxiliary variables
+!
+      call farray_register_auxiliary('gpotselfx',igpotselfx,communicated=.true.)
+      call farray_register_auxiliary('gpotselfy',igpotselfy,communicated=.true.)
+      call farray_register_auxiliary('gpotselfz',igpotselfz,communicated=.true.)
+!
+!  Identify version number (generated automatically by SVN).
+!
+      if (lroot) call svn_id( &
+          "$Id$")
+!
+    endsubroutine register_selfgravity
+!***********************************************************************
     subroutine initialize_poisson()
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
@@ -84,11 +105,6 @@ contains
 !
 !  Mask values from elsewhere
 !
-      !if (y(m1)/=0.0) then
-      !   
-      !   y=y-y(m1)
-      !endif
-!
       innerRadius=x(l1)
       outerRadius=x(l2)
       uMax=log(outerRadius/innerRadius)
@@ -100,6 +116,74 @@ contains
 !
       call get_shared_variable('gravitational_const',Gnewton_ptr)
       Gnewton=Gnewton_ptr
+!
+!  Initialize farray contributions
+!
+      f(:,:,:,igpotselfx:igpotselfz)=0.0
+!
+!  Boundary condition consistency for gpotself
+!
+if (ldensity) then
+        i = merge(irho, ilnrho, ldensity_nolog)
+        if (any(bcx(igpotselfx:igpotselfz)=='p') .and. .not.(bcx(i)=='p')) then
+          if (lroot) then
+            print*, 'initialize_selfgravity: gpotself has bcx=''p'', but the density is not'
+            print*, '                        periodic! (you must set a proper boundary condition'
+            print*, '                        for the potential)'
+            print*, 'initialize_selfgravity: bcx=', bcx
+          endif
+          call fatal_error('initialize_selfgravity','')
+        endif
+        if (any(bcy(igpotselfx:igpotselfz)=='p') .and. .not.(bcy(i)=='p')) then
+          if (lroot) then
+            print*, 'initialize_selfgravity: gpotself has bcy=''p'', but the density is not'
+            print*, '                        periodic! (you must set a proper boundary condition'
+            print*, '                        for the potential)'
+            print*, 'initialize_selfgravity: bcy=', bcy
+          endif
+          call fatal_error('initialize_selfgravity','')
+        endif
+        if (any(bcz(igpotselfx:igpotselfz)=='p') .and. .not.(bcz(i)=='p')) then
+          if (lroot) then
+            print*, 'initialize_selfgravity: gpotself has bcz=''p'', but the density is not'
+            print*, '                        periodic! (you must set a proper boundary condition'
+            print*, '                        for the potential)'
+            print*, 'initialize_selfgravity: bcz=', bcz
+          endif
+          call fatal_error('initialize_selfgravity','')
+        endif
+      endif
+!
+!     *** potential problems here...ipotself may still be 0, depending on the order in which the
+!         register / vs initialize routines are called. Will need to check ***
+!
+      if (any(bcx(igpotselfx:igpotselfz)=='p') .and. .not.(bcx(ipotself)=='p')) then
+        if (lroot) then
+          print*, 'initialize_particles_selfgrav: igpotself has bcx=''p'', but the potential is not'
+          print*, '                               periodic! (you must set a proper boundary'
+          print*, '                               condition for the gradient of the potential)'
+          print*, 'initialize_particles_selfgrav: bcx=', bcx
+        endif
+        call fatal_error('initialize_particles_selfgrav','')
+      endif
+      if (any(bcy(igpotselfx:igpotselfz)=='p') .and. .not.(bcy(ipotself)=='p')) then
+        if (lroot) then
+          print*, 'initialize_particles_selfgrav: igpotself has bcy=''p'', but the potential is not'
+          print*, '                               periodic! (you must set a proper boundary'
+          print*, '                               condition for the gradient of the potential)'
+          print*, 'initialize_particles_selfgrav: bcy=', bcy
+        endif
+        call fatal_error('initialize_particles_selfgrav','')
+      endif
+      if (any(bcz(igpotselfx:igpotselfz)=='p') .and. .not.(bcz(ipotself)=='p')) then
+        if (lroot) then
+          print*, 'initialize_particles_selfgrav: igpotself has bcz=''p'', but the potential is not'
+          print*, '                               periodic! (you must set a proper boundary'
+          print*, '                               condition for the gradient of the potential)'
+          print*, 'initialize_particles_selfgrav: bcz=', bcz
+        endif
+        call fatal_error('initialize_particles_selfgrav','')
+      endif
 !
 !  Coordinates u,phi (Fourier grid) and r,x,y (physical grid) are generated
 !
@@ -146,7 +230,7 @@ contains
       endif
     endsubroutine check_setup
 !***********************************************************************
-    subroutine inverse_laplacian(phi,gpotself)
+    subroutine inverse_laplacian(phi)
 !
 !  Dispatch solving the Poisson equation to inverse_laplacian_fft
 !  or inverse_laplacian_semispectral, based on the boundary conditions
@@ -154,13 +238,11 @@ contains
 !  17-jul-2007/wolf: coded wrapper
 !
       real, dimension(nx,ny,nz), intent(inout) :: phi
-      real, dimension(nx,ny,nz,3), intent(inout), optional :: gpotself
-
 !
       if (lcylindrical_coords) then
 !
         if (present(gpotself)) then
-          call inverse_laplacian_logradial_fft(phi,gpotself)
+          call inverse_laplacian_logradial_fft(phi)
         else
           call fatal_error("inverse_laplacian","poisson_logspirals works with the acceleration only")
         endif
@@ -283,7 +365,7 @@ contains
 !
     endsubroutine write_poisson_run_pars
 !***********************************************************************
-    subroutine inverse_laplacian_logradial_fft(potential,gpotself)
+    subroutine inverse_laplacian_logradial_fft(potential)
 !
       !use IO, only: output_globals
 !
@@ -293,7 +375,6 @@ contains
 ! 18-aug-2016/vince: coded
 !
       real, dimension(nx,ny,nz), intent(inout) :: potential
-      real, dimension(nz,ny,nz,3), intent(inout) :: gpotself
 !
 ! The density will be passed in via potential, but needs to be put on the fourier grid
 ! with 0's in the extra cells
@@ -306,7 +387,7 @@ contains
 !
 ! Mass fields and kernals are used to compute quatities of interest
 !
-      call compute_acceleration(gpotself)
+      call compute_acceleration()
       call compute_potential(potential)
 !      
     endsubroutine inverse_laplacian_logradial_fft
@@ -389,12 +470,11 @@ contains
 !
     endsubroutine generate_massfields
 !***********************************************************************
-    subroutine compute_acceleration(gpotself)
+    subroutine compute_acceleration()
 !
 ! Uses kernals and mass fields for the two acceleration integrals to
 ! calculate gravitational accelerations.
 !
-      real, dimension(nx,ny,nz,3), intent(inout) :: gpotself
       real, dimension(2*nx,ny) :: gr_convolution,gr_factor,gr1,gr2,gphi_convolution,gphi_factor
 !
       call fftconvolve(kr,sr,gr_convolution)
@@ -410,10 +490,10 @@ contains
       gphi=gphi_factor*gphi_convolution
 !
       do n=1,nz
-        gpotself(:,:,n,1)=gr(:nx,:)
-        gpotself(:,:,n,2)=gphi(:nx,:)
+        f(l1:l2,m1:m2,n,igpotselfx)=gr(:nx,:)
+        f(l1:l2,m1:m2,n,igpotselfy)=gphi(:nx,:)
       enddo
-      gpotself(:,:,:,3)=0.
+      f(l1:l2,m1:m2,n1:n2,igpotselfz)=0.
 !
     endsubroutine compute_acceleration
 !***********************************************************************
