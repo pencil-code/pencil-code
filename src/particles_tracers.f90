@@ -12,7 +12,7 @@
 ! MPVAR CONTRIBUTION 3
 ! MPAUX CONTRIBUTION 3
 !
-! PENCILS PROVIDED np; rhop; epsp; rhop_swarm; grhop(3)
+! PENCILS PROVIDED np; rhop; epsp; rhop_swarm; grhop(3); peh
 !
 !***************************************************************
 module Particles
