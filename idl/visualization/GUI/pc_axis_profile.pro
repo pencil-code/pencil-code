@@ -9,7 +9,7 @@
 ;;;
 
 
-; Event handling of vertical profile window
+; Event handling of axis profile window
 pro pc_axis_profile_event, event
 
 	common axis_prof_common, coords, num, num_coord, axis, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_min, a_max, a_label, v_range, v_min, v_max, v_label, file_name
@@ -185,7 +185,7 @@ pro pc_axis_profile_event, event
 end
 
 
-; Draw the timeseries plots
+; Draw the axis profile
 pro pc_axis_profile_draw
 
 	common axis_prof_common, coords, num, num_coord, axis, t, prof_name, prof_mean, prof_min, prof_max, a_range, a_min, a_max, a_label, v_range, v_min, v_max, v_label, file_name
@@ -269,11 +269,11 @@ pro pc_axis_profile_reset
 end
 
 
-; Calculate and draw a vertical profile of the given 3D data
+; Calculate and draw an axis profile of the given 3D data
 ;
 ; axis_dir:    direction of the axis for profiling (0-2 or 'X', 'Y', 'Z')
 ; data:        3D data cube (can be including ghost cells)
-; coord:       coordinates for the vertical position of data in the cube,
+; coord:       coordinates for the axis position of data in the cube,
 ;              asumed to be in the center of the data cube (eg. without ghost cells).
 ;              If omitted, the index numbers are used as coordinates.
 ; title:       title string for the plot
@@ -350,7 +350,7 @@ pro pc_axis_profile, axis_dir, data, coord=coord, title=title, horiz_label=horiz
 	a_range = [a_min, a_max]
 	if (keyword_set (horiz_label)) then a_label = horiz_label else a_label = ""
 
-	; extend vertical profile plot range by half a grid distance
+	; extend axis profile plot range by half a grid distance
 	if (num_coord le 1) then begin
 		v_range = [coord[0]-1, coord[0]+1]
 	end else begin
@@ -368,7 +368,7 @@ pro pc_axis_profile, axis_dir, data, coord=coord, title=title, horiz_label=horiz
 	pc_axis_profile_reset
 
 	if (prof_name eq "") then add = "" else add = " of "
-	MOTHER	= WIDGET_BASE (title="PC vertical profile analysis"+add+prof_name)
+	MOTHER	= WIDGET_BASE (title="PC axis profile analysis"+add+prof_name)
 	APP	= WIDGET_BASE (MOTHER, /col)
 
 	BASE	= WIDGET_BASE (APP, /row)
