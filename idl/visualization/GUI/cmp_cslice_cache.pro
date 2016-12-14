@@ -1075,6 +1075,7 @@ end
 pro cslice_draw_averages, number
 
 	common varset_common, set, overplot, oversets, unit, coord, varsets, varfiles, datadir, sources, param, run_param, var_list
+	common cslice_common, cube, field, num_cubes, num_overs, num_snapshots
 	common settings_common, px, py, pz, cut, log_plot, power_spec, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_axis, selected_color, af_x, af_y, af_z, destretch
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
 
@@ -1094,7 +1095,7 @@ pro cslice_draw_averages, number
 	if (selected_axis eq 0) then coords = coord.x
 	if (selected_axis eq 1) then coords = coord.y
 	if (selected_axis eq 2) then coords = coord.z
-	pc_axis_profile, selected_axis, reform (varsets[number].(selected_cube)[cut], num_x, num_y, num_z), coord=coords, title=set.(selected_cube), log=log_plot, horiz_label='['+param.unit_system+']', vert_label=vert_label, file_label=prefix, time=time
+	pc_axis_profile, selected_axis, cube, coord=coords, title=set.(selected_cube), log=log_plot, horiz_label='['+param.unit_system+']', vert_label=vert_label, file_label=prefix, time=time
 end
 
 
