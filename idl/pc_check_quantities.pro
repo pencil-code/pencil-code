@@ -180,6 +180,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		u_y:'velocity y', $
 		u_z:'velocity z', $
 		u_abs:'velocity', $
+		E_kin:'kinetic energy', $
 		P_therm:'thermal pressure', $
 		grad_P_therm_abs:'grad thermal pressure', $
 		c_sound:'sound speed', $
@@ -371,6 +372,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		u_y:'u', $
 		u_z:'u', $
 		u_abs:'u', $
+		E_kin:['u','rho'], $
 		P_therm:['Temp', 'rho'], $
 		grad_P_therm:['P_therm', 'grad_Temp'], $
 		grad_P_therm_abs:'grad_P_therm', $
