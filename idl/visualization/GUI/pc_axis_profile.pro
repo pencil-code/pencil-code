@@ -5,7 +5,7 @@
 ;;;  $Id$
 ;;;
 ;;;  Description:
-;;;    Plots a vertical profile of the given 3D quantity.
+;;;    Plots a profile of the given 3D quantity along a given axis.
 ;;;
 
 
