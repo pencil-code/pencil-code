@@ -163,8 +163,8 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, sqrt (dot2 (uu))
 	end
 
-	if (strcmp (quantity, 'E_kin', /fold_case)) then begin
-		; Kinetic energy [J]
+	if (strcmp (quantity, 'E_kin_rho', /fold_case)) then begin
+		; Kinetic energy density [J/m^3]
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u', ghost=ghost)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho', ghost=ghost)
 		return, 0.5 * dot2 (uu)^2 * rho
