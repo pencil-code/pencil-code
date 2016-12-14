@@ -1095,7 +1095,9 @@ pro cslice_draw_averages, number
 	if (selected_axis eq 0) then coords = coord.x
 	if (selected_axis eq 1) then coords = coord.y
 	if (selected_axis eq 2) then coords = coord.z
-	pc_axis_profile, selected_axis, cube, coord=coords, title=set.(selected_cube), log=log_plot, horiz_label='['+param.unit_system+']', vert_label=vert_label, file_label=prefix, time=time
+	title = set.(selected_cube)
+	if (power_spec) then title += ' (power spectrum)'
+	pc_axis_profile, selected_axis, cube, coord=coords, title=title, log=log_plot, horiz_label='['+param.unit_system+']', vert_label=vert_label, file_label=prefix, time=time
 end
 
 
