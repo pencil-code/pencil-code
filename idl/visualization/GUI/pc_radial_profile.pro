@@ -326,14 +326,13 @@ pro pc_radial_profile, data, coord=coord, anchor=anchor, title=title, horiz_labe
 	x_2 = coord.x^2
 	y_2 = coord.y^2
 	z_2 = coord.z^2
-	cutoff = r_range[1]^2
+	cutoff = r_range[1]
 	for pos_z = 0, nz - 1 do begin
 		for pos_y = 0, ny - 1 do begin
-			yz_2 = y_2[pos_y] + z_2[pos_z]
+			r = sqrt (x_2 + y_2[pos_y] + z_2[pos_z])
 			for pos_x = 0, nx - 1 do begin
-				r_2 = x_2[pos_x] + yz_2
-				if (r_2 le cutoff) then begin
-					pos = pc_find_index (sqrt (r_2), coords.r, /round)
+				if (r[pos_x] le cutoff) then begin
+					pos = pc_find_index (r[pos_x], coords.r, /round)
 					if (pos le num-1) then prof[pos] += data[pos_x,pos_y,pos_z]
 				end
 			end
