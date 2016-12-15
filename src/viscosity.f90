@@ -1081,7 +1081,7 @@ module Viscosity
       type (pencil_case) :: p
       intent(inout) :: f,p
 !
-      real, dimension (nx,3) :: tmp,tmp2,tmp5,gradnu,sgradnu,gradnu_shock,gnu_smag
+      real, dimension (nx,3) :: tmp,tmp2,tmp5,gradnu,sgradnu,gradnu_shock
       real, dimension (nx) :: murho1,zetarho1,muTT,nu_smag,tmp3,tmp4,pnu,pnu_shock
       real, dimension (nx) :: lambda_phi,prof,prof2,derprof,derprof2,qfvisc
       real, dimension (nx) :: gradnu_effective,fac
@@ -1927,7 +1927,7 @@ module Viscosity
       endif
 !
 !  Store viscous heating rate in auxiliary variable if requested.
-!  Just neccessary immediately before writing snapshots, but how would we
+!  Just necessary immediately before writing snapshots, but how would we
 !  know we are?
 !
       if (lvisc_heat_as_aux) f(l1:l2,m,n,ivisc_heat) = p%visc_heat
