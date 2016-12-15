@@ -323,15 +323,19 @@ pro pc_radial_profile, data, coord=coord, anchor=anchor, title=title, horiz_labe
 
 	; compute radial profile
 	prof = dblarr (num)
-	cutoff = r_range[1]
+	x_2 = coord.x^2
+	y_2 = coord.y^2
+	z_2 = coord.z^2
+	cutoff = r_range[1]^2
 	for pos_z = 0, nz - 1 do begin
-		r_z_2 = coord.z[pos_z]^2
 		for pos_y = 0, ny - 1 do begin
-			r_yz_2 = coord.y[pos_y]^2 + r_z_2
+			yz_2 = y_2[pos_y] + z_2[pos_z]
 			for pos_x = 0, nx - 1 do begin
-				r = sqrt (coord.x[pos_x]^2 + r_yz_2)
-				pos = pc_find_index (r, coords.r, /round)
-				if (pos le num-1) then prof[pos] += data[pos_x,pos_y,pos_z]
+				r_2 = x_2[pos_x] + yz_2
+				if (r_2 le cutoff) then begin
+					pos = pc_find_index (sqrt (r_2), coords.r, /round)
+					if (pos le num-1) then prof[pos] += data[pos_x,pos_y,pos_z]
+				end
 			end
 		end
 	end
