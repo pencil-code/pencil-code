@@ -13,7 +13,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED fvisc(3); diffus_total; diffus_total2; diffus_total3
-! PENCILS PROVIDED visc_heat; nu; gradnu(3)
+! PENCILS PROVIDED visc_heat; nu; gradnu(3), nu_smag, gnu_smag(3)
 !
 !***************************************************************
 module Viscosity
@@ -45,6 +45,7 @@ module Viscosity
   real :: PrM_turb=0.0
   real :: meanfield_nuB=0.0
   real :: nu_infinity=0.,nu0=0.,non_newton_lambda=0.,carreau_exponent=0.
+  real :: nu_smag_Ma2_power=0.0
   character (len=labellen) :: nnewton_type='none'
   real :: nnewton_tscale=0.0,nnewton_step_width=0.0
   real, dimension(nx) :: xmask_vis=0
@@ -87,8 +88,10 @@ module Viscosity
   logical :: lvisc_hyper3_nu_const_aniso=.false.
   logical :: lvisc_hyper3_rho_nu_const_bulk=.false.
   logical :: lvisc_hyper3_nu_const=.false.
+  logical :: lvisc_smag=.false.
   logical :: lvisc_smag_simplified=.false.
   logical :: lvisc_smag_cross_simplified=.false.
+  logical :: lnusmag_as_aux=.false.
   logical :: lvisc_snr_damp=.false.
   logical :: lvisc_heat_as_aux=.false.
   logical :: lvisc_mixture=.false.
@@ -99,6 +102,7 @@ module Viscosity
   logical :: lmagfield_nu=.false.
   logical :: llambda_effect=.false.
   logical :: luse_nu_rmn_prof=.false.
+  logical :: lvisc_smag_Ma=.false.
   logical, pointer:: lviscosity_heat
   logical :: lKit_Olem
   real :: damp_sound=0.
@@ -116,7 +120,8 @@ module Viscosity
       widthnu_shock, znu_shock, xnu_shock, nu_jump_shock, &
       nnewton_type,nu_infinity,nu0,non_newton_lambda,carreau_exponent,&
       nnewton_tscale,nnewton_step_width,lKit_Olem,damp_sound,luse_nu_rmn_prof, &
-      lvisc_slope_limited, h_slope_limited, islope_limiter
+      lvisc_slope_limited, h_slope_limited, islope_limiter, lnusmag_as_aux, &
+      lvisc_smag_Ma, nu_smag_Ma2_power
 !
 ! other variables (needs to be consistent with reset list below)
   integer :: idiag_nu_tdep=0    ! DIAG_DOC: time-dependent viscosity
@@ -151,6 +156,9 @@ module Viscosity
   integer :: idiag_fviscmz=0    ! XYAVG_DOC: $\left<2\nu\varrho u_i
                                 ! XYAVG_DOC: \mathcal{S}_{iz} \right>_{xy}$
                                 ! XYAVG_DOC: ($z$-component of viscous flux)
+  integer :: idiag_fviscsmmz=0  ! XYAVG_DOC: $\left<2\nu_{\rm Smag}\varrho u_i
+                                ! XYAVG_DOC: \mathcal{S}_{iz} \right>_{xy}$
+                                ! XYAVG_DOC: ($z$-component of viscous flux)
   integer :: idiag_epsKmz=0     ! XYAVG_DOC: $\left<2\nu\varrho\Strain^2
                                 ! XYAVG_DOC: \right>_{xy}$
 !
@@ -165,6 +173,9 @@ module Viscosity
 ! z averaged diagnostics given in zaver.in
 !
   integer :: idiag_fviscmxy=0   ! ZAVG_DOC: $\left<2\nu\varrho u_i
+                                ! ZAVG_DOC: \mathcal{S}_{ix} \right>_{z}$
+                                ! ZAVG_DOC: ($x$-xomponent of viscous flux)
+  integer :: idiag_fviscsmmxy=0 ! ZAVG_DOC: $\left<2\nu_{\rm Smag}\varrho u_i
                                 ! ZAVG_DOC: \mathcal{S}_{ix} \right>_{z}$
                                 ! ZAVG_DOC: ($x$-xomponent of viscous flux)
   integer :: idiag_fviscymxy=0  ! ZAVG_DOC: $\left<2\nu\varrho u_i
@@ -255,6 +266,7 @@ module Viscosity
       lvisc_hyper3_nu_const_aniso=.false.
       lvisc_hyper3_rho_nu_const_bulk=.false.
       lvisc_hyper3_nu_const=.false.
+      lvisc_smag=.false.
       lvisc_smag_simplified=.false.
       lvisc_smag_cross_simplified=.false.
       lvisc_snr_damp=.false.
@@ -389,6 +401,11 @@ module Viscosity
           if (lroot) print*,'viscous force: nu*(del6u+S.glnrho)'
           lpenc_requested(i_uij5)=.true.
           lvisc_hyper3_nu_const=.true.
+        case ('smagorinsky')
+          if (lroot) print*,'viscous force: Smagorinsky'
+          if (lroot) lvisc_LES=.true.
+          lpenc_requested(i_sij)=.true.
+          lvisc_smag=.true.
         case ('smagorinsky-simplified','smagorinsky_simplified')
           if (lroot) print*,'viscous force: Smagorinsky_simplified'
           if (lroot) lvisc_LES=.true.
@@ -455,7 +472,7 @@ module Viscosity
               (nu_aniso_hyper3(3)==0. .and. nzgrid/=1 )) ) &
             call fatal_error('initialize_viscosity', &
              'A viscosity coefficient of nu_aniso_hyper3 is zero!')
-        if ( (lvisc_smag_simplified.or.lvisc_smag_cross_simplified).and. &
+        if ( (lvisc_smag.or.lvisc_smag_simplified.or.lvisc_smag_cross_simplified).and. &
              C_smag==0.0 ) &
             call fatal_error('initialize_viscosity', &
             'Viscosity coefficient C_smag is zero!')
@@ -527,6 +544,21 @@ module Viscosity
           close(3)
           open(15,FILE=trim(datadir)//'/def_var.pro',position='append')
           write(15,*) 'visc_heat = fltarr(mx,my,mz)*one'
+          close(15)
+        endif
+      endif
+!
+!  Register nusmag as auxilliary variable
+!
+      if (lnusmag_as_aux) then
+        call farray_register_auxiliary('nusmag',inusmag)
+!
+        if (lroot) then
+          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
+          write(3,*) 'inusmag=',inusmag
+          close(3)
+          open(15,FILE=trim(datadir)//'/def_var.pro',position='append')
+          write(15,*) 'nusmag = fltarr(mx,my,mz)*one'
           close(15)
         endif
       endif
@@ -746,7 +778,8 @@ module Viscosity
         idiag_nuD2uxbxm=0; idiag_nuD2uxbym=0; idiag_nuD2uxbzm=0
         idiag_nu_tdep=0; idiag_fviscm=0 ; idiag_fviscrmsx=0
         idiag_fviscmz=0; idiag_fviscmx=0; idiag_fviscmxy=0
-        idiag_epsKmz=0; idiag_numx=0; idiag_fviscymxy=0 
+        idiag_epsKmz=0; idiag_numx=0; idiag_fviscymxy=0
+        idiag_fviscsmmz=0; idiag_fviscsmmxy=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -778,6 +811,7 @@ module Viscosity
 !
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fviscmz',idiag_fviscmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fviscsmmz',idiag_fviscsmmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'epsKmz',idiag_epsKmz)
       enddo
 !
@@ -793,6 +827,7 @@ module Viscosity
       do ixy=1,nnamexy
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'fviscmxy',idiag_fviscmxy)
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'fviscymxy',idiag_fviscymxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'fviscsmmxy',idiag_fviscsmmxy)
       enddo
 !
 !  write column where which viscosity variable is stored
@@ -837,9 +872,9 @@ module Viscosity
       if ((lentropy.or.ltemperature).and. &
           (lvisc_nu_cspeed.or.lvisc_mu_cspeed.or.lvisc_spitzer)) &
           lpenc_requested(i_lnTT)=.true.
-      if (lvisc_smag_simplified .or. lvisc_smag_cross_simplified) &
+      if (lvisc_smag .or.lvisc_smag_simplified .or. lvisc_smag_cross_simplified) &
           lpenc_requested(i_graddivu)=.true.
-      if (lvisc_smag_simplified) lpenc_requested(i_sij2)=.true.
+      if (lvisc_smag .or. lvisc_smag_simplified) lpenc_requested(i_sij2)=.true.
       if (lvisc_smag_cross_simplified) lpenc_requested(i_ss12)=.true.
       if (lvisc_nu_prof) lpenc_requested(i_z_mn)=.true.
       if (lvisc_nu_profx) lpenc_requested(i_x_mn)=.true.
@@ -863,7 +898,7 @@ module Viscosity
           lpenc_requested(i_r_mn)=.true.
       if (lvisc_rho_nu_const .or. &
           lvisc_sqrtrho_nu_const .or. lvisc_nu_const .or. lvisc_nu_tdep .or. &
-          lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
+          lvisc_smag .or. lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
           lvisc_nu_prof .or. lvisc_nu_profx .or. lvisc_spitzer .or. &
           lvisc_nu_profr_powerlaw .or. lvisc_nu_profr .or. &
           lvisc_nu_profr_twosteps .or. &
@@ -887,7 +922,7 @@ module Viscosity
           lvisc_hyper3_rho_nu_const .or. lvisc_nu_cspeed .or.&
           lvisc_hyper3_rho_nu_const_bulk .or. &
           lvisc_hyper3_rho_nu_const_aniso .or. &
-          lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
+          lvisc_smag .or.lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
           lvisc_hyper3_rho_nu_const_symm .or. &
           lvisc_hyper3_mu_const_strict .or. lvisc_mu_cspeed .or. &
           lvisc_spitzer) &
@@ -895,11 +930,13 @@ module Viscosity
 !
       if (lvisc_nu_const .or. lvisc_nu_tdep .or. &
           lvisc_nu_prof .or. lvisc_nu_profx .or. &
-          lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
+          lvisc_smag .or. lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
           lvisc_nu_profr_powerlaw .or. lvisc_nu_profr .or. &
           lvisc_nu_profr_twosteps .or. lvisc_sqrtrho_nu_const .or. &
           lvisc_nut_from_magnetic.or.lvisc_nu_cspeed) &
           lpenc_requested(i_sglnrho)=.true.
+!
+      if (lvisc_smag_Ma) lpenc_requested(i_Ma2)=.true.
 !
       if (lvisc_spitzer .or. lvisc_mu_cspeed .or. lvisc_nu_cspeed) &
           lpenc_requested(i_sglnTT)=.true.
@@ -998,14 +1035,15 @@ module Viscosity
         lpenc_diagnos(i_fvisc)=.true.
       endif
       if (idiag_Reshock/=0) lpenc_diagnos(i_shock)=.true.
-      if (idiag_fviscmz/=0.or.idiag_fviscmx/=0) then
+      if (idiag_fviscmz/=0.or.idiag_fviscsmmz/=0.or.idiag_fviscmx/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_sij)=.true.
       endif
       if (idiag_numx/=0) then
         lpenc_diagnos(i_nu) = .true.
       endif
-      if (idiag_fviscmxy/=0 .or. idiag_fviscymxy/=0) then
+      if (idiag_fviscmxy/=0 .or. idiag_fviscymxy/=0 .or. &
+          idiag_fviscsmmxy/=0) then
         lpenc_diagnos2d(i_rho)=.true.
         lpenc_diagnos2d(i_sij)=.true.
       endif
@@ -1043,8 +1081,8 @@ module Viscosity
       type (pencil_case) :: p
       intent(inout) :: f,p
 !
-      real, dimension (nx,3) :: tmp,tmp2,gradnu,sgradnu, gradnu_shock
-      real, dimension (nx) :: murho1,zetarho1,muTT,nu_smag,tmp3,tmp4,pnu, pnu_shock
+      real, dimension (nx,3) :: tmp,tmp2,tmp5,gradnu,sgradnu,gradnu_shock,gnu_smag
+      real, dimension (nx) :: murho1,zetarho1,muTT,nu_smag,tmp3,tmp4,pnu,pnu_shock
       real, dimension (nx) :: lambda_phi,prof,prof2,derprof,derprof2,qfvisc
       real, dimension (nx) :: gradnu_effective,fac
       real, dimension (nx,3) :: deljskl2,fvisc_nnewton2
@@ -1765,31 +1803,71 @@ module Viscosity
         if (lfirst .and. ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
       endif
 !
-!  viscous force: Handle damping at the core of SNRs
+!  Smagorinsky viscosity
+!  viscous force: nu_smag*(del2u+graddivu/3+2S.glnrho)+2*gnu_smag.S
+!  where nu_smag=(C_smag*dxmax)**2*sqrt(2*SS^2)
+!
+      if (lvisc_smag) then
+!
+        if (ldensity) then
+!
+!  Compute nu_smag and put into a pencil
+!
+          p%nu_smag=(C_smag*dxmax)**2.*sqrt(2*p%sij2)
+!
+!  Enhance nu_smag in proportion to the Mach number to power 2*nu_smag_Ma2_power,
+!  see e.g. Chan & Sofia (1996), ApJ, 466, 372, for a similar approach
+!
+          if (lvisc_smag_Ma) then
+             p%nu_smag=p%nu_smag*(1.+p%Ma2**nu_smag_Ma2_power)
+          endif
+!
+!  Put nu_smag into the f-array and compute its gradient
+!          
+          if (lnusmag_as_aux) f(l1:l2,m,n,inusmag)=p%nu_smag
+          call grad(f,inusmag,p%gnu_smag)
+!
+!  Apply quenching term if requested
+!
+          if (gamma_smag/=0.) p%nu_smag=p%nu_smag/sqrt(1.+gamma_smag*p%sij2)
+!
+! Calculate viscous force and heating
+!
+          call multsv_mn(p%nu_smag,p%sglnrho,tmp2)
+          call multsv_mn(p%nu_smag,p%del2u+1./3.*p%graddivu,tmp)
+          call dot_mn_sm(p%gnu_smag,p%sij,tmp5)
+          p%fvisc=p%fvisc+2*(tmp2+tmp5)+tmp
+          if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*p%nu_smag*p%sij2
+          if (lfirst .and. ldt) p%diffus_total=p%diffus_total+p%nu_smag
+        else
+          if (lfirstpoint) print*, 'calc_viscous_force: '// &
+              "ldensity better be .true. for ivisc='smagorinsky'"
+        endif
+      endif
+!
+!  Simplified Smagorinsky model (neglects the gradient of nu_smag).
+!  viscous force: nu_smag*(del2u+graddivu/3+2S.glnrho)
+!  where nu_smag=(C_smag*dxmax)**2*sqrt(2*SS^2)
 !
       if (lvisc_smag_simplified) then
-!
-!  viscous force: nu_smag*(del2u+graddivu/3+2S.glnrho)
-!  ??? where nu_smag=(C_smag*dxmax)**2*sqrt(2*SS)
-!  where nu_smag=(C_smag*dxmax)**2*sqrt(SS^2)
 !
         if (ldensity) then
 !
 !  Find nu_smag
 !
-          nu_smag=(C_smag*dxmax)**2.*sqrt(2*p%sij2)
+          p%nu_smag=(C_smag*dxmax)**2.*sqrt(2*p%sij2)
 !
 !  with quenching term
 !
-          if (gamma_smag/=0.) nu_smag=nu_smag/sqrt(1.+gamma_smag*p%sij2)
+          if (gamma_smag/=0.) p%nu_smag=p%nu_smag/sqrt(1.+gamma_smag*p%sij2)
 !
 ! Calculate viscous force
 !
-          call multsv_mn(nu_smag,p%sglnrho,tmp2)
-          call multsv_mn(nu_smag,p%del2u+1./3.*p%graddivu,tmp)
+          call multsv_mn(p%nu_smag,p%sglnrho,tmp2)
+          call multsv_mn(p%nu_smag,p%del2u+1./3.*p%graddivu,tmp)
           p%fvisc=p%fvisc+2*tmp2+tmp
-          if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*nu_smag*p%sij2
-          if (lfirst .and. ldt) p%diffus_total=p%diffus_total+nu_smag
+          if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*p%nu_smag*p%sij2
+          if (lfirst .and. ldt) p%diffus_total=p%diffus_total+p%nu_smag
         else
           if (lfirstpoint) print*, 'calc_viscous_force: '// &
               "ldensity better be .true. for ivisc='smagorinsky'"
@@ -1802,12 +1880,12 @@ module Viscosity
 !
       if (lvisc_smag_cross_simplified) then
         if (ldensity) then
-          nu_smag=(C_smag*dxmax)**2.*p%ss12
+          p%nu_smag=(C_smag*dxmax)**2.*p%ss12
 !
 ! Calculate viscous force
 !
-          call multsv_mn(nu_smag,p%sglnrho,tmp2)
-          call multsv_mn(nu_smag,p%del2u+1./3.*p%graddivu,tmp)
+          call multsv_mn(p%nu_smag,p%sglnrho,tmp2)
+          call multsv_mn(p%nu_smag,p%del2u+1./3.*p%graddivu,tmp)
           p%fvisc=p%fvisc+2*tmp2+tmp
           if (lpencil(i_visc_heat)) then  ! Heating term not implemented
             if (headtt) then
@@ -1815,7 +1893,7 @@ module Viscosity
                 'is not implemented for lvisc_smag_cross_simplified')
             endif
           endif
-          if (lfirst .and. ldt) p%diffus_total=p%diffus_total+nu_smag
+          if (lfirst .and. ldt) p%diffus_total=p%diffus_total+p%nu_smag
         else
           if (lfirstpoint) print*, 'calc_viscous_force: '// &
               "ldensity better be .true. for ivisc='smagorinsky'"
@@ -1838,7 +1916,7 @@ module Viscosity
 !
           if (lpencil(i_visc_heat)) & 
             p%visc_heat=p%visc_heat-f(l1:l2,m,n,iFF_heat)
-        endif        
+        endif 
       endif
 !
 !  Calculate Lambda effect
@@ -1849,7 +1927,7 @@ module Viscosity
       endif
 !
 !  Store viscous heating rate in auxiliary variable if requested.
-!  Just necessary immediately before writing snapshots, but how would we
+!  Just neccessary immediately before writing snapshots, but how would we
 !  know we are?
 !
       if (lvisc_heat_as_aux) f(l1:l2,m,n,ivisc_heat) = p%visc_heat
@@ -1857,9 +1935,9 @@ module Viscosity
 !  Do diagnostics related to viscosity.
 !
       if (ldiagnos) then
-        if (idiag_nusmagm/=0)   call sum_mn_name(nu_smag,idiag_nusmagm)
-        if (idiag_nusmagmin/=0) call max_mn_name(-nu_smag,idiag_nusmagmin,lneg=.true.)
-        if (idiag_nusmagmax/=0) call max_mn_name(nu_smag,idiag_nusmagmax)
+        if (idiag_nusmagm/=0)   call sum_mn_name(p%nu_smag,idiag_nusmagm)
+        if (idiag_nusmagmin/=0) call max_mn_name(-p%nu_smag,idiag_nusmagmin,lneg=.true.)
+        if (idiag_nusmagmax/=0) call max_mn_name(p%nu_smag,idiag_nusmagmax)
         if (idiag_num/=0) call sum_mn_name(p%nu,idiag_num)
         if (idiag_qfviscm/=0) then
           call dot(p%curlo,p%fvisc,qfvisc)
@@ -2054,7 +2132,7 @@ module Viscosity
       use Sub, only: cross, dot2
 !
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: nu_smag,Reshock,fvisc2
+      real, dimension (nx) :: Reshock,fvisc2
       real, dimension (nx,3) :: nuD2uxb,fluxv
       type (pencil_case) :: p
       integer :: i
@@ -2101,15 +2179,15 @@ module Viscosity
            call dot2(p%fvisc,fvisc2)
            call sum_mn_name(xmask_vis*fvisc2,idiag_fviscrmsx,lsqrt=.true.)
         endif
-        if (lvisc_smag_simplified) then
-          if (ldensity) nu_smag=(C_smag*dxmax)**2.*sqrt(2*p%sij2)
-        endif
-        if (lvisc_smag_cross_simplified) then
-          if (ldensity) nu_smag=(C_smag*dxmax)**2.*p%ss12
-        endif
+!        if (lvisc_smag_simplified) then
+!          if (ldensity) nu_smag=(C_smag*dxmax)**2.*sqrt(2*p%sij2)
+!        endif
+!        if (lvisc_smag_cross_simplified) then
+!          if (ldensity) nu_smag=(C_smag*dxmax)**2.*p%ss12
+!        endif
         if (idiag_dtnu/=0) &
             call max_mn_name(diffus_nu/cdtv,idiag_dtnu,l_dt=.true.)
-        if (idiag_nu_LES /= 0) call sum_mn_name(nu_smag,idiag_nu_LES)
+        if (idiag_nu_LES /= 0) call sum_mn_name(p%nu_smag,idiag_nu_LES)
         if (idiag_meshRemax/=0) call max_mn_name(sqrt(p%u2(:))*dxmax_pencil/p%diffus_total,idiag_meshRemax)
         if (idiag_Reshock/=0) then
           Reshock(:) = 0.
@@ -2126,9 +2204,9 @@ module Viscosity
 !
         if (idiag_epsK_LES/=0) then
           if (lvisc_smag_simplified) then
-            call sum_mn_name(2*nu_smag*p%rho*p%sij2,idiag_epsK_LES)
+            call sum_mn_name(2*p%nu_smag*p%rho*p%sij2,idiag_epsK_LES)
           else if (lvisc_smag_cross_simplified) then
-            call sum_mn_name(2*nu_smag*p%rho*p%sij2,idiag_epsK_LES)
+            call sum_mn_name(2*p%nu_smag*p%rho*p%sij2,idiag_epsK_LES)
           endif
         endif
 !
@@ -2153,6 +2231,11 @@ module Viscosity
             p%uu(:,1)*p%sij(:,1,3)+ &
             p%uu(:,2)*p%sij(:,2,3)+ &
             p%uu(:,3)*p%sij(:,3,3)),idiag_fviscmz)
+        if (idiag_fviscsmmz/=0) &
+            call xysum_mn_name_z(-2.*p%rho*p%nu_smag*( &
+            p%uu(:,1)*p%sij(:,1,3)+ &
+            p%uu(:,2)*p%sij(:,2,3)+ &
+            p%uu(:,3)*p%sij(:,3,3)),idiag_fviscsmmz)
         if (idiag_epsKmz/=0) &
             call xysum_mn_name_z(p%visc_heat*p%rho,idiag_epsKmz)
         if (idiag_fviscmx/=0) &
@@ -2174,6 +2257,9 @@ module Viscosity
             call zsum_mn_name_xy(-2.*sqrt(p%rho)*nu*( &
             p%uu(:,1)*p%sij(:,1,1)+p%uu(:,2)*p%sij(:,2,1)+ &
             p%uu(:,3)*p%sij(:,3,1)),idiag_fviscmxy)
+        if (idiag_fviscsmmxy/=0) call zsum_mn_name_xy(-2.*p%rho*p%nu_smag*( &
+            p%uu(:,1)*p%sij(:,1,1)+p%uu(:,2)*p%sij(:,2,1)+ &
+            p%uu(:,3)*p%sij(:,3,1)),idiag_fviscsmmxy)
         if (idiag_fviscmxy/=0.and.lvisc_rho_nu_const) &
             call zsum_mn_name_xy(-2.*nu*( &
             p%uu(:,1)*p%sij(:,1,1)+p%uu(:,2)*p%sij(:,2,1)+ &
