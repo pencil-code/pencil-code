@@ -1079,7 +1079,7 @@ pro cslice_draw_averages, number
 	common settings_common, px, py, pz, cut, log_plot, power_spec, abs_scale, show_cross, show_cuts, sub_aver, selected_cube, selected_overplot, selected_snapshot, selected_axis, selected_color, af_x, af_y, af_z, destretch
 	common slider_common, bin_x, bin_y, bin_z, num_x, num_y, num_z, pos_b, pos_t, pos_over, val_min, val_max, val_range, over_max, dimensionality, frozen
 
-	vert_label = (['X', 'Y', 'Z'])[selected_axis]
+	vert_label = (['X', 'Y', 'Z', 'r'])[selected_axis]
 	if (unit.default_length_str) then begin
 		vert_label += ' ['+unit.default_length_str+']'
 	end else if (strupcase (param.unit_system) eq "SI") then begin
@@ -1092,12 +1092,19 @@ pro cslice_draw_averages, number
 
 	prefix = varfiles[selected_snapshot].title + "_" + (tag_names (set))[selected_cube]
 	time = strtrim (varfiles[selected_snapshot].time * unit.time/unit.default_time, 2) + " " + unit.default_time_str
-	if (selected_axis eq 0) then coords = coord.x
-	if (selected_axis eq 1) then coords = coord.y
-	if (selected_axis eq 2) then coords = coord.z
 	title = set.(selected_cube)
 	if (power_spec) then title += ' (power spectrum)'
-	pc_axis_profile, selected_axis, cube, coord=coords, title=title, log=log_plot, horiz_label='['+param.unit_system+']', vert_label=vert_label, file_label=prefix, time=time
+
+	if (selected_axis eq 3) then begin
+		coords = { x:coord.x*unit.default_length, y:coord.y*unit.default_length, z:coord.z*unit.default_length }
+		anchor = [ coords.x[px], coords.y[py], coords.z[pz] ]*unit.default_length
+		pc_radial_profile, cube, coord=coords, anchor=anchor, title=title, log=log_plot, horiz_label=vert_label, vert_label='['+param.unit_system+']', file_label=prefix, time=time
+	end else begin
+		if (selected_axis eq 0) then coords = coord.x
+		if (selected_axis eq 1) then coords = coord.y
+		if (selected_axis eq 2) then coords = coord.z
+		pc_axis_profile, selected_axis, cube, coord=coords, title=title, log=log_plot, horiz_label='['+param.unit_system+']', vert_label=vert_label, file_label=prefix, time=time
+	end
 end
 
 
@@ -1587,7 +1594,7 @@ pro cmp_cslice_cache, set_names, set_content=set_content, set_files=set_files, l
 
 	scot	= WIDGET_BASE (scol, /row, /base_align_center)
 	tmp	= WIDGET_LABEL (scot, value='axis:', frame=0)
-	axis	= WIDGET_DROPLIST (scot, value=['X','Y','Z'], uvalue='AXIS', EVENT_PRO=cslice_event)
+	axis	= WIDGET_DROPLIST (scot, value=['X','Y','Z','r'], uvalue='AXIS', EVENT_PRO=cslice_event)
 	aver	= WIDGET_BUTTON (scot, value='average profile', uvalue='SHOW_AVER')
 	b_sub	= CW_BGROUP (scot, 'subtract average profile', /nonexcl, uvalue='SUB_AVER', set_value=sub_aver)
 
