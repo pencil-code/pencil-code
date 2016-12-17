@@ -1,7 +1,9 @@
 #!/bin/sh
 #$Id$
 echo ""
-echo "==> The Pencil Code User Meeting 2016 will be in Graz"
-echo "                   8th to 12th August 2016" 
-echo "    http://pencil-code.nordita.org/meeting2016.php"
+echo "==> The Doodle for Pencil Code User Meeting 2017 is out:"
+echo "          http://doodle.com/poll/ci7d8bhdb4yxcxr5"
+echo ""
+echo "==> A Pencil Code Stearing Committee (PCSC) has now been set up:"
+echo "          http://www.nordita.org/~brandenb/pencil-code/PCSC/"
 echo ""
