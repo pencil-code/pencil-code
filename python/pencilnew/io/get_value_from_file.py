@@ -174,7 +174,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
         q = True
         q_type = 'BOOL'
 
-    if is_number(q[0]) and type(q) == type('string'):
+    if type(q) == type('string') and is_number(q[0]):
         q_type = 'STRING'
 
     if q_type == False:                                                         # catch if type of q was not recognized
