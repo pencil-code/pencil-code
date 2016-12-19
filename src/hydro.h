@@ -13,7 +13,7 @@
   public :: pencil_criteria_hydro, pencil_interdep_hydro
   public :: calc_mflow, remove_mean_momenta, impose_velocity_ceiling
   public :: hydro_clean_up
-  public :: traceless_strain, coriolis_cartesian
+  public :: coriolis_cartesian
   public :: kinematic_random_phase
   public :: hydro_before_boundary
   public :: expand_shands_hydro

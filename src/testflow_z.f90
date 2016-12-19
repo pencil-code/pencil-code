@@ -634,7 +634,7 @@ module Testflow
       use Sub
       use Mpicomm, only: stop_it
       use density, only: glnrhomz
-      use Hydro, only: uumz, guumz, traceless_strain, coriolis_cartesian, ampl_fcont_uu
+      use Hydro, only: uumz, guumz, coriolis_cartesian, ampl_fcont_uu
       use Forcing, only: forcing_cont
       use Shear, only: shear_variables
       use Deriv, only: der5_single
@@ -1132,7 +1132,7 @@ module Testflow
       use Cdata
       use Sub
       use density, only: glnrhomz
-      use Hydro, only: uumz, traceless_strain
+      use Hydro, only: uumz
       use Mpicomm, only: mpiallreduce_sum
       use Forcing, only:forcing_cont
 !

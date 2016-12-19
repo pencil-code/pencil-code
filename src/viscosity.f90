@@ -200,7 +200,7 @@ module Viscosity
       if (lroot) call svn_id( &
           "$Id$")
 !
-!  Needed for flux limited diffusion
+!  Needed for slope limited diffusion
 !
       if (lvisc_slope_limited) then
         if (iFF_diff==0) then
@@ -550,6 +550,8 @@ module Viscosity
 !
 !  Register nusmag as auxilliary variable
 !
+      lnusmag_as_aux = lnusmag_as_aux.and.lvisc_smag
+
       if (lnusmag_as_aux) then
         call farray_register_auxiliary('nusmag',inusmag)
 !
@@ -645,9 +647,7 @@ module Viscosity
 !
 !  debug output
 !
-      if (lroot.and.ip<14) then
-        print*,'xmask_vis=',xmask_vis
-      endif
+      if (lroot.and.ip<14) print*,'xmask_vis=',xmask_vis
 !
     endsubroutine initialize_viscosity
 !***********************************************************************
@@ -1810,33 +1810,40 @@ module Viscosity
       if (lvisc_smag) then
 !
         if (ldensity) then
+
+          if (lnusmag_as_aux) then
+
+            p%nu_smag=f(l1:l2,m,n,inusmag)
+!
+!  Compute gradient of p%nu_smag from f-array.
+!          
+            call grad(f,inusmag,gradnu)
+
+          else  
 !
 !  Compute nu_smag and put into a pencil
 !
-          p%nu_smag=(C_smag*dxmax)**2.*sqrt(2*p%sij2)
+            p%nu_smag=(C_smag*dxmax)**2.*sqrt(2.*p%sij2)
 !
 !  Enhance nu_smag in proportion to the Mach number to power 2*nu_smag_Ma2_power,
 !  see e.g. Chan & Sofia (1996), ApJ, 466, 372, for a similar approach
 !
-          if (lvisc_smag_Ma) then
-             p%nu_smag=p%nu_smag*(1.+p%Ma2**nu_smag_Ma2_power)
-          endif
-!
-!  Put nu_smag into the f-array and compute its gradient
-!          
-          if (lnusmag_as_aux) f(l1:l2,m,n,inusmag)=p%nu_smag
-          call grad(f,inusmag,p%gnu_smag)
+            if (lvisc_smag_Ma) p%nu_smag=p%nu_smag*(1.+p%Ma2**nu_smag_Ma2_power)
 !
 !  Apply quenching term if requested
 !
-          if (gamma_smag/=0.) p%nu_smag=p%nu_smag/sqrt(1.+gamma_smag*p%sij2)
+            if (gamma_smag/=0.) p%nu_smag=p%nu_smag/sqrt(1.+gamma_smag*p%sij2)
+!
+          endif
 !
 ! Calculate viscous force and heating
 !
-          call multsv_mn(p%nu_smag,p%sglnrho,tmp2)
-          call multsv_mn(p%nu_smag,p%del2u+1./3.*p%graddivu,tmp)
-          call dot_mn_sm(p%gnu_smag,p%sij,tmp5)
-          p%fvisc=p%fvisc+2*(tmp2+tmp5)+tmp
+          call multsv_mn(p%nu_smag,p%del2u+1./3.*p%graddivu+2.*p%sglnrho,tmp)
+          p%fvisc=p%fvisc+tmp
+          if (lnusmag_as_aux) then
+            call dot_mn_sm(gradnu,p%sij,tmp5)
+            p%fvisc=p%fvisc+2.*tmp5
+          endif
           if (lpencil(i_visc_heat)) p%visc_heat=p%visc_heat+2*p%nu_smag*p%sij2
           if (lfirst .and. ldt) p%diffus_total=p%diffus_total+p%nu_smag
         else
@@ -1900,9 +1907,8 @@ module Viscosity
         endif
       endif
 !
-!  Calculate viscouse force form a slope limited diffusion
-!  following Rempel (2014).
-!  Here calculating the divergence of the flux.
+!  Calculate viscouse force for slope limited diffusion
+!  following Rempel (2014). Here the divergence of the flux is used.
 !
       if (lvisc_slope_limited) then
 !
@@ -1948,16 +1954,57 @@ module Viscosity
     endsubroutine calc_pencils_viscosity
 !***********************************************************************
     subroutine viscosity_after_boundary(f)
+!
+!  19-dec-16/MR: fixed bug: m,n must be from Cdata. Added precalculation of nu_smag in f array.
+!                Rewritten viscous heating from slope-limited diffusion.  
 
-      use Sub, only: div, calc_all_diff_fluxes, grad, dot_mn
+      use Sub, only: div, calc_all_diff_fluxes, grad, dot_mn, calc_sij2
       use General, only: reduce_grad_dim,notanumber
       use DensityMethods, only: getrho
+      use SharedVariables, only: get_shared_variable
 
       real, dimension(mx,my,mz,mfarray) :: f
 
       integer :: j,k
-      real, dimension(nx,3) :: gj, guj
-      real, dimension(nx) :: rho
+      real, dimension(nx,3) :: gr, guj
+      real, dimension(nx) :: rho, tmp
+      logical, pointer :: lshear_rateofstrain
+
+      if (lnusmag_as_aux) then
+!
+        if (ldensity) then
+!
+!  Compute nu_smag and put into tmp
+!
+          call get_shared_variable('lshear_rateofstrain',lshear_rateofstrain,caller='viscosity_after_boundary')
+
+          do n=n1,n2; do m=m1,m2
+!
+! sij2  ->  rho
+!
+            call calc_sij2(f,rho,lshear_rateofstrain)
+            tmp=(C_smag*dxmax)**2.*sqrt(2.*rho)
+!
+!  Enhance nu_smag in proportion to the Mach number to power 2*nu_smag_Ma2_power,
+!  see e.g. Chan & Sofia (1996), ApJ, 466, 372, for a similar approach
+!
+            !!if (lvisc_smag_Ma) tmp=tmp*(1.+p%Ma2**nu_smag_Ma2_power)
+!
+!  Apply quenching term if requested
+!
+            if (gamma_smag/=0.) tmp=tmp/sqrt(1.+gamma_smag*rho)
+!
+!  Put nu_smag into the f-array.
+!          
+            f(l1:l2,m,n,inusmag)=tmp
+          
+          enddo; enddo
+
+        else
+          if (lfirstpoint) print*, 'viscosity_after_boundary: '// &
+              "ldensity better be .true. for ivisc='smagorinsky'"
+        endif
+      endif
 !
 !  Slope limited diffusion following Rempel (2014).
 !  First calculating the flux in a subroutine below
@@ -1972,7 +2019,6 @@ module Viscosity
 
           call calc_all_diff_fluxes(f,iuu+j-1,islope_limiter,h_slope_limited)
 !
-          
           do n=n1,n2; do m=m1,m2
 !
 !  Divergence of flux = force.
@@ -1982,29 +2028,27 @@ module Viscosity
 !  Heating term.
 !
             if (lviscosity_heat) then
+              
+              if (j==1) then                                            ! as rho and grad(rho) do not depend on j
+                call getrho(f(:,m,n,ilnrho),rho)
+                call grad(f,ilnrho,gr)                                  ! grad(rho) or grad(lnrho)
+                call reduce_grad_dim(gr)                                ! compactify the non-zero components in the first dimensionality elements of gr
+              endif
 
-              call getrho(f(:,m,n,ilnrho),rho)
-              call grad(f,ilnrho,gj)                    ! grad(rho) or grad(lnrho)
-              call reduce_grad_dim(gj)
-
-              do k=1,dimensionality
-                gj(:,k)=gj(:,k)*f(l1:l2,m,n,iuu+j-1)    ! grad(ln(rho))*u_j or grad(rho)*u_j
-              enddo
-
-              call grad(f,iuu+j-1,guj)                  ! grad(u_j)
-              call reduce_grad_dim(guj)
+              call grad(f,iuu+j-1,guj)                                  ! grad(u_j)
+              call reduce_grad_dim(guj)                                 ! compactify the non-zero components in the first dimensionality elements of guj
 
               if (ldensity_nolog) then
                 do k=1,dimensionality
-                  gj(:,k)=gj(:,k)+rho*guj(:,k)          ! grad(rho)*u_j+rho*grad(u_j))=grad(rho*u_j)                  
+                  guj(:,k)=gr(:,k)*f(l1:l2,m,n,iuu+j-1)+rho*guj(:,k)    ! grad(rho)*u_j+rho*grad(u_j))=grad(rho*u_j)
                 enddo
               else
                 do k=1,dimensionality
-                  gj(:,k)=rho*(gj(:,k)+guj(:,k))        ! rho*(grad(ln(rho))*u_j+grad(u_j))=grad(rho*u_j)   
+                  guj(:,k)=rho*(gr(:,k)*f(l1:l2,m,n,iuu+j-1)+guj(:,k))  ! rho*(grad(ln(rho))*u_j+grad(u_j))=grad(rho*u_j)
                 enddo
               endif
 
-              call dot_mn(gj(:,1:dimensionality),f(l1:l2,m,n,iFF_diff1:iFF_diff2), &  
+              call dot_mn(guj(:,1:dimensionality),f(l1:l2,m,n,iFF_diff1:iFF_diff2), &    ! loop inside has length dimensionality 
 ! \partial_k(rho*u_j) f_jk (summation over j by loop)
                           f(l1:l2,m,n,iFF_heat),ladd=.true.)
               !!!f(l1:l2,m,n,iFF_heat)=min(f(l1:l2,m,n,iFF_heat),0.)                     ! no cooling admitted (Why?)
@@ -2014,7 +2058,7 @@ module Viscosity
         enddo
 !maxh=maxval(abs(f(l1:l2,m1:m2,n1:n2,iFF_heat)))
 !if (ldiagnos.and.maxh>1.) print*, 'heat:', iproc, maxh    !, minval(f(l1:l2,m1:m2,n1:n2,iFF_heat))
-!if (ldiagnos) print*, 'grhouj:', iproc, maxval(gj(:,1:dimensionality)), minval(gj(:,1:dimensionality))
+!if (ldiagnos) print*, 'grhouj:', iproc, maxval(guj(:,1:dimensionality)), minval(guj(:,1:dimensionality))
 !f(l1:l2,m1:m2,n1:n2,iFF_heat)=0.   !!!
       endif
 

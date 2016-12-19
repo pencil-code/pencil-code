@@ -977,6 +977,8 @@ module Hydro
         call put_shared_variable('x_forc', x_forc)
         call put_shared_variable('dx_forc', dx_forc)
       endif
+
+      call put_shared_variable('lshear_rateofstrain',lshear_rateofstrain)
 !
 !  Check if we are solving the force-free equations in parts of domain.
 !  This is currently possible with density (including anelastic, but not
@@ -3481,71 +3483,6 @@ module Hydro
       call timing('duu_dt','finished',mnloop=.true.)
 !
     endsubroutine duu_dt
-!***********************************************************************
-    subroutine traceless_strain(uij,divu,sij,uu,lss)
-!
-!  Calculates traceless rate-of-strain tensor sij from derivative tensor uij
-!  and divergence divu within each pencil;
-!  curvilinear co-ordinates require optional velocity argument uu
-!
-!  16-oct-09/MR: carved out from calc_pencils_hydro
-!  10-apr-11/MR: optional parameter lss added, replaces use of global lshear_rateofstrain
-!
-    real, dimension (nx,3,3)         :: uij, sij
-    real, dimension (nx)             :: divu
-    real, dimension (nx,3), optional :: uu
-    logical, optional                :: lss
-!
-    integer :: i,j
-    logical :: lshear_ROS
-!
-    intent(in)  :: uij, divu, lss
-    intent(out) :: sij
-!
-    lshear_ROS=.false.
-    if (present(lss)) lshear_ROS=lss
-!
-!  In-place operation is possible, i.e. uij and sij may refer to the same array.
-!
-    do j=1,3
-      sij(:,j,j)=uij(:,j,j)-(1./3.)*divu
-      do i=j+1,3
-        sij(:,i,j)=.5*(uij(:,i,j)+uij(:,j,i))
-        sij(:,j,i)=sij(:,i,j)
-      enddo
-    enddo
-!
-    if (lspherical_coords.or.lcylindrical_coords) then
-      if (.not.present(uu)) then
-        call fatal_error('traceless_strain', &
-            'Deformation matrix for curvilinear co-ordinates'// &
-            'requires providing of the velocity itself')
-        return
-      endif
-    endif
-!
-    if (lspherical_coords) then
-! sij(:,1,1) remains unchanged in spherical coordinates
-      sij(:,1,2)=sij(:,1,2)-.5*r1_mn*uu(:,2)
-      sij(:,1,3)=sij(:,1,3)-.5*r1_mn*uu(:,3)
-      sij(:,2,1)=sij(:,1,2)
-      sij(:,2,2)=sij(:,2,2)+r1_mn*uu(:,1)
-      sij(:,2,3)=sij(:,2,3)-.5*r1_mn*cotth(m)*uu(:,3)
-      sij(:,3,1)=sij(:,1,3)
-      sij(:,3,2)=sij(:,2,3)
-      sij(:,3,3)=sij(:,3,3)+r1_mn*uu(:,1)+cotth(m)*r1_mn*uu(:,2)
-    elseif (lcylindrical_coords) then
-      sij(:,1,2)=sij(:,1,2)-.5*rcyl_mn1*uu(:,2)
-      sij(:,2,2)=sij(:,2,2)+.5*rcyl_mn1*uu(:,1)
-      sij(:,2,1)=sij(:,1,2)
-    endif
-!
-    if (lshear .and. lshear_ROS) then
-      sij(:,1,2)=sij(:,1,2)+Sshear
-      sij(:,2,1)=sij(:,2,1)+Sshear
-    endif
-!
-    endsubroutine traceless_strain
 !***********************************************************************
     subroutine time_integrals_hydro(f,p)
 !

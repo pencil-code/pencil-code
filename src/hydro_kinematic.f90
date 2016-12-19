@@ -513,8 +513,23 @@ module Hydro
           p%uij(:,3,2)=sqrt2*ky_uukin*sin(kx_uukin*x(l1:l2))*cos(ky_uukin*y(m))
           p%uij(:,3,3)=+0.
         endif
-     case ('Roberts-II-xz')
+!
+      case ('roberts-xz')
         if (headtt) print*,'Glen Roberts flow w.r.t. x and z; kx_uukin,kz_uukin=',kx_uukin,kz_uukin
+! uu
+        sqrt2=sqrt(2.)
+        if (lpenc_loc(i_uu)) then
+          eps1=1.-eps_kinflow
+          p%uu(:,1)=+eps1 *sin(kx_uukin*x(l1:l2))*cos(kz_uukin*z(n))
+          p%uu(:,2)=-sqrt2*sin(kx_uukin*x(l1:l2))*sin(kz_uukin*z(n))
+          p%uu(:,3)=-eps1 *cos(kx_uukin*x(l1:l2))*sin(kz_uukin*z(n))
+        endif
+! divu
+        if (lpenc_loc(i_divu) .or. lpenc_loc(i_uij)) &
+          call fatal_error('hydro_kinematic:', 'divu and uij not implemented for roberts-xz')
+
+     case ('Roberts-II-xz')
+        if (headtt) print*,'Glen Roberts flow II w.r.t. x and z; kx_uukin,kz_uukin=',kx_uukin,kz_uukin
 ! uu
         fac=ampl_kinflow
         fac2=ampl_kinflow*eps_kinflow
@@ -1869,26 +1884,6 @@ module Hydro
       call keep_compiler_quiet(p)
 !
     endsubroutine time_integrals_hydro
-!***********************************************************************
-    subroutine traceless_strain(uij,divu,sij,uu)
-!
-!  Calculates traceless rate-of-strain tensor sij from derivative tensor uij
-!  and divergence divu within each pencil;
-!  curvilinear co-ordinates require optional velocity argument uu
-!
-!  16-oct-09/MR: dummy
-!
-    real, dimension(nx,3,3)         :: uij, sij
-    real, dimension(nx)             :: divu
-    real, dimension(nx,3), optional :: uu
-!
-    intent(in) :: uij, divu, sij
-!
-    call keep_compiler_quiet(uij,sij)
-    call keep_compiler_quiet(divu)
-    call keep_compiler_quiet(present(uu))
-!
-    endsubroutine traceless_strain
 !***********************************************************************
    subroutine coriolis_cartesian(df,uu,velind)
 !

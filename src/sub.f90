@@ -105,6 +105,7 @@ module Sub
   public :: lower_triangular_index
 !
   public :: vec_dot_3tensor
+  public :: traceless_strain,calc_sij2
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -7089,5 +7090,95 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
       endif
 !
     endsubroutine calc_all_diff_fluxes
+!***********************************************************************
+    subroutine calc_sij2(f,sij2,lshear_rateofstrain)
+!
+!  Calculates square of traveless rate-of-strain tensor from f array.
+!
+!  16-dec-16/MR: Outsourced from hydro.
+!
+      real, dimension (mx,my,mz,mfarray), intent(IN) :: f
+      real, dimension(nx),                intent(OUT):: sij2
+      logical,                  optional, intent(IN) :: lshear_rateofstrain
+
+      real, dimension(nx,3) :: uu
+      real, dimension(nx,3,3) :: uij
+
+! uij from f
+      call gij(f,iuu,uij,1)
+      uu=f(:,m,n,iux:iuz)
+! divu -> uij2
+      call div_mn(uij,sij2,uu)
+! sij -> uij
+      call traceless_strain(uij,sij2,uij,uu,lshear_rateofstrain)
+! sij2
+      call multm2_sym_mn(uij,sij2)
+
+    endsubroutine calc_sij2
+!***********************************************************************
+    subroutine traceless_strain(uij,divu,sij,uu,lss)
+!
+!  Calculates traceless rate-of-strain tensor sij from derivative tensor uij
+!  and divergence divu within each pencil;
+!  curvilinear co-ordinates require optional velocity argument uu.
+!  In-place operation is possible, i.e. uij and sij may refer to the same array.
+!
+!  16-oct-09/MR: carved out from calc_pencils_hydro
+!  10-apr-11/MR: optional parameter lss added, replaces use of global lshear_rateofstrain
+!
+    use General, only: loptest
+
+    real, dimension (nx,3,3)         :: uij, sij
+    real, dimension (nx)             :: divu
+    real, dimension (nx,3), optional :: uu
+    logical,                optional :: lss
+!
+    integer :: i,j
+    logical :: lshear_ROS
+!
+    intent(in)  :: uij, divu, lss
+    intent(out) :: sij
+!
+    lshear_ROS=lshear.and.loptest(lss)
+!
+    do j=1,3
+      sij(:,j,j)=uij(:,j,j)-(1./3.)*divu
+      do i=j+1,3
+        sij(:,i,j)=.5*(uij(:,i,j)+uij(:,j,i))
+        sij(:,j,i)=sij(:,i,j)
+      enddo
+    enddo
+!
+    if (lspherical_coords.or.lcylindrical_coords) then
+      if (.not.present(uu)) then
+        call fatal_error('traceless_strain', &
+            'Deformation matrix for curvilinear co-ordinates'// &
+            'requires providing of the velocity itself')
+        return
+      endif
+    endif
+!
+    if (lspherical_coords) then
+! sij(:,1,1) remains unchanged in spherical coordinates
+      sij(:,1,2)=sij(:,1,2)-.5*r1_mn*uu(:,2)
+      sij(:,1,3)=sij(:,1,3)-.5*r1_mn*uu(:,3)
+      sij(:,2,1)=sij(:,1,2)
+      sij(:,2,2)=sij(:,2,2)+r1_mn*uu(:,1)
+      sij(:,2,3)=sij(:,2,3)-.5*r1_mn*cotth(m)*uu(:,3)
+      sij(:,3,1)=sij(:,1,3)
+      sij(:,3,2)=sij(:,2,3)
+      sij(:,3,3)=sij(:,3,3)+r1_mn*uu(:,1)+cotth(m)*r1_mn*uu(:,2)
+    elseif (lcylindrical_coords) then
+      sij(:,1,2)=sij(:,1,2)-.5*rcyl_mn1*uu(:,2)
+      sij(:,2,2)=sij(:,2,2)+.5*rcyl_mn1*uu(:,1)
+      sij(:,2,1)=sij(:,1,2)
+    endif
+!
+    if (lshear_ROS) then
+      sij(:,1,2)=sij(:,1,2)+Sshear
+      sij(:,2,1)=sij(:,2,1)+Sshear
+    endif
+!
+    endsubroutine traceless_strain
 !***********************************************************************
 endmodule Sub
