@@ -7106,7 +7106,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 
 ! uij from f
       call gij(f,iuu,uij,1)
-      uu=f(:,m,n,iux:iuz)
+      uu=f(l1:l2,m,n,iux:iuz)
 ! divu -> uij2
       call div_mn(uij,sij2,uu)
 ! sij -> uij
