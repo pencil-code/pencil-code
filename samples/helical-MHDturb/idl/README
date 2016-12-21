@@ -1,0 +1,28 @@
+Description of how to produce k.dat files
+
+The basic idea is described in Brandenburg (2001, ApJ 550, 824),
+where however a sqrt was missing around the 2 in the denominator.
+
+By default, we employ a domain of size (2pi)^3, so the spacing
+of k in each direction is 1. The routine can then be adapted
+"by hand" to suit the problem of interest.
+
+In particular, you can change the numbers in the line:
+
+  dkz=1. & ex=1. & ey=1. & ez=1. & kmax=10. & k1=4.5 & k2=5.5    ;(gives 350 vectors)
+
+to
+
+  dkx=1. & dky=1. & dkz=.5 & ex=1. & ey=1. & ez=1. & kmax=10. & k1=4.5 & k2=5.5    ;(gives 630 vectors)
+
+if the domain has a z extent of 4*pi, so therefore dkz=.5.
+You get then more vectors.
+
+At the end of the routine, it prints the line:
+  good=where(abs(kky) le .4) & plot,kkx(good),kkz(good),ps=1,/iso,xst=0,yst=0
+
+You can cut+paste it into the command line to plot whether
+the k-vectors look sufficiently well populated and isotropic.
+
+If there are further questions, let me know.
+Axe Brandenburg
