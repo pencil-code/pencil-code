@@ -274,7 +274,7 @@
   \var{eem}       & $\left<e\right>$ \\
   \var{ppm}       & $\left<p\right>$ \\
   \var{csm}       & $\left<c_{\rm s}\right>$ \\
-  \var{pdivum}    & $\left<p\nabla\uv\right>$ \\
+  \var{pdivum}    & $\left<p\nabla\cdot\uv\right>$ \\
   \var{fradbot}   & $\int F_{\rm bot}\cdot d\vec{S}$ \\
   \var{fradtop}   & $\int F_{\rm top}\cdot d\vec{S}$ \\
   \var{TTtop}     & $\int T_{\rm top} d\vec{S}$ \\
@@ -530,6 +530,7 @@
   \var{phibmy}    & $\left<\phi\Bv\right>|_y$ \\
   \var{phibmz}    & $\left<\phi\Bv\right>|_z$ \\
   \var{b2divum}   & $\left<\Bv^2\nabla\cdot\uv\right>$ \\
+  \var{jdel2am}   & $\left<\Jv\cdot\nabla^2\Av)\right>$ \\
   \var{ujxbm}     & $\left<\uv\cdot(\Jv\times\Bv)\right>$ \\
   \var{jxbrmax}   & $\max(|\Jv\times\Bv/\rho|)$ \\
   \var{jxbr2m}    & $\left<(\Jv\times\Bv/\rho)^2\right>$ \\
@@ -698,6 +699,7 @@
   \var{bgmu5rms}  & $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$ \\
   \var{bgtheta5rms} & $\left<(\Bv\cdot\nabla\theta_5)^2\right>^{1/2}$ \\
   \var{gtheta5rms} & $\left<(\nabla\theta_5)^2\right>^{1/2}$ \\
+  \var{gmu5rms}   & $\left<(\nabla\mu_5)^2\right>^{1/2}$ \\
   \var{gtheta5mx} & $\left<\nabla\theta_{5x}\right>$ \\
   \var{gtheta5my} & $\left<\nabla\theta_{5y}\right>$ \\
   \var{gtheta5mz} & $\left<\nabla\theta_{5z}\right>$ \\
@@ -735,6 +737,10 @@
   \multicolumn{2}{c}{Module \file{dustdensity.f90}} \\
 \midrule
   \var{KKm}       & $\sum {\cal T}_k^{\rm coag}$ \\
+  \var{KK2m}      & $\sum {\cal T}_k^{\rm coag}$ \\
+  \var{MMxm}      & $\sum {\cal M}^x_{k,{\rm coag}}$ \\
+  \var{MMym}      & $\sum {\cal M}^y_{k,{\rm coag}}$ \\
+  \var{MMzm}      & $\sum {\cal M}^z_{k,{\rm coag}}$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{entropy_anelastic.f90}} \\
 \midrule
@@ -1191,6 +1197,10 @@
   \var{eem}       & $\left< e \right> =
                     \left< c_v T \right>$
                     \quad(mean internal energy) \\
+  \var{ssm}       & $\overline{S}$ \\
+  \var{thcool}    & $\tau_{\rm cool}$ \\
+  \var{ppm}       & $\overline{P}$ \\
+  \var{csm}       & $\overline{c}_{\rm s}$ \\
   \var{dtc}       & $\delta t/[c_{\delta t}\,\delta_x
                     /\max c_{\rm s}]$
                     \quad(time step relative to

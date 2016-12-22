@@ -106,6 +106,7 @@
 \midrule
   \var{rhomz}     & $\left<\varrho\right>_{xy}$ \\
   \var{rho2mz}    & $\left<\varrho^2\right>_{xy}$ \\
+  \var{gzlnrhomz} & $\left<\nabla_z\ln\varrho\right>_{xy}$ \\
   \var{uglnrhomz} & $\left<\uv\cdot\nabla\ln\varrho\right>_{xy}$ \\
   \var{ugrhomz}   & $\left<\uv\cdot\nabla\varrho\right>_{xy}$ \\
   \var{uygzlnrhomz} & $\left<u_y\nabla_z\ln\varrho\right>_{xy}$ \\
@@ -341,6 +342,9 @@
   \multicolumn{2}{c}{Module \file{viscosity.f90}} \\
 \midrule
   \var{fviscmz}   & $\left<2\nu\varrho u_i
+                    \mathcal{S}_{iz} \right>_{xy}$
+                    ($z$-component of viscous flux) \\
+  \var{fviscsmmz} & $\left<2\nu_{\rm Smag}\varrho u_i
                     \mathcal{S}_{iz} \right>_{xy}$
                     ($z$-component of viscous flux) \\
   \var{epsKmz}    & $\left<2\nu\varrho\Strain^2
