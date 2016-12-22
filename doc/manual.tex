@@ -3639,12 +3639,10 @@ probably a good idea to separate the different tasks (like Importing and
 Selecting, visualizing velocity, visualizing entropy, and Rendering) onto
 separate pages through \textsf{Edit $\rightarrow$ Page}.
 
-
 \paragraph{Note}
 Currently, \name{DX} can only read in data files written by one single
 processor, so from a multi-processor run, you can only visualize one
 subregion at a time.
-
 
 \subsubsection{GDL}
 \label{S-GDL}
@@ -4135,9 +4133,10 @@ finite-difference codes.
 The current version has a few restrictions, which need to be kept in mind
 when using the MPI features.
 
-First, only the $y$ and $z$ directions can be distributed over different
-processors.
-Second, the global number of grid points (but excluding the ghost zones)
+%First, only the $y$ and $z$ directions can be distributed over different
+%processors.
+%Second, the global number of grid points (but excluding the ghost zones)
+The global number of grid points (but excluding the ghost zones)
 in a given direction must be an exact multiple of the number of processors
 you use in that direction.
 For example if you have \code{nprocy=8} processors for the $y$ direction, you
