@@ -137,9 +137,9 @@ module Dustdensity
 !
   integer :: idiag_KKm=0     ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
   integer :: idiag_KK2m=0    ! DIAG_DOC: $\sum {\cal T}_k^{\rm coag}$
-  integer :: idiag_MMxm=0    ! DIAG_DOC: $\sum {\cal M}^x_k^{\rm coag}$
-  integer :: idiag_MMym=0    ! DIAG_DOC: $\sum {\cal M}^y_k^{\rm coag}$
-  integer :: idiag_MMzm=0    ! DIAG_DOC: $\sum {\cal M}^z_k^{\rm coag}$
+  integer :: idiag_MMxm=0    ! DIAG_DOC: $\sum {\cal M}^x_{k,{\rm coag}}$
+  integer :: idiag_MMym=0    ! DIAG_DOC: $\sum {\cal M}^y_{k,{\rm coag}}$
+  integer :: idiag_MMzm=0    ! DIAG_DOC: $\sum {\cal M}^z_{k,{\rm coag}}$
   integer :: idiag_ndmt=0,idiag_rhodmt=0,idiag_rhoimt=0
   integer :: idiag_ssrm=0,idiag_ssrmax=0,idiag_adm=0,idiag_mdmtot=0
   integer :: idiag_rhodmxy=0, idiag_ndmxy=0
