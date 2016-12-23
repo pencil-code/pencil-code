@@ -355,11 +355,14 @@ module Particles_chemistry
 ! ******************************************************************************
 !  11-nov-2014/jonas: coded
 
-  subroutine get_temperature_chemistry(var1,var2)
+  subroutine get_temperature_chemistry(var1,var2,k1,k2)
+    integer :: k1,k2
     real, dimension(:) :: var1,var2
 !
     call keep_compiler_quiet(var1)
     call keep_compiler_quiet(var2)
+    call keep_compiler_quiet(k1)
+    call keep_compiler_quiet(k2)
 !
   endsubroutine get_temperature_chemistry
 ! ******************************************************************************
