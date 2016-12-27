@@ -7093,7 +7093,7 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:k,ll,mm=', k,ll,mm
 !***********************************************************************
     subroutine calc_sij2(f,sij2,lshear_rateofstrain)
 !
-!  Calculates square of traveless rate-of-strain tensor from f array.
+!  Calculates square of traceless rate-of-strain tensor from f array.
 !
 !  16-dec-16/MR: Outsourced from hydro.
 !
