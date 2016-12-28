@@ -1969,7 +1969,7 @@ module Particles
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mpar_loc,mparray), intent (inout) :: fp
       integer, dimension (mpar_loc,3), intent (inout) :: ineargrid
-      real, dimension (mpar_loc) :: rr_tmp, az_tmp
+      real, dimension (mpar_loc) :: rr_tmp, az_tmp, OO_tmp
 !
       logical, save :: linsertmore=.true.
       real :: xx0, yy0, r2, r, tmp
