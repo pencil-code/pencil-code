@@ -873,6 +873,14 @@ module Particles
       logical :: lequidistant=.false.
       real :: rpar_int,rpar_ext
 !
+!  Optionally withhold some number of particles, to be inserted in
+!  insert_particles. The particle indices to be removed are not randomized,
+!  so any randomization needs to be taken care of in the above initxxp cases.
+!
+      if (lwithhold_init_particles .and. frac_init_particles < 1.0-tini) then
+        npar_loc = nint(frac_init_particles*real(npar_loc))
+      endif
+!
 !  Use either a local random position or a global random position for certain
 !  initial conditions. The default is a local random position, but the equal
 !  number of particles per processors means that this is not completely random.
@@ -1910,17 +1918,6 @@ module Particles
 !  Interface for user's own initial condition
 !
       if (linitial_condition) call initial_condition_vvp(f,fp)
-!
-!  Optionally withhold some number of particles, to be inserted in
-!  insert_particles. The particle indices to be removed are not randomized,
-!  so any randomization needs to be taken care of in the above initxxp cases.
-!
-      if (lwithhold_init_particles .and. frac_init_particles < 1.0-tini) then
-        n_kill = nint((1.0-frac_init_particles)*real(npar_loc))
-        do k=1,n_kill
-          call remove_particle(fp,ipar,k)
-        enddo
-      endif
 !
 !  Map particle velocity on the grid.
 !
