@@ -2154,10 +2154,25 @@ module Particles
 !
             case ('Keplerian','keplerian')
               call get_shared_variable('gravr',gravr)
-              if (lcylindrical_coords) then
-                fp(npar_loc_old+1:npar_loc,ivpx) = 0.0
-                fp(npar_loc_old+1:npar_loc,ivpy) = sqrt(gravr/fp(npar_loc_old+1:npar_loc,ixp))
-                fp(npar_loc_old+1:npar_loc,ivpz) = 0.0
+              if (lcartesian_coords) then
+                rr_tmp(npar_loc_old+1:npar_loc)=sqrt(fp(npar_loc_old+1:npar_loc,ixp)**2+ &
+                  fp(npar_loc_old+1:npar_loc,iyp)**2+fp(npar_loc_old+1:npar_loc,izp)**2)
+                OO_tmp(npar_loc_old+1:npar_loc)=sqrt(gravr)*rr_tmp(npar_loc_old+1:npar_loc)**(-1.5)
+                fp(npar_loc_old+1:npar_loc,ivpx) = -OO_tmp(npar_loc_old+1:npar_loc)*fp(npar_loc_old+1:npar_loc,iyp)
+                fp(npar_loc_old+1:npar_loc,ivpy) =  OO_tmp(npar_loc_old+1:npar_loc)*fp(npar_loc_old+1:npar_loc,ixp)
+                fp(npar_loc_old+1:npar_loc,ivpz) =  0.0
+              elseif (lcylindrical_coords) then
+                rr_tmp(npar_loc_old+1:npar_loc)=fp(npar_loc_old+1:npar_loc,ixp)
+                OO_tmp(npar_loc_old+1:npar_loc)=sqrt(gravr)*rr_tmp(npar_loc_old+1:npar_loc)**(-1.5)
+                fp(npar_loc_old+1:npar_loc,ivpx) =  0.0
+                fp(npar_loc_old+1:npar_loc,ivpy) =  OO_tmp(npar_loc_old+1:npar_loc)*rr_tmp(npar_loc_old+1:npar_loc)
+                fp(npar_loc_old+1:npar_loc,ivpz) =  0.0
+              elseif (lspherical_coords) then
+                rr_tmp(npar_loc_old+1:npar_loc)=fp(npar_loc_old+1:npar_loc,ixp)*sin(fp(npar_loc_old+1:npar_loc,iyp))
+                OO_tmp(npar_loc_old+1:npar_loc)=sqrt(gravr)*rr_tmp(npar_loc_old+1:npar_loc)**(-1.5)
+                fp(npar_loc_old+1:npar_loc,ivpx) =  0.0
+                fp(npar_loc_old+1:npar_loc,ivpy) =  0.0
+                fp(npar_loc_old+1:npar_loc,ivpz) =  OO_tmp(npar_loc_old+1:npar_loc)*rr_tmp(npar_loc_old+1:npar_loc)
               endif
 !
             case ('constant')
