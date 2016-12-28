@@ -272,7 +272,7 @@ Options:
   -d,  --datadir           \tUse mkdir if data/ is needed, don't ln -s /tmp
   -s,  --short             \tPrint short directory names only
   -p,  --postproc=PP       \tApply postprocessor PP to output from make
-  -F,  --file=<xx.f90>     \tOnly run tests for samples having xx.f90 in Makefile.local
+  -F,  --file=<xx>         \tOnly run tests for samples that use module 'xx' (based on 'grep -w')
   -a,  --all-dirs          \tRecurse through all subdirectories of samples/
        --level=LEV         \tRun only tests from level LEV
        --max-level=LEV     \tRun all tests below with level <= LEV (default: 2)
@@ -564,7 +564,7 @@ if (@ARGV) {
     if ($file ne "") {
         my @testdirs_tmp = ();
         for my $d (@testdirs) {
-            my $filecheck = `grep "$file" $d/src/Makefile.local | wc -l`;
+            my $filecheck = `grep -w "$file" $d/src/Makefile.local | wc -l`;
             if ($filecheck > 0) { push(@testdirs_tmp,($d)); }
         }
         @testdirs = @testdirs_tmp;
