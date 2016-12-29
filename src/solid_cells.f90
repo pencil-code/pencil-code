@@ -3232,7 +3232,6 @@ module Solid_Cells
       lpenc_requested(i_sij) = .true.
       lpenc_requested(i_rho) = .true.
       if (idiag_Nusselt /= 0) lpenc_requested(i_gTT) = .true.
-      if (idiag_Nusselt /= 0) lpenc_requested(i_tcond) = .true.
 !
     endsubroutine pencil_criteria_solid_cells
 !***********************************************************************
