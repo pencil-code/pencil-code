@@ -1,14 +1,15 @@
+
 # simulation.py
 #
 # Create simulation object to operate on.
 #
 # Authors:
 # A. Schreiber (aschreiber@mpia.de)
+#
 """
 Contains the simulation class which can be used to directly create, access and
 manipulate simulations.
 """
-
 
 def simulation(*args, **kwargs):
     """
@@ -48,6 +49,8 @@ class __Simulation__(object):
         from os.path import split
         #from pen.intern.hash_sim import hash_sim
 
+        path = path.strip()
+        if path.endswith('/'): path = path[:-1]
         self.name = split(path)[-1]     # find out name and store it
         if self.name == '.' or self.name == '': self.name = split(os.getcwd())[-1]
 
@@ -69,10 +72,10 @@ class __Simulation__(object):
         self.param = False
         self.grid = False
         self.ghost_grid = False
-        self = self.update(self)                   # auto-update, i.e. read param.nml
+        self = self.update(quiet=quiet)                   # auto-update, i.e. read param.nml
         # Done
 
-    def copy(self, path_root, name=False, optionals=True, quiet=False, rename_submit_sripts=True, OVERWRITE=False):
+    def copy(self, path_root, name=False, optionals=True, quiet=True, rename_submit_sripts=True, OVERWRITE=False):
         """This method does a copy of the simulation object by creating a new directory 'name' in 'path_root' and copy all simulation components and optionals to his directory.
         This method neither links/compiles the simulation, nor creates data dir nor does overwrite anything.
 
@@ -91,6 +94,8 @@ class __Simulation__(object):
         from shutil import copyfile
         from glob import glob
         from pencilnew.io import mkdir
+        from pencilnew.sim import is_sim_dir
+        from pencilnew import get_sim
 
         # set up paths
         if path_root == False or type(path_root) != type('string'):
@@ -100,8 +105,8 @@ class __Simulation__(object):
 
         # name and folder of new simulation
         if name == False:
-            name_new = self.name+'_copy'
-            print('? Warning: No name specified, will alter old simulation name to '+name_new)
+            name = self.name+'_copy'
+            print('? Warning: No name specified, will alter old simulation name to '+name)
         path_newsim = join(path_root, name)     # simulation abspath
         path_newsim_src = join(path_newsim, 'src')
 
@@ -118,11 +123,16 @@ class __Simulation__(object):
                 tmp.append(f)
         optionals = tmp
 
+        ## check if the copy was already created
+        if is_sim_dir(path_newsim):
+            if not quiet: print('? WARNING: Simulation already exists. Returning with existing simulation.')
+            return get_sim(path_newsim, quiet=quiet)
+
         ## expand list of optionals wildcasts
 
         # check existance of path_root+name, a reason to stop to not overwrite anything
         if OVERWRITE==False and exists(path_newsim):
-            print('! ERROR: Folder to copy simulation to already exists! -> '+path_newsim)
+            print('! ERROR: Folder to copy simulation to already exists!\n! -> '+path_newsim)
             return False
 
         # check existance of self.components
@@ -160,7 +170,7 @@ class __Simulation__(object):
                     system_name, raw_name, job_name_key, submit_scriptfile, submit_line = pencilnew.io.get_systemid()
 
         # done
-        return True
+        return get_sim(path_newsim)
 
 
     def update(self, quiet=True):
@@ -183,19 +193,22 @@ class __Simulation__(object):
                         if key.startswith('__'): continue
                         self.param[key] = getattr(param, key)
                 else:
-                    print('? WARNING: Couldnt find param.nml for '+self.path)
+                    if not quiet: print('? WARNING: for '+self.path+'\n? Simulation has not run yet! Meaning: No param.nml found!')
             except:
                 print('! ERROR: while reading param.nml for '+self.path)
                 self.param = False
 
-        if self.grid == False or self.ghost_grid == False:
-            try:                                # read grid
+        if self.param != False and (self.grid == False or self.ghost_grid == False):
+            try:                                # read grid only if param is not False
                 self.grid = grid(data_dir=self.data_dir, trim=True, quiet=True)
                 self.ghost_grid = grid(data_dir=self.data_dir, trim=False, quiet=True)
             except:
                 if self.started() or (not quiet): print('? WARNING: Couldnt load grid for '+self.path)
                 self.grid = False
                 self.ghost_grid = False
+        else:
+            self.grid = False
+            self.ghost_grid = False
 
         self.export()
         return self
@@ -221,9 +234,114 @@ class __Simulation__(object):
     def started(self):
         """Returns whether simulation has already started.
         This is indicated by existing time_series.dat in data directory."""
-        from os.path import exists
-        from os.path import join
+        from os.path import exists, realpath, join
         return exists(join(self.path, 'data', 'time_series.dat'))
+
+
+    def compile(self, cleanall=True, verbose=False):
+        """Compiles the simulation. Per default the linking is done before the
+        compiling process is called. This method will use your settings as
+        defined in your .bashrc-file.
+
+        Args:
+            - cleanall:     before calling pc_build, pc_build --cleanall is called
+        """
+        import subprocess
+        import pencilnew as pcn
+        from os.path import join, realpath
+
+        timestamp = pcn.io.timestamp()
+        pcn.io.mkdir(self.pc_dir)
+        logfile = join(self.pc_dir, 'compiler_log_'+timestamp)
+
+        commands = ['cd '+realpath(self.path)]
+        if cleanall: commands.append('pc_build --cleanall')
+        commands.append('pc_build')
+
+        with open(logfile, 'w') as f:
+            p = subprocess.Popen(';'.join(commands), shell=True, universal_newlines=True, stdout=f, stderr=f)
+            p.wait()
+            rc = p.returncode
+
+        if verbose:
+            with open(logfile, 'r') as f: print(f.read())
+
+        if rc == 0:
+            return True
+        else:
+            print('! ERROR: Compiling ended with error code '+str(rc)+'!\n! Please check log file in')
+            print('! '+logfile)
+            return rc
+
+
+    def clear_src(self, do_it=False, do_it_really=False):
+        """ This method clears the src directory of the simulation!
+        All files in src get deleted, except of whats in components and optionals!
+        By default, everything except Makefile.local and cparam.local gets erased!
+
+        Args:
+            to activate pass        True, True
+        """
+        from os import listdir
+        from os.path import join, exists
+        from pencilnew.io import remove_files as remove
+
+        folder = join(self.path,'src')
+        keeps = [f.split('/')[-1] for f in self.components+self.optionals]
+
+        if not exists(folder): print('? Warning: No src directory found!'); return True
+
+        filelist = listdir(folder)          # remove everything INSIDE
+        for f in filelist:
+            if f in keeps: continue
+            remove(join(folder,f), do_it=do_it, do_it_really=do_it_really)
+        return True
+
+
+    def clear_data(self, do_it=False, do_it_really=False):
+        """ This method clears the data directory of the simulation!
+        All files in data get deleted!
+
+        Args:
+            to activate pass        True, True
+        """
+        from os import listdir
+        from os.path import join, exists
+        from pencilnew.io import remove_files as remove
+
+        folder = join(self.path,'data')
+        keeps = []
+
+        if not exists(folder): print('? Warning: No data directory found!'); return True
+
+        filelist = listdir(folder)          # remove everything INSIDE
+        for f in filelist:
+            if f in keeps: continue
+            remove(join(folder,f), do_it=do_it, do_it_really=do_it_really)
+        return True
+
+
+    def remove(self, do_it=False, do_it_really=False, remove_data=False):
+        """ This method removes the WHOLE simulation,
+        but NOT the DATA directory per default.
+        Do remove_data=True to delete data dir as well.
+
+        Args:
+            to activate pass        True, True
+            remove_data:            also clear data directory
+        """
+        from os import listdir
+        from os.path import join
+        from pencilnew.io import remove_files as remove
+
+        self.clear_src(do_it=do_it, do_it_really=do_it_really)
+        if remove_data:
+            self.clear_data(do_it=do_it, do_it_really=do_it_really)
+
+        filelist = listdir(self.path)
+        for f in filelist:
+            remove(join(self.path, f))
+        return True
 
 
     def get_varlist(self, pos=False, particle=False):
@@ -290,7 +408,8 @@ class __Simulation__(object):
 
         print('! ERROR: Couldnt find '+quantity+'!')
 
-    def change_value_in_file(self):
-        print('! toDo!!')
-        print('! Use pcn.io.change_value_in_file')
-        return False
+    def change_value_in_file(filename, quantity, newValue, sim=False, filepath=False, DEBUG=False):
+        """Same as pencilnew.io.change_value_in_file."""
+        from pencilnew.io import change_value_in_file
+
+        return change_value_in_file(filename, quantity, newValue, sim=sim, filepath=filepath, DEBUG=DEBUG)
