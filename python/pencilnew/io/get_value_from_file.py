@@ -7,7 +7,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
     Please add further functionallity by yourself!
 
     Args:
-        file:       can be "run.in", "start.in", "cparam.local"
+        filename:   can be "run.in", "start.in", "cparam.local", path to that file is extraced from filepath or sim object
         quantity:   variable to read in from file
         sim:        put simulation object here, file will be found by filename automatically
         filepath:   normally not needed, specify here where to find the file with filename, can be a list of paths if unshure
@@ -174,7 +174,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
         q = True
         q_type = 'BOOL'
 
-    if type(q) == type('string') and is_number(q[0]):
+    if is_number(q[0]) and type(q) == type('string'):
         q_type = 'STRING'
 
     if q_type == False:                                                         # catch if type of q was not recognized
