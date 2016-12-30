@@ -9,7 +9,7 @@ def get(path='.', quiet=False):
 
     if exists(join(path, '.pc/sim.dill')):
         sim = load('sim', folder=join(path, '.pc'))
-        sim.update()
+        sim.update(quiet=quiet)
         return sim
     else:
         from pencilnew import __is_sim_dir__
@@ -25,14 +25,14 @@ def get_sims(path_root='.', depth=1, unhide_all=False, quiet=False):
     following symbolic links.
 
     Args:
-        path_root: base directory where to look for simulation from. 
+        path_root: base directory where to look for simulation from.
                    Default:'.'
         depth:     depth of searching for simulations, default is 1,
                    i.e. only one level deeper directories will be scanned.
         unhide:    unhides all simulation found if True, if False (default)
                    hidden sim will stay hidden.
         quiet:     Switches out the output of the function. Default: False.
-                   
+
     """
     from os.path import join
     import numpy as np
@@ -47,7 +47,7 @@ def get_sims(path_root='.', depth=1, unhide_all=False, quiet=False):
     #from intern import get_simdict
     #import intern.debug_breakpoint as debug_breakpoint
 
-    if not quiet: 
+    if not quiet:
         print('~ A list of pencil code simulations is generated from this dir downwards, this may take some time..')
         print('~ (Symbolic links will not be followed, since this can lead to infinit recursion.)')
 
@@ -59,7 +59,7 @@ def get_sims(path_root='.', depth=1, unhide_all=False, quiet=False):
         for dir in dirs:
             # print('dirs: '+str(dir))
             sd = join(path, dir)
-            if is_sim_dir(sd): 
+            if is_sim_dir(sd):
                 if not quiet: print('# Found Simulation in '+sd)
                 sim_paths.append(sd)
 
@@ -73,7 +73,7 @@ def get_sims(path_root='.', depth=1, unhide_all=False, quiet=False):
         for s in sim_list:			# check for double names
             if sim.name == s.name:
                 sim.name = sim.name+'#'		# add # to dublicate
-                if not quiet: 
+                if not quiet:
                     print("? Warning: Found two simulatoins with the same name: "
                           +sim.path+' and '+s.path)
                     print("? Changed name of "+sim.path+' to '+sim.name
@@ -84,6 +84,6 @@ def get_sims(path_root='.', depth=1, unhide_all=False, quiet=False):
         sim_list.append(sim)
 
     # is sim_list empty?
-    if sim_list == [] and not quiet: 
+    if sim_list == [] and not quiet:
         print '? WARNING: no simulations found!'
     return sim_list
