@@ -21,11 +21,11 @@ def __is_sim_dir__(path='.'):
     """Checks if a path is pointing at a pencil code simulation."""
     return sim.is_sim_dir(path)
 
-def get_sim(path='.'):
+def get_sim(path='.', quiet=True):
     """Returns simulation object from 'path, if already existing, or creates new simulation object from path, if its as simulation."""
-    return sim.get(path)
+    return sim.get(path, quiet=quiet)
 
-def get_sims(path='.', depth=1, unhide_all=False):
+def get_sims(path_root='.', depth=1, unhide_all=False, quiet=True):
     """Returns all found simulations as object list from all subdirs, not
        following symbolic links.
 
@@ -35,4 +35,4 @@ def get_sims(path='.', depth=1, unhide_all=False):
         unhide  unhides all simulation found if True, if False (default)
                 hidden sim will stay hidden.
     """
-    return sim.get_sims(path=path, depth=1, unhide_all=unhide_all)
+    return sim.get_sims(path_root=path_root, depth=1, unhide_all=unhide_all, quiet=quiet)
