@@ -1,0 +1,36 @@
+!                              -*-f90-*-     (for emacs)
+!
+! Initialisation parameters for MRI turbulence
+!
+&init_pars
+  cvsid='$Id: start.in 9840 2008-09-05 07:29:37Z ajohan $',
+  xyz0  =  -0.05,  -0.05,  -0.05
+  Lxyz  =   0.1,   0.1,   0.1
+  lperi =       T,       T,       T
+  ip=, lwrite_ic=T
+  lwrite_aux=T
+/
+&eos_init_pars
+  cs0=1.0, gamma=1.0, rho0=1.0
+/ 
+&hydro_init_pars
+  inituu='zero'
+  Omega=1.0
+/
+&density_init_pars
+  initlnrho='const_rho', rho_const=1. !=1 rho_Roche
+  beta_glnrho_global=-0.1,0.0,0.0	!?? Global Gradient Logarithmic Rho
+  ldensity_nolog=T
+/
+&shear_init_pars
+  qshear=1.5
+/
+&particles_init_pars
+  initxxp='random'
+  initvvp='dragforce_equilibrium'
+  eps_dtog=1. ! = epsilon _ dust to gas
+  tausp=0.1 ! Stokes Number
+  lparticlemesh_tsc=T
+  lreassign_strat_rhom=F 
+ !  learly_particle_map=F
+/

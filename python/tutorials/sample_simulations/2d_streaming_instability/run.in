@@ -1,0 +1,51 @@
+!                          -*-f90-*- (for Emacs)
+!
+!  Run parameters for MRI turbulence
+!
+&run_pars
+  it1=20, cdt=0.4, cdtv=0.4, isave=1000, itorder=3,
+  dsnap=0.062831853, dtmin=1.0e-8
+  lbidiagonal_derij=F
+  lpencil_check=F, lpencil_check_small=F
+  tmax=12, max_walltime=170000
+  dvid=1.
+  d2davg=0.01
+  slice_position='m'
+  !dspec=5., ou_spec=T, ab_spec=T !(for energy spectra)
+  dspec=1., ro_spec=F, vel_spec=T
+  oned=T
+/
+&eos_run_pars
+/
+&hydro_run_pars
+/
+&density_run_pars
+  diffrho_hyper3=1.7e-25, idiff='hyper3','shock'
+  diffrho_shock=1
+/
+&particles_run_pars                                                
+  ldragforce_dust_par=T, ldragforce_gas_par=T
+  cdtp=0.2
+  lmigration_redo=T
+  lcheck_exact_frontier=T  
+!  gravz_profile='linear'  NO GRAVITY 
+!  nu_epicycle=1.0
+  lcollisional_cooling_twobody=F
+  lpar_spec=T
+/                                                                  
+&shear_run_pars
+  qshear=1.5
+/
+&viscosity_run_pars
+  nu_hyper3=1.7e-25, ivisc='hyper3_nu-const','shock'
+  nu_shock=1
+/
+&shock_run_pars
+  lrewrite_shock_boundary=T
+/
+&power_spectrum_run_pars
+/
+
+
+
+

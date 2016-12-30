@@ -1,0 +1,133 @@
+$Id$
+
+Tutorial: 0001_Jupyter_on_a_cluster
+
+Title: This tutorial will teach you how to use Jupyter on a distant
+cluster/computer.
+
+Author: Andreas Schreiber <ascheiber@mpia.de>
+
+
+Jupyter notebooks are really powerfull since you can not only use it for doing
+plotting and diagnostics with it, you can also state bash commands (and
+basically everything). So it may look easy to have Jupyter running on your
+desktop personal computer, but there is a way to use Jupyter on your computing
+cluster as well. Even more, if you like you can keep that Jupyter notebook
+running in a screen session to let it continue working for you even if you are
+not connected to the computer directly. But lets start easy!
+
+
+The basic idea is the following:
+
+1.) We will start a Jupyter notebook session on your cluster login node.
+
+PLEASE!!! Be a fair user and USE the INTERACTIVE login nodes of you cluster
+which are for such purpose and NOT use the login nodes which are for compiling,
+checking and submitting you runs to the queue! Also remind yourself that also
+other people are using the login nodes and dont let you notebooks open if you
+are not using them!
+
+2.) We will setup the Jupyter notebook to be listening to a certain port, so you
+can connect from outside to it.
+
+3.) We will open a ssh tunnel connection to your login node and set a port of
+you computer to be forwarded to the port of you cluster node the Jupyter
+notebook is listening to.
+
+4.) We will open a Browser, e.g. Firefox, and connect to your local port, which
+directs us to you Jupyter session on your cluster.
+
+5.) We make the connection save! You dont want to have your credentials and
+notebook beeing open to the whole internet!!
+
+
+Lets start!
+
+
+1.) Connect to you interactive login node. In my case I have many interactive
+login nodes from which I randomly get one chosen when connecting to the general
+node adresse. So, I do set up my ssh config to have a specific node be "my"
+favorite node and give it a name:
+
+HOST hydrai   Hostname hydra05i   User YOURUSERNAME   ProxyCommand ssh -a -Y rzg
+netcat -v %h 22   ForwardX11 yes   ServerAliveInterval = 600
+ServerAliveCountMax = 30
+- from my ~/.ssh/config
+
+As you can see I use netcat to let this connection being forwarded to hydra05i.
+Hence this rzg named gate computer needs to be specified as well:
+
+HOST rzg   Hostname gateafs.rzg.mpg.de   User YOURUSERNAME   ForwardX11 yes
+ServerAliveInterval = 600   ServerAliveCountMax = 30
+- from my ~/.ssh/config
+
+To let myself connect multiple times via the same ssh connection, instead of
+building up a new one every time I also have in my config:
+
+host *     controlmaster auto     controlpath /tmp/ssh-%r@%h:%p
+- from my ~/.ssh/config
+
+Typing 'ssh hydrai' should now let you connect to your interactive login node
+directly. If not, contact your cluster support or do some googleing.
+
+Next, open a screen session via 'screen -S jupyter_notebook' and navigate to the
+directory which you want to be your root for the jupyter notebooks. In my case
+I use simply '~/'. You can navigate later anyway.
+
+
+2.) Now, we have to start the python notebook but as a server with dedicated port
+adress do access to from remote.
+
+>> jupyter notebook --no-browser --port=5678 --ip='*'
+
+you can choose the port number as you like.
+
+
+3.) Back on our machine we need to connect one of our localhost (local) ports to
+the port on hydrai on which jupyter is listening. So we do:
+
+>> ssh -N -f -L 5678:hydra05i.rzg.mpg.de:5678 YOURUSERNAME@gate.rzg.mpg.de
+
+We're almost done now!
+
+
+4.) Open a Browser, e.g. Firefox, and connect to http://127.0.0.1:5678, i.e.
+
+>> firefox -url https://127.0.0.1:9876 &
+
+Note that this is NOT SAVE since we use http instead of https. If you try https
+you will notice that this does not work. But in principle your done and can
+start now using your jupyter notebook server.
+
+
+5.) To make your connection secure, we follow
+
+https://ipython.org/ipython-doc/1/interactive/public_server.html
+
+Short:
+
+5.1) Generate a password as sha1 key:
+In [1]: from IPython.lib import passwd
+In [2]: passwd()
+
+5.2) Open ~/.jupyter/jupyter_notebook_config.py and add something like:
+
+# Set options for certfile, ip, password, and toggle off browser auto-opening
+c.NotebookApp.certfile = u'USERROOTDIR/.jupyter/YOURCERTIFICATE.pem'
+c.NotebookApp.keyfile = u'USERROOTDIR/.jupyter/YOURCERTIFICATE.pem'
+# Set ip to '*' to bind on all interfaces (ips) for the public server
+c.NotebookApp.ip = '*'
+c.NotebookApp.password = u'sha1:236bf1754298:4c7c7d9646XYZ....'
+c.NotebookApp.open_browser = False
+# It is a good idea to set a known, fixed port for server access
+c.NotebookApp.port = 5678
+
+5.3) Get a certificate via
+
+http://arstechnica.com/security/2009/12/how-to-get-set-with-a-secure-sertificate-for-free/
+
+and add to ~/.jupyter/YOURCERTIFICATE.pem
+
+That should be it! Have fun!
+
+Questions?

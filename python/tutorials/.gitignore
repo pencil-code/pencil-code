@@ -1,0 +1,65 @@
+.DS_Store
+*.directory
+*.pyc
+*~
+.*.swp
+host-ID
+# Generated files
+.run_directories.log
+.ipynb_checkpoints
+*/.ipynb_checkpoints
+*/*/.ipynb_checkpoints
+*/*/*/.ipynb_checkpoints
+*/*/*/*/.ipynb_checkpoints
+revision.txt
+# left-over files from auto-test and samples
+.pc_build_history
+.run_directories.log
+# temporary/local files needed for the tutorial
+tmp
+tmp/*
+# first directory level
+sample_simulations/*/pc
+sample_simulations/*/pc/*
+sample_simulations/*/src/*
+!sample_simulations/*/src/*.local
+sample_simulations/*/*.csh
+sample_simulations/*/*.log
+sample_simulations/*/Makefile
+sample_simulations/*/.pc_build_history
+sample_simulations/*/COMPLETED
+sample_simulations/*/ERROR
+sample_simulations/*/KEEP_RELOADING
+sample_simulations/*/runtime
+sample_simulations/*/fort.*
+sample_simulations/*/data
+# second directory level
+sample_simulations/*/*/pc
+sample_simulations/*/*/pc/*
+sample_simulations/*/*/src/*
+!sample_simulations/*/*/src/*.local
+sample_simulations/*/*/*.csh
+sample_simulations/*/*/*.log
+sample_simulations/*/*/Makefile
+sample_simulations/*/*/.pc_build_history
+sample_simulations/*/*/COMPLETED
+sample_simulations/*/*/ERROR
+sample_simulations/*/*/KEEP_RELOADING
+sample_simulations/*/*/runtime
+sample_simulations/*/*/fort.*
+sample_simulations/*/*/data
+# third directory level
+sample_simulations/*/*/*/pc
+sample_simulations/*/*/*/pc/*
+sample_simulations/*/*/*/src/*
+!sample_simulations/*/*/*/src/*.local
+sample_simulations/*/*/*/*.csh
+sample_simulations/*/*/*/*.log
+sample_simulations/*/*/*/Makefile
+sample_simulations/*/*/*/.pc_build_history
+sample_simulations/*/*/*/COMPLETED
+sample_simulations/*/*/*/ERROR
+sample_simulations/*/*/*/KEEP_RELOADING
+sample_simulations/*/*/*/runtime
+sample_simulations/*/*/*/fort.*
+sample_simulations/*/*/*/data

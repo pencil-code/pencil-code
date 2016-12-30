@@ -1,0 +1,1 @@
+/home/user/pencil-code/bin/start.csh

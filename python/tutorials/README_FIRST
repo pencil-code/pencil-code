@@ -1,0 +1,42 @@
+$Id$
+
+Dear Pencil Code User,
+
+this directory contains tutorials for using Python with your Pencil Code
+simulations. They are mostly written as Jupyter documents. If you dont know
+Jupyter yet you should definitly check it out before you continue!
+
+
+~ Task 1: Get yourself informed on Jupyter
+
+
+Now that you know what Jupyter is, ensure you have it installed on your
+computer. You get it by default when using Anaconda as you Python distribution,
+what is what I do recommend to you.
+
+
+~ Task 2: Check if Jupyter is running correctly. Normally this should be possible
+by using 'ipython notebook' in your bash shell.
+
+
+Note: If you are trying to do these tutorials on a distant cluster you are connected
+to via ssh, this may not work. Instead try what is written in the tutorial 0001 Jupyter_on_a_cluster.
+
+
+TUTORIAL OVERVIEW:
+
+The tutorials are grouped as follows:
+
+0xxx    on using pencilnew and Jupyter/Python in general
+            basics and neat tricks await you here
+1xxx    on using pencilnew to READ in your simulation data
+2xxx    on using pencilnew to VISUALIZE your data
+3xxx    on using pencilnew to POSTPROCESS your data
+4xxx    on using pencilnew and python to postprocess PARTICLE data
+5xxx    on using the full capacity of pencilnew
+7xxx    on using FANCY pencil code MODULES
+
+Now go and check them out! Feel free to add you own tutorials or request them from the Pencil Code Community! I recommend to go through the tutorials in number ordering.
+
+Tutorials may use dummy/sample simulations. You find them in the
+sample_simulations folder.

@@ -1,0 +1,1 @@
+/home/user/pencil-code/src/test_methods/testfield_compress_z.f90
