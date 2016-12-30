@@ -12,6 +12,7 @@ from timestamp import timestamp
 # io operation on cluster/computer
 from get_systemid import get_systemid
 from exists import *
+from remove_files import *
 
 # io operation on simulation
 from get_value_from_file import get_value_from_file
