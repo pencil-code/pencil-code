@@ -97,7 +97,7 @@ class Dim(object):
             file_name = os.path.expanduser(file_name)
             dim_file = open(file_name, "r")
         except IOError:
-            print("File {0} could not be opened.".format(file_name))
+            print("? File {0} could not be opened.".format(file_name))
             return -1
         else:
             lines = dim_file.readlines()
