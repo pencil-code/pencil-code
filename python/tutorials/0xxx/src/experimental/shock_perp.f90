@@ -1,1 +1,0 @@
-/home/user/pencil-code/src/experimental/shock_perp.f90

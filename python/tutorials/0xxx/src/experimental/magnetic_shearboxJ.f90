@@ -1,1 +1,0 @@
-/home/user/pencil-code/src/experimental/magnetic_shearboxJ.f90

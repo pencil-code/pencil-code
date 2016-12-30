@@ -1,1 +1,0 @@
-/home/user/pencil-code/src/special/meanfield_alpm.f90

@@ -1,1 +1,0 @@
-/home/user/pencil-code/src/initial_condition/kelvin_helmholtz_Lecoanet_etal16.f90

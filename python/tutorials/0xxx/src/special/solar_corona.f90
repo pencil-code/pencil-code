@@ -1,1 +1,0 @@
-/home/user/pencil-code/src/special/solar_corona.f90

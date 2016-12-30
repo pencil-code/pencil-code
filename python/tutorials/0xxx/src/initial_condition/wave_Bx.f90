@@ -1,1 +1,0 @@
-/home/user/pencil-code/src/initial_condition/wave_Bx.f90

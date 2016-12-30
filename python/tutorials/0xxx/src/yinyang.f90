@@ -1,1 +1,0 @@
-/home/user/pencil-code/src/yinyang.f90

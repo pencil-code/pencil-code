@@ -1,1 +1,0 @@
-/home/user/pencil-code/src/boundcond_alt.f90

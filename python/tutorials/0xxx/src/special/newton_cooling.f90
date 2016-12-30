@@ -1,1 +1,0 @@
-/home/user/pencil-code/src/special/newton_cooling.f90

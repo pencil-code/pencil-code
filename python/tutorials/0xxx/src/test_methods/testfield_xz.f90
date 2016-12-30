@@ -1,1 +1,0 @@
-/home/user/pencil-code/src/test_methods/testfield_xz.f90

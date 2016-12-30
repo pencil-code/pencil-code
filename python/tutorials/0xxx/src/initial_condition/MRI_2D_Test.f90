@@ -1,1 +1,0 @@
-/home/user/pencil-code/src/initial_condition/MRI_2D_Test.f90

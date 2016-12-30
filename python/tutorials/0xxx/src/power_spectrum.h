@@ -1,1 +1,0 @@
-/home/user/pencil-code/src/power_spectrum.h

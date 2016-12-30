@@ -1,1 +1,0 @@
-/home/user/pencil-code/src/special/rtime_phiavg.f90

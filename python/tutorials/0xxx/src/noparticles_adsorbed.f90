@@ -1,1 +1,0 @@
-/home/user/pencil-code/src/noparticles_adsorbed.f90

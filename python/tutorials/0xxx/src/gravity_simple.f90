@@ -1,1 +1,0 @@
-/home/user/pencil-code/src/gravity_simple.f90
