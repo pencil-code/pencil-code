@@ -204,7 +204,6 @@ module Io
 !   6-mar-2015/MR: changed direct access writing to sequential
 !
       use Mpicomm, only: globalize_xy, collect_grid
-      use General, only: delete_file
 !
       integer, intent(in) :: nv
       real, dimension (mx,my,mz,nv), intent(in) :: a
