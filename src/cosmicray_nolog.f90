@@ -37,14 +37,17 @@ module Cosmicray
   logical :: lnegl = .false.
   logical :: lvariable_tensor_diff = .false.
   logical :: lalfven_advect = .false.
+  real :: cosmicray_diff=0., Kperp=impossible, Kpara=impossible, ampl_Qcr=0.
+  real, target :: K_para=0., K_perp=0.
 !
   namelist /cosmicray_init_pars/ &
        initecr,initecr2,amplecr,amplecr2,kx_ecr,ky_ecr,kz_ecr, &
        radius_ecr,epsilon_ecr,widthecr,ecr_const, &
        gammacr, lnegl, lvariable_tensor_diff,x_pos_cr,y_pos_cr,z_pos_cr, &
-       x_pos_cr2, y_pos_cr2, z_pos_cr2
+       x_pos_cr2, y_pos_cr2, z_pos_cr2, &
+       cosmicray_diff,Kperp,Kpara, &
+       K_perp, K_para
 !
-  real :: cosmicray_diff=0., Kperp=0., Kpara=0., ampl_Qcr=0.
   real :: limiter_cr=1.,blimiter_cr=0.,ecr_floor=-1.
   logical :: simplified_cosmicray_tensor=.false.
   logical :: luse_diff_constants = .false.
@@ -53,6 +56,7 @@ module Cosmicray
 !
   namelist /cosmicray_run_pars/ &
        cosmicray_diff,Kperp,Kpara, &
+       K_perp, K_para, &
        gammacr,simplified_cosmicray_tensor,lnegl,lvariable_tensor_diff, &
        luse_diff_constants,ampl_Qcr,ampl_Qcr2, &
        limiter_cr,blimiter_cr,ecr_floor, &
@@ -98,10 +102,8 @@ module Cosmicray
     subroutine initialize_cosmicray(f)
 !
 !  Perform any necessary post-parameter read initialization
-!  Dummy routine
 !
-!  09-oct-03/tony: coded
-!
+      use SharedVariables, only: put_shared_variable
       real, dimension (mx,my,mz,mfarray) :: f
 !
 !  initialize gammacr1
@@ -109,7 +111,23 @@ module Cosmicray
       gammacr1=gammacr-1.
       if (lroot) print*,'gammacr1=',gammacr1
 !
-      call keep_compiler_quiet(f)
+!     Checks whether the obsolescent parameter names are being used
+!
+      if (Kpara /= impossible .or. Kperp /= impossible) then
+        call warning('initialize_cosmicray', &
+            'using obsolescent parameters Kpara and Kperp!' &
+            // ' In the future, please use K_para and K_perp instead.')
+        K_para = Kpara
+        K_perp = Kperp
+        call put_shared_variable('K_perp', impossible)
+        call put_shared_variable('K_para', impossible)
+      else
+        call put_shared_variable('K_perp', K_perp)
+        call put_shared_variable('K_para', K_para)
+     endif
+!
+!     Shares diffusivities allowing the cosmicrayflux module to know them
+!
 !
     endsubroutine initialize_cosmicray
 !***********************************************************************
@@ -177,7 +195,7 @@ module Cosmicray
       lpenc_requested(i_ugecr)=.true.
       lpenc_requested(i_divu)=.true.
       if (.not.lnegl) lpenc_requested(i_rho1)=.true.
-      if (Kperp/=0. .or. Kpara/=0. .or. lvariable_tensor_diff) then
+      if (K_perp/=0. .or. K_para/=0. .or. lvariable_tensor_diff) then
         lpenc_requested(i_gecr)=.true.
         lpenc_requested(i_bij)=.true.
         lpenc_requested(i_bb)=.true.
@@ -332,8 +350,8 @@ module Cosmicray
         call del2(f,iecr,del2ecr)
         df(l1:l2,m,n,iecr) = df(l1:l2,m,n,iecr) - divfcr + cosmicray_diff*del2ecr
       else
-        if (Kperp/=0. .or. Kpara/=0. .or. lvariable_tensor_diff) then
-          if (headtt) print*,'decr_dt: Kperp,Kpara=',Kperp,Kpara
+        if (K_perp/=0. .or. K_para/=0. .or. lvariable_tensor_diff) then
+          if (headtt) print*,'decr_dt: K_perp,K_para=',K_perp,K_para
           call tensor_diffusion(f,df,p%gecr,p%bij,p%bb,vKperp,vKpara)
         elseif (cosmicray_diff/=0.) then
           if (headtt) print*,'decr_dt: cosmicray_diff=',cosmicray_diff
@@ -350,7 +368,7 @@ module Cosmicray
         if (lvariable_tensor_diff)then
           diffus_cr=max(diffus_cr,cosmicray_diff,vKperp,vKpara)*dxyz_2
         else
-          diffus_cr=max(diffus_cr,cosmicray_diff,Kperp,Kpara)*dxyz_2
+          diffus_cr=max(diffus_cr,cosmicray_diff,K_perp,K_para)*dxyz_2
         endif
       endif
       if (headtt.or.ldebug) print*,'decr_dt: max(diffus_cr) =',maxval(diffus_cr)
@@ -510,14 +528,14 @@ module Cosmicray
       real, dimension (nx) :: hhh2,quenchfactor,dquenchfactor
       real :: blimiter_cr2
 !
-!  use global Kperp, Kpara ?
+!  use global K_perp, K_para ?
 !
-!      real :: Kperp,Kpara
+!      real :: K_perp,K_para
 !
       integer :: i,j,k
 !
 !
-      if (Kpara==(0.0).and.Kperp==(0.0).and.luse_diff_constants) then
+      if (K_para==(0.0).and.K_perp==(0.0).and.luse_diff_constants) then
           print *,"cosmicray: no diffusion"
           stop
       endif
@@ -624,8 +642,8 @@ module Cosmicray
 !
 !  if (luse_diff  _coef)
 !
-        vKpara(:)=Kpara
-        vKperp(:)=Kperp
+        vKpara(:)=K_para
+        vKperp(:)=K_perp
 !
 !  set gvKpara, gvKperp
 !
@@ -656,7 +674,7 @@ module Cosmicray
 !  the decr/dt equation without tmpj
 !
         df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr) &
-        + Kperp*del2ecr + (Kpara-Kperp)*tmp
+        + K_perp*del2ecr + (K_para-K_perp)*tmp
 
       endif
 !
@@ -669,6 +687,7 @@ module Cosmicray
 !
 !  19-may-15/grsarson: adapted from impose_density_floor
 !
+      use Sub, only: div
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: divfcr
 !

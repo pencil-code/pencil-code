@@ -25,6 +25,8 @@ module Cosmicrayflux
 !
   character(len=labellen) :: initfcr='zero'
   real :: amplfcr=0., kpara=0., kperp=0.
+  real, pointer :: k_para, k_perp
+  real :: kpara_t=0., kperp_t=0.
   real :: tau=0., tau1=0., bmin=1e-6
   real, dimension(nx) :: vKperp, vKpara
   real, dimension(nx) :: b_exp
@@ -50,7 +52,7 @@ module Cosmicrayflux
 !  1-may-02/wolf: coded
 !
       use FArrayManager
-!
+
       call farray_register_pde('fcr',ifcr,vector=3)
       ifcrx = ifcr
       ifcry = ifcr+1
@@ -78,12 +80,27 @@ module Cosmicrayflux
 !
 !  Perform any post-parameter-read initialization
 !
-!  24-nov-02/tony: dummy routine - nothing to do at present
-!  20-may-03/axel: reinitalize_aa added
-!
+      use Messages, only: warning
+      use SharedVariables, only: get_shared_variable
       real, dimension(mx,my,mz,mfarray) :: f
 
       if (tau /= 0.)  tau1 = 1./tau
+!
+!     Reads shared diffusivities from the cosmicray module
+!
+      call get_shared_variable('K_para',K_para)
+      call get_shared_variable('K_perp',K_perp)
+!
+      if (K_para == impossible .or. K_perp == impossible) then
+        call warning('initialize_cosmicrayflux', &
+            'using obsolescent parameters kpara and kperp!' &
+            // 'Please set K_para/K_perp at the Cosmicray module instead.')
+        kpara_t = kpara
+        kperp_t = kperp
+      else
+        kpara_t = K_para/tau
+        kperp_t = K_perp/tau
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -212,12 +229,12 @@ module Cosmicrayflux
 !
       if (lbb_dependent_perp_diff) then
 !       Parallel diffusion (constant)
-        vKpara(:) = kpara
+        vKpara(:) = kpara_t
 !       Perpendicular diffusion (dependence on B field)
-!       Kperp = kperp0/[|B|/Bmin + exp(-B/Bmin)]
+!       Kperp = kperp_t0/[|B|/Bmin + exp(-B/Bmin)]
         b_abs = sqrt(b2)
         b_exp = b_abs/bmin + exp(-b_abs/bmin)
-        vKperp(:) = kperp/b_exp
+        vKperp(:) = kperp_t/b_exp
 !
         do i=1,3
           df(l1:l2,m,n,ifcrx+i-i) = df(l1:l2,m,n,ifcrx+i-1) &
@@ -228,8 +245,8 @@ module Cosmicrayflux
       else
         df(l1:l2,m,n,ifcrx:ifcrz) = df(l1:l2,m,n,ifcrx:ifcrz) &
             - tau1*f(l1:l2,m,n,ifcrx:ifcrz)                   &
-            - kperp*p%gecr                                    &
-            - (kpara - kperp)*BuiBujgecr
+            - kperp_t*p%gecr                                    &
+            - (kpara_t - kperp_t)*BuiBujgecr
       endif
 !
 !  Allow optional use of advection term for fcr.
@@ -242,8 +259,8 @@ module Cosmicrayflux
       endif
 !
 !  For the timestep calculation, needs maximum diffusion or advection.
-!  Unless the switch lcosmicrayflux_diffus_dt is used, kpara and kperp are
-!  treated as an advection contribution. Otherwise, tau*kperp/tau*kpara are
+!  Unless the switch lcosmicrayflux_diffus_dt is used, kpara_t and kperp_t are
+!  treated as an advection contribution. Otherwise, tau*kperp_t/tau*kpara_t are
 !  used as cosmic ray diffusivities.
 !
       if (lfirst .and. ldt) then
@@ -252,14 +269,14 @@ module Cosmicrayflux
             diffus_cr = max(diffus_cr,maxval(vKperp)*tau*dxyz_2, &
                 maxval(vKpara)*tau*dxyz_2)
           else
-            diffus_cr = max(diffus_cr,kperp*tau*dxyz_2,kpara*tau*dxyz_2)
+            diffus_cr = max(diffus_cr,kperp_t*tau*dxyz_2,kpara_t*tau*dxyz_2)
           endif
         else
           if (lbb_dependent_perp_diff) then
             advec_kfcr = max(advec_kfcr,maxval(vKperp)*dxyz_2, &
                 maxval(vKpara)*dxyz_2)
           else
-            advec_kfcr = max(advec_kfcr, kperp*dxyz_2, kpara*dxyz_2)
+            advec_kfcr = max(advec_kfcr, kperp_t*dxyz_2, kpara_t*dxyz_2)
           endif
         endif
       endif
