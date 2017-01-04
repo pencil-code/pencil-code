@@ -398,11 +398,13 @@ class __Simulation__(object):
                 if DEBUG: print('~ DEBUG: '+quantity+' found in simulation.params ...')
                 return self.param[quantity]
 
-        if DEBUG: print('~ DEBUG: Searching through simulation.quantity_searchables ...')
+        if DEBUG: 
+            print('~ DEBUG: Searching through simulation.quantity_searchables ...')
         from pencilnew.io import get_value_from_file
         for filename in self.quantity_searchables:
-            q = get_value_from_file(filename, quantity, change_quantity_to=False, sim=self, DEBUG=DEBUG, silent=True)
-            if q != False:
+            q = get_value_from_file(filename, quantity, change_quantity_to=False,
+                                    sim=self, DEBUG=DEBUG, silent=True)
+            if q is not None:
                 if DEBUG: print('~ DEBUG: '+quantity+' found in '+filename+' ...')
                 return q
 

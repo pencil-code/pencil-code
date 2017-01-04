@@ -17,7 +17,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
 
     import os, pencilnew
     import numpy as np
-    from os.path import join, abspath, exists, split
+    from os.path import join, abspath, exists, split, isfile
     from pencilnew.math import is_number, is_float, is_int
     from pencilnew.io import timestamp, debug_breakpoint, mkdir
 
@@ -53,14 +53,17 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
     q_type = False                                                          # q_type will store the type of the quantity value once found and identified
 
     split_filename = split(filename)
-    if split_filename[0] != '' and filepath == False: filepath = split_filename[0]; filename = split_filename[1]
-
-
+    if sim == False and split_filename[0] != '' and filepath == False: 
+        filepath = split_filename[0]
+        filename = split_filename[1]
+ 
     ######## find correct file
-    # prepare search_path list to searth filename in
+    # prepare search_path list to search filename in
     if filepath == False:
         if sim == False:
             sim = pencilnew.get_sim()
+        else:
+            filepath = sim.path
         search_paths = [sim.path, join(sim.path, 'src')]                    # add other search paths here!!
 
     elif type(filepath) == type('string'):
@@ -73,23 +76,31 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
     else:
         print('! ERROR: Filename '+str(filename)+' could not be interprated or found!'); return False
 
+    absolute_filepath = None
     for search_path in search_paths:
-        if filename in os.listdir(search_path):
-            filepath = join(search_path, filename)
+        tmp_path = join(search_path, filename)
+        if os.path.isfile(tmp_path):
+            absolute_filepath = tmp_path
             break
 
-    if DEBUG: print('~ DEBUG: Found suiting file in '+filepath)
-
-
+    # Traps the case of not being able to find the file
+    if absolute_filepath is None:
+        if DEBUG: 
+            print('~ DEBUG: File {0} not found in {1}!'.format(filename, search_paths))
+        return None
+    
     ######## open file
-    # now having absolute filepath to file, lets check that file and find quantity inside!
-    with open(filepath, 'r') as f: data_raw = f.readlines()
+    # now having absolute filepath to file, lets check that file and find quantity inside!    
+    if DEBUG: print('~ DEBUG: Found suiting file {0} in {1}'.format(filename,filepath))
+        
+    with open(absolute_filepath, 'r') as f: 
+        data_raw = f.readlines()
 
 
     ######## find line in file which quantity in
     line_matches = []
     # scan through file for differently for different files
-    if filename.endswith('.in') or filename == 'cparam.local':
+    if filename.endswith('.in') or 'cparam.local' in filename :
         FILE_IS = 'IN_LOCAL'
         SYM_COMMENT = '!'
         SYM_ASSIGN = '='
