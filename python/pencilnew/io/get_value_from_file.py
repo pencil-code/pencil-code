@@ -139,6 +139,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
 
     qs = list(qs)
     q = qs[2]
+    
     while q.endswith('\t'): q = q[:-1]; comment = '\t'+comment                  # take care of trailing tabulator
     while q.endswith(','): q = q[:-1]                                           # remove trailing ,
 
@@ -174,8 +175,9 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
         q = True
         q_type = 'BOOL'
 
-    if is_number(q[0]) and type(q) == type('string'):
-        q_type = 'STRING'
+    if type(q) == type('string'):
+        if is_number(q[0]):
+            q_type = 'STRING'
 
     if q_type == False:                                                         # catch if type of q was not recognized
         print('! ERROR: Couldnt identify the data type of the quantity value: '+str(q))
