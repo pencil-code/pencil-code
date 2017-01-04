@@ -6336,8 +6336,7 @@ nameloop: do
 !
       integer   :: vec
       character :: ch
-      character (LEN=len(name)-2) :: tail
-      character (LEN=32) :: equalto
+      character (LEN=max(len(name)-2,2)) :: tail
 !
       vec=-1
 !
@@ -6354,11 +6353,7 @@ nameloop: do
 !
       if (index==0) then
 !
-        if (present(communicated)) then
-          call farray_register_auxiliary(trim(name), index, vector=abs(vec), communicated=communicated)
-        else
-          call farray_register_auxiliary(trim(name), index, vector=abs(vec))
-        endif
+        call farray_register_auxiliary(trim(name), index, vector=abs(vec), communicated=communicated)
 !
         if (vec>=1) then
           ind_aux1=index
@@ -6372,22 +6367,21 @@ nameloop: do
 !
       if (index/=0.and.lroot) then
 !
-        print*, 'register_report_aux: i'//trim(name)//' = ', index
+        print*, 'register_report_aux: i'//trim(name)//' =', index
         open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-        write(3,*) 'i'//trim(name)//'=',index
+        write(3,*) 'i'//trim(name)//' =',index
 !
         if ( vec>=1 ) then
-          tail='='
-          if ( name(1:1)==name(2:2) ) then
-            ch = name(1:1)
-            if ( len_trim(name)>2 ) tail = trim(name(3:))//'='
+          tail=' ='
+          ch = name(1:1)
+          if ( ch==name(2:2) ) then
+            if ( len_trim(name)>2 ) tail = trim(name(3:))//' ='
           endif
 !
-          equalto='='
-          write(3,*) 'i'//ch//'x'//trim(equalto),ind_aux1
+          write(3,*) 'i'//ch//'x'//trim(tail),ind_aux1
           if ( vec>=2 ) then
-            write(3,*) 'i'//ch//'y'//trim(equalto),ind_aux2
-            if ( vec==3 ) write(3,*) 'i'//ch//'z'//trim(equalto),ind_aux3
+            write(3,*) 'i'//ch//'y'//trim(tail),ind_aux2
+            if ( vec==3 ) write(3,*) 'i'//ch//'z'//trim(tail),ind_aux3
           endif
         endif
 !
