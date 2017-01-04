@@ -21,7 +21,7 @@ The basic idea is the following:
 
 1.) We will start a Jupyter notebook session on your cluster login node.
 
-PLEASE!!! Be a fair user and USE the INTERACTIVE login nodes of you cluster
+PLEASE!!! Be a fair user and USE the INTERACTIVE login nodes of your cluster
 which are for such purpose and NOT use the login nodes which are for compiling,
 checking and submitting you runs to the queue! Also remind yourself that also
 other people are using the login nodes and dont let you notebooks open if you
@@ -37,7 +37,7 @@ notebook is listening to.
 4.) We will open a Browser, e.g. Firefox, and connect to your local port, which
 directs us to you Jupyter session on your cluster.
 
-5.) We make the connection save! You dont want to have your credentials and
+5.) We make the connection safe! You do not want to have your credentials and
 notebook beeing open to the whole internet!!
 
 
@@ -46,7 +46,7 @@ Lets start!
 
 1.) Connect to you interactive login node. In my case I have many interactive
 login nodes from which I randomly get one chosen when connecting to the general
-node adresse. So, I do set up my ssh config to have a specific node be "my"
+node address. So, I do set up my ssh config to have a specific node be "my"
 favorite node and give it a name:
 
 HOST hydrai   Hostname hydra05i   User YOURUSERNAME   ProxyCommand ssh -a -Y rzg
@@ -95,7 +95,7 @@ We're almost done now!
 
 >> firefox -url https://127.0.0.1:9876 &
 
-Note that this is NOT SAVE since we use http instead of https. If you try https
+Note that this is NOT SAFE since we use http instead of https. If you try https
 you will notice that this does not work. But in principle your done and can
 start now using your jupyter notebook server.
 

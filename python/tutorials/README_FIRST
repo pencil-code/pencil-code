@@ -16,7 +16,7 @@ what is what I do recommend to you.
 
 
 ~ Task 2: Check if Jupyter is running correctly. Normally this should be possible
-by using 'ipython notebook' in your bash shell.
+by using 'ipython notebook' (or 'jupyter-notebook') in your bash shell.
 
 
 Note: If you are trying to do these tutorials on a distant cluster you are connected
