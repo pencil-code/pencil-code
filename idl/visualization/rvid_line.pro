@@ -62,9 +62,7 @@ if (not keyword_set(png)) then begin
 endif
 ;
 if (proc ge 0) then begin
-  procstr=strtrim(string(proc))
-  procstr=strtrim(procstr)
-  procstr='0'
+  procstr=str(proc)
   file_slice=datadir+'/proc'+procstr+'/slice_'+field+'.'+extension
 endif else begin
   file_slice=datadir+'/slice_'+field+'.'+extension
