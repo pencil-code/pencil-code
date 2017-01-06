@@ -672,8 +672,10 @@ if extension eq 'xz' then y2=rebin(z,zoom*ny_plane,sample=sample)
         if(keyword_set(savefile)) then begin
           if (size (slices, /type) eq 0) then begin
             slices = plane
+            times  = t
           endif else begin
             slices = [ [[slices]], [[plane]] ]
+            times  = [ times, t ]
           endelse
         endif
         ;xyouts, 0.05, 0.9, /normal, $
@@ -753,7 +755,7 @@ end
 if (keyword_set(png))  then set_plot,'X'
 if (keyword_set(savefile))  then begin
   num_slices = islice
-  save, file=savefile, slices, num_slices
+  save, file=savefile, slices, num_slices, times, x, y, z
 end
 ;
 END
