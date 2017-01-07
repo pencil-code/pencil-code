@@ -575,7 +575,7 @@ def make_movie_cart(field='uu1', datadir='data/', proc=-1, extension='xz',
     import sys
     from pencil.files.var import read_var
 
-    mkmvvar = read_var(trimall=True)	
+    mkmvvar = read_var(trimall=True)    
     r2d,phi2d = np.meshgrid(mkmvvar.x,mkmvvar.y)
     x2d=r2d*np.cos(phi2d)
     y2d=r2d*np.sin(phi2d)
@@ -599,11 +599,11 @@ def make_movie_cart(field='uu1', datadir='data/', proc=-1, extension='xz',
         hsize = dim.nx
         vsize = dim.ny
     if extension == 'xz':
-	print('only works for xy')
-	sys.stop
+        print('only works for xy')
+        sys.stop
     if extension == 'yz':
         print('only works for xy')
-	sys.stop
+        sys.stop
     plane = np.zeros((vsize, hsize), dtype=precision)
 
     infile = npfile(filename, endian=format)
@@ -633,7 +633,7 @@ def make_movie_cart(field='uu1', datadir='data/', proc=-1, extension='xz',
             exec('plane = plane' + transform)
 
         if t > tmin and t < tmax:
-	    ax.set_aspect('equal')
+            ax.set_aspect('equal')
             ax.cla()
             ax.contourf(x2d, y2d, plane, 256)
             fname = '_tmp%03d.png' % islice
