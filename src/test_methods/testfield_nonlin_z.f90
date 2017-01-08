@@ -526,6 +526,7 @@ module Testfield
       lpenc_requested(i_bbb)=.true.
       lpenc_requested(i_jj)=.true.
       lpenc_requested(i_uu)=.true.
+      lpenc_requested(i_oo)=.true.
       lpenc_diagnos(i_bbb)=.true.
       lpenc_diagnos(i_jj)=.true.
       lpenc_diagnos(i_uu)=.true.
