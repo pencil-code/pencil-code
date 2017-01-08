@@ -1,0 +1,8 @@
+Directory:
+    ${PENCIL_HOME}/samples/spherical-convection-corona
+Maintainer:
+    Jörn Warnecke <warnecke/mps[dot]mpg[dot]de>
+Added:
+    17-Jul-2014
+Status:
+    failing on pencil check # One of [succeeds|failing since <date>|obsolete| ...]
