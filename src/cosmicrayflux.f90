@@ -84,7 +84,12 @@ module Cosmicrayflux
       use SharedVariables, only: get_shared_variable
       real, dimension(mx,my,mz,mfarray) :: f
 
-      if (tau /= 0.)  tau1 = 1./tau
+      if (tau /= 0.)  then
+        tau1 = 1./tau
+      else
+        call warning('initialize_cosmicrayflux', &
+            'parameter tau was set to zero!')
+      endif
 !
 !     Reads shared diffusivities from the cosmicray module
 !
@@ -98,8 +103,8 @@ module Cosmicrayflux
         kpara_t = kpara
         kperp_t = kperp
       else
-        kpara_t = K_para/tau
-        kperp_t = K_perp/tau
+        kpara_t = K_para * tau1
+        kperp_t = K_perp * tau1
       endif
 !
       call keep_compiler_quiet(f)
