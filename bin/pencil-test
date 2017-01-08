@@ -140,14 +140,16 @@ my $use_build   = ($opts{'b'} || $opts{'use-pc_auto-test'} || '');
 
 my @auto_test_options = ();
 if (defined $opts{'W'}) {
-    my $atest_opts = $opts{'W'};
-    if ($atest_opts =~ /a,(.*)/) {
-        push @auto_test_options, split(/\s*,\s*/, $1);
+    if ($opts{'W'} =~ /^Wa,(.*)/) {
+        my $autotest_opts = $1;
+        $autotest_opts =~ s/^\'(.*)\'$/$1/s;
+        push @auto_test_options, split(/\s*,\s*/, $autotest_opts);
     } else {
-        die "Unknown option <-W$atest_opts>\n";
+        die "Unknown option <-".$opts{'W'}.">\n";
     }
 }
 if (defined $opts{'auto-test-options'}) {
+    $opts{'auto-test-options'} =~ s/^\'(.*)\'$/$1/s;
     push @auto_test_options, split(/\s*,\s*/, $opts{'auto-test-options'});
 }
 
