@@ -249,22 +249,55 @@ class __Simulation__(object):
         Args:
             - cleanall:     before calling pc_build, pc_build --cleanall is called
         """
+        import pencilnew as pcn
+        from os.path import join
+        
+        timestamp = pcn.io.timestamp()
+        
+        command = []
+        if cleanall: command.append('pc_build --cleanall')
+        command.append('pc_build')
+        
+        if verbose: print('! Compiling '+self.path)
+        return self.bash(command=command, 
+                         verbose=verbose,
+                         logfile=join(self.pc_dir, 'compilelog_'+timestamp))
+        
+    def bash(self, command, verbose=True, logfile=False):
+        """Executes command in simulation diredctory. 
+        This method will use your settings as defined in your .bashrc-file.
+        A log file will be produced within 'self.path/pc'-folder
+
+        Args:
+            - command:     command to be executed, can be a list of commands
+            - verbose:     show output afterwards
+        """
         import subprocess
         import pencilnew as pcn
         from os.path import join, realpath
 
         timestamp = pcn.io.timestamp()
         pcn.io.mkdir(self.pc_dir)
-        logfile = join(self.pc_dir, 'compiler_log_'+timestamp)
+        if not type(logfile) == type('string'):
+            logfile = join(self.pc_dir, 'bash_log_'+timestamp)
 
         commands = ['cd '+realpath(self.path)]
-        if cleanall: commands.append('pc_build --cleanall')
-        commands.append('pc_build')
+        #commands.append('source ~/.bashrc')
+        #commands.append('shopt -s expand_aliases')
+        
+        if type(command) == type(['list']):
+            for c in command:
+                commands.append(c)
+        elif type(command) == type('string'):
+            commands.append(command)
+        else:
+            print('! ERROR: Couldnt understand the command parameter: '+str(command))
 
         with open(logfile, 'w') as f:
-            p = subprocess.Popen(';'.join(commands), shell=True, universal_newlines=True, stdout=f, stderr=f)
-            p.wait()
-            rc = p.returncode
+            rc = subprocess.call(['/bin/bash', '-i', '-c', ';'.join(commands)], 
+                                 stdout=f, 
+                                 stderr=f
+                                 )
 
         if verbose:
             with open(logfile, 'r') as f: print(f.read())
@@ -272,7 +305,7 @@ class __Simulation__(object):
         if rc == 0:
             return True
         else:
-            print('! ERROR: Compiling ended with error code '+str(rc)+'!\n! Please check log file in')
+            print('! ERROR: Execution ended with error code '+str(rc)+'!\n! Please check log file in')
             print('! '+logfile)
             return rc
 
