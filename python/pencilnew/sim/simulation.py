@@ -75,7 +75,7 @@ class __Simulation__(object):
         self = self.update(quiet=quiet)                   # auto-update, i.e. read param.nml
         # Done
 
-    def copy(self, path_root, name=False, optionals=True, quiet=True, rename_submit_sripts=True, OVERWRITE=False):
+    def copy(self, path_root='.', name=False, optionals=True, quiet=True, rename_submit_sripts=True, OVERWRITE=False):
         """This method does a copy of the simulation object by creating a new directory 'name' in 'path_root' and copy all simulation components and optionals to his directory.
         This method neither links/compiles the simulation, nor creates data dir nor does overwrite anything.
 
@@ -104,9 +104,12 @@ class __Simulation__(object):
         path_root = abspath(path_root)          # simulation root dir
 
         # name and folder of new simulation
+        # but keep name of old if sim with old name is NOT existing in NEW directory
         if name == False:
-            name = self.name+'_copy'
-            print('? Warning: No name specified, will alter old simulation name to '+name)
+            name = self.name
+            if exists(join(path_root, self.name)):
+                name = name+'_copy'
+                print('? Warning: No name specified and simulation with that name already found! Will alter old simulation name to '+name)
         path_newsim = join(path_root, name)     # simulation abspath
         path_newsim_src = join(path_newsim, 'src')
 
