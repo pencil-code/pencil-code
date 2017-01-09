@@ -241,13 +241,15 @@ class __Simulation__(object):
         return exists(join(self.path, 'data', 'time_series.dat'))
 
 
-    def compile(self, cleanall=True, verbose=False):
+    def compile(self, cleanall=True, fast=False, verbose=False):
         """Compiles the simulation. Per default the linking is done before the
         compiling process is called. This method will use your settings as
         defined in your .bashrc-file.
 
         Args:
-            - cleanall:     before calling pc_build, pc_build --cleanall is called
+            cleanall:     before calling pc_build, pc_build --cleanall is called
+            verbose:      activate for verbosity
+            fast:         set True for fast compilation
         """
         import pencilnew as pcn
         from os.path import join
@@ -256,7 +258,10 @@ class __Simulation__(object):
         
         command = []
         if cleanall: command.append('pc_build --cleanall')
-        command.append('pc_build')
+        if fast == True:
+            command.append('pc_build --fast')
+        else:
+            command.append('pc_build')
         
         if verbose: print('! Compiling '+self.path)
         return self.bash(command=command, 
