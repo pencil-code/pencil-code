@@ -198,7 +198,7 @@ pro pc_radial_profile_draw
 
 	; plot profile mean value
 	if (plot_style ge 3) then psym = 3 else psym = 0
-	plot, coords.r, prof, xlog=log_plot, xs=3, ys=1, xr=get_val_range (r_range), yr=range, psym=psym, title=prof_name, xtitle=a_label, ytitle=r_label
+	plot, coords.r, prof, ylog=log_plot, xs=3, ys=1, xr=get_val_range (r_range), yr=range, psym=psym, title=prof_name, xtitle=a_label, ytitle=r_label
 	if (show_line) then oplot, [0.0, 0.0], minmax (prof), linestyle=1, color=20020
 	if (plot_style le 2) then oplot, coords.r, prof
 	if (plot_style gt 0) then begin
