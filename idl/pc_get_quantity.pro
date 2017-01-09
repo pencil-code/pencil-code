@@ -178,6 +178,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 			end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
 				Temp = vars[gl1:gl2,gm1:gm2,gn1:gn2,index.TT] * unit.temperature
 			end else if (any (strcmp (sources, 'ss', /fold_case))) then begin
+				cp = pc_get_parameter ('cp', label=quantity)
 				cp_SI = pc_get_parameter ('cp_SI', label=quantity)
 				cs0 = pc_get_parameter ('cs0', label=quantity)
 				gamma = pc_get_parameter ('gamma', label=quantity)
@@ -214,6 +215,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
 			return, alog10 (vars[gl1:gl2,gm1:gm2,gn1:gn2,index.TT]) + alog10 (unit.temperature)
 		end else if (any (strcmp (sources, 'ss', /fold_case))) then begin
+			cp = pc_get_parameter ('cp', label=quantity)
 			cp_SI = pc_get_parameter ('cp_SI', label=quantity)
 			cs0 = pc_get_parameter ('cs0', label=quantity)
 			gamma = pc_get_parameter ('gamma', label=quantity)
@@ -232,6 +234,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
 			return, alog (vars[gl1:gl2,gm1:gm2,gn1:gn2,index.TT]) + alog (unit.temperature)
 		end else if (any (strcmp (sources, 'ss', /fold_case))) then begin
+			cp = pc_get_parameter ('cp', label=quantity)
 			cp_SI = pc_get_parameter ('cp_SI', label=quantity)
 			cs0 = pc_get_parameter ('cs0', label=quantity)
 			gamma = pc_get_parameter ('gamma', label=quantity)
@@ -300,7 +303,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	end
 	if (strcmp (quantity, 'Spitzer_dt', /fold_case)) then begin
 		; Spitzer heat flux timestep [s]
-		cp = pc_get_parameter ('cp', label=quantity) * (unit.velocity^2 / unit.temperature)
+		cp_SI = pc_get_parameter ('cp_SI', label=quantity)
 		gamma = pc_get_parameter ('gamma', label=quantity)
 		cdtv = pc_get_parameter ('cdtv', label=quantity)
 		if (n_elements (bb) eq 0) then bb = pc_compute_quantity (vars, index, 'B')
@@ -313,7 +316,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
 			grad_ln_Temp = (grad (alog (vars[*,*,*,index.TT])))[l1:l2,m1:m2,n1:n2,*]
 		end
-		dt = cdtv / (gamma * cp * Spitzer_K_parallel) * rho * B_2 * sqrt (dot2 (grad_ln_Temp)) / (Temp^2.5 * abs (dot (bb, grad_ln_Temp)))
+		dt = cdtv / (gamma * cp_SI * Spitzer_K_parallel) * rho * B_2 * sqrt (dot2 (grad_ln_Temp)) / (Temp^2.5 * abs (dot (bb, grad_ln_Temp)))
 		; Iterate through the z-direction
 		dx_inv = pc_compute_quantity (vars, index, 'inv_dx')
 		dy_inv = pc_compute_quantity (vars, index, 'inv_dy')
@@ -430,23 +433,23 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 
 	if (strcmp (quantity, 'P_therm', /fold_case)) then begin
 		; Thermal pressure [N / m^2]
-		cp = pc_get_parameter ('cp', label=quantity) * (unit.velocity^2 / unit.temperature)
+		cp_SI = pc_get_parameter ('cp_SI', label=quantity)
 		gamma = pc_get_parameter ('gamma', label=quantity)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho', ghost=ghost)
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp', ghost=ghost)
-		if (n_elements (P_therm) eq 0) then P_therm = cp * (gamma - 1.0) / gamma * rho * Temp
+		if (n_elements (P_therm) eq 0) then P_therm = cp_SI * (gamma - 1.0) / gamma * rho * Temp
 		return, P_therm
 	end
 	if (strcmp (quantity, 'grad_P_therm', /fold_case)) then begin
 		; Gradient of thermal pressure
-		cp = pc_get_parameter ('cp', label=quantity) * (unit.velocity^2 / unit.temperature)
+		cp_SI = pc_get_parameter ('cp_SI', label=quantity)
 		gamma = pc_get_parameter ('gamma', label=quantity)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp')
 		if (n_elements (grad_rho) eq 0) then grad_rho = pc_compute_quantity (vars, index, 'grad_rho')
 		if (n_elements (grad_Temp) eq 0) then grad_Temp = pc_compute_quantity (vars, index, 'grad_Temp')
 		if (n_elements (grad_P_therm) eq 0) then begin
-			fact = cp * (gamma - 1.0) / gamma
+			fact = cp_SI * (gamma - 1.0) / gamma
 			grad_P_therm = grad_rho
 			for pa = 0, 2 do grad_P_therm[*,*,*,pa] = fact * (grad_rho[*,*,*,pa] * Temp + rho * grad_Temp[*,*,*,pa])
 		end
