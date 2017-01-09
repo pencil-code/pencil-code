@@ -178,8 +178,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 			end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
 				Temp = vars[gl1:gl2,gm1:gm2,gn1:gn2,index.TT] * unit.temperature
 			end else if (any (strcmp (sources, 'ss', /fold_case))) then begin
-				cp = pc_get_parameter ('cp', label=quantity)
-				cp_SI = cp * (unit.velocity^2 / unit.temperature)
+				cp_SI = pc_get_parameter ('cp_SI', label=quantity)
 				cs0 = pc_get_parameter ('cs0', label=quantity)
 				gamma = pc_get_parameter ('gamma', label=quantity)
 				if (gamma eq 1.0) then tmp = 1.0 else tmp = gamma - 1.0
@@ -215,8 +214,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
 			return, alog10 (vars[gl1:gl2,gm1:gm2,gn1:gn2,index.TT]) + alog10 (unit.temperature)
 		end else if (any (strcmp (sources, 'ss', /fold_case))) then begin
-			cp = pc_get_parameter ('cp', label=quantity)
-			cp_SI = cp * (unit.velocity^2 / unit.temperature)
+			cp_SI = pc_get_parameter ('cp_SI', label=quantity)
 			cs0 = pc_get_parameter ('cs0', label=quantity)
 			gamma = pc_get_parameter ('gamma', label=quantity)
 			if (gamma eq 1.0) then tmp = 1.0 else tmp = gamma - 1.0
@@ -234,8 +232,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
 			return, alog (vars[gl1:gl2,gm1:gm2,gn1:gn2,index.TT]) + alog (unit.temperature)
 		end else if (any (strcmp (sources, 'ss', /fold_case))) then begin
-			cp = pc_get_parameter ('cp', label=quantity)
-			cp_SI = cp * (unit.velocity^2 / unit.temperature)
+			cp_SI = pc_get_parameter ('cp_SI', label=quantity)
 			cs0 = pc_get_parameter ('cs0', label=quantity)
 			gamma = pc_get_parameter ('gamma', label=quantity)
 			if (gamma eq 1.0) then tmp = 1.0 else tmp = gamma - 1.0
