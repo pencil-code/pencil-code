@@ -2243,10 +2243,20 @@ module Particles
       endif
 !
       if (lbirthring_depletion) then
+        if (lcartesian_coords) then    
+         rr_tmp(1:npar_loc) = sqrt(fp(1:npar_loc,ixp)**2.0+fp(1:npar_loc,iyp)**2.0)
+        else
+         rr_tmp(1:npar_loc) = fp(1:npar_loc,ixp)
+        endif
         do k=1,npar_loc
-          if ((fp(k,ixp) .ge. birthring_r-birthring_width) .and. &
-          (fp(k,ixp) .le. birthring_r+birthring_width)) &
-            fp(k,ibrtime) = fp(k,ibrtime)+dt
+          if (lgaussian_birthring) then
+             fp(k,ibrtime) = fp(k,ibrtime) + &
+             dt*exp(-((rr_tmp(k)-birthring_r)**2.0)/(2.0*birthring_width**2.0))
+          else
+           if ((rr_tmp(k) .ge. birthring_r-birthring_width) .and. &
+           (rr_tmp(k) .le. birthring_r+birthring_width)) &
+             fp(k,ibrtime) = fp(k,ibrtime)+dt
+          endif
           if (fp(k,ibrtime) .ge. birthring_lifetime) &
             call remove_particle(fp,ipar,k)
         enddo
