@@ -53,6 +53,7 @@ function pc_derive_quantity, derivative, quantity, vars, index, varfile=varfile,
 
 	derivative = strtrim (derivative, 2)
 	num_derivatives = strlen (derivative)
+	if (derivative eq 'grad') then num_derivatives = 1
 	if ((num_derivatives lt 1) or (num_derivatives gt 2)) then message, "pc_derive_quantity: can only compute first and second derivatives."
 
 	unit_length = pc_get_parameter ('unit_length', label=label, dim=dim, datadir=datadir, start_param=start_param, run_param=run_param)
@@ -76,9 +77,9 @@ function pc_derive_quantity, derivative, quantity, vars, index, varfile=varfile,
 	end
 
 	case (derivative) of
-		'x':  result *= (xder     (quantity))[l1:l2,m1:m2,n1:n2]
-		'y':  result *= (yder     (quantity))[l1:l2,m1:m2,n1:n2]
-		'z':  result *= (zder     (quantity))[l1:l2,m1:m2,n1:n2]
+		'x': result *= (xder (quantity))[l1:l2,m1:m2,n1:n2]
+		'y': result *= (yder (quantity))[l1:l2,m1:m2,n1:n2]
+		'z': result *= (zder (quantity))[l1:l2,m1:m2,n1:n2]
 		'xx': result *= (xder2    (quantity))[l1:l2,m1:m2,n1:n2]
 		'xy': result *= (xderyder (quantity))[l1:l2,m1:m2,n1:n2]
 		'xz': result *= (xderzder (quantity))[l1:l2,m1:m2,n1:n2]
@@ -88,6 +89,7 @@ function pc_derive_quantity, derivative, quantity, vars, index, varfile=varfile,
 		'zx': result *= (zderxder (quantity))[l1:l2,m1:m2,n1:n2]
 		'zy': result *= (zderyder (quantity))[l1:l2,m1:m2,n1:n2]
 		'zz': result *= (zder2    (quantity))[l1:l2,m1:m2,n1:n2]
+		'grad': result *= (grad (quantity))[l1:l2,m1:m2,n1:n2,*]
 		else: message, "pc_derive_quantity: derivative '"+derivative+"' is unknown."
 	endcase
 
