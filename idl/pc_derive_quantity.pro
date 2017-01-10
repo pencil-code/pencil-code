@@ -53,7 +53,7 @@ function pc_derive_quantity, derivative, quantity, vars, index, varfile=varfile,
 
 	derivative = strtrim (derivative, 2)
 	num_derivatives = strlen (derivative)
-	high_level = [ 'grad', 'curl', 'delta', 'laplace' ]
+	high_level = [ 'div', 'grad', 'curl', 'delta', 'laplace' ]
 	if (any (strcmp (derivative, high_level, /fold_case))) then num_derivatives = 1
 	if ((num_derivatives lt 1) or (num_derivatives gt 2)) then message, "pc_derive_quantity: can only compute first and second derivatives."
 
@@ -90,6 +90,7 @@ function pc_derive_quantity, derivative, quantity, vars, index, varfile=varfile,
 		'zx': result *= (zderxder (quantity))[l1:l2,m1:m2,n1:n2]
 		'zy': result *= (zderyder (quantity))[l1:l2,m1:m2,n1:n2]
 		'zz': result *= (zder2    (quantity))[l1:l2,m1:m2,n1:n2]
+		'div': result *= (div (quantity))[l1:l2,m1:m2,n1:n2]
 		'grad': result *= (grad (quantity))[l1:l2,m1:m2,n1:n2,*]
 		'curl': result *= (curl (quantity))[l1:l2,m1:m2,n1:n2,*]
 		'delta': result *= (del2 (quantity))[l1:l2,m1:m2,n1:n2]
