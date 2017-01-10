@@ -1242,9 +1242,7 @@ module Particles_main
                   case ('sphere')
                       k=1
                       do while (k <= npar_loc)
-                          print*, 'k=', k
                           rp = sqrt(fp(k,ixp)**2 + fp(k,iyp)**2 + fp(k,izp)**2)
-                          print*, 'sqrt( x**2 + y**2 + z**2 ) = ', rp
                           if ( rp > remove_particle_criteria_size) then
                               call remove_particle(fp,ipar,k,dfp,ineargrid)
                           else
@@ -1256,9 +1254,7 @@ module Particles_main
                   case ('xycylinder')
                       k=1
                       do while (k<=npar_loc)
-                          print*, 'k=', k
                           rp = sqrt(fp(k,ixp)**2 + fp(k,iyp)**2)
-                          print*, 'sqrt( x**2 + y**2 ) = ', rp
                           if ( rp > remove_particle_criteria_size ) then
                               call remove_particle(fp,ipar,k,dfp,ineargrid)
                           else
