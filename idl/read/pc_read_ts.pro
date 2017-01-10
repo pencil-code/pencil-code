@@ -37,9 +37,8 @@ COMPILE_OPT IDL2,HIDDEN
 ; obsoleted after 5.2..), so we do this manually:
 ;
   while (line ne '') do begin
-    repeat begin
-      line = strmid(line,1)     ; remove first character
-    endrep until (strmid(line,0,1) ne '-')
+    while (strmid(line,0,1) eq '-') do $
+      line = strmid(line,1)               ; remove leading '-'
     endlb = strpos(line,'-')
     labels = [labels, strmid(line,0,endlb)]
     line = strmid(line,endlb)
@@ -157,6 +156,7 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 ; Check for existence and read the data
   if (file_test(fullfilename)) then begin
+
     if ( not keyword_set(QUIET) ) THEN print, 'Reading ' + fullfilename + '...'
     openr, file, fullfilename
     line = ''
@@ -167,13 +167,17 @@ COMPILE_OPT IDL2,HIDDEN
       hashpos2 = strpos(line,'%')
       if hashpos2 gt hashpos then hashpos=hashpos2
       ;; identify header line as / *#--/
-    endrep until ((hashpos ge 0) and (strmid(line,hashpos+1,2) eq '--'))
+      marker=strmid(line,hashpos+1,2)
+    endrep until ((hashpos ge 0) and (stregex(marker,'[-a-zA-Z][-a-zA-Z]',/bool) or stregex(marker,'[a-zA-Z][a-zA-Z0-9_]',/bool)))
+
     point_lun,-file,fileposition
     close,file
     free_lun,file
+
   end else begin
-    free_lun,file
+    free_lun, file
     message, 'ERROR: cannot find file ' + fullfilename
+    return
   endelse
 ;
 ;  Read table.
@@ -183,12 +187,13 @@ COMPILE_OPT IDL2,HIDDEN
   full_labels=''
 
   while (fileposition ne -1) do begin
+
     labels = parse_tsheader(newheader)
     ncols = n_elements(labels)
-    newheader='^#--'
+    newheader=['^#[-a-zA-Z_][-a-zA-Z_]','^#[a-zA-Z][a-zA-Z0-9_]']
  
-    data = input_table(fullfilename,double=double,  $
-           stop_at=newheader,fileposition=fileposition,verbose=verbose,inds_compl=inds_compl)
+    data = input_table(fullfilename,double=double, stop_at=newheader, $
+           fileposition=fileposition,verbose=verbose,inds_compl=inds_compl,/tightminus)
 
     if inds_compl[0] ne -1 then begin
 ;
@@ -212,9 +217,8 @@ COMPILE_OPT IDL2,HIDDEN
       
     endif
  
-    if ((size(data))[1] ne ncols) then begin
+    if ((size(data))[1] ne ncols) then $
       message, /INFO, 'Inconsistency: label number different from column number'
-    endif
 ;
 ;  Merge read data into full data set.
 ;
@@ -238,9 +242,8 @@ COMPILE_OPT IDL2,HIDDEN
 
           full_labels[old_ncols]=labels[i]
           col_index[i]=old_ncols
-        endif else begin
+        endif else $
           col_index[i]=list_idx(labels[i],full_labels)
-        endelse
       endfor
          
       old_ncols=(size(full_data))[1]
@@ -262,9 +265,9 @@ COMPILE_OPT IDL2,HIDDEN
       full_data[0:old_ncols-1,0:old_nrows-1] = old_full_data[0:old_ncols-1,0:old_nrows-1]
       old_full_data=0.          ; Clear the allocated memory 
     
-      for i=0,ncols-1 do begin
+      for i=0,ncols-1 do $
         full_data[col_index[i],old_nrows:new_nrows-1]=data[i,*]
-      endfor   
+
     endelse
   endwhile
 ;
@@ -283,9 +286,9 @@ COMPILE_OPT IDL2,HIDDEN
       full_data[*,*] = 0.
     endelse
     for i=0,sz[2]-movingaverage do begin
-      for j=0,movingaverage-1 do begin
+      for j=0,movingaverage-1 do $
         full_data[*,i]=full_data[*,i]+original_data[*,i+j]
-      endfor
+
       full_data[*,i]=full_data[*,i]/(1D*movingaverage)
     endfor
   endif
@@ -302,9 +305,8 @@ COMPILE_OPT IDL2,HIDDEN
     endif
     ii=monotone_array(reform(full_data[itt,*]))
     ii=njump*ii[lindgen(n_elements(ii)/njump)]
-  endif else begin
+  endif else $
     ii=njump*lindgen(n_elements(full_data[0,*])/njump)
-  endelse
 ;
 ;  Only read in first occurrence of a diagnostic variable.
 ;

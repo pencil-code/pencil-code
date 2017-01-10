@@ -13,6 +13,9 @@
 ;;; 03/10/2013 - MR:
 ;;;   Added detection of complex quantities in output, new output parameter
 ;;;   for their positions in line
+;;; 10/01/2017 - MR:
+;;;   Added keyword parameter SEPMINUS.
+;;;   Allowed STOP_AT to be an array of regular expressions.
 ;;;
 ;;; Usage:
 ;;;   IDL> data = input_table(FILE)
@@ -49,6 +52,7 @@
 ;;;                   the file was reached.
 ;;;  INDS_COMPL    -- returns list of positions of complex quantities in line 
 ;;;                   (detected by opening bracket); = [-1] if none are present
+;;;  SEPMINUS      -- minus sign of a numeral allowed to separate columns (e.g. .123E+00-.456E+00 would be read as two quantities)
 ;;;
 ;;; Note:
 ;;;   INPUT_TABLE relies on a quadrangular layout of the data, i.e.
@@ -57,10 +61,10 @@
 ;;;
 
 function input_table, filename, $
-                      STOP_AT=stop_AT, FILEPOSITION=fileposition, $
+                      STOP_AT=stop_at, FILEPOSITION=fileposition, $
                       COMMENT_CHAR=cchar, DOUBLE=double, $
                       NOFILE_OK=nofile_ok, VERBOSE=verb, $
-                      HELP=help, INDS_COMPL=inds_compl
+                      HELP=help, INDS_COMPL=inds_compl, SEPMINUS=sepminus
   ;on_error,2
 
   if (keyword_set(help)) then extract_help, 'input_table'
@@ -114,41 +118,53 @@ function input_table, filename, $
   idat = 0L                     ; datum number (iline - # comment lines)
   clen = strlen(cchar)
 
-  slen = -1
-  
-  if (keyword_set(stop_at)) then begin
-    slen = strlen(stop_at)
-  endif 
-
   success = 0
   on_ioerror, read_err            ; Catch read errors
 
-  if (keyword_set(fileposition)) then begin
-    point_lun, in_file, fileposition
-    iline = fileposition
-  endif
-  fileposition=-1 
+  if (keyword_set(fileposition)) then point_lun, in_file, fileposition
   found_stop=0
+
   while ((not eof(in_file)) and (idat lt N_lines) $
                             and (not found_stop)) do begin
     readf, in_file, line
 
-    if (slen gt 0) then begin
-        if (stregex(line,STOP_AT,/BOOLEAN)) then begin
-          point_lun,-in_file,fileposition ; Save file position
-          stop_at=line                    ; Return the line
-          found_stop=-1                   ; Exit the loop
-          if (verb) then begin
-            print, 'Found stop regexp at'
-            print, '  position ', strtrim(fileposition,2)
-            print, '  line no. ', strtrim(iline,2), ' (starting from 0)'
-            print, '  line = <'+line+'>'
-          endif
-        endif
+    if (keyword_set(fileposition)) then $
+      if (fileposition ne -1) then begin
+        iline = round(fileposition/strlen(line))
+        fileposition=-1 
       endif
+
+    if keyword_set(stop_at) then begin
+
+      stopit=0
+      for i=0,n_elements(stop_at)-1 do $
+        if strlen(stop_at(i)) gt 0 then stopit += stregex(line,stop_at(i),/BOOLEAN)
+
+      if (stopit gt 0) then begin
+
+        point_lun,-in_file,fileposition ; Save file position
+        stop_at=line                    ; Return the line
+        found_stop=-1                   ; Exit the loop
+        if (verb) then begin
+          print, 'Found stop regexp at'
+          print, '  position ', strtrim(fileposition,2)
+          print, '  line no. ', strtrim(iline,2), ' (starting from 0)'
+          print, '  line = <'+line+'>'
+        endif
+
+      endif
+    endif
+
     is_comm = (strmid(line,0,clen) eq cchar or strmid(line,0,clen) eq cchar2)
 
     if (not is_comm) then begin
+
+      if keyword_set(sepminus) then begin
+        inds_fields=strsplit(line,'[0-9]-',length=len,/REGEX,/PRESERVE_NULL)
+        for i=n_elements(inds_fields)-1,1,-1 do $
+          line = strmid(line,0,inds_fields(i)-1)+' '+strmid(line,inds_fields(i)-1)
+      endif
+
       ;; If this is first data line, determine number of columns
       if (N_cols eq 0) then begin
 
@@ -178,7 +194,7 @@ function input_table, filename, $
   
         if (verb) then begin
           print, FORMAT= $
-    '("Found ", I0, " column", A, " and ",I0 , " line", A, " in file ", A)', $
+              '("Found ", I0, " column", A, " and ",I0 , " line", A, " in file ", A)', $
               N_cols, plural(N_cols eq 1), $
               N_lines, plural(N_lines eq 1), $
               filename
