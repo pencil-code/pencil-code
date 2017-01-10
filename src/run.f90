@@ -322,10 +322,10 @@ program run
     print*, 'Lx, Ly, Lz=', Lxyz
     call box_vol
     if (lyinyang) then
-     print*, '      Vbox(Yin,Yang)=', box_volume
-     print*, '      total volume  =', 4./3.*pi*(xyz1(1)**3-xyz0(1)**3)
+      print*, '      Vbox(Yin,Yang)=', box_volume
+      print*, '      total volume  =', 4./3.*pi*(xyz1(1)**3-xyz0(1)**3)
     else
-     print*, '      Vbox=', box_volume
+      print*, '      Vbox=', box_volume
     endif
   endif
 !

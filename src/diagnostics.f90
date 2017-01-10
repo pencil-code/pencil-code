@@ -285,8 +285,9 @@ module Diagnostics
     subroutine gen_form_legend(fform,legend)
 !
 !  19-aug-13/MR: outsourced from prints
+!  10-jan-17/MR: added adjustment of fixed point format to output value
 !
-      use General, only: safe_character_append
+      use General, only: safe_character_append, itoa
       use Sub, only: noform
 !
       character (len=640)          ,intent(OUT) :: fform
@@ -294,8 +295,9 @@ module Diagnostics
 !
       character, parameter :: comma=','
       character(len=40)    :: tform
-      integer              :: iname
+      integer              :: iname, index_i, index_d, length
       logical              :: lcompl
+      real                 :: rlength
 !
 !  Produce the format.
 !
@@ -310,7 +312,21 @@ module Diagnostics
             tform = comma//'" ("'//comma//trim(cform(iname))//comma &
               //'","'//comma//trim(cform(iname))//comma//'")"'
           else
+!
+!  Check format on output for fixed-point formats.
+!
+            index_i=scan(cform(iname),'fF')
+            if (index_i>0) then
+              read(cform(iname)(index_i+1:),*) rlength
+              if (floor(alog10(fname(iname)))+2 > rlength) then
+                index_d=index(cform(iname),'.')
+                length=len(trim(cform(iname)))
+                write(cform(iname)(index_i+1:),'(f'//trim(itoa(length-index_i))//'.'//trim(itoa(length-index_d))//')') rlength+2
+              endif
+            endif
+
             tform = comma//trim(cform(iname))
+
           endif
           call safe_character_append(fform, trim(tform))
           if (present(legend)) call safe_character_append(legend, noform(cname(iname),lcompl))
@@ -1262,13 +1278,15 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !  26-feb-13/MR  : prepared for ignoring multiple occurrences of
 !                  diagnostics in print.in
 !  26-aug-13/MR  : removed unneeded 0p setting in format, added handling of D formats
-!  27-aug13/MR   : reinstated 0p
+!  27-aug-13/MR  : reinstated 0p
+!  10-jan-17/MR  : added correction of floating-point formats if not sufficient to hold sign
 !
-      use General, only: safe_character_assign
+      use General, only: safe_character_assign, itoa
 !
       character (len=*) :: cname,cform
       character (len=*) :: ctest
-      integer :: iname,itest,iform0,iform1,iform2,length,index_i
+      integer :: iname,itest,iform0,iform1,iform2,length,index_i,iwidth,idecs,idiff
+      real :: rlength
 !
       intent(in)    :: iname,cname,ctest
       intent(inout) :: itest
@@ -1289,13 +1307,27 @@ if (ios/=0) print*, 'ios, i=', ios, i
         cform='1pE10.2'
         length=iform0-1
       endif
+
+      if (scan(cform(1:1), 'eEdDgG')==1) then 
+!
+!  Increase d in [ED]w.d if insufficient to hold a sign.
+!
+        if (scan(cform(1:1), "eEdD")==1) then
+
+          index_i=index(cform,'.')
+          read(cform(2:index_i-1),*) iwidth
+          read(cform(index_i+1:),*) idecs
+          idiff=iwidth-idecs-7
+          if (idiff<0) &
+            cform=cform(1:1)//trim(itoa(iwidth-idiff))//cform(index_i:)           
+
+        endif
 !
 !  Fix annoying Fortran 1p stuff ([EDG]w.d --> 1p[EDG]w.d).
 !
-      if ((cform(1:1) == 'e') .or. (cform(1:1) == 'E') .or. &
-          (cform(1:1) == 'd') .or. (cform(1:1) == 'D') .or. &
-          (cform(1:1) == 'g') .or. (cform(1:1) == 'G'))     &
         call safe_character_assign(cform, '1p'//trim(cform)//',0p')
+        
+      endif
 !
 !  If the name matches, we keep the name and can strip off the format.
 !  The remaining name can then be used for the legend.
@@ -1313,10 +1345,9 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
 !  Integer formats are turned into floating point numbers.
 !
-      index_i=index(cform,'i')
-      if (index_i==0) index_i=index(cform,'I')
+      index_i=scan(cform,'iI',.true.)
 
-      if (index_i/=0) then
+      if (index_i>0) then
         cform(index_i:index_i)='f'
         cform=trim(cform)//'.0'
       endif

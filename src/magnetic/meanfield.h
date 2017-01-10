@@ -13,3 +13,4 @@
   public :: read_magn_mf_run_pars, write_magn_mf_run_pars
   public :: rprint_magn_mf
 !- public :: meanfield_chitB
+  public :: pc_aasb_const_alpha

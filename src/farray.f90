@@ -144,7 +144,7 @@ module FArrayManager
       intent(out) :: ivar,ierr
 !
       if (loptest(communicated)) then
-        vartype=iFARRAY_TYPE_COMM_AUXILIARY
+        vartype = iFARRAY_TYPE_COMM_AUXILIARY
       else
         vartype = iFARRAY_TYPE_AUXILIARY
       endif

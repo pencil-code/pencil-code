@@ -913,7 +913,7 @@ module General
       integer, intent(in) :: n
 !
       write (itoa, '(I21)') n   ! (64 bit integer plus sign)
-      itoa = adjustl (itoa)
+      itoa = adjustl(itoa)
 !
     endfunction itoa
 !***********************************************************************
@@ -4555,7 +4555,7 @@ module General
       ladd  =present(add)
 
       do i=1,size(x,1); do j=1,size(x,2)
-        it=0
+        it=0;  fXi=fmax_
         do while (abs(fXi)>=fmax_)
 !  
           call func(x(i,j),fXi,dfdXi)

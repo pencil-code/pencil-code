@@ -4494,7 +4494,7 @@ module Energy
         if (idiag_fradz_kramers/=0) call xysum_mn_name_z(-Krho1*p%TT*p%glnTT(:,3),idiag_fradz_kramers)
         call xysum_mn_name_z( Krho1, idiag_Kkramersmz)
         call yzsum_mn_name_x( Krho1, idiag_Kkramersmx)
-        call yzsum_mn_name_x(-Krho1*p%rho*p%TT*p%glnTT(:,1),idiag_fradx_kramers)
+        if (idiag_fradx_kramers/=0) call yzsum_mn_name_x(-Krho1*p%rho*p%TT*p%glnTT(:,1),idiag_fradx_kramers)
       endif
 !
 !  2d-averages

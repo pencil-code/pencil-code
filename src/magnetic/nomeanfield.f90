@@ -141,5 +141,17 @@ module Magnetic_meanfield
 !
     endsubroutine rprint_magn_mf
 !***********************************************************************
+    subroutine pc_aasb_const_alpha(f,topbot,j)
+
+    real, dimension(:,:,:,:) :: f
+    integer :: j
+    character (LEN=*) :: topbot
+
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(topbot)
+      call keep_compiler_quiet(j)
+
+    endsubroutine pc_aasb_const_alpha
+!***********************************************************************
 endmodule Magnetic_meanfield
 

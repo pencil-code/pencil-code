@@ -10,7 +10,7 @@ module Boundcond
   use Cparam
   use Messages
   use Mpicomm
-  use Deriv, only: set_ghosts_for_onesided_ders, bval_from_neumann
+  use Deriv, only: set_ghosts_for_onesided_ders, bval_from_neumann, bval_from_3rd
 !
   implicit none
 !
@@ -293,7 +293,7 @@ module Boundcond
                   ! BCX_DOC: onesided
                   call set_ghosts_for_onesided_ders(f,topbot,j,1)
                 case ('d1s')
-                  ! BCX_DOC: onesided for 1st derivative in two first inner points, Dirichlet in boundary point
+                  ! BCX_DOC: onesided for 1st/2nd derivative in two first inner points, Dirichlet in boundary point
                   if (k==1) then
                     f(l1,:,:,j) = fbcx(j,k)
                   else
@@ -301,7 +301,7 @@ module Boundcond
                   endif
                   call set_ghosts_for_onesided_ders(f,topbot,j,1,.true.)
                 case ('n1s')
-                  ! BCX_DOC: onesided for 1st derivative in two first inner points, Neumann in boundary point
+                  ! BCX_DOC: onesided for 1st/2nd derivative in two first inner points, Neumann in boundary point
                   call bval_from_neumann(f,topbot,j,1,fbcx(j,k))
                   call set_ghosts_for_onesided_ders(f,topbot,j,1,.true.)
                 case ('1so')
@@ -423,6 +423,11 @@ module Boundcond
                   ! BCX_DOC: Normal-field bc for spherical coordinate system.
                   ! BCX_DOC: Some people call this the ``(angry) hedgehog bc''.
                   call bc_set_nfr_x(f,topbot,j)
+                case ('nr1')
+                  ! BCX_DOC: Normal-field bc for spherical coordinate system.
+                  ! BCX_DOC: Some people call this the ``(angry) hedgehog bc''.
+                  ! BCX_DOC: Implementation with one-sided derivative.
+                  call bc_set_nr1_x(f,topbot,j)
                 case ('sa2')
                   ! BCX_DOC: $(d/dr)(r B_{\phi}) = 0$ imposes
                   ! BCX_DOC: boundary condition on 2nd derivative of
@@ -440,7 +445,7 @@ module Boundcond
                   ! BCX_DOC: set boundary value from a file
                   call bc_file_x(f,topbot,j)
                 case ('cfb')
-                  ! BCZ_DOC: radial centrifugal balance
+                  ! BCX_DOC: radial centrifugal balance
                   if (lcylindrical_coords) then
                     call bc_lnrho_cfb_r_iso(f,topbot)
                   else
@@ -599,7 +604,7 @@ module Boundcond
                 ! BCY_DOC: onesided
                 call set_ghosts_for_onesided_ders(f,topbot,j,2)
               case ('d1s')
-                ! BCY_DOC: onesided for 1st derivative in two first inner points, Dirichlet in boundary point
+                ! BCY_DOC: onesided for 1st and 2nd derivative in two first inner points, Dirichlet in boundary point
                 if (k==1) then
                   f(:,m1,:,j) = fbcy(j,k)
                 else
@@ -607,7 +612,7 @@ module Boundcond
                 endif
                 call set_ghosts_for_onesided_ders(f,topbot,j,2,.true.)
               case ('n1s')
-                ! BCY_DOC: onesided for 1st derivative in two first inner points, Neumann in boundary point
+                ! BCY_DOC: onesided for 1st and 2nd derivative in two first inner points, Neumann in boundary point
                 call bval_from_neumann(f,topbot,j,2,fbcy(j,k))
                 call set_ghosts_for_onesided_ders(f,topbot,j,2,.true.)
               case ('cT')
@@ -639,11 +644,11 @@ module Boundcond
                 !  keep the gradient frozen as well
                 call bc_freeze_var_y(topbot,j)
               case ('fBs')
-                ! BCZ_DOC: frozen-in B-field (s)
+                ! BCY_DOC: frozen-in B-field (s)
                 call bc_frozen_in_bb(topbot,j)
                 call bc_sym_y(f,+1,topbot,j) ! symmetry
               case ('fB')
-                ! BCZ_DOC: frozen-in B-field (a2)
+                ! BCY_DOC: frozen-in B-field (a2)
                 call bc_frozen_in_bb(topbot,j)
                 !call bc_sym_z(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
 !AB: wasn't this a mistake??
@@ -740,10 +745,12 @@ module Boundcond
 !  02-apr-13/MR  : added new boundary condition 'fs' = frozen boundary value
 !                  + symmetry about boundary; added 'fa' for alternative reference to
 !                  already existing freezing condition (includes antisymmetry)
+!  30-dec-16/MR: added BC 'a1s' for constant alpha mean-field model in one dimension
 !
       use General, only: var_is_vec
       use Special, only: special_boundconds
       use EquationOfState
+      use Magnetic_meanfield, only: pc_aasb_const_alpha
 !
       real, dimension (:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
@@ -831,7 +838,7 @@ module Boundcond
                 ! BCZ_DOC: one-sided
                 call set_ghosts_for_onesided_ders(f,topbot,j,3)
               case ('d1s')
-                ! BCZ_DOC: onesided for 1st derivative in two first inner points, Dirichlet in boundary point
+                ! BCZ_DOC: onesided for 1st and 2nd derivative in two first inner points, Dirichlet in boundary point
                 if (k==1) then
                   f(:,:,n1,j) = fbcz(j,k)
                 else
@@ -839,8 +846,12 @@ module Boundcond
                 endif
                 call set_ghosts_for_onesided_ders(f,topbot,j,3,.true.)
               case ('n1s')
-                ! BCZ_DOC: onesided for 1st derivative in two first inner points, Neumann in boundary point
+                ! BCZ_DOC: onesided for 1st and 2nd derivative in two first inner points, Neumann in boundary point
                 call bval_from_neumann(f,topbot,j,3,fbcz(j,k))
+                call set_ghosts_for_onesided_ders(f,topbot,j,3,.true.)
+              case ('a1s')
+                ! BCZ_DOC: special for perfect conductor with const alpha and etaT when A considered as B; one-sided for 1st and 2nd derivative in two first inner points
+                call pc_aasb_const_alpha(f,topbot,j)
                 call set_ghosts_for_onesided_ders(f,topbot,j,3,.true.)
               case ('fg')
                 ! BCZ_DOC: ``freeze'' value, i.e. maintain initial
@@ -2964,6 +2975,26 @@ module Boundcond
       endselect
 !
     endsubroutine bc_set_nfr_x
+!***********************************************************************
+    subroutine bc_set_nr1_x(f,topbot,j)
+!
+!  Normal-field (or angry-hedgehog) boundary condition for spherical
+!  coordinate system.
+!  d_r(A_{\theta}) = -A_{\theta}/r  with A_r = 0 sets B_{r} to zero
+!  in spherical coordinate system.
+!  Implementation with one-sided derivative.
+!
+!  13-Dec-2016/MR: coded
+!
+      character (len=bclen), intent (in) :: topbot
+      real, dimension (:,:,:,:), intent (inout) :: f
+      integer, intent (in) :: j
+      integer :: k
+!
+      call bval_from_3rd(f,topbot,j,1,-1./x(l1))
+      call set_ghosts_for_onesided_ders(f,topbot,j,1,.true.)
+!
+    endsubroutine bc_set_nr1_x
 ! **********************************************************************
     subroutine bc_set_sa2_x(f,topbot,j)
 !

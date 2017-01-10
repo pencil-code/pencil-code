@@ -28,6 +28,7 @@ module Equ
 !  26-aug-13/MR: added call of diagnostic for imaginary parts
 !   9-jun-15/MR: call of gravity_after_boundary added
 !  24-sep-16/MR: added offset manipulation for second derivatives in complete one-sided fornulation.
+!   5-jan-17/MR: removed mn-offset manipulation
 !
       use Boundcond
       use BorderProfiles, only: calc_pencils_borderprofiles
@@ -37,7 +38,6 @@ module Equ
       use CosmicrayFlux
       use Density
       use Detonate, only: detonate_before_boundary
-      use Deriv, only: set_mn_offsets
       use Diagnostics
       use Dustvelocity
       use Dustdensity
@@ -158,7 +158,7 @@ module Equ
                      ltestscalar.or.ltestfield.or.ltestflow.or. &
                      lparticles_spin.or.lsolid_cells.or. &
                      lchemistry.or.lweno_transport .or. lbfield .or. & 
-                     lslope_limit_diff !&
+                     lslope_limit_diff  !&
                      !!!.or. lyinyang
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.
@@ -354,10 +354,6 @@ module Equ
         m=mm(imn)
         lfirstpoint=(imn==1)      ! true for very first m-n loop
         llastpoint=(imn==(nyz)) ! true for very last m-n loop
-!
-!  Offset manipulation for second derivatives in complete one-sided fornulation.
-!
-        call set_mn_offsets
 !
 !  Store the velocity part of df array in a temporary array
 !  while solving the anelastic case.

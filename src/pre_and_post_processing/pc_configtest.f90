@@ -82,17 +82,6 @@ program pc_configtest
 !
   lenergy = lentropy .or. ltemperature .or. lthermal_energy
 !
-  if (lwrite_aux .and. .not. lread_aux) then
-    if (lroot) then
-      print *, ''
-      print *, 'lwrite_aux=T but lread_aux=F'
-      print *, 'The code will write the auxiliary variables to allprocs/VARN'
-      print *, ' without having read them from proc*/VARN'
-      print *, ''
-      call fatal_error("pc_configtest","Stop and check")
-    endif
-  endif
-!
 !  Will we write all slots of f?
 !
   if (lwrite_aux) then

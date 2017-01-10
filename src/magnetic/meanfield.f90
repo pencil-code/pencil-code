@@ -1570,4 +1570,44 @@ module Magnetic_meanfield
 !
     endsubroutine rprint_magn_mf
 !***********************************************************************
+    subroutine pc_aasb_const_alpha(f,topbot,j)
+!
+!  Perfect-conductor BC for mean field in 1D (only z dependent) with constant alpha and etaT,
+!  IF A IS CONSIDERED AS B. 
+!  Only implemented at lower z boundary.
+!
+!  2-jan-17/MR: coded
+!
+    real, dimension(:,:,:,:) :: f
+    integer :: j
+    character (LEN=*) :: topbot
+
+    real :: g0, D
+    integer :: k
+
+      if (topbot=='bot') then
+
+        if (j/=iax) return
+
+        g0=-147./(60.*dz); D=(alpha_effect**2+g0**2)*60.*dz
+        k=n1
+        f(:,:,n1,iax) = ( 360.*(-g0*f(:,:,k+1,iax)-alpha_effect*f(:,:,k+1,iay)) &
+                         -450.*(-g0*f(:,:,k+2,iax)-alpha_effect*f(:,:,k+2,iay)) &
+                         +400.*(-g0*f(:,:,k+3,iax)-alpha_effect*f(:,:,k+3,iay)) &
+                         -225.*(-g0*f(:,:,k+4,iax)-alpha_effect*f(:,:,k+4,iay)) &
+                         + 72.*(-g0*f(:,:,k+5,iax)-alpha_effect*f(:,:,k+5,iay)) &
+                         - 10.*(-g0*f(:,:,k+6,iax)-alpha_effect*f(:,:,k+6,iay))  )/D
+
+        f(:,:,n1,iay) = ( 360.*(-g0*f(:,:,k+1,iay)+alpha_effect*f(:,:,k+1,iax)) &
+                         -450.*(-g0*f(:,:,k+2,iay)+alpha_effect*f(:,:,k+2,iax)) &
+                         +400.*(-g0*f(:,:,k+3,iay)+alpha_effect*f(:,:,k+3,iax)) &
+                         -225.*(-g0*f(:,:,k+4,iay)+alpha_effect*f(:,:,k+4,iax)) &
+                         + 72.*(-g0*f(:,:,k+5,iay)+alpha_effect*f(:,:,k+5,iax)) &
+                         - 10.*(-g0*f(:,:,k+6,iay)+alpha_effect*f(:,:,k+6,iax))  )/D
+      else 
+        stop
+      endif
+      
+    endsubroutine pc_aasb_const_alpha
+!***********************************************************************
 endmodule Magnetic_meanfield
