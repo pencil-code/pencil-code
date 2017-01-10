@@ -3106,7 +3106,7 @@ module Energy
             do i = 1, 3
               ufpres=ufpres+p%uu(:,i)*p%fpres(:,i)
             enddo
-            call sum_mn_name(p%rho*ufpres,idiag_ufpresm)
+            call sum_mn_name(ufpres,idiag_ufpresm)
         endif
         if (idiag_uduum/=0) then
             uduu=0.

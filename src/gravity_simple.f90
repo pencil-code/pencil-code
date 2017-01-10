@@ -111,6 +111,7 @@ module Gravity
   integer :: idiag_epottot=0       ! DIAG_DOC: $\int_V\varrho \Phi_{\rm grav}
                                    ! DIAG_DOC: dV$ \quad(total potential
                                    ! DIAG_DOC: energy)
+  integer :: idiag_ugm=0           ! DIAG_DOC: $\left<\vu \cdot \vg\right>$
 !
 ! xy averaged diagnostics given in xyaver.in written every it1d timestep
 !
@@ -697,6 +698,10 @@ module Gravity
         lpenc_diagnos(i_epot)=.true.
         lpenc_diagnos(i_uu)=.true.
       endif
+      if (idiag_ugm/=0) then
+        lpenc_diagnos(i_uu)=.true.
+        lpenc_diagnos(i_gg)=.true.
+      endif
       if (idiag_epotmxy/=0) then
         lpenc_diagnos2d(i_epot)=.true.
       endif
@@ -838,6 +843,10 @@ module Gravity
 !
       if (ldiagnos) then
         if (idiag_epot/=0) call sum_mn_name(p%epot,idiag_epot)
+        if (idiag_ugm/=0) &
+          call sum_mn_name(p%uu(:,1)*p%gg(:,1) + &
+          p%uu(:,2)*p%gg(:,2) + &
+          p%uu(:,3)*p%gg(:,3),idiag_ugm)
         if (idiag_epottot/=0) call integrate_mn_name(p%epot,idiag_epottot)
       endif
 !
@@ -1146,7 +1155,7 @@ module Gravity
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_epot=0; idiag_epottot=0
+        idiag_epot=0; idiag_epottot=0; idiag_ugm=0
         idiag_epotmx=0; idiag_epotuxmx=0; idiag_epotmy=0; idiag_epotmz=0;
         idiag_epotmxy=0; idiag_epotuzmz=0; idiag_epotuxmxy=0
       endif
@@ -1156,6 +1165,7 @@ module Gravity
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'epot',idiag_epot)
         call parse_name(iname,cname(iname),cform(iname),'epottot',idiag_epottot)
+        call parse_name(iname,cname(iname),cform(iname),'ugm',idiag_ugm)
       enddo
 !
 !  Check for those quantities for which we want yz-averages.

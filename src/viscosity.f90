@@ -137,6 +137,8 @@ module Viscosity
   integer :: idiag_visc_heatm=0 ! DIAG_DOC: Mean value of viscous heating
   integer :: idiag_qfviscm=0    ! DIAG_DOC: $\left<\qv\cdot
                                 ! DIAG_DOC: \fv_{\rm visc}\right>$
+  integer :: idiag_ufviscm=0    ! DIAG_DOC: $\left<\uv\cdot
+                                ! DIAG_DOC: \fv_{\rm visc}\right>$
   integer :: idiag_Sij2m=0      ! DIAG_DOC: $\left<\Strain^2\right>$
   integer :: idiag_epsK=0       ! DIAG_DOC: $\left<2\nu\varrho\Strain^2\right>$
   integer :: idiag_epsK_LES=0   ! DIAG_DOC:
@@ -779,7 +781,7 @@ module Viscosity
         idiag_nu_tdep=0; idiag_fviscm=0 ; idiag_fviscrmsx=0
         idiag_fviscmz=0; idiag_fviscmx=0; idiag_fviscmxy=0
         idiag_epsKmz=0; idiag_numx=0; idiag_fviscymxy=0
-        idiag_fviscsmmz=0; idiag_fviscsmmxy=0
+        idiag_fviscsmmz=0; idiag_fviscsmmxy=0; idiag_ufviscm=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -790,6 +792,7 @@ module Viscosity
         call parse_name(iname,cname(iname),cform(iname),'fviscm',idiag_fviscm)
         call parse_name(iname,cname(iname),cform(iname),'fviscmin',idiag_fviscmin)
         call parse_name(iname,cname(iname),cform(iname),'qfviscm',idiag_qfviscm)
+        call parse_name(iname,cname(iname),cform(iname),'ufviscm',idiag_ufviscm)
         call parse_name(iname,cname(iname),cform(iname),'fviscmax',idiag_fviscmax)
         call parse_name(iname,cname(iname),cform(iname),'fviscrmsx',idiag_fviscrmsx)
         call parse_name(iname,cname(iname),cform(iname),'num',idiag_num)
@@ -1032,6 +1035,10 @@ module Viscosity
       endif
       if (idiag_qfviscm/=0) then
         lpenc_diagnos(i_curlo)=.true.
+        lpenc_diagnos(i_fvisc)=.true.
+      endif
+      if (idiag_ufviscm/=0) then
+        lpenc_diagnos(i_uu)=.true.
         lpenc_diagnos(i_fvisc)=.true.
       endif
       if (idiag_Reshock/=0) lpenc_diagnos(i_shock)=.true.
@@ -2217,6 +2224,10 @@ module Viscosity
         if (idiag_nu_tdep/=0)  call sum_mn_name(spread(nu_tdep,1,nx),idiag_nu_tdep)
         !!!if (idiag_fviscm/=0)   call sum_mn_name(p%fvisc,idiag_fviscm)   !What is intended here? p%fvisc is a vector!!
         if (idiag_fviscm/=0)   call sum_mn_name(p%fvisc(:,1),idiag_fviscm)
+        if (idiag_ufviscm/=0)  &
+           call sum_mn_name(p%uu(:,1)*p%fvisc(:,1)+ &
+           p%uu(:,2)*p%fvisc(:,2)+ &
+           p%uu(:,3)*p%fvisc(:,3),idiag_ufviscm)
         if (idiag_fviscmin/=0) call max_mn_name(-p%fvisc,idiag_fviscmin,lneg=.true.)
         if (idiag_fviscmax/=0) call max_mn_name(p%fvisc,idiag_fviscmax)
         if (idiag_fviscrmsx/=0) then
