@@ -26,9 +26,12 @@ module File_io
   include 'file_io.h'
 !
   private
+
+  character, dimension(:), allocatable :: buffer
+
   contains
 !***********************************************************************
-    function parallel_read(file,buffer,remove_comments)
+    function parallel_read(file,remove_comments)
 !
 !  Fills buffer with the content of a global file. Buffer is read in parallel.
 !  Returns length of buffer.
@@ -39,7 +42,6 @@ module File_io
       use Messages, only: fatal_error
 
       integer :: parallel_read
-      character, dimension(:), allocatable :: buffer
       character (len=*), intent(in) :: file
       logical,           intent(in),  optional :: remove_comments
 !
@@ -75,7 +77,7 @@ module File_io
         close(unit)
 !
         ! Strip comments.
-        if (loptest(remove_comments)) call strip_comments(buffer)
+        if (loptest(remove_comments)) call strip_comments
       endif
 !
       ! Broadcast buffer to all MPI ranks.
@@ -100,13 +102,11 @@ module File_io
       integer,           optional, intent(out):: nitems
 !
       integer :: bytes, pos
-      character (len=fnlen) :: filename
-      character, dimension(:), allocatable :: buffer
-      character (len=fnlen) :: tmp_prefix
+      character (len=fnlen) :: filename, tmp_prefix
 !
       if (present(nitems)) nitems=0
 
-      bytes = parallel_read(file, buffer, remove_comments)
+      bytes = parallel_read(file, remove_comments)
 !
       ! Create unique temporary filename.
       filename = file
@@ -116,6 +116,7 @@ module File_io
         pos = scan(filename, '/')
       enddo
       tmp_prefix = get_tmp_prefix()
+      !tmp_prefix = 'data/'
       write(filename,'(A,I0)') trim(tmp_prefix)//trim(filename)//'-', iproc_world
 !
       ! Write temporary file into local RAM disk (/tmp).
@@ -207,7 +208,7 @@ module File_io
 !
     endsubroutine write_binary_file_str
 !***********************************************************************
-    subroutine strip_comments(buffer)
+    subroutine strip_comments
 !
 !  Strip comments from a *.in-file
 !
@@ -215,13 +216,11 @@ module File_io
 !
       use Cdata, only: comment_char
 
-      character, dimension(:), allocatable :: buffer
-!
       integer :: num_bytes, pos
       logical :: lcomment
 !
-      if (.not. allocated (buffer)) return
-!
+      if (.not. allocated(buffer)) return
+
       num_bytes = size (buffer)
       lcomment = .false.
       do pos = 1, num_bytes
