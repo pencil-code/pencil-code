@@ -1,6 +1,8 @@
 .DS_Store
 *.directory
 *.pyc
+*.csh
+Makefile
 *~
 .*.swp
 host-ID
@@ -11,6 +13,11 @@ host-ID
 */*/.ipynb_checkpoints
 */*/*/.ipynb_checkpoints
 */*/*/*/.ipynb_checkpoints
+data
+*/data
+*/*/data
+*/*/*/data
+*/*/*/*/data
 revision.txt
 # left-over files from auto-test and samples
 .pc_build_history
