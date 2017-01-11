@@ -312,16 +312,19 @@ module Diagnostics
             tform = comma//'" ("'//comma//trim(cform(iname))//comma &
               //'","'//comma//trim(cform(iname))//comma//'")"'
           else
+            if (fname(iname)/=0.) then
 !
-!  Check format on output for fixed-point formats.
+!  Check output item for fixed-point formats.
 !
-            index_i=scan(cform(iname),'fF')
-            if (index_i>0) then
-              read(cform(iname)(index_i+1:),*) rlength
-              if (floor(alog10(fname(iname)))+2 > rlength) then
-                index_d=index(cform(iname),'.')
-                length=len(trim(cform(iname)))
-                write(cform(iname)(index_i+1:),'(f'//trim(itoa(length-index_i))//'.'//trim(itoa(length-index_d))//')') rlength+2
+              index_i=scan(cform(iname),'fF')
+              if (index_i>0) then
+                read(cform(iname)(index_i+1:),*) rlength
+                if (floor(alog10(abs(fname(iname))))+2 > rlength) then
+                  index_d=index(cform(iname),'.')
+                  length=len(trim(cform(iname)))
+                  write(cform(iname)(index_i+1:), &
+                        '(f'//trim(itoa(length-index_i))//'.'//trim(itoa(length-index_d))//')') rlength+2
+                endif
               endif
             endif
 
