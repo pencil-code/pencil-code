@@ -28,7 +28,7 @@ def var(*args, **kwargs):
 
     call signature:
 
-    var(var_file='', data_dir='data/', proc=-1, ivar=-1,
+    var(var_file='', datadir='data/', proc=-1, ivar=-1,
         quiet=True, trim_all=False,
         param=None, dim=None, index=None, run2D=False,
         magic=None, setup=None, precision='f')
@@ -38,7 +38,7 @@ def var(*args, **kwargs):
     *var_file*:
       Name of the VAR file.
 
-    *data_dir*:
+    *datadir*:
       Directory where the data is stored.
 
     *proc*:
@@ -84,7 +84,7 @@ class DataCube(object):
     DataCube -- holds Pencil Code VAR file data.
     """
 
-    def __init__(self, var_file='', data_dir='data', proc=-1, ivar=-1,
+    def __init__(self, var_file='', datadir='data', proc=-1, ivar=-1,
                  quiet=True, trim_all=False,
                  param=None, dim=None, index=None, run2D=False,
                  magic=None, setup=None, precision='f4'):
@@ -102,7 +102,7 @@ class DataCube(object):
 
         call signature:
 
-        DataCube(self, var_file='', data_dir='data', proc=-1, ivar=-1,
+        DataCube(self, var_file='', datadir='data', proc=-1, ivar=-1,
                  quiet=True, trim_all=False,
                  param=None, dim=None, index=None, run2D=False,
                  magic=None, setup=None, precision='f')
@@ -112,7 +112,7 @@ class DataCube(object):
         *var_file*:
           Name of the VAR file.
 
-        *data_dir*:
+        *datadir*:
           Directory where the data is stored.
 
         *proc*:
@@ -156,19 +156,19 @@ class DataCube(object):
         from pencilnew import read
 
         if setup is not None:
-            data_dir = os.path.expanduser(setup.data_dir)
+            datadir = os.path.expanduser(setup.datadir)
             dim = setup.dim
             param = setup.param
             index = setup.index
             run2D = setup.run2D
         else:
-            data_dir = os.path.expanduser(data_dir)
+            datadir = os.path.expanduser(datadir)
             if dim is None:
-                dim = read.dim(data_dir, proc)
+                dim = read.dim(datadir, proc)
             if param is None:
-                param = read.param(data_dir=data_dir, quiet=quiet)
+                param = read.param(datadir=datadir, quiet=quiet)
             if index is None:
-                index = read.index(data_dir=data_dir)
+                index = read.index(datadir=datadir)
 
         if dim.precision == 'D':
             precision = 'd'
@@ -188,7 +188,7 @@ class DataCube(object):
 
         if proc < 0:
             proc_dirs = self.__natural_sort(filter(lambda s: s.startswith('proc'),
-                                                   os.listdir(data_dir)))
+                                                   os.listdir(datadir)))
         else:
             proc_dirs = ['proc' + str(proc)]
 
@@ -208,7 +208,7 @@ class DataCube(object):
 
         for directory in proc_dirs:
             proc = int(directory[4:])
-            procdim = read.dim(data_dir, proc)
+            procdim = read.dim(datadir, proc)
             if not quiet:
                 print("Reading data from processor {0} of {1} ...".format( \
                       proc, len(proc_dirs)))
@@ -218,7 +218,7 @@ class DataCube(object):
             mzloc = procdim.mz
 
             # Read the data.
-            file_name = os.path.join(data_dir, directory, var_file)
+            file_name = os.path.join(datadir, directory, var_file)
             infile = FortranFile(file_name)
             if not run2D:
                 f_loc = infile.read_record(dtype=precision)

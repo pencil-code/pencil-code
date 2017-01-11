@@ -42,7 +42,7 @@ class Tracers(object):
     def find_tracers(self, trace_field='bb', h_min=2e-3, h_max=2e4, len_max=500,
                      tol=1e-2, iter_max=1e3, interpolation='trilinear',
                      trace_sub=1, int_q=[''], varfile='VAR0', ti=-1, tf=-1,
-                     integration='simple', data_dir='./data', n_proc=1):
+                     integration='simple', datadir='./data', n_proc=1):
         """
         Trace streamlines from the VAR files and integrate quantity 'int_q'
         along them.
@@ -52,7 +52,7 @@ class Tracers(object):
         find_tracers(self, trace_field='bb', h_min=2e-3, h_max=2e4, len_max=500,
                      tol=1e-2, iter_max=1e3, interpolation='trilinear',
                      trace_sub=1, int_q=[''], varfile='VAR0', ti=-1, tf=-1,
-                     integration='simple', data_dir='data/', n_proc=1)
+                     integration='simple', datadir='data/', n_proc=1)
 
         Trace streamlines of the vectofield 'field' from z = z0 to z = z1
         and integrate quantities 'int_q' along the lines. Creates a 2d
@@ -107,7 +107,7 @@ class Tracers(object):
         *tf*:
           Final VAR file index for tracer time sequences. Overrides 'varfile'.
 
-        *data_dir*:
+        *datadir*:
           Directory where the data is stored.
 
         *n_proc*:
@@ -185,7 +185,7 @@ class Tracers(object):
         self.params.ti = ti
         self.params.tf = tf
         self.params.integration = integration
-        self.params.data_dir = data_dir
+        self.params.datadir = datadir
         self.params.n_proc = n_proc
 
         # Multi core setup.
@@ -209,7 +209,7 @@ class Tracers(object):
         if any(np.array(int_q) == 'ee'):
             magic.append('bb')
             magic.append('jj')
-        dim = pc.read_dim(datadir=data_dir)
+        dim = pc.read_dim(datadir=datadir)
 
         # Check if user wants a tracer time series.
         if (ti%1 == 0) and (tf%1 == 0) and (ti >= 0) and (tf >= ti):
@@ -241,10 +241,10 @@ class Tracers(object):
                 varfile = 'VAR' + str(t_idx)
 
             # Read the data.
-            var = pc.read_var(varfile=varfile, datadir=data_dir, magic=magic,
+            var = pc.read_var(varfile=varfile, datadir=datadir, magic=magic,
                               quiet=True, trimall=True)
-            grid = pc.read_grid(datadir=data_dir, quiet=True, trim=True)
-            param2 = pc.read_param(datadir=data_dir, param2=True, quiet=True)
+            grid = pc.read_grid(datadir=datadir, quiet=True, trim=True)
+            param2 = pc.read_param(datadir=datadir, param2=True, quiet=True)
             self.t[t_idx] = var.t
 
             # Extract the requested vector trace_field.
@@ -303,17 +303,17 @@ class Tracers(object):
                 proc[i_proc].terminate()
 
 
-    def write(self, data_dir='./data', destination='tracers.hdf5'):
+    def write(self, datadir='./data', destination='tracers.hdf5'):
         """
         Write the tracers into a file.
 
         call signature::
 
-        write(self, data_dir='./data', destination='tracers.hdf5')
+        write(self, datadir='./data', destination='tracers.hdf5')
 
         Keyword arguments:
 
-        *data_dir*:
+        *datadir*:
           Directory where the data is stored.
 
         *destination*:
@@ -324,7 +324,7 @@ class Tracers(object):
 
         # Write the results into hdf5 file.
         if destination != '':
-            f = h5py.File(os.path.join(data_dir, destination), 'w')
+            f = h5py.File(os.path.join(datadir, destination), 'w')
             # Write main data arrays.
             set_x0 = f.create_dataset("x0", self.x0.shape, dtype=self.x0.dtype)
             set_y0 = f.create_dataset("y0", self.y0.shape, dtype=self.y0.dtype)
@@ -360,17 +360,17 @@ class Tracers(object):
             print("error: empty destination file")
 
 
-    def read(self, data_dir='./data', file_name='tracers.hdf5'):
+    def read(self, datadir='./data', file_name='tracers.hdf5'):
         """
         Read the tracers from a file.
 
         call signature::
 
-        read(self, data_dir='./data', file_name='tracers.hdf5')
+        read(self, datadir='./data', file_name='tracers.hdf5')
 
         Keyword arguments:
 
-        *data_dir*:
+        *datadir*:
           Directory where the data is stored.
 
         *file_name*:
@@ -380,7 +380,7 @@ class Tracers(object):
         import numpy as np
 
         # Open the file.
-        f = h5py.File(os.path.join(data_dir, file_name), 'r')
+        f = h5py.File(os.path.join(datadir, file_name), 'r')
 
         # Extract arrays.
         self.t = f['t'].value
@@ -406,7 +406,7 @@ class Tracers(object):
 
 
 ## Need some updating of this routine.
-#def tracer_movie(data_dir='data/', tracer_file='tracers.hf5',
+#def tracer_movie(datadir='data/', tracer_file='tracers.hf5',
 #                 fixedFile='fixed_points.dat', zlim=False,
 #                 head_size=3, hm=1,
 #                 imageDir='./', movieFile='fixed_points.mpg',
@@ -417,7 +417,7 @@ class Tracers(object):
 #
 #    call signature::
 #
-#      tracer_movie(data_dir='data/', tracerFile='tracers.dat',
+#      tracer_movie(datadir='data/', tracerFile='tracers.dat',
 #                   tracer_file='fixed_points.dat', zlim = [],
 #                   head_size=3, hm=1,
 #                   imageDir='./', movieFile='fixed_points.mpg',
@@ -426,7 +426,7 @@ class Tracers(object):
 #    Plots the field line mapping together with the fixed points and creates
 #    a movie file.
 #
-#      *data_dir*:
+#      *datadir*:
 #        Data directory.
 #
 #      *tracerFile*:
@@ -464,9 +464,9 @@ class Tracers(object):
 #
 #
 #    # Read the mapping and the fixed point positions.
-#    tracers, mapping, t = pc.read_tracers(data_dir=data_dir, fileName=tracer_file,
+#    tracers, mapping, t = pc.read_tracers(datadir=datadir, fileName=tracer_file,
 #                                          zlim=zlim, head_size=head_size)
-#    fixed = pc.read_fixed_points(data_dir=data_dir, fileName=fixedFile, hm=hm)
+#    fixed = pc.read_fixed_points(datadir=datadir, fileName=fixedFile, hm=hm)
 #
 #    # Read the parameters for the domain boundaries.
 #    params = pc.read_param(quiet=True)
@@ -560,6 +560,6 @@ class TracersParameterClass(object):
         self.ti = -1
         self.tf = -1
         self.integration = 'simple'
-        self.data_dir = 'data/'
+        self.datadir = 'data/'
         self.destination = 'tracers.hdf5'
         self.n_proc = 1

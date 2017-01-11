@@ -9,7 +9,7 @@ def pvar(*args, **kwargs):
         - varfile       put 'PVARXYZ' or just number here, 'VAR' will be replaced by 'PVAR' autom.
         - npar_max      maximal number of particles to be read in
 
-        - data_dir      specify data_dir, default False
+        - datadir      specify datadir, default False
         - sim           specify simulation from which you want to read
         - proc          read from single proc, set number here
         - swap_endian   change if needed to True, default False
@@ -35,7 +35,7 @@ class ParticleData(object):
     !! WARNING: SHAPE IS AS IN IDL: (X, Y, Z) !!
 
     Args:
-        - data_dir      specify data_dir, default False
+        - datadir      specify datadir, default False
         - sim           specify simulation from which you want to read
         - varfile       put 'PVARXYZ' or just number here, 'VAR' will be replaced by 'PVAR' autom.
         - npar_max      maximal number of particles to be read in
@@ -53,13 +53,13 @@ class ParticleData(object):
     """
 
     def __init__(self, varfile='pvar.dat', npar_max=-1,
-                 data_dir=False, sim=False, proc=-1, swap_endian=False, quiet=False, DEBUG=False):
+                 datadir=False, sim=False, proc=-1, swap_endian=False, quiet=False, DEBUG=False):
         """
         Read PVAR files from Pencil Code using IDL.
         Uses IDL<->Python Bridge, this must be activated manually!
 
         Args:
-            - data_dir      specify data_dir, default False
+            - datadir      specify datadir, default False
             - sim           specify simulation from which you want to read
             - varfile       put 'PVARXYZ' or just number here, 'VAR' will be replaced by 'PVAR' autom.
             - npar_max      maximal number of particles to be read in
@@ -91,10 +91,10 @@ class ParticleData(object):
             return False
 
         ####### interprate parameters
-        if data_dir == False:
+        if datadir == False:
             if sim == False:
                 sim = pcn.get_sim()
-        data_dir = sim.data_dir
+        datadir = sim.datadir
 
         if quiet == False:
             quiet = '0'
@@ -117,7 +117,7 @@ class ParticleData(object):
         idl_call = ', '.join(['pc_read_pvar',
                               'obj=pvar',
                               'varfile="'+varfile+'"',
-                              'datadir="'+data_dir+'"',
+                              'datadir="'+datadir+'"',
                               'quiet='+quiet,
                               'swap_endian='+swap_endian,
                               'proc='+str(proc)

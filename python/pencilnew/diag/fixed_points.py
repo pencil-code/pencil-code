@@ -38,7 +38,7 @@ class FixedPoint(object):
         self.tracers = []
 
 
-    def find_fixed(self, data_dir='data/', destination='fixed_points.hf5',
+    def find_fixed(self, datadir='data/', destination='fixed_points.hf5',
                    varfile='VAR0', ti=-1, tf=-1, trace_field='bb', h_min=2e-3,
                    h_max=2e4, len_max=500, tol=1e-2, interpolation='trilinear',
                    trace_sub=1, integration='simple', int_q=[''], n_proc=1,
@@ -48,7 +48,7 @@ class FixedPoint(object):
 
         call signature::
 
-        find_fixed(data_dir='data/', destination='fixed_points.hf5',
+        find_fixed(datadir='data/', destination='fixed_points.hf5',
                    varfile='VAR0', ti=-1, tf=-1, trace_field='bb', h_min=2e-3,
                    h_max=2e4, len_max=500, tol=1e-2, interpolation='trilinear',
                    trace_sub=1, integration='simple', int_q=[''], n_proc=1):
@@ -57,7 +57,7 @@ class FixedPoint(object):
 
         Keyword arguments:
 
-          *data_dir*:
+          *datadir*:
             Data directory.
 
           *destination*:
@@ -394,7 +394,7 @@ class FixedPoint(object):
         self.params.ti = ti
         self.params.tf = tf
         self.params.integration = integration
-        self.params.data_dir = data_dir
+        self.params.datadir = datadir
         self.params.destination = destination
         self.params.n_proc = n_proc
 
@@ -409,7 +409,7 @@ class FixedPoint(object):
         if any(np.array(int_q) == 'ee'):
             magic.append('bb')
             magic.append('jj')
-        dim = pc.read_dim(datadir=data_dir)
+        dim = pc.read_dim(datadir=datadir)
 
         # Check if user wants a tracer time series.
         if (ti%1 == 0) and (tf%1 == 0) and (ti >= 0) and (tf >= ti):
@@ -422,12 +422,12 @@ class FixedPoint(object):
         self.t = np.zeros(n_times)
 
         # Read the initial field.
-        var = pc.read_var(varfile=varfile, datadir=data_dir, magic=magic,
+        var = pc.read_var(varfile=varfile, datadir=datadir, magic=magic,
                           quiet=True, trimall=True)
         self.t[0] = var.t
-        grid = pc.read_grid(datadir=data_dir, quiet=True, trim=True)
+        grid = pc.read_grid(datadir=datadir, quiet=True, trim=True)
         field = getattr(var, trace_field)
-        param2 = pc.read_param(datadir=data_dir, param2=True, quiet=True)
+        param2 = pc.read_param(datadir=datadir, param2=True, quiet=True)
         if any(np.array(int_q) == 'ee'):
             ee = var.jj*param2.eta - pc.cross(var.uu, var.bb)
 
@@ -452,10 +452,10 @@ class FixedPoint(object):
                                  len_max=len_max, tol=tol,
                                  interpolation=interpolation,
                                  trace_sub=trace_sub, varfile=varfile, ti=ti, tf=tf,
-                                 integration=integration, data_dir=data_dir,
+                                 integration=integration, datadir=datadir,
                                  int_q=int_q, n_proc=n_proc)
         else:
-            tracers.read(data_dir=data_dir, file_name=tracer_file_name)
+            tracers.read(datadir=datadir, file_name=tracer_file_name)
         self.tracers = tracers
 
         # Set some default values.
@@ -469,7 +469,7 @@ class FixedPoint(object):
         # Start the parallelized fixed point finding.
         for tidx in range(n_times):
             if tidx > 0:
-                var = pc.read_var(varfile='VAR'+str(tidx+ti), datadir=data_dir,
+                var = pc.read_var(varfile='VAR'+str(tidx+ti), datadir=datadir,
                                   magic=magic, quiet=True, trimall=True)
                 field = getattr(var, trace_field)
                 self.t[tidx] = var.t
@@ -545,17 +545,17 @@ class FixedPoint(object):
                     self.ee[-1] = np.array(self.ee[-1])
 
 
-    def write(self, data_dir='./data', destination='fixed_points.hdf5'):
+    def write(self, datadir='./data', destination='fixed_points.hdf5'):
         """
         Write the fixed points into a file.
 
         call signature::
 
-        write(self, data_dir='./data', destination='fixed_points.hdf5')
+        write(self, datadir='./data', destination='fixed_points.hdf5')
 
         Keyword arguments:
 
-        *data_dir*:
+        *datadir*:
           Directory where the data is stored.
 
         *destination*:
@@ -568,7 +568,7 @@ class FixedPoint(object):
 
         # Write the results into hdf5 file.
         if destination != '':
-            f = h5py.File(os.path.join(data_dir, destination), 'w')
+            f = h5py.File(os.path.join(datadir, destination), 'w')
             # Write main data arrays.
             set_t = f.create_dataset("t", self.t.shape, dtype=self.t.dtype)
             set_t[...] = self.t[...]
@@ -605,23 +605,23 @@ class FixedPoint(object):
             # Write the tracers into their own file.
             tracer_file_name = self.params.destination[:-5] + '_tracers' + \
                                self.params.destination[-5:]
-            self.tracers.write(data_dir=self.params.data_dir,
+            self.tracers.write(datadir=self.params.datadir,
                                destination=tracer_file_name)
         else:
             print("error: empty destination file")
 
 
-    def read(self, data_dir='./data', file_name='fixed_points.hdf5'):
+    def read(self, datadir='./data', file_name='fixed_points.hdf5'):
         """
         Read the fixed points from a file.
 
         call signature::
 
-        read(self, data_dir='./data', file_name='fixed_points.hdf5')
+        read(self, datadir='./data', file_name='fixed_points.hdf5')
 
         Keyword arguments:
 
-        *data_dir*:
+        *datadir*:
           Directory where the data is stored.
 
         *file_name*:
@@ -631,7 +631,7 @@ class FixedPoint(object):
         import numpy as np
 
         # Open the file.
-        f = h5py.File(os.path.join(data_dir, file_name), 'r')
+        f = h5py.File(os.path.join(datadir, file_name), 'r')
 
         # Extract arrays.
         self.t = f['t'].value
@@ -665,4 +665,4 @@ class FixedPoint(object):
         tracer_file_name = self.params.destination[:-5] + '_tracers' + \
                            self.params.destination[-5:]
         self.tracers = Tracers()
-        self.tracers.read(data_dir=data_dir, file_name=tracer_file_name)
+        self.tracers.read(datadir=datadir, file_name=tracer_file_name)

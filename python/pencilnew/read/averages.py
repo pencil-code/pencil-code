@@ -14,14 +14,14 @@ def aver(*args, **kwargs):
 
     call signature:
 
-    read(self, plane_list=['xy', 'xz', 'yz'], data_dir='data'):
+    read(self, plane_list=['xy', 'xz', 'yz'], datadir='data'):
 
     Keyword arguments:
 
     *plane_list*:
       A list of the planes over which the averages were taken.
 
-    *data_dir*:
+    *datadir*:
       Directory where the data is stored.
     """
 
@@ -45,13 +45,13 @@ class Averages(object):
         self.t = np.array([])
 
 
-    def read(self, plane_list=None, data_dir='data', proc=-1):
+    def read(self, plane_list=None, datadir='data', proc=-1):
         """
         Read Pencil Code average data.
 
         call signature:
 
-        read(self, plane_list=['xy', 'xz', 'yz'], data_dir='data'):
+        read(self, plane_list=['xy', 'xz', 'yz'], datadir='data'):
 
         Keyword arguments:
 
@@ -59,7 +59,7 @@ class Averages(object):
           A list of the planes over which the averages were taken.
           Takes 'xy', 'xz', 'yz', 'y', 'z'
 
-        *data_dir*:
+        *datadir*:
           Directory where the data is stored.
 
         *proc*:
@@ -109,7 +109,7 @@ class Averages(object):
             ext_object = Foo()
 
             # Get the averaged quantities.
-            file_id = open(os.path.join(os.path.dirname(data_dir), in_file_name))
+            file_id = open(os.path.join(os.path.dirname(datadir), in_file_name))
             variables = file_id.readlines()
             file_id.close()
             for i in range(sum(list(map(self.__equal_newline, variables)))):
@@ -117,9 +117,9 @@ class Averages(object):
             n_vars = len(variables)
 
             if plane == 'xy' or plane == 'xz' or plane == 'yz':
-                t, raw_data = self.__read_2d_aver(plane, data_dir, aver_file_name, n_vars)
+                t, raw_data = self.__read_2d_aver(plane, datadir, aver_file_name, n_vars)
             if plane == 'y' or plane == 'z':
-                t, raw_data = self.__read_1d_aver(plane, data_dir, aver_file_name, n_vars, proc)
+                t, raw_data = self.__read_1d_aver(plane, datadir, aver_file_name, n_vars, proc)
 
             # Add the raw data to self.
             var_idx = 0
@@ -142,7 +142,7 @@ class Averages(object):
         return line == '\n'
 
 
-    def __read_1d_aver(self, plane, data_dir, aver_file_name, n_vars, proc):
+    def __read_1d_aver(self, plane, datadir, aver_file_name, n_vars, proc):
         """
         Read the yaverages.dat, zaverages.dat.
         Return the raw data and the time array.
@@ -155,11 +155,11 @@ class Averages(object):
 
         if proc < 0:
             proc_dirs = self.__natural_sort(filter(lambda s: s.startswith('proc'),
-                                                   os.listdir(data_dir)))
+                                                   os.listdir(datadir)))
         else:
             proc_dirs = ['proc' + str(proc)]
 
-        dim = read.dim(data_dir, proc)
+        dim = read.dim(datadir, proc)
 
         # Prepare the raw data.
         # This will be reformatted at the end.
@@ -167,12 +167,12 @@ class Averages(object):
         raw_data = []
         for directory in proc_dirs:
             proc = int(directory[4:])
-            proc_dim = read.dim(data_dir, proc)
+            proc_dim = read.dim(datadir, proc)
 
             # Read the data.
             t = []
             proc_data = []
-            file_id = FortranFile(os.path.join(data_dir, directory, aver_file_name))
+            file_id = FortranFile(os.path.join(datadir, directory, aver_file_name))
             while True:
                 try:
                     t.append(file_id.read_record(dtype=np.float32)[0])
@@ -214,7 +214,7 @@ class Averages(object):
         return t, raw_data
 
 
-    def __read_2d_aver(self, plane, data_dir, aver_file_name, n_vars):
+    def __read_2d_aver(self, plane, datadir, aver_file_name, n_vars):
         """
         Read the yaverages.dat, xzaverages.dat, yzaverages.dat
         Return the raw data and the time array.
@@ -227,7 +227,7 @@ class Averages(object):
         # Determine the structure of the xy/xz/yz averages.
         nw_string = 'n' + 'xyz'[np.where(np.array(map(plane.find, 'xyz')) == -1)[0][0]]
         nw = getattr(read.dim(), nw_string)
-        file_id = open(os.path.join(data_dir, aver_file_name))
+        file_id = open(os.path.join(datadir, aver_file_name))
         aver_lines = file_id.readlines()
         file_id.close()
         entry_length = int(np.ceil(nw*n_vars/8.))

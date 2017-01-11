@@ -18,11 +18,11 @@ def param(*args, **kwargs):
 
     call signature:
 
-    read(data_dir='data/', param2=False, quiet=True)
+    read(datadir='data/', param2=False, quiet=True)
 
     Keyword arguments:
 
-    *data_dir*:
+    *datadir*:
       Directory where the data is stored.
 
     *param2*:
@@ -56,7 +56,7 @@ class Param(object):
         self.keys = []
 
 
-    def read(self, data_dir='data/', param2=False, quiet=True,
+    def read(self, datadir='data/', param2=False, quiet=True,
              asdict=False, nest_dict=False):
         """
         Read Pencil Code simulation parameters.
@@ -64,12 +64,12 @@ class Param(object):
 
         call signature:
 
-        read(self, data_dir='data/', param2=False, quiet=True,
+        read(self, datadir='data/', param2=False, quiet=True,
              asdict=False, nest_dict=False)
 
         Keyword arguments:
 
-        *data_dir*:
+        *datadir*:
           Directory where the data is stored.
 
         *param2*:
@@ -87,12 +87,12 @@ class Param(object):
 
         import os
 
-        data_dir = os.path.expanduser(data_dir)
+        datadir = os.path.expanduser(datadir)
 
         if param2:
-            filen = os.path.join(data_dir, 'param2.nml')
+            filen = os.path.join(datadir, 'param2.nml')
         else:
-            filen = os.path.join(data_dir, 'param.nml')
+            filen = os.path.join(datadir, 'param.nml')
 
         # Execute output of nl2python script.
         if not os.path.exists(filen):

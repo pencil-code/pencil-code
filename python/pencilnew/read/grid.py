@@ -18,12 +18,12 @@ def grid(*args, **kwargs):
 
     call signature:
 
-    grid(file_name='time_series.dat', data_dir='data',
+    grid(file_name='time_series.dat', datadir='data',
          double=0, quiet=0, comment_char='#')
 
     Keyword arguments:
 
-    *data_dir*:
+    *datadir*:
       Directory where the data is stored.
 
     *proc*
@@ -62,7 +62,7 @@ class Grid(object):
         self.Lx = self.Ly = self.Lz = 0
 
 
-    def read(self, data_dir='data', proc=-1, quiet=False,
+    def read(self, datadir='data', proc=-1, quiet=False,
              trim=False):
         """
         Read the grid data from the pencil code simulation.
@@ -71,12 +71,12 @@ class Grid(object):
 
         call signature:
 
-        read(self, file_name='time_series.dat', data_dir='data',
+        read(self, file_name='time_series.dat', datadir='data',
              double=0, quiet=0, comment_char='#')
 
         Keyword arguments:
 
-        *data_dir*:
+        *datadir*:
           Directory where the data is stored.
 
         *proc*
@@ -96,15 +96,15 @@ class Grid(object):
         from scipy.io import FortranFile
         import pencilnew.read as read
 
-        data_dir = os.path.expanduser(data_dir)
-        dim = read.dim(data_dir, proc)
+        datadir = os.path.expanduser(datadir)
+        dim = read.dim(datadir, proc)
         if dim.precision == 'D':
             precision = 'd'
         else:
             precision = 'f'
 
         if proc < 0:
-            proc_dirs = filter(lambda s: s.startswith('proc'), os.listdir(data_dir))
+            proc_dirs = filter(lambda s: s.startswith('proc'), os.listdir(datadir))
         else:
             proc_dirs = ['proc'+str(proc)]
 
@@ -121,7 +121,7 @@ class Grid(object):
 
         for directory in proc_dirs:
             proc = int(directory[4:])
-            procdim = read.dim(data_dir, proc)
+            procdim = read.dim(datadir, proc)
             if not quiet:
                 print("reading grid data from processor {0} of {1} ...".format(proc, len(proc_dirs)))
 
@@ -130,7 +130,7 @@ class Grid(object):
             mzloc = procdim.mz
 
             # Read the grid data.
-            file_name = os.path.join(data_dir, directory, 'grid.dat')
+            file_name = os.path.join(datadir, directory, 'grid.dat')
             infile = FortranFile(file_name, 'r')
             grid_raw = infile.read_record(dtype=precision)
             dx, dy, dz = tuple(infile.read_record(dtype=precision))

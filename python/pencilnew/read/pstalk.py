@@ -4,7 +4,7 @@ def pstalk(*args, **kwargs):
     Uses IDL<->Python Bridge, this must be activated manually!
 
     Args:
-        - data_dir      specify data_dir, default False
+        - datadir      specify datadir, default False
         - sim           specify simulation from which you want to read
         - swap_endian   change if needed to True, default False
         - quiet         verbosity, default False
@@ -19,14 +19,14 @@ class ParticleStalkData(object):
     ParticleStalkData -- holds Pencil Code PSTALK file data.
     """
 
-    def __init__(self, data_dir=False, sim=False,
+    def __init__(self, datadir=False, sim=False,
                  swap_endian=False, quiet=False):
         """
         Read PSTALK files from Pencil Code using IDL.
         Uses IDL<->Python Bridge, this must be activated manually!
 
         Args:
-            - data_dir      specify data_dir, default False
+            - datadir      specify datadir, default False
             - sim           specify simulation from which you want to read
             - swap_endian   change if needed to True, default False
             - quiet         verbosity, default False
@@ -53,10 +53,10 @@ class ParticleStalkData(object):
 
         print('~ reading pstalk in IDL..')
 
-        if data_dir == False:
+        if datadir == False:
             if sim == False:
                 sim = pcn.get_sim()
-            data_dir = sim.data_dir
+            datadir = sim.datadir
 
         if quiet == False:
             quiet = '0'
@@ -68,7 +68,7 @@ class ParticleStalkData(object):
         else:
             swap_endian = '1'
 
-        idl_call = ', '.join(['pc_read_pstalk', 'obj=pstalk', 'datadir="'+data_dir+'"', 'quiet='+quiet, 'swap_endian='+swap_endian])
+        idl_call = ', '.join(['pc_read_pstalk', 'obj=pstalk', 'datadir="'+datadir+'"', 'quiet='+quiet, 'swap_endian='+swap_endian])
 
         IDL.run(idl_call)
 

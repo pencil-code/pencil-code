@@ -16,11 +16,11 @@ def dim(*args, **kwargs):
 
     call signature:
 
-    dim(data_dir='data', proc=-1)
+    dim(datadir='data', proc=-1)
 
     Keyword arguments:
 
-    *data_dir*:
+    *datadir*:
       Directory where the data is stored.
 
     *proc*
@@ -67,17 +67,17 @@ class Dim(object):
         self.mxgrid = self.mygrid = self.mzgrid = 0
 
 
-    def read(self, data_dir='data', proc=-1):
+    def read(self, datadir='data', proc=-1):
         """
         Read the dim.dat file.
 
         call signature:
 
-        read(self, data_dir='data', proc=-1)
+        read(self, datadir='data', proc=-1)
 
         Keyword arguments:
 
-        *data_dir*:
+        *datadir*:
           Directory where the data is stored.
 
         *proc*
@@ -89,9 +89,9 @@ class Dim(object):
         import os
 
         if proc < 0:
-            file_name = os.path.join(data_dir, 'dim.dat')
+            file_name = os.path.join(datadir, 'dim.dat')
         else:
-            file_name = os.path.join(data_dir, 'proc{0}'.format(proc), 'dim.dat')
+            file_name = os.path.join(datadir, 'proc{0}'.format(proc), 'dim.dat')
 
         try:
             file_name = os.path.expanduser(file_name)

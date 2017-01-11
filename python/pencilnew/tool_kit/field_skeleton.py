@@ -423,18 +423,18 @@ class NullPoint(object):
         self.normals = np.array(np.real(self.normals))
 
 
-    def write_vtk(self, data_dir='./data', file_name='nulls.vtk',
+    def write_vtk(self, datadir='./data', file_name='nulls.vtk',
                   binary=False):
         """
         Write the null point into a vtk file.
 
         call signature:
 
-            write_vtk(data_dir='./data', file_name='nulls.vtk', binary=False)
+            write_vtk(datadir='./data', file_name='nulls.vtk', binary=False)
 
         Arguments:
 
-        *data_dir*:
+        *datadir*:
             Target data directory.
 
         *file_name*:
@@ -449,7 +449,7 @@ class NullPoint(object):
             writer.SetFileTypeToBinary()
         else:
             writer.SetFileTypeToASCII()
-        writer.SetFileName(os.path.join(data_dir, file_name))
+        writer.SetFileName(os.path.join(datadir, file_name))
         grid_data = vtk.vtkUnstructuredGrid()
         points = vtk.vtkPoints()
 
@@ -499,17 +499,17 @@ class NullPoint(object):
         writer.Write()
 
 
-    def read_vtk(self, data_dir='./data', file_name='nulls.vtk'):
+    def read_vtk(self, datadir='./data', file_name='nulls.vtk'):
         """
         Read the null point from a vtk file.
 
         call signature:
 
-            read_vtk(data_dir='./data', file_name='nulls.vtk')
+            read_vtk(datadir='./data', file_name='nulls.vtk')
 
         Arguments:
 
-        *data_dir*:
+        *datadir*:
             Origin data directory.
 
         *file_name*:
@@ -517,7 +517,7 @@ class NullPoint(object):
         """
 
         reader = vtk.vtkUnstructuredGridReader()
-        reader.SetFileName(os.path.join(data_dir, file_name))
+        reader.SetFileName(os.path.join(datadir, file_name))
         reader.Update()
         output = reader.GetOutput()
 
@@ -776,19 +776,19 @@ class Separatrix(object):
         self.connectivity = np.array(connectivity)
 
 
-    def write_vtk(self, data_dir='./data', file_name='separatrices.vtk',
+    def write_vtk(self, datadir='./data', file_name='separatrices.vtk',
                   binary=False):
         """
         Write the separatrices into a vtk file.
 
         call signature:
 
-            write_vtk(data_dir='./data', file_name='separatrices.vtk',
+            write_vtk(datadir='./data', file_name='separatrices.vtk',
                       binary=False)
 
         Arguments:
 
-        *data_dir*:
+        *datadir*:
             Target data directory.
 
         *file_name*:
@@ -803,7 +803,7 @@ class Separatrix(object):
             writer.SetFileTypeToBinary()
         else:
             writer.SetFileTypeToASCII()
-        writer.SetFileName(os.path.join(data_dir, file_name))
+        writer.SetFileName(os.path.join(datadir, file_name))
         grid_data = vtk.vtkUnstructuredGrid()
         points = vtk.vtkPoints()
         cell_array = vtk.vtkCellArray()
@@ -826,17 +826,17 @@ class Separatrix(object):
         writer.Write()
 
 
-    def read_vtk(self, data_dir='./data', file_name='separatrices.vtk'):
+    def read_vtk(self, datadir='./data', file_name='separatrices.vtk'):
         """
         Read the separatrices from a vtk file.
 
         call signature:
 
-            read_vtk(data_dir='./data', file_name='separatrices.vtk')
+            read_vtk(datadir='./data', file_name='separatrices.vtk')
 
         Arguments:
 
-        *data_dir*:
+        *datadir*:
             Origin data directory.
 
         *file_name*:
@@ -844,7 +844,7 @@ class Separatrix(object):
         """
 
         reader = vtk.vtkUnstructuredGridReader()
-        reader.SetFileName(os.path.join(data_dir, file_name))
+        reader.SetFileName(os.path.join(datadir, file_name))
         reader.Update()
         output = reader.GetOutput()
 
@@ -972,17 +972,17 @@ class Spine(object):
         self.spines = np.array(spines)
 
 
-    def write_vtk(self, data_dir='./data', file_name='spines.vtk', binary=False):
+    def write_vtk(self, datadir='./data', file_name='spines.vtk', binary=False):
         """
         Write the spines into a vtk file.
 
         call signature:
 
-            write_vtk(data_dir='./data', file_name='spines.vtk', binary=False)
+            write_vtk(datadir='./data', file_name='spines.vtk', binary=False)
 
         Arguments:
 
-        *data_dir*:
+        *datadir*:
             Target data directory.
 
         *file_name*:
@@ -997,7 +997,7 @@ class Spine(object):
             writer.SetFileTypeToBinary()
         else:
             writer.SetFileTypeToASCII()
-        writer.SetFileName(os.path.join(data_dir, file_name))
+        writer.SetFileName(os.path.join(datadir, file_name))
         poly_data = vtk.vtkPolyData()
         points = vtk.vtkPoints()
         # Create the cell to store the lines in.
@@ -1026,17 +1026,17 @@ class Spine(object):
         writer.Write()
 
 
-    def read_vtk(self, data_dir='./data', file_name='spines.vtk'):
+    def read_vtk(self, datadir='./data', file_name='spines.vtk'):
         """
         Read the spines from a vtk file.
 
         call signature:
 
-            read_vtk(data_dir='./data', file_name='spines.vtk')
+            read_vtk(datadir='./data', file_name='spines.vtk')
 
         Arguments:
 
-        *data_dir*:
+        *datadir*:
             Target data directory.
 
         *file_name*:
@@ -1044,7 +1044,7 @@ class Spine(object):
         """
 
         reader = vtk.vtkPolyDataReader()
-        reader.SetFileName(os.path.join(data_dir, file_name))
+        reader.SetFileName(os.path.join(datadir, file_name))
         reader.Update()
         output = reader.GetOutput()
 

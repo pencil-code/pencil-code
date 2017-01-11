@@ -25,9 +25,9 @@ def simulation(*args, **kwargs):
     Properties:
         self.name:          name of
         self.path:          path to simulation
-        self.data_dir:      path to simulation data-dir (./data/)
+        self.datadir:      path to simulation data-dir (./data/)
         self.pc_dir:        path to simulation pc-dir (./pc/)
-        self.pc_data_dir:   path to simulation pendir in data_dir (data/pc/)
+        self.pc_datadir:   path to simulation pendir in datadir (data/pc/)
         self.components:    list of files which are nessecarry components of the simulation
         self.optionals:     list of files which are optional components of the simulation
         self.hidden:        Default is False, if True this simulation will be ignored by pencil
@@ -56,9 +56,9 @@ class __Simulation__(object):
 
         self.path = os.path.abspath(path)   # store paths
         if (not quiet): print('# Creating Simulation object for '+self.path)
-        self.data_dir = join(self.path,'data')
+        self.datadir = join(self.path,'data')
         self.pc_dir = join(self.path,'pc')
-        self.pc_data_dir = join(self.path,'data','pc')
+        self.pc_datadir = join(self.path,'data','pc')
 
         self.components = ['src/cparam.local',      # core files of a simulation run
                            'src/Makefile.local',
@@ -189,8 +189,8 @@ class __Simulation__(object):
 
         if self.param == False:
             try:
-                if exists(join(self.data_dir,'param.nml')):
-                    param = param(quiet=quiet, data_dir=self.data_dir)
+                if exists(join(self.datadir,'param.nml')):
+                    param = param(quiet=quiet, datadir=self.datadir)
                     self.param = {}                     # read params into Simulation object
                     for key in dir(param):
                         if key.startswith('__'): continue
@@ -203,8 +203,8 @@ class __Simulation__(object):
 
         if self.param != False and (self.grid == False or self.ghost_grid == False):
             try:                                # read grid only if param is not False
-                self.grid = grid(data_dir=self.data_dir, trim=True, quiet=True)
-                self.ghost_grid = grid(data_dir=self.data_dir, trim=False, quiet=True)
+                self.grid = grid(datadir=self.datadir, trim=True, quiet=True)
+                self.ghost_grid = grid(datadir=self.datadir, trim=False, quiet=True)
             except:
                 if self.started() or (not quiet): print('? WARNING: Couldnt load grid for '+self.path)
                 self.grid = False
@@ -402,7 +402,7 @@ class __Simulation__(object):
         key = 'VAR'
         if particle == True: key = 'PVAR'
 
-        varlist = natural_sort([basename(i) for i in glob.glob(join(self.data_dir, 'proc0')+'/'+key+'*')])
+        varlist = natural_sort([basename(i) for i in glob.glob(join(self.datadir, 'proc0')+'/'+key+'*')])
         #if particle: varlist = ['P'+i for i in varlist]
 
         if pos == False: return varlist

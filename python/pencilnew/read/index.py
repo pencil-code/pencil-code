@@ -16,11 +16,11 @@ def index(*args, **kwargs):
 
     call signature:
 
-    read(data_dir='data', param=None, dim=None)
+    read(datadir='data', param=None, dim=None)
 
     Keyword arguments:
 
-    *data_dir*:
+    *datadir*:
       Directory where the data is stored.
 
     *param*
@@ -48,17 +48,17 @@ class Index(object):
         self.keys = []
 
 
-    def read(self, data_dir='data', param=None, dim=None):
+    def read(self, datadir='data', param=None, dim=None):
         """
         Read Pencil Code index data from index.pro.
 
         call signature:
 
-        read(self, data_dir='data/', param=None, dim=None)
+        read(self, datadir='data/', param=None, dim=None)
 
         Keyword arguments:
 
-        *data_dir*:
+        *datadir*:
           Directory where the data is stored.
 
         *param*
@@ -72,16 +72,16 @@ class Index(object):
         import pencilnew.read as read
 
         if param is None:
-            param = read.param(data_dir=data_dir, quiet=True)
+            param = read.param(datadir=datadir, quiet=True)
         if dim is None:
-            dim = read.dim(data_dir=data_dir)
+            dim = read.dim(datadir=datadir)
 
         if param.lwrite_aux:
             totalvars = dim.mvar + dim.maux
         else:
             totalvars = dim.mvar
 
-        index_file = open(os.path.join(data_dir, 'index.pro'))
+        index_file = open(os.path.join(datadir, 'index.pro'))
         for line in index_file.readlines():
             clean = line.strip()
             name = clean.split('=')[0].strip().replace('[', '').replace(']', '')

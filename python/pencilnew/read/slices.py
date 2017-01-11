@@ -14,7 +14,7 @@ def slices(*args, **kwargs):
 
     call signature:
 
-    read(self. field='uu1', extension='xz', data_dir='data', proc=-1,
+    read(self. field='uu1', extension='xz', datadir='data', proc=-1,
          old_file=False, precision='f')
 
     Keyword arguments:
@@ -25,7 +25,7 @@ def slices(*args, **kwargs):
     *extension*
       Specifies the slice(s).
 
-    *data_dir*:
+    *datadir*:
       Directory where the data is stored.
 
     *proc*:
@@ -58,14 +58,14 @@ class SliceSeries(object):
         self.t = np.array([])
 
 
-    def read(self, field='', extension='', data_dir='data', proc=-1,
+    def read(self, field='', extension='', datadir='data', proc=-1,
              old_file=False, precision='f'):
         """
         Read Pencil Code slice data.
 
         call signature:
 
-        read(self. field='', extension='', data_dir='data', proc=-1,
+        read(self. field='', extension='', datadir='data', proc=-1,
              old_file=False, precision='f')
 
         Keyword arguments:
@@ -76,7 +76,7 @@ class SliceSeries(object):
         *extension*
           Specifies the slice(s).
 
-        *data_dir*:
+        *datadir*:
           Directory where the data is stored.
 
         *proc*:
@@ -96,9 +96,9 @@ class SliceSeries(object):
 
         # Define the directory that contains the slice files.
         if proc < 0:
-            slice_dir = data_dir
+            slice_dir = datadir
         else:
-            slice_dir = os.path.join(data_dir, 'proc{0}'.format(proc))
+            slice_dir = os.path.join(datadir, 'proc{0}'.format(proc))
 
         # Initialize the fields list.
         if field:
@@ -139,14 +139,14 @@ class SliceSeries(object):
 
             for field in field_list:
                 # Compose the file name according to field and extension.
-                data_dir = os.path.expanduser(data_dir)
+                datadir = os.path.expanduser(datadir)
                 if proc < 0:
-                    file_name = os.path.join(data_dir, 'slice_'+field+'.'+extension)
+                    file_name = os.path.join(datadir, 'slice_'+field+'.'+extension)
                 else:
-                    file_name = os.path.join(data_dir, 'proc{0}'.format(proc),
+                    file_name = os.path.join(datadir, 'proc{0}'.format(proc),
                                              'slice_'+field+'.'+extension)
 
-                dim = read.dim(data_dir, proc)
+                dim = read.dim(datadir, proc)
                 if dim.precision == 'D':
                     precision = 'd'
                 else:

@@ -15,7 +15,7 @@ def ts(*args, **kwargs):
 
     call signature:
 
-    ts(file_name='time_series.dat', data_dir='data',
+    ts(file_name='time_series.dat', datadir='data',
        quiet=False, comment_char='#')
 
     Keyword arguments:
@@ -23,7 +23,7 @@ def ts(*args, **kwargs):
     *file_name*:
       Name of the time series file.
 
-    *data_dir*:
+    *datadir*:
       Directory where the data is stored.
 
     *quiet*
@@ -51,14 +51,14 @@ class TimeSeries(object):
         self.keys = []
 
 
-    def read(self, file_name='time_series.dat', data_dir='data',
+    def read(self, file_name='time_series.dat', datadir='data',
              quiet=False, comment_char='#'):
         """
         Read Pencil Code time series data.
 
         call signature:
 
-        read(self, file_name='time_series.dat', data_dir='data',
+        read(self, file_name='time_series.dat', datadir='data',
              double=0, quiet=0, comment_char='#')
 
         Keyword arguments:
@@ -66,7 +66,7 @@ class TimeSeries(object):
         *file_name*:
           Name of the time series file.
 
-        *data_dir*:
+        *datadir*:
           Directory where the data is stored.
 
         *quiet*
@@ -80,8 +80,8 @@ class TimeSeries(object):
         import os.path
         import re
 
-        data_dir = os.path.expanduser(data_dir)
-        infile = open(os.path.join(data_dir, file_name), "r")
+        datadir = os.path.expanduser(datadir)
+        infile = open(os.path.join(datadir, file_name), "r")
         lines = infile.readlines()
         infile.close()
 
