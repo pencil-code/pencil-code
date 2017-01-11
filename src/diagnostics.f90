@@ -1304,55 +1304,60 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !  Set format; use default if not given.
 !
       if (iform1>0) then
-        cform=cname(iform1+1:iform2-1)
         length=iform1-1
       else
-        cform='1pE10.2'
         length=iform0-1
-      endif
-
-      if (scan(cform(1:1), 'eEdDgG')==1) then 
-!
-!  Increase d in [ED]w.d if insufficient to hold a sign.
-!
-        if (scan(cform(1:1), "eEdD")==1) then
-
-          index_i=index(cform,'.')
-          read(cform(2:index_i-1),*) iwidth
-          read(cform(index_i+1:),*) idecs
-          idiff=iwidth-idecs-7
-          if (idiff<0) &
-            cform=cform(1:1)//trim(itoa(iwidth-idiff))//cform(index_i:)           
-
-        endif
-!
-!  Fix annoying Fortran 1p stuff ([EDG]w.d --> 1p[EDG]w.d).
-!
-        call safe_character_assign(cform, '1p'//trim(cform)//',0p')
-        
       endif
 !
 !  If the name matches, we keep the name and can strip off the format.
 !  The remaining name can then be used for the legend.
 !
       if (cname(1:length)==ctest) then
+
         if (itest==0) then
+          if (iform1>0) then
+            cform=cname(iform1+1:iform2-1)
+          else
+            cform='1pE10.2'
+          endif
           itest=iname
           fparse_name=iname
         else
           fparse_name=-1
         endif
-      else
-        fparse_name=0
-      endif
+
+        if (scan(cform(1:1), 'eEdDgG')==1) then
+!
+!  Increase d in [ED]w.d if insufficient to hold a sign.
+!
+          if (scan(cform(1:1), "eEdD")==1) then
+
+            index_i=index(cform,'.')
+            read(cform(2:index_i-1),*) iwidth
+            read(cform(index_i+1:),*) idecs
+            idiff=iwidth-idecs-7
+            if (idiff<0) &
+              cform=cform(1:1)//trim(itoa(iwidth-idiff))//cform(index_i:)
+
+          endif
+!
+!  Fix annoying Fortran 1p stuff ([EDG]w.d --> 1p[EDG]w.d).
+!
+          call safe_character_assign(cform, '1p'//trim(cform)//',0p')
+
+        endif
 !
 !  Integer formats are turned into floating point numbers.
 !
-      index_i=scan(cform,'iI',.true.)
+        index_i=scan(cform,'iI',.true.)
 
-      if (index_i>0) then
-        cform(index_i:index_i)='f'
-        cform=trim(cform)//'.0'
+        if (index_i>0) then
+          cform(index_i:index_i)='f'
+          cform=trim(cform)//'.0'
+        endif
+
+      else
+        fparse_name=0
       endif
 !
     endfunction fparse_name
