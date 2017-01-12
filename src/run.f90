@@ -280,6 +280,8 @@ program run
   call rprint_list(LRESET=.false.)
   if (lparticles) call particles_rprint_list(.false.)
 !
+  call report_undefined(cname,cform)
+!
 !  Populate wavenumber arrays for fft and calculate Nyquist wavenumber.
 !
   if (nxgrid/=1) then

@@ -51,6 +51,7 @@ module Diagnostics
   public :: ysum_mn_name_xz_npar, xysum_mn_name_z_npar, yzsum_mn_name_x_mpar
   public :: zsum_mn_name_xy_mpar_scal, zsum_mn_name_xy_mpar
   public :: sign_masked_xyaver
+  public :: report_undefined
 !
   interface max_name
     module procedure max_name_int
@@ -184,8 +185,9 @@ module Diagnostics
 !   3-may-02/axel: coded
 !  20-aug-13/MR: changes for accumulating and complex diagnostics
 !  26-aug-13/MR: corrected insertion of imaginary values
+!  12-jan-17/MR: undefined diagnostics suppressed in output
 !
-      use General, only: safe_character_append
+      use General, only: safe_character_append, compress
       use Cparam, only: max_col_width
       use Sub, only: insert
 !
@@ -229,31 +231,33 @@ module Diagnostics
           write(*,*)
           write(*,'(" ",A)') trim(legend)
 !
-!  Write legend to extra file (might want to do only once after each lreset)
+!  Write legend to extra file (might want to do only once after each lreset).
 !
           open(lun,file=trim(datadir)//'/legend.dat')
           write(lun,'(" ",A)') trim(legend)
           close(lun)
         endif
 !
-!  Put output line into a string.
-!
-        if (ldebug) write(*,*) 'bef. writing prints'
+        if (ldebug) write(*,*) 'before writing prints'
         buffer(1:nname) = fname(1:nname)
 !
-!  add accumulated values to current ones if existent
+!  Add accumulated values to current ones if existent.
 !
         where( fname_keep(1:nname) /= impossible .and. &
                itype_name(1:nname)<ilabel_complex ) &
            buffer(1:nname) = buffer(1:nname)+fname_keep(1:nname)
 !
+!  Insert imaginary parts behind real ones if quantity is complex.
+!
         nnamel=nname
         do iname=nname,1,-1
-          if (itype_name(iname)>=ilabel_complex) then
+          if (itype_name(iname)>=ilabel_complex .and. cform(iname)/='') &
             call insert(buffer,(/fname_keep(iname)/),iname+1,nnamel)
-          endif
         enddo
 !
+!  Put output line into a string.
+!
+        call compress(buffer,cform=='',nnamel)
         write(line,trim(fform)) buffer(1:nnamel)
         call clean_line(line)
 !
@@ -282,10 +286,41 @@ module Diagnostics
 !
     endsubroutine prints
 !***********************************************************************
+    subroutine report_undefined(cname,cform)
+!
+!  Reports diagnostics requested in cname, but undefined (their format is empty in cform).
+!
+!  12-jan-17/MR: coded
+!
+      character(len=30), dimension(:), intent(IN) :: cname,cform
+
+      integer :: ind, i
+      character(LEN=256) :: text
+
+      if (lroot) then
+
+        text='Warning:'; ind=-1
+        do i=1,size(cname)
+          if (cform(i)=='') then
+            ind=index(cname(i),'('); if (ind==0) ind=31
+            text=trim(text)//' '//trim(cname(i)(1:ind-1))//','
+          endif
+        enddo
+
+        if (ind/=-1) then
+          text=text(1:index(text,',',BACK=.true.)-1)//' diagnostics not defined!'
+          print*, trim(text)
+        endif
+
+      endif
+
+    endsubroutine report_undefined
+!***********************************************************************
     subroutine gen_form_legend(fform,legend)
 !
 !  19-aug-13/MR: outsourced from prints
 !  10-jan-17/MR: added adjustment of fixed point format to output value
+!  12-jan-17/MR: undefined diagnostics suppressed in format
 !
       use General, only: safe_character_append, itoa
       use Sub, only: noform
@@ -305,35 +340,38 @@ module Diagnostics
         if (present(legend)) legend=''
 !
         do iname=1,nname
-!print*, 'iname,cname,cform=',iname,cname(iname), cform(iname)
-          lcompl=itype_name(iname)>=ilabel_complex
+!
+          if (cform(iname)/='') then
 
-          if (lcompl) then
-            tform = comma//'" ("'//comma//trim(cform(iname))//comma &
-              //'","'//comma//trim(cform(iname))//comma//'")"'
-          else
-            if (fname(iname)/=0.) then
+            lcompl=itype_name(iname)>=ilabel_complex
+
+            if (lcompl) then
+              tform = comma//'" ("'//comma//trim(cform(iname))//comma &
+                      //'","'//comma//trim(cform(iname))//comma//'")"'
+            else
+              if (fname(iname)/=0.) then
 !
 !  Check output item for fixed-point formats.
 !
-              index_i=scan(cform(iname),'fF')
-              if (index_i>0) then
-                read(cform(iname)(index_i+1:),*) rlength
-                if (floor(alog10(abs(fname(iname))))+2 > rlength) then
-                  index_d=index(cform(iname),'.')
-                  length=len(trim(cform(iname)))
-                  write(cform(iname)(index_i+1:), &
-                        '(f'//trim(itoa(length-index_i))//'.'//trim(itoa(length-index_d))//')') rlength+2
+                index_i=scan(cform(iname),'fF')
+                if (index_i>0) then
+                  read(cform(iname)(index_i+1:),*) rlength
+                  if (floor(alog10(abs(fname(iname))))+2 > rlength) then
+                    index_d=index(cform(iname),'.')
+                    length=len(trim(cform(iname)))
+                    write(cform(iname)(index_i+1:), &
+                          '(f'//trim(itoa(length-index_i))//'.'//trim(itoa(length-index_d))//')') rlength+2
+                  endif
                 endif
               endif
-            endif
 
-            if (trim(cform(iname))/='') tform = comma//trim(cform(iname))
+              if (cform(iname)/='') tform = comma//trim(cform(iname))
+
+            endif
+            call safe_character_append(fform, trim(tform))
+            if (present(legend)) call safe_character_append(legend, noform(cname(iname),lcompl))
 
           endif
-          call safe_character_append(fform, trim(tform))
-          if (present(legend)) call safe_character_append(legend, noform(cname(iname),lcompl))
-
         enddo
         call safe_character_append(fform, ')')
 !

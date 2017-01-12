@@ -34,6 +34,7 @@ module General
   public :: read_range, merge_ranges, get_range_no, write_by_ranges, &
             write_by_ranges_1d_real, write_by_ranges_1d_cmplx, &
             write_by_ranges_2d_real, write_by_ranges_2d_cmplx
+  public :: compress
   public :: quick_sort, binary_search
   public :: date_time_string
   public :: backskip
@@ -2804,6 +2805,31 @@ module General
       endif
 !
     endfunction merge_ranges
+!***********************************************************************
+    subroutine compress(vec,mask,len)
+!
+!  Compresses vector vec guided by mask: vec(i) is removed where mask(i)=T.
+!  Length of compressed vec is returned in len.
+!  If len>0 on input it is taken as the actual length of vec.
+!
+!  12-jan-17/MR: coded
+!
+      real,    dimension(:),          intent(inout):: vec
+      logical, dimension(:),          intent(in)   :: mask
+      integer,              optional, intent(inout):: len
+
+      integer :: i
+
+      if (len<=0) len=size(vec)
+
+      do i=len,1,-1
+        if ( mask(i) ) then
+          if ( i<len ) vec(i:len-1) = vec(i+1:len)
+          len = len-1
+        endif
+      enddo
+
+    endsubroutine compress
 !***********************************************************************
     subroutine find_ranges(list,ranges,ie)
 !

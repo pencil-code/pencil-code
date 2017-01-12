@@ -4798,17 +4798,14 @@ module Hydro
       if ((idiag_urmsn/=0).or.(idiag_urmss/=0))then
         iname_half=iname_half+1
         idiag_urmsh=iname_half
-      else
       endif
       if ((idiag_ormsn/=0).or.(idiag_ormss/=0))then
         iname_half=iname_half+1
         idiag_ormsh=iname_half
-      else
       endif
       if ((idiag_oumn/=0).or.(idiag_oums/=0))then
         iname_half=iname_half+1
         idiag_oumh=iname_half
-      else
       endif
       name_half_max=iname_half
 !

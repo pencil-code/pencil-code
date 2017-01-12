@@ -164,6 +164,8 @@ program start
   call rprint_list(.false.)
   if (lparticles) call particles_rprint_list(.false.)
 !
+  call report_undefined(cname,cform)
+!
 !  The logical headtt is sometimes referred to in start.x, even though it is
 !  not yet defined. So we set it simply to lroot here.
 !

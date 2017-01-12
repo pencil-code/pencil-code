@@ -1074,6 +1074,7 @@ module Register
       call rprint_shear           (lreset,LWRITE=lroot)
       call rprint_testperturb     (lreset,LWRITE=lroot)
       call rprint_pointmasses     (lreset,LWRITE=lroot)
+      
       if (lroot) close(3)
 !
     endsubroutine rprint_list
@@ -1089,8 +1090,8 @@ module Register
       use Cdata
       use Diagnostics
       use Energy,  only: expand_shands_energy
-      use Hydro,    only: expand_shands_hydro
-      use Magnetic, only: expand_shands_magnetic
+      use Hydro,   only: expand_shands_hydro
+      use Magnetic,only: expand_shands_magnetic
 !
       integer :: iname,irz
       logical :: lreset,lwr
