@@ -908,7 +908,7 @@ module Particles_main
 !
 !  15-sep-07/wlad: coded
 !
-      real :: rad,raddot,phidot,thtdot,sintht,costht
+      real :: rpcyl1,rp1,lat,costhp,sinthp,sin1thp,cotthp
       integer :: k
 !
       if (.not.lpointmasses) then
@@ -917,21 +917,33 @@ module Particles_main
 !  Correct acceleration.
 !
           if (lcylindrical_coords) then
-            rad=fp(k,ixp);raddot=fp(k,ivpx);phidot=fp(k,ivpy)/max(rad,tini)
-            dfp(k,ivpx) = dfp(k,ivpx) + rad*phidot**2
-            dfp(k,ivpy) = dfp(k,ivpy) - 2*raddot*phidot
+!            
+            rpcyl1 = 1./max(fp(k,ixp),tini)
+!            
+            dfp(k,ivpx) = dfp(k,ivpx) + rpcyl1*fp(k,ivpy)**2
+            dfp(k,ivpy) = dfp(k,ivpy) - rpcyl1*fp(k,ivpx)*fp(k,ivpy)
+!            
           elseif (lspherical_coords) then
-            rad=fp(k,ixp)
-            sintht=sin(fp(k,iyp));costht=cos(fp(k,iyp))
-            raddot=fp(k,ivpx);thtdot=fp(k,ivpy)/max(rad,tini)
-            phidot=fp(k,ivpz)/(max(rad,tini)*sintht)
 !
-            dfp(k,ivpx) = dfp(k,ivpx) &
-                 + rad*(thtdot**2 + (sintht*phidot)**2)
-            dfp(k,ivpy) = dfp(k,ivpy) &
-                 - 2*raddot*thtdot + rad*sintht*costht*phidot**2
-            dfp(k,ivpz) = dfp(k,ivpz) &
-                 - 2*phidot*(sintht*raddot + rad*costht*thtdot)
+            rp1    = 1./max(fp(k,ixp),tini)
+            if (luse_latitude) then
+              lat=pi/2-fp(k,iyp)
+              costhp=sin(lat)
+            else
+              costhp=cos(fp(k,iyp))
+            endif
+            sinthp=sin(fp(k,iyp))
+            if (abs(sinthp)>tini) then
+              sin1thp=1./sinthp
+            else
+              sin1thp=0.
+            endif
+            cotthp=costhp*sin1thp
+!
+            dfp(k,ivpx) = dfp(k,ivpx) + rp1*(fp(k,ivpy)**2 + fp(k,ivpz)**2)
+            dfp(k,ivpy) = dfp(k,ivpy) - rp1*(fp(k,ivpy)*fp(k,ivpx) - fp(k,ivpz)**2*cotthp)
+            dfp(k,ivpz) = dfp(k,ivpz) - rp1*(fp(k,ivpz)*fp(k,ivpx) + fp(k,ivpz)*fp(k,ivpy)*cotthp)
+!
           endif
         enddo
       endif
