@@ -305,7 +305,7 @@ module Diagnostics
         if (present(legend)) legend=''
 !
         do iname=1,nname
-
+!print*, 'iname,cname,cform=',iname,cname(iname), cform(iname)
           lcompl=itype_name(iname)>=ilabel_complex
 
           if (lcompl) then
@@ -328,7 +328,7 @@ module Diagnostics
               endif
             endif
 
-            tform = comma//trim(cform(iname))
+            if (trim(cform(iname))/='') tform = comma//trim(cform(iname))
 
           endif
           call safe_character_append(fform, trim(tform))
