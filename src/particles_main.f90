@@ -917,12 +917,12 @@ module Particles_main
 !  Correct acceleration.
 !
           if (lcylindrical_coords) then
-!            
+!
             rpcyl1 = 1./max(fp(k,ixp),tini)
-!            
+!
             dfp(k,ivpx) = dfp(k,ivpx) + rpcyl1*fp(k,ivpy)**2
             dfp(k,ivpy) = dfp(k,ivpy) - rpcyl1*fp(k,ivpx)*fp(k,ivpy)
-!            
+!
           elseif (lspherical_coords) then
 !
             rp1    = 1./max(fp(k,ixp),tini)
