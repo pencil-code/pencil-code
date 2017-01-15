@@ -42,13 +42,16 @@ module Supersat
   real :: supersat_diff=0.0
   real :: supersat_sink=0.0
   real :: vapor_mixing_ratio_qvs=0.0
+  real :: updraft=0.0
+  real :: A1=0.0
   real, dimension(3) :: gradssat0=(/0.0,0.0,0.0/)
-  logical :: lsupersat_sink=.false., Rsupersat_sink=.false.
+  logical :: lsupersat_sink=.false., Rsupersat_sink=.false.,lupdraft=.false.
   logical :: lupw_ssat=.false., lcondensation_rate=.false.
 
   namelist /supersat_run_pars/ &
       lupw_ssat, lsupersat_sink, Rsupersat_sink, supersat_sink, &
-      supersat_diff, gradssat0, lcondensation_rate, vapor_mixing_ratio_qvs
+      supersat_diff, gradssat0, lcondensation_rate, vapor_mixing_ratio_qvs, &
+      lupdraft, updraft, A1
 !
 ! Declare index of new variables in f array
 !
@@ -243,7 +246,7 @@ module Supersat
       real, dimension (nx) :: diff_op,diff_op2,bump,gcgu
       real, dimension (nx) :: radius_sum, condensation_rate_Cd, qv, superaturation
       real :: ssat_xyaver
-      real :: tau=10., A1=5e-4
+      real :: tau=10.
       real :: lam_gradC_fact=1., om_gradC_fact=1., gradC_fact=1.
       integer, parameter :: nxy=nxgrid*nygrid
       integer :: k
@@ -275,12 +278,13 @@ module Supersat
         if (lsupersat_sink) then
           if (Rsupersat_sink) then
             bump=A1*p%uu(:,1)
-            !print*,'tau=',p%tausupersat
+          elseif (lupdraft) then
+            bump=A1*updraft
           else
-            bump=A1*p%uu(:,1)-f(l1:l2,m,n,issat)/tau
-            !bump=A1*p%uu(:,1)-f(l1:l2,m,n,issat)/p%tausupersat
+            !bump=A1*p%uu(:,1)-f(l1:l2,m,n,issat)/tau
+            bump=A1*p%uu(:,1)-f(l1:l2,m,n,issat)/p%tausupersat
             !print*,'tau=',f(l1:l2,m,n,itausupersat)
-            !print*,'tau=',p%tausupersat
+            !print*,'tau2=',p%tausupersat
           endif
         !df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat+bump
         df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+bump
