@@ -15,7 +15,11 @@ def get_systemid():
 """
 
     import socket
-    raw_name = socket.gethostname()		# get computer name
+    system_name = False
+    raw_name = socket.gethostname()     # get computer name
+    job_name_key = False
+    submit_scriptfile = False
+    submit_line = False
 
     if raw_name.startswith('theo'): 		# theo in garchingen uses sun grid
         system_name = 'theo'
@@ -29,11 +33,17 @@ def get_systemid():
         submit_scriptfile = 'submit.csh'
         submit_line = 'llsubmit submit.csh'
 
-    elif raw_name.startswith('juqueen'): 	# loadleveler on juqueen
+    elif raw_name.startswith('juqueen'):    # loadleveler on juqueen
         system_name = 'juqueen'
         job_name_key = 'job_name'
         submit_scriptfile = 'submit.sh'
         submit_line = 'llsubmit submit.sh'
+        
+    elif raw_name.startswith('draco'):    # loadleveler on juqueen
+        system_name = 'draco'
+        job_name_key = '#SBATCH -J'
+        submit_scriptfile = 'submit.csh'
+        submit_line = 'llsubmit submit.csh'
 
     else:
         system_name = 'pc'
