@@ -1416,8 +1416,8 @@ module Energy
 !
             call information('init_energy', &
                 'star_heat: now done in initial_condition_ss')
-          case ('cylind_layers')
-            call cylind_layers(f)
+          case ('piecew-poly-cylind')
+            call piecew-poly-cylind(f)
           case ('polytropic_simple')
 !
 !  Vertical temperature profiles for convective layer problem.
@@ -6857,7 +6857,7 @@ module Energy
 !
     endsubroutine shell_ss_layers
 !***********************************************************************
-    subroutine cylind_layers(f)
+    subroutine piecew-poly-cylind(f)
 !
 !  Initialise ss in a cylindrical ring using 2 superposed polytropic layers.
 !
@@ -6865,21 +6865,21 @@ module Energy
 !
       use EquationOfState, only: lnrho0, cs20, gamma, gamma_m1, cs2top, &
                                  cs2bot, get_cp1, eoscalc, ilnrho_TT
-      use Gravity, only: gravz, g0
+      use Gravity, only: gravx
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho, TT, ss
       real :: beta0, beta1, TT_bcz, TT_ext, TT_int
       real :: cp1, lnrho_bcz
 !
-      if (headtt) print*,'r_bcz in cylind_layers=', r_bcz
+      if (headtt) print*,'r_bcz in piecew-poly-cylind=', r_bcz
 !
 !  beta is the (negative) temperature gradient
 !  beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
 !
       call get_cp1(cp1)
-      beta0=-cp1*g0/(mpoly0+1)*gamma/gamma_m1
-      beta1=-cp1*g0/(mpoly1+1)*gamma/gamma_m1
+      beta0=cp1*gravx/(mpoly0+1.)*gamma/gamma_m1
+      beta1=cp1*gravx/(mpoly1+1.)*gamma/gamma_m1
       TT_ext=cs20/gamma_m1
       TT_bcz=TT_ext+beta0*(r_bcz-r_ext)
       TT_int=TT_bcz+beta1*(r_int-r_bcz)
@@ -6910,7 +6910,7 @@ module Energy
       enddo
       enddo
 !
-    endsubroutine cylind_layers
+    endsubroutine piecew-poly-cylind 
 !***********************************************************************
     subroutine single_polytrope(f)
 !
