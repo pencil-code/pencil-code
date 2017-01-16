@@ -15,7 +15,7 @@
   public :: gravity_after_boundary
 !ajwm SHOULDN'T BE SHARED
 !MR: can be made protected
-  public :: gravz,nu_epicycle,g0,gravz_const,gravx
+  public :: gravz,nu_epicycle,g0,gravz_const
   public :: gravz_profile
   public :: zref,z1,z2,zinfty,zgrav,reduced_top
   public :: lnrho_bot,lnrho_top
