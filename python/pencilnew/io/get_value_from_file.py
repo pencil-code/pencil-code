@@ -89,6 +89,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
             print('~ DEBUG: File {0} not found in {1}!'.format(filename, search_paths))
         return None
     
+    
     ######## open file
     # now having absolute filepath to file, lets check that file and find quantity inside!    
     if DEBUG: print('~ DEBUG: Found suiting file {0} in {1}'.format(filename,filepath))
@@ -251,14 +252,14 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
             from shutil import copyfile
             target = join(sim.path, '.pc/backups/'+timestamp())
             mkdir(target); target = join(target, filename)
-            copyfile(filepath, target)
+            copyfile(absolute_filepath, target)
 
             # replace line in raw data
             data_raw[line_matches[0]] = new_line
 
             # save on drive
             f.close()
-            with open(filename, 'w') as f:
+            with open(absolute_filepath, 'w') as f:
                 for l in data_raw: f.write(l)
 
     ######## DONE!

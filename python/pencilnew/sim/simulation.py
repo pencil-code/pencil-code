@@ -90,10 +90,10 @@ class __Simulation__(object):
             rename_submit_sripts:   Set False if no renames shall be performed in subnmit* files
             OVERWRITE:      Set True to overwrite no matter what happens!
         """
-        from os.path import exists, join, abspath
+        from os.path import exists, join, abspath, basename
         from shutil import copyfile
         from glob import glob
-        from pencilnew.io import mkdir
+        from pencilnew.io import mkdir, get_systemid, debug_breakpoint
         from pencilnew.sim import is_sim_dir
         from pencilnew import get_sim
 
@@ -113,17 +113,16 @@ class __Simulation__(object):
         path_newsim = join(path_root, name)     # simulation abspath
         path_newsim_src = join(path_newsim, 'src')
 
+        if type(optionals) == type(['list']): optionals = self.optionals + optionals          # optional files to be copied
         if optionals == True: optionals = self.optionals
-        if type(optionals) == type('string'):
-            optionals = [optionals]
-        if type(optionals) != type(['list']):
-            print('! ERROR: optionals must be of type list!')
-        optionals = self.optionals + optionals          # optional files to be copied
+        if type(optionals) == type('string'): optionals = [optionals]
+        if type(optionals) != type(['list']): print('! ERROR: optionals must be of type list!')
+        
         tmp = []
         for opt in optionals:
-            files = glob(opt)
+            files = glob(join(self.path, opt))
             for f in files:
-                tmp.append(f)
+                tmp.append(basename(f))
         optionals = tmp
 
         ## check if the copy was already created
@@ -164,13 +163,15 @@ class __Simulation__(object):
         for f in self.components+optionals:
             f_path = abspath(join(self.path, f))
             copy_to = abspath(join(path_newsim, f))
+            if f_path == copy_to: debug_breakpoint()
             copyfile(f_path, copy_to)
 
         # modify name in submit script files
         if rename_submit_sripts:
             for f in self.components+optionals:
                 if f.startswith('submit'):
-                    system_name, raw_name, job_name_key, submit_scriptfile, submit_line = pencilnew.io.get_systemid()
+                    debug_breakpoint()
+                    system_name, raw_name, job_name_key, submit_scriptfile, submit_line = get_systemid()
 
         # done
         return get_sim(path_newsim)
@@ -451,8 +452,8 @@ class __Simulation__(object):
 
         print('! ERROR: Couldnt find '+quantity+'!')
 
-    def change_value_in_file(filename, quantity, newValue, sim=False, filepath=False, DEBUG=False):
+    def change_value_in_file(self, filename, quantity, newValue, filepath=False, DEBUG=False):
         """Same as pencilnew.io.change_value_in_file."""
         from pencilnew.io import change_value_in_file
 
-        return change_value_in_file(filename, quantity, newValue, sim=sim, filepath=filepath, DEBUG=DEBUG)
+        return change_value_in_file(filename, quantity, newValue, sim=self, filepath=filepath, DEBUG=DEBUG)
