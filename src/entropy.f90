@@ -441,6 +441,7 @@ module Energy
       integer :: i, j, q, n, m, stat
       logical :: lnothing, exist
       type (pencil_case) :: p
+      real, pointer :: gravx
 !
 !  Check any module dependencies.
 !
@@ -700,10 +701,11 @@ module Energy
           star_cte=(mpoly0+1.)/hcond0*(1.-gamma1)
           call compute_gravity_star(f, wheat, luminosity, star_cte)
 !
-        case ('cylind_layers')
+        case ('piecew_poly_cylind')
           if (bcx12(iss,1)=='c1') then
-            Fbot=gamma/gamma_m1*hcond0*g0/(mpoly0+1)
-            FbotKbot=gamma/gamma_m1*g0/(mpoly0+1)
+            call get_shared_variable('gravx', gravx, caller='initialize_energy')
+            Fbot=-gamma/gamma_m1*hcond0*gravx/(mpoly0+1.)
+            FbotKbot=-gamma/gamma_m1*gravx/(mpoly0+1.)
           endif
           cs2cool=cs2top
 !
