@@ -1416,8 +1416,8 @@ module Energy
 !
             call information('init_energy', &
                 'star_heat: now done in initial_condition_ss')
-          case ('piecew-poly-cylind')
-            call piecew-poly-cylind(f)
+          case ('piecew_poly_cylind')
+            call piecew_poly_cylind(f)
           case ('polytropic_simple')
 !
 !  Vertical temperature profiles for convective layer problem.
@@ -6857,7 +6857,7 @@ module Energy
 !
     endsubroutine shell_ss_layers
 !***********************************************************************
-    subroutine piecew-poly-cylind(f)
+    subroutine piecew_poly_cylind(f)
 !
 !  Initialise ss in a cylindrical ring using 2 superposed polytropic layers.
 !
@@ -6872,7 +6872,7 @@ module Energy
       real :: beta0, beta1, TT_bcz, TT_ext, TT_int
       real :: cp1, lnrho_bcz
 !
-      if (headtt) print*,'r_bcz in piecew-poly-cylind=', r_bcz
+      if (headtt) print*,'r_bcz in piecew_poly_cylind=', r_bcz
 !
 !  beta is the (negative) temperature gradient
 !  beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
@@ -6910,7 +6910,7 @@ module Energy
       enddo
       enddo
 !
-    endsubroutine piecew-poly-cylind 
+    endsubroutine piecew_poly_cylind 
 !***********************************************************************
     subroutine single_polytrope(f)
 !
