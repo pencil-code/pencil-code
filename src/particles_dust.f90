@@ -164,7 +164,7 @@ module Particles
   logical :: lcompensate_sedimentation=.false.
   real :: compensate_sedimentation=1.
 !
-  real :: A1=0., A2=0.
+  real :: A1=0., A2=0., distance=0.
 !
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
@@ -4445,10 +4445,12 @@ module Particles
         do i=l1,l2
            taulocal=0
            do k=k1_imn(imn),k2_imn(imn)
-             l=ineargrid(k,1)
-             if (l==i) then
-                taulocal=taulocal+fp(k,iap)*fp(k,inpswarm)
-             endif
+               distance=sqrt((fp(k,ixp)-fp(i,ix))**2+(fp(k,iyp)-fp(i,iy))**2+(fp(k,izp)-fp(i,iz))**2)
+               if (distance.lt. 0.00625*sqrt(3.)) then 
+!             l=ineargrid(k,1)
+!             if (l==i) then
+                 taulocal=taulocal+fp(k,iap)*fp(k,inpswarm)
+               endif
            enddo
            !f(i,m,n,itausupersat)=f(i,m,n,itausupersat)+4.*pi*rhopmat*A1*A2*taulocal
            p%tausupersat(i-3)=f(i-3,m,n,itausupersat)+4.*pi*rhopmat*A1*A2*taulocal
