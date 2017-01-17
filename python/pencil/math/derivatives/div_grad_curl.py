@@ -99,7 +99,7 @@ def laplacian(f,dx,dy,dz,x=[],y=[],z=[]):
 
     return laplacian
 
-def curl(f,dx,dy,dz,x=[],y=[],z=[],run2D=False):
+def curl(f,dx,dy,dz,x=[],y=[],z=[],run2D=False,param=[]):
     """
     take the curl of a pencil code vector array.
     23-fev-2009/dintrans+morin: introduced the run2D parameter to deal
@@ -108,13 +108,13 @@ def curl(f,dx,dy,dz,x=[],y=[],z=[],run2D=False):
     if (f.shape[0] != 3):
         print("curl: must have vector 4-D array f[3,mz,my,mx] for curl")
         raise ValueError
-    param = read_param(quiet=True)
-    gd  = read_grid(quiet=True)
+
+    if not param:
+        param = read_param(quiet=True)
     if len(x) < 1:
+        gd = read_grid(quiet=True)
         x = gd.x
-    if len(y) < 1:
         y = gd.y
-    if len(z) < 1:
         z = gd.z
 
     curl = N.empty_like(f)
@@ -138,7 +138,12 @@ def curl(f,dx,dy,dz,x=[],y=[],z=[],run2D=False):
                       yder(f,dy,x=x,y=y,z=z)[0,...]
 
     if param.coord_system == 'cylindric':
-        curl[2,...] += f[1,...]/x
+    # 2-D case in the (r,theta)-plane
+        if run2D:
+            curl[0,...] += f[1,...]/x
+        else:
+    # 3-D case
+            curl[2,...] += f[1,...]/x
     if param.coord_system == 'spherical':
         sin_y = N.sin(y)
         cos_y = N.cos(y)
