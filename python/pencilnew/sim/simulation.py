@@ -75,7 +75,7 @@ class __Simulation__(object):
         self = self.update(quiet=quiet)                   # auto-update, i.e. read param.nml
         # Done
 
-    def copy(self, path_root='.', name=False, optionals=True, quiet=True, rename_submit_sripts=True, OVERWRITE=False):
+    def copy(self, path_root='.', name=False, optionals=True, quiet=True, rename_submit_scripts=False, OVERWRITE=False):
         """This method does a copy of the simulation object by creating a new directory 'name' in 'path_root' and copy all simulation components and optionals to his directory.
         This method neither links/compiles the simulation, nor creates data dir nor does overwrite anything.
 
@@ -87,7 +87,7 @@ class __Simulation__(object):
             name:           Name of new simulation, will be used as folder name. Rename will also happen in submit script if found. Simulation folders is not allowed to preexist!!
             optionals:      Add list of further files to be copied. Wildcasts allowed according to glob module! Set True to use self.optionals.
             quiet:          Set True to suppress output.
-            rename_submit_sripts:   Set False if no renames shall be performed in subnmit* files
+            rename_submit_scripts:   Set False if no renames shall be performed in subnmit* files
             OVERWRITE:      Set True to overwrite no matter what happens!
         """
         from os.path import exists, join, abspath, basename
@@ -163,15 +163,18 @@ class __Simulation__(object):
         for f in self.components+optionals:
             f_path = abspath(join(self.path, f))
             copy_to = abspath(join(path_newsim, f))
-            if f_path == copy_to: debug_breakpoint()
+            if f_path == copy_to: 
+                print('!! ERROR: file path f_path equal to destination copy_to. Debug this line manually!')
+                debug_breakpoint()
             copyfile(f_path, copy_to)
 
         # modify name in submit script files
-        if rename_submit_sripts:
-            for f in self.components+optionals:
-                if f.startswith('submit'):
-                    debug_breakpoint()
-                    system_name, raw_name, job_name_key, submit_scriptfile, submit_line = get_systemid()
+        if rename_submit_scripts:
+            print('!! ERROR: Not implemented yet...  old version was not stable.')
+            #for f in self.components+optionals:
+                #if f.startswith('submit'):
+                    #debug_breakpoint()
+                    #system_name, raw_name, job_name_key, submit_scriptfile, submit_line = get_systemid()
 
         # done
         return get_sim(path_newsim)
