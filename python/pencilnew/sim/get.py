@@ -1,9 +1,7 @@
 def get(path='.', quiet=False):
     """Returns simulation object from 'path, if already existing, or creates new simulation object from path, if its as simulation."""
 
-    from os.path import isdir
-    from os.path import join
-    from os.path import exists
+    from os.path import isdir, join, exists, basename
     from pencilnew.io import load
     from . simulation import simulation
 
