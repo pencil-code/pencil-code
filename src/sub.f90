@@ -6035,34 +6035,35 @@ nameloop: do
 !
     endsubroutine gij_psi_etc
 !***********************************************************************
-    logical function location_in_proc(xpos,ypos,zpos,lpos,mpos,npos)
+    logical function location_in_proc(pos,lpos,mpos,npos)
 !
-! finds out if a points belongs to the location in the processor.
-! If yes the also returns the nearest grid location of this point.
+! Finds out if a points defined by pos belongs to the subdomain of the processor.
+! Note: pos contains only the relevant coordinates, that is, those of the *active* dimensions.
+! If yes then also returns the nearest grid location of this point. (MR: "nearest" not exactly true)
 !
 !  -dec-10/dhruba: coded
 !  28-dec-10/MR: changed into function
 !  13-jan-11/MR: made dependent on dimensionality,
 !                irrelevant position indices set to 1
+!  17-jan-17/MR: made valid for all possible dimensionality cases;
+!                set output for inactive dimensions to nghost+1
 !
-      real,    intent(in)  :: xpos,ypos,zpos
-      integer, intent(out) :: lpos,mpos,npos
+      real, dimension(dimensionality), intent(in)  :: pos
+      integer,                         intent(out) :: lpos,mpos,npos
 !
       logical :: linx,liny,linz
+      integer :: i
 !
-      lpos=1 ; mpos=1 ; npos=1
+      lpos=nghost+1 ; mpos=nghost+1 ; npos=nghost+1
       linx=.true. ; liny=.true. ; linz=.true.
 !
-      if (dimensionality>0) then
-        call xlocation(xpos,lpos,linx)
-!
-        if (dimensionality>1) then
-          call ylocation(ypos,mpos,liny)
-!
-          if (dimensionality>2) &
-            call zlocation(zpos,npos,linz)
-        endif
-      endif
+      do i=1,dimensionality 
+        select case (dim_mask(i))
+          case (1); call xlocation(pos(i),lpos,linx); lpos=min(max(l1,lpos),l2)  !MR: minmax operation should be in *location
+          case (2); call ylocation(pos(i),mpos,liny); mpos=min(max(m1,mpos),m2)
+          case (3); call zlocation(pos(i),npos,linz); npos=min(max(n1,npos),n2)
+        end select
+      enddo
 !
       location_in_proc = linx.and.liny.and.linz
 !

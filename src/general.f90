@@ -34,7 +34,7 @@ module General
   public :: read_range, merge_ranges, get_range_no, write_by_ranges, &
             write_by_ranges_1d_real, write_by_ranges_1d_cmplx, &
             write_by_ranges_2d_real, write_by_ranges_2d_cmplx
-  public :: compress
+  public :: compress, fcompress
   public :: quick_sort, binary_search
   public :: date_time_string
   public :: backskip
@@ -145,6 +145,11 @@ module General
     module procedure meshgrid_2d
     module procedure meshgrid_3d
   endinterface meshgrid
+
+  interface compress
+    module procedure compress_vec
+    module procedure compress_arr
+  endinterface
 !
 !  State and default generator of random numbers.
 !
@@ -2806,7 +2811,7 @@ module General
 !
     endfunction merge_ranges
 !***********************************************************************
-    subroutine compress(vec,mask,len)
+    subroutine compress_vec(vec,mask,len)
 !
 !  Compresses vector vec guided by mask: vec(i) is removed where mask(i)=T.
 !  Length of compressed vec is returned in len.
@@ -2814,9 +2819,9 @@ module General
 !
 !  12-jan-17/MR: coded
 !
-      real,    dimension(:),          intent(inout):: vec
-      logical, dimension(:),          intent(in)   :: mask
-      integer,              optional, intent(inout):: len
+      real,    dimension(:), intent(inout):: vec
+      logical, dimension(:), intent(in)   :: mask
+      integer,               intent(inout):: len
 
       integer :: i
 
@@ -2829,7 +2834,62 @@ module General
         endif
       enddo
 
-    endsubroutine compress
+    endsubroutine compress_vec
+!***********************************************************************
+    subroutine compress_arr(arr,mask,len)
+!
+!  Compresses array arr in 2nd dimension guided by mask: arr(:,i) is removed where mask(i)=T.
+!  2nd dimension of compressed arr is returned in len.
+!  If len>0 on input it is taken as the actual 2nd dimension of arr.
+!
+!  12-jan-17/MR: coded
+!
+      real,    dimension(:,:),intent(inout):: arr
+      logical, dimension(:),  intent(in)   :: mask
+      integer,                intent(inout):: len
+
+      integer :: i
+
+      if (len<=0) len=size(arr,2)
+
+      do i=len,1,-1
+        if ( mask(i) ) then
+          if ( i<len ) arr(:,i:len-1) = arr(:,i+1:len)
+          len = len-1
+        endif
+      enddo
+
+    endsubroutine compress_arr
+!***********************************************************************
+    function fcompress(arr,mask,len) result(comparr)
+!
+!  Returns array arr, compressed in 2nd dimension guided by mask: arr(:,i) is removed where mask(i)=T.
+!  2nd dimension of compressed arr is returned in len.
+!  If len>0 on input it is taken as the actual 2nd dimension of arr.
+!
+!  12-jan-17/MR: coded
+!
+      real,    dimension(:,:),intent(inout):: arr
+      logical, dimension(:),  intent(in)   :: mask
+      integer,                intent(inout):: len
+!
+      real,    dimension(size(arr,1),size(arr,2))  :: comparr
+
+      integer :: i,icomp
+
+      if (len<=0) len=size(arr,2)
+      icomp=0
+
+      do i=1,len
+        if ( .not.mask(i) ) then
+          comparr(:,i) = arr(:,i)
+          icomp = icomp+1
+        endif
+      enddo
+
+      len=icomp
+
+    endfunction fcompress
 !***********************************************************************
     subroutine find_ranges(list,ranges,ie)
 !

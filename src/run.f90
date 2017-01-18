@@ -65,7 +65,7 @@ program run
   use Fixed_point,     only: fixed_points_prepare, wfixed_points
   use Forcing,         only: forcing_clean_up,addforce
   use General,         only: random_seed_wrapper, touch_file, itoa
-  use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coords_switches
+  use Grid,            only: construct_grid, box_vol, grid_bound_data, set_coorsys_dimmask
   use Hydro,           only: hydro_clean_up,kinematic_random_phase
   use ImplicitPhysics, only: calc_heatcond_ADI
   use Interstellar,    only: check_SN,addmassflux
@@ -138,7 +138,7 @@ program run
 !
   call read_all_run_pars
 !
-  call set_coords_switches
+  call set_coorsys_dimmask
 !
 !  Initialise MPI communication.
 !
@@ -279,8 +279,7 @@ program run
 !
   call rprint_list(LRESET=.false.)
   if (lparticles) call particles_rprint_list(.false.)
-!
-  call report_undefined(cname,cform)
+  call report_undefined_diagnostics
 !
 !  Populate wavenumber arrays for fft and calculate Nyquist wavenumber.
 !
@@ -554,7 +553,7 @@ program run
     l1davg = mod(it-1,it1d)==0
 !
     if (lwrite_sound) then
-      if ( .not.lout_sound .and. abs( t-tsound - dsound )>= soundeps ) then
+      if ( .not.lout_sound .and. abs( t-tsound - dsound )<= 1.1*dt ) then
         lout_sound = .true.
         tsound = t
       endif
@@ -601,15 +600,7 @@ program run
 !  Before reading the rprint_list deallocate the arrays allocated for
 !  1-D and 2-D diagnostics.
 !
-                                 call vnames_clean_up
-                                 call xyaverages_clean_up
-                                 call xzaverages_clean_up
-                                 call yzaverages_clean_up
-        if (lwrite_phizaverages) call phizaverages_clean_up
-        if (lwrite_yaverages)    call yaverages_clean_up
-        if (lwrite_zaverages)    call zaverages_clean_up
-        if (lwrite_phiaverages)  call phiaverages_clean_up
-        if (lwrite_sound)        call sound_clean_up
+        call diagnostics_clean_up
         if (lforcing)            call forcing_clean_up
         if (lhydro_kinematic)    call hydro_clean_up
         if (lsolid_cells)        call solid_cells_clean_up
@@ -619,6 +610,7 @@ program run
           call particles_rprint_list(.false.)
           call particles_initialize_modules(f)
         endif
+        call report_undefined_diagnostics
         call choose_pencils
         call write_all_run_pars('IDL')
 !
@@ -925,21 +917,12 @@ program run
 !  Free any allocated memory.
 !  MR: Is this needed? the program terminates anyway
 !
+  call diagnostics_clean_up
   call farray_clean_up
   call sharedvars_clean_up
   call chemistry_clean_up
   call NSCBC_clean_up
-  call fnames_clean_up
-  call vnames_clean_up
-  call xyaverages_clean_up
-  call xzaverages_clean_up
-  call yzaverages_clean_up
   if (lparticles) call particles_cleanup
-  if (lwrite_phizaverages) call phizaverages_clean_up
-  if (lwrite_yaverages)    call yaverages_clean_up
-  if (lwrite_zaverages)    call zaverages_clean_up
-  if (lwrite_phiaverages)  call phiaverages_clean_up
-  if (lwrite_sound)        call sound_clean_up
 !
 endprogram run
 !**************************************************************************
