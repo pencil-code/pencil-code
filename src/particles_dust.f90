@@ -164,7 +164,7 @@ module Particles
   logical :: lcompensate_sedimentation=.false.
   real :: compensate_sedimentation=1.
 !
-  real :: A1=0., A2=0., distance=0.
+  real :: A3=0., A2=0.
 !
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
@@ -258,7 +258,7 @@ module Particles
       birthring_width, lsimple_volume,&
       lgaussian_birthring, tstart_rpbeta, linsert_as_many_as_possible, &
       lvector_gravity, lcompensate_sedimentation,compensate_sedimentation, &
-      lpeh_radius, A1, A2, ldraglaw_stokesschiller, lbirthring_depletion, birthring_lifetime, &
+      lpeh_radius, A3, A2, ldraglaw_stokesschiller, lbirthring_depletion, birthring_lifetime, &
       remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
@@ -3599,7 +3599,7 @@ module Particles
       real, dimension(k1_imn(imn):k2_imn(imn)) :: nu
       character (len=labellen) :: ivis=''
       real :: nu_
-      real :: taulocal
+      real :: inversetau
 !
 !  Identify module.
 !
@@ -4440,21 +4440,17 @@ module Particles
 !  Particle growth by condensation in a passive scalar field,
 !  calculate relaxation time. 1D case for now.
 !  14-June-16/Xiang-Yu: coded
-
+      
+      l=ineargrid(k,1)
       if (lsupersat) then
-        do i=l1,l2
-           taulocal=0
-           do k=k1_imn(imn),k2_imn(imn)
-               distance=sqrt((fp(k,ixp)-fp(i,ix))**2+(fp(k,iyp)-fp(i,iy))**2+(fp(k,izp)-fp(i,iz))**2)
-               if (distance.lt. 0.00625*sqrt(3.)) then 
-!             l=ineargrid(k,1)
-!             if (l==i) then
-                 taulocal=taulocal+fp(k,iap)*fp(k,inpswarm)
-               endif
-           enddo
-           !f(i,m,n,itausupersat)=f(i,m,n,itausupersat)+4.*pi*rhopmat*A1*A2*taulocal
-           p%tausupersat(i-3)=f(i-3,m,n,itausupersat)+4.*pi*rhopmat*A1*A2*taulocal
-        enddo
+        call find_grid_volume(ix0,iy0,iz0,volume_cell)
+!        if (lparticles_number) then
+!          inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)/volume_cell
+!        elseif (np_swarm .gt. 0) then
+!          inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*np_swarm/volume_cell
+!        endif
+        inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)/volume_cell
+        df(l,m,n,itausupersat) = df(l,m,n,itausupersat) + inversetau
       endif
 !
 !  Diagnostic output.
