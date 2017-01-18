@@ -239,7 +239,8 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
 
         ######## further formatting
         new_line = ''.join(qs).replace(SYM_SEPARATOR, SYM_SEPARATOR+' ')+'\t\t'+comment    # create new line and add comment stripped away before
-        if not FILE_IS == 'SUBMIT': new_line = '  '+new_line
+        if not (FILE_IS == 'SUBMIT' or filename == 'cparam.local'): new_line = '  '+new_line
+        new_line = new_line.rstrip()    # clean empty spaces on the right, no one needs that...
         if new_line[-1] != '\n': new_line = new_line+'\n'
         if FILE_IS=='SUBMIT': new_line = new_line.replace('#@', '#@ ').replace('=', ' = ')    # optimizing format of submit script
 
@@ -250,7 +251,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
         if not DEBUG:
             ####### do backup of file before changing it
             from shutil import copyfile
-            target = join(sim.path, '.pc/backups/'+timestamp())
+            target = join(sim.path, 'pc/backups/'+timestamp())
             mkdir(target); target = join(target, filename)
             copyfile(absolute_filepath, target)
 
