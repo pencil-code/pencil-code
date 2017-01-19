@@ -282,13 +282,11 @@ module Supersat
             bump=A1*updraft
           else
             !bump=A1*p%uu(:,1)-f(l1:l2,m,n,issat)/tau
-            bump=A1*p%uu(:,1)-f(l1:l2,m,n,issat)/p%tausupersat
-            !print*,'tau=',f(l1:l2,m,n,itausupersat)
-            !print*,'tau2=',p%tausupersat
+            bump=A1*p%uu(:,1)-f(l1:l2,m,n,issat)*p%tausupersat
           endif
         !df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat+bump
-        df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+bump
-      endif
+          df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+bump
+        endif
 !
       if (ldustdensity.and.lcondensation_rate) then
 !

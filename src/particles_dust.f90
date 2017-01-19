@@ -4347,20 +4347,13 @@ module Particles
 !  calculate relaxation time. 1D case for now.
 !  14-June-16/Xiang-Yu: coded
       
-              l=ineargrid(k,1)
               if (lsupersat) then
-                call find_grid_volume(ix0,iy0,iz0,volume_cell)
-        !        if (lparticles_number) then
-        !          inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)/volume_cell
-        !        elseif (np_swarm .gt. 0) then
-        !          inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*np_swarm/volume_cell
-        !        endif
-                inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)/volume_cell
-                !print*,'r=',fp(k,iap)
-                !print*,'np=',fp(k,inpswarm)
-                !print*,'inversetau=',inversetau
-                !print*,'volume_cell=',volume_cell
-                df(l,m,n,itausupersat) = df(l,m,n,itausupersat) + inversetau
+                l=ineargrid(k,1)
+                !call find_grid_volume(ix0,iy0,iz0,volume_cell)
+                !inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)/volume_cell
+                inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)
+                !print*,"r=",fp(k,iap)
+                f(l,m,n,itausupersat) = f(l,m,n,itausupersat) + inversetau
               endif
             endif
           enddo
