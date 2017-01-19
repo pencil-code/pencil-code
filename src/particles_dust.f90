@@ -4343,6 +4343,25 @@ module Particles
                 if (ldragforce_gas_par) &
                     dt1_drag_gas(ix0-nghost) = dt1_drag_gas(ix0-nghost) + mp_vcell * p%rho1(ix0-nghost) * tausp1_par
               endif getdt1
+!  Particle growth by condensation in a passive scalar field,
+!  calculate relaxation time. 1D case for now.
+!  14-June-16/Xiang-Yu: coded
+      
+              l=ineargrid(k,1)
+              if (lsupersat) then
+                call find_grid_volume(ix0,iy0,iz0,volume_cell)
+        !        if (lparticles_number) then
+        !          inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)/volume_cell
+        !        elseif (np_swarm .gt. 0) then
+        !          inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*np_swarm/volume_cell
+        !        endif
+                inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)/volume_cell
+                !print*,'r=',fp(k,iap)
+                !print*,'np=',fp(k,inpswarm)
+                !print*,'inversetau=',inversetau
+                !print*,'volume_cell=',volume_cell
+                df(l,m,n,itausupersat) = df(l,m,n,itausupersat) + inversetau
+              endif
             endif
           enddo
 !
@@ -4437,21 +4456,6 @@ module Particles
         f(l1:l2,m,n,ifgx:ifgz)=p%fpres+p%jxbr+p%fvisc
       endif
 !
-!  Particle growth by condensation in a passive scalar field,
-!  calculate relaxation time. 1D case for now.
-!  14-June-16/Xiang-Yu: coded
-      
-      l=ineargrid(k,1)
-      if (lsupersat) then
-        call find_grid_volume(ix0,iy0,iz0,volume_cell)
-!        if (lparticles_number) then
-!          inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)/volume_cell
-!        elseif (np_swarm .gt. 0) then
-!          inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*np_swarm/volume_cell
-!        endif
-        inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)/volume_cell
-        df(l,m,n,itausupersat) = df(l,m,n,itausupersat) + inversetau
-      endif
 !
 !  Diagnostic output.
 !

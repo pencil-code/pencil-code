@@ -711,6 +711,7 @@ module Particles_radius
             else
               if (lcondensation_simplified) then
                 dapdt=GS_condensation/fp(k,iap)
+                !print*,"radius=",fp(k,iap)
               else
                 dapdt=0.25*vth(ix)*rhopmat1* &
                     (rhovap(ix)-rhosat(ix))*alpha_cond_par
@@ -846,7 +847,6 @@ module Particles_radius
         ix0=ineargrid(k,1)
         ix=ix0-nghost
         if (lsupersat) then
-          !print*,"issat=",issat
           dapdt=f(ix,m,n,issat)/fp(k,iap)
           dfp(k,iap)=dfp(k,iap)+dapdt
         endif
