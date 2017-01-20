@@ -166,12 +166,19 @@ def time_average(datadir='./data', diagnostics=None, tmin=0, verbose=True):
 
     # Define function for conducting statistics.
     def stats(diag):
-        t = ts.t[indices]
         v = ts[diag][indices]
-        mean = dtinv * integrate.simps(v, t)
-        stddev = sqrt(dtinv * integrate.simps((v - mean)**2, t))
+
+        if diag[0:2] == "dt" or diag[0:4] == "npar" or diag[0:4] == "nmig":
+            mean = v.mean()
+            stddev = v.std()
+        else:
+            t = ts.t[indices]
+            mean = dtinv * integrate.simps(v, t)
+            stddev = sqrt(dtinv * integrate.simps((v - mean)**2, t))
+
         if verbose:
             print("<", diag, "> = ", mean, "+/-", stddev)
+
         return mean, stddev
 
     # Default diagnostics is all except it and t.
