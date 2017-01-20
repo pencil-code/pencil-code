@@ -189,14 +189,14 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		H_P_therm_x:'thermal pressure scaling height x', $
 		H_P_therm_y:'thermal pressure scaling height y', $
 		H_P_therm_z:'thermal pressure scaling height z', $
-		a_grav_abs:'Gravity acceleration absolute value', $
-		a_grav_x:'Gravity acceleration x', $
-		a_grav_y:'Gravity acceleration y', $
-		a_grav_z:'Gravity acceleration z', $
-		F_grav_abs:'Gravity force absolute value', $
-		F_grav_x:'Gravity force x', $
-		F_grav_y:'Gravity force y', $
-		F_grav_z:'Gravity force z', $
+		a_grav_abs:'gravity acceleration absolute value', $
+		a_grav_x:'gravity acceleration x', $
+		a_grav_y:'gravity acceleration y', $
+		a_grav_z:'gravity acceleration z', $
+		F_grav_abs:'gravity force absolute value', $
+		F_grav_x:'gravity force x', $
+		F_grav_y:'gravity force y', $
+		F_grav_z:'gravity force z', $
 		rho_u_abs:'impulse density absolute value', $
 		rho_u_x:'impulse density x', $
 		rho_u_y:'impulse density y', $
@@ -264,8 +264,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		grad_Temp:'grad temperature', $
 		grad_rho:'grad density', $
 		grad_P_therm:'grad thermal pressure', $
-		a_grav:'Gravity acceleration', $
-		F_grav:'Gravity force', $
+		a_grav:'gravity acceleration', $
+		F_grav:'gravity force', $
 		forcing:'forcing function', $
 		rho_u:'impulse density' $
 	}
