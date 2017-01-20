@@ -1069,7 +1069,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	end
 
 	; Check for Pencil Code alias names
-	if (n_elements (alias) eq 0) then alias = pc_check_quantities (/aliases)
+	if (n_elements (alias) eq 0) then alias = pc_check_quantities (sources=sources, /aliases)
 	pos = find_tag (alias, quantity)
 	if (pos ge 0) then return, pc_compute_quantity (vars, index, alias.(pos))
 
