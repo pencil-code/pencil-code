@@ -298,7 +298,6 @@ module Particles
   integer :: idiag_Shm=0
   integer, dimension(ninit)  :: idiag_npvzmz=0, idiag_nptz=0
   integer, dimension(ninit)  :: idiag_npuzmz=0
-  integer :: idiag_tausupersatrms=0
 !
   contains
 !***********************************************************************
@@ -4352,7 +4351,6 @@ module Particles
                 !call find_grid_volume(ix0,iy0,iz0,volume_cell)
                 !inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)/volume_cell
                 inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)
-                !print*,"r=",fp(k,iap)
                 f(l,m,n,itausupersat) = f(l,m,n,itausupersat) + inversetau
               endif
             endif
@@ -4472,8 +4470,6 @@ module Particles
             call calculate_rms_speed(fp,ineargrid,p)
         if (idiag_dtdragp/=0.and.(lfirst.and.ldt)) &
             call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
-        if (idiag_tausupersatrms/=0) &
-            call sum_mn_name(p%tausupersat**2,idiag_tausupersatrms,lsqrt=.true.)
       endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
@@ -6103,7 +6099,6 @@ module Particles
         write(3,*) 'ifgx=', ifgx
         write(3,*) 'ifgy=', ifgy
         write(3,*) 'ifgz=', ifgz
-        write(3,*) 'itausupersat=', itausupersat
       endif
 !
 !  Reset everything in case of reset.
@@ -6142,7 +6137,6 @@ module Particles
         idiag_npmxy=0; idiag_vprms=0
         idiag_npvzmz=0; idiag_nptz=0; idiag_Shm=0
         idiag_npuzmz=0
-        idiag_tausupersatrms=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -6229,7 +6223,6 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'vprms',idiag_vprms)
         call parse_name(iname,cname(iname),cform(iname),'Shm',idiag_Shm)
         call parse_name(iname,cname(iname),cform(iname),'deshearbcsm',idiag_deshearbcsm)
-        call parse_name(iname,cname(iname),cform(iname),'tausupersatrms',idiag_tausupersatrms)
       enddo
 !
 !  Check for those quantities for which we want x-averages.
