@@ -382,7 +382,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		grad_u_abs:'u_abs', $
 		E_kin_rho:['u','rho'], $
 		P_therm:['Temp', 'rho'], $
-		grad_P_therm:['P_therm', 'grad_Temp'], $
+		grad_P_therm:['P_therm','grad_Temp'], $
 		grad_P_therm_abs:'grad_P_therm', $
 		c_sound:['P_therm', 'rho'], $
 		H_P_therm_x:['P_therm','grad_P_therm'], $
