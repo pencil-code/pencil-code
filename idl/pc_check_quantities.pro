@@ -143,7 +143,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		B_x:'magnetic field x', $
 		B_y:'magnetic field y', $
 		B_z:'magnetic field z', $
-		grad_B_abs:'magnetic field gradient absolute value', $
+		grad_B_abs:'magnetic field gradient', $
 		EMF_abs:'electro motive force strength', $
 		EMF_x:'electro motive force x', $
 		EMF_y:'electro motive force y', $
@@ -181,7 +181,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		u_y:'velocity y', $
 		u_z:'velocity z', $
 		u_abs:'velocity', $
-		grad_u_abs:'velocity gradient absolute value', $
+		grad_u_abs:'velocity gradient', $
 		E_kin_rho:'kinetic energy density', $
 		P_therm:'thermal pressure', $
 		grad_P_therm_abs:'grad thermal pressure', $
@@ -189,15 +189,15 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		H_P_therm_x:'thermal pressure scaling height x', $
 		H_P_therm_y:'thermal pressure scaling height y', $
 		H_P_therm_z:'thermal pressure scaling height z', $
-		a_grav_abs:'gravity acceleration absolute value', $
+		a_grav_abs:'gravity acceleration', $
 		a_grav_x:'gravity acceleration x', $
 		a_grav_y:'gravity acceleration y', $
 		a_grav_z:'gravity acceleration z', $
-		F_grav_abs:'gravity force absolute value', $
+		F_grav_abs:'gravity force', $
 		F_grav_x:'gravity force x', $
 		F_grav_y:'gravity force y', $
 		F_grav_z:'gravity force z', $
-		rho_u_abs:'impulse density absolute value', $
+		rho_u_abs:'impulse density', $
 		rho_u_x:'impulse density x', $
 		rho_u_y:'impulse density y', $
 		rho_u_z:'impulse density z', $
