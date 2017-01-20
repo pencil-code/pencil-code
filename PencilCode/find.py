@@ -147,25 +147,33 @@ def time_average(datadir='./data', diagnostics=None, tmin=0, verbose=True):
         verbose
             Directly print out the averages when True.
     """
-    # Chao-Chin Yang, 2015-10-26
+    # Author: Chao-Chin Yang
+    # Created: 2013-10-21
+    # Last Modified: 2017-01-20
     from . import read
     from collections import namedtuple
     from numpy import sqrt, unique
     from scipy import integrate
+
     # Read the time series.
     ts = read.time_series(datadir=datadir)
     t, indices = unique(ts.t, return_index=True)
     ts = ts[indices]
+
     # Check the time span.
     indices, tmin, tmax = _get_indices(t, tmin=tmin)
     dtinv = 1 / (tmax - tmin)
-    # Local function for conducting statistics.
+
+    # Define function for conducting statistics.
     def stats(diag):
-        mean = dtinv * integrate.simps(ts[diag][indices], ts.t[indices])
-        stddev = sqrt(dtinv * integrate.simps((ts[diag][indices] - mean)**2, ts.t[indices]))
+        t = ts.t[indices]
+        v = ts[diag][indices]
+        mean = dtinv * integrate.simps(v, t)
+        stddev = sqrt(dtinv * integrate.simps((v - mean)**2, t))
         if verbose:
             print("<", diag, "> = ", mean, "+/-", stddev)
         return mean, stddev
+
     # Default diagnostics is all except it and t.
     if diagnostics is None:
         diagnostics = list(ts.dtype.names)
@@ -174,7 +182,9 @@ def time_average(datadir='./data', diagnostics=None, tmin=0, verbose=True):
                 diagnostics.remove(name)
             except ValueError:
                 pass
-    # Find and return the time average and its standard deviation of each diagnostics.
+
+    # Find and return the time average and its standard deviation of each
+    # diagnostics.
     if type(diagnostics) is str:
         return stats(diagnostics)
     else:  # assuming diagnostics is iterable.
