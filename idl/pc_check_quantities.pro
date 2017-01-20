@@ -458,12 +458,14 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		depend = create_struct (depend, species_depend)
 	end
 
-	; Fill default values
+	; Return requested listings
 	if (keyword_set (all)) then return, create_struct (available, available_vectorfields, alias, additional)
 	if (keyword_set (avail)) then return, available
 	if (keyword_set (aliases)) then return, alias
 	if (keyword_set (add_quant)) then return, additional
 	if (keyword_set (vectorfields)) then return, available_vectorfields
+
+	; Fill default values
 	if (not keyword_set (check)) then check = create_struct (available)
 
 	if (size (check, /type) eq 7) then begin
