@@ -54,7 +54,7 @@ function pc_derive_quantity, derivative, quantity, vars, index, varfile=varfile,
 	derivative = strtrim (derivative, 2)
 	num_derivatives = strlen (derivative)
 	high_level_1st = [ 'div', 'grad', 'curl' ]
-	high_level_2nd = [ 'delta', 'laplace' ]
+	high_level_2nd = [ 'curlcurl', 'delta', 'laplace' ]
 	if (any (strcmp (derivative, high_level_1st, /fold_case))) then num_derivatives = 1
 	if (any (strcmp (derivative, high_level_2nd, /fold_case))) then num_derivatives = 2
 	if ((num_derivatives lt 1) or (num_derivatives gt 2)) then message, "pc_derive_quantity: can only compute first and second derivatives."
@@ -95,6 +95,7 @@ function pc_derive_quantity, derivative, quantity, vars, index, varfile=varfile,
 		'div': result *= (div (quantity))[l1:l2,m1:m2,n1:n2]
 		'grad': result *= (grad (quantity))[l1:l2,m1:m2,n1:n2,*]
 		'curl': result *= (curl (quantity))[l1:l2,m1:m2,n1:n2,*]
+		'curlcurl': result *= (curlcurl (quantity))[l1:l2,m1:m2,n1:n2,*]
 		'delta': result *= (del2 (quantity))[l1:l2,m1:m2,n1:n2]
 		'laplace': result *= (del2 (quantity))[l1:l2,m1:m2,n1:n2]
 		else: message, "pc_derive_quantity: derivative '"+derivative+"' is unknown."

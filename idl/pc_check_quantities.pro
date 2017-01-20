@@ -143,6 +143,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		B_x:'magnetic field x', $
 		B_y:'magnetic field y', $
 		B_z:'magnetic field z', $
+		grad_B_abs:'magnetic field gradient absolute value', $
 		EMF_abs:'electro motive force strength', $
 		EMF_x:'electro motive force x', $
 		EMF_y:'electro motive force y', $
@@ -180,6 +181,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		u_y:'velocity y', $
 		u_z:'velocity z', $
 		u_abs:'velocity', $
+		grad_u_abs:'velocity gradient absolute value', $
 		E_kin_rho:'kinetic energy density', $
 		P_therm:'thermal pressure', $
 		grad_P_therm_abs:'grad thermal pressure', $
@@ -238,6 +240,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 	; List of available vector field quantities.
 	available_vectorfields = { $
 		u:'velocities', $
+		grad_u:'velocity gradient', $
 		j:'current density', $
 		F_Lorentz:'Lorentz force', $
 		Poynting_j:'current Poynting flux', $
@@ -246,6 +249,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		A:'magnetic vector potential', $
 		A_contour:'fieldlines', $
 		B:'magnetic field', $
+		grad_B:'magnetic field gradient', $
 		dB_dx:'magnetic field x-derivative', $
 		dB_dy:'magnetic field y-derivative', $
 		dB_dz:'magnetic field z-derivative', $
@@ -326,6 +330,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		dB_dx:'A', $
 		dB_dy:'A', $
 		dB_dz:'A', $
+		grad_B:'B_abs', $
+		grad_B_abs:'B_abs', $
 		E:['u','A'], $
 		E_abs:'E', $
 		EMF:['u','A'], $
@@ -372,6 +378,8 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		u_y:'u', $
 		u_z:'u', $
 		u_abs:'u', $
+		grad_u:'u_abs', $
+		grad_u_abs:'u_abs', $
 		E_kin_rho:['u','rho'], $
 		P_therm:['Temp', 'rho'], $
 		grad_P_therm:['P_therm', 'grad_Temp'], $

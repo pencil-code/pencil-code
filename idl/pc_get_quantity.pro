@@ -160,7 +160,18 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	if (strcmp (quantity, 'u_abs', /fold_case)) then begin
 		; Absolute value of the velocity
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u', ghost=ghost)
-		return, sqrt (dot2 (uu))
+		if (n_elements (u_abs) eq 0) then u_abs = sqrt (dot2 (uu))
+		return, u_abs
+	end
+	if (strcmp (quantity, 'grad_u', /fold_case)) then begin
+		; Velocity gradient
+		if (n_elements (grad_u) eq 0) then grad_u = (grad (sqrt (dot2 (vars[*,*,*,index.uu]))))[l1:l2,m1:m2,n1:n2,*] * unit.velocity
+		return, grad_u
+	end
+	if (strcmp (quantity, 'grad_u_abs', /fold_case)) then begin
+		; Velocity gradient absolute value
+		if (n_elements (grad_u) eq 0) then grad_u = pc_compute_quantity (vars, index, 'grad_u', ghost=ghost)
+		return, sqrt (dot2 (grad_u))
 	end
 
 	if (strcmp (quantity, 'E_kin_rho', /fold_case)) then begin
@@ -687,6 +698,17 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		dB_dz[*,*,*,2] *= (zderxder (vars[*,*,*,index.ay]) - zderyder (vars[*,*,*,index.ax]))[l1:l2,m1:m2,n1:n2]
 		return, dB_dz
 	end
+	if (strcmp (quantity, 'grad_B', /fold_case)) then begin
+		; Magnetic field gradient
+		if (n_elements (grad_B) eq 0) then grad_B = (grad (pc_compute_quantity (vars, index, 'B_abs', /ghost)))[l1:l2,m1:m2,n1:n2,*]
+		return, grad_B
+	end
+	if (strcmp (quantity, 'grad_B_abs', /fold_case)) then begin
+		; Magnetic field gradient absolute value
+		if (n_elements (grad_B) eq 0) then grad_B = pc_compute_quantity (vars, index, 'grad_B')
+		return, sqrt (dot2 (grad_B))
+	end
+
 	if (strcmp (quantity, 'E', /fold_case)) then begin
 		; Electric field [V / m]
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
