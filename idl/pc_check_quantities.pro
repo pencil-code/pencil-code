@@ -203,6 +203,10 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		rho_u_z:'impulse density z', $
 		Rn_viscous:'viscous Reynolds number', $
 		Rn_mag:'magnetic Reynolds number', $
+		forcing_x:'forcing function x', $
+		forcing_y:'forcing function y', $
+		forcing_z:'forcing function z', $
+		forcing_abs:'forcing function', $
 		q_sat:'saturation heatflux', $
 		Spitzer_q:'Spitzer heatflux', $
 		Spitzer_q_parallel:'field-aligned Spitzer heatflux', $
@@ -262,6 +266,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		grad_P_therm:'grad thermal pressure', $
 		a_grav:'Gravity acceleration', $
 		F_grav:'Gravity force', $
+		forcing:'forcing function', $
 		rho_u:'impulse density' $
 	}
 
@@ -405,6 +410,11 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		rho_u_z:['u_z', 'rho'], $
 		Rn_viscous:'u', $
 		Rn_mag:['u','B'], $
+		forcing:'ff', $
+		forcing_x:'forcing', $
+		forcing_y:'forcing', $
+		forcing_z:'forcing', $
+		forcing_abs:'forcing', $
 		q_sat:['Temp', 'rho'], $
 		Spitzer_K_parallel:'Temp', $
 		Spitzer_q:['Temp'], $

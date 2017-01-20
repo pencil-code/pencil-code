@@ -859,6 +859,32 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, ((Rx > Ry) > Rz) / (eta * unit.length^2/unit.time)
 	end
 
+	if (strcmp (quantity, 'forcing', /fold_case)) then begin
+		; Forcing function [kg * m / s^2]
+		if (n_elements (ff) eq 0) then ff = (vars[*,*,*,index.fx:index.fz])[gl1:gl2,gm1:gm2,gn1:gn2,*] * unit.mass * unit.length / unit.time^2
+		return, ff
+	end
+	if (strcmp (quantity, 'forcing_abs', /fold_case)) then begin
+		; Absolute value of the forcing function [kg * m / s^2]
+		if (n_elements (ff) eq 0) then ff = pc_compute_quantity (vars, index, 'forcing', ghost=ghost)
+		return, sqrt (dot2 (ff))
+	end
+	if (strcmp (quantity, 'forcing_x', /fold_case)) then begin
+		; Forcing function x-component [kg * m / s^2]
+		if (n_elements (ff) eq 0) then ff = pc_compute_quantity (vars, index, 'forcing', ghost=ghost)
+		return, ff[*,*,*,0]
+	end
+	if (strcmp (quantity, 'forcing_y', /fold_case)) then begin
+		; Forcing function y-component [kg * m / s^2]
+		if (n_elements (ff) eq 0) then ff = pc_compute_quantity (vars, index, 'forcing', ghost=ghost)
+		return, ff[*,*,*,1]
+	end
+	if (strcmp (quantity, 'forcing_z', /fold_case)) then begin
+		; Forcing function z-component [kg * m / s^2]
+		if (n_elements (ff) eq 0) then ff = pc_compute_quantity (vars, index, 'forcing', ghost=ghost)
+		return, ff[*,*,*,2]
+	end
+
 	if (strcmp (quantity, 'j', /fold_case)) then begin
 		; Current density [A / m^2]
 		mu0 = pc_get_parameter ('mu0', label=quantity)
