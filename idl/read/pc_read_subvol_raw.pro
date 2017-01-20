@@ -259,7 +259,7 @@ pro pc_read_subvol_raw, object=object, varfile=varfile, tags=tags, datadir=datad
 		tag = var_list[ov]
 		iv = where (varcontent[*].idlvar eq tag)
 		if (iv ge 0) then begin
-			if (varcontent[*].skip eq 2) then begin
+			if (varcontent[iv].skip eq 2) then begin
 				label = strmid (tag, 0, 1)
 				tags = create_struct (tags, tag, [num_read, num_read+1, num_read+2])
 				tags = create_struct (tags, label+"x", num_read, label+"y", num_read+1, label+"z", num_read+2)
