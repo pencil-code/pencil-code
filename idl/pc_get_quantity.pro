@@ -210,6 +210,19 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 				grad_Temp = (grad (exp (vars[*,*,*,index.lnTT])))[l1:l2,m1:m2,n1:n2,*] * unit.temperature / unit.length
 			end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
 				grad_Temp = (grad (vars[*,*,*,index.TT]))[l1:l2,m1:m2,n1:n2,*] * unit.temperature / unit.length
+			end else if (any (strcmp (sources, 'ss', /fold_case))) then begin
+				cp = pc_get_parameter ('cp', label=quantity)
+				cp_SI = pc_get_parameter ('cp_SI', label=quantity)
+				cs0 = pc_get_parameter ('cs0', label=quantity)
+				gamma = pc_get_parameter ('gamma', label=quantity)
+				if (gamma eq 1.0) then tmp = 1.0 else tmp = gamma - 1.0
+				ln_Temp_0 = alog (cs0^2 / cp / tmp) + alog (unit.temperature)
+				ln_rho_0 = alog (pc_get_parameter ('rho0', label=quantity)) + alog (unit.density)
+				S = pc_compute_quantity (vars, index, 'S', /ghost)
+				ln_rho = pc_compute_quantity (vars, index, 'ln_rho', /ghost) - ln_rho_0
+				Temp_with_ghosts = exp (ln_Temp_0 + gamma/cp_SI * S + (gamma-1) * ln_rho)
+				; *** WORK HERE: this is maybe better computed with a direct derivation from the entropy S
+				grad_Temp = (grad (Temp_with_ghosts))[l1:l2,m1:m2,n1:n2,*] / unit.length
 			end
 		end
 		return, grad_Temp

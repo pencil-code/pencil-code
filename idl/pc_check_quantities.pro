@@ -296,7 +296,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		TT:{ TT:['lnTT', 'TT'] }, $
 		Temp:{ Temp_alternatives:['TT', 'S_rho'] }, $
 		S:{ S_alternatives:['ss', 'TT_rho'] }, $
-		grad_Temp:'TT', $
+		grad_Temp:'Temp', $
 		grad_Temp_abs:'grad_Temp', $
 		ln_Temp:'Temp', $
 		log_Temp:'Temp', $
