@@ -164,7 +164,8 @@ indices_aux = [ $
   { name:'isigma', label:'Column density', dims:1 }, $
   { name:'imdot', label:'Mass accretion rate', dims:1 }, $
   { name:'itmid', label:'Midplane temperature', dims:1 }, $
-  { name:'ipotturb', label:'Turbulent potential', dims:1 } $
+  { name:'ipotturb', label:'Turbulent potential', dims:1 }, $
+  { name:'iff', label:'Forcing function', dims:3 } $
   ; don't forget to add a comma above when extending
 ]
 naux=n_elements(indices_aux)
