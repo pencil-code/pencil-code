@@ -71,8 +71,12 @@ function pc_derive_quantity, derivative, quantity, vars, index, varfile=varfile,
 	nx = mx - 2 * nghostx
 	ny = my - 2 * nghosty
 	nz = mz - 2 * nghostz
+	na = 1
 
-	result = dblarr (nx, ny, nz, /nozero)
+	vector_quantity = [ 'grad', 'curl', 'curl_curl', 'grad_curl' ]
+	if (any (strcmp (derivative, vector_quantity, /fold_case))) then na = 3
+
+	result = dblarr (nx, ny, nz, na, /nozero)
 	if (num_derivatives eq 2) then begin
 		result[*,*,*,*] = 1.0 / (unit_length^2)
 	end else begin
