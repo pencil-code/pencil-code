@@ -53,8 +53,10 @@ function pc_derive_quantity, derivative, quantity, vars, index, varfile=varfile,
 
 	derivative = strtrim (derivative, 2)
 	num_derivatives = strlen (derivative)
-	high_level = [ 'div', 'grad', 'curl', 'delta', 'laplace' ]
-	if (any (strcmp (derivative, high_level, /fold_case))) then num_derivatives = 1
+	high_level_1st = [ 'div', 'grad', 'curl' ]
+	high_level_2nd = [ 'delta', 'laplace' ]
+	if (any (strcmp (derivative, high_level_1st, /fold_case))) then num_derivatives = 1
+	if (any (strcmp (derivative, high_level_2nd, /fold_case))) then num_derivatives = 2
 	if ((num_derivatives lt 1) or (num_derivatives gt 2)) then message, "pc_derive_quantity: can only compute first and second derivatives."
 
 	unit_length = pc_get_parameter ('unit_length', label=label, dim=dim, datadir=datadir, start_param=start_param, run_param=run_param)
