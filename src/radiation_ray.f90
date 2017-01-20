@@ -2172,9 +2172,6 @@ module Radiation
 !
       if (lwr) then
         write(3,*) 'nname=',nname
-        write(3,*) 'ifx=',ifx
-        write(3,*) 'ify=',ify
-        write(3,*) 'ifz=',ifz
         write(3,*) 'iQrad=',iQrad
         write(3,*) 'ikapparho=',ikapparho
         write(3,*) 'iKR_Frad=',iKR_Frad
