@@ -165,6 +165,7 @@ module Particles
   real :: compensate_sedimentation=1.
 !
   real :: A3=0., A2=0.
+  logical :: supersat_ngp=.false., supersat_cic=.false.
 !
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
@@ -259,7 +260,8 @@ module Particles
       lgaussian_birthring, tstart_rpbeta, linsert_as_many_as_possible, &
       lvector_gravity, lcompensate_sedimentation,compensate_sedimentation, &
       lpeh_radius, A3, A2, ldraglaw_stokesschiller, lbirthring_depletion, birthring_lifetime, &
-      remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size
+      remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size, &
+      supersat_ngp, supersat_cic
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0   ! DIAG_DOC: $x^2_{part}$
@@ -3895,7 +3897,7 @@ module Particles
                   ixx0=ix0; iyy0=iy0; izz0=iz0
                   ixx1=ix0; iyy1=iy0; izz1=iz0
 !
-!  Particle influences the 8 surrounding grid points. The reference point is
+!  Particle influences param_iothe 8 surrounding grid points. The reference point is
 !  the grid point at the lower left corner.
 !
                   if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ixx0=ixx0-1
@@ -4347,11 +4349,32 @@ module Particles
 !  14-June-16/Xiang-Yu: coded
       
               if (lsupersat) then
-                l=ineargrid(k,1)
-                !call find_grid_volume(ix0,iy0,iz0,volume_cell)
-                !inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)/volume_cell
-                inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)
-                f(l,m,n,itausupersat) = f(l,m,n,itausupersat) + inversetau
+                 inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)
+                 if (supersat_ngp) then 
+                   l=ineargrid(k,1)
+                   !call find_grid_volume(ix0,iy0,iz0,volume_cell)
+                   !inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)/volume_cell
+                   !inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)
+                   f(l,m,n,itausupersat) = f(l,m,n,itausupersat) + inversetau
+                 elseif (supersat_cic) then
+                  ixx0=ix0; iyy0=iy0; izz0=iz0
+                  ixx1=ix0; iyy1=iy0; izz1=iz0
+                  if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ixx0=ixx0-1
+                  if ( (y(iy0)>fp(k,iyp)) .and. nygrid/=1) iyy0=iyy0-1
+                  if ( (z(iz0)>fp(k,izp)) .and. nzgrid/=1) izz0=izz0-1
+                  if (nxgrid/=1) ixx1=ixx0+1
+                  if (nygrid/=1) iyy1=iyy0+1
+                  if (nzgrid/=1) izz1=izz0+1
+                  do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+                    weight=1.0
+                    if (nxgrid/=1) weight=weight*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
+                    if (nygrid/=1) weight=weight*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
+                    if (nzgrid/=1) weight=weight*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
+                    !call find_grid_volume(ixx,iyy,izz,volume_cell)
+                    !f(ixx,iyy,izz,itausupersat) = f(ixx,iyy,izz,itausupersat) - weight*inversetau/volume_cell
+                    f(ixx,iyy,izz,itausupersat) = f(ixx,iyy,izz,itausupersat) - weight*inversetau
+                  enddo; enddo; enddo
+                 endif
               endif
             endif
           enddo
