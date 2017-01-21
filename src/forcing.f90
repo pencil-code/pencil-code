@@ -44,7 +44,7 @@ module Forcing
   real, dimension(nx) :: profx_ampl=1.,profx_hel=1., profx_ampl1=0.
   real, dimension(my) :: profy_ampl=1.,profy_hel=1.
   real, dimension(mz) :: profz_ampl=1.,profz_hel=1.
-  integer :: kfountain=5,ifff,iffx,iffy,iffz,i2fff,i2ffx,i2ffy,i2ffz
+  integer :: kfountain=5,iff,ifx,ify,ifz,ifff,iffx,iffy,iffz,i2fff,i2ffx,i2ffy,i2ffz
   integer :: kzlarge=1
   integer :: itestflow_forcing_offset=0,itestfield_forcing_offset=0
   integer :: iforcing_zsym=0
@@ -59,6 +59,7 @@ module Forcing
   logical :: lscale_kvector_fac=.false.
   logical :: lforce_peri=.false., lforce_cuty=.false.
   logical :: lforcing2_same=.false., lforcing2_curl=.false.
+  logical :: lff_as_aux = .false.
   real :: scale_kvectorx=1.,scale_kvectory=1.,scale_kvectorz=1.
   logical :: old_forcing_evector=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
@@ -116,7 +117,7 @@ module Forcing
   namelist /forcing_run_pars/ &
        tforce_start,tforce_start2,&
        iforce,force,relhel,crosshel,height_ff,r_ff,r_ff_hel, &
-       rcyl_ff,width_ff,nexp_ff, &
+       rcyl_ff,width_ff,nexp_ff,lff_as_aux, &
        iforce2, force2, force1_scl, force2_scl, iforcing_zsym, &
        kfountain,fountain,tforce_stop,tforce_stop2, &
        radius_ff,k1_ff,kx_ff,ky_ff,kz_ff,slope_ff,work_ff,lmomentum_ff, &
@@ -187,7 +188,7 @@ module Forcing
       use General, only: bessj
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
-      use Sub, only: step,erfunc,stepdown
+      use Sub, only: step,erfunc,stepdown,register_report_aux
 !
       real :: zstar
       integer :: l,i
@@ -629,6 +630,9 @@ module Forcing
       if (ip<=6) print*,'forcing_cont:','lforcing_cont=',lforcing_cont,iforcing_cont
 
       if (lstart) return
+
+      if (lff_as_aux) call register_report_aux('ff', iff, ifx, ify, ifz)
+
 !
 !  Get reference_state. Requires that density is initialized before forcing.
 !
@@ -1542,6 +1546,8 @@ module Forcing
                 forcing_rhs(:,j)=rho1*profx_ampl*profy_ampl(m)*profz_ampl(n)*force_ampl &
                   *real(cmplx(coef1(j),profx_hel*profy_hel(m)*profz_hel(n)*coef2(j)) &
                   *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
+                ! put force into auxiliary variable, if requested
+                if (iff /= 0) f(l1:l2,m,n,iff:iff+3) = forcing_rhs(:,:)
 !
 !  Compute additional forcing function (used for velocity if crosshel=1).
 !  It can optionally be the same. Alterantively, one has to set crosshel=1.
