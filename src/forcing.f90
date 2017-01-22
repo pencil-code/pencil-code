@@ -4892,9 +4892,15 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,2)=0
           force(:,3)=gravz*ampl_ff(i)*cos(omega_ff*t)
         case ('uniform_vorticity')
-          force(:,1)=z(n)*ampl_ff(i)*cos(omega_ff*t)
-          force(:,2)=0
-          force(:,3)=-x(l1:l2)*ampl_ff(i)*cos(omega_ff*t)
+          if (lcylindrical_coords) then
+            force(:,1)=-x(l1:l2)*y(m)*ampl_ff(i)*cos(omega_ff*t)
+            force(:,2)=x(l1:l2)*ampl_ff(i)*cos(omega_ff*t)
+            force(:,3)=0
+          else
+            force(:,1)=z(n)*ampl_ff(i)*cos(omega_ff*t)
+            force(:,2)=0
+            force(:,3)=-x(l1:l2)*ampl_ff(i)*cos(omega_ff*t)
+          endif
         case('KolmogorovFlow-x')
           fact=ampl_ff(i)
           force(:,1)=0

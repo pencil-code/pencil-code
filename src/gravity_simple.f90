@@ -301,6 +301,14 @@ module Gravity
         call put_shared_variable('gravx', gravx, caller='initialize_gravity')
         call put_shared_variable('gravx_xpencil', gravx_xpencil)
 !
+      case ('kepler_2d')
+        if (lroot) print*,'initialize_gravity: kepler_2d x-grav, gravx=',gravx
+        gravx_xpencil=-gravx/x
+        potx_xpencil=-gravx*alog(x) + potx_const
+        g0=gravx
+        call put_shared_variable('gravx', gravx, caller='initialize_gravity')
+        call put_shared_variable('gravx_xpencil', gravx_xpencil)
+!
 !  Convection zone model, normalized to the bottom of the domain
 !
       case ('CZbot1')
