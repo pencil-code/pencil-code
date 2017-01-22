@@ -4823,6 +4823,14 @@ call fatal_error('hel_vec','radial profile should be quenched')
 
         do i=1,n_forcing_cont
           call forcing_cont(i,p%fcont(:,:,i),rho1=p%rho1)
+          ! put force into auxiliary variable, if requested
+          if (iff /= 0) then
+            if (i == 1) then
+              f(l1:l2,m,n,iff:iff+3) = p%fcont(:,:,i)
+            else
+              f(l1:l2,m,n,iff:iff+3) = f(l1:l2,m,n,iff:iff+3) + p%fcont(:,:,i)
+            endif
+          endif
 !
 !  divide by rho if lmomentum_ff=T
 !  MR: better to place it in hydro
