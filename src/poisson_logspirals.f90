@@ -24,8 +24,8 @@
 ! CPARAM logical, parameter :: lpoisson=.true.
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 3
-! COMMUNITCATED AUXILIARIES 3
+! MAUX CONTRIBUTION 0
+! COMMUNITCATED AUXILIARIES 0
 !
 !***************************************************************
 module Poisson
@@ -64,27 +64,6 @@ module Poisson
 !
 contains
 !***********************************************************************
-    subroutine register_poisson()
-!
-!  Register auxilliary farray variables for poisson_logspirals
-!
-!  12-dec-16/vince: adapted
-!
-      use FArrayManager
-!
-!  Set indices for auxiliary variables
-!
-      call farray_register_auxiliary('gpotselfx',igpotselfx,communicated=.true.)
-      call farray_register_auxiliary('gpotselfy',igpotselfy,communicated=.true.)
-      call farray_register_auxiliary('gpotselfz',igpotselfz,communicated=.true.)
-!
-!  Identify version number (generated automatically by SVN).
-!
-      if (lroot) call svn_id( &
-          "$Id$")
-!
-    endsubroutine register_selfgravity
-!***********************************************************************
     subroutine initialize_poisson()
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
@@ -94,10 +73,7 @@ contains
 !
       use SharedVariables, only: get_shared_variable
 !
-      if (nzgrid/=1) then
-        if (lroot) print*, 'initialize_poisson: logspirals only works with nzgrid==1'
-        call fatal_error('initialize_poisson','')
-      endif
+      call check_setup()
 !
 !  Dimensionality
 !
@@ -116,74 +92,6 @@ contains
 !
       call get_shared_variable('gravitational_const',Gnewton_ptr)
       Gnewton=Gnewton_ptr
-!
-!  Initialize farray contributions
-!
-      f(:,:,:,igpotselfx:igpotselfz)=0.0
-!
-!  Boundary condition consistency for gpotself
-!
-if (ldensity) then
-        i = merge(irho, ilnrho, ldensity_nolog)
-        if (any(bcx(igpotselfx:igpotselfz)=='p') .and. .not.(bcx(i)=='p')) then
-          if (lroot) then
-            print*, 'initialize_selfgravity: gpotself has bcx=''p'', but the density is not'
-            print*, '                        periodic! (you must set a proper boundary condition'
-            print*, '                        for the potential)'
-            print*, 'initialize_selfgravity: bcx=', bcx
-          endif
-          call fatal_error('initialize_selfgravity','')
-        endif
-        if (any(bcy(igpotselfx:igpotselfz)=='p') .and. .not.(bcy(i)=='p')) then
-          if (lroot) then
-            print*, 'initialize_selfgravity: gpotself has bcy=''p'', but the density is not'
-            print*, '                        periodic! (you must set a proper boundary condition'
-            print*, '                        for the potential)'
-            print*, 'initialize_selfgravity: bcy=', bcy
-          endif
-          call fatal_error('initialize_selfgravity','')
-        endif
-        if (any(bcz(igpotselfx:igpotselfz)=='p') .and. .not.(bcz(i)=='p')) then
-          if (lroot) then
-            print*, 'initialize_selfgravity: gpotself has bcz=''p'', but the density is not'
-            print*, '                        periodic! (you must set a proper boundary condition'
-            print*, '                        for the potential)'
-            print*, 'initialize_selfgravity: bcz=', bcz
-          endif
-          call fatal_error('initialize_selfgravity','')
-        endif
-      endif
-!
-!     *** potential problems here...ipotself may still be 0, depending on the order in which the
-!         register / vs initialize routines are called. Will need to check ***
-!
-      if (any(bcx(igpotselfx:igpotselfz)=='p') .and. .not.(bcx(ipotself)=='p')) then
-        if (lroot) then
-          print*, 'initialize_particles_selfgrav: igpotself has bcx=''p'', but the potential is not'
-          print*, '                               periodic! (you must set a proper boundary'
-          print*, '                               condition for the gradient of the potential)'
-          print*, 'initialize_particles_selfgrav: bcx=', bcx
-        endif
-        call fatal_error('initialize_particles_selfgrav','')
-      endif
-      if (any(bcy(igpotselfx:igpotselfz)=='p') .and. .not.(bcy(ipotself)=='p')) then
-        if (lroot) then
-          print*, 'initialize_particles_selfgrav: igpotself has bcy=''p'', but the potential is not'
-          print*, '                               periodic! (you must set a proper boundary'
-          print*, '                               condition for the gradient of the potential)'
-          print*, 'initialize_particles_selfgrav: bcy=', bcy
-        endif
-        call fatal_error('initialize_particles_selfgrav','')
-      endif
-      if (any(bcz(igpotselfx:igpotselfz)=='p') .and. .not.(bcz(ipotself)=='p')) then
-        if (lroot) then
-          print*, 'initialize_particles_selfgrav: igpotself has bcz=''p'', but the potential is not'
-          print*, '                               periodic! (you must set a proper boundary'
-          print*, '                               condition for the gradient of the potential)'
-          print*, 'initialize_particles_selfgrav: bcz=', bcz
-        endif
-        call fatal_error('initialize_particles_selfgrav','')
-      endif
 !
 !  Coordinates u,phi (Fourier grid) and r,x,y (physical grid) are generated
 !
@@ -228,6 +136,10 @@ if (ldensity) then
          endif
          call fatal_error('initialize_poisson','')
       endif
+      if (nzgrid/=1) then
+        if (lroot) print*, 'initialize_poisson: logspirals only works with nzgrid==1'
+        call fatal_error('initialize_poisson','')
+      endif
     endsubroutine check_setup
 !***********************************************************************
     subroutine inverse_laplacian(phi)
@@ -240,13 +152,7 @@ if (ldensity) then
       real, dimension(nx,ny,nz), intent(inout) :: phi
 !
       if (lcylindrical_coords) then
-!
-        if (present(gpotself)) then
-          call inverse_laplacian_logradial_fft(phi)
-        else
-          call fatal_error("inverse_laplacian","poisson_logspirals works with the acceleration only")
-        endif
-!
+         call inverse_laplacian_logradial_fft(phi)
       else if (lspherical_coords) then
          if (lroot) then
           print*,'There is no poisson solver for spherical '
@@ -475,7 +381,8 @@ if (ldensity) then
 ! Uses kernals and mass fields for the two acceleration integrals to
 ! calculate gravitational accelerations.
 !
-      real, dimension(2*nx,ny) :: gr_convolution,gr_factor,gr1,gr2,gphi_convolution,gphi_factor
+      real, dimension(2*nx,ny) :: gr_convolution,gr_factor,gphi_convolution,gphi_factor
+      integer :: n
 !
       call fftconvolve(kr,sr,gr_convolution)
       call fftconvolve(kphi,sphi,gphi_convolution)
@@ -483,17 +390,8 @@ if (ldensity) then
       gr_factor=-Gnewton*exp(-u2d/2)*du*dphi
       gphi_factor=-Gnewton*exp(-3*u2d/2)*du*dphi
 !
-      gr1=gr_factor*gr_convolution
-      gr2=Gnewton*sigma*du*dphi/B
-      gr=gr1+gr2
-!
+      gr=gr_factor*gr_convolution+Gnewton*sigma*du*dphi/B
       gphi=gphi_factor*gphi_convolution
-!
-      do n=1,nz
-        f(l1:l2,m1:m2,n,igpotselfx)=gr(:nx,:)
-        f(l1:l2,m1:m2,n,igpotselfy)=gphi(:nx,:)
-      enddo
-      f(l1:l2,m1:m2,n1:n2,igpotselfz)=0.
 !
     endsubroutine compute_acceleration
 !***********************************************************************
@@ -502,9 +400,9 @@ if (ldensity) then
 ! Uses kernals and mass fields for the potential integral to calculate
 ! potential on the grid NOTE: Should actually calculate potential from
 ! the accelerations, since the log radial convolution product produces
-! potentials which are known to violate Newton's first law, but produces accelerations
-! that are free of this behavior (See Towards Predictive Scenarios of
-! Planetary Migration, by Clement Baruteau)
+! potentials which are known to violate Newton's first law, but produces
+! accelerations that are free of this behavior (See Towards Predictive
+! Scenarios of Planetary Migration, by Clement Baruteau)
 !
       real, dimension(nx,ny,nz), intent(inout) :: potential
       real, dimension(2*nx,ny) :: v_convolution,v_factor
@@ -583,5 +481,18 @@ if (ldensity) then
       convolution=convolution_fourier_real
 !
     endsubroutine fftconvolve
+!***********************************************************************
+    subroutine get_acceleration(acceleration)
+!
+      real, dimension(nx,ny,nz,3), intent(out) :: acceleration           !should I (CAN I?) make this allocatable?
+      integer :: n
+!
+      do n=1,nz
+        acceleration(:,:,n,1) = gr(1:nx,1:ny)
+        acceleration(:,:,n,2) = gphi(1:nx,1:ny)
+      enddo
+      acceleration(:,:,:,3)=0.
+!
+    endsubroutine get_acceleration
 !***********************************************************************
 endmodule Poisson

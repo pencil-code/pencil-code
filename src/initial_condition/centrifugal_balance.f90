@@ -1285,14 +1285,14 @@ module InitialCondition
 !  ??-???-15/wlad: adapted from correct_selfgravity
 !
       use Sub,         only:get_radial_distance,grad
-      use Poisson,     only:inverse_laplacian
+      use Poisson,     only:inverse_laplacian,get_acceleration
       use Boundcond,   only:update_ghosts
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      real, dimension (mx,my,mz) :: rho
+      real, dimension (nx,ny,nz) :: rho
       real, dimension (nx,ny,nz,3) :: gpotself
-      real, dimension (nx) :: gspotself,rr_cyl,rr_sph
+      real, dimension (nx) :: gspotself
       real :: rhs_poisson_const
 !
       if (lroot) print*,'Correcting for self-gravity on the '//&
@@ -1303,37 +1303,30 @@ module InitialCondition
         print*,"Please use a poisson solver."
         call fatal_error("correct_selfgravity_logspirals","")
       endif
+      if (.not.lcylindrical_coords) then
+        if (lroot) then
+          print*,'You are calling correct_selfgravity_logspirals'
+          print*,'from the centrifugal_balance module with non-'
+          print*,'cylindrical coordinates.'
+          print*,'If you are using the other _logspirals modules,'
+          print*,'they currently require cylindrical coordinates.'
+          print*,"If you aren't using the other _logspirals modules,"
+          print*,'please call correct_selfgravity instead.'
+        endif
+        call fatal_error("correct_selfgravity_logspirals","")
+      endif
 !
-!  Poisson constant is 4piG, this has to be consistent with the 
-!  constant in poisson_init_pars
-!
-      !rhs_poisson_const=4*pi*gravitational_const
-!
-      rho(l1:l2,m1:m2,n1:n2)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+      rho=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
 !     
-      !!!!!!!!!!!! call inverse_laplacian(rho(l1:l2,m1:m2,n1:n2),gpotself)
-      call inverse_laplacian(rho(l1:l2,m1:m2,n1:n2))!,gpotself)
+      call inverse_laplacian(rho)
+      call get_acceleration(gpotself)
 !
       do n=n1,n2 ; do m=m1,m2
 !
-!  Get the potential gradient
-!
-        !call get_radial_distance(rr_sph,rr_cyl)
-        !call grad(f,ipotself,gpotself)
-!
 !  correct the angular frequency phidot^2
 !
-        if (lcartesian_coords) then
-          !gspotself=(gpotself(:,1)*x(l1:l2) + gpotself(:,2)*y(m))/rr_cyl
-        elseif (lcylindrical_coords) then
-          ! PABourdin: this variable is unset:
-          !!!!!!!!!!!! gspotself=gpotself(:,m-m1+1,n-n1+1,1)
-        elseif (lspherical_coords) then
-          !gspotself=gpotself(:,1)*sinth(m) + gpotself(:,2)*costh(m)
-        endif
-!
-        ! PABourdin: can't do that with an unset gspotself:
-        !!!!!!!!!!!! call correct_azimuthal_velocity(f,gspotself)
+        gspotself=gpotself(:,m-m1+1,n-n1+1,1)
+        call correct_azimuthal_velocity(f,gspotself)
 !
       enddo;enddo
 !
