@@ -1547,7 +1547,7 @@ module Forcing
                   *real(cmplx(coef1(j),profx_hel*profy_hel(m)*profz_hel(n)*coef2(j)) &
                   *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
                 ! put force into auxiliary variable, if requested
-                if (iff /= 0) f(l1:l2,m,n,iff:iff+3) = forcing_rhs(:,:)
+                if (lff_as_aux) f(l1:l2,m,n,ifx:ifz) = forcing_rhs(:,:)
 !
 !  Compute additional forcing function (used for velocity if crosshel=1).
 !  It can optionally be the same. Alterantively, one has to set crosshel=1.
@@ -4824,11 +4824,11 @@ call fatal_error('hel_vec','radial profile should be quenched')
         do i=1,n_forcing_cont
           call forcing_cont(i,p%fcont(:,:,i),rho1=p%rho1)
           ! put force into auxiliary variable, if requested
-          if (iff /= 0) then
+          if (lff_as_aux) then
             if (i == 1) then
-              f(l1:l2,m,n,iff:iff+3) = p%fcont(:,:,i)
+              f(l1:l2,m,n,ifx:ifz) = p%fcont(:,:,i)
             else
-              f(l1:l2,m,n,iff:iff+3) = f(l1:l2,m,n,iff:iff+3) + p%fcont(:,:,i)
+              f(l1:l2,m,n,ifx:ifz) = f(l1:l2,m,n,ifx:ifz) + p%fcont(:,:,i)
             endif
           endif
 !
