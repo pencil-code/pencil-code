@@ -123,7 +123,7 @@ module Special
   integer :: idiag_emfcoefxmax=0
   integer :: idiag_emfcoefymax=0
   integer :: idiag_emfcoefzmax=0
-  integer :: idiag_emfratiomax=0
+  integer :: idiag_emfdiffmax=0
 ! RMS diagnostics
   integer :: idiag_alpharms=0
   integer :: idiag_betarms=0
@@ -135,7 +135,7 @@ module Special
   integer :: idiag_bcoefrms=0
   integer :: idiag_emfrms=0
   integer :: idiag_emfcoefrms=0
-  integer :: idiag_emfratiorms=0
+  integer :: idiag_emfdiffrms=0
   ! Interpolation parameters
   character (len=fnlen) :: interpname
   integer :: dataload_len
@@ -752,7 +752,7 @@ module Special
 !!      endif
 !      emftmp=0
       if (ldiagnos) then
-        emftmp = p%acoef_emf + p%bcoef_emf
+        emftmp = p%acoef_emf + p%bcoef_emf + p%utensor_emf
         tmppencil = emftmp - p%emf
         !
         if (idiag_alphaxmax/=0) call max_mn_name(p%alpha_emf(:,1),idiag_alphaxmax)
@@ -785,9 +785,9 @@ module Special
         if (idiag_emfcoefxmax/=0) call max_mn_name(emftmp(:,1),idiag_emfcoefxmax)
         if (idiag_emfcoefymax/=0) call max_mn_name(emftmp(:,2),idiag_emfcoefymax)
         if (idiag_emfcoefzmax/=0) call max_mn_name(emftmp(:,3),idiag_emfcoefzmax)
-        if (idiag_emfratiomax/=0) then
+        if (idiag_emfdiffmax/=0) then
           call dot2_mn(tmppencil,tmpline)
-          call max_mn_name(tmpline,idiag_emfratiomax,lsqrt=.true.)
+          call max_mn_name(tmpline,idiag_emfdiffmax,lsqrt=.true.)
         end if
         if (idiag_alpharms/=0) then
           call dot2_mn(p%alpha_emf,tmpline)
@@ -829,9 +829,9 @@ module Special
           call dot2_mn(emftmp,tmpline)
           call sum_mn_name(tmpline,idiag_emfcoefrms,lsqrt=.true.)
         end if
-        if (idiag_emfratiorms/=0) then
+        if (idiag_emfdiffrms/=0) then
           call dot2_mn(tmppencil,tmpline)
-          call sum_mn_name(tmpline,idiag_emfratiorms,lsqrt=.true.)
+          call sum_mn_name(tmpline,idiag_emfdiffrms,lsqrt=.true.)
         end if
       end if 
     
@@ -934,7 +934,7 @@ module Special
         idiag_emfcoefxmax=0
         idiag_emfcoefymax=0
         idiag_emfcoefzmax=0
-        idiag_emfratiomax=0
+        idiag_emfdiffmax=0
         ! RMS diagnostics
         idiag_alpharms=0
         idiag_betarms=0
@@ -946,7 +946,7 @@ module Special
         idiag_bcoefrms=0
         idiag_emfrms=0
         idiag_emfcoefrms=0
-        idiag_emfratiorms=0
+        idiag_emfdiffrms=0
       endif
 !!
 !!      do iname=1,nname
@@ -991,7 +991,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'emfcoefxmax',idiag_emfcoefxmax)
         call parse_name(iname,cname(iname),cform(iname),'emfcoefymax',idiag_emfcoefymax)
         call parse_name(iname,cname(iname),cform(iname),'emfcoefzmax',idiag_emfcoefzmax)
-        call parse_name(iname,cname(iname),cform(iname),'emfratiomax',idiag_emfratiomax)
+        call parse_name(iname,cname(iname),cform(iname),'emfdiffmax',idiag_emfdiffmax)
         ! RMS values of emf terms
         call parse_name(iname,cname(iname),cform(iname),'alpharms',idiag_alpharms)
         call parse_name(iname,cname(iname),cform(iname),'betarms',idiag_betarms)
@@ -1003,7 +1003,7 @@ module Special
         call parse_name(iname,cname(iname),cform(iname),'bcoefrms',idiag_bcoefrms)
         call parse_name(iname,cname(iname),cform(iname),'emfrms',idiag_emfrms)
         call parse_name(iname,cname(iname),cform(iname),'emfcoefrms',idiag_emfcoefrms)
-        call parse_name(iname,cname(iname),cform(iname),'emfratiorms',idiag_emfratiorms)
+        call parse_name(iname,cname(iname),cform(iname),'emfdiffrms',idiag_emfdiffrms)
       enddo
       
     endsubroutine rprint_special
@@ -1157,6 +1157,9 @@ module Special
         end if
         if (lbcoef) then
           emftmp = emftmp + p%bcoef_emf
+        end if
+        if (lutensor) then
+          emftmp = emftmp + p%utensor_emf
         end if
       else
         emftmp = p%emf
