@@ -3183,7 +3183,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
         endif
 !
 !  It turns out that in the presence of shear, and even for weak shear,
-!  vorticitity is being produced. In order to check whether the shearing
+!  vorticity is being produced. In order to check whether the shearing
 !  periodic boundaries are to blame, we can cut the y extent of forcing
 !  locations by half.
 !
