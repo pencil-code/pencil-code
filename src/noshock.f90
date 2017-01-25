@@ -32,7 +32,7 @@ module Shock
 !
   contains
 !***********************************************************************
-    subroutine register_shock()
+    subroutine register_shock
 !
 !  19-nov-02/tony: coded
 !  24-jan-05/tony: modified from visc_shock.f90
@@ -73,8 +73,7 @@ module Shock
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset)
-      if (present(lwrite)) call keep_compiler_quiet(lwrite)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_shock
 !***********************************************************************
@@ -92,7 +91,7 @@ module Shock
 !
     endsubroutine get_slices_shock
 !***********************************************************************
-    subroutine pencil_criteria_shock()
+    subroutine pencil_criteria_shock
 !
 !  All pencils that the Shock module depends on are specified here.
 !

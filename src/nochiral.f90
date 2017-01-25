@@ -25,11 +25,9 @@ module Chiral
 !
   include 'chiral.h'
 !
-  integer :: idiag_XX_chiralmax=0, idiag_YY_chiralmax=0
-!
   contains
 !***********************************************************************
-    subroutine register_chiral()
+    subroutine register_chiral
 !
 !  Initialise variables which should know that we solve for passive
 !  scalar: iXX_chiral and iYY_chiral; increase nvar accordingly
@@ -71,7 +69,7 @@ module Chiral
 !
     endsubroutine init_chiral
 !***********************************************************************
-    subroutine pencil_criteria_chiral()
+    subroutine pencil_criteria_chiral
 !
 !  All pencils that the Chiral module depends on are specified here.
 !
@@ -126,6 +124,7 @@ module Chiral
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
+
     endsubroutine dXY_chiral_dt
 !***********************************************************************
     subroutine chiral_before_boundary(f)
@@ -139,6 +138,7 @@ module Chiral
       intent(inout) :: f
 !
       call keep_compiler_quiet(f)
+
     endsubroutine chiral_before_boundary
 !***********************************************************************
     subroutine read_chiral_init_pars(iostat)
@@ -179,26 +179,10 @@ module Chiral
 !
 !  28-may-04/axel: adapted from pscalar
 !
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-!  reset everything in case of reset
-!  (this needs to be consistent with what is defined above!)
-!
-      if (lreset) then
-        idiag_XX_chiralmax=0
-        idiag_YY_chiralmax=0
-      endif
-!
-!  write column where which chiral variable is stored
-!
-      if (lwr) then
-        write(3,*) 'iXX_chiral=0'
-        write(3,*) 'iYY_chiral=0'
-      endif
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_chiral
 !***********************************************************************

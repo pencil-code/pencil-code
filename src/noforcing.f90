@@ -25,14 +25,14 @@ module Forcing
   implicit none
 !
   logical :: lhydro_forcing=.false.,ltestflow_forcing=.false.
+
   include 'forcing.h'
 !
-  integer :: idiag_rufm=0
   integer :: n_forcing_cont=n_forcing_cont_max
 !
   contains
 !***********************************************************************
-    subroutine register_forcing()
+    subroutine register_forcing
 !
 !  add forcing in timestep()
 !  11-may-2002/wolf: coded
@@ -44,7 +44,7 @@ module Forcing
 !
     endsubroutine register_forcing
 !***********************************************************************
-    subroutine initialize_forcing()
+    subroutine initialize_forcing
 !
 !  initialize random number generator in processor-dependent fashion
 !  see comments in start.f90 for details
@@ -73,7 +73,7 @@ module Forcing
 !
     endsubroutine calc_lforcing_cont_pars
 !***********************************************************************
-    subroutine pencil_criteria_forcing()
+    subroutine pencil_criteria_forcing
 !
 !  Dummy routine
 !
@@ -166,29 +166,11 @@ module Forcing
 !
 !  26-jan-04/axel: coded
 !
-      use Diagnostics, only: parse_name
-!
-      integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-!  reset everything in case of reset
-!  (this needs to be consistent with what is defined above!)
-!
-      if (lreset) then
-        idiag_rufm=0
-      endif
-!
-!  iname runs through all possible names that may be listed in print.in
-!
-      if (lroot.and.ip<14) print*,'rprint_noforcing: run through parse list'
-      do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'rufm',idiag_rufm)
-      enddo
-!
+      call keep_compiler_quiet(lreset,lwrite)
+
     endsubroutine rprint_forcing
 !***********************************************************************
     subroutine forcing_clean_up

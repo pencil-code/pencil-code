@@ -27,7 +27,7 @@ module NeutralVelocity
 !
   contains
 !***********************************************************************
-    subroutine register_neutralvelocity()
+    subroutine register_neutralvelocity
 !
 !  Initialise variables which should know that we solve the hydro
 !  equations: iuu, etc; increase nvar accordingly.
@@ -41,7 +41,7 @@ module NeutralVelocity
 !
     endsubroutine register_neutralvelocity
 !***********************************************************************
-    subroutine initialize_neutralvelocity()
+    subroutine initialize_neutralvelocity
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -62,7 +62,7 @@ module NeutralVelocity
 !
     endsubroutine init_uun
 !***********************************************************************
-    subroutine pencil_criteria_neutralvelocity()
+    subroutine pencil_criteria_neutralvelocity
 !
 !  All pencils that the Neutralvelocity module depends on are specified here.
 !
@@ -157,23 +157,10 @@ module NeutralVelocity
 !   3-may-02/axel: coded
 !  27-may-02/axel: added possibility to reset list
 !
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-!  Write column where which neutral velocity variable is stored.
-!
-      if (lwr) then
-        write(3,*) 'nname=',nname
-        write(3,*) 'iuun=',iuun
-        write(3,*) 'iunx=',iunx
-        write(3,*) 'iuny=',iuny
-        write(3,*) 'iunz=',iunz
-      endif
-!
-      call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_neutralvelocity
 !***********************************************************************

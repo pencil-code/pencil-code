@@ -22,7 +22,7 @@ module Detonate
 !
   contains
 !***********************************************************************
-    subroutine register_detonate()
+    subroutine register_detonate
 !
 !  Set up indices for variables.
 !
@@ -69,8 +69,7 @@ module Detonate
       logical, intent(in) :: lreset
       logical, intent(in), optional :: lwrite
 !
-      call keep_compiler_quiet(lreset)
-      if (present(lwrite)) call keep_compiler_quiet(lwrite)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_detonate
 !***********************************************************************

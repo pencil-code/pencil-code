@@ -28,11 +28,6 @@ module Energy
 !
   include 'energy.h'
 !
-  real :: hcond0=0.0, hcond1=impossible, chi=impossible
-  real :: Fbot=impossible, FbotKbot=impossible, Kbot=impossible
-  real :: Ftop=impossible, FtopKtop=impossible
-  logical :: lmultilayer=.true.
-  logical :: lheatc_chiconst=.false.
   logical, pointer :: lpressuregradient_gas
   logical :: lviscosity_heat=.false.
   logical, pointer :: lffree
@@ -277,7 +272,6 @@ module Energy
 !
 !  Dummy routine.
 !
-
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
 
       call keep_compiler_quiet(f)
@@ -441,11 +435,8 @@ module Energy
       use Diagnostics, only: parse_name
 !
       integer :: iname
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
-!
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
 !
 !  Reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -464,14 +455,6 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'ufpresm',idiag_ufpresm)
         call parse_name(iname,cname(iname),cform(iname),'uduum',idiag_uduum)
       enddo
-!
-!  Write column where which energy variable is stored.
-!
-      if (lwr) then
-        write(3,*) 'nname=',nname
-        write(3,*) 'iss=',iss
-        write(3,*) 'iyH=0'
-      endif
 !
     endsubroutine rprint_energy
 !***********************************************************************

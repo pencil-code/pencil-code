@@ -21,13 +21,9 @@ module Solid_Cells
 !
   include 'solid_cells.h'
 !
-  integer :: idiag_c_dragx=0       ! DIAG_DOC:
-  integer :: idiag_c_dragy=0       ! DIAG_DOC:
-  integer :: idiag_c_dragz=0       ! DIAG_DOC:
-!
   contains
 !***********************************************************************
-    subroutine register_solid_cells()
+    subroutine register_solid_cells
 !
 !  Dummy routine
 !
@@ -168,40 +164,14 @@ module Solid_Cells
 !
 !   mar-2009/kragset: coded
 !
-      use Diagnostics, only: parse_name
-!
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
-      integer :: iname
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-!  Reset everything in case of reset
-!
-      if (lreset) then
-        idiag_c_dragx=0
-        idiag_c_dragy=0
-        idiag_c_dragz=0
-      endif
-!
-!  check for those quantities that we want to evaluate online
-!
-      do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'c_dragx',idiag_c_dragx)
-        call parse_name(iname,cname(iname),cform(iname),'c_dragy',idiag_c_dragy)
-        call parse_name(iname,cname(iname),cform(iname),'c_dragz',idiag_c_dragz)
-      enddo
-!
-!  write column, idiag_XYZ, where our variable XYZ is stored
-!
-      if (lwr) then
-!
-      endif
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_solid_cells
 !***********************************************************************
-    subroutine pencil_criteria_solid_cells()
+    subroutine pencil_criteria_solid_cells
 !
 !  All pencils that the Solid_Cells module depends on are specified here.
 !

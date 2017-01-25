@@ -24,7 +24,7 @@ module Heatflux
 !
   contains
 !***********************************************************************
-    subroutine register_heatflux()
+    subroutine register_heatflux
 !
 !  6-oct-03/tony: coded
 !
@@ -71,7 +71,7 @@ module Heatflux
 !
     endsubroutine init_heatflux
 !***********************************************************************
-    subroutine pencil_criteria_heatflux()
+    subroutine pencil_criteria_heatflux
 !
 !  All pencils that this heatflux module depends on are specified here.
 !
@@ -147,12 +147,10 @@ module Heatflux
 !
 !  06-oct-03/tony: coded
 !
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-      call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_heatflux
 !***********************************************************************

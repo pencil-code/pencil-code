@@ -26,13 +26,9 @@ module Supersat
 !
   include 'supersat.h'
 !
-!  Diagnostics variables
-!
-  integer :: idiag_ssatrms=0
-!
   contains
 !***********************************************************************
-    subroutine register_supersat()
+    subroutine register_supersat
 !
 !  Initialise variables which should know that we solve for passive
 !  scalar: issat; increase nvar accordingly.
@@ -58,7 +54,7 @@ module Supersat
 !
     endsubroutine initialize_supersat
 !***********************************************************************
-    subroutine pencil_criteria_supersat()
+    subroutine pencil_criteria_supersat
 !
 !  All pencils that the Pscalar module depends on are specified here.
 !
@@ -163,9 +159,11 @@ module Supersat
 !
 !   6-jul-02/axel: coded
 !
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
+      call keep_compiler_quiet(lreset,lwrite)
+!
     endsubroutine rprint_supersat
-
+!***********************************************************************
 endmodule Supersat

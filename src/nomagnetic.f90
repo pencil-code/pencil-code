@@ -25,9 +25,6 @@ module Magnetic
   include 'magnetic.h'
 !
   real, dimension(3) :: B_ext_inv=(/0.0,0.0,0.0/)
-  real, dimension (ninit) :: amplaa=0.0,kx_aa=1.,ky_aa=1.,kz_aa=1.
-  real :: kx=1.,ky=1.,kz=1.
-  real :: brms=0., bmz_beltrami_phase=0.
   real, dimension (mz,3) :: aamz
   real, dimension (nz,3) :: bbmz,jjmz
   real :: inertial_length=0.,linertial_2
@@ -36,26 +33,17 @@ module Magnetic
   logical, dimension(7) :: lresi_dep=.false. 
   logical :: lcovariant_magnetic=.false.
 !
-  integer :: idiag_b2m=0,idiag_bm2=0,idiag_j2m=0,idiag_jm2=0,idiag_abm=0
-  integer :: idiag_jbm=0,idiag_epsM=0,idiag_vArms=0,idiag_vAmax=0
-  integer :: idiag_brms=0,idiag_bmax=0,idiag_jrms=0,idiag_jmax=0
-  integer :: idiag_bx2m=0, idiag_by2m=0, idiag_bz2m=0,idiag_bmz=0
   integer :: idiag_axmz=0,idiag_aymz=0
-  integer :: idiag_bxmz=0,idiag_bymz=0,idiag_bzmz=0,idiag_bmx=0,idiag_bmy=0
-  integer :: idiag_bxmxy=0,idiag_bymxy=0,idiag_bzmxy=0
-  integer :: idiag_uxbm=0,idiag_oxuxbm=0,idiag_jxbxbm=0,idiag_uxDxuxbm=0
-  integer :: idiag_b2mphi=0
-  integer :: idiag_bmxy_rms=0
-  integer :: idiag_bsinphz=0
-  integer :: idiag_bcosphz=0
-  integer :: idiag_magfricmax=0
+  integer :: idiag_bxmz=0,idiag_bymz=0
+  integer :: idiag_bsinphz=0,idiag_bcosphz=0
 !
   contains
 !***********************************************************************
-    subroutine register_magnetic()
+    subroutine register_magnetic
 !
 !  Initialise variables which should know that we solve for the vector
 !  potential: iaa, etc; increase nvar accordingly
+!
 !  3-may-2002/wolf: dummy routine
 !
 !  identify version number
@@ -91,7 +79,7 @@ module Magnetic
 !
     endsubroutine init_aa
 !***********************************************************************
-    subroutine pencil_criteria_magnetic()
+    subroutine pencil_criteria_magnetic
 !
 !  All pencils that the Magnetic module depends on are specified here.
 !
@@ -268,23 +256,10 @@ module Magnetic
 !   3-may-02/axel: coded
 !  26-aug-13/MR: unneeded output of idiag* removed
 !
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-      if (lwr) then
-        write(3,*) 'nname=',nname
-        write(3,*) 'nnamexy=',nnamexy
-        write(3,*) 'nnamez=',nnamez
-        write(3,*) 'iaa=',iaa
-        write(3,*) 'iax=',iax
-        write(3,*) 'iay=',iay
-        write(3,*) 'iaz=',iaz
-      endif
-!
-      call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lreset,lwrite)
 
     endsubroutine rprint_magnetic
 !***********************************************************************
@@ -373,7 +348,7 @@ module Magnetic
 !
     endsubroutine split_update_magnetic
 !***********************************************************************
-    subroutine expand_shands_magnetic()
+    subroutine expand_shands_magnetic
 !
 !  Dummy
 !

@@ -24,7 +24,7 @@ module Shear
 !
   contains
 !***********************************************************************
-    subroutine register_shear()
+    subroutine register_shear
 !
 !  Initialise variables.
 !
@@ -35,7 +35,7 @@ module Shear
 !
     endsubroutine register_shear
 !***********************************************************************
-    subroutine initialize_shear()
+    subroutine initialize_shear
 !
 !  21-nov-02/tony: coded
 !  17-jul-04/axel: Sshear=0 is needed for forcing_hel to work correctly.
@@ -88,7 +88,7 @@ module Shear
 !
     endsubroutine shear_before_boundary
 !***********************************************************************
-    subroutine pencil_criteria_shear()
+    subroutine pencil_criteria_shear
 !
 !  All pencils that the Shear module depends on are specified here.
 !
@@ -222,7 +222,7 @@ module Shear
       logical :: lreset
       logical, optional :: lwrite
 !
-      if (present(lwrite)) call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_shear
 !***********************************************************************

@@ -26,7 +26,7 @@ module Polymer
 !
   contains
 !***********************************************************************
-    subroutine register_polymer()
+    subroutine register_polymer
 !
 !  Initialise variables which should know that we solve for the vector
 !  potential: ipoly, etc; increase nvar accordingly.
@@ -61,7 +61,7 @@ module Polymer
 !
     endsubroutine init_poly
 !***********************************************************************
-    subroutine pencil_criteria_polymer()
+    subroutine pencil_criteria_polymer
 !
 !   All pencils that the Polymer module depends on are specified here.
 !
@@ -168,8 +168,7 @@ module Polymer
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset)
-      if (present(lwrite)) call keep_compiler_quiet(lwrite)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_polymer
 !***********************************************************************

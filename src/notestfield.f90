@@ -27,16 +27,9 @@ module Testfield
 !
   include 'testfield.h'
 !
-  real :: dummy=0.
-!
-  namelist /testfield_init_pars/ &
-      dummy
-  namelist /testfield_run_pars/ &
-      dummy
-!
   contains
 !***********************************************************************
-    subroutine register_testfield()
+    subroutine register_testfield
 !
 !  Dummy routine
 !
@@ -62,7 +55,7 @@ module Testfield
 !
     endsubroutine init_aatest
 !***********************************************************************
-    subroutine pencil_criteria_testfield()
+    subroutine pencil_criteria_testfield
 !
 !  Dummy routine
 !
@@ -164,8 +157,7 @@ module Testfield
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset)
-      if (present(lwrite)) call keep_compiler_quiet(lwrite)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_testfield
 !***********************************************************************

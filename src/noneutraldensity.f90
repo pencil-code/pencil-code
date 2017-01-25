@@ -24,11 +24,9 @@ module Neutraldensity
 !
   include 'neutraldensity.h'
 !
-  integer :: idiag_rhonm=0
-!
   contains
 !***********************************************************************
-    subroutine register_neutraldensity()
+    subroutine register_neutraldensity
 !
 !  Initialise variables which should know that we solve the
 !  compressible hydro equations: ilnrhon; increase nvar accordingly.
@@ -42,7 +40,7 @@ module Neutraldensity
 !
     endsubroutine register_neutraldensity
 !***********************************************************************
-    subroutine initialize_neutraldensity()
+    subroutine initialize_neutraldensity
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -65,7 +63,7 @@ module Neutraldensity
 !
     endsubroutine init_lnrhon
 !***********************************************************************
-    subroutine pencil_criteria_neutraldensity()
+    subroutine pencil_criteria_neutraldensity
 !
 !  All pencils that the Neutraldensity module depends on are specified here.
 !
@@ -158,20 +156,10 @@ module Neutraldensity
 !
 !   7-jun-02/axel: incoporated from subroutine pde
 !
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-!  Write column where which neutral density variable is stored.
-!
-      if (lwr) then
-        write(3,*) 'nname=',nname
-        write(3,*) 'ilnrhon=',ilnrhon
-      endif
-!
-      call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_neutraldensity
 !***********************************************************************

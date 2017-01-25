@@ -15,25 +15,17 @@ module TestPerturb
 !
   implicit none
 !
-  real :: dummy
-!
   include 'testperturb.h'
-!
-  namelist /testperturb_init_pars/ &
-      dummy
-!
-  namelist /testperturb_run_pars/ &
-      dummy
 !
   contains
 !***********************************************************************
-    subroutine register_testperturb()
+    subroutine register_testperturb
 !
 !  Dummy routine
 !
     endsubroutine register_testperturb
 !***********************************************************************
-    subroutine initialize_testperturb()
+    subroutine initialize_testperturb
 !
 !  Dummy routine
 !
@@ -87,8 +79,7 @@ module TestPerturb
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset)
-      if (present(lwrite)) call keep_compiler_quiet(lwrite)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_testperturb
 !***********************************************************************
