@@ -34,8 +34,8 @@ program pc_tecplot_solid
   real, dimension (mxgrid) :: gx, gy, gz
   integer   ::  i, j, k, kchem, iroot
   logical :: ex
-  integer :: mvar_in, io_len, pz, alloc_err, start_pos, end_pos
-  integer(kind=8) :: rec_len, num_rec
+  integer :: mvar_in, io_len, alloc_err, start_pos, end_pos
+  integer(kind=8) :: rec_len
   real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
   lrun=.true.

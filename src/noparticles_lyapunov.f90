@@ -113,6 +113,8 @@ module Particles_lyapunov
       use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
+
+      iostat=0
 !
     endsubroutine read_plyapunov_init_pars
 !***********************************************************************
@@ -127,6 +129,8 @@ module Particles_lyapunov
       use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
+
+      iostat=0
 !
     endsubroutine read_plyapunov_run_pars
 !***********************************************************************

@@ -31,7 +31,7 @@ module Magnetic_meanfield
 !  array for inputting alpha profile
 !
   real, dimension (mx,my) :: alpha_input
-  real, pointer :: kf_alpm, B_ext2
+  real, pointer :: B_ext2
   logical, pointer :: lweyl_gauge
 !
   real, dimension (nx) :: kf_x, kf_x1
@@ -55,9 +55,9 @@ module Magnetic_meanfield
   real :: meanfield_etat=0.0, meanfield_etat_height=1., meanfield_pumping=1.
   real :: meanfield_Beq=1.0,meanfield_Beq_height=0., meanfield_Beq2_height=0.
   real :: meanfield_etat_exp=1.0, uturb=.1
-  real :: alpha_eps=0.0, x_surface=0., x_surface2=0., z_surface=0., qp_width, qpx_width
+  real :: alpha_eps=0.0, x_surface=0., x_surface2=0., z_surface=0., qp_width=impossible, qpx_width=impossible
   real :: alpha_equator=impossible, alpha_equator_gap=0.0, alpha_gap_step=0.0
-  real :: alpha_rmin
+  real :: alpha_rmin=0.
   real :: alpha_cutoff_up=0.0, alpha_cutoff_down=0.0
   real :: meanfield_qs=0.0, meanfield_qp=0.0, meanfield_qe=0.0, meanfield_qa=0.0
   real :: meanfield_Bs=1.0, meanfield_Bp=1.0, meanfield_Be=1.0, meanfield_Ba=1.0
@@ -1235,8 +1235,6 @@ module Magnetic_meanfield
 !
       intent(in) :: p
       intent(inout) :: df,f
-!
-      real, dimension (nx) :: Beq21
 !
 !  Identify module and boundary conditions.
 !
