@@ -64,7 +64,7 @@ module Hydro
 !
   real, dimension(nx) :: profx_diffrot1=1., profx_diffrot2=1., profx_diffrot3=1.
   real, dimension(my) :: profy_diffrot1=1., profy_diffrot2=1., profy_diffrot3=1.
-  real, dimension(mz) :: profz_diffrot1=1., profz_diffrot2=1., profz_diffrot3=1.
+  real, dimension(mz) :: profz_diffrot1=1.
 !
 !  Precession matrices.
 !
@@ -5059,7 +5059,6 @@ module Hydro
 !  write column where which hydro variable is stored
 !
       if (lwr) then
-        write(3,*) 'nname=',nname
         write(3,*) 'iuu=',iuu
         write(3,*) 'iux=',iux
         write(3,*) 'iuy=',iuy

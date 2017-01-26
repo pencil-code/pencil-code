@@ -36,7 +36,7 @@ module Dustvelocity
   public :: unit_md, dust_chemistry, mumon, mmon, mi, md
 !
   integer, parameter :: nvisc_max=4
-  complex, dimension (7) :: coeff
+  complex, dimension (7) :: coeff=0.
   real, dimension(ndustspec,ndustspec) :: scolld
   real, dimension(nx,ndustspec) :: tausd1
   real, dimension(ndustspec) :: md=1.0, mdplus, mdminus, ad
@@ -56,7 +56,7 @@ module Dustvelocity
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0,cdtd=0.2
   real :: gravx_dust=0.0
   real :: Omega_pseudo=0.0, u0_gas_pseudo=0.0, tausgmin=0.0, tausg1max=0.0
-  real :: mucube_graind=1., dust_pressure_factor=1.
+  real :: dust_pressure_factor=1.
   real :: shorttauslimit=0.0, shorttaus1limit=0.0
   real :: scaleHtaus=1.0, z0taus=0.0, widthtaus=1.0
   logical :: llin_radiusbins=.false., llog_massbins=.true.
@@ -501,7 +501,7 @@ module Dustvelocity
 !  18-mar-03/axel+anders: adapted from hydro
 !  21-jan-15/MR: changes for use for reference state.
 !
-      use EquationOfState, only: gamma, beta_glnrho_global, beta_glnrho_scaled
+      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
       use Sub
       use Gravity
       use Initcond
@@ -1022,7 +1022,6 @@ module Dustvelocity
 !
       use Debug_IO
       use Diagnostics
-      use EquationOfState, only: gamma
       use General
       use Sub
       use Deriv, only: der6
@@ -1587,7 +1586,6 @@ module Dustvelocity
       real, dimension (nx,3) :: uud
       real, dimension (nx) :: rho,rhod,csrho,cs2,deltaud2, Rep
       integer :: k
-      real :: stokes_prefactor
 !
       select case (draglaw)
 
@@ -1685,7 +1683,6 @@ module Dustvelocity
 !
       if (lwr) then
         write(3,*) 'ndustspec=',ndustspec
-        write(3,*) 'nname=',nname
       endif
 !
 !  Reset everything in case of reset.

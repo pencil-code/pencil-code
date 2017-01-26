@@ -2166,7 +2166,7 @@ module General
 !  INTEGER N
 !
 !  N=2
-!  X=0.75D0
+!  X=0.75
 !
 !  Y = BESSJ(N,X)
 !
@@ -2192,7 +2192,7 @@ module General
 !     MATHEMATICAL TABLES, VOL.5, 1962.
 !
       integer, parameter :: IACC = 40
-      real, parameter :: BIGNO = 1.D10, BIGNI = 1.D-10
+      real, parameter :: BIGNO = 1.E10, BIGNI = 1.E-10
       real :: X,BESSJ,TOX,BJM,BJ,BJP,SUM1
       integer :: N,J,M,JSUM
 !
@@ -2262,11 +2262,11 @@ module General
       -.2073370639D-5,.2093887211D-6 /
       DATA Q1,Q2,Q3,Q4,Q5 /-.1562499995D-1,.1430488765D-3, &
       -.6911147651D-5,.7621095161D-6,-.9349451520D-7 /
-      DATA R1,R2,R3,R4,R5,R6 /57568490574.D0,-13362590354.D0, &
-      651619640.7D0,-11214424.18D0,77392.33017D0,-184.9052456D0 /
-      DATA S1,S2,S3,S4,S5,S6 /57568490411.D0,1029532985.D0, &
-      9494680.718D0,59272.64853D0,267.8532712D0,1.D0 /
-      IF(X==0.D0) GO TO 1
+      DATA R1,R2,R3,R4,R5,R6 /57568490574.,-13362590354., &
+      651619640.7,-11214424.18,77392.33017,-184.9052456 /
+      DATA S1,S2,S3,S4,S5,S6 /57568490411.,1029532985., &
+      9494680.718,59272.64853,267.8532712,1. /
+      IF(X==0.) GO TO 1
       AX = ABS (X)
       IF (AX<8.) THEN
       Y = X*X
@@ -2282,7 +2282,7 @@ module General
       BESSJ0 = SQRT(.636619772/AX)*(FP*COS(XX)-Z*FQ*SIN(XX))
       ENDIF
       RETURN
-    1 BESSJ0 = 1.D0
+    1 BESSJ0 = 1.
       RETURN
     endfunction BESSJ0
 !***********************************************************************
@@ -2301,10 +2301,10 @@ module General
       .2457520174D-5,-.240337019D-6 /,P6 /.636619772D0 /
       DATA Q1,Q2,Q3,Q4,Q5 /.04687499995D0,-.2002690873D-3,   &
       .8449199096D-5,-.88228987D-6,.105787412D-6 /
-      DATA R1,R2,R3,R4,R5,R6 /72362614232.D0,-7895059235.D0, &
-      242396853.1D0,-2972611.439D0,15704.48260D0,-30.16036606D0 /
-      DATA S1,S2,S3,S4,S5,S6 /144725228442.D0,2300535178.D0, &
-      18583304.74D0,99447.43394D0,376.9991397D0,1.D0 /
+      DATA R1,R2,R3,R4,R5,R6 /72362614232.,-7895059235., &
+      242396853.1,-2972611.439,15704.48260,-30.16036606 /
+      DATA S1,S2,S3,S4,S5,S6 /144725228442.,2300535178., &
+      18583304.74,99447.43394,376.9991397,1. /
 !
       AX = ABS(X)
       IF (AX<8.) THEN
@@ -3210,6 +3210,7 @@ module General
     goto 1
 !
   entry  write_by_ranges_1d_cmplx(unit,buffer_cmplx,ranges)
+!
     lcomplex = .true.
 !
  1  unfilled = 0
@@ -4130,7 +4131,7 @@ module General
 !  4-dec-15/MR: coded
 ! 12-mar-16/MR: entry yy_transform_strip_other added
 !
-      use Cdata, only: y,z,costh,sinth,cosph,sinph,iproc_world
+      use Cdata, only: y,z,costh,sinth,cosph,sinph
 
       integer,               intent(IN) :: ith1_,ith2_,iph1_,iph2_
       real, dimension(:,:,:),intent(OUT):: thphprime

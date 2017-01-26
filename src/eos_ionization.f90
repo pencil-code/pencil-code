@@ -37,7 +37,7 @@ module EquationOfState
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
   real :: ss_ion,ee_ion,kappa0,xHe_term,ss_ion1,Srad0
   real :: lnrho_e,lnrho_e_,lnrho_H,lnrho_He
-  integer :: l,icp,ics
+  integer :: icp,ics
 ! namelist parameters
   real, parameter :: yHmin=tiny(TT_ion), yHmax=1-epsilon(TT_ion)
   real :: xHe=0.1
@@ -50,7 +50,7 @@ module EquationOfState
 !ajwm  SHOULDN'T BE HERE... But can wait till fully unwrapped
   real :: cs0=impossible, rho0=impossible, cp=impossible, cv=impossible
   real :: cs20=impossible, lnrho0=impossible
-  logical :: lcalc_cp = .false., lpp_as_aux=.false., lcp_as_aux=.false.
+  logical :: lpp_as_aux=.false., lcp_as_aux=.false.
   real :: gamma=impossible, gamma_m1=impossible,gamma1=impossible
   real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=impossible, cs2top=impossible
@@ -132,7 +132,6 @@ module EquationOfState
       use SharedVariables,only: put_shared_variable
 !
       real :: mu1yHxHe
-      integer :: ierr
 !
       if (lroot) print*,'initialize_eos: ENTER'
 !
@@ -1186,7 +1185,8 @@ module EquationOfState
             yH=yH-dyH
           endwhere
         endwhere
-        where (abs(dyH)>yHacc*yH)
+
+        where (abs(dyH)>max(yHacc,1e-31)*max(yH,1e-31))     ! use max to avoid underflow
           fractions1=1/(1+yH+xHe)
           lnTT_=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH+epsi)-lnrho_H) &
                              +yH*(2*log(yH)-lnrho_e-lnrho_H) &
@@ -1435,7 +1435,7 @@ module EquationOfState
       real, dimension (:,:,:,:) :: f
       logical, optional :: lone_sided
       real, dimension (size(f,1),size(f,2)) :: tmp_xy,TT_xy,rho_xy,yH_xy
-      integer :: i,ierr
+      integer :: i
 !
 !  Do the `c1' boundary condition (constant heat flux) for entropy.
 !  check whether we want to do top or bottom (this is precessor dependent)

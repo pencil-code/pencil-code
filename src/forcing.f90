@@ -46,7 +46,6 @@ module Forcing
   real, dimension(mz) :: profz_ampl=1.,profz_hel=1.
   integer :: kfountain=5,iff,ifx,ify,ifz,ifff,iffx,iffy,iffz,i2fff,i2ffx,i2ffy,i2ffz
   integer :: kzlarge=1
-  integer :: itestflow_forcing_offset=0,itestfield_forcing_offset=0
   integer :: iforcing_zsym=0
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
   logical :: lhydro_forcing=.true.,lmagnetic_forcing=.false.
@@ -82,7 +81,7 @@ module Forcing
 ! For random forcing in 2d
   integer,allocatable, dimension (:,:) :: random2d_kmodes
   integer :: random2d_nmodes
-  integer :: random2d_kmin,random2d_kmax
+  integer :: random2d_kmin=0.,random2d_kmax=0.
 ! continious 2d forcing
   integer :: k2d
   logical :: l2dxz,l2dyz
@@ -4863,7 +4862,6 @@ call fatal_error('hel_vec','radial profile should be quenched')
       real, dimension (nx) :: tmp
       real :: fact, fact1, fact2, fpara, dfpara, sqrt21k1, kf, kx, ky, kz, nu, arg
       integer :: i2d1=1,i2d2=2,i2d3=3
-      integer :: ierr
 !
         select case (iforcing_cont(i))
         case('Fz=const')

@@ -824,7 +824,6 @@ module Particles_radius
 !
 !  28-may-16/Xiang-Yu: coded
 !
-      use EquationOfState, only: gamma
       use Particles_number
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -835,7 +834,7 @@ module Particles_radius
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real :: dapdt
-      integer :: k,k1,k2,ix,ix0
+      integer :: k,ix,ix0
 !
       intent (in) :: f, fp
       intent (inout) :: dfp

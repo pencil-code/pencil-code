@@ -1396,7 +1396,7 @@ module Particles_sub
     subroutine find_weight_array_dims(ndimx,ndimy,ndimz)
 !
       integer :: ndimx,ndimy,ndimz
-      integer :: npgl=1,cicl=2,tscl=3,gabl=7
+      integer :: cicl=2,tscl=3,gabl=7
 !
 !  ngp case and the cases where we have lower dimensions
 !
@@ -1551,7 +1551,6 @@ module Particles_sub
       integer :: l,m,n
       logical :: lexp
       real :: rdiffconst
-      character(len=20) :: formatstring
 !
       
       intent(inout)  :: domain

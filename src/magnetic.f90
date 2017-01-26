@@ -90,7 +90,9 @@ module Magnetic
   real, dimension (ninit) :: phase_ax=0.0, phase_ay=0.0, phase_az=0.0
   real, dimension (ninit) :: amplaaJ=0.0, amplaaB=0.0, RFPrad=1.0
   real, dimension (ninit) :: phasex_aa=0.0, phasey_aa=0.0, phasez_aa=0.0
-  integer, dimension (ninit) :: ll_sh, mm_sh
+  integer, dimension (ninit) :: ll_sh=0, mm_sh=0
+  integer :: nzav=0,indzav=0,nzav_start=1, izav_start=1
+  character (len=fnlen) :: source_zav=''
   character (len=labellen), dimension(ninit) :: initaa='nothing'
   character (len=labellen), dimension(3) :: borderaa='nothing'
   character (len=labellen), dimension(nresi_max) :: iresistivity=''
@@ -99,7 +101,7 @@ module Magnetic
 !
   complex, dimension(3) :: coefaa=(/0.0,0.0,0.0/), coefbb=(/0.0,0.0,0.0/)
   real, dimension(3) :: B_ext = 0.0, B0_ext = 0.0
-  real, dimension(3) :: B1_ext, B_ext_inv, B_ext_tmp
+  real, dimension(3) :: B1_ext, B_ext_inv
   real, dimension(3) :: J_ext=(/0.0,0.0,0.0/)
   real, dimension(3) :: eta_aniso_hyper3=0.0
   real, dimension(2) :: magnetic_xaver_range=(/-max_real,max_real/)
@@ -148,8 +150,6 @@ module Magnetic
   integer, target :: va2power_jxb = 5
   integer :: nbvec, nbvecmax=nx*ny*nz/4, iua=0
   integer :: N_modes_aa=1, naareset
-  integer :: nrings=2
-  integer :: ierr
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: lpress_equil_alt=.false.
   logical :: llorentzforce=.true., linduction=.true.
@@ -221,7 +221,8 @@ module Magnetic
       phase_ax, phase_ay, phase_az, magnetic_xaver_range, amp_relprof, k_relprof, &
       tau_relprof, znoise_int, znoise_ext, magnetic_zaver_range, &
       lbx_ext_global,lby_ext_global,lbz_ext_global, dipole_moment, &
-      sheet_position,sheet_thickness,sheet_hyp
+      sheet_position,sheet_thickness,sheet_hyp,ll_sh,mm_sh, &
+      source_zav,nzav,indzav,izav_start
 !
 ! Run parameters
 !
@@ -905,7 +906,7 @@ module Magnetic
       use Yinyang_mpi, only: initialize_zaver_yy
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      integer :: i,j,nyl,myl,nycap
+      integer :: i,j,myl,nycap
       real :: J_ext2
 !
 !  Share the external magnetic field with module Shear.
@@ -936,8 +937,8 @@ module Magnetic
       if (l1 == l2) then
         xmask_mag = 1.
       else
-        where (x(l1:l2) >= magnetic_xaver_range(1) &
-            .and. x(l1:l2) <= magnetic_xaver_range(2))
+        where (      x(l1:l2) >= magnetic_xaver_range(1) &
+               .and. x(l1:l2) <= magnetic_xaver_range(2))
           xmask_mag = 1.
         elsewhere
           xmask_mag = 0.
@@ -1501,6 +1502,7 @@ module Magnetic
       use SharedVariables
       use Sub
       use General, only: yin2yang_coors, transform_thph_yy
+      use File_io, only: read_zaver
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -1869,6 +1871,9 @@ module Magnetic
               enddo
             enddo
           endif
+
+        case('from-zaverage')
+          call read_zaver(f,iax,iaz,source_zav,nzav,indzav)
         case default
 !
 !  Catch unknown values.
@@ -3197,8 +3202,8 @@ module Magnetic
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      intent(in)  :: p
-      intent(inout)  :: f,df
+      intent(in)   :: p
+      intent(inout):: f,df
 !
       real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
       real, dimension (nx,3) :: exj,dexb,phib,aa_xyaver,jxbb
@@ -4187,8 +4192,6 @@ module Magnetic
         if (idiag_jxbzm/=0) call sum_mn_name(p%jj(:,1)*p%bb(:,3),idiag_jxbzm)
         if (idiag_jybzm/=0) call sum_mn_name(p%jj(:,2)*p%bb(:,3),idiag_jybzm)
         if (idiag_jzbzm/=0) call sum_mn_name(p%jj(:,3)*p%bb(:,3),idiag_jzbzm)
-
-
 !
 !  compute rms value of difference between u and b
 !
@@ -4314,7 +4317,9 @@ module Magnetic
         if (idiag_a2m/=0) call sum_mn_name(p%a2,idiag_a2m)
         if (idiag_arms/=0) call sum_mn_name(p%a2,idiag_arms,lsqrt=.true.)
         if (idiag_amax/=0) call max_mn_name(p%a2,idiag_amax,lsqrt=.true.)
+!
 !  Divergence of A
+!
         if (idiag_divarms /= 0) call sum_mn_name(p%diva**2, idiag_divarms, lsqrt=.true.)
 !
 !  Calculate surface integral <2ExA>*dS.
@@ -7271,7 +7276,6 @@ module Magnetic
 !
       use General, only: erfcc
       use Sub, only: step, der_step
-      use EquationOfState, only: cs0
 !
       character(len=labellen), intent(in) :: ydep_profile
       integer, intent(in) :: ny
@@ -7975,7 +7979,7 @@ module Magnetic
 !
       if ((idiag_bmx+idiag_bmy+idiag_bmxy_rms)>0) ldiagnos_need_zaverages=.true.
 !
-!  Check for those quantities for which we want xy-averages.
+!  Check for those quantities for which we want yz-averages.
 !
       do inamex=1,nnamex
         call parse_name(inamex,cnamex(inamex),cformx(inamex),'b2mx',idiag_b2mx)
@@ -8033,7 +8037,7 @@ module Magnetic
             'mflux_y',idiag_mflux_y)
       enddo
 !
-!  Check for those quantities for which we want yz-averages.
+!  Check for those quantities for which we want xy-averages.
 !
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'axmz',idiag_axmz)
@@ -8234,10 +8238,6 @@ module Magnetic
       enddo
 !
       if (lwr) then
-        write(3,*) 'nname=',nname
-        write(3,*) 'nnamexy=',nnamexy
-        write(3,*) 'nnamexz=',nnamexz
-        write(3,*) 'nnamez=',nnamez
         write(3,*) 'iaa=',iaa
         write(3,*) 'iax=',iax
         write(3,*) 'iay=',iay

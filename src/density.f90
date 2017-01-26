@@ -3140,7 +3140,6 @@ module Density
 !  Write column where which density variable is stored.
 !
       if (lwr) then
-        write(3,*) 'nname=',nname
         if (ldensity_nolog) then
           write(3,*) 'ilnrho=0'
           write(3,*) 'irho=', irho

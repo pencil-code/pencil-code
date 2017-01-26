@@ -730,7 +730,7 @@ program run
 !
     if (lroot.and.(idiag_walltime/=0.or.max_walltime/=0.0)) then
       time2=mpiwtime()
-      wall_clock_time=(time2-time1)
+      wall_clock_time=time2-time1
       if (lout) call save_name(wall_clock_time,idiag_walltime)
     endif
 !

@@ -315,7 +315,7 @@ module Cdata
   integer :: ishock=0,ishock_perp=0
   integer :: iyH=0,ihypvis=0,ihypres=0
   integer :: iecr=0,ismagorinsky,iviscosity=0
-  integer :: iQrad=0,iSrad=0,ikappa=0,ilnTT=0,iTT=0,ikapparho=0
+  integer :: iQrad=0,iSrad=0,ilnTT=0,iTT=0,ikapparho=0
   integer :: iKR_Frad=0,iKR_Fradx=0,iKR_Frady=0, iKR_Fradz=0
   integer :: igpotselfx=0, igpotselfy=0, igpotselfz=0
   integer :: icc=0,ilncc=0,ialpm=0,ietat=0

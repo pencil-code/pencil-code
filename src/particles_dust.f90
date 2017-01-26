@@ -870,7 +870,7 @@ module Particles
       real :: r, p, q, px, py, pz, eps, cs, k2_xxp, rp2
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
       real :: rad,rad_scl,phi,tht,tmp,OO,xx0,yy0,r2
-      integer :: l, j, k, ix0, iy0, iz0, n_kill
+      integer :: l, j, k, ix0, iy0, iz0
       logical :: lequidistant=.false.
       real :: rpar_int,rpar_ext
 !
@@ -2953,7 +2953,7 @@ module Particles
       integer, dimension (mpar_loc,3), intent (in) :: ineargrid
 !
       real :: Omega2
-      integer :: npar_found,i
+      integer :: npar_found
       logical :: lheader, lfirstcall=.true.
 !
 !  Print out header information in first time step.
@@ -3589,7 +3589,7 @@ module Particles
       real :: rho1_point, tausp1_par, up2
       real :: weight, weight_x, weight_y, weight_z
       real :: dxp, dyp, dzp, volume_cell
-      integer :: k, l, ix0, iy0, iz0, ierr, irad, i
+      integer :: k, l, ix0, iy0, iz0, ierr, irad
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       integer, dimension (3) :: inear
       logical :: lsink
@@ -6354,7 +6354,7 @@ module Particles
       real, dimension(mpar_loc,mparray), intent(in) :: fp
       real, dimension(3) :: uup,rel_vel_sing
       real, dimension(:), allocatable :: rel_vel
-      integer :: k,ix0,iy0,iz0
+      integer :: k
       integer, dimension(mpar_loc,3), intent(in) :: ineargrid
 !
 !  Calculate particle relative velocity

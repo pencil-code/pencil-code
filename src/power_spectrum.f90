@@ -38,7 +38,7 @@ module power_spectrum
   integer, dimension(3,nk_max) :: kxrange=0, kyrange=0
   integer, dimension(3,nz_max) :: zrange=0
   integer :: n_spectra=0
-  integer :: inz=0, n_segment_x=1, n_segment_y=1, ndelx
+  integer :: inz=0, n_segment_x=1, ndelx
 !
   namelist /power_spectrum_run_pars/ &
       lintegrate_shell, lintegrate_z, lcomplex, ckxrange, ckyrange, czrange, &

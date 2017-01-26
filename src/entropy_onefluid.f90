@@ -647,7 +647,6 @@ module Energy
 !  Write column where which entropy variable is stored.
 !
       if (lwr) then
-        write(3,*) 'nname=',nname
         write(3,*) 'iss=',iss
         write(3,*) 'iyH=',iyH
         write(3,*) 'ilnTT=',ilnTT

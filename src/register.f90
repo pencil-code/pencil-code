@@ -1089,6 +1089,7 @@ module Register
 !
       use Cdata
       use Diagnostics
+      use General, only: loptest
       use Energy,  only: expand_shands_energy
       use Hydro,   only: expand_shands_hydro
       use Magnetic,only: expand_shands_magnetic
@@ -1158,6 +1159,22 @@ module Register
           enddo
           close(11)
         endif
+      endif
+!
+!  For compatibility with older IDL scripts.
+!
+      if (loptest(lwrite)) then
+        write(3,*) 'nname=',nname
+        write(3,*) 'nnamev=',nnamev
+        write(3,*) 'nnamex=',nnamex
+        write(3,*) 'nnamey=',nnamey
+        write(3,*) 'nnamez=',nnamez
+        write(3,*) 'nnamer=',nnamer
+        write(3,*) 'nnamexy=',nnamexy
+        write(3,*) 'nnamexz=',nnamexz
+        write(3,*) 'nnamerz=',nnamerz
+        write(3,*) 'nname_sound=',nname_sound
+        write(3,*) 'ncoords_sound=',ncoords_sound
       endif
 !
     endsubroutine rprint_general

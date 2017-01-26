@@ -1354,7 +1354,6 @@ if (ios/=0) print*, 'ios, i=', ios, i
       character (len=*) :: cname,cform
       character (len=*) :: ctest
       integer :: iname,itest,iform0,iform1,iform2,length,index_i,iwidth,idecs,idiff
-      real :: rlength
 !
       intent(in)    :: iname,cname,ctest
       intent(inout) :: itest

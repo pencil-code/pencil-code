@@ -338,7 +338,6 @@ module Mpicomm
 !  For f-array processor boundaries
 !
   real, dimension (nghost,ny,nz,mcom) :: lbufxi,ubufxi,lbufxo,ubufxo
-  real, dimension (nx,nghost,nz,mcom) :: npbufyi,npbufyo,spbufyi,spbufyo
   real, dimension (:,:,:,:), allocatable :: lbufyi,ubufyi,lbufyo,ubufyo
   real, dimension (:,:,:,:), allocatable :: lbufzi,ubufzi,lbufzo,ubufzo
   real, dimension (:,:,:,:), allocatable :: llbufi,lubufi,uubufi,ulbufi
@@ -348,8 +347,6 @@ module Mpicomm
   integer, parameter :: INYU=1, INZU=2, INYL=3, INZL=4
   integer, parameter :: INUU=1, INLU=2, INLL=3, INUL=4
   integer, parameter :: IRCV=1, ISND=2
-  real, dimension (mx,nghost,nghost,mcom) :: nbbufi,nfbufi,sfbufi,sbbufi
-  real, dimension (mx,nghost,nghost,mcom) :: nbbufo,nfbufo,sfbufo,sbbufo
 !
   real, dimension (nghost,my-2*nghost,mz,mcom) :: fahi,falo,fbhi,fblo         ! For shear
   real, dimension (nghost,my-2*nghost,mz,mcom) :: fahihi,falolo,fbhihi,fblolo ! For shear
@@ -387,14 +384,10 @@ module Mpicomm
   integer :: MPI_COMM_GRID
 !
   integer :: isend_rq_tolowx,isend_rq_touppx,irecv_rq_fromlowx,irecv_rq_fromuppx
-  integer :: irecv_rq_banshift,isend_rq_fonshift
-  integer :: irecv_rq_basshift,isend_rq_fosshift
   integer :: isend_rq_tolowy,isend_rq_touppy,irecv_rq_fromlowy,irecv_rq_fromuppy
   integer :: isend_rq_tolowz,isend_rq_touppz,irecv_rq_fromlowz,irecv_rq_fromuppz
   integer :: isend_rq_TOll,isend_rq_TOul,isend_rq_TOuu,isend_rq_TOlu  !(corners)
   integer :: irecv_rq_FRuu,irecv_rq_FRlu,irecv_rq_FRll,irecv_rq_FRul  !(corners)
-  integer :: isend_rq_TOsb,isend_rq_TOsf,isend_rq_TOnb,isend_rq_TOnf  !(corners)
-  integer :: irecv_rq_FRsb,irecv_rq_FRsf,irecv_rq_FRnb,irecv_rq_FRnf  !(corners)
   integer :: isend_rq_tolastya,isend_rq_tonextya, &
              irecv_rq_fromlastya,irecv_rq_fromnextya ! For shear
   integer :: isend_rq_tolastyb,isend_rq_tonextyb, &
@@ -406,18 +399,10 @@ module Mpicomm
 !
   integer, dimension (MPI_STATUS_SIZE) :: isend_stat_tl,isend_stat_tu
   integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_fl,irecv_stat_fu
-  integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_np,irecv_stat_sp,&
-                                          isend_stat_np,isend_stat_sp
   integer, dimension (MPI_STATUS_SIZE) :: isend_stat_Tll,isend_stat_Tul, &
                                           isend_stat_Tuu,isend_stat_Tlu
   integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_Fuu,irecv_stat_Flu, &
                                           irecv_stat_Fll,irecv_stat_Ful
-  integer, dimension (MPI_STATUS_SIZE) :: isend_stat_Tsb,isend_stat_Tsf, &
-                                          irecv_stat_Fsb,irecv_stat_Fsf
-  integer, dimension (MPI_STATUS_SIZE) :: irecv_stat_Fnb,irecv_stat_Fnf, &
-                                          isend_stat_Tnb,isend_stat_Tnf
-  integer, dimension (MPI_STATUS_SIZE) :: isend_stat_spole,irecv_stat_spole, &
-                                          isend_stat_npole,irecv_stat_npole
 !
   logical :: lcorner_yz=.false.
 !
@@ -516,9 +501,7 @@ module Mpicomm
 !   6-jun-02/axel: generalized to allow for ny=1
 !  23-nov-02/axel: corrected problem with ny=4 or less
 !  21-oct-15/fred: adapted periodic y-boundary across the pole
-!  20-dec-16/MR: extensions for Yin-Yang grid.
-!
-      integer :: i, j, k
+!  20-dec-15/MR: extensions for Yin-Yang grid.
 !
 !  Announce myself for pc_run to detect.
 !
@@ -771,9 +754,6 @@ module Mpicomm
       integer, intent(in) :: iproc_in
       logical, intent(in), optional :: mask
 !
-      integer :: lower, upper, mid
-      integer :: iproc_target
-!
       active: if (loptest(mask,.true.)) then
         nonlocal: if (iproc_in /= iproc) then
 !
@@ -964,7 +944,7 @@ module Mpicomm
       real, dimension(:,:,:) :: gridbuf_midy, gridbuf_midz, gridbuf_left, gridbuf_right
       real, dimension(:,:,:), allocatable :: thphprime_strip_y, thphprime_strip_z, tmp
 
-      integer :: len, len_neigh, lenbuf, i, jj
+      integer :: len, len_neigh, lenbuf
       integer :: nok, noks, noks_all, nstrip_total
 
       noks=0
@@ -9102,7 +9082,7 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
       integer,                  intent(IN) :: ivar1, ivar2, pos, type
       real, dimension(:,:,:,:), intent(OUT):: buffer
 
-      integer :: nth, nph, i, j, indth, indph, iv, ive, ibuf, jbuf
+      integer :: nth, nph, i, j, iv, ive, ibuf, jbuf
       logical :: ltransp
 
       if (pos==NIL) return
