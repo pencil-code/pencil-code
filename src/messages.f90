@@ -41,7 +41,6 @@ module Messages
   integer, public, parameter :: iip_EVERYTHING  = 0
   integer, public, parameter :: iip_DEFAULT     = 0
   integer, parameter :: iinformation_ip = 1000
-  integer :: warnings=0
   integer :: errors=0
   integer :: fatal_errors=0, fatal_errors_total=0
   logical :: ldie_onwarning=.false.

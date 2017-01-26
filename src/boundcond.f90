@@ -2989,7 +2989,6 @@ module Boundcond
       character (len=bclen), intent (in) :: topbot
       real, dimension (:,:,:,:), intent (inout) :: f
       integer, intent (in) :: j
-      integer :: k
 !
       call bval_from_3rd(f,topbot,j,1,-1./x(l1))
       call set_ghosts_for_onesided_ders(f,topbot,j,1,.true.)
