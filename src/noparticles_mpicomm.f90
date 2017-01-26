@@ -28,7 +28,6 @@ module Particles_mpicomm
   real, dimension (1,0:0) :: dVol1xbrick=0, dVol1ybrick=0, dVol1zbrick=0
   real, dimension (1,0:0) :: dVol1xb=0, dVol1yb=0, dVol1zb=0
   real, dimension (1,1,1,1,0:0) :: fb, dfb
-  real :: xref_par=0.0, yref_par=0.0, zref_par=0.0
   integer :: it1_loadbalance=1
   logical :: lfill_blocks_density=.false., lfill_blocks_velocity=.false.
   logical :: lfill_blocks_gpotself=.false., lfill_bricks_velocity=.false.

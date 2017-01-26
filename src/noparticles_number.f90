@@ -22,7 +22,7 @@ module Particles_number
 !
   contains
 !***********************************************************************
-    subroutine register_particles_number()
+    subroutine register_particles_number
 !
 !  Set up indices for access to the fp and dfp arrays.
 !
@@ -71,8 +71,8 @@ module Particles_number
       call keep_compiler_quiet(present(init))
 !
     endsubroutine set_particle_number
-!init_particles_number***********************************************************************
-    subroutine pencil_criteria_par_number()
+!***********************************************************************
+    subroutine pencil_criteria_par_number
 !
 !  All pencils that the Particles_number module depends on are specified here.
 !

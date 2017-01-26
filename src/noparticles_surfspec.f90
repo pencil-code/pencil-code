@@ -147,9 +147,8 @@ module Particles_surfspec
     logical :: lreset
     logical, optional :: lwrite
 
-    if (present(lwrite)) call keep_compiler_quiet(lwrite)
+    call keep_compiler_quiet(lreset,lwrite)
 
-    call keep_compiler_quiet(lreset)
   endsubroutine rprint_particles_surf
 ! ******************************************************************************
 !

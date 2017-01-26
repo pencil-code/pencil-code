@@ -22,7 +22,7 @@ module Particles_temperature
 !
   contains
 !***********************************************************************
-    subroutine register_particles_TT()
+    subroutine register_particles_TT
 !
 !  Set up indices for access to the fp and dfp arrays
 !
@@ -59,7 +59,7 @@ module Particles_temperature
 !
     endsubroutine init_particles_TT
 !***********************************************************************
-    subroutine pencil_criteria_par_TT()
+    subroutine pencil_criteria_par_TT
 !
 !  All pencils that the Particles_temperature module depends on are specified here.
 !

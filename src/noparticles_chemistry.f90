@@ -38,16 +38,15 @@ module Particles_chemistry
   logical :: lbaum_and_street = .false.
   logical :: lsurface_nopores
   logical :: lpreactions=.false.
-  real, dimension(2) :: mass_loss
 
   contains
 ! ******************************************************************************
 !  09.09.14/jonas : coded
 
-  subroutine get_pchem_info()
+  subroutine get_pchem_info
   endsubroutine get_pchem_info
 !***********************************************************************
-    subroutine pencil_criteria_par_chem()
+    subroutine pencil_criteria_par_chem
 !
 !  16.09.2015/jonas + nils: coded
 !
@@ -127,12 +126,12 @@ module Particles_chemistry
 ! ******************************************************************************
 !  19.09.2014/Jonas:coded
 
-  subroutine get_conversion()
+  subroutine get_conversion
   endsubroutine get_conversion
 ! ******************************************************************************
 !  19.09.2014/Jonas:coded
 
-  subroutine calc_St()
+  subroutine calc_St
   endsubroutine calc_St
 ! ******************************************************************************
 !  06-oct-14/jonas:coded
@@ -151,108 +150,108 @@ module Particles_chemistry
 ! ******************************************************************************
 !  19.09.2014/Jonas:coded
 
-  subroutine calc_mod_surf_area()
+  subroutine calc_mod_surf_area
   endsubroutine calc_mod_surf_area
 ! ******************************************************************************
 
 !  19.09.2014/Jonas:coded
 
-  subroutine calc_get_mod_surf_area()
+  subroutine calc_get_mod_surf_area
   endsubroutine calc_get_mod_surf_area
 ! ******************************************************************************
 !  19.09.2014/Jonas:coded
 
-  subroutine calc_enthalpy_of_reaction()
+  subroutine calc_enthalpy_of_reaction
   endsubroutine calc_enthalpy_of_reaction
 ! ******************************************************************************
 !  19.09.2014/Jonas:coded
 
-  subroutine calc_entropy_of_reaction()
+  subroutine calc_entropy_of_reaction
   endsubroutine calc_entropy_of_reaction
 ! ******************************************************************************
 !  19.09.2014/Jonas:coded
 
-  subroutine calc_conversion()
+  subroutine calc_conversion
   endsubroutine calc_conversion
 ! ******************************************************************************
 !  19.09.2014/Jonas:coded
 
-  subroutine calc_R_c_hat()
+  subroutine calc_R_c_hat
   endsubroutine calc_R_c_hat
 ! ******************************************************************************
 ! 30.09.2014/Jonas:coded
 
-  subroutine create_dependency()
+  subroutine create_dependency
   endsubroutine create_dependency
 ! ******************************************************************************
 ! 30.09.2014/Jonas:coded
 
-  subroutine create_ad_sol_lists()
+  subroutine create_ad_sol_lists
   endsubroutine create_ad_sol_lists
 ! ******************************************************************************
 ! 30.09.2014/Jonas:coded
 
-  subroutine create_occupancy()
+  subroutine create_occupancy
   endsubroutine create_occupancy
 ! ******************************************************************************
 ! 30.09.2014/Jonas:coded
 
-  subroutine create_dngas()
+  subroutine create_dngas
   endsubroutine create_dngas
 ! ******************************************************************************
 ! 30.09.2014/Jonas:coded
 
-  subroutine create_stoc()
+  subroutine create_stoc
   endsubroutine create_stoc
 ! ******************************************************************************
 ! 30.09.2014/Jonas:coded
 
-  subroutine get_ac()
+  subroutine get_ac
   endsubroutine get_ac
 ! ******************************************************************************
 ! 30.09.2014/Jonas:coded
 
-  subroutine get_part()
+  subroutine get_part
   endsubroutine get_part
 ! ******************************************************************************
 ! 30.09.2014/Jonas:coded
 
-  subroutine get_reactants()
+  subroutine get_reactants
   endsubroutine get_reactants
 ! ******************************************************************************
 ! 30.09.2014/Jonas:coded
 
-  subroutine get_RR_hat()
+  subroutine get_RR_hat
   endsubroutine get_RR_hat
 ! ******************************************************************************
 ! 30.09.2014/Jonas:coded
 
-  subroutine sort_compounds()
+  subroutine sort_compounds
   endsubroutine sort_compounds
 ! ******************************************************************************
 ! 30.09.2014/Jonas:coded
 
-  subroutine register_particles_chem()
+  subroutine register_particles_chem
   endsubroutine register_particles_chem
 ! ******************************************************************************
 ! 30.09.2014/Jonas:coded
 
-  subroutine calc_RR_hat()
+  subroutine calc_RR_hat
   endsubroutine calc_RR_hat
 ! ******************************************************************************
 ! 30.09.2014/Jonas:coded
 
-  subroutine calc_ndot_mdot_R_j_hat()
+  subroutine calc_ndot_mdot_R_j_hat
   endsubroutine calc_ndot_mdot_R_j_hat
 ! ******************************************************************************
 !  30.09.2014/jonas:coded
 
-  subroutine calc_surf_enthalpy()
+  subroutine calc_surf_enthalpy
   endsubroutine calc_surf_enthalpy
 ! ******************************************************************************
 !  30.09.2014/jonas:coded
 
-  subroutine calc_surf_entropy()
+  subroutine calc_surf_entropy
   endsubroutine calc_surf_entropy
 ! ******************************************************************************
 !  30.09.2014/jonas:coded
@@ -273,7 +272,7 @@ module Particles_chemistry
 ! ******************************************************************************
 !  06-oct-14/jonas: coded
 
-  subroutine cleanup_chemistry_pencils()
+  subroutine cleanup_chemistry_pencils
   endsubroutine cleanup_chemistry_pencils
 ! ******************************************************************************
   subroutine read_particles_chem_init_pars(iostat)
@@ -302,7 +301,7 @@ module Particles_chemistry
 ! ******************************************************************************
 !  07-oct-14/jonas: coded
 
-  subroutine calc_rho_p()
+  subroutine calc_rho_p
   endsubroutine calc_rho_p
 ! ******************************************************************************
 !  11-nov-2014/jonas: coded
@@ -335,12 +334,12 @@ module Particles_chemistry
 ! ******************************************************************************
 !  11-nov-2014/jonas: coded
 
-  subroutine get_surface_chemistry()
+  subroutine get_surface_chemistry
   endsubroutine get_surface_chemistry
 ! ******************************************************************************
 !  11-nov-2014/jonas: coded
 
-  subroutine get_adsorbed_chemistry()
+  subroutine get_adsorbed_chemistry
   endsubroutine get_adsorbed_chemistry
 ! ******************************************************************************
 !  11-nov-2014/jonas: coded
@@ -366,16 +365,15 @@ module Particles_chemistry
 !
   endsubroutine get_temperature_chemistry
 ! ******************************************************************************
-  subroutine particles_chemistry_clean_up()
+  subroutine particles_chemistry_clean_up
   endsubroutine particles_chemistry_clean_up
 ! ******************************************************************************
     subroutine rprint_particles_chem(lreset,lwrite)
     logical :: lreset
     logical, optional :: lwrite
 
-    if (present(lwrite)) call keep_compiler_quiet(lwrite)
+    call keep_compiler_quiet(lreset,lwrite)
 
-    call keep_compiler_quiet(lreset)
     endsubroutine rprint_particles_chem
 ! ******************************************************************************
 endmodule Particles_chemistry

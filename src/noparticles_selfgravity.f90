@@ -23,7 +23,7 @@ module Particles_selfgravity
 !
   contains
 !***********************************************************************
-    subroutine register_particles_selfgrav()
+    subroutine register_particles_selfgrav
 !
 !  Set up indices for access to the fp and dfp arrays.
 !
@@ -60,7 +60,7 @@ module Particles_selfgravity
 !
     endsubroutine calc_selfpotential_particles
 !***********************************************************************
-    subroutine pencil_criteria_par_selfgrav()
+    subroutine pencil_criteria_par_selfgrav
 !
 !  All pencils that the Particles_selfgrav module depends on are specified here.
 !
