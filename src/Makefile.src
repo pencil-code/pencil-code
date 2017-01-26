@@ -2634,7 +2634,7 @@ TAGS: $(TAG_SOURCE)
 #  Clean up, but leave makefile and TAGS.
 #
 clean:
-	rm -f *.x *.o *.a *.mod *.d cparam*.inc cparam_pencils*.inc *.il
+	rm -f *.x *.o *.a *.mod *.d cparam*.inc cparam_pencils*.inc file_io_common.inc *.il
 	rm -f special/*.o special/*.mod
 	rm -f initial_condition/*.o initial_condition/*.mod
 	rm -f experimental/*.o experimental/*.mod
