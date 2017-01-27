@@ -20,7 +20,7 @@ module Deriv
   public :: der, der2, der3, der4, der5, der6, der10, derij, der5i1j
   public :: der6_other, der_pencil, der2_pencil
   public :: deri_3d_inds
-  public :: der_upwind1st, der_z, der2_z
+  public :: der_upwind1st, der_z, der2_z, der_x, der2_x
   public :: der_onesided_4_slice
   public :: der_onesided_4_slice_other
   public :: der2_minmod
@@ -1827,7 +1827,7 @@ module Deriv
       real, dimension (mz), intent(in)  :: f
       real, dimension (nz), intent(out) :: df
 !
-      call fatal_error("deriv_10t","der_z not implemented yet")
+      call fatal_error("deriv_10th","der_z not implemented yet")
 !
 ! To avoid compiler warnings:
       df=f(n1:n2)
@@ -1847,6 +1847,34 @@ module Deriv
       df2=f(n1:n2)
 !
     endsubroutine der2_z
+!***********************************************************************
+    subroutine der_x(f,df)
+!
+! dummy routine
+!
+      use Cparam, only: mz, nz
+      use Mpicomm, only: stop_it
+!
+      real, dimension (mx), intent(in)  :: f
+      real, dimension (nx), intent(out) :: df
+!
+      call stop_it("deriv_10th: der_x not implemented yet")
+!
+    endsubroutine der_x
+!***********************************************************************
+    subroutine der2_x(f,df2)
+!
+! dummy routine
+!
+      use Cparam, only: mz, nz
+      use Mpicomm, only: stop_it
+!
+      real, dimension (mx), intent(in)  :: f
+      real, dimension (nx), intent(out) :: df2
+!
+      call stop_it("deriv_10th: der2_x not implemented yet")
+!
+    endsubroutine der2_x
 !***********************************************************************
     subroutine der2_minmod(f,j,delfk,delfkp1,delfkm1,k)
 !
@@ -1913,7 +1941,7 @@ module Deriv
 
     endfunction heatflux_deriv_x
 !***********************************************************************
-    subroutine set_ghosts_for_onesided_ders(f,topbot,j,idir,l2nd_)
+    subroutine set_ghosts_for_onesided_ders(f,topbot,j,idir,l2nd)
 !
 !  Calculates the ghost point value. The coefficients are derived from two FD formulae:
 !  1) derivative is evaluated at point 4 for the given grid -1 0 1 2 3 |4| 5 6 7 8 9
@@ -1928,7 +1956,7 @@ module Deriv
       real, dimension(mx,my,mz,*) :: f
       character(LEN=3) :: topbot
       integer :: j,idir
-      logical, optional :: l2nd_
+      logical, optional :: l2nd
 
       integer :: k,off
 
