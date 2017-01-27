@@ -387,15 +387,19 @@ subroutine fold_df_3points(df,ivar1,ivar2)
                 df(l1-3:l2+3,m2-2:m2,n1:n2,ivar1:ivar2) + df_tmp_xz
           enddo
         endif
+        df(l1-3:l2+3,m2+1:m2+3,n1:n2,ivar1:ivar2)=0.0
+        df(l1-3:l2+3,m1-3:m1-1,n1:n2,ivar1:ivar2)=0.0
       endif
 !
 !  Finally x.
 !
       if (nxgrid/=1) then
         if (nprocx==1) then
-          df(l1:l1+2,m1:m2,n1:n2,ivar1:ivar2)=df(l1:l1+2,m1:m2,n1:n2,ivar1:ivar2) + &
+          df(l1:l1+2,m1:m2,n1:n2,ivar1:ivar2)=&
+              df(l1:l1+2,m1:m2,n1:n2,ivar1:ivar2) + &
               df(l2+1:l2+3,m1:m2,n1:n2,ivar1:ivar2)
-          df(l2-2:l2,m1:m2,n1:n2,ivar1:ivar2)=df(l2-2:l2,m1:m2,n1:n2,ivar1:ivar2) + &
+          df(l2-2:l2,m1:m2,n1:n2,ivar1:ivar2)=&
+              df(l2-2:l2,m1:m2,n1:n2,ivar1:ivar2) + &
               df(l1-3:l1-1,m1:m2,n1:n2,ivar1:ivar2)
         else
           do iproc_rcv=0,ncpus-1
