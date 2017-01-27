@@ -12,7 +12,8 @@
 ! CPARAM logical, parameter :: lparticles=.true.
 !
 ! PENCILS PROVIDED np; rhop; vol; peh
-! PENCILS PROVIDED np_rad(5); npvz(5); npuz(5); sherwood
+! PENCILS PROVIDED np_rad(ndustrad); npvz(ndustrad); npvz2(ndustrad); 
+! PENCILS PROVIDED npuz(ndustrad); sherwood; urel
 ! PENCILS PROVIDED epsp; grhop(3)
 ! PENCILS PROVIDED tausupersat
 !
@@ -272,6 +273,7 @@ module Particles
   integer :: idiag_ekinp=0     ! DIAG_DOC: $E_{kin,part}$
   integer :: idiag_vpxmax=0, idiag_vpymax=0, idiag_vpzmax=0, idiag_vpmax=0 ! DIAG_DOC: $MAX(u_{part})$
   integer :: idiag_vpxmin=0, idiag_vpymin=0, idiag_vpzmin=0    ! DIAG_DOC: $MIN(u_{part})$
+  integer :: idiag_urel=0
   integer :: idiag_vpxvpym=0, idiag_vpxvpzm=0, idiag_vpyvpzm=0
   integer :: idiag_rhopvpxm=0, idiag_rhopvpym=0, idiag_rhopvpzm=0
   integer :: idiag_rhopvpxt=0, idiag_rhopvpyt=0, idiag_rhopvpzt=0
@@ -298,8 +300,8 @@ module Particles
   integer :: idiag_eccpx2m=0, idiag_eccpy2m=0, idiag_eccpz2m=0
   integer :: idiag_vprms=0, idiag_vpyfull2m=0, idiag_deshearbcsm=0
   integer :: idiag_Shm=0
-  integer, dimension(ninit)  :: idiag_npvzmz=0, idiag_nptz=0
-  integer, dimension(ninit)  :: idiag_npuzmz=0
+  integer, dimension(ndustrad)  :: idiag_npvzmz=0, idiag_npvz2mz=0, idiag_nptz=0
+  integer, dimension(ndustrad)  :: idiag_npuzmz=0
 !
   contains
 !***********************************************************************
@@ -2778,9 +2780,11 @@ module Particles
       if (idiag_sigmap /= 0) lpenc_diagnos2d(i_rhop) = .true.
 !
       if (maxval(idiag_npvzmz) > 0) lpenc_requested(i_npvz)=.true.
+      if (maxval(idiag_npvz2mz) > 0) lpenc_requested(i_npvz2)=.true.
       if (maxval(idiag_npuzmz) > 0) lpenc_requested(i_npuz)=.true.
       if (maxval(idiag_nptz) > 0)   lpenc_requested(i_np_rad)=.true.
-      if (idiag_Shm /= 0) lpenc_requested(i_sherwood)=.true.
+      if (idiag_Shm /= 0)  lpenc_requested(i_sherwood)=.true.
+      if (idiag_urel /= 0) lpenc_requested(i_urel)=.true.
 !
     endsubroutine pencil_criteria_particles
 !***********************************************************************
@@ -3586,7 +3590,7 @@ module Particles
       real, dimension (3) :: adv_der_uup = 0.0
       real, dimension(:), allocatable :: rep,stocunn
       real :: added_mass_beta = 0.0
-      real :: rho1_point, tausp1_par, up2
+      real :: rho1_point, tausp1_par, up2, urel
       real :: weight, weight_x, weight_y, weight_z
       real :: dxp, dyp, dzp, volume_cell
       integer :: k, l, ix0, iy0, iz0, ierr, irad
@@ -3633,9 +3637,11 @@ module Particles
 !  Initialize the pencils that are calculated within this subroutine
 !
       if (lpenc_requested(i_npvz))     p%npvz=0.
+      if (lpenc_requested(i_npvz2))    p%npvz2=0.
       if (lpenc_requested(i_npuz))     p%npuz=0.
       if (lpenc_requested(i_np_rad))   p%np_rad=0.
       if (lpenc_requested(i_sherwood)) p%sherwood=0.
+      if (lpenc_requested(i_urel))     p%urel=0.
       if (lpenc_requested(i_tausupersat)) p%tausupersat=0.
 !
 !  Precalculate certain quantities, if necessary.
@@ -3726,11 +3732,13 @@ module Particles
 !
 !  Calculate required pencils
 !  NILS: Could this be moved to calc_pencils_particles
-              if (lpenc_requested(i_npvz) .or. lpenc_requested(i_np_rad) .or. lpenc_requested(i_npuz)) then
+              if (lpenc_requested(i_npvz) .or. lpenc_requested(i_npvz2) .or. &
+                  lpenc_requested(i_np_rad) .or. lpenc_requested(i_npuz)) then
                 call get_shared_variable('ap0',ap0,ierr)
                 do irad=1,npart_radii
                   if ((fp(k,iap) > ap0(irad)*0.99) .and. (fp(k,iap) < ap0(irad)*1.01)) then
                     p%npvz(ix0-nghost,irad)=p%npvz(ix0-nghost,irad)+fp(k,ivpz)
+                    p%npvz2(ix0-nghost,irad)=p%npvz2(ix0-nghost,irad)+fp(k,ivpz)**2
                     p%np_rad(ix0-nghost,irad)=p%np_rad(ix0-nghost,irad)+1.
                     if (lpenc_requested(i_npuz)) then
 !
@@ -3882,6 +3890,10 @@ module Particles
 !
                   if (lpenc_requested(i_sherwood)) then
                     p%sherwood(ix0-nghost)=p%sherwood(ix0-nghost)+Sherwood
+                  endif
+                  if (lpenc_requested(i_urel)) then
+                    urel=sqrt(sum((interp_uu(k,:) - fp(k,ivpx:ivpz))**2))
+                    p%urel(ix0-nghost)=p%urel(ix0-nghost)+urel
                   endif
 !
                   mass_trans_coeff=Sherwood*pscalar_diff/ &
@@ -4452,7 +4464,7 @@ module Particles
         endif
       endif
 !
-!  Add Thernophoretic forces.
+!  Add Thermophoretic forces.
 !
       if (lthermophoretic_forces) then
         if (npar_imn(imn)/=0) then
@@ -4488,6 +4500,7 @@ module Particles
         if (idiag_epspm/=0)    call sum_mn_name(p%epsp,idiag_epspm)
         if (idiag_dedragp/=0)  call sum_mn_name(drag_heat,idiag_dedragp)
         if (idiag_Shm/=0)      call sum_mn_name(p%sherwood/npar*nwgrid,idiag_Shm)
+        if (idiag_urel/=0)     call sum_mn_name(p%urel/npar*nwgrid,idiag_urel)
         if (idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. &
             idiag_dvpm  /=0 .or. idiag_dvpmax/=0) &
             call calculate_rms_speed(fp,ineargrid,p)
@@ -4512,8 +4525,9 @@ module Particles
         if (idiag_epspmz/=0)  call xysum_mn_name_z(p%epsp,idiag_epspmz)
         if (idiag_rhopmr/=0)  call phizsum_mn_name_r(p%rhop,idiag_rhopmr)
 !
-        do k=1,ninit
+        do k=1,ndustrad
           if (idiag_npvzmz(k)/=0) call xysum_mn_name_z(p%npvz(:,k),idiag_npvzmz(k))
+          if (idiag_npvz2mz(k)/=0) call xysum_mn_name_z(p%npvz2(:,k),idiag_npvz2mz(k))
           if (idiag_npuzmz(k)/=0) call xysum_mn_name_z(p%npuz(:,k),idiag_npuzmz(k))
           if (idiag_nptz(k)/=0)   call xysum_mn_name_z(p%np_rad(:,k),idiag_nptz(k))
         enddo
@@ -6130,7 +6144,7 @@ module Particles
         idiag_xpm=0; idiag_ypm=0; idiag_zpm=0
         idiag_vrelpabsm=0
         idiag_xp2m=0; idiag_yp2m=0; idiag_zp2m=0; idiag_rpm=0; idiag_rp2m=0
-        idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0
+        idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0; idiag_urel=0
         idiag_vpxvpym=0; idiag_vpxvpzm=0; idiag_vpyvpzm=0
         idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0; idiag_ekinp=0
         idiag_vpxmax=0; idiag_vpymax=0; idiag_vpzmax=0
@@ -6158,7 +6172,7 @@ module Particles
         idiag_eccpx2m=0; idiag_eccpy2m=0; idiag_eccpz2m=0
         idiag_npargone=0; idiag_vpyfull2m=0; idiag_deshearbcsm=0
         idiag_npmxy=0; idiag_vprms=0
-        idiag_npvzmz=0; idiag_nptz=0; idiag_Shm=0
+        idiag_npvzmz=0; idiag_npvz2mz=0; idiag_nptz=0; idiag_Shm=0
         idiag_npuzmz=0
       endif
 !
@@ -6179,6 +6193,7 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'zp2m',idiag_zp2m)
         call parse_name(iname,cname(iname),cform(iname),'rpm',idiag_rpm)
         call parse_name(iname,cname(iname),cform(iname),'rp2m',idiag_rp2m)
+        call parse_name(iname,cname(iname),cform(iname),'urel',idiag_urel)
         call parse_name(iname,cname(iname),cform(iname),'vpxm',idiag_vpxm)
         call parse_name(iname,cname(iname),cform(iname),'vpym',idiag_vpym)
         call parse_name(iname,cname(iname),cform(iname),'vpzm',idiag_vpzm)
@@ -6273,9 +6288,10 @@ module Particles
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhopmz',idiag_rhopmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhop2mz',idiag_rhop2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'epspmz',idiag_epspmz)
-        do k=1,ninit
+        do k=1,ndustrad
           srad=itoa(k)
           call parse_name(inamez,cnamez(inamez),cformz(inamez),'npvzmz'//trim(srad),idiag_npvzmz(k))
+          call parse_name(inamez,cnamez(inamez),cformz(inamez),'npvz2mz'//trim(srad),idiag_npvz2mz(k))
           call parse_name(inamez,cnamez(inamez),cformz(inamez),'npuzmz'//trim(srad),idiag_npuzmz(k))
           call parse_name(inamez,cnamez(inamez),cformz(inamez),'nptz'//trim(srad),idiag_nptz(k))
         enddo
