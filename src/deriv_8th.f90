@@ -1823,27 +1823,192 @@ module Deriv
 !************************************************************************
     subroutine set_ghosts_for_onesided_ders(f,topbot,j,idir,l2nd_)
 !
-!  Dummy.
+!  Calculates the ghost point value. The coefficients are derived from two FD formulae:
+!  1) derivative is evaluated at point 3 for the given grid -1 0 1 2 |3| 4 5 6 7
+!  2) derivative is evaluated at point 3 for the other grid    0 1 2 |3| 4 5 6 7 8
+!  the second expression is substituted into the first equation and then solved for f(i-1)
+!  resulting in onesided formula for the ghost point.
 !
+!  24-jan-17/Ivan: coded.
+!
+      use General, only: loptest
+
       real, dimension(mx,my,mz,*) :: f
       character(LEN=3) :: topbot
       integer :: j,idir
       logical, optional :: l2nd_
 
-      call fatal_error('set_ghosts_for_onesided_ders','Not implemented for 8th order.')
+      integer :: k,off
+
+      !call fatal_error('set_ghosts_for_onesided_ders','Not implemented for 8th order.')
+      if (loptest(l2nd)) then
+        off=3
+      else
+        off=4
+      endif
+
+      if (topbot=='bot') then
+        if (idir==1) then
+
+          do k=l1-1,l1-off,-1
+            f(k,:,:,j)=9*f(k+1,:,:,j) &
+                     -36*f(k+2,:,:,j) &
+                     +84*f(k+3,:,:,j) &
+                    -126*f(k+4,:,:,j) &
+                    +126*f(k+5,:,:,j) &
+                     -84*f(k+6,:,:,j) &
+                     +36*f(k+7,:,:,j) &
+                      -9*f(k+8,:,:,j) &
+                        +f(k+9,:,:,j)
+          enddo
+        elseif (idir==2) then
+
+          do k=m1-1,m1-off,-1
+            f(:,k,:,j)=9*f(:,k+1,:,j) &
+                     -36*f(:,k+2,:,j) &
+                     +84*f(:,k+3,:,j) &
+                    -126*f(:,k+4,:,j) &
+                    +126*f(:,k+5,:,j) &
+                     -84*f(:,k+6,:,j) &
+                     +36*f(:,k+7,:,j) &
+                      -9*f(:,k+8,:,j) &
+                        +f(:,k+9,:,j)
+          enddo
+        elseif (idir==3) then
+
+          do k=n1-1,n1-off,-1
+            f(:,:,k,j)=9*f(:,:,k+1,j) &
+                     -36*f(:,:,k+2,j) &
+                     +84*f(:,:,k+3,j) &
+                    -126*f(:,:,k+4,j) &
+                    +126*f(:,:,k+5,j) &
+                     -84*f(:,:,k+6,j) &
+                     +36*f(:,:,k+7,j) &
+                      -9*f(:,:,k+8,j) &
+                        +f(:,:,k+9,j)
+          enddo
+        endif
+      else
+        if (idir==1) then
+          do k=l2+1,l2+off
+            f(k,:,:,j)=9*f(k-1,:,:,j) &
+                     -36*f(k-2,:,:,j) &
+                     +84*f(k-3,:,:,j) &
+                    -126*f(k-4,:,:,j) &
+                    +126*f(k-5,:,:,j) &
+                     -84*f(k-6,:,:,j) &
+                     +36*f(k-7,:,:,j) &
+                      -9*f(k-8,:,:,j) &
+                        +f(k-9,:,:,j)
+          enddo
+        elseif (idir==2) then
+          do k=m2+1,m2+off
+            f(:,k,:,j)=9*f(:,k-1,:,j) &
+                     -36*f(:,k-2,:,j) &
+                     +84*f(:,k-3,:,j) &
+                    -126*f(:,k-4,:,j) &
+                    +126*f(:,k-5,:,j) &
+                     -84*f(:,k-6,:,j) &
+                     +36*f(:,k-7,:,j) &
+                      -9*f(:,k-8,:,j) &
+                        +f(:,k-9,:,j)
+          enddo
+        elseif (idir==3) then
+          do k=n2+1,n2+off
+            f(:,:,k,j)=9*f(:,:,k-1,j) &
+                     -36*f(:,:,k-2,j) &
+                     +84*f(:,:,k-3,j) &
+                    -126*f(:,:,k-4,j) &
+                    +126*f(:,:,k-5,j) &
+                     -84*f(:,:,k-6,j) &
+                     +36*f(:,:,k-7,j) &
+                      -9*f(:,:,k-8,j) &
+                        +f(:,:,k-9,j)
+          enddo
+        endif
+      endif
 
     endsubroutine set_ghosts_for_onesided_ders
 !***********************************************************************
     subroutine bval_from_neumann_scl(f,topbot,j,idir,val)
 !
-!  Dummy.
+!  Calculates the boundary value from the Neumann BC d f/d x_i = val employing
+!  one-sided difference formulae. val is a constant.
+!
+!  27-jan-17/Ivan: coded
 !
       real, dimension(mx,my,mz,*) :: f
       character(LEN=3) :: topbot
       integer :: j,idir
       real :: val
 
-      call fatal_error('bval_from_neumann_scl','Not implemented for 8th order.')
+      integer :: k
+
+      if (topbot=='bot') then
+        if (idir==1) then
+          k=l1
+          f(l1,:,:,j) = (-val*840.*dx +  6720.*f(k+1,:,:,j) &
+                                      - 11760.*f(k+2,:,:,j) &
+                                      + 15680.*f(k+3,:,:,j) &
+                                      - 14700.*f(k+4,:,:,j) &
+                                      +  9408.*f(k+5,:,:,j) &
+                                      -  3920.*f(k+6,:,:,j) &
+                                      +   960.*f(k+7,:,:,j) &
+                                      -   105.*f(k+8,:,:,j) )/2283.
+        elseif (idir==2) then
+          k=m1
+          f(:,m1,:,j) = (-val*840.*dy +  6720.*f(:,k+1,:,j) &
+                                      - 11760.*f(:,k+2,:,j) &
+                                      + 15680.*f(:,k+3,:,j) &
+                                      - 14700.*f(:,k+4,:,j) &
+                                      +  9408.*f(:,k+5,:,j) &
+                                      -  3920.*f(:,k+6,:,j) &
+                                      +   960.*f(:,k+7,:,j) &
+                                      -   105.*f(:,k+8,:,j) )/2283.
+        elseif (idir==3) then
+          k=n1
+          f(:,:,n1,j) = (-val*840.*dz +  6720.*f(:,:,k+1,j) &
+                                      - 11760.*f(:,:,k+2,j) &
+                                      + 15680.*f(:,:,k+3,j) &
+                                      - 14700.*f(:,:,k+4,j) &
+                                      +  9408.*f(:,:,k+5,j) &
+                                      -  3920.*f(:,:,k+6,j) &
+                                      +   960.*f(:,:,k+7,j) &
+                                      -   105.*f(:,:,k+8,j) )/2283.
+        endif
+      else
+        if (idir==1) then
+          k=l2
+          f(l2,:,:,j) = (val*840.*dx +  6720.*f(k-1,:,:,j) &
+                                     - 11760.*f(k-2,:,:,j) &
+                                     + 15680.*f(k-3,:,:,j) &
+                                     - 14700.*f(k-4,:,:,j) &
+                                     +  9408.*f(k-5,:,:,j) &
+                                     -  3920.*f(k-6,:,:,j) &
+                                     +   960.*f(k-7,:,:,j) &
+                                     -   105.*f(k-8,:,:,j) )/2283.
+        elseif (idir==2) then
+          k=m2
+          f(:,m2,:,j) = (val*840.*dy +  6720.*f(:,k-1,:,j) &
+                                     - 11760.*f(:,k-2,:,j) &
+                                     + 15680.*f(:,k-3,:,j) &
+                                     - 14700.*f(:,k-4,:,j) &
+                                     +  9408.*f(:,k-5,:,j) &
+                                     -  3920.*f(:,k-6,:,j) &
+                                     +   960.*f(:,k-7,:,j) &
+                                     -   105.*f(:,k-8,:,j) )/2283.
+        elseif (idir==3) then
+          k=n2
+          f(:,:,n2,j) = (val*840.*dz +  6720.*f(:,:,k-1,j) &
+                                     - 11760.*f(:,:,k-2,j) &
+                                     + 15680.*f(:,:,k-3,j) &
+                                     - 14700.*f(:,:,k-4,j) &
+                                     +  9408.*f(:,:,k-5,j) &
+                                     -  3920.*f(:,:,k-6,j) &
+                                     +   960.*f(:,:,k-7,j) &
+                                     -   105.*f(:,:,k-8,j) )/2283.
+        endif
+      endif
 
     endsubroutine bval_from_neumann_scl
 !***********************************************************************
@@ -1862,14 +2027,83 @@ module Deriv
 !***********************************************************************
     subroutine bval_from_3rd_scl(f,topbot,j,idir,val)
 !
-!  Dummy.
+!  Calculates the boundary value from the 3rd kind BC d f/d x_i = val*f employing
+!  one-sided difference formulae. val is a constant.
+!
+!  27-jan-17/Ivan: coded
 !
       real, dimension(mx,my,mz,*) :: f
       character(LEN=3) :: topbot
       integer :: j,idir
       real :: val
 
-      call fatal_error('bval_from_3rd_scl','Not implemented for 8th order.')
+      integer :: k
+
+      if (topbot=='bot') then
+        if (idir==1) then
+          k=l1
+          f(l1,:,:,j) = (   6720.*f(k+1,:,:,j) &
+                         - 11760.*f(k+2,:,:,j) &
+                         + 15680.*f(k+3,:,:,j) &
+                         - 14700.*f(k+4,:,:,j) &
+                         +  9408.*f(k+5,:,:,j) &
+                         -  3920.*f(k+6,:,:,j) &
+                         +   960.*f(k+7,:,:,j) &
+                         -   105.*f(k+8,:,:,j) )/(2283.+val*840.*dx)
+        elseif (idir==2) then
+          k=m1
+          f(:,m1,:,j) = (   6720.*f(:,k+1,:,j) &
+                         - 11760.*f(:,k+2,:,j) &
+                         + 15680.*f(:,k+3,:,j) &
+                         - 14700.*f(:,k+4,:,j) &
+                         +  9408.*f(:,k+5,:,j) &
+                         -  3920.*f(:,k+6,:,j) &
+                         +   960.*f(:,k+7,:,j) &
+                         -   105.*f(:,k+8,:,j) )/(2283.+val*840.*dy)
+        elseif (idir==3) then
+          k=n1
+          f(:,:,n1,j) = (   6720.*f(:,:,k+1,j) &
+                         - 11760.*f(:,:,k+2,j) &
+                         + 15680.*f(:,:,k+3,j) &
+                         - 14700.*f(:,:,k+4,j) &
+                         +  9408.*f(:,:,k+5,j) &
+                         -  3920.*f(:,:,k+6,j) &
+                         +   960.*f(:,:,k+7,j) &
+                         -   105.*f(:,:,k+8,j) )/(2283.+val*840.*dz)
+        endif
+      else
+        if (idir==1) then
+          k=l2
+          f(l2,:,:,j) = (   6720.*f(k-1,:,:,j) &
+                         - 11760.*f(k-2,:,:,j) &
+                         + 15680.*f(k-3,:,:,j) &
+                         - 14700.*f(k-4,:,:,j) &
+                         +  9408.*f(k-5,:,:,j) &
+                         -  3920.*f(k-6,:,:,j) &
+                         +   960.*f(k-7,:,:,j) &
+                         -   105.*f(k-8,:,:,j) )/(2283.-val*840.*dx)
+        elseif (idir==2) then
+          k=m2
+          f(:,m2,:,j) = (   6720.*f(:,k-1,:,j) &
+                         - 11760.*f(:,k-2,:,j) &
+                         + 15680.*f(:,k-3,:,j) &
+                         - 14700.*f(:,k-4,:,j) &
+                         +  9408.*f(:,k-5,:,j) &
+                         -  3920.*f(:,k-6,:,j) &
+                         +   960.*f(:,k-7,:,j) &
+                         -   105.*f(:,k-8,:,j) )/(2283.-val*840.*dy)
+        elseif (idir==3) then
+          k=n2
+          f(:,:,n2,j) = (   6720.*f(:,:,k-1,j) &
+                         - 11760.*f(:,:,k-2,j) &
+                         + 15680.*f(:,:,k-3,j) &
+                         - 14700.*f(:,:,k-4,j) &
+                         +  9408.*f(:,:,k-5,j) &
+                         -  3920.*f(:,:,k-6,j) &
+                         +   960.*f(:,:,k-7,j) &
+                         -   105.*f(:,:,k-8,j) )/(2283.-val*840.*dz)
+        endif
+      endif
 
     endsubroutine bval_from_3rd_scl
 !***********************************************************************
@@ -1892,14 +2126,83 @@ module Deriv
 !***********************************************************************
     subroutine bval_from_4th_scl(f,topbot,j,idir,val)
 !
-!  Dummy.
+!  Calculates the boundary value from the 4th kind BC d^2 f/d x_i^2 = val*f employing
+!  one-sided difference formulae. val is a constant.
+!
+!  27-jan-17/Ivan: coded
 !
       real, dimension(mx,my,mz,*) :: f
       character(LEN=3) :: topbot
       integer :: j,idir
       real, dimension(:,:) :: val
 
-      call fatal_error('bval_from_4th_scl','Not implemented for 8th order.')
+      integer :: k
+
+      if (topbot=='bot') then
+        if (idir==1) then
+          k=l1
+          f(l1,:,:,j) = (- 138528.*f(k+1,:,:,j) &
+                         + 312984.*f(k+2,:,:,j) &
+                         - 448672.*f(k+3,:,:,j) &
+                         + 435330.*f(k+4,:,:,j) &
+                         - 284256.*f(k+5,:,:,j) &
+                         + 120008.*f(k+6,:,:,j) &
+                         -  29664.*f(k+7,:,:,j) &
+                         +   3267.*f(k+8,:,:,j) )/(-29531.+val*5040.*dx*dx)
+        elseif (idir==2) then
+          k=m1
+          f(:,m1,:,j) = (- 138528.*f(:,k+1,:,j) &
+                         + 312984.*f(:,k+2,:,j) &
+                         - 448672.*f(:,k+3,:,j) &
+                         + 435330.*f(:,k+4,:,j) &
+                         - 284256.*f(:,k+5,:,j) &
+                         + 120008.*f(:,k+6,:,j) &
+                         -  29664.*f(:,k+7,:,j) &
+                         +   3267.*f(:,k+8,:,j) )/(-29531.+val*5040.*dy*dy)
+        elseif (idir==3) then
+          k=n1
+          f(:,:,n1,j) = (- 138528.*f(:,:,k+1,j) &
+                         + 312984.*f(:,:,k+2,j) &
+                         - 448672.*f(:,:,k+3,j) &
+                         + 435330.*f(:,:,k+4,j) &
+                         - 284256.*f(:,:,k+5,j) &
+                         + 120008.*f(:,:,k+6,j) &
+                         -  29664.*f(:,:,k+7,j) &
+                         +   3267.*f(:,:,k+8,j) )/(-29531.+val*5040.*dz*dz)
+        endif
+      else
+        if (idir==1) then
+          k=l2
+          f(l2,:,:,j) = (- 138528.*f(k-1,:,:,j) &
+                         + 312984.*f(k-2,:,:,j) &
+                         - 448672.*f(k-3,:,:,j) &
+                         + 435330.*f(k-4,:,:,j) &
+                         - 284256.*f(k-5,:,:,j) &
+                         + 120008.*f(k-6,:,:,j) &
+                         -  29664.*f(k-7,:,:,j) &
+                         +   3267.*f(k-8,:,:,j) )/(-29531.+val*5040.*dx*dx)
+        elseif (idir==2) then
+          k=m2
+          f(:,m2,:,j) = (- 138528.*f(:,k-1,:,j) &
+                         + 312984.*f(:,k-2,:,j) &
+                         - 448672.*f(:,k-3,:,j) &
+                         + 435330.*f(:,k-4,:,j) &
+                         - 284256.*f(:,k-5,:,j) &
+                         + 120008.*f(:,k-6,:,j) &
+                         -  29664.*f(:,k-7,:,j) &
+                         +   3267.*f(:,k-8,:,j) )/(-29531.+val*5040.*dy*dy)
+        elseif (idir==3) then
+          k=n2
+          f(:,:,n2,j) = (- 138528.*f(:,:,k-1,j) &
+                         + 312984.*f(:,:,k-2,j) &
+                         - 448672.*f(:,:,k-3,j) &
+                         + 435330.*f(:,:,k-4,j) &
+                         - 284256.*f(:,:,k-5,j) &
+                         + 120008.*f(:,:,k-6,j) &
+                         -  29664.*f(:,:,k-7,j) &
+                         +   3267.*f(:,:,k-8,j) )/(-29531.+val*5040.*dz*dz)
+        endif
+      endif
 
     endsubroutine bval_from_4th_scl
 !***********************************************************************
