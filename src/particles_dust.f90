@@ -13,7 +13,7 @@
 !
 ! PENCILS PROVIDED np; rhop; vol; peh
 ! PENCILS PROVIDED np_rad(ndustrad); npvz(ndustrad); npvz2(ndustrad); 
-! PENCILS PROVIDED npuz(ndustrad); sherwood; urel
+! PENCILS PROVIDED npuz(ndustrad); sherwood
 ! PENCILS PROVIDED epsp; grhop(3)
 ! PENCILS PROVIDED tausupersat
 !
@@ -2784,7 +2784,6 @@ module Particles
       if (maxval(idiag_npuzmz) > 0) lpenc_requested(i_npuz)=.true.
       if (maxval(idiag_nptz) > 0)   lpenc_requested(i_np_rad)=.true.
       if (idiag_Shm /= 0)  lpenc_requested(i_sherwood)=.true.
-      if (idiag_urel /= 0) lpenc_requested(i_urel)=.true.
 !
     endsubroutine pencil_criteria_particles
 !***********************************************************************
@@ -3585,7 +3584,7 @@ module Particles
       integer, dimension (mpar_loc,3), intent (inout) :: ineargrid
 !
       real, dimension (nx) :: dt1_drag = 0.0, dt1_drag_gas, dt1_drag_dust
-      real, dimension (nx) :: drag_heat
+      real, dimension (nx) :: drag_heat, urel_sum
       real, dimension (3) :: dragforce, liftforce, bforce,thermforce, uup, xxp
       real, dimension (3) :: adv_der_uup = 0.0
       real, dimension(:), allocatable :: rep,stocunn
@@ -3641,8 +3640,9 @@ module Particles
       if (lpenc_requested(i_npuz))     p%npuz=0.
       if (lpenc_requested(i_np_rad))   p%np_rad=0.
       if (lpenc_requested(i_sherwood)) p%sherwood=0.
-      if (lpenc_requested(i_urel))     p%urel=0.
       if (lpenc_requested(i_tausupersat)) p%tausupersat=0.
+!
+      if (idiag_urel /= 0) urel_sum=0.
 !
 !  Precalculate certain quantities, if necessary.
 !
@@ -3891,9 +3891,9 @@ module Particles
                   if (lpenc_requested(i_sherwood)) then
                     p%sherwood(ix0-nghost)=p%sherwood(ix0-nghost)+Sherwood
                   endif
-                  if (lpenc_requested(i_urel)) then
+                  if (idiag_urel /= 0) then
                     urel=sqrt(sum((interp_uu(k,:) - fp(k,ivpx:ivpz))**2))
-                    p%urel(ix0-nghost)=p%urel(ix0-nghost)+urel
+                    urel_sum(ix0-nghost)=urel_sum(ix0-nghost)+urel
                   endif
 !
                   mass_trans_coeff=Sherwood*pscalar_diff/ &
@@ -4500,7 +4500,7 @@ module Particles
         if (idiag_epspm/=0)    call sum_mn_name(p%epsp,idiag_epspm)
         if (idiag_dedragp/=0)  call sum_mn_name(drag_heat,idiag_dedragp)
         if (idiag_Shm/=0)      call sum_mn_name(p%sherwood/npar*nwgrid,idiag_Shm)
-        if (idiag_urel/=0)     call sum_mn_name(p%urel/npar*nwgrid,idiag_urel)
+        if (idiag_urel/=0)     call sum_mn_name(urel_sum/npar*nwgrid,idiag_urel)
         if (idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. &
             idiag_dvpm  /=0 .or. idiag_dvpmax/=0) &
             call calculate_rms_speed(fp,ineargrid,p)
