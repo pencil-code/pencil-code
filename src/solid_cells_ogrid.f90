@@ -64,7 +64,7 @@ module Solid_Cells
   contains 
  !***********************************************************************
   subroutine register_solid_cells()
-! TODO: Remove this subroutine (even in .h file)
+! 
 !  Dummy routine
 !
     end subroutine register_solid_cells
@@ -263,13 +263,17 @@ end subroutine compute_draglift
 subroutine print_solid()
 end subroutine print_solid
 !***********************************************************************
-
-! Particles could check first if thery are within the o-grids computational domain (closer than interpolation domain)
-! when the particle positions are interpolated. If this is the case they should use the o-grid for interpolation,
-! but if they are outside, they should use the cartesian grid
-! Need a variable R_grid for this, that is, the radius of the o-grid. Mabye a different name than R_grid.
-
 logical function within_ogrid_comp(xxp)
+!
+! Particles could check first if thery are within the o-grids 
+! computational domain (closer than interpolation domain)
+! when the particle positions are interpolated. If this is the 
+! case they should use the o-grid for interpolation,
+! but if they are outside, they should use the cartesian grid
+! Need a variable R_grid for this, that is, the radius of the o-grid. 
+! Mabye a different name than R_grid.
+!
+! 26-jan-2017/jorgen: coded
 !
 ! Check if current possition is within the o-grids computational domain
 !
