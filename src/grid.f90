@@ -35,6 +35,10 @@ module Grid
   public :: grid_bound_data
   public :: set_coorsys_dimmask
 !
+  public :: find_star
+  public :: calc_bound_coeffs
+  public :: grid_profile
+
   interface grid_profile
     module procedure grid_profile_0D
     module procedure grid_profile_1D
