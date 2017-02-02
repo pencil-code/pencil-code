@@ -90,12 +90,14 @@ class __Simulation__(object):
             rename_submit_scripts:   Set False if no renames shall be performed in subnmit* files
             OVERWRITE:      Set True to overwrite no matter what happens!
         """
+        from os import listdir
         from os.path import exists, join, abspath, basename
+        from numpy import size
         from shutil import copyfile
         from glob import glob
+        from pencilnew import get_sim
         from pencilnew.io import mkdir, get_systemid, debug_breakpoint
         from pencilnew.sim import is_sim_dir
-        from pencilnew import get_sim
 
         # set up paths
         if path_root == False or type(path_root) != type('string'):
@@ -107,9 +109,11 @@ class __Simulation__(object):
         # but keep name of old if sim with old name is NOT existing in NEW directory
         if name == False:
             name = self.name
-            if exists(join(path_root, self.name)):
-                name = name+'_copy'
-                print('? Warning: No name specified and simulation with that name already found! Will alter old simulation name to '+name)
+        if exists(join(path_root, self.name)):
+            name = name+'_copy'
+            if exists(join(path_root, name)):
+                name = name + str(size([f for f in listdir(path_root) if f.startswith(name)]))
+            print('? Warning: No name specified and simulation with that name already found! New simulation name now '+name)
         path_newsim = join(path_root, name)     # simulation abspath
         path_newsim_src = join(path_newsim, 'src')
 
@@ -117,7 +121,7 @@ class __Simulation__(object):
         if optionals == True: optionals = self.optionals
         if type(optionals) == type('string'): optionals = [optionals]
         if type(optionals) != type(['list']): print('! ERROR: optionals must be of type list!')
-        
+
         tmp = []
         for opt in optionals:
             files = glob(join(self.path, opt))
@@ -163,7 +167,7 @@ class __Simulation__(object):
         for f in self.components+optionals:
             f_path = abspath(join(self.path, f))
             copy_to = abspath(join(path_newsim, f))
-            if f_path == copy_to: 
+            if f_path == copy_to:
                 print('!! ERROR: file path f_path equal to destination copy_to. Debug this line manually!')
                 debug_breakpoint()
             copyfile(f_path, copy_to)
@@ -257,23 +261,23 @@ class __Simulation__(object):
         """
         import pencilnew as pcn
         from os.path import join
-        
+
         timestamp = pcn.io.timestamp()
-        
+
         command = []
         if cleanall: command.append('pc_build --cleanall')
         if fast == True:
             command.append('pc_build --fast')
         else:
             command.append('pc_build')
-        
+
         if verbose: print('! Compiling '+self.path)
-        return self.bash(command=command, 
+        return self.bash(command=command,
                          verbose=verbose,
                          logfile=join(self.pc_dir, 'compilelog_'+timestamp))
-        
+
     def bash(self, command, verbose=True, logfile=False):
-        """Executes command in simulation diredctory. 
+        """Executes command in simulation diredctory.
         This method will use your settings as defined in your .bashrc-file.
         A log file will be produced within 'self.path/pc'-folder
 
@@ -293,7 +297,7 @@ class __Simulation__(object):
         commands = ['cd '+realpath(self.path)]
         #commands.append('source ~/.bashrc')
         #commands.append('shopt -s expand_aliases')
-        
+
         if type(command) == type(['list']):
             for c in command:
                 commands.append(c)
@@ -303,8 +307,8 @@ class __Simulation__(object):
             print('! ERROR: Couldnt understand the command parameter: '+str(command))
 
         with open(logfile, 'w') as f:
-            rc = subprocess.call(['/bin/bash', '-i', '-c', ';'.join(commands)], 
-                                 stdout=f, 
+            rc = subprocess.call(['/bin/bash', '-i', '-c', ';'.join(commands)],
+                                 stdout=f,
                                  stderr=f
                                  )
 
@@ -385,7 +389,7 @@ class __Simulation__(object):
 
         filelist = listdir(self.path)
         for f in filelist:
-            remove(join(self.path, f))
+            remove(join(self.path, f), do_it=do_it, do_it_really=do_it_really)
         return True
 
 
@@ -443,7 +447,7 @@ class __Simulation__(object):
                 if DEBUG: print('~ DEBUG: '+quantity+' found in simulation.params ...')
                 return self.param[quantity]
 
-        if DEBUG: 
+        if DEBUG:
             print('~ DEBUG: Searching through simulation.quantity_searchables ...')
         from pencilnew.io import get_value_from_file
         for filename in self.quantity_searchables:
