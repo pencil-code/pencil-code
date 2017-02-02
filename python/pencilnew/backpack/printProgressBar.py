@@ -1,6 +1,6 @@
 from __future__ import print_function   # BACK TO THE FUTURE!
 
-def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = 'X'):
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 50, fill = 'X'):
     """
     Call in a loop to create terminal progress bar
     @params:
@@ -12,7 +12,10 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
         length      - Optional  : character length of bar (Int)
         fill        - Optional  : bar fill character (Str)
         
-    Credit: modified version of @Vladimir Ignatyev's solution
+    Example:
+        printProgressBar(i, l, prefix = 'Progress:', suffix = 'Complete', length = 50)
+        
+    Credit: Greensticks modified version of @Vladimir Ignatyev's solution
             http://stackoverflow.com/questions/3173320/text-progress-bar-in-the-console
     """
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
