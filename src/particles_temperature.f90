@@ -34,6 +34,7 @@ module Particles_temperature
   logical :: lpart_nuss_const=.false.
   logical :: lstefan_flow = .true.
   logical :: ldiffuse_backtemp = .false.,ldiffTT=.false.
+  logical :: lconst_part_temp=.false.
   integer :: idmpt=0,ndiffstepTT=3
   real :: init_part_temp, emissivity=0.0
   real :: rdiffconstTT = 0.1178
@@ -49,7 +50,7 @@ module Particles_temperature
   namelist /particles_TT_run_pars/ emissivity, cp_part, lpart_temp_backreac,&
       lrad_part,Twall, lpart_nuss_const,lstefan_flow,lconv_heating, &
        ldiffuse_backtemp,ldiffTT,rdiffconstTT, &
-       ndiffstepTT
+       ndiffstepTT,lconst_part_temp
 !
   integer :: idiag_Tpm=0, idiag_etpm=0
 !
@@ -176,6 +177,7 @@ module Particles_temperature
       integer, dimension(mpar_loc,3) :: ineargrid
 !
       if (lpart_temp_backreac .and. ldiffuse_backtemp) then
+
         if (ldensity_nolog .and. ltemperature_nolog) &
             call fatal_error('particles_mass', 'not implemented for ldensity_nolog')
         do i = 1, ndiffstepTT
@@ -235,7 +237,7 @@ module Particles_temperature
       real :: volume_cell, stefan_b,Prandtl
       real :: Qc, Qrad, Ap, heat_trans_coef, cond
       integer :: k, inx0, ix0, iy0, iz0, ierr
-      real :: rho1_point, weight
+      real :: rho1_point, weight, pmass
       integer :: ixx0, ixx1, iyy0, iyy1, izz0, izz1
       integer :: ixx, iyy, izz, k1, k2
 !
@@ -272,9 +274,8 @@ module Particles_temperature
 !  for reactive heating of the particle if lreactive_heating is false,
 !  q_reac is set to zero in particles_chemistry
 !
+        allocate(Nuss_p(k1:k2))
         if (lparticles_chemistry) then
-!
-          allocate(Nuss_p(k1:k2))
           allocate(q_reac(k1:k2))
           allocate(mass_loss(k1:k2))
 !
@@ -291,10 +292,20 @@ module Particles_temperature
 !
 !  Calculate convective and conductive heat, all in CGS units
 !
-            ix0 = ineargrid(k,1)
-            iy0 = ineargrid(k,2)
-            iz0 = ineargrid(k,3)
-            inx0 = ix0-nghost
+          ix0 = ineargrid(k,1)
+          iy0 = ineargrid(k,2)
+          iz0 = ineargrid(k,3)
+          inx0 = ix0-nghost
+!
+!  Find particle mass (currently only needed for calculation of heat capacity)
+!
+          if (.not. lconst_part_temp) then
+            if (lparticles_mass) then
+              pmass=fp(k,imp)
+            else
+              pmass=4.*pi*fp(k,iap)**3/3.*rhopmat
+            endif
+          endif
 !
 !  Possibility to deactivate conductive and convective heating
 !
@@ -327,7 +338,7 @@ module Particles_temperature
 !  Calculation of stefan flow constant stefan_b
 !
           if (lconv_heating) then
-            if (lstefan_flow) then
+            if (lstefan_flow .and. lparticles_chemistry) then
               stefan_b = mass_loss(k)*p%cv(inx0)/&
                   (2*pi*fp(k,iap)*Nuss_p(k)*cond)
             else
@@ -355,10 +366,14 @@ module Particles_temperature
 !  Calculate the change in particle temperature based on the cooling/heating
 !  rates on the particle
 !
-          if (lparticles_chemistry) then
-            dfp(k,iTp) = dfp(k,iTp)+(q_reac(k)-Qc+Qrad)/(fp(k,imp)*cp_part)
+          if (.not. lconst_part_temp) then
+            if (lparticles_chemistry) then
+              dfp(k,iTp) = dfp(k,iTp)+(q_reac(k)-Qc+Qrad)/(pmass*cp_part)
+            else
+              dfp(k,iTp) = dfp(k,iTp)+(Qrad-Qc)/(pmass*cp_part)
+            endif
           else
-            dfp(k,iTp) = dfp(k,iTp)+(Qrad-Qc)/(fp(k,imp)*cp_part)
+            dfp(k,iTp) = 0.
           endif
 !
 !  Calculate feed back from the particles to the gas phase
