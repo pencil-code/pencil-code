@@ -465,7 +465,7 @@ class __Simulation__(object):
         """Returns time series object."""
         from pcn.read import ts
         if self.started():
-            return ts(quiet=True)
+            return ts(sim=self, quiet=True)
         else:
             print('? WARNING: Simulation '+self.name+' has not yet been started. No timeseries available!')
             return False

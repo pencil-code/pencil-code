@@ -52,7 +52,7 @@ class TimeSeries(object):
 
 
     def read(self, file_name='time_series.dat', datadir='data',
-             quiet=False, comment_char='#'):
+             quiet=False, comment_char='#', sim=False):
         """
         Read Pencil Code time series data.
 
@@ -62,6 +62,9 @@ class TimeSeries(object):
              double=0, quiet=0, comment_char='#')
 
         Keyword arguments:
+
+        *SIM*:
+          return time series for this simulation object
 
         *file_name*:
           Name of the time series file.
@@ -79,6 +82,9 @@ class TimeSeries(object):
         import numpy as np
         import os.path
         import re
+
+        if str(sim.__class__) == "<class 'pencilnew.sim.simulation.__Simulation__'>":
+            datadir = sim.datadir
 
         datadir = os.path.expanduser(datadir)
         infile = open(os.path.join(datadir, file_name), "r")
