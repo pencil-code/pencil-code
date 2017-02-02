@@ -203,7 +203,7 @@ class __Simulation__(object):
                     param = param(quiet=quiet, datadir=self.datadir)
                     self.param = {}                     # read params into Simulation object
                     for key in dir(param):
-                        if key.startswith('_'): continue
+                        if key.startswith('_') or key == 'read': continue
                         self.param[key] = getattr(param, key)
                 else:
                     if not quiet: print('? WARNING: for '+self.path+'\n? Simulation has not run yet! Meaning: No param.nml found!')
