@@ -461,6 +461,11 @@ class __Simulation__(object):
 
         print('! ERROR: Couldnt find '+quantity+'!')
 
+    def get_ts(self):
+        """Returns time series object."""
+        from pcn.read import ts
+        return ts(quiet=True)
+
     def change_value_in_file(self, filename, quantity, newValue, filepath=False, DEBUG=False):
         """Same as pencilnew.io.change_value_in_file."""
         from pencilnew.io import change_value_in_file
