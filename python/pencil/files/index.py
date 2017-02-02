@@ -55,20 +55,20 @@ class Index(dict):
                 val=np.arange(val)
                 if (len(app) > 1 ):
                     val=val+int(app[1])
-            	if (all(val != 0)  and all(val <= totalvars) \
+                if (all(val != 0)  and all(val <= totalvars) \
                     and not name.startswith('i_') and name.startswith('i')):
-               	    name=name.lstrip('i')
+                    name=name.lstrip('i')
                     if (name == 'lnTT' and param.ltemperature_nolog):
                         name = 'tt'
                     self[name] = val
-	    else:
+            else:
                 val=int(clean.split('=')[1].strip())
-            	if (val != 0  and val <= totalvars \
+                if (val != 0  and val <= totalvars \
                     and not name.startswith('i_') and name.startswith('i')):
-                	name=name.lstrip('i')
-                	if (name == 'lnTT' and param.ltemperature_nolog):
-                    		name = 'tt'
-                	self[name] = val
+                        name=name.lstrip('i')
+                        if (name == 'lnTT' and param.ltemperature_nolog):
+                                name = 'tt'
+                        self[name] = val
            # val=int(float(clean.split('=')[1].strip())) # sean150513
 
             #            print name,val
