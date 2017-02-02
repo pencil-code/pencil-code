@@ -464,7 +464,11 @@ class __Simulation__(object):
     def get_ts(self):
         """Returns time series object."""
         from pcn.read import ts
-        return ts(quiet=True)
+        if self.started():
+            return ts(quiet=True)
+        else:
+            print('? WARNING: Simulation '+self.name+' has not yet been started. No timeseries available!')
+            return False
 
     def change_value_in_file(self, filename, quantity, newValue, filepath=False, DEBUG=False):
         """Same as pencilnew.io.change_value_in_file."""
