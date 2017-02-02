@@ -13,7 +13,7 @@ import sim         # handling simulations as python objects
 import read		   # read data and parameters from pencil code directory
 import tool_kit	   # all nice workarounds get stored here (e.g., resubmit script)
 import export	   # exporter (e.g., vtk, xml)
-#import backpack    # third party modules, tribute to the author!
+import backpack    # third party modules, tribute to the author!
 
 # internal routines
 from pencilnew.sim import simulation as __Simulation__
