@@ -38,7 +38,6 @@
 !
 !   Very fine resolution of boundary layer
 !
-!
 module Solid_Cells
 
   use Cparam
