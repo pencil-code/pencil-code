@@ -2031,7 +2031,6 @@ module Energy
 !  Write column where which variable is stored.
 !
       if (lwr) then
-        write(3,*) 'nname=',nname
         if (ltemperature_nolog) then
           write(3,*) 'ilnTT=0'
           write(3,*) 'iTT=', iTT

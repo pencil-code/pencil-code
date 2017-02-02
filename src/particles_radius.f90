@@ -711,6 +711,7 @@ module Particles_radius
             else
               if (lcondensation_simplified) then
                 dapdt=GS_condensation/fp(k,iap)
+                !print*,"radius=",fp(k,iap)
               else
                 dapdt=0.25*vth(ix)*rhopmat1* &
                     (rhovap(ix)-rhosat(ix))*alpha_cond_par
@@ -823,7 +824,6 @@ module Particles_radius
 !
 !  28-may-16/Xiang-Yu: coded
 !
-      use EquationOfState, only: gamma
       use Particles_number
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -834,7 +834,7 @@ module Particles_radius
       integer, dimension (mpar_loc,3) :: ineargrid
 !
       real :: dapdt
-      integer :: k,k1,k2,ix,ix0
+      integer :: k,ix,ix0
 !
       intent (in) :: f, fp
       intent (inout) :: dfp
@@ -846,7 +846,6 @@ module Particles_radius
         ix0=ineargrid(k,1)
         ix=ix0-nghost
         if (lsupersat) then
-          !print*,"issat=",issat
           dapdt=f(ix,m,n,issat)/fp(k,iap)
           dfp(k,iap)=dfp(k,iap)+dapdt
         endif

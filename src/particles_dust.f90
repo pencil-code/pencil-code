@@ -12,7 +12,8 @@
 ! CPARAM logical, parameter :: lparticles=.true.
 !
 ! PENCILS PROVIDED np; rhop; vol; peh
-! PENCILS PROVIDED np_rad(5); npvz(5); npuz(5); sherwood
+! PENCILS PROVIDED np_rad(ndustrad); npvz(ndustrad); npvz2(ndustrad); 
+! PENCILS PROVIDED npuz(ndustrad); sherwood
 ! PENCILS PROVIDED epsp; grhop(3)
 ! PENCILS PROVIDED tausupersat
 !
@@ -164,7 +165,8 @@ module Particles
   logical :: lcompensate_sedimentation=.false.
   real :: compensate_sedimentation=1.
 !
-  real :: A1=0., A2=0.
+  real :: A3=0., A2=0.
+  logical :: supersat_ngp=.false., supersat_cic=.false.
 !
   namelist /particles_init_pars/ &
       initxxp, initvvp, xp0, yp0, zp0, vpx0, vpy0, vpz0, delta_vp0, &
@@ -258,8 +260,9 @@ module Particles
       birthring_width, lsimple_volume,&
       lgaussian_birthring, tstart_rpbeta, linsert_as_many_as_possible, &
       lvector_gravity, lcompensate_sedimentation,compensate_sedimentation, &
-      lpeh_radius, A1, A2, ldraglaw_stokesschiller, lbirthring_depletion, birthring_lifetime, &
-      remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size
+      lpeh_radius, A3, A2, ldraglaw_stokesschiller, lbirthring_depletion, birthring_lifetime, &
+      remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size, &
+      supersat_ngp, supersat_cic
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0   ! DIAG_DOC: $x^2_{part}$
@@ -270,6 +273,7 @@ module Particles
   integer :: idiag_ekinp=0     ! DIAG_DOC: $E_{kin,part}$
   integer :: idiag_vpxmax=0, idiag_vpymax=0, idiag_vpzmax=0, idiag_vpmax=0 ! DIAG_DOC: $MAX(u_{part})$
   integer :: idiag_vpxmin=0, idiag_vpymin=0, idiag_vpzmin=0    ! DIAG_DOC: $MIN(u_{part})$
+  integer :: idiag_urel=0
   integer :: idiag_vpxvpym=0, idiag_vpxvpzm=0, idiag_vpyvpzm=0
   integer :: idiag_rhopvpxm=0, idiag_rhopvpym=0, idiag_rhopvpzm=0
   integer :: idiag_rhopvpxt=0, idiag_rhopvpyt=0, idiag_rhopvpzt=0
@@ -296,9 +300,8 @@ module Particles
   integer :: idiag_eccpx2m=0, idiag_eccpy2m=0, idiag_eccpz2m=0
   integer :: idiag_vprms=0, idiag_vpyfull2m=0, idiag_deshearbcsm=0
   integer :: idiag_Shm=0
-  integer, dimension(ninit)  :: idiag_npvzmz=0, idiag_nptz=0
-  integer, dimension(ninit)  :: idiag_npuzmz=0
-  integer :: idiag_tausupersatrms=0
+  integer, dimension(ndustrad)  :: idiag_npvzmz=0, idiag_npvz2mz=0, idiag_nptz=0
+  integer, dimension(ndustrad)  :: idiag_npuzmz=0
 !
   contains
 !***********************************************************************
@@ -869,7 +872,7 @@ module Particles
       real :: r, p, q, px, py, pz, eps, cs, k2_xxp, rp2
       real :: dim1, npar_loc_x, npar_loc_y, npar_loc_z, dx_par, dy_par, dz_par
       real :: rad,rad_scl,phi,tht,tmp,OO,xx0,yy0,r2
-      integer :: l, j, k, ix0, iy0, iz0, n_kill
+      integer :: l, j, k, ix0, iy0, iz0
       logical :: lequidistant=.false.
       real :: rpar_int,rpar_ext
 !
@@ -2777,9 +2780,10 @@ module Particles
       if (idiag_sigmap /= 0) lpenc_diagnos2d(i_rhop) = .true.
 !
       if (maxval(idiag_npvzmz) > 0) lpenc_requested(i_npvz)=.true.
+      if (maxval(idiag_npvz2mz) > 0) lpenc_requested(i_npvz2)=.true.
       if (maxval(idiag_npuzmz) > 0) lpenc_requested(i_npuz)=.true.
       if (maxval(idiag_nptz) > 0)   lpenc_requested(i_np_rad)=.true.
-      if (idiag_Shm /= 0) lpenc_requested(i_sherwood)=.true.
+      if (idiag_Shm /= 0)  lpenc_requested(i_sherwood)=.true.
 !
     endsubroutine pencil_criteria_particles
 !***********************************************************************
@@ -2952,7 +2956,7 @@ module Particles
       integer, dimension (mpar_loc,3), intent (in) :: ineargrid
 !
       real :: Omega2
-      integer :: npar_found,i
+      integer :: npar_found
       logical :: lheader, lfirstcall=.true.
 !
 !  Print out header information in first time step.
@@ -3580,15 +3584,15 @@ module Particles
       integer, dimension (mpar_loc,3), intent (inout) :: ineargrid
 !
       real, dimension (nx) :: dt1_drag = 0.0, dt1_drag_gas, dt1_drag_dust
-      real, dimension (nx) :: drag_heat
+      real, dimension (nx) :: drag_heat, urel_sum
       real, dimension (3) :: dragforce, liftforce, bforce,thermforce, uup, xxp
       real, dimension (3) :: adv_der_uup = 0.0
       real, dimension(:), allocatable :: rep,stocunn
       real :: added_mass_beta = 0.0
-      real :: rho1_point, tausp1_par, up2
+      real :: rho1_point, tausp1_par, up2, urel
       real :: weight, weight_x, weight_y, weight_z
       real :: dxp, dyp, dzp, volume_cell
-      integer :: k, l, ix0, iy0, iz0, ierr, irad, i
+      integer :: k, l, ix0, iy0, iz0, ierr, irad
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       integer, dimension (3) :: inear
       logical :: lsink
@@ -3599,7 +3603,7 @@ module Particles
       real, dimension(k1_imn(imn):k2_imn(imn)) :: nu
       character (len=labellen) :: ivis=''
       real :: nu_
-      real :: taulocal
+      real :: inversetau
 !
 !  Identify module.
 !
@@ -3632,10 +3636,13 @@ module Particles
 !  Initialize the pencils that are calculated within this subroutine
 !
       if (lpenc_requested(i_npvz))     p%npvz=0.
+      if (lpenc_requested(i_npvz2))    p%npvz2=0.
       if (lpenc_requested(i_npuz))     p%npuz=0.
       if (lpenc_requested(i_np_rad))   p%np_rad=0.
       if (lpenc_requested(i_sherwood)) p%sherwood=0.
       if (lpenc_requested(i_tausupersat)) p%tausupersat=0.
+!
+      if (idiag_urel /= 0) urel_sum=0.
 !
 !  Precalculate certain quantities, if necessary.
 !
@@ -3725,11 +3732,13 @@ module Particles
 !
 !  Calculate required pencils
 !  NILS: Could this be moved to calc_pencils_particles
-              if (lpenc_requested(i_npvz) .or. lpenc_requested(i_np_rad) .or. lpenc_requested(i_npuz)) then
+              if (lpenc_requested(i_npvz) .or. lpenc_requested(i_npvz2) .or. &
+                  lpenc_requested(i_np_rad) .or. lpenc_requested(i_npuz)) then
                 call get_shared_variable('ap0',ap0,ierr)
                 do irad=1,npart_radii
                   if ((fp(k,iap) > ap0(irad)*0.99) .and. (fp(k,iap) < ap0(irad)*1.01)) then
                     p%npvz(ix0-nghost,irad)=p%npvz(ix0-nghost,irad)+fp(k,ivpz)
+                    p%npvz2(ix0-nghost,irad)=p%npvz2(ix0-nghost,irad)+fp(k,ivpz)**2
                     p%np_rad(ix0-nghost,irad)=p%np_rad(ix0-nghost,irad)+1.
                     if (lpenc_requested(i_npuz)) then
 !
@@ -3882,6 +3891,10 @@ module Particles
                   if (lpenc_requested(i_sherwood)) then
                     p%sherwood(ix0-nghost)=p%sherwood(ix0-nghost)+Sherwood
                   endif
+                  if (idiag_urel /= 0) then
+                    urel=sqrt(sum((interp_uu(k,:) - fp(k,ivpx:ivpz))**2))
+                    urel_sum(ix0-nghost)=urel_sum(ix0-nghost)+urel
+                  endif
 !
                   mass_trans_coeff=Sherwood*pscalar_diff/ &
                       (2*fp(k,iap))
@@ -3896,7 +3909,7 @@ module Particles
                   ixx0=ix0; iyy0=iy0; izz0=iz0
                   ixx1=ix0; iyy1=iy0; izz1=iz0
 !
-!  Particle influences the 8 surrounding grid points. The reference point is
+!  Particle influences param_iothe 8 surrounding grid points. The reference point is
 !  the grid point at the lower left corner.
 !
                   if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ixx0=ixx0-1
@@ -4343,6 +4356,38 @@ module Particles
                 if (ldragforce_gas_par) &
                     dt1_drag_gas(ix0-nghost) = dt1_drag_gas(ix0-nghost) + mp_vcell * p%rho1(ix0-nghost) * tausp1_par
               endif getdt1
+!  Particle growth by condensation in a passive scalar field,
+!  calculate relaxation time. 1D case for now.
+!  14-June-16/Xiang-Yu: coded
+      
+              if (lsupersat) then
+                 inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)
+                 if (supersat_ngp) then 
+                   l=ineargrid(k,1)
+                   !call find_grid_volume(ix0,iy0,iz0,volume_cell)
+                   !inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)/volume_cell
+                   !inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)
+                   f(l,m,n,itausupersat) = f(l,m,n,itausupersat) + inversetau
+                 elseif (supersat_cic) then
+                  ixx0=ix0; iyy0=iy0; izz0=iz0
+                  ixx1=ix0; iyy1=iy0; izz1=iz0
+                  if ( (x(ix0)>fp(k,ixp)) .and. nxgrid/=1) ixx0=ixx0-1
+                  if ( (y(iy0)>fp(k,iyp)) .and. nygrid/=1) iyy0=iyy0-1
+                  if ( (z(iz0)>fp(k,izp)) .and. nzgrid/=1) izz0=izz0-1
+                  if (nxgrid/=1) ixx1=ixx0+1
+                  if (nygrid/=1) iyy1=iyy0+1
+                  if (nzgrid/=1) izz1=izz0+1
+                  do izz=izz0,izz1; do iyy=iyy0,iyy1; do ixx=ixx0,ixx1
+                    weight=1.0
+                    if (nxgrid/=1) weight=weight*( 1.0-abs(fp(k,ixp)-x(ixx))*dx_1(ixx) )
+                    if (nygrid/=1) weight=weight*( 1.0-abs(fp(k,iyp)-y(iyy))*dy_1(iyy) )
+                    if (nzgrid/=1) weight=weight*( 1.0-abs(fp(k,izp)-z(izz))*dz_1(izz) )
+                    !call find_grid_volume(ixx,iyy,izz,volume_cell)
+                    !f(ixx,iyy,izz,itausupersat) = f(ixx,iyy,izz,itausupersat) - weight*inversetau/volume_cell
+                    f(ixx,iyy,izz,itausupersat) = f(ixx,iyy,izz,itausupersat) - weight*inversetau
+                  enddo; enddo; enddo
+                 endif
+              endif
             endif
           enddo
 !
@@ -4419,7 +4464,7 @@ module Particles
         endif
       endif
 !
-!  Add Thernophoretic forces.
+!  Add Thermophoretic forces.
 !
       if (lthermophoretic_forces) then
         if (npar_imn(imn)/=0) then
@@ -4437,23 +4482,6 @@ module Particles
         f(l1:l2,m,n,ifgx:ifgz)=p%fpres+p%jxbr+p%fvisc
       endif
 !
-!  Particle growth by condensation in a passive scalar field,
-!  calculate relaxation time. 1D case for now.
-!  14-June-16/Xiang-Yu: coded
-
-      if (lsupersat) then
-        do i=l1,l2
-           taulocal=0
-           do k=k1_imn(imn),k2_imn(imn)
-             l=ineargrid(k,1)
-             if (l==i) then
-                taulocal=taulocal+fp(k,iap)*fp(k,inpswarm)
-             endif
-           enddo
-           !f(i,m,n,itausupersat)=f(i,m,n,itausupersat)+4.*pi*rhopmat*A1*A2*taulocal
-           p%tausupersat(i-3)=f(i-3,m,n,itausupersat)+4.*pi*rhopmat*A1*A2*taulocal
-        enddo
-      endif
 !
 !  Diagnostic output.
 !
@@ -4472,13 +4500,12 @@ module Particles
         if (idiag_epspm/=0)    call sum_mn_name(p%epsp,idiag_epspm)
         if (idiag_dedragp/=0)  call sum_mn_name(drag_heat,idiag_dedragp)
         if (idiag_Shm/=0)      call sum_mn_name(p%sherwood/npar*nwgrid,idiag_Shm)
+        if (idiag_urel/=0)     call sum_mn_name(urel_sum/npar*nwgrid,idiag_urel)
         if (idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. idiag_dvpx2m/=0 .or. &
             idiag_dvpm  /=0 .or. idiag_dvpmax/=0) &
             call calculate_rms_speed(fp,ineargrid,p)
         if (idiag_dtdragp/=0.and.(lfirst.and.ldt)) &
             call max_mn_name(dt1_drag,idiag_dtdragp,l_dt=.true.)
-        if (idiag_tausupersatrms/=0) &
-            call sum_mn_name(p%tausupersat**2,idiag_tausupersatrms,lsqrt=.true.)
       endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
@@ -4498,8 +4525,9 @@ module Particles
         if (idiag_epspmz/=0)  call xysum_mn_name_z(p%epsp,idiag_epspmz)
         if (idiag_rhopmr/=0)  call phizsum_mn_name_r(p%rhop,idiag_rhopmr)
 !
-        do k=1,ninit
+        do k=1,ndustrad
           if (idiag_npvzmz(k)/=0) call xysum_mn_name_z(p%npvz(:,k),idiag_npvzmz(k))
+          if (idiag_npvz2mz(k)/=0) call xysum_mn_name_z(p%npvz2(:,k),idiag_npvz2mz(k))
           if (idiag_npuzmz(k)/=0) call xysum_mn_name_z(p%npuz(:,k),idiag_npuzmz(k))
           if (idiag_nptz(k)/=0)   call xysum_mn_name_z(p%np_rad(:,k),idiag_nptz(k))
         enddo
@@ -6108,7 +6136,6 @@ module Particles
         write(3,*) 'ifgx=', ifgx
         write(3,*) 'ifgy=', ifgy
         write(3,*) 'ifgz=', ifgz
-        write(3,*) 'itausupersat=', itausupersat
       endif
 !
 !  Reset everything in case of reset.
@@ -6117,7 +6144,7 @@ module Particles
         idiag_xpm=0; idiag_ypm=0; idiag_zpm=0
         idiag_vrelpabsm=0
         idiag_xp2m=0; idiag_yp2m=0; idiag_zp2m=0; idiag_rpm=0; idiag_rp2m=0
-        idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0
+        idiag_vpxm=0; idiag_vpym=0; idiag_vpzm=0; idiag_urel=0
         idiag_vpxvpym=0; idiag_vpxvpzm=0; idiag_vpyvpzm=0
         idiag_vpx2m=0; idiag_vpy2m=0; idiag_vpz2m=0; idiag_ekinp=0
         idiag_vpxmax=0; idiag_vpymax=0; idiag_vpzmax=0
@@ -6145,9 +6172,8 @@ module Particles
         idiag_eccpx2m=0; idiag_eccpy2m=0; idiag_eccpz2m=0
         idiag_npargone=0; idiag_vpyfull2m=0; idiag_deshearbcsm=0
         idiag_npmxy=0; idiag_vprms=0
-        idiag_npvzmz=0; idiag_nptz=0; idiag_Shm=0
+        idiag_npvzmz=0; idiag_npvz2mz=0; idiag_nptz=0; idiag_Shm=0
         idiag_npuzmz=0
-        idiag_tausupersatrms=0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
@@ -6167,6 +6193,7 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'zp2m',idiag_zp2m)
         call parse_name(iname,cname(iname),cform(iname),'rpm',idiag_rpm)
         call parse_name(iname,cname(iname),cform(iname),'rp2m',idiag_rp2m)
+        call parse_name(iname,cname(iname),cform(iname),'urel',idiag_urel)
         call parse_name(iname,cname(iname),cform(iname),'vpxm',idiag_vpxm)
         call parse_name(iname,cname(iname),cform(iname),'vpym',idiag_vpym)
         call parse_name(iname,cname(iname),cform(iname),'vpzm',idiag_vpzm)
@@ -6234,7 +6261,6 @@ module Particles
         call parse_name(iname,cname(iname),cform(iname),'vprms',idiag_vprms)
         call parse_name(iname,cname(iname),cform(iname),'Shm',idiag_Shm)
         call parse_name(iname,cname(iname),cform(iname),'deshearbcsm',idiag_deshearbcsm)
-        call parse_name(iname,cname(iname),cform(iname),'tausupersatrms',idiag_tausupersatrms)
       enddo
 !
 !  Check for those quantities for which we want x-averages.
@@ -6262,9 +6288,10 @@ module Particles
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhopmz',idiag_rhopmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'rhop2mz',idiag_rhop2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'epspmz',idiag_epspmz)
-        do k=1,ninit
+        do k=1,ndustrad
           srad=itoa(k)
           call parse_name(inamez,cnamez(inamez),cformz(inamez),'npvzmz'//trim(srad),idiag_npvzmz(k))
+          call parse_name(inamez,cnamez(inamez),cformz(inamez),'npvz2mz'//trim(srad),idiag_npvz2mz(k))
           call parse_name(inamez,cnamez(inamez),cformz(inamez),'npuzmz'//trim(srad),idiag_npuzmz(k))
           call parse_name(inamez,cnamez(inamez),cformz(inamez),'nptz'//trim(srad),idiag_nptz(k))
         enddo
@@ -6343,7 +6370,7 @@ module Particles
       real, dimension(mpar_loc,mparray), intent(in) :: fp
       real, dimension(3) :: uup,rel_vel_sing
       real, dimension(:), allocatable :: rel_vel
-      integer :: k,ix0,iy0,iz0
+      integer :: k
       integer, dimension(mpar_loc,3), intent(in) :: ineargrid
 !
 !  Calculate particle relative velocity

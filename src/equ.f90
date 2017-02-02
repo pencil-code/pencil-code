@@ -92,8 +92,7 @@ module Equ
       real, dimension (nx) :: advec2,advec2_hypermesh
       real, dimension (nx) :: pfreeze,pfreeze_int,pfreeze_ext
       real, dimension(1)   :: mass_per_proc
-      integer :: iv
-      integer :: ivar1,ivar2,nyz
+      integer :: iv,nyz
 !
       intent(inout)  :: f       ! inout due to  lshift_datacube_x,
                                 ! density floor, or velocity ceiling

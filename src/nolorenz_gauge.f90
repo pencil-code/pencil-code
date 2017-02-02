@@ -25,36 +25,9 @@ module Lorenz_gauge
 
   include 'lorenz_gauge.h'
 !
-!  square of wave speed for gauge field
-!
-  real :: cphi2
-
-  ! input parameters
-  real :: cphi=1.,etaphi=0.,ampl=1e-3,kx=1.,ky=0.,kz=0.
-  character(len=50) :: init='zero'
-  namelist /lorenz_gauge_init_pars/ &
-    cphi,etaphi,init,ampl,kx,ky,kz
-
-  ! run parameters
-  namelist /lorenz_gauge_run_pars/ &
-    cphi,etaphi
-!
-! Declare any index variables necessary for main or
-!
-   integer :: iphi=0
-!
-! other variables (needs to be consistent with reset list below)
-!
-  integer :: idiag_phim=0       ! DIAG_DOC: $\left<\phi\right>$
-  integer :: idiag_phipt=0      ! DIAG_DOC: $\phi(x1,y1,z1)>$
-  integer :: idiag_phip2=0      ! DIAG_DOC: $\phi(x2,y2,z2)>$
-  integer :: idiag_phibzm=0     ! DIAG_DOC: $\left<\phi B_z\right>$
-  integer :: idiag_phibzmz=0    ! DIAG_DOC: $\left<\phi B_z\right>_{xy}$
-!
   contains
-
 !***********************************************************************
-    subroutine register_lorenz_gauge()
+    subroutine register_lorenz_gauge
 !
 !  Configure pre-initialised (i.e. before parameter read) variables
 !  which should be know to be able to evaluate
@@ -91,7 +64,7 @@ module Lorenz_gauge
 !
     endsubroutine init_lorenz_gauge
 !***********************************************************************
-    subroutine pencil_criteria_lorenz_gauge()
+    subroutine pencil_criteria_lorenz_gauge
 !
 !  All pencils that this lorenz_gauge module depends on are specified here.
 !
@@ -201,8 +174,7 @@ module Lorenz_gauge
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset)
-      if (present(lwrite)) call keep_compiler_quiet(lwrite)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_lorenz_gauge
 !***********************************************************************

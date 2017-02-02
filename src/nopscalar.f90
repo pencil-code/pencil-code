@@ -31,7 +31,7 @@ module Pscalar
 !
   contains
 !***********************************************************************
-    subroutine register_pscalar()
+    subroutine register_pscalar
 !
 !  Initialise variables which should know that we solve for passive
 !  scalar: ilncc; increase nvar accordingly.
@@ -69,7 +69,7 @@ module Pscalar
 !
     endsubroutine init_lncc
 !***********************************************************************
-    subroutine pencil_criteria_pscalar()
+    subroutine pencil_criteria_pscalar
 !
 !  All pencils that the Pscalar module depends on are specified here.
 !
@@ -169,20 +169,10 @@ module Pscalar
 !
 !   6-jul-02/axel: coded
 !
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-!  Write column where which passive scalar variable is stored.
-!
-      if (lwr) then
-        write(3,*) 'ilncc=0'
-        write(3,*) 'icc=0'
-      endif
-!
-      call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_pscalar
 !***********************************************************************

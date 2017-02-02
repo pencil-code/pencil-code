@@ -270,7 +270,6 @@ module Energy
 !  write column where which energy variable is stored
 !
       if (lwr) then
-        write(3,*) 'nname=',nname
         write(3,*) 'iss=',iss
       endif
 !

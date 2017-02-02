@@ -23,7 +23,7 @@
 ;   Again as idlinit but used when two mesh sizes are required at once.
 ;   see idlvarloc
 ;
-function pc_varcontent, datadir=datadir, dim=dim, ivar=ivar, param=param, par2=param2, $
+function pc_varcontent, datadir=datadir, dim=dim, ivar=ivar, param=param, par2=run_param, $
     run2D=run2D, scalar=scalar, noaux=noaux, quiet=quiet, down=down
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -33,7 +33,7 @@ datadir = pc_get_datadir(datadir)
 if (n_elements(dim) eq 0) then pc_read_dim, obj=dim, datadir=datadir, quiet=quiet, down=down
 if (n_elements(ivar) eq 0) then ivar=-1
 if (n_elements(param) eq 0) then pc_read_param, obj=param, datadir=datadir, dim=dim, quiet=quiet
-if (n_elements(par2) eq 0) then pc_read_param, param2=param2, datadir=datadir, dim=dim, quiet=quiet
+if (n_elements(run_param) eq 0) then pc_read_param, obj=run_param, /param2, datadir=datadir, dim=dim, quiet=quiet
 default, noaux, 0
 
 ; 
@@ -164,7 +164,8 @@ indices_aux = [ $
   { name:'isigma', label:'Column density', dims:1 }, $
   { name:'imdot', label:'Mass accretion rate', dims:1 }, $
   { name:'itmid', label:'Midplane temperature', dims:1 }, $
-  { name:'ipotturb', label:'Turbulent potential', dims:1 } $
+  { name:'ipotturb', label:'Turbulent potential', dims:1 }, $
+  { name:'iff', label:'Forcing function', dims:3 } $
   ; don't forget to add a comma above when extending
 ]
 naux=n_elements(indices_aux)
@@ -228,8 +229,8 @@ endif
 ;
 if (not keyword_set (noaux)) then begin
 
-  if (keyword_set(param2)) then $
-    lpar2aux=keyword_set(param2.lwrite_aux) $
+  if (keyword_set(run_param)) then $
+    lpar2aux=keyword_set(run_param.lwrite_aux) $
   else $
     lpar2aux=0
 

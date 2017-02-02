@@ -43,7 +43,6 @@ module Testfield
   logical :: linit_aatest=.false.
   integer :: itestfield=1
   real :: ktestfield=1.
-  integer, parameter :: mtestfield=3*njtest
   integer :: naainit
 
   namelist /testfield_init_pars/ &
@@ -84,12 +83,12 @@ module Testfield
   integer :: idiag_alp12exz=0,idiag_alp22exz=0,idiag_alp32exz=0
   integer :: idiag_alp13exz=0,idiag_alp23exz=0,idiag_alp33exz=0
 
-  real, dimension (mz,3,mtestfield/3) :: uxbtestm
+  real, dimension (mz,3,njtest) :: uxbtestm
 
   contains
 
 !***********************************************************************
-    subroutine register_testfield()
+    subroutine register_testfield
 !
 !  Initialise variables which should know that we solve for the vector
 !  potential: iaatest, etc; increase nvar accordingly
@@ -101,10 +100,10 @@ module Testfield
       use Mpicomm
       use Sub
 !
-!
 !  Register test field.
 !
-      call farray_register_pde('aatest',iaatest,vector=mtestfield)
+      ntestfield=3*njtest
+      call farray_register_pde('aatest',iaatest,vector=ntestfield)
 !
 !  Identify version number.
 !
@@ -190,7 +189,7 @@ module Testfield
 !
     endsubroutine init_aatest
 !***********************************************************************
-    subroutine pencil_criteria_testfield()
+    subroutine pencil_criteria_testfield
 !
 !   All pencils that the Testfield module depends on are specified here.
 !
@@ -892,82 +891,8 @@ module Testfield
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (lwr) then
-        write(3,*) 'idiag_alp11=',idiag_alp11
-        write(3,*) 'idiag_alp21=',idiag_alp21
-        write(3,*) 'idiag_alp31=',idiag_alp31
-        write(3,*) 'idiag_alp12=',idiag_alp12
-        write(3,*) 'idiag_alp22=',idiag_alp22
-        write(3,*) 'idiag_alp32=',idiag_alp32
-        write(3,*) 'idiag_alp13=',idiag_alp13
-        write(3,*) 'idiag_alp23=',idiag_alp23
-        write(3,*) 'idiag_alp33=',idiag_alp33
-        write(3,*) 'idiag_alp11z=',idiag_alp11z
-        write(3,*) 'idiag_alp21z=',idiag_alp21z
-        write(3,*) 'idiag_alp31z=',idiag_alp31z
-        write(3,*) 'idiag_alp12z=',idiag_alp12z
-        write(3,*) 'idiag_alp22z=',idiag_alp22z
-        write(3,*) 'idiag_alp32z=',idiag_alp32z
-        write(3,*) 'idiag_alp13z=',idiag_alp13z
-        write(3,*) 'idiag_alp23z=',idiag_alp23z
-        write(3,*) 'idiag_alp33z=',idiag_alp33z
-        write(3,*) 'idiag_eta111z=',idiag_eta111z
-        write(3,*) 'idiag_eta211z=',idiag_eta211z
-        write(3,*) 'idiag_eta311z=',idiag_eta311z
-        write(3,*) 'idiag_eta121z=',idiag_eta121z
-        write(3,*) 'idiag_eta221z=',idiag_eta221z
-        write(3,*) 'idiag_eta321z=',idiag_eta321z
-        write(3,*) 'idiag_eta131z=',idiag_eta131z
-        write(3,*) 'idiag_eta231z=',idiag_eta231z
-        write(3,*) 'idiag_eta331z=',idiag_eta331z
-        write(3,*) 'idiag_eta113z=',idiag_eta113z
-        write(3,*) 'idiag_eta213z=',idiag_eta213z
-        write(3,*) 'idiag_eta313z=',idiag_eta313z
-        write(3,*) 'idiag_eta123z=',idiag_eta123z
-        write(3,*) 'idiag_eta223z=',idiag_eta223z
-        write(3,*) 'idiag_eta323z=',idiag_eta323z
-        write(3,*) 'idiag_eta133z=',idiag_eta133z
-        write(3,*) 'idiag_eta233z=',idiag_eta233z
-        write(3,*) 'idiag_eta333z=',idiag_eta333z
-        write(3,*) 'idiag_alp11xz=',idiag_alp11xz
-        write(3,*) 'idiag_alp21xz=',idiag_alp21xz
-        write(3,*) 'idiag_alp31xz=',idiag_alp31xz
-        write(3,*) 'idiag_alp12xz=',idiag_alp12xz
-        write(3,*) 'idiag_alp22xz=',idiag_alp22xz
-        write(3,*) 'idiag_alp32xz=',idiag_alp32xz
-        write(3,*) 'idiag_alp13xz=',idiag_alp13xz
-        write(3,*) 'idiag_alp23xz=',idiag_alp23xz
-        write(3,*) 'idiag_alp33xz=',idiag_alp33xz
-        write(3,*) 'idiag_eta111xz=',idiag_eta111xz
-        write(3,*) 'idiag_eta211xz=',idiag_eta211xz
-        write(3,*) 'idiag_eta311xz=',idiag_eta311xz
-        write(3,*) 'idiag_eta121xz=',idiag_eta121xz
-        write(3,*) 'idiag_eta221xz=',idiag_eta221xz
-        write(3,*) 'idiag_eta321xz=',idiag_eta321xz
-        write(3,*) 'idiag_eta131xz=',idiag_eta131xz
-        write(3,*) 'idiag_eta231xz=',idiag_eta231xz
-        write(3,*) 'idiag_eta331xz=',idiag_eta331xz
-        write(3,*) 'idiag_eta113xz=',idiag_eta113xz
-        write(3,*) 'idiag_eta213xz=',idiag_eta213xz
-        write(3,*) 'idiag_eta313xz=',idiag_eta313xz
-        write(3,*) 'idiag_eta123xz=',idiag_eta123xz
-        write(3,*) 'idiag_eta223xz=',idiag_eta223xz
-        write(3,*) 'idiag_eta323xz=',idiag_eta323xz
-        write(3,*) 'idiag_eta133xz=',idiag_eta133xz
-        write(3,*) 'idiag_eta233xz=',idiag_eta233xz
-        write(3,*) 'idiag_eta333xz=',idiag_eta333xz
-        write(3,*) 'idiag_alp11exz=',idiag_alp11exz
-        write(3,*) 'idiag_alp21exz=',idiag_alp21exz
-        write(3,*) 'idiag_alp31exz=',idiag_alp31exz
-        write(3,*) 'idiag_alp12exz=',idiag_alp12exz
-        write(3,*) 'idiag_alp22exz=',idiag_alp22exz
-        write(3,*) 'idiag_alp32exz=',idiag_alp32exz
-        write(3,*) 'idiag_alp13exz=',idiag_alp13exz
-        write(3,*) 'idiag_alp23exz=',idiag_alp23exz
-        write(3,*) 'idiag_alp33exz=',idiag_alp33exz
         write(3,*) 'iaatest=',iaatest
-        write(3,*) 'nnamez=',nnamez
-        write(3,*) 'nnamexy=',nnamexy
-        write(3,*) 'nnamexz=',nnamexz
+        write(3,*) 'ntestfield=',ntestfield
       endif
 !
     endsubroutine rprint_testfield

@@ -294,13 +294,6 @@ contains
       call parse_name(iname,cname(iname),cform(iname),'qrms',idiag_qrms)
     enddo
 !
-!  write column where which variable is stored
-!
-    if (lwr) then
-      write(3,*) 'i_qmax=',idiag_qmax
-      write(3,*) 'i_qrms=',idiag_qrms
-    endif
-!
   endsubroutine rprint_heatflux
 !***********************************************************************
   subroutine get_slices_heatflux(f,slices)

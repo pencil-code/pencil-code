@@ -47,8 +47,8 @@ module Dustdensity
 !  real, dimension(ndustspec0)  :: Ntot_i
   real, dimension(nx,ndustspec,ndustspec) :: dkern
   real, dimension(ndustspec,ndustspec0) :: init_distr_ki
-  real, dimension(ndustspec0) :: dsize0, BB=0.
-  real, dimension(ndustspec) :: dsize,init_distr2,init_distr_log,amplnd_rel=0.
+  real, dimension(ndustspec0) :: BB=0.
+  real, dimension(ndustspec) :: dsize,init_distr2,amplnd_rel=0.
   real, dimension(ndustspec) :: diffnd_ndustspec
   real, dimension(mx,ndustspec) :: init_distr
   real, dimension(0:5) :: coeff_smooth=0.0
@@ -57,17 +57,17 @@ module Dustdensity
   real :: diffnd=0.0, diffnd_hyper3=0.0, diffnd_shock=0.0
   real :: diffmd=0.0, diffmi=0.0, ndmin_for_mdvar=0.0
   real :: nd_const=1.0, dkern_cst=0.0, eps_dtog=0.0, Sigmad=1.0
-  real :: mdave0=1.0, adpeak=5.0e-4, supsatfac=1.0, supsatfac1=1.0
+  real :: mdave0=1.0, adpeak=5.0e-4, supsatfac=1.0
   real :: amplnd=1.0, kx_nd=1.0, ky_nd=1.0, kz_nd=1.0, widthnd=1.0
   real :: Hnd=1.0, Hepsd=1.0, phase_nd=0.0, Ri0=1.0, eps1=0.5
   real :: z0_smooth=0.0, z1_smooth=0.0, epsz1_smooth=0.0
   real :: ul0=0.0, tl0=0.0, teta=0.0, ueta=0.0, deltavd_imposed=0.0
-  real :: rho_w=1.0, rho_s=3., Dwater=22.0784e-2
+  real :: rho_w=1.0, Dwater=22.0784e-2
   real :: delta=1.2, delta0=1.2, deltavd_const=1.
   real :: Rgas=8.31e7
-  real :: Rgas_unit_sys, m_w=18., m_s=60.
+  real :: Rgas_unit_sys, m_w=18.
   real :: AA=0.66e-4,  Ntot=1., dt_substep=2e-7
-  real :: nd_reuni,init_x1, init_x2, a0=0., a1=0.
+  real :: nd_reuni=0.,init_x1=0., init_x2=0., a0=0., a1=0.
   real :: dndfac_sum, dndfac_sum2, momcons_sum_x, momcons_sum_y, momcons_sum_z
   real :: momcons_term_frac=1.
   integer :: iglobal_nd=0
@@ -82,7 +82,7 @@ module Dustdensity
   logical :: lcalcdkern=.true., lkeepinitnd=.false., ldustcontinuity=.true.
   logical :: ldustnulling=.false., lupw_ndmdmi=.false.
   logical :: ldeltavd_thermal=.false., ldeltavd_turbulent=.false.
-  logical :: ldiffusion_dust=.true., ldust_cdtc=.false.
+  logical :: ldust_cdtc=.false.
   logical :: ldiffd_simplified=.false., ldiffd_dusttogasratio=.false.
   logical :: ldiffd_hyper3=.false., ldiffd_hyper3lnnd=.false.
   logical :: ldiffd_hyper3_polar=.false.,ldiffd_shock=.false.
@@ -572,7 +572,7 @@ module Dustdensity
 !   7-nov-01/wolf: coded
 !  28-jun-02/axel: added isothermal
 !
-      use EquationOfState, only: cs0, cs20, gamma, beta_glnrho_scaled
+      use EquationOfState, only: cs20, gamma, beta_glnrho_scaled
       use Initcond, only: hat3d, sinwave_phase
       use InitialCondition, only: initial_condition_nd
       use Mpicomm, only: stop_it
@@ -1291,7 +1291,7 @@ module Dustdensity
       real :: aa0= 6.107799961, aa1= 4.436518521e-1
       real :: aa2= 1.428945805e-2, aa3= 2.650648471e-4
       real :: aa4= 3.031240396e-6, aa5= 2.034080948e-8, aa6= 6.136820929e-11
-      integer :: i,k,mm,nn,ll1,l1p4
+      integer :: i,k,mm,nn
 !
       intent(inout) :: f,p
 ! nd
@@ -1770,8 +1770,7 @@ module Dustdensity
       real, dimension (nx) :: mfluxcond,fdiffd,gshockgnd, Imr, tmp1, tmp2
       real, dimension (nx,ndustspec) :: dndr_tmp=0.,  dndr
       real, dimension (nx,ndustspec) :: nd_substep, nd_substep_0, K1,K2,K3,K4
-      integer :: k,i,j,jj
-      real :: tmpl
+      integer :: k,i,j
 !
       intent(in)  :: f,p
       intent(inout) :: df
@@ -2353,8 +2352,8 @@ module Dustdensity
       type (pencil_case) :: p
       real, dimension (nx) :: mfluxcond, mfluxcondp, mfluxcondm, cc_tmp
       real, dimension (nx) :: coefkp, coefkm, coefk0
-      real :: dmdfac, dampfact
-      integer :: k,l
+      real :: dampfact
+      integer :: k
 !
 !  Calculate mass flux of condensing monomers
 !  But only if not lsemi_chemistry, because then we run Natalia's stuff.
@@ -2854,7 +2853,7 @@ module Dustdensity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real :: dndfac, dndfaci, dndfacj, dndfac_momconsi, dndfac_momconsj
+      real :: dndfac, dndfaci, dndfacj
       real :: momcons_term_x,momcons_term_y,momcons_term_z
       integer :: i,j,k,l
       logical :: lmdvar_noevolve=.false.
@@ -3090,24 +3089,17 @@ module Dustdensity
 !   3-may-02/axel: coded
 !
       use Diagnostics, only: parse_name
-      use General, only: itoa
+      use General, only: itoa, loptest
 !
       logical :: lreset
       logical, optional :: lwrite
 !
       integer :: iname, inamez, inamex, inamexy, k
-      logical :: lwr
       character (len=intlen) :: sdust
 !
 !  Write information to index.pro that should not be repeated for all species.
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-      if (lwr) then
-        write(3,*) 'ndustspec=',ndustspec
-        write(3,*) 'nname=',nname
-      endif
+      if (loptest(lwrite)) write(3,*) 'ndustspec=',ndustspec
 !
 !  Reset everything in case of reset.
 !
@@ -3467,13 +3459,10 @@ module Dustdensity
 
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      real, dimension (nx,ndustspec) :: dndr_dr,dndr_dr_inter,ff_tmp,ff_tmp_inter
-      real, dimension (nx,ndustspec) :: ff_tmp1,ff_tmp2,dndr_dr1,dndr_dr2
+      real, dimension (nx,ndustspec) :: dndr_dr,ff_tmp
       real, dimension (nx,ndustspec) :: ppsf_full_i, nd_substep,  nd_new
-      integer :: k, i, jj, ll0=6, kk1,kk2 !, ind_tmp=6
-      real, dimension (35) ::  x2, S
-      real, dimension (6) ::  X1, Y1
-      real :: del =0.85, GS, Ntot_tmp=0.
+      integer :: k, i, jj, kk1,kk2 !, ind_tmp=6
+      real :: GS
 !
       intent(in) :: ppsf_full_i, i
       intent(out) :: dndr_dr

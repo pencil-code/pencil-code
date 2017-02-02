@@ -1054,14 +1054,8 @@ module Gravity
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  write column, idiag_XYZ, where our variable XYZ is stored
-!  idl needs this even if everything is zero
-!
       if (lwr) then
         write(3,*) 'igg=',igg
-        write(3,*) 'igx=',igx
-        write(3,*) 'igy=',igy
-        write(3,*) 'igz=',igz
       endif
 !
       call keep_compiler_quiet(lreset)

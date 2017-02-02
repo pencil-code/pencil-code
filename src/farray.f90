@@ -12,7 +12,7 @@
 module FArrayManager
 !
   use Cparam, only: mvar,maux,mglobal,maux_com,mscratch
-  use Cdata, only: nvar,naux,naux_com,datadir,lroot,lwrite_aux
+  use Cdata, only: nvar,naux,naux_com,datadir,lroot,lwrite_aux,lreloading
   use Messages
 !
   implicit none
@@ -157,17 +157,19 @@ module FArrayManager
 !
 ! 12-may-12/MR: avoid writing of auxiliary variable index into index.pro if
 !               variable not written into var.dat
+! 16-jan-17/MR: avoid fatal error due to try of re-registering of an already existing variable at reloading.
 !
       character (len=*) :: varname
       integer, target   :: ivar
       integer           :: vartype
-      type (farray_contents_list), pointer :: item, new
-      integer :: ncomponents
-      integer, optional :: ierr
       integer, optional :: vector
+      integer, optional :: ierr
 !
       intent(in)  :: varname,vartype,vector
       intent(out) :: ivar,ierr
+!
+      type (farray_contents_list), pointer :: item, new
+      integer :: ncomponents
 !
       if (vartype==iFARRAY_TYPE_SCRATCH) then
         print*,"Registering f-array variable: ",varname
@@ -181,6 +183,9 @@ module FArrayManager
       if (present(vector)) ncomponents=vector
 !
       item => find_by_name(varname)
+!
+! Already existing variable.
+!
       if (associated(item)) then
         if (item%ncomponents/=ncomponents) then
           if (present(ierr)) then
@@ -200,118 +205,125 @@ module FArrayManager
             return
           endif
           print*,"Registering f-array variable: ",varname
-          call fatal_error("farray_register_variable","f array variable name already exists but with a variable type!")
-        endif
-        if (present(ierr)) then
-          ierr=iFARRAY_ERR_DUPLICATE
-          ivar=0
-          return
-        endif
-        print*,"Registering f-array variable: ",varname
-        call fatal_error("farray_register_variable","f-array variable name already exists!")
-      endif
-!
-      select case (vartype)
-        case (iFARRAY_TYPE_PDE)
-          if (nvar+ncomponents>mvar) then
-            if (present(ierr)) then
-              ierr=iFARRAY_ERR_OUTOFSPACE
-              ivar=0
-              return
-            endif
-            print*,"Registering f-array pde variable: ",varname
-            call fatal_error("farray_register_variable", &
-          "There are insufficient mvar variables allocated.  This probably means "//&
-          "the MVAR CONTRIBUTION header is incorrect in one of the physics "// &
-          "modules. ")
-          endif
-        case (iFARRAY_TYPE_AUXILIARY)
-          if (naux+ncomponents>maux) then
-            if (present(ierr)) then
-              ierr=iFARRAY_ERR_OUTOFSPACE
-              ivar=0
-              return
-            endif
-            print*,"Registering f-array auxiliary variable: ",varname
-            call fatal_error("farray_register_variable", &
-          "There are insufficient maux variables allocated.  This either means "//&
-          "the MAUX CONTRIBUTION header is incorrect in one of the physics "// &
-          "modules. Or that there you are using some code that can, depending "// &
-          "on runtime parameters, require extra auxiliary variables.  For the "// &
-          "latter try adding an MAUX CONTRIBUTION header to cparam.local.")
-          endif
-        case (iFARRAY_TYPE_COMM_AUXILIARY)
-          if (naux_com+ncomponents>maux_com) then
-            if (present(ierr)) then
-              ierr=iFARRAY_ERR_OUTOFSPACE
-              ivar=0
-              return
-            endif
-            print*,"Registering f-array communicated auxiliary variable: ",varname
-            call fatal_error("farray_register_variable", &
-          "There are insufficient maux_com variables allocated.  This either means "//&
-          "the COMMUNICATED AUXILIARIES header is incorrect in one of the physics "// &
-          "modules. Or that there you are using some code that can, depending "// &
-          "on runtime parameters, require extra auxiliary variables.  For the "// &
-          "latter try adding an MAUX CONTRIBUTION and COMMUNICATED AUXILIARIES "// &
-          "headers to cparam.local.")
-          endif
-        case (iFARRAY_TYPE_GLOBAL)
-          if (nglobal+ncomponents>mglobal) then
-            if (present(ierr)) then
-              ierr=iFARRAY_ERR_OUTOFSPACE
-              ivar=0
-              return
-            endif
-            print*,"Registering f-array global variable: ",varname
-            call fatal_error("farray_register_variable", &
-          "There are insufficient mglobal variables allocated.  This either means "//&
-          "the MGLOBAL CONTRIBUTION header is incorrect in one of the physics "// &
-          "modules. Or that there you are using some code that can, depending "// &
-          "on runtime parameters, require extra global variables.  For the "// &
-          "latter try adding an MGLOBAL CONTRIBUTION header to cparam.local.")
-          endif
-        case default
-          print*,"Registering f-array variable: ",varname
           call fatal_error("farray_register_variable", &
-          "Invalid vartype set")
-      endselect
+                           "f array variable name already exists but with a different variable type!")
+        endif
+        if (.not.lreloading) then
+          if (present(ierr)) then
+            ierr=iFARRAY_ERR_DUPLICATE
+            ivar=0
+            return
+          endif
+          print*,"Registering f-array variable: ",varname
+          call fatal_error("farray_register_variable","f-array variable name already exists!")
+        endif
+      else
 !
-      call new_item_atstart(thelist,new=new)
-      new%varname     = varname
-      new%vartype     = vartype
-      new%ncomponents = ncomponents
-      allocate(new%ivar(ncomponents))
-      new%ivar(1)%p => ivar
+! New variable.
 !
-      select case (vartype)
-        case (iFARRAY_TYPE_PDE)
-          ivar=nvar+1
-          nvar=nvar+ncomponents
-        case (iFARRAY_TYPE_COMM_AUXILIARY)
-          ivar=mvar+naux_com+1
-          naux=naux+ncomponents
-          naux_com=naux_com+ncomponents
-        case (iFARRAY_TYPE_AUXILIARY)
-          ivar=mvar+maux_com+(naux-naux_com)+1
-          naux=naux+ncomponents
-        case (iFARRAY_TYPE_GLOBAL)
-          ivar=mvar+maux+nglobal+1
-          nglobal=nglobal+ncomponents
-      endselect
+        select case (vartype)
+          case (iFARRAY_TYPE_PDE)
+            if (nvar+ncomponents>mvar) then
+              if (present(ierr)) then
+                ierr=iFARRAY_ERR_OUTOFSPACE
+                ivar=0
+                return
+              endif
+              print*,"Registering f-array pde variable: ",varname
+              call fatal_error("farray_register_variable", &
+            "There are insufficient mvar variables allocated.  This probably means "//&
+            "the MVAR CONTRIBUTION header is incorrect in one of the physics "// &
+            "modules. ")
+            endif
+          case (iFARRAY_TYPE_AUXILIARY)
+            if (naux+ncomponents>maux) then
+              if (present(ierr)) then
+                ierr=iFARRAY_ERR_OUTOFSPACE
+                ivar=0
+                return
+              endif
+              print*,"Registering f-array auxiliary variable: ",varname
+              call fatal_error("farray_register_variable", &
+            "There are insufficient maux variables allocated.  This either means "//&
+            "the MAUX CONTRIBUTION header is incorrect in one of the physics "// &
+            "modules. Or that there you are using some code that can, depending "// &
+            "on runtime parameters, require extra auxiliary variables.  For the "// &
+            "latter try adding an MAUX CONTRIBUTION header to cparam.local.")
+            endif
+          case (iFARRAY_TYPE_COMM_AUXILIARY)
+            if (naux_com+ncomponents>maux_com) then
+              if (present(ierr)) then
+                ierr=iFARRAY_ERR_OUTOFSPACE
+                ivar=0
+                return
+              endif
+              print*,"Registering f-array communicated auxiliary variable: ",varname
+              call fatal_error("farray_register_variable", &
+            "There are insufficient maux_com variables allocated.  This either means "//&
+            "the COMMUNICATED AUXILIARIES header is incorrect in one of the physics "// &
+            "modules. Or that there you are using some code that can, depending "// &
+            "on runtime parameters, require extra auxiliary variables.  For the "// &
+            "latter try adding an MAUX CONTRIBUTION and COMMUNICATED AUXILIARIES "// &
+            "headers to cparam.local.")
+            endif
+          case (iFARRAY_TYPE_GLOBAL)
+            if (nglobal+ncomponents>mglobal) then
+              if (present(ierr)) then
+                ierr=iFARRAY_ERR_OUTOFSPACE
+                ivar=0
+                return
+              endif
+              print*,"Registering f-array global variable: ",varname
+              call fatal_error("farray_register_variable", &
+            "There are insufficient mglobal variables allocated.  This either means "//&
+            "the MGLOBAL CONTRIBUTION header is incorrect in one of the physics "// &
+            "modules. Or that there you are using some code that can, depending "// &
+            "on runtime parameters, require extra global variables.  For the "// &
+            "latter try adding an MGLOBAL CONTRIBUTION header to cparam.local.")
+            endif
+          case default
+            print*,"Registering f-array variable: ",varname
+            call fatal_error("farray_register_variable", &
+            "Invalid vartype set")
+        endselect
 !
-      call save_analysis_info(new)
+        call new_item_atstart(thelist,new=new)
+        new%varname     = varname
+        new%vartype     = vartype
+        new%ncomponents = ncomponents
+        allocate(new%ivar(ncomponents))
+        new%ivar(1)%p => ivar
+!
+        select case (vartype)
+          case (iFARRAY_TYPE_PDE)
+            ivar=nvar+1
+            nvar=nvar+ncomponents
+          case (iFARRAY_TYPE_COMM_AUXILIARY)
+            ivar=mvar+naux_com+1
+            naux=naux+ncomponents
+            naux_com=naux_com+ncomponents
+          case (iFARRAY_TYPE_AUXILIARY)
+            ivar=mvar+maux_com+(naux-naux_com)+1
+            naux=naux+ncomponents
+          case (iFARRAY_TYPE_GLOBAL)
+            ivar=mvar+maux+nglobal+1
+            nglobal=nglobal+ncomponents
+        endselect
+!
+        call save_analysis_info(new)
 !
 !  write varname and index into index.pro file (for idl)
 !  except for auxiliary variables which are not written into var.dat
 !
-      if ( .not.lwrite_aux .and. (vartype==iFARRAY_TYPE_COMM_AUXILIARY .or. &
-           vartype==iFARRAY_TYPE_AUXILIARY )) return
+        if ( .not.lwrite_aux .and. (vartype==iFARRAY_TYPE_COMM_AUXILIARY .or. &
+             vartype==iFARRAY_TYPE_AUXILIARY )) return
 
-      if (lroot) then
-        open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-        write(3,*) 'i'//varname, '=', ivar
-        close(3)
+        if (lroot) then
+          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
+          write(3,*) 'i'//varname, '=', ivar
+          close(3)
+        endif
+!
       endif
 !
     endsubroutine farray_register_variable

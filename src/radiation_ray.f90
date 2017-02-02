@@ -55,10 +55,7 @@ module Radiation
   integer, parameter :: maxdir=26
 !
   real, dimension (mx,my,mz) :: Srad, tau, Qrad, Qrad0
-  real, dimension (mx,my,mz,3) :: Frad
   real, dimension (mx,my) :: Irad_refl_xy
-  real, dimension (mx,mz) :: Irad_refl_xz
-  real, dimension (my,mz) :: Irad_refl_yz
   real, target, dimension (nx,ny,mnu) :: Jrad_xy
   real, target, dimension (nx,ny,mnu) :: Jrad_xy2
   real, target, dimension (nx,ny,mnu) :: Jrad_xy3
@@ -103,7 +100,7 @@ module Radiation
   integer :: nIsurf=1
   integer :: nlnTT_table=1
 !
-  logical :: lperiodic_ray, lperiodic_ray_x, lperiodic_ray_y, lperiodic_ray_z
+  logical :: lperiodic_ray, lperiodic_ray_x, lperiodic_ray_y
   logical :: lfix_radweight_1d=.true.
   logical :: lcooling=.true., lrad_debug=.false.
   logical :: lintrinsic=.true., lcommunicate=.true., lrevision=.true.
@@ -127,8 +124,6 @@ module Radiation
   type (Qpoint), dimension (mx,my) :: Qpt_xy
   type (radslice), dimension (maxdir), target :: Isurf
 !
-  integer :: idiag_frms=0, idiag_fmax=0, idiag_Erad_rms=0, idiag_Erad_max=0
-  integer :: idiag_Egas_rms=0, idiag_Egas_max=0
   integer :: idiag_Qradrms=0, idiag_Qradmax=0
   integer :: idiag_Fradzm=0, idiag_Sradm=0, idiag_Fradzmz=0
   integer :: idiag_dtchi=0, idiag_dtrad=0
@@ -2171,10 +2166,6 @@ module Radiation
 !  write column where which radiative variable is stored
 !
       if (lwr) then
-        write(3,*) 'nname=',nname
-        write(3,*) 'ifx=',ifx
-        write(3,*) 'ify=',ify
-        write(3,*) 'ifz=',ifz
         write(3,*) 'iQrad=',iQrad
         write(3,*) 'ikapparho=',ikapparho
         write(3,*) 'iKR_Frad=',iKR_Frad

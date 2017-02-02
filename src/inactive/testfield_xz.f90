@@ -629,24 +629,7 @@ module Testfield
 !
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
-      if (lwr) then
-        write(3,*) 'idiag_alp11=',idiag_alp11
-        write(3,*) 'idiag_alp21=',idiag_alp21
-        write(3,*) 'idiag_eta11=',idiag_eta11
-        write(3,*) 'idiag_eta21=',idiag_eta21
-        write(3,*) 'idiag_b11rms=',idiag_b11rms
-        write(3,*) 'idiag_b21rms=',idiag_b21rms
-        write(3,*) 'idiag_E111z=',idiag_E111z
-        write(3,*) 'idiag_E211z=',idiag_E211z
-        write(3,*) 'idiag_E311z=',idiag_E311z
-        write(3,*) 'idiag_E121z=',idiag_E121z
-        write(3,*) 'idiag_E221z=',idiag_E221z
-        write(3,*) 'idiag_E321z=',idiag_E321z
-        write(3,*) 'iaatest=',iaatest
-        write(3,*) 'nnamez=',nnamez
-        write(3,*) 'nnamexy=',nnamexy
-        write(3,*) 'nnamexz=',nnamexz
-      endif
+      if (lwr) write(3,*) 'iaatest=',iaatest
 !
     endsubroutine rprint_testfield
 

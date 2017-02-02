@@ -45,8 +45,6 @@ module Particles_mass
 !
 !  23-sep-14/Nils: adapted
 !
-      use SharedVariables, only: get_shared_variable
-!
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)

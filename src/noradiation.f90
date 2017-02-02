@@ -22,14 +22,10 @@ module Radiation
 !
   include 'radiation.h'
 !
-  ! other variables (needs to be consistent with reset list below)
-  integer :: idiag_frms=0,idiag_fmax=0,idiag_Erad_rms=0,idiag_Erad_max=0
-  integer :: idiag_Egas_rms=0,idiag_Egas_max=0
-!
   contains
 !
 !***********************************************************************
-    subroutine register_radiation()
+    subroutine register_radiation
 !
 !  15-jul-2002/nils: dummy routine
 !
@@ -52,7 +48,7 @@ module Radiation
 !
     endsubroutine radtransfer
 !***********************************************************************
-    subroutine initialize_radiation()
+    subroutine initialize_radiation
 !
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
@@ -93,14 +89,6 @@ module Radiation
 !
     endsubroutine radiative_pressure
 !***********************************************************************
-    subroutine output_radiation(lun)
-!
-      integer, intent(in) :: lun
-!
-      call keep_compiler_quiet(lun)
-!
-    endsubroutine output_radiation
-!***********************************************************************
     subroutine init_rad(f)
 !
 !  initialise radiation; called from start.f90
@@ -112,7 +100,7 @@ module Radiation
 !
     endsubroutine init_rad
 !***********************************************************************
-    subroutine pencil_criteria_radiation()
+    subroutine pencil_criteria_radiation
 !
 !  All pencils that the Radiation module depends on are specified here.
 !
@@ -199,35 +187,14 @@ module Radiation
 !***********************************************************************
     subroutine rprint_radiation(lreset,lwrite)
 !
-!  reads and registers print parameters relevant for radiative part
+!  dummy
 !
 !  16-jul-02/nils: adapted from rprint_hydro
 !
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-!  write column where which radiative variable is stored
-!
-      if (lwr) then
-        write(3,*) 'nname=',nname
-        write(3,*) 'ifx=',ifx
-        write(3,*) 'ify=',ify
-        write(3,*) 'ifz=',ifz
-        write(3,*) 'iQrad=',iQrad
-        write(3,*) 'ikapparho=',ikapparho
-        write(3,*) 'iSrad=',iSrad
-        write(3,*) 'ikappa=',ikappa
-        !write(3,*) 'ilnTT=',ilnTT
-        write(3,*) 'iKR_Frad=',iKR_Frad
-        write(3,*) 'iKR_Fradx=',iKR_Fradx
-        write(3,*) 'iKR_Frady=',iKR_Frady
-        write(3,*) 'iKR_Fradz=',iKR_Fradz
-      endif
-!
-      call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_radiation
 !***********************************************************************

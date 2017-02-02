@@ -27,7 +27,7 @@ module Particles_diagnos_state
 !
   contains
 !***********************************************************************
-    subroutine register_pars_diagnos_state()
+    subroutine register_pars_diagnos_state
 !
 !  Dummy
 !
@@ -86,8 +86,7 @@ module Particles_diagnos_state
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset)
-      call keep_compiler_quiet(present(lwrite))
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_particles_diagnos_state
 !***********************************************************************

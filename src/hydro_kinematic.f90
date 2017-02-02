@@ -2544,7 +2544,6 @@ module Hydro
 !  Write column where which variable is stored.
 !
       if (lwr) then
-        write(3,*) 'nname=',nname
         write(3,*) 'iuu=',iuu
         write(3,*) 'iux=',iux
         write(3,*) 'iuy=',iuy

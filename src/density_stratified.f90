@@ -719,7 +719,6 @@ module Density
 !  Write column where which density variable is stored.
 !
       indices: if (lwr) then
-        write(3,*) 'nname = ', nname
         write(3,*) 'ilnrho = 0'
         write(3,*) 'irho = ', irho
       endif indices

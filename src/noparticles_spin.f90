@@ -22,7 +22,7 @@ module Particles_spin
 !
   contains
 !***********************************************************************
-    subroutine register_particles_spin()
+    subroutine register_particles_spin
 !
 !  Set up indices for access to the fp and dfp arrays
 !
@@ -72,7 +72,7 @@ module Particles_spin
 !
     endsubroutine prepare_curl_vectorfield
 !***********************************************************************
-    subroutine pencil_criteria_par_spin()
+    subroutine pencil_criteria_par_spin
 !
 !  All pencils that the Particles_spin module depends on are specified here.
 !

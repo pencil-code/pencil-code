@@ -193,7 +193,7 @@ COMPILE_OPT IDL2,HIDDEN
     newheader=['^#[-a-zA-Z_][-a-zA-Z_]','^#[a-zA-Z][a-zA-Z0-9_]']
  
     data = input_table(fullfilename,double=double, stop_at=newheader, $
-           fileposition=fileposition,verbose=verbose,inds_compl=inds_compl,/tightminus)
+           fileposition=fileposition,verbose=verbose,inds_compl=inds_compl,/sepminus)
 
     if inds_compl[0] ne -1 then begin
 ;

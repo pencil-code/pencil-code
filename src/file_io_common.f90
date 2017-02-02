@@ -18,7 +18,7 @@ module File_io
     endsubroutine parallel_rewind
 !***********************************************************************
 !***********************************************************************
-! The following routines are for later usage (transerred from General and Sub):
+! The following routines are for later usage (transferred from General and Sub):
 !***********************************************************************
 !***********************************************************************
     subroutine fseek_pos(unit, rec_len, num_rec, reference)
@@ -201,7 +201,7 @@ module File_io
 !  28-May-2015/PABourdin: reworked
 !
       use Cdata, only: comment_char
-      use General
+      use General, only: loptest, operator (.in.)
 !
       integer :: count_lines
       character (len=*), intent(in) :: file
@@ -347,5 +347,86 @@ module File_io
       call parallel_rewind
 !
     endsubroutine read_namelist
+!***********************************************************************
+    subroutine read_zaver(f,k1,k2,source,nav,indav,nstart_,ltaver)
+    
+      use Cparam, only: nx,ny,nz,l1,l2,m1,m2,n1,n2,lactive_dimension
+      use Cdata, only: directory_snap
+      use General, only: directory_names_std, loptest, ioptest
+
+      real, dimension(:,:,:,:), intent(OUT) :: f
+      integer, intent(IN) :: k1,k2,nav,indav
+      character(LEN=*) :: source
+      integer, optional, intent(IN) :: nstart_
+      logical, optional, intent(IN) :: ltaver
+
+      integer :: k,nt,it,nstart,ios,klen
+      logical :: s0
+      integer, parameter :: unit=111
+      real, dimension(nx,ny,nav) :: read_arr
+      real :: tav, tav0
+      real, dimension(:,:,:), allocatable :: buffer
+
+      klen=k2-k1+1
+      call directory_names_std(.true.)
+
+      if (file_exists(trim(directory_snap)//'/zaverages0.dat')) then
+        open(unit,FILE=trim(directory_snap)//'/zaverages0.dat',FORM='unformatted', STATUS='old')
+        !read(unit) tav0, tav
+        !read(unit) aTens,bTens,uTens
+        !close(unit)
+      else
+        nstart=ioptest(nstart_,-1)
+        allocate(buffer(nx,ny,klen))
+        if (loptest(ltaver)) then
+          open (unit, FILE=trim(source)//trim(directory_snap)//'/zaverages.dat', &
+                FORM='unformatted', status='old')
+          buffer=0.
+        else
+          open (unit, FILE=trim(source)//trim(directory_snap)//'/zaverages.dat', &
+                FORM='unformatted', status='old', position='append')
+          backspace(unit)
+          backspace(unit)
+        endif
+
+        ios=0; s0=.true.; nt=0; it=1
+        do while(ios==0)
+
+          read(unit,iostat=ios) tav
+          if (ios/=0) exit
+          if (loptest(ltaver) .and. it<nstart) then
+            read(unit,iostat=ios) tav
+          else
+            if (s0) then
+              tav0=tav
+              s0=.false.
+            endif
+            read(unit,iostat=ios) read_arr
+            if (ios==0) then
+              if (loptest(ltaver)) then
+                nt=nt+1
+                buffer=buffer+read_arr(:,:,indav:indav+klen-1)
+              else
+                buffer=read_arr(:,:,indav:indav+klen-1)
+              endif
+            endif
+          endif
+          it=it+1
+
+        enddo
+        close(unit)
+
+        if (loptest(ltaver)) buffer=buffer/nt
+
+        if (.not.lactive_dimension(3)) then
+          f(l1:l2,m1:m2,n1,k1:k2) = buffer
+        else
+          do k=k1,k2
+            f(l1:l2,m1:m2,n1:n2,k) = spread(buffer(:,:,k),3,nz)
+          enddo
+        endif
+      endif
+
+    endsubroutine read_zaver
 !***********************************************************************
 endmodule File_io

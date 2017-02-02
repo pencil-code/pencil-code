@@ -24,7 +24,7 @@ module Cosmicrayflux
   include 'cosmicrayflux.h'
 !
   character(len=labellen) :: initfcr='zero'
-  real :: amplfcr=0., kpara=0., kperp=0.
+  real :: kpara=0., kperp=0.
   real, pointer :: k_para, k_perp
   real :: kpara_t=0., kperp_t=0.
   real :: tau=0., tau1=0., bmin=1e-6

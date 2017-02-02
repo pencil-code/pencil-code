@@ -55,7 +55,6 @@ module Viscosity
   real, dimension(:), pointer :: etat_z, detat_z
   real, dimension(3) :: nu_aniso_hyper3=0.0
   real, dimension(mx) :: LV0_rprof,LV1_rprof,LH1_rprof,der_LV0_rprof,der_LV1_rprof
-  real, pointer :: Pr ! get Prandtl number from hydro
   logical :: lvisc_first=.false.
   logical :: lvisc_simplified=.false.
   logical :: lvisc_nu_non_newtonian=.false.
@@ -533,7 +532,7 @@ module Viscosity
 !  Register an extra aux slot for dissipation rate if requested (so
 !  visc_heat is written sto snapshots and can be easily analyzed later).
 !    NB: We are doing this here, rather than in register_viscosity, as the
-!  register_XXX routines are called before read_{start,run}pars, so
+!  register_XXX routines are called before read_{start,run}pars, so        !MR: this is no longer so!
 !  lvisc_heat_as_aux isn't known there. This implies that we need to
 !  append the ivisc_heat line to index.pro manually.
 !
@@ -1089,7 +1088,7 @@ module Viscosity
       intent(inout) :: f,p
 !
       real, dimension (nx,3) :: tmp,tmp2,tmp5,gradnu,sgradnu,gradnu_shock
-      real, dimension (nx) :: murho1,zetarho1,muTT,nu_smag,tmp3,tmp4,pnu,pnu_shock
+      real, dimension (nx) :: murho1,zetarho1,muTT,tmp3,tmp4,pnu,pnu_shock
       real, dimension (nx) :: lambda_phi,prof,prof2,derprof,derprof2,qfvisc
       real, dimension (nx) :: gradnu_effective,fac
       real, dimension (nx,3) :: deljskl2,fvisc_nnewton2

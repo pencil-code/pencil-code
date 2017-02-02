@@ -10,7 +10,7 @@ program pc_configtest
   use File_io, only: file_exists
   use Filter
   use General, only: itoa
-  use Grid, only: initialize_grid, set_coords_switches, construct_grid
+  use Grid, only: initialize_grid, set_coorsys_dimmask, construct_grid
   use IO
   use Messages
   use Param_IO
@@ -57,7 +57,7 @@ program pc_configtest
   lrun = .true.
   call read_all_run_pars
 !
-  call set_coords_switches
+  call set_coorsys_dimmask
 !
   lrun = .false.
   lstart = .true.

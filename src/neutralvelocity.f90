@@ -1002,7 +1002,6 @@ module NeutralVelocity
 !  write column where which neutralvelocity variable is stored
 !
       if (lwr) then
-        write(3,*) 'nname=',nname
         write(3,*) 'iuun=',iuun
         write(3,*) 'iunx=',iunx
         write(3,*) 'iuny=',iuny

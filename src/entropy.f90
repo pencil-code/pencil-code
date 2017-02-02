@@ -71,7 +71,7 @@ module Energy
   real :: heat_gaussianz=0.0, heat_gaussianz_sigma=0.0
   real :: zheat_buffer=0.0, dheat_buffer1=0.0
   real :: heat_uniform=0.0, cool_uniform=0.0, cool_newton=0.0, cool_RTV=0.0
-  real :: deltaT_poleq=0.0, beta_hand=1.0, r_bcz=0.0
+  real :: deltaT_poleq=0.0, r_bcz=0.0
   real :: tau_cool=0.0, tau_diff=0.0, TTref_cool=0.0, tau_cool2=0.0
   real :: tau_cool_ss=0.0
   real :: cs0hs=0.0, H0hs=0.0, rho0hs=0.0
@@ -140,7 +140,7 @@ module Energy
   character (len=intlen) :: iinit_str
   real, dimension (mz), save :: hcond_zprof, chit_zprof, ss_mz
   real, dimension (mz,3), save :: gradloghcond_zprof,gradlogchit_zprof
-  real, dimension (mx),   save :: hcond_xprof,chit_xprof
+  real, dimension (mx),   save :: hcond_xprof
   real, dimension (mx,3), save :: gradloghcond_xprof
 !
 !  xy-averaged field
@@ -441,6 +441,7 @@ module Energy
       integer :: i, j, q, n, m, stat
       logical :: lnothing, exist
       type (pencil_case) :: p
+      real, pointer :: gravx
 !
 !  Check any module dependencies.
 !
@@ -700,10 +701,11 @@ module Energy
           star_cte=(mpoly0+1.)/hcond0*(1.-gamma1)
           call compute_gravity_star(f, wheat, luminosity, star_cte)
 !
-        case ('cylind_layers')
+        case ('piecew_poly_cylind')
           if (bcx12(iss,1)=='c1') then
-            Fbot=gamma/gamma_m1*hcond0*g0/(mpoly0+1)
-            FbotKbot=gamma/gamma_m1*g0/(mpoly0+1)
+            call get_shared_variable('gravx', gravx, caller='initialize_energy')
+            Fbot=-gamma/gamma_m1*hcond0*gravx/(mpoly0+1.)
+            FbotKbot=-gamma/gamma_m1*gravx/(mpoly0+1.)
           endif
           cs2cool=cs2top
 !
@@ -1416,8 +1418,8 @@ module Energy
 !
             call information('init_energy', &
                 'star_heat: now done in initial_condition_ss')
-          case ('cylind_layers')
-            call cylind_layers(f)
+          case ('piecew_poly_cylind')
+            call piecew_poly_cylind(f)
           case ('polytropic_simple')
 !
 !  Vertical temperature profiles for convective layer problem.
@@ -2310,31 +2312,31 @@ module Energy
 !
 !  First quadrant:
 !
-        rpp(1) = 1.5d0
-        rpr(1) = 1.5d0
-        rpu(1) = 0.d0
-        rpv(1) = 0.d0
+        rpp(1) = 1.5
+        rpr(1) = 1.5
+        rpu(1) = 0.
+        rpv(1) = 0.
 !
 !  Second quadrant:
 !
-        rpp(2) = 0.3d0
-        rpr(2) = 0.532258064516129d0
-        rpu(2) = 1.206045378311055d0
-        rpv(2) = 0.0d0
+        rpp(2) = 0.3
+        rpr(2) = 0.532258064516129
+        rpu(2) = 1.206045378311055
+        rpv(2) = 0.0
 !
 !  Third quadrant:
 !
-        rpp(3) = 0.029032258064516d0
-        rpr(3) = 0.137992831541219d0
-        rpu(3) = 1.206045378311055d0
-        rpv(3) = 1.206045378311055d0
+        rpp(3) = 0.029032258064516
+        rpr(3) = 0.137992831541219
+        rpu(3) = 1.206045378311055
+        rpv(3) = 1.206045378311055
 !
 !  Fourth quadrant:
 !
-        rpp(4) = 0.3d0
-        rpr(4) = 0.532258064516129d0
-        rpu(4) = 0.0d0
-        rpv(4) = 1.206045378311055d0
+        rpp(4) = 0.3
+        rpr(4) = 0.532258064516129
+        rpu(4) = 0.0
+        rpv(4) = 1.206045378311055
 !
 !  s=-lnrho+log(gamma*p)/gamma
 !
@@ -2894,7 +2896,7 @@ module Energy
 !
       real, dimension (nx) :: Hmax,gT2,gs2,gTxgs2
       real, dimension (nx,3) :: gTxgs
-      real :: ztop,xi,profile_cor,uT,fradz,TTtop,cv1
+      real :: ztop,xi,profile_cor,uT,fradz,TTtop
       real, dimension(nx) :: ufpres, uduu, glnTT2, Ktmp
       integer :: j,ju
       integer :: i
@@ -3550,7 +3552,7 @@ module Energy
 !  28-apr-16/wlad: added case initial-temperature
 !
       use BorderProfiles, only: border_driving, set_border_initcond
-      use EquationOfState, only: cs20,gamma,gamma_m1,lnrho0,get_cp1
+      use EquationOfState, only: gamma,gamma_m1,get_cp1
 !
       real, dimension(mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -3721,7 +3723,7 @@ module Energy
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real, dimension (nx) :: thdiff,g2,thchi,damp_profile
+      real, dimension (nx) :: thdiff,g2,thchi
 !
       intent(inout) :: df
 !
@@ -4272,7 +4274,7 @@ module Energy
 !
 !  10-feb-04/bing: coded
 !
-      use EquationOfState, only: gamma, gamma_m1
+      use EquationOfState, only: gamma
       use Debug_IO, only: output_pencil
       use Sub, only: dot2_mn, multsv_mn, tensor_diffusion_coef
 !
@@ -4382,8 +4384,6 @@ module Energy
 !
 !  07-feb-07/wlad+heidar : coded
 !
-      use EquationOfState, only: gamma, gamma_m1
-!
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: tau,cooling,kappa,a1,a3
       real :: a2,kappa0,kappa0_cgs
@@ -4456,7 +4456,7 @@ module Energy
 !  In reality n=1, but we may need to use n\=1 for numerical reasons.
 !
       Krho1 = hcond0_kramers*p%rho1**(2.*nkramers+1.)*p%TT**(6.5*nkramers)   ! = K/rho
-      if (chimax_kramers>0.d0) &
+      if (chimax_kramers>0.) &
         Krho1 = max(min(Krho1,chimax_kramers/p%cp1),chimin_kramers/p%cp1)
       call dot(-2.*nkramers*p%glnrho+(6.5*nkramers+1)*p%glnTT,p%glnTT,g2)
       thdiff = Krho1*(p%del2lnTT+g2)
@@ -6058,7 +6058,6 @@ module Energy
 !  Write column where which entropy variable is stored.
 !
       if (lwr) then
-        write(3,*) 'nname=',nname
         write(3,*) 'iss=',iss
         write(3,*) 'iyH=',iyH
         write(3,*) 'ilnTT=',ilnTT
@@ -6857,7 +6856,7 @@ module Energy
 !
     endsubroutine shell_ss_layers
 !***********************************************************************
-    subroutine cylind_layers(f)
+    subroutine piecew_poly_cylind(f)
 !
 !  Initialise ss in a cylindrical ring using 2 superposed polytropic layers.
 !
@@ -6865,21 +6864,23 @@ module Energy
 !
       use EquationOfState, only: lnrho0, cs20, gamma, gamma_m1, cs2top, &
                                  cs2bot, get_cp1, eoscalc, ilnrho_TT
-      use Gravity, only: gravz, g0
+      use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho, TT, ss
       real :: beta0, beta1, TT_bcz, TT_ext, TT_int
       real :: cp1, lnrho_bcz
+      real, pointer :: gravx
 !
-      if (headtt) print*,'r_bcz in cylind_layers=', r_bcz
+      if (headtt) print*,'r_bcz in piecew_poly_cylind=', r_bcz
 !
 !  beta is the (negative) temperature gradient
 !  beta = (g/cp) 1./[(1-1/gamma)*(m+1)]
 !
+      call get_shared_variable('gravx', gravx, caller='piecew_poly_cylind')
       call get_cp1(cp1)
-      beta0=-cp1*g0/(mpoly0+1)*gamma/gamma_m1
-      beta1=-cp1*g0/(mpoly1+1)*gamma/gamma_m1
+      beta0=cp1*gravx/(mpoly0+1.)*gamma/gamma_m1
+      beta1=cp1*gravx/(mpoly1+1.)*gamma/gamma_m1
       TT_ext=cs20/gamma_m1
       TT_bcz=TT_ext+beta0*(r_bcz-r_ext)
       TT_int=TT_bcz+beta1*(r_int-r_bcz)
@@ -6910,7 +6911,7 @@ module Energy
       enddo
       enddo
 !
-    endsubroutine cylind_layers
+    endsubroutine piecew_poly_cylind 
 !***********************************************************************
     subroutine single_polytrope(f)
 !
@@ -6920,7 +6921,7 @@ module Energy
 !
       use EquationOfState, only: eoscalc, ilnrho_TT, get_cp1, &
                                  gamma_m1, lnrho0
-      use Gravity, only: gravz, g0
+      use Gravity, only: gravz
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f

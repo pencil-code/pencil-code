@@ -42,13 +42,16 @@ module Supersat
   real :: supersat_diff=0.0
   real :: supersat_sink=0.0
   real :: vapor_mixing_ratio_qvs=0.0
+  real :: updraft=0.0
+  real :: A1=0.0
   real, dimension(3) :: gradssat0=(/0.0,0.0,0.0/)
-  logical :: lsupersat_sink=.false., Rsupersat_sink=.false.
+  logical :: lsupersat_sink=.false., Rsupersat_sink=.false.,lupdraft=.false.
   logical :: lupw_ssat=.false., lcondensation_rate=.false.
 
   namelist /supersat_run_pars/ &
       lupw_ssat, lsupersat_sink, Rsupersat_sink, supersat_sink, &
-      supersat_diff, gradssat0, lcondensation_rate, vapor_mixing_ratio_qvs
+      supersat_diff, gradssat0, lcondensation_rate, vapor_mixing_ratio_qvs, &
+      lupdraft, updraft, A1
 !
 ! Declare index of new variables in f array
 !
@@ -59,6 +62,7 @@ module Supersat
 !
   integer :: idiag_ssatrms=0, idiag_ssatmax=0, idiag_ssatmin=0
   integer :: idiag_uxssatm=0, idiag_uyssatm=0, idiag_uzssatm=0
+  integer :: idiag_tausupersatrms=0
 !
   contains
 !***********************************************************************
@@ -243,7 +247,6 @@ module Supersat
       real, dimension (nx) :: diff_op,diff_op2,bump,gcgu
       real, dimension (nx) :: radius_sum, condensation_rate_Cd, qv, superaturation
       real :: ssat_xyaver
-      real :: tau=10., A1=5e-4
       real :: lam_gradC_fact=1., om_gradC_fact=1., gradC_fact=1.
       integer, parameter :: nxy=nxgrid*nygrid
       integer :: k
@@ -275,16 +278,13 @@ module Supersat
         if (lsupersat_sink) then
           if (Rsupersat_sink) then
             bump=A1*p%uu(:,1)
-            !print*,'tau=',p%tausupersat
+          elseif (lupdraft) then
+            bump=A1*updraft
           else
-            bump=A1*p%uu(:,1)-f(l1:l2,m,n,issat)/tau
-            !bump=A1*p%uu(:,1)-f(l1:l2,m,n,issat)/p%tausupersat
-            !print*,'tau=',f(l1:l2,m,n,itausupersat)
-            !print*,'tau=',p%tausupersat
+            bump=A1*p%uu(:,1)-f(l1:l2,m,n,issat)*p%tausupersat
           endif
-        !df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)-p%ugssat+bump
-        df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+bump
-      endif
+          df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+bump
+        endif
 !
       if (ldustdensity.and.lcondensation_rate) then
 !
@@ -311,6 +311,8 @@ module Supersat
         if (idiag_uxssatm/=0) call sum_mn_name(p%uu(:,1)*p%ssat,idiag_uxssatm)
         if (idiag_uyssatm/=0) call sum_mn_name(p%uu(:,2)*p%ssat,idiag_uyssatm)
         if (idiag_uzssatm/=0) call sum_mn_name(p%uu(:,3)*p%ssat,idiag_uzssatm)
+        if (idiag_tausupersatrms/=0) &
+            call sum_mn_name(p%tausupersat**2,idiag_tausupersatrms,lsqrt=.true.)
       endif
 !
     endsubroutine dssat_dt
@@ -368,6 +370,7 @@ module Supersat
       if (lreset) then
         idiag_ssatrms=0; idiag_ssatmax=0; idiag_ssatmin=0
         idiag_uxssatm=0; idiag_uyssatm=0; idiag_uzssatm=0
+        idiag_tausupersatrms=0
       endif
 !
       do iname=1,nname
@@ -377,10 +380,12 @@ module Supersat
         call parse_name(iname,cname(iname),cform(iname),'uxssatm',idiag_uxssatm)
         call parse_name(iname,cname(iname),cform(iname),'uyssatm',idiag_uyssatm)
         call parse_name(iname,cname(iname),cform(iname),'uzssatm',idiag_uzssatm)
+        call parse_name(iname,cname(iname),cform(iname),'tausupersatrms',idiag_tausupersatrms)
       enddo
 !
       if (lwr) then 
         write(3,*) 'issat = ', issat
+        write(3,*) 'itausupersat=', itausupersat
       endif
 !
     endsubroutine rprint_supersat 

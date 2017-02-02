@@ -22,7 +22,7 @@ module PointMasses
 !
   contains
 !***********************************************************************
-    subroutine register_pointmasses()
+    subroutine register_pointmasses
 !
 !  Set up indices for access to the f and fq.
 !
@@ -41,7 +41,7 @@ module PointMasses
 !
     endsubroutine initialize_pointmasses
 !***********************************************************************
-    subroutine pencil_criteria_pointmasses()
+    subroutine pencil_criteria_pointmasses
 !
     endsubroutine pencil_criteria_pointmasses
 !***********************************************************************
@@ -173,12 +173,10 @@ module PointMasses
 !***********************************************************************
     subroutine rprint_pointmasses(lreset,lwrite)
 !
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-      call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_pointmasses
 !***********************************************************************

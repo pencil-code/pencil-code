@@ -160,7 +160,18 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	if (strcmp (quantity, 'u_abs', /fold_case)) then begin
 		; Absolute value of the velocity
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u', ghost=ghost)
-		return, sqrt (dot2 (uu))
+		if (n_elements (u_abs) eq 0) then u_abs = sqrt (dot2 (uu))
+		return, u_abs
+	end
+	if (strcmp (quantity, 'grad_u', /fold_case)) then begin
+		; Velocity gradient
+		if (n_elements (grad_u) eq 0) then grad_u = (grad (sqrt (dot2 (vars[*,*,*,index.uu]))))[l1:l2,m1:m2,n1:n2,*] * unit.velocity
+		return, grad_u
+	end
+	if (strcmp (quantity, 'grad_u_abs', /fold_case)) then begin
+		; Velocity gradient absolute value
+		if (n_elements (grad_u) eq 0) then grad_u = pc_compute_quantity (vars, index, 'grad_u', ghost=ghost)
+		return, sqrt (dot2 (grad_u))
 	end
 
 	if (strcmp (quantity, 'E_kin_rho', /fold_case)) then begin
@@ -199,6 +210,19 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 				grad_Temp = (grad (exp (vars[*,*,*,index.lnTT])))[l1:l2,m1:m2,n1:n2,*] * unit.temperature / unit.length
 			end else if (any (strcmp (sources, 'TT', /fold_case))) then begin
 				grad_Temp = (grad (vars[*,*,*,index.TT]))[l1:l2,m1:m2,n1:n2,*] * unit.temperature / unit.length
+			end else if (any (strcmp (sources, 'ss', /fold_case))) then begin
+				cp = pc_get_parameter ('cp', label=quantity)
+				cp_SI = pc_get_parameter ('cp_SI', label=quantity)
+				cs0 = pc_get_parameter ('cs0', label=quantity)
+				gamma = pc_get_parameter ('gamma', label=quantity)
+				if (gamma eq 1.0) then tmp = 1.0 else tmp = gamma - 1.0
+				ln_Temp_0 = alog (cs0^2 / cp / tmp) + alog (unit.temperature)
+				ln_rho_0 = alog (pc_get_parameter ('rho0', label=quantity)) + alog (unit.density)
+				S = pc_compute_quantity (vars, index, 'S', /ghost)
+				ln_rho = pc_compute_quantity (vars, index, 'ln_rho', /ghost) - ln_rho_0
+				Temp_with_ghosts = exp (ln_Temp_0 + gamma/cp_SI * S + (gamma-1) * ln_rho)
+				; *** WORK HERE: this is maybe better computed with a direct derivation from the entropy S
+				grad_Temp = (grad (Temp_with_ghosts))[l1:l2,m1:m2,n1:n2,*] / unit.length
 			end
 		end
 		return, grad_Temp
@@ -687,6 +711,17 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		dB_dz[*,*,*,2] *= (zderxder (vars[*,*,*,index.ay]) - zderyder (vars[*,*,*,index.ax]))[l1:l2,m1:m2,n1:n2]
 		return, dB_dz
 	end
+	if (strcmp (quantity, 'grad_B', /fold_case)) then begin
+		; Magnetic field gradient
+		if (n_elements (grad_B) eq 0) then grad_B = (gradcurl (pc_compute_quantity (vars, index, 'A', /ghost)))[l1:l2,m1:m2,n1:n2,*]
+		return, grad_B
+	end
+	if (strcmp (quantity, 'grad_B_abs', /fold_case)) then begin
+		; Magnetic field gradient absolute value
+		if (n_elements (grad_B) eq 0) then grad_B = pc_compute_quantity (vars, index, 'grad_B')
+		return, sqrt (dot2 (grad_B))
+	end
+
 	if (strcmp (quantity, 'E', /fold_case)) then begin
 		; Electric field [V / m]
 		if (n_elements (uu) eq 0) then uu = pc_compute_quantity (vars, index, 'u')
@@ -822,6 +857,32 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		Ry = spread (pc_compute_quantity (vars, index, 'dy'), [0,2], [nx,nz]) * fact * uu[*,*,*,1] * BxUxB[*,*,*,1]
 		Rz = spread (pc_compute_quantity (vars, index, 'dz'), [0,1], [nx,ny]) * fact * uu[*,*,*,2] * BxUxB[*,*,*,2]
 		return, ((Rx > Ry) > Rz) / (eta * unit.length^2/unit.time)
+	end
+
+	if (strcmp (quantity, 'forcing', /fold_case)) then begin
+		; Forcing function [kg * m / s^2]
+		if (n_elements (ff) eq 0) then ff = (vars[*,*,*,index.fx:index.fz])[gl1:gl2,gm1:gm2,gn1:gn2,*] * unit.mass * unit.length / unit.time^2
+		return, ff
+	end
+	if (strcmp (quantity, 'forcing_abs', /fold_case)) then begin
+		; Absolute value of the forcing function [kg * m / s^2]
+		if (n_elements (ff) eq 0) then ff = pc_compute_quantity (vars, index, 'forcing', ghost=ghost)
+		return, sqrt (dot2 (ff))
+	end
+	if (strcmp (quantity, 'forcing_x', /fold_case)) then begin
+		; Forcing function x-component [kg * m / s^2]
+		if (n_elements (ff) eq 0) then ff = pc_compute_quantity (vars, index, 'forcing', ghost=ghost)
+		return, ff[*,*,*,0]
+	end
+	if (strcmp (quantity, 'forcing_y', /fold_case)) then begin
+		; Forcing function y-component [kg * m / s^2]
+		if (n_elements (ff) eq 0) then ff = pc_compute_quantity (vars, index, 'forcing', ghost=ghost)
+		return, ff[*,*,*,1]
+	end
+	if (strcmp (quantity, 'forcing_z', /fold_case)) then begin
+		; Forcing function z-component [kg * m / s^2]
+		if (n_elements (ff) eq 0) then ff = pc_compute_quantity (vars, index, 'forcing', ghost=ghost)
+		return, ff[*,*,*,2]
 	end
 
 	if (strcmp (quantity, 'j', /fold_case)) then begin
@@ -1047,7 +1108,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	end
 
 	; Check for Pencil Code alias names
-	if (n_elements (alias) eq 0) then alias = pc_check_quantities (/alias)
+	if (n_elements (alias) eq 0) then alias = pc_check_quantities (sources=sources, /aliases)
 	pos = find_tag (alias, quantity)
 	if (pos ge 0) then return, pc_compute_quantity (vars, index, alias.(pos))
 

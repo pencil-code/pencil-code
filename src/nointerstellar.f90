@@ -22,7 +22,7 @@ module Interstellar
 !
   contains
 !***********************************************************************
-    subroutine register_interstellar()
+    subroutine register_interstellar
 !
 !  19-nov-02/tony: coded
 !
@@ -75,8 +75,7 @@ module Interstellar
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset)
-      if (present(lwrite)) call keep_compiler_quiet(lwrite)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_interstellar
 !***********************************************************************
@@ -133,7 +132,7 @@ module Interstellar
 !
     endsubroutine init_interstellar
 !***********************************************************************
-    subroutine pencil_criteria_interstellar()
+    subroutine pencil_criteria_interstellar
 !
 !  All pencils that the Interstellar module depends on are specified here.
 !
@@ -178,30 +177,6 @@ module Interstellar
     call keep_compiler_quiet(f)
 !
     endsubroutine check_SN
-!***********************************************************************
-    subroutine calc_snr_unshock(penc)
-!
-      real, dimension(mx), intent(inout) :: penc
-!
-      call keep_compiler_quiet(penc)
-!
-    endsubroutine calc_snr_unshock
-!***********************************************************************
-    subroutine calc_snr_damping(p)
-!
-      type (pencil_case) :: p
-!
-      call keep_compiler_quiet(p)
-!
-    endsubroutine calc_snr_damping
-!***********************************************************************
-    subroutine calc_snr_damp_int(int_dt)
-!
-      real :: int_dt
-!
-      call keep_compiler_quiet(int_dt)
-!
-    endsubroutine calc_snr_damp_int
 !***********************************************************************
     subroutine addmassflux(f)
 !

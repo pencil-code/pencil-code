@@ -929,7 +929,6 @@ module NeutralDensity
 !  write column where which density variable is stored
 !
       if (lwr) then
-        write(3,*) 'nname=',nname
         write(3,*) 'ilnrhon=',ilnrhon
       endif
 !

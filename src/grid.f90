@@ -33,8 +33,12 @@ module Grid
   public :: coords_aux
   public :: real_to_index, inverse_grid
   public :: grid_bound_data
-  public :: set_coords_switches
+  public :: set_coorsys_dimmask
 !
+  public :: find_star
+  public :: calc_bound_coeffs
+  public :: grid_profile
+
   interface grid_profile
     module procedure grid_profile_0D
     module procedure grid_profile_1D
@@ -838,11 +842,12 @@ module Grid
 !
     endsubroutine construct_grid
 !***********************************************************************
-    subroutine set_coords_switches
+    subroutine set_coorsys_dimmask
 !
 !   Sets switches for the different coordinate systems.
 !
 !  18-dec-15/MR: outsourced from initialize_grid
+!  16-jan-17/MR: added initialization of dimensionality mask.
 !
       lcartesian_coords=.false.
       lspherical_coords=.false.
@@ -866,11 +871,23 @@ module Grid
       else if (coord_system=='pipeflows') then
         lpipe_coords=.true.
       elseif (coord_system=='Lobachevskii') then
-        call fatal_error('set_coords_switches', &
+        call fatal_error('set_coorsys_dimmask', &
                          'Lobachevskii ccordinates not implemented')
       endif
+!
+!  Initialize dimensionality mask.
+!
+      if (nxgrid==1) then
+        if (nygrid==1) then
+          dim_mask(1)=3
+        else
+          dim_mask(1:2)=(/2,3/)
+        endif
+      else
+        if (nygrid==1) dim_mask(1:2)=(/1,3/)
+      endif
 
-    endsubroutine set_coords_switches
+    endsubroutine set_coorsys_dimmask
 !***********************************************************************
     subroutine initialize_grid
 !
@@ -893,18 +910,6 @@ module Grid
 !
       real :: fact, dxmin_x, dxmin_y, dxmin_z, dxmax_x, dxmax_y, dxmax_z
       integer :: xj,yj,zj,itheta
-!
-!  Initialize dimensionality mask.
-!
-      if (nxgrid==1) then
-        if (nygrid==1) then
-          dim_mask(1)=3 
-        else
-          dim_mask(1:2)=(/2,3/) 
-        endif
-      else
-        if (nygrid==1) dim_mask(1:2)=(/1,3/)
-      endif
 !
 !  For curvilinear coordinate systems, calculate auxiliary quantities as, e.g., for spherical coordinates 1/r, cot(theta)/r, etc.
 !

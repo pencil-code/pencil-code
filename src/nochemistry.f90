@@ -151,20 +151,6 @@ module Chemistry
 !
     endsubroutine get_slices_chemistry
 !***********************************************************************
-    subroutine bc_nscbc_subin_x(f,df,topbot,val)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      character (len=3) :: topbot
-      real, dimension (mcom), optional :: val
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
-      call keep_compiler_quiet(topbot)
-      call keep_compiler_quiet(present(val))
-!
-    endsubroutine bc_nscbc_subin_x
-!***********************************************************************
     subroutine chemistry_clean_up()
 !
     endsubroutine chemistry_clean_up

@@ -25,13 +25,12 @@ module Particles_grad
 !
   contains
 !***********************************************************************
-    subroutine register_particles_grad()
+    subroutine register_particles_grad
 !
 !  Set up indices for access to the fp and dfp arrays.
 !
 !  17-sep-15/dhruba: dummy
 !
-
     endsubroutine register_particles_grad
 !***********************************************************************
     subroutine initialize_particles_grad(f)
@@ -43,18 +42,15 @@ module Particles_grad
 !
       real, dimension (mx,my,mz,mfarray) :: f
 
-
       call keep_compiler_quiet(f)
 !
     endsubroutine initialize_particles_grad
 !***********************************************************************
-    subroutine pencil_criteria_par_grad()
+    subroutine pencil_criteria_par_grad
 !
 !  All pencils that the Particles_grad module depends on are specified here.
 !
 !  17-sep-15/dhruba: dummy
-!
-
 !
     endsubroutine pencil_criteria_par_grad
 !***********************************************************************
@@ -125,16 +121,12 @@ module Particles_grad
       call keep_compiler_quiet(fp)
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
-
 !
     endsubroutine dsigmap_dt
 !***********************************************************************
     subroutine read_particles_grad_init_pars(iostat)
 !
-      use File_io, only: parallel_unit
-!
       integer, intent(out) :: iostat
-      integer :: pos
 !
       iostat=0
 !
@@ -149,8 +141,6 @@ module Particles_grad
     endsubroutine write_particles_grad_init_pars
 !***********************************************************************
     subroutine read_particles_grad_run_pars(iostat)
-!
-      use File_io, only: parallel_unit
 !
       integer, intent(out) :: iostat
 !
@@ -177,7 +167,6 @@ module Particles_grad
       logical :: lreset
       logical, optional :: lwrite
 !
-      integer :: iname
       logical :: lwr
 !
 !  Write information to index.pro.
@@ -195,7 +184,6 @@ module Particles_grad
         write(3,*) 'isigmap32=', isigmap32
         write(3,*) 'isigmap33=', isigmap33
       endif
-!
 !
     endsubroutine rprint_particles_grad
 !***********************************************************************

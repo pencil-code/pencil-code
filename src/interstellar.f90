@@ -87,9 +87,6 @@ module Interstellar
   integer, parameter :: mSNR = 100
   integer :: nSNR = 0
   type (SNRemnant), dimension(mSNR) :: SNRs
-  real, dimension(12) :: SNRsFEAT
-  integer, dimension(9) :: SNRsINDX
-  real, dimension(7) :: SNRsSITE
   integer, dimension(mSNR) :: SNR_index
   integer, parameter :: npreSN = 5
   integer, dimension(4,npreSN) :: preSN
@@ -279,7 +276,7 @@ module Interstellar
 !
 !  TT & z-dependent uv-heating profile
 !
-  real, dimension(mz) :: heat_z, zrho
+  real, dimension(mz) :: heat_z
   logical :: lthermal_hse=.false., lheatz_min=.true.
 !
   real :: coolingfunction_scalefactor=1.
@@ -934,7 +931,7 @@ module Interstellar
 !  14-jul-2015/fred: removed obsolete Remnant persistant variable from current
 !  read and added new cluster variables. All now consistent with any io
 !
-      use IO, only: read_persist, lun_input, lcollective_IO
+      use IO, only: read_persist, lun_input
 !
       integer :: id
       logical :: done
@@ -1057,7 +1054,7 @@ module Interstellar
 !  14-jul-2015/fred: removed obsolete Remnant persistant variable from current
 !  write and added new cluster variables. All now consistent with any io
 !
-      use IO, only: write_persist, write_persist_id, lun_output, lcollective_IO
+      use IO, only: write_persist
 !
 !      if (lcollective_IO) call fatal_error ('output_persistent_interstellar', &
 !          "The interstellar persistent variables can't be written collectively!")
@@ -1452,7 +1449,7 @@ module Interstellar
 !   3-apr-06/axel: add ltemperature switch
 !
       use Diagnostics, only: max_mn_name, sum_mn_name
-      use EquationOfState, only: gamma, gamma1
+      use EquationOfState, only: gamma
       use Sub, only: dot2
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -1863,7 +1860,7 @@ module Interstellar
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(1) :: franSN
-      real :: rhom, scaled_interval, mpirho
+      real :: scaled_interval
 !
       intent(in) :: f
       intent(out) :: scaled_interval
@@ -2269,13 +2266,13 @@ module Interstellar
     real :: rhomax, maxrho, rhosum
     real :: mpirho, mpiz
     real, dimension(ncpus):: tmpxyz
-    integer :: itmp, icpu, lm_range, yzproc
+    integer :: itmp, icpu, lm_range
     integer :: previous_SNl, previous_SNm, previous_SNn
 !
 !  parameters for random location of SN - about zdisk
 !
     real, dimension(nzgrid) :: cum_prob_SN
-    real :: zn, z00, x00, y00
+    real :: z00, x00, y00
     real, dimension(3) :: fran3
     integer :: i, nzskip=10 !prevent SN from being too close to boundaries
 !

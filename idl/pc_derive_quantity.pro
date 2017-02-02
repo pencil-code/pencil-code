@@ -53,8 +53,10 @@ function pc_derive_quantity, derivative, quantity, vars, index, varfile=varfile,
 
 	derivative = strtrim (derivative, 2)
 	num_derivatives = strlen (derivative)
-	high_level = [ 'div', 'grad', 'curl', 'delta', 'laplace' ]
-	if (any (strcmp (derivative, high_level, /fold_case))) then num_derivatives = 1
+	high_level_1st = [ 'div', 'grad', 'curl' ]
+	high_level_2nd = [ 'curl_curl', 'grad_curl', 'delta', 'laplace' ]
+	if (any (strcmp (derivative, high_level_1st, /fold_case))) then num_derivatives = 1
+	if (any (strcmp (derivative, high_level_2nd, /fold_case))) then num_derivatives = 2
 	if ((num_derivatives lt 1) or (num_derivatives gt 2)) then message, "pc_derive_quantity: can only compute first and second derivatives."
 
 	unit_length = pc_get_parameter ('unit_length', label=label, dim=dim, datadir=datadir, start_param=start_param, run_param=run_param)
@@ -69,8 +71,12 @@ function pc_derive_quantity, derivative, quantity, vars, index, varfile=varfile,
 	nx = mx - 2 * nghostx
 	ny = my - 2 * nghosty
 	nz = mz - 2 * nghostz
+	na = 1
 
-	result = dblarr (nx, ny, nz, /nozero)
+	vector_quantity = [ 'grad', 'curl', 'curl_curl', 'grad_curl' ]
+	if (any (strcmp (derivative, vector_quantity, /fold_case))) then na = 3
+
+	result = dblarr (nx, ny, nz, na, /nozero)
 	if (num_derivatives eq 2) then begin
 		result[*,*,*,*] = 1.0 / (unit_length^2)
 	end else begin
@@ -93,6 +99,8 @@ function pc_derive_quantity, derivative, quantity, vars, index, varfile=varfile,
 		'div': result *= (div (quantity))[l1:l2,m1:m2,n1:n2]
 		'grad': result *= (grad (quantity))[l1:l2,m1:m2,n1:n2,*]
 		'curl': result *= (curl (quantity))[l1:l2,m1:m2,n1:n2,*]
+		'curl_curl': result *= (curlcurl (quantity))[l1:l2,m1:m2,n1:n2,*]
+		'grad_curl': result *= (gradcurl (quantity))[l1:l2,m1:m2,n1:n2,*]
 		'delta': result *= (del2 (quantity))[l1:l2,m1:m2,n1:n2]
 		'laplace': result *= (del2 (quantity))[l1:l2,m1:m2,n1:n2]
 		else: message, "pc_derive_quantity: derivative '"+derivative+"' is unknown."

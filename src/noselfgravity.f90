@@ -27,7 +27,7 @@ module Selfgravity
 !
   contains
 !***********************************************************************
-    subroutine register_selfgravity()
+    subroutine register_selfgravity
 !
 !  Register self gravity variables.
 !
@@ -48,7 +48,7 @@ module Selfgravity
 !
     endsubroutine initialize_selfgravity
 !***********************************************************************
-    subroutine pencil_criteria_selfgravity()
+    subroutine pencil_criteria_selfgravity
 !
 !  All pencils that the Selfgravity module depends on are specified here.
 !
@@ -149,19 +149,10 @@ module Selfgravity
 !
 !  16-may-06/anders+jeff: dummy
 !
-      logical :: lreset, lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-      call keep_compiler_quiet(lreset)
-!
-!  Write column where which variable is stored.
-!
-      if (lwr) then
-        write(3,*) 'ipotself=0'
-      endif
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_selfgravity
 !***********************************************************************

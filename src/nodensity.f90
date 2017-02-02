@@ -33,7 +33,7 @@ module Density
 !
   contains
 !***********************************************************************
-    subroutine register_density()
+    subroutine register_density
 !
       if (lroot) call svn_id( &
           "$Id$")
@@ -78,7 +78,7 @@ module Density
 !
   endsubroutine calc_ldensity_pars
 !***********************************************************************
-    subroutine pencil_criteria_density()
+    subroutine pencil_criteria_density
 !
 !  All pencils that the Density module depends on are specified here.
 !
@@ -212,12 +212,10 @@ module Density
 !***********************************************************************
     subroutine rprint_density(lreset,lwrite)
 !
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-      call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_density
 !***********************************************************************

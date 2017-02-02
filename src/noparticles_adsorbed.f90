@@ -63,11 +63,12 @@ module Particles_adsorbed
   subroutine pencil_criteria_par_ads()
   endsubroutine pencil_criteria_par_ads
 ! ******************************************************************************
+  subroutine dpads_dt_pencil(f,df,fp,dfp,p,ineargrid)
+
 !  Evolution of particle surface fraction
 !
 !  01-sep-14/jonas: coded
 
-  subroutine dpads_dt_pencil(f,df,fp,dfp,p,ineargrid)
     real, dimension(mx,my,mz,mfarray) :: f
     real, dimension(mx,my,mz,mvar) :: df
     real, dimension(mpar_loc,mparray) :: fp
@@ -84,6 +85,7 @@ module Particles_adsorbed
     call keep_compiler_quiet(dfp)
     call keep_compiler_quiet(p)
     call keep_compiler_quiet(ineargrid)
+
   endsubroutine dpads_dt_pencil
 ! ******************************************************************************
 !  Evolution of particle surface fractions
@@ -137,9 +139,7 @@ module Particles_adsorbed
     logical :: lreset
     logical, optional :: lwrite
 
-    if (present(lwrite)) call keep_compiler_quiet(lwrite)
-
-    call keep_compiler_quiet(lreset)
+    call keep_compiler_quiet(lreset,lwrite)
   endsubroutine rprint_particles_ads
 ! ******************************************************************************
 !  28-aug-14/jonas+nils: coded

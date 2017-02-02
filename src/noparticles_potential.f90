@@ -22,7 +22,7 @@ module Particles_potential
 !
   contains
 !***********************************************************************
-    subroutine register_particles_potential()
+    subroutine register_particles_potential
 !
 !  Set up indices for access to the fp and dfp arrays
 !
@@ -49,7 +49,7 @@ module Particles_potential
 !
     endsubroutine particles_potential_clean_up
 !***********************************************************************
-    subroutine pencil_criteria_par_potential()
+    subroutine pencil_criteria_par_potential
 !
 !  All pencils that the Particles_radius module depends on are specified here.
 !

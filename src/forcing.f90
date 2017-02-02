@@ -44,9 +44,8 @@ module Forcing
   real, dimension(nx) :: profx_ampl=1.,profx_hel=1., profx_ampl1=0.
   real, dimension(my) :: profy_ampl=1.,profy_hel=1.
   real, dimension(mz) :: profz_ampl=1.,profz_hel=1.
-  integer :: kfountain=5,ifff,iffx,iffy,iffz,i2fff,i2ffx,i2ffy,i2ffz
+  integer :: kfountain=5,iff,ifx,ify,ifz,ifff,iffx,iffy,iffz,i2fff,i2ffx,i2ffy,i2ffz
   integer :: kzlarge=1
-  integer :: itestflow_forcing_offset=0,itestfield_forcing_offset=0
   integer :: iforcing_zsym=0
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
   logical :: lhydro_forcing=.true.,lmagnetic_forcing=.false.
@@ -59,6 +58,7 @@ module Forcing
   logical :: lscale_kvector_fac=.false.
   logical :: lforce_peri=.false., lforce_cuty=.false.
   logical :: lforcing2_same=.false., lforcing2_curl=.false.
+  logical :: lff_as_aux = .false.
   real :: scale_kvectorx=1.,scale_kvectory=1.,scale_kvectorz=1.
   logical :: old_forcing_evector=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
@@ -81,7 +81,7 @@ module Forcing
 ! For random forcing in 2d
   integer,allocatable, dimension (:,:) :: random2d_kmodes
   integer :: random2d_nmodes
-  integer :: random2d_kmin,random2d_kmax
+  integer :: random2d_kmin=0.,random2d_kmax=0.
 ! continious 2d forcing
   integer :: k2d
   logical :: l2dxz,l2dyz
@@ -116,7 +116,7 @@ module Forcing
   namelist /forcing_run_pars/ &
        tforce_start,tforce_start2,&
        iforce,force,relhel,crosshel,height_ff,r_ff,r_ff_hel, &
-       rcyl_ff,width_ff,nexp_ff, &
+       rcyl_ff,width_ff,nexp_ff,lff_as_aux, &
        iforce2, force2, force1_scl, force2_scl, iforcing_zsym, &
        kfountain,fountain,tforce_stop,tforce_stop2, &
        radius_ff,k1_ff,kx_ff,ky_ff,kz_ff,slope_ff,work_ff,lmomentum_ff, &
@@ -187,7 +187,7 @@ module Forcing
       use General, only: bessj
       use Mpicomm, only: stop_it
       use SharedVariables, only: get_shared_variable
-      use Sub, only: step,erfunc,stepdown
+      use Sub, only: step,erfunc,stepdown,register_report_aux
 !
       real :: zstar
       integer :: l,i
@@ -629,6 +629,9 @@ module Forcing
       if (ip<=6) print*,'forcing_cont:','lforcing_cont=',lforcing_cont,iforcing_cont
 
       if (lstart) return
+
+      if (lff_as_aux) call register_report_aux('ff', iff, ifx, ify, ifz)
+
 !
 !  Get reference_state. Requires that density is initialized before forcing.
 !
@@ -1542,6 +1545,8 @@ module Forcing
                 forcing_rhs(:,j)=rho1*profx_ampl*profy_ampl(m)*profz_ampl(n)*force_ampl &
                   *real(cmplx(coef1(j),profx_hel*profy_hel(m)*profz_hel(n)*coef2(j)) &
                   *fx(l1:l2)*fy(m)*fz(n))*fda(:,j)
+                ! put force into auxiliary variable, if requested
+                if (lff_as_aux) f(l1:l2,m,n,ifx:ifz) = forcing_rhs(:,:)
 !
 !  Compute additional forcing function (used for velocity if crosshel=1).
 !  It can optionally be the same. Alterantively, one has to set crosshel=1.
@@ -3177,7 +3182,7 @@ call fatal_error('forcing_hel_kprof','check that radial profile with rcyl_ff wor
         endif
 !
 !  It turns out that in the presence of shear, and even for weak shear,
-!  vorticitity is being produced. In order to check whether the shearing
+!  vorticity is being produced. In order to check whether the shearing
 !  periodic boundaries are to blame, we can cut the y extent of forcing
 !  locations by half.
 !
@@ -4817,6 +4822,14 @@ call fatal_error('hel_vec','radial profile should be quenched')
 
         do i=1,n_forcing_cont
           call forcing_cont(i,p%fcont(:,:,i),rho1=p%rho1)
+          ! put force into auxiliary variable, if requested
+          if (lff_as_aux) then
+            if (i == 1) then
+              f(l1:l2,m,n,ifx:ifz) = p%fcont(:,:,i)
+            else
+              f(l1:l2,m,n,ifx:ifz) = f(l1:l2,m,n,ifx:ifz) + p%fcont(:,:,i)
+            endif
+          endif
 !
 !  divide by rho if lmomentum_ff=T
 !  MR: better to place it in hydro
@@ -4849,7 +4862,6 @@ call fatal_error('hel_vec','radial profile should be quenched')
       real, dimension (nx) :: tmp
       real :: fact, fact1, fact2, fpara, dfpara, sqrt21k1, kf, kx, ky, kz, nu, arg
       integer :: i2d1=1,i2d2=2,i2d3=3
-      integer :: ierr
 !
         select case (iforcing_cont(i))
         case('Fz=const')
@@ -4878,9 +4890,15 @@ call fatal_error('hel_vec','radial profile should be quenched')
           force(:,2)=0
           force(:,3)=gravz*ampl_ff(i)*cos(omega_ff*t)
         case ('uniform_vorticity')
-          force(:,1)=z(n)*ampl_ff(i)*cos(omega_ff*t)
-          force(:,2)=0
-          force(:,3)=-x(l1:l2)*ampl_ff(i)*cos(omega_ff*t)
+          if (lcylindrical_coords) then
+            force(:,1)=-x(l1:l2)*y(m)*ampl_ff(i)*cos(omega_ff*t)
+            force(:,2)=x(l1:l2)*ampl_ff(i)*cos(omega_ff*t)
+            force(:,3)=0
+          else
+            force(:,1)=z(n)*ampl_ff(i)*cos(omega_ff*t)
+            force(:,2)=0
+            force(:,3)=-x(l1:l2)*ampl_ff(i)*cos(omega_ff*t)
+          endif
         case('KolmogorovFlow-x')
           fact=ampl_ff(i)
           force(:,1)=0

@@ -64,7 +64,7 @@ module Hydro
 !
   real, dimension(nx) :: profx_diffrot1=1., profx_diffrot2=1., profx_diffrot3=1.
   real, dimension(my) :: profy_diffrot1=1., profy_diffrot2=1., profy_diffrot3=1.
-  real, dimension(mz) :: profz_diffrot1=1., profz_diffrot2=1., profz_diffrot3=1.
+  real, dimension(mz) :: profz_diffrot1=1.
 !
 !  Precession matrices.
 !
@@ -195,6 +195,7 @@ module Hydro
   logical :: lrotation_xaxis=.false.
   logical :: lpropagate_borderuu=.true.
   logical :: lgradu_as_aux=.false.
+  logical :: lOmega_cyl_xy=.false.
   character (len=labellen) :: uuprof='nothing'
 !
 !  Parameters for interior boundary conditions.
@@ -234,7 +235,7 @@ module Hydro
       lpropagate_borderuu, hydro_zaver_range, index_rSH, &
       uzjet, ydampint, ydampext, mean_momentum, lshear_in_coriolis, &
       lcdt_tauf, cdt_tauf, ulev,&
-      w_sldchar_hyd, uphi_rbot, uphi_rtop, uphi_step_width
+      w_sldchar_hyd, uphi_rbot, uphi_rtop, uphi_step_width, lOmega_cyl_xy
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -4002,7 +4003,7 @@ module Hydro
 !
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real :: c2
+      real :: c2, s2
 !
 !  info about coriolis_cylindrical term
 !
@@ -4019,9 +4020,17 @@ module Hydro
 !  -2 Omega x u
 !
       if (lcoriolis_force) then
-        c2=2*Omega
-        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*p%uu(:,2)
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*p%uu(:,1)
+        if (lOmega_cyl_xy) then
+          c2= 2*Omega*cos(y(m))
+          s2=-2*Omega*sin(y(m))
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-c2*p%uu(:,3)
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-s2*p%uu(:,3)
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+c2*p%uu(:,1)+s2*p%uu(:,2)
+        else
+          c2=2*Omega
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*p%uu(:,2)
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*p%uu(:,1)
+        endif
       endif
 !
 !  Centrifugal force
@@ -4798,17 +4807,14 @@ module Hydro
       if ((idiag_urmsn/=0).or.(idiag_urmss/=0))then
         iname_half=iname_half+1
         idiag_urmsh=iname_half
-      else
       endif
       if ((idiag_ormsn/=0).or.(idiag_ormss/=0))then
         iname_half=iname_half+1
         idiag_ormsh=iname_half
-      else
       endif
       if ((idiag_oumn/=0).or.(idiag_oums/=0))then
         iname_half=iname_half+1
         idiag_oumh=iname_half
-      else
       endif
       name_half_max=iname_half
 !
@@ -5053,7 +5059,6 @@ module Hydro
 !  write column where which hydro variable is stored
 !
       if (lwr) then
-        write(3,*) 'nname=',nname
         write(3,*) 'iuu=',iuu
         write(3,*) 'iux=',iux
         write(3,*) 'iuy=',iuy

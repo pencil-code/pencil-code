@@ -27,7 +27,6 @@ module Pscalar
   include 'pscalar.h'
 !
   character (len=labellen) :: initlncc='zero', initlncc2='zero'
-  character (len=40) :: tensor_pscalar_file
   logical :: nopscalar=.false.
   real, dimension(3) :: gradC0=(/0.0,0.0,0.0/)
   real :: ampllncc=0.1, widthlncc=0.5, cc_min=0.0, lncc_min

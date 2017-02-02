@@ -144,7 +144,7 @@ program start
 !
   call read_all_init_pars
 !
-  call set_coords_switches
+  call set_coorsys_dimmask
 !
 !  Set up directory names and check whether the directories exist.
 !
@@ -163,6 +163,8 @@ program start
 !
   call rprint_list(.false.)
   if (lparticles) call particles_rprint_list(.false.)
+!
+  call report_undefined_diagnostics
 !
 !  The logical headtt is sometimes referred to in start.x, even though it is
 !  not yet defined. So we set it simply to lroot here.
@@ -629,16 +631,7 @@ program start
 !  Deallocate the arrays allocated for
 !  1-D and 2-D diagnostics.
 !
-  call fnames_clean_up
-  call xyaverages_clean_up
-  call xzaverages_clean_up
-  call yzaverages_clean_up
-  if (lwrite_yaverages)    call yaverages_clean_up
-  if (lwrite_zaverages)    call zaverages_clean_up
-  if (lwrite_phiaverages)  call phiaverages_clean_up
-  if (lwrite_phizaverages) call phizaverages_clean_up
-  if (lwrite_phiaverages)  call phiaverages_clean_up
-  if (lwrite_sound)        call sound_clean_up
+  call diagnostics_clean_up
 !
 ! announce completion.
 !

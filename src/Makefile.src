@@ -2502,7 +2502,7 @@ endif
 initial_condition_dummies.inc:  noinitial_condition.f90 $(INITIAL_CONDITION).f90
 	scripts/mkdummyinc -d noinitial_condition.f90 -s $(INITIAL_CONDITION).f90 -o initial_condition_dummies.inc
 #
-file_io_common.inc:  Makefile.local $(FILE_IO).f90
+file_io_common.inc:  Makefile.local $(FILE_IO).f90 file_io_common.f90
 	scripts/mkdummyinc -d file_io_common.f90 -s $(FILE_IO).f90 -o file_io_common.inc
 #
 mpicomm_double.f90: mpicomm.f90
@@ -2634,7 +2634,7 @@ TAGS: $(TAG_SOURCE)
 #  Clean up, but leave makefile and TAGS.
 #
 clean:
-	rm -f *.x *.o *.a *.mod *.d cparam*.inc cparam_pencils*.inc *.il
+	rm -f *.x *.o *.a *.mod *.d cparam*.inc cparam_pencils*.inc file_io_common.inc *.il
 	rm -f special/*.o special/*.mod
 	rm -f initial_condition/*.o initial_condition/*.mod
 	rm -f experimental/*.o experimental/*.mod

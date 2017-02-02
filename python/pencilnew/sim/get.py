@@ -1,9 +1,7 @@
 def get(path='.', quiet=False):
     """Returns simulation object from 'path, if already existing, or creates new simulation object from path, if its as simulation."""
 
-    from os.path import isdir
-    from os.path import join
-    from os.path import exists
+    from os.path import isdir, join, exists, basename
     from pencilnew.io import load
     from . simulation import simulation
 
@@ -34,7 +32,7 @@ def get_sims(path_root='.', depth=1, unhide_all=False, quiet=False):
         quiet:     Switches out the output of the function. Default: False.
 
     """
-    from os.path import join
+    from os.path import join, basename
     import numpy as np
 
     from pencilnew.io import load
@@ -59,7 +57,7 @@ def get_sims(path_root='.', depth=1, unhide_all=False, quiet=False):
         for dir in dirs:
             # print('dirs: '+str(dir))
             sd = join(path, dir)
-            if is_sim_dir(sd):
+            if is_sim_dir(sd) and not basename(sd).startswith('.'):
                 if not quiet: print('# Found Simulation in '+sd)
                 sim_paths.append(sd)
 

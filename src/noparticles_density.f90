@@ -24,7 +24,7 @@ module Particles_density
 !
   contains
 !***********************************************************************
-    subroutine register_particles_density()
+    subroutine register_particles_density
 !
 !  22-nov-10/anders+michiel: dummy
 !
@@ -52,7 +52,7 @@ module Particles_density
 !
     endsubroutine init_particles_density
 !***********************************************************************
-    subroutine pencil_criteria_par_density()
+    subroutine pencil_criteria_par_density
 !
 !  22-nov-10/anders+michiel: dummy
 !
@@ -121,8 +121,7 @@ module Particles_density
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset)
-      if (present(lwrite)) call keep_compiler_quiet(lwrite)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_particles_density
 !***********************************************************************

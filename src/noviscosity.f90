@@ -68,8 +68,7 @@ module Viscosity
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset)
-      call keep_compiler_quiet(present(lwrite))
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_viscosity
 !***********************************************************************

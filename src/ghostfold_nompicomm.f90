@@ -163,9 +163,6 @@ module GhostFold
       real, dimension (mx,my,mz,mvar) :: df
       integer :: ivar1,ivar2
 !
-      real, dimension (ny,nz) :: df_tmp_yz
-      integer :: ivar
-!
 !  Fold z-direction first (including all ghost zones in x and y).
 !
       if (nzgrid/=1) then
@@ -220,12 +217,7 @@ subroutine reverse_fold_f_3points(f,ivar1,ivar2)
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: ivar1, ivar2
 !
-      real, dimension (nx,ny,3,ivar2-ivar1+1) :: f_tmp_xy
-      real, dimension (nx,3,nz,ivar2-ivar1+1) :: f_tmp_xz
-      real, dimension (3,ny,nz,ivar2-ivar1+1) :: f_tmp_yz
-      real, dimension (ny,nz) :: f_tmp_yz_one
-      integer :: nvar_fold, iproc_rcv, ivar
-      integer :: itag1=10, itag2=11, itag3=12, itag4=13, itag5=14, itag6=15
+      integer :: nvar_fold
 !
       nvar_fold=ivar2-ivar1+1
 !
@@ -291,12 +283,7 @@ subroutine reverse_fold_df_3points(f,ivar1,ivar2)
       real, dimension (mx,my,mz,mvar) :: f
       integer :: ivar1, ivar2
 !
-      real, dimension (nx,ny,3,ivar2-ivar1+1) :: f_tmp_xy
-      real, dimension (nx,3,nz,ivar2-ivar1+1) :: f_tmp_xz
-      real, dimension (3,ny,nz,ivar2-ivar1+1) :: f_tmp_yz
-      real, dimension (ny,nz) :: f_tmp_yz_one
-      integer :: nvar_fold, iproc_rcv, ivar
-      integer :: itag1=10, itag2=11, itag3=12, itag4=13, itag5=14, itag6=15
+      integer :: nvar_fold
 !
       nvar_fold=ivar2-ivar1+1
 !

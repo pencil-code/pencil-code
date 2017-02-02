@@ -14,8 +14,6 @@ module Diagnostics
 !
   implicit none
 !
-  private
-!
   public :: initialize_diagnostics, prints
   public :: diagnostic, initialize_time_integrals,get_average_density
   public :: xyaverages_z, xzaverages_y, yzaverages_x
@@ -41,16 +39,14 @@ module Diagnostics
   public :: allocate_phizaverages
   public :: allocate_yaverages, allocate_zaverages, allocate_phiaverages, allocate_zaverages_data
   public :: trim_1daverages
-  public :: fnames_clean_up,vnames_clean_up,sound_clean_up
-  public :: xyaverages_clean_up, xzaverages_clean_up, yzaverages_clean_up
-  public :: phizaverages_clean_up
-  public :: yaverages_clean_up, zaverages_clean_up, phiaverages_clean_up
+  public :: fnames_clean_up, vnames_clean_up, diagnostics_clean_up
   public :: get_from_fname
   public :: init_xaver
   public :: gen_form_legend
   public :: ysum_mn_name_xz_npar, xysum_mn_name_z_npar, yzsum_mn_name_x_mpar
   public :: zsum_mn_name_xy_mpar_scal, zsum_mn_name_xy_mpar
   public :: sign_masked_xyaver
+  public :: report_undefined_diagnostics
 !
   interface max_name
     module procedure max_name_int
@@ -89,6 +85,13 @@ module Diagnostics
     module procedure zsum_mn_name_xy_mpar_vec
   endinterface zsum_mn_name_xy_mpar
 !
+  private
+!
+  logical :: lfirst_call_time_series=.true.
+  logical :: lfirst_call_1davs=.true.
+  logical :: lfirst_call_sound=.true.
+!
+
   real, dimension (nrcyl,nx) :: phiavg_profile=0.0
   real :: dVol_rel1
 
@@ -114,6 +117,10 @@ module Diagnostics
       real :: dxeff,dyeff,dzeff
       real :: intdr_rel, intdtheta_rel, intdphi_rel, intdz_rel
 !
+      lfirst_call_time_series=.true.
+      lfirst_call_sound=.true.
+      lfirst_call_1davs=.true.
+! 
 !  Initialize rcyl for the phi-averages grid. Does not need to be
 !  done after each reload of run.in, but this is the easiest way
 !  of doing it.
@@ -184,12 +191,12 @@ module Diagnostics
 !   3-may-02/axel: coded
 !  20-aug-13/MR: changes for accumulating and complex diagnostics
 !  26-aug-13/MR: corrected insertion of imaginary values
+!  12-jan-17/MR: undefined diagnostics suppressed in output
 !
-      use General, only: safe_character_append
+      use General, only: safe_character_append, compress
       use Cparam, only: max_col_width
       use Sub, only: insert
 !
-      logical,save :: lfirst_call=.true.
       character (len=640) :: fform,legend,line
       integer :: iname, nnamel
       real, dimension(2*nname) :: buffer
@@ -225,42 +232,47 @@ module Diagnostics
 !  This treats all numbers as floating point numbers.  Only those numbers are
 !  given (and computed) that are also listed in print.in.
 !
-        if (lfirst_call) then
+        if (lfirst_call_time_series) then
           write(*,*)
           write(*,'(" ",A)') trim(legend)
 !
-!  Write legend to extra file (might want to do only once after each lreset)
+!  Write legend to extra file (might want to do only once after each lreset).
 !
           open(lun,file=trim(datadir)//'/legend.dat')
           write(lun,'(" ",A)') trim(legend)
           close(lun)
         endif
 !
-!  Put output line into a string.
-!
-        if (ldebug) write(*,*) 'bef. writing prints'
+        if (ldebug) write(*,*) 'before writing prints'
         buffer(1:nname) = fname(1:nname)
 !
-!  add accumulated values to current ones if existent
+!  Add accumulated values to current ones if existent.
 !
         where( fname_keep(1:nname) /= impossible .and. &
                itype_name(1:nname)<ilabel_complex ) &
            buffer(1:nname) = buffer(1:nname)+fname_keep(1:nname)
 !
+!  Insert imaginary parts behind real ones if quantity is complex.
+!
         nnamel=nname
         do iname=nname,1,-1
-          if (itype_name(iname)>=ilabel_complex) then
+          if (itype_name(iname)>=ilabel_complex .and. cform(iname)/='') &
             call insert(buffer,(/fname_keep(iname)/),iname+1,nnamel)
-          endif
         enddo
 !
+!  Put output line into a string.
+!
+        call compress(buffer,cform=='',nnamel)
         write(line,trim(fform)) buffer(1:nnamel)
         call clean_line(line)
 !
 !  Append to diagnostics file.
 !
         open(lun,file=trim(datadir)//'/time_series.dat',position='append')
-        if (lfirst_call) write(lun,"('"//comment_char//"',a)") trim(legend)
+        if (lfirst_call_time_series) then
+          write(lun,"('"//comment_char//"',a)") trim(legend)
+          lfirst_call_time_series = .false.
+        endif
         write(lun,'(a)') trim(line)
         close(lun)
 !
@@ -272,7 +284,6 @@ module Diagnostics
       endif                      ! (lroot)
 !
       if (ldebug) write(*,*) 'exit prints'
-      lfirst_call = .false.
 !
 !  reset non-accumulating values (marked with zero in fname_keep)
 !
@@ -282,10 +293,55 @@ module Diagnostics
 !
     endsubroutine prints
 !***********************************************************************
+    subroutine report_undefined(cname,cform,len,file)
+!
+!  Reports diagnostics requested in cname, but undefined (their format is empty in cform).
+!
+!  12-jan-17/MR: coded
+!
+      character(len=30), dimension(:), intent(IN) :: cname,cform
+      integer,                         intent(IN) :: len
+      character(len=*),                intent(IN) :: file
+
+      integer :: ind, i
+      character(LEN=256) :: text
+
+      text='WARNING:'; ind=-1
+      do i=1,len
+        if (cname(i)/=''.and.cform(i)=='') then
+          ind=index(cname(i),'('); if (ind==0) ind=31
+          text=trim(text)//' '//trim(cname(i)(1:ind-1))//','
+        endif
+      enddo
+
+      if (ind/=-1) then
+        text=text(1:index(text,',',BACK=.true.)-1)//' diagnostic(s) in '//trim(file)//' not defined!'
+        print*, trim(text)
+      endif
+
+    endsubroutine report_undefined
+!***********************************************************************
+    subroutine report_undefined_diagnostics
+
+      if (lroot) then
+        call report_undefined(cname,cform,nname,'print.in')
+        call report_undefined(cname_sound,cform_sound,nname_sound,'sound.in')
+        call report_undefined(cnamex,cformx,nnamex,'yzaver.in')
+        call report_undefined(cnamey,cformy,nnamey,'xzaver.in')
+        call report_undefined(cnamez,cformz,nnamez,'xyaver.in')
+        call report_undefined(cnamer,cformr,nnamer,'phizaver.in')
+        call report_undefined(cnamexy,cformxy,nnamexy,'zaver.in')
+        call report_undefined(cnamexz,cformxz,nnamexz,'yaver.in')
+        call report_undefined(cnamerz,cformrz,nnamerz,'phiaver.in')
+      endif
+
+    endsubroutine report_undefined_diagnostics
+!***********************************************************************
     subroutine gen_form_legend(fform,legend)
 !
 !  19-aug-13/MR: outsourced from prints
 !  10-jan-17/MR: added adjustment of fixed point format to output value
+!  12-jan-17/MR: undefined diagnostics suppressed in format
 !
       use General, only: safe_character_append, itoa
       use Sub, only: noform
@@ -305,35 +361,38 @@ module Diagnostics
         if (present(legend)) legend=''
 !
         do iname=1,nname
+!
+          if (cform(iname)/='') then
 
-          lcompl=itype_name(iname)>=ilabel_complex
+            lcompl=itype_name(iname)>=ilabel_complex
 
-          if (lcompl) then
-            tform = comma//'" ("'//comma//trim(cform(iname))//comma &
-              //'","'//comma//trim(cform(iname))//comma//'")"'
-          else
-            if (fname(iname)/=0.) then
+            if (lcompl) then
+              tform = comma//'" ("'//comma//trim(cform(iname))//comma &
+                      //'","'//comma//trim(cform(iname))//comma//'")"'
+            else
+              if (fname(iname)/=0.) then
 !
 !  Check output item for fixed-point formats.
 !
-              index_i=scan(cform(iname),'fF')
-              if (index_i>0) then
-                read(cform(iname)(index_i+1:),*) rlength
-                if (floor(alog10(abs(fname(iname))))+2 > rlength) then
-                  index_d=index(cform(iname),'.')
-                  length=len(trim(cform(iname)))
-                  write(cform(iname)(index_i+1:), &
-                        '(f'//trim(itoa(length-index_i))//'.'//trim(itoa(length-index_d))//')') rlength+2
+                index_i=scan(cform(iname),'fF')
+                if (index_i>0) then
+                  read(cform(iname)(index_i+1:),*) rlength
+                  if (floor(alog10(abs(fname(iname))))+2 > rlength) then
+                    index_d=index(cform(iname),'.')
+                    length=len(trim(cform(iname)))
+                    write(cform(iname)(index_i+1:), &
+                          '(f'//trim(itoa(length-index_i))//'.'//trim(itoa(length-index_d))//')') rlength+2
+                  endif
                 endif
               endif
-            endif
 
-            tform = comma//trim(cform(iname))
+              if (cform(iname)/='') tform = comma//trim(cform(iname))
+
+            endif
+            call safe_character_append(fform, trim(tform))
+            if (present(legend)) call safe_character_append(legend, noform(cname(iname),lcompl))
 
           endif
-          call safe_character_append(fform, trim(tform))
-          if (present(legend)) call safe_character_append(legend, noform(cname(iname),lcompl))
-
         enddo
         call safe_character_append(fform, ')')
 !
@@ -360,26 +419,32 @@ module Diagnostics
 !
     endsubroutine clean_line
 !***********************************************************************
-    subroutine write_sound_append(legend,sublegend,coorlegend,line)
+    subroutine write_sound_append(legend,sublegend,coorlegend,line,lfirst_call)
 !
 !  Append to diagnostics file.
 !
 !  27-Nov-2014/Bourdin.KIS: cleaned up code from write_sound
 !
-      character (len=*), intent(in) :: legend, sublegend, coorlegend, line
+      character (len=*), intent(in   ) :: legend, sublegend, coorlegend, line
+      logical,           intent(inout) :: lfirst_call
 !
-      logical, save :: lfirst_call=.true.
       integer, parameter :: lun=1
+      integer :: len_stroke, len_leg
 !
         open(lun,file=trim(directory)//'/sound.dat',position='append')
 !
         if (lfirst_call) then
-          write(lun,'(a)') trim(legend)
           if (dimensionality>0) then
+            len_leg=len_trim(legend)
+            len_stroke=max(len_leg,len_trim(coorlegend),len_trim(sublegend))
+            write(lun,'(a)') trim(legend)//repeat('-',max(0,len_stroke-len_leg))
             write(lun,'(a)') trim(coorlegend)
             if ( ncoords_sound>1 ) write(lun,'(a)') trim(sublegend)
-            write(lun,'(a)') comment_char//repeat('-',len_trim(legend)-1)
+            write(lun,'(a)') comment_char//repeat('-',len_stroke-1)
+          else
+            write(lun,'(a)') trim(legend)
           endif
+          lfirst_call=.false.
         endif
 !
         write(lun,'(a)') trim(line)
@@ -395,14 +460,13 @@ module Diagnostics
 !   3-dec-10/dhruba+joern: coded
 !  10-jan-11/MR: modified
 !
-      use General, only: itoa, safe_character_append, safe_character_prepend
+      use General, only: itoa, safe_character_append, safe_character_prepend,compress
       use Sub    , only: noform
 !
       implicit none
 !
       real, intent(in) :: tout
 !
-      logical, save :: lfirst_call=.true.
       logical :: ldata
       character (len=linelen*3) :: fform,legend,sublegend,coorlegend,line
       character (len=*), parameter :: tform='(f10.4'
@@ -410,38 +474,36 @@ module Diagnostics
       character (len=ltform) :: scoor
       character (len=3*ncoords_sound*max_col_width) :: item
       real    :: coor
-      integer :: iname,leng,nc,nch,nleg,nsub,idim,icoor,i,j
+      integer :: iname,leng,nc,nch,nleg,nsub,idim,icoor,i,j,len
 !
 !  Produce the format.
 !
       fform = tform//','
-      if ( ncoords_sound>1 ) then
+      if ( ncoords_sound>1 ) &
         call safe_character_append(fform, trim(itoa(ncoords_sound))//'(')
-      endif
 !
-      if (lfirst_call) then
+      if (lfirst_call_sound) then
 !
         legend = comment_char//noform('t'//tform//')')
 !
         if (dimensionality>0) then
 !
-          coorlegend = comment_char//' Points:   '
+          coorlegend = comment_char//' Point(s):   '
           nleg = len_trim(coorlegend)+3
 !
           do icoor=1,ncoords_sound
 !
-            coorlegend(nleg+1:) = trim(itoa(icoor))//' = '
+            if (ncoords_sound>1) coorlegend(nleg+1:) = trim(itoa(icoor))//' = '
             nleg = len_trim(coorlegend)+1
 !
             item = '('
             do idim=1,dimensionality
-              select case (idim)
+              select case (dim_mask(idim))
               case (1); coor=x(sound_coords_list(icoor,1))
               case (2); coor=y(sound_coords_list(icoor,2))
               case (3); coor=z(sound_coords_list(icoor,3))
-              case default
               end select
-              write(scoor,tform//')')coor
+              write(scoor,tform//')') coor
               call safe_character_append(item,trim(adjustl(scoor))//',')
             enddo
             coorlegend(nleg+1:) = item(1:len_trim(item)-1)//'),   '
@@ -459,8 +521,9 @@ module Diagnostics
       do iname=1,nname_sound
 !
         if (cform_sound(iname)/=' ') then
+
           ldata=.true.
-          if (lfirst_call) then
+          if (lfirst_call_sound) then
 !
             item = noform(cname_sound(iname))
             if ( ncoords_sound>1 ) then
@@ -488,22 +551,24 @@ module Diagnostics
 !  Put output line into a string.
 !
       if (ldata) then
+
         fform = fform(1:len_trim(fform)-1)
         if ( ncoords_sound>1 ) call safe_character_append(fform, ')')
-        write(line,trim(fform)//')') tout, ((fname_sound(i,j),  &
-            j=1,ncoords_sound), i=1,nname_sound)
+        len=nname_sound
+        call compress(fname_sound,cform_sound=='',len)
+        write(line,trim(fform)//')') tout, ((fname_sound(i,j), i=1,ncoords_sound), j=1,len)
+               !i=1,ncoords_sound), j=1,nname_sound)
                !(1:nname_sound,1:ncoords_sound)
       else
         write(line,tform//')')tout
       endif
 !
       call clean_line(line)
-      call write_sound_append(legend,sublegend,coorlegend,line)
+      call write_sound_append(legend,sublegend,coorlegend,line,lfirst_call_sound)
 !
       if (ldebug) write(*,*) 'exit write_sound'
-      lfirst_call = .false.
 !
-      fname_sound(1:nname_sound,1:ncoords_sound)=0.0
+      fname_sound(1:ncoords_sound,1:nname_sound)=0.0
 !
     endsubroutine write_sound
 !***********************************************************************
@@ -900,14 +965,14 @@ module Diagnostics
 !
       real, save :: t2davg
       integer, save :: n2davg
-      logical, save :: first=.true.
+      logical, save :: lfirst=.true.
       character (len=fnlen) :: file
 !
       file=trim(datadir)//'/t2davg.dat'
-      if (first) &
+      if (lfirst) then
         call read_snaptime(trim(file),t2davg,n2davg,d2davg,t)
-
-      first = .false.
+        lfirst = .false.
+      endif
 !
 !  This routine sets l2davg=T whenever its time to write 2D averages
 !
@@ -1144,16 +1209,16 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
 !  29-jan-07/wlad: adapted from write_yzaverages
 !
-      logical,save :: lfirst_call=.true.
-!
       if (lroot.and.nnamer>0) then
         open(1,file=trim(datadir)//'/phizaverages.dat',position='append')
-        if (lfirst_call) write(1,'(1p,8e14.5e3)') rcyl
+        if (lfirst_call_1davs) then
+          write(1,'(1p,8e14.5e3)') rcyl
+          lfirst_call_1davs=.false.
+        endif
         write(1,'(1pe12.5)') t1ddiagnos
         write(1,'(1p,8e14.5e3)') fnamer(:,1:nnamer)
         close(1)
       endif
-      lfirst_call=.false.
 !
     endsubroutine write_phizaverages
 !***********************************************************************
@@ -1289,7 +1354,6 @@ if (ios/=0) print*, 'ios, i=', ios, i
       character (len=*) :: cname,cform
       character (len=*) :: ctest
       integer :: iname,itest,iform0,iform1,iform2,length,index_i,iwidth,idecs,idiff
-      real :: rlength
 !
       intent(in)    :: iname,cname,ctest
       intent(inout) :: itest
@@ -1304,55 +1368,60 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !  Set format; use default if not given.
 !
       if (iform1>0) then
-        cform=cname(iform1+1:iform2-1)
         length=iform1-1
       else
-        cform='1pE10.2'
         length=iform0-1
-      endif
-
-      if (scan(cform(1:1), 'eEdDgG')==1) then 
-!
-!  Increase d in [ED]w.d if insufficient to hold a sign.
-!
-        if (scan(cform(1:1), "eEdD")==1) then
-
-          index_i=index(cform,'.')
-          read(cform(2:index_i-1),*) iwidth
-          read(cform(index_i+1:),*) idecs
-          idiff=iwidth-idecs-7
-          if (idiff<0) &
-            cform=cform(1:1)//trim(itoa(iwidth-idiff))//cform(index_i:)           
-
-        endif
-!
-!  Fix annoying Fortran 1p stuff ([EDG]w.d --> 1p[EDG]w.d).
-!
-        call safe_character_assign(cform, '1p'//trim(cform)//',0p')
-        
       endif
 !
 !  If the name matches, we keep the name and can strip off the format.
 !  The remaining name can then be used for the legend.
 !
       if (cname(1:length)==ctest) then
+
         if (itest==0) then
+          if (iform1>0) then
+            cform=cname(iform1+1:iform2-1)
+          else
+            cform='1pE10.2'
+          endif
           itest=iname
           fparse_name=iname
         else
           fparse_name=-1
         endif
-      else
-        fparse_name=0
-      endif
+
+        if (scan(cform(1:1), 'eEdDgG')==1) then
+!
+!  Increase d in [ED]w.d if insufficient to hold a sign.
+!
+          if (scan(cform(1:1), "eEdD")==1) then
+
+            index_i=index(cform,'.')
+            read(cform(2:index_i-1),*) iwidth
+            read(cform(index_i+1:),*) idecs
+            idiff=iwidth-idecs-7
+            if (idiff<0) &
+              cform=cform(1:1)//trim(itoa(iwidth-idiff))//cform(index_i:)
+
+          endif
+!
+!  Fix annoying Fortran 1p stuff ([EDG]w.d --> 1p[EDG]w.d).
+!
+          call safe_character_assign(cform, '1p'//trim(cform)//',0p')
+
+        endif
 !
 !  Integer formats are turned into floating point numbers.
 !
-      index_i=scan(cform,'iI',.true.)
+        index_i=scan(cform,'iI',.true.)
 
-      if (index_i>0) then
-        cform(index_i:index_i)='f'
-        cform=trim(cform)//'.0'
+        if (index_i>0) then
+          cform(index_i:index_i)='f'
+          cform=trim(cform)//'.0'
+        endif
+
+      else
+        fparse_name=0
       endif
 !
     endfunction fparse_name
@@ -1568,7 +1637,7 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
 !  This routine is to be called only once per step
 !
-      if (iname/=0) fname_sound(iname,iscoord)=a
+      if (iname/=0) fname_sound(iscoord,iname)=a
 !
    endsubroutine save_name_sound
 !***********************************************************************
@@ -2830,8 +2899,8 @@ if (ios/=0) print*, 'ios, i=', ios, i
       logical :: lval
       integer :: ierr, il
       integer :: mcoords_sound
-      integer, allocatable, dimension (:,:) :: temp_sound_coords
-      real    :: xsound, ysound, zsound
+      integer, allocatable, dimension (:,:) :: sound_inds
+      real, dimension(dimensionality) :: coords
       integer :: lsound, msound, nsound, nitems
 !
 !  Allocate and initialize to zero. Setting it to zero is only
@@ -2840,9 +2909,9 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !  such as computing mean field energies in calc_bmz, for example,
 !
       mcoords_sound = parallel_count_lines(sound_coord_file)
-      allocate(temp_sound_coords(mcoords_sound,3),stat=ierr)
+      allocate(sound_inds(mcoords_sound,3),stat=ierr)
       if (ierr>0) call fatal_error('allocate_sound', &
-            'Could not allocate memory for temp_sound_coords')
+            'Could not allocate memory for sound_inds')
 !
       ncoords_sound = 0; nitems = 0
 !
@@ -2850,20 +2919,15 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
       do isound=1,mcoords_sound
 !
-        select case (dimensionality)
-        case (1); read(parallel_unit_vec,*) xsound
-        case (2); read(parallel_unit_vec,*) xsound, ysound
-        case (3); read(parallel_unit_vec,*) xsound, ysound, zsound
-        case default
-        endselect
+        read(parallel_unit_vec,*) coords
 !
-        if (location_in_proc(xsound,ysound,zsound,lsound,msound,nsound)) then
+        if (location_in_proc(coords,lsound,msound,nsound)) then
 !
           lval = .true.
           do il = 1, ncoords_sound
-            if ((temp_sound_coords(il,1) == lsound) .and. &
-                (temp_sound_coords(il,2) == msound) .and. &
-                (temp_sound_coords(il,3) == nsound) ) then
+            if ((sound_inds(il,1) == lsound) .and. &
+                (sound_inds(il,2) == msound) .and. &
+                (sound_inds(il,3) == nsound) ) then
               lval = .false.
               exit
             endif
@@ -2871,9 +2935,9 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
           if (lval) then
             ncoords_sound = ncoords_sound + 1
-            temp_sound_coords(ncoords_sound,1) = lsound
-            temp_sound_coords(ncoords_sound,2) = msound
-            temp_sound_coords(ncoords_sound,3) = nsound
+            sound_inds(ncoords_sound,1) = lsound
+            sound_inds(ncoords_sound,2) = msound
+            sound_inds(ncoords_sound,3) = nsound
           endif
         endif
       enddo
@@ -2896,10 +2960,10 @@ if (ios/=0) print*, 'ios, i=', ios, i
           if (ierr>0) call fatal_error('allocate_sound', &
               'Could not allocate memory for sound_coords_list')
         endif
-        sound_coords_list = temp_sound_coords(1:ncoords_sound,:)
+        sound_coords_list = sound_inds(1:ncoords_sound,:)
 !
         if (.not. allocated(fname_sound)) then
-          allocate(fname_sound(nnamel,ncoords_sound),stat=ierr)
+          allocate(fname_sound(ncoords_sound,nnamel),stat=ierr)
           if (ierr>0) call fatal_error('allocate_sound', &
               'Could not allocate memory for fname_sound')
           if (ldebug) print*, 'allocate_sound: allocated memory for '// &
@@ -2919,7 +2983,7 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !
 !  Now deallocate the temporary memory.
 !
-      deallocate(temp_sound_coords)
+      deallocate(sound_inds)
 !
     endsubroutine allocate_sound
 !***********************************************************************
@@ -3372,6 +3436,23 @@ if (ios/=0) print*, 'ios, i=', ios, i
       endif
 
     endsubroutine sign_masked_xyaver
+!***********************************************************************
+    subroutine diagnostics_clean_up
+!
+!   16-jan-17/MR: coded
+!
+                               call vnames_clean_up
+                               call fnames_clean_up
+                               call xyaverages_clean_up
+                               call xzaverages_clean_up
+                               call yzaverages_clean_up
+      if (lwrite_phizaverages) call phizaverages_clean_up
+      if (lwrite_yaverages)    call yaverages_clean_up
+      if (lwrite_zaverages)    call zaverages_clean_up
+      if (lwrite_phiaverages)  call phiaverages_clean_up
+      if (lwrite_sound)        call sound_clean_up
+    
+    endsubroutine diagnostics_clean_up
 !***********************************************************************
     subroutine fnames_clean_up
 !

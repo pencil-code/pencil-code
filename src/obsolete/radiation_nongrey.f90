@@ -2000,9 +2000,6 @@ module Radiation
         write(3,*) 'i_dtrad=',idiag_dtrad
         write(3,*) 'nname=',nname
         write(3,*) 'ie=',ie
-        write(3,*) 'ifx=',ifx
-        write(3,*) 'ify=',ify
-        write(3,*) 'ifz=',ifz
         write(3,*) 'iQrad=',iQrad
         write(3,*) 'ikapparho=',ikapparho
         write(3,*) 'iQrad2=',iQrad2

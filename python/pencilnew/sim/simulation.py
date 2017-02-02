@@ -75,7 +75,7 @@ class __Simulation__(object):
         self = self.update(quiet=quiet)                   # auto-update, i.e. read param.nml
         # Done
 
-    def copy(self, path_root='.', name=False, optionals=True, quiet=True, rename_submit_sripts=True, OVERWRITE=False):
+    def copy(self, path_root='.', name=False, optionals=True, quiet=True, rename_submit_scripts=False, OVERWRITE=False):
         """This method does a copy of the simulation object by creating a new directory 'name' in 'path_root' and copy all simulation components and optionals to his directory.
         This method neither links/compiles the simulation, nor creates data dir nor does overwrite anything.
 
@@ -87,17 +87,19 @@ class __Simulation__(object):
             name:           Name of new simulation, will be used as folder name. Rename will also happen in submit script if found. Simulation folders is not allowed to preexist!!
             optionals:      Add list of further files to be copied. Wildcasts allowed according to glob module! Set True to use self.optionals.
             quiet:          Set True to suppress output.
-            rename_submit_sripts:   Set False if no renames shall be performed in subnmit* files
+            rename_submit_scripts:   Set False if no renames shall be performed in subnmit* files
             OVERWRITE:      Set True to overwrite no matter what happens!
         """
         from os import listdir
-        from os.path import exists, join, abspath
+        from os.path import exists, join, abspath, basename
         from shutil import copyfile
         from glob import glob
         from numpy import size
         from pencilnew.io import mkdir
         from pencilnew.sim import is_sim_dir
         from pencilnew import get_sim
+        from pencilnew.io import mkdir, get_systemid, debug_breakpoint
+        from pencilnew.sim import is_sim_dir
 
         # set up paths
         if path_root == False or type(path_root) != type('string'):
@@ -117,17 +119,16 @@ class __Simulation__(object):
         path_newsim = join(path_root, name)     # simulation abspath
         path_newsim_src = join(path_newsim, 'src')
 
+        if type(optionals) == type(['list']): optionals = self.optionals + optionals          # optional files to be copied
         if optionals == True: optionals = self.optionals
-        if type(optionals) == type('string'):
-            optionals = [optionals]
-        if type(optionals) != type(['list']):
-            print('! ERROR: optionals must be of type list!')
-        optionals = self.optionals + optionals          # optional files to be copied
+        if type(optionals) == type('string'): optionals = [optionals]
+        if type(optionals) != type(['list']): print('! ERROR: optionals must be of type list!')
+
         tmp = []
         for opt in optionals:
-            files = glob(opt)
+            files = glob(join(self.path, opt))
             for f in files:
-                tmp.append(f)
+                tmp.append(basename(f))
         optionals = tmp
 
         ## check if the copy was already created
@@ -168,13 +169,18 @@ class __Simulation__(object):
         for f in self.components+optionals:
             f_path = abspath(join(self.path, f))
             copy_to = abspath(join(path_newsim, f))
+            if f_path == copy_to:
+                print('!! ERROR: file path f_path equal to destination copy_to. Debug this line manually!')
+                debug_breakpoint()
             copyfile(f_path, copy_to)
 
         # modify name in submit script files
-        if rename_submit_sripts:
-            for f in self.components+optionals:
-                if f.startswith('submit'):
-                    system_name, raw_name, job_name_key, submit_scriptfile, submit_line = pencilnew.io.get_systemid()
+        if rename_submit_scripts:
+            print('!! ERROR: Not implemented yet...  old version was not stable.')
+            #for f in self.components+optionals:
+                #if f.startswith('submit'):
+                    #debug_breakpoint()
+                    #system_name, raw_name, job_name_key, submit_scriptfile, submit_line = get_systemid()
 
         # done
         return get_sim(path_newsim)
@@ -455,8 +461,8 @@ class __Simulation__(object):
 
         print('! ERROR: Couldnt find '+quantity+'!')
 
-    def change_value_in_file(filename, quantity, newValue, sim=False, filepath=False, DEBUG=False):
+    def change_value_in_file(self, filename, quantity, newValue, filepath=False, DEBUG=False):
         """Same as pencilnew.io.change_value_in_file."""
         from pencilnew.io import change_value_in_file
 
-        return change_value_in_file(filename, quantity, newValue, sim=sim, filepath=filepath, DEBUG=DEBUG)
+        return change_value_in_file(filename, quantity, newValue, sim=self, filepath=filepath, DEBUG=DEBUG)

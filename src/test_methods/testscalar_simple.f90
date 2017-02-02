@@ -1168,17 +1168,8 @@ module Testscalar
 !  write column, idiag_XYZ, where our variable XYZ is stored
 !
       if (loptest(lwrite)) then
-        write(3,*) 'idiag_F11z=',idiag_F11z
-        write(3,*) 'idiag_F21z=',idiag_F21z
-        write(3,*) 'idiag_F31z=',idiag_F31z
-        write(3,*) 'idiag_F12z=',idiag_F12z
-        write(3,*) 'idiag_F22z=',idiag_F22z
-        write(3,*) 'idiag_F32z=',idiag_F32z
         write(3,*) 'icctest=',icctest
         write(3,*) 'ntestscalar=',ntestscalar
-        write(3,*) 'nnamez=',nnamez
-        write(3,*) 'nnamexy=',nnamexy
-        write(3,*) 'nnamexz=',nnamexz
       endif
 !
     endsubroutine rprint_testscalar

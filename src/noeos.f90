@@ -38,7 +38,6 @@ module EquationOfState
 !
   real, dimension (mz) :: profz_eos=1.0,dprofz_eos=0.0
   real, dimension (3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
-  real :: cp=impossible, cp1=impossible,cv=impossible
   real :: cs0=1.0, rho0=1.0, rho02
   real :: cs20=1.0, lnrho0=0.0
   real, parameter :: gamma=5.0/3.0, gamma_m1=2.0/3.0, gamma1=1./gamma
@@ -47,8 +46,6 @@ module EquationOfState
   real :: cs2cool=0.0
   real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   integer :: isothtop=1
-  integer :: isothmid=0
-  logical :: lcalc_cp=.false.
   character (len=labellen) :: ieos_profile='nothing'
   real, dimension(nchemspec,18) :: species_constants
   real, dimension(nchemspec,7)  :: tran_data
@@ -56,12 +53,9 @@ module EquationOfState
 !
   contains
 !***********************************************************************
-    subroutine register_eos()
+    subroutine register_eos
 !
 !  14-jun-03/axel: adapted from register_eos
-!
-      iyH=0
-      ilnTT=0
 !
 !  Identify version number.
 !
@@ -70,7 +64,7 @@ module EquationOfState
 !
     endsubroutine register_eos
 !***********************************************************************
-    subroutine units_eos()
+    subroutine units_eos
 !
 !  Dummy.
 !
@@ -146,8 +140,7 @@ module EquationOfState
       logical :: lreset
       logical, optional :: lwrite
 !
-      call keep_compiler_quiet(lreset)
-      call keep_compiler_quiet(present(lwrite))
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_eos
 !***********************************************************************
@@ -161,7 +154,7 @@ module EquationOfState
 !
     endsubroutine get_slices_eos
 !***********************************************************************
-    subroutine pencil_criteria_eos()
+    subroutine pencil_criteria_eos
 !
 !  All pencils that the EquationOfState module depends on are specified here.
 !
@@ -1866,7 +1859,7 @@ module EquationOfState
 !
     endsubroutine read_transport_data
 !***********************************************************************
-    subroutine write_thermodyn()
+    subroutine write_thermodyn
 !
     endsubroutine write_thermodyn
 !***********************************************************************

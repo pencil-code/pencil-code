@@ -1136,9 +1136,6 @@ module Testfield
       if (lwr) then
         write(3,*) 'iaatest=',iaatest
         write(3,*) 'ntestfield=',ntestfield
-        write(3,*) 'nnamez=',nnamez
-        write(3,*) 'nnamexy=',nnamexy
-        write(3,*) 'nnamexz=',nnamexz
       endif
 !
     endsubroutine rprint_testfield

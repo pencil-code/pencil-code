@@ -47,32 +47,29 @@ module Testfield
   real :: phase_testfield=.0
 !
   character (len=labellen), dimension(ninit) :: initaatest='nothing'
-  real, dimension (ninit) :: kx_aatest=1.,ky_aatest=1.,kz_aatest=1.
+  real, dimension (ninit) :: kx_aatest=1.,kz_aatest=1.
   real, dimension (ninit) :: phasex_aatest=0.,phasez_aatest=0.
   real, dimension (ninit) :: amplaatest=0.
   integer :: iuxtest=0,iuytest=0,iuztest=0,iuztestpq=0
-  integer :: iu0xtest=0,iu0ztest=0
-  integer, dimension (njtest) :: nuxb=0
   integer :: iE0=0
 
   ! input parameters
   real, dimension(3) :: Btest_ext=(/0.,0.,0./)
-  real :: taainit=0.,daainit=0.,taainit_previous=0.
+  real :: taainit=0.,daainit=0.
   logical :: reinitialize_aatest=.false.
   logical :: reinitialize_from_mainrun=.false.
-  logical :: zextent=.true.,lsoca=.false.,lsoca_jxb=.true.,lset_bbtest2=.false.
+  logical :: zextent=.true.,lsoca=.false.,lsoca_jxb=.true.
   logical :: luxb_as_aux=.false.,ljxb_as_aux=.false.,linit_aatest=.false.
   logical :: lignore_uxbtestm=.false., lignore_jxbtestm=.false., lphase_adjust=.false.
   character (len=labellen) :: itestfield='B11-B21',itestfield_method='(i)'
   real :: ktestfield=1., ktestfield1=1.
   real :: lin_testfield=0.,lam_testfield=0.,om_testfield=0.,delta_testfield=0.
-  real :: delta_testfield_next=0., delta_testfield_time=0.
   integer, parameter :: mtestfield=6*njtest
   integer :: naainit
   real :: bamp=1.,bamp1=1.,bamp12=1.
   namelist /testfield_init_pars/ &
        Btest_ext,zextent,initaatest, &
-       amplaatest,kx_aatest,ky_aatest,kz_aatest, &
+       amplaatest,kx_aatest,kz_aatest, &
        phasex_aatest,phasez_aatest, &
        luxb_as_aux,ljxb_as_aux
 
@@ -85,7 +82,7 @@ module Testfield
   namelist /testfield_run_pars/ &
        reinitialize_aatest,reinitialize_from_mainrun, &
        Btest_ext,zextent,lsoca,lsoca_jxb, &
-       lset_bbtest2,itestfield,ktestfield,itestfield_method, &
+       itestfield,ktestfield,itestfield_method, &
        etatest,etatest1,nutest,nutest1, &
        lin_testfield,lam_testfield,om_testfield,delta_testfield, &
        ltestfield_newz,leta_rank2,lphase_adjust,phase_testfield, &
@@ -607,7 +604,7 @@ module Testfield
       use Cdata
       use Diagnostics
       use Hydro, only: uumz,lcalc_uumeanz
-      use Magnetic, only: aamz,bbmz,jjmz,lcalc_aameanz,B_ext_inv
+      use Magnetic, only: bbmz,jjmz,lcalc_aameanz,B_ext_inv
       use Mpicomm, only: stop_it
       use Sub
 !
@@ -1211,7 +1208,7 @@ module Testfield
       use Sub
       use Hydro, only: calc_pencils_hydro,uumz,lcalc_uumeanz
       use Magnetic, only: calc_pencils_magnetic, idiag_bcosphz, idiag_bsinphz, &
-        aamz,bbmz,jjmz,lcalc_aameanz
+                          bbmz,jjmz,lcalc_aameanz
       use Mpicomm, only: mpibcast_real
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1413,7 +1410,7 @@ module Testfield
       use Cdata
       use Sub
       use Hydro, only: uumz,lcalc_uumeanz
-      use Magnetic, only: aamz,bbmz,jjmz,lcalc_aameanz
+      use Magnetic, only: aamz,lcalc_aameanz
 !
       real, dimension (mx,my,mz,mfarray) :: f
       character (len=fnlen) :: file
@@ -1436,8 +1433,6 @@ module Testfield
         endif
 !
 !  Do only one xy plane at a time (for cache efficiency)
-!  Also: reset nuxb=0, which is used for time-averaged testfields
-!  Do this for the full nuxb array.
 !
         if (t >= taainit) then
           do jtest=1,njtest
@@ -1800,9 +1795,6 @@ module Testfield
         write(3,*) 'iuutest=',iuutest
         write(3,*) 'ntestfield=',ntestfield/2
         write(3,*) 'ntestflow=',ntestfield/2
-        write(3,*) 'nnamez=',nnamez
-        write(3,*) 'nnamexy=',nnamexy
-        write(3,*) 'nnamexz=',nnamexz
       endif
 !
     endsubroutine rprint_testfield

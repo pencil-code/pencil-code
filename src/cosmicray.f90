@@ -33,7 +33,7 @@ module Cosmicray
 !
   character (len=labellen) :: initecr='zero', initecr2='zero'
   real :: gammacr=4./3.,gammacr1
-  real :: amplecr=.1,widthecr=.5,ecr_min=0.,ecr_const=1.
+  real :: amplecr=.1,widthecr=.5,ecr_const=1.
   real :: amplecr2=0.,kx_ecr=1.,ky_ecr=1.,kz_ecr=1.,radius_ecr=0.,epsilon_ecr=0.
   logical :: lnegl = .false.
   logical :: lvariable_tensor_diff = .false.

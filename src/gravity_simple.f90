@@ -54,11 +54,10 @@ module Gravity
   real :: kx_gg=1.0, ky_gg=1.0, kz_gg=1.0, gravz_const=1.0, reduced_top=1.0
   real :: xgrav=impossible, ygrav=impossible, zgrav=impossible
   real :: xinfty=0.0, yinfty=0.0, zinfty=impossible, zclip=impossible
-  real :: dgravx=0.0, pot_ratio=1.0, qgshear=1.5
+  real :: dgravx=0.0, pot_ratio=1.0
   real :: z1=0.0, z2=1.0, xref=0.0, zref=impossible, sphere_rad=0.0, g_ref=0.0
   real :: nu_epicycle=1.0, nu_epicycle2=1.0
   real :: nux_epicycle=0.0, nux_epicycle2=0.0
-  real :: r0_pot=0.0
   real :: g_A, g_C, g_A_factor=1.0, g_C_factor=1.0
   real :: cs0hs=0.0, H0hs=0.0
   real :: potx_const=0.0, poty_const=0.0, potz_const=0.0
@@ -297,6 +296,14 @@ module Gravity
         if (lroot) print*,'initialize_gravity: kepler x-grav, gravx=',gravx
         gravx_xpencil=-gravx/x**2
         potx_xpencil=-gravx/x + potx_const
+        g0=gravx
+        call put_shared_variable('gravx', gravx, caller='initialize_gravity')
+        call put_shared_variable('gravx_xpencil', gravx_xpencil)
+!
+      case ('kepler_2d')
+        if (lroot) print*,'initialize_gravity: kepler_2d x-grav, gravx=',gravx
+        gravx_xpencil=-gravx/x
+        potx_xpencil=-gravx*alog(x) + potx_const
         g0=gravx
         call put_shared_variable('gravx', gravx, caller='initialize_gravity')
         call put_shared_variable('gravx_xpencil', gravx_xpencil)
@@ -1207,9 +1214,6 @@ module Gravity
 !
       if (lwr) then
         write(3,*) 'igg=',igg
-        write(3,*) 'igx=',igx
-        write(3,*) 'igy=',igy
-        write(3,*) 'igz=',igz
       endif
 !
     endsubroutine rprint_gravity

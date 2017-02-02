@@ -1223,9 +1223,6 @@ module Testscalar
       if (loptest(lwrite)) then
         write(3,*) 'icctest=',icctest
         write(3,*) 'ntestscalar=',ntestscalar
-        write(3,*) 'nnamez=',nnamez
-        write(3,*) 'nnamexy=',nnamexy
-        write(3,*) 'nnamexz=',nnamexz
       endif
 !
     endsubroutine rprint_testscalar

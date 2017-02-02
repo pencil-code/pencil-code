@@ -25,7 +25,7 @@ module Cosmicray
 !
   contains
 !***********************************************************************
-    subroutine register_cosmicray()
+    subroutine register_cosmicray
 !
 !  Initialise variables which should know that we solve for active
 !  scalar: iecr - the cosmic ray energy density; increase nvar accordingly
@@ -97,7 +97,7 @@ module Cosmicray
 !
     endsubroutine init_ecr
 !***********************************************************************
-    subroutine pencil_criteria_cosmicray()
+    subroutine pencil_criteria_cosmicray
 !
 !  All pencils that the Cosmicray module depends on are specified here.
 !
@@ -160,19 +160,10 @@ module Cosmicray
 !
 !   09-oct-03/tony: coded
 !
-      logical :: lreset,lwr
+      logical :: lreset
       logical, optional :: lwrite
 !
-      lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-!
-!  Write column where which cosmic ray variable is stored.
-!
-      if (lwr) then
-        write(3,*) 'iecr=',iecr
-      endif
-!
-      call keep_compiler_quiet(lreset)
+      call keep_compiler_quiet(lreset,lwrite)
 !
     endsubroutine rprint_cosmicray
 !***********************************************************************

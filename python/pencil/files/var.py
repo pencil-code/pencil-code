@@ -274,7 +274,7 @@ class DataCube(object):
             if ('vort' in magic):
                 # Compute the vorticity field before doing trimall.
                 uu = f[index['ux']-1:index['uz'],...]
-                self.vort = curl(uu,dx,dy,dz,x,y,z,run2D=param.lwrite_2d)
+                self.vort = curl(uu,dx,dy,dz,x,y,z,run2D=param.lwrite_2d,param=param)
                 if (trimall):
                     if (param.lwrite_2d):
                         if (dim.nz == 1):
