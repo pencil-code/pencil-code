@@ -35,9 +35,11 @@ module Energy
   real :: zbot=0.0,ztop=0.0
   real :: tau_heat_cor=-1.0,tau_damp_cor=-1.0,zcor=0.0,TT_cor=0.0
   real :: zheat_uniform_range=0.
+  real :: heat_source_offset=0., heat_source_sigma=1.0, heat_source=0.0
   real, pointer :: reduce_cs2
   logical, pointer :: lreduced_sound_speed, lscale_to_cs2top
   logical, pointer :: lpressuregradient_gas
+  logical :: lheat_source
   logical :: ladvection_temperature=.true.
   logical :: lviscosity_heat=.false.
   logical :: lupw_lnTT=.false.,lcalc_heat_cool=.false.,lcalc_TTmean=.false.
@@ -58,7 +60,8 @@ module Energy
       lupw_lnTT,ladvection_temperature, &
       heat_uniform,chi,tau_heat_cor,tau_damp_cor,zcor,TT_cor, &
       lheatc_chiconst_accurate,lheatc_hyper3,chi_hyper3, &
-      iheatcond, zheat_uniform_range
+      iheatcond, zheat_uniform_range, heat_source_offset, &
+      heat_source_sigma, heat_source, lheat_source
 !
   integer :: idiag_TTmax=0    ! DIAG_DOC: $\max (T)$
   integer :: idiag_TTmin=0    ! DIAG_DOC: $\min (T)$
@@ -167,7 +170,7 @@ module Energy
 !
 !  Check whether we want heating/cooling
 !
-      lcalc_heat_cool = (heat_uniform/=0.0.or.tau_heat_cor>0)
+      lcalc_heat_cool = (heat_uniform/=0.0.or.tau_heat_cor>0.or.lheat_source)
 !
 !  Define bottom and top z positions
 !  (TH: This should really be global variables IMHO)
@@ -804,6 +807,7 @@ module Energy
 !
       real, dimension (nx) :: heat
       real :: prof
+      real :: fnorm
 !
 !  Initialize
 !
@@ -817,6 +821,13 @@ module Energy
         else
           heat=heat+heat_uniform
         endif
+      endif
+!
+!  Add heat profile
+!
+      if (lheat_source) then
+        fnorm=(2.*pi*heat_source_sigma**2)**1.5
+        heat=heat+(heat_source/fnorm)*exp(-.5*((x(l1:l2)-heat_source_offset)/heat_source_sigma)**2)
       endif
 !
 !  add "coronal" heating (to simulate a hot corona)
