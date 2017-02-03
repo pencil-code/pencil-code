@@ -134,12 +134,12 @@ module Solid_Cells
   
 
   contains 
- !***********************************************************************
+!***********************************************************************
   subroutine register_solid_cells()
 ! 
 !  Dummy routine
 !
-    end subroutine register_solid_cells
+  end subroutine register_solid_cells
 !***********************************************************************
 subroutine initialize_solid_cells(f)
 !
@@ -1466,12 +1466,12 @@ endfunction within_ogrid_comp
 
     endsubroutine grid_bound_data
 !***********************************************************************
-    subroutine time_step_solid_cells(f,df,p)
+    subroutine time_step_ogrid(f,df,p)
 !
       use Mpicomm, only: mpifinalize, mpiallreduce_max, MPI_COMM_WORLD
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar_ogrid) :: df.
       type (pencil_case) :: p
       real :: ds, dtsub
       real :: dt1, dt1_local, dt1_last=0.0
@@ -1552,7 +1552,7 @@ endfunction within_ogrid_comp
 !
       enddo
 !
-    endsubroutine time_step
+    endsubroutine time_step_ogrid
 !***********************************************************************
     subroutine pde_ogrid(f,df,p)
 !
@@ -1563,13 +1563,13 @@ endfunction within_ogrid_comp
       use Sub
 !
       logical :: early_finalize
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: df_iuu_pencil
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar_ogrid) :: df
+      real, dimension (nx_ogrid,3) :: df_iuu_pencil
       type (pencil_case) :: p
-      real, dimension (nx) :: maxadvec, maxdiffus, maxdiffus2, maxdiffus3, maxsrc
-      real, dimension (nx) :: advec2,advec2_hypermesh
-      real, dimension (nx) :: pfreeze,pfreeze_int,pfreeze_ext
+      real, dimension (nx_ogrid) :: maxadvec, maxdiffus, maxdiffus2, maxdiffus3, maxsrc
+      real, dimension (nx_ogrid) :: advec2,advec2_hypermesh
+      real, dimension (nx_ogrid) :: pfreeze,pfreeze_int,pfreeze_ext
       real, dimension(1)   :: mass_per_proc
       integer :: iv,nyz
 !
@@ -1627,7 +1627,7 @@ endfunction within_ogrid_comp
 !------------------------------------------------------------------------------
 !  Do loop over m and n.
 !
-      nyz=ny*nz
+      nyz=ny_ogrid*nz_ogrid
       mn_loop: do imn=1,nyz
         n=nn(imn)
         m=mm(imn)
@@ -1675,10 +1675,11 @@ endfunction within_ogrid_comp
 !
 !  Calculate pencils for the pencil_case.
 !
-        call calc_pencils_hydro(f,p)
-        call calc_pencils_density(f,p)
-        call calc_pencils_eos(f,p)
+        call calc_pencils_hydro_ogrid(f,p)
+        call calc_pencils_density_ogrid(f,p)
+        call calc_pencils_eos_ogrid(f,p)
         call calc_pencils_viscosity_ogrid(f,p)
+        call calc_pencils_energy_ogrid(f,p)
 !
 !  --------------------------------------------------------
 !  NO CALLS MODIFYING PENCIL_CASE PENCILS BEYOND THIS POINT
@@ -1688,8 +1689,8 @@ endfunction within_ogrid_comp
 !  Note that pressure gradient is added in denergy_dt of noentropy to momentum,
 !  even if lentropy=.false.
 !
-        call duu_dt(f,df,p)
-        call dlnrho_dt(f,df,p)
+        call duu_dt_ogrid(f,df,p)
+        call dlnrho_dt_ogrid(f,df,p)
 !
 !  In max_mn maximum values of u^2 (etc) are determined sucessively
 !  va2 is set in magnetic (or nomagnetic)
@@ -1966,7 +1967,7 @@ endfunction within_ogrid_comp
 !
     endsubroutine pde_ogrid
 !***********************************************************************
-    subroutine duu_dt(f,df,p)
+    subroutine duu_dt_ogrid(f,df,p)
 !
 !  velocity evolution
 !  calculate du/dt = - u.gradu - 2Omega x u + grav + Fvisc
@@ -1976,21 +1977,21 @@ endfunction within_ogrid_comp
       use Sub, only: vecout, dot, dot2, identify_bcs, cross, multsv_mn_add
       use General, only: transform_thph_yy
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray_ogrid) :: f
+      real, dimension (mx_ogrid,my_ogrid,m_ogridz,mvar_ogrid) :: df
       type (pencil_case) :: p
 !
       intent(in) :: p
       intent(inout) :: f,df
 !
-      real, dimension (nx,3) :: curlru,uxo
-      real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
-      real, dimension (nx) :: odel2um,curlru2,uref,curlo2,qo,quxo,graddivu2
-      real, dimension (nx) :: uus,ftot,Fmax
+      real, dimension (nx_ogrid,3) :: curlru,uxo
+      real, dimension (nx_ogrid) :: space_part_re,space_part_im,u2t,uot,out,fu
+      real, dimension (nx_ogrid) :: odel2um,curlru2,uref,curlo2,qo,quxo,graddivu2
+      real, dimension (nx_ogrid) :: uus,ftot,Fmax
       real, dimension (1,3) :: tmp
       real :: kx
       integer :: j, ju, k
-      integer, dimension(nz), save :: nuzup=0, nuzdown=0, nruzup=0, nruzdown=0
+      integer, dimension(nz_ogrid), save :: nuzup=0, nuzdown=0, nruzup=0, nruzdown=0
 !
       Fmax=0.0
 !
@@ -2000,7 +2001,7 @@ endfunction within_ogrid_comp
 !
 ! calculate viscous force
 !
-      call calc_viscous_force(df,p)
+      call calc_viscous_force_ogrid(df,p)
 !
 !  ``uu/dx'' for timestep
 !
@@ -2022,9 +2023,9 @@ endfunction within_ogrid_comp
 !
       call timing('duu_dt','just before ldiagnos',mnloop=.true.)
 !
-    endsubroutine duu_dt
+    endsubroutine duu_dt_ogrid
 !***********************************************************************
-    subroutine dlnrho_dt(f,df,p)
+    subroutine dlnrho_dt_ogrid(f,df,p)
 !
 !  Continuity equation.
 !  Calculate dlnrho/dt = - u.gradlnrho - divu
@@ -2032,16 +2033,16 @@ endfunction within_ogrid_comp
       use Diagnostics
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray_ogrid) :: f
+      real, dimension (mx_ogrid,my_ogrid,m_ogridz,mvar_ogrid) :: df
       type (pencil_case) :: p
 !
       intent(in)  :: p
       intent(inout) :: df,f
 !
-      real, dimension (nx) :: fdiff, gshockglnrho, gshockgrho, tmp, chi_sld
-      real, dimension (nx), parameter :: unitpencil=1.
-      real, dimension (nx) :: density_rhs   !GPU := df(l1:l2,m,n,irho|ilnrho)
+      real, dimension (nx_ogrid) :: fdiff, gshockglnrho, gshockgrho, tmp, chi_sld
+      real, dimension (nx_ogrid), parameter :: unitpencil=1.
+      real, dimension (nx_ogrid) :: density_rhs   !GPU := df(l1:l2,m,n,irho|ilnrho)
       integer :: j
 !
 !  Identify module and boundary conditions.
@@ -2060,9 +2061,9 @@ endfunction within_ogrid_comp
 !
       call timing('dlnrho_dt','finished',mnloop=.true.)
 !
-    endsubroutine dlnrho_dt
+    endsubroutine dlnrho_dt_ogrid
 !***********************************************************************
-    subroutine calc_pencils_eos_std(f,p)
+    subroutine calc_pencils_eos_std_ogrid(f,p)
 !
 ! Envelope adjusting calc_pencils_eos_pencpar to the standard use with
 ! lpenc_loc=lpencil
@@ -2072,20 +2073,20 @@ endfunction within_ogrid_comp
 !
       call calc_pencils_eos_pencpar(f,p,lpencil)
 !
-    endsubroutine calc_pencils_eos_std
+    endsubroutine calc_pencils_eos_std_ogrid
 !***********************************************************************
-    subroutine calc_pencils_eos_pencpar(f,p,lpenc_loc)
+    subroutine calc_pencils_eos_pencpar_ogrid(f,p,lpenc_loc)
 !
 !  Calculate EquationOfState pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
+      real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray_ogrid) :: f
       type (pencil_case),                intent(OUT)  :: p
       logical, dimension(:),             intent(IN)   :: lpenc_loc
 !
-      real, dimension(nx) :: tmp
+      real, dimension(nx_ogrid) :: tmp
       integer :: i,j
       real, dimension(:,:), pointer :: reference_state
 !
@@ -2178,23 +2179,21 @@ endfunction within_ogrid_comp
         call fatal_error('calc_pencils_eos','case not implemented yet')
       endselect
 !
-    endsubroutine calc_pencils_eos_pencpar
+    endsubroutine calc_pencils_eos_pencpar_ogrid
 !***********************************************************************
     subroutine calc_pencils_hydro_ogrid(f,p)
 !
 ! Envelope adjusting calc_pencils_hydro_pencpar to the standard use with
 ! lpenc_loc=lpencil
 !
-! 21-sep-13/MR    : coded
+      real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray_ogrid),intent(in) :: f
+      type (pencil_case),intent(OUT):: p
 !
-      real, dimension (mx,my,mz,mfarray),intent(IN) :: f
-      type (pencil_case),                intent(OUT):: p
-!
-      call calc_pencils_hydro_nonlinear(f,p,lpencil)
+      call calc_pencils_hydro_nonlinear_ogrid(f,p,lpencil)
 !
     endsubroutine calc_pencils_hydro_ogrid
 !***********************************************************************
-    subroutine calc_pencils_hydro_nonlinear(f,p,lpenc_loc)
+    subroutine calc_pencils_hydro_nonlinear_ogrid(f,p,lpenc_loc)
 !
 !  Calculate Hydro pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -2202,11 +2201,11 @@ endfunction within_ogrid_comp
       use Deriv
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray_ogrid),intent(in) :: f
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
-      real, dimension (nx) :: tmp, tmp2
+      real, dimension (nx_ogrid) :: tmp, tmp2
       integer :: i, j, ju, ij,jj,kk,jk
 !
       intent(in) :: lpenc_loc
@@ -2277,14 +2276,14 @@ endfunction within_ogrid_comp
       if (lpenc_loc(i_d2uidxj)) &
         call d2fi_dxj(f,iuu,p%d2uidxj)
 !
-    endsubroutine calc_pencils_hydro_nonlinear
+    endsubroutine calc_pencils_hydro_nonlinear_ogrid
 !***********************************************************************
     subroutine calc_pencils_density_ogrid(f,p)
 !
 !  Calculate Density pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray_ogrid),intent(in) :: f
       type (pencil_case) :: p
       intent(inout) :: f,p
 !
@@ -2301,14 +2300,14 @@ endfunction within_ogrid_comp
 !
     endsubroutine calc_pencils_density_ogrid
 !***********************************************************************
-    subroutine calc_pencils_linear_density(f,p)
+    subroutine calc_pencils_linear_density_ogrid(f,p)
 !
 !  Calculate Density pencils for linear density.
 !  Most basic pencils should come first, as others may depend on them.
 !
       use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray_ogrid),intent(in) :: f
       type (pencil_case) :: p
       intent(inout) :: f,p
 !
@@ -2346,7 +2345,7 @@ endfunction within_ogrid_comp
 ! sglnrho
       if (lpencil(i_sglnrho)) call multmv(p%sij,p%glnrho,p%sglnrho)
 !
-    endsubroutine calc_pencils_linear_density
+    endsubroutine calc_pencils_linear_density_ogrid
 !***********************************************************************
     subroutine calc_pencils_viscosity_ogrid(f,p)
 !
@@ -2359,15 +2358,15 @@ endfunction within_ogrid_comp
 !
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray_ogrid),intent(in) :: f
       type (pencil_case) :: p
       intent(inout) :: f,p
 !
-      real, dimension (nx,3) :: tmp,tmp2,tmp5,gradnu,sgradnu,gradnu_shock
-      real, dimension (nx) :: murho1,zetarho1,muTT,tmp3,tmp4,pnu,pnu_shock
-      real, dimension (nx) :: lambda_phi,prof,prof2,derprof,derprof2,qfvisc
-      real, dimension (nx) :: gradnu_effective,fac
-      real, dimension (nx,3) :: deljskl2,fvisc_nnewton2
+      real, dimension (nx_ogrid,3) :: tmp,tmp2,tmp5,gradnu,sgradnu,gradnu_shock
+      real, dimension (nx_ogrid) :: murho1,zetarho1,muTT,tmp3,tmp4,pnu,pnu_shock
+      real, dimension (nx_ogrid) :: lambda_phi,prof,prof2,derprof,derprof2,qfvisc
+      real, dimension (nx_ogrid) :: gradnu_effective,fac
+      real, dimension (nx_ogrid,3) :: deljskl2,fvisc_nnewton2
 !
       integer :: i,j,ju,ii,jj,kk,ll
 !
@@ -2384,15 +2383,13 @@ endfunction within_ogrid_comp
 !
     end subroutine calc_pencils_viscosity_ogrid
 !***********************************************************************
-    subroutine calc_viscous_force(df,p)
+    subroutine calc_viscous_force_ogrid(df,p)
 !
 !  Calculate viscous force term for right hand side of equation of motion.
 !
       use Sub, only: cross, dot2
 !
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: Reshock,fvisc2
-      real, dimension (nx,3) :: nuD2uxb,fluxv
+      real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray_ogrid),intent(in) :: f
       type (pencil_case) :: p
       integer :: i
 !
@@ -2403,25 +2400,44 @@ endfunction within_ogrid_comp
 !
       df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fvisc
 !
-    endsubroutine calc_viscous_force
+    endsubroutine calc_viscous_force_ogrid
+!***********************************************************************
+    subroutine calc_pencils_energy_ogrid(f,p)
+!
+!  Calculate Energy pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+      real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray_ogrid),intent(in) :: f
+      type (pencil_case) :: p
+!
+      integer :: j
+!
+      intent(in) :: f
+      intent(inout) :: p
+! Ma2
+      if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
+!
+!  fpres (=pressure gradient force)
+!
+      if (lpencil(i_fpres)) then
+        do j=1,3
+          if (llocal_iso) then
+            p%fpres(:,j)=-p%cs2*(p%glnrho(:,j)+p%glnTT(:,j))
+          else
+            p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
+          endif
+        enddo
+      endif
+!
+! tcond (dummy)
+!
+      if (lpencil(i_tcond)) p%tcond=0.
+! sglnTT (dummy)
+      if (lpencil(i_sglnTT)) p%sglnTT=0.
+!
+      call keep_compiler_quiet(f)
+!
+    endsubroutine calc_pencils_energy_ogrid
 !***********************************************************************
   end module Solid_Cells
 
-
-
-!***********************************************************************
-!***********************************************************************
-! THE FOLLOWING FOUR ROUTINES ARE NOT CHANGED FROM GRID.F90, AND
-! ARE FOR THAT REASON NOT IMPLEMENTED HERE
-! TODO: MAKE PUBLIC IN GRID.F90
-    !subroutine grid_profile_0D(xi,grid_func_o,g,gder1,gder2,param,dxyz,xistep,delta)
-    !subroutine grid_profile_1D(xi,grid_func_o,g,gder1,gder2,param,dxyz,xistep,delta)
-    !function find_star(xi_lo,xi_up,x_lo,x_up,x_star,grid_func_o) result (xi_star)
-    !subroutine calc_coeffs_1( grid, coeffs )  (NOT INCLUDED HERE, ONLY CALLED FROM CALC_BOUND_COEFFS)
-    !subroutine calc_bound_coeffs(coors,coeffs)
-! ROUTINE BELOW IS NOT INCLUDED, AS IT SHOULD BE SUFFICIENT TO HAVE IT IN GRID.F90
-    !subroutine set_coorsys_dimmask
-! ROUTINE BELOW IS NOT INCLUDED, AS ONLY CYLINDRICAL COORDINATES ARE CONSIDERED
-    !subroutine coords_aux(x,y,z)
-!***********************************************************************
-!***********************************************************************
