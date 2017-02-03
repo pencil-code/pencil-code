@@ -132,6 +132,7 @@ module Solid_Cells
   real, dimension (nx_ogrid) :: dxmax_pencil_ogrid,dxmin_pencil_ogrid
   real, dimension (nx_ogrid,3) :: dline_1_ogrid
   
+
   contains 
  !***********************************************************************
   subroutine register_solid_cells()
@@ -1677,6 +1678,7 @@ endfunction within_ogrid_comp
         call calc_pencils_hydro(f,p)
         call calc_pencils_density(f,p)
         call calc_pencils_eos(f,p)
+        call calc_pencils_viscosity_ogrid(f,p)
 !
 !  --------------------------------------------------------
 !  NO CALLS MODIFYING PENCIL_CASE PENCILS BEYOND THIS POINT
@@ -1994,18 +1996,15 @@ endfunction within_ogrid_comp
 !
 !  Advection term.
 !
-      if (ladvection_velocity .and. .not. lweno_transport .and. &
-          .not. lno_meridional_flow) then
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
-      endif
+      df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
 !
 ! calculate viscous force
 !
-      if (lviscosity) call calc_viscous_force(df,p)
+      call calc_viscous_force(df,p)
 !
 !  ``uu/dx'' for timestep
 !
-      if (lfirst.and.ldt.and.ladvection_velocity) then
+      if (lfirst.and.ldt.) then
         if (lmaximal_cdt) then
           advec_uu=max(abs(p%uu(:,1))*dline_1(:,1),&
                        abs(p%uu(:,2))*dline_1(:,2),&
@@ -2052,26 +2051,12 @@ endfunction within_ogrid_comp
       if (headtt) call identify_bcs('lnrho',ilnrho)
 !
 !  Continuity equation.
-!
-      if (lcontinuity_gas .and. .not. lweno_transport .and. &
-          .not. lffree .and. .not. lreduced_sound_speed .and. &
-          ieos_profile=='nothing') then
-        if (ldensity_nolog) then
-          density_rhs= - p%ugrho   - p%rho*p%divu
-        else
-          density_rhs= - p%uglnrho - p%divu
-        endif
-      else
-        density_rhs=0.
-      endif
+!      
+      density_rhs= - p%ugrho   - p%rho*p%divu      
 !
 !  Add the continuity equation terms to the RHS of the density df.
 !
-      if (ldensity_nolog) then
-        df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + density_rhs
-      else
-        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + density_rhs
-      endif
+      df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + density_rhs
 !
       call timing('dlnrho_dt','finished',mnloop=.true.)
 !
@@ -2194,6 +2179,231 @@ endfunction within_ogrid_comp
       endselect
 !
     endsubroutine calc_pencils_eos_pencpar
+!***********************************************************************
+    subroutine calc_pencils_hydro_ogrid(f,p)
+!
+! Envelope adjusting calc_pencils_hydro_pencpar to the standard use with
+! lpenc_loc=lpencil
+!
+! 21-sep-13/MR    : coded
+!
+      real, dimension (mx,my,mz,mfarray),intent(IN) :: f
+      type (pencil_case),                intent(OUT):: p
+!
+      call calc_pencils_hydro_nonlinear(f,p,lpencil)
+!
+    endsubroutine calc_pencils_hydro_ogrid
+!***********************************************************************
+    subroutine calc_pencils_hydro_nonlinear(f,p,lpenc_loc)
+!
+!  Calculate Hydro pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+      use Deriv
+      use Sub
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+      logical, dimension(npencils) :: lpenc_loc
+!
+      real, dimension (nx) :: tmp, tmp2
+      integer :: i, j, ju, ij,jj,kk,jk
+!
+      intent(in) :: lpenc_loc
+      intent(out):: p
+! uu
+      if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
+! u2
+      if (lpenc_loc(i_u2)) call dot2_mn(p%uu,p%u2)
+! uij
+      if (lpenc_loc(i_uij)) then 
+        call gij(f,iuu,p%uij,1)
+        if (lparticles_lyapunov) then
+          jk=0
+          do jj=1,3; do kk=1,3
+            jk=jk+1
+            f(l1:l2,m,n,iguij+jk-1) = p%uij(:,jj,kk)
+          enddo;enddo
+        endif
+      endif
+! divu
+      if (lpenc_loc(i_divu)) call div_mn(p%uij,p%divu,p%uu)
+! sij
+      if (lpenc_loc(i_sij)) call traceless_strain(p%uij,p%divu,p%sij,p%uu,lshear_rateofstrain)
+! sij2
+      if (lpenc_loc(i_sij2)) call multm2_sym_mn(p%sij,p%sij2)
+! oo (=curlu)
+      oo: if (lpenc_loc(i_oo)) then
+        if (ioo /= 0) then
+          p%oo = f(l1:l2,m,n,iox:ioz)
+        else
+          call curl_mn(p%uij,p%oo,p%uu)
+        endif
+      endif oo
+! o2
+      if (lpenc_loc(i_o2)) call dot2_mn(p%oo,p%o2)
+! ou
+      if (lpenc_loc(i_ou)) call dot_mn(p%oo,p%uu,p%ou)
+! ugu
+      if (lpenc_loc(i_ugu)) then
+        if (headtt.and.lupw_uu) print *,'calc_pencils_hydro: upwinding advection term'
+        call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=lupw_uu)
+      endif
+! ugu2
+      if (lpenc_loc(i_ugu2)) call dot2_mn(p%ugu,p%ugu2)
+! ogu ... ogu2
+      if (lpenc_loc(i_ogu)) call u_dot_grad(f,iuu,p%uij,p%oo,p%ogu,UPWIND=lupw_uu)
+! u3u21, u1u32, u2u13, u2u31, u3u12, u1u23
+      if (lpenc_loc(i_u3u21)) p%u3u21=p%uu(:,3)*p%uij(:,2,1)
+      if (lpenc_loc(i_u1u32)) p%u1u32=p%uu(:,1)*p%uij(:,3,2)
+      if (lpenc_loc(i_u2u13)) p%u2u13=p%uu(:,2)*p%uij(:,1,3)
+      if (lpenc_loc(i_u2u31)) p%u2u31=p%uu(:,2)*p%uij(:,3,1)
+      if (lpenc_loc(i_u3u12)) p%u3u12=p%uu(:,3)*p%uij(:,1,2)
+      if (lpenc_loc(i_u1u23)) p%u1u23=p%uu(:,1)*p%uij(:,2,3)
+!
+! del2u, graddivu
+!
+      if (lpenc_loc(i_graddivu)) then
+        if (headtt.or.ldebug) print*,'calc_pencils_hydro: call gij_etc'
+        call gij_etc(f,iuu,p%uu,p%uij,p%oij,GRADDIV=p%graddivu)
+      endif
+      if (lpenc_loc(i_del2u)) then
+        call curl_mn(p%oij,p%curlo,p%oo)
+        p%del2u=p%graddivu-p%curlo
+      endif
+!
+!del2uj, d^u/dx^2 etc
+!
+      if (lpenc_loc(i_d2uidxj)) &
+        call d2fi_dxj(f,iuu,p%d2uidxj)
+!
+    endsubroutine calc_pencils_hydro_nonlinear
+!***********************************************************************
+    subroutine calc_pencils_density_ogrid(f,p)
+!
+!  Calculate Density pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+      intent(inout) :: f,p
+!
+!  Differentiate between log density and linear density.
+!
+      if (ldensity_nolog) then
+        call calc_pencils_linear_density(f,p)
+      else
+        call fatal_error('calc_pencils_density_ogrid',&
+            'Must use linear density for solid_cells_ogrid')
+      endif
+! ekin
+      if (lpencil(i_ekin)) p%ekin=0.5*p%rho*p%u2
+!
+    endsubroutine calc_pencils_density_ogrid
+!***********************************************************************
+    subroutine calc_pencils_linear_density(f,p)
+!
+!  Calculate Density pencils for linear density.
+!  Most basic pencils should come first, as others may depend on them.
+!
+      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+      intent(inout) :: f,p
+!
+      integer :: i
+!
+! rho
+      p%rho=f(l1:l2,m,n,irho)
+! rho1
+      if (lpencil(i_rho1)) p%rho1=1.0/p%rho
+! lnrho
+      if (lpencil(i_lnrho))p%lnrho=log(p%rho)
+! glnrho and grho
+      if (lpencil(i_glnrho).or.lpencil(i_grho)) then
+!
+        call grad(f,irho,p%grho)
+! 
+        if (lpencil(i_glnrho)) then
+          do i=1,3
+            p%glnrho(:,i)=p%rho1*p%grho(:,i)
+          enddo
+        endif
+      endif
+! ugrho
+      if (lpencil(i_ugrho)) &
+        call u_dot_grad(f,ilnrho,p%grho,p%uu,p%ugrho,UPWIND=lupw_rho)
+! glnrho2
+      if (lpencil(i_glnrho2)) call dot2(p%glnrho,p%glnrho2)
+! del2rho
+      if (lpencil(i_del2rho)) then
+        call del2(f,irho,p%del2rho)
+        if (lreference_state) p%del2rho=p%del2rho+reference_state(:,iref_d2rho)
+      endif
+! del2lnrho
+      if (lpencil(i_del2lnrho)) p%del2lnrho=p%rho1*p%del2rho-p%glnrho2
+! sglnrho
+      if (lpencil(i_sglnrho)) call multmv(p%sij,p%glnrho,p%sglnrho)
+!
+    endsubroutine calc_pencils_linear_density
+!***********************************************************************
+    subroutine calc_pencils_viscosity_ogrid(f,p)
+!
+!  Calculate Viscosity pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+!  20-nov-04/anders: coded
+!  18-may-12/MR: calculation of viscous heat for boussinesq added
+!  14-oct-15/MR: corrected viscous force for slope-limited flux
+!
+      use Sub
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+      intent(inout) :: f,p
+!
+      real, dimension (nx,3) :: tmp,tmp2,tmp5,gradnu,sgradnu,gradnu_shock
+      real, dimension (nx) :: murho1,zetarho1,muTT,tmp3,tmp4,pnu,pnu_shock
+      real, dimension (nx) :: lambda_phi,prof,prof2,derprof,derprof2,qfvisc
+      real, dimension (nx) :: gradnu_effective,fac
+      real, dimension (nx,3) :: deljskl2,fvisc_nnewton2
+!
+      integer :: i,j,ju,ii,jj,kk,ll
+!
+!  Viscous force and viscous heating are calculated here (for later use).
+!
+      p%fvisc=0.0                               !!! not needed
+!
+!  viscous force: nu*del2v
+!  -- not physically correct (no momentum conservation), but
+!  numerically easy and in most cases qualitatively OK,
+!  for boussinesq (divu=0) yet exact
+!
+      p%fvisc=p%fvisc+nu*p%del2u
+!
+    end subroutine calc_pencils_viscosity_ogrid
+!***********************************************************************
+    subroutine calc_viscous_force(df,p)
+!
+!  Calculate viscous force term for right hand side of equation of motion.
+!
+      use Sub, only: cross, dot2
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: Reshock,fvisc2
+      real, dimension (nx,3) :: nuD2uxb,fluxv
+      type (pencil_case) :: p
+      integer :: i
+!
+      intent (in) :: p
+      intent (inout) :: df
+!
+!  Add viscosity to equation of motion
+!
+      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fvisc
+!
+    endsubroutine calc_viscous_force
 !***********************************************************************
   end module Solid_Cells
 
