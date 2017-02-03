@@ -3302,8 +3302,8 @@ module Interstellar
         call mpireduce_max(rhotmp,rhomax)
         call mpibcast_real(rhomax)
         if (rhomax/rhomin > SN_rho_ratio) ierr=iEXPLOSION_TOO_UNEVEN
-        if (lroot) print*,'get_properties: rhomax, rhomin, ierr=',&
-                                            rhomax, rhomin, ierr
+        if (lroot) print*,'get_properties: rhomax, rhomin, ierr, radius =',&
+                                   rhomax, rhomin, ierr, remnant%feat%radius
       endif
 !
     endsubroutine get_properties
