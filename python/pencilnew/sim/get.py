@@ -83,5 +83,5 @@ def get_sims(path_root='.', depth=1, unhide_all=False, quiet=False):
 
     # is sim_list empty?
     if sim_list == [] and not quiet:
-        print '? WARNING: no simulations found!'
+        print('? WARNING: no simulations found!')
     return sim_list

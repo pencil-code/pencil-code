@@ -56,7 +56,10 @@ def preparePlot(x_datasets, y_datasets,
   if (not fig) and (not ax):                 # if no fig/axis object is handed over, produce your own
     fig = plt.figure(figsize=PROFILE['fig_size'], facecolor=PROFILE['fig_background'])  # produce new figure if no axis is handed over
     ## SHOW PLOT?
-    if matplotlib.get_backend().startswith('Tk'): print '## Showing plot..'; plt.ion(); plt.show()
+    if matplotlib.get_backend().startswith('Tk'):
+        print('## Showing plot..')
+        plt.ion()
+        plt.show()
     # Remove the plot frame lines. They are unnecessary chartjunk.
     ax = fig.add_subplot(111)
 
@@ -81,7 +84,7 @@ def preparePlot(x_datasets, y_datasets,
     elif xlog and (not ylog):
       ax.set_xscale("log")
     else:
-      print '!! ERROR: only log setting not defined so far! xlog='+str(xlog)+' and ylog='+str(ylog)  # nothing else implemented yet!
+      print('!! ERROR: only log setting not defined so far! xlog='+str(xlog)+' and ylog='+str(ylog))  # nothing else implemented yet!
 
     ## set fontsize for ticks
     plt.setp(ax.get_xticklabels(), fontsize=PROFILE['ax_tick_fontsize'])
@@ -99,6 +102,8 @@ def preparePlot(x_datasets, y_datasets,
   ax.set_ylim(bottom=ymin)
   ax.set_ylim(top=ymax)
 
-  if ax == False: print "!! ERROR: Created axis object is False! Starting debug_breakpoint"; pencilnew.io.debug_breakpoint()
+  if ax == False:
+      print("!! ERROR: Created axis object is False! Starting debug_breakpoint")
+      pencilnew.io.debug_breakpoint()
 
   return (fig, ax)

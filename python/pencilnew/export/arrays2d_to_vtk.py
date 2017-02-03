@@ -14,7 +14,7 @@ def arrays2d_to_vtk(folder, filename, arrays, names, gridx, gridy):
     from pencilnew.math import natural_sort
     from pencilnew.io import mkdir
 
-    print "## producing vtk-file from arrays"
+    print("## producing vtk-file from arrays")
 
     if not (type(arrays) == type(['list']) and type(names) == type(['list'])): print('! ERROR: arrays and names must be a list!')
 
@@ -46,4 +46,4 @@ def arrays2d_to_vtk(folder, filename, arrays, names, gridx, gridy):
         fd.write('')
 
     fd.close()
-    print "## Done!"
+    print("## Done!")

@@ -12,7 +12,7 @@ import os
 try:
     import h5py
 except:
-    print '!! ERR in diag/fixed_points.py: Dependency of h5py not fullfilled.'
+    print('!! ERR in diag/fixed_points.py: Dependency of h5py not fullfilled.')
 from pencilnew.diag.tracers import TracersParameterClass
 from pencilnew.diag.tracers import Tracers
 from pencilnew.calc.streamlines import Stream
@@ -376,7 +376,7 @@ class FixedPoint(object):
 
         # Multi core setup.
         if not(np.isscalar(n_proc)) or (n_proc%1 != 0):
-            print "error: invalid processor number"
+            print("error: invalid processor number")
             return -1
         queue = mp.Queue()
 

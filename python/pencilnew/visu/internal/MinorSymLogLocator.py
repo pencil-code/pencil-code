@@ -29,17 +29,17 @@ class MinorSymLogLocator(Locator):
 
     # handle the lowest part
     for i in xrange(1, len(majorlocs)):
-	majorstep = majorlocs[i] - majorlocs[i-1]
-	if abs(majorlocs[i-1] + majorstep/2) < self.linthresh:
-	    ndivs = 10
-	else:
-	    ndivs = 9
-	minorstep = majorstep / ndivs
-	locs = np.arange(majorlocs[i-1], majorlocs[i], minorstep)[1:]
-	minorlocs.extend(locs)
+        majorstep = majorlocs[i] - majorlocs[i-1]
+        if abs(majorlocs[i-1] + majorstep/2) < self.linthresh:
+            ndivs = 10
+        else:
+            ndivs = 9
+        minorstep = majorstep / ndivs
+        locs = np.arange(majorlocs[i-1], majorlocs[i], minorstep)[1:]
+        minorlocs.extend(locs)
 
     return self.raise_if_exceeds(np.array(minorlocs))
 
-  def tick_values(self, vmin, vmax):
-    raise NotImplementedError('Cannot get tick locations for a '
+    def tick_values(self, vmin, vmax):
+        raise NotImplementedError('Cannot get tick locations for a '
 			      '%s type.' % type(self))

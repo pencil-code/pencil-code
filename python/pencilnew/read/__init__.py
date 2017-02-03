@@ -4,15 +4,15 @@
 ##
 ################
 
-from dim import *
-from param import *
-from grid import *
-from index import *
-from var import var
-from slices import slices
-from ts import *
-from averages import *
+from .dim import *
+from .param import *
+from .grid import *
+from .index import *
+from .var import var
+from .slices import slices
+from .ts import *
+from .averages import *
 
 # idl workarounds
-from pstalk import pstalk
-from pvar import pvar
+from .pstalk import pstalk
+from .pvar import pvar
