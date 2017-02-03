@@ -166,13 +166,25 @@ module EquationOfState
       endif
 !
       if (unit_temperature==impossible) then
-        if (cp==impossible) cp=1.0
-        if (gamma_m1==0.0) then
-          Rgas=mu*cp
+        if (lfix_unit_std) then
+          Rgas=Rgas_unit_sys/unit_velocity**2
+          if (cp==impossible) then
+            if (gamma_m1==0.0) then
+              cp=Rgas/mu
+            else
+              cp=Rgas/(mu*gamma_m1*gamma1)
+            endif
+          endif
+          unit_temperature=unit_velocity**2*Rgas/Rgas_unit_sys
         else
-          Rgas=mu*(1.0-gamma1)*cp
+          if (cp==impossible) cp=1.0
+          if (gamma_m1==0.0) then
+            Rgas=mu*cp
+          else
+            Rgas=mu*(1.0-gamma1)*cp
+          endif
+          unit_temperature=unit_velocity**2*Rgas/Rgas_unit_sys
         endif
-        unit_temperature=unit_velocity**2*Rgas/Rgas_unit_sys
       else
         Rgas=Rgas_unit_sys*unit_temperature/unit_velocity**2
         if (cp==impossible) then
