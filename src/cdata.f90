@@ -199,6 +199,7 @@ module Cdata
 !  Units (need to be in double precision).
 !
   character (len=3) :: unit_system='cgs'
+  logical :: lfix_unit_std=.false.
   double precision :: unit_length=impossible,unit_velocity=impossible
   double precision :: unit_density=impossible,unit_temperature=impossible
   double precision :: unit_magnetic=impossible
