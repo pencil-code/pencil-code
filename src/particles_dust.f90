@@ -262,7 +262,7 @@ module Particles
       lvector_gravity, lcompensate_sedimentation,compensate_sedimentation, &
       lpeh_radius, A3, A2, ldraglaw_stokesschiller, lbirthring_depletion, birthring_lifetime, &
       remove_particle_at_time, remove_particle_criteria, remove_particle_criteria_size, &
-      supersat_ngp, supersat_cic
+      supersat_ngp, supersat_cic, rp_int, rp_ext
 !
   integer :: idiag_xpm=0, idiag_ypm=0, idiag_zpm=0      ! DIAG_DOC: $x_{part}$
   integer :: idiag_xp2m=0, idiag_yp2m=0, idiag_zp2m=0   ! DIAG_DOC: $x^2_{part}$
