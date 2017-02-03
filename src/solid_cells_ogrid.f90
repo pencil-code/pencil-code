@@ -2077,7 +2077,124 @@ endfunction within_ogrid_comp
 !
     endsubroutine dlnrho_dt
 !***********************************************************************
-
+    subroutine calc_pencils_eos_std(f,p)
+!
+! Envelope adjusting calc_pencils_eos_pencpar to the standard use with
+! lpenc_loc=lpencil
+!
+      real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
+      type (pencil_case),                intent(OUT)  :: p
+!
+      call calc_pencils_eos_pencpar(f,p,lpencil)
+!
+    endsubroutine calc_pencils_eos_std
+!***********************************************************************
+    subroutine calc_pencils_eos_pencpar(f,p,lpenc_loc)
+!
+!  Calculate EquationOfState pencils.
+!  Most basic pencils should come first, as others may depend on them.
+!
+      use Sub
+!
+      real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
+      type (pencil_case),                intent(OUT)  :: p
+      logical, dimension(:),             intent(IN)   :: lpenc_loc
+!
+      real, dimension(nx) :: tmp
+      integer :: i,j
+      real, dimension(:,:), pointer :: reference_state
+!
+!  Inverse cv and cp values.
+!
+      if (lpenc_loc(i_cv1)) p%cv1=cv1
+      if (lpenc_loc(i_cp1)) p%cp1=cp1
+      if (lpenc_loc(i_cv))  p%cv=1/cv1
+      if (lpenc_loc(i_cp))  p%cp=1/cp1
+      if (lpenc_loc(i_cp1tilde)) p%cp1tilde=cp1
+!
+      if (lpenc_loc(i_glnmumol)) p%glnmumol(:,:)=0.0
+!
+      select case (ieosvars)
+!
+!  Work out thermodynamic quantities for given lnrho or rho and TT.
+!
+      case (ilnrho_TT,irho_TT)
+        if (lpenc_loc(i_TT))   p%TT=f(l1:l2,m,n,ieosvar2)
+        if (lpenc_loc(i_TT1).or.lpenc_loc(i_hlnTT))  p%TT1=1/f(l1:l2,m,n,ieosvar2)
+        if (lpenc_loc(i_lnTT).or.lpenc_loc(i_ss).or.lpenc_loc(i_ee)) &
+            p%lnTT=log(f(l1:l2,m,n,ieosvar2))
+        if (lpenc_loc(i_cs2))  p%cs2=cp*gamma_m1*f(l1:l2,m,n,ieosvar2)
+        if (lpenc_loc(i_gTT))  call grad(f,ieosvar2,p%gTT)
+        if (lpenc_loc(i_glnTT).or.lpenc_loc(i_hlnTT)) then
+          do i=1,3; p%glnTT(:,i)=p%gTT(:,i)*p%TT1; enddo
+        endif
+        if (lpenc_loc(i_del2TT).or.lpenc_loc(i_del2lnTT)) &
+            call del2(f,ieosvar2,p%del2TT)
+        if (lpenc_loc(i_del2lnTT)) then
+          tmp=0.0
+          do i=1,3
+            tmp=tmp+p%glnTT(:,i)**2
+          enddo
+          p%del2lnTT=p%del2TT*p%TT1-tmp
+        endif
+        if (lpenc_loc(i_hlnTT)) then
+          call g2ij(f,iTT,p%hlnTT)
+          do i=1,3; do j=1,3
+            p%hlnTT(:,i,j)=p%hlnTT(:,i,j)*p%TT1-p%glnTT(:,i)*p%glnTT(:,j)
+          enddo; enddo
+        endif
+        if (lpenc_loc(i_del6TT)) call del6(f,ieosvar2,p%del6TT)
+        if (lpenc_loc(i_ss)) p%ss=cv*(p%lnTT-lnTT0-gamma_m1*(p%lnrho-lnrho0))
+        if (lpenc_loc(i_pp)) p%pp=cv*gamma_m1*p%rho*p%TT
+        if (lpenc_loc(i_ee)) p%ee=cv*exp(p%lnTT)
+!
+!  Work out thermodynamic quantities for given lnrho or rho and cs2.
+!
+      case (ilnrho_cs2,irho_cs2)
+        if (leos_isentropic) then
+          call fatal_error('calc_pencils_eos', &
+              'leos_isentropic not implemented for ilnrho_cs2, try ilnrho_ss')
+        elseif (leos_isothermal) then
+          if (lpenc_loc(i_cs2)) p%cs2=cs20
+          if (lpenc_loc(i_lnTT)) p%lnTT=lnTT0
+          if (lpenc_loc(i_glnTT)) p%glnTT=0.0
+          if (lpenc_loc(i_hlnTT)) p%hlnTT=0.0
+          if (lpenc_loc(i_del2lnTT)) p%del2lnTT=0.0
+          if (lpenc_loc(i_ss)) p%ss=-(cp-cv)*(p%lnrho-lnrho0)
+          if (lpenc_loc(i_del2ss)) p%del2ss=-(cp-cv)*p%del2lnrho
+          if (lpenc_loc(i_gss)) p%gss=-(cp-cv)*p%glnrho
+          if (lpenc_loc(i_hss)) p%hss=-(cp-cv)*p%hlnrho
+          if (lpenc_loc(i_pp)) p%pp=gamma1*p%rho*cs20
+        elseif (leos_localisothermal) then
+          if (lpenc_loc(i_cs2)) p%cs2=f(l1:l2,m,n,iglobal_cs2)
+          if (lpenc_loc(i_lnTT)) call fatal_error('calc_pencils_eos', &
+              'temperature not needed for localisothermal')
+          if (lpenc_loc(i_glnTT)) &
+              p%glnTT=f(l1:l2,m,n,iglobal_glnTT:iglobal_glnTT+2)
+          if (lpenc_loc(i_hlnTT)) call fatal_error('calc_pencils_eos', &
+              'no gradients yet for localisothermal')
+          if (lpenc_loc(i_del2lnTT)) call fatal_error('calc_pencils_eos', &
+              'no gradients yet for localisothermal')
+          if (lpenc_loc(i_ss)) call fatal_error('calc_pencils_eos', &
+              'entropy not needed for localisothermal')
+          if (lpenc_loc(i_del2ss)) call fatal_error('calc_pencils_eos', &
+              'no gradients yet for localisothermal')
+          if (lpenc_loc(i_gss)) call fatal_error('calc_pencils_eos', &
+              'entropy gradient not needed for localisothermal')
+          if (lpenc_loc(i_hss)) call fatal_error('calc_pencils_eos', &
+              'no gradients yet for localisothermal')
+          if (lpenc_loc(i_pp)) p%pp=p%rho*p%cs2
+        else
+          call fatal_error('calc_pencils_eos', &
+              'Full equation of state not implemented for ilnrho_cs2')
+        endif
+!
+      case default
+        call fatal_error('calc_pencils_eos','case not implemented yet')
+      endselect
+!
+    endsubroutine calc_pencils_eos_pencpar
+!***********************************************************************
   end module Solid_Cells
 
 
