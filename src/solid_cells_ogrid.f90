@@ -132,6 +132,15 @@ module Solid_Cells
   real, dimension (nx_ogrid) :: dxmax_pencil_ogrid,dxmin_pencil_ogrid
   real, dimension (nx_ogrid,3) :: dline_1_ogrid
   
+  ! For mn-loop over ogrid pencils
+  integer :: n_ogrid, m_ogrid
+  ! For periodic boundaries
+  integer, parameter :: l1i_ogrid=l1_ogrid+nghost-1
+  integer :: l2i_ogrid=mx_ogrid-2*nghost+1
+  integer, parameter :: m1i_ogrid=m1_ogrid+nghost-1
+  integer :: m2i_ogrid=my_ogrid-2*nghost+1
+  integer, parameter :: n1i_ogrid=n1_ogrid+nghost-1
+  integer :: n2i_ogrid=mz_ogrid-2*nghost+1
 
   contains 
 !***********************************************************************
@@ -1466,13 +1475,13 @@ endfunction within_ogrid_comp
 
     endsubroutine grid_bound_data
 !***********************************************************************
-    subroutine time_step_ogrid(f,df,p)
+    subroutine time_step_ogrid(f_ogrid,df_ogrid,p_ogrid)
 !
       use Mpicomm, only: mpifinalize, mpiallreduce_max, MPI_COMM_WORLD
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar_ogrid) :: df.
-      type (pencil_case) :: p
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f_ogrid
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar_ogrid) :: df_ogrid
+      type (pencil_case) :: p_ogrid
       real :: ds, dtsub
       real :: dt1, dt1_local, dt1_last=0.0
       integer :: j
@@ -1515,7 +1524,7 @@ endfunction within_ogrid_comp
 !
 !  Change df according to the chosen physics modules.
 !
-        call pde_ogrid(f,df,p)
+        call pde_ogrid(f_ogrid,df_ogrid,p_ogrid)
 !
         ds=ds+1.0
 !
@@ -1542,9 +1551,14 @@ endfunction within_ogrid_comp
 !  Time evolution of grid variables.
 !  (do this loop in pencils, for cache efficiency)
 !
-        do j=1,mvar; do n=n1,n2; do m=m1,m2
-          f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+dt_beta_ts(itsub)*df(l1:l2,m,n,j)
-        enddo; enddo; enddo
+        do j=1,mvar 
+          do n_ogrid=n1_ogrid,n2_ogrid
+            do m_ogrid=m1_ogrid,m2_ogrid
+              f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,j)=f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,j) &
+                +dt_beta_ts(itsub)*df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,j)
+            enddo
+          enddo
+        enddo
 !
 !  Increase time.
 !
@@ -1592,13 +1606,14 @@ endfunction within_ogrid_comp
 !
 !  Call "before_boundary" hooks (for f array precalculation)
 !
-      if (ldensity.or.lboussinesq) call density_before_boundary(f)
+! TODO: Precalculation of vorticity field computed in routine below
+!       Do we need this?
       if (lhydro)        call hydro_before_boundary(f)
 !
 !  Prepare x-ghost zones; required before f-array communication
 !  AND shock calculation
 !
-      call boundconds_x(f)
+      call boundconds_x_ogrid(f)
 !
 !  Initiate (non-blocking) communication and do boundary conditions.
 !  Required order:
@@ -1610,8 +1625,8 @@ endfunction within_ogrid_comp
       call initiate_isendrcv_bdry(f)
       if (early_finalize) then
         call finalize_isendrcv_bdry(f)
-        call boundconds_y(f)
-        call boundconds_z(f)
+        call boundconds_y_ogrid(f)
+        call boundconds_z_ogrid(f)
       endif
 !
 !  Set inverse timestep to zero before entering loop over m and n.
@@ -2438,6 +2453,145 @@ endfunction within_ogrid_comp
       call keep_compiler_quiet(f)
 !
     endsubroutine calc_pencils_energy_ogrid
+!***********************************************************************
+    subroutine boundconds_x_ogrid(f,ivar1_opt,ivar2_opt)
+!
+!  Boundary conditions in x, except for periodic part handled by communication.
+!  Remark: boundconds_x() needs to be called before communicating (because we
+!  communicate the x-ghost points), boundconds_[yz] after communication
+!  has finished (they need some of the data communicated for the edges
+!  (yz-'corners').
+!
+!  For ogrids: Only boundary conditions at cylinder surface is set. The BC on
+!  the 'top' is set by interpolation from cartesian grid, outside the timestep.
+!
+!  06-feb-17/Jorgen: Adapted from boundcond.f90 to be used for ogrids
+!
+      use EquationOfState
+!
+      real, dimension (:,:,:,:) :: f
+      integer, optional :: ivar1_opt, ivar2_opt
+!
+      integer :: ivar1, ivar2, j, k
+      logical :: ip_ok
+      type (boundary_condition) :: bc
+      integer :: tester
+!
+      ivar1=1; ivar2=min(mcom,size(f,4))
+      if (present(ivar1_opt)) ivar1=ivar1_opt
+      if (present(ivar2_opt)) ivar2=ivar2_opt
+!
+!  Boundary conditions in x.
+!
+      topbot='bot'; ip_ok=lfirst_proc_x
+
+      tester=1
+!
+      if (ip_ok) then
+        do j=ivar1,ivar2
+          if(tester)
+            bc%bcname=bcx12(j,k)
+            bc%ivar=j
+            bc%location=(((k-1)*2)-1)   ! -1/1 for x bot/top
+            bc%value1=fbcx(j,k)
+            bc%value2=fbcx(j,k)
+            bc%done=.false.
+!
+            call special_boundconds(f,bc)
+!
+            if (.not.bc%done) then
+              call fatal_error_local("boundconds_x",'no such boundary condition')
+            endif
+          else
+            ! TODO
+            ! Do something smart to set body confined boundary condition properly
+          endif
+        enddo
+      endif
+!
+    endsubroutine boundconds_x_ogrid
+!***********************************************************************
+    subroutine boundconds_y_ogrid(f,ivar1_opt,ivar2_opt)
+!
+!  Boundary conditions in y, except for periodic part handled by communication.
+!  Remark: boundconds_x() needs to be called before communicating (because we
+!  communicate the x-ghost points), boundconds_[yz] after communication
+!  has finished (they need some of the data communicated for the edges
+!  (yz-'corners').
+!
+!  06-feb-17/Jorgen: Adapted from boundcond.f90 to be used for ogrids where the
+!                    y-dir is always periodic
+!
+      real, dimension (:,:,:,:) :: f
+      integer, optional :: ivar1_opt, ivar2_opt
+!
+      integer :: ivar1, ivar2, j, k
+      logical :: ip_ok
+      character (len=bclen) :: topbot
+      type (boundary_condition) :: bc
+!
+      ivar1=1; ivar2=min(mcom,size(f,4))
+      if (present(ivar1_opt)) ivar1=ivar1_opt
+      if (present(ivar2_opt)) ivar2=ivar2_opt
+!
+!  Boundary conditions in y
+!  Periodic, with y being the theta direction for the cylindrical grid
+!
+      if (nprocy==1) then
+        do j=ivar1,ivar2
+!  Bottom boundary
+          f(:,1:m1_ogrid-1,:,j) = f(:,m2i_ogrid:m2_ogrid,:,j)
+!  Top boundary
+          f(:,m2_ogrid+1:,:,j) = f(:,m1_ogrid:m1i_ogrid,:,j)
+        enddo
+      endif
+!
+    endsubroutine boundconds_y_ogrid
+!***********************************************************************
+    subroutine boundconds_z_ogrid(f,ivar1_opt,ivar2_opt)
+!
+!  Boundary conditions in z, except for periodic part handled by communication.
+!  Remark: boundconds_x() needs to be called before communicating (because we
+!  communicate the x-ghost points), boundconds_[yz] after communication
+!  has finished (they need some of the data communicated for the edges
+!  (yz-'corners').
+!
+!  06-feb-17/Jorgen: Adapted from boundcond.f90 to be used for ogrids where the
+!                    y-dir is always periodic as long as nzgrid=/0
+!
+      real, dimension (:,:,:,:) :: f
+      integer, optional :: ivar1_opt, ivar2_opt
+      real, dimension (size(f,4)) :: fbcz_zero
+      integer :: ivar1, ivar2, j, k
+      logical :: ip_ok
+      character (len=bclen) :: topbot
+      type (boundary_condition) :: bc
+!
+      if (ldebug) print*,'boundconds_z: ENTER: boundconds_z'
+!
+      ivar1=1; ivar2=min(mcom,size(f,4))
+      if (present(ivar1_opt)) ivar1=ivar1_opt
+      if (present(ivar2_opt)) ivar2=ivar2_opt
+!
+      select case (nzgrid)
+!
+      case (1)
+        if (ldebug) print*,'boundconds_z: no z-boundary'
+!
+!  Boundary conditions in z
+!
+      case default
+        if (nprocz==1) then
+          do j=ivar1,ivar2
+!  Bottom boundary
+            f(:,:,1:n1_ogrid-1,j) = f(:,:,n2i_ogrid:n2_ogrid,j)
+!  Top boundary
+            f(:,:,n2_ogrid+1:,j) = f(:,:,n1_ogrid:n1i_ogrid,j)
+          enddo
+        endif
+      endselect
+!
+    endsubroutine boundconds_z_ogrid
 !***********************************************************************
   end module Solid_Cells
 
