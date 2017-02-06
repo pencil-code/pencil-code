@@ -109,7 +109,8 @@ def read_class_npvar_red(datadir='./data',
 			npar_red = set_reduce
 		if (verbose):
 			#print 'reducing '+str(npar_loc)+' to '+str(npar_red)+ ' on proc'+str(proc) 
-			print('reducing '+str(npar_loc)+' to '+str(npar_red)+ ' on proc'+str(proc)) 
+			print('reducing {} to {} on proc {}'.format(
+                              npar_loc, npar_red, proc))
 		written_parts=npar_red
 	else:
 		written_parts=set_reduce
@@ -215,7 +216,6 @@ def collect_class_pdata(pfile='pvar.dat',datadir='/data',nprocs='0',verbose=Fals
 				dom_ipar,dom_pvar, written_parts = read_class_npvar_red(pfile=pfile,datadir=datadir,proc=i,reduce_to=reduce_to,verbose=verbose,set_reduce=parts_to_write)
 				particle_sum+=written_parts
 				if (verbose):
-					#print 'written particles',particle_sum
 					print('written particles',particle_sum)
 			else:
 				dom_ipar,dom_pvar, written_parts = read_class_npvar_red(pfile=pfile,datadir=datadir,proc=i,reduce_to=reduce_to,verbose=verbose)
