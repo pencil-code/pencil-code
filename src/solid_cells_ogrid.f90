@@ -437,52 +437,6 @@ endfunction within_ogrid_comp
 !
     end subroutine close_interpolation
 !***********************************************************************
-! ROUTINE NOT NECESSARY IF ROUTINES FROM GRID.F90 AND HYDRO.f90 ARE USED
-!    subroutine metrics(xi,eta,zeta)
-!      ! Compute metrics on the selected grid used around the solid 
-!      ! Metrics are the computational coordinates differentiated wrt physical space
-!      ! Ref Sec.5.6.2 in Tannehill,Anderson,Pletcher(1997),2nd Ed.
-!      real,dimension(mxi),  intent(out) :: xi
-!      real,dimension(meta), intent(out) :: eta
-!      real,dimension(mzeta),intent(out) :: zeta
-!      !real,dimension(:), allocatable :: dxdxi,dxdeta,dxdzeta,dydxi,dydeta,dydzeta,dzdxi,dzdeta,dzdzeta
-!      real, parameter :: twopi=2*pi
-!      real, parameter :: dr_grid=r_grid-r_solid
-!      integer :: i
-!
-!      ! Set up uniformly spaced grid in computational space
-!      do i=1,mxi
-!        xi=i
-!      enddo
-!      do i=1,meta
-!        eta=i
-!      enddo
-!      do i=1,mzeta
-!        mzeta=i
-!      enddo
-!
-!      !!TODO: Compine this with cylindrical grid by updating metrics
-!      !if(streched_from_center) then
-!      !  eta=dr_grid*((beta+1)-(beta-1)*((beta+1)/(beta-1))**(1-eta))//(((beta+1)/(beta-1))**(1-eta)+1)
-!      !endif
-!
-!
-!      if(cylinder_grid) then
-!        ! _J indicates multiplied by Jacobi determinant
-!        jacobi=1./(twopi*dr_grid*(r_solid+dr_grid*eta))
-!        dxidx_J=dr_grid*sin(twopi*xi)
-!        dxidy_J=dr_grid*cos(twopi*xi)
-!        dxidz=0.
-!        detadx=cos(twopi*xi)/dr_grid
-!        detady=sin(twopi*xi)/dr_grid
-!        detadz=0.
-!        dzetadx=0.
-!        dzetady=0.
-!        dzetadz=1.
-!      endif
-!
-!    end subroutine metrics
-!
     subroutine construct_grid_ogrid
 !
 !  Constructs a non-equidistant cylindrical grid x_ogrid that surrounds the solid cylinder 
@@ -766,9 +720,7 @@ endfunction within_ogrid_comp
 !
 !  31-jan-17/Jorgen: adapted from initialize_grid subroutine in grid.f90
 !
-      use Sub, only: remove_zprof
-      use Mpicomm
-      use IO, only: lcollective_IO
+      use Mpicomm, only: mpiallreduce_min,mpiallreduce_max,mpibcast_real,mpirecv_real,mpisend_real
 !
       real :: fact, dxmin_x, dxmin_y, dxmin_z, dxmax_x, dxmax_y, dxmax_z
       integer :: xj,yj,zj,itheta
@@ -964,12 +916,6 @@ endfunction within_ogrid_comp
         print*,'(x,y,z)_ogrid(point2)=',x_ogrid(lpoint2_ogrid),y_ogrid(mpoint2_ogrid),z_ogrid(npoint2_ogrid)
       endif
 !
-!  Clean up profile files.
-!
-!TODO: DO I NEED TO DO ANYTHING WITH THIS?
-      if (lroot.or..not.lcollective_IO) call remove_zprof
-      lwrite_prof=.true.
-!
 !  Set the the serial grid arrays, that contain the coordinate values
 !  from all processors.
 !
@@ -1110,7 +1056,6 @@ endfunction within_ogrid_comp
 !
     endsubroutine calc_pencils_grid_ogrid
 !***********************************************************************
-! TODO: COULD IT BE A PROBLEM HERE, CALLING A VARIABLE X WHEN X IS DEFINED IN CDATA.F90?
     subroutine real_to_index(n, x, xi)
 !
 !  Transforms coordinates in real space to those in index space.
@@ -1495,8 +1440,6 @@ endfunction within_ogrid_comp
         alpha_ts=(/   0.0, -1/2.0, 0.0 /)
         beta_ts =(/ 1/2.0,    1.0, 0.0 /)
       elseif (itorder==3) then
-        !alpha_ts=(/   0.0, -2/3.0, -1.0   /)
-        !beta_ts =(/ 1/3.0,    1.0,  1/2.0 /)
         !  use coefficients of Williamson (1980)
         alpha_ts=(/   0.0, -5/9.0 , -153/128.0 /)
         beta_ts =(/ 1/3.0, 15/16.0,    8/15.0  /)
@@ -1504,10 +1447,9 @@ endfunction within_ogrid_comp
         if (lroot) print*,'Not implemented: itorder=',itorder
         call mpifinalize
       endif
-!
-!  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt.
-!
-      if (.not. ldt) dt_beta_ts=dt*beta_ts
+
+!       TODO: SET TIME STEP!
+      !if (.not. ldt) dt_beta_ts=dt*beta_ts
 !
 !  Set up df and ds for each time sub.
 !
@@ -1528,24 +1470,10 @@ endfunction within_ogrid_comp
 !
         ds=ds+1.0
 !
-!  If we are in the first time substep we need to calculate timestep dt.
-!  Only do it on the root processor, then broadcast dt to all others.
-!
-        if (lfirst.and.ldt) then
-          dt1_local=maxval(dt1_max(1:nx))
-          ! Timestep growth limiter
-          if (real(ddt) > 0.) dt1_local=max(dt1_local,dt1_last)
-          call mpiallreduce_max(dt1_local,dt1,MPI_COMM_WORLD)
-          dt=1.0/dt1
-          if (loutput_varn_at_exact_tsnap) call shift_dt(dt)
-          ! Timestep growth limiter
-          if (ddt/=0.) dt1_last=dt1_local/ddt
-        endif
-!
 !  Calculate dt_beta_ts.
 !
         if (ldt) dt_beta_ts=dt*beta_ts
-        if (ip<=6) print*, 'time_step: iproc, dt=', iproc_world, dt 
+        if (ip<=6) print*, 'time_step: iproc, dt=', iproc_world, dt  !(all have same dt?)
         dtsub = ds * dt_beta_ts(itsub)
 !
 !  Time evolution of grid variables.
@@ -1562,21 +1490,19 @@ endfunction within_ogrid_comp
 !
 !  Increase time.
 !
-        t = t + dtsub
+        t_ogrid = t_ogrid + dtsub_ogrid
 !
       enddo
+!       TODO: Could perhaps need a test that checks that t_ogrid == t
 !
     endsubroutine time_step_ogrid
 !***********************************************************************
     subroutine pde_ogrid(f,df,p)
+
+      use Solid_cells_Mpicomm
 !
 !  Call the different evolution equations.
 !
-      use General, only: notanumber
-      use Mpicomm
-      use Sub
-!
-      logical :: early_finalize
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar_ogrid) :: df
       real, dimension (nx_ogrid,3) :: df_iuu_pencil
@@ -1665,10 +1591,6 @@ endfunction within_ogrid_comp
 !  calculate du/dt = - u.gradu - 2Omega x u + grav + Fvisc
 !  pressure gradient force added in density and entropy modules.
 !
-      use Diagnostics
-      use Sub, only: vecout, dot, dot2, identify_bcs, cross, multsv_mn_add
-      use General, only: transform_thph_yy
-!
       real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray_ogrid) :: f
       real, dimension (mx_ogrid,my_ogrid,m_ogridz,mvar_ogrid) :: df
       type (pencil_case) :: p
@@ -1680,9 +1602,9 @@ endfunction within_ogrid_comp
 !
       df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
 !
-! calculate viscous force
+!  Viscous term
 !
-      call calc_viscous_force_ogrid(df,p)
+      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fvisc
 !
     endsubroutine duu_dt_ogrid
 !***********************************************************************
@@ -1690,9 +1612,6 @@ endfunction within_ogrid_comp
 !
 !  Continuity equation.
 !  Calculate dlnrho/dt = - u.gradlnrho - divu
-!
-      use Diagnostics
-      use Sub
 !
       real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray_ogrid) :: f
       real, dimension (mx_ogrid,my_ogrid,m_ogridz,mvar_ogrid) :: df
@@ -1722,24 +1641,21 @@ endfunction within_ogrid_comp
       use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
       use Diagnostics
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray_ogrid) :: f
+      real, dimension (mx_ogrid,my_ogrid,m_ogridz,mvar_ogrid) :: df
       type (pencil_case) :: p
 !
-      real, dimension(nx) :: ufpres, uduu
       integer :: j,ju
-      integer :: i
 !
       intent(in) :: f,p
       intent(inout) :: df
 !
 !  Add isothermal/polytropic pressure term in momentum equation.
 !
-      if (lhydro.and.lpressuregradient_gas) then
-        do j=1,3
-          ju=j+iuu-1
-          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+p%fpres(:,j)
-        enddo
+      do j=1,3
+        ju=j+iuu-1
+        df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ju)=df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,ju)+p%fpres(:,j)
+      enddo
 !
     endsubroutine denergy_dt_ogrid
 !***********************************************************************
@@ -1748,10 +1664,12 @@ endfunction within_ogrid_comp
 ! Envelope adjusting calc_pencils_eos_pencpar to the standard use with
 ! lpenc_loc=lpencil
 !
-      real, dimension (mx,my,mz,mfarray),intent(INOUT):: f
-      type (pencil_case),                intent(OUT)  :: p
+      real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray_ogrid) :: f
+      type (pencil_case) ::  p
+
+      intent(inout) :: f,p
 !
-      call calc_pencils_eos_pencpar(f,p,lpencil)
+      call calc_pencils_eos_pencpar_ogrid(f,p,lpencil)
 !
     endsubroutine calc_pencils_eos_std_ogrid
 !***********************************************************************
@@ -1760,15 +1678,12 @@ endfunction within_ogrid_comp
 !  Calculate EquationOfState pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
-      use Sub
-!
       real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray_ogrid) :: f
-      type (pencil_case),                intent(OUT)  :: p
-      logical, dimension(:),             intent(IN)   :: lpenc_loc
+      type (pencil_case),intent(inout)   :: p
+      logical, dimension(:),intent(in) :: lpenc_loc
 !
       real, dimension(nx_ogrid) :: tmp
       integer :: i,j
-      real, dimension(:,:), pointer :: reference_state
 !
 !  Inverse cv and cp values.
 !
@@ -1790,7 +1705,7 @@ endfunction within_ogrid_comp
         if (lpenc_loc(i_lnTT).or.lpenc_loc(i_ss).or.lpenc_loc(i_ee)) &
             p%lnTT=log(f(l1:l2,m,n,ieosvar2))
         if (lpenc_loc(i_cs2))  p%cs2=cp*gamma_m1*f(l1:l2,m,n,ieosvar2)
-        if (lpenc_loc(i_gTT))  call grad(f,ieosvar2,p%gTT)
+        if (lpenc_loc(i_gTT))  call grad_ogrid(f,ieosvar2,p%gTT)
         if (lpenc_loc(i_glnTT).or.lpenc_loc(i_hlnTT)) then
           do i=1,3; p%glnTT(:,i)=p%gTT(:,i)*p%TT1; enddo
         endif
@@ -1809,7 +1724,7 @@ endfunction within_ogrid_comp
             p%hlnTT(:,i,j)=p%hlnTT(:,i,j)*p%TT1-p%glnTT(:,i)*p%glnTT(:,j)
           enddo; enddo
         endif
-        if (lpenc_loc(i_del6TT)) call del6(f,ieosvar2,p%del6TT)
+        !if (lpenc_loc(i_del6TT)) call del6(f,ieosvar2,p%del6TT)
         if (lpenc_loc(i_ss)) p%ss=cv*(p%lnTT-lnTT0-gamma_m1*(p%lnrho-lnrho0))
         if (lpenc_loc(i_pp)) p%pp=cv*gamma_m1*p%rho*p%TT
         if (lpenc_loc(i_ee)) p%ee=cv*exp(p%lnTT)
@@ -1878,22 +1793,19 @@ endfunction within_ogrid_comp
 !  Calculate Hydro pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
-      use Deriv
-      use Sub
-!
-      real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray_ogrid),intent(in) :: f
+      real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray_ogrid) :: f
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
       real, dimension (nx_ogrid) :: tmp, tmp2
       integer :: i, j, ju, ij,jj,kk,jk
 !
-      intent(in) :: lpenc_loc
+      intent(in) :: f,lpenc_loc
       intent(out):: p
 ! uu
       if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
 ! u2
-      if (lpenc_loc(i_u2)) call dot2_mn(p%uu,p%u2)
+      if (lpenc_loc(i_u2)) call dot2_mn_ogrid(p%uu,p%u2)
 ! uij
       if (lpenc_loc(i_uij)) then 
         call gij(f,iuu,p%uij,1)
@@ -1906,32 +1818,32 @@ endfunction within_ogrid_comp
         endif
       endif
 ! divu
-      if (lpenc_loc(i_divu)) call div_mn(p%uij,p%divu,p%uu)
+      if (lpenc_loc(i_divu)) call div_mn_ogrid(p%uij,p%divu,p%uu)
 ! sij
-      if (lpenc_loc(i_sij)) call traceless_strain(p%uij,p%divu,p%sij,p%uu,lshear_rateofstrain)
+      if (lpenc_loc(i_sij)) call traceless_strain_ogrid(p%uij,p%divu,p%sij,p%uu)
 ! sij2
-      if (lpenc_loc(i_sij2)) call multm2_sym_mn(p%sij,p%sij2)
+      if (lpenc_loc(i_sij2)) call multm2_sym_mn_ogrid(p%sij,p%sij2)
 ! oo (=curlu)
       oo: if (lpenc_loc(i_oo)) then
         if (ioo /= 0) then
           p%oo = f(l1:l2,m,n,iox:ioz)
         else
-          call curl_mn(p%uij,p%oo,p%uu)
+          call curl_mn_ogrid(p%uij,p%oo,p%uu)
         endif
       endif oo
 ! o2
-      if (lpenc_loc(i_o2)) call dot2_mn(p%oo,p%o2)
+      if (lpenc_loc(i_o2)) call dot2_mn_ogrid(p%oo,p%o2)
 ! ou
-      if (lpenc_loc(i_ou)) call dot_mn(p%oo,p%uu,p%ou)
+      if (lpenc_loc(i_ou)) call dot_mn_ogrid(p%oo,p%uu,p%ou)
 ! ugu
       if (lpenc_loc(i_ugu)) then
         if (headtt.and.lupw_uu) print *,'calc_pencils_hydro: upwinding advection term'
-        call u_dot_grad(f,iuu,p%uij,p%uu,p%ugu,UPWIND=lupw_uu)
+        call u_dot_grad_ogrid(f,iuu,p%uij,p%uu,p%ugu)
       endif
 ! ugu2
-      if (lpenc_loc(i_ugu2)) call dot2_mn(p%ugu,p%ugu2)
+      if (lpenc_loc(i_ugu2)) call dot2_mn_ogrid(p%ugu,p%ugu2)
 ! ogu ... ogu2
-      if (lpenc_loc(i_ogu)) call u_dot_grad(f,iuu,p%uij,p%oo,p%ogu,UPWIND=lupw_uu)
+      if (lpenc_loc(i_ogu)) call u_dot_grad_ogrid(f,iuu,p%uij,p%oo,p%ogu)
 ! u3u21, u1u32, u2u13, u2u31, u3u12, u1u23
       if (lpenc_loc(i_u3u21)) p%u3u21=p%uu(:,3)*p%uij(:,2,1)
       if (lpenc_loc(i_u1u32)) p%u1u32=p%uu(:,1)*p%uij(:,3,2)
@@ -1942,19 +1854,26 @@ endfunction within_ogrid_comp
 !
 ! del2u, graddivu
 !
+!***********************************************************************
+      !TODO:DO WE NEED THIS 
       if (lpenc_loc(i_graddivu)) then
         if (headtt.or.ldebug) print*,'calc_pencils_hydro: call gij_etc'
         call gij_etc(f,iuu,p%uu,p%uij,p%oij,GRADDIV=p%graddivu)
       endif
+!***********************************************************************
       if (lpenc_loc(i_del2u)) then
-        call curl_mn(p%oij,p%curlo,p%oo)
+        call curl_mn_ogrid(p%oij,p%curlo,p%oo)
         p%del2u=p%graddivu-p%curlo
       endif
 !
 !del2uj, d^u/dx^2 etc
 !
+!***********************************************************************
+      !TODO:DO WE NEED THIS
+      !     ONLY IMPLEMENTATION IN CARTESIAN COORDINATES IN SUB.F90
       if (lpenc_loc(i_d2uidxj)) &
         call d2fi_dxj(f,iuu,p%d2uidxj)
+!***********************************************************************
 !
     endsubroutine calc_pencils_hydro_nonlinear_ogrid
 !***********************************************************************
@@ -1985,8 +1904,6 @@ endfunction within_ogrid_comp
 !  Calculate Density pencils for linear density.
 !  Most basic pencils should come first, as others may depend on them.
 !
-      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn
-!
       real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray_ogrid),intent(in) :: f
       type (pencil_case) :: p
       intent(inout) :: f,p
@@ -2002,7 +1919,7 @@ endfunction within_ogrid_comp
 ! glnrho and grho
       if (lpencil(i_glnrho).or.lpencil(i_grho)) then
 !
-        call grad(f,irho,p%grho)
+        call grad_ogrid(f,irho,p%grho)
 ! 
         if (lpencil(i_glnrho)) then
           do i=1,3
@@ -2012,18 +1929,18 @@ endfunction within_ogrid_comp
       endif
 ! ugrho
       if (lpencil(i_ugrho)) &
-        call u_dot_grad(f,ilnrho,p%grho,p%uu,p%ugrho,UPWIND=lupw_rho)
+        call u_dot_grad_ogrid(f,ilnrho,p%grho,p%uu,p%ugrho)
 ! glnrho2
-      if (lpencil(i_glnrho2)) call dot2(p%glnrho,p%glnrho2)
+      if (lpencil(i_glnrho2)) call dot2_ogrid(p%glnrho,p%glnrho2)
 ! del2rho
       if (lpencil(i_del2rho)) then
-        call del2(f,irho,p%del2rho)
+        call del2_ogrid(f,irho,p%del2rho)
         if (lreference_state) p%del2rho=p%del2rho+reference_state(:,iref_d2rho)
       endif
 ! del2lnrho
       if (lpencil(i_del2lnrho)) p%del2lnrho=p%rho1*p%del2rho-p%glnrho2
 ! sglnrho
-      if (lpencil(i_sglnrho)) call multmv(p%sij,p%glnrho,p%sglnrho)
+      if (lpencil(i_sglnrho)) call multmv_mn_ogrid(p%sij,p%glnrho,p%sglnrho)
 !
     endsubroutine calc_pencils_linear_density_ogrid
 !***********************************************************************
@@ -2063,25 +1980,6 @@ endfunction within_ogrid_comp
 !
     end subroutine calc_pencils_viscosity_ogrid
 !***********************************************************************
-    subroutine calc_viscous_force_ogrid(df,p)
-!
-!  Calculate viscous force term for right hand side of equation of motion.
-!
-      use Sub, only: cross, dot2
-!
-      real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray_ogrid),intent(in) :: f
-      type (pencil_case) :: p
-      integer :: i
-!
-      intent (in) :: p
-      intent (inout) :: df
-!
-!  Add viscosity to equation of motion
-!
-      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + p%fvisc
-!
-    endsubroutine calc_viscous_force_ogrid
-!***********************************************************************
     subroutine calc_pencils_energy_ogrid(f,p)
 !
 !  Calculate Energy pencils.
@@ -2119,6 +2017,13 @@ endfunction within_ogrid_comp
 !
     endsubroutine calc_pencils_energy_ogrid
 !***********************************************************************
+!  FROM BOUNDCOND.F90
+!***********************************************************************
+!  ROUTINES
+!    boundconds_x_ogrid
+!    boundconds_y_ogrid
+!    boundconds_z_ogrid
+!***********************************************************************
     subroutine boundconds_x_ogrid(f,ivar1_opt,ivar2_opt)
 !
 !  Boundary conditions in x, except for periodic part handled by communication.
@@ -2131,8 +2036,6 @@ endfunction within_ogrid_comp
 !  the 'top' is set by interpolation from cartesian grid, outside the timestep.
 !
 !  06-feb-17/Jorgen: Adapted from boundcond.f90 to be used for ogrids
-!
-      use EquationOfState
 !
       real, dimension (:,:,:,:) :: f
       integer, optional :: ivar1_opt, ivar2_opt
@@ -2162,7 +2065,7 @@ endfunction within_ogrid_comp
             bc%value2=fbcx(j,k)
             bc%done=.false.
 !
-            call special_boundconds(f,bc)
+            !call special_boundconds(f,bc)
 !
             if (.not.bc%done) then
               call fatal_error_local("boundconds_x",'no such boundary condition')
@@ -2176,7 +2079,7 @@ endfunction within_ogrid_comp
 !
     endsubroutine boundconds_x_ogrid
 !***********************************************************************
-    subroutine boundconds_y_ogrid(f,ivar1_opt,ivar2_opt)
+    subroutine boundconds_y_ogrid(f)
 !
 !  Boundary conditions in y, except for periodic part handled by communication.
 !  Remark: boundconds_x() needs to be called before communicating (because we
@@ -2188,16 +2091,10 @@ endfunction within_ogrid_comp
 !                    y-dir is always periodic
 !
       real, dimension (:,:,:,:) :: f
-      integer, optional :: ivar1_opt, ivar2_opt
 !
-      integer :: ivar1, ivar2, j, k
-      logical :: ip_ok
-      character (len=bclen) :: topbot
-      type (boundary_condition) :: bc
+      integer :: ivar1, ivar2, j
 !
       ivar1=1; ivar2=min(mcom,size(f,4))
-      if (present(ivar1_opt)) ivar1=ivar1_opt
-      if (present(ivar2_opt)) ivar2=ivar2_opt
 !
 !  Boundary conditions in y
 !  Periodic, with y being the theta direction for the cylindrical grid
@@ -2213,7 +2110,7 @@ endfunction within_ogrid_comp
 !
     endsubroutine boundconds_y_ogrid
 !***********************************************************************
-    subroutine boundconds_z_ogrid(f,ivar1_opt,ivar2_opt)
+    subroutine boundconds_z_ogrid(f)
 !
 !  Boundary conditions in z, except for periodic part handled by communication.
 !  Remark: boundconds_x() needs to be called before communicating (because we
@@ -2225,18 +2122,11 @@ endfunction within_ogrid_comp
 !                    y-dir is always periodic as long as nzgrid=/0
 !
       real, dimension (:,:,:,:) :: f
-      integer, optional :: ivar1_opt, ivar2_opt
-      real, dimension (size(f,4)) :: fbcz_zero
-      integer :: ivar1, ivar2, j, k
-      logical :: ip_ok
-      character (len=bclen) :: topbot
-      type (boundary_condition) :: bc
+      integer :: ivar1, ivar2, j
 !
       if (ldebug) print*,'boundconds_z: ENTER: boundconds_z'
 !
       ivar1=1; ivar2=min(mcom,size(f,4))
-      if (present(ivar1_opt)) ivar1=ivar1_opt
-      if (present(ivar2_opt)) ivar2=ivar2_opt
 !
       select case (nzgrid)
 !
@@ -2258,335 +2148,677 @@ endfunction within_ogrid_comp
 !
     endsubroutine boundconds_z_ogrid
 !***********************************************************************
-    subroutine initiate_isendrcv_bdry_ogrid(f,ivar1_opt,ivar2_opt)
-!
-!  Isend and Irecv boundary values. Called in the beginning of pde.
-!  Does not wait for the receives to finish (done in finalize_isendrcv_bdry)
-!  leftneigh and rightneigh are initialized by mpicomm_init.
-!
-!  07-feb-17/Jorgen: adapted from mpicomm.f90
-!
-      real, dimension(:,:,:,:), intent(inout):: f
-      integer, optional,        intent(in)   :: ivar1_opt, ivar2_opt
-!
-      integer :: tolowyr,touppyr,tolowys,touppys,tolowzr,touppzr,tolowzs,touppzs ! msg. tags placeholders
-      integer :: TOllr,TOulr,TOuur,TOlur,TOlls,TOuls,TOuus,TOlus                 ! placeholder tags
-      integer :: ivar1, ivar2, nbufy, nbufz, nbufyz, mxl, comm, bufact, dir
-!
-      ivar1=1; ivar2=min(mcom,size(f,4))
-      if (present(ivar1_opt)) ivar1=ivar1_opt
-      if (present(ivar2_opt)) ivar2=ivar2_opt
-      if (ivar2==0) return
-!
-      mxl=size(f,1)
-!
-!  Set communication across x-planes.
-!
-      if (nprocx>1) call isendrcv_bdry_x(f,ivar1_opt,ivar2_opt)
-!
-!  Set communication across y-planes.
-!  Standard message tags from defaults for surfaces and yz-corners.
-!
-      tolowyr=tolowy; tolowzr=tolowz; TOlls=TOll; TOllr=TOll
-      tolowys=tolowy; tolowzs=tolowz; TOlus=TOlu; TOlur=TOlu
-      touppyr=touppy; touppzr=touppz; TOuus=TOuu; TOuur=TOuu
-      touppys=touppy; touppzs=touppz; TOuls=TOul; TOulr=TOul
-!
-!  Allocate and send/receive buffers across y-planes
-!
-      bufact=mxl*nghost*(ivar2-ivar1+1)
-
-      if (nprocy>1) then
-!
-!  Internal, periodic exchange y-plane buffers.
-!
-        lbufyo(:,:,:,ivar1:ivar2)=f(:,m1_ogrid:m1i_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2)         !(lower y-zone)
-        comm=MPI_COMM_GRID
-
-        nbufy=bufact*bufsizes_yz(INYL,IRCV)
-        call MPI_IRECV(lbufyi(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
-                       ylneigh,touppyr,comm,irecv_rq_fromlowy,mpierr)
-
-        nbufy=bufact*bufsizes_yz(INYL,ISND)
-        call MPI_ISEND(lbufyo(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
-                       ylneigh,tolowys,comm,isend_rq_tolowy,mpierr)
-
-        ubufyo(:,:,:,ivar1:ivar2)=f(:,m2i_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(upper y-zone)
-        comm=MPI_COMM_GRID
-!
-        nbufy=bufact*bufsizes_yz(INYU,IRCV)
-        call MPI_IRECV(ubufyi(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
-                       yuneigh,tolowyr,comm,irecv_rq_fromuppy,mpierr)
-
-        nbufy=bufact*bufsizes_yz(INYU,ISND)
-        call MPI_ISEND(ubufyo(:,:,:,ivar1:ivar2),nbufy,MPI_REAL, &
-                       yuneigh,touppys,comm,isend_rq_touppy,mpierr)
-      endif
-!
-!  Set communication across z-planes.
-!
-      if (nprocz>1) then
-!        
-        lbufzo(:,:,:,ivar1:ivar2)=f(:,m1_ogrid:m2_ogrid,n1_ogrid:n1i_ogrid,ivar1:ivar2) !lower z-planes
-        comm=MPI_COMM_GRID
-
-        nbufz=bufact*bufsizes_yz(INZL,IRCV)
-        call MPI_IRECV(lbufzi(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
-                       zlneigh,touppzr,comm,irecv_rq_fromlowz,mpierr)
-
-        nbufz=bufact*bufsizes_yz(INZL,ISND)
-        call MPI_ISEND(lbufzo(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
-                       zlneigh,tolowz,comm,isend_rq_tolowz,mpierr)
-!
-        ubufzo(:,:,:,ivar1:ivar2)=f(:,m1_ogrid:m2_ogrid,n2i_ogrid:n2_ogrid,ivar1:ivar2) !upper z-planes
-        comm=MPI_COMM_GRID
-
-        nbufz=bufact*bufsizes_yz(INZU,IRCV)
-        call MPI_IRECV(ubufzi(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
-                       zuneigh,tolowzr,comm,irecv_rq_fromuppz,mpierr)
-
-        nbufz=bufact*bufsizes_yz(INZU,ISND)
-        call MPI_ISEND(ubufzo(:,:,:,ivar1:ivar2),nbufz,MPI_REAL, &
-                       zuneigh,touppz,comm,isend_rq_touppz,mpierr)
-
-      endif
-!
-!  The four corners (in counter-clockwise order).
-!  (NOTE: this should work even for nprocx>1)
-!
-      if ((nprocz>1).and.(nprocy>1)) then
-!
-!  Internal and periodic yz-corner buffers.
-!
-        bufact=mxl*(ivar2-ivar1+1)
-!
-!  Lower y, lower z.
-!
-        llbufo(:,:,:,ivar1:ivar2)=f(:,m1_ogrid:m1i_ogrid,n1_ogrid:n1i_ogrid,ivar1:ivar2)
-        comm=MPI_COMM_GRID
-!
-        nbufyz=bufact*product(bufsizes_yz_corn(:,INLL,IRCV))
-        if (llcornr>=0) call MPI_IRECV(llbufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-                                       llcornr,TOuur,comm,irecv_rq_FRll,mpierr)
-
-        nbufyz=bufact*product(bufsizes_yz_corn(:,INLL,ISND))
-        if (llcorns>=0) call MPI_ISEND(llbufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-                                       llcorns,TOlls,comm,isend_rq_TOll,mpierr)
-!
-!  Upper y, lower z.
-!
-        ulbufo(:,:,:,ivar1:ivar2)=f(:,m2i_ogrid:m2_ogrid,n1_ogrid:n1i_ogrid,ivar1:ivar2)
-        comm=MPI_COMM_GRID
-
-        nbufyz=bufact*product(bufsizes_yz_corn(:,INUL,IRCV))
-        if (ulcornr>=0) call MPI_IRECV(ulbufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-                                       ulcornr,TOlur,comm,irecv_rq_FRul,mpierr)
-
-        nbufyz=bufact*product(bufsizes_yz_corn(:,INUL,ISND))
-        if (ulcorns>=0) call MPI_ISEND(ulbufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-                                       ulcorns,TOuls,comm,isend_rq_TOul,mpierr)
-!
-!  Upper y, upper z.
-!
-        uubufo(:,:,:,ivar1:ivar2)=f(:,m2i_ogrid:m2_ogrid,n2i_ogrid:n2_ogrid,ivar1:ivar2)
-        comm=MPI_COMM_GRID
-
-        nbufyz=bufact*product(bufsizes_yz_corn(:,INUU,IRCV))
-        if (uucornr>=0) call MPI_IRECV(uubufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-                                       uucornr,TOllr,comm,irecv_rq_FRuu,mpierr)
-
-        nbufyz=bufact*product(bufsizes_yz_corn(:,INUU,ISND))
-        if (uucorns>=0) call MPI_ISEND(uubufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-                                       uucorns,TOuus,comm,isend_rq_TOuu,mpierr)
-!
-!  Lower y, upper z.
-!
-        lubufo(:,:,:,ivar1:ivar2)=f(:,m1_ogrid:m1i_ogrid,n2i_ogrid:n2_ogrid,ivar1:ivar2)
-        comm=MPI_COMM_GRID
-
-        nbufyz=bufact*product(bufsizes_yz_corn(:,INLU,IRCV))
-        if (lucornr>=0) call MPI_IRECV(lubufi(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-                                       lucornr,TOulr,comm,irecv_rq_FRlu,mpierr)
-
-        nbufyz=bufact*product(bufsizes_yz_corn(:,INLU,ISND))
-        if (lucorns>=0) call MPI_ISEND(lubufo(:,:,:,ivar1:ivar2),nbufyz,MPI_REAL, &
-                                       lucorns,TOlus,comm,isend_rq_TOlu,mpierr)
-!
-      endif
-!
-    endsubroutine initiate_isendrcv_bdry_ogrid
+! FROM SUB.f90
 !***********************************************************************
-    subroutine finalize_isendrcv_bdry_ogrid(f,ivar1_opt,ivar2_opt)
-!
-!  Make sure the communications initiated with initiate_isendrcv_bdry are
-!  finished and insert the just received boundary values.
-!  Receive requests do not need to (and on OSF1 cannot) be explicitly
-!  freed, since MPI_Wait takes care of this.
-!
-!  07-feb-17/Jorgen: Adapted from mpicomm.f90
-!
-      use General, only: transpose_mn, notanumber
-
-      real, dimension(:,:,:,:), intent(inout):: f
-      integer, optional,        intent(in)   :: ivar1_opt, ivar2_opt
-!
-      integer :: ivar1, ivar2, j
-!
-      ivar1=1; ivar2=min(mcom,size(f,4))
-      if (present(ivar1_opt)) ivar1=ivar1_opt
-      if (present(ivar2_opt)) ivar2=ivar2_opt
-      if (ivar2==0) return
-!
-!  1. wait until data received
-!  2. set ghost zones
-!  3. wait until send completed, will be overwritten in next time step
-!
-!  Communication across y-planes (includes periodic bc)
-!
-      if (nprocy>1) then
-        call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,mpierr)
-        call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,mpierr)
-        do j=ivar1,ivar2
-          if (.not. lfirst_proc_y .or. bcy12(j,1)=='p') then  
-            f(:,1:m1_ogrid-1,n1_ogrid:n2_ogrid,j)=lbufyi(:,:,:,j)       ! set lower buffer
-          endif
-
-          if (.not. llast_proc_y .or. bcy12(j,2)=='p') then
-            f(:,m2_ogrid+1:,n1_ogrid:n2_ogrid,j)=ubufyi(:,:,:,j)        ! set upper buffer
-          endif
-        enddo
-        call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,mpierr)
-        call MPI_WAIT(isend_rq_touppy,isend_stat_tu,mpierr)
-      endif
-!
-!  Communication in z (includes periodic bc)
-!
-      if (nprocz>1) then
-        call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,mpierr)
-        call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,mpierr)
-        do j=ivar1,ivar2
-          if (.not. lfirst_proc_z .or. bcz12(j,1)=='p') then
-            f(:,m1_ogrid:m2_ogrid,1:n1_ogrid-1,j)=lbufzi(:,:,:,j)       ! set lower buffer
-          endif
-
-          if (.not. llast_proc_z .or. bcz12(j,2)=='p') then 
-            f(:,m1_ogrid:m2_ogrid,n2_ogrid+1:,j)=ubufzi(:,:,:,j)        ! set upper buffer
-          endif
-        enddo
-        call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,mpierr)
-        call MPI_WAIT(isend_rq_touppz,isend_stat_tu,mpierr)
-      endif
-!
-!  The four yz-corners (in counter-clockwise order)
-!
-       if (nprocz>1.and.nprocy>1) then
-
-        if (uucornr>=0) call MPI_WAIT(irecv_rq_FRuu,irecv_stat_Fuu,mpierr)
-        if (lucornr>=0) call MPI_WAIT(irecv_rq_FRlu,irecv_stat_Flu,mpierr)
-        if (llcornr>=0) call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,mpierr)
-        if (ulcornr>=0) call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,mpierr)
-
-        do j=ivar1,ivar2
-!
-!  Set ll corner
-!
-          if (.not. lfirst_proc_z .or. bcz12(j,1)=='p') then
-            if  (.not.lfirst_proc_y.or.bcy12(j,1)=='p') then    ! inner or periodic proc boundaries
-              f(:,1:m1_ogrid-1,1:n1_ogrid-1,j)=llbufi(:,:,:,j)               ! fill lower left corner
-            endif
-!
-!  Set ul corner
-!
-            if (.not.llast_proc_y .or.bcy12(j,2)=='p') then    ! inner or periodic proc boundaries
-                f(:,m2_ogrid+1:,1:n1_ogrid-1,j)=ulbufi(:,:,:,j)                ! fill lower right corner
-            endif
-          endif
-!
-!  Set uu corner
-!
-          if (.not. llast_proc_z .or. bcz12(j,2)=='p') then
-            if (.not.llast_proc_y.or.bcy12(j,2)=='p') then    ! inner or periodic proc boundaries
-              f(:,m2+1:,n2+1:,j)=uubufi(:,:,:,j)                ! fill upper right corner
-            endif
-!
-!  Set lu corner
-!
-            if (.not. lfirst_proc_y .or. bcy12(j,1)=='p') then
-              f(:,1:m1-1,n2+1:,j)=lubufi(:,:,:,j)                ! fill upper left corner
-            endif
-          endif
-        enddo
-        
-        if (llcorns>=0) call MPI_WAIT(isend_rq_TOll,isend_stat_Tll,mpierr)
-        if (ulcorns>=0) call MPI_WAIT(isend_rq_TOul,isend_stat_Tul,mpierr)
-        if (uucorns>=0) call MPI_WAIT(isend_rq_TOuu,isend_stat_Tuu,mpierr)
-        if (lucorns>=0) call MPI_WAIT(isend_rq_TOlu,isend_stat_Tlu,mpierr)
-
-      endif
-!
-!  make sure the other processors don't carry on sending new data
-!  which could be mistaken for an earlier time
-!
-     call mpibarrier
-!call mpifinalize
-!stop
-!
-    endsubroutine finalize_isendrcv_bdry_ogrid
+! ROUTINES
+!   grad_ogrid
+!   del2_ogrid
+!   g2ij
+!   dot2_mn_ogrid
+!   gij_ogrid
+!   div_mn_ogrid
+!   traceless_strain_ogrid
+!   multm2_sym_mn_ogrid
+!   curl_mn_ogrid
+!   dot_mn_ogrid
+!   dot2_0_ogrid
+!   u_dot_grad_vec_ogrid
+!   u_dot_grad_scl_ogrid
+!   multmv_mn_ogrid
 !***********************************************************************
-    subroutine isendrcv_bdry_x_ogrid(f,ivar1_opt,ivar2_opt)
+    subroutine grad_ogrid(f,k,g)
 !
-!  Isend and Irecv boundary values for x-direction. Sends and receives
-!  before continuing to y and z boundaries, as this allows the edges
-!  of the grid to be set properly.
+!  Calculate gradient of a scalar, get vector.
 !
-!   2-may-09/anders: coded
+!  07-feb-17/Jorgen: Adapted from sub.f90
 !
-      real, dimension(:,:,:,:), intent(inout) :: f
-      integer, intent(in), optional :: ivar1_opt, ivar2_opt
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
+      real, dimension (nx_ogrid,3) :: g
+      integer :: k
 !
-      integer :: ivar1, ivar2, nbufx, j
+      intent(in) :: f,k
+      intent(out) :: g
 !
-      ivar1=1; ivar2=min(mcom,size(f,4))
-      if (present(ivar1_opt)) ivar1=ivar1_opt
-      if (present(ivar2_opt)) ivar2=ivar2_opt
+      call der_ogrid(f,k,g(:,1),1)
+      call der_ogrid(f,k,g(:,2),2)
+      call der_ogrid(f,k,g(:,3),3)
 !
-      if (nprocx>1) then
-
-        lbufxo(:,:,:,ivar1:ivar2)=f(l1_ogrid:l1i_ogrid,m_ogrid1:m2,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(lower x-zone)
-        ubufxo(:,:,:,ivar1:ivar2)=f(l2i_ogrid:l2_ogrid,m_ogrid1:m2,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(upper x-zone)
-        nbufx=ny_ogrid*nz_ogrid*nghost*(ivar2-ivar1+1)
-
-        call MPI_IRECV(ubufxi(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
-            xuneigh,tolowx,MPI_COMM_GRID,irecv_rq_fromuppx,mpierr)
-        call MPI_IRECV(lbufxi(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
-            xlneigh,touppx,MPI_COMM_GRID,irecv_rq_fromlowx,mpierr)
-        call MPI_ISEND(lbufxo(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
-            xlneigh,tolowx,MPI_COMM_GRID,isend_rq_tolowx,mpierr)
-        call MPI_ISEND(ubufxo(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
-            xuneigh,touppx,MPI_COMM_GRID,isend_rq_touppx,mpierr)
-        call MPI_WAIT(irecv_rq_fromuppx,irecv_stat_fu,mpierr)
-        call MPI_WAIT(irecv_rq_fromlowx,irecv_stat_fl,mpierr)
+    endsubroutine grad_ogrid
+!***********************************************************************
+    subroutine del2_ogrid(f,k,del2f)
 !
-!  Inner communication or (shear-)periodic boundary conditions in x
-!  MR: Communication should only happen under these conditions.
+!  Calculate del2 of a scalar, get scalar.
 !
-        do j=ivar1,ivar2
-          if (.not. lfirst_proc_x .or. bcx12(j,1)=='p' .or. &
-              (bcx12(j,1)=='she'.and.nygrid==1)) then
-            f( 1:l1_ogrid-1,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j)=lbufxi(:,:,:,j)  !!(set lower buffer)
-          endif
-          if (.not. llast_proc_x .or. bcx12(j,2)=='p' .or. &
-              (bcx12(j,2)=='she'.and.nygrid==1)) then
-            f(l2_ogrid+1:,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j)=ubufxi(:,:,:,j)  !!(set upper buffer)
-          endif
+!  07-feb-17/Jorgen: Adapted from sub.f90
+!
+      intent(in) :: f,k
+      intent(out) :: del2f
+!
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
+      real, dimension (nx_ogrid) :: del2f,d2fdx,d2fdy,d2fdz,tmp
+      integer :: k
+!
+      call der2_ogrid(f,k,d2fdx,1)
+      call der2_ogrid(f,k,d2fdy,2)
+      call der2_ogrid(f,k,d2fdz,3)
+      del2f=d2fdx+d2fdy+d2fdz
+!
+!  Since we have cylindrical coordinates
+      call der_ogrid(f,k,tmp,1)
+      del2f=del2f+tmp*rcyl_mn1_ogrid
+!
+    endsubroutine del2_ogrid
+!***********************************************************************
+    subroutine g2ij(f,k,g)
+!
+!  Calculates the Hessian, i.e. all second derivatives of a scalar.
+!
+!  07-feb-17/Jorgen: Adapted from sub.f90
+!
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
+      real, dimension (nx_ogrid,3,3) :: g
+      real, dimension (nx_ogrid) :: tmp
+      integer :: i,j,k
+!
+      intent(in) :: f,k
+      intent(out) :: g
+!
+!  Run though all 9 possibilities, treat diagonals separately.
+!
+      do j=1,3
+        call der2_ogrid(f,k,tmp,j)
+        g(:,j,j)=tmp
+        do i=j+1,3
+          call derij(f,k,tmp,i,j)
+          g(:,i,j)=tmp
+          g(:,j,i)=tmp
         enddo
+      enddo
+!
+    endsubroutine g2ij
+!***********************************************************************
+    subroutine dot2_mn_ogrid(a,b)
+!
+!  Dot product with itself, to calculate max and rms values of a vector.
+!
+!  07-feb-17/Jorgen: Adapted from sub.f90
+!
+      real, dimension (nx_ogrid,3) :: a
+      real, dimension (nx_ogrid) :: b
+!
+      intent(in) :: a
+      intent(out) :: b
 
-        call MPI_WAIT(isend_rq_tolowx,isend_stat_tl,mpierr)
-        call MPI_WAIT(isend_rq_touppx,isend_stat_tu,mpierr)
+      b=a(:,1)**2+a(:,2)**2+a(:,3)**2
+!
+    endsubroutine dot2_mn_ogrid
+!***********************************************************************
+    subroutine gij_ogrid(f,k,g,nder)
+!
+!  Calculate gradient of a vector, return matrix.
+!
+!   07-feb-17/Jorgen: Adapted from sub.f90
+!
+      use Deriv, only: der,der2,der3,der4,der5,der6
+!
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
+      real, dimension (nx_ogrid,3,3) :: g
+      real, dimension (nx_ogrid) :: tmp
+      integer :: i,j,k,k1,nder
+!
+      intent(in) :: f,k,nder
+      intent(out) :: g
+!
+      k1=k-1
+      do i=1,3 
+        do j=1,3
+          if (nder == 1) then
+            call der_ogrid(f,k1+i,tmp,j)
+          elseif (nder == 2) then
+            call der2_ogrid(f,k1+i,tmp,j)
+          endif
+          g(:,i,j)=tmp
+        enddo 
+      enddo
+!
+    endsubroutine gij_ogrid
+!***********************************************************************
+    subroutine div_mn_ogrid(aij,b,a)
+!
+!  Calculate divergence from derivative matrix.
+!
+!  07-feb-17/Jorgen: Adapted from sub.f90
+!
+      real, dimension (nx_ogrid,3,3) :: aij
+      real, dimension (nx_ogrid,3) :: a
+      real, dimension (nx_ogrid) :: b
+!
+      intent(in) :: aij,a
+      intent(out) :: b
+!
+      b=aij(:,1,1)+aij(:,2,2)+aij(:,3,3)
+!
+!  Adjustments for other cylindrical coordinate system
+!
+      b=b+rcyl_mn1_ogrid*a(:,1)
+!
+    endsubroutine div_mn_ogrid
+!***********************************************************************
+    subroutine traceless_strain_ogrid(uij,divu,sij,uu)
+!
+!  Calculates traceless rate-of-strain tensor sij from derivative tensor uij
+!  and divergence divu within each pencil;
+!  curvilinear co-ordinates require velocity argument uu, so this is not optional here
+!  In-place operation is possible, i.e. uij and sij may refer to the same array.
+!
+!  07-feb-17/Jorgen: Adapted from sub.f90
+!
+    use General, only: loptest
 
+    real, dimension (nx_ogrid,3,3)   :: uij, sij
+    real, dimension (nx_ogrid)       :: divu
+    real, dimension (nx_ogrid,3)     :: uu
+!
+    integer :: i,j
+!
+    intent(in)  :: uij, divu, lss
+    intent(out) :: sij
+!
+    do j=1,3
+      sij(:,j,j)=uij(:,j,j)-(1./3.)*divu
+      do i=j+1,3
+        sij(:,i,j)=.5*(uij(:,i,j)+uij(:,j,i))
+        sij(:,j,i)=sij(:,i,j)
+      enddo
+    enddo
+    sij(:,1,2)=sij(:,1,2)-.5*rcyl_mn1_ogrid*uu(:,2)
+    sij(:,2,2)=sij(:,2,2)+.5*rcyl_mn1_ogrid*uu(:,1)
+    sij(:,2,1)=sij(:,1,2)
+!
+    endsubroutine traceless_strain_ogrid
+!***********************************************************************
+    subroutine multm2_sym_mn_ogrid(a,b)
+!
+!  Symmetric matrix squared, gives scalar.
+!
+!  07-feb-17/Jorgen: Adapted from sub.f90
+!
+      real, dimension (nx_ogrid,3,3), intent(in) :: a
+      real, dimension (nx_ogrid), intent(out) :: b
+!
+      integer :: i, j
+!
+      b = a(:,1,1)**2
+      do i = 2, 3
+        b = b + a(:,i,i)**2
+        do j = 1, i-1
+          b = b + 2 * a(:,i,j)**2
+        enddo
+      enddo
+!
+    endsubroutine multm2_sym_mn_ogrid
+!***********************************************************************
+    subroutine curl_mn_ogrid(aij,b,a)
+!
+!  Calculate curl from derivative matrix.
+!
+!  07-feb-17/Jorgen: Adapted from sub.f90
+!
+      real, dimension (nx,3,3), intent (in) :: aij
+      real, dimension (nx,3), intent (in), optional :: a
+      real, dimension (nx,3), intent (out) :: b
+      integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7
+!
+      b(:,1)=aij(:,3,2)-aij(:,2,3)
+      b(:,2)=aij(:,1,3)-aij(:,3,1)
+      b(:,3)=aij(:,2,1)-aij(:,1,2)
+!
+!  Adjustments for cylindrical coordinate system.
+!  If we go all the way to the center, we need to put a regularity condition.
+!  We do this here currently up to second order, and only for curl_mn.
+!
+      b(:,3)=b(:,3)+a(:,2)*rcyl_mn1_ogrid
+      if (rcyl_mn_ogrid(1)==0.) b(i1,3)=(360.*b(i2,3)-450.*b(i3,3)+400.*b(i4,3) &
+                                  -225.*b(i5,3)+72.*b(i6,3)-10.*b(i7,3))/147.
+!
+    endsubroutine curl_mn_ogrid
+!***********************************************************************
+    subroutine dot_mn_ogrid(a,b,c)
+!
+!  Dot product, c=a.b, on pencil arrays
+!
+!  07-feb-17/Jorgen: Adapted from sub.f90
+!
+      real, dimension (:,:) :: a,b
+      real, dimension (:) :: c
+!
+      intent(in) :: a,b
+      intent(inout) :: c
+!
+      integer :: i
+      logical :: l0
+!
+      c=0.
+      do i=1,size(a,2)
+        c=c+a(:,i)*b(:,i)
+      enddo
+!
+    endsubroutine dot_mn_ogrid
+!***********************************************************************
+    subroutine dot2_0_ogrid(a,b)
+!
+!  Dot product, c=a.b, of two simple 3-d arrays.
+!
+!  07-fab-15/Jorgen: Copied from sub.f90
+!
+      real, dimension (:) :: a
+      real :: b
+!
+      intent(in) :: a
+      intent(out) :: b
+!
+      b = dot_product(a,a)
+!
+    endsubroutine dot2_0_ogrid
+!***********************************************************************
+!   PUT IN THE TOP OF MODULE
+!***********************************************************************
+!  interface dot2_ogrid
+!    module procedure dot2_mn_ogrid
+!    module procedure dot2_0_ogrid
+!  endinterface
+!   interface u_dot_grad_ogrid
+!     module procedure u_dot_grad_scl_ogrid
+!     module procedure u_dot_grad_vec_ogrid
+!   endinterface
+! !***********************************************************************
+    subroutine u_dot_grad_vec_ogrid(f,k,gradf,uu,ugradf)
+!
+!  u.gradu
+!
+!  07-feb-17/Jorgen: Adapted from sub.f90
+!
+      intent(in) :: f,k,gradf,uu
+      intent(out) :: ugradf
+!
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
+      real, dimension (nx_ogrid,3,3) :: gradf
+      real, dimension (nx_ogrid,3) :: uu,ff,ugradf,grad_f_tmp
+      real, dimension (nx_ogrid) :: tmp
+      integer :: j,k
+!
+      if (k<1 .or. k>mfarray) then
+        call fatal_error('u_dot_grad_vec_ogrid','variable index is out of bounds')
+        return
       endif
 !
-    endsubroutine isendrcv_bdry_x_ogrid
+      do j=1,3
+        grad_f_tmp = gradf(:,j,:)
+        call u_dot_grad_scl(f,k+j-1,grad_f_tmp,uu,tmp)
+        ugradf(:,j)=tmp
+      enddo
+!
+!  Adjust to cylindrical coordinate system
+!  The following now works for general u.gradA.
+!
+      ff=f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,k:k+2)
+      ugradf(:,1)=ugradf(:,1)-rcyl_mn1_ogrid*(uu(:,2)*ff(:,2))
+      ugradf(:,2)=ugradf(:,2)+rcyl_mn1_ogrid*(uu(:,1)*ff(:,2))
+!
+    endsubroutine u_dot_grad_vec_ogrid
 !***********************************************************************
-  end module Solid_Cells
+    subroutine u_dot_grad_scl_ogrid(f,k,gradf,uu,ugradf)
+!
+!  Do advection-type term u.grad f_k.
+!  Assumes gradf to be known, but takes f and k as arguments to be able
+!  to calculate upwind correction.
+!
+!  07-feb-17/Jorgen: Adapted from sub.f90
+!
+      use General, only: loptest
+!
+      intent(in) :: f,k,gradf,uu
+      intent(out) :: ugradf
+!
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
+      real, dimension (nx_ogrid,3) :: uu,gradf
+      real, dimension (nx_ogrid) :: ugradf
+      integer :: k
+!
+      if (k<1 .or. k>mfarray) then
+        call fatal_error('u_dot_grad_scl_ogrid','variable index is out of bounds')
+        return
+      endif
+!
+      call dot_mn_ogrid(uu,gradf,ugradf)
+!
+    endsubroutine u_dot_grad_scl_ogrid
+!***********************************************************************
+    subroutine multmv_mn_ogrid(a,b,c)
+!
+!  Matrix multiplied with vector, gives vector.
+!
+!  C_i = A_{i,j} B_j
+!
+!  07-feb-17/Jorgen: Adapted from sub.f90
+!
+      real, dimension (nx_ogrid,3,3) :: a
+      real, dimension (nx_ogrid,3) :: b,c
+      real, dimension (nx_ogrid) :: tmp
+      integer :: i,j
+      logical, optional :: ladd
+!
+      intent(in) :: a,b,ladd
+      intent(out) :: c
+!
+      do i=1,3
+        j=1
+        tmp=a(:,i,j)*b(:,j)
+        do j=2,3
+          tmp=tmp+a(:,i,j)*b(:,j)
+        enddo
+        c(:,i)=tmp
+      enddo
+!
+    endsubroutine multmv_mn_ogrid
+!***********************************************************************
+! FROM DERIV.F90
+!***********************************************************************
+! ROUTINES
+!   der_ogrid
+!   der2_ogrid
+!   derij_ogrid
+!***********************************************************************
+    subroutine der_ogrid(f, k, df, j, ignoredx)
+!
+!  calculate derivative df_k/dx_j 
+!  accurate to 6th order, explicit, periodic
+!  replace cshifts by explicit construction -> x6.5 faster!
+!
+!  07-feb-17/Jorgen: Adapted from deriv.f90
+!
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
+      real, dimension(nx_ogrid), intent(out) :: df
+      integer, intent(in) :: j, k
+      logical, intent(in), optional :: ignoredx
+!
+      real, parameter :: a = 1.0 / 60.0
+      real, dimension(nx_ogrid) :: fac
+      logical :: withdx
+!
+      if (present(ignoredx)) then
+        withdx = .not. ignoredx
+        if (ignoredx) fac = a
+      else
+        withdx = .true.
+      endif
+!
+      if (j==1) then
+        if (nxgrid_ogrid/=1) then
+          if (withdx) fac = a * dx_1_ogrid(l1_ogrid:l2_ogrid)
+          df=fac*(+ 45.0*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid,k)) &
+                  -  9.0*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid,k)) &
+                  +      (f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid,k)))
+        else
+          df=0.
+          if (ip<=5) print*, 'der_main: Degenerate case in x-direction'
+        endif
+      elseif (j==2) then
+        if (nygrid/=1) then
+          if (withdx) fac = a * dy_1_ogrid(m_ogrid)
+          df=fac*(+ 45.0*(f(l1_ogrid:l2_ogrid,m_ogrid+1,n_ogrid,k)-f(l1_ogrid:l2_ogrid,m_ogrid-1,n_ogrid,k)) &
+                  -  9.0*(f(l1_ogrid:l2_ogrid,m_ogrid+2,n_ogrid,k)-f(l1_ogrid:l2_ogrid,m_ogrid-2,n_ogrid,k)) &
+                  +      (f(l1_ogrid:l2_ogrid,m_ogrid+3,n_ogrid,k)-f(l1_ogrid:l2_ogrid,m_ogrid-3,n_ogrid,k)))
+          ! Since we have cylindrical coordinates
+          if (withdx) df = df * rcyl_mn1_ogrid
+        else
+          df=0.
+          if (ip<=5) print*, 'der_main: Degenerate case in y-direction'
+        endif
+      elseif (j==3) then
+        if (nzgrid/=1) then
+          if (withdx) fac = a * dz_1_ogrid(n_ogrid)
+          df=fac*(+ 45.0*(f(l1:l2_ogrid,m_ogrid,n_ogrid+1,k)-f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid-1,k)) &
+                  -  9.0*(f(l1:l2_ogrid,m_ogrid,n_ogrid+2,k)-f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid-2,k)) &
+                  +      (f(l1:l2_ogrid,m_ogrid,n_ogrid+3,k)-f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid-3,k)))
+        else
+          df=0.
+          if (ip<=5) print*, 'der_main: Degenerate case in z-direction'
+        endif
+      endif
+!
+    endsubroutine der_ogrid
+!***********************************************************************
+    subroutine der2_ogrid(f,k,df2,j)
+!
+!  calculate 2nd derivative d^2f_k/dx_j^2
+!  accurate to 6th order, explicit, periodic
+!  replace cshifts by explicit construction -> x6.5 faster!
+!
+!  07-feb-17/Jorgen: Adapted from deriv.f90
+!
+      use General, only: loptest
 
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
+      real, dimension (nx_ogrid) :: df2,fac,df
+      integer :: j,k
+!
+      real :: der2_coef0, der2_coef1, der2_coef2, der2_coef3
+
+      intent(in)  :: f,k,j
+      intent(out) :: df2
+!
+      der2_coef0=-490./180.; der2_coef1=270./180.
+      der2_coef2=-27./180.; der2_coef3=2./180.
+
+      if (j==1) then
+        if (nxgrid_ogrid/=1) then
+          fac=dx_1_ogrid(l1_ogrid:l2_ogrid)**2
+          df2=fac*(der2_coef0* f(l1_ogrid  :l2_ogrid  ,m_ogrid,n_ogrid,k) &
+                  +der2_coef1*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid,k)+f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid,k)) &
+                  +der2_coef2*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid,k)+f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid,k)) &
+                  +der2_coef3*(f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid,k)+f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid,k)))
+          if (.not.lequidist_ogrid(j)) then
+            call der_ogrid(f,k,df,j)
+            df2=df2+dx_tilde_ogrid(l1_ogrid:l2_ogrid)*df
+          endif
+        else
+          df2=0.
+        endif
+      elseif (j==2) then
+        if (nygrid_ogrid/=1) then
+          fac=dy_1_ogrid(m_ogrid)**2
+          df2=fac*(der2_coef0* f(l1_ogrid:l2_ogrid,m_ogrid  ,n_ogrid,k) &
+                  +der2_coef1*(f(l1_ogrid:l2_ogrid,m_ogrid+1,n_ogrid,k)+f(l1_ogrid:l2_ogrid,m_ogrid-1,n_ogrid,k)) &
+                  +der2_coef2*(f(l1_ogrid:l2_ogrid,m_ogrid+2,n_ogrid,k)+f(l1_ogrid:l2_ogrid,m_ogrid-2,n_ogrid,k)) &
+                  +der2_coef3*(f(l1_ogrid:l2_ogrid,m_ogrid+3,n_ogrid,k)+f(l1_ogrid:l2_ogrid,m_ogrid-3,n_ogrid,k)))
+          df2=df2*rcyl_mn2_ogrid
+          if (.not.lequidist_ogrid(j)) then
+            call der(f,k,df,j)
+            df2=df2+dy_tilde_ogrid(m_ogrid)*df
+          endif
+        else
+          df2=0.
+        endif
+      elseif (j==3) then
+        if (nzgrid_ogrid/=1) then
+          fac=dz_1_ogrid(n_ogrid)**2
+          df2=fac*( der2_coef0* f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid    ,k) &
+                   +der2_coef1*(f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid+1,k)+f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid-1,k)) &
+                   +der2_coef2*(f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid+2,k)+f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid-2,k)) &
+                   +der2_coef3*(f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid+3,k)+f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid-3,k)))
+          if (.not.lequidist_ogrid(j)) then
+            call der(f,k,df,j)
+            df2=df2+dz_tilde_ogrid(n_ogrid)*df
+          endif
+        else
+          df2=0.
+        endif
+      endif
+!
+    endsubroutine der2_ogrid
+!***********************************************************************
+    subroutine derij_ogrid(f,k,df,i,j)
+!
+!  calculate 2nd derivative with respect to two different directions
+!  input: scalar, output: scalar
+!  accurate to 6th order, explicit, periodic
+!
+!  17-feb-17/Jorgen: Adapted from deriv.f90
+!
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
+      real, dimension (nx_ogrid) :: df,fac
+      integer :: i,j,k
+!
+      intent(in) :: f,k,i,j
+      intent(out) :: df
+!
+      if (lbidiagonal_derij) then
+        !
+        ! Use bidiagonal mixed-derivative operator, i.e.
+        ! employ only the three neighbouring points on each of the four
+        ! half-diagonals. This gives 6th-order mixed derivatives as the
+        ! version below, but involves just 12 points instead of 36.
+        !
+        if ((i==1.and.j==2).or.(i==2.and.j==1)) then
+          if (nxgrid_ogrid/=1.and.nygrid_ogrid/=1) then
+            fac=(1./720.)*dx_1_ogrid(l1_ogrid:l2_ogrid)*dy_1_ogrid(m_ogrid)
+            df=fac*( &
+                        270.*( f(l1_ogrid+1:l2_ogrid+1,m_ogrid+1,n_ogrid,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid+1,n_ogrid,k)  &
+                              +f(l1_ogrid-1:l2_ogrid-1,m_ogrid-1,n_ogrid,k)-f(l1_ogrid+1:l2_ogrid+1,m_ogrid-1,n_ogrid,k)) &
+                       - 27.*( f(l1_ogrid+2:l2_ogrid+2,m_ogrid+2,n_ogrid,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid+2,n_ogrid,k)  &
+                              +f(l1_ogrid-2:l2_ogrid-2,m_ogrid-2,n_ogrid,k)-f(l1_ogrid+2:l2_ogrid+2,m_ogrid-2,n_ogrid,k)) &
+                       +  2.*( f(l1_ogrid+3:l2_ogrid+3,m_ogrid+3,n_ogrid,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid+3,n_ogrid,k)  &
+                              +f(l1_ogrid-3:l2_ogrid-3,m_ogrid-3,n_ogrid,k)-f(l1_ogrid+3:l2_ogrid+3,m_ogrid-3,n_ogrid,k)) &
+                   )
+          else
+            df=0.
+            if (ip<=5) print*, 'derij: Degenerate case in x- or y-direction'
+          endif
+        elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
+          if (nygrid_ogrid/=1.and.nzgrid_ogrid/=1) then
+            fac=(1./720.)*dy_1_ogrid(m_ogrid)*dz_1_ogrid(n_ogrid)
+            df=fac*( &
+                        270.*( f(l1_ogrid:l2_ogrid,m_ogrid+1,n_ogrid+1,k)-f(l1_ogrid:l2_ogrid,m_ogrid+1,n_ogrid-1,k)  &
+                              +f(l1_ogrid:l2_ogrid,m_ogrid-1,n_ogrid-1,k)-f(l1_ogrid:l2_ogrid,m_ogrid-1,n_ogrid+1,k)) &
+                       - 27.*( f(l1_ogrid:l2_ogrid,m_ogrid+2,n_ogrid+2,k)-f(l1_ogrid:l2_ogrid,m_ogrid+2,n_ogrid-2,k)  &
+                              +f(l1_ogrid:l2_ogrid,m_ogrid-2,n_ogrid-2,k)-f(l1_ogrid:l2_ogrid,m_ogrid-2,n_ogrid+2,k)) &
+                       +  2.*( f(l1_ogrid:l2_ogrid,m_ogrid+3,n_ogrid+3,k)-f(l1_ogrid:l2_ogrid,m_ogrid+3,n_ogrid-3,k)  &
+                              +f(l1_ogrid:l2_ogrid,m_ogrid-3,n_ogrid-3,k)-f(l1_ogrid:l2_ogrid,m_ogrid-3,n_ogrid+3,k)) &
+                   )
+          else
+            df=0.
+            if (ip<=5) print*, 'derij: Degenerate case in y- or z-direction'
+          endif
+        elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
+          if (nzgrid_ogrid/=1.and.nxgrid_ogrid/=1) then
+            fac=(1./720.)*dz_1_ogrid(n_ogrid)*dx_1_ogrid(l1_ogrid:l2_ogrid)
+            df=fac*( &
+                        270.*( f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid+1,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid+1,k)  &
+                              +f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid-1,k)-f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid-1,k)) &
+                       - 27.*( f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid+2,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid+2,k)  &
+                              +f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid-2,k)-f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid-2,k)) &
+                       +  2.*( f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid+3,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid+3,k)  &
+                              +f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid-3,k)-f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid-3,k)) &
+                   )
+          else
+            df=0.
+            if (ip<=5) print*, 'derij: Degenerate case in x- or z-direction'
+          endif
+        endif
+!
+      else                      ! not using bidiagonal mixed derivatives
+        !
+        ! This is the old, straight-forward scheme
+        !
+        if ((i==1.and.j==2).or.(i==2.and.j==1)) then
+          if (nxgrid_ogrid/=1.and.nygrid_ogrid/=1) then
+            fac=(1./60.**2)*dx_1_ogrid(l1_ogrid:l2_ogrid)*dy_1_ogrid(m_ogrid)
+            df=fac*( &
+              45.*((45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid+1,n_ogrid,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid+1,n_ogrid,k))  &
+                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid+1,n_ogrid,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid+1,n_ogrid,k))  &
+                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid+1,n_ogrid,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid+1,n_ogrid,k))) &
+                  -(45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid-1,n_ogrid,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid-1,n_ogrid,k))  &
+                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid-1,n_ogrid,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid-1,n_ogrid,k))  &
+                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid-1,n_ogrid,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid-1,n_ogrid,k))))&
+              -9.*((45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid+2,n_ogrid,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid+2,n_ogrid,k))  &
+                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid+2,n_ogrid,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid+2,n_ogrid,k))  &
+                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid+2,n_ogrid,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid+2,n_ogrid,k))) &
+                  -(45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid-2,n_ogrid,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid-2,n_ogrid,k))  &
+                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid-2,n_ogrid,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid-2,n_ogrid,k))  &
+                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid-2,n_ogrid,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid-2,n_ogrid,k))))&
+                 +((45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid+3,n_ogrid,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid+3,n_ogrid,k))  &
+                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid+3,n_ogrid,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid+3,n_ogrid,k))  &
+                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid+3,n_ogrid,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid+3,n_ogrid,k))) &
+                  -(45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid-3,n_ogrid,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid-3,n_ogrid,k))  &
+                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid-3,n_ogrid,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid-3,n_ogrid,k))  &
+                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid-3,n_ogrid,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid-3,n_ogrid,k))))&
+                   )
+          else
+            df=0.
+            if (ip<=5) print*, 'derij: Degenerate case in x- or y-direction'
+          endif
+        elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
+          if (nygrid_ogrid/=1.and.nzgrid_ogrid/=1) then
+            fac=(1./60.**2)*dy_1_ogrid(m_ogrid)*dz_1_ogrid(n_ogrid)
+            df=fac*( &
+              45.*((45.*(f(l1_ogrid:l2_ogrid,m_ogrid+1,n_ogrid+1,k)-f(l1_ogrid:l2_ogrid,m_ogrid-1,n_ogrid+1,k))  &
+                    -9.*(f(l1_ogrid:l2_ogrid,m_ogrid+2,n_ogrid+1,k)-f(l1_ogrid:l2_ogrid,m_ogrid-2,n_ogrid+1,k))  &
+                       +(f(l1_ogrid:l2_ogrid,m_ogrid+3,n_ogrid+1,k)-f(l1_ogrid:l2_ogrid,m_ogrid-3,n_ogrid+1,k))) &
+                  -(45.*(f(l1_ogrid:l2_ogrid,m_ogrid+1,n_ogrid-1,k)-f(l1_ogrid:l2_ogrid,m_ogrid-1,n_ogrid-1,k))  &
+                    -9.*(f(l1_ogrid:l2_ogrid,m_ogrid+2,n_ogrid-1,k)-f(l1_ogrid:l2_ogrid,m_ogrid-2,n_ogrid-1,k))  &
+                       +(f(l1_ogrid:l2_ogrid,m_ogrid+3,n_ogrid-1,k)-f(l1_ogrid:l2_ogrid,m_ogrid-3,n_ogrid-1,k))))&
+              -9.*((45.*(f(l1_ogrid:l2_ogrid,m_ogrid+1,n_ogrid+2,k)-f(l1_ogrid:l2_ogrid,m_ogrid-1,n_ogrid+2,k))  &
+                    -9.*(f(l1_ogrid:l2_ogrid,m_ogrid+2,n_ogrid+2,k)-f(l1_ogrid:l2_ogrid,m_ogrid-2,n_ogrid+2,k))  &
+                       +(f(l1_ogrid:l2_ogrid,m_ogrid+3,n_ogrid+2,k)-f(l1_ogrid:l2_ogrid,m_ogrid-3,n_ogrid+2,k))) &
+                  -(45.*(f(l1_ogrid:l2_ogrid,m_ogrid+1,n_ogrid-2,k)-f(l1_ogrid:l2_ogrid,m_ogrid-1,n_ogrid-2,k))  &
+                    -9.*(f(l1_ogrid:l2_ogrid,m_ogrid+2,n_ogrid-2,k)-f(l1_ogrid:l2_ogrid,m_ogrid-2,n_ogrid-2,k))  &
+                       +(f(l1_ogrid:l2_ogrid,m_ogrid+3,n_ogrid-2,k)-f(l1_ogrid:l2_ogrid,m_ogrid-3,n_ogrid-2,k))))&
+                 +((45.*(f(l1_ogrid:l2_ogrid,m_ogrid+1,n_ogrid+3,k)-f(l1_ogrid:l2_ogrid,m_ogrid-1,n_ogrid+3,k))  &
+                    -9.*(f(l1_ogrid:l2_ogrid,m_ogrid+2,n_ogrid+3,k)-f(l1_ogrid:l2_ogrid,m_ogrid-2,n_ogrid+3,k))  &
+                       +(f(l1_ogrid:l2_ogrid,m_ogrid+3,n_ogrid+3,k)-f(l1_ogrid:l2_ogrid,m_ogrid-3,n_ogrid+3,k))) &
+                  -(45.*(f(l1_ogrid:l2_ogrid,m_ogrid+1,n_ogrid-3,k)-f(l1_ogrid:l2_ogrid,m_ogrid-1,n_ogrid-3,k))  &
+                    -9.*(f(l1_ogrid:l2_ogrid,m_ogrid+2,n_ogrid-3,k)-f(l1_ogrid:l2_ogrid,m_ogrid-2,n_ogrid-3,k))  &
+                       +(f(l1_ogrid:l2_ogrid,m_ogrid+3,n_ogrid-3,k)-f(l1_ogrid:l2_ogrid,m_ogrid-3,n_ogrid-3,k))))&
+                   )
+          else
+            df=0.
+            if (ip<=5) print*, 'derij: Degenerate case in y- or z-direction'
+          endif
+        elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
+          if (nzgrid_ogrid/=1.and.nxgrid_ogrid/=1) then
+            fac=(1./60.**2)*dz_1_ogrid(n_ogrid)*dx_1_ogrid(l1_ogrid:l2_ogrid)
+            df=fac*( &
+              45.*((45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid+1,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid+1,k))  &
+                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid+1,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid+1,k))  &
+                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid+1,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid+1,k))) &
+                  -(45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid-1,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid-1,k))  &
+                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid-1,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid-1,k))  &
+                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid-1,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid-1,k))))&
+              -9.*((45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid+2,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid+2,k))  &
+                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid+2,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid+2,k))  &
+                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid+2,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid+2,k))) &
+                  -(45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid-2,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid-2,k))  &
+                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid-2,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid-2,k))  &
+                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid-2,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid-2,k))))&
+                 +((45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid+3,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid+3,k))  &
+                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid+3,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid+3,k))  &
+                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid+3,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid+3,k))) &
+                  -(45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid-3,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid-3,k))  &
+                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid-3,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid-3,k))  &
+                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid-3,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid-3,k))))&
+                   )
+          else
+            df=0.
+            if (ip<=5) print*, 'derij: Degenerate case in x- or z-direction'
+          endif
+        endif
+!
+      endif                     ! bidiagonal derij
+
+!  Since we have cylindrical coordinates
+      if ( i+j==3 .or. i+j==5 ) df=df*rcyl_mn1_ogrid
+!
+    endsubroutine derij_ogrid
+!***********************************************************************
+end module Solid_Cells
