@@ -72,7 +72,7 @@ module Deriv
   contains
 !
 !***********************************************************************
-    subroutine initialize_deriv()
+    subroutine initialize_deriv
 !
 !  Initialize stencil coefficients
 !
@@ -1844,6 +1844,7 @@ module Deriv
       call fatal_error("deriv_10th","der2_z not implemented yet")
 !
 ! To avoid compiler warnings:
+!
       df2=f(n1:n2)
 !
     endsubroutine der2_z
@@ -1858,7 +1859,11 @@ module Deriv
       real, dimension (mx), intent(in)  :: f
       real, dimension (nx), intent(out) :: df
 !
-      call stop_it("deriv_10th: der_x not implemented yet")
+      call fatal_error("deriv_10th: der_x not implemented yet")
+!
+! To avoid compiler warnings:
+!
+      df=f(n1:n2)
 !
     endsubroutine der_x
 !***********************************************************************
@@ -1894,7 +1899,7 @@ module Deriv
 !
     endsubroutine der2_minmod
 !***********************************************************************
-    subroutine finalize_deriv()
+    subroutine finalize_deriv
 !
 ! Dummy
 !
@@ -1960,7 +1965,6 @@ module Deriv
 
       integer :: k,off
 
-      !call fatal_error('set_ghosts_for_onesided_ders','Not implemented for 10th order.')
       if (loptest(l2nd)) then
         off=4
       else

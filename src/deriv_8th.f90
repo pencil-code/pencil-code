@@ -71,7 +71,7 @@ module Deriv
   contains
 !
 !***********************************************************************
-    subroutine initialize_deriv()
+    subroutine initialize_deriv
 !
 !  Initialize stencil coefficients
 !
@@ -1768,9 +1768,13 @@ module Deriv
 !
       call stop_it("deriv_8th: der_x not implemented yet")
 !
+! To avoid compiler warnings:
+!
+      df=f(n1:n2)
+!
     endsubroutine der_x
 !***********************************************************************
-    subroutine der2_x(f,df2)
+    subroutine der2_x(f,df)
 !
 ! dummy routine
 !
@@ -1778,9 +1782,13 @@ module Deriv
       use Mpicomm, only: stop_it
 !
       real, dimension (mx), intent(in)  :: f
-      real, dimension (nx), intent(out) :: df2
+      real, dimension (nx), intent(out) :: df
 !
       call stop_it("deriv_8th: der2_x not implemented yet")
+!
+! To avoid compiler warnings:
+!
+      df=f(n1:n2)
 !
     endsubroutine der2_x
 !***********************************************************************
@@ -1802,7 +1810,7 @@ module Deriv
 !
     endsubroutine der2_minmod
 !***********************************************************************
-    subroutine finalize_deriv()
+    subroutine finalize_deriv
 !
 !  Dummy
 !
@@ -1868,7 +1876,6 @@ module Deriv
 
       integer :: k,off
 
-      !call fatal_error('set_ghosts_for_onesided_ders','Not implemented for 8th order.')
       if (loptest(l2nd)) then
         off=3
       else
