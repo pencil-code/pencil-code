@@ -1581,9 +1581,6 @@ endfunction within_ogrid_comp
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar_ogrid) :: df
       real, dimension (nx_ogrid,3) :: df_iuu_pencil
       type (pencil_case) :: p
-      real, dimension (nx_ogrid) :: maxadvec, maxdiffus, maxdiffus2, maxdiffus3, maxsrc
-      real, dimension (nx_ogrid) :: advec2,advec2_hypermesh
-      real, dimension (nx_ogrid) :: pfreeze,pfreeze_int,pfreeze_ext
       real, dimension(1)   :: mass_per_proc
       integer :: iv,nyz
 !
@@ -1599,23 +1596,12 @@ endfunction within_ogrid_comp
       if (headtt) call svn_id( &
            "$Id$")
 !
-!  Need to finalize communication early either for test purposes, or
-!  for solid_cells. TODO: Necessary??
-!
-      early_finalize=.true.
-!
-!  Call "before_boundary" hooks (for f array precalculation)
-!
-! TODO: Precalculation of vorticity field computed in routine below
-!       Do we need this?
-      if (lhydro)        call hydro_before_boundary(f)
-!
 !  Prepare x-ghost zones; required before f-array communication
 !  AND shock calculation
 !
       call boundconds_x_ogrid(f)
 !
-!  Initiate (non-blocking) communication and do boundary conditions.
+!  Initiate communication and do boundary conditions.
 !  Required order:
 !  1. x-boundaries (x-ghost zones will be communicated) - done above
 !  2. communication
@@ -1623,21 +1609,9 @@ endfunction within_ogrid_comp
 !
       if (ldebug) print*,'pde: bef. initiate_isendrcv_bdry'
       call initiate_isendrcv_bdry_ogrid(f)
-      if (early_finalize) then
-        call finalize_isendrcv_bdry_ogrid(f)
-        call boundconds_y_ogrid(f)
-        call boundconds_z_ogrid(f)
-      endif
-!
-!  Set inverse timestep to zero before entering loop over m and n.
-!
-      if (lfirst.and.ldt) then
-        if (dtmax/=0.0) then
-          dt1_max=1./dtmax
-        else
-          dt1_max=0.0
-        endif
-      endif
+      call finalize_isendrcv_bdry_ogrid(f)
+      call boundconds_y_ogrid(f)
+      call boundconds_z_ogrid(f)
 !
 !------------------------------------------------------------------------------
 !  Do loop over m and n.
@@ -1648,32 +1622,6 @@ endfunction within_ogrid_comp
         m_ogrid=mm(imn)
         lfirstpoint=(imn==1)      ! true for very first m-n loop
         llastpoint=(imn==(nyz)) ! true for very last m-n loop
-!
-!  Store the velocity part of df array in a temporary array
-!  while solving the anelastic case.
-!
-        call timing('pde_ogrid','before lanelastic',mnloop=.true.)
-!
-!  Make sure all ghost points are set.
-!
-        if (.not.early_finalize.and.necessary(imn)) then
-          call finalize_isendrcv_bdry_ogrid(f)
-          call boundconds_y_ogrid(f)
-          call boundconds_z_ogrid(f)
-        endif
-        call timing('pde_ogrid','finished boundconds_z',mnloop=.true.)
-!
-!  For each pencil, accumulate through the different modules
-!  advec_XX and diffus_XX, which are essentially the inverse
-!  advective and diffusive timestep for that module.
-!  (note: advec_cs2 and advec_va2 are inverse _squared_ timesteps)
-!  Note that advec_cs2 should always be initialized when leos.
-!
-        if (lfirst.and.ldt.and.(.not.ldt_paronly)) then
-          advec_uu=0.0
-          diffus_diffrho=0.0; diffus_diffrho3=0.0
-          if (leos) advec_cs2=0.0
-        endif
 !
 !  Grid spacing. In case of equidistant grid and cartesian coordinates
 !  this is calculated before the (m,n) loop.
@@ -1702,274 +1650,12 @@ endfunction within_ogrid_comp
 !
         call duu_dt_ogrid(f,df,p)
         call dlnrho_dt_ogrid(f,df,p)
-!
-!  In max_mn maximum values of u^2 (etc) are determined sucessively
-!  va2 is set in magnetic (or nomagnetic)
-!  In rms_mn sum of all u^2 (etc) is accumulated
-!  Calculate maximum advection speed for timestep; needs to be done at
-!  the first substep of each time step
-!  Note that we are (currently) accumulating the maximum value,
-!  not the maximum squared!
-!
-!  The dimension of the run ndim (=0, 1, 2, or 3) enters the viscous time step.
-!  This has to do with the term on the diagonal, cdtv depends on order of scheme
-!
-        if (lfirst.and.ldt.and.(.not.ldt_paronly)) then
-!
-!  sum or maximum of the advection terms?
-!  (lmaxadvec_sum=.false. by default)
-!
-          maxadvec=0.0
-          maxdiffus=0.0
-          maxdiffus2=0.0
-          maxdiffus3=0.0
-          maxsrc = 0.0
-          ! Since lhydro and ldensity are true:
-          maxadvec=maxadvec+advec_uu
-          advec2=0.0
-          advec2=advec2+advec_cs2
-          maxadvec=maxadvec+sqrt(advec2)
-!
-!  Time step constraints from each module.
-!
-!  Since ldensity=.true.
-          maxdiffus=max(maxdiffus,diffus_diffrho)
-          maxdiffus3=max(maxdiffus3,diffus_diffrho3)
-!
-!  Exclude the frozen zones from the time-step calculation.
-!  TODO: Needed??
-          if (any(lfreeze_varint)) then
-            if (lcylinder_in_a_box.or.lcylindrical_coords) then
-              where (p%rcyl_mn<=rfreeze_int)
-                maxadvec=0.0
-                maxdiffus=0.0
-              endwhere
-            else
-              where (p%r_mn<=rfreeze_int)
-                maxadvec=0.0
-                maxdiffus=0.0
-              endwhere
-            endif
-          endif
-!
-          if (any(lfreeze_varext)) then
-            if (lcylinder_in_a_box.or.lcylindrical_coords) then
-              where (p%rcyl_mn>=rfreeze_ext)
-                maxadvec=0.0
-                maxdiffus=0.0
-              endwhere
-            else
-              where (p%r_mn>=rfreeze_ext)
-                maxadvec=0.0
-                maxdiffus=0.0
-              endwhere
-            endif
-          endif
-!
-!  cdt, cdtv, and cdtc are empirical non-dimensional coefficients
-!
-          dt1_advec  = maxadvec/cdt
-          dt1_diffus = maxdiffus/cdtv + maxdiffus2/cdtv2 + maxdiffus3/cdtv3
-          dt1_src    = 5.0 * maxsrc
-          dt1_max    = max(dt1_max, sqrt(dt1_advec**2 + dt1_diffus**2 + dt1_src**2))
-!
-!  Diagnostics showing how close to advective and diffusive time steps we are
-!
-          if (ldiagnos.and.idiag_dtv/=0) then
-            call max_mn_name(maxadvec/cdt,idiag_dtv,l_dt=.true.)
-          endif
-          if (ldiagnos.and.idiag_dtdiffus/=0) then
-            call max_mn_name(maxdiffus/cdtv,idiag_dtdiffus,l_dt=.true.)
-          endif
-!
-!  Regular and hyperdiffusive mesh Reynolds numbers
-!
-        endif
-        if (.not.ldt) dt1_advec=0.0 
-!
-        call timing('pde_ogrid','end of mn loop',mnloop=.true.)
+        call denergy_dt_ogrid(f,df,p)
 !
 !  End of loops over m and n.
 !
-        headtt=.false.
+        headtt_ogrid=.false.
       enddo mn_loop
-!
-      call timing('pde_ogrid','at the end of the mn_loop')
-!
-!  -------------------------------------------------------------
-!  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)
-!  -------------------------------------------------------------
-!
-!  Freezing must be done after the full (m,n) loop, as df may be modified
-!  outside of the considered pencil.
-!
-      do imn=1,ny_ogrid*nz_ogrid
-        n=nn(imn)
-        m=mm(imn)
-!
-!  Recalculate grid/geometry related pencils. The r_mn and rcyl_mn are requested
-!  in pencil_criteria_grid. Unfortunately we need to recalculate them here.
-!
-        if (any(lfreeze_varext).or.any(lfreeze_varint)) &
-            call calc_pencils_grid(f,p)
-!
-!  Set df=0 for r_mn<r_int.
-!
-        if (any(lfreeze_varint)) then
-          if (headtt) print*, 'pde: freezing variables for r < ', rfreeze_int, &
-              ' : ', lfreeze_varint
-          if (lcylinder_in_a_box.or.lcylindrical_coords) then
-            if (wfreeze_int==0.0) then
-              where (p%rcyl_mn<=rfreeze_int) pfreeze_int=0.0
-              where (p%rcyl_mn> rfreeze_int) pfreeze_int=1.0
-            else
-              pfreeze_int=quintic_step(p%rcyl_mn,rfreeze_int,wfreeze_int, &
-                  SHIFT=fshift_int)
-            endif
-          else
-            if (wfreeze_int==0.0) then
-              where (p%r_mn<=rfreeze_int) pfreeze_int=0.0
-              where (p%r_mn> rfreeze_int) pfreeze_int=1.0
-            else
-              pfreeze_int=quintic_step(p%r_mn   ,rfreeze_int,wfreeze_int, &
-                  SHIFT=fshift_int)
-            endif
-          endif
-!
-          do iv=1,nvar
-            if (lfreeze_varint(iv)) &
-                df(l1:l2,m,n,iv)=pfreeze_int*df(l1:l2,m,n,iv)
-          enddo
-!
-        endif
-!
-!  Set df=0 for r_mn>r_ext.
-!
-        if (any(lfreeze_varext)) then
-          if (headtt) print*, 'pde: freezing variables for r > ', rfreeze_ext, &
-              ' : ', lfreeze_varext
-          if (lcylinder_in_a_box) then
-            if (wfreeze_ext==0.0) then
-              where (p%rcyl_mn>=rfreeze_ext) pfreeze_ext=0.0
-              where (p%rcyl_mn< rfreeze_ext) pfreeze_ext=1.0
-            else
-              pfreeze_ext=1.0-quintic_step(p%rcyl_mn,rfreeze_ext,wfreeze_ext, &
-                SHIFT=fshift_ext)
-            endif
-          else
-            if (wfreeze_ext==0.0) then
-              where (p%r_mn>=rfreeze_ext) pfreeze_ext=0.0
-              where (p%r_mn< rfreeze_ext) pfreeze_ext=1.0
-            else
-              pfreeze_ext=1.0-quintic_step(p%r_mn   ,rfreeze_ext,wfreeze_ext, &
-                  SHIFT=fshift_ext)
-            endif
-          endif
-!
-          do iv=1,nvar
-            if (lfreeze_varext(iv)) &
-                df(l1:l2,m,n,iv) = pfreeze_ext*df(l1:l2,m,n,iv)
-          enddo
-        endif
-!
-!  Set df=0 inside square.
-!
-        if (any(lfreeze_varsquare)) then
-          if (headtt) print*, 'pde: freezing variables inside square : ', &
-              lfreeze_varsquare
-          pfreeze=1.0-quintic_step(x(l1:l2),xfreeze_square,wfreeze,SHIFT=-1.0)*&
-              quintic_step(spread(y(m),1,nx),yfreeze_square,-wfreeze,SHIFT=-1.0)
-!
-          do iv=1,nvar
-            if (lfreeze_varsquare(iv)) &
-                df(l1:l2,m,n,iv) = pfreeze*df(l1:l2,m,n,iv)
-          enddo
-        endif
-!
-!  Freeze components of variables in boundary slice if specified by boundary
-!  condition 'f'
-!
-!  Freezing boundary conditions in x.
-!
-        if (lfrozen_bcs_x) then ! are there any frozen vars at all?
-!
-!  Only need to do this for nonperiodic x direction, on left/right-most
-!  processor and in left/right--most pencils
-!
-          if (.not. lperi(1)) then
-            if (lfirst_proc_x) then
-              do iv=1,nvar
-                if (lfrozen_bot_var_x(iv)) df(l1,m,n,iv) = 0.
-              enddo
-            endif
-            if (llast_proc_x) then
-              do iv=1,nvar
-                if (lfrozen_top_var_x(iv)) df(l2,m,n,iv) = 0.
-              enddo
-            endif
-          endif
-!
-        endif
-!
-!  Freezing boundary conditions in y.
-!
-        if (lfrozen_bcs_y) then ! are there any frozen vars at all?
-!
-!  Only need to do this for nonperiodic y direction, on bottom/top-most
-!  processor and in bottom/top-most pencils.
-!
-          if (.not. lperi(2)) then
-            if (lfirst_proc_y .and. (m == m1)) then
-              do iv=1,nvar
-                if (lfrozen_bot_var_y(iv)) df(l1:l2,m,n,iv) = 0.
-              enddo
-            endif
-            if (llast_proc_y .and. (m == m2)) then
-              do iv=1,nvar
-                if (lfrozen_top_var_y(iv)) df(l1:l2,m,n,iv) = 0.
-              enddo
-            endif
-          endif
-        endif
-!
-!  Freezing boundary conditions in z.
-!
-        if (lfrozen_bcs_z) then ! are there any frozen vars at all?
-!
-!  Only need to do this for nonperiodic z direction, on bottom/top-most
-!  processor and in bottom/top-most pencils.
-!
-          if (.not. lperi(3)) then
-            if (lfirst_proc_z .and. (n == n1)) then
-              do iv=1,nvar
-                if (lfrozen_bot_var_z(iv)) df(l1:l2,m,n,iv) = 0.
-              enddo
-            endif
-            if (llast_proc_z .and. (n == n2)) then
-              do iv=1,nvar
-                if (lfrozen_top_var_z(iv)) df(l1:l2,m,n,iv) = 0.
-              enddo
-            endif
-          endif
-        endif
-!
-!  Set df=0 for all solid cells.
-!
-        call freeze_solid_cells(df)
-!
-      enddo
-!
-!  Check for NaNs in the advection time-step.
-!
-      if (notanumber(dt1_advec)) then
-        print*, 'pde: dt1_advec contains a NaN at iproc=', iproc_world
-        if (lhydro)           print*, 'advec_uu   =',advec_uu
-        call fatal_error_local('pde_ogrid','')
-      endif
-!
-!  Reset lwrite_prof.
-!
-      lwrite_prof=.false.
 !
     endsubroutine pde_ogrid
 !***********************************************************************
@@ -1990,17 +1676,6 @@ endfunction within_ogrid_comp
       intent(in) :: p
       intent(inout) :: f,df
 !
-      real, dimension (nx_ogrid,3) :: curlru,uxo
-      real, dimension (nx_ogrid) :: space_part_re,space_part_im,u2t,uot,out,fu
-      real, dimension (nx_ogrid) :: odel2um,curlru2,uref,curlo2,qo,quxo,graddivu2
-      real, dimension (nx_ogrid) :: uus,ftot,Fmax
-      real, dimension (1,3) :: tmp
-      real :: kx
-      integer :: j, ju, k
-      integer, dimension(nz_ogrid), save :: nuzup=0, nuzdown=0, nruzup=0, nruzdown=0
-!
-      Fmax=0.0
-!
 !  Advection term.
 !
       df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
@@ -2008,26 +1683,6 @@ endfunction within_ogrid_comp
 ! calculate viscous force
 !
       call calc_viscous_force_ogrid(df,p)
-!
-!  ``uu/dx'' for timestep
-!
-      if (lfirst.and.ldt.) then
-        if (lmaximal_cdt) then
-          advec_uu=max(abs(p%uu(:,1))*dline_1(:,1),&
-                       abs(p%uu(:,2))*dline_1(:,2),&
-                       abs(p%uu(:,3))*dline_1(:,3))
-        else
-          advec_uu=    abs(p%uu(:,1))*dline_1(:,1)+&
-                       abs(p%uu(:,2))*dline_1(:,2)+&
-                       abs(p%uu(:,3))*dline_1(:,3)
-        endif
-      endif
-      if (.not. ldt) advec_uu=0.0
-      if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(advec_uu)
-!
-!  Calculate maxima and rms values for diagnostic purposes
-!
-      call timing('duu_dt','just before ldiagnos',mnloop=.true.)
 !
     endsubroutine duu_dt_ogrid
 !***********************************************************************
@@ -2046,16 +1701,8 @@ endfunction within_ogrid_comp
       intent(in)  :: p
       intent(inout) :: df,f
 !
-      real, dimension (nx_ogrid) :: fdiff, gshockglnrho, gshockgrho, tmp, chi_sld
-      real, dimension (nx_ogrid), parameter :: unitpencil=1.
-      real, dimension (nx_ogrid) :: density_rhs   !GPU := df(l1:l2,m,n,irho|ilnrho)
+      real, dimension (nx_ogrid) :: density_rhs 
       integer :: j
-!
-!  Identify module and boundary conditions.
-!
-      call timing('dlnrho_dt','entered',mnloop=.true.)
-      if (headtt.or.ldebug) print*,'dlnrho_dt: SOLVE'
-      if (headtt) call identify_bcs('lnrho',ilnrho)
 !
 !  Continuity equation.
 !      
@@ -2065,9 +1712,36 @@ endfunction within_ogrid_comp
 !
       df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + density_rhs
 !
-      call timing('dlnrho_dt','finished',mnloop=.true.)
-!
     endsubroutine dlnrho_dt_ogrid
+!***********************************************************************
+    subroutine denergy_dt_ogrid(f,df,p)
+!
+!  Calculate pressure gradient term for isothermal/polytropic equation
+!  of state.
+!
+      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
+      use Diagnostics
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+!
+      real, dimension(nx) :: ufpres, uduu
+      integer :: j,ju
+      integer :: i
+!
+      intent(in) :: f,p
+      intent(inout) :: df
+!
+!  Add isothermal/polytropic pressure term in momentum equation.
+!
+      if (lhydro.and.lpressuregradient_gas) then
+        do j=1,3
+          ju=j+iuu-1
+          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)+p%fpres(:,j)
+        enddo
+!
+    endsubroutine denergy_dt_ogrid
 !***********************************************************************
     subroutine calc_pencils_eos_std_ogrid(f,p)
 !
