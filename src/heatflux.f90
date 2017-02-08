@@ -379,7 +379,6 @@ contains
       df(l1:l2,m,n,iqq+i-1) = df(l1:l2,m,n,iqq+i-1) + &
           tau_inv_spitzer*(-p%qq(:,i)+spitzer_vec(:,i))  +  &
           p%qq(:,i)*(p%uglnrho + p%divu)
-      write (*,*) maxval(abs(df(l1:l2,m,n,iqq+i-1)))
     enddo
 !
     call dot(p%qq,p%glnrho,tmp)
