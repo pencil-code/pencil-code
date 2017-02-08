@@ -50,84 +50,68 @@ module Solid_Cells
 !
   include 'solid_cells.h'
 !
-  integer, parameter            :: max_items=5
-  integer                       :: ncylinders=0, dummy
-  integer                       :: nobjects
-  character(len=1)              :: flow_direction
-  real, dimension(max_items)    :: cylinder_radius=0.
-  real, dimension(max_items)    :: cylinder_temp=703.0
-  real, dimension(max_items)    :: cylinder_xpos=0., cylinder_ypos=0.
-  real, dimension(max_items)    :: cylinder_zpos=0.
-  real :: skin_depth=0.
+!  Cylinder parameters
+  character(len=1) :: flow_direction
+  real, parameter :: cylinder_radius=0.                        ! Set in start.in
+  real, parameter :: cylinder_temp=703.0                       ! Set in start.in
+  real, parameter :: cylinder_xpos=0., cylinder_ypos=0.        ! Set in start.in
+  real, parameter :: cylinder_zpos=0.                          ! Set in start.in
+  real, parameter :: skin_depth=0.                             ! Set in start.in
+  real, dimension(3) :: xyz0_ogrid, Lxyz_ogrid, xorigo_ogrid
+!  Fundamental grid parameters
+  real :: r_ogrid=2*cylinder_radius             
+  integer, parameter :: nxgrid_ogrid=nxgrid,nygrid_ogrid=nygrid,nzgrid_ogrid=nzgrid  ! start.in
+  character (len=labellen), dimension(3) :: grid_func_ogrid='linear'                 ! start.in
 
-  type :: ogrid
-    real, dimension(3) :: x
-    real :: r_comp, r_inter
-    real :: dr, dtheta
-  endtype ogrid
-
-  type solid_object
-    character(len=10) :: form='cylinder'
-    real :: r,T
-    real, dimension(3) :: x
-  endtype solid_object
-
-  type (solid_object), dimension(max_items), save :: objects
-
-  namelist /solid_cells_init_pars/ &
-      cylinder_temp, ncylinders, cylinder_radius, cylinder_xpos, &
-      cylinder_ypos, cylinder_zpos, flow_direction, skin_depth
-
-  namelist /solid_cells_run_pars/  &
-      dummy
 
 ! PARAMETERS NECESSARY FOR GRID CONSTRUCTION 
-!Todo
-  integer, parameter :: nxgrid_ogrid=128,nygrid_ogrid=128,nzgrid_ogrid=128 ! start.in
-  !integer, parameter :: nxgrid_ogrid,nygrid_ogrid,nzgrid_ogrid ! start.in
-  real, parameter :: r_cylinder=0.1                            ! start.in 
-  real, parameter :: r_ogrid=2*r_cylinder                      ! start.in
-  character (len=labellen), dimension(3) :: grid_func_ogrid='linear' ! start.in
+! TODO: Clean up
 
 
-  integer, parameter :: nx_ogrid=nxgrid_ogrid/nprocx,ny_ogrid=nygrid_ogrid/nprocy,nz_ogrid=nzgrid_ogrid/nprocz
-  integer, parameter :: mx_ogrid=nx_ogrid+2*nghost,l1_ogrid=1+nghost,l2_ogrid=mx_ogrid-nghost
-  integer, parameter :: my_ogrid=ny_ogrid+2*nghost,m1_ogrid=1+nghost,m2_ogrid=my_ogrid-nghost
-  integer, parameter :: mz_ogrid=nz_ogrid+2*nghost,n1_ogrid=1+nghost,n2_ogrid=mz_ogrid-nghost
+!  Global ogrid
   integer, parameter :: mxgrid_ogrid=nxgrid_ogrid+2*nghost
   integer, parameter :: mygrid_ogrid=nygrid_ogrid+2*nghost
   integer, parameter :: mzgrid_ogrid=nzgrid_ogrid+2*nghost
-  real, dimension (mx_ogrid) :: x_ogrid,dx_1_ogrid,dx2_ogrid,dx_tilde_ogrid,xprim_ogrid
-  real, dimension (my_ogrid) :: y_ogrid,dy_1_ogrid,dy2_ogrid,dy_tilde_ogrid,yprim_ogrid
-  real, dimension (mz_ogrid) :: z_ogrid,dz_1_ogrid,dz2_ogrid,dz_tilde_ogrid,zprim_ogrid
-  real, dimension (mx_ogrid) :: dVol_x_ogrid,dVol1_x_ogrid
-  real, dimension (my_ogrid) :: dVol_y_ogrid,dVol1_y_ogrid
-  real, dimension (mz_ogrid) :: dVol_z_ogrid,dVol1_z_ogrid
-  real, dimension (nz_ogrid) :: dxyz_2_ogrid,dxyz_4_ogrid,dxyz_6_ogrid,dVol_ogrid
-  real :: dx_ogrid,dy_ogrid,dz_ogrid
-  real :: dxmin_ogrid,dxmax_ogrid
-  
-  logical, dimension(3) :: lequidist_ogrid
-  real, dimension(3) :: xyz_star_ogrid
-  real, dimension(-nghost:nghost,2) :: coeffs_1_x_ogrid
-  real, dimension(-nghost:nghost,2) :: coeffs_1_y_ogrid
-  real, dimension(-nghost:nghost,2) :: coeffs_1_z_ogrid
-  real, dimension(0:nprocx) :: procx_bounds_ogrid
-  real, dimension(0:nprocy) :: procy_bounds_ogrid
-  real, dimension(0:nprocz) :: procz_bounds_ogrid
-  real :: box_volume_ogrid=1.0 
-  real :: r_int_ogrid=0.,r_ext_ogrid=impossible
-  real, dimension(3) :: coeff_grid_o=1.0
-
-  real, dimension (nx_ogrid) :: rcyl_mn_ogrid,rcyl_mn1_ogrid,rcyl_mn2_ogrid,rcyl_weight_ogrid
-  integer :: lpoint_ogrid=(mx_ogrid+1)/2, mpoint_ogrid=(my_ogrid+1)/2, npoint_ogrid=(mz_ogrid+1)/2
-  integer :: lpoint2_ogrid=(mx_ogrid+1)/4,mpoint2_ogrid=(my_ogrid+1)/4,npoint2_ogrid=(mz_ogrid+1)/4
   real, dimension(nxgrid_ogrid) :: xgrid_ogrid, dx1grid_ogrid, dxtgrid_ogrid
   real, dimension(nygrid_ogrid) :: ygrid_ogrid, dy1grid_ogrid, dytgrid_ogrid
   real, dimension(nzgrid_ogrid) :: zgrid_ogrid, dz1grid_ogrid, dztgrid_ogrid
   real, dimension(mxgrid_ogrid) :: xglobal_ogrid
   real, dimension(mygrid_ogrid) :: yglobal_ogrid
   real, dimension(mzgrid_ogrid) :: zglobal_ogrid
+!  Local ogrid and derivatives
+  integer, parameter :: nx_ogrid=nxgrid_ogrid/nprocx,ny_ogrid=nygrid_ogrid/nprocy,nz_ogrid=nzgrid_ogrid/nprocz
+  integer, parameter :: mx_ogrid=nx_ogrid+2*nghost,l1_ogrid=1+nghost,l2_ogrid=mx_ogrid-nghost
+  integer, parameter :: my_ogrid=ny_ogrid+2*nghost,m1_ogrid=1+nghost,m2_ogrid=my_ogrid-nghost
+  integer, parameter :: mz_ogrid=nz_ogrid+2*nghost,n1_ogrid=1+nghost,n2_ogrid=mz_ogrid-nghost
+  real, dimension (mx_ogrid) :: x_ogrid,dx_1_ogrid,dx2_ogrid,dx_tilde_ogrid,xprim_ogrid
+  real, dimension (my_ogrid) :: y_ogrid,dy_1_ogrid,dy2_ogrid,dy_tilde_ogrid,yprim_ogrid
+  real, dimension (mz_ogrid) :: z_ogrid,dz_1_ogrid,dz2_ogrid,dz_tilde_ogrid,zprim_ogrid
+
+!  Grid properties computed in grid routines and used outside grid routine
+  real :: dxmin_ogrid,dxmax_ogrid
+  logical, dimension(3) :: lequidist_ogrid
+!  Grid properties computed in grid routines, and only used within grid routines (so far)
+  real :: dx_ogrid,dy_ogrid,dz_ogrid
+  real, dimension(3) :: xyz_star_ogrid
+  real, dimension(-nghost:nghost,2) :: coeffs_1_x_ogrid
+  real, dimension(-nghost:nghost,2) :: coeffs_1_y_ogrid
+  real, dimension(-nghost:nghost,2) :: coeffs_1_z_ogrid
+  real, dimension(3) :: coeff_grid_o=1.0
+!  Grid properties computed in grid routines, but not used in current implementation
+  real, dimension (mx_ogrid) :: dVol_x_ogrid,dVol1_x_ogrid
+  real, dimension (my_ogrid) :: dVol_y_ogrid,dVol1_y_ogrid
+  real, dimension (mz_ogrid) :: dVol_z_ogrid,dVol1_z_ogrid
+  real, dimension (nz_ogrid) :: dxyz_2_ogrid,dxyz_4_ogrid,dxyz_6_ogrid,dVol_ogrid
+  real, dimension(0:nprocx) :: procx_bounds_ogrid
+  real, dimension(0:nprocy) :: procy_bounds_ogrid
+  real, dimension(0:nprocz) :: procz_bounds_ogrid
+  real :: box_volume_ogrid=1.0 
+  real :: r_int_ogrid=0.,r_ext_ogrid=impossible
+
+
+  real, dimension (nx_ogrid) :: rcyl_mn_ogrid,rcyl_mn1_ogrid,rcyl_mn2_ogrid,rcyl_weight_ogrid
+  integer :: lpoint_ogrid=(mx_ogrid+1)/2, mpoint_ogrid=(my_ogrid+1)/2, npoint_ogrid=(mz_ogrid+1)/2
+  integer :: lpoint2_ogrid=(mx_ogrid+1)/4,mpoint2_ogrid=(my_ogrid+1)/4,npoint2_ogrid=(mz_ogrid+1)/4
   real, dimension (-nghost:nghost) :: dx2_bound_ogrid=0., dy2_bound_ogrid=0., dz2_bound_ogrid=0.
   real, dimension (nx_ogrid) :: dxmax_pencil_ogrid,dxmin_pencil_ogrid
   real, dimension (nx_ogrid,3) :: dline_1_ogrid
@@ -141,104 +125,127 @@ module Solid_Cells
   integer :: m2i_ogrid=my_ogrid-2*nghost+1
   integer, parameter :: n1i_ogrid=n1_ogrid+nghost-1
   integer :: n2i_ogrid=mz_ogrid-2*nghost+1
+  ! For time-step
+  real :: t_ogrid
+  integer :: lfirst_ogrid, llast_ogrid
 
+! TODO: What is this used for?
+  namelist /solid_cells_init_pars/ &
+      cylinder_temp, ncylinders, cylinder_radius, cylinder_xpos, &
+      cylinder_ypos, cylinder_zpos, flow_direction, skin_depth
+
+  namelist /solid_cells_run_pars/  &
+      dummy
   contains 
 !***********************************************************************
-  subroutine register_solid_cells()
+    subroutine register_solid_cells()
 ! 
 !  Dummy routine
 !
-  end subroutine register_solid_cells
+    end subroutine register_solid_cells
 !***********************************************************************
-subroutine initialize_solid_cells(f)
+    subroutine initialize_solid_cells(f)
 !
-  real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-  integer :: icyl, isph,i
-  !
-  !  Loop over all cylinders
-  !
-  do icyl = 1,ncylinders
-    if (cylinder_radius(icyl) > 0) then
-      objects(icyl)%r    = cylinder_radius(icyl)
-      objects(icyl)%x(1) = cylinder_xpos(icyl)
-      objects(icyl)%x(2) = cylinder_ypos(icyl)
-      objects(icyl)%x(3) = cylinder_zpos(icyl)
-      objects(icyl)%T    = cylinder_temp(icyl)
-      objects(icyl)%form = 'cylinder'
-    else
-      call fatal_error('initialize_solid_cells', &
-          'All cylinders must have non-zero radii!')
-    endif
-  enddo
-  !
-  ! Give all points inside the object a value of zero for all variables
-  !
-  !TODO
-  !
+!  Define the geometry of the solids.
+!  Currently only a single solid object with overlapping grid is implemented.
+!  Use solid_cells.f90 without overlapping grids if several solids inside the
+!  flow domain is desired.
+!
+!  XX-feb-17/Jorgen: Coded
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      integer :: icyl, isph,i
+
+      real, dimension(3) :: xyz0_ogrid,Lxyz_ogrid
+
+      if (cylinder_radius(icyl) <= 0) then
+        call fatal_error('initialize_solid_cells_ogrid', &
+            'All cylinders must have non-zero radii!')
+      endif
+!  Interlap parameters of the ogrid
+      xyz0_ogrid(1)=cylinder_radius
+      xyz0_ogrid(2)=-pi
+      xyz0_ogrid(3)=xyz0(3)
+      Lxyz_ogrid(1)=r_ogrid-xyz0_ogrid(1)
+      Lxyz_ogrid(2)=2*pi
+      Lxyz_ogrid(2)=Lxyz(3)
+!  Position related to the flow domain and cartesian grid
+      xorigo_ogrid(1) = cylinder_xpos(icyl)
+      xorigo_ogrid(2) = cylinder_ypos(icyl)
+      xorigo_ogrid(3) = cylinder_zpos(icyl)
+
+!
+! Give all points inside the object a value of zero for all variables
+!
+!TODO
+!
 end subroutine initialize_solid_cells
 !***********************************************************************
-subroutine init_solid_cells(f)
+    subroutine init_solid_cells(f)
 !
-  real, dimension(mx,my,mz,mfarray), intent(in):: f
-  call keep_compiler_quiet(f)
+!  Initial conditions for cases where we have solid structures in the domain.
+!  Typically the flow field is set such that we have no-slip conditions
+!  at the solid structure surface.
 !
-end subroutine init_solid_cells
+!  This routine is adapted to resolve the solid structures with overlapping 
+!  curvelinear grids.
+!  Only implemented for a single solid at present!
+!
+!  XX-feb-17/Jorgen: Coded
+!
+      real, dimension(mx,my,mz,mfarray), intent(in):: f
+      call keep_compiler_quiet(f)
+!
+    end subroutine init_solid_cells
 !***********************************************************************
-subroutine dsolid_dt(f,df,p)
-  !
-  real, dimension(mx,my,mz,mfarray), intent(in):: f
-  real, dimension(mx,my,mz,mvar), intent(in)   :: df
-  type (pencil_case), intent(in)                :: p
-  !
-  call keep_compiler_quiet(df,f)
-  !
-end subroutine dsolid_dt
+    subroutine dsolid_dt(f,df,p)
+!
+!  Dummy routine
+!
+      real, dimension(mx,my,mz,mfarray), intent(in):: f
+      real, dimension(mx,my,mz,mvar), intent(in)   :: df
+      type (pencil_case), intent(in)                :: p
+!
+      call keep_compiler_quiet(df,f)
+!
+    end subroutine dsolid_dt
 !***********************************************************************
-subroutine dsolid_dt_integrate
-end subroutine dsolid_dt_integrate
+    subroutine dsolid_dt_integrate
+!
+!  Dummy routine
+!
+    end subroutine dsolid_dt_integrate
 !***********************************************************************
-subroutine rprint_solid_cells(lreset,lwrite)
+    subroutine rprint_solid_cells(lreset,lwrite)
 !
-  logical :: lreset
-  logical, optional :: lwrite
+! TODO: Write routine
 !
-end subroutine rprint_solid_cells
+      logical :: lreset
+      logical, optional :: lwrite
+!
+    end subroutine rprint_solid_cells
 !***********************************************************************
-subroutine update_solid_cells(f)
+    subroutine update_solid_cells(f)
 !
-!  Set the boundary values of the solid area such that we get a
-!  correct fluid-solid interface.
+!  Dummy routine
 !
-!  19-nov-2008/nils: coded
+      real, dimension(mx,my,mz,mfarray) :: f
 !
-  real, dimension(mx,my,mz,mfarray) :: f
-!
-end subroutine update_solid_cells
+    end subroutine update_solid_cells
 !***********************************************************************
-subroutine update_solid_cells_pencil(f)
+    subroutine update_solid_cells_pencil(f)
 !
-!  Set the boundary values of the solid area such that we get a
-!  correct fluid-solid interface.
+!  Dummy routine
 !
-!  30-mar-15/Jørgen+nils: coded
+      real, dimension(mx,my,mz,mfarray) :: f
 !
-  real, dimension(mx,my,mz,mfarray) :: f
-!
-end subroutine update_solid_cells_pencil
+    end subroutine update_solid_cells_pencil
 !***********************************************************************
     subroutine freeze_solid_cells(df)
 !
-!  If we are in a solid cell (or in a cell where the value of the variables are
-!  found from interpolation) set df=0 for all variables
-!
-!  19-nov-2008/nils: coded
+!  Dummy routine
 !
       real, dimension(mx,my,mz,mvar) :: df
-      integer :: i
-!
-!      do i = l1,l2
-!df(i,m,n,:) = 0
-!      enddo
 !
     endsubroutine freeze_solid_cells
 !***********************************************************************
@@ -368,9 +375,15 @@ endfunction within_ogrid_comp
 !***********************************************************************
     subroutine solid_cells_timestep_first(f)
 !
-!  Setup dfs in the beginning of each itsub.
+!  08-feb-17/Jorgen: Coded
+!
+!  No need to setup dfs in the beginning of each itsub.
+!  Only save time, which is the time before timesteps on cartesian grid
+!  is performed. Will need this to set timestep of ogrid iterations.
 !
       real, dimension(mx,my,mz,mfarray) :: f
+
+      t_ogrid = t
 !
       call keep_compiler_quiet(f)
 !
@@ -462,7 +475,6 @@ endfunction within_ogrid_comp
 !
 !  31-jan-17/jorgen: adapted from grid-module
 !
-      !TODO: Do we need both grid_profile_0D and grid_profile_1D here?
       use grid, only: grid_profile,find_star,calc_bound_coeffs
 
       real :: x00,y00,z00
@@ -488,12 +500,12 @@ endfunction within_ogrid_comp
 !
 !  Abbreviations
 !
-      x0 = r_cylinder
-      y0 = -pi
-      z0 = xyz0(3)
-      Lx = r_ogrid-r_cylinder
-      Ly = 2*pi
-      Lz = Lxyz(3)
+      x0 = xyz0_ogrid(1)
+      y0 = xyz0_ogrid(2)
+      z0 = xyz0_ogrid(3)
+      Lx = Lxyz_ogrid(1)
+      Ly = Lxyz_ogrid(2)
+      Lz = Lxyz_ogrid(3)
 !
 !  Set the lower boundary and the grid size.
 !
@@ -789,7 +801,7 @@ endfunction within_ogrid_comp
 !
       box_volume_ogrid=1.
       if (nxgrid_ogrid/=1) then
-          box_volume_ogrid = box_volume_ogrid*.5*(r_ogrid**2-r_cylinder**2)
+          box_volume_ogrid = box_volume_ogrid*.5*(r_ogrid**2-xyz0_ogrid(1)**2)
       endif
       box_volume_ogrid = box_volume_ogrid*2.*pi
       if (nzgrid_ogrid/=1) box_volume_ogrid = box_volume_ogrid*Lxyz(3)
@@ -805,10 +817,10 @@ endfunction within_ogrid_comp
 !
       if (nxgrid_ogrid/=1) then
         dVol_x_ogrid=x_ogrid*xprim_ogrid
-        Area_xy_ogrid=Area_xy_ogrid*1./2.*(r_ogrid**2-r_cylinder**2)
-        Area_xz_ogrid=Area_xz_ogrid*(r_ogrid**2-r_cylinder**2)
+        Area_xy_ogrid=Area_xy_ogrid*1./2.*(r_ogrid**2-xyz0_ogrid(1)**2)
+        Area_xz_ogrid=Area_xz_ogrid*(r_ogrid**2-xyz0_ogrid(1)**2)
       else
-        dVol_x_ogrid=1./2.*(r_ogrid**2-r_cylinder**2)
+        dVol_x_ogrid=1./2.*(r_ogrid**2-xyz0_ogrid(1)**2)
         Area_xy_ogrid=Area_xy_ogrid*dVol_x_ogrid(1)
         Area_xz_ogrid=Area_xz_ogrid*Lxyz(1)
       endif
@@ -1024,8 +1036,7 @@ endfunction within_ogrid_comp
 !
     endsubroutine pencil_interdep_grid
 !***********************************************************************
-!TODO: Do I need to change p%rcyl_mn to p%rcyl_mn_ogrid, etc.
-    subroutine calc_pencils_grid_ogrid(f,p,m_ogrid,n_ogrid)
+    subroutine calc_pencils_grid_ogrid(f,p)
 !
 !  Calculate Grid/geometry related pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -1035,7 +1046,6 @@ endfunction within_ogrid_comp
 !
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
       type (pencil_case) :: p
-      integer, intent(in) :: m_ogrid,n_ogrid
 !
       intent(in) :: f
       intent(inout) :: p
@@ -1046,8 +1056,8 @@ endfunction within_ogrid_comp
       if (lpencil(i_r_mn))     p%r_mn    = sqrt(x_ogrid(l1_ogrid:l2_ogrid)**2+z_ogrid(n_ogrid)**2)
       if (lpencil(i_rcyl_mn))  p%rcyl_mn = x_ogrid(l1_ogrid:l2_ogrid)
       if (lpencil(i_phi_mn))   p%phi_mn  = spread(y_ogrid(m_ogrid),1,nx_ogrid)
-      if (lpencil(i_rcyl_mn1)) p%rcyl_mn1=1./max(p%rcyl_mn,tini)
-      if (lpencil(i_r_mn1))    p%r_mn1   =1./max(p%r_mn,tini)
+      if (lpencil(i_rcyl_mn1)) p%rcyl_mn1= 1./max(p%rcyl_mn,tini)
+      if (lpencil(i_r_mn1))    p%r_mn1   = 1./max(p%r_mn,tini)
       if (lpencil(i_pomx))     p%pomx    = 1.
       if (lpencil(i_pomy))     p%pomy    = 0.
       if (lpencil(i_phix))     p%phix    = 0.
@@ -1103,16 +1113,6 @@ endfunction within_ogrid_comp
       logical :: loc
       integer :: shift
       real :: h, a, b, c
-      ! TODO: Move these to top?
-      real, dimension(3) :: xyz0_ogrid,Lxyz_ogrid
-      ! Shorthand notation
-      xyz0_ogrid(1)=r_cylinder
-      xyz0_ogrid(2)=-pi
-      xyz0_ogrid(3)=xyz0(3)
-      Lxyz_ogrid(1)=r_ogrid-r_cylinder
-      Lxyz_ogrid(2)=2*pi
-      Lxyz_ogrid(2)=Lxyz(3)
-      
 !
 !  Sanity check.
 !
@@ -1345,12 +1345,11 @@ endfunction within_ogrid_comp
 !
     endsubroutine construct_serial_arrays
 !***********************************************************************
-    subroutine get_grid_mn_ogrid(m_ogrid,n_ogrid)
+    subroutine get_grid_mn_ogrid()
 !
-    integer, intent(in) :: m_ogrid,n_ogrid
 !  Gets the geometry of the pencil at each (m,n) in the mn-loop.
 !
-!  31-jan-17/Jorgen Adapted from get_grid_mn in grid.f90
+!  31-jan-17/Jorgen: Adapted from get_grid_mn in grid.f90
 
       dline_1_ogrid(:,1) = dx_1_ogrid(l1_ogrid:l2_ogrid)
       dline_1_ogrid(:,2) = rcyl_mn1_ogrid * dy_1_ogrid(m_ogrid)
@@ -1427,9 +1426,18 @@ endfunction within_ogrid_comp
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f_ogrid
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar_ogrid) :: df_ogrid
       type (pencil_case) :: p_ogrid
-      real :: ds, dtsub
-      real :: dt1, dt1_local, dt1_last=0.0
+      real :: ds, dtsub_ogrid, dt_ogrid, dt_cartesian
+      integer :: timestep_factor, tstep_ogrid
       integer :: j
+!!  ! TODO TODO TODO
+!!  !  FROM MAIN TIME STEPPING LOOP IN RUN.F90
+!!  !
+!!  !  Find out which pencils to calculate at current time-step.
+!!  !
+!!      lpencil = lpenc_requested
+!!      if (lout)   lpencil=lpencil .or. lpenc_diagnos
+!!      if (l2davg) lpencil=lpencil .or. lpenc_diagnos2d
+!!      if (lvideo) lpencil=lpencil .or. lpenc_video
 !
 !  Coefficients for up to order 3.
 !
@@ -1448,52 +1456,66 @@ endfunction within_ogrid_comp
         call mpifinalize
       endif
 
-!       TODO: SET TIME STEP!
-      !if (.not. ldt) dt_beta_ts=dt*beta_ts
+!
+!  Time step for ogrid
+!
+      timestep_factor = ceiling(dxmin/dxmin_ogrid)   ! number of timesteps on cylinder grid for one timestep on cartesian grid
+      if(timestep_factor < 1)  then
+        timestep_factor = 1
+      endif
+      dt_cartesian = t-t_ogrid
+      dt_ogrid = dt_cartesian/timestep_factor
+      dt_beta_ts=dt_ogrid*beta_ts
+!
+!  Perform a number of timestep equal to timestep_factor, such that the
+!  endtime t_ogrid is equal to t after the timesteps
+!
+      do tstep_ogrid=1,timestep_factor
+
 !
 !  Set up df and ds for each time sub.
 !
-      do itsub=1,itorder
-        lfirst=(itsub==1)
-        llast=(itsub==itorder)
-        if (lfirst) then
-          df=0.0
-          ds=0.0
-        else
-          df=alpha_ts(itsub)*df !(could be subsumed into pde, but is dangerous!)
-          ds=alpha_ts(itsub)*ds
-        endif
+
+        do itsub=1,itorder
+          lfirst_ogrid=(itsub==1)
+          llast_ogrid=(itsub==itorder)
+          if (lfirst) then
+            df=0.0
+            ds=0.0
+          else
+            df=alpha_ts(itsub)*df !(could be subsumed into pde, but is dangerous!)
+            ds=alpha_ts(itsub)*ds
+          endif
 !
 !  Change df according to the chosen physics modules.
 !
-        call pde_ogrid(f_ogrid,df_ogrid,p_ogrid)
+          call pde_ogrid(f_ogrid,df_ogrid,p_ogrid)
 !
-        ds=ds+1.0
+          ds=ds+1.0
 !
-!  Calculate dt_beta_ts.
+!  Calculate substep 
 !
-        if (ldt) dt_beta_ts=dt*beta_ts
-        if (ip<=6) print*, 'time_step: iproc, dt=', iproc_world, dt  !(all have same dt?)
-        dtsub = ds * dt_beta_ts(itsub)
+          dtsub = ds * dt_beta_ts(itsub)
 !
 !  Time evolution of grid variables.
 !  (do this loop in pencils, for cache efficiency)
 !
-        do j=1,mvar 
-          do n_ogrid=n1_ogrid,n2_ogrid
-            do m_ogrid=m1_ogrid,m2_ogrid
-              f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,j)=f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,j) &
-                +dt_beta_ts(itsub)*df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,j)
+          do j=1,mvar 
+            do n_ogrid=n1_ogrid,n2_ogrid
+              do m_ogrid=m1_ogrid,m2_ogrid
+                f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,j)=f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,j) &
+                  +dt_beta_ts(itsub)*df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,j)
+              enddo
             enddo
           enddo
-        enddo
 !
 !  Increase time.
 !
-        t_ogrid = t_ogrid + dtsub_ogrid
+          t_ogrid = t_ogrid + dtsub_ogrid
 !
+        enddo
       enddo
-!       TODO: Could perhaps need a test that checks that t_ogrid == t
+!     TODO: Could perhaps need a test that checks that t_ogrid == t
 !
     endsubroutine time_step_ogrid
 !***********************************************************************
@@ -1505,22 +1527,18 @@ endfunction within_ogrid_comp
 !
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar_ogrid) :: df
-      real, dimension (nx_ogrid,3) :: df_iuu_pencil
       type (pencil_case) :: p
-      real, dimension(1)   :: mass_per_proc
-      integer :: iv,nyz
+      integer :: nyz
 !
-      intent(inout)  :: f       ! inout due to  lshift_datacube_x,
-                                ! density floor, or velocity ceiling
+      intent(inout)  :: f       
       intent(out)    :: df, p
 !
 !  Print statements when they are first executed.
 !
-      headtt = headt .and. lfirst .and. lroot
+      headtt = headt .and. lfirst_ogrid .and. lroot
 !
       if (headtt.or.ldebug) print*,'pde_ogrid: ENTER'
-      if (headtt) call svn_id( &
-           "$Id$")
+      if (headtt) call svn_id("$Id$")
 !
 !  Prepare x-ghost zones; required before f-array communication
 !  AND shock calculation
@@ -1546,13 +1564,11 @@ endfunction within_ogrid_comp
       mn_loop: do imn=1,nyz
         n_ogrid=nn(imn)
         m_ogrid=mm(imn)
-        lfirstpoint=(imn==1)      ! true for very first m-n loop
-        llastpoint=(imn==(nyz)) ! true for very last m-n loop
 !
 !  Grid spacing. In case of equidistant grid and cartesian coordinates
 !  this is calculated before the (m,n) loop.
 !
-        call get_grid_mn_ogrid
+        call get_grid_mn_ogrid()
 !
 !  Calculate grid/geometry related pencils.
 !
@@ -1580,7 +1596,7 @@ endfunction within_ogrid_comp
 !
 !  End of loops over m and n.
 !
-        headtt_ogrid=.false.
+        headtt=.false.
       enddo mn_loop
 !
     endsubroutine pde_ogrid
