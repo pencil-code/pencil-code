@@ -304,6 +304,26 @@ module Special
 !
     endsubroutine init_special
 !***********************************************************************
+        subroutine read_special_init_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+      iostat = 0
+      read(parallel_unit, NML=special_init_pars)
+!
+    endsubroutine read_special_init_pars
+!***********************************************************************
+    subroutine write_special_init_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write(unit, NML=special_init_pars)
+!
+    endsubroutine write_special_init_pars
+!***********************************************************************
+
     subroutine read_special_run_pars(iostat)
 !
       use File_io, only: parallel_unit
