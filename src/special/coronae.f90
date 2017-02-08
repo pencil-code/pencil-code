@@ -63,6 +63,8 @@ module Special
   real, dimension(1) :: heat_par_schrijver04=0.
   real, dimension(1) :: heat_par_balleg=0.
 !
+  namelist /special_init_pars/ 
+!
   namelist /special_run_pars/ &
       heat_par_exp3,u_amplifier,twist_u0,rmin,rmax,hcond1,Ksat, &
       Kpara,Kperp,Kc,init_time2,twisttype,centerx,centery,centerz, &
