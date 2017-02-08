@@ -25,7 +25,7 @@
 module power_spectrum
 !
   use Cdata
-  use Messages, only: svn_id, fatal_error
+  use Messages, only: svn_id, warning, fatal_error
 !
   implicit none
 !
@@ -45,6 +45,16 @@ module power_spectrum
       inz, n_segment_x
 !
   contains
+!***********************************************************************
+    subroutine initialize_power_spectrum
+!
+      !!! the following warnings should become fatal errors
+      if (nxgrid > nx) call warning ('power_spectrum', &
+          "Part of the high-frequency spectrum are lost because nxgrid/= nx.")
+      if ((dx /= dy) .or. (dx /= dz)) call warning ('power_spectrum', &
+          "Shell-integration will be wrong; set dx=dy=dz to fix this.")
+!
+    endsubroutine initialize_power_spectrum
 !***********************************************************************
     subroutine read_power_spectrum_run_pars(iostat)
 !

@@ -224,6 +224,7 @@ module Register
       use Magnetic,         only: initialize_magnetic
       use Lorenz_gauge,     only: initialize_lorenz_gauge
       use Polymer,          only: initialize_polymer
+      use Power_spectrum,   only: initialize_power_spectrum
       use NeutralDensity,   only: initialize_neutraldensity
       use NeutralVelocity,  only: initialize_neutralvelocity
       use PointMasses,      only: initialize_pointmasses
@@ -381,6 +382,7 @@ module Register
       call initialize_magnetic(f)
       call initialize_lorenz_gauge(f)
       call initialize_polymer(f)
+      call initialize_power_spectrum
       call initialize_testscalar(f)
       call initialize_testfield(f)
       call initialize_testflow(f)
