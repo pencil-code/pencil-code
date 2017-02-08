@@ -61,9 +61,9 @@ module Special
   real, dimension(9) :: heat_par_full=(/0.,1.,0.,1.,0.,1.,0.,0.,0./)
   real, dimension(1) :: heat_par_rappazzo=0.
   real, dimension(1) :: heat_par_schrijver04=0.
-  real, dimension(1) :: heat_par_balleg=0.
+  real, dimension(1) :: heat_par_balleg=0.,dummy_init_pars=0.
 !
-  namelist /special_init_pars/ 
+  namelist /special_init_pars/ dummy_init_pars
 !
   namelist /special_run_pars/ &
       heat_par_exp3,u_amplifier,twist_u0,rmin,rmax,hcond1,Ksat, &
