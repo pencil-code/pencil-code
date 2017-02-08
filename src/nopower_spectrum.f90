@@ -26,6 +26,10 @@ module power_spectrum
 !
   contains
 !***********************************************************************
+    subroutine initialize_power_spectrum
+!
+    endsubroutine initialize_power_spectrum
+!***********************************************************************
     subroutine read_power_spectrum_run_pars(iostat)
 !
       integer, intent(out) :: iostat
