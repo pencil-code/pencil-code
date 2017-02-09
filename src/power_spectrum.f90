@@ -499,7 +499,7 @@ module power_spectrum
     res=mod(nxgrid,n_segment_x)
     la=0
     do i=1,n_segment_x
-      le=la+1; la=la+ndelx 
+      le=la+1; la=la+ndelx
       if (res>0) then
         la=la+1
         res=res-1
@@ -2197,7 +2197,11 @@ endsubroutine pdf
   !
   if (trim(sp)=='j') then
      ! compute j = curl(curl(x))
-     call del2v_etc(f,iaa,curlcurl=a1)
+     do n=n1,n2
+       do m=m1,m2
+         call del2v_etc(f,iaa,curlcurl=a1)
+       enddo
+     enddo
   else
      print*,'There are no such sp=',trim(sp)
   endif
