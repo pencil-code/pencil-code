@@ -63,6 +63,23 @@ module Solid_Cells
   integer, parameter :: nxgrid_ogrid=nxgrid,nygrid_ogrid=nygrid,nzgrid_ogrid=nzgrid  ! start.in
   character (len=labellen), dimension(3) :: grid_func_ogrid='linear'                 ! start.in
 
+  integer, parameter :: npencils_ogrid=2
+  type pencil_case_ogrid
+    real, dimension (nx_ogrid)   :: x_mn
+    real, dimension (nx_ogrid,3) :: rr
+  endtype pencil_case_ogrid
+  
+  integer :: io_x_mn=1
+  integer :: io_r=2
+  character (len=15), parameter, dimension(npencils_ogrid) :: pencil_names = &
+      (/ 'x_mn        ', 'rr        '       /)
+  logical, parameter, dimension(npencils_ogrid):: lpenc_required  = .false.
+  logical,            dimension(npencils_ogrid):: lpenc_diagnos   = .false.
+  logical,            dimension(npencils_ogrid):: lpenc_diagnos2d = .false.
+  logical,            dimension(npencils_ogrid):: lpenc_video     = .false.
+  logical,            dimension(npencils_ogrid):: lpenc_requested = .false.
+  logical,            dimension(npencils_ogrid):: lpencil         = .false.
+
 
 ! PARAMETERS NECESSARY FOR GRID CONSTRUCTION 
 ! TODO: Clean up
