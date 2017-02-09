@@ -555,57 +555,27 @@ module Solid_Cells
 !
     endsubroutine solid_cells_clean_up
 !***********************************************************************
-subroutine recive_flow_info()
-end subroutine recive_flow_info
+    subroutine flow_cartesian_to_curvlinear(f_cartesian,f_ogrid)
+!
+!   Interpolate all flow variables from cartesian to curvelinear grid
+!
+      real, dimension (mx,my,mz,mfarray) :: f_cartesian
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f_ogrid
+    endsubroutine flow_cartesian_to_curvlinear(f_cartesian,f_ogrid)
 !***********************************************************************
-subroutine interpolate_cartesian_to_ogrid()
-end subroutine interpolate_cartesian_to_ogrid
-!***********************************************************************
-subroutine timestep_solid()
-end subroutine timestep_solid
-!***********************************************************************
-subroutine resolve_boundary()
-end subroutine resolve_boundary
-!***********************************************************************
-subroutine resolve_flow()
-end subroutine resolve_flow
-!***********************************************************************
-subroutine interpolate_ogrid_to_cartesian()
-end subroutine interpolate_ogrid_to_cartesian
-!***********************************************************************
-subroutine send_flow_info()
-end subroutine send_flow_info
+    subroutine flow_curvlinear_to_cartesian(f_cartesian,f_ogrid)
+!
+!   Interpolate all flow variables from curvelinear to cartesian grid
+!
+      real, dimension (mx,my,mz,mfarray) :: f_cartesian
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f_ogrid
+    endsubroutine flow_curvlinear_to_cartesian(f_cartesian,f_ogrid)
 !***********************************************************************
 subroutine compute_draglift()
 end subroutine compute_draglift
 !***********************************************************************
 subroutine print_solid()
 end subroutine print_solid
-!***********************************************************************
-logical function within_ogrid_comp(xxp)
-!
-! Particles could check first if thery are within the o-grids 
-! computational domain (closer than interpolation domain)
-! when the particle positions are interpolated. If this is the 
-! case they should use the o-grid for interpolation,
-! but if they are outside, they should use the cartesian grid
-! Need a variable R_grid for this, that is, the radius of the o-grid. 
-! Mabye a different name than R_grid.
-!
-! 26-jan-2017/jorgen: coded
-!
-! Check if current possition is within the o-grids computational domain
-!
-  use Cdata ! or something, need to get solid and ogrid from somewhere
-  real, dimension(3), intent(in) :: xxp
-  
-!  within_ogrid_comp = .false.
-!
-!  if(sum((xxp(1:2)-solid%x(1:2))**2) < ogrid%r_comp) then
-!    within_ogrid_comp = .true.
-!  endif
-!  
-endfunction within_ogrid_comp
 !***********************************************************************
     subroutine solid_cells_timestep_first(f)
 !
@@ -683,6 +653,64 @@ endfunction within_ogrid_comp
       logical, intent(in) :: fluid_point
 !
     end subroutine close_interpolation
+!***********************************************************************
+!TODO: Can probably skip this
+    subroutine find_ogrid_boundaries(f)
+!
+!  Find the boundaries of the overlapping grid such that we can set the
+!  zone of cartesian grid points inside the curvelinear grid that should
+!  be set by interpolation.
+!
+!  Store data in arrays grid_overlap_cartesian and grid_overlap_curvlinear, 
+!  for cartesian and curvlinear grid points, respectively.
+!  For both arrays, the following is valid:
+!  If grid_ovlap(ip,jp,kp,1)= 0  we are in a cell outside the curvelinear grid
+!  If grid_ovlap(ip,jp,kp,1)= 1  we are in a cell outside the curvelinear grid
+!                                that is used as a donor point for interpolation
+!  If grid_ovlap(ip,jp,kp,1)= 10 we are in a cell inside the curvelinear grid
+!                                that is computed in the same way as the cells
+!                                outside the overlapping area
+!  If grid_ovlap(ip,jp,kp,1)= 11 we are in a cell inside the curvelinear grid
+!                                that is computed in the same way as the cells
+!                                outside the overlapping area, and that is used
+!                                as a donor point for interpolation
+!  If grid_ovlap(ip,jp,kp,1)= 20 we are in a cell that should be computed by interpolation
+!  If grid_ovlap(ip,jp,kp,1)= 21 we are in a cell that should no be computed at all
+! 
+!  09-feb-17/Jorgen: Adapted from find_solid_cell_boundaries in solid_cells.f90
+!
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
+      integer :: i, j, k, iobj, cw
+      real :: x2, y2, z2, xval_p, xval_m, yval_p, yval_m, zval_p, zval_m
+      real :: dr, r_point, x_obj, y_obj, z_obj, r_obj
+      character(len=10) :: form
+!
+!  Initialize overlapping grid array
+!
+      grid_ovlap_cartesian=0
+      grid_ovlap_curvlinear=0
+
+!  Set interpolated points in curvlinear grid, only boundary points interpolated
+      if(x_ogrid(mx+1)>r_ogrid) then
+        grid_ovlap_curvlinear(mx+1:nx)=20
+        grid_ovlap_curvlinear(mx-int_stencil_len,mx)=11
+      enddo
+!  Set interpolation points on cartesian grid
+! TODO
+      r_grid2 = r_grid**2
+      r_inter_outer2 = r_inter_outer**2
+      r_inter_inner2 = r_inter_inner**2
+      do j=m1,m2
+        do i=l1,l2
+          r_point2 = (x(i)-xorigo_ogrid(1))**2+(y(j)-xorigo_ogrid(2))**2
+!
+          if (r_point2<rgrid2) then
+            grid_ovlap(i,j,:)=1
+          elseif (r_point2>r_inter2)
+          endif
+        enddo
+      enddo
+  endsubroutine find_ogrid_boundaries
 !***********************************************************************
     subroutine construct_grid_ogrid
 !
@@ -1117,6 +1145,11 @@ endfunction within_ogrid_comp
 !  from all processors.
 !
       call construct_serial_arrays
+!
+!  Construct interpolation arrays, to be used for interpolation between
+!  the overlapping grids
+!
+      call construct_interpolation_arrays
 !
     endsubroutine initialize_grid_ogrid
 !!***********************************************************************
@@ -1604,10 +1637,17 @@ endfunction within_ogrid_comp
 
     endsubroutine grid_bound_data
 !***********************************************************************
-    subroutine time_step_ogrid(f_ogrid,df_ogrid,p_ogrid)
+    subroutine time_step_ogrid(f_cartesian,f_ogrid,df_ogrid,p_ogrid)
+!
+!  Perform time steps on the curvelinear grid, including interpolation of 
+!  flow variables back and forth between the overlapping grids.
+!  The time iterations should equal to one time step on the cartesian grid
+!
+!  07-feb-17/Jorgen+Nils: Adapded from timestep.f90
 !
       use Mpicomm, only: mpifinalize, mpiallreduce_max, MPI_COMM_WORLD
 !
+      real, dimension (mx,my,mz,mfarray) :: f_cartesian
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f_ogrid
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: df_ogrid
       type (pencil_case) :: p_ogrid
@@ -1623,6 +1663,13 @@ endfunction within_ogrid_comp
 !!      if (lout)   lpencil=lpencil .or. lpenc_diagnos
 !!      if (l2davg) lpencil=lpencil .or. lpenc_diagnos2d
 !!      if (lvideo) lpencil=lpencil .or. lpenc_video
+
+!
+!  Update boundary of the overlapping grid by interpolating
+!  from cartesian grid to curvlinear grid
+!
+! TODO
+      call flow_cartesian_to_curvlinear(f_cartesian,f_ogrid)
 !
 !  Coefficients for up to order 3.
 !
@@ -1702,9 +1749,18 @@ endfunction within_ogrid_comp
       enddo
 !     TODO: Could perhaps need a test that checks that t_ogrid == t
 !
+!  Update boundary of the overlapping grid by interpolating
+!  from curvlinear grid to cartesian grid
+!
+! TODO
+      call flow_curvlinear_to_cartesian(f_cartesian,f_ogrid)
+!
     endsubroutine time_step_ogrid
 !***********************************************************************
     subroutine pde_ogrid(f,df,p)
+!
+!  06-feb-17/Jorgen+Nils: Adapded from equ.f90
+!
 
       use Solid_cells_Mpicomm
 !
