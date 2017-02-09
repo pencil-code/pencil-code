@@ -1877,7 +1877,7 @@ module Interstellar
 !  \pm0.875 times the average interval required.
 !
       t_next_SNI=t + (1.0 + 1.75*(franSN(1)-0.5)) * scaled_interval
-      if (lroot.and.ip<20) print*, &
+      if (lroot.and.ip<14) print*, &
           'check_SNI: Next SNI at time = ' ,t_next_SNI
 !
     endsubroutine set_next_SNI
@@ -1946,7 +1946,7 @@ module Interstellar
 !  \pm0.875 times the average interval required.
 !
       t_next_SNII=t + (1.0 + 1.75*(franSN(1)-0.5)) * scaled_interval
-      if (lroot.and.ip<20) print*, &
+      if (lroot.and.ip<14) print*, &
           'check_SNII: Next SNII at time = ' ,t_next_SNII
 !
     endsubroutine set_next_SNII
@@ -2012,11 +2012,11 @@ module Interstellar
 !        t_interval=solar_mass/(SNI_mass_rate+0.35*SNII_mass_rate)/ &
 !            surface_massII/mu
         t_interval=7.5*solar_mass/SNII_mass_rate/surface_massII/mu
-        if (lroot.and.ip<20) print*, &
+        if (lroot.and.ip<14) print*, &
             'set_interval: expected interval for SNI  =',t_interval
       else
         t_interval=solar_mass/surface_massII/SNII_mass_rate/mu
-        if (lroot.and.ip<20) print*, &
+        if (lroot.and.ip<14) print*, &
             'set_interval: expected interval for SNII  =',t_interval
       endif
 !
@@ -2124,7 +2124,7 @@ module Interstellar
         prob_SNII=freq_SNII*dtsn*5.
         call random_number_wrapper(franSN)
 !
-        if (lroot.and.ip<20) then
+        if (lroot.and.ip<14) then
         if (cloud_mass_dim>0.0.and.franSN<=2.0*prob_SNII) then
           print*,'check_SNII: freq,prob,rnd,dtsn:', &
               freq_SNII,prob_SNII,franSN,dtsn
@@ -2697,7 +2697,7 @@ module Interstellar
 !
       call mpibcast_int(ierr,SNR%indx%iproc)
       if (ierr==iEXPLOSION_TOO_HOT) then
-        if (ip<18) print*, &
+        if (ip<14) print*, &
           'position_SN_bycloudmass: iEXPLOSION_TOO_HOT,ierr',ierr
         return
       endif
@@ -2799,10 +2799,10 @@ module Interstellar
           yH=SNR%site%yH,ss=SNR%site%ss,ee=SNR%site%ee)
       SNR%site%TT=exp(SNR%site%lnTT)
 !
-      if (lroot.and.ip<24) print*, &
+      if (lroot.and.ip<14) print*, &
           'share_SN_parameters: SNR%indx%iproc,x_SN,y_SN,z_SN,SNR%indx%l,SNR%indx%m,SNR%indx%n,=', &
           SNR%indx%iproc,SNR%feat%x,SNR%feat%y,SNR%feat%z,SNR%indx%l,SNR%indx%m,SNR%indx%n
-      if (lroot.and.ip<24) print*, &
+      if (lroot.and.ip<14) print*, &
           'share_SN_parameters: SNR%site%rho,SNR%site%ss,SNR%site%TT,SNR%feat%radius=', &
           SNR%site%rho,SNR%site%ss,SNR%site%TT,SNR%feat%radius
 !
@@ -3165,7 +3165,7 @@ module Interstellar
 ! FAG need to consider effect of CR and fcr on total energy for data collection
 ! and the energy budget applied to the SNR similar to kinetic energy?
 !
-      if (lroot.and.ip<20) print*, &
+      if (lroot.and.ip<14) print*, &
           'explode_SN: SNR%feat%MM=',SNR%feat%MM
       if (SNR%indx%SN_type==1) then
         call set_next_SNI(f,t_interval_SN)
