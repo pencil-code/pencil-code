@@ -45,6 +45,7 @@ module Particles_radius
   logical :: lcondensation_simplified=.false.
   logical :: lconstant_radius_w_chem=.false.
   logical :: lfixed_particles_radius=.false.
+	logical :: reinitialize_ap=.false.
  character (len=labellen), dimension(ninit) :: initap='nothing'
   character (len=labellen) :: condensation_coefficient_type='constant'
 !
@@ -66,7 +67,8 @@ module Particles_radius
       lborder_driving_ocean, ztop_ocean, TTocean, &
       lcondensation_simplified, GS_condensation, rpbeta0,&
       lfixed_particles_radius, &
-      lsupersat_par,lconstant_radius_w_chem
+      lsupersat_par,lconstant_radius_w_chem, &
+      reinitialize_ap, initap
 !
   integer :: idiag_apm=0, idiag_ap2m=0, idiag_apmin=0, idiag_apmax=0
   integer :: idiag_dvp12m=0, idiag_dtsweepp=0, idiag_npswarmm=0
@@ -408,6 +410,41 @@ module Particles_radius
 !
       if (lparticles_radius_rpbeta) &
         fp(npar_low:npar_high,irpbeta) = rpbeta0/(fp(npar_low:npar_high,iap)*rhopmat)
+!
+! Reinitialize particle radius if reinitialize_ap=T
+! 09-Feb-17/Xiangyu: adapted from set_particles_radius
+      if (reinitialize_ap) then
+				do j=1,ninit
+          select case (initap(j))
+					
+					case ('constant')
+						if (initial.and.lroot) print*, 'set_particles_radius: constant radius'
+						ind=1
+						do k=npar_low,npar_high
+							if (npart_radii>1) then
+								call random_number_wrapper(radius_fraction)
+								ind=ceiling(npart_radii*radius_fraction)
+							endif
+							fp(k,iap)=ap0(ind)
+						enddo
+	!
+					case ('constant-1')
+						if (initial.and.lroot) print*, 'set_particles_radius: set particle 1 radius'
+						do k=npar_low,npar_high
+							if (ipar(k)==1) fp(k,iap)=ap1
+						enddo
+  ! 
+					case ('lognormal')
+
+						if (initial.and.lroot) print*, 'set_particles_radius: '// &
+								'lognormal=', a0_initdist
+						call random_number_wrapper(r_mpar_loc)
+						call random_number_wrapper(p_mpar_loc)
+						tmp_mpar_loc=sqrt(-2*log(r_mpar_loc))*sin(2*pi*p_mpar_loc)
+						fp(:,iap)=a0_initdist*exp(sigma_initdist*tmp_mpar_loc)
+					endselect  
+				enddo
+			endif
 !
       call keep_compiler_quiet(f)
 !
@@ -847,6 +884,8 @@ module Particles_radius
         ix=ix0-nghost
         if (lsupersat) then
           dapdt=f(ix,m,n,issat)/fp(k,iap)
+          !print*,'ssat=',f(ix,m,n,issat)
+          !print*,'r=',fp(k,iap)
           dfp(k,iap)=dfp(k,iap)+dapdt
         endif
       enddo
