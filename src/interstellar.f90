@@ -1683,7 +1683,7 @@ module Interstellar
 !
 !  Identifier
 !
-      if (headtt) print*,'check_SNI: ENTER'
+      if (headtt .and. (ip<14)) print*,'check_SNI: ENTER'
 !
       l_SNI=.false.
       if (t >= t_next_SNI) then
@@ -1731,22 +1731,22 @@ module Interstellar
             !call set_next_SNI
             exit
           elseif (ierr==iEXPLOSION_TOO_HOT) then
-            if (lroot) print*,'check_SNI: TOO HOT, (x,y,z) =',&
+            if (lroot .and. (ip<14)) print*,'check_SNI: TOO HOT, (x,y,z) =',&
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
                 'rho =', SNRs(iSNR)%site%rho
           elseif (ierr==iEXPLOSION_TOO_UNEVEN) then
-            if (lroot) print*,'check_SNI: TOO UNEVEN, (x,y,z) =',&
+            if (lroot .and. (ip<14)) print*,'check_SNI: TOO UNEVEN, (x,y,z) =',&
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
                 'rho =', SNRs(iSNR)%site%rho
           elseif (ierr==iEXPLOSION_TOO_RARIFIED) then
-            if (lroot) print*,'check_SNI: TOO RARIFIED, (x,y,z) =',&
+            if (lroot .and. (ip<14)) print*,'check_SNI: TOO RARIFIED, (x,y,z) =',&
                 SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
                 'rho =', SNRs(iSNR)%site%rho
           endif
         enddo
 !
         if (try_count==0) then
-          if (lroot) print*, &
+          if (lroot .and. (ip<14)) print*, &
               "check_SNI: 10 RETRIES OCCURED - skipping SNI insertion"
         endif
 !
@@ -1774,7 +1774,7 @@ module Interstellar
 !
 !  Identifier
 !
-      if (headtt) print*,'check_SNIIb: ENTER'
+      if (headtt .and. (ip<14)) print*,'check_SNIIb: ENTER'
 !
       if (t >= t_next_SNII) then
         iSNR=get_free_SNR()
@@ -1821,22 +1821,22 @@ module Interstellar
             !call set_next_SNII
             exit
             elseif (ierr==iEXPLOSION_TOO_HOT) then
-              if (lroot) print*,'check_SNIIb: TOO HOT, (x,y,z) =',&
+              if (lroot .and. (ip<14)) print*,'check_SNIIb: TOO HOT, (x,y,z) =',&
                   SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
                   'rho =', SNRs(iSNR)%site%rho
             elseif (ierr==iEXPLOSION_TOO_UNEVEN) then
-              if (lroot) print*,'check_SNIIb: TOO UNEVEN, (x,y,z) =',&
+              if (lroot .and. (ip<14)) print*,'check_SNIIb: TOO UNEVEN, (x,y,z) =',&
                   SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
                   'rho =', SNRs(iSNR)%site%rho
             elseif (ierr==iEXPLOSION_TOO_RARIFIED) then
-              if (lroot) print*,'check_SNIIb: TOO RARIFIED, (x,y,z) =',&
+              if (lroot .and. (ip<14)) print*,'check_SNIIb: TOO RARIFIED, (x,y,z) =',&
                   SNRs(iSNR)%feat%x, SNRs(iSNR)%feat%y, SNRs(iSNR)%feat%z,&
                   'rho =', SNRs(iSNR)%site%rho
           endif
         enddo
 !
         if (try_count==0) then
-          if (lroot) print*, &
+          if (lroot .and. (ip<14)) print*, &
               "check_SNIIb: 10 RETRIES OCCURED - skipping SNII insertion"
         endif
 !
@@ -2276,7 +2276,7 @@ module Interstellar
     real, dimension(3) :: fran3
     integer :: i, nzskip=10 !prevent SN from being too close to boundaries
 !
-    if (headtt) print*,'position_SN_gaussianz: ENTER'
+    if (headtt .and. (ip<14)) print*,'position_SN_gaussianz: ENTER'
 !
 !  Calculate the global (nzgrid) lower z-coordinate.
 !
@@ -2341,7 +2341,7 @@ module Interstellar
       call mpibcast_real(mpiz,xyproc(1))
       zdisk = mpiz
     endif
-    if (lroot) print*,'position_SN_gaussianz: zdisk =',zdisk
+    if (lroot .and. (ip<14)) print*,'position_SN_gaussianz: zdisk =',zdisk
 !
 !  Pick SN position (SNR%indx%l,SNR%indx%m,SNR%indx%n).
 !
@@ -3302,7 +3302,7 @@ module Interstellar
         call mpireduce_max(rhotmp,rhomax)
         call mpibcast_real(rhomax)
         if (rhomax/rhomin > SN_rho_ratio) ierr=iEXPLOSION_TOO_UNEVEN
-        if (lroot) print*,'get_properties: rhomax, rhomin, ierr, radius =',&
+        if (lroot .and. (ip<14)) print*,'get_properties: rhomax, rhomin, ierr, radius =',&
                                    rhomax, rhomin, ierr, remnant%feat%radius
       endif
 !
