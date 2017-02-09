@@ -2169,6 +2169,7 @@ endsubroutine pdf
   integer :: i,k,ikx,iky,ikz,ivec
   real, dimension (mx,my,mz,mfarray) :: f
   real, dimension(nx,ny,nz,3) :: a1,b1
+  real, dimension(nx,3) :: tmp_a1
   real, dimension(nk) :: spectrum,spectrum_sum
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
@@ -2199,7 +2200,8 @@ endsubroutine pdf
      ! compute j = curl(curl(x))
      do n=n1,n2
        do m=m1,m2
-         call del2v_etc(f,iaa,curlcurl=a1)
+         call del2v_etc(f,iaa,curlcurl=tmp_a1)
+         a1(:,m-nghost,n-nghost,:) = tmp_a1
        enddo
      enddo
   else
