@@ -1859,7 +1859,7 @@ module Deriv
       real, dimension (mx), intent(in)  :: f
       real, dimension (nx), intent(out) :: df
 !
-      call fatal_error('der_x','not implemented yet in the "deriv_10th" module')
+      call stop_it("deriv_10th: der_x not implemented yet")
 !
 ! To avoid compiler warnings:
 !
