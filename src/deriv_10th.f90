@@ -285,7 +285,7 @@ module Deriv
       endif
 !
       if (lcylindrical_coords.or.lspherical_coords) &
-           call fatal_error("der_pencil","Not implemented for non-cartesian")
+           call fatal_error('der_pencil','Not implemented for non-cartesian')
 !
     endsubroutine der_pencil
 !***********************************************************************
@@ -1827,7 +1827,7 @@ module Deriv
       real, dimension (mz), intent(in)  :: f
       real, dimension (nz), intent(out) :: df
 !
-      call fatal_error("deriv_10th","der_z not implemented yet")
+      call fatal_error('der_z','not implemented yet in the "deriv_10th" module')
 !
 ! To avoid compiler warnings:
       df=f(n1:n2)
@@ -1841,7 +1841,7 @@ module Deriv
       real, dimension (mz), intent(in)  :: f
       real, dimension (nz), intent(out) :: df2
 !
-      call fatal_error("deriv_10th","der2_z not implemented yet")
+      call fatal_error('der2_z','not implemented yet in the "deriv_10th" module')
 !
 ! To avoid compiler warnings:
 !
@@ -1859,7 +1859,7 @@ module Deriv
       real, dimension (mx), intent(in)  :: f
       real, dimension (nx), intent(out) :: df
 !
-      call fatal_error("deriv_10th: der_x not implemented yet")
+      call fatal_error('der_x','not implemented yet in the "deriv_10th" module')
 !
 ! To avoid compiler warnings:
 !
@@ -1877,7 +1877,7 @@ module Deriv
       real, dimension (mx), intent(in)  :: f
       real, dimension (nx), intent(out) :: df2
 !
-      call stop_it("deriv_10th: der2_x not implemented yet")
+      call fatal_error('der2_x','not implemented yet in the "deriv_10th" module')
 !
     endsubroutine der2_x
 !***********************************************************************
