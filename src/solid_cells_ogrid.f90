@@ -63,9 +63,9 @@ module Solid_Cells
       initsolid_cells, init_uu
   real, dimension(3) :: xyz0_ogrid, Lxyz_ogrid, xorigo_ogrid
 !  Fundamental grid parameters
-  real :: r_ogrid=2*cylinder_radius             
-  integer, parameter :: nxgrid_ogrid=nxgrid,nygrid_ogrid=nygrid,nzgrid_ogrid=nzgrid  ! start.in
-  character (len=labellen), dimension(3) :: grid_func_ogrid='linear'                 ! start.in
+  real :: r_ogrid=2*cylinder_radius  
+! Setting this in start.in
+  character (len=labellen), dimension(3) :: grid_func_ogrid='linear' 
 
 !***************************************************
 ! TODO: Pencil case ogrid
@@ -165,6 +165,10 @@ module Solid_Cells
   ! For time-step
   real :: t_ogrid
   integer :: lfirst_ogrid, llast_ogrid
+
+  real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray) ::  f_ogrid
+  real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mvar)    :: df_ogrid
+  
 
 !  Read start.in file
   namelist /solid_cells_init_pars/ &
@@ -1886,7 +1890,7 @@ end subroutine print_solid
 !
 !  Advection term.
 !
-      df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
+      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)-p%ugu
 !
 !  Viscous term
 !
@@ -1966,101 +1970,52 @@ end subroutine print_solid
 !  Calculate EquationOfState pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
+      use EOS, only: get_cp1, get_cv1
+!
       real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray) :: f
       type (pencil_case),intent(inout)   :: p
       logical, dimension(:),intent(in) :: lpenc_loc
 !
       real, dimension(nx_ogrid) :: tmp
       integer :: i,j
+      real :: cp1, cv1
 !
 !  Inverse cv and cp values.
 !
+      call get_cp1(cp1)
+      call get_cv1(cv1)
       if (lpenc_loc(i_cv1)) p%cv1=cv1
       if (lpenc_loc(i_cp1)) p%cp1=cp1
       if (lpenc_loc(i_cv))  p%cv=1/cv1
       if (lpenc_loc(i_cp))  p%cp=1/cp1
-      if (lpenc_loc(i_cp1tilde)) p%cp1tilde=cp1
-!
-      if (lpenc_loc(i_glnmumol)) p%glnmumol(:,:)=0.0
-!
-      select case (ieosvars)
 !
 !  Work out thermodynamic quantities for given lnrho or rho and TT.
 !
-      case (ilnrho_TT,irho_TT)
-        if (lpenc_loc(i_TT))   p%TT=f(l1:l2,m,n,ieosvar2)
-        if (lpenc_loc(i_TT1).or.lpenc_loc(i_hlnTT))  p%TT1=1/f(l1:l2,m,n,ieosvar2)
-        if (lpenc_loc(i_lnTT).or.lpenc_loc(i_ss).or.lpenc_loc(i_ee)) &
-            p%lnTT=log(f(l1:l2,m,n,ieosvar2))
-        if (lpenc_loc(i_cs2))  p%cs2=cp*gamma_m1*f(l1:l2,m,n,ieosvar2)
-        if (lpenc_loc(i_gTT))  call grad_ogrid(f,ieosvar2,p%gTT)
-        if (lpenc_loc(i_glnTT).or.lpenc_loc(i_hlnTT)) then
-          do i=1,3; p%glnTT(:,i)=p%gTT(:,i)*p%TT1; enddo
-        endif
+      if (iTT .gt. 0) then
+        if (lpenc_loc(i_TT))   p%TT=f(l1:l2,m,n,iTT)
+        if (lpenc_loc(i_TT1).or.lpenc_loc(i_hlnTT))  p%TT1=1/f(l1:l2,m,n,iTT)
+        if (lpenc_loc(i_cs2))  p%cs2=cp*gamma_m1*f(l1:l2,m,n,iTT)
+        if (lpenc_loc(i_gTT))  call grad_ogrid(f,iTT,p%gTT)
         if (lpenc_loc(i_del2TT).or.lpenc_loc(i_del2lnTT)) &
-            call del2(f,ieosvar2,p%del2TT)
-        if (lpenc_loc(i_del2lnTT)) then
-          tmp=0.0
-          do i=1,3
-            tmp=tmp+p%glnTT(:,i)**2
-          enddo
-          p%del2lnTT=p%del2TT*p%TT1-tmp
-        endif
-        if (lpenc_loc(i_hlnTT)) then
-          call g2ij(f,iTT,p%hlnTT)
-          do i=1,3; do j=1,3
-            p%hlnTT(:,i,j)=p%hlnTT(:,i,j)*p%TT1-p%glnTT(:,i)*p%glnTT(:,j)
-          enddo; enddo
-        endif
-        !if (lpenc_loc(i_del6TT)) call del6(f,ieosvar2,p%del6TT)
-        if (lpenc_loc(i_ss)) p%ss=cv*(p%lnTT-lnTT0-gamma_m1*(p%lnrho-lnrho0))
+            call del2_ogrid(f,iTT,p%del2TT)
         if (lpenc_loc(i_pp)) p%pp=cv*gamma_m1*p%rho*p%TT
         if (lpenc_loc(i_ee)) p%ee=cv*exp(p%lnTT)
 !
 !  Work out thermodynamic quantities for given lnrho or rho and cs2.
 !
-      case (ilnrho_cs2,irho_cs2)
+      else
         if (leos_isentropic) then
           call fatal_error('calc_pencils_eos', &
               'leos_isentropic not implemented for ilnrho_cs2, try ilnrho_ss')
         elseif (leos_isothermal) then
           if (lpenc_loc(i_cs2)) p%cs2=cs20
-          if (lpenc_loc(i_lnTT)) p%lnTT=lnTT0
-          if (lpenc_loc(i_glnTT)) p%glnTT=0.0
-          if (lpenc_loc(i_hlnTT)) p%hlnTT=0.0
-          if (lpenc_loc(i_del2lnTT)) p%del2lnTT=0.0
-          if (lpenc_loc(i_ss)) p%ss=-(cp-cv)*(p%lnrho-lnrho0)
-          if (lpenc_loc(i_del2ss)) p%del2ss=-(cp-cv)*p%del2lnrho
-          if (lpenc_loc(i_gss)) p%gss=-(cp-cv)*p%glnrho
-          if (lpenc_loc(i_hss)) p%hss=-(cp-cv)*p%hlnrho
           if (lpenc_loc(i_pp)) p%pp=gamma1*p%rho*cs20
-        elseif (leos_localisothermal) then
-          if (lpenc_loc(i_cs2)) p%cs2=f(l1:l2,m,n,iglobal_cs2)
-          if (lpenc_loc(i_lnTT)) call fatal_error('calc_pencils_eos', &
-              'temperature not needed for localisothermal')
-          if (lpenc_loc(i_glnTT)) &
-              p%glnTT=f(l1:l2,m,n,iglobal_glnTT:iglobal_glnTT+2)
-          if (lpenc_loc(i_hlnTT)) call fatal_error('calc_pencils_eos', &
-              'no gradients yet for localisothermal')
-          if (lpenc_loc(i_del2lnTT)) call fatal_error('calc_pencils_eos', &
-              'no gradients yet for localisothermal')
-          if (lpenc_loc(i_ss)) call fatal_error('calc_pencils_eos', &
-              'entropy not needed for localisothermal')
-          if (lpenc_loc(i_del2ss)) call fatal_error('calc_pencils_eos', &
-              'no gradients yet for localisothermal')
-          if (lpenc_loc(i_gss)) call fatal_error('calc_pencils_eos', &
-              'entropy gradient not needed for localisothermal')
-          if (lpenc_loc(i_hss)) call fatal_error('calc_pencils_eos', &
-              'no gradients yet for localisothermal')
-          if (lpenc_loc(i_pp)) p%pp=p%rho*p%cs2
         else
           call fatal_error('calc_pencils_eos', &
               'Full equation of state not implemented for ilnrho_cs2')
         endif
 !
-      case default
-        call fatal_error('calc_pencils_eos','case not implemented yet')
-      endselect
+      endif
 !
     endsubroutine calc_pencils_eos_pencpar_ogrid
 !***********************************************************************
@@ -2076,13 +2031,11 @@ end subroutine print_solid
 !
     endsubroutine calc_pencils_hydro_ogrid
 !***********************************************************************
-    subroutine calc_pencils_hydro_nonlinear_ogrid(f,p,lpenc_loc)
+    subroutine calc_pencils_hydro_nonlinear_ogrid(lpenc_loc)
 !
 !  Calculate Hydro pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
-      real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray) :: f
-      type (pencil_case_ogrid) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
       real, dimension (nx_ogrid) :: tmp, tmp2
@@ -2095,73 +2048,19 @@ end subroutine print_solid
 ! u2
       if (lpenc_loc(i_u2)) call dot2_mn_ogrid(p%uu,p%u2)
 ! uij
-      if (lpenc_loc(i_uij)) then 
-        call gij(f,iuu,p%uij,1)
-        if (lparticles_lyapunov) then
-          jk=0
-          do jj=1,3; do kk=1,3
-            jk=jk+1
-            f(l1:l2,m,n,iguij+jk-1) = p%uij(:,jj,kk)
-          enddo;enddo
-        endif
-      endif
+      if (lpenc_loc(i_uij)) call gij_ogrid(f,iuu,p%uij,1)
 ! divu
       if (lpenc_loc(i_divu)) call div_mn_ogrid(p%uij,p%divu,p%uu)
 ! sij
       if (lpenc_loc(i_sij)) call traceless_strain_ogrid(p%uij,p%divu,p%sij,p%uu)
 ! sij2
       if (lpenc_loc(i_sij2)) call multm2_sym_mn_ogrid(p%sij,p%sij2)
-! oo (=curlu)
-      oo: if (lpenc_loc(i_oo)) then
-        if (ioo /= 0) then
-          p%oo = f(l1:l2,m,n,iox:ioz)
-        else
-          call curl_mn_ogrid(p%uij,p%oo,p%uu)
-        endif
-      endif oo
-! o2
-      if (lpenc_loc(i_o2)) call dot2_mn_ogrid(p%oo,p%o2)
-! ou
-      if (lpenc_loc(i_ou)) call dot_mn_ogrid(p%oo,p%uu,p%ou)
 ! ugu
-      if (lpenc_loc(i_ugu)) then
-        if (headtt.and.lupw_uu) print *,'calc_pencils_hydro: upwinding advection term'
-        call u_dot_grad_ogrid(f,iuu,p%uij,p%uu,p%ugu)
-      endif
+      if (lpenc_loc(i_ugu)) call u_dot_grad_ogrid(f,iuu,p%uij,p%uu,p%ugu)
 ! ugu2
       if (lpenc_loc(i_ugu2)) call dot2_mn_ogrid(p%ugu,p%ugu2)
-! ogu ... ogu2
-      if (lpenc_loc(i_ogu)) call u_dot_grad_ogrid(f,iuu,p%uij,p%oo,p%ogu)
-! u3u21, u1u32, u2u13, u2u31, u3u12, u1u23
-      if (lpenc_loc(i_u3u21)) p%u3u21=p%uu(:,3)*p%uij(:,2,1)
-      if (lpenc_loc(i_u1u32)) p%u1u32=p%uu(:,1)*p%uij(:,3,2)
-      if (lpenc_loc(i_u2u13)) p%u2u13=p%uu(:,2)*p%uij(:,1,3)
-      if (lpenc_loc(i_u2u31)) p%u2u31=p%uu(:,2)*p%uij(:,3,1)
-      if (lpenc_loc(i_u3u12)) p%u3u12=p%uu(:,3)*p%uij(:,1,2)
-      if (lpenc_loc(i_u1u23)) p%u1u23=p%uu(:,1)*p%uij(:,2,3)
-!
-! del2u, graddivu
-!
-!***********************************************************************
-      !TODO:DO WE NEED THIS 
-      if (lpenc_loc(i_graddivu)) then
-        if (headtt.or.ldebug) print*,'calc_pencils_hydro: call gij_etc'
-        call gij_etc(f,iuu,p%uu,p%uij,p%oij,GRADDIV=p%graddivu)
-      endif
-!***********************************************************************
-      if (lpenc_loc(i_del2u)) then
-        call curl_mn_ogrid(p%oij,p%curlo,p%oo)
-        p%del2u=p%graddivu-p%curlo
-      endif
-!
-!del2uj, d^u/dx^2 etc
-!
-!***********************************************************************
-      !TODO:DO WE NEED THIS
-      !     ONLY IMPLEMENTATION IN CARTESIAN COORDINATES IN SUB.F90
-      if (lpenc_loc(i_d2uidxj)) &
-        call d2fi_dxj(f,iuu,p%d2uidxj)
-!***********************************************************************
+! del2u
+      if (lpenc_loc(i_del2u)) call del2v_ogrid(f,iux,p%del2u)
 !
     endsubroutine calc_pencils_hydro_nonlinear_ogrid
 !***********************************************************************
@@ -2182,8 +2081,6 @@ end subroutine print_solid
         call fatal_error('calc_pencils_density_ogrid',&
             'Must use linear density for solid_cells_ogrid')
       endif
-! ekin
-      if (lpencil(i_ekin)) p%ekin=0.5*p%rho*p%u2
 !
     endsubroutine calc_pencils_density_ogrid
 !***********************************************************************
@@ -2218,15 +2115,6 @@ end subroutine print_solid
 ! ugrho
       if (lpencil(i_ugrho)) &
         call u_dot_grad_ogrid(f,ilnrho,p%grho,p%uu,p%ugrho)
-! glnrho2
-      if (lpencil(i_glnrho2)) call dot2_ogrid(p%glnrho,p%glnrho2)
-! del2rho
-      if (lpencil(i_del2rho)) then
-        call del2_ogrid(f,irho,p%del2rho)
-        if (lreference_state) p%del2rho=p%del2rho+reference_state(:,iref_d2rho)
-      endif
-! del2lnrho
-      if (lpencil(i_del2lnrho)) p%del2lnrho=p%rho1*p%del2rho-p%glnrho2
 ! sglnrho
       if (lpencil(i_sglnrho)) call multmv_mn_ogrid(p%sij,p%glnrho,p%sglnrho)
 !
@@ -2280,26 +2168,14 @@ end subroutine print_solid
 !
       intent(in) :: f
       intent(inout) :: p
-! Ma2
-      if (lpencil(i_Ma2)) p%Ma2=p%u2/p%cs2
 !
 !  fpres (=pressure gradient force)
 !
       if (lpencil(i_fpres)) then
         do j=1,3
-          if (llocal_iso) then
-            p%fpres(:,j)=-p%cs2*(p%glnrho(:,j)+p%glnTT(:,j))
-          else
-            p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
-          endif
+          p%fpres(:,j)=-p%cs2*p%glnrho(:,j)
         enddo
       endif
-!
-! tcond (dummy)
-!
-      if (lpencil(i_tcond)) p%tcond=0.
-! sglnTT (dummy)
-      if (lpencil(i_sglnTT)) p%sglnTT=0.
 !
       call keep_compiler_quiet(f)
 !
@@ -2694,6 +2570,39 @@ end subroutine print_solid
       b = dot_product(a,a)
 !
     endsubroutine dot2_0_ogrid
+!***********************************************************************
+    subroutine del2v_ogrid(f,k,del2f)
+!
+!  Calculate del2 of a vector, get vector.
+!
+!  28-oct-97/axel: coded
+!  15-mar-07/wlad: added cylindrical coordinates
+!
+      use Deriv, only: der
+!
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
+      real, dimension (nx_ogrid,3) :: del2f
+      real, dimension (nx_ogrid) :: tmp
+      integer :: i,k,k1
+!
+      intent(in) :: f,k
+      intent(out) :: del2f
+!
+!  do the del2 diffusion operator
+!
+      k1=k-1
+      do i=1,3
+        call del2(f,k1+i,tmp)
+        del2f(:,i)=tmp
+      enddo
+!
+      !del2 already contains the extra term 1/r*d(uk)/dt
+      call der(f,k1+2,tmp,2)
+      del2f(:,1)=del2f(:,1) -(2*tmp+f(l1:l2,m,n,k1+1))*rcyl_mn2_ogrid
+      call der(f,k1+1,tmp,2)
+      del2f(:,2)=del2f(:,2) +(2*tmp-f(l1:l2,m,n,k1+2))*rcyl_mn2_ogrid
+!
+    endsubroutine del2v_ogrid
 !***********************************************************************
 !   PUT IN THE TOP OF MODULE
 !***********************************************************************
