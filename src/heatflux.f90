@@ -83,7 +83,7 @@ contains
           if (nvar < mvar) write(4,*) ',qq $'
           if (nvar == mvar) write(4,*) ',qq'
         else
-          write(4,*) ',heatflux $'
+          write(4,*) ',qq $'
         endif
         write(15,*) 'qq = fltarr(mx,my,mz,3)*one'
       endif    
