@@ -57,20 +57,48 @@ module Solid_Cells
   real, parameter :: cylinder_xpos=0., cylinder_ypos=0.        ! Set in start.in
   real, parameter :: cylinder_zpos=0.                          ! Set in start.in
   real, parameter :: skin_depth=0.                             ! Set in start.in
+  real, init_uu=0., ampl_noise=0.                              ! Set in start.in
+  character(len=labellen) :: initsolid_cells='cylinderstream_x'
+  
+      initsolid_cells, init_uu
   real, dimension(3) :: xyz0_ogrid, Lxyz_ogrid, xorigo_ogrid
 !  Fundamental grid parameters
   real :: r_ogrid=2*cylinder_radius             
   integer, parameter :: nxgrid_ogrid=nxgrid,nygrid_ogrid=nygrid,nzgrid_ogrid=nzgrid  ! start.in
   character (len=labellen), dimension(3) :: grid_func_ogrid='linear'                 ! start.in
 
+!***************************************************
+! TODO: Pencil case ogrid
   integer, parameter :: npencils_ogrid=2
   type pencil_case_ogrid
-    real, dimension (nx_ogrid)   :: x_mn
-    real, dimension (nx_ogrid,3) :: rr
+    real, dimension (nx_ogrid) :: x_mn    
+    real, dimension (nx_ogrid) :: y_mn    
+    real, dimension (nx_ogrid) :: z_mn    
+    real, dimension (nx_ogrid) :: r_mn    
+    real, dimension (nx_ogrid) :: rcyl_mn 
+    real, dimension (nx_ogrid) :: phi_mn  
+    real, dimension (nx_ogrid) :: rcyl_mn1
+    real, dimension (nx_ogrid) :: r_mn1   
+    real, dimension (nx_ogrid) :: pomx    
+    real, dimension (nx_ogrid) :: pomy    
+    real, dimension (nx_ogrid) :: phix    
+    real, dimension (nx_ogrid) :: phiy    
+!
   endtype pencil_case_ogrid
   
-  integer :: io_x_mn=1
-  integer :: io_r=2
+  integer :: i_og_x_mn=1
+  integer :: i_og_y_mn=2
+  integer :: i_og_z_mn=3
+  integer :: i_og_r_mn=4
+  integer :: i_og_rcyl_mn=5
+  integer :: i_og_phi_mn=6
+  integer :: i_og_rcyl_mn1=7
+  integer :: i_og_r_mn1=8
+  integer :: i_og_pomx=9
+  integer :: i_og_pomy=10
+  integer :: i_og_phix=11
+  integer :: i_og_phiy=12
+
   character (len=15), parameter, dimension(npencils_ogrid) :: pencil_names = &
       (/ 'x_mn        ', 'rr        '       /)
   logical, parameter, dimension(npencils_ogrid):: lpenc_required  = .false.
@@ -79,7 +107,10 @@ module Solid_Cells
   logical,            dimension(npencils_ogrid):: lpenc_video     = .false.
   logical,            dimension(npencils_ogrid):: lpenc_requested = .false.
   logical,            dimension(npencils_ogrid):: lpencil         = .false.
+!***************************************************
 
+!  Pencils to be used for curvelinear grid computations
+  type(pencil_case_ogrid) p_ogrid 
 
 ! PARAMETERS NECESSARY FOR GRID CONSTRUCTION 
 ! TODO: Clean up
@@ -135,13 +166,15 @@ module Solid_Cells
   real :: t_ogrid
   integer :: lfirst_ogrid, llast_ogrid
 
-! TODO: What is this used for?
+!  Read start.in file
   namelist /solid_cells_init_pars/ &
       cylinder_temp, ncylinders, cylinder_radius, cylinder_xpos, &
-      cylinder_ypos, cylinder_zpos, flow_direction, skin_depth
+      cylinder_ypos, cylinder_zpos, flow_direction, skin_depth &
+      initsolid_cells, init_uu
 
+!  Read run.in file
   namelist /solid_cells_run_pars/  &
-      dummy
+    
   contains 
 !***********************************************************************
     subroutine register_solid_cells()
@@ -194,8 +227,6 @@ module Solid_Cells
         enddo
       enddo
 !
-! TODO: Jorgen: Why do we need flow_dir, etc.?
-!
 ! Try to find flow direction
 !
       flow_dir = 0
@@ -206,8 +237,7 @@ module Solid_Cells
       elseif (fbcz(3,1) > 0) then; flow_dir = 3
       elseif (fbcz(3,2) < 0) then; flow_dir = -3
       endif
-      !TODO: Jorgen: Should this be for flow_dir /= 0
-      if (flow_dir > 0) then
+      if (flow_dir /= 0) then
         if (lroot) then
           print*,'By using fbc[x,y,z] I found the flow direction to be in the ', &
               flow_dir,' direction.'
@@ -243,6 +273,10 @@ module Solid_Cells
         if (.not. ltemperature_nolog) T0 = exp(T0)
       endif
 !
+!  Initialize the pencils overlapping grid
+!
+      call initialize_pencils_ogrid(p,0.0)
+!
 !  Construct overlapping grid
 !
       call construct_grid_ogrid
@@ -275,105 +309,67 @@ module Solid_Cells
       real :: wall_smoothing_temp, xr, yr
       integer i,j,k,cyl,jj,icyl
 !
-! TODO: Jorgen - This should be made more compact and efficient
-      do jj = 1,ninit
-        select case (initsolid_cells(jj))
-!
-!  This overrides any initial conditions set in the Hydro module.
-!
-        case ('nothing')
-          if (lroot) print*,'init_solid_cells: nothing'
-        case ('cylinder')
-!  Initial condition for cyilinder in quiecent medium
-          call gaunoise(ampl_noise,f,iux,iuz)
-          shiftx = 0
-          do i = l1,l2
-            do j = m1,m2
+      select case (initsolid_cells)
+      case ('cylinderstream_x')
+!  Stream functions for flow around a cylinder as initial condition.
+        call gaunoise(ampl_noise,f,iux,iuz)
+        f(:,:,:,iux) = f(:,:,:,iux)+init_uu
+        shiftx = 0
+        do i = l1,l2
+          do j = m1,m2
 !
 !  Loop over all cylinders
 !
-              a2 = xyz0_ogrid(1)**2
-              xr = x(i)-xorigo_ogrid(1)
-              yr = y(j)-xorigo_ogrid(2)
+            a2 = xyz0_ogrid(1)**2
+            xr = x(i)-xorigo_ogrid(1)
+            !TODO: Jorgen - WHY?
+            if (xorigo_ogrid(2) /= 0) then
+              print*,'When using cylinderstream_x all cylinders must have'
+              print*,'zero offset in y-direction!'
+              call fatal_error('init_solid_cells:','')
+            endif
+              yr = y(j)
               rr2 = xr**2+yr**2
               if (rr2 > a2) then
-                if (ilnTT /= 0) then
-                  wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2))**2)
-                  f(i,j,:,ilnTT) = wall_smoothing_temp*f(i,j,:,ilnTT) &
-                      +cylinder_temp*(1-wall_smoothing_temp)
-                  f(i,j,:,ilnrho) = f(l2,m2,n2,ilnrho) &
-                      *f(l2,m2,n2,ilnTT)/f(i,j,:,ilnTT)
-                endif
+                do cyl = 0,100
+                  if (cyl == 0) then
+                    wall_smoothing = 1-exp(-(rr2-a2)/skin_depth**2)
+                    f(i,j,k,iuy) = f(i,j,k,iuy)-init_uu* &
+                      2*xr*yr*a2/rr2**2*wall_smoothing
+                    f(i,j,k,iux) = f(i,j,k,iux)+init_uu* &
+                      (0. - a2/rr2 + 2*yr**2*a2/rr2**2) &
+                      *wall_smoothing
+                    if (ilnTT /= 0) then
+                      wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2))**2)
+                      f(i,j,k,ilnTT) = wall_smoothing_temp*f(i,j,k,ilnTT) &
+                        +objects(icyl)%T*(1-wall_smoothing_temp)
+                      f(i,j,k,ilnrho) = f(l2,m2,n2,ilnrho) &
+                        *f(l2,m2,n2,ilnTT)/f(i,j,k,ilnTT)
+                    endif
+                  else
+                    shifty = cyl*Lxyz(2)
+                    rr2_low = (xr+shiftx)**2+(yr+shifty)**2
+                    rr2_high = (xr-shiftx)**2+(yr-shifty)**2
+                    f(i,j,k,iux) = f(i,j,k,iux)+init_uu*( &
+                        +2*(yr-shifty)**2*a2/rr2_high**2-a2/rr2_high &
+                        +2*(yr+shifty)**2*a2/rr2_low**2 -a2/rr2_low)
+                    f(i,j,k,iuy) = f(i,j,k,iuy)-init_uu*( &
+                        +2*(xr-shiftx)*(yr-shifty) &
+                        *a2/rr2_high**2 &
+                        +2*(xr+shiftx)*(yr+shifty) &
+                        *a2/rr2_low**2)
+                  endif
+                enddo
               else
                 if (ilnTT /= 0) then
                   f(i,j,:,ilnTT) = cylinder_temp
                   f(i,j,:,ilnrho) = f(l2,m2,n2,ilnrho) &
-                      *f(l2,m2,n2,ilnTT)/cylinder_temp
+                    *f(l2,m2,n2,ilnTT)/cylinder_temp
                 endif
               endif
-            enddo
+            endif
           enddo
-        case ('cylinderstream_x')
-!  Stream functions for flow around a cylinder as initial condition.
-          call gaunoise(ampl_noise,f,iux,iuz)
-          f(:,:,:,iux) = f(:,:,:,iux)+init_uu
-          shiftx = 0
-          do i = l1,l2
-            do j = m1,m2
-              do k = n1,n2
-!
-!  Loop over all cylinders
-!
-                  a2 = xyz0_ogrid(1)**2
-                  xr = x(i)-xorigo_ogrid(1)
-                  !TODO: Jorgen - WHY?
-                  if (xorigo_ogrid(2) /= 0) then
-                    print*,'When using cylinderstream_x all cylinders must have'
-                    print*,'zero offset in y-direction!'
-                    call fatal_error('init_solid_cells:','')
-                  endif
-                  yr = y(j)
-                  rr2 = xr**2+yr**2
-                  if (rr2 > a2) then
-                    do cyl = 0,100
-                      if (cyl == 0) then
-                        wall_smoothing = 1-exp(-(rr2-a2)/skin_depth**2)
-                        f(i,j,k,iuy) = f(i,j,k,iuy)-init_uu* &
-                            2*xr*yr*a2/rr2**2*wall_smoothing
-                        f(i,j,k,iux) = f(i,j,k,iux)+init_uu* &
-                            (0. - a2/rr2 + 2*yr**2*a2/rr2**2) &
-                            *wall_smoothing
-                        if (ilnTT /= 0) then
-                          wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2))**2)
-                          f(i,j,k,ilnTT) = wall_smoothing_temp*f(i,j,k,ilnTT) &
-                              +objects(icyl)%T*(1-wall_smoothing_temp)
-                          f(i,j,k,ilnrho) = f(l2,m2,n2,ilnrho) &
-                              *f(l2,m2,n2,ilnTT)/f(i,j,k,ilnTT)
-                        endif
-                      else
-                        shifty = cyl*Lxyz(2)
-                        rr2_low = (xr+shiftx)**2+(yr+shifty)**2
-                        rr2_high = (xr-shiftx)**2+(yr-shifty)**2
-                        f(i,j,k,iux) = f(i,j,k,iux)+init_uu*( &
-                            +2*(yr-shifty)**2*a2/rr2_high**2-a2/rr2_high &
-                            +2*(yr+shifty)**2*a2/rr2_low**2 -a2/rr2_low)
-                        f(i,j,k,iuy) = f(i,j,k,iuy)-init_uu*( &
-                            +2*(xr-shiftx)*(yr-shifty) &
-                            *a2/rr2_high**2 &
-                            +2*(xr+shiftx)*(yr+shifty) &
-                            *a2/rr2_low**2)
-                      endif
-                    enddo
-                  else
-                    if (ilnTT /= 0) then
-                      f(i,j,:,ilnTT) = cylinder_temp
-                      f(i,j,:,ilnrho) = f(l2,m2,n2,ilnrho) &
-                      *f(l2,m2,n2,ilnTT)/cylinder_temp
-                    endif
-                  endif
-              enddo
-            enddo
-          enddo
+        enddo
         case ('cylinderstream_y')
 !  Stream functions for flow around a cylinder as initial condition.
           call gaunoise(ampl_noise,f,iux,iuz)
@@ -443,11 +439,25 @@ module Solid_Cells
               trim(initsolid_cells(jj))
           call fatal_error('init_solid_cells','')
         endselect
-      enddo
 
       call keep_compiler_quiet(f)
 !
-    end subroutine init_solid_cells
+    endsubroutine init_solid_cells
+!***********************************************************************
+    subroutine initialize_pencils_ogrid(p,penc0)
+!
+!  Initialize all pencils that are necessary on ogrid
+!
+!  10-feb-17/Jorgen: Coded
+!
+      type(pencil_case_ogrid) :: p_ogrid
+      real :: penc0
+!
+! TODO: SET ALL PENCILS
+      p%XXXXX = penc0
+      lpencil_ogrid(i_og_XXXXX) = .true.
+!
+    endsubroutine initialize_pencils_ogrid
 !***********************************************************************
     subroutine dsolid_dt(f,df,p)
 !
@@ -1280,7 +1290,7 @@ end subroutine print_solid
 !                     Only cylindrical coodrinats included
 !
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
-      type (pencil_case) :: p
+      type (pencil_case_ogrid) :: p
 !
       intent(in) :: f
       intent(inout) :: p
@@ -1667,7 +1677,7 @@ end subroutine print_solid
       real, dimension (mx,my,mz,mfarray) :: f_cartesian
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f_ogrid
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: df_ogrid
-      type (pencil_case) :: p_ogrid
+      type (pencil_case_ogrid) :: p_ogrid
       real :: ds, dtsub_ogrid, dt_ogrid, dt_cartesian
       integer :: timestep_factor, tstep_ogrid
       integer :: j
@@ -1785,7 +1795,7 @@ end subroutine print_solid
 !
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mvar) :: df
-      type (pencil_case) :: p
+      type (pencil_case_ogrid) :: p
       integer :: nyz
 !
       intent(inout)  :: f       
@@ -1869,7 +1879,7 @@ end subroutine print_solid
 !
       real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray) :: f
       real, dimension (mx_ogrid,my_ogrid,m_ogridz,mvar) :: df
-      type (pencil_case) :: p
+      type (pencil_case_ogrid) :: p
 !
       intent(in) :: p
       intent(inout) :: f,df
@@ -1891,7 +1901,7 @@ end subroutine print_solid
 !
       real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray) :: f
       real, dimension (mx_ogrid,my_ogrid,m_ogridz,mvar) :: df
-      type (pencil_case) :: p
+      type (pencil_case_ogrid) :: p
 !
       intent(in)  :: p
       intent(inout) :: df,f
@@ -1919,7 +1929,7 @@ end subroutine print_solid
 !
       real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray) :: f
       real, dimension (mx_ogrid,my_ogrid,m_ogridz,mvar) :: df
-      type (pencil_case) :: p
+      type (pencil_case_ogrid) :: p
 !
       integer :: j,ju
 !
@@ -1941,7 +1951,7 @@ end subroutine print_solid
 ! lpenc_loc=lpencil
 !
       real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray) :: f
-      type (pencil_case) ::  p
+      type (pencil_case_ogrid) ::  p
 
       intent(inout) :: f,p
 !
@@ -1950,6 +1960,8 @@ end subroutine print_solid
     endsubroutine calc_pencils_eos_std_ogrid
 !***********************************************************************
     subroutine calc_pencils_eos_pencpar_ogrid(f,p,lpenc_loc)
+!
+! TODO: Which pencils do we need?
 !
 !  Calculate EquationOfState pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -2058,7 +2070,7 @@ end subroutine print_solid
 ! lpenc_loc=lpencil
 !
       real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray),intent(in) :: f
-      type (pencil_case),intent(OUT):: p
+      type (pencil_case_ogrid),intent(OUT):: p
 !
       call calc_pencils_hydro_nonlinear_ogrid(f,p,lpencil)
 !
@@ -2070,7 +2082,7 @@ end subroutine print_solid
 !  Most basic pencils should come first, as others may depend on them.
 !
       real, dimension (mx_ogrid,my_ogrid,m_ogridz,mfarray) :: f
-      type (pencil_case) :: p
+      type (pencil_case_ogrid) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
       real, dimension (nx_ogrid) :: tmp, tmp2
