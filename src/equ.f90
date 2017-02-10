@@ -587,7 +587,7 @@ module Equ
 !
 !  Evolution of radiative energy
 !
-        if (lradiation_fld) call de_dt(f,df,p,gamma)
+        if (lradiation_fld) call de_dt(f,df,p)
 !
 !  Evolution of chemical species
 !
