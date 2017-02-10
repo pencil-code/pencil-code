@@ -70,7 +70,7 @@ contains
 !
     use FArrayManager, only: farray_register_pde
 !
-    call farray_register_pde('heatflux',iqq,vector=3)
+    call farray_register_pde('qq',iqq,vector=3)
     iqx=iqq; iqy=iqq+1; iqz=iqq+2
 !
     if (lroot) call svn_id( &
