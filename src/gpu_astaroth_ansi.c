@@ -37,8 +37,10 @@ void FTNIZE(finalize_gpu_c)
 /* ---------------------------------------------------------------------- */
 void FTNIZE(rhs_gpu_c)
      (REAL *uu, REAL *lnrho, REAL *duu, REAL *dlnrho)
-/* Communication between CPU and GPU; calculation of rhs by GPU kernels.
+/* Communication between CPU and GPU; calculation of rhs of momentum eq., duu,
+   and of continuity eq., dlnrho, by GPU kernels.
 */
 {
+// add calls to ASTAROTH routines here
 }
 /* ---------------------------------------------------------------------- */

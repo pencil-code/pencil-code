@@ -2067,7 +2067,7 @@ module Radiation
 !
     endsubroutine calc_pencils_radiation
 !***********************************************************************
-   subroutine de_dt(f,df,p,gamma)
+   subroutine de_dt(f,df,p)
 !
 !  Dummy routine for Flux Limited Diffusion routine
 !
@@ -2076,12 +2076,10 @@ module Radiation
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real :: gamma
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)
-      call keep_compiler_quiet(gamma)
 !
     endsubroutine de_dt
 !***********************************************************************

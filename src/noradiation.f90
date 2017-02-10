@@ -138,18 +138,16 @@ module Radiation
 !
     endsubroutine calc_pencils_radiation
 !***********************************************************************
-   subroutine de_dt(f,df,p,gamma)
+   subroutine de_dt(f,df,p)
 !
 !  15-jul-2002/nils: dummy routine
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
-      real :: gamma
 !
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
-      call keep_compiler_quiet(gamma)
 !
     endsubroutine de_dt
 !***********************************************************************

@@ -369,6 +369,14 @@ special_message:
     endif
   endif
 endif
+LIBGPU =
+ifeq ($(GPU),gpu_astaroth)
+  ifeq ($(REAL_PRECISION),double)
+    LIBGPU = astaroth_dbl.sl
+  else
+    LIBGPU = astaroth_sgl.sl
+  endif
+endif
 #ifdef ENTROPY
 #entropy_message:
 #    @echo ";;; Cannot compile:"
@@ -2318,11 +2326,11 @@ run=$(physics) $(technical) $(TIMESTEP).o equ.o pencil_check.o
 #
 start.o: $(start) Makefile.local
 start.x: start.o | $(SPECIAL_DEPS)
-	$(LD) $(start) start.o $(LD_MPI) $(LD_FOURIER) $(LD_GSL) -o start.x $(LDFLAGS)
+	$(LD) $(start) start.o $(LD_MPI) $(LD_FOURIER) $(LD_GSL) $(LIBGPU) -o start.x $(LDFLAGS)
 #
 run.o: $(run) Makefile.local
 run.x: run.o | $(SPECIAL_DEPS)
-	$(LD) $(run) run.o $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) -o run.x $(LDFLAGS)
+	$(LD) $(run) run.o $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LD_GSL) $(LIBGPU) -o run.x $(LDFLAGS)
 special_preps:
 ifneq ($(SPECIAL_MULT),1)
 	@sed -e 's/^\(module  *\)[a-zA-Z0-9_]* */\1Special/' -e 's/^\( *endmodule  *\)[a-zA-Z0-9_]* *$$/\1Special/' -e"s/[a-zA-Z0-9_]*\.inc/special_dummies.inc/" < $(SPECIAL_MODULES).f90 > tmp
@@ -2584,8 +2592,8 @@ debug:
 #  When you use this you must be certain that everying is consistent.
 #
 linkonly:
-	$(LD) $(start) start.o $(LD_MPI) $(LD_FOURIER) -o start.x $(LDFLAGS)
-	$(LD) $(run) run.o $(LD_MPI) $(LD_FOURIER) $(LIBSIG) -o run.x $(LDFLAGS)
+	$(LD) $(start) start.o $(LD_MPI) $(LD_FOURIER) $(LIBGPU) -o start.x $(LDFLAGS)
+	$(LD) $(run) run.o $(LD_MPI) $(LD_FOURIER) $(LIBSIG) $(LIBGPU) -o run.x $(LDFLAGS)
 #
 #  Needed for the underscore trick.
 #

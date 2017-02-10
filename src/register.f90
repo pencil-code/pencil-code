@@ -245,6 +245,7 @@ module Register
       use Viscosity,        only: initialize_viscosity
       use ImplicitPhysics,  only: initialize_implicit_physics
       use Grid,             only: initialize_grid
+      use GPU,              only: initialize_gpu
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -366,6 +367,7 @@ module Register
 !
       call initialize_deriv
       call initialize_diagnostics
+      call initialize_gpu
       call initialize_timeavg(f)
       call initialize_initial_condition(f)
       call initialize_eos
@@ -428,6 +430,7 @@ module Register
       use Special,        only: finalize_special
       use Deriv,          only: finalize_deriv
       use Special,        only: finalize_mult_special
+      use Gpu,            only: finalize_gpu
 !
       real, dimension(mx,my,mz,mfarray) :: f
 !
@@ -436,6 +439,7 @@ module Register
       call finalize_deriv
       call finalize_mult_special
       call finalize_io
+      call finalize_gpu
 !
     endsubroutine finalize_modules
 !***********************************************************************

@@ -23,13 +23,9 @@ module GPU
 contains
 
 !***********************************************************************
-    subroutine initialize_GPU(f)
-!
-      real, dimension (mx,my,mz,mfarray) :: f
+    subroutine initialize_GPU
 !
       character(LEN=30) :: str
-!
-      call keep_compiler_quiet(f)
 !
       str=''
       if (lanelastic) str='anelastic'
