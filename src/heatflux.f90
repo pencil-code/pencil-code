@@ -76,6 +76,18 @@ contains
     if (lroot) call svn_id( &
         "$Id$")
 !
+!  Writing files for use with IDL
+!
+      if (lroot) then
+        if (maux == 0) then
+          if (nvar < mvar) write(4,*) ',heatflux $'
+          if (nvar == mvar) write(4,*) ',heatflux'
+        else
+          write(4,*) ',heatflux $'
+        endif
+        write(15,*) 'heatflux = fltarr(mx,my,mz,3)*one'
+      endif    
+!
   endsubroutine register_heatflux
 !***********************************************************************
   subroutine initialize_heatflux(f)
