@@ -1854,12 +1854,11 @@ module Deriv
 ! dummy routine
 !
       use Cparam, only: mz, nz
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx), intent(in)  :: f
       real, dimension (nx), intent(out) :: df
 !
-      call stop_it("deriv_10th: der_x not implemented yet")
+      call fatal_error('der_x','not implemented yet in the "deriv_10th" module')
 !
 ! To avoid compiler warnings:
 !
@@ -1872,7 +1871,6 @@ module Deriv
 ! dummy routine
 !
       use Cparam, only: mz, nz
-      use Mpicomm, only: stop_it
 !
       real, dimension (mx), intent(in)  :: f
       real, dimension (nx), intent(out) :: df2
