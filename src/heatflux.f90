@@ -80,12 +80,12 @@ contains
 !
       if (lroot) then
         if (maux == 0) then
-          if (nvar < mvar) write(4,*) ',heatflux $'
-          if (nvar == mvar) write(4,*) ',heatflux'
+          if (nvar < mvar) write(4,*) ',qq $'
+          if (nvar == mvar) write(4,*) ',qq'
         else
           write(4,*) ',heatflux $'
         endif
-        write(15,*) 'heatflux = fltarr(mx,my,mz,3)*one'
+        write(15,*) 'qq = fltarr(mx,my,mz,3)*one'
       endif    
 !
   endsubroutine register_heatflux

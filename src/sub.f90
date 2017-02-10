@@ -4809,8 +4809,20 @@ nameloop: do
         call safe_character_append(type,   'float, '    )
         call safe_character_append(dep,    'positions, ')
       endif
+      if (ltemperature .and. (.not. ltemperature_nolog) ) then
+        call safe_character_append(field,  'lnTT, '       )
+        call safe_character_append(struct, 'scalar, '   )
+        call safe_character_append(type,   'float, '    )
+        call safe_character_append(dep,    'positions, ')
+      endif
       if (lmagnetic ) then
         call safe_character_append(field,  'aa, '       )
+        call safe_character_append(struct, '3-vector, ' )
+        call safe_character_append(type,   'float, '    )
+        call safe_character_append(dep,    'positions, ')
+      endif
+      if (lheatflux ) then
+        call safe_character_append(field,  'qq, '       )
         call safe_character_append(struct, '3-vector, ' )
         call safe_character_append(type,   'float, '    )
         call safe_character_append(dep,    'positions, ')
