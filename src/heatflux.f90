@@ -305,6 +305,14 @@ contains
       call parse_name(iname,cname(iname),cform(iname),'qmax',idiag_qmax)
       call parse_name(iname,cname(iname),cform(iname),'qrms',idiag_qrms)
     enddo
+   !
+   if (lwr) then
+      write(3,*) 'iaa=',iqq
+      write(3,*) 'iax=',iqx
+      write(3,*) 'iay=',iqy
+      write(3,*) 'iaz=',iqz
+   endif
+   !
 !
   endsubroutine rprint_heatflux
 !***********************************************************************
