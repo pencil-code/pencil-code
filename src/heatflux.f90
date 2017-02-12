@@ -36,11 +36,6 @@ module Heatflux
       lreset_heatflux,iheatflux,tau_heatflux,saturation_flux,  &
       tau1_eighthm
 !
-! variables for print.in
-!
-  integer :: idiag_qmax=0     ! DIAG_DOC: max of heat flux vector
-  integer :: idiag_qrms=0     ! DIAG_DOC: rms of heat flux vector
-!
 !  variables for video slices:
 !
   real, target, dimension (nx,ny) :: hflux_xy,hflux_xy2
@@ -57,6 +52,17 @@ module Heatflux
   real, target, dimension (nx,ny) :: divq_xy,divq_xy2,divq_xy3,divq_xy4
   real, target, dimension (nx,nz) :: divq_xz
   real, target, dimension (ny,nz) :: divq_yz
+!
+! Diagnostic variables (need to be consistent with reset list below)
+!
+  integer :: idiag_qmax=0       ! DIAG_DOC: $\max(|\qv|)$
+  integer :: idiag_qxmin=0      ! DIAG_DOC: $\min(|q_x|)$
+  integer :: idiag_qymin=0      ! DIAG_DOC: $\min(|q_y|)$
+  integer :: idiag_qzmin=0      ! DIAG_DOC: $\min(|q_z|)$
+  integer :: idiag_qxmax=0      ! DIAG_DOC: $\max(|q_x|)$
+  integer :: idiag_qymax=0      ! DIAG_DOC: $\max(|q_y|)$
+  integer :: idiag_qzmax=0      ! DIAG_DOC: $\max(|q_z|)$
+  integer :: idiag_qrms=0       ! DIAG_DOC: rms of heat flux vector
 !
   include 'heatflux.h'
 !
@@ -258,6 +264,12 @@ contains
 !
     if (idiag_qmax/=0) call max_mn_name(p%q2,idiag_qmax,lsqrt=.true.)
     if (idiag_qrms/=0) call sum_mn_name(p%q2,idiag_qrms,lsqrt=.true.)
+    if (idiag_qxmin/=0) call max_mn_name(-p%qq(:,1),idiag_qxmin,lneg=.true.)
+    if (idiag_qymin/=0) call max_mn_name(-p%qq(:,2),idiag_qymin,lneg=.true.)
+    if (idiag_qzmin/=0) call max_mn_name(-p%qq(:,3),idiag_qzmin,lneg=.true.)
+    if (idiag_qxmax/=0) call max_mn_name(p%qq(:,1),idiag_qxmax)
+    if (idiag_qymax/=0) call max_mn_name(p%qq(:,2),idiag_qymax)
+    if (idiag_qzmax/=0) call max_mn_name(p%qq(:,3),idiag_qzmax)
 !
   endsubroutine dheatflux_dt
 !***********************************************************************
