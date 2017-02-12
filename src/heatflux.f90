@@ -30,11 +30,11 @@ module Heatflux
 !
   character (len=labellen) :: iheatflux='nothing'
   logical :: lreset_heatflux
-  real :: tau_heatflux=0.,saturation_flux=0.,tau1_eighthm=0.
+  real :: saturation_flux=0.,tau1_eighthm=0.,tau_inv_spitzer=0.
 !
   namelist /heatflux_run_pars/ &
-      lreset_heatflux,iheatflux,tau_heatflux,saturation_flux,  &
-      tau1_eighthm
+      lreset_heatflux,iheatflux,saturation_flux,  &
+      tau1_eighthm,Kspitzer_para,tau_inv_spitzer
 !
 !  variables for video slices:
 !
@@ -44,7 +44,7 @@ module Heatflux
   real, target, dimension (ny,nz) :: hflux_yz
 !
   real, dimension(:), pointer :: B_ext
-  real :: tau_inv_spitzer=0.,Kspitzer_para=0.
+  real :: Kspitzer_para=0.
   real :: saturation_fluxuration=0.,nu_ee,ln_unit_TT
   real :: Ksaturation_SI = 7e7,Ksaturation=0.
   real :: e_m
