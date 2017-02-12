@@ -1830,6 +1830,7 @@ module Deriv
       call fatal_error('der_z','not implemented yet in the "deriv_10th" module')
 !
 ! To avoid compiler warnings:
+!
       df=f(n1:n2)
 !
     endsubroutine der_z
@@ -1853,8 +1854,6 @@ module Deriv
 !
 ! dummy routine
 !
-      use Cparam, only: mz, nz
-!
       real, dimension (mx), intent(in)  :: f
       real, dimension (nx), intent(out) :: df
 !
@@ -1862,7 +1861,7 @@ module Deriv
 !
 ! To avoid compiler warnings:
 !
-      df=f(n1:n2)
+      df=f(l1:l2)
 !
     endsubroutine der_x
 !***********************************************************************
@@ -1870,12 +1869,14 @@ module Deriv
 !
 ! dummy routine
 !
-      use Cparam, only: mz, nz
-!
       real, dimension (mx), intent(in)  :: f
       real, dimension (nx), intent(out) :: df2
 !
       call fatal_error('der2_x','not implemented yet in the "deriv_10th" module')
+!
+! To avoid compiler warnings:
+!
+      df2=f(l1:l2)
 !
     endsubroutine der2_x
 !***********************************************************************
@@ -1893,6 +1894,7 @@ module Deriv
       call fatal_error('der2_minmod','Not implemented for deriv_10th')
 !
 !  Fill with dummy values to keep compiler quiet
+!
       delfk(:) = j; delfkp1(:) = k; delfkm1(:) = f(l1,m1,n1,1)
 !
     endsubroutine der2_minmod
