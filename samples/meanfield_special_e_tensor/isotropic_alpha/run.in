@@ -1,0 +1,36 @@
+!
+!  isotropic alpha
+!
+&run_pars
+  cvsid='$Id$'
+  nt=10000, it1=1000, dt=1e-4, isave=10000, itorder=3
+  d2davg=1e-1, 
+  slice_position='s', xtop_slice=0.98, ytop_slice=1.57
+  lproper_averages=T
+/
+&magnetic_run_pars
+  eta=1.0
+  llorentzforce=F
+  lweyl_gauge=T
+  lcovariant_magnetic=T
+/
+&special_run_pars
+  lalpha=T
+  lbeta=F
+  lgamma=F
+  ldelta=F
+  lkappa=F
+  lutensor=F
+  lacoef=F
+  lbcoef=F
+  defaultname='diag'
+  lusecoefs=F
+  alpha_scale=1.0
+  beta_scale=0.0
+  gamma_scale=0.0
+  delta_scale=0.0
+  kappa_scale=0.0
+  utensor_scale=0.0
+  acoef_scale=0.0
+  bcoef_scale=0.0
+/

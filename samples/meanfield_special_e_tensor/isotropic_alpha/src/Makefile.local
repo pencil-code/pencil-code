@@ -1,0 +1,25 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+MPICOMM   = mpicomm_double
+FILE_IO   = file_io_f2003
+IO        = io_dist
+
+GLOBAL    = noglobal
+HYDRO     = nohydro
+DENSITY   = nodensity
+ENTROPY   = noentropy
+MAGNETIC  = magnetic
+RADIATION = noradiation
+PSCALAR   = nopscalar
+
+EOS       = noeos
+VISCOSITY = noviscosity
+GRAVITY   = nogravity
+FORCING   = noforcing
+SHEAR     = noshear
+
+SPECIAL   = special/meanfield_e_tensor
+

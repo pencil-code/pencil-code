@@ -1,0 +1,20 @@
+Directory:
+    ${PENCIL_HOME}/samples/meanfield_special_e_tensor
+SVN Id:
+    $Id$
+Maintainer:
+    Simo Tuomisto <simo.tuomisto/aalto[dot]fi>
+Added:
+    Jan 30, 2017
+Status:
+    First commit. Undergoing tests.
+Recommended resolution:
+    at least 64x64x1
+Comments:
+    This sample shows how to use special module meanfield_e_tensor.
+    Different run.in files describe different models.
+
+    The module uses parallel HDF5 to load up datasets, so it should be compiled with
+    CFLAGS=-I<path to HDF5 installation>/include
+    LDFLAGS=-lhdf5_fortran -lhdf5hl_fortran -L<path to HDF5 installation>/lib
+References:
