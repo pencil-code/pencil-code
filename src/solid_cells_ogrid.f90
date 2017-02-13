@@ -260,17 +260,6 @@ module Solid_Cells
       xorigo_ogrid(2) = cylinder_ypos(icyl)
       xorigo_ogrid(3) = cylinder_zpos(icyl)
 !
-!  Give all points inside the object a value of zero for all variables in the
-!  cartesian array of unknowns
-!
-      do i = l1,l2
-        do k = m1,m2
-          if (sqrt((x(i)-xorigo_ogrid(1)**2+(y(i)-xorigo_ogrid(2)**2) < xyz0_ogrid(1)) then
-            f(i,j,:,:)=0.
-          endif
-        enddo
-      enddo
-!
 ! Try to find flow direction
 !
       flow_dir = 0
@@ -354,9 +343,10 @@ module Solid_Cells
       real :: Lorth,flowx,flowy,shift_flow,shift_orth,flow_r,orth_r
       integer i,j,cyl,iflow,iorth
 !
-!  Set up variables in the appropriate direction of the flow
+!  Cartesian array f:
 !
-      if(initsolid_cells='cylinderstream_x') then
+!  Set up variables in the appropriate direction of the flow
+      if(abs(flow_dir)==1.or.initsolid_cells='cylinderstream_x') then
         iflow= iux
         iorth= iuy
         Lorth= Lxyz(2)
@@ -367,7 +357,7 @@ module Solid_Cells
           print*,'zero offset in y-direction!'
           call fatal_error('init_solid_cells:','')
         endif
-      elseif(initsolid_cells='cylinderstream_y') then
+      elseif(abs(flow_dir)==2.or.initsolid_cells='cylinderstream_y') then
         iflow= iuy
         iorth= iux
         Lorth= Lxyz(1)
@@ -380,7 +370,7 @@ module Solid_Cells
         endif
       else
         if (lroot) print*,'No such value for init_solid_cells:', &
-            initsolid_cells)
+            initsolid_cells
           call fatal_error('init_solid_cells','initialization of cylinderstream')
         endif
       endif
@@ -390,6 +380,7 @@ module Solid_Cells
       call gaunoise(ampl_noise,f,iux,iuz)
       f(:,:,:,iflow) = f(:,:,:,iflow)+init_uu
       shift_flow = 0
+      a2=xyz0_ogrid(1)**2
       do i = l1,l2
         do j = m1,m2
 ! Choose correct points depending on flow direction
@@ -426,6 +417,8 @@ module Solid_Cells
               endif
             enddo
           else
+!  Velocities inside the solid objects are set to zero 
+            f(i,j,:,iux:iuz)=0.
             if (ilnTT /= 0) then
               f(i,j,:,ilnTT) = cylinder_temp
               f(i,j,:,ilnrho) = f(l2,m2,n2,ilnrho) &
@@ -435,6 +428,49 @@ module Solid_Cells
         enddo
       enddo
 !
+!  Cylindrical array f_ogrid:
+!
+!  Stream functions for flow around a cylinder as initial condition.
+!
+      call gaunoise_ogrid(ampl_noise,iux,iuz)
+      f_ogrid(:,:,:,iflow) = f_ogrid(:,:,:,iflow)+init_uu
+      do i=l1,l2
+        do j=m1,m2
+          do cyl = 0,100
+            if (cyl == 0) then
+              rr2=x_ogrid(i)**2
+              wall_smoothing = 1-exp(-(rr2-a2)/skin_depth**2)
+              f_ogrid(i,j,:,iux) = f_ogrid(i,j,:,iux)+init_uu*(1-a2/(rr2**2))*cos(y_grid(j))*wall_smoothing
+              f_ogrid(i,j,:,iuy) = f_ogrid(i,j,:,iuy)-init_uu*(1+a2/(rr2**2))*sin(y_grid(j))*wall_smoothing
+              if (ilnTT /= 0) then
+                wall_smoothing_temp = 1-exp(-(rr2**2-a2)/(sqrt(a2))**2)
+                f_ogrid(i,j,:,ilnTT) = wall_smoothing_temp*f_ogrid(i,j,:,ilnTT) &
+                  +cylinder_temp*(1-wall_smoothing_temp)
+                f_ogrid(i,j,:,ilnrho) = f_ogrid(l2,m2,n2,ilnrho)*f_ogrid(l2,m2,n2,ilnTT)/f_ogrid(i,j,:,ilnTT)
+              endif
+            else
+              shift_orth = cyl*Lorth
+              if(y_ogrid(j)<0.5*pi) then
+                rr2_high=shift_orth**2+x_ogrid(i)**2+2*x_ogrid(i)*shift_orth*cos(0.5*pi-y_ogrid(j))
+                rr2_low=shift_orth**2+x_ogrid(i)**2+2*x_ogrid(i)*shift_orth*cos(0.5*pi+y_ogrid(j))
+                theta_high=sqrt(rr2_high)*asin(sin(0.5*pi-y_ogrid(j)))
+              elseif(y_ogrid(j)>1.5*pi) then
+                rr2_high=shift_orth**2+x_ogrid(i)**2+2*x_ogrid(i)*shift_orth*cos(2.5*pi-y_ogrid(j))
+                rr2_low=shift_orth**2+x_ogrid(i)**2+2*x_ogrid(i)*shift_orth*cos(y_ogrid(j)-1.5*pi)
+                theta_high=sqrt(rr2_high)*asin(sin(2.5*pi-y_ogrid(j)))
+              else
+                rr2_high=shift_orth**2+x_ogrid(i)**2+2*x_ogrid(i)*shift_orth*cos(y_ogrid(j)-0.5*pi)
+                rr2_low=shift_orth**2+x_ogrid(i)**2+2*x_ogrid(i)*shift_orth*cos(1.5*pi-y_ogrid(j))
+                theta_high=sqrt(rr2_high)*asin(sin(y_ogrid(j)-0.5*pi))
+              endif
+              theta_low=pi-theta-high
+              f_ogrid(i,j,:,iux) = f_ogrid(i,j,:,iux)+init_uu*((1-a2/(rr2_high**2))*cos(theta_high)
+                                  +(1-a2/(rr2_low**2 ))*cos(theta_low))*wall_smoothing
+              f_ogrid(i,j,:,iuy) = f_ogrid(i,j,:,iux)-init_uu*((1+a2/(rr2_high**2))*sin(theta_high)
+                                  +(1+a2/(rr2_low**2 ))*sin(theta_low))*wall_smoothing
+          enddo
+        enddo
+      enddo
     endsubroutine init_solid_cells
 !***********************************************************************
     
@@ -2805,5 +2841,43 @@ end subroutine print_solid
       if ( i+j==3 .or. i+j==5 ) df=df*rcyl_mn1_ogrid
 !
     endsubroutine derij_ogrid
+!***********************************************************************
+    subroutine gaunoise_ogrid(ampl,i1,i2)
+!
+!  Add Gaussian noise (= normally distributed) white noise for variables i1:i2
+!
+!  13-feb-17/Jorgen: Adapted from gaunoise_vect in initcond.f90
+!
+      use General, only: random_number_wrapper
+      real :: ampl
+      integer :: i1,i2
+!
+      real, dimension (mx) :: r,p,tmp
+      integer :: i
+!
+      intent(in)    :: ampl,i1,i2
+!
+!  set gaussian random noise vector
+!
+      if (ampl==0) then
+        if (lroot) print*,'gaunoise_ogrid: ampl=0 for i1,i2=',i1,i2
+      else
+        if ((ip<=8).and.lroot) print*,'gaunoise_ogrid: i1,i2=',i1,i2
+        do n=1,mz_ogrid; do m=1,my_ogrid
+          do i=i1,i2
+            if (lroot.and.m==1.and.n==1) print*,'gaunoise_ogrid: variable i=',i
+            if (modulo(i-i1,2)==0) then
+              call random_number_wrapper(r)
+              call random_number_wrapper(p)
+              tmp=sqrt(-2*log(r))*sin(2*pi*p)
+            else
+              tmp=sqrt(-2*log(r))*cos(2*pi*p)
+            endif
+            f_ogrid(:,m,n,i)=f_ogrid(:,m,n,i)+ampl*tmp
+          enddo
+        enddo; enddo
+      endif
+!
+    endsubroutine gaunoise_ogrid
 !***********************************************************************
 end module Solid_Cells
