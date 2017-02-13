@@ -12,11 +12,10 @@
 !***************************************************************
 !
 !   New solid cells module
-!   O-grid around cylinder or sphere, coupled to cartesian
-!   grid outside the o-grid by interpolation.
+!   Overlapping cylindrical grid (O-grid) around cylinder or sphere, 
+!   coupled to cartesian grid outside the o-grid by interpolation.
 !
 !   Very fine resolution of boundary layer
-!
 !
 module Solid_Cells
 
@@ -264,8 +263,6 @@ module Solid_Cells
 !  Give all points inside the object a value of zero for all variables in the
 !  cartesian array of unknowns
 !
-! TODO: Jorgen: How do I know that all nxgrid x nygrid variables are looped over?
-! TODO: Why set f=0 inside cylinder?
       do i = l1,l2
         do k = m1,m2
           if (sqrt((x(i)-xorigo_ogrid(1)**2+(y(i)-xorigo_ogrid(2)**2) < xyz0_ogrid(1)) then
@@ -352,145 +349,95 @@ module Solid_Cells
       use Initcond, only: gaunoise
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
-      real :: a2, rr2, wall_smoothing, rr2_low, rr2_high, shiftx, shifty
-      real :: wall_smoothing_temp, xr, yr
-      integer i,j,k,cyl,jj,icyl
+      real :: a2, rr2, rr2_low, rr2_high
+      real :: wall_smoothing,wall_smoothing_temp
+      real :: Lorth,flowx,flowy,shift_flow,shift_orth,flow_r,orth_r
+      integer i,j,cyl,iflow,iorth
 !
-      select case (initsolid_cells)
-      case ('cylinderstream_x')
+!  Set up variables in the appropriate direction of the flow
+!
+      if(initsolid_cells='cylinderstream_x') then
+        iflow= iux
+        iorth= iuy
+        Lorth= Lxyz(2)
+        flowx=1.
+        flowy=0.
+        if (xorigo_ogrid(2) /= 0) then
+          print*,'When using cylinderstream_x all cylinders must have'
+          print*,'zero offset in y-direction!'
+          call fatal_error('init_solid_cells:','')
+        endif
+      elseif(initsolid_cells='cylinderstream_y') then
+        iflow= iuy
+        iorth= iux
+        Lorth= Lxyz(1)
+        flowx=0.
+        flowy=1.
+        if (xorigo_ogrid(1) /= 0) then
+          print*,'When using cylinderstream_y all cylinders must have'
+          print*,'zero offset in x-direction!'
+          call fatal_error('init_solid_cells:','')
+        endif
+      else
+        if (lroot) print*,'No such value for init_solid_cells:', &
+            initsolid_cells)
+          call fatal_error('init_solid_cells','initialization of cylinderstream')
+        endif
+      endif
+!
 !  Stream functions for flow around a cylinder as initial condition.
-        call gaunoise(ampl_noise,f,iux,iuz)
-        f(:,:,:,iux) = f(:,:,:,iux)+init_uu
-        shiftx = 0
-        do i = l1,l2
-          do j = m1,m2
 !
-!  Loop over all cylinders
-!
-            a2 = xyz0_ogrid(1)**2
-            xr = x(i)-xorigo_ogrid(1)
-            !TODO: Jorgen - WHY?
-            if (xorigo_ogrid(2) /= 0) then
-              print*,'When using cylinderstream_x all cylinders must have'
-              print*,'zero offset in y-direction!'
-              call fatal_error('init_solid_cells:','')
-            endif
-              yr = y(j)
-              rr2 = xr**2+yr**2
-              if (rr2 > a2) then
-                do cyl = 0,100
-                  if (cyl == 0) then
-                    wall_smoothing = 1-exp(-(rr2-a2)/skin_depth**2)
-                    f(i,j,k,iuy) = f(i,j,k,iuy)-init_uu* &
-                      2*xr*yr*a2/rr2**2*wall_smoothing
-                    f(i,j,k,iux) = f(i,j,k,iux)+init_uu* &
-                      (0. - a2/rr2 + 2*yr**2*a2/rr2**2) &
-                      *wall_smoothing
-                    if (ilnTT /= 0) then
-                      wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2))**2)
-                      f(i,j,k,ilnTT) = wall_smoothing_temp*f(i,j,k,ilnTT) &
-                        +objects(icyl)%T*(1-wall_smoothing_temp)
-                      f(i,j,k,ilnrho) = f(l2,m2,n2,ilnrho) &
-                        *f(l2,m2,n2,ilnTT)/f(i,j,k,ilnTT)
-                    endif
-                  else
-                    shifty = cyl*Lxyz(2)
-                    rr2_low = (xr+shiftx)**2+(yr+shifty)**2
-                    rr2_high = (xr-shiftx)**2+(yr-shifty)**2
-                    f(i,j,k,iux) = f(i,j,k,iux)+init_uu*( &
-                        +2*(yr-shifty)**2*a2/rr2_high**2-a2/rr2_high &
-                        +2*(yr+shifty)**2*a2/rr2_low**2 -a2/rr2_low)
-                    f(i,j,k,iuy) = f(i,j,k,iuy)-init_uu*( &
-                        +2*(xr-shiftx)*(yr-shifty) &
-                        *a2/rr2_high**2 &
-                        +2*(xr+shiftx)*(yr+shifty) &
-                        *a2/rr2_low**2)
-                  endif
-                enddo
-              else
+      call gaunoise(ampl_noise,f,iux,iuz)
+      f(:,:,:,iflow) = f(:,:,:,iflow)+init_uu
+      shift_flow = 0
+      do i = l1,l2
+        do j = m1,m2
+! Choose correct points depending on flow direction
+          flow_r=(x(i)-xorigo_ogrid(1))*flowx+(y(j)-xorigo_ogrid(2))*flowx
+          orth_r=(x(i)-xorigo_ogrid(1))*flowy+(y(j)-xorigo_ogrid(2))*flowx
+          rr2 = flow_r**2+orth_r**2
+          if (rr2 > a2) then
+            do cyl = 0,100
+              if (cyl == 0) then
+                wall_smoothing = 1-exp(-(rr2-a2)/skin_depth**2)
+                f(i,j,:,iorth) = f(i,j,:,iorth)-init_uu* &
+                  2*flow_r*orth_r*a2/rr2**2*wall_smoothing
+                f(i,j,:,iflow) = f(i,j,:,iflow)+init_uu* &
+                  (0. - a2/rr2 + 2*orth_r**2*a2/rr2**2)*wall_smoothing
                 if (ilnTT /= 0) then
-                  f(i,j,:,ilnTT) = cylinder_temp
+                  wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2))**2)
+                  f(i,j,:,ilnTT) = wall_smoothing_temp*f(i,j,:,ilnTT) &
+                    +cylinder_temp*(1-wall_smoothing_temp)
                   f(i,j,:,ilnrho) = f(l2,m2,n2,ilnrho) &
-                    *f(l2,m2,n2,ilnTT)/cylinder_temp
+                    *f(l2,m2,n2,ilnTT)/f(i,j,:,ilnTT)
                 endif
+              else
+                shift_orth = cyl*Lorth
+                rr2_low = (flow_r+shift_flow)**2+(orth_r+shift_orth)**2
+                rr2_high = (flow_r-shift_flow)**2+(orth_r-shift_orth)**2
+                f(i,j,:,iflow) = f(i,j,:,iflow)+init_uu*( &
+                    +2*(orth_r-shift_orth)**2*a2/rr2_high**2-a2/rr2_high &
+                    +2*(orth_r+shift_orth)**2*a2/rr2_low**2 -a2/rr2_low)
+                f(i,j,:,iorth) = f(i,j,:,iorth)-init_uu*( &
+                    +2*(flow_r-shift_flow)*(orth_r-shift_orth) &
+                    *a2/rr2_high**2 &
+                    +2*(flow_r+shift_flow)*(orth_r+shift_orth) &
+                    *a2/rr2_low**2)
               endif
-            endif
-          enddo
-        enddo
-        case ('cylinderstream_y')
-!  Stream functions for flow around a cylinder as initial condition.
-          call gaunoise(ampl_noise,f,iux,iuz)
-          f(:,:,:,iuy) = f(:,:,:,iuy)+init_uu
-          shifty = 0
-          do i = l1,l2
-            do j = m1,m2
-              do k = n1,n2
-                do icyl = 1,ncylinders
-                  a2 = objects(icyl)%r**2
-                  yr = y(j)-objects(icyl)%x(2)
-                  if (objects(icyl)%x(1) /= 0) then
-!              write(*,*) 'DM',objects(icyl)%x(1),icyl
-                    print*,'When using cylinderstream_y all cylinders must have'
-                    print*,'zero offset in x-direction!'
-                    call fatal_error('init_solid_cells:','')
-                  endif
-                  xr = x(i)
-                  rr2 = xr**2+yr**2
-                  if (rr2 > a2) then
-                    do cyl = 0,100
-                      if (cyl == 0) then
-                        wall_smoothing = 1-exp(-(rr2-a2)/skin_depth**2)
-                        f(i,j,k,iux) = f(i,j,k,iux)-init_uu* &
-                            2*xr*yr*a2/rr2**2*wall_smoothing
-                        f(i,j,k,iuy) = f(i,j,k,iuy)+init_uu* &
-                            (0. - a2/rr2 + 2*xr**2*a2/rr2**2) &
-                            *wall_smoothing
-                        if (ilnTT /= 0) then
-                          wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2))**2)
-                          f(i,j,k,ilnTT) = wall_smoothing_temp*f(i,j,k,ilnTT) &
-                              +objects(icyl)%T*(1-wall_smoothing_temp)
-                          f(i,j,k,ilnrho) = f(l2,m2,n2,ilnrho) &
-                              *f(l2,m2,n2,ilnTT)/f(i,j,k,ilnTT)
-                        endif
-                      else
-                        shiftx = cyl*Lxyz(1)
-                        rr2_low = (xr+shiftx)**2+(yr+shifty)**2
-                        rr2_high = (xr-shiftx)**2+(yr-shifty)**2
-                        f(i,j,k,iuy) = f(i,j,k,iuy)+init_uu*( &
-                            +2*(xr-shiftx)**2*a2/rr2_high**2-a2/rr2_high &
-                            +2*(xr+shiftx)**2*a2/rr2_low**2 -a2/rr2_low)
-                        f(i,j,k,iux) = f(i,j,k,iux)-init_uu*( &
-                            +2*(xr-shiftx)*(y(j)-shifty) &
-                            *a2/rr2_high**2 &
-                            +2*(xr+shiftx)*(y(j)+shifty) &
-                            *a2/rr2_low**2)
-                      endif
-                    enddo
-                  else
-                    if (ilnTT /= 0) then
-                      f(i,j,k,ilnTT) = objects(icyl)%T
-                      f(i,j,k,ilnrho) = f(l2,m2,n2,ilnrho) &
-                          *f(l2,m2,n2,ilnTT)/objects(icyl)%T
-                    endif
-                  endif
-                enddo
-              enddo
             enddo
-          enddo
-          if (llast_proc_y) f(:,m2-5:m2,:,iux) = 0
-        case default
-!
-!  Catch unknown values
-!
-          if (lroot) print*,'No such value for init_solid_cells:', &
-              trim(initsolid_cells(jj))
-          call fatal_error('init_solid_cells','')
-        endselect
-
-      call keep_compiler_quiet(f)
+          else
+            if (ilnTT /= 0) then
+              f(i,j,:,ilnTT) = cylinder_temp
+              f(i,j,:,ilnrho) = f(l2,m2,n2,ilnrho) &
+                *f(l2,m2,n2,ilnTT)/cylinder_temp
+            endif
+          endif
+        enddo
+      enddo
 !
     endsubroutine init_solid_cells
 !***********************************************************************
+    
     subroutine initialize_pencils_ogrid(p,penc0)
 !
 !  Initialize all pencils that are necessary on ogrid
