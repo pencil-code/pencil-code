@@ -9,12 +9,34 @@ Added:
 Status:
     First commit. Undergoing tests.
 Recommended resolution:
-    at least 64x64x1
+    64x128x1
 Comments:
-    This sample shows how to use special module meanfield_e_tensor.
-    Different run.in files describe different models.
+    These sample shows how to use special module meanfield_e_tensor.
+    Different subfolders describe different models.
 
-    The module uses parallel HDF5 to load up datasets, so it should be compiled with
+    The module uses parallel HDF5 to load up datasets, so it should be
+    compiled with:
     CFLAGS=-I<path to HDF5 installation>/include
     LDFLAGS=-lhdf5_fortran -lhdf5hl_fortran -L<path to HDF5 installation>/lib
+
+    Tensors for the models are created with create_emftensors.py. It uses
+    python modules:
+    numpy
+    scipy
+    h5py
+
+    A typical workflow using the special module is as follows:
+    1) setup src with pc_setupsrc and build
+    2) run pc_start to create grid for create_emftensors.py
+    3) run create_emftensors.py <pencil directory> to create initial tensors
+    4) run the simulation
+
+    The input tensors are loaded during runtime, so they can be swapped and 
+    modified between runs and resets.
+
 References:
+    1. isotropic_alpha:
+       Krause, F & Rädler, K.-H.: ``Mean field magnetohydrodynamics and 
+       dynamo theory''
+       Pergamon 1980, 171-186
+    

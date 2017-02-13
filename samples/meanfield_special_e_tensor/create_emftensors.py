@@ -265,7 +265,7 @@ emffields = [
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Create artificial emf mean fields')
-    parser.add_argument('pencilfolder', nargs='1', help='Folder to analyze')
+    parser.add_argument('pencilfolder', nargs=1, help='Folder to analyze')
     #parser.add_argument('folder',nargs=1, help='Pencil-code folder to process')
     args = parser.parse_args()
     pencilfolder    = args.pencilfolder[0]

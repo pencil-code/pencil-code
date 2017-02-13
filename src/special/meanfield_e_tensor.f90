@@ -282,58 +282,58 @@ module Special
 
         call H5Fopen_F(hdf_emftensors_filename, H5F_ACC_RDONLY_F, hdf_emftensors_file, hdferr, access_prp = hdf_emftensors_plist)
 
-        call H5Lexists_F(hdf_emftensors_file,'/zaver/', hdf_exists, hdferr)
+        call H5Lexists_F(hdf_emftensors_file,'/emftensor/', hdf_exists, hdferr)
 
         if (.not. hdf_exists) then
           call H5Fclose_F(hdf_emftensors_file, hdferr)
           call H5Pclose_F(hdf_emftensors_plist, hdferr)
           call H5close_F(hdferr)
-          call fatal_error('initialize_special','group /zaver/ does not exist!')
+          call fatal_error('initialize_special','group /emftensor/ does not exist!')
         end if
 
-        call H5Gopen_F(hdf_emftensors_file, 'zaver', hdf_emftensors_group, hdferr)
+        call H5Gopen_F(hdf_emftensors_file, 'emftensor', hdf_emftensors_group, hdferr)
 
         ! Open datasets
 
         ! alpha
         if (lalpha) then
           call openDataset('alpha', alpha_id)
-          write(*,*) 'initialize_special: Using dataset /zaver/alpha/'//trim(alpha_name)//' for alpha'
+          write(*,*) 'initialize_special: Using dataset /emftensor/alpha/'//trim(alpha_name)//' for alpha'
         end if
         ! beta
         if (lbeta) then
           call openDataset('beta', beta_id)
-          write(*,*) 'initialize_special: Using dataset /zaver/beta/'//trim(beta_name)//' for beta'
+          write(*,*) 'initialize_special: Using dataset /emftensor/beta/'//trim(beta_name)//' for beta'
         end if
         ! gamma
         if (lgamma) then
           call openDataset('gamma', gamma_id)
-          write(*,*) 'initialize_special: Using dataset /zaver/gamma/'//trim(gamma_name)//' for gamma'
+          write(*,*) 'initialize_special: Using dataset /emftensor/gamma/'//trim(gamma_name)//' for gamma'
         end if
         ! delta
         if (ldelta) then
           call openDataset('delta', delta_id)
-          write(*,*) 'initialize_special: Using dataset /zaver/delta/'//trim(delta_name)//' for delta'
+          write(*,*) 'initialize_special: Using dataset /emftensor/delta/'//trim(delta_name)//' for delta'
         end if
         ! kappa
         if (lkappa) then
           call openDataset('kappa', kappa_id)
-          write(*,*) 'initialize_special: Using dataset /zaver/kappa/'//trim(kappa_name)//' for kappa'
+          write(*,*) 'initialize_special: Using dataset /emftensor/kappa/'//trim(kappa_name)//' for kappa'
         end if
         ! utensor
         if (lutensor) then
           call openDataset('utensor', utensor_id)
-          write(*,*) 'initialize_special: Using dataset /zaver/utensor/'//trim(utensor_name)//' for utensor'
+          write(*,*) 'initialize_special: Using dataset /emftensor/utensor/'//trim(utensor_name)//' for utensor'
         end if
         ! acoef
         if (lacoef) then
           call openDataset('acoef', acoef_id)
-          write(*,*) 'initialize_special: Using dataset /zaver/acoef/'//trim(acoef_name)//' for acoef'
+          write(*,*) 'initialize_special: Using dataset /emftensor/acoef/'//trim(acoef_name)//' for acoef'
         end if
         ! bcoef
         if (lbcoef) then
           call openDataset('bcoef', bcoef_id)
-          write(*,*) 'initialize_special: Using dataset /zaver/bcoef/'//trim(bcoef_name)//' for bcoef'
+          write(*,*) 'initialize_special: Using dataset /emftensor/bcoef/'//trim(bcoef_name)//' for bcoef'
         end if
         
         
@@ -1365,7 +1365,7 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
 
     subroutine openDataset(datagroup,      &
                            tensor_id)
-      ! Open a dataset e.g. /zaver/alpha/data and auxillary dataspaces
+      ! Open a dataset e.g. /emftensor/alpha/data and auxillary dataspaces
       character(len=*), intent(in)    :: datagroup
       integer, intent(in)             :: tensor_id
 !
@@ -1375,29 +1375,29 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
       character(len=fnlen)            :: dataname
       
       dataname = tensor_names(tensor_id)
-      ! Check that datagroup e.g. /zaver/alpha exists
+      ! Check that datagroup e.g. /emftensor/alpha exists
       call H5Lexists_F(hdf_emftensors_group, datagroup, hdf_exists, hdferr)
       if (.not. hdf_exists) then
-        call fatal_error('openDataset','/zaver/'//trim(datagroup)// &
+        call fatal_error('openDataset','/emftensor/'//trim(datagroup)// &
                           ' does not exist')
       end if
       ! Open datagroup
       call H5Gopen_F(hdf_emftensors_group, datagroup, tensor_id_G(tensor_id), hdferr)
       if (hdferr /= 0) then
-        call fatal_error('openDataset','Error opening /zaver/'//trim(datagroup))
+        call fatal_error('openDataset','Error opening /emftensor/'//trim(datagroup))
       end if
-      ! Check that dataset e.g. /zaver/alpha/data exists
+      ! Check that dataset e.g. /emftensor/alpha/data exists
       call H5Lexists_F(tensor_id_G(tensor_id), dataname, hdf_exists, hdferr)
       if (.not. hdf_exists) then
         call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
-        call fatal_error('openDataset','/zaver/'//trim(datagroup)// &
+        call fatal_error('openDataset','/emftensor/'//trim(datagroup)// &
                           '/'//trim(dataname)//' does not exist')
       end if
       ! Open dataset
       call H5Dopen_F(tensor_id_G(tensor_id), dataname, tensor_id_D(tensor_id), hdferr)
       if (hdferr /= 0) then
         call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
-        call fatal_error('openDataset','Error opening /zaver/'// &
+        call fatal_error('openDataset','Error opening /emftensor/'// &
                           trim(datagroup)//'/'//trim(dataname))
       end if
       ! Get dataspace
@@ -1405,7 +1405,7 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
       if (hdferr /= 0) then
         call H5Dclose_F(tensor_id_D(tensor_id), hdferr)
         call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
-        call fatal_error('openDataset','Error opening dataspace for /zaver/'// &
+        call fatal_error('openDataset','Error opening dataspace for /emftensor/'// &
                           trim(datagroup)//'/'//trim(dataname))
       end if
       ! Get dataspace dimensions
@@ -1422,7 +1422,7 @@ subroutine set_init_parameters(Ntot,dsize,init_distr,init_distr2)
         call H5Dclose_F(tensor_id_D(tensor_id), hdferr)
         call H5Gclose_F(tensor_id_G(tensor_id), hdferr)
         call fatal_error('openDataset','Error creating memory mapping & 
-                          for /zaver/'//trim(datagroup)//'/'//trim(dataname))
+                          for /emftensor/'//trim(datagroup)//'/'//trim(dataname))
       end if
 
     end subroutine openDataset

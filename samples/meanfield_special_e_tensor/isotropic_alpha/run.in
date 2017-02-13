@@ -3,8 +3,8 @@
 !
 &run_pars
   cvsid='$Id$'
-  nt=10000, it1=1000, dt=1e-4, isave=10000, itorder=3
-  d2davg=1e-1, 
+  nt=10000, it1=1000, dt=1e-5, isave=10000, itorder=3
+  d2davg=1e-2, 
   slice_position='s', xtop_slice=0.98, ytop_slice=1.57
   lproper_averages=T
 /
@@ -25,7 +25,7 @@
   lbcoef=F
   defaultname='diag'
   lusecoefs=F
-  alpha_scale=1.0
+  alpha_scale=4.6
   beta_scale=0.0
   gamma_scale=0.0
   delta_scale=0.0

@@ -1,6 +1,6 @@
 !  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 !
-! Convection in a spherical wedge
+! isotropic alpha
 !
 &init_pars
   coord_system='spherical'
@@ -8,12 +8,7 @@
   xyz0=0.1, 0., 0.
   xyz1=1.,  3.14159, 0.
   bcx='s:a','spr:nfr','spr:nfr'
-  !bcy='s','a','a'
   bcy='a','s','a'
-  !bcx='a:s','s:a','a:s'
-  !bcy='s:s','a:a','a:a'
-  !bcx='s:a','a:s','a:s'
-  !bcy='s:a','s:a','a:s'
 /
 &eos_init_pars
 /
@@ -21,6 +16,4 @@
   initaa='gaussian-noise', amplaa=1e-1
 /
 &special_init_pars
-  !lalpha_c=T,T,F,T,F,F
-  !lgamma=T
 /
