@@ -643,6 +643,7 @@ def pvar(datadir='./data', ivar=None, varfile='pvar.dat', verbose=True):
     # Author: Chao-Chin Yang
     # Created: 2015-07-12
     # Last Modified: 2017-02-14
+    from collections import namedtuple
     import numpy as np
 
     # Get the dimensions.
@@ -693,10 +694,11 @@ def pvar(datadir='./data', ivar=None, varfile='pvar.dat', verbose=True):
     if not all(exist):
         raise RuntimeError("Missing some particles. ")
 
-    # Make and return a numpy record array.
-    return np.rec.array([t] + [fp[:,i] for i in range(nvar)],
-                        dtype = [("t", dtype)] +
-                        [(v.lstrip('i'), dtype, (pdim.npar,)) for v in var])
+    # Make and return a named tuple.
+    keys = ["t"] + [v.lstrip('i') for v in var]
+    values = [t] + [fp[:,i] for i in range(nvar)]
+    Var = namedtuple('Var', keys)
+    return Var(**dict(zip(keys, values)))
 #=======================================================================
 def slices(field, datadir='./data'):
     """Reads the video slices.
