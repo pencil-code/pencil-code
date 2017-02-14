@@ -6,6 +6,9 @@ module Equ
 !
   use Cdata
   use Messages
+  use Boundcond
+  use Mpicomm
+  use Grid, only: calc_pencils_grid, get_grid_mn
 !
   implicit none
 !
@@ -29,17 +32,14 @@ module Equ
 !   9-jun-15/MR: call of gravity_after_boundary added
 !  24-sep-16/MR: added offset manipulation for second derivatives in complete one-sided fornulation.
 !   5-jan-17/MR: removed mn-offset manipulation
+!  14-feb-17/MR: adaptations for use of GPU kernels in calculating the rhss of the pde
 !
-      use Boundcond
       use BorderProfiles, only: calc_pencils_borderprofiles
       use Chiral
       use Chemistry
-      use Cosmicray
-      use CosmicrayFlux
       use Density
       use Detonate, only: detonate_before_boundary
       use Diagnostics
-      use Dustvelocity
       use Dustdensity
       use Energy
       use EquationOfState
@@ -50,7 +50,6 @@ module Equ
       use General, only: notanumber
       use GhostFold, only: fold_df, fold_df_3points
       use Gravity
-      use Grid, only: calc_pencils_grid, get_grid_mn
       use Heatflux
       use Hydro
       use Interstellar, only: interstellar_before_boundary
@@ -58,7 +57,6 @@ module Equ
       use Magnetic
       use Hypervisc_strict, only: hyperviscosity_strict
       use Hyperresi_strict, only: hyperresistivity_strict
-      use Mpicomm
       use NeutralDensity
       use NeutralVelocity
       use NSCBC
@@ -77,26 +75,23 @@ module Equ
       use Special, only: special_before_boundary, calc_lspecial_pars, &
           calc_pencils_special, dspecial_dt, special_after_boundary
       use Sub
-      use Supersat
       use Testfield
       use Testflow
       use Testscalar
       use Viscosity, only: calc_viscosity, calc_pencils_viscosity, viscosity_after_boundary
 !
-      logical :: early_finalize
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: df_iuu_pencil
       type (pencil_case) :: p
-      real, dimension (nx) :: maxadvec, maxdiffus, maxdiffus2, maxdiffus3, maxsrc
-      real, dimension (nx) :: advec2,advec2_hypermesh
-      real, dimension (nx) :: pfreeze,pfreeze_int,pfreeze_ext
-      real, dimension(1)   :: mass_per_proc
-      integer :: iv,nyz
 !
-      intent(inout)  :: f       ! inout due to  lshift_datacube_x,
-                                ! density floor, or velocity ceiling
-      intent(out)    :: df, p
+      intent(inout):: f       ! inout due to lshift_datacube_x,
+                              ! density floor, or velocity ceiling
+      intent(out)  :: df, p
+!
+      logical :: early_finalize
+      real, dimension(nx) :: pfreeze,pfreeze_int,pfreeze_ext
+      real, dimension(1)  :: mass_per_proc
+      integer :: iv,nyz
 !
 !  Print statements when they are first executed.
 !
@@ -344,15 +339,383 @@ module Equ
       if (lchemistry .and. ldensity) call calc_for_chem_mixture(f)
       call timing('pde','after calc_for_chem_mixture')
 !
-!------------------------------------------------------------------------------
-!  Do loop over m and n.
+      if (lgpu) then
+        call rhs_gpu(f,df)
+      else
+        call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
+      endif
 !
-      nyz=ny*nz
-      mn_loop: do imn=1,nyz
+!  Finish the job for the anelastic approximation
+!
+      if (lanelastic) call anelastic_after_mn(f,p,df,mass_per_proc)
+!
+      call timing('pde','at the end of the mn_loop')
+!
+!  Integrate diagnostics related to solid cells (e.g. drag and lift).
+!
+      if (lsolid_cells) call dsolid_dt_integrate
+!
+!  Calculate the gradient of the potential if there is room allocated in the
+!  f-array.
+!
+      if (igpotselfx/=0) then
+        call initiate_isendrcv_bdry(f,igpotselfx,igpotselfz)
+        call finalize_isendrcv_bdry(f,igpotselfx,igpotselfz)
+        call boundconds_x(f,igpotselfx,igpotselfz)
+        call boundconds_y(f,igpotselfx,igpotselfz)
+        call boundconds_z(f,igpotselfx,igpotselfz)
+      endif
+!
+!  Change df and dfp according to the chosen particle modules.
+!
+      if (lparticles) call particles_pde_blocks(f,df)
+      if (lparticles) call particles_pde(f,df)
+!
+      if (lpointmasses) call pointmasses_pde(f,df)
+!
+!  Electron inertia: our df(:,:,:,iax:iaz) so far is
+!  (1 - l_e^2\Laplace) daa, thus to get the true daa, we need to invert
+!  that operator.
+!  [wd-aug-2007: This should be replaced by the more general stuff with the
+!   Poisson solver (so l_e can be non-constant), so at some point, we can
+!   remove/replace this]
+!
+!      if (lelectron_inertia .and. inertial_length/=0.) then
+!        do iv = iax,iaz
+!          call inverse_laplacian_semispectral(df(:,:,:,iv), H=linertial_2)
+!        enddo
+!        df(:,:,:,iax:iaz) = -df(:,:,:,iax:iaz) * linertial_2
+!      endif
+!
+!  Take care of flux-limited diffusion
+!  This is now commented out, because we always use radiation_ray instead.
+!
+!--   if (lradiation_fld) f(:,:,:,idd)=DFF_new
+!
+!  Fold df from first ghost zone into main df.
+!
+      if (lfold_df) then
+        if (lhydro .and. (.not. lpscalar) .and. (.not. lchemistry)) then
+          call fold_df(df,iux,iuz)
+        else
+          call fold_df(df,iux,mvar)
+        endif
+      endif
+      if (lfold_df_3points) then
+        call fold_df_3points(df,iux,mvar)
+      endif
+!
+!  -------------------------------------------------------------
+!  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)
+!  -------------------------------------------------------------
+!
+!  Freezing must be done after the full (m,n) loop, as df may be modified
+!  outside of the considered pencil.
+!
+      do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
-        lfirstpoint=(imn==1)      ! true for very first m-n loop
-        llastpoint=(imn==(nyz)) ! true for very last m-n loop
+!
+!  Recalculate grid/geometry related pencils. The r_mn and rcyl_mn are requested
+!  in pencil_criteria_grid. Unfortunately we need to recalculate them here.
+!
+        if (any(lfreeze_varext).or.any(lfreeze_varint)) &
+            call calc_pencils_grid(f,p)
+!
+!  Set df=0 for r_mn<r_int.
+!
+        if (any(lfreeze_varint)) then
+          if (headtt) print*, 'pde: freezing variables for r < ', rfreeze_int, &
+              ' : ', lfreeze_varint
+          if (lcylinder_in_a_box.or.lcylindrical_coords) then
+            if (wfreeze_int==0.0) then
+              where (p%rcyl_mn<=rfreeze_int) pfreeze_int=0.0
+              where (p%rcyl_mn> rfreeze_int) pfreeze_int=1.0
+            else
+              pfreeze_int=quintic_step(p%rcyl_mn,rfreeze_int,wfreeze_int, &
+                  SHIFT=fshift_int)
+            endif
+          else
+            if (wfreeze_int==0.0) then
+              where (p%r_mn<=rfreeze_int) pfreeze_int=0.0
+              where (p%r_mn> rfreeze_int) pfreeze_int=1.0
+            else
+              pfreeze_int=quintic_step(p%r_mn   ,rfreeze_int,wfreeze_int, &
+                  SHIFT=fshift_int)
+            endif
+          endif
+!
+          do iv=1,nvar
+            if (lfreeze_varint(iv)) &
+                df(l1:l2,m,n,iv)=pfreeze_int*df(l1:l2,m,n,iv)
+          enddo
+!
+        endif
+!
+!  Set df=0 for r_mn>r_ext.
+!
+        if (any(lfreeze_varext)) then
+          if (headtt) print*, 'pde: freezing variables for r > ', rfreeze_ext, &
+              ' : ', lfreeze_varext
+          if (lcylinder_in_a_box) then
+            if (wfreeze_ext==0.0) then
+              where (p%rcyl_mn>=rfreeze_ext) pfreeze_ext=0.0
+              where (p%rcyl_mn< rfreeze_ext) pfreeze_ext=1.0
+            else
+              pfreeze_ext=1.0-quintic_step(p%rcyl_mn,rfreeze_ext,wfreeze_ext, &
+                SHIFT=fshift_ext)
+            endif
+          else
+            if (wfreeze_ext==0.0) then
+              where (p%r_mn>=rfreeze_ext) pfreeze_ext=0.0
+              where (p%r_mn< rfreeze_ext) pfreeze_ext=1.0
+            else
+              pfreeze_ext=1.0-quintic_step(p%r_mn   ,rfreeze_ext,wfreeze_ext, &
+                  SHIFT=fshift_ext)
+            endif
+          endif
+!
+          do iv=1,nvar
+            if (lfreeze_varext(iv)) &
+                df(l1:l2,m,n,iv) = pfreeze_ext*df(l1:l2,m,n,iv)
+          enddo
+        endif
+!
+!  Set df=0 inside square.
+!
+        if (any(lfreeze_varsquare)) then
+          if (headtt) print*, 'pde: freezing variables inside square : ', &
+              lfreeze_varsquare
+          pfreeze=1.0-quintic_step(x(l1:l2),xfreeze_square,wfreeze,SHIFT=-1.0)*&
+              quintic_step(spread(y(m),1,nx),yfreeze_square,-wfreeze,SHIFT=-1.0)
+!
+          do iv=1,nvar
+            if (lfreeze_varsquare(iv)) &
+                df(l1:l2,m,n,iv) = pfreeze*df(l1:l2,m,n,iv)
+          enddo
+        endif
+!
+!  Freeze components of variables in boundary slice if specified by boundary
+!  condition 'f'
+!
+!  Freezing boundary conditions in x.
+!
+        if (lfrozen_bcs_x) then ! are there any frozen vars at all?
+!
+!  Only need to do this for nonperiodic x direction, on left/right-most
+!  processor and in left/right--most pencils
+!
+          if (.not. lperi(1)) then
+            if (lfirst_proc_x) then
+              do iv=1,nvar
+                if (lfrozen_bot_var_x(iv)) df(l1,m,n,iv) = 0.
+              enddo
+            endif
+            if (llast_proc_x) then
+              do iv=1,nvar
+                if (lfrozen_top_var_x(iv)) df(l2,m,n,iv) = 0.
+              enddo
+            endif
+          endif
+!
+        endif
+!
+!  Freezing boundary conditions in y.
+!
+        if (lfrozen_bcs_y) then ! are there any frozen vars at all?
+!
+!  Only need to do this for nonperiodic y direction, on bottom/top-most
+!  processor and in bottom/top-most pencils.
+!
+          if (.not. lperi(2)) then
+            if (lfirst_proc_y .and. (m == m1)) then
+              do iv=1,nvar
+                if (lfrozen_bot_var_y(iv)) df(l1:l2,m,n,iv) = 0.
+              enddo
+            endif
+            if (llast_proc_y .and. (m == m2)) then
+              do iv=1,nvar
+                if (lfrozen_top_var_y(iv)) df(l1:l2,m,n,iv) = 0.
+              enddo
+            endif
+          endif
+        endif
+!
+!  Freezing boundary conditions in z.
+!
+        if (lfrozen_bcs_z) then ! are there any frozen vars at all?
+!
+!  Only need to do this for nonperiodic z direction, on bottom/top-most
+!  processor and in bottom/top-most pencils.
+!
+          if (.not. lperi(3)) then
+            if (lfirst_proc_z .and. (n == n1)) then
+              do iv=1,nvar
+                if (lfrozen_bot_var_z(iv)) df(l1:l2,m,n,iv) = 0.
+              enddo
+            endif
+            if (llast_proc_z .and. (n == n2)) then
+              do iv=1,nvar
+                if (lfrozen_top_var_z(iv)) df(l1:l2,m,n,iv) = 0.
+              enddo
+            endif
+          endif
+        endif
+!
+!  Set df=0 for all solid cells.
+!
+        call freeze_solid_cells(df)
+!
+      enddo
+!
+!  Boundary treatment of the df-array.
+!
+!  This is a way to impose (time-
+!  dependent) boundary conditions by solving a so-called characteristic
+!  form of the fluid equations on the boundaries, as opposed to setting
+!  actual values of the variables in the f-array. The method is called
+!  Navier-Stokes characteristic boundary conditions (NSCBC).
+!
+!  The treatment should be done after the y-z-loop, but before the Runge-
+!  Kutta solver adds to the f-array.
+!
+      if (lnscbc) call nscbc_boundtreat(f,df)
+!
+!  Check for NaNs in the advection time-step.
+!
+      if (notanumber(dt1_advec)) then
+        print*, 'pde: dt1_advec contains a NaN at iproc=', iproc_world
+        if (lhydro)           print*, 'advec_uu   =',advec_uu
+        if (lshear)           print*, 'advec_shear=',advec_shear
+        if (lmagnetic)        print*, 'advec_hall =',advec_hall
+        if (lneutralvelocity) print*, 'advec_uun  =',advec_uun
+        if (lenergy)          print*, 'advec_cs2  =',advec_cs2
+        if (lmagnetic)        print*, 'advec_va2  =',advec_va2
+        if (lradiation)       print*, 'advec_crad2=',advec_crad2
+        if (lneutralvelocity) print*, 'advec_csn2 =',advec_csn2
+        if (lpolymer)         print*, 'advec_poly =',advec_poly
+        if (lcosmicrayflux)   print*, 'advec_kfcr =',advec_kfcr
+        call fatal_error_local('pde','')
+      endif
+!
+!  0-D Diagnostics.
+!
+      if (ldiagnos) then
+        call diagnostic(fname,nname)
+        call diagnostic(fname_keep,nname,lcomplex=.true.)
+      endif
+!
+!  1-D diagnostics.
+!
+      if (l1davgfirst) then
+        if (lwrite_xyaverages) call xyaverages_z
+        if (lwrite_xzaverages) call xzaverages_y
+        if (lwrite_yzaverages) call yzaverages_x
+      endif
+      if (l1dphiavg) call phizaverages_r
+!
+!  2-D averages.
+!
+      if (l2davgfirst) then
+        if (lwrite_yaverages)   call yaverages_xz
+        if (lwrite_zaverages)   call zaverages_xy
+        if (lwrite_phiaverages) call phiaverages_rz
+      endif
+!
+!  Note: zaverages_xy are also needed if bmx and bmy are to be calculated
+!  (of course, yaverages_xz does not need to be calculated for that).
+!
+      if (.not.l2davgfirst.and.ldiagnos.and.ldiagnos_need_zaverages) then
+        if (lwrite_zaverages) call zaverages_xy
+      endif
+!
+!  Calculate mean fields and diagnostics related to mean fields.
+!
+      if (ldiagnos) then
+        if (lmagnetic) call calc_mfield
+        if (lhydro)    call calc_mflow
+        if (lpscalar)  call calc_mpscalar
+      endif
+!
+!  Calculate rhoccm and cc2m (this requires that these are set in print.in).
+!  Broadcast result to other processors. This is needed for calculating PDFs.
+!
+!      if (idiag_rhoccm/=0) then
+!        if (iproc==0) rhoccm=fname(idiag_rhoccm)
+!        call mpibcast_real(rhoccm)
+!      endif
+!
+!      if (idiag_cc2m/=0) then
+!        if (iproc==0) cc2m=fname(idiag_cc2m)
+!        call mpibcast_real(cc2m)
+!      endif
+!
+!      if (idiag_gcc2m/=0) then
+!        if (iproc==0) gcc2m=fname(idiag_gcc2m)
+!        call mpibcast_real(gcc2m)
+!      endif
+!
+!  Reset lwrite_prof.
+!
+      lwrite_prof=.false.
+!
+    endsubroutine pde
+!***********************************************************************
+    subroutine rhs_cpu(f,df,p,mass_per_proc,early_finalize)
+!
+!  Calculates rhss of the PDEs.
+!
+!  14-feb-17/MR: carved out from pde.
+!
+      use Diagnostics
+      use BorderProfiles, only: calc_pencils_borderprofiles
+      use Chiral
+      use Chemistry
+      use Cosmicray
+      use CosmicrayFlux
+      use Density
+      use Dustvelocity
+      use Dustdensity
+      use Energy
+      use EquationOfState
+      use Forcing, only: calc_pencils_forcing, calc_lforcing_cont_pars, &
+                         forcing_continuous
+      use GhostFold, only: fold_df, fold_df_3points
+      use Gravity
+      use Heatflux
+      use Hydro
+      use Magnetic
+      use NeutralDensity
+      use NeutralVelocity
+      use Particles_main
+      use Pscalar
+      use Radiation
+      use Shear
+      use Shock, only: calc_pencils_shock, calc_shock_profile, &
+                       calc_shock_profile_simple
+      use Solid_Cells, only: update_solid_cells, freeze_solid_cells, &
+                             dsolid_dt,dsolid_dt_integrate,update_solid_cells_pencil
+      use Special, only: calc_pencils_special, dspecial_dt
+      use Viscosity, only: calc_viscosity, calc_pencils_viscosity
+
+      real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
+      real, dimension (mx,my,mz,mvar)   ,intent(OUT  ) :: df
+      type (pencil_case)                ,intent(INOUT) :: p
+      real, dimension(1)                ,intent(INOUT) :: mass_per_proc
+      logical                           ,intent(IN   ) :: early_finalize
+
+      integer :: nyz
+      real, dimension (nx,3) :: df_iuu_pencil
+      real, dimension (nx) :: maxadvec, maxdiffus, maxdiffus2, maxdiffus3, maxsrc
+      real, dimension (nx) :: advec2,advec2_hypermesh
+
+      nyz=ny*nz
+      mn_loop: do imn=1,nyz
+
+        n=nn(imn)
+        m=mm(imn)
+        lfirstpoint=(imn==1)      ! true for very first iteration of m-n loop
+        llastpoint=(imn==nyz)     ! true for very last  iteration of m-n loop
 !
 !  Store the velocity part of df array in a temporary array
 !  while solving the anelastic case.
@@ -854,322 +1217,8 @@ module Equ
 !
         headtt=.false.
       enddo mn_loop
-!
-!  Finish the job for the anelastic approximation
-!
-      if (lanelastic) call anelastic_after_mn(f,p,df,mass_per_proc)
-!
-      call timing('pde','at the end of the mn_loop')
-!
-!  Integrate diagnostics related to solid cells (e.g. drag and lift).
-!
-      if (lsolid_cells) call dsolid_dt_integrate
-!
-!  Calculate the gradient of the potential if there is room allocated in the
-!  f-array.
-!
-      if (igpotselfx/=0) then
-        call initiate_isendrcv_bdry(f,igpotselfx,igpotselfz)
-        call finalize_isendrcv_bdry(f,igpotselfx,igpotselfz)
-        call boundconds_x(f,igpotselfx,igpotselfz)
-        call boundconds_y(f,igpotselfx,igpotselfz)
-        call boundconds_z(f,igpotselfx,igpotselfz)
-      endif
-!
-!  Change df and dfp according to the chosen particle modules.
-!
-      if (lparticles) call particles_pde_blocks(f,df)
-      if (lparticles) call particles_pde(f,df)
-!
-      if (lpointmasses) call pointmasses_pde(f,df)
-!
-!  Electron inertia: our df(:,:,:,iax:iaz) so far is
-!  (1 - l_e^2\Laplace) daa, thus to get the true daa, we need to invert
-!  that operator.
-!  [wd-aug-2007: This should be replaced by the more general stuff with the
-!   Poisson solver (so l_e can be non-constant), so at some point, we can
-!   remove/replace this]
-!
-!      if (lelectron_inertia .and. inertial_length/=0.) then
-!        do iv = iax,iaz
-!          call inverse_laplacian_semispectral(df(:,:,:,iv), H=linertial_2)
-!        enddo
-!        df(:,:,:,iax:iaz) = -df(:,:,:,iax:iaz) * linertial_2
-!      endif
-!
-!  Take care of flux-limited diffusion
-!  This is now commented out, because we always use radiation_ray instead.
-!
-!--   if (lradiation_fld) f(:,:,:,idd)=DFF_new
-!
-!  Fold df from first ghost zone into main df.
-!
-      if (lfold_df) then
-        if (lhydro .and. (.not. lpscalar) .and. (.not. lchemistry)) then
-          call fold_df(df,iux,iuz)
-        else
-          call fold_df(df,iux,mvar)
-        endif
-      endif
-      if (lfold_df_3points) then
-        call fold_df_3points(df,iux,mvar)
-      endif
-!
-!  -------------------------------------------------------------
-!  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)
-!  -------------------------------------------------------------
-!
-!  Freezing must be done after the full (m,n) loop, as df may be modified
-!  outside of the considered pencil.
-!
-      do imn=1,ny*nz
-        n=nn(imn)
-        m=mm(imn)
-!
-!  Recalculate grid/geometry related pencils. The r_mn and rcyl_mn are requested
-!  in pencil_criteria_grid. Unfortunately we need to recalculate them here.
-!
-        if (any(lfreeze_varext).or.any(lfreeze_varint)) &
-            call calc_pencils_grid(f,p)
-!
-!  Set df=0 for r_mn<r_int.
-!
-        if (any(lfreeze_varint)) then
-          if (headtt) print*, 'pde: freezing variables for r < ', rfreeze_int, &
-              ' : ', lfreeze_varint
-          if (lcylinder_in_a_box.or.lcylindrical_coords) then
-            if (wfreeze_int==0.0) then
-              where (p%rcyl_mn<=rfreeze_int) pfreeze_int=0.0
-              where (p%rcyl_mn> rfreeze_int) pfreeze_int=1.0
-            else
-              pfreeze_int=quintic_step(p%rcyl_mn,rfreeze_int,wfreeze_int, &
-                  SHIFT=fshift_int)
-            endif
-          else
-            if (wfreeze_int==0.0) then
-              where (p%r_mn<=rfreeze_int) pfreeze_int=0.0
-              where (p%r_mn> rfreeze_int) pfreeze_int=1.0
-            else
-              pfreeze_int=quintic_step(p%r_mn   ,rfreeze_int,wfreeze_int, &
-                  SHIFT=fshift_int)
-            endif
-          endif
-!
-          do iv=1,nvar
-            if (lfreeze_varint(iv)) &
-                df(l1:l2,m,n,iv)=pfreeze_int*df(l1:l2,m,n,iv)
-          enddo
-!
-        endif
-!
-!  Set df=0 for r_mn>r_ext.
-!
-        if (any(lfreeze_varext)) then
-          if (headtt) print*, 'pde: freezing variables for r > ', rfreeze_ext, &
-              ' : ', lfreeze_varext
-          if (lcylinder_in_a_box) then
-            if (wfreeze_ext==0.0) then
-              where (p%rcyl_mn>=rfreeze_ext) pfreeze_ext=0.0
-              where (p%rcyl_mn< rfreeze_ext) pfreeze_ext=1.0
-            else
-              pfreeze_ext=1.0-quintic_step(p%rcyl_mn,rfreeze_ext,wfreeze_ext, &
-                SHIFT=fshift_ext)
-            endif
-          else
-            if (wfreeze_ext==0.0) then
-              where (p%r_mn>=rfreeze_ext) pfreeze_ext=0.0
-              where (p%r_mn< rfreeze_ext) pfreeze_ext=1.0
-            else
-              pfreeze_ext=1.0-quintic_step(p%r_mn   ,rfreeze_ext,wfreeze_ext, &
-                  SHIFT=fshift_ext)
-            endif
-          endif
-!
-          do iv=1,nvar
-            if (lfreeze_varext(iv)) &
-                df(l1:l2,m,n,iv) = pfreeze_ext*df(l1:l2,m,n,iv)
-          enddo
-        endif
-!
-!  Set df=0 inside square.
-!
-        if (any(lfreeze_varsquare)) then
-          if (headtt) print*, 'pde: freezing variables inside square : ', &
-              lfreeze_varsquare
-          pfreeze=1.0-quintic_step(x(l1:l2),xfreeze_square,wfreeze,SHIFT=-1.0)*&
-              quintic_step(spread(y(m),1,nx),yfreeze_square,-wfreeze,SHIFT=-1.0)
-!
-          do iv=1,nvar
-            if (lfreeze_varsquare(iv)) &
-                df(l1:l2,m,n,iv) = pfreeze*df(l1:l2,m,n,iv)
-          enddo
-        endif
-!
-!  Freeze components of variables in boundary slice if specified by boundary
-!  condition 'f'
-!
-!  Freezing boundary conditions in x.
-!
-        if (lfrozen_bcs_x) then ! are there any frozen vars at all?
-!
-!  Only need to do this for nonperiodic x direction, on left/right-most
-!  processor and in left/right--most pencils
-!
-          if (.not. lperi(1)) then
-            if (lfirst_proc_x) then
-              do iv=1,nvar
-                if (lfrozen_bot_var_x(iv)) df(l1,m,n,iv) = 0.
-              enddo
-            endif
-            if (llast_proc_x) then
-              do iv=1,nvar
-                if (lfrozen_top_var_x(iv)) df(l2,m,n,iv) = 0.
-              enddo
-            endif
-          endif
-!
-        endif
-!
-!  Freezing boundary conditions in y.
-!
-        if (lfrozen_bcs_y) then ! are there any frozen vars at all?
-!
-!  Only need to do this for nonperiodic y direction, on bottom/top-most
-!  processor and in bottom/top-most pencils.
-!
-          if (.not. lperi(2)) then
-            if (lfirst_proc_y .and. (m == m1)) then
-              do iv=1,nvar
-                if (lfrozen_bot_var_y(iv)) df(l1:l2,m,n,iv) = 0.
-              enddo
-            endif
-            if (llast_proc_y .and. (m == m2)) then
-              do iv=1,nvar
-                if (lfrozen_top_var_y(iv)) df(l1:l2,m,n,iv) = 0.
-              enddo
-            endif
-          endif
-        endif
-!
-!  Freezing boundary conditions in z.
-!
-        if (lfrozen_bcs_z) then ! are there any frozen vars at all?
-!
-!  Only need to do this for nonperiodic z direction, on bottom/top-most
-!  processor and in bottom/top-most pencils.
-!
-          if (.not. lperi(3)) then
-            if (lfirst_proc_z .and. (n == n1)) then
-              do iv=1,nvar
-                if (lfrozen_bot_var_z(iv)) df(l1:l2,m,n,iv) = 0.
-              enddo
-            endif
-            if (llast_proc_z .and. (n == n2)) then
-              do iv=1,nvar
-                if (lfrozen_top_var_z(iv)) df(l1:l2,m,n,iv) = 0.
-              enddo
-            endif
-          endif
-        endif
-!
-!  Set df=0 for all solid cells.
-!
-        call freeze_solid_cells(df)
-!
-      enddo
-!
-!  Boundary treatment of the df-array.
-!
-!  This is a way to impose (time-
-!  dependent) boundary conditions by solving a so-called characteristic
-!  form of the fluid equations on the boundaries, as opposed to setting
-!  actual values of the variables in the f-array. The method is called
-!  Navier-Stokes characteristic boundary conditions (NSCBC).
-!
-!  The treatment should be done after the y-z-loop, but before the Runge-
-!  Kutta solver adds to the f-array.
-!
-      if (lnscbc) call nscbc_boundtreat(f,df)
-!
-!  Check for NaNs in the advection time-step.
-!
-      if (notanumber(dt1_advec)) then
-        print*, 'pde: dt1_advec contains a NaN at iproc=', iproc_world
-        if (lhydro)           print*, 'advec_uu   =',advec_uu
-        if (lshear)           print*, 'advec_shear=',advec_shear
-        if (lmagnetic)        print*, 'advec_hall =',advec_hall
-        if (lneutralvelocity) print*, 'advec_uun  =',advec_uun
-        if (lenergy)          print*, 'advec_cs2  =',advec_cs2
-        if (lmagnetic)        print*, 'advec_va2  =',advec_va2
-        if (lradiation)       print*, 'advec_crad2=',advec_crad2
-        if (lneutralvelocity) print*, 'advec_csn2 =',advec_csn2
-        if (lpolymer)         print*, 'advec_poly =',advec_poly
-        if (lcosmicrayflux)   print*, 'advec_kfcr =',advec_kfcr
-        call fatal_error_local('pde','')
-      endif
-!
-!  0-D Diagnostics.
-!
-      if (ldiagnos) then
-        call diagnostic(fname,nname)
-        call diagnostic(fname_keep,nname,lcomplex=.true.)
-      endif
-!
-!  1-D diagnostics.
-!
-      if (l1davgfirst) then
-        if (lwrite_xyaverages) call xyaverages_z
-        if (lwrite_xzaverages) call xzaverages_y
-        if (lwrite_yzaverages) call yzaverages_x
-      endif
-      if (l1dphiavg) call phizaverages_r
-!
-!  2-D averages.
-!
-      if (l2davgfirst) then
-        if (lwrite_yaverages)   call yaverages_xz
-        if (lwrite_zaverages)   call zaverages_xy
-        if (lwrite_phiaverages) call phiaverages_rz
-      endif
-!
-!  Note: zaverages_xy are also needed if bmx and bmy are to be calculated
-!  (of course, yaverages_xz does not need to be calculated for that).
-!
-      if (.not.l2davgfirst.and.ldiagnos.and.ldiagnos_need_zaverages) then
-        if (lwrite_zaverages) call zaverages_xy
-      endif
-!
-!  Calculate mean fields and diagnostics related to mean fields.
-!
-      if (ldiagnos) then
-        if (lmagnetic) call calc_mfield
-        if (lhydro)    call calc_mflow
-        if (lpscalar)  call calc_mpscalar
-      endif
-!
-!  Calculate rhoccm and cc2m (this requires that these are set in print.in).
-!  Broadcast result to other processors. This is needed for calculating PDFs.
-!
-!      if (idiag_rhoccm/=0) then
-!        if (iproc==0) rhoccm=fname(idiag_rhoccm)
-!        call mpibcast_real(rhoccm)
-!      endif
-!
-!      if (idiag_cc2m/=0) then
-!        if (iproc==0) cc2m=fname(idiag_cc2m)
-!        call mpibcast_real(cc2m)
-!      endif
-!
-!      if (idiag_gcc2m/=0) then
-!        if (iproc==0) gcc2m=fname(idiag_gcc2m)
-!        call mpibcast_real(gcc2m)
-!      endif
-!
-!  Reset lwrite_prof.
-!
-      lwrite_prof=.false.
-!
-    endsubroutine pde
+
+    endsubroutine rhs_cpu
 !***********************************************************************
     subroutine debug_imn_arrays
 !
