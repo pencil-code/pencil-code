@@ -689,13 +689,17 @@ module Equ
       use NeutralVelocity
       use Particles_main
       use Pscalar
+      use PointMasses
+      use Polymer
       use Radiation
+      use Selfgravity
       use Shear
       use Shock, only: calc_pencils_shock, calc_shock_profile, &
                        calc_shock_profile_simple
       use Solid_Cells, only: update_solid_cells, freeze_solid_cells, &
                              dsolid_dt,dsolid_dt_integrate,update_solid_cells_pencil
       use Special, only: calc_pencils_special, dspecial_dt
+      use Testfield
       use Viscosity, only: calc_viscosity, calc_pencils_viscosity
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
