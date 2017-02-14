@@ -640,8 +640,11 @@ def pvar(datadir='./data', ivar=None, varfile='pvar.dat', verbose=True):
         verbose
             Verbose output or not.
     """
-    # Chao-Chin Yang, 2015-12-14
+    # Author: Chao-Chin Yang
+    # Created: 2015-07-12
+    # Last Modified: 2017-02-14
     import numpy as np
+
     # Get the dimensions.
     dim = dimensions(datadir=datadir)
     pdim = pardim(datadir=datadir)
@@ -649,39 +652,51 @@ def pvar(datadir='./data', ivar=None, varfile='pvar.dat', verbose=True):
     nvar = len(var)
     if nvar != pdim.mpvar + pdim.mpaux:
         raise RuntimeError("Inconsistent number of variables. ")
+
     # Check the precision.
     fmt, dtype, nb = _get_precision(dim)
+
     # Get the file name of the snapshot.
     if ivar is not None:
         varfile = "PVAR{}".format(ivar)
+
     # Allocate arrays.
     fp = np.zeros((pdim.npar, nvar), dtype=dtype)
     exist = np.full((pdim.npar,), False)
     t = np.inf
+
     # Loop over each process.
     for proc in range(dim.nprocx * dim.nprocy * dim.nprocz):
+
         # Read data.
         if verbose:
-            print("Reading", datadir.strip() + "/proc" + str(proc) + "/" + varfile.strip(), "...")
+            print("Reading", datadir.strip() + "/proc" + str(proc) + "/" +
+                             varfile.strip(), "...")
         p = proc_pvar(datadir=datadir, pdim=pdim, proc=proc, varfile=varfile) 
         if p.npar_loc <= 0: continue
         ipar = p.ipar - 1
+
         # Check the integrity of the time and particle IDs.
         if any(exist[ipar]):
             raise RuntimeError("Duplicate particles in multiple processes. ")
         if t == np.inf:
             t = p.t
         elif p.t != t:
-            raise RuntimeError("Inconsistent time stamps in multiple processes. ")
+            raise RuntimeError(
+                      "Inconsistent time stamps in multiple processes. ")
+
         # Assign the particle data.
         fp[ipar,:] = p.fp
         exist[ipar] = True
+
     # Final integrity check.
     if not all(exist):
         raise RuntimeError("Missing some particles. ")
+
     # Make and return a numpy record array.
     return np.rec.array([t] + [fp[:,i] for i in range(nvar)],
-                        dtype = [("t", dtype)] + [(v.lstrip('i'), dtype, (pdim.npar,)) for v in var])
+                        dtype = [("t", dtype)] +
+                        [(v.lstrip('i'), dtype, (pdim.npar,)) for v in var])
 #=======================================================================
 def slices(field, datadir='./data'):
     """Reads the video slices.
