@@ -436,8 +436,8 @@ module Solid_Cells
 !
       call gaunoise_ogrid(ampl_noise,iux,iuz)
       f_ogrid(:,:,:,iflow) = f_ogrid(:,:,:,iflow)+init_uu
-      do i=l1,l2
-        do j=m1,m2
+      do i=l1_ogrid,l2_ogrid
+        do j=m1_ogrid,m2_ogrid
           do cyl = 0,100
             if (cyl == 0) then
               rr2=x_ogrid(i)**2
@@ -524,11 +524,11 @@ module Solid_Cells
       lpencil_ogrid=.true.
 
       if(iTT<=0) then
-        lpencil_ogrid(i_TT)=.false.
-        lpencil_ogrid(i_TT1)=.false.
-        lpencil_ogrid(i_gTT)=.false.
-        lpencil_ogrid(i_del2TT)=.false.
-        lpencil_ogrid(i_ee)=.false.
+        lpencil_ogrid(i_og_TT)=.false.
+        lpencil_ogrid(i_og_TT1)=.false.
+        lpencil_ogrid(i_og_gTT)=.false.
+        lpencil_ogrid(i_og_del2TT)=.false.
+        lpencil_ogrid(i_og_ee)=.false.
       endif
 !
     endsubroutine initialize_pencils_ogrid
@@ -947,7 +947,7 @@ end subroutine print_solid
         if (lfirst_proc_x) &
           dx2_bound_ogrid(-1:-nghost:-1)= 2.*(x_ogrid(l1_ogrid+1:l1_ogrid+nghost)-x_ogrid(l1_ogrid))
         if (llast_proc_x) &
-          dx2_bound_ogrid(nghost:1:-1)  = 2.*(x_ogrid(l2_ogrid)-x_ogrid(l2-nghost:l2_ogrid-1))
+          dx2_bound_ogrid(nghost:1:-1)  = 2.*(x_ogrid(l2_ogrid)-x_ogrid(l2_ogrid-nghost:l2_ogrid-1))
 !
         call calc_bound_coeffs(x_ogrid,coeffs_1_x_ogrid)
 
