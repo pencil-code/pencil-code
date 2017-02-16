@@ -150,7 +150,7 @@ module Solid_Cells
   logical,dimension(npencils_ogrid):: lpencil_ogrid
 !***************************************************
 
-!  Pencils to be used for curvelinear grid computations
+!  Pencils to be used for curvilinear grid computations
   type(pencil_case_ogrid) p_ogrid 
 
 ! PARAMETERS NECESSARY FOR GRID CONSTRUCTION 
@@ -330,7 +330,7 @@ module Solid_Cells
 !  at the solid structure surface.
 !
 !  This routine is adapted to resolve the solid structures with overlapping 
-!  curvelinear grids. Hence, the f-array, which is the array of flow variables
+!  curvilinear grids. Hence, the f-array, which is the array of flow variables
 !  on the carteisian grid, must use potential flow to set the ghost zones that
 !  will be set by intepolation for t>0.
 ! 
@@ -633,21 +633,54 @@ module Solid_Cells
 !
     endsubroutine solid_cells_clean_up
 !***********************************************************************
-    subroutine flow_cartesian_to_curvlinear(f_cartesian,f_ogrid)
+    subroutine flow_cartesian_to_curvilinear(f_cartesian)
+
+      use General, only: linear_interpolate
 !
-!   Interpolate all flow variables from cartesian to curvelinear grid
+!   Interpolate all flow variables from cartesian to curvilinear grid
+!   Only need to do this for the radial direction
+!
+!   Find position in (x,y,z)-coordinates from (r,theta,z)-system
+!   Use this to interpolate (linearly) from nearest neighbours
+!
+!   16-feb-17/Jorgen: Coded
 !
       real, dimension (mx,my,mz,mfarray) :: f_cartesian
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f_ogrid
-    endsubroutine flow_cartesian_to_curvlinear
+      real, dimension (3) :: xxp
+      integer :: lower_i,upper_i,lower_j,upper_j,lower_k,upper_k
+      integer :: ivar1,ivar2
+      integer, dimension (3) :: inear
+      real, dimension (ilnrho-iux+1) :: gp
+      integer :: i,j,k
+
+      ivar1=iux
+      ivar2=ilnrho
+      do j=n1_ogrid,n2_ogrid
+        do k=m1_ogrid,m2_ogrid
+          do i=l2_ogrid+1,l2_ogrid+nghost
+            xxp=(/ x_ogrid(i)*cos(y_ogrid(j)),x_ogrid(i)*sin(y_ogrid(j)), z_ogrid(k) /)
+            call find_near_cartesian_indeces(lower_i,upper_i,lower_j,upper_j, &
+                  lower_k,upper_k,xxp)
+            inear=(/ lower_i, lower_j, lower_k /)
+            if ( .not. linear_interpolate(f_cartesian,ivar1,ivar2,xxp,gp,inear,.false.) ) then
+              call fatal_error('linear_interpolate','')
+            endif
+            f_ogrid(i,j,k,ivar1:ivar2)=gp(ivar1:ivar2)
+          enddo
+        enddo
+      enddo
+
+    endsubroutine flow_cartesian_to_curvilinear
 !***********************************************************************
-    subroutine flow_curvlinear_to_cartesian(f_cartesian,f_ogrid)
+    subroutine flow_curvilinear_to_cartesian(f_cartesian)
 !
-!   Interpolate all flow variables from curvelinear to cartesian grid
+!   Interpolate all flow variables from curvilinear to cartesian grid
 !
       real, dimension (mx,my,mz,mfarray) :: f_cartesian
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f_ogrid
-    endsubroutine flow_curvlinear_to_cartesian
+
+      call keep_compiler_quiet(f_cartesian)
+
+    endsubroutine flow_curvilinear_to_cartesian
 !***********************************************************************
 subroutine compute_draglift()
 end subroutine compute_draglift
@@ -735,19 +768,19 @@ end subroutine print_solid
     subroutine find_ogrid_boundaries(f)
 !
 !  Find the boundaries of the overlapping grid such that we can set the
-!  zone of cartesian grid points inside the curvelinear grid that should
+!  zone of cartesian grid points inside the curvilinear grid that should
 !  be set by interpolation.
 !
 !  Store data in arrays grid_overlap_cartesian and grid_overlap_curvlinear, 
 !  for cartesian and curvlinear grid points, respectively.
 !  For both arrays, the following is valid:
-!  If grid_ovlap(ip,jp,kp,1)= 0  we are in a cell outside the curvelinear grid
-!  If grid_ovlap(ip,jp,kp,1)= 1  we are in a cell outside the curvelinear grid
+!  If grid_ovlap(ip,jp,kp,1)= 0  we are in a cell outside the curvilinear grid
+!  If grid_ovlap(ip,jp,kp,1)= 1  we are in a cell outside the curvilinear grid
 !                                that is used as a donor point for interpolation
-!  If grid_ovlap(ip,jp,kp,1)= 10 we are in a cell inside the curvelinear grid
+!  If grid_ovlap(ip,jp,kp,1)= 10 we are in a cell inside the curvilinear grid
 !                                that is computed in the same way as the cells
 !                                outside the overlapping area
-!  If grid_ovlap(ip,jp,kp,1)= 11 we are in a cell inside the curvelinear grid
+!  If grid_ovlap(ip,jp,kp,1)= 11 we are in a cell inside the curvilinear grid
 !                                that is computed in the same way as the cells
 !                                outside the overlapping area, and that is used
 !                                as a donor point for interpolation
@@ -762,7 +795,7 @@ end subroutine print_solid
       !real :: dr, r_point, x_obj, y_obj, z_obj, r_obj
       !character(len=10) :: form
       !integer, dimension(nx,ny,nz) :: grid_ovlap_cartesian
-      !integer, dimension(nx_ogrid,ny_ogrid,nz_ogrid) :: grid_ovlap_curvelinear
+      !integer, dimension(nx_ogrid,ny_ogrid,nz_ogrid) :: grid_ovlap_curvilinear
       !real :: r_ogrid2, r_inter_outer2, r_inter_inner2, r_point2
 !
 !  Ini!tialize overlapping grid array
@@ -1659,7 +1692,7 @@ end subroutine print_solid
 !***********************************************************************
     subroutine time_step_ogrid(f_cartesian)
 !
-!  Perform time steps on the curvelinear grid, including interpolation of 
+!  Perform time steps on the curvilinear grid, including interpolation of 
 !  flow variables back and forth between the overlapping grids.
 !  The time iterations should equal to one time step on the cartesian grid
 !
@@ -1676,8 +1709,7 @@ end subroutine print_solid
 !  Update boundary of the overlapping grid by interpolating
 !  from cartesian grid to curvlinear grid
 !
-! TODO
-      call flow_cartesian_to_curvlinear(f_cartesian,f_ogrid)
+      call flow_cartesian_to_curvlinear(f_cartesian)
 !
 !  Coefficients for up to order 3.
 !
@@ -1761,7 +1793,7 @@ end subroutine print_solid
 !  from curvlinear grid to cartesian grid
 !
 ! TODO
-      call flow_curvlinear_to_cartesian(f_cartesian,f_ogrid)
+      call flow_curvilinear_to_cartesian(f_cartesian)
 !
     endsubroutine time_step_ogrid
 !***********************************************************************
@@ -2917,4 +2949,51 @@ end subroutine print_solid
 !
     endsubroutine gaunoise_ogrid
 !***********************************************************************
+    subroutine find_near_cartesian_indeces(lower_i,upper_i,lower_j,upper_j, &
+        lower_k,upper_k,ppp)
+!
+!  Find i, j and k indeces for all neighbouring grid points
+!
+      integer :: ii, jj, kk
+      integer, intent(out) :: lower_i, upper_i, lower_j, upper_j, lower_k, upper_k
+      real, intent(in), dimension(3)  :: ppp
+!
+      lower_i = 0
+      upper_i = 0
+      do ii = 1,mx
+        if (x(ii) > ppp(1)) then
+          lower_i = ii-1
+          upper_i = ii
+          exit
+        endif
+      enddo
+!
+      lower_j = 0
+      upper_j = 0
+      do jj = 1,my
+        if (y(jj) > ppp(2)) then
+          lower_j = jj-1
+          upper_j = jj
+          exit
+        endif
+      enddo
+!
+      if (nzgrid == 1) then
+        lower_k = n1
+        upper_k = n1
+      else
+        lower_k = 0
+        upper_k = 0
+        do kk = 1,mz
+          if (z(kk) > ppp(3)) then
+            lower_k = kk-1
+            upper_k = kk
+            exit
+          endif
+        enddo
+      endif
+!
+    endsubroutine find_near_cartesian_indeces
+!***********************************************************************
+
 end module Solid_Cells
