@@ -154,7 +154,6 @@ module Solid_Cells
   type(pencil_case_ogrid) p_ogrid 
 
 ! PARAMETERS NECESSARY FOR GRID CONSTRUCTION 
-! TODO: Clean up
 !  Global ogrid (TODO: NEEDED?)
   integer, parameter :: mxgrid_ogrid=nxgrid_ogrid+2*nghost
   integer, parameter :: mygrid_ogrid=nygrid_ogrid+2*nghost
@@ -1790,7 +1789,7 @@ end subroutine print_solid
 !  Prepare x-ghost zones; required before f-array communication
 !  AND shock calculation
 !
-      call boundconds_x_ogrid(f_ogrid)
+      call boundconds_x_ogrid
 !
 !  Initiate communication and do boundary conditions.
 !  Required order:
@@ -1803,8 +1802,8 @@ end subroutine print_solid
       call finalize_isendrcv_bdry_ogrid(f_ogrid)
 !  Since only periodic implementation of boundconds in y- and z-dir, call only
 !  if single processor in said direction. Otherwise, handled in MPI-communication.
-      if (nprocy==1)                  call boundconds_y_ogrid(f_ogrid)
-      if ((nprocz==1).and.(nzgrid>1)) call boundconds_z_ogrid(f_ogrid)
+      if (nprocy==1)                  call boundconds_y_ogrid
+      if ((nprocz==1).and.(nzgrid>1)) call boundconds_z_ogrid
 !
 !------------------------------------------------------------------------------
 !  Do loop over m and n.
@@ -1915,27 +1914,24 @@ end subroutine print_solid
 !
 !  10-feb-17/Jorgen+Nils: Adapted from calc_pencils_eos_pencpar in eos_idealgas.f90
 !
-      !use eos, only: get_cp1, get_cv1
-      !TODO: FROM EOS, NEED cv1, cp1, leos_isentropic, leos_isothermal
+      use EquationOfState, only: get_cv1,get_cp1,cs20,gamma_m1,gamma1
 !
       real, dimension(nx_ogrid) :: tmp
       integer :: i,j
-      real :: cp1, cv1
+      real :: cp1, cv1, cp, cv
       logical :: leos_isentropic=.false.
       logical :: leos_isothermal=.true.
-
-      real :: cv=1,gamma=1,gamma1=1,gamma_m1=1,cs20=1,cp=1
 !
 !  Inverse cv and cp values.
 !
-cp1=1
-cv1=1
-      !call get_cp1(cp1)
-      !call get_cv1(cv1)
+      call get_cp1(cp1)
+      call get_cv1(cv1)
+      cp=1./cp
+      cv=1./cv
       if (lpencil_ogrid(i_cv1)) p_ogrid%cv1=cv1
       if (lpencil_ogrid(i_cp1)) p_ogrid%cp1=cp1
-      if (lpencil_ogrid(i_cv))  p_ogrid%cv=1/cv1
-      if (lpencil_ogrid(i_cp))  p_ogrid%cp=1/cp1
+      if (lpencil_ogrid(i_cv))  p_ogrid%cv=cv1
+      if (lpencil_ogrid(i_cp))  p_ogrid%cp=cp1
 !
 !  Work out thermodynamic quantities for given lnrho or rho and TT.
 !
@@ -1947,7 +1943,7 @@ cv1=1
         if (lpencil_ogrid(i_del2TT).or.lpencil_ogrid(i_del2lnTT)) &
             call del2_ogrid(f_ogrid,iTT,p_ogrid%del2TT)
         if (lpencil_ogrid(i_pp)) p_ogrid%pp=cv*gamma_m1*p_ogrid%rho*p_ogrid%TT
-        if (lpencil_ogrid(i_ee)) p_ogrid%ee=cv*p_ogrid%TT !TODO: used to be: exp(p_ogrid%lnTT)
+        if (lpencil_ogrid(i_ee)) p_ogrid%ee=cv*p_ogrid%TT
 !
 !  Work out thermodynamic quantities for given lnrho or rho and cs2.
 !
@@ -2018,14 +2014,17 @@ cv1=1
     endsubroutine calc_pencils_density_ogrid
 !***********************************************************************
     subroutine calc_pencils_viscosity_ogrid()
-      ! TODO: get viscosity NU
-      real :: nu=1
 !
 !  Calculate Viscosity pencils.
 !  Most basic pencils should come first, as others may depend on them.
 !
 !  10-feb-17/Jorgen+Nils: Adapted from rountine in viscosity.f90
 !
+      use viscosity, only:getnu
+      real :: nu
+!
+      call getnu(nu_input=nu)
+!      
 !  Viscous force and viscous heating are calculated here (for later use).
 !
       p_ogrid%fvisc=0.0                              
@@ -2060,7 +2059,7 @@ cv1=1
 !    boundconds_y_ogrid
 !    boundconds_z_ogrid
 !***********************************************************************
-    subroutine boundconds_x_ogrid(f,ivar1_opt,ivar2_opt)
+    subroutine boundconds_x_ogrid
 !
 !  Boundary conditions in x, except for periodic part handled by communication.
 !  Remark: boundconds_x() needs to be called before communicating (because we
@@ -2073,99 +2072,73 @@ cv1=1
 !
 !  06-feb-17/Jorgen: Adapted from boundcond.f90 to be used for ogrids
 !
-      real, dimension (:,:,:,:) :: f
-      integer, optional :: ivar1_opt, ivar2_opt
-!
       integer :: ivar1, ivar2, j, k
       logical :: ip_ok
       type (boundary_condition) :: bc
       logical :: tester
 !
-      ivar1=1; ivar2=min(mcom,size(f,4))
-      if (present(ivar1_opt)) ivar1=ivar1_opt
-      if (present(ivar2_opt)) ivar2=ivar2_opt
+      ivar1=1; ivar2=min(mcom,size(f_ogrid,4))
 !
 !  Boundary conditions in x.
 !
       ip_ok=lfirst_proc_x
 
-      tester=.true.
-!
-      if (ip_ok) then
-        do j=ivar1,ivar2
-          if(tester) then
-            bc%bcname=bcx12(j,k)
-            bc%ivar=j
-            bc%location=(((k-1)*2)-1)   ! -1/1 for x bot/top
-            bc%value1=fbcx(j,k)
-            bc%value2=fbcx(j,k)
-            bc%done=.false.
-!
-            !call special_boundconds(f,bc)
-!
-            if (.not.bc%done) then
-              call fatal_error_local("boundconds_x",'no such boundary condition')
-            endif
-          else
-            ! TODO
-            ! Do something smart to set body confined boundary condition properly
-          endif
-        enddo
-      endif
+!  Set no-slip condition for velocity and zero gradient for the pressure
+!  on the cylinder surface
+      f_ogrid(l1_ogrid,:,:,ivar1:ivar2) = 0.
+      call set_ghosts_for_onesided_ders_ogrid(iux)
+      call set_ghosts_for_onesided_ders_ogrid(iuy)
+      call set_ghosts_for_onesided_ders_ogrid(iuz)
+      call bval_from_neumann_arr_ogrid
+      call set_ghosts_for_onesided_ders_ogrid(ilnrho)
 !
     endsubroutine boundconds_x_ogrid
 !***********************************************************************
-    subroutine boundconds_y_ogrid(f)
+    subroutine boundconds_y_ogrid
 !
 !  Periodic boundary condition for runs with a single processor in y-direction 
 !
 !  06-feb-17/Jorgen: Adapted from boundcond.f90 to be used for ogrids where the
 !                    y-dir is always periodic
 !
-      real, dimension (:,:,:,:) :: f
-!
       integer :: ivar1, ivar2, j
       integer :: m1i_ogrid=m1_ogrid+nghost-1
       integer :: m2i_ogrid=my_ogrid-2*nghost+1
 !
-      ivar1=1; ivar2=min(mcom,size(f,4))
+      ivar1=1; ivar2=min(mcom,size(f_ogrid,4))
 !
 !  Boundary conditions in y
 !  Periodic, with y being the theta direction for the cylindrical grid
 !
       do j=ivar1,ivar2
 !  Bottom boundary
-        f(:,1:m1_ogrid-1,:,j) = f(:,m2i_ogrid:m2_ogrid,:,j)
+        f_ogrid(:,1:m1_ogrid-1,:,j) = f_ogrid(:,m2i_ogrid:m2_ogrid,:,j)
 !  Top boundary
-        f(:,m2_ogrid+1:,:,j) = f(:,m1_ogrid:m1i_ogrid,:,j)
+        f_ogrid(:,m2_ogrid+1:,:,j) = f_ogrid(:,m1_ogrid:m1i_ogrid,:,j)
       enddo
 !
     endsubroutine boundconds_y_ogrid
 !***********************************************************************
-    subroutine boundconds_z_ogrid(f)
+    subroutine boundconds_z_ogrid
 !
 !  Periodic boundary condition for 3D-runs with a single processor in z-direction 
 !
 !  06-feb-17/Jorgen: Adapted from boundcond.f90 to be used for ogrids where the
 !                    z-dir is always periodic as long as nzgrid=/1
 !
-      real, dimension (:,:,:,:) :: f
       integer :: ivar1, ivar2, j
-
       integer :: n1i_ogrid=n1_ogrid+nghost-1
       integer :: n2i_ogrid=mz_ogrid-2*nghost+1
 !
-      if (ldebug) print*,'boundconds_z: ENTER: boundconds_z'
-!
-      ivar1=1; ivar2=min(mcom,size(f,4))
+      ivar1=1; ivar2=min(mcom,size(f_ogrid,4))
 !
 !  Boundary conditions in z
 !
       do j=ivar1,ivar2
 !  Bottom boundary
-        f(:,:,1:n1_ogrid-1,j) = f(:,:,n2i_ogrid:n2_ogrid,j)
+        f_ogrid(:,:,1:n1_ogrid-1,j) = f_ogrid(:,:,n2i_ogrid:n2_ogrid,j)
 !  Top boundary
-        f(:,:,n2_ogrid+1:,j) = f(:,:,n1_ogrid:n1i_ogrid,j)
+        f_ogrid(:,:,n2_ogrid+1:,j) = f_ogrid(:,:,n1_ogrid:n1i_ogrid,j)
       enddo
 !
     endsubroutine boundconds_z_ogrid
@@ -2862,6 +2835,49 @@ cv1=1
       if ( i+j==3 .or. i+j==5 ) df=df*rcyl_mn1_ogrid
 !
     endsubroutine derij_ogrid
+!***********************************************************************
+    subroutine set_ghosts_for_onesided_ders_ogrid(ivar)
+!
+!   Set ghost points for onesided boundary conditions with Dirichlet BC
+!   on the cylidner surface.
+!   Only works for the radial direction.
+!
+!   16-feb-17/Jorgen: Adapted from deriv.f90.
+!
+      integer :: k,ivar,i
+!
+      do i=1,nghost
+        k=l1-i
+        f_ogrid(k,:,:,ivar)=7*f_ogrid(k+1,:,:,ivar) &
+                          -21*f_ogrid(k+2,:,:,ivar) &
+                          +35*f_ogrid(k+3,:,:,ivar) &
+                          -35*f_ogrid(k+4,:,:,ivar) &
+                          +21*f_ogrid(k+5,:,:,ivar) &
+                           -7*f_ogrid(k+6,:,:,ivar) &
+                             +f_ogrid(k+7,:,:,ivar)
+      enddo
+
+    endsubroutine set_ghosts_for_onesided_ders_ogrid
+!***********************************************************************
+    subroutine bval_from_neumann_arr_ogrid
+!
+!  Calculates the boundary value from the Neumann BC d f/d x_i = val employing
+!  one-sided difference formulae. val depends on x,y.
+!
+!  16-feb-17/Jorgen: Adapted from deriv.f90
+!
+      real :: val=0.
+      integer :: k
+
+      k=l1
+      f_ogrid(l1,:,:,ilnrho) = (-val*60.*dx_ogrid + 360.*f_ogrid(k+1,:,:,ilnrho) &
+                                                  - 450.*f_ogrid(k+2,:,:,ilnrho) &
+                                                  + 400.*f_ogrid(k+3,:,:,ilnrho) &
+                                                  - 225.*f_ogrid(k+4,:,:,ilnrho) &
+                                                  +  72.*f_ogrid(k+5,:,:,ilnrho) &
+                                                  -  10.*f_ogrid(k+6,:,:,ilnrho) )/147.
+
+    endsubroutine bval_from_neumann_arr_ogrid
 !***********************************************************************
     subroutine gaunoise_ogrid(ampl,i1,i2)
 !
