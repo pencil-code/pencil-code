@@ -206,7 +206,7 @@ module Solid_Cells
   real :: t_ogrid
   logical :: lfirst_ogrid, llast_ogrid
 
-  real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray) ::  f_ogrid
+  real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray) ::  f_ogrid=0.
   real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mvar)    :: df_ogrid
   
 
@@ -346,6 +346,8 @@ module Solid_Cells
       real :: wall_smoothing,wall_smoothing_temp
       real :: Lorth,flowx,flowy,shift_flow,shift_orth,flow_r,orth_r
       integer i,j,cyl,iflow,iorth
+      real :: shift_top,shift_bot,r_k_top,r_k_bot,theta_k_top,theta_k_bot
+      real :: ur_k_top ,ur_k_bot ,uth_k_top,uth_k_bot
 !
 !  Cartesian array f:
 !
@@ -386,7 +388,7 @@ module Solid_Cells
       do i = l1,l2
         do j = m1,m2
 ! Choose correct points depending on flow direction
-          flow_r=(x(i)-xorigo_ogrid(1))*flowx+(y(j)-xorigo_ogrid(2))*flowx
+          flow_r=(x(i)-xorigo_ogrid(1))*flowx+(y(j)-xorigo_ogrid(2))*flowy
           orth_r=(x(i)-xorigo_ogrid(1))*flowy+(y(j)-xorigo_ogrid(2))*flowx
           rr2 = flow_r**2+orth_r**2
           if (rr2 > a2) then
@@ -433,47 +435,44 @@ module Solid_Cells
 !  Cylindrical array f_ogrid:
 !
 !  Stream functions for flow around a cylinder as initial condition.
+!  Note that here ux and uy are the velocities in r and theta directions, respectively
 !
+!  Rotate system if the flow is in y-direction
+      flowy=-flowy*pi*0.5
       call gaunoise_ogrid(ampl_noise,iux,iuz)
-      f_ogrid(:,:,:,iflow) = f_ogrid(:,:,:,iflow)+init_uu
       do i=l1_ogrid,l2_ogrid
+        rr2=x_ogrid(i)**2
+        wall_smoothing = 1-exp(-(rr2-a2)/skin_depth**2)
         do j=m1_ogrid,m2_ogrid
-          do cyl = 0,100
-            if (cyl == 0) then
-              rr2=x_ogrid(i)**2
-              wall_smoothing = 1-exp(-(rr2-a2)/skin_depth**2)
-              f_ogrid(i,j,:,iux) = f_ogrid(i,j,:,iux)+init_uu*(1-a2/(rr2**2))*cos(y_ogrid(j))*wall_smoothing
-              f_ogrid(i,j,:,iuy) = f_ogrid(i,j,:,iuy)-init_uu*(1+a2/(rr2**2))*sin(y_ogrid(j))*wall_smoothing
-              if (ilnTT /= 0) then
-                wall_smoothing_temp = 1-exp(-(rr2**2-a2)/(sqrt(a2))**2)
-                f_ogrid(i,j,:,ilnTT) = wall_smoothing_temp*f_ogrid(i,j,:,ilnTT) &
-                  +cylinder_temp*(1-wall_smoothing_temp)
-                f_ogrid(i,j,:,ilnrho) = f_ogrid(l2,m2,n2,ilnrho)*f_ogrid(l2,m2,n2,ilnTT)/f_ogrid(i,j,:,ilnTT)
-              endif
-            else
-              shift_orth = cyl*Lorth
-              if(y_ogrid(j)<0.5*pi) then
-                rr2_high=shift_orth**2+x_ogrid(i)**2+2*x_ogrid(i)*shift_orth*cos(0.5*pi-y_ogrid(j))
-                rr2_low=shift_orth**2+x_ogrid(i)**2+2*x_ogrid(i)*shift_orth*cos(0.5*pi+y_ogrid(j))
-                theta_high=sqrt(rr2_high)*asin(sin(0.5*pi-y_ogrid(j)))
-              elseif(y_ogrid(j)>1.5*pi) then
-                rr2_high=shift_orth**2+x_ogrid(i)**2+2*x_ogrid(i)*shift_orth*cos(2.5*pi-y_ogrid(j))
-                rr2_low=shift_orth**2+x_ogrid(i)**2+2*x_ogrid(i)*shift_orth*cos(y_ogrid(j)-1.5*pi)
-                theta_high=sqrt(rr2_high)*asin(sin(2.5*pi-y_ogrid(j)))
-              else
-                rr2_high=shift_orth**2+x_ogrid(i)**2+2*x_ogrid(i)*shift_orth*cos(y_ogrid(j)-0.5*pi)
-                rr2_low=shift_orth**2+x_ogrid(i)**2+2*x_ogrid(i)*shift_orth*cos(1.5*pi-y_ogrid(j))
-                theta_high=sqrt(rr2_high)*asin(sin(y_ogrid(j)-0.5*pi))
-              endif
-              theta_low=pi-theta_high
-              f_ogrid(i,j,:,iux) = f_ogrid(i,j,:,iux)+init_uu*((1-a2/(rr2_high**2))*cos(theta_high) &
-                                  +(1-a2/(rr2_low**2 ))*cos(theta_low))*wall_smoothing
-              f_ogrid(i,j,:,iuy) = f_ogrid(i,j,:,iux)-init_uu*((1+a2/(rr2_high**2))*sin(theta_high) &
-                                  +(1+a2/(rr2_low**2 ))*sin(theta_low))*wall_smoothing
-            endif
+!  Compute potential flow past single cylinder
+          f_ogrid(i,j,:,iux) = +init_uu*(1-a2/rr2)*cos(y_ogrid(j)+flowy)
+          f_ogrid(i,j,:,iuy) = -init_uu*(1+a2/rr2)*sin(y_ogrid(j)+flowy)
+          if (ilnTT /= 0) then
+            wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2))**2)
+            f_ogrid(i,j,:,ilnTT) = wall_smoothing_temp*f_ogrid(i,j,:,ilnTT) &
+              +cylinder_temp*(1-wall_smoothing_temp)
+            f_ogrid(i,j,:,ilnrho) = f_ogrid(l2,m2,n2,ilnrho)*f_ogrid(l2,m2,n2,ilnTT)/f_ogrid(i,j,:,ilnTT)
+          endif
+!  Compute contribution to flow from cylinders above and below, due to periodic boundary conditions
+          do cyl = 1,100
+            shift_top = cyl*Lorth
+            shift_bot = cyl*Lorth
+            r_k_top=sqrt(x_ogrid(i)**2-2*x_ogrid(i)*shift_top*sin(y_ogrid(j)+flowy)+shift_top**2)
+            r_k_bot=sqrt(x_ogrid(i)**2-2*x_ogrid(i)*shift_bot*sin(y_ogrid(j)+flowy)+shift_bot**2)
+            theta_k_top=atan2(x_ogrid(i)*sin(y_ogrid(j)+flowy)-shift_top,(x_ogrid(i)*cos(y_ogrid(j)+flowy)))
+            theta_k_bot=atan2(x_ogrid(i)*sin(y_ogrid(j)+flowy)-shift_bot,(x_ogrid(i)*cos(y_ogrid(j)+flowy)))
+            ur_k_top =init_uu*a2*( x_ogrid(i)*cos(theta_k_top)-shift_top*sin(theta_k_top-(y_ogrid(j)+flowy)))/(r_k_top**3)
+            ur_k_bot =init_uu*a2*( x_ogrid(i)*cos(theta_k_bot)-shift_bot*sin(theta_k_bot-(y_ogrid(j)+flowy)))/(r_k_bot**3)
+            uth_k_top=init_uu*a2*(-x_ogrid(i)*sin(theta_k_top)+shift_top*cos(theta_k_top-(y_ogrid(j)+flowy)))/(r_k_top**3)
+            uth_k_bot=init_uu*a2*(-x_ogrid(i)*sin(theta_k_bot)+shift_bot*cos(theta_k_bot-(y_ogrid(j)+flowy)))/(r_k_bot**3)
+            f_ogrid(i,j,:,iux) = f_ogrid(i,j,:,iux)+(ur_k_top+ur_k_bot)
+            f_ogrid(i,j,:,iuy) = f_ogrid(i,j,:,iuy)+(uth_k_top+uth_k_bot)
           enddo
         enddo
+!  Force no-slip condition on the cylinder surface
+        f_ogrid(i,:,:,iux:iuy)=f_ogrid(i,:,:,iux:iuy)*wall_smoothing
       enddo
+
     endsubroutine init_solid_cells
 !***********************************************************************
     
