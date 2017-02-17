@@ -8,7 +8,7 @@ module Solid_Cells_Mpicomm
 
   contains 
 !***********************************************************************
-    subroutine initiate_isendrcv_bdry(f)
+    subroutine initiate_isendrcv_bdry_ogrid(f)
 !
 !  For one processor, use periodic boundary conditions.
 !  Dummy
@@ -17,9 +17,9 @@ module Solid_Cells_Mpicomm
 !
       if (ALWAYS_FALSE) print*, f
 !
-    endsubroutine initiate_isendrcv_bdry
+    endsubroutine initiate_isendrcv_bdry_ogrid
 !***********************************************************************
-    subroutine finalize_isendrcv_bdry(f)
+    subroutine finalize_isendrcv_bdry_ogrid(f)
 !
 !  Apply boundary conditions.
 !  Dummy
@@ -28,9 +28,9 @@ module Solid_Cells_Mpicomm
 !
       if (ALWAYS_FALSE) print*, f
 !
-    endsubroutine finalize_isendrcv_bdry
+    endsubroutine finalize_isendrcv_bdry_ogrid
 !***********************************************************************
-    subroutine isendrcv_bdry_x(f)
+    subroutine isendrcv_bdry_x_ogrid(f)
 !
 !  Dummy
 !
@@ -38,6 +38,6 @@ module Solid_Cells_Mpicomm
 !
       if (ALWAYS_FALSE) print *, f
 !
-    endsubroutine isendrcv_bdry_x
+    endsubroutine isendrcv_bdry_x_ogrid
 !***********************************************************************
 end module Solid_Cells_Mpicomm
