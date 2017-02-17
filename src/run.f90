@@ -83,7 +83,7 @@ program run
   use Signal_handling, only: signal_prepare, emergency_stop
   use Slices
   use Snapshot
-  use Solid_Cells,     only: solid_cells_clean_up
+  use Solid_Cells,     only: solid_cells_clean_up,time_step_ogrid
   use Special,         only: initialize_mult_special
   use Streamlines,     only: tracers_prepare, wtracers
   use Sub
@@ -686,6 +686,11 @@ program run
       call write_sound(tsound)
       lout_sound = .false.
     endif
+!
+!  If overlapping grids are used to get body-confined grid around the solids
+!  in the flow, call time step on these grids. 
+! 
+    if(lsolid_cells) call time_step_ogrid(f)
 !
 !  Ensure better load balancing of particles by giving equal number of
 !  particles to each CPU. This only works when block domain decomposition of

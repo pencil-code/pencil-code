@@ -10,8 +10,22 @@
 
 module Solid_Cells_Mpicomm
 
+  use Cparam
+
   implicit none
 
+  include 'solid_cells_mpi.h'
+
+  integer, parameter :: nx_ogrid=nxgrid_ogrid/nprocx,ny_ogrid=nygrid_ogrid/nprocy,nz_ogrid=nzgrid_ogrid/nprocz
+  integer, parameter :: mx_ogrid=nx_ogrid+2*nghost,l1_ogrid=1+nghost,l2_ogrid=mx_ogrid-nghost
+  integer, parameter :: my_ogrid=ny_ogrid+2*nghost,m1_ogrid=1+nghost,m2_ogrid=my_ogrid-nghost
+  integer, parameter :: mz_ogrid=nz_ogrid+2*nghost,n1_ogrid=1+nghost,n2_ogrid=mz_ogrid-nghost
+
+  real, dimension (nghost,ny_ogrid,nz_ogrid,mcom) :: lbufxi,ubufxi,lbufxo,ubufxo
+  real, dimension (:,:,:,:), allocatable :: lbufyi,ubufyi,lbufyo,ubufyo
+  real, dimension (:,:,:,:), allocatable :: lbufzi,ubufzi,lbufzo,ubufzo
+  real, dimension (:,:,:,:), allocatable :: llbufi,lubufi,uubufi,ulbufi
+  real, dimension (:,:,:,:), allocatable :: llbufo,lubufo,uubufo,ulbufo
   contains 
 
     subroutine initiate_isendrcv_bdry_ogrid(f)
@@ -22,7 +36,7 @@ module Solid_Cells_Mpicomm
 !
 !  07-feb-17/Jorgen: adapted from mpicomm.f90
 !
-      real, dimension(:,:,:,:), intent(inout):: f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
 !
       integer :: tolowyr,touppyr,tolowys,touppys,tolowzr,touppzr,tolowzs,touppzs ! msg. tags placeholders
       integer :: TOllr,TOulr,TOuur,TOlur,TOlls,TOuls,TOuus,TOlus                 ! placeholder tags
@@ -180,7 +194,7 @@ module Solid_Cells_Mpicomm
 !
       use General, only: transpose_mn, notanumber
 
-      real, dimension(:,:,:,:), intent(inout):: f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
 !
       integer :: ivar1, ivar2, j
 !
@@ -289,7 +303,7 @@ module Solid_Cells_Mpicomm
 !
 !   2-may-09/anders: coded
 !
-      real, dimension(:,:,:,:), intent(inout) :: f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
 !
       integer :: ivar1, ivar2, nbufx, j
 !
@@ -332,3 +346,5 @@ module Solid_Cells_Mpicomm
       endif
 !
     endsubroutine isendrcv_bdry_x_ogrid
+
+endmodule Solid_Cells_Mpicomm

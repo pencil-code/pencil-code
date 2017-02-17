@@ -1417,8 +1417,8 @@ if (ios/=0) print*, 'ios, i=', ios, i
 
         if (index_i>0) then
           cform(index_i:index_i)='f'
-          cform=trim(cform)//'.0'
-        endif
+          cform=trim(cform)//'.0, TL1," "'     ! TL1," " needed, as sometimes, unknown why,
+        endif                                  ! the unwanted decimal point does appear.
 
       else
         fparse_name=0

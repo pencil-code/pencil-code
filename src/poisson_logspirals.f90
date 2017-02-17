@@ -140,6 +140,10 @@ contains
         if (lroot) print*, 'initialize_poisson: logspirals only works with nzgrid==1'
         call fatal_error('initialize_poisson','')
       endif
+      if (nprocx/=1) then
+        if (lroot) print*, 'initialize_poisson: logspirals only works with nprocx==1'
+        call fatal_error('initialize_poisson','')
+      endif
     endsubroutine check_setup
 !***********************************************************************
     subroutine inverse_laplacian(phi)
@@ -308,7 +312,7 @@ contains
       real, dimension(2*nx) :: u1d
 !
       r1d=x(l1:l2)
-      u1d(:nx)=log(r1d/innerRadius)
+      u1d(:nx)=log(r1d/xyz0(1))
       du=u1d(2)-u1d(1)
 !
 ! The u coordinate will need to be extended into the Fourier cells by one unit, for the
@@ -338,7 +342,7 @@ contains
 !
       sigma(nx+1:,:)=0.0
       sigma(:nx,:)=potential(:,:,1)
-!        
+!
     endsubroutine generate_fourier_density
 !***********************************************************************
     subroutine generate_kernals()
@@ -382,7 +386,6 @@ contains
 ! calculate gravitational accelerations.
 !
       real, dimension(2*nx,ny) :: gr_convolution,gr_factor,gphi_convolution,gphi_factor
-      integer :: n
 !
       call fftconvolve(kr,sr,gr_convolution)
       call fftconvolve(kphi,sphi,gphi_convolution)
@@ -418,7 +421,7 @@ contains
 !***********************************************************************
     subroutine fftconvolve(array1,array2,convolution)
 !
-!  convolution product using the pendil code fft methods to do the ffts
+!  convolution product using the pencil code fft methods to do the ffts
 !
       real, intent(in), dimension(:,:) :: array1
       real, intent(in), dimension(:,:) :: array2
@@ -428,13 +431,13 @@ contains
       real, dimension(size(convolution,1),size(convolution,2)) :: array2_fourier_real,array2_fourier_imaginary
       real, dimension(size(convolution,1),size(convolution,2)) :: convolution_fourier_real
       real, dimension(size(convolution,1),size(convolution,2)) :: convolution_fourier_imaginary
-      integer :: nrow,ncol
+      real :: normalization_factor
       logical :: array1_convolution_diffshape,array2_convolution_diffshape
 !
       array1_convolution_diffshape=(size(array1,1)/=size(convolution,1)).or.(size(array1,2)/=size(convolution,2))
       array2_convolution_diffshape=(size(array2,1)/=size(convolution,1)).or.(size(array2,2)/=size(convolution,2))
       if (array1_convolution_diffshape.or.array2_convolution_diffshape) then
-         print*,'fftconvolve: input and output arrays must be the same shape as each other.'
+         if (lroot) print*,'fftconvolve: input and output arrays must be the same shape as each other.'
          call fatal_error('fftconvolve','')
          stop
       else
@@ -443,8 +446,6 @@ contains
 !  real components for the transform, and fill the arrays holding the imaginary
 !  components with 0's
 !
-         nrow=size(convolution,1)
-         ncol=size(convolution,2)
          array1_fourier_real=array1
          array1_fourier_imaginary=0.0
          array2_fourier_real=array2
@@ -452,35 +453,207 @@ contains
       end if
 !
 !  Transforming the arrays
-!  NOTE: the pencil code normalized Fourier transforms on the way forward, so each
-!        array will pick up a factor of 1/(nrow*ncol) here. This will be important later
 !
-      call fourier_transform_other(array1_fourier_real,array1_fourier_imaginary,.false.)
-      call fourier_transform_other(array2_fourier_real,array2_fourier_imaginary,.false.)
+      call fft_xy_parallel_2D_x_extended(array1_fourier_real,array1_fourier_imaginary, &
+           .false.,.true.)
+      call fft_xy_parallel_2D_x_extended(array2_fourier_real,array2_fourier_imaginary, &
+           .false.,.true.)
 !
 !  Now, the convolution product must be calculated by multiplying the transformed arrays.
 !  They must be multiplied as complex numbers; to save space and function calls, the real
-!  and imaginary parts of the product are calculated separately from the real and imaginary
+!  and imaginary parts of the product are calculated separately using the real and imaginary
 !  parts of the two arrays.
-!  NOTE: the convolution product will have a factor of 1/(nrow*ncol)^2, since each array will
-!        have picked up a separate normalization factor from the forward transform. This is
-!        not desirable: as the convolution product is the result of forward transforming and
-!        subserquently inverse transforming, the final product should have a single normalization
-!        factor. To this end, a factor of (nrow*ncol) is added to the components of the product
-!        in Fourier space, such that the Fourier product has a single normalization factor.
+!  Since the normalization required is not standard, it is added in this step rather than
+!  as part of the fourier transform routine.
 !
-      convolution_fourier_real=(nrow*ncol)* &
+!
+      convolution_fourier_real      = normalization_factor* &
           (array1_fourier_real*array2_fourier_real-array1_fourier_imaginary*array2_fourier_imaginary)
-      convolution_fourier_imaginary=(nrow*ncol)* &
+      convolution_fourier_imaginary = normalization_factor* &
           (array1_fourier_real*array2_fourier_imaginary+array1_fourier_imaginary*array2_fourier_real)
 !
 !  Finally, the inverse transform moves the convolution product to ordinary space.
 !
-      call fourier_transform_other(convolution_fourier_real,convolution_fourier_imaginary,.true.)
+      call fft_xy_parallel_2D_x_extended(convolution_fourier_real,convolution_fourier_imaginary, &
+           .true.,.false.)
 !
       convolution=convolution_fourier_real
 !
     endsubroutine fftconvolve
+!***********************************************************************
+    subroutine fft_xy_parallel_2D_x_extended(a_re,a_im,linv,lneed_im,shift_y)
+!
+!  Subroutine to do FFT of distributed 2D data in the x- and y-direction,
+!  on a grid which is twice the size of the physical grid in the x-diction.
+!  For x- and/or y-parallelization the calculation will be done under
+!  MPI in parallel on all processors of the corresponding xy-plane.
+!  nx is restricted to be an integer multiple of nprocy.
+!  ny is restricted to be an integer multiple of nprocx.
+!  linv indicates forward (=false, default) or backward (=true) transform.
+!  You can set lneed_im=false if the imaginary data can be disregarded.
+!  Attention: input data will be overwritten.
+!
+!  09-feb-2017/vince: adapted from fft_xy_parallel_2D
+!
+      use Mpicomm, only: transp,transp_other,remap_to_pencil_xy, transp_pencil_xy, unmap_from_pencil_xy
+!
+      complex, dimension (2*nxgrid) :: ax
+      complex, dimension (nygrid) :: ay
+      complex, dimension (nzgrid) :: az
+      real, dimension (4*(2*nxgrid)+15) :: wsavex
+      real, dimension (4*nygrid+15) :: wsavey
+      real, dimension (4*nzgrid+15) :: wsavez
+!
+      real, dimension (2*nx,ny), intent(inout) :: a_re, a_im
+      logical, optional, intent(in) :: linv, lneed_im
+      real, dimension (2*nxgrid), optional :: shift_y
+!
+      integer, parameter :: pnx=2*nxgrid, pny=nygrid/nprocxy ! pencil shaped data sizes
+      integer, parameter :: tnx=nygrid, tny=2*nxgrid/nprocxy ! pencil shaped transposed data sizes
+      real, dimension (:,:), allocatable :: p_re, p_im   ! data in pencil shape
+      real, dimension (:,:), allocatable :: t_re, t_im   ! data in transposed pencil shape
+      real, dimension (tny) :: deltay_x
+      real, dimension (tny) :: dshift_y
+!
+      integer :: l, m, stat, x_offset
+      integer(8) :: nxgrid_fourier,nx_fourier
+      logical :: lforward, lcompute_im, lshift
+!
+      nxgrid_fourier = 2*nxgrid
+      nx_fourier = 2*nx
+!
+      lforward = .true.
+      if (present (linv)) lforward = .not. linv
+!
+      lcompute_im = .true.
+      if (present (lneed_im)) lcompute_im = lneed_im
+!
+      lshift = .false.
+      if (present (shift_y)) lshift = .true.
+!
+!
+      ! Check for degenerate cases.
+      if (nxgrid == 1) then
+        if (lshift) then
+          call fft_y_parallel (a_re(1,:), a_im(1,:), .not. lforward, lcompute_im, shift_y(1))
+        else
+          call fft_y_parallel (a_re(1,:), a_im(1,:), .not. lforward, lcompute_im)
+        endif
+        return
+      endif
+      if (nygrid == 1) then
+        call fft_x_parallel (a_re(:,1), a_im(:,1), .not. lforward, lcompute_im)
+        return
+      endif
+!
+      if (mod (nxgrid, nprocxy) /= 0) &
+          call fatal_error ('fft_xy_parallel_2D', 'nxgrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
+      if (mod (nygrid, nprocxy) /= 0) &
+          call fatal_error ('fft_xy_parallel_2D', 'nygrid needs to be an integer multiple of nprocx*nprocy', lfirst_proc_xy)
+!
+      ! Allocate memory for large arrays.
+      allocate (p_re(pnx,pny), p_im(pnx,pny), t_re(tnx,tny), t_im(tnx,tny), stat=stat)
+      if (stat > 0) call fatal_error ('fft_xy_parallel_2D', 'Could not allocate memory for p/t', .true.)
+!
+      if (lshear) then
+        x_offset = 1 + (ipx+ipy*nprocx)*tny
+        deltay_x = -deltay * (xgrid(x_offset:x_offset+tny-1) - (x0+Lx/2))/Lx
+      endif
+!
+      if (lshift) then
+        x_offset = 1 + (ipx+ipy*nprocx)*tny
+        dshift_y = shift_y(x_offset:x_offset+tny-1)
+      endif
+!
+      call cffti (nxgrid_fourier, wsavex)
+      call cffti (nygrid, wsavey)
+!
+      if (lforward) then
+!
+!  Forward FFT:
+!
+        ! Remap the data we need into pencil shape.
+        call remap_to_pencil_xy (a_re, p_re)
+        if (lcompute_im) then
+          call remap_to_pencil_xy (a_im, p_im)
+        else
+          p_im = 0.0
+        endif
+!
+        call transp_pencil_xy (p_re, t_re)
+        call transp_pencil_xy (p_im, t_im)
+!
+        ! Transform y-direction.
+        do l = 1, tny
+          ay = cmplx (t_re(:,l), t_im(:,l))
+          call cfftf(nygrid, ay, wsavey)
+          if (lshear) ay = ay * exp (cmplx (0, ky_fft * deltay_x(l)))
+          if (lshift) ay = ay * exp (cmplx (0,-ky_fft * dshift_y(l)))
+          t_re(:,l) = real (ay)
+          t_im(:,l) = aimag (ay)
+        enddo
+!
+        call transp_pencil_xy (t_re, p_re)
+        call transp_pencil_xy (t_im, p_im)
+!
+        ! Transform x-direction.
+        do m = 1, pny
+          ax = cmplx (p_re(:,m), p_im(:,m))
+          call cfftf (nxgrid_fourier, ax, wsavex)
+          p_re(:,m) = real (ax)
+          p_im(:,m) = aimag (ax)
+        enddo
+!
+        ! Unmap the results back to normal shape.
+        call unmap_from_pencil_xy (p_re, a_re)
+        call unmap_from_pencil_xy (p_im, a_im)
+!
+        ! Apply normalization factor to fourier coefficients.
+        ! Since I am using this internally only for fftconvolve,
+        ! which has odd normalization requirements, I will
+        ! not normalize here, but rather in fftconvolve
+
+!
+      else
+!
+!  Inverse FFT:
+!
+        ! Remap the data we need into transposed pencil shape.
+        call remap_to_pencil_xy (a_re, p_re)
+        call remap_to_pencil_xy (a_im, p_im)
+!
+        do m = 1, pny
+          ! Transform x-direction back.
+          ax = cmplx (p_re(:,m), p_im(:,m))
+          call cfftb (nxgrid_fourier, ax, wsavex)
+          p_re(:,m) = real (ax)
+          p_im(:,m) = aimag (ax)
+        enddo
+!
+        call transp_pencil_xy (p_re, t_re)
+        call transp_pencil_xy (p_im, t_im)
+!
+        do l = 1, tny
+          ! Transform y-direction back.
+          ay = cmplx (t_re(:,l), t_im(:,l))
+          if (lshear) ay = ay * exp (cmplx (0, -ky_fft*deltay_x(l)))
+          call cfftb (nygrid, ay, wsavey)
+          t_re(:,l) = real (ay)
+          if (lcompute_im) t_im(:,l) = aimag (ay)
+        enddo
+!
+        call transp_pencil_xy (t_re, p_re)
+        if (lcompute_im) call transp_pencil_xy (t_im, p_im)
+!
+        ! Unmap the results back to normal shape.
+        call unmap_from_pencil_xy (p_re, a_re)
+        if (lcompute_im) call unmap_from_pencil_xy (p_im, a_im)
+!
+      endif
+!
+      deallocate (p_re, p_im, t_re, t_im)
+!
+    endsubroutine fft_xy_parallel_2D_x_extended
 !***********************************************************************
     subroutine get_acceleration(acceleration)
 !
