@@ -2,6 +2,5 @@
      
 private
 
-public ::  initiate_isendrcv_bdry
-public ::  finalize_isendrcv_bdry
-public ::  isendrcv_bdry_x
+public ::  initiate_isendrcv_bdry_ogrid
+public ::  finalize_isendrcv_bdry_ogrid
