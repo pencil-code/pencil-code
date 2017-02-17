@@ -232,4 +232,26 @@ module Solid_Cells
 !
     endsubroutine solid_cells_timestep_second
 !***********************************************************************
+    subroutine time_step_ogrid(f)
+!
+!  Dummy routine
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+!
+      call keep_compiler_quiet(f)
+!
+    end subroutine time_step_ogrid
+!***********************************************************************
+    subroutine f_ogrid
+!
+!  Dummy routine
+!
+    end subroutine f_ogrid
+!***********************************************************************
+    subroutine p_ogrid
+!
+!  Dummy routine
+!
+    end subroutine p_ogrid
+!***********************************************************************
 endmodule Solid_Cells

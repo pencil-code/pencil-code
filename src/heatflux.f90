@@ -191,7 +191,14 @@ contains
       lpenc_requested(i_glnrho)=.true.
     endif
 !
-    if (idiag_qmax/=0 .or. idiag_qrms/=0) lpenc_diagnos(i_q2)=.true.
+    if (idiag_qmax/=0 .or. idiag_qrms/=0) then
+       lpenc_diagnos(i_q2)=.true.
+       lpenc_requested(i_q2)=.true.
+    endif
+!
+    if (idiag_qxmax/=0 .or. idiag_qxmin/=0) lpenc_requested(i_qq)=.true.
+    if (idiag_qymax/=0 .or. idiag_qymin/=0) lpenc_requested(i_qq)=.true.
+    if (idiag_qzmax/=0 .or. idiag_qzmin/=0) lpenc_requested(i_qq)=.true.
 !
   endsubroutine pencil_criteria_heatflux
 !***********************************************************************
@@ -261,6 +268,8 @@ contains
     case ('eighth')
       call eighth_moment_approx(df,p)
     endselect
+!
+
 !
     if (idiag_qmax/=0) call max_mn_name(p%q2,idiag_qmax,lsqrt=.true.)
     if (idiag_qrms/=0) call sum_mn_name(p%q2,idiag_qrms,lsqrt=.true.)
@@ -415,6 +424,7 @@ contains
     call dot(p%qq,p%glnrho,tmp)
 !
     rhs = gamma*p%cp1*(p%divq + tmp)*exp(-p%lnTT)
+
 !
     df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - rhs
 !
