@@ -30,6 +30,28 @@ module Solid_Cells_Mpicomm
 !
     endsubroutine finalize_isendrcv_bdry
 !***********************************************************************
+    subroutine initiate_isendrcv_bdry_ogrid(f)
+!
+!  For one processor, use periodic boundary conditions.
+!  Dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      if (ALWAYS_FALSE) print*, f
+!
+    endsubroutine initiate_isendrcv_bdry_ogrid
+!***********************************************************************
+    subroutine finalize_isendrcv_bdry_ogrid(f)
+!
+!  Apply boundary conditions.
+!  Dummy
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      if (ALWAYS_FALSE) print*, f
+!
+    endsubroutine finalize_isendrcv_bdry_ogrid
+!***********************************************************************
     subroutine isendrcv_bdry_x(f)
 !
 !  Dummy
