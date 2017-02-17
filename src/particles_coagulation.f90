@@ -928,7 +928,8 @@ module Particles_coagulation
       use General, only: random_number_wrapper
       ! Get all variables
 !NILS: Shouldn't npar be mpar_loc?
-      real, dimension (npar,mparray) :: fp
+!      real, dimension (npar,mparray) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
 !
       real :: r, kernel, dt1_coag_par
       integer :: j, l
@@ -1006,7 +1007,8 @@ module Particles_coagulation
       use General, only: random_number_wrapper
       ! Get all variables
 !NILS: Shouldn't npar be mpar_loc?
-      real, dimension (npar,mparray) :: fp
+!      real, dimension (npar,mparray) :: fp
+      real, dimension (mpar_loc,mparray) :: fp
 !
       real :: r, r_i_old, kernel
       integer :: i, j, k, l
