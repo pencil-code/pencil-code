@@ -232,4 +232,22 @@ module Solid_Cells
 !
     endsubroutine solid_cells_timestep_second
 !***********************************************************************
+    subroutine time_step_ogrid
+!
+!  Dummy routine
+!
+    end subroutine time_step_ogrid
+!***********************************************************************
+    subroutine f_ogrid
+!
+!  Dummy routine
+!
+    end subroutine f_ogrid
+!***********************************************************************
+    subroutine p_ogrid
+!
+!  Dummy routine
+!
+    end subroutine p_ogrid
+!***********************************************************************
 endmodule Solid_Cells
