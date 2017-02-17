@@ -31,6 +31,10 @@ default_to_be: Makefile_inc Fortran_standard
 depend dep:
 	(cd src; $(MAKE) FROM_PARENT=src/ -f Makefile.src depend)
 
+# Slender src/ directory:
+slender:
+	(cd src; $(MAKE) FROM_PARENT=src/ -f Makefile.src slender)
+
 # Clean up most files:
 clean:
 	(cd src; $(MAKE) FROM_PARENT=src/ -f Makefile.src clean)

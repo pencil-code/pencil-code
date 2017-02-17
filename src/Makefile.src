@@ -2659,14 +2659,20 @@ TAGS: $(TAG_SOURCE)
 	@ if [ ! -s nofftpack.f90 ]; then rm -f nofftpack.f90; fi
 	@ if [ ! -s fft.f90 ]; then rm -f fft.f90; fi
 #
-#  Clean up, but leave makefile and TAGS.
+#  Slender the src/ directory by removing object and module files.
 #
-clean:
-	rm -f *.x *.o *.a *.mod *.d cparam*.inc cparam_pencils*.inc file_io_common.inc *.il
+slender:
+	rm -f *.o *.a *.mod
 	rm -f special/*.o special/*.mod
 	rm -f initial_condition/*.o initial_condition/*.mod
 	rm -f experimental/*.o experimental/*.mod
-	rm -f pre_and_post_processing/*.o pre_and_post_processing/*.x
+	rm -f pre_and_post_processing/*.o
+#
+#  Clean up, but leave makefile and TAGS.
+#
+clean:  slender
+	rm -f *.x *.d cparam*.inc cparam_pencils*.inc file_io_common.inc *.il
+	rm -f pre_and_post_processing/*.x
 	rm -f .current-precision
 	rm -f *.dot *.ps  # Dependency diagram files
 	rm -f work.pc work.pcl .build*
