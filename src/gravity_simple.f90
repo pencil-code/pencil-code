@@ -110,7 +110,7 @@ module Gravity
   integer :: idiag_epottot=0       ! DIAG_DOC: $\int_V\varrho \Phi_{\rm grav}
                                    ! DIAG_DOC: dV$ \quad(total potential
                                    ! DIAG_DOC: energy)
-  integer :: idiag_ugm=0           ! DIAG_DOC: $\left<\vu \cdot \vg\right>$
+  integer :: idiag_ugm=0           ! DIAG_DOC: $\left<\uv \cdot \gv\right>$
 !
 ! xy averaged diagnostics given in xyaver.in written every it1d timestep
 !
