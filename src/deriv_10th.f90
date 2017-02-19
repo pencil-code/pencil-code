@@ -26,7 +26,7 @@ module Deriv
   public :: der2_minmod
   public :: heatflux_deriv_x
   public :: set_ghosts_for_onesided_ders
-  public :: bval_from_neumann, bval_from_3rd, bval_from_4th_scl
+  public :: bval_from_neumann, bval_from_3rd, bval_from_4th
 !
   real :: der2_coef0, der2_coef1, der2_coef2, der2_coef3, der2_coef4, der2_coef5
 !
@@ -67,6 +67,11 @@ module Deriv
   interface bval_from_3rd
     module procedure bval_from_3rd_scl
     module procedure bval_from_3rd_arr
+  endinterface
+!
+  interface bval_from_4th
+    module procedure bval_from_4th_scl
+    module procedure bval_from_4th_arr
   endinterface
 !
   contains
@@ -285,7 +290,7 @@ module Deriv
       endif
 !
       if (lcylindrical_coords.or.lspherical_coords) &
-           call fatal_error('der_pencil','Not implemented for non-cartesian')
+           call fatal_error("der_pencil","Not implemented for non-cartesian")
 !
     endsubroutine der_pencil
 !***********************************************************************
@@ -1827,10 +1832,9 @@ module Deriv
       real, dimension (mz), intent(in)  :: f
       real, dimension (nz), intent(out) :: df
 !
-      call fatal_error('der_z','not implemented yet in the "deriv_10th" module')
+      call fatal_error("deriv_10th","der_z not implemented yet")
 !
 ! To avoid compiler warnings:
-!
       df=f(n1:n2)
 !
     endsubroutine der_z
@@ -1842,7 +1846,7 @@ module Deriv
       real, dimension (mz), intent(in)  :: f
       real, dimension (nz), intent(out) :: df2
 !
-      call fatal_error('der2_z','not implemented yet in the "deriv_10th" module')
+      call fatal_error("deriv_10th","der2_z not implemented yet")
 !
 ! To avoid compiler warnings:
 !
@@ -1854,14 +1858,17 @@ module Deriv
 !
 ! dummy routine
 !
+      use Cparam, only: mz, nz
+      use Mpicomm, only: stop_it
+!
       real, dimension (mx), intent(in)  :: f
       real, dimension (nx), intent(out) :: df
 !
-      call fatal_error('der_x','not implemented yet in the "deriv_10th" module')
+      call fatal_error("deriv_10th: der_x not implemented yet")
 !
 ! To avoid compiler warnings:
 !
-      df=f(l1:l2)
+      df=f(n1:n2)
 !
     endsubroutine der_x
 !***********************************************************************
@@ -1869,14 +1876,13 @@ module Deriv
 !
 ! dummy routine
 !
+      use Cparam, only: mz, nz
+      use Mpicomm, only: stop_it
+!
       real, dimension (mx), intent(in)  :: f
       real, dimension (nx), intent(out) :: df2
 !
-      call fatal_error('der2_x','not implemented yet in the "deriv_10th" module')
-!
-! To avoid compiler warnings:
-!
-      df2=f(l1:l2)
+      call stop_it("deriv_10th: der2_x not implemented yet")
 !
     endsubroutine der2_x
 !***********************************************************************
@@ -1894,7 +1900,6 @@ module Deriv
       call fatal_error('der2_minmod','Not implemented for deriv_10th')
 !
 !  Fill with dummy values to keep compiler quiet
-!
       delfk(:) = j; delfkp1(:) = k; delfkm1(:) = f(l1,m1,n1,1)
 !
     endsubroutine der2_minmod
@@ -2162,14 +2167,95 @@ module Deriv
 !***********************************************************************
     subroutine bval_from_neumann_arr(f,topbot,j,idir,val)
 !
-!  Dummy.
+!  Calculates the boundary value from the Neumann BC d f/d x_i = val employing
+!  one-sided difference formulae. val depends on x,y.
+!
+!  09-feb-17/Ivan: coded
 !
       real, dimension(mx,my,mz,*) :: f
       character(LEN=3) :: topbot
       integer :: j,idir
       real, dimension(:,:) :: val
 
-      call fatal_error('bval_from_neumann_arr','Not implemented for 10th order.')
+      integer :: k
+
+      if (topbot=='bot') then
+        if (idir==1) then
+          k=l1
+          f(l1,:,:,j) = (-val*2520.*dx+  25200.*f(k+1,:,:,j) &
+                                      -  56700.*f(k+2,:,:,j) &
+                                      + 100800.*f(k+3,:,:,j) &
+                                      - 132300.*f(k+4,:,:,j) &
+                                      + 127008.*f(k+5,:,:,j) &
+                                      -  88200.*f(k+6,:,:,j) &
+                                      +  43200.*f(k+7,:,:,j) &
+                                      -  14175.*f(k+8,:,:,j) &
+                                      +   2800.*f(k+9,:,:,j) &
+                                      -    252.*f(k+10,:,:,j))/7381.
+        elseif (idir==2) then
+          k=m1
+          f(:,m1,:,j) = (-val*2520.*dy+  25200.*f(:,k+1,:,j) &
+                                      -  56700.*f(:,k+2,:,j) &
+                                      + 100800.*f(:,k+3,:,j) &
+                                      - 132300.*f(:,k+4,:,j) &
+                                      + 127008.*f(:,k+5,:,j) &
+                                      -  88200.*f(:,k+6,:,j) &
+                                      +  43200.*f(:,k+7,:,j) &
+                                      -  14175.*f(:,k+8,:,j) &
+                                      +   2800.*f(:,k+9,:,j) &
+                                      -    252.*f(:,k+10,:,j))/7381.
+        elseif (idir==3) then
+          k=n1
+          f(:,:,n1,j) = (-val*2520.*dz+  25200.*f(:,:,k+1,j) &
+                                      -  56700.*f(:,:,k+2,j) &
+                                      + 100800.*f(:,:,k+3,j) &
+                                      - 132300.*f(:,:,k+4,j) &
+                                      + 127008.*f(:,:,k+5,j) &
+                                      -  88200.*f(:,:,k+6,j) &
+                                      +  43200.*f(:,:,k+7,j) &
+                                      -  14175.*f(:,:,k+8,j) &
+                                      +   2800.*f(:,:,k+9,j) &
+                                      -    252.*f(:,:,k+10,j))/7381.
+        endif
+      else
+        if (idir==1) then
+          k=l2
+          f(l2,:,:,j) = (val*2520.*dx+  25200.*f(k-1,:,:,j) &
+                                     -  56700.*f(k-2,:,:,j) &
+                                     + 100800.*f(k-3,:,:,j) &
+                                     - 132300.*f(k-4,:,:,j) &
+                                     + 127008.*f(k-5,:,:,j) &
+                                     -  88200.*f(k-6,:,:,j) &
+                                     +  43200.*f(k-7,:,:,j) &
+                                     -  14175.*f(k-8,:,:,j) &
+                                     +   2800.*f(k-9,:,:,j) &
+                                     -    252.*f(k-10,:,:,j))/7381.
+        elseif (idir==2) then
+          k=m2
+          f(:,m2,:,j) = (val*2520.*dy+  25200.*f(:,k-1,:,j) &
+                                     -  56700.*f(:,k-2,:,j) &
+                                     + 100800.*f(:,k-3,:,j) &
+                                     - 132300.*f(:,k-4,:,j) &
+                                     + 127008.*f(:,k-5,:,j) &
+                                     -  88200.*f(:,k-6,:,j) &
+                                     +  43200.*f(:,k-7,:,j) &
+                                     -  14175.*f(:,k-8,:,j) &
+                                     +   2800.*f(:,k-9,:,j) &
+                                     -    252.*f(:,k-10,:,j))/7381.
+        elseif (idir==3) then
+          k=n2
+          f(:,:,n2,j) = (val*2520.*dz+  25200.*f(:,:,k-1,j) &
+                                     -  56700.*f(:,:,k-2,j) &
+                                     + 100800.*f(:,:,k-3,j) &
+                                     - 132300.*f(:,:,k-4,j) &
+                                     + 127008.*f(:,:,k-5,j) &
+                                     -  88200.*f(:,:,k-6,j) &
+                                     +  43200.*f(:,:,k-7,j) &
+                                     -  14175.*f(:,:,k-8,j) &
+                                     +   2800.*f(:,:,k-9,j) &
+                                     -    252.*f(:,:,k-10,j))/7381.
+        endif
+      endif
 
     endsubroutine bval_from_neumann_arr
 !***********************************************************************
@@ -2273,6 +2359,7 @@ module Deriv
 !  one-sided difference formulae. val depends on x,y.
 !
 !  30-sep-16/MR: coded
+!  09-feb-17/Ivan: completed dummy routine
 !
       real, dimension(mx,my,mz,*) :: f
       character(LEN=3) :: topbot
@@ -2280,7 +2367,85 @@ module Deriv
       real, dimension(:,:) :: val
       external :: func
 !
-      call fatal_error('bval_from_3rd_arr','not implemented')
+      integer :: k
+
+      if (topbot=='bot') then
+        if (idir==1) then
+          k=l1
+          f(l1,:,:,j) = (   25200.*f(k+1,:,:,j) &
+                         -  56700.*f(k+2,:,:,j) &
+                         + 100800.*f(k+3,:,:,j) &
+                         - 132300.*f(k+4,:,:,j) &
+                         + 127008.*f(k+5,:,:,j) &
+                         -  88200.*f(k+6,:,:,j) &
+                         +  43200.*f(k+7,:,:,j) &
+                         -  14175.*f(k+8,:,:,j) &
+                         +   2800.*f(k+9,:,:,j) &
+                         -    252.*f(k+10,:,:,j))/(7381.+val*2520.*dx)
+        elseif (idir==2) then
+          k=m1
+          f(:,m1,:,j) = (   25200.*f(:,k+1,:,j) &
+                         -  56700.*f(:,k+2,:,j) &
+                         + 100800.*f(:,k+3,:,j) &
+                         - 132300.*f(:,k+4,:,j) &
+                         + 127008.*f(:,k+5,:,j) &
+                         -  88200.*f(:,k+6,:,j) &
+                         +  43200.*f(:,k+7,:,j) &
+                         -  14175.*f(:,k+8,:,j) &
+                         +   2800.*f(:,k+9,:,j) &
+                         -    252.*f(:,k+10,:,j))/(7381.+val*2520.*dy)
+        elseif (idir==3) then
+          k=n1
+          f(:,:,n1,j) = (   25200.*f(:,:,k+1,j) &
+                         -  56700.*f(:,:,k+2,j) &
+                         + 100800.*f(:,:,k+3,j) &
+                         - 132300.*f(:,:,k+4,j) &
+                         + 127008.*f(:,:,k+5,j) &
+                         -  88200.*f(:,:,k+6,j) &
+                         +  43200.*f(:,:,k+7,j) &
+                         -  14175.*f(:,:,k+8,j) &
+                         +   2800.*f(:,:,k+9,j) &
+                         -    252.*f(:,:,k+10,j))/(7381.+val*2520.*dz)
+        endif
+      else
+        if (idir==1) then
+          k=l2
+          f(l2,:,:,j) = (   25200.*f(k-1,:,:,j) &
+                         -  56700.*f(k-2,:,:,j) &
+                         + 100800.*f(k-3,:,:,j) &
+                         - 132300.*f(k-4,:,:,j) &
+                         + 127008.*f(k-5,:,:,j) &
+                         -  88200.*f(k-6,:,:,j) &
+                         +  43200.*f(k-7,:,:,j) &
+                         -  14175.*f(k-8,:,:,j) &
+                         +   2800.*f(k-9,:,:,j) &
+                         -    252.*f(k-10,:,:,j))/(7381.-val*2520.*dx)
+        elseif (idir==2) then
+          k=m2
+          f(:,m2,:,j) = (   25200.*f(:,k-1,:,j) &
+                         -  56700.*f(:,k-2,:,j) &
+                         + 100800.*f(:,k-3,:,j) &
+                         - 132300.*f(:,k-4,:,j) &
+                         + 127008.*f(:,k-5,:,j) &
+                         -  88200.*f(:,k-6,:,j) &
+                         +  43200.*f(:,k-7,:,j) &
+                         -  14175.*f(:,k-8,:,j) &
+                         +   2800.*f(:,k-9,:,j) &
+                         -    252.*f(:,k-10,:,j))/(7381.-val*2520.*dy)
+        elseif (idir==3) then
+          k=n2
+          f(:,:,n2,j) = (   25200.*f(:,:,k-1,j) &
+                         -  56700.*f(:,:,k-2,j) &
+                         + 100800.*f(:,:,k-3,j) &
+                         - 132300.*f(:,:,k-4,j) &
+                         + 127008.*f(:,:,k-5,j) &
+                         -  88200.*f(:,:,k-6,j) &
+                         +  43200.*f(:,:,k-7,j) &
+                         -  14175.*f(:,:,k-8,j) &
+                         +   2800.*f(:,:,k-9,j) &
+                         -    252.*f(:,:,k-10,j))/(7381.-val*2520.*dz)
+        endif
+      endif
 
     endsubroutine bval_from_3rd_arr
 !***********************************************************************
@@ -2290,6 +2455,100 @@ module Deriv
 !  one-sided difference formulae. val is a constant.
 !
 !  27-jan-17/Ivan: coded
+!
+      real, dimension(mx,my,mz,*) :: f
+      character(LEN=3) :: topbot
+      integer :: j,idir
+      real :: val
+
+      integer :: k
+
+      if (topbot=='bot') then
+        if (idir==1) then
+          k=l1
+          f(l1,:,:,j) = (-  972200.*f(k+1,:,:,j) &
+                         + 2754450.*f(k+2,:,:,j) &
+                         - 5232800.*f(k+3,:,:,j) &
+                         + 7088550.*f(k+4,:,:,j) &
+                         - 6932016.*f(k+5,:,:,j) &
+                         + 4872700.*f(k+6,:,:,j) &
+                         - 2407200.*f(k+7,:,:,j) &
+                         +  794925.*f(k+8,:,:,j) &
+                         -  157800.*f(k+9,:,:,j) &
+                         +   14258.*f(k+10,:,:,j))/(-177133.+val*25200.*dx*dx)
+        elseif (idir==2) then
+          k=m1
+          f(:,m1,:,j) = (-  972200.*f(:,k+1,:,j) &
+                         + 2754450.*f(:,k+2,:,j) &
+                         - 5232800.*f(:,k+3,:,j) &
+                         + 7088550.*f(:,k+4,:,j) &
+                         - 6932016.*f(:,k+5,:,j) &
+                         + 4872700.*f(:,k+6,:,j) &
+                         - 2407200.*f(:,k+7,:,j) &
+                         +  794925.*f(:,k+8,:,j) &
+                         -  157800.*f(:,k+9,:,j) &
+                         +   14258.*f(:,k+10,:,j))/(-177133.+val*25200.*dy*dy)
+        elseif (idir==3) then
+          k=n1
+          f(:,:,n1,j) = (-  972200.*f(:,:,k+1,j) &
+                         + 2754450.*f(:,:,k+2,j) &
+                         - 5232800.*f(:,:,k+3,j) &
+                         + 7088550.*f(:,:,k+4,j) &
+                         - 6932016.*f(:,:,k+5,j) &
+                         + 4872700.*f(:,:,k+6,j) &
+                         - 2407200.*f(:,:,k+7,j) &
+                         +  794925.*f(:,:,k+8,j) &
+                         -  157800.*f(:,:,k+9,j) &
+                         +   14258.*f(:,:,k+10,j))/(-177133.+val*25200.*dz*dz)
+        endif
+      else
+        if (idir==1) then
+          k=l2
+          f(l2,:,:,j) = (-  972200.*f(k-1,:,:,j) &
+                         + 2754450.*f(k-2,:,:,j) &
+                         - 5232800.*f(k-3,:,:,j) &
+                         + 7088550.*f(k-4,:,:,j) &
+                         - 6932016.*f(k-5,:,:,j) &
+                         + 4872700.*f(k-6,:,:,j) &
+                         - 2407200.*f(k-7,:,:,j) &
+                         +  794925.*f(k-8,:,:,j) &
+                         -  157800.*f(k-9,:,:,j) &
+                         +   14258.*f(k-10,:,:,j))/(-177133.+val*25200.*dx*dx)
+        elseif (idir==2) then
+          k=m2
+          f(:,m2,:,j) = (-  972200.*f(:,k-1,:,j) &
+                         + 2754450.*f(:,k-2,:,j) &
+                         - 5232800.*f(:,k-3,:,j) &
+                         + 7088550.*f(:,k-4,:,j) &
+                         - 6932016.*f(:,k-5,:,j) &
+                         + 4872700.*f(:,k-6,:,j) &
+                         - 2407200.*f(:,k-7,:,j) &
+                         +  794925.*f(:,k-8,:,j) &
+                         -  157800.*f(:,k-9,:,j) &
+                         +   14258.*f(:,k-10,:,j))/(-177133.+val*25200.*dy*dy)
+        elseif (idir==3) then
+          k=n2
+          f(:,:,n2,j) = (-  972200.*f(:,:,k-1,j) &
+                         + 2754450.*f(:,:,k-2,j) &
+                         - 5232800.*f(:,:,k-3,j) &
+                         + 7088550.*f(:,:,k-4,j) &
+                         - 6932016.*f(:,:,k-5,j) &
+                         + 4872700.*f(:,:,k-6,j) &
+                         - 2407200.*f(:,:,k-7,j) &
+                         +  794925.*f(:,:,k-8,j) &
+                         -  157800.*f(:,:,k-9,j) &
+                         +   14258.*f(:,:,k-10,j))/(-177133.+val*25200.*dz*dz)
+        endif
+      endif
+
+    endsubroutine bval_from_4th_scl
+!***********************************************************************
+    subroutine bval_from_4th_arr(f,topbot,j,idir,val)
+!
+!  Calculates the boundary value from the 4th kind BC d^2 f/d x_i^2 = val*f employing
+!  one-sided difference formulae. val depends on x,y.
+!
+!  09-feb-17/Ivan: coded
 !
       real, dimension(mx,my,mz,*) :: f
       character(LEN=3) :: topbot
@@ -2376,6 +2635,6 @@ module Deriv
         endif
       endif
 
-    endsubroutine bval_from_4th_scl
+    endsubroutine bval_from_4th_arr
 !***********************************************************************
 endmodule Deriv
