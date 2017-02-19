@@ -11,6 +11,7 @@ module Deriv
 !
   use Messages
   use Cdata
+  use Cparam, only: lactive_dimension, nxgrid, nygrid, nzgrid
 !
   implicit none
 !
@@ -80,6 +81,9 @@ module Deriv
 !
 !  Initialize stencil coefficients
 !
+      integer, dimension(3), parameter :: grid = (/ nxgrid, nygrid, nzgrid /)
+      integer :: i
+!
       select case (der2_type)
 !
       case ('standard')
@@ -96,6 +100,15 @@ module Deriv
         call fatal_error('initialize_deriv',errormsg)
 !
       endselect
+!
+!  Warning if there is not enough grid points for bval routines
+!
+      do i = 1,3
+        if (lactive_dimension(i) .AND. (grid(i) < 9)) then
+          call warning('initialize_deriv', &
+          'There are not enough grid points for the bval routine')
+        endif
+      enddo	  
 !
     endsubroutine initialize_deriv
 !***********************************************************************

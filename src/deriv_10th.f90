@@ -11,6 +11,7 @@ module Deriv
 !
   use Cdata
   use Messages, only: fatal_error, warning
+  use Cparam, only: lactive_dimension, nxgrid, nygrid, nzgrid
 !
   implicit none
 !
@@ -81,6 +82,9 @@ module Deriv
 !
 !  Initialize stencil coefficients
 !
+      integer, dimension(3), parameter :: grid = (/ nxgrid, nygrid, nzgrid /)
+      integer :: i
+!
       select case (der2_type)
 !
       case ('standard')
@@ -98,6 +102,15 @@ module Deriv
         call fatal_error('initialize_deriv',errormsg)
 !
       endselect
+!
+!  Warning if there is not enough grid points for bval routines
+!
+      do i = 1,3
+        if (lactive_dimension(i) .AND. (grid(i) < 11)) then
+          call warning('initialize_deriv', &
+          'There are not enough grid points for the bval routine')
+        endif
+      enddo	  
 !
     endsubroutine initialize_deriv
 !***********************************************************************
@@ -1864,7 +1877,7 @@ module Deriv
       real, dimension (mx), intent(in)  :: f
       real, dimension (nx), intent(out) :: df
 !
-      call fatal_error("deriv_10th: der_x not implemented yet")
+      call fatal_error("deriv_10th", "der_x not implemented yet")
 !
 ! To avoid compiler warnings:
 !
