@@ -28,7 +28,7 @@ module Deriv
   public :: der2_minmod
   public :: heatflux_deriv_x
   public :: set_ghosts_for_onesided_ders
-  public :: bval_from_neumann, bval_from_3rd, bval_from_4th_scl
+  public :: bval_from_neumann, bval_from_3rd, bval_from_4th
 !
   real :: der2_coef0, der2_coef1, der2_coef2, der2_coef3
 !
@@ -71,6 +71,11 @@ module Deriv
   interface bval_from_3rd
     module procedure bval_from_3rd_scl
     module procedure bval_from_3rd_arr
+  endinterface
+!
+  interface bval_from_4th
+    module procedure bval_from_4th_scl
+    module procedure bval_from_4th_arr
   endinterface
 !
   contains
@@ -2462,6 +2467,7 @@ module Deriv
 !  one-sided difference formulae. val depends on x,y.
 !
 !  30-sep-16/MR: coded
+!  09-feb-17/Ivan: completed dummy routine
 !
       real, dimension(mx,my,mz,*) :: f
       character(LEN=3) :: topbot
@@ -2469,8 +2475,133 @@ module Deriv
       real, dimension(:,:) :: val
       external :: func
 !
-      call fatal_error('bval_from_3rd_arr','not implemented')
+      integer :: k
+
+      if (topbot=='bot') then
+        if (idir==1) then
+          k=l1
+          f(l1,:,:,j) = (  360.*f(k+1,:,:,j) &
+                         - 450.*f(k+2,:,:,j) &
+                         + 400.*f(k+3,:,:,j) &
+                         - 225.*f(k+4,:,:,j) &
+                         +  72.*f(k+5,:,:,j) &
+                         -  10.*f(k+6,:,:,j) )/(147.+val*60.*dx)
+        elseif (idir==2) then
+          k=m1
+          f(:,m1,:,j) = (  360.*f(:,k+1,:,j) &
+                         - 450.*f(:,k+2,:,j) &
+                         + 400.*f(:,k+3,:,j) &
+                         - 225.*f(:,k+4,:,j) &
+                         +  72.*f(:,k+5,:,j) &
+                         -  10.*f(:,k+6,:,j) )/(147.+val*60.*dy)
+        elseif (idir==3) then
+          k=n1
+          f(:,:,n1,j) = (  360.*f(:,:,k+1,j) &
+                         - 450.*f(:,:,k+2,j) &
+                         + 400.*f(:,:,k+3,j) &
+                         - 225.*f(:,:,k+4,j) &
+                         +  72.*f(:,:,k+5,j) &
+                         -  10.*f(:,:,k+6,j) )/(147.+val*60.*dz)
+        endif
+      else
+        if (idir==1) then
+          k=l2
+          f(l2,:,:,j) = (  360.*f(k-1,:,:,j) &
+                         - 450.*f(k-2,:,:,j) &
+                         + 400.*f(k-3,:,:,j) &
+                         - 225.*f(k-4,:,:,j) &
+                         +  72.*f(k-5,:,:,j) &
+                         -  10.*f(k-6,:,:,j) )/(147.-val*60.*dx)
+        elseif (idir==2) then
+          k=m2
+          f(:,m2,:,j) = (  360.*f(:,k-1,:,j) &
+                         - 450.*f(:,k-2,:,j) &
+                         + 400.*f(:,k-3,:,j) &
+                         - 225.*f(:,k-4,:,j) &
+                         +  72.*f(:,k-5,:,j) &
+                         -  10.*f(:,k-6,:,j) )/(147.-val*60.*dy)
+        elseif (idir==3) then
+          k=n2
+          f(:,:,n2,j) = (+ 360.*f(:,:,k-1,j) &
+                         - 450.*f(:,:,k-2,j) &
+                         + 400.*f(:,:,k-3,j) &
+                         - 225.*f(:,:,k-4,j) &
+                         +  72.*f(:,:,k-5,j) &
+                         -  10.*f(:,:,k-6,j) )/(147.-val*60.*dz)
+        endif
+      endif
 
     endsubroutine bval_from_3rd_arr
+!***********************************************************************
+!***********************************************************************
+    subroutine bval_from_4th_arr(f,topbot,j,idir,val)
+!
+!  Calculates the boundary value from the 4th kind BC d^2 f/d x_i^2 = val*f employing
+!  one-sided difference formulae. val is a constant.
+!
+!  09-feb-17/Ivan: coded
+!
+      real, dimension(mx,my,mz,*) :: f
+      character(LEN=3) :: topbot
+      integer :: j,idir
+      real, dimension(:,:) :: val
+
+      integer :: k
+
+      if (topbot=='bot') then
+        if (idir==1) then
+          k=l1
+          f(l1,:,:,j) = (- 3132.*f(k+1,:,:,j) &
+                         + 5265.*f(k+2,:,:,j) &
+                         - 5080.*f(k+3,:,:,j) &
+                         + 2970.*f(k+4,:,:,j) &
+                         -  972.*f(k+5,:,:,j) & 
+                         +  137.*f(k+6,:,:,j)  )/(-812.+val*180.*dx*dx)
+        elseif (idir==2) then
+          k=m1
+          f(:,m1,:,j) = (- 3132.*f(:,k+1,:,j) &
+                         + 5265.*f(:,k+2,:,j) &
+                         - 5080.*f(:,k+3,:,j) &
+                         + 2970.*f(:,k+4,:,j) &
+                         -  972.*f(:,k+5,:,j) & 
+                         +  137.*f(:,k+6,:,j)  )/(-812.+val*180.*dy*dy)
+        elseif (idir==3) then
+          k=n1
+          f(:,:,n1,j) = (- 3132.*f(:,:,k+1,j) &
+                         + 5265.*f(:,:,k+2,j) &
+                         - 5080.*f(:,:,k+3,j) &
+                         + 2970.*f(:,:,k+4,j) &
+                         -  972.*f(:,:,k+5,j) & 
+                         +  137.*f(:,:,k+6,j)  )/(-812.+val*180.*dz*dz)
+        endif
+      else
+        if (idir==1) then
+          k=l2
+          f(l2,:,:,j) = (- 3132.*f(k-1,:,:,j) &
+                         + 5265.*f(k-2,:,:,j) &
+                         - 5080.*f(k-3,:,:,j) &
+                         + 2970.*f(k-4,:,:,j) &
+                         -  972.*f(k-5,:,:,j) & 
+                         +  137.*f(k-6,:,:,j)  )/(-812.+val*180.*dx*dx)
+        elseif (idir==2) then
+          k=m2
+          f(:,m2,:,j) = (- 3132.*f(:,k-1,:,j) &
+                         + 5265.*f(:,k-2,:,j) &
+                         - 5080.*f(:,k-3,:,j) &
+                         + 2970.*f(:,k-4,:,j) &
+                         -  972.*f(:,k-5,:,j) & 
+                         +  137.*f(:,k-6,:,j)  )/(-812.+val*180.*dy*dy)
+        elseif (idir==3) then
+          k=n2
+          f(:,:,n2,j) = (- 3132.*f(:,:,k-1,j) &
+                         + 5265.*f(:,:,k-2,j) &
+                         - 5080.*f(:,:,k-3,j) &
+                         + 2970.*f(:,:,k-4,j) &
+                         -  972.*f(:,:,k-5,j) & 
+                         +  137.*f(:,:,k-6,j)  )/(-812.+val*180.*dz*dz)
+        endif
+      endif
+
+    endsubroutine bval_from_4th_arr
 !***********************************************************************
  endmodule Deriv
