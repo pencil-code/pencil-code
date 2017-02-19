@@ -4,7 +4,9 @@
 %%
 %% Source files:
 %%   hydro.f90
+%%   gpu_astaroth.f90
 %%   noentropy.f90
+%%   nogpu.f90
 %%   nohydro.f90
 %%   nopower_spectrum.f90
 %%   noyinyang.f90
@@ -24,8 +26,12 @@
   \var{hydro.f90} & This module takes care of most of the things related to velocity. \\
   \var{}          & Pressure, for example, is added in the energy (entropy) module. \\
 \midrule
+  \var{gpu_astaroth.f90} & This module contains GPU related types and functions to be used with the ASTAROTH nucleus. \\
+\midrule
   \var{noentropy.f90} & Calculates pressure gradient term for \\
   \var{}          & polytropic equation of state $p=\text{const}\rho^{\Gamma}$. \\
+\midrule
+  \var{nogpu.f90} & This module contains GPU related dummy types and functions. \\
 \midrule
   \var{nohydro.f90} & no variable $\uv$: useful for kinematic dynamo runs. \\
 \midrule

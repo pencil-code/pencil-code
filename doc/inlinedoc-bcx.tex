@@ -43,8 +43,8 @@
   \var{v}         & vanishing third derivative \\
   \var{cop}       & copy value of last physical point to all ghost cells \\
   \var{1s}        & onesided \\
-  \var{d1s}       & onesided for 1st derivative in two first inner points, Dirichlet in boundary point \\
-  \var{n1s}       & onesided for 1st derivative in two first inner points, Neumann in boundary point \\
+  \var{d1s}       & onesided for 1st/2nd derivative in two first inner points, Dirichlet in boundary point \\
+  \var{n1s}       & onesided for 1st/2nd derivative in two first inner points, Neumann in boundary point \\
   \var{1so}       & onesided \\
   \var{cT}        & constant temperature (implemented as
                     condition for entropy $s$ or temperature $T$) \\
@@ -88,6 +88,9 @@
                     for spherical coordinate system. \\
   \var{nfr}       & Normal-field bc for spherical coordinate system.
                     Some people call this the ``(angry) hedgehog bc''. \\
+  \var{nr1}       & Normal-field bc for spherical coordinate system.
+                    Some people call this the ``(angry) hedgehog bc''.
+                    Implementation with one-sided derivative. \\
   \var{sa2}       & $(d/dr)(r B_{\phi}) = 0$ imposes
                     boundary condition on 2nd derivative of
                     $r A_{\phi}$. Same applies to $\theta$ component. \\
@@ -95,6 +98,7 @@
                     coordinate: $d/dr( A_r) + 2/r = 0$. \\
   \var{fix}       & set boundary value [really??] \\
   \var{fil}       & set boundary value from a file \\
+  \var{cfb}       & radial centrifugal balance \\
   \var{g}         & set to given value(s) or function \\
   \var{nil}       & do nothing; assume that everything is set \\
   \var{ioc}       & inlet/outlet on western/eastern hemisphere

@@ -31,8 +31,8 @@
   \var{out}       & allow outflow, but no inflow
                     forces ghost cells and boundary to not point inwards \\
   \var{1s}        & onesided \\
-  \var{d1s}       & onesided for 1st derivative in two first inner points, Dirichlet in boundary point \\
-  \var{n1s}       & onesided for 1st derivative in two first inner points, Neumann in boundary point \\
+  \var{d1s}       & onesided for 1st and 2nd derivative in two first inner points, Dirichlet in boundary point \\
+  \var{n1s}       & onesided for 1st and 2nd derivative in two first inner points, Neumann in boundary point \\
   \var{cT}        & constant temp. \\
   \var{sT}        & symmetric temp. \\
   \var{asT}       & select entropy for uniform ghost temperature
@@ -42,6 +42,8 @@
   \var{f}         & freeze value \\
   \var{s+f}       & freeze value \\
   \var{fg}        & ``freeze'' value, i.e. maintain initial \\
+  \var{fBs}       & frozen-in B-field (s) \\
+  \var{fB}        & frozen-in B-field (a2) \\
   \var{1}         & f=1 (for debugging) \\
   \var{set}       & set boundary value \\
   \var{sse}       & symmetry, set boundary value \\

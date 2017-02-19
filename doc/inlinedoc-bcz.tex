@@ -13,9 +13,6 @@
 \midrule
   \multicolumn{2}{c}{Module \file{boundcond.f90}} \\
 \midrule
-  \var{cfb}       & radial centrifugal balance \\
-  \var{fBs}       & frozen-in B-field (s) \\
-  \var{fB}        & frozen-in B-field (a2) \\
   \var{0}         & zero value in ghost zones, free value on boundary \\
   \var{p}         & periodic \\
   \var{yy}        & Yin-Yang grid \\
@@ -31,8 +28,9 @@
   \var{v}         & vanishing third derivative \\
   \var{v3}        & vanishing third derivative \\
   \var{1s}        & one-sided \\
-  \var{d1s}       & onesided for 1st derivative in two first inner points, Dirichlet in boundary point \\
-  \var{n1s}       & onesided for 1st derivative in two first inner points, Neumann in boundary point \\
+  \var{d1s}       & onesided for 1st and 2nd derivative in two first inner points, Dirichlet in boundary point \\
+  \var{n1s}       & onesided for 1st and 2nd derivative in two first inner points, Neumann in boundary point \\
+  \var{a1s}       & special for perfect conductor with const alpha and etaT when A considered as B; one-sided for 1st and 2nd derivative in two first inner points \\
   \var{fg}        & ``freeze'' value, i.e. maintain initial \\
   \var{c1}        & complex \\
   \var{c1s}       & complex \\

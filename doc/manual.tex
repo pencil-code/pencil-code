@@ -415,7 +415,8 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date$ $,~ $ $Revision$ $}\\
+  %\emph{$ $Date$ $,~ $ $Revision$ $}\\
+  \today\\
   \url{http://www.nordita.org/software/pencil-code/}\\
   \url{https://github.com/pencil-code/pencil-code}
 
@@ -506,7 +507,7 @@ An up to date list of Pencil Code contributors can be found at
 
 \vfill
 
-Copyright \copyright{} 2001--2014 Wolfgang Dobler \& Axel Brandenburg
+Copyright \copyright{} 2001--2017 Wolfgang Dobler \& Axel Brandenburg
 \bigskip
 
 Permission is granted to make and distribute verbatim copies of
@@ -6673,17 +6674,17 @@ Again, the answer is yes; just go to:
 \index{Check-in details}
 \index{h-index}
 
-All developers are supposed to have an up-to-date an entry in the file
+All developers are supposed to have an up-to-date entry in the file
 \file{pencil-code/license/developers.txt} so that they can be contacted in
-the case a code change breaks an auto-test or other code functionality.
+case a code change breaks an auto-test or other code functionality.
 
 Several {\sc Pencil Code} committers have done several hundred check-ins,
-but many of the currently 98 registered people on the repository have
+but many of the currently 68 registered people on the repository have
 hardly done anything.
 To put a number to this, one can define an $h$ index, which gives the
-number of users, who have done at least as many as that number of check ins.
-This $h$ index is currently 28, i.e., 28 users have done at least
-28 check ins; see Figure~\ref{pencil-hindex}.
+number of users, who have done at least as many as that number of check-ins.
+This $h$ index is currently 32, i.e., 32 users have done at least
+32 check-ins; see Figure~\ref{pencil-hindex}.
 
 % ---------------------------------------------------------------------- %
 \begin{figure}[hbtp]
@@ -6733,7 +6734,7 @@ has not changed much.
 \end{figure}
 % ---------------------------------------------------------------------- %
 
-Before making changes the to the code, it is important that you
+Before making changes to the code, it is important that you
 verify that you can run the \cmd{pc_auto-test} successfully.
 Don't do this when you have already modified the code, because
 then you cannot be sure that any problems are caused by your changes,
@@ -6788,9 +6789,14 @@ your needs.
 \end{figure}
 % ---------------------------------------------------------------------- %
 
-The Pencil Code check ins occur regularly all the time.
+The Pencil Code check-ins occur regularly all the time.
 By the Pencil Code User Meeting 2010 we have arrived at a revision
 number of 15,000.
+In February 2017, the number of check-ins has risen to 26,804; see
+\url{https://github.com/pencil-code/pencil-code}.
+Major code changes are nowadays being discussed by the
+Pencil Code Steering Committee
+(\url{https://www.nordita.org/~brandenb/pencil-code/PCSC/}).
 The increase of the revision number with time is depicted in
 Figure~\ref{CheckIns}.
 The number of Pencil Code developers increases too
@@ -6798,7 +6804,7 @@ The number of Pencil Code developers increases too
 This may indicate that new users can produce new science with the
 code as it is, but it may also indicate that it is getting harder
 to understand the code.
-This will be discussed in the next section.
+How to understand the code will be discussed in the next section.
 
 \section{Understanding the code}
 
@@ -8152,6 +8158,144 @@ in Fig~\ref{cvsstat}.
   \end{center}
 \end{table}
 % ---------------------------------------------------------------------- %
+
+\subsection{Test case}
+
+In the following test samples, we run isothermal magnetohydrodynamics
+in a periodic domain\footnote{Run directories are available on
+\url{http://norlx51.nordita.org/~brandenb/pencil-code/timings/bforced/}}.
+Power spectra are computed during the run, but our
+current parallelization of the Fourier transform
+requires that the meshpoint number is an integer multiple
+of the product of processor numbers in the $y$ and $z$ directions
+and the product of processor numbers in the $x$ and $y$ directions.
+In addition, the number of processors in one direction should not
+be so large that the number of mesh points per processor becomes
+comparable to or less than the number of ghost zones (which is 6).
+
+\subsection{Running the code}
+
+To run the code, get one of the sample run directories, e.g.,
+\url{http://norlx51.nordita.org/~brandenb/pencil-code/timings/bforced/512_4x16x32}.
+The relevant file to be changed is \url{src/cparam.local}
+\scriptsize
+\begin{verbatim}
+ncpus=2048,nprocx=4,nprocy=16,nprocz=ncpus/(nprocx*nprocy)
+nxgrid=512,nygrid=nxgrid,nzgrid=nxgrid
+\end{verbatim}
+\normalsize
+in particular the values of ncpus, nprocx, nprocy, and nxgrid.
+Once they are chosen, say make, and submit
+start\_run.csh.
+
+% ---------------------------------------------------------------------- %
+%cp ~/tex/pencil-code/performance/fig/ptriolith-strong.ps figs/
+\begin{figure}[hbtp]
+  \centering
+  \includegraphics%
+    [width=0.8\textwidth,keepaspectratio]%
+    {ptriolith-strong}
+  \caption{Strong scaling on Triolith (2014).}
+  \label{ptriolith-strong}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
+\subsection{Triolith}
+
+On Triolith, strong scaling tests have been performed
+for three mesh sizes.
+The time per time step and mesh point is given for
+different processor numbers and layouts.
+Generally, it is advantageous to keep the number
+of processors in the $x$ direction small.
+
+\begin{table}[htb]
+  \begin{center}
+    \caption{Triolith timings}
+    \label{Tsummary-Triolith}
+    \begin{tabular}{rccc}
+    \toprule
+proc & $\displaystyle\frac{{\mu\rm s}}{\rm pt\;\;step}$ & resol. & layout \\
+    \midrule
+  16 &0.075& $128^3$ & 2x2x4  \\
+  16 &0.065& $128^3$ & 1x4x4  \\
+  16 &0.0544& $256^3$ & 1x4x4  \\  %256_1x4x4
+  64 &0.0146& $256^3$ & 1x8x8  \\  %256_1x8x8
+  64 &0.0164& $256^3$ & 2x4x8  \\
+ 256 &0.0049& $256^3$ & 1x16x16 \\ %256_1x16x16
+ 512 &0.0035& $256^3$ & 2x16x16 \\ %256_2x16x16
+1024 &0.00236 &$256^3$ & 2x16x32 \\ %256_2x16x32
+1024 &0.00127 &$512^3$ & 2x16x32 \\ %512_2x16x32
+1024 &0.00129 &$512^3$ & 4x16x16 \\
+2048 & $9.34{\times}10^{-4}$ &$ 512^3$&4x16x32 \\ %512_4x16x32
+2304 & 0.00107 &$ 576^3$&4x18x32 \\  %576_4x18x32
+4096 &$3.6{\times}10^{-4}$&$1024^3$&4x32x32 \\
+4096 &$3.8{\times}10^{-4}$&$1024^3$&8x16x32 \\
+4096 &$4.2{\times}10^{-4}$&$1024^3$&4x16x64 \\
+4608 &$7.38{\times}10^{-4}$&$ 576^3$&8x18x32 \\ %576_8x18x32
+4608 &$2.66{\times}10^{-4}$&$1152^3$&4x32x36 \\ %1152_4x32x36
+4608 &$3.03{\times}10^{-4}$&$1152^3$&4x36x32 \\ %1152_4x36x32
+4608 &$3.12{\times}10^{-4}$&$1152^3$&4x18x64 \\ %1152_4x18x64
+4608 &$2.36{\times}10^{-4}$&$2304^3$&2x32x72 \\ %2304_2x32x72
+8192 &$1.475{\times}10^{-4}$&$2048^3$&4x32x64 \\ %short2048pm1_kf60b
+9216 & 0.00104 &$ 576^3$&16x18x32 \\ %576_16x18x32
+9216 &$1.276{\times}10^{-4}$&$2304^3$&4x36x64 \\ %short2304pm1_kf60c
+9216 &$1.30{\times}10^{-4}$&$2304^3$&4x32x72 \\ %2304_4x32x72
+    \bottomrule
+    \end{tabular}
+  \end{center}
+\end{table}
+
+{\em Comments}.~
+Although on Triolith the number of processors per node is 16,
+resolutions with one or two powers of 3 (such as 576) still work well.
+Furthermore, the number of processors above which the scaling becomes
+poor increases quadratically with the number of mesh points.
+This implies that the RAM per processor increases linearly with
+the problem size per direction.
+However, this will not be a limitation, because even for $2304^3$
+meshes, the required RAM is still below 100 MB.
+%    256     512    1152    2304
+%    256    1152    4608   18432
+%    7.3    13.0    37.2   74.32
+
+\subsection{Lindgren}
+
+On Lindgren, we have performed weak scaling tests and compare
+with weak scaling results for Triolith.
+Triolith is about twice as fast as Lindgren.
+
+\begin{table}[htb]
+  \begin{center}
+    \caption{Lindgren timings}
+    \label{Tsummary-Lindgren}
+    \begin{tabular}{rccc}
+    \toprule
+proc & $\displaystyle\frac{{\mu\rm s}}{\rm pt\;\;step}$ & resol. & layout \\
+    \midrule
+1536&0.00171&$512^2{\times}384$& 2x32x24 \\
+2048&0.00129&$512^2{\times}1024$&1x32x64 \\
+2048&0.00129&$1024^2{\times}2048$&1x32x64 \\
+4096&$4.6{\times}10^{-4}$&$2048^3$&4x16x64 \\
+9216&$2.36{\times}10^{-4}$&$2304^3$&4x48x48 \\
+    \bottomrule
+    \end{tabular}
+  \end{center}
+\end{table}
+
+% ---------------------------------------------------------------------- %
+%cp ~/tex/pencil-code/performance/fig/pcomp.ps figs/pcomp-lindgren.ps
+\begin{figure}[hbtp]
+  \centering
+  \includegraphics%
+    [width=0.8\textwidth,keepaspectratio]%
+    {pcomp-lindgren}
+    \caption{Comparison Triolith (black, plus signs)
+    and Lindgren (red, triangles). Weak scaling (2014).}
+  \label{pcomp-lindgren}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
 % ====================================================================== %
 \section{Coding standard}
 \index{Coding standards}
