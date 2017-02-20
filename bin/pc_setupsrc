@@ -156,14 +156,14 @@ link_pre_and_post_processing_files()
       if [ -h "`basename $file`" ]; then
         rm -f "`basename $file`"
         to_link="$to_link $file"
-        ln -s $PENCIL_HOME/bin/pc_helper $old_dir/`basename $file .f90` >& /dev/null
+        ln -s $PENCIL_HOME/bin/pc_helper $old_dir/`basename $file .f90` 2>&- 
       elif [ -f "`basename $file`" ] \
         || [ -d "`basename $file`" ]; then
         n="`expr $n + 1`"
         existf="$existf`basename $file` "
       else
         to_link="$to_link $file"
-        ln -s $PENCIL_HOME/bin/pc_helper $old_dir/`basename $file .f90` >& /dev/null
+        ln -s $PENCIL_HOME/bin/pc_helper $old_dir/`basename $file .f90` 2>&- 
       fi
     else
       echo "No such file: $file"
