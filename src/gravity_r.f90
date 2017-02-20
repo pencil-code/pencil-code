@@ -1,4 +1,4 @@
-! $Id$
+! $Id: gravity_r.f90,v 1.1 2017/02/16 18:36:53 wlyra Exp $
 !
 !  Radial gravity
 !
@@ -66,19 +66,21 @@ module Gravity
   logical :: lgravity_dust=.true.
   logical :: lindirect_terms=.false.
   logical :: lramp_mass=.false.
-  integer :: iglobal_gg=0  
+  integer :: iglobal_gg=0
+  logical :: lsecondary_wait=.false.
+  real :: t_start_secondary = -impossible
 !
   namelist /grav_init_pars/ &
       ipotential,g0,r0_pot,r1_pot1,n_pot,n_pot1,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
       lgravity_neutrals,g1,rp1_pot,lindirect_terms,lramp_mass,t_ramp_mass,&
-      ipotential_secondary
+      ipotential_secondary,lsecondary_wait,t_start_secondary
 !
   namelist /grav_run_pars/ &
       ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium, &
       qgshear,lgravity_gas,g01,rpot,gravz_profile,gravz,nu_epicycle, &
       lgravity_neutrals,g1,rp1_pot,lindirect_terms,lramp_mass,t_ramp_mass, &
-      ipotential_secondary
+      ipotential_secondary,lsecondary_wait,t_start_secondary
 !
   contains
 !***********************************************************************
@@ -90,7 +92,7 @@ module Gravity
 !
 !  Identify version number.
 !
-      if (lroot) call svn_id("$Id$")
+      if (lroot) call svn_id("$Id: gravity_r.f90,v 1.1 2017/02/16 18:36:53 wlyra Exp $")
 !
       lgravr=.true.
       lgravr_gas =.true.
@@ -455,7 +457,7 @@ module Gravity
 !  If there is a secondary body whose mass is changing in time (ramped-up), then 
 !  this gravity is not added to the global array. It is re-calculated instead. 
 !
-        if (g1/=0 .and. lramp_mass) then
+        if (g1/=0 .and. (lramp_mass.or.lsecondary_wait)) then
           call secondary_body_gravity(ggp)
           p%gg = p%gg + ggp
         endif
@@ -529,6 +531,12 @@ module Gravity
         g2 = g1/rp1**2 * t*t1_ramp_mass
       else
         g2 = g1/rp1**2
+      endif
+!
+!  Do not allow secondary before t_start_secondary
+!
+      if (lsecondary_wait .and. t <= t_start_secondary) then
+        g2 = 0. 
       endif
 !
       if (lcylindrical_coords) then
@@ -958,7 +966,7 @@ module Gravity
 !
 !  Add the gravity of a stationary secondary body (i.e., following reference frame)
 !
-      if (g1/=0 .and. (.not.lramp_mass)) then 
+      if (g1/=0 .and. (.not.(lramp_mass.or.lsecondary_wait))) then 
 !
 !  In this case, the mass is constant in time. Add to the global array.
 !
@@ -1024,7 +1032,8 @@ module Gravity
 !
       endselect
 !
-      if (lramp_mass.and.(t<=t_ramp_mass)) gp = gp * t*t1_ramp_mass
+      if (lramp_mass     .and.(t<=t_ramp_mass)      ) gp = gp * t*t1_ramp_mass
+      if (lsecondary_wait.and.(t<=t_start_secondary)) gp = 0.
 !       
 !  Set the acceleration
 !
@@ -1054,8 +1063,14 @@ module Gravity
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
+!  write column, idiag_XYZ, where our variable XYZ is stored
+!  idl needs this even if everything is zero
+!
       if (lwr) then
         write(3,*) 'igg=',igg
+        write(3,*) 'igx=',igx
+        write(3,*) 'igy=',igy
+        write(3,*) 'igz=',igz
       endif
 !
       call keep_compiler_quiet(lreset)
