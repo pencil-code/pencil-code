@@ -4488,9 +4488,13 @@ module EquationOfState
                 "currently only correct for bcz1(ilntt)='s'")
           endif
 !
-          call eoscalc(ilnrho_lntt,f(l1,m1,n1,ilnrho),f(l1,m1,n1,ilntt), &
+          if (ltemperature_nolog) then
+            call eoscalc(ilnrho_TT,f(l1,m1,n1,ilnrho),f(l1,m1,n1,iTT), &
                        cs2=cs2_point)
-!
+          else
+            call eoscalc(ilnrho_lnTT,f(l1,m1,n1,ilnrho),f(l1,m1,n1,ilnTT), &
+                       cs2=cs2_point)
+          endif
           dlnrhodz =  gamma *gravz/cs2_point
 !
           do i=1,nghost
@@ -4571,9 +4575,13 @@ module EquationOfState
                 "currently only correct for bcz2(ilntt)='s'")
           endif
 !
-          call eoscalc(ilnrho_lntt,f(l2,m2,n2,ilnrho),f(l2,m2,n2,ilntt), &
+          if (ltemperature_nolog) then
+            call eoscalc(ilnrho_TT,f(l2,m2,n2,ilnrho),f(l2,m2,n2,iTT), &
                        cs2=cs2_point)
-!
+          else
+            call eoscalc(ilnrho_lnTT,f(l2,m2,n2,ilnrho),f(l2,m2,n2,ilnTT), &
+                       cs2=cs2_point)
+          endif
           dlnrhodz =  gamma *gravz/cs2_point
 !
           do i=1,nghost

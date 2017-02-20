@@ -2657,10 +2657,9 @@ module Density
           elseif (lentropy.and.pretend_lnTT) then
             f(l1:l2,m,n,ilnTT)=log(cs20*cp1/gamma_m1)
           elseif (ltemperature.and..not.ltemperature_nolog) then
-            f(l1:l2,m,n,iTT)=log(cs20*cp1/gamma_m1)
+            f(l1:l2,m,n,ilnTT)=log(cs20*cp1/gamma_m1)
           elseif (ltemperature.and.ltemperature_nolog) then
-            call fatal_error("isothermal_density", &
-                "not implemented for ltemperature_nolog")
+            f(l1:l2,m,n,iTT)=cs20*cp1/gamma_m1
           endif
         enddo
       enddo
