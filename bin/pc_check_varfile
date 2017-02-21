@@ -1,0 +1,18 @@
+#!/bin/sh
+#
+# Checks if varfile sizes are consistent
+#
+
+if [ $# -eq 0 ]; then
+  file="var.dat"
+else
+  file="${1}"
+fi
+
+nlines=`du data/proc*/${file} | awk '{print $1}' | uniq | wc -l`
+
+if [ $nlines -eq 1 ]; then
+  echo "Sizes of ${file} are consistent."
+else
+  echo "Sizes of ${file} are inconsistent: ${nlines} different sizes were found."
+fi
