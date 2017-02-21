@@ -20,12 +20,37 @@
 
 #include "headers_c.h"
 
+extern REAL cdata_mp_omega_;
+extern REAL cdata_mp_theta_;
+extern REAL viscosity_mp_nu_;
+static FINT nx_, ny_, nz_;
+
+extern REAL cdata_mp_dx_;
+extern REAL cdata_mp_dy_;
+extern REAL cdata_mp_dz_;
 /* ---------------------------------------------------------------------- */
 void FTNIZE(initialize_gpu_c)
-     (FINT *par)
+     (FINT *nx, FINT *ny, FINT *nz, REAL *x, REAL *y, REAL *z )
 /* Initializes GPU.
 */
 {
+  /*
+  printf("omega = %e\n", cdata_mp_omega_);
+  printf("nu = %e\n", viscosity_mp_nu_);
+  printf("nx = %d\n", *nx);
+  printf("ny = %d\n", *ny);
+  printf("nz = %d\n", *nz);
+  */
+  nx_=*nx;
+  ny_=*ny;
+  nz_=*nz;
+
+  printf("xmin = %e\n", x[4]);
+  printf("xmax = %e\n", x[*nx-1+3]);
+  printf("ymin = %e\n", y[4]);
+  printf("ymax = %e\n", y[*ny-1+3]);
+  printf("zmin = %e\n", z[4]);
+  printf("zmax = %e\n", z[*nz-1+3]);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(finalize_gpu_c)
@@ -41,6 +66,8 @@ void FTNIZE(rhs_gpu_c)
    and of continuity eq., dlnrho, by GPU kernels.
 */
 {
+  printf("nx_ = %d\n", nx_);
+  printf("No GPU implementation yet");
 // add calls to ASTAROTH routines here
 }
 /* ---------------------------------------------------------------------- */
