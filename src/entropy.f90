@@ -368,6 +368,7 @@ module Energy
 ! Auxiliaries
 !
   real, dimension(:,:), pointer :: reference_state
+  real, dimension (nx) :: diffus_chi,diffus_chi3
 !
   contains
 !
@@ -2988,6 +2989,8 @@ module Energy
 !
 !  Calculate viscous contribution to entropy.
 !
+      diffus_chi=0.; diffus_chi3=0.
+ 
       if (lviscosity .and. lviscosity_heat) call calc_viscous_heat(df,p,Hmax)
 !
 !  Entry possibility for "personal" entries.
@@ -3019,8 +3022,12 @@ module Energy
       if (lheatc_hyper3ss_mesh)  call calc_heatcond_hyper3_mesh(f,df)
       if (lheatc_hyper3ss_aniso) call calc_heatcond_hyper3_aniso(f,df)
 
-      if (lenergy_slope_limited.and.lfirst) &
-        df(:,m,n,iss)=df(:,m,n,iss)-f(l1:l2,m,n,iFF_div_ss)
+      if (lfirst.and.ldt)
+        maxdiffus=max(maxdiffus,diffus_chi)
+        maxdiffus3=max(maxdiffus3,diffus_chi3)
+      endif
+      !!!if (lenergy_slope_limited.and.lfirst) &
+      !!!  df(:,m,n,iss)=df(:,m,n,iss)-f(l1:l2,m,n,iFF_div_ss)
 !
       !if(lfirst .and. ldiagnos) print*,'DIV:iproc,m,f=',iproc,m,f(l1:l2,m,n,iFF_div_ss)
 !
@@ -3502,7 +3509,8 @@ module Energy
   
         f(:,:,:,iFF_diff1:iFF_diff2)=0.
         call calc_all_diff_fluxes(f,iss,islope_limiter,h_slope_limited)
-
+!if (ldiagnos.and.iproc==0) print'(a,i2,22(1x,e14.8))','iss,IPROC=', iproc, f(4,10,:,iss)
+!if (ldiagnos.and.iproc==0) print'(a,i2,22(1x,e14.8)/)','iFF_diff1,IPROC=', iproc, f(4,10,:,iFF_diff1)
         do n=n1,n2; do m=m1,m2
           call div(f,iFF_diff,f(l1:l2,m,n,iFF_div_ss),.true.)
         enddo; enddo
