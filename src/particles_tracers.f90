@@ -915,9 +915,12 @@ module Particles
         write(3,*) 'ixp=', ixp
         write(3,*) 'iyp=', iyp
         write(3,*) 'izp=', izp
-        write(3,*) 'ivpx=', mpvar+ivpx
-        write(3,*) 'ivpy=', mpvar+ivpy
-        write(3,*) 'ivpz=', mpvar+ivpz
+!        write(3,*) 'ivpx=', mpvar+ivpx
+!        write(3,*) 'ivpy=', mpvar+ivpy
+!        write(3,*) 'ivpz=', mpvar+ivpz
+        write(3,*) 'ivpx=', ivpx
+        write(3,*) 'ivpy=', ivpy
+        write(3,*) 'ivpz=', ivpz
         write(3,*) 'inp=', inp
         write(3,*) 'irhop=', irhop
       endif

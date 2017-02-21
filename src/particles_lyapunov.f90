@@ -140,8 +140,8 @@ module Particles_lyapunov
 !
         ij=0
         do ii=1,3; do jj=1,3 
-          ij=ij+1
           fp(ip,iup11+ij)=kronecker_delta(ii,jj)
+          ij=ij+1
         enddo;enddo
 !
 ! Assign random initial value for the passive vector 

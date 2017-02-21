@@ -141,6 +141,12 @@ varcontent[ivpx].idlvar   = 'vv'
 varcontent[ivpx].idlinit  = INIT_3VECTOR
 varcontent[ivpx].skip     = 2
 ;
+default, ibpx, 0
+varcontent[ibpx].variable = 'Particle magnetic field (bp)'
+varcontent[ibpx].idlvar   = 'bp'
+varcontent[ibpx].idlinit  = INIT_3VECTOR
+varcontent[ibpx].skip     = 2
+;
 default, iap, 0
 varcontent[iap].variable = 'Particle radius (a)'
 varcontent[iap].idlvar   = 'a'
@@ -166,6 +172,51 @@ varcontent[imp].variable = 'Particle mass (mp)'
 varcontent[imp].idlvar   = 'mp'
 varcontent[imp].idlinit  = INIT_SCALAR
 ;
+default, iup11, 0
+varcontent[iup11].variable = 'grad uu at particle(up11)'
+varcontent[iup11].idlvar   = 'up11'
+varcontent[iup11].idlinit  = INIT_SCALAR
+;
+default, iup12, 0
+varcontent[iup12].variable = 'grad uu at particle(up12)'
+varcontent[iup12].idlvar   = 'up12'
+varcontent[iup12].idlinit  = INIT_SCALAR
+;
+;
+default, iup13, 0
+varcontent[iup13].variable = 'grad uu at particle(up13)'
+varcontent[iup13].idlvar   = 'up13'
+varcontent[iup13].idlinit  = INIT_SCALAR
+;
+default, iup21, 0
+varcontent[iup21].variable = 'grad uu at particle(up21)'
+varcontent[iup21].idlvar   = 'up21'
+varcontent[iup21].idlinit  = INIT_SCALAR
+;
+default, iup22, 0
+varcontent[iup22].variable = 'grad uu at particle(up22)'
+varcontent[iup22].idlvar   = 'up22'
+varcontent[iup22].idlinit  = INIT_SCALAR
+;
+default, iup23, 0
+varcontent[iup23].variable = 'grad uu at particle(up23)'
+varcontent[iup23].idlvar   = 'up23'
+varcontent[iup23].idlinit  = INIT_SCALAR
+;
+default, iup31, 0
+varcontent[iup31].variable = 'grad uu at particle(up31)'
+varcontent[iup31].idlvar   = 'up31'
+varcontent[iup31].idlinit  = INIT_SCALAR
+;
+default, iup32, 0
+varcontent[iup32].variable = 'grad uu at particle(up32)'
+varcontent[iup32].idlvar   = 'up32'
+varcontent[iup32].idlinit  = INIT_SCALAR
+;
+default, iup33, 0
+varcontent[iup33].variable = 'grad uu at particle(up33)'
+varcontent[iup33].idlvar   = 'up33'
+varcontent[iup33].idlinit  = INIT_SCALAR
 ;  Check if there is other pvar data written by the special module. 
 ;
 file_special=datadir+'/index_special_particles.pro'
