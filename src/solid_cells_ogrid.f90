@@ -197,7 +197,7 @@ module Solid_Cells
 !  Pencils and f-array to be used for curvilinear grid computations
   type(pencil_case_ogrid) p_ogrid 
   save p_ogrid
-  real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray), save ::  f_ogrid
+  real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray), save ::  f_ogrid=0.
   real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mvar)    :: df_ogrid
   
 
@@ -219,6 +219,11 @@ module Solid_Cells
     module procedure u_dot_grad_scl_ogrid
     module procedure u_dot_grad_vec_ogrid
   endinterface
+  interface read_snap_ogrid
+    module procedure read_snap_double_ogrid
+    module procedure read_snap_single_ogrid
+  endinterface
+!
 
   contains 
 !***********************************************************************
@@ -322,6 +327,21 @@ module Solid_Cells
 !
       call initialize_grid_ogrid
 !
+!  Read data.
+!  Snapshot data are saved in the data subdirectory.
+!  This directory must exist, but may be linked to another disk.
+!
+      if(lrun) call rsnap_ogrid('ogvar.dat',lread_nogrid)
+!
+!  The following is here to avoid division in sub.f90 for diagnostic
+!  outputs of integrated values in the non equidistant case.
+!  Do this even for uniform meshes, in which case xprim=dx, etc.
+!  Remember that dx_1=0 for runs without extent in that direction.
+!
+      if (nxgrid==1) then; xprim=1.0; else; xprim=1./dx_1; endif
+      if (nygrid==1) then; yprim=1.0; else; yprim=1./dy_1; endif
+      if (nzgrid==1) then; zprim=1.0; else; zprim=1./dz_1; endif
+!
     end subroutine initialize_solid_cells
 !***********************************************************************
     subroutine init_solid_cells(f)
@@ -340,6 +360,7 @@ module Solid_Cells
 !  XX-feb-17/Jorgen: Coded
 !
       use Initcond, only: gaunoise
+      use Sub,      only: wdim,control_file_exists
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real :: a2, rr2, rr2_low, rr2_high, theta_low, theta_high
@@ -348,6 +369,7 @@ module Solid_Cells
       integer i,j,cyl,iflow,iorth
       real :: shift_top,shift_bot,r_k_top,r_k_bot,theta_k_top,theta_k_bot
       real :: ur_k_top ,ur_k_bot ,uth_k_top,uth_k_bot
+      logical :: lnoerase=.false.
 !
 !  Cartesian array f:
 !
@@ -440,7 +462,11 @@ module Solid_Cells
 !  Rotate system if the flow is in y-direction
       flowy=-flowy*pi*0.5
       f_ogrid(:,:,:,iux:iuz)=0.
-      f_ogrid(:,:,:,ilnrho)=1.
+      if(ldensity_nolog) then
+        f_ogrid(:,:,:,irho)=1.
+      else
+        f_ogrid(:,:,:,ilnrho)=0.
+      endif
       call gaunoise_ogrid(ampl_noise,iux,iuz)
       do i=l1_ogrid,l2_ogrid
         rr2=x_ogrid(i)**2
@@ -474,10 +500,31 @@ module Solid_Cells
 !  Force no-slip condition on the cylinder surface
         f_ogrid(i,:,:,iux:iuy)=f_ogrid(i,:,:,iux:iuy)*wall_smoothing
       enddo
-
+!
+!  Write initial condition to disk.
+!
+      if (lwrite_ic) then
+        call wsnap_ogrid('OGVAR0',ENUM=.false.,FLIST='ogvarN.list')
+      endif
+!
+!  The option lnowrite writes everything except the actual var.dat file.
+!  This can be useful if auxiliary files are outdated, and don't want
+!  to overwrite an existing var.dat.
+!
+      lnoerase = control_file_exists("NOERASE")
+      if (.not.lnowrite .and. .not.lnoerase) then
+        call wsnap_ogrid('ogvar.dat',ENUM=.false.)
+      endif
+!
+!  Write ogdim.dat files, local and global
+!
+      call wdim(trim(directory)//'/ogdim.dat',mx_ogrid,my_ogrid,mz_ogrid)
+      if (lroot) then
+        call wdim(trim(datadir)//'/ogdim.dat', &
+            mxgrid_ogrid,mygrid_ogrid,mzgrid_ogrid,lglobal=.true.)
+      endif
     endsubroutine init_solid_cells
 !***********************************************************************
-    
     subroutine initialize_pencils_ogrid(penc0)
 !
 !  Initialize all pencils that are necessary on ogrid
@@ -1740,7 +1787,7 @@ end subroutine print_solid
         timestep_factor = 1
       endif
       !TODO
-      timestep_factor=100
+      timestep_factor=10
       dt_cartesian = t-t_ogrid
       dt_ogrid = dt_cartesian/timestep_factor
       dt_beta_ts=dt_ogrid*beta_ts
@@ -1757,8 +1804,6 @@ end subroutine print_solid
         do itsub=1,itorder
           lfirst_ogrid=(itsub==1)
           llast_ogrid=(itsub==itorder)
-iterator = iterator+1
-call print_ogrid(int(iterator))!/100))
           if (lfirst) then
             df_ogrid=0.0
             ds=0.0
@@ -1795,7 +1840,6 @@ call print_ogrid(int(iterator))!/100))
 !
         enddo
       enddo
-!     TODO: Could perhaps need a test that checks that t_ogrid == t
 !
 !  Update boundary of the overlapping grid by interpolating
 !  from curvilinear grid to cartesian grid
@@ -1803,9 +1847,10 @@ call print_ogrid(int(iterator))!/100))
 ! TODO
       call flow_curvilinear_to_cartesian(f_cartesian)
 !
-      !iterator = iterator+1
+      iterator = iterator+1
+      call wsnap_ogrid('OGVAR',ENUM=.true.,FLIST='ogvarN.list')
       !if(mod(iterator,100)==0) then
-        !call print_ogrid(int(iterator))!/100))
+      !  call print_ogrid(int(iterator)/100)
       !endif
     endsubroutine time_step_ogrid
 !***********************************************************************
@@ -1833,63 +1878,24 @@ call print_ogrid(int(iterator))!/100))
       do i=l1_ogrid,l2_ogrid
         write(1,*) x_ogrid(i)*cos(y_ogrid(m1_ogrid:m2_ogrid))
         write(2,*) x_ogrid(i)*sin(y_ogrid(m1_ogrid:m2_ogrid))
-        write(11,*) f_ogrid(i,m1_ogrid-nghost:m2_ogrid+nghost,4,iux)*cos(y_ogrid(m1_ogrid-nghost:m2_ogrid+nghost)) &
-              -f_ogrid(i,m1_ogrid-nghost:m2_ogrid+nghost,4,iuy)*sin(y_ogrid(m1_ogrid-nghost:m2_ogrid+nghost))/x_ogrid(i)
-        write(12,*) f_ogrid(i,m1_ogrid-nghost:m2_ogrid+nghost,4,iux)*sin(y_ogrid(m1_ogrid-nghost:m2_ogrid+nghost)) &
-              +f_ogrid(i,m1_ogrid-nghost:m2_ogrid+nghost,4,iuy)*cos(y_ogrid(m1_ogrid-nghost:m2_ogrid+nghost))/x_ogrid(i)
+        write(11,*) f_ogrid(i,m1_ogrid:m2_ogrid,4,iux)*cos(y_ogrid(m1_ogrid:m2_ogrid)) &
+              -f_ogrid(i,m1_ogrid:m2_ogrid,4,iuy)*sin(y_ogrid(m1_ogrid:m2_ogrid))/x_ogrid(i)
+        write(12,*) f_ogrid(i,m1_ogrid:m2_ogrid,4,iux)*sin(y_ogrid(m1_ogrid:m2_ogrid)) &
+              +f_ogrid(i,m1_ogrid:m2_ogrid,4,iuy)*cos(y_ogrid(m1_ogrid:m2_ogrid))/x_ogrid(i)
       enddo
 
-      !HEREHERE print*, 
-    print*,  'p_ogrid%x_mn    ',p_ogrid%x_mn    (int(ceiling(0.5*nx_ogrid)))    
-    print*,  'p_ogrid%y_mn    ',p_ogrid%y_mn    (int(ceiling(0.5*nx_ogrid)))    
-    print*,  'p_ogrid%z_mn    ',p_ogrid%z_mn    (int(ceiling(0.5*nx_ogrid)))    
-    print*,  'p_ogrid%rcyl_mn ',p_ogrid%rcyl_mn (int(ceiling(0.5*nx_ogrid)))    
-    print*,  'p_ogrid%phi_mn  ',p_ogrid%phi_mn  (int(ceiling(0.5*nx_ogrid)))    
-    print*,  'p_ogrid%rcyl_mn1',p_ogrid%rcyl_mn1(int(ceiling(0.5*nx_ogrid)))    
-    print*,  'p_ogrid%fpres   ',p_ogrid%fpres   (int(ceiling(0.5*nx_ogrid)),1)  
-    print*,  'p_ogrid%fvisc   ',p_ogrid%fvisc   (int(ceiling(0.5*nx_ogrid)),1)  
-    print*,  'p_ogrid%rho     ',p_ogrid%rho     (int(ceiling(0.5*nx_ogrid)))    
-    print*,  'p_ogrid%rho1    ',p_ogrid%rho1    (int(ceiling(0.5*nx_ogrid)))    
-    print*,  'p_ogrid%lnrho   ',p_ogrid%lnrho   (int(ceiling(0.5*nx_ogrid)))    
-    print*,  'p_ogrid%grho    ',p_ogrid%grho    (int(ceiling(0.5*nx_ogrid)),1)  
-    print*,  'p_ogrid%glnrho  ',p_ogrid%glnrho  (int(ceiling(0.5*nx_ogrid)),1)  
-    print*,  'p_ogrid%ugrho   ',p_ogrid%ugrho   (int(ceiling(0.5*nx_ogrid)))    
-    print*,  'p_ogrid%sglnrho ',p_ogrid%sglnrho (int(ceiling(0.5*nx_ogrid)),1)  
-    print*,  'p_ogrid%uu      ',p_ogrid%uu      (int(ceiling(0.5*nx_ogrid)),1)  
-    print*,  'p_ogrid%u2      ',p_ogrid%u2      (int(ceiling(0.5*nx_ogrid)))    
-    print*,  'p_ogrid%uij     ',p_ogrid%uij     (int(ceiling(0.5*nx_ogrid)),1,1)
-    print*,  'p_ogrid%divu    ',p_ogrid%divu    (int(ceiling(0.5*nx_ogrid)))    
-    print*,  'p_ogrid%sij     ',p_ogrid%sij     (int(ceiling(0.5*nx_ogrid)),1,1)
-    print*,  'p_ogrid%sij2    ',p_ogrid%sij2    (int(ceiling(0.5*nx_ogrid)))    
-    print*,  'p_ogrid%ugu     ',p_ogrid%ugu     (int(ceiling(0.5*nx_ogrid)),1)  
-    print*,  'p_ogrid%ugu2    ',p_ogrid%ugu2    (int(ceiling(0.5*nx_ogrid)))    
-    print*,  'p_ogrid%del2u   ',p_ogrid%del2u   (int(ceiling(0.5*nx_ogrid)),1)  
-    print*,  'p_ogrid%cv1     ',p_ogrid%cv1     (int(ceiling(0.5*nx_ogrid)))    
-    print*,  'p_ogrid%cp1     ',p_ogrid%cp1     (int(ceiling(0.5*nx_ogrid)))    
-    print*,  'p_ogrid%cv      ',p_ogrid%cv      (int(ceiling(0.5*nx_ogrid)))    
-    print*,  'p_ogrid%cp      ',p_ogrid%cp      (int(ceiling(0.5*nx_ogrid)))    
-    print*,  'p_ogrid%TT      ',p_ogrid%TT      (int(ceiling(0.5*nx_ogrid)))    
-    print*,  'p_ogrid%TT1     ',p_ogrid%TT1     (int(ceiling(0.5*nx_ogrid)))    
-    print*,  'p_ogrid%cs2     ',p_ogrid%cs2     (int(ceiling(0.5*nx_ogrid)))    
-    print*,  'p_ogrid%gTT     ',p_ogrid%gTT     (int(ceiling(0.5*nx_ogrid)),1)  
-    print*,  'p_ogrid%del2TT  ',p_ogrid%del2TT  (int(ceiling(0.5*nx_ogrid)))    
-    print*,  'p_ogrid%pp      ',p_ogrid%pp      (int(ceiling(0.5*nx_ogrid)))    
-    print*,  'p_ogrid%ee      ',p_ogrid%ee      (int(ceiling(0.5*nx_ogrid)))    
       close(1)
       close(2)
       close(11)
       close(12)
-      write(*,*) 'Press any key to continue'
-      read(*,*) 
+      !write(*,*) 'Press any key to continue'
+      !read(*,*) 
 
       endsubroutine print_ogrid
 !***********************************************************************
     subroutine pde_ogrid(df)
 !
 !  06-feb-17/Jorgen+Nils: Adapded from equ.f90
-!
-
-      use Solid_cells_Mpicomm
 !
 !  Call the different evolution equations.
 !
@@ -1902,27 +1908,9 @@ call print_ogrid(int(iterator))!/100))
 !
       headtt = (headt .and. lfirst_ogrid .and. lroot)
 !
-      !if (headtt.or.ldebug) print*,'pde_ogrid: ENTER'
-      !if (headtt) call svn_id("$Id$")
-!
-!  Prepare x-ghost zones; required before f-array communication
-!  AND shock calculation
-!
-      call boundconds_x_ogrid
-!
 !  Initiate communication and do boundary conditions.
-!  Required order:
-!  1. x-boundaries (x-ghost zones will be communicated) - done above
-!  2. communication
-!  3. y- and z-boundaries
 !
-      if (ldebug) print*,'pde: bef. initiate_isendrcv_bdry'
-      call initiate_isendrcv_bdry_ogrid(f_ogrid)
-      call finalize_isendrcv_bdry_ogrid(f_ogrid)
-!  Since only periodic implementation of boundconds in y- and z-dir, call only
-!  if single processor in said direction. Otherwise, handled in MPI-communication.
-      if (nprocy==1)                  call boundconds_y_ogrid
-      if ((nprocz==1).and.(nzgrid>1)) call boundconds_z_ogrid
+      call update_ghosts_ogrid
 !
 !------------------------------------------------------------------------------
 !  Do loop over m and n.
@@ -3081,6 +3069,507 @@ call print_ogrid(int(iterator))!/100))
       endif
 !
     endsubroutine find_near_cartesian_indeces
+!***********************************************************************
+    subroutine wsnap_ogrid(chsnap,enum,flist)
+!
+!  Write snapshot file of overlapping grid, labelled consecutively if enum==.true.
+!  Otherwise just write a snapshot without label (used for var.dat).
+!
+!  21-feb-17/Jorgen: Adapted from snapsjots.f90
+!
+      use General, only: safe_character_assign
+      use IO, only: log_filename_to_file
+      use Sub, only: read_snaptime, update_snaptime
+!
+      character(len=*), intent(in) :: chsnap
+      character(len=*), intent(in), optional :: flist
+      logical, intent(in), optional :: enum
+!
+      real, save :: tsnap
+      integer, save :: nsnap
+      logical, save :: lfirst_call=.true.
+      logical :: enum_, lsnap
+      character (len=fnlen) :: file
+      character (len=intlen) :: ch
+!
+      if (present(enum)) then
+        enum_=enum
+      else
+        enum_=.false.
+      endif
+!
+!  Output snapshot with label in 'tsnap' time intervals.
+!  File keeps the information about number and time of last snapshot.
+!
+      if (enum_) then
+        call safe_character_assign(file,trim(datadir)//'/ogtsnap.dat')
+!
+!  At first call, need to initialize tsnap.
+!  tsnap calculated in read_snaptime, but only available to root processor.
+!
+        if (lfirst_call) then
+          call read_snaptime(file,tsnap,nsnap,dsnap,t)
+          lfirst_call=.false.
+        endif
+!
+!  Check whether we want to output snapshot. If so, then
+!  update ghost zones for var.dat (cheap, since done infrequently).
+!
+        call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch)
+        if (lsnap) then
+          call update_ghosts_ogrid
+          call safe_character_assign(file,trim(chsnap)//ch)
+          call output_snap_ogrid(f_ogrid,file=file)
+          if (ip<=10.and.lroot) print*,'wsnap: written snapshot ',file
+          if (present(flist)) call log_filename_to_file(file,flist)
+        endif
+!
+      else
+!
+!  Write snapshot without label (typically, var.dat).
+!
+        call update_ghosts_ogrid
+        call safe_character_assign(file,trim(chsnap))
+        call output_snap_ogrid(f_ogrid,file=file)
+        if (present(flist)) call log_filename_to_file(file,flist)
+      endif
+!
+      if (lformat) call output_snap_form_ogrid (file)
+!
+    endsubroutine wsnap_ogrid
+!***********************************************************************
+    subroutine update_ghosts_ogrid
+!
+!  Update all ghost zones of f_ogrid.
+!  Initiate communication and do boundary conditions.
+!  Required order:
+!  1. x-boundaries (x-ghost zones will be communicated) 
+!  2. communication
+!  3. y- and z-boundaries
+!
+!  21-feb-17/Jorgen: Adapted from boundcond.f90
+!
+      use Solid_cells_Mpicomm
+
+      call boundconds_x_ogrid
+      call initiate_isendrcv_bdry_ogrid(f_ogrid)
+      call finalize_isendrcv_bdry_ogrid(f_ogrid)
+!  Since only periodic implementation of boundconds in y- and z-dir, call only
+!  if single processor in said direction. Otherwise, handled in MPI-communication.
+      if (nprocy==1)                  call boundconds_y_ogrid
+      if ((nprocz==1).and.(nzgrid>1)) call boundconds_z_ogrid
+
+!
+    endsubroutine update_ghosts_ogrid
+!***********************************************************************
+    subroutine output_snap_ogrid(a,file)
+!
+!  Write snapshot file, always write time and mesh, could add other things.
+!
+!  21-feb-17/Jorgen: Adapted from io_dist.f90
+!
+      use Mpicomm, only: start_serialize, end_serialize
+      use IO, only: lun_output
+      use File_io, only: delete_file
+!
+      real, dimension (:,:,:,:),  intent(IN) :: a
+      character (len=*), optional,intent(IN) :: file
+!
+      real :: t_sp   ! t in single precision for backwards compatibility
+!
+      t_sp = t
+      if (lserial_io) call start_serialize
+      if (present(file)) then
+        call delete_file(trim(directory_snap)//'/'//file)
+        open (lun_output, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', status='new')
+      endif
+!
+      if (lwrite_2d) then
+        if (nz_ogrid == 1) then
+          write (lun_output) a(:,:,n1_ogrid,:)
+        else
+          call fatal_error('output_snap_ogrid','lwrite_2d used for simulation with nz_ogri/=1!')
+        endif
+      else
+        write (lun_output) a
+      endif
+      write (lun_output) t_sp, x_ogrid(1:size(a,1)), y_ogrid(1:size(a,2)), z_ogrid(1:size(a,3)), dx_ogrid, dy_ogrid, dz_ogrid
+!
+      close (lun_output)
+      if (lserial_io) call end_serialize
+
+    endsubroutine output_snap_ogrid
+!***********************************************************************
+    subroutine output_snap_form_ogrid(file)
+!
+!  Write FORMATTED snapshot file
+!
+!  21/feb-17/Jorgen: Adapted from snapshot.f90
+!
+      use IO, only: lun_output
+!
+      character (len=*), intent(in) :: file
+      integer :: i, j, k
+!
+      open(lun_output,FILE=trim(directory_dist)//trim(file)//'.form')
+!
+      if (lwrite_2d) then
+        if (nz_ogrid==1) then
+          do i = l1_ogrid, l2_ogrid
+            do j = m1_ogrid, m2_ogrid
+              write(lun_output,'(40(f12.5))') x_ogrid(i),y_ogrid(j),z_ogrid(n1), &
+                    dx_ogrid,dy_ogrid,dz_ogrid,f_ogrid(i,j,n1,:)
+            enddo
+          enddo
+        else
+          call fatal_error('output_snap_form_ogrid','lwrite_2d used for simulation with nz_ogri/=1!')
+        endif
+!
+      else
+        do i = l1_ogrid, l2_ogrid
+          do j = m1_ogrid, m2_ogrid
+            do k = n1_ogrid, n2_ogrid
+              write(lun_output,'(40(f12.5))') x_ogrid(i),y_ogrid(j),z_ogrid(k), &
+                    dx_ogrid,dy_ogrid,dz_ogrid,f_ogrid(i,j,k,:)
+            enddo
+          enddo
+        enddo
+!
+      endif
+!
+      close(lun_output)
+!
+    endsubroutine output_snap_form_ogrid
+!***********************************************************************
+    subroutine rsnap_ogrid(chsnap,lread_nogrid)
+!
+!  Read snapshot file.
+!
+!  21-feb-17/Jorgen: Adapted from snapshot.f90
+!
+      use IO, only: lun_input
+      use Mpicomm, only: end_serialize
+!
+      logical :: lread_nogrid
+      integer :: mode
+      character (len=*) :: chsnap
+!
+!  possibility of not reading the mesh data nor the time
+!  of the snapshot. The mesh information is then taken from
+!  proc*/mesh.dat
+!
+      if (lread_nogrid) then
+        mode=0
+      else
+        mode=1
+      endif
+!
+      call input_snap_ogrid(chsnap,f_ogrid,mfarray,mode)
+      close (lun_input)
+      if (lserial_io) call end_serialize
+!
+!  Read data using lnrho, and now convert to rho.
+!  This assumes that one is now using ldensity_nolog=T.
+!
+      if (lread_oldsnap_lnrho2rho) then
+        print*,'convert lnrho -> rho',ilnrho,irho
+        if (irho>0) &
+          f_ogrid(:,:,:,irho)=exp(f_ogrid(:,:,:,ilnrho))
+      endif
+!
+    endsubroutine rsnap_ogrid
+!***********************************************************************
+    subroutine input_snap_ogrid(file,a,nv,mode)
+!
+!  manages reading of snapshot from different precision
+!
+!  21-feb-17/Jorgen: Adapted from io_dist.f90
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: nv, mode
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,nv), intent(out) :: a
+
+      real(KIND=rkind8), dimension(:,:,:,:), allocatable :: adb
+      real(KIND=rkind4), dimension(:,:,:,:), allocatable :: asg
+
+      real(KIND=rkind8), dimension(:), allocatable :: xdb,ydb,zdb
+      real(KIND=rkind4), dimension(:), allocatable :: xsg,ysg,zsg
+
+      real(KIND=rkind8) :: dxdb,dydb,dzdb,deltaydb
+      real(KIND=rkind4) :: dxsg,dysg,dzsg,deltaysg
+      real :: deltay_ogrid
+
+      if (lread_from_other_prec) then
+        if (kind(a)==rkind4) then
+          allocate(adb(mx_ogrid,my_ogrid,mz_ogrid,nv),xdb(mx_ogrid),ydb(my_ogrid),zdb(mz_ogrid))
+          call read_snap_ogrid(file,adb,xdb,ydb,zdb,dxdb,dydb,dzdb,deltaydb,nv,mode)
+          a=adb; x_ogrid=xdb; y_ogrid=ydb; z_ogrid=zdb; dx_ogrid=dxdb; dy_ogrid=dydb; dz_ogrid=dzdb; deltay_ogrid=deltaydb
+        elseif (kind(a)==rkind8) then
+          allocate(asg(mx_ogrid,my_ogrid,mz_ogrid,nv),xsg(mx_ogrid),ysg(my_ogrid),zsg(mz_ogrid))
+          call read_snap_ogrid(file,asg,xsg,ysg,zsg,dxsg,dysg,dzsg,deltaysg,nv,mode)
+          a=asg; x_ogrid=xsg; y_ogrid=ysg; z_ogrid=zsg; dx_ogrid=dxsg; dy_ogrid=dysg; dz_ogrid=dzsg; deltay_ogrid=deltaysg
+        endif
+      else
+        call read_snap_ogrid(file,a,x_ogrid,y_ogrid,z_ogrid,dx_ogrid,dy_ogrid,dz_ogrid,deltay_ogrid,nv,mode)
+      endif
+
+    endsubroutine input_snap_ogrid
+!***********************************************************************
+    subroutine read_snap_single_ogrid(file,a,x,y,z,dx,dy,dz,deltay,nv,mode)
+!
+!  Read snapshot file in single precision, possibly with mesh and time (if mode=1).
+!
+!  21-feb-17/Jorgen: Adapted from io_dist.f90
+!
+      use Mpicomm, only: start_serialize, mpibcast_real, mpiallreduce_or, &
+                         stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_WORLD
+      use IO, only: lun_input
+!
+      character (len=*), intent(in) :: file
+      real :: deltay_ogrid=0.0
+      integer, intent(in) :: nv, mode
+      real(KIND=rkind4), dimension (mx_ogrid,my_ogrid,mz_ogrid,nv), intent(out) :: a
+!
+      real(KIND=rkind4) :: t_sp, t_sgl
+
+      real(KIND=rkind4),                       intent(out) :: dx, dy, dz, deltay
+      real(KIND=rkind4), dimension (mx_ogrid), intent(out) :: x
+      real(KIND=rkind4), dimension (my_ogrid), intent(out) :: y
+      real(KIND=rkind4), dimension (mz_ogrid), intent(out) :: z
+
+      real :: t_test   ! t in single precision for backwards compatibility
+
+      logical :: ltest
+      ! set ireset_tstart to 1 or 2 to coordinate divergent timestamp
+      integer :: MINT=1
+      integer :: MAXT=2
+!
+      if (lserial_io) call start_serialize
+      open (lun_input, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', status='old')
+      if (lwrite_2d) then
+        if (nz == 1) then
+          read (lun_input) a(:,:,4,:)
+        else
+          call fatal_error ('read_snap_single_ogrid','lwrite_2d used for simulation with nz_ogri/=1!')
+        endif
+      else
+!
+!  Possibility of reading data with different numbers of ghost zones.
+!  In that case, one must regenerate the mesh with luse_oldgrid=T.
+!
+        if (nghost_read_fewer==0) then
+          read (lun_input) a
+        elseif (nghost_read_fewer>0) then
+          read (lun_input) &
+              a(1+nghost_read_fewer:mx_ogrid-nghost_read_fewer, &
+                1+nghost_read_fewer:my_ogrid-nghost_read_fewer, &
+                1+nghost_read_fewer:mz_ogrid-nghost_read_fewer,:)
+!
+!  The following 3 possibilities allow us to replicate 1-D data input
+!  in x (nghost_read_fewer=-1), y (-2), or z (-3) correspondingly.
+!
+        elseif (nghost_read_fewer==-1) then
+          read (lun_input) a(:,1:1+nghost*2,1:1+nghost*2,:)
+          a=spread(spread(a(:,m1_ogrid,n1_ogrid,:),2,my_ogrid),3,mz_ogrid)
+        elseif (nghost_read_fewer==-2) then
+          read (lun_input) a(1:1+nghost*2,:,1:1+nghost*2,:)
+          a=spread(spread(a(l1_ogrid,:,n1_ogrid,:),1,mx_ogrid),3,mz_ogrid)
+        elseif (nghost_read_fewer==-3) then
+          read (lun_input) a(1:1+nghost*2,1:1+nghost*2,:,:)
+          a=spread(spread(a(l1_ogrid,m1_ogrid,:,:),1,mx_ogrid),2,my_ogrid)
+        else
+          call fatal_error('read_snap_single_ogrid','nghost_read_fewer must be >=0')
+        endif
+      endif
+
+      if (mode == 1) then
+!
+!  Check whether we want to read deltay from snapshot.
+!
+        if (lshear) then
+          read (lun_input) t_sp, x_ogrid, y_ogrid, z_ogrid, dx_ogrid, dy_ogrid, dz_ogrid, deltay_ogrid
+        else
+          if (nghost_read_fewer==0) then
+            read (lun_input) t_sp, x_ogrid, y_ogrid, z_ogrid, dx_ogrid, dy_ogrid, dz_ogrid
+          elseif (nghost_read_fewer>0) then
+            read (lun_input) t_sp
+          endif
+        endif
+!
+!  Verify consistency of the snapshots regarding their timestamp,
+!  unless ireset_tstart=T, in which case we reset all times to tstart.
+!
+        if ((ireset_tstart == 0) .or. (tstart == impossible)) then
+!
+          t_test = t_sp
+          call mpibcast_real(t_test,comm=MPI_COMM_WORLD)
+          call mpiallreduce_or((t_test /= t_sp) .and. .not. lread_from_other_prec &
+                                .or. (abs(t_test-t_sp) > 1.e-6),ltest,MPI_COMM_WORLD)
+!
+!  If timestamps deviate at any processor
+!
+          if (ltest) then
+            if (ireset_tstart > 0) then
+!
+!  If reset of tstart enabled and tstart unspecified, use minimum of all t_sp
+!
+              if (ireset_tstart == MINT) then
+                call mpiallreduce_min(t_sp,t_sgl,MPI_COMM_WORLD)
+                if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT.',&
+                                       ' Using (min) t=', t_sgl,'with ireset_tstart=', MINT,'.'
+              elseif (ireset_tstart >= MAXT) then
+                call mpiallreduce_max(t_sp,t_sgl,MPI_COMM_WORLD)
+                if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT.',&
+                                       ' Using (max) t=', t_sgl,'with ireset_tstart=', MAXT,'.'
+              endif
+              tstart=t_sgl
+            else
+              write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)// &
+                          ' IS INCONSISTENT: t=', t_sp
+              call stop_it('read_snap_single')
+            endif
+          else
+            tstart=t_sp
+          endif
+!
+!  Setting time is done in main snap reading rountine
+!  Check that time read from overlapping grids match
+!  
+          if(t_sp/=t) then
+            call fatal_error ('read_snap_single_ogrid', 'time differs for cylindrical and cartesian snapshot')
+          endif
+        endif
+      endif
+    endsubroutine read_snap_single_ogrid
+!***********************************************************************
+    subroutine read_snap_double_ogrid(file,a,x,y,z,dx,dy,dz,deltay,nv,mode)
+!
+!  Read snapshot file in double precision, possibly with mesh and time (if mode=1).
+!
+!  21-feb-17/Jorgen: Adapted from io_dist.f90
+!                             
+      use Mpicomm, only: start_serialize, mpibcast_real, mpiallreduce_or, &
+                         stop_it, mpiallreduce_min, mpiallreduce_max, MPI_COMM_WORLD
+      use IO, only: lun_input
+!
+      character (len=*), intent(in) :: file
+      integer, intent(in) :: nv, mode
+      real :: deltay_ogrid=0.0
+      real(KIND=rkind8), dimension (mx_ogrid,my_ogrid,mz_ogrid,nv), intent(out) :: a
+!
+      real(KIND=rkind8) :: t_sp, t_dbl
+
+      real(KIND=rkind8), intent(out) :: dx, dy, dz, deltay
+      real(KIND=rkind8), dimension (mx_ogrid), intent(out) :: x
+      real(KIND=rkind8), dimension (my_ogrid), intent(out) :: y
+      real(KIND=rkind8), dimension (mz_ogrid), intent(out) :: z
+
+      real :: t_test   ! t in single precision for backwards compatibility
+      logical :: ltest
+      ! set ireset_tstart to 1 or 2 to coordinate divergent timestamp
+      integer :: MINT=1
+      integer :: MAXT=2
+!
+      if (lserial_io) call start_serialize
+      open (lun_input, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', status='old')
+      if (lwrite_2d) then
+        if (nz == 1) then
+          read (lun_input) a(:,:,4,:)
+        else
+          call fatal_error ('read_snap_double_ogrid','lwrite_2d used for simulation with nz_ogri/=1!')
+        endif
+      else
+!
+!  Possibility of reading data with different numbers of ghost zones.
+!  In that case, one must regenerate the mesh with luse_oldgrid=T.
+!
+        if (nghost_read_fewer==0) then
+          read (lun_input) a
+        elseif (nghost_read_fewer>0) then
+          read (lun_input) &
+              a(1+nghost_read_fewer:mx_ogrid-nghost_read_fewer, &
+                1+nghost_read_fewer:my_ogrid-nghost_read_fewer, &
+                1+nghost_read_fewer:mz_ogrid-nghost_read_fewer,:)
+!
+!  The following 3 possibilities allow us to replicate 1-D data input
+!  in x (nghost_read_fewer=-1), y (-2), or z (-3) correspondingly.
+!
+        elseif (nghost_read_fewer==-1) then
+          read (lun_input) a(:,1:1+nghost*2,1:1+nghost*2,:)
+          a=spread(spread(a(:,m1_ogrid,n1_ogrid,:),2,my_ogrid),3,mz_ogrid)
+        elseif (nghost_read_fewer==-2) then
+          read (lun_input) a(1:1+nghost*2,:,1:1+nghost*2,:)
+          a=spread(spread(a(l1_ogrid,:,n1_ogrid,:),1,mx_ogrid),3,mz_ogrid)
+        elseif (nghost_read_fewer==-3) then
+          read (lun_input) a(1:1+nghost*2,1:1+nghost*2,:,:)
+          a=spread(spread(a(l1_ogrid,m1_ogrid,:,:),1,mx_ogrid),2,my_ogrid)
+        else
+          call fatal_error('read_snap_double','nghost_read_fewer must be >=0')
+        endif
+      endif
+
+      if (ip <= 8) print *, 'read_snap: read ', file
+      if (mode == 1) then
+!
+!  Check whether we want to read deltay from snapshot.
+!
+        if (lshear) then
+          read (lun_input) t_sp, x, y, z, dx, dy, dz, deltay
+        else
+          if (nghost_read_fewer==0) then
+            read (lun_input) t_sp, x, y, z, dx, dy, dz
+          elseif (nghost_read_fewer>0) then
+            read (lun_input) t_sp
+          endif
+        endif
+!
+!  Verify consistency of the snapshots regarding their timestamp,
+!  unless ireset_tstart=T, in which case we reset all times to tstart.
+!
+        if ((ireset_tstart == 0) .or. (tstart == impossible)) then
+!
+          t_test = t_sp
+          call mpibcast_real(t_test,comm=MPI_COMM_WORLD)
+          call mpiallreduce_or((t_test /= t_sp) .and. .not. lread_from_other_prec &
+                               .or. (abs(t_test-t_sp) > 1.e-6),ltest, MPI_COMM_WORLD)
+!
+!  If timestamp deviates at any processor
+!
+          if (ltest) then
+            if (ireset_tstart > 0) then
+!
+!  If reset of tstart enabled and tstart unspecified, use minimum of all t_sp
+!
+              if (ireset_tstart == MINT) then
+                call mpiallreduce_min(t_sp,t_dbl,MPI_COMM_WORLD)
+                if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT.',&
+                                       ' Using (min) t=', t_dbl,'with ireset_tstart=', MINT,'.'
+              elseif (ireset_tstart >= MAXT) then
+                call mpiallreduce_max(t_sp,t_dbl,MPI_COMM_WORLD)
+                if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT.',&
+                                       ' Using (max) t=', t_dbl,'with ireset_tstart=', MAXT,'.'
+              endif
+              tstart=t_dbl
+              if (lroot) write (*,*) 'Timestamps in snapshot INCONSISTENT. Using t=', tstart, '.'
+            else
+              write (*,*) 'ERROR: '//trim(directory_snap)//'/'//trim(file)// &
+                          ' IS INCONSISTENT: t=', t_sp
+              call stop_it('read_snap_double')
+            endif
+          else
+            tstart=t_sp
+          endif
+!
+!  Setting time is done in main snap reading rountine
+!  Check that time read from overlapping grids match
+!  
+          if(t_sp/=t) then
+            call fatal_error ('read_snap_double_ogrid', 'time differs for cylindrical and cartesian snapshot')
+          endif
+        endif
+      endif
+!
+    endsubroutine read_snap_double_ogrid
 !***********************************************************************
 
 end module Solid_Cells
