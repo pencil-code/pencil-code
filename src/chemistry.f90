@@ -192,35 +192,17 @@ module Chemistry
 !
 ! diagnostic variables (need to be consistent with reset list below)
 !
-  integer, dimension(nchemspec) :: idiag_Ym=0 ! DIAG_DOC: $\left<Y_x\right>$
-  integer, dimension(nchemspec) :: idiag_dYm=0 ! DIAG_DOC: $\delta\left<Y_x\right>/\delta t$
-  integer, dimension(nchemspec) :: idiag_dYmax=0 ! DIAG_DOC: $max\delta\left<Y_x\right>/\delta t$
-  integer, dimension(nchemspec) :: idiag_Ymax=0 ! DIAG_DOC: $\left<Y_{x,max}\right>$
-  integer, dimension(nchemspec) :: idiag_Ymin=0 ! DIAG_DOC: $\left<Y_{x,min}\right>$
-  integer, dimension(nchemspec) :: idiag_hm=0 ! DIAG_DOC: $\left<H_{x,max}\right>$
-  integer, dimension(nchemspec) :: idiag_cpm=0 ! DIAG_DOC: $\left<c_{p,x}\right>$
-  integer, dimension(nchemspec) :: idiag_diffm=0 ! DIAG_DOC: $\left<D_{x}\right>$
+  integer, dimension(nchemspec) :: idiag_Ym=0      ! DIAG_DOC: $\left<Y_x\right>$
+  integer, dimension(nchemspec) :: idiag_dYm=0     ! DIAG_DOC: $\delta\left<Y_x\right>/\delta t$
+  integer, dimension(nchemspec) :: idiag_dYmax=0   ! DIAG_DOC: $max\delta\left<Y_x\right>/\delta t$
+  integer, dimension(nchemspec) :: idiag_Ymax=0    ! DIAG_DOC: $\left<Y_{x,max}\right>$
+  integer, dimension(nchemspec) :: idiag_Ymin=0    ! DIAG_DOC: $\left<Y_{x,min}\right>$
+  integer, dimension(nchemspec) :: idiag_hm=0      ! DIAG_DOC: $\left<H_{x,max}\right>$
+  integer, dimension(nchemspec) :: idiag_cpm=0     ! DIAG_DOC: $\left<c_{p,x}\right>$
+  integer, dimension(nchemspec) :: idiag_diffm=0   ! DIAG_DOC: $\left<D_{x}\right>$
+  integer, dimension(nchemspec) :: idiag_Ymz=0     ! DIAG_DOC: $\left<Y_x\right>_{xy}(z)$
   integer :: idiag_dtchem=0     ! DIAG_DOC: $dt_{chem}$
 !
-  integer :: idiag_Y1mz=0        ! DIAG_DOC: $\left<Y_1\right>_{xy}(z)$
-  integer :: idiag_Y2mz=0        ! DIAG_DOC: $\left<Y_2\right>_{xy}(z)$
-  integer :: idiag_Y3mz=0        ! DIAG_DOC: $\left<Y_3\right>_{xy}(z)$
-  integer :: idiag_Y4mz=0        ! DIAG_DOC: $\left<Y_4\right>_{xy}(z)$
-  integer :: idiag_Y5mz=0        ! DIAG_DOC: $\left<Y_5\right>_{xy}(z)$
-  integer :: idiag_Y6mz=0        ! DIAG_DOC: $\left<Y_6\right>_{xy}(z)$
-  integer :: idiag_Y7mz=0        ! DIAG_DOC: $\left<Y_7\right>_{xy}(z)$
-  integer :: idiag_Y8mz=0        ! DIAG_DOC: $\left<Y_8\right>_{xy}(z)$
-  integer :: idiag_Y9mz=0        ! DIAG_DOC: $\left<Y_9\right>_{xy}(z)$
-  integer :: idiag_Y10mz=0        ! DIAG_DOC: $\left<Y_10\right>_{xy}(z)$
-  integer :: idiag_Y11mz=0        ! DIAG_DOC: $\left<Y_11\right>_{xy}(z)$
-  integer :: idiag_Y12mz=0        ! DIAG_DOC: $\left<Y_12\right>_{xy}(z)$
-  integer :: idiag_Y13mz=0        ! DIAG_DOC: $\left<Y_13\right>_{xy}(z)$
-  integer :: idiag_Y14mz=0        ! DIAG_DOC: $\left<Y_14\right>_{xy}(z)$
-  integer :: idiag_Y15mz=0        ! DIAG_DOC: $\left<Y_15\right>_{xy}(z)$
-  integer :: idiag_Y16mz=0        ! DIAG_DOC: $\left<Y_16\right>_{xy}(z)$
-  integer :: idiag_Y17mz=0        ! DIAG_DOC: $\left<Y_17\right>_{xy}(z)$
-  integer :: idiag_Y18mz=0        ! DIAG_DOC: $\left<Y_18\right>_{xy}(z)$
-  integer :: idiag_Y19mz=0        ! DIAG_DOC: $\left<Y_19\right>_{xy}(z)$
 !
   integer :: idiag_cpfull=0
   integer :: idiag_cvfull=0
@@ -2765,7 +2747,7 @@ module Chemistry
       real, dimension(nx) :: ugchemspec, sum_DYDT, sum_dhhk=0.
       real, dimension(nx) :: sum_dk_ghk, dk_dhhk, sum_hhk_DYDt_reac
       type (pencil_case) :: p
-      real, dimension(nx) :: RHS_T_full
+      real, dimension(nx) :: RHS_T_full, diffus_chem
 !
 !  indices
 !
@@ -2976,6 +2958,7 @@ module Chemistry
         if (.not. lcheminp) then
           diffus_chem = chem_diff*maxval(chem_diff_prefactor)*dxyz_2
         else
+          diffus_chem=0.
           do j = 1,nx
             if (ldiffusion .and. .not. ldiff_simple) then
 !
@@ -2990,6 +2973,7 @@ module Chemistry
             endif
           enddo
         endif
+        maxdiffus=max(maxdiffus,diffus_chem)
       endif
 !
 ! NB: it should be discussed
@@ -3071,49 +3055,10 @@ module Chemistry
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1
 !
       if (l1davgfirst) then
-!
-!  To prevent out of bounds errors in auto-test, reset the i2-i19 values.
-!
-        if (idiag_Y2mz == 0)  iz2 = 1
-        if (idiag_Y3mz == 0)  iz3 = 1
-        if (idiag_Y4mz == 0)  iz4 = 1
-        if (idiag_Y5mz == 0)  iz5 = 1
-        if (idiag_Y6mz == 0)  iz6 = 1
-        if (idiag_Y7mz == 0)  iz7 = 1
-        if (idiag_Y8mz == 0)  iz8 = 1
-        if (idiag_Y9mz == 0)  iz9 = 1
-        if (idiag_Y10mz == 0) iz10 = 1
-        if (idiag_Y11mz == 0) iz11 = 1
-        if (idiag_Y12mz == 0) iz12 = 1
-        if (idiag_Y13mz == 0) iz13 = 1
-        if (idiag_Y14mz == 0) iz14 = 1
-        if (idiag_Y15mz == 0) iz15 = 1
-        if (idiag_Y16mz == 0) iz16 = 1
-        if (idiag_Y17mz == 0) iz17 = 1
-        if (idiag_Y18mz == 0) iz18 = 1
-        if (idiag_Y19mz == 0) iz19 = 1
-!
-!  Now can start:
-!
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz1)),idiag_Y1mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz2)),idiag_Y2mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz3)),idiag_Y3mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz4)),idiag_Y4mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz5)),idiag_Y5mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz6)),idiag_Y6mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz7)),idiag_Y7mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz8)),idiag_Y8mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz9)),idiag_Y9mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz10)),idiag_Y10mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz11)),idiag_Y11mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz12)),idiag_Y12mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz13)),idiag_Y13mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz14)),idiag_Y14mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz15)),idiag_Y15mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz16)),idiag_Y16mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz17)),idiag_Y17mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz18)),idiag_Y18mz)
-        call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(iz19)),idiag_Y19mz)
+        do ii = 1,nchemspec
+          if (idiag_Ymz(ii)/= 0) &
+            call xysum_mn_name_z(f(l1:l2,m,n,ichemspec(ii)),idiag_Ymz(ii))
+        enddo
       endif
       call timing('dchemistry_dt','finished',mnloop=.true.)
 !
@@ -3196,25 +3141,7 @@ module Chemistry
         idiag_cpfull = 0
         idiag_cvfull = 0
         idiag_e_intm = 0
-        idiag_Y1mz = 0
-        idiag_Y2mz = 0
-        idiag_Y3mz = 0
-        idiag_Y4mz = 0
-        idiag_Y5mz = 0
-        idiag_Y6mz = 0
-        idiag_Y7mz = 0
-        idiag_Y8mz = 0
-        idiag_Y9mz = 0
-        idiag_Y10mz = 0
-        idiag_Y11mz = 0
-        idiag_Y12mz = 0
-        idiag_Y13mz = 0
-        idiag_Y14mz = 0
-        idiag_Y15mz = 0
-        idiag_Y16mz = 0
-        idiag_Y17mz = 0
-        idiag_Y18mz = 0
-        idiag_Y19mz = 0
+        idiag_Ymz = 0
 !
         idiag_lambdam = 0
         idiag_num = 0
@@ -3262,25 +3189,11 @@ module Chemistry
 !  xy-averages
 !
       do inamez = 1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y1mz',idiag_Y1mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y2mz',idiag_Y2mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y3mz',idiag_Y3mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y4mz',idiag_Y4mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y5mz',idiag_Y5mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y6mz',idiag_Y6mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y7mz',idiag_Y7mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y8mz',idiag_Y8mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y9mz',idiag_Y9mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y10mz',idiag_Y10mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y11mz',idiag_Y11mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y12mz',idiag_Y12mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y13mz',idiag_Y13mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y14mz',idiag_Y14mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y15mz',idiag_Y15mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y16mz',idiag_Y16mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y17mz',idiag_Y17mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y18mz',idiag_Y18mz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'Y19mz',idiag_Y19mz)
+        do ii=1,nchemspec
+          write (number,'(I2)') ii
+          diagn_Ym = 'Y'//trim(adjustl(number))//'mz'
+          call parse_name(inamez,cnamez(inamez),cformz(inamez),trim(diagn_Ym),idiag_Ymz(ii))
+        enddo
       enddo
 !
 !  Write chemistry index in short notation

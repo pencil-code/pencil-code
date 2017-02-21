@@ -287,7 +287,7 @@ module Shear
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension(nx) :: dfdy, penc
+      real, dimension(nx) :: dfdy, penc,diffus_shear3
       integer :: j,k
       real :: d
 !
@@ -327,7 +327,10 @@ module Shear
           call der6(f, j, penc, 1, ignoredx=.true.)
           df(l1:l2,m,n,j) = df(l1:l2,m,n,j) + d * penc
         enddo comp1
-        if (lfirst .and. ldt) diffus_shear3 = diffus_shear3 + d
+        if (lfirst .and. ldt) then
+          diffus_shear3 = d
+          maxdiffus3=max(maxdiffus3,diffus_shear3)
+        endif
       endif hyper3x
 !
 !  Add (Lagrangian) shear term for all dust species.

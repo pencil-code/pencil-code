@@ -1115,6 +1115,7 @@ contains
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: dTdz1,dTdz2,dTdz3,dTdz4,nusselt_num,nusselt_den,TTmin_cline,TTmax_cline
       real, dimension (nx) :: devsigzz1,devsigzz2,devsigzz3,devsigzz4
+      real, dimension (nx) :: diffus_special
       type (pencil_case) :: p
 !      
 !  Advection
@@ -1141,12 +1142,13 @@ contains
                       abs(q%uu(:,2))*dy_1(  m  )+ &
                       abs(q%uu(:,3))*dz_1(  n  )       
 !
-        diffus_special=diffus_special + kappa*dxyz_2
-      endif
+        diffus_special=kappa*dxyz_2
+        maxdiffus=max(maxdiffus,diffus_special)
 !
-      if (headtt.or.ldebug) then
-        print*,'special_calc_energy: max(advec_special)  =',maxval(advec_special)
-        print*,'special_calc_energy: max(diffus_special) =',maxval(diffus_special)
+        if (headtt.or.ldebug) then
+          print*,'special_calc_energy: max(advec_special)  =',maxval(advec_special)
+          print*,'special_calc_energy: max(diffus_special) =',maxval(diffus_special)
+        endif
       endif
 !
       if (ldiagnos) then 

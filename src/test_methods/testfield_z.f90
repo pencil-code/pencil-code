@@ -470,7 +470,8 @@ module Testfield
       real, dimension (nx,3) :: uufluct,daatest
       real, dimension (nx,3) :: del2Atest2,graddivatest,aatest,jjtest,jxbrtest
       real, dimension (nx,3,3) :: aijtest,bijtest,Mijtest
-      real, dimension (nx) :: jbpq,bpq2,Epq2,s2kzDF1,s2kzDF2,unity=1.
+      real, dimension (nx) :: jbpq,bpq2,Epq2,s2kzDF1,s2kzDF2,diffus_eta
+      real, dimension (nx), parameter :: unity=1.
       real, dimension (:,:,:,:), allocatable :: Eipq
 !
 !  auxiliary arrays for imaginary parts
@@ -885,7 +886,10 @@ module Testfield
 !  diffusive time step, just take the max of diffus_eta (if existent)
 !  and whatever is calculated here
 !
-      if (lfirst.and.ldt) diffus_eta=max(diffus_eta,etatest*dxyz_2)
+      if (lfirst.and.ldt) then
+        diffus_eta=etatest*dxyz_2
+        maxdiffus=max(maxdiffus,diffus_eta)
+      endif
 !
       if (ldiagnos) then
 !

@@ -394,6 +394,7 @@ module Polymer
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension(nx,3,3) :: uijT
+      real, dimension(nx) :: diffus_eta_poly
       integer :: ipi,ipj,ipk
 !
 !  Identify module and boundary conditions.
@@ -464,14 +465,19 @@ module Polymer
 !
 ! Time step constraint from polymer diffusivity
 !
-        if (lfirst.and.ldt)  diffus_eta_poly=eta_poly*dxyz_2
+        if (lfirst.and.ldt) then
+          diffus_eta_poly=eta_poly*dxyz_2
+          maxdiffus=max(maxdiffus,diffus_eta_poly)
+          if (headtt.or.ldebug) &
+            print*, 'dpoly_dt: max(diffus_eta_poly) =', maxval(diffus_eta_poly)
+        endif
       endif
 !
 ! Time step constrant from relaxation time of polymer
-      if (lfirst.and.ldt) trelax_poly=tau_poly/frmax_local
-      if (headtt.or.ldebug) then
-        print*, 'dpoly_dt: max(diffus_eta_poly) =', maxval(diffus_eta_poly)
-        print*, 'dpoly_dt: max(trelax_poly) =', trelax_poly
+      if (lfirst.and.ldt) then
+        trelax_poly=tau_poly/frmax_local
+        if (headtt.or.ldebug) &
+          print*, 'dpoly_dt: max(trelax_poly) =', trelax_poly
       endif
 !
     endsubroutine dpoly_dt

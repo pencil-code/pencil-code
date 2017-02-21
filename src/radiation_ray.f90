@@ -2297,7 +2297,7 @@ module Radiation
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
-      real, dimension (nx) :: Krad,chi_rad,g2
+      real, dimension (nx) :: Krad,chi_rad,g2, diffus_chi
       real, dimension (nx) :: local_optical_depth,opt_thin,opt_thick,dt1_rad
       real :: fact
       integer :: j,k
@@ -2348,6 +2348,7 @@ module Radiation
 !  Frad=sigmaSB*T^4, and Egas=rho*cv*T. (At the moment we use cp.)
 !  cdtrad=0.8 is an empirical coefficient (harcoded for the time being)
 !
+        diffus_chi=0.
         chi_rad=Krad*p%rho1*p%cp1
         if (lrad_cool_diffus .and. lrad_pres_diffus) then
           diffus_chi=max(diffus_chi,gamma*chi_rad*dxyz_2)
@@ -2372,6 +2373,7 @@ module Radiation
           dt1_rad=opt_thin*sigmaSB*kappa_es*p%TT**3*p%cv1/cdtrad_thin
           dt1_max=max(dt1_max,dt1_rad)
           diffus_chi=max(diffus_chi,opt_thick*gamma*chi_rad*dxyz_2/cdtrad_thick)
+          maxdiffus=max(maxdiffus,diffus_chi)
 !
 !--      endif
         endif

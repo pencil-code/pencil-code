@@ -523,6 +523,7 @@ module Testscalar
       real, dimension (nx,3) :: uufluct
       integer :: jcctest,jtest,j,nl,ml,i1=1,i2=2,i3=3,i4=4,i5=5,i6=6
       logical,save :: ltest_ug=.false.
+      real, dimension (nx) :: diffus_eta
 !
       intent(in)    :: f,p
       intent(inout) :: df
@@ -651,7 +652,8 @@ module Testscalar
 !  and whatever is calculated here.
 !
       if (lfirst.and.ldt) then
-        diffus_eta=max(diffus_eta,kappatest*dxyz_2)
+        diffus_eta=kappatest*dxyz_2
+        maxdiffus=max(maxdiffus,diffus_eta)
       endif
 !
 !  in the following block, we have already swapped the 4-6 entries with 7-9

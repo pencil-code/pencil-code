@@ -525,6 +525,7 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: nu
+      real, dimension (nx) :: diffus_special
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -554,10 +555,10 @@ module Special
 !
       if (lfirst.and.ldt) then
         nu=pmdot*one_over_three_pi/psigma
-        diffus_special=diffus_special+nu*dxyz_2
-      endif
-      if (headtt.or.ldebug) then
-        print*,'dspecial_dt: max(diffus_special) =', maxval(diffus_special)
+        diffus_special=nu*dxyz_2
+        maxdiffus=max(maxdiffus,diffus_special)
+        if (headtt.or.ldebug) &
+          print*,'dspecial_dt: max(diffus_special) =', maxval(diffus_special)
       endif
 !
 !  Diagnostics.

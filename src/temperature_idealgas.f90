@@ -196,6 +196,8 @@ module Energy
 !
   integer :: idiag_TTmxy=0      ! ZAVG_DOC: $\left<T\right>_{z}$
 !
+  real, dimension (nx) :: diffus_chi,diffus_chi3
+!
   contains
 !***********************************************************************
     subroutine register_energy
@@ -1039,6 +1041,7 @@ module Energy
 !
 !  Thermal conduction
 !
+      diffus_chi=0.; diffus_chi3=0.
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
       if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
       if (lheatc_Kprof)    call calc_heatcond(f,df,p)
@@ -1114,9 +1117,15 @@ module Energy
 !
 !  Information on the timescales.
 !
-      if (lfirst.and.ldt.and.(headtt.or.ldebug)) then
-        print*, 'denergy_dt: max(diffus_chi ) =', maxval(diffus_chi)
-        print*, 'denergy_dt: max(diffus_chi3) =', maxval(diffus_chi3)
+      if (lfirst.and.ldt) then
+
+        maxdiffus=max(maxdiffus,diffus_chi)
+        maxdiffus3=max(maxdiffus3,diffus_chi3)
+ 
+        if (headtt.or.ldebug)) then
+          print*, 'denergy_dt: max(diffus_chi ) =', maxval(diffus_chi)
+          print*, 'denergy_dt: max(diffus_chi3) =', maxval(diffus_chi3)
+        endif
       endif
 !
 !  Apply border profile

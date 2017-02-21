@@ -2177,7 +2177,7 @@ module Density
 !
       real, dimension (nx) :: fdiff, gshockglnrho, gshockgrho, tmp, chi_sld
       real, dimension (nx), parameter :: unitpencil=1.
-      real, dimension (nx) :: density_rhs   !GPU := df(l1:l2,m,n,irho|ilnrho)
+      real, dimension (nx) :: density_rhs,diffus_diffrho,diffus_diffrho3   !GPU := df(l1:l2,m,n,irho|ilnrho)
       integer :: j
 !
 !  Identify module and boundary conditions.
@@ -2276,6 +2276,7 @@ module Density
 !
 !  Mass diffusion.
 !
+      diffus_diffrho=0.; diffus_diffrho3=0.
       fdiff=0.0
 !
       if (ldiff_normal) then  ! Normal diffusion operator
@@ -2479,6 +2480,8 @@ module Density
           print*,'dlnrho_dt: max(diffus_diffrho ) =', maxval(diffus_diffrho)
           print*,'dlnrho_dt: max(diffus_diffrho3) =', maxval(diffus_diffrho3)
         endif
+        maxdiffus=max(maxdiffus,diffus_diffrho)
+        maxdiffus3=max(maxdiffus3,diffus_diffrho3)
       endif
 !
 !  Apply border profile

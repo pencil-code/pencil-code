@@ -141,6 +141,7 @@ module Energy
 !
   real, dimension(mz) :: eth0z = 0.0, dlneth0dz = 0.0
   real, dimension(mz) :: rho0z = 0.0
+  real, dimension(nx) :: diffus_chi, diffus_chi3
 !
   contains
 !***********************************************************************
@@ -528,6 +529,7 @@ module Energy
 !
 !  Thermal energy diffusion.
 !
+      diffus_chi=0; diffus_chi3=0.
       if (chi/=0.0) then
         df(l1:l2,m,n,ieth) = df(l1:l2,m,n,ieth) + chi * p%cp * (p%rho*p%del2TT + sum(p%grho*p%gTT, 2))
         if (lfirst .and. ldt) diffus_chi = diffus_chi + gamma*chi*dxyz_2
@@ -568,6 +570,10 @@ module Energy
 !       The timestep gets the factor TT/eth = cv1*rho1
         if (lfirst .and. ldt) diffus_chi = diffus_chi &
             +(16.0*sigmaSB/(3.0*kappa_rosseland))*p%TT*p%TT*p%TT/p%rho *cv1*p%rho1 * dxyz_2
+     endif
+     if (lfirst .and. ldt) then
+       maxdiffus=max(maxdiffus,diffus_chi)
+       maxdiffus3=max(maxdiffus3,diffus_chi3)
      endif
 !
 !  Diagnostics.

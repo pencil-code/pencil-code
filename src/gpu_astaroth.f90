@@ -71,8 +71,8 @@ contains
       if (lpower_spectrum) str='power_spectrum'
       if (lparticles) str='particles'
 
-      !!!if (str/='') &
-        !!!call stop_it('No GPU implementation for module "'//trim(str)//'"')
+      if (str/='') &
+        call stop_it('No GPU implementation for module "'//trim(str)//'"')
 !
       call initialize_gpu_c(nx,ny,nz,x,y,z)
 

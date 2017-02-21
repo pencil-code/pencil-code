@@ -209,6 +209,9 @@ module Energy
   integer :: idiag_ssmxy=0      ! DIAG_DOC: $\left< s \right>_{z}$
   integer :: idiag_ssmxz=0      ! DIAG_DOC: $\left< s \right>_{y}$
 !
+!  Auxiliary variables
+!
+  real, dimension(nx) :: diffus_chi, diffus_chi3
 !
   contains
 !
@@ -1633,6 +1636,8 @@ module Energy
 !
 !  Thermal conduction delegated to different subroutines.
 !
+      diffus_chi=0.; diffus_chi3=0.
+
       if (lheatc_Kconst)   call calc_heatcond_constK(df,p)
 !
 !  Interstellar radiative cooling and UV heating.
@@ -1650,6 +1655,11 @@ module Energy
       if (tdown/=0.0) call newton_cool(df,p)
       if (cool_RTV/=0.0) call calc_heat_cool_RTV(df,p)
 !
+      if (lfirst.and.ldt) then
+        dt1_max=max(dt1_max,Hmax/ee/cdts)
+        maxdiffus=max(maxdiffus,diffus_chi)
+        maxdiffus3=max(maxdiffus3,diffus_chi3)
+      endif
 !
 !  Possibility of entropy relaxation in exterior region.
 !
@@ -1903,6 +1913,7 @@ module Energy
         else
           diffus_chi=diffus_chi+(chi+chi_t)*dxyz_2
         endif
+
         if (ldiagnos.and.idiag_dtchi/=0) then
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
         endif

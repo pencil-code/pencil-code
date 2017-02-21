@@ -186,6 +186,7 @@ module Viscosity
 ! Module Variables
 !
   real, dimension(mz) :: eth0z = 0.0
+  real, dimension(nx) :: diffus_nu=0.,diffus_nu2=0.,diffus_nu3=0.
 !
   contains
 !***********************************************************************
@@ -2202,7 +2203,7 @@ module Viscosity
 !
 !  Calculate max total diffusion coefficient for timestep calculation etc.
 !
-      if (lfirst .and. ldt) then
+      if (lfirst.and.ldt) then
         diffus_nu =p%diffus_total *dxyz_2
         diffus_nu2=p%diffus_total2*dxyz_4
         if (ldynamical_diffusion .and. lvisc_hyper3_mesh) then
@@ -2210,11 +2211,9 @@ module Viscosity
         else
           diffus_nu3=p%diffus_total3*dxyz_6
         endif
-      endif
-      if (.not. ldt) then
-        diffus_nu = 0.0
-        diffus_nu2= 0.0
-        diffus_nu3= 0.0
+        maxdiffus=max(maxdiffus,diffus_nu)
+        maxdiffus2=max(maxdiffus2,diffus_nu2)
+        maxdiffus3=max(maxdiffus3,diffus_nu3)
       endif
 !
 !  Diagnostic output

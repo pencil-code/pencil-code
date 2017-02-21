@@ -1236,6 +1236,8 @@ module Magnetic_meanfield
       intent(in) :: p
       intent(inout) :: df,f
 !
+      real, dimension(nx) :: diffus_eta
+!
 !  Identify module and boundary conditions.
 !
       if (headtt.or.ldebug) print*,'daa_dt_meanfield: SOLVE'
@@ -1259,10 +1261,10 @@ module Magnetic_meanfield
 !  Allow for variable etat (mean field theory).
 !
       if (lfirst.and.ldt) then
-        diffus_eta=diffus_eta+meanfield_etat*dxyz_2
-        if (headtt.or.ldebug) then
+        diffus_eta=meanfield_etat*dxyz_2
+        if (headtt.or.ldebug) &
           print*, 'daa_dt_meanfield: max(diffus_eta)  =', maxval(diffus_eta)
-        endif
+        maxdiffus=max(maxdiffus,diffus_eta)
       endif
 !
 !  Alpha effect.

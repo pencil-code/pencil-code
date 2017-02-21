@@ -819,6 +819,8 @@ module Magnetic
 !
 ! Module Variables
 !
+
+  real, dimension(nx) :: diffus_eta=0.,diffus_eta2=0.,diffus_eta3=0.
   real, dimension(nzgrid) :: eta_zgrid = 0.0
   real :: eta_shock_jump1
 !
@@ -3301,6 +3303,7 @@ module Magnetic
 !
       fres=0.0
       etatotal=0.0
+      diffus_eta=0.; diffus_eta2=0.; diffus_eta3=0.
 !
 !  Uniform resistivity
 !
@@ -3734,12 +3737,14 @@ module Magnetic
 !  Multiply resistivity by Nyquist scale, for resistive time-step.
 !
       if (lfirst.and.ldt) then
+!
         diffus_eta =diffus_eta *dxyz_2
         diffus_eta2=diffus_eta2*dxyz_4
+!
         if (ldynamical_diffusion .and. lresi_hyper3_mesh) then
           diffus_eta3 = diffus_eta3 * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
         else
-          diffus_eta3=diffus_eta3*dxyz_6
+          diffus_eta3 = diffus_eta3*dxyz_6
         endif
         if (ietat/=0) diffus_eta=diffus_eta+maxval(f(l1:l2,m,n,ietat))*dxyz_2
 !
@@ -3748,6 +3753,11 @@ module Magnetic
           print*, 'daa_dt: max(diffus_eta2) =', maxval(diffus_eta2)
           print*, 'daa_dt: max(diffus_eta3) =', maxval(diffus_eta3)
         endif
+
+        maxdiffus=max(maxdiffus,diffus_eta)
+        maxdiffus2=max(maxdiffus2,diffus_eta2)
+        maxdiffus3=max(maxdiffus3,diffus_eta3)
+!
       endif
 !
 !  Add Ohmic heat to entropy or temperature equation.

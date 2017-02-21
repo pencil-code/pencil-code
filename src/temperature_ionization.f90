@@ -584,7 +584,7 @@ module Energy
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: damp
-      real, dimension (nx) :: Hmax
+      real, dimension (nx) :: Hmax,diffus_chi,diffus_chi3
       real :: prof
 !
 !  Initialize maximum heating to zero
@@ -651,6 +651,7 @@ module Energy
 !
 !  Thermal conduction
 !
+      diffus_chi=0.; diffus_chi3=0.
       if (lheatc_chiconst) call calc_heatcond_constchi(df,p)
       if (lheatc_hyper3) call calc_heatcond_hyper3(df,p)
 !
@@ -679,6 +680,11 @@ module Energy
       endif
 !
       if (lspecial) call special_calc_energy(f,df,p)
+!
+      if (lfirst.and.ldt)
+        maxdiffus=max(maxdiffus,diffus_chi)
+        maxdiffus3=max(maxdiffus3,diffus_chi3)
+      endif
 !
 !  Calculate temperature related diagnostics
 !

@@ -284,7 +284,7 @@ module Cosmicray
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: del2ecr,vKperp,vKpara,divfcr,wgecr,divw,tmp
+      real, dimension (nx) :: del2ecr,vKperp,vKpara,divfcr,wgecr,divw,tmp,diffus_cr
       integer :: j
 !
       intent (in) :: f,p
@@ -366,12 +366,13 @@ module Cosmicray
 !
       if (lfirst.and.ldt) then
         if (lvariable_tensor_diff)then
-          diffus_cr=max(diffus_cr,cosmicray_diff,vKperp,vKpara)*dxyz_2
+          diffus_cr=max(cosmicray_diff,vKperp,vKpara)*dxyz_2
         else
-          diffus_cr=max(diffus_cr,cosmicray_diff,K_perp,K_para)*dxyz_2
+          diffus_cr=max(cosmicray_diff,K_perp,K_para)*dxyz_2
         endif
+        maxdiffus=max(maxdiffus,diffus_cr)
+        if (headtt.or.ldebug) print*,'decr_dt: max(diffus_cr) =',maxval(diffus_cr)
       endif
-      if (headtt.or.ldebug) print*,'decr_dt: max(diffus_cr) =',maxval(diffus_cr)
 !
 !  diagnostics
 !

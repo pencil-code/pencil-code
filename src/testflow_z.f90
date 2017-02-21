@@ -651,7 +651,7 @@ module Testflow
       real, dimension (nx,3) :: uutest,uufluct,del2utest,graddivutest,ghtest,ghfluct,U0testgu,ugU0test
       real, dimension (nx,3,3) :: uijfluct
       real, dimension (nx,3) :: U0test,gU0test                      !!!MR: needless x-dimension for 0-quantities
-      real, dimension (nx)   :: hhtest,U0ghtest,gH0test,upq2,divutest,divufluct
+      real, dimension (nx)   :: hhtest,U0ghtest,gH0test,upq2,divutest,divufluct,diffus_nu
 !
       logical :: ltestflow_out
 !
@@ -939,7 +939,8 @@ module Testflow
 !
       if (lfirst.and.ldt) then
         advec_cs2=max(advec_cs2,cs2test*dxyz_2)
-        diffus_nu=max(diffus_nu,nutest*dxyz_2)
+        diffus_nu=nutest*dxyz_2
+        maxdiffus=max(maxdiffus,diffus_nu)
       endif
 !
       call xysum_mn_name_z(f(l1:l2,m,n,iuutest  ),idiag_ux0mz)!MR: only testflow # 0

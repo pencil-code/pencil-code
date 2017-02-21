@@ -111,6 +111,8 @@ module Testfield_general
   real    :: taainit=0.,bamp1=1.,bamp12=1.
   integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
 !
+  private
+
   integer, private :: naainit
 !
   contains
@@ -489,6 +491,7 @@ module Testfield_general
       real, dimension(nx)    :: divatest
       real, dimension(nx,3)  :: del2Atest
       real, dimension(nx,3,3):: aijtest
+      real, dimension(nx) :: diffus_eta, diffus_eta3
 
       if (lcartesian_coords) then
         call del2v(f,iaxt,del2Atest)
@@ -521,11 +524,22 @@ module Testfield_general
 !  better cumulative with profiles?
 !
         if (lresitest_eta_const) daatest=etatest*del2Atest
+!
+!  diffusive time step, just take the max of diffus_eta (if existent)
+!  and whatever is calculated here
+!
+        if (lfirst.and.ldt) then
+          diffus_eta=etatest*dxyz_2
+          maxdiffus=max(maxdiffus,diffus_eta)
+        endif 
         
         if (lresitest_hyper3) then
           call del6v(f,iaxt,del2Atest)
           daatest=daatest+etatest_hyper3*del2Atest
-          if (lfirst.and.ldt) diffus_eta3=diffus_eta3+etatest_hyper3
+          if (lfirst.and.ldt) then
+            diffus_eta3=etatest_hyper3
+            maxdiffus3=max(maxdiffus3,diffus_eta3)
+          endif
         endif
 !
       endif
@@ -1020,12 +1034,6 @@ module Testfield_general
           df(l1:l2,m,n,iaxtest:iaztest)= df(l1:l2,m,n,iaxtest:iaztest) &
                                         +uxbtest-uxbtestm(:,:,jtest)
         endif
-!
-!  diffusive time step, just take the max of diffus_eta (if existent)
-!  and whatever is calculated here
-!
-        if (lfirst.and.ldt) diffus_eta=max(diffus_eta,etatest*dxyz_2)
-      
       enddo
 !
     endsubroutine rhs_daatest

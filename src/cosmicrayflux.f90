@@ -199,7 +199,7 @@ module Cosmicrayflux
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: BuiBujgecr, bunit
       real, dimension(nx)   :: b2, b21, b_abs
-      real, dimension(nx)   :: tmp
+      real, dimension(nx)   :: tmp, diffus_cr
       real, dimension (nx,3,3) :: gfcr
       real, dimension (nx,3) :: ugfcr
       integer :: i, j
@@ -271,11 +271,12 @@ module Cosmicrayflux
       if (lfirst .and. ldt) then
         if (lcosmicrayflux_diffus_dt) then
           if (lbb_dependent_perp_diff) then
-            diffus_cr = max(diffus_cr,maxval(vKperp)*tau*dxyz_2, &
-                maxval(vKpara)*tau*dxyz_2)
+            diffus_cr = max(maxval(vKperp)*tau*dxyz_2, &
+                            maxval(vKpara)*tau*dxyz_2)
           else
-            diffus_cr = max(diffus_cr,kperp_t*tau*dxyz_2,kpara_t*tau*dxyz_2)
+            diffus_cr = max(kperp_t*tau*dxyz_2,kpara_t*tau*dxyz_2)
           endif
+          maxdiffus=max(maxdiffus,diffus_cr)
         else
           if (lbb_dependent_perp_diff) then
             advec_kfcr = max(advec_kfcr,maxval(vKperp)*dxyz_2, &

@@ -610,8 +610,11 @@ module Density
            call sum_mn_name(p%rho*p%divu+p%ugrho,idiag_divrhoum)
         if (idiag_divrhourms/=0) call sum_mn_name((p%rho*p%divu+p%ugrho)**2,idiag_divrhourms,lsqrt=.true.)
         if (idiag_divrhoumax/=0) call max_mn_name(p%rho*p%divu+p%ugrho,idiag_divrhoumax)
-        if (idiag_dtd/=0) &
-            call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
+!
+! MR: diffus_diffrho is never set
+!
+!        if (idiag_dtd/=0) &
+!            call max_mn_name(diffus_diffrho/cdtv,idiag_dtd,l_dt=.true.)
       endif
 !
     endsubroutine dlnrho_dt

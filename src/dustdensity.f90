@@ -1768,6 +1768,7 @@ module Dustdensity
       type (pencil_case) :: p
 !
       real, dimension (nx) :: mfluxcond,fdiffd,gshockgnd, Imr, tmp1, tmp2
+      real, dimension (nx) :: diffus_diffnd,diffus_diffnd3
       real, dimension (nx,ndustspec) :: dndr_tmp=0.,  dndr
       real, dimension (nx,ndustspec) :: nd_substep, nd_substep_0, K1,K2,K3,K4
       integer :: k,i,j
@@ -1957,6 +1958,7 @@ module Dustdensity
         fdiffd=0.0
 ! AJ: this only works if diffusion coefficient is same for all species:
         diffus_diffnd=0.0   ! Do not sum diffusion from all dust species
+        diffus_diffnd3=0.0
 !
         if (ldiffd_simplified) then
           if (ldustdensity_log) then
@@ -2029,6 +2031,11 @@ module Dustdensity
           fdiffd = fdiffd + diffnd_shock*p%shock*p%del2nd(:,k) + &
                    diffnd_shock*gshockgnd
           if (lfirst.and.ldt) diffus_diffnd=diffus_diffnd+diffnd_shock*p%shock*dxyz_2
+        endif
+
+        if (lfirst.and.ldt) then 
+          maxdiffus=max(maxdiffus,diffus_diffnd)
+          maxdiffus3=max(maxdiffus3,diffus_diffnd3)
         endif
 !
 !  Add diffusion term.

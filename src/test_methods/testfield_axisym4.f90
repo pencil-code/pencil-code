@@ -562,7 +562,7 @@ module Testfield
       real, dimension (nx,3,njtest) :: Eipq,bpq,jpq
       real, dimension (nx,3) :: del2Atest,uufluct,aatest,jjtest
       real, dimension (nx,3,3) :: aijtest
-      real, dimension (nx) :: bpq2
+      real, dimension (nx) :: bpq2,diffus_eta
       integer :: jtest,j, i1=1, i2=2, i3=3, i4=4, nl
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
 !
@@ -720,7 +720,8 @@ module Testfield
 !  and whatever is calculated here
 !
       if (lfirst.and.ldt) then
-        diffus_eta=max(diffus_eta,etatest*dxyz_2)
+        diffus_eta=etatest*dxyz_2
+        maxdiffus=max(maxdiffus,diffus_eta)
       endif
 !
 !  in the following block, we have already swapped the 4-6 entries with 7-9

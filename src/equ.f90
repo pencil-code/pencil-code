@@ -49,6 +49,7 @@ module Equ
 !     use Ghost_check, only: check_ghosts_consistency
       use General, only: notanumber
       use GhostFold, only: fold_df, fold_df_3points
+      use Gpu
       use Gravity
       use Heatflux
       use Hydro
@@ -665,7 +666,9 @@ module Equ
 !
 !  Calculates rhss of the PDEs.
 !
-!  14-feb-17/MR: carved out from pde.
+!  14-feb-17/MR: Carved out from pde.
+!  21-feb-17/MR: Moved all module-specific estimators of the (inverse) possible timestep 
+!                to the individual modules.
 !
       use Diagnostics
       use BorderProfiles, only: calc_pencils_borderprofiles
@@ -710,7 +713,7 @@ module Equ
 
       integer :: nyz
       real, dimension (nx,3) :: df_iuu_pencil
-      real, dimension (nx) :: maxadvec, maxdiffus, maxdiffus2, maxdiffus3, maxsrc
+      real, dimension (nx) :: maxadvec
       real, dimension (nx) :: advec2,advec2_hypermesh
 
       nyz=ny*nz
@@ -757,67 +760,43 @@ module Equ
             advec_uu=0.0; advec_hypermesh_uu=0.0
           endif
           if (ldensity.or.lboussinesq.or.lanelastic) then
-            diffus_diffrho=0.0; diffus_diffrho3=0.0; advec_hypermesh_rho=0.0
-            if (lstratz) src_density = 0.0
+            advec_hypermesh_rho=0.0
           endif
           if (leos) advec_cs2=0.0
           if (lenergy) then
-            diffus_chi=0.0; diffus_chi3=0.0; advec_hypermesh_ss=0.0
+            advec_hypermesh_ss=0.0
           endif
           if (lmagnetic) then
             advec_va2=0.0; advec_hall=0.0; advec_hypermesh_aa=0.0
-            diffus_eta=0.0; diffus_eta2=0.0; diffus_eta3=0.0
           endif
           if (lpolymer) then
-            advec_poly=0.0;diffus_eta_poly=0.0
-          endif
-          if (ltestfield) then
-            diffus_eta=0.0; diffus_eta3=0.0
-          endif
-          if (ltestscalar) then
-            diffus_eta=0.0
+            advec_poly=0.0
           endif
           if (ldustvelocity) then
-            advec_uud=0.0; diffus_nud=0.0; diffus_nud3=0.0
-          endif
-          if (lpscalar) then
-            diffus_pscalar=0.0; diffus_pscalar3=0.0
-          endif
-          if (ldustdensity) then
-            diffus_diffnd=0.0; diffus_diffnd3=0.0
-          endif
-          if (lviscosity) then
-            diffus_nu=0.0; diffus_nu2=0.0; diffus_nu3=0.0
+            advec_uud=0.0
           endif
           if (lradiation) then
             advec_crad2=0.0
           endif
           if (lshear) then
             advec_shear=0.0
-            diffus_shear3 = 0.0
-          endif
-          if (lchemistry) then
-            diffus_chem=0.0
-          endif
-          if (lchiral) then
-            diffus_chiral=0.0
           endif
           if (lcosmicray) then
-            diffus_cr=0.0
             advec_cs2cr=0.0
           endif
           if (lcosmicrayflux) then
             advec_kfcr=0.0
           endif
-          if (lneutraldensity) then
-            diffus_diffrhon=0.0; diffus_diffrhon3=0.0
-          endif
           if (lneutralvelocity) then
-            advec_uun=0.0; advec_csn2=0.0; diffus_nun=0.0; diffus_nun3=0.0
+            advec_uun=0.0; advec_csn2=0.0
           endif
           if (lspecial) then
-            advec_special=0.0; diffus_special=0.0
+            advec_special=0.0
           endif
+          maxdiffus=0.0
+          maxdiffus2=0.0
+          maxdiffus3=0.0
+          maxsrc=0.0
         endif
 !
 !  Grid spacing. In case of equidistant grid and cartesian coordinates
@@ -1033,10 +1012,6 @@ module Equ
 !  (lmaxadvec_sum=.false. by default)
 !
           maxadvec=0.0
-          maxdiffus=0.0
-          maxdiffus2=0.0
-          maxdiffus3=0.0
-          maxsrc = 0.0
           if (lhydro.or.lhydro_kinematic) maxadvec=maxadvec+advec_uu
           if (lshear) maxadvec=maxadvec+advec_shear
           if (lneutralvelocity) maxadvec=maxadvec+advec_uun
@@ -1064,41 +1039,7 @@ module Equ
 !  Time step constraints from each module.
 !  (At the moment, magnetic and testfield use the same variable.)
 !
-          if (lviscosity)       maxdiffus=max(maxdiffus,diffus_nu)
-          if (ldensity)         maxdiffus=max(maxdiffus,diffus_diffrho)
-          if (lenergy)          maxdiffus=max(maxdiffus,diffus_chi)
-          if (lmagnetic)        maxdiffus=max(maxdiffus,diffus_eta)
-          if (lpolymer)         maxdiffus=max(maxdiffus,diffus_eta_poly)
-          if (ltestfield)       maxdiffus=max(maxdiffus,diffus_eta)
-          if (ltestscalar)      maxdiffus=max(maxdiffus,diffus_eta)
-          if (lpscalar)         maxdiffus=max(maxdiffus,diffus_pscalar)
-          if (lcosmicray)       maxdiffus=max(maxdiffus,diffus_cr)
-          if (ldustvelocity)    maxdiffus=max(maxdiffus,diffus_nud)
-          if (ldustdensity)     maxdiffus=max(maxdiffus,diffus_diffnd)
-          if (lchiral)          maxdiffus=max(maxdiffus,diffus_chiral)
-          if (lchemistry)       maxdiffus=max(maxdiffus,diffus_chem)
-          if (lneutralvelocity) maxdiffus=max(maxdiffus,diffus_nun)
-          if (lneutraldensity)  maxdiffus=max(maxdiffus,diffus_diffrhon)
-          if (lspecial)         maxdiffus=max(maxdiffus,diffus_special)
-!
-          if (lviscosity)       maxdiffus2=max(maxdiffus2,diffus_nu2)
-          if (lmagnetic)        maxdiffus2=max(maxdiffus2,diffus_eta2)
-!
-          if (lviscosity)       maxdiffus3=max(maxdiffus3,diffus_nu3)
-          if (ldensity)         maxdiffus3=max(maxdiffus3,diffus_diffrho3)
-          if (lmagnetic)        maxdiffus3=max(maxdiffus3,diffus_eta3)
-          if (ltestfield)       maxdiffus3=max(maxdiffus3,diffus_eta3)
-          if (lenergy)          maxdiffus3=max(maxdiffus3,diffus_chi3)
-          if (lshear)           maxdiffus3=max(maxdiffus3,diffus_shear3)
-          if (ldustvelocity)    maxdiffus3=max(maxdiffus3,diffus_nud3)
-          if (ldustdensity)     maxdiffus3=max(maxdiffus3,diffus_diffnd3)
-          if (lpscalar)         maxdiffus3=max(maxdiffus3,diffus_pscalar3)
-          if (lneutralvelocity) maxdiffus3=max(maxdiffus3,diffus_nun3)
-          if (lneutraldensity)  maxdiffus3=max(maxdiffus3,diffus_diffrhon3)
-!
-!  Timestep constraint from source terms.
-!
-          if (ldensity .and. lstratz) maxsrc = max(maxsrc, src_density)
+!if (n==n1 .and. m==m1) print*, 'equ:maxdiffus=', maxdiffus
 !
 !  Exclude the frozen zones from the time-step calculation.
 !
@@ -1134,6 +1075,9 @@ module Equ
 !
           dt1_advec  = maxadvec/cdt
           dt1_diffus = maxdiffus/cdtv + maxdiffus2/cdtv2 + maxdiffus3/cdtv3
+!
+!  Timestep constraint from source terms.
+!
           dt1_src    = 5.0 * maxsrc
           dt1_max    = max(dt1_max, sqrt(dt1_advec**2 + dt1_diffus**2 + dt1_src**2))
 !

@@ -639,11 +639,11 @@ module NeutralDensity
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: fdiff, gshockglnrhon, gshockgrhon, tmp
-      integer :: j
-!
       intent(in)  :: f,p
       intent(out) :: df
+!
+      real, dimension (nx) :: fdiff, gshockglnrhon, gshockgrhon, tmp, diffus_diffrhon, diffus_diffrhon3
+      integer :: j
 !
 !  identify module and boundary conditions
 !
@@ -673,6 +673,7 @@ module NeutralDensity
 !  Mass diffusion
 !
       fdiff=0.0
+      diffus_rhon=0.; diffus_diffrhon3=0.
 !
       if (ldiffn_normal) then  ! Normal diffusion operator
         if (lneutraldensity_nolog) then
@@ -757,8 +758,12 @@ module NeutralDensity
         df(l1:l2,m,n,ilnrhon) = df(l1:l2,m,n,ilnrhon) + fdiff
       endif
 !
-      if (headtt.or.ldebug) &
+      if (lfirst.and.ldt) then
+        if (headtt.or.ldebug) &
           print*,'dlnrhon_dt: max(diffus_diffrhon) =', maxval(diffus_diffrhon)
+        maxdiffus=max(maxdiffus,diffus_diffrhon)
+        maxdiffus3=max(maxdiffus3,diffus_diffrhon3)
+      endif
 !
 !  Apply border profile
 !

@@ -317,13 +317,12 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: diffus_chiral
       type (pencil_case) :: p
 !
       intent(in) :: f,p
       intent(inout) :: df
 !
-      real, dimension (nx) :: dtheta5, bgmu5, bgtheta5, EB
+      real, dimension (nx) :: dtheta5, bgmu5, bgtheta5, EB, diffus_special
       real, dimension (nx,3) :: ubgtheta5, dtheta5_bb, mu5bb, uxbbgtheta5r
       real, parameter :: alpha_fine_structure=1./137.
 !
@@ -340,13 +339,13 @@ module Special
 !  Evolution of mu5
 !
       df(l1:l2,m,n,imu5)=df(l1:l2,m,n,imu5)-p%ugmu5 &
-        +diffmu5*p%del2mu5+lambda5*EB
+                         +diffmu5*p%del2mu5+lambda5*EB
 !
 !  Evolution of theta5
 !
       if (lhydro) then
-      df(l1:l2,m,n,itheta5)=df(l1:l2,m,n,itheta5)-p%ugtheta5+p%mu5 &
-        +difftheta5*p%del2theta5 !-meanmu5
+        df(l1:l2,m,n,itheta5)=df(l1:l2,m,n,itheta5)-p%ugtheta5+p%mu5 &
+                              +difftheta5*p%del2theta5 !-meanmu5
       endif
 !      print*,       df(l1:l2,m,n,itheta5), f(l1:l2,m,n,itheta5)
 !
@@ -366,16 +365,17 @@ module Special
       endif
 !  Contribution to the time-step
       if (lfirst.and.ldt) then
-        diffus_special= cdtchiral*max(eta*p%mu5*sqrt(dxyz_2),   &
-                                      eta*sqrt(p%u2)*p%theta5*dxyz_2,   &
-                                      diffmu5*sqrt(dxyz_2),   &
-                                      lambda5*eta*p%b2/(p%mu5)*sqrt(dxyz_2),   &
-                                      lambda5*eta*p%b2,   &  
-                                      lambda5*eta*sqrt(p%u2)*p%b2*p%theta5/(p%mu5)*sqrt(dxyz_2), &     
-                                      sqrt(p%u2)*sqrt(dxyz_2),   &                
-                                      p%mu5/p%theta5,   & 
-                                      p%b2*p%theta5*p%rho1*sqrt(dxyz_2)   & 
-                          )  
+        diffus_special=cdtchiral*max(eta*p%mu5*sqrt(dxyz_2),   &
+                                     eta*sqrt(p%u2)*p%theta5*dxyz_2,   &
+                                     diffmu5*sqrt(dxyz_2),   &
+                                     lambda5*eta*p%b2/(p%mu5)*sqrt(dxyz_2),   &
+                                     lambda5*eta*p%b2,   &  
+                                     lambda5*eta*sqrt(p%u2)*p%b2*p%theta5/(p%mu5)*sqrt(dxyz_2), &     
+                                     sqrt(p%u2)*sqrt(dxyz_2),   &                
+                                     p%mu5/p%theta5,   & 
+                                     p%b2*p%theta5*p%rho1*sqrt(dxyz_2)   & 
+                                    )  
+        maxdiffus=max(maxdiffus,diffus_special)
       endif
 !
 !  diagnostics

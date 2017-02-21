@@ -409,7 +409,7 @@ module Density
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type(pencil_case), intent(in) :: p
 !
-      real, dimension(nx) :: fdiff, del2rhos, penc
+      real, dimension(nx) :: fdiff, del2rhos, penc, src_density
       integer :: j
 !
 !  Start the clock for this procedure.
@@ -425,7 +425,10 @@ module Density
 !
       penc = p%uu(:,3) * dlnrho0dz(n)
       df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - p%ugrhos - p%rhos * (p%divu + penc)
-      if (lfirst .and. ldt) src_density = src_density + abs(penc)
+      if (lfirst .and. ldt) then
+        src_density = abs(penc)
+        maxsrc = max(maxsrc, src_density)
+      endif
 !
       fdiff = 0.0
 !

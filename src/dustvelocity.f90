@@ -1032,6 +1032,7 @@ module Dustvelocity
 !
       real, dimension (nx,3) :: fviscd, AA_sfta, BB_sfta, tmp, tmp2
       real, dimension (nx) :: tausg1, mudrhod1, tmp3
+      real, dimension (nx) :: diffus_nud,diffus_nud3
       real :: c2, s2
       integer :: i, j, k, ju
 !
@@ -1179,6 +1180,7 @@ module Dustvelocity
 !
           fviscd=0.0
           diffus_nud=0.0
+          diffus_nud3=0.0
 !
 !  Viscous force: nud*del2ud
 !     -- not physically correct (no momentum conservation)
@@ -1259,6 +1261,10 @@ module Dustvelocity
             enddo
             if (lfirst.and.ldt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
           endif
+          if (lfirst.and.ldt) then
+            maxdiffus3=max(maxdiffus3,diffus_nud3)
+            maxdiffus=max(maxdiffus,diffus_nud)
+          endif
 !
 !  Viscous force: nud*(del6ud+S.glnnd), where S_ij=d^5 ud_i/dx_j^5
 !
@@ -1266,7 +1272,6 @@ module Dustvelocity
           if (lviscd_hyper3_nud_const) then
             fviscd = fviscd + nud_hyper3(k)*(p%del6ud(:,:,k)+p%sdglnnd(:,:,k))
             if (lfirst.and.ldt) diffus_nud3=diffus_nud3+nud_hyper3(k)*dxyz_6
-
           endif
 !
 !  Add to dust equation of motion.

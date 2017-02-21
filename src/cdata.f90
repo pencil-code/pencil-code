@@ -130,22 +130,10 @@ module Cdata
   real, dimension (nx) :: advec_uu=0.,advec_shear,advec_hall,advec_csn2,advec_cs2cr
   real, dimension (nx) :: advec_cs2=0.,advec_va2,advec_crad2,advec_uud,advec_uun
   real, dimension (nx) :: advec_kfcr
-  real, dimension (nx) :: advec_special,advec_poly,diffus_eta_poly
+  real, dimension (nx) :: advec_special,advec_poly
   real, dimension (nx) :: advec_hypermesh_rho,advec_hypermesh_uu
   real, dimension (nx) :: advec_hypermesh_aa,advec_hypermesh_ss
-  real, dimension (nx) :: diffus_nu=0.,diffus_nu2=0.,diffus_nu3=0.
-  real, dimension (nx) :: diffus_diffrho,diffus_diffrho3
-  real, dimension (nx) :: diffus_eta,diffus_eta2,diffus_eta3
-  real, dimension (nx) :: diffus_chi,diffus_chi3
-  real, dimension (nx) :: diffus_shear3
-  real, dimension (nx) :: diffus_diffrhon,diffus_diffrhon3
-  real, dimension (nx) :: diffus_diffnd,diffus_diffnd3
-  real, dimension (nx) :: diffus_pscalar,diffus_pscalar3
-  real, dimension (nx) :: diffus_chiral,diffus_cr,diffus_chem
-  real, dimension (nx) :: diffus_nud,diffus_nud3
-  real, dimension (nx) :: diffus_nun,diffus_nun3
-  real, dimension (nx) :: diffus_special
-  real, dimension (nx) :: src_density
+  real, dimension (nx) :: maxdiffus=0., maxdiffus2=0., maxdiffus3=0., maxsrc=0.
   real, dimension (nx) :: dt1_advec=0., dt1_diffus, dt1_src, dt1_max
   real                 :: dt1_poly_relax, trelax_poly
   real, dimension (nx) :: dt1_reac, reac_chem, reac_dust

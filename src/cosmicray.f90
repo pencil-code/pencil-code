@@ -272,7 +272,7 @@ print*,"init_ecr: initecr = ", initecr
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: del2ecr,vKperp,vKpara,gecr2
+      real, dimension (nx) :: del2ecr,vKperp,vKpara,gecr2,diffus_cr
       integer :: j
 !
       intent(in) :: f,p
@@ -322,8 +322,9 @@ print*,"init_ecr: initecr = ", initecr
         else
           diffus_cr=max(cosmicray_diff,K_perp,K_para)*dxyz_2
         endif
+        if (headtt.or.ldebug) print*,'decr_dt: max(diffus_cr) =',maxval(diffus_cr)
+        maxdiffus=max(maxdiffus,diffus_cr)
       endif
-      if (headtt.or.ldebug) print*,'decr_dt: max(diffus_cr) =',maxval(diffus_cr)
 !
 !  diagnostics
 !

@@ -505,6 +505,8 @@ module Testfield
       intent(in)     :: f,p
       intent(inout)  :: df
 !
+      real, dimension(nx) :: diffus_eta
+!
 !  identify module and boundary conditions
 !
       if (headtt.or.ldebug) print*,'daatest_dt: SOLVE'
@@ -645,7 +647,8 @@ module Testfield
 !  and whatever is calculated here
 !
       if (lfirst.and.ldt) then
-        diffus_eta=max(diffus_eta,etatest*dxyz_2)
+        diffus_eta=etatest*dxyz_2
+        maxdiffus=max(maxdiffus,diffus_eta)
       endif
 !
 !  in the following block, we have already swapped the 4-6 entries with 7-9

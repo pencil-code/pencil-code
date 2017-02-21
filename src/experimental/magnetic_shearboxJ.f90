@@ -3020,7 +3020,8 @@ module Magnetic
       real, dimension (nx) :: eta_mn,eta_smag,etatotal
       real, dimension (nx) :: fres2,etaSS
       real, dimension (nx) :: vdrift
-      real, dimension (nx) :: del2aa_ini, tanhx2  
+      real, dimension (nx) :: del2aa_ini, tanhx2
+      real, dimension (nx) :: diffus_eta, diffus_eta2, diffus_eta3
       real, dimension(3) :: B_ext
       real :: tmp,eta_out1,maxetaBB=0.
       real, parameter :: OmegaSS=1.0
@@ -3076,6 +3077,8 @@ module Magnetic
 !
       fres=0.0
       etatotal=0.0
+      
+      diffus_eta=0.; diffus_eta2=0.; diffus_eta3=0.
 !
 !  Uniform resistivity
 !
@@ -3496,6 +3499,10 @@ module Magnetic
           diffus_eta3=diffus_eta3*dxyz_6
         endif
         if (ietat/=0) diffus_eta=diffus_eta+maxval(f(l1:l2,m,n,ietat))*dxyz_2
+
+        maxdiffus=max(maxdiffus,diffus_eta)
+        maxdiffus2=max(maxdiffus2,diffus_eta2)
+        maxdiffus3=max(maxdiffus3,diffus_eta3)
 !
         if (headtt.or.ldebug) then
           print*, 'daa_dt: max(diffus_eta)  =', maxval(diffus_eta)

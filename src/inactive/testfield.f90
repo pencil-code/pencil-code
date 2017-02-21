@@ -269,6 +269,7 @@ module Testfield
 
       real, dimension (nx,3) :: uxB,bbtest,btest,uxbtest,duxbtest
       real, dimension (nx,3) :: del2Atest
+      real, dimension (nx) :: diffus_eta
       integer :: jtest,j
 !
       intent(in)     :: f,p
@@ -337,7 +338,8 @@ module Testfield
 !  and whatever is calculated here
 ! 
           if (lfirst.and.ldt) then
-            diffus_eta=max(diffus_eta,etatest*dxyz_2)
+            diffus_eta=etatest*dxyz_2
+            maxdiffus = max(maxdiffus,diffus_eta)
           endif
 !
 !  calculate alpha, begin by calculating uxbtest (if not already done above)

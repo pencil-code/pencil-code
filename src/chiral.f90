@@ -240,6 +240,7 @@ module Chiral
       real, dimension (nx) :: RRYY_chiral,YY2_chiral
       real, dimension (nx) :: RR21_chiral
       real, dimension (nx) :: QQ_chiral,QQ21_chiral,QQ21QQ_chiral
+      real, dimension (nx) :: diffus_chiral
       real :: pp,qq,lamchiral
       integer :: j
 !
@@ -358,9 +359,12 @@ module Chiral
 !
 !  For the timestep calculation, need maximum diffusion
 !
-      if (lfirst.and.ldt) diffus_chiral=diffus_chiral+chiral_diff*dxyz_2
-      if (headtt.or.ldebug) print*,'dXY_chiral_dt: max(diffus_chiral) =', &
-                                    maxval(diffus_chiral)
+      if (lfirst.and.ldt) then
+        diffus_chiral=chiral_diff*dxyz_2
+        if (headtt.or.ldebug) print*,'dXY_chiral_dt: max(diffus_chiral) =', &
+                                      maxval(diffus_chiral)
+        maxdiffus=max(maxdiffus,diffus_chiral)
+      endif
 !
 !  diagnostics
 !

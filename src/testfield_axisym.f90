@@ -518,6 +518,7 @@ module Testfield
       real, dimension (nx) :: jbpq,bpq2,Epq2,s2kzDF1,s2kzDF2,unity=1.
       integer :: jtest,j,nl, i1=1, i2=2, i3=3, i4=4, iuxtest, iuytest, iuztest
       logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
+      real, dimension(nx) :: diffus_eta
 !
       intent(in)     :: f,p
       intent(inout)  :: df
@@ -664,7 +665,8 @@ module Testfield
 !  and whatever is calculated here
 !
       if (lfirst.and.ldt) then
-        diffus_eta=max(diffus_eta,etatest*dxyz_2)
+        diffus_eta=etatest*dxyz_2
+        maxdiffus=max(maxdiffus,diffus_eta)
       endif
 !
 !  in the following block, we have already swapped the 4-6 entries with 7-9

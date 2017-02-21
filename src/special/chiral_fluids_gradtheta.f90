@@ -442,6 +442,7 @@ p%del2bb=0
       intent(inout) :: df
 !
       real, dimension (nx) :: dtheta5, gtheta52, gmu52, bgmu5, EB, uujj, bbjj
+      real, dimension (nx) :: diffus_special
       real, dimension (nx,3) :: mu5bb, dtheta5_bb, uxbbgtheta5r, ubgtheta5
       real, dimension (nx,3) :: uijtransgtheta5, jbgtheta5r, jbgtheta5r2
       real, dimension (nx,3) :: ubgtheta5bgtheta5r,ubbgtheta5gtheta5r
@@ -524,8 +525,9 @@ p%del2bb=0
 !
       if (lfirst.and.ldt) then
         diffus_special = cdtchiral*max(diffus_mu5_1, diffus_mu5_2, diffus_mu5_3, &
-      diffus_mu5_4, diffus_gtheta5_1, diffus_bb_1, diffus_bb_2, &
-      diffus_uu_1)
+                         diffus_mu5_4, diffus_gtheta5_1, diffus_bb_1, diffus_bb_2, &
+                         diffus_uu_1)
+        maxdiffus=max(maxdiffus,diffus_special)
       endif
 !
 !  diagnostics

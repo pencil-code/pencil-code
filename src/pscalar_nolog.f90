@@ -460,7 +460,7 @@ module Pscalar
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: diff_op,diff_op2,bump,gcgu
+      real, dimension (nx) :: diff_op,diff_op2,bump,gcgu,diffus_pscalar,diffus_pscalar3
       real :: cc_xyaver
       real :: lam_gradC_fact=1., om_gradC_fact=1., gradC_fact=1.
       integer :: j, k
@@ -621,6 +621,8 @@ module Pscalar
         if (lfirst.and.ldt) then
           diffus_pscalar =(pscalar_diff+tensor_pscalar_diff)*dxyz_2
           diffus_pscalar3=pscalar_diff_hyper3*dxyz_6
+          maxdiffus=max(maxdiffus,diffus_pscalar)
+          maxdiffus3=max(maxdiffus3,diffus_pscalar3)
         endif
 !
 !  Special contributions to this module are called here.
