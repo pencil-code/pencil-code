@@ -111,8 +111,6 @@ module Testfield_general
   real    :: taainit=0.,bamp1=1.,bamp12=1.
   integer :: i1=1,i2=2,i3=3,i4=4,i5=5,i6=6,i7=7,i8=8,i9=9
 !
-  private
-
   integer, private :: naainit
 !
   contains

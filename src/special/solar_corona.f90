@@ -144,6 +144,7 @@ module Special
 !
   integer, save, dimension(mseed) :: nano_seed
   integer :: alloc_err
+  real, dimension(nx) :: diffus_chi, diffus_chi3
 !
   contains
 !
@@ -931,6 +932,8 @@ module Special
       real, dimension(nx,3) :: hhh, tmpv
       integer :: i, j, k
 !
+      diffus_chi=0.; diffus_chi3=0.
+
       if (chi_hyper3 /= 0.0) then
         call del6(f,ilnTT,hc,IGNOREDX=.true.)
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + chi_hyper3*hc
@@ -1001,6 +1004,11 @@ module Special
 !
       if (swamp_chi > 0.0) call calc_swamp_temp(df,p)
 !
+      if (lfirst.and.ldt) then
+        maxdiffus=max(maxdiffus,diffus_chi)
+        maxdiffus3=max(maxdiffus3,diffus_chi3)
+      endif
+
     endsubroutine special_calc_energy
 !***********************************************************************
     subroutine special_before_boundary(f,lfinalize)
