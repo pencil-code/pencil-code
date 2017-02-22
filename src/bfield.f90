@@ -630,8 +630,8 @@ module Magnetic
       timestep: if (lfirst .and. ldt) then
         call set_advec_va2(p)
         if (lshear) advec_shear = abs(uy0(l1:l2) * dy_1(m))
-        diffus_eta = maxdiffus_eta
-        diffus_eta3 = maxdiffus_eta3
+        maxdiffus = max(maxdiffus,maxdiffus_eta)
+        maxdiffus3 = max(maxdiffus3,maxdiffus_eta3)
       endif timestep
 !
 !  Evaluate Magnetic diagnostics.

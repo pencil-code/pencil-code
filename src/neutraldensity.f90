@@ -673,7 +673,7 @@ module NeutralDensity
 !  Mass diffusion
 !
       fdiff=0.0
-      diffus_rhon=0.; diffus_diffrhon3=0.
+      diffus_diffrhon=0.; diffus_diffrhon3=0.
 !
       if (ldiffn_normal) then  ! Normal diffusion operator
         if (lneutraldensity_nolog) then

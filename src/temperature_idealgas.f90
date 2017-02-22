@@ -1122,7 +1122,7 @@ module Energy
         maxdiffus=max(maxdiffus,diffus_chi)
         maxdiffus3=max(maxdiffus3,diffus_chi3)
  
-        if (headtt.or.ldebug)) then
+        if (headtt.or.ldebug) then
           print*, 'denergy_dt: max(diffus_chi ) =', maxval(diffus_chi)
           print*, 'denergy_dt: max(diffus_chi3) =', maxval(diffus_chi3)
         endif

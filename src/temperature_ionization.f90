@@ -97,6 +97,10 @@ module Energy
   integer :: idiag_eemz=0     ! XYAVG_DOC: $\left< e \right>_{xy}$
   integer :: idiag_ppmz=0     ! XYAVG_DOC: $\left< p \right>_{xy}$
 !
+! Auxiliaries
+!
+      real, dimension (nx) :: diffus_chi,diffus_chi3
+!
   contains
 !***********************************************************************
     subroutine register_energy
@@ -584,7 +588,7 @@ module Energy
       type (pencil_case) :: p
 !
       real, dimension (nx,3) :: damp
-      real, dimension (nx) :: Hmax,diffus_chi,diffus_chi3
+      real, dimension (nx) :: Hmax
       real :: prof
 !
 !  Initialize maximum heating to zero
@@ -681,7 +685,7 @@ module Energy
 !
       if (lspecial) call special_calc_energy(f,df,p)
 !
-      if (lfirst.and.ldt)
+      if (lfirst.and.ldt) then
         maxdiffus=max(maxdiffus,diffus_chi)
         maxdiffus3=max(maxdiffus3,diffus_chi3)
       endif
