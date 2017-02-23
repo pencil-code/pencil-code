@@ -935,9 +935,9 @@ module Energy
         endif
       endif
 ! sglnTT 
-      if (lpencil(i_sglnTT)) &
-        call fatal_error('calc_pencils_energy', &
-            'Pencil sglnTT not yet implemented for temperature_idealgas')
+      if (lpencil(i_sglnTT)) then
+        call multmv(p%sij,p%glnTT,p%sglnTT)
+      endif
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
