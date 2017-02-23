@@ -30,8 +30,8 @@ def xder_6th(f,dx,x=[],y=[],z=[]):
     if (l2 > l1):
         for l in range(l1,l2):
             dfdx[...,l] = dx2[l]*( +45.*(f[...,l+1]-f[...,l-1])
-                                     -9.*(f[...,l+2]-f[...,l-2])
-                                     +(f[...,l+3]-f[...,l-3]) )
+                                    -9.*(f[...,l+2]-f[...,l-2])
+                                    +   (f[...,l+3]-f[...,l-3]) )
     else:
         dfdx = 0.
     return dfdx
@@ -54,7 +54,7 @@ def yder_6th(f,dy,x=[],y=[],z=[]):
         for m in range(m1,m2):
             dfdy[...,m,:] = dy2[m]*( +45.*(f[...,m+1,:]-f[...,m-1,:]) 
                                       -9.*(f[...,m+2,:]-f[...,m-2,:]) 
-                                      +(f[...,m+3,:]-f[...,m-3,:]) )
+                                      +   (f[...,m+3,:]-f[...,m-3,:]) )
     else:
         dfdy = 0.
     if param.coord_system == ('cylindric' or 'spherical'):
@@ -119,17 +119,18 @@ def xder2_6th(f,dx,x=[],y=[],z=[]):
         print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
 
-    l1 = 3
-    l2 = f.shape[-1]-3
-    dx = N.gradient(x[l1:l2])
+    dx = N.gradient(x)
     dx2 = 1./(180.*dx**2.)
     dfdx = N.zeros_like(f)
+    l1 = 3
+    l2 = f.shape[-1]-3
 
     if (l2 > l1):
-        dfdx[...,l1:l2] = dx2*(-490.*f[...,l1:l2]
-                              +270.*(f[...,l1-1:l2-1]+f[...,l1+1:l2+1])
-                              - 27.*(f[...,l1-2:l2-2]+f[...,l1+2:l2+2])
-                              +  2.*(f[...,l1-3:l2-3]+f[...,l1+3:l2+3]) )
+        for l in range(l1,l2): 
+            dfdx[...,l] = dx2[l]*(-490.* f[...,l]
+                                  +270.*(f[...,l-1]+f[...,l+1])
+                                  - 27.*(f[...,l-2]+f[...,l+2])
+                                  +  2.*(f[...,l-3]+f[...,l+3]) )
     else:
         dfdx = 0.
 
@@ -143,22 +144,18 @@ def yder2_6th(f,dy,x=[],y=[],z=[]):
     
     param=read_param(quiet=True)
 
-    m1 = 3
-    m2 = f.shape[-2]-3
-    dy = N.gradient(y) #[m1:m2])
+    dy = N.gradient(y)
     dy2 = 1./(180.*dy**2.)
     dfdy = N.zeros_like(f)
+    m1 = 3
+    m2 = f.shape[-2]-3
 
     if (m2 > m1):
         for m in range(m1,m2+1):
-            dfdy[...,m,:] = dy2[m]*(-490.*f[...,m,:]
-                                     +270.*(f[...,m-1,:]+f[...,m+1,:])
-                                     - 27.*(f[...,m-2,:]+f[...,m+2,:])
-                                     +  2.*(f[...,m-3,:]+f[...,m+3,:]) )
-        #dfdy[...,m1:m2,:] = dy2*(-490.*f[...,m1:m2,:]
-        #                      +270.*(f[...,m1-1:m2-1,:]+f[...,m1+1:m2+1,:])
-        #                      - 27.*(f[...,m1-2:m2-2,:]+f[...,m1+2:m2+2,:])
-        #                      +  2.*(f[...,m1-3:m2-3,:]+f[...,m1+3:m2+3,:]) )
+            dfdy[...,m,:] = dy2[m]*(-490.* f[...,m,:]
+                                    +270.*(f[...,m-1,:]+f[...,m+1,:])
+                                    - 27.*(f[...,m-2,:]+f[...,m+2,:])
+                                    +  2.*(f[...,m-3,:]+f[...,m+3,:]) )
     else:
         dfdy = 0.
     if param.coord_system == ('cylindric' or 'spherical'):
@@ -177,17 +174,18 @@ def zder2_6th(f,dz,x=[],y=[],z=[]):
 
     param=read_param(quiet=True)
 
-    n1 = 3
-    n2 = f.shape[-3]-3
-    dz = N.gradient(z[n1:n2])
+    dz = N.gradient(z)
     dz2 = 1./(180.*dz**2.)
     dfdz = N.zeros_like(f)
-
+    n1 = 3
+    n2 = f.shape[-3]-3
+    
     if (n2 > n1):
-        dfdz[...,n1:n2,:,:] = dz2*(-490.*f[...,n1:n2,:,:]
-                              +270.*(f[...,n1-1:n2-1,:,:]+f[...,n1+1:n2+1,:,:])
-                              - 27.*(f[...,n1-2:n2-2,:,:]+f[...,n1+2:n2+2,:,:])
-                              +  2.*(f[...,n1-3:n2-3,:,:]+f[...,n1+3:n2+3,:,:]) )
+        for n in range(z1,z2): 
+            dfdz[...,n,:,:] = dz2[n]*(-490.* f[...,n,:,:]
+                                      +270.*(f[...,n-1,:,:]+f[...,n+1,:,:])
+                                      - 27.*(f[...,n-2,:,:]+f[...,n+2,:,:])
+                                      +  2.*(f[...,n-3,:,:]+f[...,n+3,:,:]) )
     else:
         dfdz = 0.
     if param.coord_system == 'spherical':
@@ -211,15 +209,16 @@ def xder6_6th(f,dx,x=[],y=[],z=[]):
 
     l1 = 3
     l2 = f.shape[-1] - 3
-    dx = N.gradient(x[l1:l2])
+    dx = N.gradient(x)
     fac=1/dx**6
     d6fdx = N.zeros_like(f)
 
     if (l2 > l1):
-        d6fdx[...,l1:l2] = fac*(- 20.0* f[...,l1:l2] 
-                     + 15.0*(f[...,l1+1:l2+1]+f[...,l1-1:l2-1]) 
-                     -  6.0*(f[...,l1+2:l2+2]+f[...,l1-2:l2-2]) 
-                     +      (f[...,l1+3:l2+3]+f[...,l1-3:l2-3]))
+        for l in range(l1,l2): 
+            d6fdx[...,l] = fac[l]*( - 20.0* f[...,l] 
+                                    + 15.0*(f[...,l+1]+f[...,l-1]) 
+                                    -  6.0*(f[...,l+2]+f[...,l-2]) 
+                                    +      (f[...,l+3]+f[...,l-3]))
 
     return d6fdx
 
@@ -231,16 +230,16 @@ def yder6_6th(f,dy,x=[],y=[],z=[]):
 
     m1 = 3
     m2 = f.shape[-2] - 3
-
-    dy = N.gradient(y[m1:m2])
+    dy = N.gradient(y)
     fac=1/dy**6
     d6fdy = N.zeros_like(f)
 
     if (m2 > m1):
-        d6fdy[...,m1:m2,:] = fac*(- 20.0* f[...,m1:m2,:] 
-                                 + 15.0*(f[...,m1+1:m2+1,:]+f[...,m1-1:m2-1,:]) 
-                                 -  6.0*(f[...,m1+2:m2+2,:]+f[...,m1-2:m2-2,:]) 
-                                 +      (f[...,m1+3:m2+3,:]+f[...,m1-3:m2-3,:]))
+        for m in range(m1,m2):
+            d6fdy[...,m1:m2,:] = fac[m]*(- 20.0* f[...,m,:] 
+                                         + 15.0*(f[...,m+1,:]+f[...,m-1,:]) 
+                                         -  6.0*(f[...,m+2,:]+f[...,m-2,:]) 
+                                         +      (f[...,m+3,:]+f[...,m-3,:]))
     
     return d6fdy
 
@@ -251,16 +250,16 @@ def zder6_6th(f,dz,x=[],y=[],z=[]):
 
     n1 = 3
     n2 = f.shape[-3] - 3
-    dz = N.gradient(z[n1:n2])
+    dz = N.gradient(z)
     fac=1/dz**6
-
-    d6fdy = N.zeros_like(f)
+    d6fdz = N.zeros_like(f)
 
     if (n2 > n1):
-        d6fdy[...,n1:n2,:,:] = fac*(- 20.0* f[...,n1:n2,:,:] 
-                       + 15.0*(f[...,n1+1:n2+1,:,:]+f[...,n1-1:n2-1,:,:]) 
-                       -  6.0*(f[...,n1+2:n2+2,:,:]+f[...,n1-2:n2-2,:,:]) 
-                       +      (f[...,n1+3:n2+3,:,:]+f[...,n1-3:n2-3,:,:]))
+        for n in range(n1,n2):
+            d6fdz[...,n,:,:] = fac[n]*(- 20.0* f[...,n,:,:] 
+                                       + 15.0*(f[...,n+1,:,:]+f[...,n-1,:,:]) 
+                                       -  6.0*(f[...,n+2,:,:]+f[...,n-2,:,:]) 
+                                       +      (f[...,n+3,:,:]+f[...,n-3,:,:]))
     
-    return d6fdy
+    return d6fdz
     
