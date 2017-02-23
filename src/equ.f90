@@ -21,7 +21,7 @@ module Equ
 !***********************************************************************
     include 'pencil_init.inc' ! defines subroutine initialize_pencils()
 !***********************************************************************
-    subroutine pde(f,df,p)
+    subroutine pde(f,df,p,itsub,lsnap)
 !
 !  Call the different evolution equations.
 !
@@ -47,7 +47,7 @@ module Equ
                          forcing_continuous
 ! To check ghost cell consistency, please uncomment the following line:
 !     use Ghost_check, only: check_ghosts_consistency
-      use General, only: notanumber
+      use General, only: notanumber, ioptest, loptest
       use GhostFold, only: fold_df, fold_df_3points
       use Gpu
       use Gravity
@@ -84,10 +84,13 @@ module Equ
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
+      integer, optional :: itsub
+      logical, optional :: lsnap
 !
       intent(inout):: f       ! inout due to lshift_datacube_x,
                               ! density floor, or velocity ceiling
-      intent(out)  :: df, p
+      intent(out)  :: df,p
+      intent(in)   :: itsub
 !
       logical :: early_finalize
       real, dimension(nx) :: pfreeze,pfreeze_int,pfreeze_ext
@@ -341,7 +344,7 @@ module Equ
       call timing('pde','after calc_for_chem_mixture')
 !
       if (lgpu) then
-        call rhs_gpu(f,df)
+        call rhs_gpu(f,ioptest(itsub,0),loptest(lsnap))
       else
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
       endif

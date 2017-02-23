@@ -71,10 +71,10 @@ module Timestep
         lfirst=(itsub==1)
         llast=(itsub==itorder)
         if (lfirst) then
-          df=0.0
+          if (.not.lgpu) df=0.0
           ds=0.0
         else
-          df=alpha_ts(itsub)*df !(could be subsumed into pde, but is dangerous!)
+          if (.not.lgpu) df=alpha_ts(itsub)*df !(could be subsumed into pde, but is dangerous!)
           ds=alpha_ts(itsub)*ds
         endif
 !
@@ -92,7 +92,7 @@ module Timestep
 !
 !  Change df according to the chosen physics modules.
 !
-        call pde(f,df,p)
+        call pde(f,df,p,itsub)
 !
         ds=ds+1.0
 !
@@ -123,7 +123,7 @@ module Timestep
 !ajwm Note to self... Just how much overhead is there in calling
 !ajwm a sub this often...
           if (lborder_profiles) call border_quenching(f,df,j,dt_beta_ts(itsub))
-          f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+dt_beta_ts(itsub)*df(l1:l2,m,n,j)
+          if (.not.lgpu) f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+dt_beta_ts(itsub)*df(l1:l2,m,n,j)
         enddo; enddo; enddo
 !
 !  Time evolution of point masses.
