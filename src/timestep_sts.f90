@@ -58,7 +58,7 @@ module Timestep
 !
 !  Change df according to the chosen physics modules.
 !
-        call pde(f,df,p)
+        call pde(f,df,p,itsub)
 !
         if (lfirst.and.ldt) then
           dt1_local=maxval(dt1_max(1:nx))

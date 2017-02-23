@@ -97,7 +97,7 @@ contains
       else
         full=0
       endif
-      call rhs_gpu_c(f(1,1,1,iuu),f(1,1,1,ilnrho),isubstep,full)
+      call rhs_gpu_c(f(1,1,1,iux),f(1,1,1,iuy),f(1,1,1,iuz),f(1,1,1,ilnrho),isubstep,full)
 !
     endsubroutine rhs_GPU
 !**************************************************************************
