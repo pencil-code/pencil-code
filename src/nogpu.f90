@@ -26,12 +26,15 @@ contains
 !
     endsubroutine finalize_GPU
 !**************************************************************************
-    subroutine rhs_GPU(f,df)
+    subroutine rhs_GPU(f,itsub,lsnap)
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      integer :: itsub
+      logical :: lsnap
 !
-      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(itsub)
+      call keep_compiler_quiet(lsnap)
 !
     endsubroutine rhs_GPU
 !**************************************************************************

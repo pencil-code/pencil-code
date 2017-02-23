@@ -278,6 +278,10 @@ class __Simulation__(object):
                          verbose=verbose,
                          logfile=join(self.pc_dir, 'compilelog_'+timestamp))
 
+    def build(self, cleanall=True, fast=False, verbose=False):
+        """Same as compile()"""
+        return self.compile(cleanall=cleanall, fast=fast, verbose=verbose)
+
     def bash(self, command, verbose=True, logfile=False):
         """Executes command in simulation diredctory.
         This method will use your settings as defined in your .bashrc-file.

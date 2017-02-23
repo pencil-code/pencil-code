@@ -84,12 +84,20 @@ contains
 !
     endsubroutine finalize_GPU
 !**************************************************************************
-    subroutine rhs_GPU(f,df)
+    subroutine rhs_GPU(f,isubstep,lsnap)
 !
       real, dimension (mx,my,mz,mfarray), intent(INOUT) :: f
-      real, dimension (mx,my,mz,mvar) :: df
+      integer,                            intent(IN)    :: isubstep
+      logical,                            intent(in)    :: lsnap
 !
-      call rhs_gpu_c(f(1,1,1,iuu),f(1,1,1,ilnrho),df(1,1,1,iuu),df(1,1,1,ilnrho))
+      integer :: full
+
+      if (lsnap) then
+        full=1
+      else
+        full=0
+      endif
+      call rhs_gpu_c(f(1,1,1,iuu),f(1,1,1,ilnrho),isubstep,full)
 !
     endsubroutine rhs_GPU
 !**************************************************************************
