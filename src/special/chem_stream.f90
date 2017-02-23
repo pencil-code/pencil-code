@@ -271,6 +271,8 @@ module Special
       intent(in) :: f,p
       intent(inout) :: df
 !
+      real, dimension(nx) :: diffus_chi
+!
 !  identify module and boundary conditions
 !
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dSPECIAL_dt'
@@ -282,11 +284,12 @@ module Special
       if (ldiagnos) then
         if (idiag_dtcrad/=0) &
           call max_mn_name(sqrt(advec_crad2)/cdt,idiag_dtcrad,l_dt=.true.)
-        if (idiag_dtchi/=0) &
+        if (idiag_dtchi/=0) &    !! diffus_chi not calculated here.
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
       endif
 !
 ! Keep compiler quiet by ensuring every parameter is used
+!
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
       call keep_compiler_quiet(p)

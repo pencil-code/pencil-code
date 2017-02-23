@@ -361,7 +361,7 @@ module Special
 !
 !  Contribution to the timestep
 !
-      if (lfirst.and.ldt) diffus_eta=diffus_eta+eta
+      if (lfirst.and.ldt) maxdiffus=max(maxdiffus,eta)
 !
       call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)

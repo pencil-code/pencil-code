@@ -114,6 +114,8 @@ module Special
   integer :: idiag_dtcrad=0
   integer :: idiag_dtchi=0
 !
+  real, dimension(nx) :: diffus_chi
+
   contains
 !
 !***********************************************************************
@@ -247,7 +249,7 @@ module Special
       if (ldiagnos) then
         if (idiag_dtcrad/=0) &
           call max_mn_name(sqrt(advec_crad2)/cdt,idiag_dtcrad,l_dt=.true.)
-        if (idiag_dtchi/=0) &
+        if (idiag_dtchi/=0) &   !! diffus_chi not calculated
           call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
       endif
 !
@@ -570,7 +572,8 @@ module Special
 !
       if (lfirst.and.ldt) then
 ! Calculate timestep limitation
-        diffus_chi=max(diffus_chi,gamma*chix*dxyz_2)
+        diffus_chi=gamma*chix*dxyz_2
+        maxdiffus=max(maxdiffus,diffus_chi)
 !
      !   diffus_chi1=min(gamma*chix*dxyz_2, &
       !              real(sigmaSB*kappa_es*p%TT**3*4.*p%cp1tilde))
