@@ -546,7 +546,6 @@ module Special
 !
       if (lfirst.and.ldt) then
          maxdiffus=max(maxdiffus,diffus_chi)
-         maxdiffus3=max(maxdiffus3,diffus_chi3)
       endif
 !
     endsubroutine special_calc_energy
