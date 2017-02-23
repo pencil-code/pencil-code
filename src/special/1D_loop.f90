@@ -36,6 +36,7 @@ module Special
   logical :: lfilter_farray=.false.,lrad_loss=.false.
   real, dimension(mvar) :: filter_strength=0.01
   real :: Ltot,R_hyper3
+  real, dimension (nx) :: diffus_chi
 !
   character (len=labellen), dimension(3) :: iheattype='nothing'
   character (len=labellen) :: loop_frac='full'
@@ -516,6 +517,8 @@ module Special
       real, dimension (nx) :: hc
       integer :: itmp
 !
+      diffus_chi=0.
+!
       if (hcond_grad_iso/=0.) call calc_heatcond_glnTT_iso(df,p)
       if (Kpara/=0.) call calc_heatcond_spitzer(f,df,p)
       if (cool_RTV/=0.) call calc_heat_cool_RTV(df,p)
@@ -539,6 +542,11 @@ module Special
 !  due to ignoredx hyper3_chi has [1/s]
 !
           if (lfirst.and.ldt) dt1_max=max(dt1_max,hyper3_chi/0.01)
+      endif
+!
+      if (lfirst.and.ldt) then
+         maxdiffus=max(maxdiffus,diffus_chi)
+         maxdiffus3=max(maxdiffus3,diffus_chi3)
       endif
 !
     endsubroutine special_calc_energy
