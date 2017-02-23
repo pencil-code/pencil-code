@@ -28,7 +28,7 @@ module Special
   real :: tanh_newton=0.,cubic_newton=0.
   real :: width_newton=0.,width_RTV=0.,hyper3_chi=0.
   real :: init_time=0.,lnTT0_chrom=0.,width_lnTT_chrom=0.
-  real :: hcond_grad_iso=0.
+  real :: hcond_grad_iso=0.,chi_aniso=0.
   real :: tau_inv_spitzer=0.
   real :: bullets_x0=0.,bullets_dx=0.
   real :: bullets_t0=0.,bullets_dt=0.
@@ -54,7 +54,7 @@ module Special
       tau_inv_spitzer,hyper3_chi,bullets_x0,bullets_dx, &
       bullets_t0,bullets_dt,bullets_h0,hyper3_diffrho, &
       lfilter_farray,filter_strength,loop_frac,&
-      heat_par_vandoors,R_hyper3,lrad_loss
+      heat_par_vandoors,R_hyper3,lrad_loss,chi_aniso
 !
 ! variables for print.in
 !
@@ -174,6 +174,14 @@ module Special
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_glnTT)=.true.
+      endif
+!
+      if (chi_aniso/=0.) then
+         lpenc_requested(i_bij)=.true.
+         lpenc_requested(i_bunit)=.true.
+         lpenc_requested(i_glnTT)=.true.
+         lpenc_requested(i_hlnTT)=.true.
+         lpenc_requested(i_glnrho)=.true.
       endif
 !
       if (Kpara/=0.) then
@@ -526,6 +534,7 @@ module Special
       if (iheattype(1)/='nothing') call calc_artif_heating(df,p)
       if (Kchrom/=0.) call calc_heatcond_kchrom(df,p)
       if (bullets_h0/=0.) call calc_bullets_heating(df,p)
+      if (chi_aniso/=0.) call calc_heatcond_constchi(df,p)
 !
       if (ltemperature) then
         itmp = ilnTT
@@ -1304,6 +1313,63 @@ module Special
       endif
 !
     endsubroutine calc_heatcond_glnTT_iso
+!***********************************************************************
+    subroutine calc_heatcond_constchi(df,p)
+!
+! field-aligned heat conduction that is proportional to rho
+! L = Div (b K rho b*Grad(T))
+! K = chi [m^2/s] * cV [J/kg/K] = hcond1 [m^4/s^3/K]
+! Define chi = K_0/rho
+!
+      use Diagnostics, only: max_mn_name
+      use EquationOfState, only: gamma
+      use Sub
+!
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension(nx) :: rhs, glnrho_b, fdiff
+      real, dimension(nx) :: glnTT_H,tmp,hlnTT_Bij,glnTT_b
+      real, dimension(nx,3) :: hhh,tmpv
+      integer :: i,j,k
+!
+      call dot(p%glnrho,p%bunit,glnrho_b)
+      call dot(p%glnTT,p%bunit,glnTT_b)
+!
+      do i = 1,3
+         hhh(:,i) = 0.
+         do j = 1,3
+            tmp(:) = 0.
+            do k = 1,3
+               tmp(:) = tmp(:)-2.*p%bunit(:,k)*p%bij(:,k,j)
+            enddo
+            hhh(:,i) = hhh(:,i)+p%bunit(:,j)*(p%bij(:,i,j)+p%bunit(:,i)*tmp(:))
+         enddo
+      enddo
+      call dot(hhh,p%glnTT,glnTT_H)
+!
+      call multmv(p%hlnTT,p%bunit,tmpv)
+      call dot(tmpv,p%bunit,hlnTT_Bij)
+!
+      rhs = (glnTT_H + hlnTT_Bij + (glnrho_b + glnTT_b)*glnTT_b)*chi_aniso*gamma
+!
+      if (ltemperature) then
+         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + rhs
+      else
+        call fatal_error('calc_heatcond_constchi special','only for ltemperature')
+      endif
+!
+! ANISOTROPIC PART NOT INCLUDED IN THE TIMESTEP CALCULATION
+      if (lfirst .and. ldt) then
+         advec_cs2 = max(advec_cs2,chi_aniso*maxval(dxyz_2))
+         fdiff = gamma * chi_aniso * dxyz_2
+         diffus_chi = diffus_chi+fdiff
+         if (ldiagnos .and. (idiag_dtchi2 /= 0)) then
+            call max_mn_name(fdiff/cdtv,idiag_dtchi2,l_dt=.true.)
+         endif
+      endif
+!
+    endsubroutine calc_heatcond_constchi
 !***********************************************************************
     subroutine der_upwind(f,uu,k,df,j)
 !
