@@ -153,6 +153,8 @@ module Special
 !
   real :: nu_ee,ln_unit_TT
 !
+  real, dimension(nx) :: diffus_chi
+!
   contains
 !
 !***********************************************************************
@@ -842,6 +844,7 @@ module Special
       real, dimension (nx) :: hc,tmp
       integer :: itemp
 !
+      diffus_chi=0.
 !      if (Kpara /= 0.) call calc_heatcond_spitzer(df,p)
       if (Kiso /= 0.) call calc_heatcond_spitzer_iso(df,p)
       if (Kpara /= 0.          .and. (.not. sub_step_hcond)) call calc_heatcond_tensor(f,df,p)
@@ -887,6 +890,10 @@ module Special
 !  due to ignoredx tmp has the unit [1/s]
 !
         if (lfirst.and.ldt) dt1_max=max(dt1_max,tmp/0.01)
+      endif
+!
+      if (lfirst.and.ldt) then
+         maxdiffus=max(maxdiffus,diffus_chi)
       endif
 !
     endsubroutine special_calc_energy
