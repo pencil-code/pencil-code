@@ -105,7 +105,7 @@ module PointMasses
 !
       use Particles_main, only: fetch_npvar,return_npvar
 !      
-      integer :: npvar_aux
+      integer :: iqvar, npvar_aux
 !
       if (lroot) call svn_id( &
           "$Id$")
@@ -123,26 +123,26 @@ module PointMasses
 !  Auxiliary variables for polar coordinates
 !
       ixq = nqvar+1
-      qvarname(nqvar+1)='ixq'
+      qvarname(ixq)='ixq'
       iyq = nqvar+2
-      qvarname(nqvar+1)='iyq'
+      qvarname(iyq)='iyq'
       izq = nqvar+3
-      qvarname(nqvar+1)='izq'
+      qvarname(izq)='izq'
       nqvar=nqvar+3
 !
       ivxq = nqvar+1
-      qvarname(nqvar+1)='ivxq'
+      qvarname(ivxq)='ivxq'
       ivyq = nqvar+2
-      qvarname(nqvar+1)='ivyq'
+      qvarname(ivyq)='ivyq'
       ivzq = nqvar+3
-      qvarname(nqvar+1)='ivzq'
+      qvarname(ivzq)='ivzq'
       nqvar=nqvar+3
 !
 !  Set up mass as particle index. Plus seven, since the other 6 are
 !  used by positions and velocities.
 !
       imass=nqvar+1
-      qvarname(nqvar+1)='imass'
+      qvarname(imass)='imass'
       nqvar=nqvar+1
 !
 !  Check that the fq and dfq arrays are big enough.
@@ -159,6 +159,14 @@ module PointMasses
         ivpz_cart = npvar_aux+3
         npvar_aux=npvar_aux+3
         call return_npvar(npvar_aux)
+      endif
+!
+      if (lroot) then
+        open(3,file=trim(datadir)//'/qvarname.dat',status='replace')
+        do iqvar=1,mqarray
+          write(3,"(i4,2x,a)") iqvar, qvarname(iqvar)
+        enddo
+        close(3)
       endif
 !
     endsubroutine register_pointmasses
