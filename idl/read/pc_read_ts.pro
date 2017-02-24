@@ -71,7 +71,7 @@ pro pc_read_ts, $
     print=print, quiet=quiet, help=help, verbose=verbose, $
     num=num, it=it, t=t, dt=dt, dtc=dtc, urms=urms, labels=labels, $
     ekin=ekin, eth=eth, rhom=rhom, ssm=ssm, trimfirst=trimfirst,  $
-    movingaverage=movingaverage, monotone=monotone, njump=njump
+    movingaverage=movingaverage, monotone=monotone, njump=njump, sepminus=sepminus
 COMPILE_OPT IDL2,HIDDEN
 ;
 ;  If no meaningful parameters are given show some help!
@@ -128,6 +128,7 @@ COMPILE_OPT IDL2,HIDDEN
   default, monotone, 0
   default, njump, 1
   default, movingaverage,0
+  default, sepminus, 1
 ;
   if (strpos(filename,'/') eq -1) then begin
     fullfilename=datadir+'/'+filename
@@ -191,9 +192,8 @@ COMPILE_OPT IDL2,HIDDEN
     labels = parse_tsheader(newheader)
     ncols = n_elements(labels)
     newheader=['^#[-a-zA-Z_][-a-zA-Z_]','^#[a-zA-Z][a-zA-Z0-9_]']
- 
     data = input_table(fullfilename,double=double, stop_at=newheader, $
-           fileposition=fileposition,verbose=verbose,inds_compl=inds_compl,/sepminus)
+           fileposition=fileposition,verbose=verbose,inds_compl=inds_compl,sepminus=sepminus)
 
     if inds_compl[0] ne -1 then begin
 ;
