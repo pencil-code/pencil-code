@@ -690,6 +690,7 @@ module Equ
       use Gravity
       use Heatflux
       use Hydro
+      use Lorenz_gauge
       use Magnetic
       use NeutralDensity
       use NeutralVelocity
@@ -705,7 +706,11 @@ module Equ
       use Solid_Cells, only: update_solid_cells, freeze_solid_cells, &
                              dsolid_dt,dsolid_dt_integrate,update_solid_cells_pencil
       use Special, only: calc_pencils_special, dspecial_dt
+      use Sub, only: sum_mn
+      use Supersat
       use Testfield
+      use Testflow
+      use Testscalar
       use Viscosity, only: calc_viscosity, calc_pencils_viscosity
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
