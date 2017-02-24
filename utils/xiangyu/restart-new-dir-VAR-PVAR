@@ -15,7 +15,8 @@ for proc in $procdirs
 do
 	#echo "cp data/$proc/VAR$1 $2/data/$proc/var.dat"
 	mkdir $1/data/$proc
-	cp data/$proc/VAR1 $1/data/$proc/var.dat
+	#cp data/$proc/VAR1 $1/data/$proc/var.dat
+	#cp data/$proc/var.dat $1/data/$proc/var.dat
 	cp data/$proc/PVAR0 $1/data/$proc/pvar.dat
 done
 mkdir $1/data/allprocs
