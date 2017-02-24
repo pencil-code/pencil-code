@@ -1,0 +1,55 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2017/02/24 00:55:30 wlyra Exp $',
+  ip=14,                          ! debugging parameter
+!
+  xyz0  = 0.29726562, -3.1415927, -0.1
+  xyz1  = 1.70273437,  3.1415927,  0.1
+!
+  lperi = F  , T  , T,            ! periodic direction?
+!
+  bcx='out','a2','s','a2' ,'s'
+!
+  lwrite_ic=T
+  coord_system='cylindrical'
+  !grid_func='power-law'
+  !coeff_grid=1e-3
+  lwrite_aux=T
+  lcorotational_frame=T
+  rcorot=1.
+!  
+  !unit_system='cgs'
+  !unit_length      = 7.785e13
+  !unit_velocity    = 1.30600e6
+  !unit_density     = 2e-11
+  !unit_temperature = 1.
+!
+  llocal_iso=T
+/
+&initial_condition_pars
+  density_power_law=0.0
+  temperature_power_law=2.0
+/
+&eos_init_pars
+  cs0   = 0.05
+  rho0  = 1.00  
+  gamma=  1.00
+/
+&hydro_init_pars
+/
+&density_init_pars
+  ldensity_nolog=T
+/
+&grav_init_pars
+  ipotential='no-smooth','smoothed-newton'
+  g0=0.99998
+  g1=0.00002
+  rp1_pot=0.02
+  lsecondary_wait=T
+  t_secondary_planet = 62.8318530718
+/
+&special_init_pars
+/
