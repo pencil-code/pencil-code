@@ -33,6 +33,9 @@ def interp_var(
                 source='old_run', target='new_run', 
                 source_path=None, target_path=None,
                 xlim=None, ylim=None, zlim=None,
+                xrepeat=1,
+                yrepeat=1,
+                zrepeat=1,
                 time=None,
                 deltay=None,
                 nghosts=3
@@ -87,13 +90,16 @@ def interp_var(
         if hasattr(fold,arr):
             print('interpolating '+arr)
             tmp = fold.__getattribute__(arr)
-            intmpx = interp1d(fold.x,tmp,axis=-1)
-            tmp = intmpx(x)
-            intmpy = interp1d(fold.y,tmp,axis=-2)
-            tmp=intmpy(y)
-            intmpz = interp1d(fold.z,tmp,axis=-3)
-            tmp = intmpz(z)
-            fnew.__getattribute__(arr)[:] = tmp
+            if xrepeat == 1:
+                intmpx = interp1d(fold.x,tmp,axis=-1)
+                tmp = intmpx(x)
+            if yrepeat == 1:
+                intmpy = interp1d(fold.y,tmp,axis=-2)
+                tmp=intmpy(y)
+            if zrepeat == 1:
+                intmpz = interp1d(fold.z,tmp,axis=-3)
+                tmp = intmpz(z)
+                fnew.__getattribute__(arr)[:] = tmp
             if len(tmp.shape)==4:
                 fnew.f[iarr:iarr+3] = tmp
                 iarr += 3
