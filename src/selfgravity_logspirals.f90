@@ -518,7 +518,6 @@ module Selfgravity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: qtoomre
       type (pencil_case) :: p
 !
       intent(in) :: f,p
