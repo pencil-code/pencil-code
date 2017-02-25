@@ -65,6 +65,12 @@ module Selfgravity
   integer :: idiag_qtoomre=0,idiag_qtoomremin=0,idiag_qtoomremax=0
   integer :: idiag_jeanslength=0, idiag_ljeans2d=0
 !
+  type InternalPencils
+     real, dimension(nx) :: qtoomre
+  endtype InternalPencils
+!
+  type (InternalPencils) :: q
+!
 !  Module Variables
 !
   real, dimension(mz) :: rho0z = 0.0
@@ -378,6 +384,10 @@ module Selfgravity
         !if (igpotselfx/=0) f(l1:l2,m,n,igpotselfx:igpotselfz)=p%gpotself
       !endif
 !
+      if (ldiagnos.and.(idiag_qtoomre/=0.or.idiag_qtoomremin/=0.or.idiag_qtoomremax/=0)) then
+        q%qtoomre=kappa_mn*sqrt(p%cs2)/(gravitational_const*pi*p%rho)
+      endif
+!
 !  Apply Jeans stiffening to the EOS
 !
       if (ljeans_stiffening) then
@@ -508,6 +518,7 @@ module Selfgravity
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: qtoomre
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -549,19 +560,9 @@ module Selfgravity
              call sum_mn_name(p%gpotself(:,2)*p%gpotself(:,3),idiag_gygzm)
         if (idiag_grgpm/=0 .or. idiag_grgzm/=0 .or. idiag_gpgzm/=0) &
              call calc_cylgrav_stresses(p)
-        if (idiag_qtoomre/=0) then
-          !print*,maxval(kappa_mn),maxval(sqrt(p%cs2)),maxval(gravitational_const*pi*p%rho)
-          !print*,minval(kappa_mn),minval(sqrt(p%cs2)),minval(gravitational_const*pi*p%rho)
-             call sum_mn_name(kappa_mn*sqrt(p%cs2)/ &
-             (gravitational_const*pi*p%rho),idiag_qtoomre)
-           endif
-           !stop
-        if (idiag_qtoomremin/=0) &
-             call max_mn_name(-kappa_mn*sqrt(p%cs2)/ &
-             (gravitational_const*pi*p%rho),idiag_qtoomremin,lneg=.true.)
-        if (idiag_qtoomremax/=0) &
-             call max_mn_name(kappa_mn*sqrt(p%cs2)/ &
-             (gravitational_const*pi*p%rho),idiag_qtoomremax)
+        if (idiag_qtoomre/=0) call sum_mn_name(q%qtoomre,idiag_qtoomre)
+        if (idiag_qtoomremin/=0) call max_mn_name(-q%qtoomre,idiag_qtoomremin,lneg=.true.)
+        if (idiag_qtoomremax/=0) call max_mn_name( q%qtoomre,idiag_qtoomremax)
         if (idiag_jeanslength/=0) call max_mn_name(-sqrt(pi*p%cs2/ &
             (gravitational_const*p%rho)),idiag_jeanslength,lneg=.true.)
         if (idiag_ljeans2d/=0) call max_mn_name(-p%cs2/ &
