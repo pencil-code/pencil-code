@@ -66,6 +66,7 @@ function input_table, filename, $
                       NOFILE_OK=nofile_ok, VERBOSE=verb, $
                       HELP=help, INDS_COMPL=inds_compl, SEPMINUS=sepminus
   ;on_error,2
+  default, sepminus, 1
 
   if (keyword_set(help)) then extract_help, 'input_table'
 
