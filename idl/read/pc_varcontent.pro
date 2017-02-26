@@ -132,8 +132,7 @@ indices = [ $
   { name:'imi', label:'Dust mi ?something?', dims:1 }, $
   { name:'ilnTT', label:'Log temperature', dims:1 }, $
   { name:'iTT', label:'Temperature', dims:1 }, $
-  { name:'ieth', label:'Thermal energy', dims:1 }, $
-  { name:'iqq', label:'Heat flux', dims:3 }
+  { name:'ieth', label:'Thermal energy', dims:1 } $
   ; don't forget to add a comma above when extending
 ]
 nvar=n_elements(indices)
