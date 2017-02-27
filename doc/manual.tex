@@ -4736,6 +4736,30 @@ of blocks any processor may adopt. This should not be so low that there is not
 room for all the bricks with particles, nor so high that the code runs out of
 memory.
 
+\subsubsection{Large number of particles}
+
+When dealing with large number of particles, one needs to make sure that the
+number of particles \code{npar} is less than the maximum integer that the
+compiler can handle with. The maximum integer can be checked by the Fortran
+intrinsic function \code{huge},
+\begin{verbatim}
+program huge_integers
+  print *, huge(0_4) ! for default Fortran integer (32 Bit) 
+  print *, huge(0_8) ! for 64 Bit integer in Fortran
+end program huge_integers
+\end{verbatim}
+If the number of particles \code{npar} is larger than default maximum integer,
+one can promote the maximum integer to 64 Bit by setting
+\begin{verbatim}
+integer(kind=8), parameter :: npar=4294967296
+\end{verbatim}
+in the \code{cparam.local} file. This works because the data type of \code{npar}
+is only set here. It is worth noting that one \textit{should not} use the flag
+\begin{verbatim}
+FFLAGS += -integer-size 64
+\end{verbatim}
+to promote all the integers to 64 Bit. This will break the Fortran-C interface.
+
 % ---------------------------------------------------------------------- %
 
 \subsection{Non-cartesian coordinate systems}
