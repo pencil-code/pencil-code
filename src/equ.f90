@@ -34,7 +34,6 @@ module Equ
 !   5-jan-17/MR: removed mn-offset manipulation
 !  14-feb-17/MR: adaptations for use of GPU kernels in calculating the rhss of the pde
 !
-      use BorderProfiles, only: calc_pencils_borderprofiles
       use Chiral
       use Chemistry
       use Density
@@ -43,23 +42,19 @@ module Equ
       use Dustdensity
       use Energy
       use EquationOfState
-      use Forcing, only: calc_pencils_forcing, calc_lforcing_cont_pars, &
-                         forcing_continuous
+      use Forcing, only: calc_lforcing_cont_pars
+!                         
 ! To check ghost cell consistency, please uncomment the following line:
 !     use Ghost_check, only: check_ghosts_consistency
       use General, only: notanumber, ioptest, loptest
       use GhostFold, only: fold_df, fold_df_3points
       use Gpu
       use Gravity
-      use Heatflux
       use Hydro
       use Interstellar, only: interstellar_before_boundary
-      use Lorenz_gauge
       use Magnetic
       use Hypervisc_strict, only: hyperviscosity_strict
       use Hyperresi_strict, only: hyperresistivity_strict
-      use NeutralDensity
-      use NeutralVelocity
       use NSCBC
       use Particles_main
       use Poisson
@@ -69,17 +64,16 @@ module Equ
       use Radiation
       use Selfgravity
       use Shear
-      use Shock, only: calc_pencils_shock, calc_shock_profile, &
-                       calc_shock_profile_simple
+      use Shock, only: calc_shock_profile, calc_shock_profile_simple
       use Solid_Cells, only: update_solid_cells, freeze_solid_cells, &
-          dsolid_dt,dsolid_dt_integrate,update_solid_cells_pencil
+                             dsolid_dt_integrate
       use Special, only: special_before_boundary, calc_lspecial_pars, &
-          calc_pencils_special, dspecial_dt, special_after_boundary
+                         special_after_boundary
       use Sub
       use Testfield
       use Testflow
       use Testscalar
-      use Viscosity, only: calc_viscosity, calc_pencils_viscosity, viscosity_after_boundary
+      use Viscosity, only: viscosity_after_boundary
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -684,8 +678,7 @@ module Equ
       use Dustdensity
       use Energy
       use EquationOfState
-      use Forcing, only: calc_pencils_forcing, calc_lforcing_cont_pars, &
-                         forcing_continuous
+      use Forcing, only: calc_pencils_forcing, forcing_continuous
       use GhostFold, only: fold_df, fold_df_3points
       use Gravity
       use Heatflux
@@ -704,14 +697,14 @@ module Equ
       use Shock, only: calc_pencils_shock, calc_shock_profile, &
                        calc_shock_profile_simple
       use Solid_Cells, only: update_solid_cells, freeze_solid_cells, &
-                             dsolid_dt,dsolid_dt_integrate,update_solid_cells_pencil
+                             dsolid_dt,update_solid_cells_pencil
       use Special, only: calc_pencils_special, dspecial_dt
       use Sub, only: sum_mn
       use Supersat
       use Testfield
       use Testflow
       use Testscalar
-      use Viscosity, only: calc_viscosity, calc_pencils_viscosity
+      use Viscosity, only: calc_pencils_viscosity
 
       real, dimension (mx,my,mz,mfarray),intent(INOUT) :: f
       real, dimension (mx,my,mz,mvar)   ,intent(OUT  ) :: df

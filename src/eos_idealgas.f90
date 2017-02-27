@@ -98,6 +98,11 @@ module EquationOfState
   logical :: lstratset = .false.
   integer, parameter :: BOT=1, TOP=nx
 !
+!  Background stratification data
+!
+  character(len=labellen) :: gztype = 'zero'
+  real :: gz_coeff = 0.0
+!
   contains
 !***********************************************************************
     subroutine register_eos

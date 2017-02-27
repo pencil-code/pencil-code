@@ -32,10 +32,14 @@ module Poisson
   include 'poisson.h'
 
   namelist /poisson_init_pars/ &
-      dummy
+      niter_poisson
 
   namelist /poisson_run_pars/ &
-      dummy
+      niter_poisson
+!
+!  Number of iterations for multigrid solver.
+!
+  integer :: niter_poisson=30
 
   contains
 

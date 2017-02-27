@@ -100,7 +100,7 @@ module Param_IO
       lcylindrical_gravity, &
       border_frac_x, border_frac_y, border_frac_z, lborder_hyper_diff, &
       luse_latitude, lshift_datacube_x, lfargo_advection, yequator, lequatory, &
-      lequatorz, zequator, lav_smallx, xav_max, niter_poisson, &
+      lequatorz, zequator, lav_smallx, xav_max, &
       lforce_shear_bc,lread_from_other_prec, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w,&
       lcorotational_frame, rcorot, lproper_averages, &
@@ -150,7 +150,7 @@ module Param_IO
       lpencil_requested_swap, lpencil_diagnos_swap, lpencil_check, &
       lpencil_check_small, lpencil_check_no_zeros, lpencil_check_diagnos_opti, &
       lpencil_init, penc0, lwrite_2d, lbidiagonal_derij, lisotropic_advection, &
-      crash_file_dtmin_factor, niter_poisson, ltestperturb, eps_rkf, &
+      crash_file_dtmin_factor, ltestperturb, eps_rkf, &
       eps_stiff, timestep_scaling, lequatory, lequatorz, zequator, &
       lini_t_eq_zero, lav_smallx, xav_max, ldt_paronly, lweno_transport, &
       it_timing, har_spec, hav_spec, j_spec, jb_spec, &

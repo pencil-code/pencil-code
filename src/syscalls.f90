@@ -98,8 +98,9 @@ module Syscalls
       logical :: directory_exists
       character(len=*) :: path
 !
-      integer :: exists = -1
+      integer :: exists
 !
+      exists = -1
       call directory_exists_c(trim(path)//char(0), exists)
       if (exists == -1) then
         write (*,*) 'WARNING: failure while checking if "'//trim(path)//'" exists!'

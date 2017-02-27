@@ -554,12 +554,6 @@ module Cdata
   character (len=labellen), dimension(maux) :: aux_var
   integer :: aux_count=1
   integer :: mvar_io=0, mvar_down=-1, maux_down=0
-  integer :: ireac=0
-  integer, dimension(nchemspec) :: ireaci=0
-!
-!  Number of iterations for multigrid solver.
-!
-  integer :: niter_poisson=30
 !
 !  Filtering parameters.
 !
@@ -605,9 +599,6 @@ module Cdata
   real :: ampl_kinflow_x=0., ampl_kinflow_y=0., ampl_kinflow_z=0.
   real :: kx_kinflow=1., ky_kinflow=1., kz_kinflow=1.
   real :: dtphase_kinflow=0.
-! (DM) All previous kinematic stuff can go to hydro_kinematic but I am not sure how
-! to accomodate the following.
-  real :: kinematic_phase=0.
 !
 !  Switch for Galilean-invariant advection for global disks (fargo). Used
 !  in connection with special/fargo
@@ -633,7 +624,7 @@ module Cdata
 !  Used together with entropy, turns iss into ilntt (i.e., entropy
 !  becomes log temperature). It does the same as using the
 !  temperature_idealgas.f90 procedure, but draws on the more available
-!  functionality extant in entropy.f90.
+!  functionality extent in entropy.f90.
 !
   logical :: pretend_lnTT=.false.
 !
@@ -648,10 +639,6 @@ module Cdata
   logical :: lrescaling_testscalar=.false.
   logical :: lrescaling_testfield=.false.
 !
-! Also to insert particles at specific times
-!
-  logical :: lparticles_insert
-!
 !  Dynamical diffusion coefficients with fixed mesh Reynolds number.
 !
   real :: re_mesh=0.5
@@ -660,8 +647,6 @@ module Cdata
 !
 !  Background stratification.
 !
-  character(len=labellen) :: gztype = 'zero'
   logical :: lstratz = .false.
-  real :: gz_coeff = 0.0
 !***********************************************************************
 endmodule Cdata

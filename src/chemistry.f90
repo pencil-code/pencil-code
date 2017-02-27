@@ -211,6 +211,11 @@ module Chemistry
   integer :: idiag_lambdam=0
   integer :: idiag_num=0
 !
+!  Auxiliaries.
+!
+  integer :: ireac=0
+  integer, dimension(nchemspec) :: ireaci=0
+
   contains
 !
 !***********************************************************************

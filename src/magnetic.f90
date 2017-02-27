@@ -3723,7 +3723,7 @@ module Magnetic
       endif
 !
       if (lmagnetic_slope_limited.and.lfirst) then
-        df(:,m,n,iax:iaz)=df(:,m,n,iax:iaz)-f(l1:l2,m,n,iFF_div_aa:iFF_div_aa+2)
+        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-f(l1:l2,m,n,iFF_div_aa:iFF_div_aa+2)
         if (lohmic_heat) then
           call dot(f(l1:l2,m,n,iFF_div_aa:iFF_div_aa+2),p%jj,phi)                !tb checked
           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+(etatotal*mu0)*p%rho1*p%TT1*phi

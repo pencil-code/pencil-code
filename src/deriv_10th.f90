@@ -1897,6 +1897,10 @@ module Deriv
 !
       call stop_it("deriv_10th: der2_x not implemented yet")
 !
+! To avoid compiler warnings:
+!
+      df2=f(n1:n2)
+!
     endsubroutine der2_x
 !***********************************************************************
     subroutine der2_minmod(f,j,delfk,delfkp1,delfkm1,k)
@@ -1913,6 +1917,7 @@ module Deriv
       call fatal_error('der2_minmod','Not implemented for deriv_10th')
 !
 !  Fill with dummy values to keep compiler quiet
+!
       delfk(:) = j; delfkp1(:) = k; delfkm1(:) = f(l1,m1,n1,1)
 !
     endsubroutine der2_minmod
@@ -1940,10 +1945,10 @@ module Deriv
       intent(in)  :: f,j,inds,lignored,lnometric
       intent(out) :: df
 !
-!      call keep_compiler_quiet(df)
       call fatal_error('deri_3d_inds','Upwinding not implemented for nonuniform grids')
 !
 ! dummy computation to avoid compiler warnings of unused variables
+!
       if (present(lignored).and.present(lnometric)) &
           df  = inds + f(l1:l2,1,1) + j
 !
