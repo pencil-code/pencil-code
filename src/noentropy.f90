@@ -104,7 +104,11 @@ module Energy
 !  gradient dlnrho/dr = beta/H.
 !
       if (any(beta_glnrho_global /= 0.)) then
+        print*, '**** beta_glnrho_global=',beta_glnrho_global
+        print*, '**** Omega=',Omega
+        print*, '**** cs0=',cs0
         beta_glnrho_scaled=beta_glnrho_global*Omega/cs0
+        print*, '**** beta_glnrho_scaled=',beta_glnrho_scaled
         if (lroot) print*, 'initialize_energy: Global density gradient '// &
             'with beta_glnrho_global=', beta_glnrho_global
       endif
@@ -316,9 +320,13 @@ module Energy
 !
 !  Add pressure force from global density gradient.
 !
+        print*, '**** noentropy.f90: denergy.dt(f,dt,p)'
+        print*, '**** beta_glnrho_scaled=',beta_glnrho_scaled
         if (any(beta_glnrho_global /= 0.)) then
           if (headtt) print*, 'denergy_dt: adding global pressure gradient force'
           do j=1,3
+            print*, '**** j=',j
+            print*, '**** beta_glnrho_scaled(j)=',beta_glnrho_scaled(j)
             df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
                 - p%cs2*beta_glnrho_scaled(j)
           enddo

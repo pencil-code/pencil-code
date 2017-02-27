@@ -839,7 +839,7 @@ module EquationOfState
               print*,'bc_ss_temp_old: cannot have cs2bot<=0'
 !
         if (ldensity_nolog) then
-          tmp_xy = (-gamma_m1*log(f(:,:,n1,irho)/rho0) + log(cs2bot/cs20))*gamma1 
+          tmp_xy = (-gamma_m1*log(f(:,:,n1,irho)/rho0) + log(cs2bot/cs20))*gamma1
         else
           tmp_xy = (-gamma_m1*(f(:,:,n1,ilnrho)-lnrho0) + log(cs2bot/cs20))*gamma1
         endif
@@ -861,7 +861,7 @@ module EquationOfState
   !          call fatal_error(bc_ss_temp_old','Inconsistent boundary conditions 4.')
 !
         if (ldensity_nolog) then
-          tmp_xy = (-gamma_m1*log(f(:,:,n2,irho)/rho0) + log(cs2top/cs20))*gamma1 
+          tmp_xy = (-gamma_m1*log(f(:,:,n2,irho)/rho0) + log(cs2top/cs20))*gamma1
         else
           tmp_xy = (-gamma_m1*(f(:,:,n2,ilnrho)-lnrho0) + log(cs2top/cs20))*gamma1
         endif
@@ -991,7 +991,7 @@ module EquationOfState
         tmp = 2*gamma1*alog(cs2bot/cs20)
         if (ldensity_nolog) then
           f(:,m1,:,iss) = 0.5*tmp - gamma_m1/gamma*log(f(:,m1,:,irho)/rho0)
-        else        
+        else
           f(:,m1,:,iss) = 0.5*tmp - gamma_m1/gamma*(f(:,m1,:,ilnrho)-lnrho0)
         endif
         do i=1,nghost
