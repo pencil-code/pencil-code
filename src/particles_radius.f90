@@ -203,7 +203,7 @@ module Particles_radius
       real, dimension (ndustrad) :: radii_cumulative
       real, dimension (nbin_initdist) :: n_initdist, a_initdist
       integer, dimension (nbin_initdist) :: nn_initdist
-      real :: radius_fraction, mcen, mmin, mmax, fcen, p, rhopm
+      real :: radius_fraction, mcen, mmin, mmax, fcen, p
       real :: lna0, lna1, lna, lna0_initdist
       integer :: i, j, k, kend, ind, ibin
       logical :: initial
@@ -252,16 +252,11 @@ module Particles_radius
                 (alog10(ap1)-alog10(ap0(j)))/npar)
           enddo
           if (lparticles_density) then
-            if (lgravz .and. lgravz_gas) then
-              rhopm = eps_dtog*sqrt(2*pi)*1.0/Lz
-            else
-              rhopm = eps_dtog*1.0
-            endif
             do k=npar_low,npar_high
               aplow =10**(alog10(fp(k,iap))-(alog10(ap1)-alog10(ap0(j)))/npar/2)
               aphigh=10**(alog10(fp(k,iap))+(alog10(ap1)-alog10(ap0(j)))/npar/2)
               fp(k,irhopswarm)=(aphigh**(4-qplaw)-aplow**(4-qplaw))/ &
-                  (ap1**(4-qplaw)-ap0(j)**(4-qplaw))*rhopm*nwgrid
+                  (ap1**(4-qplaw)-ap0(j)**(4-qplaw))*rhop_swarm*real(npar)
             enddo
           endif
 !
