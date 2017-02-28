@@ -1373,6 +1373,11 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  20-04-06/anders: coded
 !
+      if (ldraglaw_epstein .and. iap /= 0) then
+        lpenc_requested(i_cs2) = .true.
+        lpenc_requested(i_rho) = .true.
+      endif
+!
       if (idiag_npm/=0 .or. idiag_np2m/=0 .or. idiag_npmax/=0 .or. &
           idiag_npmin/=0 .or. idiag_npmx/=0 .or. idiag_npmy/=0 .or. &
           idiag_npmz/=0) lpenc_diagnos(i_np)=.true.
@@ -2382,7 +2387,7 @@ k_loop:   do while (.not. (k>npar_loc))
       logical, optional :: nochange_opt
 !
       real :: tmp, epsp, OO
-      integer :: ix0, iy0, iz0, jspec
+      integer :: ix0, iy0, iz0, inx0, jspec
       logical :: nochange=.false.
 !
       if (present(nochange_opt)) then
@@ -2396,12 +2401,13 @@ k_loop:   do while (.not. (k>npar_loc))
       endif
 !
       ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
+      inx0 = ix0 - nghost
 !
 !  Epstein drag law.
 !
       if (ldraglaw_epstein) then
         if (iap/=0) then
-          if (fp(k,iap)/=0.0) tausp1_par = 1/(fp(k,iap)*rhopmat)
+          if (fp(k,iap)/=0.0) tausp1_par = (sqrt(p%cs2(inx0))*p%rho(inx0))/(fp(k,iap)*rhopmat)
         else
           if (npar_species>1) then
             jspec=npar_species*(ipar(k)-1)/npar+1
