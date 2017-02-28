@@ -48,7 +48,7 @@ module Particles
   real :: xp2=0.0, yp2=0.0, zp2=0.0, vpx2=0.0, vpy2=0.0, vpz2=0.0
   real :: xp3=0.0, yp3=0.0, zp3=0.0, vpx3=0.0, vpy3=0.0, vpz3=0.0
   real :: Lx0=0.0, Ly0=0.0, Lz0=0.0
-  real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0
+  real :: delta_vp0=1.0, tausp=0.0, tausp1=0.0, tausp01=0.0
   real :: nu_epicycle=0.0, nu_epicycle2=0.0
   real :: beta_dPdr_dust=0.0, beta_dPdr_dust_scaled=0.0
   real :: epsp_friction_increase=0.0
@@ -317,6 +317,10 @@ module Particles
           cs2_powerlaw=temperature_power_law
         endif
       endif
+!
+!  Normalization for Epstein drag with particles radius.
+!
+      if (ldraglaw_epstein .and. iap /= 0) tausp01 = rho0 * cs0 / (rhopmat * Omega)
 !
 !  Global gas pressure gradient seen from the perspective of the dust.
 !
@@ -1373,11 +1377,6 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  20-04-06/anders: coded
 !
-      if (ldraglaw_epstein .and. iap /= 0) then
-        lpenc_requested(i_cs2) = .true.
-        lpenc_requested(i_rho) = .true.
-      endif
-!
       if (idiag_npm/=0 .or. idiag_np2m/=0 .or. idiag_npmax/=0 .or. &
           idiag_npmin/=0 .or. idiag_npmx/=0 .or. idiag_npmy/=0 .or. &
           idiag_npmz/=0) lpenc_diagnos(i_np)=.true.
@@ -2387,7 +2386,7 @@ k_loop:   do while (.not. (k>npar_loc))
       logical, optional :: nochange_opt
 !
       real :: tmp, epsp, OO
-      integer :: ix0, iy0, iz0, inx0, jspec
+      integer :: ix0, iy0, iz0, jspec
       logical :: nochange=.false.
 !
       if (present(nochange_opt)) then
@@ -2401,13 +2400,12 @@ k_loop:   do while (.not. (k>npar_loc))
       endif
 !
       ix0=ineargrid(k,1); iy0=ineargrid(k,2); iz0=ineargrid(k,3)
-      inx0 = ix0 - nghost
 !
 !  Epstein drag law.
 !
       if (ldraglaw_epstein) then
         if (iap/=0) then
-          if (fp(k,iap)/=0.0) tausp1_par = (sqrt(p%cs2(inx0))*p%rho(inx0))/(fp(k,iap)*rhopmat)
+          if (fp(k,iap)/=0.0) tausp1_par = tausp01 / fp(k,iap)
         else
           if (npar_species>1) then
             jspec=npar_species*(ipar(k)-1)/npar+1
