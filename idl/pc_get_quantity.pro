@@ -128,6 +128,9 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	gm2 = m2
 	gn1 = n1
 	gn2 = n2
+	gnx = nx
+	gny = ny
+	gnz = nz
 	if (keyword_set (ghost)) then begin
 		gl1 = 0
 		gl2 += nghostx
@@ -135,6 +138,9 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		gm2 += nghosty
 		gn1 = 0
 		gn2 += nghostz
+		gnx += 2 * nghostx
+		gny += 2 * nghosty
+		gnz += 2 * nghostz
 	end
 
 	if (strcmp (quantity, 'u', /fold_case)) then begin
@@ -1129,6 +1135,19 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	if (strcmp (quantity, 'inv_dx', /fold_case)) then return, dx_1[gl1:gl2] / unit.length
 	if (strcmp (quantity, 'inv_dy', /fold_case)) then return, dy_1[gm1:gm2] / unit.length
 	if (strcmp (quantity, 'inv_dz', /fold_case)) then return, dz_1[gn1:gn2] / unit.length
+
+	; Grid volume
+	if (strcmp (quantity, 'dV', /fold_case)) then begin
+		dx = pc_compute_quantity (vars, index, 'dx')
+		dy = pc_compute_quantity (vars, index, 'dy')
+		dz = pc_compute_quantity (vars, index, 'dz')
+		if (all (lequidist[0:1])) then begin
+			dV = dx[0] * dy[0] * dz[0]
+		end else begin
+			dV = spread (dx, [1,2], [gny,gnz]) * spread (dy, [0,2], [gnx,gnz]) * spread (dz, [0,1], [gnx,gny])
+		end
+		return, dV
+	end
 
 	; Box size
 	if (strcmp (quantity, 'size_x', /fold_case)) then return, (x[l2]-x[l1] + lperi[0] * mean (1.0 / dx_1[[l1,l2]])) * unit.length
