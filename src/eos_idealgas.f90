@@ -75,13 +75,17 @@ module EquationOfState
   real, dimension(nchemspec,7) :: tran_data
   real, dimension(nchemspec)   :: Lewis_coef, Lewis_coef1
 !
+!  Background stratification data
+!
+  character(len=labellen) :: gztype = 'zero'
+  real :: gz_coeff = 0.0
+!
 !  Input parameters.
 !
   namelist /eos_init_pars/ &
       xHe, mu, cp, cs0, rho0, gamma, error_cp, cs2top_ini, &
       dcs2top_ini, sigmaSBt, lanelastic_lin, lcs_as_aux, lcs_as_comaux,&
-      fac_cs,isothmid,&
-      lstratz, gztype, gz_coeff
+      fac_cs,isothmid, lstratz, gztype, gz_coeff
 !
 !  Run parameters.
 !
@@ -97,11 +101,6 @@ module EquationOfState
   real, dimension(mz) :: eth0z = 0.0
   logical :: lstratset = .false.
   integer, parameter :: BOT=1, TOP=nx
-!
-!  Background stratification data
-!
-  character(len=labellen) :: gztype = 'zero'
-  real :: gz_coeff = 0.0
 !
   contains
 !***********************************************************************
