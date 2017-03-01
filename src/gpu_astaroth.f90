@@ -74,7 +74,7 @@ contains
       if (str/='') &
         call stop_it('No GPU implementation for module "'//trim(str)//'"')
 !
-      call initialize_gpu_c(nx,ny,nz,x,y,z)
+      call initialize_gpu_c(nx,ny,nz,nghost,x,y,z)
 
     endsubroutine initialize_GPU
 !**************************************************************************

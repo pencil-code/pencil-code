@@ -23,34 +23,38 @@
 extern REAL cdata_mp_omega_;
 extern REAL cdata_mp_theta_;
 extern REAL viscosity_mp_nu_;
-static FINT nx_, ny_, nz_;
+static FINT nx, ny, nz, mx, my, mz, nghost;
 
 extern REAL cdata_mp_dx_;
 extern REAL cdata_mp_dy_;
 extern REAL cdata_mp_dz_;
 /* ---------------------------------------------------------------------- */
 void FTNIZE(initialize_gpu_c)
-     (FINT *nx, FINT *ny, FINT *nz, REAL *x, REAL *y, REAL *z )
+     (FINT *nx_, FINT *ny_, FINT *nz_, FINT *nghost_, REAL *x, REAL *y, REAL *z )
 /* Initializes GPU.
 */
 {
   /*
   printf("omega = %e\n", cdata_mp_omega_);
   printf("nu = %e\n", viscosity_mp_nu_);
-  printf("nx = %d\n", *nx);
-  printf("ny = %d\n", *ny);
-  printf("nz = %d\n", *nz);
+  printf("nx = %d\n", *nx_);
+  printf("ny = %d\n", *ny_);
+  printf("nz = %d\n", *nz_);
   */
-  nx_=*nx;
-  ny_=*ny;
-  nz_=*nz;
+  nx=*nx_;
+  ny=*ny_;
+  nz=*nz_;
+  nghost=*nghost_;
+  mx=nx+2*nghost;
+  my=ny+2*nghost;
+  mz=nz+2*nghost;
 
   printf("xmin = %e\n", x[4]);
-  printf("xmax = %e\n", x[*nx-1+3]);
+  printf("xmax = %e\n", x[nx-1+3]);
   printf("ymin = %e\n", y[4]);
-  printf("ymax = %e\n", y[*ny-1+3]);
+  printf("ymax = %e\n", y[ny-1+3]);
   printf("zmin = %e\n", z[4]);
-  printf("zmax = %e\n", z[*nz-1+3]);
+  printf("zmax = %e\n", z[nz-1+3]);
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(finalize_gpu_c)
@@ -95,7 +99,7 @@ void FTNIZE(rhs_gpu_c)
    If full=1, however, copy the full arrays.
 */
 {
-  printf("nx_ = %d\n", nx_);
+  printf("nx = %d\n", nx);
   printf("No GPU implementation yet");
 // add calls to ASTAROTH routines here
 }
