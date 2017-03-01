@@ -1116,19 +1116,19 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 	if (strcmp (quantity, 'time', /fold_case)) then return, index.time * unit.time
 
 	; Coordinates
-	if (strcmp (quantity, 'x', /fold_case)) then return, x[l1:l2] * unit.length
-	if (strcmp (quantity, 'y', /fold_case)) then return, y[m1:m2] * unit.length
-	if (strcmp (quantity, 'z', /fold_case)) then return, z[n1:n2] * unit.length
+	if (strcmp (quantity, 'x', /fold_case)) then return, x[gl1:gl2] * unit.length
+	if (strcmp (quantity, 'y', /fold_case)) then return, y[gm1:gm2] * unit.length
+	if (strcmp (quantity, 'z', /fold_case)) then return, z[gn1:gn2] * unit.length
 
 	; Grid distances
-	if (strcmp (quantity, 'dx', /fold_case)) then return, 1.0 / dx_1[l1:l2] * unit.length
-	if (strcmp (quantity, 'dy', /fold_case)) then return, 1.0 / dy_1[m1:m2] * unit.length
-	if (strcmp (quantity, 'dz', /fold_case)) then return, 1.0 / dz_1[n1:n2] * unit.length
+	if (strcmp (quantity, 'dx', /fold_case)) then return, 1.0 / dx_1[gl1:gl2] * unit.length
+	if (strcmp (quantity, 'dy', /fold_case)) then return, 1.0 / dy_1[gm1:gm2] * unit.length
+	if (strcmp (quantity, 'dz', /fold_case)) then return, 1.0 / dz_1[gn1:gn2] * unit.length
 
 	; Inverse grid distances
-	if (strcmp (quantity, 'inv_dx', /fold_case)) then return, dx_1[l1:l2] / unit.length
-	if (strcmp (quantity, 'inv_dy', /fold_case)) then return, dy_1[m1:m2] / unit.length
-	if (strcmp (quantity, 'inv_dz', /fold_case)) then return, dz_1[n1:n2] / unit.length
+	if (strcmp (quantity, 'inv_dx', /fold_case)) then return, dx_1[gl1:gl2] / unit.length
+	if (strcmp (quantity, 'inv_dy', /fold_case)) then return, dy_1[gm1:gm2] / unit.length
+	if (strcmp (quantity, 'inv_dz', /fold_case)) then return, dz_1[gn1:gn2] / unit.length
 
 	; Box size
 	if (strcmp (quantity, 'size_x', /fold_case)) then return, (x[l2]-x[l1] + lperi[0] * mean (1.0 / dx_1[[l1,l2]])) * unit.length
