@@ -191,7 +191,7 @@ for i=0,ncpus-1 do begin
     readu,file, dx_tilde,dy_tilde,dz_tilde
   endif else begin
     readu,file, t,xloc,yloc,zloc
-    if procdim.ipy eq 0 and procdim.ipz eq 0 then begin
+    if (procdim.ipy eq 0 and procdim.ipz eq 0) then begin
     ;
     ;  Don't overwrite ghost zones of processor to the left (and
     ;  accordingly in y and z direction makes a difference on the
@@ -210,7 +210,7 @@ for i=0,ncpus-1 do begin
     ;
       x[i0x:i1x] = xloc[i0xloc:i1xloc]
     endif
-    if procdim.ipx eq 0 and procdim.ipz eq 0 then begin
+    if (procdim.ipx eq 0 and procdim.ipz eq 0) then begin
       if (procdim.ipy eq 0L) then begin
         i0y=0L
         i1y=procdim.my-1L
@@ -224,7 +224,7 @@ for i=0,ncpus-1 do begin
 
       y[i0y:i1y] = yloc[i0yloc:i1yloc]
     endif
-    if procdim.ipx eq 0 and procdim.ipy eq 0 then begin
+    if (procdim.ipx eq 0 and procdim.ipy eq 0) then begin
       if (procdim.ipz eq 0L) then begin
         i0z=0L
         i1z=procdim.mz-1L
@@ -247,14 +247,14 @@ for i=0,ncpus-1 do begin
     readu,file, Lx,Ly,Lz
 
     readu,file,xloc,yloc,zloc
-    if procdim.ipy eq 0 and procdim.ipz eq 0 then dx_1[i0x:i1x] = xloc[i0xloc:i1xloc]
-    if procdim.ipx eq 0 and procdim.ipz eq 0 then dy_1[i0y:i1y] = yloc[i0yloc:i1yloc]
-    if procdim.ipx eq 0 and procdim.ipy eq 0 then dz_1[i0z:i1z] = zloc[i0zloc:i1zloc]
+    if (procdim.ipy eq 0 and procdim.ipz eq 0) then dx_1[i0x:i1x] = xloc[i0xloc:i1xloc]
+    if (procdim.ipx eq 0 and procdim.ipz eq 0) then dy_1[i0y:i1y] = yloc[i0yloc:i1yloc]
+    if (procdim.ipx eq 0 and procdim.ipy eq 0) then dz_1[i0z:i1z] = zloc[i0zloc:i1zloc]
 
     readu,file,xloc,yloc,zloc
-    if procdim.ipy eq 0 and procdim.ipz eq 0 then dx_tilde[i0x:i1x] = xloc[i0xloc:i1xloc]
-    if procdim.ipx eq 0 and procdim.ipz eq 0 then dy_tilde[i0y:i1y] = yloc[i0yloc:i1yloc]
-    if procdim.ipx eq 0 and procdim.ipy eq 0 then dz_tilde[i0z:i1z] = zloc[i0zloc:i1zloc]
+    if (procdim.ipy eq 0 and procdim.ipz eq 0) then dx_tilde[i0x:i1x] = xloc[i0xloc:i1xloc]
+    if (procdim.ipx eq 0 and procdim.ipz eq 0) then dy_tilde[i0y:i1y] = yloc[i0yloc:i1yloc]
+    if (procdim.ipx eq 0 and procdim.ipy eq 0) then dz_tilde[i0z:i1z] = zloc[i0zloc:i1zloc]
   endelse
   found_grid_der=1
 
