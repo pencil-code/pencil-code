@@ -195,7 +195,7 @@ module InitialCondition
             endif
           endif
 !
-        elseif (lparticles_nbody) then
+        elseif (lpointmasses) then
 !
 ! Nbody gravity with a dominating but dynamical central body
 !
