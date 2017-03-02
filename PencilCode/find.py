@@ -111,9 +111,12 @@ def stratz(datadir='./data', par=None, trim=False):
         trim
             Whether or not to trim ghost cells.
     """
-    # Chao-Chin Yang, 2015-01-12
+    # Author: Chao-Chin Yang
+    # Created: 2014-10-08
+    # Last Modified: 2015-01-12
     from . import read
     import numpy as np
+
     # Read the dimensions and the parameters.
     dim = read.dimensions(datadir=datadir)
     if par is None:
@@ -121,12 +124,14 @@ def stratz(datadir='./data', par=None, trim=False):
     z = read.grid(datadir=datadir).z
     if trim:
         z = z[dim.nghost:-dim.nghost]
+
     # Find the density stratification.
     if par.gztype in {'zero', 'none'}:
         rho = par.rho0 * np.ones(dim.nzgrid,)
     elif par.gztype == 'linear':
         h = par.cs0 / par.gz_coeff
         rho = par.rho0 * np.exp(-0.5 * (z / h)**2)
+
     return z, rho
 #=======================================================================
 def time_average(datadir='./data', diagnostics=None, tmin=0, verbose=True):
