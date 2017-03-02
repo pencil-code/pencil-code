@@ -113,7 +113,7 @@ def stratz(datadir='./data', par=None, trim=False):
     """
     # Author: Chao-Chin Yang
     # Created: 2014-10-08
-    # Last Modified: 2015-01-12
+    # Last Modified: 2017-03-02
     from . import read
     import numpy as np
 
@@ -126,7 +126,7 @@ def stratz(datadir='./data', par=None, trim=False):
         z = z[dim.nghost:-dim.nghost]
 
     # Find the density stratification.
-    if par.gztype in {'zero', 'none'}:
+    if not par.lstratz or par.gztype in {'zero', 'none'}:
         rho = par.rho0 * np.ones(dim.nzgrid,)
     elif par.gztype == 'linear':
         h = par.cs0 / par.gz_coeff
