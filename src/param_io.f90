@@ -164,7 +164,8 @@ module Param_IO
       lread_from_other_prec, downsampl, lfullvar_in_slices, &
       lsubstract_reference_state, &
       ldirect_access, lproper_averages, lmaximal_cdt, lmaximal_cdtv, &
-      pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w
+      pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w, &
+      lhyper_avoid_boundary
 !
   namelist /IO_pars/ &
       lcollective_IO, IO_strategy
