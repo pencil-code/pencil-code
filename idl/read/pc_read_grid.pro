@@ -264,6 +264,11 @@ missing:
   close,file
 endfor
 ;
+;  Check for degenerated case.
+;
+if (ldegenerated[0]) then dx_1[*] = 1.0/dx
+if (ldegenerated[1]) then dy_1[*] = 1.0/dy
+if (ldegenerated[2]) then dz_1[*] = 1.0/dz
 ;
 ;
 free_lun,file
