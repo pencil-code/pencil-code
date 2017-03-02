@@ -3040,7 +3040,8 @@ module Magnetic
           if ((abs(p%hj2(ix))<=tini).or.(abs(p%b2(ix))<=tini))then
             p%coshjb(ix)=0.
           else
-            p%coshjb(ix)=p%hjb(ix)/sqrt(p%hj2(ix)*p%b2(ix))
+            !p%coshjb(ix)=p%hjb(ix)/sqrt(p%hj2(ix)*p%b2(ix))
+            p%coshjb(ix)=p%hjb(ix)/(sqrt(p%hj2(ix))*sqrt(p%b2(ix)))
           endif
         enddo
         if (lpencil_check_at_work) then
