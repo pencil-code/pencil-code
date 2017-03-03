@@ -30,10 +30,10 @@ link_scripts()
   done
   [ "$to_link" ] && ln -s $to_link .
 
-  ln -s $PENCIL_HOME/bin/pc_helper combine_videofiles
-  ln -s $PENCIL_HOME/bin/pc_helper read_all_videofiles
-  ln -s $PENCIL_HOME/bin/pc_helper read_vectorfiles
-  ln -s $PENCIL_HOME/bin/pc_helper read_videofiles
+  ln -s $PENCIL_HOME/bin/pc_helper combine_videofiles 2>&-
+  ln -s $PENCIL_HOME/bin/pc_helper read_all_videofiles 2>&-
+  ln -s $PENCIL_HOME/bin/pc_helper read_vectorfiles 2>&-
+  ln -s $PENCIL_HOME/bin/pc_helper read_videofiles 2>&-
 }
 #
 link_root_makefile()
