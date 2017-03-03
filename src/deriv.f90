@@ -914,8 +914,8 @@ module Deriv
                   -  6.0*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
                   +      (f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
           if (lhyper_avoid_boundary) then 
-            df(1:4)    =0.
-            df(nx-3:nx)=0.
+            df(1:min(nx,4))   =0.
+            df(max(1,nx-3):nx)=0.
           endif
         else
           df=0.
@@ -933,7 +933,7 @@ module Deriv
                   + 15.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
                   -  6.0*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
                   +      (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
-          if (lhyper_avoid_boundary.and.(m<=m1+3.or.m>=m2-3)) df=0
+          if (lhyper_avoid_boundary.and.(m<=m1+3.or.m>=m2-3)) df=0.
         else
           df=0.
         endif
@@ -950,7 +950,7 @@ module Deriv
                   + 15.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
                   -  6.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
                   +      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
-          if (lhyper_avoid_boundary.and.(m<=m1+3.or.m>=m2-3)) df=0
+          if (lhyper_avoid_boundary.and.(n<=n1+3.or.n>=n2-3)) df=0.
         else
           df=0.
         endif
