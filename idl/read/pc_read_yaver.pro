@@ -23,7 +23,7 @@ pro pc_read_yaver, object=object, varfile=varfile, datadir=datadir, $
     tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
     xsize=xsize, zsize=zsize, it1=it1, variables=variables, $
     colorbar=colorbar, bartitle=bartitle, xshift=xshift, timefix=timefix, $
-    readpar=readpar, readgrid=readgrid, debug=debug, quiet=quiet, wait=wait
+    readpar=readpar, readgrid=readgrid, debug=debug, quiet=quiet, wait=wait, write=write
 ;
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -40,6 +40,6 @@ COMPILE_OPT IDL2,HIDDEN
       tmin=tmin, njump=njump, ps=ps, png=png, imgdir=imgdir, noerase=noerase, $
       xsize=xsize, ysize=zsize, it1=it1, variables=variables, $
       colorbar=colorbar, bartitle=bartitle, xshift=xshift, timefix=timefix, $
-      readpar=readpar, readgrid=readgrid, debug=debug, quiet=quiet, wait=wait
+      readpar=readpar, readgrid=readgrid, debug=debug, quiet=quiet, wait=wait, write=write
 ;
 end
