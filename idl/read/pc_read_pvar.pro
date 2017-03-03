@@ -3,11 +3,18 @@
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
+;  1-mar-17/MR: added new keyword parameters "single" and "array".
+;               /single would force to store the data in single precision.
+;               array=<name> would force output of the data in an array <name>
+;               instead in "object". This saves half the RAM space as no duplication
+;               of the (internally anyway used) array into individual variables is performed.
+;               "object" contains then the names and starting positions of the variables in array.
+; 
 pro pc_read_pvar, object=object, varfile=varfile_, datadir=datadir, ivar=ivar, $
     npar_max=npar_max, stats=stats, quiet=quiet, swap_endian=swap_endian, $
     rmv=rmv, irmv=irmv, trmv=trmv, oldrmv=oldrmv, $
     solid_object=solid_object, theta_arr=theta_arr, savefile=savefile, $
-    proc=proc, ipar=ipar, trimxyz=trimxyz, id_proc=id_proc
+    proc=proc, ipar=ipar, trimxyz=trimxyz, id_proc=id_proc, single=single, array=array
 COMPILE_OPT IDL2,HIDDEN
 common pc_precision, zero, one, precision, data_type, data_bytes, type_idl
 ;
@@ -22,6 +29,7 @@ default, savefile, 1
 default, proc, -1
 default, trimxyz, 1
 default, id_proc, 0
+objout = not arg_present(array) 
 ;
 if (n_elements(ivar) eq 1) then begin
   default,varfile_,'PVAR'
@@ -259,7 +267,6 @@ endfor
 ;
 ;  Define arrays for temporary storage of data.
 ;
-array=fltarr(npar_max,totalvars)*one
 ipar=lonarr(npar)
 ;
 ; Define array for processor id storage
@@ -307,7 +314,11 @@ if (proc ne -1) then begin
 ;
 ;  Read local processor data.
 ;
-    array=fltarr(npar,mpvar)*one
+    if keyword_set(single) then $
+      array=fltarr(npar,mpvar) $
+    else $
+      array=fltarr(npar,mpvar)*one
+
     readu, file, array
 ;
   endif
@@ -323,7 +334,13 @@ if (proc ne -1) then begin
 ;
   close, file
   free_lun, file
+;
 endif else begin
+;
+  if keyword_set(single) then $
+    array=fltarr(npar_max,totalvars) $
+  else $
+    array=fltarr(npar_max,totalvars)*one
 ;
 ;  Loop over processors.
 ;
@@ -557,15 +574,18 @@ endif
 ;
 ;  Put data into sensibly named arrays.
 ;
-for iv=0L,mpvar-1L do begin
-  res=varcontent[iv].idlvar+'=array[*,iv:iv+varcontent[iv].skip]'
-  if (execute(res,0) ne 1) then $
-    message, 'Error putting data into '+varcontent[iv].idlvar+' array'
-  iv=iv+varcontent[iv].skip
-endfor
+if objout then begin
+  for iv=0L,mpvar-1L do begin
+    res=varcontent[iv].idlvar+'=array[*,iv:iv+varcontent[iv].skip]'
+    if (execute(res,0) ne 1) then $
+      message, 'Error putting data into '+varcontent[iv].idlvar+' array'
+    iv=iv+varcontent[iv].skip
+  endfor
+  undefine, array
+endif
 ;
 ;  Check if all particles found exactly once.
-;  Allow for particles not beeing found if particles are beeing 
+;  Allow for particles not being found if particles are being 
 ;  inserted continuously.
 ;
 if (proc eq -1 and not keyword_set(quiet)) then begin
@@ -647,6 +667,7 @@ endif
 ;
 ;  If requested print a summary.
 ;
+if objout then $
 if ( keyword_set(stats) and (not quiet) ) then begin
   print, ''
   print, 'VARIABLE SUMMARY:'
@@ -707,13 +728,32 @@ endif
 ;
 ;  Put data and parameters in object.
 ;
-npar_found=0L
-npar_found=n_elements(where(ipar eq 1))
-makeobject="object = create_struct(name=objectname," + $
-    "['t','x','y','z','dx','dy','dz','npar_found'," + $
-    arraytostring(variables,quote="'",/noleader) + "]," + $
-    "t,x,y,z,dx,dy,dz,npar_found," + $
-    arraytostring(variables,/noleader) + ")"
+npar_found=n_elements(where(ipar eq 1))+0L
+if objout then $
+  makeobject="object = create_struct(name=objectname," + $
+             "['t','x','y','z','dx','dy','dz','npar_found'," + $
+             arraytostring(variables,quote="'",/noleader) + "]," + $
+             "t,x,y,z,dx,dy,dz,npar_found," + $
+             arraytostring(variables,/noleader) + ")" $
+else begin
+;
+;  Turning skips into variable lengths
+;
+  for iv=0,mpvar-1L do begin
+    if varcontent[iv].idlvar ne 'dummy' then begin
+      iskip = varcontent[iv].skip
+      varcontent[iv].skip = iskip+1
+      iv += iskip
+    endif
+  endfor
+
+  makeobject="object = create_struct(name=objectname," + $
+             "['t','x','y','z','dx','dy','dz','npar_found'," + $
+             "'varnames', 'varlens']," + $
+             "t,x,y,z,dx,dy,dz,npar_found," + $
+             "varcontent.idlvar, varcontent.skip )" 
+endelse
+
 if (execute(makeobject) ne 1) then begin
   message, 'ERROR Evaluating variables: ' + makeobject, /info
   undefine, object
