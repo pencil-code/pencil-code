@@ -45,8 +45,6 @@
 !
 ! PENCILS PROVIDED mu5; gmu5(3); del2mu5
 ! PENCILS PROVIDED ugmu5
-!! PENCILS PROVIDED ucurlb
-!! PENCILS PROVIDED curlj(3); jjij(3,3)
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -113,13 +111,11 @@ module Special
 !
   integer :: idiag_mu5m=0      ! DIAG_DOC: $\left<\mu_5\right>$
   integer :: idiag_mu5rms=0    ! DIAG_DOC: $\left<\mu_5^2\right>^{1/2}$
-  integer :: idiag_bgmu5rms=0  ! DIAG_DOC:$\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$
-  integer :: idiag_diffus_mu5_1=0
-  integer :: idiag_diffus_mu5_2=0
-  integer :: idiag_diffus_mu5_3=0
-  integer :: idiag_diffus_bb_1=0
-  integer :: idiag_diffus_bb_2=0
-  integer :: idiag_diffus_uu_1=0
+  integer :: idiag_gmu5rms=0     
+  integer :: idiag_gmu5mx=0     
+  integer :: idiag_gmu5my=0     
+  integer :: idiag_gmu5mz=0     
+  integer :: idiag_bgmu5rms=0  ! DIAG_DOC:$\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$F 
   integer :: idiag_uxbjm=0
   integer :: idiag_mu5bjm=0
 !  integer :: idiag_bcurljm=0
@@ -238,8 +234,7 @@ module Special
 !
       lpenc_requested(i_b2)=.true.
       lpenc_requested(i_mu5)=.true.
-!      lpenc_requested(i_curlj)=.true.
-!      lpenc_requested(i_ucurlb)=.true.
+      lpenc_requested(i_gmu5)=.true.
       lpenc_requested(i_ugmu5)=.true.
       if (ldt) lpenc_requested(i_rho1)=.true.
 !      lpenc_requested(i_jjij)=.true.
@@ -282,7 +277,7 @@ module Special
       intent(inout) :: p
 !
       if (lpencil(i_mu5)) p%mu5=f(l1:l2,m,n,imu5)
-!      if (lpencil(i_ucurlb)) call dot(p%uu,p%jj,p%ucurlb)
+      if (lpencil(i_gmu5)) call grad(f,imu5,p%gmu5)
       if (lpencil(i_ugmu5)) call dot(p%uu,p%gmu5,p%ugmu5)
       if (lpencil(i_del2mu5)) call del2(f,imu5,p%del2mu5)
 !
@@ -313,7 +308,7 @@ module Special
       intent(in) :: f,p
       intent(inout) :: df
 !
-      real, dimension (nx) :: bgmu5, EB, uujj, bbjj!, bcurlj
+      real, dimension (nx) :: bgmu5, EB, uujj, bbjj, gmu52
       real, dimension (nx,3) :: mu5bb
       real, parameter :: alpha_fine_structure=1./137.
 !
@@ -361,28 +356,19 @@ module Special
         if (idiag_mu5m/=0) call sum_mn_name(p%mu5,idiag_mu5m)
         if (idiag_mu5rms/=0) call sum_mn_name(p%mu5**2,idiag_mu5rms,lsqrt=.true.)
         endif
+        if (idiag_gmu5rms/=0) then
+          call dot2_mn(p%gmu5,gmu52)
+          call sum_mn_name(gmu52,idiag_gmu5rms,lsqrt=.true.)
+        endif
+        if (idiag_gmu5mx/=0) call sum_mn_name(p%gmu5(:,1),idiag_gmu5mx)
+        if (idiag_gmu5my/=0) call sum_mn_name(p%gmu5(:,2),idiag_gmu5my)
+        if (idiag_gmu5mz/=0) call sum_mn_name(p%gmu5(:,3),idiag_gmu5mz)
         if (idiag_bgmu5rms/=0) then
           call dot_mn(p%bb,p%gmu5,bgmu5)
           call sum_mn_name(bgmu5**2,idiag_bgmu5rms,lsqrt=.true.)
         endif
-!        if (idiag_diffus_mu5_1/=0)  call
-!        sum_mn_name(diffus_mu5_1,idiag_diffus_mu5_1)
-!        if (idiag_diffus_mu5_2/=0)  call
-!        sum_mn_name(diffus_mu5_2,idiag_diffus_mu5_2)
-!        if (idiag_diffus_mu5_3/=0)  call
-!        sum_mn_name(diffus_mu5_3,idiag_diffus_mu5_3)
-!        if (idiag_diffus_gtheta5_1/=0)  call
-!        sum_mn_name(diffus_gtheta5_1,idiag_diffus_gtheta5_1)
-!        if (idiag_diffus_gtheta5_2/=0)  call
-!        sum_mn_name(diffus_gtheta5_2,idiag_diffus_gtheta5_2)
-!        if (idiag_diffus_bb_1/=0)  call
-!        sum_mn_name(diffus_bb_1,idiag_diffus_bb_1)
-!        if (idiag_diffus_bb_2/=0)  call
-!        sum_mn_name(diffus_bb_2,idiag_diffus_bb_2)
-!        if (idiag_diffus_uu_1/=0)  call
-!        sum_mn_name(diffus_uu_1,idiag_diffus_uu_1)
-        if (idiag_uxbjm/=0)  call sum_mn_name(uxbj,idiag_uxbjm)
-        if (idiag_mu5bjm/=0)  call sum_mn_name(mu5bj,idiag_mu5bjm)
+        if (idiag_uxbjm/=0) call sum_mn_name(uxbj,idiag_uxbjm)
+        if (idiag_mu5bjm/=0) call sum_mn_name(mu5bj,idiag_mu5bjm)
 !        if (idiag_bcurljm/=0)  call sum_mn_name(bcurlj,idiag_bcurljm)
 !        if (idiag_test/=0)  call
 !        sum_mn_name(test2,idiag_test,lsqrt=.true.)
@@ -448,24 +434,21 @@ module Special
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        idiag_mu5m=0; idiag_mu5rms=0; idiag_bgmu5rms=0;
-        idiag_diffus_mu5_1=0; idiag_diffus_mu5_2=0; idiag_diffus_mu5_3=0; 
-        idiag_diffus_bb_1=0; idiag_diffus_bb_2=0; idiag_diffus_uu_1=0; 
-        idiag_uxbjm=0;
+        idiag_mu5m=0; idiag_mu5rms=0; idiag_bgmu5rms=0; 
+        idiag_uxbjm=0; idiag_gmu5rms=0;
         idiag_mu5bjm=0; idiag_uxbjrms=0;
+        idiag_gmu5mx=0; idiag_gmu5my=0; idiag_gmu5mz=0;
         idiag_mu5bjrms=0!; idiag_bcurljm=0; idiag_bcurljrms=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'mu5m',idiag_mu5m)
         call parse_name(iname,cname(iname),cform(iname),'mu5rms',idiag_mu5rms)
+        call parse_name(iname,cname(iname),cform(iname),'gmu5rms',idiag_gmu5rms)
+        call parse_name(iname,cname(iname),cform(iname),'gmu5mx',idiag_gmu5mx)
+        call parse_name(iname,cname(iname),cform(iname),'gmu5my',idiag_gmu5my)
+        call parse_name(iname,cname(iname),cform(iname),'gmu5mz',idiag_gmu5mz)
         call parse_name(iname,cname(iname),cform(iname),'bgmu5rms',idiag_bgmu5rms)
-        call parse_name(iname,cname(iname),cform(iname),'diffus_mu5_1',idiag_diffus_mu5_1)
-        call parse_name(iname,cname(iname),cform(iname),'diffus_mu5_2',idiag_diffus_mu5_2)
-        call parse_name(iname,cname(iname),cform(iname),'diffus_mu5_3',idiag_diffus_mu5_3)
-        call parse_name(iname,cname(iname),cform(iname),'diffus_bb_1',idiag_diffus_bb_1)
-        call parse_name(iname,cname(iname),cform(iname),'diffus_bb_2',idiag_diffus_bb_2)
-        call parse_name(iname,cname(iname),cform(iname),'diffus_uu_1',idiag_diffus_uu_1)
         call parse_name(iname,cname(iname),cform(iname),'uxbjm',idiag_uxbjm)
         call parse_name(iname,cname(iname),cform(iname),'mu5bjm',idiag_mu5bjm)
 !        call
