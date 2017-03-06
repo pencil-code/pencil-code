@@ -2117,11 +2117,11 @@ end subroutine print_solid
 !
 !  Advection term.
 !
-      df(l1:l2,m_ogrid,n_ogrid,iux:iuz) = df(l1:l2,m_ogrid,n_ogrid,iux:iuz)-p_ogrid%ugu
+      df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iux:iuz) = df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iux:iuz)-p_ogrid%ugu
 !
 !  Viscous term
 !
-      df(l1:l2,m_ogrid,n_ogrid,iux:iuz) = df(l1:l2,m_ogrid,n_ogrid,iux:iuz) + p_ogrid%fvisc
+      df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iux:iuz) = df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iux:iuz) + p_ogrid%fvisc
 !
     endsubroutine duu_dt_ogrid
 !***********************************************************************
@@ -2142,7 +2142,7 @@ end subroutine print_solid
 !
 !  Add the continuity equation terms to the RHS of the density df.
 !
-      df(l1:l2,m_ogrid,n_ogrid,irho) = df(l1:l2,m_ogrid,n_ogrid,irho) + density_rhs
+      df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,irho) = df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,irho) + density_rhs
 !
 !UPWIND NEEDED FOR DENSITY CALCULATION
     endsubroutine dlnrho_dt_ogrid
@@ -2175,15 +2175,15 @@ end subroutine print_solid
 !
 ! Pencils: uu, u2, uij, divu, sij, sij2, ugu, ugu2, del2u
 !
-      if (lpencil_ogrid(i_uu)) p_ogrid%uu=f_ogrid(l1:l2,m_ogrid,n_ogrid,iux:iuz)
-      if (lpencil_ogrid(i_u2)) call dot2_mn_ogrid(p_ogrid%uu,p_ogrid%u2)
-      if (lpencil_ogrid(i_uij)) call gij_ogrid(f_ogrid,iuu,p_ogrid%uij,1)
-      if (lpencil_ogrid(i_divu)) call div_mn_ogrid(p_ogrid%uij,p_ogrid%divu,p_ogrid%uu)
-      if (lpencil_ogrid(i_sij)) call traceless_strain_ogrid(p_ogrid%uij,p_ogrid%divu,p_ogrid%sij,p_ogrid%uu)
-      if (lpencil_ogrid(i_sij2)) call multm2_sym_mn_ogrid(p_ogrid%sij,p_ogrid%sij2)
-      if (lpencil_ogrid(i_ugu)) call u_dot_grad_ogrid(f_ogrid,iuu,p_ogrid%uij,p_ogrid%uu,p_ogrid%ugu)
-      if (lpencil_ogrid(i_ugu2)) call dot2_mn_ogrid(p_ogrid%ugu,p_ogrid%ugu2)
-      if (lpencil_ogrid(i_del2u)) call del2v_ogrid(f_ogrid,iux,p_ogrid%del2u)
+      if (lpencil_ogrid(i_og_uu)) p_ogrid%uu=f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iux:iuz)
+      if (lpencil_ogrid(i_og_u2)) call dot2_mn_ogrid(p_ogrid%uu,p_ogrid%u2)
+      if (lpencil_ogrid(i_og_uij)) call gij_ogrid(f_ogrid,iuu,p_ogrid%uij,1)
+      if (lpencil_ogrid(i_og_divu)) call div_mn_ogrid(p_ogrid%uij,p_ogrid%divu,p_ogrid%uu)
+      if (lpencil_ogrid(i_og_sij)) call traceless_strain_ogrid(p_ogrid%uij,p_ogrid%divu,p_ogrid%sij,p_ogrid%uu)
+      if (lpencil_ogrid(i_og_sij2)) call multm2_sym_mn_ogrid(p_ogrid%sij,p_ogrid%sij2)
+      if (lpencil_ogrid(i_og_ugu)) call u_dot_grad_ogrid(f_ogrid,iuu,p_ogrid%uij,p_ogrid%uu,p_ogrid%ugu)
+      if (lpencil_ogrid(i_og_ugu2)) call dot2_mn_ogrid(p_ogrid%ugu,p_ogrid%ugu2)
+      if (lpencil_ogrid(i_og_del2u)) call del2v_ogrid(f_ogrid,iux,p_ogrid%del2u)
 !
     endsubroutine calc_pencils_hydro_ogrid
 !***********************************************************************
@@ -2215,17 +2215,17 @@ end subroutine print_solid
 !print*, 'uy',f_ogrid(l1:l2,m,n,iuy)
 !print*, 'uz',f_ogrid(l1:l2,m,n,iuz)
 !print*, 'rho',f_ogrid(l1:l2,m,n,irho)
-      p_ogrid%rho=f_ogrid(l1:l2,m_ogrid,n_ogrid,irho)
-      if (lpencil_ogrid(i_rho1)) p_ogrid%rho1=1.0/p_ogrid%rho
-      if (lpencil_ogrid(i_lnrho))p_ogrid%lnrho=log(p_ogrid%rho)
-      if (lpencil_ogrid(i_glnrho)) then
+      p_ogrid%rho=f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,irho)
+      if (lpencil_ogrid(i_og_rho1)) p_ogrid%rho1=1.0/p_ogrid%rho
+      if (lpencil_ogrid(i_og_lnrho))p_ogrid%lnrho=log(p_ogrid%rho)
+      if (lpencil_ogrid(i_og_glnrho)) then
         call grad_ogrid(f_ogrid,irho,p_ogrid%grho)
         do i=1,3
           p_ogrid%glnrho(:,i)=p_ogrid%rho1*p_ogrid%grho(:,i)
         enddo
       endif
-      if (lpencil_ogrid(i_ugrho)) call u_dot_grad_ogrid(f_ogrid,ilnrho,p_ogrid%grho,p_ogrid%uu,p_ogrid%ugrho,UPWIND=lupw_rho)
-      if (lpencil_ogrid(i_sglnrho)) call multmv_mn_ogrid(p_ogrid%sij,p_ogrid%glnrho,p_ogrid%sglnrho)
+      if (lpencil_ogrid(i_og_ugrho)) call u_dot_grad_ogrid(f_ogrid,ilnrho,p_ogrid%grho,p_ogrid%uu,p_ogrid%ugrho,UPWIND=lupw_rho)
+      if (lpencil_ogrid(i_og_sglnrho)) call multmv_mn_ogrid(p_ogrid%sij,p_ogrid%glnrho,p_ogrid%sglnrho)
 !
     endsubroutine calc_pencils_density_ogrid
 !***********************************************************************
@@ -2250,22 +2250,22 @@ end subroutine print_solid
       call get_cv1(cv1)
       cp=1./cp
       cv=1./cv
-      if (lpencil_ogrid(i_cv1)) p_ogrid%cv1=cv1
-      if (lpencil_ogrid(i_cp1)) p_ogrid%cp1=cp1
-      if (lpencil_ogrid(i_cv))  p_ogrid%cv=cv1
-      if (lpencil_ogrid(i_cp))  p_ogrid%cp=cp1
+      if (lpencil_ogrid(i_og_cv1)) p_ogrid%cv1=cv1
+      if (lpencil_ogrid(i_og_cp1)) p_ogrid%cp1=cp1
+      if (lpencil_ogrid(i_og_cv))  p_ogrid%cv=cv1
+      if (lpencil_ogrid(i_og_cp))  p_ogrid%cp=cp1
 !
 !  Work out thermodynamic quantities for given lnrho or rho and TT.
 !
       if (iTT .gt. 0) then
-        if (lpencil_ogrid(i_TT))   p_ogrid%TT=f_ogrid(l1:l2,m_ogrid,n_ogrid,iTT)
-        if (lpencil_ogrid(i_TT1).or.lpencil_ogrid(i_hlnTT))  p_ogrid%TT1=1/f_ogrid(l1:l2,m_ogrid,n_ogrid,iTT)
-        if (lpencil_ogrid(i_cs2))  p_ogrid%cs2=cp*gamma_m1*f_ogrid(l1:l2,m_ogrid,n_ogrid,iTT)
-        if (lpencil_ogrid(i_gTT))  call grad_ogrid(f_ogrid,iTT,p_ogrid%gTT)
-        if (lpencil_ogrid(i_del2TT).or.lpencil_ogrid(i_del2lnTT)) &
+        if (lpencil_ogrid(i_og_TT))   p_ogrid%TT=f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT)
+        if (lpencil_ogrid(i_og_TT1))  p_ogrid%TT1=1/f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT)
+        if (lpencil_ogrid(i_og_cs2))  p_ogrid%cs2=cp*gamma_m1*f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT)
+        if (lpencil_ogrid(i_og_gTT))  call grad_ogrid(f_ogrid,iTT,p_ogrid%gTT)
+        if (lpencil_ogrid(i_og_del2TT)) &
             call del2_ogrid(f_ogrid,iTT,p_ogrid%del2TT)
-        if (lpencil_ogrid(i_pp)) p_ogrid%pp=cv*gamma_m1*p_ogrid%rho*p_ogrid%TT
-        if (lpencil_ogrid(i_ee)) p_ogrid%ee=cv*p_ogrid%TT
+        if (lpencil_ogrid(i_og_pp)) p_ogrid%pp=cv*gamma_m1*p_ogrid%rho*p_ogrid%TT
+        if (lpencil_ogrid(i_og_ee)) p_ogrid%ee=cv*p_ogrid%TT
 !
 !  Work out thermodynamic quantities for given lnrho or rho and cs2.
 !
@@ -2274,8 +2274,8 @@ end subroutine print_solid
           call fatal_error('calc_pencils_eos', &
               'leos_isentropic not implemented for ilnrho_cs2, try ilnrho_ss')
         elseif (leos_isothermal) then
-          if (lpencil_ogrid(i_cs2)) p_ogrid%cs2=cs20
-          if (lpencil_ogrid(i_pp)) p_ogrid%pp=gamma1*p_ogrid%rho*cs20
+          if (lpencil_ogrid(i_og_cs2)) p_ogrid%cs2=cs20
+          if (lpencil_ogrid(i_og_pp)) p_ogrid%pp=gamma1*p_ogrid%rho*cs20
         else
           call fatal_error('calc_pencils_eos', &
               'Full equation of state not implemented for ilnrho_cs2')
@@ -2353,11 +2353,11 @@ end subroutine print_solid
 !  Set no-slip condition for velocity and zero gradient for the pressure
 !  on the cylinder surface
       f_ogrid(l1_ogrid,:,:,iux:iuz) = 0.
-      call set_ghosts_for_onesided_ders_ogrid(iux)
-      call set_ghosts_for_onesided_ders_ogrid(iuy)
-      call set_ghosts_for_onesided_ders_ogrid(iuz)
+      call set_ghosts_onesided_ogrid(iux)
+      call set_ghosts_onesided_ogrid(iuy)
+      call set_ghosts_onesided_ogrid(iuz)
       call bval_from_neumann_arr_ogrid
-      call set_ghosts_for_onesided_ders_ogrid(ilnrho)
+      call set_ghosts_onesided_ogrid(ilnrho)
 !
     endsubroutine boundconds_x_ogrid
 !***********************************************************************
@@ -2707,9 +2707,9 @@ end subroutine print_solid
 !
       !del2 already contains the extra term 1/r*d(uk)/dt
       call der_ogrid(f,k1+2,tmp,2)
-      del2f(:,1)=del2f(:,1) -(2*tmp+f(l1:l2,m_ogrid,n_ogrid,k1+1))*rcyl_mn2_ogrid
+      del2f(:,1)=del2f(:,1) -(2*tmp+f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,k1+1))*rcyl_mn2_ogrid
       call der_ogrid(f,k1+1,tmp,2)
-      del2f(:,2)=del2f(:,2) +(2*tmp-f(l1:l2,m_ogrid,n_ogrid,k1+2))*rcyl_mn2_ogrid
+      del2f(:,2)=del2f(:,2) +(2*tmp-f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,k1+2))*rcyl_mn2_ogrid
 !
     endsubroutine del2v_ogrid
 !***********************************************************************
@@ -2909,9 +2909,9 @@ end subroutine print_solid
       elseif (j==3) then
         if (nzgrid/=1) then
           if (withdx) fac = a * dz_1_ogrid(n_ogrid)
-          df=fac*(+ 45.0*(f(l1:l2_ogrid,m_ogrid,n_ogrid+1,k)-f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid-1,k)) &
-                  -  9.0*(f(l1:l2_ogrid,m_ogrid,n_ogrid+2,k)-f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid-2,k)) &
-                  +      (f(l1:l2_ogrid,m_ogrid,n_ogrid+3,k)-f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid-3,k)))
+          df=fac*(+ 45.0*(f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid+1,k)-f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid-1,k)) &
+                  -  9.0*(f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid+2,k)-f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid-2,k)) &
+                  +      (f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid+3,k)-f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid-3,k)))
         else
           df=0.
           if (ip<=5) print*, 'der_main: Degenerate case in z-direction'
@@ -3276,7 +3276,7 @@ end subroutine print_solid
 !
     endsubroutine deri_3d_inds_ogrid
 !************************************************************************
-    subroutine set_ghosts_for_onesided_ders_ogrid(ivar)
+    subroutine set_ghosts_onesided_ogrid(ivar)
 !
 !   Set ghost points for onesided boundary conditions with Dirichlet BC
 !   on the cylidner surface.
@@ -3297,7 +3297,7 @@ end subroutine print_solid
                              +f_ogrid(k+7,:,:,ivar)
       enddo
 
-    endsubroutine set_ghosts_for_onesided_ders_ogrid
+    endsubroutine set_ghosts_onesided_ogrid
 !***********************************************************************
     subroutine bval_from_neumann_arr_ogrid
 !
