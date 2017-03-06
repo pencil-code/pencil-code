@@ -104,7 +104,8 @@ class Grid(object):
             precision = 'f'
 
         if proc < 0:
-            proc_dirs = filter(lambda s: s.startswith('proc'), os.listdir(datadir))
+            import pencilnew
+            proc_dirs = list(filter(lambda s: s.startswith('proc'), os.listdir(datadir)))
         else:
             proc_dirs = ['proc'+str(proc)]
 
@@ -234,4 +235,3 @@ class Grid(object):
         self.Lx = Lx
         self.Ly = Ly
         self.Lz = Lz
-
