@@ -484,7 +484,8 @@ module Solid_Cells
             wall_smoothing_temp = 1-exp(-(rr2-a2)/(sqrt(a2))**2)
             f_ogrid(i,j,:,ilnTT) = wall_smoothing_temp*f_ogrid(i,j,:,ilnTT) &
               +cylinder_temp*(1-wall_smoothing_temp)
-            f_ogrid(i,j,:,ilnrho) = f_ogrid(l2,m2,n2,ilnrho)*f_ogrid(l2,m2,n2,ilnTT)/f_ogrid(i,j,:,ilnTT)
+            f_ogrid(i,j,:,ilnrho) = f_ogrid(l2_ogrid,m2_ogrid,n2_ogrid,ilnrho) &
+              *f_ogrid(l2_ogrid,m2_ogrid,n2_ogrid,ilnTT)/f_ogrid(i,j,:,ilnTT)
           endif
 !  Compute contribution to flow from cylinders above and below, due to periodic boundary conditions
           do cyl = 1,100
@@ -777,8 +778,8 @@ module Solid_Cells
             if ( .not. linear_interpolate_ogrid(ivar1,ivar2,rthz,gp,inear,.true.) ) then
               call fatal_error('linear_interpolate_ogrid','interpolation from curvilinear to cartesian')
             endif
-            f_cartesian(i,j,k,iux)=gp(iux)*cos(rthz(2))-gp(iuy)*sin(rthz(2))/rthz(1)
-            f_cartesian(i,j,k,iuy)=gp(iux)*sin(rthz(2))+gp(iuy)*cos(rthz(2))/rthz(1)
+            f_cartesian(i,j,k,iux)=gp(iux)*cos(rthz(2))-gp(iuy)*sin(rthz(2))
+            f_cartesian(i,j,k,iuy)=gp(iux)*sin(rthz(2))+gp(iuy)*cos(rthz(2))
             f_cartesian(i,j,k,iuz:ivar2)=gp(iuz:ivar2)
           endif
         enddo
@@ -1981,7 +1982,6 @@ end subroutine print_solid
 !  Update boundary of the overlapping grid by interpolating
 !  from curvilinear grid to cartesian grid
 !
-!TODO
     !call flow_curvilinear_to_cartesian(f_cartesian)
 !
     iterator = iterator+1
@@ -2014,9 +2014,9 @@ end subroutine print_solid
       write(1,*) x_ogrid(i)*cos(y_ogrid(m1_ogrid:m2_ogrid))
       write(2,*) x_ogrid(i)*sin(y_ogrid(m1_ogrid:m2_ogrid))
       write(11,*) f_ogrid(i,m1_ogrid:m2_ogrid,4,iux)*cos(y_ogrid(m1_ogrid:m2_ogrid)) &
-            -f_ogrid(i,m1_ogrid:m2_ogrid,4,iuy)*sin(y_ogrid(m1_ogrid:m2_ogrid))/x_ogrid(i)
+            -f_ogrid(i,m1_ogrid:m2_ogrid,4,iuy)*sin(y_ogrid(m1_ogrid:m2_ogrid))
       write(12,*) f_ogrid(i,m1_ogrid:m2_ogrid,4,iux)*sin(y_ogrid(m1_ogrid:m2_ogrid)) &
-            +f_ogrid(i,m1_ogrid:m2_ogrid,4,iuy)*cos(y_ogrid(m1_ogrid:m2_ogrid))/x_ogrid(i)
+            +f_ogrid(i,m1_ogrid:m2_ogrid,4,iuy)*cos(y_ogrid(m1_ogrid:m2_ogrid))
     enddo
 
     close(1)
@@ -2027,6 +2027,44 @@ end subroutine print_solid
     !read(*,*) 
 
     endsubroutine print_ogrid
+!***********************************************************************
+    subroutine print_cgrid(num,f_cartesian)
+!  Print to file
+    character(len=15) :: xfile,yfile,fxfile,fyfile
+    real, dimension (mx,my,mz,mfarray) :: f_cartesian
+    integer :: i,num
+
+    
+    xfile='x_cgrid'
+    yfile='y_cgrid'
+    fxfile='fx_cgrid'
+    fyfile='fy_cgrid'
+
+    write(fxfile,"(A8,I1)") trim(fxfile),num
+    write(fyfile,"(A8,I1)") trim(fyfile),num
+    xfile=trim(xfile)//'.dat'
+    yfile=trim(yfile)//'.dat'
+    fxfile=trim(fxfile)//'.dat'
+    fyfile=trim(fyfile)//'.dat'
+    open(unit=1,file=trim(xfile))
+    open(unit=2,file=trim(yfile))
+    open(unit=11,file=trim(fxfile))
+    open(unit=12,file=trim(fyfile))
+    do i=l1,l2
+      write(1,*) x(i)
+      write(11,*) f_cartesian(i,m1:m2,4,iux)
+      write(12,*) f_cartesian(i,m1:m2,4,iuy)
+    enddo
+    write(2,*) y(m1:m2)
+
+    close(1)
+    close(2)
+    close(11)
+    close(12)
+    !write(*,*) 'Press any key to continue'
+    !read(*,*) 
+
+    endsubroutine print_cgrid
 !***********************************************************************
     subroutine pde_ogrid(df)
 !
@@ -3597,7 +3635,7 @@ end subroutine print_solid
           do i = l1_ogrid, l2_ogrid
             do j = m1_ogrid, m2_ogrid
               write(lun_output,'(40(f12.5))') x_ogrid(i),y_ogrid(j),z_ogrid(n1), &
-                    dx_ogrid,dy_ogrid,dz_ogrid,f_ogrid(i,j,n1,:)
+                    dx_ogrid,dy_ogrid,dz_ogrid,f_ogrid(i,j,n1_ogrid,:)
             enddo
           enddo
         else
