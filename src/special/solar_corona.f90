@@ -2412,40 +2412,41 @@ module Special
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      real, dimension(nx) :: delta_T, delta_lnTT
+      real, dimension(nx) :: tmp
 !
 !     add to energy equation
 !
-      delta_T = p%TT1 * p%rho1 * p%cp1 * gamma * deltaE_init_z(n) * dt
-!write (100+iproc,*) 'it    :', it
-!write (100+iproc,*) 'pos_z :', n
-!write (100+iproc,*) 'p%TT1 :', p%TT1
-!write (100+iproc,*) 'p%rho1:', p%rho1
-!write (100+iproc,*) 'deltaE_init_z(n):', deltaE_init_z(n)
-!write (100+iproc,*) 'delta_T        :', delta_T
-!write (100+iproc,*) '1.0+delta_T    :', 1.0+delta_T
+write (100+iproc,*) 'it    :', it
+write (100+iproc,*) 'pos_z :', n
+write (100+iproc,*) 'p%TT1 :', p%TT1
+write (100+iproc,*) 'p%rho1:', p%rho1
+write (100+iproc,*) 'deltaE_init_z(n):', deltaE_init_z(n)
+write (100+iproc,*) 'delta_T        :', delta_T
+write (100+iproc,*) '1.0+delta_T    :', 1.0+delta_T
       where (delta_T <= -1.0) delta_T = -0.999999
-!write (100+iproc,*) '1.0+delta_T > 0:', 1.0+delta_T
-!write (100+iproc,*) '======='
-! flush (100+iproc)
+write (100+iproc,*) '1.0+delta_T > 0:', 1.0+delta_T
+write (100+iproc,*) '======='
+ flush (100+iproc)
 !stop
-      delta_lnTT = alog (1.0 + delta_T)
       if (ltemperature .and. ltemperature_nolog) then
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + delta_T
+        tmp = p%rho1 * p%cp1 * gamma * deltaE_init_z(n) * dt
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp
+        tmp = alog (1 + tmp)
       elseif (ltemperature) then
-        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + delta_lnTT
+        tmp = p%TT1 * p%rho1 * p%cp1 * gamma * deltaE_init_z(n) * dt
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp
       else
         if (lentropy) &
             call stop_it('solar_corona: calc_heat_cool_deltaE:lentropy=not implented')
       endif
 !
       if (lfirst .and. ldt) then
-        delta_lnTT = delta_lnTT / cdts
+        tmp = tmp / cdts
         if (ldiagnos .and. idiag_dtradloss /= 0) then
           itype_name(idiag_dtradloss) = ilabel_max_dt
-          call max_mn_name(delta_lnTT, idiag_dtradloss, l_dt=.true.)
+          call max_mn_name(tmp, idiag_dtradloss, l_dt=.true.)
         endif
-        dt1_max = max(dt1_max, delta_lnTT)
+        dt1_max = max(dt1_max, tmp)
       endif
 !
     endsubroutine calc_heat_cool_deltaE
