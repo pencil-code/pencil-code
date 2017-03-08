@@ -2417,26 +2417,18 @@ module Special
 !     add to energy equation
 !
       delta_T = p%TT1 * p%rho1 * p%cp1 * gamma * deltaE_init_z(n) * dt
-write (100+iproc,*) 'n'
-write (100+iproc,*) n
-write (100+iproc,*) 'nx'
-write (100+iproc,*) nx
-write (100+iproc,*) 'p%TT1'
-write (100+iproc,*) p%TT1
-write (100+iproc,*) 'p%rho1'
-write (100+iproc,*) p%rho1
-write (100+iproc,*) 'p%cp1'
-write (100+iproc,*) p%cp1
-write (100+iproc,*) 'gamma'
-write (100+iproc,*) gamma
-write (100+iproc,*) 'deltaE_init_z(n)'
-write (100+iproc,*) deltaE_init_z(n)
-write (100+iproc,*) 'delta_T'
-write (100+iproc,*) delta_T
-write (100+iproc,*) '1.0+delta_T'
-write (100+iproc,*) 1.0+delta_T
-write (100+iproc,*) '======='
-stop
+!write (100+iproc,*) 'it    :', it
+!write (100+iproc,*) 'pos_z :', n
+!write (100+iproc,*) 'p%TT1 :', p%TT1
+!write (100+iproc,*) 'p%rho1:', p%rho1
+!write (100+iproc,*) 'deltaE_init_z(n):', deltaE_init_z(n)
+!write (100+iproc,*) 'delta_T        :', delta_T
+!write (100+iproc,*) '1.0+delta_T    :', 1.0+delta_T
+      where (delta_T <= -1.0) delta_T = -0.999999
+!write (100+iproc,*) '1.0+delta_T > 0:', 1.0+delta_T
+!write (100+iproc,*) '======='
+! flush (100+iproc)
+!stop
       delta_lnTT = alog (1.0 + delta_T)
       if (ltemperature .and. ltemperature_nolog) then
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + delta_T
