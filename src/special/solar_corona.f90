@@ -2421,19 +2421,16 @@ write (100+iproc,*) 'pos_z :', n
 write (100+iproc,*) 'p%TT1 :', p%TT1
 write (100+iproc,*) 'p%rho1:', p%rho1
 write (100+iproc,*) 'deltaE_init_z(n):', deltaE_init_z(n)
-write (100+iproc,*) 'delta_T        :', delta_T
-write (100+iproc,*) '1.0+delta_T    :', 1.0+delta_T
-      where (delta_T <= -1.0) delta_T = -0.999999
-write (100+iproc,*) '1.0+delta_T > 0:', 1.0+delta_T
-write (100+iproc,*) '======='
- flush (100+iproc)
-!stop
       if (ltemperature .and. ltemperature_nolog) then
         tmp = p%rho1 * p%cp1 * gamma * deltaE_init_z(n) * dt
+write (100+iproc,*) 'delta_T  :', tmp
+ flush (100+iproc)
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp
         tmp = alog (1 + tmp)
       elseif (ltemperature) then
         tmp = p%TT1 * p%rho1 * p%cp1 * gamma * deltaE_init_z(n) * dt
+write (100+iproc,*) 'delta_lnT:', tmp
+ flush (100+iproc)
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp
       else
         if (lentropy) &
