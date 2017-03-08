@@ -64,7 +64,7 @@ module Special
 !
     contains
 !***********************************************************************
-subroutine pb_special_setup(pb_profile, pb_type, pb_amplitude)
+subroutine pb_special_setup
 !
 ! Setup pb_profile
 !
@@ -73,10 +73,6 @@ subroutine pb_special_setup(pb_profile, pb_type, pb_amplitude)
 !
     use EquationOfState, only: cs0
 !
-    real, intent(in) :: pb_amplitude
-    character(len=labellen), intent(in)  :: pb_type
-    real, dimension (nx), intent(inout) :: pb_profile
-
     if (pb_type/='none') then
         if (lroot) print*, '!!!! Pressure Bump selected: ', pb_type
         select case (pb_type)
@@ -116,7 +112,6 @@ subroutine init_special(f)
 !
     if (lroot) print*, '**************** init_special ****************'
 !
-    call pb_special_setup(pb_profile, pb_type, pb_amplitude)
 !    if (lroot) print*, '!!!! SETUP OF pb_profile done, see: pb_profile=', pb_profile
 !
 !
@@ -149,7 +144,7 @@ subroutine initialize_special(f)
 !
     if (lroot) print*, '**************** initialize_special ****************'
 !
-    call pb_special_setup(pb_profile, pb_type, pb_amplitude)
+    call pb_special_setup
 !    if (lroot) print*, '!!!! SETUP OF pb_profile done, see: pb_profile=', pb_profile
 
     !if (any(beta_glnrho_scaled /= 0.)) lpenc_requested(i_cs2)=.true.
@@ -207,7 +202,7 @@ subroutine dspecial_dt(f,df,p)
     if (lroot) print*, '**************** dspecial_dt ****************'
     if (lroot) print*, '!!!! t=',t
 !
-!   Add pressure force from pressrue gradiant profile.
+!   Add pressure force from pressure gradient profile.
 !
     if (any(beta_glnrho_global /= 0.) .and. pb_type/='none') then
         if (headtt) print*, 'dspecial_dt: adding global pressure gradient profile force'
