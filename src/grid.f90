@@ -69,6 +69,7 @@ module Grid
 !  25-jun-04/tobi+wolf: coded
 !   3-mar-15/MR: calculation of d[xyz]2_bound added: contain twice the distances of
 !                three neighbouring points from the boundary point
+!   9-mar-17/MR: removed unneeded use of optional parameters in calls to grid_profile
 !
       real, dimension(mx), intent(out) :: x
       real, dimension(my), intent(out) :: y
@@ -350,16 +351,16 @@ module Grid
           a= log(xyz1(1)/xyz0(1))/(xi1up-xi1lo)
           b= .5*(xi1up+xi1lo-log(xyz1(1)*xyz0(1))/a)
 !
-          call grid_profile(a*(xi1-b)  ,grid_func(1),g1,g1der1,g1der2,param=c)
-          call grid_profile(a*(xi1lo-b),grid_func(1),g1lo,param=c)
-          call grid_profile(a*(xi1up-b),grid_func(1),g1up,param=c)
+          call grid_profile(a*(xi1-b)  ,grid_func(1),g1,g1der1,g1der2)
+          call grid_profile(a*(xi1lo-b),grid_func(1),g1lo)
+          call grid_profile(a*(xi1up-b),grid_func(1),g1up)
 !
           x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
           xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
           xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
 !
           if (lparticles .or. lsolid_cells) then
-            call grid_profile(a*(xi1proc-b),grid_func(1),g1proc,param=c)
+            call grid_profile(a*(xi1proc-b),grid_func(1),g1proc)
             g1proc=x00+Lx*(g1proc  -  g1lo)/(g1up-g1lo)
           endif
 !
@@ -1721,24 +1722,9 @@ module Grid
       intent(in)  :: xi, grid_func, param, dxyz, xistep, delta
       intent(out) :: g, gder1, gder2
 !
-      real, dimension(1) :: tmp_xi, tmp_g, tmp_gder1, tmp_gder2
-      real :: tmp_param
-      real, dimension(3) :: tmp_dxyz
-      real, dimension(2) :: tmp_xistep, tmp_delta
+      real, dimension(1) :: tmp_g, tmp_gder1, tmp_gder2
 !
-!
-      tmp_param = 0.0
-      if (present (param)) tmp_param = param
-      tmp_dxyz = 0.0
-      if (present (dxyz)) tmp_dxyz = dxyz
-      tmp_xistep = 0.0
-      if (present (xistep)) tmp_xistep = xistep
-      tmp_delta = 0.0
-      if (present (delta)) tmp_delta = delta
-!
-      tmp_xi(:) = xi
-!
-      call grid_profile (tmp_xi, grid_func, tmp_g, tmp_gder1, tmp_gder2, tmp_param, tmp_dxyz, tmp_xistep, tmp_delta)
+      call grid_profile ((/xi/), grid_func, tmp_g, tmp_gder1, tmp_gder2, param, dxyz, xistep, delta)
 !
       g = tmp_g(1)
       if (present (gder1)) gder1 = tmp_gder1(1)
@@ -1752,6 +1738,7 @@ module Grid
 !  and calculate g,g',g''.
 !
 !  25-jun-04/tobi+wolf: coded
+!   9-mar-17/MR: blocked used of unpresent optionals
 !
       real, dimension(:)                    :: xi
       character(len=*)                      :: grid_func
@@ -1880,6 +1867,8 @@ module Grid
 !
       case ('power-law')
         ! Grid distance increases according to a power-law
+        if (.not. present (param)) &
+            call fatal_error ('grid_profile', "'power-law' needs its parameter.")
         g=xi**(1./param)
         if (present(gder1)) gder1=1./param*              xi**(1/param-1)
         if (present(gder2)) gder2=1./param*(1./param-1.)*xi**(1/param-2)
