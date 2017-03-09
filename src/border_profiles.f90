@@ -460,18 +460,17 @@ module BorderProfiles
 !
     endsubroutine get_drive_time
 !***********************************************************************
-    subroutine border_quenching(f,df,j,dt_sub)
+    subroutine border_quenching(f,df,dt_sub)
 !
       use Sub, only: del6
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: del6_fj,border_prof_pencil
-      real :: border_diff=0.01,dt_sub
-      integer :: j
+      real, dimension (mx,my,mz,mfarray), intent(in) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, intent(in) :: dt_sub
 !
-      intent(in) :: f,j
-      intent(inout) :: df
+      real, dimension (nx) :: del6_fj,border_prof_pencil
+      real :: border_diff=0.01
+      integer :: j
 !
 !  Position-dependent quenching factor that multiplies rhs of pde
 !  by a factor that goes gradually to zero near the boundaries.
@@ -479,17 +478,23 @@ module BorderProfiles
 !  border_frac_[xyz]=1 would affect everything between center and border.
 !
       if (lborder_quenching) then
-        border_prof_pencil=border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
+        do j = 1, mvar
+          do n = n1, n2
+            do m = m1, m2
+              border_prof_pencil=border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
 !
-        df(l1:l2,m,n,j) = df(l1:l2,m,n,j) * border_prof_pencil
+              df(l1:l2,m,n,j) = df(l1:l2,m,n,j) * border_prof_pencil
 !
-        if (lborder_hyper_diff) then
-          if (maxval(border_prof_pencil) < 1.) then
-            call del6(f,j,del6_fj,IGNOREDX=.true.)
-            df(l1:l2,m,n,j) = df(l1:l2,m,n,j) + &
-                border_diff*(1.-border_prof_pencil)*del6_fj/dt_sub
-          endif
-        endif
+              if (lborder_hyper_diff) then
+                if (maxval(border_prof_pencil) < 1.) then
+                  call del6(f,j,del6_fj,IGNOREDX=.true.)
+                  df(l1:l2,m,n,j) = df(l1:l2,m,n,j) + &
+                      border_diff*(1.-border_prof_pencil)*del6_fj/dt_sub
+                endif
+              endif
+            enddo
+          enddo
+        enddo
       endif
 !
     endsubroutine border_quenching

@@ -40,7 +40,6 @@ module Timestep
       type (pencil_case) :: p
       real :: ds, dtsub
       real :: dt1, dt1_local, dt1_last=0.0
-      integer :: j
 !
 !  Coefficients for up to order 3.
 !
@@ -116,15 +115,13 @@ module Timestep
         if (ip<=6) print*, 'time_step: iproc, dt=', iproc_world, dt  !(all have same dt?)
         dtsub = ds * dt_beta_ts(itsub)
 !
-!  Time evolution of grid variables.
-!  (do this loop in pencils, for cache efficiency)
+!  Apply border quenching.
 !
-        do j=1,mvar; do n=n1,n2; do m=m1,m2
-!ajwm Note to self... Just how much overhead is there in calling
-!ajwm a sub this often...
-          if (lborder_profiles) call border_quenching(f,df,j,dt_beta_ts(itsub))
-          if (.not.lgpu) f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+dt_beta_ts(itsub)*df(l1:l2,m,n,j)
-        enddo; enddo; enddo
+        if (lborder_profiles) call border_quenching(f,df,dt_beta_ts(itsub))
+!
+!  Time evolution of grid variables.
+!
+        if (.not. lgpu) f(l1:l2,m1:m2,n1:n2,1:mvar) = f(l1:l2,m1:m2,n1:n2,1:mvar) + dt_beta_ts(itsub)*df(l1:l2,m1:m2,n1:n2,1:mvar)
 !
 !  Time evolution of point masses.
 !

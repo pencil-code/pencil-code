@@ -40,16 +40,16 @@ module Timestep
       type (pencil_case) :: p
       real :: ds
       real :: dt1, dt1_local, dt1_last=0.0
-      integer :: j,ienergy, Nsub , itRKL,s
+      integer :: ienergy, Nsub, itRKL, s
       real, dimension (nx) :: dt1_hcond_max
       real, dimension (itorder) :: coeff_fm1, coeff_fm2, coeff_fsub, coeff_dfm1, coeff_dfsub
       real :: dt1_energy_local,dt1_energy,dt_energy,dt_RKL,dt_sub_RKL
 !
-          ienergy = ilnTT
+      ienergy = ilnTT
 !
 !  Coefficients for order 3.  (use coefficients of Williamson (1980))
-        alpha_ts=(/   0.0, -5/9.0 , -153/128.0 /)
-        beta_ts =(/ 1/3.0, 15/16.0,    8/15.0  /)
+      alpha_ts=(/   0.0, -5/9.0 , -153/128.0 /)
+      beta_ts =(/ 1/3.0, 15/16.0,    8/15.0  /)
 !
 !  dt_beta_ts may be needed in other modules (like Dustdensity) for fixed dt.
 !
@@ -96,13 +96,13 @@ module Timestep
         if (ldt) dt_beta_ts=dt*beta_ts
         if (ip<=6) print*, 'time_step: iproc, dt=', iproc_world, dt  !(all have same dt?)
 !
-!  Time evolution of grid variables.
-!  (do this loop in pencils, for cache efficiency)
+!  Apply border quenching.
 !
-        do j=1,mvar; do n=n1,n2; do m=m1,m2
-            if (lborder_profiles) call border_quenching(f,df,j,dt_beta_ts(itsub))
-            f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+dt_beta_ts(itsub)*df(l1:l2,m,n,j)
-        enddo; enddo; enddo
+        if (lborder_profiles) call border_quenching(f,df,dt_beta_ts(itsub))
+!
+!  Time evolution of grid variables.
+!
+        f(l1:l2,m1:m2,n1:n2,1:mvar) = f(l1:l2,m1:m2,n1:n2,1:mvar) + dt_beta_ts(itsub)*df(l1:l2,m1:m2,n1:n2,1:mvar)
 !
         if (lspecial) call special_after_timestep(f,df,dt_beta_ts(itsub)*ds)
 !
