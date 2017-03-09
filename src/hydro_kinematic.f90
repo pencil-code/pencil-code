@@ -1902,7 +1902,7 @@ module Hydro
 !
    endsubroutine coriolis_cartesian
 !***********************************************************************
-    subroutine calc_lhydro_pars(f)
+    subroutine hydro_after_boundary(f)
 !
 !  Dummy routine.
 !
@@ -1911,7 +1911,7 @@ module Hydro
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_lhydro_pars
+    endsubroutine hydro_after_boundary
 !***********************************************************************
     subroutine random_isotropic_KS_setup(initpower,kmin,kmax)
 !

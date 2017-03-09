@@ -1041,7 +1041,7 @@ module Hydro
 !
 ! calculates various means
 !
-!  14-oct-13/MR: outsourced from calc_lhydro_pars
+!  14-oct-13/MR: outsourced from hydro_after_boundary
 !  13-feb-15/MR: changes for use of reference_state
 !
       use Mpicomm, only: mpiallreduce_sum
@@ -3543,7 +3543,7 @@ module Hydro
 !
     endsubroutine time_integrals_hydro
 !***********************************************************************
-    subroutine calc_lhydro_pars(f)
+    subroutine hydro_after_boundary(f)
 !
 !  Calculate <rho*ux> and <rho*uy> when tau_damp_ruxm, tau_damp_ruym,
 !  or tau_damp_ruzm are different from zero. Was used to remove net
@@ -3666,7 +3666,7 @@ module Hydro
       endif
 !
 !
-    endsubroutine calc_lhydro_pars
+    endsubroutine hydro_after_boundary
 !***********************************************************************
     subroutine set_border_hydro(f,df,p)
 !

@@ -966,7 +966,7 @@ module Density
 !**********************************************************************
     subroutine calc_ldensity_pars(f)
 
-!   31-aug-09/MR: adapted from calc_lhydro_pars
+!   31-aug-09/MR: adapted from hydro_after_boundary
 !
       use Mpicomm, only: mpiallreduce_sum
 !

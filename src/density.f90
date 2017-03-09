@@ -1485,7 +1485,7 @@ module Density
 !***********************************************************************
     subroutine calc_ldensity_pars(f)
 !
-!   31-aug-09/MR: adapted from calc_lhydro_pars
+!   31-aug-09/MR: adapted from hydro_after_boundary
 !    3-oct-12/MR: global averaging corrected
 !    3-mar-14/MR: correction of total mass added
 !   17-aug-14/MR: finalize_aver used

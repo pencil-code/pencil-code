@@ -4720,7 +4720,7 @@ module Magnetic
 !
 !  Calculate <A>, which is needed for test-field methods.
 !
-!   2-jan-10/axel: adapted from calc_lhydro_pars
+!   2-jan-10/axel: adapted from hydro_after_boundary
 !  10-jan-13/MR: added possibility to remove evolving mean field
 !
       use General, only: notanumber

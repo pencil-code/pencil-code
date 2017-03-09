@@ -3258,7 +3258,7 @@ module Magnetic
 !
 !  Calculate <A>, which is needed for test-field methods.
 !
-!   2-jan-10/axel: adapted from calc_lhydro_pars
+!   2-jan-10/axel: adapted from hydro_after_boundary
 !
       use Mpicomm, only: mpiallreduce_sum
       use Deriv, only: der_z,der2_z

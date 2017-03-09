@@ -296,7 +296,7 @@ module Equ
 !  Call "after" hooks (for f array precalculation). This may imply
 !  calculating averages (some of which may only be required for certain
 !  settings in hydro of the testfield procedure (only when lsoca=.false.),
-!  for example. They used to be or are still called calc_lhydro_pars etc,
+!  for example. They used to be or are still called hydro_after_boundary etc,
 !  and will soon be renamed to hydro_after_boundary.
 !
 !  Important to note that the processor boundaries are not full updated 
@@ -304,12 +304,12 @@ module Equ
 !  Use early_finalize in this case.
 !  MR+joern+axel, 8.10.2015
 !
-      call timing('pde','before calc_lhydro_pars')
+      call timing('pde','before hydro_after_boundary')
 !DM I suggest the following lhydro_pars, lmagnetic_pars be renamed to
 ! hydro_after_boundary etc.
 !AB: yes, we should rename these step by step
 !AB: so calc_polymer_after_boundary -> polymer_after_boundary
-      if (lhydro)                 call calc_lhydro_pars(f)
+      if (lhydro)                 call hydro_after_boundary(f)
       if (lviscosity)             call viscosity_after_boundary(f)
       if (lmagnetic)              call calc_lmagnetic_pars(f)
 !--   if (lmagnetic)              call magnetic_after_boundary(f)
