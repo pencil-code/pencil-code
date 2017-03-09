@@ -159,13 +159,13 @@ module Density
 !
     endsubroutine write_density_run_pars
 !***********************************************************************
-    subroutine calc_ldensity_pars(f)
+    subroutine density_after_boundary(f)
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
       call keep_compiler_quiet(f)
 !
-  endsubroutine calc_ldensity_pars
+  endsubroutine density_after_boundary
 !***********************************************************************
     subroutine pencil_criteria_density()
 !

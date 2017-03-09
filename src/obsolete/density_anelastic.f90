@@ -964,7 +964,7 @@ module Density
 !
     endsubroutine init_lnrho
 !**********************************************************************
-    subroutine calc_ldensity_pars(f)
+    subroutine density_after_boundary(f)
 
 !   31-aug-09/MR: adapted from hydro_after_boundary
 !
@@ -1014,7 +1014,7 @@ module Density
 
       endif
 
-   endsubroutine calc_ldensity_pars
+   endsubroutine density_after_boundary
 
 !***********************************************************************
     subroutine polytropic_lnrho_z( &

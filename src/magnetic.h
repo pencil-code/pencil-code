@@ -10,7 +10,7 @@
   public :: rprint_magnetic
   public :: get_slices_magnetic
   public :: init_aa, daa_dt
-  public :: magnetic_before_boundary, calc_lmagnetic_pars
+  public :: magnetic_before_boundary, magnetic_after_boundary
   public :: time_integrals_magnetic
   public :: df_diagnos_magnetic
 

@@ -268,7 +268,7 @@ module Energy
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
-    subroutine calc_lenergy_pars(f)
+    subroutine energy_after_boundary(f)
 !
 !  Dummy routine.
 !
@@ -276,7 +276,7 @@ module Energy
 
       call keep_compiler_quiet(f)
 
-    endsubroutine calc_lenergy_pars
+    endsubroutine energy_after_boundary
 !***********************************************************************
     subroutine denergy_dt(f,df,p)
 !

@@ -1483,7 +1483,7 @@ module Density
 !
     endsubroutine init_lnrho
 !***********************************************************************
-    subroutine calc_ldensity_pars(f)
+    subroutine density_after_boundary(f)
 !
 !   31-aug-09/MR: adapted from hydro_after_boundary
 !    3-oct-12/MR: global averaging corrected
@@ -1575,7 +1575,7 @@ module Density
 
       endif
 !
-   endsubroutine calc_ldensity_pars
+   endsubroutine density_after_boundary
 !***********************************************************************
     subroutine update_char_vel_density(f)
 !

@@ -194,7 +194,7 @@ module Magnetic
 !
     endsubroutine df_diagnos_magnetic
 !***********************************************************************
-    subroutine calc_lmagnetic_pars(f)
+    subroutine magnetic_after_boundary(f)
 !
 !  Dummy routine
 !
@@ -203,7 +203,7 @@ module Magnetic
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine calc_lmagnetic_pars
+    endsubroutine magnetic_after_boundary
 !***********************************************************************
     subroutine rescaling_magnetic(f)
 !

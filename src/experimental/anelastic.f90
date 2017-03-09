@@ -410,13 +410,13 @@ module Density
 !
     endsubroutine init_lnrho
 !**********************************************************************
-    subroutine calc_ldensity_pars(f)
+    subroutine density_after_boundary(f)
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 !
       call keep_compiler_quiet(f)
 !
-   endsubroutine calc_ldensity_pars
+   endsubroutine density_after_boundary
 !***********************************************************************
     subroutine numerical_equilibrium(f)
 !

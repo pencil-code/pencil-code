@@ -4716,7 +4716,7 @@ module Magnetic
     endsubroutine df_diagnos_magnetic
 !***********************************************************************
 !-- subroutine magnetic_after_boundary(f)
-    subroutine calc_lmagnetic_pars(f)
+    subroutine magnetic_after_boundary(f)
 !
 !  Calculate <A>, which is needed for test-field methods.
 !
@@ -4837,10 +4837,10 @@ if (notanumber(f(ll,mm,2:mz-2,iff))) print*, 'DIFFZ:j,ll,mm=', j,ll,mm
 !
 !  XX
 !
-!     if (lmagn_mf) call calc_lmagnetic_pars
+!     if (lmagn_mf) call magnetic_after_boundary
 !
 !-- endsubroutine magnetic_after_boundary
-    endsubroutine calc_lmagnetic_pars
+    endsubroutine magnetic_after_boundary
 !***********************************************************************
     subroutine set_border_magnetic(f,df,p)
 !

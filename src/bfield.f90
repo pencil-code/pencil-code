@@ -417,7 +417,7 @@ module Magnetic
 !
     endsubroutine pencil_interdep_magnetic
 !***********************************************************************
-    subroutine calc_lmagnetic_pars(f)
+    subroutine magnetic_after_boundary(f)
 !
 !  Conducts any preprocessing required before the pencil calculations.
 !
@@ -523,7 +523,7 @@ module Magnetic
         enddo yscan2
       enddo zscan2
 !
-    endsubroutine calc_lmagnetic_pars
+    endsubroutine magnetic_after_boundary
 !***********************************************************************
     subroutine calc_pencils_magnetic(f, p)
 !

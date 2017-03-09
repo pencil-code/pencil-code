@@ -3304,7 +3304,7 @@ module Energy
 !
 !  Calculate azimuthal (z) average of entropy
 !
-!  26-feb-14/MR: outsourced from calc_lenergy_pars
+!  26-feb-14/MR: outsourced from energy_after_boundary
 !
       use Sub, only: finalize_aver
 !
@@ -3325,11 +3325,11 @@ module Energy
 !
     endsubroutine calc_ssmeanxy
 !***********************************************************************
-    subroutine calc_lenergy_pars(f)
+    subroutine energy_after_boundary(f)
 !
 !  Calculate <s>, which is needed for diffusion with respect to xy-flucts.
 !
-!  17-apr-10/axel: adapted from calc_lmagnetic_pars
+!  17-apr-10/axel: adapted from magnetic_after_boundary
 !  12-feb-15/MR  : changed for reference state; not yet done in averages of entropy.
 !
       use Deriv, only: der_x, der2_x, der_z, der2_z
@@ -3433,7 +3433,7 @@ module Energy
           enddo
           cs2mx=fact*cs2mx
         elseif (lcylindrical_coords) then
-          call fatal_error('calc_lenergy_pars','calculation of mean c_s not implemented for cylidrical coordinates')
+          call fatal_error('energy_after_boundary','calculation of mean c_s not implemented for cylidrical coordinates')
         endif
         call finalize_aver(nprocyz,23,cs2mx)
 !
@@ -3517,7 +3517,7 @@ module Energy
 
       endif
 !
-    endsubroutine calc_lenergy_pars
+    endsubroutine energy_after_boundary
 !***********************************************************************
     subroutine update_char_vel_energy(f)
 !

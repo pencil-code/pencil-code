@@ -42,7 +42,7 @@ module Equ
       use Dustdensity
       use Energy
       use EquationOfState
-      use Forcing, only: calc_lforcing_cont_pars
+      use Forcing, only: forcing_cont_after_boundary
 !                         
 ! To check ghost cell consistency, please uncomment the following line:
 !     use Ghost_check, only: check_ghosts_consistency
@@ -311,18 +311,18 @@ module Equ
 !AB: so calc_polymer_after_boundary -> polymer_after_boundary
       if (lhydro)                 call hydro_after_boundary(f)
       if (lviscosity)             call viscosity_after_boundary(f)
-      if (lmagnetic)              call calc_lmagnetic_pars(f)
+      if (lmagnetic)              call magnetic_after_boundary(f)
 !--   if (lmagnetic)              call magnetic_after_boundary(f)
-      if (lenergy)                call calc_lenergy_pars(f)
+      if (lenergy)                call energy_after_boundary(f)
       if (lgrav)                  call gravity_after_boundary(f)
-      if (lforcing_cont)          call calc_lforcing_cont_pars(f)
+      if (lforcing_cont)          call forcing_cont_after_boundary(f)
       if (lpolymer)               call calc_polymer_after_boundary(f)
       if (ltestscalar)            call testscalar_after_boundary(f)
       if (ltestfield)             call testfield_after_boundary(f)
 !AB: quick fix
       !if (ltestfield)             call testfield_after_boundary(f,p)
       if (lpscalar)               call pscalar_after_boundary(f)
-      if (ldensity)               call calc_ldensity_pars(f)
+      if (ldensity)               call density_after_boundary(f)
       if (ltestflow)              call calc_ltestflow_nonlin_terms(f,df)
       if (lspecial)               call calc_lspecial_pars(f)
 !AB: could be renamed to special_after_boundary etc
