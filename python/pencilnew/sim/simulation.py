@@ -471,7 +471,7 @@ class __Simulation__(object):
 
     def get_ts(self):
         """Returns time series object."""
-        from pcn.read import ts
+        from pencilnew.read import ts
         if self.started():
             return ts(sim=self, quiet=True)
         else:
