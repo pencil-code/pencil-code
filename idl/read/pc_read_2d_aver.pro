@@ -211,7 +211,7 @@ COMPILE_OPT IDL2,HIDDEN
       ipxarray = indgen(nprocx*nprocz) mod nprocx
       ipyarray = (indgen(nprocx*nprocz)/nprocx) mod nprocz
       iproc = ipxarray+ipyarray*nprocx*nprocy
-      nyg = nzgrid
+      nyg = nygrid
     end else begin
       ipxarray = indgen(nprocx*nprocy) mod nprocx
       ipyarray = (indgen(nprocx*nprocy)/nprocx) mod nprocy
