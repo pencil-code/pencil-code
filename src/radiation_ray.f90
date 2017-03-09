@@ -2077,8 +2077,7 @@ module Radiation
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(df)
+      call keep_compiler_quiet(f,df)
       call keep_compiler_quiet(p)
 !
     endsubroutine de_dt
