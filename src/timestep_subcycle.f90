@@ -118,9 +118,7 @@ module Timestep
       if (sub_step_hcond) then
 !
 !  initialized fsub
-        do n=n1,n2; do m=m1,m2
-          fsub(l1:l2,m,n,ienergy)=f(l1:l2,m,n,ienergy)
-        enddo; enddo
+        fsub(l1:l2,m1:m2,n1:n2,ienergy)=f(l1:l2,m1:m2,n1:n2,ienergy)
 !  update boundary is necessary for calculate time steps
         call boundconds_x(fsub,ilnTT,ilnTT)
         call initiate_isendrcv_bdry(fsub,ilnTT,ilnTT)
@@ -158,34 +156,26 @@ module Timestep
           if (s == 1) then
             dfsub=0.
             call pde_energy_only(fsub,dfsub,p,dt_sub_RKL)
-            do n=n1,n2; do m=m1,m2
-              fm1(l1:l2,m,n,ienergy)=fsub(l1:l2,m,n,ienergy) &
-              +coeff_dfm1(s)*dt_sub_RKL*dfsub(l1:l2,m,n,ienergy)
-              fm2(l1:l2,m,n) = fsub(l1:l2,m,n,ienergy)
-            enddo; enddo
+            fm1(l1:l2,m1:m2,n1:n2,ienergy)=fsub(l1:l2,m1:m2,n1:n2,ienergy) &
+                +coeff_dfm1(s)*dt_sub_RKL*dfsub(l1:l2,m1:m2,n1:n2,ienergy)
+                fm2(l1:l2,m1:m2,n1:n2) = fsub(l1:l2,m1:m2,n1:n2,ienergy)
           else
             dfm1=0.
             call pde_energy_only(fm1,dfm1,p,dt_sub_RKL)
-            do n=n1,n2; do m=m1,m2
-              fj(l1:l2,m,n)=coeff_fm1(s) * fm1(l1:l2,m,n,ienergy) &
-                           +coeff_fm2(s) * fm2(l1:l2,m,n)         &
-                           +coeff_fsub(s)*fsub(l1:l2,m,n,ienergy) &
-                           +coeff_dfm1(s) *dt_sub_RKL* dfm1(l1:l2,m,n,ienergy) &
-                           +coeff_dfsub(s)*dt_sub_RKL*dfsub(l1:l2,m,n,ienergy)
-            enddo; enddo
+            fj(l1:l2,m1:m2,n1:n2)=coeff_fm1(s) * fm1(l1:l2,m1:m2,n1:n2,ienergy) &
+                +coeff_fm2(s) * fm2(l1:l2,m1:m2,n1:n2)         &
+                +coeff_fsub(s)*fsub(l1:l2,m1:m2,n1:n2,ienergy) &
+                +coeff_dfm1(s) *dt_sub_RKL* dfm1(l1:l2,m1:m2,n1:n2,ienergy) &
+                +coeff_dfsub(s)*dt_sub_RKL*dfsub(l1:l2,m1:m2,n1:n2,ienergy)
 !
 ! set Yj-1 and Yj-2 for the next sub step
-            do n=n1,n2; do m=m1,m2
-              fm2(l1:l2,m,n)=fm1(l1:l2,m,n,ienergy)
-              fm1(l1:l2,m,n,ienergy)=fj(l1:l2,m,n)
-            enddo; enddo
+            fm2(l1:l2,m1:m2,n1:n2)=fm1(l1:l2,m1:m2,n1:n2,ienergy)
+            fm1(l1:l2,m1:m2,n1:n2,ienergy)=fj(l1:l2,m1:m2,n1:n2)
           endif
         enddo ! end of itRKL sub steps
 !
 ! set inital value for the next RKL step
-        do n=n1,n2; do m=m1,m2
-        fsub(l1:l2,m,n,ienergy)=fj(l1:l2,m,n)
-        enddo; enddo
+        fsub(l1:l2,m1:m2,n1:n2,ienergy)=fj(l1:l2,m1:m2,n1:n2)
 !
         if (notanumber(fsub(:,:,:,ienergy))) then
            print*, 'fsub contains NaN in proc',iproc_world, 'in No.',j,'subcycle'
@@ -195,9 +185,7 @@ module Timestep
         enddo ! end of sub cycle
 !
 ! set temperature after heat conduction back to f-array
-        do n=n1,n2; do m=m1,m2
-          f(l1:l2,m,n,ienergy)=fsub(l1:l2,m,n,ienergy)
-        enddo; enddo
+        f(l1:l2,m1:m2,n1:n2,ienergy)=fsub(l1:l2,m1:m2,n1:n2,ienergy)
 !
       ENDIF
 !
@@ -281,9 +269,7 @@ module Timestep
 !
       if (lfirst .and. lshift_datacube_x) then
         call boundconds_x(f)
-        do  n=n1,n2; do m=m1,m2
-          f(:,m,n,:)=cshift(f(:,m,n,:),1,1)
-        enddo; enddo
+        f=cshift(f,1,1)
       endif
 !
 !  Need to finalize communication early either for test purposes, or
