@@ -54,6 +54,11 @@ module Hydro
   real, target, dimension (nx,ny) :: divu_xy3,divu_xy4,u2_xy3,u2_xy4,mach_xy4
   real, target, dimension (nx,ny) :: o2_xy3,o2_xy4,mach_xy3
 !
+!  phi-averaged arrays for orbital advection
+!
+  real, dimension (nx,nz) :: uu_average
+  real, dimension (nx,nz) :: phidot_average
+!
 !  Cosine and sine function for setting test fields and analysis.
 !
   real, dimension (mz) :: c2z,s2z,cz,sz
@@ -2575,10 +2580,16 @@ module Hydro
 !  19-oct-15/ccyang: add calculation of the vorticity field.
 !
       use Sub, only: curl
+      use Mpicomm, only: mpiallreduce_sum
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
 !
       real, dimension(nx,3) :: pv
+!
+      real, dimension (nx,nz) :: fsum_tmp
+      real, dimension (nx) :: uphi
+      real :: nygrid1
+      integer :: nnghost
 !
 !  Remove mean momenta or mean flows if desired.
 !  Useful to avoid unphysical winds, for example in shearing box simulations.
@@ -2600,6 +2611,32 @@ module Hydro
           enddo mloop
         enddo nloop
       endif getoo
+!
+!  For FARGO (orbital advection) algorithm.
+!  Calculate the average velocity at the first sub-timestep.
+!
+      if (lfargo_advection.and.lfirst) then
+!
+!  Pre-calculate the average large scale speed of the flow
+!
+        fsum_tmp=0.
+!
+        nygrid1=1.0/nygrid
+        do n=n1,n2
+          do m=m1,m2
+            nnghost=n-nghost
+            uphi=f(l1:l2,m,n,iuy)
+            fsum_tmp(:,nnghost)=fsum_tmp(:,nnghost)+uphi*nygrid1
+          enddo
+        enddo
+!
+! The sum has to be done processor-wise
+! Sum over processors of same ipz, and different ipy
+! --only relevant for 3D, but is here for generality
+!
+        call mpiallreduce_sum(fsum_tmp,uu_average,&
+             (/nx,nz/),idir=2) !idir=2 is equal to old LSUMY=.true.
+      endif
 !
     endsubroutine hydro_before_boundary
 !***********************************************************************
