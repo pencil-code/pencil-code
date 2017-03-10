@@ -65,7 +65,7 @@ clean_dir()
 }
 
 clean_objects="*.o *.a *.mod *.x *.inc .build-history .buildinfo .buildtime"
-clean_links="start.csh start_run.csh run.csh getconf.csh Makefile src/.cvsignore read_videofiles read_vectorfiles read_all_videofiles combine_videofiles read_xyaver_alpha pc_tecplot_solid pc_tecplot pc_reduce pc_extract pc_distribute_z pc_distribute pc_configtest pc_collect_exp pc_collect"
+clean_links="start.csh start_run.csh run.csh getconf.csh Makefile src/.cvsignore"
 clean_files=".pc_build_history run_command.log COMPLETED ERROR LOCK STOP FULLSTOP src/Makefile src/mpicomm_double.f90 src/revision.txt src/.current-precision"
 src_dir="src"
 
