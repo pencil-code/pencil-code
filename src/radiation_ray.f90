@@ -1653,6 +1653,7 @@ module Radiation
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx) :: tmp,lnrho,lnTT,yH,rho,TT,profile
       real, dimension(mx) :: kappa1,kappa2
+      real, dimension(mx) :: kappa_rad,kappa_cond,kappa_tot
       real :: kappa0, kappa0_cgs,k1,k2
       logical, save :: lfirst=.true.
       integer :: i,inu
@@ -1664,6 +1665,30 @@ module Radiation
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,kapparho=tmp)
           f(:,m,n,ikapparho)=kapparho_floor+tmp*scalefactor_kappa(inu)
+        enddo
+        enddo
+!
+      case ('total_Rosseland_mean')
+! 
+!  All coefficients valid for cgs units ONLY
+!  We use solar abundances X=0.7381, Y=0.2485, metallicity Z=0.0134
+!  kappa1 is Kramer's opacity, kappa2 is Hminus opacity, kappa_cond is conductive opacity
+!  total kappa is calculated by taking the harmonic mean of radiative nd conductive opacities
+!  kappa_rad=1/(1/kappa2+1/kappa1)
+!  kappa=1/(1/kappa_rad+1/kappa3)
+!
+        do n=n1-radz,n2+radz
+        do m=m1-rady,m2+rady
+          call eoscalc(f,mx,lnrho=lnrho)
+          call eoscalc(f,mx,lntt=lntt)
+          kappa1=4.0d-25*1.7381*0.0135*unit_density**2*unit_length* &
+                exp(lnrho)*(exp(lnTT)*unit_temperature)**(-3.5)
+          kappa2=1.25d-29*0.0134*unit_density**1.5*unit_length*&
+                 unit_temperature**9*exp(0.5*lnrho)*exp(9.0*lnTT)
+          kappa_cond=2.6d-7*unit_length*unit_temperature**2*exp(2*lnTT)*exp(-lnrho)
+          kappa_rad=1./(1./kappa1+1./kappa2)
+          kappa_tot=1./(1./kappa_rad+1./kappa_cond)
+          f(:,m,n,ikapparho)=kapparho_floor+exp(lnrho)*kappa_tot*scalefactor_kappa(inu)
         enddo
         enddo
 !
