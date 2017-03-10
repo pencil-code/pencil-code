@@ -132,6 +132,7 @@ program pc_collect
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
+  call construct_grid(x,y,z,dx,dy,dz)
   call initialize_modules(f)
 !
   t_test = huge(1.0)
@@ -317,6 +318,7 @@ subroutine read_and_combine(filename,f,mvar_in,lonly_farray)
 !
 !  Need to re-initialize the local grid for each processor.
 !
+          call construct_grid(x,y,z,dx,dy,dz)
           call initialize_grid
 
         ! collect x coordinates:
