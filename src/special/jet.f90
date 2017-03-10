@@ -404,7 +404,7 @@ module Special
 !
     endsubroutine get_slices_special
 !***********************************************************************
-    subroutine calc_lspecial_pars(f)
+    subroutine special_after_boundary(f)
 !
 !  Mean flow velocitites
 !
@@ -434,7 +434,7 @@ module Special
 !!$        enddo
 !!$      endif
 !
-    endsubroutine calc_lspecial_pars
+    endsubroutine special_after_boundary
 !***********************************************************************
     subroutine special_boundconds(f,bc)
 !

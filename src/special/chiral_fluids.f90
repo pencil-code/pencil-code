@@ -480,7 +480,7 @@ module Special
 !
     endsubroutine get_slices_special
 !***********************************************************************
-    subroutine calc_lspecial_pars(f)
+    subroutine special_after_boundary(f)
 !
 !  Calculate meanmu5, which should be subtracted from mu5 in eqn for theta5
 !
@@ -507,7 +507,7 @@ module Special
       fact=1./(nw*ncpus)
       meanmu5=fact*meanmu5_tmp
 !
-    endsubroutine calc_lspecial_pars
+    endsubroutine special_after_boundary
 !***********************************************************************
     subroutine special_calc_hydro(f,df,p)
 !

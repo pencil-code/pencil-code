@@ -286,7 +286,7 @@ print*,'AXEL1: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
 !
     endsubroutine dspecial_dt
 !***********************************************************************
-    subroutine calc_lspecial_pars(f)
+    subroutine special_after_boundary(f)
 !
 !  dummy routine
 !
@@ -306,28 +306,28 @@ print*,'AXEL1: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
 !  Allocate memory for arrays.
 !
       allocate(k2(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('calc_lspecial_pars','Could not allocate memory for k2')
+      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for k2')
       allocate(r(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('calc_lspecial_pars','Could not allocate memory for r')
+      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for r')
 !
       allocate(B_re(nx,ny,nz,3),stat=stat)
-      if (stat>0) call fatal_error('calc_lspecial_pars','Could not allocate memory for B_re')
+      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for B_re')
       allocate(B_im(nx,ny,nz,3),stat=stat)
-      if (stat>0) call fatal_error('calc_lspecial_pars','Could not allocate memory for B_im')
+      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for B_im')
 !
       allocate(v_re(nx,ny,nz,3),stat=stat)
-      if (stat>0) call fatal_error('calc_lspecial_pars','Could not allocate memory for v_re')
+      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for v_re')
       allocate(v_im(nx,ny,nz,3),stat=stat)
-      if (stat>0) call fatal_error('calc_lspecial_pars','Could not allocate memory for v_im')
+      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for v_im')
 !
       allocate(kx(nxgrid),stat=stat)
-      if (stat>0) call fatal_error('calc_lspecial_pars', &
+      if (stat>0) call fatal_error('special_after_boundary', &
           'Could not allocate memory for kx')
       allocate(ky(nygrid),stat=stat)
-      if (stat>0) call fatal_error('calc_lspecial_pars', &
+      if (stat>0) call fatal_error('special_after_boundary', &
           'Could not allocate memory for ky')
       allocate(kz(nzgrid),stat=stat)
-      if (stat>0) call fatal_error('calc_lspecial_pars', &
+      if (stat>0) call fatal_error('special_after_boundary', &
           'Could not allocate memory for kz')
 !
 !  calculate k^2
@@ -348,7 +348,7 @@ print*,'AXEL1: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
 !  the full nx extent (which, currently, must be equal to nxgrid).
 !
         if (lroot .AND. ip<10) &
-             print*,'calc_lspecial_pars:fft ...'
+             print*,'special_after_boundary:fft ...'
         do iky=1,nz
           do ikx=1,ny
             do ikz=1,nx
@@ -433,7 +433,7 @@ print*,'AXEL2: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
           f(l1:l2,m1:m2,n1:n2,ibb+i-1)=B_re(:,:,:,i)
         enddo !i
 !
-    endsubroutine calc_lspecial_pars
+    endsubroutine special_after_boundary
 !***********************************************************************
     subroutine rprint_special(lreset,lwrite)
 !
