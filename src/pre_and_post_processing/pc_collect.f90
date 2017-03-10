@@ -8,7 +8,7 @@ program pc_collect
   use Cparam, only: fnlen
   use File_io, only: backskip_to_time, delete_file
   use General, only: loptest
-  use Grid, only: initialize_grid
+  use Grid, only: initialize_grid,construct_grid
   use IO
   use Messages
   use Param_IO
