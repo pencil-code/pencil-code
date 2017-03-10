@@ -67,8 +67,7 @@ module Equ
       use Shock, only: calc_shock_profile, calc_shock_profile_simple
       use Solid_Cells, only: update_solid_cells, freeze_solid_cells, &
                              dsolid_dt_integrate
-      use Special, only: special_before_boundary, calc_lspecial_pars, &
-                         special_after_boundary
+      use Special, only: special_before_boundary,special_after_boundary
       use Sub
       use Testfield
       use Testflow
@@ -312,7 +311,6 @@ module Equ
       if (lhydro)                 call hydro_after_boundary(f)
       if (lviscosity)             call viscosity_after_boundary(f)
       if (lmagnetic)              call magnetic_after_boundary(f)
-!--   if (lmagnetic)              call magnetic_after_boundary(f)
       if (lenergy)                call energy_after_boundary(f)
       if (lgrav)                  call gravity_after_boundary(f)
       if (lforcing_cont)          call forcing_cont_after_boundary(f)
@@ -324,8 +322,6 @@ module Equ
       if (lpscalar)               call pscalar_after_boundary(f)
       if (ldensity)               call density_after_boundary(f)
       if (ltestflow)              call calc_ltestflow_nonlin_terms(f,df)
-      if (lspecial)               call calc_lspecial_pars(f)
-!AB: could be renamed to special_after_boundary etc
       if (lspecial)               call special_after_boundary(f)
 !
 !  Calculate quantities for a chemical mixture
