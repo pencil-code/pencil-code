@@ -1409,9 +1409,9 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ##
 ##  Piyali's laptop
 ##
-#FC=mpif90 #(saveri)
+#FC=mpif90.openmpi #(saveri)
 #F77=$(FC) #(saveri*)
-#CC=mpicc #(saveri*)
+#CC=mpicc.openmpi #(saveri*)
 #CFLAGS=-O2 -DFUNDERSC=1 #(saveri*)
 #FFLAGS=-O2 #(saveri*)
 #FFLAGS_DOUBLE=-r8  #(saveri*)
