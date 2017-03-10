@@ -5024,7 +5024,6 @@ module Magnetic
 !
     endsubroutine df_diagnos_magnetic
 !***********************************************************************
-!-- subroutine magnetic_after_boundary(f)
     subroutine magnetic_after_boundary(f)
 !
 !  Calculate <A>, which is needed for test-field methods.
@@ -5154,7 +5153,6 @@ module Magnetic
 !
 !     if (lmagn_mf) call magnetic_after_boundary
 !
-!-- endsubroutine magnetic_after_boundary
     endsubroutine magnetic_after_boundary
 !***********************************************************************
     subroutine set_border_magnetic(f,df,p)
