@@ -841,6 +841,22 @@ module Grid
         enddo
       endif
 !
+!  Fargo (orbital advection acceleration) is implemented for cylindrical coordinates.
+!  Die otherwise.       
+!
+      if (lfargo_advection.and.coord_system/='cylindric') then
+        if (lroot) then
+          print*,""
+          print*,"Fargo advection is only implemented for"
+          print*,"cylindrical coordinates. Switch"
+          print*," coord_system='cylindric'"
+          print*,"in init_pars of start.in if you"
+          print*,"want to use the fargo algorithm"
+          print*,""
+        endif
+        call fatal_error("construct_grid","")
+      endif
+!
     endsubroutine construct_grid
 !***********************************************************************
     subroutine set_coorsys_dimmask

@@ -116,18 +116,18 @@ module Special
 !
 !  Not implemented for other than cylindrical coordinates
 !
-      if (lfargo_advection.and.coord_system/='cylindric') then
-        if (lroot) then
-          print*,""
-          print*,"Fargo advection is only implemented for"
-          print*,"cylindrical coordinates. Switch"
-          print*," coord_system='cylindric'"
-          print*,"in init_pars of start.in if you"
-          print*,"want to use the fargo algorithm"
-          print*,""
-        endif
-        call fatal_error("initialize_special","")
-      endif
+      !!if (lfargo_advection.and.coord_system/='cylindric') then
+      !!  if (lroot) then
+      !!    print*,""
+      !!    print*,"Fargo advection is only implemented for"
+      !!    print*,"cylindrical coordinates. Switch"
+      !!    print*," coord_system='cylindric'"
+      !!    print*,"in init_pars of start.in if you"
+      !!    print*,"want to use the fargo algorithm"
+      !!    print*,""
+      !!  endif
+      !!  call fatal_error("initialize_special","")
+      !!endif
 !
 !  Not implemented for the energy equation either
 !
