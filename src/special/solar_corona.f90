@@ -603,6 +603,13 @@ module Special
         lpenc_requested(i_cp1) = .true.
       endif
 !
+      if (heat_cool /= 0.0) then
+        lpenc_requested(i_lnrho) = .true.
+        lpenc_requested(i_lnTT) = .true.
+        lpenc_requested(i_cp1) = .true.
+        lpenc_requested(i_rho1) = .true.
+      endif
+!
       if ((tdown > 0.0) .or. (tdownr > 0.0)) then
         lpenc_requested(i_lnrho) = .true.
         lpenc_requested(i_lnTT) = .true.
