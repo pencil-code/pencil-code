@@ -2468,9 +2468,9 @@ module Special
 !     add to density
 !
       if (ldensity .and. ldensity_nolog) then
-        delta_lnrho = deltarho_init_z(n) * dt
+        delta_lnrho = deltarho_init_z(n)
       elseif (ldensity) then
-        delta_lnrho = alog (exp (df(l1:l2,m,n,ilnrho)) + deltarho_init_z(n) * dt) - df(l1:l2,m,n,ilnrho)
+        delta_lnrho = alog (exp (df(l1:l2,m,n,ilnrho)) + deltarho_init_z(n)) - df(l1:l2,m,n,ilnrho)
       else
         call stop_it('solar_corona: calc_rho_diff_fix:need density to work on it')
       endif
