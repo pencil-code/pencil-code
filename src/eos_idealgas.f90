@@ -304,6 +304,10 @@ module EquationOfState
       if (lstratz) call set_stratz
       lstratset = .true.
 !
+      if (lfargo_advection.and.(pretend_lnTT.or.ltemperature)) &
+          call fatal_error("initialize_eos","fargo advection not "//&
+          "implemented for the temperature equation")
+!
     endsubroutine initialize_eos
 !***********************************************************************
     subroutine select_eos_variable(variable,findex)

@@ -131,9 +131,9 @@ module Special
 !
 !  Not implemented for the energy equation either
 !
-      if (lfargo_advection.and.(pretend_lnTT.or.ltemperature)) &
-          call fatal_error("initialize_special","fargo advection not "//&
-          "implemented for the temperature equation")
+      !!if (lfargo_advection.and.(pretend_lnTT.or.ltemperature)) &
+      !!    call fatal_error("initialize_special","fargo advection not "//&
+      !!    "implemented for the temperature equation")
 !
 !  Stuff that is only calculated once
 !
