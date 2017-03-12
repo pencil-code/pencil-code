@@ -32,7 +32,6 @@ module Timestep
       use Solid_Cells, only: solid_cells_timestep_first, &
           solid_cells_timestep_second
       use Shear, only: advance_shear
-      use Special, only: special_after_timestep
       use Snapshot, only: shift_dt
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -144,7 +143,7 @@ module Timestep
           call advance_shear(f, df, dtsub)
         endif advec
 !
-        if (lspecial) call special_after_timestep(f, df, dtsub)
+        call update_after_timestep(f,df,dtsub)
 !
 !  Increase time.
 !
@@ -183,4 +182,30 @@ module Timestep
 !
     endsubroutine split_update
 !***********************************************************************
+    subroutine update_after_timestep(f,df,dtsub) 
+!
+!   Hooks for modifying f and df after the timestep is performed.
+!
+!  12-03-17/wlyra: coded
+!
+      use Density,  only: density_after_timestep
+      use Hydro,    only: hydro_after_timestep
+      use Energy,   only: energy_after_timestep
+      use Magnetic, only: magnetic_after_timestep
+      use Special,  only: special_after_timestep
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real :: dtsub
+!     
+!  Dispatch to respective modules.      
+!
+      if (ldensity)  call density_after_timestep  (f,df,dtsub)
+      if (lhydro)    call hydro_after_timestep    (f,df,dtsub)
+      if (lenergy)   call energy_after_timestep   (f,df,dtsub)
+      if (lmagnetic) call magnetic_after_timestep (f,df,dtsub)
+      if (lspecial)  call special_after_timestep  (f,df,dtsub)
+!
+    endsubroutine update_after_timestep
+!***********************************************************************      
 endmodule Timestep
