@@ -19,7 +19,7 @@
 ! PENCILS PROVIDED b2; bf2; bij(3,3); del2a(3); graddiva(3); jj(3); e3xa(3)
 ! PENCILS PROVIDED bijtilde(3,2)
 ! PENCILS PROVIDED j2; jb; va2; jxb(3); jxbr(3); jxbr2; ub; uxb(3); uxb2
-! PENCILS PROVIDED uxj(3); chibp; beta; beta1; uga(3); djuidjbi; jo
+! PENCILS PROVIDED uxj(3); chibp; beta; beta1; uga(3); uuadvec_gaa(3); djuidjbi; jo
 ! PENCILS PROVIDED StokesI; StokesQ; StokesU; StokesQ1; StokesU1
 ! PENCILS PROVIDED ujxb; oxu(3); oxuxb(3); jxbxb(3); jxbrxb(3)
 ! PENCILS PROVIDED glnrhoxb(3); del4a(3); del6a(3); oxj(3); diva
@@ -1968,7 +1968,10 @@ module Magnetic
 !
 !  need uga always for advective gauge.
 !
-      if (ladvective_gauge) lpenc_requested(i_uga)=.true.
+      if (ladvective_gauge) then
+        lpenc_requested(i_uga)=.true.
+        if (lfargo_advection) lpenc_requested(i_uuadvec_gaa)=.true.
+      endif
 !
       if (numag/=0.0) then
         lpenc_requested(i_jxb)=.true.
@@ -2558,6 +2561,14 @@ module Magnetic
         lpencil_in(i_aij)=.true.
         lpencil_in(i_uu)=.true.
       endif
+!
+      if (lpencil_in(i_uuadvec_gaa)) then
+        lpencil_in(i_uu_advec)=.true.
+        lpencil_in(i_aij)=.true.
+        lpencil_in(i_uu)=.true.
+        lpencil_in(i_aa)=.true.
+      endif
+!
       if (lpencil_in(i_d6ab) .or. lpencil_in(i_e3xa)) lpencil_in(i_del6a)=.true.
 !
       if (lpencil_in(i_ss12)) lpencil_in(i_sj)=.true.
@@ -2650,6 +2661,8 @@ module Magnetic
 !***********************************************************************
     subroutine calc_pencils_magnetic_std(f,p)
 !
+!   DOCUMENT ME!!! WHAT IS STD OR PENCPAR? 
+!
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
       type (pencil_case),                 intent(out)  :: p
 !
@@ -2661,6 +2674,8 @@ module Magnetic
 !
 !  Calculate Magnetic pencils.
 !  Most basic pencils should come first, as others may depend on them.
+!
+!  DOCUMENT ME!!!! WHAT IS PENCPAR?       
 !
 !  19-nov-04/anders: coded
 !  18-jun-13/axel: b2 now includes B_ext by default (luse_Bext_in_b2=T is kept)
@@ -2675,7 +2690,7 @@ module Magnetic
       logical, dimension(:),              intent(in)   :: lpenc_loc
 !
 !      real, dimension (nx,3) :: bb_ext_pot
-      real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr
+      real, dimension (nx) :: rho1_jxb, quench, StokesI_ncr, tmp
       real, dimension(3) :: B_ext
       real :: c,s
       integer :: i,j,ix
@@ -2786,6 +2801,13 @@ module Magnetic
           ! fargo (galilean invariant advection) only works with the
           ! advective gauge, but the term will be added in special/fargo.f90
           p%uga=0.
+!          
+          do j=1,3
+            call h_dot_grad(p%uu_advec,p%aij(:,j,:),tmp)
+            p%uuadvec_gaa(:,j)=tmp
+          enddo
+          p%uuadvec_gaa(:,1) = p%uuadvec_gaa(:,1) - rcyl_mn1*p%uu(:,2)*p%aa(:,2)
+          p%uuadvec_gaa(:,2) = p%uuadvec_gaa(:,2) + rcyl_mn1*p%uu(:,1)*p%aa(:,2)
         endif
       endif
 !
@@ -3814,7 +3836,11 @@ module Magnetic
                 ujiaj(:,j)=ujiaj(:,j)+p%aa(:,k)*p%uij(:,k,j)
               enddo
             enddo
-            dAdt = dAdt-p%uga-ujiaj+fres
+            if (.not.lfargo_advection) then 
+              dAdt = dAdt-p%uga-ujiaj+fres
+            else
+              dAdt = dAdt-p%uuadvec_gaa-ujiaj+fres
+            endif
 !            df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%uga-ujiaj+fres
 !
 !

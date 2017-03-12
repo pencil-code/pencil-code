@@ -172,27 +172,27 @@ module Special
 !
 !  For continuity equation
 !
-        lpenc_requested(i_divu)=.true.
-        if (ldensity_nolog) then
-          lpenc_requested(i_grho)=.true.
-        else
-          lpenc_requested(i_glnrho)=.true.
-        endif
+        !!lpenc_requested(i_divu)=.true.
+        !!if (ldensity_nolog) then
+        !!  lpenc_requested(i_grho)=.true.
+        !!else
+        !!  lpenc_requested(i_glnrho)=.true.
+        !!endif
 !
 !  For velocity advection
 !
-        lpenc_requested(i_uij)=.true.
+        !!lpenc_requested(i_uij)=.true.
 !
 !  For the induction equation
 !
-        if (lmagnetic) then
-          lpenc_requested(i_aa)=.true.
-          lpenc_requested(i_aij)=.true.
-        endif
+        !!if (lmagnetic) then
+        !!  lpenc_requested(i_aa)=.true.
+        !!  lpenc_requested(i_aij)=.true.
+        !!endif
 !
 !  For the entropy equation
 !
-        if (lentropy) lpenc_requested(i_gss)=.true.
+        !!if (lentropy) lpenc_requested(i_gss)=.true.
 !
       endif
 !
@@ -224,11 +224,11 @@ module Special
 !
 !  For the continuity equation
 !
-        if (ldensity_nolog) then
-          call h_dot_grad(uu_advec,p%grho,uuadvec_grho)
-        else
-          call h_dot_grad(uu_advec,p%glnrho,uuadvec_glnrho)
-        endif
+        !!if (ldensity_nolog) then
+        !!  call h_dot_grad(uu_advec,p%grho,uuadvec_grho)
+        !!else
+        !!  call h_dot_grad(uu_advec,p%glnrho,uuadvec_glnrho)
+        !!endif
 !
 !  For velocity advection
 !
@@ -255,32 +255,32 @@ module Special
 !   Although working (and more line-economically), the
 !   piece of code below is more readable in my opinion.
 !
-        do j=1,3
-          call h_dot_grad(uu_advec,p%uij(:,j,:),tmp)
-          tmp2(:,j)=tmp
-        enddo
-        tmp2(:,1)=tmp2(:,1)-rcyl_mn1*p%uu(:,2)*p%uu(:,2)
-        tmp2(:,2)=tmp2(:,2)+rcyl_mn1*p%uu(:,1)*p%uu(:,2)
+        !!do j=1,3
+        !!  call h_dot_grad(uu_advec,p%uij(:,j,:),tmp)
+        !!  tmp2(:,j)=tmp
+        !!enddo
+        !!tmp2(:,1)=tmp2(:,1)-rcyl_mn1*p%uu(:,2)*p%uu(:,2)
+        !!tmp2(:,2)=tmp2(:,2)+rcyl_mn1*p%uu(:,1)*p%uu(:,2)
 !
-        uuadvec_guu=tmp2
+        !!uuadvec_guu=tmp2
 !
 !  Advection of the magnetic potential
 !
-        if (lmagnetic) then
-          do j=1,3
-            call h_dot_grad(uu_advec,p%aij(:,j,:),tmp)
-            tmp2(:,j)=tmp
-          enddo
-          tmp2(:,1)=tmp2(:,1)-rcyl_mn1*p%uu(:,2)*p%aa(:,2)
-          tmp2(:,2)=tmp2(:,2)+rcyl_mn1*p%uu(:,1)*p%aa(:,2)
+        !!if (lmagnetic) then
+        !!  do j=1,3
+        !!    call h_dot_grad(uu_advec,p%aij(:,j,:),tmp)
+        !!    tmp2(:,j)=tmp
+        !!  enddo
+        !!  tmp2(:,1)=tmp2(:,1)-rcyl_mn1*p%uu(:,2)*p%aa(:,2)
+        !!  tmp2(:,2)=tmp2(:,2)+rcyl_mn1*p%uu(:,1)*p%aa(:,2)
 !
-          uuadvec_gaa=tmp2
-        endif
+        !!  uuadvec_gaa=tmp2
+        !!endif
 !
 !  Advection of entropy
 !
-        if (lentropy) &
-             call h_dot_grad(uu_advec,p%gss,uuadvec_gss)
+        !!if (lentropy) &
+        !!     call h_dot_grad(uu_advec,p%gss,uuadvec_gss)
 !
         call keep_compiler_quiet(f)
 !
@@ -419,15 +419,15 @@ module Special
 !
 !  Modified continuity equation
 !
-      if (lfargo_advection) then
-        if (ldensity_nolog) then
-          df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - &
-               uuadvec_grho   - p%rho*p%divu
-        else
-          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - &
-               uuadvec_glnrho - p%divu
-        endif
-      endif
+      !if (lfargo_advection) then
+        !if (ldensity_nolog) then
+        !  df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) - &
+        !       uuadvec_grho   - p%rho*p%divu
+        !else
+        !  df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) - &
+        !       uuadvec_glnrho - p%divu
+        !endif
+      !endif
 !
       call keep_compiler_quiet(f)
 !
@@ -450,18 +450,18 @@ module Special
 !
 !  Modified momentum equation
 !
-      if (lfargo_advection) then
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-uuadvec_guu
+     !!if (lfargo_advection) then
+        !!df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-uuadvec_guu
 !
 !  The lines below are not symmetric. This is on purpose, to better
 !  highlight that fargo advects the azimuthal coordinate ONLY!!
 !
-        if (lfirst.and.ldt) then
-          advec_uu=abs(p%uu(:,1))  *dx_1(l1:l2)+ &
-                   abs(uu_residual)*dy_1(  m  )*rcyl_mn1+ &
-                   abs(p%uu(:,3))  *dz_1(  n  )
-        endif
-      endif
+        !!if (lfirst.and.ldt) then
+        !!  advec_uu=abs(p%uu(:,1))  *dx_1(l1:l2)+ &
+        !!           abs(uu_residual)*dy_1(  m  )*rcyl_mn1+ &
+        !!           abs(p%uu(:,3))  *dz_1(  n  )
+        !!endif
+      !!endif
 !
       call keep_compiler_quiet(f)
 !
@@ -483,8 +483,8 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      if (lfargo_advection) &
-           df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-uuadvec_gaa
+      !!if (lfargo_advection) &
+      !!     df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-uuadvec_gaa
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)
@@ -507,8 +507,8 @@ module Special
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
-      if (lfargo_advection) &
-           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-uuadvec_gss
+      !!if (lfargo_advection) &
+      !!     df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-uuadvec_gss
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(p)

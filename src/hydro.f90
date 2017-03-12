@@ -21,6 +21,7 @@
 ! PENCILS PROVIDED graddivu(3); del6u_bulk(3); grad5divu(3)
 ! PENCILS PROVIDED rhougu(3); der6u(3); transpurho(3)
 ! PENCILS PROVIDED divu0; u0ij(3,3); uu0(3) 
+! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
 !
 !***************************************************************
 !
@@ -859,11 +860,11 @@ module Hydro
 !
 !  If fargo is used, advection is taken care of in special/fargo.f90
 !
-      if (lfargo_advection) then
-        ladvection_velocity=.false.
-        if (lroot) print*, &
-             'initialize_hydro: fargo used. turned off advection of velocity'
-      endif
+      !if (lfargo_advection) then
+      !  ladvection_velocity=.false.
+      !  if (lroot) print*, &
+      !       'initialize_hydro: fargo used. turned off advection of velocity'
+      !endif
 !
 !  Border profile backward compatibility. For a vector, if only the first
 !  borderuu is set, then the other components get the same value.
@@ -1969,6 +1970,11 @@ module Hydro
         lpenc_requested(i_r_mn)=.true.
       endif
 !
+      if (lfargo_advection) then 
+        lpenc_requested(i_uu_advec)=.true.
+        lpenc_requested(i_uuadvec_guu)=.true.
+      endif
+!
 !  video pencils
 !
       if (dvid/=0.0) then
@@ -2172,12 +2178,18 @@ module Hydro
       if (lpencil_in(i_oij).and.(.not.lcartesian_coords)) &
           lpencil_in(i_oo)=.true.
 !
+      if (lpencil_in(i_uu_advec)) lpencil_in(i_uu)=.true.
+      if (lpencil_in(i_uuadvec_guu)) then 
+        lpencil_in(i_uu_advec)=.true.
+        lpencil_in(i_uij)=.true.
+      endif
+!
     endsubroutine pencil_interdep_hydro
 !***********************************************************************
     subroutine calc_pencils_hydro_pencpar(f,p,lpenc_loc)
 !
 ! Calls linearized or nonlinear hydro routine depending on whether llinearized_hydro is
-! selected or not.
+! selected or not (the default is nonlinear).
 !
 ! 24-jun-13/dhruba: coded
 ! 20-sep-13/MR    : added optional list of indices in lpencil, penc_inds,
@@ -2231,8 +2243,8 @@ module Hydro
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
-      real, dimension (nx) :: tmp, tmp2
-      integer :: i, j, ju, ij,jj,kk,jk
+      real, dimension (nx) :: tmp, tmp2, uu_residual
+      integer :: i, j, ju, ij, jj, kk, jk, nnghost
 !
       intent(in) :: lpenc_loc
       intent(out):: p
@@ -2421,6 +2433,30 @@ module Hydro
           call weno_transp(f,m,n,iuy,irho,iux,iuy,iuz,p%transpurho(:,2),dx_1,dy_1,dz_1)
           call weno_transp(f,m,n,iuz,irho,iux,iuy,iuz,p%transpurho(:,3),dx_1,dy_1,dz_1)
         endif
+      endif
+!
+      if (lpenc_loc(i_uu_advec)) then
+!
+        nnghost=n-nghost
+!
+! Advect by the relative velocity
+!
+        uu_residual=p%uu(:,2)-uu_average(:,nnghost)
+!
+! Advect by the original radial and vertical, but residual azimuthal
+!
+        p%uu_advec(:,1)=p%uu(:,1)
+        p%uu_advec(:,2)=uu_residual
+        p%uu_advec(:,3)=p%uu(:,3)
+      endif
+!
+      if (lpenc_loc(i_uuadvec_guu)) then
+        do j=1,3
+          call h_dot_grad(p%uu_advec,p%uij(:,j,:),tmp)
+          p%uuadvec_guu(:,j)=tmp
+        enddo
+        p%uuadvec_guu(:,1)=p%uuadvec_guu(:,1)-rcyl_mn1*p%uu(:,2)*p%uu(:,2)
+        p%uuadvec_guu(:,2)=p%uuadvec_guu(:,2)+rcyl_mn1*p%uu(:,1)*p%uu(:,2)
       endif
 !
     endsubroutine calc_pencils_hydro_nonlinear
@@ -2709,7 +2745,7 @@ module Hydro
 !  Advection term.
 !
       if (ladvection_velocity .and. .not. lweno_transport .and. &
-          .not. lno_meridional_flow) then
+          .not. lno_meridional_flow .and. .not. lfargo_advection) then
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%ugu
       endif
 !
@@ -2726,11 +2762,15 @@ module Hydro
 !  useful for debugging.
 !
 !  18-Mar-2010/AJ: this should probably go in a special module.
+!  12-Mar-2017/WL: Agree, looks very specific. 
 !
       if (ladvection_velocity .and. lno_meridional_flow) then
         f(l1:l2,m,n,iux:iuy)=0.0
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-p%ugu(:,3)
       endif
+!
+      if (ladvection_velocity .and. lfargo_advection) &
+           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-p%uuadvec_guu
 !
 !  Coriolis force, -2*Omega x u (unless lprecession=T)
 !  Omega=(-sin_theta, 0, cos_theta), where theta corresponds to
@@ -2774,9 +2814,15 @@ module Hydro
                        abs(p%uu(:,2))*dline_1(:,2),&
                        abs(p%uu(:,3))*dline_1(:,3))
         else
-          advec_uu=    abs(p%uu(:,1))*dline_1(:,1)+&
-                       abs(p%uu(:,2))*dline_1(:,2)+&
-                       abs(p%uu(:,3))*dline_1(:,3)
+          if (.not.lfargo_advection) then 
+            advec_uu=    abs(p%uu(:,1))*dline_1(:,1)+&
+                         abs(p%uu(:,2))*dline_1(:,2)+&
+                         abs(p%uu(:,3))*dline_1(:,3)
+          else
+            advec_uu=    abs(p%uu_advec(:,1))*dline_1(:,1)+&
+                         abs(p%uu_advec(:,2))*dline_1(:,2)+&
+                         abs(p%uu_advec(:,3))*dline_1(:,3)
+          endif
         endif
 !        if (lspherical_coords) then
 !          advec_uu=abs(p%uu(:,1))*dx_1(l1:l2)+ &

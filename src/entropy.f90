@@ -14,7 +14,7 @@
 ! MAUX CONTRIBUTION 0
 !
 ! PENCILS PROVIDED ugss; Ma2; fpres(3); uglnTT; sglnTT(3); transprhos !,dsdr
-! PENCILS PROVIDED initss; initlnrho
+! PENCILS PROVIDED initss; initlnrho, uuadvec_gss
 !
 !***************************************************************
 module Energy
@@ -736,11 +736,11 @@ module Energy
 !
 !  Turn off advection of entropy when fargo is used
 !
-      if (lfargo_advection) then
-        ladvection_entropy=.false.
-        if (lroot) print*,&
-             'initialize_energy: fargo used, turned off advection of entropy'
-      endif
+      !!if (lfargo_advection) then
+      !!  ladvection_entropy=.false.
+      !!  if (lroot) print*,&
+      !!       'initialize_energy: fargo used, turned off advection of entropy'
+      !!endif
 !
 !  Possible to calculate pressure gradient directly from the pressure, in which
 !  case we must open an auxiliary slot in f to store the pressure. This method
@@ -2388,6 +2388,8 @@ module Energy
           lpenc_requested(i_rho1)=.true.
           lpenc_requested(i_transprho)=.true.
           lpenc_requested(i_transprhos)=.true.
+        elseif (lfargo_advection) then
+          lpenc_requested(i_uuadvec_gss)=.true.
         else
           lpenc_requested(i_ugss)=.true.
         endif
@@ -2628,6 +2630,12 @@ module Energy
 !  magnetic chi-quenching
 !
       if (chiB/=0.0) lpenc_requested(i_b2)=.true.
+!
+      if (lfargo_advection) then
+        lpenc_requested(i_uu_advec)=.true.
+        lpenc_requested(i_gss)=.true.
+        lpenc_requested(i_uuadvec_gss)=.true.
+      endif
 !      
       if (borderss == 'initial-temperature') lpenc_requested(i_lnrho)=.true.
 !
@@ -2751,7 +2759,6 @@ module Energy
 !
       if (iglobal_lnrho0/=0) lpenc_requested(i_initlnrho)=.true.
       if (iglobal_ss0/=0) lpenc_requested(i_initss)=.true.
-
 !
     endsubroutine pencil_criteria_energy
 !***********************************************************************
@@ -2792,6 +2799,10 @@ module Energy
             lpencil_in(i_gss)=.true.
           endif
         endif
+      endif
+      if (lpencil_in(i_uuadvec_gss)) then
+        lpencil_in(i_uu_advec)=.true.
+        lpencil_in(i_gss)=.true.
       endif
 !
     endsubroutine pencil_interdep_energy
@@ -2870,6 +2881,8 @@ module Energy
 ! initss
       if (lpencil(i_initss).and.iglobal_ss0/=0) &
           p%initss=f(l1:l2,m,n,iglobal_ss0)
+!
+      if (lpencil(i_uuadvec_gss)) call h_dot_grad(p%uu_advec,p%gss,p%uuadvec_gss)
 !
     endsubroutine calc_pencils_energy
 !***********************************************************************
@@ -2981,6 +2994,8 @@ module Energy
           if (lweno_transport) then
             df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
                 - p%transprhos*p%rho1 + p%ss*p%rho1*p%transprho
+          elseif (lfargo_advection) then
+            df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%uuadvec_gss
           else
             df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - p%ugss
           endif

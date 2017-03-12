@@ -16,7 +16,7 @@
 ! PENCILS PROVIDED lnrho; rho; rho1; glnrho(3); grho(3); uglnrho; ugrho
 ! PENCILS PROVIDED glnrho2; del2lnrho; del2rho; del6lnrho; del6rho
 ! PENCILS PROVIDED hlnrho(3,3); sglnrho(3); uij5glnrho(3); transprho
-! PENCILS PROVIDED ekin
+! PENCILS PROVIDED ekin, uuadvec_glnrho; uuadvec_grho
 !
 ! PENCILS PROVIDED rhos1; glnrhos(3)
 !
@@ -365,11 +365,11 @@ module Density
 !
 !  If fargo is used, continuity is taken care of in special/fargo.f90.
 !
-      if (lfargo_advection) then
-        lcontinuity_gas=.false.
-        if (lroot) print*,&
-             'initialize_density: fargo used, turned off continuity equation'
-      endif
+      !if (lfargo_advection) then
+      !  lcontinuity_gas=.false.
+      !  if (lroot) print*,&
+      !       'initialize_density: fargo used, turned off continuity equation'
+      !endif
 !
 !  Rescale density by a factor rescale_rho.
 !
@@ -1888,6 +1888,17 @@ module Density
         if (lthermal_energy) lpenc_requested(i_u2) = .true.
       endif
 !
+      if (lfargo_advection) then
+        lpenc_requested(i_uu_advec)=.true.
+        if (ldensity_nolog) then
+          lpenc_requested(i_grho)=.true.
+          lpenc_requested(i_uuadvec_grho)=.true.
+        else
+          lpenc_requested(i_glnrho)=.true.
+          lpenc_requested(i_uuadvec_glnrho)=.true.
+        endif
+      endif
+!
       if (lreference_state) lpenc_requested(i_rho1) = .true.
       lpenc_diagnos2d(i_lnrho)=.true.
       lpenc_diagnos2d(i_rho)=.true.
@@ -2000,7 +2011,7 @@ module Density
 !                suppressed weno for log density
 !
       use WENO_transport
-      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn
+      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij,dot_mn,h_dot_grad
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2068,6 +2079,8 @@ module Density
         endif
       endif
 !
+      if (lpencil(i_uuadvec_grho)) call h_dot_grad(p%uu_advec,p%grho,p%uuadvec_grho)
+!
     endsubroutine calc_pencils_linear_density
 !***********************************************************************
     subroutine calc_pencils_log_density(f,p)
@@ -2079,7 +2092,7 @@ module Density
 !
       use WENO_transport
       use General, only: notanumber
-      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij, dot_mn
+      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij,dot_mn,h_dot_grad
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
@@ -2140,6 +2153,8 @@ module Density
 ! uij5glnrho
       if (lpencil(i_uij5glnrho)) call multmv(p%uij5,p%glnrho,p%uij5glnrho)
 !
+      if (lpencil(i_uuadvec_glnrho)) call h_dot_grad(p%uu_advec,p%glnrho,p%uuadvec_glnrho)
+!
     endsubroutine calc_pencils_log_density
 !***********************************************************************
     subroutine density_before_boundary(f)
@@ -2190,7 +2205,7 @@ module Density
 !
       if (lcontinuity_gas .and. .not. lweno_transport .and. &
           .not. lffree .and. .not. lreduced_sound_speed .and. &
-          ieos_profile=='nothing') then
+          ieos_profile=='nothing' .and. .not. lfargo_advection) then
         if (ldensity_nolog) then
           density_rhs= - p%ugrho   - p%rho*p%divu
         else
@@ -2256,6 +2271,14 @@ module Density
           density_rhs = density_rhs - reduce_cs2_profx*reduce_cs2_profz(n)*(p%ugrho + p%rho*p%divu)
         else
           density_rhs = density_rhs - reduce_cs2_profx*reduce_cs2_profz(n)*(p%uglnrho + p%divu)
+        endif
+      endif
+!
+      if (lcontinuity_gas .and. lfargo_advection) then
+        if (ldensity_nolog) then
+          density_rhs = density_rhs - p%uuadvec_grho   - p%rho*p%divu
+        else
+          density_rhs = density_rhs - p%uuadvec_glnrho - p%divu
         endif
       endif
 !
