@@ -982,6 +982,14 @@ module Hydro
 !
     endsubroutine expand_shands_hydro
 !***********************************************************************
+    subroutine hydro_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: df
+      real :: dtsub
+!
+    endsubroutine hydro_after_timestep
+!***********************************************************************
     subroutine update_char_vel_hydro(f)
 !
 !  Dummy

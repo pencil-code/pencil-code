@@ -19,6 +19,7 @@
   public :: expand_shands_hydro
   public :: calc_means_hydro
   public :: update_char_vel_hydro
+  public :: hydro_after_timestep
 !
 ! WL: SHOULDN'T BE PUBLIC!
 !

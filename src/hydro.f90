@@ -5276,6 +5276,14 @@ module Hydro
 !
     endsubroutine get_slices_hydro
 !***********************************************************************
+    subroutine hydro_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: df
+      real :: dtsub
+!
+    endsubroutine hydro_after_timestep
+!***********************************************************************
     subroutine calc_mflow
 !
 !  calculate mean flow field from xy- or z-averages
