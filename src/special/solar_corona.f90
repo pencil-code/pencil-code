@@ -688,7 +688,6 @@ module Special
         lpenc_requested(i_hlnTT) = .true.
         lpenc_requested(i_rho1) = .true.
         lpenc_requested(i_glnrho) = .true.
-        lpenc_requested(i_rho1) = .true.
       endif
 !
       if (Ksat /= 0.) then
