@@ -2380,11 +2380,11 @@ module Special
 !     add to temperature equation
 !
       if (ltemperature .and. ltemperature_nolog) then
-        delta_lnTT = deltaT_init_z(n) * dt
+        delta_lnTT = deltaT_init_z(n)
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + delta_lnTT
       elseif (ltemperature) then
         delta_lnTT = -df(l1:l2,m,n,ilnTT)
-        df(l1:l2,m,n,ilnTT) = alog (exp (df(l1:l2,m,n,ilnTT)) + deltaT_init_z(n) * dt)
+        df(l1:l2,m,n,ilnTT) = alog (exp (df(l1:l2,m,n,ilnTT)) + deltaT_init_z(n))
         delta_lnTT = delta_lnTT + df(l1:l2,m,n,ilnTT)
       else
         if (lentropy) &
@@ -2425,13 +2425,13 @@ module Special
 !write (100+iproc,*) 'p%rho1:', p%rho1
 !write (100+iproc,*) 'deltaE_init_z(n):', deltaE_init_z(n)
       if (ltemperature .and. ltemperature_nolog) then
-        tmp = p%rho1 * p%cp1 * gamma * deltaE_init_z(n) * dt
+        tmp = p%rho1 * p%cp1 * gamma * deltaE_init_z(n)
 !write (100+iproc,*) 'delta_T  :', tmp
 ! flush (100+iproc)
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp
         tmp = alog (1 + tmp)
       elseif (ltemperature) then
-        tmp = p%TT1 * p%rho1 * p%cp1 * gamma * deltaE_init_z(n) * dt
+        tmp = p%TT1 * p%rho1 * p%cp1 * gamma * deltaE_init_z(n)
 !write (100+iproc,*) 'delta_lnT:', tmp
 ! flush (100+iproc)
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp
