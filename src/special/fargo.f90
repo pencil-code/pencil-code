@@ -70,7 +70,7 @@ module Special
   namelist /special_run_pars/ lno_radial_advection, lfargoadvection_as_shift,&
        lkeplerian_gauge,lremove_volume_average
 !
-  integer :: idiag_nshift=0
+  !integer :: idiag_nshift=0
 !
   contains
 !
@@ -328,22 +328,22 @@ module Special
 !  But it also works fairly well this way, since uavg
 !  does not change all that much between subtimesteps.
 !
-      if (lfargo_advection) then
+      !!if (lfargo_advection) then
 !
-        if (ldiagnos) then
-          if (idiag_nshift/=0) then
-            nnghost=n-nghost
-            phidot=uu_average(:,nnghost)*rcyl_mn1
-            nshift=phidot*dt*dy_1(m)
-            call max_mn_name(nshift,idiag_nshift)
-          endif
-        endif
+      !!  if (ldiagnos) then
+      !!    if (idiag_nshift/=0) then
+      !!      nnghost=n-nghost
+      !!      phidot=uu_average(:,nnghost)*rcyl_mn1
+      !!      nshift=phidot*dt*dy_1(m)
+      !!      call max_mn_name(nshift,idiag_nshift)
+      !!    endif
+      !!  endif
 !
-        call keep_compiler_quiet(f)
-        call keep_compiler_quiet(df)
-        call keep_compiler_quiet(p)
+      !!  call keep_compiler_quiet(f)
+      !!  call keep_compiler_quiet(df)
+      !!  call keep_compiler_quiet(p)
 !
-      endif
+      !!endif
 !
     endsubroutine dspecial_dt
 !***********************************************************************
@@ -379,24 +379,24 @@ module Special
 !
 !  Write information to index.pro
 !
-      if (lfargo_advection) then
+      !!if (lfargo_advection) then
 !
-        lwr = .false.
-        if (present(lwrite)) lwr=lwrite
+      !!  lwr = .false.
+      !!  if (present(lwrite)) lwr=lwrite
 !
-        if (lreset) then
-          idiag_nshift=0
-        endif
+      !!  if (lreset) then
+      !!    idiag_nshift=0
+      !!  endif
 !
-        do iname=1,nname
-          call parse_name(iname,cname(iname),cform(iname),'nshift',idiag_nshift)
-        enddo
+      !!  do iname=1,nname
+      !!    call parse_name(iname,cname(iname),cform(iname),'nshift',idiag_nshift)
+      !!  enddo
 !
-        if (lwr) then
-          write(3,*) 'i_nshift=',idiag_nshift
-        endif
+      !!  if (lwr) then
+      !!    write(3,*) 'i_nshift=',idiag_nshift
+      !!  endif
 !
-      endif
+      !!endif
 !
     endsubroutine rprint_special
 !***********************************************************************

@@ -637,6 +637,7 @@ module Hydro
                                 ! ZAVG_DOC: u_x\right>_{z}$
   integer :: idiag_fkinymxy=0   ! ZAVG_DOC: $\left<{1\over2}\varrho\uv^2
                                 ! ZAVG_DOC: u_y\right>_{z}$
+  integer :: idiag_nshift=0
 !
 !  Auxiliary variables
 !
@@ -3325,6 +3326,14 @@ module Hydro
 !
       endif
 !
+      if (lfargo_advection.and.idiag_nshift/=0) then
+        !nnghost=n-nghost
+        !phidot=uu_average(:,nnghost)*rcyl_mn1
+        !nshift=phidot*dt*dy_1(m)
+        !call max_mn_name(nshift,idiag_nshift)
+        call max_mn_name(uu_average(:,n-nghost)*rcyl_mn1*dt*dy_1(m),idiag_nshift)
+      endif      
+!
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
       if (l1davgfirst) then
@@ -4714,6 +4723,7 @@ module Hydro
         idiag_udpxym=0;idiag_udpyzm=0;idiag_udpxzm=0
         idiag_taufmin=0
         idiag_dtF=0
+        idiag_nshift=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -4868,6 +4878,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'udpxzm',idiag_udpxzm)
         call parse_name(iname,cname(iname),cform(iname),'taufmin',idiag_taufmin)
         call parse_name(iname,cname(iname),cform(iname),'dtF',idiag_dtF)
+        call parse_name(iname,cname(iname),cform(iname),'nshift',idiag_nshift)
       enddo
 !
 !  Loop over dust species (for species-dependent diagnostics).
