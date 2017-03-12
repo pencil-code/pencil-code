@@ -15,6 +15,7 @@
   public :: dynamical_diffusion, boussinesq
   public :: mean_density
   public :: update_char_vel_density
+  public :: density_after_timestep
 !
 ! WL: ONLY SUBROUTINES SHOULD BE PUBLIC. THESE DO NOT QUALIFY!!!!!
 !
