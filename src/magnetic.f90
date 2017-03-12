@@ -8322,6 +8322,14 @@ module Magnetic
 !
     endsubroutine split_update_magnetic
 !***********************************************************************
+   subroutine magnetic_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: df
+      real :: dtsub
+!
+    endsubroutine magnetic_after_timestep
+!***********************************************************************
     subroutine get_resistivity_implicit(ndc, diffus_coeff, iz)
 !
 !  Gets the diffusion coefficient along a given pencil for the implicit algorithm.

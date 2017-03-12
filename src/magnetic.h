@@ -1,6 +1,4 @@
-! $Id$
 !  -*-f90-*-  (for emacs)    vim:set filetype=fortran:  (for vim)
-!
   private
 
   public :: register_magnetic, initialize_magnetic
@@ -30,6 +28,9 @@
   public :: split_update_magnetic
   public :: expand_shands_magnetic
   public :: update_char_vel_magnetic
-
+  public :: magnetic_after_timestep
+!
+! WL: ONLY SUBROUTINES SHOULD BE PUBLIC. THESE DO NOT QUALIFY!!!!!
+!
   public :: lresi_dep
   public :: lcovariant_magnetic
