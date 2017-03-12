@@ -74,6 +74,7 @@ class ParticleData(object):
         import os
         import pencilnew as pcn
         from pencilnew.math import is_number
+        from sys import byteorder
 
         try:
             cwd = os.getcwd()
@@ -102,9 +103,9 @@ class ParticleData(object):
             quiet = '1'
 
         if swap_endian == False:
-            swap_endian = '0'
-        else:
-            swap_endian = '1'
+            if byteorder() == 'little': swap_endian = '0'
+            elif byteorder() == 'big': swap_endian = '1'
+        else: print('? WARNING: Couldnt determine endianness!')
 
         ####### preparing IDL call
         # cleanup of varfile string
