@@ -61,7 +61,7 @@ module Special
 !
   character(len=labellen) :: prof_type='nothing'
   real, dimension(mz) :: uu_init_z, lnrho_init_z, lnTT_init_z
-  real, dimension(:), allocatable :: deltaT_init_z, deltaE_init_z, deltarho_init_z
+  real, dimension(:), allocatable :: deltaT_init_z, deltaE_init_z, E_init_z, deltarho_init_z
   logical :: linit_uu=.false., linit_lnrho=.false., linit_lnTT=.false.
 !
   ! file location settings
@@ -377,7 +377,8 @@ module Special
       integer, parameter :: unit=12
       real :: var_lnrho, var_lnTT, var_z
       real, dimension(:), allocatable :: prof_lnrho, prof_lnTT, prof_z
-      logical :: lread_prof_uu, lread_prof_lnrho, lread_prof_lnTT, lread_prof_deltaT, lread_prof_deltaE, lread_prof_deltarho
+      logical :: lread_prof_uu, lread_prof_lnrho, lread_prof_lnTT, lread_prof_deltaT, lread_prof_deltaE, lread_prof_deltarho, &
+          lread_prof_E
 !
       ! file location settings
       character(len=*), parameter :: stratification_dat = 'stratification.dat'
@@ -386,6 +387,7 @@ module Special
       character(len=*), parameter :: uz_dat = 'driver/prof_uz.dat'
       character(len=*), parameter :: deltaT_dat = 'driver/prof_deltaT.dat'
       character(len=*), parameter :: deltaE_dat = 'driver/prof_deltaE.dat'
+      character(len=*), parameter :: E_dat = 'driver/prof_E.dat'
       character(len=*), parameter :: deltarho_dat = 'driver/prof_deltarho.dat'
 !
 ! Check which stratification file should be used:
@@ -395,6 +397,7 @@ module Special
       lread_prof_lnTT = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_lnTT') > 0)
       lread_prof_deltaT = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_deltaT') > 0)
       lread_prof_deltaE = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_deltaE') > 0)
+      lread_prof_E = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_E') > 0)
       lread_prof_deltarho = (index (prof_type, 'prof_') == 1) .and. (index (prof_type, '_deltarho') > 0)
 !
       if (prof_type == 'lnrho_lnTT') then
@@ -445,6 +448,12 @@ module Special
         if (lread_prof_deltaT) then
           allocate (deltaT_init_z(mz))
           call read_profile (deltaT_dat, deltaT_init_z, real(unit_temperature/unit_time), .false.)
+        endif
+!
+        ! read internal energy profile
+        if (lread_prof_E) then
+          allocate (E_init_z(mz))
+          call read_profile (E_dat, E_init_z, real(unit_energy), .false.)
         endif
 !
         ! read internal energy differences profile
@@ -2360,6 +2369,7 @@ module Special
 !
       if (allocated (deltaT_init_z)) call calc_heat_cool_deltaT(df,p)
       if (allocated (deltaE_init_z)) call calc_heat_cool_deltaE(df,p)
+      if (allocated (E_init_z)) call calc_heat_cool_E(df,p)
 !
     endsubroutine calc_heat_cool
 !***********************************************************************
@@ -2450,6 +2460,45 @@ module Special
       endif
 !
     endsubroutine calc_heat_cool_deltaE
+!***********************************************************************
+    subroutine calc_heat_cool_E(df,p)
+!
+!  Restore external thermal energy profile.
+!
+!  12-Mar-2017/PABourdin: coded
+!
+      use Diagnostics,     only: max_mn_name
+      use EquationOfState, only: gamma
+      use Mpicomm,         only: stop_it
+!
+      real, dimension(mx,my,mz,mvar), intent(inout) :: df
+      type (pencil_case), intent(in) :: p
+!
+      real, dimension(nx) :: tmp
+!
+!     change energy equation
+!
+      if (ltemperature .and. ltemperature_nolog) then
+        tmp = heat_cool *  * E_init_z(n) * (p%TT1 * p%rho1 * p%cp1 * gamma)
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp
+        tmp = alog (1 + tmp)
+      elseif (ltemperature) then
+        tmp = alog (heat_cool * E_init_z(n) * (p%TT1 * p%rho1 * p%cp1 * gamma))
+        df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp
+      else
+        if (lentropy) &
+            call stop_it('solar_corona: calc_heat_cool_E:lentropy=not implented')
+      endif
+!
+      if (lfirst .and. ldt) then
+        tmp = tmp / cdts
+        if (ldiagnos .and. (idiag_dtradloss /= 0)) then
+          call max_mn_name(tmp,idiag_dtradloss,l_dt=.true.)
+        endif
+        dt1_max = max(dt1_max, tmp)
+      endif
+!
+    endsubroutine calc_heat_cool_E
 !***********************************************************************
     subroutine calc_rho_diff_fix(df,p)
 !
