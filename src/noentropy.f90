@@ -466,7 +466,15 @@ module Energy
 !
       call keep_compiler_quiet(f)
 !
-    endsubroutine
+    endsubroutine split_update_energy
+!***********************************************************************
+    subroutine energy_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: df
+      real :: dtsub
+!
+    endsubroutine energy_after_timestep
 !***********************************************************************
     subroutine expand_shands_energy
 !
