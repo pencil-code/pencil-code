@@ -1876,7 +1876,7 @@ module Special
         ! Get reference density
         newtonr = exp (lnrho_init_z(n) - p%lnrho) - 1.0
         ! allpr is given in [Mm]
-        tmp_tau = tdownr * exp (-allpr*unit_length*1e-6 * z(n))
+        tmp_tau = tdownr * exp (-allpr * z(n)*unit_length*1e-6)
         ! Add correction term to density
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + newtonr * tmp_tau
       endif
