@@ -2816,7 +2816,7 @@ module Energy
 !  15-mar-15/MR: changes for use of reference state.
 !
       use EquationOfState, only: gamma1
-      use Sub, only: u_dot_grad, grad, multmv
+      use Sub, only: u_dot_grad, grad, multmv, h_dot_grad
       use WENO_transport, only: weno_transp
 !
       real, dimension(mx,my,mz,mfarray), intent(IN) :: f
