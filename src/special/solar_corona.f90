@@ -2393,7 +2393,7 @@ module Special
 !
       if (lfirst .and. ldt) then
         tmp = delta_lnTT / cdts
-        if (ldiagnos .and. idiag_dtradloss /= 0) then
+        if (ldiagnos .and. (idiag_dtradloss /= 0)) then
           itype_name(idiag_dtradloss) = ilabel_max_dt
           call max_mn_name(tmp, idiag_dtradloss, l_dt=.true.)
         endif
@@ -2442,7 +2442,7 @@ module Special
 !
       if (lfirst .and. ldt) then
         tmp = tmp / cdts
-        if (ldiagnos .and. idiag_dtradloss /= 0) then
+        if (ldiagnos .and. (idiag_dtradloss /= 0)) then
           itype_name(idiag_dtradloss) = ilabel_max_dt
           call max_mn_name(tmp, idiag_dtradloss, l_dt=.true.)
         endif
