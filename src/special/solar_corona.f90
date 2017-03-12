@@ -444,22 +444,19 @@ module Special
         ! read temperature differences profile
         if (lread_prof_deltaT) then
           allocate (deltaT_init_z(mz))
-          call read_profile (deltaT_dat, deltaT_init_z, real(unit_temperature), .false.)
-          deltaT_init_z = deltaT_init_z * unit_time
+          call read_profile (deltaT_dat, deltaT_init_z, real(unit_temperature/unit_time), .false.)
         endif
 !
         ! read internal energy differences profile
         if (lread_prof_deltaE) then
           allocate (deltaE_init_z(mz))
-          call read_profile (deltaE_dat, deltaE_init_z, real(unit_energy), .false.)
-          deltaE_init_z = deltaE_init_z * unit_time
+          call read_profile (deltaE_dat, deltaE_init_z, real(unit_energy/unit_time), .false.)
         endif
 !
         ! read density differences profile
         if (lread_prof_deltarho) then
           allocate (deltarho_init_z(mz))
-          call read_profile (deltarho_dat, deltarho_init_z, real(unit_density), .false.)
-          deltarho_init_z = deltarho_init_z * unit_time
+          call read_profile (deltarho_dat, deltarho_init_z, real(unit_density/unit_time), .false.)
         endif
 !
       elseif (index (prof_type, 'internal_') == 1) then
