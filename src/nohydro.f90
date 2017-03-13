@@ -13,7 +13,7 @@
 !
 ! PENCILS PROVIDED uu(3); u2; oo(3); ou; uij(3,3); sij(3,3); sij2
 ! PENCILS PROVIDED divu; uij5(3,3); graddivu(3); ugu(3); ogu(3)
-! PENCILS PROVIDED del2u(3), curlo(3)
+! PENCILS PROVIDED del2u(3), curlo(3), uu_advec(3)
 !
 !***************************************************************
 module Hydro
