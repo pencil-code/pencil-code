@@ -148,15 +148,6 @@ module Special
 !
       call keep_compiler_quiet(f)
 !
-      if (lfargo_advection) then
-        print*,''
-        print*,'Switch '
-        print*,' SPECIAL = special/fargo'
-        print*,'in src/Makefile.local if you want to use the fargo algorithm'
-        print*,''
-        call fatal_error('nospecial','initialize_special')
-      endif
-!
     endsubroutine initialize_special
 !***********************************************************************
     subroutine finalize_special(f)
