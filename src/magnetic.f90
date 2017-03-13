@@ -276,6 +276,8 @@ module Magnetic
   logical :: ladd_efield=.false.
   logical :: lmagnetic_slope_limited=.false.
   logical :: lboris_correction=.false.
+  logical :: lkeplerian_gauge=.false.
+  logical :: lremove_volume_average=.false.
   real :: h_slope_limited=0.
   character (LEN=labellen) :: islope_limiter=''
   real :: ampl_efield=0.
@@ -322,7 +324,7 @@ module Magnetic
       eta_width_shock, eta_xshock, ladd_global_field, eta_power_x, eta_power_z, & 
       ladd_efield,ampl_efield,lmagnetic_slope_limited,islope_limiter, &
       h_slope_limited,w_sldchar_mag, eta_cspeed, &
-      lboris_correction
+      lboris_correction,lkeplerian_gauge,lremove_volume_average
 !
 ! Diagnostic variables (need to be consistent with reset list below)
 !
@@ -8328,8 +8330,135 @@ module Magnetic
       real, dimension(mx,my,mz,mfarray) :: df
       real :: dtsub
 !
+      if (lfargo_advection) then
+        if (lkeplerian_gauge)       call keplerian_gauge(f)
+        if (lremove_volume_average) call remove_volume_average(f)
+      endif
+!
     endsubroutine magnetic_after_timestep
 !***********************************************************************
+    subroutine keplerian_gauge(f)
+!
+      use Mpicomm , only: mpiallreduce_sum
+      use Deriv, only: der
+!
+!  Substract mean emf from the radial component of the induction
+!  equation. Activated only when large Bz fields and are present
+!  keplerian advection. Due to this u_phi x Bz term, the radial
+!  component of the magnetic potential
+!  develops a divergence that grows linearly in time. Since it is
+!  purely divergent, it is okay analytically. But numerically it leads to
+!  problems if this divergent grows bigger than the curl, which it does
+!  eventually.
+!
+!  This is a cylindrical version of the rtime_phiavg special file.
+!
+!  13-sep-07/wlad: adapted from remove_mean_momenta
+!
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real, dimension (mx,mz) :: fsum_tmp,glambda_rz
+      real, dimension (mx,my,mz) :: lambda
+      real, dimension (nx) :: glambda_z
+      real                    :: fac
+      integer :: i
+!
+      !if (.not.lupdate_bounds_before_special) then
+      !  print*,'The boundaries have not been updated prior '
+      !  print*,'to calling this subroutine. This may lead '
+      !  print*,'to troubles since it needs derivatives '
+      !  print*,'and integrals, thus properly set ghost zones. '
+      !  print*,'Use lupdate_bounds_before_special=T in '
+      !  print*,'the run_pars of run.in.'
+      !  call fatal_error("apply_keplerian_gauge","")
+      !endif
+!
+      fac = 1.0/nygrid
+!
+! Set boundaries of iax
+!
+      !call update_ghosts(f,iax)
+!
+! Average over phi - the result is a (nr,nz) array
+!
+      fsum_tmp = 0.
+      do m=m1,m2; do n=1,mz
+        fsum_tmp(:,n) = fsum_tmp(:,n) + fac*f(:,m,n,iax)
+      enddo; enddo
+!
+! The sum has to be done processor-wise
+! Sum over processors of same ipz, and different ipy
+!
+      call mpiallreduce_sum(fsum_tmp,glambda_rz,(/mx,mz/),idir=2)
+!
+! Gauge-transform radial A
+!
+      do m=m1,m2
+        f(l1:l2,m,n1:n2,iax) = f(l1:l2,m,n1:n2,iax) - glambda_rz(l1:l2,n1:n2)
+      enddo
+!
+! Integrate in R to get lambda, using N=6 composite Simpson's rule.
+! Ghost zones in r needed for glambda_r.
+!
+      do i=l1,l2 ; do n=1,mz
+        lambda(i,:,n) = dx/6.*(   glambda_rz(i-3,n)+glambda_rz(i+3,n)+&
+                               4*(glambda_rz(i-2,n)+glambda_rz(i  ,n)+glambda_rz(i+2,n))+&
+                               2*(glambda_rz(i-1,n)+glambda_rz(i+1,n)))
+      enddo; enddo
+!
+!  Gauge-transform vertical A. Ghost zones in z needed for lambda.
+!
+      do m=m1,m2; do n=n1,n2
+        call der(lambda,glambda_z,3)
+        f(l1:l2,m,n,iaz) = f(l1:l2,m,n,iaz) - glambda_z
+      enddo; enddo
+!
+    endsubroutine keplerian_gauge
+!********************************************************************
+    subroutine remove_volume_average(f)
+!
+      use Mpicomm , only: mpiallreduce_sum
+!
+!  Substract mean emf from the radial component of the induction
+!  equation. Activated only when large Bz fields and are present
+!  keplerian advection. Due to this u_phi x Bz term, the radial
+!  component of the magnetic potential
+!  develops a divergence that grows linearly in time. Since it is
+!  purely divergent, it is okay analytically. But numerically it leads to
+!  problems if this divergent grows bigger than the curl, which it does
+!  eventually.
+!
+!  This is a cylindrical version of the rtime_phiavg special file.
+!
+!  13-sep-07/wlad: adapted from remove_mean_momenta
+!
+      real, dimension (mx,my,mz,mfarray), intent (inout) :: f
+      real :: fsum_tmp,mean_ax,fac
+      integer :: i
+!
+      fac = 1.0/nwgrid
+!
+! Set boundaries of iax
+!
+      !call update_ghosts(f,iax)
+!
+! Average over phi - the result is a (nr,nz) array
+!
+      fsum_tmp = 0.
+      do m=m1,m2; do n=n1,n2 ; do i=l1,l2
+        fsum_tmp = fsum_tmp + fac*f(i,m,n,iax)
+      enddo; enddo; enddo
+!
+! The sum has to be done processor-wise
+! Sum over processors of same ipz, and different ipy
+!
+      call mpiallreduce_sum(fsum_tmp,mean_ax)
+!
+! Gauge-transform radial A
+!
+      f(l1:l2,m1:m2,n1:n2,iax) = f(l1:l2,m1:m2,n1:n2,iax) - mean_ax
+!
+    endsubroutine remove_volume_average
+!********************************************************************
     subroutine get_resistivity_implicit(ndc, diffus_coeff, iz)
 !
 !  Gets the diffusion coefficient along a given pencil for the implicit algorithm.
