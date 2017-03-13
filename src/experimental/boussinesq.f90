@@ -253,6 +253,17 @@ module Density
 !
     endsubroutine dlnrho_dt
 !***********************************************************************
+    subroutine density_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: df
+      real :: dtsub
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
+!
+    endsubroutine density_after_timestep
+!***********************************************************************
     subroutine split_update_density(f)
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
