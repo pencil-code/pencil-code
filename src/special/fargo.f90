@@ -34,7 +34,7 @@
 ! use your additional physics.  Add a line with all the module
 ! selections to say something like:
 !
-!    SPECIAL=special/nstar
+!    SPECIAL=special/fargo
 !
 ! Where nstar it replaced by the filename of your new module
 ! upto and not including the .f90
@@ -51,25 +51,12 @@ module Special
   implicit none
 !
   include '../special.h'
+  real :: dummy
 !
   namelist /special_run_pars/ dummy
 !
   contains
 !
-!***********************************************************************
-    subroutine register_special()
-!
-!  Configure pre-initialised (i.e. before parameter read) variables
-!  which should be know to be able to evaluate
-!
-!  6-oct-03/tony: coded
-!
-      use Cdata
-!
-      if (lroot) call svn_id( &
-           "$Id$")
-!
-    endsubroutine register_special
 !***********************************************************************
 !
 !********************************************************************
