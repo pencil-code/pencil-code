@@ -203,7 +203,7 @@ module Hydro
   logical :: lgradu_as_aux=.false.
   logical :: lOmega_cyl_xy=.false.
   logical :: lno_radial_advection=.false.
-  logical :: lfargoadvection_as_shift=.false.
+  logical :: lfargoadvection_as_shift=.true.
   character (len=labellen) :: uuprof='nothing'
 !
 !  Parameters for interior boundary conditions.
