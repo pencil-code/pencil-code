@@ -1971,8 +1971,11 @@ module Magnetic
 !  need uga always for advective gauge.
 !
       if (ladvective_gauge) then
-        lpenc_requested(i_uga)=.true.
-        if (lfargo_advection) lpenc_requested(i_uuadvec_gaa)=.true.
+        if (lfargo_advection) then 
+          lpenc_requested(i_uuadvec_gaa)=.true.
+        else
+          lpenc_requested(i_uga)=.true.
+        endif
       endif
 !
       if (numag/=0.0) then
@@ -2796,21 +2799,17 @@ module Magnetic
         enddo
       endif
 ! uga
-      if (lpenc_loc(i_uga)) then
-        if (.not.lfargo_advection) then
-          call u_dot_grad(f,iaa,p%aij,p%uu,p%uga,UPWIND=lupw_aa)
-        else
-          ! fargo (galilean invariant advection) only works with the
-          ! advective gauge, but the term will be added in special/fargo.f90
-          p%uga=0.
-!          
-          do j=1,3
-            call h_dot_grad(p%uu_advec,p%aij(:,j,:),tmp)
-            p%uuadvec_gaa(:,j)=tmp
-          enddo
-          p%uuadvec_gaa(:,1) = p%uuadvec_gaa(:,1) - rcyl_mn1*p%uu(:,2)*p%aa(:,2)
-          p%uuadvec_gaa(:,2) = p%uuadvec_gaa(:,2) + rcyl_mn1*p%uu(:,1)*p%aa(:,2)
-        endif
+      if (lpenc_loc(i_uga)) call u_dot_grad(f,iaa,p%aij,p%uu,p%uga,UPWIND=lupw_aa)
+!
+! uga for fargo
+!
+      if (lpenc_loc(i_uuadvec_gaa)) then
+        do j=1,3
+          call h_dot_grad(p%uu_advec,p%aij(:,j,:),tmp)
+          p%uuadvec_gaa(:,j)=tmp
+        enddo
+        p%uuadvec_gaa(:,1) = p%uuadvec_gaa(:,1) - rcyl_mn1*p%uu(:,2)*p%aa(:,2)
+        p%uuadvec_gaa(:,2) = p%uuadvec_gaa(:,2) + rcyl_mn1*p%uu(:,1)*p%aa(:,2)
       endif
 !
 !  bij, del2a, graddiva
