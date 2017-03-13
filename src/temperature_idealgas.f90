@@ -2405,7 +2405,7 @@ module Energy
 !
     endsubroutine expand_shands_energy
 !***********************************************************************
-        subroutine energy_after_timestep(f,df,dtsub)
+    subroutine energy_after_timestep(f,df,dtsub)
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mfarray) :: df
