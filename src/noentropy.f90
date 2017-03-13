@@ -458,6 +458,17 @@ module Energy
 !
     endsubroutine rprint_energy
 !***********************************************************************
+    subroutine energy_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: df
+      real :: dtsub
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
+!
+    endsubroutine energy_after_timestep
+!***********************************************************************
     subroutine split_update_energy(f)
 !
 !  Dummy subroutine
