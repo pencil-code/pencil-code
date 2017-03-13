@@ -568,91 +568,91 @@ module Special
         if (lremove_volume_average) call remove_volume_average(f)
       endif
 !
-      if (lfargo_advection) then
-        if (lfargoadvection_as_shift) then
-          call fourier_shift_fargo(f,df,dt_sub)
-        else
-          !if (lroot) then
-          !  print*,'Fargo advection without Fourier shift'
-          !  print*,'is not functional yet. Advecting only'
-          !  print*,'at the last subtimestep was leading to'
-          !  print*,'errors. Rewrite.'
-          !  call fatal_error("special_after_timestep","")
-          !endif
-          call advect_fargo(f)
-        endif
-      endif
+      !!if (lfargo_advection) then
+      !!  if (lfargoadvection_as_shift) then
+      !!    call fourier_shift_fargo(f,df,dt_sub)
+      !!  else
+      !!    !if (lroot) then
+      !!    !  print*,'Fargo advection without Fourier shift'
+      !!    !  print*,'is not functional yet. Advecting only'
+      !!    !  print*,'at the last subtimestep was leading to'
+      !!    !  print*,'errors. Rewrite.'
+      !!    !  call fatal_error("special_after_timestep","")
+      !!    !endif
+      !!    call advect_fargo(f)
+      !!  endif
+      !!endif
 !
 !  Just for test purposes and comparison with the loop advection
 !  in Stone, J. et al., JCP 250, 509 (2005)
 !
-      if (lno_radial_advection) then
-        f(:,:,:,iux) = 0.
-        df(:,:,:,iux) = 0.
-      endif
+      !!if (lno_radial_advection) then
+      !!  f(:,:,:,iux) = 0.
+      !!  df(:,:,:,iux) = 0.
+      !!endif
 !
       call keep_compiler_quiet(dt_sub)
 !
     endsubroutine special_after_timestep
 !***********************************************************************
-    subroutine fourier_shift_fargo(f,df,dt_)
-!
-!  Possibility to modify the f array after the evolution equations
-!  are solved.
-!
-!  In this case, add the fargo shift to the f and df-array, in
-!  fourier space.
-!
-!  06-jul-06/tony: coded
-!
-      use Sub
-      use Fourier, only: fft_y_parallel
-      use Cdata
-      use Mpicomm
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,ny) :: a_re,a_im
-      real, dimension (nx) :: phidot
-      integer :: ivar,ng
-      real :: dt_
-!
-!  Pencil uses linear velocity. Fargo will shift based on
-!  angular velocity. Get phidot from uphi.
-!
-      do n=n1,n2
-        ng=n-n1+1
-        phidot=uu_average(:,ng)*rcyl_mn1
-!
-        do ivar=1,mvar
-!
-          a_re=f(l1:l2,m1:m2,n,ivar); a_im=0.
-!
-!  Forward transform. No need for computing the imaginary part.
-!  The transform is just a shift in y, so no need to compute
-!  the x-transform either.
-!
-          call fft_y_parallel(a_re,a_im,SHIFT_Y=phidot*dt_,lneed_im=.false.)
-!
-!  Inverse transform of the shifted array back into real space.
-!  No need again for either imaginary part of x-transform.
-!
-          call fft_y_parallel(a_re,a_im,linv=.true.)
-          f(l1:l2,m1:m2,n,ivar)=a_re
-!
-!  Also shift df, unless it is the last subtimestep.
-!
-          if (.not.llast) then
-            a_re=df(l1:l2,m1:m2,n,ivar); a_im=0.
-            call fft_y_parallel(a_re,a_im,SHIFT_Y=phidot*dt_,lneed_im=.false.)
-            call fft_y_parallel(a_re,a_im,linv=.true.)
-            df(l1:l2,m1:m2,n,ivar)=a_re
-          endif
-!
-        enddo
-      enddo
-!
-    endsubroutine fourier_shift_fargo
+!!    subroutine fourier_shift_fargo(f,df,dt_)
+!!!
+!!!  Possibility to modify the f array after the evolution equations
+!!!  are solved.
+!!!
+!!!  In this case, add the fargo shift to the f and df-array, in
+!!!  fourier space.
+!!!
+!!!  06-jul-06/tony: coded
+!!!
+!!      use Sub
+!!      use Fourier, only: fft_y_parallel
+!!      use Cdata
+!!      use Mpicomm
+!!!
+!!      real, dimension (mx,my,mz,mfarray) :: f
+!!      real, dimension (mx,my,mz,mvar) :: df
+!!      real, dimension (nx,ny) :: a_re,a_im
+!!      real, dimension (nx) :: phidot
+!!      integer :: ivar,ng
+!!      real :: dt_
+!!!
+!!!  Pencil uses linear velocity. Fargo will shift based on
+!!!  angular velocity. Get phidot from uphi.
+!!!
+!!      do n=n1,n2
+!!        ng=n-n1+1
+!!        phidot=uu_average(:,ng)*rcyl_mn1
+!!!
+!!        do ivar=1,mvar
+!!!
+!!          a_re=f(l1:l2,m1:m2,n,ivar); a_im=0.
+!!!
+!!!  Forward transform. No need for computing the imaginary part.
+!!!  The transform is just a shift in y, so no need to compute
+!!!  the x-transform either.
+!!!
+!!          call fft_y_parallel(a_re,a_im,SHIFT_Y=phidot*dt_,lneed_im=.false.)
+!!!
+!!!  Inverse transform of the shifted array back into real space.
+!!!  No need again for either imaginary part of x-transform.
+!!!
+!!          call fft_y_parallel(a_re,a_im,linv=.true.)
+!!          f(l1:l2,m1:m2,n,ivar)=a_re
+!!!
+!!!  Also shift df, unless it is the last subtimestep.
+!!!
+!!          if (.not.llast) then
+!!            a_re=df(l1:l2,m1:m2,n,ivar); a_im=0.
+!!            call fft_y_parallel(a_re,a_im,SHIFT_Y=phidot*dt_,lneed_im=.false.)
+!!            call fft_y_parallel(a_re,a_im,linv=.true.)
+!!            df(l1:l2,m1:m2,n,ivar)=a_re
+!!          endif
+!!!
+!!        enddo
+!!      enddo
+!!!
+!!    endsubroutine fourier_shift_fargo
 !********************************************************************
     subroutine advect_fargo(f)
 !
