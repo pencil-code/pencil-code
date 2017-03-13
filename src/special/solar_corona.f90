@@ -2479,7 +2479,7 @@ module Special
 !     change energy equation
 !
       if (ltemperature .and. ltemperature_nolog) then
-        tmp = heat_cool *  * E_init_z(n) * (p%TT1 * p%rho1 * p%cp1 * gamma)
+        tmp = heat_cool * E_init_z(n) * (p%TT1 * p%rho1 * p%cp1 * gamma)
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp
         tmp = alog (1 + tmp)
       elseif (ltemperature) then
