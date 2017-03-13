@@ -5302,7 +5302,7 @@ module Hydro
           !  print*,'errors. Rewrite.'
           !  call fatal_error("hydro_after_timestep","")
           !endif
-          !call advect_fargo(f)
+          call advect_fargo(f)
         endif fourier
 !
 !  Just for test purposes and comparison with the loop advection
@@ -5373,6 +5373,141 @@ module Hydro
 !
     endsubroutine fourier_shift_fargo
 !***********************************************************************
+    subroutine advect_fargo(f)
+!
+!  Possibility to modify the f array after the evolution equations
+!  are solved.
+!
+!  In this case, do the fargo shift to the f and df-array, in
+!  real space.
+!
+!  06-jul-06/tony: coded
+!
+      use Sub
+      use Cdata
+      use Mpicomm
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+!
+      real, dimension (nx,nygrid,mvar) :: faux_remap,faux_remap_shift
+!
+      real, dimension (nx,ny) :: faux,tmp2
+      real, dimension (nx,nygrid) :: tmp
+!
+      integer :: ivar,ng,ig,mshift,cellshift,i,mserial
+!
+      integer, dimension (nx,nz) :: shift_intg
+      real, dimension (nx,nz) :: shift_total,shift_frac
+!
+! For shift in real space, the shift is done in integer number of
+! cells in the azimuthal direction, so, take only the integer part
+! of the velocity for fargo advection.
+!
+      do n=1,nz
+        phidot_average(:,n) = uu_average(:,n)*rcyl_mn1
+      enddo
+!
+! Define the integer circular shift
+!
+      shift_total = phidot_average*dt*dy_1(mpoint)
+      shift_intg  = nint(shift_total)
+!
+! Do circular shift of cells
+!
+      do n=n1,n2
+!
+        do ivar=1,mvar
+          faux=f(l1:l2,m1:m2,n,ivar)
+          call remap_to_pencil_y(faux,tmp)
+          faux_remap(:,:,ivar)=tmp
+        enddo
+!
+        ng=n-n1+1
+!
+        do i=l1,l2
+          ig=i-l1+1
+          cellshift=shift_intg(ig,ng)
+!
+          do m=1,ny
+            mserial=m+ipy*ny
+            mshift=mserial-cellshift
+            if (mshift .lt. 1 )     mshift = mshift + nygrid
+            if (mshift .gt. nygrid) mshift = mshift - nygrid
+!
+            do ivar=1,mvar
+              faux_remap_shift(ig,mserial,ivar) = faux_remap(ig,mshift,ivar)
+            enddo
+          enddo
+        enddo
+!
+        do ivar=1,mvar
+          tmp=faux_remap_shift(:,:,ivar)
+          call unmap_from_pencil_y(tmp, tmp2)
+          f(l1:l2,m1:m2,n,ivar)=tmp2
+        enddo
+      enddo
+!
+! Fractional step
+!
+      shift_frac  = shift_total-shift_intg
+      call fractional_shift(f,shift_frac)
+!
+    endsubroutine advect_fargo
+!********************************************************************
+    subroutine fractional_shift(f,shift_frac)
+!
+      use Deriv, only:der
+      use Mpicomm
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (mx,my,mz,mvar) :: df_frac
+      real, dimension (nx,nz) :: shift_frac,uu_frac
+      real, dimension(3) :: dt_sub
+      real, dimension(nx) :: ushift,dfdy,facx
+      integer :: j,itsubstep
+!
+! Set boundaries
+!
+      if (nprocy==1) then
+        f(:,1:m1-1,:,:)  = f(:,m2i:m2,:,:)
+        f(:,m2+1:my,:,:) = f(:,m1:m1i,:,:)
+      else
+        call initiate_isendrcv_bdry(f)
+        call finalize_isendrcv_bdry(f)
+      endif
+!
+      dt_sub=dt*beta_ts
+!
+      facx=1./(dt*dy_1(mpoint)*rcyl_mn1)
+!
+      do n=1,nz
+        uu_frac(:,n)=shift_frac(:,n)*facx
+      enddo
+!
+      do itsubstep=1,itorder
+        if (itsubstep==1) then
+          df_frac=0.
+        else
+          df_frac=alpha_ts(itsubstep)*df_frac
+        endif
+!
+        do n=n1,n2;do m=m1,m2
+!
+          ushift=uu_frac(:,n-n1+1)
+!
+          do j=1,mvar
+            call der(f,j,dfdy,2)
+            df_frac(l1:l2,m,n,j)=df_frac(l1:l2,m,n,j)-ushift*dfdy
+            f(l1:l2,m,n,j) = &
+                 f(l1:l2,m,n,j)+ dt_sub(itsubstep)*df_frac(l1:l2,m,n,j)
+          enddo
+!
+        enddo;enddo
+!
+      enddo
+!
+    endsubroutine fractional_shift
+!********************************************************************
     subroutine calc_mflow
 !
 !  calculate mean flow field from xy- or z-averages
