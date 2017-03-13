@@ -363,14 +363,6 @@ module Density
              'initialize_density: 0-D run, turned off continuity equation'
       endif
 !
-!  If fargo is used, continuity is taken care of in special/fargo.f90.
-!
-      !if (lfargo_advection) then
-      !  lcontinuity_gas=.false.
-      !  if (lroot) print*,&
-      !       'initialize_density: fargo used, turned off continuity equation'
-      !endif
-!
 !  Rescale density by a factor rescale_rho.
 !
       if (lreinitialize_lnrho.or.lreinitialize_rho) then

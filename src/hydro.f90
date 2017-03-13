@@ -862,14 +862,6 @@ module Hydro
              'initialize_hydro: 0-D run, turned off advection of velocity'
       endif
 !
-!  If fargo is used, advection is taken care of in special/fargo.f90
-!
-      !if (lfargo_advection) then
-      !  ladvection_velocity=.false.
-      !  if (lroot) print*, &
-      !       'initialize_hydro: fargo used. turned off advection of velocity'
-      !endif
-!
 !  Border profile backward compatibility. For a vector, if only the first
 !  borderuu is set, then the other components get the same value.
 !

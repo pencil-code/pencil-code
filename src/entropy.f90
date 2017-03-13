@@ -734,14 +734,6 @@ module Energy
         print*, 'initialize_energy: 0-D run, turned off advection of entropy'
       endif
 !
-!  Turn off advection of entropy when fargo is used
-!
-      !!if (lfargo_advection) then
-      !!  ladvection_entropy=.false.
-      !!  if (lroot) print*,&
-      !!       'initialize_energy: fargo used, turned off advection of entropy'
-      !!endif
-!
 !  Possible to calculate pressure gradient directly from the pressure, in which
 !  case we must open an auxiliary slot in f to store the pressure. This method
 !  is not compatible with non-blocking communication of ghost zones, so we turn
