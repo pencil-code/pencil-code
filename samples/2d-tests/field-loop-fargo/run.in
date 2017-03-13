@@ -12,15 +12,12 @@
 &eos_run_pars
 /
 &hydro_run_pars
-/
+ lno_radial_advection=T
+ lfargoadvection_as_shift=T/
 &density_run_pars
 /
 &magnetic_run_pars
  ladvective_gauge=T
 /
 &viscosity_run_pars
-/
-&special_run_pars
- lno_radial_advection=T
- lfargoadvection_as_shift=T
 /

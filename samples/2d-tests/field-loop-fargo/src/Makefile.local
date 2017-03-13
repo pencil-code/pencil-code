@@ -12,7 +12,6 @@ SHOCK       = noshock
 VISCOSITY   =   viscosity
 GRAVITY     = nogravity
 
-SPECIAL = special/fargo
 FOURIER = fourier_fftpack
 
 REAL_PRECISION = double
