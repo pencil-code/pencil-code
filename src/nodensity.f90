@@ -181,14 +181,6 @@ module Density
 !
     endsubroutine split_update_density
 !***********************************************************************
-    subroutine density_after_timestep(f,df,dtsub)
-!
-      real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mfarray) :: df
-      real :: dtsub
-!
-    endsubroutine density_after_timestep
-!***********************************************************************
     subroutine impose_density_floor(f)
 !
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
