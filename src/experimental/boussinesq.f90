@@ -256,7 +256,7 @@ module Density
     subroutine density_after_timestep(f,df,dtsub)
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mfarray) :: df
+      real, dimension(mx,my,mz,mvar) :: df
       real :: dtsub
 !
       call keep_compiler_quiet(f,df)
@@ -763,5 +763,15 @@ module Density
                             =f(2:mx-2,2:my-2,2:mz-2,iFF_char_c) + rho0**2
 !
     endsubroutine update_char_vel_density
+!***********************************************************************
+    subroutine impose_density_ceiling(f)
+!
+!  Dummy routine.
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+
+      call keep_compiler_quiet(f)
+
+    endsubroutine impose_density_ceiling
 !***********************************************************************
 endmodule Density
