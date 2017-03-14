@@ -165,7 +165,7 @@ module Density
     subroutine density_after_timestep(f,df,dtsub)
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mfarray) :: df
+      real, dimension(mx,my,mz,mvar) :: df
       real :: dtsub
 !
       call keep_compiler_quiet(f,df)

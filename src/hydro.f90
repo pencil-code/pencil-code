@@ -5280,7 +5280,7 @@ module Hydro
 !  12-mar-17/wlyra: coded. 
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,my,mz,mfarray) :: df
+      real, dimension(mx,my,mz,mvar) :: df
       real :: dt_sub
 !
       fargo: if (lfargo_advection) then
