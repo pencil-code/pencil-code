@@ -3034,7 +3034,7 @@ module Energy
         maxdiffus3=max(maxdiffus3,diffus_chi3)
       endif
       !!!if (lenergy_slope_limited.and.lfirst) &
-      !!!  df(:,m,n,iss)=df(:,m,n,iss)-f(l1:l2,m,n,iFF_div_ss)
+      !!!  df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-f(l1:l2,m,n,iFF_div_ss)
 !
       !if(lfirst .and. ldiagnos) print*,'DIV:iproc,m,f=',iproc,m,f(l1:l2,m,n,iFF_div_ss)
 !
@@ -4012,7 +4012,7 @@ module Energy
       intent(in)  :: f
       intent(inout) :: df
 !
-      real, dimension (nx) :: thdiff,tmp
+      real, dimension (nx) :: thdiff,tmp,advec_hypermesh_ss
       integer :: j
 !
       if (headtt) print*, 'calc_heatcond_hyper3_mesh: chi_hyper3=', chi_hyper3
@@ -4038,6 +4038,7 @@ module Energy
         else
           advec_hypermesh_ss=chi_hyper3_mesh*pi5_1*sqrt(dxyz_2)
         endif
+        advec2_hypermesh=advec2_hypermesh+advec_hypermesh_ss**2
       endif
 !
     endsubroutine calc_heatcond_hyper3_mesh
