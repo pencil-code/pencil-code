@@ -202,7 +202,7 @@ module Cosmicrayflux
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: delucrxbb, delucrxbb2, gecr_over_ecr
       real, dimension (nx)   :: b2, b21, ucr2
-      real, dimension (nx)   :: tmp, ratio
+      real, dimension (nx)   :: tmp, ratio, advec_cs2cr
       real :: fact
       integer :: i,j
       type (pencil_case) :: p
@@ -221,8 +221,10 @@ module Cosmicrayflux
 !
 !  Time step control.
 !
-      if (lfirst.and.ldt) advec_cs2cr=cs2cr*dxyz_2
-!
+      if (lfirst.and.ldt) then
+        advec_cs2cr=cs2cr*dxyz_2
+        advec2=advec2+advec_cs2cr
+      endif
 !  Compute auxiliary terms.
 !
       call cross(omegahat*(p%ucr-p%uu),p%bb,delucrxbb)
