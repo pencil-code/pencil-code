@@ -5,7 +5,7 @@
   public :: read_density_init_pars, write_density_init_pars
   public :: read_density_run_pars,  write_density_run_pars
   public :: rprint_density, get_slices_density, get_slices_pressure
-  public :: init_lnrho, dlnrho_dt, impose_density_floor
+  public :: init_lnrho, dlnrho_dt, impose_density_floor, impose_density_ceiling
   public :: density_before_boundary
   public :: split_update_density
 
