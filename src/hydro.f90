@@ -100,7 +100,8 @@ module Hydro
   real, dimension(nx) :: prof_om
   real, dimension(2) :: hydro_xaver_range=(/-max_real,max_real/)
   real, dimension(2) :: hydro_zaver_range=(/-max_real,max_real/)
-  real :: u_out_kep=0.0, velocity_ceiling=-1.0, w_sldchar_hyd=1.0
+  real :: u_out_kep=0.0, velocity_ceiling=.0, w_sldchar_hyd=1.0
+  integer :: n_ceiling=0
   real :: mu_omega=0., gap=0., r_omega=0., w_omega=0.
   real :: z1_uu=0., z2_uu=0.
   integer :: nb_rings=0
@@ -159,7 +160,7 @@ module Hydro
       initpower, initpower2, cutoff, ncutoff, kpeak, kgaussian_uu, &
       lskip_projection, lno_second_ampl, z1_uu, z2_uu, &
       N_modes_uu, lcoriolis_force, lcentrifugal_force, ladvection_velocity, &
-      lprecession, omega_precession, alpha_precession, velocity_ceiling, &
+      lprecession, omega_precession, alpha_precession, velocity_ceiling, n_ceiling,  &
       loo_as_aux, luut_as_aux, loot_as_aux, mu_omega, nb_rings, om_rings, gap, &
       lscale_tobox, ampl_Omega, omega_ini, r_cyl, skin_depth, incl_alpha, &
       rot_rr, xsphere, ysphere, zsphere, neddy, amp_meri_circ, &
@@ -236,7 +237,7 @@ module Hydro
       lforcing_cont_uu, width_ff_uu, x1_ff_uu, x2_ff_uu, &
       loo_as_aux, luut_as_aux, loot_as_aux, loutest, ldiffrot_test, &
       interior_bc_hydro_profile, lhydro_bc_interior, z1_interior_bc_hydro, &
-      velocity_ceiling, ekman_friction, ampl_Omega, lcoriolis_xdep, &
+      velocity_ceiling, n_ceiling, ekman_friction, ampl_Omega, lcoriolis_xdep, &
       ampl_forc, k_forc, w_forc, x_forc, dx_forc, ampl_fcont_uu, &
       lno_meridional_flow, lrotation_xaxis, k_diffrot,Shearx, rescale_uu, &
       hydro_xaver_range, Ra, Pr, llinearized_hydro, lremove_mean_angmom, &
@@ -2708,7 +2709,7 @@ module Hydro
       use Diagnostics
       use Special, only: special_calc_hydro
       use Sub, only: vecout, dot, dot2, identify_bcs, cross, multsv_mn_add
-      use General, only: transform_thph_yy
+      use General, only: transform_thph_yy, notanumber
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -2720,7 +2721,7 @@ module Hydro
       real, dimension (nx,3) :: curlru,uxo
       real, dimension (nx) :: space_part_re,space_part_im,u2t,uot,out,fu
       real, dimension (nx) :: odel2um,curlru2,uref,curlo2,qo,quxo,graddivu2
-      real, dimension (nx) :: uus,ftot,Fmax
+      real, dimension (nx) :: uus,ftot,Fmax,advec_uu
       real, dimension (1,3) :: tmp
       real :: kx
       integer :: j, ju, k
@@ -2836,8 +2837,9 @@ module Hydro
 !                   abs(p%uu(:,2))*dy_1(  m  )+ &
 !                   abs(p%uu(:,3))*dz_1(  n  )
 !        endif
+      else
+        advec_uu=0.0
       endif
-      if (.not. ldt) advec_uu=0.0
 !
 !  Empirically, it turns out that we need to take the full 3-D velocity
 !  into account for computing the time step. It is not clear why.
@@ -2852,7 +2854,11 @@ module Hydro
                  advec_uu=sqrt(p%u2*dxyz_2)
          endif
       endif
-      if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(advec_uu)
+      if (lfirst.and.ldt) then
+        if (notanumber(advec_uu)) print*, 'advec_uu   =',advec_uu
+        maxadvec=maxadvec+advec_uu
+        if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(advec_uu)
+      endif
 !
 !  Ekman Friction, used only in two dimensional runs.
 !

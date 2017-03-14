@@ -1091,7 +1091,7 @@ module Viscosity
       real, dimension (nx,3) :: tmp,tmp2,tmp5,gradnu,sgradnu,gradnu_shock
       real, dimension (nx) :: murho1,zetarho1,muTT,tmp3,tmp4,pnu,pnu_shock
       real, dimension (nx) :: lambda_phi,prof,prof2,derprof,derprof2,qfvisc
-      real, dimension (nx) :: gradnu_effective,fac
+      real, dimension (nx) :: gradnu_effective,fac,advec_hypermesh_uu
       real, dimension (nx,3) :: deljskl2,fvisc_nnewton2
 !
       integer :: i,j,ju,ii,jj,kk,ll
@@ -1651,6 +1651,7 @@ module Viscosity
             else
               advec_hypermesh_uu=nu_hyper3_mesh*pi5_1*sqrt(dxyz_2)
             endif
+            advec2_hypermesh=advec2_hypermesh+advec_hypermesh_uu**2
           endif
         enddo
       endif

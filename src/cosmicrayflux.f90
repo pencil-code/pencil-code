@@ -194,12 +194,13 @@ module Cosmicrayflux
       use Slices
       use Debug_IO, only: output_pencil
       use Mpicomm, only: stop_it
+      use General, only: notanumber
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: BuiBujgecr, bunit
       real, dimension(nx)   :: b2, b21, b_abs
-      real, dimension(nx)   :: tmp, diffus_cr
+      real, dimension(nx)   :: tmp, diffus_cr,advec_kfcr
       real, dimension (nx,3,3) :: gfcr
       real, dimension (nx,3) :: ugfcr
       integer :: i, j
@@ -279,11 +280,13 @@ module Cosmicrayflux
           maxdiffus=max(maxdiffus,diffus_cr)
         else
           if (lbb_dependent_perp_diff) then
-            advec_kfcr = max(advec_kfcr,maxval(vKperp)*dxyz_2, &
-                maxval(vKpara)*dxyz_2)
+            advec_kfcr = max(maxval(vKperp)*dxyz_2, &
+                             maxval(vKpara)*dxyz_2)
           else
-            advec_kfcr = max(advec_kfcr, kperp_t*dxyz_2, kpara_t*dxyz_2)
+            advec_kfcr = max(kperp_t*dxyz_2, kpara_t*dxyz_2)
           endif
+          if (notanumber(advec_kfcr)) print*, 'advec_kfcr =',advec_kfcr
+          advec2=advec2+advec_kfcr
         endif
       endif
 

@@ -437,12 +437,13 @@ module NeutralVelocity
       use Diagnostics
       use Mpicomm, only: stop_it
       use Sub, only: identify_bcs
+      use General, only: notanumber
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: ionization,recombination,cions,cneut
+      real, dimension (nx) :: ionization,recombination,cions,cneut,advec_csn2,advec_uun
       real :: c2,s2
       integer :: j,jn,ji
 !
@@ -556,15 +557,21 @@ module NeutralVelocity
 !
       endif
 !
-      if (lfirst.and.ldt) advec_csn2=csn20*dxyz_2
-      if (headtt.or.ldebug) print*,'duun_dt: max(advec_csn2) =',maxval(advec_csn2)
+      if (lfirst.and.ldt) then
+        advec_csn2=csn20*dxyz_2
+        if (notanumber(advec_csn2)) print*, 'advec_csn2 =',advec_csn2
+        advec2=advec2+advec_csn2
+        if (headtt.or.ldebug) print*,'duun_dt: max(advec_csn2) =',maxval(advec_csn2)
 !
 !  ``uun/dx'' for timestep
 !
-      if (lfirst.and.ldt) advec_uun=abs(p%uun(:,1))*dx_1(l1:l2)+ &
-                                    abs(p%uun(:,2))*dy_1(  m  )+ &
-                                    abs(p%uun(:,3))*dz_1(  n  )
-      if (headtt.or.ldebug) print*,'duun_dt: max(advec_uun) =',maxval(advec_uun)
+        advec_uun=abs(p%uun(:,1))*dx_1(l1:l2)+ &
+                  abs(p%uun(:,2))*dy_1(  m  )+ &
+                  abs(p%uun(:,3))*dz_1(  n  )
+        if (notanumber(advec_uun)) print*, 'advec_uun  =',advec_uun
+        maxadvec=maxadvec+advec_uun
+        if (headtt.or.ldebug) print*,'duun_dt: max(advec_uun) =',maxval(advec_uun)
+      endif
 !
 !  Apply border profiles
 !

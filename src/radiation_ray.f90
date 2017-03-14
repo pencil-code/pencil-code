@@ -2318,10 +2318,11 @@ module Radiation
       use Diagnostics
       use EquationOfState
       use Sub
+      use General, only: notanumber
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       type (pencil_case) :: p
-      real, dimension (nx) :: Krad,chi_rad,g2, diffus_chi
+      real, dimension (nx) :: Krad,chi_rad,g2, diffus_chi,advec_crad2
       real, dimension (nx) :: local_optical_depth,opt_thin,opt_thick,dt1_rad
       real :: fact
       integer :: j,k
@@ -2356,13 +2357,12 @@ module Radiation
 !
       if (lfirst.and.ldt) then
         advec_crad2=(16./3.)*p%rho1*(sigmaSB/c_light)*p%TT**4
-      endif
+        advec2=advec2+advec_crad2
+        if (notanumber(advec_crad2)) print*, 'advec_crad2=',advec_crad2
 !
 !  Check maximum diffusion from thermal diffusion.
 !  With heat conduction, the second-order term for leading entropy term
 !  is gamma*chi_rad*del2ss.
-!
-      if (lfirst.and.ldt) then
 !
 !  Calculate timestep limitation. In the diffusion approximation the
 !  time step is just the diffusive time step, but with full radiation

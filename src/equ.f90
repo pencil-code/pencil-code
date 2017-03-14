@@ -579,16 +579,7 @@ module Equ
 !
       if (notanumber(dt1_advec)) then
         print*, 'pde: dt1_advec contains a NaN at iproc=', iproc_world
-        if (lhydro)           print*, 'advec_uu   =',advec_uu
-        if (lshear)           print*, 'advec_shear=',advec_shear
-        if (lmagnetic)        print*, 'advec_hall =',advec_hall
-        if (lneutralvelocity) print*, 'advec_uun  =',advec_uun
         if (lenergy)          print*, 'advec_cs2  =',advec_cs2
-        if (lmagnetic)        print*, 'advec_va2  =',advec_va2
-        if (lradiation)       print*, 'advec_crad2=',advec_crad2
-        if (lneutralvelocity) print*, 'advec_csn2 =',advec_csn2
-        if (lpolymer)         print*, 'advec_poly =',advec_poly
-        if (lcosmicrayflux)   print*, 'advec_kfcr =',advec_kfcr
         call fatal_error_local('pde','')
       endif
 !
@@ -710,8 +701,6 @@ module Equ
 
       integer :: nyz
       real, dimension (nx,3) :: df_iuu_pencil
-      real, dimension (nx) :: maxadvec
-      real, dimension (nx) :: advec2,advec2_hypermesh
 
       nyz=ny*nz
       mn_loop: do imn=1,nyz
@@ -749,51 +738,20 @@ module Equ
 !  For each pencil, accumulate through the different modules
 !  advec_XX and diffus_XX, which are essentially the inverse
 !  advective and diffusive timestep for that module.
-!  (note: advec_cs2 and advec_va2 are inverse _squared_ timesteps)
+!  (note: advec2 is an inverse _squared_ timesteps)
 !  Note that advec_cs2 should always be initialized when leos.
 !
         if (lfirst.and.ldt.and.(.not.ldt_paronly)) then
-          if (lhydro.or.lhydro_kinematic) then
-            advec_uu=0.0; advec_hypermesh_uu=0.0
-          endif
-          if (ldensity.or.lboussinesq.or.lanelastic) then
-            advec_hypermesh_rho=0.0
-          endif
-          if (leos) advec_cs2=0.0
-          if (lenergy) then
-            advec_hypermesh_ss=0.0
-          endif
-          if (lmagnetic) then
-            advec_va2=0.0; advec_hall=0.0; advec_hypermesh_aa=0.0
-          endif
-          if (lpolymer) then
-            advec_poly=0.0
-          endif
-          if (ldustvelocity) then
-            advec_uud=0.0
-          endif
-          if (lradiation) then
-            advec_crad2=0.0
-          endif
-          if (lshear) then
-            advec_shear=0.0
-          endif
-          if (lcosmicray) then
-            advec_cs2cr=0.0
-          endif
-          if (lcosmicrayflux) then
-            advec_kfcr=0.0
-          endif
-          if (lneutralvelocity) then
-            advec_uun=0.0; advec_csn2=0.0
-          endif
-          if (lspecial) then
-            advec_special=0.0
-          endif
-          maxdiffus=0.0
-          maxdiffus2=0.0
-          maxdiffus3=0.0
-          maxsrc=0.0
+          advec_cs2=0.0
+          maxadvec=0.
+          if (ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray) &
+            advec2=0.
+          if (ldensity.or.lhydro.or.lmagnetic.or.lenergy) &
+            advec2_hypermesh=0.0
+          maxdiffus=0.
+          maxdiffus2=0.
+          maxdiffus3=0.
+          maxsrc=0.
         endif
 !
 !  Grid spacing. In case of equidistant grid and cartesian coordinates
@@ -1008,30 +966,12 @@ module Equ
 !  sum or maximum of the advection terms?
 !  (lmaxadvec_sum=.false. by default)
 !
-          maxadvec=0.0
-          if (lhydro.or.lhydro_kinematic) maxadvec=maxadvec+advec_uu
-          if (lshear) maxadvec=maxadvec+advec_shear
-          if (lneutralvelocity) maxadvec=maxadvec+advec_uun
-          if (lspecial) maxadvec=maxadvec+advec_special
-          if (ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray) then
-            advec2=0.0
-            if (ldensity) advec2=advec2+advec_cs2
-            if (lmagnetic) advec2=advec2+advec_va2+advec_hall**2
-            if (lradiation) advec2=advec2+advec_crad2
-            if (lneutralvelocity) advec2=advec2+advec_csn2
-            if (lcosmicray) advec2=advec2+advec_cs2cr
-            if (lcosmicrayflux) advec2=advec2+advec_kfcr
-            if (lpolymer) advec2=advec2+advec_poly
+          advec2=advec2+advec_cs2
+          if (lenergy.or.ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray) &
             maxadvec=maxadvec+sqrt(advec2)
-          endif
-          if (ldensity.or.lhydro.or.lmagnetic.or.lenergy) then
-            advec2_hypermesh=0.0
-            if (ldensity)  advec2_hypermesh=advec2_hypermesh+advec_hypermesh_rho**2
-            if (lhydro)    advec2_hypermesh=advec2_hypermesh+advec_hypermesh_uu**2
-            if (lmagnetic) advec2_hypermesh=advec2_hypermesh+advec_hypermesh_aa**2
-            if (lenergy)   advec2_hypermesh=advec2_hypermesh+advec_hypermesh_ss**2
+
+          if (ldensity.or.lhydro.or.lmagnetic.or.lenergy) &
             maxadvec=maxadvec+sqrt(advec2_hypermesh)
-          endif
 !
 !  Time step constraints from each module.
 !  (At the moment, magnetic and testfield use the same variable.)
@@ -1254,7 +1194,7 @@ module Equ
 !  20-oct-14/ccyang: modularized from pde.
 !
       use Cosmicray, only: impose_ecr_floor
-      use Density, only: impose_density_floor
+      use Density, only: impose_density_floor,impose_density_ceiling
       use Dustdensity, only: impose_dustdensity_floor
       use Energy, only: impose_energy_floor
       use Hydro, only: impose_velocity_ceiling
@@ -1262,6 +1202,7 @@ module Equ
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
 !
       call impose_density_floor(f)
+      call impose_density_ceiling(f)
       call impose_velocity_ceiling(f)
       call impose_energy_floor(f)
       call impose_dustdensity_floor(f)

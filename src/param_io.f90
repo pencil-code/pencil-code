@@ -76,7 +76,7 @@ module Param_IO
                            fbcy1=0., fbcy2=0., fbcy1_1=0., fbcy1_2=0., fbcy2_1=0., fbcy2_2=0., &
                            fbcz1=0., fbcz2=0., fbcz1_1=0., fbcz1_2=0., fbcz2_1=0., fbcz2_2=0.
   integer :: niter_poisson  ! dummy
-
+!
   namelist /init_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower,&
       coord_system, lpole, lfix_unit_std, &
@@ -105,7 +105,7 @@ module Param_IO
       lforce_shear_bc,lread_from_other_prec, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w,&
       lcorotational_frame, rcorot, lproper_averages, &
-      ldirect_access, ltolerate_namelist_errors, lyinyang
+      ldirect_access, ltolerate_namelist_errors, lyinyang, cyinyang_intpol_type
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
@@ -165,7 +165,7 @@ module Param_IO
       lsubstract_reference_state, &
       ldirect_access, lproper_averages, lmaximal_cdt, lmaximal_cdtv, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w, &
-      lhyper_avoid_boundary
+      lhyper_avoid_boundary, cyinyang_intpol_type
 !
   namelist /IO_pars/ &
       lcollective_IO, IO_strategy

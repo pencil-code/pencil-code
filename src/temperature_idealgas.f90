@@ -963,7 +963,7 @@ module Energy
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension (nx) :: Hmax=0.0, hcond, thdiff, tmp
+      real, dimension (nx) :: Hmax=0.0, hcond, thdiff, tmp, advec_hypermesh_ss
       real :: fradtop
       integer :: j
 !
@@ -1067,8 +1067,10 @@ module Energy
           if (.not.ltemperature_nolog) tmp=tmp*p%TT1
           thdiff = thdiff + chi_hyper3_mesh*pi5_1/60.*tmp*dline_1(:,j)
         enddo
-        if (lfirst.and.ldt) &
-            advec_hypermesh_ss=chi_hyper3_mesh*pi5_1*sqrt(dxyz_2)
+        if (lfirst.and.ldt) then
+          advec_hypermesh_ss=chi_hyper3_mesh*pi5_1*sqrt(dxyz_2)
+          advec2_hypermesh=advec2_hypermesh+advec_hypermesh_ss**2
+        endif
         if (headtt) print*,'denergy_dt: chi_hyper3_mesh=', chi_hyper3_mesh
       endif
 !

@@ -56,6 +56,7 @@ module General
   public :: reduce_grad_dim
   public :: meshgrid
   public :: linspace
+  public :: linear_interpolate_2d
 !
   interface random_number_wrapper
     module procedure random_number_wrapper_0
@@ -2373,6 +2374,89 @@ module General
 !
     endsubroutine cyclic
 !***********************************************************************
+   function linear_interpolate_2d(f,xx,yy,xxp,lcheck) result(gp)
+!
+!  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate
+!  using the linear interpolation formula
+!
+!    g(x,y,z) = B*x*y + E*x + F*y + G*z + H .
+!
+!  The coefficients are determined by the 8 grid points surrounding the
+!  interpolation point.
+!
+!  30-dec-04/anders: coded
+!  04-nov-10/nils: moved from particles_map to general
+!  22-apr-11/MR: changed to logical function to get rid of dependence on
+!                module Messages
+!
+      use Cdata
+!
+      real, dimension(:,:) :: f
+      real, dimension(:) :: xx,yy
+      real, dimension(2) :: xxp
+
+      real :: gp
+!
+      real, parameter :: eps=1.e-5
+      real :: g1, g2, g3, g4
+      real :: xp0, yp0
+      real, save :: dxdy1, dx1, dy1
+      integer :: i, ix0, iy0
+      logical :: lcheck
+!
+      intent(in) :: f, xx, yy, xxp, lcheck
+!
+!  Determine index value of lowest lying corner point of grid box surrounding
+!  the interpolation point.
+!
+      do ix0=1,size(xx)
+        if ( xx(ix0)>=xxp(1) ) exit
+      enddo
+      if (ix0>1) ix0=ix0-1
+
+      do iy0=1,size(yy)
+        if ( yy(iy0)>=xxp(2) ) exit
+      enddo
+      if (iy0>1) iy0=iy0-1
+!
+!  Check if the grid point interval is really correct.
+!
+      if ( xx(ix0)-eps<=xxp(1) .and. xx(ix0+1)+eps>=xxp(1) .and. &
+           yy(iy0)-eps<=xxp(2) .and. yy(iy0+1)+eps>=xxp(2) )  then
+        ! Everything okay
+      else
+        if (lcheck) then
+          print*, 'linear_interpolate: Interpolation point does not ' // &
+                  'lie within the calculated grid point interval.'
+          print'(a,f8.3,1x,f8.3,1x,f8.3)', 'xp, xp0, xp1 = ', xxp(1), xx(ix0), xx(ix0+1)
+          print'(a,f8.3,1x,f8.3,1x,f8.3)', 'yp, yp0, yp1 = ', xxp(2), yy(iy0), yy(iy0+1)
+        endif
+        return
+      endif
+!
+!  Redefine the interpolation point in coordinates relative to lowest corner.
+!
+      xp0=xxp(1)-xx(ix0)
+      yp0=xxp(2)-yy(iy0)
+!
+!  Calculate derived grid spacing parameters needed for interpolation.
+!
+      dx1=1./(xx(2)-xx(1))
+      dy1=1./(yy(2)-yy(1))
+!
+!  Function values at all corners.
+!
+      g1=f(ix0  ,iy0  )
+      g2=f(ix0+1,iy0  )
+      g3=f(ix0  ,iy0+1)
+      g4=f(ix0+1,iy0+1)
+!
+!  Interpolation formula.
+!
+      gp = g1 + xp0*dx1*(-g1+g2) + yp0*dy1*(-g1+g3) + xp0*yp0*dx1*dy1*(g1-g2-g3+g4)
+
+    endfunction linear_interpolate_2d
+!***********************************************************************
    logical function linear_interpolate(f,ivar1,ivar2,xxp,gp,inear,lcheck)
 !
 !  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate
@@ -2386,7 +2470,7 @@ module General
 !  30-dec-04/anders: coded
 !  04-nov-10/nils: moved from particles_map to general
 !  22-apr-11/MR: changed to logical function to get rid of dependence on
-!  module Messages
+!                module Messages
 !
       use Cdata
 !
@@ -4317,7 +4401,7 @@ module General
       logical :: notanumber_0
       real :: f
 !
-      notanumber_0 = .not. ((f <= huge(f)) .or. (f > huge(0.0)))
+      notanumber_0 = .not. ((f <= huge(f)) .or. (f > huge_real))
 !
     endfunction notanumber_0
 !***********************************************************************
@@ -4333,7 +4417,7 @@ module General
      logical :: notanumber_0d
      double precision :: f
 !
-     notanumber_0d = .not. ((f <= huge(f)) .or. (f > huge(0.d0)))
+     notanumber_0d = .not. ((f <= huge(f)) .or. (f > huge_double))
 !
     endfunction notanumber_0d
 !***********************************************************************
@@ -4349,7 +4433,7 @@ module General
       logical :: notanumber_1
       real, dimension(:) :: f
 !
-      notanumber_1 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+      notanumber_1 = any(.not. ((f <= huge(f)) .or. (f > huge_real)))
 !
     endfunction notanumber_1
 !***********************************************************************
@@ -4365,7 +4449,7 @@ module General
       logical :: notanumber_2
       real, dimension(:,:) :: f
 !
-      notanumber_2 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+      notanumber_2 = any(.not. ((f <= huge(f)) .or. (f > huge_real)))
 !
     endfunction notanumber_2
 !***********************************************************************
@@ -4381,7 +4465,7 @@ module General
       logical :: notanumber_3
       real, dimension(:,:,:) :: f
 !
-      notanumber_3 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+      notanumber_3 = any(.not. ((f <= huge(f)) .or. (f > huge_real)))
 !
     endfunction notanumber_3
 !***********************************************************************
@@ -4397,7 +4481,7 @@ module General
       logical :: notanumber_4
       real, dimension(:,:,:,:) :: f
 !
-      notanumber_4 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+      notanumber_4 = any(.not. ((f <= huge(f)) .or. (f > huge_real)))
 !
     endfunction notanumber_4
 !***********************************************************************
@@ -4413,7 +4497,7 @@ module General
       logical :: notanumber_5
       real, dimension(:,:,:,:,:) :: f
 !
-      notanumber_5 = any(.not. ((f <= huge(f)) .or. (f > huge(0.0))))
+      notanumber_5 = any(.not. ((f <= huge(f)) .or. (f > huge_real)))
 !
     endfunction notanumber_5
 !***********************************************************************
@@ -4619,17 +4703,17 @@ module General
 !  12-sep-16/MR: coded
 !
       real, dimension(:,:),           intent(INOUT) :: x
-      external :: func
+      !external :: func
       real, dimension(:,:), optional, intent(IN) :: add
       real,                 optional, intent(IN) :: fmax, dxmax
       integer,              optional, intent(IN) :: itmax
 
-      !interface
-      !  pure subroutine func(x,f,df)
-      !    real, intent(in) :: x
-      !    real, intent(out):: f, df
-      !  endsubroutine
-      !endinterface
+      interface
+        pure subroutine func(x,f,df)
+          real, intent(in) :: x
+          real, intent(out):: f, df
+        endsubroutine
+      endinterface
 
       real, parameter :: damp=0.1
       integer :: itmax_, it, i, j
@@ -4642,6 +4726,7 @@ module General
       ladd  =present(add)
 
       do i=1,size(x,1); do j=1,size(x,2)
+
         it=0;  fXi=fmax_
         do while (abs(fXi)>=fmax_)
 !  
@@ -4655,6 +4740,7 @@ module General
           if (it>=itmax_) exit
 !
         enddo
+
       enddo; enddo
       
     endsubroutine newton_arr

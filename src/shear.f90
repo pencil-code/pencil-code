@@ -287,7 +287,7 @@ module Shear
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
 !
-      real, dimension(nx) :: dfdy, penc,diffus_shear3
+      real, dimension(nx) :: dfdy,penc,diffus_shear3,advec_shear
       integer :: j,k
       real :: d
 !
@@ -376,8 +376,12 @@ module Shear
 !  Take shear into account for calculating time step.
 !
       if (lfirst .and. ldt .and. (lhydro .or. ldensity) .and. &
-          nygrid > 1 .and. .not. lshearadvection_as_shift) &
+          nygrid > 1 .and. .not. lshearadvection_as_shift) then
           advec_shear = abs(uy0 * dy_1(m))
+          maxadvec=maxadvec+advec_shear
+      else
+        advec_shear=0.
+      endif
 !
 !  Calculate shearing related diagnostics.
 !
@@ -982,7 +986,7 @@ module Shear
         uy0_shear = Sshear * (x - x0_shear)
       else
         if (size(uy0_shear) /= nx) call fatal_error('get_uy0_shear', 'unconformable output array uy0_shear')
-        uy0_shear(1:nx) = uy0
+        uy0_shear = uy0
       endif
 !
     endsubroutine

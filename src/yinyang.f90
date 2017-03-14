@@ -129,7 +129,7 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
 !***********************************************************************
     subroutine prep_biquad_interp(pprime,indth,indph,indcoeffs,ip,jp,ma,me,na,ne)
 
-      use Cdata, only: y, z, dy, dz
+      use Cdata, only: y, z, dy, dz, lroot
 
       real, dimension(2),intent(IN)   :: pprime
       integer,           intent(IN)   :: indth,indph,ip,jp,ma,me,na,ne

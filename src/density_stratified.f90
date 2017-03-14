@@ -921,4 +921,14 @@ module Density
 !
     endsubroutine update_char_vel_density
 !***********************************************************************
+    subroutine impose_density_ceiling(f)
+!
+!  Dummy routine.
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+
+      call keep_compiler_quiet(f)
+
+    endsubroutine impose_density_ceiling
+!***********************************************************************
 endmodule Density

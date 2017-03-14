@@ -1518,7 +1518,7 @@ module Magnetic
 
       real :: beq2,RFPradB12,RFPradJ12
       real :: s,c,sph_har_der
-      integer :: j,iyz
+      integer :: j,iyz,llp1
 !
       do j=1,ninit
 !
@@ -1845,8 +1845,9 @@ module Magnetic
         case('spher-harm-poloidal')
           if (.not.lspherical_coords) call fatal_error("init_uu", &
               "spher-harm-poloidal only meaningful for spherical coordinates"//trim(initaa(j)))
-          tmpx=(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1)) + (xyz1(1) - 0.5*xyz0(1))*x(l1:l2)
-          prof=3.*x(l1:l2)-2.*(xyz0(1)+xyz1(1)) - xyz0(1) + 2.*xyz1(1)
+          tmpx=(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1))/x(l1:l2) + (xyz1(1) - 0.5*xyz0(1))         ! S/r
+          prof=3.*(x(l1:l2)-xyz0(1))                                                            ! S' + S/r
+          llp1=(ll_sh(j)+1)*ll_sh(j)
           if (lyang) then
             allocate(yz(2,ny*nz))
             call yin2yang_coors(costh(m1:m2),sinth(m1:m2),cosph(n1:n2),sinph(n1:n2),yz)
@@ -1854,7 +1855,7 @@ module Magnetic
             do m=m1,m2
               do n=n1,n2
 !if (iproc_world==55) print*, 'm,n,yz=', m,n,yz(:,iyz)
-                bb(:,1)=amplaa(j)*2.*tmpx*ylm_other(yz(1,iyz),yz(2,iyz),ll_sh(j),mm_sh(j),sph_har_der)
+                bb(:,1)=amplaa(j)*llp1*tmpx*ylm_other(yz(1,iyz),yz(2,iyz),ll_sh(j),mm_sh(j),sph_har_der)
                 bb(:,2)=amplaa(j)*prof*sph_har_der
                 if (mm_sh(j)/=0) then
                   bb(:,3) = -amplaa(j)*prof*mm_sh(j)/sin(yz(1,iyz))*sin(yz(2,iyz))/cos(yz(2,iyz))
@@ -1868,7 +1869,7 @@ module Magnetic
           else
             do n=n1,n2
               do m=m1,m2
-                f(l1:l2,m,n,iax) = amplaa(j)*2.*tmpx*ylm(ll_sh(j),mm_sh(j),sph_har_der)
+                f(l1:l2,m,n,iax) = amplaa(j)*llp1*tmpx*ylm(ll_sh(j),mm_sh(j),sph_har_der)
                 f(l1:l2,m,n,iay) = amplaa(j)*prof*sph_har_der
                 if (mm_sh(j)/=0) &      ! tb improved!
                   f(l1:l2,m,n,iaz) = -amplaa(j)*prof*mm_sh(j)/sinth(m)*sinph(n)/cosph(n)
@@ -3222,7 +3223,7 @@ module Magnetic
       use Mpicomm, only: stop_it
       use Special, only: special_calc_magnetic
       use Sub
-      use General, only: transform_thph_yy
+      use General, only: transform_thph_yy, notanumber
 
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -3247,7 +3248,7 @@ module Magnetic
       real, dimension (nx) :: eta_mn,eta_smag,etatotal
       real, dimension (nx) :: fres2,etaSS
       real, dimension (nx) :: vdrift
-      real, dimension (nx) :: del2aa_ini, tanhx2  
+      real, dimension (nx) :: del2aa_ini,tanhx2,advec_hall,advec_hypermesh_aa,advec_va2
       real, dimension(3) :: B_ext
       real, dimension(1,3) :: tmpvec
       real :: tmp,eta_out1,maxetaBB=0.
@@ -3378,7 +3379,7 @@ module Magnetic
         else exp_zdep
           ! Assuming geta_z(:,1) = geta_z(:,2) = 0
           fres(:,3) = fres(:,3) + geta_z(n) * p%diva
-          if (lfirst .and. ldt) advec_uu = advec_uu + abs(geta_z(n)) * dz_1(n)
+          if (lfirst .and. ldt) maxadvec = maxadvec + abs(geta_z(n)) * dz_1(n)
         endif exp_zdep
         etatotal = etatotal + eta_z(n)
       endif eta_zdep
@@ -3480,6 +3481,7 @@ module Magnetic
           else
             advec_hypermesh_aa=eta_hyper3_mesh*pi5_1*sqrt(dxyz_2)
           endif
+          advec2_hypermesh=advec2_hypermesh+advec_hypermesh_aa**2
         endif
       endif
 !
@@ -3931,9 +3933,11 @@ module Magnetic
           advec_hall=abs(p%uu(:,1)-hall_term*p%jj(:,1))*dx_1(l1:l2)+ &
                      abs(p%uu(:,2)-hall_term*p%jj(:,2))*dy_1(  m  )+ &
                      abs(p%uu(:,3)-hall_term*p%jj(:,3))*dz_1(  n  )
+          if (notanumber(advec_hall)) print*, 'advec_hall =',advec_hall
+          advec2=advec2+advec_hall**2
+          if (headtt.or.ldebug) print*,'daa_dt: max(advec_hall) =',&
+                                        maxval(advec_hall)
         endif
-        if (headtt.or.ldebug) print*,'daa_dt: max(advec_hall) =',&
-                                     maxval(advec_hall)
       endif
 !
 !  Add Battery term.
@@ -4002,6 +4006,7 @@ module Magnetic
 !  Consider advective timestep only when lhydro=T.
 !
       if (lfirst.and.ldt) then
+        advec_va2=0.
         if (lhydro) then
           rho1_jxb=p%rho1
           if (rhomin_jxb>0) rho1_jxb=min(rho1_jxb,1/rhomin_jxb)
@@ -4037,10 +4042,8 @@ module Magnetic
 !    Please check
 !
         if (lisotropic_advection) then
-          if (lfirst.and.ldt) then
-            if ((nxgrid==1).or.(nygrid==1).or.(nzgrid==1)) &
-                 advec_va2=sqrt(p%va2*dxyz_2)
-          endif
+          if ((nxgrid==1).or.(nygrid==1).or.(nzgrid==1)) &
+            advec_va2=sqrt(p%va2*dxyz_2)
         endif
 !
 !mcnallcp: If hall_term is on, the fastest alfven-type mode is the Whistler wave at the grid scale.
@@ -4048,7 +4051,7 @@ module Magnetic
 !  This is the generalization for Hall-MHD.
 !
         if (lhydro.and.hall_term/=0.0) then
-          if(lcartesian_coords) then
+          if (lcartesian_coords) then
             advec_va2 = ( &
                   (p%bb(:,1)*dx_1(l1:l2)*( &
                     hall_term*pi*dx_1(l1:l2)*mu01 &
@@ -4064,6 +4067,8 @@ module Magnetic
             call fatal_error('daa_dt', 'Timestep advec_va2 with hall_term is not implemented in these coordinates.')
           endif
         endif
+        if (notanumber(advec_va2)) print*, 'advec_va2  =',advec_va2
+        advec2=advec2+advec_va2
       endif
 !
 !  Apply border profiles.

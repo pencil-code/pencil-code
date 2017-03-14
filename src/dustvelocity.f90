@@ -1032,7 +1032,7 @@ module Dustvelocity
 !
       real, dimension (nx,3) :: fviscd, AA_sfta, BB_sfta, tmp, tmp2
       real, dimension (nx) :: tausg1, mudrhod1, tmp3
-      real, dimension (nx) :: diffus_nud,diffus_nud3
+      real, dimension (nx) :: diffus_nud,diffus_nud3,advec_uud
       real :: c2, s2
       integer :: i, j, k, ju
 !
@@ -1281,17 +1281,18 @@ module Dustvelocity
 !  ``uud/dx'' for timestep
 !
           if (lfirst .and. ldt) then
-            advec_uud=max(advec_uud,abs(p%uud(:,1,k))*dx_1(l1:l2)+ &
-                                    abs(p%uud(:,2,k))*dy_1(  m  )+ &
-                                    abs(p%uud(:,3,k))*dz_1(  n  ))
+            advec_uud=abs(p%uud(:,1,k))*dx_1(l1:l2)+ &
+                      abs(p%uud(:,2,k))*dy_1(  m  )+ &
+                      abs(p%uud(:,3,k))*dz_1(  n  )
+            maxadvec=maxadvec+advec_uud
             if (idiag_dtud(k)/=0) &
                 call max_mn_name(advec_uud/cdt,idiag_dtud(k),l_dt=.true.)
             if (idiag_dtnud(k)/=0) &
                  call max_mn_name(diffus_nud/cdtv,idiag_dtnud(k),l_dt=.true.)
-          endif
-          if ((headtt.or.ldebug) .and. (ip<6)) then
-            print*,'duud_dt: max(advec_uud) =',maxval(advec_uud)
-            print*,'duud_dt: max(diffus_nud) =',maxval(diffus_nud)
+            if ((headtt.or.ldebug) .and. (ip<6)) then
+              print*,'duud_dt: max(advec_uud) =',maxval(advec_uud)
+              print*,'duud_dt: max(diffus_nud) =',maxval(diffus_nud)
+            endif
           endif
 !
 !  Short friction time switch.

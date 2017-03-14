@@ -18,6 +18,7 @@
 ! PENCILS PROVIDED oo(3); o2; ou; uij(3,3); uu(3); u2; sij(3,3)
 ! PENCILS PROVIDED der6u(3)
 ! PENCILS PROVIDED divu; ugu(3); del2u(3); uij5(3,3); graddivu(3)
+! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
 !***********************************************************************
 module Hydro
 !
@@ -1819,6 +1820,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       real, dimension (nx,3) :: uu
+      real, dimension (nx) :: advec_uu
 !
       intent(in)  :: df,p
       intent(out) :: f
@@ -1841,9 +1843,10 @@ module Hydro
                      abs(uu(:,2))*dy_1(  m  )+ &
                      abs(uu(:,3))*dz_1(  n  )
           endif
+          maxadvec=maxadvec+advec_uu
+          if (headtt.or.ldebug) print*, 'duu_dt: max(advec_uu) =', maxval(advec_uu)
         endif
       endif
-      if (headtt.or.ldebug) print*, 'duu_dt: max(advec_uu) =', maxval(advec_uu)
 !
 !  Store uu in auxiliary variable if requested.
 !  Just neccessary immediately before writing snapshots, but how would we
@@ -2565,6 +2568,23 @@ module Hydro
       call keep_compiler_quiet(slices%ready)
 !
     endsubroutine get_slices_hydro
+!***********************************************************************
+    subroutine hydro_after_timestep(f,df,dt_sub)
+!
+!  Hook for modification of the f and df arrays
+!  according to the hydro module, after the       
+!  timestep is performed. 
+!
+!  12-mar-17/wlyra: coded. 
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: df
+      real :: dt_sub
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dt_sub)
+
+    endsubroutine hydro_after_timestep
 !***********************************************************************
     subroutine calc_mflow
 !

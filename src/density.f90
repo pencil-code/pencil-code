@@ -107,6 +107,7 @@ module Density
   logical, target :: lreduced_sound_speed=.false.
   logical, target :: lscale_to_cs2top=.false.
   logical :: lconserve_total_mass=.false.
+  real :: density_ceiling=0.
   logical :: lreinitialize_lnrho=.false., lreinitialize_rho=.false.
   logical :: lsubtract_init_stratification=.false.
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
@@ -156,7 +157,7 @@ module Density
       density_xaver_range, mass_source_tau1, reduce_cs2, lreduced_sound_speed, &
       xblob, yblob, zblob, mass_source_omega, lscale_to_cs2top, &
       density_zaver_range, rss_coef1, rss_coef2, &
-      lconserve_total_mass, total_mass, &
+      lconserve_total_mass, total_mass, density_ceiling, &
       lreinitialize_lnrho, lreinitialize_rho, initlnrho, rescale_rho,&
       lsubtract_init_stratification, ireference_state, ldensity_slope_limited, &
       h_slope_limited, chi_sld_thresh, islope_limiter
@@ -2184,7 +2185,7 @@ module Density
 !
       real, dimension (nx) :: fdiff, gshockglnrho, gshockgrho, tmp, chi_sld
       real, dimension (nx), parameter :: unitpencil=1.
-      real, dimension (nx) :: density_rhs,diffus_diffrho,diffus_diffrho3   !GPU := df(l1:l2,m,n,irho|ilnrho)
+      real, dimension (nx) :: density_rhs,diffus_diffrho,diffus_diffrho3,advec_hypermesh_rho
       integer :: j
 !
 !  Identify module and boundary conditions.
@@ -2371,6 +2372,7 @@ module Density
           else
             advec_hypermesh_rho=diffrho_hyper3_mesh*pi5_1*sqrt(dxyz_2)
           endif
+          advec2_hypermesh=advec2_hypermesh+advec_hypermesh_rho**2
         endif
         if (headtt) print*,'dlnrho_dt: diffrho_hyper3_mesh=', &
             diffrho_hyper3_mesh
@@ -2573,6 +2575,9 @@ module Density
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real :: dtsub
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
 !
     endsubroutine density_after_timestep
 !***********************************************************************
@@ -3520,5 +3525,21 @@ module Density
       endif
 !
     endfunction mean_density
+!***********************************************************************
+    subroutine impose_density_ceiling(f)
+!
+!  Impose a maximum (log) density by setting all higher (log) densities to the maximum
+!  value (density_ceiling). 
+!
+!  3-mar-2017/MR: implemented.
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+!
+      if (density_ceiling>0.0) then
+        where (f(:,:,:,ilnrho) > density_ceiling) &
+          f(:,:,:,ilnrho) = density_ceiling
+      endif
+
+    endsubroutine impose_density_ceiling
 !***********************************************************************
 endmodule Density

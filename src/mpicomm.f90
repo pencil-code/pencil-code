@@ -946,7 +946,15 @@ module Mpicomm
 
       integer :: len, len_neigh, lenbuf
       integer :: nok, noks, noks_all, nstrip_total
-
+!
+      if (cyinyang_intpol_type=='bilinear') then
+        iyinyang_intpol_type=BILIN
+      elseif (cyinyang_intpol_type=='biquadratic') then
+        iyinyang_intpol_type=BIQUAD
+      else
+        call stop_it('setup_interp_yy: Unknown Yin-Yang interpolation type '//trim(cyinyang_intpol_type))
+      endif
+!
       noks=0
 !
       if (lfirst_proc_z.or.llast_proc_z) then                ! executing proc is at z boundary
@@ -8358,8 +8366,16 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
       real, dimension(nxgrid,ny,nz):: sendbuf   ! nx=nxgrid !
       real, dimension(:,:,:)       :: recvbuf
 !
-      integer :: ncnt, nshift, nlayer, i
-      integer, dimension(ncpus) :: counts, shifts
+      integer :: ncnt, i
+!
+!  MR: These long integer variables would be necessary for big nxgrid*nygrid,
+!      but there is now MPI_GATHERV which would accept a long int shifts argument.
+!
+      !integer(KIND=ikind8) :: nlayer, nshift
+      integer :: nlayer, nshift
+      !integer(KIND=ikind8), dimension(ncpus) :: shifts
+      integer, dimension(ncpus) :: shifts
+      integer, dimension(ncpus) :: counts
 !
       ncnt = nxgrid*ny
 !
