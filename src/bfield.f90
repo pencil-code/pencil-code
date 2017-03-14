@@ -645,6 +645,17 @@ module Magnetic
 !
     endsubroutine daa_dt
 !***********************************************************************
+   subroutine magnetic_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dtsub
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
+!
+    endsubroutine magnetic_after_timestep
+!***********************************************************************
     subroutine split_update_magnetic(f)
 !
 ! Calls for ImplicitDiffusion to implicitly evolve the resistivity
