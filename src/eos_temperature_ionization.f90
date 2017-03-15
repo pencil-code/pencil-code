@@ -14,7 +14,7 @@
 ! MAUX CONTRIBUTION 1
 !
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; nabla_ad; glnTT(3); TT; TT1; gTT(3)
-! PENCILS PROVIDED yH; del2ss; del2lnTT; cv; cv1; cp; cp1; gamma; gamma_m1; gamma1
+! PENCILS PROVIDED yH; del2ss; del2lnTT; del2TT; cv; cv1; cp; cp1; gamma; gamma_m1; gamma1
 ! PENCILS PROVIDED mu1; hlnTT(3,3); rho1gpp(3); delta; gradcp(3); del6lnTT
 ! PENCILS PROVIDED glnmumol(3); ppvap; csvap2; rho_anel
 !
@@ -320,6 +320,12 @@ module EquationOfState
         lpencil_in(i_glnTT)=.true.
       endif
 !
+      if (lpencil_in(i_del2TT)) then
+        lpencil_in(i_TT)=.true.
+        lpencil_in(i_glnTT)=.true.
+        lpencil_in(i_del2lnTT)=.true.
+      endif
+!
     endsubroutine pencil_interdep_eos
 !***********************************************************************
     subroutine calc_pencils_eos_std(f,p)
@@ -365,6 +371,14 @@ module EquationOfState
       if (lpenc_loc(i_glnTT)) call grad(f,ilnTT,p%glnTT)
       if (lpenc_loc(i_hlnTT)) call g2ij(f,ilnTT,p%hlnTT)
       if (lpenc_loc(i_del2lnTT)) call del2(f,ilnTT,p%del2lnTT)
+      if (lpenc_loc(i_del2TT)) then
+        tmp=0.0
+        do i=1,3
+          tmp=tmp+p%glnTT(:,i)**2
+        enddo
+        p%del2TT=(p%del2lnTT+tmp)*p%TT
+      endif
+!
       if (lpenc_loc(i_del6lnTT)) call del6(f,ilnTT,p%del6lnTT)
       if (lpenc_loc(i_gTT)) then
         do i=1,3
