@@ -86,6 +86,7 @@ module Radiation
   real :: knee_temp_opa=0.0, width_temp_opa=1.0
   real :: ampl_Isurf=0.0, radius_Isurf=0.0
   real :: lnTT_table0=0.0, dlnTT_table=0.0, kapparho_floor=0.0
+  real :: TT_cutoff
 !
   integer :: radx=0, rady=0, radz=1, rad2max=1, nnu=1
   integer, dimension (maxdir,3) :: dir
@@ -107,6 +108,7 @@ module Radiation
   logical :: lradpressure=.false., lradflux=.false., lsingle_ray=.false.
   logical :: lrad_cool_diffus=.false., lrad_pres_diffus=.false.
   logical :: lcheck_tau_division=.false., lread_source_function=.false.
+  logical :: lcutoff_opticallythin=.false.
 !
   character (len=2*bclen+1), dimension(3) :: bc_rad=(/'0:0','0:0','S:0'/)
   character (len=bclen), dimension(3) :: bc_rad1, bc_rad2
@@ -140,7 +142,8 @@ module Radiation
       lfix_radweight_1d, expo_rho_opa, expo_temp_opa, expo_temp_opa_buff, &
       expo2_rho_opa, expo2_temp_opa, &
       ref_rho_opa, ref_temp_opa, knee_temp_opa, width_temp_opa, &
-      lread_source_function, kapparho_floor
+      lread_source_function, kapparho_floor,lcutoff_opticallythin, &
+      TT_cutoff
 !
   namelist /radiation_run_pars/ &
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kapparho_cst, &
@@ -157,7 +160,8 @@ module Radiation
       expo2_rho_opa, expo2_temp_opa, &
       ref_rho_opa, expo_temp_opa_buff, ref_temp_opa, knee_temp_opa, &
       width_temp_opa, ampl_Isurf, radius_Isurf, scalefactor_cooling, &
-      lread_source_function, kapparho_floor
+      lread_source_function, kapparho_floor, lcutoff_opticallythin, &
+      TT_cutoff
 !
   contains
 !***********************************************************************
@@ -1562,8 +1566,20 @@ module Radiation
       case ('LTE')
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
-          call eoscalc(f,mx,lnTT=lnTT)
-          Srad(:,m,n)=arad*exp(4*lnTT)*scalefactor_Srad(inu)
+          if (lcutoff_opticallythin) then
+            if (z(n).le.0.0d0) then
+               Srad(:,m,n)=arad*exp(4*lnTT)*scalefactor_Srad(inu)
+            else
+              where (lnTT < TT_cutoff)
+                Srad(:,m,n)=arad*exp(4*lnTT)*scalefactor_Srad(inu)
+              elsewhere
+                Srad(:,m,n)=0.0d0
+              endwhere
+            endif
+          else
+            call eoscalc(f,mx,lnTT=lnTT)
+            Srad(:,m,n)=arad*exp(4*lnTT)*scalefactor_Srad(inu)
+          endif
         enddo
         enddo
 !
