@@ -190,6 +190,7 @@ class __Simulation__(object):
         """Update simulation object:
                 - read param.nml
                 - read grid and ghost grid
+            Someday this might also change the real simulation parameter.
         """
         from os.path import exists
         from os.path import join

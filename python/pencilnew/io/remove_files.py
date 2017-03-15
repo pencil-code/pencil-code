@@ -38,6 +38,8 @@ def remove_files(path, do_it=False, do_it_really=False):
         return False
 
 
+    # Now I really remove files, or show what I would delete
+    # This is super slow :(( Anyone an idea how to speed up?
     if os.path.exists(path):
         if os.path.isdir(path):
             if os.path.islink(path):
