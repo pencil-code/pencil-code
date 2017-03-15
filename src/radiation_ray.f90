@@ -1566,18 +1566,18 @@ module Radiation
       case ('LTE')
         do n=n1-radz,n2+radz
         do m=m1-rady,m2+rady
+          call eoscalc(f,mx,lnTT=lnTT)
           if (lcutoff_opticallythin) then
             if (z(n).le.0.0d0) then
                Srad(:,m,n)=arad*exp(4*lnTT)*scalefactor_Srad(inu)
             else
-              where (lnTT < TT_cutoff)
+              where (lnTT < alog(TT_cutoff))
                 Srad(:,m,n)=arad*exp(4*lnTT)*scalefactor_Srad(inu)
               elsewhere
                 Srad(:,m,n)=0.0d0
               endwhere
             endif
           else
-            call eoscalc(f,mx,lnTT=lnTT)
             Srad(:,m,n)=arad*exp(4*lnTT)*scalefactor_Srad(inu)
           endif
         enddo
