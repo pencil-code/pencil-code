@@ -111,18 +111,16 @@ subroutine init_special(f)
     intent(inout) :: f
 !
     if (lroot) print*, '**************** init_special ****************'
+    call pb_special_setup
 !
-!    if (lroot) print*, '!!!! SETUP OF pb_profile done, see: pb_profile=', pb_profile
-!
-!
-!!!!!!!!!!! THIS IS FIRST DISABLED !!!!!
-!   Add additional gas initial velocity as result of pb_profile
-!
-    !if (lroot) print*, '!!!! BEFORE: f(l1:l2,m,n,iuy)= ',f(l1:l2,m,n,iuy)
-    !if (lroot) print*, '!!!! CHANGE BY: ',1/(2*Omega)*cs20*beta_glnrho_scaled(1)*pb_profile
-    !f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + &
-    !        1/(2*Omega)*cs20*beta_glnrho_scaled(1)*pb_profile
-    !if (lroot) print*, '!!!! AFTER: f(l1:l2,m,n,iuy)= ',f(l1:l2,m,n,iuy)
+    if (lroot) print*, 'init_special: set pb_profile sub-Keplerian gas velocity'
+    f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - 1/(2*Omega)*cs20*beta_glnrho_scaled(2)*pb_profile
+    f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + 1/(2*Omega)*cs20*beta_glnrho_scaled(1)*pb_profile
+    if (lroot) print*, ''
+    if (lroot) print*, f(:,:,:,iux)
+    if (lroot) print*, ''
+    if (lroot) print*, f(:,:,:,iuy)
+    if (lroot) print*, ''
 !
     call keep_compiler_quiet(f)
 !
@@ -145,31 +143,6 @@ subroutine initialize_special(f)
     if (lroot) print*, '**************** initialize_special ****************'
 !
     call pb_special_setup
-!    if (lroot) print*, '!!!! SETUP OF pb_profile done, see: pb_profile=', pb_profile
-
-    !if (any(beta_glnrho_scaled /= 0.)) lpenc_requested(i_cs2)=.true.
-!    if (any(beta_glnrho_global /= 0.) .and. pb_type/='none') then
-    !    if (headtt) print*, 'dspecial_dt: adding global pressure gradient profile force'
-    !    do j=1,3
-            !if (lroot) print*, '!!!! for j=',j
-            !if (lroot) print*, '!!!! Adding pb_profile=',pb_profile
-            !if (lroot) print*, '!!!! shape of pb_profile=',shape(pb_profile)
-            !if (lroot) print*, '!!!! shape of df(l1:l2,m,n,(iux-1)+j)=',shape(df(l1:l2,m,n,(iux-1)+j))
-            !if (lroot) print*, '!!!! shape of f(l1:l1,m,n,iuy)=',shape(f(l1:l1,m,n,iuy))
-            !if (lroot) print*, '!!!! shape of f(:,:,:,iuy)=',shape(f(:,:,:,iuy))
-            !if (lroot) print*, '!!!! cs20=',cs20
-            !if (lroot) print*, '!!!! before:',  df(l1:l2,m,n,(iux-1)+j)
-            !if (lroot) print*, '!!!! change:', p%cs2*beta_glnrho_scaled(j)*pb_profile
-            !if (lroot) print*, '!!!! with p%cs2:', p%cs2
-            !if (lroot) print*, '!!!! with beta_glnrho_scaled(j):', beta_glnrho_scaled(j)
-!            df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
-!              - p%cs2*beta_glnrho_scaled(j)*pb_profile
-!            f(:,:,:,iux) = -1/(2*Omega)*cs20*beta_glnrho_scaled(2)*pb_profile
-            !f(l1:l1,m,n,iuy) = f(l1:l1,m,n,iuy) + &
-            !        1/(2*Omega)*cs20*beta_glnrho_scaled(1)*pb_profile
-            !if (lroot) print*, '!!!! after:', df(l1:l2,m,n,(iux-1)+j)
-        !enddo
-!    endif
 !
 endsubroutine initialize_special
 !***********************************************************************

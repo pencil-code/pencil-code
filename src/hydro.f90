@@ -20,7 +20,7 @@
 ! PENCILS PROVIDED u2u31; u3u12; u1u23
 ! PENCILS PROVIDED graddivu(3); del6u_bulk(3); grad5divu(3)
 ! PENCILS PROVIDED rhougu(3); der6u(3); transpurho(3)
-! PENCILS PROVIDED divu0; u0ij(3,3); uu0(3) 
+! PENCILS PROVIDED divu0; u0ij(3,3); uu0(3)
 ! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
 !
 !***************************************************************
@@ -107,7 +107,7 @@ module Hydro
   integer :: nb_rings=0
   integer :: neddy=0
 !
-! variables for expansion into spherical harmonics 
+! variables for expansion into spherical harmonics
 !
   integer,parameter :: lSH_max=2
 ! Nmodes_SH=(lSH_max+1)*(lSH_max+1)
@@ -217,7 +217,7 @@ module Hydro
 !
 !  Option to constrain time for large df.
 !
-  real :: cdt_tauf=1.0, ulev_cgs=1.0, ulev=impossible 
+  real :: cdt_tauf=1.0, ulev_cgs=1.0, ulev=impossible
   logical :: lcdt_tauf=.false.
 !
   namelist /hydro_run_pars/ &
@@ -417,7 +417,7 @@ module Hydro
   integer :: idiag_ugurmsx=0    ! DIAG_DOC: $\left<\left(\uv\nabla\uv\right)^2\right>^{1/2}$
                                 ! DIAG_DOC: for the hydro_xaver_range
   integer :: idiag_ugu2m=0      ! DIAG_DOC: $\left<\uv\nabla\uv\right>^2$
-  integer :: idiag_dudx=0        ! DIAG_DOC: $\left<\frac{\delta \uv}{\delta x}\right>$ 
+  integer :: idiag_dudx=0        ! DIAG_DOC: $\left<\frac{\delta \uv}{\delta x}\right>$
   integer :: idiag_Marms=0      ! DIAG_DOC: $\left<\uv^2/\cs^2\right>$
                                 ! DIAG_DOC:   \quad(rms Mach number)
   integer :: idiag_Mamax=0      ! DIAG_DOC: $\max |\uv|/\cs$
@@ -718,7 +718,7 @@ module Hydro
         write(15,*) 'uu = fltarr(mx,my,mz,3)*one'
       endif
 !
-! If we are to solve for gradient of dust particle velocity, we must store gradient 
+! If we are to solve for gradient of dust particle velocity, we must store gradient
 ! of gas velocity as auxiliary
 !
       if (lparticles_grad) lgradu_as_aux=.true.
@@ -733,10 +733,10 @@ module Hydro
 !  24-nov-02/tony: coded
 !  13-oct-03/dave: check parameters and warn (if nec.) about velocity damping
 !  26-mar-10/axel: lreinitialize_uu added
-!  23-dec-15/MR: Cartesian vector Omegav intro'd; ltime_integrals set; rotation 
+!  23-dec-15/MR: Cartesian vector Omegav intro'd; ltime_integrals set; rotation
 !                of \vec{Omega} on Yang grid added.
 !   7-jun.16/MR: modifications for calculation of z average on Yin-Yang grid, not yet operational
-! 
+!
       use BorderProfiles, only: request_border_driving
       use Initcond
       use SharedVariables, only: put_shared_variable,get_shared_variable
@@ -819,8 +819,8 @@ module Hydro
           Omegav(1) = Omega*sin(theta*dtor)*cos(phi*dtor)
           Omegav(2) = Omega*sin(theta*dtor)*sin(phi*dtor)
           Omegav(3) = Omega*cos(theta*dtor)
-        endif        
-      endif        
+        endif
+      endif
 !
 !  damping parameters for damping velocities outside an embedded sphere
 !  04-feb-2008/dintrans: corriged because otherwise rdampext=r_ext all the time
@@ -1139,7 +1139,7 @@ module Hydro
           else
 !
 ! Normal summing-up in Yin procs.
-! 
+!
             uumxy(:,:,j)=fact*sum(f(:,:,n1:n2,iuu+j-1),3)  ! requires equidistant grid
           endif
         enddo
@@ -1251,7 +1251,7 @@ module Hydro
           do ix=l1,l2
              if ((iz0 .le. n2) .and. (iz0 .gt. n1) )  &
              f(ix,:,iz0,iux) = ampluu(j)*sin(kx_uu*x(ix))
-          enddo 
+          enddo
         case ('random_isotropic_shell')
           call random_isotropic_shell(f,iux,ampluu(j),z1_uu,z2_uu)
         case ('gaussian-noise'); call gaunoise(ampluu(j),f,iux,iuz)
@@ -1658,8 +1658,9 @@ module Hydro
 !
         case ('sub-Keplerian')
           if (lroot) print*, 'init_hydro: set sub-Keplerian gas velocity'
-          f(:,:,:,iux) = -1/(2*Omega)*cs20*beta_glnrho_scaled(2)
-          f(:,:,:,iuy) = 1/(2*Omega)*cs20*beta_glnrho_scaled(1)
+          f(:,:,:,iux) = f(:,:,:,iux) - 1/(2*Omega)*cs20*beta_glnrho_scaled(2)
+          f(:,:,:,iuy) = f(:,:,:,iux) + 1/(2*Omega)*cs20*beta_glnrho_scaled(1)
+          ! superimpose here for the case of pressure bump special module chaning f as well
 !
         case ('rigid')
           do n=n1,n2; do m=m1,m2; do l=l1,l2
@@ -1967,7 +1968,7 @@ module Hydro
         lpenc_requested(i_r_mn)=.true.
       endif
 !
-      if (lfargo_advection) then 
+      if (lfargo_advection) then
         lpenc_requested(i_uu_advec)=.true.
         lpenc_requested(i_uuadvec_guu)=.true.
       endif
@@ -2176,7 +2177,7 @@ module Hydro
           lpencil_in(i_oo)=.true.
 !
       if (lpencil_in(i_uu_advec)) lpencil_in(i_uu)=.true.
-      if (lpencil_in(i_uuadvec_guu)) then 
+      if (lpencil_in(i_uuadvec_guu)) then
         lpencil_in(i_uu_advec)=.true.
         lpencil_in(i_uij)=.true.
       endif
@@ -2250,7 +2251,7 @@ module Hydro
 ! u2
       if (lpenc_loc(i_u2)) call dot2_mn(p%uu,p%u2)
 ! uij
-      if (lpenc_loc(i_uij)) then 
+      if (lpenc_loc(i_uij)) then
         call gij(f,iuu,p%uij,1)
         if (lparticles_lyapunov) then
           jk=0
@@ -2271,7 +2272,7 @@ module Hydro
         do i=1,3
           do j=1,3
             ij=ij+1
-            f(l1:l2,m,n,ij) = p%uij(:,i,j) 
+            f(l1:l2,m,n,ij) = p%uij(:,i,j)
           enddo
         enddo
       endif
@@ -2759,7 +2760,7 @@ module Hydro
 !  useful for debugging.
 !
 !  18-Mar-2010/AJ: this should probably go in a special module.
-!  12-Mar-2017/WL: Agree, looks very specific. 
+!  12-Mar-2017/WL: Agree, looks very specific.
 !
       if (ladvection_velocity .and. lno_meridional_flow) then
         f(l1:l2,m,n,iux:iuy)=0.0
@@ -2811,7 +2812,7 @@ module Hydro
                        abs(p%uu(:,2))*dline_1(:,2),&
                        abs(p%uu(:,3))*dline_1(:,3))
         else
-          if (.not.lfargo_advection) then 
+          if (.not.lfargo_advection) then
             advec_uu=    abs(p%uu(:,1))*dline_1(:,1)+&
                          abs(p%uu(:,2))*dline_1(:,2)+&
                          abs(p%uu(:,3))*dline_1(:,3)
@@ -2924,7 +2925,7 @@ module Hydro
 !
       if (lborder_profiles) call set_border_hydro(f,df,p)
 !
-!  Fred: Option to constrain timestep for large forces 
+!  Fred: Option to constrain timestep for large forces
 !
       if (lfirst.and.ldt.and.lcdt_tauf) then
         if (ulev==impossible) ulev=ulev_cgs/unit_velocity
@@ -2934,7 +2935,7 @@ module Hydro
           where (uus <= ulev) uus = ulev
           dt1_max=max(dt1_max,ftot/(cdt_tauf*uus))
           Fmax=max(Fmax,ftot/uus)
-        enddo 
+        enddo
        ! call dot2(df(l1:l2,m,n,iux:iuz),ftot,FAST_SQRT=.true.)
        ! call dot2(p%uu,uus,FAST_SQRT=.true.)
        ! where (uus <= ulev) uus = ulev
@@ -3007,8 +3008,8 @@ module Hydro
         if ((idiag_taufmin/=0).and.lcdt_tauf) then
           call max_mn_name(Fmax,idiag_taufmin,lreciprocal=.true.)
         endif
-! urlm 
-! This is being always calculated but written out only when asked. 
+! urlm
+! This is being always calculated but written out only when asked.
 ! It should not be done this way, but calculated only is must be written out.
 !
         if (lspherical_coords) call amp_lm(p%uu(:,1),urlm,profile_SH)
@@ -3043,7 +3044,7 @@ module Hydro
         if (idiag_uguxm/=0) call sum_mn_name(p%ugu(:,1),idiag_uguxm)
         if (idiag_uguym/=0) call sum_mn_name(p%ugu(:,2),idiag_uguym)
         if (idiag_uguzm/=0) call sum_mn_name(p%ugu(:,3),idiag_uguzm)
-        if (idiag_dudx/=0) then 
+        if (idiag_dudx/=0) then
           call sum_mn_name(p%uij(:,1,1),idiag_dudx)
         endif
         if (idiag_ugu2m/=0) call sum_mn_name(p%ugu2,idiag_ugu2m)
@@ -3902,7 +3903,7 @@ module Hydro
 !
 !  Add -2 \Omega \times U^shear, if requested.
 !
-          if (lshear_in_coriolis) then 
+          if (lshear_in_coriolis) then
             df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+c2*Sshear*x(l1:l2)
             df(l1:l2,m,n,velind+2)=df(l1:l2,m,n,velind+2)-s2*Sshear*x(l1:l2)
           endif
