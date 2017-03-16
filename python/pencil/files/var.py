@@ -349,10 +349,10 @@ class DataCube(object):
                 else:
                     sys.exit("pb in magic!")
 
-            if (field == 'tt' and not hasattr(self,'tt')):
+            if (field == 'TT' and not hasattr(self,'TT')):
                 if hasattr(self, 'lnTT'):
-                    tt = np.exp(self.lnTT)
-                    setattr(self, 'tt', tt)
+                    TT = np.exp(self.lnTT)
+                    setattr(self, 'TT', TT)
                 else:
                     if hasattr(self, 'ss'):
                         if hasattr(self,'lnrho'):
@@ -368,7 +368,7 @@ class DataCube(object):
                         lnTT0 = np.log(cs20/(cp*(gamma-1.)))
                         lnTT = lnTT0+gamma/cp*self.ss+(gamma-1.)* \
                                (lnrho-lnrho0)
-                        setattr(self, 'tt', np.exp(lnTT))
+                        setattr(self, 'TT', np.exp(lnTT))
                     else:
                         sys.exit("pb in magic!")
 
@@ -381,8 +381,8 @@ class DataCube(object):
                 if hasattr(self, 'lnTT'):
                     self.ss = cp/gamma*(self.lnTT-lnTT0- \
                               (gamma-1.)*(self.lnrho-lnrho0))
-                elif hasattr(self, 'tt'):
-                    self.ss = cp/gamma*(np.log(self.tt)- \
+                elif hasattr(self, 'TT'):
+                    self.ss = cp/gamma*(np.log(self.TT)- \
                               lnTT0-(gamma-1.)*(self.lnrho-lnrho0))
                 else:
                     sys.exit("pb in magic!")
