@@ -1668,7 +1668,7 @@ module Radiation
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx) :: tmp,lnrho,lnTT,yH,rho,TT,profile
-      real, dimension(mx) :: kappa1,kappa2
+      real, dimension(mx) :: kappa1,kappa2,kappae
       real, dimension(mx) :: kappa_rad,kappa_cond,kappa_tot
       real :: kappa0, kappa0_cgs,k1,k2
       logical, save :: lfirst=.true.
@@ -1697,14 +1697,15 @@ module Radiation
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnrho=lnrho)
           call eoscalc(f,mx,lntt=lntt)
-          kappa1=4.0d-25*1.7381*0.0135*unit_density**2*unit_length* &
+          kappa1=4.0d25*1.7381*0.0135*unit_density**2*unit_length* &
                 exp(lnrho)*(exp(lnTT)*unit_temperature)**(-3.5)
           kappa2=1.25d-29*0.0134*unit_density**1.5*unit_length*&
                  unit_temperature**9*exp(0.5*lnrho)*exp(9.0*lnTT)
+          kappae=0.2*1.7381*(1.+2.7d11*exp(lnrho-2*lnTT)*unit_density/unit_temperature**2)**(-1.)
           kappa_cond=2.6d-7*unit_length*unit_temperature**2*exp(2*lnTT)*exp(-lnrho)
-          kappa_rad=1./(1./kappa1+1./kappa2)
+          kappa_rad=kapparho_floor+1./(1./(kappa1+kappae)+1./kappa2)
           kappa_tot=1./(1./kappa_rad+1./kappa_cond)
-          f(:,m,n,ikapparho)=kapparho_floor+exp(lnrho)*kappa_tot*scalefactor_kappa(inu)
+          f(:,m,n,ikapparho)=exp(lnrho)*kappa_tot*scalefactor_kappa(inu)
         enddo
         enddo
 !
