@@ -1284,7 +1284,7 @@ module Dustvelocity
             advec_uud=abs(p%uud(:,1,k))*dx_1(l1:l2)+ &
                       abs(p%uud(:,2,k))*dy_1(  m  )+ &
                       abs(p%uud(:,3,k))*dz_1(  n  )
-            maxadvec=maxadvec+advec_uud
+            !maxadvec=maxadvec+advec_uud
             if (idiag_dtud(k)/=0) &
                 call max_mn_name(advec_uud/cdt,idiag_dtud(k),l_dt=.true.)
             if (idiag_dtnud(k)/=0) &
