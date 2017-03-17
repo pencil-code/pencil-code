@@ -1679,9 +1679,10 @@ module Sub
         g(:,2)=g(:,2)-f(l1:l2,m,n,k)*r1_mn
       endif
 !
-!     if (lcylindrical_coords) then
+      if (lcylindrical_coords) then
+        call fatal_error("curl_horizontal","not implemented for cylindrical coords")
 !--     g(:,3)=g(:,3)+f(l1:l2,m,n,k1+2)*rcyl_mn1
-!     endif
+      endif
 !
     endsubroutine curl_horizontal
 !***********************************************************************
@@ -2880,7 +2881,7 @@ module Sub
       if (lcylindrical_coords) then
         ff=f(l1:l2,m,n,k:k+2)
         ugradf(:,1)=ugradf(:,1)-rcyl_mn1*(uu(:,2)*ff(:,2))
-        ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,1)*ff(:,2))
+        ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,2)*ff(:,1))
       endif
 !
     endsubroutine u_dot_grad_vec
@@ -2939,7 +2940,7 @@ module Sub
       if (lcylindrical_coords) then
         ff=f(l1:l2,m,n,k:k+2)
         ugradf(:,1)=ugradf(:,1)-rcyl_mn1*(uu(:,2)*ff(:,2))
-        ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,1)*ff(:,2))
+        ugradf(:,2)=ugradf(:,2)+rcyl_mn1*(uu(:,2)*ff(:,1))
       endif
 !
     endsubroutine u_dot_grad_vec_alt
@@ -3194,6 +3195,8 @@ module Sub
 !
 !  23-mar-08/axel: adapted from u_dot_grad_vec
 !
+      use General, only: loptest
+!
       intent(in) :: hh,gradf,ff
       intent(out) :: hgradf
 !
@@ -3222,7 +3225,7 @@ module Sub
 !
       if (lcylindrical_coords) then
         hgradf(:,1)=hgradf(:,1)-rcyl_mn1*(hh(:,2)*ff(:,2))
-        hgradf(:,2)=hgradf(:,2)+rcyl_mn1*(hh(:,1)*ff(:,2))
+        hgradf(:,2)=hgradf(:,2)+rcyl_mn1*(hh(:,2)*ff(:,1))
       endif
 !
     endsubroutine h_dot_grad_vec

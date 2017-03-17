@@ -2806,11 +2806,13 @@ module Magnetic
 !
       if (lpenc_loc(i_uuadvec_gaa)) then
         do j=1,3
+          ! This is calling scalar h_dot_grad, that does not add
+          ! the inertial terms. They will be added here. 
           call h_dot_grad(p%uu_advec,p%aij(:,j,:),tmp)
           p%uuadvec_gaa(:,j)=tmp
         enddo
         p%uuadvec_gaa(:,1) = p%uuadvec_gaa(:,1) - rcyl_mn1*p%uu(:,2)*p%aa(:,2)
-        p%uuadvec_gaa(:,2) = p%uuadvec_gaa(:,2) + rcyl_mn1*p%uu(:,1)*p%aa(:,2)
+        p%uuadvec_gaa(:,2) = p%uuadvec_gaa(:,2) + rcyl_mn1*p%uu(:,2)*p%aa(:,1)
       endif
 !
 !  bij, del2a, graddiva
