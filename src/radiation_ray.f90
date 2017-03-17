@@ -86,7 +86,7 @@ module Radiation
   real :: knee_temp_opa=0.0, width_temp_opa=1.0
   real :: ampl_Isurf=0.0, radius_Isurf=0.0
   real :: lnTT_table0=0.0, dlnTT_table=0.0, kapparho_floor=0.0
-  real :: TT_cutoff
+  real :: z_cutoff,TT_cutoff
 !
   integer :: radx=0, rady=0, radz=1, rad2max=1, nnu=1
   integer, dimension (maxdir,3) :: dir
@@ -143,7 +143,7 @@ module Radiation
       expo2_rho_opa, expo2_temp_opa, &
       ref_rho_opa, ref_temp_opa, knee_temp_opa, width_temp_opa, &
       lread_source_function, kapparho_floor,lcutoff_opticallythin, &
-      TT_cutoff
+      TT_cutoff,z_cutoff
 !
   namelist /radiation_run_pars/ &
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kapparho_cst, &
@@ -161,7 +161,7 @@ module Radiation
       ref_rho_opa, expo_temp_opa_buff, ref_temp_opa, knee_temp_opa, &
       width_temp_opa, ampl_Isurf, radius_Isurf, scalefactor_cooling, &
       lread_source_function, kapparho_floor, lcutoff_opticallythin, &
-      TT_cutoff
+      TT_cutoff,z_cutoff
 !
   contains
 !***********************************************************************
@@ -1568,7 +1568,7 @@ module Radiation
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnTT=lnTT)
           if (lcutoff_opticallythin) then
-            if (z(n).le.0.0d0) then
+            if (z(n).le.z_cutoff) then
                Srad(:,m,n)=arad*exp(4*lnTT)*scalefactor_Srad(inu)
             else
               where (lnTT < alog(TT_cutoff))
