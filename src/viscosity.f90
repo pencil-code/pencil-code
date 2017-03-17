@@ -1638,22 +1638,21 @@ module Viscosity
                   nu_hyper3_mesh*pi5_1/60.*tmp3*dline_1(:,i)
             endif
           enddo
-          if (lpencil(i_visc_heat)) then
-            if (headtt) then
-              call warning('calc_pencils_viscosity', 'viscous heating term '//&
-                   'is not implemented for lvisc_hyper3_mesh')
-            endif
-          endif
-          if (lfirst .and. ldt) then
-            if (ldynamical_diffusion) then
-              p%diffus_total3 = p%diffus_total3 + nu_hyper3_mesh
-              advec_hypermesh_uu = 0.0
-            else
-              advec_hypermesh_uu=nu_hyper3_mesh*pi5_1*sqrt(dxyz_2)
-            endif
-            advec2_hypermesh=advec2_hypermesh+advec_hypermesh_uu**2
-          endif
         enddo
+        if (lpencil(i_visc_heat)) then
+          if (headtt) &
+            call warning('calc_pencils_viscosity', 'viscous heating term '//&
+                         'is not implemented for lvisc_hyper3_mesh')
+        endif
+        if (lfirst .and. ldt) then
+          if (ldynamical_diffusion) then
+            p%diffus_total3 = p%diffus_total3 + nu_hyper3_mesh
+            advec_hypermesh_uu = 0.0
+          else
+            advec_hypermesh_uu=nu_hyper3_mesh*pi5_1*sqrt(dxyz_2)
+          endif
+          advec2_hypermesh=advec2_hypermesh+advec_hypermesh_uu**2
+        endif
       endif
 !
 !  viscous force: mu/rho*del6u

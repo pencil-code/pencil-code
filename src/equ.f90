@@ -746,7 +746,7 @@ module Equ
           maxadvec=0.
           if (ldensity.or.lmagnetic.or.lradiation.or.lneutralvelocity.or.lcosmicray) &
             advec2=0.
-          if (ldensity.or.lhydro.or.lmagnetic.or.lenergy) &
+          if (ldensity.or.lviscosity.or.lmagnetic.or.lenergy) &
             advec2_hypermesh=0.0
           maxdiffus=0.
           maxdiffus2=0.
