@@ -2609,6 +2609,7 @@ module Special
       real, dimension(nx), intent(in) :: lnTT
       real, dimension(nx), intent(out) :: lnQ, delta_lnTT
 !
+      ! 37 points extracted from Cook et al. (1989)
       real, parameter, dimension(37) :: intlnT = (/ &
           8.74982, 8.86495, 8.98008, 9.09521, 9.21034, 9.44060, 9.67086, &
           9.90112, 10.1314, 10.2465, 10.3616, 10.5919, 10.8221, 11.0524, &
@@ -2625,6 +2626,7 @@ module Special
           -81.9874, -82.2023, -82.5093, -82.5477, -82.4172, -82.2637, &
           -0.66650 /)
 !
+      ! 16 points extracted from Cook et al. (1989)
       real, parameter, dimension(16) :: intlnT1 = (/ &
           8.98008, 9.44060, 9.90112, 10.3616, 10.8221, 11.2827, &
           11.5129, 11.8583, 12.4340, 12.8945, 13.3550, 13.8155, &
@@ -2634,6 +2636,7 @@ module Special
           -79.1322, -79.4776, -79.2934, -79.6618, -79.3778, -79.5159, &
           -80.1990, -82.5093, -82.1793, -78.6717 /)
 !
+      ! Four Gaussians plus one constant fitted to Cook et al. (1989)
       real, dimension(9) :: pars = (/ &
           2.12040e+00, 3.88284e-01, 2.02889e+00, 3.35665e-01, 6.34343e-01, &
           1.94052e-01, 2.54536e+00, 7.28306e-01, -2.40088e+01 /)
@@ -2643,11 +2646,12 @@ module Special
       integer :: i, px, z_ref
       real :: pos, frac
 !
-!  select type for cooling fxunction
-!  1: 10 points interpolation
-!  2: 37 points interpolation
-!  3: four gaussian fit
+!  select type for cooling function
+!  1: 16-points logarithmic-piecewise-linear interpolation
+!  2: 37-points logarithmic-piecewise-linear interpolation
+!  3: four Gaussians fit
 !  4: several fits
+!  5: 37-points logarithmic-piecewise-linear interpolation with extrapolation
 !
       select case (cool_type)
       case (1)
