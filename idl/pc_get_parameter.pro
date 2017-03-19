@@ -249,6 +249,7 @@ function pc_get_parameter, param, label=label, missing=missing, dim=dim, datadir
 
 	; Some additional units
 	if (strcmp (param, 'unit_time', /fold_case)) then return, pc_get_parameter ('unit_length', label=label) / pc_get_parameter ('unit_velocity', label=label)
+	if (strcmp (param, 'unit_energy', /fold_case)) then return, pc_get_parameter ('unit_density', label=label) * pc_get_parameter ('unit_velocity', label=label)^2 / pc_get_parameter ('unit_length', label=label)^3
 
 	; Some additional mathematical constants
 	if (strcmp (param, 'e', /fold_case)) then return, 2.718281828459045235d0 ; Euler constnat
