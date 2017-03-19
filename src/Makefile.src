@@ -2509,12 +2509,18 @@ buildinfo:
 	    -e "PARTICLES_SPIN='$(PARTICLES_SPIN)';PARTICLES_CHEMISTRY='$(PARTICLES_CHEMISTRY)';" > .buildinfo
 #
 cparam.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam $(preprocess)
-	scripts/mkcparam -b $(preprocess) -o cparam.inc
-	@cat cparam.inc | perl -ne '$$H{$$_}++ or print' > tmp
-	@mv -f tmp cparam.inc
+	scripts/mkcparam -b $(preprocess) -o tmp
+	@cat tmp | perl -ne '$$H{$$_}++ or print' > cparam.inc.prelim
+	@rm -f tmp
+	@if [[ ! -e cparam.inc ]] || [ "`diff -w cparam.inc.prelim cparam.inc`" != "" ]; then \
+	  mv -f cparam.inc.prelim cparam.inc; \
+	else \
+	  rm -f cparam.inc.prelim; \
+	fi
 #
 cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
-	if [ "" ]; then \
+# What is the function of these self-links (should cost time)?
+	@if [ "" ]; then \
 	    rm -f cparam.inc; \
 	    rm -f cparam_pencils.inc; \
 	    ln -s cparam.inc cparam.inc; \
