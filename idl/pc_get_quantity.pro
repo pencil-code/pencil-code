@@ -182,12 +182,11 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 
 	if (strcmp (quantity, 'E_therm', /fold_case)) then begin
 		; Thermal energy [J]
-		DOF = pc_get_parameter ('degrees_of_freedom', label=quantity)
-		k_B = pc_get_parameter ('k_Boltzmann', label=quantity)
-		dV = pc_compute_quantity (vars, index, 'dV', ghost=ghost)
+		gamma = pc_get_parameter ('isentropic_exponent', label=quantity)
+		cp_SI = pc_get_parameter ('cp_SI', label=quantity)
 		if (n_elements (Temp) eq 0) then Temp = pc_compute_quantity (vars, index, 'Temp', ghost=ghost)
-		if (n_elements (n_rho) eq 0) then n_rho = pc_compute_quantity (vars, index, 'n_rho', ghost=ghost)
-		return, 0.5 * DOF * n_rho * dV * k_B * Temp
+		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho', ghost=ghost)
+		return, rho * Temp * cp_SI / gamma * unit.energy
 	end
 	if (strcmp (quantity, 'E_kin_rho', /fold_case)) then begin
 		; Kinetic energy density [J/m^3]
