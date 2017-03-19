@@ -280,6 +280,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		dx:'grid distance x', $
 		dy:'grid distance y', $
 		dz:'grid distance z', $
+		dV:'grid cell volume', $
 		inv_dx:'inverse grid distance x', $
 		inv_dy:'inverse grid distance y', $
 		inv_dz:'inverse grid distance z', $
@@ -454,9 +455,10 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		dx:'', $
 		dy:'', $
 		dz:'', $
-		inv_dx:'', $
-		inv_dy:'', $
-		inv_dz:'', $
+		dV:['dx', 'dy', 'dz'], $
+		inv_dx:'dx', $
+		inv_dy:'dy', $
+		inv_dz:'dz', $
 		size_x:'', $
 		size_y:'', $
 		size_z:'', $
