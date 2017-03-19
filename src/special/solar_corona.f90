@@ -2478,6 +2478,15 @@ module Special
 !
 !     change energy equation
 !
+! write (100+iproc+10*it,*) 'n:', n
+! write (100+iproc+10*it,*) 'E:', E_init_z(n)
+! write (100+iproc+10*it,*) 'P:', 1.0/(p%TT1 * p%rho1 * p%cp1 * gamma)
+! write (100+iproc+10*it,*) 'ratio:', E_init_z(n) * (p%TT1 * p%rho1 * p%cp1 * gamma)
+! write (100+iproc+10*it,*) 'TT1:', p%TT1
+! write (100+iproc+10*it,*) 'rho1:', p%rho1
+! write (100+iproc+10*it,*) 'unit_energy:', unit_energy   ! 1.0e12 ?
+! write (100+iproc+10*it,*) 'cp1:', p%cp1   ! 1.0
+! write (100+iproc+10*it,*) 'gamma:', gamma ! 5/3
       if (ltemperature .and. ltemperature_nolog) then
         tmp = heat_cool * E_init_z(n) * (p%TT1 * p%rho1 * p%cp1 * gamma)
         df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) + tmp
