@@ -135,6 +135,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		HR_ohm_particle:'Ohmic heating rate / particle', $
 		HR_viscous:'viscous heating rate', $
 		HR_viscous_particle:'viscous heating rate / particle', $
+		A_abs:'magnetic vector potential', $
 		A_x:'magnetic vector potential x', $
 		A_y:'magnetic vector potential y', $
 		A_z:'magnetic vector potential z', $
@@ -326,6 +327,7 @@ function pc_check_quantities, check=check, sources=sources, datadir=datadir, dim
 		HR_ohm_particle:['HR_ohm', 'n_rho'], $
 		HR_viscous:['u', 'rho'], $
 		HR_viscous_particle:['HR_viscous', 'n_rho'], $
+		A_abs:'A', $
 		A_x:'A', $
 		A_y:'A', $
 		A_z:'A', $

@@ -654,6 +654,10 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		; Magnetic vector potential [T * m]
 		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.aa] * (unit.magnetic_field*unit.length)
 	end
+	if (strcmp (quantity, 'A_abs', /fold_case)) then begin
+		; Magnetic vector potential [T * m]
+		return, sqrt (dot2 (pc_compute_quantity (vars, index, 'A')))
+	end
 	if (strcmp (quantity, 'A_x', /fold_case)) then begin
 		; Magnetic vector potential x-component
 		return, vars[gl1:gl2,gm1:gm2,gn1:gn2,index.ax] * (unit.magnetic_field*unit.length)
