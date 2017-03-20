@@ -1240,7 +1240,7 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 #CC=mpicc #(hydra)
 #CFLAGS=-O1 -DFUNDERSC=1 #(hydra)
 #LD_MPI= #(hydra)
-#FFLAGS_DOUBLE=-fdefault-real-8 #(hydra)
+#FFLAGS_DOUBLE=-r8 #(hydra)
 #LIBMPISUFFIX=#(hydra)
 ##
 ## Axel on LCD
