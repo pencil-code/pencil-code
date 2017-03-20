@@ -2512,7 +2512,7 @@ cparam.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam $(preproce
 	scripts/mkcparam -b $(preprocess) -o tmp
 	@cat tmp | perl -ne '$$H{$$_}++ or print' > cparam.inc.prelim
 	@rm -f tmp
-	@if [[ ! -e cparam.inc ]] || [ "`diff -w cparam.inc.prelim cparam.inc`" != "" ]; then \
+	@if [ ! -e cparam.inc ] || [ "`diff -w cparam.inc.prelim cparam.inc`" != "" ]; then \
 	  mv -f cparam.inc.prelim cparam.inc; \
 	else \
 	  rm -f cparam.inc.prelim; \
