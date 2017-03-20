@@ -2519,13 +2519,6 @@ cparam.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam $(preproce
 	fi
 #
 cparam.o:  cparam.f90 cparam.local cparam.inc cparam_pencils.inc
-# What is the function of these self-links (should cost time)?
-	@if [ "" ]; then \
-	    rm -f cparam.inc; \
-	    rm -f cparam_pencils.inc; \
-	    ln -s cparam.inc cparam.inc; \
-	    ln -s cparam_pencils.inc cparam_pencils.inc; \
-	fi
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(FFLAGS_FOURIER) $(F90FLAGS) $(FSTD) -o cparam.o -c cparam.f90
 #
 special_dummies.inc:  nospecial.f90 $(SPECIAL_MODULES:=.f90) Makefile.local
