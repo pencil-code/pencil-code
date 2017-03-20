@@ -63,6 +63,7 @@ module Special
   real, dimension(mz) :: uu_init_z, lnrho_init_z, lnTT_init_z
   real, dimension(:), allocatable :: deltaT_init_z, deltaE_init_z, E_init_z, deltarho_init_z
   logical :: linit_uu=.false., linit_lnrho=.false., linit_lnTT=.false.
+  logical :: lcooling_cutoff=.false.
 !
   ! file location settings
   character(len=*), parameter :: vel_times_dat = 'driver/vel_times.dat'
@@ -87,7 +88,7 @@ module Special
       lnc_density_depend, lnc_intrin_energy_depend, &
       init_time_fade_start, init_time_hcond_fade_start, &
       swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, swamp_eta, &
-      vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau
+      vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau, lcooling_cutoff
 !
   integer :: idiag_dtvel=0     ! DIAG_DOC: Velocity driver time step
   integer :: idiag_dtnewt=0    ! DIAG_DOC: Radiative cooling time step
@@ -2547,12 +2548,15 @@ module Special
       use Diagnostics,     only: max_mn_name
       use Mpicomm,         only: stop_it
       use Sub,             only: cubic_step
+      use SharedVariables, only: get_shared_variable
 !
+      integer :: ierr
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
 !
       real, dimension(nx) :: lnQ, rtv_cool, lnTT_SI, lnneni, delta_lnTT, tmp
       real :: unit_lnQ
+      real, pointer :: z_cutoff
 !
       unit_lnQ = 3*alog(real(unit_velocity))+ &
           5*alog(real(unit_length))+alog(real(unit_density))
@@ -2572,8 +2576,17 @@ module Special
       rtv_cool = rtv_cool*cool_RTV * get_time_fade_fact()
 !     for adjusting by setting cool_RTV in run.in
 !
-      rtv_cool = rtv_cool &
+      if (lcooling_cutoff) then
+        call get_shared_variable('z_cutoff',&
+             z_cutoff,ierr)
+        if (ierr/=0) call fatal_error('calc_heat_cool_RTV:',&
+             'failed to get z_cutoff from radiation_ray')
+        rtv_cool = rtv_cool &
+          *cubic_step(z(n),z_cutoff,0.2,1.0)
+      else
+        rtv_cool = rtv_cool &
           *(1.-cubic_step(p%lnrho,-12.-alog(real(unit_density)),3.))
+      endif
 !
 ! slices
       rtv_yz(m-m1+1,n-n1+1) = rtv_cool(ix_loc-l1+1)

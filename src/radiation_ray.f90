@@ -86,7 +86,7 @@ module Radiation
   real :: knee_temp_opa=0.0, width_temp_opa=1.0
   real :: ampl_Isurf=0.0, radius_Isurf=0.0
   real :: lnTT_table0=0.0, dlnTT_table=0.0, kapparho_floor=0.0
-  real :: z_cutoff,TT_cutoff
+  real :: z_cutoff=0.0,TT_cutoff=impossible
 !
   integer :: radx=0, rady=0, radz=1, rad2max=1, nnu=1
   integer, dimension (maxdir,3) :: dir
@@ -1552,12 +1552,15 @@ module Radiation
 !
       use EquationOfState, only: eoscalc
       use Debug_IO, only: output
+      use SharedVariables, only: put_shared_variable
+      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       logical, save :: lfirst=.true.
       integer, dimension(mx) :: ilnTT_table
       real, dimension(mx) :: lnTT
       integer :: inu
+      integer :: ierr
 !
       select case (source_function_type)
 !
@@ -1568,6 +1571,9 @@ module Radiation
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnTT=lnTT)
           if (lcutoff_opticallythin) then
+            call put_shared_variable('z_cutoff',z_cutoff,ierr)
+            if (ierr/=0) call stop_it("source_function: "//&
+              "there was a problem when putting z_cutoff")
             if (z(n).le.z_cutoff) then
                Srad(:,m,n)=arad*exp(4*lnTT)*scalefactor_Srad(inu)
             else
