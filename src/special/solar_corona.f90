@@ -73,7 +73,7 @@ module Special
   character(len=*), parameter :: mag_vel_field_dat = 'driver/mag_vel_field.dat'
 !
   ! input parameters
-  namelist /special_init_pars/ linit_uu,linit_lnrho,linit_lnTT,prof_type
+  namelist /special_init_pars/ linit_uu,linit_lnrho,linit_lnTT,prof_type,nvor
 !
   ! run parameters
   namelist /special_run_pars/ &
