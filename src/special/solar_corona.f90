@@ -188,7 +188,7 @@ module Special
           call fatal_error ('solar_corona/gran_driver', &
               "'nglevel' is invalid and/or larger than 'max_gran_levels'.")
       ! Using vorticity increase, the x- and y-directions must be equidistant.
-      if ((nvor > 0.0) .and. ((dx /= dy) .or. any (.not. lequidist(1:2)))) &
+      if (lgranulation .and. (nvor > 0.0) .and. ((dx /= dy) .or. any (.not. lequidist(1:2)))) &
           call fatal_error ('solar_corona/gran_driver', &
               "If 'nvor' is active, the grid must be equidistant in x and y.")
       ! For only one granulation level, no parallelization is required.
