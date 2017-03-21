@@ -435,7 +435,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, rho
 	end
 	if (strcmp (quantity, 'grad_rho', /fold_case)) then begin
-		; Gradient of density
+		; Gradient of density [kg / m^4]
 		if (n_elements (grad_rho) eq 0) then begin
 			if (any (strcmp (sources, 'lnrho', /fold_case))) then begin
 				grad_rho = (grad (exp (vars[*,*,*,index.lnrho])))[l1:l2,m1:m2,n1:n2,*] * unit.density / unit.length
@@ -479,7 +479,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, P_therm
 	end
 	if (strcmp (quantity, 'grad_P_therm', /fold_case)) then begin
-		; Gradient of thermal pressure
+		; Gradient of thermal pressure [N / m^3]
 		cp_SI = pc_get_parameter ('cp_SI', label=quantity)
 		gamma = pc_get_parameter ('gamma', label=quantity)
 		if (n_elements (rho) eq 0) then rho = pc_compute_quantity (vars, index, 'rho')
@@ -494,7 +494,7 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, grad_P_therm
 	end
 	if (strcmp (quantity, 'grad_P_therm_abs', /fold_case)) then begin
-		; Absolute value of thermal pressure gradient
+		; Absolute value of thermal pressure gradient [N / m^3]
 		if (n_elements (grad_P_therm) eq 0) then grad_P_therm = pc_compute_quantity (vars, index, 'grad_P_therm')
 		return, sqrt (dot2 (grad_P_therm))
 	end
@@ -506,21 +506,21 @@ function pc_compute_quantity, vars, index, quantity, ghost=ghost
 		return, sqrt (kappa * P_therm / rho)
 	end
 	if (strcmp (quantity, 'H_P_therm_x', /fold_case)) then begin
-		; Scaling height of thermal pressure x-component
+		; Scaling height of thermal pressure x-component [m]
 		if (n_elements (P_therm) eq 0) then P_therm = pc_compute_quantity (vars, index, 'P_therm')
 		if (n_elements (grad_P_therm) eq 0) then grad_P_therm = pc_compute_quantity (vars, index, 'grad_P_therm')
 		dP_therm_dx = grad_P_therm[*,*,*,0]
 		return, -(P_therm / dP_therm_dx)
 	end
 	if (strcmp (quantity, 'H_P_therm_y', /fold_case)) then begin
-		; Scaling height of thermal pressure y-component
+		; Scaling height of thermal pressure y-component [m]
 		if (n_elements (P_therm) eq 0) then P_therm = pc_compute_quantity (vars, index, 'P_therm')
 		if (n_elements (grad_P_therm) eq 0) then grad_P_therm = pc_compute_quantity (vars, index, 'grad_P_therm')
 		dP_therm_dy = grad_P_therm[*,*,*,1]
 		return, -(P_therm / dP_therm_dy)
 	end
 	if (strcmp (quantity, 'H_P_therm_z', /fold_case)) then begin
-		; Scaling height of thermal pressure z-component
+		; Scaling height of thermal pressure z-component [m]
 		if (n_elements (P_therm) eq 0) then P_therm = pc_compute_quantity (vars, index, 'P_therm')
 		if (n_elements (grad_P_therm) eq 0) then grad_P_therm = pc_compute_quantity (vars, index, 'grad_P_therm')
 		dP_therm_dz = grad_P_therm[*,*,*,2]
