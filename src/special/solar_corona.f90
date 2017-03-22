@@ -30,6 +30,7 @@ module Special
 !
   ! maximum number of granulation levels, technical maximum is 9
   integer, parameter :: max_gran_levels=3
+  integer :: cool_RTV_cutoff=0
 !
   real :: tdown=0., allp=0., Kgpara=0., heat_cool=0., rho_diff_fix=0., cool_RTV=0., Kgpara2=0., tdownr=0., allpr=0.
   real :: lntt0=0., wlntt=0., bmdi=0., hcond1=0., heatexp=0., heatamp=0., Ksat=0., Kc=0.
@@ -63,7 +64,6 @@ module Special
   real, dimension(mz) :: uu_init_z, lnrho_init_z, lnTT_init_z
   real, dimension(:), allocatable :: deltaT_init_z, deltaE_init_z, E_init_z, deltarho_init_z
   logical :: linit_uu=.false., linit_lnrho=.false., linit_lnTT=.false.
-  logical :: lcooling_cutoff=.false.
 !
   ! file location settings
   character(len=*), parameter :: vel_times_dat = 'driver/vel_times.dat'
@@ -88,7 +88,8 @@ module Special
       lnc_density_depend, lnc_intrin_energy_depend, &
       init_time_fade_start, init_time_hcond_fade_start, &
       swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, swamp_eta, &
-      vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau, lcooling_cutoff
+      vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau, &
+      cool_RTV_cutoff
 !
   integer :: idiag_dtvel=0     ! DIAG_DOC: Velocity driver time step
   integer :: idiag_dtnewt=0    ! DIAG_DOC: Radiative cooling time step
@@ -2576,17 +2577,21 @@ module Special
       rtv_cool = rtv_cool*cool_RTV * get_time_fade_fact()
 !     for adjusting by setting cool_RTV in run.in
 !
-      if (lcooling_cutoff) then
+      select case (cool_RTV_cutoff)
+      case(0)
+        rtv_cool = rtv_cool &
+          *(1.-cubic_step(p%lnrho,-12.-alog(real(unit_density)),3.))
+      case(1)
         call get_shared_variable('z_cutoff',&
              z_cutoff,ierr)
         if (ierr/=0) call fatal_error('calc_heat_cool_RTV:',&
              'failed to get z_cutoff from radiation_ray')
         rtv_cool = rtv_cool &
           *cubic_step(z(n),z_cutoff,0.2,1.0)
-      else
-        rtv_cool = rtv_cool &
-          *(1.-cubic_step(p%lnrho,-12.-alog(real(unit_density)),3.))
-      endif
+      case default
+        call fatal_error('cool_RTV_cutoff:','wrong value')
+      endselect
+       
 !
 ! slices
       rtv_yz(m-m1+1,n-n1+1) = rtv_cool(ix_loc-l1+1)
