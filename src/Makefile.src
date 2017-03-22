@@ -1236,9 +1236,9 @@ YINYANG_MPI_SRC=$(YINYANG_MPI).f90
 ## Piyali on Hydra
 ##
 #FC=mpif90 #(hydra)
-#FFLAGS= -O1  #(hydra)
+#FFLAGS= -O2  #(hydra)
 #CC=mpicc #(hydra)
-#CFLAGS=-O1 -DFUNDERSC=1 #(hydra)
+#CFLAGS=-O2 -DFUNDERSC=1 #(hydra)
 #LD_MPI= #(hydra)
 #FFLAGS_DOUBLE=-r8 #(hydra)
 #LIBMPISUFFIX=#(hydra)
