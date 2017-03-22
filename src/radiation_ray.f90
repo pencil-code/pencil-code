@@ -86,7 +86,7 @@ module Radiation
   real :: knee_temp_opa=0.0, width_temp_opa=1.0
   real :: ampl_Isurf=0.0, radius_Isurf=0.0
   real :: lnTT_table0=0.0, dlnTT_table=0.0, kapparho_floor=0.0
-  real :: z_cutoff=0.0,TT_cutoff=impossible
+  real :: z_cutoff=impossible,TT_cutoff=impossible
 !
   integer :: radx=0, rady=0, radz=1, rad2max=1, nnu=1
   integer, dimension (maxdir,3) :: dir
@@ -1571,6 +1571,8 @@ module Radiation
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnTT=lnTT)
           if (lcutoff_opticallythin) then
+            if (z_cutoff==impossible) &
+            call fatal_error("source_function:","z_cutoff is not set")
             call put_shared_variable('z_cutoff',z_cutoff,ierr)
             if (ierr/=0) call stop_it("source_function: "//&
               "there was a problem when putting z_cutoff")
