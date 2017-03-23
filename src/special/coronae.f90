@@ -232,10 +232,12 @@ module Special
           read(unit) lnTT_init_prof
           close(unit)
         else
-          if (ldensity_nolog) then
-            lnrho_init_prof = log(f(l1,m1,:,irho))
-          else
-            lnrho_init_prof = f(l1,m1,:,ilnrho)
+          if (ldensity) then
+            if (ldensity_nolog) then
+              lnrho_init_prof = log(f(l1,m1,:,irho))
+            else
+              lnrho_init_prof = f(l1,m1,:,ilnrho)
+            endif
           endif
           if (ltemperature) then
             if (ltemperature_nolog) then
@@ -245,7 +247,7 @@ module Special
             endif
           else if (lentropy.and.pretend_lnTT) then
             lnTT_init_prof = f(l1,m1,:,ilnTT)
-          else if (lthermal_energy) then
+          else if (lthermal_energy .and. ldensity) then
             if (leos) call get_cp1(cp1)
             lnTT_init_prof=log(gamma*cp1*f(l1,m1,:,ieth)*exp(-lnrho_init_prof))
           else
@@ -2168,8 +2170,8 @@ module Special
       if (headtt) print*,'special_calc_energy: newton cooling',tau_inv_newton
 !
 !  Get reference temperature
-      rho0_rho = exp(lnrho_init_prof(n)-p%lnrho)
-      TT0_TT = exp(lnTT_init_prof(n)-p%lnTT)
+      if (ldensity) rho0_rho = exp(lnrho_init_prof(n)-p%lnrho)
+      if (ltemperature) TT0_TT = exp(lnTT_init_prof(n)-p%lnTT)
 !
 !  Multiply by density dependend time scale
       if (exp_newton /= 0.) then
@@ -2193,8 +2195,8 @@ module Special
         tau_inv_tmp = tau_inv_newton
       endif
 !
-      df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) + tau_inv_tmp*(rho0_rho-1.)
-      df(l1:l2,m,n,ilnTT) =df(l1:l2,m,n,ilnTT)  + tau_inv_tmp*rho0_rho*(TT0_TT-1.)
+      if (ldensity) df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) + tau_inv_tmp*(rho0_rho-1.)
+      if (ltemperature) df(l1:l2,m,n,ilnTT) =df(l1:l2,m,n,ilnTT)  + tau_inv_tmp*rho0_rho*(TT0_TT-1.)
 !
 !       newton  = newton * tau_inv_tmp
 ! !
@@ -3783,8 +3785,8 @@ module Special
       if (nghost /= 3) call fatal_error('mark_boundary','works only for nghost=3')
 !
       if (lfirstcall) then
-        lnrho_init = f(:,:,1:3,ilnrho)
-        lntt_init  = f(:,:,1:3,ilntt)
+        if (ldensity) lnrho_init = f(:,:,1:3,ilnrho)
+        if (ltemperature) lntt_init = f(:,:,1:3,ilntt)
         ax_init    = f(:,:,1:3,iax)
         ay_init    = f(:,:,1:3,iay)
         az_init    = f(:,:,1:3,iaz)
