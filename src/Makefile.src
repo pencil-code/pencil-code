@@ -2667,15 +2667,17 @@ TAGS: $(TAG_SOURCE)
 #
 slender:
 	rm -f *.o *.a *.mod
-	rm -f special/*.o special/*.mod
-	rm -f initial_condition/*.o initial_condition/*.mod
 	rm -f experimental/*.o experimental/*.mod
+	rm -f initial_condition/*.o initial_condition/*.mod
+	rm -f magnetic/*.o magnetic/*.mod
 	rm -f pre_and_post_processing/*.o
+	rm -f special/*.o special/*.mod
+	rm -f test_methods/*.o test_methods/*.mod
 #
 #  Clean up, but leave makefile and TAGS.
 #
 clean:  slender
-	rm -f *.x *.d cparam*.inc cparam_pencils*.inc file_io_common.inc *.il
+	rm -f *.x *.d cparam*.inc* cparam_pencils*.inc file_io_common.inc *.il
 	rm -f pre_and_post_processing/*.x
 	rm -f .current-precision
 	rm -f *.dot *.ps  # Dependency diagram files

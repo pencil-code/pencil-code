@@ -15,12 +15,6 @@ module Cdata
 !
   public
 !
-!  Tiny and huge numbers.
-!
-  real, parameter :: one_real=1.0
-  real, parameter :: epsi=5*epsilon(one_real),tini=5*tiny(one_real)
-  real, parameter :: huge1=0.2*huge(one_real)
-!
 !  Default CVS Id.
 !
   character (len=linelen) :: cvsid='no cvsid is given in start.in or run.in!'

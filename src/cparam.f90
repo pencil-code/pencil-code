@@ -102,6 +102,12 @@ module Cparam
   real, parameter :: max_real=huge(0.0)/10.    ! division necessary as INTEL compiler considers
                                                ! huge(0.) illegal when reading it from a namelist 
 !
+!  Tiny and huge numbers.
+!
+  real, parameter :: one_real=1.0
+  real, parameter :: epsi=5*epsilon(one_real),tini=5*tiny(one_real)
+  real, parameter :: huge1=0.2*huge_real
+!
 !  A marker value that is highly unlikely ("impossible") to ever occur
 !  during a meaningful run: use a very large number.
 !  We use numbers ~ 2 orders of magnitude below the maximum possible

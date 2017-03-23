@@ -376,9 +376,9 @@ module Shear
 !  Take shear into account for calculating time step.
 !
       if (lfirst .and. ldt .and. (lhydro .or. ldensity) .and. &
-          nygrid > 1 .and. .not. lshearadvection_as_shift) then
-          advec_shear = abs(uy0 * dy_1(m))
-          maxadvec=maxadvec+advec_shear
+        nygrid > 1 .and. .not. lshearadvection_as_shift) then
+        advec_shear = abs(uy0 * dy_1(m))
+        maxadvec=maxadvec+advec_shear
       else
         advec_shear=0.
       endif
