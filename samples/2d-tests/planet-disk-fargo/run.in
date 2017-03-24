@@ -15,7 +15,6 @@
   crash_file_dtmin_factor=10.
   lfargo_advection=T
 !
-  lhyper_avoid_boundary=T
   fraction_tborder=0.1
   !tborder=1.0
   wborder_int=0.1
