@@ -1013,10 +1013,20 @@ module Equ
           dt1_advec  = maxadvec/cdt
           dt1_diffus = maxdiffus/cdtv + maxdiffus2/cdtv2 + maxdiffus3/cdtv3
 !
+!  WL : this dt1_diffus should be broken down as below:
+!
+          !dt1_diffus  = maxdiffus/cdtv
+          !dt1_diffus2 = maxdiffus2/cdtv2
+          !dt1_diffus3 = maxdiffus3/cdtv3
+!
 !  Timestep constraint from source terms.
 !
           dt1_src    = 5.0 * maxsrc
           dt1_max    = max(dt1_max, sqrt(dt1_advec**2 + dt1_diffus**2 + dt1_src**2))
+!
+!  WL: This should not be a quadrature sum, should it? Better the way below:
+!
+          !dt1_max    = max(dt1_max,dt1_advec,dt1_diffus,dt1_diffus2,dt1_diffus3,dt1_src)
 !
 !  time step constraint from the coagulation kernel
 !
@@ -1046,6 +1056,8 @@ module Equ
                call max_mn_name(maxadvec/cdt,idiag_dtv,l_dt=.true.)
           if (ldiagnos.and.idiag_dtdiffus/=0) &
                call max_mn_name(maxdiffus/cdtv,idiag_dtdiffus,l_dt=.true.)
+          if (ldiagnos.and.idiag_dtdiffus2/=0) &
+               call max_mn_name(maxdiffus2/cdtv2,idiag_dtdiffus2,l_dt=.true.)
           if (ldiagnos.and.idiag_dtdiffus3/=0) &
                call max_mn_name(maxdiffus3/cdtv3,idiag_dtdiffus3,l_dt=.true.)
 !
