@@ -193,10 +193,15 @@ module Timestep
       use Energy,   only: energy_after_timestep
       use Magnetic, only: magnetic_after_timestep
       use Special,  only: special_after_timestep
+      use Boundcond,only: update_ghosts
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real :: dtsub
+!
+!  Call update ghosts as derivatives may be needed.
+!
+      call update_ghosts(f)
 !     
 !  Dispatch to respective modules.      
 !
