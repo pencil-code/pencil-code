@@ -32,7 +32,7 @@ module Special
   real :: tau_inv_newton=0.,exp_newton=0.,tanh_newton=0.,cubic_newton=0.
   real :: tau_inv_top=0.,tau_inv_newton_mark=0.,chi_spi=0.,tau_inv_spitzer=0.
   real :: width_newton=0.,gauss_newton=0.
-  logical :: lgranulation=.false.,luse_ext_vel_field=.false.,lmag_time_bound=.false.
+  logical :: lgranulation=.false.,luse_ext_vel_field=.false.,lvel_field_is_3D=.false.,lmag_time_bound=.false.
   real :: increase_vorticity=15.,Bavoid=0.0
   real :: Bz_flux=0.,quench=0., b_tau=0.
   real :: init_time=0.,init_width=0.,hcond_grad=0.,hcond_grad_iso=0.
@@ -72,7 +72,7 @@ module Special
       heat_par_full,heat_par_rappazzo,heat_par_schrijver04, &
       heat_par_balleg,t_start_mark,t_mid_mark,t_width_mark,&
       tau_inv_newton,exp_newton,tanh_newton,cubic_newton,width_newton, &
-      lgranulation,luse_ext_vel_field,increase_vorticity,hyper3_chi, &
+      lgranulation,luse_ext_vel_field,lvel_field_is_3D,increase_vorticity,hyper3_chi, &
       Bavoid,Bz_flux,init_time,init_width,quench,hyper3_eta,hyper3_nu, &
       iheattype,heat_par_exp,heat_par_exp2,heat_par_gauss,hcond_grad, &
       hcond_grad_iso,limiter_tensordiff,lmag_time_bound,tau_inv_top, &
@@ -133,9 +133,10 @@ module Special
   integer, save :: pow
   integer, save, dimension(mseed) :: points_rstate
   real, dimension(nx,ny) :: Ux,Uy,b2
-  real, dimension(:,:), allocatable :: Ux_ext_global,Uy_ext_global
+  real, dimension(:,:), allocatable :: Ux_ext_global,Uy_ext_global,Uz_ext_global
   real, dimension(:,:), allocatable :: Ux_e_g_l,Ux_e_g_r
   real, dimension(:,:), allocatable :: Uy_e_g_l,Uy_e_g_r
+  real, dimension(:,:), allocatable :: Uz_e_g_l,Uz_e_g_r
 !
   real, dimension(nx,ny) :: vx,vy,w,avoidarr
   real, dimension(nx,ny,nz) :: Blength
@@ -715,6 +716,9 @@ module Special
         else
           f(l1:l2,m1:m2,n1,iux) = Ux_ext_global(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
           f(l1:l2,m1:m2,n1,iuy) = Uy_ext_global(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
+        endif
+        if (lvel_field_is_3D) then
+          f(l1:l2,m1:m2,n1,iuz) = Uz_ext_global(ipx*nx+1:(ipx+1)*nx,ipy*ny+1:(ipy+1)*ny)
         endif
       endif
 !
@@ -3640,6 +3644,7 @@ module Special
       integer, parameter :: tag_tl=345,tag_tr=346,tag_dt=347
       integer, parameter :: tag_uxl=348,tag_uyl=349
       integer, parameter :: tag_uxr=350,tag_uyr=351
+      integer, parameter :: tag_uzl=352,tag_uzr=353
       integer :: lend=0,ierr,i,stat,px,py
       real, save :: tl=0.,tr=0.,delta_t=0.
 !
@@ -3657,6 +3662,8 @@ module Special
       ierr = max(stat,ierr)
       if (.not.allocated(Uy_ext_global)) allocate(Uy_ext_global(nxgrid,nygrid),stat=stat)
       ierr = max(stat,ierr)
+      if (lvel_field_is_3D .and. .not. allocated(Uz_ext_global)) allocate(Uz_ext_global(nxgrid,nygrid),stat=stat)
+      ierr = max(stat,ierr)
       if (.not.allocated(Ux_e_g_l)) allocate(Ux_e_g_l(nxgrid,nygrid),stat=stat)
       ierr = max(stat,ierr)
       if (.not.allocated(Ux_e_g_r)) allocate(Ux_e_g_r(nxgrid,nygrid),stat=stat)
@@ -3665,6 +3672,12 @@ module Special
       ierr = max(stat,ierr)
       if (.not.allocated(Uy_e_g_r)) allocate(Uy_e_g_r(nxgrid,nygrid),stat=stat)
       ierr = max(stat,ierr)
+      if (lvel_field_is_3D) then
+        if (.not.allocated(Uz_e_g_l)) allocate(Uz_e_g_l(nxgrid,nygrid),stat=stat)
+        ierr = max(stat,ierr)
+        if (.not.allocated(Uz_e_g_r)) allocate(Uz_e_g_r(nxgrid,nygrid),stat=stat)
+        ierr = max(stat,ierr)
+      endif
 !
       if (ierr > 0) call stop_it_if_any(.true.,'read_ext_vel_field: '// &
           'Could not allocate memory for some variable, please check')
@@ -3710,11 +3723,20 @@ module Special
           read (unit,rec=2*i)   Uy_e_g_l
           read (unit,rec=2*i+2) Uy_e_g_r
 !
+          if (lvel_field_is_3D) then
+            read (unit,rec=2*i)   Uz_e_g_l
+            read (unit,rec=2*i+2) Uz_e_g_r
+          endif
+!
 ! convert to pencil units
           Ux_e_g_l = Ux_e_g_l / unit_velocity
           Ux_e_g_r = Ux_e_g_r / unit_velocity
           Uy_e_g_l = Uy_e_g_l / unit_velocity
           Uy_e_g_r = Uy_e_g_r / unit_velocity
+          if (lvel_field_is_3D) then
+            Uz_e_g_l = Uz_e_g_l / unit_velocity
+            Uz_e_g_r = Uz_e_g_r / unit_velocity
+          endif
 !
           close (unit)
 !
@@ -3728,8 +3750,10 @@ module Special
               call mpisend_real(delta_t, px+py*nprocx, tag_dt)
               call mpisend_real(Ux_e_g_l,(/nxgrid,nygrid/),px+py*nprocx,tag_uxl)
               call mpisend_real(Uy_e_g_l,(/nxgrid,nygrid/),px+py*nprocx,tag_uyl)
+              if (lvel_field_is_3D) call mpisend_real(Uz_e_g_l,(/nxgrid,nygrid/),px+py*nprocx,tag_uzl)
               call mpisend_real(Ux_e_g_r,(/nxgrid,nygrid/),px+py*nprocx,tag_uxr)
               call mpisend_real(Uy_e_g_r,(/nxgrid,nygrid/),px+py*nprocx,tag_uyr)
+              if (lvel_field_is_3D) call mpisend_real(Uz_e_g_r,(/nxgrid,nygrid/),px+py*nprocx,tag_uzr)
             enddo
           enddo
 !
@@ -3740,8 +3764,10 @@ module Special
             call mpirecv_real(delta_t, 0, tag_dt)
             call mpirecv_real(Ux_e_g_l,(/nxgrid,nygrid/),0,tag_uxl)
             call mpirecv_real(Uy_e_g_l,(/nxgrid,nygrid/),0,tag_uyl)
+            if (lvel_field_is_3D) call mpirecv_real(Uz_e_g_l,(/nxgrid,nygrid/),0,tag_uzl)
             call mpirecv_real(Ux_e_g_r,(/nxgrid,nygrid/),0,tag_uxr)
             call mpirecv_real(Uy_e_g_r,(/nxgrid,nygrid/),0,tag_uyr)
+            if (lvel_field_is_3D) call mpirecv_real(Uz_e_g_r,(/nxgrid,nygrid/),0,tag_uzr)
           endif
         endif
 !
@@ -3751,13 +3777,12 @@ module Special
 !
       if (tr /= tl) then
         Ux_ext_global=(t*unit_time-(tl+delta_t))*(Ux_e_g_r-Ux_e_g_l)/(tr-tl)+Ux_e_g_l
+        Uy_ext_global=(t*unit_time-(tl+delta_t))*(Uy_e_g_r-Uy_e_g_l)/(tr-tl)+Uy_e_g_l
+        if (lvel_field_is_3D) Uz_ext_global=(t*unit_time-(tl+delta_t))*(Uz_e_g_r-Uz_e_g_l)/(tr-tl)+Uz_e_g_l
       else
         Ux_ext_global = Ux_e_g_r
-      endif
-      if (tr /= tl) then
-        Uy_ext_global=(t*unit_time-(tl+delta_t))*(Uy_e_g_r-Uy_e_g_l)/(tr-tl)+Uy_e_g_l
-      else
         Uy_ext_global = Uy_e_g_r
+        if (lvel_field_is_3D) Uz_ext_global = Uz_e_g_r
       endif
 !
     endsubroutine read_ext_vel_field
