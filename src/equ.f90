@@ -1042,12 +1042,12 @@ module Equ
 !
 !  Diagnostics showing how close to advective and diffusive time steps we are
 !
-          if (ldiagnos.and.idiag_dtv/=0) then
-            call max_mn_name(maxadvec/cdt,idiag_dtv,l_dt=.true.)
-          endif
-          if (ldiagnos.and.idiag_dtdiffus/=0) then
-            call max_mn_name(maxdiffus/cdtv,idiag_dtdiffus,l_dt=.true.)
-          endif
+          if (ldiagnos.and.idiag_dtv/=0) &
+               call max_mn_name(maxadvec/cdt,idiag_dtv,l_dt=.true.)
+          if (ldiagnos.and.idiag_dtdiffus/=0) &
+               call max_mn_name(maxdiffus/cdtv,idiag_dtdiffus,l_dt=.true.)
+          if (ldiagnos.and.idiag_dtdiffus3/=0) &
+               call max_mn_name(maxdiffus3/cdtv3,idiag_dtdiffus3,l_dt=.true.)
 !
 !  Regular and hyperdiffusive mesh Reynolds numbers
 !

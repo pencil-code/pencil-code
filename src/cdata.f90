@@ -447,6 +447,7 @@ module Cdata
                                 ! PHIAVG_DOC: (useful for debugging)
   integer :: idiag_dtv=0        ! DIAG_DOC:
   integer :: idiag_dtdiffus=0   ! DIAG_DOC:
+  integer :: idiag_dtdiffus3=0  ! DIAG_DOC:
   integer :: idiag_Rmesh=0      ! DIAG_DOC: $R_{\rm mesh}$
   integer :: idiag_Rmesh3=0     ! DIAG_DOC: $R_{\rm mesh}^{(3)}$
   integer :: idiag_maxadvec=0   ! DIAG_DOC: maxadvec
@@ -527,7 +528,6 @@ module Cdata
   logical :: lmeridional_border_drive=.false.
   real, dimension(2) :: border_frac_x=0.0,border_frac_y=0.0,border_frac_z=0.0
   logical :: lborder_hyper_diff=.true.
-  logical :: lhyper_avoid_boundary=.false.
   logical :: lfrozen_bcs_x=.false.,lfrozen_bcs_y=.false.,lfrozen_bcs_z=.false.
   logical, dimension(mcom) :: lfrozen_bot_var_x=.false.,lfrozen_top_var_x=.false.
   logical, dimension(mcom) :: lfrozen_bot_var_y=.false.,lfrozen_top_var_y=.false.
