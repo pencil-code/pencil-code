@@ -661,7 +661,7 @@ program run
 !
 !  Save state vector prior to update for the (implicit) ADI scheme.
 !
-    if (lADI) f(:,:,:,iTTold)=f(:,:,:,ilnTT)
+    if (lADI) f(:,:,:,iTTold)=f(:,:,:,iTT)
 !
     if (ltestperturb) call testperturb_begin(f,df)
 !

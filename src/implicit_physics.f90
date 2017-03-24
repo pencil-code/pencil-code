@@ -747,8 +747,8 @@ module ImplicitPhysics
       integer, parameter :: nxt=nx/nprocz
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,mz)      :: finter, source, rho, TT
-      real, dimension(nzgrid,nxt) :: fintert, rhot, wtmp
+      real, dimension(mx,mz)      :: finter, rho1, TT
+      real, dimension(nzgrid,nxt) :: fintert, rho1t, wtmp
       real, dimension(nx)         :: ax, bx, cx, wx, rhsx
       real, dimension(nzgrid)     :: az, bz, cz, wz, rhsz
       real :: aalpha, bbeta
@@ -756,26 +756,23 @@ module ImplicitPhysics
       character(len=255) :: msg
 !
       call update_ghosts(f)
-!
-      TT=f(:,4,:,iTTold)
-      source=(f(:,4,:,ilnTT)-TT)/dt
+      TT=f(:,4,:,iTT)
       if (ldensity) then
-        rho=exp(f(:,4,:,ilnrho))
+        rho1=exp(-f(:,4,:,ilnrho))
       else
-        rho=1.
+        rho1=1.
       endif
 !
 ! Rows dealt implicitly
 !
       do j=n1,n2
-        wx=0.5*dt*cp1*gamma*hcond0/rho(l1:l2,j)
+        wx=0.5*dt*cp1*gamma*hcond0*rho1(l1:l2,j)
         ax=-wx*dx_2
         bx=1.+2.*wx*dx_2
         cx=ax
         rhsx=TT(l1:l2,j) &
           +wx*dx_2*(TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)) &
-          +wx*dz_2*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))     &
-          +dt*source(l1:l2,j)
+          +wx*dz_2*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))
 !
 ! x boundary conditions: periodic
 !
@@ -786,12 +783,12 @@ module ImplicitPhysics
 ! Do the transpositions x <--> z
 !
       call transp_xz(finter(l1:l2,n1:n2), fintert)
-      call transp_xz(rho(l1:l2,n1:n2), rhot)
+      call transp_xz(rho1(l1:l2,n1:n2), rho1t)
 !
 ! Columns dealt implicitly
 !
       do i=1,nxt
-        wz=0.5*dz_2*dt*cp1*gamma*hcond0/rhot(:,i)
+        wz=0.5*dz_2*dt*cp1*gamma*hcond0*rho1t(:,i)
         az=-wz
         bz=1.+2.*wz
         cz=az
@@ -801,11 +798,11 @@ module ImplicitPhysics
         ! Always constant temperature at the top
         !
         bz(nzgrid)=1. ; az(nzgrid)=0. ; rhsz(nzgrid)=cs2top/gamma_m1
-        select case (bcz12(ilnTT,1))
+        select case (bcz12(iTT,1))
           case ('cT') ! Constant temperature at the bottom
-            bz(1)=1.  ; cz(1)=0. ; rhsz(1)=cs2bot/gamma_m1
+            bz(1)=1.  ; cz(1)=0.  ; rhsz(1)=cs2bot/gamma_m1
           case ('c1') ! Constant flux at the bottom
-            bz(1)=1.  ; cz(1)=-1 ; rhsz(1)=dz*Fbot/hcond0
+            bz(1)=1.  ; cz(1)=-1. ; rhsz(1)=dz*Fbot/hcond0
           case default
             call fatal_error('ADI_Kconst_MPI','bcz on TT must be cT or c1')
         endselect
@@ -813,7 +810,7 @@ module ImplicitPhysics
         call tridag(az, bz, cz, rhsz, wtmp(:,i), err, msg)
         if (err) call warning('ADI_Kconst_MPI', trim(msg))
       enddo
-      call transp_zx(wtmp, f(l1:l2,4,n1:n2,ilnTT))
+      call transp_zx(wtmp, f(l1:l2,4,n1:n2,iTT))
 !
     endsubroutine ADI_Kconst_MPI
 !***********************************************************************
@@ -1053,11 +1050,10 @@ module ImplicitPhysics
 !  2-D ADI scheme for the radiative diffusion term for a constant
 !  radiative conductivity K. The ADI scheme is of Yakonov's form:
 !
-!    (1-dt/2*Lamba_x)*T^(n+1/2) = Lambda_x(T^n) + Lambda_z(T^n) + source
+!    (1-dt/2*Lamba_x)*T^(n+1/2) = Lambda_x(T^n) + Lambda_z(T^n)
 !    (1-dt/2*Lamba_z)*T^(n+1)   = T^(n+1/2)
 !
-!  where Lambda_x and Lambda_z denote diffusion operators and the source
-!  term comes from the explicit advance.
+!  where Lambda_x and Lambda_z denote diffusion operators.
 !  Note: this form is more adapted for a parallelisation compared the
 !  Peaceman & Rachford one.
 !
@@ -1068,7 +1064,7 @@ module ImplicitPhysics
 !
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,mz) :: source, finter, TT, rho
+      real, dimension(mx,mz) :: finter, TT, rho1
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, workx
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, workz
       real :: aalpha, bbeta
@@ -1076,27 +1072,24 @@ module ImplicitPhysics
       character(len=255) :: msg
 !
       call update_ghosts(f)
-!
-      source=(f(:,4,:,ilnTT)-f(:,4,:,iTTold))/dt
-      TT=f(:,4,:,iTTold)
+      TT=f(:,4,:,iTT)
       if (ldensity) then
-        rho=exp(f(:,4,:,ilnrho))
+        rho1=exp(-f(:,4,:,ilnrho))
       else
-        rho=1.
+        rho1=1.
       endif
 !
 !  rows dealt implicitly
 !
       do j=n1,n2
-        wx=dt*cp1*gamma*hcond0/rho(l1:l2,j)
+        wx=dt*cp1*gamma*hcond0*rho1(l1:l2,j)
         ax=-wx*dx_2/2.
         bx=1.+wx*dx_2
         cx=ax
         rhsx=TT(l1:l2,j)+ &
              wx*dz_2/2.*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))
         rhsx=rhsx+wx*dx_2/2.*                                 &
-             (TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)) &
-             +dt*source(l1:l2,j)
+             (TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j))
 !
 ! x boundary conditions: periodic
 !
@@ -1108,7 +1101,7 @@ module ImplicitPhysics
 !  columns dealt implicitly
 !
       do i=l1,l2
-        wz=dt*cp1*gamma*hcond0*dz_2/rho(i,n1:n2)
+        wz=dt*cp1*gamma*hcond0*dz_2*rho1(i,n1:n2)
         az=-wz/2.
         bz=1.+wz
         cz=az
@@ -1120,14 +1113,14 @@ module ImplicitPhysics
         bz(nz)=1. ; az(nz)=0.
         rhsz(nz)=cs2top/gamma_m1
 ! bottom
-        select case (bcz12(ilnTT,1))
+        select case (bcz12(iTT,1))
           ! Constant temperature at the bottom
           case ('cT')
             bz(1)=1. ; cz(1)=0.
             rhsz(1)=cs2bot/gamma_m1
           ! Constant flux at the bottom: c1 condition
           case ('c1')
-            bz(1)=1.   ; cz(1)=-1
+            bz(1)=1.   ; cz(1)=-1.
             rhsz(1)=dz*Fbot/hcond0
           case default
             call fatal_error('ADI_Kconst_yakonov','bcz on TT must be cT or c1')
@@ -1135,7 +1128,7 @@ module ImplicitPhysics
 !
         call tridag(az,bz,cz,rhsz,workz,err,msg)
         if (err) call warning('ADI_Kconst_yakonov', trim(msg))
-        f(i,4,n1:n2,ilnTT)=workz
+        f(i,4,n1:n2,iTT)=workz
       enddo
 !
     endsubroutine ADI_Kconst_yakonov
@@ -1183,11 +1176,10 @@ module ImplicitPhysics
 !  2-D ADI scheme for the radiative diffusion term for a variable
 !  radiative conductivity K(z). The ADI scheme is of Yakonov's form:
 !
-!    (1-dt/2*Lamba_x)*T^(n+1/2) = T^n + Lambda_x(T^n) + Lambda_z(T^n) + source
+!    (1-dt/2*Lamba_x)*T^(n+1/2) = T^n + Lambda_x(T^n) + Lambda_z(T^n)
 !    (1-dt/2*Lamba_z)*T^(n+1)   = T^(n+1/2)
 !
-!  where Lambda_x and Lambda_z denote diffusion operators and the source
-!  term comes from the explicit advance.
+!  where Lambda_x and Lambda_z denote diffusion operators.
 !
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
       use Boundcond, only: update_ghosts
@@ -1196,7 +1188,7 @@ module ImplicitPhysics
 !
       integer :: i,j
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,mz) :: source, finter, TT, chi, dchi
+      real, dimension(mx,mz) :: finter, rho1, TT, chi, dchi
       real, dimension(nx)    :: ax, bx, cx, wx, rhsx, wx1
       real, dimension(nz)    :: az, bz, cz, wz, rhsz, wz1
       real :: aalpha, bbeta
@@ -1204,15 +1196,14 @@ module ImplicitPhysics
       character(len=255) :: msg
 !
       call update_ghosts(f)
-!
-      source=(f(:,4,:,ilnTT)-f(:,4,:,iTTold))/dt
-      TT=f(:,4,:,iTTold)
+      TT=f(:,4,:,iTT)
+      rho1=exp(-f(:,4,:,ilnrho))
 !
 ! x-direction
 !
       do j=n1,n2
-        chi(l1:l2,j)=dt*cp1*gamma*hcondz(j)/exp(f(l1:l2,4,j,ilnrho))
-        dchi(l1:l2,j)=dt*cp1*gamma*dhcondz(j)/exp(f(l1:l2,4,j,ilnrho))
+        chi(l1:l2,j)=dt*cp1*gamma*hcondz(j)*rho1(l1:l2,j)
+        dchi(l1:l2,j)=dt*cp1*gamma*dhcondz(j)*rho1(l1:l2,j)
         wx=0.5*chi(l1:l2,j)
         wx1=0.25*dchi(l1:l2,j)
         ax=-wx*dx_2
@@ -1221,8 +1212,7 @@ module ImplicitPhysics
         rhsx=TT(l1:l2,j)   &
             +wx*dx_2*(TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)) &
             +wx*dz_2*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))     &
-            +wx1/dz*(TT(l1:l2,j+1)-TT(l1:l2,j-1))                     &
-            +dt*source(l1:l2,j)
+            +wx1/dz*(TT(l1:l2,j+1)-TT(l1:l2,j-1))
 !
 ! x boundary conditions: periodic
 !
@@ -1245,7 +1235,7 @@ module ImplicitPhysics
 ! Constant temperature at the top
         bz(nz)=1. ; az(nz)=0. ; rhsz(nz)=cs2top/gamma_m1
 ! bottom
-        select case (bcz12(ilnTT,1))
+        select case (bcz12(iTT,1))
           ! Constant temperature at the bottom
           case ('cT')
             bz(1)=1. ; cz(1)=0. ; rhsz(1)=cs2bot/gamma_m1
@@ -1256,7 +1246,7 @@ module ImplicitPhysics
             call fatal_error('ADI_poly','bcz on TT must be cT or c1')
         endselect
 !
-        call tridag(az,bz,cz,rhsz,f(i,4,n1:n2,ilnTT),err,msg)
+        call tridag(az,bz,cz,rhsz,f(i,4,n1:n2,iTT),err,msg)
         if (err) call warning('ADI_poly', trim(msg))
       enddo
 !
@@ -1276,7 +1266,7 @@ module ImplicitPhysics
       integer :: i,j
       integer, parameter :: nxt=nx/nprocz
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mx,mz)      :: source, finter, TT, chi, dchi
+      real, dimension(mx,mz)      :: finter, rho1, TT, chi, dchi
       real, dimension(nx)         :: ax, bx, cx, wx, rhsx, wx1
       real, dimension(nzgrid)     :: az, bz, cz, wz, rhsz, wz1
       real, dimension(nzgrid,nxt) :: fintert, chit, dchit, wtmp
@@ -1285,15 +1275,14 @@ module ImplicitPhysics
       character(len=255) :: msg
 !
       call update_ghosts(f)
-!
-      source=(f(:,4,:,ilnTT)-f(:,4,:,iTTold))/dt
-      TT=f(:,4,:,iTTold)
+      TT=f(:,4,:,iTT)
+      rho1=exp(-f(:,4,:,ilnrho))
 !
 ! x-direction
 !
       do j=n1,n2
-        chi(l1:l2,j)=dt*cp1*gamma*hcondz(j)/exp(f(l1:l2,4,j,ilnrho))
-        dchi(l1:l2,j)=dt*cp1*gamma*dhcondz(j)/exp(f(l1:l2,4,j,ilnrho))
+        chi(l1:l2,j)=dt*cp1*gamma*hcondz(j)*rho1(l1:l2,j)
+        dchi(l1:l2,j)=dt*cp1*gamma*dhcondz(j)*rho1(l1:l2,j)
         wx=0.5*chi(l1:l2,j)
         wx1=0.25*dchi(l1:l2,j)
         ax=-wx*dx_2
@@ -1302,8 +1291,7 @@ module ImplicitPhysics
         rhsx=TT(l1:l2,j)    &
             +wx*dx_2*(TT(l1+1:l2+1,j)-2.*TT(l1:l2,j)+TT(l1-1:l2-1,j)) &
             +wx*dz_2*(TT(l1:l2,j+1)-2.*TT(l1:l2,j)+TT(l1:l2,j-1))     &
-            +wx1/dz*(TT(l1:l2,j+1)-TT(l1:l2,j-1))                     &
-            +dt*source(l1:l2,j)
+            +wx1/dz*(TT(l1:l2,j+1)-TT(l1:l2,j-1))
 !
 ! x boundary conditions: periodic
 !
@@ -1332,7 +1320,7 @@ module ImplicitPhysics
 ! Constant temperature at the top
         bz(nzgrid)=1. ; az(nzgrid)=0. ; rhsz(nzgrid)=cs2top/gamma_m1
 ! bottom
-        select case (bcz12(ilnTT,1))
+        select case (bcz12(iTT,1))
           ! Constant temperature at the bottom
           case ('cT')
             bz(1)=1. ; cz(1)=0. ; rhsz(1)=cs2bot/gamma_m1
@@ -1347,7 +1335,7 @@ module ImplicitPhysics
         call tridag(az,bz,cz,rhsz,wtmp(:,i),err,msg)
         if (err) call warning('ADI_poly_MPI', trim(msg))
       enddo
-      call transp_zx(wtmp, f(l1:l2,4,n1:n2,ilnTT))
+      call transp_zx(wtmp, f(l1:l2,4,n1:n2,iTT))
 !
     endsubroutine ADI_poly_MPI
 !***********************************************************************
