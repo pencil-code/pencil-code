@@ -2358,7 +2358,7 @@ else
 	@for file in $(SPECIAL_MODULES); do sed -e"s/^\(module  *\)[Ss]pecial/\1$${file#*/}/" \
 	                                        -e"s/^\( *endmodule  *\)[Ss]pecial/\1$${file#*/}/" \
 						-e"s/special_dummies\.inc/$${file#*/}_dummies.inc/" \
-					 < $$file.f90 > tmp; if ! cmp -s tmp $(PENCIL_HOME)/src/$$file.f90; then mv -f tmp $(PENCIL_HOME)/src/$$file.f90; fi ; done
+					 < $$file.f90 > tmp; if ! cmp -s tmp $(PENCIL_HOME)/src/$$file.f90; then mv -f tmp $(PENCIL_HOME)/src/$$file.f90; else rm -f tmp; fi ; done
 endif
 special.dll: $(CPARAM_OBJ) $(CDATA_OBJ) $(SPECIAL_OBJ) special_dummies.inc $(SPECIAL_MODULES:=.o)
 	$(LD) $(SPECIAL_MODULES:=.o) $(DLL_LDFLAGS) -o special.dll
