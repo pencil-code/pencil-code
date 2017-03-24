@@ -2328,7 +2328,7 @@ module Density
       if (ldiff_hyper3_polar) then
         do j=1,3
           !for ldensity_nolog it is doing del6lnrho, as it should for a simple hyperdiffusion
-          call der6(f,ilnrho,tmp,j,IGNOREDX=.true.)
+          call der6(f,irho,tmp,j,IGNOREDX=.true.)
           fdiff = fdiff + diffrho_hyper3*pi4_1*tmp*dline_1(:,j)**2
 !AB: wouldn't the following line make more sense?
 !AB: But then the meaning of diffrho_hyper3 changes, so we
@@ -2336,7 +2336,7 @@ module Density
           !fdiff = fdiff + diffrho_hyper3*pi5_1*tmp*dline_1(:,j)**5
         enddo
         if (lfirst.and.ldt) &
-             diffus_diffrho3=diffus_diffrho3+diffrho_hyper3*pi4_1/dxyz_4
+             diffus_diffrho3=diffus_diffrho3+diffrho_hyper3*pi4_1*dxmin_pencil**4
         if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
       endif
 !

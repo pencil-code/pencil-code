@@ -1620,7 +1620,7 @@ module Viscosity
             endif
           endif
           if (lfirst .and. ldt) &
-               p%diffus_total3=p%diffus_total3+nu_hyper3*pi4_1/dxyz_4
+               p%diffus_total3=p%diffus_total3+nu_hyper3*pi4_1*dxmin_pencil**4
         enddo
       endif
 !

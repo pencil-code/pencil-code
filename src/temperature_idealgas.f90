@@ -1081,7 +1081,7 @@ module Energy
           thdiff = thdiff + chi_hyper3*pi4_1*tmp*dline_1(:,j)**2
         enddo
         if (lfirst.and.ldt) &
-             diffus_chi3=diffus_chi3+chi_hyper3*pi4_1*dxyz_2
+             diffus_chi3=diffus_chi3+chi_hyper3*pi4_1*dxmin_pencil**4
         if (headtt) print*,'denergy_dt: chi_hyper3=', chi_hyper3
       endif
 !
