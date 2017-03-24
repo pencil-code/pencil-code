@@ -2352,7 +2352,7 @@ run.x: run.o | $(SPECIAL_DEPS)
 special_preps:
 ifneq ($(SPECIAL_MULT),1)
 	@sed -e 's/^\(module  *\)[a-zA-Z0-9_]* */\1Special/' -e 's/^\( *endmodule  *\)[a-zA-Z0-9_]* *$$/\1Special/' -e"s/[a-zA-Z0-9_]*\.inc/special_dummies.inc/" < $(SPECIAL_MODULES).f90 > tmp
-	@if ! cmp -s tmp $(SPECIAL_MODULES).f90; then mv -f tmp $(PENCIL_HOME)/src/$(SPECIAL_MODULES).f90; fi
+	@if ! cmp -s tmp $(SPECIAL_MODULES).f90; then mv -f tmp $(PENCIL_HOME)/src/$(SPECIAL_MODULES).f90; else rm -f tmp; fi
 else
 	@list="$(subst special/,,$(SPECIAL_MODULES))";sed -e"s/special_modules_list *=.*\'/special_modules_list = \'$${list}\'/" < special.f90 > tmp; mv -f tmp $(PENCIL_HOME)/src/special.f90
 	@for file in $(SPECIAL_MODULES); do sed -e"s/^\(module  *\)[Ss]pecial/\1$${file#*/}/" \
