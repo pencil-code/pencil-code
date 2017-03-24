@@ -165,7 +165,7 @@ module Param_IO
       lsubstract_reference_state, &
       ldirect_access, lproper_averages, lmaximal_cdt, lmaximal_cdtv, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w, &
-      lhyper_avoid_boundary, cyinyang_intpol_type
+      cyinyang_intpol_type
 !
   namelist /IO_pars/ &
       lcollective_IO, IO_strategy
