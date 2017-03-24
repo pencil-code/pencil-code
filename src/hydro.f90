@@ -5343,35 +5343,27 @@ module Hydro
         do ivar=1,mvar
 !
           a_re=f(l1:l2,m1:m2,n,ivar)
+          a_im=0.
 !
 !  Forward transform. No need for computing the imaginary part.
 !  The transform is just a shift in y, so no need to compute
 !  the x-transform either.
 !
-          if (nprocx == 1) then
-            call fourier_shift_y(a_re, phidot*dt_)
-          else
-            a_im=0.
-            call fft_y_parallel(a_re,a_im,SHIFT_Y=phidot*dt_,lneed_im=.false.)
+          call fft_y_parallel(a_re,a_im,SHIFT_Y=phidot*dt_,lneed_im=.false.)
 !
 !  Inverse transform of the shifted array back into real space.
 !  No need again for either imaginary part of x-transform.
 !
-            call fft_y_parallel(a_re,a_im,linv=.true.)
-          endif
+          call fft_y_parallel(a_re,a_im,linv=.true.)
           f(l1:l2,m1:m2,n,ivar)=a_re
 !
 !  Also shift df, unless it is the last subtimestep.
 !
           if (.not.llast) then
             a_re=df(l1:l2,m1:m2,n,ivar)
-            if (nprocx == 1) then
-              call fourier_shift_y(a_re,phidot*dt_)
-            else
-              a_im=0.
-              call fft_y_parallel(a_re,a_im,SHIFT_Y=phidot*dt_,lneed_im=.false.)
-              call fft_y_parallel(a_re,a_im,linv=.true.)
-            endif
+            a_im=0.
+            call fft_y_parallel(a_re,a_im,SHIFT_Y=phidot*dt_,lneed_im=.false.)
+            call fft_y_parallel(a_re,a_im,linv=.true.)
             df(l1:l2,m1:m2,n,ivar)=a_re
           endif
 !
