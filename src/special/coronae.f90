@@ -3645,7 +3645,7 @@ module Special
       integer, parameter :: tag_uxl=348,tag_uyl=349
       integer, parameter :: tag_uxr=350,tag_uyr=351
       integer, parameter :: tag_uzl=352,tag_uzr=353
-      integer :: lend=0,ierr,i,stat,px,py
+      integer :: lend=0,ierr,i,stat,px,py,nr
       real, save :: tl=0.,tr=0.,delta_t=0.
 !
       character (len=*), parameter :: vel_times_dat = 'driver/vel_times.dat'
@@ -3717,15 +3717,17 @@ module Special
           open (unit,file=vel_field_dat,form='unformatted', &
               status='unknown',recl=lend*nxgrid*nygrid,access='direct')
 !
-          read (unit,rec=2*i-1) Ux_e_g_l
-          read (unit,rec=2*i+1) Ux_e_g_r
+          nr = 2
+          if (lvel_field_is_3D) nr = 3
+          read (unit,rec=nr*(i-1)+1) Ux_e_g_l
+          read (unit,rec=nr*i+1) Ux_e_g_r
 !
-          read (unit,rec=2*i)   Uy_e_g_l
-          read (unit,rec=2*i+2) Uy_e_g_r
+          read (unit,rec=nr*(i-1)+2) Uy_e_g_l
+          read (unit,rec=nr*i+2) Uy_e_g_r
 !
           if (lvel_field_is_3D) then
-            read (unit,rec=2*i)   Uz_e_g_l
-            read (unit,rec=2*i+2) Uz_e_g_r
+            read (unit,rec=nr*(i-1)+3) Uz_e_g_l
+            read (unit,rec=nr*i+3) Uz_e_g_r
           endif
 !
 ! convert to pencil units
