@@ -806,7 +806,7 @@ module NeutralVelocity
                fvisc(:,jj)=fvisc(:,jj)+nun_hyper3*pi4_1*tmp*dline_1(:,i)**2
              enddo
              if (lfirst.and.ldt) &
-                  diffus_nun3=diffus_nun3+nun_hyper3*pi4_1*dxyz_2
+                  diffus_nun3=diffus_nun3+nun_hyper3*pi4_1*dxmax_pencil**4
            enddo
 !
      !    case ('shock','nun-shock')

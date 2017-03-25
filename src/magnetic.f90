@@ -3461,7 +3461,7 @@ module Magnetic
           enddo
         enddo
         if (lfirst.and.ldt) &
-             diffus_eta3=diffus_eta3+eta_hyper3*pi4_1*dxmin_pencil**4
+             diffus_eta3=diffus_eta3+eta_hyper3*pi4_1*dxmax_pencil**4
       endif
 !
       if (lresi_hyper3_mesh) then

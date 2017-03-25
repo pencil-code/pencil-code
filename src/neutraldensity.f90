@@ -720,7 +720,7 @@ module NeutralDensity
           fdiff = fdiff + diffrhon_hyper3*pi4_1*tmp*dline_1(:,j)**2
         enddo
         if (lfirst.and.ldt) &
-             diffus_diffrhon3=diffus_diffrhon3+diffrhon_hyper3*pi4_1*dxmin_pencil**4
+             diffus_diffrhon3=diffus_diffrhon3+diffrhon_hyper3*pi4_1*dxmax_pencil**4
         if (headtt) print*,'dlnrhon_dt: diffrhon_hyper3=', diffrhon_hyper3
       endif
 !

@@ -2336,7 +2336,7 @@ module Density
           !fdiff = fdiff + diffrho_hyper3*pi5_1*tmp*dline_1(:,j)**5
         enddo
         if (lfirst.and.ldt) &
-             diffus_diffrho3=diffus_diffrho3+diffrho_hyper3*pi4_1*dxmin_pencil**4
+             diffus_diffrho3=diffus_diffrho3+diffrho_hyper3*pi4_1*dxmax_pencil**4
         if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
       endif
 !

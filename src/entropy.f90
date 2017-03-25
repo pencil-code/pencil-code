@@ -3994,7 +3994,7 @@ module Energy
       if (headtt) print*,'calc_heatcond_hyper3: added thdiff'
 !
       if (lfirst.and.ldt) &
-           diffus_chi3=diffus_chi3+chi_hyper3*pi4_1*dxmin_pencil**4
+           diffus_chi3=diffus_chi3+chi_hyper3*pi4_1*dxmax_pencil**4
 !
     endsubroutine calc_heatcond_hyper3_polar
 !***********************************************************************
