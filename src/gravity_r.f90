@@ -64,7 +64,7 @@ module Gravity
   logical :: lgravity_gas=.true.
   logical :: lgravity_neutrals=.true.
   logical :: lgravity_dust=.true.
-  logical :: lindirect_terms=.false.
+  logical :: lindirect_terms=.true.
   logical :: lramp_mass=.false.
   integer :: iglobal_gg=0
   logical :: lsecondary_wait=.false.
