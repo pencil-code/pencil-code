@@ -163,9 +163,9 @@ module ImplicitPhysics
 !
         if (nx == 1) then
            if (lmultilayer) then
-             call crank_poly(f)
+             call crank_Kprof(f)
            else
-             call ADI_Kconst_1d(f)
+             call crank_Kconst(f)
            endif
         else
           if (nprocz>1) then
@@ -631,11 +631,10 @@ module ImplicitPhysics
 !
     endsubroutine boundary_ADI
 !***********************************************************************
-    subroutine ADI_Kconst_1d(f)
+    subroutine crank_Kconst(f)
 !
 ! 18-sep-07/dintrans: coded
-! Implicit Crank Nicolson scheme in 1-D for a constant K (not
-! really an ADI but keep the generic name for commodity).
+! Implicit Crank Nicolson scheme in 1-D for a constant K.
 !
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
 !
@@ -649,7 +648,7 @@ module ImplicitPhysics
 !
       TT=f(4,4,:,iTT)
 !
-      wz(:)=dt*dz_2*gamma*hcond0*cp1/exp(f(4,4,n1:n2,ilnrho))
+      wz(:)=dt*dz_2*gamma*cp1*hcond0*exp(-f(4,4,n1:n2,ilnrho))
       az(:)=-wz/2.
       bz(:)=1.+wz
       cz(:)=az
@@ -660,13 +659,13 @@ module ImplicitPhysics
       if (bcz12(iTT,1)=='cT') then
         bz(1)=1. ; cz(1)=0.  ; rhsz(1)=cs2bot/gamma_m1 ! T = Tbot
       else
-        cz(1)=2.*cz(1) ; rhsz(1)=rhsz(1)+wz(1)*dz*Fbot/hcond0  ! T' = -Fbot/K
-!        bz(1)=1. ; cz(1)=-1. ; rhsz(1)=dz*Fbot/hcond0  ! T' = -Fbot/K
+!        cz(1)=2.*cz(1) ; rhsz(1)=rhsz(1)+wz(1)*dz*Fbot/hcond0  ! T' = -Fbot/K
+        bz(1)=1. ; cz(1)=-1. ; rhsz(1)=dz*Fbot/hcond0  ! T' = -Fbot/K
       endif
       call tridag(az, bz, cz, rhsz, f(4,4,n1:n2,iTT), err, msg)
-      if (err) call warning('ADI_Kconst_1d', trim(msg))
+      if (err) call warning('crank_Kconst', trim(msg))
 !
-    endsubroutine ADI_Kconst_1d
+    endsubroutine crank_Kconst
 !***********************************************************************
     subroutine ADI_Kprof_1d(f)
 !
@@ -1133,7 +1132,7 @@ module ImplicitPhysics
 !
     endsubroutine ADI_Kconst_yakonov
 !***********************************************************************
-    subroutine crank_poly(f)
+    subroutine crank_Kprof(f)
 !
 ! 01-may-14/dintrans: coded
 !
@@ -1142,15 +1141,16 @@ module ImplicitPhysics
       implicit none
 !
       real, dimension(mx,my,mz,mfarray) :: f
-      real, dimension(mz) :: TT
+      real, dimension(mz) :: TT, rho1
       real, dimension(nz) :: az, bz, cz, rhsz, chi, dchi
       logical :: err
       character(len=255) :: msg
 !
       TT=f(4,4,:,iTT)
+      rho1=exp(-f(4,4,:,ilnrho))
 !
-      chi=0.5*dt*dz_2*gamma*hcondz(n1:n2)*cp1/exp(f(4,4,n1:n2,ilnrho))
-      dchi=0.25*dt/dz*gamma*dhcondz(n1:n2)*cp1/exp(f(4,4,n1:n2,ilnrho))
+      chi=0.5*dt*dz_2*gamma*cp1*hcondz(n1:n2)*rho1(n1:n2)
+      dchi=0.25*dt/dz*gamma*cp1*dhcondz(n1:n2)*rho1(n1:n2)
       az=-chi+dchi
       bz=1.+2.*chi
       cz=-chi-dchi
@@ -1166,9 +1166,9 @@ module ImplicitPhysics
         bz(1)=1. ; cz(1)=-1. ; rhsz(1)=dz*Fbot/hcondz(n1)  ! T' = -Fbot/K
       endif
       call tridag(az, bz, cz, rhsz, f(4,4,n1:n2,iTT), err, msg)
-      if (err) call warning('crank_poly', trim(msg))
+      if (err) call warning('crank_Kprof', trim(msg))
 !
-    endsubroutine crank_poly
+    endsubroutine crank_Kprof
 !***********************************************************************
     subroutine ADI_poly(f)
 !
