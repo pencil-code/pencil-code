@@ -401,7 +401,7 @@ class DataCube(object):
                     self.pp = np.exp(gamma*(self.ss+lnrho))
                 elif hasattr(self, 'lntt'):
                     self.pp = (cp-cv)*np.exp(self.lntt+lnrho)
-                elif hasattr(self, 'tt'):
-                    self.pp = (cp-cv)*self.tt*np.exp(lnrho)
+                elif hasattr(self, 'TT'):
+                    self.pp = (cp-cv)*self.TT*np.exp(lnrho)
                 else:
                     sys.exit("pb in magic!")
