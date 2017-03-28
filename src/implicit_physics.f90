@@ -637,6 +637,7 @@ module ImplicitPhysics
 ! Implicit Crank Nicolson scheme in 1-D for a constant K.
 !
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
+      use Boundcond, only: update_ghosts
 !
       implicit none
 !
@@ -646,6 +647,7 @@ module ImplicitPhysics
       logical :: err
       character(len=255) :: msg
 !
+      call update_ghosts(f,iTT)
       TT=f(4,4,:,iTT)
 !
       wz(:)=dt*dz_2*gamma*cp1*hcond0*exp(-f(4,4,n1:n2,ilnrho))
@@ -754,7 +756,7 @@ module ImplicitPhysics
       logical :: err
       character(len=255) :: msg
 !
-      call update_ghosts(f)
+      call update_ghosts(f,iTT)
       TT=f(:,4,:,iTT)
       if (ldensity) then
         rho1=exp(-f(:,4,:,ilnrho))
@@ -1137,6 +1139,7 @@ module ImplicitPhysics
 ! 01-may-14/dintrans: coded
 !
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
+      use Boundcond, only: update_ghosts
 !
       implicit none
 !
@@ -1146,6 +1149,7 @@ module ImplicitPhysics
       logical :: err
       character(len=255) :: msg
 !
+      call update_ghosts(f,iTT)
       TT=f(4,4,:,iTT)
       rho1=exp(-f(4,4,:,ilnrho))
 !
@@ -1274,7 +1278,7 @@ module ImplicitPhysics
       logical :: err
       character(len=255) :: msg
 !
-      call update_ghosts(f)
+      call update_ghosts(f,iTT)
       TT=f(:,4,:,iTT)
       rho1=exp(-f(:,4,:,ilnrho))
 !
@@ -1327,7 +1331,7 @@ module ImplicitPhysics
           ! Constant flux at the bottom: c1 condition
           case ('c1')
 !            bz(1)=1.   ; cz(1)=-1 ; rhsz(1)=dz*Fbot/hcondz(n1)
-            bz(1)=1.   ; cz(1)=-1 ; rhsz(1)=dz*Fbot/hcond0
+            bz(1)=1.   ; cz(1)=-1. ; rhsz(1)=dz*Fbot/hcond0
           case default
             call fatal_error('ADI_poly_MPI','bcz on TT must be cT or c1')
         endselect
