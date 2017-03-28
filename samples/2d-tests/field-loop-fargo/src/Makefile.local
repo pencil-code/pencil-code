@@ -10,7 +10,7 @@ ENTROPY     = noentropy
 MAGNETIC    =   magnetic
 SHOCK       = noshock
 VISCOSITY   =   viscosity
-GRAVITY     = nogravity
+GRAVITY     =   gravity_r
 
 FOURIER = fourier_fftpack
 
