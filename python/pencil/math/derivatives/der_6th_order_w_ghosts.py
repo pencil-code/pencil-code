@@ -23,12 +23,13 @@ def xder_6th(f,dx,x=[],y=[],z=[]):
         print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
 
+    dim=read_dim()
     dx=N.gradient(x)
     dx2 = 1./(60.*dx)
     dfdx = N.zeros_like(f)
     l1 = 3
     l2 = f.shape[-1]-3
-    if (l2 > l1):
+    if (l2 > l1 and dim.nx!=1):
         for l in range(l1,l2):
             dfdx[...,l] = dx2[l]*( +45.*(f[...,l+1]-f[...,l-1])
                                     -9.*(f[...,l+2]-f[...,l-2])
@@ -44,6 +45,7 @@ def yder_6th(f,dy,x=[],y=[],z=[]):
         raise ValueError
 
     param=read_param(quiet=True)
+    dim=read_dim()
 
     dy=N.gradient(y)
     dy2 = 1./(60.*dy)
@@ -51,7 +53,7 @@ def yder_6th(f,dy,x=[],y=[],z=[]):
     m1 = 3
     m2 = f.shape[-2]-3
 
-    if (m2 > m1):
+    if (m2 > m1 and dim.ny != 1):
         for m in range(m1,m2):
             dfdy[...,m,:] = dy2[m]*( +45.*(f[...,m+1,:]-f[...,m-1,:]) 
                                       -9.*(f[...,m+2,:]-f[...,m-2,:]) 
@@ -73,49 +75,45 @@ def zder_6th(f,dz,x=[],y=[],z=[],run2D=False):
         raise ValueError
 
     param=read_param(quiet=True)
+    dim=read_dim()
 
+    dz=N.gradient(z)
+    dz2 = 1./(60.*dz)
     dfdz = N.zeros_like(f)
 
-    dim=read_dim()
-    if (dim.nz != 1):
+    n1 = 3
+    if run2D:
+        n2 = f.shape[1]-3
+    else:
+        n2 = f.shape[-3]-3
 
-        dz=N.gradient(z)
-        dz2 = 1./(60.*dz)
+    if (n2 > n1 and dim.nz!=1):
+        if (run2D):
+            # f[...,z,x] or f[...,z,y]
+            for n in range(n1,n2):
+                dfdz[...,n,:] = dz2[n]*(+45.*(f[...,n+1,:]-f[...,n-1,:])
+                                         -9.*(f[...,n+2,:]-f[...,n-2,:])
+                                            +(f[...,n+3,:]-f[...,n-3,:]) )
 
-        n1 = 3
-        if run2D:
-            n2 = f.shape[1]-3
         else:
-            n2 = f.shape[-3]-3
-
-
-        if (n2 > n1):
-            if (run2D):
-                # f[...,z,x] or f[...,z,y]
-                for n in range(n1,n2):
-                    dfdz[...,n,:] = dz2[n]*(+45.*(f[...,n+1,:]-f[...,n-1,:])
-                                             -9.*(f[...,n+2,:]-f[...,n-2,:])
-                                                +(f[...,n+3,:]-f[...,n-3,:]) )
-
-            else:
-                # f[...,z,y,x]
-                for n in range(n1,n2):
-                    dfdz[...,n,:,:] = dz2[n]*(+45.*(f[...,n+1,:,:]-f[...,n-1,:,:])
-                                               -9.*(f[...,n+2,:,:]-f[...,n-2,:,:])
-                                                  +(f[...,n+3,:,:]-f[...,n-3,:,:]) )
-        else:
-            dfdz=0
-        if param.coord_system == 'spherical':
-            if (len(x) or len(y)) < 1:
-                gd=read_grid(quiet=True)
-                x=gd.x; y=gd.y
-            sin_y = N.sin(y)
-            siny1 = 1./sin_y
-            i_sin = N.where(N.abs(sin_y) < 1e-5)[0]
-            if i_sin.size > 0:
-                siny1[i_sin] = 0.
-            x_1, sin1th = N.meshgrid(1./x, siny1)
-            dfdz *= x_1*sin1th
+            # f[...,z,y,x]
+            for n in range(n1,n2):
+                dfdz[...,n,:,:] = dz2[n]*(+45.*(f[...,n+1,:,:]-f[...,n-1,:,:])
+                                           -9.*(f[...,n+2,:,:]-f[...,n-2,:,:])
+                                              +(f[...,n+3,:,:]-f[...,n-3,:,:]) )
+    else:
+        dfdz=0
+    if param.coord_system == 'spherical':
+        if (len(x) or len(y)) < 1:
+            gd=read_grid(quiet=True)
+            x=gd.x; y=gd.y
+        sin_y = N.sin(y)
+        siny1 = 1./sin_y
+        i_sin = N.where(N.abs(sin_y) < 1e-5)[0]
+        if i_sin.size > 0:
+            siny1[i_sin] = 0.
+        x_1, sin1th = N.meshgrid(1./x, siny1)
+        dfdz *= x_1*sin1th
 
     return dfdz
 
@@ -125,13 +123,14 @@ def xder2_6th(f,dx,x=[],y=[],z=[]):
         print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
 
+    dim=read_dim()
     dx = N.gradient(x)
     dx2 = 1./(180.*dx**2.)
     dfdx = N.zeros_like(f)
     l1 = 3
     l2 = f.shape[-1]-3
 
-    if (l2 > l1):
+    if (l2 > l1 and dim.nx!=1):
         for l in range(l1,l2): 
             dfdx[...,l] = dx2[l]*(-490.* f[...,l]
                                   +270.*(f[...,l-1]+f[...,l+1])
@@ -149,6 +148,7 @@ def yder2_6th(f,dy,x=[],y=[],z=[]):
         raise ValueError
     
     param=read_param(quiet=True)
+    dim=read_dim()
 
     dy = N.gradient(y)
     dy2 = 1./(180.*dy**2.)
@@ -156,7 +156,7 @@ def yder2_6th(f,dy,x=[],y=[],z=[]):
     m1 = 3
     m2 = f.shape[-2]-3
 
-    if (m2 > m1):
+    if (m2 > m1 and dim.ny!=1):
         for m in range(m1,m2+1):
             dfdy[...,m,:] = dy2[m]*(-490.* f[...,m,:]
                                     +270.*(f[...,m-1,:]+f[...,m+1,:])
@@ -179,6 +179,7 @@ def zder2_6th(f,dz,x=[],y=[],z=[]):
         raise ValueError
 
     param=read_param(quiet=True)
+    dim=read_dim()
 
     dz = N.gradient(z)
     dz2 = 1./(180.*dz**2.)
@@ -186,7 +187,7 @@ def zder2_6th(f,dz,x=[],y=[],z=[]):
     n1 = 3
     n2 = f.shape[-3]-3
     
-    if (n2 > n1):
+    if (n2 > n1 and dim.nz!=1):
         for n in range(z1,z2): 
             dfdz[...,n,:,:] = dz2[n]*(-490.* f[...,n,:,:]
                                       +270.*(f[...,n-1,:,:]+f[...,n+1,:,:])
@@ -219,7 +220,9 @@ def xder6_6th(f,dx,x=[],y=[],z=[]):
     fac=1/dx**6
     d6fdx = N.zeros_like(f)
 
-    if (l2 > l1):
+    dim=read_dim()
+
+    if (l2 > l1 and dim.nx!=1):
         for l in range(l1,l2): 
             d6fdx[...,l] = fac[l]*( - 20.0* f[...,l] 
                                     + 15.0*(f[...,l+1]+f[...,l-1]) 
@@ -239,8 +242,10 @@ def yder6_6th(f,dy,x=[],y=[],z=[]):
     dy = N.gradient(y)
     fac=1/dy**6
     d6fdy = N.zeros_like(f)
+    
+    dim=read_dim()
 
-    if (m2 > m1):
+    if (m2 > m1 and dim.ny!=1):
         for m in range(m1,m2):
             d6fdy[...,m1:m2,:] = fac[m]*(- 20.0* f[...,m,:] 
                                          + 15.0*(f[...,m+1,:]+f[...,m-1,:]) 
@@ -260,7 +265,9 @@ def zder6_6th(f,dz,x=[],y=[],z=[]):
     fac=1/dz**6
     d6fdz = N.zeros_like(f)
 
-    if (n2 > n1):
+    dim = read_dim()
+
+    if (n2 > n1 and dim.nz!=1):
         for n in range(n1,n2):
             d6fdz[...,n,:,:] = fac[n]*(- 20.0* f[...,n,:,:] 
                                        + 15.0*(f[...,n+1,:,:]+f[...,n-1,:,:]) 
