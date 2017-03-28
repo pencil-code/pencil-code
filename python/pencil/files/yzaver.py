@@ -2,8 +2,8 @@
 #
 # read yzaver files
 #
-# Author: J. Oishi (joishi@amnh.org). 
-# 
+# Author: J. Oishi (joishi@amnh.org).
+#
 #
 import os
 import re
@@ -12,7 +12,7 @@ import re
 from subprocess import check_output
 import numpy as N
 
-#from param import read_param 
+#from param import read_param
 from pencil.files.dim import read_dim
 
 class YzAver:
@@ -32,11 +32,11 @@ def read_yzaver(varfile='yzaverages.dat',datadir='data/'):
     infile = open(datatopdir+'yzaver.in')
     variables = [line.strip() for line in infile.readlines()]
     infile.close()
-    
+
     #gotta be a better way to do this...
     n_lines = int(check_output(['wc', datadir+'/'+varfile]).split()[0])
 
-    datafile = open(datadir+'/'+varfile)    
+    datafile = open(datadir+'/'+varfile)
     n_vars = len(variables)
     # each line of data has 8 values
     rec_length = 1 + int(n_vars*nx/8)
@@ -45,11 +45,11 @@ def read_yzaver(varfile='yzaverages.dat',datadir='data/'):
     n_data_records = n_lines/rec_length
     #print "%s: reading %i records" % (__name__,n_data_records) # Python 2
     print(__name__ + ": reading {0} records".format(n_data_records))
-    
+
     # change the hardcode dtype!
     t = []
     var_tmp = dict(zip(variables,[[] for var in variables]))
-    for i in range(n_data_records):
+    for i in range(int(n_data_records)):
         t.extend(N.fromfile(datafile,dtype='float32',count=1,sep=' '))
         for var in variables:
             var_tmp[var].append(N.fromfile(datafile,
