@@ -25,7 +25,8 @@ def xder_6th(f,dx,x=[],y=[],z=[]):
 
     dim=read_dim()
     dx=N.gradient(x)
-    dx2 = 1./(60.*dx)
+    if (dim.nx!=1):
+        dx2 = 1./(60.*dx)
     dfdx = N.zeros_like(f)
     l1 = 3
     l2 = f.shape[-1]-3
@@ -48,7 +49,8 @@ def yder_6th(f,dy,x=[],y=[],z=[]):
     dim=read_dim()
 
     dy=N.gradient(y)
-    dy2 = 1./(60.*dy)
+    if (dim.ny!=1):
+        dy2 = 1./(60.*dy)
     dfdy = N.zeros_like(f)
     m1 = 3
     m2 = f.shape[-2]-3
@@ -78,7 +80,8 @@ def zder_6th(f,dz,x=[],y=[],z=[],run2D=False):
     dim=read_dim()
 
     dz=N.gradient(z)
-    dz2 = 1./(60.*dz)
+    if (dim.nz!=1):
+        dz2 = 1./(60.*dz)
     dfdz = N.zeros_like(f)
 
     n1 = 3
@@ -125,7 +128,8 @@ def xder2_6th(f,dx,x=[],y=[],z=[]):
 
     dim=read_dim()
     dx = N.gradient(x)
-    dx2 = 1./(180.*dx**2.)
+    if (dim.nx!=1):
+        dx2 = 1./(180.*dx**2.)
     dfdx = N.zeros_like(f)
     l1 = 3
     l2 = f.shape[-1]-3
@@ -151,7 +155,8 @@ def yder2_6th(f,dy,x=[],y=[],z=[]):
     dim=read_dim()
 
     dy = N.gradient(y)
-    dy2 = 1./(180.*dy**2.)
+    if (dim.ny!=1):
+        dy2 = 1./(180.*dy**2.)
     dfdy = N.zeros_like(f)
     m1 = 3
     m2 = f.shape[-2]-3
@@ -182,7 +187,8 @@ def zder2_6th(f,dz,x=[],y=[],z=[]):
     dim=read_dim()
 
     dz = N.gradient(z)
-    dz2 = 1./(180.*dz**2.)
+    if (dim.nz!=1):
+        dz2 = 1./(180.*dz**2.)
     dfdz = N.zeros_like(f)
     n1 = 3
     n2 = f.shape[-3]-3
@@ -217,7 +223,8 @@ def xder6_6th(f,dx,x=[],y=[],z=[]):
     l1 = 3
     l2 = f.shape[-1] - 3
     dx = N.gradient(x)
-    fac=1/dx**6
+    if (dim.nx!=1):
+        fac=1/dx**6
     d6fdx = N.zeros_like(f)
 
     dim=read_dim()
@@ -240,7 +247,8 @@ def yder6_6th(f,dy,x=[],y=[],z=[]):
     m1 = 3
     m2 = f.shape[-2] - 3
     dy = N.gradient(y)
-    fac=1/dy**6
+    if (dim.ny!=1):
+        fac=1/dy**6
     d6fdy = N.zeros_like(f)
     
     dim=read_dim()
@@ -262,7 +270,8 @@ def zder6_6th(f,dz,x=[],y=[],z=[]):
     n1 = 3
     n2 = f.shape[-3] - 3
     dz = N.gradient(z)
-    fac=1/dz**6
+    if (dim.nz!=1):
+        fac=1/dz**6
     d6fdz = N.zeros_like(f)
 
     dim = read_dim()
