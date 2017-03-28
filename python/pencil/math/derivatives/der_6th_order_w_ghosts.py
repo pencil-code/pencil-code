@@ -15,6 +15,7 @@
 import numpy as N
 from pencil.files.param import read_param
 from pencil.files.grid import read_grid
+from pencil.files.dim import read_dim
 
 def xder_6th(f,dx,x=[],y=[],z=[]):
 
@@ -73,43 +74,48 @@ def zder_6th(f,dz,x=[],y=[],z=[],run2D=False):
 
     param=read_param(quiet=True)
 
-    dz=N.gradient(z)
-    dz2 = 1./(60.*dz)
     dfdz = N.zeros_like(f)
-    n1 = 3
-    if run2D:
-        n2 = f.shape[1]-3
-    else:
-        n2 = f.shape[-3]-3
+
+    dim=read_dim()
+    if (dim.nz != 1):
+
+        dz=N.gradient(z)
+        dz2 = 1./(60.*dz)
+
+        n1 = 3
+        if run2D:
+            n2 = f.shape[1]-3
+        else:
+            n2 = f.shape[-3]-3
 
 
-    if (n2 > n1):
-       if (run2D):
-          # f[...,z,x] or f[...,z,y]
-           for n in range(n1,n2): 
-               dfdz[...,n,:] = dz2[n]*(+45.*(f[...,n+1,:]-f[...,n-1,:])
-                                        -9.*(f[...,n+2,:]-f[...,n-2,:]) 
-                                           +(f[...,n+3,:]-f[...,n-3,:]) )
+        if (n2 > n1):
+            if (run2D):
+                # f[...,z,x] or f[...,z,y]
+                for n in range(n1,n2):
+                    dfdz[...,n,:] = dz2[n]*(+45.*(f[...,n+1,:]-f[...,n-1,:])
+                                             -9.*(f[...,n+2,:]-f[...,n-2,:])
+                                                +(f[...,n+3,:]-f[...,n-3,:]) )
 
-       else:
-          # f[...,z,y,x]
-           for n in range(n1,n2): 
-               dfdz[...,n,:,:] = dz2[n]*(+45.*(f[...,n+1,:,:]-f[...,n-1,:,:])
-                                          -9.*(f[...,n+2,:,:]-f[...,n-2,:,:]) 
-                                             +(f[...,n+3,:,:]-f[...,n-3,:,:]) )
-    else:
-        dfdz=0
-    if param.coord_system == 'spherical':
-        if (len(x) or len(y)) < 1:
-            gd=read_grid(quiet=True)
-            x=gd.x; y=gd.y
-        sin_y = N.sin(y)
-        siny1 = 1./sin_y
-        i_sin = N.where(N.abs(sin_y) < 1e-5)[0]
-        if i_sin.size > 0:
-            siny1[i_sin] = 0.
-        x_1, sin1th = N.meshgrid(1./x, siny1)
-        dfdz *= x_1*sin1th
+            else:
+                # f[...,z,y,x]
+                for n in range(n1,n2):
+                    dfdz[...,n,:,:] = dz2[n]*(+45.*(f[...,n+1,:,:]-f[...,n-1,:,:])
+                                               -9.*(f[...,n+2,:,:]-f[...,n-2,:,:])
+                                                  +(f[...,n+3,:,:]-f[...,n-3,:,:]) )
+        else:
+            dfdz=0
+        if param.coord_system == 'spherical':
+            if (len(x) or len(y)) < 1:
+                gd=read_grid(quiet=True)
+                x=gd.x; y=gd.y
+            sin_y = N.sin(y)
+            siny1 = 1./sin_y
+            i_sin = N.where(N.abs(sin_y) < 1e-5)[0]
+            if i_sin.size > 0:
+                siny1[i_sin] = 0.
+            x_1, sin1th = N.meshgrid(1./x, siny1)
+            dfdz *= x_1*sin1th
 
     return dfdz
 
