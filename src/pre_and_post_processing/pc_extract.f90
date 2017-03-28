@@ -10,7 +10,7 @@ program pc_extract
   use Equ, only: pde
   use File_io, only: backskip_to_time, delete_file
   use Filter
-  use Grid, only: initialize_grid
+  use Grid, only: initialize_grid,construct_grid
   use IO
   use Messages
   use Param_IO
@@ -165,6 +165,7 @@ program pc_extract
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
+  call construct_grid(x,y,z,dx,dy,dz)
   call initialize_modules(f)
 !
 ! Loop over processors
@@ -298,7 +299,7 @@ program pc_extract
 !
 !  Need to re-initialize the local grid for each processor.
 !
-        call initialize_grid
+        call construct_grid(x,y,z,dx,dy,dz)
 !
 !  Read data.
 !  Snapshot data are saved in the tmp subdirectory.

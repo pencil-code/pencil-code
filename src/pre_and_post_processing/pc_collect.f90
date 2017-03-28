@@ -319,7 +319,6 @@ subroutine read_and_combine(filename,f,mvar_in,lonly_farray)
 !  Need to re-initialize the local grid for each processor.
 !
           call construct_grid(x,y,z,dx,dy,dz)
-          call initialize_grid
 
         ! collect x coordinates:
           gx(1+ipx*nx:mx+ipx*nx) = x

@@ -16,7 +16,7 @@ program pc_tecplot
   use File_io, only: backskip_to_time
   use Filter
   use General, only: itoa
-  use Grid, only: initialize_grid
+  use Grid, only: initialize_grid,construct_grid
   use IO
   use Messages
   use Param_IO
@@ -147,6 +147,7 @@ program pc_tecplot
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
+  call construct_grid(x,y,z,dx,dy,dz)
   call initialize_modules(f)
 !
 ! Loop over processors
@@ -289,7 +290,7 @@ program pc_tecplot
 !
 !  Need to re-initialize the local grid for each processor.
 !
-        call initialize_grid
+        call construct_grid(x,y,z,dx,dy,dz)
 !
 !  Read data.
 !  Snapshot data are saved in the tmp subdirectory.

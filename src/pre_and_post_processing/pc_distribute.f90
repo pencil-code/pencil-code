@@ -8,7 +8,7 @@ program pc_distribute
   use Cparam, only: fnlen
   use Diagnostics
   use Filter
-  use Grid, only: initialize_grid
+  use Grid, only: initialize_grid,construct_grid
   use IO
   use Messages
   use Param_IO
@@ -148,6 +148,7 @@ program pc_distribute
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
+  call construct_grid(x,y,z,dx,dy,dz)
   call initialize_modules (f)
 !
 ! Loop over processors
@@ -225,7 +226,7 @@ program pc_distribute
 !
 !  Need to re-initialize the local grid for each processor.
 !
-        call initialize_grid
+        call construct_grid(x,y,z,dx,dy,dz)
 !
         ! distribute gf to f:
         f(:,:,:,1:mvar_io) = gf(1+ipx*nx:mx+ipx*nx,1+ipy*ny:my+ipy*ny,:,:)

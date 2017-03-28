@@ -13,7 +13,7 @@ program pc_tecplot_solid
   use Diagnostics
   use Filter
   use General, only: itoa
-  use Grid, only: initialize_grid
+  use Grid, only: initialize_grid,construct_grid
   use IO
   use Messages
   use Param_IO
@@ -144,6 +144,7 @@ program pc_tecplot_solid
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
+  call construct_grid(x,y,z,dx,dy,dz)
   call initialize_modules(f)
 !
   if (IO_strategy == "collect_xy") then
@@ -256,7 +257,7 @@ program pc_tecplot_solid
 !
 !  Need to re-initialize the local grid for each processor.
 !
-      call initialize_grid
+      call construct_grid(x,y,z,dx,dy,dz)
 !
 !  Read data.
 !  Snapshot data are saved in the tmp subdirectory.

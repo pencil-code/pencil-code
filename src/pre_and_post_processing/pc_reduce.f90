@@ -10,7 +10,7 @@ program pc_reduce
   use Diagnostics
   use File_io, only: backskip_to_time, delete_file
   use Filter
-  use Grid, only: initialize_grid
+  use Grid, only: initialize_grid,construct_grid
   use IO
   use Messages
   use Param_IO
@@ -177,6 +177,7 @@ program pc_reduce
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
+  call construct_grid(x,y,z,dx,dy,dz)
   call initialize_modules (f)
 !
 ! Loop over processors
@@ -409,7 +410,7 @@ program pc_reduce
 !
 !  Need to re-initialize the local grid for each processor.
 !
-          call initialize_grid
+          call construct_grid(x,y,z,dx,dy,dz)
 !
 !  Read data.
 !  Snapshot data are saved in the tmp subdirectory.
@@ -438,7 +439,7 @@ program pc_reduce
             do px = 0, nx-1, reduce
               rx(nghost+1+(px+ipx*nx)/reduce) = sum (x(nghost+1+px:nghost+px+reduce)) * inv_reduce
               rdx_1(nghost+1+(px+ipx*nx)/reduce) = 1.0 / sum (1.0/dx_1(nghost+1+px:nghost+px+reduce))
-              rdx_tilde(nghost+1+(px+ipx*nx)/reduce) = sum (1.0/dx_1(nghost+1+px:nghost+px+reduce))
+              rdx_tilde(nghost+1+(px+ipx*nx)/reduce) = sum (1.0/dx_tilde(nghost+1+px:nghost+px+reduce))
             enddo
           endif
 !
@@ -447,7 +448,7 @@ program pc_reduce
             do py = 0, ny-1, reduce
               ry(nghost+1+(py+ipy*ny)/reduce) = sum (y(nghost+1+py:nghost+py+reduce)) * inv_reduce
               rdy_1(nghost+1+(py+ipy*ny)/reduce) = 1.0 / sum (1.0/dy_1(nghost+1+py:nghost+py+reduce))
-              rdy_tilde(nghost+1+(py+ipy*ny)/reduce) = sum (1.0/dy_1(nghost+1+py:nghost+py+reduce))
+              rdy_tilde(nghost+1+(py+ipy*ny)/reduce) = sum (1.0/dy_tilde(nghost+1+py:nghost+py+reduce))
             enddo
           endif
 !
