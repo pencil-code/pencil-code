@@ -651,11 +651,11 @@ module ImplicitPhysics
       TT=f(4,4,:,iTT)
 !
       wz(:)=dt*dz_2*gamma*cp1*hcond0*exp(-f(4,4,n1:n2,ilnrho))
-      az(:)=-wz/2.
+      az(:)=-0.5*wz
       bz(:)=1.+wz
       cz(:)=az
       do n=n1,n2
-        rhsz(n-nghost)=TT(n)+wz(n-nghost)/2.*(TT(n+1)-2.*TT(n)+TT(n-1))
+        rhsz(n-nghost)=TT(n)+0.5*wz(n-nghost)*(TT(n+1)-2.*TT(n)+TT(n-1))
       enddo
       bz(nz)=1. ; az(nz)=0. ; rhsz(nz)=cs2top/gamma_m1 ! T = Ttop
       if (bcz12(iTT,1)=='cT') then
