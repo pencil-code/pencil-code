@@ -5286,12 +5286,20 @@ module Hydro
 !  timestep is performed. 
 !
 !  12-mar-17/wlyra: coded. 
+!  28-mar-17/MR: reinstated update_ghosts.
+!
+      use Boundcond, only: update_ghosts
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real :: dt_sub
 !
       fargo: if (lfargo_advection) then
+!
+!  Call update ghosts as derivatives are needed.
+!
+        call update_ghosts(f)
+!
         fourier: if (lfargoadvection_as_shift) then
           call fourier_shift_fargo(f,df,dt_sub)
         else

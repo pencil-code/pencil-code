@@ -31,7 +31,7 @@ module General
   public :: bessj, cyclic
   public :: spline_derivative_double, spline_integral, linear_interpolate
   public :: itoa, count_bits, parser, write_full_columns
-  public :: read_range, merge_ranges, get_range_no, write_by_ranges, &
+  public :: read_range, merge_ranges, add_merge_range, get_range_no, write_by_ranges, &
             write_by_ranges_1d_real, write_by_ranges_1d_cmplx, &
             write_by_ranges_2d_real, write_by_ranges_2d_cmplx
   public :: compress, fcompress
@@ -2762,6 +2762,87 @@ module General
     endif
 !
   endsubroutine write_full_columns_real
+!***********************************************************************
+    function add_merge_range( ranges, ie, range ) result (iel)
+!  
+!  Checks whether range is contained (maybe partly) in any of ranges(:,1:ie) and stores it or its possible
+!  fragments in ranges(:,ie+1:). Returns new total number of ranges.
+!
+!  20-apr-11/MR: coded
+!
+    integer, dimension(:,:),intent(INOUT):: ranges
+    integer,                intent(IN)   :: ie
+    integer, dimension(2),  intent(IN)   :: range
+
+    integer :: iel
+
+    integer, dimension(2,2*size(ranges,2)) :: ranges_loc
+    integer :: i,ieloc,iloc
+ 
+    if (ie==0) then
+      iel=1
+      ranges(:,1) = range
+    else
+      ranges_loc(:,1) = range
+      ieloc=1
+      do i=1,ie
+        iloc=1
+        do while (iloc<=ieloc)
+          call analyze_range(ranges(:,i),ranges_loc,iloc,ieloc)
+        enddo
+      enddo
+      iel=ie
+      do i=1,ieloc
+        if (ranges_loc(1,ieloc)>0) then
+          iel=iel+1
+          ranges(:,iel)=ranges_loc(:,ieloc)
+        endif  
+      enddo
+    endif
+
+    endfunction add_merge_range
+!***********************************************************************
+    subroutine analyze_range(testrange,store,istore,iestore)
+!
+!  Analyzes range in store(:,istore) with respect to testrange.
+!  If fully contained it is marked deleted, if partly contained
+!  leftover(s) is(are) stored in store(:,istore) (and store(:,iestore+1).
+!
+!  20-apr-11/MR: coded
+!
+    integer, dimension(2),  intent(IN)   :: testrange
+    integer, dimension(:,:),intent(INOUT):: store
+    integer,                intent(INOUT):: istore,iestore
+
+    integer, dimension(2) :: range
+
+      range=store(:,istore)
+
+      if (range(1)>=testrange(1) .and. range(1)<=testrange(2)) then
+
+        if (range(2)<=testrange(2)) then
+          store(:,istore) = (/0,0/)                      ! range is completely absorbed
+        else
+          store(:,istore) = (/testrange(2)+1,range(2)/)  ! left leftover
+        endif
+
+      elseif (range(1)<testrange(1)) then
+        if (range(2)>=testrange(1)) then
+          store(:,istore) = (/range(1),testrange(1)-1/)  ! right leftover
+        elseif (range(2)<testrange(1)) then
+          continue                                       ! left unchanged
+        else
+          store(:,istore) = (/range(1),testrange(1)-1/)  ! two leftovers: left
+          iestore=iestore+1
+          store(:,iestore) = (/testrange(2)+1,range(2)/) ! right
+          istore=istore+1
+        endif
+      else
+        continue                                         ! right unchanged
+      endif
+      istore=istore+1
+
+    endsubroutine analyze_range
 !***********************************************************************
     function merge_ranges( ranges, ie, range, ia, istore )
 !

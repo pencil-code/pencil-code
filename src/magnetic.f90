@@ -258,7 +258,7 @@ module Magnetic
   logical :: lfreeze_aint=.false., lfreeze_aext=.false.
   logical :: lweyl_gauge=.false., ladvective_gauge=.false.
   logical :: lupw_aa=.false., ladvective_gauge2=.false.
-  logical :: lcalc_aameanz=.false., lcalc_aamean
+  logical :: lcalc_aameanz=.false.,lcalc_aamean
   equivalence (lcalc_aamean,lcalc_aameanz)     ! for compatibility
   logical :: lforcing_cont_aa=.false.
   integer :: iforcing_cont_aa=0
@@ -8347,6 +8347,7 @@ module Magnetic
 !
       use Mpicomm , only: mpiallreduce_sum
       use Deriv, only: der
+      use Boundcond, only: update_ghosts
 !
 !  Substract mean emf from the radial component of the induction
 !  equation. Activated only when large Bz fields and are present
@@ -8360,12 +8361,13 @@ module Magnetic
 !  This is a cylindrical version of the rtime_phiavg special file.
 !
 !  13-sep-07/wlad: adapted from remove_mean_momenta
+!  28-mar-17/MR: reinstated update_ghosts.
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
       real, dimension (mx,mz) :: fsum_tmp,glambda_rz
       real, dimension (mx,my,mz) :: lambda
       real, dimension (nx) :: glambda_z
-      real                    :: fac
+      real :: fac
       integer :: i
 !
       !if (.not.lupdate_bounds_before_special) then
@@ -8380,11 +8382,11 @@ module Magnetic
 !
       fac = 1.0/nygrid
 !
-! Set boundaries of iax
+! Set ghost zones of iax.
 !
-      !call update_ghosts(f,iax)
+      call update_ghosts(f,iax)
 !
-! Average over phi - the result is a (nr,nz) array
+! Average over phi - the result is a (mr=mx,mz) array
 !
       fsum_tmp = 0.
       do m=m1,m2; do n=1,mz
@@ -8438,21 +8440,16 @@ module Magnetic
 !  13-sep-07/wlad: adapted from remove_mean_momenta
 !
       real, dimension (mx,my,mz,mfarray), intent (inout) :: f
-      real :: fsum_tmp,mean_ax,fac
+      real :: fsum_tmp,mean_ax
       integer :: i
-!
-      fac = 1.0/nwgrid
-!
-! Set boundaries of iax
-!
-      !call update_ghosts(f,iax)
 !
 ! Average over phi - the result is a (nr,nz) array
 !
       fsum_tmp = 0.
       do m=m1,m2; do n=n1,n2 ; do i=l1,l2
-        fsum_tmp = fsum_tmp + fac*f(i,m,n,iax)
+        fsum_tmp = fsum_tmp + f(i,m,n,iax)
       enddo; enddo; enddo
+      fsum_tmp = fsum_tmp/nwgrid
 !
 ! The sum has to be done processor-wise
 ! Sum over processors of same ipz, and different ipy

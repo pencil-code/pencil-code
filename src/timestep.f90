@@ -187,29 +187,31 @@ module Timestep
 !   Hooks for modifying f and df after the timestep is performed.
 !
 !  12-03-17/wlyra: coded
+!  28-03-17/MR: removed update_ghosts; checks for already communicated variables enabled.
 !
       use Density,  only: density_after_timestep
       use Hydro,    only: hydro_after_timestep
       use Energy,   only: energy_after_timestep
       use Magnetic, only: magnetic_after_timestep
       use Special,  only: special_after_timestep
-      use Boundcond,only: update_ghosts
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real :: dtsub
-!
-!  Call update ghosts as derivatives may be needed.
-!
-      call update_ghosts(f)
 !     
 !  Dispatch to respective modules.      
 !
-      if (ldensity)  call density_after_timestep  (f,df,dtsub)
-      if (lhydro)    call hydro_after_timestep    (f,df,dtsub)
-      if (lenergy)   call energy_after_timestep   (f,df,dtsub)
-      if (lmagnetic) call magnetic_after_timestep (f,df,dtsub)
-      if (lspecial)  call special_after_timestep  (f,df,dtsub)
+      ighosts_updated=0       ! enables checks to avoid unnecessary communication
+!
+!  The module which communicates the biggest number of variables should come first here.
+!
+      if (lhydro)    call hydro_after_timestep   (f,df,dtsub)
+      if (lmagnetic) call magnetic_after_timestep(f,df,dtsub)
+      if (lenergy)   call energy_after_timestep  (f,df,dtsub)
+      if (ldensity)  call density_after_timestep (f,df,dtsub)
+      if (lspecial)  call special_after_timestep (f,df,dtsub)
+!
+      ighosts_updated=-1      ! disables checks
 !
     endsubroutine update_after_timestep
 !***********************************************************************      

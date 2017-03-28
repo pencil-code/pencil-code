@@ -332,6 +332,15 @@ module Cdata
   integer :: xuneigh,yuneigh,zuneigh ! `upper' processor neighbours
   integer :: poleneigh               ! `pole' processor neighbours
 !
+!  Data for registering of already updated variable ghost zones for only partly
+!  updating by the *_after_timestep routines.
+!  num_after_timestep: number of such routines; updated_var_ranges: list of already updated
+!  variable ranges; ighosts_updated: counter for those, if -1 no registration is performed (default).
+!  
+  integer, parameter :: num_after_timestep=5
+  integer, dimension(2,2*num_after_timestep) :: updated_var_ranges=0
+  integer :: ighosts_updated=-1
+!
 !  Variables to count the occurance of derivative calls per timestep
 !  for optimisation purposes.  To use uncomment the array and
 !  set optimise_ders=.true.
