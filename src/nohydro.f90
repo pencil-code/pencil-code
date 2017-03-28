@@ -988,6 +988,9 @@ module Hydro
       real, dimension(mx,my,mz,mvar) :: df
       real :: dtsub
 !
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
+
     endsubroutine hydro_after_timestep
 !***********************************************************************
     subroutine update_char_vel_hydro(f)

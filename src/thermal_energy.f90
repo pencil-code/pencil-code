@@ -635,6 +635,17 @@ module Energy
 !
     endsubroutine energy_after_boundary
 !***********************************************************************
+    subroutine energy_after_timestep(f,df,dtsub)
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real :: dtsub
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
+!
+    endsubroutine energy_after_timestep
+!***********************************************************************
     subroutine read_energy_init_pars(iostat)
 !
       use File_io, only: parallel_unit

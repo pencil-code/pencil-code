@@ -29,7 +29,7 @@ module Magnetic
   real, dimension (nz,3) :: bbmz,jjmz
   real :: inertial_length=0.,linertial_2
   logical :: lelectron_inertia=.false.
-  logical :: lcalc_aameanz=.false.
+  logical :: lcalc_aamean,lcalc_aameanz=.false.
   logical, dimension(7) :: lresi_dep=.false. 
   logical :: lcovariant_magnetic=.false.
 !
@@ -353,6 +353,9 @@ module Magnetic
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real :: dtsub
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
 !
     endsubroutine magnetic_after_timestep
 !***********************************************************************

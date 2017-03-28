@@ -2413,6 +2413,9 @@ module Energy
       real, dimension(mx,my,mz,mvar) :: df
       real :: dtsub
 !
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
+!
     endsubroutine energy_after_timestep
 !***********************************************************************
     subroutine update_char_vel_energy(f)
@@ -2424,7 +2427,6 @@ module Energy
       real, dimension (mx,my,mz,mfarray), intent(in) :: f
 
       call keep_compiler_quiet(f)
-
       call warning('update_char_vel_energy', &
            'characteristic velocity not yet implemented for temperature_idealgas')
 

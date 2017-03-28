@@ -327,6 +327,9 @@ module Energy
       real, dimension(mx,my,mz,mvar) :: df
       real :: dtsub
 !
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
+!
     endsubroutine energy_after_timestep
 !***********************************************************************    
     subroutine update_char_vel_energy(f)
