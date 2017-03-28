@@ -202,7 +202,6 @@ module Hydro
   logical :: lpropagate_borderuu=.true.
   logical :: lgradu_as_aux=.false.
   logical :: lOmega_cyl_xy=.false.
-  logical :: lno_radial_advection=.false.
   logical :: lfargoadvection_as_shift=.true.
   character (len=labellen) :: uuprof='nothing'
 !
@@ -244,7 +243,7 @@ module Hydro
       uzjet, ydampint, ydampext, mean_momentum, lshear_in_coriolis, &
       lcdt_tauf, cdt_tauf, ulev,&
       w_sldchar_hyd, uphi_rbot, uphi_rtop, uphi_step_width, lOmega_cyl_xy, &
-      lno_radial_advection, lfargoadvection_as_shift
+      lfargoadvection_as_shift
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -5310,14 +5309,6 @@ module Hydro
           endif
         endif fourier
 !
-!  Just for test purposes and comparison with the loop advection
-!  in Stone, J. et al., JCP 250, 509 (2005)
-!
-        if (lno_radial_advection) then
-          f(:,:,:,iux) = 0.
-          df(:,:,:,iux) = 0.
-        endif
-!        
       endif fargo
 !
     endsubroutine hydro_after_timestep
