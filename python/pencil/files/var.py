@@ -262,9 +262,18 @@ class DataCube(object):
             if ('bb' in magic):
                 # Compute the magnetic field before doing trimall.
                 aa = f[index['ax']-1:index['az'],...]
-                self.bb = curl(aa,dx,dy,dz,x,y,z,run2D=param.lwrite_2d)
-                if (trimall): self.bb=self.bb[:, dim.n1:dim.n2+1,
-                dim.m1:dim.m2+1, dim.l1:dim.l2+1]
+                self.bb = curl(aa,dx,dy,dz,x,y,z,run2D=param.lwrite_2d,param=param)
+                if (trimall):
+                    if (param.lwrite_2d):
+                        if (dim.nz == 1):
+                            self.bb=self.bb[:, dim.m1:dim.m2+1,
+                            dim.l1:dim.l2+1]
+                        else:
+                            self.bb=self.bb[:, dim.n1:dim.n2+1,
+                            dim.l1:dim.l2+1]
+                    else:
+                        self.bb=self.bb[:, dim.n1:dim.n2+1,
+                        dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             if ('jj' in magic):
                 # Compute the electric current field before doing trimall.
                 aa = f[index['ax']-1:index['az'],...]
