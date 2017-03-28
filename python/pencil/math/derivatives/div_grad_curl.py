@@ -99,7 +99,7 @@ def laplacian(f,dx,dy,dz,x=[],y=[],z=[]):
 
     return laplacian
 
-def curl(f,dx,dy,dz,x=[],y=[],z=[],run2D=False,param=[]):
+def curl(f,dx,dy,dz,x=[],y=[],z=[],run2D=False,param=[],dim=[]):
     """
     take the curl of a pencil code vector array.
     23-fev-2009/dintrans+morin: introduced the run2D parameter to deal
@@ -108,9 +108,10 @@ def curl(f,dx,dy,dz,x=[],y=[],z=[],run2D=False,param=[]):
     if (f.shape[0] != 3):
         print("curl: must have vector 4-D array f[3,mz,my,mx] for curl")
         raise ValueError
-
     if not param:
         param = read_param(quiet=True)
+    if not dim:
+        dim = read_dim()
     if len(x) < 1:
         gd = read_grid(quiet=True)
         x = gd.x
@@ -118,7 +119,7 @@ def curl(f,dx,dy,dz,x=[],y=[],z=[],run2D=False,param=[]):
         z = gd.z
 
     curl = N.empty_like(f)
-    if (dy != 0. and dz != 0.):
+    if (not(run2D)):
     # 3-D case
         curl[0,...] = yder(f[2,...],dy,x=x,y=y,z=z) -\
                       zder(f[1,...],dz,x=x,y=y,z=z)
@@ -126,12 +127,12 @@ def curl(f,dx,dy,dz,x=[],y=[],z=[],run2D=False,param=[]):
                       xder(f[2,...],dx,x=x,y=y,z=z)
         curl[2,...] = xder(f[1,...],dx,x=x,y=y,z=z) -\
                       yder(f[0,...],dy,x=x,y=y,z=z)
-    elif (dy == 0.):
+    elif (dim.ny == 1):
     # 2-D case in the (x,z)-plane
     # f[...,nz,1,nx] if run2D=False or f[...,nz,nx] if run2D=True
         curl[0,...] = zder(f,dz,x=x,y=y,z=z,run2D=run2D)[0,...] -\
                       xder(f,dx,x=x,y=y,z=z)[2,...]
-    else:
+    elif (dim.nz ==1):
     # 2-D case in the (x,y)-plane
     # f[...,1,ny,nx] if run2D=False or f[...,ny,nx] if run2D=True
         curl[0,...] = xder(f,dx,x=x,y=y,z=z)[1,...] -\
