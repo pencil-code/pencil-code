@@ -198,12 +198,13 @@ module Timestep
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real :: dtsub
+!
+!  Enables checks to avoid unnecessary communication
+!
+      ighosts_updated=0       
 !     
-!  Dispatch to respective modules.      
-!
-      ighosts_updated=0       ! enables checks to avoid unnecessary communication
-!
-!  The module which communicates the biggest number of variables should come first here.
+!  Dispatch to respective modules. The module which communicates 
+!  the biggest number of variables should come first here.
 !
       if (lhydro)    call hydro_after_timestep   (f,df,dtsub)
       if (lmagnetic) call magnetic_after_timestep(f,df,dtsub)
@@ -211,7 +212,9 @@ module Timestep
       if (ldensity)  call density_after_timestep (f,df,dtsub)
       if (lspecial)  call special_after_timestep (f,df,dtsub)
 !
-      ighosts_updated=-1      ! disables checks
+!  Disables checks.
+!
+      ighosts_updated=-1
 !
     endsubroutine update_after_timestep
 !***********************************************************************      
