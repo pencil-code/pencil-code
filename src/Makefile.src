@@ -2509,9 +2509,9 @@ buildinfo:
 	    -e "PARTICLES_SPIN='$(PARTICLES_SPIN)';PARTICLES_CHEMISTRY='$(PARTICLES_CHEMISTRY)';" > .buildinfo
 #
 cparam.inc: Makefile.src Makefile.local cparam.local scripts/mkcparam $(preprocess)
-	scripts/mkcparam -b $(preprocess) -o tmp
-	@cat tmp | perl -ne '$$H{$$_}++ or print' > cparam.inc.prelim
-	@rm -f tmp
+	scripts/mkcparam -b $(preprocess) -o cparam.inc.tmp
+	@cat cparam.inc.tmp | perl -ne '$$H{$$_}++ or print' > cparam.inc.prelim
+	@rm -f cparam.inc.tmp
 	@if [ ! -e cparam.inc ] || [ "`diff -w cparam.inc.prelim cparam.inc`" != "" ]; then \
 	  mv -f cparam.inc.prelim cparam.inc; \
 	else \
