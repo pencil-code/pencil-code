@@ -49,19 +49,23 @@ void FTNIZE(initialize_gpu_c)
   my=ny+2*nghost;
   mz=nz+2*nghost;
 
+  gpu_initialize(mx,my,mz,nghost,viscosity_mp_nu_);
+/*
   printf("xmin = %e\n", x[4]);
   printf("xmax = %e\n", x[nx-1+3]);
   printf("ymin = %e\n", y[4]);
   printf("ymax = %e\n", y[ny-1+3]);
   printf("zmin = %e\n", z[4]);
   printf("zmax = %e\n", z[nz-1+3]);
+*/
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(finalize_gpu_c)
-     (FINT *par)
+     ()
 /* Frees memory allocated on GPU.
 */
 {
+  gpu_finalize();
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(rhs_gpu_c)
@@ -99,8 +103,13 @@ void FTNIZE(rhs_gpu_c)
    If full=1, however, copy the full arrays.
 */
 {
+  /*
   printf("nx = %d\n", nx);
   printf("No GPU implementation yet");
-// add calls to ASTAROTH routines here
+  */
+
+  // copies data back and forth and peforms integration substep isubstep
+  gpu_substep(uu_x, uu_y, uu_z, lnrho, isubstep);
+
 }
 /* ---------------------------------------------------------------------- */
