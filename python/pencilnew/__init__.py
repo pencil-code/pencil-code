@@ -16,7 +16,6 @@ from . import export       # exporter (e.g., vtk, xml)
 from . import backpack     # third party modules, tribute to the author!
 
 # internal routines
-from pencilnew.sim import simulation as __Simulation__
 def __is_sim_dir__(path='.'):
     """Checks if a path is pointing at a pencil code simulation."""
     return sim.is_sim_dir(path)

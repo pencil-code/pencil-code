@@ -103,8 +103,8 @@ class ParticleData(object):
             quiet = '1'
 
         if swap_endian == False:
-            if byteorder() == 'little': swap_endian = '0'
-            elif byteorder() == 'big': swap_endian = '1'
+            if byteorder == 'little': swap_endian = '0'
+            elif byteorder == 'big': swap_endian = '1'
         else: print('? WARNING: Couldnt determine endianness!')
 
         ####### preparing IDL call

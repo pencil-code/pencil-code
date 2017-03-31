@@ -44,9 +44,7 @@ class __Simulation__(object):
 
     def __init__(self, path='.', hidden=False, quiet=False):
         import os
-        from os.path import join
-        from os.path import exists
-        from os.path import split
+        from os.path import join, exists,split
         #from pen.intern.hash_sim import hash_sim
 
         path = path.strip()
@@ -438,12 +436,13 @@ class __Simulation__(object):
 
     def get_pvarlist(self, pos=False):
         """Same as get_varfiles(pos, particles=True). """
-        return self.get_varfiles(pos=pos, particle=True)
+        return self.get_varlist(pos=pos, particle=True)
 
 
-    def get_lastvarfilename(self, particle=False):
+    def get_lastvarfilename(self, particle=False, id=False):
         """Returns las varfile name as string."""
-        return self.get_varfiles(pos='last', particle=particle)
+        if id == False: return self.get_varlist(pos='last', particle=particle)
+        return int(self.get_varlist(pos='last', particle=particle)[0].split('VAR')[-1])
 
 
     def get_value(self, quantity, DEBUG=False):
