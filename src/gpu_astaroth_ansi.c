@@ -49,7 +49,7 @@ void FTNIZE(initialize_gpu_c)
   my=ny+2*nghost;
   mz=nz+2*nghost;
 
-  gpu_initialize(mx,my,mz,nghost,viscosity_mp_nu_);
+  initializeGPU(mx,my,mz,nghost,viscosity_mp_nu_);
 /*
   printf("xmin = %e\n", x[4]);
   printf("xmax = %e\n", x[nx-1+3]);
@@ -65,7 +65,7 @@ void FTNIZE(finalize_gpu_c)
 /* Frees memory allocated on GPU.
 */
 {
-  gpu_finalize();
+  finalizeGpu();
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(rhs_gpu_c)
@@ -109,7 +109,8 @@ void FTNIZE(rhs_gpu_c)
   */
 
   // copies data back and forth and peforms integration substep isubstep
-  gpu_substep(uu_x, uu_y, uu_z, lnrho, isubstep);
+  //gpu_substep(uu_x, uu_y, uu_z, lnrho, isubstep);
+  RKintegration(uu_x, uu_y, uu_z, lnrho, isubstep);
 
 }
 /* ---------------------------------------------------------------------- */
