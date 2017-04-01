@@ -62,7 +62,7 @@ module Supersat
 !
   integer :: idiag_ssatrms=0, idiag_ssatmax=0, idiag_ssatmin=0
   integer :: idiag_uxssatm=0, idiag_uyssatm=0, idiag_uzssatm=0
-  integer :: idiag_tausupersatrms=0
+  integer :: idiag_tausupersatrms=0, idiag_tausupersatmax=0, idiag_tausupersatmin=0
 !
   contains
 !***********************************************************************
@@ -75,6 +75,7 @@ module Supersat
       use FArrayManager
 !
       call farray_register_pde('ssat', issat)
+
 !NILS: issat is given a value in farray_register_pde, then it can not be
 !NILS: set to zero right below. I have therefore commented out this line.
 !      issat = 0                 ! needed for idl
@@ -313,6 +314,8 @@ module Supersat
         if (idiag_uzssatm/=0) call sum_mn_name(p%uu(:,3)*p%ssat,idiag_uzssatm)
         if (idiag_tausupersatrms/=0) &
             call sum_mn_name(p%tausupersat**2,idiag_tausupersatrms,lsqrt=.true.)
+        if (idiag_tausupersatmax/=0) call max_mn_name(p%tausupersat,idiag_tausupersatmax)
+        if (idiag_tausupersatmin/=0) call max_mn_name(-p%tausupersat,idiag_tausupersatmin,lneg=.true.)
       endif
 !
     endsubroutine dssat_dt
@@ -371,6 +374,7 @@ module Supersat
         idiag_ssatrms=0; idiag_ssatmax=0; idiag_ssatmin=0
         idiag_uxssatm=0; idiag_uyssatm=0; idiag_uzssatm=0
         idiag_tausupersatrms=0
+        idiag_tausupersatrms=0; idiag_tausupersatmax=0; idiag_tausupersatmin=0
       endif
 !
       do iname=1,nname
@@ -381,6 +385,8 @@ module Supersat
         call parse_name(iname,cname(iname),cform(iname),'uyssatm',idiag_uyssatm)
         call parse_name(iname,cname(iname),cform(iname),'uzssatm',idiag_uzssatm)
         call parse_name(iname,cname(iname),cform(iname),'tausupersatrms',idiag_tausupersatrms)
+        call parse_name(iname,cname(iname),cform(iname),'tausupersatmax',idiag_tausupersatmax)
+        call parse_name(iname,cname(iname),cform(iname),'tausupersatmin',idiag_tausupersatmin)
       enddo
 !
       if (lwr) then 
