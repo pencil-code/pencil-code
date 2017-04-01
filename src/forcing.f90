@@ -865,7 +865,7 @@ module Forcing
         call get_2dmodes (.false.)
         if (lroot) then
 ! The root processors also write out the forced modes.
-          open(unit=10,file=trim(datadir)//'2drandomk.out',status='unknown')
+          open(unit=10,file=trim(datadir)//'/2drandomk.out',status='unknown')
           do ikmodes = 1, random2d_nmodes
             write(10,*) random2d_kmodes(1,ikmodes),random2d_kmodes(2,ikmodes)
           enddo

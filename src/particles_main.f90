@@ -275,7 +275,7 @@ module Particles_main
       if (lparticles_adsorbed)      call init_particles_ads(f,fp)
       if (lparticles_surfspec)      call init_particles_surf(f,fp,ineargrid)
       if (lparticles_diagnos_state) call init_particles_diagnos_state(fp)
-      if (lparticles_lyapunov)      call init_particles_lyapunov(f,fp)
+      if (lparticles_lyapunov)      call init_particles_lyapunov(fp)
 !
     endsubroutine particles_init
 !***********************************************************************
@@ -284,6 +284,7 @@ module Particles_main
       character (len=*) :: snap_directory
 !
       call particles_read_snapshot(trim(snap_directory)//'/pvar.dat')
+      if (lparticles_lyapunov)      call init_particles_lyapunov(fp)
 !
     endsubroutine read_snapshot_particles
 !***********************************************************************
