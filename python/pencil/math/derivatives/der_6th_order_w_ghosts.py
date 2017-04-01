@@ -17,13 +17,16 @@ from pencil.files.param import read_param
 from pencil.files.grid import read_grid
 from pencil.files.dim import read_dim
 
-def xder_6th(f,dx,x=[],y=[],z=[]):
+def xder_6th(f,dx,x=[],y=[],z=[],param=[],dim=[]):
 
     if (f.ndim != 3 and f.ndim != 4):
         print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
 
-    dim=read_dim()
+    if not param:
+        param=read_param()
+    if not dim:
+        dim=read_dim()
     dx=N.gradient(x)
     if (dim.nx!=1):
         dx2 = 1./(60.*dx)
@@ -39,14 +42,16 @@ def xder_6th(f,dx,x=[],y=[],z=[]):
         dfdx = 0.
     return dfdx
 
-def yder_6th(f,dy,x=[],y=[],z=[]):
+def yder_6th(f,dy,x=[],y=[],z=[],param=[],dim=[]):
 
     if (f.ndim != 3 and f.ndim != 4):
         print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
 
-    param=read_param(quiet=True)
-    dim=read_dim()
+    if not param:
+        param=read_param(quiet=True)
+    if not dim:
+        dim=read_dim()
 
     dy=N.gradient(y)
     if (dim.ny!=1):
@@ -70,14 +75,16 @@ def yder_6th(f,dy,x=[],y=[],z=[]):
         
     return dfdy
 
-def zder_6th(f,dz,x=[],y=[],z=[],run2D=False):
+def zder_6th(f,dz,x=[],y=[],z=[],run2D=False,param=[],dim=[]):
     
     if (f.ndim != 3 and f.ndim != 4):
         print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
 
-    param=read_param(quiet=True)
-    dim=read_dim()
+    if not param:
+        param=read_param(quiet=True)
+    if not dim:
+        dim=read_dim()
 
     dz=N.gradient(z)
     if (dim.nz!=1):

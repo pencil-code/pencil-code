@@ -121,12 +121,12 @@ def curl(f,dx,dy,dz,x=[],y=[],z=[],run2D=False,param=[],dim=[]):
     curl = N.empty_like(f)
     if (not(run2D)):
     # 3-D case
-        curl[0,...] = yder(f[2,...],dy,x=x,y=y,z=z) -\
-                      zder(f[1,...],dz,x=x,y=y,z=z)
-        curl[1,...] = zder(f[0,...],dz,x=x,y=y,z=z) -\
-                      xder(f[2,...],dx,x=x,y=y,z=z)
-        curl[2,...] = xder(f[1,...],dx,x=x,y=y,z=z) -\
-                      yder(f[0,...],dy,x=x,y=y,z=z)
+        curl[0,...] = yder(f[2,...],dy,x=x,y=y,z=z,param=param,dim=dim) -\
+                      zder(f[1,...],dz,x=x,y=y,z=z,param=param,dim=dim)
+        curl[1,...] = zder(f[0,...],dz,x=x,y=y,z=z,param=param,dim=dim) -\
+                      xder(f[2,...],dx,x=x,y=y,z=z,param=param,dim=dim)
+        curl[2,...] = xder(f[1,...],dx,x=x,y=y,z=z,param=param,dim=dim) -\
+                      yder(f[0,...],dy,x=x,y=y,z=z,param=param,dim=dim)
     elif (dim.ny == 1):
     # 2-D case in the (x,z)-plane
     # f[...,nz,1,nx] if run2D=False or f[...,nz,nx] if run2D=True
