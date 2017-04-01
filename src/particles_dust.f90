@@ -4356,8 +4356,8 @@ module Particles
                 if (ldragforce_gas_par) &
                     dt1_drag_gas(ix0-nghost) = dt1_drag_gas(ix0-nghost) + mp_vcell * p%rho1(ix0-nghost) * tausp1_par
               endif getdt1
-!  Particle growth by condensation in a passive scalar field,
-!  calculate relaxation time. 1D case for now.
+!  Particle growth by condensation in a active scalar field,
+!  calculate relaxation time.
 !  14-June-16/Xiang-Yu: coded
       
               if (lsupersat) then

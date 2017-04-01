@@ -275,14 +275,14 @@ module Supersat
       if (supersat_diff/=0.) &
           df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+supersat_diff*p%del2ssat
 !
-        ! 1-June-16/XY coded: to be completed, here is only for 1D case 
+        ! 1-June-16/XY coded 
         if (lsupersat_sink) then
           if (Rsupersat_sink) then
-            bump=A1*p%uu(:,1)
+            bump=A1*p%uu(:,3)
           elseif (lupdraft) then
             bump=A1*updraft
           else
-            bump=A1*p%uu(:,1)-f(l1:l2,m,n,issat)*p%tausupersat
+            bump=A1*p%uu(:,3)-f(l1:l2,m,n,issat)*p%tausupersat
           endif
           df(l1:l2,m,n,issat)=df(l1:l2,m,n,issat)+bump
         endif
