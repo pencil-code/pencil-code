@@ -160,6 +160,13 @@ module InitialCondition
       Lxn=Lx-2*(rborder_int+rborder_ext)
 !
       if (lcorotational_frame) then
+        if (lpointmasses) then
+          if (lroot) then
+            print*,'initialize_initial_condition: lcorotational frame not coded for pointmasses'
+            print*,'switch to gravity_r'
+            call fatal_error("","")
+          endif
+        endif
         OOcorot=rcorot**(-1.5)
       else
         OOcorot=0.
@@ -260,8 +267,8 @@ module InitialCondition
         endif
 !
         if (coord_system=='cartesian') then
-          f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - y(  m  )*(OO-OOcorot)
-          f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + x(l1:l2)*(OO-OOcorot)
+          f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - y(  m  )*OO
+          f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + x(l1:l2)*OO
           f(l1:l2,m,n,iuz) = f(l1:l2,m,n,iuz) + 0.
         elseif (coord_system=='cylindric') then
           f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) + 0.
