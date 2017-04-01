@@ -535,6 +535,7 @@ module PointMasses
             'reassigned to ensure that the total mass is g0')
 !
         do ks=1,nqpar
+          ! sign(A,B) returns the value of A with the sign of B
           if (ks/=istar) &
               positions(ks,1)=sign(1.,positions(ks,1))* (sma(ks) + parc)
         enddo
@@ -542,7 +543,7 @@ module PointMasses
 !  The last one (star) fixes the CM at Rcm=zero
 !
         if (lcartesian_coords) then
-          positions(istar,1)=parc
+          positions(istar,1)=-parc
         elseif (lcylindrical_coords) then
           !put the star in positive coordinates, with pi for azimuth
           positions(istar,1)=abs(parc)
@@ -673,7 +674,7 @@ module PointMasses
 !  The last one (star) fixes the CM also with velocity zero
 !
         if (lcartesian_coords) then
-          velocity(istar,2)=parc
+          velocity(istar,2)=-parc
         elseif (lcylindrical_coords) then
           velocity(istar,2)=-parc
         elseif (lspherical_coords) then
