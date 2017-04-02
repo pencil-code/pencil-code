@@ -1613,15 +1613,15 @@ module Viscosity
             p%fvisc(:,j) = p%fvisc(:,j) + &
                 nu_hyper3*pi4_1*tmp3*dline_1(:,i)**2
           enddo
-          if (lpencil(i_visc_heat)) then
-            if (headtt) then
-              call warning('calc_pencils_viscosity', 'viscous heating term '//&
-                   'is not implemented for lvisc_hyper3_polar')
-            endif
-          endif
-          if (lfirst .and. ldt) &
-               p%diffus_total3=p%diffus_total3+nu_hyper3*pi4_1*dxmax_pencil**4
         enddo
+        if (lpencil(i_visc_heat)) then
+          if (headtt) then
+            call warning('calc_pencils_viscosity', 'viscous heating term '//&
+                 'is not implemented for lvisc_hyper3_polar')
+          endif
+        endif
+        if (lfirst .and. ldt) &
+             p%diffus_total3=p%diffus_total3+nu_hyper3*pi4_1*dxmax_pencil**4
       endif
 !
 ! Following Axel's hyper3_mesh for density
