@@ -151,7 +151,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
 
     qs = list(qs)
     q = qs[2]
-    
+
     while q.endswith('\t'): q = q[:-1]; comment = '\t'+comment                  # take care of trailing tabulator
     while q.endswith(','): q = q[:-1]                                           # remove trailing ,
 
@@ -169,12 +169,21 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
         q = q.strip().replace('"','').replace("'", '')
         q_type = 'STRING'
 
-    elif is_float(q):
-        q = float(q)
+    try:
+        float(q)
         q_type = 'FLOAT'
         if is_int(q):
             q = int(q)
             q_type = 'INT'
+    except:
+        pass
+
+    #elif is_float(q):
+        #q = float(q)
+        #q_type = 'FLOAT'
+        #if is_int(q):
+            #q = int(q)
+            #q_type = 'INT'
 
     if type(q) == type('string') and ',' in q:
         q, q_type = string_to_tuple(q)                                          # q is a TULPE_something
@@ -200,7 +209,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
 
 
     ######## if value of quantity has to be changed do:
-    if change_quantity_to != False:
+    if change_quantity_to:
 
         ####### prepare change_quantity_to for string injection
         if q_type == 'STRING':
