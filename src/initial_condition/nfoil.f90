@@ -27,15 +27,17 @@ module InitialCondition
 ! D = extention coefficient for the z direction
 ! [xyz]scale = scale in each dimension
 ! [xyz]shift = shift in each dimension in a 2*pi box
+! twist = B_phi/B_0
 
   real :: ampl=1.0,width_ring=0.3, C=2.0, D=2.0
   real :: xscale = 1.0, yscale = 1.0, zscale = 1.0
   real :: xshift = 0.2, yshift = 0.5, zshift = 0.0
-  integer :: n_foil=3
+  real :: twist = 0
+  integer :: n_foil = 3
   character (len=labellen) :: prof='constant'
 !
   namelist /initial_condition_pars/ &
-      ampl,width_ring,prof,C,D,xscale,yscale,zscale,xshift,yshift,zshift,n_foil
+      ampl,width_ring,prof,C,D,xscale,yscale,zscale,xshift,yshift,zshift,n_foil,twist
 !
   contains
 !***********************************************************************
@@ -98,7 +100,8 @@ module InitialCondition
       real, dimension (mx,my,mz,mfarray) :: f
       real :: knot_param, circle_param, circle_radius
       real :: delta_knot_param, delta_circle_param, delta_circle_radius
-      real, dimension(3) :: knot_pos, circle_pos, tangent, normal
+      real :: curvature_radius, curvature_factor
+      real, dimension(3) :: knot_pos, circle_pos, tangent, normal, ee_phi
       integer :: domain_width, domain_depth, domain_height
       integer :: l, j, ju
       ! The next 2 variables are used for the uncurling.
@@ -112,7 +115,7 @@ module InitialCondition
 !  Calculate the minimum step size of the curve parameters 
 !  to avoid discretation issues, like mesh points without magnetic field
 !
-      delta_knot_param = 1./max(domain_width,domain_depth,domain_height) * 3./n_foil
+      delta_knot_param = min(dx, dy, dz)/10 * 3./n_foil
 !       delta_knot_param = min(dx, dy, dz)/2
       delta_circle_param = delta_knot_param/(width_ring/2.)
       delta_circle_radius = delta_circle_param
@@ -124,35 +127,128 @@ module InitialCondition
 !
       do
         if (knot_param .gt. 2.*pi) exit
+!  Position along the central spine.
         knot_pos(1) = (C+sin(knot_param*n_foil))*sin(knot_param*(n_foil-1))
         knot_pos(2) = (C+sin(knot_param*n_foil))*cos(knot_param*(n_foil-1))
         knot_pos(3) = D*cos(knot_param*n_foil)
+!  Tangent to the trajectory and direction of the magnetic field.
         tangent(1) = n_foil*cos(knot_param*n_foil)*sin(knot_param*(n_foil-1))+&
                (n_foil-1)*(C+sin(knot_param*n_foil))*cos(knot_param*(n_foil-1))
         tangent(2) = n_foil*cos(knot_param*n_foil)*cos(knot_param*(n_foil-1))-&
                (n_foil-1)*(C+sin(knot_param*n_foil))*sin(knot_param*(n_foil-1))
         tangent(3) = -D*n_foil*sin(knot_param*n_foil)
         tangent = tangent / sqrt(tangent(1)**2+tangent(2)**2+tangent(3)**2)
-!
-!  Find vector which is orthonormal to tangent vector.
-!
-        if (abs(tangent(1)) .le. 0.5) then
-          normal(1) = tangent(1)**2 - 1.0
-          normal(2) = tangent(2)*tangent(1)
-          normal(3) = tangent(3)*tangent(1)
-        elseif (abs(tangent(2)) .le. 0.5) then
-          normal(1) = tangent(1)*tangent(2)
-          normal(2) = tangent(2)**2 - 1.0
-          normal(3) = tangent(3)*tangent(2)
-        else
-          normal(1) = tangent(1)*tangent(3)
-          normal(2) = tangent(2)*tangent(3)
-          normal(3) = tangent(3)**2 - 1.0
-        endif
-!
-!  normalize the normal vector
-!
-        normal = normal / sqrt(normal(1)**2+normal(2)**2+normal(3)**2)
+!  Normal component using the length of the curve as parametrization.
+        normal(1) = (n_foil*sin(knot_param*(n_foil - 1.0d0))*cos(knot_param*n_foil) + (C + &
+                    sin(knot_param*n_foil))*(n_foil - 1)*cos(knot_param*(n_foil - &
+                    1.0d0)))*(-D**2*n_foil**3*sin(knot_param*n_foil)*cos(knot_param* &
+                    n_foil) - 1.0d0/2.0d0*(n_foil*sin(knot_param*(n_foil - 1.0d0))* &
+                    cos(knot_param*n_foil) + (C + sin(knot_param*n_foil))*(n_foil - 1 &
+                    )*cos(knot_param*(n_foil - 1.0d0)))*(-2*n_foil**2*sin(knot_param* &
+                    n_foil)*sin(knot_param*(n_foil - 1.0d0)) + 4*n_foil*(n_foil - 1)* &
+                    cos(knot_param*n_foil)*cos(knot_param*(n_foil - 1.0d0)) - 2*(C + &
+                    sin(knot_param*n_foil))*(n_foil - 1)**2*sin(knot_param*(n_foil - &
+                    1.0d0))) - 1.0d0/2.0d0*(n_foil*cos(knot_param*n_foil)*cos( &
+                    knot_param*(n_foil - 1.0d0)) - (C + sin(knot_param*n_foil))*( &
+                    n_foil - 1)*sin(knot_param*(n_foil - 1.0d0)))*(-2*n_foil**2*sin( &
+                    knot_param*n_foil)*cos(knot_param*(n_foil - 1.0d0)) - 4*n_foil*( &
+                    n_foil - 1)*sin(knot_param*(n_foil - 1.0d0))*cos(knot_param* &
+                    n_foil) - 2*(C + sin(knot_param*n_foil))*(n_foil - 1)**2*cos( &
+                    knot_param*(n_foil - 1.0d0))))/(D**2*n_foil**2*sin(knot_param* &
+                    n_foil)**2 + (n_foil*sin(knot_param*(n_foil - 1.0d0))*cos( &
+                    knot_param*n_foil) + (C + sin(knot_param*n_foil))*(n_foil - 1)* &
+                    cos(knot_param*(n_foil - 1.0d0)))**2 + (n_foil*cos(knot_param* &
+                    n_foil)*cos(knot_param*(n_foil - 1.0d0)) - (C + sin(knot_param* &
+                    n_foil))*(n_foil - 1)*sin(knot_param*(n_foil - 1.0d0)))**2)**( &
+                    3.0d0/2.0d0) + (-n_foil**2*sin(knot_param*n_foil)*sin(knot_param* &
+                    (n_foil - 1.0d0)) + 2*n_foil*(n_foil - 1)*cos(knot_param*n_foil)* &
+                    cos(knot_param*(n_foil - 1.0d0)) - (C + sin(knot_param*n_foil))*( &
+                    n_foil - 1)**2*sin(knot_param*(n_foil - 1.0d0)))/sqrt(D**2*n_foil &
+                    **2*sin(knot_param*n_foil)**2 + (n_foil*sin(knot_param*(n_foil - &
+                    1.0d0))*cos(knot_param*n_foil) + (C + sin(knot_param*n_foil))*( &
+                    n_foil - 1)*cos(knot_param*(n_foil - 1.0d0)))**2 + (n_foil*cos( &
+                    knot_param*n_foil)*cos(knot_param*(n_foil - 1.0d0)) - (C + sin( &
+                    knot_param*n_foil))*(n_foil - 1)*sin(knot_param*(n_foil - 1.0d0 &
+                    )))**2)
+        normal(2) = (n_foil*cos(knot_param*n_foil)*cos(knot_param*(n_foil - 1.0d0)) - (C + &
+                    sin(knot_param*n_foil))*(n_foil - 1)*sin(knot_param*(n_foil - &
+                    1.0d0)))*(-D**2*n_foil**3*sin(knot_param*n_foil)*cos(knot_param* &
+                    n_foil) - 1.0d0/2.0d0*(n_foil*sin(knot_param*(n_foil - 1.0d0))* &
+                    cos(knot_param*n_foil) + (C + sin(knot_param*n_foil))*(n_foil - 1 &
+                    )*cos(knot_param*(n_foil - 1.0d0)))*(-2*n_foil**2*sin(knot_param* &
+                    n_foil)*sin(knot_param*(n_foil - 1.0d0)) + 4*n_foil*(n_foil - 1)* &
+                    cos(knot_param*n_foil)*cos(knot_param*(n_foil - 1.0d0)) - 2*(C + &
+                    sin(knot_param*n_foil))*(n_foil - 1)**2*sin(knot_param*(n_foil - &
+                    1.0d0))) - 1.0d0/2.0d0*(n_foil*cos(knot_param*n_foil)*cos( &
+                    knot_param*(n_foil - 1.0d0)) - (C + sin(knot_param*n_foil))*( &
+                    n_foil - 1)*sin(knot_param*(n_foil - 1.0d0)))*(-2*n_foil**2*sin( &
+                    knot_param*n_foil)*cos(knot_param*(n_foil - 1.0d0)) - 4*n_foil*( &
+                    n_foil - 1)*sin(knot_param*(n_foil - 1.0d0))*cos(knot_param* &
+                    n_foil) - 2*(C + sin(knot_param*n_foil))*(n_foil - 1)**2*cos( &
+                    knot_param*(n_foil - 1.0d0))))/(D**2*n_foil**2*sin(knot_param* &
+                    n_foil)**2 + (n_foil*sin(knot_param*(n_foil - 1.0d0))*cos( &
+                    knot_param*n_foil) + (C + sin(knot_param*n_foil))*(n_foil - 1)* &
+                    cos(knot_param*(n_foil - 1.0d0)))**2 + (n_foil*cos(knot_param* &
+                    n_foil)*cos(knot_param*(n_foil - 1.0d0)) - (C + sin(knot_param* &
+                    n_foil))*(n_foil - 1)*sin(knot_param*(n_foil - 1.0d0)))**2)**( &
+                    3.0d0/2.0d0) + (-n_foil**2*sin(knot_param*n_foil)*cos(knot_param* &
+                    (n_foil - 1.0d0)) - 2*n_foil*(n_foil - 1)*sin(knot_param*(n_foil &
+                    - 1.0d0))*cos(knot_param*n_foil) - (C + sin(knot_param*n_foil))*( &
+                    n_foil - 1)**2*cos(knot_param*(n_foil - 1.0d0)))/sqrt(D**2*n_foil &
+                    **2*sin(knot_param*n_foil)**2 + (n_foil*sin(knot_param*(n_foil - &
+                    1.0d0))*cos(knot_param*n_foil) + (C + sin(knot_param*n_foil))*( &
+                    n_foil - 1)*cos(knot_param*(n_foil - 1.0d0)))**2 + (n_foil*cos( &
+                    knot_param*n_foil)*cos(knot_param*(n_foil - 1.0d0)) - (C + sin( &
+                    knot_param*n_foil))*(n_foil - 1)*sin(knot_param*(n_foil - 1.0d0 &
+                    )))**2)
+        normal(3) = -D*n_foil**2*cos(knot_param*n_foil)/sqrt(D**2*n_foil**2*sin(knot_param* &
+                    n_foil)**2 + (n_foil*sin(knot_param*(n_foil - 1.0d0))*cos( &
+                    knot_param*n_foil) + (C + sin(knot_param*n_foil))*(n_foil - 1)* &
+                    cos(knot_param*(n_foil - 1.0d0)))**2 + (n_foil*cos(knot_param* &
+                    n_foil)*cos(knot_param*(n_foil - 1.0d0)) - (C + sin(knot_param* &
+                    n_foil))*(n_foil - 1)*sin(knot_param*(n_foil - 1.0d0)))**2) - D* &
+                    n_foil*(-D**2*n_foil**3*sin(knot_param*n_foil)*cos(knot_param* &
+                    n_foil) - 1.0d0/2.0d0*(n_foil*sin(knot_param*(n_foil - 1.0d0))* &
+                    cos(knot_param*n_foil) + (C + sin(knot_param*n_foil))*(n_foil - 1 &
+                    )*cos(knot_param*(n_foil - 1.0d0)))*(-2*n_foil**2*sin(knot_param* &
+                    n_foil)*sin(knot_param*(n_foil - 1.0d0)) + 4*n_foil*(n_foil - 1)* &
+                    cos(knot_param*n_foil)*cos(knot_param*(n_foil - 1.0d0)) - 2*(C + &
+                    sin(knot_param*n_foil))*(n_foil - 1)**2*sin(knot_param*(n_foil - &
+                    1.0d0))) - 1.0d0/2.0d0*(n_foil*cos(knot_param*n_foil)*cos( &
+                    knot_param*(n_foil - 1.0d0)) - (C + sin(knot_param*n_foil))*( &
+                    n_foil - 1)*sin(knot_param*(n_foil - 1.0d0)))*(-2*n_foil**2*sin( &
+                    knot_param*n_foil)*cos(knot_param*(n_foil - 1.0d0)) - 4*n_foil*( &
+                    n_foil - 1)*sin(knot_param*(n_foil - 1.0d0))*cos(knot_param* &
+                    n_foil) - 2*(C + sin(knot_param*n_foil))*(n_foil - 1)**2*cos( &
+                    knot_param*(n_foil - 1.0d0))))*sin(knot_param*n_foil)/(D**2* &
+                    n_foil**2*sin(knot_param*n_foil)**2 + (n_foil*sin(knot_param*( &
+                    n_foil - 1.0d0))*cos(knot_param*n_foil) + (C + sin(knot_param* &
+                    n_foil))*(n_foil - 1)*cos(knot_param*(n_foil - 1.0d0)))**2 + ( &
+                    n_foil*cos(knot_param*n_foil)*cos(knot_param*(n_foil - 1.0d0)) - &
+                    (C + sin(knot_param*n_foil))*(n_foil - 1)*sin(knot_param*(n_foil &
+                    - 1.0d0)))**2)**(3.0d0/2.0d0)
+        curvature_radius = 1/sqrt(normal(1)**2+normal(2)**2+normal(3)**2)
+        normal = normal*curvature_radius
+! !
+! !  Find vector which is orthonormal to tangent vector.
+! !
+!         if (abs(tangent(1)) .le. 0.5) then
+!           normal(1) = tangent(1)**2 - 1.0
+!           normal(2) = tangent(2)*tangent(1)
+!           normal(3) = tangent(3)*tangent(1)
+!         elseif (abs(tangent(2)) .le. 0.5) then
+!           normal(1) = tangent(1)*tangent(2)
+!           normal(2) = tangent(2)**2 - 1.0
+!           normal(3) = tangent(3)*tangent(2)
+!         else
+!           normal(1) = tangent(1)*tangent(3)
+!           normal(2) = tangent(2)*tangent(3)
+!           normal(3) = tangent(3)**2 - 1.0
+!         endif
+! !
+! ! !  normalize the normal vector
+! !
+!         normal = normal / sqrt(normal(1)**2+normal(2)**2+normal(3)**2)
 
         circle_radius = 0.
 !
@@ -179,6 +275,22 @@ module InitialCondition
             (tangent(2)*tangent(3)*(1-cos(circle_param))+tangent(1)*sin(circle_param))*normal(2) + &
             (tangent(3)*tangent(3)*(1-cos(circle_param))+cos(circle_param))*normal(3))
 !
+!  Add the azimuthal field in case of twist > 0.
+!
+            if (sum(abs(circle_pos-knot_pos)) > 0) then
+                ee_phi(1) = tangent(2)*(circle_pos(3)-knot_pos(3)) - tangent(3)*(circle_pos(2)-knot_pos(2))
+                ee_phi(2) = tangent(3)*(circle_pos(1)-knot_pos(1)) - tangent(1)*(circle_pos(3)-knot_pos(3))
+                ee_phi(3) = tangent(1)*(circle_pos(2)-knot_pos(2)) - tangent(2)*(circle_pos(1)-knot_pos(1))
+                ee_phi = ee_phi/sqrt(ee_phi(1)**2 + ee_phi(2)**2 + ee_phi(3)**2)
+            else
+                ee_phi = [0, 0, 0]
+            endif
+!
+!  Correct for the loop curvature with fields inside being weakend and outside being strengthend.
+!
+!             curvature_factor = 1-sum(normal*(circle_pos-knot_pos))/curvature_radius
+            curvature_factor = 1
+!
 !  Find the corresponding mesh point to this position.
 !
             l = nint((circle_pos(1)*xscale+xshift)/(2*pi)*nxgrid + nxgrid/2.) + 1 - nx*ipx
@@ -186,11 +298,12 @@ module InitialCondition
             n = nint((circle_pos(3)*zscale+zshift)/(2*pi)*nzgrid + nzgrid/2.) + 1 - nz*ipz
 !
 !  Write the magnetic field B.
-!  Note that B is written in the f-array where A is stored. This is
-!  corrected further in the code.
+!  Note that B is written in the f-array where A is stored.
+!  This is corrected further in the code.
 !
             if ((l > mx .or. m > my .or. n > mz .or. l < 1 .or. m < 1 .or. n < 1) .eqv. .false.) then
-                f(l,m,n,iax:iaz) = tangent*ampl
+                f(l,m,n,iax:iaz) = (tangent+ee_phi*twist*sqrt(sum((circle_pos-knot_pos)**2))) * &
+                                    ampl*curvature_factor
             endif
             circle_param = circle_param + delta_circle_param
           enddo
