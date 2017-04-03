@@ -54,7 +54,7 @@ module Sub
   public :: del2, del2v, del2v_etc, del2fj,d2fi_dxj,del2fi_dxjk
   public :: del2m3x3_sym
   public :: del4v, del4, del2vi_etc
-  public :: del6v, del6, del6_other, del6fj, del6fjv
+  public :: del6v, del6, del6_other, del6fj, del6fjv, del6_strict
   public :: gradf_upw1st, doupwind
   public :: matrix2linarray, linarray2matrix
 !
@@ -2738,6 +2738,43 @@ module Sub
       del6f = d6fdx + d6fdy + d6fdz
 !
     endsubroutine del6
+!***********************************************************************
+    subroutine del6_strict(f,k,del6)
+!
+!   Calculates del6rho=del2(del2(del2(rho))), with del2=div(grad).
+!   Strictly accurate for Cartesian coordinates, does a good job in
+!   cylindrical. The subroutine is small enough and memory-cheap enough
+!   that it could be in dlnrhodt. Yet, writing it as a subroutine allows
+!   not only for encapsulation but also better documentation.
+!
+!          d6a    d6a   d6a     / d4d2a    d4d2a    d4d2a    d4d2a    d4d2a    d4d2a  \      d2d2d2a
+!   del6 = --- +  --- + --- + 3 | ------ + ------ + ------ + ------ + ------ + ------ | + 6 ---------
+!          dx6    dy6   dz6     \ dx4dy2   dx4dz2   dx2dy4   dx2dz4   d4ydz2   dz4dy2 /     dx2dy2dz2
+!
+!   02-apr-17/wlad: coded
+!
+      use Deriv, only: der6,der4i2j,der2i2j2k
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(nx) :: del6,tmp
+      integer :: k,i,j
+!      
+      intent(in) :: f,k
+      intent(out) :: del6
+!
+      del6=0.
+      do i=1,3
+        call der6(f,k,tmp,i)
+        del6 = del6 + tmp
+        do j=1,3
+          call der4i2j(f,k,tmp,i,j)
+          del6 = del6 + 3*tmp
+        enddo
+      enddo
+      call der2i2j2k(f,k,tmp)
+      del6 = del6 + 6*tmp
+!
+    endsubroutine del6_strict
 !***********************************************************************
     subroutine del6_other(f,del6f)
 !
