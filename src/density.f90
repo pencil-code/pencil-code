@@ -95,7 +95,7 @@ module Density
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
   logical :: ldiff_hyper3lnrho=.false.,ldiff_hyper3_aniso=.false.
   logical :: ldiff_hyper3_polar=.false.,lanti_shockdiffusion=.false.
-  logical :: ldiff_hyper3_mesh=.false.
+  logical :: ldiff_hyper3_mesh=.false.,ldiff_hyper3_strict=.false.
   logical :: lfreeze_lnrhoint=.false.,lfreeze_lnrhoext=.false.
   logical :: lfreeze_lnrhosqu=.false.
   logical :: lrho_as_aux=.false., ldiffusion_nolog=.false.
@@ -477,6 +477,7 @@ module Density
       ldiff_hyper3lnrho=.false.
       ldiff_hyper3_aniso=.false.
       ldiff_hyper3_polar=.false.
+      ldiff_hyper3_strict=.false.
       ldiff_hyper3_mesh=.false.
 !
 !  initialize lnothing. It is needed to prevent multiple output.
@@ -505,6 +506,9 @@ module Density
         case ('hyper3_cyl','hyper3-cyl','hyper3_sph','hyper3-sph')
           if (lroot) print*,'diffusion: Dhyper/pi^4 *(Delta(rho))^6/Deltaq^2'
           ldiff_hyper3_polar=.true.
+        case ('hyper3-strict','hyper3_strict')
+          if (lroot) print*,'diffusion: Dhyper*del2(del2(del2(rho)))'
+          ldiff_hyper3_strict=.true.
         case ('hyper3_mesh','hyper3-mesh')
           if (lroot) print*,'diffusion: mesh hyperdiffusion'
           ldiff_hyper3_mesh=.true.
@@ -529,7 +533,7 @@ module Density
         if (ldiff_normal.and.diffrho==0.0) &
             call warning('initialize_density', &
             'Diffusion coefficient diffrho is zero!')
-        if ( (ldiff_hyper3 .or. ldiff_hyper3lnrho) &
+        if ( (ldiff_hyper3 .or. ldiff_hyper3lnrho .or. ldiff_hyper3_strict) &
             .and. diffrho_hyper3==0.0) &
             call fatal_error('initialize_density', &
             'Diffusion coefficient diffrho_hyper3 is zero!')
@@ -1859,8 +1863,8 @@ module Density
           lpenc_requested(i_del2lnrho)=.true.
         endif
       endif
-      if (ldiff_hyper3) lpenc_requested(i_del6rho)=.true.
-      if (ldiff_hyper3.and..not.ldensity_nolog) lpenc_requested(i_rho)=.true.
+      if ( ldiff_hyper3.or.ldiff_hyper3_strict) lpenc_requested(i_del6rho)=.true.
+      if ((ldiff_hyper3.or.ldiff_hyper3_strict).and..not.ldensity_nolog) lpenc_requested(i_rho)=.true.
       if (ldiff_hyper3_polar.and..not.ldensity_nolog) &
            lpenc_requested(i_rho1)=.true.
       if (ldiff_hyper3lnrho) lpenc_requested(i_del6lnrho)=.true.
@@ -2004,7 +2008,7 @@ module Density
 !                suppressed weno for log density
 !
       use WENO_transport
-      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij,dot_mn,h_dot_grad
+      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij,dot_mn,h_dot_grad,del6_strict
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2049,8 +2053,12 @@ module Density
       if (lpencil(i_del2lnrho)) p%del2lnrho=p%rho1*p%del2rho-p%glnrho2
 ! del6rho
       if (lpencil(i_del6rho)) then
-        call del6(f,irho,p%del6rho)
-        if (lreference_state) p%del6rho=p%del6rho+reference_state(:,iref_d6rho)
+        if (ldiff_hyper3) then
+          call del6(f,irho,p%del6rho)
+          if (lreference_state) p%del6rho=p%del6rho+reference_state(:,iref_d6rho)
+        elseif (ldiff_hyper3_strict) then
+          call del6_strict(f,irho,p%del6rho)
+        endif
       endif
 ! del6lnrho
       if (lpencil(i_del6lnrho)) call fatal_error('calc_pencils_density', &
@@ -2311,7 +2319,7 @@ module Density
 !
 !  Hyper diffusion.
 !
-      if (ldiff_hyper3) then
+      if (ldiff_hyper3.or.ldiff_hyper3_strict) then
         if (ldensity_nolog) then
           fdiff = fdiff + diffrho_hyper3*p%del6rho
         else
@@ -2330,6 +2338,7 @@ module Density
           !for ldensity_nolog it is doing del6lnrho, as it should for a simple hyperdiffusion
           call der6(f,irho,tmp,j,IGNOREDX=.true.)
           fdiff = fdiff + diffrho_hyper3*pi4_1*tmp*dline_1(:,j)**2
+!
 !AB: wouldn't the following line make more sense?
 !AB: But then the meaning of diffrho_hyper3 changes, so we
 !AB: should not just add it to the previous diffus_diffrho3.
