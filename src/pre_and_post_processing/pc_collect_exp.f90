@@ -122,8 +122,8 @@ program pc_collect
 !
     if (IO_strategy == "collect_xy") then
 !
-      iproc = ipz * nprocx*nprocy
-      lroot = (iproc==root)
+      iproc_world = ipz * nprocx*nprocy
+      lroot = (iproc_world==root)
 !
 ! Take the shortcut, files are well prepared for direct combination
 !
@@ -185,8 +185,8 @@ program pc_collect
     do ipy = 0, nprocy-1
       do ipx = 0, nprocx-1
 !
-        iproc = ipx + ipy * nprocx + ipz * nprocx*nprocy
-        lroot = (iproc==root)
+        iproc_world = ipx + ipy * nprocx + ipz * nprocx*nprocy
+        lroot = (iproc_world==root)
 
 ! Set up directory names 'directory' and 'directory_snap'
 

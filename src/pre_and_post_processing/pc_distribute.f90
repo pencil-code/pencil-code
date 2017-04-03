@@ -172,8 +172,8 @@ program pc_distribute
     do ipy = 0, nprocy-1
       do ipx = 0, nprocx-1
 !
-        iproc = ipx + ipy * nprocx + ipz * nprocx*nprocy
-        lroot = (iproc==root)
+        iproc_world = ipx + ipy * nprocx + ipz * nprocx*nprocy
+        lroot = (iproc_world==root)
 !
 !  Set up flags for leading processors in each possible direction and plane
 !

@@ -123,7 +123,7 @@ program pc_collect
   if (lroot) print *, 'Lx, Ly, Lz=', Lxyz
   if (lroot) print *, '      Vbox=', Lxyz(1)*Lxyz(2)*Lxyz(3)
 !
-  iproc = 0
+  iproc_world = 0
   call directory_names
   inquire (file=trim(directory_dist)//'/'//filename, exist=ex)
   if (.not. ex) call fatal_error ('pc_collect', 'File not found: '//trim(directory_dist)//'/'//filename, .true.)
@@ -193,8 +193,8 @@ subroutine read_and_combine(filename,f,mvar_in,lonly_farray)
       gy = huge(1.0)
     endif
 !
-    iproc = ipz * nprocx*nprocy
-    lroot = (iproc==root)
+    iproc_world = ipz * nprocx*nprocy
+    lroot = (iproc_world==root)
     lfirst_proc_z = (ipz == 0)
     llast_proc_z = (ipz == nprocz-1)
 !
@@ -257,8 +257,8 @@ subroutine read_and_combine(filename,f,mvar_in,lonly_farray)
     do ipy = 0, nprocy-1
       do ipx = 0, nprocx-1
 !
-        iproc = ipx + ipy * nprocx + ipz * nprocx*nprocy
-        lroot = (iproc==root)
+        iproc_world = ipx + ipy * nprocx + ipz * nprocx*nprocy
+        lroot = (iproc_world==root)
 !
 !  Set up flags for leading processors in each possible direction and plane
 !

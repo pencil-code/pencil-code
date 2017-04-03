@@ -180,8 +180,8 @@ subroutine read_and_distribute(filename,f,lonly_farray)
       enddo
     enddo
 !
-    iproc = ipx + ipy * nprocx + ipz * nprocx*nprocy
-    lroot = (iproc==root)
+    iproc_world = ipx + ipy * nprocx + ipz * nprocx*nprocy
+    lroot = (iproc_world==root)
 !
 !  Set up flags for leading processors in each possible direction and plane
 !
