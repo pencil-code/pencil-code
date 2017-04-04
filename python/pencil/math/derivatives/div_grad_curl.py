@@ -113,7 +113,7 @@ def curl(f,dx,dy,dz,x=[],y=[],z=[],run2D=False,param=[],dim=[]):
     if not dim:
         dim = read_dim()
     if len(x) < 1:
-        gd = read_grid(quiet=True)
+        gd = read_grid(quiet=True,param=param)
         x = gd.x
         y = gd.y
         z = gd.z
@@ -130,13 +130,13 @@ def curl(f,dx,dy,dz,x=[],y=[],z=[],run2D=False,param=[],dim=[]):
     elif (dim.ny == 1):
     # 2-D case in the (x,z)-plane
     # f[...,nz,1,nx] if run2D=False or f[...,nz,nx] if run2D=True
-        curl[0,...] = zder(f,dz,x=x,y=y,z=z,run2D=run2D)[0,...] -\
-                      xder(f,dx,x=x,y=y,z=z)[2,...]
+        curl[0,...] = zder(f,dz,x=x,y=y,z=z,run2D=run2D,param=param, \
+        dim=dim)[0,...] - xder(f,dx,x=x,y=y,z=z,param=param,dim=dim)[2,...]
     elif (dim.nz ==1):
     # 2-D case in the (x,y)-plane
     # f[...,1,ny,nx] if run2D=False or f[...,ny,nx] if run2D=True
-        curl[0,...] = xder(f,dx,x=x,y=y,z=z)[1,...] -\
-                      yder(f,dy,x=x,y=y,z=z)[0,...]
+        curl[0,...] = xder(f,dx,x=x,y=y,z=z,param=param,dim=dim)[1,...] -\
+                      yder(f,dy,x=x,y=y,z=z,param=param,dim=dim)[0,...]
 
     if param.coord_system == 'cylindric':
     # 2-D case in the (r,theta)-plane

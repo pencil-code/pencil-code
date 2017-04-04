@@ -106,7 +106,7 @@ class DataCube(object):
             if param is None:
                 param = read_param(datadir=datadir, quiet=quiet)
             if index is None:
-                index = read_index(datadir=datadir,down=ldownsampled)
+                index = read_index(datadir=datadir,param=param,down=ldownsampled)
 
         if dim.precision == 'D':
             precision = 'd'

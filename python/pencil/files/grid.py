@@ -31,7 +31,7 @@ class Grid(object):
         """
         datadir = os.path.expanduser(datadir)
         if param is None:
-            param = read_param(datadir, quiet=quiet)
+            param = read_param(datadir, quiet=True)
         dim = read_dim(datadir, proc, down=down)
         if dim.precision == 'D':
             precision = 'd'
