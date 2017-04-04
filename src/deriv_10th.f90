@@ -110,7 +110,7 @@ module Deriv
           call warning('initialize_deriv', &
           'There are not enough grid points for the bval routine')
         endif
-      enddo	  
+      enddo
 !
     endsubroutine initialize_deriv
 !***********************************************************************
@@ -1675,6 +1675,7 @@ module Deriv
 !
       call fatal_error("der2i2j2k","not implemented in deriv_10th")
 !
+    endsubroutine der2i2j2k
 !***********************************************************************
     subroutine der_upwind1st(f,uu,k,df,j)
 !
