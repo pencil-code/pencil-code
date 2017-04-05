@@ -7,7 +7,7 @@ LDMPI=-lmpi
 
 MPICOMM   =   mpicomm
 IO        =   io_dist
-#GPU       =   gpu_astaroth
+GPU       =   gpu_astaroth
 
 HYDRO     =   hydro
 DENSITY   =   density
