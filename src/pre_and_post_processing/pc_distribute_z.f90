@@ -60,6 +60,7 @@ program pc_distribute_z
 !
 !  Read parameters and output parameter list.
 !
+  lstart = .false.
   call read_all_run_pars
 !
 !  Derived parameters (that may still be overwritten).
