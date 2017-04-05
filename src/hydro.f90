@@ -5310,8 +5310,7 @@ module Hydro
           endif
         endif fourier
 !
-!  Just for test purposes and comparison with the loop advection
-!  in Stone, J. et al., JCP 250, 509 (2005)
+!  To disable radial advection, intended for tests in cylindrical coordinates
 !
         if (lno_radial_advection) then
           f(:,:,:,iux) = 0.
