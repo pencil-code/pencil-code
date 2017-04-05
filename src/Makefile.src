@@ -388,9 +388,9 @@ LIBGPU =
 ifeq ($(GPU),gpu_astaroth)
   GPU_INTERFACE=gpu_astaroth_ansi.o
   ifeq ($(REAL_PRECISION),double)
-    LIBGPU = astaroth_dbl.sl
+    LIBGPU = astaroth_dbl.so
   else
-    LIBGPU = astaroth_sgl.sl
+    LIBGPU = astaroth_sgl.so
   endif
 else
   GPU_INTERFACE=
