@@ -46,13 +46,13 @@ module Solid_Cells
 !  Fundamental grid parameters
   real :: r_ogrid=0.                                                 ! Set in start.in?
   character (len=labellen), dimension(3) :: grid_func_ogrid='linear' ! Set in start.in
-  integer :: inter_stencil_len = 3                                ! set in start.in?
+  integer :: inter_stencil_len = 0                                ! set in start.in?
   integer, parameter :: nx_ogrid=nxgrid_ogrid/nprocx,ny_ogrid=nygrid_ogrid/nprocy,nz_ogrid=nzgrid_ogrid/nprocz
 
 
 !***************************************************
 ! Pencil case ogrid
-  integer, parameter :: npencils_ogrid=35
+  integer, parameter :: npencils_ogrid=29
   type pencil_case_ogrid
     real, dimension (nx_ogrid)     :: x_mn    
     real, dimension (nx_ogrid)     :: y_mn    
@@ -78,17 +78,11 @@ module Solid_Cells
     real, dimension (nx_ogrid,3)   :: ugu
     real, dimension (nx_ogrid)     :: ugu2
     real, dimension (nx_ogrid,3)   :: del2u
-    real, dimension (nx_ogrid)     :: cv1
-    real, dimension (nx_ogrid)     :: cp1
-    real, dimension (nx_ogrid)     :: cv
-    real, dimension (nx_ogrid)     :: cp
-    real, dimension (nx_ogrid)     :: TT
-    real, dimension (nx_ogrid)     :: TT1
+    real, dimension (nx_ogrid,3)   :: graddivu
+    real, dimension (nx_ogrid)     :: lnTT
     real, dimension (nx_ogrid)     :: cs2
-    real, dimension (nx_ogrid,3)   :: gTT
-    real, dimension (nx_ogrid)     :: del2TT
     real, dimension (nx_ogrid)     :: pp
-    real, dimension (nx_ogrid)     :: ee
+    real, dimension (nx_ogrid)     :: ss
   endtype pencil_case_ogrid
   
   integer :: i_og_x_mn    =1
@@ -115,17 +109,11 @@ module Solid_Cells
   integer :: i_og_ugu     =22
   integer :: i_og_ugu2    =23
   integer :: i_og_del2u   =24
-  integer :: i_og_cv1     =25
-  integer :: i_og_cp1     =26
-  integer :: i_og_cv      =27
-  integer :: i_og_cp      =28
-  integer :: i_og_TT      =29
-  integer :: i_og_TT1     =30
-  integer :: i_og_cs2     =31
-  integer :: i_og_gTT     =32
-  integer :: i_og_del2TT  =33
-  integer :: i_og_pp      =34
-  integer :: i_og_ee      =35
+  integer :: i_og_graddivu=25
+  integer :: i_og_lnTT    =26
+  integer :: i_og_cs2     =27
+  integer :: i_og_pp      =28
+  integer :: i_og_ss      =29
 
   character (len=15), parameter, dimension(npencils_ogrid) :: pencil_names_ogrid = &
     (/ 'x_mn          ', 'y_mn          ', 'z_mn          ', 'rcyl_mn       '  &
@@ -135,11 +123,10 @@ module Solid_Cells
      , 'ugrho         ', 'sglnrho       '  &
      , 'uu            ', 'u2            ', 'uij           ', 'divu          '  &
      , 'sij           ', 'sij2          ', 'ugu           ', 'ugu2          '  &
-     , 'del2u         '  &
-     , 'cv1           ', 'cp1           ', 'cp            ', 'cv            '  &
-     , 'TT            ', 'TT1           '  &
-     , 'cs2           ', 'gTT           ', 'del2TT        '  &
-     , 'pp            ', 'ee            ' /)
+     , 'del2u         ', 'graddivu      '  &
+     , 'lnTT          '  &
+     , 'cs2           '  &
+     , 'pp            ', 'ss            ' /)
   logical,dimension(npencils_ogrid):: lpencil_ogrid
 !***************************************************
 
@@ -170,7 +157,7 @@ module Solid_Cells
 !  Grid properties computed in grid routines and used other grid routines by call from external routines
   real, dimension (nx_ogrid,3) :: dline_1_ogrid
   real :: dx_ogrid,dy_ogrid,dz_ogrid
-  real, dimension(3) :: xyz_star_ogrid
+  real, dimension(3) :: xyz_star_ogrid=0.0
   real, dimension(-nghost:nghost,2) :: coeffs_1_x_ogrid
   real, dimension(-nghost:nghost,2) :: coeffs_1_y_ogrid
   real, dimension(-nghost:nghost,2) :: coeffs_1_z_ogrid
@@ -207,6 +194,9 @@ module Solid_Cells
 
 !  Summation by parts arrays
   real, dimension(6,9) :: D1_SBP, D2_SBP
+
+!  EOS parameters
+  real :: rho0, lnrho0, lnTT0
 
 !  Read start.in file
   namelist /solid_cells_init_pars/ &
@@ -352,7 +342,7 @@ module Solid_Cells
       if (nzgrid==1) then; zprim=1.0; else; zprim=1./dz_1; endif
 
 !
-!  Construct SBP-stencils, if SBP is on
+!  Construct summation by parts-stencils, if SBP is on
 !
       if(SBP) then
         D1_SBP(1,:)=(/ -21600./13649.  , 104009./54596.  , 30443./81894.   , & 
@@ -392,77 +382,11 @@ module Solid_Cells
                        -54899./131403. ,  820271./525612., -117600./43801. , &
                        64800./43801.   , -6480./43801.   , 480./43801.     /)
       endif
-!D1_SBP(1,:)=(/1.582533518939116  , 2.044890442417173   ,-0.187559913610861 , -0.381327724279290 , &
-!  0.058441014418054 ,  0.048089699994041  ,0., 0.,                  0.  /)
-!D1_SBP(1,:)=(/-0.464675096121735 ,                 0.  , 0.313417627884013 ,  0.206498077565307 , &
-!  -0.029873558173980 , -0.025367051153605  ,0., 0.,                  0./)
-!D1_SBP(1,:)=(/0.094430293650854  ,-0.694409067460467   ,                0. , 0.722151468254267  , &
-!  -0.138818134920932 ,  0.016645440476282  ,0., 0.,                  0./)
-!D1_SBP(1,:)=(/0.118827015563298  ,-0.283174060614145   ,-0.446965281714417 ,                 0. , &
-!  0.672406942433276 , -0.077532596536030  ,0.016437980868017 ,  0.     ,             0./)
-!D1_SBP(1,:)=(/-0.020252923848979 ,  0.045559356905423  , 0.095553120165202 , -0.747799834594894 , &
-!  0.,   0.747799834594894 ,-0.095553120165202, -0.045559356905423 , 0.020252923848979/)
-!D1_SBP(1,:)=(/0.                 ,                 0.  ,-0.016437980868017 ,  0.077532596536030 , &
-!  -0.672406942433276 ,   0.                ,0.446965281714417  ,0.283174060614145 ,-0.118827015563298/)
 !
-!D1_SBP( 1 , 1 )= -1.582533518939116418
-!D1_SBP( 1 , 2 )=   1.9968007424231323418
-!D1_SBP( 1 , 3 )=   0.47988863653014872884e-2
-!D1_SBP( 1 , 4 )=   -0.66986592424353432486
-!D1_SBP( 1 , 5 )=   0.25079981439421691455
-!D1_SBP( 1 , 6 )=   0
-!D1_SBP( 1 , 7 )=   0
-!D1_SBP( 1 , 8 )=   0 
-!D1_SBP( 1 , 9 )=   0
-!D1_SBP( 2 , 1 )=   -0.45374732928216654180
-!D1_SBP( 2 , 2 )=   0
-!D1_SBP( 2 , 3 )=   0.20413995948833208469
-!D1_SBP( 2 , 4 )=   0.42505341435666916396
-!D1_SBP( 2 , 5 )=   -0.19379006076750187297
-!D1_SBP( 2 , 6 )=   0.18344016204667166126e-1
-!D1_SBP( 2 , 7 )=   0
-!D1_SBP( 2 , 8 )=   0
-!D1_SBP( 2 , 9 )=   0
-!D1_SBP( 3 , 1 )=   -0.24160826263371449650e-2
-!D1_SBP( 3 , 2 )=   -0.45229312676749047092
-!D1_SBP( 3 , 3 )=   0
-!D1_SBP( 3 , 4 )=   0.23791958686831427518
-!D1_SBP( 3 , 5 )=   0.34541374646501905816
-!D1_SBP( 3 , 6 )=   -0.12862412393950571745
-!D1_SBP( 3 , 7 )=   0
-!D1_SBP( 3 , 8 )=   0
-!D1_SBP( 3 , 9 )=   0
-!D1_SBP( 4 , 1 )=   0.17061018846799776078
-!D1_SBP( 4 , 2 )=   -0.47641039995023947254
-!D1_SBP( 4 , 3 )=   -0.12035827579772345587
-!D1_SBP( 4 , 4 )=   0
-!D1_SBP( 4 , 5 )=   0.42710082726876904895
-!D1_SBP( 4 , 6 )=   -0.14377682403433476395e-1
-!D1_SBP( 4 , 7 )=   0.13435342414629595074e-1
-!D1_SBP( 4 , 8 )=   0
-!D1_SBP( 4 , 9 )=   0
-!D1_SBP( 5 , 1 )=   -0.86915492361728238331e-1
-!D1_SBP( 5 , 2 )=   0.29554398882823409928
-!D1_SBP( 5 , 3 )=   -0.23775972239854428505
-!D1_SBP( 5 , 4 )=   -0.58114341331302103170
-!D1_SBP( 5 , 5 )=   0
-!D1_SBP( 5 , 6 )=   0.75652321103635055647
-!D1_SBP( 5 , 7 )=   -0.16452964326520248826
-!D1_SBP( 5 , 8 )=   0.18281071473911387584e-1
-!D1_SBP( 5 , 9 )=   0
-!D1_SBP( 6 , 1 )=   0
-!D1_SBP( 6 , 2 )=   -0.25155437851495019140e-1
-!D1_SBP( 6 , 3 )=   0.79610054564964270222e-1
-!D1_SBP( 6 , 4 )=   0.17590922581676217438e-1
-!D1_SBP( 6 , 5 )=   -0.68025083141176381057
-!D1_SBP( 6 , 6 )=   0 ;
-!D1_SBP( 6 , 7 )=   0.73970913906075203762
-!D1_SBP( 6 , 8 )=   -0.14794182781215040752
-!D1_SBP( 6 , 9 )=   0.16437980868016711947e-1
-
-      !do i=1,6
-      !  print *, 'D2_SBP(i,:)=',D2_SBP(i,:)
-      !enddo
+!  Set up necessary units for equation of state
+!
+      call initialize_eos
+!
     end subroutine initialize_solid_cells
 !***********************************************************************
     subroutine init_solid_cells(f)
@@ -681,30 +605,41 @@ module Solid_Cells
       p_ogrid%ugu=penc0
       p_ogrid%ugu2=penc0
       p_ogrid%del2u=penc0
-      p_ogrid%cv1=penc0
-      p_ogrid%cp1=penc0
-      p_ogrid%cv=penc0
-      p_ogrid%cp=penc0
       p_ogrid%divu=penc0  
-      p_ogrid%TT=penc0
-      p_ogrid%TT1=penc0
+      p_ogrid%lnTT=penc0
       p_ogrid%cs2=penc0
-      p_ogrid%gTT=penc0
-      p_ogrid%del2TT=penc0
       p_ogrid%pp=penc0
-      p_ogrid%ee=penc0
+      p_ogrid%ss=penc0
     
       lpencil_ogrid=.true.
-
-      if(iTT<=0) then
-        lpencil_ogrid(i_og_TT)=.false.
-        lpencil_ogrid(i_og_TT1)=.false.
-        lpencil_ogrid(i_og_gTT)=.false.
-        lpencil_ogrid(i_og_del2TT)=.false.
-        lpencil_ogrid(i_og_ee)=.false.
-      endif
 !
     endsubroutine initialize_pencils_ogrid
+!***********************************************************************
+    subroutine initialize_eos
+!  
+!  Set up parameters necessary to compute the energy and pressure using
+!  the ideal gas eos.
+!  This is done in the unit_eos routine in eos_idealgas.f90 for the 
+!  cartesian solver
+!
+!  4-apr-17/Jorgen: Coded
+!
+      use EquationOfState, only: get_cv1,get_cp1,cs20,gamma_m1
+      real :: cp1, cp
+!
+!  Inverse cv and cp values.
+!
+      call get_cp1(cp1)
+      cp=1./cp1
+!
+      rho0=1.0
+      lnrho0=log(rho0)
+      if (gamma_m1/=0.0) then
+        lnTT0=log(cs20/(cp*gamma_m1))  !(general case)
+      else
+        lnTT0=log(cs20/cp)  !(isothermal/polytropic cases: check!)
+      endif
+    endsubroutine initialize_eos
 !***********************************************************************
     subroutine find_drag_alt(c_dragx,c_dragy)
 !
@@ -717,7 +652,7 @@ module Solid_Cells
 !
       real, intent(out) :: c_dragx,c_dragy
       real :: C_p,C_f
-      real :: nu
+      real :: nu,norm
       real, dimension(ny_ogrid) :: pres0,pres1
       real, dimension(ny_ogrid) :: presx0,presx1,presy0,presy1
       integer :: i,k
@@ -731,8 +666,9 @@ module Solid_Cells
         presy0(k) = pres0(k)*sin(y_ogrid(i))
       enddo
 !
-      c_dragx=sum(presx0)*pi/(ny_ogrid*nz_ogrid)
-      c_dragy=sum(presy0)*pi/(ny_ogrid*nz_ogrid)
+      norm=2./(1.0*1.0**2*(2*pi*cylinder_radius))
+      c_dragx=sum(presx0)*pi/(ny_ogrid*nz_ogrid)*norm
+      c_dragy=sum(presy0)*pi/(ny_ogrid*nz_ogrid)*norm
     endsubroutine find_drag_alt
 !***********************************************************************
     subroutine find_drag(c_dragx,c_dragy)
@@ -745,51 +681,21 @@ module Solid_Cells
       use EquationOfState, only: cs20,gamma1
 !
       real, intent(inout) :: c_dragx,c_dragy
-      real :: C_p,C_f
-      real :: nu
+      real :: F_p,F_f
+      real :: nu,dtheta,norm
       real, dimension(ny_ogrid) :: pres0,pres1
       real, dimension(ny_ogrid) :: presx0,presx1,presy0,presy1
 !
       integer :: i
       call getnu(nu_input=nu)
-! 
-if(m_ogrid==19) then
-  do i=m1_ogrid,m2_ogrid
-    pres0(i-3) = gamma1*f_ogrid(l1_ogrid,i,4,irho)*cs20
-    pres1(i-3) = gamma1*f_ogrid(l1_ogrid+1,i,4,irho)*cs20
-    presx0(i-3) = pres0(i-3)*cos(y_ogrid(i))
-    presx1(i-3) = pres1(i-3)*cos(y_ogrid(i))
-    presy0(i-3) = pres0(i-3)*sin(y_ogrid(i))
-    presy1(i-3) = pres1(i-3)*sin(y_ogrid(i))
-  enddo
 
-  !print*, 'f_ogrid(l1_ogrid,i,4,irho)'
-  print*, ''
-  !print*, 'presx0'
-  !print*, presx0
-  !print*, ''
-  !print*, 'presx1'
-  !print*, presx1
-  !print*, ''
-  !print*, 'presy0'
-  !print*, presy0
-  !print*, ''
-  !print*, 'presy1'
-  !print*, presy1
-  print*, ''
-  !print*, 'sum, presx0', sum(presx0)
-  !print*, 'sum, presx1', sum(presx1)
-  !print*, 'sum, presy0', sum(presy0)
-  !print*, 'sum, presy1', sum(presy1)
-  !print*, ''
-  !print*, 'cp_xp', 2*sum(presx0)
-  !print*, 'cp_yp', 2*sum(presy0)
-endif
-      C_p=2*p_ogrid%pp(1)*0.5*(y_ogrid(m_ogrid+1)-y_ogrid(m_ogrid-1))/(2*xyz0_ogrid(1)*pi)!/(p_ogrid%rho(1)*init_uu**2)
-      C_f=2*nu*p_ogrid%rho(1)*p_ogrid%uij(1,2,1)
+      !C_p=2*p_ogrid%pp(1)*0.5*(y_ogrid(m_ogrid+1)-y_ogrid(m_ogrid-1))/(2*xyz0_ogrid(1)*pi)!/(p_ogrid%rho(1)*init_uu**2)
+      F_p=-cylinder_radius*dy_ogrid*p_ogrid%pp(1)!/(p_ogrid%rho(1)*init_uu**2)
+      F_f=cylinder_radius*dy_ogrid*nu*p_ogrid%rho(1)*p_ogrid%uij(1,2,1)
 !
-      c_dragx=c_dragx+(C_p+C_f)*cos(y_ogrid(m_ogrid))
-      c_dragy=c_dragy+(C_p+C_f)*sin(y_ogrid(m_ogrid))
+      norm=2./(1.0*1.0**2*(2*pi*cylinder_radius))
+      c_dragx=c_dragx+(F_p+F_f)*cos(y_ogrid(m_ogrid))*norm
+      c_dragy=c_dragy+(F_p+F_f)*sin(y_ogrid(m_ogrid))*norm
 !
     endsubroutine find_drag
 !!***********************************************************************
@@ -1035,7 +941,7 @@ endif
           call find_near_cartesian_indices(lower_i,upper_i,lower_j,upper_j, &
                 lower_k,upper_k,xyz)
           inear=(/ lower_i, lower_j, lower_k /)
-          if ( .not. linear_interpolate(f_cartesian,ivar1,ivar2,xyz,gp,inear,.false.) ) then
+          if ( .not. linear_interpolate(f_cartesian,ivar1,ivar2,xyz,gp,inear,.true.) ) then
             call fatal_error('linear_interpolate','interpolation from cartesian to curvilinear')
           endif
           f_ogrid(i,j,k,iux)=gp(iux)*cos(y_ogrid(j))+gp(iuy)*sin(y_ogrid(j))
@@ -1166,25 +1072,25 @@ endif
 !  Calculate derived grid spacing parameters needed for interpolation.
 !  For an equidistant grid we only need to do this at the first call.
 !
-    if (lequidist(1)) then
+    if (lequidist_ogrid(1)) then
       if (lfirstcall) dx1=dx_1_ogrid(ix0) !1/dx
     else
       dx1=1/(x_ogrid(ix0+1)-x_ogrid(ix0))
     endif
 !
-    if (lequidist(2)) then
+    if (lequidist_ogrid(2)) then
       if (lfirstcall) dy1=dy_1_ogrid(iy0)
     else
       dy1=1/(y_ogrid(iy0+1)-y_ogrid(iy0))
     endif
 !
-    if (lequidist(3)) then
+    if (lequidist_ogrid(3)) then
       if (lfirstcall) dz1=dz_1_ogrid(iz0)
     else
       dz1=1/(z_ogrid(iz0+1)-z_ogrid(iz0))
     endif
 !
-    if ( (.not. all(lequidist)) .or. lfirstcall) then
+    if ( (.not. all(lequidist_ogrid)) .or. lfirstcall) then
       dxdy1=dx1*dy1; dxdz1=dx1*dz1; dydz1=dy1*dz1
       dxdydz1=dx1*dy1*dz1
     endif
@@ -1333,25 +1239,25 @@ endif
 !  Calculate derived grid spacing parameters needed for interpolation.
 !  For an equidistant grid we only need to do this at the first call.
 !
-    if (lequidist(1)) then
+    if (lequidist_ogrid(1)) then
       if (lfirstcall) dx1=dx_1_ogrid(ix0) !1/dx
     else
       dx1=1/(x_ogrid(ix0+1)-x_ogrid(ix0))
     endif
 !
-    if (lequidist(2)) then
+    if (lequidist_ogrid(2)) then
       if (lfirstcall) dy1=dy_1_ogrid(iy0)
     else
       dy1=1/(y_ogrid(iy0+1)-y_ogrid(iy0))
     endif
 !
-    if (lequidist(3)) then
+    if (lequidist_ogrid(3)) then
       if (lfirstcall) dz1=dz_1_ogrid(iz0)
     else
       dz1=1/(z_ogrid(iz0+1)-z_ogrid(iz0))
     endif
 !
-    if ( (.not. all(lequidist)) .or. lfirstcall) then
+    if ( (.not. all(lequidist_ogrid)) .or. lfirstcall) then
       dxdy1=dx1*dy1; dxdz1=dx1*dz1; dydz1=dy1*dz1
       dxdydz1=dx1*dy1*dz1
     endif
@@ -1381,8 +1287,11 @@ endif
         if (gp(i)>max(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
           print*, 'linear_interpolate_ogrid: interpolated value is LARGER than'
           print*, 'linear_interpolate_ogrid: a values at the corner points!'
+          print*, 'linear_interpolate_ogrid: xxp=', rthz
           print*, 'linear_interpolate_ogrid: r0, th0, z0=', &
               x_ogrid(ix0), y_ogrid(iy0), z_ogrid(iz0)
+          print*, 'linear_interpolate_ogrid: r1, th1, z1=', &
+              x_ogrid(ix0+1), y_ogrid(iy0+1), z_ogrid(iz0+1)
           print*, 'linear_interpolate_ogrid: i, gp(i)=', i, gp(i)
           print*, 'linear_interpolate_ogrid: g1...g8=', &
               g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
@@ -1394,6 +1303,8 @@ endif
           print*, 'linear_interpolate_ogrid: xxp=', rthz
           print*, 'linear_interpolate_ogrid: x0, y0, z0=', &
               x_ogrid(ix0), y_ogrid(iy0), z_ogrid(iz0)
+          print*, 'linear_interpolate_ogrid: r1, th1, z1=', &
+              x_ogrid(ix0+1), y_ogrid(iy0+1), z_ogrid(iz0+1)
           print*, 'linear_interpolate_ogrid: i, gp(i)=', i, gp(i)
           print*, 'linear_interpolate_ogrid: g1...g8=', &
               g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
@@ -1534,7 +1445,11 @@ end subroutine print_solid
     real :: a,b,c
     integer :: i
 !
+!HEREHERE
+    !grid_func_ogrid(1)='sinh'
     lequidist_ogrid=(grid_func_ogrid=='linear')
+    !coeff_grid_o(1)=2.
+    !xyz_star_ogrid(1)=cylinder_radius
 !
 !  Abbreviations
 !
@@ -1844,7 +1759,6 @@ end subroutine print_solid
 !
 !  Volume element.
 !
-! TODO: Should I use Lxyz_ogrid instead of Lxyz here?
     if (nxgrid_ogrid/=1) then
       dVol_x_ogrid=x_ogrid*xprim_ogrid
       Area_xy_ogrid=Area_xy_ogrid*1./2.*(r_ogrid**2-xyz0_ogrid(1)**2)
@@ -1852,7 +1766,7 @@ end subroutine print_solid
     else
       dVol_x_ogrid=1./2.*(r_ogrid**2-xyz0_ogrid(1)**2)
       Area_xy_ogrid=Area_xy_ogrid*dVol_x_ogrid(1)
-      Area_xz_ogrid=Area_xz_ogrid*Lxyz(1)
+      Area_xz_ogrid=Area_xz_ogrid*Lxyz_ogrid(1)
     endif
 !
 !  theta extent (cylindrically symmetric)
@@ -1869,8 +1783,8 @@ end subroutine print_solid
 !
     if (nzgrid/=1) then
       dVol_z_ogrid=zprim_ogrid
-      Area_xz_ogrid=Area_xz_ogrid*Lxyz(3)
-      Area_yz_ogrid=Area_yz_ogrid*Lxyz(3)
+      Area_xz_ogrid=Area_xz_ogrid*Lxyz_ogrid(3)
+      Area_yz_ogrid=Area_yz_ogrid*Lxyz_ogrid(3)
     else
       dVol_z_ogrid=1.
     endif
@@ -1923,68 +1837,6 @@ end subroutine print_solid
 !
   endsubroutine initialize_grid_ogrid
 !!***********************************************************************
-! TODO: NOT A PRIORITY AT THE MOMENT
-!
-!    subroutine save_grid(lrestore)
-!!
-!!  Saves grid into local statics (needed for downsampled output)
-!!
-!!  6-mar-14/MR: coded
-!!
-!      use General, only : loptest
-!!
-!      logical, optional :: lrestore
-!!
-!      real, dimension(mx), save :: xs,dx_1s,dx_tildes
-!      real, dimension(my), save :: ys,dy_1s,dy_tildes
-!      real, dimension(mz), save :: zs,dz_1s,dz_tildes
-!      real, dimension(nx), save :: r_mns,r1_mns,r2_mns
-!      real, dimension(my), save :: sinths,sin1ths,sin2ths,cosths, &
-!                                   cotths,cos1ths,tanths
-!      real, dimension(mz), save :: sinphs, cosphs
-!      real, dimension(nx), save :: rcyl_mns,rcyl_mn1s,rcyl_mn2s
-!
-!      real, save :: dxs, dys, dzs
-!
-!      logical, save :: lfirst=.true.
-!
-!      if (loptest(lrestore)) then
-!        if (lfirst) then
-!          call fatal_error('save_grid','first call must have lrestore=F')
-!        else
-!          dx=dxs; dy=dys; dz=dzs
-!          x=xs; y=ys; z=zs
-!          dx_1_ogrid=dx_1s; dy_1=dy_1s; dz_1=dz_1s
-!          dx_tilde_ogrid=dx_tildes; dy_tilde=dy_tildes; dz_tilde=dz_tildes
-!
-!          if (lspherical_coords) then
-!            r_mn=r_mns; r1_mn=r1_mns; r2_mn=r2_mns
-!            sinth=sinths; sin1th=sin1ths; sin2th=sin2ths; costh=cosths
-!            cotth=cotths; cos1th=cos1ths; tanth=tanths
-!            sinphs=sinph; cosphs=cosph
-!          elseif (lcylindrical_coords) then
-!            rcyl_mn=rcyl_mns; rcyl_mn1=rcyl_mn1s; rcyl_mn2=rcyl_mn2s
-!          endif
-!        endif
-!      elseif (lfirst) then
-!        lfirst=.false.
-!        dxs=dx; dys=dy; dzs=dz
-!        xs=x; ys=y; zs=z
-!        dx_1s=dx_1; dy_1s=dy_1; dz_1s=dz_1
-!        dx_tildes=dx_tilde; dy_tildes=dy_tilde; dz_tildes=dz_tilde
-!
-!        if (lspherical_coords) then
-!          r_mns=r_mn; r1_mns=r1_mn; r2_mns=r2_mn
-!          sinths=sinth; sin1ths=sin1th; sin2ths=sin2th; cosths=costh
-!          cotths=cotth; cos1ths=cos1th; tanths=tanth
-!          sinph=sinphs; cosph=cosphs
-!        elseif (lcylindrical_coords) then
-!          rcyl_mns=rcyl_mn; rcyl_mn1s=rcyl_mn1; rcyl_mn2s=rcyl_mn2
-!        endif
-!      endif
-!
-!    endsubroutine save_grid
-!***********************************************************************
   subroutine calc_pencils_grid_ogrid
 !
 !  Calculate Grid/geometry related pencils.
@@ -2000,7 +1852,6 @@ end subroutine print_solid
     if (lpencil_ogrid(i_og_phi_mn))   p_ogrid%phi_mn  = spread(y_ogrid(m_ogrid),1,nx_ogrid)
     if (lpencil_ogrid(i_og_rcyl_mn1)) p_ogrid%rcyl_mn1= 1./max(p_ogrid%rcyl_mn,tini)
 !
-!HEREHERE
   endsubroutine calc_pencils_grid_ogrid
 !***********************************************************************
   subroutine real_to_index(n, x, xi)
@@ -2321,41 +2172,6 @@ end subroutine print_solid
 !
   endsubroutine get_grid_mn_ogrid
 !***********************************************************************
-  subroutine grid_bound_data
-
-!  31-jan-17/Jorgen: adapted from version in grid.f90
-
-    use grid, only: calc_bound_coeffs
-
-    if (nxgrid_ogrid>1) then
-      if (lfirst_proc_x) &
-        dx2_bound_ogrid(-1:-nghost:-1)= 2.*(x_ogrid(l1_ogrid+1:l1_ogrid+nghost)-x_ogrid(l1_ogrid))
-      if (llast_proc_x) &
-        dx2_bound_ogrid(nghost:1:-1)  = 2.*(x_ogrid(l2_ogrid)-x_ogrid(l2-nghost:l2_ogrid-1))
-!
-      call calc_bound_coeffs(x_ogrid,coeffs_1_x_ogrid)
-    endif
-
-    if (nygrid_ogrid>1) then
-      if (lfirst_proc_y) &
-        dy2_bound_ogrid(-1:-nghost:-1)= 2.*(y_ogrid(m1_ogrid+1:m1_ogrid+nghost)-y_ogrid(m1_ogrid))
-      if (llast_proc_y) &
-        dy2_bound_ogrid(nghost:1:-1)  = 2.*(y_ogrid(m2)-y_ogrid(m2-nghost:m2-1))
-!
-      call calc_bound_coeffs(y_ogrid,coeffs_1_y_ogrid)
-    endif
-
-    if (nzgrid_ogrid>1) then
-      if (lfirst_proc_z) &
-        dz2_bound_ogrid(-1:-nghost:-1)= 2.*(z_ogrid(n1_ogrid+1:n1_ogrid+nghost)-z_ogrid(n1_ogrid))
-      if (llast_proc_z) &
-        dz2_bound_ogrid(nghost:1:-1)  = 2.*(z_ogrid(n2_ogrid)-z_ogrid(n2_ogrid-nghost:n2_ogrid-1))
-!
-      call calc_bound_coeffs(z_ogrid,coeffs_1_z_ogrid)
-    endif
-
-  endsubroutine grid_bound_data
-!***********************************************************************
   subroutine time_step_ogrid(f_cartesian)
 !
 !  Perform time steps on the curvilinear grid, including interpolation of 
@@ -2459,14 +2275,14 @@ end subroutine print_solid
 !  Update boundary of the overlapping grid by interpolating
 !  from curvilinear grid to cartesian grid
 !
-    call flow_curvilinear_to_cartesian(f_cartesian)
     call flow_cartesian_to_curvilinear(f_cartesian)
+    call flow_curvilinear_to_cartesian(f_cartesian)
 !
 !TODO:Printing
     iterator = iterator+1
-if(mod(iterator,100)==0) then
-    call print_ogrid(int(iterator/100))
-    call print_cgrid(int(iterator/100),f_cartesian)
+if(mod(iterator,2000)==0) then
+    call print_ogrid(int(iterator/2000))
+    call print_cgrid(int(iterator/2000),f_cartesian)
 !!TODO
         call find_drag_alt(c_dragx,c_dragy)
         print*, c_dragx,c_dragy
@@ -2597,6 +2413,9 @@ endif
       integer :: nyz_ogrid
 !
       intent(out)    :: df
+    real :: c_dragx2,c_dragy2
+    c_dragx2=0.
+    c_dragy2=0.
 !
 !  Print statements when they are first executed.
 !
@@ -2646,7 +2465,10 @@ endif
 !  End of loops over m and n.
 !
         headtt=.false.
+        !TODOTODO
+        !call find_drag(c_dragx2,c_dragy2)
       enddo mn_loop
+      !print*, 'c_dragx,c_dragy',c_dragx2,c_dragy2
 !
 !  -------------------------------------------------------------
 !  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)
@@ -2698,18 +2520,11 @@ endif
 !  Continuity equation.
 !      
       density_rhs= - p_ogrid%ugrho   - p_ogrid%rho*p_ogrid%divu      
-      !if(m_ogrid==floor(7.*nx_ogrid/8.)) then
-      !  print*, ''
-      !  print*, 'ugrho',p_ogrid%ugrho(:)
-      !  print*, 'rho',p_ogrid%rho(:)
-      !  print*, 'divu',p_ogrid%divu(:)
-      !endif
 !
 !  Add the continuity equation terms to the RHS of the density df.
 !
       df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,irho) = df(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,irho) + density_rhs
 !
-!UPWIND NEEDED FOR DENSITY CALCULATION
     endsubroutine dlnrho_dt_ogrid
 !***********************************************************************
     subroutine denergy_dt_ogrid(df)
@@ -2748,7 +2563,22 @@ endif
       if (lpencil_ogrid(i_og_sij2)) call multm2_sym_mn_ogrid(p_ogrid%sij,p_ogrid%sij2)
       if (lpencil_ogrid(i_og_ugu)) call u_dot_grad_ogrid(f_ogrid,iuu,p_ogrid%uij,p_ogrid%uu,p_ogrid%ugu)
       if (lpencil_ogrid(i_og_ugu2)) call dot2_mn_ogrid(p_ogrid%ugu,p_ogrid%ugu2)
-      if (lpencil_ogrid(i_og_del2u)) call del2v_ogrid(f_ogrid,iux,p_ogrid%del2u)
+      if (lpencil_ogrid(i_og_graddivu).and.lpencil_ogrid(i_og_del2u)) then
+        call gij_etc_ogrid(f_ogrid,iuu,p_ogrid%uu,p_ogrid%uij,DEL2=p_ogrid%del2u,GRADDIV=p_ogrid%graddivu)
+      elseif(lpencil_ogrid(i_og_graddivu)) then
+        call gij_etc_ogrid(f_ogrid,iuu,p_ogrid%uu,p_ogrid%uij,GRADDIV=p_ogrid%graddivu)
+      elseif(lpencil_ogrid(i_og_del2u)) then
+        call gij_etc_ogrid(f_ogrid,iuu,p_ogrid%uu,p_ogrid%uij,DEL2=p_ogrid%del2u)
+      endif
+!
+!        if (lpenc_loc(i_graddivu)) then
+!          if (headtt.or.ldebug) print*,'calc_pencils_hydro: call gij_etc'
+!          call gij_etc(f,iuu,p%uu,p%uij,p%oij,GRADDIV=p%graddivu)
+!        endif
+!        if (lpenc_loc(i_del2u)) then
+!          call curl_mn(p%oij,p%curlo,p%oo)
+!          p%del2u=p%graddivu-p%curlo
+!        endif
 !
     endsubroutine calc_pencils_hydro_ogrid
 !***********************************************************************
@@ -2773,49 +2603,29 @@ endif
 !
 ! Pencils: rho, rho1, lnrho, glnrho, grho, ugrho, sglnrho
 !
-!if(m_ogrid>=63) then
-!  print*, ''
-!  print*, 'm_ogrid,n_ogrid',m_ogrid,n_ogrid
-!  print*, 'iux,iuy,iuz',iux,iuy,iuz
-!  print*, 'ux',f_ogrid(l1:l2,m,n,iux)
-!  print*, 'uy',f_ogrid(l1:l2,m,n,iuy)
-!  print*, 'uz',f_ogrid(l1:l2,m,n,iuz)
-!  print*, 'rho',f_ogrid(l1:l2,m,n,irho)
-!endif
       p_ogrid%rho=f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,irho)
       if (lpencil_ogrid(i_og_rho1)) p_ogrid%rho1=1.0/p_ogrid%rho
-      if (lpencil_ogrid(i_og_lnrho))p_ogrid%lnrho=log(p_ogrid%rho)
+      if (lpencil_ogrid(i_og_lnrho)) p_ogrid%lnrho=log(p_ogrid%rho)
       if (lpencil_ogrid(i_og_glnrho)) then
         call grad_ogrid(f_ogrid,irho,p_ogrid%grho)
         do i=1,3
           p_ogrid%glnrho(:,i)=p_ogrid%rho1*p_ogrid%grho(:,i)
         enddo
       endif
-      if (lpencil_ogrid(i_og_ugrho)) call u_dot_grad_ogrid(f_ogrid,ilnrho,p_ogrid%grho,p_ogrid%uu,p_ogrid%ugrho)!,UPWIND=lupw_rho)
+      if (lpencil_ogrid(i_og_ugrho)) call u_dot_grad_ogrid(f_ogrid,ilnrho,p_ogrid%grho,p_ogrid%uu,p_ogrid%ugrho,UPWIND=lupw_rho)
       if (lpencil_ogrid(i_og_sglnrho)) call multmv_mn_ogrid(p_ogrid%sij,p_ogrid%glnrho,p_ogrid%sglnrho)
-      !TODO
-      !PRINTOUT
-!if(m_ogrid==16) then
-!  print*, ''
-!  print*, ''
-!  print*, 'ugrho'
-!  print*, p_ogrid%ugrho
-!  print*, ''
-!  print*, 'grho_x'
-!  print*, p_ogrid%grho(:,1)
-!  print*, ''
-!  print*, 'grho_y'
-!  print*, p_ogrid%grho(:,2)
-!  print*, ''
-!  print*, 'rho',f_ogrid(l1_ogrid:l2_ogrid+3,m_ogrid,n_ogrid,ilnrho)
-!  !print*, 'uy',f_ogrid(l1_ogrid:l2_ogrid+3,m_ogrid,n_ogrid,iuy)
-!endif
-      !if(m_ogrid==floor(7.*nx_ogrid/8.)) then
-      !  print*, ''
-      !  print*, 'ugrho',p_ogrid%ugrho(:)
-      !  print*, 'rho',p_ogrid%rho(:)
-      !  print*, 'divu',p_ogrid%divu(:)
-      !endif
+!
+! rho
+! rho1
+! lnrho
+! glnrho and grho
+! uglnrho
+! ugrho
+! sglnrho
+! uij5glnrho
+      !if (lpencil(i_uij5glnrho)) call multmv(p%uij5,p%glnrho,p%uij5glnrho)
+!
+      !if (lpencil(i_uuadvec_grho)) call h_dot_grad(p%uu_advec,p%grho,p%uuadvec_grho)
 !
     endsubroutine calc_pencils_density_ogrid
 !***********************************************************************
@@ -2831,47 +2641,55 @@ endif
       real, dimension(nx_ogrid) :: tmp
       integer :: i,j
       real :: cp1, cv1, cp, cv
-      logical :: leos_isentropic=.false.
-      logical :: leos_isothermal=.true.
+      logical :: leos_isentropic=.true.
+      logical :: leos_isothermal=.false.
 !
 !  Inverse cv and cp values.
 !
       call get_cp1(cp1)
       call get_cv1(cv1)
-      cp=1./cp
-      cv=1./cv
-      if (lpencil_ogrid(i_og_cv1)) p_ogrid%cv1=cv1
-      if (lpencil_ogrid(i_og_cp1)) p_ogrid%cp1=cp1
-      if (lpencil_ogrid(i_og_cv))  p_ogrid%cv=cv1
-      if (lpencil_ogrid(i_og_cp))  p_ogrid%cp=cp1
+      cp=1./cp1
+      cv=1./cv1
+!!  !
+!!  !  Work out thermodynamic quantities for given lnrho or rho and TT.
+!!  !
+!!        if (iTT .gt. 0) then
+!!          if (lpencil_ogrid(i_og_TT))   p_ogrid%TT=f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT)
+!!          if (lpencil_ogrid(i_og_TT1))  p_ogrid%TT1=1/f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT)
+!!          if (lpencil_ogrid(i_og_cs2))  p_ogrid%cs2=cp*gamma_m1*f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT)
+!!          if (lpencil_ogrid(i_og_gTT))  call grad_ogrid(f_ogrid,iTT,p_ogrid%gTT)
+!!          if (lpencil_ogrid(i_og_del2TT)) &
+!!              call del2_ogrid(f_ogrid,iTT,p_ogrid%del2TT)
+!!          if (lpencil_ogrid(i_og_pp)) p_ogrid%pp=cv*gamma_m1*p_ogrid%rho*p_ogrid%TT
+!!          if (lpencil_ogrid(i_og_ee)) p_ogrid%ee=cv*p_ogrid%TT
+!!  !
+!!  !  Work out thermodynamic quantities for given lnrho or rho and cs2.
+!!  !
+!!        else
+!!          if (leos_isentropic) then
+!!            call fatal_error('calc_pencils_eos', &
+!!                'leos_isentropic not implemented for ilnrho_cs2, try ilnrho_ss')
+!!          elseif (leos_isothermal) then
+!!            if (lpencil_ogrid(i_og_cs2)) p_ogrid%cs2=cs20
+!!            if (lpencil_ogrid(i_og_pp)) p_ogrid%pp=gamma1*p_ogrid%rho*cs20
+!!          else
+!!            call fatal_error('calc_pencils_eos', &
+!!                'Full equation of state not implemented for ilnrho_cs2')
+!!          endif
+!!        endif
 !
-!  Work out thermodynamic quantities for given lnrho or rho and TT.
+!  Work out thermodynamic quantities for given lnrho or rho and ss.
 !
-      if (iTT .gt. 0) then
-        if (lpencil_ogrid(i_og_TT))   p_ogrid%TT=f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT)
-        if (lpencil_ogrid(i_og_TT1))  p_ogrid%TT1=1/f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT)
-        if (lpencil_ogrid(i_og_cs2))  p_ogrid%cs2=cp*gamma_m1*f_ogrid(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,iTT)
-        if (lpencil_ogrid(i_og_gTT))  call grad_ogrid(f_ogrid,iTT,p_ogrid%gTT)
-        if (lpencil_ogrid(i_og_del2TT)) &
-            call del2_ogrid(f_ogrid,iTT,p_ogrid%del2TT)
-        if (lpencil_ogrid(i_og_pp)) p_ogrid%pp=cv*gamma_m1*p_ogrid%rho*p_ogrid%TT
-        if (lpencil_ogrid(i_og_ee)) p_ogrid%ee=cv*p_ogrid%TT
-!
-!  Work out thermodynamic quantities for given lnrho or rho and cs2.
-!
-      else
-        if (leos_isentropic) then
-          call fatal_error('calc_pencils_eos', &
-              'leos_isentropic not implemented for ilnrho_cs2, try ilnrho_ss')
-        elseif (leos_isothermal) then
-          if (lpencil_ogrid(i_og_cs2)) p_ogrid%cs2=cs20
-          if (lpencil_ogrid(i_og_pp)) p_ogrid%pp=gamma1*p_ogrid%rho*cs20
-        else
-          call fatal_error('calc_pencils_eos', &
-              'Full equation of state not implemented for ilnrho_cs2')
-        endif
+      if (leos_isentropic) then
+        if (lpencil_ogrid(i_og_ss)) p_ogrid%ss=0.0
+        if (lpencil_ogrid(i_og_cs2)) p_ogrid%cs2=cs20*exp(gamma_m1*(p_ogrid%lnrho-lnrho0))
+      elseif (leos_isothermal) then
+        if (lpencil_ogrid(i_og_ss)) p_ogrid%ss=-(cp-cv)*(p_ogrid%lnrho-lnrho0)
+        if (lpencil_ogrid(i_og_cs2)) p_ogrid%cs2=cs20
       endif
 !
+      if (lpencil_ogrid(i_og_lnTT)) p_ogrid%lnTT=lnTT0+cv1*p_ogrid%ss+gamma_m1*(p_ogrid%lnrho-lnrho0)
+      if (lpencil_ogrid(i_og_pp)) p_ogrid%pp=(cp-cv)*exp(p_ogrid%lnTT+p_ogrid%lnrho)
     endsubroutine calc_pencils_eos_ogrid
 !***********************************************************************
     subroutine calc_pencils_energy_ogrid()
@@ -2898,6 +2716,7 @@ endif
 !
       use viscosity, only:getnu
       real :: nu
+      integer :: j
 !
       call getnu(nu_input=nu)
 !      
@@ -2909,8 +2728,11 @@ endif
 !  -- not physically correct (no momentum conservation), but
 !  numerically easy and in most cases qualitatively OK
 !
-      p_ogrid%fvisc=p_ogrid%fvisc+nu*p_ogrid%del2u
+      !p_ogrid%fvisc=p_ogrid%fvisc+nu*p_ogrid%del2u
 !
+      do j=1,3
+        p_ogrid%fvisc(:,j) = p_ogrid%fvisc(:,j) + nu*(2*p_ogrid%sglnrho(:,j)+p_ogrid%del2u(:,j) + 1./3.*p_ogrid%graddivu(:,j))
+      enddo
     end subroutine calc_pencils_viscosity_ogrid
 !***********************************************************************
 !  FROM BOUNDCOND.F90
@@ -2935,6 +2757,8 @@ endif
 !
       integer :: ivar1, ivar2, j, k
       logical :: tester
+      real :: dxl2
+      real, dimension(my_ogrid,mz_ogrid) :: dudxl2,dvdxl2,dwdxl2,drhodxl2
 !
       ivar1=1; ivar2=min(mcom,size(f_ogrid,4))
 !
@@ -2948,18 +2772,36 @@ endif
       !call set_ghosts_onesided_ogrid(iuy)
       !call set_ghosts_onesided_ogrid(iuz)
       !call bval_from_neumann_arr_ogrid
+!
+! Use onesided stencil that satisfies the SBP energy conservation
+!
       call bval_from_neumann_arr_ogrid_alt
       !call set_ghosts_onesided_ogrid(ilnrho)
 
 
-      !!!!!!!!!!!!!!!!! HEREHERE
-      !f_ogrid(l1_ogrid-1,:,:,iux)=-f_ogrid(l1_ogrid+1,:,:,iux)
-      !f_ogrid(l1_ogrid-2,:,:,iux)=-f_ogrid(l1_ogrid+2,:,:,iux)
-      !f_ogrid(l1_ogrid-3,:,:,iux)=-f_ogrid(l1_ogrid+3,:,:,iux)
-      !f_ogrid(l1_ogrid,:,:,irho)=f_ogrid(l1_ogrid+1,:,:,irho)
-      !f_ogrid(l1_ogrid-1,:,:,irho)=f_ogrid(l1_ogrid+1,:,:,irho)
-      !f_ogrid(l1_ogrid-2,:,:,irho)=f_ogrid(l1_ogrid+2,:,:,irho)
-      !f_ogrid(l1_ogrid-3,:,:,irho)=f_ogrid(l1_ogrid+3,:,:,irho)
+      !!!!!!!!!!!!!!!!! HEREHERE !
+      !dxl2=x_ogrid(l2_ogrid)-x_ogrid(l2_ogrid-1)
+      !dudxl2=f_ogrid(l2_ogrid,:,:,iux)-f_ogrid(l2_ogrid-1,:,:,iux)
+      !dudxl2=dudxl2/dxl2
+      !dvdxl2=f_ogrid(l2_ogrid,:,:,iuy)-f_ogrid(l2_ogrid,:,:,iuy)
+      !dvdxl2=dudxl2/dxl2
+      !dwdxl2=f_ogrid(l2_ogrid,:,:,iuz)-f_ogrid(l2_ogrid,:,:,iuz)
+      !dwdxl2=dudxl2/dxl2
+      !drhodxl2=f_ogrid(l2_ogrid,:,:,irho)-f_ogrid(l2_ogrid,:,:,irho)
+      !drhodxl2=dudxl2/dxl2
+      !! Extrapolate
+      !f_ogrid(l2_ogrid+1,floor(my_ogrid/2.)+2:m2_ogrid,:,iux)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,iux)!+(dudxl2*dxl2)
+      !f_ogrid(l2_ogrid+2,floor(my_ogrid/2.)+2:m2_ogrid,:,iux)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,iux)!+(dudxl2*2*dxl2)
+      !f_ogrid(l2_ogrid+3,floor(my_ogrid/2.)+2:m2_ogrid,:,iux)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,iux)!+(dudxl2*3*dxl2)
+      !f_ogrid(l2_ogrid+1,floor(my_ogrid/2.)+2:m2_ogrid,:,iuy)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,iuy)!+(dvdxl2*dxl2)
+      !f_ogrid(l2_ogrid+2,floor(my_ogrid/2.)+2:m2_ogrid,:,iuy)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,iuy)!+(dvdxl2*2*dxl2)
+      !f_ogrid(l2_ogrid+3,floor(my_ogrid/2.)+2:m2_ogrid,:,iuy)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,iuy)!+(dvdxl2*3*dxl2)
+      !f_ogrid(l2_ogrid+1,floor(my_ogrid/2.)+2:m2_ogrid,:,iuz)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,iuz)!+(dwdxl2*dxl2)
+      !f_ogrid(l2_ogrid+2,floor(my_ogrid/2.)+2:m2_ogrid,:,iuz)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,iuz)!+(dwdxl2*2*dxl2)
+      !f_ogrid(l2_ogrid+3,floor(my_ogrid/2.)+2:m2_ogrid,:,iuz)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,iuz)!+(dwdxl2*3*dxl2)
+      !f_ogrid(l2_ogrid+1,floor(my_ogrid/2.)+2:m2_ogrid,:,irho)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,irho)!+(drhodxl2*dxl2)
+      !f_ogrid(l2_ogrid+2,floor(my_ogrid/2.)+2:m2_ogrid,:,irho)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,irho)!+(drhodxl2*2*dxl2)
+      !f_ogrid(l2_ogrid+3,floor(my_ogrid/2.)+2:m2_ogrid,:,irho)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,irho)!+(drhodxl2*3*dxl2)
 
       !f_ogrid(l1_ogrid,:,:,irho)=f_ogrid(l1_ogrid,:,:,irho) !&
             !+(2./(60.*(x_ogrid(l1_ogrid+1)-x_ogrid(l1_ogrid-1))))* &
@@ -3022,7 +2864,7 @@ endif
 !***********************************************************************
 ! ROUTINES
 !   grad_ogrid
-!   del2_ogrid
+!   del2_ogrid       
 !   g2ij
 !   dot2_mn_ogrid
 !   gij_ogrid
@@ -3036,6 +2878,7 @@ endif
 !   u_dot_grad_vec_ogrid
 !   u_dot_grad_scl_ogrid
 !   multmv_mn_ogrid
+!   graddiv_ogrid         ! Obsolete
 !***********************************************************************
     subroutine grad_ogrid(f,k,g)
 !
@@ -3414,7 +3257,7 @@ endif
 !
       do ii=1,3
 !
-        if ( lequidist(ii) ) then
+        if ( lequidist_ogrid(ii) ) then
           call der6_ogrid(f,k,del6f(1,ii),ii,UPWIND=.true.)
         else
           where( uu(:,ii)>=0 )
@@ -3462,6 +3305,169 @@ endif
       enddo
 !
     endsubroutine multmv_mn_ogrid
+!***********************************************************************
+!!     subroutine graddiv_ogrid(f,k,graddiv)
+!! !
+!! !  Calculates a number of second derivative expressions of a vector
+!! !  outputs a number of different vector fields.
+!! !  gradcurl is not the vector gradient.
+!! !  Surprisingly, calling derij only if graddiv or curlcurl are present
+!! !  does not speed up the code on Mephisto @ 32x32x64.
+!! !
+!! !  05-apr-17/Jorgen - Adapted from del2v_etc in sub.f90
+!! !
+!!       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
+!!       real, dimension (nx_ogrid,3,3) :: fjji,fijj
+!!       real, dimension (nx_ogrid,3) :: graddiv
+!!       real, dimension (nx_ogrid) :: tmp
+!!       integer :: i,j,k,k1
+!! !
+!!       intent(in) :: f,k
+!!       intent(out) :: del2,graddiv,curlcurl,gradcurl
+!! !
+!! !  calculate f_{i,jj} and f_{j,ji}
+!! !  AJ: graddiv needs diagonal elements from the first tmp (derij only sets
+!! !      off-diagonal elements)
+!! !
+!!       k1=k-1
+!!       do i=1,3
+!!       do j=1,3
+!!         call der2_ogrid(f,k1+i,tmp,  j) 
+!!         fijj(:,i,j)=tmp  ! f_{i,jj}
+!!         call derij_ogrid(f,k1+j,tmp,j,i) 
+!!         fjji(:,i,j)=tmp  ! f_{j,ji}
+!!         endif
+!!       enddo
+!!       enddo
+!! !
+!! !  the diagonal terms have not been set in derij; do this now
+!! !  ** They are automatically set above, because derij   **
+!! !  ** doesn't overwrite the value of tmp for i=j!       **
+!! !
+!! !     do j=1,3
+!! !       fjji(:,j,j)=fijj(:,j,j)
+!! !     enddo
+!! !
+!! !  calculate f_{i,jk} for i /= j /= k
+!! !
+!! !
+!!       do i=1,3
+!!         graddiv(:,i)=fjji(:,i,1)+fjji(:,i,2)+fjji(:,i,3)
+!!       enddo
+!!       ! Since we have cylindrical coordinates
+!!       call der(f,k1+1,tmp,1)
+!!       graddiv(:,1)=graddiv(:,1)+tmp*rcyl_mn1_ogrid-f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,k1+1)*rcyl_mn2_ogrid
+!!       call der(f,k1+1,tmp,2)
+!!       graddiv(:,2)=graddiv(:,2)+tmp*rcyl_mn1_ogrid
+!!       call der(f,k1+1,tmp,3)
+!!       graddiv(:,3)=graddiv(:,3)+tmp*rcyl_mn1_ogrid
+!! !
+!!     endsubroutine graddiv_ogrid
+!***********************************************************************
+    subroutine gij_etc_ogrid(f,iref,aa,aij,bij,del2,graddiv,lcovariant_derivative)
+!
+!  Calculate B_i,j = eps_ikl A_l,jk and A_l,kk.
+!
+!  05-apr-17/Jorgen - Adapted from gij_etc in sub.f90
+!
+      use Deriv, only: der2,derij
+      use General, only: loptest
+!
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray), intent (in) :: f
+      integer, intent (in) :: iref
+      logical, intent (in), optional :: lcovariant_derivative
+      real, dimension (nx_ogrid,3), intent (in)   :: aa
+      real, dimension (nx_ogrid,3,3), intent (in) :: aij
+      real, dimension (nx_ogrid,3,3), intent (out), optional :: bij
+      real, dimension (nx_ogrid,3), intent (out), optional :: del2,graddiv
+!
+!  Locally used variables.
+!
+      real, dimension (nx_ogrid,3,3,3) :: d2A
+      integer :: iref1,i,j
+!
+!  Reference point of argument.
+!
+      iref1=iref-1
+!
+!  Calculate all mixed and non-mixed second derivatives
+!  of the vector potential (A_k,ij).
+!
+!  Do not calculate both d^2 A_k/(dx dy) and d^2 A_k/(dy dx).
+!  (This wasn't spotted by me but by a guy from SGI...)
+!  Note: for non-cartesian coordinates there are different correction terms,
+!  see below.
+!
+      do i=1,3
+        do j=1,3
+          call der2_ogrid(f,iref1+i,d2A(:,j,j,i),j)
+        enddo
+        call derij_ogrid(f,iref1+i,d2A(:,2,3,i),2,3); d2A(:,3,2,i)=d2A(:,2,3,i)
+        call derij_ogrid(f,iref1+i,d2A(:,3,1,i),3,1); d2A(:,1,3,i)=d2A(:,3,1,i)
+        call derij_ogrid(f,iref1+i,d2A(:,1,2,i),1,2); d2A(:,2,1,i)=d2A(:,1,2,i)
+      enddo
+!
+!  Since we have cylindrical coordinates
+!  Psi_{,phi^ pom^} = Psi_{,pom^ phi^} - Psi_{,\phi^}/pom .
+!
+        do i=1,3
+          d2A(:,2,1,i)=d2A(:,2,1,i)-aij(:,i,2)*rcyl_mn1_ogrid
+        enddo
+!
+!  Calculate optionally b_i,j = eps_ikl A_l,kj,
+!  del2_i = A_i,jj and graddiv_i = A_j,ji .
+!
+      if (present(bij)) then
+!
+        bij(:,1,:)=d2A(:,2,:,3)-d2A(:,3,:,2)
+        bij(:,2,:)=d2A(:,3,:,1)-d2A(:,1,:,3)
+        bij(:,3,:)=d2A(:,1,:,2)-d2A(:,2,:,1)
+!  Corrections for cylindrical coordinates.
+          bij(:,3,2)=bij(:,3,2)+ aij(:,2,2)*rcyl_mn1_ogrid
+!          !bij(:,3,1)=bij(:,3,1)+(aij(:,2,1)+aij(:,1,2))*rcyl_mn1-aa(:,2)*rcyl_mn2
+!  FAG:Partial correction to -d2A(:,2,1,1) already applied above +aij(:,i,2)*rcyl_mn1
+!
+          bij(:,3,1)=bij(:,3,1)+aij(:,2,1)*rcyl_mn1_ogrid-aa(:,2)*rcyl_mn2_ogrid
+          if (loptest(lcovariant_derivative)) then
+            !bij(:,1,1)=bij(:,1,1)
+            bij(:,1,2)=bij(:,1,2)+(aij(:,3,1)-aij(:,1,3))*rcyl_mn1_ogrid
+            !bij(:,1,3)=bij(:,1,3)
+            !bij(:,2,1)=bij(:,2,1)
+            bij(:,2,2)=bij(:,2,2)+(aij(:,3,2)-aij(:,2,3))*rcyl_mn1_ogrid
+            !bij(:,2,3)=bij(:,2,3)
+            !bij(:,3,1)=bij(:,3,1)
+            !bij(:,3,2)=bij(:,3,2)
+            bij(:,3,3)=bij(:,3,3)+aij(:,2,3)*rcyl_mn1_ogrid
+          endif
+      endif
+!
+!  Calculate del2 and graddiv, if requested.
+!
+      if (present(graddiv)) then
+        graddiv(:,:)=d2A(:,1,:,1)+d2A(:,2,:,2)+d2A(:,3,:,3)
+!  Since we have cylindrical coordinates
+        graddiv(:,1)=graddiv(:,1)+aij(:,1,1)*rcyl_mn1_ogrid*2+ &
+           aij(:,2,1)*rcyl_mn1_ogrid*cotth(m_ogrid) &
+           -aa(:,2)*rcyl_mn2_ogrid*cotth(m_ogrid)-aa(:,1)*rcyl_mn2_ogrid*2
+        graddiv(:,2)=graddiv(:,2)+aij(:,1,2)*rcyl_mn1_ogrid*2+ &
+           aij(:,2,2)*rcyl_mn1_ogrid*cotth(m_ogrid) &
+           -aa(:,2)*rcyl_mn2_ogrid*sin2th(m_ogrid)
+        graddiv(:,3)=graddiv(:,3)+aij(:,1,3)*rcyl_mn1_ogrid*2+ &
+           aij(:,2,3)*rcyl_mn1_ogrid*cotth(m_ogrid)
+      endif
+!
+      if (present(del2)) then
+        del2(:,:)=d2A(:,1,1,:)+d2A(:,2,2,:)+d2A(:,3,3,:)
+!  Since we have cylindrical coordinates
+        del2(:,1)= del2(:,1)+&
+          rcyl_mn1_ogrid*(aij(:,1,1)-2*aij(:,2,2))-rcyl_mn2_ogrid*aa(:,1)
+        del2(:,2)=del2(:,2)+&               
+          rcyl_mn1_ogrid*(aij(:,2,1)-2*aij(:,1,2))-rcyl_mn2_ogrid*aa(:,2)
+      endif
+!
+    endsubroutine gij_etc_ogrid
+!***********************************************************************
+!***********************************************************************
 !***********************************************************************
 ! FROM DERIV.F90
 !***********************************************************************
@@ -3619,10 +3625,12 @@ endif
 !  accurate to 6th order, explicit, periodic
 !
 !  17-feb-17/Jorgen: Adapted from deriv.f90
+!  05-apr-17/Jorgen: Added summation by parts operator near cylinder surface
 !
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
       real, dimension (nx_ogrid) :: df,fac
-      integer :: i,j,k
+      real, dimension (6) :: facSBP
+      integer :: i,j,k,ii,kk
 !
       intent(in) :: f,k,i,j
       intent(out) :: df
@@ -3684,29 +3692,69 @@ endif
       else                      ! not using bidiagonal mixed derivatives
         !
         ! This is the old, straight-forward scheme
+        ! Note that the summation by parts operators are only implemented for this scheme
         !
         if ((i==1.and.j==2).or.(i==2.and.j==1)) then
           if (nxgrid_ogrid/=1.and.nygrid_ogrid/=1) then
+            if(SBP) then
+              ii=6
+              do kk=1,6
+                facSBP=(1./60.)*dx_1_ogrid(l1_ogrid:l1_ogrid+5)*dy_1_ogrid(m_ogrid)
+                df(kk)=facSBP(kk)*( &
+                  45.*(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid+1,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid+1,n_ogrid,k) + &
+                       D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid+1,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid+1,n_ogrid,k) + &
+                       D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid+1,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid+1,n_ogrid,k) + &
+                       D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid+1,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid+1,n_ogrid,k) + &
+                       D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid+1,n_ogrid,k) &
+                      -D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid-1,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid-1,n_ogrid,k) + &
+                       D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid-1,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid-1,n_ogrid,k) + &
+                       D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid-1,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid-1,n_ogrid,k) + &
+                       D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid-1,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid-1,n_ogrid,k) + &
+                       D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid-1,n_ogrid,k)) &
+                  -9.*(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid+2,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid+2,n_ogrid,k) + &
+                       D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid+2,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid+2,n_ogrid,k) + &
+                       D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid+2,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid+2,n_ogrid,k) + &
+                       D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid+2,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid+2,n_ogrid,k) + &
+                       D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid+2,n_ogrid,k) &
+                      -D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid-2,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid-2,n_ogrid,k) + &
+                       D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid-2,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid-2,n_ogrid,k) + &
+                       D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid-2,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid-2,n_ogrid,k) + &
+                       D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid-2,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid-2,n_ogrid,k) + &
+                       D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid-2,n_ogrid,k)) &
+                     +(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid+3,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid+3,n_ogrid,k) + &
+                       D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid+3,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid+3,n_ogrid,k) + &
+                       D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid+3,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid+3,n_ogrid,k) + &
+                       D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid+3,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid+3,n_ogrid,k) + &
+                       D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid+3,n_ogrid,k) &
+                      -D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid-3,n_ogrid,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid-3,n_ogrid,k) + &
+                       D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid-3,n_ogrid,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid-3,n_ogrid,k) + &
+                       D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid-3,n_ogrid,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid-3,n_ogrid,k) + &
+                       D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid-3,n_ogrid,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid-3,n_ogrid,k) + &
+                       D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid-3,n_ogrid,k)))
+              enddo
+            else
+              ii=0
+            endif
             fac=(1./60.**2)*dx_1_ogrid(l1_ogrid:l2_ogrid)*dy_1_ogrid(m_ogrid)
-            df=fac*( &
-              45.*((45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid+1,n_ogrid,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid+1,n_ogrid,k))  &
-                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid+1,n_ogrid,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid+1,n_ogrid,k))  &
-                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid+1,n_ogrid,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid+1,n_ogrid,k))) &
-                  -(45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid-1,n_ogrid,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid-1,n_ogrid,k))  &
-                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid-1,n_ogrid,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid-1,n_ogrid,k))  &
-                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid-1,n_ogrid,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid-1,n_ogrid,k))))&
-              -9.*((45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid+2,n_ogrid,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid+2,n_ogrid,k))  &
-                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid+2,n_ogrid,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid+2,n_ogrid,k))  &
-                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid+2,n_ogrid,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid+2,n_ogrid,k))) &
-                  -(45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid-2,n_ogrid,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid-2,n_ogrid,k))  &
-                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid-2,n_ogrid,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid-2,n_ogrid,k))  &
-                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid-2,n_ogrid,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid-2,n_ogrid,k))))&
-                 +((45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid+3,n_ogrid,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid+3,n_ogrid,k))  &
-                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid+3,n_ogrid,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid+3,n_ogrid,k))  &
-                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid+3,n_ogrid,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid+3,n_ogrid,k))) &
-                  -(45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid-3,n_ogrid,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid-3,n_ogrid,k))  &
-                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid-3,n_ogrid,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid-3,n_ogrid,k))  &
-                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid-3,n_ogrid,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid-3,n_ogrid,k))))&
+            df(1+ii:nx_ogrid)=fac(1+ii:nx_ogrid)*( &
+              45.*((45.*(f(l1_ogrid+1+ii:l2_ogrid+1,m_ogrid+1,n_ogrid,k)-f(l1_ogrid-1+ii:l2_ogrid-1,m_ogrid+1,n_ogrid,k))  &
+                    -9.*(f(l1_ogrid+2+ii:l2_ogrid+2,m_ogrid+1,n_ogrid,k)-f(l1_ogrid-2+ii:l2_ogrid-2,m_ogrid+1,n_ogrid,k))  &
+                       +(f(l1_ogrid+3+ii:l2_ogrid+3,m_ogrid+1,n_ogrid,k)-f(l1_ogrid-3+ii:l2_ogrid-3,m_ogrid+1,n_ogrid,k))) &
+                  -(45.*(f(l1_ogrid+1+ii:l2_ogrid+1,m_ogrid-1,n_ogrid,k)-f(l1_ogrid-1+ii:l2_ogrid-1,m_ogrid-1,n_ogrid,k))  &
+                    -9.*(f(l1_ogrid+2+ii:l2_ogrid+2,m_ogrid-1,n_ogrid,k)-f(l1_ogrid-2+ii:l2_ogrid-2,m_ogrid-1,n_ogrid,k))  &
+                       +(f(l1_ogrid+3+ii:l2_ogrid+3,m_ogrid-1,n_ogrid,k)-f(l1_ogrid-3+ii:l2_ogrid-3,m_ogrid-1,n_ogrid,k))))&
+              -9.*((45.*(f(l1_ogrid+1+ii:l2_ogrid+1,m_ogrid+2,n_ogrid,k)-f(l1_ogrid-1+ii:l2_ogrid-1,m_ogrid+2,n_ogrid,k))  &
+                    -9.*(f(l1_ogrid+2+ii:l2_ogrid+2,m_ogrid+2,n_ogrid,k)-f(l1_ogrid-2+ii:l2_ogrid-2,m_ogrid+2,n_ogrid,k))  &
+                       +(f(l1_ogrid+3+ii:l2_ogrid+3,m_ogrid+2,n_ogrid,k)-f(l1_ogrid-3+ii:l2_ogrid-3,m_ogrid+2,n_ogrid,k))) &
+                  -(45.*(f(l1_ogrid+1+ii:l2_ogrid+1,m_ogrid-2,n_ogrid,k)-f(l1_ogrid-1+ii:l2_ogrid-1,m_ogrid-2,n_ogrid,k))  &
+                    -9.*(f(l1_ogrid+2+ii:l2_ogrid+2,m_ogrid-2,n_ogrid,k)-f(l1_ogrid-2+ii:l2_ogrid-2,m_ogrid-2,n_ogrid,k))  &
+                       +(f(l1_ogrid+3+ii:l2_ogrid+3,m_ogrid-2,n_ogrid,k)-f(l1_ogrid-3+ii:l2_ogrid-3,m_ogrid-2,n_ogrid,k))))&
+                 +((45.*(f(l1_ogrid+1+ii:l2_ogrid+1,m_ogrid+3,n_ogrid,k)-f(l1_ogrid-1+ii:l2_ogrid-1,m_ogrid+3,n_ogrid,k))  &
+                    -9.*(f(l1_ogrid+2+ii:l2_ogrid+2,m_ogrid+3,n_ogrid,k)-f(l1_ogrid-2+ii:l2_ogrid-2,m_ogrid+3,n_ogrid,k))  &
+                       +(f(l1_ogrid+3+ii:l2_ogrid+3,m_ogrid+3,n_ogrid,k)-f(l1_ogrid-3+ii:l2_ogrid-3,m_ogrid+3,n_ogrid,k))) &
+                  -(45.*(f(l1_ogrid+1+ii:l2_ogrid+1,m_ogrid-3,n_ogrid,k)-f(l1_ogrid-1+ii:l2_ogrid-1,m_ogrid-3,n_ogrid,k))  &
+                    -9.*(f(l1_ogrid+2+ii:l2_ogrid+2,m_ogrid-3,n_ogrid,k)-f(l1_ogrid-2+ii:l2_ogrid-2,m_ogrid-3,n_ogrid,k))  &
+                       +(f(l1_ogrid+3+ii:l2_ogrid+3,m_ogrid-3,n_ogrid,k)-f(l1_ogrid-3+ii:l2_ogrid-3,m_ogrid-3,n_ogrid,k))))&
                    )
           else
             df=0.
@@ -3741,27 +3789,87 @@ endif
           endif
         elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
           if (nzgrid_ogrid/=1.and.nxgrid_ogrid/=1) then
+            if(SBP) then
+              ii=6
+              do kk=1,6
+                facSBP=(1./60.)*dx_1_ogrid(l1_ogrid:l1_ogrid+5)*dz_1_ogrid(n_ogrid)
+                df(kk)=facSBP(kk)*( &
+                  45.*(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid+1,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid+1,k) + &
+                       D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid+1,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid+1,k) + &
+                       D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid+1,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid+1,k) + &
+                       D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid+1,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid+1,k) + &
+                       D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid+1,k)                                           &
+                      -D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid-1,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid-1,k) + &
+                       D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid-1,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid-1,k) + &
+                       D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid-1,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid-1,k) + &
+                       D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid-1,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid-1,k) + &
+                       D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid-1,k))                                          &
+                  -9.*(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid+2,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid+2,k) + &
+                       D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid+2,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid+2,k) + &
+                       D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid+2,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid+2,k) + &
+                       D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid+2,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid+2,k) + &
+                       D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid+2,k)                                           &
+                      -D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid-2,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid-2,k) + &
+                       D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid-2,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid-2,k) + &
+                       D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid-2,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid-2,k) + &
+                       D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid-2,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid-2,k) + &
+                       D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid-2,k))                                          &
+                     +(D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid+3,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid+3,k) + &
+                       D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid+3,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid+3,k) + &
+                       D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid+3,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid+3,k) + &
+                       D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid+3,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid+3,k) + &
+                       D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid+3,k)                                           &
+                      -D1_SBP(kk,1)*f(l1_ogrid  ,m_ogrid,n_ogrid-3,k)+D1_SBP(kk,2)*f(l1_ogrid+1,m_ogrid,n_ogrid-3,k) + &
+                       D1_SBP(kk,3)*f(l1_ogrid+2,m_ogrid,n_ogrid-3,k)+D1_SBP(kk,4)*f(l1_ogrid+3,m_ogrid,n_ogrid-3,k) + &
+                       D1_SBP(kk,5)*f(l1_ogrid+4,m_ogrid,n_ogrid-3,k)+D1_SBP(kk,6)*f(l1_ogrid+5,m_ogrid,n_ogrid-3,k) + &
+                       D1_SBP(kk,7)*f(l1_ogrid+6,m_ogrid,n_ogrid-3,k)+D1_SBP(kk,8)*f(l1_ogrid+7,m_ogrid,n_ogrid-3,k) + &
+                       D1_SBP(kk,9)*f(l1_ogrid+8,m_ogrid,n_ogrid-3,k)))
+              enddo
+            else
+              ii=0
+            endif
             fac=(1./60.**2)*dz_1_ogrid(n_ogrid)*dx_1_ogrid(l1_ogrid:l2_ogrid)
-            df=fac*( &
-              45.*((45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid+1,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid+1,k))  &
-                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid+1,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid+1,k))  &
-                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid+1,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid+1,k))) &
-                  -(45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid-1,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid-1,k))  &
-                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid-1,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid-1,k))  &
-                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid-1,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid-1,k))))&
-              -9.*((45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid+2,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid+2,k))  &
-                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid+2,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid+2,k))  &
-                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid+2,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid+2,k))) &
-                  -(45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid-2,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid-2,k))  &
-                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid-2,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid-2,k))  &
-                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid-2,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid-2,k))))&
-                 +((45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid+3,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid+3,k))  &
-                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid+3,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid+3,k))  &
-                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid+3,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid+3,k))) &
-                  -(45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid-3,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid-3,k))  &
-                    -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid-3,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid-3,k))  &
-                       +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid-3,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid-3,k))))&
+            df(1+ii:nx_ogrid)=fac(1+ii:nx_ogrid)*( &
+              45.*((45.*(f(l1_ogrid+1+ii:l2_ogrid+1,m_ogrid,n_ogrid+1,k)-f(l1_ogrid-1+ii:l2_ogrid-1,m_ogrid,n_ogrid+1,k))  &
+                    -9.*(f(l1_ogrid+2+ii:l2_ogrid+2,m_ogrid,n_ogrid+1,k)-f(l1_ogrid-2+ii:l2_ogrid-2,m_ogrid,n_ogrid+1,k))  &
+                       +(f(l1_ogrid+3+ii:l2_ogrid+3,m_ogrid,n_ogrid+1,k)-f(l1_ogrid-3+ii:l2_ogrid-3,m_ogrid,n_ogrid+1,k))) &
+                  -(45.*(f(l1_ogrid+1+ii:l2_ogrid+1,m_ogrid,n_ogrid-1,k)-f(l1_ogrid-1+ii:l2_ogrid-1,m_ogrid,n_ogrid-1,k))  &
+                    -9.*(f(l1_ogrid+2+ii:l2_ogrid+2,m_ogrid,n_ogrid-1,k)-f(l1_ogrid-2+ii:l2_ogrid-2,m_ogrid,n_ogrid-1,k))  &
+                       +(f(l1_ogrid+3+ii:l2_ogrid+3,m_ogrid,n_ogrid-1,k)-f(l1_ogrid-3+ii:l2_ogrid-3,m_ogrid,n_ogrid-1,k))))&
+              -9.*((45.*(f(l1_ogrid+1+ii:l2_ogrid+1,m_ogrid,n_ogrid+2,k)-f(l1_ogrid-1+ii:l2_ogrid-1,m_ogrid,n_ogrid+2,k))  &
+                    -9.*(f(l1_ogrid+2+ii:l2_ogrid+2,m_ogrid,n_ogrid+2,k)-f(l1_ogrid-2+ii:l2_ogrid-2,m_ogrid,n_ogrid+2,k))  &
+                       +(f(l1_ogrid+3+ii:l2_ogrid+3,m_ogrid,n_ogrid+2,k)-f(l1_ogrid-3+ii:l2_ogrid-3,m_ogrid,n_ogrid+2,k))) &
+                  -(45.*(f(l1_ogrid+1+ii:l2_ogrid+1,m_ogrid,n_ogrid-2,k)-f(l1_ogrid-1+ii:l2_ogrid-1,m_ogrid,n_ogrid-2,k))  &
+                    -9.*(f(l1_ogrid+2+ii:l2_ogrid+2,m_ogrid,n_ogrid-2,k)-f(l1_ogrid-2+ii:l2_ogrid-2,m_ogrid,n_ogrid-2,k))  &
+                       +(f(l1_ogrid+3+ii:l2_ogrid+3,m_ogrid,n_ogrid-2,k)-f(l1_ogrid-3+ii:l2_ogrid-3,m_ogrid,n_ogrid-2,k))))&
+                 +((45.*(f(l1_ogrid+1+ii:l2_ogrid+1,m_ogrid,n_ogrid+3,k)-f(l1_ogrid-1+ii:l2_ogrid-1,m_ogrid,n_ogrid+3,k))  &
+                    -9.*(f(l1_ogrid+2+ii:l2_ogrid+2,m_ogrid,n_ogrid+3,k)-f(l1_ogrid-2+ii:l2_ogrid-2,m_ogrid,n_ogrid+3,k))  &
+                       +(f(l1_ogrid+3+ii:l2_ogrid+3,m_ogrid,n_ogrid+3,k)-f(l1_ogrid-3+ii:l2_ogrid-3,m_ogrid,n_ogrid+3,k))) &
+                  -(45.*(f(l1_ogrid+1+ii:l2_ogrid+1,m_ogrid,n_ogrid-3,k)-f(l1_ogrid-1+ii:l2_ogrid-1,m_ogrid,n_ogrid-3,k))  &
+                    -9.*(f(l1_ogrid+2+ii:l2_ogrid+2,m_ogrid,n_ogrid-3,k)-f(l1_ogrid-2+ii:l2_ogrid-2,m_ogrid,n_ogrid-3,k))  &
+                       +(f(l1_ogrid+3+ii:l2_ogrid+3,m_ogrid,n_ogrid-3,k)-f(l1_ogrid-3+ii:l2_ogrid-3,m_ogrid,n_ogrid-3,k))))&
                    )
+            !fac=(1./60.**2)*dz_1_ogrid(n_ogrid)*dx_1_ogrid(l1_ogrid:l2_ogrid)
+            !df=fac*( &
+            !  45.*((45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid+1,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid+1,k))  &
+            !        -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid+1,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid+1,k))  &
+            !           +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid+1,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid+1,k))) &
+            !      -(45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid-1,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid-1,k))  &
+            !        -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid-1,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid-1,k))  &
+            !           +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid-1,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid-1,k))))&
+            !  -9.*((45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid+2,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid+2,k))  &
+            !        -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid+2,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid+2,k))  &
+            !           +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid+2,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid+2,k))) &
+            !      -(45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid-2,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid-2,k))  &
+            !        -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid-2,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid-2,k))  &
+            !           +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid-2,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid-2,k))))&
+            !     +((45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid+3,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid+3,k))  &
+            !        -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid+3,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid+3,k))  &
+            !           +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid+3,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid+3,k))) &
+            !      -(45.*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid-3,k)-f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid-3,k))  &
+            !        -9.*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid-3,k)-f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid-3,k))  &
+            !           +(f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid-3,k)-f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid-3,k))))&
+            !       )
           else
             df=0.
             if (ip<=5) print*, 'derij: Degenerate case in x- or z-direction'
@@ -3790,7 +3898,7 @@ endif
 !
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
       real, dimension (nx_ogrid) :: df,fac
-      integer :: j,k
+      integer :: j,k,i=0
       logical, optional :: ignoredx,upwind
       logical :: igndx,upwnd
 !
@@ -3800,7 +3908,7 @@ endif
       if (present(ignoredx)) then
         igndx = ignoredx
       else
-        if (.not. lequidist(j)) then
+        if (.not. lequidist_ogrid(j)) then
           call fatal_error('der6','for non-equidistant grid only '//&
               'if dx is ignored.')
           igndx = .true.
@@ -3809,7 +3917,7 @@ endif
       endif
 !
       if (present(upwind)) then
-        if (.not. lequidist(j)) then
+        if (.not. lequidist_ogrid(j)) then
           call fatal_error('der6','upwind cannot be used with '//&
               'non-equidistant grid.')
         endif
@@ -3824,6 +3932,8 @@ endif
 !        endif
       endif
 !
+      if(SBP) i=6
+        
       if (j==1) then
         if (nxgrid_ogrid/=1) then
           if (igndx) then
@@ -3833,10 +3943,11 @@ endif
           else
             fac=dx_1_ogrid(l1_ogrid:l2_ogrid)**6
           endif
-          df=fac*(- 20.0* f(l1_ogrid:l2_ogrid,m_ogrid,n_ogrid,k) &
-                  + 15.0*(f(l1_ogrid+1:l2_ogrid+1,m_ogrid,n_ogrid,k)+f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid,k)) &
-                  -  6.0*(f(l1_ogrid+2:l2_ogrid+2,m_ogrid,n_ogrid,k)+f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid,k)) &
-                  +      (f(l1_ogrid+3:l2_ogrid+3,m_ogrid,n_ogrid,k)+f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid,k)))
+          df(1:i+1)=0
+          df(1+i:nxgrid)=fac(1+i:nxgrid)*(- 20.0* f(l1_ogrid+i:l2_ogrid,m_ogrid,n_ogrid,k) &
+                        + 15.0*(f(l1_ogrid+1+i:l2_ogrid+1,m_ogrid,n_ogrid,k)+f(l1_ogrid-1:l2_ogrid-1,m_ogrid,n_ogrid,k)) &
+                        -  6.0*(f(l1_ogrid+2+i:l2_ogrid+2,m_ogrid,n_ogrid,k)+f(l1_ogrid-2:l2_ogrid-2,m_ogrid,n_ogrid,k)) &
+                        +      (f(l1_ogrid+3+i:l2_ogrid+3,m_ogrid,n_ogrid,k)+f(l1_ogrid-3:l2_ogrid-3,m_ogrid,n_ogrid,k)))
         else
           df=0.
         endif
@@ -4750,14 +4861,3 @@ endif
     endsubroutine der2_ogrid_SBP
 !***********************************************************************
 end module Solid_Cells
-
-                
-
-
-
-
-
-
-
-
-
