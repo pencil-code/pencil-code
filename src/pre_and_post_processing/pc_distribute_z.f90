@@ -12,7 +12,7 @@ program pc_distribute_z
   use Param_IO
   use Register
   use Sub
-  use Grin, only: set_coorsys_dimmask
+  use Grid, only: set_coorsys_dimmask
 !
   implicit none
 !
