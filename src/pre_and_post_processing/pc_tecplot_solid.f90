@@ -13,7 +13,7 @@ program pc_tecplot_solid
   use Diagnostics
   use Filter
   use General, only: itoa
-  use Grid, only: initialize_grid,construct_grid
+  use Grid, only: initialize_grid,construct_grid,set_coorsys_dimmask
   use IO
   use Messages
   use Param_IO

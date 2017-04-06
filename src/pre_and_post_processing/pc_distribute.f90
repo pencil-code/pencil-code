@@ -8,7 +8,7 @@ program pc_distribute
   use Cparam, only: fnlen
   use Diagnostics
   use Filter
-  use Grid, only: initialize_grid,construct_grid
+  use Grid, only: initialize_grid,construct_grid,set_coorsys_dimmask
   use IO
   use Messages
   use Param_IO
