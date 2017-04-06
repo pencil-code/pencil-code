@@ -38,7 +38,7 @@ program pc_tecplot_solid
   integer(kind=8) :: rec_len
   real :: t_sp, t_test   ! t in single precision for backwards compatibility
 !
-  lrun=.true.
+  lstart=.true.
   lmpicomm = .false.
   iroot = 0
   lroot = .true.
@@ -73,6 +73,8 @@ program pc_tecplot_solid
 !  read_runpars).
 !
   call read_all_init_pars
+  call set_coorsys_dimmask
+  lstart=.false.; lrun=.true.
 !
 !  Read parameters and output parameter list.
 !

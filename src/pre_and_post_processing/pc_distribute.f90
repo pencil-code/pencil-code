@@ -31,7 +31,6 @@ program pc_distribute
   real :: t_sp   ! t in single precision for backwards compatibility
 !
   lstart = .false.
-  lrun = .true.
   lmpicomm = .false.
   lroot = .true.
   ipx = 0
@@ -64,6 +63,10 @@ program pc_distribute
 !  Read parameters from start.x (default values; overwritten by 'read_all_run_pars').
 !
   call read_all_init_pars
+  call set_coorsys_dimmask
+!
+  lstart=.false.
+  lrun=.true.
 !
 !  Read parameters and output parameter list.
 !

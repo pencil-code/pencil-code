@@ -50,9 +50,10 @@ program pc_collect
 !
 !  Read parameters from start.x (default values; overwritten by 'read_all_run_pars').
 !
+  call read_all_init_pars
+  call set_coorsys_dimmask
   lstart = .false.
   lrun = .true.
-  call read_all_init_pars
 !
 !  Read parameters and output parameter list.
 !

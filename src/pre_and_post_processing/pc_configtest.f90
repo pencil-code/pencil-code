@@ -48,6 +48,7 @@ program pc_configtest
   ltolerate_namelist_errors = .true.
   write (*,*) '>>> TESTING START.IN <<<'
   call read_all_init_pars
+  call set_coorsys_dimmask
 !
 !  Read parameters and output parameter list.
 !
