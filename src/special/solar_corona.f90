@@ -34,6 +34,7 @@ module Special
 !
   real :: tdown=0., allp=0., Kgpara=0., heat_cool=0., rho_diff_fix=0., cool_RTV=0., Kgpara2=0., tdownr=0., allpr=0.
   real :: lntt0=0., wlntt=0., bmdi=0., hcond1=0., heatexp=0., heatamp=0., Ksat=0., Kc=0.
+  real :: T_crit=0., deltaT_crit=0.
   real :: diffrho_hyper3=0., chi_hyper3=0., chi_hyper2=0., K_iso=0., b_tau=0., flux_tau=0.
   real :: Bavoid=0., nvor=5., tau_inv=1., Bz_flux=0., q0=1., qw=1., dq=0.1, dt_gran=0.
   logical :: lgranulation=.false., lgran_proc=.false., lgran_parallel=.false.
@@ -89,7 +90,7 @@ module Special
       init_time_fade_start, init_time_hcond_fade_start, &
       swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, swamp_eta, &
       vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau, &
-      cool_RTV_cutoff
+      cool_RTV_cutoff, T_crit, deltaT_crit
 !
   integer :: idiag_dtvel=0     ! DIAG_DOC: Velocity driver time step
   integer :: idiag_dtnewt=0    ! DIAG_DOC: Radiative cooling time step
@@ -724,6 +725,11 @@ module Special
           lpenc_diagnos(i_cp1) = .true.
           lpenc_diagnos(i_TT1) = .true.
           lpenc_diagnos(i_rho1) = .true.
+        case ('T<Tcrit')
+          lpenc_requested(i_b2) = .true.
+          lpenc_requested(i_TT) = .true.
+          lpenc_requested(i_rho1) = .true.
+          lpenc_requested(i_cp1) = .true.
         endselect
       enddo
 !
@@ -2949,6 +2955,11 @@ module Special
                 exp(-((x_Mm-event_pos(1))**2/ (2*0.2**2)))
             heatinput = heatinput + heat_event1D/heat_unit
           endif
+!
+        case ('T<Tcrit')
+!
+          heatinput = heatinput + &
+          0.5*p%b2*(1.-tanh((p%TT-T_crit)/deltaT_crit))/mu0
 !
         case default
           if (headtt) call fatal_error('calc_artif_heating', &

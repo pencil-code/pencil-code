@@ -2150,6 +2150,8 @@ module Magnetic
 ! pencils for semirelativistic Boris correction to velocity eq.
 !
       if (lboris_correction) then
+        lpenc_requested(i_jxbr)=.true.
+        lpenc_requested(i_bb)=.true.
         lpenc_requested(i_gamma_A2)=.true.
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_fpres)=.true.
