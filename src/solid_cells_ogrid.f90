@@ -198,6 +198,10 @@ module Solid_Cells
 !  EOS parameters
   real :: rho0, lnrho0, lnTT0
 
+!  Parameters related to interpolation and communication of interpolation points
+  logical :: interpolation_comm=.false.
+  real, dimension(:,:), allocatable :: xyz_comm
+  real, dimension(:,:), allocatable :: rthz_comm
 !  Read start.in file
   namelist /solid_cells_init_pars/ &
       cylinder_temp, cylinder_radius, cylinder_xpos, ncylinders, &
@@ -387,6 +391,11 @@ module Solid_Cells
 !
       call initialize_eos
 !
+!  Check if it will be necessary to use communication between processors 
+!  to perform the interpolation between the overlapping grids.
+!
+      call initialize_comm_interpolate
+!
     end subroutine initialize_solid_cells
 !***********************************************************************
     subroutine init_solid_cells(f)
@@ -515,7 +524,6 @@ module Solid_Cells
         f_ogrid(:,:,:,ilnrho)=0.
       endif
       call gaunoise_ogrid(ampl_noise,iux,iuz)
-      !TODO: nghost on next line
       do i=l1_ogrid,l2_ogrid+nghost
         rr2=x_ogrid(i)**2
         wall_smoothing = 1-exp(-(rr2-a2)/skin_depth**2)
@@ -640,6 +648,208 @@ module Solid_Cells
         lnTT0=log(cs20/cp)  !(isothermal/polytropic cases: check!)
       endif
     endsubroutine initialize_eos
+!***********************************************************************
+    subroutine initialize_comm_interpolate
+!
+!  Check if it will be necessary to use communication between processors 
+!  to perform the interpolation between the overlapping grids.
+!  Build arrays for communication if necessary.
+!
+!  06-apr-17/Jorgen: Coded
+!
+      real, dimension (3) :: xyz
+      real, dimension (3) :: rthz
+      integer :: tot_comm_cart_to_curv
+      integer :: tot_comm_curv_to_cart
+      integer :: i,j,k
+      integer :: ii
+      real :: r_int_outer,r_int_inner,xr,yr
+!
+      call comm_interpolate_necessary(tot_comm_cart_to_curv,tot_comm_curv_to_cart)
+      if((tot_comm_cart_to_curv==0).and.(tot_comm_curv_to_cart==0)) then
+        return
+      else
+        interpolation_comm=.true.
+      endif
+!
+      if(tot_comm_cart_to_curv>0) allocate(xyz_comm (tot_comm_cart_to_curv,3))
+      if(tot_comm_curv_to_cart>0) allocate(rthz_comm(tot_comm_curv_to_cart,3))
+!
+!  Find and save points that are needed from other processors
+!  Does some of the same work as comm_interpolate_necessary, 
+!  but this is only run once during initialization so memory 
+!  is prioritized rather than CPU-time.
+! 
+      r_int_outer=r_ogrid-2*inter_stencil_len*dxmax
+      r_int_inner=r_int_outer-3*dxmax
+!      
+      ii=0
+      do k=n1_ogrid,n2_ogrid
+        do j=m1_ogrid,m2_ogrid
+          do i=l2_ogrid+1,l2_ogrid+nghost
+            xyz=(/ x_ogrid(i)*cos(y_ogrid(j))+xorigo_ogrid(1), &
+                    x_ogrid(i)*sin(y_ogrid(j))+xorigo_ogrid(2), &
+                    z_ogrid(k) /)
+            if(.not. this_proc_cartesian(xyz)) then
+              xyz_comm(ii,:)=xyz
+              ii=ii+1
+            endif
+          enddo
+        enddo
+      enddo
+! 
+      ii=0
+      do k=n1,n2
+        do j=m1,m2
+          do i=l1,l2
+            xr=x(i)-xorigo_ogrid(1)
+            yr=y(j)-xorigo_ogrid(2)
+            rthz=(/ sqrt(xr**2+yr**2),atan2(yr,xr),z(k) /)
+            if((rthz(1)<=r_int_outer) .and. rthz(1)>=xyz0_ogrid(1)) then 
+              if(.not. this_proc_curvilinear(rthz)) then
+                rthz_comm(ii,:)=rthz
+                ii=ii+1
+              endif
+            endif
+          enddo
+        enddo
+      enddo
+!
+    endsubroutine initialize_comm_interpolate
+!***********************************************************************
+    subroutine comm_interpolate_necessary(tot_comm_cart_to_curv,tot_comm_curv_to_cart)
+!
+!  Check if grid points needed for the interpolation exists on this processor.
+!  Count the number of grid points that need to be communicated.
+!
+!  06-apr-17/Jorgen: Coded
+!
+      integer, intent(out) :: tot_comm_cart_to_curv
+      integer, intent(out) :: tot_comm_curv_to_cart
+      real, dimension (3) :: xyz
+      real, dimension (3) :: rthz
+      integer :: i,j,k
+      real :: r_int_outer,r_int_inner,xr,yr
+!
+      tot_comm_cart_to_curv=0
+      tot_comm_curv_to_cart=0
+      r_int_outer=r_ogrid-2*inter_stencil_len*dxmax
+      r_int_inner=r_int_outer-3*dxmax
+!      
+      do k=n1_ogrid,n2_ogrid
+        do j=m1_ogrid,m2_ogrid
+          do i=l2_ogrid+1,l2_ogrid+nghost
+            xyz=(/ x_ogrid(i)*cos(y_ogrid(j))+xorigo_ogrid(1), &
+                    x_ogrid(i)*sin(y_ogrid(j))+xorigo_ogrid(2), &
+                    z_ogrid(k) /)
+            !if(.not. this_proc_cartesian(xyz)) tot_comm_cart_to_curv=tot_comm_cart_to_curv+1
+          enddo
+        enddo
+      enddo
+! 
+      do k=n1,n2
+        do j=m1,m2
+          do i=l1,l2
+            xr=x(i)-xorigo_ogrid(1)
+            yr=y(j)-xorigo_ogrid(2)
+            rthz=(/ sqrt(xr**2+yr**2),atan2(yr,xr),z(k) /)
+            if((rthz(1)<=r_int_outer) .and. rthz(1)>=xyz0_ogrid(1)) then 
+              !if(.not. this_proc_curvilinear(rthz)) tot_comm_curv_to_cart=tot_comm_cart_to_curv+1
+            endif
+          enddo
+        enddo
+      enddo
+!
+      if(tot_comm_cart_to_curv>0.or.tot_comm_curv_to_cart>0) then
+        print*, 'Communication needed for interpolation between grids'
+        print*, '# grid points from cartesian to curvilinear', tot_comm_cart_to_curv
+        print*, '# grid points from curvilinear to cartesian', tot_comm_curv_to_cart
+      endif
+!
+!TODO: SHOULD PRINT GRIDS AND SEE OF THEY ACT LIKE EXPECTED WHEN PARALLEL!!!
+      call print_grids_only(iproc)
+    endsubroutine comm_interpolate_necessary
+!***********************************************************************
+    subroutine print_grids_only(num)
+!  Print to file
+    character(len=16) :: xofile,yofile,xcfile,ycfile
+    integer :: i,num
+
+    print*, 'iproc,x_og(l1_ogrid-1)-r_cyl,lfirst_proc_x',iproc,x_ogrid(l1_ogrid-1)-cylinder_radius,lfirst_proc_x
+
+    
+    xofile='x_ogrid'
+    yofile='y_ogrid'
+    xcfile='x_cgrid'
+    ycfile='y_cgrid'
+    write(xofile,"(A7,I1)") trim(xofile),num
+    write(yofile,"(A7,I1)") trim(yofile),num
+    write(xcfile,"(A7,I1)") trim(xcfile),num
+    write(ycfile,"(A7,I1)") trim(ycfile),num
+
+    xofile=trim(xofile)//'.dat'
+    yofile=trim(yofile)//'.dat'
+    xcfile=trim(xcfile)//'.dat'
+    ycfile=trim(ycfile)//'.dat'
+    open(unit=1,file=trim(xofile))
+    open(unit=2,file=trim(yofile))
+    open(unit=3,file=trim(xcfile))
+    open(unit=4,file=trim(ycfile))
+    do i=l1_ogrid-nghost,l2_ogrid+nghost
+      write(1,*) x_ogrid(i)*cos(y_ogrid(m1_ogrid:m2_ogrid))
+      write(2,*) x_ogrid(i)*sin(y_ogrid(m1_ogrid:m2_ogrid))
+    enddo
+    do i=l1-nghost,l2+nghost
+      write(3,*) x(i)
+    enddo
+    write(4,*) y(m1-nghost:m2+nghost)
+
+    close(1)
+    close(2)
+    close(3)
+    close(4)
+
+    endsubroutine print_grids_only
+!***********************************************************************
+    logical function this_proc_cartesian(xyz)
+!
+!  Check if the grid points needed for interpolation between from cartesian
+!  to curvilinear grid are prestemt on this processor.
+!  At present only valid for trilinear interpolation, where points the 
+!  four points [(x_i,y_j,z_k) for i=ii:ii+1 etc] are needed
+!
+!  06-apr-17/Jorgen: Coded
+!
+      real, dimension(3), intent(in) :: xyz
+!
+      this_proc_cartesian=.true.
+      if(xyz(1)<x(1).or.xyz(1)>x(mx-1)) this_proc_cartesian=.false.
+      if(xyz(2)<y(1).or.xyz(2)>y(my-1)) this_proc_cartesian=.false.
+      if(xyz(3)<z(1).or.xyz(3)>z(mz-1)) this_proc_cartesian=.false.
+!
+    end function this_proc_cartesian
+!***********************************************************************
+    logical function this_proc_curvilinear(rthz)
+!
+!  Check if the grid points needed for interpolation between from curvilinear
+!  to cartesian grid are prestemt on this processor.
+!  At present only valid for trilinear interpolation, where points the 
+!  four points [(x_i,y_j,z_k) for i=ii:ii+1 etc] are needed
+!
+!  06-apr-17/Jorgen: Coded
+!
+      real, dimension(3), intent(in) :: rthz
+!
+      this_proc_curvilinear=.true.
+      if(rthz(1)<x_ogrid(1)) then
+        call fatal_error('this_proc_curvilinear','interpolation point is INSIDE the solid cylinder!')
+      elseif(rthz(1)>x_ogrid(mx_ogrid-1)) then
+        call fatal_error('this_proc_curvilinear','interpolation point is OUTSIDE the curvilinear grid!')
+      endif
+      if(rthz(2)<y_ogrid(1).or.rthz(2)>y_ogrid(my_ogrid-1)) this_proc_curvilinear=.false.
+      if(rthz(3)<z_ogrid(1).or.rthz(3)>z_ogrid(mz_ogrid-1)) this_proc_curvilinear=.false.
+!
+    end function this_proc_curvilinear
 !***********************************************************************
     subroutine find_drag_alt(c_dragx,c_dragy)
 !
@@ -909,6 +1119,25 @@ module Solid_Cells
 !
   endsubroutine solid_cells_clean_up
 !***********************************************************************
+  subroutine communicate_interpol_bdry(f_cartesian)
+!
+!  Send and recieve necessary information to perform interpolation between
+!  the overlapping grids
+!  At this point we simply send the f_ogrid and f array on the entire cylinder
+!  grid and the part of the cartesian grid that covers the cylinder grid 
+!  (and a bit more), respectively to every processor.
+!  This gives a quite large communication overhead, but reduces the amount
+!  of extra work done by the root processor
+!  
+!  06-apr-17/Jorgen: Coded
+!  
+    !use Solid_Cells_Mpicomm, only: initiate_isendrcv_interpol_brdy, finalize_isendrcv_interpol_brdy
+    real, dimension(mx,my,mz,mfarray), intent(in) :: f_cartesian
+
+      !call initiate_isendrcv_interpol_bdry(f_ogrid,f_cartesian)
+      !call finalize_isendrcv_interpol_bdry(f_ogrid,f_cartesian)
+  endsubroutine communicate_interpol_bdry
+!***********************************************************************
   subroutine flow_cartesian_to_curvilinear(f_cartesian)
 
     use General, only: linear_interpolate
@@ -938,6 +1167,13 @@ module Solid_Cells
           xyz=(/ x_ogrid(i)*cos(y_ogrid(j))+xorigo_ogrid(1), &
                   x_ogrid(i)*sin(y_ogrid(j))+xorigo_ogrid(2), &
                   z_ogrid(k) /)
+!
+!  Check if grid points needed for the interpolation exists on this processor
+!
+!TODOTODO
+          !if(.not. this_proc(xyz)) then
+          !  call fatal_error('this_proc','interpolation point is not present at this processor')
+          !endif
           call find_near_cartesian_indices(lower_i,upper_i,lower_j,upper_j, &
                 lower_k,upper_k,xyz)
           inear=(/ lower_i, lower_j, lower_k /)
@@ -947,7 +1183,6 @@ module Solid_Cells
           f_ogrid(i,j,k,iux)=gp(iux)*cos(y_ogrid(j))+gp(iuy)*sin(y_ogrid(j))
           f_ogrid(i,j,k,iuy)=-gp(iux)*sin(y_ogrid(j))+gp(iuy)*cos(y_ogrid(j))
           f_ogrid(i,j,k,iuz)=gp(iuz)
-      !TODO
           f_ogrid(i,j,k,irho)=gp(irho)
         enddo
       enddo
@@ -2191,11 +2426,6 @@ end subroutine print_solid
     real, dimension(3) :: alpha_ts_ogrid=0.,beta_ts_ogrid=0.,dt_beta_ts_ogrid=0.
     real :: c_dragx,c_dragy
 !
-!  Update boundary of the overlapping grid by interpolating
-!  from cartesian grid to curvilinear grid
-!
-    !call flow_cartesian_to_curvilinear(f_cartesian)
-!
 !  Coefficients for up to order 3.
 !
     if (itorder==1) then
@@ -2271,21 +2501,37 @@ end subroutine print_solid
 !
       enddo
     enddo
+
+  If necessary (usually is for parallel runs), send information about f-array
+  to processors that need it to perform interpolation between the grids.
+
+    if(interpolation_comm) then
+      call communicate_interpol_bdry(f_cartesian)
+    endif
 !
 !  Update boundary of the overlapping grid by interpolating
-!  from curvilinear grid to cartesian grid
+!  from curvilinear grid to cartesian grid. Only relevant for 
+!  processors that have grid points at the edge of the cylidner
+!  grid.
 !
-    call flow_cartesian_to_curvilinear(f_cartesian)
+    if(llast_proc_x) then
+      call flow_cartesian_to_curvilinear(f_cartesian)
+    endif
+!
+!  Update the cartesian grid using the newly computed flow
+!  field on the curvilinear grid
+!
     call flow_curvilinear_to_cartesian(f_cartesian)
 !
-!TODO:Printing
+!!TODO:Printing
+if(lroot) then
     iterator = iterator+1
-if(mod(iterator,2000)==0) then
-    call print_ogrid(int(iterator/2000))
-    call print_cgrid(int(iterator/2000),f_cartesian)
-!!TODO
-        call find_drag_alt(c_dragx,c_dragy)
-        print*, c_dragx,c_dragy
+if(mod(iterator,100)==0) then
+    call print_ogrid(int(iterator/100))
+    call print_cgrid(int(iterator/100),f_cartesian)
+    call find_drag_alt(c_dragx,c_dragy)
+    print*, c_dragx,c_dragy
+endif
 endif
 
     call wsnap_ogrid('OGVAR',ENUM=.true.,FLIST='ogvarN.list')
@@ -2744,70 +2990,36 @@ endif
 !***********************************************************************
     subroutine boundconds_x_ogrid
 !
-!  Boundary conditions in x, except for periodic part handled by communication.
+!  Boundary conditions at the cylinder surface in the radial direction (xdir).
+!  For ogrids, only boundary conditions at cylinder surface is set. The BC on
+!  the 'top' is set by interpolation from cartesian grid, outside the timestep.
+!  Only need to conpute boundary value for the density, using stencil that
+!  satisfies the SBP energy conservation. No-slip on the surface is respected
+!  automatically since we set df(l1_ogrid,:,:,:)=0 after the mn-loop (freeze).
+!  If SBP is not used, the grid ponts inside the surface are computed using 
+!  one-sided differences. Note that these do not guarantee stability!
+!  
 !  Remark: boundconds_x() needs to be called before communicating (because we
 !  communicate the x-ghost points), boundconds_[yz] after communication
 !  has finished (they need some of the data communicated for the edges
 !  (yz-'corners').
 !
-!  For ogrids: Only boundary conditions at cylinder surface is set. The BC on
-!  the 'top' is set by interpolation from cartesian grid, outside the timestep.
-!
 !  06-feb-17/Jorgen: Adapted from boundcond.f90 to be used for ogrids
+!  06-apr-17/Jorgen: Cleanup and working with SBP property
 !
-      integer :: ivar1, ivar2, j, k
-      logical :: tester
-      real :: dxl2
-      real, dimension(my_ogrid,mz_ogrid) :: dudxl2,dvdxl2,dwdxl2,drhodxl2
+!  Only set cyinder boundary here, not processor boundaries
 !
-      ivar1=1; ivar2=min(mcom,size(f_ogrid,4))
-!
-!  Boundary conditions in x.
-!
-!  Set no-slip condition for velocity and zero gradient for the pressure
-!  on the cylinder surface
-      !f_ogrid(l1_ogrid,:,:,iux:iuz) = 0.
-      !TODO
-      !call set_ghosts_onesided_ogrid(iux)
-      !call set_ghosts_onesided_ogrid(iuy)
-      !call set_ghosts_onesided_ogrid(iuz)
-      !call bval_from_neumann_arr_ogrid
-!
-! Use onesided stencil that satisfies the SBP energy conservation
-!
-      call bval_from_neumann_arr_ogrid_alt
-      !call set_ghosts_onesided_ogrid(ilnrho)
-
-
-      !!!!!!!!!!!!!!!!! HEREHERE !
-      !dxl2=x_ogrid(l2_ogrid)-x_ogrid(l2_ogrid-1)
-      !dudxl2=f_ogrid(l2_ogrid,:,:,iux)-f_ogrid(l2_ogrid-1,:,:,iux)
-      !dudxl2=dudxl2/dxl2
-      !dvdxl2=f_ogrid(l2_ogrid,:,:,iuy)-f_ogrid(l2_ogrid,:,:,iuy)
-      !dvdxl2=dudxl2/dxl2
-      !dwdxl2=f_ogrid(l2_ogrid,:,:,iuz)-f_ogrid(l2_ogrid,:,:,iuz)
-      !dwdxl2=dudxl2/dxl2
-      !drhodxl2=f_ogrid(l2_ogrid,:,:,irho)-f_ogrid(l2_ogrid,:,:,irho)
-      !drhodxl2=dudxl2/dxl2
-      !! Extrapolate
-      !f_ogrid(l2_ogrid+1,floor(my_ogrid/2.)+2:m2_ogrid,:,iux)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,iux)!+(dudxl2*dxl2)
-      !f_ogrid(l2_ogrid+2,floor(my_ogrid/2.)+2:m2_ogrid,:,iux)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,iux)!+(dudxl2*2*dxl2)
-      !f_ogrid(l2_ogrid+3,floor(my_ogrid/2.)+2:m2_ogrid,:,iux)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,iux)!+(dudxl2*3*dxl2)
-      !f_ogrid(l2_ogrid+1,floor(my_ogrid/2.)+2:m2_ogrid,:,iuy)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,iuy)!+(dvdxl2*dxl2)
-      !f_ogrid(l2_ogrid+2,floor(my_ogrid/2.)+2:m2_ogrid,:,iuy)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,iuy)!+(dvdxl2*2*dxl2)
-      !f_ogrid(l2_ogrid+3,floor(my_ogrid/2.)+2:m2_ogrid,:,iuy)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,iuy)!+(dvdxl2*3*dxl2)
-      !f_ogrid(l2_ogrid+1,floor(my_ogrid/2.)+2:m2_ogrid,:,iuz)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,iuz)!+(dwdxl2*dxl2)
-      !f_ogrid(l2_ogrid+2,floor(my_ogrid/2.)+2:m2_ogrid,:,iuz)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,iuz)!+(dwdxl2*2*dxl2)
-      !f_ogrid(l2_ogrid+3,floor(my_ogrid/2.)+2:m2_ogrid,:,iuz)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,iuz)!+(dwdxl2*3*dxl2)
-      !f_ogrid(l2_ogrid+1,floor(my_ogrid/2.)+2:m2_ogrid,:,irho)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,irho)!+(drhodxl2*dxl2)
-      !f_ogrid(l2_ogrid+2,floor(my_ogrid/2.)+2:m2_ogrid,:,irho)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,irho)!+(drhodxl2*2*dxl2)
-      !f_ogrid(l2_ogrid+3,floor(my_ogrid/2.)+2:m2_ogrid,:,irho)=f_ogrid(l2_ogrid,floor(my_ogrid/2.)+2:m2_ogrid,:,irho)!+(drhodxl2*3*dxl2)
-
-      !f_ogrid(l1_ogrid,:,:,irho)=f_ogrid(l1_ogrid,:,:,irho) !&
-            !+(2./(60.*(x_ogrid(l1_ogrid+1)-x_ogrid(l1_ogrid-1))))* &
-            !(+ 45.0*(f_ogrid(l1_ogrid+1,:,:,irho)-f_ogrid(l1_ogrid-1,:,:,irho)) &
-            ! -  9.0*(f_ogrid(l1_ogrid+2,:,:,irho)-f_ogrid(l1_ogrid-2,:,:,irho)) &
-            ! +      (f_ogrid(l1_ogrid+3,:,:,irho)-f_ogrid(l1_ogrid-3,:,:,irho)))
+      if(lfirst_proc_x) then
+        if(SBP) then
+          call bval_from_neumann_arr_ogrid_alt
+        else
+          call set_ghosts_onesided_ogrid(iux)
+          call set_ghosts_onesided_ogrid(iuy)
+          call set_ghosts_onesided_ogrid(iuz)
+          call bval_from_neumann_arr_ogrid
+          call set_ghosts_onesided_ogrid(irho)
+        endif
+      endif
 !
     endsubroutine boundconds_x_ogrid
 !***********************************************************************
@@ -3496,7 +3708,7 @@ endif
 !
       if (j==1) then
         if (nxgrid_ogrid/=1) then
-          if(SBP) then
+          if(SBP.and.lfirst_proc_x) then
             call der_ogrid_SBP(f(1:l1_ogrid+8,:,:,:),k,df(1:6))
             i=6
           else
@@ -3566,7 +3778,7 @@ endif
 
       if (j==1) then
         if (nxgrid_ogrid/=1) then
-          if(SBP) then
+          if(SBP.and.lfirst_proc_x) then
             call der2_ogrid_SBP(f(1:l1_ogrid+8,:,:,:),k,df2(1:6))
             i=6
           else
@@ -3696,7 +3908,7 @@ endif
         !
         if ((i==1.and.j==2).or.(i==2.and.j==1)) then
           if (nxgrid_ogrid/=1.and.nygrid_ogrid/=1) then
-            if(SBP) then
+            if(SBP.and.lfirst_proc_x) then
               ii=6
               do kk=1,6
                 facSBP=(1./60.)*dx_1_ogrid(l1_ogrid:l1_ogrid+5)*dy_1_ogrid(m_ogrid)
@@ -3789,7 +4001,7 @@ endif
           endif
         elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
           if (nzgrid_ogrid/=1.and.nxgrid_ogrid/=1) then
-            if(SBP) then
+            if(SBP.and.lfirst_proc_x) then
               ii=6
               do kk=1,6
                 facSBP=(1./60.)*dx_1_ogrid(l1_ogrid:l1_ogrid+5)*dz_1_ogrid(n_ogrid)
@@ -3932,7 +4144,7 @@ endif
 !        endif
       endif
 !
-      if(SBP) i=6
+      if(SBP.and.lfirst_proc_x) i=6
         
       if (j==1) then
         if (nxgrid_ogrid/=1) then
@@ -4435,6 +4647,7 @@ endif
       real :: deltay_ogrid
 
       if (lread_from_other_prec) then
+        !TODO: DEALLCATE?
         if (kind(a)==rkind4) then
           allocate(adb(mx_ogrid,my_ogrid,mz_ogrid,nv),xdb(mx_ogrid),ydb(my_ogrid),zdb(mz_ogrid))
           call read_snap_ogrid(file,adb,xdb,ydb,zdb,dxdb,dydb,dzdb,deltaydb,nv,mode)
