@@ -28,6 +28,7 @@ module Solid_Cells_Mpicomm
   real, dimension (:,:,:,:), allocatable :: llbufo,lubufo,uubufo,ulbufo
   contains 
 
+!***********************************************************************
     subroutine initiate_isendrcv_bdry_ogrid(f)
 !
 !  Isend and Irecv boundary values. Called in the beginning of pde.
@@ -49,7 +50,7 @@ module Solid_Cells_Mpicomm
 !
 !  Set communication across x-planes.
 !
-      if (nprocx>1) call isendrcv_bdry_x(f)
+      if (nprocx>1) call isendrcv_bdry_x_ogrid(f)
 !
 !  Set communication across y-planes.
 !  Standard message tags from defaults for surfaces and yz-corners.
@@ -301,7 +302,7 @@ module Solid_Cells_Mpicomm
 !  before continuing to y and z boundaries, as this allows the edges
 !  of the grid to be set properly.
 !
-!   2-may-09/anders: coded
+!  07-feb-17/Jorgen: Adapted from mpicomm.f90
 !
       real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
 !
@@ -311,8 +312,8 @@ module Solid_Cells_Mpicomm
 !
       if (nprocx>1) then
 
-        lbufxo(:,:,:,ivar1:ivar2)=f(l1_ogrid:l1i_ogrid,m_ogrid1:m2,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(lower x-zone)
-        ubufxo(:,:,:,ivar1:ivar2)=f(l2i_ogrid:l2_ogrid,m_ogrid1:m2,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(upper x-zone)
+        lbufxo(:,:,:,ivar1:ivar2)=f(l1_ogrid:l1i_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(lower x-zone)
+        ubufxo(:,:,:,ivar1:ivar2)=f(l2i_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(upper x-zone)
         nbufx=ny_ogrid*nz_ogrid*nghost*(ivar2-ivar1+1)
 
         call MPI_IRECV(ubufxi(:,:,:,ivar1:ivar2),nbufx,MPI_REAL, &
@@ -346,5 +347,6 @@ module Solid_Cells_Mpicomm
       endif
 !
     endsubroutine isendrcv_bdry_x_ogrid
+!***********************************************************************
 
 endmodule Solid_Cells_Mpicomm
