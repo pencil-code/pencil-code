@@ -2085,7 +2085,6 @@ module Density
         call h_dot_grad(p%uu_advec,p%grho,p%uuadvec_grho)
         if (lupw_rho) then
           call calc_del6_for_upwind(f,irho,p%uu_advec,tmp)
-          print*,minval(tmp),maxval(tmp)
           p%uuadvec_grho = p%uuadvec_grho - tmp
         endif
       endif
