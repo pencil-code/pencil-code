@@ -2008,12 +2008,13 @@ module Density
 !                suppressed weno for log density
 !
       use WENO_transport
-      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij,dot_mn,h_dot_grad,del6_strict
+      use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij,dot_mn,h_dot_grad,del6_strict,calc_del6_for_upwind
       use SharedVariables, only: get_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
       intent(inout) :: f,p
+      real, dimension(nx) :: tmp
 !
       integer :: i
 !
@@ -2080,7 +2081,14 @@ module Density
         endif
       endif
 !
-      if (lpencil(i_uuadvec_grho)) call h_dot_grad(p%uu_advec,p%grho,p%uuadvec_grho)
+      if (lpencil(i_uuadvec_grho)) then
+        call h_dot_grad(p%uu_advec,p%grho,p%uuadvec_grho)
+        if (lupw_rho) then
+          call calc_del6_for_upwind(f,irho,p%uu_advec,tmp)
+          print*,minval(tmp),maxval(tmp)
+          p%uuadvec_grho = p%uuadvec_grho - tmp
+        endif
+      endif
 !
     endsubroutine calc_pencils_linear_density
 !***********************************************************************
