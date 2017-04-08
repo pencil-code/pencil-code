@@ -106,6 +106,7 @@ module Sub
 !
   public :: vec_dot_3tensor
   public :: traceless_strain,calc_sij2
+  public :: calc_del6_for_upwind
 !
   interface poly                ! Overload the `poly' function
     module procedure poly_0
@@ -6491,49 +6492,41 @@ nameloop: do
 !
     endsubroutine unit_vector
 !***********************************************************************
-    subroutine doupwind(f,k,uu,ugradf,mask)
-!
-!  Calculates upwind correction, works incrementally on ugradf
-!
-!  26-mar-12/MR: outsourced from routines u_dot_grad_mat, u_dot_grad_scl, u_dot_grad_scl_alt
-!   9-apr-12/MR: optional parameter plus added
-!  12-apr-12/MR: optional parameter modified
+    subroutine calc_del6_for_upwind(f,k,hh,del6f_upwind,mask)
 !
       use Deriv, only: der6, deri_3d_inds
 !
-      real, dimension (mx,my,mz,mfarray), intent(IN)    :: f
-      integer                                           :: k
-      real, dimension (nx,3),             intent(IN)    :: uu
-      real, dimension (nx),               intent(INOUT) :: ugradf
-      integer,                            intent(IN), optional :: mask
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(nx,3)             :: del6f, hh
+      real, dimension(nx)               :: del6f_upwind
+      integer, dimension(nx)            :: indxs
+      integer, intent(in), optional     :: mask
+      integer                           :: j, k, msk
 !
-      real, dimension (nx,3) :: del6f
-      integer                :: ii,msk
-      integer, dimension(nx) :: indxs
+      intent(in) :: f,k,hh 
+      intent(out) :: del6f_upwind
 !
       msk=0
-      if (present(mask)) then
-        if ( mask>=1 .and. mask <=3 ) msk=mask
-      endif
+      if (present(mask)) msk=mask
 !
-      do ii=1,3
+      do j=1,3
 !
-        if (ii==msk) then
-          del6f(:,ii) = 0.
+        if (j==msk) then
+          del6f(:,j) = 0.
         else
 !
-          if ( lequidist(ii) ) then
-            call der6(f,k,del6f(1,ii),ii,UPWIND=.true.)
+          if (lequidist(j)) then
+            call der6(f,k,del6f(1,j),j,UPWIND=.true.)
           else
-            where( uu(:,ii)>=0 )
+            where(hh(:,j)>=0)
               indxs = 7
             elsewhere
               indxs = 8
             endwhere
-            call deri_3d_inds(f(1,1,1,k),del6f(1,ii),indxs,ii,lnometric=.true.)
+            call deri_3d_inds(f(1,1,1,k),del6f(1,j),indxs,j,lnometric=.true.)
           endif
 !
-          del6f(:,ii) = abs(uu(:,ii))*del6f(:,ii)
+          del6f(:,j) = abs(hh(:,j))*del6f(:,j)
 !
         endif
       enddo
@@ -6546,10 +6539,38 @@ nameloop: do
         del6f(:,3) = r1_mn*sin1th(m)*del6f(:,3)
       endif
 !
+      del6f_upwind = sum(del6f,2)
+!
+    endsubroutine calc_del6_for_upwind
+!***********************************************************************    
+    subroutine doupwind(f,k,uu,ugradf,mask)
+!
+!  Calculates upwind correction, works incrementally on ugradf
+!
+!  26-mar-12/MR: outsourced from routines u_dot_grad_mat, u_dot_grad_scl, u_dot_grad_scl_alt
+!   9-apr-12/MR: optional parameter plus added
+!  12-apr-12/MR: optional parameter modified
+!   8-apr-17/wlyra: encapsulated the calculation of del6     
+!
+      real, dimension (mx,my,mz,mfarray), intent(IN)    :: f
+      integer                                           :: k
+      real, dimension (nx,3),             intent(IN)    :: uu
+      real, dimension (nx),               intent(INOUT) :: ugradf
+      integer,                            intent(IN), optional :: mask
+      real, dimension (nx) :: del6f_upwind
+      integer                :: msk
+!
+      msk=0
+      if (present(mask)) then
+        if ( mask>=1 .and. mask <=3 ) msk=mask
+      endif
+!
+      call calc_del6_for_upwind(f,k,uu,del6f_upwind,msk)
+!
       if (msk>0) then
-        ugradf = ugradf+sum(del6f,2)
+        ugradf = ugradf+del6f_upwind
       else
-        ugradf = ugradf-sum(del6f,2)
+        ugradf = ugradf-del6f_upwind
       endif
 !
     endsubroutine doupwind
