@@ -22,6 +22,7 @@
 ! PENCILS PROVIDED rhougu(3); der6u(3); transpurho(3)
 ! PENCILS PROVIDED divu0; u0ij(3,3); uu0(3)
 ! PENCILS PROVIDED uu_advec(3); uuadvec_guu(3)
+! PENCILS PROVIDED del6u_strict(3); del4graddivu(3)
 !
 !***************************************************************
 !
@@ -2341,9 +2342,11 @@ module Hydro
       if (lpenc_loc(i_u2u31)) p%u2u31=p%uu(:,2)*p%uij(:,3,1)
       if (lpenc_loc(i_u3u12)) p%u3u12=p%uu(:,3)*p%uij(:,1,2)
       if (lpenc_loc(i_u1u23)) p%u1u23=p%uu(:,1)*p%uij(:,2,3)
-! del4u and del6u
+! del4u, del6u, del4graddivu, and del6u_strict
       if (lpenc_loc(i_del4u)) call del4v(f,iuu,p%del4u)
       if (lpenc_loc(i_del6u)) call del6v(f,iuu,p%del6u)
+      if (lpenc_loc(i_del6u_strict)) call del6v(f,iuu,p%del6u_strict,LSTRICT=.true.)
+      if (lpenc_loc(i_del4graddivu)) call del4graddiv(f,iuu,p%del4graddivu)
 ! del6u_bulk
       if (lpenc_loc(i_del6u_bulk)) then
         call der6(f,iux,tmp,1)
@@ -2524,9 +2527,11 @@ module Hydro
         .or.lpenc_loc(i_u2u31).or.lpenc_loc(i_u3u12).or.lpenc_loc(i_u1u23) ) then
         call fatal_error('calc_pencils_hydro_linearized:','ujukl pencils not calculated')
       endif
-! del4u and del6u
+! del4u, del6u, and del4graddivu
       if (lpenc_loc(i_del4u)) call del4v(f,iuu,p%del4u)
       if (lpenc_loc(i_del6u)) call del6v(f,iuu,p%del6u)
+      if (lpenc_loc(i_del6u_strict)) call del6v(f,iuu,p%del6u_strict,LSTRICT=.true.)
+      if (lpenc_loc(i_del4graddivu)) call del4graddiv(f,iuu,p%del4graddivu)
 ! del6u_bulk
       if (lpenc_loc(i_del6u_bulk)) then
         call der6(f,iux,tmp,1)
