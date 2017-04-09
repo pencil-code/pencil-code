@@ -53,7 +53,7 @@ module Sub
   public :: u_dot_grad_mat
   public :: del2, del2v, del2v_etc, del2fj,d2fi_dxj,del2fi_dxjk
   public :: del2m3x3_sym
-  public :: del4v, del4, del2vi_etc
+  public :: del4v, del4, del2vi_etc, del4graddiv
   public :: del6v, del6, del6_other, del6fj, del6fjv, del6_strict
   public :: gradf_upw1st, doupwind
   public :: matrix2linarray, linarray2matrix
@@ -2383,17 +2383,20 @@ module Sub
 !
     endsubroutine del4v
 !***********************************************************************
-    subroutine del6v(f,k,del6f)
+    subroutine del6v(f,k,del6f,lstrict)
 !
 !  Calculate del6 of a vector, get vector.
 !
 !  28-oct-97/axel: coded
 !  24-apr-03/nils: adapted from del2v
 !
+      use General, only : loptest
+!
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (nx,3) :: del6f
       real, dimension (nx) :: tmp
       integer :: i,k,k1
+      logical, optional :: lstrict
 !
       intent(in) :: f,k
       intent(out) :: del6f
@@ -2402,7 +2405,11 @@ module Sub
 !
       k1=k-1
       do i=1,3
-        call del6(f,k1+i,tmp)
+        if (loptest(lstrict)) then
+          call del6_strict(f,k1+i,tmp)
+        else
+          call del6(f,k1+i,tmp)
+        endif
         del6f(:,i)=tmp
       enddo
 !
@@ -2742,9 +2749,9 @@ module Sub
 !***********************************************************************
     subroutine del6_strict(f,k,del6)
 !
-!   Calculates del6rho=del2(del2(del2(rho))), with del2=div(grad).
-!   Strictly accurate for Cartesian coordinates, does a good job in
-!   cylindrical. The subroutine is small enough and memory-cheap enough
+!   Calculates del6rho=del2(del2(del2(rho))), with del2=div(grad). The routine is
+!   strictly accurate for Cartesian coordinates, and retains all the leading dx1**6
+!   terms in cylindrical. The subroutine is small enough and memory-cheap enough
 !   that it could be in dlnrhodt. Yet, writing it as a subroutine allows
 !   not only for encapsulation but also better documentation.
 !
@@ -2768,14 +2775,104 @@ module Sub
         call der6(f,k,tmp,i)
         del6 = del6 + tmp
         do j=1,3
-          call der4i2j(f,k,tmp,i,j)
-          del6 = del6 + 3*tmp
+          if (j/=i) then
+            call der4i2j(f,k,tmp,i,j)
+            del6 = del6 + 3*tmp
+          endif
         enddo
       enddo
       call der2i2j2k(f,k,tmp)
       del6 = del6 + 6*tmp
 !
     endsubroutine del6_strict
+!***********************************************************************
+    subroutine del4graddiv(f,ikk,del4graddivu)
+!
+!  Calculate del4(grad(div())), which enters in the formulation of strict
+!  hyperviscosity. This is strictly accurate for Cartesian, and retains all
+!  the leading (dx1**6) terms for polar coordinates. For the x-component of
+!  del4(grad(div())), the result of sympy is
+!
+!               [del4(grad(div(u)))]_x = f(ux) + g(uy) + g(uz)
+!
+!   where f(ux) = der6x(ux)
+!               + 2*(der4x2y(ux)+der4x2z(ux)+der4y2x(ux)+der4z2x(ux))
+!               + 4*der2x2y2z(ux)
+!
+!         g(uy) =   der5x1y(uy) + der1x5y(uy) + 3*der3x3y(uy)
+!               + 2*der3x1y2z(uy) + 3*der1x3y2z(uy) + der1x1y4z(uy)
+!
+!   and similary
+!
+!         h(uz) =  der5x1z(uz) + der1x5z(uz) + 3*der3x3z(uz)
+!               + 2*der3x2y1z(uz) + 3*der1x2y3z(uz) + der1x4y1z(uz)
+!
+!   Per symmetry, the formulation for the y and z components are
+!   identical under the permutation [xyz].
+!
+!   09-apr-17/wlad: coded
+!
+      use Deriv, only: der6,der4i2j,der2i2j2k,der5i1j,der3i3j,der3i2j1k,der4i1j1k
+!
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(nx,3) :: del4graddivu
+      real, dimension(nx) :: tmp
+      integer :: ikk,ki,kj
+      integer :: i,j,k
+!
+      intent(in) :: f,ikk
+      intent(out) :: del4graddivu
+!
+      if (ikk .ne. iuu) call fatal_error("del4graddiv",&
+           "del4graddiv only coded for velocity")
+!
+!  The f(ui) part
+!
+      do i=1,3
+        ki = ikk + (i-1)
+        del4graddivu(:,i) = 0.
+        call der6(f,ki,tmp,i);          del4graddivu(:,i) =  del4graddivu(:,i) + tmp
+        do j=1,3
+          if (j/=i) then
+            call der4i2j(f,ki,tmp,i,j); del4graddivu(:,i) =  del4graddivu(:,i) + 2*tmp
+            call der4i2j(f,ki,tmp,j,i); del4graddivu(:,i) =  del4graddivu(:,i) + 2*tmp
+          endif
+        enddo
+        call der2i2j2k(f,ki,tmp) ;      del4graddivu(:,i) =  del4graddivu(:,i) + 4*tmp
+!
+!  The g(uj) and h(uk) parts
+!
+        do j=1,3
+          if (j/=i) then
+            if ((i==1).and.(j==2)) k=3
+            if ((i==1).and.(j==3)) k=2
+            if ((i==2).and.(j==1)) k=3
+            if ((i==2).and.(j==3)) k=1
+            if ((i==3).and.(j==1)) k=2
+            if ((i==3).and.(j==2)) k=1
+!
+            kj = ikk+(j-1)
+            call der5i1j(f,kj,tmp,i,j)
+            del4graddivu(:,i) =  del4graddivu(:,i) + tmp
+            call der5i1j(f,kj,tmp,j,i)
+            del4graddivu(:,i) =  del4graddivu(:,i) + tmp
+!
+            call der3i3j(f,kj,tmp,i,j)
+            del4graddivu(:,i) =  del4graddivu(:,i) + 3*tmp
+!
+            call der3i2j1k(f,kj,tmp,i,k,j)
+            del4graddivu(:,i) =  del4graddivu(:,i) + 2*tmp
+!
+            call der3i2j1k(f,kj,tmp,j,k,i)
+            del4graddivu(:,i) =  del4graddivu(:,i) + 3*tmp
+!
+            call der4i1j1k(f,kj,tmp,k,i,j)
+            del4graddivu(:,i) =  del4graddivu(:,i) + tmp
+          endif
+        enddo
+      enddo
+!
+    endsubroutine del4graddiv
 !***********************************************************************
     subroutine del6_other(f,del6f)
 !
