@@ -19,7 +19,7 @@ module Deriv
   public :: initialize_deriv, finalize_deriv
   public :: der, der2, der3, der4, der5, der6, derij, der5i1j, der5_single
   public :: der6_other, der_pencil, der2_pencil
-  public :: der4i2j,der2i2j2k
+  public :: der4i2j,der2i2j2k,der3i3j,der3i2j1k,der4i1j1k
   public :: deri_3d_inds
   public :: der_x,der2_x
   public :: der_z,der2_z
@@ -1541,8 +1541,12 @@ module Deriv
 !debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
 !
 !
-      if (lspherical_coords.or.lcylindrical_coords) &
-          call fatal_error('der5i1j','NOT IMPLEMENTED for non-cartesian coordinates')
+      !if (lspherical_coords.or.lcylindrical_coords) &
+      !    call fatal_error('der5i1j','NOT IMPLEMENTED for non-cartesian coordinates')
+      if (headtt) then
+        if (lspherical_coords.or.lcylindrical_coords) &
+             call warning('der5i1j','MISSING CURVATURE TERMS for non-cartesian coordinates')
+      endif
 !
       df=0.0
       if ((i==1.and.j==1)) then
@@ -1751,8 +1755,10 @@ module Deriv
 !debug                          der_call_count(k,icount_derij,i,j) + 1 !DERCOUNT
 !
 !
-      !if (lspherical_coords.or.lcylindrical_coords) &
-      !    call fatal_error('der4i2j','NOT IMPLEMENTED for non-cartesian coordinates')
+      if (headtt) then
+        if (lspherical_coords.or.lcylindrical_coords) &
+             call warning('der4i2j','MISSING CURVATURE TERMS for non-cartesian coordinates')
+      endif
 !
       df=0.0
       if ((i==1.and.j==1)) then
@@ -2016,6 +2022,11 @@ module Deriv
       real, dimension (nx) :: fac
       integer,intent(in) :: k
       real, dimension(nx), intent(out) :: df
+!
+      if (headtt) then
+        if (lspherical_coords.or.lcylindrical_coords) &
+             call warning('der2i2j2k','MISSING CURVATURE TERMS for non-cartesian coordinates')
+      endif
 !
       if (nxgrid/=1.and.nzgrid/=1.and.nygrid/=1) then
         fac=1./180.0**3*(dx_1(l1:l2)*dy_1(m)*dz_1(n))**2
@@ -2369,6 +2380,27 @@ module Deriv
       endif
       
     endsubroutine der2i2j2k
+!***********************************************************************
+    subroutine der3i3j(f,ik,df,i,j)
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx), intent(out) :: df
+      integer, intent(in) :: ik,i,j
+      df=0.0
+    endsubroutine der3i3j
+!***********************************************************************          
+    subroutine der3i2j1k(f,ik,df,i,j,k)
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx), intent(out) :: df
+      integer, intent(in) :: ik,i,j,k
+      df=0.0
+    endsubroutine der3i2j1k
+!***********************************************************************
+    subroutine der4i1j1k(f,ik,df,i,j,k)
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx), intent(out) :: df
+      integer, intent(in) :: ik,i,j,k
+      df=0.0
+    endsubroutine der4i1j1k
 !***********************************************************************
     subroutine der_upwind1st(f,uu,k,df,j)
 !
