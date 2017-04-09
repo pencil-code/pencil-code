@@ -82,6 +82,7 @@ module Viscosity
   logical :: lvisc_hyper3_rho_nu_const=.false.
   logical :: lvisc_hyper3_mu_const_strict=.false.
   logical :: lvisc_hyper3_nu_const_strict=.false.
+  logical :: lvisc_hyper3_mu_const_strict_otf=.false.
   logical :: lvisc_hyper3_rho_nu_const_symm=.false.
   logical :: lvisc_hyper3_rho_nu_const_aniso=.false.
   logical :: lvisc_hyper3_nu_const_aniso=.false.
@@ -264,6 +265,7 @@ module Viscosity
       lvisc_hyper3_rho_nu_const_symm=.false.
       lvisc_hyper3_mu_const_strict=.false.
       lvisc_hyper3_nu_const_strict=.false.
+      lvisc_hyper3_mu_const_strict_otf=.false.
       lvisc_hyper3_rho_nu_const_aniso=.false.
       lvisc_hyper3_nu_const_aniso=.false.
       lvisc_hyper3_rho_nu_const_bulk=.false.
@@ -380,6 +382,10 @@ module Viscosity
                call stop_it('initialize_viscosity: This viscosity type'//&
                ' cannot be used with HYPERVISC_STRICT=nohypervisc_strict')
           lvisc_hyper3_mu_const_strict=.true.
+        case ('hyper3-mu-strict-onthefly')
+          if (lroot) print*, 'viscous force(i): '// &
+              'nu_hyper/rho*(del2(del2(del2(u)))+del2(del2(grad(divu))))'
+          lvisc_hyper3_mu_const_strict_otf=.true.
         case ('hyper3-nu-const-strict','hyper3_nu-const_strict')
           if (lroot) print*, 'viscous force(i): 1/rho*div[2*rho*nu_3*S^(3)]'
           if (.not.lhyperviscosity_strict) &
@@ -458,7 +464,8 @@ module Viscosity
               lvisc_hyper3_rho_nu_const_symm.or. &
               lvisc_hyper3_polar.or.&
               lvisc_hyper3_mu_const_strict .or. &
-              lvisc_hyper3_nu_const_strict ).and. &
+              lvisc_hyper3_nu_const_strict .or. &
+              lvisc_hyper3_mu_const_strict_otf  ).and. &
               nu_hyper3==0.0 ) &
             call fatal_error('initialize_viscosity', &
             'Viscosity coefficient nu_hyper3 is zero!')
@@ -909,7 +916,7 @@ module Viscosity
           lpenc_requested(i_del2u)=.true.
       if (.not. limplicit_viscosity .and. lvisc_simplified) lpenc_requested(i_del2u)=.true.
       if (lvisc_hyper3_simplified .or. lvisc_hyper3_rho_nu_const .or. &
-          lvisc_hyper3_nu_const .or. lvisc_hyper3_rho_nu_const_symm) &
+          lvisc_hyper3_nu_const .or. lvisc_hyper3_rho_nu_const_symm ) &
           lpenc_requested(i_del6u)=.true.
       if (lvisc_hyper3_rho_nu_const_symm) then
         lpenc_requested(i_grad5divu)=.true.
@@ -928,8 +935,13 @@ module Viscosity
           lvisc_smag .or.lvisc_smag_simplified .or. lvisc_smag_cross_simplified .or. &
           lvisc_hyper3_rho_nu_const_symm .or. &
           lvisc_hyper3_mu_const_strict .or. lvisc_mu_cspeed .or. &
-          lvisc_spitzer) &
+          lvisc_spitzer .or. lvisc_hyper3_mu_const_strict_otf) &
           lpenc_requested(i_rho1)=.true.
+!
+      if (lvisc_hyper3_mu_const_strict_otf) then 
+        lpenc_requested(i_del6u_strict)=.true.
+        lpenc_requested(i_del4graddivu)=.true.
+      endif
 !
       if (lvisc_nu_const .or. lvisc_nu_tdep .or. &
           lvisc_nu_prof .or. lvisc_nu_profx .or. &
@@ -1704,6 +1716,22 @@ module Viscosity
           if (headtt) then              ! (see Haugen & Brandenburg 2004 eq. 7)
             call warning('calc_pencils_viscosity', 'viscous heating term '// &
               'is not implemented for lvisc_hyper3_mu_const_strict')
+          endif
+        endif
+        if (lfirst .and. ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
+      endif
+!
+!  A strict hyperviscosity, with the mixed-derivatives coded in deriv, and assessed
+!  on the fly. Much faster than the one above using the hypervisc_strict module
+!
+      if (lvisc_hyper3_mu_const_strict_otf) then
+        do i=1,3
+          p%fvisc(:,i)=p%fvisc(:,i)+nu_hyper3*p%rho1*(p%del6u_strict(:,i) + 1./3*p%del4graddivu(:,i))
+        enddo
+        if (lpencil(i_visc_heat)) then  ! Should be eps=2*mu*{del2[del2(S)]}^2
+          if (headtt) then              ! (see Haugen & Brandenburg 2004 eq. 7)
+            call warning('calc_pencils_viscosity', 'viscous heating term '// &
+              'is not implemented for lvisc_hyper3_mu_const_strict_otf')
           endif
         endif
         if (lfirst .and. ldt) p%diffus_total3=p%diffus_total3+nu_hyper3
