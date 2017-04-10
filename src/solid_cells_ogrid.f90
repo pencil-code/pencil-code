@@ -34,22 +34,18 @@ module Solid_Cells
   real :: cylinder_xpos=0., cylinder_ypos=0.        ! Set in start.in
   real :: cylinder_zpos=0.                          ! Set in start.in
   real :: skin_depth=0.                             ! Set in start.in
-  real :: init_uu=0., ampl_noise=0.                              ! Set in start.in
+  real :: init_uu=0., ampl_noise=0.                 ! Set in start.in
   character(len=labellen) :: initsolid_cells='cylinderstream_x'! Set in start.in
   real :: T0 ! Inlet temperature
   integer :: ncylinders=1,flow_dir=0, flow_dir_set
+  real, dimension(3) :: xyz0_ogrid, Lxyz_ogrid, xorigo_ogrid
 !  Boundary condition
   logical :: SBP=.true.
-
-  real, dimension(3) :: xyz0_ogrid, Lxyz_ogrid, xorigo_ogrid
-
 !  Fundamental grid parameters
   real :: r_ogrid=0.                                                 ! Set in start.in?
   character (len=labellen), dimension(3) :: grid_func_ogrid='linear' ! Set in start.in
   integer :: inter_stencil_len = 0                                ! set in start.in?
   integer, parameter :: nx_ogrid=nxgrid_ogrid/nprocx,ny_ogrid=nygrid_ogrid/nprocy,nz_ogrid=nzgrid_ogrid/nprocz
-
-
 !***************************************************
 ! Pencil case ogrid
   integer, parameter :: npencils_ogrid=29
@@ -84,7 +80,7 @@ module Solid_Cells
     real, dimension (nx_ogrid)     :: pp
     real, dimension (nx_ogrid)     :: ss
   endtype pencil_case_ogrid
-  
+!  
   integer :: i_og_x_mn    =1
   integer :: i_og_y_mn    =2
   integer :: i_og_z_mn    =3
@@ -684,36 +680,38 @@ module Solid_Cells
       r_int_inner=r_int_outer-3*dxmax
 !      
       ii=0
-      do k=n1_ogrid,n2_ogrid
-        do j=m1_ogrid,m2_ogrid
-          do i=l2_ogrid+1,l2_ogrid+nghost
-            xyz=(/ x_ogrid(i)*cos(y_ogrid(j))+xorigo_ogrid(1), &
-                    x_ogrid(i)*sin(y_ogrid(j))+xorigo_ogrid(2), &
-                    z_ogrid(k) /)
-            if(.not. this_proc_cartesian(xyz)) then
-              xyz_comm(ii,:)=xyz
-              ii=ii+1
-            endif
+        if(llast_proc_x) then
+          do k=n1_ogrid,n2_ogrid
+            do j=m1_ogrid,m2_ogrid
+              do i=l2_ogrid+1,l2_ogrid+nghost
+                xyz=(/ x_ogrid(i)*cos(y_ogrid(j))+xorigo_ogrid(1), &
+                        x_ogrid(i)*sin(y_ogrid(j))+xorigo_ogrid(2), &
+                        z_ogrid(k) /)
+                if(.not. this_proc_cartesian(xyz)) then
+                  ii=ii+1
+                  xyz_comm(ii,:)=xyz
+                endif
+              enddo
+            enddo
           enddo
-        enddo
-      enddo
+        endif
 ! 
-      ii=0
-      do k=n1,n2
-        do j=m1,m2
-          do i=l1,l2
-            xr=x(i)-xorigo_ogrid(1)
-            yr=y(j)-xorigo_ogrid(2)
-            rthz=(/ sqrt(xr**2+yr**2),atan2(yr,xr),z(k) /)
-            if((rthz(1)<=r_int_outer) .and. rthz(1)>=xyz0_ogrid(1)) then 
-              if(.not. this_proc_curvilinear(rthz)) then
-                rthz_comm(ii,:)=rthz
-                ii=ii+1
+        ii=0
+        do k=n1,n2
+          do j=m1,m2
+            do i=l1,l2
+              xr=x(i)-xorigo_ogrid(1)
+              yr=y(j)-xorigo_ogrid(2)
+              rthz=(/ sqrt(xr**2+yr**2),atan2(yr,xr),z(k) /)
+              if((rthz(1)<=r_int_outer) .and. rthz(1)>=xyz0_ogrid(1)) then 
+                if(.not. this_proc_curvilinear(rthz)) then
+                  ii=ii+1
+                  rthz_comm(ii,:)=rthz
+                endif
               endif
-            endif
+            enddo
           enddo
         enddo
-      enddo
 !
     endsubroutine initialize_comm_interpolate
 !***********************************************************************
@@ -736,16 +734,18 @@ module Solid_Cells
       r_int_outer=r_ogrid-2*inter_stencil_len*dxmax
       r_int_inner=r_int_outer-3*dxmax
 !      
-      do k=n1_ogrid,n2_ogrid
-        do j=m1_ogrid,m2_ogrid
-          do i=l2_ogrid+1,l2_ogrid+nghost
-            xyz=(/ x_ogrid(i)*cos(y_ogrid(j))+xorigo_ogrid(1), &
-                    x_ogrid(i)*sin(y_ogrid(j))+xorigo_ogrid(2), &
-                    z_ogrid(k) /)
-            !if(.not. this_proc_cartesian(xyz)) tot_comm_cart_to_curv=tot_comm_cart_to_curv+1
+      if(llast_proc_x) then
+        do k=n1_ogrid,n2_ogrid
+          do j=m1_ogrid,m2_ogrid
+            do i=l2_ogrid+1,l2_ogrid+nghost
+              xyz=(/ x_ogrid(i)*cos(y_ogrid(j))+xorigo_ogrid(1), &
+                      x_ogrid(i)*sin(y_ogrid(j))+xorigo_ogrid(2), &
+                      z_ogrid(k) /)
+              if(.not. this_proc_cartesian(xyz)) tot_comm_cart_to_curv=tot_comm_cart_to_curv+1
+            enddo
           enddo
         enddo
-      enddo
+      endif
 ! 
       do k=n1,n2
         do j=m1,m2
@@ -754,7 +754,7 @@ module Solid_Cells
             yr=y(j)-xorigo_ogrid(2)
             rthz=(/ sqrt(xr**2+yr**2),atan2(yr,xr),z(k) /)
             if((rthz(1)<=r_int_outer) .and. rthz(1)>=xyz0_ogrid(1)) then 
-              !if(.not. this_proc_curvilinear(rthz)) tot_comm_curv_to_cart=tot_comm_cart_to_curv+1
+              if(.not. this_proc_curvilinear(rthz)) tot_comm_curv_to_cart=tot_comm_cart_to_curv+1
             endif
           enddo
         enddo
@@ -762,8 +762,8 @@ module Solid_Cells
 !
       if(tot_comm_cart_to_curv>0.or.tot_comm_curv_to_cart>0) then
         print*, 'Communication needed for interpolation between grids'
-        print*, '# grid points from cartesian to curvilinear', tot_comm_cart_to_curv
-        print*, '# grid points from curvilinear to cartesian', tot_comm_curv_to_cart
+        print*, 'iproc,# grid points from cartesian to curvilinear',iproc, tot_comm_cart_to_curv
+        print*, 'iproc,# grid points from curvilinear to cartesian',iproc, tot_comm_curv_to_cart
       endif
 !
 !TODO: SHOULD PRINT GRIDS AND SEE OF THEY ACT LIKE EXPECTED WHEN PARALLEL!!!
@@ -775,7 +775,8 @@ module Solid_Cells
     character(len=16) :: xofile,yofile,xcfile,ycfile
     integer :: i,num
 
-    print*, 'iproc,x_og(l1_ogrid-1)-r_cyl,lfirst_proc_x',iproc,x_ogrid(l1_ogrid-1)-cylinder_radius,lfirst_proc_x
+    print*,'iproc,x_og(l1_ogrid-1)-r_cyl,lfirst_proc_x,llast_proc_x',iproc,x_ogrid(l1_ogrid-1)-cylinder_radius,&
+      lfirst_proc_x,llast_proc_x
 
     
     xofile='x_ogrid'
@@ -841,45 +842,15 @@ module Solid_Cells
       real, dimension(3), intent(in) :: rthz
 !
       this_proc_curvilinear=.true.
-      if(rthz(1)<x_ogrid(1)) then
+      if(rthz(1)<xyz0_ogrid(1)) then
         call fatal_error('this_proc_curvilinear','interpolation point is INSIDE the solid cylinder!')
-      elseif(rthz(1)>x_ogrid(mx_ogrid-1)) then
+      elseif(rthz(1)>r_ogrid) then
         call fatal_error('this_proc_curvilinear','interpolation point is OUTSIDE the curvilinear grid!')
       endif
       if(rthz(2)<y_ogrid(1).or.rthz(2)>y_ogrid(my_ogrid-1)) this_proc_curvilinear=.false.
       if(rthz(3)<z_ogrid(1).or.rthz(3)>z_ogrid(mz_ogrid-1)) this_proc_curvilinear=.false.
 !
     end function this_proc_curvilinear
-!***********************************************************************
-    subroutine find_drag_alt(c_dragx,c_dragy)
-!
-!  Find pressure and stress in the gridpoints at the cylinder surface
-!
-!  mar-27/Jorgen: Coded
-!
-      use Viscosity, only: getnu
-      use EquationOfState, only: cs20,gamma1
-!
-      real, intent(out) :: c_dragx,c_dragy
-      real :: C_p,C_f
-      real :: nu,norm
-      real, dimension(ny_ogrid) :: pres0,pres1
-      real, dimension(ny_ogrid) :: presx0,presx1,presy0,presy1
-      integer :: i,k
-!
-      call getnu(nu_input=nu)
-! 
-      do i=m1_ogrid,m2_ogrid
-        k=i-nghost
-        pres0(k) = -gamma1*f_ogrid(l1_ogrid,i,4,irho)*cs20
-        presx0(k) = pres0(k)*cos(y_ogrid(i))
-        presy0(k) = pres0(k)*sin(y_ogrid(i))
-      enddo
-!
-      norm=2./(1.0*1.0**2*(2*pi*cylinder_radius))
-      c_dragx=sum(presx0)*pi/(ny_ogrid*nz_ogrid)*norm
-      c_dragy=sum(presy0)*pi/(ny_ogrid*nz_ogrid)*norm
-    endsubroutine find_drag_alt
 !***********************************************************************
     subroutine find_drag(c_dragx,c_dragy)
 !
@@ -899,8 +870,7 @@ module Solid_Cells
       integer :: i
       call getnu(nu_input=nu)
 
-      !C_p=2*p_ogrid%pp(1)*0.5*(y_ogrid(m_ogrid+1)-y_ogrid(m_ogrid-1))/(2*xyz0_ogrid(1)*pi)!/(p_ogrid%rho(1)*init_uu**2)
-      F_p=-cylinder_radius*dy_ogrid*p_ogrid%pp(1)!/(p_ogrid%rho(1)*init_uu**2)
+      F_p=-cylinder_radius*dy_ogrid*p_ogrid%pp(1)
       F_f=cylinder_radius*dy_ogrid*nu*p_ogrid%rho(1)*p_ogrid%uij(1,2,1)
 !
       norm=2./(1.0*1.0**2*(2*pi*cylinder_radius))
@@ -908,101 +878,57 @@ module Solid_Cells
       c_dragy=c_dragy+(F_p+F_f)*sin(y_ogrid(m_ogrid))*norm
 !
     endsubroutine find_drag
-!!***********************************************************************
-!    subroutine dsolid_dt_integrate
-!!
-!!  Calculate drag- and lift-coefficients for solid cell objects
-!!  by integrating fluid force on object surface.
-!!
-!!  mar-2009/kragset: coded
-!!  okt-2009/kragset: updated to include multiple objects
-!!  nov-2010/kragset: updated to include spheres
-!!
-!      use General, only: safe_character_append
-!      use Mpicomm, only: mpireduce_sum, mpireduce_sum_int
-!!
-!      real    :: rhosum_all, c_dragx_all(nobjects), c_dragy_all(nobjects)
-!      real    :: c_dragz_all(nobjects), Nusselt_all(nobjects)
-!      real    :: c_dragx_p_all(nobjects), c_dragy_p_all(nobjects)
-!      real    :: c_dragz_p_all(nobjects)
-!      integer :: irhocount_all, iobj
-!      real    :: norm, refrho0
-!      character(len=100) :: numberstring
-!      character(len=500) :: solid_cell_drag
-!!
-!      if (ldiagnos) then
-!        if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0 &
-!            .or. idiag_c_dragz /= 0 .or. idiag_Nusselt /= 0 &
-!            .or. idiag_c_dragx_p /= 0 .or. idiag_c_dragy_p /= 0 &
-!            .or. idiag_c_dragz_p /= 0) then
-!!
-!!  Collect and sum rhosum, irhocount, c_dragx, c_dragz, and c_dragy.
-!          call mpireduce_sum(rhosum,rhosum_all)
-!          call mpireduce_sum_int(irhocount,irhocount_all)
-!          if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0 .or. &
-!              idiag_c_dragz /= 0 .or. idiag_c_dragx_p /= 0 .or. &
-!              idiag_c_dragy_p /= 0 .or. idiag_c_dragz_p /= 0) then
-!            call mpireduce_sum(c_dragx,c_dragx_all,nobjects)
-!            call mpireduce_sum(c_dragy,c_dragy_all,nobjects)
-!            call mpireduce_sum(c_dragz,c_dragz_all,nobjects)
-!            call mpireduce_sum(c_dragx_p,c_dragx_p_all,nobjects)
-!            call mpireduce_sum(c_dragy_p,c_dragy_p_all,nobjects)
-!            call mpireduce_sum(c_dragz_p,c_dragz_p_all,nobjects)
-!          endif
-!          if (idiag_Nusselt /= 0) call mpireduce_sum(Nusselt,Nusselt_all,nobjects)
-!!
-!          if (lroot) then
-!            refrho0 = rhosum_all / irhocount_all
-!!
-!!  Find drag and lift
-!!
-!            if (idiag_c_dragx /= 0 .or. idiag_c_dragy /= 0 .or. &
-!                idiag_c_dragz /= 0 .or. idiag_c_dragx_p /= 0 .or. &
-!                idiag_c_dragy_p /= 0 .or. idiag_c_dragz_p /= 0) then
-!!  Normalizing factor. Additional factors was included in subroutine dsolid_dt.
-!              norm = 2. / (refrho0*init_uu**2)
-!              c_dragx = c_dragx_all * norm
-!              c_dragy = c_dragy_all * norm
-!              c_dragz = c_dragz_all * norm
-!              c_dragx_p = c_dragx_p_all * norm
-!              c_dragy_p = c_dragy_p_all * norm
-!              c_dragz_p = c_dragz_p_all * norm
-!!
-!!  Write drag coefficients for all objects
-!!  (may need to expand solid_cell_drag to more
-!!  characters if large number of objects).
-!!
-!              open (unit=81,file='data/dragcoeffs.dat',position='APPEND')
-!              write (solid_cell_drag,84) it-1, t
-!              do iobj = 1,nobjects
-!                write (numberstring,82) c_dragx(iobj), c_dragy(iobj),c_dragz(iobj), &
-!                    c_dragx_p(iobj), c_dragy_p(iobj),c_dragz_p(iobj)
-!                call safe_character_append(solid_cell_drag,numberstring)
-!              enddo
-!              write (81,*) trim(solid_cell_drag)
-!              close (81)
-!84            format(1I8,1F15.8)
-!82            format(6F15.8)
-!            endif
-!!
-!!  Find Nusselt number
-!!
-!            if (idiag_Nusselt /= 0) then
-!              Nusselt = Nusselt_all
-!            endif
-!          endif
-!        endif
-!        if (idiag_c_dragx /= 0) fname(idiag_c_dragx) = c_dragx(1)
-!        if (idiag_c_dragy /= 0) fname(idiag_c_dragy) = c_dragy(1)
-!        if (idiag_c_dragz /= 0) fname(idiag_c_dragz) = c_dragz(1)
-!        if (idiag_c_dragx_p /= 0) fname(idiag_c_dragx_p) = c_dragx_p(1)
-!        if (idiag_c_dragy_p /= 0) fname(idiag_c_dragy_p) = c_dragy_p(1)
-!        if (idiag_c_dragz_p /= 0) fname(idiag_c_dragz_p) = c_dragz_p(1)
-!        if (idiag_Nusselt /= 0) fname(idiag_Nusselt) = Nusselt(1)
-!      endif
-!!
-!    endsubroutine dsolid_dt_integrate
-!!***********************************************************************
+!***********************************************************************
+    subroutine find_drag_coeff_pencils(c_dragx,c_dragy)
+!
+!  Compute the total fluid force upon the cylinder 
+!
+!  \vec{F}=\vec{F_p}+\vec{F_s}
+!
+!  \vec{F_p}=\int{-p_{r=0} d\vec{A}}\limit_A 
+!    dA=R*H*\Delta\theta
+!    d\vec{A}=dA\hat{r}
+!  \vec{F_s}=\int\vec{\tau}dA
+!    \tau=\nu\rho_{r=0}(\frac{du_{\theta}}{dr})_{r=0}
+!    \vec{\tau}=\tau\hat{\theta}
+!   
+!  F_x=\vec{F}.\hat{x}=F_p\cos{\theta}-F_s\sin{theta}
+!  F_y=\vec{F}.\hat{y}=F_p\sin{\theta}+F_s\cos{theta}
+!
+!  Normalization computed in find_drag_coeff routine.
+!
+!  10-apr-17/Jorgen: Coded
+!
+      use Viscosity, only: getnu
+!
+      real, intent(inout) :: c_dragx,c_dragy
+      real :: F_press,F_shear
+      real :: nu
+!
+      call getnu(nu_input=nu)
+!
+      F_press=-p_ogrid%pp(1)
+      F_shear=nu*p_ogrid%rho(1)*p_ogrid%uij(1,2,1)
+      c_dragx=c_dragx+(F_press*cos(y_ogrid(m_ogrid))-F_shear*sin(y_ogrid(m_ogrid)))
+      c_dragy=c_dragy+(F_press*sin(y_ogrid(m_ogrid))+F_shear*cos(y_ogrid(m_ogrid)))
+!
+    endsubroutine find_drag_coeff_pencils
+!***********************************************************************
+    subroutine find_drag_coeff(c_dragx,c_dragy)
+!
+!  Normalize the total force upon the cylinder, and compute the x-
+!  and y- drag/lift coefficients.
+!
+!  10-apr-17/Jorgen: Coded
+!
+      real, intent(inout) :: c_dragx,c_dragy
+      real :: norm
+!
+      norm=dy_ogrid/(1.*1.**2)
+      c_dragx=norm*c_dragx
+      c_dragy=norm*c_dragy
+!
+    endsubroutine find_drag_coeff
 !***********************************************************************
     subroutine dsolid_dt(f,df,p)
 !
@@ -1134,8 +1060,8 @@ module Solid_Cells
     !use Solid_Cells_Mpicomm, only: initiate_isendrcv_interpol_brdy, finalize_isendrcv_interpol_brdy
     real, dimension(mx,my,mz,mfarray), intent(in) :: f_cartesian
 
-      !call initiate_isendrcv_interpol_bdry(f_ogrid,f_cartesian)
-      !call finalize_isendrcv_interpol_bdry(f_ogrid,f_cartesian)
+      !call initiate_isendrcv_interpol_bdry(f_ogrid,f_cartesian,inter_stencil_len)
+      !call finalize_isendrcv_interpol_bdry(f_ogrid,f_cartesian,inter_stencil_len)
   endsubroutine communicate_interpol_bdry
 !***********************************************************************
   subroutine flow_cartesian_to_curvilinear(f_cartesian)
@@ -2475,7 +2401,7 @@ end subroutine print_solid
 !
 !  Change df according to the chosen physics modules.
 !
-        call pde_ogrid(df_ogrid)
+        call pde_ogrid(df_ogrid,c_dragx,c_dragy)
 !
         ds=ds+1.0
 !
@@ -2502,8 +2428,8 @@ end subroutine print_solid
       enddo
     enddo
 
-  If necessary (usually is for parallel runs), send information about f-array
-  to processors that need it to perform interpolation between the grids.
+!  If necessary (usually is for parallel runs), send information about f-array
+!  to processors that need it to perform interpolation between the grids.
 
     if(interpolation_comm) then
       call communicate_interpol_bdry(f_cartesian)
@@ -2526,10 +2452,10 @@ end subroutine print_solid
 !!TODO:Printing
 if(lroot) then
     iterator = iterator+1
-if(mod(iterator,100)==0) then
-    call print_ogrid(int(iterator/100))
-    call print_cgrid(int(iterator/100),f_cartesian)
-    call find_drag_alt(c_dragx,c_dragy)
+if(mod(iterator,1000)==0) then
+    call print_ogrid(int(iterator/1000))
+    call print_cgrid(int(iterator/1000),f_cartesian)
+    call find_drag_coeff(c_dragx,c_dragy)
     print*, c_dragx,c_dragy
 endif
 endif
@@ -2649,7 +2575,7 @@ endif
 
     endsubroutine print_cgrid
 !***********************************************************************
-    subroutine pde_ogrid(df)
+    subroutine pde_ogrid(df,c_dragx,c_dragy)
 !
 !  06-feb-17/Jorgen+Nils: Adapded from equ.f90
 !
@@ -2659,9 +2585,9 @@ endif
       integer :: nyz_ogrid
 !
       intent(out)    :: df
-    real :: c_dragx2,c_dragy2
-    c_dragx2=0.
-    c_dragy2=0.
+    real,intent(out) :: c_dragx,c_dragy
+    c_dragx=0.
+    c_dragy=0.
 !
 !  Print statements when they are first executed.
 !
@@ -2712,9 +2638,8 @@ endif
 !
         headtt=.false.
         !TODOTODO
-        !call find_drag(c_dragx2,c_dragy2)
+        call find_drag_coeff_pencils(c_dragx,c_dragy)
       enddo mn_loop
-      !print*, 'c_dragx,c_dragy',c_dragx2,c_dragy2
 !
 !  -------------------------------------------------------------
 !  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)
