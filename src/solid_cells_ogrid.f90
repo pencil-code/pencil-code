@@ -34,7 +34,7 @@ module Solid_Cells
   real :: cylinder_xpos=0., cylinder_ypos=0.        ! Set in start.in
   real :: cylinder_zpos=0.                          ! Set in start.in
   real :: skin_depth=0.                             ! Set in start.in
-  real :: init_uu=0., ampl_noise=0.                 ! Set in start.in
+  real :: init_uu=0., ampl_noise=0.
   character(len=labellen) :: initsolid_cells='cylinderstream_x'! Set in start.in
   real :: T0 ! Inlet temperature
   integer :: ncylinders=1,flow_dir=0, flow_dir_set
@@ -110,7 +110,7 @@ module Solid_Cells
   integer :: i_og_cs2     =27
   integer :: i_og_pp      =28
   integer :: i_og_ss      =29
-
+!
   character (len=15), parameter, dimension(npencils_ogrid) :: pencil_names_ogrid = &
     (/ 'x_mn          ', 'y_mn          ', 'z_mn          ', 'rcyl_mn       '  &
      , 'phi_mn        ', 'rcyl_mn1      ', 'fpres         ', 'fvisc         '  &
@@ -181,7 +181,7 @@ module Solid_Cells
   integer, dimension (my_ogrid,mz_ogrid) :: imn_array_ogrid
   ! For time-step
   real :: t_ogrid
-  logical :: lfirst_ogrid, llast_ogrid
+  logical :: llast_ogrid
 
 !  Pencils and f-array to be used for curvilinear grid computations
   type(pencil_case_ogrid) p_ogrid 
@@ -198,11 +198,15 @@ module Solid_Cells
   logical :: interpolation_comm=.false.
   real, dimension(:,:), allocatable :: xyz_comm
   real, dimension(:,:), allocatable :: rthz_comm
+!  Diagnostics for output
+  integer :: idiag_c_dragx=0
+  integer :: idiag_c_dragy=0
 !  Read start.in file
   namelist /solid_cells_init_pars/ &
       cylinder_temp, cylinder_radius, cylinder_xpos, ncylinders, &
       cylinder_ypos, cylinder_zpos, flow_dir_set, skin_depth, &
-      initsolid_cells, init_uu, r_ogrid, lset_flow_dir,ampl_noise
+      initsolid_cells, init_uu, r_ogrid, lset_flow_dir,ampl_noise, &
+      grid_func_ogrid, coeff_grid_o, xyz_star_ogrid
 
 !  Read run.in file
   namelist /solid_cells_run_pars/ &
@@ -269,13 +273,15 @@ module Solid_Cells
 ! Try to find flow direction
 !
       flow_dir = 0
-      if (fbcx(1,1) > 0) then; flow_dir = 1
+      if (fbcx(1,1) > 0)     then; flow_dir = 1
       elseif (fbcx(1,2) < 0) then; flow_dir = -1
       elseif (fbcy(2,1) > 0) then; flow_dir = 2
       elseif (fbcy(2,2) < 0) then; flow_dir = -2
       elseif (fbcz(3,1) > 0) then; flow_dir = 3
       elseif (fbcz(3,2) < 0) then; flow_dir = -3
       endif
+      print*, fbcx(:,:)
+      print*, fbcy(:,:)
       if (flow_dir /= 0) then
         if (lroot) then
           print*,'By using fbc[x,y,z] I found the flow direction to be in the ', &
@@ -298,6 +304,16 @@ module Solid_Cells
           call fatal_error('initialize_solid_cells', &
               'I was not able to determine the flow direction!')
         endif
+      endif
+!
+!  If velocity for initial potential flow is not set, use boundary condition to set this
+!
+      if(init_uu==0.) then
+        if(flow_dir==1)     then; init_uu=fbcx(1,1)
+        elseif(flow_dir==2) then; init_uu=fbcy(2,1)
+        elseif(flow_dir==3) then; init_uu=fbcz(3,1)
+        endif
+        print*, 'By using fbc[x,y,z] I set the initial velocity to ',init_uu
       endif
 !
 ! Find inlet temperature
@@ -325,6 +341,20 @@ module Solid_Cells
 !  Initialize overlapping grid
 !
       call initialize_grid_ogrid
+      if(lroot) then
+        if(.not.lequidist_ogrid(1)) then
+          print*, 'Non-linear grid in radial direction - dx_rcyl, dx_rogrid:', &
+              0.5*(xglobal_ogrid(nghost+1)-xglobal_ogrid(nghost-1)), &
+              0.5*(xglobal_ogrid(mxgrid_ogrid-nghost+1)-xglobal_ogrid(mxgrid_ogrid-nghost-1))
+          print*, 'Cartesian grid spacing - dx, dy, dz:', dx,dy,dz
+          print*, 'Timestep factor:', ceiling(dxmin/dxmin_ogrid)
+        endif
+        if(.not.lequidist_ogrid(2)) then
+          call fatal_error('initialize_solid_cells','non-linear grid in theta direction not allowed')
+        endif
+        if(.not.lequidist_ogrid(3))  print*, 'Non-linear grid in z-direction'
+      endif
+
 !
 !  Read data.
 !  Snapshot data are saved in the data subdirectory.
@@ -852,34 +882,7 @@ module Solid_Cells
 !
     end function this_proc_curvilinear
 !***********************************************************************
-    subroutine find_drag(c_dragx,c_dragy)
-!
-!  Find pressure and stress in the gridpoints at the cylinder surface
-!
-!  mar-27/Jorgen: Programmed
-!
-      use Viscosity, only: getnu
-      use EquationOfState, only: cs20,gamma1
-!
-      real, intent(inout) :: c_dragx,c_dragy
-      real :: F_p,F_f
-      real :: nu,dtheta,norm
-      real, dimension(ny_ogrid) :: pres0,pres1
-      real, dimension(ny_ogrid) :: presx0,presx1,presy0,presy1
-!
-      integer :: i
-      call getnu(nu_input=nu)
-
-      F_p=-cylinder_radius*dy_ogrid*p_ogrid%pp(1)
-      F_f=cylinder_radius*dy_ogrid*nu*p_ogrid%rho(1)*p_ogrid%uij(1,2,1)
-!
-      norm=2./(1.0*1.0**2*(2*pi*cylinder_radius))
-      c_dragx=c_dragx+(F_p+F_f)*cos(y_ogrid(m_ogrid))*norm
-      c_dragy=c_dragy+(F_p+F_f)*sin(y_ogrid(m_ogrid))*norm
-!
-    endsubroutine find_drag
-!***********************************************************************
-    subroutine find_drag_coeff_pencils(c_dragx,c_dragy)
+    subroutine drag_force_pencils(c_dragx,c_dragy)
 !
 !  Compute the total fluid force upon the cylinder 
 !
@@ -912,23 +915,35 @@ module Solid_Cells
       c_dragx=c_dragx+(F_press*cos(y_ogrid(m_ogrid))-F_shear*sin(y_ogrid(m_ogrid)))
       c_dragy=c_dragy+(F_press*sin(y_ogrid(m_ogrid))+F_shear*cos(y_ogrid(m_ogrid)))
 !
-    endsubroutine find_drag_coeff_pencils
+    endsubroutine drag_force_pencils
 !***********************************************************************
-    subroutine find_drag_coeff(c_dragx,c_dragy)
+    subroutine drag_coeffs(c_dragx,c_dragy)
 !
-!  Normalize the total force upon the cylinder, and compute the x-
-!  and y- drag/lift coefficients.
+!  Sum up the computed drag on root processor.
+!  Normalization done in the end of the computation.
+!  Use initial velocity in flow direction and initial density to compute
+!  drag coefficients. These should be equal to the inlet velocity. 
 !
-!  10-apr-17/Jorgen: Coded
+!  11-apr-17/Jorgen: Coded
 !
+      use Mpicomm, only: mpireduce_sum
       real, intent(inout) :: c_dragx,c_dragy
+      real :: c_dragx_all,c_dragy_all
       real :: norm
 !
-      norm=dy_ogrid/(1.*1.**2)
-      c_dragx=norm*c_dragx
-      c_dragy=norm*c_dragy
+      norm=dy_ogrid/(nzgrid_ogrid*rho0*init_uu**2)
 !
-    endsubroutine find_drag_coeff
+      call mpireduce_sum(c_dragx,c_dragx_all)
+      call mpireduce_sum(c_dragy,c_dragy_all)
+!
+      if(lroot) then
+        c_dragx=c_dragx_all*norm
+        c_dragy=c_dragy_all*norm
+        if (idiag_c_dragx /= 0) fname(idiag_c_dragx)=c_dragx
+        if (idiag_c_dragy /= 0) fname(idiag_c_dragy)=c_dragy
+      endif
+!
+    endsubroutine drag_coeffs
 !***********************************************************************
     subroutine dsolid_dt(f,df,p)
 !
@@ -950,12 +965,41 @@ module Solid_Cells
 !***********************************************************************
     subroutine rprint_solid_cells(lreset,lwrite)
 !
-! TODO: Write routine
+!  Reads and registers print parameters relevant for solid cells
 !
-      logical :: lreset
+!   mar-2009/kragset: coded
+!   nov-2010/kragset: generalized to include drag in z-direction
+!
+      use Diagnostics, only: parse_name
+!
+      integer :: iname
+      logical :: lreset, lwr
       logical, optional :: lwrite
 !
-    end subroutine rprint_solid_cells
+      lwr = .false.
+      if (present(lwrite)) lwr = lwrite
+!
+!  Reset everything in case of reset
+!
+      if (lreset) then
+        idiag_c_dragx = 0
+        idiag_c_dragy = 0
+      endif
+!
+!  check for those quantities that we want to evaluate online
+!
+      do iname = 1,nname
+        call parse_name(iname,cname(iname),cform(iname),'c_dragx',idiag_c_dragx)
+        call parse_name(iname,cname(iname),cform(iname),'c_dragy',idiag_c_dragy)
+      enddo
+!
+!  write column, idiag_XYZ, where our variable XYZ is stored
+!
+! TODO: Needed?
+      if (lwr) then
+      endif
+!
+    endsubroutine rprint_solid_cells
 !***********************************************************************
     subroutine update_solid_cells(f)
 !
@@ -1160,175 +1204,6 @@ module Solid_Cells
 !
   endsubroutine flow_curvilinear_to_cartesian
 !***********************************************************************
-  logical function linear_interpolate_ogrid_alt(ivar1,ivar2,rthz,gp,inear,lcheck)
-!
-!  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate on the ogrid
-!  using the linear interpolation formula
-!
-!    g(x,y,z) = A*x*y*z + B*x*y + C*x*z + D*y*z + E*x + F*y + G*z + H .
-!
-!  The coefficients are determined by the 8 grid points surrounding the
-!  interpolation point.
-!
-!  21-feb-17/Jorgen: Adapted from general.f90
-!
-    use Cdata
-!
-    integer :: ivar1, ivar2
-    real, dimension (3) :: rthz
-    real, dimension (ivar2-ivar1+1) :: gp
-    integer, dimension (3) :: inear
-!
-    real :: r1,r2,th1,th2,r,th
-    real, dimension(ivar2-ivar1+1) :: gr1,gr2,gp_alt
-    real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8
-    real :: rp0, thp0, zp0
-    real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
-    integer :: i, ix0, iy0, iz0
-    logical :: lfirstcall=.true.,lcheck
-!
-    intent(in)  :: rthz, ivar1, ivar2, lcheck
-    intent(out) :: gp
-!
-!  Determine index value of lowest lying corner point of grid box surrounding
-!  the interpolation point.
-!
-    linear_interpolate_ogrid_alt = .true.
-!
-    ix0=inear(1); iy0=inear(2); iz0=inear(3)
-    if ( (x_ogrid(ix0)>rthz(1)) .and. nxgrid_ogrid/=1) ix0=ix0-1
-    if ( (y_ogrid(iy0)>rthz(2)) .and. nygrid_ogrid/=1) iy0=iy0-1
-    if ( (z_ogrid(iz0)>rthz(3)) .and. nzgrid_ogrid/=1) iz0=iz0-1
-!
-!  Check if the grid point interval is really correct.
-!
-    if ((x_ogrid(ix0)<=rthz(1) .and. x_ogrid(ix0+1)>=rthz(1) .or. nxgrid_ogrid==1) .and. &
-        (y_ogrid(iy0)<=rthz(2) .and. y_ogrid(iy0+1)>=rthz(2) .or. nygrid_ogrid==1) .and. &
-        (z_ogrid(iz0)<=rthz(3) .and. z_ogrid(iz0+1)>=rthz(3) .or. nzgrid_ogrid==1)) then
-      ! Everything okay
-    else
-      print*, 'linear_interpolate_ogrid: Interpolation point does not ' // &
-          'lie within the calculated grid point interval.'
-      print*, 'iproc = ', iproc_world
-      print*, 'mx_ogrid, x_ogrid(1), x_ogrid(mx_ogrid) = ', mx_ogrid, x_ogrid(1), x_ogrid(mx_ogrid)
-      print*, 'my_ogrid, y_ogrid(1), y_ogrid(my_ogrid) = ', my_ogrid, y_ogrid(1), y_ogrid(my_ogrid)
-      print*, 'mz_ogrid, z_ogrid(1), z_ogrid(mz_ogrid) = ', mz_ogrid, z_ogrid(1), z_ogrid(mz_ogrid)
-      print*, 'ix0, iy0, iz0 = ', ix0, iy0, iz0
-      print*, 'rp, rp0, rp1 = ', rthz(1), x_ogrid(ix0), x_ogrid(ix0+1)
-      print*, 'thp, thp0, thp1 = ', rthz(2), y_ogrid(iy0), y_ogrid(iy0+1)
-      print*, 'zp, zp0, zp1 = ', rthz(3), z_ogrid(iz0), z_ogrid(iz0+1)
-      linear_interpolate_ogrid_alt = .false.
-      return
-    endif
-!
-!  Redefine the interpolation point in coordinates relative to lowest corner.
-!  Set it equal to 0 for dimensions having 1 grid points; this will make sure
-!  that the interpolation is bilinear for 2D grids.
-!
-    rp0=0; thp0=0; zp0=0
-    if (nxgrid/=1) rp0=rthz(1)-x_ogrid(ix0)
-    if (nygrid/=1) thp0=rthz(2)-y_ogrid(iy0)
-    if (nzgrid/=1) zp0=rthz(3)-z_ogrid(iz0)
-!
-!  Calculate derived grid spacing parameters needed for interpolation.
-!  For an equidistant grid we only need to do this at the first call.
-!
-    if (lequidist_ogrid(1)) then
-      if (lfirstcall) dx1=dx_1_ogrid(ix0) !1/dx
-    else
-      dx1=1/(x_ogrid(ix0+1)-x_ogrid(ix0))
-    endif
-!
-    if (lequidist_ogrid(2)) then
-      if (lfirstcall) dy1=dy_1_ogrid(iy0)
-    else
-      dy1=1/(y_ogrid(iy0+1)-y_ogrid(iy0))
-    endif
-!
-    if (lequidist_ogrid(3)) then
-      if (lfirstcall) dz1=dz_1_ogrid(iz0)
-    else
-      dz1=1/(z_ogrid(iz0+1)-z_ogrid(iz0))
-    endif
-!
-    if ( (.not. all(lequidist_ogrid)) .or. lfirstcall) then
-      dxdy1=dx1*dy1; dxdz1=dx1*dz1; dydz1=dy1*dz1
-      dxdydz1=dx1*dy1*dz1
-    endif
-!
-!  Function values at all corners.
-!
-    g1=f_ogrid(ix0  ,iy0  ,iz0  ,ivar1:ivar2)
-    g2=f_ogrid(ix0+1,iy0  ,iz0  ,ivar1:ivar2)
-    g3=f_ogrid(ix0  ,iy0+1,iz0  ,ivar1:ivar2)
-    g4=f_ogrid(ix0+1,iy0+1,iz0  ,ivar1:ivar2)
-    g5=f_ogrid(ix0  ,iy0  ,iz0+1,ivar1:ivar2)
-    g6=f_ogrid(ix0+1,iy0  ,iz0+1,ivar1:ivar2)
-    g7=f_ogrid(ix0  ,iy0+1,iz0+1,ivar1:ivar2)
-    g8=f_ogrid(ix0+1,iy0+1,iz0+1,ivar1:ivar2)
-!
-!  Interpolation formula.
-!
-    r1=x_ogrid(ix0)
-    r2=x_ogrid(ix0+1)
-    th1=y_ogrid(iy0)
-    th2=y_ogrid(iy0+1)
-    r=rthz(1)
-    th=rthz(2)
-    gr1 = ((r2-r)/(r2-r1))*g1+((r-r1)/(r2-r1))*g2
-    gr2 = ((r2-r)/(r2-r1))*g3+((r-r1)/(r2-r1))*g4
-    gp_alt =  ((th2-th)/(th2-th1))*gr1+((th-th1)/(th2-th1))*gr2
-!
-    gp = g1 + rp0*dx1*(-g1+g2) + thp0*dy1*(-g1+g3) + zp0*dz1*(-g1+g5) + &
-        rp0*thp0*dxdy1*(g1-g2-g3+g4) + rp0*zp0*dxdz1*(g1-g2-g5+g6) + &
-        thp0*zp0*dydz1*(g1-g3-g5+g7) + &
-        rp0*thp0*zp0*dxdydz1*(-g1+g2+g3-g4+g5-g6-g7+g8)
-!
-!  Do a reality check on the interpolation scheme.
-!
-    if (lcheck) then
-      do i=1,iuy
-          print*, 'linear_interpolate_ogrid: r, th', &
-              rthz(1), rthz(2)
-          print*, 'linear_interpolate_ogrid: r0, th0', &
-              x_ogrid(ix0), y_ogrid(iy0)
-          print*, 'linear_interpolate_ogrid: r1, th1', &
-              x_ogrid(ix0+1), y_ogrid(iy0+1)
-          print*, 'linear_interpolate_ogrid: i, gp(i)=', i, gp(i)
-          print*, 'linear_interpolate_ogrid: g1...g8=', &
-              g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
-            print*, ''
-            print*, 'ux,uy'
-            print*, gp(iux)*cos(rthz(2))-gp(iuy)*sin(rthz(2)),gp(iux)*sin(rthz(2))+gp(iuy)*cos(rthz(2))
-            print*, 'g1:ux,uy'
-            print*, g1(iux)*cos(y_ogrid(iy0))-g1(iuy)*sin(y_ogrid(iy0)),g1(iux)*sin(y_ogrid(iy0))+g1(iuy)*cos(y_ogrid(iy0))
-            print*, 'g2:ux,uy'
-            print*, g2(iux)*cos(y_ogrid(iy0))-g2(iuy)*sin(y_ogrid(iy0)),g2(iux)*sin(y_ogrid(iy0))+g2(iuy)*cos(y_ogrid(iy0))
-            print*, 'g3:ux,uy'
-            print*, g3(iux)*cos(y_ogrid(iy0+1))-g3(iuy)*sin(y_ogrid(iy0+1)),g3(iux)*sin(y_ogrid(iy0+1))+g3(iuy)*cos(y_ogrid(iy0+1))
-            print*, 'g4:ux,uy'
-            print*, g4(iux)*cos(y_ogrid(iy0+1))-g4(iuy)*sin(y_ogrid(iy0+1)),g4(iux)*sin(y_ogrid(iy0+1))+g4(iuy)*cos(y_ogrid(iy0+1))
-          print*, '------------------'
-        !endif
-        !if (gp(i)<min(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
-        !  print*, 'linear_interpolate_ogrid: interpolated value is smaller than'
-        !  print*, 'linear_interpolate_ogrid: a values at the corner points!'
-        !  print*, 'linear_interpolate_ogrid: xxp=', rthz
-        !  print*, 'linear_interpolate_ogrid: x0, y0, z0=', &
-        !      x_ogrid(ix0), y_ogrid(iy0), z_ogrid(iz0)
-        !  print*, 'linear_interpolate_ogrid: i, gp(i)=', i, gp(i)
-        !  print*, 'linear_interpolate_ogrid: g1...g8=', &
-        !      g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
-        !  print*, '------------------'
-        !endif
-      enddo
-    endif
-!
-    if (lfirstcall) lfirstcall=.false.
-!
-  endfunction linear_interpolate_ogrid_alt
-!***********************************************************************
-!***********************************************************************
   logical function linear_interpolate_ogrid(ivar1,ivar2,rthz,gp,inear,lcheck)
 !
 !  Interpolate the value of g to arbitrary (xp, yp, zp) coordinate on the ogrid
@@ -1478,9 +1353,6 @@ module Solid_Cells
 !
   endfunction linear_interpolate_ogrid
 !***********************************************************************
-subroutine compute_draglift()
-end subroutine compute_draglift
-!***********************************************************************
 subroutine print_solid()
 end subroutine print_solid
 !***********************************************************************
@@ -1606,11 +1478,7 @@ end subroutine print_solid
     real :: a,b,c
     integer :: i
 !
-!HEREHERE
-    !grid_func_ogrid(1)='sinh'
     lequidist_ogrid=(grid_func_ogrid=='linear')
-    !coeff_grid_o(1)=2.
-    !xyz_star_ogrid(1)=cylinder_radius
 !
 !  Abbreviations
 !
@@ -2350,7 +2218,6 @@ end subroutine print_solid
     integer :: j
     integer, save :: iterator=0
     real, dimension(3) :: alpha_ts_ogrid=0.,beta_ts_ogrid=0.,dt_beta_ts_ogrid=0.
-    real :: c_dragx,c_dragy
 !
 !  Coefficients for up to order 3.
 !
@@ -2389,9 +2256,8 @@ end subroutine print_solid
 !  Set up df and ds for each time sub.
 !
       do itsub=1,itorder
-        lfirst_ogrid=(itsub==1)
-        llast_ogrid=(itsub==itorder)
-        if (lfirst) then
+        llast_ogrid=(tstep_ogrid==timestep_factor).and.(itsub==itorder)
+        if (itsub==1) then
           df_ogrid=0.0
           ds=0.0
         else
@@ -2401,7 +2267,7 @@ end subroutine print_solid
 !
 !  Change df according to the chosen physics modules.
 !
-        call pde_ogrid(df_ogrid,c_dragx,c_dragy)
+        call pde_ogrid(df_ogrid)
 !
         ds=ds+1.0
 !
@@ -2452,11 +2318,9 @@ end subroutine print_solid
 !!TODO:Printing
 if(lroot) then
     iterator = iterator+1
-if(mod(iterator,1000)==0) then
-    call print_ogrid(int(iterator/1000))
-    call print_cgrid(int(iterator/1000),f_cartesian)
-    call find_drag_coeff(c_dragx,c_dragy)
-    print*, c_dragx,c_dragy
+if(mod(iterator,500)==0) then
+    call print_ogrid(int(iterator/500))
+    call print_cgrid(int(iterator/500),f_cartesian)
 endif
 endif
 
@@ -2575,7 +2439,7 @@ endif
 
     endsubroutine print_cgrid
 !***********************************************************************
-    subroutine pde_ogrid(df,c_dragx,c_dragy)
+    subroutine pde_ogrid(df)
 !
 !  06-feb-17/Jorgen+Nils: Adapded from equ.f90
 !
@@ -2585,13 +2449,9 @@ endif
       integer :: nyz_ogrid
 !
       intent(out)    :: df
-    real,intent(out) :: c_dragx,c_dragy
-    c_dragx=0.
-    c_dragy=0.
-!
-!  Print statements when they are first executed.
-!
-      headtt = (headt .and. lfirst_ogrid .and. lroot)
+      real :: c_dragx,c_dragy
+      c_dragx=0.
+      c_dragy=0.
 !
 !  Initiate communication and do boundary conditions.
 !
@@ -2634,18 +2494,23 @@ endif
         call dlnrho_dt_ogrid(df)
         call denergy_dt_ogrid(df)
 !
+!  Compute drag and lift coefficient, if this is the last sub-timestep
+!
+
+        if(llast_ogrid.and.lfirst_proc_x.and.((idiag_c_dragx/=0).or.(idiag_c_dragy/=0))) then
+          call drag_force_pencils(c_dragx,c_dragy)
+        endif
+!
 !  End of loops over m and n.
 !
-        headtt=.false.
-        !TODOTODO
-        call find_drag_coeff_pencils(c_dragx,c_dragy)
       enddo mn_loop
+!
+      if(llast_ogrid.and.((idiag_c_dragx/=0).or.(idiag_c_dragy/=0))) call drag_coeffs(c_dragx,c_dragy)
 !
 !  -------------------------------------------------------------
 !  NO CALLS MODIFYING DF BEYOND THIS POINT (APART FROM FREEZING)
 !  -------------------------------------------------------------
-!
-!  Freezing must be done after the full (m,n) loop, as df may be modified
+!  Frerzing must be done after the full (m,n) loop, as df may be modified
 !  outside of the considered pencil.
 !
 !  Freezing boundary conditions in x (radial direction)
@@ -2741,15 +2606,6 @@ endif
       elseif(lpencil_ogrid(i_og_del2u)) then
         call gij_etc_ogrid(f_ogrid,iuu,p_ogrid%uu,p_ogrid%uij,DEL2=p_ogrid%del2u)
       endif
-!
-!        if (lpenc_loc(i_graddivu)) then
-!          if (headtt.or.ldebug) print*,'calc_pencils_hydro: call gij_etc'
-!          call gij_etc(f,iuu,p%uu,p%uij,p%oij,GRADDIV=p%graddivu)
-!        endif
-!        if (lpenc_loc(i_del2u)) then
-!          call curl_mn(p%oij,p%curlo,p%oo)
-!          p%del2u=p%graddivu-p%curlo
-!        endif
 !
     endsubroutine calc_pencils_hydro_ogrid
 !***********************************************************************
