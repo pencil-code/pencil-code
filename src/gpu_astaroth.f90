@@ -67,7 +67,7 @@ contains
       if (lselfgravity) str='selfgravity'
       if (lsolid_cells) str='solid_cells'
       if (lspecial) str='special'
-      if (lviscosity) str='viscosity'
+      !if (lviscosity) str='viscosity'
       if (lpower_spectrum) str='power_spectrum'
       if (lparticles) str='particles'
 
