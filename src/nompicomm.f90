@@ -28,6 +28,7 @@ module Mpicomm
   interface mpirecv_int
     module procedure mpirecv_int_scl
     module procedure mpirecv_int_arr
+    module procedure mpirecv_int_arr2
   endinterface
 !
   interface mpisend_logical
@@ -54,6 +55,7 @@ module Mpicomm
   interface mpisend_int
     module procedure mpisend_int_scl
     module procedure mpisend_int_arr
+    module procedure mpisend_int_arr2
   endinterface
 !
   interface mpibcast
@@ -647,6 +649,20 @@ module Mpicomm
 !
     endsubroutine mpirecv_int_arr
 !***********************************************************************
+    subroutine mpirecv_int_arr2(bcast_array,nbcast_array,proc_src,tag_id)
+!
+!  Receive 2D integer array from other processor.
+!
+!  13-apr-17/Jorgen: Dummy routine made_real_arr2
+!
+      integer, dimension(2) :: nbcast_array
+      integer, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
+      integer :: proc_src, tag_id
+!
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_src, tag_id
+!
+    endsubroutine mpirecv_int_arr2
+!***********************************************************************
     subroutine mpisend_logical_scl(bcast_array,proc_rec,tag_id)
 !
       logical :: bcast_array
@@ -873,6 +889,20 @@ module Mpicomm
       if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_rec, tag_id, comm
 !
     endsubroutine mpisend_int_arr
+!***********************************************************************
+    subroutine mpisend_int_arr2(bcast_array,nbcast_array,proc_rec,tag_id)
+!
+!  Send 2d integer array to other processor.
+!
+!  13-apr-17/Jorgen: Dummy routine made_real_arr2
+!
+      integer, dimension(2) :: nbcast_array
+      integer, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
+      integer :: proc_rec, tag_id
+!
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_rec, tag_id
+!
+    endsubroutine mpisend_int_arr2
 !***********************************************************************
     subroutine mpibcast_logical_scl(lbcast_array,proc,comm)
 !
