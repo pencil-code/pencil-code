@@ -941,13 +941,13 @@ module Mpicomm
 !
     endsubroutine mpibcast_real_arr
 !***********************************************************************
-    subroutine mpibcast_real_arr2(bcast_array,nbcast_array,proc)
+    subroutine mpibcast_real_arr2(bcast_array,nbcast_array,proc,comm)
 !
       integer, dimension(2) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
 !
-      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc,comm
 !
     endsubroutine mpibcast_real_arr2
 !***********************************************************************

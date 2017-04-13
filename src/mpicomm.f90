@@ -3304,15 +3304,16 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !
     endsubroutine mpibcast_real_arr
 !***********************************************************************
-    subroutine mpibcast_real_arr2(bcast_array,nbcast_array,proc)
+    subroutine mpibcast_real_arr2(bcast_array,nbcast_array,proc,comm)
 !
 !  Communicate real array(:,:) to other processor.
 !
 !  25-feb-08/wlad: adapted
 !
+      use General, only: ioptest
       integer, dimension(2) :: nbcast_array
       real, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
-      integer, optional :: proc
+      integer, optional :: proc,comm
       integer :: ibcast_proc
 !
       integer :: num_elements
@@ -3327,7 +3328,7 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !
       num_elements = product(nbcast_array)
       call MPI_BCAST(bcast_array, num_elements, MPI_REAL, ibcast_proc, &
-                     MPI_COMM_GRID,mpierr)
+                     ioptest(comm,MPI_COMM_GRID),mpierr)
 !
     endsubroutine mpibcast_real_arr2
 !***********************************************************************
