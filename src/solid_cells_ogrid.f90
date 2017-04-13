@@ -125,10 +125,40 @@ module Solid_Cells
      , 'pp            ', 'ss            ' /)
   logical,dimension(npencils_ogrid):: lpencil_ogrid
 !***************************************************
+! DATA TYPE FOR INTERPOLATION AND INTERPOLATION STENCILS
+!!***************************************************
+!  type interpol_comm_metadata
+!    integer :: send_to_proc
+!    integer :: n_elements
+!    integer, dimension(:,:,:), allocatable :: indices
+!  endtype interpol_comm_metadata
+!!***************************************************
+  type interpol_grid_data
+    integer, dimension(3) :: i_xyz
+    integer, dimension(3) :: ind_global_neighbour
+    real, dimension(3)    :: xyz
+    real, dimension(8,mfarray) :: f_near_points
+    logical :: need_comm=.false.
+    integer :: from_proc
+  endtype interpol_grid_data
+  character(len=9) :: grid_interpolation='trilinear'
+  real, dimension(ncpus,3) :: xyz0_loc_all
+  real, dimension(ncpus,3) :: xyz1_loc_all
+  real, dimension(3) :: xyz0_loc_ogrid
+  real, dimension(3) :: xyz1_loc_ogrid
+  real, dimension(ncpus,3) :: xyz0_loc_all_ogrid
+  real, dimension(ncpus,3) :: xyz1_loc_all_ogrid
+!!***************************************************
+!  type interpol_data
+!    type(interpol_grid_data), dimension(:), allocatable :: int_gdata
+!    logical, dimension(:), allocatable :: need_comm
+!    integer, dimension(:), allocatable :: from_proc
+!  endtype interpol_data
+!!***************************************************
 
 
 ! PARAMETERS NECESSARY FOR GRID CONSTRUCTION 
-!  Global ogrid (TODO: NEEDED?)
+!  Global ogrid
   integer, parameter :: mxgrid_ogrid=nxgrid_ogrid+2*nghost
   integer, parameter :: mygrid_ogrid=nygrid_ogrid+2*nghost
   integer, parameter :: mzgrid_ogrid=nzgrid_ogrid+2*nghost
@@ -206,7 +236,7 @@ module Solid_Cells
       cylinder_temp, cylinder_radius, cylinder_xpos, ncylinders, &
       cylinder_ypos, cylinder_zpos, flow_dir_set, skin_depth, &
       initsolid_cells, init_uu, r_ogrid, lset_flow_dir,ampl_noise, &
-      grid_func_ogrid, coeff_grid_o, xyz_star_ogrid
+      grid_func_ogrid, coeff_grid_o, xyz_star_ogrid, grid_interpolation
 
 !  Read run.in file
   namelist /solid_cells_run_pars/ &
@@ -420,7 +450,9 @@ module Solid_Cells
 !  Check if it will be necessary to use communication between processors 
 !  to perform the interpolation between the overlapping grids.
 !
-      call initialize_comm_interpolate
+      call construct_serial_bdry_cartesian
+      call construct_serial_bdry_curv
+      call initialize_interpolate_points
 !
     end subroutine initialize_solid_cells
 !***********************************************************************
@@ -493,9 +525,7 @@ module Solid_Cells
           flow_r=(x(i)-xorigo_ogrid(1))*flowx+(y(j)-xorigo_ogrid(2))*flowy
           orth_r=(x(i)-xorigo_ogrid(1))*flowy+(y(j)-xorigo_ogrid(2))*flowx
           rr2 = flow_r**2+orth_r**2
-      !TODO: HEREHERE
           if (rr2 > a2) then
-          !if (rr2 > (r_ogrid-2*inter_stencil_len*dxmax)**2) then
             do cyl = 0,100
               if (cyl == 0) then
                 wall_smoothing = 1-exp(-(rr2-a2)/skin_depth**2)
@@ -675,14 +705,125 @@ module Solid_Cells
       endif
     endsubroutine initialize_eos
 !***********************************************************************
+    subroutine initialize_interpolate_points
+!
+! Build arrays of interpolation data.
+! Necessary to perform communications in an efficient manner.
+!
+! apr-17/Jorgen: Coded
+!
+      ! Should make some or all of this data global for module
+      type(interpol_grid_data), dimension(:), allocatable :: curvilinear_to_cartesian
+      type(interpol_grid_data), dimension(:), allocatable :: cartesian_to_curvilinear
+      integer :: n_point_curv=0
+      integer :: n_point_cart=0
+      real, dimension(3) :: xyz,rthz
+      real :: xr,yr
+!
+      real :: r_int_outer,r_int_inner
+      integer :: i,j,k,ii
+      r_int_inner=r_ogrid
+      r_int_inner=xyz0_ogrid(1)
+!
+!  Only implemented for trilinear interpolation between grids
+!
+      if(.not.grid_interpolation=='trilinear') then
+        call fatal_error('initialize_interpolate_points','only implemented for trilinear interpolation')
+      endif
+!
+!  Set up interpolation stencil and data for interpolation from cartesian
+!  to curvilinear grid
+!  Only done for processors at containing the end points of the radial values.
+!
+!  If interpolation point requires data from outside this processors domain,
+!  set need_comm=.true. and find the grid points and processor id for communication.
+!
+      if(llast_proc_x) then
+        n_point_curv=ny_ogrid*nz_ogrid*nghost
+        allocate(cartesian_to_curvilinear(n_point_curv))
+        cartesian_to_curvilinear%need_comm=.false.
+!
+        ii=0
+        do k=n1_ogrid,n2_ogrid
+          do j=m1_ogrid,m2_ogrid
+            do i=l2_ogrid+1,l2_ogrid+nghost
+              ii=ii+1
+              xyz=(/ x_ogrid(i)*cos(y_ogrid(j))+xorigo_ogrid(1), &
+                      x_ogrid(i)*sin(y_ogrid(j))+xorigo_ogrid(2), &
+                      z_ogrid(k) /)
+              cartesian_to_curvilinear(ii)%i_xyz = (/ i,j,k /)
+              cartesian_to_curvilinear(ii)%xyz = xyz
+              if(.not. this_proc_cartesian(xyz)) then
+                cartesian_to_curvilinear(ii)%need_comm = .true. 
+                call find_proc_cartesian(xyz,cartesian_to_curvilinear(ii)%from_proc, &
+                    cartesian_to_curvilinear(ii)%ind_global_neighbour)
+              else
+                call find_near_cart_ind_global(cartesian_to_curvilinear(ii)%ind_global_neighbour,xyz)
+              endif
+            enddo
+          enddo
+        enddo
+      endif
+!
+!  Set up interpolation stencil and data for interpolation from curvilinear
+!  to cartesian grid
+!  Here we do not know beforehand what points are needed, so we must iterate 
+!  through all points. Do this twice, once to set the size of the arrays of 
+!  interpolation data, and once to set the data values (after allocating arrays).
+!
+!  If interpolation point requires data from outside this processors domain,
+!  set need_comm=.true. and find the grid points and processor id for communication.
+!
+      do k=n1,n2
+        do j=m1,m2
+          do i=l1,l2
+            xr=x(i)-xorigo_ogrid(1)
+            yr=y(j)-xorigo_ogrid(2)
+            rthz(1)=sqrt(xr**2+yr**2)
+            if((rthz(1)<=r_int_outer) .and. rthz(1)>=r_int_inner) then 
+              n_point_cart=n_point_cart+1
+            endif
+          enddo
+        enddo
+      enddo
+      allocate(curvilinear_to_cartesian(n_point_cart))
+!
+      ii=0
+      do k=n1,n2
+        do j=m1,m2
+          do i=l1,l2
+            xr=x(i)-xorigo_ogrid(1)
+            yr=y(j)-xorigo_ogrid(2)
+            rthz=(/ sqrt(xr**2+yr**2),atan2(yr,xr),z(k) /)
+            if((rthz(1)<=r_int_outer) .and. rthz(1)>=r_int_inner) then 
+              ii=ii+1
+              curvilinear_to_cartesian(ii)%i_xyz = (/ i,j,k /)
+              curvilinear_to_cartesian(ii)%xyz = rthz
+              if(.not. this_proc_curvilinear(xyz)) then
+                curvilinear_to_cartesian(ii)%need_comm = .true. 
+                call find_proc_curvilinear(rthz,curvilinear_to_cartesian(ii)%from_proc, &
+                    curvilinear_to_cartesian(ii)%ind_global_neighbour)
+              else
+                call find_near_curv_ind_global(curvilinear_to_cartesian(ii)%ind_global_neighbour,rthz)
+              endif
+            endif
+          enddo
+        enddo
+      enddo
+!
+    endsubroutine initialize_interpolate_points
+!***********************************************************************
     subroutine initialize_comm_interpolate
 !
 !  Check if it will be necessary to use communication between processors 
 !  to perform the interpolation between the overlapping grids.
 !  Build arrays for communication if necessary.
+!  Similar loops are excecuted several times, but since this routine is 
+!  run once during initialization optimizing for CPU-time is not a priority.
 !
 !  06-apr-17/Jorgen: Coded
 !
+
       real, dimension (3) :: xyz
       real, dimension (3) :: rthz
       integer :: tot_comm_cart_to_curv
@@ -702,9 +843,6 @@ module Solid_Cells
       if(tot_comm_curv_to_cart>0) allocate(rthz_comm(tot_comm_curv_to_cart,3))
 !
 !  Find and save points that are needed from other processors
-!  Does some of the same work as comm_interpolate_necessary, 
-!  but this is only run once during initialization so memory 
-!  is prioritized rather than CPU-time.
 ! 
       r_int_outer=r_ogrid-2*inter_stencil_len*dxmax
       r_int_inner=r_int_outer-3*dxmax
@@ -854,9 +992,9 @@ module Solid_Cells
       real, dimension(3), intent(in) :: xyz
 !
       this_proc_cartesian=.true.
-      if(xyz(1)<x(1).or.xyz(1)>x(mx-1)) this_proc_cartesian=.false.
-      if(xyz(2)<y(1).or.xyz(2)>y(my-1)) this_proc_cartesian=.false.
-      if(xyz(3)<z(1).or.xyz(3)>z(mz-1)) this_proc_cartesian=.false.
+      if(xyz(1)<x(1).or.xyz(1)>x(mx)) this_proc_cartesian=.false.
+      if(xyz(2)<y(1).or.xyz(2)>y(my)) this_proc_cartesian=.false.
+      if(xyz(3)<z(1).or.xyz(3)>z(mz)) this_proc_cartesian=.false.
 !
     end function this_proc_cartesian
 !***********************************************************************
@@ -877,8 +1015,8 @@ module Solid_Cells
       elseif(rthz(1)>r_ogrid) then
         call fatal_error('this_proc_curvilinear','interpolation point is OUTSIDE the curvilinear grid!')
       endif
-      if(rthz(2)<y_ogrid(1).or.rthz(2)>y_ogrid(my_ogrid-1)) this_proc_curvilinear=.false.
-      if(rthz(3)<z_ogrid(1).or.rthz(3)>z_ogrid(mz_ogrid-1)) this_proc_curvilinear=.false.
+      if(rthz(2)<y_ogrid(1).or.rthz(2)>y_ogrid(my_ogrid)) this_proc_curvilinear=.false.
+      if(rthz(3)<z_ogrid(1).or.rthz(3)>z_ogrid(mz_ogrid)) this_proc_curvilinear=.false.
 !
     end function this_proc_curvilinear
 !***********************************************************************
@@ -1069,24 +1207,11 @@ module Solid_Cells
 !
   endsubroutine pencil_criteria_solid_cells
 !***********************************************************************
-  subroutine solid_cells_clean_up()
+  subroutine solid_cells_clean_up
 !
-!  Deallocate the variables allocated in solid_cells
+!  Dummy routine
 !
-!  7-oct-2010/dhruba: adeped from hydro_kinematic
-!  21-jul-2011/bing: fixed, only deallocate variable if allocted
-!
-    print*, 'Deallocating some solid_cells variables ...'
-!      if (allocated(fpnearestgrid)) deallocate(fpnearestgrid)
-!      if (allocated(c_dragx)) deallocate(c_dragx)
-!      if (allocated(c_dragy)) deallocate(c_dragy)
-!      if (allocated(c_dragz)) deallocate(c_dragz)
-!      if (allocated(c_dragx_p)) deallocate(c_dragx_p)
-!      if (allocated(c_dragy_p)) deallocate(c_dragy_p)
-!      if (allocated(c_dragz_p)) deallocate(c_dragz_p)
-!      if (allocated(Nusselt)) deallocate(Nusselt)
-    print*, '..Done.'
-!
+! TODO: Any arrays that should be deallucated?
   endsubroutine solid_cells_clean_up
 !***********************************************************************
   subroutine communicate_interpol_bdry(f_cartesian)
@@ -1099,7 +1224,7 @@ module Solid_Cells
 !  This gives a quite large communication overhead, but reduces the amount
 !  of extra work done by the root processor
 !  
-!  06-apr-17/Jorgen: Coded
+!  apr-17/Jorgen: Coded
 !  
     !use Solid_Cells_Mpicomm, only: initiate_isendrcv_interpol_brdy, finalize_isendrcv_interpol_brdy
     real, dimension(mx,my,mz,mfarray), intent(in) :: f_cartesian
@@ -1459,6 +1584,7 @@ end subroutine print_solid
 !
     use grid, only: grid_profile,find_star,calc_bound_coeffs
 
+    real :: Lx_og,Ly_og,Lz_og
     real :: x00,y00,z00
     real :: xi1lo,xi1up,g1lo,g1up
     real :: xi2lo,xi2up,g2lo,g2up
@@ -1482,22 +1608,19 @@ end subroutine print_solid
 !
 !  Abbreviations
 !
-    x0 = xyz0_ogrid(1)
-    y0 = xyz0_ogrid(2)
-    z0 = xyz0_ogrid(3)
-    Lx = Lxyz_ogrid(1)
-    Ly = Lxyz_ogrid(2)
-    Lz = Lxyz_ogrid(3)
+    Lx_og = Lxyz_ogrid(1)
+    Ly_og = Lxyz_ogrid(2)
+    Lz_og = Lxyz_ogrid(3)
 !
 !  Set the lower boundary and the grid size.
 !
-    x00 = x0
-    y00 = y0
-    z00 = z0
+    x00 = xyz0_ogrid(1)
+    y00 = xyz0_ogrid(2)
+    z00 = xyz0_ogrid(3)
 !
-    dx_ogrid = Lx / merge(nxgrid_ogrid, max(nxgrid_ogrid-1,1), .false.)
-    dy_ogrid = Ly / merge(nygrid_ogrid, max(nygrid_ogrid-1,1), .true.)
-    dz_ogrid = Lz / merge(nzgrid_ogrid, max(nzgrid_ogrid-1,1), lperi(3))
+    dx_ogrid = Lx_og / merge(nxgrid_ogrid, max(nxgrid_ogrid-1,1), .false.)
+    dy_ogrid = Ly_og / merge(nygrid_ogrid, max(nygrid_ogrid-1,1), .true.)
+    dz_ogrid = Lz_og / merge(nzgrid_ogrid, max(nzgrid_ogrid-1,1), lperi(3))
 !
 !  REMOVED OPTION
 !  Shift the lower boundary if requested, but only for periodic directions.
@@ -1561,18 +1684,18 @@ end subroutine print_solid
 !
       case ('linear','sinh')
         a=coeff_grid_o(1)*dx_ogrid
-        xi1star=find_star(a*xi1lo,a*xi1up,x00,x00+Lx,xyz_star_ogrid(1),grid_func_ogrid(1))/a
+        xi1star=find_star(a*xi1lo,a*xi1up,x00,x00+Lx_og,xyz_star_ogrid(1),grid_func_ogrid(1))/a
         call grid_profile(a*(xi1  -xi1star),grid_func_ogrid(1),g1,g1der1,g1der2)
         call grid_profile(a*(xi1lo-xi1star),grid_func_ogrid(1),g1lo)
         call grid_profile(a*(xi1up-xi1star),grid_func_ogrid(1),g1up)
 !
-        x_ogrid     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
-        xprim_ogrid =    Lx*(g1der1*a   )/(g1up-g1lo)
-        xprim2_ogrid=    Lx*(g1der2*a**2)/(g1up-g1lo)
+        x_ogrid     =x00+Lx_og*(g1  -  g1lo)/(g1up-g1lo)
+        xprim_ogrid =    Lx_og*(g1der1*a   )/(g1up-g1lo)
+        xprim2_ogrid=    Lx_og*(g1der2*a**2)/(g1up-g1lo)
 !
         ! Since lsolid_cells=True
         call grid_profile(a*(xi1proc-xi1star),grid_func_ogrid(1),g1proc)
-        g1proc=x00+Lx*(g1proc  -  g1lo)/(g1up-g1lo)
+        g1proc=x00+Lx_og*(g1proc  -  g1lo)/(g1up-g1lo)
 !
       case default
         call fatal_error('construct_grid', &
@@ -1608,18 +1731,18 @@ end subroutine print_solid
 !
       case ('linear')
         a=coeff_grid_o(2)*dy_ogrid
-        xi2star=find_star(a*xi2lo,a*xi2up,y00,y00+Ly,xyz_star_ogrid(2),grid_func_ogrid(2))/a
+        xi2star=find_star(a*xi2lo,a*xi2up,y00,y00+Ly_og,xyz_star_ogrid(2),grid_func_ogrid(2))/a
         call grid_profile(a*(xi2  -xi2star),grid_func_ogrid(2),g2,g2der1,g2der2)
         call grid_profile(a*(xi2lo-xi2star),grid_func_ogrid(2),g2lo)
         call grid_profile(a*(xi2up-xi2star),grid_func_ogrid(2),g2up)
 !
-        y_ogrid     =y00+Ly*(g2  -  g2lo)/(g2up-g2lo)
-        yprim_ogrid =    Ly*(g2der1*a   )/(g2up-g2lo)
-        yprim2_ogrid=    Ly*(g2der2*a**2)/(g2up-g2lo)
+        y_ogrid     =y00+Ly_og*(g2  -  g2lo)/(g2up-g2lo)
+        yprim_ogrid =    Ly_og*(g2der1*a   )/(g2up-g2lo)
+        yprim2_ogrid=    Ly_og*(g2der2*a**2)/(g2up-g2lo)
 !
         ! Since lsolid_cells=True
           call grid_profile(a*(xi2proc-xi2star),grid_func_ogrid(2),g2proc)
-          g2proc=y00+Ly*(g2proc  -  g2lo)/(g2up-g2lo)
+          g2proc=y00+Ly_og*(g2proc  -  g2lo)/(g2up-g2lo)
 !
       case default
         call fatal_error('construct_grid', &
@@ -1660,18 +1783,18 @@ end subroutine print_solid
 !
       case ('linear','sinh')
         a=coeff_grid_o(3)*dz_ogrid
-        xi3star=find_star(a*xi3lo,a*xi3up,z00,z00+Lz,xyz_star_ogrid(3),grid_func_ogrid(3))/a
+        xi3star=find_star(a*xi3lo,a*xi3up,z00,z00+Lz_og,xyz_star_ogrid(3),grid_func_ogrid(3))/a
         call grid_profile(a*(xi3  -xi3star),grid_func_ogrid(3),g3,g3der1,g3der2)
         call grid_profile(a*(xi3lo-xi3star),grid_func_ogrid(3),g3lo)
         call grid_profile(a*(xi3up-xi3star),grid_func_ogrid(3),g3up)
 !
-        z_ogrid     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
-        zprim_ogrid =    Lz*(g3der1*a   )/(g3up-g3lo)
-        zprim2_ogrid=    Lz*(g3der2*a**2)/(g3up-g3lo)
+        z_ogrid     =z00+Lz_og*(g3  -  g3lo)/(g3up-g3lo)
+        zprim_ogrid =    Lz_og*(g3der1*a   )/(g3up-g3lo)
+        zprim2_ogrid=    Lz_og*(g3der2*a**2)/(g3up-g3lo)
 !
         ! Since lsolid_cells is True
           call grid_profile(a*(xi3proc-xi3star),grid_func_ogrid(3),g3proc)
-          g3proc=z00+Lz*(g3proc-g3lo)/(g3up-g3lo)
+          g3proc=z00+Lz_og*(g3proc-g3lo)/(g3up-g3lo)
 !
       case default
         call fatal_error('construct_grid', &
@@ -1762,7 +1885,7 @@ end subroutine print_solid
     dxmin_ogrid=dxmin_x
 !
     if (dxmin_ogrid == 0) &
-      call fatal_error ("initialize_grid", "check Lx,Ly,Lz: is one of them 0?", .true.)
+      call fatal_error ("initialize_grid", "check Lx_og,Ly_og,Lz_og: is one of them 0?", .true.)
 !
     dxmax_ogrid = maxval( (/dxmax_x, dxmax_y, dxmax_z, epsilon(dx_ogrid)/), &
               MASK=((/nxgrid_ogrid, nygrid_ogrid, nzgrid_ogrid, 2/) > 1) )
@@ -2004,7 +2127,7 @@ end subroutine print_solid
 !
 !  31-jan-17/Jorgen: Adapted from construct_serial_arrays in grid.f90
 !
-    use Mpicomm!, only: mpisend_real,mpirecv_real,mpibcast_real, mpiallreduce_sum_int, MPI_COMM_WORLD
+    use Mpicomm, only: mpisend_real,mpirecv_real,mpibcast_real, mpiallreduce_sum_int, MPI_COMM_WORLD
 !
     real, dimension(nx_ogrid) :: xrecv, x1recv, x2recv
     real, dimension(ny_ogrid) :: yrecv, y1recv, y2recv
@@ -4106,6 +4229,289 @@ endif
 !
     endsubroutine gaunoise_ogrid
 !***********************************************************************
+    subroutine find_proc_cartesian(xyz,from_proc,ind_global)
+!
+!  Find the processor that stores the grid points, and return the processor
+!  id and the grid index of the bottom neighbouring point on a global grid.
+!  Necessary for interpolation between grids on parallel systems
+!
+!  13-apr-17/Jorgen: Coded
+!
+      real, dimension(3), intent(in) :: xyz
+      integer, dimension(3), intent(out) :: ind_global
+      integer, intent(out) :: from_proc
+      integer :: low_i_global,low_j_global,low_k_global
+      integer :: i
+      logical :: found_proc=.false.
+!
+      call find_near_cart_ind_global(ind_global,xyz)
+      do i=1,ncpus
+        if( ((xyz(1)>=xyz0_loc_all(i,1)).and.(xyz(1)<=xyz1_loc_all(i,1))) .and. &
+            ((xyz(2)>=xyz0_loc_all(i,2)).and.(xyz(2)<=xyz1_loc_all(i,2))) .and. &
+            ((xyz(3)>=xyz0_loc_all(i,3)).and.(xyz(3)<=xyz1_loc_all(i,3))) )  then
+            from_proc=i-1
+            found_proc=.true.
+            exit
+        endif
+      enddo
+      if(.not.found_proc) call fatal_error('find_proc_cartesian', &
+          'could not locate interpolation point on any processor!')
+!
+    endsubroutine find_proc_cartesian
+!***********************************************************************
+    subroutine find_proc_curvilinear(rthz,from_proc,ind_global)
+!
+!  Find the processor that stores the grid points, and return the processor
+!  id and the grid index of the bottom neighbouring point on a global grid.
+!  Necessary for interpolation between grids on parallel systems
+!
+!  13-apr-17/Jorgen: Coded
+!
+      real, dimension(3), intent(in) :: rthz
+      integer, dimension(3), intent(out) :: ind_global
+      integer, intent(out) :: from_proc
+      integer :: low_i_global,low_j_global,low_k_global
+      integer :: i
+      logical :: found_proc=.false.
+!
+      call find_near_curv_ind_global(ind_global,rthz)
+      do i=1,ncpus
+        if( ((rthz(1)>=xyz0_loc_all_ogrid(i,1)).and.(rthz(1)<=xyz1_loc_all_ogrid(i,1))) .and. &
+            ((rthz(2)>=xyz0_loc_all_ogrid(i,2)).and.(rthz(2)<=xyz1_loc_all_ogrid(i,2))) .and. &
+            ((rthz(3)>=xyz0_loc_all_ogrid(i,3)).and.(rthz(3)<=xyz1_loc_all_ogrid(i,3))) )  then
+            from_proc=i-1
+            found_proc=.true.
+            exit
+        endif
+      enddo
+      if(.not.found_proc) call fatal_error('find_proc_curvilinear', &
+          'could not locate interpolation point on any processor!')
+!
+    endsubroutine find_proc_curvilinear
+!***********************************************************************
+    subroutine construct_serial_bdry_cartesian
+!
+!  Build arrays containing cartesian corner values of all processors
+!  The arrays xyz0_loc_all and xyz1_loc_all are accessed by
+!  (iproc+1,[1,2,3]), where [1,2,3] is [x,y,z] corner.
+!  Need to use iproc+1 instead of iproc to avoid accessing zeroth element.
+!
+!  13-apr-17/Jorgen: Coded
+!
+      use Mpicomm, only: mpisend_int, mpisend_real, mpirecv_int, &
+                         mpirecv_real, mpibcast_real, MPI_COMM_WORLD
+      real, dimension(3) :: xyz0_loc_recv
+      real, dimension(3) :: xyz1_loc_recv
+      integer, dimension(2) :: nbcast=(/ ncpus,3 /)
+      integer :: iproc_recv,j
+!
+      if (iproc/=root) then
+!
+!  All processors send their array values to the root.
+!
+        call mpisend_int(iproc,root,990)
+        call mpisend_real(xyz0_loc,3,root,991)
+        call mpisend_real(xyz1_loc,3,root,992)
+      else
+!
+!  The root processor, in turn, receives the data from the others
+!
+        do j=0,ncpus-1
+        !avoid send-to-self
+          if (j/=root) then
+            call mpirecv_integer(iproc_recv,j,990)
+            call mpirecv_real(xyz0_loc_recv,3,iproc_recv,991)
+            call mpirecv_real(xyz1_loc_recv,3,iproc_recv,992)
+!
+            xyz0_loc_all(iproc_recv+1,:)=xyz0_loc_recv
+            xyz1_loc_all(iproc_recv+1,:)=xyz1_loc_recv
+          else
+!  The root just copies its value to the serial array
+            xyz0_loc_all(root+1,:)=xyz0_loc
+            xyz1_loc_all(root+1,:)=xyz1_loc
+          endif
+        enddo
+      endif
+!
+!  Serial array constructed. Broadcast the result. 
+!
+      call mpibcast_real(xyz0_loc_all,nbcast,comm=MPI_COMM_WORLD)
+      call mpibcast_real(xyz1_loc_all,nbcast,comm=MPI_COMM_WORLD)
+    endsubroutine construct_serial_bdry_cartesian
+!***********************************************************************
+    subroutine construct_serial_bdry_curv
+!
+!  Build arrays containing curvilinear corner values of all processors
+!  The arrays xyz0_loc_all and xyz1_loc_all are accessed by
+!  (iproc+1,[1,2,3]), where [1,2,3] is [x,y,z] corner.
+!  Need to use iproc+1 instead of iproc to avoid accessing zeroth element.
+!
+!  Unlike the cartesian version of this, we need to first construct the
+!  local arrays xyz0_loc_ogrid and xyz1_loc_ogrid. This is done in
+!  start.in/run.in for the cartesian grid.
+!
+!  13-apr-17/Jorgen: Coded
+!
+      use Mpicomm, only: mpisend_int, mpisend_real, mpirecv_int, &
+                         mpirecv_real, mpibcast_real, MPI_COMM_WORLD
+      real, dimension(3) :: xyz0_loc_recv_ogrid
+      real, dimension(3) :: xyz1_loc_recv_ogrid
+      real, dimension(3) :: Lxyz_loc_ogrid
+      integer, dimension(2) :: nbcast=(/ ncpus,3 /)
+      integer :: iproc_recv,j
+!
+!  Constructing local arrays, with code copied from run.f90
+!  Size of box at local processor. The if-statement is for
+!  backward compatibility.
+!
+      if (lequidist_ogrid(1)) then
+        Lxyz_loc_ogrid(1) = Lxyz_ogrid(1)/nprocx
+        xyz0_loc_ogrid(1) = xyz0_ogrid(1)+ipx*Lxyz_loc_ogrid(1)
+        xyz1_loc_ogrid(1) = xyz0_loc_ogrid(1)+Lxyz_loc_ogrid(1)
+      else
+!
+!  In the equidistant grid, the processor boundaries (xyz[01]_loc) do NOT
+!  coincide with the l[mn]1[2] points. Also, xyz0_loc[ipx+1]=xyz1_loc[ipx], i.e.,
+!  the inner boundary of one is exactly the outer boundary of the other. Reproduce
+!  this behavior also for non-equidistant grids.
+!
+        if (ipx==0) then
+          xyz0_loc_ogrid(1) = x_ogrid(l1_ogrid)
+        else
+          xyz0_loc_ogrid(1) = x_ogrid(l1_ogrid) - .5/dx_1_ogrid(l1_ogrid)
+        endif
+        if (ipx==nprocx-1) then
+          xyz1_loc_ogrid(1) = x_ogrid(l2_ogrid)
+        else
+          xyz1_loc_ogrid(1) = x_ogrid(l2_ogrid+1) - .5/dx_1_ogrid(l2_ogrid+1)
+        endif
+        Lxyz_loc_ogrid(1) = xyz1_loc_ogrid(1) - xyz0_loc_ogrid(1)
+      endif
+!
+      if (lequidist_ogrid(2)) then
+        Lxyz_loc_ogrid(2) = Lxyz_ogrid(2)/nprocy
+        xyz0_loc_ogrid(2) = xyz0_ogrid(2)+ipy*Lxyz_loc_ogrid(2)
+        xyz1_loc_ogrid(2) = xyz0_loc_ogrid(2)+Lxyz_loc_ogrid(2)
+      else
+        if (ipy==0) then
+          xyz0_loc_ogrid(2) = y_ogrid(m1_ogrid)
+        else
+          xyz0_loc_ogrid(2) = y_ogrid(m1_ogrid) - .5/dy_1_ogrid(m1_ogrid)
+        endif
+        if (ipy==nprocy-1) then
+          xyz1_loc_ogrid(2) = y_ogrid(m2_ogrid)
+        else
+          xyz1_loc_ogrid(2) = y_ogrid(m2_ogrid+1) - .5/dy_1_ogrid(m2_ogrid+1)
+        endif
+        Lxyz_loc_ogrid(2) = xyz1_loc_ogrid(2) - xyz0_loc_ogrid(2)
+      endif
+!
+      if (lequidist_ogrid(3)) then 
+        Lxyz_loc_ogrid(3) = Lxyz_ogrid(3)/nprocz
+        xyz0_loc_ogrid(3) = xyz0_ogrid(3)+ipz*Lxyz_loc_ogrid(3)
+        xyz1_loc_ogrid(3) = xyz0_loc_ogrid(3)+Lxyz_loc_ogrid(3)
+      else
+        if (ipz==0) then
+          xyz0_loc_ogrid(3) = z_ogrid(n1_ogrid) 
+        else
+          xyz0_loc_ogrid(3) = z_ogrid(n1_ogrid) - .5/dz_1_ogrid(n1_ogrid)
+        endif
+        if (ipz==nprocz-1) then
+          xyz1_loc_ogrid(3) = z_ogrid(n2_ogrid)
+        else
+          xyz1_loc_ogrid(3) = z_ogrid(n2_ogrid+1) - .5/dz_1_ogrid(n2_ogrid+1)
+        endif
+        Lxyz_loc_ogrid(3) = xyz1_loc_ogrid(3) - xyz0_loc_ogrid(3)
+      endif
+!
+!  Communicate arrays and generate global arrays
+!
+      if (iproc/=root) then
+!
+!  All processors send their array values to the root.
+!
+        call mpisend_int(iproc,root,880)
+        call mpisend_real(xyz0_loc_ogrid,3,root,881)
+        call mpisend_real(xyz1_loc_ogrid,3,root,882)
+      else
+!
+!  The root processor, in turn, receives the data from the others
+!
+        do j=0,ncpus-1
+        !avoid send-to-self
+          if (j/=root) then
+            call mpirecv_int(iproc_recv,j,880)
+            call mpirecv_real(xyz0_loc_recv_ogrid,3,iproc_recv,881)
+            call mpirecv_real(xyz1_loc_recv_ogrid,3,iproc_recv,882)
+!
+            xyz0_loc_all_ogrid(iproc_recv+1,:)=xyz0_loc_recv_ogrid
+            xyz1_loc_all_ogrid(iproc_recv+1,:)=xyz1_loc_recv_ogrid
+          else
+!  The root just copies its value to the serial array
+            xyz0_loc_all_ogrid(root+1,:)=xyz0_loc_ogrid
+            xyz1_loc_all_ogrid(root+1,:)=xyz1_loc_ogrid
+          endif
+        enddo
+      endif
+!
+!  Serial array constructed. Broadcast the result. 
+!
+      call mpibcast_real(xyz0_loc_all_ogrid,nbcast,comm=MPI_COMM_WORLD)
+      call mpibcast_real(xyz1_loc_all_ogrid,nbcast,comm=MPI_COMM_WORLD)
+    endsubroutine construct_serial_bdry_curv
+!***********************************************************************
+    subroutine find_near_cartesian(xyz,xyz_neighbours)
+!
+!  Find the grid point values of all neighbouring points on cartesian mesh
+!  Return array containing a cube with element 1 in the bottom left corner
+!  (low z-plane) and element 8 in the top right corner (top z-plane)
+!
+!  12-apr-17/Jorgen: Coded
+!
+      real, dimension(3), intent(in)    :: xyz
+      real, dimension(8,3), intent(out)  :: xyz_neighbours
+      integer :: lower_i, upper_i, lower_j, upper_j, lower_k, upper_k
+      integer :: i,j,k,ii=0
+!
+      call find_near_cartesian_indices(lower_i,upper_i,lower_j,upper_j, &
+        lower_k,upper_k,xyz)
+!
+      do i=lower_i,upper_i
+        do j=lower_j,upper_j
+          do k=lower_k,upper_k
+            ii=ii+1
+            xyz_neighbours(ii,:)= (/ x(i),y(j),z(k) /)
+          enddo
+        enddo
+      enddo
+    endsubroutine find_near_cartesian
+!***********************************************************************
+    subroutine find_near_curvilinear(rthz,rthz_neighbours)
+!
+!  Find the grid point values of all neighbouring points on curvilinear mesh.
+!  Return array containing a (curvilinear) cube with element 1 in the bottom left corner
+!  (low z-plane) and element 8 in the top right corner (top z-plane)
+!
+!  12-apr-17/Jorgen: Coded
+!
+      real, dimension(3), intent(in)    :: rthz
+      real, dimension(8,3), intent(out)  :: rthz_neighbours
+      integer :: lower_i, upper_i, lower_j, upper_j, lower_k, upper_k
+      integer :: i,j,k,ii=0
+!
+      call find_near_curvilinear_indices(lower_i,upper_i,lower_j,upper_j, &
+        lower_k,upper_k,rthz)
+!
+      do i=lower_i,upper_i
+        do j=lower_j,upper_j
+          do k=lower_k,upper_k
+            ii=ii+1
+            rthz_neighbours(ii,:)= (/ x_ogrid(i),y_ogrid(j),z_ogrid(k) /)
+          enddo
+        enddo
+      enddo
+    endsubroutine find_near_curvilinear
+!***********************************************************************
     subroutine find_near_cartesian_indices(lower_i,upper_i,lower_j,upper_j, &
         lower_k,upper_k,xyz)
 !
@@ -4117,7 +4523,7 @@ endif
 !
       lower_i = 0
       upper_i = 0
-      do ii = 1,mx
+      do ii = 2,mx
         if (x(ii) > xyz(1)) then
           lower_i = ii-1
           upper_i = ii
@@ -4127,7 +4533,7 @@ endif
 !
       lower_j = 0
       upper_j = 0
-      do jj = 1,my
+      do jj = 2,my
         if (y(jj) > xyz(2)) then
           lower_j = jj-1
           upper_j = jj
@@ -4141,7 +4547,7 @@ endif
       else
         lower_k = 0
         upper_k = 0
-        do kk = 1,mz
+        do kk = 2,mz
           if (z(kk) > xyz(3)) then
             lower_k = kk-1
             upper_k = kk
@@ -4151,6 +4557,45 @@ endif
       endif
 !
     endsubroutine find_near_cartesian_indices
+!***********************************************************************
+    subroutine find_near_cart_ind_global(lower_indices,xyz)
+!
+!  Find i, j and k indices for lower neighbouring grid point on global grid
+!
+!  13-apr-17/Jorgen: Adapted from find_near_cartesian_indices
+!
+      integer :: ii, jj, kk
+      integer, dimension(3), intent(out) :: lower_indices 
+      real, dimension(3), intent(in)  :: xyz
+!
+!
+      lower_indices = 0
+      do ii = 1+nghost,mxgrid-nghost
+        if (xglobal(ii) > xyz(1)) then
+          lower_indices(1) = ii-1
+          exit
+        endif
+      enddo
+!
+      do jj = 1+nghost,mygrid-nghost
+        if (yglobal(jj) > xyz(2)) then
+          lower_indices(2) = jj-1
+          exit
+        endif
+      enddo
+!
+      if (nzgrid == 1) then
+        lower_indices(3) = n1
+      else
+        do kk = 1+nghost,mzgrid-nghost
+          if (zglobal(kk) > xyz(3)) then
+            lower_indices(3) = kk-1
+            exit
+          endif
+        enddo
+      endif
+!
+    endsubroutine find_near_cart_ind_global
 !***********************************************************************
     subroutine find_near_curvilinear_indices(lower_i,upper_i,lower_j,upper_j, &
         lower_k,upper_k,rthz)
@@ -4163,7 +4608,7 @@ endif
 !
       lower_i = 0
       upper_i = 0
-      do ii = 1,mx_ogrid
+      do ii = 2,mx_ogrid
         if (x_ogrid(ii) > rthz(1)) then
           lower_i = ii-1
           upper_i = ii
@@ -4173,7 +4618,7 @@ endif
 !
       lower_j = 0
       upper_j = 0
-      do jj = 1,my_ogrid
+      do jj = 2,my_ogrid
         if (y_ogrid(jj) > rthz(2)) then
           lower_j = jj-1
           upper_j = jj
@@ -4187,7 +4632,7 @@ endif
       else
         lower_k = 0
         upper_k = 0
-        do kk = 1,mz_ogrid
+        do kk = 2,mz_ogrid
           if (z_ogrid(kk) > rthz(3)) then
             lower_k = kk-1
             upper_k = kk
@@ -4197,6 +4642,44 @@ endif
       endif
 !
     endsubroutine find_near_curvilinear_indices
+!***********************************************************************
+    subroutine find_near_curv_ind_global(lower_indices,rthz)
+!
+!  Find i, j and k indices for lower neighbouring grid point on global grid
+!
+!  13-apr-17/Jorgen: Adapted from find_near_curvilinear_indices
+!
+      integer :: ii, jj, kk
+      integer, dimension(3), intent(out) :: lower_indices
+      real, dimension(3), intent(in) :: rthz
+!
+      lower_indices = 0
+      do ii = 1+nghost,mxgrid_ogrid-nghost
+        if (xglobal_ogrid(ii) > rthz(1)) then
+          lower_indices(1) = ii-1
+          exit
+        endif
+      enddo
+!
+      do jj = 1+nghost,mygrid_ogrid-nghost
+        if (yglobal_ogrid(jj) > rthz(2)) then
+          lower_indices(2) = jj-1
+          exit
+        endif
+      enddo
+!
+      if (nzgrid == 1) then
+        lower_indices(3) = n1
+      else
+        do kk = 1+nghost,mzgrid_ogrid-nghost
+          if (zglobal_ogrid(kk) > rthz(3)) then
+            lower_indices(3) = kk-1
+            exit
+          endif
+        enddo
+      endif
+!
+    endsubroutine find_near_curv_ind_global
 !***********************************************************************
     subroutine wsnap_ogrid(chsnap,enum,flist)
 !
