@@ -270,7 +270,10 @@ class DataCube(object):
                 ntot=dim.mvar*dim.mx*dim.my*dim.mz
             with open(filename,'rb') as f:
                 data = np.fromfile(f, dtype=precision, count=ntot)
-                f.seek(4+ntot*8)
+                if dim.precision == 'D':
+                    f.seek(4+ntot*8)
+                else:
+                    f.seek(4+ntot*4)
                 raw_etc = np.fromfile(f, dtype=precision)
             if (param.lwrite_2d):
                 if (dim.ny == 1):
