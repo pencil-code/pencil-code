@@ -169,14 +169,16 @@ module Io
         if (ny == 1) then
           local_size(2) = mz
           subsize(2) = nz
-          if (lfirst_proc_z .or. llast_proc_z) subsize(2) = subsize(2) + nghost
+          if (lfirst_proc_z) subsize(2) = subsize(2) + nghost
+          if (llast_proc_z) subsize(2) = subsize(2) + nghost
           if (lfirst_proc_z) local_start(2) = local_start(2) - nghost
           global_size(2) = mzgrid
           global_start(2) = ipz*nz + local_start(2)
         else
           local_size(2) = my
           subsize(2) = ny
-          if (lfirst_proc_y .or. llast_proc_y) subsize(2) = subsize(2) + nghost
+          if (lfirst_proc_y) subsize(2) = subsize(2) + nghost
+          if (llast_proc_y) subsize(2) = subsize(2) + nghost
           if (lfirst_proc_y) local_start(2) = local_start(2) - nghost
           global_size(2) = mygrid
           global_start(2) = ipy*ny + local_start(2)
