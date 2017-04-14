@@ -267,7 +267,7 @@ class DataCube(object):
                 else:
                     ntot=dim.mvar*dim.mx*dim.my
             else:
-                dim.mvar*dim.mx*dim.my*dim.mz
+                ntot=dim.mvar*dim.mx*dim.my*dim.mz
             with open(filename,'rb') as f:
                 data = np.fromfile(f, dtype=precision, count=ntot)
                 f.seek(4+ntot*8)
