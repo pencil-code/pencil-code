@@ -150,113 +150,142 @@ class DataCube(object):
         x = np.zeros(dim.mx, dtype=precision)
         y = np.zeros(dim.my, dtype=precision)
         z = np.zeros(dim.mz, dtype=precision)
-        for directory in procdirs:
 
-            proc = int(directory[4:])
-            procdim = read_dim(datadir,proc,down=ldownsampled)
-            if (not quiet):
-                #print "reading data from processor %i of %i ..." \ # Python 2
-                      #% (proc, len(procdirs)) # Python 2
-                print("reading data from processor {0} of {1} ...".format(proc, len(procdirs)))
+        if (param.io_strategy != 'MPI-IO'):
+            for directory in procdirs:
 
-            mxloc = procdim.mx
-            myloc = procdim.my
-            mzloc = procdim.mz
+                proc = int(directory[4:])
+                procdim = read_dim(datadir,proc,down=ldownsampled)
+                if (not quiet):
+                    #print "reading data from processor %i of %i ..." \ # Python 2
+                          #% (proc, len(procdirs)) # Python 2
+                    print("reading data from processor {0} of {1} ...".format(proc, len(procdirs)))
 
-            #read data
-            filename = os.path.join(datadir,directory,varfile)
-            infile = npfile(filename, endian=format)
-            if (not run2D):
-                f_loc = infile.fort_read(precision,
-                                         shape=(-1, mzloc, myloc, mxloc))
-            else:
-                if dim.ny == 1:
-                    f_loc = infile.fort_read(precision, shape=(-1, mzloc, mxloc))
-                else:
-                    f_loc = infile.fort_read(precision, shape=(-1, myloc, mxloc))
-            raw_etc = infile.fort_read(precision)
-            infile.close()
+                mxloc = procdim.mx
+                myloc = procdim.my
+                mzloc = procdim.mz
 
-            t = raw_etc[0]
-            x_loc = raw_etc[1:mxloc+1]
-            y_loc = raw_etc[mxloc+1:mxloc+myloc+1]
-            z_loc = raw_etc[mxloc+myloc+1:mxloc+myloc+mzloc+1]
-            if (param.lshear):
-                shear_offset = 1
-                deltay = raw_etc[-1]
-            else:
-                shear_offset = 0
-
-            dx = raw_etc[-3-shear_offset]
-            dy = raw_etc[-2-shear_offset]
-            dz = raw_etc[-1-shear_offset]
-
-            if len(procdirs) > 1:
-                # Calculate where the local processor will go in
-                # the global array.
-
-                # Don't overwrite ghost zones of processor to the left (and
-                # accordingly in y and z direction--makes a difference on the
-                # diagonals).
-                #
-                # Recall that in NumPy, slicing is NON-INCLUSIVE on the right end
-                # ie, x[0:4] will slice all of a 4-digit array, not produce
-                # an error like in idl.
-
-                if procdim.ipx == 0:
-                    i0x = 0
-                    i1x = i0x+procdim.mx
-                    i0xloc = 0
-                    i1xloc = procdim.mx
-                else:
-                    i0x = procdim.ipx*procdim.nx+procdim.nghostx
-                    i1x = i0x+procdim.mx-procdim.nghostx
-                    i0xloc = procdim.nghostx
-                    i1xloc = procdim.mx
-
-                if procdim.ipy == 0:
-                    i0y = 0
-                    i1y = i0y+procdim.my
-                    i0yloc = 0
-                    i1yloc = procdim.my
-                else:
-                    i0y = procdim.ipy*procdim.ny+procdim.nghosty
-                    i1y = i0y+procdim.my-procdim.nghosty
-                    i0yloc = procdim.nghosty
-                    i1yloc = procdim.my
-
-                if procdim.ipz == 0:
-                    i0z = 0
-                    i1z = i0z+procdim.mz
-                    i0zloc = 0
-                    i1zloc = procdim.mz
-                else:
-                    i0z = procdim.ipz*procdim.nz+procdim.nghostz
-                    i1z = i0z+procdim.mz-procdim.nghostz
-                    i0zloc = procdim.nghostz
-                    i1zloc = procdim.mz
-
-                x[i0x:i1x] = x_loc[i0xloc:i1xloc]
-                y[i0y:i1y] = y_loc[i0yloc:i1yloc]
-                z[i0z:i1z] = z_loc[i0zloc:i1zloc]
-
+                #read data
+                filename = os.path.join(datadir,directory,varfile)
+                infile = npfile(filename, endian=format)
                 if (not run2D):
-                    f[:, i0z:i1z, i0y:i1y, i0x:i1x] = \
-                        f_loc[:, i0zloc:i1zloc, i0yloc:i1yloc, i0xloc:i1xloc]
+                    f_loc = infile.fort_read(precision,
+                                             shape=(-1, mzloc, myloc, mxloc))
                 else:
                     if dim.ny == 1:
-                        f[:, i0z:i1z, i0x:i1x] = \
-                              f_loc[:, i0zloc:i1zloc, i0xloc:i1xloc]
+                        f_loc = infile.fort_read(precision, shape=(-1, mzloc, mxloc))
                     else:
-                        f[:, i0y:i1y, i0x:i1x] = \
-                              f_loc[:, i0yloc:i1yloc, i0xloc:i1xloc]
+                        f_loc = infile.fort_read(precision, shape=(-1, myloc, mxloc))
+                raw_etc = infile.fort_read(precision)
+                infile.close()
+
+                t = raw_etc[0]
+                x_loc = raw_etc[1:mxloc+1]
+                y_loc = raw_etc[mxloc+1:mxloc+myloc+1]
+                z_loc = raw_etc[mxloc+myloc+1:mxloc+myloc+mzloc+1]
+                if (param.lshear):
+                    shear_offset = 1
+                    deltay = raw_etc[-1]
+                else:
+                    shear_offset = 0
+
+                dx = raw_etc[-3-shear_offset]
+                dy = raw_etc[-2-shear_offset]
+                dz = raw_etc[-1-shear_offset]
+
+                if len(procdirs) > 1:
+                    # Calculate where the local processor will go in
+                    # the global array.
+
+                    # Don't overwrite ghost zones of processor to the left (and
+                    # accordingly in y and z direction--makes a difference on the
+                    # diagonals).
+                    #
+                    # Recall that in NumPy, slicing is NON-INCLUSIVE on the right end
+                    # ie, x[0:4] will slice all of a 4-digit array, not produce
+                    # an error like in idl.
+
+                    if procdim.ipx == 0:
+                        i0x = 0
+                        i1x = i0x+procdim.mx
+                        i0xloc = 0
+                        i1xloc = procdim.mx
+                    else:
+                        i0x = procdim.ipx*procdim.nx+procdim.nghostx
+                        i1x = i0x+procdim.mx-procdim.nghostx
+                        i0xloc = procdim.nghostx
+                        i1xloc = procdim.mx
+
+                    if procdim.ipy == 0:
+                        i0y = 0
+                        i1y = i0y+procdim.my
+                        i0yloc = 0
+                        i1yloc = procdim.my
+                    else:
+                        i0y = procdim.ipy*procdim.ny+procdim.nghosty
+                        i1y = i0y+procdim.my-procdim.nghosty
+                        i0yloc = procdim.nghosty
+                        i1yloc = procdim.my
+
+                    if procdim.ipz == 0:
+                        i0z = 0
+                        i1z = i0z+procdim.mz
+                        i0zloc = 0
+                        i1zloc = procdim.mz
+                    else:
+                        i0z = procdim.ipz*procdim.nz+procdim.nghostz
+                        i1z = i0z+procdim.mz-procdim.nghostz
+                        i0zloc = procdim.nghostz
+                        i1zloc = procdim.mz
+
+                    x[i0x:i1x] = x_loc[i0xloc:i1xloc]
+                    y[i0y:i1y] = y_loc[i0yloc:i1yloc]
+                    z[i0z:i1z] = z_loc[i0zloc:i1zloc]
+
+                    if (not run2D):
+                        f[:, i0z:i1z, i0y:i1y, i0x:i1x] = \
+                            f_loc[:, i0zloc:i1zloc, i0yloc:i1yloc, i0xloc:i1xloc]
+                    else:
+                        if dim.ny == 1:
+                            f[:, i0z:i1z, i0x:i1x] = \
+                                  f_loc[:, i0zloc:i1zloc, i0xloc:i1xloc]
+                        else:
+                            f[:, i0y:i1y, i0x:i1x] = \
+                                  f_loc[:, i0yloc:i1yloc, i0xloc:i1xloc]
+                else:
+                    f = f_loc
+                    x = x_loc
+                    y = y_loc
+                    z = z_loc
+                #endif MPI run
+            #endfor directories loop
+        else:
+            filename = os.path.join(datadir,'allprocs/',varfile)
+            if (param.lwrite_2d):
+                if (dim.ny == 1):
+                    ntot=dim.mvar*dim.mx*dim.mz
+                else:
+                    ntot=dim.mvar*dim.mx*dim.my
             else:
-                f = f_loc
-                x = x_loc
-                y = y_loc
-                z = z_loc
-            #endif MPI run
-        #endfor directories loop
+                dim.mvar*dim.mx*dim.my*dim.mz
+            with open(filename,'rb') as f:
+                data = np.fromfile(f, dtype=precision, count=ntot)
+                f.seek(4+ntot*8)
+                raw_etc = np.fromfile(f, dtype=precision)
+            if (param.lwrite_2d):
+                if (dim.ny == 1):
+                    f = np.reshape(data,(dim.mvar,dim.mz,dim.mx))
+                else:
+                    f = np.reshape(data,(dim.mvar,dim.my,dim.mx))
+            else:
+                    f = np.reshape(data,(dim.mvar,dim.mz,dim.my,dim.mx))
+            t  = raw_etc[0]
+            x  = raw_etc[1:dim.mx+1]
+            y  = raw_etc[dim.mx+1:dim.mx+dim.my+1]
+            z  = raw_etc[dim.mx+dim.my+1:dim.mx+dim.my+dim.mz+1]
+            dx = raw_etc[-3]
+            dy = raw_etc[-2]
+            dz = raw_etc[-1]
 
         if (magic is not None):
             if ('bb' in magic):
