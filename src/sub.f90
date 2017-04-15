@@ -2992,7 +2992,7 @@ module Sub
       do j=1,3
 !
         grad_f_tmp = gradf(:,j,:)
-        call u_dot_grad_scl(f,k+j-1,grad_f_tmp,uu,tmp,UPWIND=loptest(upwind))
+        call u_dot_grad_scl(f,k+j-1,grad_f_tmp,uu,tmp,UPWIND=upwind)
         if (loptest(ladd)) then
           ugradf(:,j)=ugradf(:,j)+tmp
         else
@@ -3167,13 +3167,11 @@ module Sub
         return
       endif
 !
-      call dot_mn(uu,gradf,ugradf,loptest(ladd))
+      call dot_mn(uu,gradf,ugradf,ladd)
 !
 !  Upwind correction
 !
-      if (present(upwind)) then
-        if (upwind) call doupwind(f,k,uu,ugradf)
-      endif
+      if (loptest(upwind)) call doupwind(f,k,uu,ugradf)
 !
     endsubroutine u_dot_grad_scl
 !***********************************************************************
