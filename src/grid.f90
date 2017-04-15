@@ -180,9 +180,9 @@ module Grid
       if (nxgrid==1) then
         x = x00 + 0.5 * dx
         ! hopefully, we will only ever multiply by the following quantities:
-        xprim = 0.
+        xprim = dx
         xprim2 = 0.
-        dx_1 = 0.
+        dx_1 = 1.0/dx
         dx_tilde = 0.
         g1proc=x00
       else
@@ -508,9 +508,9 @@ module Grid
       if (nygrid==1) then
         y = y00 + 0.5 * dy
         ! hopefully, we will only ever multiply by the following quantities:
-        yprim = 0.
+        yprim = dy
         yprim2 = 0.
-        dy_1 = 0.
+        dy_1 = 1./dy
         dy_tilde = 0.
         g2proc=y00
       else
@@ -692,9 +692,9 @@ module Grid
       if (nzgrid==1) then
         z = z00 + 0.5 * dz
         ! hopefully, we will only ever multiply by the following quantities:
-        zprim = 0.
+        zprim = dz
         zprim2 = 0.
-        dz_1 = 0.
+        dz_1 = 1./dz
         dz_tilde = 0.
         g3proc=z00
       else
