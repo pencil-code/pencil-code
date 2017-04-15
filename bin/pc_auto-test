@@ -983,11 +983,6 @@ sub test_compile {
         my @makeopts = (shift); # gets one string ("" or "-j N")
         my $t_ref = shift;      # start time
 
-	# Temporary cleanup code, shall be removed after 6th April 2017.
-	if ((`pwd` =~ /\/samples\//is) && !(-l "src/Makefile.src")) {
-		unlink "src/Makefile.src";
-	}
-
         print "    Compiling..            ";
 
         # First pc_setupsrc, then make clean (if requested). Must be done
