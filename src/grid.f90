@@ -180,9 +180,12 @@ module Grid
       if (nxgrid==1) then
         x = x00 + 0.5 * dx
         ! hopefully, we will only ever multiply by the following quantities:
-        xprim = dx
+        ! [PABourdin] We should find a way to have valid grid functions as:
+        ! xprim = dx  ;  dx_1 = 1/dx
+        ! together with a degenerated-case flag: ldegenerated_x = .true.
+        xprim = 0.
         xprim2 = 0.
-        dx_1 = 1.0/dx
+        dx_1 = 0.
         dx_tilde = 0.
         g1proc=x00
       else
@@ -508,9 +511,12 @@ module Grid
       if (nygrid==1) then
         y = y00 + 0.5 * dy
         ! hopefully, we will only ever multiply by the following quantities:
-        yprim = dy
+        ! [PABourdin] We should find a way to have valid grid functions as:
+        ! xprim = dx  ;  dx_1 = 1/dx
+        ! together with a degenerated-case flag: ldegenerated_x = .true.
+        yprim = 0.
         yprim2 = 0.
-        dy_1 = 1./dy
+        dy_1 = 0.
         dy_tilde = 0.
         g2proc=y00
       else
@@ -692,9 +698,12 @@ module Grid
       if (nzgrid==1) then
         z = z00 + 0.5 * dz
         ! hopefully, we will only ever multiply by the following quantities:
-        zprim = dz
+        ! [PABourdin] We should find a way to have valid grid functions as:
+        ! xprim = dx  ;  dx_1 = 1/dx
+        ! together with a degenerated-case flag: ldegenerated_x = .true.
+        zprim = 0.
         zprim2 = 0.
-        dz_1 = 1./dz
+        dz_1 = 0.
         dz_tilde = 0.
         g3proc=z00
       else
