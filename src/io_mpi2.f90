@@ -93,7 +93,8 @@ module Io
       else
         io_dims=4
       endif
-      allocate (local_size(io_dims), local_start(io_dims), global_size(io_dims), global_start(io_dims), subsize(io_dims), stat=alloc_err)
+      allocate (local_size(io_dims), local_start(io_dims), global_size(io_dims), global_start(io_dims), subsize(io_dims), &
+          stat=alloc_err)
 !
       if (.not. lwrite_2D) then
 !
