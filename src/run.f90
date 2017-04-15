@@ -144,7 +144,7 @@ program run
 !
   call initialize_mpicomm
 !
-  if (any(downsampl>1)) then
+  if (any(downsampl>1) .or. mvar_down>0 .or. maux_down>0) then
 !
 !  If downsampling, calculate local start indices and number of data in
 !  output for each direction; inner ghost zones are here disregarded
@@ -152,14 +152,14 @@ program run
     ldownsampl = .true.
     if (dsnap_down<=0.) dsnap_down=dsnap
 !
-      call get_downpars(1,nx,ipx)
-      call get_downpars(2,ny,ipy)
-      call get_downpars(3,nz,ipz)
+    call get_downpars(1,nx,ipx)
+    call get_downpars(2,ny,ipy)
+    call get_downpars(3,nz,ipz)
 !
-      if (any(ndown==0)) &
-        call fatal_error('run','zero points in processor ' &
-                         //trim(itoa(iproc))//' in downsampling')
-    endif
+    if (any(ndown==0)) &
+      call fatal_error('run','zero points in processor ' &
+                       //trim(itoa(iproc))//' for downsampling')
+  endif
 !
 !  Derived parameters (that may still be overwritten).
 !  [might better be put into another routine, possibly in 'read_all_run_pars']
