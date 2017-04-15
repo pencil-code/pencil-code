@@ -2552,7 +2552,7 @@ mpicomm_double_.f90: mpicomm_double.f90
 nompicomm_.f90: nompicomm.f90
 	cp nompicomm.f90 nompicomm_.f90
 #
-MAIN_EXECUTABLES=start.x run.x 
+MAIN_EXECUTABLES=start.x run.x
 HELPER_EXECUTABLES= \
 	combine_videofiles.x read_videofiles.x read_all_videofiles.x read_vectorfiles.x \
 	pre_and_post_processing/pc_collect.x pre_and_post_processing/pc_reduce.x pre_and_post_processing/pc_distribute.x pre_and_post_processing/pc_distribute_z.x pre_and_post_processing/pc_extract.x pre_and_post_processing/pc_configtest.x pre_and_post_processing/pc_tecplot.x pre_and_post_processing/pc_tecplot_solid.x
