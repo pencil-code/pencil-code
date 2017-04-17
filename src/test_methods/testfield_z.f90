@@ -50,6 +50,7 @@ module Testfield
   logical :: lphase_adjust=.false.
   real :: ktestfield=1., ktestfield1=1.
   real :: kdamp_2ndord=0., kdamp_iter=0., dt_iter=0., reduce_iter=1.
+  real :: chiraltest=0.
   logical :: ltestfield_newz=.true.
   logical :: llorentzforce_testfield=.false.
 
@@ -57,7 +58,7 @@ module Testfield
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,lsoca,lsoca_jxb, &
        etatest,etatest1,etatest_hyper3,iresistivity_test, &
-       itestfield,ktestfield, &
+       chiraltest, itestfield,ktestfield, &
        lin_testfield,lam_testfield,om_testfield,delta_testfield, &
        ltestfield_newz,leta_rank2,lphase_adjust, &
        ltestfield_taver,llorentzforce_testfield, &
@@ -446,7 +447,7 @@ module Testfield
 !  20-aug-13/MR: calc_uxb and calc_diffusive_part introduced
 !  27-sep-13/MR: changes due to uxbtestm(mz,...  -->  uxbtestm(nz,...
 !  19-nov-13/MR: complex p=(lam_testfield,om_testfield) in complex calculation branch enabled
-!  21-nov-13/MR: suppressed time-dependence of testfield in complex calculation for lam_testfield/=0 
+!  21-nov-13/MR: suppressed time-dependence of testfield in complex calculation for lam_testfield/=0
 !
       use Diagnostics
       use Cdata
@@ -651,6 +652,11 @@ module Testfield
 !
           endif
         endif
+!
+!  add chiral effect term
+!  (if lsoca/=T, it may not work!)
+!
+        if (chiraltest/=0.) daatest=daatest+chiraltest*bbtest
 !
 !  add possibility of forcing that is not delta-correlated in time
 !
