@@ -24,7 +24,7 @@ class Grid(object):
 
     def __init__(self, datadir='data/', proc=-1, ivar=-1, quiet=False,
                  trim=False, format='native', param=None, down=False,
-                 allprocs=False):
+                 dim=None):
         """
         Read grid from pencil code. if proc < 0, then load all data
         and assemble. otherwise, load grid from specified processor.
@@ -32,7 +32,8 @@ class Grid(object):
         datadir = os.path.expanduser(datadir)
         if param is None:
             param = read_param(datadir, quiet=True)
-        dim = read_dim(datadir, proc, down=down)
+        if dim is None:
+            dim = read_dim(datadir, proc, down=down)
         if dim.precision == 'D':
             precision = 'd'
         else:
@@ -55,7 +56,7 @@ class Grid(object):
         dy_tilde = N.zeros(dim.my, dtype=precision)
         dz_tilde = N.zeros(dim.mz, dtype=precision)
 
-        if not allprocs:
+        if (param.io_strategy != 'MPI-IO'):
             for directory in procdirs:
                 proc = int(directory[4:])
                 procdim = read_dim(datadir, proc, down=down)
@@ -160,7 +161,6 @@ class Grid(object):
             dx_1_raw = infile.fort_read(precision)
             dx_tilde_raw = infile.fort_read(precision)
             infile.close()
-            dim=read_dim(datadir)
             t=grid_raw[0]
             x=grid_raw[1:dim.mx+1]
             y=grid_raw[dim.mx+1:dim.mx+1+dim.my]

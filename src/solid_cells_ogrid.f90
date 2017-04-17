@@ -138,9 +138,9 @@ module Solid_Cells
     integer, dimension(3) :: ind_global_neighbour
     real, dimension(3)    :: xyz
     real, dimension(8,mfarray) :: f_near_points
-    logical :: need_comm=.false.
     integer :: from_proc
   endtype interpol_grid_data
+!!***************************************************
   character(len=9) :: grid_interpolation='trilinear'
   real, dimension(ncpus,3) :: xyz0_loc_all
   real, dimension(ncpus,3) :: xyz1_loc_all
@@ -148,6 +148,10 @@ module Solid_Cells
   real, dimension(3) :: xyz1_loc_ogrid
   real, dimension(ncpus,3) :: xyz0_loc_all_ogrid
   real, dimension(ncpus,3) :: xyz1_loc_all_ogrid
+  type(interpol_grid_data), dimension(:), allocatable :: curvilinear_to_cartesian
+  type(interpol_grid_data), dimension(:), allocatable :: cartesian_to_curvilinear
+  integer :: n_point_curv=0
+  integer :: n_point_cart=0
 !!***************************************************
 !  type interpol_data
 !    type(interpol_grid_data), dimension(:), allocatable :: int_gdata
@@ -449,10 +453,14 @@ module Solid_Cells
 !
 !  Check if it will be necessary to use communication between processors 
 !  to perform the interpolation between the overlapping grids.
+!  Build serial arrays and data structures necessary to performe communication
+!  and interpolation efficiently.
 !
       call construct_serial_bdry_cartesian
       call construct_serial_bdry_curv
       call initialize_interpolate_points
+      !HEREHERE
+      call initialize_send_ip_points
 !
     end subroutine initialize_solid_cells
 !***********************************************************************
@@ -707,19 +715,13 @@ module Solid_Cells
 !***********************************************************************
     subroutine initialize_interpolate_points
 !
-! Build arrays of interpolation data.
+! Build arrays of interpolation data on processors that perform interpolation.
 ! Necessary to perform communications in an efficient manner.
 !
 ! apr-17/Jorgen: Coded
 !
-      ! Should make some or all of this data global for module
-      type(interpol_grid_data), dimension(:), allocatable :: curvilinear_to_cartesian
-      type(interpol_grid_data), dimension(:), allocatable :: cartesian_to_curvilinear
-      integer :: n_point_curv=0
-      integer :: n_point_cart=0
       real, dimension(3) :: xyz,rthz
       real :: xr,yr
-!
       real :: r_int_outer,r_int_inner
       integer :: i,j,k,ii
       r_int_inner=r_ogrid
@@ -736,12 +738,11 @@ module Solid_Cells
 !  Only done for processors at containing the end points of the radial values.
 !
 !  If interpolation point requires data from outside this processors domain,
-!  set need_comm=.true. and find the grid points and processor id for communication.
+!  set find the grid points and processor id for communication.
 !
       if(llast_proc_x) then
         n_point_curv=ny_ogrid*nz_ogrid*nghost
         allocate(cartesian_to_curvilinear(n_point_curv))
-        cartesian_to_curvilinear%need_comm=.false.
 !
         ii=0
         do k=n1_ogrid,n2_ogrid
@@ -754,10 +755,10 @@ module Solid_Cells
               cartesian_to_curvilinear(ii)%i_xyz = (/ i,j,k /)
               cartesian_to_curvilinear(ii)%xyz = xyz
               if(.not. this_proc_cartesian(xyz)) then
-                cartesian_to_curvilinear(ii)%need_comm = .true. 
                 call find_proc_cartesian(xyz,cartesian_to_curvilinear(ii)%from_proc, &
                     cartesian_to_curvilinear(ii)%ind_global_neighbour)
               else
+                cartesian_to_curvilinear%from_proc=iproc
                 call find_near_cart_ind_global(cartesian_to_curvilinear(ii)%ind_global_neighbour,xyz)
               endif
             enddo
@@ -772,7 +773,7 @@ module Solid_Cells
 !  interpolation data, and once to set the data values (after allocating arrays).
 !
 !  If interpolation point requires data from outside this processors domain,
-!  set need_comm=.true. and find the grid points and processor id for communication.
+!  find the grid points and processor id for communication.
 !
       do k=n1,n2
         do j=m1,m2
@@ -800,10 +801,10 @@ module Solid_Cells
               curvilinear_to_cartesian(ii)%i_xyz = (/ i,j,k /)
               curvilinear_to_cartesian(ii)%xyz = rthz
               if(.not. this_proc_curvilinear(xyz)) then
-                curvilinear_to_cartesian(ii)%need_comm = .true. 
                 call find_proc_curvilinear(rthz,curvilinear_to_cartesian(ii)%from_proc, &
                     curvilinear_to_cartesian(ii)%ind_global_neighbour)
               else
+                curvilinear_to_cartesian%from_proc=iproc
                 call find_near_curv_ind_global(curvilinear_to_cartesian(ii)%ind_global_neighbour,rthz)
               endif
             endif
@@ -813,6 +814,164 @@ module Solid_Cells
 !
     endsubroutine initialize_interpolate_points
 !***********************************************************************
+    subroutine initialize_send_ip_points
+!
+! Build arrays of interpolation data on processors that contain data 
+! necessary for interpolation on other processors. 
+!
+! 13-apr-17/Jorgen: Coded
+      use Mpicomm, only: mpisend_int, mpirecv_int
+      integer :: i,iip,npoint
+      integer, dimension(ncpus) :: from_proc_curv_to_cart=0
+      integer, dimension(ncpus) :: from_proc_cart_to_curv=0
+      integer, dimension(:,:,:), allocatable :: ind_from_proc_curv
+      integer, dimension(:,:,:), allocatable :: ind_from_proc_cart
+      integer :: max_from_proc, from_proc
+      integer, dimension(:), allocatable   :: send_to
+      integer, dimension(:,:), allocatable :: send_data
+      integer, dimension(2) :: nelements
+      integer :: size_arr, npoints_requested
+      integer, dimension(:), allocatable   :: tmp_arr1D
+      integer, dimension(:,:), allocatable :: tmp_arr2D
+!
+      if(n_point_curv>0) then
+        do i=1,n_point_curv
+          from_proc=curvilinear_to_cartesian(i)%from_proc
+          if(from_proc/=iproc) then
+! Must access from_proc+1 instead of from_proc, to avoid accessing element 0
+            from_proc_curv_to_cart(from_proc+1)=from_proc_curv_to_cart(from_proc+1)+1
+          endif
+        enddo
+      endif
+!        
+      max_from_proc=maxval(from_proc_curv_to_cart)
+      if(max_from_proc>0) then
+        allocate(ind_from_proc_curv(ncpus,max_from_proc,3))
+        do iip=0,ncpus-1
+          if(from_proc_curv_to_cart(iip+1)>0) then
+            npoint=0
+            do i=1,n_point_curv
+              if(curvilinear_to_cartesian(i)%from_proc==iip) then
+                npoint=npoint+1
+! Must access iip+1 instead of iip, to avoid accessing element 0
+                ind_from_proc_curv(iip+1,npoint,:)=curvilinear_to_cartesian(i)%ind_global_neighbour
+              endif
+            enddo
+          endif
+        enddo
+      endif
+!
+      if(n_point_cart>0) then
+        do i=1,n_point_cart
+          from_proc=cartesian_to_curvilinear(i)%from_proc
+          if(from_proc/=iproc) then
+! Must access from_proc+1 instead of from_proc, to avoid accessing element 0
+            from_proc_cart_to_curv(from_proc+1)=from_proc_cart_to_curv(from_proc+1)+1
+          endif
+        enddo
+      endif
+!
+      max_from_proc=maxval(from_proc_cart_to_curv)
+      if(max_from_proc>0) then
+        allocate(ind_from_proc_cart(ncpus,max_from_proc,3))
+        do iip=0,ncpus-1
+          if(from_proc_cart_to_curv(iip+1)>0) then
+            npoint=0
+            do i=1,n_point_cart
+              if(cartesian_to_curvilinear(i)%from_proc==iip) then
+                npoint=npoint+1
+! Must access iip+1 instead of iip, to avoid accessing element 0
+                ind_from_proc_curv(iip,npoint,:)=curvilinear_to_cartesian(i)%ind_global_neighbour
+              endif
+            enddo
+          endif
+        enddo
+      else
+        !NECESSRAY FOR COMM?
+        allocate(ind_from_proc_cart(ncpus,0,0))
+      endif
+! 
+!  Arrays containing information about which points should be sent by what processor to this
+!  processor has now been created. Now, there should be some communication to let all processors
+!  know which grid points they should SEND and who should REVIEVE them.
+!
+      do iip=0,ncpus-1
+!  Send number of points reuqested from all processors, and send what points are requested
+!  if the number of points is larger than zero.
+!  Avoid sending to oneself
+        if(iip/=iproc) then
+          call mpisend_int(from_proc_curv_to_cart(iip+1),iip,700)
+          if(from_proc_curv_to_cart(iip+1)>0) then
+            nelements=(/ from_proc_curv_to_cart(iip+1),3 /)
+            call mpisend_int(ind_from_proc_curv(iip+1,1:nelements(1),:),nelements,iip,701)
+          endif
+        endif
+      enddo
+      ! TODO
+      ! DO WE NEED THIS PREALLOCATION BEFORE EXPANDING ARRAY?
+      allocate(send_to(0))
+      allocate(send_data(0,0))
+      do iip=0,ncpus-1
+!  Revcieve data from all processors. If any points are requested, create array of request.
+!  Avoid revcieving from oneself
+        if(iip/=iproc) then
+          call mpirecv_int(npoints_requested,iip,700)
+!  Allocation/deallocation in a very inefficient manner, but this is only done during pre-processing
+!  so memory effieient code is a priority.
+          if(npoints_requested>0) then
+            !call expand_int_array(send_to,npoints_requested,size_arr)
+            ! Expand array
+            size_arr=size(send_to)
+            allocate(tmp_arr1D(size_arr))
+            tmp_arr1D = send_to
+            deallocate(send_to)
+            allocate(send_to(size_arr+npoints_requested))
+            send_to(1:size_arr)=tmp_arr1D
+            deallocate(tmp_arr1D)
+            !
+            send_to(size_arr+1:size_arr+npoints_requested)=iip
+            nelements=(/ npoints_requested,3 /)
+!  Access iip+1 in array to avoid accessing zeroth element
+            !call expand_int_array2(send_data,npoints_requested,size_arr)
+            !Expand array
+            allocate(tmp_arr2D(size_arr,3))
+            tmp_arr2D = send_data
+            deallocate(send_data)
+            allocate(send_data(size_arr+npoints_requested,3))
+            send_data(1:size_arr,:)=tmp_arr2D
+            deallocate(tmp_arr2D)
+            call mpirecv_int(send_data(size_arr+1:size_arr+npoints_requested,:),nelements,iip,701)
+          endif
+        endif
+      enddo
+    endsubroutine initialize_send_ip_points
+!!***********************************************************************
+!    subroutine expand_int_array(arr,nexpand,size_arr)
+!!  Expand dynamic input array
+!      integer :: size_arr
+!      integer, dimension(size_arr), allocatable, intent(inout) :: arr
+!      integer, intent(in) :: nexpand
+!      integer, dimension(size_arr) :: tmp_arr
+!!
+!      tmp_arr = arr
+!      deallocate(arr)
+!      allocate(arr(size_arr+nexpand))
+!      arr(1:size_arr)=tmp_arr
+!    endsubroutine expand_int_array
+!!***********************************************************************
+!    subroutine expand_int_array2(arr,nexpand,size_arr)
+!!  Expand dynamic input array
+!      integer :: size_arr
+!      integer, dimension(size_arr), allocatable, intent(inout) :: arr
+!      integer, intent(in) :: nexpand
+!      integer, dimension(size_arr) :: tmp_arr
+!!
+!      tmp_arr = arr
+!      deallocate(arr)
+!      allocate(arr(size_arr(1)+nexpand,size_arr(2)))
+!      arr(1:size_arr(1),:)=tmp_arr
+!    endsubroutine expand_int_array2
+!!***********************************************************************
     subroutine print_grids_only(num)
 !  Print to file
     character(len=16) :: xofile,yofile,xcfile,ycfile
@@ -2316,9 +2475,9 @@ end subroutine print_solid
 !!TODO:Printing
 if(lroot) then
     iterator = iterator+1
-if(mod(iterator,500)==0) then
-    call print_ogrid(int(iterator/500))
-    call print_cgrid(int(iterator/500),f_cartesian)
+if(mod(iterator,2000)==0) then
+    call print_ogrid(int(iterator/2000))
+    call print_cgrid(int(iterator/2000),f_cartesian)
 endif
 endif
 

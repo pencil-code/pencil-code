@@ -6217,13 +6217,24 @@ module Hydro
 !
       case ('damp_corona')
       zbot=rdampext
-      if (.not.lcalc_uumeanxy) then
-        call fatal_error("damp_corona","you need to set lcalc_uumeanxy=T in hydro_run_pars")
-      else
-        prof_amp1=0.5*(tanh((x(l1:l2)-zbot)/wdamp)+1.)
-        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,1)-0.)
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,2)-0.)
-        df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,3)-0.)
+      if (lspherical_coords) then
+        if (.not.lcalc_uumeanxy) then
+          call fatal_error("damp_corona","you need to set lcalc_uumeanxy=T in hydro_run_pars")
+        else
+          prof_amp1=0.5*(tanh((x(l1:l2)-zbot)/wdamp)+1.)
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,1)-0.)
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,2)-0.)
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp1*(uumxy(l1:l2,m,3)-0.)
+        endif
+      else if (lcartesian_coords) then
+        if (.not.lcalc_uumeanz) then
+          call fatal_error("damp_corona","you need to set lcalc_uumean=T in hydro_run_pars")
+        else
+          prof_amp1=0.5*(tanh((z(n)-zbot)/wdamp)+1.)
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_diffrot1*prof_amp1*(uumz(n,1)-0.)
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1*prof_amp1*(uumz(n,2)-0.)
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-tau_diffrot1*prof_amp1*(uumz(n,3)-0.)
+        endif
       endif
 !
 !  Latitudinal shear profile

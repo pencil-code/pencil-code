@@ -2959,7 +2959,7 @@ module Special
         case ('T<Tcrit')
 !
           heatinput = heatinput + &
-          0.5*p%b2*(1.-tanh((p%TT-T_crit)/deltaT_crit))/mu0
+          0.5*(1.-tanh((p%TT-T_crit)/deltaT_crit))
 !
         case default
           if (headtt) call fatal_error('calc_artif_heating', &
