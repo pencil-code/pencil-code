@@ -290,6 +290,7 @@ module Mpicomm
   interface mpisend_nonblock_int
     module procedure mpisend_nonblock_int_scl
     module procedure mpisend_nonblock_int_arr
+    module procedure mpisend_nonblock_int_arr2
   endinterface
 !
 !  interface mpigather_and_out
@@ -799,6 +800,16 @@ module Mpicomm
       if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_rec, tag_id, iref
 !
     endsubroutine mpisend_nonblock_int_arr
+!***********************************************************************
+    subroutine mpisend_nonblock_int_arr2(bcast_array,nbcast_array,proc_rec,tag_id,iref)
+!
+      integer, dimension(2) :: nbcast_array
+      integer, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
+      integer :: proc_rec, tag_id, iref
+!
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_rec, tag_id, iref
+!
+    endsubroutine mpisend_nonblock_int_arr2
 !***********************************************************************
     subroutine mpisend_nonblock_real_arr4(bcast_array,nb,proc_rec,ireq,tag_id)
 !

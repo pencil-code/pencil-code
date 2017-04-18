@@ -325,6 +325,7 @@ module Mpicomm
   interface mpisend_nonblock_int
     module procedure mpisend_nonblock_int_scl
     module procedure mpisend_nonblock_int_arr
+    module procedure mpisend_nonblock_int_arr2
   endinterface
 !
 !  interface mpigather_and_out
@@ -3153,6 +3154,24 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
           tag_id, MPI_COMM_GRID, ireq, mpierr)
 !
     endsubroutine mpisend_nonblock_int_arr
+!***********************************************************************
+    subroutine mpisend_nonblock_int_arr2(bcast_array,nbcast_array,proc_rec,tag_id,ireq)
+!
+!  Send 2d integer array to other processor, with non-blocking communication.
+!
+!  18-apr-17/Jorgen: adapted
+!
+      integer, dimension(2) :: nbcast_array
+      integer, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
+      integer :: proc_rec, tag_id, ireq, num_elements
+!
+      if (any(nbcast_array == 0)) return
+!
+      num_elements = product(nbcast_array)
+      call MPI_ISEND(bcast_array, num_elements, MPI_INTEGER, proc_rec, &
+          tag_id, MPI_COMM_GRID, ireq, mpierr)
+!
+    endsubroutine mpisend_nonblock_int_arr2
 !***********************************************************************
     subroutine mpisend_int_arr(bcast_array,nbcast_array,proc_rec,tag_id,comm)
 !
