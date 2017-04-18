@@ -5910,6 +5910,8 @@ module Energy
         idiag_ssmr=0; idiag_TTmr=0
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0; idiag_TTmxz=0
         idiag_uxTTmz=0; idiag_uyTTmz=0; idiag_uzTTmz=0; idiag_cs2mphi=0
+        idiag_gTxgsxmz=0; idiag_gTxgsymz=0; idiag_gTxgszmz=0
+        idiag_gTxgsx2mz=0; idiag_gTxgsy2mz=0; idiag_gTxgsz2mz=0
         idiag_ssmxy=0; idiag_ssmxz=0; idiag_fradz_Kprof=0; idiag_uxTTmxy=0
         idiag_uyTTmxy=0; idiag_uzTTmxy=0; idiag_TT2mx=0; idiag_TT2mz=0
         idiag_uxTTmx=0; idiag_uyTTmx=0; idiag_uzTTmx=0;
