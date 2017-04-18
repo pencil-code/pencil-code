@@ -8,7 +8,7 @@ IO           =   io_dist
 
 INITIAL_CONDITION = initial_condition/ths_equilibrium_ism
 HYDRO        =   hydro
-SHOCK        =   shock_highorder
+SHOCK        =   shock
 DENSITY      =   density
 ENTROPY      =   entropy
 MAGNETIC     = nomagnetic
