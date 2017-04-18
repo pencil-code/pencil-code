@@ -86,7 +86,7 @@ module Radiation
   real :: knee_temp_opa=0.0, width_temp_opa=1.0
   real :: ampl_Isurf=0.0, radius_Isurf=0.0
   real :: lnTT_table0=0.0, dlnTT_table=0.0, kapparho_floor=0.0
-  real :: z_cutoff=impossible
+  real :: z_cutoff=impossible,cool_wid=impossible
 !
   integer :: radx=0, rady=0, radz=1, rad2max=1, nnu=1
   integer, dimension (maxdir,3) :: dir
@@ -117,6 +117,7 @@ module Radiation
   character (len=labellen) :: angle_weight='corrected'
   character :: lrad_str, mrad_str, nrad_str
   character (len=3) :: raydir_str
+  character (len=20) :: cooling_profile='const'
 !
   type (Qbound), dimension (my,mz), target :: Qbc_yz
   type (Qbound), dimension (mx,mz), target :: Qbc_zx
@@ -161,7 +162,7 @@ module Radiation
       ref_rho_opa, expo_temp_opa_buff, ref_temp_opa, knee_temp_opa, &
       width_temp_opa, ampl_Isurf, radius_Isurf, scalefactor_cooling, &
       lread_source_function, kapparho_floor, lcutoff_opticallythin, &
-      z_cutoff
+      z_cutoff,cooling_profile,cool_wid
 !
   contains
 !***********************************************************************
@@ -1446,7 +1447,18 @@ module Radiation
 !  Possibility of rescaling the radiative cooling term.
 !
       if (scalefactor_cooling/=1.) then
-        cooling=cooling*scalefactor_cooling
+        select case(cooling_profile) 
+        case('const')
+          cooling=cooling*scalefactor_cooling
+        case('zdep')
+          if (cool_wid==impossible .or. z_cutoff==impossible) &
+            call fatal_error('radiative_cooling','cool_wid or z_cutoff should be finite')
+            cooling=cooling*scalefactor_cooling* &
+               0.5*(1.-tanh((z(n)-z_cutoff)/cool_wid))
+        case default
+          call fatal_error('radiative_cooling', &
+            'no such cooling_profile type: '//trim(cooling_profile))
+        end select
       endif
 !
 !  Add radiative cooling.
