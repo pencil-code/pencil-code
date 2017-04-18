@@ -505,6 +505,7 @@ module Interstellar
             stop_it('initialize_interstellar: energy fractions must sum to 1')
           kampl_SN=frac_kin*ampl_SN
           ampl_SN =frac_eth*ampl_SN
+          if (frac_kin >0.0) lSN_velocity = .true.
         else 
           if (lcosmicray .and. lSN_ecr) then
             if (frac_ecr==0) frac_ecr=0.1
@@ -527,7 +528,7 @@ module Interstellar
         if (mass_SN_progenitor==impossible) &
             mass_SN_progenitor=mass_SN_progenitor_cgs / unit_mass
         if (width_SN==impossible) width_SN= &
-            max(width_SN_cgs / real(unit_length),1.75*dxmin)
+            max(width_SN_cgs / real(unit_length),3.01*dxmin)
         if (SN_clustering_radius==impossible) &
             SN_clustering_radius=SN_clustering_radius_cgs / unit_length
         if (SN_clustering_time==impossible) &
@@ -2760,7 +2761,7 @@ module Interstellar
         SNR%feat%radius=width_SN
         if (lSN_scale_rad) then
             SNR%feat%radius=(0.75*solar_mass/SNR%site%rho*pi_1*N_mass)**(1.0/3.0)
-            SNR%feat%radius=max(SNR%feat%radius,1.75*dxmin) ! minimum grid resolution
+            SNR%feat%radius=max(SNR%feat%radius,3.01*dxmin) ! minimum grid resolution
         endif
 !
         m=SNR%indx%m
@@ -2873,13 +2874,13 @@ module Interstellar
           old_radius=(0.75*solar_mass/rhom*pi_1*N_mass)**(1.0/3.0)
         enddo
         SNR%feat%radius=(0.75*solar_mass/SNR%feat%rhom*pi_1*N_mass)**(1.0/3.0)
-        SNR%feat%radius=max(SNR%feat%radius,1.75*dxmin)
+        SNR%feat%radius=max(SNR%feat%radius,3.01*dxmin)
       endif
       if (present(ierr)) then
         call get_properties(f,SNR,rhom,ekintot,ierr)
         if (ierr==iEXPLOSION_TOO_UNEVEN) return
         ambient_mass=4./3.*pi*rhom*SNR%feat%radius**3
-        if (SNR%feat%radius>1.75*dxmin) then
+        if (SNR%feat%radius>3.01*dxmin) then
           if (abs(N_mass/ambient_mass*solar_mass-1.)>eps_mass) then
             ierr=iEXPLOSION_TOO_RARIFIED
             return
