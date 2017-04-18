@@ -93,6 +93,7 @@ module Density
   logical :: lmass_source=.false., lmass_source_random=.false., lcontinuity_gas=.true.
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
   logical :: ldiff_normal=.false.,ldiff_hyper3=.false.,ldiff_shock=.false.
+  logical :: ldiff_cspeed=.false.
   logical :: ldiff_hyper3lnrho=.false.,ldiff_hyper3_aniso=.false.
   logical :: ldiff_hyper3_polar=.false.,lanti_shockdiffusion=.false.
   logical :: ldiff_hyper3_mesh=.false.,ldiff_hyper3_strict=.false.
@@ -472,6 +473,7 @@ module Density
 !  Initialize mass diffusion.
 !
       ldiff_normal=.false.
+      ldiff_cspeed=.false.
       ldiff_shock=.false.
       ldiff_hyper3=.false.
       ldiff_hyper3lnrho=.false.
@@ -491,6 +493,9 @@ module Density
         case ('normal')
           if (lroot) print*,'diffusion: div(D*grad(rho))'
           ldiff_normal=.true.
+        case ('cspeed')
+          if (lroot) print*,'diffusion: div(D*grad(rho))'
+          ldiff_cspeed=.true.
         case ('hyper3')
           if (lroot) print*,'diffusion: (d^6/dx^6+d^6/dy^6+d^6/dz^6)rho'
           ldiff_hyper3=.true.
@@ -530,9 +535,12 @@ module Density
 !  corresponds to the chosen diffusion type is not set.
 !
       if (lrun) then
-        if (ldiff_normal.and.diffrho==0.0) &
+        if ((ldiff_normal.or.ldiff_cspeed).and.diffrho==0.0) &
             call warning('initialize_density', &
             'Diffusion coefficient diffrho is zero!')
+        if (ldiff_cspeed.and..not.(lentropy.or.ltemperature)) &
+            call warning('initialize_density', &
+            'Diffusion with cspeed can only be used with lenergy!')
         if ( (ldiff_hyper3 .or. ldiff_hyper3lnrho .or. ldiff_hyper3_strict) &
             .and. diffrho_hyper3==0.0) &
             call fatal_error('initialize_density', &
@@ -1854,7 +1862,7 @@ module Density
           lpenc_requested(i_del2lnrho)=.true.
         endif
       endif
-      if (ldiff_normal) then
+      if (ldiff_normal.or.ldiff_cspeed) then
         if (ldensity_nolog .or. ldiffusion_nolog) then
           lpenc_requested(i_del2rho)=.true.
           if (ldiffusion_nolog) lpenc_requested(i_rho1)=.true.
@@ -1863,6 +1871,7 @@ module Density
           lpenc_requested(i_del2lnrho)=.true.
         endif
       endif
+      if (ldiff_cspeed) lpenc_requested(i_TT)=.true.
       if ( ldiff_hyper3.or.ldiff_hyper3_strict) lpenc_requested(i_del6rho)=.true.
       if ((ldiff_hyper3.or.ldiff_hyper3_strict).and..not.ldensity_nolog) lpenc_requested(i_rho)=.true.
       if (ldiff_hyper3_polar.and..not.ldensity_nolog) &
@@ -2318,6 +2327,20 @@ module Density
             fdiff = fdiff + diffrho*p%rho1*p%del2rho
           else
             fdiff = fdiff + diffrho*(p%del2lnrho+p%glnrho2)
+          endif
+        endif
+        if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho
+        if (headtt) print*,'dlnrho_dt: diffrho=', diffrho
+      endif
+!
+      if (ldiff_cspeed) then  ! Normal diffusion operator
+        if (ldensity_nolog) then
+          fdiff = fdiff + diffrho*p%TT**0.5*p%del2rho
+        else
+          if (ldiffusion_nolog) then
+            fdiff = fdiff + diffrho*p%TT**0.5*p%rho1*p%del2rho
+          else
+            fdiff = fdiff + diffrho*p%TT**0.5*(p%del2lnrho+p%glnrho2)
           endif
         endif
         if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho
