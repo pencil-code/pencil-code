@@ -2734,7 +2734,7 @@ module Hydro
       integer :: j, ju, k
       integer, dimension(nz), save :: nuzup=0, nuzdown=0, nruzup=0, nruzdown=0
 !
-      Fmax=0.0
+      Fmax=tini
 !
 !  Identify module and boundary conditions.
 !
@@ -4477,6 +4477,9 @@ module Hydro
         idiag_rux2m=0
         idiag_ruy2m=0
         idiag_ruz2m=0
+        idiag_uxmx=0
+        idiag_uymx=0
+        idiag_uzmx=0
         idiag_ux2mx=0
         idiag_uy2mx=0
         idiag_uz2mx=0
@@ -4512,6 +4515,7 @@ module Hydro
         idiag_ruzupmz=0
         idiag_ruzdownmz=0
         idiag_divumz=0
+        idiag_divu2mz=0
         idiag_uzdivumz=0
         idiag_divrhourms=0
         idiag_divrhoumax=0
@@ -4524,6 +4528,9 @@ module Hydro
         idiag_uxuym=0
         idiag_uxuzm=0
         idiag_uyuzm=0
+        idiag_uxuymx=0
+        idiag_uxuzmx=0
+        idiag_uyuzmx=0
         idiag_uxuymz=0
         idiag_uxuzmz=0
         idiag_uyuzmz=0
