@@ -1,7 +1,9 @@
 !  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 &init_pars
   cvsid='$Id$'
-  unit_length=3.16e21, unit_velocity=1.0e5, unit_density=1.0e-24
+  unit_length=3.08567758e21, unit_velocity=9.778122994895071e4
+  unit_density=1.0e-24
+  lfix_unit_std=T
   r_int=0.5, r_ext=1.0
 /
 &eos_init_pars
