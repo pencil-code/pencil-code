@@ -117,7 +117,6 @@ module Radiation
   character (len=labellen) :: angle_weight='corrected'
   character :: lrad_str, mrad_str, nrad_str
   character (len=3) :: raydir_str
-  character (len=20) :: cooling_profile='const'
 !
   type (Qbound), dimension (my,mz), target :: Qbc_yz
   type (Qbound), dimension (mx,mz), target :: Qbc_zx
@@ -144,7 +143,7 @@ module Radiation
       expo2_rho_opa, expo2_temp_opa, &
       ref_rho_opa, ref_temp_opa, knee_temp_opa, width_temp_opa, &
       lread_source_function, kapparho_floor,lcutoff_opticallythin, &
-      z_cutoff
+      z_cutoff,cool_wid
 !
   namelist /radiation_run_pars/ &
       radx, rady, radz, rad2max, bc_rad, lrad_debug, kapparho_cst, &
@@ -162,7 +161,7 @@ module Radiation
       ref_rho_opa, expo_temp_opa_buff, ref_temp_opa, knee_temp_opa, &
       width_temp_opa, ampl_Isurf, radius_Isurf, scalefactor_cooling, &
       lread_source_function, kapparho_floor, lcutoff_opticallythin, &
-      z_cutoff,cooling_profile,cool_wid
+      z_cutoff,cool_wid
 !
   contains
 !***********************************************************************
@@ -1447,18 +1446,7 @@ module Radiation
 !  Possibility of rescaling the radiative cooling term.
 !
       if (scalefactor_cooling/=1.) then
-        select case(cooling_profile) 
-        case('const')
-          cooling=cooling*scalefactor_cooling
-        case('zdep')
-          if (cool_wid==impossible .or. z_cutoff==impossible) &
-            call fatal_error('radiative_cooling','cool_wid or z_cutoff should be finite')
-            cooling=cooling*scalefactor_cooling* &
-               0.5*(1.-tanh((z(n)-z_cutoff)/cool_wid))
-        case default
-          call fatal_error('radiative_cooling', &
-            'no such cooling_profile type: '//trim(cooling_profile))
-        end select
+        cooling=cooling*scalefactor_cooling
       endif
 !
 !  Add radiative cooling.
@@ -1583,16 +1571,13 @@ module Radiation
         do m=m1-rady,m2+rady
           call eoscalc(f,mx,lnTT=lnTT)
           if (lcutoff_opticallythin) then
-            if (z_cutoff==impossible) &
-            call fatal_error("source_function:","z_cutoff is not set")
+            if (z_cutoff==impossible .or. cool_wid==impossible) &
+            call fatal_error("source_function:","z_cutoff or cool_wid is not set")
             call put_shared_variable('z_cutoff',z_cutoff,ierr)
             if (ierr/=0) call stop_it("source_function: "//&
               "there was a problem when putting z_cutoff")
-            if (z(n).le.z_cutoff) then
-               Srad(:,m,n)=arad*exp(4*lnTT)*scalefactor_Srad(inu)
-            else
-                Srad(:,m,n)=0.0d0
-            endif
+               Srad(:,m,n)=arad*exp(4*lnTT)*scalefactor_Srad(inu)* &
+                         0.5*(1.-tanh((z(n)-z_cutoff)/cool_wid))
           else
             Srad(:,m,n)=arad*exp(4*lnTT)*scalefactor_Srad(inu)
           endif
