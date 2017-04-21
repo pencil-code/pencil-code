@@ -2154,7 +2154,7 @@ module Magnetic
         lpenc_requested(i_bb)=.true.
         lpenc_requested(i_gamma_A2)=.true.
         lpenc_requested(i_rho1)=.true.
-        lpenc_requested(i_fpres)=.true.
+        lpenc_requested(i_rho1gpp)=.true.
         lpenc_requested(i_ugu)=.true.
       endif
 !
@@ -3127,9 +3127,9 @@ module Magnetic
 !
      if (lpenc_loc(i_clight2)) then
        clight2_zdep(n)=(0.5*(1.+tanh(z(n)/(-5*dz))) & 
-           * (c_light_cgs/unit_velocity-sqrt(va2max_jxb))+sqrt(va2max_jxb))**2
+           * (c_light-sqrt(va2max_jxb))+sqrt(va2max_jxb))**2
        p%clight2=clight2_zdep(n)
-       if (lpenc_loc(i_gamma_A2)) p%gamma_A2=p%clight2/(p%clight2+p%va2+tini)
+       p%gamma_A2=p%clight2/(p%clight2+p%va2+tini)
      endif
 !
     endsubroutine calc_pencils_magnetic_pencpar
@@ -3290,23 +3290,23 @@ module Magnetic
 !  Following Eq. 34 of Gombosi et al. 2002 for Boris correction
 !
                 df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+p%gamma_A2*p%jxbr(:,1)+&
-                                  (p%ugu(:,1)+p%fpres(:,1))*(1-p%gamma_A2)-&
+                                  (p%ugu(:,1)+p%rho1gpp(:,1))*(1-p%gamma_A2)-&
                                   0.5*mu01*(p%gamma_A2*p%rho1/p%clight2)* &
-                                  (p%bb(:,1)**2*(p%ugu(:,1)+p%fpres(:,1))+&
-                                  p%bb(:,1)*p%bb(:,2)*(p%ugu(:,2)+p%fpres(:,2))+&
-                                  p%bb(:,1)*p%bb(:,3)*(p%ugu(:,3)+p%fpres(:,3)))
+                                  (p%bb(:,1)**2*(p%ugu(:,1)+p%rho1gpp(:,1))+&
+                                  p%bb(:,1)*p%bb(:,2)*(p%ugu(:,2)+p%rho1gpp(:,2))+&
+                                  p%bb(:,1)*p%bb(:,3)*(p%ugu(:,3)+p%rho1gpp(:,3)))
                 df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+p%gamma_A2*p%jxbr(:,2)+&
-                                  (p%ugu(:,2)+p%fpres(:,2))*(1-p%gamma_A2)-&
+                                  (p%ugu(:,2)+p%rho1gpp(:,2))*(1-p%gamma_A2)-&
                                   0.5*mu01*(p%gamma_A2*p%rho1/p%clight2)* &
-                                  (p%bb(:,2)**2*(p%ugu(:,2)+p%fpres(:,2))+&
-                                  p%bb(:,2)*p%bb(:,1)*(p%ugu(:,1)+p%fpres(:,1))+&
-                                  p%bb(:,2)*p%bb(:,3)*(p%ugu(:,3)+p%fpres(:,3)))
+                                  (p%bb(:,2)**2*(p%ugu(:,2)+p%rho1gpp(:,2))+&
+                                  p%bb(:,2)*p%bb(:,1)*(p%ugu(:,1)+p%rho1gpp(:,1))+&
+                                  p%bb(:,2)*p%bb(:,3)*(p%ugu(:,3)+p%rho1gpp(:,3)))
                 df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+p%gamma_A2*p%jxbr(:,3)+&
-                                  (p%ugu(:,3)+p%fpres(:,3))*(1-p%gamma_A2)-&
+                                  (p%ugu(:,3)+p%rho1gpp(:,3))*(1-p%gamma_A2)-&
                                   0.5*mu01*(p%gamma_A2*p%rho1/p%clight2)* &
-                                  (p%bb(:,3)**2*(p%ugu(:,3)+p%fpres(:,3))+&
-                                  p%bb(:,3)*p%bb(:,1)*(p%ugu(:,1)+p%fpres(:,1))+&
-                                  p%bb(:,3)*p%bb(:,2)*(p%ugu(:,2)+p%fpres(:,2)))
+                                  (p%bb(:,3)**2*(p%ugu(:,3)+p%rho1gpp(:,3))+&
+                                  p%bb(:,3)*p%bb(:,1)*(p%ugu(:,1)+p%rho1gpp(:,1))+&
+                                  p%bb(:,3)*p%bb(:,2)*(p%ugu(:,2)+p%rho1gpp(:,2)))
             else
               df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+p%jxbr
             endif
