@@ -65,6 +65,7 @@ module Mpicomm
     module procedure mpirecv_real_arr2
     module procedure mpirecv_real_arr3
     module procedure mpirecv_real_arr4
+    module procedure mpirecv_real_arr5
   endinterface
 !
   interface mpirecv_int
@@ -310,11 +311,13 @@ module Mpicomm
     module procedure mpirecv_nonblock_real_arr
     module procedure mpirecv_nonblock_real_arr2
     module procedure mpirecv_nonblock_real_arr4
+    module procedure mpirecv_nonblock_real_arr5
   endinterface
 !
   interface mpisend_nonblock_real
     module procedure mpisend_nonblock_real_arr
     module procedure mpisend_nonblock_real_arr4
+    module procedure mpisend_nonblock_real_arr5
   endinterface
 !
   interface mpirecv_nonblock_int
@@ -2705,6 +2708,27 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !
     endsubroutine mpirecv_real_arr4
 !***********************************************************************
+    subroutine mpirecv_real_arr5(bcast_array,nbcast_array,proc_src,tag_id)
+!
+!  Receive real array(:,:,:,:) from other processor.
+!
+!  24-apr-17/Jorgen: adapted
+!
+      integer, dimension(5) :: nbcast_array
+      real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3),nbcast_array(4),nbcast_array(5)) :: bcast_array
+      integer :: proc_src, tag_id, num_elements
+      integer, dimension(MPI_STATUS_SIZE) :: stat
+!
+      intent(out) :: bcast_array
+!
+      if (any(nbcast_array == 0)) return
+!
+      num_elements = product(nbcast_array)
+      call MPI_RECV(bcast_array, num_elements, MPI_REAL, proc_src, &
+                    tag_id, MPI_COMM_GRID, stat, mpierr)
+!
+    endsubroutine mpirecv_real_arr5
+!***********************************************************************
     subroutine mpirecv_int_scl(bcast_array,proc_src,tag_id)
 !
 !  Receive integer scalar from other processor.
@@ -3089,6 +3113,26 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !
     endsubroutine mpirecv_nonblock_real_arr4
 !***********************************************************************
+    subroutine mpirecv_nonblock_real_arr5(bcast_array,nbcast_array,proc_src,tag_id,ireq)
+!
+!  Receive real array(:,:,:,:) from other processor, with non-blocking communication.
+!
+!  24-apr-17/Jorgen: adapted
+!
+      integer, dimension(5) :: nbcast_array
+      real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3),nbcast_array(4),nbcast_array(5)) :: bcast_array
+      integer :: proc_src, tag_id, ireq, num_elements
+!
+      intent(out) :: bcast_array
+
+      if (any(nbcast_array == 0)) return
+!
+      num_elements = product(nbcast_array)
+      call MPI_IRECV(bcast_array, num_elements, MPI_REAL, proc_src, &
+                     tag_id, MPI_COMM_GRID, ireq, mpierr)
+!
+    endsubroutine mpirecv_nonblock_real_arr5
+!***********************************************************************
     subroutine mpisend_nonblock_real_arr(bcast_array,nbcast_array,proc_rec,tag_id,ireq)
 !
 !  Send real array to other processor, with non-blocking communication.
@@ -3123,6 +3167,24 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
                      tag_id, MPI_COMM_GRID,ireq,mpierr)
 !
     endsubroutine mpisend_nonblock_real_arr4
+!***********************************************************************
+    subroutine mpisend_nonblock_real_arr5(bcast_array,nbcast_array,proc_rec,tag_id,ireq)
+!
+!  Send real array(:,:,:,:) to other processor, with non-blocking communication.
+!
+!  24-apr-17/Jorgen: adapted
+!
+      integer, dimension(5) :: nbcast_array
+      real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3),nbcast_array(4),nbcast_array(5)) :: bcast_array
+      integer :: proc_rec, tag_id, ireq, num_elements
+!
+      if (any(nbcast_array == 0)) return
+!
+      num_elements = product(nbcast_array)
+      call MPI_ISEND(bcast_array, num_elements, MPI_REAL, proc_rec, &
+                     tag_id, MPI_COMM_GRID,ireq,mpierr)
+!
+    endsubroutine mpisend_nonblock_real_arr5
 !***********************************************************************
     subroutine mpisend_nonblock_int_scl(bcast_array,proc_rec,tag_id,ireq)
 !

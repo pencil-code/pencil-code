@@ -23,6 +23,7 @@ module Mpicomm
     module procedure mpirecv_real_arr2
     module procedure mpirecv_real_arr3
     module procedure mpirecv_real_arr4
+    module procedure mpirecv_real_arr5
   endinterface
 !
   interface mpirecv_int
@@ -275,11 +276,13 @@ module Mpicomm
   interface mpirecv_nonblock_real
     module procedure mpirecv_nonblock_real_arr
     module procedure mpirecv_nonblock_real_arr4
+    module procedure mpirecv_nonblock_real_arr5
   endinterface
 !
   interface mpisend_nonblock_real
     module procedure mpisend_nonblock_real_arr
     module procedure mpisend_nonblock_real_arr4
+    module procedure mpisend_nonblock_real_arr5
   endinterface
 !
   interface mpirecv_nonblock_int
@@ -630,6 +633,16 @@ module Mpicomm
 !
     endsubroutine mpirecv_real_arr4
 !***********************************************************************
+    subroutine mpirecv_real_arr5(bcast_array,nb,proc_src,tag_id)
+!
+      integer, dimension(5) :: nb
+      real, dimension(nb(1),nb(2),nb(3),nb(4),nb(5)) :: bcast_array
+      integer :: proc_src, tag_id
+!
+      if (ALWAYS_FALSE) print*, bcast_array, nb, proc_src, tag_id
+!
+    endsubroutine mpirecv_real_arr5
+!***********************************************************************
     subroutine mpirecv_int_scl(bcast_array,proc_src,tag_id)
 !
       integer :: bcast_array
@@ -753,6 +766,16 @@ module Mpicomm
 !
     endsubroutine mpirecv_nonblock_real_arr4
 !***********************************************************************
+    subroutine mpirecv_nonblock_real_arr5(bcast_array,nb,proc_src,ireq,tag_id)
+!
+      integer, dimension(5) :: nb
+      real, dimension(nb(1),nb(2),nb(3),nb(4),nb(5)) :: bcast_array
+      integer :: proc_src, tag_id, ireq
+!
+      if (ALWAYS_FALSE) print*, bcast_array, nb, proc_src, tag_id, ireq
+!
+    endsubroutine mpirecv_nonblock_real_arr5
+!***********************************************************************
     subroutine mpirecv_nonblock_int_scl(bcast_array,proc_src,ireq,tag_id)
 !
       integer :: bcast_array
@@ -820,6 +843,16 @@ module Mpicomm
       if (ALWAYS_FALSE) print*, bcast_array, nb, proc_rec, tag_id, ireq
 !
     endsubroutine mpisend_nonblock_real_arr4
+!***********************************************************************
+    subroutine mpisend_nonblock_real_arr5(bcast_array,nb,proc_rec,ireq,tag_id)
+!
+      integer, dimension(5) :: nb
+      real, dimension(nb(1),nb(2),nb(3),nb(4),nb(5)) :: bcast_array
+      integer :: proc_rec, tag_id, ireq
+!
+      if (ALWAYS_FALSE) print*, bcast_array, nb, proc_rec, tag_id, ireq
+!
+    endsubroutine mpisend_nonblock_real_arr5
 !***********************************************************************
     subroutine mpisendrecv_real_scl(send_array,proc_dest,sendtag, &
       recv_array,proc_src,recvtag)
