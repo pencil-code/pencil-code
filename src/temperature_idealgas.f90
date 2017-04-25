@@ -500,7 +500,7 @@ module Energy
       use Sub,      only: blob
       use InitialCondition, only: initial_condition_ss
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, cs20, &
-                                 lnrho0, get_cp1
+                                 lnrho0, get_cp1, rho0
       use Gravity, only: gravz
       use Mpicomm, only: stop_it
       use Initcond, only: modes
@@ -510,7 +510,7 @@ module Energy
 !
       integer :: j
       logical :: lnothing=.true.
-      real :: haut, Rgas, cp1, Ttop, alpha, beta, expo
+      real :: haut, Rgas, cp1, Ttop, alpha, beta, expo, ztop
 !
       do j=1,ninit
 !
@@ -591,9 +591,16 @@ module Energy
               f(:,:,:,ilnTT)=log(cs20/gamma_m1)
             endif
             haut=-cs20/gamma/gravz
-            do n=n1,n2
-              f(:,:,n,ilnrho)=lnrho0+(1.-z(n))/haut
-            enddo
+            ztop=xyz1(3)
+            if (ldensity_nolog) then
+              do n=n1,n2
+                f(:,:,n,irho)=rho0*exp((ztop-z(n))/haut)
+              enddo
+            else
+              do n=n1,n2
+                f(:,:,n,ilnrho)=lnrho0+(ztop-z(n))/haut
+              enddo
+            endif
 !
           case ('hydro_rad')
             if (lroot) print*, 'init_lnTT: hydrostatic+radiative equilibria'
