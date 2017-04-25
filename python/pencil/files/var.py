@@ -337,9 +337,9 @@ class DataCube(object):
                 self.f = f[:, dim.n1:dim.n2+1, dim.m1:dim.m2+1, dim.l1:dim.l2+1]
             else:
                if dim.ny == 1:
-                   self.f = f[:, dim.n1:dim.n2+1, dim.l1:dim.l2+1]
+                   self.f = f[:, dim.n1:dim.n2+1, dim.l1:dim.l2+1].squeeze()
                else:
-                   self.f = f[:, dim.m1:dim.m2+1, dim.l1:dim.l2+1]
+                   self.f = f[:, dim.m1:dim.m2+1, dim.l1:dim.l2+1].squeeze()
         else:
             self.x = x
             self.y = y
