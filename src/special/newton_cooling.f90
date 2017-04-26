@@ -171,8 +171,8 @@ module Special
 !
         do i=1,nx 
            ! spits out opacity in cgs units
-           call calc_opacity(TT(i)*unit_temperature,&
-                rho(i)*unit_density,&
+           call calc_opacity(TT(i)*real(unit_temperature),&
+                rho(i)*real(unit_density),&
                 kappa_cgs)
 !
 ! kappa_code = kappa_cgs/ unit_kappa
