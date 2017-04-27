@@ -83,7 +83,7 @@ program run
   use Signal_handling, only: signal_prepare, emergency_stop
   use Slices
   use Snapshot
-  use Solid_Cells,     only: solid_cells_clean_up,time_step_ogrid
+  use Solid_Cells,     only: solid_cells_clean_up,time_step_ogrid,wsnap_ogrid
   use Special,         only: initialize_mult_special
   use Streamlines,     only: tracers_prepare, wtracers
   use Sub
@@ -673,6 +673,11 @@ program run
 !
     call time_step(f,df,p)
 !
+!  If overlapping grids are used to get body-confined grid around the solids
+!  in the flow, call time step on these grids. 
+! 
+    if(lsolid_cells) call time_step_ogrid(f)
+!
 !  Print diagnostic averages to screen and file.
 !
     if (lout) then
@@ -686,11 +691,6 @@ program run
       call write_sound(tsound)
       lout_sound = .false.
     endif
-!
-!  If overlapping grids are used to get body-confined grid around the solids
-!  in the flow, call time step on these grids. 
-! 
-    if(lsolid_cells) call time_step_ogrid(f)
 !
 !  Ensure better load balancing of particles by giving equal number of
 !  particles to each CPU. This only works when block domain decomposition of
@@ -789,6 +789,7 @@ program run
             call write_snapshot_particles(directory_dist,f,ENUM=.false.)
         if (lpointmasses) call pointmasses_write_snapshot(trim(directory_snap)//'/qvar.dat',ENUM=.false.)
         if (lsave) isave_shift = mod(it+isave-isave_shift, isave) + isave_shift
+        if (lsolid_cells) call wsnap_ogrid('ogvar.dat',ENUM=.false.)
       endif
     endif
 !
