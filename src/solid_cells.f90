@@ -3697,4 +3697,19 @@ module Solid_Cells
 !
     end subroutine p_ogrid
 !***********************************************************************
+    subroutine wsnap_ogrid(chsnap,enum,flist)
+!
+!  Dummy routine
+!
+      character(len=*), intent(in) :: chsnap
+      character(len=*), intent(in), optional :: flist
+      logical, intent(in), optional :: enum
+!
+      if (ALWAYS_FALSE) print*, chsnap
+      if (ALWAYS_FALSE) then 
+        if (present(enum)) print*, enum
+        if (present(enum)) print*, flist
+      endif
+    endsubroutine wsnap_ogrid
+!***********************************************************************
 endmodule Solid_Cells
