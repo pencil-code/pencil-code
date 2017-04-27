@@ -3259,16 +3259,15 @@ use general, only: linear_interpolate
 !
     call update_ghosts_ogrid
     call communicate_ip_curv_to_cart(f_cartesian,iux,irho)
-    !call flow_curvilinear_to_cartesian(f_cartesian)
 !
-!!TODO:Printing
-if(ncpus==1 .or. iproc==1) then
-    iterator = iterator+1
-  if(mod(iterator,100)==0) then
-    call print_ogrid(int(iterator/100))
-    call print_cgrid(int(iterator/100),f_cartesian)
-  endif
-endif
+! !!TODO:Printing
+! if(ncpus==1 .or. iproc==1) then
+!     iterator = iterator+1
+!   if(mod(iterator,1000)==0) then
+!     call print_ogrid(int(iterator/1000))
+!     call print_cgrid(int(iterator/1000),f_cartesian)
+!   endif
+! endif
 
     call wsnap_ogrid('OGVAR',ENUM=.true.,FLIST='ogvarN.list')
 !
@@ -5727,7 +5726,6 @@ endif
       real :: deltay_ogrid
 
       if (lread_from_other_prec) then
-        !TODO: DEALLCATE?
         if (kind(a)==rkind4) then
           allocate(adb(mx_ogrid,my_ogrid,mz_ogrid,nv),xdb(mx_ogrid),ydb(my_ogrid),zdb(mz_ogrid))
           call read_snap_ogrid(file,adb,xdb,ydb,zdb,dxdb,dydb,dzdb,deltaydb,nv,mode)
@@ -5901,7 +5899,7 @@ endif
       if (lserial_io) call start_serialize
       open (lun_input, FILE=trim(directory_snap)//'/'//file, FORM='unformatted', status='old')
       if (lwrite_2d) then
-        if (nz == 1) then
+        if (nz_ogrid == 1) then
           read (lun_input) a(:,:,4,:)
         else
           call fatal_error ('read_snap_double_ogrid','lwrite_2d used for simulation with nz_ogri/=1!')
