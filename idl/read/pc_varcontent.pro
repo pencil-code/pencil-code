@@ -24,7 +24,11 @@
 ;   see idlvarloc
 ;
 function pc_varcontent, datadir=datadir, dim=dim, ivar=ivar, param=param, par2=run_param, $
-    run2D=run2D, scalar=scalar, noaux=noaux, quiet=quiet, down=down
+                        run2D=run2D, scalar=scalar, noaux=noaux, quiet=quiet, down=down, single=single
+;
+;    /single: enforces single precision of returned data.
+;      /down: data read from downsampled snapshot.
+;
 COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Read grid dimensions, input parameters and location of datadir.
@@ -55,7 +59,13 @@ for line = 1, num_lines do begin
   str = stregex (index_pro[line-1], '^ *n[^= ]+[= ]+[0-9]+ *$', /extract)
   if (not execute (str)) then $
       message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+str (line)+'.', /info
-end
+endfor
+
+if keyword_set(down) and (n_elements(run_param) gt 0) then begin
+  mvar=run_param.mvar_down & maux=run_param.maux_down
+endif else begin
+  mvar=dim.mvar & maux=keyword_set(run_param.lwrite_aux) ? dim.maux : 0
+endelse
 ;
 ;  For EVERY POSSIBLE variable in a snapshot file, store a
 ;  description of the variable in an indexed array of structures
@@ -65,6 +75,7 @@ end
 ;
 indices = [ $
   { name:'iuu', label:'Velocity', dims:3 }, $
+  { name:'iadv_der_uu', label:'Advective acceleration as auxiliary variable', dims:3}, $
   { name:'ipp', label:'Pressure', dims:1 }, $
   { name:'ippp', label:'Pressure as auxiliary variable', dims:1 }, $
   { name:'iss', label:'Entropy', dims:1 }, $
@@ -150,6 +161,7 @@ indices_aux = [ $
   { name:'icooling2', label:'Applied cooling term', dims:1 }, $
   { name:'idetonate', label:'Detonation energy', dims:1 }, $
   { name:'inp', label:'Particle number', dims:1 }, $
+  { name:'iphiuu', label:'Potential of curl-free part of velocity field', dims:1 }, $
   { name:'irhop', label:'Particle mass density', dims:1 }, $
   { name:'iuup', label:'Particle velocity field', dims:3 }, $
   { name:'ifgx', label:'Gas terms for stiff drag forces', dims:3 }, $
@@ -229,20 +241,16 @@ endif
 ;
 if (not keyword_set (noaux)) then begin
 
-  if (keyword_set(run_param)) then $
-    lpar2aux=keyword_set(run_param.lwrite_aux) $
-  else $
-    lpar2aux=0
-
-  if ( (keyword_set(param.lwrite_aux) and lpar2aux) or $
+  if ( (keyword_set(param.lwrite_aux) and maux gt 0) or $
        (keyword_set(param.lwrite_aux) and ivar eq 0) or $
-       (lpar2aux and ivar gt 0) ) then $
+       maux gt 0) then $
     indices = [ indices, indices_aux ]
 endif
 ;
 ;  Predefine some variable types used regularly.
 ;
-INIT_DATA = [ 'make_array (mx,my,mz,', 'type=type_idl)' ]
+if keyword_set(single) then type='4' else type='type_idl'
+INIT_DATA = [ 'make_array (mx,my,mz,', 'type='+type+')' ]
 INIT_DATA_LOC = [ 'make_array (mxloc,myloc,mzloc,', 'type=type_idl)' ]
 
 ;
@@ -268,8 +276,8 @@ endif
 totalvars = 0L
 num_tags = n_elements(indices)
 num_vars = 0
-offsetv=0
-for tag = 1, num_tags do begin
+offsetv=mvar eq 0 ? 'pos[0]+1' : '0'
+for tag = (mvar eq 0 ? nvar+1 : 1), num_tags do begin
   search = indices[tag-1].name
   dims = indices[tag-1].dims
   add_vars = dims
@@ -317,19 +325,19 @@ for tag = 1, num_tags do begin
 
   if (size (selected, /type) eq 0) then begin
     selected = [ tag-1 ]
-    executes = [ exec_str+'-('+string(offsetv)+')']
+    executes = [ exec_str+'-'+offsetv]    ;-('+string(offsetv)+')']
     position = [ pos[0] ]
   end else begin
     selected = [ selected, tag-1 ]
-    executes = [ executes, exec_str+'-('+string(offsetv)+')' ]
+    executes = [ executes, exec_str+'-'+offsetv]   ;+string(offsetv)+')' ]
     position = [ position, pos[0] ]
   end
   totalvars += add_vars
-  if totalvars eq dim.mvar then begin      ; if sufficent MVAR variables are read, jump to beginning of MAUX section
+  if totalvars eq mvar then begin      ; if sufficent MVAR variables are read, jump to beginning of MAUX section
     ;offsetv=nvar-tag+1
-    tag=nvar-1
+    tag=nvar   ;???
   endif
-  if totalvars eq dim.mvar+dim.maux then break
+  if totalvars eq mvar+maux then break
 endfor
 ;
 ;  Make an array of structures in which to store their descriptions.
@@ -375,7 +383,6 @@ for var = 0, num_vars-1 do begin
   endfor
 
 endfor
-
 ;
 ;  Turn vector quantities into scalars if requested.
 ;

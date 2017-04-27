@@ -50,7 +50,8 @@
 ;   /nostats: Suppress only summary statistics.
 ;     /stats: Force printing of summary statistics even if /quiet is set.
 ;      /help: Display this usage information, and exit.
-;    /sphere: For Yin-Yang grid only: create the triangulation on the unit sphere
+;    /sphere: For Yin-Yang grid only: create the triangulation on the unit sphere.
+;    /single: enforces single precision of returned data.
 ;
 ; EXAMPLES:
 ;       pc_read_var, obj=vars            ;; read all vars into vars struct
@@ -89,7 +90,7 @@ pro pc_read_var,                                                  $
     swap_endian=swap_endian, f77=f77, varcontent=varcontent,      $
     global=global, scalar=scalar, run2D=run2D, noaux=noaux,       $
     ghost=ghost, bcx=bcx, bcy=bcy, bcz=bcz,                       $
-    exit_status=exit_status, sphere=sphere
+    exit_status=exit_status, sphere=sphere,single=single
 
 COMPILE_OPT IDL2,HIDDEN
 ;
@@ -113,6 +114,8 @@ COMPILE_OPT IDL2,HIDDEN
   default, bcy, 'none'
   default, bcz, 'none'
   default, validate_variables, 1
+  default, single, 0
+;
   if (arg_present(exit_status)) then exit_status=0
   default, reduced, 0
   if (keyword_set(reduced)) then allprocs=1
@@ -191,6 +194,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
       undefine, par2
     endelse
   endif
+
   if (n_elements(grid) eq 0) then $
       pc_read_grid, object=grid, dim=dim, param=param, datadir=datadir, $
       proc=proc, allprocs=allprocs, reduced=reduced, $
@@ -252,6 +256,7 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
   mvar=dim.mvar
   mvar_io=mvar
   if (param.lwrite_aux) then mvar_io+=dim.maux
+
   precision=dim.precision
   if (precision eq 'D') then bytes=8 else bytes=4
   mxloc=procdim.mx
@@ -311,10 +316,10 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;
   if (is_defined(par2)) then begin
     default, varcontent, pc_varcontent(datadir=datadir,dim=dim, ivar=ivar, $
-      param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled)
+      param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single)
   endif else begin
     default, varcontent, pc_varcontent(datadir=datadir,dim=dim, ivar=ivar, $
-      param=param,par2=param,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled)
+      param=param,par2=param,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single)
   endelse
 
   totalvars=(size(varcontent))[1]
