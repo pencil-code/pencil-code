@@ -16,7 +16,7 @@
 ! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv; cv1; del6lnTT; gamma
 ! PENCILS PROVIDED del2TT; del6TT; glnmumol(3); ppvap; csvap2
 ! PENCILS PROVIDED TTb; rho_anel; eth; geth(3); del2eth; heth(3,3)
-! PENCILS PROVIDED eths; geths(3)
+! PENCILS PROVIDED eths; geths(3); rho1gpp(3)
 !
 !***************************************************************
 module EquationOfState
@@ -208,8 +208,10 @@ module EquationOfState
             cp_reference=Rgas/(mu*gamma_m1*gamma1)
           endif
           if (abs(cp-cp_reference)/cp > error_cp) then
-            if (lroot) print*,'units_eos: consistency: cp=', cp , &
+            if (lroot) print*,'Rgas,mu=', Rgas, mu
+            if (lroot) print*,'units_eos: consistency: cp=', cp, &
                 'while: cp_reference=', cp_reference
+            if (lroot) print*,'also caused when changing gamma btw start/run!'
             call fatal_error('units_eos','cp is not correctly calculated')
           endif
         endif
