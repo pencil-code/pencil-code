@@ -251,7 +251,7 @@ module Solid_Cells
       cylinder_ypos, cylinder_zpos, flow_dir_set, skin_depth, &
       initsolid_cells, init_uu, r_ogrid, lset_flow_dir,ampl_noise, &
       grid_func_ogrid, coeff_grid_o, xyz_star_ogrid, grid_interpolation, &
-      lcheck_interpolation, lcheck_init_interpolation
+      lcheck_interpolation, lcheck_init_interpolation, SBP
 
 !  Read run.in file
   namelist /solid_cells_run_pars/ &
@@ -1179,12 +1179,17 @@ module Solid_Cells
           exit
         endif
       enddo
-      do kk=1,mzgrid_ogrid
-        if(rthz_global(3)==z_ogrid(kk)) then
-          i_rthz_local(3)=kk
-          exit
-        endif
-      enddo
+!
+      if(nzgrid_ogrid==1) then
+        i_rthz_local(3)=n1
+      else
+        do kk=1,mzgrid_ogrid
+          if(rthz_global(3)==z_ogrid(kk)) then
+            i_rthz_local(3)=kk
+            exit
+          endif
+        enddo
+      endif
 !
       if(lcheck) then
         if((rthz_global(1)-x_ogrid(i_rthz_local(1))/=0.) .or. &
@@ -1231,12 +1236,16 @@ module Solid_Cells
           exit
         endif
       enddo
-      do kk=1,mzgrid
-        if(xyz_global(3)==z(kk)) then
-          i_xyz_local(3)=kk
-          exit
-        endif
-      enddo
+      if(nzgrid==1) then
+        i_xyz_local(3)=n1
+      else
+        do kk=1,mzgrid
+          if(xyz_global(3)==z(kk)) then
+            i_xyz_local(3)=kk
+            exit
+          endif
+        enddo
+      endif
 !
       if(lcheck) then
         if((xyz_global(1)-x(i_xyz_local(1))/=0.) .or. &
@@ -1337,9 +1346,9 @@ module Solid_Cells
       real, dimension(3), intent(in) :: xyz
 !
       this_proc_cartesian=.true.
-      if(xyz(1)<x(1).or.xyz(1)>x(mx)) this_proc_cartesian=.false.
-      if(xyz(2)<y(1).or.xyz(2)>y(my)) this_proc_cartesian=.false.
-      if(xyz(3)<z(1).or.xyz(3)>z(mz)) this_proc_cartesian=.false.
+      if(xyz(1)<x(l1).or.xyz(1)>x(l2)) this_proc_cartesian=.false.
+      if(xyz(2)<y(m1).or.xyz(2)>y(m2)) this_proc_cartesian=.false.
+      if(xyz(3)<z(n1).or.xyz(3)>z(n2)) this_proc_cartesian=.false.
 !
     end function this_proc_cartesian
 !***********************************************************************
@@ -1570,36 +1579,32 @@ module Solid_Cells
 !  
 !  apr-17/Jorgen: Coded
 !  
-    use Mpicomm, only: mpisend_nonblock_int,mpisend_nonblock_real,mpirecv_int,mpirecv_real,mpiwait,mpibarrier &
-      , mpirecv_nonblock_int
+    use Mpicomm, only: mpisend_nonblock_int,mpisend_nonblock_real,mpirecv_int,mpirecv_real,mpiwait,mpibarrier
     real, dimension(mx,my,mz,mfarray), intent(in) :: f_cartesian
+    integer, intent(in) :: ivar1,ivar2
     integer, dimension(n_procs_send_cart_to_curv) :: ireq1D, ireq5D
-    integer :: ivar1,ivar2
-    integer, dimension(5) :: nbuf_farr 
+    integer, dimension(5) :: nbuf_farr
     integer, dimension(max_recv_ip_cart_to_curv) :: id_bufi
     real, dimension(max_send_ip_cart_to_curv,2,2,2,ivar2-ivar1+1) :: f_bufo
     real, dimension(max_recv_ip_cart_to_curv,2,2,2,ivar2-ivar1+1) :: f_bufi
-    real, dimension(ivar2-ivar1+1) :: f_ip
     real, dimension(2,2,2,ivar2-ivar1+1) :: farr
-    real, dimension(3) :: xyz_ip
     integer :: i,j,k,id
     integer :: iter, send_to, recv_from
-    integer, dimension(3) :: inear_glob
     integer, dimension(3) :: inear_loc
     integer :: ind_send_first, ind_send_last, ind_recv_first, ind_recv_last
-
+!
     nbuf_farr(2:4)=2
     nbuf_farr(5)=ivar2-ivar1+1
-
+!
     ind_send_first=1
     do iter=1,n_procs_send_cart_to_curv
       ind_send_last=n_ip_to_proc_cart_to_curv(iter)
       send_to=send_cartesian_to_curvilinear(ind_send_last)%send_to_proc
       nbuf_farr(1)=ind_send_last-ind_send_first+1
       do ip=1,nbuf_farr(1)
-        i=send_cartesian_to_curvilinear(ind_send_first)%i_low_corner(1)
-        j=send_cartesian_to_curvilinear(ind_send_first)%i_low_corner(2)
-        k=send_cartesian_to_curvilinear(ind_send_first)%i_low_corner(3)
+        i=send_cartesian_to_curvilinear(ind_send_first+ip-1)%i_low_corner(1)
+        j=send_cartesian_to_curvilinear(ind_send_first+ip-1)%i_low_corner(2)
+        k=send_cartesian_to_curvilinear(ind_send_first+ip-1)%i_low_corner(3)
         f_bufo(ip,:,:,:,:)=f_cartesian(i:i+1,j:j+1,k:k+1,ivar1:ivar2)
       enddo
       !print*, 'iproc: send id info', iproc,send_cartesian_to_curvilinear(ind_send_first:ind_send_last)%ip_id
@@ -1616,23 +1621,7 @@ module Solid_Cells
       call mpirecv_int(id_bufi(1:nbuf_farr(1)),nbuf_farr(1),recv_from,iproc)
       call mpirecv_real(f_bufi(1:nbuf_farr(1),:,:,:,:),nbuf_farr,recv_from,iproc+ncpus)
       do ip=1,nbuf_farr(1)
-        id=id_bufi(ip)
-        xyz_ip=cartesian_to_curvilinear(id)%xyz
-        inear_glob=cartesian_to_curvilinear(id)%ind_global_neighbour
-        farr=f_bufi(ip,:,:,:,:)
-! 
-!  Perform interpolation using the data recieved from other processor
-!
-        if(.not. linear_interpolate_cartesian(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
-            call fatal_error('linear_interpolate_cartesian','interpolation from cartesian to curvilinear')
-        endif
-        i=cartesian_to_curvilinear(id)%i_xyz(1)
-        j=cartesian_to_curvilinear(id)%i_xyz(2)
-        k=cartesian_to_curvilinear(id)%i_xyz(3)
-        f_ogrid(i,j,k,iux) = f_ip(iux)*cos(y_ogrid(j)) + f_ip(iuy)*sin(y_ogrid(j))
-        f_ogrid(i,j,k,iuy) = -f_ip(iux)*sin(y_ogrid(j)) + f_ip(iuy)*cos(y_ogrid(j))
-        f_ogrid(i,j,k,iuz) = f_ip(iuz)
-        f_ogrid(i,j,k,irho) = f_ip(irho)
+        call interpolate_point_cart_to_curv(id_bufi(ip),ivar1,ivar2,f_bufi(ip,:,:,:,:))
       enddo
     enddo
 !
@@ -1640,24 +1629,11 @@ module Solid_Cells
 !
     do id=1,n_ip_cart_to_curv
       if(cartesian_to_curvilinear(id)%from_proc==iproc) then
-        i=cartesian_to_curvilinear(id)%i_xyz(1)
-        j=cartesian_to_curvilinear(id)%i_xyz(2)
-        k=cartesian_to_curvilinear(id)%i_xyz(3)
-        xyz_ip=cartesian_to_curvilinear(id)%xyz
-        inear_glob=cartesian_to_curvilinear(id)%ind_global_neighbour
         inear_loc=cartesian_to_curvilinear(id)%ind_local_neighbour
         farr(:,:,:,ivar1:ivar2)=f_cartesian(inear_loc(1):inear_loc(1)+1,inear_loc(2):inear_loc(2)+1, &
           inear_loc(3):inear_loc(3)+1,ivar1:ivar2)
-        if(.not. linear_interpolate_cartesian(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
-            call fatal_error('linear_interpolate_cartesian','interpolation from cartesian to curvilinear')
-        endif
-        i=cartesian_to_curvilinear(id)%i_xyz(1)
-        j=cartesian_to_curvilinear(id)%i_xyz(2)
-        k=cartesian_to_curvilinear(id)%i_xyz(3)
-        f_ogrid(i,j,k,iux) = f_ip(iux)*cos(y_ogrid(j)) + f_ip(iuy)*sin(y_ogrid(j))
-        f_ogrid(i,j,k,iuy) = -f_ip(iux)*sin(y_ogrid(j)) + f_ip(iuy)*cos(y_ogrid(j))
-        f_ogrid(i,j,k,iuz) = f_ip(iuz)
-        f_ogrid(i,j,k,irho) = f_ip(irho)
+        call interpolate_point_cart_to_curv(id,ivar1,ivar2,farr)
+        ip=ip+1
       endif
     enddo
 !
@@ -1669,29 +1645,148 @@ module Solid_Cells
     enddo
     call mpibarrier
 !
-endsubroutine communicate_ip_cart_to_curv
+  endsubroutine communicate_ip_cart_to_curv
 !***********************************************************************
-!***********************************************************************
-  subroutine communicate_interpol_bdry(f_cartesian)
+  subroutine communicate_ip_curv_to_cart(f_cartesian,ivar1,ivar2)
 !
-!  Send and recieve necessary information to perform interpolation between
-!  the overlapping grids
-!  At this point we simply send the f_ogrid and f array on the entire cylinder
-!  grid and the part of the cartesian grid that covers the cylinder grid 
-!  (and a bit more), respectively to every processor.
-!  This gives a quite large communication overhead, but reduces the amount
-!  of extra work done by the root processor
+!  Send and recieve necessary information to perform interpolation from 
+!  the curvilinear to the cartesian grid.
 !  
 !  apr-17/Jorgen: Coded
 !  
-    !use Solid_Cells_Mpicomm, only: initiate_isendrcv_interpol_brdy, finalize_isendrcv_interpol_brdy
-    real, dimension(mx,my,mz,mfarray), intent(in) :: f_cartesian
-
-      !call initiate_isendrcv_interpol_bdry(f_ogrid,f_cartesian,inter_stencil_len)
-      !call finalize_isendrcv_interpol_bdry(f_ogrid,f_cartesian,inter_stencil_len)
-  endsubroutine communicate_interpol_bdry
+    use Mpicomm, only: mpisend_nonblock_int,mpisend_nonblock_real,mpirecv_int,mpirecv_real,mpiwait,mpibarrier
+    real, dimension(mx,my,mz,mfarray), intent(inout) :: f_cartesian
+    integer, intent(in) :: ivar1,ivar2
+    integer, dimension(n_procs_send_curv_to_cart) :: ireq1D, ireq5D
+    integer, dimension(5) :: nbuf_farr
+    integer, dimension(max_recv_ip_curv_to_cart) :: id_bufi
+    real, dimension(max_send_ip_curv_to_cart,2,2,2,ivar2-ivar1+1) :: f_bufo
+    real, dimension(max_recv_ip_curv_to_cart,2,2,2,ivar2-ivar1+1) :: f_bufi
+    real, dimension(2,2,2,ivar2-ivar1+1) :: farr
+    integer :: i,j,k,id
+    integer :: iter, send_to, recv_from
+    integer, dimension(3) :: inear_loc
+    integer :: ind_send_first, ind_send_last, ind_recv_first, ind_recv_last
+!
+    nbuf_farr(2:4)=2
+    nbuf_farr(5)=ivar2-ivar1+1
+!
+    ind_send_first=1
+    do iter=1,n_procs_send_curv_to_cart
+      ind_send_last=n_ip_to_proc_curv_to_cart(iter)
+      send_to=send_curvilinear_to_cartesian(ind_send_last)%send_to_proc
+      nbuf_farr(1)=ind_send_last-ind_send_first+1
+      do ip=1,nbuf_farr(1)
+        i=send_curvilinear_to_cartesian(ind_send_first+ip-1)%i_low_corner(1)
+        j=send_curvilinear_to_cartesian(ind_send_first+ip-1)%i_low_corner(2)
+        k=send_curvilinear_to_cartesian(ind_send_first+ip-1)%i_low_corner(3)
+        f_bufo(ip,:,:,:,:)=f_ogrid(i:i+1,j:j+1,k:k+1,ivar1:ivar2)
+      enddo
+      call mpisend_nonblock_int(send_curvilinear_to_cartesian(ind_send_first:ind_send_last)%ip_id, &
+        nbuf_farr(1),send_to,send_to,ireq1D(iter))
+      call mpisend_nonblock_real(f_bufo(1:nbuf_farr(1),:,:,:,:),nbuf_farr,send_to,send_to+ncpus,ireq5D(iter))
+      ind_send_first=ind_send_last+1
+    enddo
+    ind_recv_first=1
+    do iter=1,n_procs_recv_curv_to_cart
+      ind_recv_last=n_ip_recv_proc_curv_to_cart(iter)
+      recv_from=procs_recv_curv_to_cart(iter)
+      nbuf_farr(1)=ind_recv_last-ind_recv_first+1
+      call mpirecv_int(id_bufi(1:nbuf_farr(1)),nbuf_farr(1),recv_from,iproc)
+      call mpirecv_real(f_bufi(1:nbuf_farr(1),:,:,:,:),nbuf_farr,recv_from,iproc+ncpus)
+      do ip=1,nbuf_farr(1)
+        call interpolate_point_curv_to_cart(f_cartesian,id_bufi(ip),ivar1,ivar2,f_bufi(ip,:,:,:,:))
+      enddo
+    enddo
+!
+!  Interpolate remaining points 
+!
+    do id=1,n_ip_curv_to_cart
+      if(curvilinear_to_cartesian(id)%from_proc==iproc) then
+        inear_loc=curvilinear_to_cartesian(id)%ind_local_neighbour
+        farr(:,:,:,ivar1:ivar2)=f_ogrid(inear_loc(1):inear_loc(1)+1,inear_loc(2):inear_loc(2)+1, &
+          inear_loc(3):inear_loc(3)+1,ivar1:ivar2)
+        call interpolate_point_curv_to_cart(f_cartesian,id,ivar1,ivar2,farr)
+      endif
+    enddo
+!
+!  Finalize nonblocking sends
+!
+    do iter=1,n_procs_send_curv_to_cart
+      call mpiwait(ireq1D(iter))
+      call mpiwait(ireq5D(iter))
+    enddo
+    call mpibarrier
+!
+  endsubroutine communicate_ip_curv_to_cart
 !***********************************************************************
-  subroutine flow_cartesian_to_curvilinear(f_cartesian)
+  subroutine interpolate_point_cart_to_curv(id,ivar1,ivar2,farr)
+!
+!  Use linear interpolation routine to interpolate the values on the cartesian 
+!  grid to the interpolation point on the curvilinear grid
+!
+use general, only: linear_interpolate
+    integer, intent(in) :: id,ivar1,ivar2
+    real, dimension(2,2,2,ivar2-ivar2+1), intent(in) :: farr
+    integer :: i,j,k
+    real, dimension(3) :: xyz_ip
+    integer, dimension(3) :: inear_glob
+    real, dimension(ivar2-ivar1+1) :: f_ip
+!
+    xyz_ip=cartesian_to_curvilinear(id)%xyz
+    inear_glob=cartesian_to_curvilinear(id)%ind_global_neighbour
+! 
+!  Perform interpolation on cartesian grid
+!
+    if(.not. linear_interpolate_cartesian(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
+      call fatal_error('linear_interpolate_cartesian','interpolation from cartesian to curvilinear')
+    endif
+!
+!  Update curvilinear grid with the new data values
+!
+    i=cartesian_to_curvilinear(id)%i_xyz(1)
+    j=cartesian_to_curvilinear(id)%i_xyz(2)
+    k=cartesian_to_curvilinear(id)%i_xyz(3)
+    f_ogrid(i,j,k,iux) = f_ip(iux)*cos(y_ogrid(j)) + f_ip(iuy)*sin(y_ogrid(j))
+    f_ogrid(i,j,k,iuy) = -f_ip(iux)*sin(y_ogrid(j)) + f_ip(iuy)*cos(y_ogrid(j))
+    f_ogrid(i,j,k,iuz:ivar2) = f_ip(iuz:ivar2)
+!
+  endsubroutine interpolate_point_cart_to_curv
+!***********************************************************************
+  subroutine interpolate_point_curv_to_cart(f_cartesian,id,ivar1,ivar2,farr)
+!
+!  Use linear interpolation routine to interpolate the values on the cartesian 
+!  grid to the interpolation point on the curvilinear grid
+!
+    real, dimension (mx,my,mz,mfarray), intent(inout) :: f_cartesian
+    integer, intent(in) :: id,ivar1,ivar2
+    real, dimension(2,2,2,ivar2-ivar2+1), intent(in) :: farr
+    integer :: i,j,k
+    real, dimension(3) :: xyz_ip
+    integer, dimension(3) :: inear_glob
+    real, dimension(ivar2-ivar1+1) :: f_ip
+!
+    xyz_ip=curvilinear_to_cartesian(id)%xyz
+    inear_glob=curvilinear_to_cartesian(id)%ind_global_neighbour
+! 
+!  Perform interpolation on cartesian grid
+!
+    if(.not. linear_interpolate_curvilinear(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
+      call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian')
+    endif
+!
+!  Update curvilinear grid with the new data values
+!
+    i=curvilinear_to_cartesian(id)%i_xyz(1)
+    j=curvilinear_to_cartesian(id)%i_xyz(2)
+    k=curvilinear_to_cartesian(id)%i_xyz(3)
+    f_cartesian(i,j,k,iux)=f_ip(iux)*cos(xyz_ip(2))-f_ip(iuy)*sin(xyz_ip(2))
+    f_cartesian(i,j,k,iuy)=f_ip(iux)*sin(xyz_ip(2))+f_ip(iuy)*cos(xyz_ip(2))
+    f_cartesian(i,j,k,iuz:ivar2)=f_ip(iuz:ivar2)
+!
+  endsubroutine interpolate_point_curv_to_cart
+!***********************************************************************
+  subroutine flow_cartesian_to_curvilinear(f_cartesian,f_og)
 
     use General, only: linear_interpolate
 !
@@ -1705,13 +1800,14 @@ endsubroutine communicate_ip_cart_to_curv
 !   16-feb-17/Jorgen: Coded
 !
     real, dimension (mx,my,mz,mfarray) :: f_cartesian
+    real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f_og
     real, dimension (3) :: xyz
     integer :: lower_i,upper_i,lower_j,upper_j,lower_k,upper_k
     integer :: ivar1,ivar2
     integer, dimension (3) :: inear
     real, dimension (ilnrho-iux+1) :: gp
     integer :: i,j,k
-
+!
     ivar1=iux
     ivar2=ilnrho
     do k=n1_ogrid,n2_ogrid
@@ -1720,23 +1816,17 @@ endsubroutine communicate_ip_cart_to_curv
           xyz=(/ x_ogrid(i)*cos(y_ogrid(j))+xorigo_ogrid(1), &
                   x_ogrid(i)*sin(y_ogrid(j))+xorigo_ogrid(2), &
                   z_ogrid(k) /)
-!
-!  Check if grid points needed for the interpolation exists on this processor
-!
-!TODOTODO
-          !if(.not. this_proc(xyz)) then
-          !  call fatal_error('this_proc','interpolation point is not present at this processor')
-          !endif
           call find_near_cartesian_indices(lower_i,upper_i,lower_j,upper_j, &
                 lower_k,upper_k,xyz)
           inear=(/ lower_i, lower_j, lower_k /)
+
           if ( .not. linear_interpolate(f_cartesian,ivar1,ivar2,xyz,gp,inear,lcheck_interpolation) ) then
             call fatal_error('linear_interpolate','interpolation from cartesian to curvilinear')
           endif
-          f_ogrid(i,j,k,iux)=gp(iux)*cos(y_ogrid(j))+gp(iuy)*sin(y_ogrid(j))
-          f_ogrid(i,j,k,iuy)=-gp(iux)*sin(y_ogrid(j))+gp(iuy)*cos(y_ogrid(j))
-          f_ogrid(i,j,k,iuz)=gp(iuz)
-          f_ogrid(i,j,k,irho)=gp(irho)
+          f_og(i,j,k,iux)=gp(iux)*cos(y_ogrid(j))+gp(iuy)*sin(y_ogrid(j))
+          f_og(i,j,k,iuy)=-gp(iux)*sin(y_ogrid(j))+gp(iuy)*cos(y_ogrid(j))
+          f_og(i,j,k,iuz)=gp(iuz)
+          f_og(i,j,k,irho)=gp(irho)
         enddo
       enddo
     enddo
@@ -1983,9 +2073,9 @@ endsubroutine communicate_ip_cart_to_curv
         print*, 'linear_interpolate_cartesian: Global interpolation point does not ' // &
             'lie within the calculated grid point interval.'
         print*, 'iproc = ', iproc_world
-        print*, 'mxgrid, xglobal(1), xglobal(mx) = ', mxgrid, xglobal(1), xglobal(mx)
-        print*, 'mygrid, yglobal(1), yglobal(my) = ', mygrid, yglobal(1), yglobal(my)
-        print*, 'mzgrid, zglobal(1), zglobal(mz) = ', mzgrid, zglobal(1), zglobal(mz)
+        print*, 'mxgrid, xglobal(1), xglobal(mx) = ', mxgrid, xglobal(1), xglobal(mxgrid)
+        print*, 'mygrid, yglobal(1), yglobal(my) = ', mygrid, yglobal(1), yglobal(mygrid)
+        print*, 'mzgrid, zglobal(1), zglobal(mz) = ', mzgrid, zglobal(1), zglobal(mzgrid)
         print*, 'ix0, iy0, iz0 = ', ix0, iy0, iz0
         print*, 'xp, xp0, xp1 = ', xxp(1), xglobal(ix0), xglobal(ix0+1)
         print*, 'yp, yp0, yp1 = ', xxp(2), yglobal(iy0), yglobal(iy0+1)
@@ -2076,6 +2166,150 @@ endsubroutine communicate_ip_cart_to_curv
       if (lfirstcall) lfirstcall=.false.
 !
   endfunction linear_interpolate_cartesian
+!***********************************************************************
+  logical function linear_interpolate_curvilinear(farr,ivar1,ivar2,xxp,inear_glob,fp,lcheck)
+!
+!  Interpolate the value of f to arbitrary (xp, yp, zp) CURVILINEAR coordinate
+!  using the linear interpolation formula.
+!
+!    g(x,y,z) = A*x*y*z + B*x*y + C*x*z + D*y*z + E*x + F*y + G*z + H .
+!
+!  The coefficients are determined by the 8 grid points surrounding the
+!  interpolation point.
+!  Global coordinates are used for the interpolation, to allow interpolation of 
+!  values outside this processors domain.
+!
+!  26-apr-17/Jorgen: Adapted from linear_interpolate_cartesian
+!
+      integer :: ivar1, ivar2
+      real, dimension (3) :: xxp
+      real, dimension (2,2,2,ivar2-ivar1+1) :: farr
+      real, dimension (ivar2-ivar1+1) :: fp
+      integer, dimension (3) :: inear_glob
+      logical :: lcheck
+!
+      real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8
+      real :: xp0, yp0, zp0
+      real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
+      logical :: lfirstcall=.true.
+      integer :: ix0, iy0, iz0, i
+!
+      intent(in)  :: farr, ivar1, ivar2, xxp, inear_glob, lcheck
+      intent(out) :: fp
+!
+!  Determine index value of lowest lying corner point of grid box surrounding
+!  the interpolation point.
+!
+      linear_interpolate_curvilinear= .true.
+!
+      ix0=inear_glob(1); iy0=inear_glob(2); iz0=inear_glob(3)
+!
+!  Check if the grid point interval is really correct.
+!
+      if ((xglobal_ogrid(ix0)<=xxp(1) .and. xglobal_ogrid(ix0+1)>=xxp(1) .or. nxgrid==1) .and. &
+          (yglobal_ogrid(iy0)<=xxp(2) .and. yglobal_ogrid(iy0+1)>=xxp(2) .or. nygrid==1) .and. &
+          (zglobal_ogrid(iz0)<=xxp(3) .and. zglobal_ogrid(iz0+1)>=xxp(3) .or. nzgrid==1)) then
+        ! Everything okay
+      else
+        print*, 'linear_interpolate_curvilinear: Global interpolation point does not ' // &
+            'lie within the calculated grid point interval.'
+        print*, 'iproc = ', iproc_world
+        print*, 'mxgrid_ogrid, xglobal_ogrid(1), xglobal_ogrid(mxgrid_ogrid) = ', & 
+            mxgrid_ogrid, xglobal_ogrid(1), xglobal_ogrid(mxgrid_ogrid)
+        print*, 'mygrid_ogrid, yglobal_ogrid(1), yglobal_ogrid(mygrid_ogrid) = ', &
+            mygrid_ogrid, yglobal_ogrid(1), yglobal_ogrid(mygrid_ogrid)
+        print*, 'mzgrid_ogrid, zglobal_ogrid(1), zglobal_ogrid(mzgrid_ogrid) = ', & 
+            mzgrid_ogrid, zglobal_ogrid(1), zglobal_ogrid(mzgrid_ogrid)
+        print*, 'ix0, iy0, iz0 = ', ix0, iy0, iz0
+        print*, 'xp, xp0, xp1 = ', xxp(1), xglobal_ogrid(ix0), xglobal_ogrid(ix0+1)
+        print*, 'yp, yp0, yp1 = ', xxp(2), yglobal_ogrid(iy0), yglobal_ogrid(iy0+1)
+        print*, 'zp, zp0, zp1 = ', xxp(3), zglobal_ogrid(iz0), zglobal_ogrid(iz0+1)
+        linear_interpolate_curvilinear= .false.
+        return
+      endif
+!
+!  Redefine the interpolation point in coordinates relative to lowest corner.
+!  Set it equal to 0 for dimensions having 1 grid points; this will make sure
+!  that the interpolation is bilinear for 2D grids.
+!
+      xp0=0; yp0=0; zp0=0
+      if (nxgrid_ogrid/=1) xp0=xxp(1)-xglobal_ogrid(ix0)
+      if (nygrid_ogrid/=1) yp0=xxp(2)-yglobal_ogrid(iy0)
+      if (nzgrid_ogrid/=1) zp0=xxp(3)-zglobal_ogrid(iz0)
+!
+!  Calculate derived grid spacing parameters needed for interpolation.
+!
+      dx1=1/(xglobal_ogrid(ix0+1)-xglobal_ogrid(ix0))
+      dy1=1/(yglobal_ogrid(iy0+1)-yglobal_ogrid(iy0))
+      if(nzgrid/=1) then
+        dz1=1/(zglobal_ogrid(iz0+1)-zglobal_ogrid(iz0))
+      else 
+        dz1=1
+      endif
+!
+      dxdy1=dx1*dy1; dxdz1=dx1*dz1; dydz1=dy1*dz1
+      dxdydz1=dx1*dy1*dz1
+!
+!  Function values at all corners.
+!
+      g1=farr(1,1,1,ivar1:ivar2)
+      g2=farr(2,1,1,ivar1:ivar2)
+      g3=farr(1,2,1,ivar1:ivar2)
+      g4=farr(2,2,1,ivar1:ivar2)
+      g5=farr(1,1,2,ivar1:ivar2)
+      g6=farr(2,1,2,ivar1:ivar2)
+      g7=farr(1,2,2,ivar1:ivar2)
+      g8=farr(2,2,2,ivar1:ivar2)
+!
+!  Interpolation formula.
+!
+      fp = g1 + xp0*dx1*(-g1+g2) + yp0*dy1*(-g1+g3) + zp0*dz1*(-g1+g5) + &
+          xp0*yp0*dxdy1*(g1-g2-g3+g4) + xp0*zp0*dxdz1*(g1-g2-g5+g6) + &
+          yp0*zp0*dydz1*(g1-g3-g5+g7) + &
+          xp0*yp0*zp0*dxdydz1*(-g1+g2+g3-g4+g5-g6-g7+g8)
+!
+!  Do a reality check on the interpolation scheme.
+!
+      if (lcheck) then
+        do i=1,ivar2-ivar1+1
+          if (fp(i)>max(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
+            print*, 'linear_interpolate_curvilinear: interpolated value is LARGER than'
+            print*, 'linear_interpolate_curvilinear: a values at the corner points!'
+            print*, 'linear_interpolate_curvilinear: x0, y0, z0=', &
+                xglobal_ogrid(ix0), yglobal_ogrid(iy0), zglobal_ogrid(iz0)
+            print*, 'linear_interpolate_curvilinear: i, fp(i)=', i, fp(i)
+            print*, 'linear_interpolate_curvilinear: g1...g8=', &
+                g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
+            print*, '------------------'
+          endif
+          if (fp(i)<min(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
+            print*, 'linear_interpolate_curvilinear: interpolated value is smaller than'
+            print*, 'linear_interpolate_curvilinear: a values at the corner points!'
+            print*, 'linear_interpolate_curvilinear: xxp=', xxp
+            print*, 'linear_interpolate_curvilinear: x0, y0, z0=', &
+                xglobal_ogrid(ix0), yglobal_ogrid(iy0), zglobal_ogrid(iz0)
+            print*, 'linear_interpolate_curvilinear: i, fp(i)=', i, fp(i)
+            print*, 'linear_interpolate_curvilinear: g1...g8=', &
+                g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
+            print*, '------------------'
+          endif
+          if (fp(i)/=fp(i)) then
+            print*, 'linear_interpolate_curvilinear: interpolated value is NaN'
+            print*, 'linear_interpolate_curvilinear: xxp=', xxp
+            print*, 'linear_interpolate_curvilinear: x0, y0, z0=', &
+                xglobal_ogrid(ix0), yglobal_ogrid(iy0), zglobal_ogrid(iz0)
+            print*, 'linear_interpolate_curvilinear: i, fp(i)=', i, fp(i)
+            print*, 'linear_interpolate_curvilinear: g1...g8=', &
+                g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
+            print*, '------------------'
+            linear_interpolate_curvilinear=.false.
+          endif
+        enddo
+      endif
+!
+      if (lfirstcall) lfirstcall=.false.
+!
+  endfunction linear_interpolate_curvilinear
 !***********************************************************************
   subroutine solid_cells_timestep_first(f)
 !
@@ -2959,8 +3193,7 @@ endsubroutine communicate_ip_cart_to_curv
 !  Before interpolating, necessary points outside this processors domain are
 !  recieved from appropriate processor
 !
-      call communicate_ip_cart_to_curv(f_cartesian,iux,irho)
-      !call flow_cartesian_to_curvilinear(f_cartesian)
+    call communicate_ip_cart_to_curv(f_cartesian,iux,irho)
 !
 !  Time step for ogrid
 !
@@ -3019,35 +3252,21 @@ endsubroutine communicate_ip_cart_to_curv
 !
       enddo
     enddo
-
-!  If necessary (usually is for parallel runs), send information about f-array
-!  to processors that need it to perform interpolation between the grids.
-
-!!TODO
-!    if(interpolation_comm) then
-!      call communicate_interpol_bdry(f_cartesian)
-!    endif
 !
-!  Update boundary of the overlapping grid by interpolating
-!  from curvilinear grid to cartesian grid. Only relevant for 
-!  processors that have grid points at the edge of the cylidner
-!  grid.
+!  Interpolate data from curvilinear to cartesian grid.
+!  Before interpolating, necessary points outside this processors domain are
+!  recieved from appropriate processor
 !
-    !if(llast_proc_x) then
-    !  call flow_cartesian_to_curvilinear(f_cartesian)
-    !endif
-!
-!  Update the cartesian grid using the newly computed flow
-!  field on the curvilinear grid
-!
+    call update_ghosts_ogrid
+    call communicate_ip_curv_to_cart(f_cartesian,iux,irho)
     !call flow_curvilinear_to_cartesian(f_cartesian)
 !
 !!TODO:Printing
 if(ncpus==1 .or. iproc==1) then
     iterator = iterator+1
-  if(mod(iterator,1)==0) then
-    call print_ogrid(int(iterator/1))
-    call print_cgrid(int(iterator/1),f_cartesian)
+  if(mod(iterator,100)==0) then
+    call print_ogrid(int(iterator/100))
+    call print_cgrid(int(iterator/100),f_cartesian)
   endif
 endif
 
@@ -3312,9 +3531,6 @@ endif
 !
 !  Calculate Hydro pencils.
 !  Most basic pencils should come first, as others may depend on them.
-!
-      real, dimension (nx_ogrid) :: tmp, tmp2
-      integer :: i, j, ju, ij,jj,kk,jk
 !
 ! Pencils: uu, u2, uij, divu, sij, sij2, ugu, ugu2, del2u
 !
@@ -5254,14 +5470,14 @@ endif
       real, dimension(3), intent(in) :: rthz
 !
       lower_indices = 0
-      do ii = 1+nghost,mxgrid_ogrid-nghost
+      do ii = 1,mxgrid_ogrid
         if (xglobal_ogrid(ii) > rthz(1)) then
           lower_indices(1) = ii-1
           exit
         endif
       enddo
 !
-      do jj = 1+nghost,mygrid_ogrid-nghost
+      do jj = 1,mygrid_ogrid
         if (yglobal_ogrid(jj) > rthz(2)) then
           lower_indices(2) = jj-1
           exit
@@ -5271,7 +5487,7 @@ endif
       if (nzgrid == 1) then
         lower_indices(3) = n1
       else
-        do kk = 1+nghost,mzgrid_ogrid-nghost
+        do kk = 1,mzgrid_ogrid
           if (zglobal_ogrid(kk) > rthz(3)) then
             lower_indices(3) = kk-1
             exit

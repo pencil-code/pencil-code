@@ -131,7 +131,7 @@ module Solid_Cells_Mpicomm
 !
 !  Set communication across x-planes.
 !
-      call isendrcv_bdry_x_ogrid(f)
+      if (nprocx>1) call isendrcv_bdry_x_ogrid(f)
 !
 !  Allocate and send/receive buffers across y-planes
 !
@@ -305,33 +305,30 @@ module Solid_Cells_Mpicomm
       integer :: j
       integer, dimension(4), parameter ::  nbuf_x=(/ny_ogrid,nz_ogrid,nghost,ivar2-ivar1+1/)
 !
-      if (nprocx>1) then
-
-        lbufxo_og(:,:,:,ivar1:ivar2)=f(l1_ogrid:l1i_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(lower x-zone)
-        ubufxo_og(:,:,:,ivar1:ivar2)=f(l2i_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(upper x-zone)
-        call mpirecv_nonblock_real(ubufxi_og(:,:,:,ivar1:ivar2),nbuf_x,xuneigh,tolowx,irecv_rq_fromuppx)
-        call mpirecv_nonblock_real(lbufxi_og(:,:,:,ivar1:ivar2),nbuf_x,xlneigh,touppx,irecv_rq_fromlowx)
-        call mpisend_nonblock_real(lbufxo_og(:,:,:,ivar1:ivar2),nbuf_x,xlneigh,tolowx,isend_rq_tolowx)
-        call mpisend_nonblock_real(ubufxo_og(:,:,:,ivar1:ivar2),nbuf_x,xuneigh,touppx,isend_rq_touppx)
-        call mpiwait(irecv_rq_fromuppx)
-        call mpiwait(irecv_rq_fromlowx)
+      lbufxo_og(:,:,:,ivar1:ivar2)=f(l1_ogrid:l1i_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(lower x-zone)
+      ubufxo_og(:,:,:,ivar1:ivar2)=f(l2i_ogrid:l2_ogrid,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,ivar1:ivar2) !!(upper x-zone)
+      call mpirecv_nonblock_real(ubufxi_og(:,:,:,ivar1:ivar2),nbuf_x,xuneigh,tolowx,irecv_rq_fromuppx)
+      call mpirecv_nonblock_real(lbufxi_og(:,:,:,ivar1:ivar2),nbuf_x,xlneigh,touppx,irecv_rq_fromlowx)
+      call mpisend_nonblock_real(lbufxo_og(:,:,:,ivar1:ivar2),nbuf_x,xlneigh,tolowx,isend_rq_tolowx)
+      call mpisend_nonblock_real(ubufxo_og(:,:,:,ivar1:ivar2),nbuf_x,xuneigh,touppx,isend_rq_touppx)
+      call mpiwait(irecv_rq_fromuppx)
+      call mpiwait(irecv_rq_fromlowx)
 !
 !  Inner communication in x
 !  Note: Never periodic BC for radial direction
 !
-        if (.not. lfirst_proc_x) then
-          do j=ivar1,ivar2
-            f( 1:l1_ogrid-1,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j)=lbufxi_og(:,:,:,j)  !!(set lower buffer)
-          enddo
-        endif
-        if (.not. llast_proc_x) then
-          do j=ivar1,ivar2
-            f(l2_ogrid+1:,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j)=ubufxi_og(:,:,:,j)  !!(set upper buffer)
-          enddo
-        endif
-        call mpiwait(isend_rq_tolowx)
-        call mpiwait(isend_rq_touppx)
+      if (.not. lfirst_proc_x) then
+        do j=ivar1,ivar2
+          f( 1:l1_ogrid-1,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j)=lbufxi_og(:,:,:,j)  !!(set lower buffer)
+        enddo
       endif
+      if (.not. llast_proc_x) then
+        do j=ivar1,ivar2
+          f(l2_ogrid+1:,m1_ogrid:m2_ogrid,n1_ogrid:n2_ogrid,j)=ubufxi_og(:,:,:,j)  !!(set upper buffer)
+        enddo
+      endif
+      call mpiwait(isend_rq_tolowx)
+      call mpiwait(isend_rq_touppx)
 !
     endsubroutine isendrcv_bdry_x_ogrid
 !***********************************************************************
