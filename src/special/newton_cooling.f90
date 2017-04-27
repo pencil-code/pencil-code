@@ -146,7 +146,7 @@ module Special
 !
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(nx) :: rho,TT
-      real :: TT0,rho01,lnTT0,cp1,cv1,kappa_cgs
+      real :: TT0,rho01,lnTT0,cp1,cv1,kappa_cgs,TTdim,rhodim
       integer :: i,j      
 !
       call get_cp1(cp1)
@@ -171,9 +171,9 @@ module Special
 !
         do i=1,nx 
            ! spits out opacity in cgs units
-           call calc_opacity(TT(i)*real(unit_temperature),&
-                rho(i)*real(unit_density),&
-                kappa_cgs)
+           TTdim=TT(i)*unit_temperature
+           rhodim=rho(i)*unit_density
+           call calc_opacity(TTdim,rhodim,kappa_cgs)
 !
 ! kappa_code = kappa_cgs/ unit_kappa
 ! unit_kappa = 1/(unit_density*unit_length)
