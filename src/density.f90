@@ -40,17 +40,17 @@ module Density
   real, dimension (ninit) :: kx_lnrho=1.0, ky_lnrho=1.0, kz_lnrho=1.0
   real, dimension (ninit) :: kxx_lnrho=0.0, kyy_lnrho=0.0, kzz_lnrho=0.0
   real, dimension (nz) :: glnrhomz
-  real, dimension (mz) :: lnrho_init_z=0.0, del2lnrho_init_z=0.0
-  real, dimension (mz) :: dlnrhodz_init_z=0.0, glnrho2_init_z=0.0
+  real, dimension (mz) :: lnrho_init_z=0.0
+  real, dimension (mz) :: dlnrhodz_init_z=0.0, del2lnrho_glnrho2_init_z=0.0
   real, dimension (3) :: diffrho_hyper3_aniso=0.0
-  real, dimension (nx) :: profx_ffree=1.0, dprofx_ffree=0.0         ! GPU => DEVICE
+  real, dimension (nx) :: profx_ffree=1.0, dprofx_ffree=0.0 
   real, dimension (my) :: profy_ffree=1.0, dprofy_ffree=0.0
   real, dimension (mz) :: profz_ffree=1.0, dprofz_ffree=0.0
   real, dimension(nx) :: xmask_den
-  real, dimension(nx) :: fprofile_x=1.                              ! GPU => DEVICE
+  real, dimension(nx) :: fprofile_x=1.
   real, dimension(nz) :: fprofile_z=1.
   real, dimension(nz) :: zmask_den
-  real, dimension(nx) :: reduce_cs2_profx = 1.0                     ! GPU => DEVICE
+  real, dimension(nx) :: reduce_cs2_profx = 1.0
   real, dimension(mz) :: reduce_cs2_profz = 1.0
   character(LEN=labellen) :: ireference_state='nothing'
   real :: reference_state_mass=0.
@@ -210,6 +210,10 @@ module Density
 ! z averaged diagnostics given in zaver.in
   integer :: idiag_rhomxy=0     ! ZAVG_DOC: $\left<\varrho\right>_{z}$
   integer :: idiag_sigma=0      ! ZAVG_DOC; $\Sigma\equiv\int\varrho\,\mathrm{d}z$
+!
+!  module auxiliaries
+!
+  logical :: lupdate_mass_source
 !
   contains
 !***********************************************************************
@@ -624,8 +628,8 @@ module Density
 !
         if (lanti_shockdiffusion) then
           call der_pencil(3,lnrho_init_z,dlnrhodz_init_z)
-          call der2_pencil(3,lnrho_init_z,del2lnrho_init_z(n1:n2))
-          glnrho2_init_z=dlnrhodz_init_z**2
+          call der2_pencil(3,lnrho_init_z,del2lnrho_glnrho2_init_z(n1:n2))
+          del2lnrho_glnrho2_init_z=del2lnrho_glnrho2_init_z+dlnrhodz_init_z**2
         endif
       endif
 !
@@ -1566,6 +1570,8 @@ module Density
 !
       endif masscons
 
+      lupdate_mass_source = lmass_source .and. t>=tstart_mass_source .and. &
+                            (tstop_mass_source==-1.0 .or. t<=tstop_mass_source)
 !
 !  Slope limited diffusion following Rempel (2014).
 !  No distinction between log and nolog density at the moment!
@@ -2207,10 +2213,12 @@ module Density
       intent(in)  :: p
       intent(inout) :: df,f
 !
-      real, dimension (nx) :: fdiff, gshockglnrho, gshockgrho, tmp, chi_sld
+      real, dimension (nx) :: fdiff,gshockglnrho, gshockgrho, chi_sld   !GPU := df(l1:l2,m,n,irho|ilnrho)
+      real, dimension (nx) :: tmp                                       !GPU := p%aux
       real, dimension (nx), parameter :: unitpencil=1.
       real, dimension (nx) :: density_rhs,diffus_diffrho,diffus_diffrho3,advec_hypermesh_rho
       integer :: j
+      logical :: ldt_up
 !
 !  Identify module and boundary conditions.
 !
@@ -2309,15 +2317,14 @@ module Density
 !
 !  Mass sources and sinks.
 !
-      if (lmass_source) then
-        if (t>=tstart_mass_source .and. (tstop_mass_source==-1.0 .or. &
-            t<=tstop_mass_source) ) call mass_source(f,df,p)
-      endif
+      if (lupdate_mass_source) call mass_source(f,df,p)
 !
 !  Mass diffusion.
 !
       diffus_diffrho=0.; diffus_diffrho3=0.
       fdiff=0.0
+!
+      ldt_up = lfirst.and.ldt
 !
       if (ldiff_normal) then  ! Normal diffusion operator
         if (ldensity_nolog) then
@@ -2329,7 +2336,7 @@ module Density
             fdiff = fdiff + diffrho*(p%del2lnrho+p%glnrho2)
           endif
         endif
-        if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho
+        if (ldt_up) diffus_diffrho=diffus_diffrho+diffrho
         if (headtt) print*,'dlnrho_dt: diffrho=', diffrho
       endif
 !
@@ -2359,7 +2366,7 @@ module Density
             call fatal_error('dlnrho_dt','hyper diffusion not implemented for lnrho')
           endif
         endif
-        if (lfirst.and.ldt) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
+        if (ldt_up) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
         if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
       endif
 !
@@ -2378,7 +2385,7 @@ module Density
 !AB: should not just add it to the previous diffus_diffrho3.
           !fdiff = fdiff + diffrho_hyper3*pi5_1*tmp*dline_1(:,j)**5
         enddo
-        if (lfirst.and.ldt) &
+        if (ldt_up) &
              diffus_diffrho3=diffus_diffrho3+diffrho_hyper3*pi4_1*dxmax_pencil**4
         if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
       endif
@@ -2408,10 +2415,10 @@ module Density
             !fdiff = fdiff + diffrho_hyper3_mesh*pi5_1/60.*tmp/dt
           endif
         enddo
-        if (lfirst.and.ldt) then
+        if (ldt_up) then
           if (ldynamical_diffusion) then
             diffus_diffrho3 = diffus_diffrho3 + diffrho_hyper3_mesh
-            advec_hypermesh_rho = 0.0
+            advec_hypermesh_rho=0.
           else
             advec_hypermesh_rho=diffrho_hyper3_mesh*pi5_1*sqrt(dxyz_2)
           endif
@@ -2429,7 +2436,7 @@ module Density
               fdiff = fdiff - tmp
             endif
 !  Must divide by dxyz_6 here, because it is multiplied on later.
-            if (lfirst.and.ldt) diffus_diffrho3=diffus_diffrho3+ &
+            if (ldt_up) diffus_diffrho3=diffus_diffrho3+ &
                  (diffrho_hyper3_aniso(1)*dline_1(:,1)**6 + &
                   diffrho_hyper3_aniso(2)*dline_1(:,2)**6 + &
                   diffrho_hyper3_aniso(3)*dline_1(:,3)**6)/dxyz_6
@@ -2441,7 +2448,7 @@ module Density
         if (.not. ldensity_nolog) then
           fdiff = fdiff + diffrho_hyper3*p%del6lnrho
         endif
-        if (lfirst.and.ldt) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
+        if (ldt_up) diffus_diffrho3=diffus_diffrho3+diffrho_hyper3
         if (headtt) print*,'dlnrho_dt: diffrho_hyper3=', diffrho_hyper3
       endif
 !
@@ -2449,28 +2456,28 @@ module Density
 !
       if (ldiff_shock) then
         if (ldensity_nolog) then
-          call dot_mn(p%gshock,p%grho,gshockgrho)
-          fdiff = fdiff + diffrho_shock * (p%shock * p%del2rho + gshockgrho)
+          call dot_mn(p%gshock,p%grho,tmp)
+          fdiff = fdiff + diffrho_shock * (p%shock * p%del2rho + tmp)
         else
           if (ldiffusion_nolog) then
-            call dot_mn(p%gshock,p%grho,gshockgrho)
-            fdiff = fdiff + p%rho1 * diffrho_shock * (p%shock * p%del2rho + gshockgrho)
+            call dot_mn(p%gshock,p%grho,tmp)
+            fdiff = fdiff + p%rho1 * diffrho_shock * (p%shock * p%del2rho + tmp)
           else
-            call dot_mn(p%gshock,p%glnrho,gshockglnrho)
-            fdiff = fdiff + diffrho_shock * (p%shock * (p%del2lnrho + p%glnrho2) + gshockglnrho)
+            call dot_mn(p%gshock,p%glnrho,tmp)
+            fdiff = fdiff + diffrho_shock * (p%shock * (p%del2lnrho + p%glnrho2) + tmp)
 !
 !  Counteract the shock diffusion of the mean stratification. Must set
 !  lwrite_stratification=T in start.in for this to work.
 !
             if (lanti_shockdiffusion) then
               fdiff = fdiff - diffrho_shock * ( &
-                  p%shock*(del2lnrho_init_z(n) + glnrho2_init_z(n) + &
-                  2*(p%glnrho(:,3)-dlnrhodz_init_z(n))*dlnrhodz_init_z(n)) + &
-                  p%gshock(:,3)*dlnrhodz_init_z(n) )
+                      p%shock*(del2lnrho_glnrho2_init_z(n) + &
+                      2*(p%glnrho(:,3)-dlnrhodz_init_z(n))*dlnrhodz_init_z(n)) + &
+                      p%gshock(:,3)*dlnrhodz_init_z(n) )
             endif
           endif
         endif
-        if (lfirst.and.ldt) diffus_diffrho=diffus_diffrho+diffrho_shock*p%shock
+        if (ldt_up) diffus_diffrho=diffus_diffrho+diffrho_shock*p%shock
         if (headtt) print*,'dlnrho_dt: diffrho_shock=', diffrho_shock
       endif
 
@@ -2529,12 +2536,12 @@ module Density
 !
 !  Multiply diffusion coefficient by Nyquist scale.
 !
-      if (lfirst.and.ldt) then
-        diffus_diffrho =diffus_diffrho *dxyz_2
+      if (ldt_up) then
+        diffus_diffrho = diffus_diffrho*dxyz_2
         if (ldynamical_diffusion .and. ldiff_hyper3_mesh) then
           diffus_diffrho3 = diffus_diffrho3 * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
         else
-          diffus_diffrho3=diffus_diffrho3*dxyz_6
+          diffus_diffrho3 = diffus_diffrho3*dxyz_6
         endif
         if (headtt.or.ldebug) then
           print*,'dlnrho_dt: max(diffus_diffrho ) =', maxval(diffus_diffrho)
