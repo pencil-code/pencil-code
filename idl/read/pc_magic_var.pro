@@ -372,13 +372,19 @@ pro pc_magic_var, variables, tags, $
 ; Sound speed squared
     endif else if (variables[iv] eq 'cs2') then begin
       if (lionization and not lionization_fixed) then begin
-        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],lnTT[*,*,*,iyy],/cs2,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],lnTT[*,*,*,iyy],/cs2,/'+density_var+'_lnTT,dim=dim,param=param,datadir=datadir)'
       endif else begin
-        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/cs2,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/cs2,/'+density_var+'_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Pressure gradient
     endif else if (variables[iv] eq 'fpres') then begin
-      if (param.ldensity_nolog) then begin
+      if lentropy then begin
+        if (param.ldensity_nolog) then $
+          variables[iv]='spread(-1./rho[*,*,*,iyy],3,3)*grad(pc_eoscalc(rho[*,*,*,iyy],ss[*,*,*,iyy],/pp,/rho_ss,dim=dim,param=param,datadir=datadir))' $
+        else $
+          variables[iv]='spread(-exp(-lnrho[*,*,*,iyy]),3,3)*grad(pc_eoscalc(lnrho[*,*,*,iyy],ss[*,*,*,iyy],/pp,/lnrho_ss,dim=dim,param=param,datadir=datadir))'
+      endif else if (param.ldensity_nolog) then begin
+; The following only correct for isothermal gas.
         variables[iv]='spread(-1./rho[*,*,*,iyy],3,3)*grad(rho[*,*,*,iyy])'
       endif else begin
         variables[iv]='-grad(lnrho[*,*,*,iyy])'
@@ -386,37 +392,37 @@ pro pc_magic_var, variables, tags, $
 ; Specific energy
     endif else if (variables[iv] eq 'ee') then begin
       if (lionization and not lionization_fixed) then begin
-        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],lnTT[*,*,*,iyy],/ee,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],lnTT[*,*,*,iyy],/ee,/'+density_var+'_lnTT,dim=dim,param=param,datadir=datadir)'
       endif else begin
-        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/ee,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/ee,/'+density_var+'_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Temperature
     endif else if (variables[iv] eq 'tt') then begin
       if (lionization and not lionization_fixed) then begin
         variables[iv]='exp(lnTT[*,*,*,iyy])'
       endif else begin
-        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/tt,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/tt,/'+density_var+'_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Logarithm of temperature
     endif else if (variables[iv] eq 'lntt') then begin
       if (lionization and not lionization_fixed) then begin
         variables[iv]='lnTT[*,*,*,iyy]'
       endif else begin
-        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/lntt,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/lntt,/'+density_var+'_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Entropy ss
     endif else if (variables[iv] eq 'ss') then begin
       if (lionization and not lionization_fixed) then begin
         message,"Thermodynamic combination not implemented yet: /ss from lnrho and lnTT with lionization"
       endif else begin
-        if (lentropy ne -1) then variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],lnTT[*,*,*,iyy],/ss,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)' else variables[iv]='ss[*,*,*,iyy]'
+        if (lentropy ne -1) then variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],lnTT[*,*,*,iyy],/ss,/'+density_var+'_lnTT,dim=dim,param=param,datadir=datadir)' else variables[iv]='ss[*,*,*,iyy]'
       endelse
 ; Pressure
     endif else if (variables[iv] eq 'pp') then begin
       if (lionization and not lionization_fixed) then begin
-        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],lnTT[*,*,*,iyy],/pp,/lnrho_lnTT,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],lnTT[*,*,*,iyy],/pp,/'+density_var+'_lnTT,dim=dim,param=param,datadir=datadir)'
       endif else begin
-        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/pp,/lnrho_ss,dim=dim,param=param,datadir=datadir)'
+        variables[iv]='pc_eoscalc('+density_var+'[*,*,*,iyy],ss[*,*,*,iyy],/pp,/'+density_var+'_ss,dim=dim,param=param,datadir=datadir)'
       endelse
 ; Divergence of dust velocity
     endif else if (variables[iv] eq 'divud') then begin
