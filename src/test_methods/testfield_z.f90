@@ -610,7 +610,7 @@ module Testfield
 !
         if (.not.lsoca) then
 !
-          if (iuxb/=0.and..not.ltest_uxb) then
+          if ((iuxb/=0.and..not.ltest_uxb).and.chiraltest==0.) then
             uxb=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
           else
             call calc_uxb(f,p,iaxtest,uxb,bbtest)
