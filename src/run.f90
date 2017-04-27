@@ -860,6 +860,7 @@ program run
       if (lparticles) &
           call write_snapshot_particles(directory_dist,f,ENUM=.false.)
       if (lpointmasses) call pointmasses_write_snapshot(trim(directory_snap)//'/qvar.dat',ENUM=.false.)
+      if (lsolid_cells) call wsnap_ogrid('ogvar.dat',ENUM=.false.)
 !
       call wsnap('var.dat',f,mvar_io,ENUM=.false.)
       call wsnap_timeavgs('timeavg.dat',ENUM=.false.)
