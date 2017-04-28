@@ -205,6 +205,7 @@ module Hydro
   logical :: lOmega_cyl_xy=.false.
   logical :: lno_radial_advection=.false.
   logical :: lfargoadvection_as_shift=.true.
+  logical :: lhelmholtz_decomp=.false.
   character (len=labellen) :: uuprof='nothing'
 !
 !  Parameters for interior boundary conditions.
@@ -245,7 +246,7 @@ module Hydro
       uzjet, ydampint, ydampext, mean_momentum, lshear_in_coriolis, &
       lcdt_tauf, cdt_tauf, ulev,&
       w_sldchar_hyd, uphi_rbot, uphi_rtop, uphi_step_width, lOmega_cyl_xy, &
-      lno_radial_advection, lfargoadvection_as_shift
+      lno_radial_advection, lfargoadvection_as_shift, lhelmholtz_decomp
 !
 !  Diagnostic variables (need to be consistent with reset list below).
 !
@@ -543,6 +544,9 @@ module Hydro
   integer :: idiag_u2u31mz=0    ! XYAVG_DOC:
   integer :: idiag_u3u12mz=0    ! XYAVG_DOC:
   integer :: idiag_u1u23mz=0    ! XYAVG_DOC:
+  integer :: idiag_accpowzmz=0  ! XYAVG_DOC: $\left<(u_z Du_z/Dt)^2\right>_{xy}$
+  integer :: idiag_accpowzupmz=0  ! XYAVG_DOC: $\left<(u_z Du_z/Dt)^2\right>_{xy+}$
+  integer :: idiag_accpowzdownmz=0! XYAVG_DOC: $\left<(u_z Du_z/Dt)^2\right>_{xy-}$
 !
 ! xz averaged diagnostics given in xzaver.in
 !
@@ -683,6 +687,13 @@ module Hydro
       if (ladv_der_as_aux) then
         call farray_register_auxiliary('adv_der_uu',i_adv_der,vector=3)
         i_adv_derx = i_adv_der;  i_adv_dery = i_adv_der+1; i_adv_derz = i_adv_der+2
+      endif
+!
+!  For Helmholtz decomposition of uu the potential of the curl-free part is registered  as an auxiliary.
+!
+      if (lhelmholtz_decomp) then
+        call farray_register_auxiliary('phiuu',iphiuu)
+        if (dsnap_down==0.) call fatal_error('register_hydro','Helmholtz decomposition requires dsnap_down>0')
       endif
 !
 !  Share lpressuregradient_gas so the entropy module knows whether to apply
@@ -2020,6 +2031,10 @@ module Hydro
       if (idiag_u2u31m/=0 .or. idiag_u2u31mz/=0) lpenc_diagnos(i_u2u31)=.true.
       if (idiag_u3u12m/=0 .or. idiag_u3u12mz/=0) lpenc_diagnos(i_u3u12)=.true.
       if (idiag_u1u23m/=0 .or. idiag_u1u23mz/=0) lpenc_diagnos(i_u1u23)=.true.
+      if (idiag_accpowzmz/=0 .or. idiag_accpowzupmz/=0 .or. idiag_accpowzdownmz/=0) then
+        lpenc_diagnos(i_fpres)=.true.; lpenc_diagnos(i_fvisc)=.true.
+        if (lgrav) lpenc_diagnos(i_gg)=.true.
+      endif
       if (idiag_urms/=0 .or. idiag_durms/=0 .or. &
           idiag_umax/=0 .or. idiag_rumax/=0 .or. &
           idiag_fkinzm/=0 .or. idiag_u2m/=0 .or. idiag_um2/=0 .or. idiag_u2mz/=0 .or. &
@@ -2907,9 +2922,9 @@ module Hydro
 !
 !  Save the advective derivative as an auxiliary
 !
-      if(ladv_der_as_aux) then
-        f(l1:l2,m,n,i_adv_derx:i_adv_derz) = &
-            -p%fpres + p%fvisc
+      if (ladv_der_as_aux) then
+        f(l1:l2,m,n,i_adv_derx:i_adv_derz) = p%fpres + p%fvisc
+        if (lgrav) f(l1:l2,m,n,i_adv_derx:i_adv_derz) = f(l1:l2,m,n,i_adv_derx:i_adv_derz) + p%gg
       endif
 !
 !  Possibility to damp mean x momentum, ruxm, to zero.
@@ -3452,7 +3467,33 @@ module Hydro
         call xysum_mn_name_z(p%u2u31,idiag_u2u31mz)
         call xysum_mn_name_z(p%u3u12,idiag_u3u12mz)
         call xysum_mn_name_z(p%u1u23,idiag_u1u23mz)
+        if (idiag_accpowzmz/=0) then
+          uus = p%fpres(:,3) + p%fvisc(:,3)
+          if (lgrav) uus = uus + p%gg(:,3)
+          uus=p%uu(:,3)*uus
+          call xysum_mn_name_z(uus,idiag_accpowzmz)   ! yet incorrect for Yin-Yang
+        endif
+        if (idiag_accpowzupmz/=0) then
+          where (p%uu(:,3) > 0.) 
+            uus = p%fpres(:,3) + p%fvisc(:,3) + p%gg(:,3)
+            uus = p%uu(:,3)*uus
+          elsewhere
+            uus=0.
+          endwhere
+          call xysum_mn_name_z(uus,idiag_accpowzupmz)   ! yet incorrect for Yin-Yang
+        endif
+        if (idiag_accpowzdownmz/=0) then
+          where (p%uu(:,3) < 0.)
+            uus = p%fpres(:,3) + p%fvisc(:,3) + p%gg(:,3)
+            uus = p%uu(:,3)*uus
+          elsewhere
+            uus=0.
+          endwhere
+          call xysum_mn_name_z(uus,idiag_accpowzdownmz)   ! yet incorrect for Yin-Yang
+        endif
+!
 !  phi-z averages
+!
         if (idiag_Remz/=0) then
           Remz = sqrt(p%ugu2/p%diffus_total**2)
           where (p%diffus_total < tini) Remz = 0.
@@ -3864,7 +3905,7 @@ module Hydro
 !
         if (lcoriolis_force) then
 !
-          if (headtt) print*,'duu_dt: add Coriolis force; Omega=',Omega
+          if (headtt) print*,'coriolis_cartesian: add Coriolis force; Omega=',Omega
 !
           c2=2*Omega
           df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+c2*uu(:,2)
@@ -3878,7 +3919,7 @@ module Hydro
 !
         if (lcentrifugal_force) then
 !
-          if (headtt) print*,'duu_dt: add Centrifugal force; Omega=',Omega
+          if (headtt) print*,'coriolis_cartesian: add Centrifugal force; Omega=',Omega
           df(l1:l2,m,n,velind  )=df(l1:l2,m,n,velind  )+x(l1:l2)*Omega**2
           df(l1:l2,m,n,velind+1)=df(l1:l2,m,n,velind+1)+y(  m  )*Omega**2
 !
@@ -3896,7 +3937,7 @@ module Hydro
         if (lcoriolis_force) then
 !
           if (headtt) &
-              print*,'duu_dt: Coriolis force; Omega, theta=', Omega, theta
+              print*,'coriolis_cartesian: Coriolis force; Omega, theta=', Omega, theta
 !
 !  Note the minus sign in front of the sin_theta term!
 !
@@ -3941,7 +3982,7 @@ module Hydro
       if (lcoriolis_force) then
 !
         if (headtt) &
-          print*,'duu_dt: Coriolis force; Omega, theta=', Omega, theta
+          print*,'coriolis_cartesian_xaxis: Coriolis force; Omega, theta=', Omega, theta
 !
         c2= 2*Omega*cos(theta*pi/180.)
         s2=-2*Omega*sin(theta*pi/180.)
@@ -4084,7 +4125,7 @@ module Hydro
 !  Centrifugal force
 !
       if (lcentrifugal_force) &
-          call fatal_error("duu_dt","Centrifugal force not "//&
+          call fatal_error("coriolis_spherical_del2p","Centrifugal force not "//&
           "implemented in spherical coordinates")
 !
       call keep_compiler_quiet(f)
@@ -4567,6 +4608,9 @@ module Hydro
         idiag_u2u31mz=0
         idiag_u3u12mz=0
         idiag_u1u23mz=0
+        idiag_accpowzmz=0
+        idiag_accpowzupmz=0
+        idiag_accpowzdownmz=0
         idiag_urmphi=0
         idiag_ursphmphi=0
         idiag_uthmphi=0
@@ -5090,6 +5134,12 @@ module Hydro
              'u3u12mz',idiag_u3u12mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez), &
              'u1u23mz',idiag_u1u23mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+             'accpowzmz',idiag_accpowzmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+             'accpowzupmz',idiag_accpowzupmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez), &
+             'accpowzdownmz',idiag_accpowzdownmz)
       enddo
 !
 !  Check for those quantities for which we want y-averages.
@@ -5172,6 +5222,7 @@ module Hydro
         write(3,*) 'iux=',iux
         write(3,*) 'iuy=',iuy
         write(3,*) 'iuz=',iuz
+        if (lhelmholtz_decomp) write(3,*) 'iphiuu=',iphiuu
       endif
 !
     endsubroutine rprint_hydro
@@ -5291,6 +5342,30 @@ module Hydro
 !
     endsubroutine get_slices_hydro
 !***********************************************************************
+    function decomp_prepare() result (ldecomp)
+!
+!  Prepare for Helmholtz decomposition.
+!
+!  20-oct-97/axel: coded
+!
+      use Sub, only: read_snaptime, update_snaptime
+!
+      logical :: ldecomp
+
+      character (len=fnlen) :: file
+      integer :: ndummy
+      real :: tdummy
+!
+!  Perform the decomposition in dsnap_down time intervals.
+!
+      file = trim(datadir)//'/tsnap_down.dat'
+!
+!  This routine sets ldecomp=T whenever its time to perform the decomposition.
+!
+      call update_snaptime(file,tdummy,ndummy,dsnap_down,t,ldecomp,nowrite=.true.)
+!
+    endfunction decomp_prepare
+!***********************************************************************
     subroutine hydro_after_timestep(f,df,dt_sub)
 !
 !  Hook for modification of the f and df arrays
@@ -5301,10 +5376,15 @@ module Hydro
 !  28-mar-17/MR: reinstated update_ghosts.
 !
       use Boundcond, only: update_ghosts
+      use Sub, only: div
+      use Poisson, only: inverse_laplacian, inverse_laplacian_fft_z
 !
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real :: dt_sub
+!
+      logical :: lwrite_debug=.false.
+      integer :: iorder_z=4
 !
       fargo: if (lfargo_advection) then
 !
@@ -5330,6 +5410,36 @@ module Hydro
         endif
 !        
       endif fargo
+
+      if (lhelmholtz_decomp) then 
+
+        call fatal_error("hydro_after_timestep","Helmholtz decomposition not yet operational")
+
+        if (decomp_prepare()) then
+!
+!  Find the divergence of uu
+!
+          do n=n1,n2; do m=m1,m2
+            call div(f,iuu,f(l1:l2,m,n,iphiuu))
+          enddo; enddo
+!
+!print*, 'minmaxi(div)=', minval(f(l1:l2,m1:m2,n1:n2,iphiuu)),maxval(f(l1:l2,m1:m2,n1:n2,iphiuu))
+          if (lwrite_debug) write(31) f(l1:l2,m1:m2,n1:n2,iphiuu)
+!
+          if (lperi(3)) then
+            call inverse_laplacian(f(l1:l2,m1:m2,n1:n2,iphiuu))
+          else
+            if (iorder_z==2) then
+              !call inverse_laplacian_z_2nd(f(l1:l2,m1:m2,n1:n2,iphiuu))
+            else
+              ! call inverse_laplacian_fft_z(f(l1:l2,m1:m2,n1:n2,iphiuu))
+              ! call inverse_laplacian_z(f(l1:l2,m1:m2,n1:n2,iphiuu),(/'n1s','n1s'/),f(:,:,n1,iuz),f(:,:,n2,iuz))
+            endif
+          endif
+          if (lwrite_debug) write(32) f(l1:l2,4,n1:n2,iphiuu)
+
+        endif
+      endif
 !
     endsubroutine hydro_after_timestep
 !***********************************************************************
@@ -6281,7 +6391,7 @@ module Hydro
 !  no profile matches
 !
       case default
-         if (lroot) print*,'duu_dt: No such profile ',trim(prof_diffrot)
+         if (lroot) print*,'impose_profile_diffrot: No such profile ',trim(prof_diffrot)
       endselect
 !
     endsubroutine impose_profile_diffrot
