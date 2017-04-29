@@ -549,7 +549,7 @@ module Gravity
 !
         if (lindirect_terms) then
           df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - g2*cos(y(m))
-          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - g2*sin(y(m))
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + g2*sin(y(m))
         endif
 !
 !  Coriolis force
