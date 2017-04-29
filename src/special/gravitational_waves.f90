@@ -37,8 +37,9 @@
 !
 ! CPARAM logical, parameter :: lspecial = .true.
 !
-! MVAR CONTRIBUTION 12
-! MAUX CONTRIBUTION 3
+! MVAR CONTRIBUTION 4
+!!! MVAR CONTRIBUTION 12
+!!! MAUX CONTRIBUTION 3
 !
 !***************************************************************
 !
@@ -84,11 +85,11 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-  integer :: ihij,igij
+  integer :: ihhL,ihhT,iggL,iggT
 !
 !! Diagnostic variables (needs to be consistent with reset list below).
 !
-  integer :: idiag_g22pt=0       ! DIAG_DOC: $g_{22}(x_1,y_1,z_1,t)$
+  integer :: idiag_ggLpt=0       ! DIAG_DOC: $g_{11}(x_1,y_1,z_1,t)$
 !
   contains
 !***********************************************************************
@@ -104,14 +105,16 @@ module Special
       if (lroot) call svn_id( &
            "$Id$")
 !
-      call farray_register_pde('hij',ihij,vector=6)
-      call farray_register_pde('gij',igij,vector=6)
+      call farray_register_pde('hhL',ihhL)
+      call farray_register_pde('hhT',ihhT)
+      call farray_register_pde('ggL',iggL)
+      call farray_register_pde('ggT',iggT)
 !
 !  Set indices for auxiliary variables.
 !
       !call farray_register_auxiliary('bb',ibb)
-      call register_report_aux('bb', ibb, ibx, iby, ibz)
-print*,'AXEL1: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
+!      call register_report_aux('bb', ibb, ibx, iby, ibz)
+!print*,'AXEL1: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -180,8 +183,8 @@ print*,'AXEL1: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
 !
 !  18-07-06/tony: coded
 !
-      lpenc_requested(i_bb)=.true.
-      lpenc_requested(i_b2)=.true.
+  !?  lpenc_requested(i_bb)=.true.
+  !?  lpenc_requested(i_b2)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -230,14 +233,12 @@ print*,'AXEL1: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
 !  06-oct-03/tony: coded
 !
       use Diagnostics
-      use Sub, only: del2v
+      use Sub, only: del2
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: del2hii,del2hij
+      real, dimension (nx) :: del2hhL,del2hhT
       type (pencil_case) :: p
-!
-      integer :: j,jhij,jgij
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -247,44 +248,86 @@ print*,'AXEL1: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
 !!      if (headtt) call identify_bcs('special',ispecial)
 !
-        if (lmagnetic) then
-!         print*,'AXEL:',p%bb(:,2)
+!  dh/dt = g, d2h/dt2 = dg/dt = del2h + S
 !
-!  g11=1, g22=2, g33=3, g12=4, g13=5, g23=6,
-!  g11=0, g22=1, g33=2, g12=3, g13=4, g23=5,
+      df(l1:l2,m,n,ihhL)=df(l1:l2,m,n,ihhL)+f(l1:l2,m,n,iggL)
+      df(l1:l2,m,n,ihhT)=df(l1:l2,m,n,ihhT)+f(l1:l2,m,n,iggT)
 !
-          do j=1,6
-            jhij=ihij-1+j
-            jgij=igij-1+j
-            df(l1:l2,m,n,jhij)=df(l1:l2,m,n,jhij)+f(l1:l2,m,n,jgij)
-          enddo
-          call del2v(f,ihij  ,del2hii)
-          call del2v(f,ihij+3,del2hij)
-          df(l1:l2,m,n,igij+0)=df(l1:l2,m,n,igij+0)+del2hii(:,1)+ &
-            p%bb(:,1)**2-onethird*p%b2
-          df(l1:l2,m,n,igij+1)=df(l1:l2,m,n,igij+1)+del2hii(:,2)+ &
-            p%bb(:,2)**2-onethird*p%b2
-          df(l1:l2,m,n,igij+2)=df(l1:l2,m,n,igij+2)+del2hii(:,3)+ &
-            p%bb(:,3)**2-onethird*p%b2
-          df(l1:l2,m,n,igij+3)=df(l1:l2,m,n,igij+3)+del2hij(:,1)+p%bb(:,1)*p%bb(:,2)
-          df(l1:l2,m,n,igij+4)=df(l1:l2,m,n,igij+4)+del2hij(:,2)+p%bb(:,1)*p%bb(:,3)
-          df(l1:l2,m,n,igij+5)=df(l1:l2,m,n,igij+5)+del2hij(:,3)+p%bb(:,2)*p%bb(:,3)
-        else
-          call fatal_error("dspecial_dt","need magnetic field")
-        endif
+      call del2(f,ihhL,del2hhL)
+      call del2(f,ihhT,del2hhT)
+      df(l1:l2,m,n,iggL)=df(l1:l2,m,n,iggL)+del2hhL !+p%stressL
+      df(l1:l2,m,n,iggT)=df(l1:l2,m,n,iggT)+del2hhT !+p%stressT
+!
+!         df(l1:l2,m,n,igij+1)=df(l1:l2,m,n,igij+1)+del2hii(:,2)+ &
+!           p%bb(:,2)**2-onethird*p%b2
+!         df(l1:l2,m,n,igij+2)=df(l1:l2,m,n,igij+2)+del2hii(:,3)+ &
+!           p%bb(:,3)**2-onethird*p%b2
+!         df(l1:l2,m,n,igij+3)=df(l1:l2,m,n,igij+3)+del2hij(:,1)+p%bb(:,1)*p%bb(:,2)
+!         df(l1:l2,m,n,igij+4)=df(l1:l2,m,n,igij+4)+del2hij(:,2)+p%bb(:,1)*p%bb(:,3)
+!         df(l1:l2,m,n,igij+5)=df(l1:l2,m,n,igij+5)+del2hij(:,3)+p%bb(:,2)*p%bb(:,3)
 !
 !  diagnostics
 !
        if (ldiagnos) then
          if (lroot.and.m==mpoint.and.n==npoint) then
-           if (idiag_g22pt/=0) call save_name(p%bb(lpoint-nghost,2),idiag_g22pt)
+           if (idiag_ggLpt/=0) call save_name(f(lpoint,m,n,iggL),idiag_ggLpt)
          endif
        endif
 !
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
+      !call keep_compiler_quiet(f,df)
+      !call keep_compiler_quiet(p)
 !
     endsubroutine dspecial_dt
+!***********************************************************************
+    subroutine special_before_boundary(f)
+!
+!  Possibility to modify the f array before the boundaries are
+!  communicated.
+!
+!  Some precalculated pencils of data are passed in for efficiency
+!  others may be calculated directly from the f array
+!
+!  30-mar-17/axel: moved stuff from special_after_boundary to here
+!
+      !use Boundcond, only: zero_ghosts, update_ghosts
+      use Sub, only: gij, curl_mn
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(nx,3,3) :: aij
+      real, dimension(nx,3) :: bb
+!
+      integer :: i
+!
+!  Compute magnetic stress Mij(x,t)=Bi(x,t)*Bj(x,t) in real space
+!
+!  Find bb if as communicated auxiliary.
+!
+      !call zero_ghosts(f, iax, iaz)
+      !call update_ghosts(f, iax, iaz)
+  !   mn_loop: do imn = 1, ny * nz
+  !     m = mm(imn)
+  !     n = nn(imn)
+  !     call gij(f, iaa, aij, 1)
+  !     call curl_mn(aij, bb, f(l1:l2,m,n,iax:iaz))
+!
+!  Add imposed field, if any
+!
+  !     bext: if (lB_ext_in_comaux) then
+  !       call get_bext(b_ext)
+  !       forall(j = 1:3, b_ext(j) /= 0.0) bb(:,j) = bb(:,j) + b_ext(j)
+  !       if (headtt .and. imn == 1) &
+  !           print *, 'magnetic_before_boundary: B_ext = ', b_ext
+  !     endif bext
+!
+  !     f(l1:l2,m,n,ibx:ibz) = bb
+  !   enddo mn_loop
+!     endif getbb
+!
+!     do i=1,n_special_modules
+!       call caller(special_sub_handles(i,I_SPECIAL_BEFORE_BOUNDARY),1,f)
+!     enddo
+!
+    endsubroutine special_before_boundary
 !***********************************************************************
     subroutine special_after_boundary(f)
 !
@@ -302,6 +345,11 @@ print*,'AXEL1: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
       logical :: lscale_tobox1=.true.
       real :: scale_factor
       intent(inout) :: f
+!
+!  Assemble stress
+!
+      print*,'AXEL: ibx,ibz=',ibx,ibz
+      print*,'AXEL: f(4,4,4,ibx:ibz)=',f(4,4,4,ibx:ibz)
 !
 !  Allocate memory for arrays.
 !
@@ -357,30 +405,6 @@ print*,'AXEL1: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
           enddo
         enddo
         if (lroot) k2(1,1,1) = 1.  ! Avoid division by zero
-!
-!  Compute Mij(x,t)=Bi(x,t)*Bj(x,t) in real space
-!
-!  Find bb if as communicated auxiliary.
-!
-      call zero_ghosts(f, iax, iaz)
-      call update_ghosts(f, iax, iaz)
-      mn_loop: do imn = 1, ny * nz
-        m = mm(imn)
-        n = nn(imn)
-        call gij(f, iaa, aij, 1)
-        call curl_mn(aij, bb, f(l1:l2,m,n,iax:iaz))
-!
-!  Add imposed field, if any
-!
-        bext: if (lB_ext_in_comaux) then
-          call get_bext(b_ext)
-          forall(j = 1:3, b_ext(j) /= 0.0) bb(:,j) = bb(:,j) + b_ext(j)
-          if (headtt .and. imn == 1) print *, 'magnetic_before_boundary: B_ext
-= ', b_ext
-        endif bext
-        f(l1:l2,m,n,ibx:ibz) = bb
-        enddo mn_loop
-      endif getbb
 
 !
 !  Go into Fourier space
@@ -454,11 +478,11 @@ print*,'AXEL2: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
 !!!  (this needs to be consistent with what is defined above!)
 !!!
       if (lreset) then
-        idiag_g22pt=0
+        idiag_ggLpt=0
       endif
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'g22pt',idiag_g22pt)
+        call parse_name(iname,cname(iname),cform(iname),'ggLpt',idiag_ggLpt)
       enddo
 !!
 !!!  write column where which magnetic variable is stored
