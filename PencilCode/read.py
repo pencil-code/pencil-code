@@ -822,10 +822,13 @@ def time_series(datadir='./data', unique=False):
 
     return ts
 #=======================================================================
-def var(datadir='./data', ivar=None, par=None, trim=True, varfile='var.dat', verbose=True):
+def var(compact=True, datadir='./data', ivar=None, par=None, trim=True,
+        varfile='var.dat', verbose=True):
     """Returns one snapshot.
 
     Keyword Arguments:
+        compact
+            If True, dimensions of one are removed.
         datadir
             Name of the data directory.
         ivar
@@ -843,7 +846,7 @@ def var(datadir='./data', ivar=None, par=None, trim=True, varfile='var.dat', ver
     """
     # Author: Chao-Chin Yang
     # Created: 2014-12-03
-    # Last Modified: 2016-07-20
+    # Last Modified: 2017-04-30
     from collections import namedtuple
     import numpy as np
 
@@ -894,7 +897,8 @@ def var(datadir='./data', ivar=None, par=None, trim=True, varfile='var.dat', ver
     for proc in range(dim.nprocx * dim.nprocy * dim.nprocz):
         # Read data.
         if verbose:
-            print("Reading", datadir + "/proc" + str(proc) + "/" + varfile, "...")
+            print("Reading", datadir + "/proc" + str(proc) + "/" + varfile,
+                  "...")
         dim1 = proc_dim(datadir=datadir, proc=proc)
         snap1 = proc_var(datadir=datadir, par=par, proc=proc, varfile=varfile) 
 
@@ -911,7 +915,11 @@ def var(datadir='./data', ivar=None, par=None, trim=True, varfile='var.dat', ver
         dm2 = 0 if dim1.iprocy == dim.nprocy - 1 else -dim.nghost
         dn1 = 0 if dim1.iprocz == 0 else dim.nghost
         dn2 = 0 if dim1.iprocz == dim.nprocz - 1 else -dim.nghost
-        f[l1+dl1:l2+dl2,m1+dm1:m2+dm2,n1+dn1:n2+dn2,:] = snap1.f[dl1:dim1.mx+dl2,dm1:dim1.my+dm2,dn1:dim1.mz+dn2,:]
+        f[l1+dl1:l2+dl2,
+          m1+dm1:m2+dm2,
+          n1+dn1:n2+dn2,:] = snap1.f[dl1:dim1.mx+dl2,
+                                     dm1:dim1.my+dm2,
+                                     dn1:dim1.mz+dn2,:]
 
         # Assign the coordinates and other scalars.
         t = assign1(t, snap1.t, 't', proc)
@@ -926,16 +934,21 @@ def var(datadir='./data', ivar=None, par=None, trim=True, varfile='var.dat', ver
 
     # Trim the ghost cells if requested.
     if trim:
-        f = f[dim.nghost:-dim.nghost,dim.nghost:-dim.nghost,dim.nghost:-dim.nghost,:]
+        f = f[dim.nghost:-dim.nghost,
+              dim.nghost:-dim.nghost,
+              dim.nghost:-dim.nghost,:]
         fdim = [dim.nxgrid, dim.nygrid, dim.nzgrid, mvar]
         x = x[dim.nghost:-dim.nghost]
         y = y[dim.nghost:-dim.nghost]
         z = z[dim.nghost:-dim.nghost]
 
-    # Define and return a named tuple.
+    # Define the returned dimensions.
     fdim.pop()
-    for i in range(fdim.count(1)):
-        fdim.remove(1)
+    if compact:
+        for i in range(fdim.count(1)):
+            fdim.remove(1)
+
+    # Define and return a named tuple.
     keys = ['t', 'x', 'y', 'z', 'dx', 'dy', 'dz', 'deltay'] + var
     values = [t, x, y, z, dx, dy, dz, deltay]
     for i in range(len(var)):
