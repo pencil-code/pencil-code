@@ -107,6 +107,7 @@ module Mpicomm
     module procedure mpibcast_logical_arr2
     module procedure mpibcast_int_scl
     module procedure mpibcast_int_arr
+    module procedure mpibcast_int_arr2
     module procedure mpibcast_real_scl
     module procedure mpibcast_real_arr
     module procedure mpibcast_real_arr2
@@ -126,6 +127,7 @@ module Mpicomm
   interface mpibcast_int
     module procedure mpibcast_int_scl
     module procedure mpibcast_int_arr
+    module procedure mpibcast_int_arr2
   endinterface
 !
   interface mpibcast_real
@@ -323,6 +325,7 @@ module Mpicomm
   interface mpirecv_nonblock_int
     module procedure mpirecv_nonblock_int_scl
     module procedure mpirecv_nonblock_int_arr
+    module procedure mpirecv_nonblock_int_arr2
   endinterface
 !
   interface mpisend_nonblock_int
@@ -3054,6 +3057,24 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
 !
     endsubroutine mpirecv_nonblock_int_arr
 !***********************************************************************
+    subroutine mpirecv_nonblock_int_arr2(bcast_array,nbcast_array,proc_src,tag_id,ireq)
+!
+!  Receive integer array(:,:) from other processor, with non-blocking communication.
+!
+!  30-apr-17/Jorgen: adapted
+!
+      integer, dimension(2) :: nbcast_array
+      integer, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
+      integer :: proc_src, tag_id, ireq, num_elements
+
+      if (any(nbcast_array == 0)) return
+!
+      num_elements = product(nbcast_array)
+      call MPI_IRECV(bcast_array, nbcast_array, MPI_INTEGER, proc_src, &
+                     tag_id, MPI_COMM_GRID, ireq, mpierr)
+!
+    endsubroutine mpirecv_nonblock_int_arr2
+!***********************************************************************
     subroutine mpirecv_nonblock_real_arr(bcast_array,nbcast_array,proc_src,tag_id,ireq)
 !
 !  Receive real array from other processor, with non-blocking communication.
@@ -3353,6 +3374,28 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
                      ioptest(comm,MPI_COMM_GRID),mpierr)
 !
     endsubroutine mpibcast_int_arr
+!***********************************************************************
+    subroutine mpibcast_int_arr2(ibcast_array,nbcast_array,proc,comm)
+!
+!  Communicate integer array(:,:) to other processors.
+!
+!  30-apr-17/Jorgen: adapted
+!
+      use General, only: ioptest
+
+      integer, dimension(2) :: nbcast_array
+      integer, dimension(nbcast_array(1),nbcast_array(2)) :: ibcast_array
+      integer, optional :: proc,comm
+      integer :: num_elements
+!
+      if (any(nbcast_array == 0)) return
+!
+      num_elements = product(nbcast_array)
+!
+      call MPI_BCAST(ibcast_array,num_elements,MPI_INTEGER,ioptest(proc,root), &
+                     ioptest(comm,MPI_COMM_GRID),mpierr)
+!
+    endsubroutine mpibcast_int_arr2
 !***********************************************************************
     subroutine mpibcast_real_scl(bcast_array,proc,comm)
 !
