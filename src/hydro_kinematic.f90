@@ -211,16 +211,18 @@ module Hydro
           iuy=iuu+1
           iuz=iuu+2
         endif
+        if (iuu/=0) then
 ! set the initial velocity to zero
-        f(:,:,:,iux:iuz) = 0.
-        if (iuu/=0.and.lroot) then
-          print*, 'initialize_velocity: iuu = ', iuu
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'iuu=',iuu
-          write(3,*) 'iux=',iux
-          write(3,*) 'iuy=',iuy
-          write(3,*) 'iuz=',iuz
-          close(3)
+          if (kinematic_flow/='from-snap') f(:,:,:,iux:iuz) = 0.
+          if (lroot) then
+            print*, 'initialize_velocity: iuu = ', iuu
+            open(3,file=trim(datadir)//'/index.pro', POSITION='append')
+            write(3,*) 'iuu=',iuu
+            write(3,*) 'iux=',iux
+            write(3,*) 'iuy=',iuy
+            write(3,*) 'iuz=',iuz
+            close(3)
+          endif
         endif
       endif
 !
