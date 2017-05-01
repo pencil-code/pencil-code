@@ -123,7 +123,7 @@ def slice(axis=2, var=None, z0=0, **kwarg):
     from Toolbox import get
 
     # Read the snapshot.
-    f = read.var(**kwarg)
+    f = read.var(compact=False, **kwarg)
 
     # Check the normal of the slice.
     if axis == 0:
