@@ -97,6 +97,56 @@ def sigma0(datadir='./data'):
         s = sqrt(0.5 * pi) * h * par.rho0 * (erf(z1) - erf(z0))
     return s
 #=======================================================================
+def slice(axis=2, z0=0, **kwarg):
+    """Finds a slice normal to one of the axis direction in one
+    snapshot.
+
+    Keyword Arguments:
+        axis
+            Axis that is normal to the slice.
+        z0
+            Coordinate of the slice on the axis.
+        **kwarg
+            Keyword arguments to be passed to read.var().
+
+    Returned Values:
+        Time of and fields on the slice.
+    """
+    # Author: Chao-Chin Yang
+    # Created: 2017-04-30
+    # Last Modified: 2017-05-01
+    from . import read
+    import numpy as np
+    from scipy.interpolate import interp1d
+    from Toolbox import get
+
+    # Read the snapshot.
+    f = read.var(**kwarg)
+
+    # Check the normal of the slice.
+    if axis == 0:
+        dim = f.y.size, f.z.size
+        z = f.x
+    elif axis == 1:
+        dim = f.x.size, f.z.size
+        z = f.y
+    elif axis == 2:
+        dim = f.x.size, f.y.size
+        z = f.z
+    else:
+        raise ValueError("axis is out of range. ")
+
+    # Get the names of the variables.
+    datadir = get.pairs(kwarg, "datadir")
+    var = read.varname(**datadir)
+
+    # Interpolate onto the slice.
+    s = np.rec.array(len(nvar) * [np.zeros(dim)], names=var)
+    for v in var:
+        s[v] = interp1d(z, getattr(f,v), axis=axis, kind="cubic")(z0)
+
+    return f.t, s
+#=======================================================================
 def stratz(datadir='./data', par=None, trim=False):
     """Finds the vertical background stratification.
 
