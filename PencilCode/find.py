@@ -97,7 +97,7 @@ def sigma0(datadir='./data'):
         s = sqrt(0.5 * pi) * h * par.rho0 * (erf(z1) - erf(z0))
     return s
 #=======================================================================
-def slice(axis=2, z0=0, **kwarg):
+def slice(axis=2, var=None, z0=0, **kwarg):
     """Finds a slice normal to one of the axis direction in one
     snapshot.
 
@@ -106,6 +106,8 @@ def slice(axis=2, z0=0, **kwarg):
             Axis that is normal to the slice.
         z0
             Coordinate of the slice on the axis.
+        var
+            List of variables; all variables are retrieved if None.
         **kwarg
             Keyword arguments to be passed to read.var().
 
@@ -137,11 +139,19 @@ def slice(axis=2, z0=0, **kwarg):
         raise ValueError("axis is out of range. ")
 
     # Get the names of the variables.
-    datadir = get.pairs(kwarg, "datadir")
-    var = read.varname(**datadir)
+    if var is None:
+        datadir = get.pairs(kwarg, "datadir")
+        var = read.varname(**datadir)
+    else:
+        if type(var) is str: var = [var]
+        for v in var:
+            if v not in dir(f):
+                print("Variable " + v + " does not exist. ")
+                var.remove(v)
+        if len(var) == 0: return f.t, None
 
     # Interpolate onto the slice.
-    s = np.rec.array(len(nvar) * [np.zeros(dim)], names=var)
+    s = np.rec.array(len(var) * [np.zeros(dim)], names=var)
     for v in var:
         s[v] = interp1d(z, getattr(f,v), axis=axis, kind="cubic")(z0)
 
