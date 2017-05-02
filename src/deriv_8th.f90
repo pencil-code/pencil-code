@@ -18,7 +18,7 @@ module Deriv
   private
 !
   public :: initialize_deriv, finalize_deriv
-  public :: der, der2, der3, der4, der5, der6, derij, der5i1j
+  public :: der, der2, der3, der4, der5, der6, derij, der5i1j,der3i3j,der3i2j1k,der4i1j1k
   public :: der6_other, der_pencil, der2_pencil
   public :: deri_3d_inds
   public :: der_upwind1st, der_z, der2_z, der_x, der2_x
@@ -1548,6 +1548,73 @@ module Deriv
            call fatal_error('der5i1j','NOT IMPLEMENTED for non-cartesian coordinates')
 !
     endsubroutine der5i1j
+!***********************************************************************
+    subroutine der4i2j(f,k,df,i,j)
+!
+!  Calculate 6th derivative with respect to two different directions.
+!
+!  02-apr-17/wlyra: adapted from der5i1j
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: df,fac
+      integer :: i,j,k
+!
+      call fatal_error("der4i2j","not implemented in deriv_8th")
+!
+    endsubroutine der4i2j
+!***********************************************************************
+    subroutine der2i2j2k(f,k,df)
+!
+!  Mixed 6th derivative of der2x(der2y(der2z(f))). Worked out symbolically
+!  in python. Result as spit from the python routine.
+!
+!  02-apr-17/wlyra: coded
+!
+      real, dimension (mx,my,mz,mfarray),intent(in) :: f
+      real, dimension (nx) :: fac
+      integer,intent(in) :: k
+      real, dimension(nx), intent(out) :: df
+!
+      call fatal_error("der2i2j2k","not implemented in deriv_8th")
+      call keep_compiler_quiet(df)
+!
+    endsubroutine der2i2j2k
+!***********************************************************************
+    subroutine der3i3j(f,k,df,i,j)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx), intent(out) :: df
+      real, dimension (nx) :: fac
+      integer, intent(in) :: k,i,j
+!
+      call fatal_error("der3i3j","not implemented in deriv_8th")
+      call keep_compiler_quiet(df)
+!
+    endsubroutine der3i3j
+!***********************************************************************          
+    subroutine der3i2j1k(f,ik,df,i,j,k)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx), intent(out) :: df
+      real, dimension (nx) :: fac
+      integer, intent(in) :: ik,i,j,k
+!
+      call fatal_error("der3i2j1k","not implemented in deriv_8th")
+      call keep_compiler_quiet(df)
+!
+    endsubroutine der3i2j1k
+!***********************************************************************
+    subroutine der4i1j1k(f,ik,df,i,j,k)
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx), intent(out) :: df
+      real, dimension (nx) :: fac
+      integer, intent(in) :: ik,i,j,k
+!
+      call fatal_error("der4i1j1k","not implemented in deriv_8th")
+      call keep_compiler_quiet(df)
+!
+    endsubroutine der4i1j1k
 !***********************************************************************
     subroutine der_upwind1st(f,uu,k,df,j)
 !
