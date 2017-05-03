@@ -655,13 +655,14 @@ module Poisson
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(phi)
-      call keep_compiler_quiet(f)
 !
     endsubroutine inverse_laplacian_semispectral
 !***********************************************************************
     subroutine inverse_laplacian_fft_z(phi)
 !
 !  15-may-2006/anders+jeff: dummy
+!
+      use General, only: keep_compiler_quiet
 !
       real, dimension(nx,ny,nz), intent(in) :: phi
 !
