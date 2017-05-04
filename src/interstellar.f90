@@ -202,7 +202,7 @@ module Interstellar
 !
   double precision, parameter :: ampl_SN_cgs=1D51
   real :: frac_ecr=0.0, frac_eth=1.0, frac_kin=0.0
-  real :: ampl_SN=impossible, kampl_SN=0.0, kperp=0.05, kpara=0.025
+  real :: ampl_SN=impossible, campl_SN=0.0, eampl_SN=0.0, kampl_SN=0.0, kperp=0.05, kpara=0.025
 !
 !  SNe composition
 !
@@ -499,16 +499,18 @@ module Interstellar
         if (lSN_eth) then        
           if (lcosmicray .and. lSN_ecr) then
             if (frac_ecr==0) frac_ecr=0.1
+            campl_SN=frac_ecr*ampl_SN
           endif 
           frac_eth=1.-frac_ecr-frac_kin
           if (frac_eth<0.) call &
             stop_it('initialize_interstellar: energy fractions must sum to 1')
           kampl_SN=frac_kin*ampl_SN
-          ampl_SN =frac_eth*ampl_SN
+          eampl_SN=frac_eth*ampl_SN
           if (frac_kin >0.0) lSN_velocity = .true.
         else 
           if (lcosmicray .and. lSN_ecr) then
             if (frac_ecr==0) frac_ecr=0.1
+            campl_SN=frac_ecr*ampl_SN
           endif 
           if (frac_kin >0.0) lSN_velocity = .true.
           kampl_SN=frac_kin*ampl_SN
@@ -519,8 +521,8 @@ module Interstellar
         if (T_init == impossible) T_init=T_init_cgs/unit_temperature
         if (rho0ts == impossible) rho0ts=rho0ts_cgs/unit_density
         if (lroot) &
-            print*,'initialize_interstellar: ampl_SN, kampl_SN = ', &
-            ampl_SN, kampl_SN
+            print*,'initialize_interstellar: eampl_SN, kampl_SN = ', &
+            eampl_SN, kampl_SN
         if (cloud_rho==impossible) cloud_rho=cloud_rho_cgs / unit_density
         if (cloud_TT==impossible) cloud_TT=cloud_TT_cgs / unit_temperature
         if (cloud_tau==impossible) cloud_tau=cloud_tau_cgs / unit_time
@@ -2893,7 +2895,7 @@ module Interstellar
 !
 !  Calculate effective Sedov evolution time diagnostic.
 !
-      SNR%feat%t_sedov=sqrt((SNR%feat%radius)**(2+dimensionality)*SNR%feat%rhom/(kampl_SN+ampl_SN)/xsi_sedov)
+      SNR%feat%t_sedov=sqrt((SNR%feat%radius)**(2+dimensionality)*SNR%feat%rhom/ampl_SN/xsi_sedov)
       uu_sedov = 2./(2.+dimensionality)*SNR%feat%radius/SNR%feat%t_sedov
 !
       width_energy   = SNR%feat%radius*energy_width_ratio
@@ -2903,14 +2905,14 @@ module Interstellar
 !  Energy insertion normalization.
 !
       if (thermal_profile=="gaussian3") then
-        c_SN=ampl_SN/(cnorm_SN(dimensionality)*width_energy**dimensionality)
+        c_SN=eampl_SN/(cnorm_SN(dimensionality)*width_energy**dimensionality)
 !
       elseif (thermal_profile=="gaussian2") then
-        c_SN=ampl_SN/(cnorm_gaussian2_SN(dimensionality)* &
+        c_SN=eampl_SN/(cnorm_gaussian2_SN(dimensionality)* &
             width_energy**dimensionality)
 !
       elseif (thermal_profile=="gaussian") then
-        c_SN=ampl_SN/(cnorm_gaussian_SN(dimensionality)* &
+        c_SN=eampl_SN/(cnorm_gaussian_SN(dimensionality)* &
             width_energy**dimensionality)
 !
       endif
@@ -2942,7 +2944,7 @@ module Interstellar
 !  Velocity insertion normalization.
 !  26-aug-10/fred:
 !  E_k=int(0.5*rho*vel^2)=approx 2pi*rhom*V0^2*int(r^2*v(r)dr).
-!  Total energy =  kinetic (kampl_SN) + thermal (ampl_SN).
+!  Total energy =  kinetic (kampl_SN) + thermal (eampl_SN).
 !  21-apr-16/fred:
 !  Only fully implemented for gaussian3 - normalisation only correct for
 !  constant ambient density and zero ambient velocity. Additional term 
@@ -3051,12 +3053,17 @@ module Interstellar
         if (ierr==iEXPLOSION_TOO_HOT) return
       endif
 !
+!  reject site if density distribution yields excessively high kinetic energy or 
+!  rescale cvelocity_SN to approximate kinetic energy = kampl_SN 
+!
       if (lSN_velocity)then
         call get_props_check(f,SNR,rhom,ekintot_new,cvelocity_SN,cmass_SN)
         if (ekintot_new-ekintot > 2.5*kampl_SN) then
           if (present(ierr)) then
             ierr=iEXPLOSION_TOO_UNEVEN
           endif
+        elseif (ekintot_new-ekintot > 0) then 
+          cvelocity_SN = cvelocity_SN * sqrt(kampl_SN/(ekintot_new-ekintot))
         endif
       endif
 !
@@ -3072,6 +3079,7 @@ module Interstellar
 !
       SNR%feat%EE=0.
       SNR%feat%MM=0.
+      SNR%feat%CR=0.
       !EE_SN2=0.
       do n=n1,n2
       do m=m1,m2
@@ -3113,7 +3121,7 @@ module Interstellar
 !
         if (lcosmicray.and.lSN_ecr) then
           call injectenergy_SN(deltaCR,width_energy, &
-                               c_SN*frac_ecr/frac_eth,SNR%feat%CR)
+                               c_SN*campl_SN/eampl_SN,SNR%feat%CR)
           f(l1:l2,m,n,iecr) = f(l1:l2,m,n,iecr) + deltaCR
           ! Optionally add cosmicray flux, consistent with addition to ecr, via
           !    delta fcr = -K grad (delta ecr) .
@@ -3121,7 +3129,7 @@ module Interstellar
           if (lcosmicrayflux .and. lSN_fcr) then
             fcr=f(l1:l2,m,n,ifcr:ifcr+2)
             call injectfcr_SN(deltafcr,width_energy, &
-                              c_SN*frac_ecr/frac_eth)
+                              c_SN*campl_SN/eampl_SN)
             f(l1:l2,m,n,ifcr:ifcr+2)=fcr + deltafcr
           endif
         endif
