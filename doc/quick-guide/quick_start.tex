@@ -117,12 +117,21 @@ Go to a folder that contains one of the many available samples, e.g.:
 \begin{verbatim}
   cd samples/1d-tests/jeans-x
 \end{verbatim}
-You may also start with a fresh directory and copy over the files from one of the samples.
+
+\section{Create a new run-directory}
+
+You may also create your own run-directories structure and simply clone input and configuration files from one of the samples that fits you best to get started quickly:
+\begin{verbatim}
+  mkdir -p /data/myuser/myrun/src
+  cd /data/myuser/myrun
+  cp samples/1d-tests/jeans-x/*.in /data/myuser/myrun/
+  cp samples/1d-tests/jeans-x/src/*.local /data/myuser/myrun/src/
+\end{verbatim}
+This is the recommended way if you expect to use a lot of space and your home directory has a tight quota.
 
 \subsection{Setting up...}
 
 One command sets up all needed symbolic links to the original Pencil Code directory:
-
 \begin{verbatim}
   pc_setupsrc
 \end{verbatim}
