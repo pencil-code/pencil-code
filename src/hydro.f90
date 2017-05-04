@@ -1670,7 +1670,7 @@ module Hydro
         case ('sub-Keplerian')
           if (lroot) print*, 'init_hydro: set sub-Keplerian gas velocity'
           f(:,:,:,iux) = f(:,:,:,iux) - 1/(2*Omega)*cs20*beta_glnrho_scaled(2)
-          f(:,:,:,iuy) = f(:,:,:,iux) + 1/(2*Omega)*cs20*beta_glnrho_scaled(1)
+          f(:,:,:,iuy) = f(:,:,:,iuy) + 1/(2*Omega)*cs20*beta_glnrho_scaled(1)
           ! superimpose here for the case of pressure bump special module chaning f as well
 !
         case ('rigid')
@@ -2468,7 +2468,7 @@ module Hydro
       if (lpenc_loc(i_uuadvec_guu)) then
         do j=1,3
           ! This is calling scalar h_dot_grad, that does not add
-          ! the inertial terms. They will be added here. 
+          ! the inertial terms. They will be added here.
           call h_dot_grad(p%uu_advec,p%uij(:,j,:),tmp)
           p%uuadvec_guu(:,j)=tmp
         enddo
@@ -3355,7 +3355,7 @@ module Hydro
         !nshift=phidot*dt*dy_1(m)
         !call max_mn_name(nshift,idiag_nshift)
         call max_mn_name(uu_average(:,n-nghost)*rcyl_mn1*dt*dy_1(m),idiag_nshift)
-      endif      
+      endif
 !
 !  1d-averages. Happens at every it1d timesteps, NOT at every it1.
 !
@@ -5369,10 +5369,10 @@ module Hydro
     subroutine hydro_after_timestep(f,df,dt_sub)
 !
 !  Hook for modification of the f and df arrays
-!  according to the hydro module, after the       
-!  timestep is performed. 
+!  according to the hydro module, after the
+!  timestep is performed.
 !
-!  12-mar-17/wlyra: coded. 
+!  12-mar-17/wlyra: coded.
 !  28-mar-17/MR: reinstated update_ghosts.
 !
       use Boundcond, only: update_ghosts
@@ -5408,7 +5408,7 @@ module Hydro
           f(:,:,:,iux) = 0.
           df(:,:,:,iux) = 0.
         endif
-!        
+!
       endif fargo
 
       if (lhelmholtz_decomp) then 
