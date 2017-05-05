@@ -136,6 +136,8 @@ module Energy
   integer :: idiag_eem=0      ! DIAG_DOC: $\left< e \right> =
                               ! DIAG_DOC:  \left< c_v T \right>$
                               ! DIAG_DOC: \quad(mean internal energy)
+  integer :: idiag_ethtot=0   ! DIAG_DOC: $\int_V\varrho e\,dV$
+                              ! DIAG_DOC:   \quad(total thermal energy)
   integer :: idiag_ssm=0      ! DIAG_DOC: $\overline{S}$
   integer :: idiag_thcool=0   ! DIAG_DOC: $\tau_{\rm cool}$
   integer :: idiag_ppm=0      ! DIAG_DOC: $\overline{P}$
@@ -824,7 +826,7 @@ module Energy
       if (idiag_yHmax/=0) lpenc_diagnos(i_yH)  =.true.
       if (idiag_yHmin/=0) lpenc_diagnos(i_yH)  =.true.
       if (idiag_yHm/=0)   lpenc_diagnos(i_yH)  =.true.
-      if (idiag_ethm/=0.or.idiag_ethmz/=0) then
+      if (idiag_ethm/=0.or.idiag_ethmz/=0.or.idiag_ethtot/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_ee)  =.true.
       endif
@@ -1151,6 +1153,7 @@ module Energy
         if (idiag_eem/=0)   call sum_mn_name(p%ee,idiag_eem)
         if (idiag_ppm/=0)   call sum_mn_name(p%pp,idiag_ppm)
         if (idiag_ethm/=0)  call sum_mn_name(p%rho*p%ee,idiag_ethm)
+        if (idiag_ethtot/=0) call integrate_mn_name(p%rho*p%ee,idiag_ethtot)
         if (idiag_csm/=0)   call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
         if (idiag_TugTm/=0) call sum_mn_name(p%TT*p%ugTT,idiag_TugTm)
         if (idiag_Trms/=0)  call sum_mn_name(p%TT**2,idiag_Trms,lsqrt=.true.)
@@ -1951,6 +1954,7 @@ module Energy
         idiag_ethmz=0; idiag_ethuxmz=0; idiag_ethuymz=0; idiag_ethuzmz=0
         idiag_TTmxy=0; idiag_TTmxz=0
         idiag_fpresxmz=0; idiag_fpresymz=0; idiag_fpreszmz=0; idiag_fradz=0
+        idiag_ethtot=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1977,6 +1981,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'Tdzpm',idiag_Tdzpm)
         call parse_name(iname,cname(iname),cform(iname),'fradtop',idiag_fradtop)
         call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
+        call parse_name(iname,cname(iname),cform(iname),'ethtot',idiag_ethtot)
         call parse_name(iname,cname(iname),cform(iname),'ssm',idiag_ssm)
         call parse_name(iname,cname(iname),cform(iname),'dtchi',idiag_dtchi)
         call parse_name(iname,cname(iname),cform(iname),'dtc',idiag_dtc)
