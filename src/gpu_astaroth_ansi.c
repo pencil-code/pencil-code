@@ -41,17 +41,20 @@ extern REAL __cdata_MOD_dy;
 extern REAL __cdata_MOD_dz;
 extern REAL __cdata_MOD_omega;
 extern REAL __cdata_MOD_theta;
-extern REAL __viscosity_MOD_nu;
+//extern REAL __viscosity_MOD_nu;
+static REAL __viscosity_MOD_nu=1.;
 extern REAL __equationofstate_MOD_cs20;
 
 static FINT nx, ny, nz, mx, my, mz, nghost;
 
-/* ---------------------------------------------------------------------- */
+// ----------------------------------------------------------------------
 void FTNIZE(initialize_gpu_c)
      (FINT *nx_, FINT *ny_, FINT *nz_, FINT *nghost_, REAL *x, REAL *y, REAL *z )
 /* Initializes GPU.
 */
 {
+  printf("omega = %e\n", __cdata_MOD_omega);
+  printf("nu = %e\n", __viscosity_MOD_nu);
   /*
   printf("omega = %e\n", cdata_mp_omega_);
   printf("nu = %e\n", viscosity_mp_nu_);
@@ -67,8 +70,10 @@ void FTNIZE(initialize_gpu_c)
   my=ny+2*nghost;
   mz=nz+2*nghost;
 
-  REAL nu=__viscosity_MOD_nu;   //,viscosity_mp_nu_);
+  REAL nu=__viscosity_MOD_nu;
+  //REAL nu=viscosity_mp_nu_;
   REAL cs2=__equationofstate_MOD_cs20;
+  //REAL cs2=equationofstate_mp_cs20_;
   REAL *uu_x, *uu_y, *uu_z, *lnrho;
   intitializeGPU(uu_x, uu_y, uu_z, lnrho, mx, my, mz, nghost, x, y, z, nu, cs2);
 
