@@ -33,7 +33,7 @@ devicecus = collectiveops.cu diagnostics.cu integrators_v5_RSM.cu boundcond.cu t
 CFLAGS = -gencode arch=compute_52,code=sm_52 -shared -Xcompiler -fPIC
 
 #Searches also src/verification for additional includes
-VPATH = verification:..
+VPATH = verification
 
 #Include initial configuration
 include init.conf
