@@ -700,7 +700,8 @@ module Gravity
       if (lreference_state) lpenc_requested(i_rho1)=.true.
 !
       if (idiag_epot/=0 .or. idiag_epot/=0 .or. idiag_epotmx/=0 .or. &
-          idiag_epotmy/=0 .or. idiag_epotmz/=0) lpenc_diagnos(i_epot)=.true.
+          idiag_epotmy/=0 .or. idiag_epotmz/=0 .or. &
+          idiag_epottot/=0) lpenc_diagnos(i_epot)=.true.
       if (idiag_epotuxmx/=0 .or. idiag_epotuzmz/=0) then
         lpenc_diagnos(i_epot)=.true.
         lpenc_diagnos(i_uu)=.true.
