@@ -386,6 +386,7 @@ special_message:
 endif
 LIBGPU =
 ifeq ($(GPU),gpu_astaroth)
+  LDFLAGS_MAIN += -dynamic
   GPU_INTERFACE=gpu_astaroth_ansi.o
   ifeq ($(REAL_PRECISION),double)
     LIBGPU = astaroth_dbl.so
