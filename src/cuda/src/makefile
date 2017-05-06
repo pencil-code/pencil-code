@@ -30,8 +30,7 @@ devicecus = collectiveops.cu diagnostics.cu integrators_v5_RSM.cu boundcond.cu t
 #from L1 are done in 128-byte cache lines, but
 #transactions from L2/SGRAM are done as 32-byte 
 #blocks.
-CFLAGS = -gencode arch=compute_30,code=sm_30 -shared -Xcompiler -fPIC
-
+CFLAGS = -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -shared -Xcompiler -fPIC
 #Searches also src/verification for additional includes
 VPATH = verification
 
