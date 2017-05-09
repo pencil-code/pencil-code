@@ -1,10 +1,3 @@
-#####################################################################################
-##
-##	Python script stopes here and gives back controll to the user.
-##	All variables and namespaces stay intacted for debugging.
-##
-#####################################################################################
-
 
 def debug_breakpoint():
     """

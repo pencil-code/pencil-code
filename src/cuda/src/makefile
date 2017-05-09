@@ -5,8 +5,14 @@
 hostobjs = initutils.o io.o model_collectiveops.o 
 deviceobjs = slice.o collectiveops.o diagnostics.o integrators_v5s.o boundcond.o timestep.o diff.o shear.o coriolis.o forcing.o continuity.o hydro.o gpu_astaroth.o copyouterhalostodevice.o copyinternalhalostohost.o copy_halos.o
 
+<<<<<<< HEAD
 hostcpps = initutils.cpp io.cpp verification/model_collectiveops.cpp
 devicecus = collectiveops.cu diagnostics.cu integrators_v5s.cu boundcond.cu timestep.cu diff.cu shear.cu coriolis.cu forcing.cu continuity.cu hydro.cu gpu_astaroth.cu copyouterhalostodevice.cu copyinternalhalostohost.cu copy_halos.cu slice.cu
+=======
+#hostcpps = initutils.cpp io.cpp verification/model_collectiveops.cpp
+hostcpps = initutils.cpp io.cpp model_collectiveops.cpp
+devicecus = collectiveops.cu diagnostics.cu integrators_v5_RSM.cu boundcond.cu timestep.cu diff.cu shear.cu coriolis.cu forcing.cu continuity.cu hydro.cu gpu_astaroth.cu copyouterhalostodevice.cu copyinternalhalostohost.cu copy_halos.cu slice.cu
+>>>>>>> 9e56cb78194c6cf5d897f581adb936a11086231c
 #deviceobjs = collectiveops.o diagnostics.o integrators_debug.o boundcond.o timestep.o diff.o shear.o coriolis.o forcing.o continuity.o hydro.o
 #deviceobjs = collectiveops.o diagnostics.o integrators_ytraversing3.o boundcond.o timestep.o diff.o shear.o coriolis.o forcing.o continuity.o hydro.o
 #deviceobjs = collectiveops.o diagnostics.o integrators_Th38x10.o boundcond.o timestep.o diff.o shear.o coriolis.o forcing.o continuity.o hydro.o
@@ -29,10 +35,9 @@ devicecus = collectiveops.cu diagnostics.cu integrators_v5s.cu boundcond.cu time
 #from L1 are done in 128-byte cache lines, but
 #transactions from L2/SGRAM are done as 32-byte 
 #blocks.
-CFLAGS = -gencode arch=compute_52,code=sm_52
-
+CFLAGS = -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -shared -Xcompiler -fPIC
 #Searches also src/verification for additional includes
-VPATH = verification:..
+VPATH = verification
 
 #Include initial configuration
 include init.conf
@@ -62,8 +67,9 @@ deviceobjs: $(deviceobjs)
 	#nvcc -g -G -Xptxas -O0 ${INIT_CONFS} ${RUN_CONFS} $(CFLAGS) -dc $< -o $@
 	#nvcc -g -lineinfo --ptxas-options=-v ${INIT_CONFS} ${RUN_CONFS} $(CFLAGS) -dc $< -o $@
 	#nvcc -g ${INIT_CONFS} ${RUN_CONFS} $(CFLAGS) -dc $< -o $@
-astaroth_sgl.so:
-	nvcc -g $(CFLAGS) ${INIT_CONFS} ${RUN_CONFS} ${MFLAGS} --relocatable-device-code=true --compiler-options '-fPIC' -o astaroth_sgl.so --shared $(hostcpps) $(devicecus)
+astaroth_sgl.so: $(hostobjs) $(deviceobjs)
+	nvcc -g $(CFLAGS) ${INIT_CONFS} ${RUN_CONFS} ${MFLAGS} --relocatable-device-code=true --compiler-options '-fPIC' -o astaroth_sgl.so --shared $(hostobjs) $(deviceobjs)
+	cp -f astaroth_sgl.so ..
 
 
 clean:

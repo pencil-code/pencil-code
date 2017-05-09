@@ -16,6 +16,7 @@
 %%   chemistry.f90
 %%   chiral_fluids.f90
 %%   chiral_fluids_gradtheta.f90
+%%   chiral_mhd.f90
 %%   coronae.f90
 %%   cosmicray_current.f90
 %%   density_stratified.f90
@@ -661,25 +662,6 @@
   \multicolumn{2}{c}{Module \file{chemistry.f90}} \\
 \midrule
   \var{dtchem}    & $dt_{chem}$ \\
-  \var{Y1mz}      & $\left<Y_1\right>_{xy}(z)$ \\
-  \var{Y2mz}      & $\left<Y_2\right>_{xy}(z)$ \\
-  \var{Y3mz}      & $\left<Y_3\right>_{xy}(z)$ \\
-  \var{Y4mz}      & $\left<Y_4\right>_{xy}(z)$ \\
-  \var{Y5mz}      & $\left<Y_5\right>_{xy}(z)$ \\
-  \var{Y6mz}      & $\left<Y_6\right>_{xy}(z)$ \\
-  \var{Y7mz}      & $\left<Y_7\right>_{xy}(z)$ \\
-  \var{Y8mz}      & $\left<Y_8\right>_{xy}(z)$ \\
-  \var{Y9mz}      & $\left<Y_9\right>_{xy}(z)$ \\
-  \var{Y10mz}     & $\left<Y_10\right>_{xy}(z)$ \\
-  \var{Y11mz}     & $\left<Y_11\right>_{xy}(z)$ \\
-  \var{Y12mz}     & $\left<Y_12\right>_{xy}(z)$ \\
-  \var{Y13mz}     & $\left<Y_13\right>_{xy}(z)$ \\
-  \var{Y14mz}     & $\left<Y_14\right>_{xy}(z)$ \\
-  \var{Y15mz}     & $\left<Y_15\right>_{xy}(z)$ \\
-  \var{Y16mz}     & $\left<Y_16\right>_{xy}(z)$ \\
-  \var{Y17mz}     & $\left<Y_17\right>_{xy}(z)$ \\
-  \var{Y18mz}     & $\left<Y_18\right>_{xy}(z)$ \\
-  \var{Y19mz}     & $\left<Y_19\right>_{xy}(z)$ \\
 \midrule
   \multicolumn{2}{c}{Module \file{chiral_fluids.f90}} \\
 \midrule
@@ -701,6 +683,12 @@
   \var{gtheta5mx} & $\left<\nabla\theta_{5x}\right>$ \\
   \var{gtheta5my} & $\left<\nabla\theta_{5y}\right>$ \\
   \var{gtheta5mz} & $\left<\nabla\theta_{5z}\right>$ \\
+\midrule
+  \multicolumn{2}{c}{Module \file{chiral_mhd.f90}} \\
+\midrule
+  \var{mu5m}      & $\left<\mu_5\right>$ \\
+  \var{mu5rms}    & $\left<\mu_5^2\right>^{1/2}$ \\
+  \var{bgmu5rms}  & $\left<(\Bv\cdot\nabla\mu_5)^2\right>^{1/2}$F \\
 \midrule
   \multicolumn{2}{c}{Module \file{coronae.f90}} \\
 \midrule

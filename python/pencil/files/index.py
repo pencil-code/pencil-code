@@ -69,9 +69,4 @@ class Index(dict):
                         if (name == 'lnTT' and param.ltemperature_nolog):
                                 name = 'tt'
                         self[name] = val
-           # val=int(float(clean.split('=')[1].strip())) # sean150513
 
-            #            print name,val
-            # need to compare val to totalvars as global indices
-            # may be present in index.pro
-            #            if (val != 0 and val <= totalvars and \

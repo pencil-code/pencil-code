@@ -23,6 +23,7 @@ module Mpicomm
     module procedure mpirecv_real_arr2
     module procedure mpirecv_real_arr3
     module procedure mpirecv_real_arr4
+    module procedure mpirecv_real_arr5
   endinterface
 !
   interface mpirecv_int
@@ -64,6 +65,7 @@ module Mpicomm
     module procedure mpibcast_logical_arr2
     module procedure mpibcast_int_scl
     module procedure mpibcast_int_arr
+    module procedure mpibcast_int_arr2
     module procedure mpibcast_real_scl
     module procedure mpibcast_real_arr
     module procedure mpibcast_real_arr2
@@ -83,6 +85,7 @@ module Mpicomm
   interface mpibcast_int
     module procedure mpibcast_int_scl
     module procedure mpibcast_int_arr
+    module procedure mpibcast_int_arr2
   endinterface
 !
   interface mpibcast_real
@@ -275,21 +278,25 @@ module Mpicomm
   interface mpirecv_nonblock_real
     module procedure mpirecv_nonblock_real_arr
     module procedure mpirecv_nonblock_real_arr4
+    module procedure mpirecv_nonblock_real_arr5
   endinterface
 !
   interface mpisend_nonblock_real
     module procedure mpisend_nonblock_real_arr
     module procedure mpisend_nonblock_real_arr4
+    module procedure mpisend_nonblock_real_arr5
   endinterface
 !
   interface mpirecv_nonblock_int
     module procedure mpirecv_nonblock_int_scl
     module procedure mpirecv_nonblock_int_arr
+    module procedure mpirecv_nonblock_int_arr2
   endinterface
 !
   interface mpisend_nonblock_int
     module procedure mpisend_nonblock_int_scl
     module procedure mpisend_nonblock_int_arr
+    module procedure mpisend_nonblock_int_arr2
   endinterface
 !
 !  interface mpigather_and_out
@@ -629,6 +636,16 @@ module Mpicomm
 !
     endsubroutine mpirecv_real_arr4
 !***********************************************************************
+    subroutine mpirecv_real_arr5(bcast_array,nb,proc_src,tag_id)
+!
+      integer, dimension(5) :: nb
+      real, dimension(nb(1),nb(2),nb(3),nb(4),nb(5)) :: bcast_array
+      integer :: proc_src, tag_id
+!
+      if (ALWAYS_FALSE) print*, bcast_array, nb, proc_src, tag_id
+!
+    endsubroutine mpirecv_real_arr5
+!***********************************************************************
     subroutine mpirecv_int_scl(bcast_array,proc_src,tag_id)
 !
       integer :: bcast_array
@@ -752,6 +769,16 @@ module Mpicomm
 !
     endsubroutine mpirecv_nonblock_real_arr4
 !***********************************************************************
+    subroutine mpirecv_nonblock_real_arr5(bcast_array,nb,proc_src,ireq,tag_id)
+!
+      integer, dimension(5) :: nb
+      real, dimension(nb(1),nb(2),nb(3),nb(4),nb(5)) :: bcast_array
+      integer :: proc_src, tag_id, ireq
+!
+      if (ALWAYS_FALSE) print*, bcast_array, nb, proc_src, tag_id, ireq
+!
+    endsubroutine mpirecv_nonblock_real_arr5
+!***********************************************************************
     subroutine mpirecv_nonblock_int_scl(bcast_array,proc_src,ireq,tag_id)
 !
       integer :: bcast_array
@@ -770,6 +797,21 @@ module Mpicomm
       if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_src, tag_id, ireq
 !
     endsubroutine mpirecv_nonblock_int_arr
+!***********************************************************************
+    subroutine mpirecv_nonblock_int_arr2(bcast_array,nbcast_array,proc_src,tag_id,ireq)
+!
+!  Receive integer array(:,:) from other processor, with non-blocking communication.
+!
+!  30-apr-17/Jorgen: adapted
+!
+      integer, dimension(2) :: nbcast_array
+      integer, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
+      integer :: proc_src, tag_id, ireq
+
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_src, tag_id, ireq
+!
+    endsubroutine mpirecv_nonblock_int_arr2
+!***********************************************************************
 !***********************************************************************
     subroutine mpisend_nonblock_real_arr(bcast_array,nbcast_array,proc_rec,tag_id,ireq)
 !
@@ -800,6 +842,16 @@ module Mpicomm
 !
     endsubroutine mpisend_nonblock_int_arr
 !***********************************************************************
+    subroutine mpisend_nonblock_int_arr2(bcast_array,nbcast_array,proc_rec,tag_id,iref)
+!
+      integer, dimension(2) :: nbcast_array
+      integer, dimension(nbcast_array(1),nbcast_array(2)) :: bcast_array
+      integer :: proc_rec, tag_id, iref
+!
+      if (ALWAYS_FALSE) print*, bcast_array, nbcast_array, proc_rec, tag_id, iref
+!
+    endsubroutine mpisend_nonblock_int_arr2
+!***********************************************************************
     subroutine mpisend_nonblock_real_arr4(bcast_array,nb,proc_rec,ireq,tag_id)
 !
       integer, dimension(4) :: nb
@@ -809,6 +861,16 @@ module Mpicomm
       if (ALWAYS_FALSE) print*, bcast_array, nb, proc_rec, tag_id, ireq
 !
     endsubroutine mpisend_nonblock_real_arr4
+!***********************************************************************
+    subroutine mpisend_nonblock_real_arr5(bcast_array,nb,proc_rec,ireq,tag_id)
+!
+      integer, dimension(5) :: nb
+      real, dimension(nb(1),nb(2),nb(3),nb(4),nb(5)) :: bcast_array
+      integer :: proc_rec, tag_id, ireq
+!
+      if (ALWAYS_FALSE) print*, bcast_array, nb, proc_rec, tag_id, ireq
+!
+    endsubroutine mpisend_nonblock_real_arr5
 !***********************************************************************
     subroutine mpisendrecv_real_scl(send_array,proc_dest,sendtag, &
       recv_array,proc_src,recvtag)
@@ -951,6 +1013,22 @@ module Mpicomm
       if (ALWAYS_FALSE) print*, ibcast_array, nbcast_array, proc
 !
     endsubroutine mpibcast_int_arr
+!***********************************************************************
+    subroutine mpibcast_int_arr2(ibcast_array,nbcast_array,proc,comm)
+!
+!  Communicate integer array(:,:) to other processors.
+!
+!  30-apr-17/Jorgen: adapted
+!
+      use General, only: ioptest
+
+      integer, dimension(2) :: nbcast_array
+      integer, dimension(nbcast_array(1),nbcast_array(2)) :: ibcast_array
+      integer, optional :: proc,comm
+!
+      if (ALWAYS_FALSE) print*, ibcast_array, nbcast_array, proc, comm
+!
+    endsubroutine mpibcast_int_arr2
 !***********************************************************************
     subroutine mpibcast_real_scl(bcast_array,proc,comm)
 !

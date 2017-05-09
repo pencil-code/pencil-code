@@ -36,6 +36,9 @@ def slices(*args, **kwargs):
 
     *precision*:
       Precision of the data. Either float 'f' or double 'd'.
+
+    *verbose*:
+      Print progress
     """
 
     slices_tmp = SliceSeries()
@@ -59,7 +62,7 @@ class SliceSeries(object):
 
 
     def read(self, field='', extension='', datadir='data', proc=-1,
-             old_file=False, precision='f'):
+             old_file=False, precision='f', verbose=True):
         """
         Read Pencil Code slice data.
 
@@ -87,6 +90,9 @@ class SliceSeries(object):
 
         *precision*:
           Precision of the data. Either float 'f' or double 'd'.
+
+        *verbose*:
+          Print progress
         """
 
         import os
@@ -134,10 +140,12 @@ class SliceSeries(object):
             pass
 
         for extension in extension_list:
+            if verbose == True: print('~ Extension: '+str(extension))
             # This one will store the data.
             ext_object = Foo()
 
             for field in field_list:
+                if verbose == True: print('  -> Field: '+str(field))
                 # Compose the file name according to field and extension.
                 datadir = os.path.expanduser(datadir)
                 if proc < 0:
@@ -171,6 +179,7 @@ class SliceSeries(object):
 
                 while True:
                     try:
+                        if verbose == True: print('  -> Reading... ')
                         raw_data = infile.read_record(dtype=precision)
                     except ValueError:
                         break
@@ -184,11 +193,12 @@ class SliceSeries(object):
                         self.t = np.concatenate((self.t, raw_data[-2:-1]))
                         slice_series = np.concatenate((slice_series, raw_data[:-2]))
                     islice += 1
+                    if verbose == True: print('  -> Done')
 
                 # Reshape and remove first entry.
+                if verbose == True: print('~ Reshaping array')
                 self.t = self.t[1:]
                 slice_series = slice_series[1:].reshape(islice, vsize, hsize)
                 setattr(ext_object, field, slice_series)
 
             setattr(self, extension, ext_object)
-

@@ -521,6 +521,24 @@ module Gravity
 !  Add the indirect terms from the motion of the primary in a non-inertial frame,
 !  plus the Coriolis and centrifugal terms from the motion of the secondary.
 !
+!  The indirect potential is Phi = GMp/rp**3 r dot rp
+!
+!  Mp is planet mass and rp planet position. For rp=(1,0,0), the potential is
+!
+!    Phi = gp * x = gp * r*cos(phi)
+!
+!  with gp = GMp/rp**2. So the resulting acceleration is, in cylindrical: 
+!
+!    grad = -       dPhi/drad = - gp * cos(phi)
+!    gphi = - 1/r * dPhi/dphi =   gp * sin(phi)
+!    gzed = -       dPhi/dzed =   0.
+!
+!  In spherical coordinates, x = r*sin(tht)*cos(phi), so 
+!
+!    grad = -                  dPhi/drad = - gp * sin(tht)*cos(phi)
+!    gtht = - 1/ r           * dPhi/dtht = - gp * cos(tht)*cos(phi)
+!    gphi = - 1/[r*sin(tht)] * dPhi/dphi =   gp *          sin(phi)  
+!
 !  20-jul-14/wlad: coded
 !
       real, dimension (mx,my,mz,mvar) :: df
@@ -549,7 +567,7 @@ module Gravity
 !
         if (lindirect_terms) then
           df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) - g2*cos(y(m))
-          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) - g2*sin(y(m))
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + g2*sin(y(m))
         endif
 !
 !  Coriolis force

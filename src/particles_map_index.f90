@@ -336,25 +336,45 @@ module Particles_map
       type(pic), dimension(nx,ny,nz), intent(in) :: cell
 !
       integer :: ix, iy, iz, j, l, m, n
-      real :: dz1, dyz1, dv1
+      real :: dz1, dyz1, dv1, total_weight
 !
 !  Loop over each cell.
 !
       zscan: do n = n1, n2
         iz = n - nghost
         dz1 = merge(dz_1(n), 1.0, nzgrid > 1)
+!
         yscan: do m = m1, m2
           iy = m - nghost
           dyz1 = dz1 * merge(dy_1(m), 1.0, nygrid > 1)
+!
           xscan: do l = l1, l2
             ix = l - nghost
+            total_weight = sum(cell(ix,iy,iz)%p%weight)
+!
+!  Assign rhop
+!
             rhop: if (irhop > 0) then
-              dv1 = dyz1 * merge(dx_1(l), 1.0, nxgrid > 1)
-              f(l,m,n,irhop) = mp_swarm * dv1 * sum(cell(ix,iy,iz)%p%weight)
+              if (total_weight > 0.0) then
+                dv1 = dyz1 * merge(dx_1(l), 1.0, nxgrid > 1)
+                f(l,m,n,irhop) = mp_swarm * dv1 * total_weight
+              else
+                f(l,m,n,irhop) = 0.0
+              endif
             endif rhop
-            if (iuup /= 0) then
-              forall(j = 1:3) f(l,m,n,iuup+j-1) = sum(cell(ix,iy,iz)%p%weight * (cell(ix,iy,iz)%p%v(j) + cell(ix,iy,iz)%p%dv(j)))
-            endif
+!
+!  Assign uup
+!
+            uup: if (iuup > 0) then
+              if (total_weight > 0.0) then
+                forall(j = 1:3) &
+                    f(l,m,n,iuup+j-1) = sum(cell(ix,iy,iz)%p%weight * (cell(ix,iy,iz)%p%v(j) + cell(ix,iy,iz)%p%dv(j))) &
+                                      / total_weight
+              else
+                f(l,m,n,iupx:iupz) = 0.0
+              endif
+            endif uup
+!
           enddo xscan
         enddo yscan
       enddo zscan

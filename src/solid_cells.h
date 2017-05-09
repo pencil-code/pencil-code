@@ -22,3 +22,4 @@ public ::  register_solid_cells
 public ::  solid_cells_timestep_first
 public ::  solid_cells_timestep_second
 public ::  time_step_ogrid
+public ::  wsnap_ogrid

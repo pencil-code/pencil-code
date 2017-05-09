@@ -50,19 +50,22 @@ module Testfield
   logical :: lphase_adjust=.false.
   real :: ktestfield=1., ktestfield1=1.
   real :: kdamp_2ndord=0., kdamp_iter=0., dt_iter=0., reduce_iter=1.
+  real :: chiraltest=0.
   logical :: ltestfield_newz=.true.
   logical :: llorentzforce_testfield=.false.
+  logical :: ltest_uxb=.false.,ltest_jxb=.false.
 
   !!!! new input pars
   namelist /testfield_run_pars/ &
        B_ext,reinitialize_aatest,lsoca,lsoca_jxb, &
        etatest,etatest1,etatest_hyper3,iresistivity_test, &
-       itestfield,ktestfield, &
+       chiraltest, itestfield,ktestfield, &
        lin_testfield,lam_testfield,om_testfield,delta_testfield, &
        ltestfield_newz,leta_rank2,lphase_adjust, &
        ltestfield_taver,llorentzforce_testfield, &
        ltestfield_profile_eta_z, &
        luxb_as_aux,ljxb_as_aux,lignore_uxbtestm, &
+       ltest_uxb,ltest_jxb, &
        lforcing_cont_aatest,ampl_fcont_aatest, &
        daainit,linit_aatest,bamp, &
        rescale_aatest,tau_aatest, &  
@@ -446,7 +449,7 @@ module Testfield
 !  20-aug-13/MR: calc_uxb and calc_diffusive_part introduced
 !  27-sep-13/MR: changes due to uxbtestm(mz,...  -->  uxbtestm(nz,...
 !  19-nov-13/MR: complex p=(lam_testfield,om_testfield) in complex calculation branch enabled
-!  21-nov-13/MR: suppressed time-dependence of testfield in complex calculation for lam_testfield/=0 
+!  21-nov-13/MR: suppressed time-dependence of testfield in complex calculation for lam_testfield/=0
 !
       use Diagnostics
       use Cdata
@@ -480,9 +483,7 @@ module Testfield
 !
       integer :: jtest, j, iuxtest, iuztest
       integer :: i1=1, i2=2, i3=3, i4=4, i5=5, iaxtest2, iaztest2
-
-      logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
-      integer      :: iswitch_iter=0, nl
+      integer :: iswitch_iter=0, nl
 !
 !  identify module and boundary conditions
 !
@@ -609,7 +610,7 @@ module Testfield
 !
         if (.not.lsoca) then
 !
-          if (iuxb/=0.and..not.ltest_uxb) then
+          if ((iuxb/=0.and..not.ltest_uxb).and.chiraltest==0.) then
             uxb=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
           else
             call calc_uxb(f,p,iaxtest,uxb,bbtest)
@@ -651,6 +652,11 @@ module Testfield
 !
           endif
         endif
+!
+!  add chiral effect term
+!  (if lsoca/=T, it may not work!)
+!
+        if (chiraltest/=0.) daatest=daatest+chiraltest*bbtest
 !
 !  add possibility of forcing that is not delta-correlated in time
 !

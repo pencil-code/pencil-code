@@ -9,7 +9,7 @@
 ;               instead in "object". This saves half the RAM space as no duplication
 ;               of the (internally anyway used) array into individual variables is performed.
 ;               "object" contains then the names and starting positions of the variables in array.
-; 
+;
 pro pc_read_pvar, object=object, varfile=varfile_, datadir=datadir, ivar=ivar, $
     npar_max=npar_max, stats=stats, quiet=quiet, swap_endian=swap_endian, $
     rmv=rmv, irmv=irmv, trmv=trmv, oldrmv=oldrmv, $
@@ -29,7 +29,7 @@ default, savefile, 1
 default, proc, -1
 default, trimxyz, 1
 default, id_proc, 0
-objout = not arg_present(array) 
+objout = not arg_present(array)
 ;
 if (n_elements(ivar) eq 1) then begin
   default,varfile_,'PVAR'
@@ -66,7 +66,7 @@ endelse
 ;
 mpvar=pdim.mpvar
 if (proc ne -1) then begin
-  filename=datadir+'/proc'+strtrim(proc,2)+'/'+varfile 
+  filename=datadir+'/proc'+strtrim(proc,2)+'/'+varfile
 ;
 ;  Check if file exists.
 ;
@@ -225,7 +225,7 @@ default, iup33, 0
 varcontent[iup33].variable = 'grad uu at particle(up33)'
 varcontent[iup33].idlvar   = 'up33'
 varcontent[iup33].idlinit  = INIT_SCALAR
-;  Check if there is other pvar data written by the special module. 
+;  Check if there is other pvar data written by the special module.
 ;
 file_special=datadir+'/index_special_particles.pro'
 exist_specialvar=file_test(file_special)
@@ -272,7 +272,7 @@ ipar=lonarr(npar)
 ; Define array for processor id storage
 ;
 if (id_proc) then begin
-  iproc=replicate(-1,npar) 
+  iproc=replicate(-1,npar)
   variables=[variables,'iproc']
 endif
 ;
@@ -290,7 +290,7 @@ endif
 ;  Read from single processor.
 ;
 if (proc ne -1) then begin
-  filename=datadir+'/proc'+strtrim(proc,2)+'/'+varfile 
+  filename=datadir+'/proc'+strtrim(proc,2)+'/'+varfile
   if (not keyword_set(quiet)) then $
       print, 'Loading data from processor ', strtrim(str(proc))
 ;
@@ -308,7 +308,7 @@ if (proc ne -1) then begin
 ;  Read particle data (if any).
 ;
   if (npar ne 0) then begin
-;    
+;
     ipar=lonarr(npar)
     readu, file, ipar
 ;
@@ -342,6 +342,8 @@ endif else begin
   else $
     array=fltarr(npar_max,totalvars)*one
 ;
+  iipar = []
+;
 ;  Loop over processors.
 ;
   for i=0,ncpus-1 do begin
@@ -351,7 +353,7 @@ endif else begin
         strtrim(str(ncpus)), ' (', $
         strtrim(datadir+'/proc'+str(i)+'/'+varfile), ')...'
 ;
-    filename=datadir+'/proc'+strtrim(i,2)+'/'+varfile 
+    filename=datadir+'/proc'+strtrim(i,2)+'/'+varfile
 ;
 ;  Check if file exists.
 ;
@@ -374,12 +376,13 @@ endif else begin
 ;  Read particle data (if any).
 ;
     if (npar_loc ne 0) then begin
-;    
+;
       ipar_loc=lonarr(npar_loc)
       readu, file, ipar_loc
+      iipar = [iipar, ipar_loc]
 ;
 ;  Register particle indices for later check if all particles have been read.
-;  
+;
       for k=0L,npar_loc-1 do begin
         ipar[ipar_loc[k]-1]=ipar[ipar_loc[k]-1]+1
       endfor
@@ -585,7 +588,7 @@ if objout then begin
 endif
 ;
 ;  Check if all particles found exactly once.
-;  Allow for particles not being found if particles are being 
+;  Allow for particles not being found if particles are being
 ;  inserted continuously.
 ;
 if (proc eq -1 and not keyword_set(quiet)) then begin
@@ -608,7 +611,7 @@ if (proc eq -1 and not keyword_set(quiet)) then begin
           if ( ipar[i] gt 1 ) then print, i, ipar[i]
         endfor
       endif
-    endelse  
+    endelse
   endif else begin
     if (rmv) then begin
       if ( (max(ipar+ipar_rmv) ne 1) or (min(ipar+ipar_rmv) ne 1) ) then begin
@@ -731,9 +734,9 @@ endif
 npar_found=n_elements(where(ipar eq 1))+0L
 if objout then $
   makeobject="object = create_struct(name=objectname," + $
-             "['t','x','y','z','dx','dy','dz','npar_found'," + $
+             "['t','x','y','z','dx','dy','dz','npar_found','ipar'," + $
              arraytostring(variables,quote="'",/noleader) + "]," + $
-             "t,x,y,z,dx,dy,dz,npar_found," + $
+             "t,x,y,z,dx,dy,dz,npar_found,iipar," + $
              arraytostring(variables,/noleader) + ")" $
 else begin
 ;
@@ -748,10 +751,10 @@ else begin
   endfor
 
   makeobject="object = create_struct(name=objectname," + $
-             "['t','x','y','z','dx','dy','dz','npar_found'," + $
+             "['t','x','y','z','dx','dy','dz','npar_found','ipar'," + $
              "'varnames', 'varlens']," + $
-             "t,x,y,z,dx,dy,dz,npar_found," + $
-             "varcontent.idlvar, varcontent.skip )" 
+             "t,x,y,z,dx,dy,dz,npar_found,iipar" + $
+             "varcontent.idlvar, varcontent.skip )"
 endelse
 
 if (execute(makeobject) ne 1) then begin

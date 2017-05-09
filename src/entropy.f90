@@ -42,6 +42,7 @@ module Energy
   real :: chi_jump_shock=1.0, xchi_shock=0.0,widthchi_shock=0.02
   real, target :: chi=0.0
   real :: chi_t=0.0, chi_shock=0.0, chi_hyper3=0.0
+  real :: chi_t0=0.0, chi_t1=0.0
   real :: chi_hyper3_mesh=5.0, chi_cs=0.0, chi_rho=0.0
   real :: Kgperp=0.0, Kgpara=0.0, tdown=0.0, allp=2.0, TT_powerlaw=1.0
   real :: ss_left=1.0, ss_right=1.0
@@ -66,6 +67,7 @@ module Energy
   real :: Kbot=impossible, Ktop=impossible
   real :: hcond2=impossible
   real :: chit_aniso=0.0, chit_aniso_prof1=1.0, chit_aniso_prof2=1.0
+  real :: chit_fluct_prof1=1.0, chit_fluct_prof2=1.0
   real :: tau_cor=0.0, TT_cor=0.0, z_cor=0.0
   real :: tauheat_buffer=0.0, TTheat_buffer=0.0
   real :: heat_gaussianz=0.0, heat_gaussianz_sigma=0.0
@@ -78,12 +80,14 @@ module Energy
   real :: ss_volaverage=0.
   real :: xbot=0.0, xtop=0.0, alpha_MLT=1.5, xbot_aniso=0.0, xtop_aniso=0.0
   real :: zz1=impossible, zz2=impossible
+  real :: zz1_fluct=impossible, zz2_fluct=impossible
   real :: rescale_TTmeanxy=1.
   real :: Pres_cutoff=impossible
   real :: pclaw=0.0, xchit=0.
   real, target :: hcond0_kramers=0.0, nkramers=0.0
   real :: chimax_kramers=0., chimin_kramers=0., zheat_uniform_range=0.
   real :: peh_factor=1., heat_ceiling=-1.0
+  real :: Pr_smag1=1.
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
@@ -95,6 +99,7 @@ module Energy
   logical :: lheatc_tensordiffusion=.false., lheatc_spitzer=.false.
   logical :: lheatc_hubeny=.false.,lheatc_sqrtrhochiconst=.false.
   logical, target :: lheatc_kramers=.false.
+  logical :: lheatc_smagorinsky=.false., lheatc_chit=.false.
   logical :: lheatc_corona=.false.,lheatc_chi_cspeed=.false.
   logical :: lheatc_shock=.false., lheatc_hyper3ss=.false.
   logical :: lheatc_hyper3ss_polar=.false., lheatc_hyper3ss_aniso=.false.
@@ -111,6 +116,7 @@ module Energy
   logical :: lviscosity_heat=.true.
   logical :: lfreeze_sint=.false.,lfreeze_sext=.false.
   logical :: lhcond_global=.false.,lchit_aniso_simplified=.false.
+  logical :: lchit_total=.false., lchit_mean=.false., lchit_fluct=.false.
   logical :: lchiB_simplified=.false.
   logical :: lfpres_from_pressure=.false.
   logical :: lconvection_gravx=.false.
@@ -191,6 +197,7 @@ module Energy
       mixinglength_flux, chiB, lchiB_simplified, chi_hyper3_aniso, Ftop, xbot, xtop, tau_cool2, &
       tau_cool_ss, tau_diff, lfpres_from_pressure, chit_aniso, &
       chit_aniso_prof1, chit_aniso_prof2, lchit_aniso_simplified, &
+      chit_fluct_prof1, chit_fluct_prof2, &
       lconvection_gravx, ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, &
       hcond0_kramers, nkramers, chimax_kramers, chimin_kramers, &
       xbot_aniso, xtop_aniso, entropy_floor, w_sldchar_ent, &
@@ -200,7 +207,8 @@ module Energy
       Pres_cutoff,lchromospheric_cooling,lchi_shock_density_dep,lhcond0_density_dep,&
       cool_type,ichit,xchit,pclaw,lenergy_slope_limited,h_slope_limited,islope_limiter, &
       zheat_uniform_range, peh_factor, lphotoelectric_heating_radius, &
-      limpose_heat_ceiling, heat_ceiling, lthdiff_Hmax
+      limpose_heat_ceiling, heat_ceiling, lthdiff_Hmax, zz1_fluct, zz2_fluct, &
+      Pr_smag1, chi_t0, chi_t1, lchit_total, lchit_mean, lchit_fluct
 !
 !  Diagnostic variables for print.in
 !  (need to be consistent with reset list below).
@@ -269,7 +277,7 @@ module Energy
 !
 ! xy averaged diagnostics given in xyaver.in
 !
-  integer :: idiag_fradz=0      ! XYAVG_DOC: $F_{\rm rad}$
+  integer :: idiag_fradz=0      ! XYAVG_DOC: $\left<F_{\rm rad}\right>_{xy}$
   integer :: idiag_fconvz=0     ! XYAVG_DOC: $\left<c_p \varrho u_z T \right>_{xy}$
   integer :: idiag_ssmz=0       ! XYAVG_DOC: $\left< s \right>_{xy}$
   integer :: idiag_ss2mz=0      ! XYAVG_DOC: $\left< s^2 \right>_{xy}$
@@ -291,6 +299,15 @@ module Energy
   integer :: idiag_fradz_constchi=0 ! XYAVG_DOC: $F_{\rm rad}$ (from chi_const)
   integer :: idiag_fturbz=0     ! XYAVG_DOC: $\left<\varrho T \chi_t \nabla_z
                                 ! XYAVG_DOC: s\right>_{xy}$ \quad(turbulent
+                                ! XYAVG_DOC: heat flux)
+  integer :: idiag_fturbtz=0    ! XYAVG_DOC: $\left<\varrho T \chi_t0 \nabla_z
+                                ! XYAVG_DOC: s\right>_{xy}$ \quad(turbulent
+                                ! XYAVG_DOC: heat flux)
+  integer :: idiag_fturbmz=0    ! XYAVG_DOC: $\left<\varrho T \chi_t0 \nabla_z
+                                ! XYAVG_DOC: \overline{s}\right>_{xy}$ 
+                                ! XYAVG_DOC: \quad(turbulent heat flux)
+  integer :: idiag_fturbfz=0    ! XYAVG_DOC: $\left<\varrho T \chi_t0 \nabla_z
+                                ! XYAVG_DOC: s'\right>_{xy}$ \quad(turbulent
                                 ! XYAVG_DOC: heat flux)
   integer :: idiag_dcoolz=0     ! XYAVG_DOC: surface cooling flux
   integer :: idiag_Kkramersmz=0 ! XYAVG_DOC: $\left< K_0 T^(3-b)/rho^(a+1) \right>_{xy}$
@@ -798,6 +815,8 @@ module Energy
       lheatc_hyper3ss_polar=.false.
       lheatc_hyper3ss_mesh=.false.
       lheatc_hyper3ss_aniso=.false.
+      lheatc_smagorinsky=.false.
+      lheatc_chit=.false.
 !
       lnothing=.false.
 !
@@ -836,6 +855,9 @@ module Energy
         case ('kramers')
           lheatc_kramers=.true.
           if (lroot) print*, 'heat conduction: kramers'
+        case ('chit')
+          lheatc_chit=.true.
+          if (lroot) print*, 'heat conduction: chit'
         case ('corona')
           lheatc_corona=.true.
           if (lroot) print*, 'heat conduction: corona'
@@ -864,6 +886,9 @@ module Energy
         case ('hyper3-mesh','hyper3_mesh')
           lheatc_hyper3ss_mesh=.true.
           if (lroot) print*, 'heat conduction: hyperdiffusivity of ss'
+        case ('smagorinsky')
+          lheatc_smagorinsky=.true.
+          if (lroot) print*, 'heat conduction: smagorinsky'
         case ('nothing')
           if (lroot .and. (.not. lnothing)) print*,'heat conduction: nothing'
         case default
@@ -910,6 +935,9 @@ module Energy
       endif
       if (lheatc_kramers .and. hcond0_kramers==0.0) then
         call warning('initialize_energy','hcond0_kramers is zero!')
+      endif
+      if (lheatc_smagorinsky .and. Pr_smag1==0.0) then
+        call warning('initialize_energy','Pr_smag1 is zero!')
       endif
       if (lheatc_hyper3ss .and. chi_hyper3==0.0) &
            call warning('initialize_energy','chi_hyper3 is zero!')
@@ -1009,6 +1037,7 @@ module Energy
       call put_shared_variable('lheatc_chiconst',lheatc_chiconst)
       call put_shared_variable('lviscosity_heat',lviscosity_heat)
       call put_shared_variable('lheatc_kramers',lheatc_kramers)
+!      call put_shared_variable('lheatc_chit',lheatc_chit)
       if (lheatc_kramers) then
         call put_shared_variable('hcond0_kramers',hcond0_kramers)
         call put_shared_variable('nkramers',nkramers)
@@ -2506,6 +2535,12 @@ module Energy
         lpenc_requested(i_cv1)=.true.
         lpenc_requested(i_del2lnTT)=.true.
       endif
+      if (lheatc_chit) then
+        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_glnTT)=.true.
+        lpenc_requested(i_gss)=.true.
+        lpenc_requested(i_del2ss)=.true.
+      endif
       if (lheatc_corona) then
         lpenc_requested(i_rho)=.true.
         lpenc_requested(i_lnrho)=.true.
@@ -2580,6 +2615,14 @@ module Energy
       if (cooltype=='shell' .and. deltaT_poleq/=0.) then
         lpenc_requested(i_z_mn)=.true.
         lpenc_requested(i_rcyl_mn)=.true.
+      endif
+      if (lheatc_smagorinsky) then
+        lpenc_requested(i_gss)=.true.
+        lpenc_requested(i_del2ss)=.true.
+        lpenc_requested(i_glnrho)=.true.
+        lpenc_requested(i_glnTT)=.true.
+!        lpenc_requested(i_nu_smag)=.true.
+!        lpenc_requested(i_gnu_smag)=.true.
       endif
       if (tau_cool/=0.0 .or. cool_uniform/=0.0) then
         lpenc_requested(i_cp)=.true.
@@ -2666,13 +2709,15 @@ module Energy
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
       endif
+      if (idiag_fradz/=0) lpenc_diagnos(i_gTT)=.true.
       if (idiag_fconvxy/=0 .or. idiag_fconvyxy/=0 .or. idiag_fconvzxy/=0) then
         lpenc_diagnos2d(i_cp)=.true.
         lpenc_diagnos2d(i_uu)=.true.
         lpenc_diagnos2d(i_rho)=.true.
         lpenc_diagnos2d(i_TT)=.true.
       endif
-      if (idiag_fturbz/=0 .or. idiag_fturbmx/=0) then
+      if (idiag_fturbz/=0 .or. idiag_fturbtz/=0 .or. idiag_fturbmz/=0 .or. &
+          idiag_fturbfz/=0 .or. idiag_fturbmx/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_TT)=.true.
         lpenc_diagnos(i_gss)=.true.
@@ -3019,6 +3064,8 @@ module Energy
       if (lheatc_spitzer)  call calc_heatcond_spitzer(df,p)
       if (lheatc_hubeny)   call calc_heatcond_hubeny(df,p)
       if (lheatc_kramers)  call calc_heatcond_kramers(df,p)
+      if (lheatc_chit)     call calc_heatcond_chit(df,p)
+      if (lheatc_smagorinsky)  call calc_heatcond_smagorinsky(f,df,p)
       if (lheatc_corona) then
         call calc_heatcond_spitzer(df,p)
         call newton_cool(df,p)
@@ -3201,7 +3248,7 @@ module Energy
 !  1-D averages.
 !
       if (l1davgfirst) then
-        call xysum_mn_name_z(-hcond0*p%TT*p%glnTT(:,3),idiag_fradz)
+        call xysum_mn_name_z(-hcond0*p%gTT(:,3),idiag_fradz)
         call xysum_mn_name_z(p%cp*p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
         call yzsum_mn_name_x(p%cp*p%rho*p%uu(:,1)*p%TT,idiag_fconvxmx)
         call yzsum_mn_name_x(p%ss,idiag_ssmx)
@@ -3694,7 +3741,7 @@ module Energy
       if (l1davgfirst) then
         if (chi_t/=0.) &
           call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
-        call xysum_mn_name_z(-chi*p%rho*p%TT*p%glnTT(:,3)/p%cp1,idiag_fradz_constchi)
+          call xysum_mn_name_z(-chi*p%rho*p%TT*p%glnTT(:,3)/p%cp1,idiag_fradz_constchi)
       endif
 !
 !  Add heat conduction to entropy equation.
@@ -4462,7 +4509,7 @@ module Energy
       intent(inout) :: df
 !
       real, dimension(nx) :: Krho1, chit_prof, del2ss1
-      real, dimension(nx,3) :: glnchit_prof, gss1 
+      real, dimension(nx,3) :: glnchit_prof, gss1
       integer :: j
 !
 !  Diffusion of the form
@@ -4487,6 +4534,9 @@ module Energy
         else if (lcalc_ssmeanxy) then
           do j=1,3; gss1(:,j)=p%gss(:,j)-gssmx(:,j); enddo
           del2ss1=p%del2ss-del2ssmx
+        else
+          do j=1,3; gss1(:,j)=p%gss(:,j) ; enddo
+          del2ss1=p%del2ss
         endif
         call dot(p%glnrho+p%glnTT,gss1,g2)
         thdiff=thdiff+chi_t*chit_prof*(del2ss1+g2)
@@ -4511,6 +4561,7 @@ module Energy
         call xysum_mn_name_z( Krho1, idiag_Kkramersmz)
         call yzsum_mn_name_x( Krho1, idiag_Kkramersmx)
         if (idiag_fradx_kramers/=0) call yzsum_mn_name_x(-Krho1*p%rho*p%TT*p%glnTT(:,1),idiag_fradx_kramers)
+        call xysum_mn_name_z(-chi_t*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbz)
       endif
 !
 !  2d-averages
@@ -4558,6 +4609,107 @@ module Energy
       endif
 !
     endsubroutine calc_heatcond_kramers
+!***********************************************************************
+    subroutine calc_heatcond_smagorinsky(f,df,p)
+!
+!  Heat conduction using Smagorinsky viscosity
+!
+!  21-apr-17/pete: coded
+!
+      use Diagnostics
+      use Debug_IO, only: output_pencil
+      use Sub, only: dot, grad
+      use General, only: notanumber
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx,my,mz,mfarray) :: f
+      type (pencil_case) :: p
+      real, dimension (nx) :: thdiff, chix, g2
+!
+      intent(in) :: p
+      intent(inout) :: f,df
+!
+      real, dimension(nx) :: del2ss1, nusmag1, nusmag
+      real, dimension(nx,3) :: gss1, gradnu
+      integer :: j
+!
+      thdiff=0.
+!
+!  Diffusion of the form
+!     rho*T*Ds/Dt = ... + nab.((nu_smag/Pr_smag)*rho*T*grads),
+!
+      nusmag=f(l1:l2,m,n,inusmag)
+!
+      if (lcalc_ssmean) then
+        do j=1,3; gss1(:,j)=spread(gssmz(n-n1+1,j), 1, l2-l1+1); enddo
+        del2ss1=spread(del2ssmz(n-n1+1), 1, l2-l1+1)
+      else if (lcalc_ssmeanxy) then
+        do j=1,3; gss1(:,j)=gssmx(:,j); enddo
+        del2ss1=del2ssmx
+      else
+        do j=1,3; gss1(:,j)=p%gss(:,j) ; enddo
+        del2ss1=p%del2ss
+      endif
+      call dot(p%glnrho+p%glnTT,gss1,g2)
+      thdiff=Pr_smag1*nusmag*(del2ss1+g2)
+!
+      call grad(f,inusmag,gradnu)
+!
+      call dot(gradnu,gss1,g2)
+      thdiff=thdiff+Pr_smag1*g2
+!
+!  Here chix = nu_smag/Pr_smag is needed for diffus_chi calculation.
+!
+      chix = Pr_smag1*nusmag
+!
+!  Write radiative flux array.
+!
+      if (l1davgfirst) then
+        call xysum_mn_name_z(-Pr_smag1*p%nu_smag*p%rho*p%TT*gss1(:,3),idiag_fturbz)
+      endif
+!
+!  2d-averages
+!
+!      if (l2davgfirst) then
+!        if (idiag_fradxy_kramers/=0) call zsum_mn_name_xy(-Krho1*p%TT*p%glnTT(:,1),idiag_fradxy_kramers)
+!      endif
+!
+!  Check for NaNs initially.
+!
+      if (headt .and. (hcond0_kramers/=0.0)) then
+        if (notanumber(p%rho1))    print*,'calc_heatcond_smagorinsky: NaNs in rho1'
+        if (notanumber(chix))      print*,'calc_heatcond_smagorinsky: NaNs in chix'
+        if (notanumber(p%del2ss))  print*,'calc_heatcond_smagorinsky: NaNs in del2ss'
+        if (notanumber(p%TT))      print*,'calc_heatcond_smagorinsky: NaNs in TT'
+        if (notanumber(p%glnTT))   print*,'calc_heatcond_smagorinsky: NaNs in glnT'
+        if (notanumber(g2))        print*,'calc_heatcond_smagorinsky: NaNs in g2'
+        if (notanumber(thdiff))    print*,'calc_heatcond_smagorinsky: NaNs in thdiff'
+!
+!  Most of these should trigger the following trap.
+!
+        if (notanumber(thdiff)) then
+          print*, 'calc_heatcond_smagorinsky: m,n,y(m),z(n)=', m, n, y(m), z(n)
+          call fatal_error_local('calc_heatcond_smagorinsky','NaNs in thdiff')
+        endif
+      endif
+!
+!  At the end of this routine, add all contribution to
+!  thermal diffusion on the rhs of the entropy equation,
+!  so Ds/Dt = ... + thdiff = ... + (...)/(rho*T)
+!
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
+!
+      if (headtt) print*,'calc_heatcond_smagorinsky: added thdiff'
+!
+!  Check maximum diffusion from thermal diffusion.
+!  NB: With heat conduction, the second-order term for entropy is
+!    gamma*chix*del2ss.
+!
+      if (lfirst.and.ldt) then
+        diffus_chi=diffus_chi+(gamma*chix)*dxyz_2
+      endif
+!
+    endsubroutine calc_heatcond_smagorinsky
 !***********************************************************************
     subroutine calc_heatcond(f,df,p)
 !
@@ -4769,7 +4921,7 @@ module Energy
           else if (lcalc_ssmeanxy) then
             do j=1,3; gss1(:,j)=p%gss(:,j)-gssmx(:,j); enddo
             del2ss1=p%del2ss-del2ssmx
-          endif
+          endif  
           call dot(p%glnrho+p%glnTT,gss1,g2)
           thdiff=thdiff+chi_t*chit_prof*(del2ss1+g2)
           call dot(glnchit_prof,gss1,g2)
@@ -4957,6 +5109,119 @@ module Energy
       endif
 !
     endsubroutine calc_heatcond_sfluct
+!***********************************************************************
+    subroutine calc_heatcond_chit(df,p)
+!
+!  Subgrid-scale ("turbulent") diffusion of entropy.
+!
+!  Three variants: 1) chi_t acts on total ss
+!                  2)  -----||----- suitably averaged ss
+!                  3)  -----||----- fluctuations of ss
+!  All variants are standalone but 2) and 3) can also occur simultaneously
+!  with different profiles and/or magnitudes for chi_t[0,1].
+!
+!   21-apr-17/pete: adapted from calc_heatcond_sfluct
+!
+      use Sub, only: dot
+      use Diagnostics
+!
+      real, dimension (mx,my,mz,mvar) :: df
+      type (pencil_case) :: p
+      real, dimension (nx,3) :: gss0, gss1
+      real, dimension (nx) :: thdiff, g2, del2ss0, del2ss1
+      real, dimension (nx,3) :: glnchit_prof, glnchit_prof_fluct
+      real, dimension (nx) :: chit_prof, chit_prof_fluct
+      integer :: j
+!
+      intent(in) :: p
+      intent(inout) :: df
+!
+!  General turbulent entropy diffusion
+!
+      if (headtt) then
+        print*,'calc_heatcond_chit: chi_t0=',chi_t0
+        print*,'calc_heatcond_chit: chi_t1=',chi_t1
+      endif
+!
+!  Compute profiles. Diffusion of total and mean use the same profile
+!
+      if (lchit_total .or. lchit_mean) then
+        call chit_profile(chit_prof)
+        call gradlogchit_profile(glnchit_prof)
+      endif
+!
+      if (lchit_fluct) then
+        call chit_profile_fluct(chit_prof_fluct)
+        call gradlogchit_profile_fluct(glnchit_prof_fluct)
+      endif
+!
+      thdiff=0.
+!
+!  chi_t acts on the total entropy 
+!      
+      if (lchit_total) then
+        call dot(p%glnrho+p%glnTT,p%gss,g2)
+        thdiff=thdiff+chi_t0*chit_prof*(p%del2ss+g2)
+        call dot(glnchit_prof,p%gss,g2)
+        thdiff=thdiff+chi_t0*g2
+      endif
+!
+!  chi_t acts on averaged entropy, need to have either lcalc_ssmean=T
+!  or lcalc_ssmeanxy=T
+!
+      if (lchit_mean .and. (lcalc_ssmean .or. lcalc_ssmeanxy)) then
+        if (lcalc_ssmean) then
+          do j=1,3; gss0(:,j)=spread(gssmz(n-n1+1,j), 1, l2-l1+1); enddo
+          del2ss0=spread(del2ssmz(n-n1+1), 1, l2-l1+1)
+        else if (lcalc_ssmeanxy) then
+          do j=1,3; gss0(:,j)=gssmx(:,j); enddo
+          del2ss0=del2ssmx
+        endif
+        call dot(p%glnrho+p%glnTT,gss0,g2)
+        thdiff=thdiff+chi_t0*chit_prof*(del2ss0+g2)
+        call dot(glnchit_prof,gss0,g2)
+        thdiff=thdiff+chi_t0*g2
+      endif
+!
+!  chi_t acts on fluctuations of entropy, again need to have either 
+!  lcalc_ssmean=T or lcalc_ssmeanxy=T
+!
+      if (lchit_fluct .and. (lcalc_ssmean .or. lcalc_ssmeanxy)) then
+        if (lcalc_ssmean) then
+          do j=1,3; gss1(:,j)=p%gss(:,j)-gssmz(n-n1+1,j); enddo
+          del2ss1=p%del2ss-del2ssmz(n-n1+1)
+        else if (lcalc_ssmeanxy) then
+          do j=1,3; gss1(:,j)=p%gss(:,j)-gssmx(:,j); enddo
+          del2ss1=p%del2ss-del2ssmx
+        endif
+        call dot(p%glnrho+p%glnTT,gss1,g2)
+        thdiff=thdiff+chi_t1*chit_prof_fluct*(del2ss1+g2)
+        call dot(glnchit_prof_fluct,gss1,g2)
+        thdiff=thdiff+chi_t1*g2
+      endif
+!
+      if (l1davgfirst) then
+        if (chi_t/=0.) &
+          call xysum_mn_name_z(-chi_t0*chit_prof*p%rho*p%TT*p%gss(:,3),idiag_fturbtz)
+          call xysum_mn_name_z(-chi_t0*chit_prof*p%rho*p%TT*gss0(:,3),idiag_fturbmz)
+          call xysum_mn_name_z(-chi_t1*chit_prof*p%rho*p%TT*gss1(:,3),idiag_fturbfz)
+      endif
+!
+!  At the end of this routine, add all contribution to
+!  thermal diffusion on the rhs of the entropy equation,
+!  so Ds/Dt = ... + thdiff = ... + (...)/(rho*T)
+!
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
+!
+      if (headtt) print*,'calc_heatcond: added thdiff'
+!
+!  Check maximum diffusion from thermal diffusion.
+!
+      if (lfirst.and.ldt) then
+        diffus_chi=diffus_chi+(chi_t0*chit_prof+chi_t1*chit_prof_fluct)*dxyz_2
+      endif
+!
+    endsubroutine calc_heatcond_chit
 !***********************************************************************
     subroutine calc_heat_cool(df,p,Hmax)
 !
@@ -5906,6 +6171,7 @@ module Energy
         idiag_gTrms=0; idiag_gsrms=0; idiag_gTxgsrms=0
         idiag_fconvm=0; idiag_fconvz=0; idiag_dcoolz=0; idiag_fradz=0
         idiag_fturbz=0; idiag_ppmx=0; idiag_ppmy=0; idiag_ppmz=0
+        idiag_fturbtz=0; idiag_fturbmz=0; idiag_fturbfz=0
         idiag_ssmx=0; idiag_ss2mx=0; idiag_ssmy=0; idiag_ssmz=0; idiag_ss2mz=0
         idiag_ssmr=0; idiag_TTmr=0
         idiag_TTmx=0; idiag_TTmy=0; idiag_TTmz=0; idiag_TTmxy=0; idiag_TTmxz=0
@@ -5999,6 +6265,9 @@ module Energy
 !
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fturbz',idiag_fturbz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fturbtz',idiag_fturbtz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fturbmz',idiag_fturbmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fturbfz',idiag_fturbfz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fconvz',idiag_fconvz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'dcoolz',idiag_dcoolz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz',idiag_fradz)
@@ -6550,6 +6819,72 @@ module Energy
       endif
 !
     endsubroutine gradlogchit_profile
+!***********************************************************************
+    subroutine chit_profile_fluct(chit_prof_fluct)
+!
+!  21-apr-2017/pete: aped from chit_profile
+!
+      use Gravity, only: z1, z2
+      use Sub, only: step
+!
+      real, dimension (nx) :: chit_prof_fluct,z_mn
+      real :: zbot, ztop
+!
+!  If zz1_fluct and/or zz2_fluct are not set, use z1 and z2 instead.
+!
+      if (zz1 == impossible) then
+          zbot=z1
+      else
+          zbot=zz1_fluct
+      endif
+!
+      if (zz2 == impossible) then
+          ztop=z2
+      else
+          ztop=zz2_fluct
+      endif
+!
+      if (lgravz) then
+        z_mn=spread(z(n),1,nx)
+        chit_prof_fluct = 1 + (chit_fluct_prof1-1)*step(z_mn,zbot,-widthss) &
+                            + (chit_fluct_prof2-1)*step(z_mn,ztop,widthss)
+      endif
+!
+    endsubroutine chit_profile_fluct
+!***********************************************************************
+    subroutine gradlogchit_profile_fluct(glnchit_prof_fluct)
+!
+!  21-apr-2017/pete: aped from gradlogchit_profile
+!
+      use Gravity, only: z1, z2
+      use Sub, only: der_step
+!
+      real, dimension (nx,3) :: glnchit_prof_fluct
+      real, dimension (nx) :: z_mn
+      real :: zbot, ztop
+!
+!  If zz1_fluct and/or zz2_fluct are not set, use z1 and z2 instead.
+!
+      if (zz1 == impossible) then
+          zbot=z1
+      else
+          zbot=zz1_fluct
+      endif
+!
+      if (zz2 == impossible) then
+          ztop=z2
+      else
+          ztop=zz2_fluct
+      endif
+!
+      if (lgravz) then
+        z_mn=spread(z(n),1,nx)
+        glnchit_prof_fluct(:,1:2) = 0.
+        glnchit_prof_fluct(:,3) = (chit_fluct_prof1-1)*der_step(z_mn,zbot,-widthss) &
+                                + (chit_fluct_prof2-1)*der_step(z_mn,ztop,widthss)
+      endif
+!
+    endsubroutine gradlogchit_profile_fluct
 !***********************************************************************
     subroutine chit_aniso_profile(chit_aniso_prof)
 !

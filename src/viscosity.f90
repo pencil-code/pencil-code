@@ -789,6 +789,7 @@ module Viscosity
         idiag_fviscmz=0; idiag_fviscmx=0; idiag_fviscmxy=0
         idiag_epsKmz=0; idiag_numx=0; idiag_fviscymxy=0
         idiag_fviscsmmz=0; idiag_fviscsmmxy=0; idiag_ufviscm=0
+        idiag_fviscmax=0; idiag_fviscmin=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in

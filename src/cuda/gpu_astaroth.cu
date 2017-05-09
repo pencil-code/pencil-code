@@ -242,7 +242,8 @@ void load_dconsts(float nu_visc, float cs2_sound){
 	//-------------------------------------------
 }
 
-
+extern "C"
+{
 /* ---------------------------------------------------------------------- */
 bool finalizeGpu(float *uu_x, float *uu_y, float *uu_z, float *lnrho){
 /* Frees memory allocated on GPU.
@@ -425,7 +426,7 @@ void intitializeGPU(float *uu_x, float *uu_y, float *uu_z, float *lnrho, int nx,
 		checkErr( cudaMemcpy(d_lnrho_dest, lnrho, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
 		checkErr( cudaMemcpy(d_uu_x_dest, uu_x, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
 		checkErr( cudaMemcpy(d_uu_y_dest, uu_y, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
-		checkErr( cudaMemcpy(d_uu_z_dest, uu_z, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
+		checkErr( cudaMemcpy(d_uu_z_dest, uu_z, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) ); 
 		//----------------------------------------------------------
 		//----------------------------------------------------------
 		//Load constants into device memory
@@ -433,5 +434,6 @@ void intitializeGPU(float *uu_x, float *uu_y, float *uu_z, float *lnrho, int nx,
 		load_dconsts(nu, cs2);
 		//----------------------------------------------------------
 return;
+}
 }
 /* ---------------------------------------------------------------------- */

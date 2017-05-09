@@ -11,48 +11,51 @@ from pencil.files.param import read_param
 from pencil.files.grid import read_grid
 from pencil.files.dim import read_dim
 
-
-def grad(f,dx,dy,dz,x=[],y=[],z=[]):
+def grad(f,dx,dy,dz,x=[],y=[],z=[],param=[],dim=[]):
     """
     take the gradient of a pencil code scalar array.
     """
     if (f.ndim != 3):
         print("grad: must have scalar 3-D array f[mz,my,mx] for gradient")
         raise ValueError
-    gd  = read_grid(quiet=True)
+
+    if not param:
+        param=read_param(quiet=True)
+    if not dim:
+        dim=read_dim()
     if len(x) < 1:
+        gd = read_grid(quiet=True)
         x = gd.x
-    if len(y) < 1:
         y = gd.y
-    if len(z) < 1:
         z = gd.z
 
     grad = N.empty((3,)+f.shape)
-    grad[0,...] = xder(f,dx,x=x,y=y,z=z)
-    grad[1,...] = yder(f,dy,x=x,y=y,z=z)
-    grad[2,...] = zder(f,dz,x=x,y=y,z=z)
+    grad[0,...] = xder(f,dx,x=x,y=y,z=z,param=param,dim=dim)
+    grad[1,...] = yder(f,dy,x=x,y=y,z=z,param=param,dim=dim)
+    grad[2,...] = zder(f,dz,x=x,y=y,z=z,param=param,dim=dim)
 
     return grad
 
-def div(f,dx,dy,dz,x=[],y=[],z=[]):
+def div(f,dx,dy,dz,x=[],y=[],z=[],param=[],dim=[]):
     """
     take divergence of pencil code vector array
     """
     if (f.ndim != 4):
         print("div: must have vector 4-D array f[mvar,mz,my,mx] for divergence")
         raise ValueError
-    param = read_param(quiet=True)
-    gd  = read_grid(quiet=True)
+    if not param:
+        param = read_param(quiet=True)
+    if not dim:
+        dim = read_dim()
+    gd  = read_grid(quiet=True, param=param)
     if len(x) < 1:
         x = gd.x
-    if len(y) < 1:
         y = gd.y
-    if len(z) < 1:
         z = gd.z
 
-    div = xder(f[0,...],dx,x=x,y=y,z=z) +\
-          yder(f[1,...],dy,x=x,y=y,z=z) +\
-          zder(f[2,...],dz,x=x,y=y,z=z)
+    div = xder(f[0,...],dx,x=x,y=y,z=z,param=param,dim=dim) +\
+          yder(f[1,...],dy,x=x,y=y,z=z,param=param,dim=dim) +\
+          zder(f[2,...],dz,x=x,y=y,z=z,param=param,dim=dim)
 
     if param.coord_system == 'cylindric':
         div += f[0,...]/x
@@ -67,26 +70,27 @@ def div(f,dx,dy,dz,x=[],y=[],z=[]):
    
     return div
 
-def laplacian(f,dx,dy,dz,x=[],y=[],z=[]):
+def laplacian(f,dx,dy,dz,x=[],y=[],z=[],param=[],dim=[]):
     """
     take the laplacian of a pencil code scalar array
     """
-    param = read_param(quiet=True)
-    gd  = read_grid(quiet=True)
+    if not param:
+        param = read_param(quiet=True)
+    if not dim:
+        dim = read_dim()
     if len(x) < 1:
+        gd  = read_grid(quiet=True)
         x = gd.x
-    if len(y) < 1:
         y = gd.y
-    if len(z) < 1:
         z = gd.z
 
     laplacian = N.empty(f.shape)
-    laplacian = xder2(f,dx,x=x,y=y,z=z)+\
-                yder2(f,dy,x=x,y=y,z=z)+\
-                zder2(f,dz,x=x,y=y,z=z)
+    laplacian = xder2(f,dx,x=x,y=y,z=z,param=param,dim=dim) +\
+                yder2(f,dy,x=x,y=y,z=z,param=param,dim=dim) +\
+                zder2(f,dz,x=x,y=y,z=z,param=param,dim=dim)
 
     if param.coord_system == 'cylindric':
-        laplacian += xder(f,dx,x=x,y=y,z=z)/x
+        laplacian += xder(f,dx,x=x,y=y,z=z,param=param,dim=dim)/x
     if param.coord_system == 'spherical':
         sin_y = N.sin(y)
         cos_y = N.cos(y)
@@ -94,8 +98,8 @@ def laplacian(f,dx,dy,dz,x=[],y=[],z=[]):
         if i_sin.size > 0:
             cos_y[i_sin] = 0.; sin_y[i_sin] = 1
         x_2, cotth = N.meshgrid(1./x**2, cos_y/sin_y)
-        laplacian += 2*xder(f,dx,x=x,y=y,z=z)/x +\
-                       yder(f,dy,x=x,y=y,z=z)*x_2*cotth
+        laplacian += 2*xder(f,dx,x=x,y=y,z=z,param=param,dim=dim)/x +\
+                       yder(f,dy,x=x,y=y,z=z,param=param,dim=dim)*x_2*cotth
 
     return laplacian
 
@@ -108,12 +112,13 @@ def curl(f,dx,dy,dz,x=[],y=[],z=[],run2D=False,param=[],dim=[]):
     if (f.shape[0] != 3):
         print("curl: must have vector 4-D array f[3,mz,my,mx] for curl")
         raise ValueError
+
     if not param:
         param = read_param(quiet=True)
     if not dim:
         dim = read_dim()
     if len(x) < 1:
-        gd = read_grid(quiet=True,param=param)
+        gd = read_grid(quiet=True, param=param)
         x = gd.x
         y = gd.y
         z = gd.z

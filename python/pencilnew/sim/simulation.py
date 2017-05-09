@@ -285,14 +285,16 @@ class __Simulation__(object):
         """Same as compile()"""
         return self.compile(cleanall=cleanall, fast=fast, verbose=verbose)
 
-    def bash(self, command, verbose=True, logfile=False):
+    def bash(self, command, verbose='last100', logfile=False):
         """Executes command in simulation diredctory.
         This method will use your settings as defined in your .bashrc-file.
         A log file will be produced within 'self.path/pc'-folder
 
         Args:
             - command:     command to be executed, can be a list of commands
-            - verbose:     show output afterwards
+            - verbose:     semi = show last lines of output afterwards
+                           False = no output
+                           True = all output
         """
         import subprocess
         import pencilnew as pcn
@@ -321,7 +323,12 @@ class __Simulation__(object):
                                  stderr=f
                                  )
 
-        if verbose:
+        if type(verbose) == type('string'):
+            outputlength = -int(verbose.split('last')[-1])
+            with open(logfile, 'r') as f:
+                strList = f.read().split('\n')[outputlength:]
+                print('\n'.join([s for s in strList if not s=='']))
+        elif verbose == True:
             with open(logfile, 'r') as f: print(f.read())
 
         if rc == 0:

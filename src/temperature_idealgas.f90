@@ -126,7 +126,9 @@ module Energy
   integer :: idiag_Tdzpm=0        ! DIAG_DOC: $\left< T dp/dz \right>$
 !
   integer :: idiag_fradtop=0  ! DIAG_DOC: $<-K{dT\over dz}>_{\text{top}}$
-                              ! DIAG_DOC: \quad(radiative flux at the top)
+                              ! DIAG_DOC: \quad(top radiative flux)
+  integer :: idiag_fradbot=0  ! DIAG_DOC: $<-K{dT\over dz}>_{\text{bot}}$
+                              ! DIAG_DOC: \quad(bottom radiative flux)
   integer :: idiag_yHmax=0    ! DIAG_DOC: DOCUMENT ME
   integer :: idiag_yHmin=0    ! DIAG_DOC: DOCUMENT ME
   integer :: idiag_yHm=0      ! DIAG_DOC: DOCUMENT ME
@@ -136,6 +138,8 @@ module Energy
   integer :: idiag_eem=0      ! DIAG_DOC: $\left< e \right> =
                               ! DIAG_DOC:  \left< c_v T \right>$
                               ! DIAG_DOC: \quad(mean internal energy)
+  integer :: idiag_ethtot=0   ! DIAG_DOC: $\int_V\varrho e\,dV$
+                              ! DIAG_DOC:   \quad(total thermal energy)
   integer :: idiag_ssm=0      ! DIAG_DOC: $\overline{S}$
   integer :: idiag_thcool=0   ! DIAG_DOC: $\tau_{\rm cool}$
   integer :: idiag_ppm=0      ! DIAG_DOC: $\overline{P}$
@@ -169,7 +173,8 @@ module Energy
   integer :: idiag_uxTmz=0      ! XYAVG_DOC: $\left<u_x T\right>_{xy}$
   integer :: idiag_uyTmz=0      ! XYAVG_DOC: $\left<u_y T\right>_{xy}$
   integer :: idiag_uzTmz=0      ! XYAVG_DOC: $\left<u_z T\right>_{xy}$
-  integer :: idiag_fradz=0      ! XYAVG_DOC: $F_{\rm rad}$
+  integer :: idiag_fradmz=0     ! XYAVG_DOC: $\left<F_{\rm rad}>_{xy}$
+  integer :: idiag_fconvmz=0    ! XYAVG_DOC: $\left<c_p \varrho u_z T \right>_{xy}$
 !
 ! xz averaged diagnostics given in xzaver.in
 !
@@ -500,7 +505,7 @@ module Energy
       use Sub,      only: blob
       use InitialCondition, only: initial_condition_ss
       use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, cs20, &
-                                 lnrho0, get_cp1
+                                 lnrho0, get_cp1, rho0
       use Gravity, only: gravz
       use Mpicomm, only: stop_it
       use Initcond, only: modes
@@ -510,7 +515,7 @@ module Energy
 !
       integer :: j
       logical :: lnothing=.true.
-      real :: haut, Rgas, cp1, Ttop, alpha, beta, expo
+      real :: haut, Rgas, cp1, Ttop, alpha, beta, expo, ztop
 !
       do j=1,ninit
 !
@@ -591,9 +596,16 @@ module Energy
               f(:,:,:,ilnTT)=log(cs20/gamma_m1)
             endif
             haut=-cs20/gamma/gravz
-            do n=n1,n2
-              f(:,:,n,ilnrho)=lnrho0+(1.-z(n))/haut
-            enddo
+            ztop=xyz1(3)
+            if (ldensity_nolog) then
+              do n=n1,n2
+                f(:,:,n,irho)=rho0*exp((ztop-z(n))/haut)
+              enddo
+            else
+              do n=n1,n2
+                f(:,:,n,ilnrho)=lnrho0+(ztop-z(n))/haut
+              enddo
+            endif
 !
           case ('hydro_rad')
             if (lroot) print*, 'init_lnTT: hydrostatic+radiative equilibria'
@@ -806,18 +818,23 @@ module Energy
          lpenc_diagnos(i_glnTT) =.true.
          lpenc_diagnos(i_TT) =.true.
       endif
-      if (idiag_fradtop/=0) then
+      if (idiag_fradtop/=0.or.idiag_fradbot/=0) then
         lpenc_diagnos(i_TT) =.true.
         lpenc_diagnos(i_gTT) =.true.
       endif
-      if (idiag_fradz/=0) then
+      if (idiag_fradmz/=0) then
+        lpenc_diagnos(i_gTT) =.true.
+      endif
+      if (idiag_fconvmz/=0) then
         lpenc_diagnos(i_TT) =.true.
-        lpenc_diagnos(i_glnTT) =.true.
+        lpenc_diagnos(i_cp)=.true.
+        lpenc_diagnos(i_uu)=.true.
+        lpenc_diagnos(i_rho)=.true.
       endif
       if (idiag_yHmax/=0) lpenc_diagnos(i_yH)  =.true.
       if (idiag_yHmin/=0) lpenc_diagnos(i_yH)  =.true.
       if (idiag_yHm/=0)   lpenc_diagnos(i_yH)  =.true.
-      if (idiag_ethm/=0.or.idiag_ethmz/=0) then
+      if (idiag_ethm/=0.or.idiag_ethmz/=0.or.idiag_ethtot/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_ee)  =.true.
       endif
@@ -964,7 +981,7 @@ module Energy
       type (pencil_case) :: p
 !
       real, dimension (nx) :: Hmax=0.0, hcond, thdiff, tmp, advec_hypermesh_ss
-      real :: fradtop
+      real :: fradtop, fradbot
       integer :: j
 !
       intent(inout) :: f,p,df
@@ -1144,6 +1161,7 @@ module Energy
         if (idiag_eem/=0)   call sum_mn_name(p%ee,idiag_eem)
         if (idiag_ppm/=0)   call sum_mn_name(p%pp,idiag_ppm)
         if (idiag_ethm/=0)  call sum_mn_name(p%rho*p%ee,idiag_ethm)
+        if (idiag_ethtot/=0) call integrate_mn_name(p%rho*p%ee,idiag_ethtot)
         if (idiag_csm/=0)   call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
         if (idiag_TugTm/=0) call sum_mn_name(p%TT*p%ugTT,idiag_TugTm)
         if (idiag_Trms/=0)  call sum_mn_name(p%TT**2,idiag_Trms,lsqrt=.true.)
@@ -1184,12 +1202,13 @@ module Energy
           call dot2(p%glnTT,tmp)
           call max_mn_name(p%TT*sqrt(tmp),idiag_gTmax)
         endif
+!
         if (idiag_fradtop/=0) then
           if (llast_proc_z.and.n==n2) then
             if (lADI) then
               call heatcond_TT(p%TT,hcond)
             else
-              hcond=1.
+              hcond=hcond0
             endif
             fradtop=sum(-hcond*p%gTT(:,3))/nx
 !            fradtop=sum(-p%gTT(:,3))/nx
@@ -1198,12 +1217,28 @@ module Energy
           endif
           call surf_mn_name(fradtop, idiag_fradtop)
         endif
+!
+        if (idiag_fradbot/=0) then
+          if (lfirst_proc_z.and.n==n1) then
+            if (lADI) then
+              call heatcond_TT(p%TT,hcond)
+            else
+              hcond=hcond0
+            endif
+            fradbot=sum(-hcond*p%gTT(:,3))/nx
+!            fradbot=sum(-p%gTT(:,3))/nx
+          else
+            fradbot=0.
+          endif
+          call surf_mn_name(fradbot, idiag_fradbot)
+        endif
       endif
 !
 !  1-D averages.
 !
       if (l1davgfirst) then
-        call xysum_mn_name_z(-hcond0*p%TT*p%glnTT(:,3),idiag_fradz)
+        call xysum_mn_name_z(-hcond0*p%gTT(:,3),idiag_fradmz)
+        call xysum_mn_name_z(p%cp*p%rho*p%uu(:,3)*p%TT,idiag_fconvmz)
         call yzsum_mn_name_x(p%pp,idiag_ppmx)
         call xzsum_mn_name_y(p%pp,idiag_ppmy)
         call xysum_mn_name_z(p%pp,idiag_ppmz)
@@ -1929,7 +1964,7 @@ module Energy
 !
       if (lreset) then
         idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0; idiag_fradtop=0
-        idiag_TugTm=0; idiag_Trms=0
+        idiag_TugTm=0; idiag_Trms=0; idiag_fradbot=0
         idiag_uxTm=0; idiag_uyTm=0; idiag_uzTm=0; idiag_gT2m=0
         idiag_guxgTm=0; idiag_guygTm=0; idiag_guzgTm=0
         idiag_Tugux_uxugTm=0; idiag_Tuguy_uyugTm=0; idiag_Tuguz_uzugTm=0
@@ -1943,7 +1978,8 @@ module Energy
         idiag_TT2mz=0; idiag_uxTmz=0; idiag_uyTmz=0; idiag_uzTmz=0
         idiag_ethmz=0; idiag_ethuxmz=0; idiag_ethuymz=0; idiag_ethuzmz=0
         idiag_TTmxy=0; idiag_TTmxz=0
-        idiag_fpresxmz=0; idiag_fpresymz=0; idiag_fpreszmz=0; idiag_fradz=0
+        idiag_fpresxmz=0; idiag_fpresymz=0; idiag_fpreszmz=0; idiag_fradmz=0
+        idiag_ethtot=0; idiag_fconvmz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1969,7 +2005,9 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'Tdypm',idiag_Tdypm)
         call parse_name(iname,cname(iname),cform(iname),'Tdzpm',idiag_Tdzpm)
         call parse_name(iname,cname(iname),cform(iname),'fradtop',idiag_fradtop)
+        call parse_name(iname,cname(iname),cform(iname),'fradbot',idiag_fradbot)
         call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
+        call parse_name(iname,cname(iname),cform(iname),'ethtot',idiag_ethtot)
         call parse_name(iname,cname(iname),cform(iname),'ssm',idiag_ssm)
         call parse_name(iname,cname(iname),cform(iname),'dtchi',idiag_dtchi)
         call parse_name(iname,cname(iname),cform(iname),'dtc',idiag_dtc)
@@ -2021,7 +2059,8 @@ module Energy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxTmz',idiag_uxTmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyTmz',idiag_uyTmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzTmz',idiag_uzTmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz',idiag_fradz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradmz',idiag_fradmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fconvmz',idiag_fconvmz)
 !
       enddo
 !

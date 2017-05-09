@@ -5,7 +5,8 @@
 #include <math.h>
 
 #include "model_collectiveops.h"
-#include "../defines.h"
+#include "defines.h"
+//#include "../defines.h"
 
 
 float model_max_vec(float* uu_x, float* uu_y, float* uu_z) {

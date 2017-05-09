@@ -211,16 +211,18 @@ module Hydro
           iuy=iuu+1
           iuz=iuu+2
         endif
+        if (iuu/=0) then
 ! set the initial velocity to zero
-        f(:,:,:,iux:iuz) = 0.
-        if (iuu/=0.and.lroot) then
-          print*, 'initialize_velocity: iuu = ', iuu
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'iuu=',iuu
-          write(3,*) 'iux=',iux
-          write(3,*) 'iuy=',iuy
-          write(3,*) 'iuz=',iuz
-          close(3)
+          if (kinematic_flow/='from-snap') f(:,:,:,iux:iuz) = 0.
+          if (lroot) then
+            print*, 'initialize_velocity: iuu = ', iuu
+            open(3,file=trim(datadir)//'/index.pro', POSITION='append')
+            write(3,*) 'iuu=',iuu
+            write(3,*) 'iux=',iux
+            write(3,*) 'iuy=',iuy
+            write(3,*) 'iuz=',iuz
+            close(3)
+          endif
         endif
       endif
 !
@@ -1745,6 +1747,17 @@ module Hydro
         enddo
         if (lpenc_loc(i_divu))  p%divu = 0.
 !
+! flow from snapshot.
+!
+      case ('from-snap')
+        if (lkinflow_as_aux) then
+          if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
+! divu
+          if (lpenc_loc(i_divu)) p%divu=0. ! tb implemented
+        else
+          call fatal_error('hydro_kinematic:', 'from-snap requires lkinflow_as_aux=T')
+        endif
+!
 ! no kinematic flow.
 !
       case ('none')
@@ -1752,7 +1765,7 @@ module Hydro
         if (lpenc_loc(i_uu)) p%uu=0.
 ! divu
         if (lpenc_loc(i_divu)) p%divu=0.
-      case default;
+      case default
         call fatal_error('hydro_kinematic:', 'kinflow not found')
       end select
 !
