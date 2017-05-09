@@ -2709,10 +2709,7 @@ module Energy
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
       endif
-      if (idiag_fradz/=0) then
-        lpenc_diagnos(i_TT)=.true.
-        lpenc_diagnos(i_glnTT)=.true.
-      endif
+      if (idiag_fradz/=0) lpenc_diagnos(i_gTT)=.true.
       if (idiag_fconvxy/=0 .or. idiag_fconvyxy/=0 .or. idiag_fconvzxy/=0) then
         lpenc_diagnos2d(i_cp)=.true.
         lpenc_diagnos2d(i_uu)=.true.
@@ -3251,7 +3248,7 @@ module Energy
 !  1-D averages.
 !
       if (l1davgfirst) then
-        call xysum_mn_name_z(-hcond0*p%TT*p%glnTT(:,3),idiag_fradz)
+        call xysum_mn_name_z(-hcond0*p%gTT(:,3),idiag_fradz)
         call xysum_mn_name_z(p%cp*p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
         call yzsum_mn_name_x(p%cp*p%rho*p%uu(:,1)*p%TT,idiag_fconvxmx)
         call yzsum_mn_name_x(p%ss,idiag_ssmx)
