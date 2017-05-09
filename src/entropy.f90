@@ -277,7 +277,7 @@ module Energy
 !
 ! xy averaged diagnostics given in xyaver.in
 !
-  integer :: idiag_fradz=0      ! XYAVG_DOC: $F_{\rm rad}$
+  integer :: idiag_fradz=0      ! XYAVG_DOC: $\left<F_{\rm rad}\right>_{xy}$
   integer :: idiag_fconvz=0     ! XYAVG_DOC: $\left<c_p \varrho u_z T \right>_{xy}$
   integer :: idiag_ssmz=0       ! XYAVG_DOC: $\left< s \right>_{xy}$
   integer :: idiag_ss2mz=0      ! XYAVG_DOC: $\left< s^2 \right>_{xy}$
