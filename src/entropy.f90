@@ -2709,6 +2709,10 @@ module Energy
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_TT)=.true.  !(to be replaced by enthalpy)
       endif
+      if (idiag_fradz/=0) then
+        lpenc_diagnos(i_TT)=.true.
+        lpenc_diagnos(i_glnTT)=.true.
+      endif
       if (idiag_fconvxy/=0 .or. idiag_fconvyxy/=0 .or. idiag_fconvzxy/=0) then
         lpenc_diagnos2d(i_cp)=.true.
         lpenc_diagnos2d(i_uu)=.true.
