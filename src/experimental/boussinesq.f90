@@ -428,6 +428,7 @@ module Density
           f(l1:l2,m,n,ju)=f(l1:l2,m,n,ju)-gpp(:,j)
         enddo
       enddo; enddo
+!      f(:,:,:,ipp)=f(:,:,:,ipp)/dt
 !
     endsubroutine boussinesq
 !***********************************************************************

@@ -173,7 +173,8 @@ module Energy
   integer :: idiag_uxTmz=0      ! XYAVG_DOC: $\left<u_x T\right>_{xy}$
   integer :: idiag_uyTmz=0      ! XYAVG_DOC: $\left<u_y T\right>_{xy}$
   integer :: idiag_uzTmz=0      ! XYAVG_DOC: $\left<u_z T\right>_{xy}$
-  integer :: idiag_fradz=0      ! XYAVG_DOC: $F_{\rm rad}$
+  integer :: idiag_fradmz=0     ! XYAVG_DOC: $\left<F_{\rm rad}>_{xy}$
+  integer :: idiag_fconvmz=0    ! XYAVG_DOC: $\left<c_p \varrho u_z T \right>_{xy}$
 !
 ! xz averaged diagnostics given in xzaver.in
 !
@@ -821,9 +822,14 @@ module Energy
         lpenc_diagnos(i_TT) =.true.
         lpenc_diagnos(i_gTT) =.true.
       endif
-      if (idiag_fradz/=0) then
+      if (idiag_fradmz/=0) then
+        lpenc_diagnos(i_gTT) =.true.
+      endif
+      if (idiag_fconvmz/=0) then
         lpenc_diagnos(i_TT) =.true.
-        lpenc_diagnos(i_glnTT) =.true.
+        lpenc_diagnos(i_cp)=.true.
+        lpenc_diagnos(i_uu)=.true.
+        lpenc_diagnos(i_rho)=.true.
       endif
       if (idiag_yHmax/=0) lpenc_diagnos(i_yH)  =.true.
       if (idiag_yHmin/=0) lpenc_diagnos(i_yH)  =.true.
@@ -1231,7 +1237,8 @@ module Energy
 !  1-D averages.
 !
       if (l1davgfirst) then
-        call xysum_mn_name_z(-hcond0*p%TT*p%glnTT(:,3),idiag_fradz)
+        call xysum_mn_name_z(-hcond0*p%gTT(:,3),idiag_fradmz)
+        call xysum_mn_name_z(p%cp*p%rho*p%uu(:,3)*p%TT,idiag_fconvmz)
         call yzsum_mn_name_x(p%pp,idiag_ppmx)
         call xzsum_mn_name_y(p%pp,idiag_ppmy)
         call xysum_mn_name_z(p%pp,idiag_ppmz)
@@ -1971,8 +1978,8 @@ module Energy
         idiag_TT2mz=0; idiag_uxTmz=0; idiag_uyTmz=0; idiag_uzTmz=0
         idiag_ethmz=0; idiag_ethuxmz=0; idiag_ethuymz=0; idiag_ethuzmz=0
         idiag_TTmxy=0; idiag_TTmxz=0
-        idiag_fpresxmz=0; idiag_fpresymz=0; idiag_fpreszmz=0; idiag_fradz=0
-        idiag_ethtot=0
+        idiag_fpresxmz=0; idiag_fpresymz=0; idiag_fpreszmz=0; idiag_fradmz=0
+        idiag_ethtot=0; idiag_fconvmz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -2052,7 +2059,8 @@ module Energy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxTmz',idiag_uxTmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uyTmz',idiag_uyTmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzTmz',idiag_uzTmz)
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradz',idiag_fradz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fradmz',idiag_fradmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'fconvmz',idiag_fconvmz)
 !
       enddo
 !
