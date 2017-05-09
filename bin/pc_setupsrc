@@ -421,7 +421,7 @@ link_cuda_files()
   cd $src/cuda
   n=0
   to_link=
-  for file in $srcdir/cuda/*.cu $srcdir/cuda/src/*.cu $srcdir/cuda/src/*.cuh $srcdir/cuda/src/*.cpp $srcdir/cuda/src/*.h $srcdir/cuda/src/makefile.* $srcdir/cuda/src/*.conf $srcdir/cuda/src/verification/*.cpp $srcdir/cuda/src/verification/*.h
+  for file in $srcdir/cuda/src/*.cu $srcdir/cuda/src/*.cuh $srcdir/cuda/src/*.cpp $srcdir/cuda/src/*.h $srcdir/cuda/src/makefile $srcdir/cuda/src/makefile.* $srcdir/cuda/src/*.conf $srcdir/cuda/src/verification/*.cpp $srcdir/cuda/src/verification/*.h
   do
     if [ -f $file ] || [ -d $file ]; then
       if [ -h "`basename $file`" ]; then
