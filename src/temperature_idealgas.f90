@@ -126,7 +126,9 @@ module Energy
   integer :: idiag_Tdzpm=0        ! DIAG_DOC: $\left< T dp/dz \right>$
 !
   integer :: idiag_fradtop=0  ! DIAG_DOC: $<-K{dT\over dz}>_{\text{top}}$
-                              ! DIAG_DOC: \quad(radiative flux at the top)
+                              ! DIAG_DOC: \quad(top radiative flux)
+  integer :: idiag_fradbot=0  ! DIAG_DOC: $<-K{dT\over dz}>_{\text{bot}}$
+                              ! DIAG_DOC: \quad(bottom radiative flux)
   integer :: idiag_yHmax=0    ! DIAG_DOC: DOCUMENT ME
   integer :: idiag_yHmin=0    ! DIAG_DOC: DOCUMENT ME
   integer :: idiag_yHm=0      ! DIAG_DOC: DOCUMENT ME
@@ -815,7 +817,7 @@ module Energy
          lpenc_diagnos(i_glnTT) =.true.
          lpenc_diagnos(i_TT) =.true.
       endif
-      if (idiag_fradtop/=0) then
+      if (idiag_fradtop/=0.or.idiag_fradbot/=0) then
         lpenc_diagnos(i_TT) =.true.
         lpenc_diagnos(i_gTT) =.true.
       endif
@@ -973,7 +975,7 @@ module Energy
       type (pencil_case) :: p
 !
       real, dimension (nx) :: Hmax=0.0, hcond, thdiff, tmp, advec_hypermesh_ss
-      real :: fradtop
+      real :: fradtop, fradbot
       integer :: j
 !
       intent(inout) :: f,p,df
@@ -1194,12 +1196,13 @@ module Energy
           call dot2(p%glnTT,tmp)
           call max_mn_name(p%TT*sqrt(tmp),idiag_gTmax)
         endif
+!
         if (idiag_fradtop/=0) then
           if (llast_proc_z.and.n==n2) then
             if (lADI) then
               call heatcond_TT(p%TT,hcond)
             else
-              hcond=1.
+              hcond=hcond0
             endif
             fradtop=sum(-hcond*p%gTT(:,3))/nx
 !            fradtop=sum(-p%gTT(:,3))/nx
@@ -1207,6 +1210,21 @@ module Energy
             fradtop=0.
           endif
           call surf_mn_name(fradtop, idiag_fradtop)
+        endif
+!
+        if (idiag_fradbot/=0) then
+          if (lfirst_proc_z.and.n==n1) then
+            if (lADI) then
+              call heatcond_TT(p%TT,hcond)
+            else
+              hcond=hcond0
+            endif
+            fradbot=sum(-hcond*p%gTT(:,3))/nx
+!            fradbot=sum(-p%gTT(:,3))/nx
+          else
+            fradbot=0.
+          endif
+          call surf_mn_name(fradbot, idiag_fradbot)
         endif
       endif
 !
@@ -1939,7 +1957,7 @@ module Energy
 !
       if (lreset) then
         idiag_TTmax=0; idiag_TTmin=0; idiag_TTm=0; idiag_fradtop=0
-        idiag_TugTm=0; idiag_Trms=0
+        idiag_TugTm=0; idiag_Trms=0; idiag_fradbot=0
         idiag_uxTm=0; idiag_uyTm=0; idiag_uzTm=0; idiag_gT2m=0
         idiag_guxgTm=0; idiag_guygTm=0; idiag_guzgTm=0
         idiag_Tugux_uxugTm=0; idiag_Tuguy_uyugTm=0; idiag_Tuguz_uzugTm=0
@@ -1980,6 +1998,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'Tdypm',idiag_Tdypm)
         call parse_name(iname,cname(iname),cform(iname),'Tdzpm',idiag_Tdzpm)
         call parse_name(iname,cname(iname),cform(iname),'fradtop',idiag_fradtop)
+        call parse_name(iname,cname(iname),cform(iname),'fradbot',idiag_fradbot)
         call parse_name(iname,cname(iname),cform(iname),'ethm',idiag_ethm)
         call parse_name(iname,cname(iname),cform(iname),'ethtot',idiag_ethtot)
         call parse_name(iname,cname(iname),cform(iname),'ssm',idiag_ssm)
