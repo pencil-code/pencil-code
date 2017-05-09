@@ -1,4 +1,14 @@
 
+/* Date:   31-12-2016
+   Author: Omer Anjum
+   Description:
+   RK integration 55-Point with reduced shared memory (RSM)
+Comments: 
+Date: Jan 10, 2017
+Omer Anjum: Changed the 19-point RK integration Kernel to 55-Point integration Kernel without changing the requirements of shared memory and simultaneously reducing the global memory traffic. The technique applied to achieve this is "scattering". In addition RSM in file name stands for reduced shared memory. In this version requirement for SM has been tried to reduce by reusing the arrays defined in the shared memory. The memory could further be reduced. However, the code is breaking for some reason if it is reduced further and needs to be fixed.
+Date: May 5, 2017
+Omer Anjum: Fixing a bug 
+*/
 //#include "hydro.cuh"
 //#include "continuity.cuh"
 #include "boundcond.cuh"
