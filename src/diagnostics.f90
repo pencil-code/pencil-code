@@ -1358,6 +1358,8 @@ if (ios/=0) print*, 'ios, i=', ios, i
       intent(in)    :: iname,cname,ctest
       intent(inout) :: itest
       intent(out)   :: cform
+
+      character(len=len(cform)) :: tmp
 !
 !  Check whether format is given.
 !
@@ -1397,8 +1399,10 @@ if (ios/=0) print*, 'ios, i=', ios, i
           if (scan(cform(1:1), "eEdD")==1) then
 
             index_i=index(cform,'.')
-            read(cform(2:index_i-1),*) iwidth
-            read(cform(index_i+1:),*) idecs
+            tmp=cform(2:index_i-1)
+            read(tmp,*) iwidth
+            tmp=cform(index_i+1:)
+            read(tmp,*) idecs
             idiff=iwidth-idecs-7
             if (idiff<0) &
               cform=cform(1:1)//trim(itoa(iwidth-idiff))//cform(index_i:)
