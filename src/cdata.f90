@@ -52,10 +52,15 @@ module Cdata
   logical :: luse_latitude=.false., luse_oldgrid=.true., luse_xyz1=.false.
   logical :: lcylindrical_gravity=.false.
   logical :: luniform_z_mesh_aspect_ratio=.false.
+!
+!  Yin-Yang grid.
+!
   logical :: lyinyang=.false., lyang=.false.
   character(LEN=labellen) :: cyinyang_intpol_type='bilinear'
   integer :: iyinyang_intpol_type=BILIN
   integer :: nzgrid_eff=nzgrid
+  real, dimension(4) :: yy_biquad_weights=impossible
+!
   real :: drcyl,dsurfxy,dsurfyz,dsurfzx
   real, dimension (nx) :: r_mn,r1_mn,r2_mn,r2_weight
   real, dimension (my) :: sinth,sin1th,sin2th,costh,cotth,sinth_weight

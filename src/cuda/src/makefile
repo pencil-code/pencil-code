@@ -3,16 +3,11 @@
 #and modules that are *separately compiled*. Everything else is 
 #automatically included in the compilation.
 hostobjs = initutils.o io.o model_collectiveops.o 
-deviceobjs = slice.o collectiveops.o diagnostics.o integrators_v5s.o boundcond.o timestep.o diff.o shear.o coriolis.o forcing.o continuity.o hydro.o gpu_astaroth.o copyouterhalostodevice.o copyinternalhalostohost.o copy_halos.o
+deviceobjs = slice.o collectiveops.o diagnostics.o integrators_v5_RSM.o boundcond.o timestep.o diff.o shear.o coriolis.o forcing.o continuity.o hydro.o gpu_astaroth.o copyouterhalostodevice.o copyinternalhalostohost.o copy_halos.o
 
-<<<<<<< HEAD
-hostcpps = initutils.cpp io.cpp verification/model_collectiveops.cpp
-devicecus = collectiveops.cu diagnostics.cu integrators_v5s.cu boundcond.cu timestep.cu diff.cu shear.cu coriolis.cu forcing.cu continuity.cu hydro.cu gpu_astaroth.cu copyouterhalostodevice.cu copyinternalhalostohost.cu copy_halos.cu slice.cu
-=======
 #hostcpps = initutils.cpp io.cpp verification/model_collectiveops.cpp
 hostcpps = initutils.cpp io.cpp model_collectiveops.cpp
 devicecus = collectiveops.cu diagnostics.cu integrators_v5_RSM.cu boundcond.cu timestep.cu diff.cu shear.cu coriolis.cu forcing.cu continuity.cu hydro.cu gpu_astaroth.cu copyouterhalostodevice.cu copyinternalhalostohost.cu copy_halos.cu slice.cu
->>>>>>> 9e56cb78194c6cf5d897f581adb936a11086231c
 #deviceobjs = collectiveops.o diagnostics.o integrators_debug.o boundcond.o timestep.o diff.o shear.o coriolis.o forcing.o continuity.o hydro.o
 #deviceobjs = collectiveops.o diagnostics.o integrators_ytraversing3.o boundcond.o timestep.o diff.o shear.o coriolis.o forcing.o continuity.o hydro.o
 #deviceobjs = collectiveops.o diagnostics.o integrators_Th38x10.o boundcond.o timestep.o diff.o shear.o coriolis.o forcing.o continuity.o hydro.o

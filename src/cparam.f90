@@ -228,5 +228,6 @@ module Cparam
 !
 !  Symbolic constants for Yin-Yang grid.
 !
-  integer, parameter :: BILIN=1, BIQUAD=2
+  integer, parameter :: BILIN=1, BIQUAD=2, BICUB=3
+!
 endmodule Cparam

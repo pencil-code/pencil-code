@@ -958,6 +958,8 @@ module Mpicomm
         iyinyang_intpol_type=BILIN
       elseif (cyinyang_intpol_type=='biquadratic') then
         iyinyang_intpol_type=BIQUAD
+      elseif (cyinyang_intpol_type=='bicubic') then
+        iyinyang_intpol_type=BICUB
       else
         call stop_it('setup_interp_yy: Unknown Yin-Yang interpolation type '//trim(cyinyang_intpol_type))
       endif
@@ -9257,7 +9259,7 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
           endif
           if (type==BILIN) then
             call bilin_interp(intcoeffs(pos),i,j,f(:,:,:,iv:ive), buffer(:,:,:,iv:ive),ibuf,jbuf)
-          elseif (type==BIQUAD) then
+          elseif (type==BIQUAD .or. type==BICUB) then
             call biquad_interp(intcoeffs(pos),i,j,f(:,:,:,iv:ive), buffer(:,:,:,iv:ive),ibuf,jbuf)
           else
             call stop_it('interpolate_yy: Only bilinear and biquadratic interpolations implemented')

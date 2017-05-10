@@ -7,7 +7,8 @@
 !
 module Yinyang
 !
-  use Cdata, only: iproc_world
+  use Cparam, only: impossible
+  use Cdata, only: iproc_world, lroot, yy_biquad_weights
 
   implicit none
 
@@ -20,7 +21,7 @@ module Yinyang
   end type
 !
   contains
-
+!
 !**************************************************************************
    subroutine biquad_interp(indcoeffs, ith, iph, f, buffer, i2buf, i3buf)
 !
@@ -139,7 +140,16 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
       integer :: i, igt, igp, nthrng, nphrng
       real, dimension(3) :: gth, gph3, gph4
       real :: dthp, dphp, w1, w2, w1ph, w2ph, w2th
+      logical :: lextweights
 
+      lextweights = all(yy_biquad_weights/=impossible)
+      if (lextweights) then
+        if (abs(yy_biquad_weights(1)+yy_biquad_weights(2) - 1.)>1e-6 .or. &
+            abs(yy_biquad_weights(3)+yy_biquad_weights(4) - 1.)>1e-6 ) then 
+           if (lroot) print*, 'prep_biquad_interp: Warning - sum of weights in yy_biquad_weights not unity'
+        endif
+      endif
+!
       nthrng=3
       if (indth==ma+1) then
         indcoeffs%inds(ip,jp,1:2)=(/ma,ma+2/)
@@ -178,7 +188,12 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
 
         gph4=(/.5*qph(3)*qph(4),-qph(2)*qph(4),.5*qph(2)*qph(3)/)
 !print*, 'gph4=', sum(gph4)
-        w1ph=-qph(3); w2ph=qph(2)
+        if (lextweights) then
+          w1ph=yy_biquad_weights(3); w2ph=yy_biquad_weights(4)
+        else
+          w1ph=-qph(3); w2ph=qph(2)
+if (lroot) print*, 'w1ph, w2ph=', w1ph, w2ph
+        endif
         indcoeffs%coeffs2(ip,jp,1:3,1:3)=w1ph*indcoeffs%coeffs2(ip,jp,1:3,1:3)
 
         do igp=1,3; do igt=1,3
@@ -192,7 +207,12 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
 
         gth=(/.5*qth(3)*qth(4),-qth(2)*qth(4),.5*qth(2)*qth(3)/)
 !print*, 'gth4=', sum(gth)
-        w1=-qth(3); w2th=qth(2)
+        if (lextweights) then
+          w1=yy_biquad_weights(1); w2th=yy_biquad_weights(2)
+        else
+          w1=-qth(3); w2th=qth(2)
+if (lroot) print*, 'w1th, w2th=', w1, w2th
+        endif
         indcoeffs%coeffs2(ip,jp,1:3,:)=w1*indcoeffs%coeffs2(ip,jp,1:3,:)
        
         if (nphrng==4) then; w2=w2th*w1ph; else; w2=w2th; endif
@@ -214,6 +234,53 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
 
     endsubroutine prep_biquad_interp
 !***********************************************************************
+    subroutine prep_bicub_interp(pprime,indth,indph,indcoeffs,ip,jp,ma,me,na,ne)
+
+      use Cdata, only: y, z, dy, dz, lroot
+
+      real, dimension(2),intent(IN)   :: pprime
+      integer,           intent(IN)   :: indth,indph,ip,jp,ma,me,na,ne
+      type(ind_coeffs),  intent(INOUT):: indcoeffs
+
+      real, dimension(4) :: qth, qph
+      integer :: i, igt, igp, nthrng, nphrng
+      real, dimension(4) :: gth, gph
+
+      nthrng=4
+      if (indth==ma+1) then
+        indcoeffs%inds(ip,jp,1:2)=(/ma,ma+3/)
+      elseif (indth==me) then
+        indcoeffs%inds(ip,jp,1:2)=(/me-3,me/)
+      else
+        indcoeffs%inds(ip,jp,1:2)=(/indth-2,indth+1/)
+      endif
+
+      nphrng=4
+      if (indph==na+1) then
+        indcoeffs%inds(ip,jp,3:4)=(/na,na+3/)
+      elseif (indph==ne) then
+        indcoeffs%inds(ip,jp,3:4)=(/ne-3,ne/)
+      else
+        indcoeffs%inds(ip,jp,3:4)=(/indph-2,indph+1/)
+      endif
+
+      do i=1,nthrng
+        qth(i) = (pprime(1)-y(i+indcoeffs%inds(ip,jp,1)-1))/dy   ! requires equidistant grid in y
+      enddo
+
+      do i=1,nphrng
+        qph(i) = (pprime(2)-z(i+indcoeffs%inds(ip,jp,3)-1))/dz   ! requires equidistant grid in z
+      enddo
+
+      gth =(/-.166666*qth(2)*qth(3)*qth(4),.5*qth(1)*qth(3)*qth(4),-.5*qth(1)*qth(2)*qth(4),.166666*qth(1)*qth(2)*qth(3)/)
+      gph =(/-.166666*qph(2)*qph(3)*qph(4),.5*qph(1)*qph(3)*qph(4),-.5*qph(1)*qph(2)*qph(4),.166666*qph(1)*qph(2)*qph(3)/)
+
+      do igp=1,4; do igt=1,4
+        indcoeffs%coeffs2(ip,jp,igt,igp)=gth(igt)*gph(igp)
+      enddo; enddo
+
+    endsubroutine prep_bicub_interp
+!***********************************************************************
     function prep_interp(thphprime,indcoeffs,itype,th_range) result (nok)
 !
 !  For each of the points in the strip thphprime (with shape 2 x thprime-extent x
@@ -231,7 +298,7 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
 !
       use General, only: find_index_range_hill
       use Cdata,   only: y, z, lfirst_proc_y, ipy, lfirst_proc_z, ipz, lroot
-      use Cparam,  only: m1,m2,n1,n2, BILIN, BIQUAD
+      use Cparam,  only: m1,m2,n1,n2, BILIN, BIQUAD, BICUB
 
       real, dimension(:,:,:),          intent(IN) :: thphprime
       type(ind_coeffs),                intent(OUT):: indcoeffs
@@ -247,7 +314,7 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
       sz1=size(thphprime,2); sz2=size(thphprime,3)
 
       if (allocated(indcoeffs%inds)) deallocate(indcoeffs%inds,indcoeffs%coeffs)
-      if (itype==BIQUAD) then
+      if (itype==BIQUAD.or.itype==BICUB) then
         allocate(indcoeffs%inds(sz1,sz2,4))
       elseif (itype==BILIN) then
         allocate(indcoeffs%inds(sz1,sz2,2))
@@ -321,7 +388,7 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
 !
             nok=nok+1
 
-            if (itype==BIQUAD) then
+            if (itype==BIQUAD .or. itype==BICUB) then
 
               if (.not.allocated(indcoeffs%coeffs2)) then
                 allocate(indcoeffs%coeffs2(sz1,sz2,4,4))
@@ -330,8 +397,11 @@ if (notanumber(buffer(:,i2buf,i3buf,1))) print*, 'NaNs at', iproc_world,  &
 !if (iproc_world==5) then
 !write(24,'(2(i2,1x),2(e13.6,1x))') ip, jp, thphprime(:,ip,jp)
 !endif
-              call prep_biquad_interp(thphprime(:,ip,jp),indth,indph,indcoeffs,ip,jp,ma,me,na,ne)
-
+              if (itype==BIQUAD) then
+                call prep_biquad_interp(thphprime(:,ip,jp),indth,indph,indcoeffs,ip,jp,ma,me,na,ne)
+              else
+                call prep_bicub_interp(thphprime(:,ip,jp),indth,indph,indcoeffs,ip,jp,ma,me,na,ne)
+              endif
             else
 
               if (.not.allocated(indcoeffs%coeffs)) then

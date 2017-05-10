@@ -309,7 +309,6 @@ extern "C" void RKintegration(float *uu_x, float *uu_y, float *uu_z, float *lnrh
 	return;
 }
 
-//void intitializeGPU(float *uu_x, float *uu_y, float *uu_z, float *lnrho, int nx, int ny, int nz, int nghost, float *x, float *y, float *z, float NU_VISC, float cs2_sound){ 
 extern "C" void intitializeGPU(int nx, int ny, int nz, int nghost, float *x, float *y, float *z, float nu, float cs2){ 
 		// nx = mx, ny = my, nz = mz halo_depth = nghost
 		int device;
