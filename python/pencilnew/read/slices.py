@@ -62,7 +62,7 @@ class SliceSeries(object):
 
 
     def read(self, field='', extension='', datadir='data', proc=-1,
-             old_file=False, precision='f', verbose=True):
+             old_file=False, precision='f', verbose=False):
         """
         Read Pencil Code slice data.
 
@@ -175,7 +175,8 @@ class SliceSeries(object):
 
                 islice = 0
                 self.t = np.zeros(1, dtype=precision)
-                slice_series = np.zeros(1, dtype=precision)
+                self.t = [0]
+                slice_series = [0]
 
                 while True:
                     try:
@@ -187,18 +188,20 @@ class SliceSeries(object):
                         break
 
                     if old_file:
-                        self.t = np.concatenate((self.t, raw_data[-1:]))
-                        slice_series = np.concatenate((slice_series, raw_data[:-1]))
+                        self.t.extend(list(raw_data[-1:]))
+                        slice_series.extend(list(raw_data[:-1]))
                     else:
-                        self.t = np.concatenate((self.t, raw_data[-2:-1]))
-                        slice_series = np.concatenate((slice_series, raw_data[:-2]))
+                        self.t.extend(list(raw_data[-2:-1]))
+                        slice_series.extend(list(raw_data[:-2]))
                     islice += 1
                     if verbose == True: print('  -> Done')
 
                 # Reshape and remove first entry.
                 if verbose == True: print('~ Reshaping array')
-                self.t = self.t[1:]
+                self.t = np.array(self.t[1:], dtype=precision)
+                slice_series = np.array(slice_series, dtype=precision)
                 slice_series = slice_series[1:].reshape(islice, vsize, hsize)
                 setattr(ext_object, field, slice_series)
 
             setattr(self, extension, ext_object)
+
