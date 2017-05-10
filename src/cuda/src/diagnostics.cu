@@ -8,8 +8,7 @@
 #include "initutils.h"
 
 //CPU functions
-#include "model_collectiveops.h"
-//#include "verification/model_collectiveops.h"
+#include "verification/model_collectiveops.h"
 //#include "verification/model_integrators.cuh"
 
 //GPU functions
@@ -304,12 +303,13 @@ typedef void (*ScalReductionFunctionDevicePointer)(float* d_vec_max, float* d_pa
 * Note: Requires that the GPU memory is already allocated, constants are
 * initialized etc and the device is otherwise ready to start computing stuff.
 */
+/*
 void run_diagnostics(	float* lnrho, float* uu_x, float* uu_y, float* uu_z,
 			float* d_lnrho, float* d_uu_x, float* d_uu_y, float* d_uu_z, 
                   	float* d_w_lnrho, float* d_w_uu_x, float* d_w_uu_y, float* d_w_uu_z,
 			float* d_lnrho_dest, float* d_uu_x_dest, float* d_uu_y_dest, float* d_uu_z_dest,
 			float* d_div_uu,
-			float* d_umax, float* d_partial_result) 
+			float* d_umax, float* d_partial_result, int isubstep) 
 {
 	printf("Running diagnostics...\n\n");
 	
@@ -439,7 +439,7 @@ void run_diagnostics(	float* lnrho, float* uu_x, float* uu_y, float* uu_z,
 		//GPU	
 		rungekutta2N_cuda(d_lnrho, d_uu_x, d_uu_y, d_uu_z, 
 				  d_w_lnrho, d_w_uu_x, d_w_uu_y, d_w_uu_z,
-				  d_lnrho_dest, d_uu_x_dest, d_uu_y_dest, d_uu_z_dest);
+				  d_lnrho_dest, d_uu_x_dest, d_uu_y_dest, d_uu_z_dest, isubstep);
 		cudaDeviceSynchronize();
 
 		checkErr( cudaMemcpy(GPU_lnrho, d_lnrho_dest, sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
@@ -458,73 +458,74 @@ void run_diagnostics(	float* lnrho, float* uu_x, float* uu_y, float* uu_z,
 			failures++;
 		}
 		else { printf("\t\tOK!\n"); }
-	}	
-	/*
-	printf("Checking Rungekutta_2N_cuda with Courant timestep...\n");
-	for (int i=0; i < NUM_DEBUG_GRIDS; i++) {
-		//Init debug grid
-		printf("\t%d/%d with d_DT = ", i, NUM_DEBUG_GRIDS-1);
-		debug_grid_init(lnrho, uu_x, uu_y, uu_z, i);
-
-		//Copy the grid to the device
-		checkErr( cudaMemcpy(d_lnrho, lnrho, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
-		checkErr( cudaMemcpy(d_uu_x, uu_x, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
-		checkErr( cudaMemcpy(d_uu_y, uu_y, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
-		checkErr( cudaMemcpy(d_uu_z, uu_z, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );	
-		cudaDeviceSynchronize();
-		
-		//Compute timestep (Tested max_vec already, so no need to validate this if the
-		//host part of timestep_cuda is correct)
-		dt = timestep_cuda(d_umax, d_partial_result, d_uu_x, d_uu_y, d_uu_z);
-		checkErr( cudaMemcpyToSymbol(d_DT, &dt, sizeof(float)) );
-		printf("%f... ", dt);
-
-		//Latest GPU version	
-		rungekutta2N_cuda(d_lnrho, d_uu_x, d_uu_y, d_uu_z, 
-				  d_w_lnrho, d_w_uu_x, d_w_uu_y, d_w_uu_z,
-				  d_lnrho_dest, d_uu_x_dest, d_uu_y_dest, d_uu_z_dest, 
-				  d_w_lnrho_dest, d_w_uu_x_dest, d_w_uu_y_dest, d_w_uu_z_dest,
-				  d_ddx_uu_x, d_ddy_uu_y, d_ddz_uu_z);
-		cudaDeviceSynchronize();
-		
-		checkErr( cudaMemcpy(GPU_lnrho, d_lnrho_dest, sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
-		checkErr( cudaMemcpy(GPU_uu_x,  d_uu_x_dest,  sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
-		checkErr( cudaMemcpy(GPU_uu_y,  d_uu_y_dest,  sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
-		checkErr( cudaMemcpy(GPU_uu_z,  d_uu_z_dest,  sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
-		cudaDeviceSynchronize();
-
-		checkErr( cudaMemcpy(d_lnrho, lnrho, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
-		checkErr( cudaMemcpy(d_uu_x, uu_x, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
-		checkErr( cudaMemcpy(d_uu_y, uu_y, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
-		checkErr( cudaMemcpy(d_uu_z, uu_z, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );	
-		cudaDeviceSynchronize();
-
-		//Model GPU version	
-		model_rungekutta2N_cuda(d_lnrho, d_uu_x, d_uu_y, d_uu_z, 
-				  d_w_lnrho, d_w_uu_x, d_w_uu_y, d_w_uu_z,
-				  d_lnrho_dest, d_uu_x_dest, d_uu_y_dest, d_uu_z_dest, 
-				  d_w_lnrho_dest, d_w_uu_x_dest, d_w_uu_y_dest, d_w_uu_z_dest);
-		cudaDeviceSynchronize();
-
-		checkErr( cudaMemcpy(lnrho, d_lnrho_dest, sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
-		checkErr( cudaMemcpy(uu_x,  d_uu_x_dest,  sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
-		checkErr( cudaMemcpy(uu_y,  d_uu_y_dest,  sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
-		checkErr( cudaMemcpy(uu_z,  d_uu_z_dest,  sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
-		cudaDeviceSynchronize();
-
-		float error = check_grids(lnrho, uu_x, uu_y, uu_z,
-					GPU_lnrho, GPU_uu_x, GPU_uu_y, GPU_uu_z);
-		
-		//const float epsilon = 0.00001f; //Cutoff in CPU/GPU floating-point error
-		const float epsilon = 0.01f; //Cutoff in CPU/GPU floating-point error
-		printf("\n\t\tTotal error: %f\n", error);
-		if (error > epsilon) {
-			printf("\t\tFAIL!\n");
-			failures++;
-		}
-		else { printf("\t\tOK!\n"); }
 	}
-	*/
+	
+	//
+	//printf("Checking Rungekutta_2N_cuda with Courant timestep...\n");
+	//for (int i=0; i < NUM_DEBUG_GRIDS; i++) {
+	//	//Init debug grid
+	//	printf("\t%d/%d with d_DT = ", i, NUM_DEBUG_GRIDS-1);
+	//	debug_grid_init(lnrho, uu_x, uu_y, uu_z, i);
+
+	//	//Copy the grid to the device
+	//	checkErr( cudaMemcpy(d_lnrho, lnrho, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
+	//	checkErr( cudaMemcpy(d_uu_x, uu_x, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
+	//	checkErr( cudaMemcpy(d_uu_y, uu_y, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
+	//	checkErr( cudaMemcpy(d_uu_z, uu_z, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );	
+	//	cudaDeviceSynchronize();
+	//	
+	//	//Compute timestep (Tested max_vec already, so no need to validate this if the
+	//	//host part of timestep_cuda is correct)
+	//	dt = timestep_cuda(d_umax, d_partial_result, d_uu_x, d_uu_y, d_uu_z);
+	//	checkErr( cudaMemcpyToSymbol(d_DT, &dt, sizeof(float)) );
+	//	printf("%f... ", dt);
+
+	//	//Latest GPU version	
+	//	rungekutta2N_cuda(d_lnrho, d_uu_x, d_uu_y, d_uu_z, 
+	//			  d_w_lnrho, d_w_uu_x, d_w_uu_y, d_w_uu_z,
+	//			  d_lnrho_dest, d_uu_x_dest, d_uu_y_dest, d_uu_z_dest, 
+	//			  d_w_lnrho_dest, d_w_uu_x_dest, d_w_uu_y_dest, d_w_uu_z_dest,
+	//			  d_ddx_uu_x, d_ddy_uu_y, d_ddz_uu_z);
+	//	cudaDeviceSynchronize();
+	//	
+	//	checkErr( cudaMemcpy(GPU_lnrho, d_lnrho_dest, sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
+	//	checkErr( cudaMemcpy(GPU_uu_x,  d_uu_x_dest,  sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
+	//	checkErr( cudaMemcpy(GPU_uu_y,  d_uu_y_dest,  sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
+	//	checkErr( cudaMemcpy(GPU_uu_z,  d_uu_z_dest,  sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
+	//	cudaDeviceSynchronize();
+
+	//	checkErr( cudaMemcpy(d_lnrho, lnrho, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
+	//	checkErr( cudaMemcpy(d_uu_x, uu_x, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
+	//	checkErr( cudaMemcpy(d_uu_y, uu_y, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
+	//	checkErr( cudaMemcpy(d_uu_z, uu_z, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );	
+	//	cudaDeviceSynchronize();
+
+	//	//Model GPU version	
+	//	model_rungekutta2N_cuda(d_lnrho, d_uu_x, d_uu_y, d_uu_z, 
+	//			  d_w_lnrho, d_w_uu_x, d_w_uu_y, d_w_uu_z,
+	//			  d_lnrho_dest, d_uu_x_dest, d_uu_y_dest, d_uu_z_dest, 
+	//			  d_w_lnrho_dest, d_w_uu_x_dest, d_w_uu_y_dest, d_w_uu_z_dest);
+	//	cudaDeviceSynchronize();
+
+	//	checkErr( cudaMemcpy(lnrho, d_lnrho_dest, sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
+	//	checkErr( cudaMemcpy(uu_x,  d_uu_x_dest,  sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
+	//	checkErr( cudaMemcpy(uu_y,  d_uu_y_dest,  sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
+	//	checkErr( cudaMemcpy(uu_z,  d_uu_z_dest,  sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
+	//	cudaDeviceSynchronize();
+
+	//	float error = check_grids(lnrho, uu_x, uu_y, uu_z,
+	//				GPU_lnrho, GPU_uu_x, GPU_uu_y, GPU_uu_z);
+	//	
+	//	//const float epsilon = 0.00001f; //Cutoff in CPU/GPU floating-point error
+	//	const float epsilon = 0.01f; //Cutoff in CPU/GPU floating-point error
+	//	printf("\n\t\tTotal error: %f\n", error);
+	//	if (error > epsilon) {
+	//		printf("\t\tFAIL!\n");
+	//		failures++;
+	//	}
+	//	else { printf("\t\tOK!\n"); }
+	//}
+	//
 
 	//TODO boundary conditions check
 
@@ -537,7 +538,7 @@ void run_diagnostics(	float* lnrho, float* uu_x, float* uu_y, float* uu_z,
 
 	printf("Diagnostics done. Failures found: %d.\n", failures);
 }
-
+*/
 
 
 

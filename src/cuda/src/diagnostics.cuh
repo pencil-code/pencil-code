@@ -55,6 +55,6 @@ void run_diagnostics(	float* lnrho, float* uu_x, float* uu_y, float* uu_z,
                   	float* d_w_lnrho, float* d_w_uu_x, float* d_w_uu_y, float* d_w_uu_z,
 			float* d_lnrho_dest, float* d_uu_x_dest, float* d_uu_y_dest, float* d_uu_z_dest,
 			float* d_div_uu,
-			float* d_umax, float* d_partial_result);
+			float* d_umax, float* d_partial_result, int isubstep);
 
 
