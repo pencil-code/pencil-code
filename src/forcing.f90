@@ -730,9 +730,6 @@ module Forcing
         elseif (iforcing_cont(i)=='(0,sinx*exp(-z^2),0)') then
           sinx(:,i)=sin(kf_fcont_x(i)*x)
           cosx(:,i)=cos(kf_fcont_x(i)*x)
-!        elseif (iforcing_cont(i)=='(0,Aycont_z,0)') then
-!          sinx(:,i)=sin(kf_fcont_x(i)*x)
-!          cosx(:,i)=cos(kf_fcont_x(i)*x)
         elseif (iforcing_cont(i)=='J0_k1x') then
           do l=l1,l2
             profx_ampl (l-l1+1)=ampl_ff(i) *bessj(0,k1bessel0*x(l))
