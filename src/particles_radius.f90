@@ -255,9 +255,11 @@ module Particles_radius
             do k=npar_low,npar_high
               aplow =10**(alog10(fp(k,iap))-(alog10(ap1)-alog10(ap0(j)))/npar/2)
               aphigh=10**(alog10(fp(k,iap))+(alog10(ap1)-alog10(ap0(j)))/npar/2)
-              fp(k,irhopswarm)=(aphigh**(4-qplaw)-aplow**(4-qplaw))/ &
-                  (ap1**(4-qplaw)-ap0(j)**(4-qplaw))*rhop_swarm*real(npar)
+              if (qplaw /= 4) &
+                  fp(k,irhopswarm) = (aphigh**(4-qplaw) - aplow**(4-qplaw)) / &
+                                     (ap1**(4-qplaw) - ap0(j)**(4-qplaw)) * rhop_swarm * real(npar)
             enddo
+            if (qplaw == 4) fp(npar_low:npar_high,irhopswarm) = rhop_swarm
           endif
 !
 !  Lognormal distribution. Here, ap1 is the largest value in the distribution.
