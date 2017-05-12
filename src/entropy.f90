@@ -311,6 +311,7 @@ module Energy
                                 ! XYAVG_DOC: heat flux)
   integer :: idiag_dcoolz=0     ! XYAVG_DOC: surface cooling flux
   integer :: idiag_Kkramersmz=0 ! XYAVG_DOC: $\left< K_0 T^(3-b)/rho^(a+1) \right>_{xy}$
+  integer :: idiag_ethmz=0      ! XYAVG_DOC: $\left<\varrho e\right>_{xy}$
 !
 ! xz averaged diagnostics given in xzaver.in
 !
@@ -2697,7 +2698,8 @@ module Energy
          lpenc_diagnos(i_pp)=.true.
       lpenc_diagnos(i_rho)=.true.
       lpenc_diagnos(i_ee)=.true.
-      if (idiag_ethm/=0 .or. idiag_ethtot/=0 .or. idiag_ethdivum/=0 ) then
+      if (idiag_ethm/=0 .or. idiag_ethtot/=0 .or. idiag_ethdivum/=0 .or. &
+          idiag_ethmz/=0) then
         lpenc_diagnos(i_rho)=.true.
         lpenc_diagnos(i_ee)=.true.
       endif
@@ -3248,6 +3250,7 @@ module Energy
 !  1-D averages.
 !
       if (l1davgfirst) then
+        call xysum_mn_name_z(p%rho*p%ee,idiag_ethmz)
         call xysum_mn_name_z(-hcond0*p%gTT(:,3),idiag_fradz)
         call xysum_mn_name_z(p%cp*p%rho*p%uu(:,3)*p%TT,idiag_fconvz)
         call yzsum_mn_name_x(p%cp*p%rho*p%uu(:,1)*p%TT,idiag_fconvxmx)
@@ -6189,7 +6192,7 @@ module Energy
         idiag_gTxgsxmxy=0;idiag_gTxgsymxy=0;idiag_gTxgszmxy=0
         idiag_fradymxy_Kprof=0; idiag_fturbymxy=0; idiag_fconvxmx=0
         idiag_Kkramersm=0; idiag_Kkramersmx=0; idiag_Kkramersmz=0
-        idiag_Hmax=0; idiag_dtH=0; idiag_tauhmin=0
+        idiag_Hmax=0; idiag_dtH=0; idiag_tauhmin=0; idiag_ethmz=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in.
@@ -6289,6 +6292,7 @@ module Energy
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'gTxgsx2mz',idiag_gTxgsx2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'gTxgsy2mz',idiag_gTxgsy2mz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'gTxgsz2mz',idiag_gTxgsz2mz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'ethmz',idiag_ethmz)
       enddo
 !
       do inamer=1,nnamer
