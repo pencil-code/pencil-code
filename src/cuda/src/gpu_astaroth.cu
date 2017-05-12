@@ -249,27 +249,9 @@ void load_dconsts(float nu_visc, float cs2_sound){
 
 
 /* ---------------------------------------------------------------------- */
-extern "C" bool finalizeGpu(float *uu_x, float *uu_y, float *uu_z, float *lnrho){
+extern "C" bool finalizeGPU(){
 /* Frees memory allocated on GPU.
 */
-	//----------------------------------------------------------
-	// Load from device memory back into host for saving the final snapshot (TODO: Might need changes after writing async transfers )
-	//----------------------------------------------------------
-	checkErr( cudaMemcpy(lnrho, d_lnrho, sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
-	checkErr( cudaMemcpy(uu_x,  d_uu_x,  sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
-	checkErr( cudaMemcpy(uu_y,  d_uu_y,  sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
-	checkErr( cudaMemcpy(uu_z,  d_uu_z,  sizeof(float)*GRID_SIZE, cudaMemcpyDeviceToHost) );
-	//----------------------------------------------------------
-	//----------------------------------------------------------
-	// Save the final snapshot. 
-	//----------------------------------------------------------
-	/*save_grid_information(t); // Save grid information for the most current .dat file TODO: test. 
-	save_grid_data(lnrho, DATA_LNRHO_PATH);
-	save_grid_data(uu_x, DATA_UU_X_PATH);
-	save_grid_data(uu_y, DATA_UU_Y_PATH);
-	save_grid_data(uu_z, DATA_UU_Z_PATH);*/
-	//----------------------------------------------------------
-
 	//Destroy timers
 	//cudaEventDestroy( start );
 	//cudaEventDestroy( stop );
@@ -296,8 +278,6 @@ extern "C" bool finalizeGpu(float *uu_x, float *uu_y, float *uu_z, float *lnrho)
 	checkErr( cudaFreeHost(slice_uu_x) );
 	checkErr( cudaFreeHost(slice_uu_y) );
 	checkErr( cudaFreeHost(slice_uu_z) );*/
-
-	
 
 
 	//Reset device
@@ -330,8 +310,7 @@ extern "C" void RKintegration(float *uu_x, float *uu_y, float *uu_z, float *lnrh
 	return;
 }
 
-//void intitializeGPU(float *uu_x, float *uu_y, float *uu_z, float *lnrho, int nx, int ny, int nz, int nghost, float *x, float *y, float *z, float NU_VISC, float cs2_sound){ 
-extern "C" void intitializeGPU(float *uu_x, float *uu_y, float *uu_z, float *lnrho, int nx, int ny, int nz, int nghost, float *x, float *y, float *z, float nu, float cs2){ 
+extern "C" void intitializeGPU(int nx, int ny, int nz, int nghost, float *x, float *y, float *z, float nu, float cs2){ 
 		// nx = mx, ny = my, nz = mz halo_depth = nghost
 		int device;
 		int halo_depth = nghost;
@@ -349,22 +328,6 @@ extern "C" void intitializeGPU(float *uu_x, float *uu_y, float *uu_z, float *lnr
 		print_run_config();
 		print_additional_defines();
 		//----------------------------------------------------------
-
-		//----------------------------------------------------------
-		// Allocate host memory
-		//----------------------------------------------------------
- 
-		/*float *lnrho; //Log density
-		float *uu_x, *uu_y, *uu_z; //velocities
-
-		lnrho = (float*) malloc(sizeof(float)*GRID_SIZE);
-		uu_x  = (float*) malloc(sizeof(float)*GRID_SIZE);
-		uu_y  = (float*) malloc(sizeof(float)*GRID_SIZE);
-		uu_z  = (float*) malloc(sizeof(float)*GRID_SIZE);*/
-
-		//Format the grids into 0.0 values to avoid potential noise in memory
-		/*set_grids_zero(lnrho, uu_x, uu_y, uu_z);
-		printf("Initializing grid to zero successful!");*/
 
 		//----------------------------------------------------------
 		// Allocating arrays for halos
@@ -399,7 +362,6 @@ extern "C" void intitializeGPU(float *uu_x, float *uu_y, float *uu_z, float *lnr
 		checkErr( cudaMalloc(&d_uu_y_dest, sizeof(float)*GRID_SIZE) );
 		checkErr( cudaMalloc(&d_uu_z_dest, sizeof(float)*GRID_SIZE) );
 
-		
 
 		checkErr( cudaMalloc((float**) &d_umax, sizeof(float)) );   //TODO this somewhere else
 		checkErr( cudaMalloc((float**) &d_umin, sizeof(float)) );   //TODO this somewhere else
@@ -419,19 +381,6 @@ extern "C" void intitializeGPU(float *uu_x, float *uu_y, float *uu_z, float *lnr
 		printf("Device mem allocated: %f MiB\n", (4*sizeof(float)*GRID_SIZE + 4*sizeof(float)*W_GRID_SIZE)/powf(2,20));
 		printf("Main array (d_lnrho) dims: (%d,%d,%d)\ntemporary result array dims (d_w_lnrho etc)(%d,%d,%d)\n", NX,NY,NZ, 										COMP_DOMAIN_SIZE_X,COMP_DOMAIN_SIZE_Y,COMP_DOMAIN_SIZE_Z);
 		
-		//----------------------------------------------------------
-		// Load data into device memory
-		//----------------------------------------------------------
-		checkErr( cudaMemcpy(d_lnrho, lnrho, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
-		checkErr( cudaMemcpy(d_uu_x, uu_x, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
-		checkErr( cudaMemcpy(d_uu_y, uu_y, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
-		checkErr( cudaMemcpy(d_uu_z, uu_z, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
-		//Init also the dest arrays to avoid roaming NaN values
-		checkErr( cudaMemcpy(d_lnrho_dest, lnrho, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
-		checkErr( cudaMemcpy(d_uu_x_dest, uu_x, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
-		checkErr( cudaMemcpy(d_uu_y_dest, uu_y, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
-		checkErr( cudaMemcpy(d_uu_z_dest, uu_z, sizeof(float)*GRID_SIZE, cudaMemcpyHostToDevice) );
-		//----------------------------------------------------------
 		//----------------------------------------------------------
 		//Load constants into device memory
 		//----------------------------------------------------------

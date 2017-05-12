@@ -8,7 +8,8 @@
 #include "initutils.h"
 
 //CPU functions
-#include "verification/model_collectiveops.h"
+#include "model_collectiveops.h"
+//#include "verification/model_collectiveops.h"
 //#include "verification/model_integrators.cuh"
 
 //GPU functions

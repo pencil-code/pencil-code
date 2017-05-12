@@ -29,10 +29,13 @@ devicecus = collectiveops.cu diagnostics.cu integrators_v5s.cu boundcond.cu time
 #from L1 are done in 128-byte cache lines, but
 #transactions from L2/SGRAM are done as 32-byte 
 #blocks.
-CFLAGS = -gencode arch=compute_35,code=sm_35
+# Settings for taito-gpu
+CFLAGS = -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -shared -Xcompiler -fPIC
+# Settings for Omer's machine
+#CFLAGS = -gencode arch=compute_52,code=sm_52 --shared --relocatable-device-code=true --compiler-options '-fPIC'
 
 #Searches also src/verification for additional includes
-VPATH = verification:..
+VPATH = verification
 
 #Include initial configuration
 include init.conf
@@ -62,9 +65,9 @@ deviceobjs: $(deviceobjs)
 	#nvcc -g -G -Xptxas -O0 ${INIT_CONFS} ${RUN_CONFS} $(CFLAGS) -dc $< -o $@
 	#nvcc -g -lineinfo --ptxas-options=-v ${INIT_CONFS} ${RUN_CONFS} $(CFLAGS) -dc $< -o $@
 	#nvcc -g ${INIT_CONFS} ${RUN_CONFS} $(CFLAGS) -dc $< -o $@
-libastaroth_sgl.so:
-	nvcc -g $(CFLAGS) ${INIT_CONFS} ${RUN_CONFS} ${MFLAGS} --relocatable-device-code=true --compiler-options '-fPIC' -o libastaroth_sgl.so --shared $(hostcpps) $(devicecus)
-
+astaroth_sgl.so: $(hostobjs) $(deviceobjs)
+	nvcc -g $(CFLAGS) ${INIT_CONFS} ${RUN_CONFS} ${MFLAGS} -o astaroth_sgl.so $(hostobjs) $(deviceobjs)
+	cp -f astaroth_sgl.so ..
 
 clean:
 	@rm -f *.o
