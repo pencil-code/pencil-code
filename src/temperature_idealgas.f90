@@ -1224,7 +1224,7 @@ module Energy
             else
               hcond=hcond0
             endif
-            fradbot=sum(-hcond0*p%gTT(:,3)*dsurfxy)
+            fradbot=sum(-hcond*p%gTT(:,3)*dsurfxy)
           else
             fradbot=0.
           endif
