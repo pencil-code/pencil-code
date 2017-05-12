@@ -1210,12 +1210,11 @@ module Energy
             else
               hcond=hcond0
             endif
-            fradtop=sum(-hcond*p%gTT(:,3))/nx
-!            fradtop=sum(-p%gTT(:,3))/nx
+            fradtop=sum(-hcond*p%gTT(:,3)*dsurfxy)
           else
             fradtop=0.
           endif
-          call surf_mn_name(fradtop, idiag_fradtop)
+          call surf_mn_name(fradtop,idiag_fradtop)
         endif
 !
         if (idiag_fradbot/=0) then
@@ -1225,12 +1224,11 @@ module Energy
             else
               hcond=hcond0
             endif
-            fradbot=sum(-hcond*p%gTT(:,3))/nx
-!            fradbot=sum(-p%gTT(:,3))/nx
+            fradbot=sum(-hcond0*p%gTT(:,3)*dsurfxy)
           else
             fradbot=0.
           endif
-          call surf_mn_name(fradbot, idiag_fradbot)
+          call surf_mn_name(fradbot,idiag_fradbot)
         endif
       endif
 !
