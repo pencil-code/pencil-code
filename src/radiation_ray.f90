@@ -1474,6 +1474,8 @@ module Radiation
                   dxyz_2(l)/f(l1-1+l,m,n,ikapparho)**2/cdtrad
             else
               dt1_rad(l)=4*kappa(l)*sigmaSB*p%TT(l)**3*p%cv1(l)/cdtrad
+              if (z_cutoff/=impossible .and. cool_wid/=impossible) &
+              dt1_rad(l)=0.5*dt1_rad(l)*(1.-tanh((z(n)-z_cutoff)/cool_wid))
             endif
           enddo
           dt1_max=max(dt1_max,dt1_rad)
