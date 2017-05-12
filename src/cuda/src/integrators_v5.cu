@@ -240,15 +240,15 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 {	
 	float ALPHA, BETA;
 	switch (isubstep) {
-		case 0:
+		case 1:
 			ALPHA = d_ALPHA1;
 			BETA = d_BETA1;
 			break;
-		case 1:
+		case 2:
 			ALPHA = d_ALPHA2;
 			BETA = d_BETA2;
 			break;
-		case 2:
+		case 3:
 			ALPHA = d_ALPHA3;
 			BETA = d_BETA3;
 			break;
@@ -359,8 +359,8 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 
 	for(int zplane = -3 ; zplane < RK_ELEMS_PER_THREAD_FIRST + 3; zplane++) {
 
-		switch (step_number) {
-			case 0:
+		switch (isubstep) {
+			case 1:
 				w_lnrho = 0.0f;
 				w_uu_x  = 0.0f;
 				w_uu_y  = 0.0f;

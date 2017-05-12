@@ -241,15 +241,15 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 {	
 	float ALPHA, BETA;
 	switch (isubstep) {
-		case 0:
+		case 1:
 			ALPHA = d_ALPHA1;
 			BETA = d_BETA1;
 			break;
-		case 1:
+		case 2:
 			ALPHA = d_ALPHA2;
 			BETA = d_BETA2;
 			break;
-		case 2:
+		case 3:
 			ALPHA = d_ALPHA3;
 			BETA = d_BETA3;
 			break;
@@ -382,8 +382,8 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 
 	for(int zplane = -3 ; zplane < RK_ELEMS_PER_THREAD_FIRST + 3; zplane++) {
 
-		switch (step_number) {
-			case 0:
+		switch (isubstep) {
+			case 1:
 				w_lnrho = 0.0f;
 				w_uu_x  = 0.0f;
 				w_uu_y  = 0.0f;
@@ -724,129 +724,7 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 }
 
 
-//Computes the gradient of divergence using a precomputed divergence field d_div_uu
-//and adds it into d_uu_*_dest arrays 
-template <int step_number>
-__global__ void 
-__launch_bounds__(RK_THREADS_PER_BLOCK, 16)
-rungekutta_step_second_half(const float* __restrict__ d_div_uu, 
-					float* __restrict__ d_uu_x_dest, float* __restrict__ d_uu_y_dest, float* __restrict__ d_uu_z_dest,
-					float* __restrict__ d_w_uu_x_dest, float* __restrict__ d_w_uu_y_dest, float* __restrict__ d_w_uu_z_dest)
-{
-	float BETA;
-	switch (step_number) {
-		case 0:
-			BETA = d_BETA1;
-			break;
-		case 1:
-			BETA = d_BETA2;
-			break;
-		case 2:
-			BETA = d_BETA3;
-			break;
-	}
-	__shared__ float s_div_uu[SHARED_SIZE_ROW][SHARED_SIZE_COL];
 
-	const int grid_idx_x = threadIdx.x + blockIdx.x*blockDim.x;
-	const int grid_idx_y = threadIdx.y + blockIdx.y*blockDim.y;
-	int grid_idx_z = threadIdx.z + blockIdx.z*blockDim.z*RK_ELEMS_PER_THREAD_SECOND; //Not const due to forcing. 
-
-	const int sid_col = threadIdx.x + BOUND_SIZE; //Varies between (3, blockDim.x + 3) if BOUND_SIZE == 3
-	const int sid_row = threadIdx.y + BOUND_SIZE; //Varies between (3, blockDim.y + 3)
-
-	//Index in the partial result array (doesn't have boundary zones)
-	int w_grid_idx = (grid_idx_x) +
-                         (grid_idx_y)*d_W_GRID_Y_OFFSET +
-                         (grid_idx_z)*d_W_GRID_Z_OFFSET;
-
-	//Index in the final result array (offset to start from first index of
-	//the computational domain)
-	int grid_idx = 	(grid_idx_x + d_CX_BOT) +
-                        (grid_idx_y + d_CY_BOT)*d_GRID_Y_OFFSET +
-                        (grid_idx_z + d_CZ_BOT)*d_GRID_Z_OFFSET;
-
-	
-	//Load stuff from the z-axis to registers
-	float behind3_div_uu  = d_div_uu[grid_idx - 3*d_GRID_Z_OFFSET];
-	float behind2_div_uu  = d_div_uu[grid_idx - 2*d_GRID_Z_OFFSET];
-	float behind1_div_uu  = d_div_uu[grid_idx - 1*d_GRID_Z_OFFSET];
-	float current_div_uu  = d_div_uu[grid_idx];
-	float infront1_div_uu = d_div_uu[grid_idx + 1*d_GRID_Z_OFFSET];
-	float infront2_div_uu = d_div_uu[grid_idx + 2*d_GRID_Z_OFFSET];
-	float infront3_div_uu = d_div_uu[grid_idx + 3*d_GRID_Z_OFFSET];
-
-	int current_iteration = 0;
-	while (true) {
-
-		//Load the gradient of divergence to shared memory
-		s_div_uu[sid_row][sid_col] = current_div_uu;	
-	
-		//Load halos (not optimal)
-		if (threadIdx.x < BOUND_SIZE) {	
-			//Load left
-			s_div_uu[sid_row][sid_col-BOUND_SIZE] = d_div_uu[grid_idx - BOUND_SIZE];
-
-			//Load right
-			s_div_uu[sid_row][sid_col+RK_THREADS_X] = d_div_uu[grid_idx+RK_THREADS_X];
-		}
-		if (threadIdx.y < BOUND_SIZE) {
-			//Load down
-			s_div_uu[sid_row-BOUND_SIZE][sid_col] = d_div_uu[grid_idx - BOUND_SIZE*d_GRID_Y_OFFSET];
-
-			//Load up
-			s_div_uu[sid_row+RK_THREADS_Y][sid_col] = d_div_uu[grid_idx + RK_THREADS_Y*d_GRID_Y_OFFSET];
-		}
-		__syncthreads();
-	
-
-		//Compute the gradient of divergence
-		const float mom_x_partial = d_NU_VISC*(1.0f/3.0f)*der_scalx(sid_row, sid_col, s_div_uu);
-		const float mom_y_partial = d_NU_VISC*(1.0f/3.0f)*der_scaly(sid_row, sid_col, s_div_uu);
-		const float mom_z_partial = d_NU_VISC*(1.0f/3.0f)*der_scalz(behind3_div_uu, behind2_div_uu, behind1_div_uu, 
-                                                                            infront1_div_uu, infront2_div_uu, infront3_div_uu);
-
-		//Add the result to _dest arrays
-		d_w_uu_x_dest[w_grid_idx] += d_DT*mom_x_partial;
-		d_w_uu_y_dest[w_grid_idx] += d_DT*mom_y_partial;
-		d_w_uu_z_dest[w_grid_idx] += d_DT*mom_z_partial;
-
-		d_uu_x_dest[grid_idx] += BETA*d_DT*mom_x_partial;
-		d_uu_y_dest[grid_idx] += BETA*d_DT*mom_y_partial;
-		d_uu_z_dest[grid_idx] += BETA*d_DT*mom_z_partial;
-
-		//Apply forcing after the normal RK steps 
-		if  (step_number == 2 && d_LFORCING == 1 && d_FTRIGGER == 0) {
-			float k_dot_x = (d_DX*grid_idx_x - d_XORIG)*d_KK_VEC_X 
-                                      + (d_DY*grid_idx_y - d_YORIG)*d_KK_VEC_Y 
-                                      + (d_DZ*grid_idx_z - d_ZORIG)*d_KK_VEC_Z;
-			float waves = cos(k_dot_x)*cos(d_PHI) - sin(k_dot_x)*sin(d_PHI);
-
-			d_uu_x_dest[grid_idx] += d_FORCING_KK_PART_X*waves;
-			d_uu_y_dest[grid_idx] += d_FORCING_KK_PART_Y*waves;
-			d_uu_z_dest[grid_idx] += d_FORCING_KK_PART_Z*waves;
-			grid_idx_z++; //Otherwise, this coordinate does not shift with the rolling cache.  
-      	  	}
-
-		current_iteration++;
-		if (current_iteration >= RK_ELEMS_PER_THREAD_SECOND)
-			break;
-		__syncthreads();
-
-		//else continue
-		grid_idx += d_GRID_Z_OFFSET;
-		w_grid_idx += d_W_GRID_Z_OFFSET;
-
-		//Reuse data in registers and update infront3
-		behind3_div_uu  = behind2_div_uu;
-		behind2_div_uu  = behind1_div_uu;
-		behind1_div_uu  = s_div_uu[sid_row][sid_col];
-		current_div_uu  = infront1_div_uu;
-		infront1_div_uu = infront2_div_uu;
-		infront2_div_uu = infront3_div_uu;
-		infront3_div_uu = d_div_uu[grid_idx + 3*d_GRID_Z_OFFSET];
-	}
-	
-}
 
 //----------------------------------------------------------
 // Manages the calculation on 2N-Runge-Kutta for a single timestep
