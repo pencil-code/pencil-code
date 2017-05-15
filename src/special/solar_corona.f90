@@ -42,6 +42,7 @@ module Special
   logical :: luse_mag_field=.false., luse_mag_vel_field=.false.
   logical :: luse_timedep_magnetogram=.false., lwrite_driver=.false.
   logical :: lnc_density_depend=.false., lnc_intrin_energy_depend=.false.
+  logical :: lflux_emerg_bottom=.false.
   integer :: irefz=n1, nglevel=max_gran_levels, cool_type=5
   real :: massflux=0., u_add
   real :: K_spitzer=0., hcond2=0., hcond3=0., init_time=0., init_time_hcond=0.
@@ -63,6 +64,7 @@ module Special
 !
   character(len=labellen) :: prof_type='nothing'
   real, dimension(mz) :: uu_init_z, lnrho_init_z, lnTT_init_z
+  real, dimension(3) :: uu_emerg=0.0, bb_emerg=0.0
   real, dimension(:), allocatable :: deltaT_init_z, deltaE_init_z, E_init_z, deltarho_init_z
   logical :: linit_uu=.false., linit_lnrho=.false., linit_lnTT=.false.
 !
@@ -90,7 +92,8 @@ module Special
       init_time_fade_start, init_time_hcond_fade_start, &
       swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, swamp_eta, &
       vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau, &
-      cool_RTV_cutoff, T_crit, deltaT_crit
+      cool_RTV_cutoff, T_crit, deltaT_crit, & 
+      lflux_emerg_bottom, uu_emerg, bb_emerg
 !
   integer :: idiag_dtvel=0     ! DIAG_DOC: Velocity driver time step
   integer :: idiag_dtnewt=0    ! DIAG_DOC: Radiative cooling time step
@@ -1146,6 +1149,53 @@ module Special
           call save_name (Bz_total_flux, idiag_mag_flux)
 !
     endsubroutine special_before_boundary
+!***********************************************************************
+    subroutine special_after_timestep(f,df,dt_)
+!
+!  Calculate an additional 'special' term on the right hand side of the
+!  induction equation.
+!
+!  Some precalculated pencils of data are passed in for efficiency
+!  others may be calculated directly from the f array.
+!
+!  06-oct-03/tony: coded
+!
+      use Deriv, only: der
+      use Mpicomm, only: mpibcast_real
+      use Sub, only: cross,gij,curl_mn
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, intent(in) :: dt_
+      real, dimension(nx,3) :: uu,bb,uxb
+      integer :: ig
+!
+! Flux emergence by driving an EMF at bottom boundary
+! Presently only emf from constant field and constant velocity
+!
+      call mpibcast_real(uu_emerg,3)
+      call mpibcast_real(bb_emerg,3)
+      if (lflux_emerg_bottom) then
+        if (lfirst_proc_z.and.lcartesian_coords) then
+          do ig=0,nghost
+            do m=m1, m2
+              uu(:,1)=uu_emerg(1)
+              uu(:,2)=uu_emerg(2)
+              uu(:,3)=uu_emerg(3)
+!
+              bb(:,1)=bb_emerg(1)
+              bb(:,2)=bb_emerg(2)
+              bb(:,3)=bb_emerg(3)
+              call cross(uu,bb,uxb)
+              f(l1:l2,m,n1-ig,iax) = f(l1:l2,m,n1-ig,iax) + uxb(:,1)*dt_
+              f(l1:l2,m,n1-ig,iay) = f(l1:l2,m,n1-ig,iay) + uxb(:,2)*dt_
+              f(l1:l2,m,n1-ig,iaz) = f(l1:l2,m,n1-ig,iaz) + uxb(:,3)*dt_
+            enddo
+          enddo
+        endif
+      endif
+!
+!
+    endsubroutine special_after_timestep
 !***********************************************************************
     function get_swamp_fade_fact(height,deriv)
 !
