@@ -10,7 +10,8 @@ something that breaks the auto-test, for example.
 In such cases that person must expect phone calls even outside office hours.
 
 Name,                 email,                         svn-name,             office,            mobile/home/alternative,  skype-name,  institution
-------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Omer Anjum,           oanjum@illinois.edu,           oa98105,              ,                  ,                         ,            Aalto Univ. & llinois, USA
 Natalia Babkovskaia,  nbabkovskaia/gmail.com,        NBabkovskaia,         +358 8 553 1939,   +358 40 5286784,          ,            University of Helsinki
 Steve Berukoff,       steveb/physics.ucla.edu,       ,                     ,                  ,                         ,            National Solar Observatory Boulder
 Sven Bingert,         bingert/mps.mpg.de,            sven.bingert,         +49 5556 979 358,  +49 179 2126192,          ,            GWDG Gottingen
@@ -60,3 +61,7 @@ Xiang-Yu Li,          xiang.yu.li.phy/gmail.com,            ,                   
 Please add further names (in alphabetical order) that have been forgotten so far!
 This file is located in the directory
    $PENCIL_HOME/license
+
+A separate list of all the committers on github are listed in:
+
+  https://www.nordita.org/~brandenb/pencil-code/PCSC/
