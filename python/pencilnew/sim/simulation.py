@@ -1,4 +1,4 @@
-
+#
 # simulation.py
 #
 # Create simulation object to operate on.
@@ -14,8 +14,8 @@ manipulate simulations.
 def simulation(*args, **kwargs):
     """
     Generate simulation object from parameters.
-    Simulation objects are containers for simulations. pencil can work with
-    several of them at once if stored in a list or dictionary.
+    Simulation objects are containers for simulations. pencilnew can work with
+    several of them at once if stored in a simulations object.
 
     Args for Constructor:
         path:		path to simulation, default = '.'
