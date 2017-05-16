@@ -39,7 +39,7 @@ def get_sims(path_root='.', depth=1, unhide_all=False, quiet=False):
     from pencilnew.io import save
     from pencilnew.sim import simulation
     from pencilnew.io import walklevel
-    from is_sim_dir import is_sim_dir
+    from .is_sim_dir import is_sim_dir
 
     #from pen.intern.class_simdict import Simdict
     #from intern import get_simdict
@@ -60,6 +60,7 @@ def get_sims(path_root='.', depth=1, unhide_all=False, quiet=False):
             if is_sim_dir(sd) and not basename(sd).startswith('.'):
                 if not quiet: print('# Found Simulation in '+sd)
                 sim_paths.append(sd)
+    if is_sim_dir('.'): sim_paths.append('.')
 
     # take care of each simulation found, i.e.
     # generate new simulation object for each and append the sim.-object on sim_list
