@@ -53,10 +53,10 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
     q_type = False                                                          # q_type will store the type of the quantity value once found and identified
 
     split_filename = split(filename)
-    if sim == False and split_filename[0] != '' and filepath == False: 
+    if sim == False and split_filename[0] != '' and filepath == False:
         filepath = split_filename[0]
         filename = split_filename[1]
- 
+
     ######## find correct file
     # prepare search_path list to search filename in
     if filepath == False:
@@ -85,16 +85,16 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
 
     # Traps the case of not being able to find the file
     if absolute_filepath is None:
-        if DEBUG: 
+        if DEBUG:
             print('~ DEBUG: File {0} not found in {1}!'.format(filename, search_paths))
         return None
-    
-    
+
+
     ######## open file
-    # now having absolute filepath to file, lets check that file and find quantity inside!    
+    # now having absolute filepath to file, lets check that file and find quantity inside!
     if DEBUG: print('~ DEBUG: Found suiting file {0} in {1}'.format(filename,filepath))
-        
-    with open(absolute_filepath, 'r') as f: 
+
+    with open(absolute_filepath, 'r') as f:
         data_raw = f.readlines()
 
 
@@ -127,6 +127,8 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
     if len(line_matches) == 0:
         if silent == False: print('! ERROR: Found no line with keyword "'+quantity+'" inside '+join(filepath, filename)+'!')
         return None
+
+    filename = os.path.basename(filename)
 
 
     ######## get line with quantity inside
@@ -176,31 +178,22 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
             q = int(q)
             q_type = 'INT'
     except:
-        pass
+        if type(q) == type('string') and ',' in q:
+            q, q_type = string_to_tuple(q)                                          # q is a TULPE_something
 
-    #elif is_float(q):
-        #q = float(q)
-        #q_type = 'FLOAT'
-        #if is_int(q):
-            #q = int(q)
-            #q_type = 'INT'
+        if type(q) == type('string') and q in ['F', 'f']:                            # q is BOOL
+            q = False
+            q_type = 'BOOL'
 
-    if type(q) == type('string') and ',' in q:
-        q, q_type = string_to_tuple(q)                                          # q is a TULPE_something
+        if type(q)== type('string') and q in ['T', 't']:
+            q = True
+            q_type = 'BOOL'
 
-    if type(q) == type('string') and q in ['F', 'f']:                            # q is BOOL
-        q = False
-        q_type = 'BOOL'
+        if type(q) == type('string'):
+            if is_number(q[0]):
+                q_type = 'STRING'
 
-    if type(q)== type('string') and q in ['T', 't']:
-        q = True
-        q_type = 'BOOL'
-
-    if type(q) == type('string'):
-        if is_number(q[0]):
-            q_type = 'STRING'
-
-    if q_type == False:                                                         # catch if type of q was not recognized
+    if q_type == False:       # catch if type of q was not recognized
         print('! ERROR: Couldnt identify the data type of the quantity value: '+str(q))
         DEBUG = True
         debug_breakpoint()
