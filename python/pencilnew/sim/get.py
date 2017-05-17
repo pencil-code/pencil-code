@@ -73,7 +73,7 @@ def get_sims(path_root='.', depth=1, unhide_all=False, quiet=False):
             if sim.name == s.name:
                 sim.name = sim.name+'#'		# add # to dublicate
                 if not quiet:
-                    print("? Warning: Found two simulatoins with the same name: "
+                    print("? Warning: Found two simulations with the same name: "
                           +sim.path+' and '+s.path)
                     print("? Changed name of "+sim.path+' to '+sim.name
                           +' -> rename simulation and re-export manually')
