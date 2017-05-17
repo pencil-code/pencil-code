@@ -52,6 +52,8 @@ class __Simulations__(object):
             print('!! ERROR: Not prepared for kwargs yet!!')
             print(kw+': '+str(arg))
 
+        if type(self.sims) == type(False) and self.sims == False: return False
+
         # sort self.sims list by name
         import re
         convert = lambda text: int(text) if text.isdigit() else text.lower()
