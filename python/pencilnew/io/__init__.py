@@ -21,7 +21,7 @@ from .change_value_in_file import change_value_in_file
 # dill im-/exporter
 from .dill_load import dill_load as load
 from .dill_save import dill_save as save
-# from pkl_exists import pkl_exists #as exists
+from .dill_save import dill_save as exists
 
 # pkl im-/exporter
 from .pkl_load import pkl_load #as load
