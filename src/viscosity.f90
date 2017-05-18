@@ -30,7 +30,8 @@ module Viscosity
   integer, parameter :: nvisc_max=4
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
   character (len=labellen) :: lambda_profile='uniform'
-  real :: nu=0.0, nu_tdep=0.0, nu_tdep_exponent=0.0, nu_tdep_t0=0.0
+  real :: nu=0.0
+  real :: nu_tdep=0.0, nu_tdep_exponent=0.0, nu_tdep_t0=0.0
   real :: zeta=0.0, nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0
   real :: nu_hyper3_mesh=5.0, nu_shock=0.0,nu_spitzer=0.0
   real :: nu_jump=1.0, xnu=1.0, xnu2=1.0, znu=1.0, widthnu=0.1, widthnu2=0.1
@@ -1993,7 +1994,8 @@ module Viscosity
 !
 !  19-dec-16/MR: fixed bug: m,n must be from Cdata. Added precalculation of nu_smag in f array.
 !                Rewritten viscous heating from slope-limited diffusion.  
-
+!  18-may-17/MR: corrected wrong order of loops for viscous heating by slope-limited diffusion.
+!
       use Sub, only: div, calc_all_diff_fluxes, grad, dot_mn, calc_sij2
       use General, only: reduce_grad_dim,notanumber
       use DensityMethods, only: getrho
@@ -2052,10 +2054,12 @@ module Viscosity
         if (lviscosity_heat) f(:,:,:,iFF_heat)=0.
 
         do j=1,3
-
           call calc_all_diff_fluxes(f,iuu+j-1,islope_limiter,h_slope_limited)
+        enddo
 !
-          do n=n1,n2; do m=m1,m2
+        do n=n1,n2; do m=m1,m2
+
+          do j=1,3
 !
 !  Divergence of flux = force.
 !
@@ -2064,8 +2068,8 @@ module Viscosity
 !  Heating term.
 !
             if (lviscosity_heat) then
-              
-              if (j==1) then                                            ! as rho and grad(rho) do not depend on j
+        
+              if (j==1) then                                            ! as rho does not depend on j
                 call getrho(f(:,m,n,ilnrho),rho)
                 call grad(f,ilnrho,gr)                                  ! grad(rho) or grad(lnrho)
                 call reduce_grad_dim(gr)                                ! compactify the non-zero components in the first dimensionality elements of gr
@@ -2090,8 +2094,8 @@ module Viscosity
               !!!f(l1:l2,m,n,iFF_heat)=min(f(l1:l2,m,n,iFF_heat),0.)                     ! no cooling admitted (Why?)
             endif
  
-          enddo; enddo
-        enddo
+          enddo
+        enddo; enddo
 !maxh=maxval(abs(f(l1:l2,m1:m2,n1:n2,iFF_heat)))
 !if (ldiagnos.and.maxh>1.) print*, 'heat:', iproc, maxh    !, minval(f(l1:l2,m1:m2,n1:n2,iFF_heat))
 !if (ldiagnos) print*, 'grhouj:', iproc, maxval(guj(:,1:dimensionality)), minval(guj(:,1:dimensionality))
