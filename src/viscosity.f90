@@ -2069,24 +2069,23 @@ module Viscosity
 !
             if (lviscosity_heat) then
         
-              if (j==1) then                                            ! as rho does not depend on j
-                call getrho(f(:,m,n,ilnrho),rho)
-                call grad(f,ilnrho,gr)                                  ! grad(rho) or grad(lnrho)
-                call reduce_grad_dim(gr)                                ! compactify the non-zero components in the first dimensionality elements of gr
+              if (j==1) then                                     ! as rho does not depend on j
+                call grad(f,ilnrho,gr)                           ! grad(rho) or grad(lnrho)    ? reference state?
+                call reduce_grad_dim(gr)                         ! compactify the non-zero components in the first dimensionality elements of gr
+                if (ldensity_nolog) then
+                  call getrho(f(:,m,n,irho),rho)
+                  do k=1,dimensionality
+                    gr(:,k)=gr(:,k)/rho                          ! now grad(ln(rho))
+                  enddo
+                endif
               endif
 
-              call grad(f,iuu+j-1,guj)                                  ! grad(u_j)
-              call reduce_grad_dim(guj)                                 ! compactify the non-zero components in the first dimensionality elements of guj
+              call grad(f,iuu+j-1,guj)                           ! grad(u_j)
+              call reduce_grad_dim(guj)                          ! compactify the non-zero components in the first dimensionality elements of guj
 
-              if (ldensity_nolog) then
-                do k=1,dimensionality
-                  guj(:,k)=gr(:,k)*f(l1:l2,m,n,iuu+j-1)+rho*guj(:,k)    ! grad(rho)*u_j+rho*grad(u_j))=grad(rho*u_j)
-                enddo
-              else
-                do k=1,dimensionality
-                  guj(:,k)=rho*(gr(:,k)*f(l1:l2,m,n,iuu+j-1)+guj(:,k))  ! rho*(grad(ln(rho))*u_j+grad(u_j))=grad(rho*u_j)
-                enddo
-              endif
+              do k=1,dimensionality
+                guj(:,k)=gr(:,k)*f(l1:l2,m,n,iuu+j-1)+guj(:,k)   ! grad(ln(rho))*u_j+grad(u_j)=grad(rho*u_j)/rho
+              enddo
 
               call dot_mn(guj(:,1:dimensionality),f(l1:l2,m,n,iFF_diff1:iFF_diff2), &    ! loop inside has length dimensionality 
 ! \partial_k(rho*u_j) f_jk (summation over j by loop)
