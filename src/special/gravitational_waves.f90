@@ -37,10 +37,9 @@
 !
 ! CPARAM logical, parameter :: lspecial = .true.
 !
-! MVAR CONTRIBUTION 4
-!!! MVAR CONTRIBUTION 12
-!!! MAUX CONTRIBUTION 3
+! MVAR CONTRIBUTION 6
 !
+! PENCILS PROVIDED stressL; stressT
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -85,11 +84,21 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-  integer :: ihhL,ihhT,iggL,iggT
+  integer :: ihhL,ihhT,iggL,iggT,istressL,istressT
 !
-!! Diagnostic variables (needs to be consistent with reset list below).
+  logical :: lno_transverse_part=.false.
 !
-  integer :: idiag_ggLpt=0       ! DIAG_DOC: $g_{11}(x_1,y_1,z_1,t)$
+! input parameters
+  namelist /special_init_pars/ &
+    lno_transverse_part
+!
+! run parameters
+  namelist /special_run_pars/ &
+    lno_transverse_part
+!
+! Diagnostic variables (needs to be consistent with reset list below).
+!
+  integer :: idiag_ggLpt=0       ! DIAG_DOC: $g_{\rm L}(x_1,y_1,z_1,t)$
 !
   contains
 !***********************************************************************
@@ -105,16 +114,14 @@ module Special
       if (lroot) call svn_id( &
            "$Id$")
 !
+!  Set indices for auxiliary variables.
+!
       call farray_register_pde('hhL',ihhL)
       call farray_register_pde('hhT',ihhT)
       call farray_register_pde('ggL',iggL)
       call farray_register_pde('ggT',iggT)
-!
-!  Set indices for auxiliary variables.
-!
-      !call farray_register_auxiliary('bb',ibb)
-!      call register_report_aux('bb', ibb, ibx, iby, ibz)
-!print*,'AXEL1: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
+      call farray_register_pde('stressL',istressL)
+      call farray_register_pde('stressT',istressT)
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -213,8 +220,13 @@ module Special
       intent(in) :: f
       intent(inout) :: p
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
+      if (lno_transverse_part) then
+        p%stressL=f(l1:l2,m,n,ibx)**2
+        p%stressT=f(l1:l2,m,n,ibx)*f(l1:l2,m,n,iby)
+      else
+        p%stressL=f(l1:l2,m,n,istressL)
+        p%stressT=f(l1:l2,m,n,istressT)
+      endif
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -255,8 +267,8 @@ module Special
 !
       call del2(f,ihhL,del2hhL)
       call del2(f,ihhT,del2hhT)
-      df(l1:l2,m,n,iggL)=df(l1:l2,m,n,iggL)+del2hhL !+p%stressL
-      df(l1:l2,m,n,iggT)=df(l1:l2,m,n,iggT)+del2hhT !+p%stressT
+      df(l1:l2,m,n,iggL)=df(l1:l2,m,n,iggL)+del2hhL+p%stressL
+      df(l1:l2,m,n,iggT)=df(l1:l2,m,n,iggT)+del2hhT+p%stressT
 !
 !         df(l1:l2,m,n,igij+1)=df(l1:l2,m,n,igij+1)+del2hii(:,2)+ &
 !           p%bb(:,2)**2-onethird*p%b2
@@ -278,6 +290,42 @@ module Special
       !call keep_compiler_quiet(p)
 !
     endsubroutine dspecial_dt
+!***********************************************************************
+    subroutine read_special_init_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+!
+    endsubroutine read_special_init_pars
+!***********************************************************************
+    subroutine write_special_init_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write(unit, NML=special_init_pars)
+!
+    endsubroutine write_special_init_pars
+!***********************************************************************
+    subroutine read_special_run_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
+!
+    endsubroutine read_special_run_pars
+!***********************************************************************
+    subroutine write_special_run_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write(unit, NML=special_run_pars)
+!
+    endsubroutine write_special_run_pars
 !***********************************************************************
     subroutine special_before_boundary(f)
 !
@@ -337,36 +385,28 @@ module Special
 !
       use Fourier, only: fourier_transform
 !
-      real, dimension (:,:,:,:), allocatable :: B_re, B_im, v_re, v_im
-      real, dimension (:,:,:), allocatable :: k2, r
+      real, dimension (:,:,:), allocatable :: S_re, S_im, T_re, T_im, k2
       real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,ikx,iky,ikz,stat
       logical :: lscale_tobox1=.true.
-      real :: scale_factor
+      real :: scale_factor, P2
       intent(inout) :: f
-!
-!  Assemble stress
-!
-      print*,'AXEL: ibx,ibz=',ibx,ibz
-      print*,'AXEL: f(4,4,4,ibx:ibz)=',f(4,4,4,ibx:ibz)
 !
 !  Allocate memory for arrays.
 !
       allocate(k2(nx,ny,nz),stat=stat)
       if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for k2')
-      allocate(r(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for r')
 !
-      allocate(B_re(nx,ny,nz,3),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for B_re')
-      allocate(B_im(nx,ny,nz,3),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for B_im')
+      allocate(S_re(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for S_re')
+      allocate(S_im(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for S_im')
 !
-      allocate(v_re(nx,ny,nz,3),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for v_re')
-      allocate(v_im(nx,ny,nz,3),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for v_im')
+      allocate(T_re(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for T_re')
+      allocate(T_im(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for T_im')
 !
       allocate(kx(nxgrid),stat=stat)
       if (stat>0) call fatal_error('special_after_boundary', &
@@ -404,58 +444,71 @@ module Special
             enddo
           enddo
         enddo
-        if (lroot) k2(1,1,1) = 1.  ! Avoid division by zero
-
 !
+!  compute 1/k2 for components of unit vector
+!
+        if (lroot) k2(1,1,1) = 1.  ! Avoid division by zero
+        k2=1./k2
+!
+!  Assemble stress
+!
+!  Do T11
 !  Go into Fourier space
 !
-        v_im=0.0
-        v_re=f(l1:l2,m1:m2,n1:n2,iax:iaz)
-        do i=1,3
-          call fourier_transform(v_re(:,:,:,i),v_im(:,:,:,i))
-        enddo !i
+        T_im=0.0
+        T_re=f(l1:l2,m1:m2,n1:n2,ibx)**2
+        call fourier_transform(T_re,T_im)
 !
-!  Compute the magnetic field in Fourier space from vector potential.
-!  In this definition of the Fourier transform, nabla = +ik.
+!  projection operator
 !
-      do ikz=1,nz; do iky=1,ny; do ikx=1,nx
+        do iky=1,nz
+          do ikx=1,ny
+            do ikz=1,nx
 !
-!  (vx, vy, vz) -> Bx
+!  Real part of (ux, uy, uz) -> vx, vy, vz
+!  (kk.uu)/k2, vi = ui - ki kj uj
 !
-        B_re(ikz,ikx,iky,1)=+( &
-          -ky(iky+ipz*nz)*v_im(ikz,ikx,iky,3) &
-          +kz(ikz+ipx*nx)*v_im(ikz,ikx,iky,2) )
-        B_im(ikz,ikx,iky,1)=+( &
-          +ky(iky+ipz*nz)*v_re(ikz,ikx,iky,3) &
-          -kz(ikz+ipx*nx)*v_re(ikz,ikx,iky,2) )
+!  r = .5*P11^2
 !
-!  (vx, vy, vz) -> By
+              P2=.5*(1.-kx(ikx+ipy*ny)**2*k2(ikz,ikx,iky))**2
+              S_re(ikz,ikx,iky)=P2*T_re(ikz,ikx,iky)
+              S_im(ikz,ikx,iky)=P2*T_im(ikz,ikx,iky)
+
+              !v_im(ikz,ikx,iky,1)=u_im(ikz,ikx,iky,1)-kx(ikx+ipy*ny)*r(ikz,ikx,iky)
+              !v_im(ikz,ikx,iky,2)=u_im(ikz,ikx,iky,2)-ky(iky+ipz*nz)*r(ikz,ikx,iky)
+              !v_im(ikz,ikx,iky,3)=u_im(ikz,ikx,iky,3)-kz(ikz+ipx*nx)*r(ikz,ikx,iky)
+
 !
-        B_re(ikz,ikx,iky,2)=+( &
-          -kz(ikz+ipx*nx)*v_im(ikz,ikx,iky,1) &
-          +kx(ikx+ipy*ny)*v_im(ikz,ikx,iky,3) )
-        B_im(ikz,ikx,iky,2)=+( &
-          +kz(ikz+ipx*nx)*v_re(ikz,ikx,iky,1) &
-          -kx(ikx+ipy*ny)*v_re(ikz,ikx,iky,3) )
+!  r = .5*P11*P12
 !
-!  (vx, vy, vz) -> Bz
+              P2=.5*(1.-kx(ikx+ipy*ny)**2*k2(ikz,ikx,iky))*(1.-ky(iky+ipz*nz)**2*k2(ikz,ikx,iky))
+              T_re(ikz,ikx,iky)=P2*T_re(ikz,ikx,iky)
+              T_im(ikz,ikx,iky)=P2*T_im(ikz,ikx,iky)
 !
-        B_re(ikz,ikx,iky,3)=+( &
-          -kx(ikx+ipy*ny)*v_im(ikz,ikx,iky,2) &
-          +ky(iky+ipz*nz)*v_im(ikz,ikx,iky,1) )
-        B_im(ikz,ikx,iky,3)=+( &
-          +kx(ikx+ipy*ny)*v_re(ikz,ikx,iky,2) &
-          -ky(iky+ipz*nz)*v_re(ikz,ikx,iky,1) )
-!
-      enddo; enddo; enddo
+            enddo
+          enddo
+        enddo
 !
 !  back to real space
 !
-print*,'AXEL2: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
-        do i=1,3
-          call fourier_transform(B_re(:,:,:,i),B_im(:,:,:,i),linv=.true.)
-          f(l1:l2,m1:m2,n1:n2,ibb+i-1)=B_re(:,:,:,i)
-        enddo !i
+        call fourier_transform(S_re,S_im,linv=.true.)
+        call fourier_transform(T_re,T_im,linv=.true.)
+!
+!  add (or set) corresponding stress
+!
+        f(l1:l2,m1:m2,n1:n2,istressL)=S_re
+        f(l1:l2,m1:m2,n1:n2,istressT)=T_re
+!
+!  Deallocate arrays.
+!
+      if (allocated(k2))   deallocate(k2)
+      if (allocated(S_re)) deallocate(S_re)
+      if (allocated(S_im)) deallocate(S_im)
+      if (allocated(T_re)) deallocate(T_re)
+      if (allocated(T_im)) deallocate(T_im)
+      if (allocated(kx)) deallocate(kx)
+      if (allocated(ky)) deallocate(ky)
+      if (allocated(kz)) deallocate(kz)
 !
     endsubroutine special_after_boundary
 !***********************************************************************
