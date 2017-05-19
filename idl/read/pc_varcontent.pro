@@ -93,9 +93,13 @@ indices = [ $
   { name:'iaa', label:'Magnetic vector potential', dims:3 }, $
   { name:'iaphi', label:'A_phi', dims:1 }, $
   { name:'ibphi', label:'B_phi', dims:1 }, $
-  { name:'ibb', label:'Magnetic field', dims:3 }, $
+;  { name:'ibb', label:'Magnetic field', dims:3 }, $
   { name:'ijj', label:'Current density', dims:3 }, $
   { name:'iemf', label:'Current density', dims:3 }, $
+  { name:'iggL', label:'ggL', dims:1 }, $
+  { name:'iggT', label:'ggT', dims:1 }, $
+  { name:'ihhL', label:'hhL', dims:1 }, $
+  { name:'ihhT', label:'hhT', dims:1 }, $
   { name:'ip11', label:'Polymer Tensor 11', dims:1 }, $
   { name:'ip12', label:'Polymer Tensor 12', dims:1 }, $
   { name:'ip13', label:'Polymer Tensor 13', dims:1 }, $
