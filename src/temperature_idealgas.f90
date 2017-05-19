@@ -106,6 +106,7 @@ module Energy
   integer :: idiag_gTmax=0        ! DIAG_DOC: $\max (|\nabla T|)$
   integer :: idiag_TTmin=0        ! DIAG_DOC: $\min (T)$
   integer :: idiag_TTm=0          ! DIAG_DOC: $\left< T \right>$
+  integer :: idiag_TT2m=0         ! DIAG_DOC: $\left< T^2 \right>$
   integer :: idiag_TugTm=0        ! DIAG_DOC: $\left< T\uv\cdot\nabla T \right>$
   integer :: idiag_Trms=0         ! DIAG_DOC: $\sqrt{\left< T^2 \right>}$
   integer :: idiag_uxTm=0         ! DIAG_DOC: $\left< u_x T \right>$
@@ -797,8 +798,8 @@ module Energy
 !
       if ( idiag_TTmax/=0.or.idiag_TTmin/=0 .or.idiag_TTm/=0  .or.idiag_TugTm/=0 .or. &
            idiag_Trms/=0 .or.idiag_uxTm/=0  .or.idiag_uyTm/=0 .or.idiag_uzTm/=0  .or. &
-           idiag_TT2mz/=0 .or.idiag_uxTmz/=0.or.idiag_uyTmz/=0.or.idiag_uzTmz/=0 ) &
-         lpenc_diagnos(i_TT)=.true.
+           idiag_TT2mz/=0 .or.idiag_uxTmz/=0.or.idiag_uyTmz/=0.or.idiag_uzTmz/=0 .or. &
+           idiag_TT2m/=0) lpenc_diagnos(i_TT)=.true.
 !
       if ( idiag_TugTm/=0 .or. idiag_gT2m/=0 .or. &
            idiag_guxgTm/=0 .or. idiag_guygTm/=0 .or. idiag_guzgTm/=0 ) lpenc_diagnos(i_gTT)=.true.
@@ -818,12 +819,9 @@ module Energy
          lpenc_diagnos(i_glnTT) =.true.
          lpenc_diagnos(i_TT) =.true.
       endif
-      if (idiag_fradtop/=0.or.idiag_fradbot/=0) then
+      if (idiag_fradtop/=0.or.idiag_fradbot/=0.or.idiag_fradmz/=0) then
         lpenc_diagnos(i_TT) =.true.
-        lpenc_diagnos(i_gTT) =.true.
-      endif
-      if (idiag_fradmz/=0) then
-        lpenc_diagnos(i_gTT) =.true.
+        lpenc_diagnos(i_glnTT) =.true.
       endif
       if (idiag_fconvmz/=0) then
         lpenc_diagnos(i_TT) =.true.
@@ -1165,6 +1163,7 @@ module Energy
         if (idiag_csm/=0)   call sum_mn_name(p%cs2,idiag_csm,lsqrt=.true.)
         if (idiag_TugTm/=0) call sum_mn_name(p%TT*p%ugTT,idiag_TugTm)
         if (idiag_Trms/=0)  call sum_mn_name(p%TT**2,idiag_Trms,lsqrt=.true.)
+        if (idiag_TT2m/=0)  call sum_mn_name(p%TT**2,idiag_TT2m)
         if (idiag_uxTm/=0)  call sum_mn_name(p%uu(:,1)*p%TT,idiag_uxTm)
         if (idiag_uyTm/=0)  call sum_mn_name(p%uu(:,2)*p%TT,idiag_uyTm)
         if (idiag_uzTm/=0)  call sum_mn_name(p%uu(:,3)*p%TT,idiag_uzTm)
@@ -1206,11 +1205,12 @@ module Energy
         if (idiag_fradtop/=0) then
           if (llast_proc_z.and.n==n2) then
             if (lADI) then
-              call heatcond_TT(p%TT,hcond)
+!              call heatcond_TT(p%TT,hcond)
+              hcond=hcond0
             else
               hcond=hcond0
             endif
-            fradtop=sum(-hcond*p%gTT(:,3)*dsurfxy)
+            fradtop=sum(-hcond*p%TT*p%glnTT(:,3)*dsurfxy)
           else
             fradtop=0.
           endif
@@ -1220,11 +1220,12 @@ module Energy
         if (idiag_fradbot/=0) then
           if (lfirst_proc_z.and.n==n1) then
             if (lADI) then
-              call heatcond_TT(p%TT,hcond)
+!              call heatcond_TT(p%TT,hcond)
+              hcond=hcond0
             else
               hcond=hcond0
             endif
-            fradbot=sum(-hcond*p%gTT(:,3)*dsurfxy)
+            fradbot=sum(-hcond*p%TT*p%glnTT(:,3)*dsurfxy)
           else
             fradbot=0.
           endif
@@ -1235,7 +1236,7 @@ module Energy
 !  1-D averages.
 !
       if (l1davgfirst) then
-        call xysum_mn_name_z(-hcond0*p%gTT(:,3),idiag_fradmz)
+        call xysum_mn_name_z(-hcond0*p%TT*p%glnTT(:,3),idiag_fradmz)
         call xysum_mn_name_z(p%cp*p%rho*p%uu(:,3)*p%TT,idiag_fconvmz)
         call yzsum_mn_name_x(p%pp,idiag_ppmx)
         call xzsum_mn_name_y(p%pp,idiag_ppmy)
@@ -1977,7 +1978,7 @@ module Energy
         idiag_ethmz=0; idiag_ethuxmz=0; idiag_ethuymz=0; idiag_ethuzmz=0
         idiag_TTmxy=0; idiag_TTmxz=0
         idiag_fpresxmz=0; idiag_fpresymz=0; idiag_fpreszmz=0; idiag_fradmz=0
-        idiag_ethtot=0; idiag_fconvmz=0
+        idiag_ethtot=0; idiag_fconvmz=0; idiag_TT2m=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -1989,6 +1990,7 @@ module Energy
         call parse_name(iname,cname(iname),cform(iname),'TTm',idiag_TTm)
         call parse_name(iname,cname(iname),cform(iname),'TugTm',idiag_TugTm)
         call parse_name(iname,cname(iname),cform(iname),'Trms',idiag_Trms)
+        call parse_name(iname,cname(iname),cform(iname),'TT2m',idiag_TT2m)
         call parse_name(iname,cname(iname),cform(iname),'uxTm',idiag_uxTm)
         call parse_name(iname,cname(iname),cform(iname),'uyTm',idiag_uyTm)
         call parse_name(iname,cname(iname),cform(iname),'uzTm',idiag_uzTm)
