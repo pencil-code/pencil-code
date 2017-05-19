@@ -183,7 +183,7 @@ module Density
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      call keep_compiler_quiet(lpencil_in)
+      if (lpencil_in(i_ekin)) lpencil_in(i_u2)=.true.
 !
     endsubroutine pencil_interdep_density
 !***********************************************************************
@@ -224,7 +224,7 @@ module Density
 ! uij5glnrho
       if (lpencil(i_uij5glnrho)) p%uij5glnrho=0.0
 ! ekin
-      if (lpencil(i_ekin)) p%ekin=0.0
+      if (lpencil(i_ekin)) p%ekin=0.5*p%u2
 !
       call keep_compiler_quiet(f)
 !
