@@ -7,7 +7,7 @@
   xyz0  =  0., 0., 0.,        ! first corner of box
   xyz1  =  2.82842, 0., 1.,   ! second corner of box
   lperi = T, T, F,
-  bcz   = 's','s','a','a','s',
+  bcz   = 's','s','a','a','s', ! (ux,uy,uz,TT,pp)
   lwrite_2d=T
 /
 &eos_init_pars
