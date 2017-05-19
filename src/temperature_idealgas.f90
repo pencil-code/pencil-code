@@ -1205,8 +1205,7 @@ module Energy
         if (idiag_fradtop/=0) then
           if (llast_proc_z.and.n==n2) then
             if (lADI) then
-!              call heatcond_TT(p%TT,hcond)
-              hcond=hcond0
+              call heatcond_TT(p%TT,hcond)
             else
               hcond=hcond0
             endif
@@ -1220,8 +1219,7 @@ module Energy
         if (idiag_fradbot/=0) then
           if (lfirst_proc_z.and.n==n1) then
             if (lADI) then
-!              call heatcond_TT(p%TT,hcond)
-              hcond=hcond0
+              call heatcond_TT(p%TT,hcond)
             else
               hcond=hcond0
             endif
