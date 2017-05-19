@@ -4644,11 +4644,11 @@ module Energy
       nusmag=f(l1:l2,m,n,inusmag)
 !
       if (lcalc_ssmean) then
-        do j=1,3; gss1(:,j)=spread(gssmz(n-n1+1,j), 1, l2-l1+1); enddo
-        del2ss1=spread(del2ssmz(n-n1+1), 1, l2-l1+1)
+        do j=1,3; gss1(:,j)=p%gss(:,j)-spread(gssmz(n-n1+1,j), 1, l2-l1+1); enddo
+        del2ss1=p%del2ss-spread(del2ssmz(n-n1+1), 1, l2-l1+1)
       else if (lcalc_ssmeanxy) then
-        do j=1,3; gss1(:,j)=gssmx(:,j); enddo
-        del2ss1=del2ssmx
+        do j=1,3; gss1(:,j)=p%gss(:,j)-gssmx(:,j); enddo
+        del2ss1=p%del2ss-del2ssmx
       else
         do j=1,3; gss1(:,j)=p%gss(:,j) ; enddo
         del2ss1=p%del2ss
@@ -5812,12 +5812,14 @@ module Energy
 !  Cool the mean temperature toward a specified profile stored in a file
 !
       case ('shell_mean_yz')
-        if (.not.lcalc_cs2mean) call fatal_error('shell_mean_yz:', &
-            'works only for lcalc_cs2mean=T')
         if (it == 1) call read_cooling_profile_x(cs2cool_x)
         if (rcool==0.0) rcool=r_ext
         prof = step(x(l1:l2),rcool,wcool)
-        heat = heat - cool*prof*(cs2mx-cs2cool_x)
+        if (lcalc_cs2mean) then
+          heat = heat - cool*prof*(cs2mx-cs2cool_x)
+        else
+          heat = heat - cool*prof*(p%cs2-cs2cool_x)
+        endif
 !
 !  Latitude dependent heating/cooling: imposes a latitudinal variation
 !  of temperature proportional to cos(theta) at each depth. deltaT gives
@@ -6854,6 +6856,10 @@ module Energy
                             + (chit_fluct_prof2-1)*step(z_mn,ztop,widthss)
       endif
 !
+      if (lgravx) then
+        chit_prof_fluct = 1.
+      endif
+!
     endsubroutine chit_profile_fluct
 !***********************************************************************
     subroutine gradlogchit_profile_fluct(glnchit_prof_fluct)
@@ -6886,6 +6892,10 @@ module Energy
         glnchit_prof_fluct(:,1:2) = 0.
         glnchit_prof_fluct(:,3) = (chit_fluct_prof1-1)*der_step(z_mn,zbot,-widthss) &
                                 + (chit_fluct_prof2-1)*der_step(z_mn,ztop,widthss)
+      endif
+!
+      if (lgravx) then
+        glnchit_prof_fluct(:,1:3) = 0.
       endif
 !
     endsubroutine gradlogchit_profile_fluct
