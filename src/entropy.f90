@@ -2622,8 +2622,7 @@ module Energy
         lpenc_requested(i_del2ss)=.true.
         lpenc_requested(i_glnrho)=.true.
         lpenc_requested(i_glnTT)=.true.
-!        lpenc_requested(i_nu_smag)=.true.
-!        lpenc_requested(i_gnu_smag)=.true.
+        lpenc_requested(i_nu_smag)=.true.
       endif
       if (tau_cool/=0.0 .or. cool_uniform/=0.0) then
         lpenc_requested(i_cp)=.true.
@@ -4632,7 +4631,7 @@ module Energy
       intent(in) :: p
       intent(inout) :: f,df
 !
-      real, dimension(nx) :: del2ss1, nusmag1, nusmag
+      real, dimension(nx) :: del2ss1
       real, dimension(nx,3) :: gss1, gradnu
       integer :: j
 !
@@ -4640,8 +4639,6 @@ module Energy
 !
 !  Diffusion of the form
 !     rho*T*Ds/Dt = ... + nab.((nu_smag/Pr_smag)*rho*T*grads),
-!
-      nusmag=f(l1:l2,m,n,inusmag)
 !
       if (lcalc_ssmean) then
         do j=1,3; gss1(:,j)=p%gss(:,j)-spread(gssmz(n-n1+1,j), 1, l2-l1+1); enddo
@@ -4654,7 +4651,7 @@ module Energy
         del2ss1=p%del2ss
       endif
       call dot(p%glnrho+p%glnTT,gss1,g2)
-      thdiff=Pr_smag1*nusmag*(del2ss1+g2)
+      thdiff=Pr_smag1*p%nu_smag*(del2ss1+g2)
 !
       call grad(f,inusmag,gradnu)
 !
@@ -4663,7 +4660,7 @@ module Energy
 !
 !  Here chix = nu_smag/Pr_smag is needed for diffus_chi calculation.
 !
-      chix = Pr_smag1*nusmag
+      chix = Pr_smag1*p%nu_smag
 !
 !  Write radiative flux array.
 !
