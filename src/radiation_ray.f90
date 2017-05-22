@@ -1873,7 +1873,11 @@ module Radiation
         call calc_kapparho_B2_W2(f)
 !
       case ('nothing')
-        f(l1:l2,m,n,ikapparho)=0.0
+        do n=n1-radz,n2+radz
+        do m=m1-rady,m2+rady
+          f(l1:l2,m,n,ikapparho)=0.0
+        enddo
+        enddo
 !
       case default
         call fatal_error('opacity','no such opacity type: '//trim(opacity_type))
