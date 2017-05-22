@@ -1065,6 +1065,8 @@ module Viscosity
       endif
       if (idiag_fviscmxy/=0 .or. idiag_fviscymxy/=0 .or. &
           idiag_fviscsmmxy/=0) then
+        lpenc_diagnos2d(i_nu_smag)=.true.
+        lpenc_diagnos2d(i_uu)=.true.
         lpenc_diagnos2d(i_rho)=.true.
         lpenc_diagnos2d(i_sij)=.true.
       endif
@@ -1853,7 +1855,7 @@ module Viscosity
             p%nu_smag=f(l1:l2,m,n,inusmag)
 !
 !  Compute gradient of p%nu_smag from f-array.
-!          
+!
             call grad(f,inusmag,gradnu)
 
           else  
