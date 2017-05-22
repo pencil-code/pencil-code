@@ -935,7 +935,8 @@ module Deriv
                   + 15.0*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
                   -  6.0*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
                   +      (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
-          if ((.not.igndx) .and. lspherical_coords) df = df * (r1_mn * sin1th(m))**6
+          if ((.not.igndx) .and. (.not.upwnd) .and. lspherical_coords) &
+            df = df * (r1_mn * sin1th(m))**6
         else
           df=0.
         endif
