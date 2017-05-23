@@ -89,7 +89,6 @@ module Viscosity
   logical :: lvisc_hyper3_nu_const_aniso=.false.
   logical :: lvisc_hyper3_rho_nu_const_bulk=.false.
   logical :: lvisc_hyper3_nu_const=.false.
-  logical :: lvisc_smag=.false.
   logical :: lvisc_smag_simplified=.false.
   logical :: lvisc_smag_cross_simplified=.false.
   logical :: lnusmag_as_aux=.false.
@@ -2002,6 +2001,7 @@ module Viscosity
       use General, only: reduce_grad_dim,notanumber
       use DensityMethods, only: getrho
       use SharedVariables, only: get_shared_variable
+      use Boundcond, only: update_ghosts
 
       real, dimension(mx,my,mz,mfarray) :: f
 
@@ -2037,13 +2037,16 @@ module Viscosity
 !  Put nu_smag into the f-array.
 !          
             f(l1:l2,m,n,inusmag)=tmp
-          
+!
           enddo; enddo
-
+!
         else
           if (lfirstpoint) print*, 'viscosity_after_boundary: '// &
               "ldensity better be .true. for ivisc='smagorinsky'"
         endif
+!
+        call update_ghosts(f,inusmag)
+!
       endif
 !
 !  Slope limited diffusion following Rempel (2014).
@@ -2054,13 +2057,13 @@ module Viscosity
       if (lvisc_slope_limited.and.lfirst) then
 !
         if (lviscosity_heat) f(:,:,:,iFF_heat)=0.
-
+!
         do j=1,3
           call calc_all_diff_fluxes(f,iuu+j-1,islope_limiter,h_slope_limited)
         enddo
 !
         do n=n1,n2; do m=m1,m2
-
+!
           do j=1,3
 !
 !  Divergence of flux = force.
