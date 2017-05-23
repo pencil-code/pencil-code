@@ -2,6 +2,7 @@
 #
 # Author: Mike McKerns (mmckerns @caltech and @uqfoundation)
 # Copyright (c) 2008-2016 California Institute of Technology.
+# Copyright (c) 2016-2017 The Uncertainty Quantification Foundation.
 # License: 3-clause BSD.  The full license text is available at:
 #  - http://trac.mystic.cacr.caltech.edu/project/pathos/browser/dill/LICENSE
 """
@@ -14,10 +15,10 @@ to load more objects and types, use dill.load_types()
 from __future__ import absolute_import
 
 # non-local import of dill.objects
-from pencilnew.backpack.dill import objects
+from dill import objects
 for _type in objects.keys():
     exec("%s = type(objects['%s'])" % (_type,_type))
-
+    
 del objects
 try:
     del _type

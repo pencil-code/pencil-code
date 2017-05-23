@@ -2,6 +2,7 @@
 #
 # Author: Mike McKerns (mmckerns @caltech and @uqfoundation)
 # Copyright (c) 2008-2016 California Institute of Technology.
+# Copyright (c) 2016-2017 The Uncertainty Quantification Foundation.
 # License: 3-clause BSD.  The full license text is available at:
 #  - http://trac.mystic.cacr.caltech.edu/project/pathos/browser/dill/LICENSE
 """
@@ -77,8 +78,11 @@ except ImportError: # Windows
 try:
     import ctypes
     HAS_CTYPES = True
+    # if using `pypy`, pythonapi is not found
+    IS_PYPY = not hasattr(ctypes, 'pythonapi')
 except ImportError: # MacPorts
     HAS_CTYPES = False
+    IS_PYPY = False
 
 # helper objects
 class _class:
@@ -103,6 +107,8 @@ class _newclass(object):
 #   @staticmethod
 #   def _static(self): #XXX: test me
 #       pass
+class _newclass2(object):
+    __slots__ = ['descriptor']
 def _function(x): yield x
 def _function2():
     try: raise
@@ -248,8 +254,7 @@ try: # python 2.7
     # generic operating system services (CH 15)
     a['NullHandlerType'] = logging.NullHandler() # pickle ok  # new 2.7
     a['ArgParseFileType'] = argparse.FileType() # pickle ok
-#except AttributeError:
-except ImportError:
+except (AttributeError, ImportError):
     pass
 
 # -- pickle fails on all below here -----------------------------------------
@@ -261,8 +266,9 @@ a['EllipsisType'] = Ellipsis
 a['ClosedFileType'] = open(os.devnull, 'wb', buffering=0).close()
 a['GetSetDescriptorType'] = array.array.typecode
 a['LambdaType'] = _lambda = lambda x: lambda y: x #XXX: works when not imported!
-a['MemberDescriptorType'] = type.__dict__['__weakrefoffset__']
-a['MemberDescriptorType2'] = datetime.timedelta.days
+a['MemberDescriptorType'] = _newclass2.descriptor
+if not IS_PYPY:
+    a['MemberDescriptorType2'] = datetime.timedelta.days
 a['MethodType'] = _method = _class()._method #XXX: works when not imported!
 a['ModuleType'] = datetime
 a['NotImplementedType'] = NotImplemented
@@ -287,11 +293,13 @@ if PY3:
 else:
     d['CellType'] = (_lambda)(0).func_closure[0]
     a['XRangeType'] = _xrange = xrange(1)
-d['MethodDescriptorType'] = type.__dict__['mro']
-d['WrapperDescriptorType'] = type.__repr__
-a['WrapperDescriptorType2'] = type.__dict__['__module__']
+if not IS_PYPY:
+    d['MethodDescriptorType'] = type.__dict__['mro']
+    d['WrapperDescriptorType'] = type.__repr__
+    a['WrapperDescriptorType2'] = type.__dict__['__module__']
+    d['ClassMethodDescriptorType'] = type.__dict__['__prepare__' if PY3 else 'mro']
 # built-in functions (CH 2)
-if PY3: 
+if PY3 or IS_PYPY: 
     _methodwrap = (1).__lt__
 else: 
     _methodwrap = (1).__cmp__
@@ -488,7 +496,8 @@ if HAS_CTYPES:
         x['CDLLType'] = _cdll = ctypes.cdll.msvcrt
     else:
         x['CDLLType'] = _cdll = ctypes.CDLL(None)
-    x['PyDLLType'] = _pydll = ctypes.pythonapi
+    if not IS_PYPY:
+        x['PyDLLType'] = _pydll = ctypes.pythonapi
     x['FuncPtrType'] = _cdll._FuncPtr()
     x['CCharArrayType'] = ctypes.create_string_buffer(1)
     x['CWCharArrayType'] = ctypes.create_unicode_buffer(1)
@@ -497,7 +506,7 @@ if HAS_CTYPES:
     x['LPCCharObjType'] = _lpchar = ctypes.POINTER(ctypes.c_char)
     x['NullPtrType'] = _lpchar()
     x['NullPyObjectType'] = ctypes.py_object()
-    x['PyObjectType'] = ctypes.py_object(1)
+    x['PyObjectType'] = ctypes.py_object(lambda :None)
     x['FieldType'] = _field = _Struct._field
     x['CFUNCTYPEType'] = _cfunc = ctypes.CFUNCTYPE(ctypes.c_char)
     x['CFunctionType'] = _cfunc(str)

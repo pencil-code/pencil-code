@@ -2,6 +2,7 @@
 #
 # Author: Mike McKerns (mmckerns @caltech and @uqfoundation)
 # Copyright (c) 2008-2016 California Institute of Technology.
+# Copyright (c) 2016-2017 The Uncertainty Quantification Foundation.
 # License: 3-clause BSD.  The full license text is available at:
 #  - http://trac.mystic.cacr.caltech.edu/project/pathos/browser/dill/LICENSE
 
@@ -21,6 +22,9 @@ try:
     import builtins
 except ImportError:
     import __builtin__ as builtins
+
+# pypy doesn't use reference counting
+getrefcount = getattr(sys, 'getrefcount', lambda x:0)
 
 # memo of objects indexed by id to a tuple (attributes, sequence items)
 # attributes is a dict indexed by attribute name to attribute id
@@ -98,6 +102,8 @@ def memorise(obj, force=False):
         seq_id = None
     elif hasattr(s, "items"):
         seq_id = dict((id_(key),id_(value)) for key, value in s.items())
+    elif not hasattr(s, "__len__"): #XXX: avoid TypeError from unexpected case
+        seq_id = None
     else:
         seq_id = [id_(i) for i in s]
 
@@ -116,9 +122,9 @@ def memorise(obj, force=False):
 
 
 def release_gone():
-    itop, mp, src = id_to_obj.pop, memo.pop, sys.getrefcount
+    itop, mp, src = id_to_obj.pop, memo.pop, getrefcount
     [(itop(id_), mp(id_)) for id_, obj in list(id_to_obj.items())
-     if src(obj) < 4]
+     if src(obj) < 4] #XXX: correct for pypy?
 
 
 def whats_changed(obj, seen=None, simple=False, first=True):
