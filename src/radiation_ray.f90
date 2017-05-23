@@ -55,8 +55,7 @@ module Radiation
   integer, parameter :: maxdir=26
 !
   real, dimension (mx,my,mz) :: Srad, tau, Qrad, Qrad0
-  !real, dimension (nx,ny,nz) :: Srad_noghost, kapparho_noghost
-  real :: Srad_noghost=0, kapparho_noghost
+  real, dimension (nx,ny,nz) :: Srad_noghost, kapparho_noghost
   real, dimension (mx,my) :: Irad_refl_xy
   real, target, dimension (nx,ny,mnu) :: Jrad_xy
   real, target, dimension (nx,ny,mnu) :: Jrad_xy2
@@ -1643,11 +1642,12 @@ module Radiation
 !  Read from file
 !
       case ('read_file')
-        open (lun_input, file=trim(directory_prestart)//'/Srad.dat', form='formatted')
-        !read (lun_input) Srad_noghost
-print*,'AXEL Srad_noghost=',Srad_noghost
+        open (lun_input, file=trim(directory_prestart)//'/Srad.dat', form='unformatted')
+        read (lun_input) Srad_noghost
         close (lun_input)
         Srad(l1:l2,m1:m2,n1:n2)=Srad_noghost
+        Srad(l1:l2,m1:m2,n1-1)=1e99
+        Srad(l1:l2,m1:m2,n2+1)=1e99
 !
 !  Nothing.
 !
@@ -1888,7 +1888,7 @@ print*,'AXEL Srad_noghost=',Srad_noghost
 !  Read from file
 !
       case ('read_file')
-        open (lun_input, file=trim(directory_prestart)//'/kapparho.dat', form='formatted')
+        open (lun_input, file=trim(directory_prestart)//'/kapparho.dat', form='unformatted')
         read (lun_input) kapparho_noghost
         close (lun_input)
         f(l1:l2,m1:m2,n1:n2,ikapparho)=kapparho_noghost
