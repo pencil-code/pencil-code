@@ -4164,9 +4164,11 @@ module General
 !  if datadir_snap (where var.dat, VAR# go) is empty, initialize to datadir
 !
 !  02-oct-2002/wolf: coded
+!  23-may-2017/axel: added directory_prestart, not to be erased after start
 !
-      use Cdata, only: iproc_world, directory, datadir, datadir_snap, directory_dist, &
-                       directory_snap, directory_collect
+      use Cdata, only: iproc_world, directory, datadir, directory_dist, &
+                       datadir_snap, directory_snap, directory_collect, &
+                       datadir_prestart, directory_prestart
 
       logical, optional :: lproc
 
@@ -4176,12 +4178,15 @@ module General
       call safe_character_assign(directory, trim(datadir)//'/proc'//chproc)
       call safe_character_assign(directory_dist, &
                                             trim(datadir_snap)//'/proc'//chproc)
+      call safe_character_assign(directory_prestart, &
+                                            trim(datadir_prestart)//'/proc'//chproc)
+!
       if (loptest(lproc)) then
         call safe_character_assign(directory_snap, &
-                                              trim(datadir_snap)//'/proc'//chproc)
+                                            trim(datadir_snap)//'/proc'//chproc)
       else
         call safe_character_assign(directory_snap, &
-                                              trim(datadir_snap)//'/allprocs')
+                                            trim(datadir_snap)//'/allprocs')
       endif
       call safe_character_assign(directory_collect, &
                                             trim (datadir_snap)//'/allprocs')

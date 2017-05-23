@@ -55,6 +55,8 @@ module Radiation
   integer, parameter :: maxdir=26
 !
   real, dimension (mx,my,mz) :: Srad, tau, Qrad, Qrad0
+  !real, dimension (nx,ny,nz) :: Srad_noghost, kapparho_noghost
+  real :: Srad_noghost=0, kapparho_noghost
   real, dimension (mx,my) :: Irad_refl_xy
   real, target, dimension (nx,ny,mnu) :: Jrad_xy
   real, target, dimension (nx,ny,mnu) :: Jrad_xy2
@@ -1561,6 +1563,7 @@ module Radiation
       logical, save :: lfirst=.true.
       integer, dimension(mx) :: ilnTT_table
       real, dimension(mx) :: lnTT
+      integer :: lun_input = 1
       integer :: inu
       integer :: ierr
 !
@@ -1637,6 +1640,15 @@ module Radiation
           call calc_Srad_W2(f,Srad)
         endif
 !
+!  Read from file
+!
+      case ('read_file')
+        open (lun_input, file=trim(directory_prestart)//'/Srad.dat', form='formatted')
+        !read (lun_input) Srad_noghost
+print*,'AXEL Srad_noghost=',Srad_noghost
+        close (lun_input)
+        Srad(l1:l2,m1:m2,n1:n2)=Srad_noghost
+!
 !  Nothing.
 !
       case ('nothing')
@@ -1675,6 +1687,7 @@ module Radiation
       real, dimension(mx) :: kappa_rad,kappa_cond,kappa_tot
       real :: kappa0, kappa0_cgs,k1,k2
       logical, save :: lfirst=.true.
+      integer :: lun_input = 1
       integer :: i,inu
 !
       select case (opacity_type)
@@ -1871,6 +1884,14 @@ module Radiation
 !
       case ('B2+W2') !! magnetic field and vorticity
         call calc_kapparho_B2_W2(f)
+!
+!  Read from file
+!
+      case ('read_file')
+        open (lun_input, file=trim(directory_prestart)//'/kapparho.dat', form='formatted')
+        read (lun_input) kapparho_noghost
+        close (lun_input)
+        f(l1:l2,m1:m2,n1:n2,ikapparho)=kapparho_noghost
 !
       case ('nothing')
         do n=n1-radz,n2+radz
