@@ -20,10 +20,10 @@ def dill_load(name, folder=False, sim=False):
     sim_path = '.'
     if sim: sim_path = sim.path
     if not folder:
-        if __exists__(__join__(sim_path, '.pc', name)):
-            folder = __join__(sim_path, '.pc');       print('~ Found '+name+' in '+folder)
-        elif __exists__(__join__(sim_path, 'data/.pc', name)):
-            folder = __join__(sim_path, 'data/.pc');  print('~ Found '+name+' in '+folder)
+        if __exists__(__join__(sim_path, 'pc', name)):
+            folder = __join__(sim_path, 'pc');       print('~ Found '+name+' in '+folder)
+        elif __exists__(__join__(sim_path, 'data/pc', name)):
+            folder = __join__(sim_path, 'data/pc');  print('~ Found '+name+' in '+folder)
         elif __exists__(__join__(sim_path, '.', name)):
             folder = __join__(sim_path, '.');         print('~ Found '+name+' in '+folder)
         else:
@@ -31,6 +31,7 @@ def dill_load(name, folder=False, sim=False):
 
     # open file
     file = __join__(folder, name)
+    from pencilnew.io import debug_breakpoint; debug_breakpoint()
     try:                                                   # check on existance
         if not __exists__(file) or not __exists__(__join__(sim_path, file)):
             print('!! ERROR: dill_load couldnt load '+file); return False
