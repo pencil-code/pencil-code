@@ -1,5 +1,6 @@
 from .der import *
 from .div_grad_curl import *
+from .simple_centered import simple_centered
 
 __all__ = ["xder","yder","zder",
            "xder2","yder2","zder2",
