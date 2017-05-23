@@ -83,7 +83,7 @@ class ParticleStalkData(object):
             print('! ')
             print('~ BACKUP SOLUTION: reading pstalk via pidly, starting IDL..')
 
-            from pencilnew.backpack.pidly import pidly
+            from pencilnew.backpack import pidly
             IDL = pidly.IDL(long_delay=0.05)	# start IDL engine
             from scipy.io.idl import readsav
             from pencilnew.io import mkdir
