@@ -12,7 +12,7 @@
 ! CPARAM logical, parameter :: lparticles=.true.
 !
 ! PENCILS PROVIDED np; rhop; vol; peh
-! PENCILS PROVIDED np_rad(ndustrad); npvz(ndustrad); npvz2(ndustrad); 
+! PENCILS PROVIDED np_rad(ndustrad); npvz(ndustrad); npvz2(ndustrad);
 ! PENCILS PROVIDED npuz(ndustrad); sherwood
 ! PENCILS PROVIDED epsp; grhop(3)
 ! PENCILS PROVIDED tausupersat
@@ -1542,7 +1542,7 @@ module Particles
               if (lfirst_proc_z) fp(k,izp)=-abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
               if (llast_proc_z) fp(k,izp)=abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
             else
-              fp(k,izp)= zp0*sqrt(-2*alog(r))*cos(2*pi*p)
+              fp(k,izp)= zp0*sqrt(-2*alog(r))*cos(2*pi*p)   ! generates a random gaussion number*zp0
             endif
           enddo
 !
@@ -2246,7 +2246,7 @@ module Particles
       endif
 !
       if (lbirthring_depletion) then
-        if (lcartesian_coords) then    
+        if (lcartesian_coords) then
          rr_tmp(1:npar_loc) = sqrt(fp(1:npar_loc,ixp)**2.0+fp(1:npar_loc,iyp)**2.0)
         else
          rr_tmp(1:npar_loc) = fp(1:npar_loc,ixp)
@@ -4359,10 +4359,10 @@ module Particles
 !  Particle growth by condensation in a active scalar field,
 !  calculate relaxation time.
 !  14-June-16/Xiang-Yu: coded
-      
+
               if (lsupersat) then
                  inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)
-                 if (supersat_ngp) then 
+                 if (supersat_ngp) then
                    l=ineargrid(k,1)
                    !call find_grid_volume(ix0,iy0,iz0,volume_cell)
                    !inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)/volume_cell
