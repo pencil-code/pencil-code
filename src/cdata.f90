@@ -246,6 +246,7 @@ module Cdata
   logical :: lglobal=.false., lglobal_nolog_density=.false.
   logical :: lvisc_hyper=.false.,lvisc_LES=.false.
   logical :: lvisc_smagorinsky=.false.
+  logical :: lvisc_smag=.false.
   logical :: lslope_limit_diff=.false.
   logical :: leos_temperature_ionization=.false.
   logical :: ltemperature_nolog=.false.
