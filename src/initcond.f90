@@ -4767,6 +4767,11 @@ module Initcond
 !          =-3.67 k^{-5/3}
 !          =-5 -> k^{-3}
 !
+!  Note that the rms value is unchanged if kpeak is changed.
+!  Thus, to reproduce an unchanged subinertial range after increasing kpeak,
+!  for example, one has to *increase* ampl by a factor 1/kpeak**2.5,
+!  e.g., from 3e-4 to 17e-4.
+!
 !  08-sep-14/axel: adapted from power_randomphase
 !
       use Fourier, only: fft_xyz_parallel, fourier_transform
