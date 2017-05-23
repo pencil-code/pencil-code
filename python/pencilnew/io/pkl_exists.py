@@ -8,18 +8,20 @@ def pkl_exists(name, folder=False):
 
   if (not name.endswith('.pkl')):    name = name+'.pkl'
 
+  from os.path import exists, join
+
   # if folder is not defined try to find file at typical places
   if not folder:
-      if __exists__(__join__('.pc', name)):
+      if exists(join('.pc', name)):
           folder = '.pc'
-      elif __exists__(__join__('data/.pc', name)):
+      elif exists(join('data/.pc', name)):
           folder = 'data/.pc'
       else:
           return False
 
-  file = __join__(folder, name)
+  file = join(folder, name)
   try:  # check on existance
-    if not __exists__(file):
+    if not exists(file):
       return False
     return True
 

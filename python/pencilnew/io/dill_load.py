@@ -10,9 +10,8 @@ def dill_load(name, folder=False, sim=False):
        or simply dill_load('sim'), since dill_load checks for following folders automatically: '.pc', 'data/.pc'
     """
 
-    import pencilnew.backpack.dill as dill
-    from os.path import join as __join__
-    from os.path import exists as  __exists__
+    import dill
+    from os.path import join, exists
 
     if (not name.endswith('.dill')): name = name+'.dill' # add .dill to name if not already ending with
 
@@ -20,25 +19,30 @@ def dill_load(name, folder=False, sim=False):
     sim_path = '.'
     if sim: sim_path = sim.path
     if not folder:
-        if __exists__(__join__(sim_path, 'pc', name)):
-            folder = __join__(sim_path, 'pc');       print('~ Found '+name+' in '+folder)
-        elif __exists__(__join__(sim_path, 'data/pc', name)):
-            folder = __join__(sim_path, 'data/pc');  print('~ Found '+name+' in '+folder)
-        elif __exists__(__join__(sim_path, '.', name)):
-            folder = __join__(sim_path, '.');         print('~ Found '+name+' in '+folder)
+        if exists(join(sim_path, 'pc', name)):
+            folder = join(sim_path, 'pc');       print('~ Found '+name+' in '+folder)
+        elif exists(join(sim_path, 'data/pc', name)):
+            folder = join(sim_path, 'data/pc');  print('~ Found '+name+' in '+folder)
+        elif exists(join(sim_path, '.', name)):
+            folder = join(sim_path, '.');         print('~ Found '+name+' in '+folder)
         else:
             print('~ Couldnt find file '+name);        return False
 
     # open file
-    file = __join__(folder, name)
-    from pencilnew.io import debug_breakpoint; debug_breakpoint()
+    filepath = join(folder, name)
+    print(filepath)
+    # from pencilnew.io import debug_breakpoint; debug_breakpoint()
     try:                                                   # check on existance
-        if not __exists__(file) or not __exists__(__join__(sim_path, file)):
-            print('!! ERROR: dill_load couldnt load '+file); return False
-        try:                                               # open file and return it
-            with open(file, 'r') as f: return dill.load(f)
-        except:
-            with open(__join__(sim_path, file), 'r') as f: return dill.load(f)
+        if not exists(filepath) or not exists(join(sim_path, filepath)):
+            print('!! ERROR: dill_load couldnt load '+filepath); return False
+        # try:                                               # open file and return it
+        with open(filepath, 'rb') as f:
+            obj = dill.load(f)
+        return obj
+        # except:
+            # with open(join(sim_path, filepath), 'rb') as f:
+                # obj = dill.load(f)
+            # return obj
 
     except: # if anything goes wrong
        print('!! ERROR: Something went wrong while importing dill-file!'); return False

@@ -94,8 +94,9 @@ class DiffusionData(object):
 
         # skip if diffusion already exists
         if not OVERWRITE and exists(name=out_name, folder=out_path):
-            from pencilnew.io import debug_breakpoint; debug_breakpoint()
-            self = load(out_name, folder=out_path)
+            self_tmp = load(out_name, folder=out_path)
+            for key in [a for a in dir(self_tmp) if not a.startswith('__')]:
+                setattr(self, key, getattr(self_tmp, key))
 
         else:
             #### start calculations ####
@@ -161,15 +162,15 @@ class DiffusionData(object):
             diffusion_std = np.std(diff_dvar)
 
             # create diffusion object
-            #self.diffusion = diffusion_mean
-            #self.diffusion_error = diffusion_std
-            #self.travel_distance = travel_distance
-            #self.mean_travel_distance = mean_travel_dist
-            #self.timerange = time_range
-            #self.variance = variance
-            #self.sigma = sigma
+            self.diffusion = diffusion_mean
+            self.diffusion_error = diffusion_std
+            self.travel_distance = travel_distance
+            self.mean_travel_distance = mean_travel_dist
+            self.timerange = time_range
+            self.variance = variance
+            self.sigma = sigma
             self.direction = direction
 
-            from pencilnew.io import debug_breakpoint; debug_breakpoint()
+            # from pencilnew.io import debug_breakpoint; debug_breakpoint()
             print('## saving results in' + join(out_path,out_name))
             save(obj=self, name=out_name, folder=out_path)
