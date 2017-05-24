@@ -4419,7 +4419,7 @@ module Solid_Cells
 !
   endsubroutine get_grid_mn_ogrid
 !***********************************************************************
-  subroutine time_step_ogrid(f_cartesian,dt)
+  subroutine time_step_ogrid(f_cartesian)
 !
 !  Perform time steps on the curvilinear grid, including interpolation of 
 !  flow variables back and forth between the overlapping grids.
@@ -4436,8 +4436,6 @@ module Solid_Cells
     integer :: j
     integer, save :: iterator=0
     real, dimension(3) :: alpha_ts_ogrid=0.,beta_ts_ogrid=0.,dt_beta_ts_ogrid=0.
-!
-    real, intent(in) :: dt
 !
 !  Coefficients for up to order 3.
 !
@@ -4482,7 +4480,6 @@ module Solid_Cells
 !  Perform a number of timestep equal to timestep_factor, such that the
 !  endtime t_ogrid is equal to t after the timesteps
 !
-
     do tstep_ogrid=1,timestep_factor
 !
 !  Set up df and ds for each time sub.
