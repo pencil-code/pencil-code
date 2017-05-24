@@ -280,8 +280,9 @@ endif
 totalvars = 0L
 num_tags = n_elements(indices)
 num_vars = 0
-offsetv=mvar eq 0 ? 'pos[0]+1' : '0'
-for tag = (mvar eq 0 ? nvar+1 : 1), num_tags do begin
+first_tag = 1
+if (mvar eq 0) then first_tag += nvar
+for tag = first_tag, num_tags do begin
   search = indices[tag-1].name
   dims = indices[tag-1].dims
   add_vars = dims
@@ -320,7 +321,8 @@ for tag = (mvar eq 0 ? nvar+1 : 1), num_tags do begin
   line = max (where (matches[0,*] ne ''))
   if (line lt 0) then continue
 
-  exec_str = 'pos = '+matches[1,line]
+  exec_str = 'pos = ' + matches[1,line]
+  if (mvar eq 0) then exec_str += '-' + str (pos[0]+1) ; [PABourdin] should this not be: pos[0]-1
   if (not execute (exec_str)) then $
       message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+str (line)+'.', /info
   if (pos[0] le 0) then continue
@@ -329,19 +331,18 @@ for tag = (mvar eq 0 ? nvar+1 : 1), num_tags do begin
 
   if (size (selected, /type) eq 0) then begin
     selected = [ tag-1 ]
-    executes = [ exec_str+'-'+offsetv]    ;-('+string(offsetv)+')']
+    executes = [ exec_str ]
     position = [ pos[0] ]
   end else begin
     selected = [ selected, tag-1 ]
-    executes = [ executes, exec_str+'-'+offsetv]   ;+string(offsetv)+')' ]
+    executes = [ executes, exec_str ]
     position = [ position, pos[0] ]
   end
   totalvars += add_vars
-  if totalvars eq mvar then begin      ; if sufficent MVAR variables are read, jump to beginning of MAUX section
-    ;offsetv=nvar-tag+1
-    tag=nvar   ;???
+  if (totalvars eq mvar) then begin      ; if sufficent MVAR variables are read, jump to beginning of MAUX section
+    tag=nvar   ;??? ; [PABourdin] please formulate your questions in readable text
   endif
-  if totalvars eq mvar+maux then break
+  if (totalvars eq mvar+maux) then break
 endfor
 ;
 ;  Make an array of structures in which to store their descriptions.
