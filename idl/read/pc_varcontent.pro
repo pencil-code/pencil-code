@@ -93,9 +93,10 @@ indices = [ $
   { name:'iaa', label:'Magnetic vector potential', dims:3 }, $
   { name:'iaphi', label:'A_phi', dims:1 }, $
   { name:'ibphi', label:'B_phi', dims:1 }, $
-;  { name:'ibb', label:'Magnetic field', dims:3 }, $
+  { name:'ibb', label:'Magnetic field', dims:3 }, $
   { name:'ijj', label:'Current density', dims:3 }, $
   { name:'iemf', label:'Current density', dims:3 }, $
+  { name:'itau', label:'tau', dims:1 }, $
   { name:'iggL', label:'ggL', dims:1 }, $
   { name:'iggT', label:'ggT', dims:1 }, $
   { name:'ihhL', label:'hhL', dims:1 }, $
@@ -202,9 +203,15 @@ inconsistent = [ $
 
 ; Inconsistent names in special modules (IDL-name is inconsistent with name in the main code):
 inconsistent_special = [ $
+  ;{ name:'iggL', inconsistent_name:'ggL' }, $
+  ;{ name:'iggT', inconsistent_name:'ggT' }, $
+  ;{ name:'ihhL', inconsistent_name:'hhL' }, $
+  ;{ name:'ihhT', inconsistent_name:'hhT' }, $
+  ;{ name:'itau', inconsistent_name:'tau' }, $
   { name:'ikappar', inconsistent_name:'kappar' }, $
   { name:'ilambda', inconsistent_name:'lambda' }  $
   ; don't forget to add a comma above when extending
+  ; (it is easier to start at the top, so you won't forget the comma...)
 ]
 
 ; Special variables:
