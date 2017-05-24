@@ -2107,7 +2107,8 @@ module Grid
         xi = (arcsinh(a) + arcsinh(b * (x - xyz0(dir)) - a)) / (coeff_grid(dir) * h)
 !
       case default func
-        call fatal_error('inverse_grid', 'unknown grid function ' // trim(grid_func(dir)))
+        call fatal_error('inverse_grid in grid.f90', &
+          'unknown grid function ' // trim(grid_func(dir)))
 !
       endselect func
 !
