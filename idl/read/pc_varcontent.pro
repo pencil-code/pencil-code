@@ -152,7 +152,7 @@ indices = [ $
 ]
 nvar=n_elements(indices)
 
-; Auxiliary variables:
+; Auxiliary variables: (see also explanation above)
 indices_aux = [ $
   { name:'iee', label:'Electric field', dims:3 }, $
   { name:'iQrad', label:'Radiative heating rate', dims:1 }, $
@@ -189,6 +189,8 @@ indices_aux = [ $
 naux=n_elements(indices_aux)
 
 ; Inconsistent names (IDL-name is inconsistent with name in the main code):
+; E.g., in Fortran we use "ifx", but some IDL scrips expect "ff" in varconent.
+; Note: the initial "i" is automatically removed and hence *not* inconsistent.
 inconsistent = [ $
   { name:'ifx', inconsistent_name:'ff' }, $
   { name:'ichemspec', inconsistent_name:'YY' }, $
@@ -201,17 +203,11 @@ inconsistent = [ $
   ; don't forget to add a comma above when extending
 ]
 
-; Inconsistent names in special modules (IDL-name is inconsistent with name in the main code):
+; Inconsistent names in special modules (see also explanation above):
 inconsistent_special = [ $
-  ;{ name:'iggL', inconsistent_name:'ggL' }, $
-  ;{ name:'iggT', inconsistent_name:'ggT' }, $
-  ;{ name:'ihhL', inconsistent_name:'hhL' }, $
-  ;{ name:'ihhT', inconsistent_name:'hhT' }, $
-  ;{ name:'itau', inconsistent_name:'tau' }, $
-  { name:'ikappar', inconsistent_name:'kappar' }, $
-  { name:'ilambda', inconsistent_name:'lambda' }  $
+  { name:'ikappar', inconsistent_name:'kappar' }, $ ; seems not inconsistent
+  { name:'ilambda', inconsistent_name:'lambda' }  $ ; seems not inconsistent
   ; don't forget to add a comma above when extending
-  ; (it is easier to start at the top, so you won't forget the comma...)
 ]
 
 ; Special variables:
