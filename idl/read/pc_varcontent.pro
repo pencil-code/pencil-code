@@ -339,10 +339,6 @@ for tag = first_tag, num_tags do begin
     position = [ position, pos[0] ]
   end
   totalvars += add_vars
-  if (totalvars eq mvar) then begin      ; if sufficent MVAR variables are read, jump to beginning of MAUX section
-    tag=nvar   ;??? ; [PABourdin] please formulate your questions in readable text
-  endif
-  if (totalvars eq mvar+maux) then break
 endfor
 ;
 ;  Make an array of structures in which to store their descriptions.
