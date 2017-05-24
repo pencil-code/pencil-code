@@ -1646,8 +1646,8 @@ module Radiation
         read (lun_input) Srad_noghost
         close (lun_input)
         Srad(l1:l2,m1:m2,n1:n2)=Srad_noghost
-        Srad(l1:l2,m1:m2,n1-1)=1e99
-        Srad(l1:l2,m1:m2,n2+1)=1e99
+        Srad(l1:l2,m1:m2,n1-1)=impossible
+        Srad(l1:l2,m1:m2,n2+1)=impossible
 !
 !  Nothing.
 !
