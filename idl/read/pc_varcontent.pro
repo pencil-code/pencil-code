@@ -244,11 +244,9 @@ endif
 ;  off by hand by setting noaux=1, e.g. for reading derivative snapshots.
 ;
 if (not keyword_set (noaux)) then begin
-
-  if ( (keyword_set(param.lwrite_aux) and maux gt 0) or $
-       (keyword_set(param.lwrite_aux) and ivar eq 0) or $
-       maux gt 0) then $
+  if ((keyword_set (param.lwrite_aux) and (maux gt 0)) or (keyword_set (param.lwrite_aux) and (ivar eq 0)) or (maux gt 0)) then begin
     indices = [ indices, indices_aux ]
+  endif
 endif
 ;
 ;  Predefine some variable types used regularly.
