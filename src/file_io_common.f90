@@ -123,7 +123,6 @@ module File_io
 !  to avoid unwanted file growth.
 !
 ! 11-jan-15/MR: coded
-! 24-may-17/MR: sleep after delete to avoid latency problems on NFSs
 !
       character(len=*), intent(in) :: file
 !
@@ -134,7 +133,6 @@ module File_io
       if (exists) then
         open (lun, FILE=file)
         close(lun, status='delete')
-        call sleep(1)
       endif
 !
     endsubroutine delete_file
