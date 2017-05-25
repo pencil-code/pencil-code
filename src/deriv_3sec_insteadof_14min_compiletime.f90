@@ -2440,859 +2440,836 @@ module Deriv
           do l=1,nx
             if (uu(l,2) > 0.) then
               df(l) = (f(nghost+l,m  ,n,k) - f(nghost+l,m-1,n,k))*dy_1(m)
-  AUTOMATIC else* AUTOMATIC C  df(l) = (f(nghost+l,m+1,n,k) - ************  *****$Id$
+            else
+              df(l) = (f(nghost+l,m+1,n,k) - f(nghost+l,m  ,n,k))*dy_1(m)
+            endif
+          enddo
+        else
+          df=0.
+          if (ip<=5) print*, 'der_upwind1st: Degenerate case in y-direction'
+        endif
+      elseif (j == 3) then
+        if (nzgrid /= 1) then
+          do l=1,nx
+            if (uu(l,3) > 0.) then
+              df(l) = (f(nghost+l,m,n,k  ) - f(nghost+l,m,n-1,k))*dz_1(n)
+            else
+              df(l) = (f(nghost+l,m,n+1,k) - f(nghost+l,m,n,k  ))*dz_1(n)
+            endif
+          enddo
+        else
+          df=0.
+          if (ip<=5) print*, 'der_upwind1st: Degenerate case in z-direction'
+        endif
+      endif
 !
-!** AUTOMATIC CPndif* AUTOMATICenddo* AUTOMATPARAM.INC GENERdf=0.* AUTOMATICif (ip<=5) print*, 'der_upwind1st: Degenerate case in y-direction'
-! variablhe number oPARAed bj == 3) then* AUTOMATed bnzgrid /= 1***************  do l=1,nx* AUTOMATIC Ced buu(l,3) > 0.dule Deriv
-!
-  usATION ***********************  ***
-! Declare (f,n-1eneratz_1(n** AUTOMATIC CPARAM.INC GENERATION *******************,n+_derblic :: initializ
-  puiv, finalize_deriv
-  puhe number of f array
-! variables and auxiliary variables added by this module
-!
-! CPARAM integer, parameter :: nghzst = 3
-!
-!***********************he nu!* AUTendsubroutine ! CPARAM inte
-!* public :: der_onesided_4_slice
-  public :: der_onesided_4_slice_other* AUT public :: der_onesided_4_slice_main(f,sgn,k,df,pos,j)
-!
-!   Calculmetex/y/z-derivative on a yz/xz/xy-c ::  at ****point pos. :: sUses a one-
-  pu 4th order stencil_from_sgn = +1 forcoefward difference,f0, der-_coef1backer2_scoef2, der2.ic :: sBecause of its original intenm_4ter  in rela
-!
-! to solving :: scharacteristic equger, ss
-  boundaries (NSCBC), thisblic should :: sreturn only PARTIAL derded_ders, NOT COVARIANT. Applying**** right_coef0caler :factors and conn 3
-!
-! termser :: i instead be done w****coef0eter ::: icunt_der2  = 2         !D :: icou7-jul-08/arne: coded ::   implreal, dimensug  (mx,my,mz,mfarray) :: number o!DERCOUNT
-!debug :,:ter :d: icount_derer ::ac       RCOUgerer :  pukx_derj         RCOUNt(in) er ::,k
-  pu_other 8     !DERCOoutDERCOUNT = 8     ****==odule Deriv
-!
-  *****x****/ction
-    module  ger,=1./12.*dx_1(pos** AUTOMATICdf =ger,*(-sgn*25*f' va,m1:m2,n1:n2,k)& Cdata
-!
-  impleld
-+dure48er_oth endi1er  ! derivative of another field
- edure36erface
-!
-  2er  ! derivative of another field
-  endi1the der func3nterface der2                 ! Overload  erface
-!
-  4er  ! derivativ** AUTOMATles and auxiliary variables added by this module
-!
-! CPmod
-  public :: ger, parameter :: nghxst = 3
-  ! Overload the der!
-!*******************************==2********************yure der_main   ! derivative of an 'm$
-!
- variable
-    module procedure der_l1:l2
-  puerivative of another field
-  endinterfded_4_sli
-!
-  ine der2                 ! Overload the nction
-    mod   module procedure der2_main   ! derivanction
-    mod3r' variable
-    module procedure der2_onction
-    mod4ive of another field
-  endinterface
-!
-  interface derij                 ! Overload the der function
-    module ost = 3
-!
-!*******************************==**************************der_main   ! derivative of an 'm findinterface
-!
-  interface  der_onesided_4_r  ! dnt_de          ! Overload the der functionbval_from
-!
-  inedure  der_onesided_4_slice_main  ! de_scl
-    modul 'mvar' variable
-    module procedure  d_scl
-    modul3lice_main_pt
-    module procedure  der__scl
-    modul4 another field
-  endinterface
-!
-  interface derij                 ! Overload the der function
-    module ublic :: der_x,der2_x
-  public :: der_zer2_z
-  public :: der_mod
-  public :: heatf
-  public :: der_onesided_4_slice
-  public :: der_onesided_4_slice_other
-  public :: der2_minmod
-  public :: heatf_ptlux_deriv_x
-lll,mmm,nnnublic :: made us    !  23-sep-16/MR: added in. One rom_4tesided_dersis ct_ghostsicounatval_ ann, b(: removed olic :: 15-oct-09/Nataliaerij = 6         !DERCOUNT
-!debug  integer, parameter :: icount_der
-!
-  UNT
-!debug  integer, parameter :: icount_d: removed ofer_other = 8     !DERCOUNT
-!
-  inte: removed ofe der                 ! Overload the der function
-    modulepos=lll  module procedure der_main   ! derivative of an 'mvar' variable
-    module procedure der_other/180.
-!
-ve of another field
-  endinterface
-!
-  int"
-        call fatal_error('irload the der functio"
-        call fatal_error('initiaerivative of an rmsg)
-!
-      endselect
-!
-    endsur2_other  ! der"
-       other field
-  endinterface
-!
-  interface derij                 ! Overload the der function
-    module procedure derij_main   ! derivative of an 'mvar' variable
-    module procedure .093mmmocedure derij_other  ! derivative of another field
-  endinterface
-!
-  interface  der_onesidll_slice      call fatal_error('initialize_+wolf:   module)
-!
-      endselect
-!
-    endsubrouwolf: adapte2ze_deriv
-!***************************wolf: adapte3*******************************
-    swolf: adapte4_main(f, k, df, j, ignoredx)
-!
-!  calculate derivative df_k/dx_j
-!  accurate to 6th order, explicit, periodic!
-  interface bval_from_neumann
-    module procedure bval_f.093nnre bval_from_neumann_scl
-    module procedure bval_from_neumann_arr
-  endinterface
-!
-  inter removerom_3rd
-    module procedure bval_fro  logical module procedure bval_from_3rd_arr
-  endise_ders) der_c 'mvar' variable
-    module proceduise_ders) der_cscl
-    module procedure bval_from_ise_ders) der_cace
-!
-  contains
-!
+    endsubroutine der_upwind1st
 !***********************************************************************
-    subroutine initialize_deriv
+    subroutine der_onesided_4_slice_main(f,sgn,k,df,pos,j)
 !
-!  Initialize stencil coefficients
+!   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos.
+!   Uses a one-sided 4th order stencil.
+!   sgn = +1 for forward difference, sgn = -1 for backwards difference.
 !
-!  23-sep-16/MR: added in_pt
-  public :: der_onesided_4_slice
-  public :: der_onesided_4_slice_other
-  public :: der2_minmod
-  public :: hotherlux_der_x
-  public :: set_ghosts_for_onesided_ders
-  public :: bval_from_neumann, bval_from_3rd, bval_from_4th
+!   Because of its original intended use in relation to solving
+!   characteristic equations on boundaries (NSCBC), this sub should
+!   return only PARTIAL derivatives, NOT COVARIANT. Applying the right
+!   scaling factors and connection terms should instead be done when
+!   solving the characteristic equations.
 !
-  real :: der2_coef0, der2_coef1, der2_coef2, der2_coef3
+!   7-jul-08/arne: coded.
 !
-!debug  integer, parameter :: icount_der   = 1         !DERCOUNT
-!debug  integer, parameter :: icount_der2  = 2         !DERCOUNT
-!debug  integer, parameter :: icount_der4  = 3         !DERCOUNT
-!debug  integer, parameter :: icount_der5  = 4         !DERCOUNT
-!debug  integer, parameter :: icount_der6  = 5         !DERCOUNT
-!debug  integer, parameter :: icount_derij = 6         !DERCOUNT
-!debug  integerter :: icount_der_upwind1st = 7 !DERCOUNT
-!debug  integer, parameter :: icount_d_other = 8     !DERCOUNT
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (:,:) :: df
+      real :: fac
+      integer :: pos,k,sgn,j
 !
-  inrface der                 ! Overload the der function
-    module procedure der_main   ! derivative of an 'mvar' variable
-    module procedure der_other  ! derivave of another field
-  endinterface
-!
-  interface der                ! Overload the der function
-    modu procedure der2_main   ! derivative of an 'mvar' varble
-    module procedure der2_other  ! derivative ofnother field
-  endinterface
-!
-  interface derij                 ! Overload the der function
-    module procedure derij_main   ! derivative of an 'mvar' variable
-    module procedure derij_other  ! derivative of another field
-  endinterface
-!
-  interface  der_one(sided_4_slice    )-function
-    module pro)ve of another field
- 
-  endi23************
-x(f,df)
-!
-!  routine der_x(f,dand. lsph derivative operating edure1x-dependent 1-D arrand. lsproutine der_x(f,dded_4_s x derivative operating on anx-dependent 1-D arrintent(iroutine der_x(f,d_4_slic))lic er ! derivative of another field
-    module procedure  der_onesided_4_slice_other_pt
-  endinterface
-!
-  interface bval_from_neumann
-    module procedure bval_from_neumann_scl
-    module procedure bval_from_neumann_arr
-  endinterface
-!
-  interface bval_fromx derivative operating on anal_from_3rd_scl
-    modulerom der_z; note that f is no
-  endinterface
-!
-  interfx derivative operating on an procedure bval_from_4th_stion'
-      endif
-!
-    endsufrom_4th_arr
-  endinterfanx) :: fac
-!
-      if (nxgrid/=1) then
-        fac=(1./60)*dx_1(l1:l2)
-        df=fac*(+ 45.0*(f(l1+1:l2+ublic :: der_x,der2_x
-  public :: der_z,der2_z
-  public :: der_            -  9.0*(f(c = a * dx_1(l1:l2)
-          df=fac*(+ 45.0*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
-                  -  9.0*(f(!   5-jan-/MR: removed offset mans_for_onesided_ders
-!
-      use General, only: indgen
-
-      sel :: icose (der2_type)
-!
-      case)+f(l1-2:l2-axel:ERCOnged file nameparamhorter verdebuds  ) df = df * r1_mn
-          if (withdx .and. lc0./180.
-        der2_coef2=-27./180.; der2_coef3=2./180.
-!_other = 8     !DERCOUNT
-!
-  in_coef0=-0.75; der2_coef1=0.34375
-        der2_coef2=0.125; der2_coef3=-00.09375
-!
-      case default
-        write(unit=errormsg,fmt=*) &
-             "der2_type doesn't exist"
-     if (ip<=5) print*, 'der_x: Degenderiv',errormsg)
-tion'
-      endif
-!
-    endsubroutine initialize_d**********************************************************
-    subroutine der2_x(f,ubroutine der_maif, k, df, j, ignoredx)
-!
-!  calculate derivative df_k/dx_j
-!  accurate to 6th orde-490.0*f( function
-    module procedurivative of an 'mvar' variable
-    module procedure dl: coded
-!  18-jul-98/axel: corrected mx -> my and mx -> mz in all y and z ders
-!   1-apr-01/ax****wolf: penc
-!
-  olf: adapted for x derivative operating on an x-depe  endsubroutine d!
-    endsubroued 1/from der_z; note that f is not the f*****************!
-    endsubrou 20-s x derivative operating on an df2)
-!
-!  z derivz-depe!
-    endsubroux
-!
- (nx) :: fac
-!
-      if (nxgrid/=1) then
-        fac=(1./60)*dx_1(l1:l2)
-        df=fa       -  9.0*(f(n1+2:n2+2)-f(!
-  interface bval_from_neumann
-    module procedure bval_frtional :: ignoredx
-!
-      real, parameter :: a = 1.0 / 60.0
-      real, dimension(nx) :: fac
-      logical  if (ip<=5) print*, 'der_x: Degeneise_ders) der_cation'
-      endif
-!
-    endsubroutRCOUNT
-!debug   **********************************count(k,icount_d********
-    subroutine der2_x(f,desent(ignoredx))    real, dimension (mz), intent(in)  :: f
-      real, dimension (nz), intent(out) :: df2
-!
-      real, dimension  initialize_deriv
-!
-!  Initialize stencil coefficients
-!
-!  23-sep-16/MR: adde490.0*f(
-  public :: der_onesided_4_slice
-  public :: der_onesided_4_slice_other
-  public :: der2f  !Dize_DERCOic :: Dummyz,der2_z
-  public :: hifts by explici public :: der_onesided_4_slice
-  public :: der_onesided_4_slice_other
-  public :: der2_mii_3d_inds(f &
- ad t,j,lignored,lnometriclic :: dstru  faster!
-or compatibilitucti!  26-mar-12/MRerij = ds  ) df = df * r1_mn
-          if ( non-coorr :: icount_der_upwind1st = nxr non-coord-coord baUNT
-!debuter :: i, dimension (mx,my,mz) :: f
-:: r       logicERCOn (:) :: df
-      op-2)) Degenace.
-!  2 5-jun-04/ parameter :: COUNT
-!debuow results dimensi:: ad tr = 8     !DERCOUNT
-!
-  injr inteace.
-!  25-jun-04/                 ! Overload the dcall fpe)
-_error(
-! Cverload t','URAM i    not implement+3)+or nonuniform_neums'lic ::lf: adn-equtger, paraavoiOUNTmpiler warnings  = unused variablesd the der fpresERCOace.
-!  ).and.id/=1) th-jun-04/t) e of anotherdf  =dimen + re  der_1,1) + er = 8  z
-  public :: derverload t2/tony: coded - duplicate der_main but without k subscript
-!             
-  pubdimensi funebug  heatflux expli_x(f, inh,ger,, topbotlic :: slf: adapted fl2+2)+f7-ap1-feb-07/axel: added 1/er  Gparaml, = 3 : keep_j,1) + 1_quiet         !DERCOUNT
-!debu  integer, paramet)))
-DERCOIN)r :: icount_der_upwind1st (rs for non-coord        if (sdf>inher2_coef1=270 
-        endif
-         if       if (sdf>nr, parameter :: i       endif
-         if (j==2) then
-   else
- ) :: fac
-n)-f(l1-3:l2-3,m = .trueariablesrs) d x-direction'
-     (f** AUTOM(l1_:l2_,m-1,n)) &
-      inh             -  9.0*(f(l1_:l2_,m+fac             -  9.0*(f(l1_:l2_,m+else
-     n)-f(l13:l2+3,m,n)-f(l1-3:l2-3,m2/tony: coded - duplicate der_main but without k subscript
-!                          thebval_from_neumann_scl(f,else
-     dir,vallic :: et_ghostss:: icUNT
-!dey value 
-   :: icN       BC d f/d x_i =nera emploter ridsal_from_4toef2, der2    mulae.endifi, bvconstant :: ico30-sep-16b-07/axel: added 1/r and 1/pomega   integer,*ter :: icountunt_der2 (LENproc(m)
-      parameter :: icou     i 'der2_x: Degenval
-              -  9k1_:l2_,m,f (l1_:l2=='bot'*******************   inction
-    module   k=l1  ! derivati(l1,:,:,j*****-val*60 'mv + 31_mnf(k+l_coords) derivative operating r_z; note that f i 45(m)
-   2      else
-            df=0.
-            if (ip+ 40(m)
-   3      else
-            df=0.
-            if (ip<=225m)
-   4 'der_other: Degenerate case in z-direction'
-     72m)
-   5      else
-            df=0.
-            if (ip<= 1(m)
-   6_coords))/147ariables a********l1_:l2dule procedure d    m  if (lspheric:,ml_cods) df=df*r1_mn*yin1th(m)
- :,       else
-            df=0.
-            if (ip<=5) prinmens, 'd_other: Degenerate case in z-direction'
-          emensif
-      endif
-      endif
-!
-    endsubroutine der_othemens!******************************************************mens***********
-    subroutine der_pencil(j,pencil,df)
-!
-! mensalcute first derivative of any x, y ****************    nnov-07/anders: a:,n1ed from der
-!
-   z  real, dimemensio(:) :: pencil,df
-      integer :: j
-!
-      intent(inin)  :j, pencil
+      intent(in)  :: f,k,pos,sgn,j
       intent(out) :: df
-!
-!  x-derivative
-!
-!
-    if (j==1) then
-        if (size(pencil)/=mx) then
-          if (lroot) print*, 'der_pencil: pencil must be of s size  for x derivative'
-          call fatal_error('der_pepencilte first derivative***************l2_,m,n+3)-f(l1_:l2_,m,n-3)))
-          2 if (lspherica, 'der_ot= (df*r1_mn*sin1th(m)
-  -       else
-            df=0.
-            if (i<=5) print-, 'der_other: Degenerate case in z-direction'
-         en-if
-        endif
-      endif
-!
-    endsubroutin der_other-!********************************************************-*************
-    subroutine der_pencil(j,penci,df)
-!
-!  -alculate first derivative of any x, y or z pencil.
-!
-!  01-=(1./60)*dy_1(:,m :: j, 
-              real, dimencil(m1:m2+1)-pencil(m1-1:m2-1)) &
-            -  9.0*(p1./6 :: j, pencil
-      intent(out) :: df
-!
-!  x-erivative
-!
-encil1+3:m2+3)-pencil(m1-3:m2-3)))
-      else if (j==3)+2)-      if (lroot) print*, 'der_pencil: pencil ust be of sin
-        if (lroot) print*, 'der_pencil: pencil must bnt*,il','')
-        endif
-        df(l1:l2)=(1./60)*dx_1(l1:lr_pencil','')
-  :,n-2:l2
-           1:l2+1)-pencil(l--1:l2-1)) &
-            -  9.0*(pencil(l1+2l2+2)-pencil(l--2:l2-2)) &
-            +      (pencil(l1+3l2+3)-pencil(l--3:l2-3)))
-      else if (j==2) then
-!
-!  yderivative
-!
- -      if (size(pencil)/=my) then
-          f (lroot) prin-*, 'der_pencil: pencil must be of size my fr y derivative-
-          call fatal_error('der_he nucil coefficients
-!
- else
-            df=l_coords)     df=df*r1_mn
-            if (lcylindrical_coords)   df=df*rcyl_mn1
-          else
-    3rd df=0.
-            if (ip<=5) print*, 'der_other: Degenerate case in y3rd kindion'
-          endi*ff
-        elseif (j==3) then
-          if (nzgrid/=1) then
-            fac=(1./60)*dz_1(n)
-            df=fac*(+ 45.0*(f(l1_:l2_,m,n+1)-f(l1_:l2_,m,n-1)) &
-                    -  9.0*(f(l1_:l2_,m,n+2)-f(l1_:l2_,m,n-2)) &
-                    +      (f(l1_:l2_,m,n+3)-f(l1_:l2_,m,n-3)))
-            if (lspherical_coords) df 1th(m)
-          else
-            df=0.
-      <=5) print*, 'der_other: Degenerate case in z-d        endif
-        endif
-      endif
-!
-    e der_other
-!***********************************************************
-    subroutine der_pen,df)
-!
-!  Calculate fi(rst +df*r1_mn*sother field
-   any x, y or z pencil.
-!
-!  01-nov-07/anders: adapted fromnsion (nxmension (:) :: pencil,df
-      integer  intent(in)  :: j, pencil
-      intent(out) ::erivative
-!
-      if (j==1) then
-        if (simx) then
-          if (lroot) print*, 'der_pencust be of size mx for x derivative'
-          cror('der_pencil','')
-             derycall_count(k,icount_der2l2)=(1./60)*dx_1(l1:l2)*( &
-            + 45.0*(   if (nxgrl(l1-1:l2-1)) &
-            -  9.0*(l2+2)-pencil(l1-2:l2-2)) &
-            +      (l2+3)-pencil(l1-3:l2-3)))
-      else if (j==2) derivative
-!
-        if (size(pencil)/=my) thenf (lroot) print*, 'der_pencil: pencil must be or y derivative'
-                  derzother field_error('der_pencil','')
-        endif
-        df(m1:m2)=(1./60)*dy_1(m1:m2)*( &
-  nsion (nx)cil(m1+1:m2+1)-pencil(m1-1:m2-1)) &
- -  9.0*(pencil(m1+2:m2+2)-pencil(m1-2:m2-2)) &
- +      (pencil(m1+3:m2+3)-pencil(m1-3:m2-3)))
-if (j==3) then
-!
-!  z-derivative
-!
-        if ()/=mz) then
-          if (lroot) print*, 'der_pil must be of size mz      =df*r1_mn*scall_count(k,icount_der2,j,1) + 1 !DERCOUNT
-!r_pencil','')
-        endif   if (nxgri60)*dz_1(n1:n2)*( &
-            + 4(n1+1:n2+1)-pencil(n1-1:n2-1)) &
-            - l(n1+2:n2+2)-pencil(n1-2:n2-2)) &
-            +il(n1+3:n2+3)-pencil(n1-3:n2-3)))
-      else
-  root) print*, 'der_pencil: no such direction j=  call fatal_error('demn2
-          ecoef3*(f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))al_coords.or.lspherical_coo       call fatal_error("der_pencil","Not implenon-cartesian")
-!
-    endsubroutine der_pencil
-**************************************************
-    subroutine der2_main(f,k,df2,j,lwo_line calculate 2nd derivative d^2f_k/dx_j^2
-!  accu order, explicit, perimn2
-          e                 +der2_c explicit construction -> x6.5 fas
-!
-!   l_coords)     df=df*r1_mn
-            if (lcylindrical_coords)   df=df*rcyl_mn1
-          else
-    4th df=0.
-            if (ip<=5) print*, 'der_other: Degenerate case in yh
-!
-jun-04/to^2        ^2 adapted for non-equidistant grids
-!  23-sep-16/MR: introduced offset variables dec(1./60)*dz_1(n)
-            df=fac*(+ 45.0*(f(l1_:l2_,m,n+1)-f(l1_:l2_,m,n-1)) &
-                    -  9.0*(f(l1_:l2_,m,n+2)-f(l1_:l2_,m,n-2)) &
-                    +      (f(l1_:l2_,m,n+3)-f(l1_:l2_,m,n-3)))
-            if (lspherical_coords) df= 313*******       else
-            df=0.
-      + 526_other
-, 'der_other: Degenerate case in z-d- 508    endif
-        endif
-      endif
-!
-    e+ 297(m)
-   !***********************************-  9****************** _coords) df2=df2*r2_mn*sin2th137!
-!  Calculate     -812      12
-!
-dxer_call_count(k,icount_der2,j,1) + 1 !DERCOUNT
-!
-      if (j==1) then
-     , dimensiomension (:) :: pencil,df
-      integerj
-!
-      in)  :: j, pencil
-      intent(out) ::: df2
-!
-!d
-!
-      if (j==1) then
-        if (si_count(k,i          if (lroot) print*, 'der_penc           size mx for  der_call_count(k,icount_der2,j,1) +pencil','')T
-!
-!
-      if (j==1y2_coef3*(f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
-          if (.not.lequidi       df2=fl(l1-1:l2-1)) &
-            -  9.0*(         +27l(l1-2:l2-2)) &
-            +      (n)) &
-      l(l1-3:l2-3)))
-      else if (j==2) )+f(l1-2:l2-!
-        if (size(pencil)/=my) then(f(l1+3:l2+3rint*, 'de-3:l2-3,m,n)))
-          if (.not.lequiive'
-    T
-!
-!
-      if (j==1z
-                  +der2_coef1*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
-                  +der2_coe, dimensioncil(m1+1:m2+1)-pencil(m1-1:m2-1)) &
- j
-!
-      incil(m1+2:m2+2)-pencil(m1-2:m2-2)) &
-: df2
-!
-!deencil(m1+3:m2+3)-pencil(m1-3:m2-3)))
-_count(k,icthen
-!
-!  z-derivative
-!
-        if (           n
-           der_call_count(k,icount_der2,j,1) +  of size mT
-!
 !
       if (j==1) then
         if (nxgrid/=1) then
-          fac=r_pencil','')
-        endif       df2=fa60)*dz_1(n1:n2)*( &
-            + 4         +270pencil(n1-1:n2-1)) &
-            - n)) &
-       -pencil(n1-2:n2-2)) &
-            +)+f(l1-2:l2-2)-pencil(n1-3:n2-3)))
-      else
-  (f(l1+3:l2+3,, 'der_pe-3:l2-3,m,n)))
-          if (.not.lequid_error('then
-            call der(f,df,j)
-            df2=df2+dx_tilde(l1:l2)al_coords.or.lspherical_coo else
-         tal_error("der_pencil","Not implef (j==2) then
- )
-!
-    endsubroutine der_pencil
-    fac=(1./180*********************************490.0*f(l1:l2,mtine der2_main(f,k,df2,j,lwo_linef(l1:l2,m+1,n)+ deriva,m-1,n)) &
-                   - 27.0*(f(l1it, pe2,n)+f(l1:l2,m-2,n)) &
-                   +  2. explicit construction -> x6.5 fas*******2/tony: coded - duplicate der_main but without k subscript
-!                          theset_*****s_foent(out) ::derthe             ifl2nd)
-rids
- fac=(1./60)*adm_4tnteger ::parame     elsdebug r: Degenerate_from_r x derivativt) pri*****nerate sett     or ha      !DEseconesided_ders
-x for x derivativecor= 3
-g  ial_from_4t    if bug  oef1,irsdx_1nery: ind_from_5-jan-17b-07/s!debifi  inas       zonlyeratescil(l1stERCOU2)
+          fac=1./12.*dx_1(pos)
+          df = fac*(-sgn*25*f(pos,m1:m2,n1:n2,k)&
+                  +sgn*48*f(pos+sgn*1,m1:m2,n1:n2,k)&
+                  -sgn*36*f(pos+sgn*2,m1:m2,n1:n2,k)&
+                  +sgn*16*f(pos+sgn*3,m1:m2,n1:n2,k)&
+                  -sgn*3 *f(pos+sgn*4,m1:m2,n1:n2,k))
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in x-directder_onesided_4_sliceion'
         endif
-        df2=(1.alsog  i    ncil(l1-1:lann, b    l1)+peFred spott= 6          Degenerate case inloptest1_:l2_,m      df=fac*(+ 45.0*(f(l1_:l2_,m,n+1)-f(l1_:l2_,m,n-1)) &
-                    -  9.0*(f(l1_:l2_dimensionnteger :: j
-!2nd1_:l2_,m,n-2)) &
-   ,ofplicit             e( then***************off==(1./60)PARAM.INC GENatal3  real, dimension            +      (f(l1_:l2_,m,n+3)-f(l1_:l2_,m,n-3)eriv
-!
-  use M    -1,l1-off,-  if (lsphererick_coords=7)
-          else
-            df=0.
-  -21   intent(in)  :: f,j
-      intent(ou+3der_ndif
+      elseif (j==2) then
+        if (nygrid/=1) then
+          fac=1./12.*dy_1(pos)
+          df = fac*(-sgn*25*f(l1:l2,pos,n1:n2,k)&
+                  +sgn*48*f(l1:l2,pos+sgn*1,n1:n2,k)&
+                  -sgn*36*f(l1:l2,pos+sgn*2,n1:n2,k)&
+                  +sgn*16*f(l1:l2,pos+sgn*3,n1:n2,k)&
+                  -sgn*3 *f(l1:l2,pos+sgn*4,n1:n2,k))
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in y-direction'
         endif
-      endif
-!
- -       !*******************************+l(m1+2:*************
-    subroutine der_-1:m2-1alculate se
-            df=0.
-     +    7_coordsumber of f array
-! variables  any x, y or z pen &
-             m +27m.0*(pencil(m1+1:m2+1)+p:,encim1-1:m2mension (:) :: pencil,df
-      intil(m1+in)  :: j, pencil
-      intent(out      
-!
-      if (j==1) then
-        ifil(m1-          if (lroot) print*, 'der_n
-!
-!  size mx for x derivative'
-        ncil)pencil','')          if (lroot) &
-      mens    print*, 'der2_pencil: pencil must be of s******** &
-             n +27n     call fatal_error('deder2encil',''l(l1-1:l2-1)) &
-            -  9180)*dz_l(l1-2:l2-2)) &
-            +   ) &
-    l(l1-3:l2-3)))
-      else if (j=2+1)+pen!
-        if (size(pencil)/=my)  - 27.0*rint*, 'der_pencil: pencil must b-2)) &
-ive'
-          +  2.0*(pencil(n1+3:n2+3)3)+penprint*, 'der2_pencil: pencil_error('der_pencil','')
-        endif
-        df(m1:      2+1,l2+ sizl(m1+1:m2+1)+pencil(m1-1:m2-cil(m1+1:m2+1)-pencil(m1-1:m2-1))il(m1+2ncil(m1+2:m2+2)-pencil(m1-2:m2-2)       encil(m1+3:m2+3)-pencil(m1-3:m2-3il(m1-3then
-!
-!  z-derivative
-!
-        n
-!
-!  n
-          if (lroot) print*, 'dencil)/ of size m          if (lroot) &
-       -      print*, 'der2_pencil: pencil must be of size mz fr z derivative'
-eal,mdimension (nx) :: dfder2_pencil','')60)*dz_1(n1:n2)*( &
-           180)*dz_1pencil(n1-1:n2-1)) &
-          ) &
-     -pencil(n1-2:n2-2)) &
-         2+1)+penc)-pencil(n1-3:n2-3)))
-      els - 27.0*(, 'der_pencil: no such direction-2)) &
- _error('      +  2.0*(pencil(n1+3:n2+3)+     l(n1-3:n2-3)))
-      else
-        if (lroot) prin*, 'der2_pencil:eal,nnoredx)) then
-            call fatal_etal_error("der_pencil","Not iendif
-!
-   )
-!
-    endsubroutine der_pen***************************************************tine der2_main(f,k,df2,j,lwo_utine der3( derivative d^2f_k/dx_j^2
-!  aate 3rd deit, peve of a scalar, get scalar
-!
-!  10-feb-06/anders: adapted from der5
-!
-      r explicit construction - if (j==1) then
-        if (l_coords)     df=df*r1_mn
-            if (lcylindrical_coords)   df=df*rcyl_mn1
-          else
-            ar(l1+            if (ip<=5) print*, 'der_other: Degenerate case in y-direction'
-          endif
-        elseif (j==3) then
-          if (nzgriddepz
-  s
-  x,y         fac=(1./60)*dz_1(n)
-            df=fac*(+ 45.0*(f(l1_:l2_,m,n+1)-f(l1_:l2_,m,n-1)) &
-                    -  9.0*(f(l1_:l2_,m,n  df=fac*(+ 7 !DERCOf(l1_:l2_,m,n-2)) &
-                    +      (f(l1_:l2_,m,n+3)-f(l1_:l2_,m,n-3)))
-            if (lspherical_coords) df=df*r1_mn*sin1th(m)
-          else
-            df=0.
-            if (ip<=5) print*, 'der_other: Degenerate case in z-direction'
-          endif
+      elseif (j==3) then
+        if (nzgrid/=1) then
+          fac=1./12.*dz_1(pos)
+          df = fac*(-sgn*25*f(l1:l2,m1:m2,pos,k)&
+                  +sgn*48*f(l1:l2,m1:m2,pos+sgn*1,k)&
+                  -sgn*36*f(l1:l2,m1:m2,pos+sgn*2,k)&
+                  +sgn*16*f(l1:l2,m1:m2,pos+sgn*3,k)&
+                  -sgn*3 *f(l1:l2,m1:m2,pos+sgn*4,k))
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
         endif
       endif
-!
-    endsubroutine der_other
+    endsubroutine der_onesided_4_slice_main
 !***********************************************************************
-    subroutine der_pencil(j,pencil,df)
+    subroutine der_onesided_4_slice_main_pt(f,sgn,k,df,lll,mmm,nnn,j)
 !
-!  Calculate first derivative of any x, y or z pencil.
+!  made using der_onesided_4_slice_main. One sided derivative is calculated
+!  at one point (lll,mmm,nnn)
 !
-!  01-nov-07/anders: adapted from der
+!  15-oct-09/Natalia: coded.
 !
-      real, dimension (:) :: pencil,df
-      integer :: j
+      real, dimension (mx,my,mz,mfarray) :: f
+      real  :: df
+      real :: fac
+      integer :: pos,lll,mmm,nnn,k,sgn,j
 !
-      intent(in)  :: j, pencil
+      intent(in)  :: f,k,lll,mmm,nnn,sgn,j
       intent(out) :: df
 !
-!  x-derivative
+      if (j==1) then
+       pos=lll
+        if (nxgrid/=1) then
+          fac=1./12.*dx_1(pos)
+          df = fac*(-sgn*25*f(pos,mmm,nnn,k)&
+                  +sgn*48*f(pos+sgn*1,mmm,nnn,k)&
+                  -sgn*36*f(pos+sgn*2,mmm,nnn,k)&
+                  +sgn*16*f(pos+sgn*3,mmm,nnn,k)&
+                  -sgn*3 *f(pos+sgn*4,mmm,nnn,k))
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in x-directder_onesided_4_sliceion'
+        endif
+      elseif (j==2) then
+       pos=mmm
+        if (nygrid/=1) then
+          fac=1./12.*dy_1(pos)
+          df = fac*(-sgn*25*f(lll,pos,nnn,k)&
+                  +sgn*48*f(lll,pos+sgn*1,nnn,k)&
+                  -sgn*36*f(lll,pos+sgn*2,nnn,k)&
+                  +sgn*16*f(lll,pos+sgn*3,nnn,k)&
+                  -sgn*3 *f(lll,pos+sgn*4,nnn,k))
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in y-direction'
+        endif
+      elseif (j==3) then
+       pos=nnn
+        if (nzgrid/=1) then
+          fac=1./12.*dz_1(pos)
+          df = fac*(-sgn*25*f(lll,mmm,pos,k)&
+                  +sgn*48*f(lll,mmm,pos+sgn*1,k)&
+                  -sgn*36*f(lll,mmm,pos+sgn*2,k)&
+                  +sgn*16*f(lll,mmm,pos+sgn*3,k)&
+                  -sgn*3 *f(lll,mmm,pos+sgn*4,k))
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
+        endif
+      endif
+    endsubroutine der_onesided_4_slice_main_pt
+!***********************************************************************
+    subroutine der_onesided_4_slice_other(f,sgn,df,pos,j)
+!
+!   Calculate x/y/z-derivative on a yz/xz/xy-slice at gridpoint pos.
+!   Uses a one-sided 4th order stencil.
+!   sgn = +1 for forward difference, sgn = -1 for backwards difference.
+!
+!   Because of its original intended use in relation to solving
+!   characteristic equations on boundaries (NSCBC), this sub should
+!   return only PARTIAL derivatives, NOT COVARIANT. Applying the right
+!   scaling factors and connection terms should instead be done when
+!   solving the characteristic equations.
+!
+!   7-jul-08/arne: coded.
+!
+      real, dimension (mx,my,mz) :: f
+      real, dimension (:,:) :: df
+      real :: fac
+      integer :: pos,sgn,j
+!
+      intent(in)  :: f,pos,sgn,j
+      intent(out) :: df
 !
       if (j==1) then
-        if (size(pencil)/=mx) then
-          if (lroot) print*, 'der_pencil: pencil must be of size mx for x derivative'
-          call fatal_error('der_pencil','')
+        if (nxgrid/=1) then
+          fac=1./12.*dx_1(pos)
+          df = fac*(-sgn*25*f(pos,m1:m2,n1:n2)&
+                  +sgn*48*f(pos+sgn*1,m1:m2,n1:n2)&
+                  -sgn*36*f(pos+sgn*2,m1:m2,n1:n2)&
+                  +sgn*16*f(pos+sgn*3,m1:m2,n1:n2)&
+                  -sgn*3 *f(pos+sgn*4,m1:m2,n1:n2))
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in x-directder_onesided_4_sliceion'
         endif
-        df(l1:l2)=(1./60)*dx_1(l1:l2)*( &
-            + 45.0*(pencil(l1+1:l2+1)-pencil(l1-1:l2-1)) &
-            -  9.0*(pencil(l1+2:l2+2)-pencil(l1-2:l2-2)) &
-            +      (pencil(l1+3:l2+3)-pencil(l1-3:l2-3)))
-      else if (j==2) then
+      elseif (j==2) then
+        if (nygrid/=1) then
+          fac=1./12.*dy_1(pos)
+          df = fac*(-sgn*25*(f(l1:l2,pos,n1:n2)-f(l1:l2,pos+sgn*1,n1:n2))&
+                    +sgn*23*(f(l1:l2,pos+sgn*1,n1:n2)-f(l1:l2,pos+sgn*2,n1:n2))&
+                    -sgn*13*(f(l1:l2,pos+sgn*2,n1:n2)-f(l1:l2,pos+sgn*3,n1:n2))&
+                    +sgn*3*(f(l1:l2,pos+sgn*3,n1:n2)-f(l1:l2,pos+sgn*4,n1:n2)))
 !
-!  y-derivative
-!
-        if (size(pencil)/=my) then
-          if (lroot) print*, 'der_pencil: pencil must be of size my for y derivative'
-          call fatal_error('der_pencil','')
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in y-direction'
         endif
-        df(m1:m2)=(1./60)*dy_1(m1:m2)*( &
-            + 45.0*(pencil(m1+1:m2+1)-pencil(m1-1:m2-1)) &
-            -  9.0*(pencil(m1+2:m2+2)-pencil(m1-2:m2-2)) &
-            +      (pencil(m1+3:m2+3)-pencil(m1-3:m2-3)))
-      else if (j==3) then
+      elseif (j==3) then
+        if (nzgrid/=1) then
+          fac=1./12.*dz_1(pos)
+          df = fac*(-sgn*25*f(l1:l2,m1:m2,pos)&
+                    +sgn*48*f(l1:l2,m1:m2,pos+sgn*1)&
+                    -sgn*36*f(l1:l2,m1:m2,pos+sgn*2)&
+                    +sgn*16*f(l1:l2,m1:m2,pos+sgn*3)&
+                    -sgn*3 *f(l1:l2,m1:m2,pos+sgn*4))
 !
-!  z-derivative
-!
-        if (size(pencil)/=mz) then
-          if (lroot) print*, 'der_pencil: pencil must be of size mz for z derivative'
-          call fatal_error('der_pencil','')
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice: Degenerate case in z-direction'
         endif
-        df(n1:n2)=(1./60)*dz_1(n1:n2)*( &
-            + 45.0*(pencil(n1+1:n2+1)-pencil(n1-1:n2-1)) &
-            -  9.0*(pencil(n1+2:n2+2)-pencil(n1-2:n2-2)) &
-            +      (pencil(n1+3:n2+3)-pencil(n1-3:n2-3)))
-      else
-        if (lroot) print*, 'der_pencil: no such direction j=', j
-        call fatal_error('der_pencil','')
       endif
 !
-      if (lcylindrical_coords.or.lspherical_coords) &
-           call fatal_error("der_pencil","Not implemented for non-cartesian")
-!
-    endsubroutine der_pencil
+    endsubroutine der_onesided_4_slice_other
 !***********************************************************************
-    subroutine der2_main(f,k,df2,j,lwo_line_elem)
+    subroutine der_onesided_4_slice_other_pt(f,sgn,df,lll,mmm,nnn,j)
 !
-!  calculate 2nd derivative d^2f_k/dx_j^2
-!  accurate to 6th order, explicit, periodic
-!  replace cshifts by explicit construction -> x6.5 faster!
-!  ar real, dimension (nx) :: fac
+!  One sided derivative is calculated
+!  at one point (lll,mmm,nnn).
 !
-      if (nxgrid/=1) then
-        fac=(1./180)*dx_1(l1:l2)*     endif
-    else
-            fac=(,3:l21.0/8)*1./dy**3
-          endif
-          df=fac*(- 13.0*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
-                  +  8.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
-       09-feb0*(pIvanerijdebu     df=0.
-         e if (j==2) then
+!  15-oct-09/Natalia: coded.
+!  15-oct-09/axel: changed file name to shorter version
 !
-!  y-derivative
+      real, dimension (mx,my,mz) :: f
+      real :: df
+      real :: fac
+      integer :: pos,lll,mmm,nnn,sgn,j
 !
-        if (size(pencil)/=my) then
-          if (lroot) &
-       l_mn1**3
+      intent(in)  :: f,lll,mmm,nnn,sgn,j
+      intent(out) :: df
+!
+      if (j==1) then
+        pos=lll
+        if (nxgrid/=1) then
+          fac=1./12.*dx_1(pos)
+          df = fac*(-sgn*25*f(pos,mmm,nnn)&
+                    +sgn*48*f(pos+sgn*1,mmm,nnn)&
+                    -sgn*36*f(pos+sgn*2,mmm,nnn)&
+                    +sgn*16*f(pos+sgn*3,mmm,nnn)&
+                    -sgn*3 *f(pos+sgn*4,mmm,nnn))
         else
-      rror('dxterr :: j
-3:l2r = 8     !DEm added
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice_other_pt: Degenerate case in x-direction'
+        endif
+      elseif (j==2) then
+        pos=mmm
+        if (nygrid/=1) then
+          fac=1./12.*dy_1(pos)
+          df = fac*(-sgn*25*(f(lll,pos,nnn)-f(lll,pos+sgn*1,nnn))&
+                    +sgn*23*(f(lll,pos+sgn*1,nnn)-f(lll,pos+sgn*2,nnn))&
+                    -sgn*13*(f(lll,pos+sgn*2,nnn)-f(lll,pos+sgn*3,nnn))&
+                    +sgn* 3*(f(lll,pos+sgn*3,nnn)-f(lll,pos+sgn*4,nnn)))
+!
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice_other_pt: Degenerate case in y-direction'
+        endif
+      elseif (j==3) then
+        pos=nnn
+        if (nzgrid/=1) then
+          fac=1./12.*dz_1(pos)
+          df = fac*(-sgn*25*f(lll,mmm,pos)&
+                    +sgn*48*f(lll,mmm,pos+sgn*1)&
+                    -sgn*36*f(lll,mmm,pos+sgn*2)&
+                    +sgn*16*f(lll,mmm,pos+sgn*3)&
+                    -sgn*3 *f(lll,mmm,pos+sgn*4))
+!
+        else
+          df=0.
+          if (ip<=5) print*, 'der_onesided_4_slice_other_pt: Degenerate case in z-direction'
+        endif
+      endif
+    endsubroutine der_onesided_4_slice_other_pt
+!***********************************************************************
+    subroutine finalize_deriv
+!
+!  Dummy
+!
+    endsubroutine finalize_deriv
+!***********************************************************************
+    subroutine deri_3d_inds(f,df,inds,j,lignored,lnometric)
+!
+!  dummy routine for compatibility
+!
+!  26-mar-12/MR: coded
+!
+      real, dimension (mx,my,mz)          :: f
+      real, dimension (nx)                :: df
+      integer                             :: j
+      logical,                   optional :: lignored, lnometric
+      integer, dimension(nx)              :: inds
+!
+      intent(in)  :: f,j,inds,lignored,lnometric
+      intent(out) :: df
+!
+      call fatal_error('deri_3d_inds','Upwinding not implemented for nonuniform grids')
+!
+! dummy computation to avoid compiler warnings of unused variables
+      if (present(lignored).and.present(lnometric)) &
+          df  = inds + f(l1:l2,1,1) + j
+!
+    endsubroutine deri_3d_inds
+!************************************************************************
+    logical function heatflux_deriv_x(f, inh, fac, topbot)
+!
+!   dummy routine
+!
+!  17-apr-12/MR: coded
+!
+      use General, only: keep_compiler_quiet
+!
+      real, dimension(mx,my,mz,mfarray), intent(IN):: f
+      real, dimension(my,mz)           , intent(IN):: inh
+      real                             , intent(IN):: fac
+      integer                          , intent(IN):: topbot
+!
+      heatflux_deriv_x = .true.
+      call keep_compiler_quiet(f)
+      call keep_compiler_quiet(inh)
+      call keep_compiler_quiet(fac)
+      call keep_compiler_quiet(topbot)
+!
+    endfunction heatflux_deriv_x
+!***********************************************************************
+    subroutine bval_from_neumann_scl(f,topbot,j,idir,val)
+!
+!  Calculates the boundary value from the Neumann BC d f/d x_i = val employing
+!  one-sided difference formulae. val is a constant.
+!
+!  30-sep-16/MR: coded
+!
+      real, dimension(mx,my,mz,*) :: f
+      character(LEN=3) :: topbot
+      integer :: j,idir
+      real :: val
+
+      integer :: k
+
+      if (topbot=='bot') then
+        if (idir==1) then
+          k=l1
+          f(l1,:,:,j) = (-val*60.*dx + 360.*f(k+1,:,:,j) &
+                                     - 450.*f(k+2,:,:,j) &
+                                     + 400.*f(k+3,:,:,j) &
+                                     - 225.*f(k+4,:,:,j) &
+                                     +  72.*f(k+5,:,:,j) &
+                                     -  10.*f(k+6,:,:,j) )/147.
+        elseif (idir==2) then
+          k=m1
+          f(:,m1,:,j) = (-val*60.*dy + 360.*f(:,k+1,:,j) &
+                                     - 450.*f(:,k+2,:,j) &
+                                     + 400.*f(:,k+3,:,j) &
+                                     - 225.*f(:,k+4,:,j) &
+                                     +  72.*f(:,k+5,:,j) &
+                                     -  10.*f(:,k+6,:,j) )/147.
+        elseif (idir==3) then
+          k=n1
+          f(:,:,n1,j) = (-val*60.*dz + 360.*f(:,:,k+1,j) &
+                                     - 450.*f(:,:,k+2,j) &
+                                     + 400.*f(:,:,k+3,j) &
+                                     - 225.*f(:,:,k+4,j) &
+                                     +  72.*f(:,:,k+5,j) &
+                                     -  10.*f(:,:,k+6,j) )/147.
+        endif
+      else
+        if (idir==1) then
+          k=l2
+          f(l2,:,:,j) = (val*60.*dx + 360.*f(k-1,:,:,j) &
+                                    - 450.*f(k-2,:,:,j) &
+                                    + 400.*f(k-3,:,:,j) &
+                                    - 225.*f(k-4,:,:,j) &
+                                    +  72.*f(k-5,:,:,j) &
+                                    -  10.*f(k-6,:,:,j) )/147.
+        elseif (idir==2) then
+          k=m2
+          f(:,m2,:,j) = (val*60.*dy + 360.*f(:,k-1,:,j) &
+                                    - 450.*f(:,k-2,:,j) &
+                                    + 400.*f(:,k-3,:,j) &
+                                    - 225.*f(:,k-4,:,j) &
+                                    +  72.*f(:,k-5,:,j) &
+                                    -  10.*f(:,k-6,:,j) )/147.
+        elseif (idir==3) then
+          k=n2
+          f(:,:,n2,j) = (val*60.*dz + 360.*f(:,:,k-1,j) &
+                                    - 450.*f(:,:,k-2,j) &
+                                    + 400.*f(:,:,k-3,j) &
+                                    - 225.*f(:,:,k-4,j) &
+                                    +  72.*f(:,:,k-5,j) &
+                                    -  10.*f(:,:,k-6,j) )/147.
+        endif
+      endif
+
+    endsubroutine bval_from_neumann_scl
+!***********************************************************************
+    subroutine bval_from_3rd_scl(f,topbot,j,idir,val)
+!
+!  Calculates the boundary value from the 3rd kind BC d f/d x_i = val*f employing
+!  one-sided difference formulae. val is a constant.
+!
+!  30-sep-16/MR: coded
+!
+      real, dimension(mx,my,mz,*) :: f
+      character(LEN=3) :: topbot
+      integer :: j,idir
+      real :: val
+
+      integer :: k
+
+      if (topbot=='bot') then
+        if (idir==1) then
+          k=l1
+          f(l1,:,:,j) = (  360.*f(k+1,:,:,j) &
+                         - 450.*f(k+2,:,:,j) &
+                         + 400.*f(k+3,:,:,j) &
+                         - 225.*f(k+4,:,:,j) &
+                         +  72.*f(k+5,:,:,j) &
+                         -  10.*f(k+6,:,:,j) )/(147.+val*60.*dx)
+        elseif (idir==2) then
+          k=m1
+          f(:,m1,:,j) = (  360.*f(:,k+1,:,j) &
+                         - 450.*f(:,k+2,:,j) &
+                         + 400.*f(:,k+3,:,j) &
+                         - 225.*f(:,k+4,:,j) &
+                         +  72.*f(:,k+5,:,j) &
+                         -  10.*f(:,k+6,:,j) )/(147.+val*60.*dy)
+        elseif (idir==3) then
+          k=n1
+          f(:,:,n1,j) = (  360.*f(:,:,k+1,j) &
+                         - 450.*f(:,:,k+2,j) &
+                         + 400.*f(:,:,k+3,j) &
+                         - 225.*f(:,:,k+4,j) &
+                         +  72.*f(:,:,k+5,j) &
+                         -  10.*f(:,:,k+6,j) )/(147.+val*60.*dz)
+        endif
+      else
+        if (idir==1) then
+          k=l2
+          f(l2,:,:,j) = (  360.*f(k-1,:,:,j) &
+                         - 450.*f(k-2,:,:,j) &
+                         + 400.*f(k-3,:,:,j) &
+                         - 225.*f(k-4,:,:,j) &
+                         +  72.*f(k-5,:,:,j) &
+                         -  10.*f(k-6,:,:,j) )/(147.-val*60.*dx)
+        elseif (idir==2) then
+          k=m2
+          f(:,m2,:,j) = (  360.*f(:,k-1,:,j) &
+                         - 450.*f(:,k-2,:,j) &
+                         + 400.*f(:,k-3,:,j) &
+                         - 225.*f(:,k-4,:,j) &
+                         +  72.*f(:,k-5,:,j) &
+                         -  10.*f(:,k-6,:,j) )/(147.-val*60.*dy)
+        elseif (idir==3) then
+          k=n2
+          f(:,:,n2,j) = (+ 360.*f(:,:,k-1,j) &
+                         - 450.*f(:,:,k-2,j) &
+                         + 400.*f(:,:,k-3,j) &
+                         - 225.*f(:,:,k-4,j) &
+                         +  72.*f(:,:,k-5,j) &
+                         -  10.*f(:,:,k-6,j) )/(147.-val*60.*dz)
+        endif
+      endif
+
+    endsubroutine bval_from_3rd_scl
+!***********************************************************************
+    subroutine bval_from_4th_scl(f,topbot,j,idir,val)
+!
+!  Calculates the boundary value from the 4th kind BC d^2 f/d x_i^2 = val*f employing
+!  one-sided difference formulae. val is a constant.
+!
+!  30-dec-16/MR: coded
+!
+      real, dimension(mx,my,mz,*) :: f
+      character(LEN=3) :: topbot
+      integer :: j,idir
+      real :: val
+
+      integer :: k
+
+      if (topbot=='bot') then
+        if (idir==1) then
+          k=l1
+          f(l1,:,:,j) = (- 3132.*f(k+1,:,:,j) &
+                         + 5265.*f(k+2,:,:,j) &
+                         - 5080.*f(k+3,:,:,j) &
+                         + 2970.*f(k+4,:,:,j) &
+                         -  972.*f(k+5,:,:,j) & 
+                         +  137.*f(k+6,:,:,j)  )/(-812.+val*180.*dx*dx)
+        elseif (idir==2) then
+          k=m1
+          f(:,m1,:,j) = (- 3132.*f(:,k+1,:,j) &
+                         + 5265.*f(:,k+2,:,j) &
+                         - 5080.*f(:,k+3,:,j) &
+                         + 2970.*f(:,k+4,:,j) &
+                         -  972.*f(:,k+5,:,j) & 
+                         +  137.*f(:,k+6,:,j)  )/(-812.+val*180.*dy*dy)
+        elseif (idir==3) then
+          k=n1
+          f(:,:,n1,j) = (- 3132.*f(:,:,k+1,j) &
+                         + 5265.*f(:,:,k+2,j) &
+                         - 5080.*f(:,:,k+3,j) &
+                         + 2970.*f(:,:,k+4,j) &
+                         -  972.*f(:,:,k+5,j) & 
+                         +  137.*f(:,:,k+6,j)  )/(-812.+val*180.*dz*dz)
+        endif
+      else
+        if (idir==1) then
+          k=l2
+          f(l2,:,:,j) = (- 3132.*f(k-1,:,:,j) &
+                         + 5265.*f(k-2,:,:,j) &
+                         - 5080.*f(k-3,:,:,j) &
+                         + 2970.*f(k-4,:,:,j) &
+                         -  972.*f(k-5,:,:,j) & 
+                         +  137.*f(k-6,:,:,j)  )/(-812.+val*180.*dx*dx)
+        elseif (idir==2) then
+          k=m2
+          f(:,m2,:,j) = (- 3132.*f(:,k-1,:,j) &
+                         + 5265.*f(:,k-2,:,j) &
+                         - 5080.*f(:,k-3,:,j) &
+                         + 2970.*f(:,k-4,:,j) &
+                         -  972.*f(:,k-5,:,j) & 
+                         +  137.*f(:,k-6,:,j)  )/(-812.+val*180.*dy*dy)
+        elseif (idir==3) then
+          k=n2
+          f(:,:,n2,j) = (- 3132.*f(:,:,k-1,j) &
+                         + 5265.*f(:,:,k-2,j) &
+                         - 5080.*f(:,:,k-3,j) &
+                         + 2970.*f(:,:,k-4,j) &
+                         -  972.*f(:,:,k-5,j) & 
+                         +  137.*f(:,:,k-6,j)  )/(-812.+val*180.*dz*dz)
+        endif
+      endif
+
+    endsubroutine bval_from_4th_scl
+!***********************************************************************
+    subroutine set_ghosts_for_onesided_ders(f,topbot,j,idir,l2nd)
+
+!  20-sep-16/MR: added optional parameter bval for boundary value.
+!                added ghost value setting for having the second derivative
+!                correct in one-sided formulation for first inner point.
+!   5-jan-17/MR: simplified, as ghost zone values for 1st and 2nd derivative
+!                also in 2nd ghost zone point equal, as Fred spotted.
 !
       use General, only: loptest
 
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (nx) :: df2,fac,df
-      integer :: j,k
-      logical, optional :: lwo_line_elem
-!
-      intent(in)  :: f,k,j,lwo_line_elem
-      intent(out) :: df2
-!
-!debug      if (loptimise_ders) der_call_count(k,icount_der2,j,1) = & !DERCOUNT
-!debug                          der_call_count(k,icount_der2,j,1) + 1 !DERCOUNT
-!
-      if (j==1) then
-        if (nxgrid/=1) then
-          fac=dx_1(l1:l2)**2
-          df2=fac*(der2_coef0* f(l1  :l2  ,m,n,k) &
-                  +der2_coef1*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
-                  +der2_coef2*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
-                  +der2_coef3*(f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
-          if (.not.lequidist(j)) then
-            call der(f,k,df,j)
-            df2=df2+dx_tilde(l1:l2)*df
-          endif
-        else
-          df2=0.
+      real, dimension(mx,my,mz,*) :: f
+      character(LEN=3) :: topbot
+      integer :: j,idir
+      logical, optional :: l2nd
+
+      integer :: k,off
+
+      if (loptest(l2nd)) then
+        off=2
+      else
+        off=3
+      endif
+
+      if (topbot=='bot') then
+        if (idir==1) then
+
+          do k=l1-1,l1-off,-1
+            f(k,:,:,j)=7*f(k+1,:,:,j) &
+                     -21*f(k+2,:,:,j) &
+                     +35*f(k+3,:,:,j) &
+                     -35*f(k+4,:,:,j) &
+                     +21*f(k+5,:,:,j) &
+                      -7*f(k+6,:,:,j) &
+                        +f(k+7,:,:,j)
+          enddo
+        elseif (idir==2) then
+
+          do k=m1-1,m1-off,-1
+            f(:,k,:,j)=7*f(:,k+1,:,j) &
+                     -21*f(:,k+2,:,j) &
+                     +35*f(:,k+3,:,j) &
+                     -35*f(:,k+4,:,j) &
+                     +21*f(:,k+5,:,j) &
+                      -7*f(:,k+6,:,j) &
+                        +f(:,k+7,:,j)
+          enddo
+        elseif (idir==3) then
+
+          do k=n1-1,n1-off,-1
+            f(:,:,k,j)=7*f(:,:,k+1,j) &
+                     -21*f(:,:,k+2,j) &
+                     +35*f(:,:,k+3,j) &
+                     -35*f(:,:,k+4,j) &
+                     +21*f(:,:,k+5,j) &
+                      -7*f(:,:,k+6,j) &
+                        +f(:,:,k+7,j)
+          enddo
         endif
-      elseif (j==2) then
-        if (nygrid/=1) then
-          fac=dy_1(m)**2
-          df2=fac*(der2_coef0* f(l1:l2,m   ,n,k) &
-                  +der2_coef1*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
-                  +der2_coef2*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
-                  +der2_coef3*(f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
-          if (.not.loptest(lwo_line_elem)) then
-            if (lspherical_coords)   df2=df2*r2_mn
-            if (lcylindrical_coords) df2=df2*rcyl_mn2
-          endif
-          if (.not.lequidist(j)) then
-            call der(f,k,df,j)
-            df2=df2+dy_tilde(m)*df
-          endif
-        else
-          df2=0.
-        endif
-      elseif (j==3) then
-        if (nzgrid/=1) then
-          fac=dz_1(n)**2
-          df2=fac*( der2_coef0* f(l1:l2,m,n    ,k) &
-                   +der2_coef1*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
-                   +der2_coef2*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
-                   +der2_coef3*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
-          if (.not.loptest(lwo_line_elem)) then
-            if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
-          endif
-          if (.not.lequidist(j)) then
-            call der(f,k,df,j)
-            df2=df2+dz_tilde(n)*df
-          endif
-           - 39.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
-                  + 12.0 else
-          df2=0.
+      else
+        if (idir==1) then
+          do k=l2+1,l2+off
+            f(k,:,:,j)=7*f(k-1,:,:,j) &
+                     -21*f(k-2,:,:,j) &
+                     +35*f(k-3,:,:,j) &
+                     -35*f(k-4,:,:,j) &
+                     +21*f(k-5,:,:,j) &
+                      -7*f(k-6,:,:,j) &
+                        +f(k-7,:,:,j)
+          enddo
+        elseif (idir==2) then
+          do k=m2+1,m2+off
+            f(:,k,:,j)=7*f(:,k-1,:,j) &
+                     -21*f(:,k-2,:,j) &
+                     +35*f(:,k-3,:,j) &
+                     -35*f(:,k-4,:,j) &
+                     +21*f(:,k-5,:,j) &
+                      -7*f(:,k-6,:,j) &
+                        +f(:,k-7,:,j)
+          enddo
+        elseif (idir==3) then
+          do k=n2+1,n2+off
+            f(:,:,k,j)=7*f(:,:,k-1,j) &
+                     -21*f(:,:,k-2,j) &
+                     +35*f(:,:,k-3,j) &
+                     -35*f(:,:,k-4,j) &
+                     +21*f(:,:,k-5,j) &
+                      -7*f(:,:,k-6,j) &
+                        +f(:,:,k-7,j)
+          enddo
         endif
       endif
-!
-    endsubroutine der2_main
-!********************** else
-            fac=(1.0/8)*1./dy**3
-          endif
-          df=f_other(f,df2,j)
-!
-!  calculate 2nd derivative d^2f/dx_j^2 (of scalar f)
-!  accurate to 6th order, expln
-        if (nzgr                  -  1.0*(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
-          if (lcylindrical_coords)   df=df*rcyl_mn1**3
-        else
-          df=0.
-        endif
-      elseif (j==3) then
-        if (nzgrid/=1) then
-          if (igndx) then
-            fac dimension (nx) :: df2,fac,df
-      integer :: j
-!
-      intent(in)  :: f,j
-      intent(out) :: df2
-!
-!debug      if (loptimise_ders) der_call_count(k,icount_der2,j,1) = & !DERCOUNT
-!debug                          der_call_count(k,icount_der2,j,1) + 1 !DERCOUNT
-!
-!
-      if (j==1) then
-        if (nxgrid/=1) then
-          fac=(1./180)*dx_1(l1:l2)**2
-          df2=fac*(-490.0*f(l1:l2,m,n) &
-                   +270.0*(f(l1+1:l2+1,m,n)+f(l1-1:l2-1,m,n)) &
-                   - 27.0*(f(l1+2:l2+2,m,n)+f(l1-2:l2-2,m,n)) &
-                   +  2.0*(f(l1+3:l2+3,m,n)+f(l1-3:l2-3,m,n)))
-          if (.not.lequidist(j)) then
-            call der(f,df,j)
-            df2=df2+dx_tilde(l1:l2)*df
-          endif
-        else
-          df2=0.
-        endif
-      elseif (j==2) then
-        if (nygrid/=1) then
-          fac=(1./180)*dy_1(m)**2
-          df2=fac*(-490.0*f(l1:l2,m,n) &
-                   +270.0*(f(l1:l2,m+1,n)+f(l1:l2,m-1,n)) &
-                   - 27.0*(f(l1:l2,m+2,n)+f(l1:l2,m-2,n)) &
-                   +  2.0*(f(l1:l2,m+3,n)+f(l1:l2,m-3,n)))
-          if (lspherical_coords)     df2=df2*r2_mn
-          if (lcylindrical_coords)   df2=df2*rcyl_mn2
-          if (.not.lequidist(j)) then
-            call der(f,df,j)
-            df2=df2+dy_tilde(m)*df
-          endif
-        else
-          df2=0.
-        endif
-      elseif (j==3) then
-        if (nzgrid/=1) then
-          fac=(1./180)*dz_1(n)**2
-          df2=fac*(-490.0*f(l1:l2,m,n) &
-                   +270.0*(f(l1:l2,m,n+1)+f(l1:l2,m,n-1)) &
-                   - 27.0*(f(l1:l2,m,n+2)+f(l1:l2,m,n-2)) &
-                   +  2.0*(f(l1:l2,m,n+3)+f(l1:l2,m,n-3)))
-          if (lspherical_coords) df2=df2*r2_mn*sin2th(m)
-          if (.not.lequidist(j)) then
-            call der(f,df,j)
-            df2=df2+dz_tilde(n)*df
-          endif
-        else
-          df2=0.
-        endif
-      endif
-!
-    endsubroutine der2_other
+
+    endsubroutine set_ghosts_for_onesided_ders
 !***********************************************************************
-    subroutine der2_pencil(j,pencil,df2)
+    subroutine bval_from_neumann_arr(f,topbot,j,idir,val)
 !
-!  Calculate 2nd derivative of any x, y or z pencil.
+!  Calculates the boundary value from the Neumann BC d f/d x_i = val employing
+!  one-sided difference formulae. val depends on x,y.
 !
-!  01-nov-07/anders: adapted from der2
+!  30-sep-16/MR: coded
 !
-      real, dimension (:) :: pencil,df2
-      inte        - 39.0*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
-                  + 12.0*endmodule Dxplic
+      real, dimension(mx,my,mz,*) :: f
+      character(LEN=3) :: topbot
+      integer :: j,idir
+      real, dimension(:,:) :: val
+
+      integer :: k
+
+      if (topbot=='bot') then
+        if (idir==1) then
+          k=l1
+          f(l1,:,:,j) = (-val*60.*dx + 360.*f(k+1,:,:,j) &
+                                     - 450.*f(k+2,:,:,j) &
+                                     + 400.*f(k+3,:,:,j) &
+                                     - 225.*f(k+4,:,:,j) &
+                                     +  72.*f(k+5,:,:,j) &
+                                     -  10.*f(k+6,:,:,j) )/147.
+        elseif (idir==2) then
+          k=m1
+          f(:,m1,:,j) = (-val*60.*dy + 360.*f(:,k+1,:,j) &
+                                     - 450.*f(:,k+2,:,j) &
+                                     + 400.*f(:,k+3,:,j) &
+                                     - 225.*f(:,k+4,:,j) &
+                                     +  72.*f(:,k+5,:,j) &
+                                     -  10.*f(:,k+6,:,j) )/147.
+        elseif (idir==3) then
+          k=n1
+          f(:,:,n1,j) = (-val*60.*dz + 360.*f(:,:,k+1,j) &
+                                     - 450.*f(:,:,k+2,j) &
+                                     + 400.*f(:,:,k+3,j) &
+                                     - 225.*f(:,:,k+4,j) &
+                                     +  72.*f(:,:,k+5,j) &
+                                     -  10.*f(:,:,k+6,j) )/147.
+        endif
+      else
+        if (idir==1) then
+          k=l2
+          f(l2,:,:,j) = (val*60.*dx + 360.*f(k-1,:,:,j) &
+                                    - 450.*f(k-2,:,:,j) &
+                                    + 400.*f(k-3,:,:,j) &
+                                    - 225.*f(k-4,:,:,j) &
+                                    +  72.*f(k-5,:,:,j) &
+                                    -  10.*f(k-6,:,:,j) )/147.
+        elseif (idir==2) then
+          k=m2
+          f(:,m2,:,j) = (val*60.*dy + 360.*f(:,k-1,:,j) &
+                                    - 450.*f(:,k-2,:,j) &
+                                    + 400.*f(:,k-3,:,j) &
+                                    - 225.*f(:,k-4,:,j) &
+                                    +  72.*f(:,k-5,:,j) &
+                                    -  10.*f(:,k-6,:,j) )/147.
+        elseif (idir==3) then
+          k=n2
+          f(:,:,n2,j) = (val*60.*dz + 360.*f(:,:,k-1,j) &
+                                    - 450.*f(:,:,k-2,j) &
+                                    + 400.*f(:,:,k-3,j) &
+                                    - 225.*f(:,:,k-4,j) &
+                                    +  72.*f(:,:,k-5,j) &
+                                    -  10.*f(:,:,k-6,j) )/147.
+        endif
+      endif
+
+    endsubroutine bval_from_neumann_arr
+!***********************************************************************
+    subroutine bval_from_3rd_arr(f,topbot,j,idir,val,func)
+!
+!  Calculates the boundary value from the Neumann BC d f/d x_i = val employing
+!  one-sided difference formulae. val depends on x,y.
+!
+!  30-sep-16/MR: coded
+!  09-feb-17/Ivan: completed dummy routine
+!
+      real, dimension(mx,my,mz,*) :: f
+      character(LEN=3) :: topbot
+      integer :: j,idir
+      real, dimension(:,:) :: val
+      external :: func
+!
+      integer :: k
+
+      if (topbot=='bot') then
+        if (idir==1) then
+          k=l1
+          f(l1,:,:,j) = (  360.*f(k+1,:,:,j) &
+                         - 450.*f(k+2,:,:,j) &
+                         + 400.*f(k+3,:,:,j) &
+                         - 225.*f(k+4,:,:,j) &
+                         +  72.*f(k+5,:,:,j) &
+                         -  10.*f(k+6,:,:,j) )/(147.+val*60.*dx)
+        elseif (idir==2) then
+          k=m1
+          f(:,m1,:,j) = (  360.*f(:,k+1,:,j) &
+                         - 450.*f(:,k+2,:,j) &
+                         + 400.*f(:,k+3,:,j) &
+                         - 225.*f(:,k+4,:,j) &
+                         +  72.*f(:,k+5,:,j) &
+                         -  10.*f(:,k+6,:,j) )/(147.+val*60.*dy)
+        elseif (idir==3) then
+          k=n1
+          f(:,:,n1,j) = (  360.*f(:,:,k+1,j) &
+                         - 450.*f(:,:,k+2,j) &
+                         + 400.*f(:,:,k+3,j) &
+                         - 225.*f(:,:,k+4,j) &
+                         +  72.*f(:,:,k+5,j) &
+                         -  10.*f(:,:,k+6,j) )/(147.+val*60.*dz)
+        endif
+      else
+        if (idir==1) then
+          k=l2
+          f(l2,:,:,j) = (  360.*f(k-1,:,:,j) &
+                         - 450.*f(k-2,:,:,j) &
+                         + 400.*f(k-3,:,:,j) &
+                         - 225.*f(k-4,:,:,j) &
+                         +  72.*f(k-5,:,:,j) &
+                         -  10.*f(k-6,:,:,j) )/(147.-val*60.*dx)
+        elseif (idir==2) then
+          k=m2
+          f(:,m2,:,j) = (  360.*f(:,k-1,:,j) &
+                         - 450.*f(:,k-2,:,j) &
+                         + 400.*f(:,k-3,:,j) &
+                         - 225.*f(:,k-4,:,j) &
+                         +  72.*f(:,k-5,:,j) &
+                         -  10.*f(:,k-6,:,j) )/(147.-val*60.*dy)
+        elseif (idir==3) then
+          k=n2
+          f(:,:,n2,j) = (+ 360.*f(:,:,k-1,j) &
+                         - 450.*f(:,:,k-2,j) &
+                         + 400.*f(:,:,k-3,j) &
+                         - 225.*f(:,:,k-4,j) &
+                         +  72.*f(:,:,k-5,j) &
+                         -  10.*f(:,:,k-6,j) )/(147.-val*60.*dz)
+        endif
+      endif
+
+    endsubroutine bval_from_3rd_arr
+!***********************************************************************
+!***********************************************************************
+    subroutine bval_from_4th_arr(f,topbot,j,idir,val)
+!
+!  Calculates the boundary value from the 4th kind BC d^2 f/d x_i^2 = val*f employing
+!  one-sided difference formulae. val is a constant.
+!
+!  09-feb-17/Ivan: coded
+!
+      real, dimension(mx,my,mz,*) :: f
+      character(LEN=3) :: topbot
+      integer :: j,idir
+      real, dimension(:,:) :: val
+
+      integer :: k
+
+      if (topbot=='bot') then
+        if (idir==1) then
+          k=l1
+          f(l1,:,:,j) = (- 3132.*f(k+1,:,:,j) &
+                         + 5265.*f(k+2,:,:,j) &
+                         - 5080.*f(k+3,:,:,j) &
+                         + 2970.*f(k+4,:,:,j) &
+                         -  972.*f(k+5,:,:,j) & 
+                         +  137.*f(k+6,:,:,j)  )/(-812.+val*180.*dx*dx)
+        elseif (idir==2) then
+          k=m1
+          f(:,m1,:,j) = (- 3132.*f(:,k+1,:,j) &
+                         + 5265.*f(:,k+2,:,j) &
+                         - 5080.*f(:,k+3,:,j) &
+                         + 2970.*f(:,k+4,:,j) &
+                         -  972.*f(:,k+5,:,j) & 
+                         +  137.*f(:,k+6,:,j)  )/(-812.+val*180.*dy*dy)
+        elseif (idir==3) then
+          k=n1
+          f(:,:,n1,j) = (- 3132.*f(:,:,k+1,j) &
+                         + 5265.*f(:,:,k+2,j) &
+                         - 5080.*f(:,:,k+3,j) &
+                         + 2970.*f(:,:,k+4,j) &
+                         -  972.*f(:,:,k+5,j) & 
+                         +  137.*f(:,:,k+6,j)  )/(-812.+val*180.*dz*dz)
+        endif
+      else
+        if (idir==1) then
+          k=l2
+          f(l2,:,:,j) = (- 3132.*f(k-1,:,:,j) &
+                         + 5265.*f(k-2,:,:,j) &
+                         - 5080.*f(k-3,:,:,j) &
+                         + 2970.*f(k-4,:,:,j) &
+                         -  972.*f(k-5,:,:,j) & 
+                         +  137.*f(k-6,:,:,j)  )/(-812.+val*180.*dx*dx)
+        elseif (idir==2) then
+          k=m2
+          f(:,m2,:,j) = (- 3132.*f(:,k-1,:,j) &
+                         + 5265.*f(:,k-2,:,j) &
+                         - 5080.*f(:,k-3,:,j) &
+                         + 2970.*f(:,k-4,:,j) &
+                         -  972.*f(:,k-5,:,j) & 
+                         +  137.*f(:,k-6,:,j)  )/(-812.+val*180.*dy*dy)
+        elseif (idir==3) then
+          k=n2
+          f(:,:,n2,j) = (- 3132.*f(:,:,k-1,j) &
+                         + 5265.*f(:,:,k-2,j) &
+                         - 5080.*f(:,:,k-3,j) &
+                         + 2970.*f(:,:,k-4,j) &
+                         -  972.*f(:,:,k-5,j) & 
+                         +  137.*f(:,:,k-6,j)  )/(-812.+val*180.*dz*dz)
+        endif
+      endif
+
+    endsubroutine bval_from_4th_arr
+!***********************************************************************
+ endmodule Deriv
