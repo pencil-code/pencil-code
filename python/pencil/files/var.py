@@ -452,3 +452,7 @@ class DataCube(object):
                     self.pp = (cp-cv)*self.TT*np.exp(lnrho)
                 else:
                     sys.exit("pb in magic!")
+
+            if (field == 'u2' and not hasattr(self, 'u2')):
+                self.u2=self.ux**2+self.uy**2+self.uz**2
+
