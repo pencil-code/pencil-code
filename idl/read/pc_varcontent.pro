@@ -96,6 +96,7 @@ indices = [ $
   { name:'ibb', label:'Magnetic field', dims:3 }, $
   { name:'ijj', label:'Current density', dims:3 }, $
   { name:'iemf', label:'Current density', dims:3 }, $
+  { name:'ikappar', label:'kappar', dims:1 }, $
   { name:'itau', label:'tau', dims:1 }, $
   { name:'iggL', label:'ggL', dims:1 }, $
   { name:'iggT', label:'ggT', dims:1 }, $
@@ -323,20 +324,24 @@ for tag = first_tag, num_tags do begin
   if (line lt 0) then continue
 
   exec_str = 'pos = ' + matches[1,line]
-  if (mvar eq 0) then exec_str += '-' + str (pos[0]+1) ; [PABourdin] should this not be: pos[0]-1
   if (not execute (exec_str)) then $
       message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+str (line)+'.', /info
   if (pos[0] le 0) then continue
   ; Append f-array variable to valid varcontent.
   num_vars += 1
+  ; [PABourdin] Disabling this mechanism for now, because it makes no sense to have all executes like: "1-0", "2-1", "3-2", etc.
+  ; => Matthias please check!
+  pos_offset = ''
+  ;;; *** Please comment me... => what is this and what is it good for?
+  ;;; if (mvar eq 0) then pos_offset = '-' + str (pos[0]-1) else pos_offset = ''
 
   if (size (selected, /type) eq 0) then begin
     selected = [ tag-1 ]
-    executes = [ exec_str ]
+    executes = [ exec_str + pos_offset ]
     position = [ pos[0] ]
   end else begin
     selected = [ selected, tag-1 ]
-    executes = [ executes, exec_str ]
+    executes = [ executes, exec_str + pos_offset ]
     position = [ position, pos[0] ]
   end
   totalvars += add_vars
