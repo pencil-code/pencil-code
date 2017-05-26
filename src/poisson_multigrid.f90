@@ -565,7 +565,6 @@ module Poisson
       f(:  ,:,nnz) = 0
 !
     endsubroutine apply_boundcond
-!
 !***********************************************************************
     subroutine inverse_laplacian_semispectral(phi,h)
 !
@@ -582,6 +581,16 @@ module Poisson
       call keep_compiler_quiet(h)
 !
     endsubroutine inverse_laplacian_semispectral
+!***********************************************************************
+    subroutine inverse_laplacian_fft_z(phi)
+!
+!  15-may-2006/anders+jeff: dummy
+!
+      real, dimension(nx,ny,nz), intent(in) :: phi
+!
+      call keep_compiler_quiet(phi)
+!
+    endsubroutine inverse_laplacian_fft_z
 !***********************************************************************
     subroutine read_poisson_init_pars(iostat)
 !

@@ -302,6 +302,16 @@ contains
 !      
     endsubroutine inverse_laplacian_logradial_fft
 !***********************************************************************
+    subroutine inverse_laplacian_fft_z(phi)
+!
+!  15-may-2006/anders+jeff: dummy
+!
+      real, dimension(nx,ny,nz), intent(in) :: phi
+!
+      call keep_compiler_quiet(phi)
+!
+    endsubroutine inverse_laplacian_fft_z
+!***********************************************************************
     subroutine generate_coordinates()
 !
 ! Generates all coordinates that will be used, sets the smoothing factor (function of the 
