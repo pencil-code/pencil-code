@@ -23,7 +23,7 @@
 ;   Again as idlinit but used when two mesh sizes are required at once.
 ;   see idlvarloc
 ;
-function pc_varcontent, datadir=datadir, dim=dim, ivar=ivar, param=param, par2=run_param, $
+function pc_varcontent, datadir=datadir, dim=dim, param=param, par2=run_param, $
                         run2D=run2D, scalar=scalar, noaux=noaux, quiet=quiet, down=down, single=single
 ;
 ;    /single: enforces single precision of returned data.
@@ -35,7 +35,6 @@ COMPILE_OPT IDL2,HIDDEN
 ;
 datadir = pc_get_datadir(datadir)
 if (n_elements(dim) eq 0) then pc_read_dim, obj=dim, datadir=datadir, quiet=quiet, down=down
-if (n_elements(ivar) eq 0) then ivar=-1
 if (n_elements(param) eq 0) then pc_read_param, obj=param, datadir=datadir, dim=dim, quiet=quiet
 if (n_elements(run_param) eq 0) then pc_read_param, obj=run_param, /param2, datadir=datadir, dim=dim, quiet=quiet
 default, noaux, 0
@@ -61,17 +60,14 @@ for line = 1, num_lines do begin
       message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+str (line)+'.', /info
 endfor
 
-if keyword_set(down) and (n_elements(run_param) gt 0) then begin
-  mvar=run_param.mvar_down & maux=run_param.maux_down
-endif else begin
-  mvar=dim.mvar & maux=keyword_set(run_param.lwrite_aux) ? dim.maux : 0
-endelse
+mvar=dim.mvar & maux=dim.maux
 ;
 ;  For EVERY POSSIBLE variable in a snapshot file, store a
 ;  description of the variable in an indexed array of structures
 ;  where the indexes line up with those in the saved f array.
 ;
-;  Note: auxiliary variables should go to the table below the folling one.
+;  Note: Integrated variables and variables which can be both integrated and auxiliary *must* be included here.
+;        Auxiliary variables should go to the table below the following one, but work also here.
 ;
 indices = [ $
   { name:'iuu', label:'Velocity', dims:3 }, $
@@ -151,7 +147,6 @@ indices = [ $
   { name:'ieth', label:'Thermal energy', dims:1 } $
   ; don't forget to add a comma above when extending
 ]
-nvar=n_elements(indices)
 
 ; Auxiliary variables: (see also explanation above)
 indices_aux = [ $
@@ -187,11 +182,11 @@ indices_aux = [ $
   { name:'iff', label:'Forcing function', dims:3 } $
   ; don't forget to add a comma above when extending
 ]
-naux=n_elements(indices_aux)
-
+;
 ; Inconsistent names (IDL-name is inconsistent with name in the main code):
-; E.g., in Fortran we use "ifx", but some IDL scrips expect "ff" in varconent.
+; E.g., in Fortran we use "ifx", but some IDL scrips expect "ff" in varcontent.
 ; Note: the initial "i" is automatically removed and hence *not* inconsistent.
+;
 inconsistent = [ $
   { name:'ifx', inconsistent_name:'ff' }, $
   { name:'ichemspec', inconsistent_name:'YY' }, $
@@ -206,8 +201,8 @@ inconsistent = [ $
 
 ; Inconsistent names in special modules (see also explanation above):
 inconsistent_special = [ $
-  { name:'ikappar', inconsistent_name:'kappar' }, $ ; seems not inconsistent
-  { name:'ilambda', inconsistent_name:'lambda' }  $ ; seems not inconsistent
+  { name:'ikappar', inconsistent_name:'kappar' }, $   ; seems not inconsistent
+  { name:'ilambda', inconsistent_name:'lambda' }  $   ; seems not inconsistent
   ; don't forget to add a comma above when extending
 ]
 
@@ -248,9 +243,10 @@ endif
 ;  off by hand by setting noaux=1, e.g. for reading derivative snapshots.
 ;
 if (not keyword_set (noaux)) then begin
-  if ((keyword_set (param.lwrite_aux) and (maux gt 0)) or (keyword_set (param.lwrite_aux) and (ivar eq 0)) or (maux gt 0)) then begin
-    indices = [ indices, indices_aux ]
-  endif
+
+    if ( maux gt 0 and (keyword_set(param.lwrite_aux) or down )) then $
+      indices = [ indices, indices_aux ]
+
 endif
 ;
 ;  Predefine some variable types used regularly.
@@ -282,9 +278,10 @@ endif
 totalvars = 0L
 num_tags = n_elements(indices)
 num_vars = 0
-first_tag = 1
-if (mvar eq 0) then first_tag += nvar
-for tag = first_tag, num_tags do begin
+
+offsetv = down and (mvar eq 0) ? '-pos[0]+1' : ''    ; corrects index for downsampled varfile if no MVAR variables are contained
+						     ; as indices in index.pro refer to the varfile not to the downsampled varfile
+for tag = 1, num_tags do begin
   search = indices[tag-1].name
   dims = indices[tag-1].dims
   add_vars = dims
@@ -329,22 +326,18 @@ for tag = first_tag, num_tags do begin
   if (pos[0] le 0) then continue
   ; Append f-array variable to valid varcontent.
   num_vars += 1
-  ; [PABourdin] Disabling this mechanism for now, because it makes no sense to have all executes like: "1-0", "2-1", "3-2", etc.
-  ; => Matthias please check!
-  pos_offset = ''
-  ;;; *** Please comment me... => what is this and what is it good for?
-  ;;; if (mvar eq 0) then pos_offset = '-' + str (pos[0]-1) else pos_offset = ''
 
   if (size (selected, /type) eq 0) then begin
     selected = [ tag-1 ]
-    executes = [ exec_str + pos_offset ]
+    executes = [ exec_str + offsetv ]
     position = [ pos[0] ]
   end else begin
     selected = [ selected, tag-1 ]
-    executes = [ executes, exec_str + pos_offset ]
+    executes = [ executes, exec_str + offsetv ]
     position = [ position, pos[0] ]
   end
   totalvars += add_vars
+  if totalvars eq mvar+maux then break
 endfor
 ;
 ;  Make an array of structures in which to store their descriptions.

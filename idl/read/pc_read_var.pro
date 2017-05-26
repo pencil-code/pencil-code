@@ -79,7 +79,7 @@
 pro pc_read_var,                                                  $
     object=object, varfile=varfile_, associate=associate,         $
     variables=variables, tags=tags, magic=magic,                  $
-    bbtoo=bbtoo, jjtoo=jjtoo, ootoo=ootoo, TTtoo=TTtoo,           $
+    bbtoo=bbtoo, jjtoo=jjtoo, ootoo=ootoo, TTtoo=TTtoo, pptoo=pptoo, $
     allprocs=allprocs, reduced=reduced,                           $
     trimxyz=trimxyz, trimall=trimall, unshear=unshear,            $
     nameobject=nameobject, validate_variables=validate_variables, $
@@ -315,10 +315,10 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
 ;  Read meta data and set up variable/tag lists.
 ;
   if (is_defined(par2)) then begin
-    default, varcontent, pc_varcontent(datadir=datadir,dim=dim, ivar=ivar, $
+    default, varcontent, pc_varcontent(datadir=datadir,dim=dim, $
       param=param,par2=par2,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single)
   endif else begin
-    default, varcontent, pc_varcontent(datadir=datadir,dim=dim, ivar=ivar, $
+    default, varcontent, pc_varcontent(datadir=datadir,dim=dim, $
       param=param,par2=param,quiet=quiet,scalar=scalar,noaux=noaux,run2D=run2D,down=ldownsampled,single=single)
   endelse
 
@@ -365,6 +365,14 @@ if (keyword_set(reduced) and (n_elements(proc) ne 0)) then $
   default, TTtoo, 0
   if (TTtoo) then begin
     variables=[variables,'tt']
+    magic=1
+  endif
+;
+; Shortcut for getting pressure.
+;
+  default, pptoo, 0
+  if (pptoo) then begin
+    variables=[variables,'pp']
     magic=1
   endif
 ;
