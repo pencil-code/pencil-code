@@ -379,29 +379,39 @@ module Special
 !***********************************************************************
     subroutine special_after_boundary(f)
 !
-!  dummy routine
+!  Compute the transverse part of the stress tensor by going into Fourier space.
 !
 !  15-jan-08/axel: coded
 !
       use Fourier, only: fourier_transform
 !
-      real, dimension (:,:,:), allocatable :: S_re, S_im, T_re, T_im, k2
+      real, dimension (:,:,:), allocatable :: S11_re, S11_im, S12_re, S12_im, T_re, T_im, one_over_k2
       real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,ikx,iky,ikz,stat
       logical :: lscale_tobox1=.true.
-      real :: scale_factor, P2
+      real :: scale_factor, fact, P11, P22, P33, P12, P13, P23
       intent(inout) :: f
+!
+!  For testing purposes, if lno_transverse_part=T, we would not need to
+!  compute the Fourier transform, so we would skip the rest.
+!
+      if (lno_transverse_part) return
 !
 !  Allocate memory for arrays.
 !
-      allocate(k2(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for k2')
+      allocate(one_over_k2(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for one_over_k2')
 !
-      allocate(S_re(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for S_re')
-      allocate(S_im(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for S_im')
+      allocate(S11_re(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for S11_re')
+      allocate(S11_im(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for S11_im')
+!
+      allocate(S12_re(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for S12_re')
+      allocate(S12_im(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for S12_im')
 !
       allocate(T_re(nx,ny,nz),stat=stat)
       if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for T_re')
@@ -434,56 +444,174 @@ module Special
 !
 !  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
 !  the full nx extent (which, currently, must be equal to nxgrid).
+!  But call it one_over_k2.
 !
         if (lroot .AND. ip<10) &
              print*,'special_after_boundary:fft ...'
         do iky=1,nz
           do ikx=1,ny
             do ikz=1,nx
-              k2(ikz,ikx,iky)=kx(ikx+ipy*ny)**2+ky(iky+ipz*nz)**2+kz(ikz+ipx*nx)**2
+              one_over_k2(ikz,ikx,iky)=kx(ikx+ipy*ny)**2+ky(iky+ipz*nz)**2+kz(ikz+ipx*nx)**2
             enddo
           enddo
         enddo
 !
 !  compute 1/k2 for components of unit vector
 !
-        if (lroot) k2(1,1,1) = 1.  ! Avoid division by zero
-        k2=1./k2
+        if (lroot) one_over_k2(1,1,1) = 1.  ! Avoid division by zero
+        one_over_k2=1./one_over_k2
 !
 !  Assemble stress
 !
 !  Do T11
-!  Go into Fourier space
 !
         T_im=0.0
         T_re=f(l1:l2,m1:m2,n1:n2,ibx)**2
         call fourier_transform(T_re,T_im)
 !
-!  projection operator
+        do iky=1,nz
+          do ikx=1,ny
+            do ikz=1,nx
+              P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
+              P12=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
+!
+              fact=.5*P11**2
+              S11_re(ikz,ikx,iky)=fact*T_re(ikz,ikx,iky)
+              S11_im(ikz,ikx,iky)=fact*T_im(ikz,ikx,iky)
+!
+              fact=.5*P11*P12
+              S12_re(ikz,ikx,iky)=fact*T_re(ikz,ikx,iky)
+              S12_im(ikz,ikx,iky)=fact*T_im(ikz,ikx,iky)
+!
+            enddo
+          enddo
+        enddo
+!
+!  Do T22
+!
+        T_im=0.0
+        T_re=f(l1:l2,m1:m2,n1:n2,iby)**2
+        call fourier_transform(T_re,T_im)
 !
         do iky=1,nz
           do ikx=1,ny
             do ikz=1,nx
+              P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
+              P22=1.-ky(iky+ipz*nz)**2*one_over_k2(ikz,ikx,iky)
+              P12=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
 !
-!  Real part of (ux, uy, uz) -> vx, vy, vz
-!  (kk.uu)/k2, vi = ui - ki kj uj
+              fact=P12**2-.5*P11*P22
+              S11_re(ikz,ikx,iky)=S11_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+              S11_im(ikz,ikx,iky)=S11_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
 !
-!  r = .5*P11^2
+              fact=.5*P12*P22
+              S12_re(ikz,ikx,iky)=S12_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+              S12_im(ikz,ikx,iky)=S12_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
 !
-              P2=.5*(1.-kx(ikx+ipy*ny)**2*k2(ikz,ikx,iky))**2
-              S_re(ikz,ikx,iky)=P2*T_re(ikz,ikx,iky)
-              S_im(ikz,ikx,iky)=P2*T_im(ikz,ikx,iky)
-
-              !v_im(ikz,ikx,iky,1)=u_im(ikz,ikx,iky,1)-kx(ikx+ipy*ny)*r(ikz,ikx,iky)
-              !v_im(ikz,ikx,iky,2)=u_im(ikz,ikx,iky,2)-ky(iky+ipz*nz)*r(ikz,ikx,iky)
-              !v_im(ikz,ikx,iky,3)=u_im(ikz,ikx,iky,3)-kz(ikz+ipx*nx)*r(ikz,ikx,iky)
-
+            enddo
+          enddo
+        enddo
 !
-!  r = .5*P11*P12
+!  Do T33
 !
-              P2=.5*(1.-kx(ikx+ipy*ny)**2*k2(ikz,ikx,iky))*(1.-ky(iky+ipz*nz)**2*k2(ikz,ikx,iky))
-              T_re(ikz,ikx,iky)=P2*T_re(ikz,ikx,iky)
-              T_im(ikz,ikx,iky)=P2*T_im(ikz,ikx,iky)
+        T_im=0.0
+        T_re=f(l1:l2,m1:m2,n1:n2,ibz)**2
+        call fourier_transform(T_re,T_im)
+!
+        do iky=1,nz
+          do ikx=1,ny
+            do ikz=1,nx
+              P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
+              P22=1.-ky(iky+ipz*nz)**2*one_over_k2(ikz,ikx,iky)
+              P33=1.-kz(ikz+ipx*nx)**2*one_over_k2(ikz,ikx,iky)
+              P12=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
+              P13=-kx(ikx+ipy*ny)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
+              P23=-ky(iky+ipz*nz)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
+!
+              fact=P13**2-.5*P11*P33
+              S11_re(ikz,ikx,iky)=S11_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+              S11_im(ikz,ikx,iky)=S11_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+!
+              fact=P13*P23-.5*P12*P33
+              S12_re(ikz,ikx,iky)=S12_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+              S12_im(ikz,ikx,iky)=S12_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+!
+            enddo
+          enddo
+        enddo
+!
+!  Do T12 = T21
+!
+        T_im=0.0
+        T_re=f(l1:l2,m1:m2,n1:n2,ibx)*f(l1:l2,m1:m2,n1:n2,iby)
+        call fourier_transform(T_re,T_im)
+!
+        do iky=1,nz
+          do ikx=1,ny
+            do ikz=1,nx
+              P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
+              P22=1.-ky(iky+ipz*nz)**2*one_over_k2(ikz,ikx,iky)
+              P12=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
+!
+              fact=P11*P12
+              S11_re(ikz,ikx,iky)=S11_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+              S11_im(ikz,ikx,iky)=S11_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+!
+              fact=P11*P22
+              S12_re(ikz,ikx,iky)=S12_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+              S12_im(ikz,ikx,iky)=S12_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+!
+            enddo
+          enddo
+        enddo
+!
+!  Do T13 = T31
+!
+        T_im=0.0
+        T_re=f(l1:l2,m1:m2,n1:n2,ibx)*f(l1:l2,m1:m2,n1:n2,ibz)
+        call fourier_transform(T_re,T_im)
+!
+        do iky=1,nz
+          do ikx=1,ny
+            do ikz=1,nx
+              P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
+              P13=-kx(ikx+ipy*ny)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
+              P23=-ky(iky+ipz*nz)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
+!
+              fact=P11*P13
+              S11_re(ikz,ikx,iky)=S11_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+              S11_im(ikz,ikx,iky)=S11_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+!
+              fact=P11*P23
+              S12_re(ikz,ikx,iky)=S12_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+              S12_im(ikz,ikx,iky)=S12_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+!
+            enddo
+          enddo
+        enddo
+!
+!  Do T23 = T32
+!
+        T_im=0.0
+        T_re=f(l1:l2,m1:m2,n1:n2,iby)*f(l1:l2,m1:m2,n1:n2,ibz)
+        call fourier_transform(T_re,T_im)
+!
+        do iky=1,nz
+          do ikx=1,ny
+            do ikz=1,nx
+              P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
+              P22=1.-ky(iky+ipz*nz)**2*one_over_k2(ikz,ikx,iky)
+              P12=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
+              P13=-kx(ikx+ipy*ny)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
+              P23=-ky(iky+ipz*nz)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
+!
+              fact=2*(P12*P13-.5*P11*P23)
+              S11_re(ikz,ikx,iky)=S11_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+              S11_im(ikz,ikx,iky)=S11_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+!
+              fact=P22*P13
+              S12_re(ikz,ikx,iky)=S12_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+              S12_im(ikz,ikx,iky)=S12_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
 !
             enddo
           enddo
@@ -491,19 +619,21 @@ module Special
 !
 !  back to real space
 !
-        call fourier_transform(S_re,S_im,linv=.true.)
-        call fourier_transform(T_re,T_im,linv=.true.)
+        call fourier_transform(S11_re,S11_im,linv=.true.)
+        call fourier_transform(S12_re,S12_im,linv=.true.)
 !
 !  add (or set) corresponding stress
 !
-        f(l1:l2,m1:m2,n1:n2,istressL)=S_re
-        f(l1:l2,m1:m2,n1:n2,istressT)=T_re
+        f(l1:l2,m1:m2,n1:n2,istressL)=S11_re
+        f(l1:l2,m1:m2,n1:n2,istressT)=S12_re
 !
 !  Deallocate arrays.
 !
-      if (allocated(k2))   deallocate(k2)
-      if (allocated(S_re)) deallocate(S_re)
-      if (allocated(S_im)) deallocate(S_im)
+      if (allocated(one_over_k2)) deallocate(one_over_k2)
+      if (allocated(S11_re)) deallocate(S11_re)
+      if (allocated(S11_im)) deallocate(S11_im)
+      if (allocated(S12_re)) deallocate(S12_re)
+      if (allocated(S12_im)) deallocate(S12_im)
       if (allocated(T_re)) deallocate(T_re)
       if (allocated(T_im)) deallocate(T_im)
       if (allocated(kx)) deallocate(kx)
