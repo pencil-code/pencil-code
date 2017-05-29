@@ -172,7 +172,7 @@ class DiffusionData(object):
             self.direction = direction
 
             print('~ diffusion = '+str(self.diffusion))
-            print('~ diffusion std = '+str(self.diffusion_std))
+            print('~ diffusion std = '+str(self.diffusion_error))
             print('~ direction = '+str(self.direction))
 
             # from pencilnew.io import debug_breakpoint; debug_breakpoint()
