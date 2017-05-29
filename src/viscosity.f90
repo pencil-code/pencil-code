@@ -219,6 +219,27 @@ module Viscosity
         call farray_register_auxiliary('Flux_diff_heat',iFF_heat)
       endif
 !
+!  Register nusmag as auxilliary variable
+!
+      if (lnusmag_as_aux.and.any(ivisc=='smagorinsky')) then
+        call farray_register_auxiliary('nusmag',inusmag,communicated=.true.)
+        if (lroot) write(15,*) 'nusmag = fltarr(mx,my,mz)*one'
+        aux_var(aux_count)=',nusmag'
+        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
+        aux_count=aux_count+1
+      endif
+!
+!  Register an extra aux slot for dissipation rate if requested (so
+!  visc_heat is written to snapshots and can be easily analyzed later).
+!
+      if (lvisc_heat_as_aux) then
+        call farray_register_auxiliary('visc_heat',ivisc_heat)
+        if (lroot) write(15,*) 'visc_heat = fltarr(mx,my,mz)*one'
+        aux_var(aux_count)=',visc_heat'
+        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
+        aux_count=aux_count+1
+      endif
+!
     endsubroutine register_viscosity
 !***********************************************************************
     subroutine initialize_viscosity
@@ -226,7 +247,6 @@ module Viscosity
 !  20-nov-02/tony: coded
 !
       use EquationOfState, only: get_stratz
-      use FArrayManager, only: farray_register_auxiliary
       use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable,get_shared_variable
       use Sub, only: write_zprof, step
@@ -537,42 +557,7 @@ module Viscosity
                            nu_shock+(nu_shock*(nu_jump_shock-1.))*step(x(l1:l2),xnu_shock,-widthnu_shock))
       endif
 !
-!  Register an extra aux slot for dissipation rate if requested (so
-!  visc_heat is written sto snapshots and can be easily analyzed later).
-!    NB: We are doing this here, rather than in register_viscosity, as the
-!  register_XXX routines are called before read_{start,run}pars, so        !MR: this is no longer so!
-!  lvisc_heat_as_aux isn't known there. This implies that we need to
-!  append the ivisc_heat line to index.pro manually.
-!
-      if (lvisc_heat_as_aux) then
-        call farray_register_auxiliary('visc_heat',ivisc_heat)
-!
-        if (lroot) then
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'ivisc_heat=',ivisc_heat
-          close(3)
-          open(15,FILE=trim(datadir)//'/def_var.pro',position='append')
-          write(15,*) 'visc_heat = fltarr(mx,my,mz)*one'
-          close(15)
-        endif
-      endif
-!
-!  Register nusmag as auxilliary variable
-!
       lnusmag_as_aux = lnusmag_as_aux.and.lvisc_smag
-
-      if (lnusmag_as_aux) then
-        call farray_register_auxiliary('nusmag',inusmag)
-!
-        if (lroot) then
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'inusmag=',inusmag
-          close(3)
-          open(15,FILE=trim(datadir)//'/def_var.pro',position='append')
-          write(15,*) 'nusmag = fltarr(mx,my,mz)*one'
-          close(15)
-        endif
-      endif
 !
 !  Shared variables.
 !
@@ -2012,38 +1997,31 @@ module Viscosity
 
       if (lnusmag_as_aux) then
 !
-        if (ldensity) then
-!
 !  Compute nu_smag and put into tmp
 !
-          call get_shared_variable('lshear_rateofstrain',lshear_rateofstrain,caller='viscosity_after_boundary')
+        call get_shared_variable('lshear_rateofstrain',lshear_rateofstrain,caller='viscosity_after_boundary')
 
-          do n=n1,n2; do m=m1,m2
+        do n=n1,n2; do m=m1,m2
 !
 ! sij2  ->  rho
 !
-            call calc_sij2(f,rho,lshear_rateofstrain)
-            tmp=(C_smag*dxmax)**2.*sqrt(2.*rho)
+          call calc_sij2(f,rho,lshear_rateofstrain)
+          tmp=(C_smag*dxmax)**2.*sqrt(2.*rho)
 !
 !  Enhance nu_smag in proportion to the Mach number to power 2*nu_smag_Ma2_power,
 !  see e.g. Chan & Sofia (1996), ApJ, 466, 372, for a similar approach
 !
-            !!if (lvisc_smag_Ma) tmp=tmp*(1.+p%Ma2**nu_smag_Ma2_power)
+          !!if (lvisc_smag_Ma) tmp=tmp*(1.+p%Ma2**nu_smag_Ma2_power)
 !
 !  Apply quenching term if requested
 !
-            if (gamma_smag/=0.) tmp=tmp/sqrt(1.+gamma_smag*rho)
+          if (gamma_smag/=0.) tmp=tmp/sqrt(1.+gamma_smag*rho)
 !
 !  Put nu_smag into the f-array.
 !          
-            f(l1:l2,m,n,inusmag)=tmp
+          f(l1:l2,m,n,inusmag)=tmp
 !
-          enddo; enddo
-!
-        else
-          if (lfirstpoint) print*, 'viscosity_after_boundary: '// &
-              "ldensity better be .true. for ivisc='smagorinsky'"
-        endif
+        enddo; enddo
 !
         call update_ghosts(f,inusmag)
 !
