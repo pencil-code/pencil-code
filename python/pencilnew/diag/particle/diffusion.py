@@ -171,6 +171,10 @@ class DiffusionData(object):
             self.sigma = sigma
             self.direction = direction
 
+            print('~ diffusion = '+str(self.diffusion))
+            print('~ diffusion std = '+str(self.diffusion_std))
+            print('~ direction = '+str(self.direction))
+
             # from pencilnew.io import debug_breakpoint; debug_breakpoint()
             print('## saving results in' + join(out_path,out_name))
             save(obj=self, name=out_name, folder=out_path)
