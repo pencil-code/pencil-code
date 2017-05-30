@@ -42,7 +42,7 @@ module Special
   logical :: luse_mag_field=.false., luse_mag_vel_field=.false.
   logical :: luse_timedep_magnetogram=.false., lwrite_driver=.false.
   logical :: lnc_density_depend=.false., lnc_intrin_energy_depend=.false.
-  logical :: lflux_emerg_bottom=.false.
+  logical :: lflux_emerg_bottom=.false.,lslope_limited_special=.false.
   integer :: irefz=n1, nglevel=max_gran_levels, cool_type=5
   real :: massflux=0., u_add
   real :: K_spitzer=0., hcond2=0., hcond3=0., init_time=0., init_time_hcond=0.
@@ -54,6 +54,11 @@ module Special
   real :: swamp_diffrho=0.0, swamp_chi=0.0, swamp_eta=0.0
   real :: lnrho_min=-max_real, lnrho_min_tau=1.0
   real, dimension(nx) :: glnTT_H, hlnTT_Bij, glnTT2, glnTT_abs, glnTT_abs_inv, glnTT_b
+!
+  integer :: nlf=4
+  real, dimension (mx) :: x12
+  real, dimension (my) :: y12
+  real, dimension (mz) :: z12
 !
   real, dimension(nx,ny,2) :: A_init
 !
@@ -93,8 +98,9 @@ module Special
       swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, swamp_eta, &
       vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau, &
       cool_RTV_cutoff, T_crit, deltaT_crit, & 
-      lflux_emerg_bottom, uu_emerg, bb_emerg
+      lflux_emerg_bottom, uu_emerg, bb_emerg, lslope_limited_special
 !
+  integer :: ispecaux=0
   integer :: idiag_dtvel=0     ! DIAG_DOC: Velocity driver time step
   integer :: idiag_dtnewt=0    ! DIAG_DOC: Radiative cooling time step
   integer :: idiag_dtradloss=0 ! DIAG_DOC: Radiative losses time step
@@ -163,7 +169,11 @@ module Special
 !
 !  6-oct-03/tony: coded
 !
+      use FArrayManager
+!
       if (lroot) call svn_id("$Id$")
+      if (lslope_limited_special .and. ldensity.and..not.ldensity_nolog) &
+      call farray_register_auxiliary('specaux',ispecaux)
 !
     endsubroutine register_special
 !***********************************************************************
@@ -236,6 +246,9 @@ module Special
 !
       ! Setup atmosphere stratification for later use
       call setup_profiles()
+!
+      if (lroot) print*,'initialize_special: Set up half grid x12, y12, z12'
+      call generate_halfgrid(x12,y12,z12)
 !
       call keep_compiler_quiet(f)
 !
@@ -915,7 +928,7 @@ module Special
 !
       use Sub, only: del6
 !
-      real, dimension(mx,my,mz,mfarray), intent(in) :: f
+      real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       real, dimension(mx,my,mz,mvar), intent(inout) :: df
       type (pencil_case), intent(in) :: p
       real, dimension(nx) :: fdiff
@@ -948,6 +961,35 @@ module Special
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + lnrho_min_tau * fdiff
       endif
 !
+      if (ispecaux/=0) then
+        if (headtt) print*,'special_calc_density: call div_diff_flux'
+        if (ibb==0)  &
+          call fatal_error ('special_calc_density', "set lbb_as_aux=T in run.in")
+        if (ldensity_nolog) then
+          call div_diff_flux(f,irho,p,fdiff)
+          if (lfirst_proc_x.and.lfrozen_bot_var_x(irho)) then
+!
+!  Density is frozen at boundary
+!
+            df(l1+1:l2,m,n,irho) = df(l1+1:l2,m,n,irho) + fdiff(2:nx)
+          else
+            df(l1:l2,m,n,irho) = df(l1:l2,m,n,irho) + fdiff
+          endif
+        else
+!
+! Store the diffusive flux in a special aux array to be added later to
+! log-density in special_after_timestep
+!
+          call div_diff_flux(f,ilnrho,p,fdiff)
+          if (lfirst_proc_x.and.lfrozen_bot_var_x(ilnrho)) then
+            f(l1,m,n,ispecaux) = 0.0
+            f(l1+1:l2,m,n,ispecaux) = fdiff(2:nx)
+          else
+            f(l1:l2,m,n,ispecaux) = fdiff
+          endif
+        endif
+      endif
+!    
     endsubroutine special_calc_density
 !***********************************************************************
     subroutine special_calc_energy(f,df,p)
@@ -1165,6 +1207,7 @@ module Special
       use Sub, only: cross,gij,curl_mn
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
+      real, dimension(mx,my,mz):: rho_tmp
       real, intent(in) :: dt_
       real, dimension(nx,3) :: uu,bb,uxb
       integer :: ig
@@ -1192,6 +1235,10 @@ module Special
             enddo
           enddo
         endif
+      endif
+      if (.not.ldensity_nolog .and. lslope_limited_special) then
+        rho_tmp(l1:l2,m1:m2,n1:n2)=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))+f(l1:l2,m1:m2,n1:n2,ispecaux)*dt_
+        f(l1:l2,m1:m2,n1:n2,ilnrho)=log(rho_tmp(l1:l2,m1:m2,n1:n2))
       endif
 !
 !
@@ -4054,6 +4101,324 @@ module Special
       Uy = vy*vtot/vrms
 !
     endsubroutine enhance_vorticity
+!***********************************************************************
+    subroutine generate_halfgrid(x12,y12,z12)
+!
+! x[l1:l2]+0.5/dx_1[l1:l2]-0.25*dx_tilde[l1:l2]/dx_1[l1:l2]^2
+!
+      real, dimension (mx), intent(out) :: x12
+      real, dimension (my), intent(out) :: y12
+      real, dimension (mz), intent(out) :: z12
+!
+      x12     =x+0.5/dx_1-0.25*dx_tilde/dx_1**2
+!
+      y12     =y+0.5/dy_1-0.25*dy_tilde/dy_1**2
+!
+      z12     =z+0.5/dz_1-0.25*dz_tilde/dz_1**2
+!
+    endsubroutine generate_halfgrid
+!*******************************************************************************
+    subroutine div_diff_flux(f,j,p,div_flux)
+      intent(in) :: f,j
+      intent(out) :: div_flux
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3) :: flux_im12,flux_ip12
+      real, dimension (nx,3) :: cmax_im12,cmax_ip12
+      real, dimension (nx) :: div_flux
+      real, dimension (nx) :: fim12_l,fim12_r,fip12_l,fip12_r
+      real, dimension (nx) :: fim1,fip1,rfac,q1
+      real :: alpha=1.25
+      type (pencil_case), intent(in) :: p
+      integer :: i,j,k
+!
+! First set the diffusive flux = cmax*(f_R-f_L) at half grid points
+!
+        fim1=0
+        fip1=0
+        fim12_l=0
+        fim12_r=0
+        fip12_l=0
+        fip12_r=0
+        cmax_ip12=0
+        cmax_im12=0
+!
+!  Generate halfgrid points
+!
+      do k=1,3
+!
+        call slope_lim_lin_interpol(f,j,fim12_l,fim12_r,fip12_l,fip12_r,&
+                                   fim1,fip1,k)      
+        call characteristic_speed(f,p,cmax_im12,cmax_ip12,k)
+        do ix=1,nx
+          if (ldensity_nolog) then
+            rfac(ix)=abs(fim12_r(ix)-fim12_l(ix))/(abs(f(ix+nghost,m,n,j)-&
+                     fim1(ix))+tini)
+          else
+            rfac(ix)=abs(fim12_r(ix)-fim12_l(ix))/(abs(exp(f(ix+nghost,m,n,j))-&
+                     fim1(ix))+tini)
+          endif
+          q1(ix)=(min1(1.0,alpha*rfac(ix)))**nlf
+        enddo
+        flux_im12(:,k)=0.5*cmax_im12(:,k)*q1*(fim12_r-fim12_l)
+        do ix=1,nx
+          if (ldensity_nolog) then
+            rfac(ix)=abs(fip12_r(ix)-fip12_l(ix))/(abs(fip1(ix)-&
+                     f(ix+nghost,m,n,j))+tini)
+          else
+            rfac(ix)=abs(fip12_r(ix)-fip12_l(ix))/(abs(fip1(ix)-&
+                     exp(f(ix+nghost,m,n,j)))+tini)
+          endif
+          q1(ix)=(min1(1.0,alpha*rfac(ix)))**nlf
+        enddo
+        flux_ip12(:,k)=0.5*cmax_ip12(:,k)*q1*(fip12_r-fip12_l)
+      enddo
+!
+! Now calculate the 2nd order divergence
+!
+      if (lspherical_coords) then
+        div_flux=0.0
+        div_flux=div_flux+(x12(l1:l2)**2*flux_ip12(:,1)-x12(l1-1:l2-1)**2*flux_im12(:,1))&
+                 /(x(l1:l2)**2*(x12(l1:l2)-x12(l1-1:l2-1))) &
+        +(sin(y(m)+0.5*dy)*flux_ip12(:,2)-&
+                sin(y(m)-0.5*dy)*flux_im12(:,2))/(x(l1:l2)*sin(y(m))*dy) &
+            +(flux_ip12(:,3)-flux_im12(:,3))/(x(l1:l2)*sin(y(m))*dz)
+      else if (lcartesian_coords) then
+        div_flux=0.0
+        div_flux=div_flux+(flux_ip12(:,1)-flux_im12(:,1))&
+                 /(x12(l1:l2)-x12(l1-1:l2-1)) &
+        +(flux_ip12(:,2)-flux_im12(:,2))/(y12(m)-y12(m-1)) &
+            +(flux_ip12(:,3)-flux_im12(:,3))/(z12(n)-z12(n-1))
+       else
+         call fatal_error('twist_inject:div_diff_flux','Not coded for cylindrical')
+       endif
+!
+    endsubroutine div_diff_flux
+!*******************************************************************************
+    subroutine slope_lim_lin_interpol(f,j,fim12_l,fim12_r,fip12_l,fip12_r,fim1,&
+                                     fip1,k)
+!
+! Reconstruction of a scalar by slope limited linear interpolation
+! Get values at half grid points l+1/2,m+1/2,n+1/2 depending on case(k)
+!
+      intent(in) :: f,k,j
+      intent(out) :: fim12_l,fim12_r,fip12_l,fip12_r
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx) :: fim12_l,fim12_r,fip12_l,fip12_r,fim1,fip1
+      real, dimension (nx) :: delfy,delfz,delfyp1,delfym1,delfzp1,delfzm1
+      real, dimension (0:nx+1) :: delfx
+      integer :: j,k
+      integer :: i,ix
+      real :: tmp0,tmp1,tmp2,tmp3
+! x-component
+      select case (k)
+        case(1)
+! Special case of non uniform grid only in the radial direction
+        if (ldensity_nolog) then
+          do i=l1-1,l2+1
+            ix=i-nghost
+            tmp1=(f(i,m,n,j)-f(i-1,m,n,j))/(x(i)-x(i-1))
+            tmp2=(f(i+1,m,n,j)-f(i,m,n,j))/(x(i+1)-x(i))
+            delfx(ix) = minmod_alt(tmp1,tmp2)
+          enddo
+          do i=l1,l2
+            ix=i-nghost
+            fim12_l(ix) = f(i-1,m,n,j)+delfx(ix-1)*(x(i)-x(i-1))
+            fim12_r(ix) = f(i,m,n,j)-delfx(ix)*(x(i)-x(i-1))
+            fip12_l(ix) = f(i,m,n,j)+delfx(ix)*(x(i+1)-x(i))
+            fip12_r(ix) = f(i+1,m,n,j)-delfx(ix+1)*(x(i+1)-x(i))
+            fim1(ix) = f(i-1,m,n,j)
+            fip1(ix) = f(i+1,m,n,j)
+          enddo
+        else
+          do i=l1-1,l2+1
+            ix=i-nghost
+            tmp1=(exp(f(i,m,n,j))-exp(f(i-1,m,n,j)))/(x(i)-x(i-1))
+            tmp2=(exp(f(i+1,m,n,j))-exp(f(i,m,n,j)))/(x(i+1)-x(i))
+            delfx(ix) = minmod_alt(tmp1,tmp2)
+          enddo
+          do i=l1,l2
+            ix=i-nghost
+            fim12_l(ix) = exp(f(i-1,m,n,j))+delfx(ix-1)*(x(i)-x(i-1))
+            fim12_r(ix) = exp(f(i,m,n,j))-delfx(ix)*(x(i)-x(i-1))
+            fip12_l(ix) = exp(f(i,m,n,j))+delfx(ix)*(x(i+1)-x(i))
+            fip12_r(ix) = exp(f(i+1,m,n,j))-delfx(ix+1)*(x(i+1)-x(i))
+            fim1(ix) = exp(f(i-1,m,n,j))
+            fip1(ix) = exp(f(i+1,m,n,j))
+          enddo
+        endif
+! y-component
+        case(2)
+        if (ldensity_nolog) then
+          do i=l1,l2
+            ix=i-nghost
+            tmp0=f(i,m-1,n,j)-f(i,m-2,n,j)
+            tmp1=f(i,m,n,j)-f(i,m-1,n,j)
+            delfym1(ix) = minmod_alt(tmp0,tmp1)
+            tmp2=f(i,m+1,n,j)-f(i,m,n,j)
+            delfy(ix) = minmod_alt(tmp1,tmp2)
+            tmp3=f(i,m+2,n,j)-f(i,m+1,n,j)
+            delfyp1(ix) = minmod_alt(tmp2,tmp3)
+          enddo
+          do i=l1,l2
+            ix=i-nghost
+            fim12_l(ix) = f(i,m-1,n,j)+delfym1(ix)
+            fim12_r(ix) = f(i,m,n,j)-delfy(ix)
+            fip12_l(ix) = f(i,m,n,j)+delfy(ix)
+            fip12_r(ix) = f(i,m+1,n,j)-delfyp1(ix)
+            fim1(ix) = f(i,m-1,n,j)
+            fip1(ix) = f(i,m+1,n,j)
+          enddo
+        else
+          do i=l1,l2
+            ix=i-nghost
+            tmp0=exp(f(i,m-1,n,j))-exp(f(i,m-2,n,j))
+            tmp1=exp(f(i,m,n,j))-exp(f(i,m-1,n,j))
+            delfym1(ix) = minmod_alt(tmp0,tmp1)
+            tmp2=exp(f(i,m+1,n,j))-exp(f(i,m,n,j))
+            delfy(ix) = minmod_alt(tmp1,tmp2)
+            tmp3=exp(f(i,m+2,n,j))-exp(f(i,m+1,n,j))
+            delfyp1(ix) = minmod_alt(tmp2,tmp3)
+          enddo
+          do i=l1,l2
+            ix=i-nghost
+            fim12_l(ix) = exp(f(i,m-1,n,j))+delfym1(ix)
+            fim12_r(ix) = exp(f(i,m,n,j))-delfy(ix)
+            fip12_l(ix) = exp(f(i,m,n,j))+delfy(ix)
+            fip12_r(ix) = exp(f(i,m+1,n,j))-delfyp1(ix)
+            fim1(ix) = exp(f(i,m-1,n,j))
+            fip1(ix) = exp(f(i,m+1,n,j))
+          enddo
+        endif
+! z-component
+        case(3)
+        if (ldensity_nolog) then
+          do i=l1,l2
+            ix=i-nghost
+            tmp0=f(i,m,n-1,j)-f(i,m,n-2,j)
+            tmp1=f(i,m,n,j)-f(i,m,n-1,j)
+            delfzm1(ix) = minmod_alt(tmp0,tmp1)
+            tmp2=f(i,m,n+1,j)-f(i,m,n,j)
+            delfz(ix) = minmod_alt(tmp1,tmp2)
+            tmp3=f(i,m,n+2,j)-f(i,m,n+1,j)
+            delfzp1(ix) = minmod_alt(tmp2,tmp3)
+          enddo
+          do i=l1,l2
+            ix=i-nghost
+            fim12_l(ix) = f(i,m,n-1,j)+delfzm1(ix)
+            fim12_r(ix) = f(i,m,n,j)-delfz(ix)
+            fip12_l(ix) = f(i,m,n,j)+delfz(ix)
+            fip12_r(ix) = f(i,m,n+1,j)-delfzp1(ix)
+            fim1(ix) = f(i,m,n-1,j)
+            fip1(ix) = f(i,m,n+1,j)
+          enddo
+        else
+          do i=l1,l2
+            ix=i-nghost
+            tmp0=exp(f(i,m,n-1,j))-exp(f(i,m,n-2,j))
+            tmp1=exp(f(i,m,n,j))-exp(f(i,m,n-1,j))
+            delfzm1(ix) = minmod_alt(tmp0,tmp1)
+            tmp2=exp(f(i,m,n+1,j))-exp(f(i,m,n,j))
+            delfz(ix) = minmod_alt(tmp1,tmp2)
+            tmp3=exp(f(i,m,n+2,j))-exp(f(i,m,n+1,j))
+            delfzp1(ix) = minmod_alt(tmp2,tmp3)
+          enddo
+          do i=l1,l2
+            ix=i-nghost
+            fim12_l(ix) = exp(f(i,m,n-1,j))+delfzm1(ix)
+            fim12_r(ix) = exp(f(i,m,n,j))-delfz(ix)
+            fip12_l(ix) = exp(f(i,m,n,j))+delfz(ix)
+            fip12_r(ix) = exp(f(i,m,n+1,j))-delfzp1(ix)
+            fim1(ix) = exp(f(i,m,n-1,j))
+            fip1(ix) = exp(f(i,m,n+1,j))
+          enddo
+        endif
+        case default
+          call fatal_error('twist_inject:slope_lim_lin_interpol','wrong component')
+        endselect
+!
+    endsubroutine slope_lim_lin_interpol
+!***********************************************************************
+    subroutine characteristic_speed(f,p,cmax_im12,cmax_ip12,k)
+      intent(in) :: f,k
+      intent(out) :: cmax_im12,cmax_ip12
+!
+!
+      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension (nx,3) :: cmax_im12,cmax_ip12
+      real, dimension (nx) :: b1_tmp,b2_tmp,b3_tmp,rho_tmp
+      real, dimension (0:nx) :: b1_xtmp,b2_xtmp,b3_xtmp,rho_xtmp
+      type (pencil_case), intent(in) :: p
+      integer :: k
+      integer :: i,ix
+!
+      select case (k)
+! x-component
+        case(1)
+          b1_xtmp=0.5*(f(l1-1:l2,m,n,ibx)+f(l1:l2+1,m,n,ibx))
+          b2_xtmp=0.5*(f(l1-1:l2,m,n,iby)+f(l1:l2+1,m,n,iby))
+          b3_xtmp=0.5*(f(l1-1:l2,m,n,ibz)+f(l1:l2+1,m,n,ibz))
+          if (ldensity_nolog) then
+          rho_xtmp=0.5*(f(l1-1:l2,m,n,irho)+f(l1:l2+1,m,n,irho))
+          else
+          rho_xtmp=0.5*(exp(f(l1-1:l2,m,n,ilnrho))+exp(f(l1:l2+1,m,n,ilnrho)))
+          endif
+          cmax_im12(:,1)=sqrt(b1_xtmp(0:nx-1)**2+b2_xtmp(0:nx-1)**2+b3_xtmp(0:nx-1)**2)/sqrt(rho_xtmp(0:nx-1))+sqrt(p%cs2)
+          cmax_ip12(:,1)=sqrt(b1_xtmp(1:nx)**2+b2_xtmp(1:nx)**2+b3_xtmp(1:nx)**2)/sqrt(rho_xtmp(1:nx))+sqrt(p%cs2)
+! y-component
+        case(2)
+          b1_tmp=0.5*(f(l1:l2,m-1,n,ibx)+f(l1:l2,m,n,ibx))
+          b2_tmp=0.5*(f(l1:l2,m-1,n,iby)+f(l1:l2,m,n,iby))
+          b3_tmp=0.5*(f(l1:l2,m-1,n,ibz)+f(l1:l2,m,n,ibz))
+          if (ldensity_nolog) then
+            rho_tmp=0.5*(f(l1:l2,m-1,n,irho)+f(l1:l2,m,n,irho))
+          else
+            rho_tmp=0.5*(exp(f(l1:l2,m-1,n,ilnrho))+exp(f(l1:l2,m,n,ilnrho)))
+          endif
+          cmax_im12(:,2)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(rho_tmp)+sqrt(p%cs2)
+          b1_tmp=0.5*(f(l1:l2,m,n,ibx)+f(l1:l2,m+1,n,ibx))
+          b2_tmp=0.5*(f(l1:l2,m,n,iby)+f(l1:l2,m+1,n,iby))
+          b3_tmp=0.5*(f(l1:l2,m,n,ibz)+f(l1:l2,m+1,n,ibz))
+          if (ldensity_nolog) then
+            rho_tmp=0.5*(f(l1:l2,m,n,irho)+f(l1:l2,m+1,n,irho))
+          else
+            rho_tmp=0.5*(exp(f(l1:l2,m,n,ilnrho))+exp(f(l1:l2,m+1,n,ilnrho)))
+          endif
+          cmax_ip12(:,2)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(rho_tmp)+sqrt(p%cs2)
+! z-component
+        case(3)
+          b1_tmp=0.5*(f(l1:l2,m,n-1,ibx)+f(l1:l2,m,n,ibx))
+          b2_tmp=0.5*(f(l1:l2,m,n-1,iby)+f(l1:l2,m,n,iby))
+          b3_tmp=0.5*(f(l1:l2,m,n-1,ibz)+f(l1:l2,m,n,ibz))
+          if (ldensity_nolog) then
+            rho_tmp=0.5*(f(l1:l2,m,n-1,irho)+f(l1:l2,m,n,irho))
+          else
+            rho_tmp=0.5*(exp(f(l1:l2,m,n-1,ilnrho))+exp(f(l1:l2,m,n,ilnrho)))
+          endif
+          cmax_im12(:,3)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(rho_tmp)+sqrt(p%cs2)
+          b1_tmp=0.5*(f(l1:l2,m,n,ibx)+f(l1:l2,m,n+1,ibx))
+          b2_tmp=0.5*(f(l1:l2,m,n,iby)+f(l1:l2,m,n+1,iby))
+          b3_tmp=0.5*(f(l1:l2,m,n,ibz)+f(l1:l2,m,n+1,ibz))
+          if (ldensity_nolog) then
+            rho_tmp=0.5*(f(l1:l2,m,n,irho)+f(l1:l2,m,n+1,irho))
+          else
+            rho_tmp=0.5*(exp(f(l1:l2,m,n,ilnrho))+exp(f(l1:l2,m,n+1,ilnrho)))
+          endif
+          cmax_ip12(:,3)=sqrt(b1_tmp**2+b2_tmp**2+b3_tmp**2)/sqrt(rho_tmp)+sqrt(p%cs2)
+        endselect
+    endsubroutine characteristic_speed
+!***********************************************************************
+    real function minmod_alt(a,b)
+!
+!  minmod=max(0,min(abs(a),sign(1,a)*b))
+!
+      real :: a,b
+!
+      minmod_alt=sign(0.5,a)*max(0.0,min(abs(a),sign(1.0,a)*b))
+!
+    endfunction minmod_alt
+!***********************************************************************
 !***********************************************************************
 !************        DO NOT DELETE THE FOLLOWING       **************
 !********************************************************************
