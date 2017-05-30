@@ -961,7 +961,7 @@ module Special
         df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + lnrho_min_tau * fdiff
       endif
 !
-      if (ispecaux/=0) then
+      if (lslope_limited_special) then
         if (headtt) print*,'special_calc_density: call div_diff_flux'
         if (ibb==0)  &
           call fatal_error ('special_calc_density', "set lbb_as_aux=T in run.in")
