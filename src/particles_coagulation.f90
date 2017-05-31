@@ -45,7 +45,7 @@ module Particles_coagulation
   logical :: lconstant_deltav=.false.   ! use constant relative velocity
   logical :: lmaxwell_deltav=.false.    ! use maxwellian relative velocity
   logical :: ldroplet_coagulation=.false.
-  logical :: lcollision_output=.false., luser_random_number_wrapper=.true.
+  logical :: lcollision_output=.false., luser_random_number_wrapper=.false.
   logical :: lrelabelling=.false.
   character (len=labellen) :: droplet_coagulation_model='standard'
 !
