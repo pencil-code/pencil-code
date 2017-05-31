@@ -174,7 +174,7 @@ module Energy
   integer :: idiag_uxTmz=0      ! XYAVG_DOC: $\left<u_x T\right>_{xy}$
   integer :: idiag_uyTmz=0      ! XYAVG_DOC: $\left<u_y T\right>_{xy}$
   integer :: idiag_uzTmz=0      ! XYAVG_DOC: $\left<u_z T\right>_{xy}$
-  integer :: idiag_fradmz=0     ! XYAVG_DOC: $\left<F_{\rm rad}>_{xy}$
+  integer :: idiag_fradmz=0     ! XYAVG_DOC: $\left<F_{\rm rad}\right>_{xy}$
   integer :: idiag_fconvmz=0    ! XYAVG_DOC: $\left<c_p \varrho u_z T \right>_{xy}$
 !
 ! xz averaged diagnostics given in xzaver.in
