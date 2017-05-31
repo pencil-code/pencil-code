@@ -175,6 +175,10 @@ class DiffusionData(object):
             print('~ diffusion std = '+str(self.diffusion_error))
             print('~ direction = '+str(self.direction))
 
-            # from pencilnew.io import debug_breakpoint; debug_breakpoint()
-            print('## saving results in' + join(out_path,out_name))
-            save(obj=self, name=out_name, folder=out_path)
+            try:
+                print('## saving results in' + join(out_path,out_name))
+                save(obj=self, name=out_name, folder=out_path)
+            except:
+                print("!! Unexpected error:", sys.exc_info()[0])
+                print("!! Check if you have writing rights.")
+                raise
