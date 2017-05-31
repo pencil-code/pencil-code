@@ -4759,6 +4759,8 @@ is only set here. It is worth noting that one \textit{should not} use the flag
 FFLAGS += -integer-size 64
 \end{verbatim}
 to promote all the integers to 64 Bit. This will break the Fortran-C interface.
+One should also make sure that \code{npar_mig<=npar/ncpus}. It is also beneficial
+to set \code{mpar_loc=2*npar/ncpus}.
 
 \subsubsection{Random number generator}
 
