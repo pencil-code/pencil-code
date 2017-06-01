@@ -381,7 +381,7 @@ class __Simulation__(object):
         folder = join(self.path,'data')
         keeps = []
 
-        if not exists(folder): print('? Warning: No data directory found!'); return True
+        if not exists(folder): return True
 
         filelist = listdir(folder)          # remove everything INSIDE
         for f in filelist:
@@ -390,26 +390,26 @@ class __Simulation__(object):
         return True
 
 
-    def remove(self, do_it=False, do_it_really=False, remove_data=False):
+    def remove(self, do_it=False, do_it_really=False, remove_data=True):
         """ This method removes the WHOLE simulation,
-        but NOT the DATA directory per default.
-        Do remove_data=True to delete data dir as well.
+        including DATA directory!
 
         Args:
             to activate pass        True, True
             remove_data:            also clear data directory
         """
-        from os import listdir
+        from os import listdir, system
         from os.path import join
         from pencilnew.io import remove_files as remove
 
         self.clear_src(do_it=do_it, do_it_really=do_it_really)
-        if remove_data:
-            self.clear_data(do_it=do_it, do_it_really=do_it_really)
+        if remove_data: self.clear_data(do_it=do_it, do_it_really=do_it_really)
 
         filelist = listdir(self.path)
         for f in filelist:
             remove(join(self.path, f), do_it=do_it, do_it_really=do_it_really)
+
+        system('rm -rf '+self.path)
         return True
 
 
