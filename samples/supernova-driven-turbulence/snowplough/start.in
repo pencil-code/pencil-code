@@ -22,7 +22,7 @@
 /
 &entropy_init_pars
   initss='isothermal'
-  T0=272.946762939 !10^4K
+  T0=75 !10^4K
 /
 &interstellar_init_pars
   initinterstellar='single'
@@ -30,19 +30,10 @@
   center_SN_y=0.0
   center_SN_z=0.0
   lSN_scale_rad=T
-  width_SN = 0.035
-  N_mass=50.0
-  energy_width_ratio=1.0
-  thermal_profile='gaussian3'
+  width_SN = 0.02
+  N_mass=100.0
   lSN_mass=T
-  mass_width_ratio=1.0
-  mass_profile='gaussian3'
-  lSN_velocity=T
-  velocity_width_ratio=1.0
-  velocity_profile='gaussian3'
-  TT_SN_max=1e9
-  frac_kin=0.3
-  frac_eth=0.7
+  frac_kin=0.5
   frac_ecr=0.0
   lSN_ecr=F
   cooling_select='WSW'
