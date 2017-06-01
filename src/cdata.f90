@@ -504,6 +504,7 @@ module Cdata
   logical :: ou_spec=.false., ab_spec=.false., azbz_spec=.false.
   logical :: ub_spec=.false., Lor_spec=.false.
   logical :: har_spec=.false.,hav_spec=.false.
+  logical :: upa_spec=.false.,upe_spec=.false.
   logical :: oned=.false.,twod=.false.
   logical :: ab_phispec=.false.,ou_phispec=.false.
   logical :: rhocc_pdf=.false.,cc_pdf=.false.,lncc_pdf=.false.
