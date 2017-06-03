@@ -75,6 +75,7 @@ module Special
 !
   use Cparam
   use Cdata
+  use Initcond
   use General, only: keep_compiler_quiet
   use Messages, only: svn_id, fatal_error
 !
@@ -85,12 +86,19 @@ module Special
 ! Declare index of new variables in f array (if any).
 !
   integer :: ihhL,ihhT,iggL,iggT,istressL,istressT
-!
+  character (len=labellen) :: inithhL='nothing'
+  character (len=labellen) :: initggL='nothing'
+  real :: amplhhL=0., amplhhT=0., amplggL=0., amplggT=0.
+  real :: kx_hhL=0., ky_hhL=0., kz_hhL=0.
+  real :: kx_ggL=0., ky_ggL=0., kz_ggL=0.
   logical :: lno_transverse_part=.false.
 !
 ! input parameters
   namelist /special_init_pars/ &
-    lno_transverse_part
+    lno_transverse_part, inithhL, initggL, &
+    amplhhL, amplhhT, amplggL, amplggT, &
+    kx_hhL, ky_hhL, kz_hhL, &
+    kx_ggL, ky_ggL, kz_ggL
 !
 ! run parameters
   namelist /special_run_pars/ &
@@ -169,18 +177,27 @@ module Special
       real, dimension (mx,my,mz,mfarray) :: f
 !
       intent(inout) :: f
-!!
-!!  SAMPLE IMPLEMENTATION
-!!
-!!      select case (initspecial)
-!!        case ('nothing'); if (lroot) print*,'init_special: nothing'
-!!        case ('zero', '0'); f(:,:,:,iSPECIAL_VARIABLE_INDEX) = 0.
-!!        case default
-!!          call fatal_error("init_special: No such value for initspecial:" &
-!!              ,trim(initspecial))
-!!      endselect
 !
-      call keep_compiler_quiet(f)
+!  initial condition for hhL
+!
+      select case (inithhL)
+        case ('nothing'); if (lroot) print*,'init_special: nothing'
+        case ('coswave-kx'); call coswave(amplhhL,f,ihhL,kx=kx_hhL)
+        case default
+          call fatal_error("init_special: No such value for inithhL:" &
+              ,trim(inithhL))
+      endselect
+!
+!  initial condition for ggL
+!
+      select case (initggL)
+        case ('nothing'); if (lroot) print*,'init_special: nothing'
+        case ('coswave-kx'); call coswave(amplggL,f,iggL,kx=kx_ggL)
+        case ('sinwave-kx'); call sinwave(amplggL,f,iggL,kx=kx_ggL)
+        case default
+          call fatal_error("init_special: No such value for initggL:" &
+              ,trim(initggL))
+      endselect
 !
     endsubroutine init_special
 !***********************************************************************
