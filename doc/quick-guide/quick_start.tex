@@ -100,30 +100,25 @@ The downloaded \directory{pencil-code} directory contains several sub-directorie
 
 \section{Configure the shell environment}
 
-For a quick start, you need to load some environment variables into your shell.
-First, you enter to the freshly downloaded directory:
+You need to load some environment variables into your shell.
+Please change to the freshly downloaded directory:
 \begin{verbatim}
   cd pencil-code
 \end{verbatim}
 
-Depending on which shell you use, you can do that by a simple command:
+Probably you use a \command{sh}-compatible shell (like the \name{Linux} default shell \command{bash}), there you just type:
 \begin{verbatim}
   . sourceme.sh
 \end{verbatim}
 
-that will work for \command{bash} and all \command{sh}-compatible shells, while this command:
-\begin{verbatim}
-  source sourceme.csh
-\end{verbatim}
-
-is for \command{tcsh} and any \command{csh}-compatible shell.
+(In a \command{csh}-compatible shell, like \command{tcsh}, use this alternative: \command{source sourceme.csh} )
 
 
 \section{Your frist simulation run}
 
 \subsection{Create a new run-directory}
 
-For a quick start, you simply create a run-directory and clone the input and configuration files from one of the samples that fits you best to get started quickly (here \directory{1d-tests/jeans-x}):
+Now create a run-directory and clone the input and configuration files from one of the samples that fits you best to get started quickly (here from \directory{pencil-code/samples/1d-tests/jeans-x}):
 \begin{verbatim}
   mkdir -p /data/myuser/myrun/src
   cd /data/myuser/myrun
@@ -146,7 +141,7 @@ Take a quick look at these files...
 
 
 \subsubsection{Single-processor}
-An example using the module for only one processor would look like:
+An example \file{src/Makefile.local} using the module for only one processor would look like:
 \begin{verbatim}
 MPICOMM=nompicomm
 \end{verbatim}
@@ -160,7 +155,7 @@ In \file{src/cparam.local} the number of processors needs to be set to \code{1} 
 \end{verbatim}
 
 \subsubsection{Multi-processor}
-If you like to use \name{MPI} for multi-processors simulations, be sure that you have a \name{MPI} library installed and change \file{src/Makefile.local} to use \name{MPI}:
+If you like to use \name{MPI} for multi-processor simulations, be sure that you have a \name{MPI} library installed and change \file{src/Makefile.local} to use \name{MPI}:
 \begin{verbatim}
   MPICOMM=mpicomm
 \end{verbatim}
@@ -185,7 +180,7 @@ Alternatively, for multi-processor runs (still using the default \name{GNU-GCC} 
 
 \subsubsection{Using a different compiler (optional)}
 
-If you prefer to use a different compiler package (e.g. using \command{ifort} or with \name{MPI} support), you may try:
+If you prefer to use a different compiler package (e.g. with \name{MPI} support or using \command{ifort}), you may try:
 
 \begin{verbatim}
   pc_build -f Intel
@@ -211,9 +206,13 @@ A good host configuration example, that you may clone and adapt according to you
 The initial conditions are set in \file{start.in} and the parameters for the main simulation run can be found in \file{run.in}.
 In \file{print.in} you can choose which quantities are written to the file \file{data/time\_series.dat}.
 
-Be sure you have created an empty \directory{data} directory. It is now time to run the code:
+Be sure you have created an empty \directory{data} directory.
 \begin{verbatim}
   mkdir data
+\end{verbatim}
+
+It is now time to run the code:
+\begin{verbatim}
   pc_run
 \end{verbatim}
 Welcome to the world of Pencil Code!
