@@ -10,7 +10,7 @@
 # S. Candelaresi (iomsn1@gmail.com).
 """
 Contains the read class for the VAR file reading,
-some simlation attributes and the data cube.
+some simulation attributes and the data cube.
 """
 
 def var(*args, **kwargs):
@@ -87,7 +87,7 @@ class DataCube(object):
     def __init__(self, var_file='', datadir='data', proc=-1, ivar=-1,
                  quiet=True, trim_all=False,
                  param=None, dim=None, index=None, run2D=False,
-                 magic=None, setup=None, precision='f4'):
+                 magic=None, setup=None, precision='f'):
         """
         Read VAR files from pencil code. If proc < 0, then load all data
         and assemble. otherwise, load VAR file from specified processor.
@@ -393,16 +393,16 @@ class DataCube(object):
             self.magic_attributes(param)
 
 
-    def __natural_sort(self, l):
+    def __natural_sort(self, procs_list):
         """
         Sort array in a more natural way, e.g. 9VAR < 10VAR
         """
 
         import re
-       
+
         convert = lambda text: int(text) if text.isdigit() else text.lower()
         alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
-        return sorted(l, key=alphanum_key)
+        return sorted(procs_list, key=alphanum_key)
 
 
     def magic_attributes(self, param):
