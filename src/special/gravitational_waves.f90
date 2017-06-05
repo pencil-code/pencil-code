@@ -85,7 +85,7 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-  integer :: ihhL,ihhT,iggL,iggT,istressL,istressT
+  integer :: istressL,istressT
   character (len=labellen) :: inithhL='nothing'
   character (len=labellen) :: initggL='nothing'
   real :: amplhhL=0., amplhhT=0., amplggL=0., amplggT=0.
@@ -238,8 +238,12 @@ module Special
       intent(inout) :: p
 !
       if (lno_transverse_part) then
-        p%stressL=f(l1:l2,m,n,ibx)**2
-        p%stressT=f(l1:l2,m,n,ibx)*f(l1:l2,m,n,iby)
+        if (ibb==0) then
+          call fatal_error('calc_pencils_special','put lbb_as_comaux=T')
+        else
+          p%stressL=f(l1:l2,m,n,ibx)**2
+          p%stressT=f(l1:l2,m,n,ibx)*f(l1:l2,m,n,iby)
+        endif
       else
         p%stressL=f(l1:l2,m,n,istressL)
         p%stressT=f(l1:l2,m,n,istressT)
@@ -447,202 +451,206 @@ module Special
 !
 !  calculate k^2
 !
-        scale_factor=1
-        if (lscale_tobox1) scale_factor=2*pi/Lx
-        kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*scale_factor
+      scale_factor=1
+      if (lscale_tobox1) scale_factor=2*pi/Lx
+      kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*scale_factor
 !
-        scale_factor=1
-        if (lscale_tobox1) scale_factor=2*pi/Ly
-        ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*scale_factor
+      scale_factor=1
+      if (lscale_tobox1) scale_factor=2*pi/Ly
+      ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*scale_factor
 !
-        scale_factor=1
-        if (lscale_tobox1) scale_factor=2*pi/Lz
-        kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*scale_factor
+      scale_factor=1
+      if (lscale_tobox1) scale_factor=2*pi/Lz
+      kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*scale_factor
 !
 !  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
 !  the full nx extent (which, currently, must be equal to nxgrid).
 !  But call it one_over_k2.
 !
-        if (lroot .AND. ip<10) &
-             print*,'special_after_boundary:fft ...'
-        do iky=1,nz
-          do ikx=1,ny
-            do ikz=1,nx
-              one_over_k2(ikz,ikx,iky)=kx(ikx+ipy*ny)**2+ky(iky+ipz*nz)**2+kz(ikz+ipx*nx)**2
-            enddo
+      if (lroot .AND. ip<10) &
+          print*,'special_after_boundary:fft ...'
+      do iky=1,nz
+        do ikx=1,ny
+          do ikz=1,nx
+            one_over_k2(ikz,ikx,iky)=kx(ikx+ipy*ny)**2+ky(iky+ipz*nz)**2+kz(ikz+ipx*nx)**2
           enddo
         enddo
+      enddo
 !
 !  compute 1/k2 for components of unit vector
 !
-        if (lroot) one_over_k2(1,1,1) = 1.  ! Avoid division by zero
-        one_over_k2=1./one_over_k2
+      if (lroot) one_over_k2(1,1,1) = 1.  ! Avoid division by zero
+      one_over_k2=1./one_over_k2
 !
 !  Assemble stress
 !
+      if (ibb==0) then
+        call fatal_error('special_after_boundary','put lbb_as_comaux=T')
+      endif
+!
 !  Do T11
 !
-        T_im=0.0
-        T_re=f(l1:l2,m1:m2,n1:n2,ibx)**2
-        call fourier_transform(T_re,T_im)
+      T_im=0.0
+      T_re=f(l1:l2,m1:m2,n1:n2,ibx)**2
+      call fourier_transform(T_re,T_im)
 !
-        do iky=1,nz
-          do ikx=1,ny
-            do ikz=1,nx
-              P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
-              P12=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
+      do iky=1,nz
+        do ikx=1,ny
+          do ikz=1,nx
+            P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
+            P12=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
 !
-              fact=.5*P11**2
-              S11_re(ikz,ikx,iky)=fact*T_re(ikz,ikx,iky)
-              S11_im(ikz,ikx,iky)=fact*T_im(ikz,ikx,iky)
+            fact=.5*P11**2
+            S11_re(ikz,ikx,iky)=fact*T_re(ikz,ikx,iky)
+            S11_im(ikz,ikx,iky)=fact*T_im(ikz,ikx,iky)
 !
-              fact=.5*P11*P12
-              S12_re(ikz,ikx,iky)=fact*T_re(ikz,ikx,iky)
-              S12_im(ikz,ikx,iky)=fact*T_im(ikz,ikx,iky)
+            fact=.5*P11*P12
+            S12_re(ikz,ikx,iky)=fact*T_re(ikz,ikx,iky)
+            S12_im(ikz,ikx,iky)=fact*T_im(ikz,ikx,iky)
 !
-            enddo
           enddo
         enddo
+      enddo
 !
 !  Do T22
 !
-        T_im=0.0
-        T_re=f(l1:l2,m1:m2,n1:n2,iby)**2
-        call fourier_transform(T_re,T_im)
+      T_im=0.0
+      T_re=f(l1:l2,m1:m2,n1:n2,iby)**2
+      call fourier_transform(T_re,T_im)
 !
-        do iky=1,nz
-          do ikx=1,ny
-            do ikz=1,nx
-              P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
-              P22=1.-ky(iky+ipz*nz)**2*one_over_k2(ikz,ikx,iky)
-              P12=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
+      do iky=1,nz
+        do ikx=1,ny
+          do ikz=1,nx
+            P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
+            P22=1.-ky(iky+ipz*nz)**2*one_over_k2(ikz,ikx,iky)
+            P12=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
 !
-              fact=P12**2-.5*P11*P22
-              S11_re(ikz,ikx,iky)=S11_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
-              S11_im(ikz,ikx,iky)=S11_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+            fact=P12**2-.5*P11*P22
+            S11_re(ikz,ikx,iky)=S11_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+            S11_im(ikz,ikx,iky)=S11_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
 !
-              fact=.5*P12*P22
-              S12_re(ikz,ikx,iky)=S12_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
-              S12_im(ikz,ikx,iky)=S12_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+            fact=.5*P12*P22
+            S12_re(ikz,ikx,iky)=S12_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+            S12_im(ikz,ikx,iky)=S12_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
 !
-            enddo
           enddo
         enddo
+      enddo
 !
 !  Do T33
 !
-        T_im=0.0
-        T_re=f(l1:l2,m1:m2,n1:n2,ibz)**2
-        call fourier_transform(T_re,T_im)
+      T_im=0.0
+      T_re=f(l1:l2,m1:m2,n1:n2,ibz)**2
+      call fourier_transform(T_re,T_im)
 !
-        do iky=1,nz
-          do ikx=1,ny
-            do ikz=1,nx
-              P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
-              P22=1.-ky(iky+ipz*nz)**2*one_over_k2(ikz,ikx,iky)
-              P33=1.-kz(ikz+ipx*nx)**2*one_over_k2(ikz,ikx,iky)
-              P12=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
-              P13=-kx(ikx+ipy*ny)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
-              P23=-ky(iky+ipz*nz)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
+      do iky=1,nz
+        do ikx=1,ny
+          do ikz=1,nx
+            P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
+            P22=1.-ky(iky+ipz*nz)**2*one_over_k2(ikz,ikx,iky)
+            P33=1.-kz(ikz+ipx*nx)**2*one_over_k2(ikz,ikx,iky)
+            P12=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
+            P13=-kx(ikx+ipy*ny)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
+            P23=-ky(iky+ipz*nz)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
 !
-              fact=P13**2-.5*P11*P33
-              S11_re(ikz,ikx,iky)=S11_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
-              S11_im(ikz,ikx,iky)=S11_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+            fact=P13**2-.5*P11*P33
+            S11_re(ikz,ikx,iky)=S11_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+            S11_im(ikz,ikx,iky)=S11_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
 !
-              fact=P13*P23-.5*P12*P33
-              S12_re(ikz,ikx,iky)=S12_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
-              S12_im(ikz,ikx,iky)=S12_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+            fact=P13*P23-.5*P12*P33
+            S12_re(ikz,ikx,iky)=S12_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+            S12_im(ikz,ikx,iky)=S12_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
 !
-            enddo
           enddo
         enddo
+      enddo
 !
 !  Do T12 = T21
 !
-        T_im=0.0
-        T_re=f(l1:l2,m1:m2,n1:n2,ibx)*f(l1:l2,m1:m2,n1:n2,iby)
-        call fourier_transform(T_re,T_im)
+      T_im=0.0
+      T_re=f(l1:l2,m1:m2,n1:n2,ibx)*f(l1:l2,m1:m2,n1:n2,iby)
+      call fourier_transform(T_re,T_im)
 !
-        do iky=1,nz
-          do ikx=1,ny
-            do ikz=1,nx
-              P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
-              P22=1.-ky(iky+ipz*nz)**2*one_over_k2(ikz,ikx,iky)
-              P12=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
+      do iky=1,nz
+        do ikx=1,ny
+          do ikz=1,nx
+            P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
+            P22=1.-ky(iky+ipz*nz)**2*one_over_k2(ikz,ikx,iky)
+            P12=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
 !
-              fact=P11*P12
-              S11_re(ikz,ikx,iky)=S11_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
-              S11_im(ikz,ikx,iky)=S11_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+            fact=P11*P12
+            S11_re(ikz,ikx,iky)=S11_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+            S11_im(ikz,ikx,iky)=S11_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
 !
-              fact=P11*P22
-              S12_re(ikz,ikx,iky)=S12_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
-              S12_im(ikz,ikx,iky)=S12_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+            fact=P11*P22
+            S12_re(ikz,ikx,iky)=S12_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+            S12_im(ikz,ikx,iky)=S12_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
 !
-            enddo
           enddo
         enddo
+      enddo
 !
 !  Do T13 = T31
 !
-        T_im=0.0
-        T_re=f(l1:l2,m1:m2,n1:n2,ibx)*f(l1:l2,m1:m2,n1:n2,ibz)
-        call fourier_transform(T_re,T_im)
+      T_im=0.0
+      T_re=f(l1:l2,m1:m2,n1:n2,ibx)*f(l1:l2,m1:m2,n1:n2,ibz)
+      call fourier_transform(T_re,T_im)
 !
-        do iky=1,nz
-          do ikx=1,ny
-            do ikz=1,nx
-              P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
-              P13=-kx(ikx+ipy*ny)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
-              P23=-ky(iky+ipz*nz)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
+      do iky=1,nz
+        do ikx=1,ny
+          do ikz=1,nx
+            P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
+            P13=-kx(ikx+ipy*ny)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
+            P23=-ky(iky+ipz*nz)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
 !
-              fact=P11*P13
-              S11_re(ikz,ikx,iky)=S11_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
-              S11_im(ikz,ikx,iky)=S11_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+            fact=P11*P13
+            S11_re(ikz,ikx,iky)=S11_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+            S11_im(ikz,ikx,iky)=S11_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
 !
-              fact=P11*P23
-              S12_re(ikz,ikx,iky)=S12_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
-              S12_im(ikz,ikx,iky)=S12_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+            fact=P11*P23
+            S12_re(ikz,ikx,iky)=S12_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+            S12_im(ikz,ikx,iky)=S12_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
 !
-            enddo
           enddo
         enddo
+      enddo
 !
 !  Do T23 = T32
 !
-        T_im=0.0
-        T_re=f(l1:l2,m1:m2,n1:n2,iby)*f(l1:l2,m1:m2,n1:n2,ibz)
-        call fourier_transform(T_re,T_im)
+      T_im=0.0
+      T_re=f(l1:l2,m1:m2,n1:n2,iby)*f(l1:l2,m1:m2,n1:n2,ibz)
+      call fourier_transform(T_re,T_im)
 !
-        do iky=1,nz
-          do ikx=1,ny
-            do ikz=1,nx
-              P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
-              P22=1.-ky(iky+ipz*nz)**2*one_over_k2(ikz,ikx,iky)
-              P12=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
-              P13=-kx(ikx+ipy*ny)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
-              P23=-ky(iky+ipz*nz)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
+      do iky=1,nz
+        do ikx=1,ny
+          do ikz=1,nx
+            P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
+            P22=1.-ky(iky+ipz*nz)**2*one_over_k2(ikz,ikx,iky)
+            P12=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
+            P13=-kx(ikx+ipy*ny)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
+            P23=-ky(iky+ipz*nz)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
 !
-              fact=2*(P12*P13-.5*P11*P23)
-              S11_re(ikz,ikx,iky)=S11_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
-              S11_im(ikz,ikx,iky)=S11_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+            fact=2*(P12*P13-.5*P11*P23)
+            S11_re(ikz,ikx,iky)=S11_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+            S11_im(ikz,ikx,iky)=S11_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
 !
-              fact=P22*P13
-              S12_re(ikz,ikx,iky)=S12_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
-              S12_im(ikz,ikx,iky)=S12_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+            fact=P22*P13
+            S12_re(ikz,ikx,iky)=S12_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+            S12_im(ikz,ikx,iky)=S12_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
 !
-            enddo
           enddo
         enddo
+      enddo
 !
 !  back to real space
-!
-        call fourier_transform(S11_re,S11_im,linv=.true.)
-        call fourier_transform(S12_re,S12_im,linv=.true.)
+
+      call fourier_transform(S11_re,S11_im,linv=.true.)
+      call fourier_transform(S12_re,S12_im,linv=.true.)
 !
 !  add (or set) corresponding stress
 !
-        f(l1:l2,m1:m2,n1:n2,istressL)=S11_re
-        f(l1:l2,m1:m2,n1:n2,istressT)=S12_re
+      f(l1:l2,m1:m2,n1:n2,istressL)=S11_re
+      f(l1:l2,m1:m2,n1:n2,istressT)=S12_re
 !
 !  Deallocate arrays.
 !
