@@ -54,13 +54,13 @@ def var(*args, **kwargs):
       Trim the data cube to exclude ghost zones.
 
     *param*:
-     The params object from read.param.
+      The params object from read.param.
 
     *dim*:
-     The dim object from read.dim.
+      The dim object from read.dim.
 
     *index*:
-     The index object from read.dim.
+      The index object from read.dim.
 
     *run2D*:
       Specify if the run is purely 2d.
@@ -128,13 +128,13 @@ class DataCube(object):
           Trim the data cube to exclude ghost zones.
 
         *param*:
-         The params object from read.param.
+          The params object from read.param.
 
         *dim*:
-         The dim object from read.dim.
+          The dim object from read.dim.
 
         *index*:
-         The index object from read.dim.
+          The index object from read.dim.
 
         *run2D*:
           Specify if the run is purely 2d.
