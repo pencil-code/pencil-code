@@ -79,6 +79,7 @@ module Special
   character(len=*), parameter :: mag_times_dat = 'driver/mag_times.dat'
   character(len=*), parameter :: mag_field_dat = 'driver/mag_field.dat'
   character(len=*), parameter :: mag_vel_field_dat = 'driver/mag_vel_field.dat'
+  character(len=labellen) :: flux_type='uniform'
 !
   ! input parameters
   namelist /special_init_pars/ linit_uu,linit_lnrho,linit_lnTT,prof_type
@@ -98,7 +99,7 @@ module Special
       swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, swamp_eta, &
       vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau, &
       cool_RTV_cutoff, T_crit, deltaT_crit, & 
-      lflux_emerg_bottom, uu_emerg, bb_emerg, lslope_limited_special
+      lflux_emerg_bottom, uu_emerg, bb_emerg, flux_type,lslope_limited_special
 !
   integer :: ispecaux=0
   integer :: idiag_dtvel=0     ! DIAG_DOC: Velocity driver time step
@@ -1205,11 +1206,13 @@ module Special
       use Deriv, only: der
       use Mpicomm, only: mpibcast_real
       use Sub, only: cross,gij,curl_mn
+      use General, only: gaunoise_number
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension(mx,my,mz):: rho_tmp
       real, intent(in) :: dt_
       real, dimension(nx,3) :: uu,bb,uxb
+      real, dimension(2) :: gn
       integer :: ig
 !
 ! Flux emergence by driving an EMF at bottom boundary
@@ -1219,21 +1222,43 @@ module Special
       call mpibcast_real(bb_emerg,3)
       if (lflux_emerg_bottom) then
         if (lfirst_proc_z.and.lcartesian_coords) then
-          do ig=0,nghost
-            do m=m1, m2
-              uu(:,1)=uu_emerg(1)
-              uu(:,2)=uu_emerg(2)
-              uu(:,3)=uu_emerg(3)
+          select case (flux_type)
+          case ('uniform')
+            do ig=0,nghost
+              do m=m1, m2
+                uu(:,1)=uu_emerg(1)
+                uu(:,2)=uu_emerg(2)
+                uu(:,3)=uu_emerg(3)
 !
-              bb(:,1)=bb_emerg(1)
-              bb(:,2)=bb_emerg(2)
-              bb(:,3)=bb_emerg(3)
-              call cross(uu,bb,uxb)
-              f(l1:l2,m,n1-ig,iax) = f(l1:l2,m,n1-ig,iax) + uxb(:,1)*dt_
-              f(l1:l2,m,n1-ig,iay) = f(l1:l2,m,n1-ig,iay) + uxb(:,2)*dt_
-              f(l1:l2,m,n1-ig,iaz) = f(l1:l2,m,n1-ig,iaz) + uxb(:,3)*dt_
+                bb(:,1)=bb_emerg(1)
+                bb(:,2)=bb_emerg(2)
+                bb(:,3)=bb_emerg(3)
+                call cross(uu,bb,uxb)
+                f(l1:l2,m,n1-ig,iax) = f(l1:l2,m,n1-ig,iax) + uxb(:,1)*dt_
+                f(l1:l2,m,n1-ig,iay) = f(l1:l2,m,n1-ig,iay) + uxb(:,2)*dt_
+                f(l1:l2,m,n1-ig,iaz) = f(l1:l2,m,n1-ig,iaz) + uxb(:,3)*dt_
+              enddo
             enddo
-          enddo
+          case ('gaussian-noise')
+            do ig=0,nghost
+              do m=m1, m2
+                uu(:,1)=uu_emerg(1)
+                uu(:,2)=uu_emerg(2)
+                uu(:,3)=uu_emerg(3)
+!
+                call gaunoise_number(gn)
+                bb(:,1)=0.5*bb_emerg(1)*(1.+gn(1))
+                bb(:,2)=bb_emerg(2)
+                bb(:,3)=bb_emerg(3)*sin(x(l1:l2)+pi*gn(2))
+                call cross(uu,bb,uxb)
+                f(l1:l2,m,n1-ig,iax) = f(l1:l2,m,n1-ig,iax) + uxb(:,1)*dt_
+                f(l1:l2,m,n1-ig,iay) = f(l1:l2,m,n1-ig,iay) + uxb(:,2)*dt_
+                f(l1:l2,m,n1-ig,iaz) = f(l1:l2,m,n1-ig,iaz) + uxb(:,3)*dt_
+              enddo
+            enddo
+          case default
+            call fatal_error('special_after_timestep:','wrong flux_type')
+          endselect
         endif
       endif
       if (.not.ldensity_nolog .and. lslope_limited_special) then
