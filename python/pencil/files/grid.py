@@ -56,7 +56,7 @@ class Grid(object):
         dy_tilde = N.zeros(dim.my, dtype=precision)
         dz_tilde = N.zeros(dim.mz, dtype=precision)
 
-        if (param.io_strategy != 'MPI-IO'):
+        if 'io_strategy' in dir(param) and param.io_strategy != 'MPI-IO':
             for directory in procdirs:
                 proc = int(directory[4:])
                 procdim = read_dim(datadir, proc, down=down)
