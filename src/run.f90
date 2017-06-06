@@ -107,6 +107,7 @@ program run
   logical :: lstop=.false., lsave=.false., timeover=.false., resubmit=.false.
   logical :: suppress_pencil_check=.false.
   logical :: lreload_file=.false., lreload_always_file=.false.
+  logical :: lonemorestep = .false.
 !
   lrun = .true.
 !
@@ -559,19 +560,16 @@ program run
       endif
     endif
 !
-    if (t >= tmax) lout = .true.
-!
     if (lout .or. emergency_stop) then
 !
 !  Exit do loop if file `STOP' exists.
 !
       lstop=control_file_exists('STOP',DELETE=.true.)
-      if (lstop .or. t>=tmax .or. emergency_stop) then
+      if (lstop .or. emergency_stop) then
         if (lroot) then
           print*
           if (emergency_stop) print*, 'Emergency stop requested'
           if (lstop) print*, 'Found STOP file'
-          if (t>=tmax) print*, 'Maximum simulation time exceeded'
         endif
         resubmit=control_file_exists('RESUBMIT',DELETE=.true.)
         if (resubmit) print*, 'Cannot be resubmitted'
@@ -646,6 +644,18 @@ program run
 !
     if (lwrite_slices) call wvid_prepare
     if (lwrite_2daverages) call write_2daverages_prepare
+!
+!  Exit do loop if maximum simulation time is reached; allow one extra
+!  step if any diagnostic output needs to be produced.
+!
+    overtmax: if (t >= tmax) then
+      onemorestep: if (lonemorestep .or. &
+                       .not. (lout .or. lvideo .or. l2davg)) then
+        if (lroot) print *, 'Maximum simulation time exceeded'
+        exit Time_loop
+      endif onemorestep
+      lonemorestep = .true.
+    endif overtmax
 !
 !   Prepare for the writing of the trcers and the fixed points.
 !
