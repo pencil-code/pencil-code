@@ -6,16 +6,21 @@ def get(path='.', quiet=False):
     from . simulation import simulation
 
     if exists(join(path, '.pc/sim.dill')):
-        sim = load('sim', folder=join(path, '.pc'))
-        sim.update(quiet=quiet)
-        return sim
+        try:
+            sim = load('sim', folder=join(path, '.pc'))
+            sim.update(quiet=quiet)
+            return sim
+        except:
+            import os
+            print('?? Warning: sim.dill in '+path+' is not up to date, recreating simulation object..')
+            os.system('rm '+join(path, '.pc/sim.dill'))
+            
+    from pencilnew import __is_sim_dir__
+    if __is_sim_dir__(path):
+        return simulation(path, quiet=quiet)
     else:
-        from pencilnew import __is_sim_dir__
-        if __is_sim_dir__(path):
-            return simulation(path, quiet=quiet)
-        else:
-            print('? WARNING: No simulation found in '+path+' -> try get_sims maybe?')
-            return False
+        print('? WARNING: No simulation found in '+path+' -> try get_sims maybe?')
+        return False
 
 def get_sims(path_root='.', depth=1, unhide_all=False, quiet=False):
     """
