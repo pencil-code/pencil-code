@@ -795,6 +795,11 @@ module Solid_Cells
               call find_near_cart_ind_global(cartesian_to_curvilinear(ii)%ind_global_neighbour,xyz)
               if(.not. this_proc_cartesian(xyz)) then
                 call find_proc_cartesian(xyz,cartesian_to_curvilinear(ii)%from_proc)
+                if(cartesian_to_curvilinear(ii)%from_proc==iproc) then
+                  ! Some ghost points might have this_proc!=iproc, but still return iproc from find_proc_cartesan
+                  call ind_global_to_local_cart(cartesian_to_curvilinear(ii)%ind_global_neighbour, &
+                        cartesian_to_curvilinear(ii)%ind_local_neighbour,lcheck_init_interpolation)
+                endif
               else
                 cartesian_to_curvilinear(ii)%from_proc=iproc
                 call ind_global_to_local_cart(cartesian_to_curvilinear(ii)%ind_global_neighbour, &
@@ -1231,14 +1236,15 @@ module Solid_Cells
       integer, dimension(:,:), allocatable :: tmp_arr2D
       integer :: nreq1D,nreq2D
       integer, dimension(ncpus-1) :: ireq1D
-      integer, dimension(3) :: ireq2D
+      integer, dimension(ncpus-1,3) :: ireq2D
       !
       integer, dimension(ncpus,ncpus) :: from_proc_curv_to_cart_glob=0
       integer, dimension(ncpus,ncpus) :: from_proc_cart_to_curv_glob=0
-      integer :: iter, ind_start, ind_stop, ip_recv_tot, ip_send_tot
+      integer :: iter, ind_start, ind_stop, ip_recv_tot, ip_send_tot, n_ip_proc
       integer, dimension(2) :: buf_size
       integer, dimension(:), allocatable :: id_bufi, id_bufo
       integer, dimension(:,:), allocatable :: ijk_bufi, ijk_bufo
+      ! TODO TODO TODO : Ensure that every ID in cartesian_to_curvilinear array (etc.) are unique!!!
 ! TODO: COULD THIS BE MOVED INTO SOLID_CELLS_OGRID_MPICOMM?
       if(n_ip_curv_to_cart>0) then
         do i=1,n_ip_curv_to_cart
@@ -1251,6 +1257,7 @@ module Solid_Cells
       endif
 !
       max_from_proc=maxval(from_proc_curv_to_cart)
+
       if(max_from_proc>0) then
         allocate(ind_from_proc_curv(ncpus,max_from_proc,3))
         allocate(ip_id_curv_to_cart(ncpus,max_from_proc))
@@ -1368,9 +1375,14 @@ module Solid_Cells
       do iip=0,ncpus-1
         if(from_proc_curv_to_cart(iip+1)>0) then
           procs_recv_curv_to_cart(iter)=iip
+          iter=iter+1
         endif
+      enddo
+      iter=1
+      do iip=0,ncpus-1
         if(from_proc_cart_to_curv(iip+1)>0) then
           procs_recv_cart_to_curv(iter)=iip
+          iter=iter+1
         endif
       enddo
       max_recv_ip_curv_to_cart=maxval(n_ip_recv_proc_curv_to_cart)
@@ -1395,7 +1407,7 @@ module Solid_Cells
         iip=procs_send_curv_to_cart(iter)
         buf_size=(/ind_stop-ind_start+1,3/)
         do i=1,3
-          call mpirecv_nonblock_int(ijk_bufi(ind_start:ind_stop,i),buf_size(1),iip,200+i,ireq2D(iter+i-1))
+          call mpirecv_nonblock_int(ijk_bufi(ind_start:ind_stop,i),buf_size(1),iip,200+i,ireq2D(iter,i))
         enddo
         call mpirecv_nonblock_int(id_bufi(ind_start:ind_stop),buf_size(1),iip,210,ireq1D(iter))
         ind_start=ind_stop+1
@@ -1411,10 +1423,12 @@ module Solid_Cells
       allocate(id_bufo(ip_recv_tot))
       ind_start=1
       do iter=1,n_procs_recv_curv_to_cart
-        ind_stop=ind_start+n_ip_recv_proc_curv_to_cart(iter)-1
+        n_ip_proc=n_ip_recv_proc_curv_to_cart(iter)
+        ind_stop=ind_start+n_ip_proc-1
         iip=procs_recv_curv_to_cart(iter)
-        ijk_bufo(ind_start:ind_stop,:)=ind_from_proc_curv(iip+1,:,:)
-        id_bufo(ind_start:ind_stop)=ip_id_curv_to_cart(iip+1,:)
+        print*, 'iproc,iip,n_procs_recv', iproc,iip,n_procs_recv_curv_to_cart
+        ijk_bufo(ind_start:ind_stop,:)=ind_from_proc_curv(iip+1,1:n_ip_proc,:)
+        id_bufo(ind_start:ind_stop)=ip_id_curv_to_cart(iip+1,1:n_ip_proc)
         buf_size=(/ind_stop-ind_start+1,3/)
         do i=1,3
           call mpisend_int(ijk_bufo(ind_start:ind_stop,i),buf_size(1),iip,200+i)
@@ -1433,7 +1447,7 @@ module Solid_Cells
         buf_size=(/ind_stop-ind_start+1,3/)
         send_curvilinear_to_cartesian(ind_start:ind_stop)%send_to_proc=iip
         do i=1,3
-          call mpiwait(ireq2D(iter+i-1))
+          call mpiwait(ireq2D(iter,i))
         enddo
         do i=ind_start,ind_stop
           call ind_global_to_local_curv(ijk_bufi(i,:),&
@@ -1467,7 +1481,7 @@ module Solid_Cells
         iip=procs_send_cart_to_curv(iter)
         buf_size=(/ind_stop-ind_start+1,3/)
         do i=1,3
-          call mpirecv_nonblock_int(ijk_bufi(ind_start:ind_stop,i),buf_size(1),iip,1200+i,ireq2D(iter+i-1))
+          call mpirecv_nonblock_int(ijk_bufi(ind_start:ind_stop,i),buf_size(1),iip,1200+i,ireq2D(iter,i))
         enddo
         call mpirecv_nonblock_int(id_bufi(ind_start:ind_stop),buf_size(1),iip,1210,ireq1D(iter))
         ind_start=ind_stop+1
@@ -1483,10 +1497,11 @@ module Solid_Cells
       allocate(id_bufo(ip_recv_tot))
       ind_start=1
       do iter=1,n_procs_recv_cart_to_curv
-        ind_stop=ind_start+n_ip_recv_proc_cart_to_curv(iter)-1
+        n_ip_proc=n_ip_recv_proc_cart_to_curv(iter)
+        ind_stop=ind_start+n_ip_proc-1
         iip=procs_recv_cart_to_curv(iter)
-        ijk_bufo(ind_start:ind_stop,:)=ind_from_proc_cart(iip+1,:,:)
-        id_bufo(ind_start:ind_stop)=ip_id_cart_to_curv(iip+1,:)
+        ijk_bufo(ind_start:ind_stop,:)=ind_from_proc_cart(iip+1,1:n_ip_proc,:)
+        id_bufo(ind_start:ind_stop)=ip_id_cart_to_curv(iip+1,1:n_ip_proc)
         buf_size=(/ind_stop-ind_start+1,3/)
         do i=1,3
           call mpisend_int(ijk_bufo(ind_start:ind_stop,i),buf_size(1),iip,1200+i)
@@ -1505,7 +1520,7 @@ module Solid_Cells
         buf_size=(/ind_stop-ind_start+1,3/)
         send_cartesian_to_curvilinear(ind_start:ind_stop)%send_to_proc=iip
         do i=1,3
-          call mpiwait(ireq2D(iter+i-1))
+          call mpiwait(ireq2D(iter,i))
         enddo
         do i=ind_start,ind_stop
           call ind_global_to_local_cart(ijk_bufi(i,:),&
@@ -1705,6 +1720,8 @@ module Solid_Cells
     endsubroutine print_grids_only
 !***********************************************************************
     logical function this_proc_cartesian(xyz)
+      !TODO: Should perhaps use xyz0_loc and xyz1_loc for this
+      !      to make it consistent with find_proc_cartesian
 !
 !  Check if the grid points needed for interpolation between from cartesian
 !  to curvilinear grid are prestemt on this processor.
@@ -1723,6 +1740,8 @@ module Solid_Cells
     end function this_proc_cartesian
 !***********************************************************************
     logical function this_proc_curvilinear(rthz,lcheck)
+      !TODO: Should perhaps use xyz0_loc_ogrid and xyz1_loc_ogrid for this
+      !      to make it consistent with find_proc_curvilinear
 !
 !  Check if the grid points needed for interpolation between from curvilinear
 !  to cartesian grid are prestemt on this processor.
@@ -1939,7 +1958,6 @@ module Solid_Cells
 !
 !  Dummy routine
 !
-! TODO: Any arrays that should be deallocated?
   endsubroutine solid_cells_clean_up
 !***********************************************************************
   subroutine communicate_ip_cart_to_curv(f_cartesian,ivar1,ivar2)
@@ -1968,7 +1986,7 @@ module Solid_Cells
 !
     ind_send_first=1
     do iter=1,n_procs_send_cart_to_curv
-      ind_send_last=n_ip_to_proc_cart_to_curv(iter)
+      ind_send_last=n_ip_to_proc_cart_to_curv(iter)+ind_send_first-1
       send_to=send_cartesian_to_curvilinear(ind_send_last)%send_to_proc
       nbuf_farr(1)=ind_send_last-ind_send_first+1
       do ip=1,nbuf_farr(1)
@@ -2043,7 +2061,7 @@ module Solid_Cells
 !
     ind_send_first=1
     do iter=1,n_procs_send_curv_to_cart
-      ind_send_last=n_ip_to_proc_curv_to_cart(iter)
+      ind_send_last=n_ip_to_proc_curv_to_cart(iter)+ind_send_first-1
       send_to=send_curvilinear_to_cartesian(ind_send_last)%send_to_proc
       nbuf_farr(1)=ind_send_last-ind_send_first+1
       do ip=1,nbuf_farr(1)
@@ -2403,14 +2421,16 @@ module Solid_Cells
 
     use General, only: linear_interpolate
 !
-!   Interpolate all flow variables from cartesian to curvilinear grid
-!   Only need to do this for the radial direction
+!  Interpolate all flow variables from cartesian to curvilinear grid
+!  Only need to do this for the radial direction
 !
-!   Find position in (x,y,z)-coordinates from (r,theta,z)-system
-!   Use this to interpolate (linearly) from nearest neighbours
-!   Only works for iux:iuz and scalar values (rho,T,etc.) at present.
+!  Find position in (x,y,z)-coordinates from (r,theta,z)-system
+!  Use this to interpolate (linearly) from nearest neighbours
+!  Only works for iux:iuz and scalar values (rho,T,etc.) at present.
 !
-!   16-feb-17/Jorgen: Coded
+!  NOTE: Does not work for parallell runs
+!
+!  16-feb-17/Jorgen: Coded
 !
     real, dimension (mx,my,mz,mfarray) :: f_cartesian
     real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f_og
@@ -2448,7 +2468,9 @@ module Solid_Cells
 !***********************************************************************
   subroutine flow_curvilinear_to_cartesian(f_cartesian)
 !
-!   Interpolate all flow variables from curvilinear to cartesian grid
+!  Interpolate all flow variables from curvilinear to cartesian grid
+!
+!  NOTE: Does not work for parallell runs
 !
     real, dimension (mx,my,mz,mfarray) :: f_cartesian
     real, dimension (3) :: rthz
@@ -4458,8 +4480,7 @@ module Solid_Cells
 !  Before interpolating, necessary points outside this processors domain are
 !  recieved from appropriate processor
 !
-    !call communicate_ip_cart_to_curv(f_cartesian,iux,irho)
-    call flow_cartesian_to_curvilinear(f_cartesian,f_ogrid)
+    call communicate_ip_cart_to_curv(f_cartesian,iux,irho)
 !
 !  Time step for ogrid
 !
@@ -4523,8 +4544,7 @@ module Solid_Cells
 !  recieved from appropriate processor
 !
     call update_ghosts_ogrid
-    !call communicate_ip_curv_to_cart(f_cartesian,iux,irho)
-    call flow_curvilinear_to_cartesian(f_cartesian)
+    call communicate_ip_curv_to_cart(f_cartesian,iux,irho)
 !
 ! !!TODO:Printing
 ! if(ncpus==1 .or. iproc==1) then
@@ -5644,17 +5664,20 @@ module Solid_Cells
 !
 !  Calculate del2 and graddiv, if requested.
 !
+! HEREHEREHERE: THIS CANNOT BE CORRECT FOR CYLINDER COORDINATES
+!               MUST FIX THIS
       if (present(graddiv)) then
         graddiv(:,:)=d2A(:,1,:,1)+d2A(:,2,:,2)+d2A(:,3,:,3)
-!  Since we have cylindrical coordinates
-        graddiv(:,1)=graddiv(:,1)+aij(:,1,1)*rcyl_mn1_ogrid*2+ &
-           aij(:,2,1)*rcyl_mn1_ogrid*cotth(m_ogrid) &
-           -aa(:,2)*rcyl_mn2_ogrid*cotth(m_ogrid)-aa(:,1)*rcyl_mn2_ogrid*2
-        graddiv(:,2)=graddiv(:,2)+aij(:,1,2)*rcyl_mn1_ogrid*2+ &
-           aij(:,2,2)*rcyl_mn1_ogrid*cotth(m_ogrid) &
-           -aa(:,2)*rcyl_mn2_ogrid*sin2th(m_ogrid)
-        graddiv(:,3)=graddiv(:,3)+aij(:,1,3)*rcyl_mn1_ogrid*2+ &
-           aij(:,2,3)*rcyl_mn1_ogrid*cotth(m_ogrid)
+!!!! ONLY FOR SHPERICAL COORDINATES?
+!!!! !  Since we have cylindrical coordinates
+!!!!         graddiv(:,1)=graddiv(:,1)+aij(:,1,1)*rcyl_mn1_ogrid*2+ &
+!!!!            aij(:,2,1)*rcyl_mn1_ogrid*cotth(m_ogrid) &
+!!!!            -aa(:,2)*rcyl_mn2_ogrid*cotth(m_ogrid)-aa(:,1)*rcyl_mn2_ogrid*2
+!!!!         graddiv(:,2)=graddiv(:,2)+aij(:,1,2)*rcyl_mn1_ogrid*2+ &
+!!!!            aij(:,2,2)*rcyl_mn1_ogrid*cotth(m_ogrid) &
+!!!!            -aa(:,2)*rcyl_mn2_ogrid*sin2th(m_ogrid)
+!!!!         graddiv(:,3)=graddiv(:,3)+aij(:,1,3)*rcyl_mn1_ogrid*2+ &
+!!!!            aij(:,2,3)*rcyl_mn1_ogrid*cotth(m_ogrid)
       endif
 !
       if (present(del2)) then
