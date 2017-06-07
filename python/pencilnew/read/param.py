@@ -117,7 +117,10 @@ class Param(object):
             if not quiet:
                 print(script)
             if script:
+                # This import is needed to execute the script.
+                import numpy
                 exec(script.replace("\n    ", "\nself.")[198:])
+                del(numpy)
             else:
                 print("Param.read: nl2python returned nothing! Is $PENCIL_HOME/bin in the path?")
                 return -1
