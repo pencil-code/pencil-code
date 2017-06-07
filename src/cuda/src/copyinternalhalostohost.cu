@@ -9,6 +9,7 @@ Very first version of code written.
 */
 #include <stdio.h>
 
+/****************************************************************************************/
 __global__ void copy_internal_rows(float* d_halo, float* d_grid, int nx, int ny, int nz, int halo_depth, dim3 blocksPerGrid)
 { 
 	//int halo_size = (halo_depth*nx*2 + halo_depth*(ny-halo_depth*2)*2)*(nz-halo_depth*2) + nx*ny*(halo_depth*2);
@@ -25,7 +26,7 @@ __global__ void copy_internal_rows(float* d_halo, float* d_grid, int nx, int ny,
 	}
 	
 }
-
+/****************************************************************************************/
 __global__ void copy_internal_cols(float* d_halo, float* d_grid, int nx, int ny, int nz, int halo_depth, dim3 blocksPerGrid)
 { 
 	//int halo_size = (halo_depth*nx*2 + halo_depth*(ny-halo_depth*2)*2)*(nz-halo_depth*2) + nx*ny*(halo_depth*2);
@@ -41,7 +42,7 @@ __global__ void copy_internal_cols(float* d_halo, float* d_grid, int nx, int ny,
 		d_halo[halo_idx+halo_depth] = d_grid[d_grid_idx+(nx-3*halo_depth)];//---|idx|------|nx|---|nx+idx|
 	}
 }
-
+/****************************************************************************************/
 __global__ void copy_internal_frtbk(float* d_halo, float* d_grid, int nx, int ny, int nz, int halo_depth, dim3 blocksPerGrid)
 { 
 	//int halo_size = (halo_depth*nx*2 + halo_depth*(ny-halo_depth*2)*2)*(nz-halo_depth*2) + nx*ny*(halo_depth*2);
@@ -67,8 +68,7 @@ __global__ void copy_internal_frtbk(float* d_halo, float* d_grid, int nx, int ny
 
 	}*/
 }
-
-
+/****************************************************************************************/
 void fillhalosinhost(float* d_halo, float* d_grid, int nx, int ny, int nz, int halo_depth)
 {
 	//int ELEMS_PER_THREAD_in_z = nz-(2*halo_depth);
@@ -96,7 +96,7 @@ void fillhalosinhost(float* d_halo, float* d_grid, int nx, int ny, int nz, int h
 	blocksPerGrid.y = 1;
 	blocksPerGrid.z = nz-(2*halo_depth);
 	//printf(" %d block in z= %d",threadsPerBlock.z, blocksPerGrid.z);
-	printf("\n----------------------\ngoing inside the kernel to copy rows\n-----------------------------\n");
+	//printf("\n----------------------\ngoing inside the kernel to copy rows\n-----------------------------\n");
 	copy_internal_rows<<<blocksPerGrid, threadsPerBlock, 0, per_row_stream>>>(d_halo, d_grid, nx, ny, nz, halo_depth, blocksPerGrid);
 	cudaThreadSynchronize();
 
@@ -110,7 +110,7 @@ void fillhalosinhost(float* d_halo, float* d_grid, int nx, int ny, int nz, int h
 	//printf("%d blocksPerGrid.y \n", blocksPerGrid.y);
 	blocksPerGrid.z = nz-(2*halo_depth);
 	//printf(" %d block in z= %d",threadsPerBlock.z, blocksPerGrid.z);
-	printf("\n----------------------\ngoing inside the kernel to copy cols\n-----------------------------\n");
+	//printf("\n----------------------\ngoing inside the kernel to copy cols\n-----------------------------\n");
 	copy_internal_cols<<<blocksPerGrid, threadsPerBlock, 0, per_col_stream>>>(d_halo, d_grid, nx, ny, nz, halo_depth, blocksPerGrid);
 	cudaThreadSynchronize();
 
@@ -124,13 +124,15 @@ void fillhalosinhost(float* d_halo, float* d_grid, int nx, int ny, int nz, int h
 	//printf("%d blocksPerGrid.y \n", blocksPerGrid.y);
 	blocksPerGrid.z = halo_depth;
 	//printf(" %d block in z= %d",threadsPerBlock.z, blocksPerGrid.z);
-	printf("\n----------------------\ngoing inside the kernel to copy frtbk\n-----------------------------\n");
+	//printf("\n----------------------\ngoing inside the kernel to copy frtbk\n-----------------------------\n");
 	copy_internal_frtbk<<<blocksPerGrid, threadsPerBlock, 0, per_frtbk_stream>>>(d_halo, d_grid, nx, ny, nz, halo_depth, blocksPerGrid);
 	cudaThreadSynchronize();
 
-	printf("\n came back \n");
+	//printf("\n came back \n");
 
 return;
 	
 }
+/****************************************************************************************/
+
 
