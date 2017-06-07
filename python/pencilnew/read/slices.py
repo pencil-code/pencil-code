@@ -116,7 +116,7 @@ class SliceSeries(object):
             # Find the existing fields.
             field_list = []
             for file_name in os.listdir(slice_dir):
-                if (file_name[:6] == 'slice_'):
+                if file_name[:6] == 'slice_':
                     field_list.append(file_name.split('.')[0][6:])
             # Remove duplicates.
             field_list = list(set(field_list))
@@ -131,21 +131,23 @@ class SliceSeries(object):
             # Find the existing extensions.
             extension_list = []
             for file_name in os.listdir(slice_dir):
-                if (file_name[:6] == 'slice_'):
+                if file_name[:6] == 'slice_':
                     extension_list.append(file_name.split('.')[1])
             # Remove duplicates.
             extension_list = list(set(extension_list))
 
-        class Foo():
+        class Foo(object):
             pass
 
         for extension in extension_list:
-            if verbose == True: print('~ Extension: '+str(extension))
+            if verbose:
+                print('Extension: '+str(extension))
             # This one will store the data.
             ext_object = Foo()
 
             for field in field_list:
-                if verbose == True: print('  -> Field: '+str(field))
+                if verbose:
+                    print('  -> Field: '+str(field))
                 # Compose the file name according to field and extension.
                 datadir = os.path.expanduser(datadir)
                 if proc < 0:
@@ -161,13 +163,13 @@ class SliceSeries(object):
                     precision = 'f'
 
                 # Set up slice plane.
-                if (extension == 'xy' or extension == 'Xy'):
+                if extension == 'xy' or extension == 'Xy' or  extension == 'xy2':
                     hsize = dim.nx
                     vsize = dim.ny
-                if (extension == 'xz'):
+                if extension == 'xz':
                     hsize = dim.nx
                     vsize = dim.nz
-                if (extension == 'yz'):
+                if extension == 'yz':
                     hsize = dim.ny
                     vsize = dim.nz
 
@@ -180,7 +182,8 @@ class SliceSeries(object):
 
                 while True:
                     try:
-                        if verbose == True: print('  -> Reading... ')
+                        if verbose:
+                            print('  -> Reading... ')
                         raw_data = infile.read_record(dtype=precision)
                     except ValueError:
                         break
@@ -188,16 +191,18 @@ class SliceSeries(object):
                         break
 
                     if old_file:
-                        self.t.extend(list(raw_data[-1:]))
+                        self.t.append(list(raw_data[-1]))
                         slice_series.extend(list(raw_data[:-1]))
                     else:
-                        self.t.extend(list(raw_data[-2:-1]))
+                        self.t.append(list(raw_data[-2:-1]))
                         slice_series.extend(list(raw_data[:-2]))
                     islice += 1
-                    if verbose == True: print('  -> Done')
+                    if verbose:
+                        print('  -> Done')
 
                 # Reshape and remove first entry.
-                if verbose == True: print('~ Reshaping array')
+                if verbose:
+                    print('Reshaping array')
                 self.t = np.array(self.t[1:], dtype=precision)
                 slice_series = np.array(slice_series, dtype=precision)
                 slice_series = slice_series[1:].reshape(islice, vsize, hsize)
