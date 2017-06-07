@@ -8,7 +8,7 @@ from . import io           # input und output functions, like save data or call 
 from . import diag         # diagnostic scripts and functions
 from . import visu         # visualization routines
 from . import calc         # math functions and further calculations
-from . import math
+from . import math         # basic math functions, like products and derivatives
 from . import sim          # handling simulations as python objects
 from . import read         # read data and parameters from pencil code directory
 from . import tool_kit     # all nice workarounds get stored here (e.g., resubmit script)
