@@ -747,13 +747,14 @@ module Particles_sub
 !
     endsubroutine get_particles_interdistance
 !***********************************************************************
-    subroutine remove_particle(fp,ipar,k,dfp,ineargrid)
+    subroutine remove_particle(fp,ipar,k,dfp,ineargrid,ks)
 !
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc) :: ipar
       integer :: k
       real, dimension (mpar_loc,mpvar), optional :: dfp
       integer, dimension (mpar_loc,3), optional :: ineargrid
+      integer, intent(in), optional :: ks
 !
       real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -769,12 +770,20 @@ module Particles_sub
 !  conversion problems when reading t_rmv with pc_read_pvar.
 !
       open(20,file=trim(directory)//'/rmv_ipar.dat',position='append')
-      write(20,*) ipar(k), t_sp
+      if (present(ks)) then
+        write(20,*) ipar(k), t_sp, ipar(ks)
+      else
+        write(20,*) ipar(k), t_sp
+      endif
       close(20)
 !
       open(20,file=trim(directory)//'/rmv_par.dat', &
           position='append',form='unformatted')
-      write(20) fp(k,:)
+      if (present(ks)) then
+        write(20) fp(k,:), fp(ks,:)
+      else
+        write(20) fp(k,:)
+      endif
       close(20)
 !
       if (ip<=8) print*, 'removed particle ', ipar(k)
