@@ -75,7 +75,8 @@ def var(*args, **kwargs):
       Precision of the data. Either float 'f' or double 'd'.
     """
 
-    var_tmp = DataCube(*args, **kwargs)
+    var_tmp = DataCube()
+    var_tmp.read(*args, **kwargs)
     return var_tmp
 
 
@@ -84,10 +85,21 @@ class DataCube(object):
     DataCube -- holds Pencil Code VAR file data.
     """
 
-    def __init__(self, var_file='', datadir='data', proc=-1, ivar=-1,
-                 quiet=True, trim_all=False,
-                 param=None, dim=None, index=None, run2D=False,
-                 magic=None, setup=None, precision='f'):
+    def __init__(self):
+        """
+        Fill members with default values.
+        """
+
+        self.t = 0.
+        self.dx = 1.
+        self.dy = 1.
+        self.dz = 1.
+
+
+    def read(self, var_file='', datadir='data', proc=-1, ivar=-1,
+             quiet=True, trim_all=False,
+             param=None, dim=None, index=None, run2D=False,
+             magic=None, setup=None, precision='f'):
         """
         Read VAR files from pencil code. If proc < 0, then load all data
         and assemble. otherwise, load VAR file from specified processor.
@@ -102,10 +114,10 @@ class DataCube(object):
 
         call signature:
 
-        DataCube(self, var_file='', datadir='data', proc=-1, ivar=-1,
-                 quiet=True, trim_all=False,
-                 param=None, dim=None, index=None, run2D=False,
-                 magic=None, setup=None, precision='f')
+        read(self, var_file='', datadir='data', proc=-1, ivar=-1,
+             quiet=True, trim_all=False,
+             param=None, dim=None, index=None, run2D=False,
+             magic=None, setup=None, precision='f')
 
         Keyword arguments:
 
