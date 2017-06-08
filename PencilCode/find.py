@@ -54,24 +54,28 @@ def midplane(**kwarg):
             Keyword arguments to be passed to read.avg1d(), except
             keyword plane.
     """
-    # Chao-Chin Yang, 2014-11-27
+    # Author: Chao-Chin Yang
+    # Created: 2014-11-27
+    # Last Modified: 2017-06-08
     from . import read
     import numpy as np
     from scipy.interpolate import interp1d
-    from Toolbox import get
+
     # Read the horizontal averages.
-    dir = get.pairs(kwarg, 'datadir')
+    dir = {"datadir": kwarg["datadir"]} if "datadir" in kwarg else {}
     t, avg = read.avg1d(plane='xy', **kwarg)
     g = read.grid(trim=True, **dir)
+
     # Find the mid-plane properties.
     print("Finding mid-plane properties...")
     var = avg.dtype.names
     nvar = len(var)
     nt = avg.shape[0]
-    avg0 = np.core.records.array(nvar * [np.zeros(nt,)], names=var)
+    avg0 = np.rec.array(nvar * [np.zeros(nt,)], names=var)
     for v in var:
         for i in range(nt):
             avg0[v][i] = interp1d(g.z, avg[v][i,:])(0)
+
     return t, avg0
 #=======================================================================
 def sigma0(datadir='./data'):
@@ -116,11 +120,10 @@ def slice(axis=2, var=None, z0=0, **kwarg):
     """
     # Author: Chao-Chin Yang
     # Created: 2017-04-30
-    # Last Modified: 2017-05-01
+    # Last Modified: 2017-06-08
     from . import read
     import numpy as np
     from scipy.interpolate import interp1d
-    from Toolbox import get
 
     # Read the snapshot.
     f = read.var(compact=False, **kwarg)
@@ -140,7 +143,7 @@ def slice(axis=2, var=None, z0=0, **kwarg):
 
     # Get the names of the variables.
     if var is None:
-        datadir = get.pairs(kwarg, "datadir")
+        datadir = {"datadir": kwarg["datadir"]} if "datadir" in kwarg else {}
         var = read.varname(**datadir)
     else:
         if type(var) is str: var = [var]
