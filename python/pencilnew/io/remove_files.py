@@ -46,27 +46,4 @@ def remove_files(path, do_it=False, do_it_really=False):
         else:
             print('?? WARNING: Would remove: '+path)
 
-
-        # if os.path.isdir(path):
-        #     if os.path.islink(path):
-        #         if do_it and do_it_really:
-        #             os.unlink(path)
-        #         else:
-        #             print('-> would unlink:\t'+relpath(path))
-        #     else:
-        #         for p in os.listdir(path):
-        #             #print('-> would remove:\t'+p+'\nin '+relpath(path))
-        #             remove(p)
-        # else:
-        #     if os.path.islink(path):
-        #         if do_it and do_it_really:
-        #             os.unlink(path)
-        #         else:
-        #             print('-> would unlink:\t'+relpath(path))
-        #     else:
-        #         if do_it and do_it_really:
-        #             os.remove(path)
-        #         else:
-        #             print('-> would remove:\t'+relpath(path))
-
     return True

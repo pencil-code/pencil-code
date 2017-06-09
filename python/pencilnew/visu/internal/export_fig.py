@@ -6,7 +6,8 @@ def export_fig(fig, filepath, filename=False,
     """
     import datetime as dt
     from os.path import join, split
-    from pencilnew.io import exists, mkdir
+    from pencilnew.io import exists_file as exists
+    from pencilnew.io import mkdir
 
     ######## parse filepath and filename
     if not filename:

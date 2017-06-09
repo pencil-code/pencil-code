@@ -480,6 +480,36 @@ class __Simulation__(object):
 
         print('! ERROR: Couldnt find '+quantity+'!')
 
+    def show(self, name=False):
+        """Shows the content of a specified simulation file.
+        E.g.: self.show('cparam.local') show the content that file.
+        Works with: cparam.local, Makefile.local and *.in files"""
+
+        from os.path import join
+        from pencilnew.io import exists_file
+
+        def __s__(filepath):
+            print(filepath)
+            if exists_file(filepath):
+                with open(filepath, 'r') as fin:
+                    print(fin.read())
+                    return True
+            return False
+
+        if name != False:
+            if name.startswith('cparam'):
+                return __s__(join(self.path,'src','cparam.local'))
+            elif name.startswith('Makefile'):
+                return __s__(join(self.path,'src','Makefile.local'))
+            elif name.endswith('.in'):
+                return __s__(join(self.path,name))
+            else:
+                print('?? Specify which file to show..')
+                return False
+
+        print('?? Specify which file to show, Couldnt find '+str(name))
+        return False
+
     def get_ts(self):
         """Returns time series object."""
         from pencilnew.read import ts

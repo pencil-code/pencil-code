@@ -1,4 +1,4 @@
-def exists(file, folder=False):
+def exists_file(file, folder=False):
     """Better version of exists, compared with os.path.exists!
 
     Args:
@@ -8,10 +8,9 @@ def exists(file, folder=False):
     Returns:
         True if file in folder of path specified in file exists.
     """
-    from os.path import join
-    from os.path import exists
+    from os.path import join, exists, split
     if not folder:
-        folder = os.path.split(file)[0]
+        folder = split(file)[0]
         if folder == '': folder = '.'
     if exists(join(folder, file)):
         return True

@@ -11,7 +11,7 @@ from .timestamp import timestamp
 
 # io operation on cluster/computer
 from .get_systemid import get_systemid
-from .exists import exists
+from .exists_file import exists_file
 from .remove_files import remove_files
 
 # io operation on simulation
