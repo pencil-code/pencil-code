@@ -1977,7 +1977,7 @@ module Solid_Cells
     real, dimension(max_send_ip_cart_to_curv,2,2,2,ivar2-ivar1+1) :: f_bufo
     real, dimension(max_recv_ip_cart_to_curv,2,2,2,ivar2-ivar1+1) :: f_bufi
     real, dimension(2,2,2,ivar2-ivar1+1) :: farr
-    integer :: i,j,k,id
+    integer :: i,j,k,id,ipp
     integer :: iter, send_to, recv_from
     integer, dimension(3) :: inear_loc
     integer :: ind_send_first, ind_send_last, ind_recv_first, ind_recv_last
@@ -1990,11 +1990,11 @@ module Solid_Cells
       ind_send_last=n_ip_to_proc_cart_to_curv(iter)+ind_send_first-1
       send_to=send_cartesian_to_curvilinear(ind_send_last)%send_to_proc
       nbuf_farr(1)=ind_send_last-ind_send_first+1
-      do ip=1,nbuf_farr(1)
-        i=send_cartesian_to_curvilinear(ind_send_first+ip-1)%i_low_corner(1)
-        j=send_cartesian_to_curvilinear(ind_send_first+ip-1)%i_low_corner(2)
-        k=send_cartesian_to_curvilinear(ind_send_first+ip-1)%i_low_corner(3)
-        f_bufo(ip,:,:,:,:)=f_cartesian(i:i+1,j:j+1,k:k+1,ivar1:ivar2)
+      do ipp=1,nbuf_farr(1)
+        i=send_cartesian_to_curvilinear(ind_send_first+ipp-1)%i_low_corner(1)
+        j=send_cartesian_to_curvilinear(ind_send_first+ipp-1)%i_low_corner(2)
+        k=send_cartesian_to_curvilinear(ind_send_first+ipp-1)%i_low_corner(3)
+        f_bufo(ipp,:,:,:,:)=f_cartesian(i:i+1,j:j+1,k:k+1,ivar1:ivar2)
       enddo
       !print*, 'iproc: send id info', iproc,send_cartesian_to_curvilinear(ind_send_first:ind_send_last)%ip_id
       call mpisend_nonblock_int(send_cartesian_to_curvilinear(ind_send_first:ind_send_last)%ip_id, &
@@ -2009,20 +2009,20 @@ module Solid_Cells
       nbuf_farr(1)=ind_recv_last-ind_recv_first+1
       call mpirecv_int(id_bufi(1:nbuf_farr(1)),nbuf_farr(1),recv_from,iproc)
       call mpirecv_real(f_bufi(1:nbuf_farr(1),:,:,:,:),nbuf_farr,recv_from,iproc+ncpus)
-      do ip=1,nbuf_farr(1)
-        call interpolate_point_cart_to_curv(id_bufi(ip),ivar1,ivar2,f_bufi(ip,:,:,:,:),f_cartesian)
+      do ipp=1,nbuf_farr(1)
+        call interpolate_point_cart_to_curv(id_bufi(ipp),ivar1,ivar2,f_bufi(ipp,:,:,:,:),f_cartesian)
       enddo
     enddo
 !
 !  Interpolate remaining points 
 !
     do id=1,n_ip_cart_to_curv
+    ! TODO: Make this more efficient by only looping over id's not used above and eliminate if-statement 
       if(cartesian_to_curvilinear(id)%from_proc==iproc) then
         inear_loc=cartesian_to_curvilinear(id)%ind_local_neighbour
         farr(:,:,:,ivar1:ivar2)=f_cartesian(inear_loc(1):inear_loc(1)+1,inear_loc(2):inear_loc(2)+1, &
           inear_loc(3):inear_loc(3)+1,ivar1:ivar2)
         call interpolate_point_cart_to_curv(id,ivar1,ivar2,farr,f_cartesian)
-        ip=ip+1
       endif
     enddo
 !
@@ -2052,7 +2052,7 @@ module Solid_Cells
     real, dimension(max_send_ip_curv_to_cart,2,2,2,ivar2-ivar1+1) :: f_bufo
     real, dimension(max_recv_ip_curv_to_cart,2,2,2,ivar2-ivar1+1) :: f_bufi
     real, dimension(2,2,2,ivar2-ivar1+1) :: farr
-    integer :: i,j,k,id
+    integer :: i,j,k,id,ipp
     integer :: iter, send_to, recv_from
     integer, dimension(3) :: inear_loc
     integer :: ind_send_first, ind_send_last, ind_recv_first, ind_recv_last
@@ -2065,11 +2065,11 @@ module Solid_Cells
       ind_send_last=n_ip_to_proc_curv_to_cart(iter)+ind_send_first-1
       send_to=send_curvilinear_to_cartesian(ind_send_last)%send_to_proc
       nbuf_farr(1)=ind_send_last-ind_send_first+1
-      do ip=1,nbuf_farr(1)
-        i=send_curvilinear_to_cartesian(ind_send_first+ip-1)%i_low_corner(1)
-        j=send_curvilinear_to_cartesian(ind_send_first+ip-1)%i_low_corner(2)
-        k=send_curvilinear_to_cartesian(ind_send_first+ip-1)%i_low_corner(3)
-        f_bufo(ip,:,:,:,:)=f_ogrid(i:i+1,j:j+1,k:k+1,ivar1:ivar2)
+      do ipp=1,nbuf_farr(1)
+        i=send_curvilinear_to_cartesian(ind_send_first+ipp-1)%i_low_corner(1)
+        j=send_curvilinear_to_cartesian(ind_send_first+ipp-1)%i_low_corner(2)
+        k=send_curvilinear_to_cartesian(ind_send_first+ipp-1)%i_low_corner(3)
+        f_bufo(ipp,:,:,:,:)=f_ogrid(i:i+1,j:j+1,k:k+1,ivar1:ivar2)
       enddo
       call mpisend_nonblock_int(send_curvilinear_to_cartesian(ind_send_first:ind_send_last)%ip_id, &
         nbuf_farr(1),send_to,send_to,ireq1D(iter))
@@ -2083,14 +2083,15 @@ module Solid_Cells
       nbuf_farr(1)=ind_recv_last-ind_recv_first+1
       call mpirecv_int(id_bufi(1:nbuf_farr(1)),nbuf_farr(1),recv_from,iproc)
       call mpirecv_real(f_bufi(1:nbuf_farr(1),:,:,:,:),nbuf_farr,recv_from,iproc+ncpus)
-      do ip=1,nbuf_farr(1)
-        call interpolate_point_curv_to_cart(f_cartesian,id_bufi(ip),ivar1,ivar2,f_bufi(ip,:,:,:,:))
+      do ipp=1,nbuf_farr(1)
+        call interpolate_point_curv_to_cart(f_cartesian,id_bufi(ipp),ivar1,ivar2,f_bufi(ipp,:,:,:,:))
       enddo
     enddo
 !
 !  Interpolate remaining points 
 !
     do id=1,n_ip_curv_to_cart
+    ! TODO: Make more efficient
       if(curvilinear_to_cartesian(id)%from_proc==iproc) then
         inear_loc=curvilinear_to_cartesian(id)%ind_local_neighbour
         farr(:,:,:,ivar1:ivar2)=f_ogrid(inear_loc(1):inear_loc(1)+1,inear_loc(2):inear_loc(2)+1, &
