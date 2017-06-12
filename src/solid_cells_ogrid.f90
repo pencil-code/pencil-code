@@ -1553,7 +1553,7 @@ module Solid_Cells
       rthz_global=(/ xglobal_ogrid(i_rthz_global(1)), yglobal_ogrid(i_rthz_global(2)), &
                      zglobal_ogrid(i_rthz_global(3)) /)
       do ii=1,mxgrid_ogrid
-        if(rthz_global(1)==x_ogrid(ii)) then
+        if(abs(rthz_global(1)-x_ogrid(ii))<1e-12) then
           i_rthz_local(1)=ii
           exit
         endif
@@ -1576,10 +1576,11 @@ module Solid_Cells
         enddo
       endif
 !
+      if(i_rthz_local(1)==0) print*, 'ZERO INDEX IN R-DIRECTION!'
       if(lcheck) then
-        if((rthz_global(1)-x_ogrid(i_rthz_local(1))/=0.) .or. &
-           (rthz_global(2)-y_ogrid(i_rthz_local(2))/=0.) .or. &
-           (rthz_global(3)-z_ogrid(i_rthz_local(3))/=0.)) then
+        if((rthz_global(1)-x_ogrid(i_rthz_local(1))>1e-12) .or. &
+           (rthz_global(2)-y_ogrid(i_rthz_local(2))>1e-12) .or. &
+           (rthz_global(3)-z_ogrid(i_rthz_local(3))>1e-12)) then
           print*, ''
           print*, 'iproc', iproc
           print*, 'Correct global to local conversion not performed'
