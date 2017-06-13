@@ -38,7 +38,6 @@ if (n_elements(dim) eq 0) then pc_read_dim, obj=dim, datadir=datadir, quiet=quie
 if (n_elements(param) eq 0) then pc_read_param, obj=param, datadir=datadir, dim=dim, quiet=quiet
 if (n_elements(run_param) eq 0) then pc_read_param, obj=run_param, /param2, datadir=datadir, dim=dim, quiet=quiet
 default, noaux, 0
-
 ; 
 ;  Read the positions of variables in the f-array from the index file.
 ;
@@ -54,6 +53,7 @@ free_lun, lun
 default, ntestfield, 0
 default, ntestflow, 0
 default, ntestscalar, 0
+
 for line = 1, num_lines do begin
   str = stregex (index_pro[line-1], '^ *n[^= ]+[= ]+[0-9]+ *$', /extract)
   if (not execute (str)) then $
@@ -243,18 +243,18 @@ endif
 ;  off by hand by setting noaux=1, e.g. for reading derivative snapshots.
 ;
 if (not keyword_set (noaux)) then begin
-
-    if ( maux gt 0 and (keyword_set(param.lwrite_aux) or down )) then $
-      indices = [ indices, indices_aux ]
-
-endif
+  if ( maux gt 0 and (keyword_set(param.lwrite_aux) or keyword_set(run_param.lwrite_aux) or down )) then $
+    indices = [ indices, indices_aux ] $
+  else $
+    maux=0
+endif else $
+  maux=0
 ;
 ;  Predefine some variable types used regularly.
 ;
 if keyword_set(single) then type='4' else type='type_idl'
 INIT_DATA = [ 'make_array (mx,my,mz,', 'type='+type+')' ]
 INIT_DATA_LOC = [ 'make_array (mxloc,myloc,mzloc,', 'type=type_idl)' ]
-
 ;
 ;  For 2-D runs with lwrite_2d=T. Data has been written by the code without
 ;  ghost zones in the missing direction. We add ghost zones here anyway so
@@ -275,7 +275,6 @@ endif
 ;
 ;  Parse variables and count total number of variables.
 ;
-totalvars = 0L
 num_tags = n_elements(indices)
 num_vars = 0
 
@@ -336,8 +335,24 @@ for tag = 1, num_tags do begin
     executes = [ executes, exec_str + offsetv ]
     position = [ position, pos[0] ]
   end
-  totalvars += add_vars
-  if totalvars eq mvar+maux then break
+endfor
+;
+selected = selected[sort (position)]
+executes = executes[sort (position)]
+;
+; in the *ordered* list of hits
+; only the first mvar+maux entries matter
+;
+totalvars = 0L
+for var=0,num_vars-1 do begin
+  tag = selected[var]
+  totalvars += indices[tag].dims  
+  if totalvars eq mvar+maux then begin
+    selected = selected[0:var]
+    executes = executes[0:var]
+    num_vars=var+1
+    break
+  endif
 endfor
 ;
 ;  Make an array of structures in which to store their descriptions.
@@ -346,9 +361,6 @@ varcontent = replicate ({ varcontent_all, variable:'UNKNOWN', idlvar:'dummy', id
     idlvarloc:'dummy_loc', idlinitloc:'0', skip:0 }, totalvars)
 ;
 ;  Fill varcontent array.
-;
-selected = selected[sort (position)]
-executes = executes[sort (position)]
 ;
 for var = 0, num_vars-1 do begin
 
