@@ -1206,7 +1206,6 @@ module Special
       use Deriv, only: der
       use Mpicomm, only: mpibcast_real
       use Sub, only: cross,gij,curl_mn
-      use General, only: gaunoise_number
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension(mx,my,mz):: rho_tmp
@@ -1229,6 +1228,7 @@ module Special
                 uu(:,1)=uu_emerg(1)
                 uu(:,2)=uu_emerg(2)
                 uu(:,3)=uu_emerg(3)
+                f(l1:l2,m,n1-ig,iuz) = uu(:,3)
 !
                 bb(:,1)=bb_emerg(1)
                 bb(:,2)=bb_emerg(2)
@@ -1239,17 +1239,19 @@ module Special
                 f(l1:l2,m,n1-ig,iaz) = f(l1:l2,m,n1-ig,iaz) + uxb(:,3)*dt_
               enddo
             enddo
-          case ('gaussian-noise')
+          case ('noise')
             do ig=0,nghost
               do m=m1, m2
                 uu(:,1)=uu_emerg(1)
                 uu(:,2)=uu_emerg(2)
                 uu(:,3)=uu_emerg(3)
+                f(l1:l2,m,n1-ig,iuz) = uu(:,3)
 !
-                call gaunoise_number(gn)
+                call random_number(gn)
                 bb(:,1)=0.5*bb_emerg(1)*(1.+gn(1))
                 bb(:,2)=bb_emerg(2)
-                bb(:,3)=bb_emerg(3)*sin(x(l1:l2)+pi*gn(2))
+                bb(:,3)=bb_emerg(3)*sin(pi*(2*x(l1:l2)/Lxyz(1)+gn(2)))
+!                
                 call cross(uu,bb,uxb)
                 f(l1:l2,m,n1-ig,iax) = f(l1:l2,m,n1-ig,iax) + uxb(:,1)*dt_
                 f(l1:l2,m,n1-ig,iay) = f(l1:l2,m,n1-ig,iay) + uxb(:,2)*dt_
