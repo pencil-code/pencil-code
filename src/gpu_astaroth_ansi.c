@@ -20,11 +20,9 @@
 
 #include "headers_c.h"
 
-#pragma once
-
 void intitializeGPU(int nx, int ny, int nz, int nghost, float *x, float *y, float *z, float nu, float cs2);
-int finalizeGpu();
-void RKintegration(float *uu_x, float *uu_y, float *uu_z, float *lnrho, int mx, int my, int mz, int nghost, int isubstep);
+int finalizeGPU();
+void substepGPU(float *uu_x, float *uu_y, float *uu_z, float *lnrho, int isubstep, int full);
 
 /* for Intel Compiler
 extern REAL cdata_mp_dx_;
@@ -44,8 +42,10 @@ extern REAL __cdata_MOD_theta;
 //extern REAL __viscosity_MOD_nu;
 static REAL __viscosity_MOD_nu=1.;
 extern REAL __equationofstate_MOD_cs20;
+extern FINT __cdata_MOD_iproc;
+extern char *__cparam_MOD_coornames;
 
-static FINT nx, ny, nz, mx, my, mz, nghost;
+FINT mx, my, mz, nx, ny, nz, nghost, iproc;
 
 // ----------------------------------------------------------------------
 void FTNIZE(initialize_gpu_c)
@@ -53,9 +53,10 @@ void FTNIZE(initialize_gpu_c)
 /* Initializes GPU.
 */
 {
+  /*
   printf("omega = %e\n", __cdata_MOD_omega);
   printf("nu = %e\n", __viscosity_MOD_nu);
-  /*
+
   printf("omega = %e\n", cdata_mp_omega_);
   printf("nu = %e\n", viscosity_mp_nu_);
   printf("nx = %d\n", *nx_);
@@ -69,7 +70,8 @@ void FTNIZE(initialize_gpu_c)
   mx=nx+2*nghost;
   my=ny+2*nghost;
   mz=nz+2*nghost;
-
+  iproc=__cdata_MOD_iproc;
+  //printf("coornames(1)= %s", __cparam_MOD_coornames[0]);
   REAL nu=__viscosity_MOD_nu;
   //REAL nu=viscosity_mp_nu_;
   REAL cs2=__equationofstate_MOD_cs20;
@@ -86,16 +88,17 @@ void FTNIZE(initialize_gpu_c)
 */
 }
 /* ---------------------------------------------------------------------- */
-void FTNIZE(finalize_gpu_c)
-     ()
-/* Frees memory allocated on GPU.
-*/
+void FTNIZE(finalize_gpu_c)()
 {
-  int res=finalizeGPU();
+
+// Frees memory allocated on GPU.
+
+  finalizeGPU();
 }
 /* ---------------------------------------------------------------------- */
 void FTNIZE(rhs_gpu_c)
-     (REAL *uu_x, REAL *uu_y, REAL *uu_z, REAL *lnrho, FINT isubstep)  //, FINT *full)
+     (REAL *uu_x, REAL *uu_y, REAL *uu_z, REAL *lnrho, FINT *isubstep, FINT *full)
+
 /* Communication between CPU and GPU: copy (outer) halos from CPU to GPU, 
    copy "inner halos" from GPU to CPU; calculation of rhss of momentum eq.
    and of continuity eq. by GPU kernels. Perform the Runge-Kutta substep 
@@ -129,14 +132,8 @@ void FTNIZE(rhs_gpu_c)
    If full=1, however, copy the full arrays.
 */
 {
-  /*
-  printf("nx = %d\n", nx);
-  printf("No GPU implementation yet");
-  */
-
   // copies data back and forth and peforms integration substep isubstep
-  //gpu_substep(uu_x, uu_y, uu_z, lnrho, isubstep);
-  RKintegration(uu_x, uu_y, uu_z, lnrho, mx, my, mz, nghost, isubstep);
 
+  substepGPU(uu_x, uu_y, uu_z, lnrho, *isubstep, *full);
 }
 /* ---------------------------------------------------------------------- */

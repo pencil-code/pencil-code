@@ -155,6 +155,7 @@ module Cdata
   character (len=fnlen) :: directory='', datadir_snap='', directory_prestart=''
   character (len=fnlen) :: directory_snap='',directory_dist='',directory_collect=''
   character (len=fnlen) :: modify_filename='modify.dat'
+  logical :: lsnap=.false., lsnap_down=.false., lspec=.false.
   real :: dsnap=100.,dsnap_down=0.,d2davg=100.,dvid=0.,dspec=impossible, dsound=0., tsound=0., soundeps=1.e-4
   real :: dtracers=0., dfixed_points=0.
   real :: crash_file_dtmin_factor=-1.0
@@ -468,7 +469,6 @@ module Cdata
   integer :: idiag_Rmesh=0      ! DIAG_DOC: $R_{\rm mesh}$
   integer :: idiag_Rmesh3=0     ! DIAG_DOC: $R_{\rm mesh}^{(3)}$
   integer :: idiag_maxadvec=0   ! DIAG_DOC: maxadvec
-  integer :: idiag_nu_LES=0     ! DIAG_DOC:
 !
 !  Emergency brake:
 !   When toggled the code will stop at the next convenient point

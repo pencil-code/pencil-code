@@ -134,6 +134,7 @@ module Viscosity
   integer :: idiag_nusmagm=0    ! DIAG_DOC: Mean value of Smagorinsky viscosity
   integer :: idiag_nusmagmin=0  ! DIAG_DOC: Min value of Smagorinsky viscosity
   integer :: idiag_nusmagmax=0  ! DIAG_DOC: Max value of Smagorinsky viscosity
+  integer :: idiag_nu_LES=0     ! DIAG_DOC: Mean value of Smagorinsky viscosity 
   integer :: idiag_visc_heatm=0 ! DIAG_DOC: Mean value of viscous heating
   integer :: idiag_qfviscm=0    ! DIAG_DOC: $\left<\qv\cdot
                                 ! DIAG_DOC: \fv_{\rm visc}\right>$
@@ -1965,6 +1966,7 @@ module Viscosity
 !
       if (ldiagnos) then
         if (idiag_nusmagm/=0)   call sum_mn_name(p%nu_smag,idiag_nusmagm)
+        if (idiag_nu_LES/=0)    call sum_mn_name(p%nu_smag,idiag_nu_LES)
         if (idiag_nusmagmin/=0) call max_mn_name(-p%nu_smag,idiag_nusmagmin,lneg=.true.)
         if (idiag_nusmagmax/=0) call max_mn_name(p%nu_smag,idiag_nusmagmax)
         if (idiag_num/=0) call sum_mn_name(p%nu,idiag_num)
@@ -2255,7 +2257,6 @@ module Viscosity
 !        endif
         if (idiag_dtnu/=0) &
             call max_mn_name(diffus_nu/cdtv,idiag_dtnu,l_dt=.true.)
-        if (idiag_nu_LES /= 0) call sum_mn_name(p%nu_smag,idiag_nu_LES)
         if (idiag_meshRemax/=0) call max_mn_name(sqrt(p%u2(:))*dxmax_pencil/p%diffus_total,idiag_meshRemax)
         if (idiag_Reshock/=0) then
           Reshock(:) = 0.

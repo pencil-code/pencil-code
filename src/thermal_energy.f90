@@ -14,8 +14,6 @@
 ! CPARAM logical, parameter :: lthermal_energy = .true.
 !
 ! MVAR CONTRIBUTION 1
-! MAUX CONTRIBUTION 0
-! COMMUNICATED AUXILIARIES 0
 !
 ! PENCILS PROVIDED Ma2; fpres(3); ugeths; transpeth; sglnTT(3)
 !
