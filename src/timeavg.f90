@@ -109,7 +109,7 @@ module Timeavg
       character (len=intlen) :: ch
       character (len=fnlen) :: file
       character (len=*) :: chsnap,flist
-      logical :: lsnap,enum
+      logical :: enum
       logical, save :: lfirst_call=.true.
       integer, save :: nsnap
       real, save :: tsnap
