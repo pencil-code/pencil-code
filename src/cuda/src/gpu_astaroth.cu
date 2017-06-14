@@ -30,7 +30,7 @@ Omer Anjum: Added description of the functions
 #include "smem.cuh"
 #include "forcing.cuh"
 #include "copyhalos.cuh"
-
+#include "copyHalosConcur.cuh"
 
 //DEBUG
 #include "initutils.h"
@@ -52,7 +52,7 @@ Omer Anjum: Added description of the functions
 void load_dconsts(float nu_visc, float cs2_sound);
 inline void swap_ptrs(float** a, float** b);
 
-int halo_size, d_lnrho_size;
+int halo_size;
 float *d_halo;
 float *halo; 
 float *d_lnrho, *d_uu_x, *d_uu_y, *d_uu_z;
@@ -65,6 +65,7 @@ float *d_rhorms, *d_rhomax, *d_rhomin; //Device pointer for rhorms, rhomax, rhom
 float *d_uxmax, *d_uymax, *d_uzmax; //Device pointer for uxmax, uymax, uzmax
 float *d_uxmin, *d_uymin, *d_uzmin; //Device pointer for uxmin, uymin, uzmin
 
+extern int mx, my, mz, nx, ny, nz, nghost, iproc;
 
 /*cudaError_t checkErr(cudaError_t result) {
   if (result != cudaSuccess) {
@@ -87,7 +88,6 @@ float nu, cs2;
 //Loads constants into device memory
 void load_dconsts(float nu_visc, float cs2_sound){
 	//---------Grid dims-----------------------
-	const int nx = NX, ny = NY, nz = NZ;
 	const int pad_size = PAD_SIZE, bound_size = BOUND_SIZE;
 	const int 	comp_domain_size_x = COMP_DOMAIN_SIZE_X, 
 			comp_domain_size_y = COMP_DOMAIN_SIZE_Y, 
@@ -99,9 +99,9 @@ void load_dconsts(float nu_visc, float cs2_sound){
 			domain_size_y = DOMAIN_SIZE_Y, 
 			domain_size_z = DOMAIN_SIZE_Z;
 
-	checkErr( cudaMemcpyToSymbol(d_NX, &nx, sizeof(int)) );
-	checkErr( cudaMemcpyToSymbol(d_NY, &ny, sizeof(int)) );
-	checkErr( cudaMemcpyToSymbol(d_NZ, &nz, sizeof(int)) );
+	checkErr( cudaMemcpyToSymbol(d_NX, &mx, sizeof(int)) );
+	checkErr( cudaMemcpyToSymbol(d_NY, &my, sizeof(int)) );
+	checkErr( cudaMemcpyToSymbol(d_NZ, &mz, sizeof(int)) );
 
 	checkErr( cudaMemcpyToSymbol(d_PAD_SIZE, &pad_size, sizeof(int)) );
 	checkErr( cudaMemcpyToSymbol(d_BOUND_SIZE, &bound_size, sizeof(int)) );
@@ -158,9 +158,6 @@ void load_dconsts(float nu_visc, float cs2_sound){
 	const float q_shear = Q_SHEAR;
 	const float omega = OMEGA; 
 	const int interp_order = INTERP_ORDER;
-
-	printf("compute INTERP_ORDER = %i \n", INTERP_ORDER);
-	printf("compute interp_order = %i \n", interp_order); 
 
         checkErr( cudaMemcpyToSymbol(d_INTERP_ORDER, &interp_order, sizeof(int)) );
         checkErr( cudaMemcpyToSymbol(d_Q_SHEAR, &q_shear, sizeof(float)) );
@@ -244,12 +241,12 @@ void load_dconsts(float nu_visc, float cs2_sound){
 	checkErr( cudaMemcpyToSymbol(d_DIFFMN_DXDY_DIV, &diffmn_dxdy, sizeof(float)) );
 	checkErr( cudaMemcpyToSymbol(d_DIFFMN_DYDZ_DIV, &diffmn_dydz, sizeof(float)) );
 	checkErr( cudaMemcpyToSymbol(d_DIFFMN_DXDZ_DIV, &diffmn_dxdz, sizeof(float)) );
-	//-------------------------------------------
+
+        initializeCopying();
 }
 
-
 /* ---------------------------------------------------------------------- */
-extern "C" bool finalizeGPU(){
+extern "C" void finalizeGPU(){
 /* Frees memory allocated on GPU.
 */
 	//Destroy timers
@@ -272,50 +269,62 @@ extern "C" bool finalizeGPU(){
 	checkErr( cudaFree(d_uxmin) ); checkErr( cudaFree(d_uymin) ); checkErr( cudaFree(d_uzmin) );
 	checkErr( cudaFree(d_partial_result) );
 	checkErr( cudaFree(d_halo) );
-	/*//Free pinned memory
-	checkErr( cudaFreeHost(slice_lnrho) );
+
+	//Free pinned memory
+	/*checkErr( cudaFreeHost(slice_lnrho) );
 	checkErr( cudaFreeHost(slice_uu) );
 	checkErr( cudaFreeHost(slice_uu_x) );
 	checkErr( cudaFreeHost(slice_uu_y) );
 	checkErr( cudaFreeHost(slice_uu_z) );*/
 
-
-	//Reset device
+	finalizeCopying();
 	cudaDeviceReset();
-
-
-	return EXIT_SUCCESS;
 }
 
-extern "C" void RKintegration(float *uu_x, float *uu_y, float *uu_z, float *lnrho, int mx, int my, int mz, int nghost, int isubstep){
-	
+extern "C" void substepGPU(float *uu_x, float *uu_y, float *uu_z, float *lnrho, int isubstep, bool full=false){
 	//need to make those calls asynchronize
-	copyouterhalostodevice(lnrho, d_lnrho, halo, d_halo, mx, my, mz, nghost);
+	/*copyouterhalostodevice(lnrho, d_lnrho, halo, d_halo, mx, my, mz, nghost);
 	copyouterhalostodevice(uu_x, d_uu_x, halo, d_halo, mx, my, mz, nghost);
 	copyouterhalostodevice(uu_y, d_uu_y, halo, d_halo, mx, my, mz, nghost);
-	copyouterhalostodevice(uu_z, d_uu_z, halo, d_halo, mx, my, mz, nghost);
+	copyouterhalostodevice(uu_z, d_uu_z, halo, d_halo, mx, my, mz, nghost);*/
+
+        copyOuterHalos(lnrho, d_lnrho);
+        copyOuterHalos(uu_x, d_uu_x);
+        copyOuterHalos(uu_y, d_uu_y);
+        copyOuterHalos(uu_z, d_uu_z);
 	
 	rungekutta2N_cuda(d_lnrho, d_uu_x, d_uu_y, d_uu_z, d_w_lnrho, d_w_uu_x, d_w_uu_y, d_w_uu_z, d_lnrho_dest, d_uu_x_dest, d_uu_y_dest, d_uu_z_dest, isubstep);
-
-	copyinternalhalostohost(lnrho, d_lnrho, halo, d_halo, mx, my, mz, nghost);
-	copyinternalhalostohost(uu_x, d_uu_x, halo, d_halo, mx, my, mz, nghost);
-	copyinternalhalostohost(uu_y, d_uu_y, halo, d_halo, mx, my, mz, nghost);
-	copyinternalhalostohost(uu_z, d_uu_z, halo, d_halo, mx, my, mz, nghost);
 
 	//Swap array pointers
 	swap_ptrs(&d_lnrho, &d_lnrho_dest);
 	swap_ptrs(&d_uu_x, &d_uu_x_dest);
 	swap_ptrs(&d_uu_y, &d_uu_y_dest);
 	swap_ptrs(&d_uu_z, &d_uu_z_dest);
-	return;
+
+	/*copyinternalhalostohost(lnrho, d_lnrho, halo, d_halo, mx, my, mz, nghost);
+	copyinternalhalostohost(uu_x, d_uu_x, halo, d_halo, mx, my, mz, nghost);
+	copyinternalhalostohost(uu_y, d_uu_y, halo, d_halo, mx, my, mz, nghost);
+	copyinternalhalostohost(uu_z, d_uu_z, halo, d_halo, mx, my, mz, nghost);*/
+        if (full) 
+	{
+        	copyInnerAll(lnrho, d_lnrho);
+        	copyInnerAll(uu_x, d_uu_x);
+        	copyInnerAll(uu_y, d_uu_y);
+        	copyInnerAll(uu_z, d_uu_z);
+	}
+	else
+	{
+        	copyInnerHalos(lnrho, d_lnrho);
+        	copyInnerHalos(uu_x, d_uu_x);
+        	copyInnerHalos(uu_y, d_uu_y);
+        	copyInnerHalos(uu_z, d_uu_z);
+	}
 }
 
 extern "C" void intitializeGPU(int nx, int ny, int nz, int nghost, float *x, float *y, float *z, float nu, float cs2){ 
 		// nx = mx, ny = my, nz = mz halo_depth = nghost
 		int device;
-		int halo_depth = nghost;
 		cudaGetDevice(&device);
-		printf("Using device %d\n", device);
 		//cudaSetDevice(device); //Not yet enabled
 
 		//Ensure that we're using a clean device
@@ -324,31 +333,29 @@ extern "C" void intitializeGPU(int nx, int ny, int nz, int nghost, float *x, flo
 		//----------------------------------------------------------
 		// Initialize global host variables
 		//----------------------------------------------------------
-		print_init_config();
-		print_run_config();
-		print_additional_defines();
+		/*
+                  print_init_config();
+		  print_run_config();
+		  print_additional_defines();
+                */
 		//----------------------------------------------------------
 
-		//----------------------------------------------------------
 		// Allocating arrays for halos
-		//----------------------------------------------------------
 
+		int halo_depth = nghost;
 		halo_size = (halo_depth*nx*2 + halo_depth*(ny-halo_depth*2)*2)*(nz-halo_depth*2) + nx*ny*(halo_depth*2);
-		d_lnrho_size = nx*ny*nz;
-		
 		halo = (float*) malloc(sizeof(float)*halo_size);
 		checkErr(cudaMalloc ((void **) &d_halo, sizeof(float)*halo_size));
+
 		//note: int GRID_SIZE ?
 		//note: W_GRID_SIZE = ?
-		//----------------------------------------------------------
+
 		// Allocate device memory
-		//----------------------------------------------------------
 
 		checkErr( cudaMalloc(&d_lnrho, sizeof(float)*GRID_SIZE) );
 		checkErr( cudaMalloc(&d_uu_x, sizeof(float)*GRID_SIZE) );
 		checkErr( cudaMalloc(&d_uu_y, sizeof(float)*GRID_SIZE) );
 		checkErr( cudaMalloc(&d_uu_z, sizeof(float)*GRID_SIZE) );
-
 
 		checkErr( cudaMalloc(&d_w_lnrho, sizeof(float)*W_GRID_SIZE) );
 		checkErr( cudaMalloc(&d_w_uu_x, sizeof(float)*W_GRID_SIZE) );
@@ -362,6 +369,7 @@ extern "C" void intitializeGPU(int nx, int ny, int nz, int nghost, float *x, flo
 		checkErr( cudaMalloc(&d_uu_y_dest, sizeof(float)*GRID_SIZE) );
 		checkErr( cudaMalloc(&d_uu_z_dest, sizeof(float)*GRID_SIZE) );
 
+                // Diagnostics quantities
 
 		checkErr( cudaMalloc((float**) &d_umax, sizeof(float)) );   //TODO this somewhere else
 		checkErr( cudaMalloc((float**) &d_umin, sizeof(float)) );   //TODO this somewhere else
@@ -378,14 +386,16 @@ extern "C" void intitializeGPU(int nx, int ny, int nz, int nghost, float *x, flo
 		checkErr( cudaMalloc((float**) &d_uymin, sizeof(float)) );   //TODO this somewhere else
 		checkErr( cudaMalloc((float**) &d_uzmax, sizeof(float)) );   //TODO this somewhere else
 		checkErr( cudaMalloc((float**) &d_uzmin, sizeof(float)) );   //TODO this somewhere else
-		printf("Device mem allocated: %f MiB\n", (4*sizeof(float)*GRID_SIZE + 4*sizeof(float)*W_GRID_SIZE)/powf(2,20));
-		printf("Main array (d_lnrho) dims: (%d,%d,%d)\ntemporary result array dims (d_w_lnrho etc)(%d,%d,%d)\n", NX,NY,NZ, 										COMP_DOMAIN_SIZE_X,COMP_DOMAIN_SIZE_Y,COMP_DOMAIN_SIZE_Z);
+
+                if (iproc==0)
+		{
+		  printf(" Device mem allocated: %f MiB\n", (4*sizeof(float)*GRID_SIZE + 4*sizeof(float)*W_GRID_SIZE)/powf(2,20));
+		  //printf("Main array (d_lnrho etc) dims: (%d,%d,%d)\ntemporary result array dims (d_w_lnrho etc)(%d,%d,%d)\n",
+                  //       NX,NY,NZ,COMP_DOMAIN_SIZE_X,COMP_DOMAIN_SIZE_Y,COMP_DOMAIN_SIZE_Z);
+                }
 		
-		//----------------------------------------------------------
 		//Load constants into device memory
-		//----------------------------------------------------------
+
 		load_dconsts(nu, cs2);
-		//----------------------------------------------------------
-return;
 }
 /* ---------------------------------------------------------------------- */

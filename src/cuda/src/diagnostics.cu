@@ -168,7 +168,7 @@ void print_init_config()
 	printf("Actual grid sizes (with pads+bounds): %d, %d, %d\n", NX, NY, NZ);
    	printf("Lbox_z = %f, Lbox_y = %f, Lbox_z = %f \n", DOMAIN_SIZE_X, DOMAIN_SIZE_Y, DOMAIN_SIZE_Z);
    	printf("iboundx = %d, iboundy = %d, iboundz = %d \n", BOUNDCOND_TYPE_X, BOUNDCOND_TYPE_Y, BOUNDCOND_TYPE_Z);
-   	printf("unit_lenght = %f \n", UNIT_LENGTH);
+   	printf("unit_length = %f \n", UNIT_LENGTH);
    	printf("val = %f, wavel = %f, phase = %f \n", AMPL_LNRHO, INIT_WAVELENGTH_LNRHO, INIT_PHASE_LNRHO); 
    	printf("initrho = %d \n ", INITCOND_LNRHO);
    	printf("initvel = %d \n ", INITCOND_UU);

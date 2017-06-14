@@ -3,7 +3,7 @@
 #and modules that are *separately compiled*. Everything else is 
 #automatically included in the compilation.
 hostobjs = initutils.o io.o model_collectiveops.o 
-deviceobjs = slice.o collectiveops.o diagnostics.o integrators_v5s.o boundcond.o timestep.o diff.o shear.o coriolis.o forcing.o continuity.o hydro.o gpu_astaroth.o copyouterhalostodevice.o copyinternalhalostohost.o copy_halos.o
+deviceobjs = slice.o collectiveops.o diagnostics.o integrators_v5s.o boundcond.o timestep.o diff.o shear.o coriolis.o forcing.o continuity.o hydro.o gpu_astaroth.o copyouterhalostodevice.o copyinternalhalostohost.o copy_halos.o copyHalosConcur.o
 
 hostcpps = initutils.cpp io.cpp model_collectiveops.cpp
 devicecus = collectiveops.cu diagnostics.cu integrators_v5s.cu boundcond.cu timestep.cu diff.cu shear.cu coriolis.cu forcing.cu continuity.cu hydro.cu gpu_astaroth.cu copyouterhalostodevice.cu copyinternalhalostohost.cu copy_halos.cu slice.cu
@@ -65,7 +65,7 @@ deviceobjs: $(deviceobjs)
 	#nvcc -g -G -Xptxas -O0 ${INIT_CONFS} ${RUN_CONFS} $(CFLAGS) -dc $< -o $@
 	#nvcc -g -lineinfo --ptxas-options=-v ${INIT_CONFS} ${RUN_CONFS} $(CFLAGS) -dc $< -o $@
 	#nvcc -g ${INIT_CONFS} ${RUN_CONFS} $(CFLAGS) -dc $< -o $@
-astaroth_sgl.so: $(hostobjs) $(deviceobjs)
+astaroth_sgl.so: $(hostobjs) $(deviceobjs) defines.h
 	nvcc -g $(CFLAGS) ${INIT_CONFS} ${RUN_CONFS} ${MFLAGS} -o astaroth_sgl.so $(hostobjs) $(deviceobjs)
 	cp -f astaroth_sgl.so ..
 
