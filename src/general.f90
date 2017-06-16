@@ -187,7 +187,7 @@ module General
 !  m and n are executed. At one point, necessary(imn)=.true., which is
 !  the moment when all communication must be completed.
 !
-      use Cdata, only: mm,nn,imn_array,necessary,lroot
+      use Cdata, only: mm,nn,imn_array,necessary,lroot,ip
 !
       integer :: imn,m,n
       integer :: min_m1i_m2,max_m2i_m1
@@ -4698,11 +4698,12 @@ module General
 ! length(array1)xlength(array2). Analagous to numpy.meshgrid
 !
 ! 19-aug-16/vince: adapted
+! 16-jun-17/MR: double -> real
 !
-      double precision, intent(in), dimension(:) :: array1
-      double precision, intent(in), dimension(:) :: array2
-      double precision, intent(out), dimension(:,:) :: output_array1
-      double precision, intent(out), dimension(:,:) :: output_array2
+      real, intent(in), dimension(:) :: array1
+      real, intent(in), dimension(:) :: array2
+      real, intent(out), dimension(:,:) :: output_array1
+      real, intent(out), dimension(:,:) :: output_array2
 !    
       output_array1=spread(array1,2,size(array2))
       output_array2=spread(array2,1,size(array1))
