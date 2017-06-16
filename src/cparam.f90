@@ -68,7 +68,6 @@ module Cparam
 !  Use here symbol mreduce, use nreduce in call.
 !
   integer, parameter :: mreduce=6
-  integer :: ip=14
 !
 !  Number of slots in initlnrho etc.
 !
@@ -125,7 +124,7 @@ module Cparam
 !
 ! MPI
 !
-   integer, parameter :: root=0
+  integer, parameter :: root=0
 !
 !  Diagnostic variable types.
 !

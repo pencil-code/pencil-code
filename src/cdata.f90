@@ -181,6 +181,10 @@ module Cdata
   integer, dimension(3) :: downsampl=1, firstind=1, ndown=0, startind=1
   logical :: ldownsampl=.false., ldownsampling
 !
+! Debugging
+!
+  integer :: ip=14
+!
 !  Units (need to be in double precision).
 !
   character (len=3) :: unit_system='cgs'

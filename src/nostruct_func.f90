@@ -3,6 +3,7 @@
 module struct_func
 !
   use Cparam
+  use Cdata, only: ip
   use General, only: keep_compiler_quiet
 !
   implicit none
