@@ -288,8 +288,9 @@ module Particles_coagulation
 			real, dimension (10) :: radius_all
 			real, dimension (10) :: radius_ratio
 			real :: rmin,rmax
-			integer :: ibin, rbin, ik, ij, ikernel, row
-			integer, parameter :: max_rows = 10
+			integer :: ibin, ik, ij, ikernel, row
+			integer, parameter :: max_rows = 10, rbin=10
+			real, parameter :: radius_diff=5.e-6
 !
 !  If using the Zsom & Dullemond Monte Carlo method (KWJ)
 !
@@ -489,20 +490,23 @@ module Particles_coagulation
                       ncoll=ncoll+1
                       ncoll_par=ncoll_par+1
 !17-06-18: Xiang-Yu coded
-! read radius and radius ratio
-											open(unit=11,file="radius.txt")
-											do row = 1, max_rows
-											  read(11,*) radius_all(row)
-											enddo
-											close(unit=11)
-											open(unit=12,file="ratio.txt")
-											do row = 1, max_rows
-											  read(12,*) radius_ratio(row)
-											enddo
-											close(unit=12)
-! search for collector and collected particles and bin them in the kernel
 											if (kernel_output) then
+! read radius and radius ratio
+												open(unit=11,file="radius.txt")
+												do row = 1, max_rows
+													read(11,*) radius_all(row)
+												enddo
+												close(unit=11)
+												rmin = minval(radius_all)
+												rmax = maxval(radius_all)
+												open(unit=12,file="ratio.txt")
+												do row = 1, max_rows
+													read(12,*) radius_ratio(row)
+												enddo
+												close(unit=12)
+! search for collector and collected particles and bin them in the kernel
 												if (fp(k,iap) >= rmin .and. fp(k,iap) <= rmax) then
+													!print*,'rj-rk=',fp(k,iap)-fp(j,iap)
 													ikernel=0
 													do ibin=1,rbin 
 														if (abs(fp(k,iap)-radius_all(ibin)) == minval(abs(fp(k,iap)-radius_all))) then
@@ -516,6 +520,7 @@ module Particles_coagulation
 													enddo
                           ikernel=ikernel+1
 													kernel_array(ik,ij)=(kernel_array(ik,ij)+tau_coll1)/ikernel
+													!print*,'kernel_array=',kernel_array 
 											  endif
 											endif
 !17-06-18:XY
