@@ -47,6 +47,7 @@ module Particles_coagulation
   logical :: ldroplet_coagulation=.false.
   logical :: lcollision_output=.false., luser_random_number_wrapper=.false.
   logical :: lrelabelling=.false.
+	logical :: kernel_output=.false.
   character (len=labellen) :: droplet_coagulation_model='standard'
 !
   real, dimension(:,:), allocatable :: r_ik_mat, cum_func_sec_ik
@@ -68,7 +69,8 @@ module Particles_coagulation
       minimum_particle_mass, minimum_particle_radius, lzsomdullemond, &
       lconstant_deltav, lmaxwell_deltav, deltav, maxwell_param, &
       ldroplet_coagulation, droplet_coagulation_model, lcollision_output, &
-      luser_random_number_wrapper, lrelabelling, rdifference
+      luser_random_number_wrapper, lrelabelling, rdifference, &
+      kernel_output
 !
   contains
 !***********************************************************************
@@ -282,6 +284,13 @@ module Particles_coagulation
       intent (in) :: ineargrid
       intent (inout) :: fp
 !
+			real, dimension (10,10) :: kernel_array
+			real, dimension (10) :: radius_all
+			real, dimension (10) :: radius_ratio
+			real :: rmin,rmax
+			integer :: ibin, rbin, ik, ij, ikernel, row
+			integer, parameter :: max_rows = 10
+!
 !  If using the Zsom & Dullemond Monte Carlo method (KWJ)
 !
       if(lzsomdullemond) then
@@ -479,7 +488,37 @@ module Particles_coagulation
 !
                       ncoll=ncoll+1
                       ncoll_par=ncoll_par+1
-!
+!17-06-18: Xiang-Yu coded
+! read radius and radius ratio
+											open(unit=11,file="radius.txt")
+											do row = 1, max_rows
+											  read(11,*) radius_all(row)
+											enddo
+											close(unit=11)
+											open(unit=12,file="ratio.txt")
+											do row = 1, max_rows
+											  read(12,*) radius_ratio(row)
+											enddo
+											close(unit=12)
+! search for collector and collected particles and bin them in the kernel
+											if (kernel_output) then
+												if (fp(k,iap) >= rmin .and. fp(k,iap) <= rmax) then
+													ikernel=0
+													do ibin=1,rbin 
+														if (abs(fp(k,iap)-radius_all(ibin)) == minval(abs(fp(k,iap)-radius_all))) then
+														  ik=ibin
+														endif
+													enddo
+													do ibin=1,rbin
+														if (abs(fp(j,iap)-radius_all(ibin)) == minval(abs(fp(j,iap)-radius_all))) then
+														  ij=ibin
+														endif
+													enddo
+                          ikernel=ikernel+1
+													kernel_array(ik,ij)=(kernel_array(ik,ij)+tau_coll1)/ikernel
+											  endif
+											endif
+!17-06-18:XY
                     endif
                   endif
                 endif
