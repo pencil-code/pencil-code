@@ -61,6 +61,8 @@ module Particles_coagulation
   integer :: idiag_ncoagpm=0, idiag_ncoagpartpm=0, idiag_dt1_coag_par=0
              
 !
+  real :: deltad = 1., a0 = 1.
+!
   namelist /particles_coag_run_pars/ &
       cdtpcoag, lcoag_simultaneous, lshear_in_vp, lconstant_kernel_test, &
       kernel_cst, llinear_kernel_test, kernel_lin, lproduct_kernel_test, &
@@ -70,7 +72,7 @@ module Particles_coagulation
       lconstant_deltav, lmaxwell_deltav, deltav, maxwell_param, &
       ldroplet_coagulation, droplet_coagulation_model, lcollision_output, &
       luser_random_number_wrapper, lrelabelling, rdifference, &
-      kernel_output
+      kernel_output, deltad, a0
 !
   contains
 !***********************************************************************
@@ -287,10 +289,11 @@ module Particles_coagulation
 			real, dimension (10,10) :: kernel_array
 			real, dimension (10) :: radius_all
 			real, dimension (10) :: radius_ratio
-			real :: rmin,rmax
+			real :: rmin, rmax
 			integer :: ibin, ik, ij, ikernel, row
 			integer, parameter :: max_rows = 10, rbin=10
 			real, parameter :: radius_diff=5.e-6
+			real, dimension (rbin) :: adplus, adminus, ad
 !
 !  If using the Zsom & Dullemond Monte Carlo method (KWJ)
 !
@@ -504,10 +507,15 @@ module Particles_coagulation
 													read(12,*) radius_ratio(row)
 												enddo
 												close(unit=12)
+!												logorithmic binning
+                        do ibin = 1,rbin
+												  adminus(ibin) = a0*deltad**(ibin-1)
+													adplus(ibin) = a0*deltad**ibin
+													ad(ibin) = (adminus(ibin)+adplus(ibin))*.5
+												enddo
 ! search for collector and collected particles and bin them in the kernel
 												if (fp(k,iap) >= rmin .and. fp(k,iap) <= rmax) then
-													!print*,'rj-rk=',fp(k,iap)-fp(j,iap)
-													ikernel=0
+												!	ikernel=0
 													do ibin=1,rbin 
 														if (abs(fp(k,iap)-radius_all(ibin)) == minval(abs(fp(k,iap)-radius_all))) then
 														  ik=ibin
@@ -518,9 +526,16 @@ module Particles_coagulation
 														  ij=ibin
 														endif
 													enddo
-                          ikernel=ikernel+1
-													kernel_array(ik,ij)=(kernel_array(ik,ij)+tau_coll1)/ikernel
-													!print*,'kernel_array=',kernel_array 
+                         ! ikernel=ikernel+1
+													!kernel_array(ik,ij)=(kernel_array(ik,ij)+tau_coll1)/ikernel
+													kernel_array(ik,ij)=tau_coll1
+! output the kernel													
+!													open(13,POSITION='append', &
+!														FILE=trim(directory_dist)//'/kernel.dat')
+!													write(13,"(f14.6,2i8,2f12.8,1p,2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
+!													close(13)
+													print*,'kernel_array=',kernel_array
+													print*,'tau_coll1=',tau_coll1
 											  endif
 											endif
 !17-06-18:XY
