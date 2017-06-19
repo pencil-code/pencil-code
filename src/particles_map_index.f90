@@ -36,7 +36,7 @@ module Particles_map
   type, public :: particle
     integer :: proc     ! Parent process rank if a ghost particle; -1, otherwise.
     integer :: id       ! Index in the fp array.
-    real :: weight      ! Normalized weight to the cell.
+    real :: weight      ! Weight contributed to a cell in code mass unit.
     real :: eps         ! Particle-to-gas density ratio.
     real, dimension(3) :: x, xi ! Particle position in real space and in index space.
     real, dimension(3) :: v, dv ! Particle velocity and its change.
@@ -177,15 +177,15 @@ module Particles_map
       logical, intent(in) :: lupdate_par, lupdate_gas, lpmbr
 !
       type(particle), dimension(:), allocatable :: packet
-      real, dimension(npar_loc,3) :: dv
+      real, dimension(npar_loc,3) :: dmv
       integer :: stat, j
 !
 !  Collect change in particle velocities.
 !
       par: if (lupdate_par) then
-        call pic_unset_particles(cell, ghost, dv)
-        call ghost_particles_collect(ghost, ngp_send, ngp_recv, dv)
-        fp(1:npar_loc,ivpx:ivpz) = fp(1:npar_loc,ivpx:ivpz) + dv
+        call pic_unset_particles(cell, ghost, dmv)
+        call ghost_particles_collect(ghost, ngp_send, ngp_recv, dmv)
+        fp(1:npar_loc,ivpx:ivpz) = fp(1:npar_loc,ivpx:ivpz) + dmv / mp_swarm
       endif par
 !
 !  Collect change in gas velocity.
@@ -195,9 +195,9 @@ module Particles_map
           allocate(packet(npsend), stat=stat)
           if (stat /= 0) call fatal_error_local('collect_particles', 'unable to allocate working array packet.')
           call pack_particles(fp, sendlist, packet)
-          forall(j = 1:3) packet%v(j) = dv(sendlist,j)  ! Use v to send dv.
+          forall(j = 1:3) packet%v(j) = dmv(sendlist,j)  ! Use v to send dmv.
           call ghost_particles_send(npsend, packet, xi(sendlist,:), ngp_send, ngp_recv, ghost)
-          call back_reaction(f, cell, npar_loc + size(ghost), (/(dv(:,j), ghost%v(j), j = 1, 3)/), &
+          call back_reaction(f, cell, npar_loc + size(ghost), (/(dmv(:,j), ghost%v(j), j = 1, 3)/), &
                                                               (/(xi(:,j), ghost%xi(j), j = 1, 3)/))
           deallocate(packet, stat=stat)
           if (stat /= 0) call warning('collect_particles', 'unable to deallocate working array packet.')
@@ -357,7 +357,7 @@ module Particles_map
             rhop: if (irhop > 0) then
               if (total_weight > 0.0) then
                 dv1 = dyz1 * merge(dx_1(l), 1.0, nxgrid > 1)
-                f(l,m,n,irhop) = mp_swarm * dv1 * total_weight
+                f(l,m,n,irhop) = dv1 * total_weight
               else
                 f(l,m,n,irhop) = 0.0
               endif
@@ -496,7 +496,7 @@ module Particles_map
 !  LOCAL SUBROUTINES GO BELOW HERE.
 !***********************************************************************
 !***********************************************************************
-    subroutine back_reaction(f, cell, np, dv, xi)
+    subroutine back_reaction(f, cell, np, dmv, xi)
 !
 !  Particle-mesh the momentum changes in particles back to the gas and
 !  update the gas velocity.
@@ -506,7 +506,7 @@ module Particles_map
       real, dimension(mx,my,mz,mfarray), intent(inout) :: f
       type(pic), dimension(nx,ny,nz), intent(in) :: cell
       integer, intent(in) :: np
-      real, dimension(np,3), intent(in) :: dv, xi
+      real, dimension(np,3), intent(in) :: dmv, xi
 !
       real, dimension(mx,my,mz) :: dp
       integer :: i
@@ -514,7 +514,7 @@ module Particles_map
 !  Operate on each component.
 !
       comp: do i = 1, 3
-        call pm_assignment(np, mp_swarm*dv(:,i), xi, dp)
+        call pm_assignment(np, dmv(:,i), xi, dp)
         f(l1:l2,m1:m2,n1:n2,iuu+i-1) = f(l1:l2,m1:m2,n1:n2,iuu+i-1) - dp(l1:l2,m1:m2,n1:n2) / cell%rho + cell%du(i)
       enddo comp
 !
@@ -593,10 +593,10 @@ module Particles_map
 !
     endsubroutine find_np
 !***********************************************************************
-    subroutine ghost_particles_collect(ghost, ngp_send, ngp_recv, dv)
+    subroutine ghost_particles_collect(ghost, ngp_send, ngp_recv, dmv)
 !
-!  Communicate the velocity change of the ghost particles and add it to
-!  dv.
+!  Communicate the momentum change of the ghost particles and add it to
+!  dmv.
 !
 !  28-feb-16/ccyang: coded.
 !
@@ -604,12 +604,12 @@ module Particles_map
 !
       type(particle), dimension(:), intent(in) :: ghost
       integer, dimension(0:nproc_comm), intent(in) :: ngp_send, ngp_recv
-      real, dimension(npar_loc,3), intent(inout) :: dv
+      real, dimension(npar_loc,3), intent(inout) :: dmv
 !
       integer, parameter :: tag = 100
       integer, dimension(maxval(ngp_send)) :: id
       integer, dimension(maxval(ngp_recv)) :: ibuf
-      real, dimension(3*maxval(ngp_send)) :: ddv
+      real, dimension(3*maxval(ngp_send)) :: dp
       real, dimension(3*maxval(ngp_recv)) :: rbuf
       integer :: ip, iproc_target, nsend, nrecv
       integer :: i, j, k, n3s, n3r
@@ -640,21 +640,21 @@ module Particles_map
           call mpisend_int(ibuf, nsend, iproc_target, tag+iproc_target)
           call mpisend_real(rbuf, n3s, iproc_target, tag+iproc_target)
           call mpirecv_int(id, nrecv, iproc_target, tag+iproc)
-          call mpirecv_real(ddv, n3r, iproc_target, tag+iproc)
+          call mpirecv_real(dp, n3r, iproc_target, tag+iproc)
         elseif (iproc_target < iproc) then comm
           call mpirecv_int(id, nrecv, iproc_target, tag+iproc)
-          call mpirecv_real(ddv, n3r, iproc_target, tag+iproc)
+          call mpirecv_real(dp, n3r, iproc_target, tag+iproc)
           call mpisend_int(ibuf, nsend, iproc_target, tag+iproc_target)
           call mpisend_real(rbuf, n3s, iproc_target, tag+iproc_target)
         else comm
           id(1:nrecv) = ibuf(1:nsend)
-          ddv(1:n3r) = rbuf(1:n3s)
+          dp(1:n3r) = rbuf(1:n3s)
         endif comm
 !
-!  Collect the weighted change of particle velocity.
+!  Collect the change of particle momenta.
 !
         do i = 1, nrecv
-          dv(id(i),:) = dv(id(i),:) + ddv(i:n3r:nrecv)
+          dmv(id(i),:) = dmv(id(i),:) + dp(i:n3r:nrecv)
         enddo
         j = k
       enddo proc
@@ -950,7 +950,7 @@ module Particles_map
           xscan: do l = l1, l2
             ix = l - nghost
             dv1 = dyz1 * merge(dx_1(l), 1.0, nxgrid > 1)
-            cell(ix,iy,iz)%p%eps = mp_swarm * dv1 / cell(ix,iy,iz)%rho * cell(ix,iy,iz)%p%weight
+            cell(ix,iy,iz)%p%eps = dv1 / cell(ix,iy,iz)%rho * cell(ix,iy,iz)%p%weight
           enddo xscan
         enddo yscan
       enddo zscan
@@ -1022,7 +1022,7 @@ module Particles_map
               np = cell(ix,iy,iz)%np + 1
               cell(ix,iy,iz)%p(np)%proc = proc(ip)
               cell(ix,iy,iz)%p(np)%id = ip
-              cell(ix,iy,iz)%p(np)%weight = weigh_particle(dxi(1), dxi(2), dxi(3))
+              cell(ix,iy,iz)%p(np)%weight = mp_swarm * weigh_particle(dxi(1), dxi(2), dxi(3))
               cell(ix,iy,iz)%p(np)%xi = xi(ip,:)
               cell(ix,iy,iz)%p(np)%x = xp(ip,:)
               cell(ix,iy,iz)%p(np)%v = vp(ip,:)
@@ -1052,23 +1052,23 @@ module Particles_map
 !
     endsubroutine pic_unset_gas
 !***********************************************************************
-    pure subroutine pic_unset_particles(cell, ghost, dv)
+    pure subroutine pic_unset_particles(cell, ghost, dmv)
 !
-!  Collect the weighted change of particle velocity over each cell into
-!  dv and ghost%dv.
+!  Collect the change of particle momenta over each cell into dmv and
+!  ghost%dv.
 !
 !  10-jun-15/ccyang: coded.
 !
       type(pic), dimension(nx,ny,nz), intent(in) :: cell
       type(particle), dimension(:), intent(inout) :: ghost
-      real, dimension(npar_loc,3), intent(out) :: dv
+      real, dimension(npar_loc,3), intent(out) :: dmv
 !
-      real, dimension(3) :: ddv
+      real, dimension(3) :: dp
       integer :: id, ix, iy, iz, j
 !
 !  Initialization.
 !
-      dv = 0.0
+      dmv = 0.0
       forall(j = 1:3) ghost%dv(j) = 0.0
 !
 !  Process each cell.
@@ -1078,11 +1078,11 @@ module Particles_map
           xscan: do ix = 1, nx
             par: do j = 1, cell(ix,iy,iz)%np
               id = cell(ix,iy,iz)%p(j)%id
-              ddv = cell(ix,iy,iz)%p(j)%weight * cell(ix,iy,iz)%p(j)%dv
+              dp = cell(ix,iy,iz)%p(j)%weight * cell(ix,iy,iz)%p(j)%dv
               if (cell(ix,iy,iz)%p(j)%proc < 0) then
-                dv(id,:) = dv(id,:) + ddv
+                dmv(id,:) = dmv(id,:) + dp
               else
-                ghost(id)%dv = ghost(id)%dv + ddv
+                ghost(id)%dv = ghost(id)%dv + dp
               endif
             enddo par
           enddo xscan
