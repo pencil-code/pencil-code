@@ -294,6 +294,7 @@ module Particles_coagulation
 			integer, parameter :: max_rows = 10, rbin=10
 			real, parameter :: radius_diff=5.e-6
 			real, dimension (rbin) :: adplus, adminus, ad
+			character(len=50) :: itn,filename
 !
 !  If using the Zsom & Dullemond Monte Carlo method (KWJ)
 !
@@ -528,14 +529,15 @@ module Particles_coagulation
 													enddo
                          ! ikernel=ikernel+1
 													!kernel_array(ik,ij)=(kernel_array(ik,ij)+tau_coll1)/ikernel
-													kernel_array(ik,ij)=tau_coll1
-! output the kernel													
-!													open(13,POSITION='append', &
-!														FILE=trim(directory_dist)//'/kernel.dat')
-!													write(13,"(f14.6,2i8,2f12.8,1p,2e11.3)") t,ipar(j),ipar(k),fp(j,iap),fp(k,iap),fp(j,inpswarm),fp(k,inpswarm)
-!													close(13)
-													print*,'kernel_array=',kernel_array
-													print*,'tau_coll1=',tau_coll1
+													kernel_array(ik,ij) = tau_coll1
+! output the kernel		
+                          write(itn,'(I5)') it  ! convert  integer to char
+													filename = adjustl(trim(adjustr(itn)))
+													open(13, file=trim(directory_dist)//'/'//trim(filename)//'.dat')
+											    write(13,"(10e11.3)") kernel_array
+													close(13)
+												!	print*,'kernel_array=',kernel_array
+												!	print*,'tau_coll1=',tau_coll1
 											  endif
 											endif
 !17-06-18:XY
