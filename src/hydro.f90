@@ -2256,11 +2256,12 @@ module Hydro
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
-      real, dimension (nx) :: tmp, tmp2, uu_residual
-      integer :: i, j, ju, ij, jj, kk, jk, nnghost
+      real, dimension (nx) :: tmp, tmp2
+      integer :: i, j, ju, ij, jj, kk, jk
 !
       intent(in) :: lpenc_loc
       intent(out):: p
+
 ! uu
       if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
 ! u2
@@ -2450,22 +2451,14 @@ module Hydro
         endif
       endif
 !
-      if (lpenc_loc(i_uu_advec)) then
+      if (lfargo_advection) then
 !
-        nnghost=n-nghost
-!
-! Advect by the relative velocity
-!
-        uu_residual=p%uu(:,2)-uu_average(:,nnghost)
-!
-! Advect by the original radial and vertical, but residual azimuthal
+! Advect by the original radial and vertical, but residual azimuthal (= relative) velocity
 !
         p%uu_advec(:,1)=p%uu(:,1)
-        p%uu_advec(:,2)=uu_residual
+        p%uu_advec(:,2)=p%uu(:,2)-uu_average(:,n-nghost)
         p%uu_advec(:,3)=p%uu(:,3)
-      endif
 !
-      if (lpenc_loc(i_uuadvec_guu)) then
         do j=1,3
           ! This is calling scalar h_dot_grad, that does not add
           ! the inertial terms. They will be added here.
