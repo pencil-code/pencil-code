@@ -436,9 +436,19 @@ module Forcing
        profz_ampl=1.; profz_hel=1.
 !
 !  turn off helicity of forcing above x=r_ff
+!  used in Jabbari et al. (2015)
 !
       elseif (iforce_profile=='surface_helx_cosy*siny**n_hel_sin_pow') then
         profx_ampl=1.; profx_hel=.5*(1.-erfunc((x(l1:l2)-r_ff)/width_ff))
+        profy_ampl=1.; profy_hel=cos(y)*sin(y)**n_hel_sin_pow
+        profz_ampl=1.; profz_hel=1.
+!
+!  turn off helicity of forcing above x=r_ff
+!  but with step function in radius, as in Warnecke et al. (2011)
+!
+      elseif (iforce_profile=='surface_stepx_cosy*siny**n_hel_sin_pow') then
+        profx_ampl=.5*(1.-erfunc((x(l1:l2)-r_ff)/width_ff))
+        profx_hel=1.
         profy_ampl=1.; profy_hel=cos(y)*sin(y)**n_hel_sin_pow
         profz_ampl=1.; profz_hel=1.
 !
@@ -512,7 +522,7 @@ module Forcing
         profz_ampl=1.; profz_hel=1.
 !
 !  turn off forcing intensity above x=x0, and
-!  stepy profile of helicity
+!  stepy profile of helicity, used in Warnecke et al. (2011)
 !
       elseif (iforce_profile=='surface_x_stepy') then
         profx_ampl=.5*(1.-erfunc((x(l1:l2)-r_ff)/width_ff))
