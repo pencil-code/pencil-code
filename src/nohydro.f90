@@ -126,7 +126,7 @@ module Hydro
           iuz=iuu+2
         endif
         if (iuu/=0.and.lroot) then
-          print*, 'initialize_velocity: iuu = ', iuu
+          if (ip<14) print*, 'initialize_velocity: iuu = ', iuu
           open(3,file=trim(datadir)//'/index.pro', POSITION='append')
           write(3,*) 'iuu=',iuu
           write(3,*) 'iux=',iux

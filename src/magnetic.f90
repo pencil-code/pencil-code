@@ -1487,6 +1487,12 @@ module Magnetic
         allocate(aamxy(mx,myl))
       endif
 
+      if (idiag_axp2/=0.or.idiag_ayp2/=0.or.idiag_azp2/=0) then
+        print*,'magnetic: pointwise diagnostics at'
+        print*,'(x,y,z)(point)=',x(lpoint),y(mpoint),z(npoint)
+        print*,'(x,y,z)(point2)=',x(lpoint2),y(mpoint2),z(npoint2)
+      endif
+
     endsubroutine initialize_magnetic
 !***********************************************************************
     subroutine init_aa(f)

@@ -1047,7 +1047,7 @@ module Param_IO
        do i=1,npencils
          if (lpenc_video(i)) write(unit,*) i, pencil_names(i)
        enddo
-       print*, 'write_pencil_info: pencil information written to the file pencils.list'
+       if (ip<14) call information('write_pencil_info','pencil information written to the file pencils.list')
        close(unit)
      endif
 !
