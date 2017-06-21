@@ -1,0 +1,3 @@
+export DIAG_PREFIX="$MODULE_PREFIX"diagnostics"$MODULE_INFIX"
+sed -e'/GPU-START/,/GPU-END/ !d' -e's/public *:: */extern void *'$DIAG_PREFIX'/' -e's/, */, *'$DIAG_PREFIX'/g' -e's/ *$/;/'  -e's/^ *! *GPU-START; *$/namespace PC\n{/' -e's/^ *! *GPU-END; *$/}/'< diagnostics.f90 > diagnostics_c.h
+
