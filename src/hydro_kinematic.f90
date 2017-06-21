@@ -57,6 +57,7 @@ module Hydro
   real :: ampl_fcont_uu=1.
   logical :: lforcing_cont_uu=.false., lrandom_location=.false., lwrite_random_location=.false.
   real, dimension(nx) :: ck_r,ck_rsqr
+  integer :: ll_sh=0, mm_sh=0
 !
 !  init parameters
 !  (none)
@@ -93,7 +94,7 @@ module Hydro
       uphi_step_width,gcs_rzero, &
       gcs_psizero,kinflow_ck_Balpha,kinflow_ck_ell, &
       eps_kinflow,exp_kinflow,omega_kinflow,ampl_kinflow, rp, gamma_dg11, &
-      lambda_kinflow, tree_lmax, zinfty_kinflow, kappa_kinflow
+      lambda_kinflow, tree_lmax, zinfty_kinflow, kappa_kinflow, ll_sh, mm_sh
 !
   integer :: idiag_u2m=0,idiag_um2=0,idiag_oum=0,idiag_o2m=0
   integer :: idiag_uxpt=0,idiag_uypt=0,idiag_uzpt=0
@@ -132,8 +133,8 @@ module Hydro
 !
 !  Identify version number (generated automatically by SVN).
 !
-      if (lroot) call svn_id( &
-          "$Id$")
+      !if (lroot) call svn_id( &
+      !    "$Id$")
 !
       call put_shared_variable('lpressuregradient_gas',&
           lpressuregradient_gas,caller='register_hydro')
@@ -148,12 +149,19 @@ module Hydro
 !  24-nov-02/tony: coded
 !  12-sep-13/MR  : calculation of means added
 !  21-sep-13/MR  : adjusted use of calc_pencils_hydro
+!  10-jun-17/MR  : added poloidal velocity from a single spherical harmonic,
+!                  also oscillating with omega_kinflow
 !
       use FArrayManager
-      use Sub, only: erfunc
+      use Sub, only: erfunc, ylm, ylm_other
+      use General
 !
       real, dimension (mx,my,mz,mfarray) :: f
-      real :: exp_kinflow1
+      real :: exp_kinflow1, sph, sph_har_der
+      real, dimension (nx) :: vel_prof, tmp_mn
+      real, dimension (nx,3) :: tmp_nx3
+      real, dimension (:,:), allocatable :: yz
+      integer :: iyz
 !
       lupdate_aux=.false.
 !
@@ -192,7 +200,7 @@ module Hydro
       case ('ck')
         call init_ck
       case default;
-        if (lroot) print*,'no preparatory profile needed'
+        if (lroot .and. (ip < 14)) call information('initialize_hydro','no preparatory profile needed')
       end select
 !
 ! kinflows end here
@@ -218,13 +226,51 @@ module Hydro
 ! set the initial velocity to zero
           if (kinematic_flow/='from-snap') f(:,:,:,iux:iuz) = 0.
           if (lroot) then
-            print*, 'initialize_velocity: iuu = ', iuu
+            if (ip<14) print*, 'initialize_velocity: iuu = ', iuu
             open(3,file=trim(datadir)//'/index.pro', POSITION='append')
             write(3,*) 'iuu=',iuu
             write(3,*) 'iux=',iux
             write(3,*) 'iuy=',iuy
             write(3,*) 'iuz=',iuz
             close(3)
+          endif
+        endif
+
+        if (kinematic_flow=='spher-harm-poloidal'.or.kinematic_flow=='spher-harm-poloidal-per') then
+          if (.not.lspherical_coords) call fatal_error("init_uu", &
+              "spher-harm-poloidal only meaningful for spherical coordinates"//trim(kinematic_flow))
+          if (.not.lkinflow_as_aux) call fatal_error("init_uu", &
+              "spher-harm-poloidal requires lkinflow_as_aux=T")
+          tmp_mn=(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1))
+          vel_prof=tmp_mn/x(l1:l2) + 2.*x(l1:l2)-(xyz0(1)+xyz1(1))
+          if (lyang) then
+            allocate(yz(2,ny*nz))
+            call yin2yang_coors(costh(m1:m2),sinth(m1:m2),cosph(n1:n2),sinph(n1:n2),yz)
+            iyz=1
+            do m=m1,m2
+              do n=n1,n2
+                sph=ampl_kinflow*ylm_other(yz(1,iyz),yz(2,iyz),ll_sh,mm_sh,sph_har_der)
+                tmp_nx3(:,1)=sph*2.*tmp_mn
+                tmp_nx3(:,2)=ampl_kinflow*vel_prof*sph_har_der
+                if (mm_sh/=0) then
+                  tmp_nx3(:,3) = -sph*vel_prof*mm_sh/sin(yz(1,iyz))*sin(mm_sh*yz(2,iyz))/cos(mm_sh*yz(2,iyz))
+                else
+                  tmp_nx3(:,3) = 0.
+                endif
+                call transform_thph_yy( tmp_nx3, (/1,1,1/), f(l1:l2,m,n,iux:iuz), yz(1,iyz), yz(2,iyz) )
+                iyz=iyz+1
+              enddo
+            enddo
+          else
+            do n=n1,n2
+              do m=m1,m2
+                sph=ampl_kinflow*ylm(ll_sh,mm_sh,sph_har_der)
+                f(l1:l2,m,n,iux) = 2.*tmp_mn*sph
+                f(l1:l2,m,n,iuy) = ampl_kinflow*vel_prof*sph_har_der
+                if (mm_sh/=0) & 
+                  f(l1:l2,m,n,iuz) = -vel_prof*sph*mm_sh/sinth(m)*sin(mm_sh*z(n))/cos(mm_sh*z(n))    ! d/d phi / sin(theta)
+              enddo
+            enddo
           endif
         endif
       endif
@@ -1219,8 +1265,7 @@ module Hydro
 !  and X=x-ct, Y=y-ct, Z=z-ct.
 !
       case ('potential')
-        if (headtt) print*,'potential; ampl_kinflow,omega_kinflow=',&
-            ampl_kinflow,omega_kinflow
+        if (headtt) print*,'potential; ampl_kinflow=', ampl_kinflow
         if (headtt) print*,'potential; ki_uukin=',kx_uukin,ky_uukin,kz_uukin
         fac=ampl_kinflow
         cxt=cx_uukin*t
@@ -1246,8 +1291,7 @@ module Hydro
 !  and X=x-ct, Y=y-ct, Z=z-ct.
 !
       case ('potential2')
-        if (headtt) print*,'2nd potential; ampl_kinflow,omega_kinflow=',&
-            ampl_kinflow,omega_kinflow
+        if (headtt) print*,'2nd potential; ampl_kinflow=',ampl_kinflow
         if (headtt) print*,'2nd potential; ki_uukin=',kx_uukin,ky_uukin,kz_uukin
         fac=ampl_kinflow
         cxt=cx_uukin*t
@@ -1270,8 +1314,7 @@ module Hydro
 !  and X=x-ct, Y=y-ct, Z=z-ct.
 !
       case ('incompressible-2D-xz')
-        if (headtt) print*,'incompr, 2D; ampl_kinflow,omega_kinflow=',&
-            ampl_kinflow,omega_kinflow
+        if (headtt) print*,'incompr, 2D; ampl_kinflow=',ampl_kinflow
         if (headtt) print*,'incompr, 2D; ki_uukin=',kx_uukin,ky_uukin,kz_uukin
         fac=ampl_kinflow
 ! uu
@@ -1790,6 +1833,13 @@ module Hydro
         if (lpenc_loc(i_uu)) p%uu=0.
 ! divu
         if (lpenc_loc(i_divu)) p%divu=0.
+      case('spher-harm-poloidal')
+        if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
+      case('spher-harm-poloidal-per')
+        if (lpenc_loc(i_uu)) then
+          p%uu(:,1:2)=f(l1:l2,m,n,iux:iuz)*sin(omega_kinflow*t)
+          !p%uu(:,3)=f(l1:l2,m,n,iuz)*cos(omega_kinflow*t)
+        endif
       case default
         call fatal_error('hydro_kinematic:', 'kinflow not found')
       end select

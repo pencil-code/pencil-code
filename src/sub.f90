@@ -4099,6 +4099,7 @@ module Sub
 !  Spherical harmonic
 !
 !   24-nov-14/dhruba: copied from step
+!   15-jun-17/MR: corrected  derivative
 !
       real :: sph_har
       real :: theta,phi
@@ -4121,6 +4122,7 @@ module Sub
       cost=cos(theta); sint=sin(theta); cosp=cos(phi); sinp=sin(phi)
       
  1    aemm=iabs(emm)
+
       select case (ell)
           case (0)
             sph_har=(0.5)*sqrt(1./pi)
@@ -4152,12 +4154,15 @@ module Sub
       endselect
 
       if (present(der)) then
-        if (lother) then
-          der = ( ell*cost*sph_har - sqrt((2.*ell+1.)*(ell-aemm)*(ell+aemm)/(2.*ell-1.))* &
-                  ylm_other(theta,phi,ell-1,emm) )/sint
-        else
-          der = ( ell*cost*sph_har - sqrt((2.*ell+1.)*(ell-aemm)*(ell+aemm)/(2.*ell-1.))* &
-                  ylm(ell-1,emm) )/sint
+        der = ell*cost*sph_har/sint
+        if (emm<ell) then
+          if (lother) then
+            der = der - sqrt((2.*ell+1.)*(ell-aemm)*(ell+aemm)/(2.*ell-1.))* &
+                    ylm_other(theta,phi,ell-1,emm)/sint
+          else
+            der = der - sqrt((2.*ell+1.)*(ell-aemm)*(ell+aemm)/(2.*ell-1.))* &
+                    ylm(ell-1,emm)/sint
+          endif
         endif
       endif
 !
