@@ -1,0 +1,17 @@
+copyHalosConcur.o: copyHalosConcur.cu ../cparam_c.h ../cdata_c.h
+timestep.o: timestep.cu ../cparam_c.h ../cdata_c.h ../diagnostics_c.h ../hydro_c.h defines_PC.h
+gpu_astaroth.o: gpu_astaroth.cu ../cparam_c.h ../cdata_c.h ../diagnostics_c.h ../hydro_c.h ../viscosity_c.h ../eos_c.h defines_PC.h
+diagnostics.o: diagnostics.cu ../cparam_c.h ../cdata_c.h defines_PC.h
+
+../cparam_c.h: ../cparam.f90 ../cparam.inc ../cparam.local
+	cd ..; cparam2c
+../cdata_c.h: ../cdata.f90
+	cd ..; cdata2c
+../diagnostics_c.h: ../diagnostics.f90
+	cd ..; diagnostics2c
+../viscosity_c.h: ../viscosity.f90
+	cd ..; viscosity2c
+../hydro_c.h: ../hydro.f90
+	cd ..; hydro2c
+../eos_c.h: ../eos_idealgas.f90
+	cd ..; eos2c
