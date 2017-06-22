@@ -47,7 +47,7 @@ module Particles_coagulation
   logical :: ldroplet_coagulation=.false.
   logical :: lcollision_output=.false., luser_random_number_wrapper=.false.
   logical :: lrelabelling=.false.
-	logical :: kernel_output=.false.
+	logical :: kernel_output=.false., radius_output=.false.
   character (len=labellen) :: droplet_coagulation_model='standard'
 !
   real, dimension(:,:), allocatable :: r_ik_mat, cum_func_sec_ik
@@ -62,6 +62,8 @@ module Particles_coagulation
              
 !
   real :: deltad = 1., a0 = 1.
+	real :: r1_fixed, r2_fixed, r3_fixed, r4_fixed, r5_fixed, r_diff
+	integer :: idiag_kernel1_fixed, idiag_kernel2_fixed, idiag_kernel3_fixed, idiag_kernel4_fixed, idiag_kernel5_fixed
 !
   namelist /particles_coag_run_pars/ &
       cdtpcoag, lcoag_simultaneous, lshear_in_vp, lconstant_kernel_test, &
@@ -72,7 +74,8 @@ module Particles_coagulation
       lconstant_deltav, lmaxwell_deltav, deltav, maxwell_param, &
       ldroplet_coagulation, droplet_coagulation_model, lcollision_output, &
       luser_random_number_wrapper, lrelabelling, rdifference, &
-      kernel_output, deltad, a0
+      kernel_output, deltad, a0, &
+      radius_output, r1_fixed, r2_fixed, r3_fixed, r4_fixed, r5_fixed, r_diff
 !
   contains
 !***********************************************************************
@@ -295,6 +298,7 @@ module Particles_coagulation
 			real, parameter :: radius_diff=5.e-6
 			real, dimension (rbin) :: adplus, adminus, ad
 			character(len=50) :: itn,filename
+			real :: kernel1_fixed, kernel2_fixed, kernel3_fixed, kernel4_fixed, kernel5_fixed
 !
 !  If using the Zsom & Dullemond Monte Carlo method (KWJ)
 !
@@ -493,7 +497,41 @@ module Particles_coagulation
 !
                       ncoll=ncoll+1
                       ncoll_par=ncoll_par+1
-!17-06-18: Xiang-Yu coded
+!
+!17-06-21: Xiang-Yu coded: kernel of ri rj, diagnostics as time series
+                      if (radius_output) then
+												if (fp(j,iap)>=fp(k,iap)) then
+													if (fp(j,iap)>=r1_fixed-r_diff .and. fp(j,iap)<=r1_fixed+r_diff .and. &
+														fp(k,iap)>=r1_fixed-r_diff .and. fp(k,iap)<=r1_fixed+r_diff) kernel1_fixed = tau_coll1
+													if (fp(j,iap)>=r1_fixed-r_diff .and. fp(j,iap)<=r1_fixed+r_diff .and. &
+														fp(k,iap)>=r2_fixed-r_diff .and. fp(k,iap)<=r2_fixed+r_diff) kernel2_fixed = tau_coll1
+													if (fp(j,iap)>=r1_fixed-r_diff .and. fp(j,iap)<=r1_fixed+r_diff .and. &
+														fp(k,iap)>=r3_fixed-r_diff .and. fp(k,iap)<=r3_fixed+r_diff) kernel3_fixed = tau_coll1
+													if (fp(j,iap)>=r1_fixed-r_diff .and. fp(j,iap)<=r1_fixed+r_diff .and. &
+														fp(k,iap)>=r4_fixed-r_diff .and. fp(k,iap)<=r4_fixed+r_diff) kernel4_fixed = tau_coll1
+													if (fp(j,iap)>=r1_fixed-r_diff .and. fp(j,iap)<=r1_fixed+r_diff .and. &
+														fp(k,iap)>=r5_fixed-r_diff .and. fp(k,iap)<=r5_fixed+r_diff) kernel5_fixed = tau_coll1
+												else
+													if (fp(k,iap)>=r1_fixed-r_diff .and. fp(k,iap)<=r1_fixed+r_diff .and. &
+														fp(j,iap)>=r1_fixed-r_diff .and. fp(j,iap)<=r1_fixed+r_diff) kernel1_fixed = tau_coll1
+													if (fp(k,iap)>=r1_fixed-r_diff .and. fp(k,iap)<=r1_fixed+r_diff .and. &
+														fp(j,iap)>=r2_fixed-r_diff .and. fp(j,iap)<=r2_fixed+r_diff) kernel2_fixed = tau_coll1
+													if (fp(k,iap)>=r1_fixed-r_diff .and. fp(k,iap)<=r1_fixed+r_diff .and. &
+														fp(j,iap)>=r3_fixed-r_diff .and. fp(j,iap)<=r3_fixed+r_diff) kernel3_fixed = tau_coll1
+													if (fp(k,iap)>=r1_fixed-r_diff .and. fp(k,iap)<=r1_fixed+r_diff .and. &
+														fp(j,iap)>=r4_fixed-r_diff .and. fp(j,iap)<=r4_fixed+r_diff) kernel4_fixed = tau_coll1
+													if (fp(k,iap)>=r1_fixed-r_diff .and. fp(k,iap)<=r1_fixed+r_diff .and. &
+														fp(j,iap)>=r5_fixed-r_diff .and. fp(j,iap)<=r5_fixed+r_diff) kernel5_fixed = tau_coll1
+                        endif 
+!												print*,'kernel1_fixed=',kernel1_fixed
+!												print*,'kernel2_fixed=',kernel2_fixed
+!												print*,'kernel3_fixed=',kernel3_fixed
+!												print*,'kernel4_fixed=',kernel4_fixed
+!												print*,'kernel5_fixed=',kernel5_fixed
+											endif
+!17-06-21: Xiang-Yu
+
+!17-06-18: Xiang-Yu coded: kernel of ri rj, diagnostics as 2-D matrix
 											if (kernel_output) then
 ! read radius and radius ratio
 												open(unit=11,file="radius.txt")
@@ -566,6 +604,8 @@ module Particles_coagulation
                     call sum_par_name((/real(npart_par)/),idiag_ncoagpartpm)
                 if (idiag_dt1_coag_par/=0) &
                     call sum_par_name((/real(ncoll_par)/),idiag_dt1_coag_par)
+								if (idiag_kernel1_fixed/=0) &	
+									  call sum_par_name((/real(kernel1_fixed)/),idiag_kernel1_fixed) 
               endif
 !
 !  Move to next particle in the grid cell.
@@ -1327,6 +1367,8 @@ module Particles_coagulation
 !
       if (lreset) then
         idiag_ncoagpm=0; idiag_ncoagpartpm=0; idiag_dt1_coag_par=0
+        idiag_kernel1_fixed=0; idiag_kernel2_fixed=0; idiag_kernel3_fixed=0
+				idiag_kernel4_fixed=0; idiag_kernel5_fixed=0
       endif
 !
       do iname=1,nname
@@ -1334,6 +1376,11 @@ module Particles_coagulation
         call parse_name(iname,cname(iname),cform(iname), &
             'ncoagpartpm',idiag_ncoagpartpm)
         call parse_name(iname,cname(iname),cform(iname),'dt1_coag_par',idiag_dt1_coag_par)
+        call parse_name(iname,cname(iname),cform(iname),'kernel1_fixed',idiag_kernel1_fixed)
+        call parse_name(iname,cname(iname),cform(iname),'kernel2_fixed',idiag_kernel2_fixed)
+        call parse_name(iname,cname(iname),cform(iname),'kernel3_fixed',idiag_kernel3_fixed)
+        call parse_name(iname,cname(iname),cform(iname),'kernel4_fixed',idiag_kernel4_fixed)
+        call parse_name(iname,cname(iname),cform(iname),'kernel5_fixed',idiag_kernel5_fixed)
       enddo
 !
       if (present(lwrite)) call keep_compiler_quiet(lwrite)
