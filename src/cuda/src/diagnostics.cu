@@ -1,22 +1,14 @@
 
+#include <stdio.h>
 #include <float.h>
 
-#include "diagnostics.cuh"
 #include "dconstsextern.cuh"
+#include "../cparam_c.h"
 #include "smem.cuh"
-#include "defines.h"
-#include "initutils.h"
 
-//CPU functions
-#include "model_collectiveops.h"
-//#include "verification/model_collectiveops.h"
-//#include "verification/model_integrators.cuh"
+extern float cs2, nu;
 
-//GPU functions
-#include "collectiveops.cuh"
-#include "integrators.cuh"
-#include "timestep.cuh"
-
+/****************************************************************************************************************/
 __device__ void check_for_nan_inf_variable(int code, float var)
 {
 	// Check for the presence of inf or nan in the shared memory in a variable
@@ -40,13 +32,13 @@ __device__ void check_for_nan_inf_variable(int code, float var)
 		}
 	}
 }
-
-__device__ void check_for_nan_inf(      int step_number, int grid_idx_x, int grid_idx_y, int grid_idx_z,
-                                        int sid_row, int sid_col, int sid_depth,
-                                        float s_lnrho[SHARED_SIZE_ROW][SHARED_SIZE_COL][SHARED_SIZE_DEPTH],
-                                        float s_uu_x[SHARED_SIZE_ROW][SHARED_SIZE_COL][SHARED_SIZE_DEPTH],
-                                        float s_uu_y[SHARED_SIZE_ROW][SHARED_SIZE_COL][SHARED_SIZE_DEPTH],
-                                        float s_uu_z[SHARED_SIZE_ROW][SHARED_SIZE_COL][SHARED_SIZE_DEPTH]       )
+/****************************************************************************************************************/
+__device__ void check_for_nan_inf(int step_number, int grid_idx_x, int grid_idx_y, int grid_idx_z,
+                                  int sid_row, int sid_col, int sid_depth,
+                                  float s_lnrho[SHARED_SIZE_ROW][SHARED_SIZE_COL][SHARED_SIZE_DEPTH],
+                                  float s_uu_x[SHARED_SIZE_ROW][SHARED_SIZE_COL][SHARED_SIZE_DEPTH],
+                                  float s_uu_y[SHARED_SIZE_ROW][SHARED_SIZE_COL][SHARED_SIZE_DEPTH],
+                                  float s_uu_z[SHARED_SIZE_ROW][SHARED_SIZE_COL][SHARED_SIZE_DEPTH] )
 {
         // Check for the presence of inf or nan in the shared memory. This might be useful for both stability 
         // cheking and debugging purposes.
@@ -76,7 +68,7 @@ __device__ void check_for_nan_inf(      int step_number, int grid_idx_x, int gri
         }
 
 }
-
+/****************************************************************************************************************/
 __global__ void check_grid_for_nan_cuda(float* d_lnrho, float* d_uu_x, float* d_uu_y, float* d_uu_z, int* d_nan_count) 
 {
 	//Look into device memory and locate all NaN
@@ -114,7 +106,8 @@ __global__ void check_grid_for_nan_cuda(float* d_lnrho, float* d_uu_x, float* d_
 	}
 	
 }
-
+/****************************************************************************************************************/
+/*
 float check_grid_for_nan(float* d_lnrho, float* d_uu_x, float* d_uu_y, float* d_uu_z)
 {
         //Look into device memory and locate all NaN. Set here the threads and blocks and call the kernel itself. 
@@ -159,35 +152,29 @@ float check_grid_for_nan(float* d_lnrho, float* d_uu_x, float* d_uu_y, float* d_
 	}  
 
 	return found_nan;
-}
+}*/
+/****************************************************************************************************************/
 
+#include "../eos_c.h"
+#include "defines_PC.h"
+#include "../cdata_c.h"
+//using namespace PC;
 
+/****************************************************************************************************************/
 void print_init_config()
 {
    	printf("Comp domain sizes: %d, %d, %d\n", COMP_DOMAIN_SIZE_X, COMP_DOMAIN_SIZE_Y, COMP_DOMAIN_SIZE_Z);
 	printf("Actual grid sizes (with pads+bounds): %d, %d, %d\n", NX, NY, NZ);
-   	printf("Lbox_z = %f, Lbox_y = %f, Lbox_z = %f \n", DOMAIN_SIZE_X, DOMAIN_SIZE_Y, DOMAIN_SIZE_Z);
-   	printf("iboundx = %d, iboundy = %d, iboundz = %d \n", BOUNDCOND_TYPE_X, BOUNDCOND_TYPE_Y, BOUNDCOND_TYPE_Z);
+   	printf("Lbox_x = %f, Lbox_y = %f, Lbox_z = %f \n", DOMAIN_SIZE_X, DOMAIN_SIZE_Y, DOMAIN_SIZE_Z);
+/*   	printf("iboundx = %d, iboundy = %d, iboundz = %d \n", BOUNDCOND_TYPE_X, BOUNDCOND_TYPE_Y, BOUNDCOND_TYPE_Z);
    	printf("unit_length = %f \n", UNIT_LENGTH);
-   	printf("val = %f, wavel = %f, phase = %f \n", AMPL_LNRHO, INIT_WAVELENGTH_LNRHO, INIT_PHASE_LNRHO); 
-   	printf("initrho = %d \n ", INITCOND_LNRHO);
-   	printf("initvel = %d \n ", INITCOND_UU);
-   	printf("uval = %f, uwidth = %f, kval= %f, ulocation_x = %f, ulocation_y = %f, ulocation_z = %f \n \n", AMPL_UU, WIDTH_UU, INIT_KK_UU, INIT_LOC_UU_X, INIT_LOC_UU_Y, INIT_LOC_UU_Z);
+*/
 }
-
-
+/****************************************************************************************************************/
 void print_run_config()
 {
-   	printf("MAX_STEPS %d\n", MAX_STEPS);
-	printf("SAVE_STEPS %d\n", SAVE_STEPS);
-
-	printf("CDT %f\n", CDT);
-	printf("CDTV %f\n", CDTV);
-
 	printf("NU_VISC %f\n", NU_VISC);
 	printf("CS_SOUND %f\n", CS_SOUND);
-
-	printf("MAX_TIME %f\n", MAX_TIME);
 
 	printf("LFORCING %d\n", LFORCING);
 	printf("FORCING %f\n", FORCING);
@@ -201,29 +188,26 @@ void print_run_config()
 	printf("Q_SHEAR %f\n", Q_SHEAR);
 	printf("OMEGA %f\n", OMEGA);
 }
-
-
+/****************************************************************************************************************/
 void print_additional_defines()
 {
+	printf("bound size %d\n", BOUND_SIZE);
+	printf("pad size %d\n", PAD_SIZE);
+	//printf(" %d", NDIM 3 //useless?
 
-printf("bound size %d\n", BOUND_SIZE);
-printf("pad size %d\n", PAD_SIZE);
-//printf(" %d", NDIM 3 //useless?
+	printf("Comp domain top indices xyz:\n%d\n", CX_TOP);
+	printf("%d\n", CY_TOP);
+	printf("%d\n", CZ_TOP);
 
-printf("Comp domain top indices xyz:\n%d\n", CX_TOP);
-printf("%d\n", CY_TOP);
-printf("%d\n", CZ_TOP);
+	printf("Comp domain bot indices xyz:\n%d\n", CX_BOT);
+	printf("%d\n", CY_BOT);
+	printf("%d\n", CZ_BOT);
 
-printf("Comp domain bot indices xyz:\n%d\n", CX_BOT);
-printf("%d\n", CY_BOT);
-printf("%d\n", CZ_BOT);
-
-printf("Distances between gridpoints:\n%f\n", DX);
-printf("%f\n", DY);
-printf("%f\n", DZ);
+	printf("Distances between gridpoints:\n%f\n", DX);
+	printf("%f\n", DY);
+	printf("%f\n", DZ);
 }
-
-
+/****************************************************************************************************************/
 void print_grid_data(float* grid)
 {
 	for(int k=0; k < NZ; k++) {
@@ -236,9 +220,9 @@ void print_grid_data(float* grid)
 		printf("\n\n\n");
 	}
 }
-
+/****************************************************************************************************************/
 float check_grids(float* CPU_lnrho, float* CPU_uu_x, float* CPU_uu_y, float* CPU_uu_z,
-		 float* GPU_lnrho, float* GPU_uu_x, float* GPU_uu_y, float* GPU_uu_z) 
+    		  float* GPU_lnrho, float* GPU_uu_x, float* GPU_uu_y, float* GPU_uu_z) 
 {
 	float error = 0.0f;
 
@@ -289,7 +273,7 @@ float check_grids(float* CPU_lnrho, float* CPU_uu_x, float* CPU_uu_y, float* CPU
 	printf("\n\t\tCPU / GPU: %f, %f\n", CPU_uu_y[CX_BOT + CY_BOT*NX + CZ_BOT*NX*NY], GPU_uu_y[CX_BOT + CY_BOT*NX + CZ_BOT*NX*NY]);
 	return error;
 }
-
+/****************************************************************************************************************/
 
 typedef float (*VecReductionFunctionHostPointer)(float* vec_x, float* vec_y, float* vec_z);
 typedef void (*VecReductionFunctionDevicePointer)(float* d_vec_max, float* d_partial_result, 
@@ -540,39 +524,3 @@ void run_diagnostics(	float* lnrho, float* uu_x, float* uu_y, float* uu_z,
 	printf("Diagnostics done. Failures found: %d.\n", failures);
 }
 */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

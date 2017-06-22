@@ -1,7 +1,6 @@
 #pragma once
 #include "smem.cuh"
 
-
 #define DEBUG
 #include <stdio.h>
 #include <assert.h>
@@ -48,7 +47,6 @@ __device__ void check_for_nan_inf(      int step_number, int grid_idx_x, int gri
 __global__ void check_grid_for_nan_cuda(float* d_lnrho, float* d_uu_x, float* d_uu_y, float* d_uu_z, int* d_nan_count);
 
 float check_grid_for_nan(float* d_lnrho, float* d_uu_x, float* d_uu_y, float* d_uu_z);
-
 
 void run_diagnostics(	float* lnrho, float* uu_x, float* uu_y, float* uu_z,
 			float* d_lnrho, float* d_uu_x, float* d_uu_y, float* d_uu_z, 

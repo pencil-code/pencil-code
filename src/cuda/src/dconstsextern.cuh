@@ -1,7 +1,7 @@
 
 #pragma once
 /*
-* Define constants used by device
+* Declare constants used by device as extern.
 */
 
 //Explicit definition, must declare with "extern" keyword in

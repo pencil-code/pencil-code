@@ -7,18 +7,17 @@ Comments:
 Omer Anjum: Changed the 19-point RK integration Kernel to 55-Point integration Kernel without changing the requirements of shared memory and simultaneously reducing the global memory traffic. The technique applied to achieve this is "scattering".
 */
 
-//#include "hydro.cuh"
-//#include "continuity.cuh"
-#include "boundcond.cuh"
+#include "../cparam_c.h"
 #include "dconstsextern.cuh"
 #include "smem.cuh"
-//#include "forcing.cuh"
-//#include "shear.cuh"
-//#include "diff.cuh"
+#include "hydro.cuh"
+#include "continuity.cuh"
+#include "forcing.cuh"
+#include "shear.cuh"
+#include "diff.cuh"
 
 //DEBUG
 #include "diagnostics.cuh"
-
 
 /*
 * Notes:

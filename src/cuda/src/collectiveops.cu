@@ -1,8 +1,8 @@
 
 #include <stdio.h>
 
-#include "collectiveops.cuh"
 #include "dconstsextern.cuh"
+#include "../cparam_c.h"
 #include "smem.cuh"
 
 //DEBUG
