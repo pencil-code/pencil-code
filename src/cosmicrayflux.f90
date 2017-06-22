@@ -27,20 +27,22 @@ module Cosmicrayflux
   real :: kpara=0., kperp=0.
   real, pointer :: k_para, k_perp
   real :: kpara_t=0., kperp_t=0.
-  real :: tau=0., tau1=0., bmin=1e-6
+  real :: tau=0., tau1=0.
+  real :: subgrid_bref=0., subgrid_alpha=1.
+  real :: ratio_kpara_kperp=0.
   real, dimension(nx) :: vKperp, vKpara
   real, dimension(nx) :: b_exp
-  logical :: lbb_dependent_perp_diff = .false.
+  logical :: lsubgrid_cr = .false.
   logical :: lcosmicrayflux_diffus_dt = .false.
   logical :: ladvect_fcr=.false., lupw_fcr=.false.
 !
   namelist /cosmicrayflux_init_pars/ &
-      tau, kpara, kperp, lbb_dependent_perp_diff, &
-      bmin, lcosmicrayflux_diffus_dt
+      tau, kpara, kperp, lsubgrid_cr, ratio_kpara_kperp, &
+      subgrid_bref, lcosmicrayflux_diffus_dt,subgrid_alpha
 !
   namelist /cosmicrayflux_run_pars/ &
-      tau, kpara, kperp, lbb_dependent_perp_diff, bmin, &
-      lcosmicrayflux_diffus_dt, ladvect_fcr, lupw_fcr
+      tau, kpara, kperp, lsubgrid_cr, subgrid_bref, ratio_kpara_kperp, &
+      lcosmicrayflux_diffus_dt, ladvect_fcr, lupw_fcr,subgrid_alpha
 !
   contains
 !***********************************************************************
@@ -189,6 +191,7 @@ module Cosmicrayflux
 !
 !  08-mar-05/snod: adapted from daa_dt
 !  12-jan-15/luiz: diffusion/advection contribution to the timestep
+!  22-jun-17/luiz: subgrid prescription for the cosmic ray diffusion
 !
       use Sub
       use Slices
@@ -208,21 +211,20 @@ module Cosmicrayflux
 !
       intent(in)     :: f
       intent(inout)  :: df
-!
-!  Identify module and boundary conditions.
-!
+
+      !  Identifies module and boundary conditions.
       if (headtt .or. ldebug) print*,'dfcr_dt: SOLVE'
       if (headtt) then
         call identify_bcs('Fecx',ifcrx)
         call identify_bcs('Fecy',ifcry)
         call identify_bcs('Fecz',ifcrz)
       endif
-!
+
       call dot2_mn(p%bb,b2)
 !  with frequency omega_Bz_ext
       b21 = 1./max(tini,b2)
       call multsv_mn(sqrt(b21),p%bb,bunit)
-!
+
       do i=1,3
         tmp = 0.
         do j=1, 3
@@ -230,33 +232,45 @@ module Cosmicrayflux
         enddo
         BuiBujgecr(:,i) = tmp
       enddo
-!
-!  Cosmic Ray Flux equation.
-!
-      if (lbb_dependent_perp_diff) then
-!       Parallel diffusion (constant)
-        vKpara(:) = kpara_t
-!       Perpendicular diffusion (dependence on B field)
-!       Kperp = kperp_t0/[|B|/Bmin + exp(-B/Bmin)]
+
+      !
+      !  Cosmic Ray Flux equation.
+      !
+      if (lsubgrid_cr) then
         b_abs = sqrt(b2)
-        b_exp = b_abs/bmin + exp(-b_abs/bmin)
-        vKperp(:) = kperp_t/b_exp
-!
+        ! Parallel diffusion
+        ! Kperp = kperp_t0/[|B|/subgrid_bref + exp(-B/subgrid_bref)]
+        if (subgrid_alpha /= 0.) then
+          vKpara(:) = kpara_t*(1.0+(b_abs/subgrid_bref)**subgrid_alpha)
+        else
+          ! The factor 2 makes it consistent with the \alpha>0 case
+          vKpara(:) = kpara_t*2.
+        endif
+        ! Perpendicular diffusion (dependence on B field)
+        if (ratio_kpara_kperp /= 0.0) then
+          ! If a ration k_para/k_perp was specified, ignore the value of k_perp
+          ! and computes the perpendicular diffusivity accordingly
+          vKperp(:) = vKpara(:)/ratio_kpara_kperp
+        else
+          ! Otherwise, use constant perpendicular diffusivity previously
+          ! specified
+          vKperp(:) = kperp_t
+        endif
+
         do i=1,3
-          df(l1:l2,m,n,ifcrx+i-i) = df(l1:l2,m,n,ifcrx+i-1) &
+          df(l1:l2,m,n,ifcrx+i-1) = df(l1:l2,m,n,ifcrx+i-1) &
               - tau1*f(l1:l2,m,n,ifcrx+i-1)                 &
               - vKperp*p%gecr(:,i)                          &
               - (vKpara - vKperp)*BuiBujgecr(:,i)
         enddo
       else
+        ! If not using the subgrid prescription, the diffusivities are constants
         df(l1:l2,m,n,ifcrx:ifcrz) = df(l1:l2,m,n,ifcrx:ifcrz) &
             - tau1*f(l1:l2,m,n,ifcrx:ifcrz)                   &
             - kperp_t*p%gecr                                    &
             - (kpara_t - kperp_t)*BuiBujgecr
       endif
-!
-!  Allow optional use of advection term for fcr.
-!
+      !  Allows optional use of advection term for fcr.
       if (ladvect_fcr) then
         call gij(f,ifcr,gfcr,1)
         call u_dot_grad(f,ifcr,gfcr,p%uu,ugfcr,UPWIND=lupw_fcr)
@@ -271,7 +285,7 @@ module Cosmicrayflux
 !
       if (lfirst .and. ldt) then
         if (lcosmicrayflux_diffus_dt) then
-          if (lbb_dependent_perp_diff) then
+          if (lsubgrid_cr) then
             diffus_cr = max(maxval(vKperp)*tau*dxyz_2, &
                             maxval(vKpara)*tau*dxyz_2)
           else
@@ -279,7 +293,7 @@ module Cosmicrayflux
           endif
           maxdiffus=max(maxdiffus,diffus_cr)
         else
-          if (lbb_dependent_perp_diff) then
+          if (lsubgrid_cr) then
             advec_kfcr = max(maxval(vKperp)*dxyz_2, &
                              maxval(vKpara)*dxyz_2)
           else
