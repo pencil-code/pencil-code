@@ -1,0 +1,5 @@
+rm -f hydro_c.h
+echo '# pragma once' > hydro_c.h
+echo '# include "headers_c.h"' >> hydro_c.h
+echo 'extern "C" void *__hydro_MOD_push2c(int *(&p_diags)[10]);' >> hydro_c.h
+

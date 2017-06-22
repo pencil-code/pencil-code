@@ -1,0 +1,5 @@
+rm -f eos_c.h
+echo '#pragma once' > eos_c.h
+echo '#include "headers_c.h"' >> eos_c.h
+echo 'extern "C" void *__equationofstate_MOD_push2c(float *(&p_pars)[1]);' >> eos_c.h
+

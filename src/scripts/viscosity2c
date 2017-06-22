@@ -1,0 +1,5 @@
+rm -rf viscosity_c.h
+echo '# pragma once' > viscosity_c.h
+echo '# include "headers_c.h"' >> viscosity_c.h
+echo 'extern "C" void *__viscosity_MOD_push2c(float *(&p_pars)[1]);' >> viscosity_c.h
+
