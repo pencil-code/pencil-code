@@ -6,7 +6,7 @@
 #include "../cparam_c.h"
 #include "smem.cuh"
 
-extern float cs2, nu;
+extern float cs2, nu, force, tforce_stop;
 
 /****************************************************************************************************************/
 __device__ void check_for_nan_inf_variable(int code, float var)
@@ -155,9 +155,8 @@ float check_grid_for_nan(float* d_lnrho, float* d_uu_x, float* d_uu_y, float* d_
 }*/
 /****************************************************************************************************************/
 
-#include "../eos_c.h"
-#include "defines_PC.h"
 #include "../cdata_c.h"
+#include "defines_PC.h"
 //using namespace PC;
 
 /****************************************************************************************************************/
@@ -203,8 +202,8 @@ void print_additional_defines()
 	printf("%d\n", CY_BOT);
 	printf("%d\n", CZ_BOT);
 
-	printf("Distances between gridpoints:\n%f\n", DX);
-	printf("%f\n", DY);
+	printf("Distances between gridpoints:\n%f, ", DX);
+	printf("%f, ", DY);
 	printf("%f\n", DZ);
 }
 /****************************************************************************************************************/

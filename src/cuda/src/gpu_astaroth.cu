@@ -24,6 +24,7 @@
 #include "../eos_c.h"
 #include "../hydro_c.h"
 #include "../viscosity_c.h"
+#include "../forcing_c.h"
 #include "defines_PC.h"
 //#include "copyhalos.cuh"
 #include "copyHalosConcur.cuh"
@@ -50,7 +51,7 @@ float *d_lnrho, *d_uu_x, *d_uu_y, *d_uu_z;
 float *d_w_lnrho, *d_w_uu_x, *d_w_uu_y, *d_w_uu_z;
 float *d_lnrho_dest, *d_uu_x_dest, *d_uu_y_dest, *d_uu_z_dest;
 
-//Device pointer for diagnostic quantities
+// Device pointer for diagnostic quantities
 
 float *d_umax, *d_umin; 
 float *d_urms; 
@@ -59,7 +60,10 @@ float *d_rhorms, *d_rhomax, *d_rhomin;
 float *d_uxmax, *d_uymax, *d_uzmax; 
 float *d_uxmin, *d_uymin, *d_uzmin; 
 float *d_partial_result;                    //Device pointer for partial result for the reductions
-float nu, cs2;
+
+// Parameter of ohysics modules.
+
+float nu, cs2, force, tforce_stop;
 
 const int idiag_urms=0,
           idiag_uxrms=1,
@@ -74,10 +78,16 @@ const int idiag_urms=0,
 
 const int ndiags_hydro=10;
 int *p_diags_hydro[ndiags_hydro];
+
 const int npars_visc=1;
 float *p_pars_visc[npars_visc];
+
 const int npars_eos=1;
 float *p_pars_eos[npars_eos];
+
+const int npars_force=2;
+float *p_pars_force[npars_force];
+
 /***********************************************************************************************/
 inline void swap_ptrs(float** a, float** b)
 {
@@ -242,8 +252,8 @@ printf("Lxyz %f %f %f \n", lxyz[0], lxyz[1], lxyz[2]);
 printf(lcartesian_coords ? "CARTESIAN \n" : "NONCARTESIAN");
 }
 printf("[xyz]minmax %f %f %f %f %f %f \n", x[l1-1], x[l2-1], y[m1-1], y[m2-1], z[n1-1], z[n2-1]); 
-printf("[xyz]minmax_ghost %f %f %f %f %f %f \n", x[0], x[mx-1], y[0], y[my-1], z[0], z[mz-1]); 
-*/
+printf("[xyz]minmax_ghost %f %f %f %f %f %f \n", x[0], x[mx-1], y[0], y[my-1], z[0], z[mz-1]); */
+
 	// Allocating arrays for halos
 
 	halo_size = (nghost*nx*2 + nghost*(ny-nghost*2)*2)*(nz-nghost*2) + nx*ny*(nghost*2);
@@ -294,13 +304,22 @@ printf("[xyz]minmax_ghost %f %f %f %f %f %f \n", x[0], x[mx-1], y[0], y[my-1], z
 		  //printf("Main array (d_lnrho etc) dims: (%d,%d,%d)\ntemporary result array dims (d_w_lnrho etc)(%d,%d,%d)\n",
                   //       NX,NY,NZ,COMP_DOMAIN_SIZE_X,COMP_DOMAIN_SIZE_Y,COMP_DOMAIN_SIZE_Z);
         }
-	
         // Get private data from physics modules.
-        __hydro_MOD_push2c(p_diags_hydro); 
-        __viscosity_MOD_push2c(p_pars_visc);
-        __equationofstate_MOD_push2c(p_pars_eos);        // analogoulsy for other modules
+        
+ 	if (lhydro){
+        	hydro_push2c(p_diags_hydro); 
+	}
+        if (lviscosity){
+        	viscosity_push2c(p_pars_visc);
+        	nu=*p_pars_visc[0];
+	}
+	if (lforcing){
+        	forcing_push2c(p_pars_force);
+        	force=*p_pars_force[0];
+		tforce_stop=*p_pars_force[1];
+	}
 
-        nu=*p_pars_visc[0];
+        eos_push2c(p_pars_eos);
         cs2=*p_pars_eos[0];
 
         /*if (iproc==0){	

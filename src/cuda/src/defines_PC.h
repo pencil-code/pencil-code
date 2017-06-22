@@ -15,8 +15,8 @@
 #define CDT  cdt
 #define CDTV cdtv
 
-#define T_STOP_FORCING 1e99
-#define FORCING     1e-5
+#define T_STOP_FORCING tforce_stop
+#define FORCING     force
 #define KK1         4.5
 #define KK2         5.5
 #define KMAX        10.0
@@ -34,4 +34,14 @@
 #define NU_VISC   nu
 #define CS2_SOUND cs2
 #define CS_SOUND  sqrt(cs2)
+
+#define _qualified(module,name,pre,in,suf) pre##module##in##name##suf 
+#define qualified(module,name,pre,in,suf) _qualified(module,name,pre,in,suf)
+
+#define save_name        qualified(diagnostics,save_name,MODPRE,MODIN,MODSUF)
+
+#define hydro_push2c     qualified(hydro,push2c,MODPRE,MODIN,MODSUF)
+#define viscosity_push2c qualified(viscosity,push2c,MODPRE,MODIN,MODSUF)
+#define forcing_push2c   qualified(forcing,push2c,MODPRE,MODIN,MODSUF)
+#define eos_push2c       qualified(equationofstate,push2c,MODPRE,MODIN,MODSUF)
 

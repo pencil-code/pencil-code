@@ -11,10 +11,8 @@
 #include "../hydro_c.h"
 #include "../cparam_c.h"
 #include "defines_dims_PC.h"
-#include "../eos_c.h"
 #include "../cdata_c.h"
 #include "defines_PC.h"
-#include "../diagnostics_c.h"
 
 extern float nu, cs2;
 
@@ -139,11 +137,11 @@ void timeseries_diagnostics_cuda(int step, float dt, double t)
 	cudaMemcpy(&umax, (float*)d_umax, sizeof(float), cudaMemcpyDeviceToHost); 
 	cudaDeviceSynchronize();
 printf("umax= %f\n", umax);
-        __diagnostics_MOD_save_name(&umax,p_diags_hydro[idiag_umax]);
+        save_name(&umax,p_diags_hydro[idiag_umax]);
 
 	//Get uu_x max from d_uxmax 
         get_maxscal_from_device(uxmax,d_uu_x,d_uxmax);
-        __diagnostics_MOD_save_name(&uxmax,p_diags_hydro[idiag_uxmax]);
+        save_name(&uxmax,p_diags_hydro[idiag_uxmax]);
 
 	//Get uu_y max from d_uymax
         get_maxscal_from_device(uymax,d_uu_y,d_uymax);
