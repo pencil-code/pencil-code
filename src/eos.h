@@ -45,6 +45,8 @@
 ! Initial conditions
   public :: isothermal_entropy,isothermal_lnrho_ss
   public :: get_stratz
+! CUDA interface
+  public :: push2c
 
 !ajwm SHOULDN'T BE PUBLIC
   public :: cs0,cs20,lnrho0,rho0
@@ -82,4 +84,3 @@
     module procedure calc_pencils_eos_pencpar
     module procedure calc_pencils_eos_std
   endinterface calc_pencils_eos
-
