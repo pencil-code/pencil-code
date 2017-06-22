@@ -20,16 +20,11 @@
 
 #include "headers_c.h"
 
-void initializeGPU(float nu);
+void initializeGPU();
 int finalizeGPU();
 void substepGPU(float *uu_x, float *uu_y, float *uu_z, float *lnrho, int isubstep, int full_inner, int full);
 
-/* for Intel Compiler
-extern REAL viscosity_mp_nu_;
-*/
 // for Gnu Compiler
-//extern REAL __viscosity_MOD_nu;
-static REAL __viscosity_MOD_nu=1.;
 extern char *__cparam_MOD_coornames;
 //extern REAL __cdata_MOD_y[14];
 // ----------------------------------------------------------------------
@@ -38,21 +33,16 @@ void FTNIZE(initialize_gpu_c)()
 */
 {
   /*
-  printf("nu = %e\n", __viscosity_MOD_nu);
-
   printf("omega = %e\n", cdata_mp_omega_);
-  printf("nu = %e\n", viscosity_mp_nu_);
   printf("nx = %d\n", *nx_);
   printf("ny = %d\n", *ny_);
   printf("nz = %d\n", *nz_);
   printf("__hydro_MOD_idiag_umax = %d\n", __hydro_MOD_idiag_umax);
   */
   //printf("coornames(1)= %s", __cparam_MOD_coornames[0]);
-  REAL nu=__viscosity_MOD_nu;
-  //REAL nu=viscosity_mp_nu_;
 
   //printf("ymin = %f\n", __cdata_MOD_y[0]);
-  initializeGPU(nu);
+  initializeGPU();
 
 /*
   printf("xmin = %e\n", x[4]);

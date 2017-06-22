@@ -66,6 +66,7 @@ module Timestep
 !  Set up df and ds for each time sub.
 !
       do itsub=1,itorder
+
         lfirst=(itsub==1)
         llast=(itsub==itorder)
         if (lfirst) then
@@ -98,7 +99,7 @@ module Timestep
 !  Only do it on the root processor, then broadcast dt to all others.
 !
         if (lfirst.and.ldt) then
-          dt1_local=maxval(dt1_max(1:nx))
+          dt1_local=maxval(dt1_max)
           ! Timestep growth limiter
           if (real(ddt) > 0.) dt1_local=max(dt1_local,dt1_last)
           call mpiallreduce_max(dt1_local,dt1,MPI_COMM_WORLD)

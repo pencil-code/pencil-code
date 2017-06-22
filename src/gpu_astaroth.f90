@@ -109,6 +109,7 @@ contains
                      isubstep,lfull_inner,lvery_first)
 !
       lvery_first=.false.
+
       return
       if (.not.lroot) return
       do nn=1,mz   !  nghost+1,mz-nghost   !1,mz
