@@ -2,15 +2,16 @@
 #Note that you only have to include the main file (compute.o)
 #and modules that are *separately compiled*. Everything else is 
 #automatically included in the compilation.
-hostobjs = initutils.o io.o model_collectiveops.o 
-deviceobjs = slice.o collectiveops.o diagnostics.o integrators_v5s.o boundcond.o timestep.o diff.o shear.o coriolis.o forcing.o continuity.o hydro.o gpu_astaroth.o copyouterhalostodevice.o copyinternalhalostohost.o copy_halos.o copyHalosConcur.o
+
+hostobjs = 
+#model_collectiveops.o
+
+deviceobjs = diagnostics.o integrators_v5s.o collectiveops.o copyHalosConcur.o timestep.o gpu_astaroth.o
+#boundcond.o diff.o shear.o coriolis.o forcing.o continuity.o hydro.o
+#copyouterhalostodevice.o copyinternalhalostohost.o copy_halos.o
 
 hostcpps = initutils.cpp io.cpp model_collectiveops.cpp
-devicecus = collectiveops.cu diagnostics.cu integrators_v5s.cu boundcond.cu timestep.cu diff.cu shear.cu coriolis.cu forcing.cu continuity.cu hydro.cu gpu_astaroth.cu copyouterhalostodevice.cu copyinternalhalostohost.cu copy_halos.cu slice.cu
-#deviceobjs = collectiveops.o diagnostics.o integrators_debug.o boundcond.o timestep.o diff.o shear.o coriolis.o forcing.o continuity.o hydro.o
-#deviceobjs = collectiveops.o diagnostics.o integrators_ytraversing3.o boundcond.o timestep.o diff.o shear.o coriolis.o forcing.o continuity.o hydro.o
-#deviceobjs = collectiveops.o diagnostics.o integrators_Th38x10.o boundcond.o timestep.o diff.o shear.o coriolis.o forcing.o continuity.o hydro.o
-#main = compute.o
+devicecus = slice.cu collectiveops.cu diagnostics.cu integrators_v5s.cu boundcond.cu timestep.cu diff.cu shear.cu coriolis.cu forcing.cu continuity.cu hydro.cu gpu_astaroth.cu copyouterhalostodevice.cu copyinternalhalostohost.cu copy_halos.cu slice.cu
 
 #Flags: 
 #
@@ -30,21 +31,19 @@ devicecus = collectiveops.cu diagnostics.cu integrators_v5s.cu boundcond.cu time
 #transactions from L2/SGRAM are done as 32-byte 
 #blocks.
 # Settings for taito-gpu
-CFLAGS = -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -shared -Xcompiler -fPIC
+CFLAGS = -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -shared -Xcompiler -fPIC --debug
 # Settings for Omer's machine
 #CFLAGS = -gencode arch=compute_52,code=sm_52 --shared --relocatable-device-code=true --compiler-options '-fPIC'
+
+#Importing environ variables into preprocessor
+ENVIRON = -D MODPRE=${MODULE_PREFIX} -D MODIN=${MODULE_INFIX} -D MODSUF=${MODULE_SUFFIX}
 
 #Searches also src/verification for additional includes
 VPATH = verification
 
-#Include initial configuration
-include init.conf
-
-#Include run configuration
-include run.conf
-
 #Include macro flags and their user defined values
 include makefile.local
+include makefile.depend
 
 #-rdc=true?
 #all: hostobjs deviceobjs main
@@ -52,26 +51,26 @@ include makefile.local
 	#nvcc -g -lineinfo --ptxas-options=-v $(CFLAGS) $(hostobjs) $(deviceobjs) $(main) -o ac_run_gdb
 	#nvcc -g $(CFLAGS) $(hostobjs) $(deviceobjs) $(main) -o ac_run_gdb	
 
-hostobjs: $(hostobjs)
 %.o: %.cpp
-	nvcc -g ${INIT_CONFS} ${RUN_CONFS} $(CFLAGS) -dc $< -o $@
+	nvcc -g $(CFLAGS) $(ENVIRON) -dc $< -o $@
 
-deviceobjs: $(deviceobjs)
 %.o: %.cu
-	nvcc -g ${INIT_CONFS} ${RUN_CONFS} ${MFLAGS} $(CFLAGS) -dc $< -o $@
+	nvcc -g ${MFLAGS} $(CFLAGS) $(ENVIRON) -dc $< -o $@
 
 #main: $(main)
 #%.o: %.cu
 	#nvcc -g -G -Xptxas -O0 ${INIT_CONFS} ${RUN_CONFS} $(CFLAGS) -dc $< -o $@
 	#nvcc -g -lineinfo --ptxas-options=-v ${INIT_CONFS} ${RUN_CONFS} $(CFLAGS) -dc $< -o $@
 	#nvcc -g ${INIT_CONFS} ${RUN_CONFS} $(CFLAGS) -dc $< -o $@
-astaroth_sgl.so: $(hostobjs) $(deviceobjs) defines.h
-	nvcc -g $(CFLAGS) ${INIT_CONFS} ${RUN_CONFS} ${MFLAGS} -o astaroth_sgl.so $(hostobjs) $(deviceobjs)
+
+astaroth_sgl.so: $(hostobjs) $(deviceobjs) defines_PC.h defines_dims_PC.h
+	nvcc -g $(CFLAGS) ${MFLAGS} -o astaroth_sgl.so $(hostobjs) $(deviceobjs)
 	cp -f astaroth_sgl.so ..
+
+hostobjs: $(hostobjs)
+deviceobjs: $(deviceobjs)
 
 clean:
 	@rm -f *.o
-	@rm -f runme
-	@rm data/*.ac
-	@rm data/*.dat
+	@rm -f *.so
 
