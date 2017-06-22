@@ -3845,11 +3845,26 @@ module Magnetic
               ujiaj=0.
             endif
 !
+!  Calculate ujiaj (=aj uj;i)
+!
             do j=1,3
               do k=1,3
                 ujiaj(:,j)=ujiaj(:,j)+p%aa(:,k)*p%uij(:,k,j)
               enddo
             enddo
+!
+!  Curvature terms on ujiaj
+!
+            if (lcylindrical_coords) then
+              ujiaj(:,2) = ujiaj(:,2) + (p%uu(:,1)*p%aa(:,2) - p%uu(:,2)*p%aa(:,1))*rcyl_mn1
+            else if (lspherical_coords) then 
+              ujiaj(:,2) = ujiaj(:,2) + (p%uu(:,1)*p%aa(:,2) - p%uu(:,2)*p%aa(:,1))*r1_mn
+              ujiaj(:,3) = ujiaj(:,3) + (p%uu(:,1)*p%aa(:,3)          - &
+                                         p%uu(:,3)*p%aa(:,1)          + &
+                                         p%uu(:,2)*p%aa(:,3)*cotth(m) - &
+                                         p%uu(:,3)*p%aa(:,3)*cotth(m))*r1_mn
+            endif
+!
             if (.not.lfargo_advection) then 
               dAdt = dAdt-p%uga-ujiaj+fres
             else
