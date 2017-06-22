@@ -6510,4 +6510,22 @@ module Hydro
 
     endsubroutine amp_lm
 !***********************************************************************
+    subroutine push2c(p_idiag)
+
+    integer, parameter :: ndiags=10
+    integer(KIND=ikind8), dimension(ndiags) :: p_idiag
+
+    call copy_addr_c(idiag_urms,p_idiag(1))
+    call copy_addr_c(idiag_uxrms,p_idiag(2))
+    call copy_addr_c(idiag_uzrms,p_idiag(3))
+    call copy_addr_c(idiag_umax,p_idiag(4))
+    call copy_addr_c(idiag_uxmin,p_idiag(5))
+    call copy_addr_c(idiag_uymin,p_idiag(6))
+    call copy_addr_c(idiag_uzmin,p_idiag(7))
+    call copy_addr_c(idiag_uxmax,p_idiag(8))
+    call copy_addr_c(idiag_uymax,p_idiag(9))
+    call copy_addr_c(idiag_uzmax,p_idiag(10))
+
+    endsubroutine push2c
+!***********************************************************************
 endmodule Hydro

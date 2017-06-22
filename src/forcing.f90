@@ -5343,5 +5343,15 @@ call fatal_error('hel_vec','radial profile should be quenched')
       endif
 !
     endsubroutine forcing_clean_up
+!***********************************************************************
+    subroutine push2c(p_par)
+
+    integer, parameter :: npars=2
+    integer(KIND=ikind8), dimension(npars) :: p_par
+
+    call copy_addr_c(force,p_par(1))
+    call copy_addr_c(tforce_stop,p_par(1))
+
+    endsubroutine push2c
 !*******************************************************************
 endmodule Forcing

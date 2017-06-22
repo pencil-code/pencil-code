@@ -22,10 +22,11 @@ module Diagnostics
   public :: write_1daverages, write_2daverages
   public :: write_sound
   public :: write_2daverages_prepare, write_zaverages
-! GPU-START
-  public :: expand_cname, parse_name, fparse_name, save_name, save_name_halfz
-  public :: save_name_sound
   public :: name_is_present
+  public :: expand_cname, parse_name, fparse_name
+! GPU-START
+  public :: save_name
+  public :: save_name_halfz, save_name_sound
   public :: max_name, sum_name
   public :: max_mn_name, sum_mn_name, integrate_mn_name, sum_weighted_name
   public :: integrate_mn
@@ -1625,6 +1626,7 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !  This routine is to be called only once per step
 !
       if (iname/=0) then
+print*, 'save_name: a,iname=', a,iname
         fname(iname)=a
         itype_name(iname)=ilabel_save
       endif
