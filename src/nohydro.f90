@@ -1005,5 +1005,14 @@ module Hydro
 
     endsubroutine update_char_vel_hydro
 !***********************************************************************
+    subroutine push2c(p_par)
+
+      integer, parameter :: npars=1
+      integer(KIND=ikind8), dimension(npars) :: p_par
+
+      call keep_compiler_quiet(p_par)
+
+    endsubroutine push2c
+!***********************************************************************
 endmodule Hydro
 
