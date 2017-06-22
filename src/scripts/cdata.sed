@@ -12,7 +12,8 @@ s/\([0-9.]\) *[dD] *\([-0-9]\)/\1E\2/g
 /implicit  *none/ d
 /kind=ikind8/ d
 s/\([^ ]\) *!.*$/\1/
-s/^ *module .*$/  # pragma once \n  namespace PC\n{\n  # include "headers_c.h" \n  # include "defines_cdata.h"/ 
+//s/^ *module .*$/  # pragma once \n  namespace PC\n{\n  # include "headers_c.h" \n  # include "defines_cdata.h"/ 
+s/^ *module .*$/  # pragma once \n  # include "headers_c.h" \n  # include "defines_cdata.h"/ 
 s/, *dimension.*::/*::,/
 s/integer *, *parameter *::/const FINT /
 s/integer\([*]*\) *::/extern FINT \1/
@@ -53,4 +54,4 @@ s/& *$//
                       b loop        
 	             }
 s/\*\([a-zA-Z0-9_][a-zA-Z0-9_]*\)/\1[1]/g
-s/^ *endmodule.*$/}/
+/^ *endmodule.*$/ d
