@@ -3595,7 +3595,7 @@ module Particles
       integer :: k, l, ix0, iy0, iz0, ierr, irad
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       integer, dimension (3) :: inear
-      logical :: lsink
+      logical :: lsink, lvapour
       real, pointer :: pscalar_diff, ap0(:)
       real :: Sherwood, mass_trans_coeff, lambda_tilde
       real :: dthetadt, mp_vcell
@@ -3719,13 +3719,38 @@ module Particles
 !
           do k=k1_imn(imn),k2_imn(imn)
 !
-!  Exclude sink particles from the drag.
+!  Vapour particles acquire same speed as the gas.
 !
-            lsink =.false.
+            lvapour=.false.
+            if (lparticles_radius) then
+              if (fp(k,iap)==0.0) then
+                lvapour=.true.
+                inear = ineargrid(k,:)
+                xxp = fp(k,ixp:izp)
+                if (lparticlemesh_cic) then
+                  call interpolate_linear(f,iux,iuz,xxp,uup,inear,0,ipar(k))
+                elseif (lparticlemesh_tsc) then
+                  if (linterpolate_spline) then
+                    call interpolate_quadratic_spline(f,iux,iuz,xxp,uup,inear,0,ipar(k))
+                  else
+                    call interpolate_quadratic(f,iux,iuz,xxp,uup,inear,0,ipar(k))
+                  endif
+                else
+                  uup=f(ix0,iy0,iz0,iux:iuz)
+                endif
+                fp(k,ivpx:ivpz)=uup
+                dfp(k,ivpx:ivpz)=0.0
+              endif
+            endif
+!
+!  Exclude sink and vapour particles from the drag.
+!
+            lsink=.false.
             if (lparticles_sink) then
               if (fp(k,iaps)>0.0) lsink=.true.
             endif
-            if (.not. lsink) then
+!
+            if (.not. lsink .and. .not. lvapour) then
               ix0=ineargrid(k,1)
               iy0=ineargrid(k,2)
               iz0=ineargrid(k,3)
