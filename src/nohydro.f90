@@ -126,7 +126,7 @@ module Hydro
           iuz=iuu+2
         endif
         if (iuu/=0.and.lroot) then
-          print*, 'initialize_velocity: iuu = ', iuu
+          if (ip<14) print*, 'initialize_velocity: iuu = ', iuu
           open(3,file=trim(datadir)//'/index.pro', POSITION='append')
           write(3,*) 'iuu=',iuu
           write(3,*) 'iux=',iux
@@ -1004,6 +1004,15 @@ module Hydro
       call keep_compiler_quiet(f)
 
     endsubroutine update_char_vel_hydro
+!***********************************************************************
+    subroutine push2c(p_par)
+
+      integer, parameter :: npars=1
+      integer(KIND=ikind8), dimension(npars) :: p_par
+
+      call keep_compiler_quiet(p_par)
+
+    endsubroutine push2c
 !***********************************************************************
 endmodule Hydro
 

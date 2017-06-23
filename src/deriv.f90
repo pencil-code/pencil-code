@@ -5296,6 +5296,7 @@ module Deriv
       call fatal_error('deri_3d_inds','Upwinding not implemented for nonuniform grids')
 !
 ! dummy computation to avoid compiler warnings of unused variables
+!
       if (present(lignored).and.present(lnometric)) &
           df  = inds + f(l1:l2,1,1) + j
 !

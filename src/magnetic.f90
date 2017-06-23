@@ -1487,6 +1487,12 @@ module Magnetic
         allocate(aamxy(mx,myl))
       endif
 
+      if (idiag_axp2/=0.or.idiag_ayp2/=0.or.idiag_azp2/=0) then
+        print*,'magnetic: pointwise diagnostics at'
+        print*,'(x,y,z)(point)=',x(lpoint),y(mpoint),z(npoint)
+        print*,'(x,y,z)(point2)=',x(lpoint2),y(mpoint2),z(npoint2)
+      endif
+
     endsubroutine initialize_magnetic
 !***********************************************************************
     subroutine init_aa(f)
@@ -3839,11 +3845,26 @@ module Magnetic
               ujiaj=0.
             endif
 !
+!  Calculate ujiaj (=aj uj;i)
+!
             do j=1,3
               do k=1,3
                 ujiaj(:,j)=ujiaj(:,j)+p%aa(:,k)*p%uij(:,k,j)
               enddo
             enddo
+!
+!  Curvature terms on ujiaj
+!
+            if (lcylindrical_coords) then
+              ujiaj(:,2) = ujiaj(:,2) + (p%uu(:,1)*p%aa(:,2) - p%uu(:,2)*p%aa(:,1))*rcyl_mn1
+            else if (lspherical_coords) then 
+              ujiaj(:,2) = ujiaj(:,2) + (p%uu(:,1)*p%aa(:,2) - p%uu(:,2)*p%aa(:,1))*r1_mn
+              ujiaj(:,3) = ujiaj(:,3) + (p%uu(:,1)*p%aa(:,3)          - &
+                                         p%uu(:,3)*p%aa(:,1)          + &
+                                         p%uu(:,2)*p%aa(:,3)*cotth(m) - &
+                                         p%uu(:,3)*p%aa(:,3)*cotth(m))*r1_mn
+            endif
+!
             if (.not.lfargo_advection) then 
               dAdt = dAdt-p%uga-ujiaj+fres
             else

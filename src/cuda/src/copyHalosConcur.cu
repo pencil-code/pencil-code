@@ -11,15 +11,44 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-//Headers
-//#include "defines.h"
-
-extern int mx, my, mz, nx, ny, nz, nghost, iproc;
-static long mxy;
+#include "../cparam_c.h"
+#include "defines_dims_PC.h"
+#include "dconstsextern.cuh"
 
 static cudaStream_t strFront=NULL, strBack=NULL, strBot=NULL, strTop=NULL, strLeftRight=NULL;
-static long halo_yz_size;
+static int mxy;
+static int halo_yz_size;
 static float *halo_yz, *d_halo_yz; 
+
+/****************************************************************************************************************/
+__global__ void unpackOyzPlates(float* d_grid,float* d_halo_yz)
+{
+//  unpacks buffer for yz halos in global memory
+        
+        int halo_ind=threadIdx.x + (threadIdx.y + threadIdx.z*d_COMP_DOMAIN_SIZE_Y)*(2*d_BOUND_SIZE), grid_ind;
+        const int start_offset=(d_W_GRID_Z_OFFSET+d_NX)*d_BOUND_SIZE;
+        
+        grid_ind=start_offset + threadIdx.z*d_W_GRID_Z_OFFSET + threadIdx.y*d_NX + threadIdx.x;
+        if (threadIdx.x>=d_BOUND_SIZE) grid_ind+=d_COMP_DOMAIN_SIZE_X;
+        
+        d_grid[grid_ind]=d_halo_yz[halo_ind];
+}
+/****************************************************************************************/
+__global__ void packIyzPlates(float* d_grid,float* d_halo_yz)
+{
+//  packs inner yz halos in buffer d_halo_yz on device
+
+        const int halo_ind=threadIdx.x + (threadIdx.y + threadIdx.z*(d_COMP_DOMAIN_SIZE_Y-2*d_BOUND_SIZE))*(2*d_BOUND_SIZE);
+        const int start_offset=((d_W_GRID_Z_OFFSET+d_NX)*2+1)*d_BOUND_SIZE;
+
+        int grid_ind=start_offset + threadIdx.z*d_W_GRID_Z_OFFSET + threadIdx.y*d_NX + threadIdx.x;
+        if (threadIdx.x>=d_BOUND_SIZE) grid_ind+=d_COMP_DOMAIN_SIZE_X-2*d_BOUND_SIZE;
+
+        d_halo_yz[halo_ind] = d_grid[grid_ind];
+}
+//Headers
+#include "../cdata_c.h"
+//using namespace PC;
 
 /****************************************************************************************************************/
 __host__ void initializeCopying()
@@ -53,8 +82,8 @@ __host__ void copyOxyPlates(float* grid, float* d_grid)
 {
 //  copies outer xy halos from host to device
 
-        const long size=mxy*nghost*sizeof(float);
-        const long offset=mxy*(mz-nghost);
+        const int size=mxy*nghost*sizeof(float);
+        const int offset=mxy*(mz-nghost);
 
         // front plate
         cudaHostRegister(grid, size, cudaHostRegisterDefault);
@@ -71,7 +100,7 @@ __host__ void copyOxzPlates(float* grid, float* d_grid)
 
         const int size=mx*nghost*sizeof(float);
 
-        long offset=mxy*nghost;
+        int offset=mxy*nghost;
         int i;
 
         // bottom plate
@@ -92,19 +121,6 @@ __host__ void copyOxzPlates(float* grid, float* d_grid)
         }
 }
 /****************************************************************************************************************/
-__global__ void unpackOyzPlates(float* d_grid,float* d_halo_yz,int mx,int nx,int ny,int mxy,int nghost)
-{
-//  unpacks buffer for yz halos in global memory
-
-        long halo_ind=threadIdx.x + (threadIdx.y + threadIdx.z*ny)*(2*nghost), grid_ind;
-        const long start_offset=(mxy+mx)*nghost;
-
-        grid_ind=start_offset + threadIdx.z*mxy + threadIdx.y*mx + threadIdx.x;
-        if (threadIdx.x>=nghost) grid_ind+=nx;
-
-        d_grid[grid_ind]=d_halo_yz[halo_ind];
-}
-/****************************************************************************************************************/
 __host__ void copyOyzPlates(float* grid, float* d_grid)
 {
 //  copies outer yz halos from host to device: they are first packed into the buffer halo_yz, which is then copied 
@@ -114,8 +130,8 @@ __host__ void copyOyzPlates(float* grid, float* d_grid)
         const int x_inc=mx-nghost;
 
         int i,j;
-        long halo_ind=0;
-        long offset=mx*(my+1)*nghost;
+        int halo_ind=0;
+        int offset=mx*(my+1)*nghost;
 
         for (i=0;i<nz;i++)
         {
@@ -139,7 +155,7 @@ __host__ void copyOyzPlates(float* grid, float* d_grid)
 
         int numBlocks=1;
         dim3 threads(2*nghost,ny,nz);
-        unpackOyzPlates<<<numBlocks,threads,0,strLeftRight>>>(d_grid,d_halo_yz,mx,nx,ny,mxy,nghost);
+        unpackOyzPlates<<<numBlocks,threads,0,strLeftRight>>>(d_grid,d_halo_yz);
 }
 /****************************************************************************************************************/
 __host__ void unlockHostMemOuter(float* grid,float* d_grid)
@@ -153,7 +169,7 @@ __host__ void unlockHostMemOuter(float* grid,float* d_grid)
         cudaStreamSynchronize(strBack);
 	cudaHostUnregister(grid+mxy*(mz-nghost));
 
-        long offset=mxy*nghost;
+        int offset=mxy*nghost;
         int i;
 
         // outer bottom plate
@@ -180,7 +196,7 @@ __host__ void unlockHostMemInner(float* grid,float* d_grid)
 {
 //  after copy of inner halos: synchronizes streams and releases pinned memory
 
-        long offset=(mxy+mx+1)*nghost;
+        int offset=(mxy+mx+1)*nghost;
         int i;
 
         cudaStreamSynchronize(strFront);
@@ -243,7 +259,7 @@ __host__ void copyIxyPlates(float* grid, float* d_grid)    // or kernel?
         const size_t px=mx*sizeof(float);
         const size_t sx=nx*sizeof(float);
 
-        long offset=(mxy+mx+1)*nghost;
+        int offset=(mxy+mx+1)*nghost;
         int i;
 
         // inner front plate
@@ -290,19 +306,6 @@ __host__ void copyIxzPlates(float* grid, float* d_grid)    // or __global__?
         }
 }
 /****************************************************************************************/
-__global__ void packIyzPlates(float* d_grid,float* d_halo_yz,int mx,int nx,int ny,int mxy,int nghost)
-{
-//  packs inner yz halos in buffer d_halo_yz on device
-
-        const long halo_ind=threadIdx.x + (threadIdx.y + threadIdx.z*(ny-2*nghost))*(2*nghost);
-        const long start_offset=((mxy+mx)*2+1)*nghost;
-
-        long grid_ind=start_offset + threadIdx.z*mxy + threadIdx.y*mx + threadIdx.x;
-        if (threadIdx.x>=nghost) grid_ind+=nx-2*nghost;
-
-  	d_halo_yz[halo_ind] = d_grid[grid_ind]; 
-}
-/****************************************************************************************/
 __host__ void copyIyzPlates(float* grid, float* d_grid)
 {
 //  copies inner yz halos from device to host: they are first packed into the buffer d_halo_yz, which is then copied 
@@ -311,15 +314,15 @@ __host__ void copyIyzPlates(float* grid, float* d_grid)
 
         //d_halo_yz has to have at least size (2*nghost)*(ny-2*nghost)*(nz-2*nghost).
         const int size=nghost*sizeof(float);
-        const long halo_size=2*nghost*(ny-2*nghost)*(nz-2*nghost)*sizeof(float);
+        const int halo_size=2*nghost*(ny-2*nghost)*(nz-2*nghost)*sizeof(float);
         const int x_inc=nx-nghost;
 
         int i,j;
         int halo_ind=0;
-        long offset=((mxy+mx)*2+1)*nghost;
+        int offset=((mxy+mx)*2+1)*nghost;
         dim3 threads(2*nghost,ny-2*nghost,nz-2*nghost);
 
-        packIyzPlates<<<1,threads,0,strLeftRight>>>(d_grid,d_halo_yz,mx,nx,ny,mxy,nghost);
+        packIyzPlates<<<1,threads,0,strLeftRight>>>(d_grid,d_halo_yz);
         cudaHostRegister(halo_yz, halo_size, cudaHostRegisterDefault);
         cudaMemcpyAsync(halo_yz, d_halo_yz, halo_size, cudaMemcpyDeviceToHost,strLeftRight);
 
@@ -342,12 +345,12 @@ __host__ void copyIyzPlates(float* grid, float* d_grid)
         }
 }
 /****************************************************************************************************************/
-__global__ void setIxyPlates(float* d_grid, int mx, int mxy, int nz, int nghost)
+/*__global__ void setIxyPlates(float* d_grid, int mx, int mxy, int nz, int nghost)
 {
 // sets d_grid[linear_index] = -(linear_index+1) in global memory in inner xy halos
 
-        long start_offset=(mxy+mx+1)*nghost;
-        long grid_ind=start_offset + threadIdx.x + threadIdx.y*mx + threadIdx.z*mxy;
+        int start_offset=(mxy+mx+1)*nghost;
+        int grid_ind=start_offset + threadIdx.x + threadIdx.y*mx + threadIdx.z*mxy;
 
         // inner front plate
         d_grid[grid_ind] = (float) (-grid_ind-1);
@@ -355,15 +358,15 @@ __global__ void setIxyPlates(float* d_grid, int mx, int mxy, int nz, int nghost)
         // inner back plate
         grid_ind += (nz-nghost)*mxy;
         d_grid[grid_ind] = (float) (-grid_ind-1);
-}
+}*/
 /****************************************************************************************************************/
-__global__ void setIxzPlates(float* d_grid, int mx, int mxy, int ny, int nghost)
+/*__global__ void setIxzPlates(float* d_grid, int mx, int mxy, int ny, int nghost)
 {
 // sets d_grid[linear_index] = -(linear_index+1) in global memory in inner xz halos
 
 
-        long start_offset=(2*mxy+mx+1)*nghost;
-        long grid_ind=start_offset + threadIdx.x + threadIdx.y*mx + threadIdx.z*mxy;
+        int start_offset=(2*mxy+mx+1)*nghost;
+        int grid_ind=start_offset + threadIdx.x + threadIdx.y*mx + threadIdx.z*mxy;
 
         // inner bottom plate
         d_grid[grid_ind] = (float) (-grid_ind-1);
@@ -371,20 +374,20 @@ __global__ void setIxzPlates(float* d_grid, int mx, int mxy, int ny, int nghost)
         // inner top plate
         grid_ind += (ny-nghost)*mx;
         d_grid[grid_ind] = (float) (-grid_ind-1);
-}
+}*/
 /****************************************************************************************/
-__global__ void setIyzPlates(float* d_grid,int mx,int nx,int mxy,int nghost)
+/*__global__ void setIyzPlates(float* d_grid,int mx,int nx,int mxy,int nghost)
 {
 // sets d_grid[linear_index] = -(linear_index+1) in global memory in inner yz halos
 
-        const long start_offset=((mxy+mx)*2+1)*nghost;
+        const int start_offset=((mxy+mx)*2+1)*nghost;
 
-        long grid_ind=start_offset + threadIdx.z*mxy + threadIdx.y*mx + threadIdx.x;
+        int grid_ind=start_offset + threadIdx.z*mxy + threadIdx.y*mx + threadIdx.x;
         d_grid[grid_ind] = (float)(-grid_ind-1);
         
         grid_ind+=nx-nghost;
         d_grid[grid_ind] = (float)(-grid_ind-1);
-}
+}*/
 /****************************************************************************************************************/
 __host__ void copyInnerHalos(float* grid, float* d_grid)
 {

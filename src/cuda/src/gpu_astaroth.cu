@@ -1,14 +1,12 @@
-/*                             gpu_astaroth_ansi.cu
-                              --------------------
-*/
+//                             gpu_astaroth.cu
+//                             ---------------
 
-/* Date:   8-Feb-2017
-   Author: M. Rheinhardt
-   Description:
- ANSI C and standard library callable function wrappers for ASTAROTH-nucleus functions to be called from Fortran.
-Comments: 
-DATE March 17, 2017: 
-Omer Anjum: Added description of the functions
+/* Functions for initializing, finalizing and performing of one integration substep with ASTAROTH-nucleus,
+   to be called from PencilCode.
+
+   Comments: 
+   DATE March 17, 2017: 
+   Omer Anjum: Added description of the functions
 */
 
 //C libraries
@@ -16,24 +14,22 @@ Omer Anjum: Added description of the functions
 #include <stdlib.h>
 #include <cmath>
 
-//CUDA libraries
-//#include <cfloat>
-
 //Headers
 #include "dconsts.cuh"
 #include "integrators.cuh"
-#include "boundcond.cuh"
 #include "timestep.cuh"
-#include "defines.h"
-#include "io.h"
-#include "slice.cuh"
+#include "../cparam_c.h"
 #include "smem.cuh"
-#include "forcing.cuh"
-#include "copyhalos.cuh"
+#include "../cdata_c.h"
+#include "../eos_c.h"
+#include "../hydro_c.h"
+#include "../viscosity_c.h"
+#include "../forcing_c.h"
+#include "defines_PC.h"
+//#include "copyhalos.cuh"
 #include "copyHalosConcur.cuh"
 
 //DEBUG
-#include "initutils.h"
 #include "diagnostics.cuh"
 #define dbug 0
 
@@ -46,75 +42,86 @@ Omer Anjum: Added description of the functions
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <dlfcn.h>
-//#include "headers_c.h" 
-#include "gpu_astaroth.cuh"
-
-void load_dconsts(float nu_visc, float cs2_sound);
-inline void swap_ptrs(float** a, float** b);
 
 int halo_size;
-float *d_halo;
 float *halo; 
+float *d_halo;
+
 float *d_lnrho, *d_uu_x, *d_uu_y, *d_uu_z;
 float *d_w_lnrho, *d_w_uu_x, *d_w_uu_y, *d_w_uu_z;
 float *d_lnrho_dest, *d_uu_x_dest, *d_uu_y_dest, *d_uu_z_dest;
-float *d_umax, *d_umin, *d_partial_result;//Device pointer for max vec and partial result for the reductions
-float *d_urms; //Device pointer for urms 
-float *d_uxrms, *d_uyrms, *d_uzrms; //Device pointer for uxrms, uyrms, uzrms 
-float *d_rhorms, *d_rhomax, *d_rhomin; //Device pointer for rhorms, rhomax, rhomin
-float *d_uxmax, *d_uymax, *d_uzmax; //Device pointer for uxmax, uymax, uzmax
-float *d_uxmin, *d_uymin, *d_uzmin; //Device pointer for uxmin, uymin, uzmin
 
-extern int mx, my, mz, nx, ny, nz, nghost, iproc;
+// Device pointer for diagnostic quantities
 
-/*cudaError_t checkErr(cudaError_t result) {
-  if (result != cudaSuccess) {
-    fprintf(stderr, "CUDA Runtime Error: %s \n", 
-            cudaGetErrorString(result));
-    assert(result == cudaSuccess);
-  }
-  return result;
-}*/
+float *d_umax, *d_umin; 
+float *d_urms; 
+float *d_uxrms, *d_uyrms, *d_uzrms; 
+float *d_rhorms, *d_rhomax, *d_rhomin; 
+float *d_uxmax, *d_uymax, *d_uzmax; 
+float *d_uxmin, *d_uymin, *d_uzmin; 
+float *d_partial_result;                    //Device pointer for partial result for the reductions
 
-//Swaps pointers a,b (do xor swap if too slow)
+// Parameter of ohysics modules.
+
+float nu, cs2, force, tforce_stop;
+
+const int idiag_urms=0,
+          idiag_uxrms=1,
+          idiag_uzrms=2,
+          idiag_umax=3,
+          idiag_uxmin=4,
+          idiag_uymin=5,
+          idiag_uzmin=6,
+          idiag_uxmax=7,
+          idiag_uymax=8,
+          idiag_uzmax=9;
+
+const int ndiags_hydro=10;
+int *p_diags_hydro[ndiags_hydro];
+
+const int npars_visc=1;
+float *p_pars_visc[npars_visc];
+
+const int npars_eos=1;
+float *p_pars_eos[npars_eos];
+
+const int npars_force=2;
+float *p_pars_force[npars_force];
+
+/***********************************************************************************************/
 inline void swap_ptrs(float** a, float** b)
 {
+//  Swaps pointers a,b (do xor swap if too slow)
+
 	float* temp = *a;
 	*a = *b;
 	*b = temp;
 }
+/***********************************************************************************************/
+//using namespace PC;
 
-float nu, cs2;
-//Loads constants into device memory
-void load_dconsts(float nu_visc, float cs2_sound){
-	//---------Grid dims-----------------------
-	const int pad_size = PAD_SIZE, bound_size = BOUND_SIZE;
-	const int 	comp_domain_size_x = COMP_DOMAIN_SIZE_X, 
-			comp_domain_size_y = COMP_DOMAIN_SIZE_Y, 
-			comp_domain_size_z = COMP_DOMAIN_SIZE_Z;
-	//Needed for calculating averages
-	const float nelements_float = COMP_DOMAIN_SIZE_X*COMP_DOMAIN_SIZE_Y*COMP_DOMAIN_SIZE_Z;
+void load_dconsts()
+{
+//  Loads constants into device memory
 
-	const float 	domain_size_x = DOMAIN_SIZE_X, 
-			domain_size_y = DOMAIN_SIZE_Y, 
-			domain_size_z = DOMAIN_SIZE_Z;
+	checkErr( cudaMemcpyToSymbol(d_NX, &NX, sizeof(int)) );
+	checkErr( cudaMemcpyToSymbol(d_NY, &NY, sizeof(int)) );
+	checkErr( cudaMemcpyToSymbol(d_NZ, &NZ, sizeof(int)) );
 
-	checkErr( cudaMemcpyToSymbol(d_NX, &mx, sizeof(int)) );
-	checkErr( cudaMemcpyToSymbol(d_NY, &my, sizeof(int)) );
-	checkErr( cudaMemcpyToSymbol(d_NZ, &mz, sizeof(int)) );
-
+        const int pad_size=PAD_SIZE;
 	checkErr( cudaMemcpyToSymbol(d_PAD_SIZE, &pad_size, sizeof(int)) );
-	checkErr( cudaMemcpyToSymbol(d_BOUND_SIZE, &bound_size, sizeof(int)) );
+	checkErr( cudaMemcpyToSymbol(d_BOUND_SIZE, &BOUND_SIZE, sizeof(int)) );
 
-	checkErr( cudaMemcpyToSymbol(d_COMP_DOMAIN_SIZE_X, &comp_domain_size_x, sizeof(int)) );
-	checkErr( cudaMemcpyToSymbol(d_COMP_DOMAIN_SIZE_Y, &comp_domain_size_y, sizeof(int)) );
-	checkErr( cudaMemcpyToSymbol(d_COMP_DOMAIN_SIZE_Z, &comp_domain_size_z, sizeof(int)) );
+	checkErr( cudaMemcpyToSymbol(d_COMP_DOMAIN_SIZE_X, &COMP_DOMAIN_SIZE_X, sizeof(int)) );
+	checkErr( cudaMemcpyToSymbol(d_COMP_DOMAIN_SIZE_Y, &COMP_DOMAIN_SIZE_Y, sizeof(int)) );
+	checkErr( cudaMemcpyToSymbol(d_COMP_DOMAIN_SIZE_Z, &COMP_DOMAIN_SIZE_Z, sizeof(int)) );
 
-	checkErr( cudaMemcpyToSymbol(d_NELEMENTS_FLOAT, &nelements_float, sizeof(int)) );
+        const float nelements_float = W_GRID_SIZE;
+	checkErr( cudaMemcpyToSymbol(d_NELEMENTS_FLOAT, &nelements_float, sizeof(float)) );
 
-	checkErr( cudaMemcpyToSymbol(d_DOMAIN_SIZE_X, &domain_size_x, sizeof(float)) );
-	checkErr( cudaMemcpyToSymbol(d_DOMAIN_SIZE_Y, &domain_size_y, sizeof(float)) );
-	checkErr( cudaMemcpyToSymbol(d_DOMAIN_SIZE_Z, &domain_size_z, sizeof(float)) );
+	checkErr( cudaMemcpyToSymbol(d_DOMAIN_SIZE_X, &DOMAIN_SIZE_X, sizeof(float)) );
+	checkErr( cudaMemcpyToSymbol(d_DOMAIN_SIZE_Y, &DOMAIN_SIZE_Y, sizeof(float)) );
+	checkErr( cudaMemcpyToSymbol(d_DOMAIN_SIZE_Z, &DOMAIN_SIZE_Z, sizeof(float)) );
 
 	const int h_w_grid_y_offset = COMP_DOMAIN_SIZE_X;
 	const int h_w_grid_z_offset = COMP_DOMAIN_SIZE_X*COMP_DOMAIN_SIZE_Y;
@@ -125,55 +132,42 @@ void load_dconsts(float nu_visc, float cs2_sound){
 	checkErr( cudaMemcpyToSymbol(d_W_GRID_Z_OFFSET, &h_w_grid_z_offset, sizeof(int)) );
 	checkErr( cudaMemcpyToSymbol(d_GRID_Y_OFFSET, &h_grid_y_offset, sizeof(int)) );
 	checkErr( cudaMemcpyToSymbol(d_GRID_Z_OFFSET, &h_grid_z_offset, sizeof(int)) );
-	//-------------------------------------------
 
 	//------Computational domain's bottom and top indices---------
-	const int cx_top = CX_TOP, cy_top = CY_TOP, cz_top = CZ_TOP;
-	const int cx_bot = CX_BOT, cy_bot = CY_BOT, cz_bot = CY_BOT;
 
-	checkErr( cudaMemcpyToSymbol(d_CX_TOP, &cx_top, sizeof(int)) );
-	checkErr( cudaMemcpyToSymbol(d_CY_TOP, &cy_top, sizeof(int)) );
-	checkErr( cudaMemcpyToSymbol(d_CZ_TOP, &cz_top, sizeof(int)) );
+	checkErr( cudaMemcpyToSymbol(d_CX_TOP, &CX_TOP, sizeof(int)) );
+	checkErr( cudaMemcpyToSymbol(d_CY_TOP, &CY_TOP, sizeof(int)) );
+	checkErr( cudaMemcpyToSymbol(d_CZ_TOP, &CZ_TOP, sizeof(int)) );
 
-	checkErr( cudaMemcpyToSymbol(d_CX_BOT, &cx_bot, sizeof(int)) );
-	checkErr( cudaMemcpyToSymbol(d_CY_BOT, &cy_bot, sizeof(int)) );
-	checkErr( cudaMemcpyToSymbol(d_CZ_BOT, &cz_bot, sizeof(int)) );
-	//-------------------------------------------
+	checkErr( cudaMemcpyToSymbol(d_CX_BOT, &CX_BOT, sizeof(int)) );
+	checkErr( cudaMemcpyToSymbol(d_CY_BOT, &CY_BOT, sizeof(int)) );
+	checkErr( cudaMemcpyToSymbol(d_CZ_BOT, &CZ_BOT, sizeof(int)) );
 
 	//-------------Real distance between grid points---------------
-	const float dx = DX, dy = DY, dz = DZ; 
-	checkErr( cudaMemcpyToSymbol(d_DX, &dx, sizeof(float)) );
-	checkErr( cudaMemcpyToSymbol(d_DY, &dy, sizeof(float)) );
-	checkErr( cudaMemcpyToSymbol(d_DZ, &dz, sizeof(float)) );
-	//-------------------------------------------
+	checkErr( cudaMemcpyToSymbol(d_DX, &DX, sizeof(float)) );
+	checkErr( cudaMemcpyToSymbol(d_DY, &DY, sizeof(float)) );
+	checkErr( cudaMemcpyToSymbol(d_DZ, &DZ, sizeof(float)) );
 
 	//----------Location of the grid coordinate origin-------------
-	const float xorig = XORIG, yorig = YORIG, zorig = ZORIG;
-        checkErr( cudaMemcpyToSymbol(d_XORIG, &xorig, sizeof(float)) );
-        checkErr( cudaMemcpyToSymbol(d_YORIG, &yorig, sizeof(float)) );
-        checkErr( cudaMemcpyToSymbol(d_ZORIG, &zorig, sizeof(float)) );
-	//-------------------------------------------
+        checkErr( cudaMemcpyToSymbol(d_XORIG, &XORIG, sizeof(float)) );
+        checkErr( cudaMemcpyToSymbol(d_YORIG, &YORIG, sizeof(float)) );
+        checkErr( cudaMemcpyToSymbol(d_ZORIG, &ZORIG, sizeof(float)) );
 
 	//----------Shearing parameters---------------
-	const float q_shear = Q_SHEAR;
-	const float omega = OMEGA; 
 	const int interp_order = INTERP_ORDER;
-
         checkErr( cudaMemcpyToSymbol(d_INTERP_ORDER, &interp_order, sizeof(int)) );
-        checkErr( cudaMemcpyToSymbol(d_Q_SHEAR, &q_shear, sizeof(float)) );
-        checkErr( cudaMemcpyToSymbol(d_OMEGA, &omega, sizeof(float)) );
-	//-------------------------------------------
+
+        checkErr( cudaMemcpyToSymbol(d_Q_SHEAR, &Q_SHEAR, sizeof(float)) );
+        checkErr( cudaMemcpyToSymbol(d_OMEGA, &OMEGA, sizeof(float)) );
 
 	//------------------Optional physics switches------------------------
-	const int lforcing = LFORCING;
-	const int lshear = LSHEAR;
-	const int lcoriolis = LCORIOLIS;
-        checkErr( cudaMemcpyToSymbol(d_LFORCING, &lforcing, sizeof(int)) );
-        checkErr( cudaMemcpyToSymbol(d_LSHEAR, &lshear, sizeof(int)) );
-        checkErr( cudaMemcpyToSymbol(d_LCORIOLIS, &lcoriolis, sizeof(int)) );
-	//-------------------------------------------------------------------
+        checkErr( cudaMemcpyToSymbol(d_LFORCING, &LFORCING, sizeof(int)) );
+        checkErr( cudaMemcpyToSymbol(d_LSHEAR, &LSHEAR, sizeof(int)) );
 
-	//------------Random constants for computation-----------------
+        const int lcoriolis = LCORIOLIS;
+        checkErr( cudaMemcpyToSymbol(d_LCORIOLIS, &lcoriolis, sizeof(int)) );
+
+	//-----------Coefficients of Runge-Kutta method-------------
 	const float h_ALPHA1 = 0.0; 
 	const float h_ALPHA2 = -0.53125; 
 	const float h_ALPHA3 = -1.1851851851851851;
@@ -190,11 +184,8 @@ void load_dconsts(float nu_visc, float cs2_sound){
 	checkErr( cudaMemcpyToSymbol(d_BETA2, &h_BETA2, sizeof(float)) );
 	checkErr( cudaMemcpyToSymbol(d_BETA3, &h_BETA3, sizeof(float)) );
 
-	//const float nu_visc = NU_VISC;
-	//const float cs2_sound = pow(CS_SOUND, 2.0);
-	checkErr( cudaMemcpyToSymbol(d_NU_VISC, &nu_visc, sizeof(float)) );
-	checkErr( cudaMemcpyToSymbol(d_CS2_SOUND, &cs2_sound, sizeof(float)) );	
-	//-------------------------------------------
+	checkErr( cudaMemcpyToSymbol(d_NU_VISC, &NU_VISC, sizeof(float)) );
+	checkErr( cudaMemcpyToSymbol(d_CS2_SOUND, &CS2_SOUND, sizeof(float)) );	
 
 	//------------Constants for derivatives-----------------
 
@@ -216,9 +207,9 @@ void load_dconsts(float nu_visc, float cs2_sound){
 	const float diff2_dy = 1.0/(180.0*DY*DY);
 	const float diff2_dz = 1.0/(180.0*DZ*DZ);
 
-	const float diffmn_dxdy = (1.0/720.0)*(1.0/DX)*(1.0/DY); 
-	const float diffmn_dydz = (1.0/720.0)*(1.0/DY)*(1.0/DZ);
-	const float diffmn_dxdz = (1.0/720.0)*(1.0/DZ)*(1.0/DX);
+	const float diffmn_dxdy = 1.0/(720.0*DX*DY); 
+	const float diffmn_dydz = 1.0/(720.0*DY*DZ);
+	const float diffmn_dxdz = 1.0/(720.0*DZ*DX);
 	
 	checkErr( cudaMemcpyToSymbol(d_FLT_9, &flt_9, sizeof(float)) );
 	checkErr( cudaMemcpyToSymbol(d_FLT_45, &flt_45, sizeof(float)) );
@@ -241,59 +232,147 @@ void load_dconsts(float nu_visc, float cs2_sound){
 	checkErr( cudaMemcpyToSymbol(d_DIFFMN_DXDY_DIV, &diffmn_dxdy, sizeof(float)) );
 	checkErr( cudaMemcpyToSymbol(d_DIFFMN_DYDZ_DIV, &diffmn_dydz, sizeof(float)) );
 	checkErr( cudaMemcpyToSymbol(d_DIFFMN_DXDZ_DIV, &diffmn_dxdz, sizeof(float)) );
+}
+/***********************************************************************************************/
+extern "C" void initializeGPU(){ 
+
+	int device;
+	cudaGetDevice(&device);
+	//cudaSetDevice(device); //Not yet enabled
+
+	//Ensure that we're using a clean device
+	cudaDeviceReset();
+
+/*if (iproc==0){
+printf("mx,my,mz,nx,ny,nz,nghost= %d %d %d %d %d %d %d \n", mx,my,mz,nx,ny,nz,nghost);
+printf("nxgrid,nygrid,nzgrid= %d %d %d \n", nxgrid,nygrid,nzgrid);
+printf("l1,l2,m1,m2,n1,n2= %d %d %d %d %d %d \n", l1,l2,m1,m2,n1,n2);
+printf("xyz0, xyz1 %f %f %f %f %f %f \n", xyz0[0], xyz0[1], xyz0[2], xyz1[0], xyz1[1], xyz1[2]); 
+printf("Lxyz %f %f %f \n", lxyz[0], lxyz[1], lxyz[2]); 
+printf(lcartesian_coords ? "CARTESIAN \n" : "NONCARTESIAN");
+}
+printf("[xyz]minmax %f %f %f %f %f %f \n", x[l1-1], x[l2-1], y[m1-1], y[m2-1], z[n1-1], z[n2-1]); 
+printf("[xyz]minmax_ghost %f %f %f %f %f %f \n", x[0], x[mx-1], y[0], y[my-1], z[0], z[mz-1]); */
+
+	// Allocating arrays for halos
+
+	halo_size = (nghost*nx*2 + nghost*(ny-nghost*2)*2)*(nz-nghost*2) + nx*ny*(nghost*2);
+	halo = (float*) malloc(sizeof(float)*halo_size);
+	checkErr(cudaMalloc((void **) &d_halo, sizeof(float)*halo_size));
+
+	// Allocate device memory
+
+	checkErr( cudaMalloc(&d_lnrho, sizeof(float)*GRID_SIZE) );
+	checkErr( cudaMalloc(&d_uu_x, sizeof(float)*GRID_SIZE) );
+	checkErr( cudaMalloc(&d_uu_y, sizeof(float)*GRID_SIZE) );
+	checkErr( cudaMalloc(&d_uu_z, sizeof(float)*GRID_SIZE) );
+
+	checkErr( cudaMalloc(&d_w_lnrho, sizeof(float)*W_GRID_SIZE) );
+	checkErr( cudaMalloc(&d_w_uu_x, sizeof(float)*W_GRID_SIZE) );
+	checkErr( cudaMalloc(&d_w_uu_y, sizeof(float)*W_GRID_SIZE) );
+	checkErr( cudaMalloc(&d_w_uu_z, sizeof(float)*W_GRID_SIZE) );
+
+	//Temporary arrays
+
+	checkErr( cudaMalloc(&d_lnrho_dest, sizeof(float)*GRID_SIZE) );
+	checkErr( cudaMalloc(&d_uu_x_dest, sizeof(float)*GRID_SIZE) );
+	checkErr( cudaMalloc(&d_uu_y_dest, sizeof(float)*GRID_SIZE) );
+	checkErr( cudaMalloc(&d_uu_z_dest, sizeof(float)*GRID_SIZE) );
+
+        // Diagnostics quantities. TODO this somewhere else?
+
+	checkErr( cudaMalloc((float**) &d_umax, sizeof(float)) );   
+	checkErr( cudaMalloc((float**) &d_umin, sizeof(float)) );   
+	checkErr( cudaMalloc((float**) &d_urms, sizeof(float)) );   
+	checkErr( cudaMalloc((float**) &d_uxrms, sizeof(float)) );  
+	checkErr( cudaMalloc((float**) &d_uyrms, sizeof(float)) );  
+	checkErr( cudaMalloc((float**) &d_uzrms, sizeof(float)) );  
+	checkErr( cudaMalloc((float**) &d_rhorms, sizeof(float)) ); 
+	checkErr( cudaMalloc((float**) &d_rhomax, sizeof(float)) ); 
+	checkErr( cudaMalloc((float**) &d_rhomin, sizeof(float)) ); 
+	checkErr( cudaMalloc((float**) &d_uxmax, sizeof(float)) );   
+	checkErr( cudaMalloc((float**) &d_uxmin, sizeof(float)) );   
+	checkErr( cudaMalloc((float**) &d_uymax, sizeof(float)) );   
+	checkErr( cudaMalloc((float**) &d_uymin, sizeof(float)) );   
+	checkErr( cudaMalloc((float**) &d_uzmax, sizeof(float)) );   
+	checkErr( cudaMalloc((float**) &d_uzmin, sizeof(float)) );   
+	checkErr( cudaMalloc((float**) &d_partial_result, sizeof(float)) );   
+
+        if (iproc==0)
+	{
+	  printf(" Device mem allocated: %f MiB\n", (4*sizeof(float)*GRID_SIZE + 4*sizeof(float)*W_GRID_SIZE)/powf(2,20));
+		  //printf("Main array (d_lnrho etc) dims: (%d,%d,%d)\ntemporary result array dims (d_w_lnrho etc)(%d,%d,%d)\n",
+                  //       NX,NY,NZ,COMP_DOMAIN_SIZE_X,COMP_DOMAIN_SIZE_Y,COMP_DOMAIN_SIZE_Z);
+        }
+        // Get private data from physics modules.
+        
+ 	if (lhydro){
+        	hydro_push2c(p_diags_hydro); 
+	}
+        if (lviscosity){
+        	viscosity_push2c(p_pars_visc);
+        	nu=*p_pars_visc[0];
+	}
+	if (lforcing){
+        	forcing_push2c(p_pars_force);
+        	force=*p_pars_force[0];
+		tforce_stop=*p_pars_force[1];
+	}
+
+        eos_push2c(p_pars_eos);
+        cs2=*p_pars_eos[0];
+
+        /*if (iproc==0){	
+	print_init_config();
+	print_run_config();
+	print_additional_defines();
+        }
+
+        if (iproc==0) {
+        printf("nu %f \n", nu);
+        printf("idiag_urms= %d \n", *p_diags_hydro[idiag_urms]);
+        printf("idiag_uxrms= %d \n", *p_diags_hydro[idiag_uxrms]);
+        printf("idiag_uzrms= %d \n", *p_diags_hydro[idiag_uzrms]);
+        printf("idiag_umax= %d \n", *p_diags_hydro[idiag_umax]);
+        printf("idiag_uxmin= %d \n", *p_diags_hydro[idiag_uxmin]);
+        printf("idiag_uymin= %d \n", *p_diags_hydro[idiag_uymin]);
+        printf("idiag_uzmin= %d \n", *p_diags_hydro[idiag_uzmin]);
+        printf("idiag_uxmax= %d \n", *p_diags_hydro[idiag_uxmax]);
+        printf("idiag_uymax= %d \n", *p_diags_hydro[idiag_uymax]);
+        printf("idiag_uzmax= %d \n", *p_diags_hydro[idiag_uzmax]);
+	}*/
+
+	// Load constants into device memory.
+	load_dconsts();
 
         initializeCopying();
 }
-
-/* ---------------------------------------------------------------------- */
-extern "C" void finalizeGPU(){
-/* Frees memory allocated on GPU.
-*/
-	//Destroy timers
-	//cudaEventDestroy( start );
-	//cudaEventDestroy( stop );
-
-	//Free device memory
-	checkErr( cudaFree(d_lnrho) );
-	checkErr( cudaFree(d_uu_x) );
-	checkErr( cudaFree(d_uu_y) );
-	checkErr( cudaFree(d_uu_z) );
-
-	//Free diagnostic helper variables/arrays
-	checkErr( cudaFree(d_umax) ); checkErr( cudaFree(d_umin) );
-	checkErr( cudaFree(d_urms) );
- 	checkErr( cudaFree(d_uxrms) ); checkErr( cudaFree(d_uyrms) ); checkErr( cudaFree(d_uzrms) );
-	checkErr( cudaFree(d_rhorms) );
-	checkErr( cudaFree(d_rhomax) ); checkErr( cudaFree(d_rhomin) );
-	checkErr( cudaFree(d_uxmax) ); checkErr( cudaFree(d_uymax) ); checkErr( cudaFree(d_uzmax) );
-	checkErr( cudaFree(d_uxmin) ); checkErr( cudaFree(d_uymin) ); checkErr( cudaFree(d_uzmin) );
-	checkErr( cudaFree(d_partial_result) );
-	checkErr( cudaFree(d_halo) );
-
-	//Free pinned memory
-	/*checkErr( cudaFreeHost(slice_lnrho) );
-	checkErr( cudaFreeHost(slice_uu) );
-	checkErr( cudaFreeHost(slice_uu_x) );
-	checkErr( cudaFreeHost(slice_uu_y) );
-	checkErr( cudaFreeHost(slice_uu_z) );*/
-
-	finalizeCopying();
-	cudaDeviceReset();
-}
-
-extern "C" void substepGPU(float *uu_x, float *uu_y, float *uu_z, float *lnrho, int isubstep, bool full=false){
+/***********************************************************************************************/
+extern "C" void substepGPU(float *uu_x, float *uu_y, float *uu_z, float *lnrho, int isubstep, bool full_inner=false, bool full=false){
 	//need to make those calls asynchronize
 	/*copyouterhalostodevice(lnrho, d_lnrho, halo, d_halo, mx, my, mz, nghost);
 	copyouterhalostodevice(uu_x, d_uu_x, halo, d_halo, mx, my, mz, nghost);
 	copyouterhalostodevice(uu_y, d_uu_y, halo, d_halo, mx, my, mz, nghost);
 	copyouterhalostodevice(uu_z, d_uu_z, halo, d_halo, mx, my, mz, nghost);*/
 
-        copyOuterHalos(lnrho, d_lnrho);
-        copyOuterHalos(uu_x, d_uu_x);
-        copyOuterHalos(uu_y, d_uu_y);
-        copyOuterHalos(uu_z, d_uu_z);
-	
-	rungekutta2N_cuda(d_lnrho, d_uu_x, d_uu_y, d_uu_z, d_w_lnrho, d_w_uu_x, d_w_uu_y, d_w_uu_z, d_lnrho_dest, d_uu_x_dest, d_uu_y_dest, d_uu_z_dest, isubstep);
+printf(full ? "full\n" : "not full\n");
+        if (full) 
+	{
+          copyAll(lnrho, d_lnrho);
+          copyAll(uu_x, d_uu_x);
+          copyAll(uu_y, d_uu_y);
+          copyAll(uu_z, d_uu_z);
+   	}
+	else
+	{
+          copyOuterHalos(lnrho, d_lnrho);
+          copyOuterHalos(uu_x, d_uu_x);
+          copyOuterHalos(uu_y, d_uu_y);
+          copyOuterHalos(uu_z, d_uu_z);
+	}
+
+	rungekutta2N_cuda(d_lnrho, d_uu_x, d_uu_y, d_uu_z, d_w_lnrho, d_w_uu_x, d_w_uu_y, d_w_uu_z,
+                          d_lnrho_dest, d_uu_x_dest, d_uu_y_dest, d_uu_z_dest, isubstep);
 
 	//Swap array pointers
 	swap_ptrs(&d_lnrho, &d_lnrho_dest);
@@ -305,7 +384,8 @@ extern "C" void substepGPU(float *uu_x, float *uu_y, float *uu_z, float *lnrho, 
 	copyinternalhalostohost(uu_x, d_uu_x, halo, d_halo, mx, my, mz, nghost);
 	copyinternalhalostohost(uu_y, d_uu_y, halo, d_halo, mx, my, mz, nghost);
 	copyinternalhalostohost(uu_z, d_uu_z, halo, d_halo, mx, my, mz, nghost);*/
-        if (full) 
+printf(full_inner ? "full_inner\n" : "not full_inner\n");
+        if (full_inner) 
 	{
         	copyInnerAll(lnrho, d_lnrho);
         	copyInnerAll(uu_x, d_uu_x);
@@ -319,83 +399,51 @@ extern "C" void substepGPU(float *uu_x, float *uu_y, float *uu_z, float *lnrho, 
         	copyInnerHalos(uu_y, d_uu_y);
         	copyInnerHalos(uu_z, d_uu_z);
 	}
+printf(ldiagnos ? "out\n" : "not out\n");
+        if (ldiagnos) {
+                timeseries_diagnostics_cuda(it, dt, t);
+/*d_umax, d_umin, d_urms, d_uxrms, d_uyrms, d_uzrms, d_rhorms,
+                                            d_rhomax, d_uxmax, d_uymax, d_uzmax,
+                                            d_rhomin, d_uxmin, d_uymin, d_uzmin,*/
+        }
+        if (lfirst && ldt) {
+		max_diffus(); max_advec();
+	}
 }
+/***********************************************************************************************/
+extern "C" void finalizeGPU()
+{
+// Frees memory allocated on GPU.
 
-extern "C" void intitializeGPU(int nx, int ny, int nz, int nghost, float *x, float *y, float *z, float nu, float cs2){ 
-		// nx = mx, ny = my, nz = mz halo_depth = nghost
-		int device;
-		cudaGetDevice(&device);
-		//cudaSetDevice(device); //Not yet enabled
+        //Destroy timers
+        //cudaEventDestroy( start );
+        //cudaEventDestroy( stop );
 
-		//Ensure that we're using a clean device
-		cudaDeviceReset();
-	
-		//----------------------------------------------------------
-		// Initialize global host variables
-		//----------------------------------------------------------
-		/*
-                  print_init_config();
-		  print_run_config();
-		  print_additional_defines();
-                */
-		//----------------------------------------------------------
+        //Free device memory of grids
+        checkErr( cudaFree(d_lnrho) );
+        checkErr( cudaFree(d_uu_x) );
+        checkErr( cudaFree(d_uu_y) );
+        checkErr( cudaFree(d_uu_z) );
 
-		// Allocating arrays for halos
+        //Free diagnostic helper variables/arrays
+        checkErr( cudaFree(d_umax) ); checkErr( cudaFree(d_umin) );
+        checkErr( cudaFree(d_urms) );
+        checkErr( cudaFree(d_uxrms) ); checkErr( cudaFree(d_uyrms) ); checkErr( cudaFree(d_uzrms) );
+        checkErr( cudaFree(d_rhorms) );
+        checkErr( cudaFree(d_rhomax) ); checkErr( cudaFree(d_rhomin) );
+        checkErr( cudaFree(d_uxmax) ); checkErr( cudaFree(d_uymax) ); checkErr( cudaFree(d_uzmax) );
+        checkErr( cudaFree(d_uxmin) ); checkErr( cudaFree(d_uymin) ); checkErr( cudaFree(d_uzmin) );
+        checkErr( cudaFree(d_partial_result) );
+        checkErr( cudaFree(d_halo) );
 
-		int halo_depth = nghost;
-		halo_size = (halo_depth*nx*2 + halo_depth*(ny-halo_depth*2)*2)*(nz-halo_depth*2) + nx*ny*(halo_depth*2);
-		halo = (float*) malloc(sizeof(float)*halo_size);
-		checkErr(cudaMalloc ((void **) &d_halo, sizeof(float)*halo_size));
+        //Free pinned memory
+        /*checkErr( cudaFreeHost(slice_lnrho) );
+        checkErr( cudaFreeHost(slice_uu) );
+        checkErr( cudaFreeHost(slice_uu_x) );
+        checkErr( cudaFreeHost(slice_uu_y) );
+        checkErr( cudaFreeHost(slice_uu_z) );*/
 
-		//note: int GRID_SIZE ?
-		//note: W_GRID_SIZE = ?
-
-		// Allocate device memory
-
-		checkErr( cudaMalloc(&d_lnrho, sizeof(float)*GRID_SIZE) );
-		checkErr( cudaMalloc(&d_uu_x, sizeof(float)*GRID_SIZE) );
-		checkErr( cudaMalloc(&d_uu_y, sizeof(float)*GRID_SIZE) );
-		checkErr( cudaMalloc(&d_uu_z, sizeof(float)*GRID_SIZE) );
-
-		checkErr( cudaMalloc(&d_w_lnrho, sizeof(float)*W_GRID_SIZE) );
-		checkErr( cudaMalloc(&d_w_uu_x, sizeof(float)*W_GRID_SIZE) );
-		checkErr( cudaMalloc(&d_w_uu_y, sizeof(float)*W_GRID_SIZE) );
-		checkErr( cudaMalloc(&d_w_uu_z, sizeof(float)*W_GRID_SIZE) );
-
-		//Temporary arrays
-
-		checkErr( cudaMalloc(&d_lnrho_dest, sizeof(float)*GRID_SIZE) );
-		checkErr( cudaMalloc(&d_uu_x_dest, sizeof(float)*GRID_SIZE) );
-		checkErr( cudaMalloc(&d_uu_y_dest, sizeof(float)*GRID_SIZE) );
-		checkErr( cudaMalloc(&d_uu_z_dest, sizeof(float)*GRID_SIZE) );
-
-                // Diagnostics quantities
-
-		checkErr( cudaMalloc((float**) &d_umax, sizeof(float)) );   //TODO this somewhere else
-		checkErr( cudaMalloc((float**) &d_umin, sizeof(float)) );   //TODO this somewhere else
-		checkErr( cudaMalloc((float**) &d_urms, sizeof(float)) );   //TODO this somewhere else
-		checkErr( cudaMalloc((float**) &d_uxrms, sizeof(float)) );  //TODO this somewhere else
-		checkErr( cudaMalloc((float**) &d_uyrms, sizeof(float)) );  //TODO this somewhere else
-		checkErr( cudaMalloc((float**) &d_uzrms, sizeof(float)) );  //TODO this somewhere else
-		checkErr( cudaMalloc((float**) &d_rhorms, sizeof(float)) ); //TODO this somewhere else
-		checkErr( cudaMalloc((float**) &d_rhomax, sizeof(float)) ); //TODO this somewhere else
-		checkErr( cudaMalloc((float**) &d_rhomin, sizeof(float)) ); //TODO this somewhere else
-		checkErr( cudaMalloc((float**) &d_uxmax, sizeof(float)) );   //TODO this somewhere else
-		checkErr( cudaMalloc((float**) &d_uxmin, sizeof(float)) );   //TODO this somewhere else
-		checkErr( cudaMalloc((float**) &d_uymax, sizeof(float)) );   //TODO this somewhere else
-		checkErr( cudaMalloc((float**) &d_uymin, sizeof(float)) );   //TODO this somewhere else
-		checkErr( cudaMalloc((float**) &d_uzmax, sizeof(float)) );   //TODO this somewhere else
-		checkErr( cudaMalloc((float**) &d_uzmin, sizeof(float)) );   //TODO this somewhere else
-
-                if (iproc==0)
-		{
-		  printf(" Device mem allocated: %f MiB\n", (4*sizeof(float)*GRID_SIZE + 4*sizeof(float)*W_GRID_SIZE)/powf(2,20));
-		  //printf("Main array (d_lnrho etc) dims: (%d,%d,%d)\ntemporary result array dims (d_w_lnrho etc)(%d,%d,%d)\n",
-                  //       NX,NY,NZ,COMP_DOMAIN_SIZE_X,COMP_DOMAIN_SIZE_Y,COMP_DOMAIN_SIZE_Z);
-                }
-		
-		//Load constants into device memory
-
-		load_dconsts(nu, cs2);
+        finalizeCopying();
+        cudaDeviceReset();
 }
-/* ---------------------------------------------------------------------- */
+/***********************************************************************************************/

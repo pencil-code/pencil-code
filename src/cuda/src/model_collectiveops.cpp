@@ -1,12 +1,9 @@
 
-
-
 #include <float.h>
 #include <math.h>
 
-#include "model_collectiveops.h"
-#include "defines.h"
-//#include "../defines.h"
+#include "../cparam_c.h"
+#include "defines_dims_PC.h"
 
 
 float model_max_vec(float* uu_x, float* uu_y, float* uu_z) {

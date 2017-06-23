@@ -74,13 +74,13 @@ contains
       if (str/='') &
         call stop_it('No GPU implementation for module "'//trim(str)//'"')
 !
-      call initialize_gpu_c(nx,ny,nz,nghost,x,y,z)
+      call initialize_gpu_c
 
     endsubroutine initialize_GPU
 !**************************************************************************
     subroutine finalize_GPU
 !
-      call finalize_gpu_c()
+      call finalize_gpu_c
 !
     endsubroutine finalize_GPU
 !**************************************************************************
@@ -91,6 +91,8 @@ contains
 !
       integer :: ll, mm, nn
       real :: val
+      logical, save :: lvery_first=.true.
+      logical :: lfull_inner
 
       goto 1
       val=1.
@@ -101,9 +103,13 @@ contains
       enddo; enddo; enddo
       f(1,1,1,iuy)=-1.; f(1,1,1,iuz)=-1.; f(1,1,1,ilnrho)=-1.
 
-1     call rhs_gpu_c(f(1,1,1,iux),f(1,1,1,iuy),f(1,1,1,iuz),f(1,1,1,ilnrho), &
-                     isubstep,lsnap.or.lsnap_down.or.lspec)
+1     lfull_inner = (lsnap.or.lsnap_down.or.lspec) .and. isubstep==itorder
+
+      call rhs_gpu_c(f(1,1,1,iux),f(1,1,1,iuy),f(1,1,1,iuz),f(1,1,1,ilnrho), &
+                     isubstep,lfull_inner,lvery_first)
 !
+      lvery_first=.false.
+
       return
       if (.not.lroot) return
       do nn=1,mz   !  nghost+1,mz-nghost   !1,mz

@@ -2516,4 +2516,13 @@ module Viscosity
 !
     endsubroutine calc_lambda
 !***********************************************************************
+    subroutine push2c(p_par)
+
+    integer, parameter :: npars=1
+    integer(KIND=ikind8), dimension(npars) :: p_par
+
+    call copy_addr_c(nu,p_par(1))
+
+    endsubroutine push2c
+!***********************************************************************
 endmodule Viscosity

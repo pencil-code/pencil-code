@@ -22,9 +22,11 @@ module Diagnostics
   public :: write_1daverages, write_2daverages
   public :: write_sound
   public :: write_2daverages_prepare, write_zaverages
-  public :: expand_cname, parse_name, fparse_name, save_name, save_name_halfz
-  public :: save_name_sound
   public :: name_is_present
+  public :: expand_cname, parse_name, fparse_name
+! GPU-START
+  public :: save_name
+  public :: save_name_halfz, save_name_sound
   public :: max_name, sum_name
   public :: max_mn_name, sum_mn_name, integrate_mn_name, sum_weighted_name
   public :: integrate_mn
@@ -34,6 +36,9 @@ module Diagnostics
   public :: phizsum_mn_name_r, ysum_mn_name_xz, zsum_mn_name_xy
   public :: phisum_mn_name_rz, calc_phiavg_profile
   public :: yzintegrate_mn_name_x, xzintegrate_mn_name_y, xyintegrate_mn_name_z
+  public :: ysum_mn_name_xz_npar, xysum_mn_name_z_npar, yzsum_mn_name_x_mpar
+  public :: zsum_mn_name_xy_mpar_scal, zsum_mn_name_xy_mpar
+! GPU-END
   public :: allocate_fnames,allocate_vnames,allocate_sound
   public :: allocate_xyaverages, allocate_xzaverages, allocate_yzaverages
   public :: allocate_phizaverages
@@ -43,8 +48,6 @@ module Diagnostics
   public :: get_from_fname
   public :: init_xaver
   public :: gen_form_legend
-  public :: ysum_mn_name_xz_npar, xysum_mn_name_z_npar, yzsum_mn_name_x_mpar
-  public :: zsum_mn_name_xy_mpar_scal, zsum_mn_name_xy_mpar
   public :: sign_masked_xyaver
   public :: report_undefined_diagnostics
 !
@@ -640,7 +643,8 @@ module Diagnostics
             if (itype==ilabel_sum_weighted .or. &
                 itype==ilabel_sum_weighted_sqrt .or. &
                 itype==ilabel_sum_par .or. &
-                itype==ilabel_sum_sqrt_par) then
+                itype==ilabel_sum_sqrt_par .or. &
+								itype==ilabel_sum_log10_par) then
               fweight_tmp(isum_count)=fweight(iname)
               lweight_comm=.true.
             endif
@@ -708,6 +712,9 @@ module Diagnostics
 !
               if (itype==ilabel_sum_sqrt_par)        &
                   vname(iname)=sqrt(fsum(isum_count))/fweight(isum_count)
+!
+              if (itype==ilabel_sum_log10_par)        &
+                  vname(iname)=log10(fsum(isum_count))/fweight(isum_count)
 !
               if (itype==ilabel_integrate)      &
                   vname(iname)=fsum(isum_count)
@@ -1623,6 +1630,7 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !  This routine is to be called only once per step
 !
       if (iname/=0) then
+!print*, 'save_name: a,iname=', a,iname
         fname(iname)=a
         itype_name(iname)=ilabel_save
       endif

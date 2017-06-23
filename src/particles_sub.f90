@@ -487,7 +487,7 @@ module Particles_sub
 !
     endsubroutine boundconds_particles
 !***********************************************************************
-    subroutine sum_par_name(a,iname,lsqrt)
+    subroutine sum_par_name(a,iname,lsqrt,llog10)
 !
 !  Successively calculate sum of a, which is supplied at each call.
 !  Works for particle diagnostics. The number of particles is stored as
@@ -503,7 +503,7 @@ module Particles_sub
 !
       real, dimension (:) :: a
       integer :: iname
-      logical, optional :: lsqrt
+      logical, optional :: lsqrt, llog10
 !
       integer, dimension(mname), save :: icount=0
 !
@@ -521,7 +521,9 @@ module Particles_sub
 !
         if (present(lsqrt)) then
           itype_name(iname)=ilabel_sum_sqrt_par
-        else
+				elseif (present(llog10)) then
+					itype_name(iname)=ilabel_sum_log10_par
+				else
           itype_name(iname)=ilabel_sum_par
         endif
 !

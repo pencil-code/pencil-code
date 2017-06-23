@@ -1042,6 +1042,12 @@ module Hydro
         uumxy=0.0
       endif
 !
+      if (idiag_uxp2/=0.or.idiag_uyp2/=0.or.idiag_uzp2/=0) then
+        print*,'hydro: pointwise diagnostics at'
+        print*,'(x,y,z)(point)=',x(lpoint),y(mpoint),z(npoint)
+        print*,'(x,y,z)(point2)=',x(lpoint2),y(mpoint2),z(npoint2)
+      endif
+!
       call keep_compiler_quiet(f)
 !
       endsubroutine initialize_hydro
@@ -2256,11 +2262,12 @@ module Hydro
       type (pencil_case) :: p
       logical, dimension(npencils) :: lpenc_loc
 !
-      real, dimension (nx) :: tmp, tmp2, uu_residual
-      integer :: i, j, ju, ij, jj, kk, jk, nnghost
+      real, dimension (nx) :: tmp, tmp2
+      integer :: i, j, ju, ij, jj, kk, jk
 !
       intent(in) :: lpenc_loc
       intent(out):: p
+
 ! uu
       if (lpenc_loc(i_uu)) p%uu=f(l1:l2,m,n,iux:iuz)
 ! u2
@@ -2450,22 +2457,14 @@ module Hydro
         endif
       endif
 !
-      if (lpenc_loc(i_uu_advec)) then
+      if (lfargo_advection) then
 !
-        nnghost=n-nghost
-!
-! Advect by the relative velocity
-!
-        uu_residual=p%uu(:,2)-uu_average(:,nnghost)
-!
-! Advect by the original radial and vertical, but residual azimuthal
+! Advect by the original radial and vertical, but residual azimuthal (= relative) velocity
 !
         p%uu_advec(:,1)=p%uu(:,1)
-        p%uu_advec(:,2)=uu_residual
+        p%uu_advec(:,2)=p%uu(:,2)-uu_average(:,n-nghost)
         p%uu_advec(:,3)=p%uu(:,3)
-      endif
 !
-      if (lpenc_loc(i_uuadvec_guu)) then
         do j=1,3
           ! This is calling scalar h_dot_grad, that does not add
           ! the inertial terms. They will be added here.
@@ -6510,5 +6509,23 @@ module Hydro
       enddo
 
     endsubroutine amp_lm
+!***********************************************************************
+    subroutine push2c(p_idiag)
+
+    integer, parameter :: ndiags=10
+    integer(KIND=ikind8), dimension(ndiags) :: p_idiag
+
+    call copy_addr_c(idiag_urms,p_idiag(1))
+    call copy_addr_c(idiag_uxrms,p_idiag(2))
+    call copy_addr_c(idiag_uzrms,p_idiag(3))
+    call copy_addr_c(idiag_umax,p_idiag(4))
+    call copy_addr_c(idiag_uxmin,p_idiag(5))
+    call copy_addr_c(idiag_uymin,p_idiag(6))
+    call copy_addr_c(idiag_uzmin,p_idiag(7))
+    call copy_addr_c(idiag_uxmax,p_idiag(8))
+    call copy_addr_c(idiag_uymax,p_idiag(9))
+    call copy_addr_c(idiag_uzmax,p_idiag(10))
+
+    endsubroutine push2c
 !***********************************************************************
 endmodule Hydro

@@ -490,7 +490,7 @@ module Slices
       iz3_loc=min(iz3_loc,n2) ; iz4_loc=min(iz4_loc,n2)
       iz3_loc=max(iz3_loc,n1) ; iz4_loc=max(iz4_loc,n1)
 !
-      if (lroot) then
+      if (lroot.and.dvid>0.) then
         write (*,*)'setup_slices: slice_position = '//slice_position
         write (*,'(1x,a,4i4)') &
           'setup_slices: ix,iy,iz,iz2 (video files) =',&

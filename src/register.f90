@@ -504,8 +504,8 @@ module Register
 !
       integer :: i
 !
-      if (lroot) print*, 'choose_pencils: finding out which pencils '// &
-          'are needed for the pencil case'
+      if (lroot.and.ip<14) call information('choose_pencils','finding out which pencils '// &
+          'are needed for the pencil case')
 !
 !  Must set all pencil arrays to false in case of reload.
 !

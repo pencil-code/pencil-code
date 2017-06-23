@@ -140,7 +140,7 @@ module Cparam
   integer, parameter :: ilabel_max_dt=-3,ilabel_max_neg=-4
   integer, parameter :: ilabel_max_reciprocal=-5
   integer, parameter :: ilabel_integrate=3,ilabel_surf=4
-  integer, parameter :: ilabel_sum_par=5,ilabel_sum_sqrt_par=6
+  integer, parameter :: ilabel_sum_par=5,ilabel_sum_sqrt_par=6, ilabel_sum_log10_par=20
   integer, parameter :: ilabel_sum_weighted=7,ilabel_sum_weighted_sqrt=8
   integer, parameter :: ilabel_sum_lim=9,ilabel_complex=100
 !

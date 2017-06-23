@@ -47,6 +47,7 @@ module Particles_coagulation
   logical :: ldroplet_coagulation=.false.
   logical :: lcollision_output=.false., luser_random_number_wrapper=.false.
   logical :: lrelabelling=.false.
+	logical :: kernel_output=.false., radius_output=.false.
   character (len=labellen) :: droplet_coagulation_model='standard'
 !
   real, dimension(:,:), allocatable :: r_ik_mat, cum_func_sec_ik
@@ -60,6 +61,10 @@ module Particles_coagulation
   integer :: idiag_ncoagpm=0, idiag_ncoagpartpm=0, idiag_dt1_coag_par=0
              
 !
+  real :: deltad = 1., a0 = 1.
+	real :: r1, r2, r3, r4, r5, r_diff
+	integer :: idiag_kernel1, idiag_kernel2, idiag_kernel3, idiag_kernel4, idiag_kernel5
+!
   namelist /particles_coag_run_pars/ &
       cdtpcoag, lcoag_simultaneous, lshear_in_vp, lconstant_kernel_test, &
       kernel_cst, llinear_kernel_test, kernel_lin, lproduct_kernel_test, &
@@ -68,7 +73,9 @@ module Particles_coagulation
       minimum_particle_mass, minimum_particle_radius, lzsomdullemond, &
       lconstant_deltav, lmaxwell_deltav, deltav, maxwell_param, &
       ldroplet_coagulation, droplet_coagulation_model, lcollision_output, &
-      luser_random_number_wrapper, lrelabelling, rdifference
+      luser_random_number_wrapper, lrelabelling, rdifference, &
+      kernel_output, deltad, a0, &
+      radius_output, r1, r2, r3, r4, r5, r_diff
 !
   contains
 !***********************************************************************
@@ -282,6 +289,17 @@ module Particles_coagulation
       intent (in) :: ineargrid
       intent (inout) :: fp
 !
+			real, dimension (10,10) :: kernel_array
+			real, dimension (10) :: radius_all
+			real, dimension (10) :: radius_ratio
+			real :: rmin, rmax
+			integer :: ibin, ik, ij, ikernel, row
+			integer, parameter :: max_rows = 10, rbin=10
+			real, parameter :: radius_diff=5.e-6
+			real, dimension (rbin) :: adplus, adminus, ad
+			character(len=50) :: itn,filename
+			real :: kernel1, kernel2, kernel3, kernel4, kernel5
+!
 !  If using the Zsom & Dullemond Monte Carlo method (KWJ)
 !
       if(lzsomdullemond) then
@@ -480,6 +498,87 @@ module Particles_coagulation
                       ncoll=ncoll+1
                       ncoll_par=ncoll_par+1
 !
+!17-06-21: Xiang-Yu coded: kernel of ri rj, diagnostics as time series
+                      if (radius_output) then
+												if (fp(j,iap)>=fp(k,iap)) then
+													if (fp(j,iap)>=r1-r_diff .and. fp(j,iap)<=r1+r_diff .and. &
+														fp(k,iap)>=r1-r_diff .and. fp(k,iap)<=r1+r_diff) kernel1 = tau_coll1
+													if (fp(j,iap)>=r1-r_diff .and. fp(j,iap)<=r1+r_diff .and. &
+														fp(k,iap)>=r2-r_diff .and. fp(k,iap)<=r2+r_diff) kernel2 = tau_coll1
+													if (fp(j,iap)>=r1-r_diff .and. fp(j,iap)<=r1+r_diff .and. &
+														fp(k,iap)>=r3-r_diff .and. fp(k,iap)<=r3+r_diff) kernel3 = tau_coll1
+													if (fp(j,iap)>=r1-r_diff .and. fp(j,iap)<=r1+r_diff .and. &
+														fp(k,iap)>=r4-r_diff .and. fp(k,iap)<=r4+r_diff) kernel4 = tau_coll1
+													if (fp(j,iap)>=r1-r_diff .and. fp(j,iap)<=r1+r_diff .and. &
+														fp(k,iap)>=r5-r_diff .and. fp(k,iap)<=r5+r_diff) kernel5 = tau_coll1
+												else
+													if (fp(k,iap)>=r1-r_diff .and. fp(k,iap)<=r1+r_diff .and. &
+														fp(j,iap)>=r1-r_diff .and. fp(j,iap)<=r1+r_diff) kernel1 = tau_coll1
+													if (fp(k,iap)>=r1-r_diff .and. fp(k,iap)<=r1+r_diff .and. &
+														fp(j,iap)>=r2-r_diff .and. fp(j,iap)<=r2+r_diff) kernel2 = tau_coll1
+													if (fp(k,iap)>=r1-r_diff .and. fp(k,iap)<=r1+r_diff .and. &
+														fp(j,iap)>=r3-r_diff .and. fp(j,iap)<=r3+r_diff) kernel3 = tau_coll1
+													if (fp(k,iap)>=r1-r_diff .and. fp(k,iap)<=r1+r_diff .and. &
+														fp(j,iap)>=r4-r_diff .and. fp(j,iap)<=r4+r_diff) kernel4 = tau_coll1
+													if (fp(k,iap)>=r1-r_diff .and. fp(k,iap)<=r1+r_diff .and. &
+														fp(j,iap)>=r5-r_diff .and. fp(j,iap)<=r5+r_diff) kernel5 = tau_coll1
+                        endif 
+!												print*,'kernel1=',kernel1
+!												print*,'kernel2=',kernel2
+!												print*,'kernel3=',kernel3
+!												print*,'kernel4=',kernel4
+!												print*,'kernel5=',kernel5
+											endif
+!17-06-21: Xiang-Yu
+
+!17-06-18: Xiang-Yu coded: kernel of ri rj, diagnostics as 2-D matrix
+											if (kernel_output) then
+! read radius and radius ratio
+												open(unit=11,file="radius.txt")
+												do row = 1, max_rows
+													read(11,*) radius_all(row)
+												enddo
+												close(unit=11)
+												rmin = minval(radius_all)
+												rmax = maxval(radius_all)
+												open(unit=12,file="ratio.txt")
+												do row = 1, max_rows
+													read(12,*) radius_ratio(row)
+												enddo
+												close(unit=12)
+!												logorithmic binning
+                        do ibin = 1,rbin
+												  adminus(ibin) = a0*deltad**(ibin-1)
+													adplus(ibin) = a0*deltad**ibin
+													ad(ibin) = (adminus(ibin)+adplus(ibin))*.5
+												enddo
+! search for collector and collected particles and bin them in the kernel
+												if (fp(k,iap) >= rmin .and. fp(k,iap) <= rmax) then
+												!	ikernel=0
+													do ibin=1,rbin 
+														if (abs(fp(k,iap)-radius_all(ibin)) == minval(abs(fp(k,iap)-radius_all))) then
+														  ik=ibin
+														endif
+													enddo
+													do ibin=1,rbin
+														if (abs(fp(j,iap)-radius_all(ibin)) == minval(abs(fp(j,iap)-radius_all))) then
+														  ij=ibin
+														endif
+													enddo
+                         ! ikernel=ikernel+1
+													!kernel_array(ik,ij)=(kernel_array(ik,ij)+tau_coll1)/ikernel
+													kernel_array(ik,ij) = tau_coll1
+! output the kernel		
+                          write(itn,'(I5)') it  ! convert  integer to char
+													filename = adjustl(trim(adjustr(itn)))
+													open(13, file=trim(directory_dist)//'/'//trim(filename)//'.dat')
+											    write(13,"(10e11.3)") kernel_array
+													close(13)
+												!	print*,'kernel_array=',kernel_array
+												!	print*,'tau_coll1=',tau_coll1
+											  endif
+											endif
+!17-06-18:XY
                     endif
                   endif
                 endif
@@ -505,6 +604,16 @@ module Particles_coagulation
                     call sum_par_name((/real(npart_par)/),idiag_ncoagpartpm)
                 if (idiag_dt1_coag_par/=0) &
                     call sum_par_name((/real(ncoll_par)/),idiag_dt1_coag_par)
+								if (idiag_kernel1/=0) &	
+									  call sum_par_name((/real(kernel1)/),idiag_kernel1) 
+								if (idiag_kernel2/=0) &	
+									  call sum_par_name((/real(kernel2)/),idiag_kernel2) 
+								if (idiag_kernel3/=0) &	
+									  call sum_par_name((/real(kernel3)/),idiag_kernel3) 
+								if (idiag_kernel4/=0) &	
+									  call sum_par_name((/real(kernel4)/),idiag_kernel4) 
+								if (idiag_kernel5/=0) &	
+									  call sum_par_name((/real(kernel5)/),idiag_kernel5) 
               endif
 !
 !  Move to next particle in the grid cell.
@@ -1266,6 +1375,8 @@ module Particles_coagulation
 !
       if (lreset) then
         idiag_ncoagpm=0; idiag_ncoagpartpm=0; idiag_dt1_coag_par=0
+        idiag_kernel1=0; idiag_kernel2=0; idiag_kernel3=0
+				idiag_kernel4=0; idiag_kernel5=0
       endif
 !
       do iname=1,nname
@@ -1273,6 +1384,11 @@ module Particles_coagulation
         call parse_name(iname,cname(iname),cform(iname), &
             'ncoagpartpm',idiag_ncoagpartpm)
         call parse_name(iname,cname(iname),cform(iname),'dt1_coag_par',idiag_dt1_coag_par)
+        call parse_name(iname,cname(iname),cform(iname),'kernel1',idiag_kernel1)
+        call parse_name(iname,cname(iname),cform(iname),'kernel2',idiag_kernel2)
+        call parse_name(iname,cname(iname),cform(iname),'kernel3',idiag_kernel3)
+        call parse_name(iname,cname(iname),cform(iname),'kernel4',idiag_kernel4)
+        call parse_name(iname,cname(iname),cform(iname),'kernel5',idiag_kernel5)
       enddo
 !
       if (present(lwrite)) call keep_compiler_quiet(lwrite)
