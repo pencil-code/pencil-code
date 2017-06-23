@@ -643,7 +643,8 @@ module Diagnostics
             if (itype==ilabel_sum_weighted .or. &
                 itype==ilabel_sum_weighted_sqrt .or. &
                 itype==ilabel_sum_par .or. &
-                itype==ilabel_sum_sqrt_par) then
+                itype==ilabel_sum_sqrt_par .or. &
+								itype==ilabel_sum_log10_par) then
               fweight_tmp(isum_count)=fweight(iname)
               lweight_comm=.true.
             endif
@@ -711,6 +712,9 @@ module Diagnostics
 !
               if (itype==ilabel_sum_sqrt_par)        &
                   vname(iname)=sqrt(fsum(isum_count))/fweight(isum_count)
+!
+              if (itype==ilabel_sum_log10_par)        &
+                  vname(iname)=log10(fsum(isum_count))/fweight(isum_count)
 !
               if (itype==ilabel_integrate)      &
                   vname(iname)=fsum(isum_count)
@@ -1626,7 +1630,7 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !  This routine is to be called only once per step
 !
       if (iname/=0) then
-print*, 'save_name: a,iname=', a,iname
+!print*, 'save_name: a,iname=', a,iname
         fname(iname)=a
         itype_name(iname)=ilabel_save
       endif
