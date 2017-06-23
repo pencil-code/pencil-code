@@ -13,6 +13,7 @@ module Particles_main
   use Particles_cdata
   use Particles_chemistry
   use Particles_coagulation
+  use Particles_condensation
   use Particles_collisions
   use Particles_density
   use Particles_diagnos_dv
@@ -111,6 +112,7 @@ module Particles_main
       call rprint_particles_surf         (lreset,LWRITE=lroot)
       call rprint_particles_chem         (lreset,LWRITE=lroot)
       call rprint_particles_coagulation  (lreset,LWRITE=lroot)
+      call rprint_particles_condensation (lreset,LWRITE=lroot)
 !      call rprint_particles_potential    (lreset,LWRITE=lroot)
       call rprint_particles_collisions   (lreset,LWRITE=lroot)
       call rprint_particles_diagnos_dv   (lreset,LWRITE=lroot)
@@ -213,6 +215,7 @@ module Particles_main
       call initialize_particles_ads          (f)
       call initialize_particles_surf         (f)
       call initialize_particles_coag         (f)
+      call initialize_particles_cond         (f)
       call initialize_particles_collisions   (f)
       call initialize_pars_diagnos_state     (f)
       call initialize_particles_diagnos_dv   (f)
@@ -303,6 +306,7 @@ module Particles_main
 !
       call read_namelist(read_particles_init_pars      ,'particles'         ,lparticles)
       call read_namelist(read_particles_rad_init_pars  ,'particles_radius'  ,lparticles_radius)
+      call read_namelist(read_particles_cond_init_pars ,'particles_cond'  ,lparticles_condensation)
 !     call read_namelist(read_particles_pot_init_pars  ,'particles_potential',lparticles_potential)
       call read_namelist(read_particles_spin_init_pars ,'particles_spin'    ,lparticles_spin)
       call read_namelist(read_particles_sink_init_pars ,'particles_sink'    ,lparticles_sink)
@@ -333,6 +337,7 @@ module Particles_main
       call read_namelist(read_particles_num_run_pars      ,'particles_number'       ,lparticles_number)
       call read_namelist(read_particles_selfg_run_pars    ,'particles_selfgrav'     ,lparticles_selfgravity)
       call read_namelist(read_particles_coag_run_pars     ,'particles_coag'         ,lparticles_coagulation)
+      call read_namelist(read_particles_cond_run_pars     ,'particles_cond'         ,lparticles_condensation)
       call read_namelist(read_particles_coll_run_pars     ,'particles_coll'         ,lparticles_collisions)
       call read_namelist(read_particles_stir_run_pars     ,'particles_stirring'     ,lparticles_stirring)
       call read_namelist(read_pstalker_run_pars           ,'particles_stalker'      ,lparticles_stalker)
@@ -535,7 +540,8 @@ module Particles_main
         call particle_stirring(fp,ineargrid)
       endif
 !
-      if ( (lparticles_collisions.or.lparticles_coagulation) .and. llast ) then
+      if ( (lparticles_collisions .or. lparticles_coagulation .or. &
+          lparticles_condensation) .and. llast ) then
 !
         call boundconds_particles(fp,ipar)
         call map_nearest_grid(fp,ineargrid)
@@ -555,6 +561,9 @@ module Particles_main
           endif
           if (lparticles_coagulation) then
             call particles_coagulation_pencils(fp,ineargrid)
+          endif
+          if (lparticles_condensation) then
+            call particles_condensation_pencils(fp,ineargrid)
           endif
         endif
 !
@@ -959,6 +968,7 @@ module Particles_main
 !
       call write_particles_init_pars(unit)
       if (lparticles_radius)      call write_particles_rad_init_pars(unit)
+      if (lparticles_condensation)call write_particles_cond_init_pars(unit)
 !      if (lparticles_potential)   call write_particles_pot_init_pars(unit)
       if (lparticles_spin)        call write_particles_spin_init_pars(unit)
       if (lparticles_sink)        call write_particles_sink_init_pars(unit)
@@ -990,6 +1000,7 @@ module Particles_main
       if (lparticles_number)         call write_particles_num_run_pars(unit)
       if (lparticles_selfgravity)    call write_particles_selfg_run_pars(unit)
       if (lparticles_coagulation)    call write_particles_coag_run_pars(unit)
+      if (lparticles_condensation)    call write_particles_coag_run_pars(unit)
       if (lparticles_collisions)     call write_particles_coll_run_pars(unit)
       if (lparticles_stirring)       call write_particles_stir_run_pars(unit)
       if (lparticles_stalker)        call write_pstalker_run_pars(unit)
