@@ -2839,4 +2839,16 @@ module Hydro
 
     endsubroutine update_char_vel_hydro
 !***********************************************************************
+    subroutine push2c(p_idiag)
+
+    integer, parameter :: ndiags=4
+    integer(KIND=ikind8), dimension(ndiags) :: p_idiag
+
+    call copy_addr_c(idiag_urms,p_idiag(1))
+    call copy_addr_c(idiag_uzrms,p_idiag(2))
+    call copy_addr_c(idiag_umax,p_idiag(3))
+    call copy_addr_c(idiag_uzmax,p_idiag(4))
+
+    endsubroutine push2c
+!***********************************************************************
 endmodule Hydro
