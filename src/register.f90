@@ -512,6 +512,7 @@ module Register
       lpenc_requested=.false.
       lpenc_diagnos=.false.
       lpenc_diagnos2d=.false.
+      lpenc_video=.false.
 !
 !  Find out which pencils are needed for the pencil case.
 !
