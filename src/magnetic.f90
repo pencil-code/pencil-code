@@ -254,7 +254,7 @@ module Magnetic
   real, dimension(mx) :: eta_x,geta_x
   real, dimension(my) :: eta_y,geta_y
   real, dimension(nx) :: va2max_beta
-  real, dimension(mz) :: clight2_zdep=1.0
+  real, dimension(nz) :: clight2_zdep=1.0
   logical :: lfreeze_aint=.false., lfreeze_aext=.false.
   logical :: lweyl_gauge=.false., ladvective_gauge=.false.
   logical :: lupw_aa=.false., ladvective_gauge2=.false.
@@ -898,6 +898,7 @@ module Magnetic
 !  26-feb-13/axel: reinitialize_aa added
 !  21-jan-15/MR: avoided double put_shared_variable for B_ext
 !   7-jun-16/MR: modifications in z average removal for Yin-Yang, yet inoperational
+!  24-jun-17/MR: moved calculation of clight2_zdep from calc_pencils to initialize
 !
       use Sub, only: register_report_aux, write_zprof, step
       use Magnetic_meanfield, only: initialize_magn_mf
@@ -1486,6 +1487,11 @@ module Magnetic
         endif
         allocate(aamxy(mx,myl))
       endif
+!
+      if (lboris_correction) &
+        clight2_zdep = ((xyz1(3)/(z(n1:n2)+xyz1(3)))**6 &
+                      *(c_light-sqrt(va2max_jxb))+sqrt(va2max_jxb))**2
+
 
       if (idiag_axp2/=0.or.idiag_ayp2/=0.or.idiag_azp2/=0) then
         print*,'magnetic: pointwise diagnostics at'
@@ -3132,9 +3138,7 @@ module Magnetic
 ! reduced speed of light pencil
 !
      if (lpenc_loc(i_clight2)) then
-       clight2_zdep(n)=((xyz1(3)/(z(n)+xyz1(3)))**6 &
-           * (c_light-sqrt(va2max_jxb))+sqrt(va2max_jxb))**2
-       p%clight2=clight2_zdep(n)
+       p%clight2=clight2_zdep(n-n1+1)
        p%gamma_A2=p%clight2/(p%clight2+p%va2+tini)
      endif
 !
