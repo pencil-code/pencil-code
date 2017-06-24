@@ -3245,7 +3245,7 @@ module Magnetic
 !
       real, dimension (nx,3) :: geta,uxDxuxb,fres,uxb_upw,tmp2
       real, dimension (nx,3) :: exj,dexb,phib,aa_xyaver,jxbb
-      real, dimension (nx,3) :: ujiaj,gua,uxbxb,poynting
+      real, dimension (nx,3) :: ujiaj,gua,uxbxb,poynting,ajiuj
       real, dimension (nx,3) :: magfric,vmagfric2, baroclinic
       real, dimension (nx,3) :: dAdt, gradeta_shock
       real, dimension (nx) :: exabot,exatop, peta_shock
@@ -3840,24 +3840,40 @@ module Magnetic
 !  Take care of possibility of imposed field.
 !
             if (any(B_ext/=0.)) then
+              if (lfargo_advection) call fatal_error("daadt","fargo advection with external field not tested")
               call cross(p%uu,B_ext,ujiaj)
             else
-              ujiaj=0.
+              if (lfargo_advection) then 
+                ajiuj=0.
+              else
+                ujiaj=0.
+              endif
             endif
 !
-!  Calculate ujiaj (=aj uj;i)
+!  Calculate ujiaj (=aj uj;i) or ajiuj for fargo advection
 !
             do j=1,3
               do k=1,3
-                ujiaj(:,j)=ujiaj(:,j)+p%aa(:,k)*p%uij(:,k,j)
+                if (lfargo_advection) then 
+                  ajiuj(:,j)=ajiuj(:,j)+p%uu(:,k)*p%aij(:,k,j)
+                else
+                  ujiaj(:,j)=ujiaj(:,j)+p%aa(:,k)*p%uij(:,k,j)
+                endif
               enddo
             enddo
 !
 !  Curvature terms on ujiaj
 !
             if (lcylindrical_coords) then
-              ujiaj(:,2) = ujiaj(:,2) + (p%uu(:,1)*p%aa(:,2) - p%uu(:,2)*p%aa(:,1))*rcyl_mn1
+              if (lfargo_advection) then
+                ajiuj(:,2) = ajiuj(:,2) + (p%aa(:,1)*p%uu(:,2) - p%aa(:,2)*p%uu(:,1))*rcyl_mn1
+              else
+                ujiaj(:,2) = ujiaj(:,2) + (p%uu(:,1)*p%aa(:,2) - p%uu(:,2)*p%aa(:,1))*rcyl_mn1
+              endif
+!
             else if (lspherical_coords) then 
+              if (lfargo_advection) call fatal_error("daadt",&
+                   "curvature terms on ajiuj not added for spherical coordinates yet.")
               ujiaj(:,2) = ujiaj(:,2) + (p%uu(:,1)*p%aa(:,2) - p%uu(:,2)*p%aa(:,1))*r1_mn
               ujiaj(:,3) = ujiaj(:,3) + (p%uu(:,1)*p%aa(:,3)          - &
                                          p%uu(:,3)*p%aa(:,1)          + &
@@ -3868,7 +3884,10 @@ module Magnetic
             if (.not.lfargo_advection) then 
               dAdt = dAdt-p%uga-ujiaj+fres
             else
-              dAdt = dAdt-p%uuadvec_gaa-ujiaj+fres
+              ! the gauge above, with -ujiaj is unstable due to the buildup of the irrotational term 
+              ! Candelaresi et al. 2011. The gauge below does not have the irrotational term. On the 
+              ! other hand it cancels out the full advection term if fargo isn't used.
+              dAdt = dAdt-p%uuadvec_gaa+ajiuj+fres
             endif
 !            df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-p%uga-ujiaj+fres
 !
@@ -3886,6 +3905,7 @@ module Magnetic
 !  ladvective_gauge=F, so just the normal uxb term plus resistive term.
 !
           else
+            !print*,'this, right?'
             dAdt = dAdt+ p%uxb+fres
           endif
         endif
