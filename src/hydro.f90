@@ -58,7 +58,7 @@ module Hydro
 !
 !  phi-averaged arrays for orbital advection
 !
-  real, dimension (nx,nz) :: uu_average
+  real, dimension (nx,nz) :: uu_average=0.
 !
 !  Cosine and sine function for setting test fields and analysis.
 !
@@ -2307,13 +2307,13 @@ module Hydro
 ! uij5
       if (lpenc_loc(i_uij5)) call gij(f,iuu,p%uij5,5)
 ! oo (=curlu)
-      oo: if (lpenc_loc(i_oo)) then
+      if (lpenc_loc(i_oo)) then
         if (ioo /= 0) then
           p%oo = f(l1:l2,m,n,iox:ioz)
         else
           call curl_mn(p%uij,p%oo,p%uu)
         endif
-      endif oo
+      endif
 ! o2
       if (lpenc_loc(i_o2)) call dot2_mn(p%oo,p%o2)
 ! ou
@@ -2419,14 +2419,11 @@ module Hydro
 !
 !del2uj, d^u/dx^2 etc
 !
-      if (lpenc_loc(i_d2uidxj)) &
-        call d2fi_dxj(f,iuu,p%d2uidxj)
+      if (lpenc_loc(i_d2uidxj)) call d2fi_dxj(f,iuu,p%d2uidxj)
 !
 ! deluidxjk
 !
-      if (lpenc_loc(i_uijk)) then
-        call del2fi_dxjk(f,iuu,p%uijk)
-      endif
+      if (lpenc_loc(i_uijk)) call del2fi_dxjk(f,iuu,p%uijk)
 !
 ! grad5divu
 !
@@ -2457,7 +2454,7 @@ module Hydro
         endif
       endif
 !
-      if (lfargo_advection) then
+      if (lpenc_loc(i_uu_advec)) then
 !
 ! Advect by the original radial and vertical, but residual azimuthal (= relative) velocity
 !

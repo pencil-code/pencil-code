@@ -67,7 +67,7 @@ module Cdata
   real, dimension (mz) :: sinph,cosph 
   real, dimension (my) :: cos1th,tanth
   real, dimension (nygrid) :: sinth_weight_across_proc
-  real, dimension (nx) :: rcyl_mn,rcyl_mn1,rcyl_mn2,rcyl_weight
+  real, dimension (nx) :: rcyl_mn=1.,rcyl_mn1=1.,rcyl_mn2=1.,rcyl_weight
   real, dimension (nx) :: glnCrossSec
   real, dimension (nx,3) :: dline_1
   real, dimension (nrcyl) :: rcyl  ! used for phi-averages

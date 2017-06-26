@@ -253,8 +253,8 @@ module Magnetic
   real, dimension(mz) :: coskz,sinkz,eta_z,geta_z
   real, dimension(mx) :: eta_x,geta_x
   real, dimension(my) :: eta_y,geta_y
-  real, dimension(nx) :: va2max_beta
-  real, dimension(nz) :: clight2_zdep=1.0
+  real, dimension(nx) :: va2max_beta=1.
+  real, dimension(nz) :: clight2_zdep=1.
   logical :: lfreeze_aint=.false., lfreeze_aext=.false.
   logical :: lweyl_gauge=.false., ladvective_gauge=.false.
   logical :: lupw_aa=.false., ladvective_gauge2=.false.
@@ -2682,7 +2682,7 @@ module Magnetic
 !***********************************************************************
     subroutine calc_pencils_magnetic_std(f,p)
 !
-!   DOCUMENT ME!!! WHAT IS STD OR PENCPAR? 
+!  Standard version (_std): global variable lpencil contains information about needed pencils.
 !
       real, dimension (mx,my,mz,mfarray), intent(inout):: f
       type (pencil_case),                 intent(out)  :: p
@@ -2695,8 +2695,9 @@ module Magnetic
 !
 !  Calculate Magnetic pencils.
 !  Most basic pencils should come first, as others may depend on them.
-!
-!  DOCUMENT ME!!!! WHAT IS PENCPAR?       
+! 
+!  Version with formal parameter lpencil_loc instead of global lpencil for cases
+!  in which not necessarily all generally needed pencil are to be calculated.
 !
 !  19-nov-04/anders: coded
 !  18-jun-13/axel: b2 now includes B_ext by default (luse_Bext_in_b2=T is kept)
