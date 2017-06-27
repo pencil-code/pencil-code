@@ -219,12 +219,12 @@ module Density
   integer :: idiag_sigma=0      ! ZAVG_DOC; $\Sigma\equiv\int\varrho\,\mathrm{d}z$
 !
   interface calc_pencils_density
-    module procedure calc_pencils_density_pencpar
+    module procedure calc_pencils_density_pnc
     module procedure calc_pencils_density_std
   endinterface calc_pencils_density
 !
   interface calc_pencils_linear_density
-    module procedure calc_pencils_linear_density_pencpar
+    module procedure calc_pencils_linear_density_pnc
     module procedure calc_pencils_linear_density_std
   endinterface calc_pencils_linear_density
 !
@@ -2050,7 +2050,7 @@ module Density
 !
     endsubroutine pencil_interdep_density
 !***********************************************************************
-    subroutine calc_pencils_density_pencpar(f,p,lpenc_loc)
+    subroutine calc_pencils_density_pnc(f,p,lpenc_loc)
 !
 !  Calculate Density pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -2066,9 +2066,9 @@ module Density
 !  Differentiate between log density and linear density.
 !
       if (ldensity_nolog) then
-        call calc_pencils_linear_density_pencpar(f,p,lpenc_loc)
+        call calc_pencils_linear_density_pnc(f,p,lpenc_loc)
       else
-        call calc_pencils_log_density_pencpar(f,p,lpenc_loc)
+        call calc_pencils_log_density_pnc(f,p,lpenc_loc)
       endif
 ! ekin
       if (lpenc_loc(i_ekin)) p%ekin=0.5*p%rho*p%u2
@@ -2076,15 +2076,15 @@ module Density
 !  Dummy pencils.
 !
       if (lpenc_loc(i_rhos1)) &
-        call fatal_error('calc_pencils_density_pencpar', 'rhos1 is no implemented')
+        call fatal_error('calc_pencils_density_pnc', 'rhos1 is no implemented')
       if (lpenc_loc(i_glnrhos)) &
-        call fatal_error('calc_pencils_density_pencpar', 'glnrhos is no implemented')
+        call fatal_error('calc_pencils_density_pnc', 'glnrhos is no implemented')
 !
-    endsubroutine calc_pencils_density_pencpar
+    endsubroutine calc_pencils_density_pnc
 !***********************************************************************
     subroutine calc_pencils_density_std(f,p)
 !
-! Envelope adjusting calc_pencils_hydro_pencpar to the standard use with
+! Envelope adjusting calc_pencils_density_pnc to the standard use with
 ! lpenc_loc=lpencil
 !
 ! 21-sep-13/MR    : coded
@@ -2092,13 +2092,13 @@ module Density
       real, dimension (mx,my,mz,mfarray),intent(IN) :: f
       type (pencil_case),                intent(OUT):: p
 !
-      call calc_pencils_density_pencpar(f,p,lpencil)
+      call calc_pencils_density_pnc(f,p,lpencil)
 !
       endsubroutine calc_pencils_density_std
 !***********************************************************************
     subroutine calc_pencils_linear_density_std(f,p)
 !
-! Envelope adjusting calc_pencils_hydro_pencpar to the standard use with
+! Envelope adjusting calc_pencils_density_pnc to the standard use with
 ! lpenc_loc=lpencil
 !
 ! 21-sep-13/MR    : coded
@@ -2106,11 +2106,11 @@ module Density
       real, dimension (mx,my,mz,mfarray),intent(IN) :: f
       type (pencil_case),                intent(OUT):: p
 !
-      call calc_pencils_linear_density_pencpar(f,p,lpencil)
+      call calc_pencils_linear_density_pnc(f,p,lpencil)
 !
       endsubroutine calc_pencils_linear_density_std
 !***********************************************************************
-    subroutine calc_pencils_linear_density_pencpar(f,p,lpenc_loc)
+    subroutine calc_pencils_linear_density_pnc(f,p,lpenc_loc)
 !
 !  Calculate Density pencils for linear density.
 !  Most basic pencils should come first, as others may depend on them.
@@ -2204,9 +2204,9 @@ module Density
         endif
       endif
 !
-    endsubroutine calc_pencils_linear_density_pencpar
+    endsubroutine calc_pencils_linear_density_pnc
 !***********************************************************************
-    subroutine calc_pencils_log_density_pencpar(f,p,lpenc_loc)
+    subroutine calc_pencils_log_density_pnc(f,p,lpenc_loc)
 !
 !  Calculate Density pencils for logarithmic density.
 !  Most basic pencils should come first, as others may depend on them.
@@ -2280,7 +2280,7 @@ module Density
 !
       if (lpenc_loc(i_uuadvec_glnrho)) call h_dot_grad(p%uu_advec,p%glnrho,p%uuadvec_glnrho)
 !
-    endsubroutine calc_pencils_log_density_pencpar
+    endsubroutine calc_pencils_log_density_pnc
 !***********************************************************************
     subroutine density_before_boundary(f)
 !
