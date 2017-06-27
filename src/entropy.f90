@@ -22,9 +22,8 @@ module Energy
   use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
-  use EquationOfState, only: gamma, gamma_m1, gamma1, cs20, cs2top, cs2bot, &
-                         isothtop, mpoly0, mpoly1, mpoly2, cs2cool, &
-                         beta_glnrho_global, cs2top_ini, dcs2top_ini
+  use EquationOfState, only: gamma, gamma_m1, gamma1, cs20, cs2top, cs2bot
+  use Density, only: beta_glnrho_global, beta_glnrho_scaled
   use DensityMethods, only: putrho, putlnrho, getlnrho, getrho_s
   use Messages
 !
@@ -40,7 +39,8 @@ module Energy
   real :: TT_int, TT_ext, cs2_int, cs2_ext
   real :: cool_int=0.0, cool_ext=0.0, ampl_TT=0.0
   real :: chi_jump_shock=1.0, xchi_shock=0.0,widthchi_shock=0.02
-  real, target :: chi=0.0
+  real, target :: chi=0.0, cs2cool=0., mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
+  real, pointer :: mpoly
   real :: chi_t=0.0, chi_shock=0.0, chi_hyper3=0.0
   real :: chi_t0=0.0, chi_t1=0.0
   real :: chi_hyper3_mesh=5.0, chi_cs=0.0, chi_rho=0.0
@@ -85,13 +85,17 @@ module Energy
   real :: Pres_cutoff=impossible
   real :: pclaw=0.0, xchit=0.
   real, target :: hcond0_kramers=0.0, nkramers=0.0
-  real :: chimax_kramers=0., chimin_kramers=0., zheat_uniform_range=0.
+  real :: chimax_kramers=0., chimin_kramers=0.
+  integer :: nsmooth_kramers=0
+  real :: zheat_uniform_range=0.
   real :: peh_factor=1., heat_ceiling=-1.0
   real :: Pr_smag1=1.
+  real :: cs2top_ini=impossible, dcs2top_ini=impossible
   integer, parameter :: nheatc_max=4
   integer :: iglobal_hcond=0
   integer :: iglobal_glhc=0
   integer :: ippaux=0
+  integer, target :: isothtop=0
   integer :: cool_type=1
   logical :: lturbulent_heat=.false.
   logical :: lheatc_Kprof=.false., lheatc_Kconst=.false., lheatc_sfluct=.false.
@@ -172,7 +176,7 @@ module Energy
       ampl_TT, kx_ss, ky_ss, kz_ss, beta_glnrho_global, ladvection_entropy, &
       lviscosity_heat, r_bcz, luminosity, wheat, hcond0, tau_cool, &
       tau_cool_ss, cool2, TTref_cool, lhcond_global, cool_fac, cs0hs, H0hs, &
-      rho0hs, tau_cool2, lconvection_gravx, Fbot, &
+      rho0hs, tau_cool2, lconvection_gravx, Fbot, cs2top_ini, dcs2top_ini, &
       hcond0_kramers, nkramers, alpha_MLT, lprestellar_cool_iso, lread_hcond, &
       limpose_heat_ceiling, heat_ceiling
 !
@@ -187,7 +191,7 @@ module Energy
       chit_prof2, chi_shock, chi, iheatcond, Kgperp, Kgpara, cool_RTV, &
       tau_ss_exterior, lmultilayer, Kbot, tau_cor, TT_cor, z_cor, &
       tauheat_buffer, TTheat_buffer, zheat_buffer, dheat_buffer1, &
-      heat_gaussianz, heat_gaussianz_sigma, &
+      heat_gaussianz, heat_gaussianz_sigma, cs2top_ini, dcs2top_ini, &
       chi_jump_shock, xchi_shock, widthchi_shock, &
       heat_uniform, cool_uniform, cool_newton, lupw_ss, cool_int, cool_ext, &
       chi_hyper3, chi_hyper3_mesh, lturbulent_heat, deltaT_poleq, tdown, allp, &
@@ -199,7 +203,7 @@ module Energy
       chit_aniso_prof1, chit_aniso_prof2, lchit_aniso_simplified, &
       chit_fluct_prof1, chit_fluct_prof2, &
       lconvection_gravx, ltau_cool_variable, TT_powerlaw, lcalc_ssmeanxy, &
-      hcond0_kramers, nkramers, chimax_kramers, chimin_kramers, &
+      hcond0_kramers, nkramers, chimax_kramers, chimin_kramers, nsmooth_kramers, &
       xbot_aniso, xtop_aniso, entropy_floor, w_sldchar_ent, &
       lprestellar_cool_iso, zz1, zz2, lphotoelectric_heating, TT_floor, &
       reinitialize_ss, initss, ampl_ss, radius_ss, center1_x, center1_y, &
@@ -438,8 +442,6 @@ module Energy
 !
       use BorderProfiles, only: request_border_driving
       use EquationOfState, only: cs0, get_soundspeed, get_cp1, &
-                                 beta_glnrho_global, beta_glnrho_scaled, &
-                                 mpoly, mpoly0, mpoly1, mpoly2, &
                                  select_eos_variable,gamma,gamma_m1
       use FArrayManager
       use Gravity, only: gravz, g0, compute_gravity_star
@@ -475,6 +477,13 @@ module Energy
         call select_eos_variable('lnTT',iss)
       else
         call select_eos_variable('ss',iss)
+      endif
+      if (ldensity.and..not.lstratz) then
+        call get_shared_variable('mpoly',mpoly)
+      else
+        call warning('initialize_eos','mpoly not obtained from density,'// &
+                     'set impossible')
+        allocate(mpoly); mpoly=impossible
       endif
 !
 !  Radiative diffusion: initialize flux etc.
@@ -1038,6 +1047,11 @@ module Energy
       call put_shared_variable('lheatc_chiconst',lheatc_chiconst)
       call put_shared_variable('lviscosity_heat',lviscosity_heat)
       call put_shared_variable('lheatc_kramers',lheatc_kramers)
+      call put_shared_variable('isothtop',isothtop)
+      call put_shared_variable('cs2cool',cs2cool)
+      call put_shared_variable('mpoly0',mpoly0)
+      call put_shared_variable('mpoly1',mpoly1)
+      call put_shared_variable('mpoly2',mpoly2)
 !      call put_shared_variable('lheatc_chit',lheatc_chit)
       if (lheatc_kramers) then
         call put_shared_variable('hcond0_kramers',hcond0_kramers)
@@ -1151,11 +1165,10 @@ module Energy
 !  20-jan-2015/MR: changes for use of reference state
 !
       use SharedVariables, only: get_shared_variable
-      use EquationOfState,  only: isothtop, get_cp1, &
-                                mpoly0, mpoly1, mpoly2, cs2cool, cs0, &
-                                rho0, lnrho0, isothermal_entropy, &
-                                isothermal_lnrho_ss, eoscalc, ilnrho_pp, &
-                                eosperturb
+      use EquationOfState, only: get_cp1, cs0, &
+                                 rho0, lnrho0, isothermal_entropy, &
+                                 isothermal_lnrho_ss, eoscalc, ilnrho_pp, &
+                                 eosperturb
       use General, only: itoa
       use Gravity
       use Initcond
@@ -1945,7 +1958,7 @@ module Energy
 !  20-oct-03/dave -- coded
 !  21-aug-08/dhruba: added spherical coordinates
 !
-      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, get_cp1
+      use EquationOfState, only: eoscalc, ilnrho_lnTT, get_cp1
       use Gravity, only: g0
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -2044,7 +2057,7 @@ module Energy
 !  for `conv_slab' style runs, with a layer of polytropic gas in [z0,z1].
 !  generalised for cp/=1.
 !
-      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly, get_cp1
+      use EquationOfState, only: eoscalc, ilnrho_lnTT, get_cp1
       use Gravity, only: gravz, zinfty
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -2395,8 +2408,6 @@ module Energy
 !
 !  20-nov-04/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_scaled
-!
       if (lheatc_Kconst .or. lheatc_chiconst .or. lheatc_Kprof .or. &
           tau_cor>0 .or. &
           lheatc_sqrtrhochiconst) lpenc_requested(i_cp1)=.true.
@@ -2528,6 +2539,8 @@ module Energy
       endif
       if (lheatc_kramers) then
         lpenc_requested(i_rho)=.true.
+        !lpenc_requested(i_lnrho)=.true.
+        !lpenc_requested(i_lnTT)=.true.
         lpenc_requested(i_cp1)=.true.
         lpenc_requested(i_rho1)=.true.
         lpenc_requested(i_TT)=.true.
@@ -2935,8 +2948,7 @@ module Energy
 !  21-oct-15/MR: added timestep adaptation for slope-limited diffusion
 ! 
       use Diagnostics
-      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, &
-                                 gamma1
+      use EquationOfState, only: gamma1
       use Interstellar, only: calc_heat_cool_interstellar
       use Special, only: special_calc_energy
       use Sub
@@ -3763,7 +3775,7 @@ module Energy
         endif
         if (chi_t/=0.) diffus_chi = diffus_chi+chi_t*chit_prof*dxyz_2
 !        if (ldiagnos.and.idiag_dtchi/=0) &
-!          call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
+!            call max_mn_name(diffus_chi/cdtv,idiag_dtchi,l_dt=.true.)
       endif
 !
     endsubroutine calc_heatcond_constchi
@@ -4512,7 +4524,7 @@ module Energy
 !
       real, dimension(nx) :: Krho1, chit_prof, del2ss1
       real, dimension(nx,3) :: glnchit_prof, gss1
-      integer :: j
+      integer :: j,l
 !
 !  Diffusion of the form
 !      rho*T*Ds/Dt = ... + nab.(K*gradT),
@@ -4521,6 +4533,7 @@ module Energy
 !  In reality n=1, but we may need to use n\=1 for numerical reasons.
 !
       Krho1 = hcond0_kramers*p%rho1**(2.*nkramers+1.)*p%TT**(6.5*nkramers)   ! = K/rho
+      !Krho1 = hcond0_kramers*exp(-p%lnrho*(2.*nkramers+1.)+p%lnTT*(6.5*nkramers))   ! = K/rho
       if (chimax_kramers>0.) &
         Krho1 = max(min(Krho1,chimax_kramers/p%cp1),chimin_kramers/p%cp1)
       call dot(-2.*nkramers*p%glnrho+(6.5*nkramers+1)*p%glnTT,p%glnTT,g2)
@@ -7149,8 +7162,7 @@ module Energy
 !
 !  09-aug-06/dintrans: coded
 !
-      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly0, &
-                                 mpoly1, lnrho0, get_cp1
+      use EquationOfState, only: eoscalc, ilnrho_lnTT, lnrho0, get_cp1
       use Gravity, only: g0
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
@@ -7654,6 +7666,9 @@ module Energy
      real, dimension(mx,my,mz,mfarray) :: f
      real, dimension(mx,my,mz,mvar) :: df
      real :: dtsub
+!
+      call keep_compiler_quiet(f,df)
+      call keep_compiler_quiet(dtsub)
 !
    endsubroutine energy_after_timestep
 !***********************************************************************

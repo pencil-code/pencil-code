@@ -23,9 +23,8 @@ module Energy
   use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
-  use EquationOfState, only: gamma, gamma_m1, gamma1, cs20, cs2top, cs2bot, &
-                         isothtop, mpoly0, mpoly1, mpoly2, cs2cool, &
-                         beta_glnrho_global, cs2top_ini, dcs2top_ini
+  use EquationOfState, only: gamma, gamma_m1, gamma1, cs20, cs2top, cs2bot
+  use Density, only: beta_glnrho_global
   use Interstellar
   use Messages
   use Viscosity
@@ -51,6 +50,7 @@ module Energy
   real :: center2_x=0., center2_y=0., center2_z=0.
   real :: kx_ss=1.,ky_ss=1.,kz_ss=1.
   real :: thermal_background=0., thermal_peak=0., thermal_scaling=1.
+  real, target :: cs2cool
   real :: cool_fac=1., chiB=0.
   real, dimension(3) :: chi_hyper3_aniso=0.
 !
@@ -68,6 +68,8 @@ module Energy
   real :: tau_cool=0.0, TTref_cool=0.0, tau_cool2=0.0
   real :: cs0hs=0.0,H0hs=0.0,rho0hs=0.0
   real :: chit_aniso=0.0,xbot=0.0
+  real, pointer :: mpoly
+  real, target :: mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
   integer, parameter :: nheatc_max=4
   logical :: lturbulent_heat=.false.
   logical :: lheatc_Kprof=.false.,lheatc_Kconst=.false.
@@ -122,7 +124,7 @@ module Energy
       mixinglength_flux, &
       chi_t, &
       pp_const, &
-      ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
+      ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2, &
       khor_ss,thermal_background,thermal_peak,thermal_scaling,cs2cool, &
       center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
       T0,ampl_TT,kx_ss,ky_ss,kz_ss,beta_glnrho_global,ladvection_entropy, &
@@ -245,13 +247,12 @@ module Energy
 !
       use BorderProfiles, only: request_border_driving
       use EquationOfState, only: cs0, get_soundspeed, get_cp1, &
-                                 beta_glnrho_global, beta_glnrho_scaled, &
-                                 mpoly, mpoly0, mpoly1, mpoly2, &
                                  select_eos_variable,gamma,gamma_m1
+      use Density, only: beta_glnrho_global, beta_glnrho_scaled
       use FArrayManager
       use Gravity, only: gravz,g0
       use Mpicomm, only: stop_it
-      use SharedVariables, only: put_shared_variable
+      use SharedVariables, only: get_shared_variable, put_shared_variable
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -264,29 +265,37 @@ module Energy
 !
 ! Check any module dependencies
 !
-      if (.not. leos) then
+      if (.not. leos) &
         call fatal_error('initialize_energy', &
             'EOS=noeos but energy requires an EQUATION OF STATE for the fluid')
-      endif
 !
 ! Tell the equation of state that we're here and what f variable we use
 !
 !ajwm      if (.not. lreloading) then ! already in place when reloading
-        if (pretend_lnTT) then
-          call select_eos_variable('lnTT',iss)
+      if (pretend_lnTT) then
+        call select_eos_variable('lnTT',iss)
+      else
+        if (gamma_m1==0.) then
+          call fatal_error('initialize_energy',&
+               'Use experimental/noenergy for isothermal case')
         else
-          if (gamma_m1==0.) then
-            call fatal_error('initialize_energy',&
-                 'Use experimental/noenergy for isothermal case')
-          else
-            call select_eos_variable('ss',iss)
-          endif
+          call select_eos_variable('ss',iss)
         endif
+      endif
+
+      if (ldensity.and..not.lstratz) then
+        call get_shared_variable('mpoly',mpoly)
+      else
+        call warning('initialize_energy','mpoly not obtained from density,'// &
+                     'set impossible')
+        allocate(mpoly); mpoly=impossible
+      endif
+!
 !ajwm      endif
 !
 !  radiative diffusion: initialize flux etc
 !
-        hcond = 0.
+      hcond = 0.
       !
       !  Kbot and hcond0 are used interchangibly, so if one is
       !  =impossible, set it to the other's value
@@ -564,6 +573,10 @@ module Energy
 !
       call put_shared_variable('hcond0',hcond0,caller='initialize_energy')
       call put_shared_variable('lviscosity_heat',lviscosity_heat)
+      call put_shared_variable('cs2cool',cs2cool)
+      call put_shared_variable('mpoly0',mpoly0)
+      call put_shared_variable('mpoly1',mpoly2)
+      call put_shared_variable('mpoly2',mpoly2)
 !
       call keep_compiler_quiet(f)
 !
@@ -614,11 +627,9 @@ module Energy
       use General, only: itoa
       use Initcond
       use InitialCondition, only: initial_condition_ss
-      use EquationOfState,  only: mpoly, isothtop, &
-                                mpoly0, mpoly1, mpoly2, cs2cool, cs0, &
-                                rho0, lnrho0, isothermal_entropy, &
-                                isothermal_lnrho_ss, eoscalc, ilnrho_pp, &
-                                eosperturb
+      use EquationOfState,  only: cs0, rho0, lnrho0, isothermal_entropy, & 
+                                  isothermal_lnrho_ss, eoscalc, ilnrho_pp, &
+                                  eosperturb
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -1409,8 +1420,6 @@ module Energy
 !
 !  20-11-04/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_scaled
-!
       if (lheatc_Kconst .or. lheatc_chiconst .or. lheatc_Kprof .or. &
           tau_cor>0) lpenc_requested(i_cp1)=.true.
       if (ladvection_entropy) then
@@ -1547,7 +1556,7 @@ module Energy
 !
 !  08-dec-2009/piyali:adapted
 !
-      use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0,profz_eos
+      use EquationOfState, only: gamma,gamma_m1,cs20,lnrho0
       use Sub
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1585,7 +1594,7 @@ module Energy
 !
 !   08-dec-09/piyali: adapted from entropy.f90
       use Diagnostics
-      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, gamma1, cs0
+      use EquationOfState, only: gamma1, cs0
       use Special, only: special_calc_energy
       use Sub
 !
@@ -3190,8 +3199,7 @@ module Energy
 !  09-aug-06/dintrans: coded
 !
       use Gravity, only: g0
-      use EquationOfState, only: eoscalc, ilnrho_lnTT, mpoly0, &
-                                 mpoly1, lnrho0, get_cp1
+      use EquationOfState, only: eoscalc, ilnrho_lnTT, lnrho0, get_cp1
 !
       real, dimension (mx,my,mz,mfarray), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss,r_mn
@@ -3413,7 +3421,7 @@ module Energy
 !
 !  17-jan-07/dintrans: coded
 !
-    use EquationOfState, only: gamma, gamma_m1, mpoly0, mpoly1, lnrho0, cs20
+    use EquationOfState, only: gamma, gamma_m1, lnrho0, cs20
     use Sub, only: step, erfunc, interp1
 !
     integer, parameter   :: nr=100

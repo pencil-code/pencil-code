@@ -34,7 +34,6 @@ module Energy
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
-  use EquationOfState, only: mpoly0, mpoly1, mpoly2
 !
   implicit none
 !
@@ -78,6 +77,7 @@ module Energy
   real    :: kx_lnTT=1.,ky_lnTT=1.,kz_lnTT=1.
   logical :: lADI_mixed=.false., lmultilayer=.false.
   real, pointer :: PrRa   ! preliminary
+  real, target :: mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
 !
   real, dimension(nz) :: TTmz, gTTmz 
 !
@@ -444,6 +444,9 @@ module Energy
       call put_shared_variable('Fbot', Fbot)
       call put_shared_variable('lADI_mixed', lADI_mixed)
       call put_shared_variable('lviscosity_heat',lviscosity_heat)
+      call put_shared_variable('mpoly0', mpoly0)
+      call put_shared_variable('mpoly1', mpoly1)
+      call put_shared_variable('mpoly2', mpoly2)
 !
 !  Share the 4 parameters of the radiative conductivity hole (kappa-mechanism
 !  problem).

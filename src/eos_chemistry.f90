@@ -51,12 +51,7 @@ module EquationOfState
   real :: gamma_m1    !(=gamma-1)
   real :: gamma1   !(=1/gamma)
   real :: cp=impossible, cp1=impossible, cv=impossible, cv1=impossible
-  real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=1., cs2top=1.
-  real :: cs2cool=0.
-  real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
-  real, dimension(3) :: beta_glnrho_global=0., beta_glnrho_scaled=0.
-  integer :: isothtop=0
   integer :: ieosvars=-1, ieosvar1=-1, ieosvar2=-1, ieosvar_count=0
   integer :: ll1,ll2,mm1,mm2,nn1,nn2
   logical :: leos_isothermal=.false., leos_isentropic=.false.
@@ -68,9 +63,6 @@ module EquationOfState
   logical :: l_gamma=.false.
   logical :: l_cp=.false.
   integer :: imass=1!, iTemp1=2,iTemp2=3,iTemp3=4
-!
-  character (len=labellen) :: ieos_profile='nothing'
-  real, dimension(mz) :: profz_eos=1.,dprofz_eos=0.
 !
  real, dimension(nchemspec,18) :: species_constants
  real, dimension(nchemspec,7)     :: tran_data

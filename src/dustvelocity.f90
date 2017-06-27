@@ -501,7 +501,7 @@ module Dustvelocity
 !  18-mar-03/axel+anders: adapted from hydro
 !  21-jan-15/MR: changes for use for reference state.
 !
-      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
+      use Density, only: beta_glnrho_global, beta_glnrho_scaled
       use Sub
       use Gravity
       use Initcond

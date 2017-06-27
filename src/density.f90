@@ -27,7 +27,8 @@ module Density
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
-  use EquationOfState
+  use EquationOfState, only: get_cp1, cs0, cs20, cs2bot, cs2top, rho0, lnrho0, &
+                             gamma, gamma1, gamma_m1
   use DensityMethods
 !
   implicit none
@@ -39,20 +40,24 @@ module Density
   real, dimension (ninit) :: amplrho=0.0, phase_lnrho=0.0, radius_lnrho=0.5
   real, dimension (ninit) :: kx_lnrho=1.0, ky_lnrho=1.0, kz_lnrho=1.0
   real, dimension (ninit) :: kxx_lnrho=0.0, kyy_lnrho=0.0, kzz_lnrho=0.0
-  real, dimension (nz) :: glnrhomz
+  real, dimension (nz) :: lnrhomz,glnrhomz
   real, dimension (mz) :: lnrho_init_z=0.0
   real, dimension (mz) :: dlnrhodz_init_z=0.0, del2lnrho_glnrho2_init_z=0.0
   real, dimension (3) :: diffrho_hyper3_aniso=0.0
   real, dimension (nx) :: profx_ffree=1.0, dprofx_ffree=0.0 
   real, dimension (my) :: profy_ffree=1.0, dprofy_ffree=0.0
   real, dimension (mz) :: profz_ffree=1.0, dprofz_ffree=0.0
+  real, dimension(mz) :: profz_eos=1.0,dprofz_eos=0.0
+  real, target :: mpoly=impossible
+  real, pointer :: mpoly0, mpoly1, mpoly2
   real, dimension(nx) :: xmask_den
   real, dimension(nx) :: fprofile_x=1.
   real, dimension(nz) :: fprofile_z=1.
   real, dimension(nz) :: zmask_den
   real, dimension(nx) :: reduce_cs2_profx = 1.0
   real, dimension(mz) :: reduce_cs2_profz = 1.0
-  character(LEN=labellen) :: ireference_state='nothing'
+  real :: width_eos_prof=0.2
+  character(LEN=labellen) :: ireference_state='nothing', ieos_profile='nothing'
   real :: reference_state_mass=0.
 ! 
 ! reference state, components:  1       2          3              4            5      6     7         8            9        
@@ -102,7 +107,7 @@ module Density
   logical :: lrho_as_aux=.false., ldiffusion_nolog=.false.
   logical :: lmassdiff_fixmom = .false., lmassdiff_fixkin = .false.
   logical :: lcheck_negative_density=.false.
-  logical :: lcalc_glnrhomean=.false.
+  logical :: lcalc_lnrhomean=.false.,lcalc_glnrhomean=.false.
   logical :: ldensity_profile_masscons=.false.
   logical :: lffree=.false.
   logical, target :: lreduced_sound_speed=.false.
@@ -123,6 +128,7 @@ module Density
   logical :: ldensity_slope_limited=.false.
   real :: h_slope_limited=0., chi_sld_thresh=0.
   character (len=labellen) :: islope_limiter=''
+  real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
 !
   namelist /density_init_pars/ &
       ampllnrho, initlnrho, widthlnrho, rho_left, rho_right, lnrho_const, &
@@ -140,10 +146,10 @@ module Density
       T_cloud, cloud_mode, T_cloud_out_rel, xi_coeff, density_xaver_range, &
       dens_coeff, temp_coeff, temp_trans, temp_coeff_out, reduce_cs2, &
       lreduced_sound_speed, lscale_to_cs2top, density_zaver_range, &
+      ieos_profile, width_eos_prof, &
       lconserve_total_mass, total_mass, ireference_state
 !
   namelist /density_run_pars/ &
-      beta_glnrho_global, &
       cdiffrho, diffrho, diffrho_hyper3, diffrho_hyper3_mesh, diffrho_shock, &
       cs2bot, cs2top, lupw_lnrho, lupw_rho, idiff, &
       lmass_source, lmass_source_random, &
@@ -153,11 +159,12 @@ module Density
       lnrho_const, lcontinuity_gas, borderlnrho, diffrho_hyper3_aniso, &
       lfreeze_lnrhosqu, density_floor, lanti_shockdiffusion, lrho_as_aux, &
       ldiffusion_nolog, lcheck_negative_density, lmassdiff_fixmom, lmassdiff_fixkin, &
-      lcalc_glnrhomean, ldensity_profile_masscons, lffree, ffree_profile, &
+      lcalc_lnrhomean, lcalc_glnrhomean, ldensity_profile_masscons, lffree, ffree_profile, &
       rzero_ffree, wffree, tstart_mass_source, tstop_mass_source, &
       density_xaver_range, mass_source_tau1, reduce_cs2, lreduced_sound_speed, &
       xblob, yblob, zblob, mass_source_omega, lscale_to_cs2top, &
       density_zaver_range, rss_coef1, rss_coef2, &
+      ieos_profile, width_eos_prof, beta_glnrho_global,&
       lconserve_total_mass, total_mass, density_ceiling, &
       lreinitialize_lnrho, lreinitialize_rho, initlnrho, rescale_rho,&
       lsubtract_init_stratification, ireference_state, ldensity_slope_limited, &
@@ -211,6 +218,16 @@ module Density
   integer :: idiag_rhomxy=0     ! ZAVG_DOC: $\left<\varrho\right>_{z}$
   integer :: idiag_sigma=0      ! ZAVG_DOC; $\Sigma\equiv\int\varrho\,\mathrm{d}z$
 !
+  interface calc_pencils_density
+    module procedure calc_pencils_density_pencpar
+    module procedure calc_pencils_density_std
+  endinterface calc_pencils_density
+!
+  interface calc_pencils_linear_density
+    module procedure calc_pencils_linear_density_pencpar
+    module procedure calc_pencils_linear_density_std
+  endinterface calc_pencils_linear_density
+!
 !  module auxiliaries
 !
   logical :: lupdate_mass_source
@@ -226,6 +243,7 @@ module Density
 !   21-oct-15/MR: changes for slope-limited diffusion
 !
       use FArrayManager
+      use SharedVariables, only: put_shared_variable
 !
       if (ldensity_nolog) then
         call farray_register_pde('rho',irho)
@@ -251,6 +269,11 @@ module Density
       if (lroot) call svn_id( &
           "$Id$")
 !
+! mpoly needs tobe put here as it initialize_density it were to late for other 
+! modules
+!
+      call put_shared_variable('mpoly',mpoly,caller='register_density')
+
     endsubroutine register_density
 !***********************************************************************
     subroutine initialize_density(f)
@@ -269,6 +292,7 @@ module Density
 !                upwind switch according to log/nolog (with warning).
 !  15-nov-16/fred: option to apply z-profile to reinitialize_*
 !
+      use EquationOfState, only: select_eos_variable
       use BorderProfiles, only: request_border_driving
       use Deriv, only: der_pencil,der2_pencil
       use FArrayManager
@@ -767,6 +791,17 @@ module Density
         endselect
       endif
 !
+!  Calculate profile functions (used as prefactors to turn off pressure
+!  gradient term).
+!
+      if (ieos_profile=='nothing') then
+        profz_eos=1.0
+        dprofz_eos=0.0
+      elseif (ieos_profile=='surface_z') then
+        profz_eos=0.5*(1.0-erfunc(z/width_eos_prof))
+        dprofz_eos=-exp(-(z/width_eos_prof)**2)/(sqrtpi*width_eos_prof)
+      endif
+!
       if (lreference_state) then
 !
         select case(ireference_state)
@@ -847,6 +882,7 @@ module Density
 !  28-jun-02/axel: added isothermal
 !  15-oct-03/dave: added spherical shell (kws)
 !
+      use EquationOfState, only: eoscalc, ilnrho_TT 
       use General, only: itoa,complex_phase,notanumber
       use Gravity, only: zref,z1,z2,gravz,nu_epicycle,potential
       use Initcond
@@ -862,8 +898,8 @@ module Density
       real :: pot_ext,lnrho_ext,cs2_ext,tmp1,k_j2
       real :: zbot,ztop,haut
       real, dimension (nx) :: r_mn,lnrho,TT,ss
-      real, pointer :: gravx, rhs_poisson_const,fac_cs
-      integer, pointer :: isothmid
+      real, pointer :: gravx, rhs_poisson_const,fac_cs,cs2cool
+      integer, pointer :: isothmid, isothtop
       complex :: omega_jeans
       integer :: j, ierr,ix,iy
       logical :: lnothing
@@ -884,14 +920,24 @@ module Density
 !  specified in density_init_pars.
 !  These may be updated in one of the following initialization routines.
 !
-  if (cs2top==impossible) cs2top=cs20
-  if (cs2bot==impossible) cs2bot=cs20
+      if (cs2top==impossible) cs2top=cs20
+      if (cs2bot==impossible) cs2bot=cs20
 !
 !  Different initializations of lnrho (called from start).
 !
       lnrho0      = log(rho0)
       lnrho_left  = log(rho_left)
       lnrho_right = log(rho_right)
+
+      if (lentropy) then
+        call get_shared_variable('mpoly0', mpoly0,caller='init_lnrho')
+        call get_shared_variable('mpoly1', mpoly1)
+        call get_shared_variable('mpoly2', mpoly2)
+      else
+        call warning('init_lnrho','mpoly[0-2] not provided by entropy, take default 1.5')
+        allocate(mpoly0,mpoly1,mpoly2)
+        mpoly0=1.5; mpoly1=1.5; mpoly2=1.5
+      endif
 !
 !  Initialize lnothing and cycle ninit (=4) times through the list of
 !  initial conditions with the various options.
@@ -1090,9 +1136,7 @@ module Density
         case ('sph_isoth'); call init_sph_isoth (f)
 !
         case ('cylind_isoth')
-          call get_shared_variable('gravx', gravx, ierr)
-          if (ierr/=0) call stop_it("init_lnrho: "//&
-             "there was a problem when getting gravx")
+          call get_shared_variable('gravx', gravx, caller='init_lnrho')
           if (lroot) print*, 'init_lnrho: isothermal cylindrical ring with gravx=', gravx
           haut=-cs20/gamma/gravx
           TT=spread(cs20/gamma_m1,1,nx)
@@ -1113,6 +1157,12 @@ module Density
 !  Only makes sense if both initlnrho=initss='isentropic-star'
 !
           if (lgravr) then
+            if (lentropy) then
+              call get_shared_variable('cs2cool', cs2cool, caller='init_lnrho')
+            else
+              call warning('init_lnrho','cs2cool not provided by entropy, set zero')
+              allocate(cs2cool); cs2cool=0.
+            endif
             if (lroot) print*, &
                  'init_lnrho: isentropic star with isothermal atmosphere'
             do n=n1,n2; do m=m1,m2
@@ -1173,13 +1223,14 @@ module Density
           cs2int = cs0**2
           lnrhoint = lnrho0
 !
-          call get_shared_variable('isothmid', isothmid, ierr)
-          if (ierr/=0) call stop_it("init_lnrho: "//&
-            "there was a problem when getting isothmid")
-!
-          call get_shared_variable('fac_cs', fac_cs, ierr)
-          if (ierr/=0) call stop_it("init_lnrho: "//&
-             "there was a problem when getting fac_cs")
+          call get_shared_variable('isothmid', isothmid, caller='init_lnrho')
+          call get_shared_variable('fac_cs', fac_cs)
+          if (lentropy) then
+            call get_shared_variable('isothtop', isothtop)
+          else
+            call warning('init_lnrho','isothtop not provided by entropy, set to zero')
+            allocate(isothtop); isothtop=0
+          endif
 !
           f(:,:,:,ilnrho) = lnrho0 ! just in case
           call polytropic_lnrho_z(f,mpoly2,zref,z2,ztop+Lz, &
@@ -1356,9 +1407,8 @@ module Density
 !
 !  Soundwave + self gravity.
 !
-          call get_shared_variable('rhs_poisson_const', rhs_poisson_const, ierr)
-          if (ierr/=0) call stop_it("init_lnrho: "//&
-             "there was a problem when getting rhs_poisson_const")
+          call get_shared_variable('rhs_poisson_const', rhs_poisson_const, &
+                                   caller='init_lnrho')
           omega_jeans = sqrt(cmplx(cs20*kx_lnrho(j)**2 - &
               rhs_poisson_const*rho0,0.))/(rho0*kx_lnrho(j))
           if (lroot) &
@@ -1381,9 +1431,8 @@ module Density
 !
 !  Soundwave + self gravity.
 !
-          call get_shared_variable('rhs_poisson_const', rhs_poisson_const, ierr)
-          if (ierr/=0) call stop_it("init_lnrho: "//&
-             "there was a problem when getting rhs_poisson_const")
+          call get_shared_variable('rhs_poisson_const', rhs_poisson_const, &
+                                   caller='init_lnrho')
           k_j2 = kx_lnrho(j)**2 + ky_lnrho(j)**2 + kz_lnrho(j)**2
           omega_jeans = sqrt(cmplx(cs20*k_j2 - rhs_poisson_const*rho0,0.))/ &
               (rho0*sqrt(k_j2))
@@ -1412,9 +1461,8 @@ module Density
 !
 !  Soundwave + self gravity + (differential) rotation.
 !
-          call get_shared_variable('rhs_poisson_const', rhs_poisson_const, ierr)
-          if (ierr/=0) call stop_it("init_lnrho: "//&
-             "there was a problem when getting rhs_poisson_const")
+          call get_shared_variable('rhs_poisson_const', rhs_poisson_const, &
+                                   caller='init_lnrho')
           omega_jeans = sqrt(cmplx(cs20*kx_lnrho(j)**2 + &
               Omega**2 - rhs_poisson_const*rho0,0.))/(rho0*kx_lnrho(j))
 !
@@ -1513,7 +1561,27 @@ module Density
 !
       integer :: nl,j
 !
-!  Calculate mean gradient of lnrho.
+!  Calculate mean (= xy-average) of lnrho.
+!
+      if (lcalc_lnrhomean) then
+!
+        lnrhomz=0.
+        do n=n1,n2
+          nl = n-n1+1
+!
+          do m=m1,m2
+            if (ldensity_nolog) then
+              lnrhomz(nl)=lnrhomz(nl)+sum(alog(f(l1:l2,m,n,irho)))
+            else
+              lnrhomz(nl)=lnrhomz(nl)+sum(f(l1:l2,m,n,ilnrho))
+            endif
+          enddo
+        enddo
+        lnrhomz=lnrhomz/nxygrid
+
+      endif
+!
+!  Calculate mean (= xy-average) gradient of lnrho.
 !
       if (lcalc_glnrhomean) then
 !
@@ -1596,7 +1664,6 @@ module Density
 !   9-oct-15/MR: added updateing of characteristic velocity by density
 !                not yet activated (weight=0), tb reconsidered
 !
-      use EquationOfState, only: calc_pencils_eos
       use General, only: staggered_mean_scal
 !
       real, dimension(mx,my,mz,mfarray), intent(INOUT) :: f
@@ -1983,7 +2050,7 @@ module Density
 !
     endsubroutine pencil_interdep_density
 !***********************************************************************
-    subroutine calc_pencils_density(f,p)
+    subroutine calc_pencils_density_pencpar(f,p,lpenc_loc)
 !
 !  Calculate Density pencils.
 !  Most basic pencils should come first, as others may depend on them.
@@ -1992,26 +2059,58 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      intent(inout) :: f,p
+      logical, dimension(:), intent(IN) :: lpenc_loc
+      intent(in) :: f
+      intent(inout) :: p
 !
 !  Differentiate between log density and linear density.
 !
       if (ldensity_nolog) then
-        call calc_pencils_linear_density(f,p)
+        call calc_pencils_linear_density_pencpar(f,p,lpenc_loc)
       else
-        call calc_pencils_log_density(f,p)
+        call calc_pencils_log_density_pencpar(f,p,lpenc_loc)
       endif
 ! ekin
-      if (lpencil(i_ekin)) p%ekin=0.5*p%rho*p%u2
+      if (lpenc_loc(i_ekin)) p%ekin=0.5*p%rho*p%u2
 !
 !  Dummy pencils.
 !
-      if (lpencil(i_rhos1)) call fatal_error('calc_pencils_density', 'rhos1 is no implemented. ')
-      if (lpencil(i_glnrhos)) call fatal_error('calc_pencils_density', 'glnrhos is no implemented. ')
+      if (lpenc_loc(i_rhos1)) &
+        call fatal_error('calc_pencils_density_pencpar', 'rhos1 is no implemented')
+      if (lpenc_loc(i_glnrhos)) &
+        call fatal_error('calc_pencils_density_pencpar', 'glnrhos is no implemented')
 !
-    endsubroutine calc_pencils_density
+    endsubroutine calc_pencils_density_pencpar
 !***********************************************************************
-    subroutine calc_pencils_linear_density(f,p)
+    subroutine calc_pencils_density_std(f,p)
+!
+! Envelope adjusting calc_pencils_hydro_pencpar to the standard use with
+! lpenc_loc=lpencil
+!
+! 21-sep-13/MR    : coded
+!
+      real, dimension (mx,my,mz,mfarray),intent(IN) :: f
+      type (pencil_case),                intent(OUT):: p
+!
+      call calc_pencils_density_pencpar(f,p,lpencil)
+!
+      endsubroutine calc_pencils_density_std
+!***********************************************************************
+    subroutine calc_pencils_linear_density_std(f,p)
+!
+! Envelope adjusting calc_pencils_hydro_pencpar to the standard use with
+! lpenc_loc=lpencil
+!
+! 21-sep-13/MR    : coded
+!
+      real, dimension (mx,my,mz,mfarray),intent(IN) :: f
+      type (pencil_case),                intent(OUT):: p
+!
+      call calc_pencils_linear_density_pencpar(f,p,lpencil)
+!
+      endsubroutine calc_pencils_linear_density_std
+!***********************************************************************
+    subroutine calc_pencils_linear_density_pencpar(f,p,lpenc_loc)
 !
 !  Calculate Density pencils for linear density.
 !  Most basic pencils should come first, as others may depend on them.
@@ -2024,11 +2123,12 @@ module Density
 !
       use WENO_transport
       use Sub, only: grad,dot,dot2,u_dot_grad,del2,del6,multmv,g2ij,dot_mn,h_dot_grad,del6_strict,calc_del6_for_upwind
-      use SharedVariables, only: get_shared_variable
-!
+
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
-      intent(inout) :: f,p
+      logical, dimension(:), intent(IN) :: lpenc_loc
+      intent(in) :: f
+      intent(inout) :: p
       real, dimension(nx) :: tmp
 !
       integer :: i
@@ -2037,38 +2137,38 @@ module Density
       p%rho=f(l1:l2,m,n,irho)
       if (lreference_state) p%rho=p%rho+reference_state(:,iref_rho)
 ! rho1
-      if (lpencil(i_rho1)) p%rho1=1.0/p%rho
+      if (lpenc_loc(i_rho1)) p%rho1=1.0/p%rho
 ! lnrho
-      if (lpencil(i_lnrho))p%lnrho=log(p%rho)
+      if (lpenc_loc(i_lnrho))p%lnrho=log(p%rho)
 ! glnrho and grho
-      if (lpencil(i_glnrho).or.lpencil(i_grho)) then
+      if (lpenc_loc(i_glnrho).or.lpenc_loc(i_grho)) then
 !
         call grad(f,irho,p%grho)
         if (lreference_state) p%grho(:,1)=p%grho(:,1)+reference_state(:,iref_grho)
 ! 
-        if (lpencil(i_glnrho)) then
+        if (lpenc_loc(i_glnrho)) then
           do i=1,3
             p%glnrho(:,i)=p%rho1*p%grho(:,i)
           enddo
         endif
       endif
 ! uglnrho
-      if (lpencil(i_uglnrho)) call fatal_error('calc_pencils_density', &
+      if (lpenc_loc(i_uglnrho)) call fatal_error('calc_pencils_density', &
           'uglnrho not available for linear mass density')   ! Why not implementing it?
 ! ugrho
-      if (lpencil(i_ugrho)) &
+      if (lpenc_loc(i_ugrho)) &
         call u_dot_grad(f,ilnrho,p%grho,p%uu,p%ugrho,UPWIND=lupw_rho)
 ! glnrho2
-      if (lpencil(i_glnrho2)) call dot2(p%glnrho,p%glnrho2)
+      if (lpenc_loc(i_glnrho2)) call dot2(p%glnrho,p%glnrho2)
 ! del2rho
-      if (lpencil(i_del2rho)) then
+      if (lpenc_loc(i_del2rho)) then
         call del2(f,irho,p%del2rho)
         if (lreference_state) p%del2rho=p%del2rho+reference_state(:,iref_d2rho)
       endif
 ! del2lnrho
-      if (lpencil(i_del2lnrho)) p%del2lnrho=p%rho1*p%del2rho-p%glnrho2
+      if (lpenc_loc(i_del2lnrho)) p%del2lnrho=p%rho1*p%del2rho-p%glnrho2
 ! del6rho
-      if (lpencil(i_del6rho)) then
+      if (lpenc_loc(i_del6rho)) then
         if (ldiff_hyper3) then
           call del6(f,irho,p%del6rho)
           if (lreference_state) p%del6rho=p%del6rho+reference_state(:,iref_d6rho)
@@ -2077,17 +2177,17 @@ module Density
         endif
       endif
 ! del6lnrho
-      if (lpencil(i_del6lnrho)) call fatal_error('calc_pencils_density', &
+      if (lpenc_loc(i_del6lnrho)) call fatal_error('calc_pencils_density', &
           'del6lnrho not available for linear mass density')
 ! hlnrho
-      if (lpencil(i_hlnrho)) call fatal_error('calc_pencils_density', &
+      if (lpenc_loc(i_hlnrho)) call fatal_error('calc_pencils_density', &
           'hlnrho not available for linear mass density')
 ! sglnrho
-      if (lpencil(i_sglnrho)) call multmv(p%sij,p%glnrho,p%sglnrho)
+      if (lpenc_loc(i_sglnrho)) call multmv(p%sij,p%glnrho,p%sglnrho)
 ! uij5glnrho
-      if (lpencil(i_uij5glnrho)) call multmv(p%uij5,p%glnrho,p%uij5glnrho)
+      if (lpenc_loc(i_uij5glnrho)) call multmv(p%uij5,p%glnrho,p%uij5glnrho)
 ! transprho
-      if (lpencil(i_transprho)) then
+      if (lpenc_loc(i_transprho)) then
         if (lreference_state) then
           call weno_transp(f,m,n,irho,-1,iux,iuy,iuz,p%transprho,dx_1,dy_1,dz_1, &
                            reference_state(:,iref_rho))
@@ -2096,7 +2196,7 @@ module Density
         endif
       endif
 !
-      if (lpencil(i_uuadvec_grho)) then
+      if (lpenc_loc(i_uuadvec_grho)) then
         call h_dot_grad(p%uu_advec,p%grho,p%uuadvec_grho)
         if (lupw_rho) then
           call calc_del6_for_upwind(f,irho,p%uu_advec,tmp)
@@ -2104,9 +2204,9 @@ module Density
         endif
       endif
 !
-    endsubroutine calc_pencils_linear_density
+    endsubroutine calc_pencils_linear_density_pencpar
 !***********************************************************************
-    subroutine calc_pencils_log_density(f,p)
+    subroutine calc_pencils_log_density_pencpar(f,p,lpenc_loc)
 !
 !  Calculate Density pencils for logarithmic density.
 !  Most basic pencils should come first, as others may depend on them.
@@ -2119,19 +2219,21 @@ module Density
 !
       real, dimension (mx,my,mz,mfarray) :: f
       type (pencil_case) :: p
+      logical, dimension(:) :: lpenc_loc
 !
-      intent(inout) :: f,p
+      intent(in) :: f
+      intent(inout) :: p
 !
       integer :: i
 !
 ! lnrho
       p%lnrho=f(l1:l2,m,n,ilnrho)
 ! rho1
-      if (lpencil(i_rho1)) p%rho1=exp(-f(l1:l2,m,n,ilnrho))
+      if (lpenc_loc(i_rho1)) p%rho1=exp(-f(l1:l2,m,n,ilnrho))
 ! rho
-      if (lpencil(i_rho)) p%rho=1.0/p%rho1
+      if (lpenc_loc(i_rho)) p%rho=1.0/p%rho1
 ! glnrho and grho
-      if (lpencil(i_glnrho).or.lpencil(i_grho)) then
+      if (lpenc_loc(i_glnrho).or.lpenc_loc(i_grho)) then
         call grad(f,ilnrho,p%glnrho)
         if (notanumber(p%glnrho)) then
           print*, 'density:iproc,it,m,n=', iproc_world,it,m,n
@@ -2140,14 +2242,14 @@ module Density
           !print*, f(4,4,1:6,ilnrho)
           call fatal_error_local('calc_pencils_density','NaNs in p%glnrho)')
         endif
-        if (lpencil(i_grho)) then
+        if (lpenc_loc(i_grho)) then
           do i=1,3
             p%grho(:,i)=p%rho*p%glnrho(:,i)
           enddo
         endif
       endif
 ! uglnrho
-      if (lpencil(i_uglnrho)) then
+      if (lpenc_loc(i_uglnrho)) then
         if (lupw_lnrho) then
           call u_dot_grad(f,ilnrho,p%glnrho,p%uu,p%uglnrho,UPWIND=lupw_lnrho)
         else
@@ -2155,30 +2257,30 @@ module Density
         endif
       endif
 ! ugrho
-      if (lpencil(i_ugrho)) call fatal_error('calc_pencils_density', &
+      if (lpenc_loc(i_ugrho)) call fatal_error('calc_pencils_density', &
           'ugrho not available for logarithmic mass density')
 ! glnrho2
-      if (lpencil(i_glnrho2)) call dot2(p%glnrho,p%glnrho2)
+      if (lpenc_loc(i_glnrho2)) call dot2(p%glnrho,p%glnrho2)
 ! del2rho
-      if (lpencil(i_del2rho)) call fatal_error('calc_pencils_density', &
+      if (lpenc_loc(i_del2rho)) call fatal_error('calc_pencils_density', &
           'del2rho not available for logarithmic mass density')
 ! del2lnrho
-      if (lpencil(i_del2lnrho)) call del2(f,ilnrho,p%del2lnrho)
+      if (lpenc_loc(i_del2lnrho)) call del2(f,ilnrho,p%del2lnrho)
 ! del6rho
-      if (lpencil(i_del6rho)) call fatal_error('calc_pencils_density', &
+      if (lpenc_loc(i_del6rho)) call fatal_error('calc_pencils_density', &
           'del6rho not available for logarithmic mass density')
 ! del6lnrho
-      if (lpencil(i_del6lnrho)) call del6(f,ilnrho,p%del6lnrho)
+      if (lpenc_loc(i_del6lnrho)) call del6(f,ilnrho,p%del6lnrho)
 ! hlnrho
-      if (lpencil(i_hlnrho))  call g2ij(f,ilnrho,p%hlnrho)
+      if (lpenc_loc(i_hlnrho))  call g2ij(f,ilnrho,p%hlnrho)
 ! sglnrho
-      if (lpencil(i_sglnrho)) call multmv(p%sij,p%glnrho,p%sglnrho)
+      if (lpenc_loc(i_sglnrho)) call multmv(p%sij,p%glnrho,p%sglnrho)
 ! uij5glnrho
-      if (lpencil(i_uij5glnrho)) call multmv(p%uij5,p%glnrho,p%uij5glnrho)
+      if (lpenc_loc(i_uij5glnrho)) call multmv(p%uij5,p%glnrho,p%uij5glnrho)
 !
-      if (lpencil(i_uuadvec_glnrho)) call h_dot_grad(p%uu_advec,p%glnrho,p%uuadvec_glnrho)
+      if (lpenc_loc(i_uuadvec_glnrho)) call h_dot_grad(p%uu_advec,p%glnrho,p%uuadvec_glnrho)
 !
-    endsubroutine calc_pencils_log_density
+    endsubroutine calc_pencils_log_density_pencpar
 !***********************************************************************
     subroutine density_before_boundary(f)
 !
@@ -3277,6 +3379,8 @@ module Density
 !
 !  14-may-10/dhruba: coded
 !
+      use EquationOfState, only: eoscalc,ilnrho_TT
+
       real, dimension (mx,my,mz,mfarray) :: f
       real :: haut
       real, dimension (nx) :: lnrho,TT,ss
@@ -3591,5 +3695,17 @@ module Density
       endif
 
     endsubroutine impose_density_ceiling
+!***********************************************************************
+    subroutine push2c(p_idiag)
+
+    integer, parameter :: ndiags=4
+    integer(KIND=ikind8), dimension(ndiags) :: p_idiag
+
+    call copy_addr_c(idiag_rhom,p_idiag(1))
+    call copy_addr_c(idiag_rhomin,p_idiag(2))
+    call copy_addr_c(idiag_rhomax,p_idiag(3))
+    call copy_addr_c(idiag_mass,p_idiag(4))
+
+    endsubroutine push2c
 !***********************************************************************
 endmodule Density

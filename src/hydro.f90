@@ -1198,9 +1198,9 @@ module Hydro
 !  13-feb-15/MR: changes for use of reference_state
 !
       use Boundcond, only:update_ghosts
-      use Density, only: calc_pencils_density
+      use Density, only: calc_pencils_density, beta_glnrho_scaled
       use DensityMethods, only: getrho, putlnrho
-      use EquationOfState, only: cs20, beta_glnrho_scaled
+      use EquationOfState, only: cs20
       use General
       use Gravity, only: gravz_const,z1
       use Initcond

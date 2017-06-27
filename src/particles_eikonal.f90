@@ -657,7 +657,8 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_global, cs20
+      use Density, only: beta_glnrho_global
+      use EquationOfState, only: cs20
       use General, only: random_number_wrapper
       use Mpicomm, only: mpireduce_sum, mpibcast_real
       use InitialCondition, only: initial_condition_xxp,&
@@ -1806,7 +1807,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  14-apr-06/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_global
+      use Density, only: beta_glnrho_global
       use General, only: random_number_wrapper
 !
       real, dimension (mpar_loc,mparray) :: fp
@@ -1920,7 +1921,7 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  30-jan-06/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_global
+      use Density, only: beta_glnrho_global
       use General, only: random_number_wrapper
       use Particles_mpicomm
 !
@@ -2029,7 +2030,8 @@ k_loop:   do while (.not. (k>npar_loc))
 !
 !  14-sep-05/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_scaled, gamma, cs20
+      use Density, only: beta_glnrho_scaled
+      use EquationOfState, only: gamma, cs20
       use General, only: random_number_wrapper
 !
       real, dimension (mpar_loc,mparray) :: fp

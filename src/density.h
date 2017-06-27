@@ -16,8 +16,9 @@
   public :: mean_density
   public :: update_char_vel_density
   public :: density_after_timestep
+  public :: push2c
 !
 ! WL: ONLY SUBROUTINES SHOULD BE PUBLIC. THESE DO NOT QUALIFY!!!!!
 !
-  public :: glnrhomz,lcalc_glnrhomean,lupw_lnrho
-
+  public :: lnrhomz,glnrhomz,lcalc_lnrhomean,lcalc_glnrhomean,lupw_lnrho
+  public :: beta_glnrho_global,beta_glnrho_scaled

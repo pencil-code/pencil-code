@@ -1558,7 +1558,6 @@ module PointMasses
 !
       if (lroot) then
         open(1,FILE=filename,FORM='unformatted')
-        print*,'opened file'
         read(1) nqpar_read
         if (nqpar_read /= nqpar) call fatal_error("","")
         if (nqpar_read/=0) read(1) fq

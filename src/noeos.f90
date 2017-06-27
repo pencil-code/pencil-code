@@ -37,17 +37,10 @@ module EquationOfState
   integer :: imass=1
   integer :: ics
 !
-  real, dimension (mz) :: profz_eos=1.0,dprofz_eos=0.0
-  real, dimension (3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
   real :: cs0=1.0, rho0=1.0, rho02
   real :: cs20=1.0, lnrho0=0.0
   real, parameter :: gamma=5.0/3.0, gamma_m1=2.0/3.0, gamma1=1./gamma
-  real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=1.0, cs2top=1.0
-  real :: cs2cool=0.0
-  real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
-  integer :: isothtop=1
-  character (len=labellen) :: ieos_profile='nothing'
   real, dimension(nchemspec,18) :: species_constants
   real, dimension(nchemspec,7)  :: tran_data
   real, dimension(nchemspec)    :: Lewis_coef, Lewis_coef1

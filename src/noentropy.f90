@@ -76,8 +76,8 @@ module Energy
 !
 !  24-nov-02/tony: coded
 !
-      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled, &
-                                 cs0, select_eos_variable,gamma_m1
+      use Density, only: beta_glnrho_global, beta_glnrho_scaled
+      use EquationOfState, only: cs0, select_eos_variable,gamma_m1
       use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable,get_shared_variable
 !
@@ -161,7 +161,7 @@ module Energy
 !
 !  20-11-04/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_scaled
+      use Density, only: beta_glnrho_scaled
 !
       if (lhydro.and.lpressuregradient_gas) lpenc_requested(i_fpres)=.true.
       if (leos.and.ldensity.and.lhydro.and.ldt) lpenc_requested(i_cs2)=.true.
@@ -283,7 +283,7 @@ module Energy
 !  Calculate pressure gradient term for isothermal/polytropic equation
 !  of state.
 !
-      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
+      use Density, only: beta_glnrho_global, beta_glnrho_scaled
       use Diagnostics
 !
       real, dimension (mx,my,mz,mfarray) :: f

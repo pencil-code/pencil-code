@@ -18,7 +18,7 @@ module InitialCondition
   use Cdata
   use General, only: keep_compiler_quiet
   use Messages
-  use EquationOfState, only: gamma1, mpoly0, mpoly1, mpoly2, gamma_m1, cs20
+  use EquationOfState, only: gamma1, gamma_m1, cs20
 !
   implicit none
 !
@@ -26,6 +26,7 @@ module InitialCondition
 !
   real, pointer :: hcond0
   real :: wheat,luminosity,r_bcz,widthss,alpha_MLT
+  real, pointer :: mpoly0,mpoly1,mpoly2
 !
   contains
 !***********************************************************************
@@ -53,10 +54,18 @@ module InitialCondition
 !
 !  Get the needed parameters from the entropy module.
 !
-      call get_shared_variable('hcond0',hcond0,ierr)
-      if (ierr/=0) call stop_it(" initial_condition_ss: "//&
-           "there was a problem when getting hcond0")
-      call get_shared_variable('star_params',star_params,caller='initial_condition_ss')
+      call get_shared_variable('hcond0',hcond0,caller='initial_condition_ss')  
+      call get_shared_variable('star_params',star_params)
+      if (lentropy) then
+        call get_shared_variable('mpoly0', mpoly0)
+        call get_shared_variable('mpoly1', mpoly1)
+        call get_shared_variable('mpoly2', mpoly2)
+      else
+        call warning('init_condition_ss','no mpoly[0-2] provided by entropy, take default 1.5')
+        allocate(mpoly0,mpoly1,mpoly2)
+        mpoly0=1.5; mpoly1=1.5; mpoly2=1.5
+      endif
+
       wheat=star_params(1)
       luminosity=star_params(2)
       r_bcz=star_params(3)

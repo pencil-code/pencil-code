@@ -47,13 +47,14 @@ module Pscalar
   character (len=labellen) :: initlncc='impossible', initlncc2='impossible'
   character (len=labellen) :: initcc='nothing', initcc2='zero'
   character (len=40) :: tensor_pscalar_file
+  integer :: ll_sh, mm_sh, n_xprof
 !
   namelist /pscalar_init_pars/ &
       initcc, initcc2,amplcc, amplcc2, kx_cc, ky_cc, kz_cc, radius_cc, &
       cc_left, cc_right, &
       epsilon_cc, widthcc, cc_min, cc_const, initlncc, initlncc2, ampllncc, &
       ampllncc2, kx_lncc, ky_lncc, kz_lncc, radius_lncc, epsilon_lncc, &
-      widthlncc, kxx_cc, kyy_cc, kzz_cc, hoverr, powerlr, zoverh
+      widthlncc, kxx_cc, kyy_cc, kzz_cc, hoverr, powerlr, zoverh, ll_sh, mm_sh, n_xprof
 !
 !  Run parameters.
 !
@@ -160,12 +161,18 @@ module Pscalar
 !  initialise passive scalar field; called from start.f90
 !
 !   6-jul-2001/axel: coded
+!  27-jun-2017/MR: added initial condition: spherical harmonic in \theta,\phi,
+!                  sinusoidal in r with frequency n_xprof
 !
       use Sub
+      use General, only: yin2yang_coors
       use Initcond
       use InitialCondition, only: initial_condition_lncc
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(nx) :: tmpx
+      real, dimension(:,:), allocatable :: yz
+      integer :: iyz
 !
       ! for the time being, keep old name for backward compatibility
       if (initlncc/='impossible') initcc=initlncc
@@ -238,6 +245,31 @@ module Pscalar
         case ('jump-y-neg'); call jump(f,icc,0.,cc_const,widthcc,'y')
         case ('jump-z-neg'); call jump(f,icc,0.,cc_const,widthcc,'z')
         case ('jump'); call jump(f,icc,cc_const,0.,widthcc,'z')
+        case('spher-harm')
+          if (.not.lspherical_coords) call fatal_error("init_lncc", &
+              "spher-harm only meaningful for spherical coordinates"//trim(initcc))
+          !tmpx=(x(l1:l2)-xyz0(1))*(x(l1:l2)-xyz1(1)) + (xyz1(1) - 0.5*xyz0(1))*x(l1:l2)         ! S(r)
+          tmpx=sin((2.*pi/(Lxyz(1))*n_xprof)*(x(l1:l2)-xyz0(1)))
+
+          if (lyang) then
+            allocate(yz(2,ny*nz))
+            call yin2yang_coors(costh(m1:m2),sinth(m1:m2),cosph(n1:n2),sinph(n1:n2),yz)
+            iyz=1
+            do m=m1,m2
+              do n=n1,n2
+!if (iproc_world==55) print*, 'm,n,yz=', m,n,yz(:,iyz)
+                f(l1:l2,m,n,icc) = amplcc*tmpx*ylm_other(yz(1,iyz),yz(2,iyz),ll_sh,mm_sh)
+                iyz=iyz+1
+              enddo
+            enddo
+          else
+            do n=n1,n2
+              do m=m1,m2
+                f(l1:l2,m,n,icc) = amplcc*tmpx*ylm(ll_sh,mm_sh)
+              enddo
+            enddo
+          endif
+
         case default; call fatal_error('init_lncc','bad initcc='//trim(initcc))
       endselect
 !
