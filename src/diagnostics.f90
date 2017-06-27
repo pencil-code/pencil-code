@@ -714,7 +714,7 @@ module Diagnostics
                   vname(iname)=sqrt(fsum(isum_count))/fweight(isum_count)
 !
               if (itype==ilabel_sum_log10_par)        &
-                  vname(iname)=log10(fsum(isum_count))/fweight(isum_count)
+                  vname(iname)=log10(fsum(isum_count)/fweight(isum_count))
 !
               if (itype==ilabel_integrate)      &
                   vname(iname)=fsum(isum_count)
@@ -1630,7 +1630,9 @@ if (ios/=0) print*, 'ios, i=', ios, i
 !  This routine is to be called only once per step
 !
       if (iname/=0) then
-!print*, 'save_name: a,iname=', a,iname
+!  18-June-17/xiangyu: when I adapted the log output for high moments of swarm model, the print command is
+!  always invoked, so I commented the "print" out for now.
+				!print*, 'save_name: a,iname=', a,iname
         fname(iname)=a
         itype_name(iname)=ilabel_save
       endif
