@@ -433,6 +433,7 @@ module Io
       endif
 !
       if (filename /= "") then
+        close (lun_output)
         call delete_file(trim(directory_dist)//'/'//filename)
         open (lun_output, FILE=trim(directory_dist)//'/'//filename, FORM='unformatted', status='new')
         if (ip <= 9) write (*,*) 'begin persistent block'
