@@ -62,8 +62,15 @@ module Particles_coagulation
              
 !
   real :: deltad = 1., a0 = 1.
-	real :: r1, r2, r3, r4, r5, r_diff
-	integer :: idiag_kernel1, idiag_kernel2, idiag_kernel3, idiag_kernel4, idiag_kernel5
+	real :: r1, r2, r3, r4, r5, r6, r7, r8, r_diff
+	integer :: idiag_k100_100, idiag_k100_80, idiag_k100_60, idiag_k100_50, idiag_k100_40, idiag_k100_30, idiag_k100_20, idiag_k100_10, &
+             idiag_k80_80, idiag_k80_60, idiag_k80_50, idiag_k80_40, idiag_k80_30, idiag_k80_20, idiag_k80_10, &
+             idiag_k60_60, idiag_k60_50, idiag_k60_40, idiag_k60_30, idiag_k60_20, idiag_k60_10, &
+             idiag_k50_50, idiag_k50_40, idiag_k50_30, idiag_k50_20, idiag_k50_10, &
+             idiag_k40_40, idiag_k40_30, idiag_k40_20, idiag_k40_10, &
+             idiag_k30_30, idiag_k30_20, idiag_k30_10, &
+             idiag_k20_20, idiag_k20_10, &
+             idiag_k10_10
 !
   namelist /particles_coag_run_pars/ &
       cdtpcoag, lcoag_simultaneous, lshear_in_vp, lconstant_kernel_test, &
@@ -75,7 +82,7 @@ module Particles_coagulation
       ldroplet_coagulation, droplet_coagulation_model, lcollision_output, &
       luser_random_number_wrapper, lrelabelling, rdifference, &
       kernel_output, deltad, a0, &
-      radius_output, r1, r2, r3, r4, r5, r_diff
+      radius_output, r1, r2, r3, r4, r5, r6, r7, r8, r_diff
 !
   contains
 !***********************************************************************
@@ -298,7 +305,14 @@ module Particles_coagulation
 			real, parameter :: radius_diff=5.e-6
 			real, dimension (rbin) :: adplus, adminus, ad
 			character(len=50) :: itn,filename
-			real :: kernel1, kernel2, kernel3, kernel4, kernel5
+			real :: k100_100, k100_80, k100_60, k100_50, k100_40, k100_30, k100_20, k100_10, &
+              k80_80, k80_60, k80_50, k80_40, k80_30, k80_20, k80_10, &
+              k60_60, k60_50, k60_40, k60_30, k60_20, k60_10, &
+              k50_50, k50_40, k50_30, k50_20, k50_10, &
+              k40_40, k40_30, k40_20, k40_10, &
+              k30_30, k30_20, k30_10, &
+              k20_20, k20_10, &
+              k10_10
 !
 !  If using the Zsom & Dullemond Monte Carlo method (KWJ)
 !
@@ -501,33 +515,101 @@ module Particles_coagulation
 !17-06-21: Xiang-Yu coded: kernel of ri rj, diagnostics as time series
                       if (radius_output) then
 												if (fp(j,iap)>=fp(k,iap)) then
-													if (fp(j,iap)>=r1-r_diff .and. fp(j,iap)<=r1+r_diff .and. &
-														fp(k,iap)>=r1-r_diff .and. fp(k,iap)<=r1+r_diff) kernel1 = tau_coll1
-													if (fp(j,iap)>=r1-r_diff .and. fp(j,iap)<=r1+r_diff .and. &
-														fp(k,iap)>=r2-r_diff .and. fp(k,iap)<=r2+r_diff) kernel2 = tau_coll1
-													if (fp(j,iap)>=r1-r_diff .and. fp(j,iap)<=r1+r_diff .and. &
-														fp(k,iap)>=r3-r_diff .and. fp(k,iap)<=r3+r_diff) kernel3 = tau_coll1
-													if (fp(j,iap)>=r1-r_diff .and. fp(j,iap)<=r1+r_diff .and. &
-														fp(k,iap)>=r4-r_diff .and. fp(k,iap)<=r4+r_diff) kernel4 = tau_coll1
-													if (fp(j,iap)>=r1-r_diff .and. fp(j,iap)<=r1+r_diff .and. &
-														fp(k,iap)>=r5-r_diff .and. fp(k,iap)<=r5+r_diff) kernel5 = tau_coll1
+													!r1=100 mum
+													if (fp(j,iap)>=r1-r_diff .and. fp(j,iap)<=r1+r_diff .and. fp(k,iap)>=r1-r_diff .and. fp(k,iap)<=r1+r_diff) k100_100 = tau_coll1
+													if (fp(j,iap)>=r1-r_diff .and. fp(j,iap)<=r1+r_diff .and. fp(k,iap)>=r2-r_diff .and. fp(k,iap)<=r2+r_diff) k100_80 = tau_coll1
+													if (fp(j,iap)>=r1-r_diff .and. fp(j,iap)<=r1+r_diff .and. fp(k,iap)>=r3-r_diff .and. fp(k,iap)<=r3+r_diff) k100_60 = tau_coll1
+													if (fp(j,iap)>=r1-r_diff .and. fp(j,iap)<=r1+r_diff .and. fp(k,iap)>=r4-r_diff .and. fp(k,iap)<=r4+r_diff) k100_50 = tau_coll1
+													if (fp(j,iap)>=r1-r_diff .and. fp(j,iap)<=r1+r_diff .and. fp(k,iap)>=r5-r_diff .and. fp(k,iap)<=r5+r_diff) k100_40 = tau_coll1
+													if (fp(j,iap)>=r1-r_diff .and. fp(j,iap)<=r1+r_diff .and. fp(k,iap)>=r6-r_diff .and. fp(k,iap)<=r6+r_diff) k100_30 = tau_coll1
+													if (fp(j,iap)>=r1-r_diff .and. fp(j,iap)<=r1+r_diff .and. fp(k,iap)>=r7-r_diff .and. fp(k,iap)<=r7+r_diff) k100_20 = tau_coll1
+													if (fp(j,iap)>=r1-r_diff .and. fp(j,iap)<=r1+r_diff .and. fp(k,iap)>=r8-r_diff .and. fp(k,iap)<=r8+r_diff) k100_10 = tau_coll1
+													!r2=80 mum
+													if (fp(j,iap)>=r2-r_diff .and. fp(j,iap)<=r2+r_diff .and. fp(k,iap)>=r2-r_diff .and. fp(k,iap)<=r2+r_diff) k80_80 = tau_coll1
+													if (fp(j,iap)>=r2-r_diff .and. fp(j,iap)<=r2+r_diff .and. fp(k,iap)>=r3-r_diff .and. fp(k,iap)<=r3+r_diff) k80_60 = tau_coll1
+													if (fp(j,iap)>=r2-r_diff .and. fp(j,iap)<=r2+r_diff .and. fp(k,iap)>=r4-r_diff .and. fp(k,iap)<=r4+r_diff) k80_50 = tau_coll1
+													if (fp(j,iap)>=r2-r_diff .and. fp(j,iap)<=r2+r_diff .and. fp(k,iap)>=r5-r_diff .and. fp(k,iap)<=r5+r_diff) k80_40 = tau_coll1
+													if (fp(j,iap)>=r2-r_diff .and. fp(j,iap)<=r2+r_diff .and. fp(k,iap)>=r6-r_diff .and. fp(k,iap)<=r6+r_diff) k80_30 = tau_coll1
+													if (fp(j,iap)>=r2-r_diff .and. fp(j,iap)<=r2+r_diff .and.	fp(k,iap)>=r7-r_diff .and. fp(k,iap)<=r7+r_diff) k80_20 = tau_coll1
+													if (fp(j,iap)>=r2-r_diff .and. fp(j,iap)<=r2+r_diff .and. fp(k,iap)>=r8-r_diff .and. fp(k,iap)<=r8+r_diff) k80_10 = tau_coll1
+													!r3=60 mum
+													if (fp(j,iap)>=r3-r_diff .and. fp(j,iap)<=r3+r_diff .and. fp(k,iap)>=r3-r_diff .and. fp(k,iap)<=r3+r_diff) k60_60 = tau_coll1
+													if (fp(j,iap)>=r3-r_diff .and. fp(j,iap)<=r3+r_diff .and. fp(k,iap)>=r4-r_diff .and. fp(k,iap)<=r4+r_diff) k60_50 = tau_coll1
+													if (fp(j,iap)>=r3-r_diff .and. fp(j,iap)<=r3+r_diff .and. fp(k,iap)>=r5-r_diff .and. fp(k,iap)<=r5+r_diff) k60_40 = tau_coll1
+													if (fp(j,iap)>=r3-r_diff .and. fp(j,iap)<=r3+r_diff .and. fp(k,iap)>=r6-r_diff .and. fp(k,iap)<=r6+r_diff) k60_30 = tau_coll1
+													if (fp(j,iap)>=r3-r_diff .and. fp(j,iap)<=r3+r_diff .and.	fp(k,iap)>=r7-r_diff .and. fp(k,iap)<=r7+r_diff) k60_20 = tau_coll1
+													if (fp(j,iap)>=r3-r_diff .and. fp(j,iap)<=r3+r_diff .and. fp(k,iap)>=r8-r_diff .and. fp(k,iap)<=r8+r_diff) k60_10 = tau_coll1
+													!r4=50 mum
+													if (fp(j,iap)>=r4-r_diff .and. fp(j,iap)<=r4+r_diff .and. fp(k,iap)>=r4-r_diff .and. fp(k,iap)<=r4+r_diff) k50_50 = tau_coll1
+													if (fp(j,iap)>=r4-r_diff .and. fp(j,iap)<=r4+r_diff .and. fp(k,iap)>=r5-r_diff .and. fp(k,iap)<=r5+r_diff) k50_40 = tau_coll1
+													if (fp(j,iap)>=r4-r_diff .and. fp(j,iap)<=r4+r_diff .and. fp(k,iap)>=r6-r_diff .and. fp(k,iap)<=r6+r_diff) k50_30 = tau_coll1
+													if (fp(j,iap)>=r4-r_diff .and. fp(j,iap)<=r4+r_diff .and.	fp(k,iap)>=r7-r_diff .and. fp(k,iap)<=r7+r_diff) k50_20 = tau_coll1
+													if (fp(j,iap)>=r4-r_diff .and. fp(j,iap)<=r4+r_diff .and. fp(k,iap)>=r8-r_diff .and. fp(k,iap)<=r8+r_diff) k50_10 = tau_coll1
+													!r5=40 mum
+													if (fp(j,iap)>=r5-r_diff .and. fp(j,iap)<=r5+r_diff .and. fp(k,iap)>=r5-r_diff .and. fp(k,iap)<=r5+r_diff) k40_40 = tau_coll1
+													if (fp(j,iap)>=r5-r_diff .and. fp(j,iap)<=r5+r_diff .and. fp(k,iap)>=r6-r_diff .and. fp(k,iap)<=r6+r_diff) k40_30 = tau_coll1
+													if (fp(j,iap)>=r5-r_diff .and. fp(j,iap)<=r5+r_diff .and.	fp(k,iap)>=r7-r_diff .and. fp(k,iap)<=r7+r_diff) k40_20 = tau_coll1
+													if (fp(j,iap)>=r5-r_diff .and. fp(j,iap)<=r5+r_diff .and. fp(k,iap)>=r8-r_diff .and. fp(k,iap)<=r8+r_diff) k40_10 = tau_coll1
+													!r6=30 mum
+													if (fp(j,iap)>=r6-r_diff .and. fp(j,iap)<=r6+r_diff .and. fp(k,iap)>=r6-r_diff .and. fp(k,iap)<=r6+r_diff) k30_30 = tau_coll1
+													if (fp(j,iap)>=r6-r_diff .and. fp(j,iap)<=r6+r_diff .and.	fp(k,iap)>=r7-r_diff .and. fp(k,iap)<=r7+r_diff) k30_20 = tau_coll1
+													if (fp(j,iap)>=r6-r_diff .and. fp(j,iap)<=r6+r_diff .and. fp(k,iap)>=r8-r_diff .and. fp(k,iap)<=r8+r_diff) k30_10 = tau_coll1
+													!r7=20 mum
+													if (fp(j,iap)>=r7-r_diff .and. fp(j,iap)<=r7+r_diff .and.	fp(k,iap)>=r7-r_diff .and. fp(k,iap)<=r7+r_diff) k20_20 = tau_coll1
+													if (fp(j,iap)>=r7-r_diff .and. fp(j,iap)<=r7+r_diff .and. fp(k,iap)>=r8-r_diff .and. fp(k,iap)<=r8+r_diff) k20_10 = tau_coll1
+													!r7=10 mum
+													if (fp(j,iap)>=r8-r_diff .and. fp(j,iap)<=r8+r_diff .and. fp(k,iap)>=r8-r_diff .and. fp(k,iap)<=r8+r_diff) k10_10 = tau_coll1
 												else
-													if (fp(k,iap)>=r1-r_diff .and. fp(k,iap)<=r1+r_diff .and. &
-														fp(j,iap)>=r1-r_diff .and. fp(j,iap)<=r1+r_diff) kernel1 = tau_coll1
-													if (fp(k,iap)>=r1-r_diff .and. fp(k,iap)<=r1+r_diff .and. &
-														fp(j,iap)>=r2-r_diff .and. fp(j,iap)<=r2+r_diff) kernel2 = tau_coll1
-													if (fp(k,iap)>=r1-r_diff .and. fp(k,iap)<=r1+r_diff .and. &
-														fp(j,iap)>=r3-r_diff .and. fp(j,iap)<=r3+r_diff) kernel3 = tau_coll1
-													if (fp(k,iap)>=r1-r_diff .and. fp(k,iap)<=r1+r_diff .and. &
-														fp(j,iap)>=r4-r_diff .and. fp(j,iap)<=r4+r_diff) kernel4 = tau_coll1
-													if (fp(k,iap)>=r1-r_diff .and. fp(k,iap)<=r1+r_diff .and. &
-														fp(j,iap)>=r5-r_diff .and. fp(j,iap)<=r5+r_diff) kernel5 = tau_coll1
+													!r1=100
+													if (fp(k,iap)>=r1-r_diff .and. fp(k,iap)<=r1+r_diff .and. fp(j,iap)>=r1-r_diff .and. fp(j,iap)<=r1+r_diff) k100_100 = tau_coll1
+													if (fp(k,iap)>=r1-r_diff .and. fp(k,iap)<=r1+r_diff .and. fp(j,iap)>=r2-r_diff .and. fp(j,iap)<=r2+r_diff) k100_80 = tau_coll1
+													if (fp(k,iap)>=r1-r_diff .and. fp(k,iap)<=r1+r_diff .and. fp(j,iap)>=r3-r_diff .and. fp(j,iap)<=r3+r_diff) k100_60 = tau_coll1
+													if (fp(k,iap)>=r1-r_diff .and. fp(k,iap)<=r1+r_diff .and. fp(j,iap)>=r4-r_diff .and. fp(j,iap)<=r4+r_diff) k100_50 = tau_coll1
+													if (fp(k,iap)>=r1-r_diff .and. fp(k,iap)<=r1+r_diff .and. fp(j,iap)>=r5-r_diff .and. fp(j,iap)<=r5+r_diff) k100_40 = tau_coll1
+													if (fp(k,iap)>=r1-r_diff .and. fp(k,iap)<=r1+r_diff .and. fp(j,iap)>=r6-r_diff .and. fp(j,iap)<=r6+r_diff) k100_30 = tau_coll1
+													if (fp(k,iap)>=r1-r_diff .and. fp(k,iap)<=r1+r_diff .and.	fp(j,iap)>=r7-r_diff .and. fp(j,iap)<=r7+r_diff) k100_20 = tau_coll1
+													if (fp(k,iap)>=r1-r_diff .and. fp(k,iap)<=r1+r_diff .and. fp(j,iap)>=r8-r_diff .and. fp(j,iap)<=r8+r_diff) k100_10 = tau_coll1
+													!r2=80 mum
+													if (fp(k,iap)>=r2-r_diff .and. fp(k,iap)<=r2+r_diff .and. fp(j,iap)>=r2-r_diff .and. fp(j,iap)<=r2+r_diff) k80_80 = tau_coll1
+													if (fp(k,iap)>=r2-r_diff .and. fp(k,iap)<=r2+r_diff .and. fp(j,iap)>=r3-r_diff .and. fp(j,iap)<=r3+r_diff) k80_60 = tau_coll1
+													if (fp(k,iap)>=r2-r_diff .and. fp(k,iap)<=r2+r_diff .and. fp(j,iap)>=r4-r_diff .and. fp(j,iap)<=r4+r_diff) k80_50 = tau_coll1
+													if (fp(k,iap)>=r2-r_diff .and. fp(k,iap)<=r2+r_diff .and. fp(j,iap)>=r5-r_diff .and. fp(j,iap)<=r5+r_diff) k80_40 = tau_coll1
+													if (fp(k,iap)>=r2-r_diff .and. fp(k,iap)<=r2+r_diff .and. fp(j,iap)>=r6-r_diff .and. fp(j,iap)<=r6+r_diff) k80_30 = tau_coll1
+													if (fp(k,iap)>=r2-r_diff .and. fp(k,iap)<=r2+r_diff .and. fp(j,iap)>=r7-r_diff .and. fp(j,iap)<=r7+r_diff) k80_20 = tau_coll1
+													if (fp(k,iap)>=r2-r_diff .and. fp(k,iap)<=r2+r_diff .and. fp(j,iap)>=r8-r_diff .and. fp(j,iap)<=r8+r_diff) k80_10 = tau_coll1
+													!r3=60 mum
+													if (fp(k,iap)>=r3-r_diff .and. fp(k,iap)<=r3+r_diff .and. fp(j,iap)>=r3-r_diff .and. fp(j,iap)<=r3+r_diff) k60_60 = tau_coll1
+													if (fp(k,iap)>=r3-r_diff .and. fp(k,iap)<=r3+r_diff .and. fp(j,iap)>=r4-r_diff .and. fp(j,iap)<=r4+r_diff) k60_50 = tau_coll1
+													if (fp(k,iap)>=r3-r_diff .and. fp(k,iap)<=r3+r_diff .and. fp(j,iap)>=r5-r_diff .and. fp(j,iap)<=r5+r_diff) k60_40 = tau_coll1
+													if (fp(k,iap)>=r3-r_diff .and. fp(k,iap)<=r3+r_diff .and. fp(j,iap)>=r6-r_diff .and. fp(j,iap)<=r6+r_diff) k60_30 = tau_coll1
+													if (fp(k,iap)>=r3-r_diff .and. fp(k,iap)<=r3+r_diff .and. fp(j,iap)>=r7-r_diff .and. fp(j,iap)<=r7+r_diff) k60_20 = tau_coll1
+													if (fp(k,iap)>=r3-r_diff .and. fp(k,iap)<=r3+r_diff .and. fp(j,iap)>=r8-r_diff .and. fp(j,iap)<=r8+r_diff) k60_10 = tau_coll1
+													!r4=50 mum
+													if (fp(k,iap)>=r4-r_diff .and. fp(k,iap)<=r4+r_diff .and. fp(j,iap)>=r4-r_diff .and. fp(j,iap)<=r4+r_diff) k50_50 = tau_coll1
+													if (fp(k,iap)>=r4-r_diff .and. fp(k,iap)<=r4+r_diff .and. fp(j,iap)>=r5-r_diff .and. fp(j,iap)<=r5+r_diff) k50_40 = tau_coll1
+													if (fp(k,iap)>=r4-r_diff .and. fp(k,iap)<=r4+r_diff .and. fp(j,iap)>=r6-r_diff .and. fp(j,iap)<=r6+r_diff) k50_30 = tau_coll1
+													if (fp(k,iap)>=r4-r_diff .and. fp(k,iap)<=r4+r_diff .and. fp(j,iap)>=r7-r_diff .and. fp(j,iap)<=r7+r_diff) k50_20 = tau_coll1
+													if (fp(k,iap)>=r4-r_diff .and. fp(k,iap)<=r4+r_diff .and. fp(j,iap)>=r8-r_diff .and. fp(j,iap)<=r8+r_diff) k50_10 = tau_coll1
+													!r5=40 mum
+													if (fp(k,iap)>=r5-r_diff .and. fp(k,iap)<=r5+r_diff .and. fp(j,iap)>=r5-r_diff .and. fp(j,iap)<=r5+r_diff) k40_40 = tau_coll1
+													if (fp(k,iap)>=r5-r_diff .and. fp(k,iap)<=r5+r_diff .and. fp(j,iap)>=r6-r_diff .and. fp(j,iap)<=r6+r_diff) k40_30 = tau_coll1
+													if (fp(k,iap)>=r5-r_diff .and. fp(k,iap)<=r5+r_diff .and. fp(j,iap)>=r7-r_diff .and. fp(j,iap)<=r7+r_diff) k40_20 = tau_coll1
+													if (fp(k,iap)>=r5-r_diff .and. fp(k,iap)<=r5+r_diff .and. fp(j,iap)>=r8-r_diff .and. fp(j,iap)<=r8+r_diff) k40_10 = tau_coll1
+													!r6=30 mum
+													if (fp(k,iap)>=r6-r_diff .and. fp(k,iap)<=r6+r_diff .and. fp(j,iap)>=r6-r_diff .and. fp(j,iap)<=r6+r_diff) k30_30 = tau_coll1
+													if (fp(k,iap)>=r6-r_diff .and. fp(k,iap)<=r6+r_diff .and. fp(j,iap)>=r7-r_diff .and. fp(j,iap)<=r7+r_diff) k30_20 = tau_coll1
+													if (fp(k,iap)>=r6-r_diff .and. fp(k,iap)<=r6+r_diff .and. fp(j,iap)>=r8-r_diff .and. fp(j,iap)<=r8+r_diff) k30_10 = tau_coll1
+													!r7=20 mum
+													if (fp(k,iap)>=r7-r_diff .and. fp(k,iap)<=r7+r_diff .and. fp(j,iap)>=r7-r_diff .and. fp(j,iap)<=r7+r_diff) k20_20 = tau_coll1
+													if (fp(k,iap)>=r7-r_diff .and. fp(k,iap)<=r7+r_diff .and. fp(j,iap)>=r8-r_diff .and. fp(j,iap)<=r8+r_diff) k20_10 = tau_coll1
+													!r8=10 mum
+													if (fp(k,iap)>=r8-r_diff .and. fp(k,iap)<=r8+r_diff .and. fp(j,iap)>=r8-r_diff .and. fp(j,iap)<=r8+r_diff) k10_10 = tau_coll1
                         endif 
-!												print*,'kernel1=',kernel1
-!												print*,'kernel2=',kernel2
-!												print*,'kernel3=',kernel3
-!												print*,'kernel4=',kernel4
-!												print*,'kernel5=',kernel5
+!												print*,'k100_100=',k100_100
+!												print*,'k100_80=',k100_80
+!												print*,'k100_60=',kernel3
+!												print*,'k100_50=',kernel4
+!												print*,'k100_40=',kernel5
 											endif
 !17-06-21: Xiang-Yu
 
@@ -604,16 +686,50 @@ module Particles_coagulation
                     call sum_par_name((/real(npart_par)/),idiag_ncoagpartpm)
                 if (idiag_dt1_coag_par/=0) &
                     call sum_par_name((/real(ncoll_par)/),idiag_dt1_coag_par)
-								if (idiag_kernel1/=0) &	
-									  call sum_par_name((/real(kernel1)/),idiag_kernel1) 
-								if (idiag_kernel2/=0) &	
-									  call sum_par_name((/real(kernel2)/),idiag_kernel2) 
-								if (idiag_kernel3/=0) &	
-									  call sum_par_name((/real(kernel3)/),idiag_kernel3) 
-								if (idiag_kernel4/=0) &	
-									  call sum_par_name((/real(kernel4)/),idiag_kernel4) 
-								if (idiag_kernel5/=0) &	
-									  call sum_par_name((/real(kernel5)/),idiag_kernel5) 
+								if (idiag_k100_100/=0) &	
+									  call sum_par_name((/real(k100_100)/),idiag_k100_100) 
+								if (idiag_k100_80/=0) &	
+									  call sum_par_name((/real(k100_80)/),idiag_k100_80) 
+								if (idiag_k100_60/=0) &	
+									  call sum_par_name((/real(k100_60)/),idiag_k100_60) 
+								if (idiag_k100_50/=0) &	
+									  call sum_par_name((/real(k100_50)/),idiag_k100_50) 
+								if (idiag_k100_40/=0) &	
+									  call sum_par_name((/real(k100_40)/),idiag_k100_40) 
+								if (idiag_k100_30/=0) &	
+									  call sum_par_name((/real(k100_30)/),idiag_k100_30) 
+								if (idiag_k100_20/=0) &	
+									  call sum_par_name((/real(k100_20)/),idiag_k100_20) 
+								if (idiag_k100_10/=0) &	
+									  call sum_par_name((/real(k100_10)/),idiag_k100_10) 
+								if (idiag_k80_80/=0) call sum_par_name((/real(k80_80)/),idiag_k80_80) 
+								if (idiag_k80_60/=0) call sum_par_name((/real(k80_60)/),idiag_k80_60) 
+								if (idiag_k80_50/=0) call sum_par_name((/real(k80_50)/),idiag_k80_50) 
+								if (idiag_k80_40/=0) call sum_par_name((/real(k80_40)/),idiag_k80_40) 
+								if (idiag_k80_30/=0) call sum_par_name((/real(k80_30)/),idiag_k80_30) 
+								if (idiag_k80_20/=0) call sum_par_name((/real(k80_20)/),idiag_k80_20) 
+								if (idiag_k80_10/=0) call sum_par_name((/real(k80_10)/),idiag_k80_10) 
+								if (idiag_k60_60/=0) call sum_par_name((/real(k60_60)/),idiag_k60_60) 
+								if (idiag_k60_50/=0) call sum_par_name((/real(k60_50)/),idiag_k60_50) 
+								if (idiag_k60_40/=0) call sum_par_name((/real(k60_40)/),idiag_k60_40) 
+								if (idiag_k60_30/=0) call sum_par_name((/real(k60_30)/),idiag_k60_30) 
+								if (idiag_k60_20/=0) call sum_par_name((/real(k60_20)/),idiag_k60_20) 
+								if (idiag_k60_10/=0) call sum_par_name((/real(k60_10)/),idiag_k60_10) 
+								if (idiag_k50_50/=0) call sum_par_name((/real(k50_50)/),idiag_k50_50) 
+								if (idiag_k50_40/=0) call sum_par_name((/real(k50_40)/),idiag_k50_40) 
+								if (idiag_k50_30/=0) call sum_par_name((/real(k50_30)/),idiag_k50_30) 
+								if (idiag_k50_20/=0) call sum_par_name((/real(k50_20)/),idiag_k50_20) 
+								if (idiag_k50_10/=0) call sum_par_name((/real(k50_10)/),idiag_k50_10) 
+								if (idiag_k40_40/=0) call sum_par_name((/real(k40_40)/),idiag_k40_40) 
+								if (idiag_k40_30/=0) call sum_par_name((/real(k40_30)/),idiag_k40_30) 
+								if (idiag_k40_20/=0) call sum_par_name((/real(k40_20)/),idiag_k40_20) 
+								if (idiag_k40_10/=0) call sum_par_name((/real(k40_10)/),idiag_k40_10) 
+								if (idiag_k30_30/=0) call sum_par_name((/real(k30_30)/),idiag_k30_30) 
+								if (idiag_k30_20/=0) call sum_par_name((/real(k30_20)/),idiag_k30_20) 
+								if (idiag_k30_10/=0) call sum_par_name((/real(k30_10)/),idiag_k30_10) 
+								if (idiag_k20_20/=0) call sum_par_name((/real(k20_20)/),idiag_k20_20) 
+								if (idiag_k20_10/=0) call sum_par_name((/real(k20_10)/),idiag_k20_10) 
+								if (idiag_k10_10/=0) call sum_par_name((/real(k10_10)/),idiag_k10_10) 
               endif
 !
 !  Move to next particle in the grid cell.
@@ -1375,8 +1491,14 @@ module Particles_coagulation
 !
       if (lreset) then
         idiag_ncoagpm=0; idiag_ncoagpartpm=0; idiag_dt1_coag_par=0
-        idiag_kernel1=0; idiag_kernel2=0; idiag_kernel3=0
-				idiag_kernel4=0; idiag_kernel5=0
+        idiag_k100_100=0; idiag_k100_80=0; idiag_k100_60=0; idiag_k100_50=0; idiag_k100_40=0; idiag_k100_30=0; idiag_k100_20=0; idiag_k100_10=0
+        idiag_k80_80=0; idiag_k80_60=0; idiag_k80_50=0; idiag_k80_40=0; idiag_k80_30=0; idiag_k80_20=0; idiag_k80_10=0
+        idiag_k60_60=0; idiag_k60_50=0; idiag_k60_40=0; idiag_k60_30=0; idiag_k60_20=0; idiag_k60_10=0
+        idiag_k50_50=0; idiag_k50_40=0; idiag_k50_30=0; idiag_k50_20=0; idiag_k50_10=0
+        idiag_k40_40=0; idiag_k40_30=0; idiag_k40_20=0; idiag_k40_10=0
+        idiag_k30_30=0; idiag_k30_20=0; idiag_k30_10=0
+        idiag_k20_20=0; idiag_k20_10=0
+        idiag_k10_10=0
       endif
 !
       do iname=1,nname
@@ -1384,11 +1506,43 @@ module Particles_coagulation
         call parse_name(iname,cname(iname),cform(iname), &
             'ncoagpartpm',idiag_ncoagpartpm)
         call parse_name(iname,cname(iname),cform(iname),'dt1_coag_par',idiag_dt1_coag_par)
-        call parse_name(iname,cname(iname),cform(iname),'kernel1',idiag_kernel1)
-        call parse_name(iname,cname(iname),cform(iname),'kernel2',idiag_kernel2)
-        call parse_name(iname,cname(iname),cform(iname),'kernel3',idiag_kernel3)
-        call parse_name(iname,cname(iname),cform(iname),'kernel4',idiag_kernel4)
-        call parse_name(iname,cname(iname),cform(iname),'kernel5',idiag_kernel5)
+        call parse_name(iname,cname(iname),cform(iname),'k100_100',idiag_k100_100)
+        call parse_name(iname,cname(iname),cform(iname),'k100_80',idiag_k100_80)
+        call parse_name(iname,cname(iname),cform(iname),'k100_60',idiag_k100_60)
+        call parse_name(iname,cname(iname),cform(iname),'k100_50',idiag_k100_50)
+        call parse_name(iname,cname(iname),cform(iname),'k100_40',idiag_k100_40)
+        call parse_name(iname,cname(iname),cform(iname),'k100_30',idiag_k100_30)
+        call parse_name(iname,cname(iname),cform(iname),'k100_20',idiag_k100_20)
+        call parse_name(iname,cname(iname),cform(iname),'k100_10',idiag_k100_10)
+        call parse_name(iname,cname(iname),cform(iname),'k80_80',idiag_k80_80)
+        call parse_name(iname,cname(iname),cform(iname),'k80_60',idiag_k80_60)
+        call parse_name(iname,cname(iname),cform(iname),'k80_50',idiag_k80_50)
+        call parse_name(iname,cname(iname),cform(iname),'k80_40',idiag_k80_40)
+        call parse_name(iname,cname(iname),cform(iname),'k80_30',idiag_k80_30)
+        call parse_name(iname,cname(iname),cform(iname),'k80_20',idiag_k80_20)
+        call parse_name(iname,cname(iname),cform(iname),'k80_10',idiag_k80_10)
+        call parse_name(iname,cname(iname),cform(iname),'k60_60',idiag_k60_60)
+        call parse_name(iname,cname(iname),cform(iname),'k60_50',idiag_k60_50)
+        call parse_name(iname,cname(iname),cform(iname),'k60_40',idiag_k60_40)
+        call parse_name(iname,cname(iname),cform(iname),'k60_30',idiag_k60_30)
+        call parse_name(iname,cname(iname),cform(iname),'k60_20',idiag_k60_20)
+        call parse_name(iname,cname(iname),cform(iname),'k60_10',idiag_k60_10)
+        call parse_name(iname,cname(iname),cform(iname),'k60_10',idiag_k60_10)
+        call parse_name(iname,cname(iname),cform(iname),'k50_50',idiag_k50_50)
+        call parse_name(iname,cname(iname),cform(iname),'k50_40',idiag_k50_40)
+        call parse_name(iname,cname(iname),cform(iname),'k50_30',idiag_k50_30)
+        call parse_name(iname,cname(iname),cform(iname),'k50_20',idiag_k50_20)
+        call parse_name(iname,cname(iname),cform(iname),'k50_10',idiag_k50_10)
+        call parse_name(iname,cname(iname),cform(iname),'k40_40',idiag_k40_40)
+        call parse_name(iname,cname(iname),cform(iname),'k40_30',idiag_k40_30)
+        call parse_name(iname,cname(iname),cform(iname),'k40_20',idiag_k40_20)
+        call parse_name(iname,cname(iname),cform(iname),'k40_10',idiag_k40_10)
+        call parse_name(iname,cname(iname),cform(iname),'k30_30',idiag_k30_30)
+        call parse_name(iname,cname(iname),cform(iname),'k30_20',idiag_k30_20)
+        call parse_name(iname,cname(iname),cform(iname),'k30_10',idiag_k30_10)
+        call parse_name(iname,cname(iname),cform(iname),'k20_20',idiag_k20_20)
+        call parse_name(iname,cname(iname),cform(iname),'k20_10',idiag_k20_10)
+        call parse_name(iname,cname(iname),cform(iname),'k10_10',idiag_k10_10)
       enddo
 !
       if (present(lwrite)) call keep_compiler_quiet(lwrite)
