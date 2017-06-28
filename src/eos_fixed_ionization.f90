@@ -62,6 +62,7 @@ module EquationOfState
   real :: cp1=impossible,cv=impossible
 !ajwm  can't use impossible else it breaks reading param.nml
   real :: cs2bot=1., cs2top=1.
+  integer :: imass=1, ics
 !
   real, dimension(nchemspec,18) :: species_constants
   real, dimension(nchemspec,7)     :: tran_data
