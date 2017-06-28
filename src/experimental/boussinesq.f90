@@ -34,12 +34,12 @@ module Density
 !
   implicit none
 !
-  logical :: lcalc_glnrhomean=.false.,lupw_lnrho=.false., &
+  logical :: lcalc_lnrhomean=.false.,lcalc_glnrhomean=.false.,lupw_lnrho=.false., &
              lremove_mean_temperature=.false.
 !
   logical :: lwrite_debug=.false.
 !
-  real, dimension (nz,3) :: glnrhomz
+  real, dimension (nz) :: lnrhomz,glnrhomz
   real :: dx_2, dz_2
   real, pointer :: chi
 !
