@@ -47,6 +47,7 @@ module Particles_radius
   logical :: reinitialize_ap=.false.
   character(len=labellen), dimension(ninit) :: initap='nothing'
   character(len=labellen) :: condensation_coefficient_type='constant'
+	integer :: k_lucky 
 !
   namelist /particles_radius_init_pars/ &
       initap, ap0, rhopmat, vthresh_sweepup, deltavp12_floor, &
@@ -56,7 +57,7 @@ module Particles_radius
       lborder_driving_ocean, ztop_ocean, radii_distribution, TTocean, &
       aplow, aphigh, mbar, ap1, qplaw, eps_dtog, nbin_initdist, &
       sigma_initdist, a0_initdist, lparticles_radius_rpbeta, rpbeta0, &
-      lfixed_particles_radius
+      lfixed_particles_radius, k_lucky
 !
   namelist /particles_radius_run_pars/ &
       rhopmat, vthresh_sweepup, deltavp12_floor, &
@@ -205,6 +206,7 @@ module Particles_radius
       real :: lna0, lna1, lna, lna0_initdist
       integer :: i, j, k, kend, ind, ibin
       logical :: initial
+			integer :: k_several
 !
       initial = .false.
       if (present(init)) then
@@ -229,12 +231,36 @@ module Particles_radius
             fp(k,iap) = ap0(ind)
           enddo
 !
+				case ('constant-luck')
+          if (initial.and.lroot) print*, 'set_particles_radius: constant radius'
+          ind=1
+          do k=npar_low,npar_high
+            if (npart_radii>1) then
+              call random_number_wrapper(radius_fraction)
+              ind=ceiling(npart_radii*radius_fraction)
+            endif
+            if (ipar(k)==1) then 
+							fp(k,iap)=ap1
+            else
+               fp(k,iap)=ap0(ind)
+						endif
+          enddo
+!
         case ('constant-1')
           if (initial .and. lroot) print*, 'set_particles_radius: set particle 1 radius'
           do k = npar_low,npar_high
             if (ipar(k) == 1) fp(k,iap) = ap1
           enddo
 !
+!17-06-29: Xiang-Yu coded
+        case ('constant-several')
+          if (initial .and. lroot) print*, 'set_particles_radius: set radius of several particles'
+          do k = npar_low,npar_high
+					  do k_several = 1,k_lucky
+              if (ipar(k) == k_several) fp(k,iap) = ap1
+						enddo
+          enddo
+!Xiang-Yu
         case ('random')
           if (initial .and. lroot) print*, 'set_particles_radius: random radius'
           do k = npar_low,npar_high
@@ -272,6 +298,23 @@ module Particles_radius
           call random_number_wrapper(p_mpar_loc)
           tmp_mpar_loc = sqrt(-2*log(r_mpar_loc))*sin(2*pi*p_mpar_loc)
           fp(:,iap) = a0_initdist*exp(sigma_initdist*tmp_mpar_loc)
+!
+!17-06-29: Xiang-Yu coded
+
+        case ('lognormal-lucky')
+!
+          if (initial .and. lroot) print*, 'set_particles_radius: '// &
+              'lognormal=', a0_initdist
+          call random_number_wrapper(r_mpar_loc)
+          call random_number_wrapper(p_mpar_loc)
+          tmp_mpar_loc = sqrt(-2*log(r_mpar_loc))*sin(2*pi*p_mpar_loc)
+          fp(1:k_lucky,iap) = a0_initdist*exp(sigma_initdist*tmp_mpar_loc)
+          do k = npar_low,npar_high
+					  if (k>k_lucky) then
+              fp(k,iap) = ap1
+						endif
+          enddo
+!Xiang-Yu
 !
 !  Lognormal distribution. Here, ap1 is the largest value in the distribution
 !  and ap0 is the smallest radius initially.
@@ -874,8 +917,8 @@ module Particles_radius
         ix = ix0-nghost
         if (lsupersat) then
           dapdt = f(ix,m,n,issat)/fp(k,iap)
-          !print*,'ssat=',f(ix,m,n,issat)
-          !print*,'r=',fp(k,iap)
+!          print*,'ssat=',f(ix,m,n,issat)
+!          print*,'r=',fp(k,iap)
           dfp(k,iap) = dfp(k,iap)+dapdt
         endif
       enddo
