@@ -308,7 +308,7 @@ module Particles_radius
           call random_number_wrapper(r_mpar_loc)
           call random_number_wrapper(p_mpar_loc)
           tmp_mpar_loc = sqrt(-2*log(r_mpar_loc))*sin(2*pi*p_mpar_loc)
-          fp(1:k_lucky,iap) = a0_initdist*exp(sigma_initdist*tmp_mpar_loc)
+          fp(npar_low:k_lucky,iap) = a0_initdist*exp(sigma_initdist*tmp_mpar_loc)
           do k = npar_low,npar_high
 					  if (k>k_lucky) then
               fp(k,iap) = ap1
