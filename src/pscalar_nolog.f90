@@ -47,7 +47,7 @@ module Pscalar
   character (len=labellen) :: initlncc='impossible', initlncc2='impossible'
   character (len=labellen) :: initcc='nothing', initcc2='zero'
   character (len=40) :: tensor_pscalar_file
-  integer :: ll_sh, mm_sh, n_xprof
+  integer :: ll_sh=0, mm_sh=0, n_xprof=0
 !
   namelist /pscalar_init_pars/ &
       initcc, initcc2,amplcc, amplcc2, kx_cc, ky_cc, kz_cc, radius_cc, &
