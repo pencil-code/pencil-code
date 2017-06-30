@@ -382,15 +382,15 @@ module Particles_number
       endif
 
       if (ldiagnos) then
-           do k=0,mmom
-              if(idiag_admom(k)/=0) then
-								if (llog10_for_admom_above10 .and. k>=24) then
-                  call sum_par_name(fp(1:npar_loc,inpswarm)*fp(1:npar_loc,iap)**k*npar/nwgrid,idiag_admom(k),llog10=.true.)
-								else
-                  call sum_par_name(fp(1:npar_loc,inpswarm)*fp(1:npar_loc,iap)**k*npar/nwgrid,idiag_admom(k))
-							  endif
-              endif
-           enddo
+        do k=0,mmom
+          if(idiag_admom(k)/=0) then
+            if (llog10_for_admom_above10 .and. k>=24) then
+              call sum_par_name(fp(1:npar_loc,inpswarm)*fp(1:npar_loc,iap)**k*npar/nwgrid,idiag_admom(k),llog10=.true.)
+            else
+              call sum_par_name(fp(1:npar_loc,inpswarm)*fp(1:npar_loc,iap)**k*npar/nwgrid,idiag_admom(k))
+            endif
+          endif
+        enddo
       endif
 !
       call keep_compiler_quiet(f,df)

@@ -521,9 +521,9 @@ module Particles_sub
 !
         if (present(lsqrt)) then
           itype_name(iname)=ilabel_sum_sqrt_par
-				elseif (present(llog10)) then
-					itype_name(iname)=ilabel_sum_log10_par
-				else
+        elseif (present(llog10)) then
+          itype_name(iname)=ilabel_sum_log10_par
+        else
           itype_name(iname)=ilabel_sum_par
         endif
 !
