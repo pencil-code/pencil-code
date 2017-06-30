@@ -42,7 +42,8 @@ module Special
   logical :: luse_mag_field=.false., luse_mag_vel_field=.false.
   logical :: luse_timedep_magnetogram=.false., lwrite_driver=.false.
   logical :: lnc_density_depend=.false., lnc_intrin_energy_depend=.false.
-  logical :: lflux_emerg_bottom=.false.,lslope_limited_special=.false.
+  logical :: lflux_emerg_bottom=.false.,lslope_limited_special=.false.,&
+             lemerg_profx=.false.
   integer :: irefz=n1, nglevel=max_gran_levels, cool_type=5
   real :: massflux=0., u_add
   real :: K_spitzer=0., hcond2=0., hcond3=0., init_time=0., init_time_hcond=0.
@@ -99,7 +100,8 @@ module Special
       swamp_fade_start, swamp_fade_end, swamp_diffrho, swamp_chi, swamp_eta, &
       vel_time_offset, mag_time_offset, lnrho_min, lnrho_min_tau, &
       cool_RTV_cutoff, T_crit, deltaT_crit, & 
-      lflux_emerg_bottom, uu_emerg, bb_emerg, flux_type,lslope_limited_special
+      lflux_emerg_bottom, uu_emerg, bb_emerg, flux_type,lslope_limited_special, &
+      lemerg_profx
 !
   integer :: ispecaux=0
   integer :: idiag_dtvel=0     ! DIAG_DOC: Velocity driver time step
@@ -1227,7 +1229,18 @@ module Special
               do m=m1, m2
                 uu(:,1)=uu_emerg(1)
                 uu(:,2)=uu_emerg(2)
-                uu(:,3)=uu_emerg(3)
+                if (lemerg_profx) then
+!
+! Hard coding the emerging velocity x-profile for testing
+!
+                  uu(:,3)=uu_emerg(3)*(1.0-0.29279746*((1+&
+                          tanh((x(l1:l2)+4+0.5)/0.4))* &
+                          (1-tanh((x(l1:l2)+4-0.5)/0.4))- &
+                          (1-tanh((x(l1:l2)-4-0.5)/0.4))* &
+                          (1+tanh((x(l1:l2)-4+0.5)/0.4))))
+                else
+                  uu(:,3)=uu_emerg(3)
+                endif
                 f(l1:l2,m,n1-ig,iuz) = uu(:,3)
 !
                 bb(:,1)=bb_emerg(1)
