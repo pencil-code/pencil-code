@@ -1257,7 +1257,18 @@ module Special
               do m=m1, m2
                 uu(:,1)=uu_emerg(1)
                 uu(:,2)=uu_emerg(2)
-                uu(:,3)=uu_emerg(3)
+                if (lemerg_profx) then
+!
+! Hard coding the emerging velocity x-profile for testing
+!
+                  uu(:,3)=uu_emerg(3)*(1.0-0.29279746*((1+&
+                          tanh((x(l1:l2)+4+0.5)/0.4))* &
+                          (1-tanh((x(l1:l2)+4-0.5)/0.4))- &
+                          (1-tanh((x(l1:l2)-4-0.5)/0.4))* &
+                          (1+tanh((x(l1:l2)-4+0.5)/0.4))))
+                else
+                  uu(:,3)=uu_emerg(3)
+                endif
                 f(l1:l2,m,n1-ig,iuz) = uu(:,3)
 !
                 call random_number(gn)
