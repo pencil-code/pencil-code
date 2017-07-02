@@ -47,7 +47,7 @@ module Particles_radius
   logical :: reinitialize_ap=.false.
   character(len=labellen), dimension(ninit) :: initap='nothing'
   character(len=labellen) :: condensation_coefficient_type='constant'
-	integer :: k_lucky 
+  integer :: k_lucky
 !
   namelist /particles_radius_init_pars/ &
       initap, ap0, rhopmat, vthresh_sweepup, deltavp12_floor, &
