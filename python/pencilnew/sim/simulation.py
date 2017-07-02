@@ -75,7 +75,7 @@ class __Simulation__(object):
         self = self.update(quiet=quiet)                   # auto-update, i.e. read param.nml
         # Done
 
-    def copy(self, path_root='.', name=False, optionals=True, quiet=True, rename_submit_scripts=False, OVERWRITE=False):
+    def copy(self, path_root='.', name=False, optionals=True, quiet=True, rename_submit_script=False, OVERWRITE=False):
         """This method does a copy of the simulation object by creating a new directory 'name' in 'path_root' and copy all simulation components and optionals to his directory.
         This method neither links/compiles the simulation, nor creates data dir nor does overwrite anything.
 
@@ -83,22 +83,21 @@ class __Simulation__(object):
             Name in submit scripts will be renamed if possible! Submit scripts will be identified by submit* plus appearenace of old simulation name inside, latter will be renamed!
 
         Args:
-            path_root:      Dir to create new sim.-folder(sim.-name) inside. This folder will be created if not existing!
-            name:           Name of new simulation, will be used as folder name. Rename will also happen in submit script if found. Simulation folders is not allowed to preexist!!
-            optionals:      Add list of further files to be copied. Wildcasts allowed according to glob module! Set True to use self.optionals.
-            quiet:          Set True to suppress output.
-            rename_submit_scripts:   Set False if no renames shall be performed in subnmit* files
-            OVERWRITE:      Set True to overwrite no matter what happens!
+            path_root:               Dir to create new sim.-folder(sim.-name) inside. This folder will be created if not existing!
+            name:                    Name of new simulation, will be used as folder name. Rename will also happen in submit script if found. Simulation folders is not allowed to preexist!!
+            optionals:               Add list of further files to be copied. Wildcasts allowed according to glob module! Set True to use self.optionals.
+            quiet:                   Set True to suppress output.
+            rename_submit_script:   Set False if no renames shall be performed in subnmit* files
+            OVERWRITE:               Set True to overwrite no matter what happens!
         """
         from os import listdir
         from os.path import exists, join, abspath, basename
         from shutil import copyfile
         from glob import glob
         from numpy import size
-        from pencilnew.io import mkdir
         from pencilnew.sim import is_sim_dir
         from pencilnew import get_sim
-        from pencilnew.io import mkdir, get_systemid, debug_breakpoint
+        from pencilnew.io import mkdir, get_systemid, rename_in_submit_script, debug_breakpoint
         from pencilnew.sim import is_sim_dir
 
         # set up paths
@@ -175,12 +174,12 @@ class __Simulation__(object):
             copyfile(f_path, copy_to)
 
         # modify name in submit script files
-        if rename_submit_scripts:
-            print('!! ERROR: Not implemented yet...  old version was not stable.')
-            #for f in self.components+optionals:
-                #if f.startswith('submit'):
-                    #debug_breakpoint()
-                    #system_name, raw_name, job_name_key, submit_scriptfile, submit_line = get_systemid()
+        if rename_submit_script != False:
+            if type(rename_submit_script) == type('STRING'):
+                rename_in_submit_script(new_name = rename_submit_script, sim=sim)
+            else:
+                print('!! ERROR: Could not understand rename_submit_script='+str(rename_submit_script))
+
 
         # done
         return get_sim(path_newsim)

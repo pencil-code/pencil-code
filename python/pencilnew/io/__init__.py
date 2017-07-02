@@ -17,6 +17,7 @@ from .remove_files import remove_files
 # io operation on simulation
 from .get_value_from_file import get_value_from_file
 from .change_value_in_file import change_value_in_file
+from .rename_in_submit_script import rename_in_submit_script
 
 # dill im-/exporter
 from .dill_load import dill_load as load
