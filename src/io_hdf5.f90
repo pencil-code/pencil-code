@@ -311,7 +311,7 @@ module Io
         if (lroot .and. (ip <= 9)) write (*,*) 'finish persistent block'
         write (lun_output) id_block_PERSISTENT
         persist_initialized = .false.
-        close (lun_input)
+        close (lun_output)
       endif
 !
     endsubroutine output_snap_finalize
