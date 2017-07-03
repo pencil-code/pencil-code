@@ -240,7 +240,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
         qs[2] = str(change_quantity_to)
 
         ######## further formatting
-        new_line = ''.join(qs).replace(SYM_SEPARATOR, SYM_SEPARATOR+' ')+'\t\t'+comment    # create new line and add comment stripped away before
+        new_line = ''.join(qs).replace(SYM_SEPARATOR, SYM_SEPARATOR+' ')+'\t'+comment    # create new line and add comment stripped away before
         if not (FILE_IS == 'SUBMIT' or filename == 'cparam.local'): new_line = '  '+new_line
         new_line = new_line.rstrip()    # clean empty spaces on the right, no one needs that...
         if new_line[-1] != '\n': new_line = new_line+'\n'
