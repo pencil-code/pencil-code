@@ -967,7 +967,9 @@ module Particles_radius
       integer, intent(out) :: iostat
       integer :: pos
 !
-      read (parallel_unit, NML=particles_radius_init_pars, IOSTAT=iostat)
+      ! temporary replacement code for fixing the broken most-module autotest on Norlx51b
+      iostat = 0 ! want to see the clear-text error message
+      read (parallel_unit, NML=particles_radius_init_pars) ! , IOSTAT=iostat)
 !
 !  Find how many different particle radii we are using. This must be done
 !  because not all parts of the code are adapted to work with more than one
@@ -995,7 +997,9 @@ module Particles_radius
 !
       integer, intent(out) :: iostat
 !
-      read (parallel_unit, NML=particles_radius_run_pars, IOSTAT=iostat)
+      ! temporary replacement code for fixing the broken most-module autotest on Norlx51b
+      iostat = 0 ! want to see the clear-text error message
+      read (parallel_unit, NML=particles_radius_run_pars) ! , IOSTAT=iostat)
 !
     endsubroutine read_particles_rad_run_pars
 !***********************************************************************
