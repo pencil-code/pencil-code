@@ -110,7 +110,7 @@ class __Simulation__(object):
         # but keep name of old if sim with old name is NOT existing in NEW directory
         if name == False:
             name = self.name
-        if exists(join(path_root, self.name)):
+        if exists(join(path_root, name)) and OVERWRITE == False:
             name = name+'_copy'
             if exists(join(path_root, name)):
                 name = name + str(size([f for f in listdir(path_root) if f.startswith(name)]))
@@ -131,7 +131,7 @@ class __Simulation__(object):
         optionals = tmp
 
         ## check if the copy was already created
-        if is_sim_dir(path_newsim):
+        if is_sim_dir(path_newsim) and OVERWRITE == False:
             if not quiet: print('? WARNING: Simulation already exists. Returning with existing simulation.')
             return get_sim(path_newsim, quiet=quiet)
 
@@ -176,10 +176,9 @@ class __Simulation__(object):
         # modify name in submit script files
         if rename_submit_script != False:
             if type(rename_submit_script) == type('STRING'):
-                rename_in_submit_script(new_name = rename_submit_script, sim=sim)
+                rename_in_submit_script(new_name = rename_submit_script, sim=get_sim(path_newsim))
             else:
                 print('!! ERROR: Could not understand rename_submit_script='+str(rename_submit_script))
-
 
         # done
         return get_sim(path_newsim)
