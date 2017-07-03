@@ -184,7 +184,7 @@ def dimensions(datadir='./data'):
                       mvar=mvar, maux=maux, mglobal=mglobal, double_precision=double_precision,
                       nprocx=nprocx, nprocy=nprocy, nprocz=nprocz, procz_last=procz_last)
 #=======================================================================
-def grid(datadir='./data', interface=False, par=None, trim=False):
+def grid(datadir='./data', interface=False, par=None, trim=True):
     """Returns the coordinates and their derivatives of the grid.
 
     Keyword Arguments:
@@ -201,11 +201,15 @@ def grid(datadir='./data', interface=False, par=None, trim=False):
             interface is True, ghost cells are automatically trimmed and
             this keyword has no effect.
     """
-    # Chao-Chin Yang, 2015-04-30
+    # Author: Chao-Chin Yang
+    # Created: 2014-11-02
+    # Last Modified: 2017-07-03
     from collections import namedtuple
     import numpy as np
+
     # Get the dimensions.
     dim = dimensions(datadir=datadir)
+
     # Allocate arrays.
     x = np.zeros(dim.mxgrid,)
     y = np.zeros(dim.mygrid,)
@@ -217,6 +221,7 @@ def grid(datadir='./data', interface=False, par=None, trim=False):
     dx_tilde = np.zeros(dim.mxgrid,)
     dy_tilde = np.zeros(dim.mygrid,)
     dz_tilde = np.zeros(dim.mzgrid,)
+
     # Define functions for assigning local coordinates to global.
     def assign(l1, l2, xg, xl, label, proc):
         indices = xg[l1:l2] != 0.0
@@ -228,10 +233,12 @@ def grid(datadir='./data', interface=False, par=None, trim=False):
         if old != 0.0 and old != new:
             print("Warning: inconsistent ", label, " for process", proc)
         return new
+
     # Read the grid from each process and construct the whole grid.
     for proc in range(dim.nprocx * dim.nprocy * dim.nprocz):
         dim1 = proc_dim(datadir=datadir, proc=proc)
         grid = proc_grid(datadir=datadir, dim=dim1, proc=proc)
+
         # x direction
         l1 = dim1.iprocx * dim1.nx
         l2 = l1 + dim1.mx
@@ -240,6 +247,7 @@ def grid(datadir='./data', interface=False, par=None, trim=False):
         Lx = assign1(Lx, grid.Lx, 'Lx', proc)
         dx_1 = assign(l1, l2, dx_1, grid.dx_1, 'dx_1', proc)
         dx_tilde = assign(l1, l2, dx_tilde, grid.dx_tilde, 'dx_tilde', proc)
+
         # y direction
         m1 = dim1.iprocy * dim1.ny
         m2 = m1 + dim1.my
@@ -248,6 +256,7 @@ def grid(datadir='./data', interface=False, par=None, trim=False):
         Ly = assign1(Ly, grid.Ly, 'Ly', proc)
         dy_1 = assign(m1, m2, dy_1, grid.dy_1, 'dy_1', proc)
         dy_tilde = assign(m1, m2, dy_tilde, grid.dy_tilde, 'dy_tilde', proc)
+
         # z direction
         n1 = dim1.iprocz * dim1.nz
         n2 = n1 + dim1.mz
@@ -256,6 +265,7 @@ def grid(datadir='./data', interface=False, par=None, trim=False):
         Lz = assign1(Lz, grid.Lz, 'Lz', proc)
         dz_1 = assign(n1, n2, dz_1, grid.dz_1, 'dz_1', proc)
         dz_tilde = assign(n1, n2, dz_tilde, grid.dz_tilde, 'dz_tilde', proc)
+
     # Trim the ghost cells if requested.
     if interface or trim:
         x = x[dim.nghost:-dim.nghost]
@@ -267,20 +277,28 @@ def grid(datadir='./data', interface=False, par=None, trim=False):
         dx_tilde = dx_tilde[dim.nghost:-dim.nghost]
         dy_tilde = dy_tilde[dim.nghost:-dim.nghost]
         dz_tilde = dz_tilde[dim.nghost:-dim.nghost]
+
     # Find the interfaces if requested.
     if interface:
         f = (lambda x, dx_1, x0, x1:
-                np.concatenate(((x0,), (x[:-1] * dx_1[:-1] + x[1:] * dx_1[1:]) / (dx_1[:-1] + dx_1[1:]), (x1,)))
+                np.concatenate((
+                    (x0,),
+                    (x[:-1] * dx_1[:-1] + x[1:] * dx_1[1:]) /
+                        (dx_1[:-1] + dx_1[1:]),
+                    (x1,)))
                 if len(x) > 1 else x)
         if par is None:
             par = parameters(datadir=datadir)
         x = f(x, dx_1, par.xyz0[0], par.xyz1[0])
         y = f(y, dy_1, par.xyz0[1], par.xyz1[1])
         z = f(z, dz_1, par.xyz0[2], par.xyz1[2])
+
     # Define and return a named tuple.
-    Grid = namedtuple('Grid', ['x', 'y', 'z', 'dx', 'dy', 'dz', 'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1',
+    Grid = namedtuple('Grid', ['x', 'y', 'z', 'dx', 'dy', 'dz',
+                               'Lx', 'Ly', 'Lz', 'dx_1', 'dy_1', 'dz_1',
                                'dx_tilde', 'dy_tilde', 'dz_tilde'])
-    return Grid(x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, Lx=Lx, Ly=Ly, Lz=Lz, dx_1=dx_1, dy_1=dy_1, dz_1=dz_1,
+    return Grid(x=x, y=y, z=z, dx=dx, dy=dy, dz=dz,
+                Lx=Lx, Ly=Ly, Lz=Lz, dx_1=dx_1, dy_1=dy_1, dz_1=dz_1,
                 dx_tilde=dx_tilde, dy_tilde=dy_tilde, dz_tilde=dz_tilde)
 #=======================================================================
 def parameters(datadir='./data', par2=False, warning=True):
