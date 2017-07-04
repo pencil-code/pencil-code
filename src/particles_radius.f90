@@ -206,7 +206,7 @@ module Particles_radius
       real :: lna0, lna1, lna, lna0_initdist
       integer :: i, j, k, kend, ind, ibin
       logical :: initial
-			integer :: k_several
+      integer :: k_several
 !
       initial = .false.
       if (present(init)) then
@@ -231,7 +231,7 @@ module Particles_radius
             fp(k,iap) = ap0(ind)
           enddo
 !
-				case ('constant-luck')
+        case ('constant-luck')
           if (initial.and.lroot) print*, 'set_particles_radius: constant radius'
           ind=1
           do k=npar_low,npar_high
@@ -240,10 +240,10 @@ module Particles_radius
               ind=ceiling(npart_radii*radius_fraction)
             endif
             if (ipar(k)==1) then 
-							fp(k,iap)=ap1
+              fp(k,iap)=ap1
             else
                fp(k,iap)=ap0(ind)
-						endif
+            endif
           enddo
 !
         case ('constant-1')
@@ -256,9 +256,9 @@ module Particles_radius
         case ('constant-several')
           if (initial .and. lroot) print*, 'set_particles_radius: set radius of several particles'
           do k = npar_low,npar_high
-					  do k_several = 1,k_lucky
+            do k_several = 1,k_lucky
               if (ipar(k) == k_several) fp(k,iap) = ap1
-						enddo
+            enddo
           enddo
 !Xiang-Yu
         case ('random')
@@ -310,9 +310,9 @@ module Particles_radius
           tmp_mpar_loc = sqrt(-2*log(r_mpar_loc))*sin(2*pi*p_mpar_loc)
           fp(npar_low:k_lucky,iap) = a0_initdist*exp(sigma_initdist*tmp_mpar_loc)
           do k = npar_low,npar_high
-					  if (k>k_lucky) then
+            if (k>k_lucky) then
               fp(k,iap) = ap1
-						endif
+            endif
           enddo
 !Xiang-Yu
 !
