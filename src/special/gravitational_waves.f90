@@ -240,12 +240,23 @@ module Special
       intent(in) :: f
       intent(inout) :: p
 !
+!  The following construct when lno_transverse_part=T applies only
+!  to the case of a Beltrami field with z variation.
+!
       if (lno_transverse_part) then
-        if (ibb==0) then
-          call fatal_error('calc_pencils_special','put lbb_as_comaux=T')
-        else
-          p%stressL=.5*(f(l1:l2,m,n,ibx)**2-f(l1:l2,m,n,iby)**2)
-          p%stressT=f(l1:l2,m,n,ibx)*f(l1:l2,m,n,iby)
+        p%stressL=0.0
+        p%stressT=0.0
+        if (lhydro) then
+          p%stressL=p%stressL+.5*(f(l1:l2,m,n,iuy)**2 &
+                                 -f(l1:l2,m,n,iux)**2)
+          p%stressT=p%stressT+.5*(f(l1:l2,m,n,iux) &
+                                 *f(l1:l2,m,n,iuy))
+        endif
+        if (lmagnetic) then
+          p%stressL=p%stressL-.5*(f(l1:l2,m,n,iby)**2 &
+                                 -f(l1:l2,m,n,ibx)**2)
+          p%stressT=p%stressT-.5*(f(l1:l2,m,n,ibx) &
+                                 *f(l1:l2,m,n,iby))
         endif
       else
         p%stressL=f(l1:l2,m,n,istressL)
@@ -494,9 +505,6 @@ module Special
 !
       T_re=0.0
       T_im=0.0
-print*,'AXEL iuy',iux
-print*,'AXEL iuy',iuy
-print*,'AXEL iuz',iuz
       if (lhydro) T_re=T_re+f(l1:l2,m1:m2,n1:n2,iux)**2
       if (lmagnetic) T_re=T_re+f(l1:l2,m1:m2,n1:n2,ibx)**2
       call fourier_transform(T_re,T_im)
