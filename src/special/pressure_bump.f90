@@ -82,10 +82,10 @@ subroutine pb_special_setup
         select case (pb_type)
 
         case ('gauss-x')
-          pb_profile = pb_amplitude*exp(-x(l1:l2)**2/(Lxyz(1)/2)**2)
+          pb_profile = -1*pb_amplitude*exp(-x(l1:l2)**2/(Lxyz(1)/2)**2)
 
         case ('sinwave-x')
-          pb_profile = pb_amplitude*sin(2*pi/Lxyz(1)*x(l1:l2))
+          pb_profile = -1*pb_amplitude*sin(2*pi/Lxyz(1)*x(l1:l2))
 
         case default
           if (lroot) print*, '! ERROR: Couldnt identify selected pressure bump profile pb_type = ', pb_type
