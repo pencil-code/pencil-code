@@ -24,6 +24,12 @@ module Particles_mass
 !
   include 'particles_mass.h'
 !
+! Diagnostic variables
+!
+  integer :: idiag_mpm = 0    ! DIAG_DOC: $\overline{m_p}}$
+  integer :: idiag_mpmin = 0  ! DIAG_DOC: $\min_j m_{p,j}$
+  integer :: idiag_mpmax = 0  ! DIAG_DOC: $\max_j m_{p,j}$
+!
   contains
 !***********************************************************************
     subroutine register_particles_mass()
@@ -93,7 +99,9 @@ module Particles_mass
 !
 ! Evolution of particle mass.
 !
-! 18-jun-17/ccyang: dummy
+! 04-jul-17/ccyang: coded
+!
+      use Particles_sub, only: sum_par_name, max_par_name
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx,my,mz,mvar), intent(in) :: df
@@ -103,9 +111,16 @@ module Particles_mass
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
-      call keep_compiler_quiet(fp)
       call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(ineargrid)
+!
+! Diagnostic output
+!
+      diag: if (ldiagnos) then
+        if (idiag_mpm /= 0) call sum_par_name(fp(1:npar_loc,imp), idiag_mpm)
+        if (idiag_mpmin /= 0) call max_par_name(-fp(1:npar_loc,imp), idiag_mpmin, lneg=.true.)
+        if (idiag_mpmax /= 0) call max_par_name(fp(1:npar_loc,imp), idiag_mpmax)
+      endif diag
 !
     endsubroutine dpmass_dt
 !***********************************************************************
@@ -165,12 +180,15 @@ module Particles_mass
 !
 ! Read and register print parameters relevant for particle mass.
 !
-! 18-jun-17/ccyang: coded
+! 04-jul-17/ccyang: coded
+!
+      use Diagnostics
 !
       logical, intent(in) :: lreset
       logical, intent(in), optional :: lwrite
 !
       logical :: lwr
+      integer :: iname
 !
 ! Write information to index.pro.
 !
@@ -178,7 +196,21 @@ module Particles_mass
       if (present(lwrite)) lwr = lwrite
       if (lwr) write(3,*) 'imp = ', imp
 !
-      call keep_compiler_quiet(lreset)
+! Reset diagnostic variables if requested.
+!
+      reset: if (lreset) then
+        idiag_mpm = 0
+        idiag_mpmin = 0
+        idiag_mpmax = 0
+      endif reset
+!
+! Parse the names in print.in.
+!
+      parse: do iname = 1, nname
+        call parse_name(iname, cname(iname), cform(iname), 'mpm', idiag_mpm)
+        call parse_name(iname, cname(iname), cform(iname), 'mpmin', idiag_mpmin)
+        call parse_name(iname, cname(iname), cform(iname), 'mpmax', idiag_mpmax)
+      enddo parse
 !
     endsubroutine rprint_particles_mass
 !***********************************************************************
