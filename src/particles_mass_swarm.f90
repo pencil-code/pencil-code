@@ -128,7 +128,7 @@ module Particles_mass
 !
 ! Evolution of particle mass in pencils.
 !
-! 18-jun-17/ccyang: dummy
+! 04-jul-17/ccyang: dummy
 !
       real, dimension(mx,my,mz,mfarray), intent(in) :: f
       real, dimension(mx,my,mz,mvar), intent(in) :: df
@@ -139,6 +139,8 @@ module Particles_mass
 !
       call keep_compiler_quiet(f)
       call keep_compiler_quiet(df)
+      call keep_compiler_quiet(fp)
+      call keep_compiler_quiet(dfp)
       call keep_compiler_quiet(p)
       call keep_compiler_quiet(ineargrid)
 !
