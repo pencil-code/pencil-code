@@ -8,6 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! CPARAM logical, parameter :: lsolid_cells = .false.
+! CPARAM logical, parameter :: lsolid_ogrid = .false.
 !
 !***************************************************************
 module Solid_Cells
