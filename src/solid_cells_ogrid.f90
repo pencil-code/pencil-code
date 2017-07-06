@@ -1406,6 +1406,7 @@ module Solid_Cells
         ind_stop=ind_start+n_ip_to_proc_curv_to_cart(iter)-1
         iip=procs_send_curv_to_cart(iter)
         buf_size=(/ind_stop-ind_start+1,3/)
+        print*, 'iproc,iip,n_procs_send,n_ip', iproc,iip,n_procs_send_curv_to_cart,n_ip_to_proc_curv_to_cart(iter)
         do i=1,3
           call mpirecv_nonblock_int(ijk_bufi(ind_start:ind_stop,i),buf_size(1),iip,200+i,ireq2D(iter,i))
         enddo
@@ -1426,7 +1427,7 @@ module Solid_Cells
         n_ip_proc=n_ip_recv_proc_curv_to_cart(iter)
         ind_stop=ind_start+n_ip_proc-1
         iip=procs_recv_curv_to_cart(iter)
-        print*, 'iproc,iip,n_procs_recv', iproc,iip,n_procs_recv_curv_to_cart
+        print*, 'iproc,iip,n_procs_recv,n_ip', iproc,iip,n_procs_recv_curv_to_cart,n_ip_proc
         ijk_bufo(ind_start:ind_stop,:)=ind_from_proc_curv(iip+1,1:n_ip_proc,:)
         id_bufo(ind_start:ind_stop)=ip_id_curv_to_cart(iip+1,1:n_ip_proc)
         buf_size=(/ind_stop-ind_start+1,3/)
@@ -1859,11 +1860,8 @@ module Solid_Cells
       use Diagnostics, only: parse_name
 !
       integer :: iname
-      logical :: lreset, lwr
+      logical :: lreset
       logical, optional :: lwrite
-!
-      lwr = .false.
-      if (present(lwrite)) lwr = lwrite
 !
 !  Reset everything in case of reset
 !
@@ -1878,12 +1876,6 @@ module Solid_Cells
         call parse_name(iname,cname(iname),cform(iname),'c_dragx',idiag_c_dragx)
         call parse_name(iname,cname(iname),cform(iname),'c_dragy',idiag_c_dragy)
       enddo
-!
-!  write column, idiag_XYZ, where our variable XYZ is stored
-!
-! TODO: Needed?
-      if (lwr) then
-      endif
 !
     endsubroutine rprint_solid_cells
 !***********************************************************************
@@ -2123,7 +2115,7 @@ module Solid_Cells
     integer, dimension(3) :: inear_glob
     real, dimension(ivar2-ivar1+1) :: f_ip
     !TODO
-    integer, parameter :: order=6
+    integer, parameter :: order=4
     integer :: k_start,k_stop
     real, dimension(order,order,2,ivar2-ivar1+1) :: farr_large
     logical :: highorder
@@ -2134,11 +2126,11 @@ module Solid_Cells
 ! 
 !  Perform interpolation on cartesian grid
 !
-!TODO TODO
+!!!TODO TODO
 !    k_start=-floor(order/2.)+1
 !    k_stop=floor(order/2.)
 !    highorder=.true.
-!    inear_loc=curvilinear_to_cartesian(id)%ind_local_neighbour
+!    inear_loc=cartesian_to_curvilinear(id)%ind_local_neighbour
 !    farr_large(:,:,:,ivar1:ivar2)=f_cartesian(inear_loc(1)+k_start:inear_loc(1)+k_stop, &
 !        inear_loc(2)+k_start:inear_loc(2)+k_stop,inear_loc(3):inear_loc(3)+1,ivar1:ivar2)
 !!
@@ -2147,9 +2139,9 @@ module Solid_Cells
 !        call fatal_error('linear_interpolate_curvilinear highorder','interpolation from curvilinear to cartesian')
 !      endif
 !    else
-      if(.not. linear_interpolate_cartesian(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
-        call fatal_error('linear_interpolate_cartesian','interpolation from cartesian to curvilinear')
-      endif
+     if(.not. linear_interpolate_cartesian(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
+       call fatal_error('linear_interpolate_cartesian','interpolation from cartesian to curvilinear')
+     endif
 !    endif
 !
 !  Update curvilinear grid with the new data values
@@ -2162,7 +2154,7 @@ module Solid_Cells
     f_ogrid(i,j,k,iuz:ivar2) = f_ip(iuz:ivar2)
 !
   endsubroutine interpolate_point_cart_to_curv
-!***********************************************************************
+!!***********************************************************************
   subroutine interpolate_point_curv_to_cart(f_cartesian,id,ivar1,ivar2,farr)
 !
 !  Use linear interpolation routine to interpolate the values on the cartesian 
@@ -2176,7 +2168,7 @@ module Solid_Cells
     integer, dimension(3) :: inear_glob
     real, dimension(ivar2-ivar1+1) :: f_ip
     !TODO
-    integer, parameter :: order=2
+    integer, parameter :: order=4
     integer :: k_start,k_stop
     real, dimension(order,order,2,ivar2-ivar1+1) :: farr_large
     logical :: highorder, hermite
@@ -2188,34 +2180,34 @@ module Solid_Cells
 ! 
 !  Perform interpolation on cartesian grid
 !
-!TODO TODO
-    !k_start=-floor(order/2.)+1
-    !k_stop=floor(order/2.)
-    !if(xyz_ip(1)>2*xyz0_ogrid(1)) then
-    !  hermite=.false.
-    !  !highorder=.false.
-    !  highorder=.true.
-    !  inear_loc=curvilinear_to_cartesian(id)%ind_local_neighbour
-    !  farr_large(:,:,:,ivar1:ivar2)=f_ogrid(inear_loc(1)+k_start:inear_loc(1)+k_stop, &
-    !      inear_loc(2)+k_start:inear_loc(2)+k_stop,inear_loc(3):inear_loc(3)+1,ivar1:ivar2)
-    !else
-    !  highorder=.false.
-    !endif
+!!TODO TODO
+!    k_start=-floor(order/2.)+1
+!    k_stop=floor(order/2.)
+!    if(xyz_ip(1)>2*xyz0_ogrid(1)) then
+!      hermite=.false.
+!      !highorder=.false.
+!      highorder=.true.
+!      inear_loc=curvilinear_to_cartesian(id)%ind_local_neighbour
+!      farr_large(:,:,:,ivar1:ivar2)=f_ogrid(inear_loc(1)+k_start:inear_loc(1)+k_stop, &
+!          inear_loc(2)+k_start:inear_loc(2)+k_stop,inear_loc(3):inear_loc(3)+1,ivar1:ivar2)
+!    else
+!      highorder=.false.
+!    endif
 !
     !if(hermite) then
     !  if(.not. hermite_interpolate_curv(farr,ivar1,ivar2,xyz_ip,inear_glob,inear_loc,f_ip,lcheck_interpolation)) then
     !    call fatal_error('hermite_interpolation','interpolation from curvilinear to cartesian')
     !  endif
     !else
-    !  if(highorder) then
-    !    if(.not. linear_interpolate_curv_HO(farr_large,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation,order)) then
-    !      call fatal_error('linear_interpolate_curvilinear highorder','interpolation from curvilinear to cartesian')
-    !    endif
-    !  else
+!      if(highorder) then
+!        if(.not. linear_interpolate_curv_HO(farr_large,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation,order)) then
+!          call fatal_error('linear_interpolate_curvilinear highorder','interpolation from curvilinear to cartesian')
+!        endif
+!      else
         if(.not. linear_interpolate_curvilinear(farr,ivar1,ivar2,xyz_ip,inear_glob,f_ip,lcheck_interpolation)) then
           call fatal_error('linear_interpolate_curvilinear','interpolation from curvilinear to cartesian')
         endif
-    !  endif
+!      endif
     !endif
 !
 !  Update curvilinear grid with the new data values
@@ -2484,7 +2476,7 @@ module Solid_Cells
     ! TODO
     integer, parameter :: ivar1=1,ivar2=4
     integer, dimension(3) :: inear_glob
-    integer, parameter :: order=4
+    integer, parameter :: order=2
     real, dimension(order,order,ivar2-ivar1+1) :: farr
   
     do k=n1,n2
@@ -4490,7 +4482,6 @@ module Solid_Cells
     if(timestep_factor < 1)  then
       timestep_factor = 1
     endif
-    !timestep_factor=1
 !
 !  Uncomment for forced timestep factor = 1
 !  Should be used with care, typically when dt is set in run.in
@@ -6567,6 +6558,20 @@ module Solid_Cells
             xyz0_loc_all_ogrid(root+1,:)=xyz0_loc_ogrid
             xyz1_loc_all_ogrid(root+1,:)=xyz1_loc_ogrid
           endif
+        enddo
+      endif
+      if(lroot) then
+        print*, 'Processor boundaries cgrid:'
+        do j=0,ncpus-1
+          print*, 'Proc:',j
+          print*, 'xyz0:,',xyz0_loc_all(j+1,:)
+          print*, 'xyz1:,',xyz1_loc_all(j+1,:)
+        enddo
+        print*, 'Processor boundaries ogrid:'
+        do j=0,ncpus-1
+          print*, 'Proc:',j
+          print*, 'xyz0:,',xyz0_loc_all_ogrid(j+1,:)
+          print*, 'xyz1:,',xyz1_loc_all_ogrid(j+1,:)
         enddo
       endif
 !
