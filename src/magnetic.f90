@@ -228,7 +228,8 @@ module Magnetic
 !
   real :: eta=0.0, eta1=0.0, eta_hyper2=0.0, eta_hyper3=0.0
   real :: eta_tdep=0.0, eta_tdep_exponent=0.0, eta_tdep_t0=0.0
-  real :: eta_hyper3_mesh=5.0, eta_spitzer=0., eta_anom=0.0
+  real :: eta_hyper3_mesh=5.0, eta_spitzer=0., eta_anom=0.0,& 
+          eta_anom_thresh=0.0
   real :: eta_int=0.0, eta_ext=0.0, wresistivity=0.01, eta_xy_max=1.0
   real :: height_eta=0.0, eta_out=0.0, eta_cspeed=0.
   real :: tau_aa_exterior=0.0
@@ -291,7 +292,8 @@ module Magnetic
   character (len=labellen) :: ambipolar_diffusion='constant'
 !
   namelist /magnetic_run_pars/ &
-      eta, eta1, eta_hyper2, eta_hyper3, eta_anom, B_ext, B0_ext, t_bext, t0_bext, J_ext, &
+      eta, eta1, eta_hyper2, eta_hyper3, eta_anom, eta_anom_thresh, &
+      B_ext, B0_ext, t_bext, t0_bext, J_ext, &
       J_ext_quench, omega_Bz_ext, nu_ni, hall_term, battery_term, &
       eta_hyper3_mesh, eta_tdep_exponent, eta_tdep_t0, &
       tau_aa_exterior, kx_aa, ky_aa, kz_aa, lcalc_aamean,lohmic_heat, &
@@ -3661,8 +3663,16 @@ module Magnetic
         vdrift=sqrt(sum(p%jj**2,2))*p%rho1
         if (lweyl_gauge) then
           do i=1,3
-            where (vdrift>vcrit_anom) &
+            if (eta_anom_thresh/=0) then
+              where (eta_anom*vdrift > eta_anom_thresh*vcrit_anom) 
+                fres(:,i)=fres(:,i)-eta_anom_thresh*mu0*p%jj(:,i)
+              elsewhere
                 fres(:,i)=fres(:,i)-eta_anom*vdrift/vcrit_anom*mu0*p%jj(:,i)
+              endwhere
+            else
+              where (vdrift>vcrit_anom) &
+                fres(:,i)=fres(:,i)-eta_anom*vdrift/vcrit_anom*mu0*p%jj(:,i)
+            endif
           enddo
         else
           if (lroot) print*, 'daa_dt: must have Weyl gauge for '// &
@@ -3670,10 +3680,26 @@ module Magnetic
           call fatal_error('daa_dt','')
         endif
         if (lfirst.and.ldt) then
-          where (vdrift>vcrit_anom) &
+          if (eta_anom_thresh/=0) then
+            where (eta_anom*vdrift > eta_anom_thresh*vcrit_anom) 
+              diffus_eta=diffus_eta+eta_anom_thresh
+            elsewhere
               diffus_eta=diffus_eta+eta_anom*vdrift/vcrit_anom
+            endwhere
+          else
+            where (vdrift>vcrit_anom) &
+              diffus_eta=diffus_eta+eta_anom*vdrift/vcrit_anom
+            endif
         endif
-        where (vdrift>vcrit_anom) etatotal=etatotal+eta_anom*vdrift/vcrit_anom
+        if (eta_anom_thresh/=0) then
+            where (eta_anom*vdrift > eta_anom_thresh*vcrit_anom) 
+              etatotal=etatotal+eta_anom_thresh
+            elsewhere
+              etatotal=etatotal+eta_anom*vdrift/vcrit_anom
+            endwhere
+        else
+          where (vdrift>vcrit_anom) etatotal=etatotal+eta_anom*vdrift/vcrit_anom
+        endif
       endif
 !
 ! Temperature dependent resistivity for the solar corona (Spitzer 1969)

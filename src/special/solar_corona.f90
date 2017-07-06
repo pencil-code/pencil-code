@@ -1233,7 +1233,7 @@ module Special
 !
 ! Hard coding the emerging velocity x-profile for testing
 !
-                  uu(:,3)=uu_emerg(3)*(1.0-0.29279746*((1+&
+                  uu(:,3)=uu_emerg(3)*(1.0-0.29279746*abs((1+&
                           tanh((x(l1:l2)+4+0.5)/0.4))* &
                           (1-tanh((x(l1:l2)+4-0.5)/0.4))- &
                           (1-tanh((x(l1:l2)-4-0.5)/0.4))* &
@@ -1261,7 +1261,7 @@ module Special
 !
 ! Hard coding the emerging velocity x-profile for testing
 !
-                  uu(:,3)=uu_emerg(3)*(1.0-0.29279746*((1+&
+                  uu(:,3)=uu_emerg(3)*(1.0-0.29279746*abs((1+&
                           tanh((x(l1:l2)+4+0.5)/0.4))* &
                           (1-tanh((x(l1:l2)+4-0.5)/0.4))- &
                           (1-tanh((x(l1:l2)-4-0.5)/0.4))* &
