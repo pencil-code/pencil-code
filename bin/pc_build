@@ -30,9 +30,9 @@
 #   -H <id>
 #       --host-id=<id>
 #                   Use the given <id> as host ID.
-#   -i              Show system host ID and and exit. This ignores local
+#   -i              Show system host ID and exit. This ignores local
 #                   configuration of the host ID via command-line flags,
-#                   environment variables or 'host-ID' files.
+#                   environment variables, and 'host-ID' files.
 #   -I              Show all matching host IDs, in the order in which they
 #                   are tried, and exit.
 #   -D, --debug-config
