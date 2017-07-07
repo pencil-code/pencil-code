@@ -312,6 +312,7 @@ module Mpicomm
   interface mpirecv_nonblock_real
     module procedure mpirecv_nonblock_real_arr
     module procedure mpirecv_nonblock_real_arr2
+    module procedure mpirecv_nonblock_real_arr3
     module procedure mpirecv_nonblock_real_arr4
     module procedure mpirecv_nonblock_real_arr5
   endinterface
@@ -3115,6 +3116,26 @@ if (notanumber(f(:,:,:,j))) print*, 'lucorn: iproc,j=', iproc, iproc_world, j
                      tag_id, MPI_COMM_GRID, ireq, mpierr)
 !
     endsubroutine mpirecv_nonblock_real_arr2
+!***********************************************************************
+    subroutine mpirecv_nonblock_real_arr3(bcast_array,nbcast_array,proc_src,tag_id,ireq)
+!
+!  Receive real array(:,:) from other processor, with non-blocking communication.
+!
+!  07-jul-17/Jorgen: adapted
+!
+      integer, dimension(3) :: nbcast_array
+      real, dimension(nbcast_array(1),nbcast_array(2),nbcast_array(3)) :: bcast_array
+      integer :: proc_src, tag_id, ireq, num_elements
+!
+      intent(out) :: bcast_array
+
+      if (any(nbcast_array == 0)) return
+!
+      num_elements = product(nbcast_array)
+      call MPI_IRECV(bcast_array, num_elements, MPI_REAL, proc_src, &
+                     tag_id, MPI_COMM_GRID, ireq, mpierr)
+!
+    endsubroutine mpirecv_nonblock_real_arr3
 !***********************************************************************
     subroutine mpirecv_nonblock_real_arr4(bcast_array,nbcast_array,proc_src,tag_id,ireq)
 !
