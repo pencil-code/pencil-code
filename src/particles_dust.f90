@@ -704,11 +704,11 @@ module Particles
 !  vorticity oo)
 !
       uu: if (lnostore_uu) then
-        if (ldraglaw_steadystate .or. lparticles_spin) &
+        if (ldraglaw_steadystate .or. lparticles_spin .or. lsolid_ogrid) &
             call fatal_error('initialize_particles', 'lnostore_uu = .false. is required. ')
         interp%luu = .false.
       else uu
-        interp%luu = ldragforce_dust_par .or. ldraglaw_steadystate .or. lparticles_spin
+        interp%luu = ldragforce_dust_par .or. ldraglaw_steadystate .or. lparticles_spin .or. lsolid_ogrid
       endif uu
       interp%loo=.false.
       interp%lTT=(lbrownian_forces.and.(brownian_T0==0.0))&
