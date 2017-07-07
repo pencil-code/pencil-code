@@ -147,13 +147,13 @@ my $quiet        = ($opts{'q'} || $opts{'quiet'}          || '');
 
 if ($show_system_host_id) {
     my $id = Pencil::ConfigFinder::get_host_id_system_info();
-    print "$id\n";
+    print $id."\n";
     exit 0;
 }
 
 if ($show_host_ids) {
     foreach my $id (Pencil::ConfigFinder::get_host_ids()) {
-        print "$id\n";
+        print $id."\n";
     }
     exit 0;
 }
