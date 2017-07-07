@@ -190,6 +190,17 @@ module Solid_Cells
   real, dimension(mxgrid_ogrid) :: xglobal_ogrid
   real, dimension(mygrid_ogrid) :: yglobal_ogrid
   real, dimension(mzgrid_ogrid) :: zglobal_ogrid
+!  Necessary for particle runs
+  real, dimension(:,:,:,:,:), allocatable ::  f_ogrid_loc
+  integer, dimension(:), allocatable :: recv_part_data_from
+  integer, dimension(:), allocatable :: send_part_data_to
+  integer :: n_procs_recv_part_data 
+  integer :: n_procs_send_part_data 
+  !public :: xgrid_ogrid, ygrid_ogrid, zgrid_ogrid, xglobal_ogrid, yglobal_ogrid, zglobal_ogrid
+  !public :: f_ogrid_loc
+  !public :: r_ogrid, xorigo_ogrid
+  !public :: map_nearest_grid_ogrid
+  !public :: interpolate_linear_ogrid
 !  Local ogrid and derivatives
   integer, parameter :: mx_ogrid=nx_ogrid+2*nghost,l1_ogrid=1+nghost,l2_ogrid=mx_ogrid-nghost
   integer, parameter :: my_ogrid=ny_ogrid+2*nghost,m1_ogrid=1+nghost,m2_ogrid=my_ogrid-nghost
@@ -496,9 +507,15 @@ module Solid_Cells
       !call initialize_send_ip_points
       call initialize_send_ip_points_alt
 ! 
-!  Allocate arrays used for communications across processors internally on the ogrid
+!  Allocate arrays used for communications across processors internally on the curvilinear grid
 !
       call initialize_mpicomm_ogrid
+!
+!  If particles are used in the simulation, set up 'local' arrays of f_ogrid variables to use
+!  when computing particle velocities (etc.) for particles inside r_ogrid
+!
+      !TODO: iux,iuz should be replaced by parameters set in start.in
+      if(lparticles) call initialize_particles_ogrid(iux,iuz)
 
       if(lroot) then
         print*, 'Interpolation zone: r_ogrid, r_int_outer, r_int_inner',r_ogrid,r_int_outer,r_int_inner
@@ -4539,6 +4556,10 @@ module Solid_Cells
 !
     call update_ghosts_ogrid
     call communicate_ip_curv_to_cart(f_cartesian,iux,irho)
+    !TODO: Should use the partifle flow info in the interpolation point
+    !      computation above
+    !TODO: iux,iuz, should be replaced by parameters set in start.in
+    if(lparticles)  call update_ogrid_flow_info(iux,iuz)
 !
 ! !!TODO:Printing
 ! if(ncpus==1 .or. iproc==1) then
@@ -6374,6 +6395,7 @@ module Solid_Cells
 !  Find the processor that stores the grid points, and return the processor
 !  id and the grid index of the bottom neighbouring point on a global grid.
 !  Necessary for interpolation between grids on parallel systems
+!  and for particle computations
 !
 !  13-apr-17/Jorgen: Coded
 !
@@ -7515,4 +7537,429 @@ module Solid_Cells
 
     endsubroutine der2_ogrid_SBP_experimental
 !*********************************************************************** 
+    subroutine map_nearest_grid_ogrid(xxp,ineargrid_ogrid)
+!
+!  Find index (ix0, iy0, iz0) of nearest grid point of particle.
+!
+!  06-jul-17/Jorgen: Adapted from map_nearest_grid in particles_sub
+!                    to work for overlapping grid
+!
+      real, dimension (3) :: xxp
+      integer, dimension (4) :: ineargrid_ogrid
+!
+      double precision, save :: dx1_ogrid, dy1_ogrid, dz1_ogrid
+      integer :: ix0, iy0, iz0
+      logical, save :: lfirstcall=.true.
+!
+      intent(in)  :: xxp
+      intent(out) :: ineargrid_ogrid
+!
+!  Default values in case of missing directions.
+!
+      ix0=nghost+1; iy0=nghost+1; iz0=nghost+1
+!
+      if (lfirstcall) then
+        dx1_ogrid=dx_1_ogrid(l1_ogrid) 
+        dy1_ogrid=dy_1_ogrid(m1_ogrid) 
+        dz1_ogrid=dz_1_ogrid(n1_ogrid)
+        lfirstcall=.false.
+      endif
+!
+!  Find nearest grid point in x-direction.
+!  Find nearest grid point by bisection if the grid is not equidistant.
+!
+      if (nxgrid_ogrid/=1) then
+        if (lequidist_ogrid(1)) then
+          ix0 = nint((xxp(1)-x_ogrid(1))*dx1_ogrid) + 1
+        else
+          call find_gp_index_by_bisection(xxp(1),x_ogrid,ix0)
+        endif
+      endif
+!
+!  Find nearest grid point in y-direction.
+!
+      if (nygrid_ogrid/=1) then
+        if (lequidist_ogrid(2)) then
+          iy0 = nint((xxp(2)-y_ogrid(1))*dy1_ogrid) + 1
+        else
+          call find_gp_index_by_bisection(xxp(2),y_ogrid,iy0)
+        endif
+      endif
+!
+!  Find nearest grid point in z-direction.
+!
+      if (nzgrid_ogrid/=1) then
+        if (lequidist_ogrid(3)) then
+          iz0 = nint((xxp(3)-z_ogrid(1))*dz1_ogrid) + 1
+        else
+          call find_gp_index_by_bisection(xxp(3),z_ogrid,iz0)
+        endif
+      endif
+!
+      ineargrid_ogrid(1)=ix0; ineargrid_ogrid(2)=iy0; ineargrid_ogrid(3)=iz0
+!
+!  Round off errors may put a particle closer to a ghost point than to a
+!  physical point. Either stop the code with a fatal error or fix problem
+!  by forcing the nearest grid point to be a physical point.
+!
+      if (ineargrid_ogrid(1)<=l1_ogrid-1.or.ineargrid_ogrid(1)>=l2_ogrid+1.or. &
+          ineargrid_ogrid(2)<=m1_ogrid-1.or.ineargrid_ogrid(2)>=m2_ogrid+1.or. &
+          ineargrid_ogrid(3)<=n1_ogrid-1.or.ineargrid_ogrid(3)>=n2_ogrid+1) then
+!        if (lcheck_exact_frontier) then
+!          if (ineargrid(1)<=l1_ogrid-1) then
+!            ineargrid(1)=l1_ogrid
+!          elseif (ineargrid(1)>=l2_ogrid+1) then
+!            ineargrid(1)=l2_ogrid
+!          endif
+!          if (ineargrid(2)<=m1_ogrid-1) then
+!            ineargrid(2)=m1_ogrid
+!          elseif (ineargrid(2)>=m2_ogrid+1) then
+!            ineargrid(2)=m2_ogrid
+!          endif
+!          if (ineargrid(3)<=n1_ogrid-1) then
+!            ineargrid(3)=n1_ogrid
+!          elseif (ineargrid(3)>=n2_ogrid+1) then
+!            ineargrid(3)=n2_ogrid
+!          endif
+!      else
+        print*, 'map_nearest_grid: particle must never be closer to a '//&
+                'ghost point than'
+        print*, '                  to a physical point.'
+        print*, '                  Consider using double precision to '//&
+                'avoid this problem'
+        print*, '                  or set lcheck_exact_frontier in '// &
+                '&particles_run_pars.'
+        print*, 'Information about what went wrong:'
+        print*, '----------------------------------'
+        print*, 'it, itsub, t=', it, itsub, t
+        print*, 'iproc  =', iproc
+        print*, 'xxp    =', xxp
+        print*, 'ineargrid   =', ineargrid_ogrid(:)
+        print*, 'l1_ogrid, m1_ogrid, n1_ogrid  =', l1_ogrid, m1_ogrid, n1_ogrid
+        print*, 'l2_ogrid, m2_ogrid, n2_ogrid  =', l2_ogrid, m2_ogrid, n2_ogrid
+        print*, 'x1_ogrid, y1_ogrid, z1_ogrid  =', x_ogrid(l1_ogrid), y_ogrid(m1_ogrid), z_ogrid(n1_ogrid)
+        print*, 'x2_ogrid, y2_ogrid, z2_ogrid  =', x_ogrid(l2_ogrid), y_ogrid(m2_ogrid), z_ogrid(n2_ogrid)
+        call fatal_error_local('map_nearest_grid_ogrid','')
+      endif
+!
+    endsubroutine map_nearest_grid_ogrid
+!***********************************************************************
+    subroutine find_gp_index_by_bisection(qp,q,iq0)
+!
+!  Given a gridpoint location (qp), find the index of
+!  the nearest grid cell by bisecting the interval. Its main
+!  use is for non-equidistant grids. 
+!
+!  06-jul-17/Jorgen: Adapted/copied from particles_mpicomm
+!
+      real, dimension (:) :: q
+      real :: qp
+      integer :: iq0,jl,ju,jm
+!
+      intent (in) :: qp,q
+      intent (out) :: iq0
+!
+      jl=1+nghost
+      ju=size(q)-nghost
+!
+      do while((ju-jl)>1)
+        jm=(ju+jl)/2
+        if (qp > q(jm)) then
+          jl=jm
+        else
+          ju=jm
+        endif
+      enddo
+      if (qp-q(jl) <= q(ju)-qp) then
+        iq0=jl
+      else
+        iq0=ju
+      endif
+!
+    endsubroutine find_gp_index_by_bisection
+!***********************************************************************
+    subroutine initialize_particles_ogrid(ivar1,ivar2)
+!
+!  Set up f_ogrid_loc, that sends information about ogrid to the appropriate
+!  processor that needs this for computation of particle properties (velocity,
+!  temperature, etc.)
+!  
+!  07-jul-17/Jorgen: Coded
+!
+      use Mpicomm, only: mpirecv_logical, mpisend_logical, mpibcast_logical
+!
+      integer, intent(in) :: ivar1,ivar2
+      real :: r2_ogrid, r2
+      integer :: i,j,k,iip
+      logical, dimension(ncpus) :: linside_proc = .false.
+      real, dimension(3) :: rthz
+      integer :: from_proc
+      integer :: procs_needed 
+      logical, dimension(ncpus,ncpus) :: part_data_comm_glob
+! 
+!  Check if any points on the cartesian grid on this processor is inside the ogrid     
+!
+      r2_ogrid = r_ogrid**2
+      do i=nghost,nx
+        do j=nghost,ny
+          r2 = (x(i)-xorigo_ogrid(1))**2 + (y(j)-xorigo_ogrid(2))**2
+          if(r2<r2_ogrid .and. r2>cylinder_radius) then
+            do k=nghost,nz
+              rthz=(/ sqrt(r2),atan2(y(j)-xorigo_ogrid(2),x(j)-xorigo_ogrid(1)),z(k) /)
+              call find_proc_curvilinear(rthz,from_proc)
+              linside_proc(from_proc+1) = .true.
+            enddo
+          endif
+        enddo
+      enddo
+! 
+!  Initialize arrays of points needed for particle properties 
+!
+      procs_needed = count(linside_proc)
+      if(procs_needed>0) then
+        allocate(f_ogrid_loc(procs_needed,mx_ogrid,my_ogrid,mz_ogrid,ivar2-ivar1+1))
+        allocate(recv_part_data_from(procs_needed))
+        k=1
+        do iip=0,ncpus-1
+          if(linside_proc(iip+1)) then
+            recv_part_data_from(k)=iip
+            k=k+1
+          endif
+        enddo
+      endif
+!
+!  Communicate this to the other processors
+!
+      if(lroot) then
+        do iip=0,ncpus-1
+          if(iip/=root) then
+            call mpirecv_logical(part_data_comm_glob(iip+1,:),ncpus,iip,899)
+          else
+            part_data_comm_glob(root+1,:)=linside_proc
+          endif
+        enddo
+      else
+        call mpisend_logical(linside_proc,ncpus,root,899)
+      endif
+      call mpibcast_logical(part_data_comm_glob,(/ncpus,ncpus/))
+!
+!  Determine if this processor must send flow data to any others
+!  Never send data to onself
+!
+      n_procs_send_part_data = count(part_data_comm_glob(:,iproc+1))
+      if(part_data_comm_glob(iproc+1,iproc+1)) then
+        n_procs_send_part_data = n_procs_send_part_data-1
+      endif
+      if(n_procs_send_part_data>0) then
+        allocate(send_part_data_to(n_procs_send_part_data))
+        k=1
+        do iip=0,ncpus-1
+          if(part_data_comm_glob(iip+1,iproc+1)) then
+            if(iip/=iproc) then
+              send_part_data_to(k)=iip
+              k=k+1
+            endif
+          endif
+        enddo
+      endif
+      n_procs_recv_part_data = procs_needed
+!
+!  Send/recv information of this timestep (needed if continuing run from previous simulation)
+!
+      call update_ogrid_flow_info(ivar1,ivar2)
+!
+    endsubroutine initialize_particles_ogrid
+!***********************************************************************
+    subroutine update_ogrid_flow_info(ivar1,ivar2)
+!
+!  Communicate f_ogrid to the processors that need it for computation of 
+!  particle properties. 
+!  
+!  07-jul-17/Jorgen: Coded
+!
+      use Mpicomm, only: mpirecv_nonblock_real, mpisend_real, mpibarrier, mpiwait
+!
+      integer, intent(in) :: ivar1, ivar2
+      integer :: iter, iter_recv, ivar
+      integer :: recv_from, send_to
+      integer, dimension(3) :: flow_buf_size = (/mx_ogrid,my_ogrid,mz_ogrid/)
+      integer, dimension(n_procs_recv_part_data-1,ivar2-ivar1+1) :: ireq2D
+!
+!  Post non-blocking recieves
+!
+      iter_recv=1
+      do iter=1,n_procs_recv_part_data
+        recv_from = recv_part_data_from(iter)
+        if(recv_from /= iproc) then
+          do ivar=ivar1,ivar2
+            call mpirecv_nonblock_real(f_ogrid_loc(iter,:,:,:,ivar),flow_buf_size,recv_from,800+ivar,ireq2D(iter,ivar))
+          enddo
+          iter_recv=iter_recv+1
+        else
+          f_ogrid_loc(iter,:,:,:,ivar1:ivar2) = f_ogrid(:,:,:,ivar1:ivar2)
+        endif
+      enddo
+!
+!  Send flow data to prosessors that need it
+!  Note that send_to is never iproc, since this item is taken out of send_par_data_to
+!  during initialization
+!
+      do iter=1,n_procs_send_part_data
+        send_to = send_part_data_to(iter+1)
+        do ivar=ivar1,ivar2
+          call mpisend_real(f_ogrid(:,:,:,ivar),flow_buf_size,send_to,800+ivar)
+        enddo
+      enddo
+!
+      do iter_recv=1,n_procs_recv_part_data-1
+        do ivar=ivar1,ivar2
+          call mpiwait(ireq2D(iter_recv,ivar))
+        enddo
+      enddo
+      call mpibarrier
+!
+    endsubroutine update_ogrid_flow_info
+!***********************************************************************
+! TODO TODO
+    subroutine interpolate_linear_ogrid(ivar1,ivar2,xxp,gp,inear_glob)
+!
+!  Use information from the overlappint curvilinear grid to interpolate the velocity
+!  of the particle. Must transform to cartesian velocity after interpolation.
+!  Interpolate the value of f to arbitrary (xp, yp, zp) curvilinear coordinate
+!  using the linear interpolation formula.
+!
+!    g(x,y,z) = A*x*y*z + B*x*y + C*x*z + D*y*z + E*x + F*y + G*z + H .
+!
+!  The coefficients are determined by the 8 grid points surrounding the
+!  interpolation point.
+!  Global coordinates are used for the interpolation, such that only velocity
+!  information needs to be communicated between the processors before interpolation.
+!
+!  06-jul-17/Jorgen: Adapted from linear_interpolate_curvilinear in solid_cells_ogrid.f90
+!
+      !use Solid_Cells, only: f_ogrid_loc, xglobal_ogrid, yglobal_ogrid, zglobal_ogrid
+!
+      integer :: ivar1, ivar2
+      real, dimension (3) :: xxp
+      real, dimension (ivar2-ivar1+1) :: gp
+      integer, dimension (4) :: inear_glob
+!
+      real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8
+      real :: xp0, yp0, zp0
+      real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
+      integer :: ix0, iy0, iz0, i, proc
+!
+      intent(in)  :: ivar1, ivar2, xxp, inear_glob
+      intent(out) :: gp
+!
+!  Determine index value of lowest lying corner point of grid box surrounding
+!  the interpolation point.
+!
+      ix0=inear_glob(1); iy0=inear_glob(2); iz0=inear_glob(3); proc=inear_glob(4)
+!
+!  Check if the grid point interval is really correct.
+!
+      if ((xglobal_ogrid(ix0)<=xxp(1) .and. xglobal_ogrid(ix0+1)>=xxp(1) .or. nxgrid_ogrid==1) .and. &
+          (yglobal_ogrid(iy0)<=xxp(2) .and. yglobal_ogrid(iy0+1)>=xxp(2) .or. nygrid_ogrid==1) .and. &
+          (zglobal_ogrid(iz0)<=xxp(3) .and. zglobal_ogrid(iz0+1)>=xxp(3) .or. nzgrid_ogrid==1)) then
+        ! Everything okay
+      else
+        print*, 'interpolate_linear_ogrid: Global interpolation point does not ' // &
+            'lie within the calculated grid point interval.'
+        print*, 'iproc = ', iproc
+        print*, 'ipar = ', ipar
+        !print*, 'mxgrid_ogrid, xglobal_ogrid(1), xglobal_ogrid(mxgrid_ogrid) = ', & 
+        !    mxgrid_ogrid, xglobal_ogrid(1), xglobal_ogrid(mxgrid_ogrid)
+        !print*, 'mygrid_ogrid, yglobal_ogrid(1), yglobal_ogrid(mygrid_ogrid) = ', &
+        !    mygrid_ogrid, yglobal_ogrid(1), yglobal_ogrid(mygrid_ogrid)
+        !print*, 'mzgrid_ogrid, zglobal_ogrid(1), zglobal_ogrid(mzgrid_ogrid) = ', & 
+        !    mzgrid_ogrid, zglobal_ogrid(1), zglobal_ogrid(mzgrid_ogrid)
+        print*, 'ix0, iy0, iz0 = ', ix0, iy0, iz0
+        print*, 'xp, xp0, xp1 = ', xxp(1), xglobal_ogrid(ix0), xglobal_ogrid(ix0+1)
+        print*, 'yp, yp0, yp1 = ', xxp(2), yglobal_ogrid(iy0), yglobal_ogrid(iy0+1)
+        print*, 'zp, zp0, zp1 = ', xxp(3), zglobal_ogrid(iz0), zglobal_ogrid(iz0+1)
+        call fatal_error('interpolate_linear_ogrid','point outside of interval for particle interpolation')
+        return
+      endif
+!
+!  Redefine the interpolation point in coordinates relative to lowest corner.
+!  Set it equal to 0 for dimensions having 1 grid points; this will make sure
+!  that the interpolation is bilinear for 2D grids.
+!
+      xp0=0; yp0=0; zp0=0
+      if (nxgrid_ogrid/=1) xp0=xxp(1)-xglobal_ogrid(ix0)
+      if (nygrid_ogrid/=1) yp0=xxp(2)-yglobal_ogrid(iy0)
+      if (nzgrid_ogrid/=1) zp0=xxp(3)-zglobal_ogrid(iz0)
+!
+!  Calculate derived grid spacing parameters needed for interpolation.
+!
+      dx1=1/(xglobal_ogrid(ix0+1)-xglobal_ogrid(ix0))
+      dy1=1/(yglobal_ogrid(iy0+1)-yglobal_ogrid(iy0))
+      if(nzgrid_ogrid/=1) then
+        dz1=1/(zglobal_ogrid(iz0+1)-zglobal_ogrid(iz0))
+      else 
+        dz1=1
+      endif
+!
+      dxdy1=dx1*dy1; dxdz1=dx1*dz1; dydz1=dy1*dz1
+      dxdydz1=dx1*dy1*dz1
+!
+!  Function values at all corners.
+!
+      g1=f_ogrid_loc(proc,ix0  ,iy0  ,iz0  ,ivar1:ivar2)
+      g2=f_ogrid_loc(proc,ix0+1,iy0  ,iz0  ,ivar1:ivar2)
+      g3=f_ogrid_loc(proc,ix0  ,iy0+1,iz0  ,ivar1:ivar2)
+      g4=f_ogrid_loc(proc,ix0+1,iy0+1,iz0  ,ivar1:ivar2)
+      g5=f_ogrid_loc(proc,ix0  ,iy0  ,iz0+1,ivar1:ivar2)
+      g6=f_ogrid_loc(proc,ix0+1,iy0  ,iz0+1,ivar1:ivar2)
+      g7=f_ogrid_loc(proc,ix0  ,iy0+1,iz0+1,ivar1:ivar2)
+      g8=f_ogrid_loc(proc,ix0+1,iy0+1,iz0+1,ivar1:ivar2)
+      !g1=farr(1,1,1,ivar1:ivar2)
+      !g2=farr(2,1,1,ivar1:ivar2)
+      !g3=farr(1,2,1,ivar1:ivar2)
+      !g4=farr(2,2,1,ivar1:ivar2)
+      !g5=farr(1,1,2,ivar1:ivar2)
+      !g6=farr(2,1,2,ivar1:ivar2)
+      !g7=farr(1,2,2,ivar1:ivar2)
+      !g8=farr(2,2,2,ivar1:ivar2)
+!
+!  Interpolation formula.
+!
+      gp = g1 + xp0*dx1*(-g1+g2) + yp0*dy1*(-g1+g3) + zp0*dz1*(-g1+g5) + &
+          xp0*yp0*dxdy1*(g1-g2-g3+g4) + xp0*zp0*dxdz1*(g1-g2-g5+g6) + &
+          yp0*zp0*dydz1*(g1-g3-g5+g7) + &
+          xp0*yp0*zp0*dxdydz1*(-g1+g2+g3-g4+g5-g6-g7+g8)
+!
+!  Do a reality check on the interpolation scheme.
+!
+      if (linterp_reality_check) then
+        do i=1,ivar2-ivar1+1
+          if ((gp(i)>max(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) .or. &
+            (gp(i)<min(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) .or. &
+            (gp(i)/=gp(i))) then
+            if (gp(i)>max(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
+              print*, 'interpolate_linear_ogrid: interpolated value is LARGER than'
+              print*, 'interpolate_linear_ogrid: a values at the corner points!'
+            elseif (gp(i)<min(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) then
+              print*, 'interpolate_linear_ogrid: interpolated value is smaller than'
+              print*, 'interpolate_linear_ogrid: a values at the corner points!'
+            elseif (gp(i)/=gp(i)) then
+              print*, 'interpolate_linear_ogrid: interpolated value is NaN'
+            endif
+            print*, 'iproc = ', iproc
+            print*, 'ipar = ', ipar
+            print*, 'interpolate_linear_ogrid: xxp=', xxp
+            print*, 'interpolate_linear_ogrid: x0, y0, z0=', &
+                xglobal_ogrid(ix0), yglobal_ogrid(iy0), zglobal_ogrid(iz0)
+            print*, 'interpolate_linear_ogrid: i, gp(i)=', i, gp(i)
+            print*, 'interpolate_linear_ogrid: g1...g8=', &
+                g1(i), g2(i), g3(i), g4(i), g5(i), g6(i), g7(i), g8(i)
+            print*, '------------------'
+            call fatal_error('interpolate_linear_ogrid','particle velocity interpolation error')
+          endif
+        enddo
+      endif
+!
+    endsubroutine interpolate_linear_ogrid
+!***********************************************************************
 end module Solid_Cells
