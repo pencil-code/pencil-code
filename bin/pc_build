@@ -96,7 +96,7 @@ Pencil::Util::use_pencil_perl_modules(
     'Pencil::ConfigParser'
     ) or die;
 
-use POSIX qw(strftime tmpnam);
+use POSIX qw(strftime);
 use Getopt::Long;
 # Allow for '-Plp' as equivalent to '-P lp' etc:
 Getopt::Long::config("bundling");
