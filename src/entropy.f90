@@ -4094,7 +4094,7 @@ module Energy
 !
       if (lfirst.and.ldt) then
         if (ldynamical_diffusion) then
-          diffus_chi3 = diffus_chi3 + chi_hyper3_mesh
+          diffus_chi3 = diffus_chi3 + chi_hyper3_mesh * (abs(dline_1(:,1)) + abs(dline_1(:,2)) + abs(dline_1(:,3)))
           advec_hypermesh_ss = 0.0
         else
           advec_hypermesh_ss=chi_hyper3_mesh*pi5_1*sqrt(dxyz_2)
