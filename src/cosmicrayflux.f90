@@ -27,7 +27,11 @@ module Cosmicrayflux
   real, pointer :: k_para, k_perp
   real :: kpara_t=0., kperp_t=0.
   real :: tau=0., tau1=0.
-  real :: subgrid_bref=0., subgrid_alpha=1.
+  real :: subgrid_c1=0., subgrid_c2=0.
+  real :: subgrid_brms=1.
+  real :: subgrid_bmin=0.
+  real :: subgrid_s=1.66666666666666666667
+  real :: subgrid_k=0.
   real :: ratio_kpara_kperp=0.
   real, dimension(nx) :: vKperp, vKpara
   real, dimension(nx) :: b_exp
@@ -36,12 +40,22 @@ module Cosmicrayflux
   logical :: ladvect_fcr=.false., lupw_fcr=.false.
 
   namelist /cosmicrayflux_init_pars/ &
-      tau, kpara, kperp, lsubgrid_cr, ratio_kpara_kperp, &
-      subgrid_bref, lcosmicrayflux_diffus_dt,subgrid_alpha
+      tau, kpara, kperp, lsubgrid_cr, &
+      lcosmicrayflux_diffus_dt, &
+      subgrid_brms, subgrid_bmin, &
+      subgrid_c1,subgrid_c2, &
+      subgrid_s, subgrid_k, &
+      ratio_kpara_kperp
+
+
 
   namelist /cosmicrayflux_run_pars/ &
-      tau, kpara, kperp, lsubgrid_cr, subgrid_bref, ratio_kpara_kperp, &
-      lcosmicrayflux_diffus_dt, ladvect_fcr, lupw_fcr,subgrid_alpha
+      tau, kpara, kperp, lsubgrid_cr, &
+      lcosmicrayflux_diffus_dt, ladvect_fcr, lupw_fcr, &
+      subgrid_brms, subgrid_bmin, &
+      subgrid_c1,subgrid_c2, &
+      subgrid_s, subgrid_k, &
+      ratio_kpara_kperp
 
   contains
 !*******************************************************************************
@@ -180,7 +194,7 @@ module Cosmicrayflux
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: BuiBujgecr, bunit
-      real, dimension(nx)   :: b2, b21, b_abs
+      real, dimension(nx)   :: b2, b21, b_brms
       real, dimension(nx)   :: tmp, diffus_cr,advec_kfcr
       real, dimension (nx,3,3) :: gfcr
       real, dimension (nx,3) :: ugfcr
@@ -212,21 +226,40 @@ module Cosmicrayflux
       enddo
 
       !  Cosmic Ray Flux equation.
-      if (lsubgrid_cr) then
-        b_abs = sqrt(b2)
-        ! Parallel diffusion
-        ! Kperp = kperp_t0/[|B|/subgrid_bref + exp(-B/subgrid_bref)]
-        if (subgrid_alpha /= 0.) then
-          vKpara(:) = kpara_t*(1.0+(b_abs/subgrid_bref)**subgrid_alpha)
-        else
-          ! The factor 2 makes it consistent with the \alpha>0 case
-          vKpara(:) = kpara_t*2.
+      if (.not.lsubgrid_cr) then
+        ! If not using the subgrid prescription, the diffusivities are
+        ! constants
+        df(l1:l2,m,n,ifcrx:ifcrz) = df(l1:l2,m,n,ifcrx:ifcrz) &
+            - tau1*f(l1:l2,m,n,ifcrx:ifcrz)                   &
+            - kperp_t*p%gecr                                  &
+            - (kpara_t - kperp_t)*BuiBujgecr
+      else
+        ! Subgrid prescription for parallel diffusion:
+        ! kpara = kpara_0 * [1 + c1*(B/Brms)^s + c2*(Brms/B)]
+        ! Brms (subgrid_brms) is the rms value of the assumed background field
+        ! and s is its spectral index.
+        ! (subgrid_)c1 and c2 depend on properties of background field
+        vKpara(:) = kpara_t
+
+        b_brms = sqrt(b2)/subgrid_brms
+        if (subgrid_c1 /= 0.0) then
+          vKpara(:) = vKpara(:) + kpara_t*subgrid_c1*b_brms**subgrid_s
         endif
-        ! Perpendicular diffusion (dependence on B field)
+
+        if (subgrid_c2 /= 0.0) then
+          vKpara(:) = vKpara(:) + kpara_t*subgrid_c2*subgrid_brms*sqrt(b21)
+        endif
+
+          ! Subgrid prescription for perpendicular diffusion:
         if (ratio_kpara_kperp /= 0.0) then
-          ! If a ration k_para/k_perp was specified, ignore the value of k_perp
-          ! and computes the perpendicular diffusivity accordingly
+          ! If a ration k_para/k_perp was specified, ignore the value of
+          ! k_perp and computes the perpendicular diffusivity accordingly
+          ! kperp = kpara/r * (B/Brms)^(-k)
+          ! where r = ratio_kpara_kperp) and k = subgrid_k
           vKperp(:) = vKpara(:)/ratio_kpara_kperp
+          if (subgrid_k /= 0.0) then
+            vKperp(:) = vKperp(:) * (b_brms)**(-subgrid_k)
+          endif
         else
           ! Otherwise, use constant perpendicular diffusivity previously
           ! specified
@@ -239,13 +272,8 @@ module Cosmicrayflux
               - vKperp*p%gecr(:,i)                          &
               - (vKpara - vKperp)*BuiBujgecr(:,i)
         enddo
-      else
-        ! If not using the subgrid prescription, the diffusivities are constants
-        df(l1:l2,m,n,ifcrx:ifcrz) = df(l1:l2,m,n,ifcrx:ifcrz) &
-            - tau1*f(l1:l2,m,n,ifcrx:ifcrz)                   &
-            - kperp_t*p%gecr                                    &
-            - (kpara_t - kperp_t)*BuiBujgecr
       endif
+
       !  Allows optional use of advection term for fcr.
       if (ladvect_fcr) then
         call gij(f,ifcr,gfcr,1)
