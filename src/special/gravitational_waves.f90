@@ -91,7 +91,8 @@ module Special
   real :: amplhhL=0., amplhhT=0., amplggL=0., amplggT=0.
   real :: kx_hhL=0., ky_hhL=0., kz_hhL=0.
   real :: kx_ggL=0., ky_ggL=0., kz_ggL=0.
-  logical :: lno_transverse_part=.false.
+  real :: diffhh=0., diffgg=0.
+  logical :: lno_transverse_part=.false., lsame_diffgg_as_hh=.true.
 !
 ! input parameters
   namelist /special_init_pars/ &
@@ -102,7 +103,7 @@ module Special
 !
 ! run parameters
   namelist /special_run_pars/ &
-    lno_transverse_part
+    lno_transverse_part, diffhh, diffgg, lsame_diffgg_as_hh
 !
 ! Diagnostic variables (needs to be consistent with reset list below).
 !
@@ -147,16 +148,11 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call keep_compiler_quiet(f)
+!  Check whether diffgg=diffhh (which  is the default)
 !
-      if (lfargo_advection) then
-        print*,''
-        print*,'Switch '
-        print*,' SPECIAL = special/fargo'
-        print*,'in src/Makefile.local if you want to use the fargo algorithm'
-        print*,''
-        call fatal_error('nospecial','initialize_special()')
-      endif
+      if (lsame_diffgg_as_hh) diffgg=diffhh
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -284,7 +280,7 @@ module Special
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: del2hhL,del2hhT
+      real, dimension (nx) :: del2hhL,del2hhT,del2ggL,del2ggT
       type (pencil_case) :: p
 !
       intent(in) :: f,p
@@ -295,15 +291,21 @@ module Special
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
 !!      if (headtt) call identify_bcs('special',ispecial)
 !
-!  dh/dt = g, d2h/dt2 = dg/dt = del2h + S
-!
-      df(l1:l2,m,n,ihhL)=df(l1:l2,m,n,ihhL)+f(l1:l2,m,n,iggL)
-      df(l1:l2,m,n,ihhT)=df(l1:l2,m,n,ihhT)+f(l1:l2,m,n,iggT)
-!
       call del2(f,ihhL,del2hhL)
       call del2(f,ihhT,del2hhT)
-      df(l1:l2,m,n,iggL)=df(l1:l2,m,n,iggL)+del2hhL+p%stressL
-      df(l1:l2,m,n,iggT)=df(l1:l2,m,n,iggT)+del2hhT+p%stressT
+!
+      if (diffgg/=0.) then
+        call del2(f,iggL,del2ggL)
+        call del2(f,iggT,del2ggT)
+      endif
+!
+!  dh/dt = g, d2h/dt2 = dg/dt = del2h + S
+!
+      df(l1:l2,m,n,ihhL)=df(l1:l2,m,n,ihhL)+f(l1:l2,m,n,iggL)+diffhh*del2hhL
+      df(l1:l2,m,n,ihhT)=df(l1:l2,m,n,ihhT)+f(l1:l2,m,n,iggT)+diffhh*del2hhT
+!
+      df(l1:l2,m,n,iggL)=df(l1:l2,m,n,iggL)+del2hhL+p%stressL+diffgg*del2ggL
+      df(l1:l2,m,n,iggT)=df(l1:l2,m,n,iggT)+del2hhT+p%stressT+diffgg*del2ggT
 !
 !         df(l1:l2,m,n,igij+1)=df(l1:l2,m,n,igij+1)+del2hii(:,2)+ &
 !           p%bb(:,2)**2-onethird*p%b2
