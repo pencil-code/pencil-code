@@ -4,7 +4,8 @@
 
 #include <cstdio>
 
-#include "dconstsextern.cuh"
+#define EXTERN extern
+#include "dconsts.cuh"
 #include "shear.cuh"
 #include "smem.cuh"
 

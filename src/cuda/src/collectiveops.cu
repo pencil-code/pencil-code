@@ -1,7 +1,8 @@
 
 #include <stdio.h>
 
-#include "dconstsextern.cuh"
+#define EXTERN extern
+#include "dconsts.cuh"
 #include "../cparam_c.h"
 #include "smem.cuh"
 

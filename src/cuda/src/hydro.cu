@@ -7,7 +7,8 @@
 
 #include "hydro.cuh"
 #include "diff.cuh"
-#include "dconstsextern.cuh"
+#define EXTERN extern
+#include "dconsts.cuh"
 #include "coriolis.cuh"
 #include "shear.cuh"
 
