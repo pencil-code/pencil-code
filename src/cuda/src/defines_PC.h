@@ -40,6 +40,7 @@
 
 #define save_name        qualified(diagnostics,save_name,MODPRE,MODIN,MODSUF)
 
+#define density_push2c   qualified(density,push2c,MODPRE,MODIN,MODSUF)
 #define hydro_push2c     qualified(hydro,push2c,MODPRE,MODIN,MODSUF)
 #define viscosity_push2c qualified(viscosity,push2c,MODPRE,MODIN,MODSUF)
 #define forcing_push2c   qualified(forcing,push2c,MODPRE,MODIN,MODSUF)
