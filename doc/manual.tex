@@ -4759,6 +4759,20 @@ is only set here. It is worth noting that one \textit{should not} use the flag
 FFLAGS += -integer-size 64
 \end{verbatim}
 to promote all the integers to 64 Bit. This will break the Fortran-C interface.
+One should also make sure that \code{npar_mig<=npar/ncpus}. It is also beneficial
+to set \code{mpar_loc=2*npar/ncpus}.
+
+\subsubsection{Random number generator}
+
+There are several methods to generate random number in the code.
+It is worth noting that when simulating coagulation with the
+super-particle approach, one should use the intrinsic random number
+generator of FORTRAN instead of the one implemented in the code.
+When invoking \code{random_number_wrapper}, there will be back-reaction
+to the gas flow. This unexpected back-reaction can be tracked by
+inspecting the power spectra, which exhibits the oscillation at the tail.
+To avoid this, one should set \code{luser_random_number_wrapper=F} under
+the module \code{particles_coag_run_pars} in \code{run.in}.
 
 % ---------------------------------------------------------------------- %
 

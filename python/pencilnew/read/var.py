@@ -10,7 +10,7 @@
 # S. Candelaresi (iomsn1@gmail.com).
 """
 Contains the read class for the VAR file reading,
-some simlation attributes and the data cube.
+some simulation attributes and the data cube.
 """
 
 def var(*args, **kwargs):
@@ -54,13 +54,13 @@ def var(*args, **kwargs):
       Trim the data cube to exclude ghost zones.
 
     *param*:
-     The params object from read.param.
+      The params object from read.param.
 
     *dim*:
-     The dim object from read.dim.
+      The dim object from read.dim.
 
     *index*:
-     The index object from read.dim.
+      The index object from read.dim.
 
     *run2D*:
       Specify if the run is purely 2d.
@@ -75,7 +75,8 @@ def var(*args, **kwargs):
       Precision of the data. Either float 'f' or double 'd'.
     """
 
-    var_tmp = DataCube(*args, **kwargs)
+    var_tmp = DataCube()
+    var_tmp.read(*args, **kwargs)
     return var_tmp
 
 
@@ -84,10 +85,21 @@ class DataCube(object):
     DataCube -- holds Pencil Code VAR file data.
     """
 
-    def __init__(self, var_file='', datadir='data', proc=-1, ivar=-1,
-                 quiet=True, trim_all=False,
-                 param=None, dim=None, index=None, run2D=False,
-                 magic=None, setup=None, precision='f4'):
+    def __init__(self):
+        """
+        Fill members with default values.
+        """
+
+        self.t = 0.
+        self.dx = 1.
+        self.dy = 1.
+        self.dz = 1.
+
+
+    def read(self, var_file='', datadir='data', proc=-1, ivar=-1,
+             quiet=True, trim_all=False,
+             param=None, dim=None, index=None, run2D=False,
+             magic=None, setup=None, precision='f'):
         """
         Read VAR files from pencil code. If proc < 0, then load all data
         and assemble. otherwise, load VAR file from specified processor.
@@ -102,10 +114,10 @@ class DataCube(object):
 
         call signature:
 
-        DataCube(self, var_file='', datadir='data', proc=-1, ivar=-1,
-                 quiet=True, trim_all=False,
-                 param=None, dim=None, index=None, run2D=False,
-                 magic=None, setup=None, precision='f')
+        read(self, var_file='', datadir='data', proc=-1, ivar=-1,
+             quiet=True, trim_all=False,
+             param=None, dim=None, index=None, run2D=False,
+             magic=None, setup=None, precision='f')
 
         Keyword arguments:
 
@@ -128,13 +140,13 @@ class DataCube(object):
           Trim the data cube to exclude ghost zones.
 
         *param*:
-         The params object from read.param.
+          The params object from read.param.
 
         *dim*:
-         The dim object from read.dim.
+          The dim object from read.dim.
 
         *index*:
-         The index object from read.dim.
+          The index object from read.dim.
 
         *run2D*:
           Specify if the run is purely 2d.
@@ -393,16 +405,16 @@ class DataCube(object):
             self.magic_attributes(param)
 
 
-    def __natural_sort(self, l):
+    def __natural_sort(self, procs_list):
         """
         Sort array in a more natural way, e.g. 9VAR < 10VAR
         """
 
         import re
-       
+
         convert = lambda text: int(text) if text.isdigit() else text.lower()
         alphanum_key = lambda key: [convert(c) for c in re.split('([0-9]+)', key)]
-        return sorted(l, key=alphanum_key)
+        return sorted(procs_list, key=alphanum_key)
 
 
     def magic_attributes(self, param):

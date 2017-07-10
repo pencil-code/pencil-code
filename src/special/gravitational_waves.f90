@@ -37,9 +37,9 @@
 !
 ! CPARAM logical, parameter :: lspecial = .true.
 !
-! MVAR CONTRIBUTION 12
-! MAUX CONTRIBUTION 3
+! MVAR CONTRIBUTION 6
 !
+! PENCILS PROVIDED stressL; stressT
 !***************************************************************
 !
 ! HOW TO USE THIS FILE
@@ -75,6 +75,7 @@ module Special
 !
   use Cparam
   use Cdata
+  use Initcond
   use General, only: keep_compiler_quiet
   use Messages, only: svn_id, fatal_error
 !
@@ -84,11 +85,32 @@ module Special
 !
 ! Declare index of new variables in f array (if any).
 !
-  integer :: ihij,igij
+  integer :: istressL,istressT
+  character (len=labellen) :: inithhL='nothing'
+  character (len=labellen) :: initggL='nothing'
+  real :: amplhhL=0., amplhhT=0., amplggL=0., amplggT=0.
+  real :: kx_hhL=0., ky_hhL=0., kz_hhL=0.
+  real :: kx_ggL=0., ky_ggL=0., kz_ggL=0.
+  real :: diffhh=0., diffgg=0.
+  logical :: lno_transverse_part=.false., lsame_diffgg_as_hh=.true.
 !
-!! Diagnostic variables (needs to be consistent with reset list below).
+! input parameters
+  namelist /special_init_pars/ &
+    lno_transverse_part, inithhL, initggL, &
+    amplhhL, amplhhT, amplggL, amplggT, &
+    kx_hhL, ky_hhL, kz_hhL, &
+    kx_ggL, ky_ggL, kz_ggL
 !
-  integer :: idiag_g22pt=0       ! DIAG_DOC: $g_{22}(x_1,y_1,z_1,t)$
+! run parameters
+  namelist /special_run_pars/ &
+    lno_transverse_part, diffhh, diffgg, lsame_diffgg_as_hh
+!
+! Diagnostic variables (needs to be consistent with reset list below).
+!
+  integer :: idiag_hhL2m=0       ! DIAG_DOC: $\left<h_{\rm L}^2\right>$
+  integer :: idiag_hhT2m=0       ! DIAG_DOC: $\left<h_{\rm T}^2\right>$
+  integer :: idiag_hhLhhTm=0     ! DIAG_DOC: $\left<h_{\rm L}h_{\rm T}\right>$
+  integer :: idiag_ggLpt=0       ! DIAG_DOC: $g_{\rm L}(x_1,y_1,z_1,t)$
 !
   contains
 !***********************************************************************
@@ -104,14 +126,14 @@ module Special
       if (lroot) call svn_id( &
            "$Id$")
 !
-      call farray_register_pde('hij',ihij,vector=6)
-      call farray_register_pde('gij',igij,vector=6)
-!
 !  Set indices for auxiliary variables.
 !
-      !call farray_register_auxiliary('bb',ibb)
-      call register_report_aux('bb', ibb, ibx, iby, ibz)
-print*,'AXEL1: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
+      call farray_register_pde('hhL',ihhL)
+      call farray_register_pde('hhT',ihhT)
+      call farray_register_pde('ggL',iggL)
+      call farray_register_pde('ggT',iggT)
+      call farray_register_pde('stressL',istressL)
+      call farray_register_pde('stressT',istressT)
 !
       if (lroot) call svn_id( &
            "$Id$")
@@ -126,16 +148,11 @@ print*,'AXEL1: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
-      call keep_compiler_quiet(f)
+!  Check whether diffgg=diffhh (which  is the default)
 !
-      if (lfargo_advection) then
-        print*,''
-        print*,'Switch '
-        print*,' SPECIAL = special/fargo'
-        print*,'in src/Makefile.local if you want to use the fargo algorithm'
-        print*,''
-        call fatal_error('nospecial','initialize_special()')
-      endif
+      if (lsame_diffgg_as_hh) diffgg=diffhh
+!
+      call keep_compiler_quiet(f)
 !
     endsubroutine initialize_special
 !***********************************************************************
@@ -159,18 +176,27 @@ print*,'AXEL1: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
       real, dimension (mx,my,mz,mfarray) :: f
 !
       intent(inout) :: f
-!!
-!!  SAMPLE IMPLEMENTATION
-!!
-!!      select case (initspecial)
-!!        case ('nothing'); if (lroot) print*,'init_special: nothing'
-!!        case ('zero', '0'); f(:,:,:,iSPECIAL_VARIABLE_INDEX) = 0.
-!!        case default
-!!          call fatal_error("init_special: No such value for initspecial:" &
-!!              ,trim(initspecial))
-!!      endselect
 !
-      call keep_compiler_quiet(f)
+!  initial condition for hhL
+!
+      select case (inithhL)
+        case ('nothing'); if (lroot) print*,'init_special: nothing'
+        case ('coswave-kx'); call coswave(amplhhL,f,ihhL,kx=kx_hhL)
+        case default
+          call fatal_error("init_special: No such value for inithhL:" &
+              ,trim(inithhL))
+      endselect
+!
+!  initial condition for ggL
+!
+      select case (initggL)
+        case ('nothing'); if (lroot) print*,'init_special: nothing'
+        case ('coswave-kx'); call coswave(amplggL,f,iggL,kx=kx_ggL)
+        case ('sinwave-kx'); call sinwave(amplggL,f,iggL,kx=kx_ggL)
+        case default
+          call fatal_error("init_special: No such value for initggL:" &
+              ,trim(initggL))
+      endselect
 !
     endsubroutine init_special
 !***********************************************************************
@@ -180,8 +206,8 @@ print*,'AXEL1: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
 !
 !  18-07-06/tony: coded
 !
-      lpenc_requested(i_bb)=.true.
-      lpenc_requested(i_b2)=.true.
+  !?  lpenc_requested(i_bb)=.true.
+  !?  lpenc_requested(i_b2)=.true.
 !
     endsubroutine pencil_criteria_special
 !***********************************************************************
@@ -210,8 +236,28 @@ print*,'AXEL1: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
       intent(in) :: f
       intent(inout) :: p
 !
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(p)
+!  The following construct when lno_transverse_part=T applies only
+!  to the case of a Beltrami field with z variation.
+!
+      if (lno_transverse_part) then
+        p%stressL=0.0
+        p%stressT=0.0
+        if (lhydro) then
+          p%stressL=p%stressL+.5*(f(l1:l2,m,n,iuy)**2 &
+                                 -f(l1:l2,m,n,iux)**2)
+          p%stressT=p%stressT+.5*(f(l1:l2,m,n,iux) &
+                                 *f(l1:l2,m,n,iuy))
+        endif
+        if (lmagnetic) then
+          p%stressL=p%stressL-.5*(f(l1:l2,m,n,iby)**2 &
+                                 -f(l1:l2,m,n,ibx)**2)
+          p%stressT=p%stressT-.5*(f(l1:l2,m,n,ibx) &
+                                 *f(l1:l2,m,n,iby))
+        endif
+      else
+        p%stressL=f(l1:l2,m,n,istressL)
+        p%stressT=f(l1:l2,m,n,istressT)
+      endif
 !
     endsubroutine calc_pencils_special
 !***********************************************************************
@@ -230,14 +276,12 @@ print*,'AXEL1: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
 !  06-oct-03/tony: coded
 !
       use Diagnostics
-      use Sub, only: del2v
+      use Sub, only: del2
 !
       real, dimension (mx,my,mz,mfarray) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: del2hii,del2hij
+      real, dimension (nx) :: del2hhL,del2hhT,del2ggL,del2ggT
       type (pencil_case) :: p
-!
-      integer :: j,jhij,jgij
 !
       intent(in) :: f,p
       intent(inout) :: df
@@ -247,78 +291,172 @@ print*,'AXEL1: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
       if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
 !!      if (headtt) call identify_bcs('special',ispecial)
 !
-        if (lmagnetic) then
-!         print*,'AXEL:',p%bb(:,2)
+      call del2(f,ihhL,del2hhL)
+      call del2(f,ihhT,del2hhT)
 !
-!  g11=1, g22=2, g33=3, g12=4, g13=5, g23=6,
-!  g11=0, g22=1, g33=2, g12=3, g13=4, g23=5,
+      if (diffgg/=0.) then
+        call del2(f,iggL,del2ggL)
+        call del2(f,iggT,del2ggT)
+      endif
 !
-          do j=1,6
-            jhij=ihij-1+j
-            jgij=igij-1+j
-            df(l1:l2,m,n,jhij)=df(l1:l2,m,n,jhij)+f(l1:l2,m,n,jgij)
-          enddo
-          call del2v(f,ihij  ,del2hii)
-          call del2v(f,ihij+3,del2hij)
-          df(l1:l2,m,n,igij+0)=df(l1:l2,m,n,igij+0)+del2hii(:,1)+ &
-            p%bb(:,1)**2-onethird*p%b2
-          df(l1:l2,m,n,igij+1)=df(l1:l2,m,n,igij+1)+del2hii(:,2)+ &
-            p%bb(:,2)**2-onethird*p%b2
-          df(l1:l2,m,n,igij+2)=df(l1:l2,m,n,igij+2)+del2hii(:,3)+ &
-            p%bb(:,3)**2-onethird*p%b2
-          df(l1:l2,m,n,igij+3)=df(l1:l2,m,n,igij+3)+del2hij(:,1)+p%bb(:,1)*p%bb(:,2)
-          df(l1:l2,m,n,igij+4)=df(l1:l2,m,n,igij+4)+del2hij(:,2)+p%bb(:,1)*p%bb(:,3)
-          df(l1:l2,m,n,igij+5)=df(l1:l2,m,n,igij+5)+del2hij(:,3)+p%bb(:,2)*p%bb(:,3)
-        else
-          call fatal_error("dspecial_dt","need magnetic field")
-        endif
+!  dh/dt = g, d2h/dt2 = dg/dt = del2h + S
+!
+      df(l1:l2,m,n,ihhL)=df(l1:l2,m,n,ihhL)+f(l1:l2,m,n,iggL)+diffhh*del2hhL
+      df(l1:l2,m,n,ihhT)=df(l1:l2,m,n,ihhT)+f(l1:l2,m,n,iggT)+diffhh*del2hhT
+!
+      df(l1:l2,m,n,iggL)=df(l1:l2,m,n,iggL)+del2hhL+p%stressL+diffgg*del2ggL
+      df(l1:l2,m,n,iggT)=df(l1:l2,m,n,iggT)+del2hhT+p%stressT+diffgg*del2ggT
+!
+!         df(l1:l2,m,n,igij+1)=df(l1:l2,m,n,igij+1)+del2hii(:,2)+ &
+!           p%bb(:,2)**2-onethird*p%b2
+!         df(l1:l2,m,n,igij+2)=df(l1:l2,m,n,igij+2)+del2hii(:,3)+ &
+!           p%bb(:,3)**2-onethird*p%b2
+!         df(l1:l2,m,n,igij+3)=df(l1:l2,m,n,igij+3)+del2hij(:,1)+p%bb(:,1)*p%bb(:,2)
+!         df(l1:l2,m,n,igij+4)=df(l1:l2,m,n,igij+4)+del2hij(:,2)+p%bb(:,1)*p%bb(:,3)
+!         df(l1:l2,m,n,igij+5)=df(l1:l2,m,n,igij+5)+del2hij(:,3)+p%bb(:,2)*p%bb(:,3)
 !
 !  diagnostics
 !
        if (ldiagnos) then
+         if (idiag_hhL2m/=0) call sum_mn_name(f(l1:l2,m,n,ihhL)**2,idiag_hhL2m)
+         if (idiag_hhT2m/=0) call sum_mn_name(f(l1:l2,m,n,ihhT)**2,idiag_hhT2m)
+         if (idiag_hhLhhTm/=0) call sum_mn_name(f(l1:l2,m,n,ihhL)*f(l1:l2,m,n,ihhT),idiag_hhLhhTm)
          if (lroot.and.m==mpoint.and.n==npoint) then
-           if (idiag_g22pt/=0) call save_name(p%bb(lpoint-nghost,2),idiag_g22pt)
+           if (idiag_ggLpt/=0) call save_name(f(lpoint,m,n,iggL),idiag_ggLpt)
          endif
        endif
 !
-      call keep_compiler_quiet(f,df)
-      call keep_compiler_quiet(p)
+      !call keep_compiler_quiet(f,df)
+      !call keep_compiler_quiet(p)
 !
     endsubroutine dspecial_dt
 !***********************************************************************
+    subroutine read_special_init_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+      read(parallel_unit, NML=special_init_pars, IOSTAT=iostat)
+!
+    endsubroutine read_special_init_pars
+!***********************************************************************
+    subroutine write_special_init_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write(unit, NML=special_init_pars)
+!
+    endsubroutine write_special_init_pars
+!***********************************************************************
+    subroutine read_special_run_pars(iostat)
+!
+      use File_io, only: parallel_unit
+!
+      integer, intent(out) :: iostat
+!
+      read(parallel_unit, NML=special_run_pars, IOSTAT=iostat)
+!
+    endsubroutine read_special_run_pars
+!***********************************************************************
+    subroutine write_special_run_pars(unit)
+!
+      integer, intent(in) :: unit
+!
+      write(unit, NML=special_run_pars)
+!
+    endsubroutine write_special_run_pars
+!***********************************************************************
+    subroutine special_before_boundary(f)
+!
+!  Possibility to modify the f array before the boundaries are
+!  communicated.
+!
+!  Some precalculated pencils of data are passed in for efficiency
+!  others may be calculated directly from the f array
+!
+!  30-mar-17/axel: moved stuff from special_after_boundary to here
+!
+      !use Boundcond, only: zero_ghosts, update_ghosts
+      use Sub, only: gij, curl_mn
+!
+      real, dimension (mx,my,mz,mfarray), intent(inout) :: f
+      real, dimension(nx,3,3) :: aij
+      real, dimension(nx,3) :: bb
+!
+      integer :: i
+!
+!  Compute magnetic stress Mij(x,t)=Bi(x,t)*Bj(x,t) in real space
+!
+!  Find bb if as communicated auxiliary.
+!
+      !call zero_ghosts(f, iax, iaz)
+      !call update_ghosts(f, iax, iaz)
+  !   mn_loop: do imn = 1, ny * nz
+  !     m = mm(imn)
+  !     n = nn(imn)
+  !     call gij(f, iaa, aij, 1)
+  !     call curl_mn(aij, bb, f(l1:l2,m,n,iax:iaz))
+!
+!  Add imposed field, if any
+!
+  !     bext: if (lB_ext_in_comaux) then
+  !       call get_bext(b_ext)
+  !       forall(j = 1:3, b_ext(j) /= 0.0) bb(:,j) = bb(:,j) + b_ext(j)
+  !       if (headtt .and. imn == 1) &
+  !           print *, 'magnetic_before_boundary: B_ext = ', b_ext
+  !     endif bext
+!
+  !     f(l1:l2,m,n,ibx:ibz) = bb
+  !   enddo mn_loop
+!     endif getbb
+!
+!     do i=1,n_special_modules
+!       call caller(special_sub_handles(i,I_SPECIAL_BEFORE_BOUNDARY),1,f)
+!     enddo
+!
+    endsubroutine special_before_boundary
+!***********************************************************************
     subroutine special_after_boundary(f)
 !
-!  dummy routine
+!  Compute the transverse part of the stress tensor by going into Fourier space.
 !
 !  15-jan-08/axel: coded
 !
       use Fourier, only: fourier_transform
 !
-      real, dimension (:,:,:,:), allocatable :: B_re, B_im, v_re, v_im
-      real, dimension (:,:,:), allocatable :: k2, r
+      real, dimension (:,:,:), allocatable :: S11_re, S11_im, S12_re, S12_im, T_re, T_im, one_over_k2
       real, dimension (:), allocatable :: kx, ky, kz
       real, dimension (mx,my,mz,mfarray) :: f
       integer :: i,ikx,iky,ikz,stat
       logical :: lscale_tobox1=.true.
-      real :: scale_factor
+      real :: scale_factor, fact, P11, P22, P33, P12, P13, P23
       intent(inout) :: f
+!
+!  For testing purposes, if lno_transverse_part=T, we would not need to
+!  compute the Fourier transform, so we would skip the rest.
+!
+      if (lno_transverse_part) return
 !
 !  Allocate memory for arrays.
 !
-      allocate(k2(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for k2')
-      allocate(r(nx,ny,nz),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for r')
+      allocate(one_over_k2(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for one_over_k2')
 !
-      allocate(B_re(nx,ny,nz,3),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for B_re')
-      allocate(B_im(nx,ny,nz,3),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for B_im')
+      allocate(S11_re(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for S11_re')
+      allocate(S11_im(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for S11_im')
 !
-      allocate(v_re(nx,ny,nz,3),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for v_re')
-      allocate(v_im(nx,ny,nz,3),stat=stat)
-      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for v_im')
+      allocate(S12_re(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for S12_re')
+      allocate(S12_im(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for S12_im')
+!
+      allocate(T_re(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for T_re')
+      allocate(T_im(nx,ny,nz),stat=stat)
+      if (stat>0) call fatal_error('special_after_boundary','Could not allocate memory for T_im')
 !
       allocate(kx(nxgrid),stat=stat)
       if (stat>0) call fatal_error('special_after_boundary', &
@@ -332,106 +470,227 @@ print*,'AXEL1: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
 !
 !  calculate k^2
 !
-        scale_factor=1
-        if (lscale_tobox1) scale_factor=2*pi/Lx
-        kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*scale_factor
+      scale_factor=1
+      if (lscale_tobox1) scale_factor=2*pi/Lx
+      kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*scale_factor
 !
-        scale_factor=1
-        if (lscale_tobox1) scale_factor=2*pi/Ly
-        ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*scale_factor
+      scale_factor=1
+      if (lscale_tobox1) scale_factor=2*pi/Ly
+      ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*scale_factor
 !
-        scale_factor=1
-        if (lscale_tobox1) scale_factor=2*pi/Lz
-        kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*scale_factor
+      scale_factor=1
+      if (lscale_tobox1) scale_factor=2*pi/Lz
+      kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*scale_factor
 !
 !  Set k^2 array. Note that in Fourier space, kz is the fastest index and has
 !  the full nx extent (which, currently, must be equal to nxgrid).
+!  But call it one_over_k2.
 !
-        if (lroot .AND. ip<10) &
-             print*,'special_after_boundary:fft ...'
-        do iky=1,nz
-          do ikx=1,ny
-            do ikz=1,nx
-              k2(ikz,ikx,iky)=kx(ikx+ipy*ny)**2+ky(iky+ipz*nz)**2+kz(ikz+ipx*nx)**2
-            enddo
+      if (lroot .AND. ip<10) &
+          print*,'special_after_boundary:fft ...'
+      do iky=1,nz
+        do ikx=1,ny
+          do ikz=1,nx
+            one_over_k2(ikz,ikx,iky)=kx(ikx+ipy*ny)**2+ky(iky+ipz*nz)**2+kz(ikz+ipx*nx)**2
           enddo
         enddo
-        if (lroot) k2(1,1,1) = 1.  ! Avoid division by zero
+      enddo
 !
-!  Compute Mij(x,t)=Bi(x,t)*Bj(x,t) in real space
+!  compute 1/k2 for components of unit vector
 !
-!  Find bb if as communicated auxiliary.
+      if (lroot) one_over_k2(1,1,1) = 1.  ! Avoid division by zero
+      one_over_k2=1./one_over_k2
 !
-      call zero_ghosts(f, iax, iaz)
-      call update_ghosts(f, iax, iaz)
-      mn_loop: do imn = 1, ny * nz
-        m = mm(imn)
-        n = nn(imn)
-        call gij(f, iaa, aij, 1)
-        call curl_mn(aij, bb, f(l1:l2,m,n,iax:iaz))
+!  Assemble stress
 !
-!  Add imposed field, if any
+!  Do T11
 !
-        bext: if (lB_ext_in_comaux) then
-          call get_bext(b_ext)
-          forall(j = 1:3, b_ext(j) /= 0.0) bb(:,j) = bb(:,j) + b_ext(j)
-          if (headtt .and. imn == 1) print *, 'magnetic_before_boundary: B_ext
-= ', b_ext
-        endif bext
-        f(l1:l2,m,n,ibx:ibz) = bb
-        enddo mn_loop
-      endif getbb
-
+      T_re=0.0
+      T_im=0.0
+      if (lhydro) T_re=T_re+f(l1:l2,m1:m2,n1:n2,iux)**2
+      if (lmagnetic) T_re=T_re+f(l1:l2,m1:m2,n1:n2,ibx)**2
+      call fourier_transform(T_re,T_im)
 !
-!  Go into Fourier space
+      do iky=1,nz
+        do ikx=1,ny
+          do ikz=1,nx
+            P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
+            P12=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
 !
-        v_im=0.0
-        v_re=f(l1:l2,m1:m2,n1:n2,iax:iaz)
-        do i=1,3
-          call fourier_transform(v_re(:,:,:,i),v_im(:,:,:,i))
-        enddo !i
+            fact=.5*P11**2
+            S11_re(ikz,ikx,iky)=fact*T_re(ikz,ikx,iky)
+            S11_im(ikz,ikx,iky)=fact*T_im(ikz,ikx,iky)
 !
-!  Compute the magnetic field in Fourier space from vector potential.
-!  In this definition of the Fourier transform, nabla = +ik.
+            fact=.5*P11*P12
+            S12_re(ikz,ikx,iky)=fact*T_re(ikz,ikx,iky)
+            S12_im(ikz,ikx,iky)=fact*T_im(ikz,ikx,iky)
 !
-      do ikz=1,nz; do iky=1,ny; do ikx=1,nx
+          enddo
+        enddo
+      enddo
 !
-!  (vx, vy, vz) -> Bx
+!  Do T22
 !
-        B_re(ikz,ikx,iky,1)=+( &
-          -ky(iky+ipz*nz)*v_im(ikz,ikx,iky,3) &
-          +kz(ikz+ipx*nx)*v_im(ikz,ikx,iky,2) )
-        B_im(ikz,ikx,iky,1)=+( &
-          +ky(iky+ipz*nz)*v_re(ikz,ikx,iky,3) &
-          -kz(ikz+ipx*nx)*v_re(ikz,ikx,iky,2) )
+      T_re=0.0
+      T_im=0.0
+      if (lhydro) T_re=T_re+f(l1:l2,m1:m2,n1:n2,iuy)**2
+      if (lmagnetic) T_re=T_re+f(l1:l2,m1:m2,n1:n2,iby)**2
+      call fourier_transform(T_re,T_im)
 !
-!  (vx, vy, vz) -> By
+      do iky=1,nz
+        do ikx=1,ny
+          do ikz=1,nx
+            P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
+            P22=1.-ky(iky+ipz*nz)**2*one_over_k2(ikz,ikx,iky)
+            P12=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
 !
-        B_re(ikz,ikx,iky,2)=+( &
-          -kz(ikz+ipx*nx)*v_im(ikz,ikx,iky,1) &
-          +kx(ikx+ipy*ny)*v_im(ikz,ikx,iky,3) )
-        B_im(ikz,ikx,iky,2)=+( &
-          +kz(ikz+ipx*nx)*v_re(ikz,ikx,iky,1) &
-          -kx(ikx+ipy*ny)*v_re(ikz,ikx,iky,3) )
+            fact=P12**2-.5*P11*P22
+            S11_re(ikz,ikx,iky)=S11_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+            S11_im(ikz,ikx,iky)=S11_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
 !
-!  (vx, vy, vz) -> Bz
+            fact=.5*P12*P22
+            S12_re(ikz,ikx,iky)=S12_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+            S12_im(ikz,ikx,iky)=S12_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
 !
-        B_re(ikz,ikx,iky,3)=+( &
-          -kx(ikx+ipy*ny)*v_im(ikz,ikx,iky,2) &
-          +ky(iky+ipz*nz)*v_im(ikz,ikx,iky,1) )
-        B_im(ikz,ikx,iky,3)=+( &
-          +kx(ikx+ipy*ny)*v_re(ikz,ikx,iky,2) &
-          -ky(iky+ipz*nz)*v_re(ikz,ikx,iky,1) )
+          enddo
+        enddo
+      enddo
 !
-      enddo; enddo; enddo
+!  Do T33
+!
+      T_re=0.0
+      T_im=0.0
+      if (lhydro) T_re=f(l1:l2,m1:m2,n1:n2,iuz)**2
+      if (lmagnetic) T_re=f(l1:l2,m1:m2,n1:n2,ibz)**2
+      call fourier_transform(T_re,T_im)
+!
+      do iky=1,nz
+        do ikx=1,ny
+          do ikz=1,nx
+            P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
+            P22=1.-ky(iky+ipz*nz)**2*one_over_k2(ikz,ikx,iky)
+            P33=1.-kz(ikz+ipx*nx)**2*one_over_k2(ikz,ikx,iky)
+            P12=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
+            P13=-kx(ikx+ipy*ny)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
+            P23=-ky(iky+ipz*nz)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
+!
+            fact=P13**2-.5*P11*P33
+            S11_re(ikz,ikx,iky)=S11_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+            S11_im(ikz,ikx,iky)=S11_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+!
+            fact=P13*P23-.5*P12*P33
+            S12_re(ikz,ikx,iky)=S12_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+            S12_im(ikz,ikx,iky)=S12_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+!
+          enddo
+        enddo
+      enddo
+!
+!  Do T12 = T21
+!
+      T_re=0.0
+      T_im=0.0
+      if (lhydro) T_re=f(l1:l2,m1:m2,n1:n2,iux)*f(l1:l2,m1:m2,n1:n2,iuy)
+      if (lmagnetic) T_re=f(l1:l2,m1:m2,n1:n2,ibx)*f(l1:l2,m1:m2,n1:n2,iby)
+      call fourier_transform(T_re,T_im)
+!
+      do iky=1,nz
+        do ikx=1,ny
+          do ikz=1,nx
+            P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
+            P22=1.-ky(iky+ipz*nz)**2*one_over_k2(ikz,ikx,iky)
+            P12=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
+!
+            fact=P11*P12
+            S11_re(ikz,ikx,iky)=S11_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+            S11_im(ikz,ikx,iky)=S11_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+!
+            fact=P11*P22
+            S12_re(ikz,ikx,iky)=S12_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+            S12_im(ikz,ikx,iky)=S12_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+!
+          enddo
+        enddo
+      enddo
+!
+!  Do T13 = T31
+!
+      T_re=0.0
+      T_im=0.0
+      if (lhydro) T_re=f(l1:l2,m1:m2,n1:n2,iux)*f(l1:l2,m1:m2,n1:n2,iuz)
+      if (lmagnetic) T_re=f(l1:l2,m1:m2,n1:n2,ibx)*f(l1:l2,m1:m2,n1:n2,ibz)
+      call fourier_transform(T_re,T_im)
+!
+      do iky=1,nz
+        do ikx=1,ny
+          do ikz=1,nx
+            P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
+            P13=-kx(ikx+ipy*ny)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
+            P23=-ky(iky+ipz*nz)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
+!
+            fact=P11*P13
+            S11_re(ikz,ikx,iky)=S11_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+            S11_im(ikz,ikx,iky)=S11_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+!
+            fact=P11*P23
+            S12_re(ikz,ikx,iky)=S12_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+            S12_im(ikz,ikx,iky)=S12_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+!
+          enddo
+        enddo
+      enddo
+!
+!  Do T23 = T32
+!
+      T_re=0.0
+      T_im=0.0
+      if (lhydro) T_re=f(l1:l2,m1:m2,n1:n2,iuy)*f(l1:l2,m1:m2,n1:n2,iuz)
+      if (lmagnetic) T_re=f(l1:l2,m1:m2,n1:n2,iby)*f(l1:l2,m1:m2,n1:n2,ibz)
+      call fourier_transform(T_re,T_im)
+!
+      do iky=1,nz
+        do ikx=1,ny
+          do ikz=1,nx
+            P11=1.-kx(ikx+ipy*ny)**2*one_over_k2(ikz,ikx,iky)
+            P22=1.-ky(iky+ipz*nz)**2*one_over_k2(ikz,ikx,iky)
+            P12=-kx(ikx+ipy*ny)*ky(iky+ipz*nz)*one_over_k2(ikz,ikx,iky)
+            P13=-kx(ikx+ipy*ny)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
+            P23=-ky(iky+ipz*nz)*kz(ikz+ipx*nx)*one_over_k2(ikz,ikx,iky)
+!
+            fact=2*(P12*P13-.5*P11*P23)
+            S11_re(ikz,ikx,iky)=S11_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+            S11_im(ikz,ikx,iky)=S11_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+!
+            fact=P22*P13
+            S12_re(ikz,ikx,iky)=S12_re(ikz,ikx,iky)+fact*T_re(ikz,ikx,iky)
+            S12_im(ikz,ikx,iky)=S12_im(ikz,ikx,iky)+fact*T_im(ikz,ikx,iky)
+!
+          enddo
+        enddo
+      enddo
 !
 !  back to real space
+
+      call fourier_transform(S11_re,S11_im,linv=.true.)
+      call fourier_transform(S12_re,S12_im,linv=.true.)
 !
-print*,'AXEL2: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
-        do i=1,3
-          call fourier_transform(B_re(:,:,:,i),B_im(:,:,:,i),linv=.true.)
-          f(l1:l2,m1:m2,n1:n2,ibb+i-1)=B_re(:,:,:,i)
-        enddo !i
+!  add (or set) corresponding stress
+!
+      f(l1:l2,m1:m2,n1:n2,istressL)=S11_re
+      f(l1:l2,m1:m2,n1:n2,istressT)=S12_re
+!
+!  Deallocate arrays.
+!
+      if (allocated(one_over_k2)) deallocate(one_over_k2)
+      if (allocated(S11_re)) deallocate(S11_re)
+      if (allocated(S11_im)) deallocate(S11_im)
+      if (allocated(S12_re)) deallocate(S12_re)
+      if (allocated(S12_im)) deallocate(S12_im)
+      if (allocated(T_re)) deallocate(T_re)
+      if (allocated(T_im)) deallocate(T_im)
+      if (allocated(kx)) deallocate(kx)
+      if (allocated(ky)) deallocate(ky)
+      if (allocated(kz)) deallocate(kz)
 !
     endsubroutine special_after_boundary
 !***********************************************************************
@@ -454,11 +713,15 @@ print*,'AXEL2: registered, ibb, ibx, iby, ibz=',ibb, ibx, iby, ibz
 !!!  (this needs to be consistent with what is defined above!)
 !!!
       if (lreset) then
-        idiag_g22pt=0
+        idiag_hhL2m=0; idiag_hhT2m=0; idiag_hhLhhTm=0
+        idiag_ggLpt=0
       endif
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'g22pt',idiag_g22pt)
+        call parse_name(iname,cname(iname),cform(iname),'hhL2m',idiag_hhL2m)
+        call parse_name(iname,cname(iname),cform(iname),'hhT2m',idiag_hhT2m)
+        call parse_name(iname,cname(iname),cform(iname),'hhLhhTm',idiag_hhLhhTm)
+        call parse_name(iname,cname(iname),cform(iname),'ggLpt',idiag_ggLpt)
       enddo
 !!
 !!!  write column where which magnetic variable is stored

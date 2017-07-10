@@ -23,19 +23,21 @@
 ;   Again as idlinit but used when two mesh sizes are required at once.
 ;   see idlvarloc
 ;
-function pc_varcontent, datadir=datadir, dim=dim, ivar=ivar, param=param, par2=run_param, $
-    run2D=run2D, scalar=scalar, noaux=noaux, quiet=quiet, down=down
+function pc_varcontent, datadir=datadir, dim=dim, param=param, par2=run_param, $
+                        run2D=run2D, scalar=scalar, noaux=noaux, quiet=quiet, down=down, single=single
+;
+;    /single: enforces single precision of returned data.
+;      /down: data read from downsampled snapshot.
+;
 COMPILE_OPT IDL2,HIDDEN
 ;
 ;  Read grid dimensions, input parameters and location of datadir.
 ;
 datadir = pc_get_datadir(datadir)
 if (n_elements(dim) eq 0) then pc_read_dim, obj=dim, datadir=datadir, quiet=quiet, down=down
-if (n_elements(ivar) eq 0) then ivar=-1
 if (n_elements(param) eq 0) then pc_read_param, obj=param, datadir=datadir, dim=dim, quiet=quiet
 if (n_elements(run_param) eq 0) then pc_read_param, obj=run_param, /param2, datadir=datadir, dim=dim, quiet=quiet
 default, noaux, 0
-
 ; 
 ;  Read the positions of variables in the f-array from the index file.
 ;
@@ -51,20 +53,25 @@ free_lun, lun
 default, ntestfield, 0
 default, ntestflow, 0
 default, ntestscalar, 0
+
 for line = 1, num_lines do begin
   str = stregex (index_pro[line-1], '^ *n[^= ]+[= ]+[0-9]+ *$', /extract)
   if (not execute (str)) then $
       message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+str (line)+'.', /info
-end
+endfor
+
+mvar=dim.mvar & maux=dim.maux
 ;
 ;  For EVERY POSSIBLE variable in a snapshot file, store a
 ;  description of the variable in an indexed array of structures
 ;  where the indexes line up with those in the saved f array.
 ;
-;  Note: auxiliary variables should go to the table below the folling one.
+;  Note: Integrated variables and variables which can be both integrated and auxiliary *must* be included here.
+;        Auxiliary variables should go to the table below the following one, but work also here.
 ;
 indices = [ $
   { name:'iuu', label:'Velocity', dims:3 }, $
+  { name:'iadv_der_uu', label:'Advective acceleration as auxiliary variable', dims:3}, $
   { name:'ipp', label:'Pressure', dims:1 }, $
   { name:'ippp', label:'Pressure as auxiliary variable', dims:1 }, $
   { name:'iss', label:'Entropy', dims:1 }, $
@@ -85,6 +92,12 @@ indices = [ $
   { name:'ibb', label:'Magnetic field', dims:3 }, $
   { name:'ijj', label:'Current density', dims:3 }, $
   { name:'iemf', label:'Current density', dims:3 }, $
+  { name:'ikappar', label:'kappar', dims:1 }, $
+  { name:'itau', label:'tau', dims:1 }, $
+  { name:'iggL', label:'ggL', dims:1 }, $
+  { name:'iggT', label:'ggT', dims:1 }, $
+  { name:'ihhL', label:'hhL', dims:1 }, $
+  { name:'ihhT', label:'hhT', dims:1 }, $
   { name:'ip11', label:'Polymer Tensor 11', dims:1 }, $
   { name:'ip12', label:'Polymer Tensor 12', dims:1 }, $
   { name:'ip13', label:'Polymer Tensor 13', dims:1 }, $
@@ -134,9 +147,8 @@ indices = [ $
   { name:'ieth', label:'Thermal energy', dims:1 } $
   ; don't forget to add a comma above when extending
 ]
-nvar=n_elements(indices)
 
-; Auxiliary variables:
+; Auxiliary variables: (see also explanation above)
 indices_aux = [ $
   { name:'iee', label:'Electric field', dims:3 }, $
   { name:'iQrad', label:'Radiative heating rate', dims:1 }, $
@@ -150,6 +162,7 @@ indices_aux = [ $
   { name:'icooling2', label:'Applied cooling term', dims:1 }, $
   { name:'idetonate', label:'Detonation energy', dims:1 }, $
   { name:'inp', label:'Particle number', dims:1 }, $
+  { name:'iphiuu', label:'Potential of curl-free part of velocity field', dims:1 }, $
   { name:'irhop', label:'Particle mass density', dims:1 }, $
   { name:'iuup', label:'Particle velocity field', dims:3 }, $
   { name:'ifgx', label:'Gas terms for stiff drag forces', dims:3 }, $
@@ -169,9 +182,11 @@ indices_aux = [ $
   { name:'iff', label:'Forcing function', dims:3 } $
   ; don't forget to add a comma above when extending
 ]
-naux=n_elements(indices_aux)
-
+;
 ; Inconsistent names (IDL-name is inconsistent with name in the main code):
+; E.g., in Fortran we use "ifx", but some IDL scrips expect "ff" in varcontent.
+; Note: the initial "i" is automatically removed and hence *not* inconsistent.
+;
 inconsistent = [ $
   { name:'ifx', inconsistent_name:'ff' }, $
   { name:'ichemspec', inconsistent_name:'YY' }, $
@@ -184,10 +199,10 @@ inconsistent = [ $
   ; don't forget to add a comma above when extending
 ]
 
-; Inconsistent names in special modules (IDL-name is inconsistent with name in the main code):
+; Inconsistent names in special modules (see also explanation above):
 inconsistent_special = [ $
-  { name:'ikappar', inconsistent_name:'kappar' }, $
-  { name:'ilambda', inconsistent_name:'lambda' }  $
+  { name:'ikappar', inconsistent_name:'kappar' }, $   ; seems not inconsistent
+  { name:'ilambda', inconsistent_name:'lambda' }  $   ; seems not inconsistent
   ; don't forget to add a comma above when extending
 ]
 
@@ -228,23 +243,18 @@ endif
 ;  off by hand by setting noaux=1, e.g. for reading derivative snapshots.
 ;
 if (not keyword_set (noaux)) then begin
-
-  if (keyword_set(run_param)) then $
-    lpar2aux=keyword_set(run_param.lwrite_aux) $
+  if ( maux gt 0 and (keyword_set(param.lwrite_aux) or keyword_set(run_param.lwrite_aux) or down )) then $
+    indices = [ indices, indices_aux ] $
   else $
-    lpar2aux=0
-
-  if ( (keyword_set(param.lwrite_aux) and lpar2aux) or $
-       (keyword_set(param.lwrite_aux) and ivar eq 0) or $
-       (lpar2aux and ivar gt 0) ) then $
-    indices = [ indices, indices_aux ]
-endif
+    maux=0
+endif else $
+  maux=0
 ;
 ;  Predefine some variable types used regularly.
 ;
-INIT_DATA = [ 'make_array (mx,my,mz,', 'type=type_idl)' ]
+if keyword_set(single) then type='4' else type='type_idl'
+INIT_DATA = [ 'make_array (mx,my,mz,', 'type='+type+')' ]
 INIT_DATA_LOC = [ 'make_array (mxloc,myloc,mzloc,', 'type=type_idl)' ]
-
 ;
 ;  For 2-D runs with lwrite_2d=T. Data has been written by the code without
 ;  ghost zones in the missing direction. We add ghost zones here anyway so
@@ -265,10 +275,11 @@ endif
 ;
 ;  Parse variables and count total number of variables.
 ;
-totalvars = 0L
 num_tags = n_elements(indices)
 num_vars = 0
-offsetv=0
+
+offsetv = down and (mvar eq 0) ? '-pos[0]+1' : ''    ; corrects index for downsampled varfile if no MVAR variables are contained
+						     ; as indices in index.pro refer to the varfile not to the downsampled varfile
 for tag = 1, num_tags do begin
   search = indices[tag-1].name
   dims = indices[tag-1].dims
@@ -308,7 +319,7 @@ for tag = 1, num_tags do begin
   line = max (where (matches[0,*] ne ''))
   if (line lt 0) then continue
 
-  exec_str = 'pos = '+matches[1,line]
+  exec_str = 'pos = ' + matches[1,line]
   if (not execute (exec_str)) then $
       message, 'pc_varcontent: there was a problem with "'+indices_file+'" at line '+str (line)+'.', /info
   if (pos[0] le 0) then continue
@@ -317,19 +328,31 @@ for tag = 1, num_tags do begin
 
   if (size (selected, /type) eq 0) then begin
     selected = [ tag-1 ]
-    executes = [ exec_str+'-('+string(offsetv)+')']
+    executes = [ exec_str + offsetv ]
     position = [ pos[0] ]
   end else begin
     selected = [ selected, tag-1 ]
-    executes = [ executes, exec_str+'-('+string(offsetv)+')' ]
+    executes = [ executes, exec_str + offsetv ]
     position = [ position, pos[0] ]
   end
-  totalvars += add_vars
-  if totalvars eq dim.mvar then begin      ; if sufficent MVAR variables are read, jump to beginning of MAUX section
-    ;offsetv=nvar-tag+1
-    tag=nvar-1
+endfor
+;
+selected = selected[sort (position)]
+executes = executes[sort (position)]
+;
+; in the *ordered* list of hits
+; only the first mvar+maux entries matter
+;
+totalvars = 0L
+for var=0,num_vars-1 do begin
+  tag = selected[var]
+  totalvars += indices[tag].dims  
+  if totalvars eq mvar+maux then begin
+    selected = selected[0:var]
+    executes = executes[0:var]
+    num_vars=var+1
+    break
   endif
-  if totalvars eq dim.mvar+dim.maux then break
 endfor
 ;
 ;  Make an array of structures in which to store their descriptions.
@@ -338,9 +361,6 @@ varcontent = replicate ({ varcontent_all, variable:'UNKNOWN', idlvar:'dummy', id
     idlvarloc:'dummy_loc', idlinitloc:'0', skip:0 }, totalvars)
 ;
 ;  Fill varcontent array.
-;
-selected = selected[sort (position)]
-executes = executes[sort (position)]
 ;
 for var = 0, num_vars-1 do begin
 
@@ -375,7 +395,6 @@ for var = 0, num_vars-1 do begin
   endfor
 
 endfor
-
 ;
 ;  Turn vector quantities into scalars if requested.
 ;

@@ -7,18 +7,17 @@ Comments:
 Omer Anjum: Changed the 19-point RK integration Kernel to 55-Point integration Kernel without changing the requirements of shared memory and simultaneously reducing the global memory traffic. The technique applied to achieve this is "scattering".
 */
 
-//#include "hydro.cuh"
-//#include "continuity.cuh"
-#include "boundcond.cuh"
+#include "../cparam_c.h"
 #include "dconstsextern.cuh"
 #include "smem.cuh"
-//#include "forcing.cuh"
-//#include "shear.cuh"
-//#include "diff.cuh"
+#include "hydro.cuh"
+#include "continuity.cuh"
+#include "forcing.cuh"
+#include "shear.cuh"
+#include "diff.cuh"
 
 //DEBUG
 #include "diagnostics.cuh"
-
 
 /*
 * Notes:
@@ -230,29 +229,25 @@ __device__ float der2_scalyz(int sid_row, int sid_column, float s_scal[SHARED_SI
 }
 
 //------------------------------------------------------------------------------------------------------
-
-
-//Computes the first part of a runge kutta integration step
-//(everything except the gradient of divergence) 
+ 
 template <int step_number>
 __global__ void 
 __launch_bounds__(RK_THREADS_PER_BLOCK, 8)
 rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __restrict__ d_uu_x, const float* __restrict__ d_uu_y, const float* __restrict__ d_uu_z, 
                   		float* __restrict__ d_w_lnrho, float* __restrict__ d_w_uu_x, float* __restrict__ d_w_uu_y, float* __restrict__ d_w_uu_z,
-				float* __restrict__ d_lnrho_dest, float* __restrict__ d_uu_x_dest, float* __restrict__ d_uu_y_dest, float* __restrict__ d_uu_z_dest,
-				float* __restrict__ d_div_uu)
+				float* __restrict__ d_lnrho_dest, float* __restrict__ d_uu_x_dest, float* __restrict__ d_uu_y_dest, float* __restrict__ d_uu_z_dest, int isubstep)
 {	
 	float ALPHA, BETA;
-	switch (step_number) {
-		case 0:
+	switch (isubstep) {
+		case 1:
 			ALPHA = d_ALPHA1;
 			BETA = d_BETA1;
 			break;
-		case 1:
+		case 2:
 			ALPHA = d_ALPHA2;
 			BETA = d_BETA2;
 			break;
-		case 2:
+		case 3:
 			ALPHA = d_ALPHA3;
 			BETA = d_BETA3;
 			break;
@@ -363,8 +358,8 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 
 	for(int zplane = -3 ; zplane < RK_ELEMS_PER_THREAD_FIRST + 3; zplane++) {
 
-		switch (step_number) {
-			case 0:
+		switch (isubstep) {
+			case 1:
 				w_lnrho = 0.0f;
 				w_uu_x  = 0.0f;
 				w_uu_y  = 0.0f;
@@ -690,8 +685,7 @@ rungekutta_step_first_half(const float* __restrict__ d_lnrho, const float* __res
 //----------------------------------------------------------
 void rungekutta2N_cuda(	float* d_lnrho, float* d_uu_x, float* d_uu_y, float* d_uu_z, 
                   	float* d_w_lnrho, float* d_w_uu_x, float* d_w_uu_y, float* d_w_uu_z,
-			float* d_lnrho_dest, float* d_uu_x_dest, float* d_uu_y_dest, float* d_uu_z_dest,
-			float* d_div_uu)
+			float* d_lnrho_dest, float* d_uu_x_dest, float* d_uu_y_dest, float* d_uu_z_dest, int isubstep)
 {
 	//Determine threadblock dims (TODO better solution, define?)
 	static dim3 threadsPerBlock, blocksPerGridFirst, blocksPerGridSecond;
@@ -714,8 +708,7 @@ void rungekutta2N_cuda(	float* d_lnrho, float* d_uu_x, float* d_uu_y, float* d_u
 	//FIRST HALF
         rungekutta_step_first_half<0><<<blocksPerGridFirst, threadsPerBlock>>>(d_lnrho, d_uu_x, d_uu_y, d_uu_z, 
                                                                                d_w_lnrho, d_w_uu_x, d_w_uu_y, d_w_uu_z, 
-                                                                               d_lnrho_dest, d_uu_x_dest, d_uu_y_dest, d_uu_z_dest,
-                                                                              d_div_uu);
+                                                                               d_lnrho_dest, d_uu_x_dest, d_uu_y_dest, d_uu_z_dest, isubstep);
          
 /*
 	//cudaDeviceSynchronize();

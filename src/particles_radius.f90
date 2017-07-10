@@ -8,7 +8,6 @@
 ! variables and auxiliary variables added by this module
 !
 ! MPVAR CONTRIBUTION 2
-! MPAUX CONTRIBUTION 1
 ! CPARAM logical, parameter :: lparticles_radius=.true.
 !
 !***************************************************************
@@ -26,8 +25,8 @@ module Particles_radius
   include 'particles_radius.h'
 !
   real :: vthresh_sweepup=-1.0, deltavp12_floor=0.0
-  real, dimension (ndustrad) :: ap0=0.0
-  real, dimension (ndustrad) :: radii_distribution=0.0
+  real, dimension(ndustrad) :: ap0=0.0
+  real, dimension(ndustrad) :: radii_distribution=0.0
   real :: tstart_sweepup_par=0.0, cdtps=0.2, cdtpc=0.2
   real :: tstart_condensation_par=0.0
   real :: apmin=0.0, latent_heat_SI=2.257e6, alpha_cond=1.0, alpha_cond1=1.0
@@ -45,9 +44,10 @@ module Particles_radius
   logical :: lcondensation_simplified=.false.
   logical :: lconstant_radius_w_chem=.false.
   logical :: lfixed_particles_radius=.false.
-	logical :: reinitialize_ap=.false.
- character (len=labellen), dimension(ninit) :: initap='nothing'
-  character (len=labellen) :: condensation_coefficient_type='constant'
+  logical :: reinitialize_ap=.false.
+  character(len=labellen), dimension(ninit) :: initap='nothing'
+  character(len=labellen) :: condensation_coefficient_type='constant'
+  integer :: k_lucky
 !
   namelist /particles_radius_init_pars/ &
       initap, ap0, rhopmat, vthresh_sweepup, deltavp12_floor, &
@@ -56,8 +56,8 @@ module Particles_radius
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
       lborder_driving_ocean, ztop_ocean, radii_distribution, TTocean, &
       aplow, aphigh, mbar, ap1, qplaw, eps_dtog, nbin_initdist, &
-      sigma_initdist, a0_initdist, lparticles_radius_rpbeta, rpbeta0,&
-      lfixed_particles_radius
+      sigma_initdist, a0_initdist, lparticles_radius_rpbeta, rpbeta0, &
+      lfixed_particles_radius, k_lucky
 !
   namelist /particles_radius_run_pars/ &
       rhopmat, vthresh_sweepup, deltavp12_floor, &
@@ -65,7 +65,7 @@ module Particles_radius
       condensation_coefficient_type, alpha_cond, diffusion_coefficient, &
       tau_damp_evap, llatent_heat, cdtpc, tau_ocean_driving, &
       lborder_driving_ocean, ztop_ocean, TTocean, &
-      lcondensation_simplified, GS_condensation, rpbeta0,&
+      lcondensation_simplified, GS_condensation, rpbeta0, &
       lfixed_particles_radius, &
       lsupersat_par,lconstant_radius_w_chem, &
       reinitialize_ap, initap
@@ -82,28 +82,27 @@ module Particles_radius
 !
 !  22-aug-05/anders: coded
 !
-      if (lroot) call svn_id( &
-          "$Id$")
+      if (lroot) call svn_id( "$Id$")
 !
 !  Index for particle radius.
 !
-      iap=npvar+1
-      pvarname(npvar+1)='iap'
+      iap = npvar+1
+      pvarname(npvar+1) = 'iap'
 !
 !  Increase npvar accordingly.
 !
-      npvar=npvar+1
+      npvar = npvar+1
 !
       if (lparticles_radius_rpbeta) then
-        irpbeta=npvar+1
-        pvarname(npvar+1)='irpbeta'
-        npvar=npvar+1
+        irpbeta = npvar+1
+        pvarname(npvar+1) = 'irpbeta'
+        npvar = npvar+1
       endif
 !
 !  Check that the fp and dfp arrays are big enough.
 !
       if (npvar > mpvar) then
-        if (lroot) write(0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
+        if (lroot) write (0,*) 'npvar = ', npvar, ', mpvar = ', mpvar
         call fatal_error('register_particles: npvar > mpvar','')
       endif
 !
@@ -133,53 +132,53 @@ module Particles_radius
 !
       use SharedVariables, only: put_shared_variable
 !
-      real, dimension (mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mfarray) :: f
 !
 !  Calculate the number density of bodies within a superparticle.
 !
-      if (npart_radii>1 .and. &
+      if (npart_radii > 1 .and. &
           (.not. lcartesian_coords .or. lparticles_number .or. lparticles_spin)) then
         call fatal_error('initialize_particles_radius: npart_radii > 1','')
       else
-        mpmat=4/3.0*pi*rhopmat*ap0(1)**3
+        mpmat = 4/3.0*pi*rhopmat*ap0(1)**3
         if (lroot) print*, 'initialize_particles_radius: '// &
             'mass per dust grain mpmat=', mpmat
       endif
 !
-      if ((lsweepup_par.or.lcondensation_par).and..not.lpscalar &
-              .and..not.lsupersat_par &
-              .and..not.lsupersat &
-          .and..not.lcondensation_simplified) then
+      if ((lsweepup_par .or. lcondensation_par).and. .not. lpscalar &
+          .and. .not. lsupersat_par &
+              .and. .not. lsupersat &
+          .and. .not. lcondensation_simplified) then
         call fatal_error('initialize_particles_radius', &
             'must have passive scalar module for sweep-up and condensation')
       endif
 !
 !  Short hand for spherical particle prefactor.
 !
-      four_pi_rhopmat_over_three=four_pi_over_three*rhopmat
+      four_pi_rhopmat_over_three = four_pi_over_three*rhopmat
 !
 !  Inverse coefficients.
 !
-      alpha_cond1=1/alpha_cond
-      diffusion_coefficient1=1/diffusion_coefficient
-      if (tau_damp_evap/=0.0) tau_damp_evap1=1/tau_damp_evap
-      if (tau_ocean_driving/=0.0) tau_ocean_driving1=1/tau_ocean_driving
+      alpha_cond1 = 1/alpha_cond
+      diffusion_coefficient1 = 1/diffusion_coefficient
+      if (tau_damp_evap /= 0.0) tau_damp_evap1 = 1/tau_damp_evap
+      if (tau_ocean_driving /= 0.0) tau_ocean_driving1 = 1/tau_ocean_driving
 !
       call put_shared_variable('ap0',ap0,caller='initialize_particles_radius')
 !
 ! If we have decided to hold the radius of the particles to be fixed then
-! we should not have any process that changes the radius. 
+! we should not have any process that changes the radius.
 !
-      if(lfixed_particles_radius) then
-        if(lsweepup_par) &
-          call fatal_error('initialize_particles_radius', & 
-          'incosistency: lfixed_particles_radius and lsweepup_par cannot both be true')
+      if (lfixed_particles_radius) then
+        if (lsweepup_par) &
+            call fatal_error('initialize_particles_radius', &
+            'incosistency: lfixed_particles_radius and lsweepup_par cannot both be true')
         if (lcondensation_par) &
-          call fatal_error('initialize_particles_radius', & 
-          'incosistency: lfixed_particles_radius and lcondensation_par cannot both be true')
+            call fatal_error('initialize_particles_radius', &
+            'incosistency: lfixed_particles_radius and lcondensation_par cannot both be true')
         if (lparticles_chemistry) &
-          call fatal_error('initialize_particles_radius', & 
-          'incosistency: lfixed_particles_radius and lparticles_chemistry cannot both be true')
+            call fatal_error('initialize_particles_radius', &
+            'incosistency: lfixed_particles_radius and lparticles_chemistry cannot both be true')
       endif
 !
       call keep_compiler_quiet(f)
@@ -194,33 +193,45 @@ module Particles_radius
 !
       use General, only: random_number_wrapper
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mpar_loc,mparray) :: fp
-      integer :: npar_low,npar_high
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mpar_loc,mparray) :: fp
+      integer :: npar_low, npar_high
       logical, optional :: init
 !
-      real, dimension (mpar_loc) :: r_mpar_loc, p_mpar_loc, tmp_mpar_loc
-      real, dimension (ndustrad) :: radii_cumulative
-      real, dimension (nbin_initdist) :: n_initdist, a_initdist
-      integer, dimension (nbin_initdist) :: nn_initdist
+      real, dimension(mpar_loc) :: r_mpar_loc, p_mpar_loc, tmp_mpar_loc
+      real, dimension(ndustrad) :: radii_cumulative
+      real, dimension(nbin_initdist) :: n_initdist, a_initdist
+      integer, dimension(nbin_initdist) :: nn_initdist
       real :: radius_fraction, mcen, mmin, mmax, fcen, p
       real :: lna0, lna1, lna, lna0_initdist
       integer :: i, j, k, kend, ind, ibin
       logical :: initial
+      integer :: k_several
 !
-      initial=.false.
+      initial = .false.
       if (present(init)) then
-        if (init) initial=.true.
+        if (init) initial = .true.
       endif
 !
-      do j=1,ninit
+      do j = 1,ninit
 !
         select case (initap(j))
 !
         case ('nothing')
-          if (initial.and.lroot.and.j==1)  print*, 'set_particles_radius: nothing'
+          if (initial .and. lroot .and. j == 1)  print*, 'set_particles_radius: nothing'
 !
         case ('constant')
+          if (initial .and. lroot) print*, 'set_particles_radius: constant radius'
+          ind = 1
+          do k = npar_low,npar_high
+            if (npart_radii > 1) then
+              call random_number_wrapper(radius_fraction)
+              ind = ceiling(npart_radii*radius_fraction)
+            endif
+            fp(k,iap) = ap0(ind)
+          enddo
+!
+        case ('constant-luck')
           if (initial.and.lroot) print*, 'set_particles_radius: constant radius'
           ind=1
           do k=npar_low,npar_high
@@ -228,36 +239,51 @@ module Particles_radius
               call random_number_wrapper(radius_fraction)
               ind=ceiling(npart_radii*radius_fraction)
             endif
-            fp(k,iap)=ap0(ind)
+            if (ipar(k)==1) then 
+              fp(k,iap)=ap1
+            else
+               fp(k,iap)=ap0(ind)
+            endif
           enddo
 !
         case ('constant-1')
-          if (initial.and.lroot) print*, 'set_particles_radius: set particle 1 radius'
-          do k=npar_low,npar_high
-            if (ipar(k)==1) fp(k,iap)=ap1
+          if (initial .and. lroot) print*, 'set_particles_radius: set particle 1 radius'
+          do k = npar_low,npar_high
+            if (ipar(k) == 1) fp(k,iap) = ap1
           enddo
 !
+!17-06-29: Xiang-Yu coded
+        case ('constant-several')
+          if (initial .and. lroot) print*, 'set_particles_radius: set radius of several particles'
+          do k = npar_low,npar_high
+            do k_several = 1,k_lucky
+              if (ipar(k) == k_several) fp(k,iap) = ap1
+            enddo
+          enddo
+!Xiang-Yu
         case ('random')
-          if (initial.and.lroot) print*, 'set_particles_radius: random radius'
-          do k=npar_low,npar_high
+          if (initial .and. lroot) print*, 'set_particles_radius: random radius'
+          do k = npar_low,npar_high
             call random_number_wrapper(fp(k,iap))
-            fp(k,iap)=fp(k,iap)*(aphigh-aplow)+aplow
+            fp(k,iap) = fp(k,iap)*(aphigh-aplow)+aplow
           enddo
 !
         case ('logarithmically-spaced')
-          if (initial.and.lroot) print*, 'set_particles_radius: '// &
+          if (initial .and. lroot) print*, 'set_particles_radius: '// &
               'logarithmically spaced with ap0, ap1=', ap0(j), ap1
-          do k=npar_low,npar_high
-            fp(k,iap)=10**(alog10(ap0(j))+(ipar(k)-0.5)* &
+          do k = npar_low,npar_high
+            fp(k,iap) = 10**(alog10(ap0(j))+(ipar(k)-0.5)* &
                 (alog10(ap1)-alog10(ap0(j)))/npar)
           enddo
           if (lparticles_density) then
             do k=npar_low,npar_high
               aplow =10**(alog10(fp(k,iap))-(alog10(ap1)-alog10(ap0(j)))/npar/2)
               aphigh=10**(alog10(fp(k,iap))+(alog10(ap1)-alog10(ap0(j)))/npar/2)
-              fp(k,irhopswarm)=(aphigh**(4-qplaw)-aplow**(4-qplaw))/ &
-                  (ap1**(4-qplaw)-ap0(j)**(4-qplaw))*rhop_swarm*real(npar)
+              if (qplaw /= 4) &
+                  fp(k,irhopswarm) = (aphigh**(4-qplaw) - aplow**(4-qplaw)) / &
+                                     (ap1**(4-qplaw) - ap0(j)**(4-qplaw)) * rhop_swarm * real(npar)
             enddo
+            if (qplaw == 4) fp(npar_low:npar_high,irhopswarm) = rhop_swarm
           endif
 !
 !  Lognormal distribution. Here, ap1 is the largest value in the distribution.
@@ -265,78 +291,94 @@ module Particles_radius
 !  gaussian noise for ln(a/a0)/sigma.
 !
         case ('lognormal')
-
-          if (initial.and.lroot) print*, 'set_particles_radius: '// &
+!
+          if (initial .and. lroot) print*, 'set_particles_radius: '// &
               'lognormal=', a0_initdist
           call random_number_wrapper(r_mpar_loc)
           call random_number_wrapper(p_mpar_loc)
-          tmp_mpar_loc=sqrt(-2*log(r_mpar_loc))*sin(2*pi*p_mpar_loc)
-          fp(:,iap)=a0_initdist*exp(sigma_initdist*tmp_mpar_loc)
+          tmp_mpar_loc = sqrt(-2*log(r_mpar_loc))*sin(2*pi*p_mpar_loc)
+          fp(:,iap) = a0_initdist*exp(sigma_initdist*tmp_mpar_loc)
+!
+!17-06-29: Xiang-Yu coded
 
+        case ('lognormal-lucky')
+!
+          if (initial .and. lroot) print*, 'set_particles_radius: '// &
+              'lognormal=', a0_initdist
+          call random_number_wrapper(r_mpar_loc)
+          call random_number_wrapper(p_mpar_loc)
+          tmp_mpar_loc = sqrt(-2*log(r_mpar_loc))*sin(2*pi*p_mpar_loc)
+          fp(npar_low:k_lucky,iap) = a0_initdist*exp(sigma_initdist*tmp_mpar_loc)
+          do k = npar_low,npar_high
+            if (k>k_lucky) then
+              fp(k,iap) = ap1
+            endif
+          enddo
+!Xiang-Yu
 !
 !  Lognormal distribution. Here, ap1 is the largest value in the distribution
 !  and ap0 is the smallest radius initially.
 !
         case ('old_lognormal')
-
-          if (initial.and.lroot) print*, 'set_particles_radius: '// &
+!
+          if (initial .and. lroot) print*, 'set_particles_radius: '// &
               'lognormal=', ap0(1), ap1
-          lna0=log(ap0(1))
-          lna1=log(ap1)
-          lna0_initdist=log(a0_initdist)
-          do ibin=1,nbin_initdist
-            lna=lna0+(lna1-lna0)*(ibin-1)/(nbin_initdist-1)
-            a_initdist(ibin)=exp(lna)
-            n_initdist(ibin)=exp(-0.5*(lna-lna0_initdist)**2/sigma_initdist**2) &
+          lna0 = log(ap0(1))
+          lna1 = log(ap1)
+          lna0_initdist = log(a0_initdist)
+          do ibin = 1,nbin_initdist
+            lna = lna0+(lna1-lna0)*(ibin-1)/(nbin_initdist-1)
+            a_initdist(ibin) = exp(lna)
+            n_initdist(ibin) = exp(-0.5*(lna-lna0_initdist)**2/sigma_initdist**2) &
                 /(sqrt(twopi)*sigma_initdist*a_initdist(ibin))
           enddo
-          nn_initdist=nint(n_initdist)
-          nn_initdist=(npar_high-npar_low+1)*nn_initdist/(sum(nn_initdist)-1)
+          nn_initdist = nint(n_initdist)
+          nn_initdist = (npar_high-npar_low+1)*nn_initdist/(sum(nn_initdist)-1)
 !
 !  is now normalized to the number of particles,
 !  so set the corresponding distribution.
 !  Normally, the number of bins is less than the number of available ones,
 !  so then we patch the rest with fp(kend+1:,iap)=a0_initdist.
 !
-          k=npar_low
-          do ibin=1,nbin_initdist
-            kend=k+nn_initdist(ibin)
+          k = npar_low
+          do ibin = 1,nbin_initdist
+            kend = k+nn_initdist(ibin)
             if (kend > k) then
-              fp(k:kend,iap)=a_initdist(ibin)
-              k=kend
+              fp(k:kend,iap) = a_initdist(ibin)
+              k = kend
             endif
           enddo
 !
 !  put all the remaining particles (from kend+1 to the end of the array)
 !  in the bin corresponding to the middle of the distribution.
 !
-          fp(kend+1:,iap)=a0_initdist
+          fp(kend+1:,iap) = a0_initdist
 !
         case ('specify')
 !
 !  User specified particle size distribution with constant radii.
 !
-          if (initial.and.lroot) &
+          if (initial .and. lroot) &
               print*, 'set_particles_radius: constant radius, user specified distribution'
-          radii_cumulative=0.0
-          radii_cumulative(1)=radii_distribution(1)
-          do i=2,npart_radii
+          radii_cumulative = 0.0
+          radii_cumulative(1) = radii_distribution(1)
+          do i = 2,npart_radii
             radii_cumulative(i) = radii_cumulative(i-1) + radii_distribution(i)
           enddo
           if (radii_cumulative(npart_radii) /= 1.0) then
 !
 !  Renormalize.
 !
-            do i=1,npart_radii
-              radii_cumulative(i)=radii_cumulative(i)/radii_cumulative(npart_radii)
+            do i = 1,npart_radii
+              radii_cumulative(i) = radii_cumulative(i)/radii_cumulative(npart_radii)
             enddo
           endif
 !
-          do k=npar_low,npar_high
+          do k = npar_low,npar_high
             call random_number_wrapper(radius_fraction)
-            do i=1,npart_radii
+            do i = 1,npart_radii
               if (radius_fraction <= radii_cumulative(i)) then
-                fp(k,iap)=ap0(i)
+                fp(k,iap) = ap0(i)
                 exit
               endif
             enddo
@@ -356,41 +398,41 @@ module Particles_radius
 !  to obtain the right distribution function.
 !
         case ('kernel-lin')
-          if (initial.and.lroot) print*, 'set_particles_radius: '// &
+          if (initial .and. lroot) print*, 'set_particles_radius: '// &
               'initial condition for linear kernel test'
-          do k=npar_low,npar_high
-            p=(ipar(k)-0.5)/float(npar)
-            mmin=0.0
-            mmax=1.0
+          do k = npar_low,npar_high
+            p = (ipar(k)-0.5)/float(npar)
+            mmin = 0.0
+            mmax = 1.0
             do while (.true.)
-              if ((1.0-exp(-mmax)*(1+mmax))<p) then
-                mmax=mmax+1.0
+              if ((1.0-exp(-mmax)*(1+mmax)) < p) then
+                mmax = mmax+1.0
               else
                 exit
               endif
             enddo
 !
-            mcen=0.5*(mmin+mmax)
-            fcen=1.0-exp(-mcen)*(1+mcen)
+            mcen = 0.5*(mmin+mmax)
+            fcen = 1.0-exp(-mcen)*(1+mcen)
 !
-            do while (abs(p-fcen)>1.0e-6)
-              if (fcen<p) then
-                mmin=mcen
+            do while (abs(p-fcen) > 1.0e-6)
+              if (fcen < p) then
+                mmin = mcen
               else
-                mmax=mcen
+                mmax = mcen
               endif
-              mcen=0.5*(mmin+mmax)
-              fcen=1.0-exp(-mcen)*(1+mcen)
+              mcen = 0.5*(mmin+mmax)
+              fcen = 1.0-exp(-mcen)*(1+mcen)
             enddo
 !
-            fp(k,iap)=(mcen*mbar/four_pi_rhopmat_over_three)**(1.0/3.0)
+            fp(k,iap) = (mcen*mbar/four_pi_rhopmat_over_three)**(1.0/3.0)
 !
           enddo
 !
         case ('power-law')
           call random_number_wrapper(fp(npar_low:npar_high,iap))
           fp(npar_low:npar_high,iap) = ((aphigh**(qplaw+1.0)-aplow**(qplaw+1.0)) &
-            *fp(npar_low:npar_high,iap)+aplow**(qplaw+1.0))**(1.0/(qplaw+1.0))
+              *fp(npar_low:npar_high,iap)+aplow**(qplaw+1.0))**(1.0/(qplaw+1.0))
 !
         case default
           if (lroot) print*, 'init_particles_radius: '// &
@@ -401,45 +443,45 @@ module Particles_radius
 !
 !  Set initial particle radius if lparticles_mass=T
 !
-      if (lparticles_mass) fp(:,iapinit)=fp(:,iap)
+      if (lparticles_mass) fp(:,iapinit) = fp(:,iap)
 !
       if (lparticles_radius_rpbeta) &
-        fp(npar_low:npar_high,irpbeta) = rpbeta0/(fp(npar_low:npar_high,iap)*rhopmat)
+          fp(npar_low:npar_high,irpbeta) = rpbeta0/(fp(npar_low:npar_high,iap)*rhopmat)
 !
 ! Reinitialize particle radius if reinitialize_ap=T
 ! 09-Feb-17/Xiangyu: adapted from set_particles_radius
       if (reinitialize_ap) then
-				do j=1,ninit
+        do j = 1,ninit
           select case (initap(j))
-					
-					case ('constant')
-						if (initial.and.lroot) print*, 'set_particles_radius: constant radius'
-						ind=1
-						do k=npar_low,npar_high
-							if (npart_radii>1) then
-								call random_number_wrapper(radius_fraction)
-								ind=ceiling(npart_radii*radius_fraction)
-							endif
-							fp(k,iap)=ap0(ind)
-						enddo
-	!
-					case ('constant-1')
-						if (initial.and.lroot) print*, 'set_particles_radius: set particle 1 radius'
-						do k=npar_low,npar_high
-							if (ipar(k)==1) fp(k,iap)=ap1
-						enddo
-  ! 
-					case ('lognormal')
-
-						if (initial.and.lroot) print*, 'set_particles_radius: '// &
-								'lognormal=', a0_initdist
-						call random_number_wrapper(r_mpar_loc)
-						call random_number_wrapper(p_mpar_loc)
-						tmp_mpar_loc=sqrt(-2*log(r_mpar_loc))*sin(2*pi*p_mpar_loc)
-						fp(:,iap)=a0_initdist*exp(sigma_initdist*tmp_mpar_loc)
-					endselect  
-				enddo
-			endif
+!
+          case ('constant')
+            if (initial .and. lroot) print*, 'set_particles_radius: constant radius'
+            ind = 1
+            do k = npar_low,npar_high
+              if (npart_radii > 1) then
+                call random_number_wrapper(radius_fraction)
+                ind = ceiling(npart_radii*radius_fraction)
+              endif
+              fp(k,iap) = ap0(ind)
+            enddo
+!
+          case ('constant-1')
+            if (initial .and. lroot) print*, 'set_particles_radius: set particle 1 radius'
+            do k = npar_low,npar_high
+              if (ipar(k) == 1) fp(k,iap) = ap1
+            enddo
+!
+          case ('lognormal')
+!
+            if (initial .and. lroot) print*, 'set_particles_radius: '// &
+                'lognormal=', a0_initdist
+            call random_number_wrapper(r_mpar_loc)
+            call random_number_wrapper(p_mpar_loc)
+            tmp_mpar_loc = sqrt(-2*log(r_mpar_loc))*sin(2*pi*p_mpar_loc)
+            fp(:,iap) = a0_initdist*exp(sigma_initdist*tmp_mpar_loc)
+          endselect
+        enddo
+      endif
 !
       call keep_compiler_quiet(f)
 !
@@ -452,28 +494,28 @@ module Particles_radius
 !  21-nov-06/anders: coded
 !
       if (lsweepup_par) then
-        lpenc_requested(i_uu)=.true.
-        lpenc_requested(i_rho)=.true.
-        lpenc_requested(i_cc)=.true.
+        lpenc_requested(i_uu) = .true.
+        lpenc_requested(i_rho) = .true.
+        lpenc_requested(i_cc) = .true.
       endif
       if (lcondensation_par) then
-        lpenc_requested(i_csvap2)=.true.
-        lpenc_requested(i_TT1)=.true.
-        lpenc_requested(i_ppvap)=.true.
-        lpenc_requested(i_rho)=.true.
-        lpenc_requested(i_rho1)=.true.
-        lpenc_requested(i_cc)=.true.
-        lpenc_requested(i_cc1)=.true.
-        lpenc_requested(i_np)=.true.
-        lpenc_requested(i_rhop)=.true.
+        lpenc_requested(i_csvap2) = .true.
+        lpenc_requested(i_TT1) = .true.
+        lpenc_requested(i_ppvap) = .true.
+        lpenc_requested(i_rho) = .true.
+        lpenc_requested(i_rho1) = .true.
+        lpenc_requested(i_cc) = .true.
+        lpenc_requested(i_cc1) = .true.
+        lpenc_requested(i_np) = .true.
+        lpenc_requested(i_rhop) = .true.
         if (ltemperature) then
-          lpenc_requested(i_cv1)=.true.
-          lpenc_requested(i_TT1)=.true.
+          lpenc_requested(i_cv1) = .true.
+          lpenc_requested(i_TT1) = .true.
         endif
       endif
-      if (lsupersat.and.lsupersat_par) then 
-        lpenc_requested(i_ssat)=.true. 
-        lpenc_requested(i_ugssat)=.true. 
+      if (lsupersat .and. lsupersat_par) then
+        lpenc_requested(i_ssat) = .true.
+        lpenc_requested(i_ugssat) = .true.
       endif
 !
     endsubroutine pencil_criteria_par_radius
@@ -486,38 +528,37 @@ module Particles_radius
 !
       use Particles_number
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(mpar_loc,mparray) :: fp
+      real, dimension(mpar_loc,mpvar) :: dfp
       type (pencil_case) :: p
-      integer, dimension (mpar_loc,3) :: ineargrid
+      integer, dimension(mpar_loc,3) :: ineargrid
       logical :: lfirstcall=.true., lheader
-      integer :: k,k1,k2
+      integer :: k, k1, k2
       real :: mass_per_radius, rho
       real, dimension(:), allocatable :: effectiveness_factor, mass_loss
 !
-      intent (in) :: f
-      intent (out) :: dfp
-      intent (inout) :: fp
+      intent(in) :: f
+      intent(out) :: dfp
+      intent(inout) :: fp
 !
 !  Print out header information in first time step.
 !
-      lheader=lfirstcall.and.lroot.and.(.not.lpencil_check_at_work)
+      lheader = lfirstcall .and. lroot .and.(.not. lpencil_check_at_work)
 !
 !  Identify module.
 !
       if (lheader) print*,'dap_dt_pencil: Calculate dap/dt'
 !
-      if (lsweepup_par) &
-          call dap_dt_sweepup_pencil(f,df,fp,dfp,p,ineargrid)
+      if (lsweepup_par) call dap_dt_sweepup_pencil(f,df,fp,dfp,p,ineargrid)
       if (lcondensation_par) &
           call dap_dt_condensation_pencil(f,df,fp,dfp,p,ineargrid)
       if (lsupersat_par) &
           call dap_dt_supersat_pencil(f,df,fp,dfp,p,ineargrid) !XY
-          
 !
-      lfirstcall=.false.
+!
+      lfirstcall = .false.
 !
 !  Decrease particle radius with dmass if the density in the outer shell
 !  is wholly consumed (equation 51 in Equations to be solved for DNS
@@ -526,7 +567,7 @@ module Particles_radius
       if (lparticles_chemistry .and. npar_imn(imn) /= 0) then
         k1 = k1_imn(imn)
         k2 = k2_imn(imn)
-!        
+!
 !  Particles can lose radius under consumption
 !
         if (.not. lconstant_radius_w_chem) then
@@ -562,7 +603,7 @@ module Particles_radius
 !  Constant particle radius with activated chemistry
 !
           dfp(k1:k2,iap) = 0.0
-          
+!
         endif
       endif
 !
@@ -577,46 +618,45 @@ module Particles_radius
       use Diagnostics, only: max_mn_name
       use Particles_number
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(mpar_loc,mparray) :: fp
+      real, dimension(mpar_loc,mpvar) :: dfp
       type (pencil_case) :: p
-      integer, dimension (mpar_loc,3) :: ineargrid
+      integer, dimension(mpar_loc,3) :: ineargrid
 !
-      real, dimension (nx) :: dt1_sweepup
+      real, dimension(nx) :: dt1_sweepup
       real :: deltavp
       integer :: k, ix0, ix
 !
-      intent (in) :: f, fp
-      intent (inout) :: dfp
+      intent(in) :: f, fp
+      intent(inout) :: dfp
 !
 !  Increase in particle radius due to sweep-up of small grains in the gas.
 !
-      if (t>=tstart_sweepup_par) then
+      if (t >= tstart_sweepup_par) then
 !
 !
-        if (npar_imn(imn)/=0) then
-          do k=k1_imn(imn),k2_imn(imn)
-            ix0=ineargrid(k,1)
-            ix=ix0-nghost
+        if (npar_imn(imn) /= 0) then
+          do k = k1_imn(imn),k2_imn(imn)
+            ix0 = ineargrid(k,1)
+            ix = ix0-nghost
 !  No interpolation needed here.
 !  Relative speed.
-            deltavp=sqrt( &
+            deltavp = sqrt( &
                 (fp(k,ivpx)-p%uu(ix,1))**2 + &
                 (fp(k,ivpy)-p%uu(ix,2))**2 + &
                 (fp(k,ivpz)-p%uu(ix,3))**2 )
-            if (deltavp12_floor/=0.0) &
-                deltavp=sqrt(deltavp**2+deltavp12_floor**2)
+            if (deltavp12_floor /= 0.0) &
+                deltavp = sqrt(deltavp**2+deltavp12_floor**2)
 !  Allow boulders to sweep up small grains if relative velocity not too high.
-            if (deltavp<=vthresh_sweepup .or. vthresh_sweepup<0.0) then
+            if (deltavp <= vthresh_sweepup .or. vthresh_sweepup < 0.0) then
 !  Radius increase due to sweep-up.
-              dfp(k,iap) = dfp(k,iap) + &
-                  0.25*deltavp*p%cc(ix)*p%rho(ix)*rhopmat1
+              dfp(k,iap) = dfp(k,iap) + 0.25*deltavp*p%cc(ix)*p%rho(ix)*rhopmat1
 !
 !  Deplete gas of small grains.
 !
-              if (lparticles_number) np_swarm=fp(k,inpswarm)
+              if (lparticles_number) np_swarm = fp(k,inpswarm)
               if (lpscalar_nolog) then
                 df(ix0,m,n,icc) = df(ix0,m,n,icc) - &
                     np_swarm*pi*fp(k,iap)**2*deltavp*p%cc(ix)
@@ -624,10 +664,10 @@ module Particles_radius
                 df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) - &
                     np_swarm*pi*fp(k,iap)**2*deltavp
               endif
-!              
+!
 !  Time-step contribution of sweep-up.
 !
-              if (lfirst.and.ldt) then
+              if (lfirst .and. ldt) then
                 dt1_sweepup(ix) = dt1_sweepup(ix) + &
                     np_swarm*pi*fp(k,iap)**2*deltavp
               endif
@@ -635,19 +675,19 @@ module Particles_radius
             endif
 !
             if (ldiagnos) then
-              if (idiag_dvp12m/=0) call sum_par_name((/deltavp/),idiag_dvp12m)
+              if (idiag_dvp12m /= 0) call sum_par_name((/deltavp/),idiag_dvp12m)
             endif
           enddo
         endif
 !
 !  Time-step contribution of sweep-up.
 !
-          if (lfirst.and.ldt) then
-            dt1_sweepup=dt1_sweepup/cdtps
-            dt1_max=max(dt1_max,dt1_sweepup)
-            if (ldiagnos.and.idiag_dtsweepp/=0) &
-                call max_mn_name(dt1_sweepup,idiag_dtsweepp,l_dt=.true.)
-          endif
+        if (lfirst .and. ldt) then
+          dt1_sweepup = dt1_sweepup/cdtps
+          dt1_max = max(dt1_max,dt1_sweepup)
+          if (ldiagnos .and. idiag_dtsweepp /= 0) &
+              call max_mn_name(dt1_sweepup,idiag_dtsweepp,l_dt=.true.)
+        endif
 !
       endif
 !
@@ -665,42 +705,42 @@ module Particles_radius
       use EquationOfState, only: gamma
       use Particles_number
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(mpar_loc,mparray) :: fp
+      real, dimension(mpar_loc,mpvar) :: dfp
       type (pencil_case) :: p
-      integer, dimension (mpar_loc,3) :: ineargrid
+      integer, dimension(mpar_loc,3) :: ineargrid
 !
-      real, dimension (nx) :: ap_equi, vth, dt1_condensation, rhovap
-      real, dimension (nx) :: total_surface_area, ppsat
-      real, dimension (nx) :: rhocond_tot, rhosat, np_total
+      real, dimension(nx) :: ap_equi, vth, dt1_condensation, rhovap
+      real, dimension(nx) :: total_surface_area, ppsat
+      real, dimension(nx) :: rhocond_tot, rhosat, np_total
       real :: dapdt, drhocdt, alpha_cond_par
       integer :: k, ix, ix0
 !
-      intent (in) :: f, fp
-      intent (inout) :: dfp
+      intent(in) :: f, fp
+      intent(inout) :: dfp
 !
 !  Change in particle radius due to condensation and evaporation.
 !
-      if (t>=tstart_condensation_par) then
+      if (t >= tstart_condensation_par) then
 !
-        if (npar_imn(imn)/=0) then
+        if (npar_imn(imn) /= 0) then
 !          rhovap=p%cc(:,1)*p%rho
 !DMDM
-          rhovap=p%cc*p%rho
-          ppsat=6.035e11*exp(-5938*p%TT1)  ! Valid for water
-          vth=sqrt(p%csvap2)
-          rhosat=gamma*ppsat/p%csvap2
-          rhocond_tot=p%rhop+rhovap
-          if (lfirst.and.ldt) then
-            np_total=0.0
-            total_surface_area=0.0
-            dt1_condensation=0.0
+          rhovap = p%cc*p%rho
+          ppsat = 6.035e11*exp(-5938*p%TT1)  ! Valid for water
+          vth = sqrt(p%csvap2)
+          rhosat = gamma*ppsat/p%csvap2
+          rhocond_tot = p%rhop+rhovap
+          if (lfirst .and. ldt) then
+            np_total = 0.0
+            total_surface_area = 0.0
+            dt1_condensation = 0.0
           endif
-          do k=k1_imn(imn),k2_imn(imn)
-            ix0=ineargrid(k,1)
-            ix=ix0-nghost
+          do k = k1_imn(imn),k2_imn(imn)
+            ix0 = ineargrid(k,1)
+            ix = ix0-nghost
 !
 !  The condensation/evaporation mass flux is
 !
@@ -718,34 +758,34 @@ module Particles_radius
 !  particles. Barkstrom 1978 use alpha0=0.04.
 !
             select case (condensation_coefficient_type)
-              case ('constant')
-                alpha_cond_par=alpha_cond
-              case ('size-dependent')
-                alpha_cond_par=1/(vth(ix)*fp(k,iap)*diffusion_coefficient1+ &
-                    alpha_cond1)
-              case default
-                if (lroot) print*, 'dap_dt_condensation_pencil: '// &
-                    'invalid condensation coefficient type'
-                call fatal_error('dap_dt_condensation_pencil','')
-                 alpha_cond_par=0.
+            case ('constant')
+              alpha_cond_par = alpha_cond
+            case ('size-dependent')
+              alpha_cond_par = 1/(vth(ix)*fp(k,iap)*diffusion_coefficient1+ &
+                  alpha_cond1)
+            case default
+              if (lroot) print*, 'dap_dt_condensation_pencil: '// &
+                  'invalid condensation coefficient type'
+              call fatal_error('dap_dt_condensation_pencil','')
+              alpha_cond_par = 0.
             endselect
 !
 !  Radius increase by condensation or decrease by evaporation.
 !
-            if (fp(k,iap)<apmin) then
+            if (fp(k,iap) < apmin) then
 !
 !  Do not allow particles to become smaller than a minimum radius.
 !
-              dapdt=-tau_damp_evap1*(fp(k,iap)-apmin)
+              dapdt = -tau_damp_evap1*(fp(k,iap)-apmin)
               if (lfirst .and. ldt) then
-                dt1_condensation(ix)=max(dt1_condensation(ix),tau_damp_evap1)
+                dt1_condensation(ix) = max(dt1_condensation(ix),tau_damp_evap1)
               endif
             else
               if (lcondensation_simplified) then
-                dapdt=GS_condensation/fp(k,iap)
+                dapdt = GS_condensation/fp(k,iap)
                 !print*,"radius=",fp(k,iap)
               else
-                dapdt=0.25*vth(ix)*rhopmat1* &
+                dapdt = 0.25*vth(ix)*rhopmat1* &
                     (rhovap(ix)-rhosat(ix))*alpha_cond_par
               endif
 !
@@ -753,31 +793,31 @@ module Particles_radius
 !  the limit of small particles; therefore we need to damp the evaporation to
 !  avoid small time-steps.
 !
-              if (dapdt<0.0) then
-                dapdt=dapdt*min(1.0,(fp(k,iap)/apmin-1.0)**2)
+              if (dapdt < 0.0) then
+                dapdt = dapdt*min(1.0,(fp(k,iap)/apmin-1.0)**2)
                 if (lfirst .and. ldt) then
-                  dt1_condensation(ix)=max(dt1_condensation(ix), &
+                  dt1_condensation(ix) = max(dt1_condensation(ix), &
                       abs(dapdt/(fp(k,iap)-apmin)))
                 endif
               endif
             endif
 !
-            dfp(k,iap)=dfp(k,iap)+dapdt
+            dfp(k,iap) = dfp(k,iap)+dapdt
 !
 !  Vapor monomers are added to the gas or removed from the gas.
 !
-            if (lparticles_number) np_swarm=fp(k,inpswarm)
+            if (lparticles_number) np_swarm = fp(k,inpswarm)
             if (lcondensation_simplified) then
-              drhocdt=0.
+              drhocdt = 0.
             else
-              drhocdt=-dapdt*4*pi*fp(k,iap)**2*rhopmat*np_swarm
+              drhocdt = -dapdt*4*pi*fp(k,iap)**2*rhopmat*np_swarm
             endif
 !
 !  Drive the vapor pressure towards the saturated pressure due to contact
 !  with "ocean" at the box bottom.
 !
             if (lborder_driving_ocean) then
-              if (fp(k,izp)<ztop_ocean) then
+              if (fp(k,izp) < ztop_ocean) then
                 drhocdt = drhocdt + tau_ocean_driving1*(rhosat(ix)-rhovap(ix))
               endif
             endif
@@ -798,31 +838,29 @@ module Particles_radius
             elseif (lpscalar) then
               df(ix0,m,n,ilncc) = df(ix0,m,n,ilncc) + &
                   (p%cc1(ix)-1.0)*p%rho1(ix)*drhocdt
-            else
             endif
-
 !
 !  Release latent heat to gas / remove heat from gas.
 !
-            if (ltemperature.and.llatent_heat) then
-              df(ix0,m,n,ilnTT)=df(ix0,m,n,ilnTT) - &
+            if (ltemperature .and. llatent_heat) then
+              df(ix0,m,n,ilnTT) = df(ix0,m,n,ilnTT) - &
                   latent_heat_SI*p%rho1(ix)*p%TT1(ix)*p%cv1(ix)*drhocdt
             endif
 !
-            if (lfirst.and.ldt) then
-              total_surface_area(ix)=total_surface_area(ix)+ &
+            if (lfirst .and. ldt) then
+              total_surface_area(ix) = total_surface_area(ix)+ &
                   4*pi*fp(k,iap)**2*np_swarm*alpha_cond_par
-              np_total(ix)=np_total(ix)+np_swarm
+              np_total(ix) = np_total(ix)+np_swarm
             endif
           enddo
 !
 !  Time-step contribution of condensation.
 !
-          if (lfirst.and.ldt) then
-            ap_equi=((p%rhop+(rhovap-rhosat))/ &
+          if (lfirst .and. ldt) then
+            ap_equi = ((p%rhop+(rhovap-rhosat))/ &
                 (4.0/3.0*pi*rhopmat*np_swarm*p%np))**(1.0/3.0)
-            do ix=1,nx
-              if (rhocond_tot(ix)>rhosat(ix)) then
+            do ix = 1,nx
+              if (rhocond_tot(ix) > rhosat(ix)) then
                 dt1_condensation(ix) = max(total_surface_area(ix)*vth(ix), &
                     pi*vth(ix)*np_total(ix)*ap_equi(ix)**2*alpha_cond)
               endif
@@ -831,7 +869,7 @@ module Particles_radius
         endif
 !
         if (lborder_driving_ocean) then
-          if (z(n)<ztop_ocean) then
+          if (z(n) < ztop_ocean) then
             df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - &
                 (1.0-TTocean*p%TT1)*tau_ocean_driving1
           endif
@@ -839,9 +877,9 @@ module Particles_radius
 !
 !  Time-step contribution of condensation.
 !
-        if (lfirst.and.ldt) then
-          dt1_condensation=dt1_condensation/cdtpc
-          dt1_max=max(dt1_max,dt1_condensation)
+        if (lfirst .and. ldt) then
+          dt1_condensation = dt1_condensation/cdtpc
+          dt1_max = max(dt1_max,dt1_condensation)
         endif
 !
       endif
@@ -858,30 +896,30 @@ module Particles_radius
 !
       use Particles_number
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(mpar_loc,mparray) :: fp
+      real, dimension(mpar_loc,mpvar) :: dfp
       type (pencil_case) :: p
-      integer, dimension (mpar_loc,3) :: ineargrid
+      integer, dimension(mpar_loc,3) :: ineargrid
 !
       real :: dapdt
-      integer :: k,ix,ix0
+      integer :: k, ix, ix0
 !
-      intent (in) :: f, fp
-      intent (inout) :: dfp
+      intent(in) :: f, fp
+      intent(inout) :: dfp
 !
 !AB:  At the moment, dapdt grows only if lsupersat=T.
 !AB:  But we want the previous option should still to work.
 !
-      do k=k1_imn(imn),k2_imn(imn)
-        ix0=ineargrid(k,1)
-        ix=ix0-nghost
+      do k = k1_imn(imn),k2_imn(imn)
+        ix0 = ineargrid(k,1)
+        ix = ix0-nghost
         if (lsupersat) then
-          dapdt=f(ix,m,n,issat)/fp(k,iap)
-          !print*,'ssat=',f(ix,m,n,issat)
-          !print*,'r=',fp(k,iap)
-          dfp(k,iap)=dfp(k,iap)+dapdt
+          dapdt = f(ix,m,n,issat)/fp(k,iap)
+!          print*,'ssat=',f(ix,m,n,issat)
+!          print*,'r=',fp(k,iap)
+          dfp(k,iap) = dfp(k,iap)+dapdt
         endif
       enddo
 !
@@ -895,25 +933,24 @@ module Particles_radius
 !
       use Sub
 !
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (mpar_loc,mparray) :: fp
-      real, dimension (mpar_loc,mpvar) :: dfp
-      integer, dimension (mpar_loc,3) :: ineargrid
+      real, dimension(mx,my,mz,mfarray) :: f
+      real, dimension(mx,my,mz,mvar) :: df
+      real, dimension(mpar_loc,mparray) :: fp
+      real, dimension(mpar_loc,mpvar) :: dfp
+      integer, dimension(mpar_loc,3) :: ineargrid
 !
 !  Diagnostic output.
 !
       if (ldiagnos) then
-        if (idiag_apm/=0) call sum_par_name(fp(1:npar_loc,iap),idiag_apm)
-        if (idiag_ap2m/=0) call sum_par_name(fp(1:npar_loc,iap)**2,idiag_ap2m)
-        if (idiag_apmin/=0) &
+        if (idiag_apm /= 0) call sum_par_name(fp(1:npar_loc,iap),idiag_apm)
+        if (idiag_ap2m /= 0) call sum_par_name(fp(1:npar_loc,iap)**2,idiag_ap2m)
+        if (idiag_apmin /= 0) &
             call max_par_name(-fp(1:npar_loc,iap),idiag_apmin,lneg=.true.)
-        if (idiag_apmax/=0) &
-            call max_par_name(fp(1:npar_loc,iap),idiag_apmax)
-        if (idiag_npswarmm/=0) &
+        if (idiag_apmax /= 0) call max_par_name(fp(1:npar_loc,iap),idiag_apmax)
+        if (idiag_npswarmm /= 0) &
             call sum_par_name(rhop_swarm/ &
             (four_pi_rhopmat_over_three*fp(1:npar_loc,iap)**3),idiag_npswarmm)
-        if (idiag_ieffp/=0) & 
+        if (idiag_ieffp /= 0) &
             call sum_par_name(fp(1:npar_loc,ieffp),idiag_ieffp)
       endif
 !
@@ -930,15 +967,17 @@ module Particles_radius
       integer, intent(out) :: iostat
       integer :: pos
 !
-      read(parallel_unit, NML=particles_radius_init_pars, IOSTAT=iostat)
+      ! temporary replacement code for fixing the broken most-module autotest on Norlx51b
+      iostat = 0 ! want to see the clear-text error message
+      read (parallel_unit, NML=particles_radius_init_pars) ! , IOSTAT=iostat)
 !
 !  Find how many different particle radii we are using. This must be done
 !  because not all parts of the code are adapted to work with more than one
 !  particle radius.
 !
-      do pos=1,ndustrad
-        if (ap0(pos)/=0) then
-          npart_radii=npart_radii+1
+      do pos = 1,ndustrad
+        if (ap0(pos) /= 0) then
+          npart_radii = npart_radii+1
         endif
       enddo
 !
@@ -948,7 +987,7 @@ module Particles_radius
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=particles_radius_init_pars)
+      write (unit, NML=particles_radius_init_pars)
 !
     endsubroutine write_particles_rad_init_pars
 !***********************************************************************
@@ -958,7 +997,9 @@ module Particles_radius
 !
       integer, intent(out) :: iostat
 !
-      read(parallel_unit, NML=particles_radius_run_pars, IOSTAT=iostat)
+      ! temporary replacement code for fixing the broken most-module autotest on Norlx51b
+      iostat = 0 ! want to see the clear-text error message
+      read (parallel_unit, NML=particles_radius_run_pars) ! , IOSTAT=iostat)
 !
     endsubroutine read_particles_rad_run_pars
 !***********************************************************************
@@ -966,7 +1007,7 @@ module Particles_radius
 !
       integer, intent(in) :: unit
 !
-      write(unit, NML=particles_radius_run_pars)
+      write (unit, NML=particles_radius_run_pars)
 !
     endsubroutine write_particles_rad_run_pars
 !***********************************************************************
@@ -987,22 +1028,27 @@ module Particles_radius
 !  Write information to index.pro.
 !
       lwr = .false.
-      if (present(lwrite)) lwr=lwrite
-      if (lwr) write(3,*) 'iap=', iap
+      if (present(lwrite)) lwr = lwrite
+      if (lwr) write (3,*) 'iap=', iap
 !
 !  Reset everything in case of reset.
 !
       if (lreset) then
-        idiag_apm=0; idiag_ap2m=0; idiag_apmin=0; idiag_apmax=0
-        idiag_dvp12m=0; idiag_dtsweepp=0; idiag_npswarmm=0
-        idiag_ieffp=0
+        idiag_apm = 0
+        idiag_ap2m = 0
+        idiag_apmin = 0
+        idiag_apmax = 0
+        idiag_dvp12m = 0
+        idiag_dtsweepp = 0
+        idiag_npswarmm = 0
+        idiag_ieffp = 0
       endif
 !
 !  Run through all possible names that may be listed in print.in.
 !
-      if (lroot.and.ip<14) &
+      if (lroot .and. ip < 14) &
           print*, 'rprint_particles_radius: run through parse list'
-      do iname=1,nname
+      do iname = 1,nname
         call parse_name(iname,cname(iname),cform(iname),'apm',idiag_apm)
         call parse_name(iname,cname(iname),cform(iname),'ap2m',idiag_ap2m)
         call parse_name(iname,cname(iname),cform(iname),'apmin',idiag_apmin)
@@ -1011,35 +1057,35 @@ module Particles_radius
         call parse_name(iname,cname(iname),cform(iname),'dtsweepp', &
             idiag_dtsweepp)
         call parse_name(iname,cname(iname),cform(iname),'ieffp',idiag_ieffp)
-        if (.not.lparticles_number) call parse_name(iname,cname(iname), &
+        if (.not. lparticles_number) call parse_name(iname,cname(iname), &
             cform(iname),'npswarmm',idiag_npswarmm)
       enddo
 !
     endsubroutine rprint_particles_radius
 !***********************************************************************
     subroutine get_stbin(iStbin,fp,ip)
-      real, dimension (mpar_loc,mparray) :: fp
-      integer,intent(out) :: iStbin
-      integer,intent(in) :: ip
+      real, dimension(mpar_loc,mparray) :: fp
+      integer, intent(out) :: iStbin
+      integer, intent(in) :: ip
       integer :: k=0
       real :: api
-      k=1
-      api=fp(ip,iap)
-      if (lfixed_particles_radius) then 
-        do while((api .ge. ap0(k)).and.(k .le. ndustrad))
-          iStbin=k
-          k=k+1
+      k = 1
+      api = fp(ip,iap)
+      if (lfixed_particles_radius) then
+        do while((api  >=  ap0(k)).and.(k  <=  ndustrad))
+          iStbin = k
+          k = k+1
         enddo
       endif
     endsubroutine get_stbin
 !***********************************************************************
     subroutine get_mass_from_radius(mpi,fp,ip)
-      real, dimension (mpar_loc,mparray) :: fp
-      integer,intent(in) :: ip
-      real,intent(out) :: mpi
+      real, dimension(mpar_loc,mparray) :: fp
+      integer, intent(in) :: ip
+      real, intent(out) :: mpi
       real :: api
       api = fp(ip,iap)
-      mpi=(4./3.)*pi*rhopmat*(api**3)      
+      mpi = (4./3.)*pi*rhopmat*(api**3)
     endsubroutine get_mass_from_radius
 !***********************************************************************
 endmodule Particles_radius

@@ -30,7 +30,8 @@ module Viscosity
   integer, parameter :: nvisc_max=4
   character (len=labellen), dimension(nvisc_max) :: ivisc=''
   character (len=labellen) :: lambda_profile='uniform'
-  real :: nu=0.0, nu_tdep=0.0, nu_tdep_exponent=0.0, nu_tdep_t0=0.0
+  real :: nu=0.0
+  real :: nu_tdep=0.0, nu_tdep_exponent=0.0, nu_tdep_t0=0.0
   real :: zeta=0.0, nu_mol=0.0, nu_hyper2=0.0, nu_hyper3=0.0
   real :: nu_hyper3_mesh=5.0, nu_shock=0.0,nu_spitzer=0.0
   real :: nu_jump=1.0, xnu=1.0, xnu2=1.0, znu=1.0, widthnu=0.1, widthnu2=0.1
@@ -88,7 +89,6 @@ module Viscosity
   logical :: lvisc_hyper3_nu_const_aniso=.false.
   logical :: lvisc_hyper3_rho_nu_const_bulk=.false.
   logical :: lvisc_hyper3_nu_const=.false.
-  logical :: lvisc_smag=.false.
   logical :: lvisc_smag_simplified=.false.
   logical :: lvisc_smag_cross_simplified=.false.
   logical :: lnusmag_as_aux=.false.
@@ -134,6 +134,7 @@ module Viscosity
   integer :: idiag_nusmagm=0    ! DIAG_DOC: Mean value of Smagorinsky viscosity
   integer :: idiag_nusmagmin=0  ! DIAG_DOC: Min value of Smagorinsky viscosity
   integer :: idiag_nusmagmax=0  ! DIAG_DOC: Max value of Smagorinsky viscosity
+  integer :: idiag_nu_LES=0     ! DIAG_DOC: Mean value of Smagorinsky viscosity 
   integer :: idiag_visc_heatm=0 ! DIAG_DOC: Mean value of viscous heating
   integer :: idiag_qfviscm=0    ! DIAG_DOC: $\left<\qv\cdot
                                 ! DIAG_DOC: \fv_{\rm visc}\right>$
@@ -219,6 +220,27 @@ module Viscosity
         call farray_register_auxiliary('Flux_diff_heat',iFF_heat)
       endif
 !
+!  Register nusmag as auxilliary variable
+!
+      if (lnusmag_as_aux.and.any(ivisc=='smagorinsky')) then
+        call farray_register_auxiliary('nusmag',inusmag,communicated=.true.)
+        if (lroot) write(15,*) 'nusmag = fltarr(mx,my,mz)*one'
+        aux_var(aux_count)=',nusmag'
+        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
+        aux_count=aux_count+1
+      endif
+!
+!  Register an extra aux slot for dissipation rate if requested (so
+!  visc_heat is written to snapshots and can be easily analyzed later).
+!
+      if (lvisc_heat_as_aux) then
+        call farray_register_auxiliary('visc_heat',ivisc_heat)
+        if (lroot) write(15,*) 'visc_heat = fltarr(mx,my,mz)*one'
+        aux_var(aux_count)=',visc_heat'
+        if (naux+naux_com <  maux+maux_com) aux_var(aux_count)=trim(aux_var(aux_count))//' $'
+        aux_count=aux_count+1
+      endif
+!
     endsubroutine register_viscosity
 !***********************************************************************
     subroutine initialize_viscosity
@@ -226,7 +248,6 @@ module Viscosity
 !  20-nov-02/tony: coded
 !
       use EquationOfState, only: get_stratz
-      use FArrayManager, only: farray_register_auxiliary
       use Mpicomm, only: stop_it
       use SharedVariables, only: put_shared_variable,get_shared_variable
       use Sub, only: write_zprof, step
@@ -537,42 +558,7 @@ module Viscosity
                            nu_shock+(nu_shock*(nu_jump_shock-1.))*step(x(l1:l2),xnu_shock,-widthnu_shock))
       endif
 !
-!  Register an extra aux slot for dissipation rate if requested (so
-!  visc_heat is written sto snapshots and can be easily analyzed later).
-!    NB: We are doing this here, rather than in register_viscosity, as the
-!  register_XXX routines are called before read_{start,run}pars, so        !MR: this is no longer so!
-!  lvisc_heat_as_aux isn't known there. This implies that we need to
-!  append the ivisc_heat line to index.pro manually.
-!
-      if (lvisc_heat_as_aux) then
-        call farray_register_auxiliary('visc_heat',ivisc_heat)
-!
-        if (lroot) then
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'ivisc_heat=',ivisc_heat
-          close(3)
-          open(15,FILE=trim(datadir)//'/def_var.pro',position='append')
-          write(15,*) 'visc_heat = fltarr(mx,my,mz)*one'
-          close(15)
-        endif
-      endif
-!
-!  Register nusmag as auxilliary variable
-!
       lnusmag_as_aux = lnusmag_as_aux.and.lvisc_smag
-
-      if (lnusmag_as_aux) then
-        call farray_register_auxiliary('nusmag',inusmag)
-!
-        if (lroot) then
-          open(3,file=trim(datadir)//'/index.pro', POSITION='append')
-          write(3,*) 'inusmag=',inusmag
-          close(3)
-          open(15,FILE=trim(datadir)//'/def_var.pro',position='append')
-          write(15,*) 'nusmag = fltarr(mx,my,mz)*one'
-          close(15)
-        endif
-      endif
 !
 !  Shared variables.
 !
@@ -1064,6 +1050,8 @@ module Viscosity
       endif
       if (idiag_fviscmxy/=0 .or. idiag_fviscymxy/=0 .or. &
           idiag_fviscsmmxy/=0) then
+        lpenc_diagnos2d(i_nu_smag)=.true.
+        lpenc_diagnos2d(i_uu)=.true.
         lpenc_diagnos2d(i_rho)=.true.
         lpenc_diagnos2d(i_sij)=.true.
       endif
@@ -1852,7 +1840,7 @@ module Viscosity
             p%nu_smag=f(l1:l2,m,n,inusmag)
 !
 !  Compute gradient of p%nu_smag from f-array.
-!          
+!
             call grad(f,inusmag,gradnu)
 
           else  
@@ -1978,6 +1966,7 @@ module Viscosity
 !
       if (ldiagnos) then
         if (idiag_nusmagm/=0)   call sum_mn_name(p%nu_smag,idiag_nusmagm)
+        if (idiag_nu_LES/=0)    call sum_mn_name(p%nu_smag,idiag_nu_LES)
         if (idiag_nusmagmin/=0) call max_mn_name(-p%nu_smag,idiag_nusmagmin,lneg=.true.)
         if (idiag_nusmagmax/=0) call max_mn_name(p%nu_smag,idiag_nusmagmax)
         if (idiag_num/=0) call sum_mn_name(p%nu,idiag_num)
@@ -1993,11 +1982,13 @@ module Viscosity
 !
 !  19-dec-16/MR: fixed bug: m,n must be from Cdata. Added precalculation of nu_smag in f array.
 !                Rewritten viscous heating from slope-limited diffusion.  
-
+!  18-may-17/MR: corrected wrong order of loops for viscous heating by slope-limited diffusion.
+!
       use Sub, only: div, calc_all_diff_fluxes, grad, dot_mn, calc_sij2
       use General, only: reduce_grad_dim,notanumber
       use DensityMethods, only: getrho
       use SharedVariables, only: get_shared_variable
+      use Boundcond, only: update_ghosts
 
       real, dimension(mx,my,mz,mfarray) :: f
 
@@ -2008,38 +1999,34 @@ module Viscosity
 
       if (lnusmag_as_aux) then
 !
-        if (ldensity) then
-!
 !  Compute nu_smag and put into tmp
 !
-          call get_shared_variable('lshear_rateofstrain',lshear_rateofstrain,caller='viscosity_after_boundary')
+        call get_shared_variable('lshear_rateofstrain',lshear_rateofstrain,caller='viscosity_after_boundary')
 
-          do n=n1,n2; do m=m1,m2
+        do n=n1,n2; do m=m1,m2
 !
 ! sij2  ->  rho
 !
-            call calc_sij2(f,rho,lshear_rateofstrain)
-            tmp=(C_smag*dxmax)**2.*sqrt(2.*rho)
+          call calc_sij2(f,rho,lshear_rateofstrain)
+          tmp=(C_smag*dxmax)**2.*sqrt(2.*rho)
 !
 !  Enhance nu_smag in proportion to the Mach number to power 2*nu_smag_Ma2_power,
 !  see e.g. Chan & Sofia (1996), ApJ, 466, 372, for a similar approach
 !
-            !!if (lvisc_smag_Ma) tmp=tmp*(1.+p%Ma2**nu_smag_Ma2_power)
+          !!if (lvisc_smag_Ma) tmp=tmp*(1.+p%Ma2**nu_smag_Ma2_power)
 !
 !  Apply quenching term if requested
 !
-            if (gamma_smag/=0.) tmp=tmp/sqrt(1.+gamma_smag*rho)
+          if (gamma_smag/=0.) tmp=tmp/sqrt(1.+gamma_smag*rho)
 !
 !  Put nu_smag into the f-array.
 !          
-            f(l1:l2,m,n,inusmag)=tmp
-          
-          enddo; enddo
-
-        else
-          if (lfirstpoint) print*, 'viscosity_after_boundary: '// &
-              "ldensity better be .true. for ivisc='smagorinsky'"
-        endif
+          f(l1:l2,m,n,inusmag)=tmp
+!
+        enddo; enddo
+!
+        call update_ghosts(f,inusmag)
+!
       endif
 !
 !  Slope limited diffusion following Rempel (2014).
@@ -2050,12 +2037,14 @@ module Viscosity
       if (lvisc_slope_limited.and.lfirst) then
 !
         if (lviscosity_heat) f(:,:,:,iFF_heat)=0.
-
-        do j=1,3
-
-          call calc_all_diff_fluxes(f,iuu+j-1,islope_limiter,h_slope_limited)
 !
-          do n=n1,n2; do m=m1,m2
+        do j=1,3
+          call calc_all_diff_fluxes(f,iuu+j-1,islope_limiter,h_slope_limited)
+        enddo
+!
+        do n=n1,n2; do m=m1,m2
+!
+          do j=1,3
 !
 !  Divergence of flux = force.
 !
@@ -2064,25 +2053,24 @@ module Viscosity
 !  Heating term.
 !
             if (lviscosity_heat) then
-              
-              if (j==1) then                                            ! as rho and grad(rho) do not depend on j
-                call getrho(f(:,m,n,ilnrho),rho)
-                call grad(f,ilnrho,gr)                                  ! grad(rho) or grad(lnrho)
-                call reduce_grad_dim(gr)                                ! compactify the non-zero components in the first dimensionality elements of gr
+        
+              if (j==1) then                                     ! as rho does not depend on j
+                call grad(f,ilnrho,gr)                           ! grad(rho) or grad(lnrho)    ? reference state?
+                call reduce_grad_dim(gr)                         ! compactify the non-zero components in the first dimensionality elements of gr
+                if (ldensity_nolog) then
+                  call getrho(f(:,m,n,irho),rho)
+                  do k=1,dimensionality
+                    gr(:,k)=gr(:,k)/rho                          ! now grad(ln(rho))
+                  enddo
+                endif
               endif
 
-              call grad(f,iuu+j-1,guj)                                  ! grad(u_j)
-              call reduce_grad_dim(guj)                                 ! compactify the non-zero components in the first dimensionality elements of guj
+              call grad(f,iuu+j-1,guj)                           ! grad(u_j)
+              call reduce_grad_dim(guj)                          ! compactify the non-zero components in the first dimensionality elements of guj
 
-              if (ldensity_nolog) then
-                do k=1,dimensionality
-                  guj(:,k)=gr(:,k)*f(l1:l2,m,n,iuu+j-1)+rho*guj(:,k)    ! grad(rho)*u_j+rho*grad(u_j))=grad(rho*u_j)
-                enddo
-              else
-                do k=1,dimensionality
-                  guj(:,k)=rho*(gr(:,k)*f(l1:l2,m,n,iuu+j-1)+guj(:,k))  ! rho*(grad(ln(rho))*u_j+grad(u_j))=grad(rho*u_j)
-                enddo
-              endif
+              do k=1,dimensionality
+                guj(:,k)=gr(:,k)*f(l1:l2,m,n,iuu+j-1)+guj(:,k)   ! grad(ln(rho))*u_j+grad(u_j)=grad(rho*u_j)/rho
+              enddo
 
               call dot_mn(guj(:,1:dimensionality),f(l1:l2,m,n,iFF_diff1:iFF_diff2), &    ! loop inside has length dimensionality 
 ! \partial_k(rho*u_j) f_jk (summation over j by loop)
@@ -2090,8 +2078,8 @@ module Viscosity
               !!!f(l1:l2,m,n,iFF_heat)=min(f(l1:l2,m,n,iFF_heat),0.)                     ! no cooling admitted (Why?)
             endif
  
-          enddo; enddo
-        enddo
+          enddo
+        enddo; enddo
 !maxh=maxval(abs(f(l1:l2,m1:m2,n1:n2,iFF_heat)))
 !if (ldiagnos.and.maxh>1.) print*, 'heat:', iproc, maxh    !, minval(f(l1:l2,m1:m2,n1:n2,iFF_heat))
 !if (ldiagnos) print*, 'grhouj:', iproc, maxval(guj(:,1:dimensionality)), minval(guj(:,1:dimensionality))
@@ -2269,7 +2257,6 @@ module Viscosity
 !        endif
         if (idiag_dtnu/=0) &
             call max_mn_name(diffus_nu/cdtv,idiag_dtnu,l_dt=.true.)
-        if (idiag_nu_LES /= 0) call sum_mn_name(p%nu_smag,idiag_nu_LES)
         if (idiag_meshRemax/=0) call max_mn_name(sqrt(p%u2(:))*dxmax_pencil/p%diffus_total,idiag_meshRemax)
         if (idiag_Reshock/=0) then
           Reshock(:) = 0.
@@ -2528,5 +2515,14 @@ module Viscosity
           +costh(m)*dlomega_dtheta) + lomega*costh(m)*dlhor_dtheta
 !
     endsubroutine calc_lambda
+!***********************************************************************
+    subroutine push2c(p_par)
+
+    integer, parameter :: npars=1
+    integer(KIND=ikind8), dimension(npars) :: p_par
+
+    call copy_addr_c(nu,p_par(1))
+
+    endsubroutine push2c
 !***********************************************************************
 endmodule Viscosity

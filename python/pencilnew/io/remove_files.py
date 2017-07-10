@@ -1,7 +1,7 @@
 def remove_files(path, do_it=False, do_it_really=False):
     """ This method clears path COMPLETELY.
     Meaning, if you start this method my using path on your root dir
-    your whole computer is gone! So we implemented some safety mechanism.
+    your whole computer would be gone! So we implemented some safety mechanism.
 
     Args:
         path:                   path do clear
@@ -41,26 +41,9 @@ def remove_files(path, do_it=False, do_it_really=False):
     # Now I really remove files, or show what I would delete
     # This is super slow :(( Anyone an idea how to speed up?
     if os.path.exists(path):
-        if os.path.isdir(path):
-            if os.path.islink(path):
-                if do_it and do_it_really:
-                    os.unlink(path)
-                else:
-                    print('-> would unlink:\t'+relpath(path))
-            else:
-                for p in os.listdir(path):
-                    print('-> would remove:\t'+p+'\nin '+relpath(path))
-                    remove(p)
+        if do_it and do_it_really:
+            os.system('rm -rf '+path)
         else:
-            if os.path.islink(path):
-                if do_it and do_it_really:
-                    os.unlink(path)
-                else:
-                    print('-> would unlink:\t'+relpath(path))
-            else:
-                if do_it and do_it_really:
-                    os.remove(path)
-                else:
-                    print('-> would remove:\t'+relpath(path))
+            print('?? WARNING: Would remove: '+path)
 
     return True

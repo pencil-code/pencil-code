@@ -13,6 +13,7 @@ from . import derivatives
 from .is_int import *
 from .is_float import *
 from .is_number import *
+from .is_iterable import *
 
 # sorting
 from .natural_sort import natural_sort

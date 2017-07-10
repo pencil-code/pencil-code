@@ -4,7 +4,7 @@
 !  simulations. First run 1D simulation using identical z grid with 
 !  initial_condition/ths1D_equilibrium_ism.f90.
 !  This module will load the converged 1D profiles derived and saved to
-!  init_ism.dat.
+!  init_ism.dat (now init_ism.in).
 !
 !   Description                               | Relevant function call
 !  ------------------------------------------------------------------------

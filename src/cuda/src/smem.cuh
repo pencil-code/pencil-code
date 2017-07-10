@@ -1,14 +1,11 @@
-
-
 #pragma once
-#include "defines.h"
+#include "defines_dims_PC.h"
 
 //-----------------------------------------------
 //-----Defines for rungekutta2N_cuda-------------
 //-----------------------------------------------
 #define RK_ELEMS_PER_THREAD_FIRST 128 //Number of elements evaluated by one thread in _first_half
 #define RK_ELEMS_PER_THREAD_SECOND 1 //Number of elements evaluated by one thread in _second_half
-
 
 //Dimensions of the thread block used in rungekutta2N_cuda
 #define RK_THREADS_X 32 //Returns incorrect results with higher than 32, bugged somewhere
@@ -21,7 +18,6 @@
 #define ytraversing 1
 
 #define SHARED_SIZE_ROW (ytraversing*RK_THREADS_Y + 2*BOUND_SIZE)
-
 
 #define SHARED_SIZE_COL (RK_THREADS_X + 2*BOUND_SIZE)//Columns
 

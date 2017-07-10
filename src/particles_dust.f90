@@ -12,7 +12,7 @@
 ! CPARAM logical, parameter :: lparticles=.true.
 !
 ! PENCILS PROVIDED np; rhop; vol; peh
-! PENCILS PROVIDED np_rad(ndustrad); npvz(ndustrad); npvz2(ndustrad); 
+! PENCILS PROVIDED np_rad(ndustrad); npvz(ndustrad); npvz2(ndustrad);
 ! PENCILS PROVIDED npuz(ndustrad); sherwood
 ! PENCILS PROVIDED epsp; grhop(3)
 ! PENCILS PROVIDED tausupersat
@@ -704,11 +704,11 @@ module Particles
 !  vorticity oo)
 !
       uu: if (lnostore_uu) then
-        if (ldraglaw_steadystate .or. lparticles_spin) &
+        if (ldraglaw_steadystate .or. lparticles_spin .or. lsolid_ogrid) &
             call fatal_error('initialize_particles', 'lnostore_uu = .false. is required. ')
         interp%luu = .false.
       else uu
-        interp%luu = ldragforce_dust_par .or. ldraglaw_steadystate .or. lparticles_spin
+        interp%luu = ldragforce_dust_par .or. ldraglaw_steadystate .or. lparticles_spin .or. lsolid_ogrid
       endif uu
       interp%loo=.false.
       interp%lTT=(lbrownian_forces.and.(brownian_T0==0.0))&
@@ -856,7 +856,8 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_global, cs20
+      use Density, only: beta_glnrho_global
+      use EquationOfState, only: cs20
       use General, only: random_number_wrapper, normal_deviate
       use Mpicomm, only: mpireduce_sum, mpibcast_real
       use InitialCondition, only: initial_condition_xxp, initial_condition_vvp
@@ -1542,7 +1543,7 @@ module Particles
               if (lfirst_proc_z) fp(k,izp)=-abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
               if (llast_proc_z) fp(k,izp)=abs(zp0*sqrt(-2*alog(r))*cos(2*pi*p))
             else
-              fp(k,izp)= zp0*sqrt(-2*alog(r))*cos(2*pi*p)
+              fp(k,izp)= zp0*sqrt(-2*alog(r))*cos(2*pi*p)   ! generates a random gaussion number*zp0
             endif
           enddo
 !
@@ -2246,7 +2247,7 @@ module Particles
       endif
 !
       if (lbirthring_depletion) then
-        if (lcartesian_coords) then    
+        if (lcartesian_coords) then
          rr_tmp(1:npar_loc) = sqrt(fp(1:npar_loc,ixp)**2.0+fp(1:npar_loc,iyp)**2.0)
         else
          rr_tmp(1:npar_loc) = fp(1:npar_loc,ixp)
@@ -2273,7 +2274,8 @@ module Particles
 !
 !  14-apr-06/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_global, cs0
+      use EquationOfState, only: cs0
+      use Density, only: beta_glnrho_global
 !
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2381,7 +2383,7 @@ module Particles
 !
 !  30-jan-06/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_global
+      use Density, only: beta_glnrho_global
       use General, only: random_number_wrapper
       use Particles_mpicomm
 !
@@ -2490,7 +2492,8 @@ module Particles
 !
 !  14-sep-05/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_scaled, gamma, cs20
+      use Density, only: beta_glnrho_scaled
+      use EquationOfState, only: gamma, cs20
       use General, only: random_number_wrapper
 !
       real, dimension (mpar_loc,mparray) :: fp
@@ -3595,7 +3598,7 @@ module Particles
       integer :: k, l, ix0, iy0, iz0, ierr, irad
       integer :: ixx, iyy, izz, ixx0, iyy0, izz0, ixx1, iyy1, izz1
       integer, dimension (3) :: inear
-      logical :: lsink
+      logical :: lsink, lvapour
       real, pointer :: pscalar_diff, ap0(:)
       real :: Sherwood, mass_trans_coeff, lambda_tilde
       real :: dthetadt, mp_vcell
@@ -3719,13 +3722,38 @@ module Particles
 !
           do k=k1_imn(imn),k2_imn(imn)
 !
-!  Exclude sink particles from the drag.
+!  Vapour particles acquire same speed as the gas.
 !
-            lsink =.false.
+            lvapour=.false.
+            if (lparticles_radius) then
+              if (fp(k,iap)==0.0) then
+                lvapour=.true.
+                inear = ineargrid(k,:)
+                xxp = fp(k,ixp:izp)
+                if (lparticlemesh_cic) then
+                  call interpolate_linear(f,iux,iuz,xxp,uup,inear,0,ipar(k))
+                elseif (lparticlemesh_tsc) then
+                  if (linterpolate_spline) then
+                    call interpolate_quadratic_spline(f,iux,iuz,xxp,uup,inear,0,ipar(k))
+                  else
+                    call interpolate_quadratic(f,iux,iuz,xxp,uup,inear,0,ipar(k))
+                  endif
+                else
+                  uup=f(ix0,iy0,iz0,iux:iuz)
+                endif
+                fp(k,ivpx:ivpz)=uup
+                dfp(k,ivpx:ivpz)=0.0
+              endif
+            endif
+!
+!  Exclude sink and vapour particles from the drag.
+!
+            lsink=.false.
             if (lparticles_sink) then
               if (fp(k,iaps)>0.0) lsink=.true.
             endif
-            if (.not. lsink) then
+!
+            if (.not. lsink .and. .not. lvapour) then
               ix0=ineargrid(k,1)
               iy0=ineargrid(k,2)
               iz0=ineargrid(k,3)
@@ -4359,10 +4387,10 @@ module Particles
 !  Particle growth by condensation in a active scalar field,
 !  calculate relaxation time.
 !  14-June-16/Xiang-Yu: coded
-      
+
               if (lsupersat) then
                  inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)
-                 if (supersat_ngp) then 
+                 if (supersat_ngp) then
                    l=ineargrid(k,1)
                    !call find_grid_volume(ix0,iy0,iz0,volume_cell)
                    !inversetau=4.*pi*rhopmat*A3*A2*fp(k,iap)*fp(k,inpswarm)/volume_cell

@@ -82,19 +82,9 @@ module EquationOfState
   logical :: lcp_as_aux=.false., lcv_as_aux=.false., lgamma_as_aux=.false.
   logical :: lnabad_as_aux=.false., ldelta_as_aux=.false.
   real :: gamma=5./3., gamma_m1=impossible, gamma1=impossible
-  real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=impossible, cs2top=impossible
-  real :: cs2cool=impossible
-  real :: mpoly=impossible, mpoly0=impossible
-  real :: mpoly1=impossible, mpoly2=impossible
-  integer :: isothtop=0
-  real, dimension (3) :: beta_glnrho_global=impossible
-  real, dimension (3) :: beta_glnrho_scaled=impossible
 ! Allocatable 3D-array for cp
   real, dimension (:,:,:), allocatable :: cp_full
-!
-  character (len=labellen) :: ieos_profile='nothing'
-  real, dimension(mz) :: profz_eos=1.,dprofz_eos=0.
 !
   real, dimension(nchemspec,18) :: species_constants
   real, dimension(nchemspec,7)     :: tran_data
@@ -2381,5 +2371,14 @@ module EquationOfState
       if (present(eth0z)) call keep_compiler_quiet(eth0z)
 !
     endsubroutine get_stratz
+!***********************************************************************
+    subroutine push2c(p_par)
+
+    integer, parameter :: npars=1
+    integer(KIND=ikind8), dimension(npars) :: p_par
+
+    call copy_addr_c(cs20,p_par(1))
+
+    endsubroutine push2c
 !***********************************************************************
 endmodule EquationOfState

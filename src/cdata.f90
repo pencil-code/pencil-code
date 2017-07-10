@@ -52,17 +52,22 @@ module Cdata
   logical :: luse_latitude=.false., luse_oldgrid=.true., luse_xyz1=.false.
   logical :: lcylindrical_gravity=.false.
   logical :: luniform_z_mesh_aspect_ratio=.false.
+!
+!  Yin-Yang grid.
+!
   logical :: lyinyang=.false., lyang=.false.
   character(LEN=labellen) :: cyinyang_intpol_type='bilinear'
   integer :: iyinyang_intpol_type=BILIN
   integer :: nzgrid_eff=nzgrid
+  real, dimension(4) :: yy_biquad_weights=impossible
+!
   real :: drcyl,dsurfxy,dsurfyz,dsurfzx
   real, dimension (nx) :: r_mn,r1_mn,r2_mn,r2_weight
   real, dimension (my) :: sinth,sin1th,sin2th,costh,cotth,sinth_weight
   real, dimension (mz) :: sinph,cosph 
   real, dimension (my) :: cos1th,tanth
   real, dimension (nygrid) :: sinth_weight_across_proc
-  real, dimension (nx) :: rcyl_mn,rcyl_mn1,rcyl_mn2,rcyl_weight
+  real, dimension (nx) :: rcyl_mn=1.,rcyl_mn1=1.,rcyl_mn2=1.,rcyl_weight
   real, dimension (nx) :: glnCrossSec
   real, dimension (nx,3) :: dline_1
   real, dimension (nrcyl) :: rcyl  ! used for phi-averages
@@ -146,10 +151,11 @@ module Cdata
 !
 !  Input/output of data.
 !
-  character (len=fnlen) :: datadir='data'
-  character (len=fnlen) :: directory='',datadir_snap=''
+  character (len=fnlen) :: datadir='data', datadir_prestart='data_prestart'
+  character (len=fnlen) :: directory='', datadir_snap='', directory_prestart=''
   character (len=fnlen) :: directory_snap='',directory_dist='',directory_collect=''
   character (len=fnlen) :: modify_filename='modify.dat'
+  logical :: lsnap=.false., lsnap_down=.false., lspec=.false.
   real :: dsnap=100.,dsnap_down=0.,d2davg=100.,dvid=0.,dspec=impossible, dsound=0., tsound=0., soundeps=1.e-4
   real :: dtracers=0., dfixed_points=0.
   real :: crash_file_dtmin_factor=-1.0
@@ -174,6 +180,10 @@ module Cdata
   logical :: lread_from_other_prec=.false.       ! works so far only with io_dist!
   integer, dimension(3) :: downsampl=1, firstind=1, ndown=0, startind=1
   logical :: ldownsampl=.false., ldownsampling
+!
+! Debugging
+!
+  integer :: ip=14
 !
 !  Units (need to be in double precision).
 !
@@ -241,6 +251,7 @@ module Cdata
   logical :: lglobal=.false., lglobal_nolog_density=.false.
   logical :: lvisc_hyper=.false.,lvisc_LES=.false.
   logical :: lvisc_smagorinsky=.false.
+  logical :: lvisc_smag=.false.
   logical :: lslope_limit_diff=.false.
   logical :: leos_temperature_ionization=.false.
   logical :: ltemperature_nolog=.false.
@@ -279,6 +290,7 @@ module Cdata
   integer :: iaa=0,iax=0,iay=0,iaz=0
   integer :: ispx=0,ispy=0,ispz=0
   integer :: ifcr=0,ifcrx=0,ifcry=0,ifcrz=0
+  integer :: ihhL=0,ihhT=0,iggL=0,iggT=0
   integer :: iaatest=0,iaztestpq=0,iaxtest=0,iaytest=0,iaztest=0
   integer :: iuutest=0,iuztestpq=0,ihhtestpq=0
   integer :: iqx=0,iqy=0,iqz=0,iqq=0
@@ -461,7 +473,6 @@ module Cdata
   integer :: idiag_Rmesh=0      ! DIAG_DOC: $R_{\rm mesh}$
   integer :: idiag_Rmesh3=0     ! DIAG_DOC: $R_{\rm mesh}^{(3)}$
   integer :: idiag_maxadvec=0   ! DIAG_DOC: maxadvec
-  integer :: idiag_nu_LES=0     ! DIAG_DOC:
 !
 !  Emergency brake:
 !   When toggled the code will stop at the next convenient point
@@ -496,7 +507,7 @@ module Cdata
   logical :: sp_spec=.false.
   logical :: lr_spec=.false., r2u_spec=.false., r3u_spec=.false.
   logical :: ou_spec=.false., ab_spec=.false., azbz_spec=.false.
-  logical :: ub_spec=.false., Lor_spec=.false.
+  logical :: ub_spec=.false., Lor_spec=.false., GWs_spec=.false.
   logical :: har_spec=.false.,hav_spec=.false.
   logical :: oned=.false.,twod=.false.
   logical :: ab_phispec=.false.,ou_phispec=.false.

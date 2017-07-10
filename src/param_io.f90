@@ -82,7 +82,7 @@ module Param_IO
       coord_system, lpole, lfix_unit_std, &
       lequidist, coeff_grid, zeta_grid0, grid_func, xyz_star, lwrite_ic, lwrite_avg1d_binary, &
       lnowrite, luniform_z_mesh_aspect_ratio, unit_system, unit_length, &
-      lmodify,modify_filename, &
+      lmodify,modify_filename, dvid, &
       unit_velocity, unit_density, unit_temperature, unit_magnetic, c_light, &
       G_Newton, hbar, random_gen, seed0, nfilter, lserial_io, der2_type, &
       lread_oldsnap, lread_oldsnap_nomag, lread_oldsnap_nopscalar, &
@@ -105,7 +105,7 @@ module Param_IO
       lforce_shear_bc,lread_from_other_prec, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w,&
       lcorotational_frame, rcorot, lproper_averages, &
-      ldirect_access, ltolerate_namelist_errors, lyinyang, cyinyang_intpol_type
+      ldirect_access, ltolerate_namelist_errors, lyinyang, cyinyang_intpol_type, yy_biquad_weights
 !
   namelist /run_pars/ &
       cvsid, ip, xyz0, xyz1, Lxyz, lperi, lshift_origin, lshift_origin_lower, coord_system, &
@@ -116,12 +116,14 @@ module Param_IO
       unit_velocity, unit_density, unit_temperature, unit_magnetic, &
       awig, ialive, max_walltime, dtmax, ldt_paronly, vel_spec, mag_spec, &
       uxy_spec, bxy_spec, jxbxy_spec, xy_spec, oo_spec, &
-      uxj_spec, vec_spec, ou_spec, ab_spec, azbz_spec, ub_spec, Lor_spec, &
+      uxj_spec, vec_spec, ou_spec, ab_spec, azbz_spec, ub_spec, &
+      Lor_spec, GWs_spec, &
       vel_phispec, mag_phispec, &
       uxj_phispec, vec_phispec, ou_phispec, ab_phispec, EP_spec, ro_spec, &
       TT_spec, ss_spec, cc_spec, cr_spec, sp_spec, isaveglobal, lr_spec, r2u_spec, &
       r3u_spec, rhocc_pdf, cc_pdf, lncc_pdf, gcc_pdf, lngcc_pdf, kinflow, &
-      lkinflow_as_aux, ampl_kinflow_x, ampl_kinflow_y, ampl_kinflow_z, &
+      ladv_der_as_aux, lkinflow_as_aux, &
+      ampl_kinflow_x, ampl_kinflow_y, ampl_kinflow_z, &
       kx_kinflow, ky_kinflow, kz_kinflow, dtphase_kinflow, &
       random_gen, der2_type, lrmwig_rho, lrmwig_full, lrmwig_xyaverage, &
       lnowrite, noghost_for_isave, nghost_read_fewer, &
@@ -165,7 +167,7 @@ module Param_IO
       lsubstract_reference_state, &
       ldirect_access, lproper_averages, lmaximal_cdt, lmaximal_cdtv, &
       pipe_func, glnCrossSec0, CrossSec_x1, CrossSec_x2, CrossSec_w, &
-      cyinyang_intpol_type
+      cyinyang_intpol_type, yy_biquad_weights
 !
   namelist /IO_pars/ &
       lcollective_IO, IO_strategy
@@ -1045,7 +1047,7 @@ module Param_IO
        do i=1,npencils
          if (lpenc_video(i)) write(unit,*) i, pencil_names(i)
        enddo
-       print*, 'write_pencil_info: pencil information written to the file pencils.list'
+       if (ip<14) call information('write_pencil_info','pencil information written to the file pencils.list')
        close(unit)
      endif
 !

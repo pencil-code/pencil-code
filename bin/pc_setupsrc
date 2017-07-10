@@ -400,6 +400,50 @@ link_initial_condition_files()
   fi
 }
 #
+make_cuda_dir()
+{
+## src subdirectory
+  [ -h $src/cuda ] && rm $src/cuda
+  if [ ! -d $src/cuda ]; then
+    echo "No cuda directory found: creating new one (`pwd`/src/cuda)."
+    mkdir $src/cuda
+    #mkdir $src/cuda/verification
+  fi
+}
+#
+link_cuda_files()
+{
+#
+#  LINK all *.* to local src directory
+#
+  echo "Linking files in '$src/cuda'."
+  old_dir="`pwd`"
+  cd $src/cuda
+  n=0
+  to_link=
+  for file in $srcdir/cuda/src/*.cu $srcdir/cuda/src/*.cuh $srcdir/cuda/src/*.cpp $srcdir/cuda/src/*.h $srcdir/cuda/src/makefile $srcdir/cuda/src/makefile.* $srcdir/cuda/src/*.conf
+  do
+    if [ -f $file ] || [ -d $file ]; then
+      if [ -h "`basename $file`" ]; then
+        rm -f "`basename $file`"
+        to_link="$to_link $file"
+        #ln -s $file .
+      elif [ -f "`basename $file`" ] \
+        || [ -d "`basename $file`" ]; then
+        n="`expr $n + 1`"
+        existf="$existf`basename $file` "
+      else
+        to_link="$to_link $file"
+        #ln -s $file .
+      fi
+    else
+      echo "No such file: $file"
+    fi
+  done
+  [ "$to_link" ] && ln -s $to_link .
+  cd $old_dir
+}
+#
 create_Makefile_inc()
 {
 #
@@ -549,6 +593,8 @@ make_experimental_dir
 link_experimental_files
 make_initial_condition_dir
 link_initial_condition_files
+make_cuda_dir
+link_cuda_files
 create_Makefile_inc
 #copy_local_files
 print_status

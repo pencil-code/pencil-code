@@ -53,6 +53,7 @@ module Testfield
   real :: chiraltest=0.
   logical :: ltestfield_newz=.true.
   logical :: llorentzforce_testfield=.false.
+  logical :: ltest_uxb=.false.,ltest_jxb=.false.
 
   !!!! new input pars
   namelist /testfield_run_pars/ &
@@ -64,6 +65,7 @@ module Testfield
        ltestfield_taver,llorentzforce_testfield, &
        ltestfield_profile_eta_z, &
        luxb_as_aux,ljxb_as_aux,lignore_uxbtestm, &
+       ltest_uxb,ltest_jxb, &
        lforcing_cont_aatest,ampl_fcont_aatest, &
        daainit,linit_aatest,bamp, &
        rescale_aatest,tau_aatest, &  
@@ -481,9 +483,7 @@ module Testfield
 !
       integer :: jtest, j, iuxtest, iuztest
       integer :: i1=1, i2=2, i3=3, i4=4, i5=5, iaxtest2, iaztest2
-
-      logical,save :: ltest_uxb=.false.,ltest_jxb=.false.
-      integer      :: iswitch_iter=0, nl
+      integer :: iswitch_iter=0, nl
 !
 !  identify module and boundary conditions
 !
@@ -610,7 +610,7 @@ module Testfield
 !
         if (.not.lsoca) then
 !
-          if (iuxb/=0.and..not.ltest_uxb) then
+          if ((iuxb/=0.and..not.ltest_uxb).and.chiraltest==0.) then
             uxb=f(l1:l2,m,n,iuxb+3*(jtest-1):iuxb+3*jtest-1)
           else
             call calc_uxb(f,p,iaxtest,uxb,bbtest)

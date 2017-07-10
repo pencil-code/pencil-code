@@ -49,7 +49,6 @@ module Snapshot
       real, save :: tsnap
       integer, save :: nsnap
       logical, save :: lfirst_call=.true.
-      logical :: lsnap
       character (len=fnlen) :: file
       character (len=intlen) :: ch
 
@@ -70,8 +69,8 @@ module Snapshot
 !  Check whether we want to output snapshot. If so, then
 !  update ghost zones for var.dat (cheap, since done infrequently).
 !
-      call update_snaptime(file,tsnap,nsnap,dsnap_down,t,lsnap,ch)
-      if (lsnap) then
+      call update_snaptime(file,tsnap,nsnap,dsnap_down,t,lsnap_down,ch)
+      if (lsnap_down) then
 !
         if (maux_down>0) call update_auxiliaries(a)
 !
@@ -204,6 +203,7 @@ module Snapshot
 !
         if (present(flist)) call log_filename_to_file(file,flist)
 !
+        lsnap_down=.false.
       endif
 !
     endsubroutine wsnap_down
@@ -238,7 +238,7 @@ module Snapshot
       real, save :: tsnap
       integer, save :: nsnap
       logical, save :: lfirst_call=.true.
-      logical :: enum_, lsnap
+      logical :: enum_
       character (len=fnlen) :: file
       character (len=intlen) :: ch
 !
@@ -275,6 +275,7 @@ module Snapshot
           call output_snap_finalize()
           if (ip<=10.and.lroot) print*,'wsnap: written snapshot ',file
           if (present(flist)) call log_filename_to_file(file,flist)
+          lsnap=.false.
         endif
 !
       else
@@ -458,7 +459,7 @@ module Snapshot
 !
       real, dimension (:,:,:), allocatable :: b_vec
       character (len=fnlen) :: file
-      logical :: lspec,llwrite_only=.false.,ldo_all
+      logical :: llwrite_only=.false.,ldo_all
       integer, save :: nspec
       logical, save :: lfirst_call=.true.
       real, save :: tspec
@@ -507,6 +508,7 @@ module Snapshot
         if (j_spec)   call power_vec(f,'j')
 !         if (jb_spec)   call powerhel(f,'jb')
         if (Lor_spec) call powerLor(f,'Lor')
+        if (GWs_spec) call powerGWs(f,'GWs')
         if (uxj_spec) call powerhel(f,'uxj')
         if (ou_spec)  call powerhel(f,'kin')
         if (ab_spec)  call powerhel(f,'mag')
@@ -614,6 +616,7 @@ module Snapshot
         if (gcc_pdf)   call pdf(f,'gcc'  ,0.    ,sqrt(gcc2m))
         if (lngcc_pdf) call pdf(f,'lngcc',0.    ,sqrt(gcc2m))
 !
+        lspec=.false.
       endif
 !
       deallocate(b_vec)

@@ -1,0 +1,4 @@
+sed -f scripts/cdata.sed cdata.f90 > cdata_c.h
+sed -e's/MPRE/'$MODULE_PREFIX'/' -e's/MINF/'$MODULE_INFIX'/' -e's/MSUF/'$MODULE_SUFFIX'/' tmp > defines_cdata.h
+rm -f tmp
+

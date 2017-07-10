@@ -38,6 +38,7 @@ module Particles_number
   integer :: idiag_dtfragp=0, idiag_npsm=0
   integer, parameter :: mmom=24
   integer, dimension(0:mmom) :: idiag_admom=0
+	logical :: llog10_for_admom_above10=.true.
 !
   namelist /particles_number_init_pars/ &
       initnpswarm, np_swarm0, rhop_swarm0, vthresh_coagulation, &
@@ -47,7 +48,7 @@ module Particles_number
       initnpswarm, vthresh_coagulation, deltavp22_floor, &
       lfragmentation_par, tstart_fragmentation_par, cdtpf, &
       lbirthring_depletion, birthring_inner, birthring_outer, &
-      depletion_rate
+      depletion_rate, llog10_for_admom_above10
 !
   contains
 !***********************************************************************
@@ -381,11 +382,15 @@ module Particles_number
       endif
 
       if (ldiagnos) then
-           do k=0,mmom
-              if(idiag_admom(k)/=0) then 
-                call sum_par_name(fp(1:npar_loc,inpswarm)*fp(1:npar_loc,iap)**k*npar/nwgrid,idiag_admom(k))
-              endif
-           enddo
+        do k=0,mmom
+          if(idiag_admom(k)/=0) then
+            if (llog10_for_admom_above10 .and. k>=24) then
+              call sum_par_name(fp(1:npar_loc,inpswarm)*fp(1:npar_loc,iap)**k*npar/nwgrid,idiag_admom(k),llog10=.true.)
+            else
+              call sum_par_name(fp(1:npar_loc,inpswarm)*fp(1:npar_loc,iap)**k*npar/nwgrid,idiag_admom(k))
+            endif
+          endif
+        enddo
       endif
 !
       call keep_compiler_quiet(f,df)

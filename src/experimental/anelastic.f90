@@ -54,11 +54,13 @@ module Density
   real, dimension(3) :: diffrho_hyper3_aniso=0.
   real, dimension(mz) :: lnrho_init_z=0.0,del2lnrho_init_z=0.0
   real, dimension(mz) :: dlnrhodz_init_z=0.0, glnrho2_init_z=0.0
+  real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
   real, target :: plaw=0.0
   real :: lnrho_z_shift=0.0
   real, dimension (nz,3) :: glnrhomz
   real :: powerlr=3.0, zoverh=1.5, hoverr=0.05
   real :: init_average_density
+  real, target :: mpoly=impossible
   integer, parameter :: ndiff_max=4
   logical :: lcontinuity_gas=.true.
   logical :: lupw_lnrho=.false.,lupw_rho=.false.
@@ -72,7 +74,6 @@ module Density
   logical :: lcheck_negative_density=.false.
   logical :: lcalc_glnrhomean=.false.
   logical, pointer :: lanelastic_lin
-
 !
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss'
@@ -100,12 +101,14 @@ module Density
       cdiffrho,diffrho,diffrho_hyper3,diffrho_shock,                &
       cs2bot,cs2top,lupw_lnrho,lupw_rho,idiff,                      &
       lnrho_int,lnrho_ext,damplnrho_int,damplnrho_ext,              &
-      wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,                      &
+      wdamp,lfreeze_lnrhoint,lfreeze_lnrhoext,beta_glnrho_global,   &
       lnrho_const,plaw,lcontinuity_gas,                             &
       diffrho_hyper3_aniso,lfreeze_lnrhosqu,density_floor,          &
       lanti_shockdiffusion,lrho_as_aux,ldiffusion_nolog,            &
       lcheck_negative_density,lmassdiff_fix,niter
+!
 ! diagnostic variables (need to be consistent with reset list below)
+!
   integer :: idiag_rhom=0       ! DIAG_DOC: $\left<\varrho\right>$
                                 ! DIAG_DOC:   \quad(mean density)
   integer :: idiag_rho2m=0      ! DIAG_DOC:
@@ -175,9 +178,7 @@ module Density
       integer :: i,ierr
       logical :: lnothing
 !
-      call get_shared_variable('lanelastic_lin',lanelastic_lin,ierr)
-      if (ierr/=0) call stop_it("lanelastic_lin: "//&
-        "there was a problem when sharing lanelastic_lin")
+      call get_shared_variable('lanelastic_lin',lanelastic_lin,caller='initialize_density')
 !
       if (lanelastic_lin) then
         call farray_register_auxiliary('rho_b',irho_b,communicated=.true.)
@@ -248,6 +249,7 @@ module Density
          call farray_register_global('gg',iglobal_gg,vector=3)
       endif
 
+      call put_shared_variable('mpoly',mpoly)
       call initialize_density_methods
 !
     endsubroutine initialize_density

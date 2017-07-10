@@ -35,8 +35,6 @@ module EquationOfState
   integer, parameter :: irho_TT=10, ipp_ss=11, ipp_cs2=12
   integer, parameter :: irho_eth=13, ilnrho_eth=14
   integer :: iglobal_cs2, iglobal_glnTT, ics
-  real, dimension(mz) :: profz_eos=1.0, dprofz_eos=0.0
-  real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
   real, dimension(nchemspec,18) :: species_constants
   real, dimension(nchemspec,7) :: tran_data
   real, dimension(nchemspec) :: Lewis_coef, Lewis_coef1
@@ -52,16 +50,12 @@ module EquationOfState
   real :: gamma1   !(=1/gamma)
   real :: cpdry=impossible, cpdry1=impossible
   real :: cvdry=impossible, cvdry1=impossible
-  real :: cs2top_ini=impossible, dcs2top_ini=impossible
-  real :: cs2bot=1.0, cs2top=1.0, cs2cool=0.0
-  real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
-  integer :: isothtop=0
+  real :: cs2bot=1.0, cs2top=1.0
   integer :: imass=1
   integer :: ieosvars=-1, ieosvar1=-1, ieosvar2=-1, ieosvar_count=0
   logical :: leos_isothermal=.false., leos_isentropic=.false.
   logical :: leos_isochoric=.false., leos_isobaric=.false.
   logical :: leos_localisothermal=.false.
-  character (len=labellen) :: ieos_profile='nothing'
 !
 !  Input parameters.
 !

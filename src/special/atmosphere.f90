@@ -829,7 +829,6 @@ module Special
       enddo
       endif
 !
-
      if (lACTOS) then
        call dustspec_normalization_(f)
      endif

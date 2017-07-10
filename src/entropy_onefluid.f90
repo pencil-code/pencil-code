@@ -25,7 +25,8 @@ module Energy
   use Cparam
   use Cdata
   use General, only: keep_compiler_quiet
-  use EquationOfState, only: gamma, gamma_m1, cs20, beta_glnrho_global
+  use EquationOfState, only: gamma, gamma_m1, cs20
+  use Density, only: beta_glnrho_global
   use Interstellar
   use Messages
   use Viscosity
@@ -175,9 +176,8 @@ module Energy
       use General, only: itoa
       use Initcond
       use InitialCondition, only: initial_condition_ss
-      use EquationOfState,  only: mpoly, isothtop, &
-                                rho0, lnrho0, isothermal_entropy, &
-                                isothermal_lnrho_ss, eoscalc, ilnrho_pp
+      use EquationOfState,  only: rho0, lnrho0, isothermal_entropy, &
+                                  isothermal_lnrho_ss, eoscalc, ilnrho_pp
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !
@@ -229,7 +229,7 @@ module Energy
 !
 !  20-11-04/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_scaled
+      use Density, only: beta_glnrho_scaled
 !
       if (ldt) lpenc_requested(i_cs2)=.true.
       if (lpressuregradient_gas) then
@@ -403,7 +403,7 @@ module Energy
 !
 !      use Conductivity, only: heat_conductivity
       use Diagnostics
-      use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
+      use Density, only: beta_glnrho_global, beta_glnrho_scaled
       use Special, only: special_calc_energy
       use Sub
 !

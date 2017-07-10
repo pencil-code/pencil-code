@@ -22,8 +22,8 @@ Very first version of code written.
 
 cudaError_t checkErr(cudaError_t result) {
   if (result != cudaSuccess) {
-    fprintf(stderr, "CUDA Runtime Error: %s \n", 
-            cudaGetErrorString(result));
+    fprintf(stderr, "CUDA Runtime Error: %s %d\n", 
+            cudaGetErrorString(result), result);
     assert(result == cudaSuccess);
   }
   return result;

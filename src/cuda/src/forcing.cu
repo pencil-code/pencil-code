@@ -2,7 +2,8 @@
 #include <cstdio>
 
 #include "forcing.cuh"
-#include "dconstsextern.cuh"
+#define EXTERN extern
+#include "dconsts.cuh"
 
 __device__ void forcing_simple(float* fx, float* fy, float* fz, float grid_idx_x, float grid_idx_y, float grid_idx_z)
 {

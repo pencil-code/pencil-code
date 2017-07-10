@@ -1,0 +1,5 @@
+rm -f eos_c.h
+echo '#pragma once' > eos_c.h
+echo '#include "headers_c.h"' >> eos_c.h
+echo 'extern "C" void *'$MODULE_PREFIX'equationofstate'$MODULE_INFIX'push2c(float *(&p_pars)[1]);'$MODULE_SUFFIX >> eos_c.h
+

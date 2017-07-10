@@ -34,18 +34,19 @@ module Density
 !
   implicit none
 !
-  logical :: lcalc_glnrhomean=.false.,lupw_lnrho=.false., &
+  logical :: lcalc_lnrhomean=.false.,lcalc_glnrhomean=.false.,lupw_lnrho=.false., &
              lremove_mean_temperature=.false.
 !
   logical :: lwrite_debug=.false.
 !
-  real, dimension (nz,3) :: glnrhomz
+  real, dimension (nz) :: lnrhomz,glnrhomz
   real :: dx_2, dz_2
   real, pointer :: chi
 !
   include '../density.h'
 !
   integer :: iorder_z=4
+  real, dimension(3) :: beta_glnrho_global=0.0, beta_glnrho_scaled=0.0
 !
   namelist /density_run_pars/ iorder_z, lwrite_debug, lremove_mean_temperature
 !
@@ -183,7 +184,7 @@ module Density
 !
       logical, dimension(npencils) :: lpencil_in
 !
-      call keep_compiler_quiet(lpencil_in)
+      if (lpencil_in(i_ekin)) lpencil_in(i_u2)=.true.
 !
     endsubroutine pencil_interdep_density
 !***********************************************************************
@@ -224,7 +225,7 @@ module Density
 ! uij5glnrho
       if (lpencil(i_uij5glnrho)) p%uij5glnrho=0.0
 ! ekin
-      if (lpencil(i_ekin)) p%ekin=0.0
+      if (lpencil(i_ekin)) p%ekin=0.5*p%u2
 !
       call keep_compiler_quiet(f)
 !
@@ -428,6 +429,7 @@ module Density
           f(l1:l2,m,n,ju)=f(l1:l2,m,n,ju)-gpp(:,j)
         enddo
       enddo; enddo
+!      f(:,:,:,ipp)=f(:,:,:,ipp)/dt
 !
     endsubroutine boussinesq
 !***********************************************************************
@@ -773,5 +775,14 @@ module Density
       call keep_compiler_quiet(f)
 
     endsubroutine impose_density_ceiling
+!***********************************************************************
+    subroutine push2c(p_par)
+
+      integer, parameter :: npars=1
+      integer(KIND=ikind8), dimension(npars) :: p_par
+
+      call keep_compiler_quiet(p_par)
+
+    endsubroutine push2c
 !***********************************************************************
 endmodule Density

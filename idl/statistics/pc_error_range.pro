@@ -1,6 +1,6 @@
 ;$Id$
 pro pc_error_range,tt,a,mean=am,error=err,oplot=oplot,accum=accum, $
-  col=col,li=li,sqrt1=sqrt1
+  col=col,li=li,sqrt1=sqrt1,quiet=quiet
 ;
 ;  Calculate averages for each third of time series and use
 ;  maximum departure from full average as error estimate.
@@ -12,6 +12,7 @@ pro pc_error_range,tt,a,mean=am,error=err,oplot=oplot,accum=accum, $
 ;
 default,li,-1
 default,col,122
+default,quiet,0
 ;
 ;  determine 3 ranges for which separate errors are calculated
 ;
@@ -30,7 +31,7 @@ am3=total(a(it3:it4))/(it4-it3+1)
 aml=am<am1<am2<am3
 amu=am>am1>am2>am3
 err=(amu-am) > (am-aml)
-print,'am,am1,am2,am3,err=',am,am1,am2,am3,err
+if (~quiet) then print,'am,am1,am2,am3,err=',am,am1,am2,am3,err
 ;
 ;  Assume that t is already normalized in correlation times, i.e. by urms*kf.
 ;  The following method is commented out, because it wasn't too useful.

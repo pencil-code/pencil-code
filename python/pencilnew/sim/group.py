@@ -1,9 +1,9 @@
 
-def group(sim_list, groupby, sort=True):
+def group(simulations, groupby, sort=True):
   """Group simulation by a quantity. Each Simulation object can only be part of one group.
 
   Args:
-    sim_list:       put here a list of Simulation objects, i.e. [sim1, sim2, ...]
+    simulations:       put here a list of Simulation objects or list of simulation [sim1, sim2, ...]
     groupby:        put here the heyword after which the grouping shall happen
     sort:           set True to sort returned dictionary naturally
 

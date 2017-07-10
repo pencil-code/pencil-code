@@ -9,7 +9,7 @@ Very first version of code written.
 */
 #include <stdio.h>
 
-
+/****************************************************************************************************************/
 __global__ void copy_rows(float* d_halo, float* d_grid, int nx, int ny, int nz, int halo_depth, dim3 blocksPerGrid)
 { 
 	
@@ -24,9 +24,8 @@ __global__ void copy_rows(float* d_halo, float* d_grid, int nx, int ny, int nz, 
 		d_grid[d_grid_idx] = d_halo[halo_idx];
 		d_grid[d_grid_idx+(ny-halo_depth)*nx] = d_halo[halo_idx+(nx*halo_depth+(ny-(halo_depth*2))*(halo_depth*2))];
 	}
-
 }
-
+/****************************************************************************************************************/
 __global__ void copy_cols(float* d_halo, float* d_grid, int nx, int ny, int nz, int halo_depth, dim3 blocksPerGrid)
 { 
 	
@@ -46,10 +45,9 @@ __global__ void copy_cols(float* d_halo, float* d_grid, int nx, int ny, int nz, 
 	}
 
 }
-
+/****************************************************************************************************************/
 __global__ void copy_frtbk(float* d_halo, float* d_grid, int nx, int ny, int nz, int halo_depth, dim3 blocksPerGrid)
 { 
-	
 	const int halo_idx_x = threadIdx.x + blockIdx.x*blockDim.x; 
 	const int halo_idx_y = threadIdx.y + blockIdx.y*blockDim.y;
 	const int halo_idx_z = threadIdx.z + blockIdx.z*blockDim.z;
@@ -81,8 +79,7 @@ __global__ void copy_frtbk(float* d_halo, float* d_grid, int nx, int ny, int nz,
 	}*/
 
 }
-
-
+/****************************************************************************************************************/
 void fillhalosindevice(float* d_halo, float* d_grid, int nx, int ny, int nz, int halo_depth)
 {
 	//int ELEMS_PER_THREAD_in_z = nz-(2*halo_depth);
@@ -146,5 +143,4 @@ void fillhalosindevice(float* d_halo, float* d_grid, int nx, int ny, int nz, int
 	return;
 	
 }
-
-
+/****************************************************************************************************************/

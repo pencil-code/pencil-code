@@ -24,7 +24,7 @@ def xder_6th(f,dx,x=[],y=[],z=[],param=[],dim=[]):
         raise ValueError
 
     if not param:
-        param=read_param()
+        param=read_param(quiet=True)
     if not dim:
         dim=read_dim()
     dx=N.gradient(x)
@@ -127,13 +127,17 @@ def zder_6th(f,dz,x=[],y=[],z=[],run2D=False,param=[],dim=[]):
 
     return dfdz
 
-def xder2_6th(f,dx,x=[],y=[],z=[]):
+def xder2_6th(f,dx,x=[],y=[],z=[],param=[],dim=[]):
 
     if (f.ndim != 3 and f.ndim != 4):
         print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
 
-    dim=read_dim()
+    if not param:
+        param=read_param(quiet=True)
+    if not dim: 
+        dim=read_dim()
+
     dx = N.gradient(x)
     if (dim.nx!=1):
         dx2 = 1./(180.*dx**2.)
@@ -152,14 +156,16 @@ def xder2_6th(f,dx,x=[],y=[],z=[]):
 
     return dfdx
 
-def yder2_6th(f,dy,x=[],y=[],z=[]):
+def yder2_6th(f,dy,x=[],y=[],z=[],param=[],dim=[]):
 
     if (f.ndim != 3 and f.ndim != 4):
         print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
     
-    param=read_param(quiet=True)
-    dim=read_dim()
+    if not param:
+        param=read_param(quiet=True)
+    if not dim:
+        dim=read_dim()
 
     dy = N.gradient(y)
     if (dim.ny!=1):
@@ -184,14 +190,16 @@ def yder2_6th(f,dy,x=[],y=[],z=[]):
 
     return dfdy
 
-def zder2_6th(f,dz,x=[],y=[],z=[]):
+def zder2_6th(f,dz,x=[],y=[],z=[],param=[],dim=[]):
 
     if (f.ndim != 3 and f.ndim != 4):
         print("%s dimension arrays not handled." % (str(f.ndim)))
         raise ValueError
 
-    param=read_param(quiet=True)
-    dim=read_dim()
+    if not param:
+        param=read_param(quiet=True)
+    if not dim:
+        dim=read_dim()
 
     dz = N.gradient(z)
     if (dim.nz!=1):
@@ -201,7 +209,7 @@ def zder2_6th(f,dz,x=[],y=[],z=[]):
     n2 = f.shape[-3]-3
     
     if (n2 > n1 and dim.nz!=1):
-        for n in range(z1,z2): 
+        for n in range(n1,n2): 
             dfdz[...,n,:,:] = dz2[n]*(-490.* f[...,n,:,:]
                                       +270.*(f[...,n-1,:,:]+f[...,n+1,:,:])
                                       - 27.*(f[...,n-2,:,:]+f[...,n+2,:,:])

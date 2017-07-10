@@ -17,7 +17,7 @@ module Particles_sub
   private
 !
   public :: input_particles, output_particles, boundconds_particles
-  public :: sum_par_name, max_par_name, sum_par_name_nw, integrate_par_name
+  public :: sum_par_name, max_par_name, integrate_par_name
   public :: remove_particle, get_particles_interdistance
   public :: count_particles, output_particle_size_dist
   public :: get_rhopswarm, find_grid_volume, find_interpolation_weight
@@ -487,7 +487,7 @@ module Particles_sub
 !
     endsubroutine boundconds_particles
 !***********************************************************************
-    subroutine sum_par_name(a,iname,lsqrt)
+    subroutine sum_par_name(a,iname,lsqrt,llog10)
 !
 !  Successively calculate sum of a, which is supplied at each call.
 !  Works for particle diagnostics. The number of particles is stored as
@@ -503,7 +503,7 @@ module Particles_sub
 !
       real, dimension (:) :: a
       integer :: iname
-      logical, optional :: lsqrt
+      logical, optional :: lsqrt, llog10
 !
       integer, dimension(mname), save :: icount=0
 !
@@ -521,6 +521,8 @@ module Particles_sub
 !
         if (present(lsqrt)) then
           itype_name(iname)=ilabel_sum_sqrt_par
+        elseif (present(llog10)) then
+          itype_name(iname)=ilabel_sum_log10_par
         else
           itype_name(iname)=ilabel_sum_par
         endif
@@ -539,46 +541,6 @@ module Particles_sub
       endif
 !
     endsubroutine sum_par_name
-!***********************************************************************
-    subroutine sum_par_name_nw(a,iname,lsqrt)
-!
-!  successively calculate sum of a, which is supplied at each call.
-!  Works for particle diagnostics.
-!
-!  22-aug-05/anders: adapted from sum_par_name
-!
-      real, dimension (:) :: a
-      integer :: iname
-      logical, optional :: lsqrt
-!
-      integer, save :: icount=0
-!
-      if (iname/=0) then
-!
-        if (icount==0) fname(iname)=0
-!
-        fname(iname)=fname(iname)+sum(a)
-!
-!  Set corresponding entry in itype_name
-!
-        if (present(lsqrt)) then
-          itype_name(iname)=ilabel_sum_sqrt
-        else
-          itype_name(iname)=ilabel_sum
-        endif
-!
-        icount=icount+size(a)
-        if (icount==nw) then
-          icount=0
-        elseif (icount>=nw) then
-          print*, 'sum_par_name_nw: Too many grid points entered this sub.'
-          print*, 'sum_par_name_nw: Can only do statistics on nw grid points!'
-          call fatal_error('sum_par_name_nw','')
-        endif
-!
-      endif
-!
-    endsubroutine sum_par_name_nw
 !***********************************************************************
     subroutine max_par_name(a,iname,lneg)
 !
@@ -747,13 +709,14 @@ module Particles_sub
 !
     endsubroutine get_particles_interdistance
 !***********************************************************************
-    subroutine remove_particle(fp,ipar,k,dfp,ineargrid)
+    subroutine remove_particle(fp,ipar,k,dfp,ineargrid,ks)
 !
       real, dimension (mpar_loc,mparray) :: fp
       integer, dimension (mpar_loc) :: ipar
       integer :: k
       real, dimension (mpar_loc,mpvar), optional :: dfp
       integer, dimension (mpar_loc,3), optional :: ineargrid
+      integer, intent(in), optional :: ks
 !
       real :: t_sp   ! t in single precision for backwards compatibility
 !
@@ -769,12 +732,20 @@ module Particles_sub
 !  conversion problems when reading t_rmv with pc_read_pvar.
 !
       open(20,file=trim(directory)//'/rmv_ipar.dat',position='append')
-      write(20,*) ipar(k), t_sp
+      if (present(ks)) then
+        write(20,*) ipar(k), t_sp, ipar(ks)
+      else
+        write(20,*) ipar(k), t_sp
+      endif
       close(20)
 !
       open(20,file=trim(directory)//'/rmv_par.dat', &
           position='append',form='unformatted')
-      write(20) fp(k,:)
+      if (present(ks)) then
+        write(20) fp(k,:), fp(ks,:)
+      else
+        write(20) fp(k,:)
+      endif
       close(20)
 !
       if (ip<=8) print*, 'removed particle ', ipar(k)

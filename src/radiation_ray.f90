@@ -55,6 +55,7 @@ module Radiation
   integer, parameter :: maxdir=26
 !
   real, dimension (mx,my,mz) :: Srad, tau, Qrad, Qrad0
+  real, dimension (nx,ny,nz) :: Srad_noghost, kapparho_noghost
   real, dimension (mx,my) :: Irad_refl_xy
   real, target, dimension (nx,ny,mnu) :: Jrad_xy
   real, target, dimension (nx,ny,mnu) :: Jrad_xy2
@@ -1474,6 +1475,8 @@ module Radiation
                   dxyz_2(l)/f(l1-1+l,m,n,ikapparho)**2/cdtrad
             else
               dt1_rad(l)=4*kappa(l)*sigmaSB*p%TT(l)**3*p%cv1(l)/cdtrad
+              if (z_cutoff/=impossible .and. cool_wid/=impossible) &
+              dt1_rad(l)=0.5*dt1_rad(l)*(1.-tanh((z(n)-z_cutoff)/cool_wid))
             endif
           enddo
           dt1_max=max(dt1_max,dt1_rad)
@@ -1559,6 +1562,7 @@ module Radiation
       logical, save :: lfirst=.true.
       integer, dimension(mx) :: ilnTT_table
       real, dimension(mx) :: lnTT
+      integer :: lun_input = 1
       integer :: inu
       integer :: ierr
 !
@@ -1635,6 +1639,16 @@ module Radiation
           call calc_Srad_W2(f,Srad)
         endif
 !
+!  Read from file
+!
+      case ('read_file')
+        open (lun_input, file=trim(directory_prestart)//'/Srad.dat', form='unformatted')
+        read (lun_input) Srad_noghost
+        close (lun_input)
+        Srad(l1:l2,m1:m2,n1:n2)=Srad_noghost
+        Srad(l1:l2,m1:m2,n1-1)=impossible
+        Srad(l1:l2,m1:m2,n2+1)=impossible
+!
 !  Nothing.
 !
       case ('nothing')
@@ -1673,6 +1687,7 @@ module Radiation
       real, dimension(mx) :: kappa_rad,kappa_cond,kappa_tot
       real :: kappa0, kappa0_cgs,k1,k2
       logical, save :: lfirst=.true.
+      integer :: lun_input = 1
       integer :: i,inu
 !
       select case (opacity_type)
@@ -1870,8 +1885,20 @@ module Radiation
       case ('B2+W2') !! magnetic field and vorticity
         call calc_kapparho_B2_W2(f)
 !
+!  Read from file
+!
+      case ('read_file')
+        open (lun_input, file=trim(directory_prestart)//'/kapparho.dat', form='unformatted')
+        read (lun_input) kapparho_noghost
+        close (lun_input)
+        f(l1:l2,m1:m2,n1:n2,ikapparho)=kapparho_noghost
+!
       case ('nothing')
-        f(l1:l2,m,n,ikapparho)=0.0
+        do n=n1-radz,n2+radz
+        do m=m1-rady,m2+rady
+          f(l1:l2,m,n,ikapparho)=0.0
+        enddo
+        enddo
 !
       case default
         call fatal_error('opacity','no such opacity type: '//trim(opacity_type))

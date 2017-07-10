@@ -72,6 +72,10 @@ subroutine pb_special_setup
 !  ux*pressure_gradient*constants, see blow.
 !
     use EquationOfState, only: cs0
+
+    ! if (lroot) print*, 'x(l1:l2)= ', x(l1:l2)
+    ! if (lroot) print*, 'l1= ', l1
+    ! if (lroot) print*, 'l2= ', l2
 !
     if (pb_type/='none') then
         if (lroot) print*, '!!!! Pressure Bump selected: ', pb_type
@@ -92,10 +96,10 @@ subroutine pb_special_setup
         pb_profile = pb_profile*Omega/cs0
 
         end select
-        if (lroot) print*, '!pb_special_setup! x coordinates: x(l1:l2) = ', x(l1:l2)
-        if (lroot) print*, '!pb_special_setup! size(x(l1:l2)) = ', size(x(l1:l2))
-        if (lroot) print*, '!pb_special_setup! Pressure Bump looks like: ', pb_profile
-        if (lroot) print*, '!pb_special_setup! size(pb_profile) = ', size(pb_profile)
+        ! if (lroot) print*, '!pb_special_setup! x coordinates: x(l1:l2) = ', x(l1:l2)
+        ! if (lroot) print*, '!pb_special_setup! size(x(l1:l2)) = ', size(x(l1:l2))
+        if (lroot) print*, '!!!!!!! pb_profile = ', pb_profile
+        ! if (lroot) print*, '!pb_special_setup! size(pb_profile) = ', size(pb_profile)
     endif
 !
 endsubroutine pb_special_setup
@@ -105,22 +109,66 @@ subroutine init_special(f)
 !  initialise special condition; called from start.f90
 !  06-oct-2003/tony: coded
 !
-    use EquationOfState, only: cs20, beta_glnrho_global, beta_glnrho_scaled
+    use EquationOfState, only: cs20
+    use Density, only:  beta_glnrho_global, beta_glnrho_scaled
+
     real, dimension (mx,my,mz,mfarray) :: f
 !
     intent(inout) :: f
+    integer :: ix
 !
     if (lroot) print*, '**************** init_special ****************'
-    call pb_special_setup
+    ! call pb_special_setup  is UNNEEDED
 !
     if (lroot) print*, 'init_special: set pb_profile sub-Keplerian gas velocity'
-    f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - 1/(2*Omega)*cs20*beta_glnrho_scaled(2)*pb_profile
-    f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + 1/(2*Omega)*cs20*beta_glnrho_scaled(1)*pb_profile
-    if (lroot) print*, ''
-    if (lroot) print*, f(:,:,:,iux)
-    if (lroot) print*, ''
-    if (lroot) print*, f(:,:,:,iuy)
-    if (lroot) print*, ''
+
+    if (lroot) print*, '!!!!!!! m1 = ', m1
+    if (lroot) print*, '!!!!!!! m2 = ', m2
+    if (lroot) print*, '!!!!!!! n1 = ', n1
+    if (lroot) print*, '!!!!!!! n2 = ', n2
+
+    ! if (lroot) print*, '!!!!!!! shape(f(l1:l2,m,n,iux)) = ', shape(f(l1:l2,m,n,iux))
+    ! if (lroot) print*, '!!!!!!! shape(f(l1:l2,m,n,iuy)) = ', shape(f(l1:l2,m,n,iuy))
+    ! if (lroot) print*, '!!!!!!! shape(f(:,:,:,iux)) = ', shape(f(:,:,:,iux))
+    ! if (lroot) print*, '!!!!!!! shape(f(:,:,:,iuy)) = ', shape(f(:,:,:,iuy))
+
+    ! f(l1:l2,m,n,iux) = f(l1:l2,m,n,iux) - 1/(2*Omega)*cs20*beta_glnrho_scaled(2)*pb_profile
+    ! f(l1:l2,m,n,iuy) = f(l1:l2,m,n,iuy) + 1/(2*Omega)*cs20*beta_glnrho_scaled(1)*pb_profile
+
+    ! print*, 'mx', mx  = 22
+    do ix=l1,l2;do iy=m1,m2;do iz=n1,n2
+
+            ! if (lroot) print*, ''
+            if (lroot) print*, 'ix, iy, iz: ', ix, ' ', iy, ' ', iz
+            if (lroot) print*, 'ix-l1 = ',ix-l1+1
+            ! if (lroot) print*, 'BEFORE:', f(ix,iy,iz,iuy)
+            ! if (lroot) print*, 'CHANGE:', 1/(2*Omega)*cs20*beta_glnrho_scaled(1)*pb_profile(ix)
+            ! if (lroot) print*, 'Omega:', Omega
+            ! if (lroot) print*, 'cs20:', cs20
+            ! if (lroot) print*, 'beta_glnrho_scaled:', beta_glnrho_scaled
+            ! if (lroot) print*, 'beta_glnrho_scaled(0):', beta_glnrho_scaled(0)
+            ! if (lroot) print*, 'beta_glnrho_scaled(1):', beta_glnrho_scaled(1)
+            ! if (lroot) print*, 'beta_glnrho_scaled(2):', beta_glnrho_scaled(2)
+            ! if (lroot) print*, 'pb_profile:', pb_profile
+            if (lroot) print*, 'pb_profile(ix-l1+1):', pb_profile(ix-l1+1)
+
+            f(ix,iy,iz,iuy) = f(ix,iy,iz,iuy) + 1/(2*Omega)*cs20*beta_glnrho_scaled(1)*pb_profile(ix-l1+1)
+
+            ! if (lroot) print*, 'AFTER:', f(ix,iy,iz,iuy)
+    enddo;enddo;enddo
+
+    ! if (lroot) print*, 'f(l1:l2,m,n,iux)='
+    ! if (lroot) print*, f(l1:l2,m,n,iux)
+    ! if (lroot) print*, ''
+    ! if (lroot) print*, 'f(l1:l2,m,n,iuy)='
+    ! if (lroot) print*, f(l1:l2,m,n,iuy)
+    ! if (lroot) print*, ''
+    ! if (lroot) print*, 'f(:,:,:,iux)='
+    ! if (lroot) print*, f(:,:,:,iux)
+    ! if (lroot) print*, ''
+    ! if (lroot) print*, 'f(:,:,:,iuy)='
+    ! if (lroot) print*, f(:,:,:,iuy)
+    ! if (lroot) print*, ''
 !
     call keep_compiler_quiet(f)
 !
@@ -132,7 +180,7 @@ subroutine initialize_special(f)
 !
 !  06-oct-03/tony: coded
 !
-    use EquationOfState, only: cs20, beta_glnrho_global, beta_glnrho_scaled
+    use EquationOfState, only: cs20
 !
     integer :: j
 !
@@ -160,7 +208,7 @@ subroutine dspecial_dt(f,df,p)
 !
 !  06-oct-03/tony: coded
 !
-    use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
+    use Density, only: beta_glnrho_global, beta_glnrho_scaled
 !
     integer :: j
 !
@@ -171,32 +219,34 @@ subroutine dspecial_dt(f,df,p)
     intent(in) :: f,p
     intent(inout) :: df
 !
-    if (lroot) print*, ''
-    if (lroot) print*, '**************** dspecial_dt ****************'
-    if (lroot) print*, '!!!! t=',t
+    ! if (lroot) print*, ''
+    ! if (lroot) print*, '**************** dspecial_dt ****************'
+    ! if (lroot) print*, '!!!! t=',t
 !
 !   Add pressure force from pressure gradient profile.
 !
     if (any(beta_glnrho_global /= 0.) .and. pb_type/='none') then
-        if (headtt) print*, 'dspecial_dt: adding global pressure gradient profile force'
+        ! if (headtt) print*, 'dspecial_dt: adding global pressure gradient profile force'
         do j=1,3
             if (beta_glnrho_global(j) /= 0) then
-                if (lroot) print*, '!special_calc_hydro! for j=',j
-                if (lroot) print*, '!special_calc_hydro! Adding pb_profile=',pb_profile
-                if (lroot) print*, '!special_calc_hydro! with p%cs:', p%cs2
-                if (lroot) print*, '!special_calc_hydro! with beta_glnrho_scaled(j):', beta_glnrho_scaled(j)
-                if (lroot) print*, '!special_calc_hydro! df before:',  df(l1:l2,m,n,(iux-1)+j)
-                if (lroot) print*, '!special_calc_hydro! df change:', p%cs2*beta_glnrho_scaled(j)*pb_profile
+                ! if (lroot) print*, '~~> m:', m
+                ! if (lroot) print*, '~~> n:', n
+                ! if (lroot) print*, '!special_calc_hydro! for j=',j
+                ! if (lroot) print*, '!special_calc_hydro! Adding pb_profile=',pb_profile
+                ! if (lroot) print*, '!special_calc_hydro! with p%cs:', p%cs2
+                ! if (lroot) print*, '!special_calc_hydro! with beta_glnrho_scaled(j):', beta_glnrho_scaled(j)
+                ! if (lroot) print*, '!special_calc_hydro! df before:',  df(l1:l2,m,n,(iux-1)+j)
+                ! if (lroot) print*, '!special_calc_hydro! df change:', p%cs2*beta_glnrho_scaled(j)*pb_profile
                 df(l1:l2,m,n,(iux-1)+j) = df(l1:l2,m,n,(iux-1)+j) &
                   - p%cs2*beta_glnrho_scaled(j)*pb_profile
-                if (lroot) print*, '!special_calc_hydro! df after:', df(l1:l2,m,n,(iux-1)+j)
+                ! if (lroot) print*, '!special_calc_hydro! df after:', df(l1:l2,m,n,(iux-1)+j)
             endif
         enddo
     endif
 !
 !  Identify module and boundary conditions.
 !
-    if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
+    ! if (headtt.or.ldebug) print*,'dspecial_dt: SOLVE dspecial_dt'
 !
     call keep_compiler_quiet(f,df)
     call keep_compiler_quiet(p)
@@ -213,16 +263,14 @@ subroutine special_calc_hydro(f,df,p)
 !
 !  06-oct-03/tony: coded
 !
-    use EquationOfState, only: beta_glnrho_global, beta_glnrho_scaled
-!
     integer :: j
 !
     real, dimension (mx,my,mz,mfarray), intent(in) :: f
     real, dimension (mx,my,mz,mvar), intent(inout) :: df
     type (pencil_case), intent(in) :: p
 !
-    if (lroot) print*, ''
-    if (lroot) print*, '**************** special_calc_hydro ****************'
+    ! if (lroot) print*, ''
+    ! if (lroot) print*, '**************** special_calc_hydro ****************'
 
 !
     call keep_compiler_quiet(f,df)

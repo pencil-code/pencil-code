@@ -160,7 +160,8 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use EquationOfState, only: gamma, cs20, beta_glnrho_global
+      use Density, only: beta_glnrho_global
+      use EquationOfState, only: gamma, cs20
       use General, only: random_number_wrapper
       use Mpicomm, only: stop_it
       use Sub

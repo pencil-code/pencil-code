@@ -45,18 +45,15 @@
 ! Initial conditions
   public :: isothermal_entropy,isothermal_lnrho_ss
   public :: get_stratz
+! CUDA interface
+  public :: push2c
 
 !ajwm SHOULDN'T BE PUBLIC
   public :: cs0,cs20,lnrho0,rho0
 !Shouldn't be public, certainly means don't add anymore!!
 !,mu,Rgas    BREAKS THE AUTO-TEST
 
-  public :: gamma,gamma_m1,gamma1,cs2top,cs2bot,cs2top_ini,dcs2top_ini
-  public :: beta_glnrho_global, beta_glnrho_scaled
-  public :: cs2cool
-  public :: mpoly, mpoly0, mpoly1, mpoly2
-  public :: isothtop
-  public :: ieos_profile,profz_eos,dprofz_eos
+  public :: gamma,gamma_m1,gamma1,cs2top,cs2bot
 
 ! chemistry
   public :: read_thermodyn,write_thermodyn
@@ -82,4 +79,3 @@
     module procedure calc_pencils_eos_pencpar
     module procedure calc_pencils_eos_std
   endinterface calc_pencils_eos
-

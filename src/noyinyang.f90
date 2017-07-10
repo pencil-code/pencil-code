@@ -7,6 +7,7 @@
 module Yinyang
 !
   use Cdata, only: lroot
+  use General, only: keep_compiler_quiet
 
   implicit none
 
@@ -18,7 +19,7 @@ module Yinyang
   end type
 
 contains
-
+!
 !**************************************************************************
     subroutine bilin_interp(indcoeffs, ith, iph, f, buffer, i2buf, i3buf)
 !

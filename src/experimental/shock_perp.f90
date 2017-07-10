@@ -406,7 +406,7 @@ module Shock
      f(:,:,:,ishock) = f(:,:,:,ishock) * dxmin**2
 !
 !debug only line:-
-! if (ip=0) call output(trim(directory_snap)//'/shockvisc.dat',f(:,:,:,ishock),1)
+! if (ip==0) call output(trim(directory_snap)//'/shockvisc.dat',f(:,:,:,ishock),1)
     endsubroutine calc_shock_profile_simple
 !!***********************************************************************
     subroutine calc_shock_profile(f)

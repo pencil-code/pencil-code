@@ -75,6 +75,7 @@ module General
     module procedure keep_compiler_quiet_sl
     module procedure keep_compiler_quiet_i
     module procedure keep_compiler_quiet_i1d
+    module procedure keep_compiler_quiet_i81d
     module procedure keep_compiler_quiet_i2d
     module procedure keep_compiler_quiet_i3d
     module procedure keep_compiler_quiet_l
@@ -187,7 +188,7 @@ module General
 !  m and n are executed. At one point, necessary(imn)=.true., which is
 !  the moment when all communication must be completed.
 !
-      use Cdata, only: mm,nn,imn_array,necessary,lroot
+      use Cdata, only: mm,nn,imn_array,necessary,lroot,ip
 !
       integer :: imn,m,n
       integer :: min_m1i_m2,max_m2i_m1
@@ -764,6 +765,27 @@ module General
       endif
 !
     endsubroutine keep_compiler_quiet_i
+!***********************************************************************
+    subroutine keep_compiler_quiet_i81d(v1,v2,v3,v4)
+!
+!  Call this to avoid compiler warnings about unused variables.
+!  Optional arguments allow for more variables of the same shape+type.
+!
+!  04-aug-06/wolf: coded
+!
+      integer(KIND=ikind8), dimension(:) :: v1, v2, v3, v4
+      optional :: v2, v3, v4
+!
+      if (ALWAYS_FALSE) then
+        write(0,*) 'keep_compiler_quiet_i: Never got here...'
+        print*,                  v1(1)
+        if (present(v2)) print*, v2(1)
+        if (present(v3)) print*, v3(1)
+        if (present(v4)) print*, v4(1)
+        STOP 1
+      endif
+!
+    endsubroutine keep_compiler_quiet_i81d
 !***********************************************************************
     subroutine keep_compiler_quiet_i1d(v1,v2,v3,v4)
 !
@@ -4164,9 +4186,11 @@ module General
 !  if datadir_snap (where var.dat, VAR# go) is empty, initialize to datadir
 !
 !  02-oct-2002/wolf: coded
+!  23-may-2017/axel: added directory_prestart, not to be erased after start
 !
-      use Cdata, only: iproc_world, directory, datadir, datadir_snap, directory_dist, &
-                       directory_snap, directory_collect
+      use Cdata, only: iproc_world, directory, datadir, directory_dist, &
+                       datadir_snap, directory_snap, directory_collect, &
+                       datadir_prestart, directory_prestart
 
       logical, optional :: lproc
 
@@ -4176,12 +4200,15 @@ module General
       call safe_character_assign(directory, trim(datadir)//'/proc'//chproc)
       call safe_character_assign(directory_dist, &
                                             trim(datadir_snap)//'/proc'//chproc)
+      call safe_character_assign(directory_prestart, &
+                                            trim(datadir_prestart)//'/proc'//chproc)
+!
       if (loptest(lproc)) then
         call safe_character_assign(directory_snap, &
-                                              trim(datadir_snap)//'/proc'//chproc)
+                                            trim(datadir_snap)//'/proc'//chproc)
       else
         call safe_character_assign(directory_snap, &
-                                              trim(datadir_snap)//'/allprocs')
+                                            trim(datadir_snap)//'/allprocs')
       endif
       call safe_character_assign(directory_collect, &
                                             trim (datadir_snap)//'/allprocs')
@@ -4693,11 +4720,12 @@ module General
 ! length(array1)xlength(array2). Analagous to numpy.meshgrid
 !
 ! 19-aug-16/vince: adapted
+! 16-jun-17/MR: double -> real
 !
-      double precision, intent(in), dimension(:) :: array1
-      double precision, intent(in), dimension(:) :: array2
-      double precision, intent(out), dimension(:,:) :: output_array1
-      double precision, intent(out), dimension(:,:) :: output_array2
+      real, intent(in), dimension(:) :: array1
+      real, intent(in), dimension(:) :: array2
+      real, intent(out), dimension(:,:) :: output_array1
+      real, intent(out), dimension(:,:) :: output_array2
 !    
       output_array1=spread(array1,2,size(array2))
       output_array2=spread(array2,1,size(array1))

@@ -6,16 +6,21 @@ def get(path='.', quiet=False):
     from . simulation import simulation
 
     if exists(join(path, '.pc/sim.dill')):
-        sim = load('sim', folder=join(path, '.pc'))
-        sim.update(quiet=quiet)
-        return sim
+        try:
+            sim = load('sim', folder=join(path, '.pc'))
+            sim.update(quiet=quiet)
+            return sim
+        except:
+            import os
+            print('?? Warning: sim.dill in '+path+' is not up to date, recreating simulation object..')
+            os.system('rm '+join(path, '.pc/sim.dill'))
+            
+    from pencilnew import __is_sim_dir__
+    if __is_sim_dir__(path):
+        return simulation(path, quiet=quiet)
     else:
-        from pencilnew import __is_sim_dir__
-        if __is_sim_dir__(path):
-            return simulation(path, quiet=quiet)
-        else:
-            print('? WARNING: No simulation found in '+path+' -> try get_sims maybe?')
-            return False
+        print('? WARNING: No simulation found in '+path+' -> try get_sims maybe?')
+        return False
 
 def get_sims(path_root='.', depth=1, unhide_all=False, quiet=False):
     """
@@ -39,7 +44,7 @@ def get_sims(path_root='.', depth=1, unhide_all=False, quiet=False):
     from pencilnew.io import save
     from pencilnew.sim import simulation
     from pencilnew.io import walklevel
-    from is_sim_dir import is_sim_dir
+    from .is_sim_dir import is_sim_dir
 
     #from pen.intern.class_simdict import Simdict
     #from intern import get_simdict
@@ -60,6 +65,7 @@ def get_sims(path_root='.', depth=1, unhide_all=False, quiet=False):
             if is_sim_dir(sd) and not basename(sd).startswith('.'):
                 if not quiet: print('# Found Simulation in '+sd)
                 sim_paths.append(sd)
+    if is_sim_dir('.'): sim_paths.append('.')
 
     # take care of each simulation found, i.e.
     # generate new simulation object for each and append the sim.-object on sim_list
@@ -72,7 +78,7 @@ def get_sims(path_root='.', depth=1, unhide_all=False, quiet=False):
             if sim.name == s.name:
                 sim.name = sim.name+'#'		# add # to dublicate
                 if not quiet:
-                    print("? Warning: Found two simulatoins with the same name: "
+                    print("? Warning: Found two simulations with the same name: "
                           +sim.path+' and '+s.path)
                     print("? Changed name of "+sim.path+' to '+sim.name
                           +' -> rename simulation and re-export manually')

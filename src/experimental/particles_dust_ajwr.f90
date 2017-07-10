@@ -761,7 +761,8 @@ module Particles
 !
 !  29-dec-04/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_global, cs20
+      use Density, only: beta_glnrho_global
+      use EquationOfState, only: cs20
       use General, only: random_number_wrapper
       use Mpicomm, only: mpireduce_sum, mpibcast_real
       use InitialCondition, only: initial_condition_xxp, initial_condition_vvp
@@ -2063,7 +2064,8 @@ module Particles
 !
 !  14-apr-06/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_global, cs0
+      use Density, only: beta_glnrho_global
+      use EquationOfState, only: cs0
 !
       real, dimension (mpar_loc,mparray) :: fp
       real, dimension (mx,my,mz,mfarray) :: f
@@ -2171,7 +2173,7 @@ module Particles
 !
 !  30-jan-06/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_global
+      use Density, only: beta_glnrho_global
       use General, only: random_number_wrapper
       use Particles_mpicomm
 !

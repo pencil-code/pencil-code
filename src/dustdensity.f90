@@ -572,7 +572,8 @@ module Dustdensity
 !   7-nov-01/wolf: coded
 !  28-jun-02/axel: added isothermal
 !
-      use EquationOfState, only: cs20, gamma, beta_glnrho_scaled
+      use Density, only: beta_glnrho_scaled
+      use EquationOfState, only: cs20, gamma
       use Initcond, only: hat3d, sinwave_phase
       use InitialCondition, only: initial_condition_nd
       use Mpicomm, only: stop_it
@@ -935,7 +936,8 @@ module Dustdensity
 !
 !  18-sep-05/anders: coded
 !
-      use EquationOfState, only: beta_glnrho_scaled, gamma, cs20
+      use Density, only: beta_glnrho_scaled
+      use EquationOfState, only: gamma, cs20
 !
       real, dimension (mx,my,mz,mfarray) :: f
 !

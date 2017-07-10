@@ -21,7 +21,7 @@ module Equ
 !***********************************************************************
     include 'pencil_init.inc' ! defines subroutine initialize_pencils()
 !***********************************************************************
-    subroutine pde(f,df,p,itsub,lsnap)
+    subroutine pde(f,df,p,itsub)
 !
 !  Call the different evolution equations.
 !
@@ -78,7 +78,6 @@ module Equ
       real, dimension (mx,my,mz,mvar) :: df
       type (pencil_case) :: p
       integer, optional :: itsub
-      logical, optional :: lsnap
 !
       intent(inout):: f       ! inout due to lshift_datacube_x,
                               ! density floor, or velocity ceiling
@@ -149,7 +148,7 @@ module Equ
                      ltestscalar.or.ltestfield.or.ltestflow.or. &
                      lparticles_spin.or.lsolid_cells.or. &
                      lchemistry.or.lweno_transport .or. lbfield .or. & 
-                     lslope_limit_diff  !&
+                     lslope_limit_diff .or. lvisc_smag !&
                      !!!.or. lyinyang
 !
 !  Write crash snapshots to the hard disc if the time-step is very low.
@@ -334,7 +333,9 @@ module Equ
       call timing('pde','after calc_for_chem_mixture')
 !
       if (lgpu) then
-        call rhs_gpu(f,ioptest(itsub,0),loptest(lsnap))
+        call rhs_gpu(f,ioptest(itsub,0))
+!print*, 'uu:', maxval(abs(f(:,:,:,iux:iuz)))
+!print*, 'rho:',maxval(abs(f(:,:,:,ilnrho)))
       else
         call rhs_cpu(f,df,p,mass_per_proc,early_finalize)
       endif

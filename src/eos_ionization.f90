@@ -15,7 +15,7 @@
 ! PENCILS PROVIDED ss; gss(3); ee; pp; lnTT; cs2; cp; cp1; cp1tilde
 ! PENCILS PROVIDED glnTT(3); TT; TT1; gTT(3); yH; hss(3,3); hlnTT(3,3)
 ! PENCILS PROVIDED del2ss; del6ss; del2lnTT; cv; cv1; glnmumol(3); ppvap; csvap2
-! PENCILS PROVIDED rho_anel
+! PENCILS PROVIDED rho_anel; rho1gpp(3)
 !
 !***************************************************************
 module EquationOfState
@@ -52,21 +52,13 @@ module EquationOfState
   real :: cs20=impossible, lnrho0=impossible
   logical :: lpp_as_aux=.false., lcp_as_aux=.false.
   real :: gamma=impossible, gamma_m1=impossible,gamma1=impossible
-  real :: cs2top_ini=impossible, dcs2top_ini=impossible
   real :: cs2bot=impossible, cs2top=impossible
 ! input parameters
   namelist /eos_init_pars/ xHe,yMetals,yHacc,lpp_as_aux,lcp_as_aux
 ! run parameters
   namelist /eos_run_pars/ xHe,yMetals,yHacc,lpp_as_aux,lcp_as_aux
 !ajwm  Not sure this should exist either...
-  real :: cs2cool=0.
-  real :: mpoly=1.5, mpoly0=1.5, mpoly1=1.5, mpoly2=1.5
-  integer :: isothtop=0
   integer :: imass=1
-  real, dimension (3) :: beta_glnrho_global=0.0,beta_glnrho_scaled=0.0
-!
-  character (len=labellen) :: ieos_profile='nothing'
-  real, dimension(mz) :: profz_eos=1.,dprofz_eos=0.
 !
   real, dimension(nchemspec,18) :: species_constants
   real, dimension(nchemspec,7)     :: tran_data
@@ -2087,5 +2079,14 @@ module EquationOfState
       if (present(eth0z)) call keep_compiler_quiet(eth0z)
 !
     endsubroutine get_stratz
+!***********************************************************************
+    subroutine push2c(p_par)
+
+    integer, parameter :: npars=1
+    integer(KIND=ikind8), dimension(npars) :: p_par
+
+    call copy_addr_c(cs20,p_par(1))
+
+    endsubroutine push2c
 !***********************************************************************
 endmodule EquationOfState

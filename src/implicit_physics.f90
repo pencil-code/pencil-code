@@ -223,7 +223,7 @@ module ImplicitPhysics
 !  where Lambda_x and Lambda_y denote diffusion operators and the source
 !  term comes from the explicit advance.
 !
-      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top, mpoly0
+      use EquationOfState, only: gamma, gamma_m1, cs2bot, cs2top
       use Boundcond, only: update_ghosts
 !
       implicit none

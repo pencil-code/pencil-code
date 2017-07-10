@@ -10,7 +10,8 @@ something that breaks the auto-test, for example.
 In such cases that person must expect phone calls even outside office hours.
 
 Name,                 email,                         svn-name,             office,            mobile/home/alternative,  skype-name,  institution
-------------------------------------------------------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Omer Anjum,           oanjum@illinois.edu,           oa98105,              ,                  ,                         ,            Aalto Univ. & llinois, USA
 Natalia Babkovskaia,  nbabkovskaia/gmail.com,        NBabkovskaia,         +358 8 553 1939,   +358 40 5286784,          ,            University of Helsinki
 Steve Berukoff,       steveb/physics.ucla.edu,       ,                     ,                  ,                         ,            National Solar Observatory Boulder
 Sven Bingert,         bingert/mps.mpg.de,            sven.bingert,         +49 5556 979 358,  +49 179 2126192,          ,            GWDG Gottingen
@@ -20,7 +21,7 @@ Simon Candelaresi,    iomsn1/gmail.com,              iomsn,                +44 7
 Chi-kwan Chan,        ckch/nordita.org,              chanchikwan,          +46 8 5537 8573,   +46 7273 91600,           ,            Steward Observatory Arizona
 Piyali Chatterjee,    mppiyali/gmail.com,            mppiyali,             +47 228 57529,     +47 9845 2367,            mppiyali,    University of Oslo
 Fabio Del Sordo,      fabio/nordita.org,             fadiesis,             +46 8 5537 8277,   +46 700629700,            fabiodelsordo, NORDITA
-Boris Dintrans,       boris.dintrans/irap.omp.eu,    boris.dintrans,       +33 5 6133 2811,   +33 651 053 521,          bdintrans,   CNRS/IRAP
+Boris Dintrans,       boris.dintrans/irap.omp.eu,    boris.dintrans,       +33 5 6133 2811,   ,                         bdintrans,   CNRS/IRAP
 Wolfgang Dobler,      wdobler/gmail.com,             wdobler,              +49 33201 43791,   +49 151 28123472,         wolfgangdobler,
 Thomas Gastine,       gastine/mps.mpg.de,            ,                     +49 5556 979 456,  ,                         ,            Max-Planck-Institut für Sonnensystemforschung Göttingen
 Fred A. Gent,         frederick.gent@aalto.fi,       fred.gent.ncl,        +44 114 222 3285,  +44 7779 364 893 (mob),   fred_gent,   Aalto University
@@ -60,3 +61,7 @@ Xiang-Yu Li,          xiang.yu.li.phy/gmail.com,            ,                   
 Please add further names (in alphabetical order) that have been forgotten so far!
 This file is located in the directory
    $PENCIL_HOME/license
+
+A separate list of all the committers on github are listed in:
+
+  https://www.nordita.org/~brandenb/pencil-code/PCSC/
