@@ -1571,32 +1571,32 @@ module Solid_Cells
 !
       rthz_global=(/ xglobal_ogrid(i_rthz_global(1)), yglobal_ogrid(i_rthz_global(2)), &
                      zglobal_ogrid(i_rthz_global(3)) /)
-      do ii=1,mxgrid_ogrid
+      do ii=1,mx_ogrid
         if(abs(rthz_global(1)-x_ogrid(ii))<1e-12) then
           i_rthz_local(1)=ii
           exit
         endif
       enddo
-      do jj=1,mygrid_ogrid
-        if(rthz_global(2)==y_ogrid(jj)) then
+      do jj=1,my_ogrid
+        if(abs(rthz_global(2)-y_ogrid(jj))<1e-12) then
           i_rthz_local(2)=jj
           exit
         endif
       enddo
-!
       if(nzgrid_ogrid==1) then
         i_rthz_local(3)=n1
       else
-        do kk=1,mzgrid_ogrid
-          if(rthz_global(3)==z_ogrid(kk)) then
+        do kk=1,mz_ogrid
+          if(abs(rthz_global(3)-z_ogrid(kk))<1e-12) then
             i_rthz_local(3)=kk
             exit
           endif
         enddo
       endif
 !
-      if(i_rthz_local(1)==0) print*, 'ZERO INDEX IN R-DIRECTION!'
       if(lcheck) then
+        if(i_rthz_local(1)==0) print*, 'ERROR:ZERO INDEX IN R-DIRECTION!'
+        if(i_rthz_local(2)==0) print*, 'ERROR:ZERO INDEX IN TH-DIRECTION!'
         if((rthz_global(1)-x_ogrid(i_rthz_local(1))>1e-12) .or. &
            (rthz_global(2)-y_ogrid(i_rthz_local(2))>1e-12) .or. &
            (rthz_global(3)-z_ogrid(i_rthz_local(3))>1e-12)) then
@@ -1607,8 +1607,6 @@ module Solid_Cells
           print*, 'rthz_local',x_ogrid(i_rthz_local(1)),y_ogrid(i_rthz_local(2)),z_ogrid(i_rthz_local(3))
           print*, 'i_rthz_global',i_rthz_global
           print*, 'i_rthz_local',i_rthz_local
-          print*, 'xyz0_loc_ogrid[x,y,z]', xyz0_loc_ogrid
-          print*, 'xyz0_loc_ogrid[x,y,z]', xyz1_loc_ogrid
           print*, ''
           call fatal_error('ind_global_to_local_curv','correct local point not found!')
         endif
@@ -1629,13 +1627,13 @@ module Solid_Cells
 !
       xyz_global=(/ xglobal(i_xyz_global(1)), yglobal(i_xyz_global(2)), &
                     zglobal(i_xyz_global(3)) /)
-      do ii=1,mxgrid
+      do ii=1,mx
         if(xyz_global(1)==x(ii)) then
           i_xyz_local(1)=ii
           exit
         endif
       enddo
-      do jj=1,mygrid
+      do jj=1,my
         if(xyz_global(2)==y(jj)) then
           i_xyz_local(2)=jj
           exit
@@ -1644,7 +1642,7 @@ module Solid_Cells
       if(nzgrid==1) then
         i_xyz_local(3)=n1
       else
-        do kk=1,mzgrid
+        do kk=1,mz
           if(xyz_global(3)==z(kk)) then
             i_xyz_local(3)=kk
             exit
@@ -6583,20 +6581,20 @@ module Solid_Cells
           endif
         enddo
       endif
-      if(lroot) then
-        print*, 'Processor boundaries cgrid:'
-        do j=0,ncpus-1
-          print*, 'Proc:',j
-          print*, 'xyz0:,',xyz0_loc_all(j+1,:)
-          print*, 'xyz1:,',xyz1_loc_all(j+1,:)
-        enddo
-        print*, 'Processor boundaries ogrid:'
-        do j=0,ncpus-1
-          print*, 'Proc:',j
-          print*, 'xyz0:,',xyz0_loc_all_ogrid(j+1,:)
-          print*, 'xyz1:,',xyz1_loc_all_ogrid(j+1,:)
-        enddo
-      endif
+      !if(lroot) then
+      !  print*, 'Processor boundaries cgrid:'
+      !  do j=0,ncpus-1
+      !    print*, 'Proc:',j
+      !    print*, 'xyz0:,',xyz0_loc_all(j+1,:)
+      !    print*, 'xyz1:,',xyz1_loc_all(j+1,:)
+      !  enddo
+      !  print*, 'Processor boundaries ogrid:'
+      !  do j=0,ncpus-1
+      !    print*, 'Proc:',j
+      !    print*, 'xyz0:,',xyz0_loc_all_ogrid(j+1,:)
+      !    print*, 'xyz1:,',xyz1_loc_all_ogrid(j+1,:)
+      !  enddo
+      !endif
 !
 !  Serial array constructed. Broadcast the result. 
 !
@@ -7867,7 +7865,7 @@ module Solid_Cells
         print*, 'interpolate_linear_ogrid: Global interpolation point does not ' // &
             'lie within the calculated grid point interval.'
         print*, 'iproc = ', iproc
-        print*, 'ipar = ', ipar
+        !print*, 'ipar = ', ipar
         !print*, 'mxgrid_ogrid, xglobal_ogrid(1), xglobal_ogrid(mxgrid_ogrid) = ', & 
         !    mxgrid_ogrid, xglobal_ogrid(1), xglobal_ogrid(mxgrid_ogrid)
         !print*, 'mygrid_ogrid, yglobal_ogrid(1), yglobal_ogrid(mygrid_ogrid) = ', &
@@ -7906,6 +7904,10 @@ module Solid_Cells
 !
 !  Function values at all corners.
 !
+! TODO: This needs to be fixed
+! TODO: At the moment, there is no correct relation between
+!       the coordinates ix0,iy0,iz0 and f_ogrid_loc, and proc is 
+!       not even set!
       g1=f_ogrid_loc(proc,ix0  ,iy0  ,iz0  ,ivar1:ivar2)
       g2=f_ogrid_loc(proc,ix0+1,iy0  ,iz0  ,ivar1:ivar2)
       g3=f_ogrid_loc(proc,ix0  ,iy0+1,iz0  ,ivar1:ivar2)
@@ -7932,7 +7934,7 @@ module Solid_Cells
 !
 !  Do a reality check on the interpolation scheme.
 !
-      if (linterp_reality_check) then
+      if (lcheck_interpolation) then
         do i=1,ivar2-ivar1+1
           if ((gp(i)>max(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) .or. &
             (gp(i)<min(g1(i),g2(i),g3(i),g4(i),g5(i),g6(i),g7(i),g8(i))) .or. &
@@ -7947,7 +7949,7 @@ module Solid_Cells
               print*, 'interpolate_linear_ogrid: interpolated value is NaN'
             endif
             print*, 'iproc = ', iproc
-            print*, 'ipar = ', ipar
+            !print*, 'ipar = ', ipar
             print*, 'interpolate_linear_ogrid: xxp=', xxp
             print*, 'interpolate_linear_ogrid: x0, y0, z0=', &
                 xglobal_ogrid(ix0), yglobal_ogrid(iy0), zglobal_ogrid(iz0)
