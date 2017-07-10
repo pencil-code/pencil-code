@@ -26,7 +26,7 @@ module Particles_mass
 !
 ! Diagnostic variables
 !
-  integer :: idiag_mpm = 0    ! DIAG_DOC: $\overline{m_p}}$
+  integer :: idiag_mpm = 0    ! DIAG_DOC: $\overline{m_p}$
   integer :: idiag_mpmin = 0  ! DIAG_DOC: $\min_j m_{p,j}$
   integer :: idiag_mpmax = 0  ! DIAG_DOC: $\max_j m_{p,j}$
 !
