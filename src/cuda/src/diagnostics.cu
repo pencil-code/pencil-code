@@ -2,11 +2,10 @@
 #include <stdio.h>
 #include <float.h>
 
-#include "dconstsextern.cuh"
+#define EXTERN extern
+#include "dconsts.cuh"
 #include "../cparam_c.h"
 #include "smem.cuh"
-
-extern float cs2, nu, force, tforce_stop;
 
 /****************************************************************************************************************/
 __device__ void check_for_nan_inf_variable(int code, float var)
@@ -156,6 +155,9 @@ float check_grid_for_nan(float* d_lnrho, float* d_uu_x, float* d_uu_y, float* d_
 /****************************************************************************************************************/
 
 #include "../cdata_c.h"
+#include "../viscosity_c.h"
+#include "../eos_c.h"
+#include "../forcing_c.h"
 #include "defines_PC.h"
 //using namespace PC;
 

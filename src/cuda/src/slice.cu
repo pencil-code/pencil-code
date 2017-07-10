@@ -3,7 +3,8 @@
 #include <stdio.h>
 
 #include "slice.cuh"
-#include "dconstsextern.cuh"
+#define EXTERN extern
+#include "dconsts.cuh"
 #include "defines.h"
 
 /*
