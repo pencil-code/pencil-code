@@ -191,7 +191,7 @@ class __Simulation__(object):
             for f in listdir(path_initial_condition):
                 f_path = abspath(join(path_initial_condition, f))
                 copy_to = abspath(join(path_newsim_initcond, f))
-                print 'f_path',f_path, 'copy_to',copy_to
+
                 if f_path == copy_to:
                     print('!! ERROR: file path f_path equal to destination copy_to. Debug this line manually!')
                     debug_breakpoint()
