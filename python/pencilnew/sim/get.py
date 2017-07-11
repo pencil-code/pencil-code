@@ -14,7 +14,7 @@ def get(path='.', quiet=False):
             import os
             print('?? Warning: sim.dill in '+path+' is not up to date, recreating simulation object..')
             os.system('rm '+join(path, '.pc/sim.dill'))
-            
+
     from pencilnew import __is_sim_dir__
     if __is_sim_dir__(path):
         return simulation(path, quiet=quiet)
@@ -22,7 +22,7 @@ def get(path='.', quiet=False):
         print('? WARNING: No simulation found in '+path+' -> try get_sims maybe?')
         return False
 
-def get_sims(path_root='.', depth=1, unhide_all=False, quiet=False):
+def get_sims(path_root='.', depth=1, unhide_all=True, quiet=False):
     """
     Returns all found simulations as object list from all subdirs, not
     following symbolic links.
@@ -59,9 +59,9 @@ def get_sims(path_root='.', depth=1, unhide_all=False, quiet=False):
     for path, dirs in walklevel(path_root, depth):
         #if 'start.in' in files and 'run.in' in files:
         # print('path: '+str(path))
-        for dir in dirs:
+        for sdir in dirs:
             # print('dirs: '+str(dir))
-            sd = join(path, dir)
+            sd = join(path, sdir)
             if is_sim_dir(sd) and not basename(sd).startswith('.'):
                 if not quiet: print('# Found Simulation in '+sd)
                 sim_paths.append(sd)

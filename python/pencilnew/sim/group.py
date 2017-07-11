@@ -1,11 +1,12 @@
 
-def group(simulations, groupby, sort=True):
+def group(simulations, groupby, sort=True, only_started=False):
   """Group simulation by a quantity. Each Simulation object can only be part of one group.
 
   Args:
-    simulations:       put here a list of Simulation objects or list of simulation [sim1, sim2, ...]
+    simulations:    put here a list of Simulation objects or list of simulation [sim1, sim2, ...]
     groupby:        put here the heyword after which the grouping shall happen
     sort:           set True to sort returned dictionary naturally
+    only_started:   only group simulations that already has started
 
   Return:
     a dictionary with keywords are the group entries and values are lists of simulations in that group
@@ -25,10 +26,16 @@ def group(simulations, groupby, sort=True):
       print('!! ERROR: Dont know how to interprated simulations argument..')
       return False
 
-  # case the groupby-keyword can be found in param.keys()
-  if groupby in sim_list[0].param.keys():
+  # sort out simulations that has not started
+  if only_started==True: sim_list = [s for s in sim_list if s.started()]
+
+  # case the groupby-keyword can be found via __simulation__.get_value
+  if sim_list[0].get_value(groupby) != None:
     for sim in sim_list:
-      q = str(sim.param[groupby])
+    #   sim.update()
+    #   if sim.param == False:
+    #       print('?? WARNING: Simulation '+sim.name+' has no params'); continue
+      q = str(sim.get_value(groupby))
       if (not q in sim_dict_grouped.keys()):
         sim_dict_grouped[q] = [sim]
       else:

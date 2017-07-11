@@ -92,7 +92,7 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
 
     ######## open file
     # now having absolute filepath to file, lets check that file and find quantity inside!
-    if DEBUG: print('~ DEBUG: Found suiting file {0} in {1}'.format(filename,filepath))
+    if DEBUG: print('~ DEBUG: Found file {0} in {1}'.format(filename,filepath))
 
     with open(absolute_filepath, 'r') as f:
         data_raw = f.readlines()
@@ -199,6 +199,10 @@ def get_value_from_file(filename, quantity, change_quantity_to=False, sim=False,
         debug_breakpoint()
     elif DEBUG:
         print('~ DEBUG: q_type = '+q_type)
+    if q_type == 'FLOAT':
+        q = float(q)
+    elif q_type == 'INT':
+        q = int(q)
 
 
     ######## if value of quantity has to be changed do:

@@ -490,8 +490,7 @@ class __Simulation__(object):
                 if DEBUG: print('~ DEBUG: '+quantity+' found in simulation.params ...')
                 return self.param[quantity]
 
-        if DEBUG:
-            print('~ DEBUG: Searching through simulation.quantity_searchables ...')
+        if DEBUG: print('~ DEBUG: Searching through simulation.quantity_searchables ...')
         from pencilnew.io import get_value_from_file
         for filename in self.quantity_searchables:
             q = get_value_from_file(filename, quantity, change_quantity_to=False,
@@ -499,8 +498,11 @@ class __Simulation__(object):
             if q is not None:
                 if DEBUG: print('~ DEBUG: '+quantity+' found in '+filename+' ...')
                 return q
+            else:
+                if DEBUG: print('~ DEBUG: Couldnt find quantity here.. continue searching')
 
         print('! ERROR: Couldnt find '+quantity+'!')
+        return None
 
     def get_ts(self):
         """Returns time series object."""
