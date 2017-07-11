@@ -13,8 +13,17 @@ def group(simulations, groupby, sort=True):
 
   from collections import OrderedDict
   from pencilnew.math import natural_sort
+  #from . import Simulations
 
   sim_dict_grouped = {}
+
+  if type(simulations) == type(['list']):
+      sim_list = simulations
+  #elif type(simulations) == Simulations:
+#      sim_list = simulations.sims
+  else:
+      print('!! ERROR: Dont know how to interprated simulations argument..')
+      return False
 
   # case the groupby-keyword can be found in param.keys()
   if groupby in sim_list[0].param.keys():
