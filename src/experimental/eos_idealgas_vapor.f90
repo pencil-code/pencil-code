@@ -36,8 +36,6 @@ module EquationOfState
   integer, parameter :: irho_eth=13, ilnrho_eth=14
   integer :: iglobal_cs2, iglobal_glnTT, ics
   real, dimension(nchemspec,18) :: species_constants
-  real, dimension(nchemspec,7) :: tran_data
-  real, dimension(nchemspec) :: Lewis_coef, Lewis_coef1
   real :: Rgas_unit_sys=1.0
   real :: lnTT0=impossible
   real :: mudry=1.0, muvap=1.0, mudry1=1.0, muvap1=1.0
@@ -1359,14 +1357,6 @@ module EquationOfState
 !
     endsubroutine find_species_index
 !***********************************************************************
-    subroutine read_transport_data
-!
-       real, dimension (mx,my,mz,mfarray) :: f
-!
-       call keep_compiler_quiet(f)
-!
-    endsubroutine read_transport_data
-!***********************************************************************
     subroutine write_thermodyn()
 !
       real, dimension (mx,my,mz,mfarray) :: f
@@ -1390,10 +1380,6 @@ module EquationOfState
       call keep_compiler_quiet(input_file)
 !
     endsubroutine read_species
-!***********************************************************************
-    subroutine read_Lewis
-!
-    endsubroutine read_Lewis
 !***********************************************************************
     subroutine get_stratz(z, rho0z, dlnrho0dz, eth0z)
 !
