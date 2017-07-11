@@ -61,8 +61,6 @@ module EquationOfState
   integer :: imass=1
 !
   real, dimension(nchemspec,18) :: species_constants
-  real, dimension(nchemspec,7)     :: tran_data
-  real, dimension(nchemspec)  :: Lewis_coef, Lewis_coef1
 !
   contains
 !***********************************************************************
@@ -516,20 +514,6 @@ module EquationOfState
       call keep_compiler_quiet(present(f))
 !
     endsubroutine getmu
-!***********************************************************************
-    subroutine getmu_array(f,mu1_full_tmp)
-!
-!  dummy routine to calculate mean molecular weight
-!
-!   16-mar-10/natalia
-!
-      real, dimension (mx,my,mz,mfarray) :: f
-      real, dimension (mx,my,mz) :: mu1_full_tmp
-!
-      call keep_compiler_quiet(f)
-      call keep_compiler_quiet(mu1_full_tmp)
-!
-    endsubroutine getmu_array
 !***********************************************************************
     subroutine ioninit(f)
 !
@@ -2008,10 +1992,6 @@ module EquationOfState
 !
     endsubroutine bc_lnrho_hdss_z_iso
 !***********************************************************************
-    subroutine read_transport_data
-!
-    endsubroutine read_transport_data
-!***********************************************************************
     subroutine write_thermodyn
 !
     endsubroutine write_thermodyn
@@ -2055,12 +2035,6 @@ module EquationOfState
        call keep_compiler_quiet(MolMass)
 !
      endsubroutine find_mass
-!***********************************************************************
-    subroutine read_Lewis
-!
-! Dummy routine
-!
-    endsubroutine read_Lewis
 !***********************************************************************
     subroutine get_stratz(z, rho0z, dlnrho0dz, eth0z)
 !
