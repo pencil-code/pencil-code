@@ -52,6 +52,7 @@ def diffusion(directions=['x'], trange=[0, -1], sim='.', OVERWRITE=False, quiet=
                                                 sim=sims[0],
                                                 OVERWRITE=OVERWRITE,
                                                 quiet=quiet)
+            return directions
     else:
         DiffusionData_Dict = {}
         for sim in sims:
@@ -61,7 +62,7 @@ def diffusion(directions=['x'], trange=[0, -1], sim='.', OVERWRITE=False, quiet=
                                              sim=sim,
                                              OVERWRITE=OVERWRITE,
                                              quiet=quiet)
-        return True
+        return DiffusionData_Dict
     return False
 
 
