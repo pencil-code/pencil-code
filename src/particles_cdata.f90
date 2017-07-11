@@ -71,9 +71,7 @@ module Particles_cdata
   integer :: idfg=0,idfx=0,idfy=0,idfz=0
 
   integer :: npar_inserted_tot=0
-! Define maximum number of inserted particles in total
-! Stop inserting after max_particles is reached
-  integer :: max_particles=huge(1)
+  integer :: max_particles=npar
 !
   logical :: linterpolate_spline=.true.
   logical :: lparticlemesh_cic=.true., lparticlemesh_tsc=.false.
