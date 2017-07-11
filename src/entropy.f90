@@ -481,8 +481,8 @@ module Energy
       if (ldensity.and..not.lstratz) then
         call get_shared_variable('mpoly',mpoly)
       else
-        call warning('initialize_eos','mpoly not obtained from density,'// &
-                     'set impossible')
+        if (lroot) call warning('initialize_eos','mpoly not obtained from density,'// &
+                                'set impossible')
         allocate(mpoly); mpoly=impossible
       endif
 !

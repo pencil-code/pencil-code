@@ -184,6 +184,7 @@ module Density
   integer :: idiag_drhom=0      ! DIAG_DOC: $<\varrho-\varrho_0>$
   integer :: idiag_rhomin=0     ! DIAG_DOC: $\min(\rho)$
   integer :: idiag_rhomax=0     ! DIAG_DOC: $\max(\rho)$
+  integer :: idiag_rhorms=0     ! DIAG_DOC:
   integer :: idiag_ugrhom=0     ! DIAG_DOC: $\left<\uv\cdot\nabla\varrho\right>$
   integer :: idiag_uglnrhom=0   ! DIAG_DOC: $\left<\uv\cdot\nabla\ln\varrho\right>$
   integer :: idiag_lnrhomphi=0  ! PHIAVG_DOC: $\left<\ln\varrho\right>_\varphi$
@@ -934,7 +935,7 @@ module Density
         call get_shared_variable('mpoly1', mpoly1)
         call get_shared_variable('mpoly2', mpoly2)
       else
-        call warning('init_lnrho','mpoly[0-2] not provided by entropy, take default 1.5')
+        if (lroot) call warning('init_lnrho','mpoly[0-2] not provided by entropy, take default 1.5')
         allocate(mpoly0,mpoly1,mpoly2)
         mpoly0=1.5; mpoly1=1.5; mpoly2=1.5
       endif
@@ -3698,13 +3699,14 @@ module Density
 !***********************************************************************
     subroutine push2c(p_idiag)
 
-    integer, parameter :: ndiags=4
+    integer, parameter :: ndiags=5
     integer(KIND=ikind8), dimension(ndiags) :: p_idiag
 
     call copy_addr_c(idiag_rhom,p_idiag(1))
     call copy_addr_c(idiag_rhomin,p_idiag(2))
     call copy_addr_c(idiag_rhomax,p_idiag(3))
     call copy_addr_c(idiag_mass,p_idiag(4))
+    call copy_addr_c(idiag_rhorms,p_idiag(5))
 
     endsubroutine push2c
 !***********************************************************************
