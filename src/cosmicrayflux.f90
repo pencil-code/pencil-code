@@ -194,7 +194,7 @@ module Cosmicrayflux
       real, dimension(mx,my,mz,mfarray) :: f
       real, dimension(mx,my,mz,mvar) :: df
       real, dimension(nx,3) :: BuiBujgecr, bunit
-      real, dimension(nx)   :: b2, b21, b_rms
+      real, dimension(nx)   :: b2, b21, b_brms
       real, dimension(nx)   :: tmp, diffus_cr,advec_kfcr
       real, dimension (nx,3,3) :: gfcr
       real, dimension (nx,3) :: ugfcr
@@ -241,9 +241,9 @@ module Cosmicrayflux
         ! (subgrid_)c1 and c2 depend on properties of background field
         vKpara(:) = kpara_t
 
-        b_rms = sqrt(b2)/subgrid_brms
+        b_brms = sqrt(b2)/subgrid_brms
         if (subgrid_c1 /= 0.0) then
-          vKpara(:) = vKpara(:) + kpara_t*subgrid_c1*b_rms**subgrid_s
+          vKpara(:) = vKpara(:) + kpara_t*subgrid_c1*b_brms**subgrid_s
         endif
 
         if (subgrid_c2 /= 0.0) then
@@ -258,7 +258,7 @@ module Cosmicrayflux
           ! where r = ratio_kpara_kperp) and k = subgrid_k
           vKperp(:) = vKpara(:)/ratio_kpara_kperp
           if (subgrid_k /= 0.0) then
-            vKperp(:) = vKperp(:) * (b_rms)**(-subgrid_k)
+            vKperp(:) = vKperp(:) * (b_brms)**(-subgrid_k)
           endif
         else
           ! Otherwise, use constant perpendicular diffusivity previously
