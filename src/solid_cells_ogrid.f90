@@ -192,6 +192,7 @@ module Solid_Cells
   real, dimension(mzgrid_ogrid) :: zglobal_ogrid
 !  Necessary for particle runs
   real, dimension(:,:,:,:,:), allocatable ::  f_ogrid_loc
+  integer, dimension(:,:), allocatable :: ip_proc
   integer, dimension(:), allocatable :: recv_part_data_from
   integer, dimension(:), allocatable :: send_part_data_to
   integer :: n_procs_recv_part_data 
@@ -814,7 +815,7 @@ module Solid_Cells
               if(.not. this_proc_cartesian(xyz)) then
                 call find_proc_cartesian(xyz,cartesian_to_curvilinear(ii)%from_proc)
                 if(cartesian_to_curvilinear(ii)%from_proc==iproc) then
-                  ! Some ghost points might have this_proc!=iproc, but still return iproc from find_proc_cartesan
+                  ! Some ghost points might have this_proc!=iproc, but still return iproc from find_proc_cartesian
                   call ind_global_to_local_cart(cartesian_to_curvilinear(ii)%ind_global_neighbour, &
                         cartesian_to_curvilinear(ii)%ind_local_neighbour,lcheck_init_interpolation)
                 endif
@@ -1566,51 +1567,73 @@ module Solid_Cells
       integer, dimension(3), intent(in) :: i_rthz_global
       integer, dimension(3), intent(out) :: i_rthz_local
       logical, intent(in) :: lcheck
-      real, dimension(3) :: rthz_global
-      integer :: ii,jj,kk
+      !real, dimension(3) :: rthz_global
+      !integer :: ii,jj,kk
 !
-      rthz_global=(/ xglobal_ogrid(i_rthz_global(1)), yglobal_ogrid(i_rthz_global(2)), &
-                     zglobal_ogrid(i_rthz_global(3)) /)
-      do ii=1,mx_ogrid
-        if(abs(rthz_global(1)-x_ogrid(ii))<1e-12) then
-          i_rthz_local(1)=ii
-          exit
-        endif
-      enddo
-      do jj=1,my_ogrid
-        if(abs(rthz_global(2)-y_ogrid(jj))<1e-12) then
-          i_rthz_local(2)=jj
-          exit
-        endif
-      enddo
-      if(nzgrid_ogrid==1) then
-        i_rthz_local(3)=n1
-      else
-        do kk=1,mz_ogrid
-          if(abs(rthz_global(3)-z_ogrid(kk))<1e-12) then
-            i_rthz_local(3)=kk
-            exit
-          endif
-        enddo
-      endif
-!
+      i_rthz_local(1) = i_rthz_global(1) - nx_ogrid*ipx
+      i_rthz_local(2) = i_rthz_global(2) - ny_ogrid*ipy
+      i_rthz_local(3) = i_rthz_global(3) - nz_ogrid*ipz
+
       if(lcheck) then
-        if(i_rthz_local(1)==0) print*, 'ERROR:ZERO INDEX IN R-DIRECTION!'
-        if(i_rthz_local(2)==0) print*, 'ERROR:ZERO INDEX IN TH-DIRECTION!'
-        if((rthz_global(1)-x_ogrid(i_rthz_local(1))>1e-12) .or. &
-           (rthz_global(2)-y_ogrid(i_rthz_local(2))>1e-12) .or. &
-           (rthz_global(3)-z_ogrid(i_rthz_local(3))>1e-12)) then
-          print*, ''
-          print*, 'iproc', iproc
-          print*, 'Correct global to local conversion not performed'
-          print*, 'rthz_global',rthz_global
-          print*, 'rthz_local',x_ogrid(i_rthz_local(1)),y_ogrid(i_rthz_local(2)),z_ogrid(i_rthz_local(3))
-          print*, 'i_rthz_global',i_rthz_global
-          print*, 'i_rthz_local',i_rthz_local
-          print*, ''
-          call fatal_error('ind_global_to_local_curv','correct local point not found!')
-        endif
+        if(x_ogrid(i_rthz_local(1))/=xglobal_ogrid(i_rthz_global(1))) &
+          print*, 'ERROR: incorrect transformation of global to local coordinates in r-direction'
+        if(y_ogrid(i_rthz_local(2))/=yglobal_ogrid(i_rthz_global(2))) &
+          print*, 'ERROR: incorrect transformation of global to local coordinates in th-direction'
+        if(z_ogrid(i_rthz_local(3))/=zglobal_ogrid(i_rthz_global(3))) &
+          print*, 'ERROR: incorrect transformation of global to local coordinates in z-direction'
       endif
+!      rthz_global=(/ xglobal_ogrid(i_rthz_global(1)), yglobal_ogrid(i_rthz_global(2)), &
+!                     zglobal_ogrid(i_rthz_global(3)) /)
+!      do ii=1,mx_ogrid
+!        if(abs(rthz_global(1)-x_ogrid(ii))<1e-12) then
+!          i_rthz_local(1)=ii
+!          exit
+!        endif
+!      enddo
+!      do jj=1,my_ogrid
+!        if(abs(rthz_global(2)-y_ogrid(jj))<1e-12) then
+!          i_rthz_local(2)=jj
+!          exit
+!        endif
+!      enddo
+!      if(nzgrid_ogrid==1) then
+!        i_rthz_local(3)=n1
+!      else
+!        do kk=1,mz_ogrid
+!          if(abs(rthz_global(3)-z_ogrid(kk))<1e-12) then
+!            i_rthz_local(3)=kk
+!            exit
+!          endif
+!        enddo
+!      endif
+!!
+!if((i_rthz_global(2)/=i_rthz_local(2)+ny_ogrid*ipy).or.(i_rthz_local(2) /=i_rthz_global(2)-ny_ogrid*ipy)) then
+!  print*, ''
+!  print*, 'SOME ERROR'
+!  print*, yglobal_ogrid(i_rthz_global(2)),yglobal_ogrid(i_rthz_local(2)+ny_ogrid*ipy)
+!  print*, y_ogrid(i_rthz_local(2)),y_ogrid(i_rthz_global(2)-ny_ogrid*ipy)
+!endif
+!      !print*, 'iproc,l1_ogrid,l2_ogrid,m1_ogrid,m2_ogrid',l1_ogrid,l2_ogrid,m1_ogrid,m2_ogrid
+!      !print*, 'iproc,x_ogrid(l1_ogrid),y_ogrid(m1_ogrid)',iproc,x_ogrid(l1_ogrid),y_ogrid(m1_ogrid)
+!      !print*, 'iproc,xglobal_ogrid(l1_ogrid+nx_ogrid*ipx),yglobal_ogrid(m1_ogrid+ny_ogrid*ipy)', &
+!              !iproc,xglobal_ogrid(l1_ogrid+nx_ogrid*ipx),yglobal_ogrid(m1_ogrid+ny_ogrid*ipy)
+!      if(lcheck) then
+!        if(i_rthz_local(1)==0) print*, 'ERROR:ZERO INDEX IN R-DIRECTION!'
+!        if(i_rthz_local(2)==0) print*, 'ERROR:ZERO INDEX IN TH-DIRECTION!'
+!        if((rthz_global(1)-x_ogrid(i_rthz_local(1))>1e-12) .or. &
+!           (rthz_global(2)-y_ogrid(i_rthz_local(2))>1e-12) .or. &
+!           (rthz_global(3)-z_ogrid(i_rthz_local(3))>1e-12)) then
+!          print*, ''
+!          print*, 'iproc', iproc
+!          print*, 'Correct global to local conversion not performed'
+!          print*, 'rthz_global',rthz_global
+!          print*, 'rthz_local',x_ogrid(i_rthz_local(1)),y_ogrid(i_rthz_local(2)),z_ogrid(i_rthz_local(3))
+!          print*, 'i_rthz_global',i_rthz_global
+!          print*, 'i_rthz_local',i_rthz_local
+!          print*, ''
+!          call fatal_error('ind_global_to_local_curv','correct local point not found!')
+!        endif
+!      endif
     endsubroutine ind_global_to_local_curv
 !***********************************************************************
     subroutine ind_global_to_local_cart(i_xyz_global,i_xyz_local,lcheck)
@@ -1622,51 +1645,63 @@ module Solid_Cells
       integer, dimension(3), intent(in) :: i_xyz_global
       integer, dimension(3), intent(out) :: i_xyz_local
       logical, intent(in) :: lcheck
-      real, dimension(3) :: xyz_global
-      integer :: ii,jj,kk
+      !real, dimension(3) :: xyz_global
+      !integer :: ii,jj,kk
 !
-      xyz_global=(/ xglobal(i_xyz_global(1)), yglobal(i_xyz_global(2)), &
-                    zglobal(i_xyz_global(3)) /)
-      do ii=1,mx
-        if(xyz_global(1)==x(ii)) then
-          i_xyz_local(1)=ii
-          exit
-        endif
-      enddo
-      do jj=1,my
-        if(xyz_global(2)==y(jj)) then
-          i_xyz_local(2)=jj
-          exit
-        endif
-      enddo
-      if(nzgrid==1) then
-        i_xyz_local(3)=n1
-      else
-        do kk=1,mz
-          if(xyz_global(3)==z(kk)) then
-            i_xyz_local(3)=kk
-            exit
-          endif
-        enddo
-      endif
-!
+      i_xyz_local(1) = i_xyz_global(1) - nx*ipx
+      i_xyz_local(2) = i_xyz_global(2) - ny*ipy
+      i_xyz_local(3) = i_xyz_global(3) - nz*ipz
+
       if(lcheck) then
-        if((xyz_global(1)-x(i_xyz_local(1))/=0.) .or. &
-           (xyz_global(2)-y(i_xyz_local(2))/=0.) .or. &
-           (xyz_global(3)-z(i_xyz_local(3))/=0.)) then
-          print*, ''
-          print*, 'Correct global to local conversion not performed'
-          print*, 'iproc', iproc
-          print*, 'xyz_global',xyz_global
-          print*, 'xyz_local',x(i_xyz_local(1)),y(i_xyz_local(2)),z(i_xyz_local(3))
-          print*, 'i_xyz_global',i_xyz_global
-          print*, 'i_xyz_local',i_xyz_local
-          print*, 'xyz0_loc[x,y,z]', xyz0_loc
-          print*, 'xyz0_loc[x,y,z]', xyz1_loc
-          print*, ''
-          call fatal_error('ind_global_to_local_cart','correct local point not found!')
-        endif
+        if(x(i_xyz_local(1))/=xglobal(i_xyz_global(1))) &
+          print*, 'ERROR: incorrect transformation of global to local coordinates in r-direction'
+        if(y(i_xyz_local(2))/=yglobal(i_xyz_global(2))) &
+          print*, 'ERROR: incorrect transformation of global to local coordinates in th-direction'
+        if(z(i_xyz_local(3))/=zglobal(i_xyz_global(3))) &
+          print*, 'ERROR: incorrect transformation of global to local coordinates in z-direction'
       endif
+!!      xyz_global=(/ xglobal(i_xyz_global(1)), yglobal(i_xyz_global(2)), &
+!!                    zglobal(i_xyz_global(3)) /)
+!!      do ii=1,mx
+!!        if(xyz_global(1)==x(ii)) then
+!!          i_xyz_local(1)=ii
+!!          exit
+!!        endif
+!!      enddo
+!!      do jj=1,my
+!!        if(xyz_global(2)==y(jj)) then
+!!          i_xyz_local(2)=jj
+!!          exit
+!!        endif
+!!      enddo
+!!      if(nzgrid==1) then
+!!        i_xyz_local(3)=n1
+!!      else
+!!        do kk=1,mz
+!!          if(xyz_global(3)==z(kk)) then
+!!            i_xyz_local(3)=kk
+!!            exit
+!!          endif
+!!        enddo
+!!      endif
+!!!
+!!      if(lcheck) then
+!!        if((xyz_global(1)-x(i_xyz_local(1))/=0.) .or. &
+!!           (xyz_global(2)-y(i_xyz_local(2))/=0.) .or. &
+!!           (xyz_global(3)-z(i_xyz_local(3))/=0.)) then
+!!          print*, ''
+!!          print*, 'Correct global to local conversion not performed'
+!!          print*, 'iproc', iproc
+!!          print*, 'xyz_global',xyz_global
+!!          print*, 'xyz_local',x(i_xyz_local(1)),y(i_xyz_local(2)),z(i_xyz_local(3))
+!!          print*, 'i_xyz_global',i_xyz_global
+!!          print*, 'i_xyz_local',i_xyz_local
+!!          print*, 'xyz0_loc[x,y,z]', xyz0_loc
+!!          print*, 'xyz0_loc[x,y,z]', xyz1_loc
+!!          print*, ''
+!!          call fatal_error('ind_global_to_local_cart','correct local point not found!')
+!!        endif
+!!      endif
     endsubroutine ind_global_to_local_cart
 !***********************************************************************
 !    subroutine expand_int_array(arr,nexpand,size_arr)
@@ -7712,15 +7747,27 @@ module Solid_Cells
       enddo
 ! 
 !  Initialize arrays of points needed for particle properties 
+!  The ip_proc is needed to transform global coordinates to coordinates local to 
+!  the processor considered in the f_ogrid_loc_arrary
 !
       procs_needed = count(linside_proc)
       if(procs_needed>0) then
         allocate(f_ogrid_loc(procs_needed,mx_ogrid,my_ogrid,mz_ogrid,ivar2-ivar1+1))
+        allocate(ip_proc(procs_needed,3))
         allocate(recv_part_data_from(procs_needed))
         k=1
         do iip=0,ncpus-1
           if(linside_proc(iip+1)) then
             recv_part_data_from(k)=iip
+            if (lprocz_slowest) then
+              ip_proc(k,1) = modulo(iip, nprocx)
+              ip_proc(k,2) = modulo(iip/nprocx, nprocy)
+              ip_proc(k,3) = iip/nprocxy
+            else
+              ip_proc(k,1) = modulo(iip, nprocx)
+              ip_proc(k,2) = iip/nprocxz
+              ip_proc(k,3) = modulo(iip/nprocx, nprocz)
+            endif
             k=k+1
           endif
         enddo
@@ -7845,7 +7892,8 @@ module Solid_Cells
       real, dimension (ivar2-ivar1+1) :: g1, g2, g3, g4, g5, g6, g7, g8
       real :: xp0, yp0, zp0
       real, save :: dxdydz1, dxdy1, dxdz1, dydz1, dx1, dy1, dz1
-      integer :: ix0, iy0, iz0, i, proc
+      integer :: ix0, iy0, iz0, i 
+      integer :: ix0_proc, iy0_proc, iz0_proc, proc
 !
       intent(in)  :: ivar1, ivar2, xxp, inear_glob
       intent(out) :: gp
@@ -7865,13 +7913,6 @@ module Solid_Cells
         print*, 'interpolate_linear_ogrid: Global interpolation point does not ' // &
             'lie within the calculated grid point interval.'
         print*, 'iproc = ', iproc
-        !print*, 'ipar = ', ipar
-        !print*, 'mxgrid_ogrid, xglobal_ogrid(1), xglobal_ogrid(mxgrid_ogrid) = ', & 
-        !    mxgrid_ogrid, xglobal_ogrid(1), xglobal_ogrid(mxgrid_ogrid)
-        !print*, 'mygrid_ogrid, yglobal_ogrid(1), yglobal_ogrid(mygrid_ogrid) = ', &
-        !    mygrid_ogrid, yglobal_ogrid(1), yglobal_ogrid(mygrid_ogrid)
-        !print*, 'mzgrid_ogrid, zglobal_ogrid(1), zglobal_ogrid(mzgrid_ogrid) = ', & 
-        !    mzgrid_ogrid, zglobal_ogrid(1), zglobal_ogrid(mzgrid_ogrid)
         print*, 'ix0, iy0, iz0 = ', ix0, iy0, iz0
         print*, 'xp, xp0, xp1 = ', xxp(1), xglobal_ogrid(ix0), xglobal_ogrid(ix0+1)
         print*, 'yp, yp0, yp1 = ', xxp(2), yglobal_ogrid(iy0), yglobal_ogrid(iy0+1)
@@ -7902,28 +7943,26 @@ module Solid_Cells
       dxdy1=dx1*dy1; dxdz1=dx1*dz1; dydz1=dy1*dz1
       dxdydz1=dx1*dy1*dz1
 !
+!  Transform global coordinates to coordinates local to the f_ogrid_loc array
+!
+      ix0_proc=ix0-nx_ogrid*ip_proc(proc,1)
+      iy0_proc=iy0-ny_ogrid*ip_proc(proc,2)
+      iz0_proc=iz0-nz_ogrid*ip_proc(proc,3)
+!
 !  Function values at all corners.
 !
 ! TODO: This needs to be fixed
 ! TODO: At the moment, there is no correct relation between
 !       the coordinates ix0,iy0,iz0 and f_ogrid_loc, and proc is 
 !       not even set!
-      g1=f_ogrid_loc(proc,ix0  ,iy0  ,iz0  ,ivar1:ivar2)
-      g2=f_ogrid_loc(proc,ix0+1,iy0  ,iz0  ,ivar1:ivar2)
-      g3=f_ogrid_loc(proc,ix0  ,iy0+1,iz0  ,ivar1:ivar2)
-      g4=f_ogrid_loc(proc,ix0+1,iy0+1,iz0  ,ivar1:ivar2)
-      g5=f_ogrid_loc(proc,ix0  ,iy0  ,iz0+1,ivar1:ivar2)
-      g6=f_ogrid_loc(proc,ix0+1,iy0  ,iz0+1,ivar1:ivar2)
-      g7=f_ogrid_loc(proc,ix0  ,iy0+1,iz0+1,ivar1:ivar2)
-      g8=f_ogrid_loc(proc,ix0+1,iy0+1,iz0+1,ivar1:ivar2)
-      !g1=farr(1,1,1,ivar1:ivar2)
-      !g2=farr(2,1,1,ivar1:ivar2)
-      !g3=farr(1,2,1,ivar1:ivar2)
-      !g4=farr(2,2,1,ivar1:ivar2)
-      !g5=farr(1,1,2,ivar1:ivar2)
-      !g6=farr(2,1,2,ivar1:ivar2)
-      !g7=farr(1,2,2,ivar1:ivar2)
-      !g8=farr(2,2,2,ivar1:ivar2)
+      g1=f_ogrid_loc(proc,ix0_proc  ,iy0_proc  ,iz0_proc  ,ivar1:ivar2)
+      g2=f_ogrid_loc(proc,ix0_proc+1,iy0_proc  ,iz0_proc  ,ivar1:ivar2)
+      g3=f_ogrid_loc(proc,ix0_proc  ,iy0_proc+1,iz0_proc  ,ivar1:ivar2)
+      g4=f_ogrid_loc(proc,ix0_proc+1,iy0_proc+1,iz0_proc  ,ivar1:ivar2)
+      g5=f_ogrid_loc(proc,ix0_proc  ,iy0_proc  ,iz0_proc+1,ivar1:ivar2)
+      g6=f_ogrid_loc(proc,ix0_proc+1,iy0_proc  ,iz0_proc+1,ivar1:ivar2)
+      g7=f_ogrid_loc(proc,ix0_proc  ,iy0_proc+1,iz0_proc+1,ivar1:ivar2)
+      g8=f_ogrid_loc(proc,ix0_proc+1,iy0_proc+1,iz0_proc+1,ivar1:ivar2)
 !
 !  Interpolation formula.
 !
