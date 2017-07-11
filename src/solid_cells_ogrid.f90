@@ -248,7 +248,8 @@ module Solid_Cells
 !  Pencils and f-array to be used for curvilinear grid computations
   type(pencil_case_ogrid) p_ogrid 
   save p_ogrid
-  real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray), save ::  f_ogrid=0.
+  integer, parameter :: mfarray_ogrid=mvar
+  real, dimension (mx_ogrid, my_ogrid, mz_ogrid,mfarray_ogrid), save ::  f_ogrid=0.
 
 !  Summation by parts arrays
   real, dimension(6,9) :: D1_SBP, D2_SBP
@@ -684,7 +685,7 @@ module Solid_Cells
 !
 !  Write initial condition to disk.
 !
-      if (lwrite_ic) then
+      if (lwrite_ic.and.lstart) then
         call wsnap_ogrid('OGVAR0',ENUM=.false.,FLIST='ogvarN.list')
       endif
 !
@@ -5155,7 +5156,7 @@ module Solid_Cells
 !
 !  07-feb-17/Jorgen: Adapted from sub.f90
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
       real, dimension (nx_ogrid,3) :: g
       integer :: k
 !
@@ -5177,7 +5178,7 @@ module Solid_Cells
       intent(in) :: f,k
       intent(out) :: del2f
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
       real, dimension (nx_ogrid) :: del2f,d2fdx,d2fdy,d2fdz,tmp
       integer :: k
 !
@@ -5198,7 +5199,7 @@ module Solid_Cells
 !
 !  07-feb-17/Jorgen: Adapted from sub.f90
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
       real, dimension (nx_ogrid,3,3) :: g
       real, dimension (nx_ogrid) :: tmp
       integer :: i,j,k
@@ -5246,7 +5247,7 @@ module Solid_Cells
 !
 !   07-feb-17/Jorgen: Adapted from sub.f90
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
       real, dimension (nx_ogrid,3,3) :: g
       real, dimension (nx_ogrid) :: tmp
       integer :: i,j,k,k1,nder
@@ -5413,7 +5414,7 @@ module Solid_Cells
 !  14-feb-17/Jorgen: Adapted from del2v_ogrid in der.f90
 !  15-mar-07/wlad: added cylindrical coordinates
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
       real, dimension (nx_ogrid,3) :: del2f
       real, dimension (nx_ogrid) :: tmp
       integer :: i,k,k1
@@ -5448,14 +5449,14 @@ module Solid_Cells
       intent(in) :: f,k,gradf,uu,upwind
       intent(out) :: ugradf
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
       real, dimension (nx_ogrid,3,3) :: gradf
       real, dimension (nx_ogrid,3) :: uu,ff,ugradf,grad_f_tmp
       real, dimension (nx_ogrid) :: tmp
       integer :: j,k
       logical, optional :: upwind
 !
-      if (k<1 .or. k>mfarray) then
+      if (k<1 .or. k>mfarray_ogrid) then
         call fatal_error('u_dot_grad_vec_ogrid','variable index is out of bounds')
         return
       endif
@@ -5488,13 +5489,13 @@ module Solid_Cells
       intent(in) :: f,k,gradf,uu,upwind
       intent(out) :: ugradf
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
       real, dimension (nx_ogrid,3) :: uu,gradf
       real, dimension (nx_ogrid) :: ugradf
       integer :: k
       logical, optional :: upwind
 !
-      if (k<1 .or. k>mfarray) then
+      if (k<1 .or. k>mfarray_ogrid) then
         call fatal_error('u_dot_grad_scl_ogrid','variable index is out of bounds')
         return
       endif
@@ -5515,7 +5516,7 @@ module Solid_Cells
 !
 !  27-feb-17/Jorgen: Adapted from sub.f90
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray), intent(IN)    :: f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(IN)    :: f
       integer :: k
       real, dimension (nx_ogrid,3),                         intent(IN)    :: uu
       real, dimension (nx_ogrid),                           intent(INOUT) :: ugradf
@@ -5642,7 +5643,7 @@ module Solid_Cells
       use Deriv, only: der2,derij
       use General, only: loptest
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray), intent (in) :: f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent (in) :: f
       integer, intent (in) :: iref
       logical, intent (in), optional :: lcovariant_derivative
       real, dimension (nx_ogrid,3), intent (in)   :: aa
@@ -5758,7 +5759,7 @@ module Solid_Cells
 !
 !  07-feb-17/Jorgen: Adapted from deriv.f90
 !
-      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray), intent(in) :: f
+      real, dimension(mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
       real, dimension(nx_ogrid), intent(out) :: df
       integer, intent(in) :: j, k
 !
@@ -5824,7 +5825,7 @@ module Solid_Cells
 !
       use General, only: loptest
 
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
       real, dimension (nx_ogrid) :: df2,fac,df
       integer :: j,k,i
 !
@@ -5899,7 +5900,7 @@ module Solid_Cells
 !  17-feb-17/Jorgen: Adapted from deriv.f90
 !  05-apr-17/Jorgen: Added summation by parts operator near cylinder surface
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
       real, dimension (nx_ogrid) :: df,fac
       real, dimension (6) :: facSBP
       integer :: i,j,k,ii,kk
@@ -6168,7 +6169,7 @@ module Solid_Cells
 !
 !   27-feb-17/Jorgen: Adapted from deriv.f90
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
       real, dimension (nx_ogrid) :: df,fac
       integer :: j,k,i=0
       logical, optional :: ignoredx,upwind
@@ -6265,7 +6266,7 @@ module Solid_Cells
 !
 !  27-feb-17/Jorgen: Adapted from deriv.f90
 !
-      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray) :: f
+      real, dimension (mx_ogrid,my_ogrid,mz_ogrid,mfarray_ogrid) :: f
       real, dimension (nx_ogrid)                           :: df
       integer                             :: j
       logical,                   optional :: lignored, lnometric
@@ -7052,7 +7053,7 @@ module Solid_Cells
         mode=1
       endif
 !
-      call input_snap_ogrid(chsnap,f_ogrid,mfarray,mode)
+      call input_snap_ogrid(chsnap,f_ogrid,mfarray_ogrid,mode)
       close (lun_input)
       if (lserial_io) call end_serialize
 !
@@ -7469,7 +7470,7 @@ module Solid_Cells
 !  Only implemented in radial direction.
 !
 !  21-mar-17/Jorgen: Coded
-      real, dimension(l1_ogrid+8,my_ogrid,mz_ogrid,mfarray), intent(in) :: f
+      real, dimension(l1_ogrid+8,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
       real, dimension(6), intent(out) :: df
       integer, intent(in) :: k
       integer :: i
@@ -7494,7 +7495,7 @@ module Solid_Cells
 !  Only implemented in radial direction.
 !
 !  21-mar-17/Jorgen: Coded
-      real, dimension(l1_ogrid+8,my_ogrid,mz_ogrid,mfarray), intent(in) :: f
+      real, dimension(l1_ogrid+8,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
       real, dimension(6), intent(out) :: df2
       integer, intent(in) :: k
       integer :: i
@@ -7521,7 +7522,7 @@ module Solid_Cells
 !
 !  12-may-17/Jorgen: Coded
 !
-      real, dimension(9,my_ogrid,mz_ogrid,mfarray), intent(in) :: f
+      real, dimension(9,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
       real, dimension(6), intent(out) :: df
       integer, intent(in) :: k
       real :: fac
@@ -7549,7 +7550,7 @@ module Solid_Cells
 !  This experimental routine is for the outer boundary
 !
 !  12-may-17/Jorgen: Coded
-      real, dimension(9,my_ogrid,mz_ogrid,mfarray), intent(in) :: f
+      real, dimension(9,my_ogrid,mz_ogrid,mfarray_ogrid), intent(in) :: f
       real, dimension(6), intent(out) :: df2
       integer, intent(in) :: k
       real :: fac
