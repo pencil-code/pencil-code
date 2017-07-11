@@ -34,6 +34,7 @@ def simulation(*args, **kwargs):
         self.param:         list of param file
         self.grid:          grid object
         self.dim:           dim object
+        self.tmp_dict:      temporal dictionary of stuff, will not be saved
     """
 
     return __Simulation__(*args, **kwargs)
@@ -72,6 +73,7 @@ class __Simulation__(object):
         self.grid = False
         self.dim = False
         self.ghost_grid = False
+        self.tmp_dict = {}
         self = self.update(quiet=quiet)                   # auto-update, i.e. read param.nml
         # Done
 
@@ -246,7 +248,14 @@ class __Simulation__(object):
         """Export simulation object to its root/.pc-dir"""
         from pencilnew.io import save
         if self == False: print('! ERROR: Simulation object is bool object and False!')
+
+        # clean self.tmp_dict
+        tmp_dict = self.tmp_dict; self.tmp_dict = {}
+
         save(self, name='sim', folder=self.pc_dir)
+
+        # restore self.tmp_dict
+        self.tmp_dict = tmp_dict
 
 
     def started(self):
@@ -272,13 +281,11 @@ class __Simulation__(object):
         timestamp = pcn.io.timestamp()
 
         command = []
-        if cleanall: command.append('pc_build --cleanall')
-        if fast == True:
-            command.append('pc_build --fast')
-        else:
-            command.append('pc_build')
+        command.append('pc_build')
+        if cleanall: command.append(' --cleanall')
+        if fast == True: command.append(' --fast')
 
-        if verbose: print('! Compiling '+self.path)
+        if verbose != False: print('! Compiling '+self.path)
         return self.bash(command=command,
                          verbose=verbose,
                          logfile=join(self.pc_dir, 'compilelog_'+timestamp))
@@ -379,7 +386,7 @@ class __Simulation__(object):
         folder = join(self.path,'data')
         keeps = []
 
-        if not exists(folder): return True
+        if not exists(folder): print('? Warning: No data directory found!'); return True
 
         filelist = listdir(folder)          # remove everything INSIDE
         for f in filelist:
@@ -388,27 +395,44 @@ class __Simulation__(object):
         return True
 
 
-    def remove(self, do_it=False, do_it_really=False, remove_data=True):
+    def remove(self, do_it=False, do_it_really=False, remove_data=False):
         """ This method removes the WHOLE simulation,
-        including DATA directory!
+        but NOT the DATA directory per default.
+        Do remove_data=True to delete data dir as well.
 
         Args:
             to activate pass        True, True
             remove_data:            also clear data directory
         """
-        from os import listdir, system
+        from os import listdir
         from os.path import join
         from pencilnew.io import remove_files as remove
 
         self.clear_src(do_it=do_it, do_it_really=do_it_really)
-        if remove_data: self.clear_data(do_it=do_it, do_it_really=do_it_really)
+        if remove_data:
+            self.clear_data(do_it=do_it, do_it_really=do_it_really)
 
         filelist = listdir(self.path)
         for f in filelist:
             remove(join(self.path, f), do_it=do_it, do_it_really=do_it_really)
-
-        system('rm -rf '+self.path)
         return True
+
+    def get_T_last(self):
+        """ Returnes ts.t[-1] WITHOUTH reading the whole time series!
+        """
+        from os.path import join
+        with open(join(self.datadir, 'time_series.dat'), 'rb') as fh:
+            first = next(fh).decode()
+            fh.seek(-1024, 2)
+            last = fh.readlines()[-1].decode()
+
+        header = [i for i in first.split('-') if not i=='' and not i=='#' and not i=='\n']
+        values = [i for i in last.split(' ') if not i=='']
+
+        if len(header) != len(values):
+            return self.get_ts().t[-1]
+
+        return float(dict(zip(header, values))['t'])
 
 
     def get_varlist(self, pos=False, particle=False):
@@ -478,41 +502,17 @@ class __Simulation__(object):
 
         print('! ERROR: Couldnt find '+quantity+'!')
 
-    def show(self, name=False):
-        """Shows the content of a specified simulation file.
-        E.g.: self.show('cparam.local') show the content that file.
-        Works with: cparam.local, Makefile.local and *.in files"""
-
-        from os.path import join
-        from pencilnew.io import exists_file
-
-        def __s__(filepath):
-            print(filepath)
-            if exists_file(filepath):
-                with open(filepath, 'r') as fin:
-                    print(fin.read())
-                    return True
-            return False
-
-        if name != False:
-            if name.startswith('cparam'):
-                return __s__(join(self.path,'src','cparam.local'))
-            elif name.startswith('Makefile'):
-                return __s__(join(self.path,'src','Makefile.local'))
-            elif name.endswith('.in'):
-                return __s__(join(self.path,name))
-            else:
-                print('?? Specify which file to show..')
-                return False
-
-        print('?? Specify which file to show, Couldnt find '+str(name))
-        return False
-
     def get_ts(self):
         """Returns time series object."""
         from pencilnew.read import ts
+
+        # check if already loaded
+        if 'ts' in self.tmp_dict.keys() and self.tmp_dict['ts'].t[-1] == self.get_T_last(): return self.tmp_dict['ts']
+
         if self.started():
-            return ts(sim=self, quiet=True)
+            ts = ts(sim=self, quiet=True)
+            self.tmp_dict['ts'] = ts
+            return ts
         else:
             print('? WARNING: Simulation '+self.name+' has not yet been started. No timeseries available!')
             return False
