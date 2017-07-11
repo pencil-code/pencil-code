@@ -120,6 +120,13 @@ class __Simulation__(object):
         path_newsim = join(path_root, name)     # simulation abspath
         path_newsim_src = join(path_newsim, 'src')
 
+        path_initial_condition = join(self.path, 'initial_condition')
+        if exists(path_initial_condition):
+            has_initial_condition_dir = True
+            path_newsim_initcond = join(path_newsim, 'initial_condition')
+        else:
+            has_initial_condition_dir = False
+
         if type(optionals) == type(['list']): optionals = self.optionals + optionals          # optional files to be copied
         if optionals == True: optionals = self.optionals
         if type(optionals) == type('string'): optionals = [optionals]
@@ -174,6 +181,22 @@ class __Simulation__(object):
                 print('!! ERROR: file path f_path equal to destination copy_to. Debug this line manually!')
                 debug_breakpoint()
             copyfile(f_path, copy_to)
+
+        # Organizes any personalized initial conditions
+        if has_initial_condition_dir:
+            if mkdir(path_newsim_initcond) == False and OVERWRITE==False:
+                print('! ERROR: Couldnt create new simulation initial_condition directory '+path_newsim_initcond+' !!')
+                return False
+
+            for f in listdir(path_initial_condition):
+                f_path = abspath(join(path_initial_condition, f))
+                copy_to = abspath(join(path_newsim_initcond, f))
+                print 'f_path',f_path, 'copy_to',copy_to
+                if f_path == copy_to:
+                    print('!! ERROR: file path f_path equal to destination copy_to. Debug this line manually!')
+                    debug_breakpoint()
+                copyfile(f_path, copy_to)
+
 
         # modify name in submit script files
         if rename_submit_script != False:
@@ -490,7 +513,8 @@ class __Simulation__(object):
                 if DEBUG: print('~ DEBUG: '+quantity+' found in simulation.params ...')
                 return self.param[quantity]
 
-        if DEBUG: print('~ DEBUG: Searching through simulation.quantity_searchables ...')
+        if DEBUG:
+            print('~ DEBUG: Searching through simulation.quantity_searchables ...')
         from pencilnew.io import get_value_from_file
         for filename in self.quantity_searchables:
             q = get_value_from_file(filename, quantity, change_quantity_to=False,
@@ -498,11 +522,8 @@ class __Simulation__(object):
             if q is not None:
                 if DEBUG: print('~ DEBUG: '+quantity+' found in '+filename+' ...')
                 return q
-            else:
-                if DEBUG: print('~ DEBUG: Couldnt find quantity here.. continue searching')
 
         print('! ERROR: Couldnt find '+quantity+'!')
-        return None
 
     def get_ts(self):
         """Returns time series object."""
