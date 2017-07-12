@@ -200,7 +200,7 @@ module Diagnostics
       use Cparam, only: max_col_width
       use Sub, only: insert
 !
-      character (len=640) :: fform,legend,line
+      character (len=1000) :: fform,legend,line
       integer :: iname, nnamel
       real, dimension(2*nname) :: buffer
       integer, parameter :: lun=1
